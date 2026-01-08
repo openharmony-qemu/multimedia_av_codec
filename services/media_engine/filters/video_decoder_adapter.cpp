@@ -172,7 +172,13 @@ Status VideoDecoderAdapter::Configure(const Format &format)
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
     Format formatCopy = format;
     std::shared_ptr<Media::Meta> metaInfoCopy = const_cast<Format &>(formatCopy).GetMeta();
-    metaInfoCopy->Remove(std::string(MediaDescriptionKey::MD_KEY_CODEC_CONFIG));
+    std::string codecMimeType_;
+    metaInfo->GetData(Tag::MIME_TYPE, codecMimeType_);
+    if (codecMimeType_ != MediaAVCodec::CodecMimeType::VIDEO_VC1 &&
+        codecMimeType_ != MediaAVCodec::CodecMimeType::VIDEO_WMV3 &&
+        codecMimeType_ != MediaAVCodec::CodecMimeType::VIDEO_RV30) {
+        metaInfoCopy->Remove(std::string(MediaDescriptionKey::MD_KEY_CODEC_CONFIG));
+    }
     int32_t ret = mediaCodec_->Configure(formatCopy);
     isConfigured_ = ret == AVCodecServiceErrCode::AVCS_ERR_OK;
     return isConfigured_ ? Status::OK : Status::ERROR_INVALID_DATA;
@@ -308,6 +314,17 @@ sptr<AVBufferQueueConsumer> VideoDecoderAdapter::GetBufferQueueConsumer()
     return inputBufferQueueConsumer_;
 }
 
+static void RecordTimeStamp(AVBuffer& buffer, StallingStage stage)
+{
+    std::vector<int64_t> timeStampList;
+    int64_t nowTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+    buffer.meta_->GetData(Media::Tag::STALLING_TIMESTAMP, timeStampList);
+    timeStampList.push_back(static_cast<int64_t>(stage));
+    timeStampList.push_back(nowTime);
+    buffer.meta_->SetData(Media::Tag::STALLING_TIMESTAMP, timeStampList);
+}
+
 void VideoDecoderAdapter::AquireAvailableInputBuffer()
 {
     AVCodecTrace trace("VideoDecoderAdapter::AquireAvailableInputBuffer");
@@ -335,6 +352,7 @@ void VideoDecoderAdapter::AquireAvailableInputBuffer()
                 tmpBuffer->pts_, tmpBuffer->flag_);
             isRenderStarted_ = true;
         }
+        RecordTimeStamp(*tmpBuffer, StallingStage::DECODER_START);
         int32_t ret = mediaCodec_->QueueInputBuffer(index);
         if (ret != ERR_OK) {
             MEDIA_LOG_E_SHORT("QueueInputBuffer failed, index: %{public}u,  bufferid: %{public}" PRIu64

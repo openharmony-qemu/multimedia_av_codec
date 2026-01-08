@@ -16,11 +16,11 @@
 #include <fuzzer/FuzzedDataProvider.h>
 #include "hls/hls_segment_manager.h"
 #include "http_server_mock.h"
-
+#include "test_template.h"
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
-using namespace OHOS::MediaAVCodec;
+using namespace OHOS::Media::Plugins;
 using namespace OHOS::Media::Plugins::HttpPlugin;
 
 #define FUZZ_PROJECT_NAME "hlsm3u8mutate_fuzzer"
@@ -31,7 +31,6 @@ const map<string, string> g_httpHeader = {
     {"User-Agent", "ABC"},
     {"Referer", "DEF"},
 };
-
 
 bool StartFuzzTest(FuzzedDataProvider *fdp, size_t size)
 {
@@ -71,8 +70,11 @@ bool StartFuzzTest(FuzzedDataProvider *fdp, size_t size)
     return true;
 }
 
-void SegMentFuzzTest(const uint8_t *data, size_t size)
+bool SegMentFuzzTest(const uint8_t *data, size_t size)
 {
+    if (data == nullptr) {
+        return false;
+    }
     std::string mimeType = "audio";
     std::map<std::string, std::string> httpHeader = {
         {"User-Agent", "ABC"},
@@ -88,16 +90,16 @@ void SegMentFuzzTest(const uint8_t *data, size_t size)
     url += FAKE_FUZZ_M3U8;  // 虚假m3u8文件，需通过 fuzz data 喂入
     hlsSegmentManager->Open(url, g_httpHeader);
     hlsSegmentManager->SetIsReportedErrorCode();
-    int32_t streamId = *reinterpret_cast<const int32_t *>(data);
+    int32_t streamId = GetData<int32_t>();
     hlsSegmentManager->SelectAudio(streamId);
     hlsSegmentManager->StartAudioDownload(streamId);
     hlsSegmentManager->OnDrmInfoChanged(drmInfos);
     hlsSegmentManager->GetDownloadRateAndSpeed();
-    bool isDelay = *reinterpret_cast<const bool *>(data);
+    bool isDelay = GetData<bool>();
     hlsSegmentManager->GetReadTimeOut(isDelay);
     hlsSegmentManager->GetSegmentOffset();
     hlsSegmentManager->GetHLSDiscontinuity();
-    bool isAppBackground = *reinterpret_cast<const bool *>(data);
+    bool isAppBackground = GetData<bool>();
     hlsSegmentManager->StopBufferring(isAppBackground);
     hlsSegmentManager->WaitForBufferingEnd();
     hlsSegmentManager->GetTotalTsBuffersize();
@@ -107,24 +109,23 @@ void SegMentFuzzTest(const uint8_t *data, size_t size)
     bool isAsync = true; // fdp->ConsumeBool();
     hlsSegmentManager->Close(isAsync);
     hlsSegmentManager = nullptr;
+    return true;
 }
 
 } // namespace OHOS::Media::Plugins::HttpPlugin
 
 
 /* Fuzzer entry point */
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
+extern "C" int LLVMFuzzerTestOneInput(uint8_t *data, size_t size)
 {
-    if (size <= sizeof(int64_t)) {
-        return false;
-    }
-
     /* Run your code on data */
     if (!InitServer(data, size)) {
         cout << "Init server error" << endl;
         return -1;
     }
-
+    g_baseFuzzData = data;
+    g_baseFuzzSize = size;
+    g_baseFuzzPos = 0;
     FuzzedDataProvider fdp(data, size);
     OHOS::Media::Plugins::HttpPlugin::StartFuzzTest(&fdp, size);
     OHOS::Media::Plugins::HttpPlugin::SegMentFuzzTest(data, size);

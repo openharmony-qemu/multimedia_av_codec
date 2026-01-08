@@ -22,6 +22,7 @@
 #include <fcntl.h>
 #include <fstream>
 #include <gtest/gtest.h>
+#include "avpacket_wrapper.h"
 #include "media_description.h"
 #include "file_server_demo.h"
 #include <numeric>
@@ -833,9 +834,9 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_EnsurePacketAllocated_001, TestSize.Leve
     ASSERT_NE(demuxerPlugin_, nullptr); // 检查插件是否初始化成功
     ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
     ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
-    AVPacket *pkt = av_packet_alloc();
-    demuxerPlugin_->EnsurePacketAllocated(pkt);
-    av_packet_free(&pkt);
+    Plugins::AVPacketWrapperPtr avPacketWrapperPtr = std::make_shared<Plugins::AVPacketWrapper>();
+    demuxerPlugin_->EnsurePacketAllocated(avPacketWrapperPtr);
+    avPacketWrapperPtr.reset();
 }
 
 /**

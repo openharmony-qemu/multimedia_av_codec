@@ -432,6 +432,25 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_CheckFrames_100, T
 }
 
 /**
+ * @tc.name: SurfaceEncoderAdapter_CheckAndAdjustFrameRate_100
+ * @tc.desc: CheckAndAdjustFrameRate
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_CheckAndAdjustFrameRate_100, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->isStopKeyFramePts_ = true;
+    surfaceEncoderAdapter_->isSupportBoostFrameRate_ = true;
+    surfaceEncoderAdapter_->stoppedVideoFrameCount_ = 2;
+    surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
+    surfaceEncoderAdapter_->codecMimeType_ = "video/avc";
+    surfaceEncoderAdapter_->videoWidth_ = 1920;
+    surfaceEncoderAdapter_->videoHeight_ = 1080;
+    surfaceEncoderAdapter_->IsSupportBoostFrameRate();
+    Status ret = surfaceEncoderAdapter_->CheckAndAdjustFrameRate();
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
  * @tc.name: SurfaceEncoderAdapter_CheckFrames_200
  * @tc.desc: CheckFrames
  * @tc.type: FUNC

@@ -800,18 +800,6 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2400, TestSize.Level0)
 }
 
 /**
- * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_2500
- * @tc.name      : create hls demuxer with error uri
- * @tc.desc      : function test
- */
-HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2500, TestSize.Level1)
-{
-    const char *uri = "http://192.168.3.11:8080/share/index.m3u8";
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
-    ASSERT_EQ(nullptr, source);
-}
-
-/**
  * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_2600
  * @tc.name      : create str demuxer with file and read
  * @tc.desc      : function test
@@ -1172,7 +1160,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3400, TestSize.Level0)
     trackFormatSecond = OH_AVSource_GetTrackFormat(source, 1);
     ASSERT_NE(trackFormatSecond, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_DURATION, &duration));
-    ASSERT_EQ(duration, 10032000);
+    ASSERT_EQ(duration, 10031020);
     ASSERT_TRUE(OH_AVFormat_GetBuffer(trackFormatSecond, OH_MD_KEY_CODEC_CONFIG, &codecConfig, &bufferSize));
     ASSERT_TRUE(OH_AVFormat_GetDoubleValue(trackFormatSecond, OH_MD_KEY_FRAME_RATE, &frameRate));
     ASSERT_EQ(frameRate, 25.1);

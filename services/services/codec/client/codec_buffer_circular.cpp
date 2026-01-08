@@ -410,13 +410,6 @@ void CodecBufferCircular::OnOutputFormatChanged(const Format &format)
 void CodecBufferCircular::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     CHECK_AND_RETURN_LOG_WITH_TAG(buffer != nullptr, "buffer is nullptr");
-    {
-        std::unique_lock<std::mutex> lock(inMutex_);
-        if (HasFlag(FLAG_INPUT_EOS)) {
-            AVCODEC_LOGD_WITH_TAG("At eos state, no buffer available");
-            return;
-        }
-    }
     IsSyncMode() ? SyncOnInputBufferAvailable(index, buffer) : AsyncOnInputBufferAvailable(index, buffer);
 }
 
@@ -514,6 +507,7 @@ void CodecBufferCircular::AsyncOnInputBufferAvailable(uint32_t index, std::share
         paramCb->OnInputParameterAvailable(index, parameter);
         return;
     }
+    CHECK_AND_RETURN_LOG_WITH_TAG(!HasFlag(FLAG_INPUT_EOS), "At eos state, no buffer available");
     // AVBuffer callback
     auto mediaCb = mediaCb_;
     if (mediaCb != nullptr) {

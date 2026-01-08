@@ -100,10 +100,11 @@ int32_t AudioResample::ConvertFrame(AVFrame *outputFrame, const AVFrame *inputFr
     }
     int planar = av_sample_fmt_is_planar(static_cast<AVSampleFormat>(inputFrame->format));
     if (planar) {
-        for (auto i = 0; i < inputFrame->channels; i++) {
+        for (auto i = 0; i < inputFrame->ch_layout.nb_channels; i++) {
             if (inputFrame->extended_data[i] == nullptr) {
-                AVCODEC_LOGE("this is a planar audio, inputFrame->channels: %{public}d, "
-                             "but inputFrame->extended_data[%{public}d] is nullptr", inputFrame->channels, i);
+                AVCODEC_LOGE("this is a planar audio, inputFrame->ch_layout.nb_channels: %{public}d, "
+                             "but inputFrame->extended_data[%{public}d] is nullptr",
+                             inputFrame->ch_layout.nb_channels, i);
                 return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
             }
         }

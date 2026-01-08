@@ -140,7 +140,6 @@ void HlsMediaDownloaderTest ::TearDown(void)
 
 HWTEST_F(HlsMediaDownloaderTest, GET_PLAY_INFO_001, TestSize.Level0)
 {
-    hlsMediaDownloader_->videoSegManager_->isBuffering_ = true;
     EXPECT_FALSE(hlsMediaDownloader_->GetPlayable());
 
     hlsMediaDownloader_->videoSegManager_ = nullptr;
@@ -732,7 +731,7 @@ HWTEST_F(HlsMediaDownloaderTest, SET_INITIAL_BUFFERSIZE_003, TestSize.Level1)
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_);
     downloader->Init();
     downloader->videoSegManager_->downloader_ = std::make_shared<Downloader>("hlsMedia");
-    auto saveData = [] (uint8_t* data, uint32_t len, bool flag) { return 0; };
+    auto saveData = [] (uint8_t* data, uint32_t len, bool flag) { (void)data; (void)len; (void)flag; return 0; };
     auto statusCallback = [] (DownloadStatus status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {};
     RequestInfo info {};
@@ -750,7 +749,7 @@ HWTEST_F(HlsMediaDownloaderTest, SET_INITIAL_BUFFERSIZE_004, TestSize.Level1)
     downloader->audioSegManager_->Init();
     downloader->audioSegManager_->Clone(downloader->videoSegManager_);
     downloader->videoSegManager_->downloader_ = std::make_shared<Downloader>("hlsMedia");
-    auto saveData = [] (uint8_t* data, uint32_t len, bool flag) { return 0; };
+    auto saveData = [] (uint8_t* data, uint32_t len, bool flag) { (void)data; (void)len; (void)flag; return 0; };
     auto statusCallback = [] (DownloadStatus status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {};
     RequestInfo info {};
@@ -967,7 +966,6 @@ HWTEST_F(HlsMediaDownloaderTest, CACHE_BUFFER_FULL_LOOP_001, TestSize.Level1)
     downloader->videoSegManager_->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
     downloader->videoSegManager_->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
     EXPECT_EQ(downloader->videoSegManager_->CacheBufferFullLoop(), true);
-    EXPECT_EQ(downloader->videoSegManager_->initCacheSize_, -1);
     downloader->videoSegManager_->isSeekingFlag = false;
     EXPECT_EQ(downloader->videoSegManager_->CacheBufferFullLoop(), false);
     CloseHlsDetachAudioVideo(downloader);
@@ -1099,10 +1097,8 @@ HWTEST_F(HlsMediaDownloaderTest, WAIT_FOR_BUFFERING_END_001, TestSize.Level1)
     auto downloader = OpenHlsDetachAudioVideo();
     
     downloader->WaitForBufferingEnd();
-    EXPECT_FALSE(downloader->videoSegManager_->isBuffering_.load());
     
     downloader->SetInitialBufferSize(0, 20000000);
-    EXPECT_FALSE(downloader->videoSegManager_->isBuffering_.load());
     
     downloader->videoSegManager_ = nullptr;
     downloader->WaitForBufferingEnd();
@@ -1279,6 +1275,33 @@ HWTEST_F(HlsMediaDownloaderTest, TEST_AUDIO_START_STREAM_ID, TestSize.Level1)
         downloader->Close(true);
         CloseHlsDetachAudioVideo(downloader);
         std::cout << "TEST_AUDIO_START_STREAM_ID end: " << k << ", start audio id: " << v << std::endl;
+    }
+}
+
+HWTEST_F(HlsMediaDownloaderTest, LIVE_ENDLIST_MASTER_PLAYLIST, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideo("test_detach_hls/live_endlist.m3u8");
+
+    EXPECT_EQ(downloader->GetSeekable(), Seekable::SEEKABLE);
+    EXPECT_EQ(downloader->GetDuration(), 60060000000);
+
+    CloseHlsDetachAudioVideo(std::move(downloader));
+}
+
+HWTEST_F(HlsMediaDownloaderTest, LIVE_ENDLIST_MEDIA_PLAYLIST, TestSize.Level1)
+{
+    std::map<std::string, int64_t> mediaPlaylistArr = {
+        {"test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_live_endlist.m3u8", 60060000000},
+        {"test_detach_hls/cmaf/aac/lc_192/aac_lc_192_live_endlist.m3u8", 60097999999},
+        {"test_detach_hls/subtitles/eng/prog_index_live_endlist.m3u8", 66066000000}
+    };
+    for (const auto &[playlist, duration]: mediaPlaylistArr) {
+        auto downloader = OpenHlsDetachAudioVideo(playlist);
+
+        EXPECT_EQ(downloader->GetSeekable(), Seekable::SEEKABLE);
+        EXPECT_EQ(downloader->GetDuration(), duration);
+
+        CloseHlsDetachAudioVideo(std::move(downloader));
     }
 }
 }

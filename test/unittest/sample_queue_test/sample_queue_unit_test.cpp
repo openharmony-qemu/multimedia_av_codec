@@ -53,7 +53,7 @@ Status SampleQueueUnitTest::InitNormalSampleQueue()
     sampleQueueConfig.isFlvLiveStream_ = false;
     sampleQueueConfig.isSupportBitrateSwitch_ = false;
     sampleQueueConfig.queueId_ = 0;
-    sampleQueueConfig.bufferCap_ = 1;
+    sampleQueueConfig.bufferCap_ = 0;
     Status status = sampleQueue_->Init(sampleQueueConfig);
     EXPECT_EQ(status, Status::OK);
     return status;
@@ -62,8 +62,7 @@ Status SampleQueueUnitTest::InitNormalSampleQueue()
 Status SampleQueueUnitTest::UpdateBufferInfo(
     const std::shared_ptr<AVBuffer> &buffer, int64_t pts, size_t bufferSize, bool isKeyFrame)
 {
-    EXPECT_EQ(buffer->memory_ != nullptr, true);
-    buffer->memory_->SetSize(bufferSize);
+    buffer->Init(new uint8_t[bufferSize], bufferSize, bufferSize);
     EXPECT_EQ(buffer->GetConfig().size, bufferSize);
     buffer->pts_ = pts;
     if (isKeyFrame) {
@@ -81,7 +80,7 @@ void SampleQueueUnitTest::ProducerLoop(int64_t frameCount, int64_t frameInterval
         AVBufferConfig avBufferConfig;
         avBufferConfig.capacity = bufferSize;
         avBufferConfig.size = bufferSize;
-        std::shared_ptr<AVBuffer> sampleBuffer;
+        std::shared_ptr<AVBuffer> sampleBuffer = nullptr;
         Status status = sampleQueue_->RequestBuffer(sampleBuffer, avBufferConfig, 0);
         if (status != Status::OK) {
             continue;

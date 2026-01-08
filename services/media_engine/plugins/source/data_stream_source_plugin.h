@@ -41,6 +41,8 @@ public:
     Status Reset() override;
     bool IsNeedPreDownload() override;
     void SetInterruptState(bool isInterruptNeeded) override;
+    Status GetDownloadInfo(Plugins::DownloadInfo& downloadInfo) override;
+
 private:
     std::shared_ptr<Plugins::Buffer> WrapAVSharedMemory(
         const std::shared_ptr<AVSharedMemory>& avSharedMemory, int32_t realLen);
@@ -53,6 +55,7 @@ private:
     void ResetPool();
     Status ReadAt(std::shared_ptr<AVSharedMemory> memory, size_t &expectedLen, int32_t &realLen);
     Status HandleEos();
+    int64_t GetCurrentMillisecond();
     Plugins::Seekable seekable_ {Plugins::Seekable::INVALID};
     std::shared_ptr<IMediaDataSource> dataSrc_;
     std::shared_ptr<AVSharedMemoryPool> pool_;
@@ -65,6 +68,11 @@ private:
     int64_t size_ {0};
     uint64_t offset_ {0};
     uint32_t retryTimes_ = 0;
+    int64_t totalDownLoadBytes_ {0};
+    int32_t totalDownloadCount_ {0};
+    int64_t firstDownloadTime_ {0};
+    int64_t firstDownloadTimestamp_ {0};
+    int64_t totalDownloadDuringTime_ {0};
 };
 } // namespace DataStreamSource
 } // namespace Plugin

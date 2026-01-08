@@ -231,7 +231,7 @@ protected:
     void UpdateOwner();
     void UpdateOwner(OMX_DIRTYPE port);
     void ReduceOwner(OMX_DIRTYPE port, BufferOwner owner);
-    void ChangeOwner(BufferInfo& info, BufferOwner newOwner);
+    TimePoint ChangeOwner(BufferInfo& info, BufferOwner newOwner);
     void OnPrintAllBufferOwner(const MsgInfo& msg);
     void PrintAllBufferInfo();
     std::string OnGetHidumperInfo();
@@ -339,6 +339,9 @@ protected:
     virtual int32_t DecreaseFreq() { return AVCS_ERR_UNSUPPORT; }
     virtual int32_t RecoverFreq() { return AVCS_ERR_UNSUPPORT; }
 
+    virtual void RecordProcessTimeOfUpstream(const std::shared_ptr<AVBuffer>& avBuffer) {}
+    virtual void AppendProcessTimeOfUs(const std::shared_ptr<AVBuffer>& avBuffer, int64_t pts, const TimePoint& now) {}
+
     // template
     template <typename T>
     static inline void InitOMXParam(T& param)
@@ -410,6 +413,14 @@ protected:
     struct CallerInfo {
         int32_t pid = -1;
         std::string processName;
+        size_t operator()(const CallerInfo& info) const
+        {
+            return std::hash<int32_t>()(info.pid);
+        }
+        bool operator()(const CallerInfo &lhs, const CallerInfo &rhs) const
+        {
+            return lhs.pid == rhs.pid;
+        }
     };
     struct Caller {
         CallerInfo playerCaller;
@@ -417,8 +428,15 @@ protected:
         CallerInfo app;
         bool calledByAvcodec = true;
     } caller_;
+    struct InstInfo {
+        int64_t createTimeUs;
+        std::string compUniqueStr;
+    };
     static std::shared_mutex g_mtx;
-    static std::unordered_map<std::string, HCodec::Caller> g_callers;
+    static std::unordered_map<CallerInfo, std::vector<InstInfo>, CallerInfo, CallerInfo> g_decCallers;
+    uint32_t maxDecInst_ = 0;
+    uint32_t totalWarnInstCnt_ = 0;
+    uint32_t singleAppWarnInstCnt_ = 0;
 
     bool debugMode_ = false;
     bool disableDmaSwap_ = false;
@@ -446,6 +464,8 @@ protected:
     int pid_ = -1;
     bool isLpp_ = false;
     double codecRate_ = 0.0;
+    // save the processing time point corresponding to pts
+    std::map<int64_t, std::vector<int64_t>> ptsToProcessTimesMap_;
     static constexpr uint32_t MAX_BUFFER_COUNT = 32;
 
     // VRR
@@ -608,6 +628,8 @@ private:
     void PrintCaller();
     void PrintAllCaller();
     void RemoveCaller();
+    size_t CalculateTotalInstCnt();
+    void ReportToRss();
     int32_t OnAllocateComponent();
     void ReleaseComponent();
     void CleanUpOmxNode();

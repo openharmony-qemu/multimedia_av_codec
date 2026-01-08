@@ -200,6 +200,10 @@ public:
     {
         return mapStatus_[name_];
     }
+    Status SeekToStart() override
+    {
+        return mapStatus_[name_];
+    }
 private:
     std::map<std::string, Status> mapStatus_;
     std::string name_;

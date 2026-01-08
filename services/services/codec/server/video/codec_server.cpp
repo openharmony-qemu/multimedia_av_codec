@@ -54,6 +54,7 @@ enum DumpIndex : uint32_t {
     DUMP_INDEX_CODEC_INFO_START            = 0x01'02'00'00,
 };
 constexpr uint32_t DUMP_OFFSET_8 = 8;
+constexpr uint32_t BUFFER_IS_EOS = 1;
 
 const std::map<OHOS::MediaAVCodec::CodecServer::CodecStatus, std::string> CODEC_STATE_MAP = {
     {OHOS::MediaAVCodec::CodecServer::UNINITIALIZED, "uninitialized"},
@@ -329,6 +330,18 @@ int32_t CodecServer::Start()
 {
     SetFreeStatus(false);
     std::lock_guard<std::shared_mutex> lock(mutex_);
+    if (isLocalReleaseMode_) {
+        if (!releaseBufferTask_) {
+            releaseBufferTask_ = std::make_shared<TaskThread>("SurfaceDecoder");
+            CHECK_AND_RETURN_RET_LOG_WITH_TAG(releaseBufferTask_ != nullptr,
+                                              AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+            releaseBufferTask_->RegisterHandler([this] {
+                ReleaseBuffer();
+                return 0;
+            });
+        }
+        releaseBufferTask_->Start();
+    }
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(status_ == FLUSHED || status_ == CONFIGURED, AVCS_ERR_INVALID_STATE,
                                       "In invalid state, %{public}s", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
@@ -357,6 +370,15 @@ int32_t CodecServer::Stop()
 {
     SetFreeStatus(true);
     std::lock_guard<std::shared_mutex> lock(mutex_);
+    if (isLocalReleaseMode_) {
+        {
+            std::unique_lock<std::mutex> lock1(releaseBufferMutex_);
+            isReleaseFree_ = true;
+        }
+        releaseBufferCondition_.notify_all();
+        releaseBufferTask_->Stop();
+        AVCODEC_LOGI_WITH_TAG("releaseBufferTask_ success");
+    }
     CHECK_AND_RETURN_RET_LOGW_WITH_TAG(status_ != CONFIGURED, AVCS_ERR_OK, "Already in %{public}s state",
                                        GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(status_ == RUNNING || status_ == END_OF_STREAM || status_ == FLUSHED,
@@ -753,9 +775,12 @@ int32_t CodecServer::ReleaseOutputBuffer(uint32_t index, bool render)
 
     if (framerateCalculator_ && status_ == RUNNING) {
         std::shared_ptr<AVBuffer> buffer = nullptr;
-        auto it = outBufMap_.find(index);
-        if (it != outBufMap_.end()) {
-            buffer = it->second;
+        {
+            std::lock_guard<std::mutex> outBuflock(outBufMutex_);
+            auto it = outBufMap_.find(index);
+            if (it != outBufMap_.end()) {
+                buffer = it->second;
+            }
         }
         framerateCalculator_->OnFrameConsumed(buffer);
     }
@@ -993,6 +1018,7 @@ void CodecServer::SetInstanceInfo(AVCodecType type, bool isMimeType, const std::
     callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PID, forwardCaller_.pid);
     callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_UID, forwardCaller_.uid);
     callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardCaller_.processName);
+    callerInfo.GetData(Tag::VIDEO_ENABLE_LOCAL_RELEASE, isLocalReleaseMode_);
     if (caller_.pid == -1) {
         caller_.pid = getprocpid();
         caller_.uid = getuid();
@@ -1127,8 +1153,10 @@ void CodecServer::OnOutputBufferUnbinded()
 void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     CHECK_AND_RETURN_LOG_WITH_TAG(buffer != nullptr, "buffer is nullptr!");
-
-    outBufMap_[index] = buffer;
+    {
+        std::lock_guard<std::mutex> outBuflock(outBufMutex_);
+        outBufMap_[index] = buffer;
+    }
     if (temporalScalability_ != nullptr && !(buffer->flag_ == AVCODEC_BUFFER_FLAG_CODEC_DATA)) {
         temporalScalability_->SetDisposableFlag(buffer);
     }
@@ -1146,9 +1174,7 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuff
         */
         (void)PushDecodedBufferInfo(index, buffer);
     } else {
-        std::shared_lock<std::shared_mutex> lock(cbMutex_);
-        CHECK_AND_RETURN_LOG_WITH_TAG(videoCb_ != nullptr, "videoCb_ is nullptr!");
-        videoCb_->OnOutputBufferAvailable(index, buffer);
+        HandleOutputBufferAvailability(index, buffer);
     }
 }
 
@@ -1318,9 +1344,6 @@ int32_t CodecServer::CreatePostProcessing(const Format& format)
     if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpaceType)) {
         return AVCS_ERR_OK;
     }
-    auto capData = CodecAbilitySingleton::GetInstance().GetCapabilityByName(codecName_);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(capData != std::nullopt && capData->isVendor, AVCS_ERR_UNKNOWN,
-                                      "Get codec capability from codec list failed");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_, AVCS_ERR_UNKNOWN, "Decoder is not found");
     int32_t ret;
     postProcessing_ = PostProcessingType::Create(codecBase_, format, ret);
@@ -1527,23 +1550,26 @@ void CodecServer::PostProcessingOnError(int32_t errorCode)
 
 void CodecServer::PostProcessingOnOutputBufferAvailable(uint32_t index, int32_t flag)
 {
-    std::lock_guard<std::shared_mutex> lock(cbMutex_);
-    if (videoCb_ == nullptr) {
-        AVCODEC_LOGD_WITH_TAG("Missing video callback");
-        return;
+    std::shared_ptr<AVBuffer> buffer;
+    {
+        std::lock_guard<std::shared_mutex> lock(cbMutex_);
+        if (videoCb_ == nullptr) {
+            AVCODEC_LOGD_WITH_TAG("Missing video callback");
+            return;
+        }
+        CHECK_AND_RETURN_LOG_WITH_TAG(postProcessingInputBufferInfoQueue_, "Queue is null");
+        DecodedBufferInfo info;
+        auto ret = postProcessingInputBufferInfoQueue_->PopWait(info);
+        CHECK_AND_RETURN_LOG_WITH_TAG(ret == QueueResult::OK, "Get data failed, %{public}s",
+            QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
+        if (flag == 1) { // 1: EOS flag
+            info.flag = AVCODEC_BUFFER_FLAG_EOS;
+            AVCODEC_LOGI_WITH_TAG("Catch EOS frame");
+        }
+        buffer = info.CreateAVBuffer();
+        CHECK_AND_RETURN_LOG_WITH_TAG(buffer != nullptr, "Create AVBuffer failed");
     }
-    CHECK_AND_RETURN_LOG_WITH_TAG(postProcessingInputBufferInfoQueue_, "Queue is null");
-    DecodedBufferInfo info;
-    auto ret = postProcessingInputBufferInfoQueue_->PopWait(info);
-    CHECK_AND_RETURN_LOG_WITH_TAG(ret == QueueResult::OK, "Get data failed, %{public}s",
-                                  QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
-    if (flag == 1) { // 1: EOS flag
-        info.flag = AVCODEC_BUFFER_FLAG_EOS;
-        AVCODEC_LOGI_WITH_TAG("Catch EOS frame");
-    }
-    auto buffer = info.CreateAVBuffer();
-    CHECK_AND_RETURN_LOG_WITH_TAG(buffer != nullptr, "Create AVBuffer failed");
-    videoCb_->OnOutputBufferAvailable(index, buffer);
+    HandleOutputBufferAvailability(index, buffer);
 }
 
 void CodecServer::PostProcessingOnOutputFormatChanged(const Format& format)
@@ -1690,6 +1716,57 @@ std::shared_ptr<AVBuffer> CodecServer::DecodedBufferInfo::CreateAVBuffer()
     buffer->pts_  = this->pts;
     buffer->flag_ = this->flag;
     return buffer;
+}
+
+void CodecServer::HandleOutputBufferAvailability(uint32_t index, std::shared_ptr<AVBuffer> buffer)
+{
+    CHECK_AND_RETURN_LOG(buffer != nullptr, "HandleOutputBufferAvailability AVBuffer is null");
+    if (isLocalReleaseMode_) {
+        if ((buffer->flag_ & BUFFER_IS_EOS) == BUFFER_IS_EOS) {
+            ; // EOS buffer, no operation needed. Proceed to call video callback.
+        } else if (buffer->pts_ > lastBufferPts_.load()) {
+            lastBufferPts_ = buffer->pts_;
+            std::unique_lock<std::mutex> lockNotEos(releaseBufferMutex_);
+            indexs_.push_back(index);
+            releaseBufferCondition_.notify_all();
+            return;
+        } else {
+            AVCODEC_LOGW_WITH_TAG("Buffer drop index:  %{public}u pts:  %{public}" PRId64, index, buffer->pts_);
+            dropIndexs_.push_back(index);
+            return;
+        }
+    }
+    std::shared_lock<std::shared_mutex> lock(cbMutex_);
+    CHECK_AND_RETURN_LOG_WITH_TAG(videoCb_ != nullptr, "videoCb_ is nullptr!");
+    videoCb_->OnOutputBufferAvailable(index, buffer);
+}
+ 
+void CodecServer::ReleaseBuffer()
+{
+    AVCODEC_LOGI_WITH_TAG("CodecServer::ReleaseBuffer");
+    while (!isReleaseFree_) {
+        std::vector<uint32_t> indexs;
+        std::vector<uint32_t> dropIndexs;
+        {
+            std::unique_lock<std::mutex> lock(releaseBufferMutex_);
+            releaseBufferCondition_.wait(lock, [this] {
+                return isReleaseFree_ || !indexs_.empty() || !dropIndexs_.empty();
+            });
+            indexs = indexs_;
+            indexs_.clear();
+            dropIndexs = dropIndexs_;
+            dropIndexs_.clear();
+        }
+        for (auto &index : indexs) {
+            AVCODEC_LOGD_WITH_TAG("ReleaseBuffer buffer, index: %{public}u", index);
+            ReleaseOutputBuffer(index, true);
+        }
+        for (auto &dropIndex : dropIndexs) {
+            AVCODEC_LOGD_WITH_TAG("Drop buffer, index:  %{public}u", dropIndex);
+            ReleaseOutputBuffer(dropIndex, false);
+        }
+    }
+    AVCODEC_LOGI_WITH_TAG("CodecServer::ReleaseBuffer end");
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

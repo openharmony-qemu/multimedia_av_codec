@@ -50,6 +50,7 @@ struct ParserSdtpInfo {
 
 struct HevcParseFormat {
     int32_t isHdrVivid = 0;
+    int32_t isHdr10Plus = 0;
     int32_t colorRange = 0;
     uint8_t colorPrimaries = 0x02;
     uint8_t colorTransfer = 0x02;
@@ -66,7 +67,8 @@ public:
     static void ParseMediaInfo(const AVFormatContext& avFormatContext, Meta& format);
     static void ParseTrackInfo(const AVStream& avStream, Meta& format, const AVFormatContext& avFormatContext);
     static void ParseUserMeta(const AVFormatContext& avFormatContext, std::shared_ptr<Meta> format);
-    static void ParseHevcInfo(const AVFormatContext& avFormatContext, HevcParseFormat parse, Meta &format);
+    static void ParseHevcInfo(
+        const AVFormatContext& avFormatContext, const AVStream& avStream, HevcParseFormat parse, Meta &format);
     static FileType GetFileTypeByName(const AVFormatContext& avFormatContext);
     static bool IsVideoCodecId(const AVCodecID &codecId);
     static bool IsImageTrack(const AVStream &avStream);
@@ -89,6 +91,7 @@ private:
     static void ParseHvccBoxInfo(const AVStream& avStream, Meta &format);
     static void ParseColorBoxInfo(const AVStream& avStream, Meta &format);
     static void ParseColorBoxInfo(const AVFormatContext& avFormatContext, HevcParseFormat parse, Meta &format);
+    static void ParseHdrTypeInfo(const AVStream& avStream, Meta &format, HevcParseFormat parse);
 
     static void ParseLocationInfo(const AVFormatContext& avFormatContext, Meta &format);
 
@@ -101,6 +104,7 @@ private:
     static void ParseAv3aInfo(const AVStream& avStream, Meta &format);
     static void ConvertAv3aSampleFormat(const AVStream& avStream, Meta &format);
     static void ParseGltfInfo(const AVFormatContext& avFormatContext, Meta &format);
+    static void ParseRawvideoInfo(const AVStream& avStream, Meta &format);
 };
 extern std::vector<TagType> g_supportSourceFormat;
 } // namespace Ffmpeg

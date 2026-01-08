@@ -122,6 +122,7 @@ public:
     virtual int32_t GetNewVideoStreamID();
     virtual int32_t GetNewAudioStreamID();
     virtual int32_t GetNewSubtitleStreamID();
+    virtual int64_t GetFirstFrameDecapsulationTime() { return 0; }
     bool CanDoChangeStream();
     void SetChangeFlag(bool flag);
     virtual bool SetSourceInitialBufferSize(int32_t offset, int32_t size);

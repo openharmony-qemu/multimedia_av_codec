@@ -16,6 +16,7 @@
 #ifndef HISTREAMER_DASH_MPD_DOWNLOADER_H
 #define HISTREAMER_DASH_MPD_DOWNLOADER_H
 
+#include <shared_mutex>
 #include "dash_common.h"
 #include "dash_mpd_def.h"
 #include "dash_mpd_parser.h"
@@ -26,6 +27,7 @@
 #include "download/downloader.h"
 #include "media_downloader.h"
 #include "meta/media_types.h"
+#include "download/download_metrics_info.h"
 
 namespace OHOS {
 namespace Media {
@@ -142,6 +144,7 @@ public:
     void SetInterruptState(bool isInterruptNeeded);
     std::string GetUrl() const;
     std::string GetContentType();
+    void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
 
 private:
     void ParseManifest();
@@ -229,6 +232,9 @@ private:
     void GetAdpDrmInfos(std::vector<DashDrmInfo> &drmInfos, DashPeriodInfo *const &periodInfo,
                         const std::string &periodDrmId);
 
+    void SetDownloadRequest(std::shared_ptr<DownloadRequest> downloadRequest);
+    std::shared_ptr<DownloadRequest> GetDownloadRequest();
+
 private:
     std::string url_ {};
     std::string downloadContent_ {}; // mpd content or sidx content
@@ -254,6 +260,10 @@ private:
     unsigned int initResolution_ {0};
     std::atomic<bool> isInterruptNeeded_{false};
     std::vector<DashDrmInfo> localDrmInfos_;
+    std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
+
+    std::shared_mutex downloadRequestMutex_;
+    std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
 };
 }
 }

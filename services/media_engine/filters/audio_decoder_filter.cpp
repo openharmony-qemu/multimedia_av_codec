@@ -367,7 +367,7 @@ Status AudioDecoderFilter::ChangePlugin(std::shared_ptr<Meta> meta)
     bool mimeGetRes = meta->GetData(Tag::MIME_TYPE, mime);
     if (!mimeGetRes && eventReceiver_ != nullptr) {
         MEDIA_LOG_I("AudioDecoderFilter cannot get mime");
-        eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE});
+        eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE, ""});
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
     UpdateTrackInfoSampleFormat(mime, meta);
@@ -402,7 +402,7 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
     bool mimeGetRes = meta->GetData(Tag::MIME_TYPE, mime);
     if (!mimeGetRes && eventReceiver_ != nullptr) {
         MEDIA_LOG_I("AudioDecoderFilter cannot get mime");
-        eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE});
+        eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE, ""});
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
     UpdateTrackInfoSampleFormat(mime, meta);
@@ -423,7 +423,7 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
     if (ret != Status::OK && ret != Status::ERROR_INVALID_STATE) {
         MEDIA_LOG_I_SHORT("AudioDecoderFilter unsupport format");
         if (eventReceiver_ != nullptr) {
-            eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE});
+            eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE, mime});
         }
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
@@ -679,9 +679,14 @@ void AudioDecoderFilter::OnError(CodecErrorType errorType, int32_t errorCode)
         return;
     }
     switch (errorType) {
-        case CodecErrorType::CODEC_DRM_DECRYTION_FAILED:
-            eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_DRM_VERIFICATION_FAILED});
+        case CodecErrorType::CODEC_DRM_DECRYTION_FAILED: {
+            std::string mime;
+            if (meta_ != nullptr) {
+                meta_->GetData(Tag::MIME_TYPE, mime);
+            }
+            eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_DRM_VERIFICATION_FAILED, mime});
             break;
+        }
         default:
             break;
     }

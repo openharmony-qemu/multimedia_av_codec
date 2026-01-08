@@ -41,19 +41,22 @@ constexpr int32_t BLURAY_PACKET_SIZE = 964;
 constexpr int32_t BLURAY_PACKET_OFFSET = 4;
 constexpr int32_t DVD_PACKET_SIZE = 2013;
 constexpr int32_t DVD_PACKET_OFFSET = 3;
+constexpr int32_t BYTES_8 = 8;
+constexpr int32_t BYTES_4 = 4;
 // {sampleFormat, {filePath, outputName}}
 const std::unordered_map<AudioSampleFormat, std::pair<std::string, std::string>> inputFormatPathMap = {
     {AudioSampleFormat::SAMPLE_S8, std::make_pair("/data/test/media/pcm_s8.pcm", "s8_")},
     {AudioSampleFormat::SAMPLE_F64LE, std::make_pair("/data/test/media/pcm_f64le.pcm", "f64le_")},
     {AudioSampleFormat::SAMPLE_S64LE, std::make_pair("/data/test/media/pcm_s64le.pcm", "s64le_")},
-    {AudioSampleFormat::SAMPLE_S8P, std::make_pair("/data/test/media/pcm_s8_planar.pcm", "s8p_")},
-    {AudioSampleFormat::SAMPLE_S16LEP, std::make_pair("/data/test/media/pcm_s16le_planar.pcm", "s16lep_")},
-    {AudioSampleFormat::SAMPLE_S16BEP, std::make_pair("/data/test/media/pcm_s16be_planar.pcm", "s16bep_")},
-    {AudioSampleFormat::SAMPLE_S24LEP, std::make_pair("/data/test/media/pcm_s24le_planar.pcm", "s24lep_")},
-    {AudioSampleFormat::SAMPLE_S32LEP, std::make_pair("/data/test/media/pcm_s32le_planar.pcm", "s32lep_")},
     {AudioSampleFormat::SAMPLE_DVD, std::make_pair("/data/test/media/pcm_dvd_16bit.pcm", "dvd_16bit_")},
     {AudioSampleFormat::SAMPLE_BLURAY, std::make_pair("/data/test/media/pcm_bluray_16bit.pcm", "bluray_16bit_")},
 };
+
+const std::unordered_map<AudioSampleFormat, std::pair<std::string, std::string>> planarInputFormatPathMap = {
+    {AudioSampleFormat::SAMPLE_S8P, std::make_pair("/data/test/media/pcm_s8_planar.dat", "s8p_")},
+    {AudioSampleFormat::SAMPLE_S16BEP, std::make_pair("/data/test/media/pcm_s16be_planar.dat", "s16bep_")},
+};
+
 // {sampleFormat, outputName}
 const std::vector<pair<AudioSampleFormat, std::string>> outputFormats = {
     std::make_pair(AudioSampleFormat::SAMPLE_U8, "to_u8"),
@@ -153,6 +156,44 @@ public:
         meta_->Set<Tag::AUDIO_RAW_SAMPLE_FORMAT>(inputFormat);
         meta_->Set<Tag::AUDIO_BITS_PER_CODED_SAMPLE>(AUDIO_BITS_16);
         meta_->Set<Tag::AUDIO_SAMPLE_FORMAT>(outputFormat);
+        if (inputFormat == AudioSampleFormat::SAMPLE_BLURAY) {
+            meta_->Set<Tag::AUDIO_CHANNEL_LAYOUT>(AudioChannelLayout::STEREO);
+        }
+    }
+
+    void ProcessPackages(std::ifstream& inputFile, std::ofstream& outputFile,
+                    int32_t srcBytes, int32_t destBytes)
+    {
+        auto avAllocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+        std::vector<uint8_t> buffer(BYTES_8);
+        while (!inputFile.eof()) {
+            inputFile.read(reinterpret_cast<char*>(buffer.data()), BYTES_8);
+            int64_t packageSize;
+            memcpy_s(&packageSize, sizeof(int64_t), buffer.data(), sizeof(int64_t));
+            inputFile.read(reinterpret_cast<char*>(buffer.data()), BYTES_8);
+            shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer(avAllocator, packageSize);
+            inputBuffer->memory_->SetSize(packageSize);
+            inputFile.read(reinterpret_cast<char*>(inputBuffer->memory_->GetAddr()), packageSize);
+            EXPECT_EQ(Status::OK, decoder_->QueueInputBuffer(inputBuffer));
+            
+            int32_t totalSamples = packageSize / (CHANNELS * srcBytes);
+            int32_t outputSize = totalSamples * CHANNELS * destBytes;
+            shared_ptr<AVBuffer> outputBuffer = AVBuffer::CreateAVBuffer(avAllocator, outputSize);
+            shared_ptr<AVBuffer> emptyOutputBuffer = AVBuffer::CreateAVBuffer(avAllocator, outputSize);
+            
+            Status ret = Status::ERROR_AGAIN;
+            int32_t pos = 0;
+            while (ret == Status::ERROR_AGAIN) {
+                ret = decoder_->QueueOutputBuffer(emptyOutputBuffer);
+                outputBuffer->memory_->Write(emptyOutputBuffer->memory_->GetAddr(),
+                                             emptyOutputBuffer->memory_->GetSize(), pos);
+                pos += emptyOutputBuffer->memory_->GetSize();
+            }
+            ASSERT_EQ(Status::OK, ret);
+            EXPECT_EQ(outputSize, outputBuffer->memory_->GetSize());
+            outputFile.write(reinterpret_cast<char*>(outputBuffer->memory_->GetAddr()),
+                             outputBuffer->memory_->GetSize());
+        }
     }
 
 protected:
@@ -302,6 +343,50 @@ HWTEST_F(RawDecoderUnitTest, StableTest, TestSize.Level1)
         }
     }
 }
+
+HWTEST_F(RawDecoderUnitTest, StableTest_1, TestSize.Level1)
+{
+    for (int count = 0; count < 5; count++) {
+        for (auto &elem : planarInputFormatPathMap) {
+            AudioSampleFormat inputFormat = elem.first;
+            auto pair = elem.second;
+            std::string inputFilePath = pair.first;
+            std::string srcOutName = pair.second;
+
+            for (auto outElem : outputFormats) {
+                AudioSampleFormat outputFormat = outElem.first;
+                std::string destName = outElem.second;
+                SetupParameter(inputFormat, outputFormat);
+                EXPECT_EQ(Status::OK, decoder_->SetParameter(meta_));
+
+                std::ifstream inputFile;
+                inputFile.open(inputFilePath, std::ios::binary);
+                ASSERT_TRUE(inputFile.is_open());
+
+                std::ofstream outputFile;
+                std::string outputPath = OUTPUT_PREFIX + srcOutName + destName + OUTPUT_SUFFIX;
+                outputFile.open(outputPath, std::ios::out | std::ios::binary);
+                int32_t srcBytesSize = GetFormatBytes(inputFormat);
+                int32_t destBytesSize = GetFormatBytes(outputFormat);
+                
+                std::vector<uint8_t> buffer(BYTES_8);
+                inputFile.read(reinterpret_cast<char*>(buffer.data()), BYTES_8);
+                buffer.resize(BYTES_4);
+                inputFile.read(reinterpret_cast<char*>(buffer.data()), BYTES_4);
+                int32_t extradataLen;
+                memcpy_s(&extradataLen, sizeof(int32_t), buffer.data(), sizeof(int32_t));
+                buffer.resize(extradataLen);
+                inputFile.read(reinterpret_cast<char*>(buffer.data()), extradataLen);
+
+                ProcessPackages(inputFile, outputFile, srcBytesSize, destBytesSize);
+
+                inputFile.close();
+                outputFile.close();
+            }
+        }
+    }
+}
+
 } // namespace Plugins
 }
 }

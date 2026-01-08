@@ -27,7 +27,7 @@
 using namespace std;
 using namespace OHOS::Media;
 namespace OHOS {
-const char *RM_PATH = "/data/test/fuzz_create.rmvb";
+const char *RM_PATH = "/data/test/fuzz_create.rm";
 const int64_t EXPECT_SIZE = 36;
 const size_t URI_BUFFER_SIZE = 21;
 const int64_t URI_COUNT = 20;

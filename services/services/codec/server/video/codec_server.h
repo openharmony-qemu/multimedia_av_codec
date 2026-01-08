@@ -168,7 +168,18 @@ private:
     bool isFree_ = false;
     std::shared_ptr<TaskThread> inputParamTask_ = nullptr;
     CodecScenario scenario_ = CodecScenario::CODEC_SCENARIO_ENC_NORMAL;
+    std::mutex outBufMutex_;
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> outBufMap_;
+    std::condition_variable releaseBufferCondition_;
+    std::vector<uint32_t> indexs_;
+    std::vector<uint32_t> dropIndexs_;
+    std::atomic<int64_t> lastBufferPts_ = INT64_MIN;
+    std::mutex releaseBufferMutex_;
+    bool isReleaseFree_ = false;
+    bool isLocalReleaseMode_ = false;
+    std::shared_ptr<TaskThread> releaseBufferTask_{nullptr};
+    void HandleOutputBufferAvailability(uint32_t index, std::shared_ptr<AVBuffer> buffer);
+    void ReleaseBuffer();
 
     // post processing, video decoder and surface mode only
     int32_t SetCallbackForPostProcessing();

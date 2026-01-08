@@ -35,7 +35,7 @@ using namespace Ffmpeg;
 
 std::map<std::string, std::shared_ptr<AVOutputFormat>> g_pluginOutputFmt;
 
-std::set<std::string> g_supportedMuxer = {"mp4", "ipod", "amr", "mp3", "wav", "adts", "flac"};
+std::set<std::string> g_supportedMuxer = {"mp4", "ipod", "amr", "mp3", "wav", "adts", "flac", "ogg"};
 const std::set<std::string> SUPPORTED_TRACK_REF_TYPE = {"hint", "cdsc", "font", "hind", "vdep", "vplx",
     "subt", "thmb", "auxl", "cdtg", "shsc", "aest"};
 constexpr float LATITUDE_MIN = -90.0f;
@@ -99,6 +99,12 @@ bool CodecId2Cap(AVCodecID codecId, bool encoder, Capability& cap)
         case AV_CODEC_ID_FLAC:
             cap.SetMime(MimeType::AUDIO_FLAC);
             return true;
+        case AV_CODEC_ID_OPUS:
+            cap.SetMime(MimeType::AUDIO_OPUS);
+            return true;
+        case AV_CODEC_ID_VORBIS:
+            cap.SetMime(MimeType::AUDIO_VORBIS);
+            return true;
         default:
             break;
     }
@@ -133,6 +139,10 @@ bool FormatName2OutCapability(const std::string& fmtName, MuxerPluginDef& plugin
         return true;
     } else if (fmtName == "flac") {
         auto cap = Capability(MimeType::MEDIA_FLAC);
+        pluginDef.AddOutCaps(cap);
+        return true;
+    } else if (fmtName == "ogg") {
+        auto cap = Capability(MimeType::MEDIA_OGG);
         pluginDef.AddOutCaps(cap);
         return true;
     }
@@ -271,7 +281,7 @@ FFmpegMuxerPlugin::FFmpegMuxerPlugin(std::string name)
         fmt->oformat = outputFormat_.get();
         fmt->flags = static_cast<uint32_t>(fmt->flags) | static_cast<uint32_t>(AVFMT_FLAG_CUSTOM_IO);
         fmt->io_open = IoOpen;
-        fmt->io_close = IoClose;
+        fmt->io_close2 = IoClose;
     } else {
         MEDIA_LOG_E("Failed to allocate AVFormatContext, fmt is null.");
     }
@@ -454,8 +464,38 @@ Status FFmpegMuxerPlugin::SetGltfInfo(std::shared_ptr<Meta> param)
     return Status::NO_ERROR;
 }
 
+Status FFmpegMuxerPlugin::SetOggUserMeta(const std::shared_ptr<Meta> &userMeta)
+{
+    std::vector<std::string> keys;
+    userMeta->GetKeys(keys);
+    FALSE_RETURN_V_MSG_E(keys.size() > 0, Status::ERROR_INVALID_DATA, "ogg user meta is empty!");
+
+    for (auto& k: keys) {
+        if (k.compare(0, 16, "com.openharmony.") != 0) { // 16 "com.openharmony." length
+            MEDIA_LOG_W("the meta key %{public}s must com.openharmony.xxx!", k.c_str());
+            continue;
+        }
+        std::string value = "";
+        if (!userMeta->GetData(k, value)) {
+            MEDIA_LOG_W("ogg meta key must be string, %{public}s invalid type", k.c_str());
+            continue;
+        }
+        if (value.length() > MAX_USERMETA_STRING_LENGTH) {
+            MEDIA_LOG_E("the usermeta key %{public}s string value length %{public}zu more than 256 characters.",
+                k.c_str(), value.length());
+            return Status::ERROR_INVALID_DATA;
+        }
+        av_dict_set(&formatContext_->metadata, k.c_str(), value.c_str(), 0);
+    }
+    return Status::NO_ERROR;
+}
+
 Status FFmpegMuxerPlugin::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
 {
+    if (pluginName_ == "ffmpegMux_ogg") {
+        return SetOggUserMeta(userMeta);
+    }
+    // default muxer meta
     std::vector<std::string> keys;
     bool isSetUserMeta = false;
     userMeta->GetKeys(keys);
@@ -903,7 +943,6 @@ Status FFmpegMuxerPlugin::AddAudioTrack(int32_t &trackIndex, const std::shared_p
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id = codeID;
     st->codecpar->sample_rate = sampleRate;
-    st->codecpar->channels = channels;
     if (trackDesc->Find(Tag::AUDIO_SAMPLE_PER_FRAME) != trackDesc->end()) {
         int32_t frameSize = 0;
         trackDesc->Get<Tag::AUDIO_SAMPLE_PER_FRAME>(frameSize); // frame size
@@ -918,9 +957,11 @@ Status FFmpegMuxerPlugin::AddAudioTrack(int32_t &trackIndex, const std::shared_p
         CheckChannelLayout(ffChannelLayout, trackDesc);
         MEDIA_LOG_D("channelLayout:" PUBLIC_LOG_D64 ", ffChannelLayout:" PUBLIC_LOG_U64,
             channelLayout, ffChannelLayout);
-        FALSE_RETURN_V_MSG_E(ffChannelLayout != AV_CH_LAYOUT_NATIVE, Status::ERROR_INVALID_DATA,
+        FALSE_RETURN_V_MSG_E(ffChannelLayout, Status::ERROR_INVALID_DATA,
             "the value of channelLayout is not supported, " PUBLIC_LOG_D64, channelLayout);
-        st->codecpar->channel_layout = ffChannelLayout;
+        av_channel_layout_from_mask(&st->codecpar->ch_layout, ffChannelLayout);
+    } else {
+        av_channel_layout_default(&st->codecpar->ch_layout, channels);
     }
     trackIndex = st->index;
     return SetCodecParameterOfAudioTrack(st, trackDesc);
@@ -1033,7 +1074,6 @@ Status FFmpegMuxerPlugin::AddAudioAuxiliaryTrack(
     st->codecpar->codec_type = AVMEDIA_TYPE_AUXILIARY;
     st->codecpar->codec_id = codeID;
     st->codecpar->sample_rate = sampleRate;
-    st->codecpar->channels = channels;
 
     auto retAuxlMeta = SetAuxiliaryMeta(trackDesc, st);
     FALSE_RETURN_V_MSG_E(retAuxlMeta == Status::NO_ERROR, retAuxlMeta, "set auxiliary meta failed!");
@@ -1051,9 +1091,11 @@ Status FFmpegMuxerPlugin::AddAudioAuxiliaryTrack(
         auto ffChannelLayout = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(channelLayout);
         MEDIA_LOG_D("channelLayout:" PUBLIC_LOG_D64 ", ffChannelLayout:" PUBLIC_LOG_U64,
             channelLayout, ffChannelLayout);
-        FALSE_RETURN_V_MSG_E(ffChannelLayout != AV_CH_LAYOUT_NATIVE, Status::ERROR_INVALID_DATA,
+        FALSE_RETURN_V_MSG_E(ffChannelLayout, Status::ERROR_INVALID_DATA,
             "the value of channelLayout is not supported, " PUBLIC_LOG_D64, channelLayout);
-        st->codecpar->channel_layout = ffChannelLayout;
+        av_channel_layout_from_mask(&st->codecpar->ch_layout, ffChannelLayout);
+    } else {
+        av_channel_layout_default(&st->codecpar->ch_layout, channels);
     }
     trackIndex = st->index;
     return SetCodecParameterOfAudioTrack(st, trackDesc);
@@ -1618,7 +1660,7 @@ int32_t FFmpegMuxerPlugin::IoRead(void *opaque, uint8_t *buf, int bufSize)
     return -1;
 }
 
-int32_t FFmpegMuxerPlugin::IoWrite(void *opaque, uint8_t *buf, int bufSize)
+int32_t FFmpegMuxerPlugin::IoWrite(void *opaque, const uint8_t *buf, int bufSize)
 {
     auto ioCtx = static_cast<IOContext*>(opaque);
     if (ioCtx != nullptr && ioCtx->dataSink_ != nullptr) {
@@ -1676,10 +1718,11 @@ int32_t FFmpegMuxerPlugin::IoOpen(AVFormatContext *s, AVIOContext **pb,
     return 0;
 }
 
-void FFmpegMuxerPlugin::IoClose(AVFormatContext *s, AVIOContext *pb)
+int FFmpegMuxerPlugin::IoClose(AVFormatContext *s, AVIOContext *pb)
 {
     avio_flush(pb);
     DeInitAvIoCtx(pb);
+    return 0;
 }
 } // namespace Ffmpeg
 } // namespace Plugin

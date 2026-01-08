@@ -78,6 +78,14 @@ const std::vector<std::tuple<AudioSampleFormat, OHOS::AudioStandard::AudioSample
     {AudioSampleFormat::SAMPLE_U64P, OHOS::AudioStandard::AudioSampleFormat::INVALID_WIDTH, AV_SAMPLE_FMT_NONE},
 };
 
+const std::unordered_map<std::string, OHOS::AudioStandard::AudioEncodingType> mimeTypeToEncodingMap = {
+    { MimeType::AUDIO_AC3, OHOS::AudioStandard::ENCODING_AC3 },
+    { MimeType::AUDIO_EAC3, OHOS::AudioStandard::ENCODING_EAC3 },
+    { MimeType::AUDIO_TRUEHD, OHOS::AudioStandard::ENCODING_TRUE_HD },
+    { MimeType::AUDIO_DTS, OHOS::AudioStandard::ENCODING_DTS_X },
+    { MimeType::AUDIO_AVS3DA, OHOS::AudioStandard::ENCODING_AUDIOVIVID_DIRECT },
+};
+
 void AudioInterruptMode2InterruptMode(AudioInterruptMode audioInterruptMode,
     OHOS::AudioStandard::InterruptMode &interruptMode)
 {
@@ -284,8 +292,12 @@ Status AudioServerSinkPlugin::Init()
     rendererOptions_.rendererInfo.volumeMode = static_cast<AudioStandard::AudioVolumeMode>(ChooseVolumeMode());
     rendererOptions_.streamInfo.samplingRate = rendererParams_.sampleRate;
     rendererOptions_.streamInfo.customSampleRate = customSampleRate_;
-    rendererOptions_.streamInfo.encoding =
-        mimeType_ == MimeType::AUDIO_AVS3DA ? AudioStandard::ENCODING_AUDIOVIVID : AudioStandard::ENCODING_PCM;
+    if (isAudioPass_) {
+        rendererOptions_.streamInfo.encoding = GetEncodingType(mimeType_);
+    } else {
+        rendererOptions_.streamInfo.encoding =
+            mimeType_ == MimeType::AUDIO_AVS3DA ? AudioStandard::ENCODING_AUDIOVIVID : AudioStandard::ENCODING_PCM;
+    }
     rendererOptions_.streamInfo.format = rendererParams_.sampleFormat;
     rendererOptions_.streamInfo.channels = rendererParams_.channelCount;
     rendererOptions_.rendererInfo.playerType = AudioStandard::PlayerType::PLAYER_TYPE_AV_PLAYER;
@@ -296,7 +308,8 @@ Status AudioServerSinkPlugin::Init()
                 rendererOptions_.streamInfo.format, rendererOptions_.streamInfo.channels);
     audioRenderer_ = AudioStandard::AudioRenderer::Create(rendererOptions_, appInfo);
     if (audioRenderer_ == nullptr && playerEventReceiver_ != nullptr) {
-        playerEventReceiver_->OnEvent({"audioSinkPlugin", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_SAMPLE_RATE});
+        playerEventReceiver_->OnEvent(
+            {"audioSinkPlugin", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_SAMPLE_RATE, ""});
     }
     FALSE_RETURN_V(audioRenderer_ != nullptr, Status::ERROR_NULL_POINTER);
     if (audioRenderSetFlag_ && (audioRenderInfo_.streamUsage == AudioStandard::STREAM_USAGE_MUSIC ||
@@ -308,6 +321,20 @@ Status AudioServerSinkPlugin::Init()
     audioRenderer_->SetInterruptMode(audioInterruptMode_);
     audioRenderer_->SetSourceDuration(sourceDuraionMs_);
     return Status::OK;
+}
+
+AudioStandard::AudioEncodingType AudioServerSinkPlugin::GetEncodingType(std::string mime)
+{
+    auto it = mimeTypeToEncodingMap.find(mime);
+    if (it != mimeTypeToEncodingMap.end()) {
+        return it->second;
+    }
+    return AudioStandard::ENCODING_PCM;
+}
+
+void AudioServerSinkPlugin::SetAudioPassFlag(bool isAudioPass)
+{
+    isAudioPass_ = isAudioPass;
 }
 
 int32_t AudioServerSinkPlugin::ChooseVolumeMode()
@@ -639,8 +666,8 @@ void AudioServerSinkPlugin::SetUpSampleRateSetter()
                              "sample rate type should be int32_t");
         if (!AssignSampleRateIfSupported(AnyCast<int32_t>(para))) {
             MEDIA_LOG_E_SHORT("sampleRate isn't supported");
-            playerEventReceiver_->OnEvent({"sampleRate isn't supported",
-                EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_SAMPLE_RATE});
+            playerEventReceiver_->OnEvent({
+                "sampleRate isn't supported", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_SAMPLE_RATE, "sample_rate"});
             return Status::ERROR_INVALID_PARAMETER;
         }
         return Status::OK;
@@ -656,8 +683,8 @@ void AudioServerSinkPlugin::SetUpAudioOutputChannelsSetter()
         MEDIA_LOG_I_SHORT("Set outputChannels: " PUBLIC_LOG_U32, channels_);
         if (!AssignChannelNumIfSupported(channels_)) {
             MEDIA_LOG_E_SHORT("channel isn't supported");
-            playerEventReceiver_->OnEvent({"channel isn't supported",
-                EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_CHANNEL_NUM});
+            playerEventReceiver_->OnEvent({
+                "channel isn't supported", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_CHANNEL_NUM, "channel_num"});
             return Status::ERROR_INVALID_PARAMETER;
         }
         return Status::OK;
@@ -681,8 +708,8 @@ void AudioServerSinkPlugin::SetUpAudioSampleFormatSetter()
                              "AudioSampleFormat type should be AudioSampleFormat");
         if (!AssignSampleFmtIfSupported(AnyCast<AudioSampleFormat>(para))) {
             MEDIA_LOG_E_SHORT("sampleFmt isn't supported by audio renderer or resample lib");
-            playerEventReceiver_->OnEvent({"sampleFmt isn't supported",
-                EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_PARAMS});
+            playerEventReceiver_->OnEvent({
+                "sampleFmt isn't supported", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_PARAMS, "sample_format"});
             return Status::ERROR_INVALID_PARAMETER;
         }
         return Status::OK;

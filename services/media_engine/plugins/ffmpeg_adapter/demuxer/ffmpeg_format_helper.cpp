@@ -74,6 +74,13 @@ const int32_t VALUE_10 = 10;
 
 const size_t BRAND_CODE_LEN = 4; // 4 is brand code length
 
+static std::map<AVPixelFormat, RawVideoPixelFormat> g_convertFfmpegPixFmt = {
+    {AVPixelFormat::AV_PIX_FMT_YUV420P, RawVideoPixelFormat::YUV420P},
+    {AVPixelFormat::AV_PIX_FMT_NV12, RawVideoPixelFormat::NV12},
+    {AVPixelFormat::AV_PIX_FMT_NV21, RawVideoPixelFormat::NV21},
+    {AVPixelFormat::AV_PIX_FMT_RGBA, RawVideoPixelFormat::RGBA},
+};
+
 static std::map<AVMediaType, MediaType> g_convertFfmpegTrackType = {
     {AVMEDIA_TYPE_VIDEO, MediaType::VIDEO},
     {AVMEDIA_TYPE_AUDIO, MediaType::AUDIO},
@@ -90,9 +97,7 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_AAC, MimeType::AUDIO_AAC},
     {AV_CODEC_ID_AAC_LATM, MimeType::AUDIO_AAC},
     {AV_CODEC_ID_VORBIS, MimeType::AUDIO_VORBIS},
-#ifdef SUPPORT_CODEC_OPUS
     {AV_CODEC_ID_OPUS, MimeType::AUDIO_OPUS},
-#endif
     {AV_CODEC_ID_AMR_NB, MimeType::AUDIO_AMR_NB},
     {AV_CODEC_ID_AMR_WB, MimeType::AUDIO_AMR_WB},
     {AV_CODEC_ID_ADPCM_MS, MimeType::AUDIO_ADPCM_MS},
@@ -142,13 +147,15 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_HEVC, MimeType::VIDEO_HEVC},
     {AV_CODEC_ID_VVC, MimeType::VIDEO_VVC},
     {AV_CODEC_ID_AV1, MimeType::VIDEO_AV1},
-    {AV_CODEC_ID_VP8, MimeType::VIDEO_VP8},
-    {AV_CODEC_ID_VP9, MimeType::VIDEO_VP9},
+    {AV_CODEC_ID_VP8, MimeType::VIDEO_VP8_IANA},
+    {AV_CODEC_ID_VP9, MimeType::VIDEO_VP9_IANA},
     {AV_CODEC_ID_MSVIDEO1, MimeType::VIDEO_MSVIDEO1},
 #ifdef SUPPORT_CODEC_VC1
     {AV_CODEC_ID_VC1, MimeType::VIDEO_VC1},
 #endif
     {AV_CODEC_ID_AV1, MimeType::VIDEO_AV1},
+    {AV_CODEC_ID_DVVIDEO, MimeType::VIDEO_DVVIDEO},
+    {AV_CODEC_ID_RAWVIDEO, MimeType::VIDEO_RAWVIDEO},
 
     {AV_CODEC_ID_AVS3DA, MimeType::AUDIO_AVS3DA},
     {AV_CODEC_ID_APE, MimeType::AUDIO_APE},
@@ -198,6 +205,7 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"avi", FileType::AVI},
     {"mpeg", FileType::MPEGPS},
     {"rm", FileType::RM},
+    {"caf", FileType::CAF},
     {"ac3", FileType::AC3},
     {"wmv", FileType::WMV},
     {"asf", FileType::WMV},
@@ -205,7 +213,9 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"ape", FileType::APE},
     {"srt", FileType::SRT},
     {"webvtt", FileType::VTT},
+    {"aiff", FileType::AIFF},
     {"dts", FileType::DTS},
+    {"au", FileType::AU},
 #ifdef SUPPORT_DEMUXER_LRC
     {"lrc", FileType::LRC},
 #endif
@@ -217,6 +227,12 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
 #endif
 #ifdef SUPPORT_DEMUXER_EAC3
     {"eac3", FileType::EAC3},
+#endif
+#ifdef SUPPORT_DEMUXER_DTSHD
+    {"dtshd", FileType::DTSHD},
+#endif
+#ifdef SUPPORT_DEMUXER_TRUEHD
+    {"truehd", FileType::TRUEHD},
 #endif
 };
 
@@ -951,6 +967,9 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
         ParseHvccBoxInfo(avStream, format);
         ParseColorBoxInfo(avStream, format);
     }
+    if (avStream.codecpar->codec_id == AV_CODEC_ID_RAWVIDEO) {
+        ParseRawvideoInfo(avStream, format);
+    }
 }
 
 void FFmpegFormatHelper::ParseRotationFromMatrix(const AVStream& avStream, Meta &format)
@@ -1034,10 +1053,7 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
                                              const AVFormatContext& avFormatContext)
 {
     int sampleRate = avStream.codecpar->sample_rate;
-    int channels = avStream.codecpar->channels;
-    if (channels <= 0) {
-        channels = avStream.codecpar->ch_layout.nb_channels;
-    }
+    int channels = avStream.codecpar->ch_layout.nb_channels;
     int frameSize = avStream.codecpar->frame_size;
     if (sampleRate > 0) {
         format.Set<Tag::AUDIO_SAMPLE_RATE>(static_cast<uint32_t>(sampleRate));
@@ -1056,7 +1072,7 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
         MEDIA_LOG_D("Parse frame rate failed: " PUBLIC_LOG_D32, frameSize);
     }
     AudioChannelLayout channelLayout = FFMpegConverter::ConvertFFToOHAudioChannelLayoutV2(
-        avStream.codecpar->channel_layout, channels);
+        avStream.codecpar->ch_layout.u.mask, channels);
     format.Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(channelLayout);
     format.Set<Tag::AUDIO_CHANNEL_LAYOUT>(channelLayout);
 
@@ -1138,7 +1154,7 @@ void FFmpegFormatHelper::ConvertAv3aSampleFormat(const AVStream& avStream, Meta 
 
 void FFmpegFormatHelper::ParseAv3aInfo(const AVStream& avStream, Meta &format)
 {
-    int channels = avStream.codecpar->channels; // 总通道数
+    int channels = avStream.codecpar->ch_layout.nb_channels; // 总通道数
     AudioChannelLayout channelLayout = AudioChannelLayout::UNKNOWN;
     int objectNumber = 0; // 对象数量
     uint64_t channelLayoutMask = 0L;
@@ -1313,7 +1329,48 @@ void FFmpegFormatHelper::ParseColorBoxInfo(const AVFormatContext& avFormatContex
     }
 }
 
-void FFmpegFormatHelper::ParseHevcInfo(const AVFormatContext &avFormatContext, HevcParseFormat parse, Meta &format)
+void FFmpegFormatHelper::ParseHdrTypeInfo(const AVStream& avStream, Meta &format, HevcParseFormat parse)
+{
+    format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::NONE);
+
+    ColorPrimary colorPrimaries = ColorPrimary::UNSPECIFIED;
+    format.Get<Tag::VIDEO_COLOR_PRIMARIES>(colorPrimaries);
+    FALSE_RETURN_NOLOG(colorPrimaries == ColorPrimary::BT2020);
+
+    MatrixCoefficient colorMatrix = MatrixCoefficient::UNSPECIFIED;
+    format.Get<Tag::VIDEO_COLOR_MATRIX_COEFF>(colorMatrix);
+    FALSE_RETURN_NOLOG(colorMatrix == MatrixCoefficient::BT2020_CL || colorMatrix == MatrixCoefficient::BT2020_NCL);
+
+    if (parse.isHdrVivid) {
+        format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HDR_VIVID);
+        return;
+    } else if (parse.isHdr10Plus) {
+        format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HDR_10);
+        return;
+    }
+
+    const AVDictionaryEntry *type = av_dict_get(avStream.metadata, "hdr_type", NULL, 0);
+    if (type != nullptr && type->value != nullptr) {
+        if (StartWith(type->value, "dolbyVision")) {
+            format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HDR_10);
+            return;
+        } else if (StartWith(type->value, "hdrVivid")) {
+            format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HDR_VIVID);
+            return;
+        }
+    }
+
+    TransferCharacteristic colorTrans = TransferCharacteristic::UNSPECIFIED;
+    format.Get<Tag::VIDEO_COLOR_TRC>(colorTrans);
+    if (colorTrans == TransferCharacteristic::HLG) {
+        format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HLG);
+    } else if (colorTrans == TransferCharacteristic::PQ) {
+        format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HDR_10);
+    }
+}
+
+void FFmpegFormatHelper::ParseHevcInfo(
+    const AVFormatContext &avFormatContext, const AVStream& avStream, HevcParseFormat parse, Meta &format)
 {
     if (parse.isHdrVivid) {
         format.Set<Tag::VIDEO_IS_HDR_VIVID>(true);
@@ -1333,11 +1390,14 @@ void FFmpegFormatHelper::ParseHevcInfo(const AVFormatContext &avFormatContext, H
     } else {
         MEDIA_LOG_D("Parse hevc level failed: " PUBLIC_LOG_D32, level);
     }
-    auto FileType = GetFileTypeByName(avFormatContext);
-    if (FileType == FileType::MPEGTS ||
-        FileType == FileType::FLV) {
+    auto fileType = GetFileTypeByName(avFormatContext);
+    if (fileType == FileType::MPEGTS ||
+        fileType == FileType::FLV) {
         format.Set<Tag::VIDEO_WIDTH>(static_cast<uint32_t>(parse.picWidInLumaSamples));
         format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(parse.picHetInLumaSamples));
+    }
+    if (IsMpeg4File(fileType)) {
+        ParseHdrTypeInfo(avStream, format, parse);
     }
 }
 
@@ -1449,6 +1509,16 @@ void FFmpegFormatHelper::ParseGltfInfo(const AVFormatContext& avFormatContext, M
     MEDIA_LOG_I("Valid glTF file and idat Pos: " PUBLIC_LOG_S, idatPos ? idatPos->value : "not found");
     if (idatPos && idatPos->value) {
         SetToFormatIfConvertSuccess(format, Tag::GLTF_OFFSET, idatPos->value, ValueType::INT64);
+    }
+}
+void FFmpegFormatHelper::ParseRawvideoInfo(const AVStream& avStream, Meta &format)
+{
+    AVPixelFormat pixFmt = static_cast<AVPixelFormat>(avStream.codecpar->format);
+    if (g_convertFfmpegPixFmt.count(pixFmt)) {
+        format.Set<Tag::VIDEO_RAWVIDEO_INPUT_PIXEL_FORMAT>(static_cast<int32_t>(g_convertFfmpegPixFmt[pixFmt]));
+    } else {
+        format.Set<Tag::VIDEO_RAWVIDEO_INPUT_PIXEL_FORMAT>(static_cast<int32_t>(RawVideoPixelFormat::UNKNOWN));
+        MEDIA_LOG_W("rawvideo pix_fmt unsupported.");
     }
 }
 } // namespace Ffmpeg

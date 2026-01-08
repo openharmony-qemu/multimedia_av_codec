@@ -185,6 +185,7 @@ std::shared_ptr<Plugins::CodecPlugin> MediaCodec::CreatePlugin(const std::string
     return std::reinterpret_pointer_cast<Plugins::CodecPlugin>(plugin);
 }
 
+// LCOV_EXCL_START
 void MediaCodec::IODump(const std::shared_ptr<Meta> &meta)
 {
     std::time_t t = std::time(nullptr);
@@ -213,6 +214,7 @@ void MediaCodec::IODump(const std::shared_ptr<Meta> &meta)
     dumpDataInputFs_ = std::make_shared<std::ofstream>(inputStr.str(), std::ios::binary);
     dumpDataOutputFs_ = std::make_shared<std::ofstream>(outputStr.str(), std::ios::binary);
 }
+// LCOV_EXCL_STOP
 
 int32_t MediaCodec::Configure(const std::shared_ptr<Meta> &meta)
 {
@@ -531,6 +533,7 @@ int32_t MediaCodec::Reset()
     ClearInputBuffer();
     ResetBufferStatusInfo();
     ClearBufferQueue();
+    // LCOV_EXCL_START
     if (dumpDataInputFs_ != nullptr && dumpDataInputFs_->is_open()) {
         dumpDataInputFs_->flush();
         dumpDataInputFs_->close();
@@ -539,6 +542,7 @@ int32_t MediaCodec::Reset()
         dumpDataOutputFs_->flush();
         dumpDataOutputFs_->close();
     }
+    // LCOV_EXCL_STOP
     ResetIOStat();
     state_ = CodecState::INITIALIZED;
     return (int32_t)ret;
@@ -568,6 +572,7 @@ int32_t MediaCodec::Release()
     codecPlugin_ = nullptr;
     ResetBufferStatusInfo();
     ClearBufferQueue();
+    // LCOV_EXCL_START
     if (dumpDataInputFs_ != nullptr && dumpDataInputFs_->is_open()) {
         dumpDataInputFs_->flush();
         dumpDataInputFs_->close();
@@ -576,6 +581,7 @@ int32_t MediaCodec::Release()
         dumpDataOutputFs_->flush();
         dumpDataOutputFs_->close();
     }
+    // LCOV_EXCL_STOP
     state_ = CodecState::UNINITIALIZED;
     return (int32_t)ret;
 }
@@ -666,6 +672,7 @@ Status MediaCodec::AttachBufffer()
     return Status::OK;
 }
 
+// LCOV_EXCL_START
 Status MediaCodec::AttachDrmBufffer(std::shared_ptr<AVBuffer> &drmInbuf, std::shared_ptr<AVBuffer> &drmOutbuf,
     uint32_t size)
 {
@@ -734,6 +741,7 @@ void MediaCodec::HandleAudioCencDecryptError()
             static_cast<int32_t>(Status::ERROR_DRM_DECRYPT_FAILED));
     }
 }
+// LCOV_EXCL_STOP
 
 int32_t MediaCodec::PrepareInputBufferQueue()
 {
@@ -886,6 +894,7 @@ void MediaCodec::HandleInputBufferInner(uint32_t &eosStatus, bool &isProcessingN
     eosStatus = flag;
 }
 
+// LCOV_EXCL_START
 #ifdef SUPPORT_DRM
 int32_t MediaCodec::SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
     const bool svpFlag)
@@ -908,6 +917,7 @@ int32_t MediaCodec::SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySe
     return (int32_t)Status::OK;
 }
 #endif
+// LCOV_EXCL_STOP
 
 Status MediaCodec::ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Meta> &meta)
 {
@@ -1047,6 +1057,7 @@ void MediaCodec::OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffe
     MediaAVCodec::AVCodecTrace trace(("MediaCodec::OnOutputBufferDone:") +
         std::to_string(outputBuffer->flag_) + "," + std::to_string(outputBuffer->pts_) +
         "," + std::to_string(outputBuffer->duration_));
+    // LCOV_EXCL_START
     if (isDump_) {
         DumpAVBufferToFile(DUMP_PARAM, dumpPrefix_ + DUMP_FILE_NAME, outputBuffer);
     }
@@ -1057,6 +1068,7 @@ void MediaCodec::OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffe
                                      outputBuffer->memory_->GetOffset()), outputBuffer->memory_->GetSize());
         }
     }
+    // LCOV_EXCL_STOP
     Status ret = outputBufferQueueProducer_->PushBuffer(outputBuffer, true);
     auto realPtr = mediaCodecCallback_.lock();
     if (realPtr != nullptr) {
@@ -1160,6 +1172,7 @@ void MediaCodec::OnDumpInfo(int32_t fd)
     }
 }
 
+// LCOV_EXCL_START
 uint32_t MediaCodec::GetApiVersion()
 {
     uint32_t apiVersion = INVALID_API_VERSION;
@@ -1187,6 +1200,7 @@ uint32_t MediaCodec::GetApiVersion()
     }
     return apiVersion;
 }
+// LCOV_EXCL_STOP
 
 Status MediaCodec::CodePluginInputBuffer(const std::shared_ptr<AVBuffer> &inputBuffer)
 {

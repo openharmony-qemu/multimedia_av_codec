@@ -21,15 +21,19 @@
 #include <thread>
 #include <map>
 #include <queue>
+#include <mutex>
 #include <shared_mutex>
 #include <list>
 #include "buffer/avbuffer.h"
 #include "plugin/demuxer_plugin.h"
+#include "avpacket_memory.h"
+#include "avpacket_wrapper.h"
 #include "block_queue_pool.h"
 #include "multi_stream_parser_manager.h"
 #include "reference_parser_manager.h"
 #include "meta/meta.h"
 #include "qos.h"
+#include "time_range_manager.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,6 +44,7 @@ extern "C" {
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "libavcodec/bsf.h"
+#include "libavformat/demux.h"
 #ifdef __cplusplus
 }
 #endif
@@ -58,6 +63,23 @@ public:
     Status Stop() override;
     Status Flush() override;
     Status SetDataSource(const std::shared_ptr<DataSource>& source) override;
+    /**
+     * Judgment for VIDEO_HDR_TYPE:
+     * 1. Only applicable to H.265 streams. This attribute is not included in non-H.265 streams.
+     * 2. If COLOR_PRIMARIES or COLOR_MATRIX_COEFFICIENT is not BT2020, assign the value as NONE.
+     * 3. If ITU_T_T35 type PREFIX_SEI is included:
+     *    1) If COUNTRY_CODE is 0xB5 or 0x26, and PROVIDER_CODE is 0x04 and PROVIDER_ORIENTED_CODE is 0x05,
+     *       assign the value as HDR_VIVID.
+     *    2) If COUNTRY_CODE is 0xB5 and PROVIDER_CODE is 0x3C, assign the value as HDR10.
+     * 4. If ITU_T_T35 is not included, check if there are special boxes in the file:
+     *    1) If CUVV box exists, assign the value as HDR_VIVID.
+     *    2) If DVCC, DVVC, or DVH1 box exists, assign the value as HDR10.
+     * 5. If none of the above conditions are met, determine based on COLOR_TRANSFER_CHARACTERISTIC:
+     *    1) If the transfer function is PQ, assign the value as HDR10.
+     *    2) If the transfer function is HLG, assign the value as HLG.
+     * 6. If none of the above conditions are satisfied, assign the value as NONE,
+     *    which may indicate SDR or non-standard HDR.
+     */
     Status GetMediaInfo(MediaInfo& mediaInfo) override;
     Status GetUserMeta(std::shared_ptr<Meta> meta) override;
     Status SelectTrack(uint32_t trackId) override;
@@ -93,6 +115,9 @@ public:
         const int32_t probSize) override;
     Status BoostReadThreadPriority() override;
     Status SetAVReadPacketStopState(bool state) override;
+    Status SeekToStart() override;
+    Status SeekToKeyFrame(int32_t trackId, int64_t seekTime,
+        SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs) override;
 private:
     enum ThreadState : unsigned int {
         NOT_STARTED,
@@ -183,7 +208,7 @@ private:
     static int HandleReadEOS(IOContext* ioContext);
     static int HandleReadError(int result);
     static void UpdateInitDownloadData(IOContext* ioContext, int dataSize);
-    static int AVWritePacket(void* opaque, uint8_t* buf, int bufSize);
+    static int AVWritePacket(void* opaque, const uint8_t* buf, int bufSize);
     static int64_t AVSeek(void* opaque, int64_t offset, int whence);
     AVIOContext* AllocAVIOContext(int flags, IOContext *ioContext);
     std::shared_ptr<AVFormatContext> InitAVFormatContext(IOContext *ioContext);
@@ -196,24 +221,54 @@ private:
     Status PushEOSToAllCache();
     bool TrackIsSelected(const uint32_t trackId);
     Status ReadPacketToCacheQueue(const uint32_t readId);
-    Status AddPacketToCacheQueue(AVPacket *pkt);
+    Status AddPacketToCacheQueue(Plugins::AVPacketWrapperPtr pkt);
     Status SetDrmCencInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     void WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status BufferIsValid(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertAVPacketToSample(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
-    Status ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacket* avpacket,
+    Status ConvertAVPacketToSampleMemory(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
+    Status PreparePacketForConversion(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket,
+        Plugins::AVPacketWrapperPtr& tempPktWrapper, bool& combined);
+    Status PrepareBufferMetadata(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket,
+        Plugins::AVPacketWrapperPtr tempPktWrapper, uint32_t& copySize);
+    Status WritePacketDataAndUpdateInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket,
+        Plugins::AVPacketWrapperPtr tempPktWrapper, uint32_t copySize, bool combined);
+    Status ConvertToAnnexbAndUpdateSample(std::shared_ptr<AVBuffer> sample,
+        std::shared_ptr<SamplePacket> samplePacket, Plugins::AVPacketWrapperPtr& tempPktWrapper, bool combined);
+    Status ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample, Plugins::AVPacketWrapperPtr avpacketWrapper,
         std::shared_ptr<SamplePacket> dstSamplePacket);
+    Status ConvertPacketToAnnexb(Plugins::AVPacketWrapperPtr srcWrapper, std::shared_ptr<SamplePacket> samplePacket,
+        Plugins::AVPacketWrapperPtr& outWrapper);
     Status SetEosSample(std::shared_ptr<AVBuffer> sample);
     Status WriteBuffer(std::shared_ptr<AVBuffer> outBuffer, const uint8_t *writeData, uint32_t writeSize);
     void ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, size_t drmInfoSize,
         std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
+    void UpdateCachedDrmInfoFromStream(AVStream* avStream);
     bool NeedCombineFrame(uint32_t trackId);
-    AVPacket* CombinePackets(std::shared_ptr<SamplePacket> samplePacket);
+    Plugins::AVPacketWrapperPtr CombinePackets(std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
+    
+    struct ConvertToAnnexbParams {
+        std::shared_ptr<SamplePacket> samplePacket {nullptr};
+        uint8_t *outBuffer {nullptr};
+        int32_t outBufferSize {0};
+        int32_t &outDataSize;
+        uint8_t *sideData {nullptr};
+        size_t sideDataSize {0};
+
+        // 构造函数，用于初始化引用成员
+        explicit ConvertToAnnexbParams(int32_t &outSizeRef) : outDataSize(outSizeRef) {}
+    };
+    Status ConvertHevcToAnnexb(AVPacket& pkt, const ConvertToAnnexbParams &params);
+    Status ConvertVvcToAnnexb(AVPacket& pkt, const ConvertToAnnexbParams &params);
+    Status ConvertPacketToAnnexbWithParser(AVPacket* srcAVPacket, std::shared_ptr<SamplePacket> samplePacket,
+        Plugins::AVPacketWrapperPtr& outWrapper, const AVStreamSnapshot* snapshot);
     bool HasCodecParameters();
     Status GetMediaInfo();
     void ResetParam();
+    void UpdateStreamSnapshots();
+    const AVStreamSnapshot* GetStreamSnapshot(uint32_t trackId) const;
 
     bool WebvttPktProcess(AVPacket *pkt);
     bool IsWebvttMP4(const AVStream *avStream);
@@ -263,6 +318,7 @@ private:
     std::shared_ptr<AVInputFormat> pluginImpl_ {nullptr};
     std::shared_ptr<AVFormatContext> formatContext_ {nullptr};
     std::map<uint32_t, std::shared_ptr<AVBSFContext>> avbsfContexts_ {};
+    std::vector<AVStreamSnapshot> streamSnapshots_;
     
     void UpdateReferenceIds();
     std::map<int32_t, std::vector<int32_t>> referenceIdsMap_ {};
@@ -270,9 +326,9 @@ private:
     Status ParseVideoFirstFrames();
     bool AllVideoFirstFramesReady();
     bool AllSupportTrackFramesReady();
-    Status SetVideoFirstFrame(AVPacket* pkt, bool isConvert = true);
+    Status SetVideoFirstFrame(Plugins::AVPacketWrapperPtr pkt, bool isConvert = true);
     bool VideoFirstFrameValid(uint32_t trackIndex);
-    std::map<int32_t, AVPacket *> videoFirstFrameMap_ {};
+    std::map<int32_t, Plugins::AVPacketWrapperPtr> videoFirstFrameMap_ {};
     std::unordered_map<int32_t, int64_t> seekCalibMap_ {};
     bool TrackIsChecked(const uint32_t trackId);
     std::vector<uint32_t> checkedTrackIds_ {};
@@ -282,6 +338,9 @@ private:
     std::shared_ptr<MultiStreamParserManager> streamParsers_ {nullptr};
 
     void ParseHEVCMetadataInfo(const AVStream& avStream, Meta &format);
+    void ProcessHevcFirstFrame(uint32_t trackId, AVStream* avStream, bool parserReady, bool firstFrameReady,
+                               Meta &meta);
+    void BuildTrackMeta(uint32_t trackId, AVStream* avStream);
     std::atomic<bool> parserState_ = true;
     IOContext parserRefIoContext_;
     std::shared_ptr<AVFormatContext> parserRefCtx_{nullptr};
@@ -350,11 +409,11 @@ private:
     void FFmpegReadLoop();
     bool NeedWaitForRead();
     void HandleReadWait();
-    bool EnsurePacketAllocated(AVPacket*& pkt);
-    bool ReadAndProcessFrame(AVPacket* pkt);
-    void HandleAVPacketEndOfStream(AVPacket* pkt);
-    void HandleAVPacketReadError(AVPacket* pkt, int ffmpegRet);
-    bool ReadOnePacketAndProcessWebVTT(AVPacket* pkt);
+    bool EnsurePacketAllocated(Plugins::AVPacketWrapperPtr& pktWrapper);
+    bool ReadAndProcessFrame(Plugins::AVPacketWrapperPtr& pktWrapper);
+    void HandleAVPacketEndOfStream(Plugins::AVPacketWrapperPtr& pktWrapper);
+    void HandleAVPacketReadError(Plugins::AVPacketWrapperPtr& pktWrapper, int ffmpegRet);
+    bool ReadOnePacketAndProcessWebVTT(Plugins::AVPacketWrapperPtr& pktWrapper);
     void ReleaseFFmpegReadLoop();
     std::unique_ptr<std::thread> readThread_ {nullptr};
     std::condition_variable readLoopCv_;
@@ -378,9 +437,34 @@ private:
     std::atomic<bool> isAsyncReadThreadPrioritySet_ = false;
     void UpdateAsyncReadThreadPriority();
 
-    void UpdateStreamSnapshots();
-    const AVStreamSnapshot* GetStreamSnapshot(uint32_t trackId) const;
-    std::vector<AVStreamSnapshot> streamSnapshots_;
+    // DRM info cache to avoid race condition in async mode
+    std::multimap<std::string, std::vector<uint8_t>> cachedDrmInfo_;
+    std::mutex cachedDrmInfoMutex_;
+    std::atomic<bool> drmInfoCached_ {false};
+
+    struct MinTsPacketInfo {
+        bool isInit = false;
+        bool isUpd = false;
+        int32_t streamIndex = -1;
+        int64_t minPts = AV_NOPTS_VALUE;
+        int64_t minDts = AV_NOPTS_VALUE;
+    };
+    MinTsPacketInfo minTsPktInfo_ {};
+    Status GetFileFirstPacket();
+    void InitMinTsPacketInfo(AVPacket *pkt);
+    void UpdMinTsPacketInfo(AVPacket *pkt);
+    bool IsSkipGetMinTsPktInfo();
+    Status SeekToStartInternal();
+
+    int AVSeekFrameLock(int idx, int64_t timestamp, int flags);
+    TimeRangeManager timeRangeManager_;
+    Status ReadUntilKeyFrame(Plugins::AVPacketWrapperPtr pkt, int trackIndex,
+        TimeoutGuard &timeoutGuard, TimeRange &readRange);
+    Status SeekToKeyFrameCheckParam(int64_t seekTime, SeekMode mode,
+        int32_t &trackIndex, int64_t &ffTime, AVStream* &avStream);
+    void ResetAfterSeek(int64_t seekTime, SeekMode mode);
+
+    std::unordered_map<int32_t, int32_t> mp4FirstKeyFrameIdx_; // key: track index, value: first key frame index
 };
 
 typedef struct DtsFinder {

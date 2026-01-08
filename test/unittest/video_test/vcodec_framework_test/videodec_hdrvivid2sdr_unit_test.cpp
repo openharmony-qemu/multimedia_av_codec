@@ -207,7 +207,13 @@ INSTANTIATE_TEST_SUITE_P(,
                                          std::make_tuple(CodecMimeType::VIDEO_HEVC, ResourceType::HDR,
                                                          AVCodecCategory::AVCODEC_HARDWARE),
                                          std::make_tuple(CodecMimeType::VIDEO_HEVC, ResourceType::HDR_HLG_FULL,
-                                                         AVCodecCategory::AVCODEC_HARDWARE)));
+                                                         AVCodecCategory::AVCODEC_HARDWARE),
+                                         std::make_tuple(CodecMimeType::VIDEO_HEVC, ResourceType::SDR,
+                                                         AVCodecCategory::AVCODEC_SOFTWARE),
+                                         std::make_tuple(CodecMimeType::VIDEO_HEVC, ResourceType::HDR,
+                                                         AVCodecCategory::AVCODEC_SOFTWARE),
+                                         std::make_tuple(CodecMimeType::VIDEO_HEVC, ResourceType::HDR_HLG_FULL,
+                                                         AVCodecCategory::AVCODEC_SOFTWARE)));
 
 /**
  * @tc.name: VideoDecoder_HRDVivid2SDR_0011

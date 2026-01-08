@@ -13,6 +13,7 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
+
 <configuration ver="2.0">
     <target name="avmuxer_inner_unit_test">
         <preparer>
@@ -99,6 +100,16 @@
             <option name="push" value="muxer_res/wav_pcm_44100_octagonal_s16le.pcm -> /data/test/media" src="res"/>
             <option name="push" value="muxer_res/wav_pcm_44100_hexadecagonal_s16le.pcm -> /data/test/media" src="res"/>
             <option name="push" value="muxer_res/wav_pcm_44100_stereodownmix_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="avmuxer_ogg_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="audio_res/g711mu_8kHz_10s.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/flac_2c_44100hz_261k.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/opus_16000_1.dat -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/vorbis_16000_2.dat -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -866,7 +877,7 @@
     <target name="audio_twinvq_decoder_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="audio_res/twinvq_8000_1.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/twinvq_8000_mono.dat -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -1319,6 +1330,7 @@
             <option name="push" value="video_res/test_hls/testHLSEncode.m3u8 -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_hls/testHLSEncode_session_key.m3u8 -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192.m3u8-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_live_endlist.m3u8-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192init.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000001.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000002.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
@@ -1331,6 +1343,7 @@
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000009.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000010.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000.m3u8-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_live_endlist.m3u8-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000init.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000001.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000002.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
@@ -1363,11 +1376,13 @@
             <option name="push" value="video_res/test_detach_hls/invalidaudio_default.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/invalidaudio.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/invalidaudio_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/live_endlist.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_default_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_default.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/prog_index.m3u8-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/prog_index_live_endlist.m3u8-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_0.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_1.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_10.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
@@ -1447,6 +1462,7 @@
             <option name="push" value="video_res/test_hls/testHLSEncode.m3u8 -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_hls/testHLSEncode_session_key.m3u8 -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192.m3u8-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_live_endlist.m3u8-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192init.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000001.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000002.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
@@ -1459,6 +1475,7 @@
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000009.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000010.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000.m3u8-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_live_endlist.m3u8-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000init.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000001.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000002.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
@@ -1491,11 +1508,13 @@
             <option name="push" value="video_res/test_detach_hls/invalidaudio_default.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/invalidaudio.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/invalidaudio_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/live_endlist.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_default_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_default.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/prog_index.m3u8-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/prog_index_live_endlist.m3u8-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_0.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_1.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_10.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
@@ -1576,6 +1595,7 @@
             <option name="push" value="video_res/test_hls/testHlsLive.m3u8 -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_hls/testXMap.m3u8 -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192.m3u8-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_live_endlist.m3u8-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192init.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000001.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000002.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
@@ -1588,6 +1608,7 @@
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000009.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000010.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000.m3u8-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_live_endlist.m3u8-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000init.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000001.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000002.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
@@ -1620,11 +1641,13 @@
             <option name="push" value="video_res/test_detach_hls/invalidaudio_default.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/invalidaudio.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/invalidaudio_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/live_endlist.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_default_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_default.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/prog_index.m3u8-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/prog_index_live_endlist.m3u8-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_0.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_1.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_10.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
@@ -1684,6 +1707,7 @@
             <option name="push" value="video_res/dewu.mp4 -> /data/test/media" src="res"/>
             <option name="push" value="video_res/dewuNull.mp4 -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/h264.flv -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/aigc_str.flv -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -1787,6 +1811,7 @@
             <option name="push" value="video_res/test_hls/testHLSEncode.m3u8 -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_hls/testHLSEncode_session_key.m3u8 -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192.m3u8-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_live_endlist.m3u8-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192init.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000001.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000002.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
@@ -1799,6 +1824,7 @@
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000009.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000010.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000.m3u8-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_live_endlist.m3u8-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000init.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000001.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000002.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
@@ -1831,11 +1857,145 @@
             <option name="push" value="video_res/test_detach_hls/invalidaudio_default.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/invalidaudio.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/invalidaudio_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/live_endlist.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_default_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_default.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/prog_index.m3u8-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/prog_index_live_endlist.m3u8-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_0.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_1.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_10.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_2.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_3.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_4.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_5.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_6.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_7.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_8.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_9.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_cbr/test_cbr.m3u8 -> /data/test/media/test_cbr" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_720.m3u8 -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_720_native.m3u8 -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_720_live.m3u8 -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_720_5K.m3u8 -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_720_null.m3u8 -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_0.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_1.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_2.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_3.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_4.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_5.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_6.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_7.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_8.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_9.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_720.m3u8 -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7200.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7201.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7202.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7203.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7204.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7205.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7206.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7207.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7208.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7209.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_72010.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_72011.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_1080.m3u8 -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10800.ts-> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10801.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10802.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10803.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10804.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10805.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10806.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10807.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10808.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10809.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_108010.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_108011.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_108012.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_hls/testXMap.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testByteRange.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testMutiStream.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testHlsLive.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="HlsMediaCfgFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media/test_cbr"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_hls"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_detach_hls"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_detach_hls/cmaf/aac/lc_192"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_detach_hls/cmaf/avc/540p_2000"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_detach_hls/cmaf/avc/720p_3000"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_detach_hls/subtitles/eng"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_cbr/720_1M"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_cbr/720_2M"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_cbr/1080_3M"/>
+            <option name="push" value="video_res/test_hls/enc.key -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/out000.ts -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/out001.ts -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testHLSEncode.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testHLSEncode_session_key.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192.m3u8-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_live_endlist.m3u8-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192init.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000001.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000002.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000003.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000004.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000005.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000006.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000007.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000008.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000009.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000010.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000.m3u8-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_live_endlist.m3u8-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000init.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000001.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000002.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000003.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000004.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000005.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000006.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000007.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000008.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000009.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000010.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/720p_3000/avc_720p_3000.m3u8-> /data/test/media/test_detach_hls/cmaf/avc/720p_3000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/720p_3000/avc_720p_3000init.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/720p_3000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/720p_3000/avc_720p_3000_000000001.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/720p_3000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/720p_3000/avc_720p_3000_000000002.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/720p_3000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/720p_3000/avc_720p_3000_000000003.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/720p_3000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/720p_3000/avc_720p_3000_000000004.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/720p_3000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/720p_3000/avc_720p_3000_000000005.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/720p_3000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/720p_3000/avc_720p_3000_000000006.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/720p_3000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/720p_3000/avc_720p_3000_000000007.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/720p_3000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/720p_3000/avc_720p_3000_000000008.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/720p_3000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/720p_3000/avc_720p_3000_000000009.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/720p_3000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/720p_3000/avc_720p_3000_000000010.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/720p_3000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/audio_default_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/audio_default.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/audio.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/audio_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/invalidaudio_default_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/invalidaudio_default.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/invalidaudio.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/invalidaudio_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/live_endlist.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/noaudio_default_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/noaudio_default.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/noaudio.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/noaudio_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/prog_index.m3u8-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/prog_index_live_endlist.m3u8-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_0.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_1.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_10.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
@@ -1954,6 +2114,156 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
+        <target name="HlsDownloadFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media/test_cbr"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_hls"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_detach_hls"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_detach_hls/cmaf/aac/lc_192"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_detach_hls/cmaf/avc/540p_2000"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_detach_hls/cmaf/avc/720p_3000"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_detach_hls/subtitles/eng"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_cbr/720_1M"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_cbr/720_2M"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_cbr/1080_3M"/>
+            <option name="push" value="video_res/test_hls/enc.key -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/out000.ts -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/out001.ts -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testHLSEncode.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testHLSEncode_session_key.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192.m3u8-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_live_endlist.m3u8-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192init.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000001.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000002.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000003.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000004.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000005.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000006.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000007.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000008.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000009.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000010.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000.m3u8-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_live_endlist.m3u8-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000init.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000001.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000002.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000003.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000004.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000005.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000006.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000007.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000008.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000009.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000010.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/720p_3000/avc_720p_3000.m3u8-> /data/test/media/test_detach_hls/cmaf/avc/720p_3000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/720p_3000/avc_720p_3000init.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/720p_3000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/720p_3000/avc_720p_3000_000000001.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/720p_3000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/720p_3000/avc_720p_3000_000000002.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/720p_3000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/720p_3000/avc_720p_3000_000000003.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/720p_3000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/720p_3000/avc_720p_3000_000000004.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/720p_3000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/720p_3000/avc_720p_3000_000000005.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/720p_3000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/720p_3000/avc_720p_3000_000000006.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/720p_3000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/720p_3000/avc_720p_3000_000000007.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/720p_3000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/720p_3000/avc_720p_3000_000000008.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/720p_3000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/720p_3000/avc_720p_3000_000000009.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/720p_3000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/720p_3000/avc_720p_3000_000000010.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/720p_3000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/audio_default_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/audio_default.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/audio.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/audio_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/invalidaudio_default_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/invalidaudio_default.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/invalidaudio.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/invalidaudio_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/live_endlist.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/noaudio_default_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/noaudio_default.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/noaudio.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/noaudio_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/prog_index.m3u8-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/prog_index_live_endlist.m3u8-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_0.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_1.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_10.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_2.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_3.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_4.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_5.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_6.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_7.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_8.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_9.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_cbr/test_cbr.m3u8 -> /data/test/media/test_cbr" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_720.m3u8 -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_720_native.m3u8 -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_720_live.m3u8 -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_720_5K.m3u8 -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_720_null.m3u8 -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_0.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_1.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_2.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_3.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_4.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_5.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_6.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_7.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_8.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_9.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_720.m3u8 -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7200.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7201.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7202.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7203.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7204.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7205.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7206.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7207.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7208.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7209.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_72010.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_72011.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_1080.m3u8 -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10800.ts-> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10801.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10802.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10803.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10804.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10805.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10806.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10807.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10808.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10809.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_108010.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_108011.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_108012.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_hls/testXMap.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testByteRange.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testMutiStream.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testHlsLive.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="HttpDownloaderOpenFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/dewu.mp4 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/dewuNull.mp4 -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/h264.flv -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="HttpDownloaderFlvFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/dewu.mp4 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/dewuNull.mp4 -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/h264.flv -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
     <target name="HttpDownloaderFuzzTest">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
@@ -1986,7 +2296,7 @@
     </target>
     <target name="DashMediaDownloader2FuzzTest">
         <preparer>
-            <option name="shell" value="mkdir -p /data/test/media/test_dash/segment_base"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_dash/segment_base1"/>
             <option name="push" value="video_res/test_dash/segment_base/media-audio-und-mp4a.mp4 -> /data/test/media/test_dash/segment_base1" src="res"/>
             <option name="push" value="video_res/test_dash/segment_base/index_audio_subtitle.mpd -> /data/test/media/test_dash/segment_base1" src="res"/>
             <option name="push" value="video_res/test_dash/segment_base/index_period.mpd -> /data/test/media/test_dash/segment_base1" src="res"/>
@@ -1996,16 +2306,28 @@
             <option name="shell" value="restorecon /data/test/media/test_dash/segment_base1"/>
         </preparer>
     </target>
-    <target name="DashMediaDownSeekToTimeFuzzTest">
+    <target name="DashMediaDownFinishedFuzzTest">
         <preparer>
-            <option name="shell" value="mkdir -p /data/test/media/test_dash/segment_base2"/>
-            <option name="push" value="video_res/test_dash/segment_base/media-audio-und-mp4a.mp4 -> /data/test/media/test_dash/segment_base2" src="res"/>
-            <option name="push" value="video_res/test_dash/segment_base/index_audio_subtitle.mpd -> /data/test/media/test_dash/segment_base2" src="res"/>
-            <option name="push" value="video_res/test_dash/segment_base/index_period.mpd -> /data/test/media/test_dash/segment_base2" src="res"/>
-            <option name="push" value="video_res/test_dash/segment_base/index.mpd -> /data/test/media/test_dash/segment_base2" src="res"/>
-            <option name="push" value="video_res/test_dash/segment_base/media-video-1.mp4 -> /data/test/media/test_dash/segment_base2" src="res"/>
-            <option name="push" value="video_res/test_dash/segment_base/media-video-2.mp4 -> /data/test/media/test_dash/segment_base2" src="res"/>
-            <option name="shell" value="restorecon /data/test/media/test_dash/segment_base2"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_dash/segment_base3"/>
+            <option name="push" value="video_res/test_dash/segment_base/media-audio-und-mp4a.mp4 -> /data/test/media/test_dash/segment_base3" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_base/index_audio_subtitle.mpd -> /data/test/media/test_dash/segment_base3" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_base/index_period.mpd -> /data/test/media/test_dash/segment_base3" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_base/index.mpd -> /data/test/media/test_dash/segment_base3" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_base/media-video-1.mp4 -> /data/test/media/test_dash/segment_base3" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_base/media-video-2.mp4 -> /data/test/media/test_dash/segment_base3" src="res"/>
+            <option name="shell" value="restorecon /data/test/media/test_dash/segment_base3"/>
+        </preparer>
+    </target>
+    <target name="MpdDownFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media/test_dash/segment_base4"/>
+            <option name="push" value="video_res/test_dash/segment_base/media-audio-und-mp4a.mp4 -> /data/test/media/test_dash/segment_base4" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_base/index_audio_subtitle.mpd -> /data/test/media/test_dash/segment_base4" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_base/index_period.mpd -> /data/test/media/test_dash/segment_base4" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_base/index.mpd -> /data/test/media/test_dash/segment_base4" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_base/media-video-1.mp4 -> /data/test/media/test_dash/segment_base4" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_base/media-video-2.mp4 -> /data/test/media/test_dash/segment_base4" src="res"/>
+            <option name="shell" value="restorecon /data/test/media/test_dash/segment_base4"/>
         </preparer>
     </target>
     <target name="audio_decoder_skip_info_unit_test">
@@ -2041,21 +2363,21 @@
 	<target name="audio_cook_decoder_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="audio_res/cook_44100_stereo.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/cook.dat -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
     <target name="audio_cook_capi_decoder_unit_stable_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="audio_res/. -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/cook.dat -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
     <target name="audio_cook_capi_decoder_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="audio_res/. -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/cook.dat -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -2090,7 +2412,7 @@
     <target name="audio_sync_mode_cook_capi_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="audio_res/. -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/cook.dat -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -2112,6 +2434,86 @@
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="audio_res/wma_2c_44100hz_128k.dat -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="avmuxer_mpeg4_plugin_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="muxer_res/h264_720_480.dat -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/aac_2c_44100hz_199k.dat -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/h265_logInfo.dat -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/aac_44100_2.dat -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="videodec_dvvideo_capi_async_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/DVCPAL_720x576_25_411_dvpp.dvvideo -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+	<target name="videodec_dvvideo_capi_sync_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/DVCPAL_720x576_25_411_dvpp.dvvideo -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+	<target name="videodec_dvvideo_func_async_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/DVCPAL_720x576_25_411_dvpp.dvvideo -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+	<target name="videodec_dvvideo_func_sync_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/DVCPAL_720x576_25_411_dvpp.dvvideo -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+	<target name="videodec_dvvideo_stable_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/DVCPAL_720x576_25_411_dvpp.dvvideo -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="videodec_rawvideo_capi_async_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/rawvideo.dat -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+	<target name="videodec_rawvideo_capi_sync_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/rawvideo.dat -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+	<target name="videodec_rawvideo_func_async_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/rawvideo.dat -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+	<target name="videodec_rawvideo_func_sync_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/rawvideo.dat -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+	<target name="videodec_rawvideo_stable_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/rawvideo.dat -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>

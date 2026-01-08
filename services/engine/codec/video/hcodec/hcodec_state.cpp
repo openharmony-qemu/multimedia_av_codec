@@ -180,7 +180,6 @@ void HCodec::BaseState::OnErrorEventHandler(uint32_t omxError)
     int32_t errorCode = 0;
     std::string faultType;
     std::string sysEventMsg = "[" + codec_->caller_.app.processName + "]" + "[" + codec_->compUniqueStr_ + "]";
-    bool isNeedForceShutdown = false;
  
     switch (omxError) {
         case static_cast<uint32_t>(OMX_ErrorInsufficientResources):
@@ -190,7 +189,6 @@ void HCodec::BaseState::OnErrorEventHandler(uint32_t omxError)
         case static_cast<uint32_t>(OMX_ErrorUnsupportedSetting):
             errorCode = AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION;
             faultType = "XPS_UNSUPPORT";
-            isNeedForceShutdown = true;
             codec_->unsupportHappened_ = true;
             break;
         case static_cast<uint32_t>(OMX_ErrorParameterSetsIllegal):
@@ -214,9 +212,6 @@ void HCodec::BaseState::OnErrorEventHandler(uint32_t omxError)
     }
     codec_->SignalError(AVCODEC_ERROR_INTERNAL, errorCode);
     codec_->FaultEventWrite(faultType, sysEventMsg);
-    if (isNeedForceShutdown) {
-        (void)codec_->ForceShutdown(codec_->stateGeneration_, false);
-    }
 }
 /**************************** BaseState End ******************************/
 
@@ -224,6 +219,7 @@ void HCodec::BaseState::OnErrorEventHandler(uint32_t omxError)
 /**************************** UninitializedState start ****************************/
 void HCodec::UninitializedState::OnStateEntered()
 {
+    codec_->ptsToProcessTimesMap_.clear();
     codec_->gotFirstInput_ = false;
     codec_->gotFirstOutput_ = false;
     codec_->onePtsInToOutTotalCostUs_ = 0;
@@ -657,6 +653,7 @@ void HCodec::RunningState::OnShutDown(const MsgInfo &info)
 void HCodec::RunningState::OnFlush(const MsgInfo &info)
 {
     codec_->isBufferCirculating_ = false;
+    codec_->ptsToProcessTimesMap_.clear();
     SLOGD("begin to ask omx to flush");
     int32_t ret = codec_->compNode_->SendCommand(CODEC_COMMAND_FLUSH, OMX_ALL, {});
     if (ret == HDF_SUCCESS) {

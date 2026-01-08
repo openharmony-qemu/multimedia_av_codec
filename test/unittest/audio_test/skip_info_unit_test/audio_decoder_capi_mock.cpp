@@ -133,6 +133,7 @@ int32_t AudioDecoderCapiMock::Stop()
         }
         decSignal_->inBufferQueue.pop();
         decSignal_->inQueue.pop();
+        inLock.unlock();
         ret = OH_AudioCodec_Stop(audioDec_);
         if (ret != 0) {
             retCode |= 0x04;
@@ -149,6 +150,8 @@ int32_t AudioDecoderCapiMock::DecodeInput(const uint8_t *dataIn, uint32_t inSize
 {
     int32_t ret = 0;
     uint32_t index = 0;
+    outputPts_ = 0;
+    outputFlag_ = 0;
     if (inSizeBytes == 0) {
         return 1;
     }
@@ -166,7 +169,8 @@ int32_t AudioDecoderCapiMock::DecodeInput(const uint8_t *dataIn, uint32_t inSize
     OH_AVCodecBufferAttr inAttr;
     memset_s(&inAttr, sizeof(inAttr), 0, sizeof(inAttr));
     inAttr.size = inSizeBytes;
-    inAttr.flags = AVCODEC_BUFFER_FLAGS_NONE;
+    inAttr.flags = flag_;
+    inAttr.pts = pts_;
     auto inBuffer = decSignal_->inBufferQueue.front();
     if (skipInfo != nullptr) {
         auto avFormat = OH_AVBuffer_GetParameter(inBuffer);
@@ -225,6 +229,8 @@ int32_t AudioDecoderCapiMock::DecodeOutput(uint8_t *dataOut, int32_t &outSizeByt
         DEMO_LOG("DecodeOutput free buffer failed! ret:%d", ret);
     }
     outSizeBytes = outAttr.size;
+    outputFlag_ = outAttr.flags;
+    outputPts_ = outAttr.pts;
     return decSignal_->outQueue.size();
 }
 } // namespace MediaAVCodec

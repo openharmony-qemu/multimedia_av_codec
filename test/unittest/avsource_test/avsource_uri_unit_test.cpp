@@ -993,7 +993,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2180, TestSize.Level1)
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
-    ASSERT_EQ(formatVal_.duration, 32044000);
+    ASSERT_EQ(formatVal_.duration, 32043537);
     ASSERT_EQ(formatVal_.trackCount, 1);
 #ifdef AVSOURCE_INNER_UNIT_TEST
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));

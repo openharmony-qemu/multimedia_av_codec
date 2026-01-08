@@ -51,6 +51,7 @@ bool DynamicInterface::OpenLibrary()
     }
     lib_ = dlopen("libvideoprocessingengine.z.so", RTLD_LAZY);
     CHECK_AND_RETURN_RET_LOG(lib_ != nullptr, false, "Load VPE lib failed.");
+    AVCODEC_LOGI("VPE lib is loaded");
     return true;
 }
 
@@ -58,6 +59,7 @@ void DynamicInterface::CloseLibrary()
 {
     if (lib_ != nullptr) {
         dlclose(lib_);
+        AVCODEC_LOGI("VPE lib is closed");
         lib_ = nullptr;
     }
 }

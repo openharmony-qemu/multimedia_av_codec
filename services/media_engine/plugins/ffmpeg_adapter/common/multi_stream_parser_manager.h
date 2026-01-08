@@ -46,6 +46,7 @@ public:
     bool AllParserInited();
 
     bool IsHdrVivid(uint32_t trackId);
+    bool IsHdr10Plus(uint32_t trackId);
     bool IsSyncFrame(uint32_t trackId, const uint8_t *sample, int32_t size);
     bool GetColorRange(uint32_t trackId);
     uint8_t GetColorPrimaries(uint32_t trackId);
@@ -61,6 +62,7 @@ public:
     bool ConvertExtraDataToAnnexb(uint32_t trackId, uint8_t *extraData, int32_t extraDataSize);
     void ConvertPacketToAnnexb(uint32_t trackId, uint8_t **hvccPacket, int32_t &hvccPacketSize,
         const PacketConvertInfo &packetInfo);
+    bool ConvertPacketToAnnexb(uint32_t trackId, const PacketConvertToBufferInfo &convertInfo);
     void ParseAnnexbExtraData(uint32_t trackId, const uint8_t *sample, int32_t size);
     
 private:

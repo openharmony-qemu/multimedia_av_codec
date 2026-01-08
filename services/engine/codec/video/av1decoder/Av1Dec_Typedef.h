@@ -30,17 +30,13 @@
 #define DAV1D_TOTAL_REFS_PER_FRAME (DAV1D_REFS_PER_FRAME + 1)
 
 typedef void *AV1_DEC_HANDLE;
-typedef int INT32;
 typedef unsigned int UINT32;
 typedef unsigned char UINT8;
-typedef unsigned long long UINT64;
-typedef long long INT64;
-typedef int atomic_int;
 
 typedef struct TagAv1DecInArgs {
     UINT8 *pStream;
     UINT32 uiStreamLen;
-    INT64 uiTimeStamp;
+    int64_t uiTimeStamp;
 } AV1_DEC_INARGS;
 
 enum Dav1dPixelLayout {
@@ -495,4 +491,11 @@ typedef struct Dav1dPicture {
 
     void *allocator_data; ///< pointer managed by the allocator
 } Dav1dPicture;
+
+typedef struct AV1ColorSpaceInfo {
+    enum Dav1dColorPrimaries pri; ///< color primaries(av1)
+    enum Dav1dTransferCharacteristics trc; ///< transfer characteristics (av1)
+    enum Dav1dMatrixCoefficients mtrx; //// matrix coefficiients (av1)
+    uint8_t color_range;
+} AV1ColorSpaceInfo;
 #endif // __AV1_DEC_TYPE_DEF_H__

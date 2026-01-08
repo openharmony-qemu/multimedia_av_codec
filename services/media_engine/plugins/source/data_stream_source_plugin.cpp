@@ -144,6 +144,7 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
 {
     MEDIA_LOG_D("Read, offset: " PUBLIC_LOG_D64 ", expectedLen: " PUBLIC_LOG_ZU ", seekable: " PUBLIC_LOG_D32,
         offset, expectedLen, seekable_);
+    int64_t start = GetCurrentMillisecond();
     std::shared_ptr<AVSharedMemory> memory = GetMemory();
     FALSE_RETURN_V_MSG(memory != nullptr, Status::ERROR_NO_MEMORY, "allocate memory failed!");
     int32_t realLen = 0;
@@ -174,6 +175,9 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
     } while (retryTimes_ < DEFAULT_RETRY_TIMES);
     offset_ += static_cast<uint64_t>(realLen);
     if (buffer && buffer->GetMemory()) {
+        int32_t memorySize = memory->GetSize();
+        FALSE_RETURN_V_MSG(memorySize != -1, Status::ERROR_INVALID_DATA, "GetSize failed");
+        realLen = std::min(memorySize, realLen);
         buffer->GetMemory()->Write(memory->GetBase(), realLen, 0);
     } else {
         buffer = WrapAVSharedMemory(memory, realLen);
@@ -183,6 +187,14 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
         ", retryTimes: " PUBLIC_LOG_U32, (buffer && buffer->GetMemory()) ?
         buffer->GetMemory()->GetSize() : -100, realLen, retryTimes_); // -100 invalid size
     FALSE_RETURN_V(realLen != 0, Status::ERROR_AGAIN);
+    totalDownLoadBytes_ += realLen;
+    if (totalDownloadCount_ == 0) {
+        firstDownloadTimestamp_ = GetCurrentMillisecond();
+        firstDownloadTime_ = firstDownloadTimestamp_ - start;
+    }
+    totalDownloadCount_++;
+    int64_t end = GetCurrentMillisecond();
+    totalDownloadDuringTime_ += end - start;
     return Status::OK;
 }
 
@@ -301,6 +313,22 @@ Status DataStreamSourcePlugin::Reset()
 bool DataStreamSourcePlugin::IsNeedPreDownload()
 {
     return true;
+}
+
+Status DataStreamSourcePlugin::GetDownloadInfo(Plugins::DownloadInfo& downloadInfo)
+{
+    downloadInfo.totalDownLoadBytes = totalDownLoadBytes_;
+    downloadInfo.totalLoadingTime = totalDownloadDuringTime_;
+    downloadInfo.loadingCount = totalDownloadCount_;
+    downloadInfo.firstDownloadTime = firstDownloadTime_;
+    downloadInfo.firstFrameDecapsulationTime = firstDownloadTimestamp_;
+    return Status::OK;
+}
+
+int64_t DataStreamSourcePlugin::GetCurrentMillisecond()
+{
+    auto duration = std::chrono::steady_clock::now().time_since_epoch();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
 }
 } // namespace DataStreamSourcePlugin
 } // namespace Plugin

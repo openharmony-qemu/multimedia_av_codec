@@ -459,7 +459,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ProcessVideoStartTime_001, TestSize.
     demuxer->isVideoMuted_ = false;
     std::shared_ptr<AVBuffer> vBuffer = AVBuffer::CreateAVBuffer();
     demuxer->bufferMap_[trackId] = vBuffer;
-    EXPECT_EQ(Status::ERROR_INVALID_PARAMETER, demuxer->HandleReadSample(trackId));
+    EXPECT_EQ(Status::OK, demuxer->HandleReadSample(trackId));
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_AddDemuxerCopyTask_001, TestSize.Level1)
@@ -2168,7 +2168,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_VideoStreamCallback_001, TestSize.Le
     demuxer->RegisterVideoStreamReadyCallback(std::make_shared<VideoStreamReadyTestCallback>());
     std::shared_ptr<AVBuffer> vBuffer = AVBuffer::CreateAVBuffer();
     demuxer->bufferMap_[trackId] = vBuffer;
-    EXPECT_NE(Status::OK, demuxer->HandleReadSample(trackId));
+    EXPECT_EQ(Status::OK, demuxer->HandleReadSample(trackId));
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SetDumpInfo_001, TestSize.Level1)

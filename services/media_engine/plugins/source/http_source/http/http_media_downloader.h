@@ -30,6 +30,7 @@
 #include "utils/write_bitrate_caculator.h"
 #include "osal/task/mutex.h"
 #include "osal/task/condition_variable.h"
+#include "download/download_metrics_info.h"
 
 namespace OHOS {
 namespace Media {
@@ -114,7 +115,7 @@ private:
     uint32_t SaveData(uint8_t* data, uint32_t len, bool notBlock);
     uint32_t SaveCacheBufferData(uint8_t* data, uint32_t len, bool notBlock);
     Status ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo);
-    uint32_t SaveRingBufferData(uint8_t* data, uint32_t len, bool notBlock);
+    uint32_t SaveRingBufferData(uint8_t* data, uint32_t len);
     void OnClientErrorEvent();
     Status CheckIsEosRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status CheckIsEosCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
@@ -160,6 +161,7 @@ private:
     bool CheckAutoSelectBitrate();
     bool IsAutoSelectConditionOk();
     void WaitCacheBufferInit();
+    void UpdateDownloadFinished(const std::string &url, const std::string& location);
 
 private:
     std::shared_ptr<RingBuffer> ringBuffer_;
@@ -266,6 +268,7 @@ private:
     std::deque<uint32_t> downloadSpeeds_;
     uint32_t videoBitrate_ {0};
     bool isAppBackground_ {false};
+    std::shared_ptr<DownloadMetricsInfo> downloadMetricsInfo_ {nullptr};
 };
 }
 }

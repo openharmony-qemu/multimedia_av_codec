@@ -31,6 +31,8 @@
 #include "osal/filesystem/file_system.h"
 #include "file_fd_source_plugin.h"
 #include "common/media_core.h"
+#include "http_media_utils.h"
+#include "avcodec_sysevent.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "FileFdSourcePlugin" };
@@ -166,6 +168,11 @@ Status FileFdSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
         downloadTask_->Start();
         steadyClock_.Reset();
     }
+    auto uuid = source->GetAppUid();
+    std::string bundleName = OHOS::Media::HttpMediaUtils::GetClientBundleName(uuid);
+    MEDIA_LOG_I("SYX FD name %{public}s", bundleName.c_str());
+    MediaAVCodec::StreamAppPackageNameEventWrite("AVSource", bundleName,
+        "OH_AVSource_CreateWithFD", "{\"result\": \"success\"}");
     return Status::OK;
 }
 
@@ -194,6 +201,7 @@ Status FileFdSourcePlugin::ReadOfflineFile(int32_t streamId, std::shared_ptr<Buf
     expectedLen = std::min(bufData->GetCapacity(), expectedLen);
     MEDIA_LOG_D("ReadLocal buffer pos: " PUBLIC_LOG_U64 " , len:" PUBLIC_LOG_ZU, position_.load(), expectedLen);
 
+    int64_t start = GetCurrentMillisecond();
     int64_t offsetCur = lseek(fd_, 0, SEEK_CUR);
     if (offsetCur < 0) {
         MEDIA_LOG_E("Fd get offset failed ");
@@ -215,6 +223,14 @@ Status FileFdSourcePlugin::ReadOfflineFile(int32_t streamId, std::shared_ptr<Buf
         MEDIA_LOG_D("ReadLocal position_ " PUBLIC_LOG_U64 ", readSize " PUBLIC_LOG_ZU,
             position_.load(), buffer->GetMemory()->GetSize());
     }
+    totalDownLoadBytes_ += static_cast<int64_t>(size);
+    if (totalDownloadCount_ == 0) {
+        firstDownloadTimestamp_ = GetCurrentMillisecond();
+        firstDownloadTime_ = firstDownloadTimestamp_ - start;
+    }
+    totalDownloadCount_++;
+    int64_t end = GetCurrentMillisecond();
+    totalDownloadDuringTime_ += end - start;
     return Status::OK;
 }
 
@@ -230,6 +246,7 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
         }
     }
 
+    int64_t start = GetCurrentMillisecond();
     std::shared_ptr<Memory> bufData = GetBufferPtr(buffer, expectedLen);
     FALSE_RETURN_V_MSG_E(bufData != nullptr, Status::ERROR_NO_MEMORY, "memory is not enough");
     expectedLen = std::min(static_cast<size_t>(GetLastSize(position_)), expectedLen);
@@ -266,6 +283,14 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
     }
     position_ += static_cast<uint64_t>(size);
     MEDIA_LOG_D("ringBuffer.size() " PUBLIC_LOG_ZU, ringBuffer_->GetSize());
+    totalDownLoadBytes_ += static_cast<int64_t>(size);
+    if (totalDownloadCount_ == 0) {
+        firstDownloadTimestamp_ = GetCurrentMillisecond();
+        firstDownloadTime_ = firstDownloadTimestamp_ - start;
+    }
+    totalDownloadCount_++;
+    int64_t end = GetCurrentMillisecond();
+    totalDownloadDuringTime_ += end - start;
     return Status::OK;
 }
 
@@ -416,8 +441,14 @@ void FileFdSourcePlugin::CacheDataLoop()
     }
     cachePosition_ += static_cast<uint64_t>(size);
     downloadSize_ += static_cast<uint64_t>(size);
-
+    totalDownLoadBytes_ += static_cast<int64_t>(size);
+    if (totalDownloadCount_ == 0) {
+        firstDownloadTimestamp_ = GetCurrentMillisecond();
+        firstDownloadTime_ = firstDownloadTimestamp_ - curTime;
+    }
+    totalDownloadCount_++;
     int64_t ct = steadyClock2_.ElapsedMilliseconds() - curTime;
+    totalDownloadDuringTime_ += ct;
     if (ct > READ_TIME) {
         MEDIA_LOG_I("Cache fd:" PUBLIC_LOG_D32 " pos:" PUBLIC_LOG_U64 " rb:" PUBLIC_LOG_ZU
         " size:" PUBLIC_LOG_U64 " ct:" PUBLIC_LOG_U64, fd_, cachePosition_.load(), ringBuffer_->GetSize(),
@@ -791,6 +822,22 @@ void FileFdSourcePlugin::WaitForInterrupt(int32_t waitTimeMS)
 bool FileFdSourcePlugin::IsLocalFd()
 {
     return !isCloudFile_;
+}
+
+Status FileFdSourcePlugin::GetDownloadInfo(DownloadInfo& downloadInfo)
+{
+    downloadInfo.totalDownLoadBytes = totalDownLoadBytes_;
+    downloadInfo.totalLoadingTime = totalDownloadDuringTime_;
+    downloadInfo.loadingCount = totalDownloadCount_;
+    downloadInfo.firstDownloadTime = firstDownloadTime_;
+    downloadInfo.firstFrameDecapsulationTime = firstDownloadTimestamp_;
+    return Status::OK;
+}
+
+int64_t FileFdSourcePlugin::GetCurrentMillisecond()
+{
+    auto duration = std::chrono::steady_clock::now().time_since_epoch();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
 }
 } // namespace FileFdSource
 } // namespace Plugin

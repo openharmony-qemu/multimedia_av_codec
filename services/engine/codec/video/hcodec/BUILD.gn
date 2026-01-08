@@ -85,6 +85,8 @@ ohos_shared_library("hcodec") {
     "memory_utils:libdmabufheap",
     "openmax:libopenmax_static",
     "qos_manager:qos",
+    "resource_schedule_service:ressched_client",
+    "samgr:samgr_proxy",
   ]
 
   if (defined(av_codec_support_video_processing_engine) &&

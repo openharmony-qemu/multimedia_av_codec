@@ -63,7 +63,7 @@ constexpr int32_t DEFAULT_CHANNELS = 1;
 constexpr int32_t FRAME_COUNT = 5;
 constexpr uint32_t DEFAULT_SAMPLE_RATE = 8000;
 constexpr string_view ILBC_FILE_TODEMUX = "/data/test/media/ilbc_mov.mov";
-constexpr string_view OUTPUT_TRUEHD_ILBC_FILE_PATH = "/data/test/media/test_decoder_ilbc.pcm";
+constexpr string_view OUTPUT_ILBC_FILE_PATH = "/data/test/media/test_decoder_ilbc.pcm";
 } // namespace
 
 namespace OHOS {
@@ -135,7 +135,7 @@ static void OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBuff
     signal->outCond_.notify_all();
 }
 
-class AudioCodeTruehdDecoderUnitTest : public testing::Test {
+class AudioCodeIlbcDecoderUnitTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
@@ -181,24 +181,24 @@ protected:
     size_t staleOutputDiscarded_ = 0;
 };
 
-void AudioCodeTruehdDecoderUnitTest::SetUpTestCase(void)
+void AudioCodeIlbcDecoderUnitTest::SetUpTestCase(void)
 {
     cout << "[SetUpTestCase]: " << endl;
 }
 
-void AudioCodeTruehdDecoderUnitTest::TearDownTestCase(void)
+void AudioCodeIlbcDecoderUnitTest::TearDownTestCase(void)
 {
     cout << "[TearDownTestCase]: " << endl;
 }
 
-void AudioCodeTruehdDecoderUnitTest::SetUp(void)
+void AudioCodeIlbcDecoderUnitTest::SetUp(void)
 {
     g_outputSampleRate = 0;
     g_outputChannels = 0;
     cout << "[SetUp]: SetUp!!!" << endl;
 }
 
-void AudioCodeTruehdDecoderUnitTest::TearDown(void)
+void AudioCodeIlbcDecoderUnitTest::TearDown(void)
 {
     cout << "[TearDown]: over!!!" << endl;
     CleanUp();
@@ -215,7 +215,7 @@ void AudioCodeTruehdDecoderUnitTest::TearDown(void)
     }
 }
 
-void AudioCodeTruehdDecoderUnitTest::Release()
+void AudioCodeIlbcDecoderUnitTest::Release()
 {
     Stop();
     OH_AudioCodec_Destroy(audioDec_);
@@ -223,7 +223,7 @@ void AudioCodeTruehdDecoderUnitTest::Release()
     CleanUp();
 }
 
-void AudioCodeTruehdDecoderUnitTest::HandleEOS(const uint32_t &index)
+void AudioCodeIlbcDecoderUnitTest::HandleEOS(const uint32_t &index)
 {
     OH_AudioCodec_PushInputBuffer(audioDec_, index);
     if (!signal_->inQueue_.empty()) {
@@ -238,7 +238,7 @@ void AudioCodeTruehdDecoderUnitTest::HandleEOS(const uint32_t &index)
     gotEos_.store(true, std::memory_order_relaxed);
 }
 
-void AudioCodeTruehdDecoderUnitTest::SetEOS(uint32_t index, OH_AVBuffer *buffer)
+void AudioCodeIlbcDecoderUnitTest::SetEOS(uint32_t index, OH_AVBuffer *buffer)
 {
     OH_AVCodecBufferAttr attr;
     attr.pts = 0;
@@ -252,7 +252,7 @@ void AudioCodeTruehdDecoderUnitTest::SetEOS(uint32_t index, OH_AVBuffer *buffer)
     }
 }
 
-bool AudioCodeTruehdDecoderUnitTest::ReadBuffer(OH_AVBuffer *buffer, uint32_t index)
+bool AudioCodeIlbcDecoderUnitTest::ReadBuffer(OH_AVBuffer *buffer, uint32_t index)
 {
     if (demuxer == nullptr || buffer == nullptr) {
         cout << "Fatal: demuxer or buffer is null loop=" << loopIndex_ << " frame=" << frameCount_ << endl;
@@ -287,7 +287,7 @@ bool AudioCodeTruehdDecoderUnitTest::ReadBuffer(OH_AVBuffer *buffer, uint32_t in
     return true;
 }
 
-int64_t AudioCodeTruehdDecoderUnitTest::GetFileSize(const char *fileName)
+int64_t AudioCodeIlbcDecoderUnitTest::GetFileSize(const char *fileName)
 {
     int64_t fileSize = 0;
     if (fileName != nullptr) {
@@ -312,7 +312,7 @@ inline void PopInputQueues(AudioCodecBufferSignal* sig, bool popGen = true)
     }
 }
 
-void AudioCodeTruehdDecoderUnitTest::InputFunc()
+void AudioCodeIlbcDecoderUnitTest::InputFunc()
 {
     while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->inMutex_);
@@ -376,7 +376,7 @@ inline void PopOutputQueues(AudioCodecBufferSignal* sig, bool popGen = true)
     }
 }
 
-void AudioCodeTruehdDecoderUnitTest::OutputFunc()
+void AudioCodeIlbcDecoderUnitTest::OutputFunc()
 {
     if (!pcmOutputFile_.is_open()) {
         std::cout << "open " << ILBC_FILE_TODEMUX << " failed!" << std::endl;
@@ -425,15 +425,15 @@ void AudioCodeTruehdDecoderUnitTest::OutputFunc()
     pcmOutputFile_.close();
 }
 
-int32_t AudioCodeTruehdDecoderUnitTest::Start()
+int32_t AudioCodeIlbcDecoderUnitTest::Start()
 {
     isRunning_.store(true);
-    inputLoop_ = make_unique<thread>(&AudioCodeTruehdDecoderUnitTest::InputFunc, this);
+    inputLoop_ = make_unique<thread>(&AudioCodeIlbcDecoderUnitTest::InputFunc, this);
     if (inputLoop_ == nullptr) {
         cout << "Fatal: No memory" << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
     }
-    outputLoop_ = make_unique<thread>(&AudioCodeTruehdDecoderUnitTest::OutputFunc, this);
+    outputLoop_ = make_unique<thread>(&AudioCodeIlbcDecoderUnitTest::OutputFunc, this);
     if (outputLoop_ == nullptr) {
         cout << "Fatal: No memory" << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
@@ -441,7 +441,7 @@ int32_t AudioCodeTruehdDecoderUnitTest::Start()
     return OH_AudioCodec_Start(audioDec_);
 }
 
-int32_t AudioCodeTruehdDecoderUnitTest::Stop()
+int32_t AudioCodeIlbcDecoderUnitTest::Stop()
 {
     isRunning_.store(false);
     StopLoops();
@@ -453,7 +453,7 @@ int32_t AudioCodeTruehdDecoderUnitTest::Stop()
     return ret;
 }
 
-void AudioCodeTruehdDecoderUnitTest::StopLoops()
+void AudioCodeIlbcDecoderUnitTest::StopLoops()
 {
     if (signal_ != nullptr) {
         {
@@ -503,12 +503,12 @@ void AudioCodeTruehdDecoderUnitTest::StopLoops()
     }
 }
 
-int32_t AudioCodeTruehdDecoderUnitTest::InitFile()
+int32_t AudioCodeIlbcDecoderUnitTest::InitFile()
 {
     CleanUp();
     isFirstFrame_ = true;
     frameCount_ = 0;
-    pcmOutputFile_.open(OUTPUT_TRUEHD_ILBC_FILE_PATH.data(), std::ios::out | std::ios::binary);
+    pcmOutputFile_.open(OUTPUT_ILBC_FILE_PATH.data(), std::ios::out | std::ios::binary);
     if (!pcmOutputFile_.is_open()) {
         cout << "Fatal: open output file failed" << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
@@ -543,7 +543,7 @@ int32_t AudioCodeTruehdDecoderUnitTest::InitFile()
     return OH_AVErrCode::AV_ERR_OK;
 }
 
-int32_t AudioCodeTruehdDecoderUnitTest::CreateCodecFunc()
+int32_t AudioCodeIlbcDecoderUnitTest::CreateCodecFunc()
 {
     audioDec_ = OH_AudioCodec_CreateByName((std::string(AVCodecCodecName::AUDIO_DECODER_ILBC_NAME)).data());
     if (audioDec_ == nullptr) {
@@ -564,7 +564,7 @@ int32_t AudioCodeTruehdDecoderUnitTest::CreateCodecFunc()
     return OH_AVErrCode::AV_ERR_OK;
 }
 
-int32_t AudioCodeTruehdDecoderUnitTest::Configure()
+int32_t AudioCodeIlbcDecoderUnitTest::Configure()
 {
     format_ = OH_AVFormat_Create();
     if (format_ == nullptr) {
@@ -578,7 +578,7 @@ int32_t AudioCodeTruehdDecoderUnitTest::Configure()
     return OH_AudioCodec_Configure(audioDec_, format_);
 }
 
-int32_t AudioCodeTruehdDecoderUnitTest::Reset()
+int32_t AudioCodeIlbcDecoderUnitTest::Reset()
 {
     isRunning_.store(false);
     StopLoops();
@@ -589,7 +589,7 @@ int32_t AudioCodeTruehdDecoderUnitTest::Reset()
     return OH_AudioCodec_Reset(audioDec_);
 }
 
-void AudioCodeTruehdDecoderUnitTest::CleanUp()
+void AudioCodeIlbcDecoderUnitTest::CleanUp()
 {
     if (pcmOutputFile_.is_open()) {
         pcmOutputFile_.close();
@@ -608,7 +608,7 @@ void AudioCodeTruehdDecoderUnitTest::CleanUp()
     }
 }
 
-HWTEST_F(AudioCodeTruehdDecoderUnitTest, audioDecoder_Truehd_loop_test_01, TestSize.Level1)
+HWTEST_F(AudioCodeIlbcDecoderUnitTest, audioDecoder_Ilbc_loop_test_01, TestSize.Level1)
 {
     isTestingFormat_ = true;
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
@@ -626,7 +626,7 @@ HWTEST_F(AudioCodeTruehdDecoderUnitTest, audioDecoder_Truehd_loop_test_01, TestS
     Release();
 }
 
-HWTEST_F(AudioCodeTruehdDecoderUnitTest, audioDecoder_Truehd_loop_test_02, TestSize.Level1)
+HWTEST_F(AudioCodeIlbcDecoderUnitTest, audioDecoder_Ilbc_loop_test_02, TestSize.Level1)
 {
     isTestingFormat_ = true;
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
@@ -650,7 +650,7 @@ HWTEST_F(AudioCodeTruehdDecoderUnitTest, audioDecoder_Truehd_loop_test_02, TestS
     Release();
 }
 
-HWTEST_F(AudioCodeTruehdDecoderUnitTest, audioDecoder_Truehd_loop_test_03, TestSize.Level1)
+HWTEST_F(AudioCodeIlbcDecoderUnitTest, audioDecoder_Ilbc_loop_test_03, TestSize.Level1)
 {
     isTestingFormat_ = true;
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());

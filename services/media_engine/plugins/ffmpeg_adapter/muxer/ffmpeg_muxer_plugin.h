@@ -91,14 +91,15 @@ private:
     void HandleOptions(std::string& optionName);
     Status UpdateExtraData(uint8_t *data, size_t size);
     static int32_t IoRead(void *opaque, uint8_t *buf, int bufSize);
-    static int32_t IoWrite(void *opaque, uint8_t *buf, int bufSize);
+    static int32_t IoWrite(void *opaque, const uint8_t *buf, int bufSize);
     static int64_t IoSeek(void *opaque, int64_t offset, int whence);
     static AVIOContext *InitAvIoCtx(const std::shared_ptr<DataSink> &dataSink, int writeFlags);
     static void DeInitAvIoCtx(AVIOContext *ptr);
     static int32_t IoOpen(AVFormatContext *s, AVIOContext **pb, const char *url, int flags, AVDictionary **options);
-    static void IoClose(AVFormatContext *s, AVIOContext *pb);
+    static int IoClose(AVFormatContext *s, AVIOContext *pb);
     void CheckChannelLayout(uint64_t channelLayout, const std::shared_ptr<Meta> &trackDesc);
     bool CheckGltfParam(std::shared_ptr<Meta> param);
+    Status SetOggUserMeta(const std::shared_ptr<Meta> &userMeta);
 
 private:
     struct IOContext {

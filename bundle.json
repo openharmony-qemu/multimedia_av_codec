@@ -50,7 +50,9 @@
         "av_codec_support_vc1_decoder",
         "av_codec_support_vp8_decoder",
         "av_codec_support_vp9_decoder",
-        "av_codec_support_av1_decoder"
+        "av_codec_support_av1_decoder",
+        "av_codec_enable_demuxer_dtshd",
+        "av_codec_enable_demuxer_truehd"
       ],
       "adapted_system_type": [ "standard" ],
       "rom": "10000KB",
@@ -70,6 +72,7 @@
           "graphic_2d",
           "graphic_surface",
           "hdf_core",
+          "hiappevent",
           "hicollie",
           "hidumper",
           "hilog",
