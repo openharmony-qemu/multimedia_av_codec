@@ -510,6 +510,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/mpeg1decoderconfigure_fuzzer:Mpeg1decoderConfigureFuzzTest",
       "fuzztest/mpeg1decoderresource_fuzzer:Mpeg1decoderResourceFuzzTest",
       "fuzztest/mpeg1decodersetparameter_fuzzer:Mpeg1decoderSetParameterFuzzTest",
+      "fuzztest/pluginsink_fuzzer:PluginSinkFuzzTest",
     ]
     if(av_codec_support_vp8_decoder) {
       deps += [
