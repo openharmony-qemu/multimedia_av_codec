@@ -40,6 +40,27 @@ public:
     virtual void OnEvent(const std::shared_ptr<Plugins::PluginEvent> event) = 0;
 };
 
+static inline void SafeCallInputBufferDone(DataCallback *callback, const std::shared_ptr<AVBuffer> &buffer)
+{
+    if (callback != nullptr) {
+        callback->OnInputBufferDone(buffer);
+    }
+}
+
+static inline void SafeCallOutputBufferDone(DataCallback *callback, const std::shared_ptr<AVBuffer> &buffer)
+{
+    if (callback != nullptr) {
+        callback->OnOutputBufferDone(buffer);
+    }
+}
+
+static inline void SafeCallOnEvent(DataCallback *callback, const std::shared_ptr<Plugins::PluginEvent> event)
+{
+    if (callback != nullptr) {
+        callback->OnEvent(event);
+    }
+}
+
 class CodecPlugin : public Plugins::PluginBase {
 public:
     explicit CodecPlugin(std::string name) : PluginBase(std::move(name)) {}

@@ -69,7 +69,7 @@ Status FFmpegBaseEncoder::ProcessSendData(const std::shared_ptr<AVBuffer> &input
                 return Status::ERROR_INVALID_DATA;
             }
             bufferMeta_ = inputBuffer->meta_;
-            dataCallback_->OnInputBufferDone(inputBuffer);
+            SafeCallInputBufferDone(dataCallback_, inputBuffer);
             ret = Status::OK;
         }
     }
@@ -198,7 +198,7 @@ Status FFmpegBaseEncoder::SendOutputBuffer(std::shared_ptr<AVBuffer> &outputBuff
             std::lock_guard<std::mutex> l(bufferMetaMutex_);
             outBuffer_->meta_ = bufferMeta_;
         }
-        dataCallback_->OnOutputBufferDone(outBuffer_);
+        SafeCallOutputBufferDone(dataCallback_, outputBuffer);
     } else {
         AVCODEC_LOGE("SendOutputBuffer-ReceiveBuffer error");
     }

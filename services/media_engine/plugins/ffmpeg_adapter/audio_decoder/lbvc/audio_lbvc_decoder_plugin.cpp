@@ -175,7 +175,7 @@ Status AudioLbvcDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> 
     if (inputBuffer->flag_ == BUFFER_FLAG_EOS) {
         AVCODEC_LOGI("QueueInputBuffer Eos!");
         eosFlag_ = true;
-        dataCallback_->OnInputBufferDone(inputBuffer);
+        SafeCallInputBufferDone(dataCallback_, inputBuffer);
         return Status::OK;
     }
 
@@ -185,7 +185,7 @@ Status AudioLbvcDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> 
         return ret;
     }
 
-    dataCallback_->OnInputBufferDone(inputBuffer);
+    SafeCallInputBufferDone(dataCallback_, inputBuffer);
     AVCODEC_LOGD("OnInputBufferDone");
     return Status::OK;
 }
@@ -197,7 +197,7 @@ Status AudioLbvcDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer> &outp
         outputBuffer->flag_ = BUFFER_FLAG_EOS;
         outputBuffer->memory_->SetSize(0);
         eosFlag_ = false;
-        dataCallback_->OnOutputBufferDone(outputBuffer);
+        SafeCallOutputBufferDone(dataCallback_, outputBuffer);
         return Status::OK;
     }
 
@@ -207,7 +207,7 @@ Status AudioLbvcDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer> &outp
         return ret;
     }
 
-    dataCallback_->OnOutputBufferDone(outputBuffer);
+    SafeCallOutputBufferDone(dataCallback_, outputBuffer);
     AVCODEC_LOGD("OnOutputBufferDone");
     return Status::OK;
 }
