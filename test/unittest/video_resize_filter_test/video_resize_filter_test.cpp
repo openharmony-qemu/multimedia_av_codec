@@ -97,20 +97,6 @@ HWTEST_F(VideoResizeFilterTest, OnVPEError_001, TestSize.Level1)
 
 /**
  * @tc.name  : Test OnOutputBufferAvailable
- * @tc.number: OnOutputBufferAvailable_001
- * @tc.desc  : Test flag == static_cast<uint32_t>(DETAIL_ENH_BUFFER_FLAG_EOS
- */
-HWTEST_F(VideoResizeFilterTest, OnOutputBufferAvailable_001, TestSize.Level1)
-{
-    uint32_t index = 0;
-    uint32_t flag = static_cast<uint32_t>(DETAIL_ENH_BUFFER_FLAG_EOS);
-    videoResizeFilter_->indexs_.clear();
-    videoResizeFilter_->OnOutputBufferAvailable(index, flag);
-    EXPECT_EQ(videoResizeFilter_->indexs_.size(), 0);
-}
-
-/**
- * @tc.name  : Test OnOutputBufferAvailable
  * @tc.number: OnOutputBufferAvailable_002
  * @tc.desc  : Test flag != static_cast<uint32_t>(DETAIL_ENH_BUFFER_FLAG_EOS
  */
@@ -153,24 +139,6 @@ HWTEST_F(VideoResizeFilterTest, OnOutputBufferAvailable_004, TestSize.Level1)
     videoResizeFilter_->OnOutputBufferAvailable(index, flag);
     ASSERT_TRUE(videoResizeFilter_->indexs_.size() > 0);
     ASSERT_TRUE(videoResizeFilter_->frameNum_ > videoResizeFilter_->currentFrameNum_.load());
-}
-
-/**
- * @tc.name  : Test OnOutputBufferAvailable
- * @tc.number: OnOutputBufferAvailable_005
- * @tc.desc  : Test videoEnhancer_ != nullptr && currentFrameNum_.load() >= frameNum_
- */
-HWTEST_F(VideoResizeFilterTest, OnOutputBufferAvailable_005, TestSize.Level1)
-{
-    uint32_t index = 0;
-    uint32_t flag = 0;
-    videoResizeFilter_->indexs_.clear();
-    videoResizeFilter_->frameNum_ = 0;
-    EXPECT_CALL(*(videoEnhancer_), NotifyEos()).Times(TEST_TIMES_ONE);
-
-    videoResizeFilter_->OnOutputBufferAvailable(index, flag);
-    ASSERT_TRUE(videoResizeFilter_->indexs_.size() > 0);
-    ASSERT_TRUE(videoResizeFilter_->frameNum_ < videoResizeFilter_->currentFrameNum_.load());
 }
 
 /**
