@@ -157,7 +157,7 @@ private:
         uint64_t fileSize {0};
         bool eos {false};
         std::atomic<bool> retry {false};
-        uint32_t initDownloadDataSize {0};
+        uint64_t initDownloadDataSize {0};
         std::atomic<bool> initCompleted {false};
         DumpMode dumpMode {DUMP_NONE};
         bool isLimit {false};

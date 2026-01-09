@@ -96,7 +96,7 @@ private:
     static void ParseLocationInfo(const AVFormatContext& avFormatContext, Meta &format);
 
     static void ParseInfoFromMetadata(
-        const AVDictionary* metadata, Meta &format, std::map<std::string, TagType> tagRange);
+        const AVDictionary* metadata, Meta &format, std::map<std::string, TagType> &tagRange);
     static void ParseRotationFromMatrix(const AVStream& avStream, Meta &format);
     static void ParseOrientationFromMatrix(const AVStream& avStream, Meta &format);
     static void ParseTrackType(const AVFormatContext& avFormatContext, Meta& format);
