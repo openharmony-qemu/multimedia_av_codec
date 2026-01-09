@@ -154,10 +154,10 @@ int FFmpegDemuxerPlugin::HandleReadError(int result)
 void FFmpegDemuxerPlugin::UpdateInitDownloadData(IOContext* ioContext, int dataSize)
 {
     if (!ioContext->initCompleted) {
-        if (ioContext->initDownloadDataSize <= UINT32_MAX - static_cast<uint32_t>(dataSize)) {
-            ioContext->initDownloadDataSize += static_cast<uint32_t>(dataSize);
+        if (ioContext->initDownloadDataSize <= UINT64_MAX - static_cast<uint64_t>(dataSize)) {
+            ioContext->initDownloadDataSize += static_cast<uint64_t>(dataSize);
         } else {
-            MEDIA_LOG_W("DataSize " PUBLIC_LOG_U32 " is invalid", static_cast<uint32_t>(dataSize));
+            MEDIA_LOG_W("DataSize " PUBLIC_LOG_U64 " is invalid", static_cast<uint64_t>(dataSize));
         }
     }
 }

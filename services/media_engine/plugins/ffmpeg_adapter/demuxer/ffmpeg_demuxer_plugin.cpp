@@ -72,7 +72,7 @@ const uint32_t TRUEHD_SNIFF_SIZE = 1024 * 1024;
 const int32_t MP3_PROBE_SCORE_LIMIT = 5;
 const int32_t DEF_PROBE_SCORE_LIMIT = 50;
 const uint32_t RANK_MAX = 100;
-const uint32_t INIT_DOWNLOADS_DATA_SIZE_THRESHOLD = 2 * 1024 * 1024;
+const uint64_t INIT_DOWNLOADS_DATA_SIZE_THRESHOLD = 2 * 1024 * 1024;
 const int64_t LIVE_FLV_PROBE_SIZE = 100 * 1024 * 2;
 const uint32_t DEFAULT_CACHE_LIMIT = 50 * 1024 * 1024; // 50M
 const int64_t INIT_TIME_THRESHOLD = 1000;
@@ -1321,7 +1321,7 @@ void FFmpegDemuxerPlugin::NotifyInitializationCompleted()
 {
     ioContext_.initCompleted = true;
     if (ioContext_.initDownloadDataSize >= INIT_DOWNLOADS_DATA_SIZE_THRESHOLD) {
-        MEDIA_LOG_I("Large init size %{public}u", ioContext_.initDownloadDataSize);
+        MEDIA_LOG_I("Large init size " PUBLIC_LOG_U64, ioContext_.initDownloadDataSize);
     }
 }
 
@@ -1720,7 +1720,10 @@ Status FFmpegDemuxerPlugin::GetMediaInfo()
     GetStreamInitialParams();
     Status ret = ParseVideoFirstFrames();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse video info failed");
-
+    for (uint32_t trackId = 0; trackId < formatContext_->nb_streams; ++trackId) {
+        MEDIA_LOG_I("Cache Info:track[" PUBLIC_LOG_U32 "] count[" PUBLIC_LOG_ZU "] size[" PUBLIC_LOG_U32 "]",
+            trackId, cacheQueue_.GetCacheSize(trackId), cacheQueue_.GetCacheDataSize(trackId));
+    }
     ret = GetFileFirstPacket();
     FALSE_LOG_MSG_W(ret == Status::OK, "Get file first packet failed");
 
@@ -2006,9 +2009,8 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
         InitMinTsPacketInfo(pktWrapper->GetAVPacket());
         ret = AddPacketToCacheQueue(pktWrapper);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add to cache failed");
-        bool needCheck = (stream->codecpar->codec_id != AV_CODEC_ID_VVC) && (!TrackIsChecked(trackId) &&
-            IsSyncFrame(stream, pktWrapper->GetAVPacket(), formatContext_));
-        if (!needCheck) {
+        bool isVvc = (stream->codecpar->codec_id == AV_CODEC_ID_VVC);
+        if (!isVvc && (TrackIsChecked(trackId) || !IsSyncFrame(stream, pktWrapper->GetAVPacket(), formatContext_))) {
             pktWrapper = nullptr;
             continue;
         }

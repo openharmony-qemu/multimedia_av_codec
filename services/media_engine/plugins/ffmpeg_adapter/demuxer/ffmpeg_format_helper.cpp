@@ -1402,7 +1402,7 @@ void FFmpegFormatHelper::ParseHevcInfo(
 }
 
 void FFmpegFormatHelper::ParseInfoFromMetadata(
-    const AVDictionary* metadata, Meta &format, std::map<std::string, TagType> tagRange)
+    const AVDictionary* metadata, Meta &format, std::map<std::string, TagType> &tagRange)
 {
     AVDictionaryEntry *valPtr = nullptr;
     while ((valPtr = av_dict_get(metadata, "", valPtr, AV_DICT_IGNORE_SUFFIX)) != nullptr) {
