@@ -376,7 +376,9 @@ int32_t CodecServer::Stop()
             isReleaseFree_ = true;
         }
         releaseBufferCondition_.notify_all();
-        releaseBufferTask_->Stop();
+        if (releaseBufferTask_) {
+            releaseBufferTask_->Stop();
+        }
         AVCODEC_LOGI_WITH_TAG("releaseBufferTask_ success");
     }
     CHECK_AND_RETURN_RET_LOGW_WITH_TAG(status_ != CONFIGURED, AVCS_ERR_OK, "Already in %{public}s state",
