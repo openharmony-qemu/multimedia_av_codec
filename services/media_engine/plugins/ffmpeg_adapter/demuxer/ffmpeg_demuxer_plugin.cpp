@@ -2010,7 +2010,7 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
         ret = AddPacketToCacheQueue(pktWrapper);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add to cache failed");
         bool isSpecialStreamType = (stream->codecpar->codec_id == AV_CODEC_ID_VVC);
-         if (!isSpecialStreamType && (TrackIsChecked(trackId) || !IsSyncFrame(stream, pkt, formatContext_))) {
+        if (!isSpecialStreamType && (TrackIsChecked(trackId) || !IsSyncFrame(stream, pkt, formatContext_))) {
             pktWrapper = nullptr;
             continue;
         }
