@@ -463,13 +463,19 @@ int32_t CodecServiceStub::Init(MessageParcel &data, MessageParcel &reply)
     AVCODEC_FUNC_INTERACTIVE_QOS;
     AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     Meta callerInfo;
+    int32_t instanceId = 0;
+    std::string codecName = "";
     callerInfo.FromParcel(data);
     AVCodecType type = static_cast<AVCodecType>(data.ReadInt32());
     bool isMimeType = data.ReadBool();
     std::string name = data.ReadString();
-    bool parcelRet = reply.WriteInt32(Init(type, isMimeType, name, callerInfo));
-    callerInfo.Remove(EventInfoExtentedKey::CODEC_TYPE.data());
-    parcelRet = parcelRet && callerInfo.ToParcel(reply);
+    bool parcelRet = reply.WriteInt32(Init(type, isMimeType, name, callerInfo)) &&
+                     callerInfo.GetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId) &&
+                     callerInfo.GetData(Tag::MEDIA_CODEC_NAME, codecName);
+    Meta replyCallerInfo;
+    replyCallerInfo.SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId);
+    replyCallerInfo.SetData(Tag::MEDIA_CODEC_NAME, codecName);
+    parcelRet = parcelRet && replyCallerInfo.ToParcel(reply);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }
