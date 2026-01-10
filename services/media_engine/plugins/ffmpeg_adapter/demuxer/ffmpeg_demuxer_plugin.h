@@ -24,6 +24,9 @@
 #include <mutex>
 #include <shared_mutex>
 #include <list>
+#include <functional>
+#include <unordered_map>
+#include <chrono>
 #include "buffer/avbuffer.h"
 #include "plugin/demuxer_plugin.h"
 #include "avpacket_memory.h"
@@ -56,6 +59,8 @@ namespace Ffmpeg {
 extern const std::vector<AVCodecID> g_streamContainedXPS;
 class FFmpegDemuxerPlugin : public DemuxerPlugin {
 public:
+    using CachePressureCallback = DemuxerPlugin::CachePressureCallback;
+
     explicit FFmpegDemuxerPlugin(std::string name);
     ~FFmpegDemuxerPlugin() override;
     Status Reset() override;
@@ -109,6 +114,7 @@ public:
         const uint32_t index, uint64_t &relativePresentationTimeUs) override;
     void SetCacheLimit(uint32_t limitSize) override;
     Status GetCurrentCacheSize(uint32_t trackId, uint32_t& size) override;
+    Status GetCurrentCacheFrameCount(uint32_t trackId, uint32_t& frameCount) override;
     bool GetProbeSize(int32_t &offset, int32_t &size) override;
     void SetInterruptState(bool isInterruptNeeded) override;
     Status SetDataSourceWithProbSize(const std::shared_ptr<DataSource>& source,
@@ -118,6 +124,10 @@ public:
     Status SeekToStart() override;
     Status SeekToKeyFrame(int32_t trackId, int64_t seekTime,
         SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs) override;
+
+    // cache pressure control
+    Status SetCachePressureCallback(CachePressureCallback cb) override;
+    Status SetTrackCacheLimit(uint32_t trackId, uint32_t limitBytes, uint32_t windowMs = 500) override;
 private:
     enum ThreadState : unsigned int {
         NOT_STARTED,
@@ -362,6 +372,14 @@ private:
     bool outOfLimit_ = false;
     bool setLimitByUser = false;
     std::atomic<bool> isInterruptNeeded_{false};
+    // cache pressure control
+    void MaybeNotifyCachePressure(uint32_t trackId, uint32_t cacheBytes);
+    int64_t NowMs() const;
+    CachePressureCallback cachePressureCb_{nullptr};
+    std::unordered_map<uint32_t, uint32_t> trackCacheLimitMap_; // per track bytes limit
+    std::unordered_map<uint32_t, uint32_t> trackThrottleWindowMs_;
+    std::unordered_map<uint32_t, int64_t> trackLastNotifyMs_;
+    std::mutex cachePressureMutex_;
 
     // dfx
     struct TrackDfxInfo {

@@ -47,6 +47,7 @@ public:
     bool HasCache(uint32_t trackIndex);
     size_t GetCacheSize(uint32_t trackIndex);
     uint32_t GetCacheDataSize(uint32_t trackIndex);
+    uint32_t GetCacheFrameCount(uint32_t trackIndex);
     bool ResetInfo(std::shared_ptr<SamplePacket> block);
     bool SetInfo(std::shared_ptr<SamplePacket> block);
     void FreeQueue(uint32_t queueIndex);

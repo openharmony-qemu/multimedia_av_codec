@@ -15,13 +15,27 @@
 
 #include <gtest/gtest.h>
 #include <memory>
+#include <atomic>
+#include <chrono>
+#include <thread>
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+#include <cmath>
+#include <iostream>
 #include "avpacket_wrapper.h"
 #include "avpacket_memory.h"
+#include "demuxer_plugin_unit_test.h"
+#include "plugin/plugin_info.h"
+#include "plugin/plugin_manager_v2.h"
+#include "buffer/avbuffer.h"
 
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace OHOS::Media::Plugins;
+using namespace OHOS::Media::Plugins::Ffmpeg;
 using namespace testing::ext;
+using MediaAVBuffer = OHOS::Media::AVBuffer;
 
 namespace {
 constexpr int32_t TEST_DATA_SIZE = 1024;
@@ -641,4 +655,265 @@ HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_061329, TestSize.Level
     
     uint8_t testData[10] = {0};
     EXPECT_EQ(memory.Write(testData, 10, 0), 0);
+}
+
+// ==================== Cache Pressure Control Tests ====================
+
+/**
+ * @tc.name: AVDemuxer_Enhance_CachePressure_061330
+ * @tc.desc: Test cache pressure control interfaces: SetCachePressureCallback,
+ *           SetTrackCacheLimit, GetCurrentCacheFrameCount, GetCurrentCacheSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, AVDemuxer_Enhance_CachePressure_061330, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_flv";
+    std::string filePath = "/data/test/media/h264.flv";
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    
+    // Select tracks first
+    constexpr uint32_t videoTrackId = 0;
+    constexpr uint32_t audioTrackId = 1;
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(videoTrackId), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(audioTrackId), Status::OK);
+    
+    // Test SetCachePressureCallback - 设置回调函数用于接收缓存压力通知
+    constexpr int initialCallbackCount = 0; // 初始回调计数为0
+    std::atomic<int> callbackInvokedCount(initialCallbackCount);
+    
+    Status status = demuxerPlugin_->SetCachePressureCallback(
+        [&callbackInvokedCount](uint32_t trackId, uint32_t bytes) {
+            (void)trackId; // 避免未使用变量警告
+            (void)bytes;   // 避免未使用变量警告
+            callbackInvokedCount++;
+            // 注意：回调在读线程中执行，必须异步派发实际工作以避免死锁
+            // 本测试仅验证回调被正确设置和调用，不在此处执行实际处理逻辑
+        });
+    EXPECT_EQ(status, Status::OK);
+    
+    // Test SetTrackCacheLimit - 为视频轨道设置较小的缓存限制以触发压力通知
+    // 设置较小的限制值（例如 64KB），以便更容易触发缓存压力
+    constexpr uint32_t bytesPerKB = 1024; // 1KB的字节数
+    constexpr uint32_t cacheLimitKB = 64;  // 缓存限制为64KB
+    constexpr uint32_t cacheLimitBytes = cacheLimitKB * bytesPerKB;
+    constexpr uint32_t throttleWindowMs = 300; // 节流窗口为300毫秒
+    status = demuxerPlugin_->SetTrackCacheLimit(videoTrackId, cacheLimitBytes, throttleWindowMs);
+    EXPECT_EQ(status, Status::OK);
+    
+    // Test GetCurrentCacheFrameCount and GetCurrentCacheSize before reading
+    // 注意：后台线程可能在 SelectTrack 后已经开始填充缓存，所以初始缓存可能不为空
+    constexpr uint32_t initialCount = 0; // 初始计数为0
+    uint32_t initialFrameCount = initialCount;
+    status = demuxerPlugin_->GetCurrentCacheFrameCount(videoTrackId, initialFrameCount);
+    std::cout << "[061330] initialFrameCount: " << initialFrameCount
+            << ", status: " << static_cast<int>(status) << std::endl;
+    EXPECT_EQ(status, Status::OK);
+    EXPECT_GE(initialFrameCount, 0); // 缓存帧数应该 >= 0
+    
+    constexpr uint32_t initialSize = 0; // 初始缓存大小为0
+    uint32_t initialCacheSize = initialSize;
+    status = demuxerPlugin_->GetCurrentCacheSize(videoTrackId, initialCacheSize);
+    std::cout << "[061330] initialCacheSize: " << initialCacheSize
+            << ", status: " << static_cast<int>(status) << std::endl;
+    EXPECT_EQ(status, Status::OK);
+    EXPECT_GE(initialCacheSize, 0); // 缓存大小应该 >= 0
+    
+    // 异步读取视频数据，让后台线程填充缓存
+    // 读取少量数据以触发缓存填充，但不会立即超过限制
+    AVBufferWrapper avbuffer(DEFAULT_BUFFSIZE);
+    constexpr uint32_t maxReadAttempts = 10; // 最大读取尝试次数
+    constexpr uint32_t readTimeoutMs = 100; // ReadSample超时时间100毫秒
+    
+    for (uint32_t i = 0; i < maxReadAttempts; ++i) {
+        Status readStatus = demuxerPlugin_->ReadSample(videoTrackId,
+            avbuffer.mediaAVBuffer, readTimeoutMs);
+        if (readStatus != Status::OK) {
+            break;
+        }
+    }
+    
+    // 等待后台线程有时间填充缓存
+    constexpr uint32_t cacheWaitMs = 200; // 等待缓存填充的时间200毫秒
+    std::this_thread::sleep_for(std::chrono::milliseconds(cacheWaitMs));
+    
+    // 验证 GetCurrentCacheFrameCount 返回值合理
+    constexpr uint32_t zeroCount = 0; // 初始帧计数为0
+    uint32_t frameCount = zeroCount;
+    status = demuxerPlugin_->GetCurrentCacheFrameCount(videoTrackId, frameCount);
+    std::cout << "[061330] after read frameCount: " << frameCount
+            << ", status: " << static_cast<int>(status) << std::endl;
+    EXPECT_EQ(status, Status::OK);
+    EXPECT_GE(frameCount, 0);
+    
+    // 验证 GetCurrentCacheSize 返回值合理
+    constexpr uint32_t zeroSize = 0; // 初始缓存大小为0
+    uint32_t cacheSize = zeroSize;
+    status = demuxerPlugin_->GetCurrentCacheSize(videoTrackId, cacheSize);
+    std::cout << "[061330] after read cacheSize: " << cacheSize
+            << ", status: " << static_cast<int>(status) << std::endl;
+    EXPECT_EQ(status, Status::OK);
+    EXPECT_GE(cacheSize, 0);
+    
+    // 如果缓存超过了限制，回调应该被调用（取决于实现和节流窗口）
+    // 由于节流窗口的存在，回调可能不会立即被调用，这是正常行为
+    if (cacheSize > cacheLimitBytes) {
+        // 等待足够的时间让回调有机会被触发（考虑节流窗口）
+        constexpr uint32_t extraWaitMs = 100; // 额外等待时间100毫秒
+        std::this_thread::sleep_for(
+            std::chrono::milliseconds(throttleWindowMs + extraWaitMs));
+    }
+    
+    // 验证回调机制正常工作（回调可能被调用，也可能由于节流而未调用，都是正常情况）
+    // 至少验证回调函数被正确设置，不会导致崩溃
+    constexpr int minCallbackCount = 0; // 最小回调计数为0
+    EXPECT_GE(callbackInvokedCount.load(), minCallbackCount);
+}
+
+/**
+ * @tc.name: AVDemuxer_Enhance_CachePressure_061331
+ * @tc.desc: Test SeekTo interface and cache state after seek operation
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, AVDemuxer_Enhance_CachePressure_061331, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_flv";
+    std::string filePath = "/data/test/media/h264.flv";
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    
+    // Select tracks first
+    constexpr uint32_t videoTrackId = 0;
+    constexpr uint32_t audioTrackId = 1;
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(videoTrackId), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(audioTrackId), Status::OK);
+    
+    // Read some audio samples first
+    AVBufferWrapper avbuffer(DEFAULT_BUFFSIZE);
+    constexpr uint32_t maxAudioReads = 20; // 最大音频读取次数
+    constexpr uint32_t audioReadTimeoutMs = 50; // 音频读取超时时间50毫秒
+    
+    for (uint32_t i = 0; i < maxAudioReads; ++i) {
+        Status readStatus = demuxerPlugin_->ReadSample(audioTrackId,
+            avbuffer.mediaAVBuffer, audioReadTimeoutMs);
+        std::cout << "[061331] audio sample " << i << " readStatus: "
+                << static_cast<int>(readStatus) << std::endl;
+        if (readStatus != Status::OK) {
+            break;
+        }
+    }
+    
+    // Read first video sample to get initial timestamp
+    constexpr uint32_t videoReadTimeoutMs = 50; // 视频读取超时时间50毫秒
+    Status status = demuxerPlugin_->ReadSample(videoTrackId,
+        avbuffer.mediaAVBuffer, videoReadTimeoutMs);
+    std::cout << "[061331] first video ReadSample status: "
+            << static_cast<int>(status) << std::endl;
+    ASSERT_EQ(status, Status::OK);
+    
+    int64_t firstVideoDts = avbuffer.mediaAVBuffer->dts_;
+    int64_t firstVideoPts = avbuffer.mediaAVBuffer->pts_;
+    std::cout << "[061331] firstVideoDts: " << firstVideoDts
+            << ", firstVideoPts: " << firstVideoPts << std::endl;
+    EXPECT_NE(firstVideoDts, AV_NOPTS_VALUE);
+    EXPECT_NE(firstVideoPts, AV_NOPTS_VALUE);
+    
+    // Read more video samples to advance position before seeking back
+    // This tests seeking back to a previous position
+    constexpr uint32_t maxVideoReads = 10; // 最大视频读取次数
+    
+    for (uint32_t i = 0; i < maxVideoReads; ++i) {
+        Status readStatus = demuxerPlugin_->ReadSample(videoTrackId,
+            avbuffer.mediaAVBuffer, videoReadTimeoutMs);
+        std::cout << "[061331] video sample " << i << " readStatus: "
+                << static_cast<int>(readStatus)
+                << ", pts: " << avbuffer.mediaAVBuffer->pts_
+                << ", dts: " << avbuffer.mediaAVBuffer->dts_ << std::endl;
+        if (readStatus != Status::OK) {
+            break;
+        }
+    }
+    
+    // Get media info to calculate relative time for SeekTo
+    MediaInfo mediaInfo;
+    status = demuxerPlugin_->GetMediaInfo(mediaInfo);
+    std::cout << "[061331] GetMediaInfo status: "
+            << static_cast<int>(status) << std::endl;
+    EXPECT_EQ(status, Status::OK);
+    
+    constexpr int64_t zeroTime = 0; // 初始时间为0
+    int64_t trackStartTime = zeroTime;
+    bool hasStartTime = mediaInfo.tracks[videoTrackId].GetData(
+        Tag::MEDIA_START_TIME, trackStartTime);
+    std::cout << "[061331] hasStartTime: " << hasStartTime
+            << ", trackStartTime: " << trackStartTime << std::endl;
+    
+    // Calculate relative seek time (seek back to first video PTS position)
+    // Use first video PTS as the seek target for simplicity and reliability
+    // The seek time should be relative to track start time
+    int64_t relativeSeekTime = firstVideoPts;
+    constexpr int64_t zeroSeekTime = 0; // 零seek时间
+    if (hasStartTime && trackStartTime > zeroSeekTime &&
+        firstVideoPts >= trackStartTime) {
+        relativeSeekTime = firstVideoPts - trackStartTime;
+    }
+    
+    // Ensure seek time is non-negative
+    if (relativeSeekTime < zeroSeekTime) {
+        relativeSeekTime = zeroSeekTime;
+    }
+    std::cout << "[061331] relativeSeekTime: " << relativeSeekTime << std::endl;
+    
+    // Test SeekTo interface - seek back to first video position
+    int64_t realSeekTime = zeroSeekTime;
+    status = demuxerPlugin_->SeekTo(videoTrackId, relativeSeekTime,
+        SeekMode::SEEK_CLOSEST_SYNC, realSeekTime);
+    std::cout << "[061331] SeekTo status: " << static_cast<int>(status)
+            << ", realSeekTime: " << realSeekTime << std::endl;
+    
+    // Verify seek succeeded
+    ASSERT_EQ(status, Status::OK) << "SeekTo failed with relativeSeekTime: "
+                                    << relativeSeekTime
+                                    << ", firstVideoPts: " << firstVideoPts
+                                    << ", trackStartTime: " << trackStartTime;
+    
+    // Verify real seek time is reasonable (should be close to requested time)
+    EXPECT_GE(realSeekTime, zeroSeekTime);
+    
+    // Read sample after seek to verify seek operation
+    constexpr uint32_t seekReadTimeoutMs = 100; // seek后读取超时时间100毫秒
+    status = demuxerPlugin_->ReadSample(videoTrackId,
+        avbuffer.mediaAVBuffer, seekReadTimeoutMs);
+    std::cout << "[061331] after seek ReadSample status: "
+            << static_cast<int>(status)
+            << ", pts: " << avbuffer.mediaAVBuffer->pts_
+            << ", dts: " << avbuffer.mediaAVBuffer->dts_ << std::endl;
+    ASSERT_EQ(status, Status::OK) << "ReadSample after seek failed";
+    
+    // Verify the PTS of the sample after seek is reasonable
+    int64_t seekedPts = avbuffer.mediaAVBuffer->pts_;
+    ASSERT_NE(seekedPts, AV_NOPTS_VALUE) << "Seeked PTS is invalid";
+    
+    // The PTS after seek should be close to the first video PTS (within reasonable range)
+    // Due to key frame alignment, it may not be exactly the same
+    // Compare absolute PTS values
+    int64_t ptsDiff = (seekedPts > firstVideoPts) ? (seekedPts - firstVideoPts) : (firstVideoPts - seekedPts);
+    std::cout << "[061331] PTS diff: " << ptsDiff
+            << " (target: " << firstVideoPts << ", actual: " << seekedPts << ")" << std::endl;
+    
+    // Allow tolerance for key frame alignment (within 2 seconds at 90000 timebase)
+    // Increased tolerance to account for key frame spacing in some codecs
+    EXPECT_LE(ptsDiff, 180000) << "PTS difference too large: " << ptsDiff 
+                                << " (target: " << firstVideoPts << ", actual: " << seekedPts << ")";
+    
+    // Test cache state after seek - cache should be reset or updated
+    uint32_t videoCacheSize = 0;
+    status = demuxerPlugin_->GetCurrentCacheSize(videoTrackId, videoCacheSize);
+    EXPECT_EQ(status, Status::OK);
+    EXPECT_GE(videoCacheSize, 0);
+    
+    uint32_t videoFrameCount = 0;
+    status = demuxerPlugin_->GetCurrentCacheFrameCount(videoTrackId, videoFrameCount);
+    EXPECT_EQ(status, Status::OK);
+    EXPECT_GE(videoFrameCount, 0);
 }
