@@ -53,6 +53,7 @@ using MediaSource = OHOS::Media::Plugins::MediaSource;
 using MediaSyncManager = OHOS::Media::Pipeline::MediaSyncManager;
 using FileType = OHOS::Media::Plugins::FileType;
 using funcPreReadSample = std::function<int64_t(int32_t trackId)>;
+using CachePressureCallback = std::function<void(uint32_t trackId, uint32_t cachedBytes)>;
 
 extern std::unordered_set<FileType> ptsManagedFileTypes;
 
@@ -385,6 +386,10 @@ private:
     int32_t GetMainTrackId();
     void RecordDemuxerTimeStamp(AVBuffer& buffer, StallingStage stage);
     std::string GetMime();
+    void CachePressuredCallback(int32_t trackId, uint32_t cachedBytes);
+    bool NeedDroped(int32_t trackId);
+    void AfterDrop(int32_t trackId);
+    void ClearSampleQueue();
 
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
@@ -530,6 +535,9 @@ private:
 
     std::atomic<bool> isBuffering_ {false};
     int64_t lastCacheDuration_ {0};
+    std::map<int32_t, std::atomic<bool>> hasDropedMap_;
+    std::map<int32_t, int64_t> afterDropPts_;
+    bool videoNeedIFrame_ {false};
 };
 } // namespace Media
 } // namespace OHOS
