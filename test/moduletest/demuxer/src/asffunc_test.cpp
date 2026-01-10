@@ -505,7 +505,7 @@ HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_URI_3200, TestSize.Level1)
  */
 HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_3500, TestSize.Level1)
 {
-    seekInfo fileTest1{INP_DIR_1, SEEK_MODE_PREVIOUS_SYNC, 3000, 216, 10};
+    seekInfo fileTest1{INP_DIR_1, SEEK_MODE_PREVIOUS_SYNC, 3000, 216, 155};
     CreateFdSource(INP_DIR_1);
     CheckSeekMode(fileTest1);
 }
@@ -517,7 +517,7 @@ HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_3500, TestSize.Level1)
  */
 HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_URI_3500, TestSize.Level1)
 {
-    seekInfo fileTest1{INP_URI_1, SEEK_MODE_PREVIOUS_SYNC, 3000, 216, 10};
+    seekInfo fileTest1{INP_URI_1, SEEK_MODE_PREVIOUS_SYNC, 3000, 216, 155};
     CreateUriSource(INP_URI_1);
     CheckSeekMode(fileTest1);
 }
