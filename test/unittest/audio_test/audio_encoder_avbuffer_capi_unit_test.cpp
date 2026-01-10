@@ -323,14 +323,14 @@ void AudioEncoderBufferCapiUnitTest::OutputFunc()
             cout << "OutputFunc OH_AVBuffer is nullptr" << endl;
             continue;
         }
-        if (avBuffer != nullptr) {
-            cout << "OutputFunc write file,buffer index:"
-                << index << ", data size:" << avBuffer->buffer_->memory_->GetSize() << endl;
-            outputFile_->write(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(avBuffer)),
-                               avBuffer->buffer_->memory_->GetSize());
-        }
-        if (avBuffer != nullptr &&
-            (avBuffer->buffer_->flag_ == AVCODEC_BUFFER_FLAGS_EOS || avBuffer->buffer_->memory_->GetSize()== 0)) {
+        cout << "OutputFunc write file, buffer index:" << index
+            << ", data size:" << avBuffer->buffer_->memory_->GetSize() << endl;
+        OH_AVFormat *outFormat = OH_AudioCodec_GetOutputDescription(audioEnc_);
+        ASSERT_NE(outFormat, nullptr);
+        OH_AVFormat_Destroy(outFormat);
+        outputFile_->write(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(avBuffer)),
+                           avBuffer->buffer_->memory_->GetSize());
+        if (avBuffer->buffer_->flag_ == AVCODEC_BUFFER_FLAGS_EOS || avBuffer->buffer_->memory_->GetSize()== 0) {
             cout << "encode eos" << endl;
             isRunning_.store(false);
             signal_->startCond_.notify_all();
