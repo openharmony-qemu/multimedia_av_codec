@@ -225,7 +225,7 @@ Status AudioG711muEncoderPlugin::Flush()
 
 Status AudioG711muEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
-    std::lock_guard<std::mutex> lock(avMutex_);
+    std::lock_guard<std::mutex> lock(paramMutex_);
     Status ret = Status::OK;
 
     if (parameter->Find(Tag::AUDIO_CHANNEL_COUNT) != parameter->end()) {
@@ -265,7 +265,7 @@ Status AudioG711muEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &param
 
 Status AudioG711muEncoderPlugin::GetParameter(std::shared_ptr<Meta> &parameter)
 {
-    std::lock_guard<std::mutex> lock(avMutex_);
+    std::lock_guard<std::mutex> lock(paramMutex_);
     if (maxInputSize_ <= 0 || maxInputSize_ > INPUT_BUFFER_SIZE_DEFAULT) {
         maxInputSize_ = INPUT_BUFFER_SIZE_DEFAULT;
     }
