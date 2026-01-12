@@ -2139,6 +2139,9 @@ Status FFmpegDemuxerPlugin::CheckSeekParams(int64_t seekTime, SeekMode mode) con
 
 void FFmpegDemuxerPlugin::SyncSeekThread()
 {
+    if (readThread_ == nullptr) {
+        return;
+    }
     if (ioContext_.invokerType != InvokerType::SEEK) {
         std::lock_guard<std::mutex> seekLock(ioContext_.invokerTypeMutex);
         ioContext_.invokerType = InvokerType::SEEK;
@@ -2206,9 +2209,7 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
 
     Status check = CheckSeekParams(seekTime, mode);
     FALSE_RETURN_V_MSG_E(check == Status::OK, check, "CheckSeekParams failed");
-    if (readThread_ != nullptr) {
-        SyncSeekThread();
-    }
+    SyncSeekThread();
     int trackIndex = SelectSeekTrack();
     MEDIA_LOG_D("Seek based on track " PUBLIC_LOG_D32, trackIndex);
 
@@ -2330,6 +2331,7 @@ Status FFmpegDemuxerPlugin::SeekToKeyFrame(int32_t trackId, int64_t seekTime,
     AVStream *avStream = nullptr;
     auto ret = SeekToKeyFrameCheckParam(seekTime, mode, trackId, ffTime, avStream);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SeekToKeyFrameCheckParam failed");
+    SyncSeekThread();
     TimeRange timeRange;
     if (timeRangeManager_.IsInTimeRanges(ffTime, timeRange)) {
         ffTime = timeRange.end_ts;
@@ -2980,6 +2982,7 @@ Status FFmpegDemuxerPlugin::SeekToStartInternal()
     std::unique_lock<std::shared_mutex> lock(sharedMutex_);
     int64_t seekTs = AV_NOPTS_VALUE;
     int ffRet = -1;
+    SyncSeekThread();
     if (IsSkipGetMinTsPktInfo()) {
         av_dict_set_int(&formatContext_->metadata, "seekToStart", 1, 0);
         ffRet = AVSeekFrameLock(SEEK_TRACK_DEFAULT, seekTs, AVSEEK_FLAG_ANY);
