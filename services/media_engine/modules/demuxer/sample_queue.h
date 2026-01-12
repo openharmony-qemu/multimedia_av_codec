@@ -102,6 +102,8 @@ public:
     Status AttachOneBuffer(uint32_t size);
     Status UpdateLastOutSamplePts(int64_t lastOutSamplePts);
     Status UpdateLastEnterSamplePts(int64_t lastEnterSamplePts);
+    int64_t GetLastEnterSamplePts() const;
+    int64_t GetLastOutSamplePts() const;
     
 private:
 
@@ -126,8 +128,6 @@ private:
 
     std::string SetToString(std::set<int64_t> localSet);
     std::string StringifyMeta(std::shared_ptr<Meta> &meta);
-    int64_t GetLastEnterSamplePts() const;
-    int64_t GetLastOutSamplePts() const;
 
     Config config_{};
     std::weak_ptr<SampleQueueCallback> sampleQueueCb_;

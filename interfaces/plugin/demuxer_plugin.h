@@ -18,6 +18,7 @@
 
 #include <memory>
 #include <vector>
+#include <functional>
 #include "meta/meta.h"
 #include "plugin/plugin_base.h"
 #include "plugin/plugin_caps.h"
@@ -37,6 +38,9 @@ namespace Plugins {
  * @version 1.0
  */
 struct DemuxerPlugin : public PluginBase {
+    // Cache pressure callback type, executed in the read thread; must dispatch work asynchronously.
+    using CachePressureCallback = std::function<void(uint32_t /*trackId*/, uint32_t /*cachedBytes*/)>;
+
     /// constructor
     explicit DemuxerPlugin(std::string name): PluginBase(std::move(name)) {}
     /**
@@ -241,6 +245,35 @@ struct DemuxerPlugin : public PluginBase {
         size = 0;
         return Status::OK;
     };
+    virtual Status GetCurrentCacheFrameCount(uint32_t trackId, uint32_t& frameCount)
+    {
+        frameCount = 0;
+        return Status::OK;
+    };
+
+    /**
+     * @brief Register cache pressure callback function.
+     *
+     * @param cb Callback function, called by the read thread when track cache exceeds limit.
+     *           Warning: The callback executes in the read thread. It must not directly call
+     *           plugin interfaces such as ReadSample or GetNextSampleSize that may acquire
+     *           internal locks. The actual work should be asynchronously dispatched to other
+     *           threads to avoid deadlocks with operations such as SeekTo and Flush.
+     *
+     * @return Execution Status
+     */
+    virtual Status SetCachePressureCallback(CachePressureCallback cb) = 0;
+
+    /**
+     * @brief Set per-track cache size limit and notification throttle window.
+     *
+     * @param trackId    Track ID.
+     * @param limitBytes Cache size limit in bytes for the given track.
+     * @param windowMs   Minimum interval (in milliseconds) between two notifications of the same track.
+     * @return Execution Status
+     */
+    virtual Status SetTrackCacheLimit(uint32_t trackId, uint32_t limitBytes, uint32_t windowMs = 500) = 0;
+
     virtual bool GetProbeSize(int32_t &offset, int32_t &size) { return false; };
     virtual Status SetDataSourceWithProbSize(const std::shared_ptr<DataSource>& source,
         const int32_t probSize) = 0;

@@ -108,6 +108,22 @@ uint32_t BlockQueuePool::GetCacheDataSize(uint32_t trackIndex)
     return dataSize;
 }
 
+uint32_t BlockQueuePool::GetCacheFrameCount(uint32_t trackIndex)
+{
+    std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
+    MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32,
+        name_.c_str(), trackIndex);
+    FALSE_RETURN_V_NOLOG(HasQueue(trackIndex), 0);
+    auto it = sizeMap_.find(trackIndex);
+    if (it == sizeMap_.end()) {
+        MEDIA_LOG_D("Track " PUBLIC_LOG_U32 " not in sizeMap_", trackIndex);
+        return 0;
+    }
+    MEDIA_LOG_D("Out, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32 " frame count = " PUBLIC_LOG_U32,
+        name_.c_str(), trackIndex, it->second);
+    return it->second;
+}
+
 bool BlockQueuePool::HasCache(uint32_t trackIndex)
 {
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
