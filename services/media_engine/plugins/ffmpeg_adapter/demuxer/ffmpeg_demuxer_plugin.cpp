@@ -2253,7 +2253,7 @@ Status FFmpegDemuxerPlugin::ReadUntilKeyFrame(Plugins::AVPacketWrapperPtr pktWra
         FALSE_RETURN_V_MSG_E(!timeoutGuard.IsTimeout(), Status::ERROR_WAIT_TIMEOUT, "Timeout while reading frames");
         uint32_t fFlag = static_cast<uint32_t>(pktWrapper->GetFlags());
         if (pktWrapper->GetStreamIndex() != trackIndex || pktWrapper->GetDts() == AV_NOPTS_VALUE ||
-            fFlag & AV_PKT_FLAG_DISCARD) {
+            (fFlag & AV_PKT_FLAG_DISCARD)) {
             av_packet_unref(pktWrapper->GetAVPacket());
             continue;
         }
