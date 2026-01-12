@@ -21,6 +21,7 @@
 #include "download/downloader.h"
 #include "plugin/plugin_base.h"
 #include "plugin/source_plugin.h"
+#include "download/download_metrics_info.h"
 
 namespace OHOS {
 namespace Media {
@@ -121,7 +122,9 @@ public:
 
     virtual void UpdateStreamInfo() = 0;
     virtual HlsSegmentType GetSegType(uint32_t streamId) = 0;
-    virtual void GetDownloadInfo(DownloadInfo& downloadInfo) = 0;
+    void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
+    std::shared_ptr<MediaSourceLoaderCombinations> GetSourceLoader();
+    void SetSourceLoader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader);
 
 protected:
     uint32_t SaveData(uint8_t* data, uint32_t len, bool notBlock);
@@ -153,6 +156,8 @@ protected:
     Callback* eventCallback_ {nullptr};
     std::atomic<bool> isInterruptNeeded_{false};
     std::atomic<bool> isAppBackground_ {false};
+    std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
+    std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
 };
 }
 }

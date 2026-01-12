@@ -24,6 +24,7 @@
 #include "native_avcodec_audioencoder.h"
 #include "native_avcodec_base.h"
 #include "native_avmagic.h"
+#include "hiappevent_util.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "NativeAudioEncoder"};
@@ -188,6 +189,8 @@ extern "C" {
 
 struct OH_AVCodec *OH_AudioEncoder_CreateByMime(const char *mime)
 {
+    static AppEventReporter appEventReporter = AppEventReporter();
+    ApiInvokeRecorder apiInvokeRecorder("OH_AudioEncoder_CreateByMime", appEventReporter);
     CHECK_AND_RETURN_RET_LOG(mime != nullptr, nullptr, "input mime is nullptr!");
     CHECK_AND_RETURN_RET_LOG(strlen(mime) < MAX_LENGTH, nullptr, "input mime is too long!");
 
@@ -202,6 +205,8 @@ struct OH_AVCodec *OH_AudioEncoder_CreateByMime(const char *mime)
 
 struct OH_AVCodec *OH_AudioEncoder_CreateByName(const char *name)
 {
+    static AppEventReporter appEventReporter = AppEventReporter();
+    ApiInvokeRecorder apiInvokeRecorder("OH_AudioEncoder_CreateByName", appEventReporter);
     CHECK_AND_RETURN_RET_LOG(name != nullptr, nullptr, "input name is nullptr!");
     CHECK_AND_RETURN_RET_LOG(strlen(name) < MAX_LENGTH, nullptr, "input name is too long!");
 

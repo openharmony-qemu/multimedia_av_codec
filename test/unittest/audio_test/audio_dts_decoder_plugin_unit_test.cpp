@@ -265,7 +265,7 @@ HWTEST_F(AudioDTSUnitTest, DTS_GetParameter_002, TestSize.Level1)
 {
     ASSERT_EQ(plugin_->Init(), Status::OK);
     ASSERT_EQ(plugin_->SetDataCallback(this), Status::OK);
-    int32_t defaultInputSize = 8192;
+    int32_t defaultInputSize = 16384;
     shared_ptr<Media::Meta> outMeta = make_shared<Media::Meta>();
     int32_t maxInputSize = 0;
     int32_t smallInputSize = 4096;

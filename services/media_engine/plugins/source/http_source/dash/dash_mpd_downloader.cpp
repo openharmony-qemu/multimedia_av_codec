@@ -45,6 +45,7 @@ DashMpdDownloader::DashMpdDownloader(std::shared_ptr<MediaSourceLoaderCombinatio
     } else {
         downloader_ = std::make_shared<Downloader>("dashMpd");
     }
+    sourceLoader_ = sourceLoader;
     downloader_->Init();
 
     mpdParser_ = std::make_shared<DashMpdParser>();
@@ -71,6 +72,14 @@ void DashMpdDownloader::Init()
         return shareDownloader->SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len),
             std::forward<decltype(notBlock)>(notBlock));
     };
+    if (downloader_!= nullptr && downloadCallback_ != nullptr) {
+        downloader_->SetDownloadCallback(downloadCallback_);
+    }
+}
+
+void DashMpdDownloader::SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback)
+{
+    downloadCallback_ = callback;
 }
 
 std::string DashMpdDownloader::GetContentType()
@@ -209,8 +218,9 @@ void DashMpdDownloader::Close(bool isAsync)
 {
     downloader_->Stop(isAsync);
 
-    if (downloadRequest_ != nullptr && !downloadRequest_->IsClosed()) {
-        downloadRequest_->Close();
+    auto downloadRequest = GetDownloadRequest();
+    if (downloadRequest != nullptr && !downloadRequest->IsClosed()) {
+        downloadRequest->Close();
     }
 }
 
@@ -771,6 +781,11 @@ void DashMpdDownloader::BuildDashSegment(std::list<std::shared_ptr<SubSegmentInd
         if (lastSegment != nullptr && mpdInfo_ != nullptr && mpdInfo_->type_ == DashType::DASH_TYPE_STATIC) {
             lastSegment->isLast_ = true;
         }
+        if (mpdInfo_ != nullptr && mpdInfo_->type_ == DashType::DASH_TYPE_DYNAMIC) {
+            if (sourceLoader_ && sourceLoader_->GetenableOfflineCache()) {
+                sourceLoader_->Close(-1);
+            }
+        }
     }
 }
 
@@ -812,18 +827,21 @@ void DashMpdDownloader::DoOpen(const std::string& url, int64_t startRange, int64
     RequestInfo mediaSource;
     mediaSource.url = url;
     mediaSource.timeoutMs = MPD_HTTP_TIME_OUT_MS;
-    downloadRequest_ = std::make_shared<DownloadRequest>(dataSave_, realStatusCallback, mediaSource, requestWholeFile);
+    SetDownloadRequest(std::make_shared<DownloadRequest>(dataSave_, realStatusCallback, mediaSource,
+        requestWholeFile));
     auto downloadDoneCallback = [weakDownloader](const std::string &url, const std::string &location) {
         auto shareDownloader = weakDownloader.lock();
         FALSE_RETURN_MSG(shareDownloader != nullptr, "downloadDoneCb, dash mpd downloader already destructed.");
         shareDownloader->UpdateDownloadFinished(url);
     };
-    downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
-    downloadRequest_->SetRequestProtocolType(RequestProtocolType::DASH);
+    auto downloadRequest = GetDownloadRequest();
+    FALSE_RETURN_MSG(downloadRequest != nullptr, "downloadRequest is nullptr");
+    downloadRequest->SetDownloadDoneCb(downloadDoneCallback);
+    downloadRequest->SetRequestProtocolType(RequestProtocolType::DASH);
     if (!requestWholeFile) {
-        downloadRequest_->SetRangePos(startRange, endRange);
+        downloadRequest->SetRangePos(startRange, endRange);
     }
-    downloader_->Download(downloadRequest_, -1); // -1
+    downloader_->Download(downloadRequest, -1); // -1
     downloader_->Start();
 }
 
@@ -1367,6 +1385,11 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsInMpd(std::shared_ptr<DashStr
     if (lastSegment != nullptr && mpdInfo_ != nullptr && mpdInfo_->type_ == DashType::DASH_TYPE_STATIC) {
         lastSegment->isLast_ = true;
     }
+    if (mpdInfo_ != nullptr && mpdInfo_->type_ == DashType::DASH_TYPE_DYNAMIC) {
+        if (sourceLoader_ && sourceLoader_->GetenableOfflineCache()) {
+            sourceLoader_->Close(-1);
+        }
+    }
     return DASH_SEGMENT_INIT_SUCCESS;
 }
 
@@ -1489,6 +1512,11 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsWithSegTemplate(const DashSeg
         return GetSegmentsWithTmpltStatic(segTmpltInfo, media, streamDesc);
     }
 
+    if (mpdInfo_->type_ == DashType::DASH_TYPE_DYNAMIC) {
+        if (sourceLoader_ && sourceLoader_->GetenableOfflineCache()) {
+            sourceLoader_->Close(-1);
+        }
+    }
     return DASH_SEGMENT_INIT_FAILED;
 }
 
@@ -1827,6 +1855,11 @@ void DashMpdDownloader::GetSegDurationFromTimeline(unsigned int periodDuration, 
             }
         }
     }
+    if (mpdInfo_->type_ == DashType::DASH_TYPE_DYNAMIC) {
+        if (sourceLoader_ && sourceLoader_->GetenableOfflineCache()) {
+            sourceLoader_->Close(-1);
+        }
+    }
 }
 
 /**
@@ -2099,13 +2132,17 @@ bool DashMpdDownloader::PutStreamToDownload()
     return true;
 }
 
-void DashMpdDownloader::GetDownloadInfo(DownloadInfo& downloadInfo)
+void DashMpdDownloader::SetDownloadRequest(std::shared_ptr<DownloadRequest> downloadRequest)
 {
-    if (downloader_ != nullptr) {
-        downloader_->GetDownloadInfo(downloadInfo);
-    }
+    std::unique_lock<std::shared_mutex> lock(downloadRequestMutex_);
+    downloadRequest_ = std::move(downloadRequest);
 }
 
+std::shared_ptr<DownloadRequest> DashMpdDownloader::GetDownloadRequest()
+{
+    std::shared_lock<std::shared_mutex> lock(downloadRequestMutex_);
+    return downloadRequest_;
+}
 }
 }
 }

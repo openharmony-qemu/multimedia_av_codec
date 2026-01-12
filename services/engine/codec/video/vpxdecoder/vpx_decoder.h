@@ -45,6 +45,7 @@ protected:
 
     int32_t Initialize() override;
     void InitParams() override;
+    void FlushAllFrames() override;
     void ReleaseHandle() override;
     void SendFrame()override;
     int32_t DecodeFrameOnce() override;

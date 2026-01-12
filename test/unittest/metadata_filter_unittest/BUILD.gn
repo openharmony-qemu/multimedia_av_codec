@@ -56,6 +56,7 @@ ohos_unittest("metadata_filter_unittest") {
     "$av_codec_root_dir/interfaces",
     "$av_codec_root_dir/interfaces/inner_api/native",
     "$av_codec_root_dir/services/media_engine/filters",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils",
   ]
 
   cflags = av_codec_unittest_cflags
@@ -72,6 +73,7 @@ ohos_unittest("metadata_filter_unittest") {
       "$av_codec_root_dir//services/media_engine/plugins/source/data_stream_source_plugin.cpp",
       "$av_codec_root_dir//services/media_engine/plugins/source/file_fd_source_plugin.cpp",
       "$av_codec_root_dir//services/media_engine/plugins/source/file_source_plugin.cpp",
+      "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/http_media_utils.cpp",
       "./metadata_filter_unittest.cpp",
     ]
   }
@@ -103,6 +105,9 @@ ohos_unittest("metadata_filter_unittest") {
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
     "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
+    "bundle_framework:appexecfwk_base",
+    "bundle_framework:appexecfwk_core",
   ]
 
   if (av_codec_support_drm) {

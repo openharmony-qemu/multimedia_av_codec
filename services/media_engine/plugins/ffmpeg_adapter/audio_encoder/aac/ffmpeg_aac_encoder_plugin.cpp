@@ -84,7 +84,7 @@ FFmpegAACEncoderPlugin::FFmpegAACEncoderPlugin(const std::string& name)
       resample_(nullptr),
       srcFmt_(AVSampleFormat::AV_SAMPLE_FMT_NONE),
       audioSampleFormat_(AudioSampleFormat::INVALID_WIDTH),
-      srcLayout_(AudioChannelLayout::UNKNOWN),
+      srcLayout_(0),
       channels_(MIN_CHANNELS),
       sampleRate_(0),
       bitRate_(0),
@@ -107,7 +107,7 @@ Status FFmpegAACEncoderPlugin::GetAdtsHeader(std::string &adtsHeader, int32_t &h
     if (iter != sampleFreqMap.end()) {
         freqIdx = iter->second;
     }
-    uint8_t chanCfg = static_cast<uint8_t>(ctx->channels);
+    uint8_t chanCfg = static_cast<uint8_t>(ctx->ch_layout.nb_channels);
     uint32_t frameLength = static_cast<uint32_t>(aacLength + ADTS_HEADER_SIZE);
     uint8_t profile = static_cast<uint8_t>(ctx->profile);
     adtsHeader += 0xFF;
@@ -143,10 +143,8 @@ bool FFmpegAACEncoderPlugin::CheckSampleFormat()
 
 bool FFmpegAACEncoderPlugin::CheckChannelLayout()
 {
-    uint64_t ffmpegChlayout = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(
-        static_cast<AudioChannelLayout>(srcLayout_));
     // channel layout not available
-    CHECK_AND_RETURN_RET_LOG(av_get_channel_layout_nb_channels(ffmpegChlayout) == channels_, false,
+    CHECK_AND_RETURN_RET_LOG(av_popcount64(srcLayout_) == channels_, false,
         "channel layout channels mismatch");
     return true;
 }
@@ -261,7 +259,7 @@ Status FFmpegAACEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> 
                 prevPts_ = inputBuffer->pts_;
                 isFirstInputPts_ = false;
             }
-            dataCallback_->OnInputBufferDone(inputBuffer);
+            SafeCallInputBufferDone(dataCallback_, inputBuffer);
             ret = Status::OK;
         }
     }
@@ -367,7 +365,7 @@ Status FFmpegAACEncoderPlugin::SendOutputBuffer(std::shared_ptr<AVBuffer> &outpu
             if (tmp != Status::END_OF_STREAM) {
                 outputBuffer->flag_ = MediaAVCodec::AVCODEC_BUFFER_FLAG_NONE;
             }
-            dataCallback_->OnOutputBufferDone(outBuffer_);
+            SafeCallOutputBufferDone(dataCallback_, outputBuffer);
             status = ((tmp == Status::OK) ? Status::ERROR_AGAIN : Status::OK);
             isEosFlush_ = true;
         }
@@ -387,10 +385,10 @@ Status FFmpegAACEncoderPlugin::SendOutputBuffer(std::shared_ptr<AVBuffer> &outpu
         if (fifoSize >= avCodecContext_->frame_size) {
             outputBuffer->flag_ = 0; // not eos
             MEDIA_LOG_D("fifoSize:%{public}d need another encoder", fifoSize);
-            dataCallback_->OnOutputBufferDone(outBuffer_);
+            SafeCallOutputBufferDone(dataCallback_, outputBuffer);
             return Status::ERROR_AGAIN;
         }
-        dataCallback_->OnOutputBufferDone(outBuffer_);
+        SafeCallOutputBufferDone(dataCallback_, outputBuffer);
         return Status::OK;
     } else {
         MEDIA_LOG_E("SendOutputBuffer-ReceiveBuffer error");
@@ -458,14 +456,14 @@ Status FFmpegAACEncoderPlugin::ReAllocateContext()
     CHECK_AND_RETURN_RET_LOG(tmpContext != nullptr, Status::ERROR_NO_MEMORY,
         "Allocate tmpContext failed.");
 
-    tmpContext->channels = avCodecContext_->channels;
     tmpContext->sample_rate = avCodecContext_->sample_rate;
     tmpContext->bit_rate = avCodecContext_->bit_rate;
-    tmpContext->channel_layout = avCodecContext_->channel_layout;
     tmpContext->sample_fmt = avCodecContext_->sample_fmt;
     tmpContext->flags = avCodecContext_->flags;
     tmpContext->global_quality = avCodecContext_->global_quality;
     MEDIA_LOG_I("flags:%{public}d global_quality:%{public}d", tmpContext->flags, tmpContext->global_quality);
+    int ret = av_channel_layout_copy(&tmpContext->ch_layout, &avCodecContext_->ch_layout);
+    CHECK_AND_RETURN_RET_LOG(!ret, Status::ERROR_UNKNOWN, "av_channel_layout_copy failed.");
 
     auto res = avcodec_open2(tmpContext.get(), avCodec_.get(), nullptr);
     CHECK_AND_RETURN_RET_LOG(res == 0, Status::ERROR_UNKNOWN,
@@ -506,11 +504,10 @@ Status FFmpegAACEncoderPlugin::AllocateContext(const std::string &name)
 
 Status FFmpegAACEncoderPlugin::InitContext()
 {
-    avCodecContext_->channels = channels_;
     avCodecContext_->sample_rate = sampleRate_;
     avCodecContext_->bit_rate = bitRate_;
-    avCodecContext_->channel_layout = srcLayout_;
     avCodecContext_->sample_fmt = srcFmt_;
+    av_channel_layout_from_mask(&avCodecContext_->ch_layout, srcLayout_);
     // 8khz 2声道编码码率校正
     if (sampleRate_ == CORRECTION_SAMPLE_RATE && channels_ == CORRECTION_CHANNEL_COUNT &&
         bitRate_ < CORRECTION_BIT_RATE) {
@@ -532,10 +529,10 @@ Status FFmpegAACEncoderPlugin::OpenContext()
 {
     {
         std::unique_lock lock(avMutex_);
-        MEDIA_LOG_I("avCodecContext_->channels " PUBLIC_LOG_D32, avCodecContext_->channels);
+        MEDIA_LOG_I("avCodecContext_->ch_layout.nb_channels " PUBLIC_LOG_D32, avCodecContext_->ch_layout.nb_channels);
         MEDIA_LOG_I("avCodecContext_->sample_rate " PUBLIC_LOG_D32, avCodecContext_->sample_rate);
         MEDIA_LOG_I("avCodecContext_->bit_rate " PUBLIC_LOG_D64, avCodecContext_->bit_rate);
-        MEDIA_LOG_I("avCodecContext_->channel_layout " PUBLIC_LOG_D64, avCodecContext_->channel_layout);
+        MEDIA_LOG_I("avCodecContext_->ch_layout.u.mask " PUBLIC_LOG_D64, avCodecContext_->ch_layout.u.mask);
         MEDIA_LOG_I("avCodecContext_->sample_fmt " PUBLIC_LOG_D32,
                     static_cast<int32_t>(*(avCodec_.get()->sample_fmts)));
         MEDIA_LOG_I("avCodecContext_ old srcFmt_ " PUBLIC_LOG_D32, static_cast<int32_t>(srcFmt_));
@@ -555,7 +552,7 @@ Status FFmpegAACEncoderPlugin::OpenContext()
         avCodecContext_->frame_size : (avCodecContext_->sample_rate / FRAMES_PER_SECOND);
     if (needResample_) {
         ResamplePara resamplePara = {
-            .channels = static_cast<uint32_t>(avCodecContext_->channels),
+            .channels = static_cast<uint32_t>(avCodecContext_->ch_layout.nb_channels),
             .sampleRate = static_cast<uint32_t>(avCodecContext_->sample_rate),
             .bitsPerSample = 0,
             .channelLayout = avCodecContext_->ch_layout,
@@ -590,7 +587,7 @@ Status FFmpegAACEncoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
 {
     int32_t type;
     int32_t aacProfile;
-    MEDIA_LOG_I("GetMetaData enter");
+    AudioChannelLayout channelLayout;
     if (meta->Get<Tag::MEDIA_PROFILE>(aacProfile)) {
         if (aacProfile != AAC_PROFILE_LC) {
             MEDIA_LOG_E("this plugin only support LC-AAC, input profile:%{public}d", aacProfile);
@@ -630,11 +627,12 @@ Status FFmpegAACEncoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
     if (meta->Get<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_)) {
         MEDIA_LOG_I("maxInputSize: %{public}d", maxInputSize_);
     }
-    if (meta->Get<Tag::AUDIO_CHANNEL_LAYOUT>(srcLayout_)) {
-        MEDIA_LOG_I("srcLayout_: " PUBLIC_LOG_U64, srcLayout_);
+    if (meta->Get<Tag::AUDIO_CHANNEL_LAYOUT>(channelLayout)) {
+        srcLayout_ = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(channelLayout);
     } else {
-        srcLayout_ = static_cast<AudioChannelLayout>(channelLayoutMap.at(channels_));
+        srcLayout_ = channelLayoutMap.at(channels_);
     }
+    MEDIA_LOG_I("srcLayout_: " PUBLIC_LOG_U64, srcLayout_);
     return Status::OK;
 }
 
@@ -672,13 +670,13 @@ Status FFmpegAACEncoderPlugin::InitFrame()
     MEDIA_LOG_I("InitFrame enter");
     cachedFrame_->nb_samples = avCodecContext_->frame_size;
     cachedFrame_->format = avCodecContext_->sample_fmt;
-    cachedFrame_->channel_layout = avCodecContext_->channel_layout;
-    cachedFrame_->channels = avCodecContext_->channels;
+    int res = av_channel_layout_copy(&cachedFrame_->ch_layout, &avCodecContext_->ch_layout);
+    CHECK_AND_RETURN_RET_LOG(!res, Status::ERROR_UNKNOWN, "av_channel_layout_copy failed.");
     int ret = av_frame_get_buffer(cachedFrame_.get(), 0);
     CHECK_AND_RETURN_RET_LOG(ret >= 0, Status::ERROR_NO_MEMORY,
         "Get frame buffer failed: %{public}s", OSAL::AVStrError(ret).c_str());
-    if (!(fifo_ =
-              av_audio_fifo_alloc(avCodecContext_->sample_fmt, avCodecContext_->channels, cachedFrame_->nb_samples))) {
+    if (!(fifo_ = av_audio_fifo_alloc(
+        avCodecContext_->sample_fmt, avCodecContext_->ch_layout.nb_channels, cachedFrame_->nb_samples))) {
         MEDIA_LOG_E("Could not allocate FIFO");
     }
     return Status::OK;
@@ -739,7 +737,7 @@ Status FFmpegAACEncoderPlugin::SendFrameToFfmpeg()
     cachedFrame_->nb_samples = avCodecContext_->frame_size;
     int32_t bytesPerSample = av_get_bytes_per_sample(avCodecContext_->sample_fmt);
     // adjest data addr
-    for (int i = 1; i < avCodecContext_->channels; i++) {
+    for (int i = 1; i < avCodecContext_->ch_layout.nb_channels; i++) {
         cachedFrame_->extended_data[i] =
             cachedFrame_->extended_data[i - 1] + cachedFrame_->nb_samples * bytesPerSample;
     }
@@ -781,7 +779,8 @@ Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inp
         }
     }
 
-    cachedFrame_->nb_samples = static_cast<int>(destBufferSize) / (bytesPerSample * avCodecContext_->channels);
+    cachedFrame_->nb_samples =
+        static_cast<int>(destBufferSize) / (bytesPerSample * avCodecContext_->ch_layout.nb_channels);
     if (!(inputBuffer->flag_ & BUFFER_FLAG_EOS) && cachedFrame_->nb_samples != avCodecContext_->frame_size) {
         MEDIA_LOG_D("Input frame size not match, input samples: %{public}d, "
                     "frame_size: %{public}d",
@@ -795,7 +794,7 @@ Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inp
     cachedFrame_->extended_data = cachedFrame_->data;
     cachedFrame_->extended_data[0] = destBuffer;
     cachedFrame_->linesize[0] = cachedFrame_->nb_samples * bytesPerSample;
-    for (int i = 1; i < avCodecContext_->channels; i++) {
+    for (int i = 1; i < avCodecContext_->ch_layout.nb_channels; i++) {
         // after convert, the length of line is destSamplesPerFrame
         cachedFrame_->extended_data[i] =
             cachedFrame_->extended_data[i - 1] + destSamplesPerFrame * static_cast<uint32_t>(bytesPerSample);
@@ -806,7 +805,7 @@ Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inp
         MEDIA_LOG_E("realloc ret: %{public}d, cacheSize: %{public}d", ret, cacheSize);
     }
     MEDIA_LOG_D("realloc nb_samples:%{public}d cacheSize:%{public}d channels:%{public}d",
-        cachedFrame_->nb_samples, cacheSize, avCodecContext_->channels);
+        cachedFrame_->nb_samples, cacheSize, avCodecContext_->ch_layout.nb_channels);
     int32_t writeSamples =
         av_audio_fifo_write(fifo_, reinterpret_cast<void **>(cachedFrame_->data), cachedFrame_->nb_samples);
     if (writeSamples < cachedFrame_->nb_samples) {

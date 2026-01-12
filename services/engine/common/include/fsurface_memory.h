@@ -23,7 +23,7 @@
 namespace OHOS {
 namespace MediaAVCodec {
 namespace {
-constexpr uint64_t USAGE =
+constexpr uint64_t SURFACE_DEFAULT_USAGE =
     BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE;
 constexpr int32_t SURFACE_STRIDE_ALIGN = 8;
 constexpr int32_t TIMEOUT = 0;
@@ -44,13 +44,19 @@ struct CallerInfo {
     bool calledByAvcodec = true;
 };
 
+struct SurfaceBufferInfo {
+    sptr<SurfaceBuffer> buf = nullptr;
+    sptr<SyncFence> fence = nullptr;
+    uint32_t seqNum = 0u;
+};
+
 struct SurfaceControl {
     sptr<Surface> surface = nullptr;
     BufferRequestConfig requestConfig = {.width = 0,
                                          .height = 0,
                                          .strideAlignment = SURFACE_STRIDE_ALIGN,
                                          .format = 0,
-                                         .usage = USAGE,
+                                         .usage = SURFACE_DEFAULT_USAGE,
                                          .timeout = TIMEOUT};
     std::optional<ScalingMode> scalingMode = std::nullopt;
 };
@@ -65,15 +71,16 @@ public:
     int32_t AllocSurfaceBuffer(int32_t width, int32_t height);
     void ReleaseSurfaceBuffer();
     sptr<SurfaceBuffer> GetSurfaceBuffer();
+    void SetSurfaceBuffer(sptr<SurfaceBuffer> surfaceBuffer, Owner toChangeOwner, sptr<SyncFence> fence = nullptr);
     int32_t GetSurfaceBufferStride();
     sptr<SyncFence> GetFence();
     uint8_t *GetBase() const;
     int32_t GetSize() const;
+    uint32_t GetSurfaceBufferSeqNum() const;
     std::atomic<bool> isAttached = false;
     std::atomic<Owner> owner = Owner::OWNED_BY_US;
 
 private:
-    void SetSurfaceBuffer(sptr<SurfaceBuffer> surfaceBuffer, Owner toChangeOwner);
     int32_t RequestSurfaceBuffer();
     void SetCallerToBuffer(int32_t w, int32_t h);
     CallerInfo decInfo_;
@@ -81,6 +88,7 @@ private:
     sptr<SyncFence> fence_ = nullptr;
     int32_t stride_ = 0;
     SurfaceControl *sInfo_ = nullptr;
+    uint32_t seqNum_ = 0u;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

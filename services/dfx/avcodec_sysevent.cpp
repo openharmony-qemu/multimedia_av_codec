@@ -16,13 +16,13 @@
 #include <avcodec_sysevent.h>
 #include <unistd.h>
 #include <unordered_map>
-#include "securec.h"
+#include <cstring>
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
 #include "hisysevent.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecDFX"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecSysEvent"};
 constexpr char HISYSEVENT_DOMAIN_AVCODEC[] = "AV_CODEC";
 
 const std::unordered_map<OHOS::MediaAVCodec::FaultType, std::string> FAULT_TYPE_TO_STRING = {
@@ -51,6 +51,18 @@ void ServiceStartEventWrite(uint32_t useTime, const std::string& module)
     HiSysEventWrite(HISYSEVENT_DOMAIN_AVCODEC, "SERVICE_START_INFO",
                     OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR, "MODULE", module.c_str(), "TIME", useTime,
                     "MEMORY", useMemory);
+}
+
+void StreamAppPackageNameEventWrite(const std::string& sysCap,
+    const std::string& packageName, const std::string& apiCall, const std::string& mediaEvents)
+{
+    HiSysEventWrite(OHOS::HiviewDFX::HiSysEvent::Domain::MULTI_MEDIA, "MEDIAKIT_STATISTICS",
+                    OHOS::HiviewDFX::HiSysEvent::EventType::STATISTIC,
+                    "SYSCAP",             sysCap,
+                    "APP_NAME",           packageName,
+                    "INSTANCE_ID",        "",
+                    "API_CALL",           apiCall,
+                    "MEDIA_EVENTS",       mediaEvents);
 }
 
 void CodecStartEventWrite(CodecDfxInfo& codecDfxInfo)

@@ -20,6 +20,8 @@
 #include <thread>
 #include "syspara/parameters.h" // base/startup/init/interfaces/innerkits/include/
 #include "qos.h"
+// foundation/resourceschedule/resource_schedule_service/ressched/interfaces/innerkits/ressched_client/include
+#include "res_sched_client.h"
 #include "hdf_base.h"
 #include "codec_omx_ext.h"
 #include "hcodec_list.h"
@@ -93,7 +95,8 @@ int32_t HCodec::Init(Media::Meta &callerInfo)
 }
 
 std::shared_mutex HCodec::g_mtx;
-std::unordered_map<std::string, HCodec::Caller> HCodec::g_callers;
+std::unordered_map<HCodec::CallerInfo, std::vector<HCodec::InstInfo>,
+    HCodec::CallerInfo, HCodec::CallerInfo> HCodec::g_decCallers;
 
 void HCodec::PrintCaller()
 {
@@ -102,20 +105,35 @@ void HCodec::PrintCaller()
     } else {
         HLOGI("[pid %d][%s] -> player -> avcodec", caller_.playerCaller.pid, caller_.playerCaller.processName.c_str());
     }
+    if (isEncoder_) {
+        return;
+    }
     std::unique_lock<std::shared_mutex> lk(g_mtx);
-    g_callers[compUniqueStr_] = caller_;
+    g_decCallers[caller_.app].emplace_back(InstInfo{GetNowUs(), compUniqueStr_});
+ 
+    size_t totalInstCntNow = CalculateTotalInstCnt();
+    size_t singleAppInstCntNow = g_decCallers[caller_.app].size();
+    if ((totalInstCntNow >= totalWarnInstCnt_) || (singleAppInstCntNow >= singleAppWarnInstCnt_)) {
+        ReportToRss();
+    }
+}
+
+size_t HCodec::CalculateTotalInstCnt()
+{
+    size_t ret = 0;
+    for (const auto& [_, vec] : g_decCallers) {
+        ret += vec.size();
+    }
+    return ret;
 }
 
 void HCodec::PrintAllCaller()
 {
     std::shared_lock<std::shared_mutex> lk(g_mtx);
-    for (const auto& [inst, caller] : g_callers) {
-        if (caller.calledByAvcodec) {
-            LOGI("%s: [pid %d][%s] -> avcodec", inst.c_str(),
-                caller.avcodecCaller.pid, caller.avcodecCaller.processName.c_str());
-        } else {
-            LOGI("%s: [pid %d][%s] -> player -> avcodec", inst.c_str(),
-                caller.playerCaller.pid, caller.playerCaller.processName.c_str());
+    for (const auto& [app, vec] : g_decCallers) {
+        LOGI("[pid %d][%s] hold %zu decoders", app.pid, app.processName.c_str(), vec.size());
+        for (const InstInfo& inst : vec) {
+            LOGI("createTime: %" PRId64 ", %s", inst.createTimeUs, inst.compUniqueStr.c_str());
         }
     }
 }
@@ -123,7 +141,43 @@ void HCodec::PrintAllCaller()
 void HCodec::RemoveCaller()
 {
     std::unique_lock<std::shared_mutex> lk(g_mtx);
-    g_callers.erase(compUniqueStr_);
+    for (auto mapIter = g_decCallers.begin(); mapIter != g_decCallers.end(); mapIter++) {
+        std::vector<InstInfo>& vec = mapIter->second;
+        auto iter = find_if(vec.begin(), vec.end(), [this](const InstInfo& inst) {
+            return inst.compUniqueStr == compUniqueStr_;
+        });
+        if (iter == vec.end()) {
+            continue;
+        }
+        size_t totalInstCntBefore = CalculateTotalInstCnt();
+        size_t singleAppInstCntBefore = vec.size();
+        vec.erase(iter);
+        if (vec.empty()) {
+            g_decCallers.erase(mapIter);
+        }
+        if ((totalInstCntBefore >= totalWarnInstCnt_) || (singleAppInstCntBefore >= singleAppWarnInstCnt_)) {
+            ReportToRss();
+        }
+        return;
+    }
+}
+
+void HCodec::ReportToRss()
+{
+    std::unordered_map<std::string, std::string> mapPayload;
+    for (const auto& [app, vec] : g_decCallers) {
+        nlohmann::json js = {
+            {"AppProcessName", app.processName},
+            {"AppHoldDecoderCnt", vec.size()},
+            {"MaxAllowDecoderCnt", maxDecInst_},
+        };
+        string pidStr = to_string(app.pid);
+        string jsStr = js.dump();
+        HLOGI("%s, %s", pidStr.c_str(), jsStr.c_str());
+        mapPayload[pidStr] = jsStr;
+    }
+    ResourceSchedule::ResSchedClient::GetInstance().ReportData(
+        ResourceSchedule::ResType::RES_TYPE_HARDWARE_DECODING_RESOURCES, 0, mapPayload);
 }
 
 int32_t HCodec::SetCallback(const std::shared_ptr<MediaCodecCallback> &callback)
@@ -1454,8 +1508,11 @@ int32_t HCodec::OnAllocateComponent()
         compMgr_ = nullptr;
         HLOGE("CreateComponent failed, ret=%d", ret);
         PrintAllCaller();
-        return AVCS_ERR_UNKNOWN;
+        return ret == OMX_ErrorInsufficientResources ? AVCS_ERR_INSUFFICIENT_HARDWARE_RESOURCES : AVCS_ERR_UNKNOWN;
     }
+    maxDecInst_ = GetMaxDecInstCnt();
+    totalWarnInstCnt_ = maxDecInst_ * 0.6;
+    singleAppWarnInstCnt_ = maxDecInst_ * 0.5;
     compUniqueStr_ = to_string(componentId_) + (isEncoder_ ? "_e" : "_d");
     record_[OMX_DirInput].ownerTraceTag_ = { "[" + compUniqueStr_ + "]in_us", "[" + compUniqueStr_ + "]in_user",
         "[" + compUniqueStr_ + "]in_omx", "[" + compUniqueStr_ + "]in_surface"};

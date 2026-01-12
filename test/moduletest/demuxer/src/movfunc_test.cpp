@@ -1502,12 +1502,13 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_1300, TestSize.Level3)
  */
 HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_1400, TestSize.Level3)
 {
+    // mpg zero track not support stream info in ffmepg 7.1.1
     const char *file = "/data/test/media/zero_track.mpg";
     int fd = open(file, O_RDONLY);
-    OpenFile(file, fd, &source, &demuxer);
-    CheckTrackCount(&sourceFormat, source, &g_trackCount, 0);
-
-    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_EQ(source, nullptr);
     close(fd);
     fd = -1;
 }

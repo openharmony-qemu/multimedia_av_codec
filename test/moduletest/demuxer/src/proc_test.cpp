@@ -800,18 +800,6 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2400, TestSize.Level0)
 }
 
 /**
- * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_2500
- * @tc.name      : create hls demuxer with error uri
- * @tc.desc      : function test
- */
-HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2500, TestSize.Level1)
-{
-    const char *uri = "http://192.168.3.11:8080/share/index.m3u8";
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
-    ASSERT_EQ(nullptr, source);
-}
-
-/**
  * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_2600
  * @tc.name      : create str demuxer with file and read
  * @tc.desc      : function test

@@ -15,8 +15,7 @@ import("//build/config/features.gni")
 import("//build/test.gni")
 
 av_codec_root_dir = "//foundation/multimedia/av_codec/"
-# module_output_path = "player_framework/stream_player_framework"
-module_output_path = "av_codec/av_codec"
+module_output_path = "player_framework/stream_player_framework"
 
 test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/base64/base64_utils.cpp",
@@ -64,6 +63,8 @@ test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_element.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_parser.cpp",
   "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/http_media_utils.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/storage_usage_util.cpp",
 ]
 
 config("fuzz_cfg") {
@@ -106,6 +107,7 @@ config("fuzz_cfg") {
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include",
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include/mpd_parser",
     "$av_codec_root_dir/test/unittest/common",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils",
     "../common",
   ]
 }
@@ -137,6 +139,8 @@ ohos_fuzztest("HlsDownloadFuzzTest") {
     "openssl:libcrypto_shared",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
+    "bundle_framework:appexecfwk_base",
+    "bundle_framework:appexecfwk_core",
   ]
 
   deps = [

@@ -49,7 +49,7 @@ public:
 
 constexpr int BUFF_READ_SIZE = 5 * 1024 * 1024; // buf size 5MB
 constexpr int READ_TIMES_5S = 1000 * 5;         // 5000MS
-constexpr int READ_TIMES_NS = 1010;             // 1010MS
+constexpr int READ_TIMES_NS = 100;             // 100MS
 unsigned char g_buffRead[BUFF_READ_SIZE];
 
 const map<string, string> g_httpHeader = {

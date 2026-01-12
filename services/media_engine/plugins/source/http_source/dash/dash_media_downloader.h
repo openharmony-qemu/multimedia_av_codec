@@ -21,6 +21,7 @@
 #include "dash_segment_downloader.h"
 #include "osal/utils/steady_clock.h"
 #include "osal/task/task.h"
+#include "download/download_metrics_info.h"
 
 namespace OHOS {
 namespace Media {
@@ -134,6 +135,7 @@ private:
     double bufferDurationForPlaying_ {0};
 
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
+    std::shared_ptr<DownloadMetricsInfo> downloadMetricsInfo_ {nullptr};
 };
 }
 }

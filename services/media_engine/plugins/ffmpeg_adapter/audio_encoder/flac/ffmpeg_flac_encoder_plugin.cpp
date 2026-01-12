@@ -117,8 +117,8 @@ Status FFmpegFlacEncoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)
     format->GetData(Tag::AUDIO_CHANNEL_LAYOUT, channelLayout);
     auto ffChannelLayout =
         FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(static_cast<AudioChannelLayout>(channelLayout));
-    CHECK_AND_RETURN_RET_LOG(ffChannelLayout != AV_CH_LAYOUT_NATIVE, Status::ERROR_INVALID_PARAMETER,
-        "InitContext failed, because ffChannelLayout is AV_CH_LAYOUT_NATIVE");
+    CHECK_AND_RETURN_RET_LOG(ffChannelLayout, Status::ERROR_INVALID_PARAMETER,
+        "InitContext failed, because channelLayout is not supported.");
 
     AudioSampleFormat sampleFormat;
     format->GetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFormat);

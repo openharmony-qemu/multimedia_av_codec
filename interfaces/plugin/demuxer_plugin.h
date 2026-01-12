@@ -18,6 +18,7 @@
 
 #include <memory>
 #include <vector>
+#include <functional>
 #include "meta/meta.h"
 #include "plugin/plugin_base.h"
 #include "plugin/plugin_caps.h"
@@ -37,6 +38,9 @@ namespace Plugins {
  * @version 1.0
  */
 struct DemuxerPlugin : public PluginBase {
+    // Cache pressure callback type, executed in the read thread; must dispatch work asynchronously.
+    using CachePressureCallback = std::function<void(uint32_t /*trackId*/, uint32_t /*cachedBytes*/)>;
+
     /// constructor
     explicit DemuxerPlugin(std::string name): PluginBase(std::move(name)) {}
     /**
@@ -104,8 +108,11 @@ struct DemuxerPlugin : public PluginBase {
      * @note This synchronous interface must be used together with the synchronous version of GetNextSampleSize.
      *       Synchronous and asynchronous interfaces (with and without timeout) cannot be mixed in the same instance.
      *
+     * @note Memory management: The data will be copied into the memory provided by @param sample->memory_.
+     *       The caller must pre-allocate sufficient memory in sample->memory_ before calling this function.
+     *
      * @param trackId Identifies the media track. ignore the invalid value is passed.
-     * @param sample Buffer where store data frames.
+     * @param sample Buffer where store data frames. The sample->memory_ must be pre-allocated with sufficient capacity.
      * @return  Execution Status return
      *  @retval OK: Plugin ReadFrame succeeded.
      *  @retval ERROR_TIMED_OUT: Operation timeout.
@@ -120,8 +127,11 @@ struct DemuxerPlugin : public PluginBase {
      * @note This asynchronous interface must be used together with the asynchronous version of GetNextSampleSize.
      *       Synchronous and asynchronous interfaces (with and without timeout) cannot be mixed in the same instance.
      *
+     * @note Memory management: The function will create new memory internally and replace sample->memory_ with it.
+     *       The caller does not need to pre-allocate memory in sample->memory_. The original memory will be replaced.
+     *
      * @param trackId Identifies the media track. ignore the invalid value is passed.
-     * @param sample Buffer where store data frames.
+     * @param sample Buffer where store data frames. The sample->memory_ will be replaced with the new memory.
      * @param timeout If no result is available after @param timeout milliseconds, the function returns.
      * @return  Execution Status return
      *  @retval OK: Plugin ReadFrame succeeded.
@@ -235,6 +245,35 @@ struct DemuxerPlugin : public PluginBase {
         size = 0;
         return Status::OK;
     };
+    virtual Status GetCurrentCacheFrameCount(uint32_t trackId, uint32_t& frameCount)
+    {
+        frameCount = 0;
+        return Status::OK;
+    };
+
+    /**
+     * @brief Register cache pressure callback function.
+     *
+     * @param cb Callback function, called by the read thread when track cache exceeds limit.
+     *           Warning: The callback executes in the read thread. It must not directly call
+     *           plugin interfaces such as ReadSample or GetNextSampleSize that may acquire
+     *           internal locks. The actual work should be asynchronously dispatched to other
+     *           threads to avoid deadlocks with operations such as SeekTo and Flush.
+     *
+     * @return Execution Status
+     */
+    virtual Status SetCachePressureCallback(CachePressureCallback cb) = 0;
+
+    /**
+     * @brief Set per-track cache size limit and notification throttle window.
+     *
+     * @param trackId    Track ID.
+     * @param limitBytes Cache size limit in bytes for the given track.
+     * @param windowMs   Minimum interval (in milliseconds) between two notifications of the same track.
+     * @return Execution Status
+     */
+    virtual Status SetTrackCacheLimit(uint32_t trackId, uint32_t limitBytes, uint32_t windowMs = 500) = 0;
+
     virtual bool GetProbeSize(int32_t &offset, int32_t &size) { return false; };
     virtual Status SetDataSourceWithProbSize(const std::shared_ptr<DataSource>& source,
         const int32_t probSize) = 0;
@@ -249,6 +288,9 @@ struct DemuxerPlugin : public PluginBase {
      */
     virtual Status BoostReadThreadPriority() = 0;
     virtual Status SetAVReadPacketStopState(bool state) = 0;
+    virtual Status SeekToStart() = 0;
+    virtual Status SeekToKeyFrame(int32_t trackId, int64_t seekTime,
+        SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs) { return Status::ERROR_UNKNOWN; };
 };
 
 /// Demuxer plugin api major number.

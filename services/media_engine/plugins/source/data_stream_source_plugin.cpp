@@ -175,6 +175,9 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
     } while (retryTimes_ < DEFAULT_RETRY_TIMES);
     offset_ += static_cast<uint64_t>(realLen);
     if (buffer && buffer->GetMemory()) {
+        int32_t memorySize = memory->GetSize();
+        FALSE_RETURN_V_MSG(memorySize != -1, Status::ERROR_INVALID_DATA, "GetSize failed");
+        realLen = std::min(memorySize, realLen);
         buffer->GetMemory()->Write(memory->GetBase(), realLen, 0);
     } else {
         buffer = WrapAVSharedMemory(memory, realLen);
@@ -185,11 +188,11 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
         buffer->GetMemory()->GetSize() : -100, realLen, retryTimes_); // -100 invalid size
     FALSE_RETURN_V(realLen != 0, Status::ERROR_AGAIN);
     totalDownLoadBytes_ += realLen;
-    if (toalDownloadCount_ == 0) {
+    if (totalDownloadCount_ == 0) {
         firstDownloadTimestamp_ = GetCurrentMillisecond();
         firstDownloadTime_ = firstDownloadTimestamp_ - start;
     }
-    toalDownloadCount_++;
+    totalDownloadCount_++;
     int64_t end = GetCurrentMillisecond();
     totalDownloadDuringTime_ += end - start;
     return Status::OK;
@@ -316,7 +319,7 @@ Status DataStreamSourcePlugin::GetDownloadInfo(Plugins::DownloadInfo& downloadIn
 {
     downloadInfo.totalDownLoadBytes = totalDownLoadBytes_;
     downloadInfo.totalLoadingTime = totalDownloadDuringTime_;
-    downloadInfo.loadingCount = toalDownloadCount_;
+    downloadInfo.loadingCount = totalDownloadCount_;
     downloadInfo.firstDownloadTime = firstDownloadTime_;
     downloadInfo.firstFrameDecapsulationTime = firstDownloadTimestamp_;
     return Status::OK;

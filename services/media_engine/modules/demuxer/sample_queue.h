@@ -42,12 +42,12 @@ enum class SelectBitrateStatus : uint32_t {
 
 class SampleQueue : public std::enable_shared_from_this<SampleQueue> {
 public:
-    static constexpr uint32_t MAX_SAMPLE_QUEUE_SIZE = 1;
-    static constexpr uint32_t MAX_SAMPLE_QUEUE_SIZE_ON_MUTE = 150;
-    static constexpr uint32_t DEFAULT_SAMPLE_QUEUE_SIZE = 1;
-    static constexpr uint32_t MAX_SAMPLE_BUFFER_CAP = 10 * 1024 * 1024;
-    static constexpr uint32_t DEFAULT_VIDEO_SAMPLE_BUFFER_CAP = 256 * 1024;
-    static constexpr uint32_t DEFAULT_SAMPLE_BUFFER_CAP = 4 * 1024;
+    static constexpr uint32_t MAX_SAMPLE_QUEUE_SIZE = 16;
+    static constexpr uint32_t MAX_SAMPLE_QUEUE_SIZE_ON_MUTE = 500;
+    static constexpr uint32_t DEFAULT_SAMPLE_QUEUE_SIZE = 500;
+    static constexpr uint32_t DEFAULT_SAMPLE_BUFFER_CAP = 0;
+    static constexpr uint32_t MAX_SAMPLE_BUFFER_CAP = DEFAULT_SAMPLE_BUFFER_CAP;
+    static constexpr uint32_t DEFAULT_VIDEO_SAMPLE_BUFFER_CAP = DEFAULT_SAMPLE_BUFFER_CAP;
     static constexpr int64_t MIN_SWITCH_BITRATE_TIME_US = 3000000;
     static constexpr size_t MAX_BITRATE_SWITCH_WAIT_NUMBER = 1;
     struct Config {
@@ -83,6 +83,7 @@ public:
     void OnBufferAvailable();
     void OnBufferConsumer();
     uint64_t GetCacheDuration() const;
+    uint64_t NewGetCacheDuration() const;
     void UpdateQueueId(int32_t queueId);
     uint32_t GetMemoryUsage();
 
@@ -91,6 +92,18 @@ public:
     Status SetLargerQueueSize(uint32_t size);
     bool IsEmpty();
     Status AddQueueSize(uint32_t size);
+    Status CopyBufferSlice(std::shared_ptr<AVBuffer>& srcBuffer, std::shared_ptr<AVBuffer>& dstBuffer,
+        int32_t sliceSize);
+    Status RollbackBuffer(std::shared_ptr<AVBuffer>& sampleBuffer);
+    Status PopRollbackBuffer(std::shared_ptr<AVBuffer>& sampleBuffer);
+    Status PeekRollbackBuffer(std::shared_ptr<AVBuffer>& sampleBuffer);
+    Status PushRollbackBuffer(std::shared_ptr<AVBuffer>& sampleBuffer);
+    uint32_t GetFilledBufferSize();
+    Status AttachOneBuffer(uint32_t size);
+    Status UpdateLastOutSamplePts(int64_t lastOutSamplePts);
+    Status UpdateLastEnterSamplePts(int64_t lastEnterSamplePts);
+    int64_t GetLastEnterSamplePts() const;
+    int64_t GetLastOutSamplePts() const;
     
 private:
 
@@ -101,7 +114,6 @@ private:
     Status NotifySwitchBitrateOK();
 
     Status DiscardSampleAfter(int64_t startPts);
-    Status RollbackBuffer(std::shared_ptr<AVBuffer>& sampleBuffer);
     bool IsKeyFrameAvailable();
     void CheckSwitchBitrateWaitList();
 
@@ -109,10 +121,13 @@ private:
     void CopyMeta(std::shared_ptr<AVBuffer>& srcBuffer, std::shared_ptr<AVBuffer>& dstBuffer);
     Status CopyAVMemory(std::shared_ptr<AVBuffer>& srcBuffer, std::shared_ptr<AVBuffer>& dstBuffer);
 
+    Status InnerCopySliceAVBuffer(std::shared_ptr<AVBuffer>& srcBuffer, std::shared_ptr<AVBuffer>& dstBuffer,
+        int32_t sliceSize);
+    Status InnerCopySliceAVMemory(std::shared_ptr<AVBuffer>& srcBuffer, std::shared_ptr<AVBuffer>& dstBuffer,
+        int32_t sliceSize);
+
     std::string SetToString(std::set<int64_t> localSet);
     std::string StringifyMeta(std::shared_ptr<Meta> &meta);
-
-    Status UpdateLastOutSamplePts(int64_t lastOutSamplePts);
 
     Config config_{};
     std::weak_ptr<SampleQueueCallback> sampleQueueCb_;
@@ -131,6 +146,7 @@ private:
     std::mutex ptsMutex_;
     std::set<int64_t> keyFramePtsSet_;
 
+    std::mutex rollbackMutex_;
     std::list<std::shared_ptr<AVBuffer>> rollbackBufferQueue_;
 
     std::mutex waitListMutex_;

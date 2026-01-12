@@ -65,6 +65,8 @@ void DemuxerSetDataSourceWithProbSizeFuzzTest(const uint8_t *data, size_t size)
     std::string typeName = provider.ConsumeRandomLengthString();
     int probSize = provider.ConsumeIntegral<int32_t>();
     DemuxerPluginTest test;
+    test.seekTime_ = provider.ConsumeIntegral<int64_t>();
+    test.timeOutMs_ = provider.ConsumeIntegral<uint32_t>();
     test.Run(typeName, TEST_FILE_PATH, probSize);
     (void)remove(TEST_FILE_PATH);
     return;

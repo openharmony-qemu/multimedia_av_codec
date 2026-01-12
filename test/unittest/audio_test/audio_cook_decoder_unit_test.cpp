@@ -40,13 +40,14 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace {
+constexpr size_t FIELDSIZE = 8;
 const string CODEC_COOK_DEC_NAME = std::string(MediaAVCodec::AVCodecCodecName::AUDIO_DECODER_COOK_NAME);
 constexpr int32_t COOK_SAMPLE_RATE = 44100;
 constexpr int32_t COOK_CHANNEL_COUNT = 2;
 constexpr size_t COOK_AVBUFFER_SIZE = 8192;
 constexpr int32_t COOK_MAX_INPUT_SIZE = 8192;
 constexpr int32_t COOK_OUTPUT_BUFFER_SIZE = 4 * 1024 * 8;
-const string COOK_FILE_PATH = "/data/test/media/cook_44100_stereo.dat";
+const string COOK_FILE_PATH = "/data/test/media/cook.dat";
 const string COOK_OUTPUT_FILE_PATH = "/data/test/media/cook_44100_stereo.pcm";
 constexpr int PROBE = 2;
 constexpr int32_t BLOCK_ALIGN = 93;
@@ -114,11 +115,36 @@ shared_ptr<CodecPlugin> CookUnitTest::CreatePlugin()
 shared_ptr<Media::Meta> CookUnitTest::CreateMeta()
 {
     auto meta = make_shared<Media::Meta>();
-    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(COOK_CHANNEL_COUNT);
-    meta->Set<Tag::AUDIO_SAMPLE_RATE>(COOK_SAMPLE_RATE);
-    std::vector<uint8_t> extradata = {1, 0, 0, 3, 8, 0, 0, 32, 0, 0, 0, 0, 0, 2, 0, 4};
-    meta->Set<Tag::MEDIA_CODEC_CONFIG>(extradata);
+    int32_t extraDataSize = 0;
+    int32_t channels = 0;
+    int32_t sampleRate = 0;
+    std::vector<uint8_t> extraData;
+    std::ifstream inputFile;
+    inputFile.open(COOK_FILE_PATH, std::ios::binary);
+    if (!inputFile.is_open()) {
+        std::cout << "Fatal: inputFile is null" << std::endl;
+        return nullptr;
+    }
+    inputFile.read(reinterpret_cast<char *>(&channels), sizeof(int32_t));
+    inputFile.read(reinterpret_cast<char *>(&sampleRate), sizeof(int32_t));
+    inputFile.read(reinterpret_cast<char*>(&extraDataSize), sizeof(extraDataSize));
+    if (inputFile.gcount() != sizeof(extraDataSize)) {
+        std::cout << "Fatal: read extraDataSize fail" << std::endl;
+        return nullptr;
+    }
+    if (extraDataSize > 0) {
+        extraData.resize(extraDataSize);
+        inputFile.read(reinterpret_cast<char*>(extraData.data()), extraDataSize);
+        if (inputFile.gcount() != extraDataSize) {
+            std::cout << "Fatal: read extraData fail" << std::endl;
+            return nullptr;
+        }
+        meta->Set<Tag::MEDIA_CODEC_CONFIG>(extraData);
+    }
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(channels);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(sampleRate);
     meta->Set<Tag::AUDIO_BLOCK_ALIGN>(BLOCK_ALIGN);
+    inputFile.close();
 
     return meta;
 }
@@ -283,24 +309,24 @@ HWTEST_F(CookUnitTest, Decode_With_Embedded_RealBlocks_001, TestSize.Level1)
     std::ifstream inputFile;
     inputFile.open(COOK_FILE_PATH, std::ios::binary);
     ASSERT_TRUE(inputFile.is_open());
-    std::vector<uint8_t> buffer(8);
-    inputFile.read(reinterpret_cast<char*>(buffer.data()), 8);
-    buffer.resize(4);
-    inputFile.read(reinterpret_cast<char*>(buffer.data()), 4);
-    int32_t extradataLen;
-    memcpy_s(&extradataLen, sizeof(int32_t), buffer.data(), sizeof(int32_t));
-    buffer.resize(extradataLen);
-    inputFile.read(reinterpret_cast<char*>(buffer.data()), extradataLen);
+    int32_t channels = 0;
+    int32_t sampleRate = 0;
+    int32_t extradatalen = 0;
+    inputFile.read(reinterpret_cast<char *>(&channels), sizeof(int32_t));
+    inputFile.read(reinterpret_cast<char *>(&sampleRate), sizeof(int32_t));
+    inputFile.read(reinterpret_cast<char *>(&extradatalen), sizeof(int32_t));
+    std::vector<uint8_t> buffer(extradatalen);
+    inputFile.read(reinterpret_cast<char *>(buffer.data()), extradatalen);
 
     std::ofstream outputFile;
     outputFile.open(COOK_OUTPUT_FILE_PATH, std::ios::out | std::ios::binary);
     auto outBuffer = CreateAVBuffer(10 * 1024 * 1024, 0);
     int32_t pos = 0;
-    buffer.resize(8);
-    while (inputFile.read(reinterpret_cast<char*>(buffer.data()), 8)) {
+    buffer.resize(FIELDSIZE);
+    while (inputFile.read(reinterpret_cast<char*>(buffer.data()), FIELDSIZE)) {
         int64_t packageSize;
         memcpy_s(&packageSize, sizeof(int64_t), buffer.data(), sizeof(int64_t));
-        inputFile.read(reinterpret_cast<char*>(buffer.data()), 8);
+        inputFile.read(reinterpret_cast<char*>(buffer.data()), FIELDSIZE);
         auto in = CreateAVBuffer(COOK_AVBUFFER_SIZE, packageSize);
         inputFile.read(reinterpret_cast<char*>(in->memory_->GetAddr()), packageSize);
         auto st = plugin_->QueueInputBuffer(in);

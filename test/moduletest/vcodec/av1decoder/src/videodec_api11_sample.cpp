@@ -1222,7 +1222,7 @@ int32_t VDecAPI11Sample::CheckAttrFlag(OH_AVCodecBufferAttr attr)
         AutoSwitchSurface();
         SHA512_Final(g_md, &g_c);
         OPENSSL_cleanse(&g_c, sizeof(g_c));
-        if (!SF_OUTPUT && !NocaleHash) {
+        if (!SF_OUTPUT && needCheckHash) {
             const char **source = nullptr;
             if (defaultPixelFormat == AV_PIXEL_FORMAT_NV12) {
                 source = fileSourcesha256_nv12;

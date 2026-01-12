@@ -17,6 +17,7 @@ import("//foundation/multimedia/av_codec/config.gni")
 config("instance_operation_event_handler_public_config") {
   include_dirs = [
     "./",
+    "../../",
     "../../../",
     "../../../../../../interfaces/inner_api/native/",
   ]

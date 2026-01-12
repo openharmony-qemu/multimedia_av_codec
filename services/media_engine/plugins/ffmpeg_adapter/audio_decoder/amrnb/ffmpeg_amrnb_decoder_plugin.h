@@ -70,6 +70,7 @@ private:
     int32_t GetOutputBufferSize();
 
 private:
+    std::mutex amrMutex_;
     int channels;
     int sampleRate;
     DataCallback *dataCallback_{nullptr};
@@ -83,7 +84,6 @@ private:
     int32_t nbSamplesPerFrame_ = 0;
     std::shared_ptr<AVPacket> avPacket_;
     bool eosFlushed_ = false;
-    bool currentPacketEmpty_ = true;
 };
 } // namespace Ffmpeg
 } // namespace Plugins

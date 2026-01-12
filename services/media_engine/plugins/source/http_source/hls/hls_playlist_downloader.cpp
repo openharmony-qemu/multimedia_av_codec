@@ -257,9 +257,14 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPr
         url_ = location;
     }
     if (!master_) {
+        std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = GetSourceLoader();
         master_ = std::make_shared<M3U8MasterPlaylist>(playList_, url_, initResolution_, httpHeader_,
                                                        statusCallback_);
+        master_->SetSourceloader(sourceLoader);
         FALSE_RETURN_NOLOG(master_ != nullptr);
+        if (downloadCallback_ != nullptr) {
+            master_->SetDownloadCallback(downloadCallback_);
+        }
         master_->StartParsing();
         currentVariant_ = master_->defaultVariant_;
         if (currentVariant_ && currentVariant_->m3u8_) {
@@ -768,54 +773,6 @@ HlsSegmentType HlsPlayListDownloader::GetSegType(uint32_t streamId)
     return HlsSegmentType::SEG_VIDEO;
 }
 
-void HlsPlayListDownloader::GetDownloadInfo(DownloadInfo& downloadInfo)
-{
-    if (master_ != nullptr) {
-        for (auto &stream : master_->variants_) {
-            if (stream == nullptr || stream->m3u8_ == nullptr) {
-                continue;
-            }
-            DownloadInfo tmpDownloadInfo;
-            stream->m3u8_->GetDownloadInfo(tmpDownloadInfo);
-            if (tmpDownloadInfo.firstFrameDecapsulationTime < downloadInfo.firstFrameDecapsulationTime ||
-                downloadInfo.firstFrameDecapsulationTime == 0) {
-                downloadInfo.firstFrameDecapsulationTime = tmpDownloadInfo.firstFrameDecapsulationTime;
-                downloadInfo.firstDownloadTime = tmpDownloadInfo.firstDownloadTime;
-            }
-            downloadInfo.totalDownLoadBytes += tmpDownloadInfo.totalDownLoadBytes;
-            downloadInfo.totalLoadingTime += tmpDownloadInfo.totalLoadingTime;
-            downloadInfo.loadingCount += tmpDownloadInfo.loadingCount;
-        }
-        for (auto &media : master_->mediaList_) {
-            if (media == nullptr || media->m3u8_ == nullptr) {
-                continue;
-            }
-            DownloadInfo tmpDownloadInfo;
-            media->m3u8_->GetDownloadInfo(tmpDownloadInfo);
-            if (tmpDownloadInfo.firstFrameDecapsulationTime < downloadInfo.firstFrameDecapsulationTime ||
-                downloadInfo.firstFrameDecapsulationTime == 0) {
-                downloadInfo.firstFrameDecapsulationTime = tmpDownloadInfo.firstFrameDecapsulationTime;
-                downloadInfo.firstDownloadTime = tmpDownloadInfo.firstDownloadTime;
-            }
-            downloadInfo.totalDownLoadBytes += tmpDownloadInfo.totalDownLoadBytes;
-            downloadInfo.totalLoadingTime += tmpDownloadInfo.totalLoadingTime;
-            downloadInfo.loadingCount += tmpDownloadInfo.loadingCount;
-        }
-    }
-
-    if (downloader_) {
-        DownloadInfo tmpDownloadInfo;
-        downloader_->GetDownloadInfo(tmpDownloadInfo);
-        if (tmpDownloadInfo.firstFrameDecapsulationTime < downloadInfo.firstFrameDecapsulationTime ||
-            downloadInfo.firstFrameDecapsulationTime == 0) {
-            downloadInfo.firstFrameDecapsulationTime = tmpDownloadInfo.firstFrameDecapsulationTime;
-            downloadInfo.firstDownloadTime = tmpDownloadInfo.firstDownloadTime;
-        }
-        downloadInfo.totalDownLoadBytes += tmpDownloadInfo.totalDownLoadBytes;
-        downloadInfo.totalLoadingTime += tmpDownloadInfo.totalLoadingTime;
-        downloadInfo.loadingCount += tmpDownloadInfo.loadingCount;
-    }
-}
 }
 }
 }

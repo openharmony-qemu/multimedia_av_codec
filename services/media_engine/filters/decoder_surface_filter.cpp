@@ -479,6 +479,7 @@ Status DecoderSurfaceFilter::DoPause()
     }
     isPaused_ = true;
     isFirstFrameAfterResume_ = false;
+    isFirstRenderFrameAfterResume_ = false;
     if (!IS_FILTER_ASYNC) {
         condBufferAvailable_.notify_all();
     }
@@ -494,6 +495,7 @@ Status DecoderSurfaceFilter::DoFreeze()
     FALSE_RETURN_V_MSG(state_ == FilterState::RUNNING, Status::OK, "current state is %{public}d", state_);
     isPaused_ = true;
     isFirstFrameAfterResume_ = false;
+    isFirstRenderFrameAfterResume_ = false;
     if (!IS_FILTER_ASYNC) {
         condBufferAvailable_.notify_all();
     }
@@ -536,6 +538,7 @@ Status DecoderSurfaceFilter::DoResume()
     refreshTotalPauseTime_ = true;
     isPaused_ = false;
     isFirstFrameAfterResume_ = true;
+    isFirstRenderFrameAfterResume_ = true;
     if (!IS_FILTER_ASYNC) {
         condBufferAvailable_.notify_all();
     }
@@ -570,6 +573,7 @@ Status DecoderSurfaceFilter::DoUnFreeze()
     refreshTotalPauseTime_ = true;
     isPaused_ = false;
     isFirstFrameAfterResume_ = true;
+    isFirstRenderFrameAfterResume_ = true;
     if (!IS_FILTER_ASYNC) {
         condBufferAvailable_.notify_all();
     }
@@ -997,7 +1001,7 @@ void DecoderSurfaceFilter::HandleRender(
     RenderAtTimeDfx(renderTime, currentSysTimeNs, lastRenderTimeNs);
     DoRenderOutputBufferAtTime(index, renderTime, outBuffer->pts_);
 
-    if (eventReceiver_!= nullptr && lastRenderTimeNs > 0L) {
+    if (eventReceiver_!= nullptr && lastRenderTimeNs > 0 && !isFirstRenderFrameAfterResume_ && !isInSeekContinous_) {
         int64_t frameIntervalMs = videoSink_->GetFrameInterval();
         std::vector<int64_t> timeStampList;
         outBuffer->meta_->GetData(Tag::STALLING_TIMESTAMP, timeStampList);
@@ -1012,9 +1016,6 @@ void DecoderSurfaceFilter::HandleRender(
             MEDIA_LOG_D("Rendering is late. texpMS: " PUBLIC_LOG_D64 ", renderTime: " PUBLIC_LOG_D64,
                 texpMS, renderTime);
         }
-    }
-    if (!isInSeekContinous_) {
-        lastRenderTimeNs_ = renderTime;
     }
 }
 
@@ -1071,6 +1072,7 @@ Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const s
     if (renderTime > 0L && render) {
         HandleRender(index, render, outBuffer, renderTime);
         if (!isInSeekContinous_) {
+            isFirstRenderFrameAfterResume_ = false;
             lastRenderTimeNs_ = renderTime;
         }
     } else {

@@ -611,6 +611,20 @@ const uint32_t ES_RV40[] = {
 };
 const uint32_t ES_RV40_LENGTH = sizeof(ES_RV40) / sizeof(ES_RV40[0]);
 #endif
+enum RawvideoType {
+    RAWVIDEO_UNSPECIFIED = 0,
+    RAWVIDEO_I = 1,
+    RAWVIDEO_P = 2,
+    RAWVIDEO_B = 3,
+    RAWVIDEO_SEQUENCE_HEADER = 4
+};
+
+const uint32_t ES_RAWVIDEO[] = {
+    518400, 518400, 518400, 518400, 518400,
+    518400, 518400, 518400, 518400, 518400,
+};
+
+const uint32_t ES_RAWVIDEO_LENGTH = sizeof(ES_RAWVIDEO) / sizeof(ES_RAWVIDEO[0]);
 
 enum Mpeg1Type {
     MPEG1_UNSPECIFIED = 0,
@@ -638,6 +652,20 @@ const uint32_t ES_MPEG1[] = {
     11635,   949,
 };
 const uint32_t ES_MPEG1_LENGTH = sizeof(ES_MPEG1) / sizeof(ES_MPEG1[0]);
+
+enum DvvideoType {
+    DVVIDEO_UNSPECIFIED = 0,
+    DVVIDEO_I = 1,
+    DVVIDEO_SEQUENCE_HEADER = 4
+};
+
+const uint32_t ES_DVVIDEO[] = {
+    144000, 144000, 144000, 144000, 144000, 144000, 144000, 144000, 144000, 144000,
+    144000, 144000, 144000, 144000, 144000, 144000, 144000, 144000, 144000, 144000,
+    144000, 144000, 144000, 144000, 144000, 144000, 144000,
+};
+
+const uint32_t ES_DVVIDEO_LENGTH = sizeof(ES_DVVIDEO) / sizeof(ES_DVVIDEO[0]);
 
 int32_t MpegReader::Init(const std::shared_ptr<MpegReaderInfo> &info)
 {
@@ -1823,7 +1851,7 @@ int32_t Msvideo1Reader::FillBuffer(uint8_t* bufferAddr, OH_AVCodecBufferAttr& at
     return AV_ERR_OK;
 }
 
-bool Msvideo1Reader::IsEOS()
+bool Msvideo1Reader::IsEOS() const
 {
     return msvideo1UnitReader_ ? msvideo1UnitReader_->IsEOS() : true;
 }
@@ -1914,12 +1942,12 @@ int32_t Wmv3Reader::FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr)
     return AV_ERR_OK;
 }
 
-bool Wmv3Reader::IsEOS()
+bool Wmv3Reader::IsEOS() const
 {
     return wmv3UnitReader_ ? wmv3UnitReader_->IsEOS() : true;
 }
 
-uint8_t const *Wmv3Reader::Wmv3UnitReader::GetNextWmv3UnitAddr()
+uint8_t const *Wmv3Reader::Wmv3UnitReader::GetNextWmv3UnitAddr() const
 {
     CHECK_AND_RETURN_RET_LOG(wmv3Unit_ != nullptr, nullptr, "wmv3Unit_ is nullptr");
     return wmv3Unit_->data();
@@ -2009,7 +2037,7 @@ bool Wmv3Reader::Wmv3MetaUnitReader::IsEOF()
     return frameIndex_ >= ES_WMV3_NORMAL_LEN;
 }
 
-uint32_t Wmv3Reader::Wmv3MetaUnitReader::GetFrameLenth(uint32_t index)
+uint32_t Wmv3Reader::Wmv3MetaUnitReader::GetFrameLenth(uint32_t index) const
 {
     if (isMainStream_) {
         return ES_WMV3_MAIN[index];
@@ -2037,12 +2065,12 @@ void Wmv3Reader::Wmv3MetaUnitReader::PrereadWmv3Unit()
     frameIndex_++;
 }
 
-const uint8_t* Msvideo1Reader::Msvideo1Detector::GetMsvideo1TypeAddr(const uint8_t* bufferAddr)
+const uint8_t* Msvideo1Reader::Msvideo1Detector::GetMsvideo1TypeAddr(const uint8_t* bufferAddr) const
 {
     return bufferAddr;
 }
 
-uint8_t Msvideo1Reader::Msvideo1Detector::GetMsvideo1Type(const uint8_t* bufferAddr)
+uint8_t Msvideo1Reader::Msvideo1Detector::GetMsvideo1Type(const uint8_t* bufferAddr) const
 {
     if (!bufferAddr) {
         return MSVIDEO1_UNSPECIFIED;
@@ -2056,7 +2084,7 @@ uint8_t Msvideo1Reader::Msvideo1Detector::GetMsvideo1Type(const uint8_t* bufferA
     }
 }
 
-bool Msvideo1Reader::Msvideo1Detector::IsI(uint8_t msvideo1Type)
+bool Msvideo1Reader::Msvideo1Detector::IsI(uint8_t msvideo1Type) const
 {
     return (msvideo1Type == MSVIDEO1_I);
 }
@@ -3357,7 +3385,7 @@ int32_t Mpeg1Reader::FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr)
     return AV_ERR_OK;
 }
 
-bool Mpeg1Reader::IsEOS()
+bool Mpeg1Reader::IsEOS() const
 {
     return mpeg1UnitReader_ ? mpeg1UnitReader_->IsEOS() : true;
 }
@@ -3379,7 +3407,7 @@ void Mpeg1Reader::FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize,
     }
 }
 
-uint8_t const *Mpeg1Reader::Mpeg1UnitReader::GetNextMpeg1UnitAddr()
+uint8_t const *Mpeg1Reader::Mpeg1UnitReader::GetNextMpeg1UnitAddr() const
 {
     CHECK_AND_RETURN_RET_LOG(mpeg1Unit_ != nullptr, nullptr, "mpeg1Unit_ is nullptr");
     return mpeg1Unit_->data();
@@ -3461,19 +3489,19 @@ void Mpeg1Reader::Mpeg1MetaUnitReader::PrereadMpeg1Unit()
     frameIndex_++;
 }
 
-uint8_t* Mpeg1Reader::Mpeg1Detector::GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend)
+uint8_t* Mpeg1Reader::Mpeg1Detector::GetDelimiterPos(const uint8_t* addrstart, const uint8_t* addrend) const
 {
     (void)addrstart;
     (void)addrend;
     return nullptr;
 }
 
-const uint8_t *Mpeg1Reader::Mpeg1Detector::GetMpeg1TypeAddr(const uint8_t *bufferAddr)
+const uint8_t *Mpeg1Reader::Mpeg1Detector::GetMpeg1TypeAddr(const uint8_t *bufferAddr) const
 {
     return bufferAddr;
 }
 
-uint8_t Mpeg1Reader::Mpeg1Detector::GetMpeg1Type(const uint8_t *bufferAddr)
+uint8_t Mpeg1Reader::Mpeg1Detector::GetMpeg1Type(const uint8_t *bufferAddr) const
 {
     if (!bufferAddr) {
         return MPEG1_UNSPECIFIED;
@@ -3487,9 +3515,318 @@ uint8_t Mpeg1Reader::Mpeg1Detector::GetMpeg1Type(const uint8_t *bufferAddr)
     }
 }
 
-bool Mpeg1Reader::Mpeg1Detector::IsI(uint8_t mpeg1Type)
+bool Mpeg1Reader::Mpeg1Detector::IsI(uint8_t mpeg1Type) const
 {
     return (mpeg1Type == MPEG1_I);
+}
+
+int32_t DvvideoReader::Init(const std::shared_ptr<DvvideoReaderInfo>& info)
+{
+    std::shared_ptr<std::ifstream> inputFile = std::make_shared<std::ifstream>(
+        info->inPath, std::ios::binary | std::ios::in);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(inputFile && inputFile->is_open(),
+        AV_ERR_INVALID_VAL, "Open DVVIDEO input file failed");
+
+    dvvideoUnitReader_ = std::static_pointer_cast<DvvideoUnitReader>(
+        std::make_shared<DvvideoMetaUnitReader>(inputFile));
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(dvvideoUnitReader_, AV_ERR_INVALID_VAL, "DVVIDEO unit reader create failed");
+
+    dvvideoDetector_ = std::static_pointer_cast<DvvideoDetector>(
+        std::make_shared<DvvideoDetector>());
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(dvvideoDetector_, AV_ERR_INVALID_VAL, "DVVIDEO detector create failed");
+
+    return AV_ERR_OK;
+}
+
+int32_t DvvideoReader::FillBuffer(uint8_t* bufferAddr, OH_AVCodecBufferAttr& attr)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr, AV_ERR_INVALID_VAL, "Buffer address is null");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(dvvideoUnitReader_, AV_ERR_INVALID_VAL, "dvvideoUnitReader_ is null");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(dvvideoDetector_, AV_ERR_INVALID_VAL, "dvvideoDetector_ is null");
+
+    int32_t frameSize = 0;
+    bool isEosFrame = false;
+    auto ret = dvvideoUnitReader_->ReadDvvideoUnit(bufferAddr, frameSize, isEosFrame);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCS_ERR_INVALID_OPERATION, "ReadDvvideoUnit failed");
+
+    uint8_t dvvideoType = dvvideoDetector_->GetDvvideoType(dvvideoDetector_->GetDvvideoTypeAddr(bufferAddr));
+    bufferAddr += frameSize;
+    FillBufferAttr(attr, frameSize, dvvideoType, isEosFrame);
+    frameInputCount_++;
+    return AV_ERR_OK;
+}
+
+bool DvvideoReader::IsEOS()
+{
+    return dvvideoUnitReader_ ? dvvideoUnitReader_->IsEOS() : true;
+}
+
+void DvvideoReader::FillBufferAttr(OH_AVCodecBufferAttr& attr, int32_t frameSize,
+    uint8_t dvvideoType, bool isEosFrame)
+{
+    attr.size = frameSize;
+    attr.pts = GetTimeUs();
+    attr.flags = 0;
+    if (isEosFrame) {
+        attr.flags |= AVCODEC_BUFFER_FLAG_EOS;
+        std::cout << "Input EOS Frame, frameCount = " << (frameInputCount_) << std::endl;
+    } else {
+        if (dvvideoDetector_->IsI(dvvideoType) || dvvideoType == DVVIDEO_SEQUENCE_HEADER) {
+            attr.flags |= AVCODEC_BUFFER_FLAG_SYNC_FRAME;
+        }
+    }
+}
+
+DvvideoReader::DvvideoMetaUnitReader::DvvideoMetaUnitReader(std::shared_ptr<std::ifstream> inputFile)
+{
+    inputFile_ = inputFile;
+    prereadBuffer_ = std::make_unique<uint8_t[]>(PREREAD_BUFFER_SIZE);
+    dvvideoUnit_ = std::make_unique<std::vector<uint8_t>>(MAX_NALU_SIZE);
+    frameIndex_ = 0;
+    PrereadDvvideoUnit();
+}
+
+int32_t DvvideoReader::DvvideoMetaUnitReader::ReadDvvideoUnit(uint8_t* bufferAddr,
+    int32_t& bufferSize, bool& isEosFrame)
+{
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr, AV_ERR_INVALID_VAL, "Got an invalid buffer addr");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(dvvideoUnit_, AV_ERR_INVALID_VAL, "Dvvideo unit buffer is nullptr");
+
+    bufferSize = static_cast<int32_t>(dvvideoUnit_->size());
+    if (bufferSize > 0) {
+        auto ret = memcpy_s(bufferAddr, bufferSize, dvvideoUnit_->data(), bufferSize);
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == EOK, AV_ERR_INVALID_VAL, "Copy DVVIDEO unit failed");
+    }
+
+    if (frameIndex_ < ES_DVVIDEO_LENGTH) {
+        isEosFrame = false;
+        PrereadDvvideoUnit();
+    } else {
+        isEosFrame = true;
+        dvvideoUnit_->clear();
+    }
+    return AV_ERR_OK;
+}
+
+bool DvvideoReader::DvvideoMetaUnitReader::IsEOS()
+{
+    return frameIndex_ >= ES_DVVIDEO_LENGTH;
+}
+
+bool DvvideoReader::DvvideoMetaUnitReader::IsEOF()
+{
+    return (pPrereadBuffer_ >= prereadBufferSize_) && (inputFile_ && inputFile_->peek() == EOF);
+}
+
+void DvvideoReader::DvvideoMetaUnitReader::PrereadFile()
+{
+    CHECK_AND_RETURN_LOG(prereadBuffer_, "Preread buffer is nullptr");
+    if (!inputFile_ || !inputFile_->is_open()) {
+        prereadBufferSize_ = 0;
+        pPrereadBuffer_ = 0;
+        return;
+    }
+    inputFile_->read(reinterpret_cast<char*>(prereadBuffer_.get()), PREREAD_BUFFER_SIZE);
+    std::streamsize bytesRead = inputFile_->gcount();
+    prereadBufferSize_ = static_cast<uint32_t>(bytesRead);
+    pPrereadBuffer_ = 0;
+}
+
+void DvvideoReader::DvvideoMetaUnitReader::PrereadDvvideoUnit()
+{
+    CHECK_AND_RETURN_LOG(inputFile_ && inputFile_->is_open(), "Input file not open");
+    CHECK_AND_RETURN_LOG(dvvideoUnit_ != nullptr, "dvvideo unit buffer is nullptr");
+    CHECK_AND_RETURN_LOG(frameIndex_ < ES_DVVIDEO_LENGTH, "All DVVIDEO frames have been read");
+
+    uint32_t frameSize = ES_DVVIDEO[frameIndex_];
+    dvvideoUnit_->resize(frameSize);
+    auto pBuffer = dvvideoUnit_->data();
+
+    inputFile_->read(reinterpret_cast<char*>(pBuffer), frameSize);
+    uint32_t bytesRead = static_cast<uint32_t>(inputFile_->gcount());
+    CHECK_AND_RETURN_LOG(bytesRead == frameSize,
+        "Failed to read full DVVIDEO frame. Expected: %u, Got: %u", frameSize, bytesRead);
+
+    frameIndex_++;
+}
+
+const uint8_t* DvvideoReader::DvvideoDetector::GetDvvideoTypeAddr(const uint8_t* bufferAddr)
+{
+    return bufferAddr;
+}
+
+uint8_t DvvideoReader::DvvideoDetector::GetDvvideoType(const uint8_t* bufferAddr)
+{
+    if (!bufferAddr) {
+        return DVVIDEO_UNSPECIFIED;
+    }
+    return DVVIDEO_I;
+}
+
+bool DvvideoReader::DvvideoDetector::IsI(uint8_t dvvideoType)
+{
+    return (dvvideoType == DVVIDEO_I);
+}
+
+int32_t RawvideoReader::Init(const std::shared_ptr<RawvideoReaderInfo>& info)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(info, AV_ERR_INVALID_VAL, "RawvideoReaderInfo is null");
+
+    std::shared_ptr<std::ifstream> inputFile = std::make_shared<std::ifstream>(
+        info->inPath, std::ios::binary | std::ios::in);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(inputFile && inputFile->is_open(),
+        AV_ERR_INVALID_VAL, "Open RAWVIDEO input file failed");
+
+    rawvideoUnitReader_ = std::static_pointer_cast<RawvideoUnitReader>(
+        std::make_shared<RawvideoMetaUnitReader>(inputFile));
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(rawvideoUnitReader_, AV_ERR_INVALID_VAL, "RAWVIDEO unit reader create failed");
+
+    rawvideoDetector_ = std::static_pointer_cast<RawvideoDetector>(
+        std::make_shared<RawvideoDetector>());
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(rawvideoDetector_, AV_ERR_INVALID_VAL, "RAWVIDEO detector create failed");
+
+    return AV_ERR_OK;
+}
+
+int32_t RawvideoReader::FillBuffer(uint8_t* bufferAddr, OH_AVCodecBufferAttr& attr)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr, AV_ERR_INVALID_VAL, "Buffer address is null");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(rawvideoUnitReader_, AV_ERR_INVALID_VAL, "rawvideoUnitReader_ is null");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(rawvideoDetector_, AV_ERR_INVALID_VAL, "rawvideoDetector_ is null");
+
+    int32_t frameSize = 0;
+    bool isEosFrame = false;
+    auto ret = rawvideoUnitReader_->ReadRawvideoUnit(bufferAddr, frameSize, isEosFrame);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCS_ERR_INVALID_OPERATION, "ReadRawvideoUnit failed");
+
+    uint8_t rawvideoType = rawvideoDetector_->GetRawvideoType(rawvideoDetector_->GetRawvideoTypeAddr(bufferAddr));
+    bufferAddr += frameSize;
+    FillBufferAttr(attr, frameSize, rawvideoType, isEosFrame);
+    frameInputCount_++;
+    return AV_ERR_OK;
+}
+
+bool RawvideoReader::IsEOS()
+{
+    return rawvideoUnitReader_ ? rawvideoUnitReader_->IsEOS() : true;
+}
+
+void RawvideoReader::FillBufferAttr(OH_AVCodecBufferAttr& attr, int32_t frameSize,
+                                    uint8_t rawvideoType, bool isEosFrame)
+{
+    attr.size = frameSize;
+    attr.pts = GetTimeUs();
+    attr.flags = 0;
+
+    if (isEosFrame) {
+        attr.flags |= AVCODEC_BUFFER_FLAG_EOS;
+        std::cout << "Input EOS Frame, frameCount = " << (frameInputCount_) << std::endl;
+    } else {
+        if (rawvideoDetector_->IsI(rawvideoType) || rawvideoType == RAWVIDEO_SEQUENCE_HEADER) {
+            attr.flags |= AVCODEC_BUFFER_FLAG_SYNC_FRAME;
+        }
+    }
+}
+
+RawvideoReader::RawvideoMetaUnitReader::RawvideoMetaUnitReader(std::shared_ptr<std::ifstream> inputFile)
+{
+    inputFile_ = inputFile;
+    prereadBuffer_ = std::make_unique<uint8_t[]>(PREREAD_BUFFER_SIZE);
+    rawvideoUnit_ = std::make_unique<std::vector<uint8_t>>(MAX_NALU_SIZE);
+    frameIndex_ = 0;
+    PrereadRawvideoUnit();
+}
+
+int32_t RawvideoReader::RawvideoMetaUnitReader::ReadRawvideoUnit(uint8_t* bufferAddr,
+                                                                 int32_t& bufferSize,
+                                                                 bool& isEosFrame)
+{
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr, AV_ERR_INVALID_VAL, "Got an invalid buffer addr");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(rawvideoUnit_, AV_ERR_INVALID_VAL, "Rawvideo unit buffer is nullptr");
+
+    bufferSize = static_cast<int32_t>(rawvideoUnit_->size());
+    if (bufferSize > 0) {
+        auto ret = memcpy_s(bufferAddr, bufferSize, rawvideoUnit_->data(), bufferSize);
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == EOK, AV_ERR_INVALID_VAL, "Copy RAWVIDEO unit failed");
+    }
+
+    if (frameIndex_ < ES_RAWVIDEO_LENGTH) {
+        isEosFrame = false;
+        PrereadRawvideoUnit();
+    } else {
+        isEosFrame = true;
+        rawvideoUnit_->clear();
+    }
+    return AV_ERR_OK;
+}
+
+bool RawvideoReader::RawvideoMetaUnitReader::IsEOS()
+{
+    return frameIndex_ >= ES_RAWVIDEO_LENGTH;
+}
+
+bool RawvideoReader::RawvideoMetaUnitReader::IsEOF()
+{
+    return (pPrereadBuffer_ >= prereadBufferSize_) && (inputFile_ && inputFile_->peek() == EOF);
+}
+
+void RawvideoReader::RawvideoMetaUnitReader::PrereadFile()
+{
+    CHECK_AND_RETURN_LOG(prereadBuffer_, "Preread buffer is nullptr");
+    if (!inputFile_ || !inputFile_->is_open()) {
+        prereadBufferSize_ = 0;
+        pPrereadBuffer_ = 0;
+        return;
+    }
+    inputFile_->read(reinterpret_cast<char*>(prereadBuffer_.get()), PREREAD_BUFFER_SIZE);
+    std::streamsize bytesRead = inputFile_->gcount();
+    prereadBufferSize_ = static_cast<uint32_t>(bytesRead);
+    pPrereadBuffer_ = 0;
+}
+
+void RawvideoReader::RawvideoMetaUnitReader::PrereadRawvideoUnit()
+{
+    CHECK_AND_RETURN_LOG(inputFile_ && inputFile_->is_open(), "Input file not open");
+    CHECK_AND_RETURN_LOG(rawvideoUnit_ != nullptr, "rawvideo unit buffer is nullptr");
+    CHECK_AND_RETURN_LOG(frameIndex_ < ES_RAWVIDEO_LENGTH, "All RAWVIDEO frames have been read");
+
+    uint32_t frameSize = ES_RAWVIDEO[frameIndex_];
+    rawvideoUnit_->resize(frameSize);
+    auto pBuffer = rawvideoUnit_->data();
+
+    inputFile_->read(reinterpret_cast<char*>(pBuffer), frameSize);
+    uint32_t bytesRead = static_cast<uint32_t>(inputFile_->gcount());
+    CHECK_AND_RETURN_LOG(bytesRead == frameSize,
+        "Failed to read full RAWVIDEO frame. Expected: %u, Got: %u", frameSize, bytesRead);
+
+    frameIndex_++;
+}
+
+const uint8_t* RawvideoReader::RawvideoDetector::GetRawvideoTypeAddr(const uint8_t* bufferAddr)
+{
+    return bufferAddr;
+}
+
+uint8_t RawvideoReader::RawvideoDetector::GetRawvideoType(const uint8_t* bufferAddr)
+{
+    if (!bufferAddr) {
+        return RAWVIDEO_UNSPECIFIED;
+    }
+    uint8_t type = bufferAddr[0];
+    switch (type) {
+        case 0x00: return RAWVIDEO_I;
+        case 0x01: return RAWVIDEO_P;
+        case 0x02: return RAWVIDEO_B;
+        default:   return RAWVIDEO_UNSPECIFIED;
+    }
+}
+
+bool RawvideoReader::RawvideoDetector::IsI(uint8_t rawvideoType)
+{
+    return (rawvideoType == RAWVIDEO_I);
 }
 } // MediaAVCodec
 } // OHOS

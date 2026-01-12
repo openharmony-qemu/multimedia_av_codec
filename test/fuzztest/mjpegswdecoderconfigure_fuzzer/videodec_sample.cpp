@@ -295,6 +295,7 @@ void VDecFuzzSample::WaitForEOS()
 
 void VDecFuzzSample::CopyStartCode(uint8_t *frameBuffer, uint32_t bufferSize, OH_AVCodecBufferAttr &attr)
 {
+    (void)frameBuffer;
     attr.pts = GetSystemTimeUs();
     attr.size = bufferSize;
     attr.offset = 0;

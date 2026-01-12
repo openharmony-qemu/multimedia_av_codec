@@ -33,9 +33,10 @@
 #include "test_template.h"
 #define FUZZ_PROJECT_NAME "dashmediadownseektotime_fuzzer"
 using namespace std;
-using namespace OHOS::Media;
-using namespace OHOS::Media::Plugins::HttpPlugin;
 using namespace OHOS;
+using namespace OHOS::Media;
+using namespace OHOS::Media::Plugins;
+using namespace OHOS::Media::Plugins::HttpPlugin;
 namespace OHOS {
 namespace Media {
 namespace Plugins {
@@ -44,6 +45,7 @@ namespace HttpPlugin {
 namespace {
 static const std::string MPD_MULTI_AUDIO_SUB = "http://127.0.0.1:46666/test_dash/segment_base/index_audio_subtitle.mpd";
 constexpr int32_t WAIT_FOR_SIDX_TIME = 1000 * 1000;
+constexpr int32_t MAX_COUNT = 2000;
 }
 
 static const std::string BASE_MPD = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n"
@@ -141,6 +143,8 @@ void RunMpdDownloaderTests(DashMpdInfo *mpdInfo)
 
 bool DashMediaFuzzerTest(const uint8_t *data, size_t size)
 {
+    (void) data;
+    (void) size;
     std::string mpd = BASE_MPD;
     std::shared_ptr<DashMpdParser> mpdParser = std::make_shared<DashMpdParser>();
     mpdParser->ParseMPD(mpd.c_str(), mpd.length());
@@ -158,156 +162,207 @@ bool DashMediaFuzzerTest(const uint8_t *data, size_t size)
 
 bool DashAdptRun(const uint8_t *data, size_t size)
 {
-    if (size <= sizeof(int64_t)) {
+    if (data == nullptr) {
         return false;
     }
-    std::shared_ptr<DashAdptSetManager> mpdMpddownload = std::make_shared<DashAdptSetManager>();
-    std::list<std::string> baseUrlList;
-    mpdMpddownload->GetBaseUrlList(baseUrlList);
-    mpdMpddownload->Reset();
-    int32_t flag = *reinterpret_cast<const int32_t *>(data);
-    mpdMpddownload->GetInitSegment(flag);
-    uint32_t bandwidth = *reinterpret_cast<const uint32_t *>(data);
-    mpdMpddownload->GetRepresentationByBandwidth(bandwidth);
-    mpdMpddownload->GetHighRepresentation();
-    mpdMpddownload->GetLowRepresentation();
-    mpdMpddownload->GetMime();
-    mpdMpddownload->IsOnDemand();
+    int32_t count = GetData<int32_t>();
+    count = std::min(count, MAX_COUNT);
+    while (count > 0) {
+        std::shared_ptr<DashAdptSetManager> mpdMpddownload = std::make_shared<DashAdptSetManager>();
+        std::list<std::string> baseUrlList;
+        mpdMpddownload->GetBaseUrlList(baseUrlList);
+        mpdMpddownload->Reset();
+        int32_t flag = GetData<int32_t>();
+        mpdMpddownload->GetInitSegment(flag);
+        uint32_t bandwidth = GetData<uint32_t>();
+        mpdMpddownload->GetRepresentationByBandwidth(bandwidth);
+        mpdMpddownload->GetHighRepresentation();
+        mpdMpddownload->GetLowRepresentation();
+        mpdMpddownload->GetMime();
+        mpdMpddownload->IsOnDemand();
+        count = count - 1;
+    }
     return true;
 }
 
 bool DashDescriptorNodeRun(const uint8_t *data, size_t size)
 {
-    if (size <= sizeof(int64_t)) {
+    if (data == nullptr) {
         return false;
     }
-    std::shared_ptr<DashDescriptorNode> mpdMpddownload = std::make_shared<DashDescriptorNode>();
-    std::string addr = "hev1.1.6.L93.90";
-    uint32_t uiAttrVal = *reinterpret_cast<const uint32_t *>(data);
-    int32_t iAttrVal = *reinterpret_cast<const int32_t *>(data);
-    uint64_t ullAttrVal = *reinterpret_cast<const uint64_t *>(data);
-    double dAttrVal = *reinterpret_cast<const double *>(data);
-    mpdMpddownload->GetAttr(addr, uiAttrVal);
-    mpdMpddownload->GetAttr(addr, iAttrVal);
-    mpdMpddownload->GetAttr(addr, ullAttrVal);
-    mpdMpddownload->GetAttr(addr, dAttrVal);
+    int32_t count = GetData<int32_t>();
+    count = std::min(count, MAX_COUNT);
+    while (count > 0) {
+        std::shared_ptr<DashDescriptorNode> mpdMpddownload = std::make_shared<DashDescriptorNode>();
+        std::string addr = "hev1.1.6.L93.90";
+        uint32_t uiAttrVal = GetData<uint32_t>();
+        int32_t iAttrVal = GetData<int32_t>();
+        uint64_t ullAttrVal = GetData<uint64_t>();
+        double dAttrVal = GetData<double>();
+        mpdMpddownload->GetAttr(addr, uiAttrVal);
+        mpdMpddownload->GetAttr(addr, iAttrVal);
+        mpdMpddownload->GetAttr(addr, ullAttrVal);
+        mpdMpddownload->GetAttr(addr, dAttrVal);
+        count = count - 1;
+    }
     return true;
 }
 
 bool MpdMangerRun(const uint8_t *data, size_t size)
 {
-    if (size <= sizeof(int64_t)) {
+    if (data == nullptr) {
         return false;
     }
-    std::shared_ptr<DashMpdManager> mpdMpddownload = std::make_shared<DashMpdManager>();
-    mpdMpddownload->Reset();
-    DashMpdInfo *mangerInfo = new DashMpdInfo;
-    DashPeriodInfo *periodInfo = nullptr;
-    mangerInfo->periodInfoList_.push_back(periodInfo);
-    std::string mpdUrl = MPD_MULTI_AUDIO_SUB;
-    mpdMpddownload->SetMpdInfo(mangerInfo, mpdUrl);
-    mpdMpddownload->GetNextPeriod(periodInfo);
+    int32_t count = GetData<int32_t>();
+    count = std::min(count, MAX_COUNT);
+    while (count > 0) {
+        std::shared_ptr<DashMpdManager> mpdMpddownload = std::make_shared<DashMpdManager>();
+        mpdMpddownload->Reset();
+        DashMpdInfo *mangerInfo = new DashMpdInfo;
+        DashPeriodInfo *periodInfo = nullptr;
+        mangerInfo->periodInfoList_.push_back(periodInfo);
+        std::string mpdUrl = MPD_MULTI_AUDIO_SUB;
+        mpdMpddownload->SetMpdInfo(mangerInfo, mpdUrl);
+        mpdMpddownload->GetNextPeriod(periodInfo);
+        mpdMpddownload->GetMpdInfo();
+        mpdMpddownload->GetFirstPeriod();
+        mpdMpddownload->GetBaseUrl();
+        count = count - 1;
+    }
     return true;
 }
 
 bool DashMpdNodeRun(const uint8_t *data, size_t size)
 {
-    if (size <= sizeof(int64_t)) {
+    if (data == nullptr) {
         return false;
     }
-    std::shared_ptr<DashMpdNode> mpdMpddownload = std::make_shared<DashMpdNode>();
-    std::string addr = "hev1.1.6.L93.90";
-    int32_t iAttrVal = *reinterpret_cast<const int32_t *>(data);
-    uint64_t ullAttrVal = *reinterpret_cast<const uint64_t *>(data);
-    double dAttrVal = *reinterpret_cast<const double *>(data);
-    mpdMpddownload->GetAttr(addr, iAttrVal);
-    mpdMpddownload->GetAttr(addr, ullAttrVal);
-    mpdMpddownload->GetAttr(addr, dAttrVal);
-    std::shared_ptr<DashPeriodManager> dashPeriodManager = std::make_shared<DashPeriodManager>();
-    dashPeriodManager->Empty();
+    int32_t count = GetData<int32_t>();
+    count = std::min(count, MAX_COUNT);
+    while (count > 0) {
+        std::shared_ptr<DashMpdNode> mpdMpddownload = std::make_shared<DashMpdNode>();
+        std::string addr = "hev1.1.6.L93.90";
+        int32_t iAttrVal = GetData<int32_t>();
+        uint64_t ullAttrVal = GetData<uint64_t>();
+        double dAttrVal = GetData<double>();
+        mpdMpddownload->GetAttr(addr, iAttrVal);
+        mpdMpddownload->GetAttr(addr, ullAttrVal);
+        mpdMpddownload->GetAttr(addr, dAttrVal);
+        std::shared_ptr<DashPeriodManager> dashPeriodManager = std::make_shared<DashPeriodManager>();
+        dashPeriodManager->Empty();
+        count = count - 1;
+    }
     return true;
 }
 
 bool DashPeriodNodeRun(const uint8_t *data, size_t size)
 {
-    if (size <= sizeof(int64_t)) {
+    if (data == nullptr) {
         return false;
     }
-    std::shared_ptr<DashPeriodNode> mpdMpddownload = std::make_shared<DashPeriodNode>();
-    std::string addr = "hev1.1.6.L93.90";
-    uint32_t uiAttrVal = *reinterpret_cast<const uint32_t *>(data);
-    int32_t iAttrVal = *reinterpret_cast<const int32_t *>(data);
-    uint64_t ullAttrVal = *reinterpret_cast<const uint64_t *>(data);
-    double dAttrVal = *reinterpret_cast<const double *>(data);
-    mpdMpddownload->GetAttr(addr, uiAttrVal);
-    mpdMpddownload->GetAttr(addr, iAttrVal);
-    mpdMpddownload->GetAttr(addr, ullAttrVal);
-    mpdMpddownload->GetAttr(addr, dAttrVal);
+    int32_t count = GetData<int32_t>();
+    count = std::min(count, MAX_COUNT);
+    while (count > 0) {
+        std::shared_ptr<DashPeriodNode> mpdMpddownload = std::make_shared<DashPeriodNode>();
+        std::string addr = "hev1.1.6.L93.90";
+        uint32_t uiAttrVal = GetData<uint32_t>();
+        int32_t iAttrVal = GetData<int32_t>();
+        uint64_t ullAttrVal = GetData<uint64_t>();
+        double dAttrVal = GetData<double>();
+        mpdMpddownload->GetAttr(addr, uiAttrVal);
+        mpdMpddownload->GetAttr(addr, iAttrVal);
+        mpdMpddownload->GetAttr(addr, ullAttrVal);
+        mpdMpddownload->GetAttr(addr, dAttrVal);
+        count = count - 1;
+    }
     return true;
 }
 
 bool DashRepresenRun(const uint8_t *data, size_t size)
 {
-    if (size <= sizeof(int64_t)) {
+    if (data == nullptr) {
         return false;
     }
-    std::shared_ptr<DashRepresentationManager> mpdMpddownload = std::make_shared<DashRepresentationManager>();
-    mpdMpddownload->Reset();
-    mpdMpddownload->GetRepresentationInfo();
+    int32_t count = GetData<int32_t>();
+    count = std::min(count, MAX_COUNT);
+    while (count > 0) {
+        std::shared_ptr<DashRepresentationManager> mpdMpddownload = std::make_shared<DashRepresentationManager>();
+        int32_t flag = GetData<int32_t>();
+        mpdMpddownload->GetInitSegment(flag);
+        mpdMpddownload->Reset();
+        mpdMpddownload->GetRepresentationInfo();
+        mpdMpddownload->GetPreviousRepresentationInfo();
+        count = count - 1;
+    }
     return true;
 }
 
 bool DashRepresentationNodeRun(const uint8_t *data, size_t size)
 {
-    if (size <= sizeof(int64_t)) {
+    if (data == nullptr) {
         return false;
     }
-    std::shared_ptr<DashRepresentationNode> mpdMpddownload = std::make_shared<DashRepresentationNode>();
-    std::string addr = "hev1.1.6.L93.90";
-    uint32_t uiAttrVal = *reinterpret_cast<const uint32_t *>(data);
-    int32_t iAttrVal = *reinterpret_cast<const int32_t *>(data);
-    uint64_t ullAttrVal = *reinterpret_cast<const uint64_t *>(data);
-    double dAttrVal = *reinterpret_cast<const double *>(data);
-    mpdMpddownload->GetAttr(addr, uiAttrVal);
-    mpdMpddownload->GetAttr(addr, iAttrVal);
-    mpdMpddownload->GetAttr(addr, ullAttrVal);
-    mpdMpddownload->GetAttr(addr, dAttrVal);
+    int32_t count = GetData<int32_t>();
+    count = std::min(count, MAX_COUNT);
+    while (count > 0) {
+        std::shared_ptr<DashRepresentationNode> mpdMpddownload = std::make_shared<DashRepresentationNode>();
+        std::string addr = "hev1.1.6.L93.90";
+        uint32_t uiAttrVal = GetData<uint32_t>();
+        int32_t iAttrVal = GetData<int32_t>();
+        uint64_t ullAttrVal = GetData<uint64_t>();
+        double dAttrVal = GetData<double>();
+        mpdMpddownload->GetAttr(addr, uiAttrVal);
+        mpdMpddownload->GetAttr(addr, iAttrVal);
+        mpdMpddownload->GetAttr(addr, ullAttrVal);
+        mpdMpddownload->GetAttr(addr, dAttrVal);
+        count = count - 1;
+    }
     return true;
 }
 
 bool DashSegBaseNodeRun(const uint8_t *data, size_t size)
 {
-    if (size <= sizeof(int64_t)) {
+    if (data == nullptr) {
         return false;
     }
-    std::shared_ptr<DashSegBaseNode> mpdMpddownload = std::make_shared<DashSegBaseNode>();
-    std::string addr = "hev1.1.6.L93.90";
-    uint32_t uiAttrVal = *reinterpret_cast<const uint32_t *>(data);
-    int32_t iAttrVal = *reinterpret_cast<const int32_t *>(data);
-    uint64_t ullAttrVal = *reinterpret_cast<const uint64_t *>(data);
-    double dAttrVal = *reinterpret_cast<const double *>(data);
-    mpdMpddownload->GetAttr(addr, uiAttrVal);
-    mpdMpddownload->GetAttr(addr, iAttrVal);
-    mpdMpddownload->GetAttr(addr, ullAttrVal);
-    mpdMpddownload->GetAttr(addr, dAttrVal);
+    int32_t count = GetData<int32_t>();
+    count = std::min(count, MAX_COUNT);
+    while (count > 0) {
+        std::shared_ptr<DashSegBaseNode> mpdMpddownload = std::make_shared<DashSegBaseNode>();
+        std::string addr = "hev1.1.6.L93.90";
+        uint32_t uiAttrVal = GetData<uint32_t>();
+        int32_t iAttrVal = GetData<int32_t>();
+        uint64_t ullAttrVal = GetData<uint64_t>();
+        double dAttrVal = GetData<double>();
+        mpdMpddownload->GetAttr(addr, uiAttrVal);
+        mpdMpddownload->GetAttr(addr, iAttrVal);
+        mpdMpddownload->GetAttr(addr, ullAttrVal);
+        mpdMpddownload->GetAttr(addr, dAttrVal);
+        count = count - 1;
+    }
     return true;
 }
 
 bool DashUrlTypeNodeRun(const uint8_t *data, size_t size)
 {
-    if (size <= sizeof(int64_t)) {
+    if (data == nullptr) {
         return false;
     }
-    std::shared_ptr<DashUrlTypeNode> mpdMpddownload = std::make_shared<DashUrlTypeNode>();
-    std::string addr = "hev1.1.6.L93.90";
-    uint32_t uiAttrVal = *reinterpret_cast<const uint32_t *>(data);
-    int32_t iAttrVal = *reinterpret_cast<const int32_t *>(data);
-    uint64_t ullAttrVal = *reinterpret_cast<const uint64_t *>(data);
-    double dAttrVal = *reinterpret_cast<const double *>(data);
-    mpdMpddownload->GetAttr(addr, uiAttrVal);
-    mpdMpddownload->GetAttr(addr, iAttrVal);
-    mpdMpddownload->GetAttr(addr, ullAttrVal);
-    mpdMpddownload->GetAttr(addr, dAttrVal);
+    int32_t count = GetData<int32_t>();
+    count = std::min(count, MAX_COUNT);
+    while (count > 0) {
+        std::shared_ptr<DashUrlTypeNode> mpdMpddownload = std::make_shared<DashUrlTypeNode>();
+        std::string addr = "hev1.1.6.L93.90";
+        uint32_t uiAttrVal = GetData<uint32_t>();
+        int32_t iAttrVal = GetData<int32_t>();
+        uint64_t ullAttrVal = GetData<uint64_t>();
+        double dAttrVal = GetData<double>();
+        mpdMpddownload->GetAttr(addr, uiAttrVal);
+        mpdMpddownload->GetAttr(addr, iAttrVal);
+        mpdMpddownload->GetAttr(addr, ullAttrVal);
+        mpdMpddownload->GetAttr(addr, dAttrVal);
+        count = count - 1;
+    }
     return true;
 }
 }
@@ -315,13 +370,16 @@ bool DashUrlTypeNodeRun(const uint8_t *data, size_t size)
 }
 
 /* Fuzzer entry point */
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
+extern "C" int LLVMFuzzerTestOneInput(uint8_t *data, size_t size)
 {
     /* Run your code on data */
     if (!InitServer()) {
         cout << "Init server error" << endl;
         return -1;
     }
+    g_baseFuzzData = data;
+    g_baseFuzzSize = size;
+    g_baseFuzzPos = 0;
     OHOS::Media::Plugins::DashMediaFuzzerTest(data, size);
     OHOS::Media::Plugins::DashAdptRun(data, size);
     OHOS::Media::Plugins::DashDescriptorNodeRun(data, size);
@@ -330,6 +388,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::Media::Plugins::DashPeriodNodeRun(data, size);
     OHOS::Media::Plugins::DashRepresenRun(data, size);
     OHOS::Media::Plugins::DashRepresentationNodeRun(data, size);
+    OHOS::Media::Plugins::DashUrlTypeNodeRun(data, size);
+    OHOS::Media::Plugins::DashSegBaseNodeRun(data, size);
     if (!CloseServer()) {
         cout << "Close server error" << endl;
         return -1;

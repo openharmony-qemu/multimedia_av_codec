@@ -138,6 +138,7 @@ private:
 #ifdef USE_VIDEO_PROCESSING_ENGINE
     int32_t VrrPrediction(BufferInfo &info) override;
     int32_t InitVrr();
+    void CombineConsumerUsageByVpe(uint64_t& consumerUsage);
     static constexpr double VRR_DEFAULT_INPUT_FRAME_RATE = 60.0;
     using VrrCreate = Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle* (*)();
     using VrrDestroy = void (*)(Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle*);
@@ -145,6 +146,7 @@ private:
         const char *processName);
     using VrrProcess = void (*)(Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle*,
         OH_NativeBuffer*, int32_t, int32_t);
+    using VpeVideoGetSupportedListByType = bool (*)(uint32_t, std::vector<std::string>&);
     VrrCreate VrrCreateFunc_ = nullptr;
     VrrDestroy VrrDestroyFunc_ = nullptr;
     VrrCheckSupport VrrCheckSupportFunc_ = nullptr;

@@ -25,6 +25,7 @@
 #include "codeclist_service_stub.h"
 #include "iservice_registry.h"
 #include "mem_mgr_client.h"
+#include "statistics_event_handler.h"
 #include "system_ability.h"
 #include "system_ability_definition.h"
 
@@ -62,7 +63,10 @@ private:
 
 void SaAVCodecUnitTest::SetUpTestCase(void) {}
 
-void SaAVCodecUnitTest::TearDownTestCase(void) {}
+void SaAVCodecUnitTest::TearDownTestCase(void)
+{
+    StatisticsEventInfo::GetInstance().timer_ = nullptr;
+}
 
 void SaAVCodecUnitTest::SetUp(void)
 {
@@ -376,7 +380,7 @@ void PrintAndCloseFd(int32_t fd)
 HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_Dump_001, TestSize.Level1)
 {
     auto server = CreateAVCodecServer();
-    std::vector<std::u16string> args = {u"All"};
+    std::vector<std::u16string> args = {u"Codec"};
     int32_t fileFd = open(DUMP_FILE_PATH.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP);
     EXPECT_CALL(*codecStubMock_, Dump).Times(AtLeast(1)).WillRepeatedly(Return(OHOS::NO_ERROR));
 

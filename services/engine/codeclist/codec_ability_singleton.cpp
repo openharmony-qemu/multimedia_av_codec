@@ -20,6 +20,7 @@
 #include "hcodec_loader.h"
 #endif
 #include "codec_ability_singleton.h"
+#include "instance_info.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecAbilitySingleton"};
@@ -124,28 +125,39 @@ void CodecAbilitySingleton::RegisterCapabilityArray(std::vector<CapabilityData> 
             mimeCapIdxMap_.insert(std::make_pair(mimeType, idxVec));
         }
         if ((*iter).profileLevelsMap.size() > MAX_MAP_SIZE) {
-            while ((*iter).profileLevelsMap.size() > MAX_MAP_SIZE) {
-                auto rIter = (*iter).profileLevelsMap.end();
-                (*iter).profileLevelsMap.erase(--rIter);
+            AVCODEC_LOGW("current profileLevelsMap size: %{public}zu, codecName is %{public}s",
+                (*iter).profileLevelsMap.size(), (*iter).codecName.c_str());
+            std::map<int32_t, std::vector<int32_t>> oldProfileLevelsMap = (*iter).profileLevelsMap;
+            std::map<int32_t, std::vector<int32_t>> newProfileLevelsMap;
+            auto it = oldProfileLevelsMap.begin();
+            for (uint32_t i = 0u; i < MAX_MAP_SIZE && it != oldProfileLevelsMap.end(); ++i, ++it) {
+                newProfileLevelsMap.insert(*it);
             }
+            (*iter).profileLevelsMap = newProfileLevelsMap;
             std::vector<int32_t> newProfiles;
-            (*iter).profiles.swap(newProfiles);
-            auto nIter = (*iter).profileLevelsMap.begin();
-            while (nIter != (*iter).profileLevelsMap.end()) {
-                (*iter).profiles.emplace_back(nIter->first);
+            auto nIter = newProfileLevelsMap.begin();
+            while (nIter != newProfileLevelsMap.end()) {
+                newProfiles.emplace_back(nIter->first);
                 nIter++;
             }
+            (*iter).profiles.swap(newProfiles);
         }
-        while ((*iter).measuredFrameRate.size() > MAX_MAP_SIZE) {
-            auto rIter = (*iter).measuredFrameRate.end();
-            (*iter).measuredFrameRate.erase(--rIter);
+        if ((*iter).measuredFrameRate.size() > MAX_MAP_SIZE) {
+            AVCODEC_LOGW("current measuredFrameRate map size: %{public}zu, codecName is %{public}s",
+                (*iter).measuredFrameRate.size(), (*iter).codecName.c_str());
+            std::map<ImgSize, Range> oldMeasuredFrameRate = (*iter).measuredFrameRate;
+            std::map<ImgSize, Range> newMeasuredFrameRate;
+            auto it = oldMeasuredFrameRate.begin();
+            for (uint32_t i = 0u; i < MAX_MAP_SIZE && it != oldMeasuredFrameRate.end(); ++i, ++it) {
+                newMeasuredFrameRate.insert(*it);
+            }
+            (*iter).measuredFrameRate = newMeasuredFrameRate;
         }
         capabilityDataArray_.emplace_back(*iter);
         mimeCapIdxMap_.at(mimeType).emplace_back(beginIdx);
         nameCodecTypeMap_.insert(std::make_pair((*iter).codecName, codecType));
         beginIdx++;
     }
-    AVCODEC_LOGD("Register capability successful");
 }
 
 std::vector<CapabilityData> CodecAbilitySingleton::GetCapabilityArray()
@@ -183,6 +195,35 @@ std::unordered_map<std::string, std::vector<size_t>> CodecAbilitySingleton::GetM
 {
     std::lock_guard<std::mutex> lock(mutex_);
     return mimeCapIdxMap_;
+}
+
+int32_t CodecAbilitySingleton::GetVideoCodecTypeByCodecName(const std::string &codecName)
+{
+    constexpr auto hdecPair = std::pair(true,  static_cast<int32_t>(AVCODEC_TYPE_VIDEO_DECODER));
+    constexpr auto sdecPair = std::pair(false, static_cast<int32_t>(AVCODEC_TYPE_VIDEO_DECODER));
+    constexpr auto hencPair = std::pair(true,  static_cast<int32_t>(AVCODEC_TYPE_VIDEO_ENCODER));
+    constexpr auto sencPair = std::pair(false, static_cast<int32_t>(AVCODEC_TYPE_VIDEO_ENCODER));
+
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto it = std::find_if(capabilityDataArray_.begin(), capabilityDataArray_.end(), [&](const CapabilityData &cap) {
+        return cap.codecName == codecName;
+    });
+    if (it == capabilityDataArray_.end()) {
+        return static_cast<int32_t>(VideoCodecType::UNKNOWN);
+    }
+
+    int32_t ret = static_cast<int32_t>(VideoCodecType::UNKNOWN);
+    auto vcodecTypePair = std::make_pair(it->isVendor, it->codecType);
+    if (vcodecTypePair == hdecPair) {
+        ret = static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE);
+    } else if (vcodecTypePair == hencPair) {
+        ret = static_cast<int32_t>(VideoCodecType::ENCODER_HARDWARE);
+    } else if (vcodecTypePair == sdecPair) {
+        ret = static_cast<int32_t>(VideoCodecType::DECODER_SOFTWARE);
+    } else if (vcodecTypePair == sencPair) {
+        ret = static_cast<int32_t>(VideoCodecType::ENCODER_SOFTWARE);
+    }
+    return ret;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

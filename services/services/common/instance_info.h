@@ -22,6 +22,7 @@
 #include "avcodec_info.h"
 #include "meta.h"
 #include "meta/meta_key.h"
+#include "event_info_extented_key.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -29,21 +30,13 @@ using InstanceId = int32_t;
 constexpr pid_t INVALID_PID = -1;
 constexpr InstanceId INVALID_INSTANCE_ID = -1;
 
-class EventInfoExtentedKey {
-public:
-    static constexpr std::string_view INSTANCE_ID = "av_codec_event_info_instance_id";
-    static constexpr std::string_view CODEC_TYPE = "av_codec_event_info_codec_type";
-    static constexpr std::string_view IS_HARDWARE = "IS_VENDOR";
-    static constexpr std::string_view BIT_DEPTH = "av_codec_event_info_bit_depth";
-    static constexpr std::string_view ENABLE_POST_PROCESSING = "av_codec_event_info_enable_post_processing";
-    static constexpr std::string_view PIXEL_FORMAT_STRING = "pixel_format_string";
-
-    static int32_t GetInstanceIdFromMeta(const Media::Meta &meta)
-    {
-        auto instanceId = INVALID_INSTANCE_ID;
-        meta.GetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId);
-        return instanceId;
-    }
+enum class VideoCodecType : int16_t {
+    UNKNOWN,
+    DECODER_HARDWARE,
+    DECODER_SOFTWARE,
+    ENCODER_HARDWARE,
+    ENCODER_SOFTWARE,
+    END,
 };
 
 struct CallerInfo {
@@ -59,6 +52,7 @@ struct InstanceInfo {
     AVCodecType codecType;
     uint32_t memoryUsage = 0;
     std::string codecName = "";
+    VideoCodecType videoCodecType = VideoCodecType::UNKNOWN;
 
     void Print()
     {
@@ -67,7 +61,32 @@ struct InstanceInfo {
             ", CodecType: %{public}d, MemoryUsage: %{public}u", instanceId, caller.pid, caller.processName.c_str(),
             forwardCaller.pid, forwardCaller.processName.c_str(), codecType, memoryUsage);
     }
+
+    pid_t GetActualCallerPid() const
+    {
+        if (forwardCaller.pid != INVALID_INSTANCE_ID) {
+            return forwardCaller.pid;
+        } else {
+            return caller.pid;
+        }
+    }
+
+    std::string GetActualCallerProcessName() const
+    {
+        if (forwardCaller.pid != INVALID_INSTANCE_ID) {
+            return forwardCaller.processName;
+        } else {
+            return caller.processName;
+        }
+    }
 };
+
+[[maybe_unused]] static int32_t GetInstanceIdFromMeta(const Media::Meta &meta)
+{
+    auto instanceId = INVALID_INSTANCE_ID;
+    meta.GetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId);
+    return instanceId;
+}
 } // namespace MediaAVCodec
 } // namespace OHOS
 #endif // AVCODEC_INSTANCE_INFO_H

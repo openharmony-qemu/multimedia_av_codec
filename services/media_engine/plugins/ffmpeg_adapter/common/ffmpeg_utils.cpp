@@ -32,6 +32,16 @@ constexpr uint32_t FLAC_CODEC_CONFIG_SIZE = 34;
 #define AV_CODEC_USECOND (static_cast<int64_t>(1000) * AV_CODEC_NSECOND)
 #define AV_CODEC_MSECOND (static_cast<int64_t>(1000) * AV_CODEC_USECOND)
 #define AV_CODEC_SECOND (static_cast<int64_t>(1000) * AV_CODEC_MSECOND)
+const int32_t NAL_START_CODE_SIZE = 4;
+const uint8_t START_CODE[] = {0x00, 0x00, 0x01};
+// position of nal unit type
+const int32_t POS_0 = 0;
+const int32_t POS_1 = 1;
+const int32_t POS_2 = 2;
+const int32_t POS_3 = 3;
+const int32_t POS_8 = 8;
+const int32_t POS_16 = 16;
+const int32_t POS_24 = 24;
 
 namespace OHOS {
 namespace Media {
@@ -48,6 +58,8 @@ bool Mime2CodecId(const std::string &mime, AVCodecID &codecId)
         {MimeType::AUDIO_RAW, AV_CODEC_ID_PCM_U8},
         {MimeType::AUDIO_G711MU, AV_CODEC_ID_PCM_MULAW},
         {MimeType::AUDIO_FLAC, AV_CODEC_ID_FLAC},
+        {MimeType::AUDIO_OPUS, AV_CODEC_ID_OPUS},
+        {MimeType::AUDIO_VORBIS, AV_CODEC_ID_VORBIS},
         {MimeType::VIDEO_MPEG4, AV_CODEC_ID_MPEG4},
         {MimeType::VIDEO_AVC, AV_CODEC_ID_H264},
         {MimeType::VIDEO_HEVC, AV_CODEC_ID_HEVC},
@@ -617,6 +629,105 @@ std::string hexEncode(const std::vector<uint8_t>& data)
         result.push_back(hexDigits[c & 0xF]);
     }
     return result;
+}
+
+bool IsBeginAsAnnexb(const uint8_t *sample, int32_t size)
+{
+    if (size < NAL_START_CODE_SIZE) {
+        return false;
+    }
+    bool hasShortStartCode = (sample[0] == 0 && sample[1] == 0 && sample[2] == 1); // 001
+    bool hasLongStartCode = (sample[0] == 0 && sample[1] == 0 && sample[2] == 0 && sample[3] == 1); // 0001
+    return hasShortStartCode || hasLongStartCode;
+}
+
+int32_t GetNaluSize(const uint8_t *nalStart)
+{
+    return static_cast<int32_t>(
+        (nalStart[POS_3]) | (nalStart[POS_2] << POS_8) | (nalStart[POS_1] << POS_16) | (nalStart[POS_0] << POS_24));
+}
+
+bool IsHvccSyncFrame(const uint8_t *sample, int32_t size)
+{
+    const uint8_t* nalStart = sample;
+    const uint8_t* end = nalStart + size;
+    int32_t sizeLen = NAL_START_CODE_SIZE;
+    int32_t naluSize = 0;
+    naluSize = GetNaluSize(nalStart);
+    if (naluSize <= 0 || nalStart > end - sizeLen) {
+        return false;
+    }
+    nalStart = nalStart + sizeLen;
+    while (nalStart < end) {
+        uint8_t naluType = static_cast<uint8_t>((nalStart[0] & 0x7E) >> 1);
+        if (naluType > 0x10 && naluType <= 0x17) {
+            return true;
+        }
+        if (nalStart > end - naluSize) {
+            return false;
+        }
+        nalStart = nalStart + naluSize;
+        if (nalStart > end - sizeLen) {
+            return false;
+        }
+        naluSize = GetNaluSize(nalStart);
+        if (naluSize < 0) {
+            return false;
+        }
+        nalStart = nalStart + sizeLen;
+    }
+    return false;
+}
+
+const uint8_t* FindNalStartCode(const uint8_t *start, const uint8_t *end, int32_t &startCodeLen)
+{
+    startCodeLen = sizeof(START_CODE);
+    auto *iter = std::search(start, end, START_CODE, START_CODE + startCodeLen);
+    if (iter != end && (iter > start && *(iter - 1) == 0x00)) {
+        ++startCodeLen;
+        return iter - 1;
+    }
+    return iter;
+}
+
+bool IsAnnexbSyncFrame(const uint8_t *sample, int32_t size)
+{
+    if (sample == nullptr || size < 0) {
+        return false;
+    }
+    const uint8_t* nalStart = sample;
+    const uint8_t* end = nalStart + size;
+    const uint8_t* nalEnd = nullptr;
+    int32_t startCodeLen = 0;
+    nalStart = FindNalStartCode(nalStart, end, startCodeLen);
+    if (nalStart > end - startCodeLen) {
+        return false;
+    }
+    nalStart = nalStart + startCodeLen;
+    while (nalStart < end) {
+        nalEnd = FindNalStartCode(nalStart, end, startCodeLen);
+        uint8_t naluType = static_cast<uint8_t>((nalStart[0] & 0x7E) >> 1);
+        if (naluType > 0x10 && naluType <= 0x17) {
+            return true;
+        }
+        if (nalEnd > end - startCodeLen) {
+            return false;
+        }
+        nalStart = nalEnd + startCodeLen;
+    }
+    return false;
+}
+
+bool IsHevcSyncFrame(const uint8_t *sample, int32_t size)
+{
+    if (size < NAL_START_CODE_SIZE) {
+        return false;
+    }
+    if (IsBeginAsAnnexb(sample, size)) {
+        return IsAnnexbSyncFrame(sample, size);
+    } else {
+        return IsHvccSyncFrame(sample, size);
+    }
 }
 } // namespace Ffmpeg
 } // namespace Plugins

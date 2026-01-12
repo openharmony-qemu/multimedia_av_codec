@@ -111,6 +111,7 @@ public:
     Status SetLoudnessGain(float loudnessGain);
     Status CacheBuffer();
     void SetBuffering(bool isBuffering);
+    void SetAudioPassFlag(bool isAudioPass);
     void OnFirstFrameWriting();
 
 protected:
@@ -331,6 +332,7 @@ private:
     int32_t maxCbDataSize_ {0};
     std::queue<std::shared_ptr<AVBuffer>> swapOutputBuffers_ {};
     bool isBuffering_ {false};
+    bool isAudioPass_ {false};
     bool isFirstFrameWrite_ {false};
 };
 }

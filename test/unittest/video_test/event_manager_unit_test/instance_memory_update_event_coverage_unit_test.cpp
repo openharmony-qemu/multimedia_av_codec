@@ -169,7 +169,7 @@ HWTEST_F(TEST_SUIT, DeterminAppMemoryExceedThresholdAndReport_Test_003, TestSize
     pid_t pid = getpid();
     auto timeName = std::string("Pid_") + std::to_string(pid) + " memory exceeded threshold";
     instanceMemoryHandler_->timerMap_.emplace(
-        pid, std::make_shared<AVCodecXcollieTimer>(timeName, false, MEMORY_LEAK_UPLOAD_TIMEOUT, nullptr));
+        pid, std::make_shared<AVCodecXcollieTimer>(timeName, false, true, MEMORY_LEAK_UPLOAD_TIMEOUT, nullptr));
     instanceMemoryHandler_->appMemoryThreshold_ = 0;
     instanceMemoryHandler_->UpdateInstanceMemory(instanceId_, DEFAULT_MEMORY);
     instanceMemoryHandler_->appMemoryExceedThresholdList_.clear();
@@ -187,7 +187,7 @@ HWTEST_F(TEST_SUIT, DeterminAppMemoryExceedThresholdAndReport_Test_004, TestSize
     pid_t pid = getpid();
     auto timeName = std::string("Pid_") + std::to_string(pid) + " memory exceeded threshold";
     instanceMemoryHandler_->timerMap_.emplace(
-        pid, std::make_shared<AVCodecXcollieTimer>(timeName, false, MEMORY_LEAK_UPLOAD_TIMEOUT, nullptr));
+        pid, std::make_shared<AVCodecXcollieTimer>(timeName, false, true, MEMORY_LEAK_UPLOAD_TIMEOUT, nullptr));
     instanceMemoryHandler_->appMemoryThreshold_ = INT32_MAX;
     instanceMemoryHandler_->appMemoryExceedThresholdList_.clear();
     instanceMemoryHandler_->DeterminAppMemoryExceedThresholdAndReport(pid, pid);
@@ -237,7 +237,7 @@ HWTEST_F(TEST_SUIT, DeterminAppMemoryExceedThresholdAndReport_Test_007, TestSize
     pid_t pid = getpid();
     auto timeName = std::string("Pid_") + std::to_string(pid) + " memory exceeded threshold";
     instanceMemoryHandler_->timerMap_.emplace(
-        pid, std::make_shared<AVCodecXcollieTimer>(timeName, false, MEMORY_LEAK_UPLOAD_TIMEOUT, nullptr));
+        pid, std::make_shared<AVCodecXcollieTimer>(timeName, false, true, MEMORY_LEAK_UPLOAD_TIMEOUT, nullptr));
     instanceMemoryHandler_->appMemoryThreshold_ = 0;
     instanceMemoryHandler_->UpdateInstanceMemory(instanceId_, DEFAULT_MEMORY);
     instanceMemoryHandler_->appMemoryExceedThresholdList_.emplace(pid);
@@ -255,7 +255,7 @@ HWTEST_F(TEST_SUIT, DeterminAppMemoryExceedThresholdAndReport_Test_008, TestSize
     pid_t pid = getpid();
     auto timeName = std::string("Pid_") + std::to_string(pid) + " memory exceeded threshold";
     instanceMemoryHandler_->timerMap_.emplace(
-        pid, std::make_shared<AVCodecXcollieTimer>(timeName, false, MEMORY_LEAK_UPLOAD_TIMEOUT, nullptr));
+        pid, std::make_shared<AVCodecXcollieTimer>(timeName, false, true, MEMORY_LEAK_UPLOAD_TIMEOUT, nullptr));
     instanceMemoryHandler_->appMemoryThreshold_ = INT32_MAX;
     instanceMemoryHandler_->appMemoryExceedThresholdList_.emplace(pid);
     instanceMemoryHandler_->DeterminAppMemoryExceedThresholdAndReport(pid, pid);

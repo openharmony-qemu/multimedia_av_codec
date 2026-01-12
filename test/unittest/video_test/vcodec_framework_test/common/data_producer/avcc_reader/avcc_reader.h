@@ -377,8 +377,8 @@ struct Msvideo1ReaderInfo {
 class Msvideo1Reader : public DataProducerBase {
 public:
     int32_t FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr) override;
-    void FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t naluType, bool isEosFrame);
-    bool IsEOS();
+    void FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t msvideo1Type, bool isEosFrame);
+    bool IsEOS() const;
     int32_t Init(const std::shared_ptr<Msvideo1ReaderInfo> &info);
     std::mutex mutex_;
     int32_t frameInputCount_ = 0;
@@ -404,7 +404,7 @@ private:
     class Msvideo1MetaUnitReader : public Msvideo1UnitReader {
     public:
         explicit Msvideo1MetaUnitReader(std::shared_ptr<std::ifstream> inputFile);
-        int32_t ReadMsvideo1Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) override;
+        int32_t ReadMsvideo1Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEosFrame) override;
         bool IsEOS() override;
         void PrereadFile() override;
         void PrereadMsvideo1Unit() override;
@@ -420,9 +420,9 @@ private:
     class Msvideo1Detector {
     public:
         uint8_t* GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend);
-        const uint8_t *GetMsvideo1TypeAddr(const uint8_t *bufferAddr);
-        uint8_t GetMsvideo1Type(const uint8_t *bufferAddr);
-        bool IsI(uint8_t msvideo1Type);
+        const uint8_t *GetMsvideo1TypeAddr(const uint8_t *bufferAddr) const;
+        uint8_t GetMsvideo1Type(const uint8_t *bufferAddr) const;
+        bool IsI(uint8_t msvideo1Type) const;
     };
 
     std::shared_ptr<Msvideo1UnitReader> msvideo1UnitReader_ = nullptr;
@@ -438,7 +438,7 @@ class Wmv3Reader : public DataProducerBase {
 public:
     int32_t FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr) override;
     void FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t frameType, bool isEosFrame);
-    bool IsEOS();
+    bool IsEOS() const;
     int32_t Init(const std::shared_ptr<Wmv3ReaderInfo> &info);
     std::mutex mutex_;
     int32_t frameInputCount_ = 0;
@@ -447,7 +447,7 @@ private:
     public:
         explicit Wmv3UnitReader(std::shared_ptr<std::ifstream> inputFile) : inputFile_(inputFile) {}
         virtual ~Wmv3UnitReader() {};
-        uint8_t const *GetNextWmv3UnitAddr();
+        uint8_t const *GetNextWmv3UnitAddr() const;
         virtual int32_t ReadWmv3Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) = 0;
         virtual bool IsEOS() = 0;
         virtual void PrereadFile() = 0;
@@ -463,14 +463,14 @@ private:
     class Wmv3MetaUnitReader : public Wmv3UnitReader {
     public:
         explicit Wmv3MetaUnitReader(std::shared_ptr<std::ifstream> inputFile, bool isMainStream);
-        int32_t ReadWmv3Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) override;
+        int32_t ReadWmv3Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEosFrame) override;
         bool IsEOS() override;
         void PrereadFile() override;
         void PrereadWmv3Unit();
 
     private:
         bool IsEOF() override;
-        uint32_t GetFrameLenth(uint32_t index);
+        uint32_t GetFrameLenth(uint32_t index) const;
         std::unique_ptr<uint8_t []> prereadBuffer_ = nullptr;
         uint32_t prereadBufferSize_ = 0;
         uint32_t pPrereadBuffer_ = 0;
@@ -848,7 +848,7 @@ class Mpeg1Reader : public DataProducerBase {
 public:
     int32_t FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr) override;
     void FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t mpeg1Type, bool isEosFrame);
-    bool IsEOS();
+    bool IsEOS() const;
     int32_t Init(const std::shared_ptr<Mpeg1ReaderInfo> &info);
 
     std::mutex mutex_;
@@ -860,7 +860,7 @@ private:
         explicit Mpeg1UnitReader(std::shared_ptr<std::ifstream> inputFile) : inputFile_(inputFile) {}
         virtual ~Mpeg1UnitReader() = default;
 
-        uint8_t const *GetNextMpeg1UnitAddr();
+        uint8_t const *GetNextMpeg1UnitAddr() const;
         virtual int32_t ReadMpeg1Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) = 0;
         virtual bool IsEOS() = 0;
         virtual void PrereadFile() = 0;
@@ -877,7 +877,7 @@ private:
     class Mpeg1MetaUnitReader : public Mpeg1UnitReader {
     public:
         explicit Mpeg1MetaUnitReader(std::shared_ptr<std::ifstream> inputFile);
-        int32_t ReadMpeg1Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) override;
+        int32_t ReadMpeg1Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEosFrame) override;
         bool IsEOS() override;
         void PrereadFile() override;
         void PrereadMpeg1Unit() override;
@@ -893,14 +893,143 @@ private:
 
     class Mpeg1Detector {
     public:
-        uint8_t* GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend);
-        const uint8_t *GetMpeg1TypeAddr(const uint8_t *bufferAddr);
-        uint8_t GetMpeg1Type(const uint8_t *bufferAddr);
-        bool IsI(uint8_t mpeg1Type);
+        uint8_t* GetDelimiterPos(const uint8_t* addrstart, const uint8_t* addrend) const;
+        const uint8_t *GetMpeg1TypeAddr(const uint8_t *bufferAddr) const;
+        uint8_t GetMpeg1Type(const uint8_t *bufferAddr) const;
+        bool IsI(uint8_t mpeg1Type) const;
     };
 
     std::shared_ptr<Mpeg1UnitReader> mpeg1UnitReader_ = nullptr;
     std::shared_ptr<Mpeg1Detector> mpeg1Detector_ = nullptr;
+};
+
+struct DvvideoReaderInfo {
+    std::string inPath;
+};
+class DvvideoReader : public DataProducerBase {
+public:
+    DvvideoReader() = default;
+    ~DvvideoReader() = default;
+
+    int32_t Init(const std::shared_ptr<DvvideoReaderInfo>& info);
+    int32_t FillBuffer(uint8_t* bufferAddr, OH_AVCodecBufferAttr& attr);
+    bool IsEOS();
+
+private:
+    class DvvideoUnitReader {
+    public:
+        virtual ~DvvideoUnitReader() = default;
+        virtual int32_t ReadDvvideoUnit(uint8_t* bufferAddr, int32_t& bufferSize, bool& isEosFrame) = 0;
+        virtual bool IsEOS() = 0;
+        virtual bool IsEOF() = 0;
+    protected:
+        virtual void PrereadDvvideoUnit() = 0;
+    };
+
+    class DvvideoMetaUnitReader : public DvvideoUnitReader {
+    public:
+        explicit DvvideoMetaUnitReader(std::shared_ptr<std::ifstream> inputFile);
+        ~DvvideoMetaUnitReader() override = default;
+
+        int32_t ReadDvvideoUnit(uint8_t* bufferAddr, int32_t& bufferSize, bool& isEosFrame) override;
+        bool IsEOS() override;
+        bool IsEOF() override;
+
+    private:
+        void PrereadFile();
+        void PrereadDvvideoUnit() override;
+
+        std::shared_ptr<std::ifstream> inputFile_;
+        std::unique_ptr<uint8_t[]> prereadBuffer_;
+        uint32_t prereadBufferSize_ = 0;
+        uint32_t pPrereadBuffer_ = 0;
+
+        std::unique_ptr<std::vector<uint8_t>> dvvideoUnit_;
+        uint32_t frameIndex_ = 0;
+    };
+    class DvvideoDetector {
+    public:
+        DvvideoDetector() = default;
+        ~DvvideoDetector() = default;
+
+        const uint8_t* GetDvvideoTypeAddr(const uint8_t* bufferAddr);
+        uint8_t GetDvvideoType(const uint8_t* bufferAddr);
+        bool IsI(uint8_t dvvideoType);
+    };
+
+private:
+    void FillBufferAttr(OH_AVCodecBufferAttr& attr, int32_t frameSize,
+                        uint8_t dvvideoType, bool isEosFrame);
+
+    std::mutex mutex_;
+    std::shared_ptr<DvvideoUnitReader> dvvideoUnitReader_;
+    std::shared_ptr<DvvideoDetector> dvvideoDetector_;
+    uint32_t frameInputCount_ = 0;
+};
+
+struct RawvideoReaderInfo {
+    std::string inPath;
+};
+
+class RawvideoReader : public DataProducerBase {
+public:
+    RawvideoReader() = default;
+    ~RawvideoReader() = default;
+
+    int32_t Init(const std::shared_ptr<RawvideoReaderInfo>& info);
+    int32_t FillBuffer(uint8_t* bufferAddr, OH_AVCodecBufferAttr& attr);
+    bool IsEOS();
+
+private:
+    class RawvideoUnitReader {
+    public:
+        virtual ~RawvideoUnitReader() = default;
+        virtual int32_t ReadRawvideoUnit(uint8_t* bufferAddr, int32_t& bufferSize, bool& isEosFrame) = 0;
+        virtual bool IsEOS() = 0;
+        virtual bool IsEOF() = 0;
+    protected:
+        virtual void PrereadRawvideoUnit() = 0;
+    };
+
+    class RawvideoMetaUnitReader : public RawvideoUnitReader {
+    public:
+        explicit RawvideoMetaUnitReader(std::shared_ptr<std::ifstream> inputFile);
+        ~RawvideoMetaUnitReader() override = default;
+
+        int32_t ReadRawvideoUnit(uint8_t* bufferAddr, int32_t& bufferSize, bool& isEosFrame) override;
+        bool IsEOS() override;
+        bool IsEOF() override;
+
+    private:
+        void PrereadFile();
+        void PrereadRawvideoUnit() override;
+
+        std::shared_ptr<std::ifstream> inputFile_;
+        std::unique_ptr<uint8_t[]> prereadBuffer_;
+        uint32_t prereadBufferSize_ = 0;
+        uint32_t pPrereadBuffer_ = 0;
+
+        std::unique_ptr<std::vector<uint8_t>> rawvideoUnit_;
+        uint32_t frameIndex_ = 0;
+    };
+    class RawvideoDetector {
+    public:
+        RawvideoDetector() = default;
+        ~RawvideoDetector() = default;
+
+        const uint8_t* GetRawvideoTypeAddr(const uint8_t* bufferAddr);
+        uint8_t GetRawvideoType(const uint8_t* bufferAddr);
+        bool IsI(uint8_t rawvideoType);
+    };
+
+private:
+    void FillBufferAttr(OH_AVCodecBufferAttr& attr, int32_t frameSize,
+                        uint8_t rawvideoType, bool isEosFrame);
+
+    std::mutex mutex_;
+    std::shared_ptr<RawvideoUnitReader> rawvideoUnitReader_;
+    std::shared_ptr<RawvideoDetector> rawvideoDetector_;
+    uint32_t frameInputCount_ = 0;
 };
 } // MediaAVCodec
 } // OHOS

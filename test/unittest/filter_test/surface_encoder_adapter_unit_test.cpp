@@ -17,7 +17,6 @@
 #include "surface_encoder_adapter.h"
 #include "avcodec_info.h"
 #include "avcodec_common.h"
-#include "codec_server.h"
 #include "meta/format.h"
 #include "media_description.h"
 #include "native_avcapability.h"
@@ -430,6 +429,25 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_CheckFrames_100, T
     surfaceEncoderAdapter_->pauseResumeQueue_.push_back(std::make_pair(100, StateCode::PAUSE));
     bool result = surfaceEncoderAdapter_->CheckFrames(currentPts, checkFramesPauseTime);
     ASSERT_EQ(result, false);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_CheckAndAdjustFrameRate_100
+ * @tc.desc: CheckAndAdjustFrameRate
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_CheckAndAdjustFrameRate_100, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->isStopKeyFramePts_ = true;
+    surfaceEncoderAdapter_->isSupportBoostFrameRate_ = true;
+    surfaceEncoderAdapter_->stoppedVideoFrameCount_ = 2;
+    surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
+    surfaceEncoderAdapter_->codecMimeType_ = "video/avc";
+    surfaceEncoderAdapter_->videoWidth_ = 1920;
+    surfaceEncoderAdapter_->videoHeight_ = 1080;
+    surfaceEncoderAdapter_->IsSupportBoostFrameRate();
+    Status ret = surfaceEncoderAdapter_->CheckAndAdjustFrameRate();
+    EXPECT_EQ(ret, Status::OK);
 }
 
 /**

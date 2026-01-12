@@ -17,6 +17,8 @@
 #include <iostream>
 #include <unordered_map>
 #include <unistd.h>
+#include <vector>
+#include <thread>
 #include "sample_base.h"
 #include "av_codec_sample_log.h"
 #include "av_codec_sample_error.h"
@@ -84,16 +86,31 @@ std::string ToString(OH_AVPixelFormat pixelFormat)
 
 int32_t RunSample(const SampleInfo &info)
 {
-    std::shared_ptr<SampleBase> sample = SampleFactory::CreateSample(info);
-
     Pause(info.pauseBeforeRunSample);
 
-    int32_t ret = sample->Create(info);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Create failed");
-    ret = sample->Start();
-    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Start failed");
-    ret = sample->WaitForSampleDone();
-    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Wait for done failed");
+    auto runSampleOnce = [](const SampleInfo &info, int32_t count) -> int32_t {
+        pthread_setname_np(pthread_self(), (std::string("VCD_Instance_") + std::to_string(count)).c_str());
+        std::shared_ptr<SampleBase> sample = SampleFactory::CreateSample(info);
+        int32_t ret = sample->Create(info);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Create failed");
+        ret = sample->Start();
+        CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Start failed");
+        ret = sample->WaitForSampleDone();
+        CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Wait for done failed");
+        return AVCODEC_SAMPLE_ERR_OK;
+    };
+
+    auto sampleThreadVec = std::vector<std::shared_ptr<std::thread>>();
+    for (int32_t count = 0; count < info.sampleCount; count++) {
+        sampleThreadVec.emplace_back(std::make_shared<std::thread>(runSampleOnce, info, count));
+    }
+
+    for (const auto &sampleThread : sampleThreadVec) {
+        if (sampleThread != nullptr && sampleThread->joinable()) {
+            sampleThread->join();
+        }
+    }
+
     return AVCODEC_SAMPLE_ERR_OK;
 }
 

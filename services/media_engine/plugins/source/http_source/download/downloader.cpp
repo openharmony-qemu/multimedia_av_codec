@@ -705,6 +705,9 @@ void Downloader::HandleResponseCb(int32_t clientCode, int32_t serverCode, Status
         return;
     }
     if (ret == Status::OK) {
+        MEDIA_LOG_I("Client request data OK. ret = " PUBLIC_LOG_D32 ", clientCode = " PUBLIC_LOG_D32
+            ", request queue size: " PUBLIC_LOG_U64, static_cast<int32_t>(ret),
+            static_cast<int32_t>(clientCode), static_cast<int64_t>(requestQue_->Size()));
         HandleRetOK();
     } else {
         PauseLoop(true);
@@ -748,10 +751,13 @@ void Downloader::RequestData()
     if (currentRequest_->requestWholeFile_) {
         len = 0;
     }
-    if (toalDownloadCount_ == 0) {
+    if (!isFirstDownload_) {
         startDownTime_ = GetCurrentMillisecond();
+        isFirstDownload_ = true;
     }
-    toalDownloadCount_++;
+    if (downloadCallback_ != nullptr) {
+        downloadCallback_->UpdateTotalDownloadCount();
+    }
     client_->RequestData(startPos, len, sourceInfo, handleResponseCb);
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " RequestData end.", FAKE_POINTER(this));
 }
@@ -1139,7 +1145,7 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
         if (!strncmp(StringTrim(token), "chunked", strlen("chunked")) &&
             !mediaDownloader->currentRequest_->IsM3u8Request()) {
             info->isChunked = true;
-            if (static_cast<int32_t>(mediaDownloader->currentRequest_->url_.find(".flv") == std::string::npos)) {
+            if (mediaDownloader->currentRequest_->url_.find(".flv") == std::string::npos) {
                 info->contentLen = LIVE_CONTENT_LENGTH;
             } else {
                 info->contentLen = 0;
@@ -1281,13 +1287,9 @@ void Downloader::StopBufferring()
     }
 }
 
-void Downloader::GetDownloadInfo(DownloadInfo& downloadInfo)
+void Downloader::SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback)
 {
-    downloadInfo.totalDownLoadBytes = totalDownLoadBytes_;
-    downloadInfo.totalLoadingTime = totalDownloadDuringTime_;
-    downloadInfo.loadingCount = toalDownloadCount_;
-    downloadInfo.firstDownloadTime = firstDownloadTime_;
-    downloadInfo.firstFrameDecapsulationTime = firstDownloadTimestamp_;
+    downloadCallback_ = callback;
 }
 
 int64_t Downloader::GetCurrentMillisecond()
@@ -1300,14 +1302,18 @@ void Downloader::UpdateDownloadInfo(Downloader *downloader, size_t dataLen)
 {
     if (downloader) {
         auto now = downloader->GetCurrentMillisecond();
-        if (downloader->firstDownloadTime_ == 0) {
-            downloader->firstDownloadTimestamp_ = now;
-            downloader->firstDownloadTime_ = now - downloader->startDownTime_;
+        if (downloader->lastDownloadTime_  == 0) {
+            int64_t firstDownloadTime = now - downloader->startDownTime_;
             downloader->lastDownloadTime_ = downloader->startDownTime_;
+            if (downloader->downloadCallback_ != nullptr) {
+                downloader->downloadCallback_->UpdateFirstDownloadTime(firstDownloadTime, now);
+            }
         }
-        downloader->totalDownloadDuringTime_ += now - downloader->lastDownloadTime_;
+        int64_t downloadTime = now - downloader->lastDownloadTime_;
         downloader->lastDownloadTime_ = now;
-        downloader->totalDownLoadBytes_ += dataLen;
+        if (downloader->downloadCallback_ != nullptr) {
+            downloader->downloadCallback_->UpdateTotalDownloadTimeAndBytes(downloadTime, dataLen);
+        }
     }
 }
 }

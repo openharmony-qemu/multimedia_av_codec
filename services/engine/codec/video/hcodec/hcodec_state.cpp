@@ -180,7 +180,6 @@ void HCodec::BaseState::OnErrorEventHandler(uint32_t omxError)
     int32_t errorCode = 0;
     std::string faultType;
     std::string sysEventMsg = "[" + codec_->caller_.app.processName + "]" + "[" + codec_->compUniqueStr_ + "]";
-    bool isNeedForceShutdown = false;
  
     switch (omxError) {
         case static_cast<uint32_t>(OMX_ErrorInsufficientResources):
@@ -190,7 +189,6 @@ void HCodec::BaseState::OnErrorEventHandler(uint32_t omxError)
         case static_cast<uint32_t>(OMX_ErrorUnsupportedSetting):
             errorCode = AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION;
             faultType = "XPS_UNSUPPORT";
-            isNeedForceShutdown = true;
             codec_->unsupportHappened_ = true;
             break;
         case static_cast<uint32_t>(OMX_ErrorParameterSetsIllegal):
@@ -214,9 +212,6 @@ void HCodec::BaseState::OnErrorEventHandler(uint32_t omxError)
     }
     codec_->SignalError(AVCODEC_ERROR_INTERNAL, errorCode);
     codec_->FaultEventWrite(faultType, sysEventMsg);
-    if (isNeedForceShutdown) {
-        (void)codec_->ForceShutdown(codec_->stateGeneration_, false);
-    }
 }
 /**************************** BaseState End ******************************/
 

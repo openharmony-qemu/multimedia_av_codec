@@ -116,6 +116,7 @@ ohos_shared_library("media_plugin_FFmpegDemuxer") {
     "demuxer/ffmpeg_demuxer_thread.cpp",
     "demuxer/ffmpeg_format_helper.cpp",
     "demuxer/ffmpeg_reference_parser.cpp",
+    "common/time_range_manager.cpp",
   ]
 
   deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]

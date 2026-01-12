@@ -436,6 +436,39 @@ HWTEST_F(AudioDecoderSkipInfoUnitTest, mp3_skip_start_end_003, TestSize.Level0)
     }
 }
 
+
+/**
+ * @tc.name: mp3_eos_001
+ * @tc.desc: test eos
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDecoderSkipInfoUnitTest, mp3_eos_001, TestSize.Level0)
+{
+    constexpr int32_t testIndex = 5;
+    ASSERT_EQ(CreateMp3Decoder(), 0);
+    int32_t outSize = 0;
+    std::vector<uint8_t> skipInfo {0x00, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    int32_t i = 0;
+    while (FillInputData() == 0 && i < testIndex) {
+        ++i;
+        outSize = 0;
+        if (i == testIndex) {
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
+        } else {
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
+        }
+        decoderMock_->DecodeOutput(nullptr, outSize);
+
+        if (i == testIndex) {
+            EXPECT_EQ(outSize, 0);
+        }
+    }
+    decoderMock_->SetFlag(0x01);
+    decoderMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
+    decoderMock_->DecodeOutput(nullptr, outSize);
+    EXPECT_EQ(decoderMock_->GetOutputFlag(), 0x01);
+}
+
 /**
  * @tc.name: vorbis_skip_start_001
  * @tc.desc: skip one frame start samples
@@ -614,6 +647,70 @@ HWTEST_F(AudioDecoderSkipInfoUnitTest, vorbis_skip_all_002, TestSize.Level0)
             EXPECT_EQ(outSize, 4096 - (0x02 * sizeof(int16_t) * 2)); // 4096 2
         }
     }
+}
+
+/**
+ * @tc.name: vorbis_eos_001
+ * @tc.desc: test eos
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDecoderSkipInfoUnitTest, vorbis_eos_001, TestSize.Level0)
+{
+    constexpr int32_t testIndex = 5;
+    ASSERT_EQ(CreateVorbisDecoder(), 0);
+    int32_t outSize = 0;
+    std::vector<uint8_t> skipInfo {0x81, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    int32_t i = 0;
+    while (FillInputData() == 0 && i < testIndex) {
+        ++i;
+        outSize = 0;
+        if (i == testIndex) {
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
+        } else {
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
+        }
+        decoderMock_->DecodeOutput(nullptr, outSize);
+
+        if (i == testIndex) {
+            EXPECT_EQ(outSize, 0);
+        }
+    }
+    decoderMock_->SetFlag(0x01);
+    decoderMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
+    decoderMock_->DecodeOutput(nullptr, outSize);
+    EXPECT_EQ(decoderMock_->GetOutputFlag(), 0x01);
+}
+
+/**
+ * @tc.name: vorbis_eos_002
+ * @tc.desc: test eos
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDecoderSkipInfoUnitTest, vorbis_eos_002, TestSize.Level0)
+{
+    constexpr int32_t testIndex = 5;
+    ASSERT_EQ(CreateVorbisDecoder(), 0);
+    int32_t outSize = 0;
+    std::vector<uint8_t> skipInfo {0x81, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    int32_t i = 0;
+    while (FillInputData() == 0 && i < testIndex) {
+        ++i;
+        outSize = 0;
+        if (i == testIndex) {
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
+        } else {
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
+        }
+        decoderMock_->DecodeOutput(nullptr, outSize);
+
+        if (i == testIndex) {
+            EXPECT_EQ(outSize, 0);
+        }
+    }
+    decoderMock_->SetFlag(0x01);
+    decoderMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
+    decoderMock_->DecodeOutput(nullptr, outSize);
+    EXPECT_EQ(decoderMock_->GetOutputFlag(), 0x01);
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

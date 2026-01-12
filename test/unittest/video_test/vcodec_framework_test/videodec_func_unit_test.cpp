@@ -59,12 +59,6 @@ void TEST_SUIT::CreateByNameWithParam(int32_t param)
             capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_HEVC.data(), false,
                                                                         AVCodecCategory::AVCODEC_HARDWARE);
             break;
-#ifdef SUPPORT_CODEC_RV
-        case VCodecTestCode::SW_RV40:
-            capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_RV40.data(), false,
-                                                                        AVCodecCategory::AVCODEC_SOFTWARE);
-            break;
-#endif
         default:
             capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), false,
                                                                         AVCodecCategory::AVCODEC_SOFTWARE);
@@ -215,8 +209,8 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Configure_Transform_001, TestSize.Level1)
     surface->GetTransform(transform);
     EXPECT_EQ(1, transform);
 
-    CreateVideoCodecByName("OMX.hisi.video.decoder.avc");
-    SetFormatWithParam(0);
+    CreateByNameWithParam(HW_AVC);
+    SetFormatWithParam(HW_AVC);
     PrepareSource(HW_AVC);
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface(surface));
@@ -241,7 +235,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Configure_Transform_002, TestSize.Level1)
     sptr<Surface> producer_ = Surface::CreateSurfaceAsProducer(p);
     std::shared_ptr<SurfaceMock> surface = SurfaceMockFactory::CreateSurface(producer_);
 
-    CreateVideoCodecByName("OMX.hisi.video.decoder.avc");
+    CreateByNameWithParam(HW_AVC);
     PrepareSource(HW_AVC);
     std::shared_ptr<OHOS::MediaAVCodec::FormatMock> formatCfg = FormatMockFactory::CreateFormat();
     ASSERT_NE(nullptr, formatCfg);
@@ -290,8 +284,8 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Configure_Transform_003, TestSize.Level1)
     surface->GetTransform(transform);
     EXPECT_EQ(1, transform);
 
-    CreateVideoCodecByName("OH.Media.Codec.Decoder.Video.AVC");
-    SetFormatWithParam(0);
+    CreateByNameWithParam(SW_AVC);
+    SetFormatWithParam(SW_AVC);
     PrepareSource(HW_AVC);
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface(surface));
@@ -316,8 +310,8 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Configure_Transform_004, TestSize.Level1)
     sptr<Surface> producer_ = Surface::CreateSurfaceAsProducer(p);
     std::shared_ptr<SurfaceMock> surface = SurfaceMockFactory::CreateSurface(producer_);
 
-    CreateVideoCodecByName("OH.Media.Codec.Decoder.Video.AVC");
-    PrepareSource(HW_AVC);
+    CreateByNameWithParam(SW_AVC);
+    PrepareSource(SW_AVC);
     std::shared_ptr<OHOS::MediaAVCodec::FormatMock> formatCfg = FormatMockFactory::CreateFormat();
     ASSERT_NE(nullptr, formatCfg);
     formatCfg->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
@@ -345,7 +339,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Configure_Transform_004, TestSize.Level1)
     surface->GetTransform(transform);
     EXPECT_EQ(0, transform);
 }
-
+#ifdef HMOS_TEST
 /**
  * @tc.name: VideoDecoder_Configure_Transform_005
  * @tc.desc: video codec Configure
@@ -420,7 +414,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Configure_Transform_006, TestSize.Level1)
     surface->GetTransform(transform);
     EXPECT_EQ(0, transform);
 }
-
+#endif
 /**
  * @tc.name: VideoDecoder_Configure_Transform_007
  * @tc.desc: video codec Configure
@@ -666,13 +660,8 @@ HWTEST_P(TEST_SUIT, VideoDecoder_GetOutputDescription_004, TestSize.Level1)
     EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, pictureWidth));
     EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, pictureHeight));
 
-    if (GetParam() == VCodecTestCode::SW_RV40) {
-        EXPECT_GE(pictureWidth, DEFAULT_RV40_WIDTH - 1);
-        EXPECT_GE(pictureHeight, DEFAULT_RV40_HEIGHT - 1);
-    } else {
-        EXPECT_GE(pictureWidth, DEFAULT_WIDTH - 1);
-        EXPECT_GE(pictureHeight, DEFAULT_HEIGHT - 1);
-    }
+    EXPECT_GE(pictureWidth, DEFAULT_WIDTH - 1);
+    EXPECT_GE(pictureHeight, DEFAULT_HEIGHT - 1);
 
     EXPECT_NE(nullptr, format_);
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());

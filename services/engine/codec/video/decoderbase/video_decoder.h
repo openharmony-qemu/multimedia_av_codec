@@ -42,7 +42,7 @@ using FormatDataType = Media::FormatDataType;
 
 class VideoDecoder : public RenderSurface, public CodecBase {
 public:
-    VideoDecoder(const std::string& codecName, const std::string& path);
+    VideoDecoder(const std::string &name, const std::string &path);
     ~VideoDecoder() = default;
     int32_t Init(Media::Meta &callerInfo) override;
     int32_t Start() override;
@@ -65,26 +65,28 @@ public:
     void ConfigureSurface(const Format &format, const std::string_view &formatKey, FormatDataType formatType);
     int32_t SetOutputSurface(sptr<Surface> surface) override;
     int32_t RenderOutputBuffer(uint32_t index) override;
-    int32_t CheckFormatChange(uint32_t index, int width, int height);
+    int32_t CheckFormatChange(uint32_t index, int width, int height, int bitDepth);
     virtual int32_t CreateDecoder() = 0;
     virtual void DeleteDecoder() = 0;
     bool IsValid() const { return isValid_; }
     void ReleaseResource();
-    void FramePostProcess(std::shared_ptr<CodecBuffer> &frameBuffer, uint32_t index, int32_t status, int ret);
+    void FramePostProcess(const std::shared_ptr<CodecBuffer> &frameBuffer, uint32_t index, int32_t status);
     int32_t FillFrameBuffer(const std::shared_ptr<CodecBuffer> &frameBuffer);
     void ResetData();
     int32_t UpdateOutputBuffer(uint32_t index);
     int32_t UpdateSurfaceMemory(uint32_t index);
     int32_t GetSurfaceBufferStride(const std::shared_ptr<CodecBuffer> &frameBuffer);
+    virtual void FlushAllFrames() {};
+    virtual void FillHdrInfo(sptr<SurfaceBuffer> surfaceBuffer) {};
 #ifdef BUILD_ENG_VERSION
     void OpenDumpFile();
-    void DumpOutputBuffer();
+    void DumpOutputBuffer(int32_t bitDepth = BITS_PER_PIXEL_COMPONENT_8);
     void DumpConvertOut(struct SurfaceInfo &surfaceInfo);
 #endif
 
     static std::mutex decoderCountMutex_;
     static std::vector<uint32_t> freeIDSet_;
-    uint32_t decInstanceID_;
+    uint32_t decInstanceID_ = 0;
     static std::vector<uint32_t> decInstanceIDSet_;
     void* handle_ = nullptr;
     std::string codecName_;
@@ -93,6 +95,7 @@ public:
     std::shared_ptr<MediaCodecCallback> callback_;
     bool isOutBufSetted_ = false;
     std::mutex decRunMutex_;
+    std::mutex convertDataMutex_;
     std::shared_ptr<RenderSurface> renderSurface_ = nullptr;
     std::string decName_;
     CallerInfo decInfo_;
@@ -101,6 +104,7 @@ public:
     std::atomic<bool> isSendEos_ = false;
     std::shared_ptr<BlockQueue<uint32_t>> inputAvailQue_;
     std::shared_ptr<Scale> scale_ = nullptr;
+    int32_t bitDepth_ = BITS_PER_PIXEL_COMPONENT_8;
 #ifdef BUILD_ENG_VERSION
     std::shared_ptr<std::ofstream> dumpInFile_ = nullptr;
     std::shared_ptr<std::ofstream> dumpOutFile_ = nullptr;
@@ -120,16 +124,16 @@ private:
     int32_t AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize);
     int32_t AllocateOutputBuffer(int32_t bufferCnt);
     int32_t AllocateOutputBuffersFromSurface(int32_t bufferCnt);
-    void SetSurfaceParameter(const Format &format, const std::string_view &formatKey,
-        FormatDataType formatType);
+    void SetSurfaceParameter();
     int32_t Detach(sptr<SurfaceBuffer> surfaceBuffer);
     virtual int32_t DecodeFrameOnce() = 0;
     virtual void DecoderFuncMatch() = 0;
     virtual void ReleaseHandle() = 0;
     virtual void InitParams() = 0;
     void SetCallerToBuffer(sptr<SurfaceBuffer> surfaceBuffer);
+    int32_t SetSurfaceFormat();
+    void GetSurfaceCfgFromFmt(const Format &format);
 
-    bool disableDmaSwap_ = false;
     int32_t inputBufferSize_ = 0;
     int32_t inputBufferCnt_ = 0;
     uint8_t *scaleData_[AV_NUM_DATA_POINTERS] = {nullptr};

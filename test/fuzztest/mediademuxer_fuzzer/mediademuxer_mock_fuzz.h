@@ -188,6 +188,22 @@ public:
     {
         return mapStatus_[name_];
     }
+    Status SeekToStart() override
+    {
+        return mapStatus_[name_];
+    }
+    Status SetCachePressureCallback(Plugins::DemuxerPlugin::CachePressureCallback cb) override
+    {
+        (void)cb;
+        return mapStatus_[name_];
+    }
+    Status SetTrackCacheLimit(uint32_t trackId, uint32_t limitBytes, uint32_t windowMs = 500) override
+    {
+        (void)trackId;
+        (void)limitBytes;
+        (void)windowMs;
+        return mapStatus_[name_];
+    }
 private:
     std::map<std::string, Status> mapStatus_;
     std::string name_;

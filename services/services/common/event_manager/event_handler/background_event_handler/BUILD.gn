@@ -29,6 +29,7 @@ ohos_source_set("background_event_handler") {
 
   include_dirs = [
     "./",
+    "../..",
     "../../../../sa_avcodec/ipc/",
   ]
 

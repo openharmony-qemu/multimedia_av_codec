@@ -78,6 +78,14 @@ const std::vector<std::tuple<AudioSampleFormat, OHOS::AudioStandard::AudioSample
     {AudioSampleFormat::SAMPLE_U64P, OHOS::AudioStandard::AudioSampleFormat::INVALID_WIDTH, AV_SAMPLE_FMT_NONE},
 };
 
+const std::unordered_map<std::string, OHOS::AudioStandard::AudioEncodingType> mimeTypeToEncodingMap = {
+    { MimeType::AUDIO_AC3, OHOS::AudioStandard::ENCODING_AC3 },
+    { MimeType::AUDIO_EAC3, OHOS::AudioStandard::ENCODING_EAC3 },
+    { MimeType::AUDIO_TRUEHD, OHOS::AudioStandard::ENCODING_TRUE_HD },
+    { MimeType::AUDIO_DTS, OHOS::AudioStandard::ENCODING_DTS_X },
+    { MimeType::AUDIO_AVS3DA, OHOS::AudioStandard::ENCODING_AUDIOVIVID_DIRECT },
+};
+
 void AudioInterruptMode2InterruptMode(AudioInterruptMode audioInterruptMode,
     OHOS::AudioStandard::InterruptMode &interruptMode)
 {
@@ -284,8 +292,12 @@ Status AudioServerSinkPlugin::Init()
     rendererOptions_.rendererInfo.volumeMode = static_cast<AudioStandard::AudioVolumeMode>(ChooseVolumeMode());
     rendererOptions_.streamInfo.samplingRate = rendererParams_.sampleRate;
     rendererOptions_.streamInfo.customSampleRate = customSampleRate_;
-    rendererOptions_.streamInfo.encoding =
-        mimeType_ == MimeType::AUDIO_AVS3DA ? AudioStandard::ENCODING_AUDIOVIVID : AudioStandard::ENCODING_PCM;
+    if (isAudioPass_) {
+        rendererOptions_.streamInfo.encoding = GetEncodingType(mimeType_);
+    } else {
+        rendererOptions_.streamInfo.encoding =
+            mimeType_ == MimeType::AUDIO_AVS3DA ? AudioStandard::ENCODING_AUDIOVIVID : AudioStandard::ENCODING_PCM;
+    }
     rendererOptions_.streamInfo.format = rendererParams_.sampleFormat;
     rendererOptions_.streamInfo.channels = rendererParams_.channelCount;
     rendererOptions_.rendererInfo.playerType = AudioStandard::PlayerType::PLAYER_TYPE_AV_PLAYER;
@@ -309,6 +321,20 @@ Status AudioServerSinkPlugin::Init()
     audioRenderer_->SetInterruptMode(audioInterruptMode_);
     audioRenderer_->SetSourceDuration(sourceDuraionMs_);
     return Status::OK;
+}
+
+AudioStandard::AudioEncodingType AudioServerSinkPlugin::GetEncodingType(std::string mime)
+{
+    auto it = mimeTypeToEncodingMap.find(mime);
+    if (it != mimeTypeToEncodingMap.end()) {
+        return it->second;
+    }
+    return AudioStandard::ENCODING_PCM;
+}
+
+void AudioServerSinkPlugin::SetAudioPassFlag(bool isAudioPass)
+{
+    isAudioPass_ = isAudioPass;
 }
 
 int32_t AudioServerSinkPlugin::ChooseVolumeMode()

@@ -152,6 +152,8 @@ public:
     Status SetAudioHapticsSyncId(int32_t syncId) override;
 
     Status SetLoudnessGain(float loudnessGain) override;
+
+    void SetAudioPassFlag(bool isAudioPass) override;
 private:
     class AudioRendererCallbackImpl : public OHOS::AudioStandard::AudioRendererCallback,
         public OHOS::AudioStandard::AudioRendererOutputDeviceChangeCallback {
@@ -233,6 +235,7 @@ private:
     int32_t ChooseVolumeMode();
     void ApplyAudioHapticsSyncId();
     int32_t GetAvailableBufferDuration(uint32_t customSampleRate);
+    AudioStandard::AudioEncodingType GetEncodingType(std::string mime);
 
     OHOS::Media::Mutex renderMutex_{};
     Callback *callback_{};
@@ -290,6 +293,7 @@ private:
     int32_t audioHapticsSyncId_ {0};
     uint32_t customSampleRate_{0};
     int32_t privacyType_ {0};
+    bool isAudioPass_ {false};
 };
 } // namespace Plugin
 } // namespace Media

@@ -31,10 +31,6 @@ struct PacketConvertToBufferInfo {
     const uint8_t *srcData {nullptr};
     int32_t srcDataSize {0};
 
-    // XPS信息（参数集信息）
-    const uint8_t *xpsData {nullptr};
-    int32_t xpsDataSize {0};
-
     // 输出缓冲区（外部申请好的）
     uint8_t *outBuffer {nullptr};
     int32_t outBufferSize {0};
@@ -45,7 +41,6 @@ struct PacketConvertToBufferInfo {
     // 可选的sideData信息
     uint8_t *sideData {nullptr};
     size_t sideDataSize {0};
-    bool isExtradata {false};
 
     // 构造函数，用于初始化引用成员
     explicit PacketConvertToBufferInfo(int32_t &outSizeRef) : outDataSize(outSizeRef) {}
@@ -60,10 +55,11 @@ public:
     virtual bool ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDataSize) = 0;
     virtual void ConvertPacketToAnnexb(uint8_t **hvccPacket, int32_t &hvccPacketSize, uint8_t *sideData,
         size_t sideDataSize, bool isExtradata) = 0;
-    virtual void ConvertPacketToAnnexb(const PacketConvertToBufferInfo &convertInfo) = 0;
+    virtual bool ConvertPacketToAnnexb(const PacketConvertToBufferInfo &convertInfo) = 0;
     virtual void ParseAnnexbExtraData(const uint8_t *sample, int32_t size) = 0;
     virtual void ResetXPSSendStatus();
     virtual bool IsHdrVivid() = 0;
+    virtual bool IsHdr10Plus() = 0;
     virtual bool IsSyncFrame(const uint8_t *sample, int32_t size) = 0;
     virtual bool GetColorRange() = 0;
     virtual uint8_t GetColorPrimaries() = 0;

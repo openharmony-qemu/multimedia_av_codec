@@ -135,8 +135,8 @@ int32_t AudioFFMpegFlacEncoderPlugin::CheckFormat(const Format &format)
     format.GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, channelLayout);
     auto ffChannelLayout =
         FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(static_cast<AudioChannelLayout>(channelLayout));
-    if (ffChannelLayout == AV_CH_LAYOUT_NATIVE) {
-        AVCODEC_LOGE("InitContext failed, because ffChannelLayout is AV_CH_LAYOUT_NATIVE");
+    if (!ffChannelLayout) {
+        AVCODEC_LOGE("InitContext failed, because channelLayout is not supported.");
         return AVCodecServiceErrCode::AVCS_ERR_CONFIGURE_ERROR;
     }
 

@@ -41,11 +41,21 @@ public:
     {
         return outputPts_;
     }
+    void SetFlag(uint32_t flag)
+    {
+        flag_ = flag;
+    }
+    uint32_t GetOutputFlag()
+    {
+        return outputFlag_;
+    }
     static std::unique_ptr<AudioDecoderMockBase> CreateDecoder();
 protected:
     int32_t blockAlign_ = 0;
     int64_t pts_ = 0;
     int64_t outputPts_ = 0;
+    uint32_t flag_ = 0;
+    uint32_t outputFlag_ = 0;
 };
 
 } // namespace MediaAVCodec

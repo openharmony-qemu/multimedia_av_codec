@@ -49,6 +49,7 @@ private:
     bool isEOS(std::map<uint32_t, bool>& countFlag);
     void RemoveValue();
     bool ResultAssert(uint32_t frames0, uint32_t frames1, uint32_t keyFrames0, uint32_t keyFrames1);
+    bool ResultAssert(std::vector<uint32_t> &framesExpect, std::vector<uint32_t> &keyFramesExpect);
     bool PluginReadAllSample();
 
     int streamId_ = 0;
@@ -62,6 +63,7 @@ private:
     std::shared_ptr<Media::MediaSource> mediaSource_{ nullptr };
     std::shared_ptr<Media::Source> realSource_{ nullptr };
     std::shared_ptr<Media::PluginBase> pluginBase_{ nullptr };
+    std::shared_ptr<Media::DemuxerPlugin> demuxerPlugin_{ nullptr };
 };
 }  // namespace Media
 }  // namespace OHOS

@@ -28,7 +28,8 @@ namespace MediaAVCodec {
 class AVCodecXCollie {
 public:
     static AVCodecXCollie &GetInstance();
-    int32_t SetTimer(const std::string &name, bool recovery, uint32_t timeout, std::function<void(void *)> callback);
+    int32_t SetTimer(const std::string &name, bool recovery, bool dumpLog, uint32_t timeout,
+                     std::function<void(void *)> callback);
     int32_t SetInterfaceTimer(const std::string &name, bool isService, bool recovery, uint32_t timeout);
     void CancelTimer(int32_t timerId);
     int32_t Dump(int32_t fd);
@@ -57,9 +58,10 @@ private:
 
 class AVCodecXcollieTimer {
 public:
-    AVCodecXcollieTimer(const std::string &name, bool recovery, uint32_t timeout, std::function<void(void *)> callback)
+    AVCodecXcollieTimer(const std::string &name, bool recovery, bool dumpLog, uint32_t timeout,
+                        std::function<void(void *)> callback)
     {
-        index_ = AVCodecXCollie::GetInstance().SetTimer(name, recovery, timeout, callback);
+        index_ = AVCodecXCollie::GetInstance().SetTimer(name, recovery, dumpLog, timeout, callback);
     };
 
     ~AVCodecXcollieTimer()

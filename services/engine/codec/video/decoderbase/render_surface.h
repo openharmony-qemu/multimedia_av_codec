@@ -32,6 +32,9 @@
 #include "avbuffer.h"
 #include "fsurface_memory.h"
 
+constexpr int32_t BITS_PER_PIXEL_COMPONENT_8 = 8;
+constexpr int32_t BITS_PER_PIXEL_COMPONENT_10 = 10;
+
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {
@@ -60,7 +63,8 @@ public:
         std::atomic<Owner> owner_ = Owner::OWNED_BY_US;
         int32_t width = 0;
         int32_t height = 0;
-        bool hasSwapedOut = false;
+        int32_t bitDepth = BITS_PER_PIXEL_COMPONENT_8;
+        std::atomic<bool> hasSwapedOut = false;
     };
     int pid_ = -1;
     std::atomic<State> state_ = State::UNINITIALIZED;
@@ -79,6 +83,7 @@ public:
     int32_t outputBufferCnt_ = 0;
     std::mutex outputMutex_;
     std::map<uint32_t, std::pair<sptr<SurfaceBuffer>, OHOS::BufferFlushConfig>> renderSurfaceBufferMap_;
+    std::atomic<GraphicTransformType> transform_ = GraphicTransformType::GRAPHIC_ROTATE_NONE;
 
 private:
     int32_t SetQueueSize(const sptr<Surface> &surface, uint32_t targetSize);
@@ -87,11 +92,11 @@ private:
     int32_t RenderNewSurfaceWithOldBuffer(const sptr<Surface> &newSurface, uint32_t index);
     GSError BufferReleasedByConsumer(uint64_t surfaceId);
     void RequestBufferFromConsumer();
-    void FindAvailIndex(uint32_t index);
+    void FindAvailIndex(uint32_t index) const;
     void RequestSurfaceBufferThread();
-    bool CanSwapOut(bool isOutputBuffer, std::shared_ptr<CodecBuffer> &codecBuffer);
+    bool CanSwapOut(bool isOutputBuffer, const std::shared_ptr<CodecBuffer> &codecBuffer);
     int32_t SwapOutBuffers(bool isOutputBuffer, State curState);
-    int32_t SwapInBuffers(bool isOutputBuffer);
+    int32_t SwapInBuffers(bool isOutputBuffer) const;
 
     std::thread mRequestSurfaceBufferThread_;
     std::atomic<bool> requestSucceed_ = false;

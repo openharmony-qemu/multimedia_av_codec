@@ -25,6 +25,7 @@
 #include "avcodec_errors.h"
 #include "meta/meta_key.h"
 #include "config_policy_utils.h"
+#include "event_info_extented_key.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "InstanceMemoryUpdateEventHandler"};
@@ -45,7 +46,7 @@ void InstanceMemoryUpdateEventHandler::OnInstanceMemoryUpdate(const Media::Meta 
     if (appMemoryThreshold_ == UINT32_MAX) {
         return;
     }
-    auto instanceId = EventInfoExtentedKey::GetInstanceIdFromMeta(meta);
+    auto instanceId = GetInstanceIdFromMeta(meta);
     CHECK_AND_RETURN_LOG(instanceId != INVALID_INSTANCE_ID, "Can not find instance id");
 
     auto calculator = GetCalculator(meta);
@@ -65,7 +66,7 @@ void InstanceMemoryUpdateEventHandler::OnInstanceMemoryReset(const Media::Meta &
     if (appMemoryThreshold_ == UINT32_MAX) {
         return;
     }
-    auto instanceId = EventInfoExtentedKey::GetInstanceIdFromMeta(meta);
+    auto instanceId = GetInstanceIdFromMeta(meta);
     CHECK_AND_RETURN_LOG(instanceId != INVALID_INSTANCE_ID, "Can not find instance id");
     
     auto instanceInfo = UpdateInstanceMemory(instanceId, 0);
@@ -205,7 +206,7 @@ void InstanceMemoryUpdateEventHandler::DeterminAppMemoryExceedThresholdAndReport
     }
     if (appMemoryExceedThreshold && !appExistTimer && !appInExceedThresholdList) {
         auto timeName = std::string("Pid_") + std::to_string(actualCallerPid) + " memory exceeded threshold";
-        auto timer = std::make_shared<AVCodecXcollieTimer>(timeName, false, MEMORY_LEAK_UPLOAD_TIMEOUT,
+        auto timer = std::make_shared<AVCodecXcollieTimer>(timeName, false, true, MEMORY_LEAK_UPLOAD_TIMEOUT,
             [=](void *) -> void { ReportAppMemory(callerPid, actualCallerPid); });
         std::lock_guard<std::shared_mutex> timerLock(timerMutex_);
         timerMap_.emplace(actualCallerPid, timer);
