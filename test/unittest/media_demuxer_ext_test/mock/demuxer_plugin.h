@@ -24,6 +24,7 @@ namespace Media {
 namespace Plugins {
 class DemuxerPlugin {
 public:
+    using CachePressureCallback = std::function<void(uint32_t /*trackId*/, uint32_t /*cachedBytes*/)>;
     explicit DemuxerPlugin(std::string name) : name_(std::move(name)) {}
     virtual ~DemuxerPlugin() = default;
 
@@ -68,6 +69,9 @@ public:
     MOCK_METHOD2(GetProbeSize, bool(int32_t&, int32_t&));
     MOCK_METHOD0(BoostReadThreadPriority, Status());
     MOCK_METHOD1(SetAVReadPacketStopState, Status(bool));
+    MOCK_METHOD1(SetCachePressureCallback, Status(CachePressureCallback));
+    MOCK_METHOD3(SetTrackCacheLimit, Status(uint32_t, uint32_t, uint32_t));
+    MOCK_METHOD2(GetCurrentCacheFrameCount, Status(uint32_t, uint32_t&));
 private:
     std::string name_ {};
 };

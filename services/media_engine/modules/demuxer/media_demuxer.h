@@ -389,7 +389,10 @@ private:
     void CachePressuredCallback(int32_t trackId, uint32_t cachedBytes);
     bool NeedDroped(int32_t trackId);
     void AfterDrop(int32_t trackId);
+    void AfterSeekNeedDrop(int32_t trackId);
     void ClearSampleQueue();
+    Status SetCachePressureCallback();
+    bool SourceDropFrame(int32_t trackId);
 
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
@@ -537,6 +540,7 @@ private:
     int64_t lastCacheDuration_ {0};
     std::map<int32_t, std::atomic<bool>> hasDropedMap_;
     std::map<int32_t, int64_t> afterDropPts_;
+    std::map<int32_t, bool> afterSeekNeedDrop_;
     bool videoNeedIFrame_ {false};
 };
 } // namespace Media

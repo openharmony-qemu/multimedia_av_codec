@@ -2262,6 +2262,11 @@ Status MediaDemuxer::Start()
         }
     }
     source_->Start();
+    return SetCachePressureCallback();
+}
+
+Status MediaDemuxer::SetCachePressureCallback()
+{
     Status status = demuxerPluginManager_->Start();
     auto weakDownloader = weak_from_this();
     CachePressureCallback cachePressureCallback = [weakDownloader] (int32_t trackId, uint32_t cachedBytes) -> void {
@@ -2810,13 +2815,8 @@ Status MediaDemuxer::HandleReadSample(int32_t trackId)
     }
 
     HandleSeek(trackId);
-    if (videoNeedIFrame_ && trackId == videoTrackId_) {
-        if (bufferMap_[trackId]->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::SYNC_FRAME)) {
-            videoNeedIFrame_ = false;
-        } else {
-            PushBufferToQueue(trackId, bufferMap_[trackId], false);
-            return ret;
-        }
+    if (!SourceDropFrame(trackId)) {
+        return ret;
     }
     if (ret == Status::OK || ret == Status::END_OF_STREAM) {
         if (bufferMap_[trackId]->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS)) {
@@ -2837,6 +2837,19 @@ Status MediaDemuxer::HandleReadSample(int32_t trackId)
         MEDIA_LOG_E("Read failed, track " PUBLIC_LOG_D32 ", ret:" PUBLIC_LOG_D32, trackId, static_cast<int32_t>(ret));
     }
     return ret;
+}
+
+bool MediaDemuxer::SourceDropFrame(int32_t trackId)
+{
+    if (!videoNeedIFrame_ || trackId != videoTrackId_) {
+        return true;
+    }
+    if (bufferMap_[trackId]->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::SYNC_FRAME)) {
+        videoNeedIFrame_ = false;
+        return true;
+    }
+    PushBufferToQueue(trackId, bufferMap_[trackId], false);
+    return false;
 }
 
 void MediaDemuxer::HandleEosDrag(int32_t trackId, bool isDiscardable)
@@ -3331,6 +3344,7 @@ int64_t MediaDemuxer::ReadLoop(int32_t trackId)
     auto resPreReadSample = DoBeforeEachLoop(trackId);
     FALSE_RETURN_V_NOLOG(resPreReadSample == 0, resPreReadSample);
     AfterDrop(trackId);
+    AfterSeekNeedDrop(trackId);
     Status ret = CopyFrameToUserQueue(trackId);
     if (ret == Status::ERROR_ONE_TRACK_SEGMENT_EOS) {
         HandleNotAllTrackEos(trackId);
@@ -3365,6 +3379,31 @@ int64_t MediaDemuxer::ReadLoop(int32_t trackId)
     MEDIA_LOG_DD("ReadLoop wait, track:" PUBLIC_LOG_D32 ", ret:" PUBLIC_LOG_D32,
         trackId, static_cast<int32_t>(ret));
     return RETRY_DELAY_TIME_US; // delay to retry if no frame
+}
+
+void MediaDemuxer::AfterSeekNeedDrop(int32_t trackId)
+{
+    if (afterSeekNeedDrop_[trackId]) {
+        std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = nullptr;
+        int32_t innerTrackID = trackId;
+        if (IsNeedMapToInnerTrackID()) {
+            int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
+            pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamID);
+            innerTrackID = demuxerPluginManager_->GetTmpInnerTrackIDByTrackID(trackId);
+        } else {
+            int32_t streamId = demuxerPluginManager_->GetStreamIDByTrackID(trackId);
+            pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamId);
+        }
+        if (pluginTemp == nullptr) {
+            return;
+        }
+        std::shared_ptr<AVBuffer> sample = AVBuffer::CreateAVBuffer();
+        pluginTemp->ReadSample(static_cast<int32_t>(innerTrackID), sample, timeout_);
+        while (sample->pts_ < afterDropPts_[trackId]) {
+            pluginTemp->ReadSample(static_cast<uint32_t>(innerTrackID), sample, timeout_);
+        }
+        afterSeekNeedDrop_[trackId] = false;
+    }
 }
 
 void MediaDemuxer::HandlePacketConvertError()
@@ -4590,11 +4629,11 @@ void MediaDemuxer::CachePressuredCallback(int32_t trackId, uint32_t cachedBytes)
     std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = nullptr;
     int32_t innerTrackID = trackId;
     if (IsNeedMapToInnerTrackID()) {
-        int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(videoTrackId_);
+        int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
         pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamID);
         innerTrackID = demuxerPluginManager_->GetTmpInnerTrackIDByTrackID(trackId);
     } else {
-        int32_t streamID = demuxerPluginManager_->GetStreamIDByTrackID(videoTrackId_);
+        int32_t streamID = demuxerPluginManager_->GetStreamIDByTrackID(trackId);
         pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamID);
     }
     if (pluginTemp == nullptr) {
@@ -4649,22 +4688,26 @@ void MediaDemuxer::AfterDrop(int32_t trackId)
         if (sampleQueueMap_[trackId] == nullptr) {
             return;
         }
-        afterDropPts_[trackId] = sampleQueueMap_[trackId]->GetLastOutSamplePts();
+        afterDropPts_[videoTrackId_] = sampleQueueMap_[videoTrackId_]->GetLastOutSamplePts();
+        afterDropPts_[audioTrackId_] = sampleQueueMap_[audioTrackId_]->GetLastOutSamplePts();
         int64_t startTime = 0;
         std::string mimeType;
         mediaMetaData_.trackMetas[trackId]->Get<TAG::MEDIA_START_TIME>(startTime);
         MEDIA_LOG_I("afterDrop startTime: " PUBLIC_LOG_D64 " seekto time: " PUBLIC_LOG_D64
             " trackId: " PUBLIC_LOG_D32, startTime, afterDropPts_[trackId], trackId);
+        int64_t readlSeekTime = 0;
         if (IsNeedMapToInnerTrackID()) {
-            int32_t streamID = demuxerPluginManager_->GetTmpStreamByTrackID(videoTrackId_);
+            int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
             demuxerPluginManager_->SingleStreamSeekTo((afterDropPts_[trackId] - startTime) / US_TO_MS,
-                SeekMode::SEEK_CLOSEST, streamID, afterDropPts_[trackId]);
+                SeekMode::SEEK_NEXT_SYNC, streamID, readlSeekTime);
         } else {
-            int32_t streamID = demuxerPluginManager_->GetStreamIDByTrackID(videoTrackId_);
+            int32_t streamID = demuxerPluginManager_->GetStreamIDByTrackID(trackId);
             demuxerPluginManager_->SingleStreamSeekTo((afterDropPts_[trackId] - startTime) / US_TO_MS,
-                SeekMode::SEEK_CLOSEST, streamID, afterDropPts_[trackId]);
+                SeekMode::SEEK_NEXT_SYNC, streamID, readlSeekTime);
         }
         ClearSampleQueue();
+        afterSeekNeedDrop_[videoTrackId_] = true;
+        afterSeekNeedDrop_[audioTrackId_] = true;
     } else {
         videoNeedIFrame_ = true;
     }
