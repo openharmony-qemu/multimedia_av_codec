@@ -4692,7 +4692,7 @@ void MediaDemuxer::AfterDrop(int32_t trackId)
         afterDropPts_[audioTrackId_] = sampleQueueMap_[audioTrackId_]->GetLastOutSamplePts();
         int64_t startTime = 0;
         std::string mimeType;
-        mediaMetaData_.trackMetas[trackId]->Get<TAG::MEDIA_START_TIME>(startTime);
+        mediaMetaData_.trackMetas[trackId]->Get<Tag::MEDIA_START_TIME>(startTime);
         MEDIA_LOG_I("afterDrop startTime: " PUBLIC_LOG_D64 " seekto time: " PUBLIC_LOG_D64
             " trackId: " PUBLIC_LOG_D32, startTime, afterDropPts_[trackId], trackId);
         int64_t readlSeekTime = 0;
