@@ -25,7 +25,7 @@ namespace Plugins {
 namespace Mpeg4 {
 class CoverTrack : public BasicTrack {
 public:
-    CoverTrack(std::string mimeType, std::shared_ptr<BasicBox> moov);
+    CoverTrack(std::string mimeType, std::shared_ptr<BasicBox> moov, bool &hasAigc);
     ~CoverTrack() override;
     Status Init(const std::shared_ptr<Meta> &trackDesc) override;
     Status WriteSample(std::shared_ptr<AVIOStream> io, const std::shared_ptr<AVBuffer> &sample) override;
@@ -34,8 +34,8 @@ public:
 private:
     int32_t width_ = 0;
     int32_t height_ = 0;
-    std::shared_ptr<BasicBox> covr_ = nullptr;
     std::shared_ptr<DataBox> data_ = nullptr;
+    bool &hasAigc_;
 };
 } // Mpeg4
 } // Plugins

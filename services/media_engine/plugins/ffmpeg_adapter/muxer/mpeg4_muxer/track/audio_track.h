@@ -24,24 +24,24 @@ namespace Plugins {
 namespace Mpeg4 {
 class AudioTrack : public BasicTrack {
 public:
-    AudioTrack(std::string mimeType, std::shared_ptr<BasicBox> moov);
+    AudioTrack(std::string mimeType, std::shared_ptr<BasicBox> moov, std::vector<std::shared_ptr<BasicTrack>> &tracks);
     ~AudioTrack() override;
     Status Init(const std::shared_ptr<Meta> &trackDesc) override;
     Status WriteSample(std::shared_ptr<AVIOStream> io, const std::shared_ptr<AVBuffer> &sample) override;
     Status WriteTailer() override;
     Any GetPointer() override {return Any(this);}
-    int32_t GetSampleRate();
-    int32_t GetChannels();
+    int32_t GetSampleRate() const;
+    int32_t GetChannels() const;
+    bool GetSrcTrackIds(const std::shared_ptr<Meta> &trackDesc);
+    int32_t GetAacAdtsSize(const uint8_t *data, int32_t len);
 
 private:
-    void DisposeStts(int64_t duration, int64_t pts);
-    void DisposeStco(int64_t pos);
-    void DisposeStsz(int32_t size);
     void DisposeDuration();
     void DisposeBitrate();
     int32_t sampleRate_ = 44100;  // 44100
     int32_t channels_ = 2;  // 2
     int32_t frameSize_ = 0;
+    std::vector<std::shared_ptr<BasicTrack>> &tracks_;
 };
 } // Mpeg4
 } // Plugins

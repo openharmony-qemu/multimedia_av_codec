@@ -14,7 +14,6 @@
  */
 
 #include "video_track.h"
-#include "av_common.h"
 #include "avcodec_common.h"
 #include "avcodec_mime_type.h"
 #include "mpeg4_utils.h"
@@ -24,6 +23,10 @@
 #ifndef _WIN32
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_MUXER, "VideoTrack" };
+constexpr uint8_t FRAME_DEPENDENCY_UNKNOWN = 0x00;
+constexpr uint8_t FRAME_DEPENDENCY_YES = 0x01;
+constexpr uint8_t FRAME_DEPENDENCY_NO = 0x02;
+constexpr uint8_t FRAME_DEPENDENCY_EXT = 0x03;
 }
 #endif // !_WIN32
 
@@ -32,9 +35,11 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Mpeg4 {
-VideoTrack::VideoTrack(std::string mimeType, std::shared_ptr<BasicBox> moov)
-    : BasicTrack(std::move(mimeType), moov)
+VideoTrack::VideoTrack(std::string mimeType, std::shared_ptr<BasicBox> moov,
+    std::vector<std::shared_ptr<BasicTrack>> &tracks) : BasicTrack(std::move(mimeType), moov), tracks_(tracks)
 {
+    hdlrType_ = 'vide';
+    hdlrName_ = "VideoHandler";
 }
 
 VideoTrack::~VideoTrack()
@@ -66,22 +71,24 @@ Status VideoTrack::Init(const std::shared_ptr<Meta> &trackDesc)
         "create video parser failed! mimetype:%{public}s", mimeType_.c_str());
     constexpr int32_t maxLength = 65535;
     constexpr int32_t videoTimeScale = 90000;
-    mediaType_ = OHOS::MediaAVCodec::MEDIA_TYPE_VID;
+    mediaType_ = MediaType::VIDEO;
     bool ret = trackDesc->Get<Tag::VIDEO_WIDTH>(width_); // width
     FALSE_RETURN_V_MSG_E((ret && width_ > 0 && width_ <= maxLength), Status::ERROR_INVALID_PARAMETER,
         "get video width failed! width:%{public}d", width_);
     ret = trackDesc->Get<Tag::VIDEO_HEIGHT>(height_); // height
     FALSE_RETURN_V_MSG_E((ret && height_ > 0 && height_ <= maxLength), Status::ERROR_INVALID_PARAMETER,
         "get video height failed! height:%{public}d", height_);
+    MEDIA_LOG_I("video track width:%{public}d, height:%{public}d", width_, height_);
+
     if (trackDesc->Find(Tag::VIDEO_FRAME_RATE) != trackDesc->end()) {
         trackDesc->Get<Tag::VIDEO_FRAME_RATE>(frameRate_);
         FALSE_RETURN_V_MSG_E(frameRate_ > 0, Status::ERROR_MISMATCHED_TYPE, "err frame rate %{public}lf", frameRate_);
-        MEDIA_LOG_I("video track:%{public}d, frame rate:%{public}lf", trackId_, frameRate_);
+        MEDIA_LOG_I("video track: frame rate:%{public}lf", frameRate_);
     }
 
     if (trackDesc->Find(Tag::MEDIA_BITRATE) != trackDesc->end()) {
         trackDesc->Get<Tag::MEDIA_BITRATE>(bitRate_); // bit rate
-        MEDIA_LOG_I("video track:%{public}d, bit rate:" PUBLIC_LOG_D64, trackId_, bitRate_);
+        MEDIA_LOG_I("video track bit rate:" PUBLIC_LOG_D64, bitRate_);
     }
     
     InitColor(trackDesc);
@@ -89,13 +96,38 @@ Status VideoTrack::Init(const std::shared_ptr<Meta> &trackDesc)
     codecConfig_.clear();
     if (trackDesc->Find(Tag::MEDIA_CODEC_CONFIG) != trackDesc->end()) { // codec config
         trackDesc->Get<Tag::MEDIA_CODEC_CONFIG>(codecConfig_); // codec config
-        MEDIA_LOG_I("video track:%{public}d, codec config len:%{public}zu", trackId_, codecConfig_.size());
+        MEDIA_LOG_I("video track codec config len:%{public}zu", codecConfig_.size());
     }
     timeScale_ = videoTimeScale;
     if (frameRate_ >= 1) {
         lastDuration_ = ConvertTime(1, static_cast<int32_t>(frameRate_), timeScale_);
     }
+    Plugins::MediaType mediaType = Plugins::MediaType::UNKNOWN;
+    trackDesc->GetData(Tag::MEDIA_TYPE, mediaType);
+    if (mediaType == Plugins::MediaType::AUXILIARY) {
+        // 初始化辅助轨独有参数
+        FALSE_RETURN_V_MSG_E(GetSrcTrackIds(trackDesc), Status::ERROR_INVALID_PARAMETER, "get src track ids failed!");
+        return SetAuxiliaryTrackParam(trackDesc);
+    }
     return Status::NO_ERROR;
+}
+
+bool VideoTrack::GetSrcTrackIds(const std::shared_ptr<Meta> &trackDesc)
+{
+    std::vector<int32_t> trackIndexs;
+    // get reference track ids
+    FALSE_RETURN_V_MSG_E(trackDesc->GetData(Tag::REFERENCE_TRACK_IDS, trackIndexs), false, "track ids not set!");
+    srcTrackIds_ = std::make_shared<std::vector<uint32_t>>();
+    for (auto i : trackIndexs) {
+        if (i >= 0 && i < static_cast<int32_t>(tracks_.size()) && tracks_[i]->GetTrackId() >= 0) {
+            srcTrackIds_->push_back(static_cast<uint32_t>(tracks_[i]->GetTrackId()));
+        } else {
+            MEDIA_LOG_W("video aux unsupport track index:%{public}d, track size:%{public}zu",
+                i, tracks_.size());
+        }
+    }
+    FALSE_RETURN_V_MSG_E(srcTrackIds_->size() > 0, false, "video track ids get failed!");
+    return true;
 }
 
 void VideoTrack::ParserSetConfig()
@@ -136,7 +168,7 @@ void VideoTrack::SetRotation(uint32_t rotation)
 Status VideoTrack::WriteSample(std::shared_ptr<AVIOStream> io, const std::shared_ptr<AVBuffer> &sample)
 {
     FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_ != nullptr,
-        Status::ERROR_INVALID_OPERATION, "sample is null");
+        Status::ERROR_NULL_POINTER, "sample is null");
     FALSE_RETURN_V_MSG_E(io != nullptr, Status::ERROR_INVALID_OPERATION, "io is null");
     FALSE_RETURN_V_MSG_E(stss_ != nullptr && stsz_ != nullptr,
         Status::ERROR_INVALID_OPERATION, "stss or stsz box is empty");
@@ -150,6 +182,7 @@ Status VideoTrack::WriteSample(std::shared_ptr<AVIOStream> io, const std::shared
         "video write frame err:%{public}d", size);
     DisposeCtts(sample->pts_);
     DisposeStco(pos);
+    DisposeSdtp(sample->flag_);
     DisposeStsz(static_cast<uint32_t>(size));
     if (sample->flag_ & static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME)) {
         stss_->syncCount_++;
@@ -164,7 +197,7 @@ Status VideoTrack::WriteTailer()
     FALSE_RETURN_V_MSG_E(stsz_ != nullptr, Status::ERROR_INVALID_OPERATION, "stsz box is empty");
     if (stsz_->sampleCount_ > 0) {
         DisposeCtts();
-        DisposeStts();
+        DisposeSttsAllPts();
         DisposeDuration();
         DisposeBitrate();
         DisposeColor();
@@ -173,42 +206,42 @@ Status VideoTrack::WriteTailer()
     return Status::NO_ERROR;
 }
 
-int32_t VideoTrack::GetWidth()
+int32_t VideoTrack::GetWidth() const
 {
     return width_;
 }
 
-int32_t VideoTrack::GetHeight()
+int32_t VideoTrack::GetHeight() const
 {
     return height_;
 }
 
-bool VideoTrack::IsColor()
+bool VideoTrack::IsColor() const
 {
     return isColor_;
 }
 
-ColorPrimary VideoTrack::GetColorPrimaries()
+ColorPrimary VideoTrack::GetColorPrimaries() const
 {
     return colorPrimaries_;
 }
 
-TransferCharacteristic VideoTrack::GetColorTransfer()
+TransferCharacteristic VideoTrack::GetColorTransfer() const
 {
     return colorTransfer_;
 }
 
-MatrixCoefficient VideoTrack::GetColorMatrixCoeff()
+MatrixCoefficient VideoTrack::GetColorMatrixCoeff() const
 {
     return colorMatrixCoeff_;
 }
 
-bool VideoTrack::GetColorRange()
+bool VideoTrack::GetColorRange() const
 {
     return colorRange_;
 }
 
-bool VideoTrack::IsCuvaHDR()
+bool VideoTrack::IsCuvaHDR() const
 {
     return isCuvaHDR_;
 }
@@ -355,7 +388,7 @@ void VideoTrack::DisposeSttsNoPts()
     DisposeStts(lastDuration_, lastTimestamp);
 }
 
-void VideoTrack::DisposeStts()
+void VideoTrack::DisposeSttsAllPts()
 {
     FALSE_RETURN_MSG(stts_ != nullptr && stsz_ != nullptr, "stts or stsz box is empty");
     if (isHaveBFrame_) {
@@ -376,61 +409,6 @@ void VideoTrack::DisposeStts()
     } else {
         DisposeSttsNoPts();
     }
-}
-
-void VideoTrack::DisposeStts(int64_t duration, int64_t pts)
-{
-    if (duration > INT32_MAX || duration < 0) {
-        MEDIA_LOG_E("stts sample_delta must <= INT32_MAX and >= 0, but the value is " PUBLIC_LOG_D64
-            ", the pts is " PUBLIC_LOG_D64, duration, pts);
-    }
-    size_t size = stts_->timeToSamples_.size();
-    if (size > 0 && stts_->timeToSamples_[size - 1].second == static_cast<uint32_t>(duration)) {
-        stts_->timeToSamples_[size - 1].first++;
-    } else {
-        stts_->entryCount_++;
-        stts_->timeToSamples_.emplace_back(std::pair<uint32_t, uint32_t>(1, static_cast<uint32_t>(duration)));
-    }
-}
-
-void VideoTrack::DisposeStco(int64_t pos)
-{
-    constexpr size_t num2 = 2;
-    FALSE_RETURN_MSG(stsc_ != nullptr, "stsc box is empty");
-    FALSE_RETURN_MSG(stco_ != nullptr, "stco box is empty");
-    size_t iChunk = stsc_->chunks_.size();
-    if (pos_ == pos && iChunk > 0) {
-        stsc_->chunks_[iChunk - 1].samplesPerChunk_++;
-    } else {
-        stco_->chunkCount_++;
-        if (pos <= UINT32_MAX) {
-            stco_->chunksOffset32_.emplace_back(static_cast<uint32_t>(pos));
-        } else {
-            stco_->isCo64_ = true;
-            stco_->chunksOffset64_.emplace_back(pos);
-        }
-        if (iChunk >= num2 &&
-            stsc_->chunks_[iChunk - 1].samplesPerChunk_ == stsc_->chunks_[iChunk - num2].samplesPerChunk_) {
-            stsc_->chunks_.pop_back();
-        }
-        StscBox::Data stscData;
-        stscData.chunkNum_ = stco_->chunkCount_;
-        stscData.samplesPerChunk_ = 1;
-        stsc_->chunks_.emplace_back(stscData);
-        stsc_->entryCount_ = static_cast<uint32_t>(stsc_->chunks_.size());
-    }
-}
-
-void VideoTrack::DisposeStsz(uint32_t size)
-{
-    FALSE_RETURN_MSG(stsz_ != nullptr, "stsz box is empty");
-    allSampleSize_ += size;
-    if (isSameSize_ && stsz_->sampleCount_ > 0 &&
-        stsz_->samples_[stsz_->sampleCount_ - 1] != size) {
-        isSameSize_ = false;
-    }
-    stsz_->sampleCount_++;
-    stsz_->samples_.emplace_back(size);
 }
 
 void VideoTrack::DisposeDuration()
@@ -550,6 +528,50 @@ void VideoTrack::DisposeCuva()
             videoBox->AddChild(std::make_shared<CuvvBox>(0, "cuvv"));
         }
     }
+}
+
+void VideoTrack::AddSdtpBox()
+{
+    FALSE_RETURN_MSG(sdtp_ != nullptr, "sdtp box is empty");
+    auto stblBox = moov_->GetChild(trackPath_ + ".mdia.minf.stbl");
+    FALSE_RETURN_MSG(stblBox != nullptr, "stbl box is empty");
+    stblBox->AddChild(sdtp_);
+    sdtp_->dependencyFlags_.clear();
+    if (stsz_->sampleCount_ > 0) {
+        sdtp_->dependencyFlags_.assign(stsz_->sampleCount_, 0x10);  // dependent = FRAME_DEPENDENCY_YES
+        for (auto syncIndex : stss_->syncIndex_) {
+            FALSE_RETURN_MSG(syncIndex > 0 && syncIndex <= sdtp_->dependencyFlags_.size(),
+                "sync index out of range! index:%{public}u, count:%{public}zu",
+                syncIndex, sdtp_->dependencyFlags_.size());
+            sdtp_->dependencyFlags_[syncIndex - 1] = 0x20;  // dependent = FRAME_DEPENDENCY_NO
+        }
+    }
+}
+
+void VideoTrack::DisposeSdtp(uint32_t flag)
+{
+    uint8_t reference = FRAME_DEPENDENCY_UNKNOWN;
+    if ((flag & static_cast<uint32_t>(AVBufferFlag::DISPOSABLE)) != 0) {
+        reference = FRAME_DEPENDENCY_NO;
+        MEDIA_LOG_D("frame[%{public}u] is disposable frame", stsz_->sampleCount_);
+    } else if ((flag & static_cast<uint32_t>(AVBufferFlag::DISPOSABLE_EXT)) != 0) {
+        reference = FRAME_DEPENDENCY_EXT;
+        MEDIA_LOG_D("frame[%{public}u] is disposable_ext frame", stsz_->sampleCount_);
+    }
+    if (sdtp_ == nullptr && reference == FRAME_DEPENDENCY_UNKNOWN) {
+        return;
+    }
+    uint8_t dependent = FRAME_DEPENDENCY_YES;
+    uint8_t leading = FRAME_DEPENDENCY_UNKNOWN;
+    uint8_t redundancy = FRAME_DEPENDENCY_UNKNOWN;
+    if (sdtp_ == nullptr) {
+        sdtp_ = std::make_shared<SdtpBox>(0, "sdtp");
+        AddSdtpBox();
+    }
+    if (flag & static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME)) {
+        dependent = FRAME_DEPENDENCY_NO;
+    }
+    sdtp_->dependencyFlags_.push_back((leading << 6) | (dependent << 4) | (reference << 2) | redundancy);  // 6 4 2
 }
 } // Mpeg4
 } // Plugins

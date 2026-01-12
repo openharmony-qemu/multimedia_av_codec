@@ -15,6 +15,7 @@
 
 #include "avc_parser.h"
 #include <set>
+#include "mpeg4_utils.h"
 
 #ifndef _WIN32
 namespace {

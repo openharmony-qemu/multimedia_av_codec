@@ -19,8 +19,8 @@
 #ifndef _WIN32
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_MUXER, "Box" };
-constexpr uint32_t BOX_FLAGS_LEN = 3;
-constexpr uint32_t BOX_TYPE_LEN = 4;
+constexpr int32_t BOX_FLAGS_LEN = 3;
+constexpr int32_t BOX_TYPE_LEN = 4;
 constexpr uint32_t BOX_HEAD_LEN = 8;
 constexpr uint32_t BOX_BASE_LEN = 12;
 }
@@ -38,9 +38,7 @@ BasicBox::BasicBox(uint32_t size, std::string type)
 uint32_t BasicBox::GetSize()
 {
     size_ = BOX_HEAD_LEN;  // box head size: 8 B
-    for (auto &box : childBoxes_) {
-        size_ += box.second->GetSize();
-    }
+    AppendChildSize();
     return size_;
 }
 
@@ -110,6 +108,13 @@ void BasicBox::WriteChild(std::shared_ptr<AVIOStream> io)
     }
 }
 
+void BasicBox::AppendChildSize()
+{
+    for (auto &box : childBoxes_) {
+        size_ += box.second->GetSize();
+    }
+}
+
 FullBox::FullBox(uint32_t size, std::string type, uint8_t version, uint32_t flags)
     : BasicBox(size, std::move(type)), version_(version)
 {
@@ -121,9 +126,7 @@ FullBox::FullBox(uint32_t size, std::string type, uint8_t version, uint32_t flag
 uint32_t FullBox::GetSize()
 {
     size_ = BOX_BASE_LEN;
-    for (auto &box : childBoxes_) {
-        size_ += box.second->GetSize();
-    }
+    AppendChildSize();
     return size_;
 }
 
@@ -142,6 +145,27 @@ void FullBox::SetVersion(uint8_t version)
     version_ = version;
 }
 
+uint32_t AnyBox::GetSize()
+{
+    // size_ 不包含box 长度和type的字节数
+    size_ = getSizeFunc_();
+    AppendChildSize();
+    return size_ + BOX_HEAD_LEN;
+}
+
+int64_t AnyBox::Write(std::shared_ptr<AVIOStream> io)
+{
+    int64_t pos = io->GetPos();
+    uint32_t size = size_ + BOX_HEAD_LEN;
+    io->Write(size);
+    io->Write(type_.c_str(), BOX_TYPE_LEN);  // 4
+    writeFunc_(io);
+    WriteChild(io);
+    FALSE_RETURN_V_MSG_E(io->GetPos() - pos == size, io->GetPos(), "%{public}s write box size err! size:"
+        PUBLIC_LOG_D64 ", " PUBLIC_LOG_U32, type_.c_str(), io->GetPos() - pos, size);
+    return io->GetPos();
+}
+
 MvhdBox::MvhdBox(uint32_t size, std::string type, uint8_t version, uint32_t flags)
     : FullBox(size, std::move(type), version, flags) // 120/108
 {
@@ -151,10 +175,8 @@ uint32_t MvhdBox::GetSize()
 {
     size_ = BOX_BASE_LEN;
     version_ = duration_ < UINT32_MAX ? 0 : 1;
-    size_ += version_ ? 108 : 96;  // 108B  96B
-    for (auto &box : childBoxes_) {
-        size_ += box.second->GetSize();
-    }
+    size_ += version_ == 1 ? 108 : 96;  // 108B  96B
+    AppendChildSize();
     return size_;
 }
 
@@ -184,7 +206,7 @@ int64_t MvhdBox::Write(std::shared_ptr<AVIOStream> io)
         }
     }
     io->Write(reserved2_, sizeof(reserved2_));
-    io->Write(nextTrackId);
+    io->Write(nextTrackId_);
     WriteChild(io);
     return io->GetPos();
 }
@@ -198,10 +220,8 @@ uint32_t TkhdBox::GetSize()
 {
     size_ = BOX_BASE_LEN;
     version_ = duration_ < UINT32_MAX ? 0 : 1;
-    size_ += version_ ? 92 : 80;  // 92 80
-    for (auto &box : childBoxes_) {
-        size_ += box.second->GetSize();
-    }
+    size_ += version_ == 1 ? 92 : 80;  // 92 80
+    AppendChildSize();
     return size_;
 }
 
@@ -248,14 +268,12 @@ ElstBox::ElstBox(uint32_t size, std::string type, uint8_t version, uint32_t flag
 uint32_t ElstBox::GetSize()
 {
     size_ = BOX_BASE_LEN + 4;  // 4: bytes of entryCount_
-    if (version_) {
+    if (version_ == 1) {
         size_ += data_.size() * 20;  // 20
     } else {
         size_ += data_.size() * 12;  // 12
     }
-    for (auto &box : childBoxes_) {
-        size_ += box.second->GetSize();
-    }
+    AppendChildSize();
     return size_;
 }
 
@@ -292,10 +310,8 @@ uint32_t MdhdBox::GetSize()
 {
     size_ = BOX_BASE_LEN;
     version_ = duration_ < UINT32_MAX ? 0 : 1;
-    size_ += version_ ? 32 : 20;  // 32 20
-    for (auto &box : childBoxes_) {
-        size_ += box.second->GetSize();
-    }
+    size_ += version_ == 1 ? 32 : 20;  // 32 20
+    AppendChildSize();
     return size_;
 }
 
@@ -331,9 +347,7 @@ uint32_t HdlrBox::GetSize()
 {
     size_ = BOX_BASE_LEN + 20;  // hdlr len : 20
     size_ += name_.length() + 1;
-    for (auto &box : childBoxes_) {
-        size_ += box.second->GetSize();
-    }
+    AppendChildSize();
     return size_;
 }
 
@@ -361,9 +375,7 @@ VmhdBox::VmhdBox(uint32_t size, std::string type, uint8_t version, uint32_t flag
 uint32_t VmhdBox::GetSize()
 {
     size_ = BOX_BASE_LEN + 8;  // 8
-    for (auto &box : childBoxes_) {
-        size_ += box.second->GetSize();
-    }
+    AppendChildSize();
     return size_;
 }
 
@@ -389,9 +401,7 @@ SmhdBox::SmhdBox(uint32_t size, std::string type, uint8_t version, uint32_t flag
 uint32_t SmhdBox::GetSize()
 {
     size_ = BOX_BASE_LEN + 4;  // 4
-    for (auto &box : childBoxes_) {
-        size_ += box.second->GetSize();
-    }
+    AppendChildSize();
     return size_;
 }
 
@@ -415,9 +425,7 @@ DrefBox::DrefBox(uint32_t size, std::string type, uint8_t version, uint32_t flag
 uint32_t DrefBox::GetSize()
 {
     size_ = BOX_BASE_LEN + 4;  // 4
-    for (auto &box : childBoxes_) {
-        size_ += box.second->GetSize();
-    }
+    AppendChildSize();
     return size_;
 }
 
@@ -440,9 +448,7 @@ StsdBox::StsdBox(uint32_t size, std::string type, uint8_t version, uint32_t flag
 uint32_t StsdBox::GetSize()
 {
     size_ = BOX_BASE_LEN + 4;  // 4
-    for (auto &box : childBoxes_) {
-        size_ += box.second->GetSize();
-    }
+    AppendChildSize();
     return size_;
 }
 
@@ -465,9 +471,7 @@ AudioBox::AudioBox(uint32_t size, std::string type)
 uint32_t AudioBox::GetSize()
 {
     size_ = BOX_HEAD_LEN + 28;  // 28
-    for (auto &box : childBoxes_) {
-        size_ += box.second->GetSize();
-    }
+    AppendChildSize();
     return size_;
 }
 
@@ -499,9 +503,7 @@ EsdsBox::EsdsBox(uint32_t size, std::string type, uint8_t version, uint32_t flag
 uint32_t EsdsBox::GetSize()
 {
     size_ = BOX_BASE_LEN + 37 + codecConfig_.size();  // 37
-    for (auto &box : childBoxes_) {
-        size_ += box.second->GetSize();
-    }
+    AppendChildSize();
     return size_;
 }
 
@@ -540,9 +542,7 @@ BtrtBox::BtrtBox(uint32_t size, std::string type)
 uint32_t BtrtBox::GetSize()
 {
     size_ = BOX_HEAD_LEN + 12;  // 12
-    for (auto &box : childBoxes_) {
-        size_ += box.second->GetSize();
-    }
+    AppendChildSize();
     return size_;
 }
 
@@ -565,9 +565,7 @@ VideoBox::VideoBox(uint32_t size, std::string type)
 uint32_t VideoBox::GetSize()
 {
     size_ = BOX_HEAD_LEN + 78;  // 78
-    for (auto &box : childBoxes_) {
-        size_ += box.second->GetSize();
-    }
+    AppendChildSize();
     return size_;
 }
 
@@ -619,9 +617,7 @@ uint32_t AvccBox::GetSize()
             size_ += spsExt.size();
         }
     }
-    for (auto &box : childBoxes_) {
-        size_ += box.second->GetSize();
-    }
+    AppendChildSize();
     return size_;
 }
 
@@ -674,9 +670,7 @@ uint32_t HvccBox::GetSize()
                 size_ += nalu.size();
             }
         }
-        for (auto &box : childBoxes_) {
-            size_ += box.second->GetSize();
-        }
+        AppendChildSize();
     }
     return size_;
 }
@@ -814,9 +808,7 @@ uint32_t SttsBox::GetSize()
     size_ = BOX_BASE_LEN;
     size_ += 4;  // 4 byte
     size_ += 8 * timeToSamples_.size();  // 8 byte
-    for (auto &box : childBoxes_) {
-        size_ += box.second->GetSize();
-    }
+    AppendChildSize();
     return size_;
 }
 
@@ -848,9 +840,7 @@ uint32_t StscBox::GetSize()
     size_ = BOX_BASE_LEN;
     size_ += 4;  // 4
     size_ += 12 * chunks_.size();  // chunks len: 12
-    for (auto &box : childBoxes_) {
-        size_ += box.second->GetSize();
-    }
+    AppendChildSize();
     return size_;
 }
 
@@ -880,9 +870,7 @@ uint32_t StszBox::GetSize()
     size_ = BOX_BASE_LEN;
     size_ += 8;  // 8
     size_ += 4 * samples_.size();  // 4
-    for (auto &box : childBoxes_) {
-        size_ += box.second->GetSize();
-    }
+    AppendChildSize();
     return size_;
 }
 
@@ -918,9 +906,7 @@ uint32_t StcoBox::GetSize()
     } else {
         size_ += 4 * chunksOffset32_.size();  // 4
     }
-    for (auto &box : childBoxes_) {
-        size_ += box.second->GetSize();
-    }
+    AppendChildSize();
     return size_;
 }
 
@@ -957,9 +943,7 @@ uint32_t StssBox::GetSize()
     size_ = BOX_BASE_LEN;
     size_ += 4;  // 4
     size_ += 4 * syncIndex_.size();  // 4
-    for (auto &box : childBoxes_) {
-        size_ += box.second->GetSize();
-    }
+    AppendChildSize();
     return size_;
 }
 
@@ -987,9 +971,7 @@ uint32_t SgpdBox::GetSize()
     size_ = BOX_BASE_LEN;
     size_ += 12;  // 12
     size_ += 2 * distances_.size();  // 2
-    for (auto &box : childBoxes_) {
-        size_ += box.second->GetSize();
-    }
+    AppendChildSize();
     return size_;
 }
 
@@ -1019,9 +1001,7 @@ uint32_t SbgpBox::GetSize()
     size_ = BOX_BASE_LEN;
     size_ += 8;  // 8
     size_ += 8 * descriptions_.size();  // 8
-    for (auto &box : childBoxes_) {
-        size_ += box.second->GetSize();
-    }
+    AppendChildSize();
     return size_;
 }
 
@@ -1050,9 +1030,7 @@ uint32_t KeysBox::GetSize()
 {
     size_ = BOX_BASE_LEN;
     size_ += 4;  // 4
-    for (auto &box : childBoxes_) {
-        size_ += box.second->GetSize();
-    }
+    AppendChildSize();
     return size_;
 }
 
@@ -1077,9 +1055,7 @@ uint32_t DataBox::GetSize()
     size_ = BOX_HEAD_LEN;
     size_ += 8;  // 8
     size_ += data_.size();
-    for (auto &box : childBoxes_) {
-        size_ += box.second->GetSize();
-    }
+    AppendChildSize();
     return size_;
 }
 
@@ -1090,6 +1066,159 @@ int64_t DataBox::Write(std::shared_ptr<AVIOStream> io)
     io->Write(dataType_);
     io->Write(default_);
     io->Write(data_.data(), data_.size());
+    WriteChild(io);
+    return io->GetPos();
+}
+
+LociBox::LociBox(uint32_t size, std::string type, uint8_t version, uint32_t flags)
+    : FullBox(size, std::move(type), version, flags)
+{
+}
+
+uint32_t LociBox::GetSize()
+{
+    size_ = BOX_BASE_LEN;
+    size_ += 16; // 16
+    size_ += place_.length() + 1;
+    size_ += astronomicalBody_.length() + 1;
+    AppendChildSize();
+    return size_;
+}
+
+int64_t LociBox::Write(std::shared_ptr<AVIOStream> io)
+{
+    io->Write(size_);
+    io->Write(type_.data(), BOX_TYPE_LEN);
+    io->Write(version_);
+    io->Write(flags_, BOX_FLAGS_LEN);
+    io->Write(static_cast<uint16_t>(0));  // lang
+    io->Write(place_);
+    io->Write(static_cast<uint8_t>(0));  // role of place, 0:shooting 1:real 2:fictional
+    io->Write(static_cast<uint32_t>(longitude_));
+    io->Write(static_cast<uint32_t>(latitude_));
+    io->Write(static_cast<uint32_t>(0));  // altitude
+    io->Write(astronomicalBody_);
+    io->Write(static_cast<uint8_t>(0));
+    WriteChild(io);
+    return io->GetPos();
+}
+
+SdtpBox::SdtpBox(uint32_t size, std::string type, uint8_t version, uint32_t flags)
+    : FullBox(size, std::move(type), version, flags)
+{
+}
+
+uint32_t SdtpBox::GetSize()
+{
+    size_ = BOX_BASE_LEN;
+    size_ += static_cast<uint32_t>(dependencyFlags_.size());
+    AppendChildSize();
+    return size_;
+}
+
+int64_t SdtpBox::Write(std::shared_ptr<AVIOStream> io)
+{
+    io->Write(size_);
+    io->Write(type_.data(), BOX_TYPE_LEN);
+    io->Write(version_);
+    io->Write(flags_, BOX_FLAGS_LEN);
+    for (uint8_t flag : dependencyFlags_) {
+        io->Write(flag);
+    }
+    WriteChild(io);
+    return io->GetPos();
+}
+
+InfeBox::InfeBox(uint32_t size, std::string type, uint8_t version, uint32_t flags)
+    : FullBox(size, std::move(type), version, flags)
+{
+}
+
+uint32_t InfeBox::GetSize()
+{
+    size_ = BOX_BASE_LEN;
+    if (version_ == 0 || version_ == 1) {
+        size_ += 4;  // int16 * 2 = 4
+        size_ += static_cast<uint32_t>(itemName_.length() + 1);
+        size_ += static_cast<uint32_t>(contentType_.length() + 1);
+        size_ += static_cast<uint32_t>(contentEncoding_.length() + 1);
+        if (version_ == 1) {
+            size_ += static_cast<uint32_t>(sizeof(uint32_t));
+        }
+    } else if (version_ >= 2) {  // 2
+        size_ += (version_ == 2 ? 2 : 4);  // 2 4
+        size_ += static_cast<uint32_t>(6 + itemName_.length() + 1);  // 6
+        if (itemType_.compare(0, 4, "mime") == 0) {  // 4
+            size_ += static_cast<uint32_t>(contentType_.length() + 1);
+            size_ += static_cast<uint32_t>(contentEncoding_.length() + 1);
+        } else {
+            size_ += 4;  // 4
+        }
+    }
+    AppendChildSize();
+    return size_;
+}
+
+int64_t InfeBox::Write(std::shared_ptr<AVIOStream> io)
+{
+    int64_t pos = io->GetPos();
+    io->Write(size_);
+    io->Write(type_.data(), BOX_TYPE_LEN);
+    io->Write(version_);
+    io->Write(flags_, BOX_FLAGS_LEN);
+    if (version_ == 0 || version_ == 1) {
+        io->Write(static_cast<uint16_t>(1));  // item id
+        io->Write(static_cast<uint16_t>(0));  // item protection idex: 0
+        io->Write(itemName_);
+        io->Write(contentType_);
+        io->Write(contentEncoding_);
+        if (version_ == 1) {
+            io->Write(static_cast<uint32_t>(1));
+        }
+    } else if (version_ >= 2) {  // 2
+        if (version_ == 2) {     // 2
+            io->Write(static_cast<uint16_t>(1));
+        } else {
+            io->Write(static_cast<uint32_t>(1));
+        }
+        io->Write(static_cast<uint16_t>(0));  // item protection index
+        io->Write(itemType_.data(), BOX_TYPE_LEN);
+        io->Write(itemName_);
+        if (itemType_.compare(0, 4, "mime") == 0) {  // 4
+            io->Write(contentType_);
+            io->Write(contentEncoding_);
+        } else {
+            io->Write("uri", 3);  // 3
+            io->Write(static_cast<uint8_t>(0));
+        }
+    }
+    WriteChild(io);
+    FALSE_RETURN_V_MSG_E(io->GetPos() - pos == size_, io->GetPos(), "%{public}s box size fail!", type_.data());
+    return io->GetPos();
+}
+
+TrefBox::TrefBox(uint32_t size, std::string type)
+    : BasicBox(size, std::move(type))
+{
+}
+
+uint32_t TrefBox::GetSize()
+{
+    size_ = static_cast<uint32_t>(srcTrackIds_.size() * sizeof(uint32_t)) + BOX_HEAD_LEN + BOX_HEAD_LEN;
+    AppendChildSize();
+    return size_;
+}
+
+int64_t TrefBox::Write(std::shared_ptr<AVIOStream> io)
+{
+    uint32_t dataSize = static_cast<uint32_t>(srcTrackIds_.size() * sizeof(uint32_t)) + BOX_HEAD_LEN;
+    io->Write(size_);
+    io->Write(type_.data(), BOX_TYPE_LEN);
+    io->Write(dataSize);
+    io->Write(trefTag_);
+    for (auto id : srcTrackIds_) {
+        io->Write(id);
+    }
     WriteChild(io);
     return io->GetPos();
 }

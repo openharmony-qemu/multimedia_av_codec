@@ -21,6 +21,7 @@
 #include <unordered_map>
 #include <vector>
 #include <memory>
+#include <functional>
 #include "meta/any.h"
 #include "common/log.h"
 #include "avio_stream.h"
@@ -41,7 +42,7 @@ public:
     size_t GetChildCount();
     virtual int64_t Write(std::shared_ptr<AVIOStream> io);
     virtual void SetVersion(uint8_t version) {return;}
-    virtual Any GetCurBoxPtr() {return Any();}
+    virtual Any GetCurBoxPtr() {return Any(this);}
 public:
     template <class T>
     static T* GetBoxPtr(std::shared_ptr<BasicBox> &box)
@@ -56,7 +57,7 @@ public:
     }
 
     template <class T>
-    static T* GetBoxPtr(std::shared_ptr<BasicBox> &parentBox, std::string typePath)
+    static T* GetBoxPtr(const std::shared_ptr<BasicBox> &parentBox, std::string typePath)
     {
         static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_MUXER, "BasicBox" };
         FALSE_RETURN_V_MSG_W(parentBox != nullptr, nullptr,
@@ -74,6 +75,7 @@ public:
 
 protected:
     inline void WriteChild(std::shared_ptr<AVIOStream> io);
+    inline void AppendChildSize();
 
 protected:
     uint32_t size_;
@@ -94,6 +96,24 @@ protected:
     uint8_t flags_[3];
 };
 
+using AnyBoxGetSizeFunc = std::function<uint32_t(void)>;
+using AnyBoxWriteFunc = std::function<void(std::shared_ptr<AVIOStream>)>;
+class AnyBox : public BasicBox {
+public:
+    AnyBox(uint32_t size, std::string type) : BasicBox(size, std::move(type)) {}
+    void SetFunc(AnyBoxWriteFunc writeFunc, AnyBoxGetSizeFunc getSizeFunc)
+    {
+        writeFunc_ = writeFunc;
+        getSizeFunc_ = getSizeFunc;
+    }
+    int64_t Write(std::shared_ptr<AVIOStream> io) override;
+    uint32_t GetSize() override;
+    Any GetCurBoxPtr() override {return Any(this);}
+
+    AnyBoxWriteFunc writeFunc_ = [] (std::shared_ptr<AVIOStream> io) {};
+    AnyBoxGetSizeFunc getSizeFunc_ = [] () {return 0;};  // retrun size of writeFunc_ write size
+};
+
 class MvhdBox : public FullBox {
 public:
     MvhdBox(uint32_t size, std::string type, uint8_t version = 0, uint32_t flags = 0);
@@ -110,7 +130,7 @@ public:
     uint8_t reserved1_[10] = {0}; // reserved
     uint32_t matrix_[3][3] = {{0x00010000, 0, 0}, {0, 0x00010000, 0}, {0, 0, 0x40000000}};
     uint8_t reserved2_[24] = {0}; // reserved
-    uint32_t nextTrackId = 1;
+    uint32_t nextTrackId_ = 1;
 };
 
 class TkhdBox : public FullBox {
@@ -500,6 +520,50 @@ public:
     uint32_t dataType_ = 0; // 0x01 UTF8, 0x17 float32, 0x43 int32, 0x0D jpg, 0x0E png, 0x1B bmp
     uint32_t default_ = 0;
     std::vector<uint8_t> data_;
+};
+
+class LociBox : public FullBox {
+public:
+    LociBox(uint32_t size, std::string type, uint8_t version = 0, uint32_t flags = 0);
+    uint32_t GetSize() override;
+    int64_t Write(std::shared_ptr<AVIOStream> io) override;
+
+    int32_t latitude_ = 0;
+    int32_t longitude_ = 0;
+    std::string place_ = "";
+    std::string astronomicalBody_ = "earth";
+};
+
+class SdtpBox : public FullBox {
+public:
+    SdtpBox(uint32_t size, std::string type, uint8_t version = 0, uint32_t flags = 0);
+    uint32_t GetSize() override;
+    int64_t Write(std::shared_ptr<AVIOStream> io) override;
+
+    std::deque<uint8_t> dependencyFlags_;
+};
+
+class InfeBox : public FullBox {
+public:
+    InfeBox(uint32_t size, std::string type, uint8_t version = 0, uint32_t flags = 0);
+    uint32_t GetSize() override;
+    int64_t Write(std::shared_ptr<AVIOStream> io) override;
+
+    std::string itemType_ = "";
+    std::string itemName_ = "";
+    std::string contentType_ = "";
+    std::string contentEncoding_ = "";
+};
+
+class TrefBox : public BasicBox {
+public:
+    TrefBox(uint32_t size, std::string type);
+    uint32_t GetSize() override;
+    int64_t Write(std::shared_ptr<AVIOStream> io) override;
+    Any GetCurBoxPtr() override {return Any(this);}
+
+    uint32_t trefTag_;
+    std::vector<uint32_t> srcTrackIds_;
 };
 } // Mpeg4
 } // Plugins

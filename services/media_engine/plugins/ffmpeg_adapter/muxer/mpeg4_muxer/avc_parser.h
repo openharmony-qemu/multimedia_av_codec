@@ -26,7 +26,7 @@ class AvcParser : public VideoParser {
 public:
     AvcParser();
     int32_t WriteFrame(const std::shared_ptr<AVIOStream> &io, const std::shared_ptr<AVBuffer> &sample) override;
-    using ParserFunc = int32_t(AvcParser::*)(const uint8_t* sample, int32_t size);
+    using ParserFunc = int32_t(AvcParser::*)(const uint8_t *sample, int32_t size);
     int32_t SetConfig(const std::shared_ptr<BasicBox> &box, std::vector<uint8_t> &codecConfig) override;
 
 private:
@@ -46,7 +46,7 @@ private:
 
     uint8_t spsCount_ = 0;
     std::shared_ptr<BasicBox> avccBasicBox_ = nullptr;
-    AvccBox* avccBox_ = nullptr;
+    AvccBox *avccBox_ = nullptr;
     std::unordered_map<AvcNalType, std::pair<bool, ParserFunc>> needParse_ = {
         {AVC_SPS_NAL_UNIT, {true, &AvcParser::ParseSps}},
         {AVC_PPS_NAL_UNIT, {true, &AvcParser::ParsePps}},

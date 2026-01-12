@@ -35,6 +35,9 @@ public:
     int32_t SetRotation(int32_t rotation) override;
     int32_t SetTimedMetadata() override;
     int32_t SetFormat(std::shared_ptr<FormatMock> &format) override;
+    int32_t SetParameter(const std::shared_ptr<Media::Meta> &param);
+    int32_t SetUserMeta(const std::shared_ptr<Media::Meta> &userMate);
+    int32_t AddTrack(int32_t& trackIndex, const std::shared_ptr<Media::Meta> &trackDesc);
 private:
     std::shared_ptr<Media::Plugins::DataSink> dataSink_ = nullptr;
     std::shared_ptr<Media::Plugins::MuxerPlugin> muxer_ = nullptr;
