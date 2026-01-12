@@ -153,7 +153,6 @@
             <option name="push" value="video_res/1920_1440_30_avcc_hdr_static_meta.bin -> /data/test/media" src="res"/>
             <option name="push" value="video_res/1920_1440_30_avcc.h265 -> /data/test/media" src="res"/>
             <option name="push" value="video_res/1600_900_avcc_hdr10_hdr_static_meta.bin -> /data/test/media" src="res"/>
-            <option name="push" value="video_res/rv40.rm -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -170,7 +169,6 @@
             <option name="push" value="video_res/1920_1440_30_avcc_hdr_static_meta.bin -> /data/test/media" src="res"/>
             <option name="push" value="video_res/1920_1440_30_avcc.h265 -> /data/test/media" src="res"/>
             <option name="push" value="video_res/1600_900_avcc_hdr10_hdr_static_meta.bin -> /data/test/media" src="res"/>
-            <option name="push" value="video_res/rv40.rm -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -470,7 +468,6 @@
             <option name="push" value="video_res/1920_1440_30_avcc_hdr_static_meta.bin -> /data/test/media" src="res"/>
             <option name="push" value="video_res/1920_1440_30_avcc.h265 -> /data/test/media" src="res"/>
             <option name="push" value="video_res/1600_900_avcc_hdr10_hdr_static_meta.bin -> /data/test/media" src="res"/>
-            <option name="push" value="video_res/rv40.rm -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -487,7 +484,6 @@
             <option name="push" value="video_res/1920_1440_30_avcc_hdr_static_meta.bin -> /data/test/media" src="res"/>
             <option name="push" value="video_res/1920_1440_30_avcc.h265 -> /data/test/media" src="res"/>
             <option name="push" value="video_res/1600_900_avcc_hdr10_hdr_static_meta.bin -> /data/test/media" src="res"/>
-            <option name="push" value="video_res/rv40.rm -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
