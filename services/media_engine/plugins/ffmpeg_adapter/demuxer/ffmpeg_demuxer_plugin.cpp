@@ -2251,8 +2251,9 @@ Status FFmpegDemuxerPlugin::ReadUntilKeyFrame(Plugins::AVPacketWrapperPtr pktWra
     int ffRet = 0;
     while ((ffRet = AVReadFrameLimit(pktWrapper->GetAVPacket())) >= 0) {
         FALSE_RETURN_V_MSG_E(!timeoutGuard.IsTimeout(), Status::ERROR_WAIT_TIMEOUT, "Timeout while reading frames");
+        uint32_t fFlag = static_cast<uint32_t>(pktWrapper->GetFlags());
         if (pktWrapper->GetStreamIndex() != trackIndex || pktWrapper->GetDts() == AV_NOPTS_VALUE ||
-            (pktWrapper->GetFlags() & AV_PKT_FLAG_DISCARD)) {
+            fFlag & AV_PKT_FLAG_DISCARD) {
             av_packet_unref(pktWrapper->GetAVPacket());
             continue;
         }
@@ -2260,7 +2261,7 @@ Status FFmpegDemuxerPlugin::ReadUntilKeyFrame(Plugins::AVPacketWrapperPtr pktWra
             readRange.start_ts = pktWrapper->GetDts();
         }
         readRange.end_ts = pktWrapper->GetDts();
-        if (pktWrapper->GetFlags() & AV_PKT_FLAG_KEY) {
+        if (fFlag & AV_PKT_FLAG_KEY) {
             return Status::OK;
         }
         ++readCnt;

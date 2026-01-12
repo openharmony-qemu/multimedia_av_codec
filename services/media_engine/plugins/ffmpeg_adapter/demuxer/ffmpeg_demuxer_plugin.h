@@ -244,7 +244,7 @@ private:
     Status WritePacketDataAndUpdateInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket,
         Plugins::AVPacketWrapperPtr tempPktWrapper, uint32_t copySize, bool combined);
     Status ConvertToAnnexbAndUpdateSample(std::shared_ptr<AVBuffer> sample,
-        std::shared_ptr<SamplePacket> samplePacket, Plugins::AVPacketWrapperPtr& tempPktWrapper, bool combined);
+        std::shared_ptr<SamplePacket> samplePacket, Plugins::AVPacketWrapperPtr& tempPktWrapper);
     Status ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample, Plugins::AVPacketWrapperPtr avpacketWrapper,
         std::shared_ptr<SamplePacket> dstSamplePacket);
     Status ConvertPacketToAnnexb(Plugins::AVPacketWrapperPtr srcWrapper, std::shared_ptr<SamplePacket> samplePacket,
