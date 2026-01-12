@@ -263,6 +263,7 @@ HWTEST_F(DemuxerFilterUnitTest, HandleTrackInfos, TestSize.Level1)
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     trackInfos.push_back(meta);
 
+    meta->Set<Tag::REGULAR_TRACK_ID>(0);
     auto res = demuxerFilter_->HandleTrackInfos(trackInfos, successNodeCount);
     std::cout << "HandleTrackInfos " << static_cast<int32_t>(res) << std::endl;
 
