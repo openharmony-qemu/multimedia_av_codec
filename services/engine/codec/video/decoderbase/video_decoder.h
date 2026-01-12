@@ -86,7 +86,7 @@ public:
 
     static std::mutex decoderCountMutex_;
     static std::vector<uint32_t> freeIDSet_;
-    uint32_t decInstanceID_;
+    uint32_t decInstanceID_ = 0;
     static std::vector<uint32_t> decInstanceIDSet_;
     void* handle_ = nullptr;
     std::string codecName_;
