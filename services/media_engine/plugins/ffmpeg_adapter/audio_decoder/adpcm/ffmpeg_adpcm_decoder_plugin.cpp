@@ -82,6 +82,8 @@ FFmpegADPCMDecoderPlugin::FFmpegADPCMDecoderPlugin(const std::string& name)
     auto it = kAdpcmName2Ff.find(name);
     if (it == kAdpcmName2Ff.end()) {
         AVCODEC_LOGE("unsupported name for ADPCM: %{public}s", name.c_str());
+        ffCodecName_ = "invalidName";
+        return;
     }
     ffCodecName_ = it->second;
     AVCODEC_LOGI("create adpcm decoder plugin by %{public}s", name.c_str());
@@ -129,6 +131,8 @@ Status FFmpegADPCMDecoderPlugin::Release()
 
 Status FFmpegADPCMDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &meta)
 {
+    CHECK_AND_RETURN_RET_LOG(ffCodecName_ != "invalidName",
+        Status::ERROR_UNSUPPORTED_FORMAT, "unsupported type for ADPCM");
     if (!CheckFormat(meta)) {
         return Status::ERROR_INVALID_PARAMETER;
     }
