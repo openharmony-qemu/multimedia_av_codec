@@ -329,6 +329,11 @@ void VpxDecoder::ConvertDecOutToAVFrame()
     cachedFrame_->data[planeU] = vpxDecOutputImg_->planes[planeU]; /**< U (Chroma) plane */
     cachedFrame_->data[planeV] = vpxDecOutputImg_->planes[planeV]; /**< V (Chroma) plane */
 
+    if (vpxDecOutputImg_->bit_depth == BITS_PER_PIXEL_COMPONENT_10 && outputPixelFmt_ == VideoPixelFormat::NV21) {
+        cachedFrame_->data[planeU] = vpxDecOutputImg_->planes[planeV]; /**< V (Chroma) plane */
+        cachedFrame_->data[planeV] = vpxDecOutputImg_->planes[planeU]; /**< U (Chroma) plane */
+    }
+
     cachedFrame_->format = static_cast<int>(ConvertVpxFmtToAVPixFmt(vpxDecOutputImg_->fmt));
 
     uint32_t channelY = 0;
@@ -415,15 +420,16 @@ int32_t VpxDecoder::DecodeFrameOnce()
         ret = -1;
     }
     if (ret == 0 && vpxDecOutputImg_ != nullptr) {
+        int32_t bitDepth = vpxDecOutputImg_->bit_depth;
         ConvertDecOutToAVFrame();
 #ifdef BUILD_ENG_VERSION
-        DumpOutputBuffer();
+        DumpOutputBuffer(bitDepth);
 #endif
         auto index = codecAvailQue_->Front();
         CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING, -1, "Not in running state");
         std::shared_ptr<CodecBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
         int32_t status = AVCS_ERR_OK;
-        if (CheckFormatChange(index, cachedFrame_->width, cachedFrame_->height, bitDepth_) == AVCS_ERR_OK) {
+        if (CheckFormatChange(index, cachedFrame_->width, cachedFrame_->height, bitDepth) == AVCS_ERR_OK) {
             CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING, -1, "Not in running state");
             frameBuffer = buffers_[INDEX_OUTPUT][index];
             status = FillFrameBuffer(frameBuffer);
