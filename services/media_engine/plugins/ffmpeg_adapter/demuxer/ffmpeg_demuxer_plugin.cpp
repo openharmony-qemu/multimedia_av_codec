@@ -3020,6 +3020,47 @@ Status FFmpegDemuxerPlugin::SeekToStart()
     return Status::OK;
 }
 
+Status FFmpegDemuxerPlugin::SeekToFrameByDts(int32_t trackId, int64_t seekTime,
+    SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs)
+{
+    MEDIA_LOG_D("in");
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
+    TimeoutGuard timeoutGuard(timeoutMs);
+    MediaAVCodec::AVCodecTrace trace("SeekToFrameByDts");
+    auto id = HiviewDFX::XCollie::GetInstance().SetTimer("av_codec::demuxer_seekToFrameByDts", SETTIMER_TIMEOUT,
+        nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
+    if (readThread_ != nullptr) {
+        SyncSeekThread();
+    }
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
+        "AVFormatContext is nullptr");
+    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION,
+        "No track has been selected");
+    FALSE_RETURN_V_MSG_E(seekTime >= 0 && seekTime <= INT64_MAX / MS_TO_NS,
+        Status::ERROR_INVALID_PARAMETER,
+        "Seek time " PUBLIC_LOG_D64 " is not supported", seekTime);
+    int trackIndex = SelectSeekTrack();
+    MEDIA_LOG_D("Seek by DTS based on track " PUBLIC_LOG_D32, trackIndex);
+    AVStream* avStream = formatContext_->streams[trackIndex];
+    FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER,
+        "AVStream is nullptr");
+    int64_t ffDts = ConvertTimeToFFmpeg(seekTime * MS_TO_NS, avStream->time_base);
+    MEDIA_LOG_D("Seek DTS: " PUBLIC_LOG_D64 " ms -> " PUBLIC_LOG_D64 " (FFmpeg time_base)",
+        seekTime, ffDts);
+    int ffRet = AVSeekFrameLock(trackIndex, ffDts, AVSEEK_FLAG_ANY);
+    FALSE_RETURN_V_MSG_E(ffRet >= 0, Status::ERROR_UNKNOWN,
+        "Call av_seek_frame failed, err: " PUBLIC_LOG_S, AVStrError(ffRet).c_str());
+    formatContext_->pb->error = 0;
+    FALSE_RETURN_V_MSG_E(!timeoutGuard.IsTimeout(), Status::ERROR_WAIT_TIMEOUT,
+        "Timeout after av_seek_frame");
+    realSeekTime = ConvertTimeFromFFmpeg(ffDts, avStream->time_base);
+    ResetAfterSeek(seekTime, mode);
+    HiviewDFX::XCollie::GetInstance().CancelTimer(id);
+    MEDIA_LOG_I("Seek by DTS succeeded: target=" PUBLIC_LOG_D64 " ms, real=" PUBLIC_LOG_D64 " (ns)",
+        seekTime, realSeekTime);
+    return Status::OK;
+}
+
 namespace { // plugin set
 
 int IsStartWithID3(const uint8_t *buf, const char *tagName)
