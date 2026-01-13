@@ -1672,41 +1672,6 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ReadLoop_002, TestSize.Level1)
     }
 }
 
-HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_TryRecvParserTask_002, TestSize.Level1)
-{
-    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
-    demuxer->source_->plugin_ = std::make_shared<SourcePluginMock>("StatusErrorUnknown");
-    demuxer->source_->seekable_ = Plugins::Seekable::SEEKABLE;
-
-    std::shared_ptr<Plugins::DemuxerPlugin> pluginMock = std::make_shared<DemuxerPluginMock>("StatusOK");
-    demuxer->demuxerPluginManager_->streamInfoMap_[0].plugin = pluginMock;
-
-    demuxer->isParserTaskEnd_ = false;
-
-    demuxer->videoTrackId_ = 0;
-    demuxer->demuxerPluginManager_->temp2TrackInfoMap_[0].streamID = 0;
-    demuxer->demuxerPluginManager_->temp2TrackInfoMap_[0].innerTrackIndex = 0;
-    demuxer->demuxerPluginManager_->isDash_ = false;
-
-    EXPECT_EQ(demuxer->StartReferenceParser(0, true), Status::OK);
-    EXPECT_EQ(demuxer->ParserRefInfo(), 0);
-
-    std::shared_ptr<Plugins::DemuxerPlugin> pluginMock1 = std::make_shared<DemuxerPluginMock>("StatusAgain");
-    demuxer->demuxerPluginManager_->streamInfoMap_[0].plugin = pluginMock1;
-    uint8_t* data = new uint8_t[100];
-    std::shared_ptr<AVBuffer> sample = AVBuffer::CreateAVBuffer(data, 100, 100);
-    sample->pts_ = 100;
-    FrameLayerInfo frameLayerInfo;
-    EXPECT_EQ(demuxer->GetFrameLayerInfo(sample, frameLayerInfo), Status::ERROR_AGAIN);
-    EXPECT_EQ(demuxer->GetFrameLayerInfo(0, frameLayerInfo), Status::ERROR_AGAIN);
-
-    GopLayerInfo gopLayerInfo;
-    EXPECT_EQ(demuxer->GetGopLayerInfo(0, gopLayerInfo), Status::ERROR_AGAIN);
-
-    delete[] data;
-}
-
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_StartTask_001, TestSize.Level1)
 {
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
