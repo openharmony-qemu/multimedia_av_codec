@@ -1018,6 +1018,27 @@ int32_t FCodec::UpdateSurfaceMemory(uint32_t index)
     return AVCS_ERR_OK;
 }
 
+bool FCodec::CheckStrideChange(uint32_t index, bool& isChanged)
+{
+    if (sInfo_.surface != nullptr) {
+        std::shared_ptr<FBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
+        if (!frameBuffer || frameBuffer->sMemory_ == nullptr) {
+            AVCODEC_LOGE("frameBuffer or surfaceMemory is nullptr");
+            return false;
+        }
+        int32_t stride = frameBuffer->sMemory_->GetSurfaceBufferStride();
+        int32_t formatStride = 0;
+        format_.GetIntValue(FMTKey::VIDEO_STRIDE, formatStride);
+        if (stride != formatStride) {
+            AVCODEC_LOGI("format change, stride: %{public}d->%{public}d", formatStride, stride);
+            std::lock_guard<std::mutex> lock(formatMutex_);
+            format_.PutIntValue(FMTKey::VIDEO_STRIDE, stride);
+            isChanged = true;
+        }
+    }
+    return true;
+}
+
 int32_t FCodec::CheckFormatChange(uint32_t index, int width, int height)
 {
     AVCODEC_LOGD("cur decNum: %{public}u", decNum_);
@@ -1028,6 +1049,7 @@ int32_t FCodec::CheckFormatChange(uint32_t index, int width, int height)
 #ifdef BUILD_ENG_VERSION
     DumpOutputBuffer();
 #endif // BUILD_ENG_VERSION
+    bool isChanged = false;
     if (width_ != width || height_ != height) {
         AVCODEC_LOGI("format change, width: %{public}d->%{public}d, height: %{public}d->%{public}d", width_, width,
                      height_, height);
@@ -1040,8 +1062,6 @@ int32_t FCodec::CheckFormatChange(uint32_t index, int width, int height)
             std::lock_guard<std::mutex> lock(formatMutex_);
             format_.PutIntValue(FMTKey::VIDEO_WIDTH, width_);
             format_.PutIntValue(FMTKey::VIDEO_HEIGHT, height_);
-            format_.PutIntValue(FMTKey::VIDEO_STRIDE,
-                                outputPixelFmt_ == VideoPixelFormat::RGBA ? width_ * VIDEO_PIX_DEPTH_RGBA : width_);
             format_.PutIntValue(FMTKey::VIDEO_SLICE_HEIGHT, height_);
             format_.PutIntValue(FMTKey::VIDEO_PIC_WIDTH, width_);
             format_.PutIntValue(FMTKey::VIDEO_PIC_HEIGHT, height_);
@@ -1053,6 +1073,11 @@ int32_t FCodec::CheckFormatChange(uint32_t index, int width, int height)
                 sInfo_.requestConfig.height = height_;
             }
         }
+        isChanged = true;
+    }
+    CHECK_AND_RETURN_RET_LOG(CheckStrideChange(index, isChanged), AVCS_ERR_UNKNOWN,
+                             "frameBuffer or surfaceMemory is nullptr!");
+    if (isChanged) {
         callback_->OnOutputFormatChanged(format_);
     }
     std::lock_guard<std::mutex> oLock(outputMutex_);
