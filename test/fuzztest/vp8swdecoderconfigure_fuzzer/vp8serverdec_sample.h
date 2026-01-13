@@ -26,7 +26,6 @@
 #include <thread>
 #include <unistd.h>
 #include <unordered_map>
-#include "vpx_decoder.h"
 #include "codecbase.h"
 namespace OHOS {
 namespace MediaAVCodec {

@@ -18,6 +18,8 @@
 #include "vp9serverdec_sample.h"
 #include <iostream>
 #include "vpx_decoder_api.h"
+#include "video_decoder.h"
+
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
@@ -60,7 +62,7 @@ VDecServerSample::~VDecServerSample()
         codec_->Stop();
         codec_->Release();
         // VP9解码器特定清理
-        VpxDecoder *codec = static_cast<VpxDecoder*>(codec_.get());
+        VideoDecoder *codec = static_cast<VideoDecoder*>(codec_.get());
         codec->DecStrongRef(codec);
     }
     if (signal_ != nullptr) {

@@ -26,7 +26,6 @@
 #include <thread>
 #include <unistd.h>
 #include <unordered_map>
-#include "vpx_decoder.h"
 #include "codecbase.h"
 #include "surface/window.h"
 namespace OHOS {

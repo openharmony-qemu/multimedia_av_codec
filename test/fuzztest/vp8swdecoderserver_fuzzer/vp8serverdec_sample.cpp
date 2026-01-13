@@ -21,6 +21,8 @@
 #include "window.h"
 #include "window_manager.h"
 #include "window_option.h"
+#include "video_decoder.h"
+
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
@@ -67,7 +69,7 @@ VDecServerSample::~VDecServerSample()
     if (codec_ != nullptr) {
         codec_->Stop();
         codec_->Release();
-        VpxDecoder *codec = static_cast<VpxDecoder*>(codec_.get());
+        VideoDecoder *codec = static_cast<VideoDecoder*>(codec_.get());
         codec->DecStrongRef(codec);
     }
 }
