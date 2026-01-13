@@ -298,7 +298,7 @@ static void DemuxerResult(int audioFramesCount)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local ac3.dat(ac3)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0610, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0610, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_1);
     ASSERT_NE(source, nullptr);
@@ -322,7 +322,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0610, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, URI ac3.dat(ac3)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0620, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0620, TestSize.Level2)
 {
     CreateUriSource(INP_URI_1);
     ASSERT_NE(source, nullptr);
@@ -346,7 +346,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0620, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local ac3.dat(ac3)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0630, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0630, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_1);
     DemuxerResult(317);
@@ -365,7 +365,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0630, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI ac3.dat(ac3)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0640, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0640, TestSize.Level2)
 {
     CreateUriSource(INP_URI_1);
     DemuxerResult(317);
@@ -385,7 +385,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0640, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local eac3.dat(eac3)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0650, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0650, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_2);
     ASSERT_NE(source, nullptr);
@@ -409,7 +409,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0650, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, eac3.dat(eac3)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0660, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0660, TestSize.Level2)
 {
     CreateUriSource(INP_URI_2);
     ASSERT_NE(source, nullptr);
@@ -433,7 +433,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0660, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local eac3.dat(eac3)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0670, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0670, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_2);
     DemuxerResult(317);
@@ -452,7 +452,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0670, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI eac3.dat(eac3)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0680, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0680, TestSize.Level2)
 {
     CreateUriSource(INP_URI_2);
     DemuxerResult(317);
@@ -472,7 +472,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0680, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local amr_nb_8000_1_amr.dat(amr)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0690, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0690, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_3);
     ASSERT_NE(source, nullptr);
@@ -496,7 +496,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0690, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, URI amr_nb_8000_1_amr.dat(amr)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0700, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0700, TestSize.Level2)
 {
     CreateUriSource(INP_URI_3);
     ASSERT_NE(source, nullptr);
@@ -520,7 +520,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0700, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local amr_nb_8000_1_amr.dat(amr)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0710, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0710, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_3);
     DemuxerResult(1501);
@@ -539,7 +539,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0710, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI amr_nb_8000_1_amr.dat(amr)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0720, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0720, TestSize.Level2)
 {
     CreateUriSource(INP_URI_3);
     DemuxerResult(1501);
@@ -558,7 +558,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0720, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local AAC_48000_1_aac.dat(aac)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0730, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0730, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_4);
     ASSERT_NE(source, nullptr);
@@ -582,7 +582,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0730, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, URI AAC_48000_1_aac.dat(aac)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0740, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0740, TestSize.Level2)
 {
     CreateUriSource(INP_URI_4);
     ASSERT_NE(source, nullptr);
@@ -606,7 +606,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0740, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local AAC_48000_1_aac.dat(aac)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0750, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0750, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_4);
     DemuxerResult(9457);
@@ -625,7 +625,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0750, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI AAC_48000_1_aac.dat(aac)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0760, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0760, TestSize.Level2)
 {
     CreateUriSource(INP_URI_4);
     DemuxerResult(9457);
@@ -644,7 +644,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0760, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local MP3_48000_1_mp3.dat(mp3)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0770, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0770, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_5);
     ASSERT_NE(source, nullptr);
@@ -668,7 +668,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0770, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, URI MP3_48000_1_mp3.dat(mp3)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0780, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0780, TestSize.Level2)
 {
     CreateUriSource(INP_URI_5);
     ASSERT_NE(source, nullptr);
@@ -692,12 +692,12 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0780, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local MP3_48000_1_mp3.dat(mp3)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0790, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0790, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_5);
     DemuxerResult(9150);
     seekInfo fileTestDirPrevious{INP_DIR_5, SEEK_MODE_PREVIOUS_SYNC, 0, 0, 9150};
-    seekInfo fileTestDirClosest{INP_DIR_5, SEEK_MODE_CLOSEST_SYNC, 109800, 0, 4574};
+    seekInfo fileTestDirClosest{INP_DIR_5, SEEK_MODE_CLOSEST_SYNC, 109800, 0, 4575};
     seekInfo fileTestDirNext{INP_DIR_5, SEEK_MODE_NEXT_SYNC, 219576, 0, 1};
     CheckSeekMode(fileTestDirPrevious);
     CheckSeekMode(fileTestDirClosest);
@@ -711,12 +711,12 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0790, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI MP3_48000_1_mp3.dat(mp3)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0800, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0800, TestSize.Level2)
 {
     CreateUriSource(INP_URI_5);
     DemuxerResult(9150);
     seekInfo fileTestUriPrevious{INP_URI_5, SEEK_MODE_PREVIOUS_SYNC, 0, 0, 9150};
-    seekInfo fileTestUriClosest{INP_URI_5, SEEK_MODE_CLOSEST_SYNC, 109800, 0, 4574};
+    seekInfo fileTestUriClosest{INP_URI_5, SEEK_MODE_CLOSEST_SYNC, 109800, 0, 4575};
     seekInfo fileTestUriNext{INP_URI_5, SEEK_MODE_NEXT_SYNC, 219576, 0, 1};
     CheckSeekMode(fileTestUriPrevious);
     CheckSeekMode(fileTestUriClosest);
@@ -730,7 +730,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0800, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local FLAC_48000_1_flac.dat(flac)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0810, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0810, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_6);
     ASSERT_NE(source, nullptr);
@@ -754,7 +754,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0810, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, URI FLAC_48000_1_flac.dat(flac)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0820, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0820, TestSize.Level2)
 {
     CreateUriSource(INP_URI_6);
     ASSERT_NE(source, nullptr);
@@ -778,7 +778,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0820, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local FLAC_48000_1_flac.dat(flac)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0830, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0830, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_6);
     DemuxerResult(2288);
@@ -797,7 +797,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0830, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI FLAC_48000_1_flac.dat(flac)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0840, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0840, TestSize.Level2)
 {
     CreateUriSource(INP_URI_6);
     DemuxerResult(2288);
@@ -816,7 +816,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0840, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local OGG_48000_1_ogg.dat(ogg)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0850, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0850, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_7);
     ASSERT_NE(source, nullptr);
@@ -840,7 +840,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0850, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, URI OGG_48000_1_ogg.dat(ogg)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0860, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0860, TestSize.Level2)
 {
     CreateUriSource(INP_URI_7);
     ASSERT_NE(source, nullptr);
@@ -864,7 +864,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0860, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local OGG_48000_1_ogg.dat(ogg)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0870, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0870, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_7);
     DemuxerResult(11439);
@@ -883,7 +883,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0870, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI OGG_48000_1_ogg.dat(ogg)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0880, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0880, TestSize.Level2)
 {
     CreateUriSource(INP_URI_7);
     DemuxerResult(11439);
@@ -902,7 +902,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0880, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local M4A_48000_1_m4a.dat(m4a)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0890, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0890, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_8);
     ASSERT_NE(source, nullptr);
@@ -926,7 +926,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0890, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, M4A_48000_1_m4a.dat(m4a)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0900, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0900, TestSize.Level2)
 {
     CreateUriSource(INP_URI_8);
     ASSERT_NE(source, nullptr);
@@ -950,7 +950,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0900, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local M4A_48000_1_m4a.dat(m4a)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0910, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0910, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_8);
     DemuxerResult(10293);
@@ -969,7 +969,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0910, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI M4A_48000_1_m4a.dat(m4a)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0920, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0920, TestSize.Level2)
 {
     CreateUriSource(INP_URI_8);
     DemuxerResult(10293);
@@ -988,7 +988,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0920, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local wav_48000_1_wav.dat(wav)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0930, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0930, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_9);
     ASSERT_NE(source, nullptr);
@@ -1012,7 +1012,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0930, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, wav_48000_1_wav.dat(wav)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0940, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0940, TestSize.Level2)
 {
     CreateUriSource(INP_URI_9);
     ASSERT_NE(source, nullptr);
@@ -1036,7 +1036,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0940, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local wav_48000_1_wav.dat(wav)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0950, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0950, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_9);
     DemuxerResult(5146);
@@ -1055,7 +1055,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0950, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI wav_48000_1_wav.dat(wav)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0960, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0960, TestSize.Level2)
 {
     CreateUriSource(INP_URI_9);
     DemuxerResult(5146);
@@ -1074,7 +1074,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0960, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local ape.dat(ape)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0970, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0970, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_10);
     ASSERT_NE(source, nullptr);
@@ -1098,7 +1098,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0970, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, ape.dat(ape)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0980, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0980, TestSize.Level2)
 {
     CreateUriSource(INP_URI_10);
     ASSERT_NE(source, nullptr);
@@ -1122,7 +1122,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0980, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local ape.dat(ape)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0990, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0990, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_10);
     DemuxerResult(8);
@@ -1141,7 +1141,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0990, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI ape.dat(ape)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1000, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1000, TestSize.Level2)
 {
     CreateUriSource(INP_URI_10);
     DemuxerResult(8);
@@ -1160,7 +1160,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1000, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local aac_wma.dat(wma)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1010, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1010, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_11);
     ASSERT_NE(source, nullptr);
@@ -1184,7 +1184,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1010, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, aac_wma.dat(wma)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1020, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1020, TestSize.Level2)
 {
     CreateUriSource(INP_URI_11);
     ASSERT_NE(source, nullptr);
@@ -1208,7 +1208,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1020, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local aac_wma.dat(wma)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1030, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1030, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_11);
     DemuxerResult(433);
@@ -1227,7 +1227,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1030, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI aac_wma.dat(wma)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1040, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1040, TestSize.Level2)
 {
     CreateUriSource(INP_URI_11);
     DemuxerResult(433);
@@ -1246,7 +1246,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1040, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local dts.dat(dts)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1050, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1050, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_12);
     ASSERT_NE(source, nullptr);
@@ -1270,7 +1270,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1050, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, dts.dat(dts)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1060, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1060, TestSize.Level2)
 {
     CreateUriSource(INP_URI_12);
     ASSERT_NE(source, nullptr);
@@ -1294,7 +1294,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1060, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local dts.dat(dts)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1070, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1070, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_12);
     DemuxerResult(469);
@@ -1313,7 +1313,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1070, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI dts.dat(dts)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1080, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1080, TestSize.Level2)
 {
     CreateUriSource(INP_URI_12);
     DemuxerResult(469);
@@ -1332,7 +1332,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1080, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local alac_caf.dat(caf)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1090, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1090, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_13);
     ASSERT_NE(source, nullptr);
@@ -1356,7 +1356,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1090, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, alac_caf.dat(caf)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1100, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1100, TestSize.Level2)
 {
     CreateUriSource(INP_URI_13);
     ASSERT_NE(source, nullptr);
@@ -1380,7 +1380,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1100, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local alac_caf.dat(caf)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1110, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1110, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_13);
     DemuxerResult(108);
@@ -1399,7 +1399,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1110, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI alac_caf.dat(caf)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1120, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1120, TestSize.Level2)
 {
     CreateUriSource(INP_URI_13);
     DemuxerResult(108);
@@ -1418,7 +1418,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1120, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local pcmS16be_44100_aiff.dat(aiff)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1130, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1130, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_14);
     ASSERT_NE(source, nullptr);
@@ -1442,7 +1442,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1130, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, pcmS16be_44100_aiff.dat(aiff)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1140, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1140, TestSize.Level2)
 {
     CreateUriSource(INP_URI_14);
     ASSERT_NE(source, nullptr);
@@ -1466,7 +1466,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1140, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local pcmS16be_44100_aiff.dat(aiff)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1150, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1150, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_14);
     DemuxerResult(1292);
@@ -1485,7 +1485,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1150, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI pcmS16be_44100_aiff.dat(aiff)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1160, TestSize.Level0)
+HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_1160, TestSize.Level2)
 {
     CreateUriSource(INP_URI_14);
     DemuxerResult(1292);
