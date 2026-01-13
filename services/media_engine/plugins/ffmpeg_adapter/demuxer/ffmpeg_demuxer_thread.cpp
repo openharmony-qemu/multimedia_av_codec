@@ -227,7 +227,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSampleMemory(
         MEDIA_LOG_D("Reset info failed");
     }
 
-    Status ret = ConvertToAnnexbAndUpdateSample(sample, samplePacket, tempPktWrapper, combined);
+    Status ret = ConvertToAnnexbAndUpdateSample(sample, samplePacket, tempPktWrapper);
     if (combined) {
         tempPktWrapper.reset();
     }
@@ -693,7 +693,7 @@ Status FFmpegDemuxerPlugin::ConvertPacketToAnnexbWithParser(AVPacket* srcAVPacke
 }
 
 Status FFmpegDemuxerPlugin::ConvertToAnnexbAndUpdateSample(std::shared_ptr<AVBuffer> sample,
-    std::shared_ptr<SamplePacket> samplePacket, Plugins::AVPacketWrapperPtr& tempPktWrapper, bool combined)
+    std::shared_ptr<SamplePacket> samplePacket, Plugins::AVPacketWrapperPtr& tempPktWrapper)
 {
     Plugins::AVPacketWrapperPtr outPktWrapper = nullptr;
     Status ret = ConvertPacketToAnnexb(tempPktWrapper, samplePacket, outPktWrapper);

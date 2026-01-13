@@ -66,6 +66,9 @@ int32_t AVPacketMemory::GetOffset()
 
 int32_t AVPacketMemory::Write(const uint8_t *in, int32_t writeSize, int32_t position)
 {
+    (void)in;
+    (void)writeSize;
+    (void)position;
     return 0;
 }
 } // namespace Plugins

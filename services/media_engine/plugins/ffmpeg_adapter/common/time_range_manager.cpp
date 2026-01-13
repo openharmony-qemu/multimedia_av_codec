@@ -27,7 +27,8 @@ bool TimeRangeManager::IsInTimeRanges(const int64_t targetTs, TimeRange &timeRan
             return targetTs >= range.start_ts && targetTs <= range.end_ts;
         });
     if (it != timeRanges_.end()) {
-        timeRange = *it;
+        timeRange.start_ts = it->start_ts;
+        timeRange.end_ts = it->end_ts;
         return true;
     }
     return false;

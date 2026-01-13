@@ -49,8 +49,8 @@ struct ParserSdtpInfo {
 };
 
 struct HevcParseFormat {
-    int32_t isHdrVivid = 0;
-    int32_t isHdr10Plus = 0;
+    bool isHdrVivid = false;
+    bool isHdr10Plus = false;
     int32_t colorRange = 0;
     uint8_t colorPrimaries = 0x02;
     uint8_t colorTransfer = 0x02;
