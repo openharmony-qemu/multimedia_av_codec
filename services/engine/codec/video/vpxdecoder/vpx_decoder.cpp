@@ -21,6 +21,17 @@
 #include "avcodec_log.h"
 #include "avcodec_codec_name.h"
 #include "vpx_decoder.h"
+#include "v1_0/cm_color_space.h"
+#include "v1_0/hdr_static_metadata.h"
+#include "v1_0/buffer_handle_meta_key_type.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include "libavutil/mastering_display_metadata.h"
+#ifdef __cplusplus
+}
+#endif
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -141,6 +152,58 @@ void VpxDecoder::ConfigureDefaultVal(const Format &format, const std::string_vie
                      "maximum threshold=%{public}d",
                      formatKey.data(), minVal, maxVal);
     }
+}
+
+void VpxDecoder::ConfigureHdrMetadata(const Format &format)
+{
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, colorSpaceInfo_.fullRangeFlag)) {
+        AVCODEC_LOGE("format_ get MD_KEY_RANGE_FLAG failed!");
+        return;
+    }
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES, colorSpaceInfo_.colorPrimaries)) {
+        AVCODEC_LOGE("format_ get MD_KEY_COLOR_PRIMARIES failed!");
+        return;
+    }
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS,
+                            colorSpaceInfo_.transferCharacteristic)) {
+        AVCODEC_LOGE("format_ get MD_KEY_TRANSFER_CHARACTERISTICS failed!");
+        return;
+    }
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, colorSpaceInfo_.matrixCoeffs)) {
+        AVCODEC_LOGE("format_ get MD_KEY_MATRIX_COEFFICIENTS failed!");
+        return;
+    }
+    size_t extraSize = 0;
+    uint8_t *extraData = nullptr;
+    format.GetBuffer(MediaDescriptionKey::MD_KEY_VIDEO_HDR_METADATA, &extraData, extraSize);
+    const AVMasteringDisplayMetadata *metadata = (AVMasteringDisplayMetadata *)extraData;
+    if (metadata == nullptr) {
+        AVCODEC_LOGE("Get HDR metadata from format failed");
+        return;
+    }
+    auto safeDiv = [](int num, int den) -> double {
+        if (den == 0) {
+            return 0.0;
+        }
+        return static_cast<double>(num) / static_cast<double>(den);
+    };
+    hdrMetadata_.displayPrimariesX[0] =
+        safeDiv(metadata->display_primaries[0][0].num, metadata->display_primaries[0][0].den); // 0: Y
+    hdrMetadata_.displayPrimariesY[0] =
+        safeDiv(metadata->display_primaries[0][1].num, metadata->display_primaries[0][1].den); // 0: Y
+    hdrMetadata_.displayPrimariesX[1] =
+        safeDiv(metadata->display_primaries[1][0].num, metadata->display_primaries[1][0].den); // 1: U
+    hdrMetadata_.displayPrimariesY[1] =
+        safeDiv(metadata->display_primaries[1][1].num, metadata->display_primaries[1][1].den); // 1: U
+    hdrMetadata_.displayPrimariesX[2] =
+        safeDiv(metadata->display_primaries[2][0].num, metadata->display_primaries[2][0].den); // 2: V
+    hdrMetadata_.displayPrimariesY[2] =
+        safeDiv(metadata->display_primaries[2][1].num, metadata->display_primaries[2][1].den); // 2: V
+    hdrMetadata_.whitePointX = safeDiv(metadata->white_point[0].num, metadata->white_point[0].den);
+    hdrMetadata_.whitePointY = safeDiv(metadata->white_point[1].num, metadata->white_point[1].den);
+    hdrMetadata_.maxDisplayMasteringLuminance = safeDiv(metadata->max_luminance.num, metadata->max_luminance.den);
+    hdrMetadata_.minDisplayMasteringLuminance = safeDiv(metadata->min_luminance.num, metadata->min_luminance.den);
+    colorSpaceInfo_.colorDescriptionPresentFlag = 1;
 }
 
 bool VpxDecoder::CheckVideoPixelFormat(VideoPixelFormat vpf)
@@ -560,6 +623,68 @@ int32_t VpxDecoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
             GetVp8CapProf(capaArray);
         }
     }
+    return AVCS_ERR_OK;
+}
+
+void VpxDecoder::FillHdrInfo(sptr<SurfaceBuffer> surfaceBuffer)
+{
+    using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
+    CHECK_AND_RETURN_LOG(surfaceBuffer != nullptr, "surfaceBuffer is nullptr");
+    if (colorSpaceInfo_.colorDescriptionPresentFlag) {
+        std::vector<uint8_t> colorSpaceInfoVec;
+
+        int32_t convertRet = ConvertParamsToColorSpaceInfo(colorSpaceInfo_.fullRangeFlag,
+                                                           colorSpaceInfo_.colorPrimaries,
+                                                           colorSpaceInfo_.transferCharacteristic,
+                                                           colorSpaceInfo_.matrixCoeffs,
+                                                           colorSpaceInfoVec);
+        
+        CHECK_AND_RETURN_LOG(convertRet == AVCS_ERR_OK, "ConvertParamsToColorSpaceInfo failed,convertRet");
+        GSError setRet = surfaceBuffer->SetMetadata(ATTRKEY_COLORSPACE_INFO, colorSpaceInfoVec);
+        CHECK_AND_RETURN_LOG(setRet == GSERROR_OK, "SetMetadata ATTRKEY_COLORSPACE_INFO failed,setRet = %{public}d",
+            static_cast<int32_t>(setRet));
+
+        std::vector<uint8_t> staticMetadataVec(sizeof(HdrStaticMetadata));
+        CHECK_AND_RETURN_LOG(ConvertHdrStaticMetadata(hdrMetadata_, staticMetadataVec) == AVCS_ERR_OK,
+            "ConvertHdrStaticMetadata error");
+        setRet = surfaceBuffer->SetMetadata(ATTRKEY_HDR_STATIC_METADATA, staticMetadataVec);
+        CHECK_AND_RETURN_LOG(setRet == GSERROR_OK, "SetMetadata ATTRKEY_HDR_STATIC_METADATA failed");
+
+        std::vector<uint8_t> metadataTypeVec(sizeof(CM_HDR_Metadata_Type));
+        CM_HDR_Metadata_Type* metadataType = reinterpret_cast<CM_HDR_Metadata_Type*>(metadataTypeVec.data());
+        CHECK_AND_RETURN_LOG(metadataType != nullptr, "vector convert to CM_HDR_Metadata_Type error");
+        *metadataType =
+            static_cast<CM_HDR_Metadata_Type>(GetMetaDataTypeByTransFunc(colorSpaceInfo_.transferCharacteristic));
+        setRet = surfaceBuffer->SetMetadata(ATTRKEY_HDR_METADATA_TYPE, metadataTypeVec);
+        CHECK_AND_RETURN_LOG(setRet == GSERROR_OK, "SetMetadata ATTRKEY_HDR_METADATA_TYPE failed");
+        AVCODEC_LOGD("surface buffer Fill hdr info successful");
+    }
+}
+
+int32_t VpxDecoder::ConvertHdrStaticMetadata(const HdrMetadata &hdrMetadata, std::vector<uint8_t> &staticMetadataVec)
+{
+    using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
+    CHECK_AND_RETURN_RET_LOG(staticMetadataVec.size() == sizeof(HdrStaticMetadata), AVCS_ERR_INVALID_VAL,
+        "wrong staticMetadataVec.size : %{public}d", static_cast<int32_t>(staticMetadataVec.size()));
+    HdrStaticMetadata* hdrStaticMetadata = reinterpret_cast<HdrStaticMetadata*>(staticMetadataVec.data());
+    CHECK_AND_RETURN_RET_LOG(hdrStaticMetadata != nullptr, AVCS_ERR_INVALID_VAL,
+        "vector convert to CM_HDR_Metadata_Type error");
+    hdrStaticMetadata->smpte2086.displayPrimaryGreen.x =
+        static_cast<float>(hdrMetadata.displayPrimariesX[0]); // 0: Y
+    hdrStaticMetadata->smpte2086.displayPrimaryBlue.x =
+        static_cast<float>(hdrMetadata.displayPrimariesX[1]); // 1: U
+    hdrStaticMetadata->smpte2086.displayPrimaryRed.x =
+        static_cast<float>(hdrMetadata.displayPrimariesX[2]); // 2: V
+    hdrStaticMetadata->smpte2086.displayPrimaryGreen.y =
+        static_cast<float>(hdrMetadata.displayPrimariesY[0]); // 0: Y
+    hdrStaticMetadata->smpte2086.displayPrimaryBlue.y =
+        static_cast<float>(hdrMetadata.displayPrimariesY[1]); // 1: U
+    hdrStaticMetadata->smpte2086.displayPrimaryRed.y =
+        static_cast<float>(hdrMetadata.displayPrimariesY[2]); // 2: V
+    hdrStaticMetadata->smpte2086.whitePoint.x = static_cast<float>(hdrMetadata.whitePointX);
+    hdrStaticMetadata->smpte2086.whitePoint.y = static_cast<float>(hdrMetadata.whitePointY);
+    hdrStaticMetadata->smpte2086.maxLuminance = static_cast<float>(hdrMetadata.maxDisplayMasteringLuminance);
+    hdrStaticMetadata->smpte2086.minLuminance = static_cast<float>(hdrMetadata.minDisplayMasteringLuminance);
     return AVCS_ERR_OK;
 }
 } // namespace Codec

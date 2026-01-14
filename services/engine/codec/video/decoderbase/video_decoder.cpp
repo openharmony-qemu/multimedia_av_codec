@@ -179,6 +179,12 @@ int32_t VideoDecoder::Start()
     return AVCS_ERR_OK;
 }
 
+void VideoDecoder::ConfigureHdrMetadata(const Format &format)
+{
+    (void)format;
+    AVCODEC_LOGI("Decoder does not support HDR metadata configuration.");
+}
+
 int32_t VideoDecoder::Configure(const Format &format)
 {
     AVCODEC_SYNC_TRACE;
@@ -203,6 +209,8 @@ int32_t VideoDecoder::Configure(const Format &format)
                    it.first == MediaDescriptionKey::MD_KEY_SCALE_TYPE ||
                    it.first == OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE) {
             continue;
+        } else if (it.first == MediaDescriptionKey::MD_KEY_VIDEO_HDR_METADATA) {
+            ConfigureHdrMetadata(format);
         } else {
             AVCODEC_LOGW("Set parameter failed: size:%{public}s, unsupport key", it.first.data());
         }
