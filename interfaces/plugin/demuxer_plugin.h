@@ -289,13 +289,13 @@ struct DemuxerPlugin : public PluginBase {
     virtual Status BoostReadThreadPriority() = 0;
     virtual Status SetAVReadPacketStopState(bool state) = 0;
     /**
-     * @brief Seeks to the first frame of the media file.
+     * @brief Seek to the first frame of the media file.
      *
      * @return Execution status
     */
     virtual Status SeekToStart() = 0;
     /**
-     * @brief Seeks to the first key frame at or after the specified time on the default track.
+     * @brief Seek to the first key frame at or after the specified time on the default track.
      *
      * @param trackId       [Ignored] Present for consistency with the @c SeekTo() interface.
      *                      Internally, the video track is always used; if no video track exists,
