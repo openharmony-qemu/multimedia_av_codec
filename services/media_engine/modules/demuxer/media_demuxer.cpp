@@ -4626,6 +4626,9 @@ bool MediaDemuxer::IsAVInOneStream()
 
 void MediaDemuxer::CachePressuredCallback(int32_t trackId, uint32_t cachedBytes)
 {
+    if (!GetEnableSampleQueueFlag()) { 
+         return; 
+     }
     std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = nullptr;
     int32_t innerTrackID = trackId;
     if (IsNeedMapToInnerTrackID()) {
