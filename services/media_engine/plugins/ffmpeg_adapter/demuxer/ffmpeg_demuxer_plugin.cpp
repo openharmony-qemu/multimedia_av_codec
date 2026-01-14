@@ -1374,11 +1374,11 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
 
     SetAVReadFrameLimitDefault();
 
-    // parse media info
-    GetMediaInfo();
-
     // Create stream snapshots to avoid data race when accessing formatContext_->streams
     UpdateStreamSnapshots();
+
+    // parse media info
+    GetMediaInfo();
 
     SetAVReadFrameLimit();
 
