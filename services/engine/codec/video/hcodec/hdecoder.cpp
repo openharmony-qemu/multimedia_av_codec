@@ -342,6 +342,9 @@ int32_t HDecoder::OnSetParameters(const Format &format)
         codecRate_ = frameRate.value();
     }
     optional<double> operatingRate = GetOperatingRateFromUser(format);
+    if (isLpp_) {
+        operatingRate = nullopt;
+    }
     if (operatingRate.has_value() || frameRate.has_value()) {
         double maxFramerate = std::max(operatingRate.value_or(0.0), frameRate.value_or(0.0));
         OMX_PARAM_U32TYPE maxFramerateCfgType;
