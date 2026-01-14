@@ -288,7 +288,26 @@ struct DemuxerPlugin : public PluginBase {
      */
     virtual Status BoostReadThreadPriority() = 0;
     virtual Status SetAVReadPacketStopState(bool state) = 0;
+    /**
+     * @brief Seek to the first frame of the media file.
+     *
+     * @return Execution status
+    */
     virtual Status SeekToStart() = 0;
+    /**
+     * @brief Seek to the first key frame at or after the specified time on the default track.
+     *
+     * @param trackId       [Ignored] Present for consistency with the @c SeekTo() interface.
+     *                      Internally, the video track is always used; if no video track exists,
+     *                      track 0 is used instead.
+     * @param seekTime      Indicates the target position, based on {@link HST_TIME_BASE} .
+     * @param mode          Only @c SeekMode::SEEK_NEXT_SYNC is supported.
+     * @param[out] realSeekTime  On success, contains the converted timestamp of the found keyframe.
+     *                           On failure, contains the offset-adjusted version of @p seekTime.
+     * @param timeoutMs     Timeout in milliseconds. A value of 0 means no timeout (blocking wait).
+     *
+     * @return Execution status
+    */
     virtual Status SeekToKeyFrame(int32_t trackId, int64_t seekTime,
         SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs) { return Status::ERROR_UNKNOWN; };
 };
