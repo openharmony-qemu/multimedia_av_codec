@@ -59,6 +59,7 @@ public:
     void NotifyReadFail();
     void SetEnableOnlineFdCache(bool isEnableFdCache) override;
     bool IsLocalFd() override;
+    bool IsCloudFd() override;
     Status GetDownloadInfo(DownloadInfo& downloadInfo) override;
 
 private:

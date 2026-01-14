@@ -198,6 +198,8 @@ public:
     void NotifyResumeUnMute();
     bool BoostThreadPriorityIfNeeded();
     bool IsWatchDevice();
+    bool IsCloudFd();
+    bool IsFd();
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
