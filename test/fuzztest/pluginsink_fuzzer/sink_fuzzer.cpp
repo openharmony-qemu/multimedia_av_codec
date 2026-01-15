@@ -141,7 +141,9 @@ void FuzzTestSink(uint8_t *data, size_t size)
     if (data == nullptr || size < sizeof(int32_t) || size > MAX_CODE_LEN) {
         return;
     }
-
+    g_baseFuzzData = data;
+    g_baseFuzzSize = size;
+    g_baseFuzzPos = 0;
     SinkFuzzer testSink;
     return testSink.FuzzSinkAll(data, size);
 }
