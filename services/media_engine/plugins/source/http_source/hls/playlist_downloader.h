@@ -35,6 +35,7 @@ struct PlayInfo {
     uint32_t length_ {0};
     std::string rangeUrl_;
     uint32_t streamId_ {0};
+    uint64_t sumduration_ {0};
 };
 struct PlayListChangeCallback {
     virtual ~PlayListChangeCallback() = default;

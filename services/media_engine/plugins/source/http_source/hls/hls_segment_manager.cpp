@@ -47,6 +47,7 @@ constexpr int SEEK_STATUS_RETRY_TIMES = 100;
 constexpr int SEEK_STATUS_SLEEP_TIME = 50;
 constexpr uint64_t CURRENT_BIT_RATE = 1 * 1024 * 1024; // bps
 constexpr int32_t ONE_SECONDS = 1000;
+constexpr uint64_t ONE_USSECONDS = 1000 * 1000;
 constexpr float CACHE_LEVEL_1 = 0.5;
 constexpr float DEFAULT_CACHE_TIME = 1;
 constexpr int TRANSFER_SIZE_RATE_2 = 2;
@@ -289,6 +290,7 @@ void HlsSegmentManager::PutRequestIntoDownloader(const PlayInfo& playInfo)
             tsStorageInfo_[writeTsIndex_] = std::make_pair(0, false);
         }
     }
+    InfoIndexMap_.writeMap[writeTsIndex_] = playerInfo.url_;
     auto downloadRequest = GetDownloadRequest();
     if (!playInfo.rangeUrl_.empty()) {
         tsStreamIdInfo_[writeTsIndex_] = playInfo.streamId_;
@@ -660,7 +662,7 @@ bool HlsSegmentManager::CheckCanReadOneSeconds(uint64_t wantReadLength)
     canReadCond_.wait_for(lock, std::chrono::milliseconds(ONE_SECONDS), [this, len]() {
         return GetCrossTsBuffersize() >= len || IsAllDownloadFinish();
     });
-    auto canRead = GetCrossTsBuffersize() >= len || IsAllDownloadFinish();
+    auto canRead = GetCrossTsBuffersize() >= len || IsAllDownloadFinish() || playlistDownloader_->IsLive();
     MEDIA_LOG_I("HLS CheckCanReadOneSeconds out, can read: %{public}d, type: %{public}d", canRead, type_);
     return canRead;
 }
@@ -848,6 +850,12 @@ void HlsSegmentManager::OnPlayListChanged(const std::vector<PlayInfo>& playList)
     ResetPlaylistCapacity(static_cast<size_t>(playList.size()));
     int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
     for (uint32_t i = 0; i < static_cast<uint32_t>(playList.size()); i++) {
+        playInfo playerTmp = playList[i];
+        if (InfoIndexMap_.urlMap.find(playList[i].url_) == InfoIndexMap_.urlMap.end()) {
+            playerTmp.sumduration_ = InfoIndexMap_.lastPlay_.sumduration_ + static_cast<uint64_t>(playerTmp.duration_) * ONE_USSECONDS;
+            InfoIndexMap_.urlMap[playList[i].url_] = playerTmp;
+            InfoIndexMap_.lastPlay_ = playerTmp;
+        }
         if (CheckLoopTimeout(loopStartTime)) {
             break;
         }
@@ -1903,6 +1911,9 @@ bool HlsSegmentManager::GetReadTimeOut(bool isDelay)
 size_t HlsSegmentManager::GetSegmentOffset()
 {
     if (playlistDownloader_) {
+        if (playListDownloader_->IsLive()) {
+            return InfoIndexMap_.urlMap[url].sumduration_ - static_cast<uint64_t>(InfoIndexMap_.urlMap[uri].duration_) * ONE_USSECONDS;
+        }
         return playlistDownloader_->GetSegmentOffset(readTsIndex_);
     }
     return 0;
