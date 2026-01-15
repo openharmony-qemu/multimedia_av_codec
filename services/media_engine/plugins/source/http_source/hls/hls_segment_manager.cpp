@@ -290,7 +290,7 @@ void HlsSegmentManager::PutRequestIntoDownloader(const PlayInfo& playInfo)
             tsStorageInfo_[writeTsIndex_] = std::make_pair(0, false);
         }
     }
-    InfoIndexMap_.writeMap[writeTsIndex_] = playerInfo.url_;
+    InfoIndexMap_.writeMap[writeTsIndex_] = playInfo.url_;
     auto downloadRequest = GetDownloadRequest();
     if (!playInfo.rangeUrl_.empty()) {
         tsStreamIdInfo_[writeTsIndex_] = playInfo.streamId_;
@@ -850,7 +850,7 @@ void HlsSegmentManager::OnPlayListChanged(const std::vector<PlayInfo>& playList)
     ResetPlaylistCapacity(static_cast<size_t>(playList.size()));
     int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
     for (uint32_t i = 0; i < static_cast<uint32_t>(playList.size()); i++) {
-        playInfo playerTmp = playList[i];
+        PlayInfo playerTmp = playList[i];
         if (InfoIndexMap_.urlMap.find(playList[i].url_) == InfoIndexMap_.urlMap.end()) {
             playerTmp.sumduration_ = InfoIndexMap_.lastPlay_.sumduration_ + static_cast<uint64_t>(playerTmp.duration_) * ONE_USSECONDS;
             InfoIndexMap_.urlMap[playList[i].url_] = playerTmp;
