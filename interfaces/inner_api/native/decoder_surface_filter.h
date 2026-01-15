@@ -95,7 +95,7 @@ public:
 
     sptr<AVBufferQueueProducer> GetInputBufferQueue();
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
-    void SetSeekTime(int64_t seekTimeUs, PlayerSeekMode mode = PlayerSeekMode::SEEK_CLOSEST);
+    void SetSeekTime(int64_t seekTimeUs, PlayerSeekMode mode = PlayerSeekMode::SEEK_CLOSEST, bool needWait = false);
     void ResetSeekInfo();
     Status HandleInputBuffer();
     void OnDumpInfo(int32_t fd);
