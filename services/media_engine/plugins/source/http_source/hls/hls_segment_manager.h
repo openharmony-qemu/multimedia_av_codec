@@ -43,6 +43,12 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 
+struct InfoIndexMap {
+    std::map<std::string, PlayInfo> urlMap;
+    std::map<uint32_t, std::string> writeMap;
+    PlayInfo lastPlay_;
+};
+
 struct HlsSegEvent {
     HlsSegmentType segType {HlsSegmentType::SEG_VIDEO};
     PluginEventType type;
@@ -360,6 +366,7 @@ private:
     std::mutex canReadMutex_;
     std::condition_variable canReadCond_;
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
+    InfoIndexMap InfoIndexMap_;
 };
 }
 }
