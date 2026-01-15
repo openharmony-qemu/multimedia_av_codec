@@ -251,7 +251,7 @@ void BasicTrack::DisposeStco(int64_t pos)
 void BasicTrack::DisposeStsz(int32_t size)
 {
     FALSE_RETURN_MSG(stsz_ != nullptr, "track[%{public}d] stsz box is empty", trackId_);
-    allSampleSize_ += size;
+    allSampleSize_ += static_cast<uint64_t>(size);
     if (isSameSize_ && stsz_->sampleCount_ > 0 &&
         static_cast<int32_t>(stsz_->samples_[stsz_->sampleCount_ - 1]) != size) {
         isSameSize_ = false;

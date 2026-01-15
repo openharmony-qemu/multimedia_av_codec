@@ -562,7 +562,7 @@ public:
     int64_t Write(std::shared_ptr<AVIOStream> io) override;
     Any GetCurBoxPtr() override {return Any(this);}
 
-    uint32_t trefTag_;
+    uint32_t trefTag_ = 0;
     std::vector<uint32_t> srcTrackIds_;
 };
 } // Mpeg4

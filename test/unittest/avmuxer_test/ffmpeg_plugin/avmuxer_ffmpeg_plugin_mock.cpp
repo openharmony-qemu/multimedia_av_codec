@@ -23,7 +23,7 @@ namespace MediaAVCodec {
 using namespace OHOS::Media;
 using namespace OHOS::Media::Plugins;
 AVMuxerFfmpegPluginMock::AVMuxerFfmpegPluginMock(std::shared_ptr<Media::Plugins::DataSink> dataSink,
-        std::shared_ptr<Media::Plugins::MuxerPlugin> muxer) : dataSink_(dataSink), muxer_(muxer)
+    std::shared_ptr<Media::Plugins::MuxerPlugin> muxer) : dataSink_(dataSink), muxer_(muxer)
 {
     if (muxer_) {
         muxer_->SetDataSink(dataSink_);

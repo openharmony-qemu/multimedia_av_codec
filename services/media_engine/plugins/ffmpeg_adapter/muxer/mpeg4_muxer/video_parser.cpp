@@ -58,7 +58,7 @@ uint8_t VideoParser::GetNalType(uint8_t nalHeader)
 
 bool VideoParser::IsAvccHvccFrame(const uint8_t *sample, int32_t size)
 {
-    if (size < nalSizeLen_ || sample == nullptr) {
+    if (size < static_cast<int32_t>(nalSizeLen_) || sample == nullptr) {
         return false;
     }
 
@@ -81,7 +81,7 @@ bool VideoParser::IsAvccHvccFrame(const uint8_t *sample, int32_t size)
 
 bool VideoParser::IsAnnexbFrame(const uint8_t* sample, int32_t size)
 {
-    if (size < nalSizeLen_ || sample == nullptr) {
+    if (size < static_cast<int32_t>(nalSizeLen_) || sample == nullptr) {
         return false;
     }
     if (sample[0] == 0 && sample[1] == 0 &&
@@ -161,8 +161,8 @@ uint32_t RbspContext::RbspGetUeGolomb()
         RbspSkipBits(1);
     }
     size == 32 ? --size : size;  // 32
-    uint32_t data = RbspGetBits<uint32_t, uint64_t>(size + 1) - 1;
-    return data;
+    uint32_t data = RbspGetBits<uint32_t, uint64_t>(size + 1);
+    return data > 0 ?  data - 1 : 0;
 }
 
 int32_t RbspContext::RbspGetSeGolomb()

@@ -419,11 +419,12 @@ void VideoTrack::DisposeDuration()
 
     auto mdhdBox = BasicBox::GetBoxPtr<MdhdBox>(moov_, trackPath_ + ".mdia.mdhd");
     FALSE_RETURN_MSG(mdhdBox != nullptr, "mdhd box is empty");
-    mdhdBox->duration_ = ConvertTimeToMpeg4(durationUs_, timeScale_);
+    mdhdBox->duration_ = static_cast<uint64_t>(ConvertTimeToMpeg4(durationUs_, timeScale_));
 
     auto tkhdBox = BasicBox::GetBoxPtr<TkhdBox>(moov_, trackPath_ + ".tkhd");
     FALSE_RETURN_MSG(tkhdBox != nullptr, "tkhd box is empty");
-    tkhdBox->duration_ = ConvertTimeToMpeg4(durationUs_ + startTimestampUs_, mvhdBox->timeScale_, RoundingType::UP);
+    tkhdBox->duration_ = static_cast<uint64_t>(
+        ConvertTimeToMpeg4(durationUs_ + startTimestampUs_, mvhdBox->timeScale_, RoundingType::UP));
     mvhdBox->duration_ = std::max(mvhdBox->duration_, tkhdBox->duration_);
 
     int64_t delay = ConvertTimeToMpeg4(startTimestampUs_, mvhdBox->timeScale_, RoundingType::DOWN);
@@ -433,17 +434,17 @@ void VideoTrack::DisposeDuration()
     elstBox->SetVersion(duration < INT32_MAX && delay < INT32_MAX ? 0 : 1);
     elstBox->entryCount_ = 1;
     ElstBox::Data data;
-    data.segmentDuration_ = duration;
+    data.segmentDuration_ = static_cast<uint64_t>(duration);
     data.mediaTime_ = 0;
     if (delay > 0) {
         elstBox->entryCount_ += 1;
         ElstBox::Data data0;
-        data0.segmentDuration_ = delay;
+        data0.segmentDuration_ = static_cast<uint64_t>(delay);
         data0.mediaTime_ = -1;
         elstBox->data_.emplace_back(data0);
         delay_ -= ConvertTimeToMpeg4(startTimestampUs_, timeScale_);
     } else {
-        data.segmentDuration_ += delay;
+        data.segmentDuration_ += static_cast<uint64_t>(delay);
     }
     data.mediaTime_ = -std::min(static_cast<int64_t>(0), delay_);
     elstBox->data_.emplace_back(data);
@@ -457,7 +458,8 @@ void VideoTrack::DisposeBitrate()
         stsz_->sampleSize_ = stsz_->samples_.size() > 0 ? stsz_->samples_[0] : 0;
     }
     if (durationUs_ > 0 && !codingType_.empty()) {
-        int64_t bitRate = allSampleSize_ * 8 * timeScale_ / ConvertTimeToMpeg4(durationUs_, timeScale_);  // 8
+        int64_t bitRate = static_cast<int64_t>(allSampleSize_) *
+            8 * timeScale_ / ConvertTimeToMpeg4(durationUs_, timeScale_);  // 8
         auto esdsBox = BasicBox::GetBoxPtr<EsdsBox>(
             moov_, trackPath_ + ".mdia.minf.stbl.stsd." + codingType_ + ".esds"); // mp4v
         if (esdsBox != nullptr) {

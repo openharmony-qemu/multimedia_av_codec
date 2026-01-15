@@ -71,7 +71,7 @@ Status RegisterMuxerPlugins(const std::shared_ptr<Register>& reg)
         MuxerPluginDef def;
         def.name = muxer.first;
         def.description = "mpeg4 muxer";
-        def.rank = 100;
+        def.rank = 100;  // 100
         def.SetCreator([](const std::string& name) -> std::shared_ptr<MuxerPlugin> {
             return std::make_shared<Mpeg4MuxerPlugin>(name);
         });
@@ -265,11 +265,12 @@ Status Mpeg4MuxerPlugin::SetLocation(const std::shared_ptr<Meta> &param)
         return Status::ERROR_INVALID_DATA;
     }
     FALSE_RETURN_V_MSG_E(latitude >= LATITUDE_MIN && latitude <= LATITUDE_MAX,
-        Status::ERROR_INVALID_DATA, "latitude must be in [-90, 90]! %{public}f", latitude);
+        Status::ERROR_INVALID_DATA, "latitude must be in [-90, 90]!");
     FALSE_RETURN_V_MSG_E(longitude >= LONGITUDE_MIN && longitude <= LONGITUDE_MAX,
-        Status::ERROR_INVALID_DATA, "longitude must be in [-180, 180]! %{public}f", longitude);
+        Status::ERROR_INVALID_DATA, "longitude must be in [-180, 180]!");
     latitude_ = latitude;
     longitude_ = longitude;
+    MEDIA_LOG_I("set latitude and longitude successfully");
     return Status::NO_ERROR;
 }
 
@@ -426,7 +427,6 @@ Status Mpeg4MuxerPlugin::WriteHeader()
     io_->Seek(0);
     io_->Write(static_cast<uint32_t>(0));
     io_->Write("ftyp", typeLen);
-    // T:更新ftyp, 用新标
     if (outputFormat_ == OUTPUT_FORMAT_M4A) {
         io_->Write("M4A ", typeLen);
     } else {
@@ -435,16 +435,16 @@ Status Mpeg4MuxerPlugin::WriteHeader()
     io_->Write(static_cast<uint32_t>(0));
     if (outputFormat_ == OUTPUT_FORMAT_M4A) {
         io_->Write("M4A ", typeLen);
-        io_->Write("isom ", typeLen);
-        io_->Write("iso2 ", typeLen);
+        io_->Write("isom", typeLen);
+        io_->Write("iso2", typeLen);
     } else {
         io_->Write("iso2", typeLen);
         if (isH264_) {
             io_->Write("avc1", typeLen);
         }
-        io_->Write("mp42 ", typeLen);
+        io_->Write("mp42", typeLen);
         if (hasGltf_) {
-            io_->Write("glti ", typeLen);
+            io_->Write("glti", typeLen);
         }
     }
     freePos_ = io_->GetPos();
@@ -527,7 +527,7 @@ void Mpeg4MuxerPlugin::WriteMdatSize()
 {
     needFree_ = false;
     int64_t pos = io_->GetPos();
-    uint64_t mdatSize = pos - mdatPos_;
+    uint64_t mdatSize = static_cast<uint64_t>(pos - mdatPos_);
     if (mdatSize <= UINT32_MAX) {
         io_->Seek(mdatPos_);
         io_->Write(static_cast<uint32_t>(mdatSize));

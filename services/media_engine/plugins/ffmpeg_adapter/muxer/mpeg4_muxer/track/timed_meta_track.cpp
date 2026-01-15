@@ -53,8 +53,9 @@ Status TimedMetaTrack::Init(const std::shared_ptr<Meta> &trackDesc)
 
     int32_t trackIndex = -1;
     bool ret = trackDesc->GetData(Tag::TIMED_METADATA_SRC_TRACK, trackIndex);
-    FALSE_RETURN_V_MSG_E(ret && trackIndex >=0 && trackIndex < tracks_.size(), Status::ERROR_MISMATCHED_TYPE,
-        "source track index not set or invalid! trackIndex:%{public}d, count:%{public}zu", trackIndex, tracks_.size());
+    FALSE_RETURN_V_MSG_E(ret && trackIndex >=0 && static_cast<uint32_t>(trackIndex) < tracks_.size(),
+        Status::ERROR_MISMATCHED_TYPE, "source track index not set or invalid! "
+        "trackIndex:%{public}d, count:%{public}zu", trackIndex, tracks_.size());
     int32_t sourceTrackId = tracks_[trackIndex]->GetTrackId();
     FALSE_RETURN_V_MSG_E(sourceTrackId > 0, Status::ERROR_MISMATCHED_TYPE, "source track id invalid! "
         "src track id:%{public}d, mime:%{public}s", sourceTrackId, tracks_[trackIndex]->GetMimeType().c_str());
@@ -132,7 +133,7 @@ bool TimedMetaTrack::GetSrcTrackDurationUs(int64_t &durationUs, int64_t &startTi
 {
     int32_t trackIndex = -1;
     bool ret = trackDesc_->GetData(Tag::TIMED_METADATA_SRC_TRACK, trackIndex);
-    FALSE_RETURN_V_MSG_W(ret && trackIndex >=0 && trackIndex < tracks_.size(), false,
+    FALSE_RETURN_V_MSG_W(ret && trackIndex >=0 && static_cast<uint32_t>(trackIndex) < tracks_.size(), false,
         "source track index not set or invalid! trackIndex:%{public}d, count:%{public}zu", trackIndex, tracks_.size());
     durationUs = tracks_[trackIndex]->GetDurationUs();
     startTimeUs = tracks_[trackIndex]->GetStartTimeUs();
@@ -157,11 +158,12 @@ void TimedMetaTrack::DisposeDuration()
 
     auto mdhdBox = BasicBox::GetBoxPtr<MdhdBox>(moov_, trackPath_ + ".mdia.mdhd");
     FALSE_RETURN_MSG(mdhdBox != nullptr, "mdhd box is empty");
-    mdhdBox->duration_ = ConvertTimeToMpeg4(durationUs, timeScale_);
+    mdhdBox->duration_ = static_cast<uint64_t>(ConvertTimeToMpeg4(durationUs, timeScale_));
 
     auto tkhdBox = BasicBox::GetBoxPtr<TkhdBox>(moov_, trackPath_ + ".tkhd");
     FALSE_RETURN_MSG(tkhdBox != nullptr, "tkhd box is empty");
-    tkhdBox->duration_ = ConvertTimeToMpeg4(durationUs + startTimestampUs, mvhdBox->timeScale_, RoundingType::UP);
+    tkhdBox->duration_ = static_cast<uint64_t>(
+        ConvertTimeToMpeg4(durationUs + startTimestampUs, mvhdBox->timeScale_, RoundingType::UP));
 
     // set elst box
     int64_t delay = ConvertTimeToMpeg4(startTimestampUs_, mvhdBox->timeScale_, RoundingType::DOWN);
@@ -171,16 +173,16 @@ void TimedMetaTrack::DisposeDuration()
     elstBox->SetVersion(duration < INT32_MAX && delay < INT32_MAX ? 0 : 1);
     elstBox->entryCount_ = 1;
     ElstBox::Data data;
-    data.segmentDuration_ = duration;
+    data.segmentDuration_ = static_cast<uint64_t>(duration);
     data.mediaTime_ = 0;
     if (delay > 0) {
         elstBox->entryCount_ += 1;
         ElstBox::Data data0;
-        data0.segmentDuration_ = delay;
+        data0.segmentDuration_ = static_cast<uint64_t>(delay);
         data0.mediaTime_ = -1;
         elstBox->data_.emplace_back(data0);
     } else {
-        data.segmentDuration_ += delay;
+        data.segmentDuration_ += static_cast<uint64_t>(delay);
         int64_t mediaTime = ConvertTimeToMpeg4(startTimestampUs_, timeScale_, RoundingType::DOWN);
         data.mediaTime_ = -std::min(static_cast<int64_t>(0), mediaTime);
     }

@@ -66,7 +66,7 @@ void BoxParser::AddTrakBox(std::shared_ptr<BasicTrack> track)
     FALSE_RETURN_MSG(track != nullptr, "track is empty");
     FALSE_RETURN_MSG(moov_ != nullptr, "moov box is empty");
     auto mvhdBox = BasicBox::GetBoxPtr<MvhdBox>(moov_, "mvhd");
-    FALSE_RETURN_MSG(mvhdBox->nextTrackId_ < INT16_MAX, "track id is out of range"); // max int16
+    FALSE_RETURN_MSG(mvhdBox != nullptr && mvhdBox->nextTrackId_ < INT16_MAX, "track id is out of range"); // max int16
     track->SetTrackId(static_cast<int32_t>(mvhdBox->nextTrackId_));
     moov_->AddChild(TrakBoxGenerate(track));
     mvhdBox->nextTrackId_++;
@@ -301,16 +301,16 @@ static void SetKeysIlstBox(std::shared_ptr<Meta> userMeta,
         if (userMeta->GetData(k, dataInt)) {
             keysBox->AddChild(MetaKeyGenerate(keyType, k));
             ilstBox->AddChild(Uint32DataTagGenerate(
-                BoxParser::Uint32ToString(i), 67, static_cast<uint32_t>(dataInt)));  // 67
+                BoxParser::Uint32ToString(i), 67, static_cast<uint32_t>(dataInt)));  // 67: type uint32
         } else if (userMeta->GetData(k, dataFloat)) {
             keysBox->AddChild(MetaKeyGenerate(keyType, k));
-            ilstBox->AddChild(floatDataTagGenerate(BoxParser::Uint32ToString(i), 23, dataFloat));  // 23
+            ilstBox->AddChild(floatDataTagGenerate(BoxParser::Uint32ToString(i), 23, dataFloat));  // 23: type float
         } else if (userMeta->GetData(k, dataStr)) {
             keysBox->AddChild(MetaKeyGenerate(keyType, k));
-            ilstBox->AddChild(StringDataTagGenerate(BoxParser::Uint32ToString(i), 1, dataStr));
+            ilstBox->AddChild(StringDataTagGenerate(BoxParser::Uint32ToString(i), 1, dataStr));  // 1: type string
         } else if (userMeta->GetData(k, dataBinary)) {
             keysBox->AddChild(MetaKeyGenerate(keyType, k));
-            ilstBox->AddChild(Uint8ArrDataTagGenerate(BoxParser::Uint32ToString(i), 0, dataBinary));
+            ilstBox->AddChild(Uint8ArrDataTagGenerate(BoxParser::Uint32ToString(i), 0, dataBinary));  // 0: type binary
         } else {
             MEDIA_LOG_E("the value type of meta key %{public}s is not supported!", k.c_str());
             continue;
@@ -323,7 +323,7 @@ static void SetKeysIlstBox(std::shared_ptr<Meta> userMeta,
         keyType = "mdta" + std::to_string(i);
         std::string keyName = "AIGC";
         keysBox->AddChild(MetaKeyGenerate(keyType, keyName));
-        ilstBox->AddChild(StringDataTagGenerate(BoxParser::Uint32ToString(i), 1, dataStr));
+        ilstBox->AddChild(StringDataTagGenerate(BoxParser::Uint32ToString(i), 1, dataStr));  // 1: type string
         i++;
     }
 }
@@ -375,7 +375,7 @@ void BoxParser::AddMoovUdtaGeoTag(float latitude, float longitude, bool needGene
     int32_t latitude10000 = static_cast<int32_t>(static_cast<float>(cof) * latitude);
     int32_t longitude10000 = static_cast<int32_t>(static_cast<float>(cof) * longitude);
     FALSE_RETURN_MSG_I(latitude10000 >= (-maxLat) && latitude10000 <= maxLat && longitude10000 >= (-maxLon) &&
-        longitude10000 <= maxLon, "location not supported! lat:%{public}f, lon:%{public}f", latitude, longitude);
+        longitude10000 <= maxLon, "location not set or not supported!");
     std::stringstream ss;
     // 0.1 -> +00.1000
     char sign = latitude10000 < 0 ? '-' : '+';
@@ -422,7 +422,7 @@ std::shared_ptr<BasicBox> BoxParser::TkhdBoxGenerate(std::shared_ptr<BasicTrack>
     std::shared_ptr<TkhdBox> tkhdBox = std::make_shared<TkhdBox>(0, "tkhd");
     tkhdBox->creationTime_ = 0;
     tkhdBox->modificationTime_ = 0;
-    tkhdBox->trackIndex_ = track->GetTrackId();
+    tkhdBox->trackIndex_ = static_cast<uint32_t>(track->GetTrackId());
     tkhdBox->duration_ = 0;
     auto mediaType = track->GetMediaType();
     if (mediaType == MediaType::AUDIO) {
@@ -430,8 +430,8 @@ std::shared_ptr<BasicBox> BoxParser::TkhdBoxGenerate(std::shared_ptr<BasicTrack>
     } else if (mediaType == MediaType::VIDEO) { // 视频的旋转角度，后边刷新
         auto videoTrack = BasicTrack::GetTrackPtr<VideoTrack>(track);
         if (videoTrack != nullptr) {
-            tkhdBox->width_ = videoTrack->GetWidth() << 16;  // 16
-            tkhdBox->height_ = videoTrack->GetHeight() << 16;  // 16
+            tkhdBox->width_ = static_cast<uint32_t>(videoTrack->GetWidth()) << 16;  // 16
+            tkhdBox->height_ = static_cast<uint32_t>(videoTrack->GetHeight()) << 16;  // 16
         }
     }
     return tkhdBox;
@@ -470,7 +470,7 @@ std::shared_ptr<BasicBox> BoxParser::MdhdBoxGenerate(std::shared_ptr<BasicTrack>
     std::shared_ptr<MdhdBox> mdhdBox = std::make_shared<MdhdBox>(0, "mdhd");
     mdhdBox->creationTime_ = 0;
     mdhdBox->modificationTime_ = 0;
-    mdhdBox->timeScale_ = track->GetTimeScale();
+    mdhdBox->timeScale_ = static_cast<uint32_t>(track->GetTimeScale());
     mdhdBox->duration_ = 0;
     return mdhdBox;
 }
@@ -488,11 +488,11 @@ std::shared_ptr<BasicBox> BoxParser::MinfBoxGenerate(std::shared_ptr<BasicTrack>
 {
     std::shared_ptr<BasicBox> minfBox = std::make_shared<BasicBox>(0, "minf");
     auto mediaType = track->GetMediaType();
-    if (mediaType == MediaType::AUDIO) {
+    if (mediaType == MediaType::AUDIO && !track->IsAuxiliary()) {
         minfBox->AddChild(std::make_shared<SmhdBox>(0, "smhd"));
-    } else if (mediaType == MediaType::VIDEO) {
+    } else if (mediaType == MediaType::VIDEO && !track->IsAuxiliary()) {
         minfBox->AddChild(std::make_shared<VmhdBox>(0, "vmhd"));
-    } else if (mediaType != MediaType::TIMEDMETA) {
+    } else {
         minfBox->AddChild(std::make_shared<FullBox>(0, "nmhd"));
     }
     std::shared_ptr<BasicBox> dinfBox = std::make_shared<BasicBox>(0, "dinf");
