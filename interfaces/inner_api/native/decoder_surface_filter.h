@@ -97,6 +97,7 @@ public:
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
     void SetSeekTime(int64_t seekTimeUs, PlayerSeekMode mode = PlayerSeekMode::SEEK_CLOSEST, bool needWait = false);
     void ResetSeekInfo();
+    void ClosestSeekDone();
     Status HandleInputBuffer();
     void OnDumpInfo(int32_t fd);
 
@@ -281,6 +282,9 @@ private:
     bool isFirstStart_ = true;
     bool isBuffering_ {false};
     bool isFirstFrameWrite_ {false};
+    std::atomic<bool> isClosestSeekDone_ {true};
+    std::mutex closestSeekMutex_ {};
+    std::condition_variable closestSeekCond_ {};
 };
 } // namespace Pipeline
 } // namespace Media
