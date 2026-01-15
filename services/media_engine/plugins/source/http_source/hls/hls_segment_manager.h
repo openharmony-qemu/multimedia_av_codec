@@ -46,7 +46,7 @@ namespace HttpPlugin {
 struct InfoIndexMap {
     std::map<std::string, PlayInfo> urlMap;
     std::map<uint32_t, std::string> writeMap;
-    PlayInfo lastPlay_;
+    PlayInfo lastPlay;
 };
 
 struct HlsSegEvent {

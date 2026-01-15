@@ -852,9 +852,10 @@ void HlsSegmentManager::OnPlayListChanged(const std::vector<PlayInfo>& playList)
     for (uint32_t i = 0; i < static_cast<uint32_t>(playList.size()); i++) {
         PlayInfo playerTmp = playList[i];
         if (InfoIndexMap_.urlMap.find(playList[i].url_) == InfoIndexMap_.urlMap.end()) {
-            playerTmp.sumduration_ = InfoIndexMap_.lastPlay_.sumduration_ + static_cast<uint64_t>(playerTmp.duration_) * ONE_USSECONDS;
+            playerTmp.sumDuration_ = InfoIndexMap_.lastPlay.sumDuration_ +
+                static_cast<uint64_t>(playerTmp.duration_) * ONE_USSECONDS;
             InfoIndexMap_.urlMap[playList[i].url_] = playerTmp;
-            InfoIndexMap_.lastPlay_ = playerTmp;
+            InfoIndexMap_.lastPlay = playerTmp;
         }
         if (CheckLoopTimeout(loopStartTime)) {
             break;
@@ -1911,8 +1912,10 @@ bool HlsSegmentManager::GetReadTimeOut(bool isDelay)
 size_t HlsSegmentManager::GetSegmentOffset()
 {
     if (playlistDownloader_) {
-        if (playListDownloader_->IsLive()) {
-            return InfoIndexMap_.urlMap[url].sumduration_ - static_cast<uint64_t>(InfoIndexMap_.urlMap[uri].duration_) * ONE_USSECONDS;
+        if (playlistDownloader_->IsLive()) {
+            std::string url = InfoIndexMap_.writeMap[readTsIndex_];
+            return InfoIndexMap_.urlMap[url].sumDuration_ -
+                static_cast<uint64_t>(InfoIndexMap_.urlMap[uri].duration_) * ONE_USSECONDS;
         }
         return playlistDownloader_->GetSegmentOffset(readTsIndex_);
     }
