@@ -313,7 +313,7 @@ Status Mpeg4MuxerPlugin::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
             if (dataStr.length() > MAX_USERMETA_STRING_LENGTH) {
                 MEDIA_LOG_E("the usermeta key %{public}s string value length %{public}zu more than 256 characters.",
                     k.c_str(), dataStr.length());
-                continue;
+                return Status::ERROR_INVALID_DATA;
             }
             userMeta_->SetData(k, dataStr);
         } else if (userMeta->GetData(k, dataBinary)) {
