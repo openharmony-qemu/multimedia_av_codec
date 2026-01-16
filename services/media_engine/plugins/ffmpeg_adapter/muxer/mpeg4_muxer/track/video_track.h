@@ -27,23 +27,24 @@ namespace Plugins {
 namespace Mpeg4 {
 class VideoTrack : public BasicTrack {
 public:
-    VideoTrack(std::string mimeType, std::shared_ptr<BasicBox> moov);
+    VideoTrack(std::string mimeType, std::shared_ptr<BasicBox> moov, std::vector<std::shared_ptr<BasicTrack>> &tracks);
     ~VideoTrack() override;
     Status Init(const std::shared_ptr<Meta> &trackDesc) override;
     void SetRotation(uint32_t rotation) override;
     Status WriteSample(std::shared_ptr<AVIOStream> io, const std::shared_ptr<AVBuffer> &sample) override;
     Status WriteTailer() override;
     Any GetPointer() override {return Any(this);}
-    int32_t GetWidth();
-    int32_t GetHeight();
-    bool IsColor();
-    ColorPrimary GetColorPrimaries();
-    TransferCharacteristic GetColorTransfer();
-    MatrixCoefficient GetColorMatrixCoeff();
-    bool GetColorRange();
-    bool IsCuvaHDR();
+    int32_t GetWidth() const;
+    int32_t GetHeight() const;
+    bool IsColor() const;
+    ColorPrimary GetColorPrimaries() const;
+    TransferCharacteristic GetColorTransfer() const;
+    MatrixCoefficient GetColorMatrixCoeff() const;
+    bool GetColorRange() const;
+    bool IsCuvaHDR() const;
     void SetCttsBox(std::shared_ptr<SttsBox> ctts);
     void SetStssBox(std::shared_ptr<StssBox> stss);
+    bool GetSrcTrackIds(const std::shared_ptr<Meta> &trackDesc);
 
 private:
     int32_t CreateParser();
@@ -53,15 +54,14 @@ private:
     void DisposeCtts(int64_t pts);
     void DisposeCtts();
     void DisposeCttsByFrameRate(int64_t pts);
-    void DisposeStts();
-    void DisposeStts(int64_t duration, int64_t pts);
+    void DisposeSttsAllPts();
     void DisposeSttsNoPts();
-    void DisposeStco(int64_t pos);
-    void DisposeStsz(uint32_t size);
     void DisposeDuration();
     void DisposeBitrate();
     void DisposeColor();
     void DisposeCuva();
+    void DisposeSdtp(uint32_t flag);
+    void AddSdtpBox();
     int32_t width_ = 0;
     int32_t height_ = 0;
     int64_t delay_ = 0;
@@ -75,11 +75,13 @@ private:
     std::shared_ptr<VideoParser> videoParser_ = nullptr;
     std::shared_ptr<SttsBox> ctts_ = nullptr;
     std::shared_ptr<StssBox> stss_ = nullptr;
+    std::shared_ptr<SdtpBox> sdtp_ = nullptr;
     std::queue<int64_t> allPts_;
     bool isHaveBFrame_ = false;
     int64_t dts_ = 0;
     int64_t startDts_ = 0;
     bool hasSetParserConfig_ = false;
+    std::vector<std::shared_ptr<BasicTrack>> &tracks_;
 };
 } // Mpeg4
 } // Plugins

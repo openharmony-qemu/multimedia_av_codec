@@ -104,6 +104,7 @@ group("av_codec_unit_test") {
         "unittest/avmuxer_test:avmuxer_ogg_unit_test",
         "unittest/avmuxer_test:avmuxer_gltf_unit_test",
         "unittest/avmuxer_test:avmuxer_mpeg4_plugin_unit_test",
+        "unittest/avmuxer_test:avmuxer_ffmpeg_plugin_mp4_unit_test",
         "unittest/avsource_test:avsource_capi_unit_test",
         "unittest/avsource_test:avsource_inner_unit_test",
         "unittest/calc_max_amplitude_unittest:calc_max_amplitude_unittest",

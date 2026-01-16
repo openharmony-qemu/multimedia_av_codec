@@ -21,7 +21,6 @@
 #include <cstdint>
 #include "media_description.h"
 #include "avcodec_common.h"
-#include "av_common.h"
 #include "basic_box.h"
 
 namespace OHOS {
@@ -40,21 +39,29 @@ public:
     void SetTrackId(int32_t trackId);
     void SetTrackPath(std::string trackPath);
     void SetCodingType(std::string codingType);
-    int32_t GetTrackId();
-    std::string GetMimeType();
-    int32_t GetMediaType();
-    std::vector<uint8_t> GetCodecConfig();
-    int32_t GetTimeScale();
+    int32_t GetTrackId() const;
+    std::string GetMimeType() const;
+    MediaType GetMediaType() const;
+    std::vector<uint8_t> &GetCodecConfig();
+    int32_t GetTimeScale() const;
     void SetSttsBox(std::shared_ptr<SttsBox> stts);
     void SetStszBox(std::shared_ptr<StszBox> stsz);
     void SetStscBox(std::shared_ptr<StscBox> stsc);
     void SetStcoBox(std::shared_ptr<StcoBox> stco);
+    void SetCreationTime(uint64_t creationTime, uint64_t modifyTime);
     static bool Compare(std::shared_ptr<BasicTrack> trackOne, std::shared_ptr<BasicTrack> trackTwo);
     uint32_t MoovIncrements(uint32_t moovSize);
     void SetOffset(uint32_t moovSize);
+    int64_t GetDurationUs() const;
+    int64_t GetStartTimeUs() const;
+    bool IsAuxiliary() const;
+    uint32_t GetHdlrType() const;
+    const std::string &GetHdlrName() const;
+    uint32_t GetTrefTag() const;
+    std::shared_ptr<std::vector<uint32_t>> &GetSrcTrackIds();
 
     template <class T>
-    static T* GetTrackPtr(std::shared_ptr<BasicTrack> &basicTrack)
+    static T* GetTrackPtr(const std::shared_ptr<BasicTrack> &basicTrack)
     {
         static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_MUXER, "BasicTrack" };
         FALSE_RETURN_V_MSG_W(basicTrack != nullptr, nullptr, "GetTrackPtr track is nullptr!");
@@ -66,9 +73,14 @@ public:
     }
 
 protected:
+    virtual void DisposeStts(int64_t duration, int64_t pts);
+    virtual void DisposeStco(int64_t pos);
+    virtual void DisposeStsz(int32_t size);
+    Status SetAuxiliaryTrackParam(const std::shared_ptr<Meta> &trackDesc);
+
     std::string trackPath_ = "";
     int32_t trackId_ = -1;
-    int32_t mediaType_ = -1;
+    MediaType mediaType_ = MediaType::UNKNOWN;
     std::string mimeType_ = "";
     std::string codingType_ = "";
     int64_t bitRate_ = 0;
@@ -81,11 +93,16 @@ protected:
     int64_t pos_ = 0;
     uint64_t allSampleSize_ = 0;
     bool isSameSize_ = true;
+    bool isAuxiliary_ = false;
+    uint32_t hdlrType_ = 0;
+    std::string hdlrName_ = "";
     std::shared_ptr<BasicBox> moov_ = nullptr;
     std::shared_ptr<SttsBox> stts_ = nullptr;
     std::shared_ptr<StszBox> stsz_ = nullptr;
     std::shared_ptr<StscBox> stsc_ = nullptr;
     std::shared_ptr<StcoBox> stco_ = nullptr;
+    uint32_t trefTag_ = 0;
+    std::shared_ptr<std::vector<uint32_t>> srcTrackIds_;
 };
 } // Mpeg4
 } // Plugins

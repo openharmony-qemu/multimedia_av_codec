@@ -119,14 +119,7 @@ void AVIOStream::Write(const char *data, int32_t size)
 
 void AVIOStream::Write(const uint8_t* data, int32_t size)
 {
-    if (!dataSink_) {
-        MEDIA_LOG_E("failed to write, dataSink is nullptr.");
-        return;
-    }
-
-    if (data == nullptr || size == 0) {
-        return;
-    }
+    FALSE_RETURN_MSG((data != nullptr && size > 0), "failed to write, data is empty.");
     pos_ = dataSink_->Seek(pos_, SEEK_SET);
     int32_t writeSize = dataSink_->Write(data, size);
     if (writeSize > 0) {
@@ -137,10 +130,7 @@ void AVIOStream::Write(const uint8_t* data, int32_t size)
 
 int32_t AVIOStream::Read(uint8_t *data, int32_t size)
 {
-    if (!dataSink_) {
-        MEDIA_LOG_E("failed to read, dataSink is nullptr.");
-        return -1;
-    }
+    FALSE_RETURN_V_MSG_E(dataSink_ != nullptr, -1, "failed to get pos, dataSink is nullptr.");
     if (pos_ >= end_) {
         return 0;
     }
@@ -154,10 +144,7 @@ int32_t AVIOStream::Read(uint8_t *data, int32_t size)
 
 void AVIOStream::Seek(int64_t offset, int32_t whence)
 {
-    if (!dataSink_) {
-        MEDIA_LOG_E("failed to seek, dataSink is nullptr.");
-        return;
-    }
+    FALSE_RETURN_MSG(dataSink_ != nullptr, "failed to seek, dataSink is nullptr.");
     if (whence == SEEK_SET) {
         pos_ = offset;
     } else if (whence == SEEK_CUR) {
@@ -173,17 +160,14 @@ void AVIOStream::Seek(int64_t offset, int32_t whence)
 
 int64_t AVIOStream::GetPos()
 {
-    if (!dataSink_) {
-        MEDIA_LOG_E("failed to get pos, dataSink is nullptr.");
-        return -1;
-    }
-
+    FALSE_RETURN_V_MSG_E(dataSink_ != nullptr, -1, "failed to get pos, dataSink is nullptr.");
     return pos_;
 }
 
-void AVIOStream::DataReverse(uint8_t *data, int32_t size)
+bool AVIOStream::CanRead()
 {
-    std::reverse(data, data + size);
+    FALSE_RETURN_V_MSG_E(dataSink_ != nullptr, false, "dataSink is nullptr.");
+    return dataSink_->CanRead();
 }
 } // Plugins
 } // Media

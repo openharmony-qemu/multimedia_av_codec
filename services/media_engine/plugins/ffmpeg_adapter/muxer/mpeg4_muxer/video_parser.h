@@ -59,7 +59,6 @@ public:
 
 protected:
     int32_t WriteSample(const std::shared_ptr<AVIOStream> &io, const uint8_t *sample, int32_t size);
-    uint8_t *FindNalStartCode(const uint8_t *buf, const uint8_t *end, int32_t &startCodeLen);
     uint8_t GetNalType(uint8_t nalHeader);
     bool IsAvccHvccFrame(const uint8_t *sample, int32_t size);
     bool IsAnnexbFrame(const uint8_t* sample, int32_t size);
@@ -67,7 +66,6 @@ protected:
     uint32_t nalSizeLen_ = 0x04;
 
 private:
-    uint8_t *FastFindNalStartCode(const uint8_t *buf, const uint8_t *end, int32_t &startCodeLen);
     VideoParserStreamType streamType_;
 };
 

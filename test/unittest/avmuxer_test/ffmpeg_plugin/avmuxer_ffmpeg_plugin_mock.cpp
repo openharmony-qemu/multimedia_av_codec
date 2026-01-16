@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Copyright (C) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "avmuxer_mpeg4_plugin_mock.h"
+#include "avmuxer_ffmpeg_plugin_mock.h"
 #include "securec.h"
 #include "avformat_inner_mock.h"
 #include "common/native_mfmagic.h"
@@ -22,14 +22,15 @@ namespace OHOS {
 namespace MediaAVCodec {
 using namespace OHOS::Media;
 using namespace OHOS::Media::Plugins;
-AVMuxerMpeg4PluginMock::AVMuxerMpeg4PluginMock(std::shared_ptr<Media::Plugins::DataSink> dataSink,
+AVMuxerFfmpegPluginMock::AVMuxerFfmpegPluginMock(std::shared_ptr<Media::Plugins::DataSink> dataSink,
     std::shared_ptr<Media::Plugins::MuxerPlugin> muxer) : dataSink_(dataSink), muxer_(muxer)
 {
     if (muxer_) {
         muxer_->SetDataSink(dataSink_);
     }
 }
-int32_t AVMuxerMpeg4PluginMock::Destroy()
+
+int32_t AVMuxerFfmpegPluginMock::Destroy()
 {
     if (muxer_ != nullptr) {
         muxer_ = nullptr;
@@ -38,7 +39,7 @@ int32_t AVMuxerMpeg4PluginMock::Destroy()
     return AV_ERR_UNKNOWN;
 }
 
-int32_t AVMuxerMpeg4PluginMock::Start()
+int32_t AVMuxerFfmpegPluginMock::Start()
 {
     if (muxer_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -46,7 +47,7 @@ int32_t AVMuxerMpeg4PluginMock::Start()
     return static_cast<int32_t>(muxer_->Start());
 }
 
-int32_t AVMuxerMpeg4PluginMock::Stop()
+int32_t AVMuxerFfmpegPluginMock::Stop()
 {
     if (muxer_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -54,7 +55,7 @@ int32_t AVMuxerMpeg4PluginMock::Stop()
     return static_cast<int32_t>(muxer_->Stop());
 }
 
-int32_t AVMuxerMpeg4PluginMock::AddTrack(int32_t &trackIndex, std::shared_ptr<FormatMock> &trackFormat)
+int32_t AVMuxerFfmpegPluginMock::AddTrack(int32_t &trackIndex, std::shared_ptr<FormatMock> &trackFormat)
 {
     if (muxer_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -63,7 +64,7 @@ int32_t AVMuxerMpeg4PluginMock::AddTrack(int32_t &trackIndex, std::shared_ptr<Fo
     return static_cast<int32_t>(muxer_->AddTrack(trackIndex, formatMock->GetFormat().GetMeta()));
 }
 
-int32_t AVMuxerMpeg4PluginMock::WriteSample(uint32_t trackIndex,
+int32_t AVMuxerFfmpegPluginMock::WriteSample(uint32_t trackIndex,
     const uint8_t *sample, const OH_AVCodecBufferAttr &info)
 {
     if (muxer_ == nullptr) {
@@ -77,7 +78,7 @@ int32_t AVMuxerMpeg4PluginMock::WriteSample(uint32_t trackIndex,
     return static_cast<int32_t>(muxer_->WriteSample(trackIndex, avSample));
 }
 
-int32_t AVMuxerMpeg4PluginMock::WriteSampleBuffer(uint32_t trackIndex, const OH_AVBuffer *sample)
+int32_t AVMuxerFfmpegPluginMock::WriteSampleBuffer(uint32_t trackIndex, const OH_AVBuffer *sample)
 {
     if (muxer_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -85,7 +86,7 @@ int32_t AVMuxerMpeg4PluginMock::WriteSampleBuffer(uint32_t trackIndex, const OH_
     return static_cast<int32_t>(muxer_->WriteSample(trackIndex, sample->buffer_));
 }
 
-int32_t AVMuxerMpeg4PluginMock::SetTimedMetadata()
+int32_t AVMuxerFfmpegPluginMock::SetTimedMetadata()
 {
     if (muxer_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -93,7 +94,7 @@ int32_t AVMuxerMpeg4PluginMock::SetTimedMetadata()
     return 0;
 }
 
-int32_t AVMuxerMpeg4PluginMock::SetRotation(int32_t rotation)
+int32_t AVMuxerFfmpegPluginMock::SetRotation(int32_t rotation)
 {
     if (muxer_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -103,7 +104,7 @@ int32_t AVMuxerMpeg4PluginMock::SetRotation(int32_t rotation)
     return static_cast<int32_t>(muxer_->SetParameter(param));
 }
 
-int AVMuxerMpeg4PluginMock::SetFormat(std::shared_ptr<FormatMock> &format)
+int32_t AVMuxerFfmpegPluginMock::SetFormat(std::shared_ptr<FormatMock> &format)
 {
     if (muxer_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -111,6 +112,30 @@ int AVMuxerMpeg4PluginMock::SetFormat(std::shared_ptr<FormatMock> &format)
     auto formatMock = std::static_pointer_cast<AVFormatInnerMock>(format);
     muxer_->SetUserMeta(formatMock->GetFormat().GetMeta());
     return static_cast<int32_t>(muxer_->SetParameter(formatMock->GetFormat().GetMeta()));
+}
+
+int32_t AVMuxerFfmpegPluginMock::SetParameter(const std::shared_ptr<Meta> &param)
+{
+    if (muxer_ == nullptr) {
+        return AV_ERR_UNKNOWN;
+    }
+    return static_cast<int32_t>(muxer_->SetParameter(param));
+}
+
+int32_t AVMuxerFfmpegPluginMock::SetUserMeta(const std::shared_ptr<Meta> &userMate)
+{
+    if (muxer_ == nullptr) {
+        return AV_ERR_UNKNOWN;
+    }
+    return static_cast<int32_t>(muxer_->SetUserMeta(userMate));
+}
+
+int32_t AVMuxerFfmpegPluginMock::AddTrack(int32_t& trackIndex, const std::shared_ptr<Meta> &trackDesc)
+{
+    if (muxer_ == nullptr) {
+        return AV_ERR_UNKNOWN;
+    }
+    return static_cast<int32_t>(muxer_->AddTrack(trackIndex, trackDesc));
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
