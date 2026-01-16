@@ -110,7 +110,6 @@ public:
     MOCK_METHOD(Status, SetPerfRecEnabled, (bool perfRecEnabled), ());
     MOCK_METHOD(void, NotifyInitSuccess, (), ());
     MOCK_METHOD(bool, IsLocalFd, (), ());
-    MOCK_METHOD(bool, IsCloudFd, (), ());
     MOCK_METHOD(bool, IsFlvLiveStream, (), (const));
     MOCK_METHOD(uint64_t, GetCachedDuration, (), ());
     MOCK_METHOD(void, RestartAndClearBuffer, (), ());
