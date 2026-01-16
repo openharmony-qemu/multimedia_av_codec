@@ -3346,6 +3346,13 @@ int64_t MediaDemuxer::ReadLoop(int32_t trackId)
     FALSE_RETURN_V_NOLOG(resPreReadSample == 0, resPreReadSample);
     AfterDrop(trackId);
     AfterSeekNeedDrop(trackId);
+    if (afterSeekNeepDrop_[trackId]) {
+        return NEXT_DELAY_TIME_US;
+    }
+    int64_t delay = HandleFrameDropForTrack(trackId);
+    if (delay > 0) {
+        return delay;
+    }
     Status ret = CopyFrameToUserQueue(trackId);
     if (ret == Status::ERROR_ONE_TRACK_SEGMENT_EOS) {
         HandleNotAllTrackEos(trackId);
@@ -3382,27 +3389,49 @@ int64_t MediaDemuxer::ReadLoop(int32_t trackId)
     return RETRY_DELAY_TIME_US; // delay to retry if no frame
 }
 
+int64_t MediaDemuxer::HandleFrameDropForTrack(int32_t trackId)
+{
+    if (frameCountNeedDrop_[trackId] <= 0){
+        return 0;
+    }
+    if (IsFd()) {
+        return 0;
+    }
+    std::shared_ptr<AVBuffer> sample = AVBuffer::CreateAVBuffer();
+    if (!sample) {
+        frameCountNeedDrop_[trackId] = 0;
+        return 0;
+    }
+    Status dropStatus = ReadSampleToDrop(trackId, sample);
+    if (dropStatus == Status::OK) {
+        frameCountNeedDrop_[trackId]--;
+    } else {
+        frameCountNeedDrop_[trackId] = 0;
+    }
+    return NEXT_DELAY_TIME_US;
+}
+
 void MediaDemuxer::AfterSeekNeedDrop(int32_t trackId)
 {
-    if (afterSeekNeedDrop_[trackId]) {
-        std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = nullptr;
-        int32_t innerTrackID = trackId;
-        if (IsNeedMapToInnerTrackID()) {
-            int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
-            pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamID);
-            innerTrackID = demuxerPluginManager_->GetTmpInnerTrackIDByTrackID(trackId);
-        } else {
-            int32_t streamId = demuxerPluginManager_->GetStreamIDByTrackID(trackId);
-            pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamId);
-        }
-        if (pluginTemp == nullptr) {
-            return;
-        }
-        std::shared_ptr<AVBuffer> sample = AVBuffer::CreateAVBuffer();
-        pluginTemp->ReadSample(static_cast<int32_t>(innerTrackID), sample, timeout_);
-        while (sample->pts_ < afterDropPts_[trackId]) {
-            pluginTemp->ReadSample(static_cast<uint32_t>(innerTrackID), sample, timeout_);
-        }
+    if (!afterSeekNeedDrop_[trackId]) {
+        return;
+    }
+    std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = nullptr;
+    int32_t innerTrackID = trackId;
+    if (IsNeedMapToInnerTrackID()) {
+        int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
+        pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamID);
+        innerTrackID = demuxerPluginManager_->GetTmpInnerTrackIDByTrackID(trackId);
+    } else {
+        int32_t streamId = demuxerPluginManager_->GetStreamIDByTrackID(trackId);
+        pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamId);
+    }
+    if (pluginTemp == nullptr) {
+        return;
+    }
+    std::shared_ptr<AVBuffer> sample = AVBuffer::CreateAVBuffer();
+    pluginTemp->ReadSample(static_cast<int32_t>(innerTrackID), sample, timeout_);
+    if (sample->dts_ >= afterDropDts_[trackId]) {
         afterSeekNeedDrop_[trackId] = false;
     }
 }
@@ -4644,11 +4673,9 @@ void MediaDemuxer::CachePressuredCallback(int32_t trackId, uint32_t cachedBytes)
         return;
     }
     std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = nullptr;
-    int32_t innerTrackID = trackId;
     if (IsNeedMapToInnerTrackID()) {
         int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
         pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamID);
-        innerTrackID = demuxerPluginManager_->GetTmpInnerTrackIDByTrackID(trackId);
     } else {
         int32_t streamID = demuxerPluginManager_->GetStreamIDByTrackID(trackId);
         pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamID);
@@ -4657,19 +4684,18 @@ void MediaDemuxer::CachePressuredCallback(int32_t trackId, uint32_t cachedBytes)
         MEDIA_LOG_E("CachePressuredCallback pluginTemp nullptr");
         return;
     }
-    uint32_t frameCount = 0;
-    if (pluginTemp->GetCurrentCacheFrameCount(trackId, frameCount) != Status::OK) {
+    if (pluginTemp->GetCurrentCacheFrameCount(trackId, frameCountNeedDrop_[trackId]) != Status::OK) {
         MEDIA_LOG_E("CachePressuredCallback frameCount error");
         return;
     }
     if (NeedDroped(trackId) || hasDropedMap_[trackId].load()) {
         hasDropedMap_[trackId].store(true);
-        if (!IsLocalFd()) {
-            std::shared_ptr<AVBuffer> sample = AVBuffer::CreateAVBuffer();
-            while (frameCount > 0) {
-                pluginTemp->ReadSample(static_cast<uint32_t>(innerTrackID), sample, timeout_);
-                frameCount--;
+        if (!IsFd()) {
+            if (!taskMap_[trackId]->IsTaskRunning()) {
+                AutoLock lock(mapMutex_);
+                taskMap_[trackId]->Strat();
             }
+            MEDIA_LOG_I("source need drop count: " PUBLIC_LOG_U32, frameCountNeedDrop_[trackId]);
         }
     } else {
         OnSampleQueueBufferAvailable(trackId);
@@ -4678,7 +4704,7 @@ void MediaDemuxer::CachePressuredCallback(int32_t trackId, uint32_t cachedBytes)
 
 bool MediaDemuxer::NeedDroped(int32_t trackId)
 {
-    if (IsLocalFd()) {
+    if (IsFd()) {
         if (sampleQueueMap_[trackId]->GetFilledBufferSize() >= SampleQueue::MAX_SAMPLE_QUEUE_SIZE - 1) {
             hasDropedMap_[trackId].store(true);
             return true;
@@ -4701,50 +4727,55 @@ void MediaDemuxer::AfterDrop(int32_t trackId)
     if (!GetEnableSampleQueueFlag()) {
         return;
     }
-    if (IsLocalFd()) {
+    if (IsFd()) {
         if (sampleQueueMap_[trackId] == nullptr) {
             return;
         }
-        afterDropPts_[videoTrackId_] = sampleQueueMap_[videoTrackId_]->GetLastOutSamplePts();
-        afterDropPts_[audioTrackId_] = sampleQueueMap_[audioTrackId_]->GetLastOutSamplePts();
-        int64_t startTime = 0;
-        std::string mimeType;
-        mediaMetaData_.trackMetas[trackId]->Get<Tag::MEDIA_START_TIME>(startTime);
-        MEDIA_LOG_I("afterDrop startTime: " PUBLIC_LOG_D64 " seekto time: " PUBLIC_LOG_D64
-            " trackId: " PUBLIC_LOG_D32, startTime, afterDropPts_[trackId], trackId);
+        std::shared_ptr<AVBuffer> videoSample = AVBuffer::CreateAVBuffer();
+        ReadSampleToDrop(videoTrackId_, videoSample);
+        std::shared_ptr<AVBuffer> audioSample = AVBuffer::CreateAVBuffer();
+        ReadSampleToDrop(audioTrackId_, audioSample);
         int64_t readlSeekTime = 0;
         if (IsNeedMapToInnerTrackID()) {
             int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
-            demuxerPluginManager_->SingleStreamSeekTo((afterDropPts_[trackId] - startTime) / US_TO_MS,
-                SeekMode::SEEK_NEXT_SYNC, streamID, readlSeekTime);
         } else {
             int32_t streamID = demuxerPluginManager_->GetStreamIDByTrackID(trackId);
-            demuxerPluginManager_->SingleStreamSeekTo((afterDropPts_[trackId] - startTime) / US_TO_MS,
-                SeekMode::SEEK_NEXT_SYNC, streamID, readlSeekTime);
         }
-        ClearSampleQueue();
-        afterSeekNeedDrop_[videoTrackId_] = true;
-        afterSeekNeedDrop_[audioTrackId_] = true;
+        demuxerPluginManager_->SeekToFrameByDts(streamID, videoSample->dts_ / US_TO_MS,
+            SeekMode::SEEK_CLOSEST, realSeekTime, timeout_);
+        afterDropDts_[videoTrackId_] = videoSample->dts_;
+        afterDropDts_[audioTrackId_] = audioSample->dts_;
+        MEDIA_LOG_I("afterDrop seekTo dts: " PUBLIC_LOG_D64 " realTime: "
+            PUBLIC_LOG_D64 " videoDts: " PUBLIC_LOG_D64 "audioDts: " PUBLIC_LOG_D64,
+            videoSample->dts_, realSeekTime, videoSample->dts_, audioSample->dts_);
+        if (trackId == videoTrackId_) {
+            afterSeekNeedDrop_[audioTrackId_] = true;
+        } else if (trackId == audioTrackId_) {
+            afterSeekNeedDrop_[videoTrackId_] = true;
+        }
     } else {
         videoNeedIFrame_ = true;
     }
     hasDropedMap_[trackId].store(false);
 }
 
-void MediaDemuxer::ClearSampleQueue()
+Status MediaDemuxer::ReadSampleToDrop(int32_t trackId, std::shared_ptr<AVBuffer> sample)
 {
-    if (sampleQueueMap_.find(videoTrackId_) != sampleQueueMap_.end() && sampleQueueMap_[videoTrackId_]) {
-        auto &sampleQueue = sampleQueueMap_[videoTrackId_];
-        sampleQueue->Clear();
+    std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = nullptr;
+    int32_t innerTrackID = trackId;
+    if (IsNeedMapToInnerTrackID()) {
+        int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
+        pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamID);
+        innerTrackID = demuxerPluginManager_->GetTmpInnerTrackIDByTrackID(trackId);
+    } else {
+        int32_t streamID = demuxerPluginManager_->GetStreamIDByTrackID(trackId);
+        pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamID);
     }
-    if (sampleQueueMap_.find(audioTrackId_) != sampleQueueMap_.end() && sampleQueueMap_[audioTrackId_]) {
-        auto &sampleQueue = sampleQueueMap_[audioTrackId_];
-        sampleQueue->Clear();
+    if (pluginTemp == nullptr) {
+        return Status::ERROR_UNKNOWN;
     }
-    if (sampleQueueMap_.find(subtitleTrackId_) != sampleQueueMap_.end() && sampleQueueMap_[subtitleTrackId_]) {
-        auto &sampleQueue = sampleQueueMap_[subtitleTrackId_];
-        sampleQueue->Clear();
-    }
+    Status status = p;uginTemp->ReadSample(static_cast<uint32_t>(innerTrackID), sample, timeout_);
+    return status;
 }
 } // namespace Media
 } // namespace OHOS
