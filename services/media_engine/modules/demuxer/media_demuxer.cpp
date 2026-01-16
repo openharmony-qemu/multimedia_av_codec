@@ -986,6 +986,10 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     MediaAVCodec::AVCODEC_SYNC_TRACE;
     MEDIA_LOG_D("In");
     FALSE_RETURN_V_MSG_E(isThreadExit_, Status::ERROR_WRONG_STATE, "Process is running");
+
+    if (sampleQueueController_) {
+        sampleQueueController_->SetBufferingDuration(source->GetPlayStrategy());
+    }
     isPrepared_.store(false);
     source_->SetCallback(this);
     auto res = source_->SetSource(source);
