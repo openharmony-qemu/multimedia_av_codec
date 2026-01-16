@@ -1033,31 +1033,31 @@ enum VP9Level {
     /** 1 level */
     VP9_LEVEL_1 = 0,
     /** 1.1 level */
-    VP9_LEVEL_1_1 = 1,
+    VP9_LEVEL_11 = 1,
     /** 2 level */
     VP9_LEVEL_2 = 2,
     /** 2.1 level */
-    VP9_LEVEL_2_1 = 3,
+    VP9_LEVEL_21 = 3,
     /** 3 level */
     VP9_LEVEL_3 = 4,
     /** 3.1 level */
-    VP9_LEVEL_3_1 = 5,
+    VP9_LEVEL_31 = 5,
     /** 4 level */
     VP9_LEVEL_4 = 6,
     /** 4.1 level */
-    VP9_LEVEL_4_1 = 7,
+    VP9_LEVEL_41 = 7,
     /** 5 level */
     VP9_LEVEL_5 = 8,
     /** 5.1 level */
-    VP9_LEVEL_5_1 = 9,
+    VP9_LEVEL_51 = 9,
     /** 5.2 level */
-    VP9_LEVEL_5_2 = 10,
+    VP9_LEVEL_52 = 10,
     /** 6 level */
     VP9_LEVEL_6 = 11,
     /** 6.1 level */
-    VP9_LEVEL_6_1 = 12,
+    VP9_LEVEL_61 = 12,
     /** 6.2 level */
-    VP9_LEVEL_6_2 = 13,
+    VP9_LEVEL_62 = 13,
 };
 
 /**

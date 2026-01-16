@@ -564,7 +564,7 @@ void VpxDecoder::GetVp9CapProf(std::vector<CapabilityData> &capaArray)
         capsData.profiles = {static_cast<int32_t>(VP9_PROFILE_0), static_cast<int32_t>(VP9_PROFILE_1),
                              static_cast<int32_t>(VP9_PROFILE_2), static_cast<int32_t>(VP9_PROFILE_3)};
         std::vector<int32_t> levels;
-        for (int32_t j = 0; j <= static_cast<int32_t>(VP9Level::VP9_LEVEL_6_2); ++j) {
+        for (int32_t j = 0; j <= static_cast<int32_t>(VP9Level::VP9_LEVEL_62); ++j) {
             levels.emplace_back(j);
         }
         capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(VP9_PROFILE_0), levels));
