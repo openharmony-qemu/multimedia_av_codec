@@ -242,6 +242,9 @@ int32_t HDecoder::DecreaseFreq()
 
 int32_t HDecoder::ActiveBuffers()
 {
+    if (isSecure_) {
+        return AVCS_ERR_OK;
+    }
     if (SwapInBufferByPortIndex(OMX_DirInput) != AVCS_ERR_OK) {
         return AVCS_ERR_UNKNOWN;
     }
