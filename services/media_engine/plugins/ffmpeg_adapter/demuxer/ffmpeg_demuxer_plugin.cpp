@@ -3033,7 +3033,7 @@ Status FFmpegDemuxerPlugin::SeekToFrameByDts(int32_t trackId, int64_t seekTime,
         SyncSeekThread();
     }
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
-    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected"); 
+    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
     FALSE_RETURN_V_MSG_E(seekTime >= 0 && seekTime <= INT64_MAX / MS_TO_NS, Status::ERROR_INVALID_PARAMETER,
         "Seek time " PUBLIC_LOG_D64 " is not supported", seekTime);
     FALSE_RETURN_V_MSG_E(mode == SeekMode::SEEK_CLOSEST, Status::ERROR_INVALID_PARAMETER,
@@ -3049,7 +3049,7 @@ Status FFmpegDemuxerPlugin::SeekToFrameByDts(int32_t trackId, int64_t seekTime,
     int ffRet = AVSeekFrameLock(trackIndex, ffDts, AVSEEK_FLAG_ANY);
     // 如果不支持（返回 EPERM 或其他错误），回退到 AVSEEK_FLAG_FRAME
     if (ffRet < 0) {
-        MEDIA_LOG_W("AVSEEK_FLAG_ANY failed (err: %s), fallback to AVSEEK_FLAG_FRAME", 
+        MEDIA_LOG_W("AVSEEK_FLAG_ANY failed (err: " PUBLIC_LOG_S "), fallback to AVSEEK_FLAG_FRAME",
             AVStrError(ffRet).c_str());
         ffRet = AVSeekFrameLock(trackIndex, ffDts, AVSEEK_FLAG_FRAME);
     }
