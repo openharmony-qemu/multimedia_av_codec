@@ -1503,10 +1503,10 @@ Status MediaDemuxer::HandleSegmentEos(int32_t trackId)
         hlsSegmentEosMap_[trackId] = false;
     }
     if (IsValidTrackId(audioTrackId_)) {
-        isBufferingMap_[audioTrackId_].store(true);
+        SetTrackIsBuffering(audioTrackId_, true);
     }
     if (IsValidTrackId(videoTrackId_)) {
-        isBufferingMap_[videoTrackId_].store(true);
+        SetTrackIsBuffering(videoTrackId_, true);
     }
     MEDIA_LOG_I("HandleSegmentChange mixed end");
     return ret;
@@ -1699,10 +1699,10 @@ void MediaDemuxer::ResetSampleQueueStatus(int64_t seekTime)
         sampleQueue->UpdateLastEnterSamplePts(seekTime * US_TO_MS);
     }
     if (IsValidTrackId(audioTrackId_)) {
-        isBufferingMap_[audioTrackId_].store(true);
+        SetTrackIsBuffering(audioTrackId_, true);
     }
     if (IsValidTrackId(videoTrackId_)) {
-        isBufferingMap_[videoTrackId_].store(true);
+        SetTrackIsBuffering(videoTrackId_, true);
     }
 }
 
@@ -3105,10 +3105,10 @@ void MediaDemuxer::StartConsume(int32_t trackId)
     }
 
     // set is buffering
-    isBufferingMap_[trackId].store(false);
+    SetTrackIsBuffering(trackId, false);
     if (IsValidTrackId(audioTrackId_)) {
         // if both has video & audio, both check and start consumer task
-        if (isBufferingMap_[videoTrackId_] || isBufferingMap_[audioTrackId_]) {
+        if (GetTrackIsBuffering(videoTrackId_) || GetTrackIsBuffering(audioTrackId_)) {
             return;
         }
         if (sampleConsumerTaskMap_[audioTrackId_] && !sampleConsumerTaskMap_[audioTrackId_]->IsTaskRunning()) {
@@ -3122,7 +3122,7 @@ void MediaDemuxer::StartConsume(int32_t trackId)
         CheckAndReportBufferingStatus(EventType::BUFFERING_END);
         return;
     }
-    if (isBufferingMap_[videoTrackId_]) {
+    if (GetTrackIsBuffering(videoTrackId_)) {
         return;
     }
     if (sampleConsumerTaskMap_[videoTrackId_] && !sampleConsumerTaskMap_[videoTrackId_]->IsTaskRunning()) {
@@ -3152,7 +3152,7 @@ void MediaDemuxer::BufferingStatus()
         || sampleQueueMap_[mainTrackId] == nullptr) {
         return;
     }
-    if (isBufferingMap_[mainTrackId].load()) {
+    if (GetTrackIsBuffering(mainTrackId)) {
         int64_t percent = static_cast<int64_t>((sampleQueueMap_[mainTrackId]->NewGetCacheDuration() * 100) /
             SampleQueueController::START_CONSUME_WATER_LOOP);
         MEDIA_LOG_I("BUFFERING_PERCENT: %{public}lld", percent);
@@ -3305,9 +3305,9 @@ std::string MediaDemuxer::GetMime()
 void MediaDemuxer::HandleNotAllTrackEos(int32_t trackId)
 {
     hlsSegmentEosMap_[trackId] = true;
-    if (isBufferingMap_[trackId].load() && (!taskMap_[audioTrackId_]->IsTaskRunning() ||
+    if (GetTrackIsBuffering(trackId) && (!taskMap_[audioTrackId_]->IsTaskRunning() ||
         !taskMap_[videoTrackId_]->IsTaskRunning())) {
-        isBufferingMap_[trackId].store(false);
+        SetTrackIsBuffering(trackId, false);
         CheckAndReportBufferingStatus(EventType::BUFFERING_END);
     }
 }
@@ -4166,10 +4166,10 @@ void MediaDemuxer::ConsumeWaterLoopControl(int32_t trackId, std::shared_ptr<Samp
     }
     if (stopConsumeResult && !hlsSegmentEosMap_[trackId]) {
         if (trackId == videoTrackId_ && isVideoMuted_) {
-            isBufferingMap_[trackId].store(false);
+            SetTrackIsBuffering(trackId, false);
             return;
         }
-        isBufferingMap_[trackId].store(true);
+        SetTrackIsBuffering(trackId, true);
         CheckAndReportBufferingStatus(EventType::BUFFERING_START);
     }
 }
@@ -4728,6 +4728,18 @@ void MediaDemuxer::ClearSampleQueue()
         auto &sampleQueue = sampleQueueMap_[subtitleTrackId_];
         sampleQueue->Clear();
     }
+}
+
+bool MediaDemuxer::GetTrackIsBuffering(int32_t trackId)
+{
+    std::lock_guard<std::mutex> lock(bufferingMapMutex_);
+    return isBufferingMap_[trackId];
+}
+
+void MediaDemuxer::SetTrackIsBuffering(int32_t trackId, bool isBuffering)
+{
+    std::lock_guard<std::mutex> lock(bufferingMapMutex_);
+    isBufferingMap_[trackId] = isBuffering;
 }
 } // namespace Media
 } // namespace OHOS
