@@ -54,6 +54,7 @@ public:
     Seekable GetSeekable() override;
     Status SeekTo(uint64_t offset) override;
     bool IsLocalFd() override;
+    bool IsCloudFd() override;
     Status GetDownloadInfo(DownloadInfo& downloadInfo) override;
 
     std::shared_ptr<Allocator> GetAllocator();
