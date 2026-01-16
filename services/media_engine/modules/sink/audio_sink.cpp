@@ -765,8 +765,8 @@ bool AudioSink::CopyAudioVividBufferData(AudioStandard::BufferDesc &bufferDesc, 
         buffer->memory_->GetAddr() + currentQueuedBufferOffset_, cacheBufferSize);
     FALSE_RETURN_V_MSG(ret == 0, false, "copy from cache buffer may fail.");
     bufferPts = (bufferPts == HST_TIME_NONE) ? buffer->pts_ : bufferPts;
-    if (isAudioPass_) {
-        bufferDesc.syncFramePts = bufferPts;
+    if (isAudioPass_ && bufferPts >= 0) {
+        bufferDesc.syncFramePts = static_cast<uint64_t>(bufferPts);
     }
     bufferDesc.dataLength += cacheBufferSize;
     size -= cacheBufferSize;
