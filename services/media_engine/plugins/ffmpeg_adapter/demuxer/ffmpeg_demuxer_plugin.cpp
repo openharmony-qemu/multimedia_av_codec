@@ -2265,6 +2265,10 @@ Status FFmpegDemuxerPlugin::ReadUntilKeyFrame(Plugins::AVPacketWrapperPtr pktWra
         if (fFlag & AV_PKT_FLAG_KEY) {
             return Status::OK;
         }
+        if (NeedCombineFrame(pktWrapper->GetStreamIndex()) &&
+            streamParsers_->IsSyncFrame(pktWrapper->GetStreamIndex(), pktWrapper->GetData(), pktWrapper->GetSize())) {
+            return Status::OK;
+        }
         ++readCnt;
         if (!(readCnt % RECHECK_TIMES)) {
             TimeRange timeRange;
