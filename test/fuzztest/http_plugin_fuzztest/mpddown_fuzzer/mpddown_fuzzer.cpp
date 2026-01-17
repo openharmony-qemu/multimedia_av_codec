@@ -413,7 +413,7 @@ bool DashUrlTypeNodeRun(const uint8_t *data, size_t size)
 bool DashGetAttr(const uint8_t *data, size_t size)
 {
     for (auto url : BASE_URLS) {
-        for (auto base : AttrBase) {
+        for (auto base : ATTR_BASE) {
             IDashMpdNode *node = IDashMpdNode::CreateNode(url);
             uint32_t uiAttrVal = GetData<uint32_t>();
             node->GetAttr(base, uiAttrVal);
