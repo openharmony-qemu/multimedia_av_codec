@@ -987,7 +987,6 @@ uint32_t HlsSegmentManager::SaveCacheBufferData(uint8_t* data, uint32_t len, boo
         canWrite_ = true;
     }
     if (isInterruptNeeded_.load() || isInterrupt_) {
-        MEDIA_LOG_I("HLS isInterruptNeeded true, return false, type: %{public}d", type_);
         MEDIA_LOG_W("HLS isInterruptNeeded %{public}d, isInterrupt: %{public}d, type: %{public}d",
             isInterruptNeeded_.load(), isInterrupt_, type_);
         return 0;
