@@ -1994,7 +1994,7 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
     Plugins::AVPacketWrapperPtr pktWrapper = nullptr;
     Status ret = Status::OK;
     bool extraType = (fileType_ == FileType::MPEGTS || FFmpegFormatHelper::IsMpeg4File(fileType_) ||
-        fileType_ == FileType::FLV);
+        fileType_ == FileType::FLV || fileType_ == FileType::RM);
     // Finish for extraType: get all support stream
     // Finish: read all video or init all parser
     while ((extraType && !AllSupportTrackFramesReady()) ||
@@ -2158,7 +2158,7 @@ void FFmpegDemuxerPlugin::SyncSeekThread()
 bool FFmpegDemuxerPlugin::IsUseFirstFrameDts(int trackIndex, int64_t seekTime)
 {
     if (seekTime == 0 &&
-        (fileType_ == FileType::MPEGTS || FFmpegFormatHelper::IsMpeg4File(fileType_)) &&
+        (fileType_ == FileType::MPEGTS || FFmpegFormatHelper::IsMpeg4File(fileType_) || fileType_ == FileType::RM) &&
         FFmpegFormatHelper::IsVideoType(*(formatContext_->streams[trackIndex])) &&
         VideoFirstFrameValid(trackIndex)) {
             return true;
