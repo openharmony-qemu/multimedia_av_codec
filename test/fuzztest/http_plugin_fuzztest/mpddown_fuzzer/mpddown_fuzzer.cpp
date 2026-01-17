@@ -52,8 +52,44 @@ constexpr int32_t MAX_COUNT = 2000;
 constexpr unsigned int INIT_WIDTH = 1280;
 constexpr unsigned int INIT_HEIGHT = 720;
 const std::string MpdBaseUrl[] = {
-    std::string(""),
-}
+    std::string("http://127.0.0.1:46666/test_dash/segment_base/index.mpd"),
+    std::string("http://127.0.0.1:46666/test_dash/segment_list/index.mpd"),
+    std::string("http://127.0.0.1:46666/test_dash/segment_template/index.mpd"),
+    std::string("http://127.0.0.1:46666/test_dash/segment_list/index_timeline.mpd"),
+    std::string("http://127.0.0.1:46666/test_dash/segment_template/index_adpt.mpd"),
+    std::string("http://127.0.0.1:46666/test_dash/segment_template/index_timeline.mpd"),
+    std::string("http://127.0.0.1:46666/test_dash/segment_base/index_period.mpd"),
+};
+const std::string BaseUrls[] = {
+    std::string("Period"),
+    std::string("AdaptationSet"),
+    std::string("ContentComponent"),
+    std::string("Representation"),
+    std::string("SegmentBase"),
+    std::string("MultipleSegmentBase"),
+    std::string("SegmentList"),
+    std::string("SegmentTemplate"),
+    std::string("Initialization"),
+    std::string("RepresentationIndex"),
+    std::string("BitstreamSwitching"),
+    std::string("SegmentTimeline"),
+    std::string("ContentProtection"),
+    std::string("Role"),
+    std::string("EssentialProperty"),
+    std::string("AudioChannelConfiguration"),
+    std::string("SegmentURL"),
+};
+ 
+const std::string AttrBase[] = {
+    std::string("id"),
+    std::string("timescale"),
+    std::string("duration"),
+    std::string("media"),
+    std::string("sourceURL"),
+    std::string("t"),
+    std::string("schemeIdUri"),
+};
+
 }
 
 static const std::string BASE_MPD = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n"
@@ -373,6 +409,60 @@ bool DashUrlTypeNodeRun(const uint8_t *data, size_t size)
     }
     return true;
 }
+
+bool DashGetAttr(const uint8_t *data, size_t size)
+{
+    for (auto url : BaseUrls) {
+        for (auto base : AttrBase) {
+            IDashMpdNode *node = IDashMpdNode::CreateNode(url);
+            uint32_t uiAttrVal = GetData<uint32_t>();
+            node->GetAttr(base, uiAttrVal);
+            node->GetAttr("test", uiAttrVal);
+            int32_t iAttrVal = GetData<int32_t>();
+            node->GetAttr(base, iAttrVal);
+            node->GetAttr("test", iAttrVal);
+            uint64_t ullAttrVal = GetData<uint64_t>();
+            node->GetAttr(base, ullAttrVal);
+            node->GetAttr("test", ullAttrVal);
+            double dAttrVal = GetData<double>();
+            node->GetAttr(base, dAttrVal);
+            node->GetAttr("test", dAttrVal);
+        }
+    }
+    std::string segTmpltStr = "$NumberABC";
+    std::string segTmpltIdentifier = "$Number";
+    std::string substitutionStr = "5";
+    int32_t ret = DashSubstituteTmpltStr(segTmpltStr, segTmpltIdentifier, substitutionStr);
+    segTmpltStr = "$Number%012";
+    segTmpltIdentifier = "$Number";
+    substitutionStr = "5";
+    ret = DashSubstituteTmpltStr(segTmpltStr, segTmpltIdentifier, substitutionStr);
+    DashAdptSetManager setManager;
+    DashVector<uint32_t> bandwidths;
+    setManager.GetBandwidths(bandwidths);
+    return true;
+}
+ 
+bool MpdParse(const uint8_t *data, size_t size)
+{
+    for (auto mpdUrl : MpdBaseUrl) {
+        std::shared_ptr<DashMpdDownloader> mpdMpddownload = std::make_shared<DashMpdDownloader>();
+        mpdMpddownload->Init();
+        auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                std::shared_ptr<DownloadRequest>& request) {};
+        mpdMpddownload->SetStatusCallback(statusCallback);
+        mpdMpddownload->SetInitResolution(INIT_WIDTH, INIT_HEIGHT);
+        mpdMpddownload->Open(mpdUrl);
+        int64_t seekTime = GetData<int64_t>();
+        std::shared_ptr<DashSegment> seg = nullptr;
+        int streamId = GetData<int>();
+        mpdMpddownload->SeekToTs(streamId, seekTime, seg);
+        mpdMpddownload->Close(false);
+        mpdMpddownload = nullptr;
+    }
+    return true;
+}
+
 }
 }
 }
@@ -388,6 +478,7 @@ extern "C" int LLVMFuzzerTestOneInput(uint8_t *data, size_t size)
     g_baseFuzzData = data;
     g_baseFuzzSize = size;
     g_baseFuzzPos = 0;
+    OHOS::Media::Plugins::DashGetAttr(data, size);
     OHOS::Media::Plugins::DashMediaFuzzerTest(data, size);
     OHOS::Media::Plugins::DashAdptRun(data, size);
     OHOS::Media::Plugins::DashDescriptorNodeRun(data, size);
@@ -398,6 +489,7 @@ extern "C" int LLVMFuzzerTestOneInput(uint8_t *data, size_t size)
     OHOS::Media::Plugins::DashRepresentationNodeRun(data, size);
     OHOS::Media::Plugins::DashUrlTypeNodeRun(data, size);
     OHOS::Media::Plugins::DashSegBaseNodeRun(data, size);
+    OHOS::Media::Plugins::MpdParse(data, size);
     if (!CloseServer()) {
         cout << "Close server error" << endl;
         return -1;
