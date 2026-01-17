@@ -266,7 +266,8 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
     if (clientError == 0 && serverError == 0) {
         return false;
     }
-    if ((GetPlayable() && !GetReadTimeOut(clientError == -1))) { // -1: NOT_READY
+    // -1: NOT_READY
+    if ((GetPlayable() && !GetReadTimeOut(clientError == -1)) && retryTimes <= RETRY_TIMES_TO_REPORT_ERROR) {
         return true;
     }
 
