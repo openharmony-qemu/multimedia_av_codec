@@ -31,6 +31,9 @@
 #include "http_server_demo.h"
 #include "http_server_mock.h"
 #include "test_template.h"
+#include "mpd_parser/i_dash_mpd_node.h"
+#include "dash_mpd_util.h"
+#include "dash_mpd_def.h"
 #define FUZZ_PROJECT_NAME "dashmediadownseektotime_fuzzer"
 using namespace std;
 using namespace OHOS;
@@ -46,6 +49,11 @@ namespace {
 static const std::string MPD_MULTI_AUDIO_SUB = "http://127.0.0.1:46666/test_dash/segment_base/index_audio_subtitle.mpd";
 constexpr int32_t WAIT_FOR_SIDX_TIME = 1000 * 1000;
 constexpr int32_t MAX_COUNT = 2000;
+constexpr unsigned int INIT_WIDTH = 1280;
+constexpr unsigned int INIT_HEIGHT = 720;
+const std::string MpdBaseUrl[] = {
+    std::string(""),
+}
 }
 
 static const std::string BASE_MPD = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n"
@@ -60,7 +68,7 @@ static const std::string BASE_MPD = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>
     "segmentAlignment=\"true\" subsegmentAlignment=\"true\" subsegmentStartsWithSAP=\"1\" startWithSAP=\"1\">\n"
     "            <Representation id=\"5\" bandwidth=\"7342976\" width=\"1920\" "
     "height=\"1080\" codecs=\"avc1.640028\">\n"
-    "               <BaseURL>http://127.0.0.1:47777/test_dash/segment_base/2_video_1_1920X1080_6000_0_0.mp4</BaseURL>\n"
+    "               <BaseURL>http://127.0.0.1:46666/test_dash/segment_base/2_video_1_1920X1080_6000_0_0.mp4</BaseURL>\n"
     "                <SegmentBase timescale=\"90000\" indexRangeExact=\"true\" "
     "indexRange=\"851-1166\">\n"
     "                    <Initialization range=\"0-850\"/>\n"
@@ -74,7 +82,7 @@ static const std::string BASE_MPD = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>
     "codecs=\"mp4a.40.5\">\n"
     "                <AudioChannelConfiguration "
     "schemeIdUri=\"urn:dolby:dash:audio_channel_configuration:2011\" value=\"0\"/>\n"
-    "                <BaseURL>http://127.0.0.1:47777/test_dash/segment_base/2_audio_6.mp4</BaseURL>\n"
+    "                <BaseURL>http://127.0.0.1:46666/test_dash/segment_base/2_audio_6.mp4</BaseURL>\n"
     "                <SegmentBase timescale=\"44100\" indexRangeExact=\"true\" "
     "indexRange=\"756-1167\">\n"
     "                    <Initialization range=\"0-755\"/>\n"

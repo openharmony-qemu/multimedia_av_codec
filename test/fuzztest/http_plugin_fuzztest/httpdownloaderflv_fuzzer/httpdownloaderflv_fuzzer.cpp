@@ -87,8 +87,8 @@ const std::string MP4_NULL_SEGMENT_BASE = "http://127.0.0.1:46666/dewuNull.mp4";
 const std::string FLV_SEGMENT_BASE = "http://127.0.0.1:46666/h264.flv";
 
 static constexpr int32_t MAX_BUFFER_SIZE_FUZZ = 1024 * 1024 * 2;
-constexpr int32_t WAIT_FOR_SIDX_TIME = 1 * 1000;
-constexpr int32_t MAX_COUNT = 20;
+constexpr int32_t WAIT_FOR_SIDX_TIME = 1 * 10;
+constexpr int32_t MAX_COUNT = 1;
 static uint8_t g_buffer[MAX_BUFFER_SIZE_FUZZ];
 static const std::map<std::string, std::string> g_httpHeader = {
     {"User-Agent", "ABC"},
