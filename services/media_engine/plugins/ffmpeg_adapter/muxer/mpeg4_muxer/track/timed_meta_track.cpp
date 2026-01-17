@@ -179,10 +179,10 @@ void TimedMetaTrack::DisposeDuration()
         elstBox->entryCount_ += 1;
         ElstBox::Data data0;
         data0.segmentDuration_ = static_cast<uint64_t>(delay);
-        data0.mediaTime_ = -1;
+        data0.mediaTime_ = static_cast<uint64_t>(-1);
         elstBox->data_.emplace_back(data0);
     } else {
-        data.segmentDuration_ += static_cast<uint64_t>(delay);
+        data.segmentDuration_ = static_cast<uint64_t>(duration + delay);
         int64_t mediaTime = ConvertTimeToMpeg4(startTimestampUs_, timeScale_, RoundingType::DOWN);
         data.mediaTime_ = -std::min(static_cast<int64_t>(0), mediaTime);
     }
