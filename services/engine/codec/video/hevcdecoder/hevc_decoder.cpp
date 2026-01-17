@@ -67,6 +67,7 @@ constexpr uint32_t DEFAULT_TRY_DECODE_TIME = 1;
 constexpr int32_t VIDEO_INSTANCE_SIZE = 64;
 constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 36864;
 constexpr int32_t VIDEO_BLOCKPERSEC_SIZE = 983040;
+constexpr uint32_t LOG_LOW_FREQUENCY = 100;
 #ifdef BUILD_ENG_VERSION
 constexpr uint32_t PATH_MAX_LEN = 128;
 constexpr char DUMP_PATH[] = "/data/misc/hevcdecoderdump";
@@ -198,7 +199,7 @@ int32_t HevcDecoder::Initialize()
 {
     AVCODEC_SYNC_TRACE;
     decName_ = "hevcdecoder_["+ std::to_string(instanceId_) + "]";
-    AVCODEC_LOGI("current codec name: %{public}s", decName_.c_str());
+    AVCODEC_LOGI("Num %{public}u current codec name: %{public}s", decInstanceID_, decName_.c_str());
     CHECK_AND_RETURN_RET_LOG(!codecName_.empty(), AVCS_ERR_INVALID_VAL, "Init codec failed:  empty name");
     std::string_view mime;
     for (uint32_t i = 0; i < SUPPORT_HEVC_DECODER_NUM; ++i) {
@@ -390,7 +391,7 @@ int32_t HevcDecoder::Start()
     isSendEos_ = false;
     sendTask_->Start();
     state_ = State::RUNNING;
-    AVCODEC_LOGI("%{public}s Start codec successful, state: Running", decName_.c_str());
+    AVCODEC_LOGI("Num %{public}u %{public}s Start codec successful, state: Running", decInstanceID_, decName_.c_str());
     return AVCS_ERR_OK;
 }
 
@@ -403,14 +404,13 @@ void HevcDecoder::InitBuffers()
         requestSurfaceBufferQue_->SetActive(true);
     }
     CHECK_AND_RETURN_LOG(buffers_[INDEX_INPUT].size() > 0, "Input buffers is null!");
-    if (buffers_[INDEX_INPUT].size() > 0) {
-        for (uint32_t i = 0; i < buffers_[INDEX_INPUT].size(); i++) {
-            buffers_[INDEX_INPUT][i]->owner_ = Owner::OWNED_BY_USER;
-            callback_->OnInputBufferAvailable(i, buffers_[INDEX_INPUT][i]->avBuffer);
-            AVCODEC_LOGI("%{public}s OnInputBufferAvailable frame index = %{public}u, owner = %{public}d",
-                         decName_.c_str(), i, buffers_[INDEX_INPUT][i]->owner_.load());
-        }
+    for (uint32_t i = 0; i < buffers_[INDEX_INPUT].size(); i++) {
+        buffers_[INDEX_INPUT][i]->owner_ = Owner::OWNED_BY_USER;
+        callback_->OnInputBufferAvailable(i, buffers_[INDEX_INPUT][i]->avBuffer);
+        AVCODEC_LOGI("%{public}s OnInputBufferAvailable frame index = %{public}u, owner = %{public}d",
+            decName_.c_str(), i, buffers_[INDEX_INPUT][i]->owner_.load());
     }
+
     CHECK_AND_RETURN_LOG(buffers_[INDEX_OUTPUT].size() > 0, "Output buffers is null!");
     InitHevcParams();
     if (sInfo_.surface == nullptr || state_ == State::CONFIGURED) {
@@ -543,7 +543,7 @@ int32_t HevcDecoder::Stop()
 
     ReleaseBuffers();
     state_ = State::CONFIGURED;
-    AVCODEC_LOGI("Stop codec successful, state: Configured");
+    AVCODEC_LOGI("Num %{public}u Stop codec successful, state: Configured", decInstanceID_);
     return AVCS_ERR_OK;
 }
 
@@ -566,14 +566,14 @@ int32_t HevcDecoder::Flush()
     }
     runLock.unlock();
     state_ = State::FLUSHED;
-    AVCODEC_LOGI("%{public}s Flush codec successful, state: Flushed", decName_.c_str());
+    AVCODEC_LOGI("Num %{public}u %{public}s Flush codec successful, state: Flushed", decInstanceID_, decName_.c_str());
     return AVCS_ERR_OK;
 }
 
 int32_t HevcDecoder::Reset()
 {
     AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGI("Reset codec called");
+    AVCODEC_LOGI("Num %{public}u Reset codec called", decInstanceID_);
     int32_t ret = Release();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Reset codec failed: cannot release codec");
     ret = Initialize();
@@ -615,7 +615,7 @@ int32_t HevcDecoder::Release()
     state_ = State::STOPPING;
     ReleaseResource();
     state_ = State::UNINITIALIZED;
-    AVCODEC_LOGI("Release codec successful, state: Uninitialized");
+    AVCODEC_LOGI("Num %{public}u Release codec successful, state: Uninitialized", decInstanceID_);
     return AVCS_ERR_OK;
 }
 
@@ -658,7 +658,7 @@ int32_t HevcDecoder::SetParameter(const Format &format)
         GetSurfaceCfgFromFmt(format);
         SetSurfaceParameter();
     }
-    AVCODEC_LOGI("Set parameter successful");
+    AVCODEC_LOGI("Num %{public}u Set parameter successful", decInstanceID_);
     return AVCS_ERR_OK;
 }
 
@@ -1092,8 +1092,10 @@ void HevcDecoder::ReleaseBuffers()
         StopRequestSurfaceBufferThread();
         renderAvailQue_->Clear();
         requestSurfaceBufferQue_->Clear();
-        std::unique_lock<std::mutex> mLock(renderBufferMapMutex_);
-        renderSurfaceBufferMap_.clear();
+        {
+            std::lock_guard<std::mutex> mLock(renderBufferMapMutex_);
+            renderSurfaceBufferMap_.clear();
+        }
         for (uint32_t i = 0; i < buffers_[INDEX_OUTPUT].size(); i++) {
             std::shared_ptr<HBuffer> outputBuffer = buffers_[INDEX_OUTPUT][i];
             if (outputBuffer->owner_ == Owner::OWNED_BY_CODEC) {
@@ -1526,6 +1528,7 @@ void HevcDecoder::RequestBufferFromConsumer()
     }
     buffers_[INDEX_OUTPUT][curIndex]->owner_ = Owner::OWNED_BY_CODEC;
     codecAvailQue_->Push(curIndex);
+    std::lock_guard<std::mutex> mLock(renderBufferMapMutex_);
     if (renderSurfaceBufferMap_.count(curIndex)) {
         renderSurfaceBufferMap_.erase(curIndex);
     }
@@ -1573,6 +1576,8 @@ int32_t HevcDecoder::RegisterListenerToSurface(const sptr<Surface> &surface)
 int32_t HevcDecoder::ReleaseOutputBuffer(uint32_t index)
 {
     AVCODEC_SYNC_TRACE;
+    AVCODEC_LOGI_LIMIT(LOG_LOW_FREQUENCY, "Num %{public}u release output buffer with index=%{public}u",
+        decInstanceID_, index);
     std::unique_lock<std::mutex> oLock(outputMutex_);
     CHECK_AND_RETURN_RET_LOG(index < buffers_[INDEX_OUTPUT].size(), AVCS_ERR_INVALID_VAL,
                              "Failed to release output buffer: invalid index");
@@ -1645,7 +1650,10 @@ int32_t HevcDecoder::FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surface
         AVCODEC_LOGW("Failed to update surface memory: %{public}d", res);
         return AVCS_ERR_UNKNOWN;
     }
-    renderSurfaceBufferMap_[index] = std::make_pair(surfaceBuffer, flushConfig);
+    {
+        std::lock_guard<std::mutex> mLock(renderBufferMapMutex_);
+        renderSurfaceBufferMap_[index] = std::make_pair(surfaceBuffer, flushConfig);
+    }
     renderAvailQue_->Push(index);
     return AVCS_ERR_OK;
 }
@@ -1655,6 +1663,8 @@ int32_t HevcDecoder::RenderOutputBuffer(uint32_t index)
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNSUPPORT,
                              "Render output buffer failed, surface is nullptr!");
+    AVCODEC_LOGI_LIMIT(LOG_LOW_FREQUENCY, "Num %{public}u render output buffer with index=%{public}u",
+        decInstanceID_, index);
     std::unique_lock<std::mutex> oLock(outputMutex_);
     CHECK_AND_RETURN_RET_LOG(index < buffers_[INDEX_OUTPUT].size(), AVCS_ERR_INVALID_VAL,
                              "Failed to render output buffer: invalid index");
@@ -1669,7 +1679,6 @@ int32_t HevcDecoder::RenderOutputBuffer(uint32_t index)
             AVCODEC_LOGD("Flush surface memory(index=%{public}u) successful.", index);
         }
         frameBuffer->owner_ = Owner::OWNED_BY_SURFACE;
-        AVCODEC_LOGD("render output buffer with index, index=%{public}u", index);
         return AVCS_ERR_OK;
     } else {
         AVCODEC_LOGE("Failed to render output buffer with bad index, index=%{public}u", index);
@@ -1737,6 +1746,7 @@ int32_t HevcDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface)
         }
         sptr<SurfaceBuffer> surfaceBuffer = nullptr;
         if (buffers_[INDEX_OUTPUT][index]->owner_ == Owner::OWNED_BY_SURFACE) {
+            std::lock_guard<std::mutex> mLock(renderBufferMapMutex_);
             if (renderSurfaceBufferMap_.count(index)) {
                 surfaceBuffer = renderSurfaceBufferMap_[index].first;
                 ownedBySurfaceBufferIndex.push_back(index);
@@ -1768,9 +1778,11 @@ int32_t HevcDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface)
 
 int32_t HevcDecoder::RenderNewSurfaceWithOldBuffer(const sptr<Surface> &newSurface, uint32_t index)
 {
-    std::shared_ptr<FSurfaceMemory> surfaceMemory = buffers_[INDEX_OUTPUT][index]->sMemory;
+    std::unique_lock<std::mutex> mLock(renderBufferMapMutex_);
     sptr<SurfaceBuffer> surfaceBuffer = renderSurfaceBufferMap_[index].first;
     OHOS::BufferFlushConfig flushConfig = renderSurfaceBufferMap_[index].second;
+    mLock.unlock();
+
     if (sInfo_.scalingMode) {
         newSurface->SetScalingMode(surfaceBuffer->GetSeqNum(), sInfo_.scalingMode.value());
     }
@@ -1818,7 +1830,7 @@ int32_t HevcDecoder::SetOutputSurface(sptr<Surface> surface)
     CHECK_AND_RETURN_RET_LOG(ret == GSERROR_OK, ret,
                              "surface(%{public}" PRIu64 ") register listener to surface failed, GSError=%{public}d",
                              sInfo_.surface->GetUniqueId(), ret);
-    AVCODEC_LOGI("Set surface(%{public}" PRIu64 ") success.", surfaceId);
+    AVCODEC_LOGI("Num %{public}u Set surface(%{public}" PRIu64 ") success.", decInstanceID_, surfaceId);
     return AVCS_ERR_OK;
 }
 
@@ -1911,7 +1923,7 @@ int32_t HevcDecoder::NotifyMemoryRecycle()
     CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNKNOWN, "Only surface mode support!");
     CHECK_AND_RETURN_RET_LOGD(state_ == State::RUNNING || state_ == State::FLUSHED || state_ == State::EOS,
                               AVCS_ERR_INVALID_STATE, "Current state can't recycle memory!");
-    AVCODEC_LOGI("Begin to freeze this codec");
+    AVCODEC_LOGI("Num %{public}u Begin to freeze this codec", decInstanceID_);
     State currentState = state_;
     state_ = State::FREEZING;
     int32_t errCode = FreezeBuffers(currentState);
@@ -1923,7 +1935,7 @@ int32_t HevcDecoder::NotifyMemoryRecycle()
 int32_t HevcDecoder::NotifyMemoryWriteBack()
 {
     CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNKNOWN, "Only surface mode support!");
-    AVCODEC_LOGI("Begin to active this codec");
+    AVCODEC_LOGI("Num %{public}u Begin to active this codec", decInstanceID_);
     int32_t errCode = ActiveBuffers();
     CHECK_AND_RETURN_RET_LOG(errCode == AVCS_ERR_OK, errCode, "HevcCodec active buffers failed!");
     state_ = State::RUNNING;
