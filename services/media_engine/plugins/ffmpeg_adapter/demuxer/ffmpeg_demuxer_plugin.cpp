@@ -184,7 +184,8 @@ static const std::vector<FileType> g_fileSkipGetMinTsPktInfo = {
     FileType::MKV,
     FileType::WMV,
     FileType::WMA,
-    FileType::MPEGTS
+    FileType::MPEGTS,
+    FileType::MPEGPS
 };
 
 bool HaveValidParser(const AVCodecID codecId)
@@ -2989,11 +2990,13 @@ Status FFmpegDemuxerPlugin::SeekToStartInternal()
     int ffRet = -1;
     SyncSeekThread();
     if (IsSkipGetMinTsPktInfo()) {
-        av_dict_set_int(&formatContext_->metadata, "seekToStart", 1, 0);
-        ffRet = AVSeekFrameLock(SEEK_TRACK_DEFAULT, seekTs, AVSEEK_FLAG_ANY);
-        av_dict_set_int(&formatContext_->metadata, "seekToStart", 0, 0);
-    } else if (fileType_ == FileType::MPEGPS) {
-        ffRet = AVSeekFrameLock(SEEK_TRACK_DEFAULT, POS_0, AVSEEK_FLAG_BYTE);
+        if (fileType_ == FileType::MPEGPS || fileType_ == FileType::MPEGTS) {
+            ffRet = AVSeekFrameLock(SEEK_TRACK_DEFAULT, POS_0, AVSEEK_FLAG_BYTE);
+        } else {
+            av_dict_set_int(&formatContext_->metadata, "seekToStart", 1, 0);
+            ffRet = AVSeekFrameLock(SEEK_TRACK_DEFAULT, seekTs, AVSEEK_FLAG_ANY);
+            av_dict_set_int(&formatContext_->metadata, "seekToStart", 0, 0);
+        }
     } else if (minTsPktInfo_.isInit) {
         seekTs = (static_cast<uint32_t>(pluginImpl_->flags) & AVFMT_SEEK_TO_PTS) &&
             !FFmpegFormatHelper::IsMpeg4File(fileType_) ? minTsPktInfo_.minPts : minTsPktInfo_.minDts;
@@ -3001,6 +3004,7 @@ Status FFmpegDemuxerPlugin::SeekToStartInternal()
         MEDIA_LOG_I("av_seek_frame stream_index " PUBLIC_LOG_U32 " seekTs " PUBLIC_LOG_D64 " ffRet " PUBLIC_LOG_D32,
             minTsPktInfo_.streamIndex, seekTs, ffRet);
     }
+    ResetAfterSeek(AV_NOPTS_VALUE, SeekMode::SEEK_NEXT_SYNC);
     lock.unlock();
     if (ffRet < 0) {
         MEDIA_LOG_I("Use default seekto.");
@@ -3023,7 +3027,6 @@ Status FFmpegDemuxerPlugin::SeekToStart()
     }
     auto ret = SeekToStartInternal();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SeekToStartInternal failed.");
-    ResetAfterSeek(AV_NOPTS_VALUE, SeekMode::SEEK_NEXT_SYNC);
     HiviewDFX::XCollie::GetInstance().CancelTimer(id);
     return Status::OK;
 }
