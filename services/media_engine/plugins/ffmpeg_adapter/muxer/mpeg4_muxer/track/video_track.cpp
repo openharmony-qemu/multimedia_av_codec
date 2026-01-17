@@ -440,13 +440,13 @@ void VideoTrack::DisposeDuration()
         elstBox->entryCount_ += 1;
         ElstBox::Data data0;
         data0.segmentDuration_ = static_cast<uint64_t>(delay);
-        data0.mediaTime_ = -1;
+        data0.mediaTime_ = static_cast<uint64_t>(-1);
         elstBox->data_.emplace_back(data0);
         delay_ -= ConvertTimeToMpeg4(startTimestampUs_, timeScale_);
     } else {
-        data.segmentDuration_ += static_cast<uint64_t>(delay);
+        data.segmentDuration_ = static_cast<uint64_t>(duration + delay);
     }
-    data.mediaTime_ = -std::min(static_cast<int64_t>(0), delay_);
+    data.mediaTime_ = static_cast<uint64_t>(-std::min(static_cast<int64_t>(0), delay_));
     elstBox->data_.emplace_back(data);
 }
 
