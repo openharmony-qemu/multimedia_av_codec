@@ -28,6 +28,8 @@ public:
     static SurfaceTools &GetInstance();
     bool RegisterReleaseListener(int32_t instanceId, sptr<Surface> surface, OnReleaseFunc callback,
         OHSurfaceSource type = OH_SURFACE_SOURCE_VIDEO);
+    bool RegisterReleaseListener(int32_t instanceId, sptr<Surface> surface, OnReleaseFuncWithSequenceAndFence callback,
+        OHSurfaceSource type = OH_SURFACE_SOURCE_VIDEO);
     void CleanCache(int32_t instanceId, sptr<Surface> surface, bool cleanAll);
     void ReleaseSurface(int32_t instanceId, sptr<Surface> surface, bool cleanAll, bool abadon = false);
 
