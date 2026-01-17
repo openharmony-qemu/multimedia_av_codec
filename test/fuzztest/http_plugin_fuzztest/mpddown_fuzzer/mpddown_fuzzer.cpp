@@ -51,7 +51,7 @@ constexpr int32_t WAIT_FOR_SIDX_TIME = 1000 * 1000;
 constexpr int32_t MAX_COUNT = 2000;
 constexpr unsigned int INIT_WIDTH = 1280;
 constexpr unsigned int INIT_HEIGHT = 720;
-const std::string MpdBaseUrl[] = {
+const std::string MPD_BASE_URLS[] = {
     std::string("http://127.0.0.1:46666/test_dash/segment_base/index.mpd"),
     std::string("http://127.0.0.1:46666/test_dash/segment_list/index.mpd"),
     std::string("http://127.0.0.1:46666/test_dash/segment_template/index.mpd"),
@@ -60,7 +60,7 @@ const std::string MpdBaseUrl[] = {
     std::string("http://127.0.0.1:46666/test_dash/segment_template/index_timeline.mpd"),
     std::string("http://127.0.0.1:46666/test_dash/segment_base/index_period.mpd"),
 };
-const std::string BaseUrls[] = {
+const std::string BASE_URLS[] = {
     std::string("Period"),
     std::string("AdaptationSet"),
     std::string("ContentComponent"),
@@ -80,7 +80,7 @@ const std::string BaseUrls[] = {
     std::string("SegmentURL"),
 };
  
-const std::string AttrBase[] = {
+const std::string ATTR_BASE[] = {
     std::string("id"),
     std::string("timescale"),
     std::string("duration"),
@@ -412,7 +412,7 @@ bool DashUrlTypeNodeRun(const uint8_t *data, size_t size)
 
 bool DashGetAttr(const uint8_t *data, size_t size)
 {
-    for (auto url : BaseUrls) {
+    for (auto url : BASE_URLS) {
         for (auto base : AttrBase) {
             IDashMpdNode *node = IDashMpdNode::CreateNode(url);
             uint32_t uiAttrVal = GetData<uint32_t>();
@@ -445,7 +445,7 @@ bool DashGetAttr(const uint8_t *data, size_t size)
  
 bool MpdParse(const uint8_t *data, size_t size)
 {
-    for (auto mpdUrl : MpdBaseUrl) {
+    for (auto mpdUrl : MPD_BASE_URLS) {
         std::shared_ptr<DashMpdDownloader> mpdMpddownload = std::make_shared<DashMpdDownloader>();
         mpdMpddownload->Init();
         auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
