@@ -4702,6 +4702,10 @@ void MediaDemuxer::CachePressuredCallback(int32_t trackId, uint32_t cachedBytes)
     if (NeedDroped(trackId) || hasDropedMap_[trackId].load()) {
         hasDropedMap_[trackId].store(true);
         if (!IsFd()) {
+            std::unique_lock<std::mutex> stopLock(stopMutex_);
+            if (isStopped_) {
+                return;
+            }
             AutoLock lock(mapMutex_);
             if (!taskMap_[trackId]->IsTaskRunning()) {
                 taskMap_[trackId]->Strat();
