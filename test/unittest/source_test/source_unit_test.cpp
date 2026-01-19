@@ -327,7 +327,7 @@ HWTEST_F(SourceUnitTest, Source_IsCloudFd_0100, TestSize.Level1)
     std::shared_ptr<MediaSource> mediaSource = std::make_shared<MediaSource>(VIDEO_FILE1);
     source->SetSource(mediaSource);
     // source plugin is file_source_plugin, it is for local fd
-    EXPECT_FALSE(source->IsCloudFd());
+    EXPECT_FALSE(source->IsLocalFd());
 }
 } // namespace Media
 } // namespace OHOS

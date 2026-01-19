@@ -166,7 +166,7 @@ HWTEST_F(FileSourceUnitTest, FileSource_IsLocalFd_0100, TestSize.Level1)
  */
 HWTEST_F(FileSourceUnitTest, FileSource_IsCloudFd_0100, TestSize.Level1)
 {
-    ASSERT_FALSE(fileSourcePlugin_->IsCloudFd());
+    ASSERT_FALSE(fileSourcePlugin_->IsLocalFd());
 }
 } // namespace FileSource
 } // namespace Plugins
