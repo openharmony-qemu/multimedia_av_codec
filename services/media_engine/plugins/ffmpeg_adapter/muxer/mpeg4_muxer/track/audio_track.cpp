@@ -213,8 +213,8 @@ void AudioTrack::DisposeBitrate()
 {
     FALSE_RETURN_MSG(stsz_ != nullptr, "stsz box is empty");
     if (isSameSize_) {
+        stsz_->sampleSize_ = stsz_->samples_.size() > 0 ? stsz_->samples_[0] : 0;
         stsz_->samples_.clear();
-        stsz_->sampleSize_ = 0;
     }
     if (durationUs_ > 0 && !codingType_.empty()) {
         int64_t bitRate = static_cast<int64_t>(allSampleSize_) *
