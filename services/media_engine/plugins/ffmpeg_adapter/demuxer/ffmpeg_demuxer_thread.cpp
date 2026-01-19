@@ -201,7 +201,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         }
         return ret;
     }
-
+    SupplementFirstFrameIfPending(trackId, samplePacket);
     ret = ConvertAVPacketToSampleMemory(sample, samplePacket);
     DumpPacketInfo(trackId, Stage::FIRST_READ);
     if (ret == Status::OK) {

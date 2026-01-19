@@ -1962,6 +1962,85 @@ bool FFmpegDemuxerPlugin::AllVideoFirstFramesReady()
     return true;
 }
 
+uint32_t FFmpegDemuxerPlugin::CalculateRelevantTrackCount() const
+{
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, 0, "AVFormatContext is nullptr");
+    uint32_t count = 0;
+    for (uint32_t i = 0; i < formatContext_->nb_streams; ++i) {
+        AVStream *stream = formatContext_->streams[i];
+        if (stream == nullptr || stream->codecpar == nullptr) {
+            continue;
+        }
+        if (FFmpegFormatHelper::IsVideoType(*stream) ||
+            FFmpegFormatHelper::IsAudioType(*stream)) {
+            if (count >= UINT32_MAX) {
+                MEDIA_LOG_W("Track count overflow, return max value");
+                return UINT32_MAX;
+            }
+            ++count;
+        }
+    }
+    return count;
+}
+
+uint32_t FFmpegDemuxerPlugin::CalculateSoftLimit(uint32_t trackCount) const
+{
+    if (trackCount > UINT32_MAX / SOFT_LIMIT_MULTIPLIER) {
+        MEDIA_LOG_W("Soft limit calculation overflow, trackCount: " PUBLIC_LOG_U32
+            ", multiplier: " PUBLIC_LOG_U32, trackCount, SOFT_LIMIT_MULTIPLIER);
+        return UINT32_MAX;
+    }
+    uint32_t base = trackCount * SOFT_LIMIT_MULTIPLIER;
+    if (base < SOFT_LIMIT_MIN) {
+        base = SOFT_LIMIT_MIN;
+    }
+    return base;
+}
+
+uint32_t FFmpegDemuxerPlugin::CalculateHardLimit(uint32_t trackCount) const
+{
+    if (trackCount > UINT32_MAX / HARD_LIMIT_MULTIPLIER) {
+        MEDIA_LOG_W("Hard limit calculation overflow, trackCount: " PUBLIC_LOG_U32
+            ", multiplier: " PUBLIC_LOG_U32, trackCount, HARD_LIMIT_MULTIPLIER);
+        return UINT32_MAX;
+    }
+    uint32_t base = trackCount * HARD_LIMIT_MULTIPLIER;
+    if (base < HARD_LIMIT_MIN) {
+        base = HARD_LIMIT_MIN;
+    }
+    return base;
+}
+
+bool FFmpegDemuxerPlugin::HasVideoTrack() const
+{
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, false, "AVFormatContext is nullptr");
+    for (uint32_t i = 0; i < formatContext_->nb_streams; ++i) {
+        AVStream *stream = formatContext_->streams[i];
+        if (stream == nullptr || stream->codecpar == nullptr) {
+            continue;
+        }
+        if (FFmpegFormatHelper::IsVideoType(*stream)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool FFmpegDemuxerPlugin::HasAudioTrack() const
+{
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, false, "AVFormatContext is nullptr");
+    for (uint32_t i = 0; i < formatContext_->nb_streams; ++i) {
+        AVStream *stream = formatContext_->streams[i];
+        if (stream == nullptr || stream->codecpar == nullptr) {
+            continue;
+        }
+        if (FFmpegFormatHelper::IsAudioType(*stream)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 /*
 return true:
   unsupport track
@@ -1974,7 +2053,7 @@ return false:
   support track + without key FLAG + not hevc track
   support track + without key FLAG + hevc track + not ts/ps + IsHevcSyncFrame fail
 */
-static bool IsSyncFrame(AVStream *stream, AVPacket *pkt, std::shared_ptr<AVFormatContext> formatContext)
+static bool IsSyncFrameStatic(AVStream *stream, AVPacket *pkt, std::shared_ptr<AVFormatContext> formatContext)
 {
     FALSE_RETURN_V_MSG_E(stream != nullptr && stream->codecpar != nullptr, false, "stream is nullptr");
     FALSE_RETURN_V_MSG_E(pkt != nullptr, false, "pkt is nullptr");
@@ -1987,25 +2066,49 @@ static bool IsSyncFrame(AVStream *stream, AVPacket *pkt, std::shared_ptr<AVForma
                 (!IsSyncFrameCheckNeeded(formatContext) || IsHevcSyncFrame(pkt->data, pkt->size))));
 }
 
+bool FFmpegDemuxerPlugin::IsSyncFrame(AVStream *stream, AVPacket *pkt) const
+{
+    return IsSyncFrameStatic(stream, pkt, formatContext_);
+}
+
 Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
 {
-    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
-    FALSE_RETURN_V_MSG_E(streamParsers_ != nullptr, Status::ERROR_NULL_POINTER, "StreamParser is nullptr");
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
+        "AVFormatContext is nullptr");
+    FALSE_RETURN_V_MSG_E(streamParsers_ != nullptr, Status::ERROR_NULL_POINTER,
+        "StreamParser is nullptr");
+    uint64_t fileSize = 0;
+    bool useLimitedProbe = false;
+    if (seekable_ == Seekable::SEEKABLE && ioContext_.dataSource != nullptr) {
+        Status ret = ioContext_.dataSource->GetSize(fileSize);
+        if (ret == Status::OK && fileSize >= FILE_SIZE_THRESHOLD) {
+            useLimitedProbe = true;
+            MEDIA_LOG_I("Use limited pre-read, fileSize: " PUBLIC_LOG_U64, fileSize);
+        }
+    }
+    if (!useLimitedProbe) {
+        return ParseVideoFirstFramesFull();
+    }
+    return ParseVideoFirstFramesLimited();
+}
+
+Status FFmpegDemuxerPlugin::ParseVideoFirstFramesFull()
+{
     Plugins::AVPacketWrapperPtr pktWrapper = nullptr;
     Status ret = Status::OK;
-    bool extraType = (fileType_ == FileType::MPEGTS || FFmpegFormatHelper::IsMpeg4File(fileType_) ||
-        fileType_ == FileType::FLV || fileType_ == FileType::RM);
-    // Finish for extraType: get all support stream
-    // Finish: read all video or init all parser
+    bool extraType = (fileType_ == FileType::MPEGTS ||
+        FFmpegFormatHelper::IsMpeg4File(fileType_) || fileType_ == FileType::FLV);
     while ((extraType && !AllSupportTrackFramesReady()) ||
-           (!extraType && !AllVideoFirstFramesReady() && !streamParsers_->AllParserInited())) {
-        FALSE_RETURN_V_MSG_E(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE, "ParseVideoFirstFrames interrupt");
+           (!extraType && !AllVideoFirstFramesReady() &&
+            !streamParsers_->AllParserInited())) {
+        FALSE_RETURN_V_MSG_E(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE,
+            "ParseVideoFirstFrames interrupt");
         if (pktWrapper == nullptr) {
             pktWrapper = std::make_shared<Plugins::AVPacketWrapper>();
             FALSE_RETURN_V_MSG_E(pktWrapper != nullptr && pktWrapper->GetAVPacket() != nullptr,
                 Status::ERROR_NULL_POINTER, "Create AVPacketWrapper failed");
         }
-        int ffmpegRet = AVReadFrameLimit(pktWrapper->GetAVPacket());
+        int32_t ffmpegRet = AVReadFrameLimit(pktWrapper->GetAVPacket());
         if (ffmpegRet < 0) {
             MEDIA_LOG_E("Call av_read_frame failed, ret:" PUBLIC_LOG_D32, ffmpegRet);
             pktWrapper.reset();
@@ -2013,18 +2116,20 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
         }
         int32_t trackId = pktWrapper->GetStreamIndex();
         auto stream = formatContext_->streams[trackId];
-        FALSE_RETURN_V_MSG_E(stream != nullptr && stream->codecpar != nullptr, Status::ERROR_NULL_POINTER,
-            "Stream " PUBLIC_LOG_D32 " is invalid", trackId);
+        FALSE_RETURN_V_MSG_E(stream != nullptr && stream->codecpar != nullptr,
+            Status::ERROR_NULL_POINTER, "Stream " PUBLIC_LOG_D32 " is invalid", trackId);
         InitMinTsPacketInfo(pktWrapper->GetAVPacket());
         ret = AddPacketToCacheQueue(pktWrapper);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add to cache failed");
         bool isVvc = (stream->codecpar->codec_id == AV_CODEC_ID_VVC);
-        if (!isVvc && (TrackIsChecked(trackId) || !IsSyncFrame(stream, pktWrapper->GetAVPacket(), formatContext_))) {
+        if (!isVvc && (TrackIsChecked(trackId) ||
+            !IsSyncFrame(stream, pktWrapper->GetAVPacket()))) {
             pktWrapper = nullptr;
             continue;
         }
         checkedTrackIds_.push_back(trackId);
-        if (streamParsers_->ParserIsCreated(trackId) && !streamParsers_->ParserIsInited(trackId)) {
+        if (streamParsers_->ParserIsCreated(trackId) &&
+            !streamParsers_->ParserIsInited(trackId)) {
             ret = SetVideoFirstFrame(pktWrapper);
         } else if (extraType && FFmpegFormatHelper::IsVideoType(*stream)) {
             ret = SetVideoFirstFrame(pktWrapper, false);
@@ -2034,6 +2139,180 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
             return ret;
         }
         pktWrapper = nullptr;
+    }
+    return ret;
+}
+
+void FFmpegDemuxerPlugin::MarkPendingTracksForFirstFrame()
+{
+    for (uint32_t i = 0; i < formatContext_->nb_streams; ++i) {
+        if (!TrackIsChecked(i)) {
+            firstFramePendingTracks_.insert(i);
+        }
+    }
+}
+
+Status FFmpegDemuxerPlugin::ReadAndValidateLimitedPacket(Plugins::AVPacketWrapperPtr& pktWrapper)
+{
+    if (pktWrapper == nullptr) {
+        pktWrapper = std::make_shared<Plugins::AVPacketWrapper>();
+        FALSE_RETURN_V_MSG_E(pktWrapper != nullptr &&
+            pktWrapper->GetAVPacket() != nullptr, Status::ERROR_NULL_POINTER,
+            "Create AVPacketWrapper failed");
+    }
+    int32_t ffmpegRet = AVReadFrameLimit(pktWrapper->GetAVPacket());
+    if (ffmpegRet < 0) {
+        MEDIA_LOG_E("Call av_read_frame failed, ret:" PUBLIC_LOG_D32, ffmpegRet);
+        pktWrapper.reset();
+        return Status::ERROR_WRONG_STATE;
+    }
+    if (initReadFrameCount_ >= UINT32_MAX) {
+        MEDIA_LOG_W("initReadFrameCount_ overflow, stop counting");
+        return Status::ERROR_WRONG_STATE;
+    }
+    ++initReadFrameCount_;
+    int32_t trackId = pktWrapper->GetStreamIndex();
+    auto stream = formatContext_->streams[trackId];
+    FALSE_RETURN_V_MSG_E(stream != nullptr && stream->codecpar != nullptr,
+        Status::ERROR_NULL_POINTER, "Stream " PUBLIC_LOG_D32 " is invalid", trackId);
+    InitMinTsPacketInfo(pktWrapper->GetAVPacket());
+    Status ret = AddPacketToCacheQueue(pktWrapper);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add to cache failed");
+    bool isVvc = (stream->codecpar->codec_id == AV_CODEC_ID_VVC);
+    bool isSync = IsSyncFrame(stream, pktWrapper->GetAVPacket());
+    if (!isVvc && (TrackIsChecked(trackId) || !isSync)) {
+        pktWrapper = nullptr;
+        return Status::OK;
+    }
+    return Status::OK;
+}
+
+Status FFmpegDemuxerPlugin::ProcessLimitedPacketFirstFrame(Plugins::AVPacketWrapperPtr& pktWrapper,
+    bool extraType, int32_t trackId, AVStream *stream)
+{
+    checkedTrackIds_.push_back(trackId);
+    if (FFmpegFormatHelper::IsVideoType(*stream)) {
+        hasVideoFirstFrame_ = true;
+    } else if (FFmpegFormatHelper::IsAudioType(*stream)) {
+        hasAudioFirstFrame_ = true;
+    }
+    if (streamParsers_->ParserIsCreated(trackId) && !streamParsers_->ParserIsInited(trackId)) {
+        Status ret = SetVideoFirstFrame(pktWrapper);
+        if (ret != Status::OK) {
+            MEDIA_LOG_E("Set first frame failed, track " PUBLIC_LOG_D32, trackId);
+            return ret;
+        }
+    } else if (extraType && FFmpegFormatHelper::IsVideoType(*stream)) {
+        Status ret = SetVideoFirstFrame(pktWrapper, false);
+        if (ret != Status::OK) {
+            MEDIA_LOG_E("Set first frame failed, track " PUBLIC_LOG_D32, trackId);
+            return ret;
+        }
+    }
+    return Status::OK;
+}
+
+bool FFmpegDemuxerPlugin::CheckLimitedProbeExitConditions(bool hasVideoTrack, bool hasAudioTrack,
+    uint32_t softLimit, uint32_t hardLimit)
+{
+    bool videoReady = !hasVideoTrack || hasVideoFirstFrame_;
+    bool audioReady = !hasAudioTrack || hasAudioFirstFrame_;
+    if (initReadFrameCount_ > softLimit && videoReady && audioReady) {
+        MEDIA_LOG_I("Early exit ParseVideoFirstFramesLimited at frame "
+            PUBLIC_LOG_U32, initReadFrameCount_);
+        return true;
+    }
+    if (initReadFrameCount_ > hardLimit) {
+        MEDIA_LOG_W("Hard limit reached " PUBLIC_LOG_U32
+            ", some tracks may not have first frame", hardLimit);
+        MarkPendingTracksForFirstFrame();
+        return true;
+    }
+    return false;
+}
+
+void FFmpegDemuxerPlugin::SupplementFirstFrameIfPending(uint32_t trackId,
+    const std::shared_ptr<SamplePacket>& samplePacket)
+{
+    if (firstFramePendingTracks_.count(trackId) > 0 && !samplePacket->pkts.empty()) {
+        Plugins::AVPacketWrapperPtr pktWrapper = samplePacket->pkts[0];
+        AVPacket *pkt = (pktWrapper != nullptr) ? pktWrapper->GetAVPacket() : nullptr;
+        AVStream *stream = formatContext_->streams[trackId];
+        if (pkt != nullptr && stream != nullptr && IsSyncFrame(stream, pkt)) {
+            Status firstRet = SetVideoFirstFrame(pktWrapper);
+            if (firstRet == Status::OK) {
+                checkedTrackIds_.push_back(trackId);
+                firstFramePendingTracks_.erase(trackId);
+                MEDIA_LOG_I("Supplement first frame for track " PUBLIC_LOG_D32, trackId);
+            }
+        }
+    }
+}
+
+Status FFmpegDemuxerPlugin::WaitForCacheReady(uint32_t trackId)
+{
+    if (NeedCombineFrame(trackId) && cacheQueue_.GetCacheSize(trackId) == 1) {
+        Status ret = ReadPacketToCacheQueue(trackId);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read packet failed");
+    }
+    while (!cacheQueue_.HasCache(trackId)) {
+        FALSE_RETURN_V_MSG_E(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE,
+            " ReadSample interrupt");
+        Status ret = ReadPacketToCacheQueue(trackId);
+        bool frameReady = FrameReady(ret);
+        FALSE_RETURN_V_MSG_E(frameReady, ret, "Read from ffmpeg failed");
+    }
+    return Status::OK;
+}
+
+Status FFmpegDemuxerPlugin::ParseVideoFirstFramesLimited()
+{
+    Plugins::AVPacketWrapperPtr pktWrapper = nullptr;
+    Status ret = Status::OK;
+    bool extraType = (fileType_ == FileType::MPEGTS ||
+        FFmpegFormatHelper::IsMpeg4File(fileType_) || fileType_ == FileType::FLV);
+    uint32_t trackCount = CalculateRelevantTrackCount();
+    uint32_t softLimit = CalculateSoftLimit(trackCount);
+    uint32_t hardLimit = CalculateHardLimit(trackCount);
+    bool hasVideoTrack = HasVideoTrack();
+    bool hasAudioTrack = HasAudioTrack();
+    initReadFrameCount_ = 0;
+    hasVideoFirstFrame_ = false;
+    hasAudioFirstFrame_ = false;
+    MEDIA_LOG_I("trackCount: " PUBLIC_LOG_U32
+        ", softLimit: " PUBLIC_LOG_U32
+        ", hardLimit: " PUBLIC_LOG_U32
+        ", hasVideoTrack: " PUBLIC_LOG_D32
+        ", hasAudioTrack: " PUBLIC_LOG_D32,
+        trackCount, softLimit, hardLimit, hasVideoTrack, hasAudioTrack);
+    while ((extraType && !AllSupportTrackFramesReady()) ||
+           (!extraType && !AllVideoFirstFramesReady() &&
+            !streamParsers_->AllParserInited())) {
+        FALSE_RETURN_V_MSG_E(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE,
+            "ParseVideoFirstFrames interrupt");
+        ret = ReadAndValidateLimitedPacket(pktWrapper);
+        if (ret == Status::ERROR_WRONG_STATE) {
+            break;
+        }
+        if (ret != Status::OK) {
+            continue;
+        }
+        if (pktWrapper == nullptr || pktWrapper->GetAVPacket() == nullptr) {
+            continue;
+        }
+        int32_t trackId = pktWrapper->GetStreamIndex();
+        auto stream = formatContext_->streams[trackId];
+        ret = ProcessLimitedPacketFirstFrame(pktWrapper, extraType, trackId, stream);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Process first frame failed");
+        if (CheckLimitedProbeExitConditions(hasVideoTrack, hasAudioTrack,
+            softLimit, hardLimit)) {
+            break;
+        }
+        pktWrapper = nullptr;
+    }
+    MEDIA_LOG_I("initReadFrameCount_ : " PUBLIC_LOG_U32, initReadFrameCount_);
+    for (auto i = 0; i < formatContext_->nb_streams; ++i) {
+        MEDIA_LOG_I("i: " PUBLIC_LOG_U32 " cache queue size: " PUBLIC_LOG_U32, i, cacheQueue_.GetCacheFrameCount(i));
     }
     return ret;
 }
@@ -2460,19 +2739,11 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         needClear_ = false;
     }
     readModeMap_[0] = 1;
-    Status ret;
     auto id = HiviewDFX::XCollie::GetInstance().SetTimer("av_codec::demuxer_read", SETTIMER_TIMEOUT,
         nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
-    if (NeedCombineFrame(trackId) && cacheQueue_.GetCacheSize(trackId) == 1) {
-        ret = ReadPacketToCacheQueue(trackId);
-    }
-    while (!cacheQueue_.HasCache(trackId)) {
-        FALSE_RETURN_V_MSG_E(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE, " ReadSample interrupt");
-        ret = ReadPacketToCacheQueue(trackId);
-        bool frameReady = FrameReady(ret);
-        FALSE_RETURN_V_MSG_E(frameReady, ret, "Read from ffmpeg failed");
-    }
+    Status ret = WaitForCacheReady(trackId);
     HiviewDFX::XCollie::GetInstance().CancelTimer(id);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Wait for cache failed");
     std::lock_guard<std::mutex> lockTrack(*trackMtx_[trackId].get());
     auto samplePacket = cacheQueue_.Front(trackId);
     FALSE_RETURN_V_MSG_E(samplePacket != nullptr, Status::ERROR_NULL_POINTER, "Cache packet is nullptr");
@@ -2484,6 +2755,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         }
         return ret;
     }
+    SupplementFirstFrameIfPending(trackId, samplePacket);
     ret = ConvertAVPacketToSample(sample, samplePacket);
     DumpPacketInfo(trackId, Stage::FIRST_READ);
     if (ret == Status::ERROR_NOT_ENOUGH_DATA) {
