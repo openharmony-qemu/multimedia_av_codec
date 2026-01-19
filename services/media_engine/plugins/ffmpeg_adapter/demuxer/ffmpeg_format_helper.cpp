@@ -34,6 +34,7 @@ extern "C" {
 #endif
 #include "libavutil/avutil.h"
 #include "libavutil/display.h"
+#include "libavutil/mastering_display_metadata.h"
 #ifdef __cplusplus
 }
 #endif
@@ -215,6 +216,7 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"webvtt", FileType::VTT},
     {"aiff", FileType::AIFF},
     {"dts", FileType::DTS},
+    {"au", FileType::AU},
 #ifdef SUPPORT_DEMUXER_LRC
     {"lrc", FileType::LRC},
 #endif
@@ -226,6 +228,12 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
 #endif
 #ifdef SUPPORT_DEMUXER_EAC3
     {"eac3", FileType::EAC3},
+#endif
+#ifdef SUPPORT_DEMUXER_DTSHD
+    {"dtshd", FileType::DTSHD},
+#endif
+#ifdef SUPPORT_DEMUXER_TRUEHD
+    {"truehd", FileType::TRUEHD},
 #endif
 };
 
@@ -963,6 +971,9 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
     if (avStream.codecpar->codec_id == AV_CODEC_ID_RAWVIDEO) {
         ParseRawvideoInfo(avStream, format);
     }
+    if (avStream.codecpar->codec_id == AV_CODEC_ID_VP9) {
+        ParseVideoHdrAndColorMetadata(avStream, format);
+    }
 }
 
 void FFmpegFormatHelper::ParseRotationFromMatrix(const AVStream& avStream, Meta &format)
@@ -995,6 +1006,18 @@ void FFmpegFormatHelper::ParseRotationFromMatrix(const AVStream& avStream, Meta 
         MEDIA_LOG_D("Parse rotate info from display matrix failed, set rotation as default 0");
         format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["0"]);
     }
+}
+
+void FFmpegFormatHelper::ParseVideoHdrAndColorMetadata(const AVStream& avStream, Meta &format)
+{
+    const uint8_t *sideData = (uint8_t *)av_stream_get_side_data(
+        &avStream, AV_PKT_DATA_MASTERING_DISPLAY_METADATA, NULL);
+    if (sideData) {
+        std::vector<uint8_t> extra(sizeof(AVMasteringDisplayMetadata));
+        extra.assign(sideData, sideData + sizeof(AVMasteringDisplayMetadata));
+        format.Set<Tag::VIDEO_HDR_METADATA>(extra);
+    }
+    ParseColorBoxInfo(avStream, format);
 }
 
 void PrintMatrixToLog(int32_t * matrix, const std::string& matrixName)
@@ -1046,10 +1069,7 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
                                              const AVFormatContext& avFormatContext)
 {
     int sampleRate = avStream.codecpar->sample_rate;
-    int channels = avStream.codecpar->channels;
-    if (channels <= 0) {
-        channels = avStream.codecpar->ch_layout.nb_channels;
-    }
+    int channels = avStream.codecpar->ch_layout.nb_channels;
     int frameSize = avStream.codecpar->frame_size;
     if (sampleRate > 0) {
         format.Set<Tag::AUDIO_SAMPLE_RATE>(static_cast<uint32_t>(sampleRate));
@@ -1068,7 +1088,7 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
         MEDIA_LOG_D("Parse frame rate failed: " PUBLIC_LOG_D32, frameSize);
     }
     AudioChannelLayout channelLayout = FFMpegConverter::ConvertFFToOHAudioChannelLayoutV2(
-        avStream.codecpar->channel_layout, channels);
+        avStream.codecpar->ch_layout.u.mask, channels);
     format.Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(channelLayout);
     format.Set<Tag::AUDIO_CHANNEL_LAYOUT>(channelLayout);
 
@@ -1150,7 +1170,7 @@ void FFmpegFormatHelper::ConvertAv3aSampleFormat(const AVStream& avStream, Meta 
 
 void FFmpegFormatHelper::ParseAv3aInfo(const AVStream& avStream, Meta &format)
 {
-    int channels = avStream.codecpar->channels; // 总通道数
+    int channels = avStream.codecpar->ch_layout.nb_channels; // 总通道数
     AudioChannelLayout channelLayout = AudioChannelLayout::UNKNOWN;
     int objectNumber = 0; // 对象数量
     uint64_t channelLayoutMask = 0L;
@@ -1398,7 +1418,7 @@ void FFmpegFormatHelper::ParseHevcInfo(
 }
 
 void FFmpegFormatHelper::ParseInfoFromMetadata(
-    const AVDictionary* metadata, Meta &format, std::map<std::string, TagType> tagRange)
+    const AVDictionary* metadata, Meta &format, std::map<std::string, TagType> &tagRange)
 {
     AVDictionaryEntry *valPtr = nullptr;
     while ((valPtr = av_dict_get(metadata, "", valPtr, AV_DICT_IGNORE_SUFFIX)) != nullptr) {

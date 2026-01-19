@@ -18,6 +18,7 @@
 
 #include <memory>
 #include <vector>
+#include <functional>
 #include "meta/meta.h"
 #include "plugin/plugin_base.h"
 #include "plugin/plugin_caps.h"
@@ -37,6 +38,9 @@ namespace Plugins {
  * @version 1.0
  */
 struct DemuxerPlugin : public PluginBase {
+    // Cache pressure callback type, executed in the read thread; must dispatch work asynchronously.
+    using CachePressureCallback = std::function<void(uint32_t /*trackId*/, uint32_t /*cachedBytes*/)>;
+
     /// constructor
     explicit DemuxerPlugin(std::string name): PluginBase(std::move(name)) {}
     /**
@@ -241,6 +245,35 @@ struct DemuxerPlugin : public PluginBase {
         size = 0;
         return Status::OK;
     };
+    virtual Status GetCurrentCacheFrameCount(uint32_t trackId, uint32_t& frameCount)
+    {
+        frameCount = 0;
+        return Status::OK;
+    };
+
+    /**
+     * @brief Register cache pressure callback function.
+     *
+     * @param cb Callback function, called by the read thread when track cache exceeds limit.
+     *           Warning: The callback executes in the read thread. It must not directly call
+     *           plugin interfaces such as ReadSample or GetNextSampleSize that may acquire
+     *           internal locks. The actual work should be asynchronously dispatched to other
+     *           threads to avoid deadlocks with operations such as SeekTo and Flush.
+     *
+     * @return Execution Status
+     */
+    virtual Status SetCachePressureCallback(CachePressureCallback cb) = 0;
+
+    /**
+     * @brief Set per-track cache size limit and notification throttle window.
+     *
+     * @param trackId    Track ID.
+     * @param limitBytes Cache size limit in bytes for the given track.
+     * @param windowMs   Minimum interval (in milliseconds) between two notifications of the same track.
+     * @return Execution Status
+     */
+    virtual Status SetTrackCacheLimit(uint32_t trackId, uint32_t limitBytes, uint32_t windowMs = 500) = 0;
+
     virtual bool GetProbeSize(int32_t &offset, int32_t &size) { return false; };
     virtual Status SetDataSourceWithProbSize(const std::shared_ptr<DataSource>& source,
         const int32_t probSize) = 0;
@@ -255,9 +288,40 @@ struct DemuxerPlugin : public PluginBase {
      */
     virtual Status BoostReadThreadPriority() = 0;
     virtual Status SetAVReadPacketStopState(bool state) = 0;
+    /**
+     * @brief Seek to the first frame of the media file.
+     *
+     * @return Execution status
+    */
     virtual Status SeekToStart() = 0;
+    /**
+     * @brief Seek to the first key frame at or after the specified time on the default track.
+     *
+     * @param trackId       [Ignored] Present for consistency with the @c SeekTo() interface.
+     *                      Internally, the video track is always used; if no video track exists,
+     *                      track 0 is used instead.
+     * @param seekTime      Indicates the target position, based on {@link HST_TIME_BASE} .
+     * @param mode          Only @c SeekMode::SEEK_NEXT_SYNC is supported.
+     * @param[out] realSeekTime  On success, contains the converted timestamp of the found keyframe.
+     *                           On failure, contains the offset-adjusted version of @p seekTime.
+     * @param timeoutMs     Timeout in milliseconds. A value of 0 means no timeout (blocking wait).
+     *
+     * @return Execution status
+    */
     virtual Status SeekToKeyFrame(int32_t trackId, int64_t seekTime,
         SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs) { return Status::ERROR_UNKNOWN; };
+    /**
+     * @brief Seeks to a specified frame by DTS.
+     *
+     * @param trackId Identifies the stream in the media file.
+     * @param seekTime Indicates the target DTS.
+     * @param mode Indicates the seek mode.
+     * @param realSeekTime Indicates the accurate target DTS.
+     * @param timeoutMs If no result is available after @param timeoutMs milliseconds, the function returns.
+     * @return Execution Status
+     */
+    virtual Status SeekToFrameByDts(int32_t trackId, int64_t seekTime,
+        SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs) = 0;
 };
 
 /// Demuxer plugin api major number.

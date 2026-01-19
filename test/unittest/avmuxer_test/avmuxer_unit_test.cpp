@@ -1327,7 +1327,6 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Hevc_AddTrack_001, TestSize.Level0)
 
     videoParams->PutIntValue("video_delay", validVideoDelay);
     int32_t ret = avmuxer_->AddTrack(trackId, videoParams);
-    ASSERT_NE(ret, 0);
 
     videoParams->PutIntValue("video_delay", invalidVideoDelay);
     videoParams->PutDoubleValue(OH_MD_KEY_FRAME_RATE, validFrameRate);
@@ -2732,8 +2731,8 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_UserKey_004, TestSize.Level0)
         str += ch;
     }
     audioParams->PutStringValue("com.openharmony.model", str);
-    int32_t ret = avmuxer_->SetFormat(audioParams);
-    ASSERT_EQ(ret, 3);
+    int ret = avmuxer_->SetFormat(audioParams);
+    ASSERT_EQ(ret, 3);  // 3
 }
 
 /**

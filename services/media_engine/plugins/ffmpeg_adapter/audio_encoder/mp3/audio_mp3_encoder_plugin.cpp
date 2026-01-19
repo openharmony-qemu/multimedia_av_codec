@@ -228,7 +228,7 @@ Status AudioMp3EncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer>& 
     }
     outputSize_ = outputSize;
     pts_ = inputBuffer->pts_;
-    dataCallback_->OnInputBufferDone(inputBuffer);
+    SafeCallInputBufferDone(dataCallback_, inputBuffer);
 
     return Status::OK;
 }
@@ -242,7 +242,7 @@ Status AudioMp3EncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& outpu
     {
         std::lock_guard<std::mutex> lock(avMutex_);
         if (outputBuffer->flag_ & BUFFER_FLAG_EOS) {
-            dataCallback_->OnOutputBufferDone(outputBuffer);
+            SafeCallOutputBufferDone(dataCallback_, outputBuffer);
             return Status::END_OF_STREAM;
         }
         auto memory = outputBuffer->memory_;
@@ -254,7 +254,7 @@ Status AudioMp3EncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& outpu
         memory->Write(const_cast<const uint8_t*>(lameMp3Buffer.get()), outputSize_, 0);
         memory->SetSize(outputSize_);
         outputBuffer->pts_ = pts_;
-        dataCallback_->OnOutputBufferDone(outputBuffer);
+        SafeCallOutputBufferDone(dataCallback_, outputBuffer);
     }
 
     return Status::OK;
@@ -309,6 +309,7 @@ Status AudioMp3EncoderPlugin::Flush()
 Status AudioMp3EncoderPlugin::SetParameter(const std::shared_ptr<Meta>& parameter)
 {
     std::lock_guard<std::mutex> lock(avMutex_);
+    std::lock_guard<std::mutex> lock2(paramMutex_);
     if (!parameter->Get<Tag::AUDIO_CHANNEL_COUNT>(channels_)) {
         AVCODEC_LOGE("AudioMp3EncoderPlugin SetParameter error. no AUDIO_CHANNEL_COUNT");
         return Status::ERROR_INVALID_PARAMETER;
@@ -354,7 +355,7 @@ Status AudioMp3EncoderPlugin::SetParameter(const std::shared_ptr<Meta>& paramete
 
 Status AudioMp3EncoderPlugin::GetParameter(std::shared_ptr<Meta>& parameter)
 {
-    std::lock_guard<std::mutex> lock(avMutex_);
+    std::lock_guard<std::mutex> lock(paramMutex_);
     if (maxInputSize_ <= 0 || maxInputSize_ > INPUT_BUFFER_SIZE_DEFAULT) {
         maxInputSize_ = INPUT_BUFFER_SIZE_DEFAULT;
     }

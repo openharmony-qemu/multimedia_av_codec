@@ -63,6 +63,7 @@ private:
     void UpdateColorAspects(Dav1dSequenceHeader *seqHdr);
     int32_t ConvertHdrStaticMetadata(Dav1dContentLightLevel *contentLight, Dav1dMasteringDisplay *masteringDisplay,
                                      std::vector<uint8_t> &staticMetadataVec);
+    bool CheckStateRunning();
 
     AV1_DEC_HANDLE av1DecHandle_ = nullptr;
     AV1_DEC_INARGS av1DecoderInputArgs_;

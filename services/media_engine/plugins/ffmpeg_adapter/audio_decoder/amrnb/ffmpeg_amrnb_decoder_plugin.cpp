@@ -177,7 +177,7 @@ Status FFmpegAmrnbDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer
         inputBuf_.insert(inputBuf_.end(), srcBuffer, srcBuffer + sourceSize);
     }
     nextPts_ = inputBuffer->pts_;
-    dataCallback_->OnInputBufferDone(inputBuffer);
+    SafeCallInputBufferDone(dataCallback_, inputBuffer);
     return Status::OK;
 }
 
@@ -204,7 +204,7 @@ Status FFmpegAmrnbDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer> &ou
     if (retSend == AVERROR(EAGAIN)) {
         return Status::ERROR_NOT_ENOUGH_DATA;
     } else if (retSend == AVERROR_EOF) {
-        dataCallback_->OnInputBufferDone(outputBuffer);
+        SafeCallOutputBufferDone(dataCallback_, outputBuffer);
         AVCODEC_LOGE("send eos frame, msg:%{public}s", AVStrError(retSend).data());
         return Status::END_OF_STREAM;
     } else if (retSend < 0) {

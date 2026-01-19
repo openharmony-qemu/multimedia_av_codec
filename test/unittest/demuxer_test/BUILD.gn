@@ -76,6 +76,7 @@ ohos_unittest("demuxer_capi_unit_test") {
       "./capi/demuxer_capi_memory_mock.cpp",
       "./capi/demuxer_capi_mock_factory.cpp",
       "./demuxer_aiff_unit_test.cpp",
+      "./demuxer_au_unit_test.cpp",
       "./demuxer_container_test_video_part1.cpp",
       "./demuxer_func_unit_test.cpp",
       "./demuxer_hevc_unit_test.cpp",
@@ -92,6 +93,7 @@ ohos_unittest("demuxer_capi_unit_test") {
       "./demuxer_video_wmv_unit_test.cpp",
       "./demuxer_video_dat_unit_test.cpp",
       "./demuxer_video_caf_unit_test.cpp",
+      "./demuxer_video_asf_unit_test.cpp"
     ]
   }
 
@@ -169,6 +171,7 @@ ohos_unittest("demuxer_inner_unit_test") {
       "$av_codec_root_dir/test/unittest/avsource_test/inner/avsource_inner_mock.cpp",
       "$av_codec_root_dir/test/unittest/avsource_test/inner/avsource_inner_mock_factory.cpp",
       "./demuxer_aiff_unit_test.cpp",
+      "./demuxer_au_unit_test.cpp",
       "./demuxer_container_test_video_part1.cpp",
       "./demuxer_func_unit_test.cpp",
       "./demuxer_hevc_unit_test.cpp",
@@ -188,6 +191,7 @@ ohos_unittest("demuxer_inner_unit_test") {
       "./demuxer_video_wmv_unit_test.cpp",
       "./demuxer_video_dat_unit_test.cpp",
       "./demuxer_video_caf_unit_test.cpp",
+      "./demuxer_video_asf_unit_test.cpp"
     ]
   }
 
@@ -325,6 +329,7 @@ ohos_unittest("demuxer_inner_buffer_unit_test") {
       "$av_codec_root_dir/test/unittest/avsource_test/inner/avsource_inner_mock.cpp",
       "$av_codec_root_dir/test/unittest/avsource_test/inner/avsource_inner_mock_factory.cpp",
       "./demuxer_aiff_unit_test.cpp",
+      "./demuxer_au_unit_test.cpp",
       "./demuxer_container_test_video_part1.cpp",
       "./demuxer_enhance_ndk_unit_test_part1.cpp",
       "./demuxer_func_unit_test.cpp",

@@ -53,14 +53,16 @@ void FramerateCalculator::OnFrameConsumed(std::shared_ptr<AVBuffer> buffer)
         return;
     }
 
+    if ((static_cast<int32_t>(lastFramerate_.load()) == MIN_FRAMERATE || status_ == Status::STOPPED) &&
+        configuredFramerate_ > MIN_FRAMERATE) {
+        SetFramerate2ConfiguredFramerate();
+    }
     if (status_ == Status::INITIALIZED || status_ == Status::STOPPED) {
         lastAdjustmentTime_ = std::chrono::steady_clock::now();
         Register2AFC();
         status_ = Status::RUNNING;
     }
-    if (static_cast<int32_t>(lastFramerate_.load()) == MIN_FRAMERATE && configuredFramerate_ > MIN_FRAMERATE) {
-        SetFramerate2ConfiguredFramerate();
-    }
+
     if (behaviorAnalyzer_) {
         behaviorAnalyzer_->OnFrameConsumed(buffer);
     }

@@ -37,7 +37,9 @@ namespace Plugins {
 namespace Ffmpeg {
 struct ParserSdtpInfo {
     void *pb = nullptr;
+    int refCount = 0;
     int pbIsCopied = 0;
+    int id = 0;
     int ffindex = 0;
     int nextChunk = 0;
     unsigned int chunkCount = 0;
@@ -49,8 +51,8 @@ struct ParserSdtpInfo {
 };
 
 struct HevcParseFormat {
-    int32_t isHdrVivid = 0;
-    int32_t isHdr10Plus = 0;
+    bool isHdrVivid = false;
+    bool isHdr10Plus = false;
     int32_t colorRange = 0;
     uint8_t colorPrimaries = 0x02;
     uint8_t colorTransfer = 0x02;
@@ -86,6 +88,7 @@ private:
     static void ParseAudioTrackInfo(const AVStream& avStream, Meta &format, const AVFormatContext& avFormatContext);
     static void ParseAudioApeTrackInfo(const AVStream& avStream, Meta &format, const AVFormatContext& avFormatContext);
     static void ParseImageTrackInfo(const AVStream& avStream, Meta &format);
+    static void ParseVideoHdrAndColorMetadata(const AVStream& avStream, Meta &format);
     static void ParseTimedMetaTrackInfo(const AVStream& avStream, Meta &format);
     static void ParseAuxiliaryTrackInfo(const AVStream& avStream, Meta &format);
     static void ParseHvccBoxInfo(const AVStream& avStream, Meta &format);
@@ -96,7 +99,7 @@ private:
     static void ParseLocationInfo(const AVFormatContext& avFormatContext, Meta &format);
 
     static void ParseInfoFromMetadata(
-        const AVDictionary* metadata, Meta &format, std::map<std::string, TagType> tagRange);
+        const AVDictionary* metadata, Meta &format, std::map<std::string, TagType> &tagRange);
     static void ParseRotationFromMatrix(const AVStream& avStream, Meta &format);
     static void ParseOrientationFromMatrix(const AVStream& avStream, Meta &format);
     static void ParseTrackType(const AVFormatContext& avFormatContext, Meta& format);

@@ -1165,6 +1165,43 @@ HWTEST_F(Mpeg1decApiNdkTest, VIDEO_MPEG1DEC_CAP_API_1900, TestSize.Level1)
 }
 
 /**
+ * @tc.number    : VIDEO_MPEG1DEC_CAP_API_1901
+ * @tc.name      : Test video width height range retrieval with Resolution combination max Border size
+ * @tc.desc      : api test
+ */
+HWTEST_F(Mpeg1decApiNdkTest, VIDEO_MPEG1DEC_CAP_API_1901, TestSize.Level1)
+{
+    OH_AVErrCode ret = AV_ERR_OK;
+    OH_AVRange range;
+    memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+    OH_AVCapability *capability =
+        OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MPEG1, false, SOFTWARE);
+    ASSERT_NE(nullptr, capability);
+    int32_t maxHeight = 4096;
+    int32_t maxWidth = 4096;
+    ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, maxHeight, &range);
+    cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ASSERT_EQ(range.minVal, 2);
+    ASSERT_EQ(range.maxVal, 4096);
+    ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, maxWidth, &range);
+    cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ASSERT_EQ(range.minVal, 2);
+    ASSERT_EQ(range.maxVal, 4096);
+    ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, maxHeight + 2, &range);
+    cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
+    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+    ASSERT_EQ(range.minVal, 0);
+    ASSERT_EQ(range.maxVal, 0);
+    ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, maxWidth + 2, &range);
+    cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
+    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+    ASSERT_EQ(range.minVal, 0);
+    ASSERT_EQ(range.maxVal, 0);
+}
+
+/**
  * @tc.number    : VIDEO_MPEG1DEC_CAP_API_2000
  * @tc.name      : Test video size support check with zero width
  * @tc.desc      : api test

@@ -126,6 +126,7 @@ private:
     int32_t ClearSurfaceAndSetQueueSize();
     int32_t AllocateOutputBuffersFromSurface();
     int32_t FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer);
+    bool CheckStrideChange(uint32_t index, bool& isChanged);
     int32_t CheckFormatChange(uint32_t index, int width, int height);
     void SetSurfaceParameter();
     int32_t ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface);
@@ -156,6 +157,7 @@ private:
     bool CanSwapOut(bool isOutputBuffer, std::shared_ptr<FBuffer> &fBuffer);
     int32_t SwapOutBuffers(bool isOutputBuffer, State curState);
     int32_t SwapInBuffers(bool isOutputBuffer);
+    void PutFormatValue();
     int32_t pid_ = -1;
 
     int32_t instanceId_ = -1;
@@ -184,6 +186,7 @@ private:
     bool isConverted_ = false;
     bool isOutBufSetted_ = false;
     VideoPixelFormat outputPixelFmt_ = VideoPixelFormat::UNKNOWN;
+    RawVideoPixelFormat rawvideoPixFmt_ = RawVideoPixelFormat::UNKNOWN;
     // Running
     std::vector<std::shared_ptr<FBuffer>> buffers_[2];
     std::vector<std::shared_ptr<AVBuffer>> outAVBuffer4Surface_;

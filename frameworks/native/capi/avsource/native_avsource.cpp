@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -38,11 +38,17 @@ public:
     explicit NativeAVDataSource(OH_AVDataSource *dataSource)
         : isExt_(false), dataSource_(dataSource), dataSourceExt_(nullptr), userData_(nullptr)
     {
+        if (dataSource_ != nullptr) {
+            readAt_ = dataSource_->readAt;
+        }
     }
 
     NativeAVDataSource(OH_AVDataSourceExt* dataSourceExt, void* userData)
         : isExt_(true), dataSource_(nullptr), dataSourceExt_(dataSourceExt), userData_(userData)
     {
+        if (dataSourceExt_ != nullptr) {
+            readAtExt_ = dataSourceExt_->readAt;
+        }
     }
 
     virtual ~NativeAVDataSource() = default;
@@ -54,10 +60,12 @@ public:
         );
         OH_AVBuffer avBuffer(buffer);
 
-        if (isExt_) {
-            return dataSourceExt_->readAt(&avBuffer, length, pos, userData_);
+        if (isExt_ && readAtExt_ != nullptr) {
+            return readAtExt_(&avBuffer, length, pos, userData_);
+        } else if (readAt_ != nullptr) {
+            return readAt_(&avBuffer, length, pos);
         } else {
-            return dataSource_->readAt(&avBuffer, length, pos);
+            return 0;
         }
     }
 
@@ -86,6 +94,8 @@ private:
     OH_AVDataSource* dataSource_;
     OH_AVDataSourceExt* dataSourceExt_ = nullptr;
     void* userData_ = nullptr;
+    OH_AVDataSourceReadAt readAt_ = nullptr;
+    OH_AVDataSourceReadAtExt readAtExt_ = nullptr;
 };
 
 std::string static GetProtocolFromURL(const std::string &url)

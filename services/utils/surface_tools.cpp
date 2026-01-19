@@ -48,6 +48,26 @@ bool SurfaceTools::RegisterReleaseListener(int32_t instanceId, sptr<Surface> sur
     return true;
 }
 
+bool SurfaceTools::RegisterReleaseListener(int32_t instanceId, sptr<Surface> surface,
+    OnReleaseFuncWithSequenceAndFence callback, OHSurfaceSource type)
+{
+    CHECK_AND_RETURN_RET_LOGW(surface != nullptr, false, "Unexpected param");
+ 
+    uint64_t id = surface->GetUniqueId();
+    std::lock_guard<std::mutex> lock(mutex_);
+    GSError err = surface->RegisterReleaseListener(callback);
+    if (err != GSERROR_OK) {
+        AVCODEC_LOGE("Register Listener failed, GSError=%{public}d, instanceId=%{public}d, id=%{public}" PRIu64,
+            err, instanceId, id);
+        return false;
+    }
+    AVCODEC_LOGI("instanceId=%{public}d register listener to surface id=%{public}" PRIu64,
+        instanceId, id);
+    surface->SetSurfaceSourceType(type);
+    surfaceProducerMap_[id] = instanceId;
+    return true;
+}
+
 void SurfaceTools::CleanCache(int32_t instanceId, sptr<Surface> surface, bool cleanAll)
 {
     if (surface == nullptr) {

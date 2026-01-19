@@ -197,12 +197,12 @@ Status FileSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer,
     auto size = std::fread(bufDataAddr, sizeof(char), expectedLen, fp_);
     bufData->UpdateDataSize(size);
     position_ += bufData->GetSize();
-    totalDownLoadBytes_ += size;
-    if (toalDownloadCount_ == 0) {
+    totalDownLoadBytes_ += static_cast<int64_t>(size);
+    if (totalDownloadCount_ == 0) {
         firstDownloadTimestamp_ = GetCurrentMillisecond();
         firstDownloadTime_ = firstDownloadTimestamp_ - start;
     }
-    toalDownloadCount_++;
+    totalDownloadCount_++;
     int64_t end = GetCurrentMillisecond();
     totalDownloadDuringTime_ += end - start;
     MEDIA_LOG_DD("position_: " PUBLIC_LOG_U64 ", readSize: " PUBLIC_LOG_ZU, position_, bufData->GetSize());
@@ -336,11 +336,16 @@ bool FileSourcePlugin::IsLocalFd()
     return true;
 }
 
+bool FileSourcePlugin::IsCloudFd()
+{
+    return false;
+}
+
 Status FileSourcePlugin::GetDownloadInfo(DownloadInfo& downloadInfo)
 {
     downloadInfo.totalDownLoadBytes = totalDownLoadBytes_;
     downloadInfo.totalLoadingTime = totalDownloadDuringTime_;
-    downloadInfo.loadingCount = toalDownloadCount_;
+    downloadInfo.loadingCount = totalDownloadCount_;
     downloadInfo.firstDownloadTime = firstDownloadTime_;
     downloadInfo.firstFrameDecapsulationTime = firstDownloadTimestamp_;
     return Status::OK;

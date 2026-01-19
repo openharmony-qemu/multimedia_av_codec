@@ -248,12 +248,12 @@ int32_t FCodec::ConfigureContext(const Format &format)
     format_.PutIntValue(FMTKey::VIDEO_PIC_HEIGHT, height_);
     int32_t pixelFormat = 0;
     if (format.GetIntValue(FMTKey::VIDEO_RAWVIDEO_INPUT_PIXEL_FORMAT, pixelFormat)) {
-        RawVideoPixelFormat rawvideoPixFmt = static_cast<RawVideoPixelFormat>(pixelFormat);
-        CHECK_AND_RETURN_RET_LOG(rawvideoPixFmt >= RawVideoPixelFormat::YUV420P &&
-                                 rawvideoPixFmt <= RawVideoPixelFormat::RGBA,
+        rawvideoPixFmt_ = static_cast<RawVideoPixelFormat>(pixelFormat);
+        CHECK_AND_RETURN_RET_LOG(rawvideoPixFmt_ >= RawVideoPixelFormat::YUV420P &&
+                                 rawvideoPixFmt_ <= RawVideoPixelFormat::RGBA,
                                  AVCS_ERR_INVALID_VAL, "Unsupported rawvideo pixel format %{public}d!",
-                                 static_cast<int32_t>(rawvideoPixFmt));
-        avCodecContext_->pix_fmt = g_convertFfmpegPixFmt[rawvideoPixFmt];
+                                 static_cast<int32_t>(rawvideoPixFmt_));
+        avCodecContext_->pix_fmt = g_convertFfmpegPixFmt[rawvideoPixFmt_];
     }
 
     avCodecContext_->width = width_;
@@ -643,7 +643,12 @@ void FCodec::CalculateBufferSize()
 {
     int32_t stride = AlignUp(width_, VIDEO_ALIGN_SIZE);
     outputBufferSize_ = static_cast<int32_t>((stride * height_ * VIDEO_PIX_DEPTH_YUV) / UV_SCALE_FACTOR);
-    inputBufferSize_ = std::max(VIDEO_MIN_BUFFER_SIZE, outputBufferSize_);
+    if (rawvideoPixFmt_ == RawVideoPixelFormat::RGBA) {
+        inputBufferSize_ = std::max(static_cast<int32_t>(stride * height_ * VIDEO_PIX_DEPTH_RGBA),
+                                    outputBufferSize_);
+    } else {
+        inputBufferSize_ = std::max(VIDEO_MIN_BUFFER_SIZE, outputBufferSize_);
+    }
     if (outputPixelFmt_ == VideoPixelFormat::RGBA) {
         outputBufferSize_ = static_cast<int32_t>(stride * height_ * VIDEO_PIX_DEPTH_RGBA);
     }
@@ -718,6 +723,15 @@ int32_t FCodec::SetSurfaceCfg()
 void FCodec::RequestSurfaceBuffer(SurfaceBufferInfo &bufInfo)
 {
     std::unique_lock<std::mutex> sLock(surfaceMutex_);
+    AVCODEC_LOGD(
+        "surface request config, width: %{public}d, height: %{public}d, strideAlignment: %{public}d, "
+        "format: %{public}d, usage: %{public}" PRIu64 ", timeout: %{public}d",
+        sInfo_.requestConfig.width,
+        sInfo_.requestConfig.height,
+        sInfo_.requestConfig.strideAlignment,
+        sInfo_.requestConfig.format,
+        sInfo_.requestConfig.usage,
+        sInfo_.requestConfig.timeout);
     GSError err = sInfo_.surface->RequestBuffer(bufInfo.buf, bufInfo.fence, sInfo_.requestConfig);
     if (err != GSERROR_OK || bufInfo.buf == nullptr || bufInfo.buf->GetBufferHandle() == nullptr) {
         AVCODEC_LOGE("Request surface buffer fail, ret:%{public}d", static_cast<int32_t>(err));
@@ -756,13 +770,14 @@ void FCodec::OnSurfaceBufferAvailable(SurfaceBufferInfo &bufInfo)
                 seqNumToFbufMap_.erase(oldSeqNum);
                 seqNumToFbufMap_[bufInfo.seqNum] = bufIdx;
                 AVCODEC_LOGI("buf(%{public}u), %{public}u -> %{public}u", bufIdx, oldSeqNum, bufInfo.seqNum);
+                buffers_[INDEX_OUTPUT][bufIdx]->avBuffer_ = AVBuffer::CreateAVBuffer(bufInfo.buf);
                 break;
             }
         }
     } else {
         bufIdx = seqNumToFbufMap_[bufInfo.seqNum];
     }
-    if (bufIdx >= buffers_[INDEX_OUTPUT].size()) {
+    if (bufIdx >= buffers_[INDEX_OUTPUT].size() || buffers_[INDEX_OUTPUT][bufIdx]->avBuffer_ == nullptr) {
         AVCODEC_LOGE("surfae buffer(%{public}u) cannot match available output buffer", bufInfo.seqNum);
         callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
         state_ = State::ERROR;
@@ -899,7 +914,8 @@ int32_t FCodec::AllocateOutputBuffersFromSurface()
         buf->height_ = height_;
         buf->width_ = width_;
         outAVBuffer4Surface_.emplace_back(AVBuffer::CreateAVBuffer());
-        buf->avBuffer_ = AVBuffer::CreateAVBuffer(buf->sMemory_->GetBase(), buf->sMemory_->GetSize());
+        buf->avBuffer_ = AVBuffer::CreateAVBuffer(surfaceBuffer);
+        CHECK_AND_RETURN_RET_LOG(buf->avBuffer_ != nullptr, AVCS_ERR_UNKNOWN, "avbuffer is nullptr!");
         AVCODEC_LOGI("Allocate output surface buffer success, index=%{public}u, size=%{public}d, stride=%{public}d", i,
                      buf->sMemory_->GetSize(), buf->sMemory_->GetSurfaceBufferStride());
         buffers_[INDEX_OUTPUT].emplace_back(buf);
@@ -994,12 +1010,45 @@ int32_t FCodec::UpdateSurfaceMemory(uint32_t index)
         uint32_t seqNum = newSurfaceBuffer->GetSeqNum();
         seqNumToFbufMap_[seqNum] = index;
         AVCODEC_LOGI("Surface buffer seqNum: %{public}u -> index: [%{public}u]", seqNum, index);
-        outputBuffer->avBuffer_ =
-            AVBuffer::CreateAVBuffer(outputBuffer->sMemory_->GetBase(), outputBuffer->sMemory_->GetSize());
+        outputBuffer->avBuffer_ = AVBuffer::CreateAVBuffer(newSurfaceBuffer);
+        CHECK_AND_RETURN_RET_LOG(outputBuffer->avBuffer_ != nullptr, AVCS_ERR_UNKNOWN, "avbuffer is nullptr!");
         outputBuffer->width_ = width_;
         outputBuffer->height_ = height_;
     }
     return AVCS_ERR_OK;
+}
+
+bool FCodec::CheckStrideChange(uint32_t index, bool& isChanged)
+{
+    if (sInfo_.surface != nullptr) {
+        std::shared_ptr<FBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
+        if (!frameBuffer || frameBuffer->sMemory_ == nullptr) {
+            AVCODEC_LOGE("frameBuffer or surfaceMemory is nullptr");
+            return false;
+        }
+        int32_t stride = frameBuffer->sMemory_->GetSurfaceBufferStride();
+        int32_t formatStride = 0;
+        format_.GetIntValue(FMTKey::VIDEO_STRIDE, formatStride);
+        if (stride != formatStride) {
+            AVCODEC_LOGI("format change, stride: %{public}d->%{public}d", formatStride, stride);
+            std::lock_guard<std::mutex> lock(formatMutex_);
+            format_.PutIntValue(FMTKey::VIDEO_STRIDE, stride);
+            isChanged = true;
+        }
+    }
+    return true;
+}
+
+void FCodec::PutFormatValue()
+{
+    std::lock_guard<std::mutex> lock(formatMutex_);
+    format_.PutIntValue(FMTKey::VIDEO_WIDTH, width_);
+    format_.PutIntValue(FMTKey::VIDEO_HEIGHT, height_);
+    format_.PutIntValue(FMTKey::VIDEO_STRIDE,
+                        outputPixelFmt_ == VideoPixelFormat::RGBA ? width_ * VIDEO_PIX_DEPTH_RGBA : width_);
+    format_.PutIntValue(FMTKey::VIDEO_SLICE_HEIGHT, height_);
+    format_.PutIntValue(FMTKey::VIDEO_PIC_WIDTH, width_);
+    format_.PutIntValue(FMTKey::VIDEO_PIC_HEIGHT, height_);
 }
 
 int32_t FCodec::CheckFormatChange(uint32_t index, int width, int height)
@@ -1012,6 +1061,7 @@ int32_t FCodec::CheckFormatChange(uint32_t index, int width, int height)
 #ifdef BUILD_ENG_VERSION
     DumpOutputBuffer();
 #endif // BUILD_ENG_VERSION
+    bool isChanged = false;
     if (width_ != width || height_ != height) {
         AVCODEC_LOGI("format change, width: %{public}d->%{public}d, height: %{public}d->%{public}d", width_, width,
                      height_, height);
@@ -1020,16 +1070,7 @@ int32_t FCodec::CheckFormatChange(uint32_t index, int width, int height)
         ResetData();
         scale_ = nullptr;
         CalculateBufferSize();
-        {
-            std::lock_guard<std::mutex> lock(formatMutex_);
-            format_.PutIntValue(FMTKey::VIDEO_WIDTH, width_);
-            format_.PutIntValue(FMTKey::VIDEO_HEIGHT, height_);
-            format_.PutIntValue(FMTKey::VIDEO_STRIDE,
-                                outputPixelFmt_ == VideoPixelFormat::RGBA ? width_ * VIDEO_PIX_DEPTH_RGBA : width_);
-            format_.PutIntValue(FMTKey::VIDEO_SLICE_HEIGHT, height_);
-            format_.PutIntValue(FMTKey::VIDEO_PIC_WIDTH, width_);
-            format_.PutIntValue(FMTKey::VIDEO_PIC_HEIGHT, height_);
-        }
+        PutFormatValue();
         {
             std::lock_guard<std::mutex> sLock(surfaceMutex_);
             if (sInfo_.surface) {
@@ -1037,6 +1078,11 @@ int32_t FCodec::CheckFormatChange(uint32_t index, int width, int height)
                 sInfo_.requestConfig.height = height_;
             }
         }
+        isChanged = true;
+    }
+    CHECK_AND_RETURN_RET_LOG(CheckStrideChange(index, isChanged), AVCS_ERR_UNKNOWN,
+                             "frameBuffer or surfaceMemory is nullptr!");
+    if (isChanged) {
         callback_->OnOutputFormatChanged(format_);
     }
     std::lock_guard<std::mutex> oLock(outputMutex_);

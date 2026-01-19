@@ -54,6 +54,7 @@ public:
     Seekable GetSeekable() override;
     Status SeekTo(uint64_t offset) override;
     bool IsLocalFd() override;
+    bool IsCloudFd() override;
     Status GetDownloadInfo(DownloadInfo& downloadInfo) override;
 
     std::shared_ptr<Allocator> GetAllocator();
@@ -71,7 +72,7 @@ private:
     Status OpenFile();
     void CloseFile();
     int64_t totalDownLoadBytes_ {0};
-    int32_t toalDownloadCount_ {0};
+    int32_t totalDownloadCount_ {0};
     int64_t firstDownloadTime_ {0};
     int64_t firstDownloadTimestamp_ {0};
     int64_t totalDownloadDuringTime_ {0};

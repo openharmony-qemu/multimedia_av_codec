@@ -78,6 +78,7 @@ void PlayListDownloader::SetDownloadCallback(const std::shared_ptr<DownloadMetri
 PlayListDownloader::PlayListDownloader(const std::map<std::string, std::string>& httpHeader,
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
 {
+    sourceLoader_ = sourceLoader;
     if (sourceLoader != nullptr) {
         downloader_ = std::make_shared<Downloader>("hlsPlayList", sourceLoader);
     } else {
@@ -85,6 +86,16 @@ PlayListDownloader::PlayListDownloader(const std::map<std::string, std::string>&
     }
     downloader_->Init();
     httpHeader_ = httpHeader;
+}
+
+std::shared_ptr<MediaSourceLoaderCombinations> PlayListDownloader::GetSourceLoader()
+{
+    return sourceLoader_;
+}
+
+void PlayListDownloader::SetSourceLoader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
+{
+    sourceLoader_ = sourceLoader;
 }
 
 PlayListDownloader::PlayListDownloader(std::shared_ptr<Downloader> downloader,

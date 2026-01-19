@@ -71,6 +71,7 @@ private:
     bool CheckFormat();
     Meta audioParameter_ ;
     mutable std::mutex avMutex_ {};
+    mutable std::mutex paramMutex_ {};
 
     DataCallback* dataCallback_ {nullptr};
     AudioSampleFormat audioSampleFormat_;

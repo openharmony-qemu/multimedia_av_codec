@@ -55,16 +55,22 @@ public:
     
     int64_t Open(const std::string &url, const std::map<std::string, std::string> &header)
     {
+        (void) url;
+        (void) header;
         return 1;
     };
 
     int32_t Read(int64_t uuid, int64_t requestedOffset, int64_t requestedLength)
     {
+        (void) uuid;
+        (void) requestedOffset;
+        (void) requestedLength;
         return 1;
     };
 
     int32_t Close(int64_t uuid)
     {
+        (void) uuid;
         return 1;
     };
 };
@@ -81,8 +87,7 @@ const std::string MP4_NULL_SEGMENT_BASE = "http://127.0.0.1:46666/dewuNull.mp4";
 const std::string FLV_SEGMENT_BASE = "http://127.0.0.1:46666/h264.flv";
 
 static constexpr int32_t MAX_BUFFER_SIZE_FUZZ = 1024 * 1024 * 2;
-constexpr int32_t WAIT_FOR_SIDX_TIME = 1000 * 1000;
-
+constexpr int32_t WAIT_FOR_SIDX_TIME = 1 * 10;
 static uint8_t g_buffer[MAX_BUFFER_SIZE_FUZZ];
 static const std::map<std::string, std::string> g_httpHeader = {
     {"User-Agent", "ABC"},
@@ -189,17 +194,6 @@ void PostDownloadCleanup(std::shared_ptr<HttpMediaDownloader> httpMediaDownloade
     httpMediaDownloader = nullptr;
 }
 
-bool HttpDownloaderFlvRun(uint8_t *data, size_t size)
-{
-    if (data == nullptr || size < sizeof(int64_t)) {
-        return false;
-    }
-    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader = InitializeAndDownload();
-    PostDownloadSetup(httpMediaDownloader);
-    PostDownloadCleanup(httpMediaDownloader);
-    return true;
-}
-
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(uint8_t *data, size_t size)
 {
@@ -211,7 +205,11 @@ extern "C" int LLVMFuzzerTestOneInput(uint8_t *data, size_t size)
     g_baseFuzzData = data;
     g_baseFuzzSize = size;
     g_baseFuzzPos = 0;
-    HttpDownloaderFlvRun(data, size);
+    if (data != nullptr) {
+        std::shared_ptr<HttpMediaDownloader> httpMediaDownloader = InitializeAndDownload();
+        PostDownloadSetup(httpMediaDownloader);
+        PostDownloadCleanup(httpMediaDownloader);
+    }
     if (!CloseServer()) {
         std::cout << "Close server error" << std::endl;
         return -1;

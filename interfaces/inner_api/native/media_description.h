@@ -101,6 +101,11 @@ public:
     static constexpr std::string_view MD_KEY_ROTATION_ANGLE = "rotation_angle";
 
     /**
+     * Key for video hdr metadata, value type is uint8_t*
+     */
+    static constexpr std::string_view MD_KEY_VIDEO_HDR_METADATA = "video_hdr_metadata";
+
+    /**
      * Key for video frame rate, value type is double.
      */
     static constexpr std::string_view MD_KEY_FRAME_RATE = "frame_rate";

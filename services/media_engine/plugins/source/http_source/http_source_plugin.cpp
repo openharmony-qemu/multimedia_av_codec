@@ -23,7 +23,7 @@
 #include "monitor/download_monitor.h"
 #include "avcodec_sysevent.h"
 #include "http_media_utils.h"
-
+#include "storage_usage_util.h"
 namespace OHOS {
 namespace Media {
 namespace Plugins {
@@ -215,20 +215,42 @@ Status HttpSourcePlugin::InitSourcePlugin(const std::shared_ptr<MediaSource>& so
     return Status::OK;
 }
 
+std::shared_ptr<PlayStrategy> HttpSourcePlugin::PlayStrategyInit(std::shared_ptr<MediaSource> source)
+{
+    uri_ = redirectUrl_.empty() ? source->GetSourceUri() : redirectUrl_;
+    httpHeader_ = source->GetSourceHeader();
+    std::shared_ptr<PlayStrategy> playStrategy = source->GetPlayStrategy();
+    mimeType_ = source->GetMimeType();
+    return playStrategy;
+}
+
+void HttpSourcePlugin::MediaStreamDfxTrace(std::shared_ptr<MediaSource> source)
+{
+    auto uuid = source->GetAppUid();
+    std::string bundleName = OHOS::Media::HttpMediaUtils::GetClientBundleName(uuid);
+    MediaAVCodec::StreamAppPackageNameEventWrite("AVSource", bundleName,
+        "OH_AVSource_CreateWithURI", "{\"result\": \"success\"}");
+}
+
 void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source)
 {
     FALSE_RETURN_MSG(source != nullptr, "source is null.");
     std::shared_ptr<PlayStrategy> playStrategy;
     if (source != nullptr) {
-        uri_ = redirectUrl_.empty() ? source->GetSourceUri() : redirectUrl_;
-        httpHeader_ = source->GetSourceHeader();
-        playStrategy = source->GetPlayStrategy();
-        mimeType_ = source->GetMimeType();
+        playStrategy = PlayStrategyInit(source);
     }
     if (source->GetSourceLoader() != nullptr) {
         loaderCombinations_ = std::make_shared<MediaSourceLoaderCombinations>(source->GetSourceLoader());
+        loaderCombinations_->EnableOfflineCache(source->GetenableOfflineCache());
+        if (httpHeader_.find("Cookie") != httpHeader_.end() && loaderCombinations_->GetenableOfflineCache()) {
+            loaderCombinations_->Close(-1);
+        } else {
+            std::shared_ptr<StorageUsageUtil> storageUsage = std::make_shared<StorageUsageUtil>();
+            if (loaderCombinations_->GetenableOfflineCache() && !storageUsage->HasEnoughStorage()) {
+                loaderCombinations_->Close(-1);
+            }
+        }
     }
- 
     if (uri_.find(".mpd") != std::string::npos) {
         downloader_ = std::make_shared<DownloadMonitor>(
                       std::make_shared<DashMediaDownloader>(loaderCombinations_));
@@ -255,11 +277,7 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
         downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>(mimeType_));
         downloader_->Init();
     }
-    auto uuid = source->GetAppUid();
-    std::string bundleName = OHOS::Media::HttpMediaUtils::GetClientBundleName(uuid);
-    MEDIA_LOG_I("SYX URI name %{public}s", bundleName.c_str());
-    MediaAVCodec::StreamAppPackageNameEventWrite("AVSource", bundleName,
-        "OH_AVSource_CreateWithURI", "{\"result\": \"success\"}");
+    MediaStreamDfxTrace(source);
     if (downloader_ != nullptr) {
         downloader_->SetInterruptState(isInterruptNeeded_);
         downloader_->SetAppUid(source->GetAppUid());

@@ -122,7 +122,7 @@ void DemuxerPluginTypeTest::OperateDemuxerPlugin(MediaInfo& mediaInfo, size_t bu
     for (uint32_t idx = 0; idx < mediaInfo.tracks.size(); ++idx) {
         demuxerPlugin_->SelectTrack(idx);
     }
-
+    demuxerPlugin_->SeekToStart();
     for (uint32_t idx = 0; idx < mediaInfo.tracks.size(); ++idx) {
         demuxerPlugin_->ReadSample(idx, buffer.mediaAVBuffer, interfaceTimeout_);
         demuxerPlugin_->ReadSample(idx, buffer.mediaAVBuffer);

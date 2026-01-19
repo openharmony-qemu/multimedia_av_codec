@@ -37,10 +37,7 @@ public:
     Status Stop() override;
 
     Status SetParameter(const std::shared_ptr<Meta> &param) override;
-    Status SetUserMeta(const std::shared_ptr<Meta> &userMeta) override
-    {
-        return Status::NO_ERROR;
-    }
+    Status SetUserMeta(const std::shared_ptr<Meta> &userMeta) override;
     Status Reset() override
     {
         return Status::NO_ERROR;
@@ -51,6 +48,11 @@ private:
     Status WriteTailer();
     Status MoveMoovBoxToFront(bool isNeedFree);
     Status SetRotation(const std::shared_ptr<Meta> &param);
+    Status SetLocation(const std::shared_ptr<Meta> &param);
+    Status SetCreationTime(const std::shared_ptr<Meta> &param);
+    bool CheckGltfParam(std::shared_ptr<Meta> &param);
+    void WriteMdatSize();
+    void WriteFileLevelMetafBox();
 
 private:
     std::shared_ptr<AVIOStream> io_ = nullptr;
@@ -59,9 +61,17 @@ private:
     std::shared_ptr<BasicBox> moov_ = nullptr;
     std::shared_ptr<BoxParser> boxParser_ = nullptr;
     std::vector<std::shared_ptr<BasicTrack>> tracks_;
+    std::shared_ptr<Meta> param_ = nullptr;
+    std::shared_ptr<Meta> userMeta_ = nullptr;
     int64_t freePos_ = 0;
     int64_t mdatPos_ = 0;
     bool isH264_ = false;
+    float latitude_ = 1000.0f;
+    float longitude_ = 1000.0f;
+    bool hasGltf_ = false;
+    bool useTimedMeta_ = false;
+    bool needFree_ = false;
+    bool hasAigc_ = false;
 };
 } // Mpeg4
 } // Plugins

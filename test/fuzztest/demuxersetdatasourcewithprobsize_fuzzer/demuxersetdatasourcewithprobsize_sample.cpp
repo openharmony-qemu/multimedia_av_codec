@@ -127,7 +127,38 @@ bool DemuxerPluginTest::Run(const std::string& typeName, const std::string& file
     if (!PluginSelectTracks()) {
         return false;
     }
+    int64_t realSeekTime = 0;
+    if (!PluginSeekToKeyFrame(-1, seekTime_, SeekMode::SEEK_NEXT_SYNC, realSeekTime, timeOutMs_)) {
+        return false;
+    }
     if (!PluginReadAllSample()) {
+        return false;
+    }
+    if (!PluginReplay()) {
+        return false;
+    }
+    return true;
+}
+
+bool DemuxerPluginTest::PluginReplay()
+{
+    auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    auto ret = demuxerPlugin->SeekToStart();
+    if (ret != Status::OK) {
+        return false;
+    }
+    if (!PluginReadAllSample()) {
+        return false;
+    }
+    return true;
+}
+
+bool DemuxerPluginTest::PluginSeekToKeyFrame(int32_t trackId, int64_t seekTime, SeekMode mode,
+    int64_t& realSeekTime, uint32_t timeoutMs)
+{
+    auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    auto ret = demuxerPlugin->SeekToKeyFrame(trackId, seekTime, mode, realSeekTime, timeoutMs);
+    if (ret != Status::OK) {
         return false;
     }
     return true;

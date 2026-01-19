@@ -158,6 +158,16 @@ HWTEST_F(FileSourceUnitTest, FileSource_IsLocalFd_0100, TestSize.Level1)
 {
     ASSERT_TRUE(fileSourcePlugin_->IsLocalFd());
 }
+
+/**
+ * @tc.name: FileSource_IsCloudFd_0100
+ * @tc.desc: FileSource_IsCloudFd_0100
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileSourceUnitTest, FileSource_IsCloudFd_0100, TestSize.Level1)
+{
+    ASSERT_FALSE(fileSourcePlugin_->IsLocalFd());
+}
 } // namespace FileSource
 } // namespace Plugins
 } // namespace Media

@@ -104,6 +104,7 @@ group("av_codec_unit_test") {
         "unittest/avmuxer_test:avmuxer_ogg_unit_test",
         "unittest/avmuxer_test:avmuxer_gltf_unit_test",
         "unittest/avmuxer_test:avmuxer_mpeg4_plugin_unit_test",
+        "unittest/avmuxer_test:avmuxer_ffmpeg_plugin_mp4_unit_test",
         "unittest/avsource_test:avsource_capi_unit_test",
         "unittest/avsource_test:avsource_inner_unit_test",
         "unittest/calc_max_amplitude_unittest:calc_max_amplitude_unittest",
@@ -225,6 +226,7 @@ group("av_codec_module_test") {
       "moduletest/vcodec/swdecoder:swdecoder_native_module_test",
       "moduletest/vcodec/msvideo1decoder:msvideo1decoder_native_module_test",
       "moduletest/vcodec/mjpegswdecoder:mjpegswdecoder_native_module_test",
+      "moduletest/vcodec/rawvideodecoder:rawvideodecoder_native_module_test",
     ]
     if (av_codec_enable_codec_rv) {
       deps += [
@@ -352,6 +354,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/demuxermtsapi11_fuzzer:DemuxerMtsAPI11FuzzTest",
       "fuzztest/demuxerogg_fuzzer:DemuxerOggFuzzTest",
       "fuzztest/demuxeroggapi11_fuzzer:DemuxerOggAPI11FuzzTest",
+      "fuzztest/demuxerdatapi11_fuzzer:DemuxerDatAPI11FuzzTest",
       "fuzztest/demuxerpluginflv_fuzzer:DemuxerPluginFlvFuzzTest",
       "fuzztest/demuxerpluginaac_fuzzer:DemuxerPluginAacFuzzTest",
       "fuzztest/demuxerpluginamr_fuzzer:DemuxerPluginAmrFuzzTest",
@@ -450,6 +453,9 @@ group("av_codec_fuzz_test") {
       "fuzztest/msvideo1decoderconfigure_fuzzer:MsVideo1decoderConfigureFuzzTest",
       "fuzztest/msvideo1decoderresource_fuzzer:MsVideo1decoderResourceFuzzTest",
       "fuzztest/msvideo1decodersetparameter_fuzzer:MsVideo1decoderSetParameterFuzzTest",
+      "fuzztest/rawvideodecoderconfigure_fuzzer:RawvideodecoderConfigureFuzzTest",
+      "fuzztest/rawvideodecoderresource_fuzzer:RawvideodecoderResourceFuzzTest",
+      "fuzztest/rawvideodecodersetparameter_fuzzer:RawvideodecoderSetParameterFuzzTest",
       "fuzztest/ptsandindexconversion_fuzzer:PtsAndIndexConversionFuzzTest",
       "fuzztest/referenceparser_fuzzer:ReferenceparserFuzzTest",
       "fuzztest/vc1swdecoderresource_fuzzer:Vc1SwdecoderResourceFuzzTest",
@@ -478,7 +484,6 @@ group("av_codec_fuzz_test") {
       "fuzztest/syncdecoderbuffer10bit_fuzzer:SyncDecoderBuffer10BitFuzzTest",
       "fuzztest/http_plugin_fuzztest/dashmediadownloader_fuzzer:DashMediaDownloaderFuzzTest",
       "fuzztest/http_plugin_fuzztest/dashmediadownselectbit_fuzzer:DashMediaDownSelectBitFuzzTest",
-      "fuzztest/http_plugin_fuzztest/dashmediadownsetbit_fuzzer:DashMediaDownSetBitFuzzTest",
       "fuzztest/http_plugin_fuzztest/dashmpddownloader_fuzzer:DashMpdDownloaderFuzzTest",
       "fuzztest/http_plugin_fuzztest/httpdownloaderflv_fuzzer:HttpDownloaderFlvFuzzTest",
       "fuzztest/http_plugin_fuzztest/hlsdownload_fuzzer:HlsDownloadFuzzTest",
@@ -505,27 +510,8 @@ group("av_codec_fuzz_test") {
       "fuzztest/mpeg1decoderconfigure_fuzzer:Mpeg1decoderConfigureFuzzTest",
       "fuzztest/mpeg1decoderresource_fuzzer:Mpeg1decoderResourceFuzzTest",
       "fuzztest/mpeg1decodersetparameter_fuzzer:Mpeg1decoderSetParameterFuzzTest",
+      "fuzztest/pluginsink_fuzzer:PluginSinkFuzzTest",
     ]
-    if(av_codec_support_vp8_decoder) {
-      deps += [
-        "fuzztest/vp8swdecoderconfigure_fuzzer:Vp8SwdecoderConfigureFuzzTest",
-        "fuzztest/vp8swdecoderserver_fuzzer:Vp8SwdecoderServerFuzzTest",
-        "fuzztest/vp8swdecoderservermemrecycle_fuzzer:Vp8SwdecoderServerMemrecycleFuzzTest",
-        "fuzztest/vp8swdecoderservernormal_fuzzer:Vp8SwdecoderServerNormalFuzzTest",
-        "fuzztest/vp8swdecoderserversurface_fuzzer:Vp8SwdecoderServerSurfaceFuzzTest",
-        "fuzztest/vp8swdecodersetparameter_fuzzer:Vp8SwdecoderSetParameterFuzzTest",
-      ]
-    }
-    if(av_codec_support_vp9_decoder) {
-      deps += [
-        "fuzztest/vp9swdecoderconfigure_fuzzer:Vp9SwdecoderConfigureFuzzTest",
-        "fuzztest/vp9swdecoderserver_fuzzer:Vp9SwdecoderServerFuzzTest",
-        "fuzztest/vp9swdecoderservermemrecycle_fuzzer:Vp9SwdecoderServerMemrecycleFuzzTest",
-        "fuzztest/vp9swdecoderservernormal_fuzzer:Vp9SwdecoderServerNormalFuzzTest",
-        "fuzztest/vp9swdecoderserversurface_fuzzer:Vp9SwdecoderServerSurfaceFuzzTest",
-        "fuzztest/vp9swdecodersetparameter_fuzzer:Vp9SwdecoderSetParameterFuzzTest",
-      ]
-    }
     if(av_codec_enable_codec_eac3) {
       deps += [ "fuzztest/audiodecodereac3_fuzzer:AudioDecoderEac3FuzzTest" ]
     }

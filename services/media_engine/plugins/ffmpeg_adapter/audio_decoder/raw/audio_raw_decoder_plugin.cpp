@@ -611,7 +611,7 @@ Status AudioRawDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> &
     frameSize_ = size;
     offset_ = 0;
     pts_ = inputBuffer->pts_;
-    dataCallback_->OnInputBufferDone(inputBuffer);
+    SafeCallInputBufferDone(dataCallback_, inputBuffer);
     return Status::OK;
 }
 
@@ -728,9 +728,7 @@ bool AudioRawDecoderPlugin::CheckFormat()
 void AudioRawDecoderPlugin::SetOutputBasicInfo(std::shared_ptr<AVBuffer> &outputBuffer)
 {
     outputBuffer->pts_ = pts_;
-    if (dataCallback_ != nullptr) {
-        dataCallback_->OnOutputBufferDone(outputBuffer);
-    }
+    SafeCallOutputBufferDone(dataCallback_, outputBuffer);
 }
 
 inline void AudioRawDecoderPlugin::WriteU8(int32_t idx, uint8_t value)

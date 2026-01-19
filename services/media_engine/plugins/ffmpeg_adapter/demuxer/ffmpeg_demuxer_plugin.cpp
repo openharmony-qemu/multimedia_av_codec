@@ -66,15 +66,19 @@ namespace Plugins {
 namespace Ffmpeg {
 const uint32_t DEFAULT_READ_SIZE = 4096;
 const uint32_t DEFAULT_SNIFF_SIZE = 4096 * 4;
+#ifdef SUPPORT_DEMUXER_TRUEHD
+const uint32_t TRUEHD_SNIFF_SIZE = 1024 * 1024;
+#endif
 const int32_t MP3_PROBE_SCORE_LIMIT = 5;
 const int32_t DEF_PROBE_SCORE_LIMIT = 50;
 const uint32_t RANK_MAX = 100;
-const uint32_t INIT_DOWNLOADS_DATA_SIZE_THRESHOLD = 2 * 1024 * 1024;
+const uint64_t INIT_DOWNLOADS_DATA_SIZE_THRESHOLD = 2 * 1024 * 1024;
 const int64_t LIVE_FLV_PROBE_SIZE = 100 * 1024 * 2;
 const uint32_t DEFAULT_CACHE_LIMIT = 50 * 1024 * 1024; // 50M
 const int64_t INIT_TIME_THRESHOLD = 1000;
 const uint32_t ID3V2_HEADER_SIZE = 10;
 const int32_t MS_TO_US = 1000;
+const uint32_t DEFAULT_CACHE_PRESSURE_WINDOW_MS = 500;
 const int32_t MS_TO_NS = 1000 * 1000;
 const uint32_t REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT = 200000;
 const int DEFAULT_CHANNEL_CNT = 3;
@@ -90,6 +94,7 @@ constexpr int64_t LOG_INTERVAL_MS = 2000; // 2s
 constexpr uint32_t LOG_MAX_COUNT = 10; // 10 times
 constexpr int32_t SEEK_TRACK_DEFAULT = -1;
 constexpr int32_t RECHECK_TIMES = 5;
+constexpr int32_t MAX_READ_CNT = 5;
 
 // id3v2 tag position
 const int32_t POS_0 = 0;
@@ -501,6 +506,11 @@ void FFmpegDemuxerPlugin::ResetParam()
     }
     trackMtx_.clear();
     trackDfxInfoMap_.clear();
+    minTsPktInfo_.isInit = false;
+    minTsPktInfo_.isUpd = false;
+    minTsPktInfo_.streamIndex = -1;
+    minTsPktInfo_.minPts = AV_NOPTS_VALUE;
+    minTsPktInfo_.minDts = AV_NOPTS_VALUE;
 }
 
 Status FFmpegDemuxerPlugin::Reset()
@@ -1111,7 +1121,7 @@ Status FFmpegDemuxerPlugin::Stop()
 }
 
 // Write packet unimplemented, return 0
-int FFmpegDemuxerPlugin::AVWritePacket(void* opaque, uint8_t* buf, int bufSize)
+int FFmpegDemuxerPlugin::AVWritePacket(void* opaque, const uint8_t* buf, int bufSize)
 {
     (void)opaque;
     (void)buf;
@@ -1287,7 +1297,6 @@ std::shared_ptr<AVFormatContext> FFmpegDemuxerPlugin::InitAVFormatContext(IOCont
     if (ioContext_.dataSource->IsDash()) {
         av_dict_set(&options, "use_tfdt", "true", 0);
     }
-    
     int ret = ParseHeader(formatContext, pluginImpl_, &options);
     av_dict_free(&options);
     FALSE_RETURN_V_MSG_E(ret >= 0, nullptr, "ParseHeader failed");
@@ -1313,7 +1322,7 @@ void FFmpegDemuxerPlugin::NotifyInitializationCompleted()
 {
     ioContext_.initCompleted = true;
     if (ioContext_.initDownloadDataSize >= INIT_DOWNLOADS_DATA_SIZE_THRESHOLD) {
-        MEDIA_LOG_I("Large init size %{public}u", ioContext_.initDownloadDataSize);
+        MEDIA_LOG_I("Large init size " PUBLIC_LOG_U64, ioContext_.initDownloadDataSize);
     }
 }
 
@@ -1365,11 +1374,11 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
 
     SetAVReadFrameLimitDefault();
 
-    // parse media info
-    GetMediaInfo();
-
     // Create stream snapshots to avoid data race when accessing formatContext_->streams
     UpdateStreamSnapshots();
+
+    // parse media info
+    GetMediaInfo();
 
     SetAVReadFrameLimit();
 
@@ -1712,9 +1721,12 @@ Status FFmpegDemuxerPlugin::GetMediaInfo()
     GetStreamInitialParams();
     Status ret = ParseVideoFirstFrames();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse video info failed");
-
+    for (uint32_t trackId = 0; trackId < formatContext_->nb_streams; ++trackId) {
+        MEDIA_LOG_I("Cache Info:track[" PUBLIC_LOG_U32 "] count[" PUBLIC_LOG_ZU "] size[" PUBLIC_LOG_U32 "]",
+            trackId, cacheQueue_.GetCacheSize(trackId), cacheQueue_.GetCacheDataSize(trackId));
+    }
     ret = GetFileFirstPacket();
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Get file first packet failed");
+    FALSE_LOG_MSG_W(ret == Status::OK, "Get file first packet failed");
 
     FFmpegFormatHelper::ParseMediaInfo(*formatContext_, mediaInfo_.general);
     DemuxerLogCompressor::StringifyMeta(mediaInfo_.general, -1); // source meta
@@ -1840,6 +1852,10 @@ Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(Plugins::AVPacketWrapperPtr pk
         std::shared_ptr<SamplePacket> cacheSamplePacket = cacheQueue_.Back(static_cast<uint32_t>(trackId));
         if (cacheSamplePacket != nullptr) {
             cacheSamplePacket->pkts.push_back(pktWrapper);
+            uint32_t cacheBytes = cacheQueue_.GetCacheDataSize(static_cast<uint32_t>(trackId));
+            if (cacheBytes < UINT32_MAX) {
+                MaybeNotifyCachePressure(static_cast<uint32_t>(trackId), cacheBytes);
+            }
         }
     } else {
         std::shared_ptr<SamplePacket> cacheSamplePacket = std::make_shared<SamplePacket>();
@@ -1848,6 +1864,10 @@ Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(Plugins::AVPacketWrapperPtr pk
             cacheSamplePacket->offset = 0;
             cacheQueue_.Push(static_cast<uint32_t>(trackId), cacheSamplePacket);
             ret = CheckCacheDataLimit(static_cast<uint32_t>(trackId));
+            uint32_t cacheBytes = cacheQueue_.GetCacheDataSize(static_cast<uint32_t>(trackId));
+            if (cacheBytes < UINT32_MAX) { // only notify when size is valid
+                MaybeNotifyCachePressure(static_cast<uint32_t>(trackId), cacheBytes);
+            }
         }
     }
     return ret;
@@ -1900,7 +1920,13 @@ bool FFmpegDemuxerPlugin::Mp4CheckKeyFrame(AVStream* stream)
     FALSE_RETURN_V_MSG_E(stream != nullptr, false, "AVStream is nullptr");
     const AVIndexEntry *entry = avformat_index_get_entry(stream, POS_0);
     FALSE_RETURN_V_MSG_E(entry != nullptr, false, "First AVIndexEntry is nullptr");
+    auto item = mp4FirstKeyFrameIdx_.find(stream->index);
+    if (item != mp4FirstKeyFrameIdx_.end()) {
+        bool ret = item->second >= 0;
+        return ret;
+    }
     int keyIndex = av_index_search_timestamp(stream, entry->timestamp, AVINDEX_KEYFRAME);
+    mp4FirstKeyFrameIdx_[stream->index] = keyIndex;
     FALSE_RETURN_V_MSG_E(keyIndex >= 0, false, "KeyIndex is invalid");
     return true;
 }
@@ -1968,7 +1994,7 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
     Plugins::AVPacketWrapperPtr pktWrapper = nullptr;
     Status ret = Status::OK;
     bool extraType = (fileType_ == FileType::MPEGTS || FFmpegFormatHelper::IsMpeg4File(fileType_) ||
-        fileType_ == FileType::FLV);
+        fileType_ == FileType::FLV || fileType_ == FileType::RM);
     // Finish for extraType: get all support stream
     // Finish: read all video or init all parser
     while ((extraType && !AllSupportTrackFramesReady()) ||
@@ -1992,9 +2018,8 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
         InitMinTsPacketInfo(pktWrapper->GetAVPacket());
         ret = AddPacketToCacheQueue(pktWrapper);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add to cache failed");
-        bool needCheck = (stream->codecpar->codec_id != AV_CODEC_ID_VVC) && (!TrackIsChecked(trackId) &&
-            IsSyncFrame(stream, pktWrapper->GetAVPacket(), formatContext_));
-        if (!needCheck) {
+        bool isVvc = (stream->codecpar->codec_id == AV_CODEC_ID_VVC);
+        if (!isVvc && (TrackIsChecked(trackId) || !IsSyncFrame(stream, pktWrapper->GetAVPacket(), formatContext_))) {
             pktWrapper = nullptr;
             continue;
         }
@@ -2114,6 +2139,9 @@ Status FFmpegDemuxerPlugin::CheckSeekParams(int64_t seekTime, SeekMode mode) con
 
 void FFmpegDemuxerPlugin::SyncSeekThread()
 {
+    if (readThread_ == nullptr) {
+        return;
+    }
     if (ioContext_.invokerType != InvokerType::SEEK) {
         std::lock_guard<std::mutex> seekLock(ioContext_.invokerTypeMutex);
         ioContext_.invokerType = InvokerType::SEEK;
@@ -2130,7 +2158,7 @@ void FFmpegDemuxerPlugin::SyncSeekThread()
 bool FFmpegDemuxerPlugin::IsUseFirstFrameDts(int trackIndex, int64_t seekTime)
 {
     if (seekTime == 0 &&
-        (fileType_ == FileType::MPEGTS || FFmpegFormatHelper::IsMpeg4File(fileType_)) &&
+        (fileType_ == FileType::MPEGTS || FFmpegFormatHelper::IsMpeg4File(fileType_) || fileType_ == FileType::RM) &&
         FFmpegFormatHelper::IsVideoType(*(formatContext_->streams[trackIndex])) &&
         VideoFirstFrameValid(trackIndex)) {
             return true;
@@ -2181,9 +2209,7 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
 
     Status check = CheckSeekParams(seekTime, mode);
     FALSE_RETURN_V_MSG_E(check == Status::OK, check, "CheckSeekParams failed");
-    if (readThread_ != nullptr) {
-        SyncSeekThread();
-    }
+    SyncSeekThread();
     int trackIndex = SelectSeekTrack();
     MEDIA_LOG_D("Seek based on track " PUBLIC_LOG_D32, trackIndex);
 
@@ -2226,8 +2252,9 @@ Status FFmpegDemuxerPlugin::ReadUntilKeyFrame(Plugins::AVPacketWrapperPtr pktWra
     int ffRet = 0;
     while ((ffRet = AVReadFrameLimit(pktWrapper->GetAVPacket())) >= 0) {
         FALSE_RETURN_V_MSG_E(!timeoutGuard.IsTimeout(), Status::ERROR_WAIT_TIMEOUT, "Timeout while reading frames");
+        uint32_t fFlag = static_cast<uint32_t>(pktWrapper->GetFlags());
         if (pktWrapper->GetStreamIndex() != trackIndex || pktWrapper->GetDts() == AV_NOPTS_VALUE ||
-            (pktWrapper->GetFlags() & AV_PKT_FLAG_DISCARD)) {
+            (fFlag & AV_PKT_FLAG_DISCARD)) {
             av_packet_unref(pktWrapper->GetAVPacket());
             continue;
         }
@@ -2235,7 +2262,11 @@ Status FFmpegDemuxerPlugin::ReadUntilKeyFrame(Plugins::AVPacketWrapperPtr pktWra
             readRange.start_ts = pktWrapper->GetDts();
         }
         readRange.end_ts = pktWrapper->GetDts();
-        if (pktWrapper->GetFlags() & AV_PKT_FLAG_KEY) {
+        if (fFlag & AV_PKT_FLAG_KEY) {
+            return Status::OK;
+        }
+        if (NeedCombineFrame(pktWrapper->GetStreamIndex()) &&
+            streamParsers_->IsSyncFrame(pktWrapper->GetStreamIndex(), pktWrapper->GetData(), pktWrapper->GetSize())) {
             return Status::OK;
         }
         ++readCnt;
@@ -2305,6 +2336,7 @@ Status FFmpegDemuxerPlugin::SeekToKeyFrame(int32_t trackId, int64_t seekTime,
     AVStream *avStream = nullptr;
     auto ret = SeekToKeyFrameCheckParam(seekTime, mode, trackId, ffTime, avStream);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SeekToKeyFrameCheckParam failed");
+    SyncSeekThread();
     TimeRange timeRange;
     if (timeRangeManager_.IsInTimeRanges(ffTime, timeRange)) {
         ffTime = timeRange.end_ts;
@@ -2354,6 +2386,7 @@ Status FFmpegDemuxerPlugin::Flush()
         avformat_flush(formatContext_.get());
         sLock.unlock();
     }
+    minTsPktInfo_.isUpd = true;
     return ret;
 }
 
@@ -2413,7 +2446,7 @@ bool FFmpegDemuxerPlugin::FrameReady(Status ret)
 Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
 {
     std::shared_lock<std::shared_mutex> lock(sharedMutex_);
-    MediaAVCodec::AVCodecTrace trace("ReadSample");
+    MediaAVCodec::AVCodecTrace trace(std::string("ReadSample_") + std::to_string(trackId));
     MEDIA_LOG_D("In");
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
@@ -2465,7 +2498,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
 Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size)
 {
     std::shared_lock<std::shared_mutex> lock(sharedMutex_);
-    MediaAVCodec::AVCodecTrace trace("GetNextSampleSize");
+    MediaAVCodec::AVCodecTrace trace(std::string("GetNextSampleSize_") + std::to_string(trackId));
     MEDIA_LOG_D("In, track " PUBLIC_LOG_D32, trackId);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN, "AVFormatContext is nullptr");
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_UNKNOWN, "Track has not been selected");
@@ -2795,6 +2828,90 @@ Status FFmpegDemuxerPlugin::GetCurrentCacheSize(uint32_t trackId, uint32_t& size
     return Status::OK;
 }
 
+Status FFmpegDemuxerPlugin::GetCurrentCacheFrameCount(uint32_t trackId, uint32_t& frameCount)
+{
+    MEDIA_LOG_D("TrackId " PUBLIC_LOG_U32, trackId);
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
+    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
+    FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_PARAMETER, "Track has not been selected");
+
+    uint32_t cachedFrames = cacheQueue_.GetCacheFrameCount(trackId); // 返回对应缓存的samplePacket个数
+    FALSE_RETURN_V_MSG_E(cachedFrames <= UINT32_MAX, Status::ERROR_WRONG_STATE, "FrameCount is invalid");
+    frameCount = cachedFrames;
+    return Status::OK;
+}
+
+Status FFmpegDemuxerPlugin::SetCachePressureCallback(CachePressureCallback cb)
+{
+    std::lock_guard<std::mutex> lock(cachePressureMutex_);
+    cachePressureCb_ = std::move(cb);
+    return Status::OK;
+}
+
+Status FFmpegDemuxerPlugin::SetTrackCacheLimit(uint32_t trackId, uint32_t limitBytes, uint32_t windowMs)
+{
+    std::lock_guard<std::mutex> lock(cachePressureMutex_);
+    if (limitBytes == 0) { // disable for this track
+        trackCacheLimitMap_.erase(trackId);
+        trackThrottleWindowMs_.erase(trackId);
+        trackLastNotifyMs_.erase(trackId);
+        return Status::OK;
+    }
+    uint32_t window = windowMs == 0 ? DEFAULT_CACHE_PRESSURE_WINDOW_MS : windowMs;
+    trackCacheLimitMap_[trackId] = limitBytes;
+    trackThrottleWindowMs_[trackId] = window;
+    trackLastNotifyMs_.erase(trackId); // reset throttle
+    return Status::OK;
+}
+
+int64_t FFmpegDemuxerPlugin::NowMs() const
+{
+    using namespace std::chrono;
+    return duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
+}
+
+void FFmpegDemuxerPlugin::MaybeNotifyCachePressure(uint32_t trackId, uint32_t cacheBytes)
+{
+    std::lock_guard<std::mutex> lock(cachePressureMutex_);
+    if (!cachePressureCb_) {
+        return;
+    }
+    auto limitIt = trackCacheLimitMap_.find(trackId);
+    if (limitIt == trackCacheLimitMap_.end() || limitIt->second == 0) {
+        return;
+    }
+    if (cacheBytes < limitIt->second) {
+        return;
+    }
+    uint32_t windowMs = DEFAULT_CACHE_PRESSURE_WINDOW_MS;
+    auto windowIt = trackThrottleWindowMs_.find(trackId);
+    if (windowIt != trackThrottleWindowMs_.end() && windowIt->second > 0) {
+        windowMs = windowIt->second;
+    }
+    int64_t now = NowMs();
+    auto lastIt = trackLastNotifyMs_.find(trackId);
+    if (lastIt != trackLastNotifyMs_.end() && now - lastIt->second < static_cast<int64_t>(windowMs)) {
+        return; // throttled
+    }
+    trackLastNotifyMs_[trackId] = now;
+
+    /**
+     * Warning: The callback is executed in the read thread, which may cause lock contention
+     * with other operations.
+     * 1. If the callback directly invokes interfaces that require `sharedMutex_` such as
+     *    `ReadSample` or `GetNextSampleSize`, it may lead to deadlocks with operations like
+     *    `SeekTo` or `Flush` that hold the write lock (for example, `SeekTo` holds the write
+     *    lock waiting for the read thread to enter the WAITING state, while the read thread
+     *    is blocked in the callback trying to acquire `sharedMutex_`).
+     * 2. The callback implementation must dispatch the actual work (especially calls to
+     *    plugin interfaces) asynchronously to other threads, and avoid calling plugin
+     *    interfaces directly in the read thread.
+     * 3. The callback should remain lightweight, reentrant, and non-blocking. It should
+     *    only mark or notify, and must not perform time-consuming operations.
+     */
+    cachePressureCb_(trackId, cacheBytes);
+}
+
 void FFmpegDemuxerPlugin::SetInterruptState(bool isInterruptNeeded)
 {
     MEDIA_LOG_I("SetInterruptState %{public}d", isInterruptNeeded);
@@ -2816,7 +2933,8 @@ Status FFmpegDemuxerPlugin::GetFileFirstPacket()
         return Status::OK;
     }
     Status ret = Status::OK;
-    while (!minTsPktInfo_.isInit) {
+    int readCnt = 0;
+    while (!minTsPktInfo_.isInit && readCnt < MAX_READ_CNT) {
         Plugins::AVPacketWrapperPtr pktWrapper = std::make_shared<Plugins::AVPacketWrapper>();
         FALSE_RETURN_V_MSG_E(pktWrapper != nullptr && pktWrapper->GetAVPacket() != nullptr,
             Status::ERROR_NULL_POINTER, "Create AVPacketWrapper failed");
@@ -2826,6 +2944,7 @@ Status FFmpegDemuxerPlugin::GetFileFirstPacket()
         InitMinTsPacketInfo(pktWrapper->GetAVPacket());
         ret = AddPacketToCacheQueue(pktWrapper);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add packet to cache failed");
+        ++readCnt;
     }
     return Status::OK;
 }
@@ -2833,15 +2952,19 @@ Status FFmpegDemuxerPlugin::GetFileFirstPacket()
 void FFmpegDemuxerPlugin::InitMinTsPacketInfo(AVPacket *pkt)
 {
     bool isSkip = IsSkipGetMinTsPktInfo();
-    FALSE_RETURN_MSG_W(!isSkip, "File skip init");
-    FALSE_RETURN_MSG_W(pkt != nullptr, "AVPacket is nullptr");
-    FALSE_RETURN_MSG_W(pkt->dts != AV_NOPTS_VALUE || pkt->pts != AV_NOPTS_VALUE,
+    FALSE_RETURN_MSG_D(!isSkip, "File skip init");
+    FALSE_RETURN_MSG_D(pkt != nullptr, "AVPacket is nullptr");
+    FALSE_RETURN_MSG_D(pkt->dts != AV_NOPTS_VALUE || pkt->pts != AV_NOPTS_VALUE,
         "pkt dts and pts is AV_NOPTS_VALUE");
-    FALSE_RETURN_MSG_W(!minTsPktInfo_.isInit, "minTsPktInfo_ has been initialized");
-    minTsPktInfo_.streamIndex = pkt->stream_index;
-    minTsPktInfo_.minPts = pkt->pts;
-    minTsPktInfo_.minDts = pkt->dts;
-    minTsPktInfo_.isInit = true;
+    if (!minTsPktInfo_.isInit) {
+        minTsPktInfo_.streamIndex = pkt->stream_index;
+        minTsPktInfo_.minPts = pkt->pts;
+        minTsPktInfo_.minDts = pkt->dts;
+        minTsPktInfo_.isInit = true;
+    } else {
+        UpdMinTsPacketInfo(pkt);
+        minTsPktInfo_.isUpd = false;
+    }
 }
 
 void FFmpegDemuxerPlugin::UpdMinTsPacketInfo(AVPacket *pkt)
@@ -2849,8 +2972,8 @@ void FFmpegDemuxerPlugin::UpdMinTsPacketInfo(AVPacket *pkt)
     minTsPktInfo_.isUpd = true;
     FALSE_RETURN_MSG_W(pkt != nullptr, "AVPacket is nullptr");
     FALSE_RETURN_MSG_D(minTsPktInfo_.isInit, "minTsPktInfo_ is not init");
-    if ((pluginImpl_->flags & AVFMT_SEEK_TO_PTS) && !FFmpegFormatHelper::IsMpeg4File(fileType_) &&
-        pkt->pts != AV_NOPTS_VALUE && pkt->pts < minTsPktInfo_.minPts) {
+    if ((static_cast<uint32_t>(pluginImpl_->flags) & AVFMT_SEEK_TO_PTS) &&
+        !FFmpegFormatHelper::IsMpeg4File(fileType_) && pkt->pts != AV_NOPTS_VALUE && pkt->pts < minTsPktInfo_.minPts) {
         minTsPktInfo_.streamIndex = pkt->stream_index;
         minTsPktInfo_.minPts = pkt->pts;
     } else if (pkt->dts != AV_NOPTS_VALUE && pkt->dts < minTsPktInfo_.minDts) {
@@ -2864,19 +2987,17 @@ Status FFmpegDemuxerPlugin::SeekToStartInternal()
     std::unique_lock<std::shared_mutex> lock(sharedMutex_);
     int64_t seekTs = AV_NOPTS_VALUE;
     int ffRet = -1;
+    SyncSeekThread();
     if (IsSkipGetMinTsPktInfo()) {
         av_dict_set_int(&formatContext_->metadata, "seekToStart", 1, 0);
-        std::unique_lock<std::mutex> sLock(syncMutex_);
-        ffRet = av_seek_frame(formatContext_.get(), SEEK_TRACK_DEFAULT, seekTs, AVSEEK_FLAG_ANY);
-        sLock.unlock();
+        ffRet = AVSeekFrameLock(SEEK_TRACK_DEFAULT, seekTs, AVSEEK_FLAG_ANY);
         av_dict_set_int(&formatContext_->metadata, "seekToStart", 0, 0);
+    } else if (fileType_ == FileType::MPEGPS) {
+        ffRet = AVSeekFrameLock(SEEK_TRACK_DEFAULT, POS_0, AVSEEK_FLAG_BYTE);
     } else if (minTsPktInfo_.isInit) {
-        seekTs = (pluginImpl_->flags & AVFMT_SEEK_TO_PTS) && !FFmpegFormatHelper::IsMpeg4File(fileType_) ?
-            minTsPktInfo_.minPts : minTsPktInfo_.minDts;
-        std::unique_lock<std::mutex> sLock(syncMutex_);
-        ffRet = av_seek_frame(formatContext_.get(),
-            minTsPktInfo_.streamIndex, seekTs, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
-        sLock.unlock();
+        seekTs = (static_cast<uint32_t>(pluginImpl_->flags) & AVFMT_SEEK_TO_PTS) &&
+            !FFmpegFormatHelper::IsMpeg4File(fileType_) ? minTsPktInfo_.minPts : minTsPktInfo_.minDts;
+        ffRet = AVSeekFrameLock(minTsPktInfo_.streamIndex, seekTs, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
         MEDIA_LOG_I("av_seek_frame stream_index " PUBLIC_LOG_U32 " seekTs " PUBLIC_LOG_D64 " ffRet " PUBLIC_LOG_D32,
             minTsPktInfo_.streamIndex, seekTs, ffRet);
     }
@@ -2907,6 +3028,52 @@ Status FFmpegDemuxerPlugin::SeekToStart()
     return Status::OK;
 }
 
+Status FFmpegDemuxerPlugin::SeekToFrameByDts(int32_t trackId, int64_t seekTime,
+    SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs)
+{
+    MEDIA_LOG_D("in");
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
+    TimeoutGuard timeoutGuard(timeoutMs);
+    MediaAVCodec::AVCodecTrace trace("SeekToFrameByDts");
+    auto id = HiviewDFX::XCollie::GetInstance().SetTimer("av_codec::demuxer_seekToFrameByDts", SETTIMER_TIMEOUT,
+        nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
+    if (readThread_ != nullptr) {
+        SyncSeekThread();
+    }
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
+    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
+    FALSE_RETURN_V_MSG_E(seekTime >= 0 && seekTime <= INT64_MAX / MS_TO_NS, Status::ERROR_INVALID_PARAMETER,
+        "Seek time " PUBLIC_LOG_D64 " is not supported", seekTime);
+    FALSE_RETURN_V_MSG_E(mode == SeekMode::SEEK_CLOSEST, Status::ERROR_INVALID_PARAMETER,
+        "Seek mode " PUBLIC_LOG_U32 " is not supported", static_cast<uint32_t>(mode));
+    int trackIndex = SelectSeekTrack();
+    MEDIA_LOG_D("Seek by DTS based on track " PUBLIC_LOG_D32, trackIndex);
+    AVStream* avStream = formatContext_->streams[trackIndex];
+    FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER,
+        "AVStream is nullptr");
+    int64_t ffDts = ConvertTimeToFFmpeg(seekTime * MS_TO_NS, avStream->time_base);
+    MEDIA_LOG_D("Seek DTS: " PUBLIC_LOG_D64 " ms -> " PUBLIC_LOG_D64 " (FFmpeg time_base)",
+        seekTime, ffDts);
+    int ffRet = AVSeekFrameLock(trackIndex, ffDts, AVSEEK_FLAG_ANY);
+    // 如果不支持（返回 EPERM 或其他错误），回退到 AVSEEK_FLAG_FRAME
+    if (ffRet < 0) {
+        MEDIA_LOG_W("AVSEEK_FLAG_ANY failed (err: " PUBLIC_LOG_S "), fallback to AVSEEK_FLAG_FRAME",
+            AVStrError(ffRet).c_str());
+        ffRet = AVSeekFrameLock(trackIndex, ffDts, AVSEEK_FLAG_FRAME);
+    }
+    FALSE_RETURN_V_MSG_E(ffRet >= 0, Status::ERROR_UNKNOWN,
+        "Call av_seek_frame failed, err: " PUBLIC_LOG_S, AVStrError(ffRet).c_str());
+    formatContext_->pb->error = 0;
+    FALSE_RETURN_V_MSG_E(!timeoutGuard.IsTimeout(), Status::ERROR_WAIT_TIMEOUT,
+        "Timeout after av_seek_frame");
+    realSeekTime = ConvertTimeFromFFmpeg(ffDts, avStream->time_base);
+    ResetAfterSeek(seekTime, mode);
+    HiviewDFX::XCollie::GetInstance().CancelTimer(id);
+    MEDIA_LOG_I("Seek by DTS succeeded: target=" PUBLIC_LOG_D64 " ms, real=" PUBLIC_LOG_D64 " (ns)",
+        seekTime, realSeekTime);
+    return Status::OK;
+}
+
 namespace { // plugin set
 
 int IsStartWithID3(const uint8_t *buf, const char *tagName)
@@ -2933,8 +3100,8 @@ int GetID3TagLen(const uint8_t *buf)
     return len;
 }
 
-int32_t GetConfidence(std::shared_ptr<AVInputFormat> plugin, const std::string& pluginName,
-    std::shared_ptr<DataSource> dataSource, size_t &getData, size_t bufferSize)
+int32_t GetConfidence(std::shared_ptr<AVInputFormat> plugin, std::shared_ptr<FFInputFormat> ffPlugin,
+    const std::string& pluginName, std::shared_ptr<DataSource> dataSource, size_t &getData, size_t bufferSize)
 {
     uint64_t fileSize = 0;
     Status getFileSize = dataSource->GetSize(fileSize);
@@ -2972,13 +3139,18 @@ int32_t GetConfidence(std::shared_ptr<AVInputFormat> plugin, const std::string& 
         }
     }
     AVProbeData probeData{"", buff.data(), static_cast<int32_t>(getData), ""};
-    return plugin->read_probe(&probeData);
+    return ffPlugin->read_probe(&probeData);
 }
 
 int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
 {
     FALSE_RETURN_V_MSG_E(!pluginName.empty(), 0, "Plugin name is empty");
     FALSE_RETURN_V_MSG_E(dataSource != nullptr, 0, "DataSource is nullptr");
+#ifdef SUPPORT_DEMUXER_TRUEHD
+    if (pluginName == "avdemux_truehd") {
+        return SniffWithSize(pluginName, dataSource, TRUEHD_SNIFF_SIZE);
+    }
+#endif
     return SniffWithSize(pluginName, dataSource, DEFAULT_SNIFF_SIZE);
 }
 
@@ -2987,15 +3159,19 @@ int SniffWithSize(const std::string& pluginName, std::shared_ptr<DataSource> dat
     FALSE_RETURN_V_MSG_E(!pluginName.empty(), 0, "Plugin name is empty");
     FALSE_RETURN_V_MSG_E(dataSource != nullptr, 0, "DataSource is nullptr");
     std::shared_ptr<AVInputFormat> plugin;
+    std::shared_ptr<FFInputFormat> ffPlugin;
     {
         std::lock_guard<std::mutex> lock(g_mtx);
         auto inputFormat = av_find_input_format(ProcessPluginName(pluginName).c_str());
+        const FFInputFormat* ffInputFormat = (const FFInputFormat*)inputFormat;
         plugin = std::shared_ptr<AVInputFormat>(const_cast<AVInputFormat*>(inputFormat), [](void*) {});
+        // refer to ffmepg libavformat/demux.h ffifmt
+        ffPlugin = std::shared_ptr<FFInputFormat>(const_cast<FFInputFormat*>(ffInputFormat), [](void*) {});
     }
-    FALSE_RETURN_V_MSG_E((plugin != nullptr && plugin->read_probe), 0,
+    FALSE_RETURN_V_MSG_E((plugin != nullptr && ffPlugin->read_probe), 0,
         "Get plugin for " PUBLIC_LOG_S " failed", pluginName.c_str());
     size_t getData = 0;
-    int confidence = GetConfidence(plugin, pluginName, dataSource, getData, probSize);
+    int confidence = GetConfidence(plugin, ffPlugin, pluginName, dataSource, getData, probSize);
     if (confidence < 0) {
         return 0;
     }

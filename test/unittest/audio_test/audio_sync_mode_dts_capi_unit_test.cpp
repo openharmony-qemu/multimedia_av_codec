@@ -53,7 +53,7 @@ constexpr int32_t DEFAULT_CHANNELS = 1;
 constexpr uint32_t DEFAULT_SAMPLE_RATE = 8000;
 constexpr int SAMPLERATE = 8000;
 constexpr int SAMPLES_PER_FRAME = 160;
-constexpr string_view DTS_FILE_TODEMUX = "/data/test/media/8000_mono_dts.avi";
+constexpr string_view DTS_FILE_TODEMUX = "/data/test/media/dts.avi";
 constexpr string_view OUTPUT_DTS_PCM_FILE_PATH = "/data/test/media/test_decoder_dts.pcm";
 constexpr int32_t SLEEP_TIME = 5000;
 }

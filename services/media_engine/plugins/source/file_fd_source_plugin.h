@@ -59,6 +59,7 @@ public:
     void NotifyReadFail();
     void SetEnableOnlineFdCache(bool isEnableFdCache) override;
     bool IsLocalFd() override;
+    bool IsCloudFd() override;
     Status GetDownloadInfo(DownloadInfo& downloadInfo) override;
 
 private:
@@ -120,7 +121,7 @@ private:
     bool isEnableFdCache_{ true };
     int loc_ {0};
     int64_t totalDownLoadBytes_ {0};
-    int32_t toalDownloadCount_ {0};
+    int32_t totalDownloadCount_ {0};
     int64_t firstDownloadTime_ {0};
     int64_t firstDownloadTimestamp_ {0};
     int64_t totalDownloadDuringTime_ {0};

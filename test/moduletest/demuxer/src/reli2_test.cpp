@@ -26,6 +26,7 @@
 #include <fcntl.h>
 #include <thread>
 #include <securec.h>
+#include <vector>
 
 namespace OHOS {
 namespace Media {
@@ -47,6 +48,7 @@ static OH_AVSource *source = nullptr;
 static OH_AVDemuxer *demuxer = nullptr;
 static OH_AVFormat *sourceFormat = nullptr;
 static OH_AVFormat *trackFormat = nullptr;
+static OH_AVBuffer *avBuffer = nullptr;
 static int32_t g_trackCount;
 static int32_t g_width = 3840;
 static int32_t g_height = 2160;
@@ -54,8 +56,24 @@ static int32_t g_maxThread = 16;
 OH_AVSource *source_list[16] = {};
 OH_AVMemory *memory_list[16] = {};
 OH_AVDemuxer *demuxer_list[16] = {};
+OH_AVBuffer *buffer_list[16] = {};
+OH_AVFormat *paraformat_list[16] = {};
 int g_fdList[16] = {};
+int g_frame[16] = {};
 int32_t g_track = 2;
+struct SkipSampleInfo {
+    int32_t frame;
+    uint32_t skipSamples;
+    uint32_t discardPadding;
+    int skipReason;
+    int discardReason;
+    size_t buffSize;
+};
+constexpr uint8_t NUM_FOUR = 4;
+constexpr uint8_t NUM_EIGHT = 8;
+constexpr uint8_t NUM_NINE = 9;
+std::vector<SkipSampleInfo> skipSample[16];
+
 
 void DemuxerReli2NdkTest::SetUpTestCase() {}
 void DemuxerReli2NdkTest::TearDownTestCase() {}
@@ -87,6 +105,11 @@ void DemuxerReli2NdkTest::TearDown()
         memory = nullptr;
     }
 
+    if (avBuffer != nullptr) {
+        OH_AVBuffer_Destroy(avBuffer);
+        avBuffer = nullptr;
+    }
+
     if (source != nullptr) {
         OH_AVSource_Destroy(source);
         source = nullptr;
@@ -105,6 +128,7 @@ using namespace OHOS;
 using namespace OHOS::Media;
 using namespace testing::ext;
 namespace {
+
 static int64_t GetFileSize(const char *fileName)
 {
     int64_t fileSize = 0;
@@ -160,6 +184,75 @@ static void SetVideoValue(OH_AVCodecBufferAttr attr, bool &videoIsEnd, int &vide
         videoFrame++;
         cout << "video track !!!!!" << endl;
     }
+}
+
+static bool CompareSkipSampleValue(SkipSampleInfo& info, ExpectSkipSampleInfo expectInfo)
+{
+    if (info.frame != expectInfo.expectFrame) {
+        return false;
+    }
+    if (info.skipSamples != expectInfo.expectSkipSamples) {
+        return false;
+    }
+    if (info.discardPadding != expectInfo.expectDiscardPadding) {
+        return false;
+    }
+    if (info.skipReason != expectInfo.expectSkipReason) {
+        return false;
+    }
+    if (info.discardReason != expectInfo.expectDiscardReason) {
+        return false;
+    }
+    if (info.buffSize != expectInfo.expectBuffSize) {
+        return false;
+    }
+    return true;
+}
+
+static void GetSkipSampleInfo(uint8_t *addr, size_t buffSize, int &audioFrame, std::vector<SkipSampleInfo> &skipSample)
+{
+    if (OH_AVFormat_GetBuffer(format, OH_MD_KEY_BUFFER_SKIP_SAMPLES_INFO, &addr, &buffSize)) {
+        uint32_t skipSamples;
+        memcpy_s(&skipSamples, sizeof(uint32_t), addr, sizeof(uint32_t));
+        uint32_t discardPadding;
+        memcpy_s(&discardPadding, sizeof(uint32_t), addr + NUM_FOUR, sizeof(uint32_t));
+        uint8_t skipReason;
+        memcpy_s(&skipReason, sizeof(uint8_t), addr + NUM_EIGHT, sizeof(uint8_t));
+        uint8_t discardReason;
+        memcpy_s(&discardReason, sizeof(uint8_t), addr + NUM_NINE, sizeof(uint8_t));
+        SkipSampleInfo skipSampleInfo{audioFrame, skipSamples, discardPadding, static_cast<int>(skipReason),
+            static_cast<int>(discardReason), buffSize};
+        skipSample.push_back(skipSampleInfo);
+    }
+}
+
+void DemuxFuncAudio(int i, int64_t size)
+{
+    bool audioIsEnd = false;
+    OH_AVCodecBufferAttr attr;
+    int audioFrame = 0;
+    uint8_t *addr = nullptr;
+    size_t buffSize = 0;
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer_list[i], 0));
+    while (!audioIsEnd) {
+        for (int32_t index = 0; index < 1; index++) {
+            buffer_list[i] = OH_AVBuffer_Create(size);
+            ASSERT_NE(buffer_list[i], nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer_list[i], index, buffer_list[i]));
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(buffer_list[i], &attr));
+            paraformat_list[i] = OH_AVBuffer_GetParameter(buffer_list[i]);
+            ASSERT_NE(paraformat_list[i], nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_Destroy(buffer_list[i]));
+            buffer_list[i] = nullptr;
+            GetSkipSampleInfo(addr, buffSize, audioFrame, skipSample);
+            SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+            OH_AVFormat_Destroy(paraformat_list[i]);
+            paraformat_list[i] = nullptr;
+        }
+    }
+    ASSERT_EQ(true, CompareSkipSampleValue(skipSample[0], {0, 1105, 0, 0, 0, 10}));
+    ASSERT_EQ(true, CompareSkipSampleValue(skipSample[1], {3051, 0, 419, 0, 0, 10}));
+    g_frame[i] = audioFrame;
 }
 
 /**
@@ -1496,6 +1589,115 @@ HWTEST_F(DemuxerReli2NdkTest, DEMUXER_M4V_RELI_0800, TestSize.Level3)
 
             close(g_fdList[i]);
             g_fdList[i] = 1;
+        }
+        cout << "num: " << num << endl;
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_SKIP_SAMPLE_RELI_0100
+ * @tc.name      : create 16 instances repeat create-destory with mpe local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReli2NdkTest, DEMUXER_SKIP_SAMPLE_RELI_0100, TestSize.Level3)
+{
+    int num = 0;
+    int len = 256;
+    int expectAudioFrame = 3052;
+    while (true) {
+        num++;
+        vector<std::thread> vecThread;
+        for (int i = 0; i < g_maxThread; i++) {
+            char file[256] = {};
+            sprintf_s(file, len, "/data/test/media/16/%d_MP3_8K_1.mp3", i);
+            g_fdList[i] = open(file, O_RDONLY);
+            int64_t size = GetFileSize(file);
+            cout << file << "----------------------" << g_fdList[i] << "---------" << size << endl;
+            source_list[i] = OH_AVSource_CreateWithFD(g_fdList[i], 0, size);
+            ASSERT_NE(source_list[i], nullptr);
+            demuxer_list[i] = OH_AVDemuxer_CreateWithSource(source_list[i]);
+            ASSERT_NE(demuxer_list[i], nullptr);
+            vecThread.emplace_back(DemuxFuncAudio, i, size);
+        }
+        for (auto &val : vecThread) {
+            val.join();
+        }
+
+        for (int i = 0; i < g_maxThread; i++) {
+            ASSERT_EQ(expectAudioFrame, g_frame[i]);
+            ASSERT_EQ(skipSample[i].size(), 2);
+            ASSERT_EQ(true, CompareSkipSampleValue(skipSample[i][0], 0, 1105, 0, 0, 0, 10));
+            ASSERT_EQ(true, CompareSkipSampleValue(skipSample[i][1], 3051, 0, 419, 0, 0, 10));
+            skipSample[i] = vector<SkipSampleInfo>();
+        }
+
+        for (int i = 0; i < g_maxThread; i++) {
+            if (demuxer_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
+                demuxer_list[i] = nullptr;
+            }
+
+            if (source_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source_list[i]));
+                source_list[i] = nullptr;
+            }
+            std::cout << i << "            finish Destroy!!!!" << std::endl;
+            close(g_fdList[i]);
+            g_fdList[i] = -1;
+        }
+        cout << "num: " << num << endl;
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_SKIP_SAMPLE_RELI_0200
+ * @tc.name      : create 16 instances repeat create-destory with ogg local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReli2NdkTest, DEMUXER_SKIP_SAMPLE_RELI_0200, TestSize.Level3)
+{
+    int num = 0;
+    int len = 256;
+    int expectAudioFrame = 6863;
+    while (true) {
+        num++;
+        vector<std::thread> vecThread;
+        for (int i = 0; i < g_maxThread; i++) {
+            char file[256] = {};
+            sprintf_s(file, len, "/data/test/media/16/%d_OGG_8K_1.ogg", i);
+            g_fdList[i] = open(file, O_RDONLY);
+            int64_t size = GetFileSize(file);
+            cout << file << "----------------------" << g_fdList[i] << "---------" << size << endl;
+            source_list[i] = OH_AVSource_CreateWithFD(g_fdList[i], 0, size);
+            ASSERT_NE(source_list[i], nullptr);
+            demuxer_list[i] = OH_AVDemuxer_CreateWithSource(source_list[i]);
+            ASSERT_NE(demuxer_list[i], nullptr);
+            vecThread.emplace_back(DemuxFuncAudio, i, size);
+        }
+        for (auto &val : vecThread) {
+            val.join();
+        }
+
+        for (int i = 0; i < g_maxThread; i++) {
+            ASSERT_EQ(expectAudioFrame, g_frame[i]);
+            ASSERT_EQ(skipSample[i].size(), 1);
+            ASSERT_EQ(true, CompareSkipSampleValue(skipSample[i][0], 6862, 0, 244, 0, 0, 10));
+            skipSample[i] = vector<SkipSampleInfo>();
+        }
+
+        for (int i = 0; i < g_maxThread; i++) {
+            if (demuxer_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
+                demuxer_list[i] = nullptr;
+            }
+
+            if (source_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source_list[i]));
+                source_list[i] = nullptr;
+            }
+            std::cout << i << "            finish Destroy!!!!" << std::endl;
+            close(g_fdList[i]);
+            g_fdList[i] = -1;
         }
         cout << "num: " << num << endl;
     }

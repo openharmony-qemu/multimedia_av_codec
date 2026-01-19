@@ -115,7 +115,7 @@ private:
     uint32_t SaveData(uint8_t* data, uint32_t len, bool notBlock);
     uint32_t SaveCacheBufferData(uint8_t* data, uint32_t len, bool notBlock);
     Status ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo);
-    uint32_t SaveRingBufferData(uint8_t* data, uint32_t len, bool notBlock);
+    uint32_t SaveRingBufferData(uint8_t* data, uint32_t len);
     void OnClientErrorEvent();
     Status CheckIsEosRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status CheckIsEosCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
@@ -161,6 +161,7 @@ private:
     bool CheckAutoSelectBitrate();
     bool IsAutoSelectConditionOk();
     void WaitCacheBufferInit();
+    void UpdateDownloadFinished(const std::string &url, const std::string& location);
 
 private:
     std::shared_ptr<RingBuffer> ringBuffer_;

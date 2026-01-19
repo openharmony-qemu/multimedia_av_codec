@@ -103,8 +103,7 @@ CapabilityData *AVCodecListImpl::GetCapability(const std::string &mime, const bo
         auto nextIter = mimeCapIter;
         nextIter++;
         if ((codecType == AVCODEC_TYPE_VIDEO_ENCODER || codecType == AVCODEC_TYPE_AUDIO_ENCODER) == isEncoder &&
-            (isHardward == mimeCapIter->second->isVendor ||
-             (category == AVCodecCategory::AVCODEC_NONE && nextIter == mimeCapsRange.second))) {
+            (isHardward == mimeCapIter->second->isVendor)) {
             return mimeCapIter->second.get();
         }
     }
@@ -117,6 +116,11 @@ CapabilityData *AVCodecListImpl::GetCapability(const std::string &mime, const bo
         "Get capability failed from service, mime: %{public}s, isEnc: %{public}d, category: %{public}d",
         mime.c_str(), isEncoder, category);
 
+    auto capInCache = std::find_if(mimeCapsRange.first, mimeCapsRange.second,
+        [&capData](const auto &item) { return item.second->codecName == capData->codecName; });
+    if (capInCache != mimeCapsRange.second) {
+        return capInCache->second.get();
+    }
     mimeCapsMap_.emplace(mime, capData);
     AVCODEC_LOGD("Get capabilityData successfully, mime: %{public}s, isEnc: %{public}d, category: %{public}d",
         mime.c_str(), isEncoder, category);

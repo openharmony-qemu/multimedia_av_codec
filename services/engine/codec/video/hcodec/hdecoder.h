@@ -28,8 +28,7 @@
 namespace OHOS::MediaAVCodec {
 class HDecoder : public HCodec {
 public:
-    HDecoder(CodecHDI::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType)
-        : HCodec(caps, codingType, false) {}
+    HDecoder(CodecHDI::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType);
     ~HDecoder() override;
 
     class XperfConnector : public OHOS::HiviewDFX::VideoJankCallbackStub {
@@ -46,10 +45,12 @@ public:
 
 private:
     struct SurfaceBufferItem {
-        sptr<SurfaceBuffer> buffer;
         sptr<SyncFence> fence;
+        // release with seq
+        uint32_t seqnum = 0;
+        // release and request
+        sptr<SurfaceBuffer> buffer;
         int32_t generation = 0;
-        bool hasSwapedOut = false;
     };
 
 private:
@@ -103,6 +104,7 @@ private:
     int32_t Attach(BufferInfo &info);
     void OnGetBufferFromSurface(const ParamSP& param) override;
     SurfaceBufferItem RequestBuffer();
+    std::vector<BufferInfo>::iterator FindBelongTo(uint32_t seqnum);
     std::vector<BufferInfo>::iterator FindBelongTo(sptr<SurfaceBuffer>& buffer);
     std::vector<BufferInfo>::iterator FindNullSlotIfDynamicMode();
     void SurfaceModeSubmitBuffer();
@@ -138,6 +140,7 @@ private:
 #ifdef USE_VIDEO_PROCESSING_ENGINE
     int32_t VrrPrediction(BufferInfo &info) override;
     int32_t InitVrr();
+    void CombineConsumerUsageByVpe(uint64_t& consumerUsage);
     static constexpr double VRR_DEFAULT_INPUT_FRAME_RATE = 60.0;
     using VrrCreate = Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle* (*)();
     using VrrDestroy = void (*)(Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle*);
@@ -145,6 +148,7 @@ private:
         const char *processName);
     using VrrProcess = void (*)(Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle*,
         OH_NativeBuffer*, int32_t, int32_t);
+    using VpeVideoGetSupportedListByType = bool (*)(uint32_t, std::vector<std::string>&);
     VrrCreate VrrCreateFunc_ = nullptr;
     VrrDestroy VrrDestroyFunc_ = nullptr;
     VrrCheckSupport VrrCheckSupportFunc_ = nullptr;
@@ -188,6 +192,7 @@ private:
     std::list<SurfaceBufferItem> freeList_;
     int32_t currGeneration_ = 0;
     bool isDynamic_ = false;
+    bool isReleaseWithSeq_ = true;  // true: dont need to request, false: need to do request
     uint32_t outBufferCnt_ = 0;
     GraphicTransformType transform_ = GRAPHIC_ROTATE_NONE;
     std::optional<ScalingMode> scaleMode_;
