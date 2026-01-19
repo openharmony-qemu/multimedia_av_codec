@@ -87,7 +87,7 @@ private:
     void MediaStreamDfxTrace(std::shared_ptr<MediaSource> source);
     std::string GetCurUrl();
     Status InitSourcePlugin(const std::shared_ptr<MediaSource>& source);
-    bool isDash();
+    bool IsDash();
     uint32_t bufferSize_;
     uint32_t waterline_;
     uint32_t seekErrorCount_{0};

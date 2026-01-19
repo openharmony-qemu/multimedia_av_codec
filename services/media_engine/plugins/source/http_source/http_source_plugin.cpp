@@ -255,7 +255,7 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
             }
         }
     }
-    if (isDash()) {
+    if (IsDash()) {
         downloader_ = std::make_shared<DownloadMonitor>(
                       std::make_shared<DashMediaDownloader>(loaderCombinations_));
         downloader_->Init();
@@ -645,7 +645,7 @@ bool HttpSourcePlugin::IsFlvLive()
     return downloader_->IsFlvLive();
 }
 
-bool HttpSourcePlugin::isDash()
+bool HttpSourcePlugin::IsDash()
 {
     auto it = std::find_if(std::begin(DASH_LIST), std::end(DASH_LIST),
         [this](const std::string& key) {
