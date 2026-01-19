@@ -917,3 +917,63 @@ HWTEST_F(DemuxerPluginUnitTest, AVDemuxer_Enhance_CachePressure_061331, TestSize
     EXPECT_EQ(status, Status::OK);
     EXPECT_GE(videoFrameCount, 0);
 }
+
+Status ReadSampleAndPrintInfo(int32_t testId, std::shared_ptr<DemuxerPlugin> demuxerPlugin, int32_t trackId,
+    AVBufferWrapper& avbuffer, uint32_t timeoutMs)
+{
+    Status readStatus = demuxerPlugin->ReadSample(trackId, avbuffer.mediaAVBuffer, timeoutMs);
+    std::cout << "[" << testId << "] ReadSample status: " << static_cast<int>(readStatus) << ", trackId: " << trackId <<
+        ", pts: " << avbuffer.mediaAVBuffer->pts_ << ", dts: " << avbuffer.mediaAVBuffer->dts_ << std::endl;
+    uint32_t frameCount = 0;
+    demuxerPlugin->GetCurrentCacheFrameCount(trackId, frameCount);
+    std::cout << "[" << testId << "] frame count: " << frameCount << std::endl;
+    uint32_t cacheSize = 0;
+    demuxerPlugin->GetCurrentCacheSize(trackId, cacheSize);
+    std::cout << "[" << testId << "] cache size: " << cacheSize << std::endl;
+    return readStatus;
+}
+
+/**
+ * @tc.name: AVDemuxer_Enhance_CachePressure_061332
+ * @tc.desc: Test SeekToFrameByDts interface and cache state after seek operation
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, AVDemuxer_Enhance_CachePressure_061332, TestSize.Level1)
+{
+    constexpr int32_t testId = 061332;
+    std::string pluginName = "avdemux_flv";
+    std::string filePath = "/data/test/media/h264.flv";
+    constexpr uint32_t audioReadTimeoutMs = 50;
+    constexpr uint32_t videoReadTimeoutMs = 50;
+    constexpr uint32_t seekTimeoutMs = 1000;
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    // Select tracks first
+    constexpr uint32_t videoTrackId = 0;
+    constexpr uint32_t audioTrackId = 1;
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(videoTrackId), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(audioTrackId), Status::OK);
+    
+    // Read some audio samples first
+    AVBufferWrapper avbuffer(DEFAULT_BUFFSIZE);
+    constexpr uint32_t maxAudioReads = 20; // 最大音频读取次数
+    constexpr uint32_t maxVideoReads = 5; // 最大视频读取次数
+    Status readStatus = Status::OK;
+    for (uint32_t i = 0; i < maxAudioReads; ++i) {
+        readStatus = ReadSampleAndPrintInfo(testId, demuxerPlugin_, audioTrackId, avbuffer, audioReadTimeoutMs);
+        ASSERT_EQ(readStatus, Status::OK);
+    }
+    for (uint32_t i = 0; i < maxVideoReads; ++i) {
+        readStatus = ReadSampleAndPrintInfo(testId, demuxerPlugin_, videoTrackId, avbuffer, videoReadTimeoutMs);
+        ASSERT_EQ(readStatus, Status::OK);
+    }
+    int64_t seekTime = avbuffer.mediaAVBuffer->dts_ / 1000;
+    int64_t realSeekTime = 0;
+    Status seekStatus = demuxerPlugin_->SeekToFrameByDts(videoTrackId, seekTime, SeekMode::SEEK_CLOSEST, realSeekTime,
+                                                         seekTimeoutMs);
+    std::cout << "[" << testId << "] SeekToFrameByDts status: " << static_cast<int>(seekStatus) <<
+        ", seekTime: " << seekTime << ", realSeekTime: " << realSeekTime << std::endl;
+    ASSERT_EQ(seekStatus, Status::OK);
+    readStatus = ReadSampleAndPrintInfo(testId, demuxerPlugin_, videoTrackId, avbuffer, videoReadTimeoutMs);
+    ASSERT_EQ(readStatus, Status::OK);
+}

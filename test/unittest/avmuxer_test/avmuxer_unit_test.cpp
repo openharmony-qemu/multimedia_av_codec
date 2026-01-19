@@ -2731,7 +2731,8 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_UserKey_004, TestSize.Level0)
         str += ch;
     }
     audioParams->PutStringValue("com.openharmony.model", str);
-    avmuxer_->SetFormat(audioParams);
+    int ret = avmuxer_->SetFormat(audioParams);
+    ASSERT_EQ(ret, 3);  // 3
 }
 
 /**

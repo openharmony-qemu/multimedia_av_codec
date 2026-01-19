@@ -124,6 +124,8 @@ public:
     Status SeekToStart() override;
     Status SeekToKeyFrame(int32_t trackId, int64_t seekTime,
         SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs) override;
+    Status SeekToFrameByDts(int32_t trackId, int64_t seekTime,
+        SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs) override;
 
     // cache pressure control
     Status SetCachePressureCallback(CachePressureCallback cb) override;

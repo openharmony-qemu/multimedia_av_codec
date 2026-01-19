@@ -1284,6 +1284,10 @@ bool DecoderSurfaceFilter::DrainSeekClosest(uint32_t index, std::shared_ptr<AVBu
         return true;
     }
     MEDIA_LOG_I("Seek arrive target video pts: " PUBLIC_LOG_D64, seekTimeUs_);
+    {
+        std::unique_lock<std::mutex> lock(closestSeekMutex_);
+        closestSeekCond_.wait(lock, [this] { return isClosestSeekDone_.load() || isInterruptNeeded_.load(); });
+    }
     isSeek_ = false;
     return false;
 }
@@ -1347,12 +1351,13 @@ Status DecoderSurfaceFilter::SetDecryptConfig(const sptr<DrmStandard::IMediaKeyS
     return Status::OK;
 }
 
-void DecoderSurfaceFilter::SetSeekTime(int64_t seekTimeUs, PlayerSeekMode mode)
+void DecoderSurfaceFilter::SetSeekTime(int64_t seekTimeUs, PlayerSeekMode mode, bool needWait)
 {
     MEDIA_LOG_I("SetSeekTime");
     if (mode == PlayerSeekMode::SEEK_CLOSEST) {
         isSeek_ = true;
         seekTimeUs_ = seekTimeUs;
+        isClosestSeekDone_.store(!needWait);
     }
     FALSE_RETURN_NOLOG(postProcessor_ != nullptr);
     postProcessor_->SetSeekTime(seekTimeUs, mode);
@@ -1365,6 +1370,16 @@ void DecoderSurfaceFilter::ResetSeekInfo()
     seekTimeUs_ = 0;
     FALSE_RETURN_NOLOG(postProcessor_ != nullptr);
     postProcessor_->ResetSeekInfo();
+}
+
+void DecoderSurfaceFilter::ClosestSeekDone()
+{
+    MEDIA_LOG_I("ClosestSeekDone");
+    {
+        std::unique_lock<std::mutex> lock(closestSeekMutex_);
+        isClosestSeekDone_.store(true);
+    }
+    closestSeekCond_.notify_one();
 }
 
 void DecoderSurfaceFilter::ParseDecodeRateLimit()

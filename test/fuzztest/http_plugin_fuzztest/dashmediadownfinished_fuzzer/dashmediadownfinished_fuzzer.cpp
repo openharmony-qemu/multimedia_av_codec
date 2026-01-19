@@ -70,6 +70,8 @@ bool DashMediaDownFinishedFuzzerTest(const uint8_t *data, size_t size)
     mediaDownloader->Open(testUrl, httpHeader);
     std::vector<StreamInfo> streams;
     mediaDownloader->GetStreamInfo(streams);
+    int32_t appUid = GetData<int32_t>();
+    mediaDownloader->SetAppUid(appUid);
     std::cout << streams.size()<<endl;
     for (auto u : streams) {
         int32_t type = GetData<int32_t>()%4;
