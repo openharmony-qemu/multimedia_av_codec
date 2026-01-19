@@ -3386,7 +3386,7 @@ int64_t MediaDemuxer::ReadLoop(int32_t trackId)
 }
 
 void MediaDemuxer::AfterSeekNeedDrop(int32_t trackId)
- {
+{
     if (!afterSeekNeedDrop_[trackId]) {
         return;
     }
