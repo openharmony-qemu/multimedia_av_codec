@@ -3388,7 +3388,7 @@ int64_t MediaDemuxer::ReadLoop(int32_t trackId)
 
 int64_t MediaDemuxer::HandleFrameDropForTrack(int32_t trackId)
 {
-    if (frameCountNeedDrop_[trackId] <= 0){
+    if (frameCountNeedDrop_[trackId] <= 0) {
         return 0;
     }
     if (IsFd()) {
@@ -4708,7 +4708,7 @@ void MediaDemuxer::CachePressuredCallback(int32_t trackId, uint32_t cachedBytes)
             }
             AutoLock lock(mapMutex_);
             if (!taskMap_[trackId]->IsTaskRunning()) {
-                taskMap_[trackId]->Strat();
+                taskMap_[trackId]->Start();
             }
             MEDIA_LOG_I("source need drop count: " PUBLIC_LOG_U32, frameCountNeedDrop_[trackId]);
         }
