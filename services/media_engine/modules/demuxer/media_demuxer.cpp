@@ -3412,12 +3412,14 @@ int64_t MediaDemuxer::HandleFrameDropForTrack(int32_t trackId)
     }
     if (pluginTemp == nullptr) {
         dropStatus = Status::ERROR_UNKNOWN;
+        return 0;
     }
     dropStatus = pluginTemp->ReadSample(static_cast<uint32_t>(innerTrackID), sample, timeout_);
     if (dropStatus == Status::OK) {
         frameCountNeedDrop_[trackId]--;
     } else {
         frameCountNeedDrop_[trackId] = 0;
+        return 0;
     }
     return NEXT_DELAY_TIME_US;
 }
