@@ -395,7 +395,6 @@ private:
     Status SetCachePressureCallback();
     bool SourceDropFrame(int32_t trackId);
     Status ReadSampleToDrop(int32_t trackId, std::shared_ptr<AVBuffer> sample);
-    int64_t HandleFrameDropForTrack(int32_t trackId);
 
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
