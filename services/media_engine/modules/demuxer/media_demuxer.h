@@ -545,7 +545,6 @@ private:
     std::map<int32_t, int64_t> afterDropDts_;
     std::map<int32_t, bool> afterSeekNeedDrop_;
     bool videoNeedIFrame_ {false};
-    std::map<int32_t, uint32_t> frameCountNeedDrop_;
 };
 } // namespace Media
 } // namespace OHOS
