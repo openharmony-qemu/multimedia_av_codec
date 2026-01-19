@@ -49,16 +49,16 @@ int32_t AvcParser::WriteFrame(const std::shared_ptr<AVIOStream> &io, const std::
 {
     if (!IsAvccHvccFrame(sample->memory_->GetAddr(), sample->memory_->GetSize()) &&
         IsAnnexbFrame(sample->memory_->GetAddr(), sample->memory_->GetSize())) {
-        return WriteAnnexBFrame(io, sample->memory_->GetAddr(), sample->memory_->GetSize());
+        return WriteAnnexBFrame(io, sample);
     }
     io->Write(sample->memory_->GetAddr(), sample->memory_->GetSize());
     return sample->memory_->GetSize();
 }
 
-int32_t AvcParser::WriteAnnexBFrame(const std::shared_ptr<AVIOStream> &io, const uint8_t* sample, int32_t size)
+int32_t AvcParser::WriteAnnexBFrame(const std::shared_ptr<AVIOStream> &io, const std::shared_ptr<AVBuffer> &sample)
 {
-    const uint8_t* nalStart = sample;
-    const uint8_t* end = nalStart + size;
+    const uint8_t* nalStart = sample->memory_->GetAddr();
+    const uint8_t* end = nalStart + sample->memory_->GetSize();
     const uint8_t* nalEnd = nullptr;
     int32_t startCodeLen = 0;
     int32_t writeSize = 0;
@@ -67,7 +67,9 @@ int32_t AvcParser::WriteAnnexBFrame(const std::shared_ptr<AVIOStream> &io, const
     while (nalStart < end) {
         nalEnd = FindNalStartCode(nalStart, end, startCodeLen);
         int32_t naluSize = static_cast<int32_t>(nalEnd - nalStart);
-        writeSize += WriteSample(io, nalStart, naluSize);
+        if (!isFirstFrame_ || (sample->flag_ & static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME)) != 0) {
+            writeSize += WriteSample(io, nalStart, naluSize);
+        }
         AvcNalType nalType = static_cast<AvcNalType>(GetNalType(nalStart[0]));
         if (needParse_.find(nalType) != needParse_.end() && needParse_[nalType].first) {
             (this->*needParse_[nalType].second)(nalStart, naluSize);
@@ -75,7 +77,12 @@ int32_t AvcParser::WriteAnnexBFrame(const std::shared_ptr<AVIOStream> &io, const
         nalStart = nalEnd + startCodeLen;
     }
     UpdateNeedParser();
-
+    if (isFirstFrame_) {
+        isFirstFrame_ = false;
+        if ((sample->flag_ & static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME)) == 0) {
+            MEDIA_LOG_I("H264 first frame is not sync frame, return");
+        }
+    }
     return writeSize;
 }
 
