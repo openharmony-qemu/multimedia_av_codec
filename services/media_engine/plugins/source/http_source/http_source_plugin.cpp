@@ -255,13 +255,7 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
             }
         }
     }
-    bool isDash = false;
-    for (auto mpdType : DASH_LIST) {
-        if (uri_.find(mpdType) != std::string::npos) {
-            isDash = true;
-        }
-    }
-    if (isDash) {
+    if (isDash()) {
         downloader_ = std::make_shared<DownloadMonitor>(
                       std::make_shared<DashMediaDownloader>(loaderCombinations_));
         downloader_->Init();
@@ -649,6 +643,15 @@ bool HttpSourcePlugin::IsFlvLive()
 {
     FALSE_RETURN_V_MSG_E(downloader_ != nullptr, false, "downloader_ is nullptr");
     return downloader_->IsFlvLive();
+}
+
+bool HttpSourcePlugin::isDash()
+{
+    auto it = std::find_if(std::begin(DASH_LIST), std::end(DASH_LIST),
+        [this](const std::string& key) {
+            return this->uri_.find(key) != std::string::npos;
+    });
+    return it != std::end(DASH_LIST);
 }
 
 bool HttpSourcePlugin::IsHlsFmp4()
