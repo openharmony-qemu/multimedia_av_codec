@@ -4712,7 +4712,7 @@ void MediaDemuxer::AfterDrop(int32_t trackId)
         ReadSampleToDrop(videoTrackId_, videoSample);
         std::shared_ptr<AVBuffer> audioSample = AVBuffer::CreateAVBuffer();
         ReadSampleToDrop(audioTrackId_, audioSample);
-        int64_t readlSeekTime = 0;
+        int64_t realSeekTime = 0;
         if (IsNeedMapToInnerTrackID()) {
             int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
         } else {
