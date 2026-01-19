@@ -4715,12 +4715,8 @@ void MediaDemuxer::AfterDrop(int32_t trackId)
         int64_t readlSeekTime = 0;
         if (IsNeedMapToInnerTrackID()) {
             int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
-            demuxerPluginManager_->SingleStreamSeekTo((afterDropPts_[trackId] - startTime) / US_TO_MS,
-                SeekMode::SEEK_NEXT_SYNC, streamID, readlSeekTime);
         } else {
             int32_t streamID = demuxerPluginManager_->GetStreamIDByTrackID(trackId);
-            demuxerPluginManager_->SingleStreamSeekTo((afterDropPts_[trackId] - startTime) / US_TO_MS,
-                SeekMode::SEEK_NEXT_SYNC, streamID, readlSeekTime);
         }
         demuxerPluginManager_->SeekToFrameByDts(streamID, videoSample->dts_ / US_TO_MS,
             SeekMode::SEEK_CLOSEST, realSeekTime, timeout_);
