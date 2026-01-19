@@ -395,6 +395,7 @@ private:
     void ClearSampleQueue();
     Status SetCachePressureCallback();
     bool SourceDropFrame(int32_t trackId);
+    int64_t HandleFrameDropForTrack(int32_t trackId);
 
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
@@ -544,6 +545,7 @@ private:
     std::map<int32_t, int64_t> afterDropPts_;
     std::map<int32_t, bool> afterSeekNeedDrop_;
     bool videoNeedIFrame_ {false};
+    std::map<int32_t, uint32_t> frameCountNeedDrop_;
 };
 } // namespace Media
 } // namespace OHOS
