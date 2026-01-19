@@ -3383,28 +3383,28 @@ int64_t MediaDemuxer::ReadLoop(int32_t trackId)
 }
 
 void MediaDemuxer::AfterSeekNeedDrop(int32_t trackId)
-{	 
-    if (afterSeekNeedDrop_[trackId]) {	 
-        std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = nullptr;	 
-        int32_t innerTrackID = trackId;	 
-        if (IsNeedMapToInnerTrackID()) {	 
-            int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);	 
-            pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamID);	 
-            innerTrackID = demuxerPluginManager_->GetTmpInnerTrackIDByTrackID(trackId);	 
-        } else {	 
-            int32_t streamId = demuxerPluginManager_->GetStreamIDByTrackID(trackId);	 
-            pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamId);	 
-        }	 
-        if (pluginTemp == nullptr) {	 
-            return;	 
-        }	 
-        std::shared_ptr<AVBuffer> sample = AVBuffer::CreateAVBuffer();	 
-        pluginTemp->ReadSample(static_cast<int32_t>(innerTrackID), sample, timeout_);	 
-        while (sample->pts_ < afterDropPts_[trackId]) {	 
-            pluginTemp->ReadSample(static_cast<uint32_t>(innerTrackID), sample, timeout_);	 
-        }	 
-        afterSeekNeedDrop_[trackId] = false;	 
-    }	 
+{
+    if (afterSeekNeedDrop_[trackId]) {
+        std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = nullptr;
+        int32_t innerTrackID = trackId;
+        if (IsNeedMapToInnerTrackID()) {
+            int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
+            pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamID);
+            innerTrackID = demuxerPluginManager_->GetTmpInnerTrackIDByTrackID(trackId);
+        } else {
+            int32_t streamId = demuxerPluginManager_->GetStreamIDByTrackID(trackId);
+            pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamId);
+        }
+        if (pluginTemp == nullptr) {
+            return;
+        }
+        std::shared_ptr<AVBuffer> sample = AVBuffer::CreateAVBuffer();
+        pluginTemp->ReadSample(static_cast<int32_t>(innerTrackID), sample, timeout_);
+        while (sample->pts_ < afterDropPts_[trackId]) {
+            pluginTemp->ReadSample(static_cast<uint32_t>(innerTrackID), sample, timeout_);
+        }
+        afterSeekNeedDrop_[trackId] = false;
+    }
 }
 
 void MediaDemuxer::HandlePacketConvertError()
@@ -4705,12 +4705,12 @@ void MediaDemuxer::AfterDrop(int32_t trackId)
         if (sampleQueueMap_[trackId] == nullptr) {
             return;
         }
-        afterDropPts_[videoTrackId_] = sampleQueueMap_[videoTrackId_]->GetLastOutSamplePts();	 
-        afterDropPts_[audioTrackId_] = sampleQueueMap_[audioTrackId_]->GetLastOutSamplePts();	 
-        int64_t startTime = 0;	 
-        std::string mimeType;	 
-        mediaMetaData_.trackMetas[trackId]->Get<Tag::MEDIA_START_TIME>(startTime); 
-        MEDIA_LOG_I("afterDrop startTime: " PUBLIC_LOG_D64 " seekto time: " PUBLIC_LOG_D64 
+        afterDropPts_[videoTrackId_] = sampleQueueMap_[videoTrackId_]->GetLastOutSamplePts();
+        afterDropPts_[audioTrackId_] = sampleQueueMap_[audioTrackId_]->GetLastOutSamplePts();
+        int64_t startTime = 0;
+        std::string mimeType;
+        mediaMetaData_.trackMetas[trackId]->Get<Tag::MEDIA_START_TIME>(startTime);
+        MEDIA_LOG_I("afterDrop startTime: " PUBLIC_LOG_D64 " seekto time: " PUBLIC_LOG_D64
             " trackId: " PUBLIC_LOG_D32, startTime, afterDropPts_[trackId], trackId);
         int64_t readlSeekTime = 0;
         if (IsNeedMapToInnerTrackID()) {
@@ -4722,8 +4722,8 @@ void MediaDemuxer::AfterDrop(int32_t trackId)
             demuxerPluginManager_->SingleStreamSeekTo((afterDropPts_[trackId] - startTime) / US_TO_MS,
                 SeekMode::SEEK_NEXT_SYNC, streamID, readlSeekTime);
         }
-        ClearSampleQueue();	 
-        afterSeekNeedDrop_[videoTrackId_] = true;	 
+        ClearSampleQueue();
+        afterSeekNeedDrop_[videoTrackId_] = true;
         afterSeekNeedDrop_[audioTrackId_] = true;
     } else {
         videoNeedIFrame_ = true;
