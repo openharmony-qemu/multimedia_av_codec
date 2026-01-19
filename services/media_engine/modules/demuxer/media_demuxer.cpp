@@ -3346,7 +3346,7 @@ int64_t MediaDemuxer::ReadLoop(int32_t trackId)
     FALSE_RETURN_V_NOLOG(resPreReadSample == 0, resPreReadSample);
     AfterDrop(trackId);
     AfterSeekNeedDrop(trackId);
-    if (afterSeekNeepDrop_[trackId]) {
+    if (afterSeekNeedDrop_[trackId]) {
         return NEXT_DELAY_TIME_US;
     }
     Status ret = CopyFrameToUserQueue(trackId);
