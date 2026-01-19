@@ -3399,7 +3399,21 @@ int64_t MediaDemuxer::HandleFrameDropForTrack(int32_t trackId)
         frameCountNeedDrop_[trackId] = 0;
         return 0;
     }
-    Status dropStatus = ReadSampleToDrop(trackId, sample);
+    Status dropStatus = Status::OK;
+    std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = nullptr;
+    int32_t innerTrackID = trackId;
+    if (IsNeedMapToInnerTrackID()) {
+        int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
+        pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamID);
+        innerTrackID = demuxerPluginManager_->GetTmpInnerTrackIDByTrackID(trackId);
+    } else {
+        int32_t streamID = demuxerPluginManager_->GetStreamIDByTrackID(trackId);
+        pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamID);
+    }
+    if (pluginTemp == nullptr) {
+        dropStatus = Status::ERROR_UNKNOWN;
+    }
+    dropStatus = pluginTemp->ReadSample(static_cast<uint32_t>(innerTrackID), sample, timeout_);
     if (dropStatus == Status::OK) {
         frameCountNeedDrop_[trackId]--;
     } else {
@@ -4768,25 +4782,6 @@ void MediaDemuxer::ClearSampleQueue()
         auto &sampleQueue = sampleQueueMap_[subtitleTrackId_];
         sampleQueue->Clear();
     }
-}
-
-Status MediaDemuxer::ReadSampleToDrop(int32_t trackId, std::shared_ptr<AVBuffer> sample)
-{
-    std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = nullptr;
-    int32_t innerTrackID = trackId;
-    if (IsNeedMapToInnerTrackID()) {
-        int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
-        pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamID);
-        innerTrackID = demuxerPluginManager_->GetTmpInnerTrackIDByTrackID(trackId);
-    } else {
-        int32_t streamID = demuxerPluginManager_->GetStreamIDByTrackID(trackId);
-        pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamID);
-    }
-    if (pluginTemp == nullptr) {
-        return Status::ERROR_UNKNOWN;
-    }
-    Status status = p;uginTemp->ReadSample(static_cast<uint32_t>(innerTrackID), sample, timeout_);
-    return status;
 }
 } // namespace Media
 } // namespace OHOS
