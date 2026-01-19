@@ -14,23 +14,98 @@
  */
 
 #include "video_track.h"
+#include <set>
 #include "avcodec_common.h"
 #include "avcodec_mime_type.h"
 #include "mpeg4_utils.h"
 #include "avc_parser.h"
 #include "hevc_parser.h"
 
-#ifndef _WIN32
+using namespace OHOS::MediaAVCodec;
+using namespace OHOS::Media;
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_MUXER, "VideoTrack" };
 constexpr uint8_t FRAME_DEPENDENCY_UNKNOWN = 0x00;
 constexpr uint8_t FRAME_DEPENDENCY_YES = 0x01;
 constexpr uint8_t FRAME_DEPENDENCY_NO = 0x02;
 constexpr uint8_t FRAME_DEPENDENCY_EXT = 0x03;
-}
-#endif // !_WIN32
 
-using namespace OHOS::MediaAVCodec;
+bool CheckColorPrimary(Plugins::ColorPrimary primary)
+{
+    static const std::set<Plugins::ColorPrimary> table = {
+        Plugins::ColorPrimary::BT709,
+        Plugins::ColorPrimary::UNSPECIFIED,
+        Plugins::ColorPrimary::BT470_M,
+        Plugins::ColorPrimary::BT601_625,
+        Plugins::ColorPrimary::BT601_525,
+        Plugins::ColorPrimary::SMPTE_ST240,
+        Plugins::ColorPrimary::GENERIC_FILM,
+        Plugins::ColorPrimary::BT2020,
+        Plugins::ColorPrimary::SMPTE_ST428,
+        Plugins::ColorPrimary::P3DCI,
+        Plugins::ColorPrimary::P3D65,
+    };
+    auto it = table.find(primary);
+    if (it != table.end()) {
+        return true;
+    }
+    return false;
+}
+
+bool CheckColorTransfer(Plugins::TransferCharacteristic transfer)
+{
+    static const std::set<Plugins::TransferCharacteristic> table = {
+        Plugins::TransferCharacteristic::BT709,
+        Plugins::TransferCharacteristic::UNSPECIFIED,
+        Plugins::TransferCharacteristic::GAMMA_2_2,
+        Plugins::TransferCharacteristic::GAMMA_2_8,
+        Plugins::TransferCharacteristic::BT601,
+        Plugins::TransferCharacteristic::SMPTE_ST240,
+        Plugins::TransferCharacteristic::LINEAR,
+        Plugins::TransferCharacteristic::LOG,
+        Plugins::TransferCharacteristic::LOG_SQRT,
+        Plugins::TransferCharacteristic::IEC_61966_2_4,
+        Plugins::TransferCharacteristic::BT1361,
+        Plugins::TransferCharacteristic::IEC_61966_2_1,
+        Plugins::TransferCharacteristic::BT2020_10BIT,
+        Plugins::TransferCharacteristic::BT2020_12BIT,
+        Plugins::TransferCharacteristic::PQ,
+        Plugins::TransferCharacteristic::SMPTE_ST428,
+        Plugins::TransferCharacteristic::HLG,
+    };
+    auto it = table.find(transfer);
+    if (it != table.end()) {
+        return true;
+    }
+    return false;
+}
+
+bool CheckColorMatrix(Plugins::MatrixCoefficient matrix)
+{
+    static const std::set table = {
+        Plugins::MatrixCoefficient::IDENTITY,
+        Plugins::MatrixCoefficient::BT709,
+        Plugins::MatrixCoefficient::UNSPECIFIED,
+        Plugins::MatrixCoefficient::FCC,
+        Plugins::MatrixCoefficient::BT601_625,
+        Plugins::MatrixCoefficient::BT601_525,
+        Plugins::MatrixCoefficient::SMPTE_ST240,
+        Plugins::MatrixCoefficient::YCGCO,
+        Plugins::MatrixCoefficient::BT2020_NCL,
+        Plugins::MatrixCoefficient::BT2020_CL,
+        Plugins::MatrixCoefficient::SMPTE_ST2085,
+        Plugins::MatrixCoefficient::CHROMATICITY_NCL,
+        Plugins::MatrixCoefficient::CHROMATICITY_CL,
+        Plugins::MatrixCoefficient::ICTCP,
+    };
+    auto it = table.find(matrix);
+    if (it != table.end()) {
+        return true;
+    }
+    return false;
+}
+}
+
 namespace OHOS {
 namespace Media {
 namespace Plugins {
@@ -91,7 +166,7 @@ Status VideoTrack::Init(const std::shared_ptr<Meta> &trackDesc)
         MEDIA_LOG_I("video track bit rate:" PUBLIC_LOG_D64, bitRate_);
     }
     
-    InitColor(trackDesc);
+    FALSE_RETURN_V_MSG_E(InitColor(trackDesc), Status::ERROR_INVALID_PARAMETER, "Init color failed!");
     InitCuva(trackDesc);
     codecConfig_.clear();
     if (trackDesc->Find(Tag::MEDIA_CODEC_CONFIG) != trackDesc->end()) { // codec config
@@ -256,7 +331,7 @@ void VideoTrack::SetStssBox(std::shared_ptr<StssBox> stss)
     stss_ = stss;
 }
 
-void VideoTrack::InitColor(const std::shared_ptr<Meta> &trackDesc)
+bool VideoTrack::InitColor(const std::shared_ptr<Meta> &trackDesc)
 {
     isColor_ = false;
     if (trackDesc->Find(Tag::VIDEO_COLOR_PRIMARIES) != trackDesc->end() ||
@@ -267,15 +342,20 @@ void VideoTrack::InitColor(const std::shared_ptr<Meta> &trackDesc)
         trackDesc->Get<Tag::VIDEO_COLOR_TRC>(colorTransfer_);
         trackDesc->Get<Tag::VIDEO_COLOR_MATRIX_COEFF>(colorMatrixCoeff_);
         trackDesc->Get<Tag::VIDEO_COLOR_RANGE>(colorRange_);
-        MEDIA_LOG_D("color info.: primary %{public}d, transfer %{public}d, matrix coeff %{public}d,"
+        MEDIA_LOG_I("color info.: primary %{public}d, transfer %{public}d, matrix coeff %{public}d,"
             " range %{public}d,", static_cast<int32_t>(colorPrimaries_), static_cast<int32_t>(colorTransfer_),
             static_cast<int32_t>(colorMatrixCoeff_), static_cast<int32_t>(colorRange_));
+        if (!CheckColorPrimary(colorPrimaries_) || !CheckColorTransfer(colorTransfer_) ||
+            !CheckColorMatrix(colorMatrixCoeff_)) {
+            return false;
+        }
         if (colorPrimaries_ != ColorPrimary::UNSPECIFIED &&
             colorTransfer_ != TransferCharacteristic::UNSPECIFIED &&
             colorMatrixCoeff_ != MatrixCoefficient::UNSPECIFIED) {
             isColor_ = true;
         }
     }
+    return true;
 }
 
 void VideoTrack::InitCuva(const std::shared_ptr<Meta> &trackDesc)
@@ -454,8 +534,8 @@ void VideoTrack::DisposeBitrate()
 {
     FALSE_RETURN_MSG(stsz_ != nullptr, "stsz box is empty");
     if (isSameSize_) {
-        stsz_->samples_.clear();
         stsz_->sampleSize_ = stsz_->samples_.size() > 0 ? stsz_->samples_[0] : 0;
+        stsz_->samples_.clear();
     }
     if (durationUs_ > 0 && !codingType_.empty()) {
         int64_t bitRate = static_cast<int64_t>(allSampleSize_) *

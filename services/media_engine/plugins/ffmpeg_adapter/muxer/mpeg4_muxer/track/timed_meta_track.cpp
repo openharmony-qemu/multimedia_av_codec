@@ -122,8 +122,8 @@ Status TimedMetaTrack::WriteTailer()
         DisposeStts(lastDuration_, lastTimestampUs_);
         DisposeDuration();
         if (isSameSize_) {
+            stsz_->sampleSize_ = stsz_->samples_.size() > 0 ? stsz_->samples_[0] : 0;
             stsz_->samples_.clear();
-            stsz_->sampleSize_ = 0;
         }
     }
     return Status::NO_ERROR;
