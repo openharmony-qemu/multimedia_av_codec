@@ -773,18 +773,6 @@ Status DemuxerPluginManager::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode 
     return Status::OK;
 }
 
-Status DemuxerPluginManager::SeekToFrameByDts(int32_t streamID, int64_t seekTime, Plugins::SeekMode mode,
-    int64_t& realSeekTime, uint32_t timeoutMs)
-{
-    MediaAVCodec::AVCodecTrace trace("DemuxerPluginManager::SeekToFrameByDts");
-    Status ret = Status::OK;
-    if (streamID >= 0 && streamInfoMap_.find(streamID) != streamInfoMap_.end() &&
-        streamInfoMap_[streamID].plugin != nullptr) {
-        ret = streamInfoMap_[streamID].plugin->SeekToFrameByDts(-1, seekTime, mode, realSeekTime, timeoutMs);
-    }
-    return ret;
-}
-
 Status DemuxerPluginManager::Flush()
 {
     if (curAudioStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {
