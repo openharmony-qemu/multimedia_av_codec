@@ -653,7 +653,7 @@ int32_t InnerDemuxerSample::ReadSample(int32_t videoFrame, int32_t audioFrame)
                 cout << "ReadSampleBuffer fail ret:" << retForSave << endl;
                 break;
             }
-            if (SetEos() != 0) {
+            if (SetEos(trackType) != 0) {
                 continue;
             }
             if (trackType == MEDIA_TYPE_VID) {
@@ -669,7 +669,7 @@ int32_t InnerDemuxerSample::ReadSample(int32_t videoFrame, int32_t audioFrame)
     return ret;
 }
 
-int32_t InnerDemuxerSample::SetEos()
+int32_t InnerDemuxerSample::SetEos(int32_t trackType)
 {
     if (avBuffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
         if (trackType == MEDIA_TYPE_VID) {
