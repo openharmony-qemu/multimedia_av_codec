@@ -310,6 +310,18 @@ struct DemuxerPlugin : public PluginBase {
     */
     virtual Status SeekToKeyFrame(int32_t trackId, int64_t seekTime,
         SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs) { return Status::ERROR_UNKNOWN; };
+    /**
+     * @brief Seeks to a specified frame by DTS.
+     *
+     * @param trackId Identifies the stream in the media file.
+     * @param seekTime Indicates the target DTS.
+     * @param mode Indicates the seek mode.
+     * @param realSeekTime Indicates the accurate target DTS.
+     * @param timeoutMs If no result is available after @param timeoutMs milliseconds, the function returns.
+     * @return Execution Status
+     */
+    virtual Status SeekToFrameByDts(int32_t trackId, int64_t seekTime,
+        SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs) = 0;
 };
 
 /// Demuxer plugin api major number.

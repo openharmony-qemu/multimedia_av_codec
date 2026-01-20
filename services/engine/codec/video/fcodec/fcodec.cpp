@@ -1039,6 +1039,18 @@ bool FCodec::CheckStrideChange(uint32_t index, bool& isChanged)
     return true;
 }
 
+void FCodec::PutFormatValue()
+{
+    std::lock_guard<std::mutex> lock(formatMutex_);
+    format_.PutIntValue(FMTKey::VIDEO_WIDTH, width_);
+    format_.PutIntValue(FMTKey::VIDEO_HEIGHT, height_);
+    format_.PutIntValue(FMTKey::VIDEO_STRIDE,
+                        outputPixelFmt_ == VideoPixelFormat::RGBA ? width_ * VIDEO_PIX_DEPTH_RGBA : width_);
+    format_.PutIntValue(FMTKey::VIDEO_SLICE_HEIGHT, height_);
+    format_.PutIntValue(FMTKey::VIDEO_PIC_WIDTH, width_);
+    format_.PutIntValue(FMTKey::VIDEO_PIC_HEIGHT, height_);
+}
+
 int32_t FCodec::CheckFormatChange(uint32_t index, int width, int height)
 {
     AVCODEC_LOGD("cur decNum: %{public}u", decNum_);
@@ -1058,14 +1070,7 @@ int32_t FCodec::CheckFormatChange(uint32_t index, int width, int height)
         ResetData();
         scale_ = nullptr;
         CalculateBufferSize();
-        {
-            std::lock_guard<std::mutex> lock(formatMutex_);
-            format_.PutIntValue(FMTKey::VIDEO_WIDTH, width_);
-            format_.PutIntValue(FMTKey::VIDEO_HEIGHT, height_);
-            format_.PutIntValue(FMTKey::VIDEO_SLICE_HEIGHT, height_);
-            format_.PutIntValue(FMTKey::VIDEO_PIC_WIDTH, width_);
-            format_.PutIntValue(FMTKey::VIDEO_PIC_HEIGHT, height_);
-        }
+        PutFormatValue();
         {
             std::lock_guard<std::mutex> sLock(surfaceMutex_);
             if (sInfo_.surface) {

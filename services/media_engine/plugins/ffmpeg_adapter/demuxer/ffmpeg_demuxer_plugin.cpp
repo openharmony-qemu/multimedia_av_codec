@@ -184,7 +184,8 @@ static const std::vector<FileType> g_fileSkipGetMinTsPktInfo = {
     FileType::MKV,
     FileType::WMV,
     FileType::WMA,
-    FileType::MPEGTS
+    FileType::MPEGTS,
+    FileType::MPEGPS
 };
 
 bool HaveValidParser(const AVCodecID codecId)
@@ -1994,7 +1995,7 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
     Plugins::AVPacketWrapperPtr pktWrapper = nullptr;
     Status ret = Status::OK;
     bool extraType = (fileType_ == FileType::MPEGTS || FFmpegFormatHelper::IsMpeg4File(fileType_) ||
-        fileType_ == FileType::FLV);
+        fileType_ == FileType::FLV || fileType_ == FileType::RM);
     // Finish for extraType: get all support stream
     // Finish: read all video or init all parser
     while ((extraType && !AllSupportTrackFramesReady()) ||
@@ -2158,7 +2159,7 @@ void FFmpegDemuxerPlugin::SyncSeekThread()
 bool FFmpegDemuxerPlugin::IsUseFirstFrameDts(int trackIndex, int64_t seekTime)
 {
     if (seekTime == 0 &&
-        (fileType_ == FileType::MPEGTS || FFmpegFormatHelper::IsMpeg4File(fileType_)) &&
+        (fileType_ == FileType::MPEGTS || FFmpegFormatHelper::IsMpeg4File(fileType_) || fileType_ == FileType::RM) &&
         FFmpegFormatHelper::IsVideoType(*(formatContext_->streams[trackIndex])) &&
         VideoFirstFrameValid(trackIndex)) {
             return true;
@@ -2263,6 +2264,10 @@ Status FFmpegDemuxerPlugin::ReadUntilKeyFrame(Plugins::AVPacketWrapperPtr pktWra
         }
         readRange.end_ts = pktWrapper->GetDts();
         if (fFlag & AV_PKT_FLAG_KEY) {
+            return Status::OK;
+        }
+        if (NeedCombineFrame(pktWrapper->GetStreamIndex()) &&
+            streamParsers_->IsSyncFrame(pktWrapper->GetStreamIndex(), pktWrapper->GetData(), pktWrapper->GetSize())) {
             return Status::OK;
         }
         ++readCnt;
@@ -2980,16 +2985,18 @@ void FFmpegDemuxerPlugin::UpdMinTsPacketInfo(AVPacket *pkt)
 
 Status FFmpegDemuxerPlugin::SeekToStartInternal()
 {
-    std::unique_lock<std::shared_mutex> lock(sharedMutex_);
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     int64_t seekTs = AV_NOPTS_VALUE;
     int ffRet = -1;
     SyncSeekThread();
     if (IsSkipGetMinTsPktInfo()) {
-        av_dict_set_int(&formatContext_->metadata, "seekToStart", 1, 0);
-        ffRet = AVSeekFrameLock(SEEK_TRACK_DEFAULT, seekTs, AVSEEK_FLAG_ANY);
-        av_dict_set_int(&formatContext_->metadata, "seekToStart", 0, 0);
-    } else if (fileType_ == FileType::MPEGPS) {
-        ffRet = AVSeekFrameLock(SEEK_TRACK_DEFAULT, POS_0, AVSEEK_FLAG_BYTE);
+        if (fileType_ == FileType::MPEGPS || fileType_ == FileType::MPEGTS) {
+            ffRet = AVSeekFrameLock(SEEK_TRACK_DEFAULT, POS_0, AVSEEK_FLAG_BYTE);
+        } else {
+            av_dict_set_int(&formatContext_->metadata, "seekToStart", 1, 0);
+            ffRet = AVSeekFrameLock(SEEK_TRACK_DEFAULT, seekTs, AVSEEK_FLAG_ANY);
+            av_dict_set_int(&formatContext_->metadata, "seekToStart", 0, 0);
+        }
     } else if (minTsPktInfo_.isInit) {
         seekTs = (static_cast<uint32_t>(pluginImpl_->flags) & AVFMT_SEEK_TO_PTS) &&
             !FFmpegFormatHelper::IsMpeg4File(fileType_) ? minTsPktInfo_.minPts : minTsPktInfo_.minDts;
@@ -2997,13 +3004,8 @@ Status FFmpegDemuxerPlugin::SeekToStartInternal()
         MEDIA_LOG_I("av_seek_frame stream_index " PUBLIC_LOG_U32 " seekTs " PUBLIC_LOG_D64 " ffRet " PUBLIC_LOG_D32,
             minTsPktInfo_.streamIndex, seekTs, ffRet);
     }
-    lock.unlock();
-    if (ffRet < 0) {
-        MEDIA_LOG_I("Use default seekto.");
-        int64_t realSeekTime = 0;
-        auto ret = SeekTo(SEEK_TRACK_DEFAULT, 0, SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime);
-        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SeekTo failed.");
-    }
+    FALSE_RETURN_V_MSG_E(ffRet >= 0, Status::ERROR_UNKNOWN, "SeekToStartInternal failed");
+    ResetAfterSeek(AV_NOPTS_VALUE, SeekMode::SEEK_NEXT_SYNC);
     return Status::OK;
 }
 
@@ -3018,9 +3020,59 @@ Status FFmpegDemuxerPlugin::SeekToStart()
         return Status::OK;
     }
     auto ret = SeekToStartInternal();
+    if (ret != Status::OK) {
+        MEDIA_LOG_I("Use default seekto.");
+        int64_t realSeekTime = 0;
+        ret = SeekTo(SEEK_TRACK_DEFAULT, 0, SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime);
+    }
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SeekToStartInternal failed.");
-    ResetAfterSeek(AV_NOPTS_VALUE, SeekMode::SEEK_NEXT_SYNC);
     HiviewDFX::XCollie::GetInstance().CancelTimer(id);
+    return Status::OK;
+}
+
+Status FFmpegDemuxerPlugin::SeekToFrameByDts(int32_t trackId, int64_t seekTime,
+    SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs)
+{
+    MEDIA_LOG_D("in");
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
+    TimeoutGuard timeoutGuard(timeoutMs);
+    MediaAVCodec::AVCodecTrace trace("SeekToFrameByDts");
+    auto id = HiviewDFX::XCollie::GetInstance().SetTimer("av_codec::demuxer_seekToFrameByDts", SETTIMER_TIMEOUT,
+        nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
+    if (readThread_ != nullptr) {
+        SyncSeekThread();
+    }
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
+    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
+    FALSE_RETURN_V_MSG_E(seekTime >= 0 && seekTime <= INT64_MAX / MS_TO_NS, Status::ERROR_INVALID_PARAMETER,
+        "Seek time " PUBLIC_LOG_D64 " is not supported", seekTime);
+    FALSE_RETURN_V_MSG_E(mode == SeekMode::SEEK_CLOSEST, Status::ERROR_INVALID_PARAMETER,
+        "Seek mode " PUBLIC_LOG_U32 " is not supported", static_cast<uint32_t>(mode));
+    int trackIndex = SelectSeekTrack();
+    MEDIA_LOG_D("Seek by DTS based on track " PUBLIC_LOG_D32, trackIndex);
+    AVStream* avStream = formatContext_->streams[trackIndex];
+    FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER,
+        "AVStream is nullptr");
+    int64_t ffDts = ConvertTimeToFFmpeg(seekTime * MS_TO_NS, avStream->time_base);
+    MEDIA_LOG_D("Seek DTS: " PUBLIC_LOG_D64 " ms -> " PUBLIC_LOG_D64 " (FFmpeg time_base)",
+        seekTime, ffDts);
+    int ffRet = AVSeekFrameLock(trackIndex, ffDts, AVSEEK_FLAG_ANY);
+    // 如果不支持（返回 EPERM 或其他错误），回退到 AVSEEK_FLAG_FRAME
+    if (ffRet < 0) {
+        MEDIA_LOG_W("AVSEEK_FLAG_ANY failed (err: " PUBLIC_LOG_S "), fallback to AVSEEK_FLAG_FRAME",
+            AVStrError(ffRet).c_str());
+        ffRet = AVSeekFrameLock(trackIndex, ffDts, AVSEEK_FLAG_FRAME);
+    }
+    FALSE_RETURN_V_MSG_E(ffRet >= 0, Status::ERROR_UNKNOWN,
+        "Call av_seek_frame failed, err: " PUBLIC_LOG_S, AVStrError(ffRet).c_str());
+    formatContext_->pb->error = 0;
+    FALSE_RETURN_V_MSG_E(!timeoutGuard.IsTimeout(), Status::ERROR_WAIT_TIMEOUT,
+        "Timeout after av_seek_frame");
+    realSeekTime = ConvertTimeFromFFmpeg(ffDts, avStream->time_base);
+    ResetAfterSeek(seekTime, mode);
+    HiviewDFX::XCollie::GetInstance().CancelTimer(id);
+    MEDIA_LOG_I("Seek by DTS succeeded: target=" PUBLIC_LOG_D64 " ms, real=" PUBLIC_LOG_D64 " (ns)",
+        seekTime, realSeekTime);
     return Status::OK;
 }
 

@@ -134,6 +134,7 @@ public:
     Status StopBufferring(bool isAppBackground);
     bool IsHlsEnd(int32_t streamId = -1);
     bool IsHls();
+    bool IsCloudFd();
 
 private:
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);

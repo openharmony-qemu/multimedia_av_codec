@@ -164,7 +164,7 @@ void SampleQueueController::ConsumeSpeed(int32_t trackId)
 {
     if (consumeSpeedCountInfo_[trackId] == nullptr) {
         consumeSpeedCountInfo_[trackId] = std::make_shared<SpeedCountInfo>();
-    }vbmn  0
+    }
     auto countInfo = consumeSpeedCountInfo_[trackId];
     countInfo->IncrementFrameCount();
     countInfo->OnEventTimeRecord();

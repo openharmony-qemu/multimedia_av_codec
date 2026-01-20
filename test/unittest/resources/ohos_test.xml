@@ -2323,6 +2323,52 @@
             <option name="push" value="video_res/test_dash/segment_base/index.mpd -> /data/test/media/test_dash/segment_base4" src="res"/>
             <option name="push" value="video_res/test_dash/segment_base/media-video-1.mp4 -> /data/test/media/test_dash/segment_base4" src="res"/>
             <option name="push" value="video_res/test_dash/segment_base/media-video-2.mp4 -> /data/test/media/test_dash/segment_base4" src="res"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_dash"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_dash/segment_template"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_dash/segment_template/video"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_dash/segment_template/video/1"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_dash/segment_template/audio"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_dash/segment_template/audio/und"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_dash/segment_template/audio/und/mp4a"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_dash/segment_list"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_dash/segment_list/video"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_dash/segment_list/video/1"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_dash/segment_list/audio"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_dash/segment_list/audio/und"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_dash/segment_list/audio/und/mp4a"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_dash/segment_base"/>
+            <option name="push" value="video_res/test_dash/segment_template/video/1/seg-0004.m4s -> /data/test/media/test_dash/segment_template/video/1" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_template/video/1/seg-0003.m4s -> /data/test/media/test_dash/segment_template/video/1" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_template/video/1/seg-0002.m4s -> /data/test/media/test_dash/segment_template/video/1" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_template/video/1/seg-0001.m4s -> /data/test/media/test_dash/segment_template/video/1" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_template/video/1/init.mp4 -> /data/test/media/test_dash/segment_template/video/1" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_template/index.mpd -> /data/test/media/test_dash/segment_template" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_template/index_adpt.mpd -> /data/test/media/test_dash/segment_template" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_template/index_timeline.mpd -> /data/test/media/test_dash/segment_template" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_template/audio/und/mp4a/seg-0004.m4s -> /data/test/media/test_dash/segment_template/audio/und/mp4a" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_template/audio/und/mp4a/seg-0003.m4s -> /data/test/media/test_dash/segment_template/audio/und/mp4a" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_template/audio/und/mp4a/seg-0002.m4s -> /data/test/media/test_dash/segment_template/audio/und/mp4a" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_template/audio/und/mp4a/seg-0001.m4s -> /data/test/media/test_dash/segment_template/audio/und/mp4a" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_template/audio/und/mp4a/init.mp4 -> /data/test/media/test_dash/segment_template/audio/und/mp4a" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_list/video/1/seg-4.m4s -> /data/test/media/test_dash/segment_list/video/1" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_list/video/1/seg-3.m4s -> /data/test/media/test_dash/segment_list/video/1" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_list/video/1/seg-2.m4s -> /data/test/media/test_dash/segment_list/video/1" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_list/video/1/seg-1.m4s -> /data/test/media/test_dash/segment_list/video/1" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_list/video/1/init.mp4 -> /data/test/media/test_dash/segment_list/video/1" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_list/index.mpd -> /data/test/media/test_dash/segment_list" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_list/index_timeline.mpd -> /data/test/media/test_dash/segment_list" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_list/audio/und/mp4a/seg-4.m4s -> /data/test/media/test_dash/segment_list/audio/und/mp4a" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_list/audio/und/mp4a/seg-3.m4s -> /data/test/media/test_dash/segment_list/audio/und/mp4a" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_list/audio/und/mp4a/seg-2.m4s -> /data/test/media/test_dash/segment_list/audio/und/mp4a" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_list/audio/und/mp4a/seg-1.m4s -> /data/test/media/test_dash/segment_list/audio/und/mp4a" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_list/audio/und/mp4a/init.mp4 -> /data/test/media/test_dash/segment_list/audio/und/mp4a" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_base/media-video-2.mp4 -> /data/test/media/test_dash/segment_base" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_base/media-video-1.mp4 -> /data/test/media/test_dash/segment_base" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_base/media-audio-und-mp4a.mp4 -> /data/test/media/test_dash/segment_base" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_base/index.mpd -> /data/test/media/test_dash/segment_base" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_base/index_audio_subtitle.mpd -> /data/test/media/test_dash/segment_base" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_base/index_period.mpd -> /data/test/media/test_dash/segment_base" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
             <option name="shell" value="restorecon /data/test/media/test_dash/segment_base4"/>
         </preparer>
     </target>
@@ -2449,6 +2495,18 @@
             <option name="push" value="muxer_res/aac_2c_44100hz_199k.dat -> /data/test/media" src="res"/>
             <option name="push" value="muxer_res/h265_logInfo.dat -> /data/test/media" src="res"/>
             <option name="push" value="muxer_res/aac_44100_2.dat -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/aac_2c_44100hz_199k_muxer.dat -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="avmuxer_ffmpeg_plugin_mp4_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="muxer_res/h264_720_480.dat -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/aac_2c_44100hz_199k.dat -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/h265_logInfo.dat -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/aac_44100_2.dat -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/aac_2c_44100hz_199k_muxer.dat -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>

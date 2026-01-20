@@ -1,0 +1,72 @@
+# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#####################hydra-fuzz###################
+import("//build/config/features.gni")
+import("//build/test.gni")
+import("//build/ohos.gni")
+import("//foundation/multimedia/av_codec/config.gni")
+module_output_path = "player_framework/player_framework"
+MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
+
+##############################fuzztest##########################################
+ohos_fuzztest("AudioDecoderAdapterFuzzTest") {
+  module_out_path = module_output_path
+  fuzz_config_file =
+      "$MEDIA_ROOT_DIR/test/fuzztest/audiodecoderadapter_fuzzer"
+  include_dirs = [
+    "$MEDIA_ROOT_DIR/test/fuzztest/audiodecoderadapter_fuzzer",
+    "//foundation/multimedia/av_codec/interfaces/inner_api/native", 
+    "//foundation/multimedia/av_codec/services/media_engine/filters",
+  ]
+  cflags = [
+    "-g",
+    "-O0",
+    "-Wno-unused-variable",
+    "-fno-omit-frame-pointer",
+  ]
+  sources = [
+    "audio_decoderadapter_fuzzer.cpp",
+    "../../../services/media_engine/filters/audio_decoder_adapter.cpp",
+  ]
+
+  defines = []
+
+  if (av_codec_enable_special_codec) {
+    defines += [ "AV_CODEC_AUDIO_SPECIAL_CAPACITY" ]
+  }
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+    "ipc:ipc_single",
+    "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
+    "window_manager:libwm",
+  ]
+  deps = [
+    "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
+    "$MEDIA_ROOT_DIR/services/services:av_codec_service",
+  ]
+}
+
+###############################################################################
+group("fuzztest") {
+  testonly = true
+  deps = []
+  deps += [
+    # deps file
+    ":AudioDecoderAdapterFuzzTest",
+  ]
+}
+###############################################################################

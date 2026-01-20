@@ -222,6 +222,11 @@ public:
         (void)frameCount;
         return mapStatus_[name_];
     }
+    Status SeekToFrameByDts(int32_t trackId, int64_t seekTime,
+        SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs) override
+    {
+        return mapStatus_[name_];
+    }
 private:
     std::map<std::string, Status> mapStatus_;
     std::string name_;

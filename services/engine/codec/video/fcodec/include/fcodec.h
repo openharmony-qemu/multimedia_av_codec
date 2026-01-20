@@ -157,6 +157,7 @@ private:
     bool CanSwapOut(bool isOutputBuffer, std::shared_ptr<FBuffer> &fBuffer);
     int32_t SwapOutBuffers(bool isOutputBuffer, State curState);
     int32_t SwapInBuffers(bool isOutputBuffer);
+    void PutFormatValue();
     int32_t pid_ = -1;
 
     int32_t instanceId_ = -1;

@@ -824,6 +824,11 @@ bool FileFdSourcePlugin::IsLocalFd()
     return !isCloudFile_;
 }
 
+bool FileFdSourcePlugin::IsCloudFd()
+{
+    return isCloudFile_;
+}
+
 Status FileFdSourcePlugin::GetDownloadInfo(DownloadInfo& downloadInfo)
 {
     downloadInfo.totalDownLoadBytes = totalDownLoadBytes_;

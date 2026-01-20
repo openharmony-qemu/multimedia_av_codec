@@ -580,10 +580,18 @@ Status AudioRawDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> &
     int32_t size = memory->GetSize();
     uint8_t *ptr = memory->GetAddr();
     if (srcSampleFormat_ == AudioSampleFormat::SAMPLE_BLURAY) {
+        if (size < BLURAY_OFFSET) {
+            AVCODEC_LOGE("bluray size:%{public}d is invalid", size);
+            return Status::ERROR_UNKNOWN;
+        }
         size -= BLURAY_OFFSET;
         ptr += BLURAY_OFFSET;
     }
     if (srcSampleFormat_ == AudioSampleFormat::SAMPLE_DVD) {
+        if (size < DVD_OFFSET) {
+            AVCODEC_LOGE("dvd size:%{public}d is invalid", size);
+            return Status::ERROR_UNKNOWN;
+        }
         size -= DVD_OFFSET;
         ptr += DVD_OFFSET;
     }

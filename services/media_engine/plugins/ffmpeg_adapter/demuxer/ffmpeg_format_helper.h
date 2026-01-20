@@ -37,7 +37,9 @@ namespace Plugins {
 namespace Ffmpeg {
 struct ParserSdtpInfo {
     void *pb = nullptr;
+    int refCount = 0;
     int pbIsCopied = 0;
+    int id = 0;
     int ffindex = 0;
     int nextChunk = 0;
     unsigned int chunkCount = 0;

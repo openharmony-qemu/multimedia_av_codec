@@ -39,7 +39,7 @@ public:
     int32_t Read(uint8_t *data, int32_t size);
     void Seek(int64_t offset, int whence = SEEK_SET);
     int64_t GetPos();
-    void DataReverse(uint8_t *data, int32_t size);
+    bool CanRead();
 
 private:
     std::shared_ptr<DataSink> dataSink_ = nullptr;

@@ -205,68 +205,6 @@ ohos_unittest("http_source_plugin_unit_test") {
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
 
-ohos_unittest("xml_parser_unittest") {
-  sanitize = av_codec_test_sanitize
-  module_out_path = module_output_path
-  testonly = true
-  configs = [
-    ":hls_unittest_cfg",
-    "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
-  ]
-  sources = hls_test_sources + [ "xml_parser_unittest.cpp" ]
-  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
-
-  external_deps = [
-    "c_utils:utils",
-    "curl:curl_shared",
-    "graphic_surface:surface",
-    "hilog:libhilog",
-    "init:libbegetutil",
-    "ipc:ipc_single",
-    "libxml2:libxml2",
-    "media_foundation:media_foundation",
-    "netmanager_base:net_conn_manager_if",
-    "openssl:libcrypto_shared",
-    "safwk:system_ability_fwk",
-    "samgr:samgr_proxy",
-    "bundle_framework:appexecfwk_base",
-    "bundle_framework:appexecfwk_core",
-  ]
-  resource_config_file =
-      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
-}
-
-ohos_unittest("xml_element_unittest") {
-  sanitize = av_codec_test_sanitize
-  module_out_path = module_output_path
-  testonly = true
-  configs = [
-    ":hls_unittest_cfg",
-    "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
-  ]
-  sources = hls_test_sources + [ "xml_element_unittest.cpp" ]
-  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
-
-  external_deps = [
-    "c_utils:utils",
-    "curl:curl_shared",
-    "graphic_surface:surface",
-    "hilog:libhilog",
-    "init:libbegetutil",
-    "ipc:ipc_single",
-    "libxml2:libxml2",
-    "media_foundation:media_foundation",
-    "netmanager_base:net_conn_manager_if",
-    "openssl:libcrypto_shared",
-    "safwk:system_ability_fwk",
-    "samgr:samgr_proxy",
-    "bundle_framework:appexecfwk_base",
-    "bundle_framework:appexecfwk_core",
-  ]
-  resource_config_file =
-      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
-}
-
 ohos_unittest("http_source_plugin_unittest") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path

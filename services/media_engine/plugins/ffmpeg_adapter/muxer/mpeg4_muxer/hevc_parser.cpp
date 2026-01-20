@@ -16,6 +16,7 @@
 #include "hevc_parser.h"
 #include <algorithm>
 #include <set>
+#include "mpeg4_utils.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_MUXER, "HevcParser" };
@@ -67,8 +68,8 @@ int32_t HevcParser::WriteFrame(const std::shared_ptr<AVIOStream> &io, const std:
             parser_->ParseExtraData(buffer, size, &extra, &extraSize);
             if (extraSize > 0) {
                 isParserColor_ = true;
-                hvccBox_->data.resize(extraSize);
-                std::copy(extra, extra + extraSize, hvccBox_->data.begin());
+                hvccBox_->data.clear();
+                hvccBox_->data.assign(extra, extra + extraSize);
             }
             MEDIA_LOG_I("avmuxer h265 first frame size:%{public}d, extra data size:%{public}d, box data"
                 " size:%{public}zu", size, extraSize, hvccBox_->data.size());
