@@ -324,6 +324,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/avsourcefunc_fuzzer:AvSourceFuncFuzzTest",
       "fuzztest/demuxer_fuzzer:DemuxerFuzzTest",
       "fuzztest/demuxerinnerfunc_fuzzer:DemuxerInnerFuncFuzzTest",
+      "fuzztest/demuxerinner_fuzzer:DemuxerInnerFuzzTest",
       "fuzztest/demuxeraac_fuzzer:DemuxerAacFuzzTest",
       "fuzztest/demuxeraacapi11_fuzzer:DemuxerAacAPI11FuzzTest",
       "fuzztest/demuxeramr_fuzzer:DemuxerAmrFuzzTest",

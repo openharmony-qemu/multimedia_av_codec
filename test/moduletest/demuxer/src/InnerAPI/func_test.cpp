@@ -25,11 +25,12 @@
 #include "securec.h"
 #include "inner_demuxer_sample.h"
 #include "media_description.h"
-
+#include "file_server_demo.h"
 #include <iostream>
 #include <cstdio>
 #include <string>
 #include <fcntl.h>
+
 
 using namespace std;
 using namespace OHOS;
@@ -41,7 +42,9 @@ namespace {
 const int64_t SOURCE_OFFSET = 0;
 static std::shared_ptr<AVSource> source = nullptr;
 static std::shared_ptr<AVDemuxer> demuxer = nullptr;
+static unique_ptr<FileServerDemo> server = nullptr;
 static const string TEST_FILE_PATH = "/data/test/media/";
+const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_hevc_parser.z.so";
 string g_doubleHevcPath = TEST_FILE_PATH + string("double_hevc.mp4");
 string g_singleHevcPath = TEST_FILE_PATH + string("single_60.mp4");
 string g_singleRkPath = TEST_FILE_PATH + string("single_rk.mp4");
@@ -102,8 +105,15 @@ private:
     uint32_t audioIndexForRead_ = 0;
 };
 
-void DemuxerInnerFuncNdkTest::SetUpTestCase() {}
-void DemuxerInnerFuncNdkTest::TearDownTestCase() {}
+void DemuxerInnerFuncNdkTest::SetUpTestCase()
+{
+    server = make_unique<FileServerDemo>();
+    server->StartServer();    
+}
+void DemuxerInnerFuncNdkTest::TearDownTestCase()
+{
+    server->StopServer();    
+}
 void DemuxerInnerFuncNdkTest::SetUp() {}
 void DemuxerInnerFuncNdkTest::TearDown()
 {
@@ -1429,5 +1439,257 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_COVER_INNER_FUNC_0010, TestSize.Level2
     ASSERT_EQ(433, audioIndexForRead_);
     close(fd_);
     fd_ = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_HDR10_HLG_META_LOCAL_0100
+ * @tc.name      : check mp4 hdr type for 264, local
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_HDR10_HLG_META_LOCAL_0100, TestSize.Level2)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        auto demuxerSample = make_unique<InnerDemuxerSample>();
+        ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/mp3_h264.mp4", true), AVCS_ERR_OK);
+        ASSERT_EQ(demuxerSample->getHdrMetadata, false);
+        ASSERT_EQ(demuxerSample->ReadSample(373, 468), AVCS_ERR_OK);
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_HDR10_HLG_META_URI_0100
+ * @tc.name      : check mp4 hdr type for 264, uri
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_HDR10_HLG_META_URI_0100, TestSize.Level2)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        auto demuxerSample = make_unique<InnerDemuxerSample>();
+        ASSERT_EQ(demuxerSample->InitWithFile("http://127.0.0.1:46666/mp3_h264.mp4", false), AVCS_ERR_OK);
+        ASSERT_EQ(demuxerSample->getHdrMetadata, false);
+        ASSERT_EQ(demuxerSample->ReadSample(373, 468), AVCS_ERR_OK);
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_HDR10_HLG_META_LOCAL_0200
+ * @tc.name      : check mp4 hdr type for hdr10, local
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_HDR10_HLG_META_LOCAL_0200, TestSize.Level0)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        auto demuxerSample = make_unique<InnerDemuxerSample>();
+        ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_hdr_1_hevc.mp4", true), AVCS_ERR_OK);
+        ASSERT_EQ(demuxerSample->getHdrMetadata, true);
+        ASSERT_EQ(demuxerSample->hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HDR_10));
+        ASSERT_EQ(demuxerSample->ReadSample(242, 235), AVCS_ERR_OK);
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_HDR10_HLG_META_URI_0200
+ * @tc.name      : check mp4 hdr type for hdr10, uri
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_HDR10_HLG_META_URI_0200, TestSize.Level2)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        auto demuxerSample = make_unique<InnerDemuxerSample>();
+        ASSERT_EQ(demuxerSample->InitWithFile("http://127.0.0.1:46666/demuxer_parser_hdr_1_hevc.mp4", false), AVCS_ERR_OK);
+        ASSERT_EQ(demuxerSample->getHdrMetadata, true);
+        ASSERT_EQ(demuxerSample->hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HDR_10));
+        ASSERT_EQ(demuxerSample->ReadSample(242, 235), AVCS_ERR_OK);
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_HDR10_HLG_META_LOCAL_0300
+ * @tc.name      : check mp4 hdr type for hlg, local
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_HDR10_HLG_META_LOCAL_0300, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        auto demuxerSample = make_unique<InnerDemuxerSample>();
+        ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/hlg.mp4", true), AVCS_ERR_OK);
+        ASSERT_EQ(demuxerSample->getHdrMetadata, true);
+        ASSERT_EQ(demuxerSample->hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HLG));
+        ASSERT_EQ(demuxerSample->ReadSample(80, 0), AVCS_ERR_OK);
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_HDR10_HLG_META_URI_0300
+ * @tc.name      : check mp4 hdr type for hlg, uri
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_HDR10_HLG_META_URI_0300, TestSize.Level2)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        auto demuxerSample = make_unique<InnerDemuxerSample>();
+        ASSERT_EQ(demuxerSample->InitWithFile("http://127.0.0.1:46666/hlg.mp4", false), AVCS_ERR_OK);
+        ASSERT_EQ(demuxerSample->getHdrMetadata, true);
+        ASSERT_EQ(demuxerSample->hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HLG));
+        ASSERT_EQ(demuxerSample->ReadSample(80, 0), AVCS_ERR_OK);
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_HDR10_HLG_META_LOCAL_0400
+ * @tc.name      : check mp4 hdr type for hlg hdrvivid, local
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_HDR10_HLG_META_LOCAL_0400, TestSize.Level2)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        auto demuxerSample = make_unique<InnerDemuxerSample>();
+        ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/hlgHdrVivid.mp4", true), AVCS_ERR_OK);
+        ASSERT_EQ(demuxerSample->getHdrMetadata, true);
+        ASSERT_EQ(demuxerSample->hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HDR_VIVID));
+        ASSERT_EQ(demuxerSample->ReadSample(66, 103), AVCS_ERR_OK);
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_HDR10_HLG_META_URI_0400
+ * @tc.name      : check mp4 hdr type for hlg hdrvivid, uri
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_HDR10_HLG_META_URI_0400, TestSize.Level2)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        auto demuxerSample = make_unique<InnerDemuxerSample>();
+        ASSERT_EQ(demuxerSample->InitWithFile("http://127.0.0.1:46666/hlgHdrVivid.mp4", false), AVCS_ERR_OK);
+        ASSERT_EQ(demuxerSample->getHdrMetadata, true);
+        ASSERT_EQ(demuxerSample->hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HDR_VIVID));
+        ASSERT_EQ(demuxerSample->ReadSample(66, 103), AVCS_ERR_OK);
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_HDR10_HLG_META_LOCAL_0500
+ * @tc.name      : check mp4 hdr type for pq hdrvivid, local
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_HDR10_HLG_META_LOCAL_0500, TestSize.Level2)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        auto demuxerSample = make_unique<InnerDemuxerSample>();
+        ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/pqHdrvivid.mp4", true), AVCS_ERR_OK);
+        ASSERT_EQ(demuxerSample->getHdrMetadata, true);
+        ASSERT_EQ(demuxerSample->hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HDR_VIVID));
+        ASSERT_EQ(demuxerSample->ReadSample(3000, 0), AVCS_ERR_OK);
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_HDR10_HLG_META_URI_0500
+ * @tc.name      : check mp4 hdr type for pq hdrvivid, uri
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_HDR10_HLG_META_URI_0500, TestSize.Level2)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        auto demuxerSample = make_unique<InnerDemuxerSample>();
+        ASSERT_EQ(demuxerSample->InitWithFile("http://127.0.0.1:46666/pqHdrvivid.mp4", false), AVCS_ERR_OK);
+        ASSERT_EQ(demuxerSample->getHdrMetadata, true);
+        ASSERT_EQ(demuxerSample->hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HDR_VIVID));
+        ASSERT_EQ(demuxerSample->ReadSample(3000, 0), AVCS_ERR_OK);
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_HDR10_HLG_META_LOCAL_0600
+ * @tc.name      : check mp4 hdr type for Dolby Vision, local
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_HDR10_HLG_META_LOCAL_0600, TestSize.Level2)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        auto demuxerSample = make_unique<InnerDemuxerSample>();
+        ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/dolbyvision.MOV", true), AVCS_ERR_OK);
+        ASSERT_EQ(demuxerSample->getHdrMetadata, true);
+        ASSERT_EQ(demuxerSample->hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HDR_10));
+        ASSERT_EQ(demuxerSample->ReadSample(324, 468), AVCS_ERR_OK);
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_HDR10_HLG_META_URI_0600
+ * @tc.name      : check mp4 hdr type for Dolby Vision, uri
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_HDR10_HLG_META_URI_0600, TestSize.Level2)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        auto demuxerSample = make_unique<InnerDemuxerSample>();
+        ASSERT_EQ(demuxerSample->InitWithFile("http://127.0.0.1:46666/dolbyvision.MOV", false), AVCS_ERR_OK);
+        ASSERT_EQ(demuxerSample->getHdrMetadata, true);
+        ASSERT_EQ(demuxerSample->hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HDR_10));
+        ASSERT_EQ(demuxerSample->ReadSample(324, 468), AVCS_ERR_OK);
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_HDR10_HLG_META_LOCAL_0700
+ * @tc.name      : check mp4 hdr type for SDR, local
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_HDR10_HLG_META_LOCAL_0700, TestSize.Level2)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        auto demuxerSample = make_unique<InnerDemuxerSample>();
+        ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/mp3_h265.mp4", true), AVCS_ERR_OK);
+        ASSERT_EQ(demuxerSample->getHdrMetadata, true);
+        ASSERT_EQ(demuxerSample->hdrType, static_cast<int32_t>(Media::Plugins::HDRType::NONE));
+        ASSERT_EQ(demuxerSample->ReadSample(372, 468), AVCS_ERR_OK);
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_HDR10_HLG_META_URI_0700
+ * @tc.name      : check mp4 hdr type for SDR, uri
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_HDR10_HLG_META_URI_0700, TestSize.Level2)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        auto demuxerSample = make_unique<InnerDemuxerSample>();
+        ASSERT_EQ(demuxerSample->InitWithFile("http://127.0.0.1:46666/mp3_h265.mp4", false), AVCS_ERR_OK);
+        ASSERT_EQ(demuxerSample->getHdrMetadata, true);
+        ASSERT_EQ(demuxerSample->hdrType, static_cast<int32_t>(Media::Plugins::HDRType::NONE));
+        ASSERT_EQ(demuxerSample->ReadSample(372, 468), AVCS_ERR_OK);
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_HDR10_HLG_META_LOCAL_0800
+ * @tc.name      : check mkv hdr type, local
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_HDR10_HLG_META_LOCAL_0800, TestSize.Level2)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        auto demuxerSample = make_unique<InnerDemuxerSample>();
+        ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/mp3_h265.mkv", true), AVCS_ERR_OK);
+        ASSERT_EQ(demuxerSample->getHdrMetadata, false);
+        ASSERT_EQ(demuxerSample->ReadSample(372, 468), AVCS_ERR_OK);
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_HDR10_HLG_META_URI_0800
+ * @tc.name      : check mkv hdr type, uri
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_HDR10_HLG_META_URI_0800, TestSize.Level2)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        auto demuxerSample = make_unique<InnerDemuxerSample>();
+        ASSERT_EQ(demuxerSample->InitWithFile("http://127.0.0.1:46666/mp3_h265.mkv", false), AVCS_ERR_OK);
+        ASSERT_EQ(demuxerSample->getHdrMetadata, false);
+        ASSERT_EQ(demuxerSample->ReadSample(372, 468), AVCS_ERR_OK);
+    }
 }
 } // namespace
