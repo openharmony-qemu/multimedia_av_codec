@@ -80,11 +80,8 @@ extern "C" int av_read_frame(AVFormatContext* ctx, AVPacket* pkt)
     int ret = Controller().MockReadFrame(ctx, pkt);
     if (Controller().IsLogEnabled()) {
         if (ret >= 0 && pkt != nullptr) {
-            std::cout << "[INTERPOSE] av_read_frame ret=" << ret
-                      << ", stream_index=" << pkt->stream_index
-                      << ", pts=" << pkt->pts
-                      << ", dts=" << pkt->dts
-                      << std::endl;
+            std::cout << "[INTERPOSE] av_read_frame ret=" << ret << ", stream_index=" << pkt->stream_index <<
+                      ", pts=" << pkt->pts << ", dts=" << pkt->dts << std::endl;
         } else {
             std::cout << "[INTERPOSE] av_read_frame ret=" << ret << std::endl;
         }
