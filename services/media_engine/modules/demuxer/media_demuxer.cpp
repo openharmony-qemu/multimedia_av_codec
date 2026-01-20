@@ -80,7 +80,6 @@ constexpr int32_t PAUSE = 2;
 constexpr bool SEEK_TO_EOS = true;
 constexpr uint32_t RETRY_DELAY_TIME_US = 100000; // 100ms, Delay time for RETRY if no buffer in avbufferqueue producer.
 constexpr uint32_t NEXT_DELAY_TIME_US = 10; // 10us is ok
-constexpr uint32_t SAMPLE_LOOP_RETRY_TIME_US = 20000;
 constexpr uint32_t SAMPLE_LOOP_DELAY_TIME_US = 100000;
 constexpr uint32_t SAMPLE_FLOW_CONTROL_MIN_SAMPLE_DURATION_US = 200000;
 constexpr uint32_t SAMPLE_FLOW_CONTROL_RATE_POW = 6; // 2^6
