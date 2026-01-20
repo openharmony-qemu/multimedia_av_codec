@@ -108,11 +108,11 @@ private:
 void DemuxerInnerFuncNdkTest::SetUpTestCase()
 {
     server = make_unique<FileServerDemo>();
-    server->StartServer();    
+    server->StartServer();
 }
 void DemuxerInnerFuncNdkTest::TearDownTestCase()
 {
-    server->StopServer();    
+    server->StopServer();
 }
 void DemuxerInnerFuncNdkTest::SetUp() {}
 void DemuxerInnerFuncNdkTest::TearDown()
@@ -1496,7 +1496,8 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_HDR10_HLG_META_URI_0200, TestSize.Leve
 {
     if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
         auto demuxerSample = make_unique<InnerDemuxerSample>();
-        ASSERT_EQ(demuxerSample->InitWithFile("http://127.0.0.1:46666/demuxer_parser_hdr_1_hevc.mp4", false), AVCS_ERR_OK);
+        ASSERT_EQ(demuxerSample->InitWithFile("http://127.0.0.1:46666/demuxer_parser_hdr_1_hevc.mp4", false),
+            AVCS_ERR_OK);
         ASSERT_EQ(demuxerSample->getHdrMetadata, true);
         ASSERT_EQ(demuxerSample->hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HDR_10));
         ASSERT_EQ(demuxerSample->ReadSample(242, 235), AVCS_ERR_OK);

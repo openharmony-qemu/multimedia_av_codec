@@ -72,12 +72,10 @@ int32_t InnerDemuxerSample::InitWithFile(const std::string &path, bool local)
         this->avsource_ = AVSourceFactory::CreateWithURI(const_cast<char*>(path.data()));
     }
     if (!avsource_) {
-        printf("Source is null\n");
         return -1;
     }
     this->demuxer_ = AVDemuxerFactory::CreateWithSource(avsource_);
     if (!demuxer_) {
-        printf("AVDemuxerFactory::CreateWithSource is failed\n");
         return -1;
     }
     int32_t ret = this->avsource_->GetSourceFormat(source_format_);
@@ -92,7 +90,6 @@ int32_t InnerDemuxerSample::InitWithFile(const std::string &path, bool local)
         int32_t trackType = -1;
         ret = this->avsource_->GetTrackFormat(track_format_, i);
         if (ret != 0) {
-            printf("GetTrackFormat is failed\n");
             return ret;
         }
         track_format_.GetIntValue(OH_MD_KEY_TRACK_TYPE, trackType);
@@ -656,12 +653,7 @@ int32_t InnerDemuxerSample::ReadSample(int32_t videoFrame, int32_t audioFrame)
                 cout << "ReadSampleBuffer fail ret:" << retForSave << endl;
                 break;
             }
-            if (avBuffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
-                if (trackType == MEDIA_TYPE_VID) {
-                    videoIsEnd = true;
-                } else {
-                    audioIsEnd = true;
-                }
+            if (SetEos() != 0) {
                 continue;
             }
             if (trackType == MEDIA_TYPE_VID) {
@@ -675,6 +667,19 @@ int32_t InnerDemuxerSample::ReadSample(int32_t videoFrame, int32_t audioFrame)
         return -1;
     }
     return ret;
+}
+
+int32_t InnerDemuxerSample::SetEos()
+{
+    if (avBuffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
+        if (trackType == MEDIA_TYPE_VID) {
+            videoIsEnd = true;
+        } else {
+            audioIsEnd = true;
+        }
+        return -1;
+    }
+    return 0;  
 }
 }
 }

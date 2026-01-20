@@ -63,6 +63,7 @@ private:
     bool ReadVideo(std::vector<std::vector<int32_t>> &cacheCheckSteps);
     int32_t ReadSample(int32_t videoFrame, int32_t audioFrame);
     void GetHdrType();
+    int32_t SetEos();
     std::list<int64_t> videoIndexPtsList;
     std::list<int64_t> audioIndexPtsList;
     std::shared_ptr<AVSource> avsource_ = nullptr;

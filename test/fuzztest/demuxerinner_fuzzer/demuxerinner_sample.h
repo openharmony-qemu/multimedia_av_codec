@@ -21,7 +21,7 @@
 #include "avsource.h"
 
 namespace OHOS {
-namespace MediaAVCodec {    
+namespace MediaAVCodec {
 class DemuxerInnerSample {
 public:
     DemuxerInnerSample() = default;
@@ -36,8 +36,6 @@ private:
     int32_t fd = -1;
     int32_t trackCount;
     int32_t hdrType = -2;
-
-
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
