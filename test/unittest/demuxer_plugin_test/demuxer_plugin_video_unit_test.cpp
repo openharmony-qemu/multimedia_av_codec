@@ -202,6 +202,66 @@ void DemuxerPluginUnitTest::InitResource(const std::string &filePath, std::strin
     initStatus_ = true;
 }
 
+namespace {
+// Fake data source used only in unit tests to simulate a very large file size
+// so that FFmpegDemuxerPlugin will take the limited pre-read path without
+// requiring an actual >= 1GB test file.
+class FakeLargeSizeDataSource : public DataSourceImpl {
+public:
+    FakeLargeSizeDataSource(const std::shared_ptr<BaseStreamDemuxer>& stream, int32_t streamID)
+        : DataSourceImpl(stream, streamID)
+    {
+    }
+
+    Status GetSize(uint64_t& size) override
+    {
+        // Return a size well above FILE_SIZE_THRESHOLD (1GB) defined in
+        // FFmpegDemuxerPlugin so that limited pre-read logic is triggered.
+        constexpr uint64_t TWO_GB = 2ULL * 1024 * 1024 * 1024;
+        size = TWO_GB;
+        return Status::OK;
+    }
+
+    Plugins::Seekable GetSeekable() override
+    {
+        // Force return SEEKABLE so that the limited pre-read path is triggered.
+        // The condition in ParseVideoFirstFrames() requires:
+        //   seekable_ == Seekable::SEEKABLE && fileSize >= FILE_SIZE_THRESHOLD
+        return Plugins::Seekable::SEEKABLE;
+    }
+};
+} // namespace
+
+void DemuxerPluginUnitTest::InitResourceLargeFile(const std::string &filePath, std::string pluginName)
+{
+    struct stat fileStatus {};
+    if (stat(filePath.c_str(), &fileStatus) != 0) {
+        printf("Failed to get file status for path: %s\n", filePath.c_str());
+        return;
+    }
+    int64_t fileSize = static_cast<int64_t>(fileStatus.st_size);
+    int fd = open(filePath.c_str(), O_RDONLY);
+    if (fd < 0) {
+        printf("Failed to open file: %s\n", filePath.c_str());
+        return;
+    }
+    auto uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+    std::shared_ptr<MediaSource> mediaSource = std::make_shared<MediaSource>(uri);
+    std::shared_ptr<StreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxer>();
+    std::shared_ptr<Source> source = std::make_shared<Source>();
+    source->SetSource(mediaSource);
+    streamDemuxer->SetSource(source);
+    streamDemuxer->SetSourceType(mediaSource->GetSourceType());
+    streamDemuxer->Init(uri);
+    streamDemuxer->SetDemuxerState(0, DemuxerState::DEMUXER_STATE_PARSE_FRAME);
+    auto dataSource = std::make_shared<FakeLargeSizeDataSource>(streamDemuxer, 0);
+    auto basePlugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(pluginName);
+    demuxerPlugin_ = std::reinterpret_pointer_cast<OHOS::Media::Plugins::Ffmpeg::FFmpegDemuxerPlugin>(basePlugin);
+    ASSERT_EQ(demuxerPlugin_->SetDataSource(dataSource), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->GetMediaInfo(mediaInfo_), Status::OK);
+    initStatus_ = true;
+}
+
 void DemuxerPluginUnitTest::InitWeakNetworkDemuxerPlugin(
     const std::string& filePath, std::string pluginName, int64_t failOffset, size_t maxFailCount)
 {

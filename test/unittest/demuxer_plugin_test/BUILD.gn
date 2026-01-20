@@ -89,6 +89,8 @@ ohos_unittest("demuxer_plugin_unit_test") {
     "demuxer_plugin_audio_unit_test.cpp",
     "demuxer_plugin_video_unit_test.cpp",
     "demuxer_plugin_common_unit_test.cpp",
+    "mock/ffmpeg_avreadframe_mock_helper.cpp",
+    "mock/ffmpeg_avreadframe_interpose.cpp",
   ]
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",

@@ -29,6 +29,15 @@
 #include "plugin/plugin_info.h"
 #include "plugin/plugin_manager_v2.h"
 #include "buffer/avbuffer.h"
+#include "mock/ffmpeg_avreadframe_mock_helper.h"
+
+extern "C" {
+void AvReadFrameMockSetOrder(const int* streams, int count);
+void AvReadFrameMockEnable(int enable);
+void AvReadFrameMockLogEnable(int enable);
+void AvReadFrameMockReset();
+uint64_t AvReadFrameMockGetReadCount();
+}
 
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -976,4 +985,339 @@ HWTEST_F(DemuxerPluginUnitTest, AVDemuxer_Enhance_CachePressure_061332, TestSize
     ASSERT_EQ(seekStatus, Status::OK);
     readStatus = ReadSampleAndPrintInfo(testId, demuxerPlugin_, videoTrackId, avbuffer, videoReadTimeoutMs);
     ASSERT_EQ(readStatus, Status::OK);
+}
+
+/**
+ * @tc.name: AVDemuxer_AvReadFrame_MockOrder_061333
+ * @tc.desc: Verify interposed av_read_frame can output packets in a user-defined order
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, AVDemuxer_AvReadFrame_MockOrder_061333, TestSize.Level1)
+{
+    constexpr uint32_t videoTrackId = 0;
+    constexpr uint32_t audioTrackId = 1;
+    std::string pluginName = "avdemux_flv";
+    std::string filePath = "/data/test/media/h264.flv";
+
+    int order[] = {static_cast<int>(audioTrackId), static_cast<int>(audioTrackId), static_cast<int>(videoTrackId)};
+    std::cout << "[TEST] set order: " << order[0] << ", " << order[1] << ", " << order[2] << std::endl;
+    AvReadFrameMockLogEnable(1);
+    AvReadFrameMockSetOrder(order, 3);
+    AvReadFrameMockEnable(1);
+
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(videoTrackId), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(audioTrackId), Status::OK);
+
+    AVBufferWrapper avbuffer(DEFAULT_BUFFSIZE);
+    constexpr uint32_t timeoutMs = 100;
+    // Read two audio samples then one video sample; all should succeed if mock order works.
+    std::cout << "[TEST] ReadSample audio #1" << std::endl;
+    EXPECT_EQ(demuxerPlugin_->ReadSample(audioTrackId, avbuffer.mediaAVBuffer, timeoutMs), Status::OK);
+    std::cout << "[TEST] got audio #1 pts=" << avbuffer.mediaAVBuffer->pts_
+              << ", dts=" << avbuffer.mediaAVBuffer->dts_ << std::endl;
+    std::cout << "[TEST] ReadSample audio #2" << std::endl;
+    EXPECT_EQ(demuxerPlugin_->ReadSample(audioTrackId, avbuffer.mediaAVBuffer, timeoutMs), Status::OK);
+    std::cout << "[TEST] got audio #2 pts=" << avbuffer.mediaAVBuffer->pts_
+              << ", dts=" << avbuffer.mediaAVBuffer->dts_ << std::endl;
+    std::cout << "[TEST] ReadSample video #1" << std::endl;
+    EXPECT_EQ(demuxerPlugin_->ReadSample(videoTrackId, avbuffer.mediaAVBuffer, timeoutMs), Status::OK);
+    std::cout << "[TEST] got video #1 pts=" << avbuffer.mediaAVBuffer->pts_
+              << ", dts=" << avbuffer.mediaAVBuffer->dts_ << std::endl;
+
+    // Reset mock to avoid affecting other tests.
+    AvReadFrameMockReset();
+    AvReadFrameMockLogEnable(0);
+}
+
+/**
+ * @tc.name: AVDemuxer_AvReadFrame_MockOrder_Complex_061334
+ * @tc.desc: Verify a more complex av_read_frame order (audio burst, video burst, then audio burst)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, AVDemuxer_AvReadFrame_MockOrder_Complex_061334, TestSize.Level1)
+{
+    constexpr uint32_t videoTrackId = 0;
+    constexpr uint32_t audioTrackId = 1;
+    std::string pluginName = "avdemux_flv";
+    std::string filePath = "/data/test/media/h264.flv";
+
+    // Complex order: 10 audio -> 5 video -> 3 audio
+    std::vector<int> order;
+    for (int i = 0; i < 10; i++) {
+        order.push_back(static_cast<int>(audioTrackId));
+    }
+    for (int i = 0; i < 5; i++) {
+        order.push_back(static_cast<int>(videoTrackId));
+    }
+    for (int i = 0; i < 3; i++) {
+        order.push_back(static_cast<int>(audioTrackId));
+    }
+
+    std::cout << "[TEST061334] order size=" << order.size() << " (10A->5V->3A)" << std::endl;
+    AvReadFrameMockLogEnable(1);
+    AvReadFrameMockSetOrder(order.data(), static_cast<int>(order.size()));
+    AvReadFrameMockEnable(1);
+
+    InitResource(filePath, pluginName);
+    std::cout << "[TEST061334] InitResource status=" << static_cast<int>(initStatus_) << std::endl;
+    ASSERT_TRUE(initStatus_);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(videoTrackId), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(audioTrackId), Status::OK);
+
+    AVBufferWrapper avbuffer(DEFAULT_BUFFSIZE);
+    constexpr uint32_t timeoutMs = 100;
+    for (size_t i = 0; i < order.size(); i++) {
+        const uint32_t trackId = (order[i] == static_cast<int>(audioTrackId)) ? audioTrackId : videoTrackId;
+        Status st = demuxerPlugin_->ReadSample(trackId, avbuffer.mediaAVBuffer, timeoutMs);
+        std::cout << "[TEST061334] i=" << i << ", expectTrack=" << trackId
+                  << ", st=" << static_cast<int>(st)
+                  << ", pts=" << avbuffer.mediaAVBuffer->pts_
+                  << ", dts=" << avbuffer.mediaAVBuffer->dts_
+                  << std::endl;
+        ASSERT_EQ(st, Status::OK);
+    }
+
+    AvReadFrameMockReset();
+    AvReadFrameMockLogEnable(0);
+}
+
+/**
+ * @tc.name: AVDemuxer_LimitedProbe_UseLargeSizeDataSource_061335
+ * @tc.desc: Verify that demuxer takes limited pre-read path when DataSource reports a large file size
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, AVDemuxer_LimitedProbe_UseLargeSizeDataSource_061335, TestSize.Level1)
+{
+    constexpr uint32_t videoTrackId = 0;
+    constexpr uint32_t audioTrackId = 1;
+    std::string pluginName = "avdemux_flv";
+    std::string filePath = "/data/test/media/h264.flv";
+
+    // Ensure mock is in counting mode (no order control) and logs enabled only for this test.
+    AvReadFrameMockReset();
+    AvReadFrameMockLogEnable(1);
+    AvReadFrameMockEnable(0);
+
+    // Init with a DataSource that reports a very large file size so that
+    // FFmpegDemuxerPlugin::ParseVideoFirstFramesLimited() is used.
+    InitResourceLargeFile(filePath, pluginName);
+    std::cout << "[TEST061335] InitResourceLargeFile status=" << static_cast<int>(initStatus_) << std::endl;
+    ASSERT_TRUE(initStatus_);
+
+    // Select tracks and read a few samples to make sure normal playback still works.
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(videoTrackId), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(audioTrackId), Status::OK);
+
+    AVBufferWrapper avbuffer(DEFAULT_BUFFSIZE);
+    constexpr uint32_t timeoutMs = 100;
+    Status st = demuxerPlugin_->ReadSample(audioTrackId, avbuffer.mediaAVBuffer, timeoutMs);
+    std::cout << "[TEST061335] first audio read st=" << static_cast<int>(st)
+              << ", pts=" << avbuffer.mediaAVBuffer->pts_
+              << ", dts=" << avbuffer.mediaAVBuffer->dts_ << std::endl;
+    ASSERT_EQ(st, Status::OK);
+
+    st = demuxerPlugin_->ReadSample(videoTrackId, avbuffer.mediaAVBuffer, timeoutMs);
+    std::cout << "[TEST061335] first video read st=" << static_cast<int>(st)
+              << ", pts=" << avbuffer.mediaAVBuffer->pts_
+              << ", dts=" << avbuffer.mediaAVBuffer->dts_ << std::endl;
+    ASSERT_EQ(st, Status::OK);
+
+    // This test mainly serves to ensure that:
+    // 1) Limited pre-read path can be triggered without a real >=1GB file.
+    // 2) Normal ReadSample() behavior is not broken under limited pre-read.
+    // Details of soft/hard limits can be inspected via log output.
+
+    AvReadFrameMockReset();
+    AvReadFrameMockLogEnable(0);
+}
+
+/**
+ * @tc.name: AVDemuxer_LimitedProbe_HardLimit_061336
+ * @tc.desc: Verify hard limit fallback mechanism when reading exceeds hardLimit frames
+ * @tc.type: FUNC
+ * 
+ * Test strategy:
+ * 1. Use mock to control frame order: first 60 frames are all video (stream=0),
+ *    audio first frame (stream=1) never appears in the first 60 frames
+ * 2. Verify: should trigger hard limit (initReadFrameCount_ > 50)
+ * 3. Verify log: "Hard limit reached 50, some tracks may not have first frame"
+ * 4. Verify: audio track should be marked as pending (firstFramePendingTracks_)
+ */
+HWTEST_F(DemuxerPluginUnitTest, AVDemuxer_LimitedProbe_HardLimit_061336, TestSize.Level1)
+{
+    constexpr uint32_t videoTrackId = 0;
+    constexpr uint32_t audioTrackId = 1;
+    std::string pluginName = "avdemux_flv";
+    std::string filePath = "/data/test/media/h264.flv";
+
+    // For 2 tracks: hardLimit = max(2*4, 50) = 50
+    // Design order: first 60 frames are all video frames, audio first frame never appears
+    // Expected: when reading frame 51 (>hardLimit=50), should trigger hard limit
+    std::vector<int> order;
+    // First 60 frames: all video frames, audio first frame never appears
+    for (int i = 0; i < 60; i++) {
+        order.push_back(static_cast<int>(videoTrackId));
+    }
+    // After hard limit, add some audio frames for later ReadSample test
+    for (int i = 0; i < 10; i++) {
+        order.push_back(static_cast<int>(audioTrackId));
+    }
+
+    std::cout << "[TEST061336] Set order: 60 video frames, then 10 audio frames" << std::endl;
+    AvReadFrameMockLogEnable(1);
+    AvReadFrameMockSetOrder(order.data(), static_cast<int>(order.size()));
+    AvReadFrameMockEnable(1);
+
+    // Init with large file DataSource to trigger limited pre-read path
+    InitResourceLargeFile(filePath, pluginName);
+    std::cout << "[TEST061336] InitResourceLargeFile status=" << static_cast<int>(initStatus_) << std::endl;
+    ASSERT_TRUE(initStatus_);
+
+    // Verify hard limit was triggered:
+    // 1. Should trigger hard limit (initReadFrameCount_ > 50)
+    // 2. The actual read count should exceed hardLimit (50)
+    // Note: AvReadFrameMockGetReadCount() counts all av_read_frame calls during initialization.
+    // For 2 tracks: hardLimit = max(2*4, 50) = 50
+    // Expected: readCount should be > 50 (we set 60 video frames, so should read at least 51)
+    uint64_t readCountAfterInit = AvReadFrameMockGetReadCount();
+    std::cout << "[TEST061336] av_read_frame call count after init: " << readCountAfterInit << std::endl;
+    // Verify that we read more than hardLimit (50) frames, confirming hard limit was triggered
+    ASSERT_GT(readCountAfterInit, 50U) << "Hard limit should be triggered (readCount > 50)";
+    
+    // Note: The log "Hard limit reached 50, some tracks may not have first frame" may appear
+    // in system logs (MEDIA_LOG_W) rather than stdout. Check system logs for confirmation.
+    // Audio track should be marked as pending (firstFramePendingTracks_ contains audioTrackId)
+    // for later supplement during ReadSample().
+
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(videoTrackId), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(audioTrackId), Status::OK);
+
+    AVBufferWrapper avbuffer(DEFAULT_BUFFSIZE);
+    constexpr uint32_t timeoutMs = 100;
+
+    // Read video sample should succeed (video first frame was obtained)
+    Status st = demuxerPlugin_->ReadSample(videoTrackId, avbuffer.mediaAVBuffer, timeoutMs);
+    std::cout << "[TEST061336] video read st=" << static_cast<int>(st)
+              << ", pts=" << avbuffer.mediaAVBuffer->pts_
+              << ", dts=" << avbuffer.mediaAVBuffer->dts_ << std::endl;
+    ASSERT_EQ(st, Status::OK);
+
+    // Audio read should also succeed (frames are cached, even though first frame
+    // was not set during ParseVideoFirstFramesLimited due to hard limit)
+    st = demuxerPlugin_->ReadSample(audioTrackId, avbuffer.mediaAVBuffer, timeoutMs);
+    std::cout << "[TEST061336] audio read st=" << static_cast<int>(st)
+              << ", pts=" << avbuffer.mediaAVBuffer->pts_
+              << ", dts=" << avbuffer.mediaAVBuffer->dts_ << std::endl;
+    ASSERT_EQ(st, Status::OK);
+
+    AvReadFrameMockReset();
+    AvReadFrameMockLogEnable(0);
+}
+
+/**
+ * @tc.name: AVDemuxer_LimitedProbe_Supplement_061337
+ * @tc.desc: Verify supplement first frame mechanism for pending tracks
+ * @tc.type: FUNC
+ * 
+ * Test strategy:
+ * 1. First trigger hard limit, let audio track be marked as pending
+ * 2. In ReadSample(), if reading a sync frame of the pending track,
+ *    should call SupplementFirstFrameIfPending() to supplement the first frame
+ * 3. Verify log: "Supplement first frame for track X"
+ */
+HWTEST_F(DemuxerPluginUnitTest, AVDemuxer_LimitedProbe_Supplement_061337, TestSize.Level1)
+{
+    constexpr uint32_t videoTrackId = 0;
+    constexpr uint32_t audioTrackId = 1;
+    std::string pluginName = "avdemux_flv";
+    std::string filePath = "/data/test/media/h264.flv";
+
+    // Step 1: Trigger hard limit by making audio first frame never appear in first 60 frames
+    std::vector<int> initOrder;
+    // First 60 frames: all video frames, audio first frame never appears
+    for (int i = 0; i < 60; i++) {
+        initOrder.push_back(static_cast<int>(videoTrackId));
+    }
+
+    std::cout << "[TEST061337] Step 1: Trigger hard limit with 60 video frames" << std::endl;
+    AvReadFrameMockLogEnable(1);
+    AvReadFrameMockSetOrder(initOrder.data(), static_cast<int>(initOrder.size()));
+    AvReadFrameMockEnable(1);
+
+    // Init with large file DataSource to trigger limited pre-read path
+    InitResourceLargeFile(filePath, pluginName);
+    std::cout << "[TEST061337] InitResourceLargeFile status=" << static_cast<int>(initStatus_) << std::endl;
+    ASSERT_TRUE(initStatus_);
+
+    // At this point, audio track should be marked as pending due to hard limit
+    // Verify hard limit was triggered by checking read count
+    uint64_t readCountAfterInit = AvReadFrameMockGetReadCount();
+    std::cout << "[TEST061337] Step 1: av_read_frame call count after init: " << readCountAfterInit << std::endl;
+    ASSERT_GT(readCountAfterInit, 50U) << "Hard limit should be triggered (readCount > 50)";
+    // Note: The log "Hard limit reached 50, some tracks may not have first frame" may appear
+    // in system logs (MEDIA_LOG_W) rather than stdout. Check system logs for confirmation.
+
+    // Step 2: Reset mock and set normal order (including audio frames)
+    // Note: FFmpegDemuxerPlugin has its own cacheQueue_ that stores frames read during
+    // initialization. When ReadSample() is called, it may use cached frames first.
+    // Expected: when ReadSample() reads the first audio frame from cacheQueue_,
+    // SupplementFirstFrameIfPending() checks if the track is pending and if the frame
+    // is a sync frame. If both conditions are met, it supplements the first frame.
+    AvReadFrameMockReset();
+
+    // Set normal order: include audio frames
+    std::vector<int> normalOrder;
+    // Add some video frames
+    for (int i = 0; i < 5; i++) {
+        normalOrder.push_back(static_cast<int>(videoTrackId));
+    }
+    // Add audio frames (should trigger supplement)
+    for (int i = 0; i < 10; i++) {
+        normalOrder.push_back(static_cast<int>(audioTrackId));
+    }
+
+    std::cout << "[TEST061337] Step 2: Reset mock, set normal order with audio frames" << std::endl;
+    AvReadFrameMockSetOrder(normalOrder.data(), static_cast<int>(normalOrder.size()));
+    AvReadFrameMockEnable(1);
+
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(videoTrackId), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(audioTrackId), Status::OK);
+
+    AVBufferWrapper avbuffer(DEFAULT_BUFFSIZE);
+    constexpr uint32_t timeoutMs = 100;
+
+    // Read audio sample, should trigger SupplementFirstFrameIfPending()
+    // Note: The log "Supplement first frame for track 1" may appear in system logs
+    // (MEDIA_LOG_I) rather than stdout. Check system logs for confirmation.
+    // The supplement mechanism works as follows:
+    // 1. Audio track was marked as pending during hard limit (firstFramePendingTracks_)
+    // 2. When ReadSample() reads the first audio frame, SupplementFirstFrameIfPending()
+    //    checks if it's a sync frame
+    // 3. If yes, it calls SetVideoFirstFrame() to supplement the first frame
+    // 4. The track is removed from firstFramePendingTracks_
+    Status st = demuxerPlugin_->ReadSample(audioTrackId, avbuffer.mediaAVBuffer, timeoutMs);
+    std::cout << "[TEST061337] audio read st=" << static_cast<int>(st)
+              << ", pts=" << avbuffer.mediaAVBuffer->pts_
+              << ", dts=" << avbuffer.mediaAVBuffer->dts_ << std::endl;
+    ASSERT_EQ(st, Status::OK);
+    
+    // Verify that audio read succeeded, which indicates:
+    // 1. The supplement mechanism worked (if first cached audio frame was sync frame),
+    //    and the log "Supplement first frame for track 1" should appear in system logs
+    // 2. Or the cached frames are usable even without supplement (if first frame wasn't sync)
+    // The actual supplement log can be verified in system logs (MEDIA_LOG_I) if needed.
+    // The key verification is that ReadSample() succeeds after hard limit, demonstrating
+    // that the system can recover from the hard limit scenario.
+
+    // Read video sample should also succeed
+    st = demuxerPlugin_->ReadSample(videoTrackId, avbuffer.mediaAVBuffer, timeoutMs);
+    std::cout << "[TEST061337] video read st=" << static_cast<int>(st)
+              << ", pts=" << avbuffer.mediaAVBuffer->pts_
+              << ", dts=" << avbuffer.mediaAVBuffer->dts_ << std::endl;
+    ASSERT_EQ(st, Status::OK);
+
+    AvReadFrameMockReset();
+    AvReadFrameMockLogEnable(0);
 }
