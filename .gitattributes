@@ -76,8 +76,6 @@ test/moduletest/resources/demuxer/rv30_cook.rm filter=lfs diff=lfs merge=lfs -te
 test/moduletest/resources/demuxer/rv40_aac.rm filter=lfs diff=lfs merge=lfs -text
 test/moduletest/resources/demuxer/ac3.rm filter=lfs diff=lfs merge=lfs -text
 test/moduletest/resources/demuxer/test_error.rm filter=lfs diff=lfs merge=lfs -text
-test/moduletest/resources/video_decoder/dvvideo_1280x1080_yuv422p_30_25frames.avi filter=lfs diff=lfs merge=lfs -text
-test/moduletest/resources/video_decoder/dvvideo_1440x1080_yuv422p_25_25frames.avi filter=lfs diff=lfs merge=lfs -text
 test/fuzztest/demuxerrmapi11_fuzzer/corpus/rv40_aac.rm filter=lfs diff=lfs merge=lfs -text
 test/fuzztest/demuxerrmvbapi11_fuzzer/corpus/rv40_cook.rmvb filter=lfs diff=lfs merge=lfs -text
 test/unittest/resources/demuxer_res/hdrType_db_no_image.mp4 filter=lfs diff=lfs merge=lfs -text

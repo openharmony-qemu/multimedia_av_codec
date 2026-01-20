@@ -198,6 +198,8 @@ public:
     void NotifyResumeUnMute();
     bool BoostThreadPriorityIfNeeded();
     bool IsWatchDevice();
+    bool IsCloudFd();
+    bool IsFd();
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -390,11 +392,11 @@ private:
     bool NeedDroped(int32_t trackId);
     void AfterDrop(int32_t trackId);
     void AfterSeekNeedDrop(int32_t trackId);
-    void ClearSampleQueue();
     Status SetCachePressureCallback();
     bool SourceDropFrame(int32_t trackId);
     bool GetTrackIsBuffering(int32_t trackId);
     void SetTrackIsBuffering(int32_t trackId, bool isBuffering);
+    Status ReadSampleToDrop(int32_t trackId, std::shared_ptr<AVBuffer> sample);
 
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
@@ -542,7 +544,7 @@ private:
     std::atomic<bool> isBuffering_ {false};
     int64_t lastCacheDuration_ {0};
     std::map<int32_t, std::atomic<bool>> hasDropedMap_;
-    std::map<int32_t, int64_t> afterDropPts_;
+    std::map<int32_t, int64_t> afterDropDts_;
     std::map<int32_t, bool> afterSeekNeedDrop_;
     bool videoNeedIFrame_ {false};
 };

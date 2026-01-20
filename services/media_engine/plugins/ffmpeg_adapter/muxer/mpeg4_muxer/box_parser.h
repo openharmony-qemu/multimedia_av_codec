@@ -28,13 +28,22 @@ public:
     explicit BoxParser(uint32_t fileType);
     ~BoxParser();
     std::shared_ptr<BasicBox> MoovBoxGenerate();
+    void AddMoovUdtaBox();
     void AddTrakBox(std::shared_ptr<BasicTrack> track);
-    void AddUdtaBox();
+    void AddMoovUdtaLociBox(float latitude, float longitude);
+    void AddIlstMetaData(const std::shared_ptr<Meta> &param);  // udta.meta.ilst
+    void AddGnreBox(const std::shared_ptr<Meta> &param, bool needGenerate, std::string path = "");
+    void AddUserMetaBox(const std::shared_ptr<Meta> &userMeta, std::string path = "");
+    void AddMoovUdtaGeoTag(float latitude, float longitude, bool needGenerate = true);
+    void AddMoovUdtaMetaBox();
+    void SetEdtsBoxFlag(bool flag) {enableEdtsBox_ = flag;}
+    std::shared_ptr<BasicBox> FileLevelMetaBoxGenerate(const std::shared_ptr<Meta> &param);
+
+public:
+    static std::string Uint32ToString(uint32_t num);
 
 private:
     std::shared_ptr<BasicBox> MvhdBoxGenerate();
-    std::shared_ptr<BasicBox> UdtaBoxGenerate();
-    std::shared_ptr<BasicBox> MetaBoxGenerate();
     std::shared_ptr<BasicBox> IlstBoxGenerate();
     std::shared_ptr<BasicBox> TrakBoxGenerate(std::shared_ptr<BasicTrack> track);
     std::shared_ptr<BasicBox> TkhdBoxGenerate(std::shared_ptr<BasicTrack> track);
@@ -52,9 +61,14 @@ private:
     std::shared_ptr<BasicBox> HvccBoxGenerate(std::shared_ptr<BasicTrack> track);
     std::shared_ptr<BasicBox> ColrBoxGenerate(std::shared_ptr<BasicTrack> track);
     std::shared_ptr<BasicBox> CuvvBoxGenerate(std::shared_ptr<BasicTrack> track);
+    std::shared_ptr<BasicBox> TimedMetaMebxBoxGenerate(std::shared_ptr<BasicTrack> track);
+    std::shared_ptr<BasicBox> TrefBoxGenerate(std::shared_ptr<BasicTrack> track);
+    std::shared_ptr<BasicBox> GltfIlocBoxGenerate(uint32_t binaryDataLen);
+    std::shared_ptr<BasicBox> GltfIinfBoxGenerate(const std::shared_ptr<Meta> &param);
     uint32_t CalculateEsDescr(uint32_t size);
     uint32_t fileType_;
     std::shared_ptr<BasicBox> moov_ = nullptr;
+    bool enableEdtsBox_ = true;
 };
 } // Mpeg4
 } // Plugins

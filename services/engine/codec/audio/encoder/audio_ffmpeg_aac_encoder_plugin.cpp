@@ -41,14 +41,14 @@ static std::set<OHOS::MediaAVCodec::AudioSampleFormat> supportedSampleFormats = 
     OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S16LE,
     OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_F32LE,
 };
-static std::map<int32_t, int64_t> channelLayoutMap = {{1, AV_CH_LAYOUT_MONO},
-                                                      {2, AV_CH_LAYOUT_STEREO},
-                                                      {3, AV_CH_LAYOUT_SURROUND},
-                                                      {4, AV_CH_LAYOUT_4POINT0},
-                                                      {5, AV_CH_LAYOUT_5POINT0_BACK},
-                                                      {6, AV_CH_LAYOUT_5POINT1_BACK},
-                                                      {7, AV_CH_LAYOUT_7POINT0},
-                                                      {8, AV_CH_LAYOUT_7POINT1}};
+static std::map<int32_t, uint64_t> channelLayoutMap = {{1, AV_CH_LAYOUT_MONO},
+                                                       {2, AV_CH_LAYOUT_STEREO},
+                                                       {3, AV_CH_LAYOUT_SURROUND},
+                                                       {4, AV_CH_LAYOUT_4POINT0},
+                                                       {5, AV_CH_LAYOUT_5POINT0_BACK},
+                                                       {6, AV_CH_LAYOUT_5POINT1_BACK},
+                                                       {7, AV_CH_LAYOUT_7POINT0},
+                                                       {8, AV_CH_LAYOUT_7POINT1}};
 }
 
 namespace OHOS {

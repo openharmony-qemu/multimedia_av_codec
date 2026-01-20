@@ -28,8 +28,7 @@
 namespace OHOS::MediaAVCodec {
 class HDecoder : public HCodec {
 public:
-    HDecoder(CodecHDI::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType)
-        : HCodec(caps, codingType, false) {}
+    HDecoder(CodecHDI::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType);
     ~HDecoder() override;
 
     class XperfConnector : public OHOS::HiviewDFX::VideoJankCallbackStub {
@@ -46,10 +45,12 @@ public:
 
 private:
     struct SurfaceBufferItem {
-        sptr<SurfaceBuffer> buffer;
         sptr<SyncFence> fence;
+        // release with seq
+        uint32_t seqnum = 0;
+        // release and request
+        sptr<SurfaceBuffer> buffer;
         int32_t generation = 0;
-        bool hasSwapedOut = false;
     };
 
 private:
@@ -103,6 +104,7 @@ private:
     int32_t Attach(BufferInfo &info);
     void OnGetBufferFromSurface(const ParamSP& param) override;
     SurfaceBufferItem RequestBuffer();
+    std::vector<BufferInfo>::iterator FindBelongTo(uint32_t seqnum);
     std::vector<BufferInfo>::iterator FindBelongTo(sptr<SurfaceBuffer>& buffer);
     std::vector<BufferInfo>::iterator FindNullSlotIfDynamicMode();
     void SurfaceModeSubmitBuffer();
@@ -190,6 +192,7 @@ private:
     std::list<SurfaceBufferItem> freeList_;
     int32_t currGeneration_ = 0;
     bool isDynamic_ = false;
+    bool isReleaseWithSeq_ = true;  // true: dont need to request, false: need to do request
     uint32_t outBufferCnt_ = 0;
     GraphicTransformType transform_ = GRAPHIC_ROTATE_NONE;
     std::optional<ScalingMode> scaleMode_;

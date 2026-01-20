@@ -576,17 +576,15 @@ void Av1Decoder::FlushAllFrames()
     int ret = 0;
     while (ret == 0) {
         Dav1dPicture pic = { 0 };
-        av1DecOutputImg_ = &pic;
+        Dav1dPicture *outputImg = &pic;
         if (av1DecHandle_ != nullptr && av1DecoderGetFrameFunc_ != nullptr && av1DecoderPictureUnrefFunc_ != nullptr) {
-            ret = av1DecoderGetFrameFunc_(av1DecHandle_, av1DecOutputImg_);
-            if (ret < 0 && ret != -EAGAIN) {
-                av1DecoderPictureUnrefFunc_(av1DecOutputImg_);
-                av1DecOutputImg_ = nullptr;
-            }
+            ret = av1DecoderGetFrameFunc_(av1DecHandle_, outputImg);
+            av1DecoderPictureUnrefFunc_(outputImg);
         } else {
             AVCODEC_LOGE("load libdav1d.z.so failed, get generated picture form av1 decoder failed.");
             ret = -1;
         }
+        outputImg = nullptr;
     }
     runlock.unlock();
 }

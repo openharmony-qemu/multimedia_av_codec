@@ -35,6 +35,10 @@ constexpr int ERROR_COUNT = 5;
 const std::string LOWER_M3U8 = "m3u8";
 const std::string DASH_SUFFIX = ".mpd";
 const std::string EQUAL_M3U8 = "=" + LOWER_M3U8;
+const std::string DASH_LIST[] = {
+    std::string(".mpd"),
+    std::string("type=mpd"),
+};
 
 }
 
@@ -251,7 +255,7 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
             }
         }
     }
-    if (uri_.find(".mpd") != std::string::npos) {
+    if (IsDash()) {
         downloader_ = std::make_shared<DownloadMonitor>(
                       std::make_shared<DashMediaDownloader>(loaderCombinations_));
         downloader_->Init();
@@ -639,6 +643,15 @@ bool HttpSourcePlugin::IsFlvLive()
 {
     FALSE_RETURN_V_MSG_E(downloader_ != nullptr, false, "downloader_ is nullptr");
     return downloader_->IsFlvLive();
+}
+
+bool HttpSourcePlugin::IsDash()
+{
+    auto it = std::find_if(std::begin(DASH_LIST), std::end(DASH_LIST),
+        [this](const std::string& key) {
+            return this->uri_.find(key) != std::string::npos;
+    });
+    return it != std::end(DASH_LIST);
 }
 
 bool HttpSourcePlugin::IsHlsFmp4()

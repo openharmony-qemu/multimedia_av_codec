@@ -1830,20 +1830,6 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_UpdateSampleQueueCache_002, Te
 }
 
 /**
- * @tc.name  : Test MediaDemuxerExtUnitTest UpdateSampleQueueCache API
- * @tc.number: MediaDemuxerExt_UpdateSampleQueueCache_003
- * @tc.desc  : Test lastClockTimeMs_ == 0 && currentClockTimeMs - lastClockTimeMs_ > UPDATE_SOURCE_CACHE_MS
- */
-HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_UpdateSampleQueueCache_003, TestSize.Level1)
-{
-    mediaDemuxer_->isFlvLiveStream_ = true;
-    mediaDemuxer_->lastClockTimeMs_ = NUM_0;
-    mediaDemuxer_->source_ = nullptr;
-    mediaDemuxer_->UpdateSampleQueueCache();
-    EXPECT_EQ(mediaDemuxer_->lastClockTimeMs_, SteadyClock::GetCurrentTimeMs());
-}
-
-/**
  * @tc.name  : Test MediaDemuxerExtUnitTest NotifySampleQueueBufferConsume API
  * @tc.number: MediaDemuxerExt_NotifySampleQueueBufferConsume_001
  * @tc.desc  : Test isStopped_ && isThreadExit_

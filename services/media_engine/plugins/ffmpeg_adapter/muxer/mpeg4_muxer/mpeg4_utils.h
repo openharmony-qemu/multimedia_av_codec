@@ -17,6 +17,8 @@
 #define MPEG4_UTILS_H
 
 #include <cstdint>
+#include <string>
+#include <vector>
 
 namespace OHOS {
 namespace Media {
@@ -55,6 +57,10 @@ int64_t ConvertTimeToMpeg4(int64_t time, int32_t timeScale, RoundingType type = 
  * @return time in timeScaleB
  */
 int64_t ConvertTime(int64_t time, int32_t timeScaleA, int32_t timeScaleB, RoundingType type = RoundingType::NEAR_INF);
+
+std::vector<uint8_t> GenerateAACCodecConfig(int32_t profile, int32_t sampleRate, int32_t channels);
+
+uint8_t *FindNalStartCode(const uint8_t *buf, const uint8_t *end, int32_t &startCodeLen);
 } // Mpeg4
 } // Plugins
 } // Media

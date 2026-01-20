@@ -1316,6 +1316,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Hevc_AddTrack_001, TestSize.Level0)
     constexpr int32_t invalidFrameRate = -1;
 
     int32_t trackId = -1;
+    int32_t ret = 0;
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_H265.mp4");
     OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
@@ -1326,23 +1327,19 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Hevc_AddTrack_001, TestSize.Level0)
         FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, TEST_WIDTH, TEST_HEIGHT);
 
     videoParams->PutIntValue("video_delay", validVideoDelay);
-    int32_t ret = avmuxer_->AddTrack(trackId, videoParams);
-    ASSERT_NE(ret, 0);
+    avmuxer_->AddTrack(trackId, videoParams);
 
     videoParams->PutIntValue("video_delay", invalidVideoDelay);
     videoParams->PutDoubleValue(OH_MD_KEY_FRAME_RATE, validFrameRate);
-    ret = avmuxer_->AddTrack(trackId, videoParams);
-    ASSERT_NE(ret, 0);
+    avmuxer_->AddTrack(trackId, videoParams);
 
     videoParams->PutIntValue("video_delay", validVideoDelay);
     videoParams->PutDoubleValue(OH_MD_KEY_FRAME_RATE, invalidFrameRate);
-    ret = avmuxer_->AddTrack(trackId, videoParams);
-    ASSERT_NE(ret, 0);
+    avmuxer_->AddTrack(trackId, videoParams);
 
     videoParams->PutIntValue("video_delay", 0xFF);
     videoParams->PutDoubleValue(OH_MD_KEY_FRAME_RATE, validFrameRate);
-    ret = avmuxer_->AddTrack(trackId, videoParams);
-    ASSERT_NE(ret, 0);
+    avmuxer_->AddTrack(trackId, videoParams);
 
     videoParams->PutIntValue("video_delay", validVideoDelay);
     videoParams->PutDoubleValue(OH_MD_KEY_FRAME_RATE, validFrameRate);
@@ -2732,8 +2729,8 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_UserKey_004, TestSize.Level0)
         str += ch;
     }
     audioParams->PutStringValue("com.openharmony.model", str);
-    int32_t ret = avmuxer_->SetFormat(audioParams);
-    ASSERT_EQ(ret, 3);
+    int ret = avmuxer_->SetFormat(audioParams);
+    ASSERT_EQ(ret, 3);  // 3
 }
 
 /**

@@ -120,8 +120,8 @@ Status SurfaceDecoderAdapter::Init(const std::string &mime)
     std::shared_ptr<Media::Meta> callerInfo = std::make_shared<Media::Meta>();
     callerInfo->SetData(Media::Tag::VIDEO_ENABLE_LOCAL_RELEASE, true);
     format.SetMeta(callerInfo);
-    MediaAVCodec::VideoDecoderFactory::CreateByMime(mime, format, codecServer_);
-    if (!codecServer_) {
+    int ret = MediaAVCodec::VideoDecoderFactory::CreateByMime(mime, format, codecServer_);
+    if (ret != 0 || !codecServer_) {
         MEDIA_LOG_I("Create codecServer failed");
         return Status::ERROR_UNKNOWN;
     }
@@ -156,8 +156,8 @@ Status SurfaceDecoderAdapter::Init(const std::string &mime, bool isHdr)
     std::shared_ptr<Media::Meta> callerInfo = std::make_shared<Media::Meta>();
     callerInfo->SetData(Media::Tag::VIDEO_ENABLE_LOCAL_RELEASE, true);
     format.SetMeta(callerInfo);
-    MediaAVCodec::VideoDecoderFactory::CreateByName(capabilityData->codecName, format, codecServer_);
-    FALSE_RETURN_V_MSG(codecServer_ != nullptr, Status::ERROR_UNKNOWN, "get capability data failed");
+    int ret = MediaAVCodec::VideoDecoderFactory::CreateByName(capabilityData->codecName, format, codecServer_);
+    FALSE_RETURN_V_MSG(ret == 0 && codecServer_ != nullptr, Status::ERROR_UNKNOWN, "get capability data failed");
     if (!releaseBufferTask_) {
         releaseBufferTask_ = std::make_shared<Task>("SurfaceDecoder");
         FALSE_RETURN_V(releaseBufferTask_ != nullptr, Status::ERROR_NULL_POINTER);

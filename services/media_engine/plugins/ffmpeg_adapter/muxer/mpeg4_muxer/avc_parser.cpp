@@ -15,6 +15,7 @@
 
 #include "avc_parser.h"
 #include <set>
+#include "mpeg4_utils.h"
 
 #ifndef _WIN32
 namespace {
@@ -48,16 +49,16 @@ int32_t AvcParser::WriteFrame(const std::shared_ptr<AVIOStream> &io, const std::
 {
     if (!IsAvccHvccFrame(sample->memory_->GetAddr(), sample->memory_->GetSize()) &&
         IsAnnexbFrame(sample->memory_->GetAddr(), sample->memory_->GetSize())) {
-        return WriteAnnexBFrame(io, sample->memory_->GetAddr(), sample->memory_->GetSize());
+        return WriteAnnexBFrame(io, sample);
     }
     io->Write(sample->memory_->GetAddr(), sample->memory_->GetSize());
     return sample->memory_->GetSize();
 }
 
-int32_t AvcParser::WriteAnnexBFrame(const std::shared_ptr<AVIOStream> &io, const uint8_t* sample, int32_t size)
+int32_t AvcParser::WriteAnnexBFrame(const std::shared_ptr<AVIOStream> &io, const std::shared_ptr<AVBuffer> &sample)
 {
-    const uint8_t* nalStart = sample;
-    const uint8_t* end = nalStart + size;
+    const uint8_t* nalStart = sample->memory_->GetAddr();
+    const uint8_t* end = nalStart + sample->memory_->GetSize();
     const uint8_t* nalEnd = nullptr;
     int32_t startCodeLen = 0;
     int32_t writeSize = 0;
@@ -66,7 +67,9 @@ int32_t AvcParser::WriteAnnexBFrame(const std::shared_ptr<AVIOStream> &io, const
     while (nalStart < end) {
         nalEnd = FindNalStartCode(nalStart, end, startCodeLen);
         int32_t naluSize = static_cast<int32_t>(nalEnd - nalStart);
-        writeSize += WriteSample(io, nalStart, naluSize);
+        if (!isFirstFrame_ || (sample->flag_ & static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME)) != 0) {
+            writeSize += WriteSample(io, nalStart, naluSize);
+        }
         AvcNalType nalType = static_cast<AvcNalType>(GetNalType(nalStart[0]));
         if (needParse_.find(nalType) != needParse_.end() && needParse_[nalType].first) {
             (this->*needParse_[nalType].second)(nalStart, naluSize);
@@ -74,7 +77,12 @@ int32_t AvcParser::WriteAnnexBFrame(const std::shared_ptr<AVIOStream> &io, const
         nalStart = nalEnd + startCodeLen;
     }
     UpdateNeedParser();
-
+    if (isFirstFrame_) {
+        isFirstFrame_ = false;
+        if ((sample->flag_ & static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME)) == 0) {
+            MEDIA_LOG_I("H264 first frame is not sync frame, return");
+        }
+    }
     return writeSize;
 }
 
@@ -101,8 +109,8 @@ int32_t AvcParser::ParseSps(const uint8_t* sample, int32_t size)
     }
 
     std::vector<uint8_t> sps(0x02, 0);
-    sps[1] = static_cast<uint8_t>(size & 0xff);
-    sps[0] = static_cast<uint8_t>((size >> 0x08) & 0xff);
+    sps[1] = static_cast<uint8_t>(static_cast<uint32_t>(size) & 0xff);
+    sps[0] = static_cast<uint8_t>((static_cast<uint32_t>(size) >> 0x08) & 0xff);
     sps.insert(sps.end(), sample, sample + size);
     avccBox_->sps_.emplace_back(sps);
     ++spsCount_;
@@ -122,8 +130,8 @@ int32_t AvcParser::ParsePps(const uint8_t* sample, int32_t size)
     }
 
     std::vector<uint8_t> pps(2, 0);  // 2
-    pps[1] = static_cast<uint8_t>(size & 0xff);
-    pps[0] = static_cast<uint8_t>((size >> 0x08) & 0xff);
+    pps[1] = static_cast<uint8_t>(static_cast<uint32_t>(size) & 0xff);
+    pps[0] = static_cast<uint8_t>((static_cast<uint32_t>(size) >> 0x08) & 0xff);
     pps.insert(pps.end(), sample, sample + size);
     avccBox_->pps_.emplace_back(pps);
     ++avccBox_->ppsCount_;
@@ -142,8 +150,8 @@ int32_t AvcParser::ParseSpsExt(const uint8_t* sample, int32_t size)
     }
 
     std::vector<uint8_t> spsExt(2, 0);  // 2
-    spsExt[1] = static_cast<uint8_t>(size & 0xff);
-    spsExt[0] = static_cast<uint8_t>((size >> 0x08) & 0xff);
+    spsExt[1] = static_cast<uint8_t>(static_cast<uint32_t>(size) & 0xff);
+    spsExt[0] = static_cast<uint8_t>((static_cast<uint32_t>(size) >> 0x08) & 0xff);
     spsExt.insert(spsExt.end(), sample, sample + size);
     avccBox_->spsExt_.emplace_back(spsExt);
     ++avccBox_->spsExtCount_;

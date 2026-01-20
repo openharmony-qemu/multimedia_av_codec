@@ -50,7 +50,7 @@ config("ffmpeg_adapter_config") {
 }
 
 ohos_shared_library("media_plugin_Eac3AudioDecoder") {
-  stack_protector_ret = true
+  branch_protector_ret = "pac_ret"
   sanitize = av_codec_sanitize
   install_enable = true
   configs = [
