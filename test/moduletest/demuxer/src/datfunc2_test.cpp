@@ -304,7 +304,7 @@ static void DemuxerResult(int videoFramesCount, int audioFramesCount)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local aac_mpeg4_mp4.dat(mp4)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0010, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0010, TestSize.Level1)
 {
     CreateFdSource(INP_DIR_1);
     ASSERT_NE(source, nullptr);
@@ -337,7 +337,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0010, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, URI aac_mpeg4_mp4.dat(mp4)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0020, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0020, TestSize.Level1)
 {
     CreateUriSource(INP_URI_1);
     ASSERT_NE(source, nullptr);
@@ -370,7 +370,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0020, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local aac_mpeg4_mp4.dat(mp4)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0030, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0030, TestSize.Level1)
 {
     CreateFdSource(INP_DIR_1);
     DemuxerResult(372, 528);
@@ -387,7 +387,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0030, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI aac_mpeg4_mp4.dat(mp4)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0040, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0040, TestSize.Level1)
 {
     CreateUriSource(INP_URI_1);
     DemuxerResult(372, 528);
@@ -404,7 +404,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0040, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local mp3_h264_ts.dat(MPEGTS)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0050, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0050, TestSize.Level1)
 {
     CreateFdSource(INP_DIR_2);
     ASSERT_NE(source, nullptr);
@@ -437,7 +437,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0050, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, URI mp3_h264_ts.dat(MPEGTS)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0060, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0060, TestSize.Level1)
 {
     CreateUriSource(INP_URI_2);
     ASSERT_NE(source, nullptr);
@@ -470,7 +470,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0060, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local mp3_h264_ts.dat(MPEGTS)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0070, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0070, TestSize.Level1)
 {
     CreateFdSource(INP_DIR_2);
     DemuxerResult(372, 468);
@@ -487,7 +487,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0070, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI mp3_h264_ts.dat(MPEGTS)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0080, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0080, TestSize.Level1)
 {
     CreateUriSource(INP_URI_2);
     DemuxerResult(372, 468);
@@ -504,7 +504,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0080, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local mkv.dat(mkv)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0090, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0090, TestSize.Level1)
 {
     CreateFdSource(INP_DIR_3);
     ASSERT_NE(source, nullptr);
@@ -537,7 +537,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0090, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, URI mkv.dat(mkv)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0100, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0100, TestSize.Level1)
 {
     CreateUriSource(INP_URI_3);
     ASSERT_NE(source, nullptr);
@@ -570,7 +570,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0100, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local mkv.dat(mkv)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0110, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0110, TestSize.Level1)
 {
     CreateFdSource(INP_DIR_3);
     DemuxerResult(600, 431);
@@ -587,7 +587,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0110, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI mkv.dat(mkv)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0120, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0120, TestSize.Level1)
 {
     CreateUriSource(INP_URI_3);
     DemuxerResult(600, 431);
@@ -604,7 +604,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0120, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local av1_vorbis_webm.dat(webm)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0130, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0130, TestSize.Level1)
 {
     CreateFdSource(INP_DIR_4);
     ASSERT_NE(source, nullptr);
@@ -637,7 +637,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0130, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, URI av1_vorbis_webm.dat(webm)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0140, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0140, TestSize.Level1)
 {
     CreateUriSource(INP_URI_4);
     ASSERT_NE(source, nullptr);
@@ -670,7 +670,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0140, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local av1_vorbis_webm.dat(webm)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0150, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0150, TestSize.Level1)
 {
     CreateFdSource(INP_DIR_4);
     DemuxerResult(179, 130);
@@ -687,7 +687,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0150, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI av1_vorbis_webm.dat(webm)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0160, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0160, TestSize.Level1)
 {
     CreateUriSource(INP_URI_4);
     DemuxerResult(179, 130);
@@ -704,7 +704,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0160, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local avc_mp3_flv.dat(flv)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0170, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0170, TestSize.Level1)
 {
     CreateFdSource(INP_DIR_5);
     ASSERT_NE(source, nullptr);
@@ -737,7 +737,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0170, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, URI avc_mp3_flv.dat(flv)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0180, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0180, TestSize.Level1)
 {
     CreateUriSource(INP_URI_5);
     ASSERT_NE(source, nullptr);
@@ -770,7 +770,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0180, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local avc_mp3_flv.dat(flv)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0190, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0190, TestSize.Level1)
 {
     CreateFdSource(INP_DIR_5);
     DemuxerResult(602, 385);
@@ -787,7 +787,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0190, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI avc_mp3_flv.dat(flv)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0200, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0200, TestSize.Level1)
 {
     CreateUriSource(INP_URI_5);
     DemuxerResult(602, 385);
@@ -804,7 +804,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0200, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local adpcm_yamaha_avi.dat(avi)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0210, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0210, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_6);
     ASSERT_NE(source, nullptr);
@@ -837,7 +837,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0210, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, URI adpcm_yamaha_avi.dat(avi)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0220, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0220, TestSize.Level2)
 {
     CreateUriSource(INP_URI_6);
     ASSERT_NE(source, nullptr);
@@ -870,7 +870,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0220, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local adpcm_yamaha_avi.dat(avi)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0230, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0230, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_6);
     DemuxerResult(29, 47);
@@ -887,7 +887,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0230, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI adpcm_yamaha_avi.dat(avi)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0240, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0240, TestSize.Level2)
 {
     CreateUriSource(INP_URI_6);
     DemuxerResult(29, 47);
@@ -904,7 +904,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0240, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local adpcm_yamaha_mov.dat(mov)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0250, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0250, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_7);
     ASSERT_NE(source, nullptr);
@@ -937,7 +937,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0250, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, URI adpcm_yamaha_mov.dat(mov)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0260, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0260, TestSize.Level2)
 {
     CreateUriSource(INP_URI_7);
     ASSERT_NE(source, nullptr);
@@ -970,7 +970,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0260, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local adpcm_yamaha_mov.dat(mov)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0270, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0270, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_7);
     DemuxerResult(29, 47);
@@ -987,7 +987,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0270, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI adpcm_yamaha_mov.dat(mov)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0280, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0280, TestSize.Level2)
 {
     CreateUriSource(INP_URI_7);
     DemuxerResult(29, 47);
@@ -1004,7 +1004,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0280, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local mpeg_h264_mp3_mpeg.dat(MPEGPS)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0290, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0290, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_8);
     ASSERT_NE(source, nullptr);
@@ -1037,7 +1037,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0290, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, URI mpeg_h264_mp3_mpeg.dat(MPEGPS)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0300, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0300, TestSize.Level2)
 {
     CreateUriSource(INP_URI_8);
     ASSERT_NE(source, nullptr);
@@ -1070,7 +1070,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0300, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local mpeg_h264_mp3_mpeg.dat(MPEGPS)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0310, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0310, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_8);
     DemuxerResult(1253, 2165);
@@ -1087,7 +1087,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0310, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI mpeg_h264_mp3_mpeg.dat(MPEGPS)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0320, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0320, TestSize.Level2)
 {
     CreateUriSource(INP_URI_8);
     DemuxerResult(1253, 2165);
@@ -1105,7 +1105,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0320, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local rv30_cook_rm.dat(rm)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0330, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0330, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_9);
     ASSERT_NE(source, nullptr);
@@ -1138,7 +1138,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0330, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, URI rv30_cook_rm.dat(rm)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0340, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0340, TestSize.Level2)
 {
     CreateUriSource(INP_URI_9);
     ASSERT_NE(source, nullptr);
@@ -1171,7 +1171,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0340, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local rv30_cook_rm.dat(rm)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0350, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0350, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_9);
     DemuxerResult(1937, 2720);
@@ -1188,7 +1188,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0350, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI rv30_cook_rm.dat(rm)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0360, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0360, TestSize.Level2)
 {
     CreateUriSource(INP_URI_9);
     DemuxerResult(1937, 2720);
@@ -1205,7 +1205,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0360, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local rv40_cook_rmvb.dat(rmvb)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0370, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0370, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_10);
     ASSERT_NE(source, nullptr);
@@ -1238,7 +1238,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0370, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, URI rv40_cook_rmvb.dat(rmvb)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0380, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0380, TestSize.Level2)
 {
     CreateUriSource(INP_URI_10);
     ASSERT_NE(source, nullptr);
@@ -1271,7 +1271,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0380, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local rv40_cook_rmvb.dat(rmvb)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0390, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0390, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_10);
     DemuxerResult(251, 480);
@@ -1288,7 +1288,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0390, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI rv40_cook_rmvb.dat(rmvb)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0400, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0400, TestSize.Level2)
 {
     CreateUriSource(INP_URI_10);
     DemuxerResult(251, 480);
@@ -1306,7 +1306,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0400, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local m4v_h264_alac_m4v.dat(m4v)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0410, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0410, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_11);
     ASSERT_NE(source, nullptr);
@@ -1339,7 +1339,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0410, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, URI m4v_h264_alac_m4v.dat(m4v)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0420, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0420, TestSize.Level2)
 {
     CreateUriSource(INP_URI_11);
     ASSERT_NE(source, nullptr);
@@ -1372,7 +1372,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0420, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local m4v_h264_alac_m4v.dat(m4v)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0430, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0430, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_11);
     DemuxerResult(602, 109);
@@ -1389,7 +1389,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0430, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI m4v_h264_alac_m4v.dat(m4v)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0440, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0440, TestSize.Level2)
 {
     CreateUriSource(INP_URI_11);
     DemuxerResult(602, 109);
@@ -1406,7 +1406,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0440, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local wmv_h264_wmav1_wmv.dat(wmv)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0450, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0450, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_12);
     ASSERT_NE(source, nullptr);
@@ -1439,7 +1439,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0450, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, URI wmv_h264_wmav1_wmv.dat(wmv)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0460, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0460, TestSize.Level2)
 {
     CreateUriSource(INP_URI_12);
     ASSERT_NE(source, nullptr);
@@ -1472,7 +1472,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0460, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local wmv_h264_wmav1_wmv.dat(wmv)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0470, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0470, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_12);
     DemuxerResult(602, 218);
@@ -1489,7 +1489,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0470, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI wmv_h264_wmav1_wmv.dat(wmv)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0480, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0480, TestSize.Level2)
 {
     CreateUriSource(INP_URI_12);
     DemuxerResult(602, 218);
@@ -1506,7 +1506,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0480, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local mpeg2_ac3_vob.dat(vob)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0490, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0490, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_13);
     ASSERT_NE(source, nullptr);
@@ -1539,7 +1539,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0490, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, URI mpeg2_ac3_vob.dat(vob)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0500, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0500, TestSize.Level2)
 {
     CreateUriSource(INP_URI_13);
     ASSERT_NE(source, nullptr);
@@ -1572,7 +1572,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0500, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local mpeg2_ac3_vob.dat(vob)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0510, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0510, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_13);
     DemuxerResult(602, 314);
@@ -1589,7 +1589,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0510, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI mpeg2_ac3_vob.dat(vob)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0520, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0520, TestSize.Level2)
 {
     CreateUriSource(INP_URI_13);
     DemuxerResult(602, 314);
@@ -1606,7 +1606,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0520, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local 3g2_h263_aac_3g2.dat(3g2)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0530, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0530, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_14);
     ASSERT_NE(source, nullptr);
@@ -1639,7 +1639,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0530, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, URI 3g2_h263_aac_3g2.dat(3g2)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0540, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0540, TestSize.Level2)
 {
     CreateUriSource(INP_URI_14);
     ASSERT_NE(source, nullptr);
@@ -1672,7 +1672,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0540, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local 3g2_h263_aac_3g2.dat(3g2)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0550, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0550, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_14);
     DemuxerResult(300, 217);
@@ -1689,7 +1689,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0550, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI 3g2_h263_aac_3g2.dat(3g2)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0560, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0560, TestSize.Level2)
 {
     CreateUriSource(INP_URI_14);
     DemuxerResult(300, 217);
@@ -1706,7 +1706,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0560, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, Local 3gp_h264_aac_3gp.dat(3gp)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0570, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0570, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_15);
     ASSERT_NE(source, nullptr);
@@ -1739,7 +1739,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0570, TestSize.Level0)
  * @tc.name      : demuxer DAT, GetTrackFormat, URI 3gp_h264_aac_3gp.dat(3gp)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0580, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0580, TestSize.Level2)
 {
     CreateUriSource(INP_URI_15);
     ASSERT_NE(source, nullptr);
@@ -1772,7 +1772,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0580, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with Local 3gp_h264_aac_3gp.dat(3gp)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0590, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0590, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_15);
     DemuxerResult(1116, 2186);
@@ -1789,7 +1789,7 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0590, TestSize.Level0)
  * @tc.name      : demuxer DAT, Read Seek with URI 3gp_h264_aac_3gp.dat(3gp)
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0600, TestSize.Level0)
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0600, TestSize.Level2)
 {
     CreateUriSource(INP_URI_15);
     DemuxerResult(1116, 2186);
