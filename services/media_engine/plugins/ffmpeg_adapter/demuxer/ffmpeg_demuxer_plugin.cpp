@@ -2096,8 +2096,8 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFramesFull()
 {
     Plugins::AVPacketWrapperPtr pktWrapper = nullptr;
     Status ret = Status::OK;
-    bool extraType = (fileType_ == FileType::MPEGTS ||
-        FFmpegFormatHelper::IsMpeg4File(fileType_) || fileType_ == FileType::FLV);
+    bool extraType = (fileType_ == FileType::MPEGTS || fileType_ == FileType::RM ||
+        fileType_ == FileType::FLV || FFmpegFormatHelper::IsMpeg4File(fileType_));
     while ((extraType && !AllSupportTrackFramesReady()) ||
            (!extraType && !AllVideoFirstFramesReady() &&
             !streamParsers_->AllParserInited())) {
