@@ -679,7 +679,7 @@ int32_t InnerDemuxerSample::SetEos(int32_t trackType)
         }
         return -1;
     }
-    return 0;  
+    return 0;
 }
 }
 }
