@@ -451,4 +451,131 @@ HWTEST_F(AttributeUnitTest, QuotedStringNoQuotes_001, TestSize.Level1)
     Attribute attr("name", "hello");
     EXPECT_EQ(attr.QuotedString(), "hello");
 }
+
+HWTEST_F(AttributeUnitTest, ParseUriQuery_001, TestSize.Level1)
+{
+    std::string uri = "http://example.com/path";
+    auto params = ParseUriQuery(uri);
+    EXPECT_TRUE(params.empty());
+}
+
+HWTEST_F(AttributeUnitTest, ParseUriQuery_002, TestSize.Level1)
+{
+    std::string uri = "http://example.com/path?key=value";
+    auto params = ParseUriQuery(uri);
+    EXPECT_EQ(params.size(), 1);
+    EXPECT_EQ(params["key"], "value");
+}
+
+HWTEST_F(AttributeUnitTest, ParseUriQuery_003, TestSize.Level1)
+{
+    std::string uri = "http://example.com/path?k1=v1&k2=v2&k3=v3";
+    auto params = ParseUriQuery(uri);
+    EXPECT_EQ(params.size(), 3);
+    EXPECT_EQ(params["k1"], "v1");
+}
+
+HWTEST_F(AttributeUnitTest, ParseUriQuery_004, TestSize.Level1)
+{
+    std::string uri = "http://example.com/path?param=hello%20world";
+    auto params = ParseUriQuery(uri);
+    EXPECT_EQ(params["param"], "hello world");
+}
+
+HWTEST_F(AttributeUnitTest, ParseUriQuery_005, TestSize.Level1)
+{
+    std::string uri = "http://example.com/path?param=hello+world";
+    auto params = ParseUriQuery(uri);
+    EXPECT_EQ(params["param"], "hello world");
+}
+
+HWTEST_F(AttributeUnitTest, ParseUriQuery_006, TestSize.Level1)
+{
+    std::string uri = "http://example.com/path?param=hello%2Gworld";
+    auto params = ParseUriQuery(uri);
+    EXPECT_EQ(params["param"], "hello%2Gworld");
+}
+
+HWTEST_F(AttributeUnitTest, ParseUriQuery_007, TestSize.Level1)
+{
+    std::string uri = "http://example.com/path=?key=&=value";
+    auto params = ParseUriQuery(uri);
+    EXPECT_EQ(params.size(), 1);
+    EXPECT_EQ(params["key"], "");
+}
+
+HWTEST_F(AttributeUnitTest, ParseUriQuery_008, TestSize.Level1)
+{
+    std::string uri = "http://example.com/path?k1=v1&&k2=v2";
+    auto params = ParseUriQuery(uri);
+    EXPECT_EQ(params.size(), 2);
+}
+
+HWTEST_F(AttributeUnitTest, ParseUriQuery_009, TestSize.Level1)
+{
+    std::string uri = "http://example.com/path?param=100%25";
+    auto params = ParseUriQuery(uri);
+    EXPECT_EQ(params["param"], "100%");
+}
+
+HWTEST_F(AttributeUnitTest, ParseUriQuery_010, TestSize.Level1)
+{
+    std::string uri = "";
+    auto params = ParseUriQuery(uri);
+    EXPECT_TRUE(params.empty());
+}
+
+HWTEST_F(AttributeUnitTest, ParseUriQuery_011, TestSize.Level1)
+{
+    std::string uri = "http://example.com/path?";
+    auto params = ParseUriQuery(uri);
+    EXPECT_TRUE(params.empty());
+}
+
+HWTEST_F(AttributeUnitTest, ParseEntries_001, TestSize.Level1)
+{
+    std::string hlsContent = "#EXT-X-DEFINE:NAME=\"test\",VALUE=\"out\"\n"
+        "#EXT-X-MEDIA-SEQUENCE:0\n"
+        "#EXT-X-KEY:METHOD=AES-128,URI=\"enc.key\",IV=0xd017dc49908d7272fc2def8ffe6fc15e\n"
+        "#EXTINF:11.333333,\n"
+        "{$test}000.ts";
+    auto result = ParseEntries(hlsContent, {}, {});
+    auto& tagList = result.first;
+    auto tagDefineMap = result.second;
+
+    EXPECT_EQ(tagList.size(), 4);
+    EXPECT_EQ(tagDefineMap["test"], "out");
+}
+
+HWTEST_F(AttributeUnitTest, ParseEntries_002, TestSize.Level1)
+{
+    auto result = ParseEntries("", {}, {});
+    EXPECT_TRUE(result.first.empty());
+}
+
+HWTEST_F(AttributeUnitTest, ParseEntries_003, TestSize.Level1)
+{
+    std::string hlsContent = "#EXT-X-DEFINE:NAME=\"test\"\n"
+        "test.ts";
+    auto result = ParseEntries(hlsContent, {}, {});
+    EXPECT_EQ(result.second.size(), 0);
+}
+
+HWTEST_F(AttributeUnitTest, ParseEntries_004, TestSize.Level1)
+{
+    std::unordered_map<std::string, std::string> masterMap = {{"qual", "ity"}};
+    std::string hlsContent = "#EXT-X-DEFINE:IMPORT=\"qual\"\n"
+        "test.ts";
+    auto result = ParseEntries(hlsContent, masterMap, {});
+    EXPECT_EQ(result.second["qual"], "ity");
+}
+
+HWTEST_F(AttributeUnitTest, ParseEntries_005, TestSize.Level1)
+{
+    std::unordered_map<std::string, std::string> uriMap = {{"param", "value"}};
+    std::string hlsContent = "#EXT-X-DEFINE:QUERYPARAM=\"param\"\n"
+        "test.ts";
+    auto result = ParseEntries(hlsContent, {}, uriMap);
+    EXPECT_EQ(result.second["param"], "value");
+}
 }

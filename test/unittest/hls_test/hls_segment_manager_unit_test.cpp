@@ -1586,7 +1586,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, READ_HEADER_DATA_001, TestSize.Level1)
     readDataInfo.wantReadLength_ = 1 * 1024 * 1024;
     readDataInfo.realReadLength_ = 16;
     EXPECT_EQ(downloader->IsHlsFmp4(), false);
-    EXPECT_EQ(downloader->ReadHeaderData(buffer, readDataInfo), false);
+    EXPECT_EQ(downloader->ReadHeaderData(buffer, readDataInfo), true);
     std::string testUrl = TEST_URI_PATH + "test_hls/testXMap.m3u8";
     downloader->Open(testUrl, httpHeader);
     std::vector<StreamInfo> streams;
@@ -1817,7 +1817,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, UPDATE_MASTER_PLAYLIST_001, TestSize.Level1)
     downloader->Open(testUrl, httpHeader);
     std::vector<StreamInfo> streams;
     downloader->GetStreamInfo(streams);
-    EXPECT_EQ(streams.size(), 0);
+    EXPECT_EQ(streams.size(), 2);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, PLAYLIST_DOWNLOADER_001, TestSize.Level1)

@@ -11,6 +11,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ 
  */
 #include <iostream>
 #include <fuzzer/FuzzedDataProvider.h>
@@ -90,9 +91,9 @@ bool SegMentFuzzTest(const uint8_t *data, size_t size)
     url += FAKE_FUZZ_M3U8;  // 虚假m3u8文件，需通过 fuzz data 喂入
     hlsSegmentManager->Open(url, g_httpHeader);
     hlsSegmentManager->SetIsReportedErrorCode();
-    int32_t streamId = GetData<int32_t>();
-    hlsSegmentManager->SelectAudio(streamId);
-    hlsSegmentManager->StartAudioDownload(streamId);
+    int32_t streamId = *reinterpret_cast<const int32_t *>(data);
+    hlsSegmentManager->SelectMedia(streamId, HlsSegmentType::SEG_AUDIO);
+    hlsSegmentManager->StartMediaDownload(streamId, HlsSegmentType::SEG_AUDIO);
     hlsSegmentManager->OnDrmInfoChanged(drmInfos);
     hlsSegmentManager->GetDownloadRateAndSpeed();
     bool isDelay = GetData<bool>();
@@ -104,7 +105,7 @@ bool SegMentFuzzTest(const uint8_t *data, size_t size)
     hlsSegmentManager->WaitForBufferingEnd();
     hlsSegmentManager->GetTotalTsBuffersize();
     hlsSegmentManager->GetStreamInfoById(streamId);
-    hlsSegmentManager->GetDefaultAudioStreamId();
+    hlsSegmentManager->GetDefaultMediaStreamId(HlsSegmentType::SEG_AUDIO);
     hlsSegmentManager->GetSegType(streamId);
     bool isAsync = true; // fdp->ConsumeBool();
     hlsSegmentManager->Close(isAsync);

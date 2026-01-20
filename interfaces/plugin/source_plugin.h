@@ -18,6 +18,7 @@
 
 #include <map>
 #include <string>
+#include <utility>
 
 #include "common/media_source.h"
 #include "plugin/plugin_base.h"
@@ -207,6 +208,11 @@ public:
     virtual Status GetDuration(int64_t& duration)
     {
         duration = Plugins::HST_TIME_NONE;
+        return Status::OK;
+    }
+
+    virtual Status GetStartInfo(std::pair<int64_t, bool>& startInfo)
+    {
         return Status::OK;
     }
 

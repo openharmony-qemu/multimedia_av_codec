@@ -18,6 +18,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "osal/task/task.h"
 #include "osal/utils/util.h"
@@ -100,6 +101,7 @@ public:
     bool IsSeekToTimeSupported();
     bool IsLocalFd();
     int64_t GetDuration();
+    std::pair<int64_t, bool> GetStartInfo();
     Status SeekToTime(int64_t seekTime, SeekMode mode);
     Status SeekTo(uint64_t offset);
     Status GetBitRates(std::vector<uint32_t>& bitRates);

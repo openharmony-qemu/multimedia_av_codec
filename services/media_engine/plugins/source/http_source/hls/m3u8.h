@@ -21,6 +21,7 @@
 #include <list>
 #include <unordered_map>
 #include <functional>
+#include <utility>
 #include <map>
 #include "hls_tags.h"
 #include "playlist_downloader.h"
@@ -61,7 +62,9 @@ struct M3U8Info {
 };
 
 struct M3U8 : public std::enable_shared_from_this<M3U8> {
-    M3U8(const std::string &uri, const std::string &name, StatusCallbackFunc statusCallback = [](DownloadStatus,
+    M3U8(const std::string &uri, const std::string &name,
+        const std::unordered_map<std::string, std::string> tagMasterMap = {},
+        StatusCallbackFunc statusCallback = [](DownloadStatus,
         std::shared_ptr<Downloader>&, std::shared_ptr<DownloadRequest>&) {},
         std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = nullptr);
     ~M3U8();
@@ -78,12 +81,18 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     std::string uri_;
     std::string name_;
     std::unordered_map<HlsTag, std::function<void(std::shared_ptr<Tag>&, M3U8Info&)>> tagUpdatersMap_;
+    std::unordered_map<std::string, std::string> tagMasterMap_;
 
     double targetDuration_ {0.0};
     bool bLive_ {};
     std::list<std::shared_ptr<M3U8Fragment>> files_;
     uint64_t sequence_ {1}; // default 1
+    uint64_t initSequence_ {1}; // default 1
     int discontSequence_ {0};
+    uint64_t skipSegmentsNum_ {0};
+    double timeOffset_ {0.0};
+    bool precise_ {false};
+    bool isStart_ {false};
     std::string playList_;
     void ParseKey(const std::shared_ptr<AttributesTag> &tag);
     void DownloadKey();
@@ -98,6 +107,10 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     uint32_t SaveMapData(uint8_t* data, uint32_t len, bool notBlock);
     void UpdateDownloadFinished(const std::string& url, const std::string& location);
     void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
+    uint64_t ExtractNumber(const std::string& uri);
+    bool ShouldSkipSegment(const std::string& uri, uint64_t skippedSegments,
+        uint64_t initSequence);
+    void ProcessInfo(M3U8Info& info, size_t& duration);
     void InitDownloadHeader();
 
     std::shared_ptr<std::string> method_;
@@ -161,15 +174,18 @@ struct M3U8VariantStream {
     std::string uri_;
     std::string codecs_;
     std::string audio_;
+    std::string subtitles_;
     uint64_t bandWidth_ {};
     int programID_ {};
     int width_ {};
     int height_ {};
     bool iframe_ {false};
     std::shared_ptr<M3U8> m3u8_;
-    std::list<std::shared_ptr<M3U8Media>> media_;
+    std::list<std::shared_ptr<M3U8Media>> audioMedia_;
+    std::list<std::shared_ptr<M3U8Media>> subtitlesMedia_;
     uint32_t streamId_ {0};
-    std::shared_ptr<M3U8Media> defaultMedia_;
+    std::shared_ptr<M3U8Media> defaultAudio_;
+    std::shared_ptr<M3U8Media> defaultSubtitles_;
     bool isVideo_ {false};
 };
 
@@ -183,8 +199,9 @@ struct M3U8MasterPlaylist {
     void UpdateMediaPlaylist();
     void UpdateMasterPlaylist();
     void ParseMediaStreamInfo(std::shared_ptr<Tag>& tag);
-    void BindVideoAudio();
-    void GetDefaultAudioStream(const std::shared_ptr<M3U8VariantStream> &videoStream);
+    void ParseStart(std::shared_ptr<Tag> &tag);
+    void GetDefaultMedieStream(std::shared_ptr<M3U8VariantStream>& videoStream, std::string mediaType);
+    void BindVideoMedia(std::string mediaType);
     void DownloadSessionKey(std::shared_ptr<Tag>& tag);
     void CreateVariantStream(const std::shared_ptr<Tag>& tag);
     void ChooseStreamByResolution();
@@ -196,12 +213,18 @@ struct M3U8MasterPlaylist {
     void ProcessAllTags(std::list<std::shared_ptr<Tag>>& tags);
     void ProcessStreamInfoTag(std::shared_ptr<Tag> tag);
     void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
+    void ParseAttributes(const std::shared_ptr<AttributesTag>& item,
+        std::shared_ptr<M3U8VariantStream>& stream);
     std::list<std::shared_ptr<M3U8VariantStream>> variants_;
     std::shared_ptr<M3U8VariantStream> defaultVariant_;
     std::shared_ptr<M3U8VariantStream> firstVideoStream_;
     std::string uri_;
     std::string playList_;
+    std::unordered_map<std::string, std::string> tagMasterMap_;
     double duration_ {0};
+    double timeOffset_ {0.0};
+    bool precise_ {false};
+    bool isStart_ {false};
     std::atomic<bool> isSimple_ {false};
     std::atomic<bool> bLive_ {false};
     bool isDecryptAble_ { false };
@@ -221,6 +244,8 @@ struct M3U8MasterPlaylist {
     StatusCallbackFunc monitorStatusCallback_;
     std::list<std::shared_ptr<M3U8Media>> mediaList_;
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
+    std::list<std::shared_ptr<M3U8Media>> audioList_;
+    std::list<std::shared_ptr<M3U8Media>> subtitlesList_;
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
 };
 }

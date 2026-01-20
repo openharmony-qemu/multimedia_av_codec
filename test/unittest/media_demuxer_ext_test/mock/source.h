@@ -11,6 +11,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ 
  */
 
 #ifndef MEDIA_SOURCE_H
@@ -87,6 +88,7 @@ public:
     MOCK_METHOD(bool, IsLocalFd, (), ());
     MOCK_METHOD(bool, IsCloudFd, (), ());
     MOCK_METHOD(int64_t, GetDuration, (), ());
+    MOCK_METHOD((std::pair<int64_t, bool>), GetStartInfo, (), ());
     MOCK_METHOD(Status, SeekToTime, (int64_t seekTime, SeekMode mode), ());
     MOCK_METHOD(Status, SeekTo, (uint64_t offset), ());
     MOCK_METHOD(Status, GetBitRates, (std::vector<uint32_t> & bitRates), ());
