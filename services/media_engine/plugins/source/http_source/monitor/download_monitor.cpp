@@ -41,6 +41,7 @@ namespace {
         56,
         18,
         0,
+        7,
     };
     const std::set<int32_t> SERVER_RETRY_ERROR_CODES = {
         300,
