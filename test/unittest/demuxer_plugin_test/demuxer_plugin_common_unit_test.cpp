@@ -1137,7 +1137,7 @@ HWTEST_F(DemuxerPluginUnitTest, AVDemuxer_LimitedProbe_UseLargeSizeDataSource_06
  * @tc.name: AVDemuxer_LimitedProbe_HardLimit_061336
  * @tc.desc: Verify hard limit fallback mechanism when reading exceeds hardLimit frames
  * @tc.type: FUNC
- * 
+ *
  * Test strategy:
  * 1. Use mock to control frame order: first 60 frames are all video (stream=0),
  *    audio first frame (stream=1) never appears in the first 60 frames
@@ -1220,7 +1220,7 @@ HWTEST_F(DemuxerPluginUnitTest, AVDemuxer_LimitedProbe_HardLimit_061336, TestSiz
  * @tc.name: AVDemuxer_LimitedProbe_Supplement_061337
  * @tc.desc: Verify supplement first frame mechanism for pending tracks
  * @tc.type: FUNC
- * 
+ *
  * Test strategy:
  * 1. First trigger hard limit, let audio track be marked as pending
  * 2. In ReadSample(), if reading a sync frame of the pending track,

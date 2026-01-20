@@ -2279,12 +2279,9 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFramesLimited()
     initReadFrameCount_ = 0;
     hasVideoFirstFrame_ = false;
     hasAudioFirstFrame_ = false;
-    MEDIA_LOG_I("trackCount: " PUBLIC_LOG_U32
-        ", softLimit: " PUBLIC_LOG_U32
-        ", hardLimit: " PUBLIC_LOG_U32
-        ", hasVideoTrack: " PUBLIC_LOG_D32
-        ", hasAudioTrack: " PUBLIC_LOG_D32,
-        trackCount, softLimit, hardLimit, hasVideoTrack, hasAudioTrack);
+    MEDIA_LOG_I("trackCount: " PUBLIC_LOG_U32 ", softLimit: " PUBLIC_LOG_U32 ", hardLimit: " PUBLIC_LOG_U32
+        ", hasVideoTrack: " PUBLIC_LOG_D32 ", hasAudioTrack: " PUBLIC_LOG_D32, trackCount, softLimit,
+        hardLimit, hasVideoTrack, hasAudioTrack);
     while ((extraType && !AllSupportTrackFramesReady()) ||
            (!extraType && !AllVideoFirstFramesReady() &&
             !streamParsers_->AllParserInited())) {
@@ -2312,7 +2309,7 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFramesLimited()
     }
     MEDIA_LOG_I("initReadFrameCount_ : " PUBLIC_LOG_U32, initReadFrameCount_);
     for (auto i = 0; i < formatContext_->nb_streams; ++i) {
-        MEDIA_LOG_I("i: " PUBLIC_LOG_U32 " cache queue size: " PUBLIC_LOG_U32, i, cacheQueue_.GetCacheFrameCount(i));
+        MEDIA_LOG_D("i: " PUBLIC_LOG_U32 " cache queue size: " PUBLIC_LOG_U32, i, cacheQueue_.GetCacheFrameCount(i));
     }
     return ret;
 }

@@ -217,8 +217,8 @@ public:
     {
         // Return a size well above FILE_SIZE_THRESHOLD (1GB) defined in
         // FFmpegDemuxerPlugin so that limited pre-read logic is triggered.
-        constexpr uint64_t TWO_GB = 2ULL * 1024 * 1024 * 1024;
-        size = TWO_GB;
+        constexpr uint64_t twoGb = 2ULL * 1024 * 1024 * 1024;
+        size = twoGb;
         return Status::OK;
     }
 
