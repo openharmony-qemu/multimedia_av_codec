@@ -227,6 +227,8 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSampleMemory(
         MEDIA_LOG_D("Reset info failed");
     }
 
+    MaybeInitSeekCalibAfterRead(tempPktWrapper->GetStreamIndex(), tempPkt);
+
     Status ret = ConvertToAnnexbAndUpdateSample(sample, samplePacket, tempPktWrapper);
     if (combined) {
         tempPktWrapper.reset();

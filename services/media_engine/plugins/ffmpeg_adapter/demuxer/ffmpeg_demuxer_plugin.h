@@ -344,6 +344,7 @@ private:
     Status ParseVideoFirstFrames();
     Status ParseVideoFirstFramesFull();
     Status ParseVideoFirstFramesLimited();
+    Status ConvertVideoExtraDataForParsers();
     Status ReadAndValidateLimitedPacket(Plugins::AVPacketWrapperPtr& pktWrapper);
     Status ProcessLimitedPacketFirstFrame(Plugins::AVPacketWrapperPtr& pktWrapper,
         bool extraType, int32_t trackId, AVStream *stream);
@@ -352,6 +353,7 @@ private:
     void MarkPendingTracksForFirstFrame();
     void SupplementFirstFrameIfPending(uint32_t trackId,
         const std::shared_ptr<SamplePacket>& samplePacket);
+    void MaybeInitSeekCalibAfterRead(uint32_t trackId, AVPacket *pkt);
     Status WaitForCacheReady(uint32_t trackId);
     uint32_t CalculateRelevantTrackCount() const;
     uint32_t CalculateSoftLimit(uint32_t trackCount) const;

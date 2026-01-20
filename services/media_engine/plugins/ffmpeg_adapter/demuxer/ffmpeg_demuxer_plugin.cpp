@@ -764,11 +764,15 @@ void FFmpegDemuxerPlugin::WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std:
         sample->meta_->SetData(Media::Tag::BUFFER_DECODING_TIMESTAMP, dts);
     }
 
-    if (snapshot->isVideo && snapshot->codecId != AV_CODEC_ID_H264 &&
-        VideoFirstFrameValid(trackIndex)) {
-        Plugins::AVPacketWrapperPtr firstFrameWrapper = videoFirstFrameMap_[trackIndex];
-        AVPacket *firstFrame = (firstFrameWrapper != nullptr) ? firstFrameWrapper->GetAVPacket() : nullptr;
-        if (firstFrame != nullptr && firstPkt->dts == firstFrame->dts && streamParsers_ != nullptr) {
+    if (snapshot->isVideo && snapshot->codecId != AV_CODEC_ID_H264) {
+        if (VideoFirstFrameValid(trackIndex)) {
+            Plugins::AVPacketWrapperPtr firstFrameWrapper = videoFirstFrameMap_[trackIndex];
+            AVPacket *firstFrame = (firstFrameWrapper != nullptr) ? firstFrameWrapper->GetAVPacket() : nullptr;
+            if (firstFrame != nullptr && firstPkt->dts == firstFrame->dts && streamParsers_ != nullptr) {
+                streamParsers_->ResetXPSSendStatus(trackIndex);
+            }
+        } else if (streamParsers_ != nullptr && firstPkt->dts != AV_NOPTS_VALUE && firstPkt->dts <= 0) {
+            // Limited pre-read might skip caching the first frame; if current dts is non-positive, reset XPS state
             streamParsers_->ResetXPSSendStatus(trackIndex);
         }
     }
@@ -894,6 +898,10 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     bool combined = false;
     Status ret = PreparePacketForConversion(sample, samplePacket, tempPktWrapper, combined);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Prepare packet for conversion failed");
+
+    if (tempPktWrapper != nullptr) {
+        MaybeInitSeekCalibAfterRead(tempPktWrapper->GetStreamIndex(), tempPktWrapper->GetAVPacket());
+    }
 
     uint32_t copySize = 0;
     ret = PrepareBufferMetadata(sample, samplePacket, tempPktWrapper, copySize);
@@ -1722,8 +1730,11 @@ Status FFmpegDemuxerPlugin::GetMediaInfo()
     Status ret = ParseVideoFirstFrames();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse video info failed");
     for (uint32_t trackId = 0; trackId < formatContext_->nb_streams; ++trackId) {
+        const auto cacheCount = cacheQueue_.GetCacheSize(trackId);
+        if (cacheCount > 0) {
         MEDIA_LOG_I("Cache Info:track[" PUBLIC_LOG_U32 "] count[" PUBLIC_LOG_ZU "] size[" PUBLIC_LOG_U32 "]",
-            trackId, cacheQueue_.GetCacheSize(trackId), cacheQueue_.GetCacheDataSize(trackId));
+                trackId, cacheCount, cacheQueue_.GetCacheDataSize(trackId));
+        }
     }
     ret = GetFileFirstPacket();
     FALSE_LOG_MSG_W(ret == Status::OK, "Get file first packet failed");
@@ -2180,7 +2191,6 @@ Status FFmpegDemuxerPlugin::ReadAndValidateLimitedPacket(Plugins::AVPacketWrappe
     bool isSync = IsSyncFrame(stream, pktWrapper->GetAVPacket());
     if (!isVvc && (TrackIsChecked(trackId) || !isSync)) {
         pktWrapper = nullptr;
-        return Status::OK;
     }
     return Status::OK;
 }
@@ -2194,18 +2204,31 @@ Status FFmpegDemuxerPlugin::ProcessLimitedPacketFirstFrame(Plugins::AVPacketWrap
     } else if (FFmpegFormatHelper::IsAudioType(*stream)) {
         hasAudioFirstFrame_ = true;
     }
-    if (streamParsers_->ParserIsCreated(trackId) && !streamParsers_->ParserIsInited(trackId)) {
-        Status ret = SetVideoFirstFrame(pktWrapper);
-        if (ret != Status::OK) {
-            MEDIA_LOG_E("Set first frame failed, track " PUBLIC_LOG_D32, trackId);
-            return ret;
-        }
-    } else if (extraType && FFmpegFormatHelper::IsVideoType(*stream)) {
+    bool needFirstFrame = (streamParsers_->ParserIsCreated(trackId) &&
+        !streamParsers_->ParserIsInited(trackId)) ||
+        (extraType && FFmpegFormatHelper::IsVideoType(*stream));
+    if (needFirstFrame && FFmpegFormatHelper::IsVideoType(*stream)) {
         Status ret = SetVideoFirstFrame(pktWrapper, false);
-        if (ret != Status::OK) {
-            MEDIA_LOG_E("Set first frame failed, track " PUBLIC_LOG_D32, trackId);
-            return ret;
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Set first frame failed, track " PUBLIC_LOG_D32, trackId);
+    }
+    return Status::OK;
+}
+
+Status FFmpegDemuxerPlugin::ConvertVideoExtraDataForParsers()
+{
+    for (uint32_t trackId = 0; trackId < formatContext_->nb_streams; ++trackId) {
+        AVStream *stream = formatContext_->streams[trackId];
+        if (stream == nullptr || stream->codecpar == nullptr ||
+            !FFmpegFormatHelper::IsVideoType(*stream)) {
+            continue;
         }
+        if (!streamParsers_->ParserIsCreated(trackId) || streamParsers_->ParserIsInited(trackId)) {
+            continue;
+        }
+        bool convertRet = streamParsers_->ConvertExtraDataToAnnexb(trackId,
+            stream->codecpar->extradata, stream->codecpar->extradata_size);
+        FALSE_RETURN_V_MSG_E(convertRet, Status::ERROR_INVALID_DATA,
+            "ConvertExtraDataToAnnexb failed: " PUBLIC_LOG_D32, trackId);
     }
     return Status::OK;
 }
@@ -2237,7 +2260,7 @@ void FFmpegDemuxerPlugin::SupplementFirstFrameIfPending(uint32_t trackId,
         AVPacket *pkt = (pktWrapper != nullptr) ? pktWrapper->GetAVPacket() : nullptr;
         AVStream *stream = formatContext_->streams[trackId];
         if (pkt != nullptr && stream != nullptr && IsSyncFrame(stream, pkt)) {
-            Status firstRet = SetVideoFirstFrame(pktWrapper);
+            Status firstRet = SetVideoFirstFrame(pktWrapper, false);
             if (firstRet == Status::OK) {
                 checkedTrackIds_.push_back(trackId);
                 firstFramePendingTracks_.erase(trackId);
@@ -2245,6 +2268,25 @@ void FFmpegDemuxerPlugin::SupplementFirstFrameIfPending(uint32_t trackId,
             }
         }
     }
+}
+
+void FFmpegDemuxerPlugin::MaybeInitSeekCalibAfterRead(uint32_t trackId, AVPacket *pkt)
+{
+    if (!IsEnableSeekTimeCalib(formatContext_) ||
+        seekCalibMap_.count(trackId) > 0 || pkt == nullptr) {
+        return;
+    }
+    if (pkt->pts == AV_NOPTS_VALUE || pkt->dts == AV_NOPTS_VALUE || pkt->pts < 0 || pkt->dts < 0) {
+        return;
+    }
+    AVStream *stream = formatContext_->streams[trackId];
+    if (stream == nullptr || !FFmpegFormatHelper::IsVideoType(*stream)) {
+        return;
+    }
+    if (!IsSyncFrame(stream, pkt)) {
+        return;
+    }
+    seekCalibMap_[trackId] = pkt->pts - pkt->dts;
 }
 
 Status FFmpegDemuxerPlugin::WaitForCacheReady(uint32_t trackId)
@@ -2267,7 +2309,7 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFramesLimited()
 {
     Plugins::AVPacketWrapperPtr pktWrapper = nullptr;
     Status ret = Status::OK;
-    bool extraType = (fileType_ == FileType::MPEGTS ||
+    bool extraType = (fileType_ == FileType::MPEGTS || fileType_ == FileType::RM ||
         FFmpegFormatHelper::IsMpeg4File(fileType_) || fileType_ == FileType::FLV);
     uint32_t trackCount = CalculateRelevantTrackCount();
     uint32_t softLimit = CalculateSoftLimit(trackCount);
@@ -2277,6 +2319,8 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFramesLimited()
     initReadFrameCount_ = 0;
     hasVideoFirstFrame_ = false;
     hasAudioFirstFrame_ = false;
+    ret = ConvertVideoExtraDataForParsers();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Convert video extradata failed");
     MEDIA_LOG_I("trackCount: " PUBLIC_LOG_U32 ", softLimit: " PUBLIC_LOG_U32 ", hardLimit: " PUBLIC_LOG_U32
         ", hasVideoTrack: " PUBLIC_LOG_D32 ", hasAudioTrack: " PUBLIC_LOG_D32, trackCount, softLimit,
         hardLimit, hasVideoTrack, hasAudioTrack);
@@ -2306,9 +2350,6 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFramesLimited()
         pktWrapper = nullptr;
     }
     MEDIA_LOG_I("initReadFrameCount_ : " PUBLIC_LOG_U32, initReadFrameCount_);
-    for (auto i = 0; i < formatContext_->nb_streams; ++i) {
-        MEDIA_LOG_D("i: " PUBLIC_LOG_U32 " cache queue size: " PUBLIC_LOG_U32, i, cacheQueue_.GetCacheFrameCount(i));
-    }
     return ret;
 }
 
