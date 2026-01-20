@@ -4105,11 +4105,9 @@ int64_t MediaDemuxer::SampleConsumerLoop(int32_t trackId)
                 "CopySrcBufferByMinSize failed, trackId: %{public}d, status: %{public}d", trackId, status);
         }
     } while (0);
-    uint32_t retryTime = hasSetLargeSize_ && !isVideoMuted_ && trackId == videoTrackId_ ?
-        NEXT_DELAY_TIME_US : SAMPLE_LOOP_RETRY_TIME_US;
     float speed = speed_.load() < BASE_SPEED ? BASE_SPEED : speed_.load();
     return status == Status::OK ?
-        static_cast<int64_t>(retryTime / speed) : static_cast<int64_t>(SAMPLE_LOOP_DELAY_TIME_US / speed);
+        static_cast<int64_t>(NEXT_DELAY_TIME_US / speed) : static_cast<int64_t>(SAMPLE_LOOP_DELAY_TIME_US / speed);
 }
 
 Status MediaDemuxer::RequestDstBuffer(int32_t trackId, int32_t size, std::shared_ptr<AVBuffer> &dstBuffer)
