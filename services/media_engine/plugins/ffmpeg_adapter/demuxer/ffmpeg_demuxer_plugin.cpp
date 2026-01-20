@@ -395,6 +395,15 @@ std::optional<int32_t> CheckedProductForInt32(Args... args)
     }
     return std::nullopt;
 }
+
+static bool IsEnableSeekTimeCalib(const std::shared_ptr<AVFormatContext> &formatContext)
+{
+    FALSE_RETURN_V_MSG_E(formatContext != nullptr, false, "AVFormatContext is nullptr");
+    if (FileType::FLV == FFmpegFormatHelper::GetFileTypeByName(*formatContext)) {
+        return true;
+    }
+    return false;
+}
 } // namespace
 
 std::atomic<int> FFmpegDemuxerPlugin::readatIndex_ = 0;
@@ -2504,15 +2513,6 @@ Status FFmpegDemuxerPlugin::DoSeekInternal(int trackIndex, int64_t seekTime, int
         "Call av_seek_frame failed, err: " PUBLIC_LOG_S, AVStrError(ret).c_str());
     ResetAfterSeek(seekTime, flag == AVSEEK_FLAG_BACKWARD ? SeekMode::SEEK_PREVIOUS_SYNC : mode);
     return Status::OK;
-}
-
-static bool IsEnableSeekTimeCalib(const std::shared_ptr<AVFormatContext> &formatContext)
-{
-    FALSE_RETURN_V_MSG_E(formatContext != nullptr, false, "AVFormatContext is nullptr");
-    if (FileType::FLV == FFmpegFormatHelper::GetFileTypeByName(*formatContext)) {
-        return true;
-    }
-    return false;
 }
 
 Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode, int64_t& realSeekTime)
