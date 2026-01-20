@@ -2086,10 +2086,8 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
             MEDIA_LOG_I("Use limited pre-read, fileSize: " PUBLIC_LOG_U64, fileSize);
         }
     }
-    if (!useLimitedProbe) {
-        return ParseVideoFirstFramesFull();
-    }
-    return ParseVideoFirstFramesLimited();
+    return useLimitedProbe ? ParseVideoFirstFramesLimited()
+                           : ParseVideoFirstFramesFull();
 }
 
 Status FFmpegDemuxerPlugin::ParseVideoFirstFramesFull()
