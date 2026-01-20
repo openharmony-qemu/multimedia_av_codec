@@ -170,6 +170,7 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
                                       GetStatusDescription(status_).data());
     EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::BASIC_CREATE_CODEC_INFO);
 
+    callerInfo.SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
     int32_t ret = isMimeType ? InitByMime(type, name, callerInfo) : InitByName(name, callerInfo);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret,
         "Init failed, ret: %{public}d, %{public}s, %{public}s: %{public}s",
