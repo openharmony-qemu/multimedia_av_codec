@@ -549,7 +549,13 @@ void FFmpegDemuxerPlugin::InitBitStreamContext(const AVStream& avStream)
         FALSE_RETURN_MSG((ret >= 0), "Call avcodec_parameters_copy failed, err:" PUBLIC_LOG_S, AVStrError(ret).c_str());
 
         ret = av_bsf_init(avbsfContext);
-        FALSE_RETURN_MSG((ret >= 0), "Call av_bsf_init failed, err:" PUBLIC_LOG_S, AVStrError(ret).c_str());
+        if (ret < 0) {
+            if (avbsfContext) {
+                av_bsf_free(&avbsfContext);
+            }
+            MEDIA_LOG_E("Call av_bsf_init failed, err:" PUBLIC_LOG_S, AVStrError(ret).c_str());
+            return;
+        }
 
         avbsfContexts_[avStream.index] = std::shared_ptr<AVBSFContext>(avbsfContext, [](AVBSFContext* ptr) {
             if (ptr) {
