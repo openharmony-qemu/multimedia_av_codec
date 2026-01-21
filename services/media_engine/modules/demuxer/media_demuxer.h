@@ -200,6 +200,7 @@ public:
     bool IsWatchDevice();
     bool IsCloudFd();
     bool IsFd();
+    bool IsBuffering();
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
