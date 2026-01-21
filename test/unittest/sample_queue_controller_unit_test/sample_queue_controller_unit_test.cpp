@@ -101,8 +101,24 @@ HWTEST_F(SampleQueueControllerUnitTest, TEST_BUFFERING_DURATION, TestSize.Level1
     sampleQueueController_->DisableFirstBufferingDuration();
     EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), 10 * S_TO_US);
     EXPECT_FALSE(sampleQueueController_->isSetFirstBufferingDuration_);
+}
+
+/**
+ * @tc.name  : TEST_BUFFERING_DURATION_FOR_PLAYING
+ * @tc.number: 002
+ * @tc.desc  : Test bufferingDuration_ firstBufferingDuration_
+ */
+HWTEST_F(SampleQueueControllerUnitTest, TEST_BUFFERING_DURATION_FOR_PLAYING, TestSize.Level1)
+{
+    EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), START_CONSUME_WATER_LOOP);
+    EXPECT_FALSE(sampleQueueController_->isSetFirstBufferingDuration_);
+    sampleQueueController_->DisableFirstBufferingDuration();
+    EXPECT_FALSE(sampleQueueController_->isSetFirstBufferingDuration_);
+
+    auto strategy = std::make_shared<Plugins::PlayStrategy>();
 
     // case duration for playing normal
+    strategy->duration = 10;
     strategy->bufferDurationForPlaying = 5;
     sampleQueueController_->SetBufferingDuration(strategy);
     EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), 5 * S_TO_US);
