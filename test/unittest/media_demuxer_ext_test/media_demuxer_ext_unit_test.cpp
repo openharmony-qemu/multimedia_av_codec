@@ -3300,4 +3300,28 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_RecordDemuxerTimeStamp_002, Te
     EXPECT_EQ(timeStampList[0], static_cast<int64_t>(stage));
     EXPECT_GT(timeStampList[1], NUM_0);
 }
+
+/**
+ * @tc.name  : MediaDemuxer_IsBufferingMap
+ * @tc.number: MediaDemuxer_IsBufferingMap
+ * @tc.desc  : test SetTrackIsBuffering GetTrackIsBuffering
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_IsBufferingMap, TestSize.Level1)
+{
+    int32_t trackId = 0;
+    mediaDemuxer_->isBufferingMap_[trackId] = true;
+    EXPECT_TRUE(mediaDemuxer_->GetTrackIsBuffering(trackId));
+    mediaDemuxer_->SetTrackIsBuffering(trackId, false);
+    EXPECT_FALSE(mediaDemuxer_->GetTrackIsBuffering(trackId));
+    mediaDemuxer_->SetTrackIsBuffering(trackId, true);
+    EXPECT_TRUE(mediaDemuxer_->GetTrackIsBuffering(trackId));
+    
+    trackId = 100;
+    mediaDemuxer_->isBufferingMap_[trackId] = false;
+    EXPECT_FALSE(mediaDemuxer_->GetTrackIsBuffering(trackId));
+    mediaDemuxer_->SetTrackIsBuffering(trackId, true);
+    EXPECT_TRUE(mediaDemuxer_->GetTrackIsBuffering(trackId));
+    mediaDemuxer_->SetTrackIsBuffering(trackId, false);
+    EXPECT_FALSE(mediaDemuxer_->GetTrackIsBuffering(trackId));
+}
 }  // namespace OHOS::Media

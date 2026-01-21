@@ -394,6 +394,8 @@ private:
     void AfterSeekNeedDrop(int32_t trackId);
     Status SetCachePressureCallback();
     bool SourceDropFrame(int32_t trackId);
+    bool GetTrackIsBuffering(int32_t trackId);
+    void SetTrackIsBuffering(int32_t trackId, bool isBuffering);
     Status ReadSampleToDrop(int32_t trackId, std::shared_ptr<AVBuffer> sample);
 
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
@@ -534,7 +536,8 @@ private:
     sptr<AVBufferQueueProducer> dfxBufferQueueProducer_ {nullptr};
     sptr<AVBufferQueueConsumer> dfxBufferQueueConsumer_ {nullptr};
     std::shared_ptr<SampleQueueController> sampleQueueController_;
-    std::map<int32_t, std::atomic<bool>> isBufferingMap_;
+    std::mutex bufferingMapMutex_ {};
+    std::map<int32_t, bool> isBufferingMap_;
     SteadyClock produceSteadyClock_;
     uint64_t produceLastCountTime_ {0};
 
