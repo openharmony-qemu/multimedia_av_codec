@@ -80,7 +80,6 @@ constexpr int32_t PAUSE = 2;
 constexpr bool SEEK_TO_EOS = true;
 constexpr uint32_t RETRY_DELAY_TIME_US = 100000; // 100ms, Delay time for RETRY if no buffer in avbufferqueue producer.
 constexpr uint32_t NEXT_DELAY_TIME_US = 10; // 10us is ok
-constexpr uint32_t SAMPLE_LOOP_RETRY_TIME_US = 20000;
 constexpr uint32_t SAMPLE_LOOP_DELAY_TIME_US = 100000;
 constexpr uint32_t SAMPLE_FLOW_CONTROL_MIN_SAMPLE_DURATION_US = 200000;
 constexpr uint32_t SAMPLE_FLOW_CONTROL_RATE_POW = 6; // 2^6
@@ -4108,11 +4107,9 @@ int64_t MediaDemuxer::SampleConsumerLoop(int32_t trackId)
                 "CopySrcBufferByMinSize failed, trackId: %{public}d, status: %{public}d", trackId, status);
         }
     } while (0);
-    uint32_t retryTime = hasSetLargeSize_ && !isVideoMuted_ && trackId == videoTrackId_ ?
-        NEXT_DELAY_TIME_US : SAMPLE_LOOP_RETRY_TIME_US;
     float speed = speed_.load() < BASE_SPEED ? BASE_SPEED : speed_.load();
     return status == Status::OK ?
-        static_cast<int64_t>(retryTime / speed) : static_cast<int64_t>(SAMPLE_LOOP_DELAY_TIME_US / speed);
+        static_cast<int64_t>(NEXT_DELAY_TIME_US / speed) : static_cast<int64_t>(SAMPLE_LOOP_DELAY_TIME_US / speed);
 }
 
 Status MediaDemuxer::RequestDstBuffer(int32_t trackId, int32_t size, std::shared_ptr<AVBuffer> &dstBuffer)
