@@ -712,12 +712,12 @@ HWTEST_F(HlsMediaDownloaderTest, GET_HLS_DISCONTINUITY_003, TestSize.Level1)
     downloader = nullptr;
 }
 
-HWTEST_F(HlsMediaDownloaderTest, GET_HLS_DISCONTINUITY_006, TestSize.Level1)
+HWTEST_F(HlsMediaDownloaderTest, GET_HLS_DISCONTINUITY_004, TestSize.Level1)
 {
     auto downloader = std::make_shared<HlsMediaDownloader>(10, true, header_);
     downloader->Init();
     downloader->subtitlesSegManager_ =
-        std::make_shared<HlsSegmentManager>(downloader->videoSegManager_, HlsSegmentType::SEG_AUDIO);
+        std::make_shared<HlsSegmentManager>(downloader->videoSegManager_, HlsSegmentType::SEG_SUBTITLE);
     downloader->subtitlesSegManager_->Init();
     downloader->subtitlesSegManager_->Clone(downloader->videoSegManager_);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
@@ -991,21 +991,14 @@ HWTEST_F(HlsMediaDownloaderTest, SET_INITIAL_BUFFERSIZE_006, TestSize.Level1)
         std::make_shared<HlsSegmentManager>(downloader->videoSegManager_, HlsSegmentType::SEG_SUBTITLE);
     downloader->subtitlesSegManager_->Init();
     downloader->subtitlesSegManager_->Clone(downloader->videoSegManager_);
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-                            std::shared_ptr<DownloadRequest>& request) {};
-    downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
-    std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
-    PlayInfo playInfo;
-    playInfo.url_ = testUrl;
-    downloader->videoSegManager_->PutRequestIntoDownloader(playInfo);
-    downloader->videoSegManager_->backPlayList_.push_back(playInfo);
-    downloader->videoSegManager_->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
-    downloader->videoSegManager_->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE_UT);
+    downloader->videoSegManager_->downloader_ = std::make_shared<Downloader>("hlsMedia");
+    auto saveData = [] (uint8_t* data, uint32_t len, bool flag) { (void)data; (void)len; (void)flag; return 0; };
+    auto statusCallback = [] (DownloadStatus status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {};
+    RequestInfo info {};
+    downloader->videoSegManager_->downloadRequest_ = std::make_shared<DownloadRequest>(100.0,
+        saveData, statusCallback, info, false);
     EXPECT_FALSE(downloader->SetInitialBufferSize(0, 50000));
-    delete sourceCallback;
-    sourceCallback = nullptr;
 }
 
 HWTEST_F(HlsMediaDownloaderTest, SET_PLAY_STRATEGY_001, TestSize.Level1)
@@ -1549,7 +1542,7 @@ HWTEST_F(HlsMediaDownloaderTest, GET_SEGMENT_MANAGER_002, TestSize.Level1)
     EXPECT_TRUE(manager == downloader->videoSegManager_);
     manager = downloader->GetSegmentManager(2);
     EXPECT_TRUE(manager == downloader->videoSegManager_);
-    manager = downloader->GetSegmentManager(3);
+    manager = downloader->GetSegmentManager(4);
     EXPECT_TRUE(manager == downloader->subtitlesSegManager_);
     
     downloader->videoSegManager_ = nullptr;

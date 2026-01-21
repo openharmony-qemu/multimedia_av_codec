@@ -91,7 +91,7 @@ bool SegMentFuzzTest(const uint8_t *data, size_t size)
     url += FAKE_FUZZ_M3U8;  // 虚假m3u8文件，需通过 fuzz data 喂入
     hlsSegmentManager->Open(url, g_httpHeader);
     hlsSegmentManager->SetIsReportedErrorCode();
-    int32_t streamId = *reinterpret_cast<const int32_t *>(data);
+    int32_t streamId = GetData<int32_t>();
     hlsSegmentManager->SelectMedia(streamId, HlsSegmentType::SEG_AUDIO);
     hlsSegmentManager->StartMediaDownload(streamId, HlsSegmentType::SEG_AUDIO);
     hlsSegmentManager->OnDrmInfoChanged(drmInfos);

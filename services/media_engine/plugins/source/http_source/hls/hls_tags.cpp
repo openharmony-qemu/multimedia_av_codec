@@ -30,8 +30,8 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
-    constexpr size_t EXT_X_DEFINE_LEN = 14;
-    constexpr size_t MIN_MATCH_GROUPS = 3;
+constexpr size_t EXT_X_DEFINE_LEN = 14;
+constexpr size_t MIN_MATCH_GROUPS = 3;
 }
 struct {
     const char* name;

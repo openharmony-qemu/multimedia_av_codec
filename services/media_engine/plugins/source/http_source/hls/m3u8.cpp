@@ -103,8 +103,8 @@ M3U8::M3U8(const std::string &uri, const std::string &name,
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
     : uri_(std::move(uri)), name_(std::move(name))
 {
-    tagMasterMap_ = tagMasterMap;
     sourceLoader_ = sourceLoader;
+    tagMasterMap_ = tagMasterMap;
     monitorStatusCallback_ = statusCallback;
     InitTagUpdatersMap();
 }

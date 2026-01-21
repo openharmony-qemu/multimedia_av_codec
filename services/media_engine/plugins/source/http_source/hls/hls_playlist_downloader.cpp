@@ -633,8 +633,8 @@ bool HlsPlayListDownloader::ReadFmp4Header(uint8_t* buffer, uint32_t wantLen,
     if (master_ == nullptr || buffer == nullptr) {
         return false;
     }
-    return ReadMediaHeader(master_->subtitlesList_, buffer, wantLen, readLen, streamId)||
-        ReadMediaHeader(master_->audioList_, buffer, wantLen, readLen, streamId)||
+    return ReadMediaHeader(master_->subtitlesList_, buffer, wantLen, readLen, streamId) ||
+        ReadMediaHeader(master_->audioList_, buffer, wantLen, readLen, streamId) ||
         ReadStreamHeader(master_->variants_, buffer, wantLen, readLen, streamId);
 }
 
@@ -683,9 +683,6 @@ bool HlsPlayListDownloader::ReadStreamHeader(const std::list<std::shared_ptr<M3U
 void HlsPlayListDownloader::GetStreamInfo(std::vector<StreamInfo>& streams)
 {
     if (currentVariant_ == nullptr || master_ == nullptr) {
-        return;
-    }
-    if (!master_->isFmp4_) {
         return;
     }
     GetMediaStreams(StreamType::AUDIO, streams);

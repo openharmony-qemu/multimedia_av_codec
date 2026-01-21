@@ -1421,7 +1421,7 @@ Status MediaDemuxer::HandleSelectTrack(int32_t trackId)
     if (trackType == TrackType::TRACK_AUDIO) {
         MEDIA_LOG_I("Select audio [" PUBLIC_LOG_D32 "->" PUBLIC_LOG_D32 "]", audioTrackId_, trackId);
         curTrackId = audioTrackId_;
-    }  else if (trackType == TrackType::TRACK_SUBTITLE) {
+    } else if (trackType == TrackType::TRACK_SUBTITLE) {
         MEDIA_LOG_I("Select subtitle [" PUBLIC_LOG_D32 "->" PUBLIC_LOG_D32 "]", subtitleTrackId_, trackId);
         curTrackId = subtitleTrackId_;
     } else {    // inner subtitle and video not support
