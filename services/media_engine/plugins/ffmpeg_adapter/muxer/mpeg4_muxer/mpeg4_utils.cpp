@@ -125,10 +125,15 @@ std::vector<uint8_t> GenerateAACCodecConfig(int32_t profile, int32_t sampleRate,
         codecConfig[1] = ((baseIndex & 0x01) << 0x07) | ((realCh & 0x0F) << 0x03) | ((sampleRateIndex & 0x0F) >> 1) ;
         // 4 bit ext sample rate idx(0x07: left 7 bits for other) + 4 bit aot(2: LC-AAC, 0x02: left for other)
         codecConfig[2] = ((sampleRateIndex & 0x01) << 0x07) | (2 << 0x02);
-    } else {
+    } else if (profile >= 0) {
         codecConfig = {0, 0, 0x56, 0xE5, 0};
         codecConfig[0] = ((profileVal + 1) << 0x03) | ((sampleRateIndex & 0x0F) >> 0x01);
         codecConfig[1] = ((sampleRateIndex & 0x01) << 0x07) | ((static_cast<uint32_t>(channels) & 0x0F) << 0x03);
+    } else {
+        codecConfig = {0, 0};
+        codecConfig[0] = ((0x02) << 0x03) | ((sampleRateIndex & 0x0F) >> 0x01);  // 0x02 -> aac lc
+        codecConfig[1] = ((sampleRateIndex & 0x01) << 0x07) | ((static_cast<uint32_t>(channels) & 0x0F) << 0x03);
+        MEDIA_LOG_W("unsupport aac profile:%{public}d, use default aac lc", profile);
     }
     return codecConfig;
 }
