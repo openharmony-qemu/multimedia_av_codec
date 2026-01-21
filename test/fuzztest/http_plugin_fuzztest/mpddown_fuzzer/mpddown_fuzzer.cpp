@@ -412,8 +412,8 @@ bool DashUrlTypeNodeRun(const uint8_t *data, size_t size)
 
 bool DashGetAttr(const uint8_t *data, size_t size)
 {
-    void(data);
-    void(size);
+    (void)data;
+    (void)size;
     for (auto url : BASE_URLS) {
         for (auto base : ATTR_BASE) {
             IDashMpdNode *node = IDashMpdNode::CreateNode(url);
@@ -447,8 +447,8 @@ bool DashGetAttr(const uint8_t *data, size_t size)
  
 bool MpdParse(const uint8_t *data, size_t size)
 {
-    void(data);
-    void(size);
+    (void)data;
+    (void)size;
     for (auto mpdUrl : MPD_BASE_URLS) {
         std::shared_ptr<DashMpdDownloader> mpdMpddownload = std::make_shared<DashMpdDownloader>();
         mpdMpddownload->Init();
