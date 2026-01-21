@@ -489,6 +489,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/mpeg1decoderresource_fuzzer:Mpeg1decoderResourceFuzzTest",
       "fuzztest/mpeg1decodersetparameter_fuzzer:Mpeg1decoderSetParameterFuzzTest",
       "fuzztest/pluginsink_fuzzer:PluginSinkFuzzTest",
+      "fuzztest/pluginsinkfuzzsecondtest_fuzzer:PluginSinkFuzzSecondTest",
       "fuzztest/audiodecoderadapter_fuzzer:AudioDecoderAdapterFuzzTest",
     ]
     if(av_codec_enable_codec_eac3) {
