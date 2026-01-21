@@ -3349,9 +3349,8 @@ int64_t MediaDemuxer::ReadLoop(int32_t trackId)
     if (afterSeekNeedDrop_[trackId]) {
         return NEXT_DELAY_TIME_US;
     }
-    int64_t delay = HandleFrameDropForTrack(trackId);
-    if (delay > 0) {
-        return delay;
+    if (HandleFrameDropForTrack(trackId) > 0) {
+        return NEXT_DELAY_TIME_US;
     }
     Status ret = CopyFrameToUserQueue(trackId);
     if (ret == Status::ERROR_ONE_TRACK_SEGMENT_EOS) {
