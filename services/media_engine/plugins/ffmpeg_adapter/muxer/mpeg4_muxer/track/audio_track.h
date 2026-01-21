@@ -38,6 +38,7 @@ public:
 private:
     void DisposeDuration();
     void DisposeBitrate();
+    void DisposeLastDuration();
     int32_t sampleRate_ = 44100;  // 44100
     int32_t channels_ = 2;  // 2
     int32_t frameSize_ = 0;
