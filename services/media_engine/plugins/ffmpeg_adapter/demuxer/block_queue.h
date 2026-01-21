@@ -53,8 +53,8 @@ public:
 
     bool Push(const T& block)
     {
-        MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S, name_.c_str());
         std::unique_lock<std::mutex> lock(mutex_);
+        MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S, name_.c_str());
         if (!isActive_) {
             MEDIA_LOG_D("Block queue " PUBLIC_LOG_S " is inactive", name_.c_str());
             return false;
@@ -76,8 +76,8 @@ public:
 
     T Pop()
     {
-        MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S, name_.c_str());
         std::unique_lock<std::mutex> lock(mutex_);
+        MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S, name_.c_str());
         if (que_.empty() && !isActive_) {
             MEDIA_LOG_D("Block queue " PUBLIC_LOG_S " is inactive", name_.c_str());
             return {};
@@ -100,8 +100,8 @@ public:
 
     T Front()
     {
-        MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S, name_.c_str());
         std::unique_lock<std::mutex> lock(mutex_);
+        MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S, name_.c_str());
         if (que_.empty() && !isActive_) {
             MEDIA_LOG_D("Block queue " PUBLIC_LOG_S " is inactive", name_.c_str());
             return {};
@@ -123,8 +123,8 @@ public:
 
     T Back()
     {
-        MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S, name_.c_str());
         std::unique_lock<std::mutex> lock(mutex_);
+        MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S, name_.c_str());
         if (que_.empty() && !isActive_) {
             MEDIA_LOG_D("Block queue " PUBLIC_LOG_S " is inactive", name_.c_str());
             return {};

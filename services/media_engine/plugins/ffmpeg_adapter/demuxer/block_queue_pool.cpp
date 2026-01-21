@@ -162,6 +162,7 @@ void BlockQueuePool::ResetQueue(uint32_t queueIndex)
 
 bool BlockQueuePool::ResetInfo(std::shared_ptr<SamplePacket> block)
 {
+    std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
     FALSE_RETURN_V_MSG_E(block != nullptr, false, "Block is nullptr");
     MEDIA_LOG_D("Reset for block " PUBLIC_LOG_U32, block->queueIndex);
     uint32_t queIndex = block->queueIndex;
@@ -178,6 +179,7 @@ bool BlockQueuePool::ResetInfo(std::shared_ptr<SamplePacket> block)
 
 bool BlockQueuePool::SetInfo(std::shared_ptr<SamplePacket> block)
 {
+    std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
     FALSE_RETURN_V_MSG_E(block != nullptr, false, "Block is nullptr");
     MEDIA_LOG_D("Set for block " PUBLIC_LOG_U32, block->queueIndex);
     uint32_t queIndex = block->queueIndex;

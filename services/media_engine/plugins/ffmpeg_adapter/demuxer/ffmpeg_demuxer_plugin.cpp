@@ -930,6 +930,9 @@ Status FFmpegDemuxerPlugin::PushEOSToAllCache()
 
 bool FFmpegDemuxerPlugin::WebvttPktProcess(AVPacket *pkt)
 {
+    if (pkt == nullptr) {
+        return false;
+    }
     auto trackId = pkt->stream_index;
     if (pkt->size > 0) {    // vttc
         return false;
@@ -1392,7 +1395,8 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     NotifyInitializationCompleted();
     MEDIA_LOG_I("Out");
     cachelimitSize_ = DEFAULT_CACHE_LIMIT;
-    if (ioContext_.initErrorAgain == true && formatContext_->pb->error == -1) { // -1 means error_again during init
+    if (ioContext_.initErrorAgain == true && formatContext_->pb != nullptr && formatContext_->pb->error == -1) {
+        // -1 means error_again during init
         MEDIA_LOG_E("Initialization error_again occurred");
         ResetContext();
         ioContext_.initErrorAgain = false;
@@ -1782,18 +1786,20 @@ void FFmpegDemuxerPlugin::UpdateCachedDrmInfoFromStream(AVStream* avStream)
 
 Status FFmpegDemuxerPlugin::GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
 {
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MEDIA_LOG_D("In");
     // Only read from cache when async mode is confirmed and DRM info is cached
     // If ReadSample interface hasn't been called, readModeMap_ cannot determine the mode, default to sync path
     bool isAsyncRead = (readModeMap_.find(1) != readModeMap_.end() && readModeMap_[1] == 1);
-    if (isAsyncRead && drmInfoCached_.load()) {
-        // Async mode and DRM info cached: read from cached member variable
+    {
         std::lock_guard<std::mutex> lock(cachedDrmInfoMutex_);
-        drmInfo = cachedDrmInfo_;
-        return Status::OK;
+        if (isAsyncRead && drmInfoCached_.load()) {
+            // Async mode and DRM info cached: read from cached member variable
+            drmInfo = cachedDrmInfo_;
+            return Status::OK;
+        }
     }
     // Other cases (sync mode, readModeMap_ not set, DRM info not cached): read from formatContext_
-    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
 
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
