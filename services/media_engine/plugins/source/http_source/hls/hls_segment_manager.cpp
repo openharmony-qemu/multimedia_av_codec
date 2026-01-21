@@ -908,8 +908,8 @@ void HlsSegmentManager::OnPlayListChanged(const std::vector<PlayInfo>& playList)
         }
         PutRequestIntoDownloader(playInfo);
     }
-    MEDIA_LOG_I("HLS OnPlayListChanged out playlist: %{public}zu, back: %{public}zu, writeTsIndex_: %{public}u," 
-        "type: %{public}d", playList_->size(), backPlayList_.size(), writeTsIndex_, type_);
+    MEDIA_LOG_I("HLS OnPlayListChanged out playlist: %{public}zu, back: %{public}zu, writeTsIndex_: %{public}u,"
+        "type: %{public}d", playList_->Size(), backPlayList_.size(), writeTsIndex_, type_);
 }
 
 void HlsSegmentManager::SubtitlePlayListChanged(const std::vector<PlayInfo>& playList)
