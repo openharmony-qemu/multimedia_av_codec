@@ -142,6 +142,7 @@ public:
     Status NotifyResumeUnMute();
     std::shared_ptr<Meta> GetGlobalInfo();
     bool IsMimeInDolbyList(const std::string& mime);
+    bool IsBuffering();
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;

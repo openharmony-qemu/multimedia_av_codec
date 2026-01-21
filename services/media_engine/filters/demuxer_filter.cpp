@@ -1140,6 +1140,12 @@ std::shared_ptr<Meta> DemuxerFilter::GetGlobalInfo()
     FALSE_RETURN_V(demuxer_ != nullptr, nullptr);
     return demuxer_->GetUserMeta();
 }
+
+bool DemuxerFilter::IsBuffering()
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
+    return demuxer_->IsBuffering();
+}
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS

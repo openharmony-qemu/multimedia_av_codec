@@ -4763,5 +4763,10 @@ void MediaDemuxer::SetTrackIsBuffering(int32_t trackId, bool isBuffering)
     std::lock_guard<std::mutex> lock(bufferingMapMutex_);
     isBufferingMap_[trackId] = isBuffering;
 }
+
+bool MediaDemuxer::IsBuffering()
+{
+    return isBuffering_.load();
+}
 } // namespace Media
 } // namespace OHOS
