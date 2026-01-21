@@ -74,7 +74,8 @@ Status AudioTrack::Init(const std::shared_ptr<Meta> &trackDesc)
             codecConfig_ = GenerateAACCodecConfig(profile, sampleRate_, channels_);
             MEDIA_LOG_I("audio generate aac  codec config len:%{public}zu", codecConfig_.size());
         } else {
-            MEDIA_LOG_W("missing codec config of aac!");
+            codecConfig_ = GenerateAACCodecConfig(-1, sampleRate_, channels_);
+            MEDIA_LOG_W("missing codec config and profile of aac!");
         }
     }
     timeScale_ = sampleRate_;
