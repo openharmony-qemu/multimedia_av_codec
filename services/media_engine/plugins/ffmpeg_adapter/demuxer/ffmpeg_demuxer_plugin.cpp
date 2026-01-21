@@ -2302,7 +2302,8 @@ Status FFmpegDemuxerPlugin::WaitForCacheReady(uint32_t trackId)
 {
     if (NeedCombineFrame(trackId) && cacheQueue_.GetCacheSize(trackId) == 1) {
         Status ret = ReadPacketToCacheQueue(trackId);
-        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read packet failed");
+        bool frameReady = FrameReady(ret);
+        FALSE_RETURN_V_MSG_E(frameReady, ret, "Read from ffmpeg failed");
     }
     while (!cacheQueue_.HasCache(trackId)) {
         FALSE_RETURN_V_MSG_E(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE,
