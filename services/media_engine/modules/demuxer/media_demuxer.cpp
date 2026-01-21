@@ -141,10 +141,7 @@ public:
         std::unique_ptr<Task>& notifyTask) : trackId_(trackId), demuxer_(demuxer), notifyTask_(std::move(notifyTask)) {}
 
     virtual ~AVBufferQueueProducerListener() = default;
-    int OnRemoteRequest(uint32_t code, MessageParcel& arguments, MessageParcel& reply, MessageOption& option) override
-    {
-        return IPCObjectStub::OnRemoteRequest(code, arguments, reply, option);
-    }
+
     void OnBufferAvailable() override
     {
         MEDIA_LOG_DD("Buffer available for track " PUBLIC_LOG_D32, trackId_);
