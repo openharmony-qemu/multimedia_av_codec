@@ -25,14 +25,6 @@
 #include "v1_0/hdr_static_metadata.h"
 #include "v1_0/buffer_handle_meta_key_type.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-#include "libavutil/mastering_display_metadata.h"
-#ifdef __cplusplus
-}
-#endif
-
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {

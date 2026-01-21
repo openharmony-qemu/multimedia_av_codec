@@ -191,6 +191,7 @@ int32_t RenderSurface::RenderNewSurfaceWithOldBuffer(const sptr<Surface> &newSur
 
 int32_t RenderSurface::FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemory, uint32_t index)
 {
+    std::unique_lock<std::mutex> sLock(surfaceMutex_);
     RequestSurfaceBufferOnce(index);
     sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
     CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, AVCS_ERR_UNKNOWN, "Get surface buffer failed!");
@@ -208,15 +209,19 @@ int32_t RenderSurface::FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfa
         outAVBuffer4Surface_[index]->meta_->Remove(OHOS::Media::Tag::VIDEO_DECODER_DESIRED_PRESENT_TIMESTAMP);
     }
     auto res = sInfo_.surface->FlushBuffer(surfaceBuffer, -1, flushConfig);
+    sLock.unlock();
+
     if (res == GSERROR_BUFFER_NOT_INCACHE) {
         AVCODEC_LOGW("Surface(%{public}" PRIu64 "), flush buffer(seq=%{public}u) failed, try to recover",
                      sInfo_.surface->GetUniqueId(), surfaceBuffer->GetSeqNum());
         int32_t ret = ClearSurfaceAndSetQueueSize(sInfo_.surface, outputBufferCnt_);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Clean surface and set queue size failed!");
+        sLock.lock();
         ret = Attach(surfaceBuffer);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Surface buffer attach failed!");
         surfaceMemory->isAttached = true;
         res = sInfo_.surface->FlushBuffer(surfaceBuffer, -1, flushConfig);
+        sLock.unlock();
     }
     surfaceMemory->owner = Owner::OWNED_BY_SURFACE;
     if (res != OHOS::SurfaceError::SURFACE_ERROR_OK) {
@@ -239,12 +244,14 @@ int32_t RenderSurface::Attach(sptr<SurfaceBuffer> surfaceBuffer)
 
 int32_t RenderSurface::ClearSurfaceAndSetQueueSize(const sptr<Surface> &surface, int32_t bufferCnt)
 {
+    std::unique_lock<std::mutex> sLock(surfaceMutex_);
     surface->Connect();
     surface->CleanCache(); // clean cache will work only if the surface is connected by us.
     int32_t ret = SetQueueSize(surface, bufferCnt);
+    surface->Disconnect();
+    sLock.unlock();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Set surface queue size failed!");
     ret = SetSurfaceCfg();
-    surface->Disconnect();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Set surface cfg failed!");
     CHECK_AND_RETURN_RET_LOGD(buffers_[INDEX_OUTPUT].size() > 0u, AVCS_ERR_OK, "Set surface cfg & queue size success.");
     int32_t valBufferCnt = 0;
