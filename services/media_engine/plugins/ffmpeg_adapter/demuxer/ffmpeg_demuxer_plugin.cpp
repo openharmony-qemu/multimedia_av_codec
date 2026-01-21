@@ -1792,7 +1792,7 @@ Status FFmpegDemuxerPlugin::GetDrmInfo(std::multimap<std::string, std::vector<ui
     // If ReadSample interface hasn't been called, readModeMap_ cannot determine the mode, default to sync path
     bool isAsyncRead = (readModeMap_.find(1) != readModeMap_.end() && readModeMap_[1] == 1);
     {
-        std::lock_guard<std::mutex> lock(cachedDrmInfoMutex_);
+        std::lock_guard<std::mutex> drmLock(cachedDrmInfoMutex_);
         if (isAsyncRead && drmInfoCached_.load()) {
             // Async mode and DRM info cached: read from cached member variable
             drmInfo = cachedDrmInfo_;
