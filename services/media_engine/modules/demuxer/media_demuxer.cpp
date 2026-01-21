@@ -1631,10 +1631,11 @@ Status MediaDemuxer::HandleRebootPlugin(int32_t trackId, bool& isRebooted)
             seekReadyInfo = seekReadyStreamInfo_[static_cast<int32_t>(streamType)];
             seekReadyStreamInfo_.erase(static_cast<int32_t>(streamType));
         }
-        if (seekReadyInfo.second == SEEK_TO_EOS || (seekReadyInfo.first >= 0 && seekReadyInfo.first != streamID)) {
-            MEDIA_LOG_I("End of stream or streamID changed, isEOS: " PUBLIC_LOG_D32 ", streamId: " PUBLIC_LOG_D32,
-                seekReadyInfo.second, seekReadyInfo.first);
+        if (seekReadyInfo.second == SEEK_TO_EOS) {
+            MEDIA_LOG_I("Seek to eos");
             return Status::OK;
+        } else if (seekReadyInfo.first >= 0 && seekReadyInfo.first != streamID) {
+            return HandleSeekChangeStream(streamID, seekReadyInfo.first, trackId);
         }
         ret = demuxerPluginManager_->RebootPlugin(streamID, trackType, streamDemuxer_, isRebooted);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Reboot demuxer plugin failed");
