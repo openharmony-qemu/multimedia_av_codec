@@ -681,7 +681,7 @@ bool HlsSegmentManager::CheckCanReadOneSeconds(uint64_t wantReadLength)
     MEDIA_LOG_I("HLS CheckCanReadOneSeconds in, type: %{public}d", type_);
     uint64_t len = isFirstFrameArrived_ ? 1 : wantReadLength;
     std::unique_lock<std::mutex> lock(canReadMutex_);
-    canReadCond_.wait_for(lock, std::chrono::milliseconds(1000), [this, len]() {
+    canReadCond_.wait_for(lock, std::chrono::milliseconds(ONE_SECONDS), [this, len]() {
         auto index = (!isFirstFrameArrived_ && type_ == HlsSegmentType::SEG_SUBTITLE) ?
             readTsIndex_.load() : writeTsIndex_;
         return GetCrossTsBuffersize() >= len || (GetSeekable() == Seekable::SEEKABLE &&
@@ -908,8 +908,8 @@ void HlsSegmentManager::OnPlayListChanged(const std::vector<PlayInfo>& playList)
         }
         PutRequestIntoDownloader(playInfo);
     }
-    MEDIA_LOG_I("HLS OnPlayListChanged out playlist: %{public}zu, back: %{public}zu, writeTsIndex_: %{public}u,
-        type: %{public}d", playList_->size(), backPlayList_.size(), writeTsIndex_, type_);
+    MEDIA_LOG_I("HLS OnPlayListChanged out playlist: %{public}zu, back: %{public}zu, writeTsIndex_: %{public}u," 
+        "type: %{public}d", playList_->size(), backPlayList_.size(), writeTsIndex_, type_);
 }
 
 void HlsSegmentManager::SubtitlePlayListChanged(const std::vector<PlayInfo>& playList)
