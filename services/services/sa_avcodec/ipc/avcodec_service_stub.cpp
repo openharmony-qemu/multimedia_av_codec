@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include "avcodec_service_stub.h"
+#include "accesstoken_kit.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "avcodec_server_manager.h"
@@ -26,6 +27,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace OHOS::Security::AccessToken;
 AVCodecServiceStub::AVCodecServiceStub()
 {
     deathRecipientMap_.clear();
@@ -162,6 +164,11 @@ int32_t AVCodecServiceStub::GetSystemAbility(MessageParcel &data, MessageParcel 
 
 int32_t AVCodecServiceStub::OnSuspendFreeze(MessageParcel &data, MessageParcel &reply)
 {
+    auto tokenId = IPCSkeleton::GetCallingTokenID();
+    auto tokenType = AccessTokenKit::GetTokenTypeFlag(tokenId);
+    CHECK_AND_RETURN_RET_LOG(tokenType == ATokenTypeEnum::TOKEN_NATIVE || tokenType == ATokenTypeEnum::TOKEN_SHELL,
+                             AVCS_ERR_INVALID_OPERATION, "Only native|shell tokens allowed(%{public}d)",
+                             static_cast<int32_t>(tokenType));
     std::vector<pid_t> pidList;
     CHECK_AND_RETURN_RET_LOG(data.ReadInt32Vector(&pidList),
                              AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED,
@@ -173,6 +180,11 @@ int32_t AVCodecServiceStub::OnSuspendFreeze(MessageParcel &data, MessageParcel &
 }
 int32_t AVCodecServiceStub::OnSuspendActive(MessageParcel &data, MessageParcel &reply)
 {
+    auto tokenId = IPCSkeleton::GetCallingTokenID();
+    auto tokenType = AccessTokenKit::GetTokenTypeFlag(tokenId);
+    CHECK_AND_RETURN_RET_LOG(tokenType == ATokenTypeEnum::TOKEN_NATIVE || tokenType == ATokenTypeEnum::TOKEN_SHELL,
+                             AVCS_ERR_INVALID_OPERATION, "Only native|shell tokens allowed(%{public}d)",
+                             static_cast<int32_t>(tokenType));
     std::vector<pid_t> pidList;
     CHECK_AND_RETURN_RET_LOG(data.ReadInt32Vector(&pidList),
                              AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED,
@@ -184,6 +196,11 @@ int32_t AVCodecServiceStub::OnSuspendActive(MessageParcel &data, MessageParcel &
 }
 int32_t AVCodecServiceStub::OnSuspendActiveAll(MessageParcel &data, MessageParcel &reply)
 {
+    auto tokenId = IPCSkeleton::GetCallingTokenID();
+    auto tokenType = AccessTokenKit::GetTokenTypeFlag(tokenId);
+    CHECK_AND_RETURN_RET_LOG(tokenType == ATokenTypeEnum::TOKEN_NATIVE || tokenType == ATokenTypeEnum::TOKEN_SHELL,
+                             AVCS_ERR_INVALID_OPERATION, "Only native|shell tokens allowed(%{public}d)",
+                             static_cast<int32_t>(tokenType));
     int32_t ret = SuspendActiveAll();
     (void)reply.WriteInt32(ret);
 
