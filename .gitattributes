@@ -122,5 +122,12 @@ test/moduletest/resources/demuxer/audio/dts.dat filter=lfs diff=lfs merge=lfs -t
 test/moduletest/resources/demuxer/audio/alac_caf.dat filter=lfs diff=lfs merge=lfs -text
 test/moduletest/resources/demuxer/audio/pcmS16be_44100_aiff.dat filter=lfs diff=lfs merge=lfs -text
 test/unittest/resources/demuxer_res/test_ts.ts filter=lfs diff=lfs merge=lfs -text
+test/fuzztest/demuxerinner_fuzzer/corpus/hlg.mp4 filter=lfs diff=lfs merge=lfs -text
+test/fuzztest/demuxerinner_fuzzer/corpus/hlgHdrVivid.mp4 filter=lfs diff=lfs merge=lfs -text
+test/fuzztest/demuxerinner_fuzzer/corpus/pqHdrvivid.mp4 filter=lfs diff=lfs merge=lfs -text
+test/moduletest/resources/demuxer/pqHdrvivid.mp4 filter=lfs diff=lfs merge=lfs -text
+test/moduletest/resources/demuxer/hlg.mp4 filter=lfs diff=lfs merge=lfs -text
+test/moduletest/resources/demuxer/hlgHdrVivid.mp4 filter=lfs diff=lfs merge=lfs -text
+test/moduletest/resources/demuxer/dolbyvision.MOV filter=lfs diff=lfs merge=lfs -text
 /test/moduletest/resources/demuxer/mkv.mkv filter=lfs diff=lfs merge=lfs -text
 /test/unittest/resources/reference_parser_test/mp4/ippp_0.mp4 filter=lfs diff=lfs merge=lfs -text
