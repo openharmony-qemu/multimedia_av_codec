@@ -189,8 +189,8 @@ static const std::vector<FileType> g_fileSkipGetMinTsPktInfo = {
 };
 
 template <typename T>
-typename std::enable_if<std::is_integral<T>::value &&
-    std::is_signed<T>::value, bool>::type SignedIntSafeAdd(T a, T b, T& result)
+typename std::enable_if<std::is_integral<T>::value && std::is_signed<T>::value, bool>::type SignedIntSafeAdd(
+    T a, T b, T& result)
 {
     using Limits = std::numeric_limits<T>;
     if (b > 0 && a > Limits::max() - b) {
@@ -204,8 +204,8 @@ typename std::enable_if<std::is_integral<T>::value &&
 }
 
 template <typename T>
-typename std::enable_if<std::is_integral<T>::value &&
-    std::is_signed<T>::value, bool>::type SignedIntSafeSub(T a, T b, T& result)
+typename std::enable_if<std::is_integral<T>::value && std::is_signed<T>::value, bool>::type SignedIntSafeSub(
+    T a, T b, T& result)
 {
     using Limits = std::numeric_limits<T>;
     if (b > 0 && a < Limits::min() + b) {
