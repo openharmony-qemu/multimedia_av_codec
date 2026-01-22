@@ -45,7 +45,7 @@ bool AVCodecServiceStubFuzzer::FuzzAVCodecOnRemoteRequest(uint8_t *data, size_t 
     }
     std::shared_ptr<AVCodecServer> avcodecServerStub =
         std::make_shared<AVCodecServer>(SYSTEM_ABILITY_ID, RUN_ON_CREATE);
-    if (avcodecServer == nullptr) {
+    if (avcodecServerStub == nullptr) {
         return false;
     }
 
