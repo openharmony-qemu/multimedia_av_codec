@@ -837,8 +837,10 @@ void VideoDecoder::ReleaseBuffers()
         StopRequestSurfaceBufferThread();
         renderAvailQue_->Clear();
         requestSurfaceBufferQue_->Clear();
-        std::unique_lock<std::mutex> mLock(renderBufferMapMutex_);
-        renderSurfaceBufferMap_.clear();
+        {
+            std::unique_lock<std::mutex> mLock(renderBufferMapMutex_);
+            renderSurfaceBufferMap_.clear();
+        }
         for (uint32_t i = 0; i < buffers_[INDEX_OUTPUT].size(); i++) {
             std::shared_ptr<CodecBuffer> outputBuffer = buffers_[INDEX_OUTPUT][i];
             if (outputBuffer->owner_ == Owner::OWNED_BY_CODEC) {

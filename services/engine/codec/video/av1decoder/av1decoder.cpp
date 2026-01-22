@@ -421,6 +421,7 @@ bool Av1Decoder::CheckStateRunning()
     if (state_ != State::RUNNING) {
         if (av1DecOutputImg_ != nullptr && av1DecoderPictureUnrefFunc_ != nullptr) {
             av1DecoderPictureUnrefFunc_(av1DecOutputImg_);
+            delete av1DecOutputImg_;
             av1DecOutputImg_ = nullptr;
         }
         return false;
@@ -430,8 +431,7 @@ bool Av1Decoder::CheckStateRunning()
 
 int32_t Av1Decoder::DecodeFrameOnce()
 {
-    Dav1dPicture pic = { 0 };
-    av1DecOutputImg_ = &pic;
+    av1DecOutputImg_ = new Dav1dPicture{0};
     int32_t ret = DecodeAv1FrameOnce();
     if (ret == 0 && av1DecOutputImg_ != nullptr) {
         int32_t bitDepth = av1DecOutputImg_->p.bpc;
@@ -457,6 +457,7 @@ int32_t Av1Decoder::DecodeFrameOnce()
             state_ = State::ERROR;
             if (av1DecOutputImg_ != nullptr && av1DecoderPictureUnrefFunc_ != nullptr) {
                 av1DecoderPictureUnrefFunc_(av1DecOutputImg_);
+                delete av1DecOutputImg_;
                 av1DecOutputImg_ = nullptr;
             }
             return -1;
@@ -466,6 +467,7 @@ int32_t Av1Decoder::DecodeFrameOnce()
     }
     if (av1DecOutputImg_ != nullptr && av1DecoderPictureUnrefFunc_ != nullptr) {
         av1DecoderPictureUnrefFunc_(av1DecOutputImg_);
+        delete av1DecOutputImg_;
         av1DecOutputImg_ = nullptr;
     }
     return ret;
