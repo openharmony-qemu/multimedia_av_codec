@@ -385,8 +385,8 @@ Status FFmpegMuxerPlugin::SetLocation(std::shared_ptr<Meta> param)
         Status::ERROR_INVALID_DATA, "latitude must be in [-90, 90]!");
     FALSE_RETURN_V_MSG_E(longitude >= LONGITUDE_MIN && longitude <= LONGITUDE_MAX,
         Status::ERROR_INVALID_DATA, "longitude must be in [-180, 180]!");
-    std::string location = std::to_string(longitude) + " ";
-    location += std::to_string(latitude) + " ";
+    std::string location = std::to_string(latitude) + " ";
+    location += std::to_string(longitude) + " ";
     location += std::to_string(0.0f);
     av_dict_set(&formatContext_.get()->metadata, "location", location.c_str(), 0);
     return Status::NO_ERROR;
