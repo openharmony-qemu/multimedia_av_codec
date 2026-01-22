@@ -3350,6 +3350,9 @@ int64_t MediaDemuxer::ReadLoop(int32_t trackId)
     if (afterSeekNeedDrop_[trackId]) {
         return NEXT_DELAY_TIME_US;
     }
+    if (HandleFrameDropForTrack(trackId) > 0) {
+        return NEXT_DELAY_TIME_US;
+    }
     Status ret = CopyFrameToUserQueue(trackId);
     if (ret == Status::ERROR_ONE_TRACK_SEGMENT_EOS) {
         HandleNotAllTrackEos(trackId);
@@ -3384,6 +3387,29 @@ int64_t MediaDemuxer::ReadLoop(int32_t trackId)
     MEDIA_LOG_DD("ReadLoop wait, track:" PUBLIC_LOG_D32 ", ret:" PUBLIC_LOG_D32,
         trackId, static_cast<int32_t>(ret));
     return RETRY_DELAY_TIME_US; // delay to retry if no frame
+}
+
+int64_t MediaDemuxer::HandleFrameDropForTrack(int32_t trackId)
+{
+    if (frameCountNeedDrop_[trackId] <= 0) {
+        return 0;
+    }
+    if (IsFd()) {
+        return 0;
+    }
+    std::shared_ptr<AVBuffer> sample = AVBuffer::CreateAVBuffer();
+    if (!sample) {
+        frameCountNeedDrop_[trackId] = 0;
+        return 0;
+    }
+    Status dropStatus = ReadSampleToDrop(trackId, sample);
+    if (dropStatus == Status::OK) {
+        frameCountNeedDrop_[trackId]--;
+    } else {
+        frameCountNeedDrop_[trackId] = 0;
+        return 0;
+    }
+    return NEXT_DELAY_TIME_US;
 }
 
 void MediaDemuxer::AfterSeekNeedDrop(int32_t trackId)
@@ -4646,11 +4672,9 @@ void MediaDemuxer::CachePressuredCallback(int32_t trackId, uint32_t cachedBytes)
         return;
     }
     std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = nullptr;
-    int32_t innerTrackID = trackId;
     if (IsNeedMapToInnerTrackID()) {
         int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
         pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamID);
-        innerTrackID = demuxerPluginManager_->GetTmpInnerTrackIDByTrackID(trackId);
     } else {
         int32_t streamID = demuxerPluginManager_->GetStreamIDByTrackID(trackId);
         pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamID);
@@ -4659,19 +4683,22 @@ void MediaDemuxer::CachePressuredCallback(int32_t trackId, uint32_t cachedBytes)
         MEDIA_LOG_E("CachePressuredCallback pluginTemp nullptr");
         return;
     }
-    uint32_t frameCount = 0;
-    if (pluginTemp->GetCurrentCacheFrameCount(trackId, frameCount) != Status::OK) {
+    if (pluginTemp->GetCurrentCacheFrameCount(trackId, frameCountNeedDrop_[trackId]) != Status::OK) {
         MEDIA_LOG_E("CachePressuredCallback frameCount error");
         return;
     }
     if (NeedDroped(trackId) || hasDropedMap_[trackId].load()) {
         hasDropedMap_[trackId].store(true);
-        if (!IsLocalFd()) {
-            std::shared_ptr<AVBuffer> sample = AVBuffer::CreateAVBuffer();
-            while (frameCount > 0) {
-                pluginTemp->ReadSample(static_cast<uint32_t>(innerTrackID), sample, timeout_);
-                frameCount--;
+        if (!IsFd()) {
+            std::unique_lock<std::mutex> stopLock(stopMutex_);
+            if (isStopped_) {
+                return;
             }
+            AutoLock lock(mapMutex_);
+            if (!taskMap_[trackId]->IsTaskRunning()) {
+                taskMap_[trackId]->Start();
+            }
+            MEDIA_LOG_I("source need drop count: " PUBLIC_LOG_U32, frameCountNeedDrop_[trackId]);
         }
     } else {
         OnSampleQueueBufferAvailable(trackId);

@@ -395,6 +395,7 @@ private:
     void AfterSeekNeedDrop(int32_t trackId);
     Status SetCachePressureCallback();
     bool SourceDropFrame(int32_t trackId);
+    int64_t HandleFrameDropForTrack(int32_t trackId);
     bool GetTrackIsBuffering(int32_t trackId);
     void SetTrackIsBuffering(int32_t trackId, bool isBuffering);
     Status ReadSampleToDrop(int32_t trackId, std::shared_ptr<AVBuffer> sample);
@@ -548,6 +549,7 @@ private:
     std::map<int32_t, int64_t> afterDropDts_;
     std::map<int32_t, bool> afterSeekNeedDrop_;
     bool videoNeedIFrame_ {false};
+    std::map<int32_t, uint32_t> frameCountNeedDrop_;
 };
 } // namespace Media
 } // namespace OHOS
