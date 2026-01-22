@@ -49,7 +49,7 @@ public:
 private:
     int32_t CreateParser();
     void ParserSetConfig();
-    void InitColor(const std::shared_ptr<Meta> &trackDesc);
+    bool InitColor(const std::shared_ptr<Meta> &trackDesc);
     void InitCuva(const std::shared_ptr<Meta> &trackDesc);
     void DisposeCtts(int64_t pts);
     void DisposeCtts();

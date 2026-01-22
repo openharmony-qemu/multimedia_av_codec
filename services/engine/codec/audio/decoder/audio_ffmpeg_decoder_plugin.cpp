@@ -276,6 +276,8 @@ int32_t AudioFfmpegDecoderPlugin::AllocateContext(const std::string &name)
                 ptr = nullptr;
             }
         });
+        CHECK_AND_RETURN_RET_LOG(avCodecContext_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY,
+            "Allocate avCodecContext_ failed.");
         av_log_set_level(AV_LOG_ERROR);
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;

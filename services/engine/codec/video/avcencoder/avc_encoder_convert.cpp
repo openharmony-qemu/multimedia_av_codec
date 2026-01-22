@@ -117,65 +117,65 @@ int32_t ConvertRgbToYuv420Neon(uint8_t *dstData, int32_t width, int32_t height,
 
     for (int j = 0; j < height; ++j) {
         for (int i = 0; i < patch + isPad; ++i) {
-            uint8x16x3_t pixel_rgb;
+            uint8x16x3_t pixelRgbOri;
             if (bytesPerPixel == RGBA_COLINC) {
-                uint8x16x4_t pixel_rgba = vld4q_u8(rgbaBuf + rgbaOffset);
-                pixel_rgb.val[0] = pixel_rgba.val[0];   // get val[0] from rgba buf
-                pixel_rgb.val[1] = pixel_rgba.val[1];   // get val[1] from rgba buf
-                pixel_rgb.val[2] = pixel_rgba.val[2];   // get val[2] from rgba buf
+                uint8x16x4_t pixelRgbaOri = vld4q_u8(rgbaBuf + rgbaOffset);
+                pixelRgbOri.val[0] = pixelRgbaOri.val[0];   // get val[0] from rgba buf
+                pixelRgbOri.val[1] = pixelRgbaOri.val[1];   // get val[1] from rgba buf
+                pixelRgbOri.val[2] = pixelRgbaOri.val[2];   // get val[2] from rgba buf
             } else {
-                pixel_rgb = vld3q_u8(rgbaBuf + rgbaOffset);
+                pixelRgbOri = vld3q_u8(rgbaBuf + rgbaOffset);
             }
 
-            uint8x8x2_t uint8_r;
-            uint8x8x2_t uint8_g;
-            uint8x8x2_t uint8_b;
-            uint8_r.val[0] = vget_low_u8(pixel_rgb.val[0]);     // val[0]: r value
-            uint8_r.val[1] = vget_high_u8(pixel_rgb.val[0]);    // val[0]: r value
-            uint8_g.val[0] = vget_low_u8(pixel_rgb.val[1]);     // val[1]: g value
-            uint8_g.val[1] = vget_high_u8(pixel_rgb.val[1]);    // val[1]: g value
-            uint8_b.val[0] = vget_low_u8(pixel_rgb.val[2]);     // val[2]: b value
-            uint8_b.val[1] = vget_high_u8(pixel_rgb.val[2]);    // val[2]: b value
+            uint8x8x2_t rOri;
+            uint8x8x2_t gOri;
+            uint8x8x2_t bOri;
+            rOri.val[0] = vget_low_u8(pixelRgbOri.val[0]);     // val[0]: r value
+            rOri.val[1] = vget_high_u8(pixelRgbOri.val[0]);    // val[0]: r value
+            gOri.val[0] = vget_low_u8(pixelRgbOri.val[1]);     // val[1]: g value
+            gOri.val[1] = vget_high_u8(pixelRgbOri.val[1]);    // val[1]: g value
+            bOri.val[0] = vget_low_u8(pixelRgbOri.val[2]);     // val[2]: b value
+            bOri.val[1] = vget_high_u8(pixelRgbOri.val[2]);    // val[2]: b value
 
-            uint16x8x2_t uint16_y;
-            uint8x16_t pixel_y;
+            uint16x8x2_t yTemp;
+            uint8x16_t pixelY;
 
-            uint16_y.val[0] = vmull_u8(uint8_r.val[0], scalar_Yr);
-            uint16_y.val[1] = vmull_u8(uint8_r.val[1], scalar_Yr);      // Y = R * 66
+            yTemp.val[0] = vmull_u8(rOri.val[0], scalar_Yr);
+            yTemp.val[1] = vmull_u8(rOri.val[1], scalar_Yr);      // Y = R * 66
 
-            uint16_y.val[0] = vmlal_u8(uint16_y.val[0], uint8_g.val[0], scalar_Yg);
-            uint16_y.val[1] = vmlal_u8(uint16_y.val[1], uint8_g.val[1], scalar_Yg);
+            yTemp.val[0] = vmlal_u8(yTemp.val[0], gOri.val[0], scalar_Yg);
+            yTemp.val[1] = vmlal_u8(yTemp.val[1], gOri.val[1], scalar_Yg);
 
-            uint16_y.val[0] = vmlal_u8(uint16_y.val[0], uint8_b.val[0], scalar_Yb);
-            uint16_y.val[1] = vmlal_u8(uint16_y.val[1], uint8_b.val[1], scalar_Yb);
+            yTemp.val[0] = vmlal_u8(yTemp.val[0], bOri.val[0], scalar_Yb);
+            yTemp.val[1] = vmlal_u8(yTemp.val[1], bOri.val[1], scalar_Yb);
 
-            pixel_y = vcombine_u8(vqshrn_n_u16(uint16_y.val[0], 8), vqshrn_n_u16(uint16_y.val[1], 8));  // 8 bits
-            pixel_y = vaddq_u8(pixel_y, u8_16);
+            pixelY = vcombine_u8(vqshrn_n_u16(yTemp.val[0], 8), vqshrn_n_u16(yTemp.val[1], 8));  // 8 bits
+            pixelY = vaddq_u8(pixelY, u8_16);
 
-            vst1q_u8(dstData + lumaOffset, pixel_y);
+            vst1q_u8(dstData + lumaOffset, pixelY);
 
             if (j % 2 == 0) {   // calc 2 components: u, v
-                int16x8_t r = vreinterpretq_s16_u16(vandq_u16(vreinterpretq_u16_u8(pixel_rgb.val[0]), mask));
-                int16x8_t g = vreinterpretq_s16_u16(vandq_u16(vreinterpretq_u16_u8(pixel_rgb.val[1]), mask));
-                int16x8_t b = vreinterpretq_s16_u16(vandq_u16(vreinterpretq_u16_u8(pixel_rgb.val[2]), mask));
+                int16x8_t rUpdate = vreinterpretq_s16_u16(vandq_u16(vreinterpretq_u16_u8(pixelRgbOri.val[0]), mask));
+                int16x8_t gUpdate = vreinterpretq_s16_u16(vandq_u16(vreinterpretq_u16_u8(pixelRgbOri.val[1]), mask));
+                int16x8_t bUpdate = vreinterpretq_s16_u16(vandq_u16(vreinterpretq_u16_u8(pixelRgbOri.val[2]), mask));
 
-                int16x8_t signed_u;
-                int16x8_t signed_v;
-                uint8x8_t result[2]; // 2 row for u & v
-                signed_u = vmulq_n_s16(r, weights[1][0]);   // u coeff = -28
-                signed_v = vmulq_n_s16(r, weights[2][0]);   // v coeff = 112
+                int16x8_t signedU;
+                int16x8_t signedV;
+                uint8x8_t outputUV[2]; // 2 row for u & v
+                signedU = vmulq_n_s16(rUpdate, weights[1][0]);   // u coeff = -28
+                signedV = vmulq_n_s16(rUpdate, weights[2][0]);   // v coeff = 112
 
-                signed_u = vmlaq_s16(signed_u, g, u2_scalar);
-                signed_v = vmlaq_s16(signed_v, g, v2_scalar);
+                signedU = vmlaq_s16(signedU, gUpdate, u2_scalar);
+                signedV = vmlaq_s16(signedV, gUpdate, v2_scalar);
 
-                signed_u = vmlaq_s16(signed_u, b, u3_scalar);
-                signed_v = vmlaq_s16(signed_v, b, v3_scalar);
+                signedU = vmlaq_s16(signedU, bUpdate, u3_scalar);
+                signedV = vmlaq_s16(signedV, bUpdate, v3_scalar);
 
-                result[0] = vreinterpret_u8_s8(vadd_s8(vqshrn_n_s16(signed_u, 8), s8_rounding));  // 8 bits
-                result[1] = vreinterpret_u8_s8(vadd_s8(vqshrn_n_s16(signed_v, 8), s8_rounding));  // 8 bits
+                outputUV[0] = vreinterpret_u8_s8(vadd_s8(vqshrn_n_s16(signedU, 8), s8_rounding));  // 8 bits
+                outputUV[1] = vreinterpret_u8_s8(vadd_s8(vqshrn_n_s16(signedV, 8), s8_rounding));  // 8 bits
 
-                vst1_u8(dstData + chromaUOffset, result[0]);
-                vst1_u8(dstData + chromaVOffset, result[1]);
+                vst1_u8(dstData + chromaUOffset, outputUV[0]);
+                vst1_u8(dstData + chromaVOffset, outputUV[1]);
 
                 chromaUOffset += (i == 0 && isPad) ? (widthLess >> 1) : (batchOffset >> 1);
                 chromaVOffset += (i == 0 && isPad) ? (widthLess >> 1) : (batchOffset >> 1);

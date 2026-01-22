@@ -48,17 +48,19 @@ StreamParserManager::~StreamParserManager()
 bool StreamParserManager::Init(VideoStreamType videoStreamType)
 {
     std::lock_guard<std::mutex> lock(mtx_);
-    if (handlerMap_.count(videoStreamType) && createFuncMap_.count(videoStreamType) &&
-        destroyFuncMap_.count(videoStreamType)) {
+    if (handlerMap_.count(videoStreamType)) {
         return true;
     }
 
     std::string streamParserPath = HEVC_LIB_PATH;
-    if (handlerMap_.count(videoStreamType) == 0) {
-        handlerMap_[videoStreamType] = LoadPluginFile(streamParserPath);
+    void* handler = LoadPluginFile(streamParserPath);
+    FALSE_RETURN_V_MSG_E(handler != nullptr, false, "Load plugin failed");
+    if (!CheckSymbol(handler, videoStreamType)) {
+        MEDIA_LOG_E("Load stream parser failed");
+        ::dlclose(handler);
+        return false;
     }
-    FALSE_RETURN_V_MSG_E(CheckSymbol(handlerMap_[videoStreamType], videoStreamType), false,
-                         "Load stream parser failed");
+    handlerMap_[videoStreamType] = handler;
     return true;
 }
 

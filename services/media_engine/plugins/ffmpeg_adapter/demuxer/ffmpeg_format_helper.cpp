@@ -641,6 +641,9 @@ int64_t GetDefaultTrackStartTime(const AVFormatContext& avFormatContext)
 
 static int FfAv3aGetNbObjects(AVChannelLayout *channelLayout)
 {
+    if (channelLayout == nullptr || channelLayout->nb_channels < 0 || channelLayout->nb_channels > INT32_MAX) {
+        return 0;
+    }
     int nbObjects = 0;
     if (channelLayout->order != AV_CHANNEL_ORDER_CUSTOM) {
         return 0;
@@ -655,6 +658,9 @@ static int FfAv3aGetNbObjects(AVChannelLayout *channelLayout)
 
 static uint64_t FfAv3aGetChannelLayoutMask(AVChannelLayout *channelLayout)
 {
+    if (channelLayout == nullptr || channelLayout->nb_channels < 0 || channelLayout->nb_channels > INT32_MAX) {
+        return 0;
+    }
     uint64_t mask = 0L;
     if (channelLayout->order != AV_CHANNEL_ORDER_CUSTOM) {
         return 0;

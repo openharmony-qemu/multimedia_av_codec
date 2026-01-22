@@ -56,8 +56,8 @@ public:
 
     bool Push(const T& block)
     {
-        AVCODEC_LOGD("block queue %{public}s Push enter.", name_.c_str());
         std::unique_lock<std::mutex> lock(mutex_);
+        AVCODEC_LOGD("block queue %{public}s Push enter.", name_.c_str());
         if (!isActive_) {
             AVCODEC_LOGD("block queue %{public}s is inactive for Push.", name_.c_str());
             return false;
@@ -79,8 +79,8 @@ public:
 
     T Pop()
     {
-        AVCODEC_LOGD("block queue %{public}s Pop enter.", name_.c_str());
         std::unique_lock<std::mutex> lock(mutex_);
+        AVCODEC_LOGD("block queue %{public}s Pop enter.", name_.c_str());
         if (que_.empty() && !isActive_) {
             AVCODEC_LOGD("block queue %{public}s is inactive for Pop.", name_.c_str());
             return {};
@@ -102,8 +102,8 @@ public:
 
     T Front()
     {
-        AVCODEC_LOGD("block queue %{public}s Front enter.", name_.c_str());
         std::unique_lock<std::mutex> lock(mutex_);
+        AVCODEC_LOGD("block queue %{public}s Front enter.", name_.c_str());
         if (que_.empty() && !isActive_) {
             AVCODEC_LOGD("block queue %{public}s is inactive for Front.", name_.c_str());
             return {};

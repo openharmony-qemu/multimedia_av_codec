@@ -79,6 +79,8 @@ bool MultiStreamParserManager::Init(VideoStreamType videoStreamType)
     }
     if (!CheckSymbol(handlerMap_[videoStreamType], videoStreamType)) {
         MEDIA_LOG_E("Load stream parser failed");
+        dlclose(handlerMap_[videoStreamType]);
+        handlerMap_.erase(videoStreamType);
         return false;
     }
     return true;

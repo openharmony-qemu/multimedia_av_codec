@@ -371,9 +371,11 @@ void MediaMuxer::ThreadProcessor()
             MEDIA_LOG_D("Exit ThreadProcessor [%{public}s]", threadName_.c_str());
             return;
         }
-        std::unique_lock<std::mutex> lock(mutexBufferAvailable_);
-        condBufferAvailable_.wait_for(lock, std::chrono::milliseconds(timeoutMs),
-            [this] { return isThreadExit_ || bufferAvailableCount_ > 0; });
+        {
+            std::unique_lock<std::mutex> lock(mutexBufferAvailable_);
+            condBufferAvailable_.wait_for(lock, std::chrono::milliseconds(timeoutMs),
+                [this] { return isThreadExit_ || bufferAvailableCount_ > 0; });
+        }
         int32_t trackIdx = -1;
         std::shared_ptr<AVBuffer> buffer1 = nullptr;
         for (int i = 0; i < trackCount; ++i) {
@@ -396,6 +398,7 @@ void MediaMuxer::ThreadProcessor()
 
 void MediaMuxer::OnBufferAvailable()
 {
+    std::unique_lock<std::mutex> lock(mutexBufferAvailable_);
     ++bufferAvailableCount_;
     condBufferAvailable_.notify_one();
     MEDIA_LOG_D("Track " PUBLIC_LOG_S " 1 bufferAvailableCount_ :" PUBLIC_LOG_D32,
@@ -404,6 +407,7 @@ void MediaMuxer::OnBufferAvailable()
 
 void MediaMuxer::ReleaseBuffer()
 {
+    std::unique_lock<std::mutex> lock(mutexBufferAvailable_);
     --bufferAvailableCount_;
 }
 

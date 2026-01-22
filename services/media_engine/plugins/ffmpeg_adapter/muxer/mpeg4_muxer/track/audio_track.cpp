@@ -74,7 +74,8 @@ Status AudioTrack::Init(const std::shared_ptr<Meta> &trackDesc)
             codecConfig_ = GenerateAACCodecConfig(profile, sampleRate_, channels_);
             MEDIA_LOG_I("audio generate aac  codec config len:%{public}zu", codecConfig_.size());
         } else {
-            MEDIA_LOG_W("missing codec config of aac!");
+            codecConfig_ = GenerateAACCodecConfig(-1, sampleRate_, channels_);
+            MEDIA_LOG_W("missing codec config and profile of aac!");
         }
     }
     timeScale_ = sampleRate_;
@@ -111,7 +112,7 @@ int32_t AudioTrack::GetAacAdtsSize(const uint8_t *data, int32_t len)
 {
     constexpr int32_t adtsMinLen = 7;
     constexpr int32_t adtsMaxLen = 9;
-    if (len < adtsMinLen || data[0] != 0xff || (data[1] & 0xf0) != 0xf0) {
+    if (data == nullptr || len < adtsMinLen || data[0] != 0xff || (data[1] & 0xf0) != 0xf0) {
         return 0;
     }
     int32_t skipBytes = (data[1] & 0x01) == 0x01 ? adtsMinLen : adtsMaxLen;  // adts head len is 7 or 9
@@ -148,11 +149,22 @@ Status AudioTrack::WriteSample(std::shared_ptr<AVIOStream> io, const std::shared
     return Status::NO_ERROR;
 }
 
+void AudioTrack::DisposeLastDuration()
+{
+    if (mimeType_.compare(AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_MPEG) == 0) {
+        constexpr int32_t mpegSampleRate = 24000;
+        lastDuration_ = sampleRate_ > mpegSampleRate ? 1152 : 576;  // mpr sample size: 1152 576
+    }
+}
+
 Status AudioTrack::WriteTailer()
 {
     FALSE_RETURN_V_MSG_E(stsz_ != nullptr, Status::ERROR_INVALID_OPERATION, "stsz box is empty");
     if (stsz_->sampleCount_ > 0) {
         lastDuration_ = std::max(static_cast<int64_t>(frameSize_), lastDuration_);
+        if (lastTimestampUs_ == startTimestampUs_ && lastDuration_ == 0) {
+            DisposeLastDuration();
+        }
         DisposeStts(lastDuration_, lastTimestampUs_);
         DisposeDuration();
         DisposeBitrate();
@@ -213,8 +225,8 @@ void AudioTrack::DisposeBitrate()
 {
     FALSE_RETURN_MSG(stsz_ != nullptr, "stsz box is empty");
     if (isSameSize_) {
+        stsz_->sampleSize_ = stsz_->samples_.size() > 0 ? stsz_->samples_[0] : 0;
         stsz_->samples_.clear();
-        stsz_->sampleSize_ = 0;
     }
     if (durationUs_ > 0 && !codingType_.empty()) {
         int64_t bitRate = static_cast<int64_t>(allSampleSize_) *
@@ -230,6 +242,9 @@ void AudioTrack::DisposeBitrate()
         if (btrtBox != nullptr) {
             btrtBox->avgBitrate_ = esdsBox->avgBitrate_;
             btrtBox->maxBitrate_ = esdsBox->maxBitrate_;
+        }
+        if (mimeType_.compare(AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_MPEG) == 0 && sampleRate_ > 24000) {  // 24000HZ
+            esdsBox->objectType_ = 0x6B;
         }
     }
     if (mimeType_.compare(AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AAC) == 0) {

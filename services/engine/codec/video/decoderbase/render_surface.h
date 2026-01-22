@@ -101,6 +101,7 @@ private:
     std::thread mRequestSurfaceBufferThread_;
     std::atomic<bool> requestSucceed_ = false;
     std::mutex requestBufferMutex_;
+    std::mutex renderBufferMapMutex_;
     std::atomic<bool> requestBufferThreadExit_ = false;
     std::atomic<bool> requestBufferFinished_ = true;
     std::condition_variable requestBufferCV_;

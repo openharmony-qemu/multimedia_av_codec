@@ -649,6 +649,9 @@ int32_t GetNaluSize(const uint8_t *nalStart)
 
 bool IsHvccSyncFrame(const uint8_t *sample, int32_t size)
 {
+    if (sample == nullptr || size < NAL_START_CODE_SIZE || size > INT32_MAX) {
+        return false;
+    }
     const uint8_t* nalStart = sample;
     const uint8_t* end = nalStart + size;
     int32_t sizeLen = NAL_START_CODE_SIZE;

@@ -201,7 +201,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         }
         return ret;
     }
-
+    SupplementFirstFrameIfPending(trackId, samplePacket);
     ret = ConvertAVPacketToSampleMemory(sample, samplePacket);
     DumpPacketInfo(trackId, Stage::FIRST_READ);
     if (ret == Status::OK) {
@@ -226,6 +226,8 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSampleMemory(
     if (cacheQueue_.ResetInfo(samplePacket) == false) {
         MEDIA_LOG_D("Reset info failed");
     }
+
+    MaybeInitSeekCalibAfterRead(tempPktWrapper->GetStreamIndex(), tempPkt);
 
     Status ret = ConvertToAnnexbAndUpdateSample(sample, samplePacket, tempPktWrapper);
     if (combined) {

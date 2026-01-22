@@ -358,6 +358,7 @@ int32_t VideoDecoder::Stop()
     AVCODEC_LOGI("Stop codec successful, state: Configured");
     return AVCS_ERR_OK;
 }
+
 int32_t VideoDecoder::Flush()
 {
     AVCODEC_SYNC_TRACE;
@@ -366,8 +367,8 @@ int32_t VideoDecoder::Flush()
     state_ = State::FLUSHING;
     AVCODEC_LOGI("%{public}s step into FLUSHING status", decName_.c_str());
     inputAvailQue_->SetActive(false, false);
-    sendTask_->Pause();
     codecAvailQue_->SetActive(false, false);
+    sendTask_->Pause();
 
     ResetBuffers();
     FlushAllFrames();
@@ -571,7 +572,6 @@ int32_t VideoDecoder::RenderOutputBuffer(uint32_t index)
                              "Failed to render output buffer: invalid index");
     std::shared_ptr<CodecBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
     oLock.unlock();
-    std::lock_guard<std::mutex> sLock(surfaceMutex_);
     if (frameBuffer->owner_ == Owner::OWNED_BY_USER) {
         std::shared_ptr<FSurfaceMemory> surfaceMemory = frameBuffer->sMemory;
         int32_t ret = FlushSurfaceMemory(surfaceMemory, index);
@@ -837,8 +837,10 @@ void VideoDecoder::ReleaseBuffers()
         StopRequestSurfaceBufferThread();
         renderAvailQue_->Clear();
         requestSurfaceBufferQue_->Clear();
-        std::unique_lock<std::mutex> mLock(renderBufferMapMutex_);
-        renderSurfaceBufferMap_.clear();
+        {
+            std::unique_lock<std::mutex> mLock(renderBufferMapMutex_);
+            renderSurfaceBufferMap_.clear();
+        }
         for (uint32_t i = 0; i < buffers_[INDEX_OUTPUT].size(); i++) {
             std::shared_ptr<CodecBuffer> outputBuffer = buffers_[INDEX_OUTPUT][i];
             if (outputBuffer->owner_ == Owner::OWNED_BY_CODEC) {

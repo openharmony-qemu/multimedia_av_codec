@@ -137,11 +137,6 @@ public:
     }
     virtual ~AudioDecOutPortProducerListener() = default;
 
-    int OnRemoteRequest(uint32_t code, MessageParcel& arguments, MessageParcel& reply, MessageOption& option) override
-    {
-        return IPCObjectStub::OnRemoteRequest(code, arguments, reply, option);
-    }
-
     void OnBufferAvailable() override
     {
         MEDIA_LOG_D("AudioDecOutPortProducerListener OnBufferAvailable");

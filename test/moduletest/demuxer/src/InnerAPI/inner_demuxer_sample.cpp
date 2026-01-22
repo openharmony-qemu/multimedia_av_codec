@@ -48,7 +48,7 @@ InnerDemuxerSample::~InnerDemuxerSample()
 {
     if (fd > 0) {
         close(fd);
-        fd = 0;
+        fd = -1;
     }
 }
 
@@ -72,12 +72,10 @@ int32_t InnerDemuxerSample::InitWithFile(const std::string &path, bool local)
         this->avsource_ = AVSourceFactory::CreateWithURI(const_cast<char*>(path.data()));
     }
     if (!avsource_) {
-        printf("Source is null\n");
         return -1;
     }
     this->demuxer_ = AVDemuxerFactory::CreateWithSource(avsource_);
     if (!demuxer_) {
-        printf("AVDemuxerFactory::CreateWithSource is failed\n");
         return -1;
     }
     int32_t ret = this->avsource_->GetSourceFormat(source_format_);
@@ -88,18 +86,23 @@ int32_t InnerDemuxerSample::InitWithFile(const std::string &path, bool local)
     source_format_.GetIntValue(OH_MD_KEY_TRACK_COUNT, trackCount);
     source_format_.GetLongValue(OH_MD_KEY_DURATION, duration);
     printf("====>total tracks:%d duration:%" PRId64 "\n", trackCount, duration);
-    int32_t trackType = 0;
     for (int32_t i = 0; i < trackCount; i++) {
+        int32_t trackType = -1;
         ret = this->avsource_->GetTrackFormat(track_format_, i);
         if (ret != 0) {
-            printf("GetTrackFormat is failed\n");
             return ret;
         }
         track_format_.GetIntValue(OH_MD_KEY_TRACK_TYPE, trackType);
         if (trackType == MEDIA_TYPE_VID) {
+            GetHdrType();
+            videoIsEnd = false;
             videoTrackIdx = i;
+        } else {
+            audioIsEnd = false;
         }
-        if (unSelectTrack != i) {
+        if (unSelectTrack != i && (trackType == MEDIA_TYPE_VID || trackType == MEDIA_TYPE_AUD ||
+            trackType == MEDIA_TYPE_SUBTITLE || trackType == MEDIA_TYPE_TIMED_METADATA ||
+            trackType == MEDIA_TYPE_AUXILIARY)) {
             ret = this->demuxer_->SelectTrackByID(i);
             if (ret != 0) {
                 printf("SelectTrackByID is failed\n");
@@ -110,6 +113,13 @@ int32_t InnerDemuxerSample::InitWithFile(const std::string &path, bool local)
     return ret;
 }
 
+void InnerDemuxerSample::GetHdrType()
+{
+    if (!track_format_.GetIntValue(Media::Tag::VIDEO_HDR_TYPE, hdrType)) {
+        cout << "get hdr type failed" << endl;
+        getHdrMetadata = false;
+    }
+}
 int32_t InnerDemuxerSample::ReadSampleAndSave()
 {
     uint32_t buffersize = 1024 * 1024;
@@ -613,6 +623,63 @@ bool InnerDemuxerSample::ReadAudio(std::vector<std::vector<int32_t>> &cacheCheck
         }
     }
     return true;
+}
+
+int32_t InnerDemuxerSample::ReadSample(int32_t videoFrame, int32_t audioFrame)
+{
+    int32_t ret = 0;
+    uint32_t buffersize = 1024 * 1024;
+    std::shared_ptr<AVAllocator> allocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+    avBuffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, buffersize);
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t i = 0; i < trackCount; i++) {
+            int32_t trackType = -1;
+            ret = this->avsource_->GetTrackFormat(track_format_, i);
+            if (ret != 0) {
+                printf("GetTrackFormat is failed\n");
+                return ret;
+            }
+            track_format_.GetIntValue(OH_MD_KEY_TRACK_TYPE, trackType);
+            if ((audioIsEnd && (trackType == MEDIA_TYPE_AUD)) || (videoIsEnd && (trackType == MEDIA_TYPE_VID))) {
+                continue;
+            }
+            if (!(trackType == MEDIA_TYPE_VID || trackType == MEDIA_TYPE_AUD ||
+                trackType == MEDIA_TYPE_SUBTITLE || trackType == MEDIA_TYPE_TIMED_METADATA ||
+                trackType == MEDIA_TYPE_AUXILIARY)) {
+                continue;
+            }
+            ret = this->demuxer_->ReadSampleBuffer(i, avBuffer);
+            if (ret != 0) {
+                cout << "ReadSampleBuffer fail ret:" << retForSave << endl;
+                break;
+            }
+            if (SetEos(trackType) != 0) {
+                continue;
+            }
+            if (trackType == MEDIA_TYPE_VID) {
+                videoIndexForRead ++;
+            } else {
+                audioIndexForRead ++;
+            }
+        }
+    }
+    if (videoIndexForRead != videoFrame || audioIndexForRead != audioFrame) {
+        return -1;
+    }
+    return ret;
+}
+
+int32_t InnerDemuxerSample::SetEos(int32_t trackType)
+{
+    if (avBuffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
+        if (trackType == MEDIA_TYPE_VID) {
+            videoIsEnd = true;
+        } else {
+            audioIsEnd = true;
+        }
+        return -1;
+    }
+    return 0;
 }
 }
 }
