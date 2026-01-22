@@ -39,6 +39,9 @@ public:
     void SetUp() override;
     void TearDown() override;
     void InitResource(const std::string &filePath, std::string pluginName);
+    // Init demuxer with a DataSource that reports a very large file size
+    // so that FFmpegDemuxerPlugin takes the limited pre-read path.
+    void InitResourceLargeFile(const std::string &filePath, std::string pluginName);
     void InitResourceURI(const std::string &filePath, std::string pluginName);
     void InitWeakNetworkDemuxerPlugin(
         const std::string& filePath, std::string pluginName, int64_t failOffset, size_t maxFailCount);
