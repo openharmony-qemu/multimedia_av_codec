@@ -1619,11 +1619,12 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     bool discard = false;
     if (inputSurface_ && bufferInfo->avBuffer->meta_->GetData(
         OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, discard) && discard) {
-        HLOGI("inBufId = %u, discard by user, pts = %" PRId64, bufferId, bufferInfo->avBuffer->pts_);
+        HLOGD("inBufId = %u, discard by user, pts = %" PRId64, bufferId, bufferInfo->avBuffer->pts_);
         record_[OMX_DirInput].discardCntInterval_++;
         bufferInfo->avBuffer->meta_->Clear();
         ResetSlot(*bufferInfo);
         ReplyErrorCode(msg.id, AVCS_ERR_OK);
+        TraverseAvaliableBuffers();
         return;
     }
     SetBufferPts(bufferInfo);
