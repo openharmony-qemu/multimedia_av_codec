@@ -147,7 +147,7 @@ bool MultiStreamParserManager::IsHdr10Plus(uint32_t trackId)
 
 bool MultiStreamParserManager::IsSyncFrame(uint32_t trackId, const uint8_t *sample, int32_t size)
 {
-    FALSE_RETURN_V_MSG_E(sample != nullptr && size > 0 && size < INT32_MAX, false, "Sample is nullptr");
+    FALSE_RETURN_V_MSG_E(sample != nullptr && size >= 0 && size < INT32_MAX, false, "Sample is nullptr");
     FALSE_RETURN_V_MSG_E(ParserIsInited(trackId), false, "Stream parser is invalid");
     return streamMap_[trackId].parser->IsSyncFrame(sample, size);
 }
