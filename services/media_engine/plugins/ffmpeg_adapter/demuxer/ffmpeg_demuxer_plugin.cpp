@@ -2289,6 +2289,7 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
 
 int FFmpegDemuxerPlugin::AVSeekFrameLock(int idx, int64_t timestamp, int flags)
 {
+    FALSE_RETURN_V_MSG_E(formatContext_.get() != nullptr, -1, "AVFormatContext is nullptr");
     std::lock_guard<std::mutex> sLock(syncMutex_);
     return av_seek_frame(formatContext_.get(), idx, timestamp, flags);
 }
