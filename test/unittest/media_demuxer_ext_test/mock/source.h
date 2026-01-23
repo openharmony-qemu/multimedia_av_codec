@@ -85,7 +85,6 @@ public:
     MOCK_METHOD(Status, GetSize, (uint64_t & fileSize), ());
     MOCK_METHOD(bool, IsSeekToTimeSupported, (), ());
     MOCK_METHOD(bool, IsLocalFd, (), ());
-    MOCK_METHOD(bool, IsCloudFd, (), ());
     MOCK_METHOD(int64_t, GetDuration, (), ());
     MOCK_METHOD(Status, SeekToTime, (int64_t seekTime, SeekMode mode), ());
     MOCK_METHOD(Status, SeekTo, (uint64_t offset), ());
