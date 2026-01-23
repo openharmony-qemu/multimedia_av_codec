@@ -3136,7 +3136,7 @@ void MediaDemuxer::StartConsume(int32_t trackId)
 
 void MediaDemuxer::ProduceWaterLoopControl(int32_t trackId)
 {
-    if (!sampleQueueController_ || trackId == subtitleTrackId_ || isVideoMuted_ || IsFd()
+    if (!sampleQueueController_ || trackId == subtitleTrackId_ || isVideoMuted_ || IsLocalFd()
         || !GetEnableSampleQueueFlag()) {
         return;
     }
@@ -3150,7 +3150,7 @@ void MediaDemuxer::ProduceWaterLoopControl(int32_t trackId)
 void MediaDemuxer::BufferingStatus()
 {
     int32_t mainTrackId = GetMainTrackId();
-    if (IsFd() || sampleQueueMap_.find(mainTrackId) == sampleQueueMap_.end()
+    if (IsLocalFd() || sampleQueueMap_.find(mainTrackId) == sampleQueueMap_.end()
         || sampleQueueMap_[mainTrackId] == nullptr) {
         return;
     }
@@ -3397,7 +3397,7 @@ int64_t MediaDemuxer::HandleFrameDropForTrack(int32_t trackId)
     if (frameCountNeedDrop_[trackId] <= 0) {
         return 0;
     }
-    if (IsFd()) {
+    if (IsLocalFd()) {
         return 0;
     }
     std::shared_ptr<AVBuffer> sample = AVBuffer::CreateAVBuffer();
@@ -4031,22 +4031,10 @@ void MediaDemuxer::SetApiVersion(int32_t apiVersion)
     demuxerPluginManager_->SetApiVersion(apiVersion);
 }
 
-bool MediaDemuxer::IsFd()
-{
-    FALSE_RETURN_V_MSG_E(source_ != nullptr, false, "source_ is nullptr");
-    return IsLocalFd() || IsCloudFd();
-}
-
 bool MediaDemuxer::IsLocalFd()
 {
     FALSE_RETURN_V_MSG_E(source_ != nullptr, false, "source_ is nullptr");
     return source_->IsLocalFd();
-}
-
-bool MediaDemuxer::IsCloudFd()
-{
-    FALSE_RETURN_V_MSG_E(source_ != nullptr, false, "source_ is nullptr");
-    return source_->IsCloudFd();
 }
 
 Status MediaDemuxer::RebootPlugin()
@@ -4078,7 +4066,7 @@ Status MediaDemuxer::AddSampleBufferQueue(int32_t trackId)
     sampleQueueConfig.queueId_ = trackId;
     sampleQueueConfig.bufferCap_ =
         isVideo ? SampleQueue::DEFAULT_VIDEO_SAMPLE_BUFFER_CAP : SampleQueue::DEFAULT_SAMPLE_BUFFER_CAP;
-    sampleQueueConfig.queueSize_ = IsFd() ? SampleQueue::MAX_SAMPLE_QUEUE_SIZE :
+    sampleQueueConfig.queueSize_ = IsLocalFd() ? SampleQueue::MAX_SAMPLE_QUEUE_SIZE :
         SampleQueue::DEFAULT_SAMPLE_QUEUE_SIZE;
     produceSteadyClock_.Reset();
     Status status = sampleQueue->Init(sampleQueueConfig);
@@ -4199,7 +4187,7 @@ Status MediaDemuxer::CheckAndReleaseRemainBuffer(std::shared_ptr<AVBuffer> &srcB
 
 void MediaDemuxer::ConsumeWaterLoopControl(int32_t trackId, std::shared_ptr<SampleQueue> sampleQueue)
 {
-    if (!sampleQueueController_ || trackId == subtitleTrackId_ || IsFd() || eosMap_[trackId]) {
+    if (!sampleQueueController_ || trackId == subtitleTrackId_ || IsLocalFd() || eosMap_[trackId]) {
         return;
     }
     bool stopConsumeResult = false;
@@ -4692,7 +4680,7 @@ void MediaDemuxer::CachePressuredCallback(int32_t trackId, uint32_t cachedBytes)
     }
     if (NeedDroped(trackId) || hasDropedMap_[trackId].load()) {
         hasDropedMap_[trackId].store(true);
-        if (!IsFd()) {
+        if (!IsLocalFd()) {
             std::unique_lock<std::mutex> stopLock(stopMutex_);
             if (isStopped_) {
                 return;
@@ -4710,7 +4698,7 @@ void MediaDemuxer::CachePressuredCallback(int32_t trackId, uint32_t cachedBytes)
 
 bool MediaDemuxer::NeedDroped(int32_t trackId)
 {
-    if (IsFd()) {
+    if (IsLocalFd()) {
         if (sampleQueueMap_[trackId]->GetFilledBufferSize() >= SampleQueue::MAX_SAMPLE_QUEUE_SIZE - 1) {
             hasDropedMap_[trackId].store(true);
             return true;
@@ -4733,7 +4721,7 @@ void MediaDemuxer::AfterDrop(int32_t trackId)
     if (!GetEnableSampleQueueFlag()) {
         return;
     }
-    if (IsFd()) {
+    if (IsLocalFd()) {
         if (sampleQueueMap_[trackId] == nullptr) {
             return;
         }
