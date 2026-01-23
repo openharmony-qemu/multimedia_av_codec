@@ -48,7 +48,7 @@ struct {
 };
 
 namespace {
-constexpr int NUME_TEN = 10;
+constexpr int DECIMAL = 10;
 }
 
 Attribute::Attribute(std::string name, std::string value)
@@ -96,7 +96,7 @@ bool Attribute::SafeStringToInt(const std::string& str, int& result)
     }
     char* endptr;
     errno = 0;
-    long num = std::strtol(str.c_str(), &endptr, NUME_TEN);
+    long num = std::strtol(str.c_str(), &endptr, DECIMAL);
 
     if (errno == ERANGE) {
         return false;

@@ -456,7 +456,7 @@ HWTEST_F(AttributeUnitTest, SafeStringToInt, TestSize.Level1)
 {
     std::string input = "0";
     int output {};
-    auto result = SafeStringToInt(input output);
+    auto result = SafeStringToInt(input, output);
     EXPECT_TRUE(result);
     EXPECT_EQ(output, 0);
 
