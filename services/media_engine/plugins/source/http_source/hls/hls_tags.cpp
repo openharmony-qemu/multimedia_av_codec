@@ -48,6 +48,10 @@ struct {
     {"",                             HlsTag::URI}
 };
 
+namespace {
+constexpr int NUME_TEN = 10;
+}
+
 Attribute::Attribute(std::string name, std::string value)
     : name_(std::move(name)), value_(std::move(value))
 {
@@ -92,7 +96,7 @@ static bool SafeStringToInt(const std::string& str, int& result) {
     }
     char* endptr;
     errno = 0;
-    long num = std::strtol(str.c_str(), &endptr, 10);
+    long num = std::strtol(str.c_str(), &endptr, NUME_TEN);
 
     if (errno == ERANGE) {
         return false;
