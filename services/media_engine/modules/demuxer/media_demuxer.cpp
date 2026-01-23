@@ -109,6 +109,7 @@ constexpr int64_t LOG_INTERVAL_MS = 2000; // 2s
 constexpr uint32_t LOG_MAX_COUNT = 10; // 10 times
 constexpr int32_t CACHE_PRESSURE_LIMIT = 5 * 1000 * 1000;
 constexpr int32_t CACHE_PRESSURE_LIMIT_TIME = 500;
+constexpr float BASE_SPEED = 1.0f;
 
 static const std::map<TrackType, DemuxerTrackType> TRACK_MAP = {
     {TrackType::TRACK_AUDIO, DemuxerTrackType::AUDIO},
@@ -4122,10 +4123,9 @@ int64_t MediaDemuxer::SampleConsumerLoop(int32_t trackId)
                 "CopySrcBufferByMinSize failed, trackId: %{public}d, status: %{public}d", trackId, status);
         }
     } while (0);
-    uint32_t retryTime = hasSetLargeSize_ && !isVideoMuted_ && trackId == videoTrackId_ ?
-        NEXT_DELAY_TIME_US : SAMPLE_LOOP_RETRY_TIME_US;
+    float speed = speed_.load() < BASE_SPEED ? BASE_SPEED : speed_.load();
     return status == Status::OK ?
-        static_cast<int64_t>(retryTime / speed_) : static_cast<int64_t>(SAMPLE_LOOP_DELAY_TIME_US / speed_);
+        static_cast<int64_t>(NEXT_DELAY_TIME_US / speed) : static_cast<int64_t>(SAMPLE_LOOP_DELAY_TIME_US / speed);
 }
 
 Status MediaDemuxer::RequestDstBuffer(int32_t trackId, int32_t size, std::shared_ptr<AVBuffer> &dstBuffer)
