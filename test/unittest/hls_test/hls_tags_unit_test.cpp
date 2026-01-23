@@ -451,4 +451,30 @@ HWTEST_F(AttributeUnitTest, QuotedStringNoQuotes_001, TestSize.Level1)
     Attribute attr("name", "hello");
     EXPECT_EQ(attr.QuotedString(), "hello");
 }
+
+HWTEST_F(AttributeUnitTest, SafeStringToInt, TestSize.Level1)
+{
+    std::string input = "0";
+    int output {};
+    auto result = SafeStringToInt(input output);
+    EXPECT_TRUE(result);
+    EXPECT_EQ(output, 0);
+
+    input = "123456";
+    result = SafeStringToInt(input, output);
+    EXPECT_TRUE(result);
+    EXPECT_EQ(output, 123456);
+
+    intput = "#$46(!%)_=+af46";
+    result = SafeStringToInt(input, output);
+    EXPECT_FALSE(result);
+
+    input = "123456789123456789123456789123456789123456789";
+    result = SafeStringToInt(input, output);
+    EXPECT_FALSE(result);
+
+    input = "2147483648";
+    result = SafeStringToInt(input, output);
+    EXPECT_FALSE(result);
+}
 }
