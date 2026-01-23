@@ -953,9 +953,9 @@ ChunkIterator CacheMediaChunkBufferImpl::AddFragmentCacheBuffer(uint64_t offset)
     totalReadSize_ += newReadSizeInit;
     newFragmentPos->totalReadSize = newReadSizeInit;
     writePos_ = newFragmentPos;
-    if (*writePos_ == nullptr) {
-        MEDIA_LOG_w("writePos is null");
-        return false;
+    if (writePos_ == fragmentCacheBuffer_.end()) {
+        MEDIA_LOG_W("writePos is invalid");
+        return fragmentCacheBuffer_.end();
     }
     writePos_->accessPos = writePos_->chunks.end();
     lruCache_.Refer(newFragmentPos->offsetBegin, newFragmentPos);
