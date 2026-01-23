@@ -255,7 +255,7 @@ protected:
     CacheChunk* GetFreeCacheChunk(uint64_t offset, bool checkAllowFailContinue = false) override;
     ChunkIterator SplitFragmentCacheBuffer(FragmentIterator& currFragmentIter, uint64_t offset,
         ChunkIterator chunkPos) override;
-    bool AddFragmentCacheBuffer(uint64_t offset, ChunkIterator chunkPos) override;
+    bool AddFragmentCacheBuffer(uint64_t offset, ChunkIterator& chunkPos) override;
     size_t Write(void* ptr, uint64_t inOffset, size_t inWriteSize) override;
 };
 
