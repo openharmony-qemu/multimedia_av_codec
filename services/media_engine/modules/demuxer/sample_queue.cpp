@@ -197,19 +197,6 @@ Status SampleQueue::PushBuffer(std::shared_ptr<AVBuffer>& sampleBuffer, bool ava
     return Status::OK;
 }
 
-Status SampleQueue::AttachOneBuffer(uint32_t size)
-{
-    for (uint32_t i = 0; i < size; i++) {
-        auto avAllocator = AVAllocatorFactory::CreateVirtualAllocator();
-        std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(avAllocator, config_.bufferCap_);
-        FALSE_RETURN_V_MSG_E(buffer != nullptr, Status::ERROR_NO_MEMORY, "CreateAVBuffer failed");
-        Status status = sampleBufferQueueProducer_->AttachBuffer(buffer, false);
-        FALSE_RETURN_V_MSG_E(
-            status == Status::OK, status, "AttachBuffer failed status=" PUBLIC_LOG_D32, static_cast<int32_t>(status));
-    }
-    return Status::OK;
-}
-
 Status SampleQueue::AcquireBuffer(std::shared_ptr<AVBuffer>& sampleBuffer)
 {
     MEDIA_TRACE_DEBUG("SampleQueue::AcquireBuffer");
@@ -455,7 +442,7 @@ Status SampleQueue::QuerySizeForNextAcquireBuffer(size_t& size)
         SampleQueue::RollbackBuffer(sampleBuffer);
     }
     FALSE_RETURN_V(sampleBuffer != nullptr && sampleBuffer->memory_ != nullptr, Status::ERROR_NULL_POINT_BUFFER);
-    size = sampleBuffer->memory_->GetSize();
+    size = static_cast<size_t>(sampleBuffer->memory_->GetSize());
     MEDIA_LOG_DD(PUBLIC_LOG_S " QuerySizeForNextAcquireBuffer size=" PUBLIC_LOG_ZU, config_.queueName_.c_str(), size);
     return Status::OK;
 }

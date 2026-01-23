@@ -147,7 +147,7 @@ void CacheMediaChunkBufferImpl::UpdateAccessPos(FragmentIterator& fragmentPos, C
         } else {
             fragmentPos->accessPos = preChunkPos;
         }
-    } else if ((*chunkPos)->offset == offsetChunk) {
+    } else if (*chunkPos != nullptr && (*chunkPos)->offset == offsetChunk) {
             fragmentPos->accessPos = chunkPos;
     } else {
         fragmentPos->accessPos = std::prev(chunkPos);
@@ -290,6 +290,10 @@ bool CacheMediaChunkBufferImpl::WriteInPlace(FragmentIterator& fragmentPos, uint
 
 bool CacheMediaChunkBufferImpl::WriteMergerPre(uint64_t offset, size_t writeSize, FragmentIterator& nextFragmentPos)
 {
+    if (writePos_ == fragmentCacheBuffer_.end()) {
+        MEDIA_LOG_W("writePos is invalid");
+        return false;
+    }
     nextFragmentPos = std::next(writePos_);
     bool isLoop = true;
     while (isLoop) {
@@ -390,6 +394,10 @@ size_t CacheMediaChunkBufferImpl::Write(void* ptr, uint64_t inOffset, size_t inW
     if (!success) {
         return dupWriteSize;
     }
+    if (writePos_ == fragmentCacheBuffer_.end()) {
+        MEDIA_LOG_W("writePos is invalid");
+        return dupWriteSize;
+    }
     auto writeSizeTmp = WriteChunk(*writePos_, chunkPos, src, offset, writeSize);
     if (writeSize != writeSizeTmp) {
         nextFragmentPos = fragmentCacheBuffer_.end();
@@ -432,6 +440,10 @@ size_t CacheMediaChunkBufferHlsImpl::Write(void* ptr, uint64_t inOffset, size_t 
     FragmentIterator nextFragmentPos = fragmentCacheBuffer_.end();
     auto success = WriteMergerPre(offset, writeSize, nextFragmentPos);
     if (!success) {
+        return dupWriteSize;
+    }
+    if (writePos_ == fragmentCacheBuffer_.end()) {
+        MEDIA_LOG_W("writePos is invalid");
         return dupWriteSize;
     }
     auto writeSizeTmp = WriteChunk(*writePos_, chunkPos, src, offset, writeSize);
@@ -941,6 +953,10 @@ ChunkIterator CacheMediaChunkBufferImpl::AddFragmentCacheBuffer(uint64_t offset)
     totalReadSize_ += newReadSizeInit;
     newFragmentPos->totalReadSize = newReadSizeInit;
     writePos_ = newFragmentPos;
+    if (*writePos_ == nullptr) {
+        MEDIA_LOG_w("writePos is null");
+        return false;
+    }
     writePos_->accessPos = writePos_->chunks.end();
     lruCache_.Refer(newFragmentPos->offsetBegin, newFragmentPos);
     auto freeChunk = GetFreeCacheChunk(offset);
