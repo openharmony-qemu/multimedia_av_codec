@@ -465,7 +465,7 @@ HWTEST_F(AttributeUnitTest, SafeStringToInt, TestSize.Level1)
     EXPECT_TRUE(result);
     EXPECT_EQ(output, 123456);
 
-    intput = "#$46(!%)_=+af46";
+    input = "#$46(!%)_=+af46";
     result = Attribute::SafeStringToInt(input, output);
     EXPECT_FALSE(result);
 
