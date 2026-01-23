@@ -957,7 +957,7 @@ bool CacheMediaChunkBufferImpl::AddFragmentCacheBuffer(uint64_t offset, ChunkIte
     writePos_ = newFragmentPos;
     if (writePos_ == fragmentCacheBuffer_.end()) {
         MEDIA_LOG_W("writePos is invalid");
-        return fragmentCacheBuffer_.end();
+        return false;
     }
     writePos_->accessPos = writePos_->chunks.end();
     lruCache_.Refer(newFragmentPos->offsetBegin, newFragmentPos);
