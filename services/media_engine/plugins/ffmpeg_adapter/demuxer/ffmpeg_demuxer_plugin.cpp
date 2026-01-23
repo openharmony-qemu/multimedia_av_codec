@@ -1462,6 +1462,14 @@ const FFmpegDemuxerPlugin::AVStreamSnapshot* FFmpegDemuxerPlugin::GetStreamSnaps
     return &streamSnapshots_[trackId];
 }
 
+FFmpegDemuxerPlugin::AVStreamSnapshot* FFmpegDemuxerPlugin::GetStreamSnapshotForUpdate(uint32_t trackId)
+{
+    if (trackId >= streamSnapshots_.size()) {
+        return nullptr;
+    }
+    return &streamSnapshots_[trackId];
+}
+
 static bool CheckProbScore(const std::string& pluginName, const int32_t probScore)
 {
     if (probScore >= DEF_PROBE_SCORE_LIMIT) {
@@ -1865,6 +1873,10 @@ void FFmpegDemuxerPlugin::ConvertCsdToAnnexb(const AVStream& avStream, Meta &for
         std::vector<uint8_t> extra(extradataSize);
         extra.assign(extradata, extradata + extradataSize);
         format.Set<Tag::MEDIA_CODEC_CONFIG>(extra);
+        AVStreamSnapshot* snapshot = GetStreamSnapshotForUpdate(avStream.index);
+        if (snapshot != nullptr && snapshot->valid && extradataSize > snapshot->extradataSize) {
+            snapshot->extradataSize = extradataSize;
+        }
     }
 }
 
