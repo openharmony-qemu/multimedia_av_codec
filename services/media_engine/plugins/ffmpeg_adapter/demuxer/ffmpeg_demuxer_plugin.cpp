@@ -86,6 +86,7 @@ const int READ_SIZE_LIMIT_FACTOR = 2;
 const int READ_SIZE_LIMIT_DEFAULT = 4096 * 2160 * 3 * 2;
 const char* PLUGIN_NAME_PREFIX = "avdemux_";
 const char* PLUGIN_NAME_MP3 = "mp3";
+const char* PLUGIN_NAME_AAC = "aac";
 const char* PLUGIN_NAME_MPEGPS = "mpeg";
 const int32_t MPEGPS_START_CODE_SIZE = 4;
 const uint8_t MPEGPS_START_CODE[] = {0x00, 0x00, 0x01, 0xBA};
@@ -3158,6 +3159,9 @@ void FFmpegDemuxerPlugin::RelativePTSToIndexProcess(int64_t pts, int64_t absolut
 
 Status FFmpegDemuxerPlugin::CheckCacheDataLimit(uint32_t trackId)
 {
+    if (cachelimitSize_ <= 0) {
+        return Status::OK;
+    }
     if (!outOfLimit_) {
         auto cacheDataSize = cacheQueue_.GetCacheDataSize(trackId);
         if (cacheDataSize > cachelimitSize_) {
@@ -3286,7 +3290,7 @@ bool FFmpegDemuxerPlugin::IsSkipGetMinTsPktInfo()
 Status FFmpegDemuxerPlugin::GetFileFirstPacket()
 {
     bool isSkip = IsSkipGetMinTsPktInfo();
-    FALSE_RETURN_V_MSG_I(!isSkip, Status::OK, "File skip get first packet info");
+    FALSE_RETURN_V_MSG_D(!isSkip, Status::OK, "File skip get first packet info");
     if (formatContext_->nb_streams <= 0 || fileType_ == FileType::VTT) {
         MEDIA_LOG_E("FormatContext nb_streams is " PUBLIC_LOG_U32, formatContext_->nb_streams);
         return Status::OK;
@@ -3535,12 +3539,15 @@ int SniffWithSize(const std::string& pluginName, std::shared_ptr<DataSource> dat
     if (confidence < 0) {
         return 0;
     }
+    if (StartWith(plugin->name, PLUGIN_NAME_AAC) && getData < DEFAULT_SNIFF_SIZE) {
+        MEDIA_LOG_I("Sniff data [" PUBLIC_LOG_ZU "/" PUBLIC_LOG_D32 "]", getData, probSize);
+    }
     if (StartWith(plugin->name, PLUGIN_NAME_MP3) && confidence > 0 && confidence <= MP3_PROBE_SCORE_LIMIT) {
         MEDIA_LOG_W("Score " PUBLIC_LOG_D32 " is too low", confidence);
         confidence = 0;
     }
-    if (getData < DEFAULT_SNIFF_SIZE || confidence > 0) {
-        MEDIA_LOG_I("Sniff:" PUBLIC_LOG_S "[" PUBLIC_LOG_ZU "/" PUBLIC_LOG_D32 "]", plugin->name, getData, confidence);
+    if (confidence > 0) {
+        MEDIA_LOG_I(PUBLIC_LOG_S " [" PUBLIC_LOG_D32 "]", plugin->name, confidence);
     }
     return confidence;
 }
