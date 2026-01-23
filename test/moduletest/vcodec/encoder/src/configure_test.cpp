@@ -341,4 +341,120 @@ HWTEST_F(HwEncConfigureNdkTest, VIDEO_ENCODE_CAPABILITY_5010, TestSize.Level2)
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, range.minVal - 1);
     EXPECT_NE(AV_ERR_OK, OH_VideoEncoder_Configure(venc_, format));
 }
+
+/**
+ * @tc.number    : VIDEO_CAPABILITY_CONIFG_1000
+ * @tc.name      : set widthRange 、 heightRange  max and min  test
+ * @tc.desc      : configure test
+ */
+HWTEST_F(HwEncConfigureNdkTest, VIDEO_CAPABILITY_CONIFG_1000, TestSize.Level2)
+{
+    OH_AVErrCode  ret = AV_ERR_OK;
+    OH_AVRange widthRange;
+    OH_AVRange heightRange;
+    memset_s(&widthRange, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+    memset_s(&heightRange, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+    OH_AVCapability  *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
+    if (capability == nullptr) {
+        return;
+    }
+    ret = OH_AVCapability_GetVideoWidthRange(capability, &widthRange);
+    ret = OH_AVCapability_GetVideoHeightRange(capability, &heightRange);
+    cout  << "width minval=" << widthRange.minVal << "   width maxval=" << widthRange.maxVal << endl;
+    cout  << "height minval=" << heightRange.minVal << "   height maxval=" << heightRange.maxVal << endl;
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ASSERT_GE(widthRange.minVal, 0);
+    ASSERT_GE(widthRange.maxVal, 0);
+    ASSERT_GE(heightRange.minVal, 0);
+    ASSERT_GE(heightRange.minVal, 0);
+    const char *tmpCodecName = OH_AVCapability_GetName(capability);
+    if (memcpy_s(g_codecName, sizeof(g_codecName), tmpCodecName, strlen(tmpCodecName) != 0))
+        cout  << "memcpy failed" << endl;
+    OH_AVCodec  *vdec = OH_VideoEncoder_CreateByName(g_codecName);
+    ASSERT_NE(nullptr, vdec);
+    OH_AVFormat *encodeFormat = OH_AVFormat_Create();
+    ASSERT_NE(nullptr, encodeFormat);
+    (void)OH_AVFormat_SetIntValue(encodeFormat, OH_MD_KEY_WIDTH, widthRange.minVal);
+    (void)OH_AVFormat_SetIntValue(encodeFormat, OH_MD_KEY_HEIGHT, heightRange.maxVal);
+    (void)OH_AVFormat_SetIntValue(encodeFormat, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(vdec, encodeFormat));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(vdec));
+    (void)OH_AVFormat_SetIntValue(encodeFormat, OH_MD_KEY_HEIGHT, heightRange.minVal);
+    (void)OH_AVFormat_SetIntValue(encodeFormat, OH_MD_KEY_WIDTH, widthRange.maxVal);
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(vdec, encodeFormat));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(vdec));
+    (void)OH_AVFormat_SetIntValue(encodeFormat, OH_MD_KEY_WIDTH, widthRange.maxVal+1);
+    EXPECT_NE(AV_ERR_OK, OH_VideoEncoder_Configure(vdec, encodeFormat));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(vdec));
+    (void)OH_AVFormat_SetIntValue(encodeFormat, OH_MD_KEY_WIDTH, widthRange.minVal-1);
+    EXPECT_NE(AV_ERR_OK, OH_VideoEncoder_Configure(vdec, encodeFormat));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(vdec));
+    (void)OH_AVFormat_SetIntValue(encodeFormat, OH_MD_KEY_WIDTH, widthRange.minVal);
+    (void)OH_AVFormat_SetIntValue(encodeFormat, OH_MD_KEY_HEIGHT, heightRange.minVal-1);
+    EXPECT_NE(AV_ERR_OK, OH_VideoEncoder_Configure(vdec, encodeFormat));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(vdec));
+    (void)OH_AVFormat_SetIntValue(encodeFormat, OH_MD_KEY_HEIGHT, heightRange.maxVal+1);
+    EXPECT_NE(AV_ERR_OK, OH_VideoEncoder_Configure(vdec, encodeFormat));
+    OH_VideoEncoder_Destroy(vdec);
+    OH_AVFormat_Destroy(encodeFormat);
+}
+
+/**
+ * @tc.number    : VIDEO_CAPABILITY_CONIFG_2000
+ * @tc.name      : set widthRange 、 heightRange  max and min  test
+ * @tc.desc      : configure test
+ */
+HWTEST_F(HwEncConfigureNdkTest, VIDEO_CAPABILITY_CONIFG_2000, TestSize.Level2)
+{
+    OH_AVErrCode  ret = AV_ERR_OK;
+    OH_AVRange widthRange;
+    OH_AVRange heightRange;
+    memset_s(&widthRange, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+    memset_s(&heightRange, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+    OH_AVCapability  *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
+    if (capability == nullptr) {
+        return;
+    }
+    ret = OH_AVCapability_GetVideoWidthRange(capability, &widthRange);
+    ret = OH_AVCapability_GetVideoHeightRange(capability, &heightRange);
+    cout  << "width minval=" << widthRange.minVal << "   width maxval=" << widthRange.maxVal << endl;
+    cout  << "height minval=" << heightRange.minVal << "   height maxval=" << heightRange.maxVal << endl;
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ASSERT_GE(widthRange.minVal, 0);
+    ASSERT_GE(widthRange.maxVal, 0);
+    ASSERT_GE(heightRange.minVal, 0);
+    ASSERT_GE(heightRange.minVal, 0);
+    const char *tmpCodecName = OH_AVCapability_GetName(capability);
+    if (memcpy_s(g_codecName, sizeof(g_codecName), tmpCodecName, strlen(tmpCodecName) != 0))
+        cout  << "memcpy failed" << endl;
+    OH_AVCodec  *vdec = OH_VideoEncoder_CreateByName(g_codecName);
+    ASSERT_NE(nullptr, vdec);
+    OH_AVFormat *encodeFormat = OH_AVFormat_Create();
+    ASSERT_NE(nullptr, encodeFormat);
+    (void)OH_AVFormat_SetIntValue(encodeFormat, OH_MD_KEY_WIDTH, widthRange.minVal);
+    (void)OH_AVFormat_SetIntValue(encodeFormat, OH_MD_KEY_HEIGHT, heightRange.maxVal);
+    (void)OH_AVFormat_SetIntValue(encodeFormat, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(vdec, encodeFormat));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(vdec));
+    (void)OH_AVFormat_SetIntValue(encodeFormat, OH_MD_KEY_HEIGHT, heightRange.minVal);
+    (void)OH_AVFormat_SetIntValue(encodeFormat, OH_MD_KEY_WIDTH, widthRange.maxVal);
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(vdec, encodeFormat));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(vdec));
+    (void)OH_AVFormat_SetIntValue(encodeFormat, OH_MD_KEY_WIDTH, widthRange.maxVal+1);
+    EXPECT_NE(AV_ERR_OK, OH_VideoEncoder_Configure(vdec, encodeFormat));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(vdec));
+    (void)OH_AVFormat_SetIntValue(encodeFormat, OH_MD_KEY_WIDTH, widthRange.minVal-1);
+    EXPECT_NE(AV_ERR_OK, OH_VideoEncoder_Configure(vdec, encodeFormat));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(vdec));
+    (void)OH_AVFormat_SetIntValue(encodeFormat, OH_MD_KEY_WIDTH, widthRange.minVal);
+    (void)OH_AVFormat_SetIntValue(encodeFormat, OH_MD_KEY_HEIGHT, heightRange.minVal-1);
+    EXPECT_NE(AV_ERR_OK, OH_VideoEncoder_Configure(vdec, encodeFormat));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Reset(vdec));
+    (void)OH_AVFormat_SetIntValue(encodeFormat, OH_MD_KEY_HEIGHT, heightRange.maxVal+1);
+    EXPECT_NE(AV_ERR_OK, OH_VideoEncoder_Configure(vdec, encodeFormat));
+    OH_VideoEncoder_Destroy(vdec);
+    OH_AVFormat_Destroy(encodeFormat);
+}
+
+
 }
