@@ -187,6 +187,8 @@ void RunMpdDownloaderTests(DashMpdInfo *mpdInfo)
 
 bool DashMediaFuzzerTest(const uint8_t *data, size_t size)
 {
+    (void) data; 
+    (void) size;
     std::string mpd = BASE_MPD;
     std::shared_ptr<DashMpdParser> mpdParser = std::make_shared<DashMpdParser>();
     mpdParser->ParseMPD(mpd.c_str(), mpd.length());
@@ -443,8 +445,6 @@ bool DashGetAttr(const uint8_t *data, size_t size)
  
 bool MpdParse(const uint8_t *data, size_t size)
 {
-    (void)data;
-    (void)size;
     for (auto mpdUrl : MPD_BASE_URLS) {
         std::shared_ptr<DashMpdDownloader> mpdMpddownload = std::make_shared<DashMpdDownloader>();
         mpdMpddownload->Init();
