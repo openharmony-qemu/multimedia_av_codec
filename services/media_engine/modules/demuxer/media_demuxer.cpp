@@ -3064,7 +3064,7 @@ Status MediaDemuxer::CopyFrameToUserQueue(int32_t trackId)
     }
     GetMemoryUsage(trackId, pluginTemp);
     int32_t size = 0;
-    Status ret = enableAsyncDemuxer_ ?
+    Status ret = !isTranscoderMode_ && enableAsyncDemuxer_ ?
         pluginTemp->GetNextSampleSize(static_cast<uint32_t>(innerTrackID), size, timeout_) :
         pluginTemp->GetNextSampleSize(static_cast<uint32_t>(innerTrackID), size);
     FALSE_RETURN_V_MSG_E(ret != Status::ERROR_WAIT_TIMEOUT, ret, "Get size timeout " PUBLIC_LOG_D32, trackId);
@@ -3202,6 +3202,9 @@ Status MediaDemuxer::InnerReadSample(int32_t trackId, std::shared_ptr<AVBuffer> 
     int64_t threshold = trackId == audioTrackId_ ? READSAMPLE_AUIDO_WARNING_MS : READSAMPLE_WARNING_MS;
     Status ret = Status::OK;
     {
+        if (isTranscoderMode_) {
+            isAVDemuxer = true;
+        }
         ScopedTimer timer("ReadSample", threshold);
         ret = ReadSampleWithPerfRecord(pluginTemp, innerTrackID, sample, isAVDemuxer);
     }
