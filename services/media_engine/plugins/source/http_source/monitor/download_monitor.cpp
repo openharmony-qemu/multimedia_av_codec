@@ -22,7 +22,7 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
-    constexpr int RETRY_TIMES_TO_REPORT_ERROR = 10;
+    constexpr int RETRY_TIMES_TO_REPORT_ERROR = 200;
     constexpr int APP_DOWNLOAD_RETRY_TIMES = 60;
     constexpr int SERVER_ERROR_THRESHOLD = 500;
     constexpr int32_t READ_LOG_FEQUENCE = 50;
@@ -41,6 +41,7 @@ namespace {
         56,
         18,
         0,
+        7,
     };
     const std::set<int32_t> SERVER_RETRY_ERROR_CODES = {
         300,
