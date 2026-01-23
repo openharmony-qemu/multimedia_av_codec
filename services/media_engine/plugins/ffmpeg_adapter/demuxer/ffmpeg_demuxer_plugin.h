@@ -287,6 +287,7 @@ private:
     void ResetParam();
     void UpdateStreamSnapshots();
     const AVStreamSnapshot* GetStreamSnapshot(uint32_t trackId) const;
+    AVStreamSnapshot* GetStreamSnapshotForUpdate(uint32_t trackId);
 
     bool WebvttPktProcess(AVPacket *pkt);
     bool IsWebvttMP4(const AVStream *avStream);
