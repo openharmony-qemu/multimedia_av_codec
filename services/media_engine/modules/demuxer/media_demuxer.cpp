@@ -623,8 +623,6 @@ bool MediaDemuxer::GetStartInfo(std::pair<int64_t, bool>& startInfo)
     if (source_ == nullptr) {
         return false;
     }
-    seekable_ = source_->GetSeekable();
-    FALSE_LOG(seekable_ != Seekable::INVALID);
     if (source_->IsSeekToTimeSupported()) {
         startInfo = source_->GetStartInfo();
         return true;

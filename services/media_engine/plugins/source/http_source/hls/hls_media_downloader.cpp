@@ -87,34 +87,23 @@ void HlsMediaDownloader::Init()
 void HlsMediaDownloader::OnMasterReady(bool needAudioManager, bool needSubtitlesManager)
 {
     FALSE_RETURN_MSG(videoSegManager_ != nullptr, "OnMasterReady no video segment manager found!");
-    if (!needAudioManager) {
-        MEDIA_LOG_I("no need audio seg manager.");
-    } else {
-        if (!audioSegManager_) {
-            MEDIA_LOG_I("HlsMediaDownloader Audio OnMasterReady: 0x%{public}06" PRIXPTR, FAKE_POINTER(this));
-            audioSegManager_ = std::make_shared<HlsSegmentManager>(videoSegManager_, HlsSegmentType::SEG_AUDIO);
-            audioSegManager_->Init();
-            audioSegManager_->Clone(videoSegManager_);
-            auto audioDefaultStreamId = videoSegManager_->GetDefaultMediaStreamId(HlsSegmentType::SEG_AUDIO);
-            audioSegManager_->StartMediaDownload(audioDefaultStreamId, HlsSegmentType::SEG_AUDIO);
-        } else {
-            MEDIA_LOG_I("already create audio seg manager.");
-        }
+    MEDIA_LOG_I("HlsMediaDownloader OnMasterReady Audio: %{public}d, Subtitles: %{public}d", needAudioManager,
+        needSubtitlesManager);
+    if (needAudioManager && !audioSegManager_) {
+        MEDIA_LOG_I("HlsMediaDownloader Audio OnMasterReady: 0x%{public}06" PRIXPTR, FAKE_POINTER(this));
+        audioSegManager_ = std::make_shared<HlsSegmentManager>(videoSegManager_, HlsSegmentType::SEG_AUDIO);
+        audioSegManager_->Init();
+        audioSegManager_->Clone(videoSegManager_);
+        auto audioDefaultStreamId = videoSegManager_->GetDefaultMediaStreamId(HlsSegmentType::SEG_AUDIO);
+        audioSegManager_->StartMediaDownload(audioDefaultStreamId, HlsSegmentType::SEG_AUDIO);
     }
- 
-    if (!needSubtitlesManager) {
-        MEDIA_LOG_I("no need subtitle seg manager.");
-    } else {
-        if (!subtitlesSegManager_) {
-            MEDIA_LOG_I("HlsMediaDownloader Subtitles OnMasterReady: 0x%{public}06" PRIXPTR, FAKE_POINTER(this));
-            subtitlesSegManager_ = std::make_shared<HlsSegmentManager>(videoSegManager_, HlsSegmentType::SEG_SUBTITLE);
-            subtitlesSegManager_->Init();
-            subtitlesSegManager_->Clone(videoSegManager_);
-            auto subtitlesDefaultStreamId = videoSegManager_->GetDefaultMediaStreamId(HlsSegmentType::SEG_SUBTITLE);
-            subtitlesSegManager_->StartMediaDownload(subtitlesDefaultStreamId, HlsSegmentType::SEG_SUBTITLE);
-        } else {
-            MEDIA_LOG_I("already create subtitle seg manager.");
-        }
+    if (needSubtitlesManager && !subtitlesSegManager_) {
+        MEDIA_LOG_I("HlsMediaDownloader Subtitles OnMasterReady: 0x%{public}06" PRIXPTR, FAKE_POINTER(this));
+        subtitlesSegManager_ = std::make_shared<HlsSegmentManager>(videoSegManager_, HlsSegmentType::SEG_SUBTITLE);
+        subtitlesSegManager_->Init();
+        subtitlesSegManager_->Clone(videoSegManager_);
+        auto subtitlesDefaultStreamId = videoSegManager_->GetDefaultMediaStreamId(HlsSegmentType::SEG_SUBTITLE);
+        subtitlesSegManager_->StartMediaDownload(subtitlesDefaultStreamId, HlsSegmentType::SEG_SUBTITLE);
     }
 }
 

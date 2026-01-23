@@ -146,34 +146,26 @@ int64_t HlsPlayListDownloader::GetDuration() const
 
 std::pair<int64_t, bool> HlsPlayListDownloader::GetStartInfo() const
 {
+    if (!master_) {
+        return std::make_pair(0, false);
+    }
     int64_t duration = GetDuration();
-    std::pair<int64_t, bool> startInfo;
-    if (master_ && master_->isStart_) {
-        double ret = master_->timeOffset_;
-        int64_t timeOffset = ((int64_t)(ret * HST_SECOND) / HST_MSECOND);
+    std::pair<int64_t, bool> startInfo{0, false};
+    if (master_->isStart_) {
+        int64_t timeOffset = ((int64_t)(master_->timeOffset_ * HST_SECOND) / HST_MSECOND);
         if (duration != -1) {
-            if (timeOffset < 0) {
-                timeOffset = std::max(timeOffset, -duration) + duration;
-            } else if (timeOffset > duration) {
-                timeOffset = duration;
-            }
-            startInfo.first = timeOffset;
+            startInfo.first = timeOffset < 0 ? std::max(timeOffset + duration, 0) : duration;
+            startInfo.second = master_->precise_;
         }
-        startInfo.second = master_->precise_;
-    } else if (master_ && master_->defaultVariant_ &&
-        master_->defaultVariant_->m3u8_ &&
-        master_->defaultVariant_->m3u8_->isStart_) {
-        double ret = master_->defaultVariant_->m3u8_->timeOffset_;
-        int64_t timeOffset = ((int64_t)(ret * HST_SECOND) / HST_MSECOND);
+    } else if (master_->defaultVariant_ && master_->defaultVariant_->m3u8_ &&
+            master_->defaultVariant_->m3u8_->isStart_) {
+        int64_t timeOffset = ((int64_t)(master_->defaultVariant_->m3u8_->timeOffset_ * HST_SECOND) / HST_MSECOND);
         if (duration != -1) {
-            if (timeOffset < 0) {
-                timeOffset = std::max(timeOffset, -duration) + duration;
-            } else if (timeOffset > duration) {
-                timeOffset = duration;
-            }
-            startInfo.first = timeOffset;
+            startInfo.first = timeOffset < 0 ? std::max(timeOffset + duration, 0) : duration;
+            startInfo.second = master_->defaultVariant_->m3u8_->precise_;
         }
-        startInfo.second = master_->defaultVariant_->m3u8_->precise_;
+    } else {
+        MEDIA_LOG_W("EXT-X-START does no exist.");
     }
     return startInfo;
 }
@@ -358,14 +350,10 @@ bool HlsPlayListDownloader::UpdateNotSimplePlaylists()
 {
     std::lock_guard<std::mutex> lock(mediaMutex_);
     bool ret = false;
-    if (currentAudio_ != nullptr) {
-        if (currentAudio_->m3u8_ != nullptr) {
-            ret = currentAudio_->m3u8_->Update(playList_, true);
-        }
-    } else if (currentSubtitles_ != nullptr) {
-        if (currentSubtitles_->m3u8_ != nullptr) {
-            ret = currentSubtitles_->m3u8_->Update(playList_, true);
-        }
+    if (currentAudio_ != nullptr && currentAudio_->m3u8_ != nullptr) {
+        ret = currentAudio_->m3u8_->Update(playList_, true);
+    } else if (currentSubtitles_ != nullptr && currentSubtitles_->m3u8_ != nullptr) {
+        ret = currentSubtitles_->m3u8_->Update(playList_, true);
     } else {
         currentVariant_ = master_->defaultVariant_;
         if (currentVariant_ && currentVariant_->m3u8_) {
@@ -495,10 +483,10 @@ bool HlsPlayListDownloader::IsMediaSame(uint32_t streamId, HlsSegmentType mediaT
     std::lock_guard<std::mutex> lock(mediaMutex_);
     if (mediaType == HlsSegmentType::SEG_AUDIO) {
         return currentAudio_ == nullptr || streamId == currentAudio_->streamId_;
-    } else if (currentSubtitles_ != nullptr) {
+    } else if (mediaType == HlsSegmentType::SEG_SUBTITLE) {
         return streamId == currentSubtitles_->streamId_;
     } else {
-        MEDIA_LOG_W("media no.");
+        MEDIA_LOG_W("Audio and Subtitle both Null.");
     }
     return true;
 }
@@ -720,10 +708,11 @@ void HlsPlayListDownloader::GetMediaStreams(StreamType streamType, std::vector<S
         bool isDefault = false;
         if (streamType == StreamType::AUDIO) {
             isDefault = currentVariant_->defaultAudio_ != nullptr &&
-                       media->streamId_ == currentVariant_->defaultAudio_->streamId_;
-        } else if (streamType == StreamType::SUBTITLE) {
+                media->streamId_ == currentVariant_->defaultAudio_->streamId_;
+        }
+        if (streamType == StreamType::SUBTITLE) {
             isDefault = currentVariant_->defaultSubtitles_ != nullptr &&
-                       media->streamId_ == currentVariant_->defaultSubtitles_->streamId_;
+                media->streamId_ == currentVariant_->defaultSubtitles_->streamId_;
         }
         
         if (isDefault) {
