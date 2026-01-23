@@ -387,7 +387,8 @@ size_t CacheMediaChunkBufferImpl::Write(void* ptr, uint64_t inOffset, size_t inW
             MEDIA_LOG_D("no free chunk.");
         }
         MEDIA_LOG_D("not find fragment.");
-        chunkPos = AddFragmentCacheBuffer(offset);
+        bool ret = AddFragmentCacheBuffer(offset, chunkPos);
+        MEDIA_LOG_D("AddFragmentCacheBuffer %{public}d", ret);
     }
     FragmentIterator nextFragmentPos = fragmentCacheBuffer_.end();
     auto success = WriteMergerPre(offset, writeSize, nextFragmentPos);
@@ -435,7 +436,8 @@ size_t CacheMediaChunkBufferHlsImpl::Write(void* ptr, uint64_t inOffset, size_t 
             return 0; // 只有hls可以return 0
         }
         MEDIA_LOG_D("not find fragment.");
-        chunkPos = AddFragmentCacheBuffer(offset);
+        bool ret = AddFragmentCacheBuffer(offset, chunkPos);
+        MEDIA_LOG_D("AddFragmentCacheBuffer %{public}d", ret);
     }
     FragmentIterator nextFragmentPos = fragmentCacheBuffer_.end();
     auto success = WriteMergerPre(offset, writeSize, nextFragmentPos);
@@ -930,7 +932,7 @@ ChunkIterator CacheMediaChunkBufferHlsImpl::SplitFragmentCacheBuffer(FragmentIte
     return newFragmentPos->accessPos;
 }
 
-ChunkIterator CacheMediaChunkBufferImpl::AddFragmentCacheBuffer(uint64_t offset)
+bool CacheMediaChunkBufferImpl::AddFragmentCacheBuffer(uint64_t offset, ChunkIterator& chunkPos)
 {
     size_t fragmentThreshold = CACHE_FRAGMENT_MAX_NUM_DEFAULT;
     if (isLargeOffsetSpan_) {
@@ -962,13 +964,14 @@ ChunkIterator CacheMediaChunkBufferImpl::AddFragmentCacheBuffer(uint64_t offset)
     auto freeChunk = GetFreeCacheChunk(offset);
     if (freeChunk == nullptr) {
         MEDIA_LOG_D("get free cache chunk fail.");
-        return writePos_->chunks.end();
+        return false;
     }
     writePos_->accessPos = newFragmentPos->chunks.emplace(newFragmentPos->chunks.end(), freeChunk);
-    return writePos_->accessPos;
+    chunkPos = writePos_->accessPos;
+    return true;
 }
 
-ChunkIterator CacheMediaChunkBufferHlsImpl::AddFragmentCacheBuffer(uint64_t offset)
+bool CacheMediaChunkBufferHlsImpl::AddFragmentCacheBuffer(uint64_t offset, ChunkIterator& chunkPos)
 {
     ResetReadSizeAlloc();
     auto fragmentInsertPos = std::upper_bound(fragmentCacheBuffer_.begin(), fragmentCacheBuffer_.end(), offset,
@@ -988,10 +991,11 @@ ChunkIterator CacheMediaChunkBufferHlsImpl::AddFragmentCacheBuffer(uint64_t offs
     auto freeChunk = GetFreeCacheChunk(offset);
     if (freeChunk == nullptr) {
         MEDIA_LOG_D("get free cache chunk fail.");
-        return writePos_->chunks.end();
+        return false;
     }
     writePos_->accessPos = newFragmentPos->chunks.emplace(newFragmentPos->chunks.end(), freeChunk);
-    return writePos_->accessPos;
+    chunkPos = writePos_->accessPos;
+    return true;
 }
 
 void CacheMediaChunkBufferImpl::ResetReadSizeAlloc()

@@ -89,7 +89,7 @@ std::vector<uint8_t> Attribute::HexSequence() const
     return ret;
 }
 
-static bool SafeStringToInt(const std::string& str, int& result)
+bool Attribute::SafeStringToInt(const std::string& str, int& result)
 {
     if (str.empty()) {
         return false;
