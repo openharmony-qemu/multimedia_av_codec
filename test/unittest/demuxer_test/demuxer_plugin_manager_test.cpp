@@ -1010,6 +1010,22 @@ HWTEST_F(DemuxerPluginManagerUnitTest, Demuxer_SeekToStart_0003, TestSize.Level1
     }
 }
 
+HWTEST_F(DemuxerPluginManagerUnitTest, Demuxer_SeekToStart_0004, TestSize.Level1)
+{
+    for (auto &item : TEST_LIST) {
+        printf("#####pluginName: %s, testFile: %s#####\n", item.pluginName.c_str(), item.testFile.c_str());
+        ASSERT_EQ(CreateDemuxerPluginByName(item.pluginName.c_str(), item.testFile.c_str(), DEF_PROB_SIZE), true);
+        ASSERT_EQ(PluginSelectTracks(), true);
+        ASSERT_EQ(demuxerPlugin_->Flush(), Status::OK);
+        printf("SeekToStart:\n");
+        ASSERT_EQ(demuxerPlugin_->SeekToStart(), Status::OK);
+        ASSERT_EQ(PluginSelectTracks(), true);
+        ASSERT_EQ(PluginReadAllSample(), true);
+        EXPECT_EQ(ResultAssert(item.frameCnt, item.keyFrameCnt), true);
+        RemoveValue();
+    }
+}
+
 HWTEST_F(DemuxerPluginManagerUnitTest, SeekToKeyFrame_0001, TestSize.Level1)
 {
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEGTS, TEST_FILE_URI_MPEGTS, DEF_PROB_SIZE), true);

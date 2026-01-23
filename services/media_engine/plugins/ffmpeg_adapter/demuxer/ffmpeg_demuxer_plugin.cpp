@@ -188,6 +188,36 @@ static const std::vector<FileType> g_fileSkipGetMinTsPktInfo = {
     FileType::MPEGPS
 };
 
+template <typename T>
+typename std::enable_if<std::is_integral<T>::value && std::is_signed<T>::value, bool>::type SignedIntSafeAdd(
+    T a, T b, T& result)
+{
+    using Limits = std::numeric_limits<T>;
+    if (b > 0 && a > Limits::max() - b) {
+        return false;
+    }
+    if (b < 0 && a < Limits::min() - b) {
+        return false;
+    }
+    result = a + b;
+    return true;
+}
+
+template <typename T>
+typename std::enable_if<std::is_integral<T>::value && std::is_signed<T>::value, bool>::type SignedIntSafeSub(
+    T a, T b, T& result)
+{
+    using Limits = std::numeric_limits<T>;
+    if (b > 0 && a < Limits::min() + b) {
+        return false;
+    }
+    if (b < 0 && a > Limits::max() + b) {
+        return false;
+    }
+    result = a - b;
+    return true;
+}
+
 bool HaveValidParser(const AVCodecID codecId)
 {
     return g_streamParserMap.count(codecId) != 0;
@@ -974,7 +1004,12 @@ bool FFmpegDemuxerPlugin::WebvttPktProcess(AVPacket *pkt)
     AVPacket *firstPkt = firstWrapper != nullptr ? firstWrapper->GetAVPacket() : nullptr;
     if (firstPkt != nullptr && firstPkt->duration == 0 &&
         pkt->pts != AV_NOPTS_VALUE && firstPkt->pts != AV_NOPTS_VALUE) {
-        firstPkt->duration = pkt->pts - firstPkt->pts;
+        bool subRet = SignedIntSafeSub(pkt->pts, firstPkt->pts, firstPkt->duration);
+        if (!subRet) {
+            MEDIA_LOG_E("Failed to calculate duration");
+            av_packet_unref(pkt);
+            return true;
+        }
     }
     av_packet_unref(pkt);
     return true;
@@ -2594,7 +2629,7 @@ Status FFmpegDemuxerPlugin::ReadUntilKeyFrame(Plugins::AVPacketWrapperPtr pktWra
         if (fFlag & AV_PKT_FLAG_KEY) {
             return Status::OK;
         }
-        if (NeedCombineFrame(pktWrapper->GetStreamIndex()) &&
+        if (NeedCombineFrame(pktWrapper->GetStreamIndex()) && streamParsers_ != nullptr &&
             streamParsers_->IsSyncFrame(pktWrapper->GetStreamIndex(), pktWrapper->GetData(), pktWrapper->GetSize())) {
             return Status::OK;
         }
@@ -2628,7 +2663,9 @@ Status FFmpegDemuxerPlugin::SeekToKeyFrameCheckParam(int64_t seekTime, SeekMode 
 
     ffTime = ConvertTimeToFFmpeg(seekTime * MS_TO_NS, avStream->time_base);
     if (VideoFirstFrameValid(trackIndex)) {
-        ffTime += videoFirstFrameMap_[trackIndex]->GetDts();
+        int64_t dts = videoFirstFrameMap_[trackIndex]->GetDts();
+        bool addRet = SignedIntSafeAdd(ffTime, dts, ffTime);
+        FALSE_RETURN_V_MSG_E(addRet, Status::ERROR_INVALID_OPERATION, "Add ffTime and dts failed");
     } else {
         if (!CheckStartTime(formatContext_.get(), avStream, ffTime, seekTime)) {
             MEDIA_LOG_E("Get start time from track " PUBLIC_LOG_D32 " failed", trackIndex);
@@ -3309,6 +3346,10 @@ Status FFmpegDemuxerPlugin::SeekToStartInternal()
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     int64_t seekTs = AV_NOPTS_VALUE;
     int ffRet = -1;
+    if (!minTsPktInfo_.isUpd) {
+        MEDIA_LOG_I("minTsPktInfo_ is not upd, do not seek");
+        return Status::OK;
+    }
     SyncSeekThread();
     if (IsSkipGetMinTsPktInfo()) {
         if (fileType_ == FileType::MPEGPS || fileType_ == FileType::MPEGTS) {
@@ -3336,17 +3377,13 @@ Status FFmpegDemuxerPlugin::SeekToStart()
     MediaAVCodec::AVCodecTrace trace("SeekToStart");
     auto id = HiviewDFX::XCollie::GetInstance().SetTimer("av_codec::demuxer_seekToStart", SETTIMER_TIMEOUT,
         nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
-    if (!minTsPktInfo_.isUpd) {
-        MEDIA_LOG_I("minTsPktInfo_ is not upd, do not seek.");
-        return Status::OK;
-    }
     auto ret = SeekToStartInternal();
     if (ret != Status::OK) {
-        MEDIA_LOG_I("Use default seekto.");
+        MEDIA_LOG_I("Use default seekto");
         int64_t realSeekTime = 0;
         ret = SeekTo(SEEK_TRACK_DEFAULT, 0, SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime);
     }
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SeekToStartInternal failed.");
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SeekToStart failed");
     HiviewDFX::XCollie::GetInstance().CancelTimer(id);
     return Status::OK;
 }
