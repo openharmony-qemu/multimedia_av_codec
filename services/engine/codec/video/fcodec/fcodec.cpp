@@ -1212,7 +1212,7 @@ void FCodec::SendFrame()
     int ret = avcodec_send_packet(avCodecContext_.get(), avPacket_.get());
     sLock.unlock();
     if (ret == 0 || ret == AVERROR_INVALIDDATA) {
-        EXPECT_AND_LOGD_LIMIT_IN_TIME_WITH_TAG(ret == AVERROR_INVALIDDATA, "ffmpeg ret = %{public}s", AVStrError(ret).c_str());
+        EXPECT_AND_LOGD(ret == AVERROR_INVALIDDATA, "ffmpeg ret = %{public}s", AVStrError(ret).c_str());
         std::unique_lock<std::mutex> recvLock(recvMutex_);
         recvCv_.notify_one();
         recvLock.unlock();
