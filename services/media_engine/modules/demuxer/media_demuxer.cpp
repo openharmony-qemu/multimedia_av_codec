@@ -2785,7 +2785,6 @@ void MediaDemuxer::HandleVideoTrack(int32_t trackId)
             sampleQueueMap_[trackId]->Clear();
             sampleQueueMap_[trackId]->UpdateLastOutSamplePts(bufferMap_[trackId]->pts_);
         }
-        
     }
     lastVideoPts_ = bufferMap_[trackId]->pts_;
 }
