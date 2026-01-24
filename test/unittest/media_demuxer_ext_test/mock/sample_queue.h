@@ -91,6 +91,7 @@ public:
     MOCK_METHOD(uint32_t, GetFilledBufferSize, (), ());
     MOCK_METHOD(Status, UpdateLastOutSamplePts, (int64_t), ());
     MOCK_METHOD(Status, UpdateLastEnterSamplePts, (int64_t), ());
+    MOCK_METHOD(int64_t, GetLastEnterSamplePts, (), ());
     MOCK_METHOD(int64_t, GetLastOutSamplePts, (), ());
     MOCK_METHOD(Status, CopyBufferSlice, (std::shared_ptr<AVBuffer>&, std::shared_ptr<AVBuffer>&, int32_t), ());
     MOCK_METHOD(Status, RollbackBuffer, (std::shared_ptr<AVBuffer>&), ());
