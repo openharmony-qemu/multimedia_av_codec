@@ -16,7 +16,7 @@
  */
 
 #include "vpx_decoder_api.h"
-#include "vpx_decoder.h"
+#include "vpxDecoder.h"
 
 namespace OHOS::MediaAVCodec::Codec {
 extern "C" {
@@ -27,7 +27,7 @@ int32_t GetVpxDecoderCapabilityList(std::vector<CapabilityData> &caps)
 
 void CreateVpxDecoderByName(const std::string &name, std::shared_ptr<CodecBase> &codec)
 {
-    sptr<VpxDecoder> vpxDecoder = new (std::nothrow) VpxDecoder(name, "libvpxdec_ohos.z.so");
+    sptr<VpxDecoder> vpxDecoder = new (std::nothrow) VpxDecoder(name);
     if (vpxDecoder == nullptr || !vpxDecoder->IsValid()) {
         codec = nullptr;
         return;

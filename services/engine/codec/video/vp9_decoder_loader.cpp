@@ -16,7 +16,7 @@
 #include <dlfcn.h>
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
-#include "vpx_decoder.h"
+#include "vpxDecoder.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

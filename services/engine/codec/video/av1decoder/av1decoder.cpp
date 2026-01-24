@@ -38,11 +38,6 @@ namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "Av1DecoderLoader"};
-const char *AV1_DEC_CREATE_DECODER_FUNC_NAME = "dav1d_create_decoder_api";
-const char *AV1_DEC_DECODE_FRAME_FUNC_NAME = "dav1d_codec_decode_api";
-const char *AV1_DEC_GET_FRAME_FUNC_NAME = "dav1d_codec_get_frame_api";
-const char *AV1_DEC_PICTURE_UNREF_FUNC_NAME = "dav1d_picture_unref";
-const char *AV1_DEC_DELETE_FUNC_NAME = "dav1d_destroy_decoder_api";
 
 constexpr struct {
     const std::string_view codecName;
@@ -65,9 +60,10 @@ constexpr uint32_t DEFAULT_TRY_DECODE_TIME = 1;
 constexpr uint32_t INDEX_INPUT = 0;
 constexpr uint32_t INDEX_OUTPUT = 1;
 constexpr int32_t VIDEO_MAX_FRAMERATE = 300;
+constexpr int32_t DAV1D_AGAIN = -11;
 using namespace OHOS::Media;
 
-Av1Decoder::Av1Decoder(const std::string &name, const std::string &path) : VideoDecoder(name, path)
+Av1Decoder::Av1Decoder(const std::string &name) : VideoDecoder(name)
 {
     AVCODEC_SYNC_TRACE;
     std::unique_lock<std::mutex> lock(decoderCountMutex_);
@@ -85,24 +81,19 @@ Av1Decoder::Av1Decoder(const std::string &name, const std::string &path) : Video
     lock.unlock();
 
     if (decInstanceID_ < VIDEO_INSTANCE_SIZE) {
-        handle_ = dlopen(libPath_.c_str(), RTLD_LAZY);
-        if (handle_ == nullptr) {
-            AVCODEC_LOGE("Load codec failed: %{public}s", libPath_.c_str());
-            isValid_ = false;
-        }
-        DecoderFuncMatch();
         AVCODEC_LOGI("Num %{public}u Decoder entered, state: Uninitialized", decInstanceID_);
     } else {
         AVCODEC_LOGE("Decoder already has %{public}d instances, cannot has more instances", VIDEO_INSTANCE_SIZE);
         isValid_ = false;
     }
+    InitParams();
+    renderSurface_ = std::make_shared<RenderSurface>();
 }
 
 Av1Decoder::~Av1Decoder()
 {
     ReleaseResource();
     callback_ = nullptr;
-    ReleaseHandle();
     if (decInstanceID_ < VIDEO_INSTANCE_SIZE) {
         std::lock_guard<std::mutex> lock(decoderCountMutex_);
         freeIDSet_.push_back(decInstanceID_);
@@ -168,52 +159,6 @@ void Av1Decoder::ConfigurelWidthAndHeight(const Format &format, const std::strin
     }
 }
 
-void Av1Decoder::DecoderFuncMatch()
-{
-    if (handle_ != nullptr) {
-        std::unique_lock<std::mutex> runlock(decRunMutex_);
-        av1DecoderCreateFunc_ = reinterpret_cast<Av1CreateDecoderFuncType>(dlsym(handle_,
-            AV1_DEC_CREATE_DECODER_FUNC_NAME));
-        av1DecoderFrameFunc_ = reinterpret_cast<Av1DecodeFrameFuncType>(dlsym(handle_,
-            AV1_DEC_DECODE_FRAME_FUNC_NAME));
-        av1DecoderGetFrameFunc_ = reinterpret_cast<Av1GetFrameFuncType>(dlsym(handle_,
-            AV1_DEC_GET_FRAME_FUNC_NAME));
-        av1DecoderPictureUnrefFunc_ = reinterpret_cast<Av1PictureUnrefFuncType>(dlsym(handle_,
-            AV1_DEC_PICTURE_UNREF_FUNC_NAME));
-        av1DecoderDestroyFunc_ = reinterpret_cast<Av1DestroyDecoderFuncType>(dlsym(handle_,
-            AV1_DEC_DELETE_FUNC_NAME));
-        if (av1DecoderCreateFunc_ == nullptr || av1DecoderFrameFunc_ == nullptr ||
-            av1DecoderGetFrameFunc_ == nullptr || av1DecoderPictureUnrefFunc_ == nullptr ||
-            av1DecoderDestroyFunc_ == nullptr) {
-                AVCODEC_LOGE("Av1Decoder av1 DecoderFuncMatch failed!");
-                ReleaseHandle();
-        }
-    }
-
-    InitParams();
-    renderSurface_ = std::make_shared<RenderSurface>();
-}
-
-void Av1Decoder::ReleaseHandle()
-{
-    std::unique_lock<std::mutex> runLock(decRunMutex_);
-    av1DecoderCreateFunc_ = nullptr;
-    av1DecoderFrameFunc_ = nullptr;
-    av1DecoderGetFrameFunc_ = nullptr;
-    av1DecoderPictureUnrefFunc_ = nullptr;
-    av1DecoderDestroyFunc_ = nullptr;
-    if (handle_ != nullptr) {
-        dlclose(handle_);
-        handle_ = nullptr;
-    }
-    runLock.unlock();
-
-    if (sInfo_.surface != nullptr) {
-        UnRegisterListenerToSurface(sInfo_.surface);
-        StopRequestSurfaceBufferThread();
-    }
-}
-
 int32_t Av1Decoder::Initialize()
 {
     AVCODEC_SYNC_TRACE;
@@ -244,11 +189,17 @@ int32_t Av1Decoder::CreateDecoder()
 {
     std::unique_lock<std::mutex> runLock(decRunMutex_);
     int32_t createRet = 0;
-    if (av1DecHandle_ == nullptr && av1DecoderCreateFunc_ != nullptr) {
-        createRet = av1DecoderCreateFunc_(&av1DecHandle_, AV1DecLog);
+    if (dav1dCtx_ == nullptr) {
+        Dav1dSettings dav1dSettings;
+        dav1d_default_settings(&dav1dSettings);
+        dav1dSettings.logger.callback = AV1DecLog;
+        dav1dSettings.n_threads = 2; // 2 threads
+        dav1dSettings.max_frame_delay = 1;
+        dav1dSettings.apply_grain = 1;
+        createRet = dav1d_open(&dav1dCtx_, &dav1dSettings);
     }
     runLock.unlock();
-    CHECK_AND_RETURN_RET_LOG(createRet == 0 && av1DecHandle_ != nullptr, AVCS_ERR_INVALID_OPERATION,
+    CHECK_AND_RETURN_RET_LOG(createRet >= 0 && dav1dCtx_ != nullptr, AVCS_ERR_INVALID_OPERATION,
                              "av1 decoder create failed");
     return AVCS_ERR_OK;
 }
@@ -256,10 +207,10 @@ int32_t Av1Decoder::CreateDecoder()
 void Av1Decoder::DeleteDecoder()
 {
     std::unique_lock<std::mutex> runLock(decRunMutex_);
-    if (av1DecHandle_ != nullptr && av1DecoderDestroyFunc_ != nullptr) {
-        av1DecoderDestroyFunc_(&av1DecHandle_);
+    if (dav1dCtx_ != nullptr) {
+        dav1d_close(&dav1dCtx_);
     }
-    av1DecHandle_ = nullptr;
+    dav1dCtx_ = nullptr;
     runLock.unlock();
 }
 
@@ -394,23 +345,25 @@ void Av1Decoder::SendFrame()
 int32_t Av1Decoder::DecodeAv1FrameOnce()
 {
     int32_t ret = 0;
-    if (av1DecHandle_ != nullptr && av1DecoderFrameFunc_ != nullptr) {
+    if (dav1dCtx_ != nullptr) {
         if (!isSendEos_) {
-            ret = av1DecoderFrameFunc_(av1DecHandle_, av1DecoderInputArgs_.pStream, av1DecoderInputArgs_.uiStreamLen,
-                                       av1DecoderInputArgs_.uiTimeStamp);
+            Dav1dData dav1dDataBuf;
+            ret = dav1d_data_wrap(&dav1dDataBuf, av1DecoderInputArgs_.pStream, av1DecoderInputArgs_.uiStreamLen,
+                                  Av1FreeCallback, nullptr);
+            CHECK_AND_RETURN_RET_LOG(ret >= 0, ret, "feed av1 input stream failed!");
+            dav1dDataBuf.m.timestamp = av1DecoderInputArgs_.uiTimeStamp;
+            ret = dav1d_send_data(dav1dCtx_, &dav1dDataBuf);
+            if (dav1dDataBuf.sz > 0) {
+                dav1d_data_unref(&dav1dDataBuf);
+            }
         }
-    } else {
-        AVCODEC_LOGE("load libdav1d.z.so failed, send data to av1 decoder failed.");
-        ret = -1;
-    }
-    if (av1DecHandle_ != nullptr && av1DecoderGetFrameFunc_ != nullptr && av1DecoderPictureUnrefFunc_ != nullptr) {
-        ret = av1DecoderGetFrameFunc_(av1DecHandle_, av1DecOutputImg_);
-        if (ret < 0 && ret != -EAGAIN) {
-            av1DecoderPictureUnrefFunc_(av1DecOutputImg_);
+        ret = dav1d_get_picture(dav1dCtx_, av1DecOutputImg_);
+        if (ret < 0 && ret != DAV1D_AGAIN) {
+            dav1d_picture_unref(av1DecOutputImg_);
             av1DecOutputImg_ = nullptr;
         }
     } else {
-        AVCODEC_LOGE("load libdav1d.z.so failed, get generated picture form av1 decoder failed.");
+        AVCODEC_LOGE("dav1d decoder is null, send data to av1 decoder failed.");
         ret = -1;
     }
     return ret;
@@ -419,8 +372,8 @@ int32_t Av1Decoder::DecodeAv1FrameOnce()
 bool Av1Decoder::CheckStateRunning()
 {
     if (state_ != State::RUNNING) {
-        if (av1DecOutputImg_ != nullptr && av1DecoderPictureUnrefFunc_ != nullptr) {
-            av1DecoderPictureUnrefFunc_(av1DecOutputImg_);
+        if (av1DecOutputImg_ != nullptr) {
+            dav1d_picture_unref(av1DecOutputImg_);
             delete av1DecOutputImg_;
             av1DecOutputImg_ = nullptr;
         }
@@ -455,8 +408,8 @@ int32_t Av1Decoder::DecodeFrameOnce()
             CHECK_AND_RETURN_RET_LOG(CheckStateRunning(), -1, "Not in running state");
             callback_->OnError(AVCODEC_ERROR_EXTEND_START, AVCS_ERR_NO_MEMORY);
             state_ = State::ERROR;
-            if (av1DecOutputImg_ != nullptr && av1DecoderPictureUnrefFunc_ != nullptr) {
-                av1DecoderPictureUnrefFunc_(av1DecOutputImg_);
+            if (av1DecOutputImg_ != nullptr) {
+                dav1d_picture_unref(av1DecOutputImg_);
                 delete av1DecOutputImg_;
                 av1DecOutputImg_ = nullptr;
             }
@@ -465,8 +418,8 @@ int32_t Av1Decoder::DecodeFrameOnce()
         frameBuffer->avBuffer->flag_ = AVCODEC_BUFFER_FLAG_NONE;
         FramePostProcess(frameBuffer, index, status);
     }
-    if (av1DecOutputImg_ != nullptr && av1DecoderPictureUnrefFunc_ != nullptr) {
-        av1DecoderPictureUnrefFunc_(av1DecOutputImg_);
+    if (av1DecOutputImg_ != nullptr) {
+        dav1d_picture_unref(av1DecOutputImg_);
         delete av1DecOutputImg_;
         av1DecOutputImg_ = nullptr;
     }
@@ -579,9 +532,10 @@ void Av1Decoder::FlushAllFrames()
     while (ret == 0) {
         Dav1dPicture pic = { 0 };
         Dav1dPicture *outputImg = &pic;
-        if (av1DecHandle_ != nullptr && av1DecoderGetFrameFunc_ != nullptr && av1DecoderPictureUnrefFunc_ != nullptr) {
-            ret = av1DecoderGetFrameFunc_(av1DecHandle_, outputImg);
-            av1DecoderPictureUnrefFunc_(outputImg);
+        if (dav1dCtx_ != nullptr) {
+            ret = dav1d_get_picture(dav1dCtx_, av1DecOutputImg_);
+            dav1d_picture_unref(av1DecOutputImg_);
+            av1DecOutputImg_ = nullptr;
         } else {
             AVCODEC_LOGE("load libdav1d.z.so failed, get generated picture form av1 decoder failed.");
             ret = -1;
@@ -591,46 +545,8 @@ void Av1Decoder::FlushAllFrames()
     runlock.unlock();
 }
 
-int32_t Av1Decoder::CheckAv1DecLibStatus()
-{
-    void* handle = dlopen("libdav1d.z.so", RTLD_LAZY);
-    if (handle != nullptr) {
-        auto av1DecoderCreateFunc = reinterpret_cast<Av1CreateDecoderFuncType>(
-            dlsym(handle, AV1_DEC_CREATE_DECODER_FUNC_NAME));
-        auto av1DecoderDecodeFrameFunc = reinterpret_cast<Av1DecodeFrameFuncType>(
-            dlsym(handle, AV1_DEC_DECODE_FRAME_FUNC_NAME));
-        auto av1DecoderGetFrameFunc = reinterpret_cast<Av1GetFrameFuncType>(
-            dlsym(handle, AV1_DEC_GET_FRAME_FUNC_NAME));
-        auto av1DecoderPictureUnrefFunc = reinterpret_cast<Av1PictureUnrefFuncType>(
-            dlsym(handle, AV1_DEC_PICTURE_UNREF_FUNC_NAME));
-        auto av1DecoderDestroyFunc = reinterpret_cast<Av1DestroyDecoderFuncType>(
-            dlsym(handle, AV1_DEC_DELETE_FUNC_NAME));
-        if (av1DecoderCreateFunc == nullptr || av1DecoderDecodeFrameFunc == nullptr ||
-            av1DecoderGetFrameFunc == nullptr || av1DecoderPictureUnrefFunc == nullptr ||
-            av1DecoderDestroyFunc == nullptr) {
-                AVCODEC_LOGE("Av1Decoder av1FuncMatch_ failed!");
-                av1DecoderCreateFunc = nullptr;
-                av1DecoderDecodeFrameFunc = nullptr;
-                av1DecoderGetFrameFunc = nullptr;
-                av1DecoderPictureUnrefFunc = nullptr;
-                av1DecoderDestroyFunc = nullptr;
-                dlclose(handle);
-                handle = nullptr;
-        }
-    }
-    if (handle == nullptr) {
-        return AVCS_ERR_UNSUPPORT;
-    }
-    dlclose(handle);
-    handle = nullptr;
-
-    return AVCS_ERR_OK;
-}
-
 int32_t Av1Decoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
 {
-    CHECK_AND_RETURN_RET_LOG(CheckAv1DecLibStatus() == AVCS_ERR_OK, AVCS_ERR_UNSUPPORT,
-                             "av1 decoder libs not available");
     for (uint32_t i = 0; i < SUPPORT_AV1_DECODER_NUM; ++i) {
         CapabilityData capsData;
         capsData.codecName = static_cast<std::string>(SUPPORT_AV1_DECODER[i].codecName);
@@ -693,6 +609,12 @@ void AV1DecLog(void *cookie, const char *format, va_list ap)
     }
     auto msg = std::string(buf.data(), size);
     AVCODEC_LOGI("%{public}s", msg.c_str());
+}
+
+void Av1FreeCallback(const uint8_t *data, void *userData)
+{
+    (void)data;
+    (void)userData;
 }
 } // namespace Codec
 } // namespace MediaAVCodec
