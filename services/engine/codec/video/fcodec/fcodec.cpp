@@ -1212,7 +1212,7 @@ void FCodec::SendFrame()
     int ret = avcodec_send_packet(avCodecContext_.get(), avPacket_.get());
     sLock.unlock();
     if (ret == 0 || ret == AVERROR_INVALIDDATA) {
-        EXPECT_AND_LOGW(ret == AVERROR_INVALIDDATA, "ffmpeg ret = %{public}s", AVStrError(ret).c_str());
+        EXPECT_AND_LOGD_LIMIT_IN_TIME_WITH_TAG(ret == AVERROR_INVALIDDATA, "ffmpeg ret = %{public}s", AVStrError(ret).c_str());
         std::unique_lock<std::mutex> recvLock(recvMutex_);
         recvCv_.notify_one();
         recvLock.unlock();
@@ -1230,8 +1230,7 @@ void FCodec::SendFrame()
         isSendWait_ = true;
         sendCv_.wait_for(sendLock, std::chrono::milliseconds(DEFAULT_DECODE_WAIT_TIME));
     } else {
-        AVCODEC_LOGE_LIMIT(
-            LOG_FREQUENCE, "Cannot send frame to codec: ffmpeg ret = %{public}s", AVStrError(ret).c_str());
+        AVCODEC_LOGE("Cannot send frame to codec: ffmpeg ret = %{public}s", AVStrError(ret).c_str());
         callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
         state_ = State::ERROR;
     }
@@ -1376,8 +1375,7 @@ void FCodec::ReceiveFrame()
         recvCv_.wait_for(recvLock, std::chrono::milliseconds(DEFAULT_DECODE_WAIT_TIME));
         return;
     } else {
-        AVCODEC_LOGE_LIMIT(
-            LOG_FREQUENCE, "Cannot recv frame from codec: ffmpeg ret = %{public}s", AVStrError(ret).c_str());
+        AVCODEC_LOGE("Cannot recv frame from codec: ffmpeg ret = %{public}s", AVStrError(ret).c_str());
         callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
         state_ = State::ERROR;
         return;
