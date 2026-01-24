@@ -388,7 +388,9 @@ size_t CacheMediaChunkBufferImpl::Write(void* ptr, uint64_t inOffset, size_t inW
         }
         MEDIA_LOG_D("not find fragment.");
         bool ret = AddFragmentCacheBuffer(offset, chunkPos);
-        MEDIA_LOG_D("AddFragmentCacheBuffer %{public}d", ret);
+        if (!ret) {
+            return dupWriteSize;	 
+        }
     }
     FragmentIterator nextFragmentPos = fragmentCacheBuffer_.end();
     auto success = WriteMergerPre(offset, writeSize, nextFragmentPos);
@@ -437,7 +439,9 @@ size_t CacheMediaChunkBufferHlsImpl::Write(void* ptr, uint64_t inOffset, size_t 
         }
         MEDIA_LOG_D("not find fragment.");
         bool ret = AddFragmentCacheBuffer(offset, chunkPos);
-        MEDIA_LOG_D("AddFragmentCacheBuffer %{public}d", ret);
+        if (!ret) {
+            return dupWriteSize;	 
+        }
     }
     FragmentIterator nextFragmentPos = fragmentCacheBuffer_.end();
     auto success = WriteMergerPre(offset, writeSize, nextFragmentPos);
