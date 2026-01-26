@@ -156,8 +156,10 @@ group("av_codec_unit_test") {
         "unittest/sample_queue_unit_test:sample_queue_test",
         "unittest/sample_queue_controller_unit_test:sample_queue_controller_unit_test",
         "unittest/source_test:source_unit_test",
+        "unittest/source_unit_test:source_test",
         "unittest/subtitle_sink_unittest:subtitle_sink_unittest",
         "unittest/surface_encoder_adapter_unittest:surface_encoder_adapter_unittest",
+        "unittest/video_resize_filter_test:video_resize_filter_test",
         "unittest/video_sink_unittest:video_sink_unittest",
       ]
       if (av_codec_support_hcodec) {
