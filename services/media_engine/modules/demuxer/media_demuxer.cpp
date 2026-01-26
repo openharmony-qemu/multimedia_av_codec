@@ -61,8 +61,7 @@ static constexpr char PERFORMANCE_STATS[] = "PERFORMANCE";
 static constexpr int32_t INVALID_STREAM_OR_TRACK_ID = -1;
 static constexpr int32_t SKIP_NEXT_OPEN_GOP_CNT = 2;
 constexpr uint32_t THREAD_PRIORITY_41 = 7;
-constexpr uint32_t MAX_VIDEO_LEAD_TIME_ON_MUTE_US = 34000; // Maximum video frame advance time during video mute
-constexpr uint32_t SAMPLE_QUEUE_SIZE_ON_MUTE = 50; // After video mute, sampleSize increases to 50
+constexpr uint32_t MAX_VIDEO_LEAD_TIME_ON_MUTE_US = 10000000; // Maximum video frame advance time during video mute
 constexpr uint32_t SAMPLE_QUEUE_ADD_SIZE_ON_MUTE = 20; // When samplequeue is full on mute, samplequeue size add 20
 std::map<OHOS::Media::TrackType, OHOS::Media::StreamType> TRACK_TO_STREAM_MAP = {
     {OHOS::Media::TrackType::TRACK_VIDEO, OHOS::Media::StreamType::VIDEO},
@@ -2486,10 +2485,7 @@ bool MediaDemuxer::GetBufferFromUserQueue(int32_t queueIndex, int32_t size)
     }
     bool needSetSmallerSize = queueIndex == videoTrackId_ && hasSetLargeSize_ && !isVideoMuted_ && !needRestore_;
     if (needSetSmallerSize && sampleQueueMap_[queueIndex]->IsEmpty()) {
-        sampleQueueMap_[queueIndex]->SetLargerQueueSize(SampleQueue::MAX_SAMPLE_QUEUE_SIZE);
         hasSetLargeSize_ = false;
-    } else if (needSetSmallerSize) {
-        return false;
     }
     bool needControlRead = !HasEosTrack() && queueIndex == videoTrackId_ && (isVideoMuted_ || needRestore_);
     if (needControlRead) {
@@ -2782,11 +2778,13 @@ void MediaDemuxer::HandleVideoTrack(int32_t trackId)
                 sampleConsumerTaskMap_[videoTrackId_]->Pause();
             }
             if (!hasSetLargeSize_) {
-                sampleQueueMap_[videoTrackId_]->SetLargerQueueSize(SAMPLE_QUEUE_SIZE_ON_MUTE);
                 hasSetLargeSize_ = true;
             }
         }
-        sampleQueueMap_[trackId]->Clear();
+        if (bufferMap_[trackId]->pts_ <= sampleQueueMap_[audioTrackId_]->GetLastOutSamplePts()) {
+            sampleQueueMap_[trackId]->Clear();
+            sampleQueueMap_[trackId]->UpdateLastOutSamplePts(bufferMap_[trackId]->pts_);
+        }
     }
     lastVideoPts_ = bufferMap_[trackId]->pts_;
 }
@@ -3096,6 +3094,10 @@ Status MediaDemuxer::CopyFrameToUserQueue(int32_t trackId)
 void MediaDemuxer::StartConsume(int32_t trackId)
 {
     bool startConsumeResult = false;
+    if (trackId == videoTrackId_ && isVideoMuted_) {
+        SetTrackIsBuffering(trackId, false);
+        return;
+    }
     {
         AutoLock lock(mapMutex_);
         startConsumeResult = sampleQueueController_->ShouldStartConsume(trackId, sampleQueueMap_[trackId],
@@ -3136,11 +3138,14 @@ void MediaDemuxer::StartConsume(int32_t trackId)
 
 void MediaDemuxer::ProduceWaterLoopControl(int32_t trackId)
 {
-    if (!sampleQueueController_ || trackId == subtitleTrackId_ || isVideoMuted_ || IsLocalFd()
+    if (!sampleQueueController_ || trackId == subtitleTrackId_ || IsLocalFd()
         || !GetEnableSampleQueueFlag()) {
         return;
     }
     StartConsume(trackId);
+    if (trackId == videoTrackId_ && isVideoMuted_) {
+        return;
+    }
     {
         AutoLock lock(mapMutex_);
         sampleQueueController_->ShouldStopProduce(trackId, sampleQueueMap_[trackId], taskMap_[trackId]);
