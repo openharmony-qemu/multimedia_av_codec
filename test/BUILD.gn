@@ -155,6 +155,7 @@ group("av_codec_unit_test") {
         "unittest/sample_queue_test:sample_queue_unit_test",
         "unittest/sample_queue_unit_test:sample_queue_test",
         "unittest/sample_queue_controller_unit_test:sample_queue_controller_unit_test",
+        "unittest/sei_parser_helper_unittest:sei_parser_helper_unittest",
         "unittest/source_test:source_unit_test",
         "unittest/subtitle_sink_unittest:subtitle_sink_unittest",
         "unittest/surface_encoder_adapter_unittest:surface_encoder_adapter_unittest",
