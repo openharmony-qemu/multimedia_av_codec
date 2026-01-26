@@ -4805,7 +4805,7 @@ uint32_t MediaDemuxer::GetTrackNeedDropFrame(int32_t trackId)
     return frameCountNeedDrop_[trackId];
 }
 
-void MediaDemuxer::SetTrackIsBuffering(int32_t trackId, uint32_t frameCount)
+void MediaDemuxer::SetTrackNeedDropFrame(int32_t trackId, uint32_t frameCount)
 {
     std::lock_guard<std::mutex> lock(bufferingMapMutex_);
     frameCountNeedDrop_[trackId] = frameCount;
