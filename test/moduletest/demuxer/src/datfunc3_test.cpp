@@ -179,8 +179,58 @@ static void CreateUriSource(const char *uri)
     source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
 }
 
+static void Create(seekInfo seekInfo)
+{
+    if (memory == nullptr) {
+        memory = OH_AVMemory_Create(g_width * g_height);
+        g_trackCount = 0;
+    }
+    if (source == nullptr && ((strstr(seekInfo.fileName, "http") != nullptr))) {
+        CreateUriSource(seekInfo.fileName);
+    } else if (source == nullptr && ((strstr(seekInfo.fileName, "http") == nullptr))) {
+        CreateFdSource(seekInfo.fileName);
+    }
+}
+
+static void Destroy()
+{
+    if (trackFormat != nullptr) {
+        OH_AVFormat_Destroy(trackFormat);
+        trackFormat = nullptr;
+    }
+    if (sourceFormat != nullptr) {
+        OH_AVFormat_Destroy(sourceFormat);
+        sourceFormat = nullptr;
+    }
+    if (format != nullptr) {
+        OH_AVFormat_Destroy(format);
+        format = nullptr;
+    }
+    if (memory != nullptr) {
+        OH_AVMemory_Destroy(memory);
+        memory = nullptr;
+    }
+    if (source != nullptr) {
+        OH_AVSource_Destroy(source);
+        source = nullptr;
+    }
+    if (demuxer != nullptr) {
+        OH_AVDemuxer_Destroy(demuxer);
+        demuxer = nullptr;
+    }
+    if (avBuffer != nullptr) {
+        OH_AVBuffer_Destroy(avBuffer);
+        avBuffer = nullptr;
+    }
+    if (g_fd > 0) {
+        close(g_fd);
+        g_fd = -1;
+    }
+}
+
 static void CheckSeekMode(seekInfo seekInfo)
 {
+    Create(seekInfo);
     int tarckType = 0;
     OH_AVCodecBufferAttr attr;
     ASSERT_NE(source, nullptr);
@@ -200,7 +250,8 @@ static void CheckSeekMode(seekInfo seekInfo)
         ASSERT_NE(trackFormat, nullptr);
         ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, seekInfo.millisecond, seekInfo.seekmode));
-        
+        OH_AVFormat_Destroy(trackFormat);
+        trackFormat = nullptr;
         bool readEnd = false;
         int32_t frameNum = 0;
         while (!readEnd) {
@@ -220,6 +271,7 @@ static void CheckSeekMode(seekInfo seekInfo)
             ASSERT_EQ(seekInfo.audioCount, frameNum);
         }
     }
+    Destroy();
 }
 
 static void SetAudioValue(OH_AVCodecBufferAttr attr, bool &audioIsEnd, int &audioFrame, int &aKeyCount)
@@ -292,6 +344,7 @@ static void DemuxerResult(int audioFramesCount)
 
     cout << "Audio key frames:" << aKeyCount << " | Video key frames:" << vKeyCount << endl;
     ASSERT_EQ(audioFramesCount, audioFrame);
+    Destroy();
 }
 /**
  * @tc.number    : DEMUXER_DAT_FUNC_0610
@@ -698,7 +751,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0790, TestSize.Level2)
     DemuxerResult(9150);
     seekInfo fileTestDirPrevious{INP_DIR_5, SEEK_MODE_PREVIOUS_SYNC, 0, 0, 9150};
     seekInfo fileTestDirClosest{INP_DIR_5, SEEK_MODE_CLOSEST_SYNC, 109800, 0, 4575};
-    seekInfo fileTestDirNext{INP_DIR_5, SEEK_MODE_NEXT_SYNC, 219576, 0, 1};
+    seekInfo fileTestDirNext{INP_DIR_5, SEEK_MODE_NEXT_SYNC, 219576, 0, 15};
     CheckSeekMode(fileTestDirPrevious);
     CheckSeekMode(fileTestDirClosest);
     CheckSeekMode(fileTestDirNext);
@@ -717,7 +770,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0800, TestSize.Level2)
     DemuxerResult(9150);
     seekInfo fileTestUriPrevious{INP_URI_5, SEEK_MODE_PREVIOUS_SYNC, 0, 0, 9150};
     seekInfo fileTestUriClosest{INP_URI_5, SEEK_MODE_CLOSEST_SYNC, 109800, 0, 4575};
-    seekInfo fileTestUriNext{INP_URI_5, SEEK_MODE_NEXT_SYNC, 219576, 0, 1};
+    seekInfo fileTestUriNext{INP_URI_5, SEEK_MODE_NEXT_SYNC, 219576, 0, 15};
     CheckSeekMode(fileTestUriPrevious);
     CheckSeekMode(fileTestUriClosest);
     CheckSeekMode(fileTestUriNext);
@@ -783,8 +836,8 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0830, TestSize.Level2)
     CreateFdSource(INP_DIR_6);
     DemuxerResult(2288);
     seekInfo fileTestDirPrevious{INP_DIR_6, SEEK_MODE_PREVIOUS_SYNC, 0, 0, 2288};
-    seekInfo fileTestDirClosest{INP_DIR_6, SEEK_MODE_CLOSEST_SYNC, 109824, 0, 1144};
-    seekInfo fileTestDirNext{INP_DIR_6, SEEK_MODE_NEXT_SYNC, 219552, 0, 1};
+    seekInfo fileTestDirClosest{INP_DIR_6, SEEK_MODE_CLOSEST_SYNC, 109824, 0, 1145};
+    seekInfo fileTestDirNext{INP_DIR_6, SEEK_MODE_NEXT_SYNC, 219552, 0, 2};
     CheckSeekMode(fileTestDirPrevious);
     CheckSeekMode(fileTestDirClosest);
     CheckSeekMode(fileTestDirNext);
@@ -802,8 +855,8 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0840, TestSize.Level2)
     CreateUriSource(INP_URI_6);
     DemuxerResult(2288);
     seekInfo fileTestUriPrevious{INP_URI_6, SEEK_MODE_PREVIOUS_SYNC, 0, 0, 2288};
-    seekInfo fileTestUriClosest{INP_URI_6, SEEK_MODE_CLOSEST_SYNC, 109824, 0, 1144};
-    seekInfo fileTestUriNext{INP_URI_6, SEEK_MODE_NEXT_SYNC, 219552, 0, 1};
+    seekInfo fileTestUriClosest{INP_URI_6, SEEK_MODE_CLOSEST_SYNC, 109824, 0, 1145};
+    seekInfo fileTestUriNext{INP_URI_6, SEEK_MODE_NEXT_SYNC, 219552, 0, 2};
     CheckSeekMode(fileTestUriPrevious);
     CheckSeekMode(fileTestUriClosest);
     CheckSeekMode(fileTestUriNext);
@@ -870,7 +923,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0870, TestSize.Level2)
     DemuxerResult(11439);
     seekInfo fileTestDirPrevious{INP_DIR_7, SEEK_MODE_PREVIOUS_SYNC, 0, 0, 11439};
     seekInfo fileTestDirClosest{INP_DIR_7, SEEK_MODE_CLOSEST_SYNC, 104726, 0, 5724};
-    seekInfo fileTestDirNext{INP_DIR_7, SEEK_MODE_NEXT_SYNC, 219545, 0, 19};
+    seekInfo fileTestDirNext{INP_DIR_7, SEEK_MODE_NEXT_SYNC, 219545, 0, 66};
     CheckSeekMode(fileTestDirPrevious);
     CheckSeekMode(fileTestDirClosest);
     CheckSeekMode(fileTestDirNext);
@@ -889,7 +942,7 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0880, TestSize.Level2)
     DemuxerResult(11439);
     seekInfo fileTestUriPrevious{INP_URI_7, SEEK_MODE_PREVIOUS_SYNC, 0, 0, 11439};
     seekInfo fileTestUriClosest{INP_URI_7, SEEK_MODE_CLOSEST_SYNC, 104726, 0, 5724};
-    seekInfo fileTestUriNext{INP_URI_7, SEEK_MODE_NEXT_SYNC, 219545, 0, 19};
+    seekInfo fileTestUriNext{INP_URI_7, SEEK_MODE_NEXT_SYNC, 219545, 0, 66};
     CheckSeekMode(fileTestUriPrevious);
     CheckSeekMode(fileTestUriClosest);
     CheckSeekMode(fileTestUriNext);
