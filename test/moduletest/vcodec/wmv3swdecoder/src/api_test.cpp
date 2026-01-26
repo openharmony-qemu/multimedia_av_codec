@@ -2833,5 +2833,4 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_CAPABILITY_CONIFG_1000, TestSize.Level2)
     OH_VideoDecoder_Destroy(vdec);
     OH_AVFormat_Destroy(format);
 }
-
 }  // namespace

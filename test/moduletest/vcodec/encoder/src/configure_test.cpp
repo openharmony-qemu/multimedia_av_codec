@@ -354,14 +354,13 @@ HWTEST_F(HwEncConfigureNdkTest, VIDEO_CAPABILITY_CONIFG_1000, TestSize.Level2)
     OH_AVRange heightRange;
     memset_s(&widthRange, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
     memset_s(&heightRange, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability  *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
+    OH_AVCapability  *capability = OH_AVCodec_GetCapabilityByCategory(
+        OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
     if (capability == nullptr) {
         return;
     }
     ret = OH_AVCapability_GetVideoWidthRange(capability, &widthRange);
     ret = OH_AVCapability_GetVideoHeightRange(capability, &heightRange);
-    cout  << "width minval=" << widthRange.minVal << "   width maxval=" << widthRange.maxVal << endl;
-    cout  << "height minval=" << heightRange.minVal << "   height maxval=" << heightRange.maxVal << endl;
     ASSERT_EQ(AV_ERR_OK, ret);
     ASSERT_GE(widthRange.minVal, 0);
     ASSERT_GE(widthRange.maxVal, 0);
@@ -411,14 +410,13 @@ HWTEST_F(HwEncConfigureNdkTest, VIDEO_CAPABILITY_CONIFG_2000, TestSize.Level2)
     OH_AVRange heightRange;
     memset_s(&widthRange, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
     memset_s(&heightRange, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability  *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
+    OH_AVCapability  *capability = OH_AVCodec_GetCapabilityByCategory(
+        OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
     if (capability == nullptr) {
         return;
     }
     ret = OH_AVCapability_GetVideoWidthRange(capability, &widthRange);
     ret = OH_AVCapability_GetVideoHeightRange(capability, &heightRange);
-    cout  << "width minval=" << widthRange.minVal << "   width maxval=" << widthRange.maxVal << endl;
-    cout  << "height minval=" << heightRange.minVal << "   height maxval=" << heightRange.maxVal << endl;
     ASSERT_EQ(AV_ERR_OK, ret);
     ASSERT_GE(widthRange.minVal, 0);
     ASSERT_GE(widthRange.maxVal, 0);
@@ -455,6 +453,4 @@ HWTEST_F(HwEncConfigureNdkTest, VIDEO_CAPABILITY_CONIFG_2000, TestSize.Level2)
     OH_VideoEncoder_Destroy(vdec);
     OH_AVFormat_Destroy(encodeFormat);
 }
-
-
 }
