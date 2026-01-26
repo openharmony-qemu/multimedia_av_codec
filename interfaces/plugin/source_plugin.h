@@ -308,11 +308,6 @@ public:
     {
         return false;
     }
-
-    virtual bool IsCloudFd()
-    {
-        return false;
-    }
 };
 
 /// Source plugin api major number.

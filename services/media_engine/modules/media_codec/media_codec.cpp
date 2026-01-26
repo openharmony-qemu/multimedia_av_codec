@@ -1205,12 +1205,12 @@ uint32_t MediaCodec::GetApiVersion()
 Status MediaCodec::CodePluginInputBuffer(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
     AutoLock pluginLock(codecPluginMutex_);
-    if (codecPlugin_ != nullptr) {
+    if (inputBuffer && codecPlugin_ != nullptr) {
         MEDIA_TRACE_DEBUG(std::string("MediaCodec::CodePluginInputBuffer-QueueInputBuffer:") +
             std::to_string(inputBuffer->flag_) + "," + std::to_string(inputBuffer->pts_) +
             "," + std::to_string(inputBuffer->duration_));
 
-        if (inputBuffer && inputBuffer->memory_) {
+        if (inputBuffer->memory_) {
             ++inputCount_;
             inputBytesSum_ += inputBuffer->memory_->GetSize();
         }

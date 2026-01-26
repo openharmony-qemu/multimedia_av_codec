@@ -22,7 +22,7 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
-    constexpr int RETRY_TIMES_TO_REPORT_ERROR = 10;
+    constexpr int RETRY_TIMES_TO_REPORT_ERROR = 200;
     constexpr int APP_DOWNLOAD_RETRY_TIMES = 60;
     constexpr int SERVER_ERROR_THRESHOLD = 500;
     constexpr int32_t READ_LOG_FEQUENCE = 50;
@@ -41,6 +41,7 @@ namespace {
         56,
         18,
         0,
+        7,
     };
     const std::set<int32_t> SERVER_RETRY_ERROR_CODES = {
         300,
@@ -268,13 +269,15 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
     }
     // -1: NOT_READY
     if ((GetPlayable() && !GetReadTimeOut(clientError == -1)) && retryTimes <= RETRY_TIMES_TO_REPORT_ERROR) {
+        MEDIA_LOG_W("PlayableRetry: clientError = " PUBLIC_LOG_D32 ", serverError = " PUBLIC_LOG_D32
+            ", retryTimes = " PUBLIC_LOG_D32 ",", clientError, serverError, retryTimes);
         return true;
     }
 
     if (CLIENT_RETRY_ERROR_CODES.find(clientError) == CLIENT_RETRY_ERROR_CODES.end() ||
         SERVER_RETRY_ERROR_CODES.find(serverError) == SERVER_RETRY_ERROR_CODES.end() ||
         serverError > SERVER_ERROR_THRESHOLD) {
-        MEDIA_LOG_I("error code dont't need to retry.");
+        MEDIA_LOG_W("error code dont't need to retry.");
         NotifyError(clientError, serverError);
         if (downloader_ != nullptr) {
             downloader_->SetDownloadErrorState();
@@ -285,7 +288,7 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
 
     int retryTimesTmp = clientError == -1 ? APP_DOWNLOAD_RETRY_TIMES : RETRY_TIMES_TO_REPORT_ERROR;
     if (retryTimes > retryTimesTmp) { // Report error to upper layer
-        MEDIA_LOG_I("Retry times readches the upper limit.");
+        MEDIA_LOG_W("Retry times readches the upper limit.");
         NotifyError(clientError, serverError);
         if (downloader_ != nullptr) {
             downloader_->SetDownloadErrorState();
@@ -339,6 +342,7 @@ void DownloadMonitor::SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playS
 
 void DownloadMonitor::SetInterruptState(bool isInterruptNeeded)
 {
+    MEDIA_LOG_W("SetInterruptState: %{public}d", isInterruptNeeded);
     if (downloader_ != nullptr) {
         downloader_->SetInterruptState(isInterruptNeeded);
     }
@@ -445,7 +449,7 @@ bool DownloadMonitor::GetHLSDiscontinuity()
 
 Status DownloadMonitor::StopBufferring(bool isAppBackground)
 {
-    MEDIA_LOG_I("DownloadMonitor::StopBufferring");
+    MEDIA_LOG_W("StopBufferring isBackground: %{public}d", isAppBackground);
     if (downloader_ == nullptr) {
         MEDIA_LOG_E("StopBufferring failed, downloader_ is nullptr");
         return Status::ERROR_NULL_POINTER;
