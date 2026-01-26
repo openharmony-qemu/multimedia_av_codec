@@ -1750,7 +1750,7 @@ HWTEST_F(Rv30decApiNdkTest, VIDEO_RV30DEC_CAP_API_4000, TestSize.Level1)
  */
 HWTEST_F(Rv30decApiNdkTest, VIDEO_CAPABILITY_CONIFG_1000, TestSize.Level2)
 {
-     if (!access("/system/lib64/media/", 0)) {
+    if (!access("/system/lib64/media/", 0)) {
         string codecName = "";
         OH_AVErrCode  ret = AV_ERR_OK;
         OH_AVRange widthRange;

@@ -1885,8 +1885,6 @@ HWTEST_F(Av1decApiNdkTest, VIDEO_CAPABILITY_CONIFG_1000, TestSize.Level2)
     }
     ret = OH_AVCapability_GetVideoWidthRange(capability, &widthRange);
     ret = OH_AVCapability_GetVideoHeightRange(capability, &heightRange);
-    cout  << "width minval=" << widthRange.minVal << "   width maxval=" << widthRange.maxVal << endl;
-    cout  << "height minval=" << heightRange.minVal << "   height maxval=" << heightRange.maxVal << endl;
     ASSERT_EQ(AV_ERR_OK, ret);
     ASSERT_GE(widthRange.minVal, 0);
     ASSERT_GE(widthRange.maxVal, 0);
