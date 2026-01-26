@@ -3355,7 +3355,7 @@ int64_t MediaDemuxer::ReadLoop(int32_t trackId)
     FALSE_RETURN_V_NOLOG(resPreReadSample == 0, resPreReadSample);
     AfterDrop(trackId);
     AfterSeekNeedDrop(trackId);
-    if (afterSeekNeedDrop_[trackId]) {
+    if (GetTrackSeekNeedDrop(trackId)) {
         return NEXT_DELAY_TIME_US;
     }
     if (HandleFrameDropForTrack(trackId) > 0) {
@@ -3399,7 +3399,8 @@ int64_t MediaDemuxer::ReadLoop(int32_t trackId)
 
 int64_t MediaDemuxer::HandleFrameDropForTrack(int32_t trackId)
 {
-    if (frameCountNeedDrop_[trackId] <= 0) {
+    uint32_t frameCount = GetTrackNeedDropFrame(trackId);
+    if (frameCount <= 0) {
         return 0;
     }
     if (IsLocalFd()) {
@@ -3407,14 +3408,14 @@ int64_t MediaDemuxer::HandleFrameDropForTrack(int32_t trackId)
     }
     std::shared_ptr<AVBuffer> sample = AVBuffer::CreateAVBuffer();
     if (!sample) {
-        frameCountNeedDrop_[trackId] = 0;
+        SetTrackNeedDropFrame(trackId, 0);
         return 0;
     }
     Status dropStatus = ReadSampleToDrop(trackId, sample);
     if (dropStatus == Status::OK) {
-        frameCountNeedDrop_[trackId]--;
+        SetTrackNeedDropFrame(trackId, frameCount - 1);
     } else {
-        frameCountNeedDrop_[trackId] = 0;
+        SetTrackNeedDropFrame(trackId, 0);
         return 0;
     }
     return NEXT_DELAY_TIME_US;
@@ -3422,7 +3423,7 @@ int64_t MediaDemuxer::HandleFrameDropForTrack(int32_t trackId)
 
 void MediaDemuxer::AfterSeekNeedDrop(int32_t trackId)
 {
-    if (!afterSeekNeedDrop_[trackId]) {
+    if (!GetTrackSeekNeedDrop(trackId)) {
         return;
     }
     std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = nullptr;
@@ -3441,7 +3442,7 @@ void MediaDemuxer::AfterSeekNeedDrop(int32_t trackId)
     std::shared_ptr<AVBuffer> sample = AVBuffer::CreateAVBuffer();
     pluginTemp->ReadSample(static_cast<int32_t>(innerTrackID), sample, timeout_);
     if (sample->dts_ >= afterDropDts_[trackId]) {
-        afterSeekNeedDrop_[trackId] = false;
+        SetTrackSeekNeedDrop(trackId, false);
     }
 }
 
@@ -4679,7 +4680,8 @@ void MediaDemuxer::CachePressuredCallback(int32_t trackId, uint32_t cachedBytes)
         MEDIA_LOG_E("CachePressuredCallback pluginTemp nullptr");
         return;
     }
-    if (pluginTemp->GetCurrentCacheFrameCount(trackId, frameCountNeedDrop_[trackId]) != Status::OK) {
+    uint32_t frameCount = 0;
+    if (pluginTemp->GetCurrentCacheFrameCount(trackId, frameCount) != Status::OK) {
         MEDIA_LOG_E("CachePressuredCallback frameCount error");
         return;
     }
@@ -4694,7 +4696,8 @@ void MediaDemuxer::CachePressuredCallback(int32_t trackId, uint32_t cachedBytes)
             if (!taskMap_[trackId]->IsTaskRunning()) {
                 taskMap_[trackId]->Start();
             }
-            MEDIA_LOG_I("source need drop count: " PUBLIC_LOG_U32, frameCountNeedDrop_[trackId]);
+            SetTrackNeedDropFrame(trackId, frameCount);
+            MEDIA_LOG_I("source need drop count: " PUBLIC_LOG_U32, frameCount);
         }
     } else {
         OnSampleQueueBufferAvailable(trackId);
@@ -4750,9 +4753,9 @@ void MediaDemuxer::AfterDrop(int32_t trackId)
             PUBLIC_LOG_D64 " videoDts: " PUBLIC_LOG_D64 "audioDts: " PUBLIC_LOG_D64,
             videoSample->dts_, realSeekTime, videoSample->dts_, audioSample->dts_);
         if (trackId == videoTrackId_) {
-            afterSeekNeedDrop_[audioTrackId_] = true;
+            SetTrackSeekNeedDrop(audioTrackId_, true);
         } else if (trackId == audioTrackId_) {
-            afterSeekNeedDrop_[videoTrackId_] = true;
+            SetTrackSeekNeedDrop(videoTrackId_, true);
         }
     } else {
         videoNeedIFrame_ = true;
@@ -4794,6 +4797,30 @@ void MediaDemuxer::SetTrackIsBuffering(int32_t trackId, bool isBuffering)
 bool MediaDemuxer::IsBuffering()
 {
     return isBuffering_.load();
+}
+
+uint32_t MediaDemuxer::GetTrackNeedDropFrame(int32_t trackId)
+{
+    std::lock_guard<std::mutex> lock(frameCountNeedDropMutex_);
+    return frameCountNeedDrop_[trackId];
+}
+
+void MediaDemuxer::SetTrackIsBuffering(int32_t trackId, uint32_t frameCount)
+{
+    std::lock_guard<std::mutex> lock(bufferingMapMutex_);
+    frameCountNeedDrop_[trackId] = frameCount;
+}
+
+bool MediaDemuxer::GetTrackSeekNeedDrop(int32_t trackId)
+{
+    std::lock_guard<std::mutex> lock(afterSeekNeedDropMutex_);
+    return afterSeekNeedDrop_[trackId];
+}
+
+void MediaDemuxer::SetTrackSeekNeedDrop(int32_t trackId, bool needDrop)
+{
+    std::lock_guard<std::mutex> lock(afterSeekNeedDropMutex_);
+    afterSeekNeedDrop_[trackId] = needDrop;
 }
 } // namespace Media
 } // namespace OHOS
