@@ -1354,13 +1354,12 @@ Status DecoderSurfaceFilter::SetDecryptConfig(const sptr<DrmStandard::IMediaKeyS
     return Status::OK;
 }
 
-void DecoderSurfaceFilter::SetSeekTime(int64_t seekTimeUs, PlayerSeekMode mode, bool needWait)
+void DecoderSurfaceFilter::SetSeekTime(int64_t seekTimeUs, PlayerSeekMode mode)
 {
     MEDIA_LOG_I("SetSeekTime");
     if (mode == PlayerSeekMode::SEEK_CLOSEST) {
         isSeek_ = true;
         seekTimeUs_ = seekTimeUs;
-        isClosestSeekDone_.store(!needWait);
     }
     FALSE_RETURN_NOLOG(postProcessor_ != nullptr);
     postProcessor_->SetSeekTime(seekTimeUs, mode);
