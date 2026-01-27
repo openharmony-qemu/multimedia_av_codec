@@ -389,7 +389,7 @@ size_t CacheMediaChunkBufferImpl::Write(void* ptr, uint64_t inOffset, size_t inW
         MEDIA_LOG_D("not find fragment.");
         bool ret = AddFragmentCacheBuffer(offset, chunkPos);
         if (!ret) {
-            return dupWriteSize;	 
+            return dupWriteSize;
         }
     }
     FragmentIterator nextFragmentPos = fragmentCacheBuffer_.end();
@@ -440,7 +440,7 @@ size_t CacheMediaChunkBufferHlsImpl::Write(void* ptr, uint64_t inOffset, size_t 
         MEDIA_LOG_D("not find fragment.");
         bool ret = AddFragmentCacheBuffer(offset, chunkPos);
         if (!ret) {
-            return dupWriteSize;	 
+            return dupWriteSize;
         }
     }
     FragmentIterator nextFragmentPos = fragmentCacheBuffer_.end();
