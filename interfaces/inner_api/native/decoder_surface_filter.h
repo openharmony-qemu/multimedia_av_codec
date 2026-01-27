@@ -97,7 +97,7 @@ public:
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
     void SetSeekTime(int64_t seekTimeUs, PlayerSeekMode mode = PlayerSeekMode::SEEK_CLOSEST, bool needWait = false);
     void ResetSeekInfo();
-    void ClosestSeekDone();
+    void ClosestSeekDone(bool isSeekDone);
     Status HandleInputBuffer();
     void OnDumpInfo(int32_t fd);
 
