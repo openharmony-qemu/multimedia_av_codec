@@ -141,7 +141,7 @@ public:
 
     virtual ~AVBufferQueueProducerListener() = default;
 
-    void OnBufferAvailable() override
+    void OnBuffer Available() override
     {
         MEDIA_LOG_DD("Buffer available for track " PUBLIC_LOG_D32, trackId_);
         if (notifyTask_ == nullptr) {
@@ -4382,7 +4382,7 @@ Status MediaDemuxer::NotifySampleQueueBufferConsume(int32_t queueId)
 
     // accelerate SampleQueue toConsumer
     auto sampleConsumerTask = sampleConsumerTaskMap_.find(trackId);
-    if (sampleConsumerTask == sampleConsumerTaskMap_.end()) {
+    if (sampleConsumerTask == sampleConsumerTaskMap_.end() || sampleConsumerTask->second == nullptr) {
         return Status::OK;
     }
     sampleConsumerTask->second->UpdateDelayTime();
