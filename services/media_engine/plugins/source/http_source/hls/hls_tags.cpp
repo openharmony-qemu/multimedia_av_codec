@@ -47,10 +47,6 @@ struct {
     {"",                             HlsTag::URI}
 };
 
-namespace {
-constexpr int DECIMAL = 10;
-}
-
 Attribute::Attribute(std::string name, std::string value)
     : name_(std::move(name)), value_(std::move(value))
 {
@@ -89,14 +85,14 @@ std::vector<uint8_t> Attribute::HexSequence() const
     return ret;
 }
 
-bool Attribute::SafeStringToInt(const std::string& str, int& result)
+bool Attribute::SafeStringToInt(const std::string& str, int& result, int base)
 {
     if (str.empty()) {
         return false;
     }
     char* endptr;
     errno = 0;
-    long num = std::strtol(str.c_str(), &endptr, DECIMAL);
+    long num = std::strtol(str.c_str(), &endptr, base);
 
     if (errno == ERANGE) {
         return false;
