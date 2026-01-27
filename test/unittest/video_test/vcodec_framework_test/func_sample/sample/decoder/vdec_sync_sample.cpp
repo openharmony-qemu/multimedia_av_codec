@@ -212,6 +212,8 @@ int32_t VideoDecSyncSample::CreateReader(const std::string &inPath)
             return CreateDvvideoReader();
         case RAWVIDEO_STREAM:
             return CreateRawvideoReader();
+        case CINEPAK_STREAM:
+            return CreateCinepakReader();
         default:
             return CreateAvccReader();
     }
@@ -532,6 +534,17 @@ int32_t VideoDecSyncSample::CreateRawvideoReader()
     return ret;
 }
 
+int32_t VideoDecSyncSample::CreateCinepakReader()
+{
+    std::shared_ptr<CinepakReaderInfo> info = std::make_shared<CinepakReaderInfo>();
+    info->inPath = inPath_;
+    info->isMainStream = false;
+	
+    cinepakReader_ = std::make_shared<CinepakReader>();
+    int32_t ret = cinepakReader_->Init(info);
+    return ret;
+}
+
 void VideoDecSyncSample::FlushInner()
 {
     if (signal_ == nullptr) {
@@ -812,7 +825,7 @@ int32_t VideoDecSyncSample::OutputLoopInnerExt()
                         testParam_ == VCodecTestParam::SW_WMV3 || testParam_ == VCodecTestParam::SW_RV30 ||
                         testParam_ == VCodecTestParam::SW_RV40_TEST || testParam_ == VCodecTestParam::SW_WVC1 ||
                         testParam_ == VCodecTestParam::SW_MPEG1 || testParam_ == VCodecTestParam::SW_DVVIDEO ||
-                        testParam_ == VCodecTestParam::SW_RAWVIDEO)
+                        testParam_ == VCodecTestParam::SW_RAWVIDEO || testParam_ == VCodecTestParam::SW_CINEPAK)
                            ? attr.size : buffer->GetNativeBuffer()->GetSize();
         UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
                                           "Fatal: GetOutputBuffer fail, exit, index: %d", index);
@@ -894,6 +907,8 @@ int32_t VideoDecSyncSample::InputLoopInnerExt()
         dvvideoReader_->FillBuffer(buffer->GetAddr(), attr);
     } else if (rawvideoReader_ != nullptr) {
         rawvideoReader_->FillBuffer(buffer->GetAddr(), attr);
+    } else if (cinepakReader_ != nullptr) {
+        cinepakReader_->FillBuffer(buffer->GetAddr(), attr);
     } else {
         msvideo1Reader_->FillBuffer(buffer->GetAddr(), attr);
     }

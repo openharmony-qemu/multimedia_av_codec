@@ -128,6 +128,7 @@ private:
     int32_t CreateRv40Reader();
 #endif
     int32_t CreateMpeg1Reader();
+    int32_t CreateCinepakReader();
     OH_AVCodec *codec_ = nullptr;
     std::shared_ptr<VCodecSignal> signal_ = nullptr;
 
@@ -145,6 +146,7 @@ private:
     bool needExtraData_ = false;
     bool isWmv3MainStream_ = false;
     bool rv30needExtraData_ = false;
+    bool isCinepakStream_ = false;
 
 private:
     OH_AVCodecAsyncCallback asyncCallback_;
