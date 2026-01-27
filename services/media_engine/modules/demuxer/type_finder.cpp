@@ -149,14 +149,13 @@ std::string TypeFinder::SniffMediaType()
 {
     std::string pluginName;
     auto dataSource = shared_from_this();
-    uint64_t dataSizeForSniff = mediaDataSize_ < DEFAULT_SNIFF_SIZE ? mediaDataSize_ : DEFAULT_SNIFF_SIZE;
-    std::vector<uint8_t> buff(dataSizeForSniff);
+    std::vector<uint8_t> buff(DEFAULT_SNIFF_SIZE);
     auto buffer = std::make_shared<Buffer>();
     FALSE_RETURN_V_MSG_E(buffer != nullptr, "", "Alloc failed");
-    auto bufData = buffer->WrapMemory(buff.data(), dataSizeForSniff, dataSizeForSniff);
+    auto bufData = buffer->WrapMemory(buff.data(), DEFAULT_SNIFF_SIZE, DEFAULT_SNIFF_SIZE);
     FALSE_RETURN_V_MSG_E(
-        buffer->GetMemory() != nullptr, "", "Alloc failed, sniffSize " PUBLIC_LOG_U64, dataSizeForSniff);
-    Status ret = dataSource->ReadAt(0, buffer, dataSizeForSniff);
+        buffer->GetMemory() != nullptr, "", "Alloc failed, sniffSize " PUBLIC_LOG_U64, DEFAULT_SNIFF_SIZE);
+    Status ret = dataSource->ReadAt(0, buffer, DEFAULT_SNIFF_SIZE);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, "", "Not data for sniff");
     pluginName = Plugins::PluginManagerV2::Instance().SnifferPlugin(PluginType::DEMUXER, dataSource);
     return pluginName;
