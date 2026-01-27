@@ -141,7 +141,7 @@ public:
 
     virtual ~AVBufferQueueProducerListener() = default;
 
-    void OnBuffer Available() override
+    void OnBufferAvailable() override
     {
         MEDIA_LOG_DD("Buffer available for track " PUBLIC_LOG_D32, trackId_);
         if (notifyTask_ == nullptr) {
