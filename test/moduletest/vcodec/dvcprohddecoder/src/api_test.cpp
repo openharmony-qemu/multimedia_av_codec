@@ -1693,7 +1693,7 @@ HWTEST_F(DvcprohdDecApiNdkTest, VIDEO_DVCPROHDDEC_CAP_API_4000, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_CAPABILITY_CONIFG_1000
- * @tc.name      : set widthRange 、 heightRange  max and min  test
+ * @tc.name      : set widthRange  heightRange  max and min  test
  * @tc.desc      : configure test
  */
 HWTEST_F(DvcprohdDecApiNdkTest, VIDEO_CAPABILITY_CONIFG_1000, TestSize.Level2)

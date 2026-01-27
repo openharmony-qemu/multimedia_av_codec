@@ -344,7 +344,7 @@ HWTEST_F(HwEncConfigureNdkTest, VIDEO_ENCODE_CAPABILITY_5010, TestSize.Level2)
 
 /**
  * @tc.number    : VIDEO_CAPABILITY_CONIFG_1000
- * @tc.name      : set widthRange 、 heightRange  max and min  test
+ * @tc.name      : set widthRange  heightRange  max and min  test
  * @tc.desc      : configure test
  */
 HWTEST_F(HwEncConfigureNdkTest, VIDEO_CAPABILITY_CONIFG_1000, TestSize.Level2)
@@ -400,7 +400,7 @@ HWTEST_F(HwEncConfigureNdkTest, VIDEO_CAPABILITY_CONIFG_1000, TestSize.Level2)
 
 /**
  * @tc.number    : VIDEO_CAPABILITY_CONIFG_2000
- * @tc.name      : set widthRange 、 heightRange  max and min  test
+ * @tc.name      : set widthRange  heightRange  max and min  test
  * @tc.desc      : configure test
  */
 HWTEST_F(HwEncConfigureNdkTest, VIDEO_CAPABILITY_CONIFG_2000, TestSize.Level2)

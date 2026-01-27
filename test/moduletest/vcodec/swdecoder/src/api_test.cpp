@@ -1577,7 +1577,7 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_7400, TestSize.Level2)
 
 /**
  * @tc.number    : VIDEO_CAPABILITY_CONIFG_1000
- * @tc.name      : set widthRange 、 heightRange  max and min  test
+ * @tc.name      : set widthRange  heightRange  max and min  test
  * @tc.desc      : configure test
  */
 HWTEST_F(SwdecApiNdkTest, VIDEO_CAPABILITY_CONIFG_1000, TestSize.Level2)

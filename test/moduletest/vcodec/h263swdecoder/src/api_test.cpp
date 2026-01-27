@@ -1055,7 +1055,7 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_H263SWDEC_CAP_API_4100, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_CAPABILITY_CONIFG_1000
- * @tc.name      : set widthRange 、 heightRange  max and min  test
+ * @tc.name      : set widthRange  heightRange  max and min  test
  * @tc.desc      : configure test
  */
 HWTEST_F(H263SwdecApiNdkTest, VIDEO_CAPABILITY_CONIFG_1000, TestSize.Level2)
@@ -1072,8 +1072,6 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_CAPABILITY_CONIFG_1000, TestSize.Level2)
     }
     ret = OH_AVCapability_GetVideoWidthRange(capability, &widthRange);
     ret = OH_AVCapability_GetVideoHeightRange(capability, &heightRange);
-    cout  << "width minval=" << widthRange.minVal << "   width maxval=" << widthRange.maxVal << endl;
-    cout  << "height minval=" << heightRange.minVal << "   height maxval=" << heightRange.maxVal << endl;
     ASSERT_EQ(AV_ERR_OK, ret);
     ASSERT_GE(widthRange.minVal, 0);
     ASSERT_GE(widthRange.maxVal, 0);
@@ -1108,5 +1106,4 @@ HWTEST_F(H263SwdecApiNdkTest, VIDEO_CAPABILITY_CONIFG_1000, TestSize.Level2)
     OH_VideoDecoder_Destroy(vdec);
     OH_AVFormat_Destroy(format);
 }
-
 } // namespace

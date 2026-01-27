@@ -1791,7 +1791,7 @@ HWTEST_F(Vp9decApiNdkTest, VIDEO_VP9DEC_CAP_API_7300, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_CAPABILITY_CONIFG_1000
- * @tc.name      : set widthRange 、 heightRange  max and min  test
+ * @tc.name      : set widthRange  heightRange  max and min  test
  * @tc.desc      : configure test
  */
 HWTEST_F(Vp9decApiNdkTest, VIDEO_CAPABILITY_CONIFG_1000, TestSize.Level2)
@@ -1802,7 +1802,8 @@ HWTEST_F(Vp9decApiNdkTest, VIDEO_CAPABILITY_CONIFG_1000, TestSize.Level2)
     OH_AVRange heightRange;
     memset_s(&widthRange, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
     memset_s(&heightRange, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability  *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_VP9, false, SOFTWARE);
+    OH_AVCapability  *capability = OH_AVCodec_GetCapabilityByCategory(
+        OH_AVCODEC_MIMETYPE_VIDEO_VP9, false, SOFTWARE);
     if (capability == nullptr) {
         return;
     }

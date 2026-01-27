@@ -1796,7 +1796,7 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_5700, TestSize.Level2)
 
 /**
  * @tc.number    : VIDEO_CAPABILITY_CONIFG_1000
- * @tc.name      : set widthRange 、 heightRange  max and min  test
+ * @tc.name      : set widthRange  heightRange  max and min  test
  * @tc.desc      : configure test
  */
 HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_CAPABILITY_CONIFG_1000, TestSize.Level2)
