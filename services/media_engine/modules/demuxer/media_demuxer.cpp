@@ -4382,11 +4382,8 @@ Status MediaDemuxer::NotifySampleQueueBufferConsume(int32_t queueId)
 
     // accelerate SampleQueue toConsumer
     auto sampleConsumerTask = sampleConsumerTaskMap_.find(trackId);
-    if (sampleConsumerTask == sampleConsumerTaskMap_.end() || sampleConsumerTask->second == nullptr) {
-        return Status::OK;
-    }
+    FALSE_RETURN_V(sampleConsumerTask != sampleConsumerTaskMap_.end() && sampleConsumerTask->second != nullptr, Status::OK);
     sampleConsumerTask->second->UpdateDelayTime();
-
     return Status::OK;
 }
 
