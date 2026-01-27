@@ -87,9 +87,7 @@ ohos_unittest("filter_unit_test") {
       "$av_codec_root_dir/services/media_engine/filters/surface_decoder_adapter.cpp",
       "$av_codec_root_dir/services/media_engine/filters/surface_decoder_filter.cpp",
       "$av_codec_root_dir/services/media_engine/filters/surface_encoder_adapter.cpp",
-      "$av_codec_root_dir/services/media_engine/filters/video_capture_filter.cpp",
       "$av_codec_root_dir/services/media_engine/filters/video_decoder_adapter.cpp",
-      "$av_codec_root_dir/services/media_engine/filters/video_resize_filter.cpp",
       "$av_codec_root_dir/services/media_engine/modules/sink/subtitle_sink.cpp",
       "./audio_capture_filter_unit_test.cpp",
       "./audio_data_source_filter_unit_test.cpp",
@@ -104,8 +102,6 @@ ohos_unittest("filter_unit_test") {
       "./surface_decoder_filter_unit_test.cpp",
       "./surface_decoder_unit_test.cpp",
       "./surface_encoder_adapter_unit_test.cpp",
-      "./video_capture_filter_unit_test.cpp",
-      "./video_resize_filter_unit_test.cpp",
       "./surface_decoder_adapter_mock_unit_test.cpp",
     ]
   }
