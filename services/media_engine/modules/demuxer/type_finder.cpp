@@ -156,7 +156,8 @@ std::string TypeFinder::SniffMediaType()
     FALSE_RETURN_V_MSG_E(
         buffer->GetMemory() != nullptr, "", "Alloc failed, sniffSize " PUBLIC_LOG_U32, DEFAULT_SNIFF_SIZE);
     Status ret = dataSource->ReadAt(0, buffer, DEFAULT_SNIFF_SIZE);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, "", "Not data for sniff");
+    size_t getDataSize = buffer->GetMemory()->GetSize();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK && getDataSize > 0, "", "Not data for sniff " PUBLIC_LOG_ZU, getDataSize);
     pluginName = Plugins::PluginManagerV2::Instance().SnifferPlugin(PluginType::DEMUXER, dataSource);
     return pluginName;
 }
