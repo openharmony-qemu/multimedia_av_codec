@@ -21,6 +21,8 @@
 #include <mutex>
 
 namespace {
+using namespace std::chrono;
+
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "DBA"};
 constexpr size_t SPEED_WINDON_SIZE = 5;           // Sliding window size used to determine speed stability
 constexpr double DETECTION_THRESHOLD_RATIO = 0.5; // Stability threshold: dominant speed in the window must exceed 50%
@@ -65,7 +67,7 @@ void DecodingBehaviorAnalyzer::SaveDecodingBehaviorAsSnapshot(
     DecodingBehaviorSnapshot snapshot;
     snapshot.type = type;
     snapshot.decSpeedIdx = decSpeedIdx;
-    snapshot.duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime_).count();
+    snapshot.duration = static_cast<uint32_t>(duration_cast<milliseconds>(endTime - startTime_).count());
     history_.push_back(snapshot);
     startTime_ = endTime;
     AVCODEC_LOGD("snapshot: %{public}d-%{public}.2fx-%{public}u, history size %{public}zu ",
