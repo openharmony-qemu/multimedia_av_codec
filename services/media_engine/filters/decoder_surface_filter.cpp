@@ -818,6 +818,7 @@ void DecoderSurfaceFilter::OnInterrupted(bool isInterruptNeeded)
     std::lock_guard<std::mutex> lock(prerollMutex_);
     isInterruptNeeded_ = isInterruptNeeded;
     prerollDoneCond_.notify_all();
+    closestSeekCond_.notify_all();
 }
 
 Status DecoderSurfaceFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
