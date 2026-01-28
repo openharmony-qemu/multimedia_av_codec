@@ -2684,10 +2684,12 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoSampleQueue_001, TestS
 HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoTrack_001, TestSize.Level1)
 {
     mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->audioTrackId_ = NUM_1;
     std::shared_ptr<AVBuffer> videoSample = std::make_shared<AVBuffer>();
     videoSample->pts_ = NUM_0;
     mediaDemuxer_->bufferMap_[0] = videoSample;
     mediaDemuxer_->sampleQueueMap_[0] = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[1] = std::make_shared<SampleQueue>();
     auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
     mediaDemuxer_->eventReceiver_ = mockEventReceiver;
     EXPECT_CALL(*(mockEventReceiver), OnEvent(_)).Times(NUM_1);
@@ -2713,10 +2715,12 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoTrack_001, TestSize.Le
 HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoTrack_002, TestSize.Level1)
 {
     mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->audioTrackId_ = NUM_1;
     std::shared_ptr<AVBuffer> videoSample = std::make_shared<AVBuffer>();
     videoSample->pts_ = NUM_0;
     mediaDemuxer_->bufferMap_[0] = videoSample;
     mediaDemuxer_->sampleQueueMap_[0] = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[1] = std::make_shared<SampleQueue>();
     EXPECT_CALL(*(mediaDemuxer_->sampleQueueMap_[NUM_0]), Clear()).WillRepeatedly(Return(Status::OK));
     auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
     mediaDemuxer_->eventReceiver_ = mockEventReceiver;
