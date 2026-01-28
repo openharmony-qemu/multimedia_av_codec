@@ -50,6 +50,38 @@ string g_cafAlacUri = TEST_URI_PATH + string("caf_alac.caf");
 string g_cafOpusPath = TEST_FILE_PATH + string("caf_opus.caf");
 string g_cafOpusUri = TEST_URI_PATH + string("caf_opus.caf");
 
+string g_cafFilePath1 = TEST_FILE_PATH + string("ac3.caf");
+string g_cafFilePath2 = TEST_FILE_PATH + string("adpcm_ima_wav.caf");
+string g_cafFilePath3 = TEST_FILE_PATH + string("adpcm_ms.caf");
+string g_cafFilePath4 = TEST_FILE_PATH + string("alac.caf");
+string g_cafFilePath5 = TEST_FILE_PATH + string("amr_nb.caf");
+string g_cafFilePath6 = TEST_FILE_PATH + string("flac.caf");
+string g_cafFilePath7 = TEST_FILE_PATH + string("gsm.caf");
+string g_cafFilePath8 = TEST_FILE_PATH + string("gsm_ms.caf");
+string g_cafFilePath9 = TEST_FILE_PATH + string("ilbc.caf");
+string g_cafFilePath10 = TEST_FILE_PATH + string("mp2.caf");
+string g_cafFilePath11 = TEST_FILE_PATH + string("mp3.caf");
+string g_cafFilePath12 = TEST_FILE_PATH + string("opus.caf");
+string g_cafFilePath13 = TEST_FILE_PATH + string("pcm_alaw.caf");
+string g_cafFilePath14 = TEST_FILE_PATH + string("pcm_mulaw.caf");
+string g_cafFilePath15 = TEST_FILE_PATH + string("pcm_s16be.caf");
+
+string g_cafUriPath1 = TEST_URI_PATH + string("ac3.caf");
+string g_cafUriPath2 = TEST_URI_PATH + string("adpcm_ima_wav.caf");
+string g_cafUriPath3 = TEST_URI_PATH + string("adpcm_ms.caf");
+string g_cafUriPath4 = TEST_URI_PATH + string("alac.caf");
+string g_cafUriPath5 = TEST_URI_PATH + string("amr_nb.caf");
+string g_cafUriPath6 = TEST_URI_PATH + string("flac.caf");
+string g_cafUriPath7 = TEST_URI_PATH + string("gsm.caf");
+string g_cafUriPath8 = TEST_URI_PATH + string("gsm_ms.caf");
+string g_cafUriPath9 = TEST_URI_PATH + string("ilbc.caf");
+string g_cafUriPath10 = TEST_URI_PATH + string("mp2.caf");
+string g_cafUriPath11 = TEST_URI_PATH + string("mp3.caf");
+string g_cafUriPath12 = TEST_URI_PATH + string("opus.caf");
+string g_cafUriPath13 = TEST_URI_PATH + string("pcm_alaw.caf");
+string g_cafUriPath14 = TEST_URI_PATH + string("pcm_mulaw.caf");
+string g_cafUriPath15 = TEST_URI_PATH + string("pcm_s16be.caf");
+
 } //namespace
 
 namespace {
@@ -459,6 +491,1386 @@ HWTEST_F(DemuxerUnitTest, Demuxer_CAF_RepeatRead_0012, TestSize.Level1)
         ASSERT_EQ(keyFrames_[0], 501);
 
         RemoveValue();
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0001
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,local
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0001, TestSize.Level1)
+{
+    InitResource(g_cafFilePath1, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 158);
+    EXPECT_EQ(keyFrames_[0], 158);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {158, 158, 158, 151, 152, 152, 139, 140, 140};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0002
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,uri
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0002, TestSize.Level1)
+{
+    InitResource(g_cafUriPath1, URI);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 158);
+    EXPECT_EQ(keyFrames_[0], 158);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {158, 158, 158, 151, 152, 152, 139, 140, 140};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0003
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,local
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0003, TestSize.Level1)
+{
+    InitResource(g_cafFilePath2, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 119);
+    EXPECT_EQ(keyFrames_[0], 119);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {119, 119, 119, 114, 115, 115, 104, 105, 105};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0004
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,uri
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0004, TestSize.Level1)
+{
+    InitResource(g_cafUriPath2, URI);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 119);
+    EXPECT_EQ(keyFrames_[0], 119);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {119, 119, 119, 114, 115, 115, 104, 105, 105};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0005
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,local
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0005, TestSize.Level1)
+{
+    InitResource(g_cafFilePath3, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 119);
+    EXPECT_EQ(keyFrames_[0], 119);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {119, 119, 119, 114, 115, 115, 104, 105, 105};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0006
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,uri
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0006, TestSize.Level1)
+{
+    InitResource(g_cafUriPath3, URI);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 119);
+    EXPECT_EQ(keyFrames_[0], 119);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {119, 119, 119, 114, 115, 115, 104, 105, 105};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0007
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,local
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0007, TestSize.Level1)
+{
+    InitResource(g_cafFilePath4, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 60);
+    EXPECT_EQ(keyFrames_[0], 60);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {60, 60, 60, 57, 58, 58, 52, 53, 53};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0008
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,uri
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0008, TestSize.Level1)
+{
+    InitResource(g_cafUriPath4, URI);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 60);
+    EXPECT_EQ(keyFrames_[0], 60);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {60, 60, 60, 57, 58, 58, 52, 53, 53};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0009
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,local
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0009, TestSize.Level1)
+{
+    InitResource(g_cafFilePath6, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 53);
+    EXPECT_EQ(keyFrames_[0], 53);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {53, 53, 53, 50, 51, 51, 46, 47, 47};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0010
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,uri
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0010, TestSize.Level1)
+{
+    InitResource(g_cafUriPath6, URI);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 53);
+    EXPECT_EQ(keyFrames_[0], 53);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {53, 53, 53, 50, 51, 51, 46, 47, 47};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0011
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,local
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0011, TestSize.Level1)
+{
+    InitResource(g_cafFilePath7, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 252);
+    EXPECT_EQ(keyFrames_[0], 252);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {252, 252, 252, 242, 242, 242, 222, 222, 222};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0012
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,uri
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0012, TestSize.Level1)
+{
+    InitResource(g_cafUriPath7, URI);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 252);
+    EXPECT_EQ(keyFrames_[0], 252);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {252, 252, 252, 242, 242, 242, 222, 222, 222};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0013
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,local
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0013, TestSize.Level1)
+{
+    InitResource(g_cafFilePath8, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 126);
+    EXPECT_EQ(keyFrames_[0], 126);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {126, 126, 126, 121, 121, 121, 111, 111, 111};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0014
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,uri
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0014, TestSize.Level1)
+{
+    InitResource(g_cafUriPath8, URI);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 126);
+    EXPECT_EQ(keyFrames_[0], 126);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {126, 126, 126, 121, 121, 121, 111, 111, 111};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0015
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,local
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0015, TestSize.Level1)
+{
+    InitResource(g_cafFilePath9, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 252);
+    EXPECT_EQ(keyFrames_[0], 252);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {252, 252, 252, 242, 242, 242, 222, 222, 222};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0016
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,uri
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0016, TestSize.Level1)
+{
+    InitResource(g_cafUriPath9, URI);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 252);
+    EXPECT_EQ(keyFrames_[0], 252);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {252, 252, 252, 242, 242, 242, 222, 222, 222};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0017
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,local
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0017, TestSize.Level1)
+{
+    InitResource(g_cafFilePath10, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 210);
+    EXPECT_EQ(keyFrames_[0], 210);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {210, 210, 210, 201, 202, 202, 185, 185, 185};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0018
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,uri
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0018, TestSize.Level1)
+{
+    InitResource(g_cafUriPath10, URI);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 210);
+    EXPECT_EQ(keyFrames_[0], 210);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {210, 210, 210, 201, 202, 202, 185, 185, 185};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0019
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,local
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0019, TestSize.Level1)
+{
+    InitResource(g_cafFilePath11, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 210);
+    EXPECT_EQ(keyFrames_[0], 210);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {210, 210, 210, 201, 202, 202, 185, 185, 185};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0020
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,uri
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0020, TestSize.Level1)
+{
+    InitResource(g_cafUriPath11, URI);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 210);
+    EXPECT_EQ(keyFrames_[0], 210);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {210, 210, 210, 201, 202, 202, 185, 185, 185};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0021
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,local
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0021, TestSize.Level1)
+{
+    InitResource(g_cafFilePath12, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 253);
+    EXPECT_EQ(keyFrames_[0], 253);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {253, 253, 253, 173, 173, 173, 13, 13, 13};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0022
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,uri
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0022, TestSize.Level1)
+{
+    InitResource(g_cafUriPath12, URI);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 253);
+    EXPECT_EQ(keyFrames_[0], 253);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {253, 253, 253, 173, 173, 173, 13, 13, 13};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0023
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,local
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0023, TestSize.Level1)
+{
+    InitResource(g_cafFilePath13, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 60);
+    EXPECT_EQ(keyFrames_[0], 60);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {60, 60, 60, 57, 57, 57, 53, 53, 53};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0024
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,uri
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0024, TestSize.Level1)
+{
+    InitResource(g_cafUriPath13, URI);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 60);
+    EXPECT_EQ(keyFrames_[0], 60);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {60, 60, 60, 57, 57, 57, 53, 53, 53};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0025
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,local
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0025, TestSize.Level1)
+{
+    InitResource(g_cafFilePath14, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 60);
+    EXPECT_EQ(keyFrames_[0], 60);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {60, 60, 60, 57, 57, 57, 53, 53, 53};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0026
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,uri
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0026, TestSize.Level1)
+{
+    InitResource(g_cafUriPath14, URI);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 60);
+    EXPECT_EQ(keyFrames_[0], 60);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {60, 60, 60, 57, 57, 57, 53, 53, 53};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0027
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,local
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0027, TestSize.Level1)
+{
+    InitResource(g_cafFilePath15, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 119);
+    EXPECT_EQ(keyFrames_[0], 119);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {119, 119, 119, 114, 114, 114, 105, 105, 105};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0028
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,uri
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0028, TestSize.Level1)
+{
+    InitResource(g_cafUriPath15, URI);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 119);
+    EXPECT_EQ(keyFrames_[0], 119);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {119, 119, 119, 114, 114, 114, 105, 105, 105};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0029
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,local
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0029, TestSize.Level1)
+{
+    InitResource(g_cafFilePath5, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 253);
+    EXPECT_EQ(keyFrames_[0], 253);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {253, 253, 253, 243, 243, 243, 223, 223, 223};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_CAF_ReadSample_And_SeekToTime_0030
+ * @tc.desc: Read sample test for timed metadata track and seek to the specified time,uri
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_And_SeekToTime_0030, TestSize.Level1)
+{
+    InitResource(g_cafUriPath5, URI);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            EXPECT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
+    EXPECT_EQ(frames_[0], 253);
+    EXPECT_EQ(keyFrames_[0], 253);
+
+    for (auto idx : selectedTrackIds_) {
+        EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 600}; // ms
+    vector<int32_t> audioVals = {253, 253, 253, 243, 243, 243, 223, 223, 223};
+    numbers_ = 0;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            EXPECT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
     }
 }
 
