@@ -685,33 +685,33 @@ HWTEST_F(DemuxerFilterUnitTest, SelectBitRate, TestSize.Level1)
     ASSERT_EQ(res, Status::OK);
 }
 
- /**
-  * @tc.name: OnDumpInfo
-  * @tc.desc: OnDumpInfo
-  * @tc.type: FUNC
-  */
- HWTEST_F(DemuxerFilterUnitTest, OnDumpInfo, TestSize.Level1)
- {
-     auto fd = AshmemCreate("DemuxerFilterUnitTest::OnDumpInfo", 4096);
-     char* temp = new char[8];
-     ON_SCOPE_EXIT(0) {
-         if (fd > 0) {
-             (void)::close(fd);
-         }
-         delete [] temp;
-     };
+/**
+ * @tc.name: OnDumpInfo
+ * @tc.desc: OnDumpInfo
+ * @tc.type: FUNC
+*/
+HWTEST_F(DemuxerFilterUnitTest, OnDumpInfo, TestSize.Level1)
+{
+    auto fd = AshmemCreate("DemuxerFilterUnitTest::OnDumpInfo", 4096);
+    char* temp = new char[8];
+    ON_SCOPE_EXIT(0) {
+        if (fd > 0) {
+            (void)::close(fd);
+        }
+        delete [] temp;
+    };
 
-     ASSERT_GE(fd, 0);
-     demuxerFilter_->OnDumpInfo(fd);
-     read(fd, temp, 8);
-     std::cout << "OnDumpInfo " << temp << std::endl;
-     ASSERT_NE(temp[0], ' ');
+    ASSERT_GE(fd, 0);
+    demuxerFilter_->OnDumpInfo(fd);
+    read(fd, temp, 8);
+    std::cout << "OnDumpInfo " << temp << std::endl;
+    ASSERT_NE(temp[0], ' ');
 
-     demuxerFilter_->demuxer_ = nullptr;
-     demuxerFilter_->SetBundleName("xxxxx");
-     demuxerFilter_->OnDumpInfo(0);
-     ASSERT_NE(temp[0], ' ');
- }
+    demuxerFilter_->demuxer_ = nullptr;
+    demuxerFilter_->SetBundleName("xxxxx");
+    demuxerFilter_->OnDumpInfo(0);
+    ASSERT_NE(temp[0], ' ');
+}
 
 /**
  * @tc.name: GetBitRates_0200
