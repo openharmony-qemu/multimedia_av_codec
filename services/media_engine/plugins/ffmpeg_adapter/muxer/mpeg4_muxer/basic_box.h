@@ -422,6 +422,7 @@ public:
     SttsBox(uint32_t size, std::string type, uint8_t version = 0, uint32_t flags = 0); // stts, ctts
     uint32_t GetSize() override;
     int64_t Write(std::shared_ptr<AVIOStream> io) override;
+    void AddData(uint32_t data);
 
     uint32_t entryCount_ = 0;
     std::deque<std::pair<uint32_t, uint32_t>> timeToSamples_;

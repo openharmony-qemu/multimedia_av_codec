@@ -805,6 +805,17 @@ SttsBox::SttsBox(uint32_t size, std::string type, uint8_t version, uint32_t flag
 {
 }
 
+void SttsBox::AddData(uint32_t data)
+{
+    size_t size = timeToSamples_.size();
+    if (size > 0 && timeToSamples_[size - 1].second == data) {
+        timeToSamples_[size - 1].first++;
+    } else {
+        entryCount_++;
+        timeToSamples_.emplace_back(std::pair<uint32_t, uint32_t>(1, data));
+    }
+}
+
 uint32_t SttsBox::GetSize()
 {
     if (type_.compare("ctts") == 0 && entryCount_ == 0) {
