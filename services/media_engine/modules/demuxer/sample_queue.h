@@ -99,7 +99,6 @@ public:
     Status PeekRollbackBuffer(std::shared_ptr<AVBuffer>& sampleBuffer);
     Status PushRollbackBuffer(std::shared_ptr<AVBuffer>& sampleBuffer);
     uint32_t GetFilledBufferSize();
-    Status AttachOneBuffer(uint32_t size);
     Status UpdateLastOutSamplePts(int64_t lastOutSamplePts);
     Status UpdateLastEnterSamplePts(int64_t lastEnterSamplePts);
     int64_t GetLastEnterSamplePts() const;

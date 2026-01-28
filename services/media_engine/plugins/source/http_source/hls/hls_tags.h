@@ -36,6 +36,7 @@ public:
     std::vector<uint8_t> HexSequence() const;
     std::pair<std::size_t, std::size_t> GetByteRange() const;
     std::pair<int, int> GetResolution() const;
+    static bool SafeStringToInt(const std::string& str, int& result, int base);
 private:
     std::string name_;
     std::string value_;
