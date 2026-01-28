@@ -27,6 +27,7 @@ namespace Media {
 
 BlockQueuePool::~BlockQueuePool()
 {
+    std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
     MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S, name_.c_str());
     for (auto que : quePool_) {
         FreeQueue(que.first);

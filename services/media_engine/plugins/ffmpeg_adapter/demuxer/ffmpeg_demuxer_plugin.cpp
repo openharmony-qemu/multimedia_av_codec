@@ -1044,8 +1044,10 @@ void FFmpegDemuxerPlugin::WebvttMP4EOSProcess(const AVPacket *pkt)
 
 void FFmpegDemuxerPlugin::ResetContext()
 {
-    formatContext_->pb->eof_reached = 0;
-    formatContext_->pb->error = 0;
+    if (formatContext_ != nullptr && formatContext_->pb != nullptr) {
+        formatContext_->pb->eof_reached = 0;
+        formatContext_->pb->error = 0;
+    }
     ioContext_.retry = false;
 }
 
