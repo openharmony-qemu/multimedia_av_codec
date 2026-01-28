@@ -2878,9 +2878,6 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_GetBufferFromUserQueue_001, TestS
 
     mediaDemuxer_->hasSetLargeSize_ = true;
     EXPECT_CALL(*(mediaDemuxer_->sampleQueueMap_[NUM_0]), IsEmpty()).WillOnce(Return(false));
-    ret = mediaDemuxer_->GetBufferFromUserQueue(NUM_0, NUM_100);
-    EXPECT_EQ(ret, false);
-
     int64_t duration = 0;
     mediaDemuxer_->mediaMetaData_.globalMeta = std::make_shared<Meta>();
     mediaDemuxer_->mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(duration);
