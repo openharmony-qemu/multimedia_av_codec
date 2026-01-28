@@ -123,6 +123,7 @@ void XmlParser::DestroyDoc()
         xmlFreeDoc(xmlDocPtr_);
         xmlCleanupParser();
         xmlMemoryDump();
+        xmlDocPtr_ = nullptr;
     }
 }
 } // namespace HttpPluginLite
