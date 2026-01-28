@@ -3101,7 +3101,7 @@ void MediaDemuxer::StartConsume(int32_t trackId)
     {
         AutoLock lock(mapMutex_);
         startConsumeResult = sampleQueueController_->ShouldStartConsume(trackId, sampleQueueMap_[trackId],
-            sampleConsumerTaskMap_[trackId]);
+            sampleConsumerTaskMap_[trackId], inPreroll_.load());
     }
     if (!startConsumeResult && !eosMap_[trackId]) {
         // if controllor do not start consume, and not eos, do nothing
