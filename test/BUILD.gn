@@ -380,6 +380,8 @@ group("av_codec_fuzz_test") {
       "fuzztest/demuxerasfapi11_fuzzer:DemuxerAsfAPI11FuzzTest",
       "fuzztest/demuxersunauapi11_fuzzer:DemuxerSunAuAPI11FuzzTest",
       "fuzztest/demuxerdtsapi11_fuzzer:DemuxerDtsAPI11FuzzTest",
+      "fuzztest/demuxercaf_fuzzer:DemuxerCafFuzzTest",
+      "fuzztest/demuxercafapi11_fuzzer:DemuxerCafAPI11FuzzTest",
       "fuzztest/drmdecryptor_fuzzer:DrmDecryptorFuzzTest",
       "fuzztest/encoderapi10h264_fuzzer:EncoderAPI10H264FuzzTest",
       "fuzztest/encoderapi10h26510bit_fuzzer:EncoderAPI10H26510BitFuzzTest",
