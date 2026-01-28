@@ -378,6 +378,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/demuxerrmapi11_fuzzer:DemuxerRmAPI11FuzzTest",
       "fuzztest/demuxerrmvbapi11_fuzzer:DemuxerRmvbAPI11FuzzTest",
       "fuzztest/demuxerasfapi11_fuzzer:DemuxerAsfAPI11FuzzTest",
+      "fuzztest/demuxersunauapi11_fuzzer:DemuxerSunAuAPI11FuzzTest",
       "fuzztest/demuxerdtsapi11_fuzzer:DemuxerDtsAPI11FuzzTest",
       "fuzztest/drmdecryptor_fuzzer:DrmDecryptorFuzzTest",
       "fuzztest/encoderapi10h264_fuzzer:EncoderAPI10H264FuzzTest",
