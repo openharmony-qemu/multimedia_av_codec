@@ -152,6 +152,14 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParseSegmentBaseMpd_002, TestSize.Level1)
     EXPECT_NE(nullptr, mpdInfo);
 }
 
+HWTEST_F(DashMpdParserUnitTest, Test_ParseSegmentBaseMpd_003, TestSize.Level1)
+{
+    DashMpdInfo *mpdInfo{nullptr};
+    std::shared_ptr<DashMpdManager> mpdManager = std::make_shared<DashMpdManager>(mpdInfo, "http://1.0.0.1/1.mpd");
+    auto periods = mpdManager->GetPeriods();
+    EXPECT_TRUE(periods.empty());
+}
+
 HWTEST_F(DashMpdParserUnitTest, Test_ParseSegmentListMpd_001, TestSize.Level1)
 {
     std::string mpd = "<?xml version=\"1.0\" ?>\n"
