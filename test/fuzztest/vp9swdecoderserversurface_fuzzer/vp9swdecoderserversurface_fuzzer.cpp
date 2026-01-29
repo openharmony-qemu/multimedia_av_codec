@@ -44,6 +44,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 #ifdef SUPPORT_CODEC_VP9
     /* Run your code on data */
     OHOS::Vp9SwdecoderServerSurfaceFuzzTest(data, size);
+#else
+    (void)data;
+    (void)size;
 #endif
     return 0;
 }

@@ -2684,10 +2684,12 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoSampleQueue_001, TestS
 HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoTrack_001, TestSize.Level1)
 {
     mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->audioTrackId_ = NUM_1;
     std::shared_ptr<AVBuffer> videoSample = std::make_shared<AVBuffer>();
     videoSample->pts_ = NUM_0;
     mediaDemuxer_->bufferMap_[0] = videoSample;
     mediaDemuxer_->sampleQueueMap_[0] = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[1] = std::make_shared<SampleQueue>();
     auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
     mediaDemuxer_->eventReceiver_ = mockEventReceiver;
     EXPECT_CALL(*(mockEventReceiver), OnEvent(_)).Times(NUM_1);
@@ -2713,10 +2715,12 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoTrack_001, TestSize.Le
 HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoTrack_002, TestSize.Level1)
 {
     mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->audioTrackId_ = NUM_1;
     std::shared_ptr<AVBuffer> videoSample = std::make_shared<AVBuffer>();
     videoSample->pts_ = NUM_0;
     mediaDemuxer_->bufferMap_[0] = videoSample;
     mediaDemuxer_->sampleQueueMap_[0] = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[1] = std::make_shared<SampleQueue>();
     EXPECT_CALL(*(mediaDemuxer_->sampleQueueMap_[NUM_0]), Clear()).WillRepeatedly(Return(Status::OK));
     auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
     mediaDemuxer_->eventReceiver_ = mockEventReceiver;
@@ -3299,5 +3303,29 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_RecordDemuxerTimeStamp_002, Te
     ASSERT_EQ(timeStampList.size(), NUM_2);
     EXPECT_EQ(timeStampList[0], static_cast<int64_t>(stage));
     EXPECT_GT(timeStampList[1], NUM_0);
+}
+
+/**
+ * @tc.name  : MediaDemuxer_IsBufferingMap
+ * @tc.number: MediaDemuxer_IsBufferingMap
+ * @tc.desc  : test SetTrackIsBuffering GetTrackIsBuffering
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_IsBufferingMap, TestSize.Level1)
+{
+    int32_t trackId = 0;
+    mediaDemuxer_->isBufferingMap_[trackId] = true;
+    EXPECT_TRUE(mediaDemuxer_->GetTrackIsBuffering(trackId));
+    mediaDemuxer_->SetTrackIsBuffering(trackId, false);
+    EXPECT_FALSE(mediaDemuxer_->GetTrackIsBuffering(trackId));
+    mediaDemuxer_->SetTrackIsBuffering(trackId, true);
+    EXPECT_TRUE(mediaDemuxer_->GetTrackIsBuffering(trackId));
+    
+    trackId = 100;
+    mediaDemuxer_->isBufferingMap_[trackId] = false;
+    EXPECT_FALSE(mediaDemuxer_->GetTrackIsBuffering(trackId));
+    mediaDemuxer_->SetTrackIsBuffering(trackId, true);
+    EXPECT_TRUE(mediaDemuxer_->GetTrackIsBuffering(trackId));
+    mediaDemuxer_->SetTrackIsBuffering(trackId, false);
+    EXPECT_FALSE(mediaDemuxer_->GetTrackIsBuffering(trackId));
 }
 }  // namespace OHOS::Media

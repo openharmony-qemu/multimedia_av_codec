@@ -261,8 +261,9 @@ ohos_unittest("avmuxer_mpeg4_plugin_unit_test") {
   ]
 
   include_dirs = mpeg4_include_dirs + [
-    "./",
+    "./demuxer_capi",
     "./mpeg4_plugin",
+    "./",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/track",
     "$av_codec_root_dir/interfaces/plugin",
@@ -292,6 +293,7 @@ ohos_unittest("avmuxer_mpeg4_plugin_unit_test") {
     sources = mpeg4_sources + [
       "./mpeg4_plugin/avmuxer_mpeg4_plugin_mock_factory.cpp",
       "./mpeg4_plugin/avmuxer_mpeg4_plugin_mock.cpp",
+      "./demuxer_capi/demuxer_mock.cpp",
       "./avmuxer_mpeg4_unit_test.cpp",
       "avmuxer_sample.cpp",
     ]
@@ -342,6 +344,7 @@ ohos_unittest("avmuxer_ffmpeg_plugin_mp4_unit_test") {
 
   include_dirs = base_include_dirs + [
     "./",
+    "./demuxer_capi",
     "./ffmpeg_plugin",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/muxer",
     "$av_codec_root_dir/interfaces/plugin",
@@ -356,6 +359,7 @@ ohos_unittest("avmuxer_ffmpeg_plugin_mp4_unit_test") {
       "./ffmpeg_plugin/avmuxer_ffmpeg_plugin_mock.cpp",
       "./avmuxer_mpeg4_unit_test.cpp",
       "avmuxer_sample.cpp",
+      "./demuxer_capi/demuxer_mock.cpp",
     ]
   }
 

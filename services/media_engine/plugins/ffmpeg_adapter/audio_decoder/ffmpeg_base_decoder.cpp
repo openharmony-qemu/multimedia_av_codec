@@ -346,6 +346,8 @@ Status FfmpegBaseDecoder::AllocateContext(const std::string &name)
                 ptr = nullptr;
             }
         });
+        CHECK_AND_RETURN_RET_LOG(avCodecContext_ != nullptr, Status::ERROR_NO_MEMORY,
+            "Allocate avCodecContext_ failed.");
         av_log_set_level(AV_LOG_ERROR);
     }
     return Status::OK;

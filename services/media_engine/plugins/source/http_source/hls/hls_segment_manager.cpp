@@ -2039,7 +2039,8 @@ bool HlsSegmentManager::GetHLSDiscontinuity()
 
 Status HlsSegmentManager::StopBufferring(bool isAppBackground)
 {
-    MEDIA_LOG_I("HlsSegmentManager:StopBufferring enter, type: %{public}d", type_);
+    MEDIA_LOG_W("HlsSegmentManager:StopBufferring enter, isBackground: %{public}d, type: %{public}d", isAppBackground,
+        type_);
     if (cacheMediaBuffer_ == nullptr || downloader_ == nullptr || playlistDownloader_ == nullptr) {
         MEDIA_LOG_E("StopBufferring error, type: %{public}d", type_);
         return Status::ERROR_NULL_POINTER;
@@ -2053,7 +2054,8 @@ Status HlsSegmentManager::StopBufferring(bool isAppBackground)
     bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
     downloader_->StopBufferring();
     playlistDownloader_->StopBufferring(isAppBackground);
-    MEDIA_LOG_I("HlsSegmentManager:StopBufferring out, type: %{public}d", type_);
+    MEDIA_LOG_W("HlsSegmentManager:StopBufferring out, isBackground: %{public}d, type: %{public}d", isAppBackground,
+        type_);
     return Status::OK;
 }
 

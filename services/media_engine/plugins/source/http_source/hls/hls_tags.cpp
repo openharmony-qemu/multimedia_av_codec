@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#include <cstdint>
 #include <cstring>
 #include <sstream>
 #include <stack>
@@ -95,6 +95,29 @@ std::vector<uint8_t> Attribute::HexSequence() const
         }
     }
     return ret;
+}
+
+bool Attribute::SafeStringToInt(const std::string& str, int& result, int base)
+{
+    if (str.empty()) {
+        return false;
+    }
+    char* endptr;
+    errno = 0;
+    long num = std::strtol(str.c_str(), &endptr, base);
+
+    if (errno == ERANGE) {
+        return false;
+    }
+    if (*endptr != '\0') {
+        return false;
+    }
+
+    if (num < INT_MIN || num > INT_MAX) {
+        return false;
+    }
+    result = static_cast<int>(num);
+    return true;
 }
 
 std::pair<std::size_t, std::size_t> Attribute::GetByteRange() const

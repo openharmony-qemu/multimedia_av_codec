@@ -388,6 +388,10 @@ int FindNaluSpliter(int size, const uint8_t* data)
 bool CanDropAvcPkt(const AVPacket& pkt)
 {
     const uint8_t *data = pkt.data;
+    if (data == nullptr) {
+        MEDIA_LOG_D("pkt->data is null!");
+        return false;
+    }
     int size = pkt.size;
     int naluPos = FindNaluSpliter(size, data);
     if (naluPos < 0) {
@@ -649,6 +653,9 @@ int32_t GetNaluSize(const uint8_t *nalStart)
 
 bool IsHvccSyncFrame(const uint8_t *sample, int32_t size)
 {
+    if (sample == nullptr || size < NAL_START_CODE_SIZE || size > INT32_MAX) {
+        return false;
+    }
     const uint8_t* nalStart = sample;
     const uint8_t* end = nalStart + size;
     int32_t sizeLen = NAL_START_CODE_SIZE;
@@ -692,7 +699,7 @@ const uint8_t* FindNalStartCode(const uint8_t *start, const uint8_t *end, int32_
 
 bool IsAnnexbSyncFrame(const uint8_t *sample, int32_t size)
 {
-    if (sample == nullptr || size < 0) {
+    if (sample == nullptr || size < 0 || size > INT32_MAX) {
         return false;
     }
     const uint8_t* nalStart = sample;

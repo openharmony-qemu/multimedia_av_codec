@@ -45,14 +45,6 @@ static constexpr const char DEC_ABNORMAL_OCCUPATION_INFO[] = "DecAbnormalOccupat
 static constexpr const char SPEED_DECODING_INFO[] = "SpeedDecodingInfo";
 static constexpr const char CODEC_ERROR_INFO[] = "CodecErrorInfo";
 
-inline void HashCombine(std::size_t &seed, std::size_t value)
-{
-    constexpr std::size_t hashMagicConstant = static_cast<std::size_t>(0x9e3779b97f4a7c15ULL);
-    constexpr unsigned hashShiftLeft = 6u;
-    constexpr unsigned hashShiftRight = 2u;
-    seed ^= value + hashMagicConstant + (seed << hashShiftLeft) + (seed >> hashShiftRight);
-}
-
 const std::unordered_map<VideoCodecType, std::string> VIDEO_CODEC_TYPE_TO_STRING = {
     { VideoCodecType::DECODER_HARDWARE, "HDec" },
     { VideoCodecType::DECODER_SOFTWARE, "SDec" },
@@ -116,10 +108,7 @@ struct HashPair {
     template <class T1, class T2>
     std::size_t operator()(const std::pair<T1, T2>& p) const
     {
-        std::size_t seed = 0;
-        HashCombine(seed, std::hash<T1>{}(p.first));
-        HashCombine(seed, std::hash<T2>{}(p.second));
-        return seed;
+        return std::hash<T1>{}(p.first) ^ std::hash<T2>{}(p.second);
     }
 };
 struct HashTuple {
@@ -127,11 +116,7 @@ struct HashTuple {
     std::size_t operator()(const std::tuple<T1, T2, T3>& t) const
     {
         const auto &[a, b, c] = t;
-        std::size_t seed = 0;
-        HashCombine(seed, std::hash<T1>{}(a));
-        HashCombine(seed, std::hash<T2>{}(b));
-        HashCombine(seed, std::hash<T3>{}(c));
-        return seed;
+        return std::hash<T1>{}(a) ^ std::hash<T2>{}(b) ^ std::hash<T3>{}(c);
     }
 };
 

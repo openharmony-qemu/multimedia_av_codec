@@ -26,6 +26,7 @@
 #include <list>
 #include <functional>
 #include <unordered_map>
+#include <set>
 #include <chrono>
 #include "buffer/avbuffer.h"
 #include "plugin/demuxer_plugin.h"
@@ -57,6 +58,11 @@ namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
 extern const std::vector<AVCodecID> g_streamContainedXPS;
+constexpr uint64_t FILE_SIZE_THRESHOLD = 1ULL * 1024 * 1024 * 1024; // 1GB
+constexpr uint32_t SOFT_LIMIT_MULTIPLIER = 2;
+constexpr uint32_t HARD_LIMIT_MULTIPLIER = 4;
+constexpr uint32_t SOFT_LIMIT_MIN = 20;
+constexpr uint32_t HARD_LIMIT_MIN = 50;
 class FFmpegDemuxerPlugin : public DemuxerPlugin {
 public:
     using CachePressureCallback = DemuxerPlugin::CachePressureCallback;
@@ -281,6 +287,7 @@ private:
     void ResetParam();
     void UpdateStreamSnapshots();
     const AVStreamSnapshot* GetStreamSnapshot(uint32_t trackId) const;
+    AVStreamSnapshot* GetStreamSnapshotForUpdate(uint32_t trackId);
 
     bool WebvttPktProcess(AVPacket *pkt);
     bool IsWebvttMP4(const AVStream *avStream);
@@ -336,12 +343,35 @@ private:
     std::map<int32_t, std::vector<int32_t>> referenceIdsMap_ {};
 
     Status ParseVideoFirstFrames();
+    Status ParseVideoFirstFramesFull();
+    Status ParseVideoFirstFramesLimited();
+    Status ConvertVideoExtraDataForParsers();
+    Status ReadAndValidateLimitedPacket(Plugins::AVPacketWrapperPtr& pktWrapper);
+    Status ProcessLimitedPacketFirstFrame(Plugins::AVPacketWrapperPtr& pktWrapper,
+        bool extraType, int32_t trackId, AVStream *stream);
+    bool CheckLimitedProbeExitConditions(bool hasVideoTrack, bool hasAudioTrack,
+        uint32_t softLimit, uint32_t hardLimit);
+    void MarkPendingTracksForFirstFrame();
+    void SupplementFirstFrameIfPending(uint32_t trackId,
+        const std::shared_ptr<SamplePacket>& samplePacket);
+    void MaybeInitSeekCalibAfterRead(uint32_t trackId, AVPacket *pkt);
+    Status WaitForCacheReady(uint32_t trackId);
+    uint32_t CalculateRelevantTrackCount() const;
+    uint32_t CalculateSoftLimit(uint32_t trackCount) const;
+    uint32_t CalculateHardLimit(uint32_t trackCount) const;
+    bool HasVideoTrack() const;
+    bool HasAudioTrack() const;
+    bool IsSyncFrame(AVStream *stream, AVPacket *pkt) const;
     bool AllVideoFirstFramesReady();
     bool AllSupportTrackFramesReady();
     Status SetVideoFirstFrame(Plugins::AVPacketWrapperPtr pkt, bool isConvert = true);
     bool VideoFirstFrameValid(uint32_t trackIndex);
     std::map<int32_t, Plugins::AVPacketWrapperPtr> videoFirstFrameMap_ {};
     std::unordered_map<int32_t, int64_t> seekCalibMap_ {};
+    uint32_t initReadFrameCount_ = 0;
+    bool hasVideoFirstFrame_ = false;
+    bool hasAudioFirstFrame_ = false;
+    std::set<uint32_t> firstFramePendingTracks_ {};
     bool TrackIsChecked(const uint32_t trackId);
     std::vector<uint32_t> checkedTrackIds_ {};
     void ClearUnselectTrackCache();
@@ -444,7 +474,7 @@ private:
     std::mutex readSampleMutex_;
     std::mutex fFmpegReadLoopMutex_;
     uint32_t trackId_ = 0;
-    ThreadState threadState_ {ThreadState::NOT_STARTED};
+    std::atomic<ThreadState> threadState_ {ThreadState::NOT_STARTED};
     std::atomic<Status> readLoopStatus_ = {Status::OK};
     std::atomic<bool> isPauseReadPacket_ = false;
     std::unordered_map<int, int> readModeMap_; // 0 mean sync read, 1 mean async read

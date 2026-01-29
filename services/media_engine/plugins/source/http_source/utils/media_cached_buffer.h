@@ -99,7 +99,7 @@ public:
 
 protected:
     virtual CacheChunk* GetFreeCacheChunk(uint64_t offset, bool checkAllowFailContinue = false);
-    virtual ChunkIterator AddFragmentCacheBuffer(uint64_t offset);
+    virtual bool AddFragmentCacheBuffer(uint64_t offset, ChunkIterator& chunkPos);
     FragmentIterator GetFragmentIterator(FragmentIterator& currFragmentIter,
         uint64_t offset, ChunkIterator chunkPos, CacheChunk* splitHead, CacheChunk*& chunkInfo);
     virtual ChunkIterator SplitFragmentCacheBuffer(FragmentIterator& currFragmentIter,
@@ -258,7 +258,7 @@ protected:
     CacheChunk* GetFreeCacheChunk(uint64_t offset, bool checkAllowFailContinue = false) override;
     ChunkIterator SplitFragmentCacheBuffer(FragmentIterator& currFragmentIter, uint64_t offset,
         ChunkIterator chunkPos) override;
-    ChunkIterator AddFragmentCacheBuffer(uint64_t offset) override;
+    bool AddFragmentCacheBuffer(uint64_t offset, ChunkIterator& chunkPos) override;
     size_t Write(void* ptr, uint64_t inOffset, size_t inWriteSize) override;
 };
 

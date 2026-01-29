@@ -61,12 +61,15 @@ private:
     bool CreateBuffer();
     bool ReadAudio(std::vector<std::vector<int32_t>> &cacheCheckSteps);
     bool ReadVideo(std::vector<std::vector<int32_t>> &cacheCheckSteps);
+    int32_t ReadSample(int32_t videoFrame, int32_t audioFrame);
+    void GetHdrType();
+    int32_t SetEos(int32_t trackType);
     std::list<int64_t> videoIndexPtsList;
     std::list<int64_t> audioIndexPtsList;
     std::shared_ptr<AVSource> avsource_ = nullptr;
     Format source_format_;
     Format track_format_;
-    int32_t fd;
+    int32_t fd = -1;
     int32_t trackCount;
     int64_t duration;
     int32_t videoTrackIdx;
@@ -100,6 +103,10 @@ private:
     uint32_t indexData = 0;
     int32_t readPos = 0;
     int32_t unSelectTrack = -1;
+    int32_t hdrType = -2;
+    bool getHdrMetadata = true;
+    bool audioIsEnd = true;
+    bool videoIsEnd = true;
 };
 }
 }

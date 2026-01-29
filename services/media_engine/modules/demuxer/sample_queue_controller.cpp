@@ -20,6 +20,11 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_PLAYER, "SampleQueueController" };
+constexpr uint32_t S_TO_US = 1000 * 1000;
+constexpr double MIN_FIRST_DURATION = 0;
+constexpr double MAX_FIRST_DURATION = 20;
+constexpr uint64_t MIN_DURATION = 1;
+constexpr uint64_t MAX_DURATION = 20;
 }
 
 namespace OHOS {
@@ -51,17 +56,19 @@ void SampleQueueController::AddQueueSize(int32_t trackId, uint64_t size)
 }
 
 bool SampleQueueController::ShouldStartConsume(int32_t trackId, std::shared_ptr<SampleQueue> sampleQueue,
-    const std::unique_ptr<Task> &task)
+    const std::unique_ptr<Task> &task, bool inPreroll)
 {
     if (sampleQueue == nullptr || task == nullptr) {
         return false;
     }
     auto cacheDuration = sampleQueue->NewGetCacheDuration();
-    if (cacheDuration < START_CONSUME_WATER_LOOP &&
+    if (cacheDuration < GetBufferingDuration() &&
         sampleQueue->GetFilledBufferSize() < SampleQueue::DEFAULT_SAMPLE_QUEUE_SIZE - 1 &&
-        (isFirstArrived_[trackId] || cacheDuration < static_cast<uint64_t>(FIRST_START_CONSUME_WATER_LOOP))) {
+        (isFirstArrived_[trackId] ||cacheDuration < static_cast<uint64_t>(FIRST_START_CONSUME_WATER_LOOP &&
+        !inPreroll))) {
         return false;
     }
+    DisableFirstBufferingDuration();
 
     if (!task->IsTaskRunning()) {
         MEDIA_LOG_I("StartConsume, cacheDuration: %{public}llu, trackId: %{public}d", cacheDuration, trackId);
@@ -168,8 +175,44 @@ int64_t SampleQueueController::GetFilledBufferPercent(int32_t trackId, std::shar
 {
     auto filledBufferSize = sampleQueue->GetFilledBufferSize();
     auto queueSize = GetQueueSize(trackId);
-    int64_t percent = static_cast<int64_t>(filledBufferSize * 100 / (queueSize * START_CONSUME_WATER_LOOP));
+    int64_t percent = static_cast<int64_t>(filledBufferSize * 100 / (queueSize * GetBufferingDuration()));
     return percent;
+}
+
+void SampleQueueController::SetBufferingDuration(std::shared_ptr<Plugins::PlayStrategy> strategy)
+{
+    if (strategy == nullptr) {
+        MEDIA_LOG_W("SetBufferingDuration strategy nullptr!");
+        return;
+    }
+
+    if (strategy->duration != 0) {
+        bufferingDuration_.store(std::max(MIN_DURATION,
+            std::min(MAX_DURATION, static_cast<uint64_t>(strategy->duration))) * S_TO_US);
+    }
+    if (strategy->bufferDurationForPlaying != 0) {
+        isSetFirstBufferingDuration_.store(true);
+        firstBufferingDuration_.store(static_cast<uint64_t>(std::max(MIN_FIRST_DURATION,
+            std::min(MAX_FIRST_DURATION, strategy->bufferDurationForPlaying))) * S_TO_US);
+    }
+    MEDIA_LOG_I("set duration, enable first: " PUBLIC_LOG_D32 ", first: " PUBLIC_LOG_U64 ", playing duration: "
+        PUBLIC_LOG_U64, isSetFirstBufferingDuration_.load(), firstBufferingDuration_.load(),
+        bufferingDuration_.load());
+}
+
+uint64_t SampleQueueController::GetBufferingDuration()
+{
+    return isSetFirstBufferingDuration_.load() ? firstBufferingDuration_.load() :
+        (bufferingDuration_.load() > 0 ? bufferingDuration_.load() : START_CONSUME_WATER_LOOP);
+}
+
+void SampleQueueController::DisableFirstBufferingDuration()
+{
+    if (!isSetFirstBufferingDuration_.load()) {
+        return;
+    }
+    MEDIA_LOG_I("disable first buffering duration");
+    isSetFirstBufferingDuration_.store(false);
 }
 
 uint64_t SpeedCountInfo::GetCurrentTimeUs()

@@ -130,6 +130,7 @@ int32_t RenderSurface::SwitchBetweenSurface(const sptr<Surface> &newSurface)
         }
         sptr<SurfaceBuffer> surfaceBuffer = nullptr;
         if (buffers_[INDEX_OUTPUT][index]->owner_ == Owner::OWNED_BY_SURFACE) {
+            std::lock_guard<std::mutex> mLock(renderBufferMapMutex_);
             if (renderSurfaceBufferMap_.count(index)) {
                 surfaceBuffer = renderSurfaceBufferMap_[index].first;
                 ownedBySurfaceBufferIndex.push_back(index);
@@ -174,9 +175,10 @@ bool RenderSurface::RequestSurfaceBufferOnce(uint32_t index)
 
 int32_t RenderSurface::RenderNewSurfaceWithOldBuffer(const sptr<Surface> &newSurface, uint32_t index)
 {
-    std::shared_ptr<FSurfaceMemory> surfaceMemory = buffers_[INDEX_OUTPUT][index]->sMemory;
+    std::unique_lock<std::mutex> mLock(renderBufferMapMutex_);
     sptr<SurfaceBuffer> surfaceBuffer = renderSurfaceBufferMap_[index].first;
     OHOS::BufferFlushConfig flushConfig = renderSurfaceBufferMap_[index].second;
+    mLock.unlock();
     if (sInfo_.scalingMode) {
         newSurface->SetScalingMode(surfaceBuffer->GetSeqNum(), sInfo_.scalingMode.value());
     }
@@ -191,6 +193,7 @@ int32_t RenderSurface::RenderNewSurfaceWithOldBuffer(const sptr<Surface> &newSur
 
 int32_t RenderSurface::FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemory, uint32_t index)
 {
+    std::unique_lock<std::mutex> sLock(surfaceMutex_);
     RequestSurfaceBufferOnce(index);
     sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
     CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, AVCS_ERR_UNKNOWN, "Get surface buffer failed!");
@@ -208,22 +211,29 @@ int32_t RenderSurface::FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfa
         outAVBuffer4Surface_[index]->meta_->Remove(OHOS::Media::Tag::VIDEO_DECODER_DESIRED_PRESENT_TIMESTAMP);
     }
     auto res = sInfo_.surface->FlushBuffer(surfaceBuffer, -1, flushConfig);
+    sLock.unlock();
+
     if (res == GSERROR_BUFFER_NOT_INCACHE) {
         AVCODEC_LOGW("Surface(%{public}" PRIu64 "), flush buffer(seq=%{public}u) failed, try to recover",
                      sInfo_.surface->GetUniqueId(), surfaceBuffer->GetSeqNum());
         int32_t ret = ClearSurfaceAndSetQueueSize(sInfo_.surface, outputBufferCnt_);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Clean surface and set queue size failed!");
+        sLock.lock();
         ret = Attach(surfaceBuffer);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Surface buffer attach failed!");
         surfaceMemory->isAttached = true;
         res = sInfo_.surface->FlushBuffer(surfaceBuffer, -1, flushConfig);
+        sLock.unlock();
     }
     surfaceMemory->owner = Owner::OWNED_BY_SURFACE;
     if (res != OHOS::SurfaceError::SURFACE_ERROR_OK) {
         AVCODEC_LOGW("Failed to update surface memory: %{public}d", res);
         return AVCS_ERR_UNKNOWN;
     }
-    renderSurfaceBufferMap_[index] = std::make_pair(surfaceBuffer, flushConfig);
+    {
+        std::lock_guard<std::mutex> mLock(renderBufferMapMutex_);
+        renderSurfaceBufferMap_[index] = std::make_pair(surfaceBuffer, flushConfig);
+    }
     renderAvailQue_->Push(index);
     return AVCS_ERR_OK;
 }
@@ -239,12 +249,14 @@ int32_t RenderSurface::Attach(sptr<SurfaceBuffer> surfaceBuffer)
 
 int32_t RenderSurface::ClearSurfaceAndSetQueueSize(const sptr<Surface> &surface, int32_t bufferCnt)
 {
+    std::unique_lock<std::mutex> sLock(surfaceMutex_);
     surface->Connect();
     surface->CleanCache(); // clean cache will work only if the surface is connected by us.
     int32_t ret = SetQueueSize(surface, bufferCnt);
+    surface->Disconnect();
+    sLock.unlock();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Set surface queue size failed!");
     ret = SetSurfaceCfg();
-    surface->Disconnect();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Set surface cfg failed!");
     CHECK_AND_RETURN_RET_LOGD(buffers_[INDEX_OUTPUT].size() > 0u, AVCS_ERR_OK, "Set surface cfg & queue size success.");
     int32_t valBufferCnt = 0;
@@ -332,6 +344,7 @@ void RenderSurface::RequestBufferFromConsumer()
     }
     buffers_[INDEX_OUTPUT][curIndex]->owner_ = Owner::OWNED_BY_CODEC;
     codecAvailQue_->Push(curIndex);
+    std::lock_guard<std::mutex> mLock(renderBufferMapMutex_);
     if (renderSurfaceBufferMap_.count(curIndex)) {
         renderSurfaceBufferMap_.erase(curIndex);
     }

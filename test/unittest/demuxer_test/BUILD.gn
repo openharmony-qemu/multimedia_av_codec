@@ -252,6 +252,7 @@ ohos_unittest("demuxer_capi_buffer_unit_test") {
       "./capi/demuxer_capi_buffer_mock.cpp",
       "./capi/demuxer_capi_mock_factory.cpp",
       "./demuxer_aiff_unit_test.cpp",
+      "./demuxer_au_unit_test.cpp",
       "./demuxer_container_test_video_part1.cpp",
       "./demuxer_enhance_ndk_unit_test_part1.cpp",
       "./demuxer_func_unit_test.cpp",

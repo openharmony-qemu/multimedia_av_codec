@@ -684,11 +684,12 @@ HWTEST_F(DemuxerFilterUnitTest, SelectBitRate, TestSize.Level1)
     std::cout << "SelectBitRate " << static_cast<int32_t>(res) << std::endl;
     ASSERT_EQ(res, Status::OK);
 }
+
 /**
  * @tc.name: OnDumpInfo
  * @tc.desc: OnDumpInfo
  * @tc.type: FUNC
- */
+*/
 HWTEST_F(DemuxerFilterUnitTest, OnDumpInfo, TestSize.Level1)
 {
     auto fd = AshmemCreate("DemuxerFilterUnitTest::OnDumpInfo", 4096);

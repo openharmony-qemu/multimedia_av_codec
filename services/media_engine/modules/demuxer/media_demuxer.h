@@ -200,8 +200,7 @@ public:
     void NotifyResumeUnMute();
     bool BoostThreadPriorityIfNeeded();
     bool IsWatchDevice();
-    bool IsCloudFd();
-    bool IsFd();
+    bool IsBuffering();
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -394,9 +393,16 @@ private:
     bool NeedDroped(int32_t trackId);
     void AfterDrop(int32_t trackId);
     void AfterSeekNeedDrop(int32_t trackId);
-    void ClearSampleQueue();
     Status SetCachePressureCallback();
     bool SourceDropFrame(int32_t trackId);
+    int64_t HandleFrameDropForTrack(int32_t trackId);
+    bool GetTrackIsBuffering(int32_t trackId);
+    void SetTrackIsBuffering(int32_t trackId, bool isBuffering);
+    Status ReadSampleToDrop(int32_t trackId, std::shared_ptr<AVBuffer> sample);
+    uint32_t GetTrackNeedDropFrame(int32_t trackId);
+    void SetTrackNeedDropFrame(int32_t trackId, uint32_t frameCount);
+    bool GetTrackSeekNeedDrop(int32_t trackId);
+    void SetTrackSeekNeedDrop(int32_t trackId, bool needDrop);
 
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
@@ -536,16 +542,20 @@ private:
     sptr<AVBufferQueueProducer> dfxBufferQueueProducer_ {nullptr};
     sptr<AVBufferQueueConsumer> dfxBufferQueueConsumer_ {nullptr};
     std::shared_ptr<SampleQueueController> sampleQueueController_;
-    std::map<int32_t, std::atomic<bool>> isBufferingMap_;
+    std::mutex bufferingMapMutex_ {};
+    std::map<int32_t, bool> isBufferingMap_;
     SteadyClock produceSteadyClock_;
     uint64_t produceLastCountTime_ {0};
 
     std::atomic<bool> isBuffering_ {false};
     int64_t lastCacheDuration_ {0};
     std::map<int32_t, std::atomic<bool>> hasDropedMap_;
-    std::map<int32_t, int64_t> afterDropPts_;
+    std::map<int32_t, int64_t> afterDropDts_;
+    std::mutex afterSeekNeedDropMutex_ {};
     std::map<int32_t, bool> afterSeekNeedDrop_;
     bool videoNeedIFrame_ {false};
+    std::mutex frameCountNeedDropMutex_ {};
+    std::map<int32_t, uint32_t> frameCountNeedDrop_;
 };
 } // namespace Media
 } // namespace OHOS

@@ -25,14 +25,6 @@
 #include "v1_0/hdr_static_metadata.h"
 #include "v1_0/buffer_handle_meta_key_type.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-#include "libavutil/mastering_display_metadata.h"
-#ifdef __cplusplus
-}
-#endif
-
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {
@@ -483,7 +475,7 @@ int32_t VpxDecoder::DecodeFrameOnce()
         ret = -1;
     }
     if (ret == 0 && vpxDecOutputImg_ != nullptr) {
-        int32_t bitDepth = vpxDecOutputImg_->bit_depth;
+        int32_t bitDepth = static_cast<int32_t>(vpxDecOutputImg_->bit_depth);
         ConvertDecOutToAVFrame();
 #ifdef BUILD_ENG_VERSION
         DumpOutputBuffer(bitDepth);

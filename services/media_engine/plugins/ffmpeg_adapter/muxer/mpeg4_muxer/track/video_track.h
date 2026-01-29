@@ -52,10 +52,11 @@ private:
     bool InitColor(const std::shared_ptr<Meta> &trackDesc);
     void InitCuva(const std::shared_ptr<Meta> &trackDesc);
     void DisposeCtts(int64_t pts);
-    void DisposeCtts();
+    void DisposeCttsAndStts();
+    void DisposeCttsAndStts(int64_t mpeg4Pts);
     void DisposeCttsByFrameRate(int64_t pts);
-    void DisposeSttsAllPts();
     void DisposeSttsNoPts();
+    void DisposeSttsOnly();
     void DisposeDuration();
     void DisposeBitrate();
     void DisposeColor();
@@ -74,6 +75,7 @@ private:
     bool isCuvaHDR_ = false;
     std::shared_ptr<VideoParser> videoParser_ = nullptr;
     std::shared_ptr<SttsBox> ctts_ = nullptr;
+    std::shared_ptr<SttsBox> tempCtts_ = nullptr;
     std::shared_ptr<StssBox> stss_ = nullptr;
     std::shared_ptr<SdtpBox> sdtp_ = nullptr;
     std::queue<int64_t> allPts_;
@@ -82,6 +84,7 @@ private:
     int64_t startDts_ = 0;
     bool hasSetParserConfig_ = false;
     std::vector<std::shared_ptr<BasicTrack>> &tracks_;
+    int64_t ptsMax_ = 0;  // mpeg4 time scale
 };
 } // Mpeg4
 } // Plugins

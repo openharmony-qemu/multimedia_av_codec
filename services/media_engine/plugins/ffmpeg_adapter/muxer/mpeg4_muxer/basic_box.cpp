@@ -502,7 +502,10 @@ EsdsBox::EsdsBox(uint32_t size, std::string type, uint8_t version, uint32_t flag
 
 uint32_t EsdsBox::GetSize()
 {
-    size_ = BOX_BASE_LEN + 37 + codecConfig_.size();  // 37
+    size_ = BOX_BASE_LEN + 32;  // 32
+    if (codecConfig_.size() > 0) {
+        size_ += (codecConfig_.size() + 5); // 5
+    }
     AppendChildSize();
     return size_;
 }
@@ -524,9 +527,11 @@ int64_t EsdsBox::Write(std::shared_ptr<AVIOStream> io)
     io->Write(bufferSize_, sizeof(bufferSize_));
     io->Write(maxBitrate_);
     io->Write(avgBitrate_);
-    io->Write(dsInfoTag_);
-    io->Write(dsInfo_);
-    io->Write(codecConfig_.data(), codecConfig_.size());
+    if (codecConfig_.size() > 0) {
+        io->Write(dsInfoTag_);
+        io->Write(dsInfo_);
+        io->Write(codecConfig_.data(), codecConfig_.size());
+    }
     io->Write(slcDescrTag_);
     io->Write(slcDescr_);
     io->Write(slcData_);
@@ -798,6 +803,17 @@ int64_t CuvvBox::Write(std::shared_ptr<AVIOStream> io)
 SttsBox::SttsBox(uint32_t size, std::string type, uint8_t version, uint32_t flags)
     : FullBox(size, std::move(type), version, flags) // stts, ctts
 {
+}
+
+void SttsBox::AddData(uint32_t data)
+{
+    size_t size = timeToSamples_.size();
+    if (size > 0 && timeToSamples_[size - 1].second == data) {
+        timeToSamples_[size - 1].first++;
+    } else {
+        entryCount_++;
+        timeToSamples_.emplace_back(std::pair<uint32_t, uint32_t>(1, data));
+    }
 }
 
 uint32_t SttsBox::GetSize()

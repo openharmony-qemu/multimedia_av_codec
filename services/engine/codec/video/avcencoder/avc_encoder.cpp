@@ -1103,9 +1103,11 @@ int32_t AvcEncoder::GetOutputFormat(Format &format)
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, encHeight_);
     format.PutIntValue(OHOS::Media::Tag::VIDEO_PIC_WIDTH, encWidth_);
     format.PutIntValue(OHOS::Media::Tag::VIDEO_PIC_HEIGHT, encHeight_);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, avcQuality_);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE,
         static_cast<int>(bitrateMode_));
+    if (bitrateMode_ == VideoEncodeBitrateMode::CQ) {
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, avcQuality_);
+    }
     AVCODEC_LOGI("GetOutputFormat !");
     return AVCS_ERR_OK;
 }

@@ -90,6 +90,7 @@ private:
     std::atomic<int64_t> frameNum_ = 0;
     std::atomic<int64_t> lastBufferPts_ = INT64_MIN;
     std::atomic<bool> isThreadExit_ = true;
+    std::shared_mutex codecServerMutex_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

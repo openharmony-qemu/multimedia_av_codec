@@ -27,6 +27,7 @@ namespace Media {
 
 BlockQueuePool::~BlockQueuePool()
 {
+    std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
     MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S, name_.c_str());
     for (auto que : quePool_) {
         FreeQueue(que.first);
@@ -162,6 +163,7 @@ void BlockQueuePool::ResetQueue(uint32_t queueIndex)
 
 bool BlockQueuePool::ResetInfo(std::shared_ptr<SamplePacket> block)
 {
+    std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
     FALSE_RETURN_V_MSG_E(block != nullptr, false, "Block is nullptr");
     MEDIA_LOG_D("Reset for block " PUBLIC_LOG_U32, block->queueIndex);
     uint32_t queIndex = block->queueIndex;
@@ -178,6 +180,7 @@ bool BlockQueuePool::ResetInfo(std::shared_ptr<SamplePacket> block)
 
 bool BlockQueuePool::SetInfo(std::shared_ptr<SamplePacket> block)
 {
+    std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
     FALSE_RETURN_V_MSG_E(block != nullptr, false, "Block is nullptr");
     MEDIA_LOG_D("Set for block " PUBLIC_LOG_U32, block->queueIndex);
     uint32_t queIndex = block->queueIndex;
@@ -373,6 +376,7 @@ bool BlockQueuePool::InnerQueueIsFull(uint32_t queueIndex)
 
 bool BlockQueuePool::HasQueue(uint32_t trackIndex)
 {
+    std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
     MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32, name_.c_str(), trackIndex);
     return queMap_.count(trackIndex) > 0;
 }

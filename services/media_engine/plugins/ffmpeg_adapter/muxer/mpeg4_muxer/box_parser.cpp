@@ -649,7 +649,7 @@ std::shared_ptr<BasicBox> BoxParser::EsdsBoxGenerate(std::shared_ptr<BasicTrack>
     esdsBox->esId_ = static_cast<uint16_t>(track->GetTrackId());
     std::string mimeType = track->GetMimeType();
     if (mimeType.compare(AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_MPEG) == 0) {
-        esdsBox->objectType_ = 0x68;
+        esdsBox->objectType_ = 0x69;
         esdsBox->streamType_ = 0x15;
     } else if (mimeType.compare(AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AAC) == 0) {
         esdsBox->objectType_ = 0x40;
@@ -661,12 +661,11 @@ std::shared_ptr<BasicBox> BoxParser::EsdsBoxGenerate(std::shared_ptr<BasicTrack>
         MEDIA_LOG_D("mimeType %{public}s is unsupported", mimeType.c_str());
     }
     esdsBox->codecConfig_ = track->GetCodecConfig();
-    if (esdsBox->codecConfig_.size() > 0) { // codec config
-        esdsBox->esDescr_ = CalculateEsDescr(32 + esdsBox->codecConfig_.size());  // 32 = 3 + 5 + 13 + 5 + 5 + 1
-        esdsBox->dcDescr_ = CalculateEsDescr(18 + esdsBox->codecConfig_.size());  // 18 = 13 + 5
-        esdsBox->dsInfo_ = CalculateEsDescr(esdsBox->codecConfig_.size());
-        esdsBox->slcDescr_ = CalculateEsDescr(1);
-    }
+    uint32_t codeConfigAndSpInfoLen = esdsBox->codecConfig_.size() > 0 ? esdsBox->codecConfig_.size() + 5 : 0;  // 5
+    esdsBox->esDescr_ = CalculateEsDescr(27 + codeConfigAndSpInfoLen);  // 27 = 3 + 5 + 13  + 5 + 1
+    esdsBox->dcDescr_ = CalculateEsDescr(13 + codeConfigAndSpInfoLen);  // 13
+    esdsBox->dsInfo_ = CalculateEsDescr(esdsBox->codecConfig_.size());
+    esdsBox->slcDescr_ = CalculateEsDescr(1);
 
     return esdsBox;
 }

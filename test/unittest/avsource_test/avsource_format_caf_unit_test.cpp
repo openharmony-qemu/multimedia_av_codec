@@ -53,6 +53,38 @@ string g_cafAlacUri = TEST_URI_PATH + string("caf_alac.caf");
 string g_cafOpusPath = TEST_FILE_PATH + string("caf_opus.caf");
 string g_cafOpusUri = TEST_URI_PATH + string("caf_opus.caf");
 
+string g_cafFilePath1 = TEST_FILE_PATH + string("ac3.caf");
+string g_cafFilePath2 = TEST_FILE_PATH + string("adpcm_ima_wav.caf");
+string g_cafFilePath3 = TEST_FILE_PATH + string("adpcm_ms.caf");
+string g_cafFilePath4 = TEST_FILE_PATH + string("alac.caf");
+string g_cafFilePath5 = TEST_FILE_PATH + string("amr_nb.caf");
+string g_cafFilePath6 = TEST_FILE_PATH + string("flac.caf");
+string g_cafFilePath7 = TEST_FILE_PATH + string("gsm.caf");
+string g_cafFilePath8 = TEST_FILE_PATH + string("gsm_ms.caf");
+string g_cafFilePath9 = TEST_FILE_PATH + string("ilbc.caf");
+string g_cafFilePath10 = TEST_FILE_PATH + string("mp2.caf");
+string g_cafFilePath11 = TEST_FILE_PATH + string("mp3.caf");
+string g_cafFilePath12 = TEST_FILE_PATH + string("opus.caf");
+string g_cafFilePath13 = TEST_FILE_PATH + string("pcm_alaw.caf");
+string g_cafFilePath14 = TEST_FILE_PATH + string("pcm_mulaw.caf");
+string g_cafFilePath15 = TEST_FILE_PATH + string("pcm_s16be.caf");
+
+string g_cafUriPath1 = TEST_URI_PATH + string("ac3.caf");
+string g_cafUriPath2 = TEST_URI_PATH + string("adpcm_ima_wav.caf");
+string g_cafUriPath3 = TEST_URI_PATH + string("adpcm_ms.caf");
+string g_cafUriPath4 = TEST_URI_PATH + string("alac.caf");
+string g_cafUriPath5 = TEST_URI_PATH + string("amr_nb.caf");
+string g_cafUriPath6 = TEST_URI_PATH + string("flac.caf");
+string g_cafUriPath7 = TEST_URI_PATH + string("gsm.caf");
+string g_cafUriPath8 = TEST_URI_PATH + string("gsm_ms.caf");
+string g_cafUriPath9 = TEST_URI_PATH + string("ilbc.caf");
+string g_cafUriPath10 = TEST_URI_PATH + string("mp2.caf");
+string g_cafUriPath11 = TEST_URI_PATH + string("mp3.caf");
+string g_cafUriPath12 = TEST_URI_PATH + string("opus.caf");
+string g_cafUriPath13 = TEST_URI_PATH + string("pcm_alaw.caf");
+string g_cafUriPath14 = TEST_URI_PATH + string("pcm_mulaw.caf");
+string g_cafUriPath15 = TEST_URI_PATH + string("pcm_s16be.caf");
+
 /**
  * @tc.name: AVSource_CAF_GetFormat_0001
  * @tc.desc: get source format when the file is CAF(PCM_S16LE). Use FD mode.
@@ -294,6 +326,1444 @@ HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetSourceFormat_0008, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
     ASSERT_EQ(formatVal_.fileType, 211);
     format_->Destroy();
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_0009
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_0009, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafFilePath1.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafFilePath1.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 5056000);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 48000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 96000);
+    EXPECT_EQ(formatVal_.codecMime, "audio/ac3");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_F32P);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_00010
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_00010, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafUriPath1.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafUriPath1.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 5056000);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 48000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 96000);
+    EXPECT_EQ(formatVal_.codecMime, "audio/ac3");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_F32P);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_0011
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_0011, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafFilePath2.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafFilePath2.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 5060000);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 48000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 192658);
+    EXPECT_EQ(formatVal_.codecMime, "audio/adpcm_ima_wav");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_S16P);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_00012
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_00012, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafUriPath2.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafUriPath2.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 5060000);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 48000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 192658);
+    EXPECT_EQ(formatVal_.codecMime, "audio/adpcm_ima_wav");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_S16P);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_0013
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_0013, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafFilePath3.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafFilePath3.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 5047604);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 48000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 193131);
+    EXPECT_EQ(formatVal_.codecMime, "audio/adpcm_ms");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_00014
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_00014, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafUriPath3.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafUriPath3.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 5047604);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 48000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 193131);
+    EXPECT_EQ(formatVal_.codecMime, "audio/adpcm_ms");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_0015
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_0015, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafFilePath4.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafFilePath4.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 5120000);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 48000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 384000);
+    EXPECT_EQ(formatVal_.codecMime, "audio/alac");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_S32P);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_00016
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_00016, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafUriPath4.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafUriPath4.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 5120000);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 48000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 384000);
+    EXPECT_EQ(formatVal_.codecMime, "audio/alac");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_S32P);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_0017
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_0017, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafFilePath5.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafFilePath5.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 5060000);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 8000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.codecMime, "audio/3gpp");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_F32P);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_00018
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_00018, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafUriPath5.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafUriPath5.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 5000000);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 48000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 768000);
+    EXPECT_EQ(formatVal_.codecMime, "audio/raw");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_S16BE);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_0019
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_0019, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafFilePath6.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafFilePath6.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 5134500);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 48000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 384000);
+    EXPECT_EQ(formatVal_.codecMime, "audio/flac");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_S32LE);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_00020
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_00020, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafUriPath6.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafUriPath6.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 5134500);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 48000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 384000);
+    EXPECT_EQ(formatVal_.codecMime, "audio/flac");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_S32LE);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_0021
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_0021, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafFilePath7.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafFilePath7.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 5040000);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 8000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 13200);
+    EXPECT_EQ(formatVal_.codecMime, "audio/gsm");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_00022
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_00022, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafUriPath7.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafUriPath7.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 5040000);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 8000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 13200);
+    EXPECT_EQ(formatVal_.codecMime, "audio/gsm");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_0023
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_0023, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafFilePath8.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafFilePath8.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 5040000);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 8000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 13000);
+    EXPECT_EQ(formatVal_.codecMime, "audio/gsm_ms");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_00024
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_00024, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafUriPath8.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafUriPath8.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 5040000);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 8000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 13000);
+    EXPECT_EQ(formatVal_.codecMime, "audio/gsm_ms");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_0025
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_0025, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafFilePath9.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafFilePath9.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 5040000);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 8000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 15200);
+    EXPECT_EQ(formatVal_.codecMime, "audio/ilbc");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_00026
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_00026, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafUriPath9.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafUriPath9.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 5040000);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 8000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 15200);
+    EXPECT_EQ(formatVal_.codecMime, "audio/ilbc");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_0027
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_0027, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafFilePath10.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafFilePath10.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 5040000);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 48000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 384000);
+    EXPECT_EQ(formatVal_.codecMime, "audio/mpeg");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_S16P);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_00028
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_00028, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafUriPath10.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafUriPath10.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 5040000);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 48000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 384000);
+    EXPECT_EQ(formatVal_.codecMime, "audio/mpeg");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_S16P);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_0029
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_0029, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafFilePath11.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafFilePath11.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 5040000);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 48000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 64000);
+    EXPECT_EQ(formatVal_.codecMime, "audio/mpeg");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_F32P);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_00030
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_00030, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafUriPath11.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafUriPath11.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 5040000);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 48000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 64000);
+    EXPECT_EQ(formatVal_.codecMime, "audio/mpeg");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_F32P);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_0031
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_0031, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafFilePath12.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafFilePath12.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 632500);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 48000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 384000);
+    EXPECT_EQ(formatVal_.codecMime, "audio/opus");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_F32P);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_00032
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_00032, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafUriPath12.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafUriPath12.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 632500);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 48000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 384000);
+    EXPECT_EQ(formatVal_.codecMime, "audio/opus");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_F32P);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_0033
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_0033, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafFilePath13.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafFilePath13.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 5040000);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 48000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 384000);
+    EXPECT_EQ(formatVal_.codecMime, "audio/g711a");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_00034
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_00034, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafUriPath13.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafUriPath13.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 5040000);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 48000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 384000);
+    EXPECT_EQ(formatVal_.codecMime, "audio/g711a");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_0035
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_0035, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafFilePath14.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafFilePath14.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 5040000);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 48000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 384000);
+    EXPECT_EQ(formatVal_.codecMime, "audio/g711mu");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_00036
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_00036, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafUriPath14.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafUriPath14.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 5040000);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 48000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 384000);
+    EXPECT_EQ(formatVal_.codecMime, "audio/g711mu");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_0037
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_0037, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafFilePath15.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafFilePath15.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 5040000);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 48000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 768000);
+    EXPECT_EQ(formatVal_.codecMime, "audio/raw");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_S16BE);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_CAF_GetFormat_00038
+ * @tc.desc: get format when the file is caf
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_00038, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_cafUriPath15.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafUriPath15.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    EXPECT_EQ(formatVal_.duration, 5040000);
+    EXPECT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    EXPECT_EQ(formatVal_.hasVideo, 0);
+    EXPECT_EQ(formatVal_.hasAudio, 1);
+    EXPECT_EQ(formatVal_.fileType, static_cast<int>(OHOS::Media::Plugins::FileType::CAF));
+#endif
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    EXPECT_EQ(formatVal_.sampleRate, 48000);
+    EXPECT_EQ(formatVal_.channelCount, 1);
+    EXPECT_EQ(formatVal_.bitRate, 768000);
+    EXPECT_EQ(formatVal_.codecMime, "audio/raw");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_S16BE);
+    EXPECT_EQ(formatVal_.channelLayout, 4);
+    EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
 }
 
 } // namespace
