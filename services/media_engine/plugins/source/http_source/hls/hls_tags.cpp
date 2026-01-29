@@ -515,6 +515,15 @@ static bool IsHexValid(const std::string& hex)
         [](char c) {return !std::isxdigit(static_cast<unsigned char>(c));});
     return it == hex.end();
 }
+
+static void UriInsert (std::string& result, std::string& hex, int base)
+{
+    int resultTmp = 0;
+    bool ret = Attribute::SafeStringToInt(hex, resultTmp, base);
+    if (ret) {
+        result += static_cast<char>(resultTmp);
+    }
+}
  	 
 static std::string UriDecode(const std::string& uri)
 {
@@ -525,7 +534,7 @@ static std::string UriDecode(const std::string& uri)
         if (uri[i] == '%' && i + 2 <= uri.size()) { // 2:“%20”
             std::string hex = uri.substr(i + 1, 2); // 2
             if (IsHexValid(hex)) {
-                result += static_cast<char>(std::stoi(hex, nullptr, 16)); // 16:hex
+                UriInsert(result, hex, 16); // 16:hex
                 i += 3; // 3:“%20”
             } else {
                 result += uri.substr(i, 3); // 3
