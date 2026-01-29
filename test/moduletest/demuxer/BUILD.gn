@@ -117,7 +117,9 @@ ohos_unittest("demuxer_native_module_test") {
       "./src/rmvbfunc_test.cpp",
       "./src/rmfunc_test.cpp",
       "./src/asffunc_test.cpp",
-      "./src/sunaufunc_test.cpp"
+      "./src/sunaufunc_test.cpp",
+      "./src/aifcfunc_test.cpp",
+      "./src/aifffunc_test.cpp"
     ]
   }
 
