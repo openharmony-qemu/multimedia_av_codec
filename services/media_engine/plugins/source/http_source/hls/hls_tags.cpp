@@ -516,7 +516,7 @@ static bool IsHexValid(const std::string& hex)
     return it == hex.end();
 }
 
-static void UriInsert (std::string& result, std::string& hex, int base)
+static void UriInsert(std::string& result, std::string& hex, int base)
 {
     int resultTmp = 0;
     bool ret = Attribute::SafeStringToInt(hex, resultTmp, base);
