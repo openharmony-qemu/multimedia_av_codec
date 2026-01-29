@@ -195,7 +195,11 @@ void MediaCodec::IODump(const std::shared_ptr<Meta> &meta)
     }
 
     std::ostringstream common;
-    common << "/data/media/";
+    if (!isRunInApp_) {
+        common << "/data/media/";
+    } else {
+        common << "/data/storage/el2/base/cache/";
+    }
     common << std::put_time(tm, "%H%M%S");
     common << "_" << reinterpret_cast<void*>(this);
 
@@ -1194,8 +1198,10 @@ uint32_t MediaCodec::GetApiVersion()
     AppExecFwk::BundleInfo bundleInfo;
     if (iBundleMgr->GetBundleInfoForSelf(0, bundleInfo) == ERR_OK) {
         apiVersion = bundleInfo.targetVersion % API_VERSION_MOD;
+        isRunInApp_ = true;
         AVCODEC_LOGI("GetApiVersion targetVersion: %{public}u", bundleInfo.targetVersion);
     } else {
+        isRunInApp_ = false;
         AVCODEC_LOGW("GetApiVersion failed, call by SA or test maybe");
     }
     return apiVersion;
