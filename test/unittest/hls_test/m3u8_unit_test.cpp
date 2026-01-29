@@ -99,6 +99,17 @@ HWTEST_F(M3u8UnitTest, UPDATE_FROM_TAGS_TEST, TestSize.Level1)
     EXPECT_EQ(m3u8.files_.size(), 0);
 }
 
+HWTEST_F(M3u8UnitTest, UPDATE_FROM_TAGS_TEST_NULL_UPDATER, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "TestPlaylist");
+    //
+    std::list<std::shared_ptr<Tag>> tags;
+    tags.emplace_back(std::make_shared<Tag>(HlsTag::EXTXSESSIONKEY));
+    m3u8.tagUpdatersMap_[HlsTag::EXTXSESSIONKEY] = nullptr;
+    m3u8.UpdateFromTags(tags);
+    EXPECT_EQ(m3u8.files_.size(), 0);
+}
+
 HWTEST_F(M3u8UnitTest, TEST_CONSTRUCTOR_WITH_NULL_KEY_AND_IV, TestSize.Level1)
 {
     M3U8Fragment m3u8("http://example.com", 10.0, 1, false);

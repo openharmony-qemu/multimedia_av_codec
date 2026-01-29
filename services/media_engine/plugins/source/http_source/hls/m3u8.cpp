@@ -356,7 +356,7 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
             continue;
         }
         auto iter = tagUpdatersMap_.find(hlsTag);
-        if (iter != tagUpdatersMap_.end()) {
+        if (iter != tagUpdatersMap_.end() && iter->second) {
             auto updater = iter->second;
             updater(tag, info);
         }

@@ -106,7 +106,7 @@ int32_t MediaSourceLoadingRequest::RespondData(int64_t uuid, int64_t offset,
         " offset: " PUBLIC_LOG_D64, FAKE_POINTER(this), uuid, offset);
     AutoLock lock(clientMutex_);
     auto it = requestMap_.find(uuid);
-    if (it != requestMap_.end()) {
+    if (it != requestMap_.end() && it->second != nullptr) {
         return it->second->RespondData(uuid, offset, request);
     } else {
         MEDIA_LOG_E("0x%{public}06" PRIXPTR "MediaSourceLoadingRequest RespondData, invalid uuid: " PUBLIC_LOG_D64,
@@ -123,7 +123,7 @@ int32_t MediaSourceLoadingRequest::RespondHeader(int64_t uuid, std::map<std::str
         FAKE_POINTER(this), uuid);
     AutoLock lock(clientMutex_);
     auto it = requestMap_.find(uuid);
-    if (it != requestMap_.end()) {
+    if (it != requestMap_.end() && it->second != nullptr) {
         return it->second->RespondHeader(uuid, header, redirectUrl);
     } else {
         MEDIA_LOG_E("0x%{public}06" PRIXPTR "MediaSourceLoadingRequest RespondHeader, invalid uuid: " PUBLIC_LOG_D64,
@@ -138,7 +138,7 @@ int32_t MediaSourceLoadingRequest::FinishLoading(int64_t uuid, LoadingRequestErr
         " state: " PUBLIC_LOG_D32, FAKE_POINTER(this), uuid, static_cast<int32_t>(state));
     AutoLock lock(clientMutex_);
     auto it = requestMap_.find(uuid);
-    if (it != requestMap_.end()) {
+    if (it != requestMap_.end() && it->second != nullptr) {
         return it->second->FinishLoading(uuid, state);
     } else {
         MEDIA_LOG_E("0x%{public}06" PRIXPTR "MediaSourceLoadingRequest FinishLoading, invalid uuid: " PUBLIC_LOG_D64,
