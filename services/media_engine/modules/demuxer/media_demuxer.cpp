@@ -108,6 +108,8 @@ constexpr int64_t LOG_INTERVAL_MS = 2000; // 2s
 constexpr uint32_t LOG_MAX_COUNT = 10; // 10 times
 constexpr int32_t CACHE_PRESSURE_LIMIT = 5 * 1000 * 1000;
 constexpr int32_t CACHE_PRESSURE_LIMIT_TIME = 500;
+constexpr int32_t BITRATE = 8;
+constexpr int32_t CACHE_PRESSURE_TIME = 2;
 constexpr float BASE_SPEED = 1.0f;
 
 static const std::map<TrackType, DemuxerTrackType> TRACK_MAP = {
@@ -2288,7 +2290,11 @@ Status MediaDemuxer::SetCachePressureCallback()
         return status;
     }
     pluginTemp->SetCachePressureCallback(cachePressureCallback);
-    pluginTemp->SetTrackCacheLimit(videoTrackId_, CACHE_PRESSURE_LIMIT, CACHE_PRESSURE_LIMIT_TIME);
+    int64_t bitRate = 0;
+    mediaMetaData_.trackMetas[videoTrackId_]->GetData(Tag::BITRATE, bitRate);
+    auto cachePressureLimit = bitRate * CACHE_PRESSURE_TIME / bitRate;
+    pluginTemp->SetTrackCacheLimit(videoTrackId_, cachePressureLimit > CACHE_PRESSURE_LIMIT ?
+        static_cast<int32_t>(cachePressureLimit) : CACHE_PRESSURE_LIMIT, CACHE_PRESSURE_LIMIT_TIME);
     return status;
 }
 
@@ -4072,7 +4078,7 @@ Status MediaDemuxer::AddSampleBufferQueue(int32_t trackId)
     sampleQueueConfig.queueId_ = trackId;
     sampleQueueConfig.bufferCap_ =
         isVideo ? SampleQueue::DEFAULT_VIDEO_SAMPLE_BUFFER_CAP : SampleQueue::DEFAULT_SAMPLE_BUFFER_CAP;
-    sampleQueueConfig.queueSize_ = IsLocalFd() ? SampleQueue::MAX_SAMPLE_QUEUE_SIZE :
+    sampleQueueConfig.queueSize_ = IsLocalFd() ? SampleQueue::FD_SAMPLE_QUEUE_SIZE :
         SampleQueue::DEFAULT_SAMPLE_QUEUE_SIZE;
     produceSteadyClock_.Reset();
     Status status = sampleQueue->Init(sampleQueueConfig);
@@ -4707,7 +4713,7 @@ void MediaDemuxer::CachePressuredCallback(int32_t trackId, uint32_t cachedBytes)
 bool MediaDemuxer::NeedDroped(int32_t trackId)
 {
     if (IsLocalFd()) {
-        if (sampleQueueMap_[trackId]->GetFilledBufferSize() >= SampleQueue::MAX_SAMPLE_QUEUE_SIZE - 1) {
+        if (sampleQueueMap_[trackId]->GetFilledBufferSize() >= SampleQueue::FD_SAMPLE_QUEUE_SIZE - 1) {
             hasDropedMap_[trackId].store(true);
             return true;
         }
@@ -4740,12 +4746,12 @@ void MediaDemuxer::AfterDrop(int32_t trackId)
         int64_t realSeekTime = 0;
         if (IsNeedMapToInnerTrackID()) {
             int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
-            demuxerPluginManager_->SeekToFrameByDts(streamID, videoSample->dts_ / US_TO_MS,
-                SeekMode::SEEK_CLOSEST, realSeekTime, timeout_);
+            demuxerPluginManager_->SeekToFrameByDts(streamID, trackId, videoSample->dts_ / US_TO_MS,
+                SeekMode::SEEK_CLOSEST, realSeekTime);
         } else {
             int32_t streamID = demuxerPluginManager_->GetStreamIDByTrackID(trackId);
-            demuxerPluginManager_->SeekToFrameByDts(streamID, videoSample->dts_ / US_TO_MS,
-                SeekMode::SEEK_CLOSEST, realSeekTime, timeout_);
+            demuxerPluginManager_->SeekToFrameByDts(streamID, trackId, videoSample->dts_ / US_TO_MS,
+                SeekMode::SEEK_CLOSEST, realSeekTime);
         }
         afterDropDts_[videoTrackId_] = videoSample->dts_;
         afterDropDts_[audioTrackId_] = audioSample->dts_;

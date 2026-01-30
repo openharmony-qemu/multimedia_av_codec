@@ -46,6 +46,7 @@ constexpr int32_t API_VERSION_16 = 16;
 constexpr int32_t API_VERSION_18 = 18;
 constexpr int64_t SNIFF_WARNING_MS = 200;
 constexpr int64_t SEEKTOKEYFRAME_WARNING_MS = 0;
+constexpr uint32_t SEEKTOFRAMEBYDTS_TIMEOUT_MS = 200;
 }
 
 namespace OHOS {
@@ -773,14 +774,15 @@ Status DemuxerPluginManager::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode 
     return Status::OK;
 }
 
-Status DemuxerPluginManager::SeekToFrameByDts(int32_t streamID, int64_t seekTime, Plugins::SeekMode mode,
-    int64_t& realSeekTime, uint32_t timeoutMs)
+Status DemuxerPluginManager::SeekToFrameByDts(int32_t streamID, int32_t trackId, int64_t seekTime,
+    Plugins::SeekMode mode, int64_t& realSeekTime)
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerPluginManager::SeekToFrameByDts");
     Status ret = Status::OK;
     if (streamID >= 0 && streamInfoMap_.find(streamID) != streamInfoMap_.end() &&
         streamInfoMap_[streamID].plugin != nullptr) {
-        ret = streamInfoMap_[streamID].plugin->SeekToFrameByDts(-1, seekTime, mode, realSeekTime, timeoutMs);
+        ret = streamInfoMap_[streamID].plugin->SeekToFrameByDts(trackId, seekTime, mode, realSeekTime,
+            SEEKTOFRAMEBYDTS_TIMEOUT_MS);
     }
     return ret;
 }
