@@ -29,42 +29,43 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+class IStandardCodecListService;
 class IAVCodecService {
 public:
     virtual ~IAVCodecService() = default;
 
     /**
-    * @brief Get freeze status message from suspend manager.
-    *
-    * @param pidList The list of pid to be frozen.
-    * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
-    * @since 5.1
-    */
+     * @brief Get freeze status message from suspend manager.
+     *
+     * @param pidList The list of pid to be frozen.
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+     * @since 5.1
+     */
     virtual int32_t SuspendFreeze(const std::vector<pid_t> &pidList) = 0;
 
     /**
-        * @brief Get active status message from suspend manager.
-        *
-        * @param pidList The list of pid to be active.
-        * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
-        * @since 5.1
-        */
+     * @brief Get active status message from suspend manager.
+     *
+     * @param pidList The list of pid to be active.
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+     * @since 5.1
+     */
     virtual int32_t SuspendActive(const std::vector<pid_t> &pidList) = 0;
 
     /**
-        * @brief Reset all frozen pids into active state.
-        *
-        * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
-        * @since 5.1
-        */
+     * @brief Reset all frozen pids into active state.
+     *
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+     * @since 5.1
+     */
     virtual int32_t SuspendActiveAll() = 0;
 
     /**
-        * @brief Get active secure decoder pids.
-        *
-        * @param pidList The list of pids
-        * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
-        */
+     * @brief Get active secure decoder pids.
+     *
+     * @param pidList The list of pids
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+     */
     virtual int32_t GetActiveSecureDecoderPids(std::vector<pid_t> &pidList) = 0;
 
 #ifdef SUPPORT_CODECLIST
@@ -90,6 +91,13 @@ public:
      * @version 4.0
      */
     virtual int32_t DestroyCodecListService(std::shared_ptr<ICodecListService> avCodecList) = 0;
+
+    /**
+     * @brief Get codeclist service proxy for auto-reconnect
+     *
+     * @return Returns sptr to IStandardCodecListService
+     */
+    virtual sptr<IStandardCodecListService> GetCodecListServiceProxy() = 0;
 #endif
 
 #ifdef SUPPORT_CODEC
@@ -129,6 +137,7 @@ public:
      * @version 4.0
      */
     static IAVCodecService &GetInstance();
+
 private:
     AVCodecServiceFactory() = delete;
     ~AVCodecServiceFactory() = delete;

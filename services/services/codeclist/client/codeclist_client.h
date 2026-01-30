@@ -37,6 +37,9 @@ public:
     bool IsServiceDied() override;
 
 private:
+    // Auto-reconnect support
+    bool EnsureProxyValid();
+
     sptr<IStandardCodecListService> codecListProxy_ = nullptr;
     std::mutex mutex_;
 };
