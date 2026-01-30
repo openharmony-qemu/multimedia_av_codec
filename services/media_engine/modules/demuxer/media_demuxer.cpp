@@ -2291,7 +2291,7 @@ Status MediaDemuxer::SetCachePressureCallback()
     }
     pluginTemp->SetCachePressureCallback(cachePressureCallback);
     int64_t bitRate = 0;
-    mediaMetaData_.trackMetas[videoTrackId_]->GetData(Tag::BITRATE, bitRate);
+    mediaMetaData_.trackMetas[videoTrackId_]->GetData(Tag::MEDIA_BITRATE, bitRate);
     auto cachePressureLimit = bitRate * CACHE_PRESSURE_TIME / bitRate;
     pluginTemp->SetTrackCacheLimit(videoTrackId_, cachePressureLimit > CACHE_PRESSURE_LIMIT ?
         static_cast<int32_t>(cachePressureLimit) : CACHE_PRESSURE_LIMIT, CACHE_PRESSURE_LIMIT_TIME);
