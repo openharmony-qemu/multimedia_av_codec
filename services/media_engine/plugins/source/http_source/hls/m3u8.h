@@ -178,6 +178,7 @@ struct M3U8MasterPlaylist {
         const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>(),
         StatusCallbackFunc statusCallback = [](DownloadStatus, std::shared_ptr<Downloader>&,
         std::shared_ptr<DownloadRequest>&) {});
+    ~M3U8MasterPlaylist();
     void SetSourceloader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader);
     void StartParsing();
     void UpdateMediaPlaylist();

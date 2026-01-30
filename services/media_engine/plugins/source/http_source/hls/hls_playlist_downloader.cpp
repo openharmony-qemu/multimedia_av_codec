@@ -61,14 +61,6 @@ HlsPlayListDownloader::~HlsPlayListDownloader()
     if (downloader_ != nullptr) {
         downloader_->Stop(false);
     }
-    if (master_ != nullptr) {
-        std::fill(std::begin(master_->key_), std::end(master_->key_), 0);
-        std::fill(std::begin(master_->iv_), std::end(master_->iv_), 0);
-    }
-    if (currentVariant_ != nullptr && currentVariant_->m3u8_ != nullptr) {
-        std::fill(std::begin(currentVariant_->m3u8_->key_), std::end(currentVariant_->m3u8_->key_), 0);
-        std::fill(std::begin(currentVariant_->m3u8_->iv_), std::end(currentVariant_->m3u8_->iv_), 0);
-    }
     MEDIA_LOG_I("~HlsPlayListDownloader out");
 }
 

@@ -113,6 +113,8 @@ M3U8::~M3U8()
     }
     delete[] fmp4Header_;
     fmp4Header_ = nullptr;
+    std::fill(std::begin(key_), std::end(key_), 0);
+    std::fill(std::begin(iv_), std::end(iv_), 0);
 }
 
 void M3U8::SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback)
@@ -618,6 +620,13 @@ M3U8MasterPlaylist::M3U8MasterPlaylist(const std::string& playList, const std::s
     initResolution_ = initResolution;
     monitorStatusCallback_ = statusCallback;
 }
+
+M3U8MasterPlaylist::~M3U8MasterPlaylist()
+{
+    std::fill(std::begin(key_), std::end(key_), 0);
+    std::fill(std::begin(iv_), std::end(iv_), 0);
+}
+
 void M3U8MasterPlaylist::SetSourceloader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
 {
     sourceLoader_ = sourceLoader;
