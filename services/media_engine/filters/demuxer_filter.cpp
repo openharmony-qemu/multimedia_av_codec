@@ -749,6 +749,7 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
         MEDIA_LOG_W("Get file type failed");
     }
     std::vector<std::shared_ptr<Meta>> trackInfos = GetStreamMetaInfo();
+    FALSE_RETURN_V_MSG_E(trackId >= 0 && trackId < trackInfos.size(), Status::ERROR_INVALID_OPERATION, "trackId invalid");
     std::shared_ptr<Meta> meta = trackInfos[trackId];
     for (MapIt iter = meta->begin(); iter != meta->end(); iter++) {
         MEDIA_LOG_D_SHORT("Link " PUBLIC_LOG_S, iter->first.c_str());

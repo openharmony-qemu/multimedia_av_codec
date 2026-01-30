@@ -919,7 +919,8 @@ Status DemuxerPluginManager::UpdateMediaInfo(int32_t streamID)
         size_t j = 0;
         for (j = 0; j < tempTrackInfoMap.size(); j++) {
             if (tempTrackInfoMap[j].streamID == streamID
-                && tempTrackInfoMap[j].innerTrackIndex == static_cast<int32_t>(i)) {
+                && tempTrackInfoMap[j].innerTrackIndex == static_cast<int32_t>(i)
+                && j < mediaInfo.tracks.size()) {
                 mediaInfo.tracks[j] = trackMeta;     // cover
                 break;
             }
