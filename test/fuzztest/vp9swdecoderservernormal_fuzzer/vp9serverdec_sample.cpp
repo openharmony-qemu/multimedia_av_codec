@@ -307,7 +307,7 @@ int32_t Vp9VDecServerSample::SendData(uint32_t bufferSize, uint32_t index, std::
 {
     if (bufferSize == 0 || bufferSize > MAX_BUFFER_SIZE) {
         cout << "ERROR: Invalid buffer size " << bufferSize << endl;
-        return -1;
+        return 1;
     }
     uint8_t *frameBuffer = new uint8_t[bufferSize];
     (void)inFile_->read(reinterpret_cast<char *>(frameBuffer), bufferSize);
