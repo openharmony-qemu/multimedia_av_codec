@@ -502,6 +502,9 @@ group("av_codec_fuzz_test") {
       "fuzztest/pluginsink_fuzzer:PluginSinkFuzzTest",
       "fuzztest/pluginsinkfuzzsecondtest_fuzzer:PluginSinkFuzzSecondTest",
       "fuzztest/audiodecoderadapter_fuzzer:AudioDecoderAdapterFuzzTest",
+      "fuzztest/cinepakdecoderconfigure_fuzzer:CinepakdecoderConfigureFuzzTest",
+      "fuzztest/cinepakdecoderresource_fuzzer:CinepakdecoderResourceFuzzTest",
+      "fuzztest/cinepakdecodersetparameter_fuzzer:CinepakdecoderSetParameterFuzzTest",
     ]
     if(av_codec_enable_codec_eac3) {
       deps += [ "fuzztest/audiodecodereac3_fuzzer:AudioDecoderEac3FuzzTest" ]

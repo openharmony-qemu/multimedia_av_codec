@@ -385,6 +385,13 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_RV30;
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_RV40;
 
 /**
+ * @brief Enumerates the MIME type of video CINEPAK codec.
+ *
+ * @since 23
+ */
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_CINEPAK;
+
+/**
  * @brief Enumerates the types of audio and video muxer
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
