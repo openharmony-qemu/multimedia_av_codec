@@ -207,9 +207,9 @@ int32_t AudioCodecServer::Stop()
     CHECK_AND_RETURN_RET_LOG(status_ == RUNNING || status_ == END_OF_STREAM || status_ == FLUSHED,
                              AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
                              GetStatusDescription(status_).data());
-    CHECK_AND_RETURN_RET_LOG(codecBase_ == nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     int32_t ret = codecBase_->Stop();
-    CHECK_AND_RETURN_RET_LOG(ret != AVCS_ERR_OK, ret, "Stop failed");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Stop failed");
     StatusChanged(CONFIGURED);
     return AVCS_ERR_OK;
 }
