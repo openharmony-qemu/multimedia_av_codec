@@ -14,7 +14,6 @@
  */
 #define HST_LOG_TAG "HlsPlayListDownloader"
 #include <mutex>
-#include <algorithm>
 #include <unistd.h>
 #include "plugin/plugin_time.h"
 #include "hls_playlist_downloader.h"
