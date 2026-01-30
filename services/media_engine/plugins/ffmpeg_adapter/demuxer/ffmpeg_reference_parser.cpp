@@ -43,10 +43,18 @@ constexpr int64_t REFERENCE_PARSER_TIMEOUT_MS = 10000;
 const uint32_t REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT = 200000u;
 }
 
+int64_t GetDuration(int64_t startTime)
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
+               .count() - startTime;
+}
+
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
+
+using RefTrace = MediaAVCodec::AVCodecTrace;
 
 bool FFmpegDemuxerPlugin::IsLessMaxReferenceParserFrames(uint32_t trackIndex)
 {
@@ -192,7 +200,7 @@ Status FFmpegDemuxerPlugin::ParserRefInit()
     parserRefStartTime_ = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count();
     std::string suffix = std::to_string(parserRefStartTime_) + "_" + std::to_string(IFramePos_.size());
-    MediaAVCodec::AVCodecTrace trace("ParserRefCost_1_" + suffix);
+    RefTrace trace("ParserRefCost_1_" + suffix);
     MEDIA_LOG_I("Parser ref start time: " PUBLIC_LOG_D64, parserRefStartTime_);
     FALSE_RETURN_V_MSG_E(IFramePos_.size() > 0, Status::ERROR_UNKNOWN,
         "Init failed, IFramePos size:" PUBLIC_LOG_ZU, IFramePos_.size());
@@ -236,6 +244,26 @@ static void InsertIframePtsMap(AVPacket *pkt, int32_t gopId, int32_t trackIdx,
     }
 }
 
+Status FFmpegDemuxerPlugin::UpdateParserGopId(int32_t iFramePosSize)
+{
+    int32_t tmpGopId = parserCurGopId_;
+    int32_t searchCnt = 0;
+    while (formatContext_ != nullptr && std::find(processingIFrame_.begin(), processingIFrame_.end(),
+                                                  IFramePos_[parserCurGopId_]) == processingIFrame_.end()) {
+        if (updatePosIsForward_) {
+            parserCurGopId_ = (parserCurGopId_ + 1) % iFramePosSize;
+        } else {
+            parserCurGopId_ = parserCurGopId_ == 0 ? iFramePosSize - 1 : parserCurGopId_ - 1;
+        }
+        searchCnt++;
+        FALSE_RETURN_V_MSG_E(searchCnt < iFramePosSize, Status::ERROR_UNKNOWN, "Cannot find gop");
+    }
+    if (formatContext_ == nullptr || tmpGopId + 1 != parserCurGopId_ || !updatePosIsForward_) {
+        return Status::END_OF_STREAM;
+    }
+    return Status::OK;
+}
+
 Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId)
 {
     std::unique_lock<std::mutex> sLock(syncMutex_);
@@ -258,7 +286,8 @@ Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamI
                          "eos or not video");
     int64_t dts = AvTime2Us(ConvertTimeFromFFmpeg(pkt->dts, parserRefCtx_->streams[parserRefIdx_]->time_base));
     Status result = referenceParser_->ParserNalUnits(pkt->data, pkt->size, curStreamId, dts);
-    FALSE_RETURN_V_MSG_E(result == Status::OK, Status::ERROR_UNKNOWN, "parse nal units error!");
+    FALSE_RETURN_V_MSG_E(result == Status::OK, result, "parse nal units end! ret=" PUBLIC_LOG_D32,
+                         static_cast<int32_t>(result));
     int32_t iFramePosSize = static_cast<int32_t>(IFramePos_.size());
     if (ffmpegRet == AVERROR_EOF || result != Status::OK ||
         (parserCurGopId_ + 1 < iFramePosSize && curStreamId == IFramePos_[parserCurGopId_ + 1] - 1)) { // 处理完一个GOP
@@ -269,21 +298,7 @@ Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamI
             parserCurGopId_ = -1;
             return Status::OK;
         }
-        int32_t tmpGopId = parserCurGopId_;
-        int32_t searchCnt = 0;
-        while (formatContext_ != nullptr && std::find(processingIFrame_.begin(), processingIFrame_.end(),
-                                                      IFramePos_[parserCurGopId_]) == processingIFrame_.end()) {
-            if (updatePosIsForward_) {
-                parserCurGopId_ = (parserCurGopId_ + 1) % iFramePosSize;
-            } else {
-                parserCurGopId_ = parserCurGopId_ == 0 ? iFramePosSize - 1 : parserCurGopId_ - 1;
-            }
-            searchCnt++;
-            FALSE_RETURN_V_MSG_E(searchCnt < iFramePosSize, Status::ERROR_UNKNOWN, "Cannot find gop");
-        }
-        if (formatContext_ == nullptr || tmpGopId + 1 != parserCurGopId_ || !updatePosIsForward_) {
-            return Status::END_OF_STREAM;
-        }
+        return UpdateParserGopId(iFramePosSize);
     }
     return Status::OK;
 }
@@ -339,15 +354,11 @@ Status FFmpegDemuxerPlugin::ParserRefInfo()
     if (!isInit_) {
         isInit_ = true;
         Status ret = ParserRefInit();
-        if (ret == Status::END_OF_STREAM) {
-            return Status::OK;
-        }
+        FALSE_RETURN_V_NOLOG(ret != Status::END_OF_STREAM, Status::OK);
         FALSE_RETURN_V(ret == Status::OK, Status::ERROR_UNKNOWN);
     }
-    int64_t duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::system_clock::now().time_since_epoch()).count() - parserRefStartTime_;
-    std::string suffix = std::to_string(duration) + "_" + std::to_string(parserCurGopId_);
-    MediaAVCodec::AVCodecTrace trace("ParserRefCost_2_" + suffix);
+    int64_t duration = GetDuration(parserRefStartTime_);
+    RefTrace trace("ParserRefCost_2_" + std::to_string(duration) + "_" + std::to_string(parserCurGopId_));
     FALSE_RETURN_V_MSG_W(duration < REFERENCE_PARSER_TIMEOUT_MS, Status::ERROR_UNKNOWN, "Reference parser timeout");
     FALSE_RETURN_V_MSG(parserCurGopId_ != -1, Status::OK, "Reference parser end"); // 参考关系解析完毕
     FALSE_RETURN_V_MSG_E(SelectProGopId() == Status::OK, Status::ERROR_UNKNOWN, "Call selectProGopId failed");
@@ -357,13 +368,22 @@ Status FFmpegDemuxerPlugin::ParserRefInfo()
         IFramePos_.size(), processingIFrame_.size(), duration);
     AVPacket *pkt = av_packet_alloc();
     FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_UNKNOWN, "Packet is nullptr!");
+    int loopCounter = 0;
     while (formatContext_ != nullptr && parserState_ && parserCurGopId_ != -1) {
         Status rlt = ParserRefInfoLoop(pkt, curStreamId);
-        duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now().time_since_epoch()).count() - parserRefStartTime_;
-        suffix = std::to_string(duration) + "_" + std::to_string(parserCurGopId_) + "_" + std::to_string(curStreamId);
-        MediaAVCodec::AVCodecTrace traceInLoop("ParserRefCost_3_" + suffix);
-        FALSE_RETURN_V_MSG_W(duration < REFERENCE_PARSER_TIMEOUT_MS, Status::ERROR_UNKNOWN, "Reference parser timeout");
+        if (rlt == Status::ERROR_EARLY_STOP) { // START 首GOP提前终止
+            MEDIA_LOG_I("Exiting reference parsing early due to simple first GOP structure.");
+            av_packet_unref(pkt);
+            av_packet_free(&pkt);
+            parserState_ = true;
+            return Status::OK;
+        }
+        if ((loopCounter++ % 100) == 0) { // 100 trace降采样
+            duration = GetDuration(parserRefStartTime_);
+            std::string suffix = "_" + std::to_string(parserCurGopId_) + "_" + std::to_string(curStreamId);
+            RefTrace traceInLoop("ParserRefCost_3_" + std::to_string(duration) + suffix);
+            FALSE_RETURN_V_MSG_W(duration < REFERENCE_PARSER_TIMEOUT_MS, Status::ERROR_UNKNOWN, "Infoloop timeout");
+        }
         if (rlt != Status::OK) {
             av_packet_unref(pkt);
             av_packet_free(&pkt);
@@ -375,7 +395,6 @@ Status FFmpegDemuxerPlugin::ParserRefInfo()
         }
         av_packet_unref(pkt);
     }
-
     av_packet_free(&pkt);
     parserState_ = true;
     return Status::ERROR_AGAIN;

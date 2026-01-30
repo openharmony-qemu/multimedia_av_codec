@@ -320,6 +320,7 @@ private:
     void InitIoContextInDemuxer(const std::shared_ptr<DataSource>& source);
     Status ParserRefInit();
     Status ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId);
+    Status UpdateParserGopId(int32_t iFramePosSize);
     Status SelectProGopId();
     void ParserBoxInfo();
     AVStream *GetVideoStream();
