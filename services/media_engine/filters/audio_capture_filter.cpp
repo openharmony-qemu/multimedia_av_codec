@@ -285,7 +285,7 @@ Status AudioCaptureFilter::DoStop()
     if (!cachedAudioDataDeque_.empty()) {
         RecordCachedData(cachedAudioDataDeque_.size());
     }
-    MEDIA_LOG_I("Pause recordAudioFrameCount_: " PUBLIC_LOG_D64, recordAudioFrameCount_);
+    MEDIA_LOG_I("Stop recordAudioFrameCount_: " PUBLIC_LOG_D64, recordAudioFrameCount_);
     return ret;
 }
 
