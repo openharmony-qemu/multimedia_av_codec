@@ -99,6 +99,7 @@ int32_t AudioCodecServer::Init(AVCodecType type, bool isMimeType, const std::str
     std::lock_guard<std::shared_mutex> lock(mutex_);
     (void)mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     (void)mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
+    CHECK_AND_RETURN_RET_LOG(name == "", AVCS_ERR_INVALID_OPERATION, "name is null");
     codecType_ = type;
     codecName_ = name;
     codecMime_ = isMimeType ? name : CodecAbilitySingleton::GetInstance().GetMimeByCodecName(name);
@@ -163,14 +164,13 @@ int32_t AudioCodecServer::Configure(const Format &format)
                              GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
 
-    int32_t paramCheckRet = AVCS_ERR_OK;
     int32_t ret = codecBase_->Configure(format);
     if (ret != AVCS_ERR_OK) {
         StatusChanged(ERROR);
         return ret;
     }
     StatusChanged(CONFIGURED);
-    return paramCheckRet;
+    return AVCS_ERR_OK;
 }
 
 int32_t AudioCodecServer::SetCustomBuffer(std::shared_ptr<AVBuffer> buffer)
@@ -208,7 +208,8 @@ int32_t AudioCodecServer::Stop()
                              AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
                              GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-    codecBase_->Stop(); // perhaps need check?
+    int32_t ret = codecBase_->Stop();
+    CHECK_AND_RETURN_RET_LOG(ret != AVCS_ERR_OK, ret, "Stop failed");
     StatusChanged(CONFIGURED);
     return AVCS_ERR_OK;
 }
@@ -222,7 +223,8 @@ int32_t AudioCodecServer::Flush()
     CHECK_AND_RETURN_RET_LOG(status_ == RUNNING || status_ == END_OF_STREAM, AVCS_ERR_INVALID_STATE,
                              "In invalid state, %{public}s", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-    codecBase_->Flush();
+    int32_t ret = codecBase_->Flush();
+    CHECK_AND_RETURN_RET_LOG(ret != AVCS_ERR_OK, ret, "Flush failed");
     StatusChanged(FLUSHED);
     return AVCS_ERR_OK;
 }
@@ -250,9 +252,6 @@ int32_t AudioCodecServer::Reset()
     int32_t ret = codecBase_->Reset();
     CodecStatus newStatus = (ret == AVCS_ERR_OK ? INITIALIZED : ERROR);
     StatusChanged(newStatus);
-    if (ret != AVCS_ERR_OK) {
-        StatusChanged(ERROR);
-    }
     lastErrMsg_.clear();
 
     return ret;
@@ -268,6 +267,7 @@ int32_t AudioCodecServer::Release()
 
     codecBase_ = nullptr;
     avBufCallback_ = nullptr;
+    shareBufCallback_ = nullptr;
     return ret;
 }
 
@@ -518,21 +518,20 @@ CodecBaseCallback::CodecBaseCallback(const std::shared_ptr<AudioCodecServer> &co
 
 CodecBaseCallback::~CodecBaseCallback()
 {
-    codec_ = nullptr;
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
 void CodecBaseCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
-    if (codec_ != nullptr) {
-        codec_->OnError(errorType, errorCode);
+    if (auto shared_from_weak != codec_.lock()) {
+        shared_from_weak->OnError(errorType, errorCode);
     }
 }
 
 void CodecBaseCallback::OnOutputFormatChanged(const Format &format)
 {
-    if (codec_ != nullptr) {
-        codec_->OnOutputFormatChanged(format);
+    if (auto shared_from_weak != codec_.lock()) {
+        shared_from_weak->OnOutputFormatChanged(format);
     } else {
         AVCODEC_LOGI("CodecBaseCallback receive output format changed but codec is nullptr");
     }
@@ -540,16 +539,16 @@ void CodecBaseCallback::OnOutputFormatChanged(const Format &format)
 
 void CodecBaseCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
 {
-    if (codec_ != nullptr) {
-        codec_->OnInputBufferAvailable(index, buffer);
+    if (auto shared_from_weak != codec_.lock()) {
+        shared_from_weak->OnInputBufferAvailable(index, buffer);
     }
 }
 
 void CodecBaseCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
                                                 std::shared_ptr<AVSharedMemory> buffer)
 {
-    if (codec_ != nullptr) {
-        codec_->OnOutputBufferAvailable(index, info, flag, buffer);
+    if (auto shared_from_weak != codec_.lock()) {
+        shared_from_weak->OnOutputBufferAvailable(index, info, flag, buffer);
     }
 }
 
@@ -560,21 +559,20 @@ VCodecBaseCallback::VCodecBaseCallback(const std::shared_ptr<AudioCodecServer> &
 
 VCodecBaseCallback::~VCodecBaseCallback()
 {
-    codec_ = nullptr;
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
 void VCodecBaseCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
-    if (codec_ != nullptr) {
-        codec_->OnError(errorType, errorCode);
+    if (auto shared_from_weak != codec_.lock()) {
+        shared_from_weak->OnError(errorType, errorCode);
     }
 }
 
 void VCodecBaseCallback::OnOutputFormatChanged(const Format &format)
 {
-    if (codec_ != nullptr) {
-        codec_->OnOutputFormatChanged(format);
+    if (auto shared_from_weak != codec_.lock()) {
+        shared_from_weak->OnOutputFormatChanged(format);
     } else {
         AVCODEC_LOGE("receive output format changed, but codec is nullptr");
     }
@@ -582,22 +580,22 @@ void VCodecBaseCallback::OnOutputFormatChanged(const Format &format)
 
 void VCodecBaseCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    if (codec_ != nullptr) {
-        codec_->OnInputBufferAvailable(index, buffer);
+    if (auto shared_from_weak != codec_.lock()) {
+        shared_from_weak->OnInputBufferAvailable(index, buffer);
     }
 }
 
 void VCodecBaseCallback::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    if (codec_ != nullptr) {
-        codec_->OnOutputBufferAvailable(index, buffer);
+    if (auto shared_from_weak != codec_.lock()) {
+        shared_from_weak->OnOutputBufferAvailable(index, buffer);
     }
 }
 
 int32_t AudioCodecServer::Configure(const std::shared_ptr<Media::Meta> &meta)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(meta != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    CHECK_AND_RETURN_RET_LOG(meta != nullptr, AVCS_ERR_NO_MEMORY, "meta is nullptr");
 
     CHECK_AND_RETURN_RET_LOG(status_ == INITIALIZED, AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
                              GetStatusDescription(status_).data());
@@ -687,7 +685,7 @@ int32_t AudioCodecServer::SetAudioDecryptionConfig(const sptr<DrmStandard::IMedi
                                                    const bool svpFlag)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    AVCODEC_LOGI("AudioCodecServer::SetAudioDecryptionConfig");
+    AVCODEC_LOGI("CodecServer::SetAudioDecryptionConfig");
     if (codecBase_ == nullptr) {
         AVCODEC_LOGE("codecBase_ is nullptr");
         return AVCS_ERR_NO_MEMORY;

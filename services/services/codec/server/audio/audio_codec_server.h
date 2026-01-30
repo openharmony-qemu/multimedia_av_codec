@@ -143,7 +143,7 @@ public:
                                  std::shared_ptr<AVSharedMemory> buffer);
 
 private:
-    std::shared_ptr<AudioCodecServer> codec_ = nullptr;
+    std::weak_ptr<AudioCodecServer> codec_;
 };
 
 class VCodecBaseCallback : public MediaCodecCallback, public NoCopyable {
@@ -157,7 +157,7 @@ public:
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
 
 private:
-    std::shared_ptr<AudioCodecServer> codec_ = nullptr;
+    std::weak_ptr<AudioCodecServer> codec_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
