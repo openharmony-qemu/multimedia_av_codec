@@ -1041,7 +1041,7 @@ class CinepakReader : public DataProducerBase {
 public:
     int32_t FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr) override;
     void FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t frameType, bool isEosFrame);
-    bool IsEOS();
+    bool IsEOS() const;
     int32_t Init(const std::shared_ptr<CinepakReaderInfo> &info);
     std::mutex mutex_;
     int32_t frameInputCount_ = 0;
@@ -1050,8 +1050,8 @@ private:
     public:
         explicit CinepakUnitReader(std::shared_ptr<std::ifstream> inputFile) : inputFile_(inputFile) {}
         virtual ~CinepakUnitReader() {};
-        uint8_t const *GetNextCinepakUnitAddr();
-        virtual int32_t ReadCinepakUnit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) = 0;
+        uint8_t const *GetNextCinepakUnitAddr() const;
+        virtual int32_t ReadCinepakUnit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEosFrame) = 0;
         virtual bool IsEOS() = 0;
         virtual void PrereadFile() = 0;
 
@@ -1066,7 +1066,7 @@ private:
     class CinepakMetaUnitReader : public CinepakUnitReader {
     public:
         explicit CinepakMetaUnitReader(std::shared_ptr<std::ifstream> inputFile, bool isMainStream);
-        int32_t ReadCinepakUnit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) override;
+        int32_t ReadCinepakUnit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEosFrame) override;
         uint32_t FindAVIMoviBlock();
         bool IsEOS() override;
         void PrereadFile() override;
@@ -1074,7 +1074,7 @@ private:
 
     private:
         bool IsEOF() override;
-        uint32_t GetFrameLenth(uint32_t index);
+        uint32_t GetFrameLenth(uint32_t index) const;
         uint8_t* GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend);
         std::unique_ptr<uint8_t []> prereadBuffer_ = nullptr;
         uint32_t prereadBufferSize_ = 0;
@@ -1087,7 +1087,7 @@ private:
         const uint8_t *GetCinepakTypeAddr(const uint8_t *bufferAddr);
         uint8_t* GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend);
         uint8_t GetCinepakType(const uint8_t *bufferAddr);
-        bool IsI(uint8_t cinepakType);
+        bool IsI(uint8_t cinepakType) const;
     };
 
     std::shared_ptr<CinepakUnitReader> cinepakUnitReader_ = nullptr;

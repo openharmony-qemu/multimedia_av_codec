@@ -3893,7 +3893,7 @@ uint8_t CinepakReader::CinepakDetector::GetCinepakType(const uint8_t *bufferAddr
     if (typeAddr == nullptr) {
         return MPEG4_UNSPECIFIED;
     }
-    return (*typeAddr & CINEPAK_FRAME_TYPE_MASK) ? MPEG4_I : MPEG4_P;
+    return ((*typeAddr & CINEPAK_FRAME_TYPE_MASK) != 0) ? MPEG4_I : MPEG4_P;
 }
 
 void CinepakReader::FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize,
@@ -3946,17 +3946,17 @@ int32_t CinepakReader::FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &att
     return AV_ERR_OK;
 }
 
-bool CinepakReader::CinepakDetector::IsI(uint8_t cinepakType)
+bool CinepakReader::CinepakDetector::IsI(uint8_t cinepakType) const
 {
     return (cinepakType == MPEG4_I);
 }
 
-bool CinepakReader::IsEOS()
+bool CinepakReader::IsEOS() const
 {
     return cinepakUnitReader_ ? cinepakUnitReader_->IsEOS() : true;
 }
 
-uint8_t const *CinepakReader::CinepakUnitReader::GetNextCinepakUnitAddr()
+uint8_t const *CinepakReader::CinepakUnitReader::GetNextCinepakUnitAddr() const
 {
     CHECK_AND_RETURN_RET_LOG(cinepakUnit_ != nullptr, nullptr, "cinepakUnit_ is nullptr");
     return cinepakUnit_->data();
@@ -3999,7 +3999,7 @@ bool CinepakReader::CinepakMetaUnitReader::IsEOF()
     return frameIndex_ >= ES_CINEPAK_NORMAL_LEN;
 }
 
-uint32_t CinepakReader::CinepakMetaUnitReader::GetFrameLenth(uint32_t index)
+uint32_t CinepakReader::CinepakMetaUnitReader::GetFrameLenth(uint32_t index) const
 {
     return ES_CINEPAK_NORMAL[index];
 }
