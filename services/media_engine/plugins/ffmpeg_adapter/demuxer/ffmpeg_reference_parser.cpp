@@ -246,6 +246,7 @@ static void InsertIframePtsMap(AVPacket *pkt, int32_t gopId, int32_t trackIdx,
 
 Status FFmpegDemuxerPlugin::UpdateParserGopId(int32_t iFramePosSize)
 {
+    FALSE_RETURN_V_NOLOG(iFramePosSize != 0, Status::ERROR_UNKNOWN);
     int32_t tmpGopId = parserCurGopId_;
     int32_t searchCnt = 0;
     while (formatContext_ != nullptr && std::find(processingIFrame_.begin(), processingIFrame_.end(),
