@@ -222,9 +222,9 @@ int32_t AudioCodecServer::Flush()
                               GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(status_ == RUNNING || status_ == END_OF_STREAM, AVCS_ERR_INVALID_STATE,
                              "In invalid state, %{public}s", GetStatusDescription(status_).data());
-    CHECK_AND_RETURN_RET_LOG(codecBase_ == nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     int32_t ret = codecBase_->Flush();
-    CHECK_AND_RETURN_RET_LOG(ret != AVCS_ERR_OK, ret, "Flush failed");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Flush failed");
     StatusChanged(FLUSHED);
     return AVCS_ERR_OK;
 }
