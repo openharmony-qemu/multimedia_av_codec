@@ -99,7 +99,7 @@ int32_t AudioCodecServer::Init(AVCodecType type, bool isMimeType, const std::str
     std::lock_guard<std::shared_mutex> lock(mutex_);
     (void)mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     (void)mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
-    CHECK_AND_RETURN_RET_LOG(name == "", AVCS_ERR_INVALID_OPERATION, "name is null");
+    CHECK_AND_RETURN_RET_LOG(name != "",  AVCS_ERR_INVALID_OPERATION,  "name is null");
     codecType_ = type;
     codecName_ = name;
     codecMime_ = isMimeType ? name : CodecAbilitySingleton::GetInstance().GetMimeByCodecName(name);
@@ -207,7 +207,7 @@ int32_t AudioCodecServer::Stop()
     CHECK_AND_RETURN_RET_LOG(status_ == RUNNING || status_ == END_OF_STREAM || status_ == FLUSHED,
                              AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
                              GetStatusDescription(status_).data());
-    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    CHECK_AND_RETURN_RET_LOG(codecBase_ == nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     int32_t ret = codecBase_->Stop();
     CHECK_AND_RETURN_RET_LOG(ret != AVCS_ERR_OK, ret, "Stop failed");
     StatusChanged(CONFIGURED);
@@ -222,7 +222,7 @@ int32_t AudioCodecServer::Flush()
                               GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(status_ == RUNNING || status_ == END_OF_STREAM, AVCS_ERR_INVALID_STATE,
                              "In invalid state, %{public}s", GetStatusDescription(status_).data());
-    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    CHECK_AND_RETURN_RET_LOG(codecBase_ == nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     int32_t ret = codecBase_->Flush();
     CHECK_AND_RETURN_RET_LOG(ret != AVCS_ERR_OK, ret, "Flush failed");
     StatusChanged(FLUSHED);
@@ -523,14 +523,14 @@ CodecBaseCallback::~CodecBaseCallback()
 
 void CodecBaseCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
-    if (auto shared_from_weak != codec_.lock()) {
+    if (auto shared_from_weak = codec_.lock()) {
         shared_from_weak->OnError(errorType, errorCode);
     }
 }
 
 void CodecBaseCallback::OnOutputFormatChanged(const Format &format)
 {
-    if (auto shared_from_weak != codec_.lock()) {
+    if (auto shared_from_weak = codec_.lock()) {
         shared_from_weak->OnOutputFormatChanged(format);
     } else {
         AVCODEC_LOGI("CodecBaseCallback receive output format changed but codec is nullptr");
@@ -539,7 +539,7 @@ void CodecBaseCallback::OnOutputFormatChanged(const Format &format)
 
 void CodecBaseCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
 {
-    if (auto shared_from_weak != codec_.lock()) {
+    if (auto shared_from_weak = codec_.lock()) {
         shared_from_weak->OnInputBufferAvailable(index, buffer);
     }
 }
@@ -547,7 +547,7 @@ void CodecBaseCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<A
 void CodecBaseCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
                                                 std::shared_ptr<AVSharedMemory> buffer)
 {
-    if (auto shared_from_weak != codec_.lock()) {
+    if (auto shared_from_weak = codec_.lock()) {
         shared_from_weak->OnOutputBufferAvailable(index, info, flag, buffer);
     }
 }
@@ -564,14 +564,14 @@ VCodecBaseCallback::~VCodecBaseCallback()
 
 void VCodecBaseCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
-    if (auto shared_from_weak != codec_.lock()) {
+    if (auto shared_from_weak = codec_.lock()) {
         shared_from_weak->OnError(errorType, errorCode);
     }
 }
 
 void VCodecBaseCallback::OnOutputFormatChanged(const Format &format)
 {
-    if (auto shared_from_weak != codec_.lock()) {
+    if (auto shared_from_weak = codec_.lock()) {
         shared_from_weak->OnOutputFormatChanged(format);
     } else {
         AVCODEC_LOGE("receive output format changed, but codec is nullptr");
@@ -580,14 +580,14 @@ void VCodecBaseCallback::OnOutputFormatChanged(const Format &format)
 
 void VCodecBaseCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    if (auto shared_from_weak != codec_.lock()) {
+    if (auto shared_from_weak = codec_.lock()) {
         shared_from_weak->OnInputBufferAvailable(index, buffer);
     }
 }
 
 void VCodecBaseCallback::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    if (auto shared_from_weak != codec_.lock()) {
+    if (auto shared_from_weak = codec_.lock()) {
         shared_from_weak->OnOutputBufferAvailable(index, buffer);
     }
 }
