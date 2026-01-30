@@ -283,6 +283,7 @@ sptr<AVBufferQueueConsumer> AudioSink::GetBufferQueueConsumer()
 
 Status AudioSink::SetParameter(const std::shared_ptr<Meta>& meta)
 {
+    globalMeta_ = meta;
     UpdateMediaTimeRange(meta);
     FALSE_RETURN_V(meta != nullptr, Status::ERROR_NULL_POINTER);
     meta->GetData(Tag::APP_PID, appPid_);
@@ -1549,6 +1550,7 @@ Status AudioSink::ChangeTrackForFormatChange()
     std::lock_guard<std::mutex> lock(pluginMutex_);
     std::shared_ptr<Plugins::AudioSinkPlugin> plugin = std::move(plugin_);
     FALSE_RETURN_V(plugin != nullptr && changeTrackTask_ != nullptr, Status::ERROR_NULL_POINTER);
+    plugin->SetResponseCallback(false);
     changeTrackTask_->SubmitJobOnce([plugin] {
         plugin->Stop();
         plugin->Deinit();
@@ -1560,6 +1562,7 @@ Status AudioSink::ChangeTrackForFormatChange()
     hasPluginCreateTaskFinished_ = false;
     FALSE_RETURN_V(newPlugin_ != nullptr, Status::ERROR_NULL_POINTER);
     plugin_ = std::move(newPlugin_);
+    plugin_->SetParameter(globalMeta_);
     SetAudioSinkPluginParameters(plugin_);
 
     forceUpdateTimeAnchorNextTime_ = true;
