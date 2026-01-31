@@ -15,9 +15,9 @@
 #ifndef AVCODEC_CLIENT_H
 #define AVCODEC_CLIENT_H
 
-#include "i_avcodec_service.h"
 #include "avcodec_death_recipient.h"
 #include "avcodec_listener_stub.h"
+#include "i_avcodec_service.h"
 #include "i_standard_avcodec_service.h"
 
 #ifdef SUPPORT_CODEC
@@ -49,17 +49,20 @@ public:
 #ifdef SUPPORT_CODECLIST
     std::shared_ptr<ICodecListService> CreateCodecListService() override;
     int32_t DestroyCodecListService(std::shared_ptr<ICodecListService> codecListClient) override;
+    sptr<IStandardCodecListService> GetCodecListServiceProxy() override;
 #endif
 
 private:
     int32_t CreateInstanceAndTryInTimes(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
-                                        sptr<IRemoteObject> &object,
-                                        uint32_t tryTimes = 3);
+                                        sptr<IRemoteObject> &object, uint32_t tryTimes = 3);
     sptr<IStandardAVCodecService> GetAVCodecProxy();
     sptr<IStandardAVCodecService> GetTemporaryAVCodecProxy();
     bool IsAlived();
     static void AVCodecServerDied(pid_t pid);
     void DoAVCodecServerDied();
+    void CancelTimer();
+    void TryReleaseResources();
+    void ScheduleReleaseResources();
 
     sptr<IStandardAVCodecService> avCodecProxy_ = nullptr;
     sptr<AVCodecListenerStub> listenerStub_ = nullptr;
@@ -71,7 +74,11 @@ private:
 #ifdef SUPPORT_CODECLIST
     std::list<std::shared_ptr<ICodecListService>> codecListClientList_;
 #endif
-
+#ifdef SUPPORT_START_STOP_ON_DEMAND
+    static void ReleaseTimerCallback(void *data);
+    int32_t releaseTimerId_ = 0;
+    static constexpr uint32_t RELEASE_DELAY_SECONDS = 180; // Delay before releasing resources (3 minutes)
+#endif
     std::mutex mutex_;
 };
 } // namespace MediaAVCodec
