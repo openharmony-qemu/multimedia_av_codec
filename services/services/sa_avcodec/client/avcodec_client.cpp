@@ -307,13 +307,11 @@ void AVCodecClient::CancelTimer()
 void AVCodecClient::ScheduleReleaseResources()
 {
     CancelTimer();
-
     // Check if all client lists are empty before setting timer
     bool hasAnyClient = false;
 #ifdef SUPPORT_CODEC
     hasAnyClient = hasAnyClient || !codecClientList_.empty();
 #endif
-
     // Only set timer if no clients exist
     if (!hasAnyClient) {
         releaseTimerId_ = AVCodecXCollie::GetInstance().SetTimer("AVCodecClient_ReleaseResources", false, false,
@@ -338,7 +336,6 @@ void AVCodecClient::TryReleaseResources()
         }
     }
 #endif
-
     // Only release if no codec clients exist
     if (!hasAnyClient && avCodecProxy_ != nullptr) {
         (void)avCodecProxy_->AsObject()->RemoveDeathRecipient(deathRecipient_);
@@ -347,7 +344,6 @@ void AVCodecClient::TryReleaseResources()
         deathRecipient_ = nullptr;
         AVCODEC_LOGI("Release resources due to all codec clients destroyed");
     }
-
     // Reset timer ID
     releaseTimerId_ = 0;
 }
