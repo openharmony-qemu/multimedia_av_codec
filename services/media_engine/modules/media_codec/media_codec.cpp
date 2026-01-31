@@ -1045,8 +1045,8 @@ void MediaCodec::OnInputBufferDone(const std::shared_ptr<AVBuffer> &inputBuffer)
     if (dumpIOEnable == "true" && dumpDataInputFs_) {
         if (dumpDataInputFs_->is_open() && inputBuffer->memory_->GetAddr()) {
             AVCODEC_LOGD("dumpIOE writing");
-            dumpDataInputFs_->write(reinterpret_cast<const char*>(inputBuffer->memory_->GetAddr() +
-                                    inputBuffer->memory_->GetOffset()), inputBuffer->memory_->GetSize());
+            dumpDataInputFs_->write(reinterpret_cast<const char*>(inputBuffer->memory_->GetAddr()),
+                inputBuffer->memory_->GetSize());
         }
     }
     Status ret = inputBufferQueueConsumer_->ReleaseBuffer(inputBuffer);
@@ -1068,8 +1068,8 @@ void MediaCodec::OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffe
     if (dumpIOEnable == "true" && dumpDataOutputFs_) {
         if (dumpDataOutputFs_->is_open() && outputBuffer->memory_->GetAddr()) {
             AVCODEC_LOGD("dumpIOE writing");
-            dumpDataOutputFs_->write(reinterpret_cast<const char*>(outputBuffer->memory_->GetAddr() +
-                                     outputBuffer->memory_->GetOffset()), outputBuffer->memory_->GetSize());
+            dumpDataOutputFs_->write(reinterpret_cast<const char*>(outputBuffer->memory_->GetAddr()),
+                outputBuffer->memory_->GetSize());
         }
     }
     // LCOV_EXCL_STOP
