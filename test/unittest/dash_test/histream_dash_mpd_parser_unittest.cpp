@@ -22,6 +22,7 @@
 #include "mpd_parser/dash_mpd_manager.h"
 #include "mpd_parser/dash_period_manager.h"
 #include "mpd_parser/dash_seg_tmline_node.h"
+#include "mpd_parser/dash_url_type_node.h"
 #include "mpd_parser/i_dash_mpd_node.h"
 
 using namespace std;
@@ -78,6 +79,58 @@ HWTEST_F(DashMpdNodeParserUnitTest, DashSegTmlineNode_001, TestSize.Level1)
     ASSERT_NE(nullptr, segNode);
     segNode->segTmlineAttr_[0].val_ = "mockData";
     node_->GetAttr("t", attr);
+    ASSERT_EQ("mockData", attr);
+}
+
+/**
+ * @tc.name  : Test DashSegTmlineNode ParseNode
+ * @tc.number: DashSegTmlineNode_ParseNode
+ * @tc.desc  : Test ParseNode xmlParser nullptr, rootElement nullptr
+ */
+HWTEST_F(DashMpdNodeParserUnitTest, DashSegTmlineNode_ParseNode, TestSize.Level1)
+{
+    node_ = IDashMpdNode::CreateNode("SegmentTimeline");
+    ASSERT_NE(nullptr, node_);
+    node_->ParseNode(parser_, element_);
+    parser_ = std::make_shared<XmlParser>();
+    ASSERT_NE(nullptr, parser_);
+    node_->ParseNode(parser_, element_);
+    xmlNodePtr element = xmlNewNode(nullptr, BAD_CAST "root");
+    element_ = std::make_shared<XmlElement>(element);
+    node_->ParseNode(parser_, element_);
+    std::string attr;
+    node_->GetAttr("mock", attr);
+    ASSERT_EQ("", attr);
+    DashSegTmlineNode* segNode = reinterpret_cast<DashSegTmlineNode*>(node_);
+    ASSERT_NE(nullptr, segNode);
+    segNode->segTmlineAttr_[0].val_ = "mockData";
+    node_->GetAttr("t", attr);
+    ASSERT_EQ("mockData", attr);
+}
+
+/**
+ * @tc.name  : Test DashUrlTypeNode ParseNode
+ * @tc.number: DashUrlTypeNode_ParseNode
+ * @tc.desc  : Test ParseNode xmlParser nullptr, rootElement nullptr
+ */
+HWTEST_F(DashMpdNodeParserUnitTest, DashUrlTypeNode_ParseNode, TestSize.Level1)
+{
+    node_ = IDashMpdNode::CreateNode("Initialization");
+    ASSERT_NE(nullptr, node_);
+    node_->ParseNode(parser_, element_);
+    parser_ = std::make_shared<XmlParser>();
+    ASSERT_NE(nullptr, parser_);
+    node_->ParseNode(parser_, element_);
+    xmlNodePtr element = xmlNewNode(nullptr, BAD_CAST "root");
+    element_ = std::make_shared<XmlElement>(element);
+    node_->ParseNode(parser_, element_);
+    std::string attr;
+    node_->GetAttr("mock", attr);
+    ASSERT_EQ("", attr);
+    DashUrlTypeNode* segNode = reinterpret_cast<DashUrlTypeNode*>(node_);
+    ASSERT_NE(nullptr, segNode);
+    segNode->urlTypeAttr_[0].val_ = "mockData";
+    node_->GetAttr("sourceURL", attr);
     ASSERT_EQ("mockData", attr);
 }
 }
