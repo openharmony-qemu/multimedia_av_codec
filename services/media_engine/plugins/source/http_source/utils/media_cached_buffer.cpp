@@ -291,7 +291,7 @@ bool CacheMediaChunkBufferImpl::WriteInPlace(FragmentIterator& fragmentPos, uint
 
 bool CacheMediaChunkBufferImpl::WriteMergerPre(uint64_t offset, size_t writeSize, FragmentIterator& nextFragmentPos)
 {
-    if (writePos_ == fragmentCacheBuffer_.end()) return false;
+    FALSE_RETURN_V_MSG_E(writePos_ != fragmentCacheBuffer_.end(), false, "writePos is invalid");
     nextFragmentPos = std::next(writePos_);
     bool isLoop = true;
     while (isLoop) {
@@ -330,7 +330,7 @@ bool CacheMediaChunkBufferImpl::WriteMergerPre(uint64_t offset, size_t writeSize
             break;
         } else {
             freeChunks_.splice(freeChunks_.end(), nextFragmentPos->chunks);
-            if (writePos_ == fragmentCacheBuffer_.end()) return false;
+            FALSE_RETURN_V_MSG_E(writePos_ != fragmentCacheBuffer_.end(), false, "Loop writePos is invalid");
             writePos_->totalReadSize += nextFragmentPos->totalReadSize;
             nextFragmentPos->totalReadSize = 0; // avoid total size sub, chunk num reduce.
             nextFragmentPos = EraseFragmentCache(nextFragmentPos);
