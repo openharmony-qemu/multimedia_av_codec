@@ -1389,6 +1389,13 @@ ohos_unittest("audio_sync_codec_adapter_unit_test") {
     "googletest:gmock_main"
   ]
 
+  if (av_codec_support_drm) {
+    external_deps += [
+      "drm_framework:drm_framework",
+      "drm_framework:native_drm",
+    ]
+  }
+
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }

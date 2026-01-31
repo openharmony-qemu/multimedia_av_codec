@@ -7,6 +7,9 @@
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
 #include "avcodec_trace.h"
+#ifdef SUPPORT_DRM
+#include "imedia_key_session_service.h"
+#endif
 
 using namespace testing;
 using namespace testing::ext;
@@ -444,6 +447,15 @@ HWTEST_F(SyncCodecAdapterTest, ATC_OnBufferAvailable_ShouldIncreaseOutputAvaliab
     int initialOutputAvaliableNum = syncCodecAdapter_->outputAvaliableNum_;
     syncCodecAdapter_->OnBufferAvailable();
     EXPECT_EQ(initialOutputAvaliableNum + 1, syncCodecAdapter_->outputAvaliableNum_);
+}
+
+HWTEST_F(SyncCodecAdapterTest, SetAudioDecryptionConfig, TestSize.Level0)
+{
+    auto innerImpl = std::make_shared<AVCodecAudioCodecInnerImpl>();
+    innerImpl->codecService_ = nullptr;
+    sptr<DrmStandard::IMediaKeySessionService> keySession = nullptr;
+    auto ret = innerImpl->SetAudioDecryptionConfig(keySession, false);
+    EXPECT_EQ(ret, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION);
 }
 }  // namespace Media
 }  // namespace OHOS
