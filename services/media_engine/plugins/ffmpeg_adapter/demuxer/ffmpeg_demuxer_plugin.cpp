@@ -1486,7 +1486,8 @@ void FFmpegDemuxerPlugin::UpdateStreamSnapshots()
             snapshot.isVideo = FFmpegFormatHelper::IsVideoType(*stream);
             snapshot.isAudio = FFmpegFormatHelper::IsAudioType(*stream);
             snapshot.needCombineFrame =
-                (fileType_ == FileType::MPEGTS && snapshot.codecId == AV_CODEC_ID_HEVC);
+                ((fileType_ == FileType::MPEGTS || fileType_ == FileType::MPEGPS) &&
+                snapshot.codecId == AV_CODEC_ID_HEVC);
         }
         streamSnapshots_.emplace_back(snapshot);
     }
