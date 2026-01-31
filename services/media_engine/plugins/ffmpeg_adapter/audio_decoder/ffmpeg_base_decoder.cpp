@@ -100,7 +100,7 @@ bool FfmpegBaseDecoder::HasExtraData() const noexcept
 
 void FfmpegBaseDecoder::SetSkipSamplesInfo(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
-    if (avCodec_ == nullptr) {
+    if (!isEnableSkipSamples_ || avCodec_ == nullptr) {
         return;
     }
     if (avCodec_->id != AV_CODEC_ID_MP3 && avCodec_->id != AV_CODEC_ID_VORBIS) {
@@ -382,6 +382,9 @@ Status FfmpegBaseDecoder::InitContext(const std::shared_ptr<Meta> &format)
         av_channel_layout_default(&avCodecContext_->ch_layout, channels);
     }
     format->GetData(Tag::AUDIO_MAX_INPUT_SIZE, maxInputSize_);
+    int32_t enableSkipSamples = 0;
+    format->GetData("enable_buffer_skip_samples", enableSkipSamples);
+    isEnableSkipSamples_ = (enableSkipSamples == 1);
 
     Status ret = SetCodecExtradata(format);
     if (ret != Status::OK) {
