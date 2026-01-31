@@ -116,6 +116,9 @@ Status SeiParserFilter::PrepareInputBufferQueue()
     int32_t videoWidth = 0;
     auto metaRes = trackMeta_->Get<Tag::VIDEO_HEIGHT>(videoHeight) && trackMeta_->Get<Tag::VIDEO_WIDTH>(videoWidth);
     int32_t capacity = metaRes ? videoWidth * videoHeight * VIDEO_CAPACITY_RATE : DEFAULT_BUFFER_CAPACITY;
+    if (capacity <= 0 || capacity > INT32_MAX) {
+        capacity = DEFAULT_BUFFER_CAPACITY;
+    }git
     MemoryType memoryType = MemoryType::VIRTUAL_MEMORY;
 
     MEDIA_LOG_I("PrepareInputBufferQueue");
