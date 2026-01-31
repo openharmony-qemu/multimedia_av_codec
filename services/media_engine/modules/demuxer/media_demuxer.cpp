@@ -4385,8 +4385,8 @@ Status MediaDemuxer::NotifySampleQueueBufferConsume(int32_t queueId)
     if (sampleConsumerTask == sampleConsumerTaskMap_.end()) {
         return Status::OK;
     }
+    FALSE_RETURN_V(sampleConsumerTask->second != nullptr, Status::ERROR_NULL_POINTER);
     sampleConsumerTask->second->UpdateDelayTime();
-
     return Status::OK;
 }
 
