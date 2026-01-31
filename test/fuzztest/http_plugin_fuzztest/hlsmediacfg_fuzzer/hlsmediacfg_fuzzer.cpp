@@ -48,8 +48,8 @@ public:
 };
 
 constexpr int BUFF_READ_SIZE = 5 * 1024 * 1024; // buf size 5MB
-constexpr int READ_TIMES_5S = 5;         // 5000MS
-constexpr int READ_TIMES_NS = 5;             // 100MS
+constexpr int READ_TIMES_5S = 1000 * 5;         // 5000MS	 
+ constexpr int READ_TIMES_NS = 100;             // 100MS
 unsigned char g_buffRead[BUFF_READ_SIZE];
 
 const map<string, string> g_httpHeader = {
@@ -61,6 +61,15 @@ const std::string g_urlIPPort = "http://127.0.0.1:46666/";
 
 const std::string g_urls[] = {
     std::string("test_cbr/test_cbr.m3u8"),
+    std::string("test_cbr/1080_3M/video_1080.m3u8"), 
+    std::string("test_cbr/720_1M/video_720_null.m3u8"), 
+    std::string("test_cbr/720_1M/video_720_live.m3u8"), 
+    std::string("test_hls/testHLSEncode.m3u8"), 
+    std::string("test_hls/testHLSEncode_session_key.m3u8"), 
+    std::string("test_hls/testXMap.m3u8"), 
+    std::string("test_hls/testByteRange.m3u8"), 
+    std::string("test_hls/testMutiStream.m3u8"), 
+    std::string("test_hls/testHlsLive.m3u8"),
 };
 
 void IncreaseCoverageSet(std::shared_ptr<HlsMediaDownloader> &hlsMediaDownloader)
@@ -329,7 +338,7 @@ bool StartFuzzTestMultiUrl(const uint8_t *data, size_t size)
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    if (data == nullptr) {
+    if (data == nullptr || size <= sizeof(int64_t)) {
         return false;
     }
     /* Run your code on data */
