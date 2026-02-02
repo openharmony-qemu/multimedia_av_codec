@@ -4712,6 +4712,9 @@ void MediaDemuxer::CachePressuredCallback(int32_t trackId, uint32_t cachedBytes)
 
 bool MediaDemuxer::NeedDroped(int32_t trackId)
 {
+    if (sampleQueueMap_[trackId] == nullptr) {
+        return false;
+    }
     if (IsLocalFd()) {
         if (sampleQueueMap_[trackId]->GetFilledBufferSize() >= SampleQueue::FD_SAMPLE_QUEUE_SIZE - 1) {
             hasDropedMap_[trackId].store(true);
