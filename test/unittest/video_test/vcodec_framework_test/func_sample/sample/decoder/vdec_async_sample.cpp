@@ -1165,7 +1165,8 @@ int32_t VideoDecAsyncSample::OutputLoopInnerExt()
                         testParam_ == VCodecTestParam::SW_RV40_TEST || testParam_ == VCodecTestParam::SW_WVC1 ||
                         testParam_ == VCodecTestParam::SW_MPEG1 || testParam_ == VCodecTestParam::SW_DVVIDEO ||
                         testParam_ == VCodecTestParam::SW_RAWVIDEO || testParam_ == VCodecTestParam::SW_CINEPAK ||
-                        testParam_ == VCodecTestParam::SW_VP8 || testParam_ == VCodecTestParam::SW_VP9)
+                        testParam_ == VCodecTestParam::SW_VP8 || testParam_ == VCodecTestParam::SW_VP9 ||
+                        testParam_ == VCodecTestParam::SW_AV1_TEST)
                            ? attr.size : buffer->GetNativeBuffer()->GetSize();
         UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
                                           "Fatal: GetOutputBuffer fail, exit, index: %d", index);
