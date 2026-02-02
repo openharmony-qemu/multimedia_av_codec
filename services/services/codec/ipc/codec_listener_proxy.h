@@ -21,6 +21,7 @@
 #include "avcodec_death_recipient.h"
 #include "nocopyable.h"
 #include "surface_buffer.h"
+#include "message_parcel.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -60,12 +61,17 @@ public:
     void SetOutputBufferRenderTimestamp(uint32_t index, int64_t renderTimestampNs);
     void ClearListenerCache();
 private:
+    void ResetParcel(MessageParcel &parcel);
+
     static inline BrokerDelegator<CodecListenerProxy> delegator_;
     class CodecBufferCache;
     std::unique_ptr<CodecBufferCache> inputBufferCache_;
     std::unique_ptr<CodecBufferCache> outputBufferCache_;
     uint64_t inputBufferGeneration_ { 0 };
     uint64_t outputBufferGeneration_{0};
+    std::mutex parcelMutex_;
+    MessageParcel input_;
+    MessageParcel output_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
