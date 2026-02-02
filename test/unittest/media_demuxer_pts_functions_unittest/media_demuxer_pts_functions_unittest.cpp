@@ -50,6 +50,15 @@ void MediaDemuxerPtsUnitTest::SetUp()
 
 void MediaDemuxerPtsUnitTest::TearDown()
 {
+    if (demuxerPtr_ != nullptr) {
+        if (demuxerPtr_->source_ != nullptr) {
+            testing::Mock::VerifyAndClearExpectations(demuxerPtr_->source_.get());
+            testing::Mock::AllowLeak(demuxerPtr_->source_.get());
+        }
+        demuxerPtr_->source_.reset();
+        demuxerPtr_->subtitleSource_.reset();
+        demuxerPtr_->demuxerPluginManager_.reset();
+    }
     demuxerPtr_ = nullptr;
 }
 
