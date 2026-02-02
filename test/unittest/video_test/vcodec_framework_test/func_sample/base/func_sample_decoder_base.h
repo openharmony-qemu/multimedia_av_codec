@@ -65,6 +65,7 @@ inline std::unordered_map<std::string, int32_t> fileTypeMap = {
     {"cinepak", CINEPAK_STREAM},
     {"vp8", VP8_STREAM},
     {"vp9", VP9_STREAM},
+    {"av1", AV1_STREAM},
 };
 
 inline constexpr uint32_t BUFFER_COUNT = 59;
