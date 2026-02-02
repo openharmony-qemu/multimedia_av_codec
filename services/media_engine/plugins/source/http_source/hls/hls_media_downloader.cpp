@@ -222,9 +222,9 @@ void HlsMediaDownloader::SetCallback(Callback* cb)
     callback_ = cb;
     FALSE_RETURN_MSG(videoSegManager_ != nullptr, "SetCallback no video segment manager found!");
     videoSegManager_->SetCallback(cb);
-    FALSE_RETURN(audioSegManager_ != nullptr);
+    FALSE_RETURN_MSG(audioSegManager_ != nullptr, "SetCallback no audio segment manager found!");
     audioSegManager_->SetCallback(cb);
-    FALSE_RETURN(subtitlesSegManager_ != nullptr);
+    FALSE_RETURN_MSG(subtitlesSegManager_ != nullptr, "SetCallback no subtitles segment manager found!");
     subtitlesSegManager_->SetCallback(cb);
 }
 

@@ -78,8 +78,7 @@ public:
 private:
     void UpdateMasterInfo(bool isPreParse);
     void UpdateMasterAndNotifyList(bool isPreParse);
-    bool UpdateNotSimplePlaylists();
-    bool UpdateSimplePlaylists();
+    bool UpdatePlaylists(bool isSimple);
     bool ReadMediaHeader(const std::list<std::shared_ptr<M3U8Media>>& mediaList, uint8_t* buffer, uint32_t wantLen,
         uint32_t& readLen, uint32_t streamId);
     bool ReadStreamHeader(const std::list<std::shared_ptr<M3U8VariantStream>>& streamList, uint8_t* buffer,
