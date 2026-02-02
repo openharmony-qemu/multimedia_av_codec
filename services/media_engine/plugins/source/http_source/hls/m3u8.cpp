@@ -324,7 +324,7 @@ uint32_t M3U8::SaveMapData(uint8_t* data, uint32_t len, bool notBlock)
         headerLen = headerLen > 0 ? headerLen : DEFAULT_HEADER_SIZE; // 1MB
         headerLen = std::min(headerLen, DEFAULT_MAX_SIZE);
         fmp4Header_ = new(std::nothrow) uint8_t[headerLen];
-        FALSE_RETURN_MSG(fmp4Header_ != nullptr, "SaveMapData error, no memory.");
+        FALSE_RETURN_V_MSG(fmp4Header_ != nullptr, 0u, "SaveMapData error, no memory.");
         fmp4HeaderLen = headerLen;
     }
     NZERO_RETURN_V(memcpy_s(fmp4Header_ + downloadHeaderLen_, fmp4HeaderLen - downloadHeaderLen_, data, len), 0);
