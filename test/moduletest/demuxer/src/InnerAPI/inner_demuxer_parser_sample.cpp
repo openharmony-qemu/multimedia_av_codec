@@ -316,13 +316,28 @@ bool InnerDemuxerParserSample::RunSeekScene(WorkPts workPts)
             isEosFlag = false;
             break;
         }
-        this->demuxer_->GetFrameLayerInfo(avBuffer, frameLayerInfo);
-        cout << "isDiscardable: " << frameLayerInfo.isDiscardable << ", gopId: " << frameLayerInfo.gopId
-             << ", layer: " << frameLayerInfo.layer << ", dts_: " << avBuffer->dts_ << endl;
-        checkResult = CheckFrameLayerResult(frameLayerInfo, avBuffer->dts_, false);
-        if (!checkResult) {
-            cout << "CheckFrameLayerResult is false!!" << endl;
-            break;
+        ret = this->demuxer_->GetFrameLayerInfo(avBuffer, frameLayerInfo);
+        if (ret == 0) {
+            cout << "isDiscardable: " << frameLayerInfo.isDiscardable << ", gopId: " << frameLayerInfo.gopId
+                 << ", layer: " << frameLayerInfo.layer << ", dts_: " << avBuffer->dts_ << endl;
+            checkResult = CheckFrameLayerResult(frameLayerInfo, avBuffer->dts_, false);
+            if (!checkResult) {
+                cout << "CheckFrameLayerResult is false!!" << endl;
+                break;
+            }
+        } else {
+            if (frameMap_.count(avBuffer->dts_) == 0) {
+                cout << "Error: DTS " << avBuffer->dts_ << " not found in json map" << endl;
+                checkResult = false;
+                break;
+            } 
+            JsonFrameLayerInfo expected = frameMap_[avBuffer->dts_];
+            if (expected.discardable) {
+                cout << "GetFrameLayerInfo failed for Discardable frame! ret:" << ret << " dts:" << avBuffer->dts_
+                     << endl;
+                checkResult = false;
+                break;
+            } 
         }
     }
     return checkResult;
@@ -358,22 +373,32 @@ bool InnerDemuxerParserSample::RunSpeedScene(WorkPts workPts)
         }
         if (avBuffer->pts_ >= pts * num) {
             ret = this->demuxer_->GetFrameLayerInfo(avBuffer, frameLayerInfo);
-            if (ret != 0) {
-                checkResult = false;
-                break;
-            }
-            checkResult = CheckFrameLayerResult(frameLayerInfo, avBuffer->dts_, true);
-            if (!checkResult) {
-                break;
-            }
-            ret = this->demuxer_->GetGopLayerInfo(frameLayerInfo.gopId, gopLayerInfo);
-            if (ret != 0) {
-                checkResult = false;
-                break;
-            }
-            checkResult = CheckGopLayerResult(gopLayerInfo, frameLayerInfo.gopId);
-            if (!checkResult) {
-                break;
+            if (ret == 0) { // 成功获取FrameLayerInfo
+                checkResult = CheckFrameLayerResult(frameLayerInfo, avBuffer->dts_, true);
+                if (!checkResult) break;
+                ret = this->demuxer_->GetGopLayerInfo(frameLayerInfo.gopId, gopLayerInfo);
+                if (ret != 0) {
+                    checkResult = false;
+                    break;
+                }
+                checkResult = CheckGopLayerResult(gopLayerInfo, frameLayerInfo.gopId);
+                if (!checkResult) break;
+            } else { // 获取FrameLayerInfo失败, Map为空，优化生效
+                if (frameMap_.count(avBuffer->dts_) == 0) {
+                    cout << "Error: DTS not found in json map" << endl;
+                    checkResult = false;
+                    break;
+                }
+                JsonFrameLayerInfo expected = frameMap_[avBuffer->dts_];
+                if (expected.discardable) {
+                    cout << "Check Fail: Complex frame (discardable) missing info! pts=" 
+                         << avBuffer->pts_ << " ret=" << ret << endl;
+                    checkResult = false;
+                    break;
+                } else {
+                    cout << "Optimization hit: Simple frame passed." << endl;
+                    checkResult = true;
+                }
             }
         }
     }
