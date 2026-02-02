@@ -172,6 +172,11 @@ int64_t DownloadMonitor::GetDuration() const
     return downloader_->GetDuration();
 }
 
+std::pair<int64_t, bool> DownloadMonitor::GetStartInfo() const
+{
+    return downloader_->GetStartInfo();
+}
+
 Seekable DownloadMonitor::GetSeekable() const
 {
     return downloader_->GetSeekable();

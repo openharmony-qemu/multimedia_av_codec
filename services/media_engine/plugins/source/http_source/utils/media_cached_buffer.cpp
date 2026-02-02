@@ -1175,6 +1175,28 @@ bool CacheMediaChunkBufferImpl::ClearFragmentBeforeOffset(uint64_t offset)
     return res;
 }
 
+bool CacheMediaChunkBufferImpl::ClearFragmentAfterOffset(uint64_t offset)
+{
+    std::lock_guard lock(mutex_);
+    bool res = false;
+    for (auto iter = fragmentCacheBuffer_.begin(); iter != fragmentCacheBuffer_.end();) {
+        if (iter->offsetBegin + static_cast<uint64_t>(iter->dataLength) <= offset) {
+            iter++;
+            continue;
+        }
+        if (iter->offsetBegin >= offset) {
+            MEDIA_LOG_D("ClearFragmentAfterOffset clear fragment, offsetBegin: " PUBLIC_LOG_U64 " offsetEnd "
+                PUBLIC_LOG_U64, iter->offsetBegin, iter->offsetBegin + iter->dataLength);
+            freeChunks_.splice(freeChunks_.end(), iter->chunks);
+            iter = EraseFragmentCache(iter);
+            res = true;
+            continue;
+        }
+        iter++;
+    }
+    return res;
+}
+
 // Release all chunks of read fragment between minReadOffset and maxReadOffset.
 bool CacheMediaChunkBufferImpl::ClearMiddleReadFragment(uint64_t minOffset, uint64_t maxOffset)
 {
@@ -1346,6 +1368,11 @@ uint64_t CacheMediaChunkBuffer::GetFreeSize()
 bool CacheMediaChunkBuffer::ClearFragmentBeforeOffset(uint64_t offset)
 {
     return impl_->ClearFragmentBeforeOffset(offset);
+}
+
+bool CacheMediaChunkBuffer::ClearFragmentAfterOffset(uint64_t offset)
+{
+    return impl_->ClearFragmentAfterOffset(offset);
 }
 
 bool CacheMediaChunkBuffer::ClearChunksOfFragment(uint64_t offset)

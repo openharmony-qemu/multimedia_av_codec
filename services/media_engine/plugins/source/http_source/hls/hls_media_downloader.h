@@ -61,6 +61,7 @@ public:
 
     size_t GetContentLength() const override;
     int64_t GetDuration() const override;
+    std::pair<int64_t, bool> GetStartInfo() const override;
     Seekable GetSeekable() const override;
     void SetCallback(Callback* cb) override;
     void SetStatusCallback(StatusCallbackFunc cb) override;
@@ -102,12 +103,13 @@ private:
     void SetDemuxerState(int32_t streamId) override;
     void SetDownloadErrorState() override;
     std::shared_ptr<HlsSegmentManager> GetSegmentManager(uint32_t streamId);
-    void OnMasterReady(bool needAudioManager, bool needSubTitleManager);
+    void OnMasterReady(bool needAudioManager, bool needSubtitlesManager);
 
 private:
     Callback* callback_ {nullptr};
     std::shared_ptr<HlsSegmentManager> videoSegManager_ {nullptr};
     std::shared_ptr<HlsSegmentManager> audioSegManager_ {nullptr};
+    std::shared_ptr<HlsSegmentManager> subtitlesSegManager_ {nullptr};
     uint32_t bufferingFlag_ {0};
     std::mutex bufferingMutex_;
     std::shared_ptr<DownloadMetricsInfo> downloadMetricsInfo_ {nullptr};

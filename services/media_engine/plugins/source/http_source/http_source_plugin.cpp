@@ -11,6 +11,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ 
  */
 #define HST_LOG_TAG "HttpSourcePlugin"
 
@@ -449,6 +450,13 @@ Status HttpSourcePlugin::GetDuration(int64_t& duration)
 {
     FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
     duration = downloader_->GetDuration();
+    return Status::OK;
+}
+
+Status HttpSourcePlugin::GetStartInfo(std::pair<int64_t, bool>& startInfo)
+{
+    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
+    startInfo = downloader_->GetStartInfo();
     return Status::OK;
 }
 
