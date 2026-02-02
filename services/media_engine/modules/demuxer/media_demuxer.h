@@ -401,6 +401,7 @@ private:
     void SetTrackNeedDropFrame(int32_t trackId, uint32_t frameCount);
     bool GetTrackSeekNeedDrop(int32_t trackId);
     void SetTrackSeekNeedDrop(int32_t trackId, bool needDrop);
+    void ResetAfterSeek(Status ret);
 
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
