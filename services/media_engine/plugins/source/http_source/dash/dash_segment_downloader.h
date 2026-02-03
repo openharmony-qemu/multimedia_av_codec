@@ -214,6 +214,9 @@ private:
     bool IsNeedBufferForPlaying();
     void UpdateMediaSegments(size_t bufferTail, uint32_t len);
     bool CheckLoopTimeout(int64_t startLoopTime);
+    void SetDownloadRequest(std::shared_ptr<DownloadRequest> downloadRequest);
+    std::shared_ptr<DownloadRequest> GetDownloadRequest() const;
+    bool CheckDownloadRequest(const std::shared_ptr<DownloadRequest>& downloadRequest);
 
 private:
     static constexpr uint32_t MIN_RETENTION_DURATION_MS = 5 * 1000;
@@ -225,6 +228,7 @@ private:
     std::vector<std::shared_ptr<DashInitSegment>> initSegments_;
     std::mutex segmentMutex_;
     std::mutex initSegmentMutex_;
+    mutable std::shared_mutex downloadRequestMutex_;
     DataSaveFunc dataSave_;
     StatusCallbackFunc statusCallback_;
     SegmentDownloadDoneCbFunc downloadDoneCbFunc_;
