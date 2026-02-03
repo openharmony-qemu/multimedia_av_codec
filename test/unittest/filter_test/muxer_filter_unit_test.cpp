@@ -161,6 +161,7 @@ HWTEST_F(MuxerFilterUnitTest, MuxerFilter_OnBufferFilled_0100, TestSize.Level1)
     muxerFilter_->OnBufferFilled(inputBuffer, trackIndex, streamType, inputBufferQueue);
     muxerFilter_->isTransCoderMode = true;
     muxerFilter_->OnBufferFilled(inputBuffer, trackIndex, streamType, inputBufferQueue);
+    muxerFilter_->EventCompleteStopAsync();
     EXPECT_EQ(inputBuffer->flag_, 0);
 }
 
@@ -379,6 +380,17 @@ HWTEST_F(MuxerFilterUnitTest, MuxerFilter_SetCallingInfo_0400, TestSize.Level1)
     EXPECT_EQ(appPid, muxerFilter_->appPid_);
     EXPECT_EQ(bundleName, muxerFilter_->bundleName_);
     EXPECT_EQ(instanceId, muxerFilter_->instanceId_);
+}
+
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_SetOrGetParameter_0100, TestSize.Level1)
+{
+    std::shared_ptr<Meta> receivedMeta = std::make_shared<Meta>();
+    muxerFilter_->GetParameter(receivedMeta);
+    ASSERT_NE(receivedMeta, nullptr);
+    muxerFilter_->mediaMuxer_ = std::make_shared<MediaMuxer>(0, 0);
+    std::shared_ptr<Meta> userMeta = std::make_shared<Meta>();
+    muxerFilter_->SetParameter(userMeta);
+    EXPECT_NE(muxerFilter_->mediaMuxer_->SetParameter(userMeta), Status::OK);
 }
 }  // namespace Pipeline
 }  // namespace Media
