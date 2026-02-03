@@ -279,28 +279,10 @@ size_t InnerDemuxerParserSample::GetFileSize(const std::string& filePath)
     return fileSize;
 }
 
-bool InnerDemuxerParserSample::RunSeekScene(WorkPts workPts)
+bool InnerDemuxerParserSample::CheckSeekScene(int64_t pts)
 {
-    int64_t pts = GetPtsFromWorkPts(workPts);
-    float durationNum = 0.0;
-    if (pts > duration / durationNum) {
-        cout << "pts > duration" << endl;
-        return true;
-    }
-    int32_t ret = 0;
-    ret = this->demuxer_->StartReferenceParser(pts);
-    cout << "StartReferenceParser pts:" << pts << endl;
-    if (ret != 0) {
-        cout << "StartReferenceParser fail ret:" << ret << endl;
-        return false;
-    }
+    int32_t ret = -1;
     bool checkResult = true;
-    ret = demuxer_->SeekToTime(pts, Media::SeekMode::SEEK_PREVIOUS_SYNC);
-    if (ret != 0) {
-        cout << "SeekToTime fail ret:" << ret << endl;
-        return false;
-    }
-    usleep(usleepTime);
     FrameLayerInfo frameLayerInfo;
     bool isEosFlag = true;
     int32_t ptsNum = 1000;
@@ -317,42 +299,61 @@ bool InnerDemuxerParserSample::RunSeekScene(WorkPts workPts)
             break;
         }
         ret = this->demuxer_->GetFrameLayerInfo(avBuffer, frameLayerInfo);
+        int64_t dts = avBuffer->dts_;
         if (ret == 0) {
             cout << "isDiscardable: " << frameLayerInfo.isDiscardable << ", gopId: " << frameLayerInfo.gopId
-                 << ", layer: " << frameLayerInfo.layer << ", dts_: " << avBuffer->dts_ << endl;
-            checkResult = CheckFrameLayerResult(frameLayerInfo, avBuffer->dts_, false);
+                 << ", layer: " << frameLayerInfo.layer << ", dts_: " << dts << endl;
+            checkResult = CheckFrameLayerResult(frameLayerInfo, dts, false);
             if (!checkResult) {
                 cout << "CheckFrameLayerResult is false!!" << endl;
                 break;
             }
         } else {
-            if (frameMap_.count(avBuffer->dts_) == 0) {
-                cout << "Error: DTS " << avBuffer->dts_ << " not found in json map" << endl;
+            if (frameMap_.count(dts) == 0) {
+                cout << "Error: DTS " << dts << " not found in json map" << endl;
                 checkResult = false;
                 break;
-            } 
-            JsonFrameLayerInfo expected = frameMap_[avBuffer->dts_];
+            }
+            JsonFrameLayerInfo expected = frameMap_[dts];
             if (expected.discardable) {
-                cout << "GetFrameLayerInfo failed for Discardable frame! ret:" << ret << " dts:" << avBuffer->dts_
-                     << endl;
+                cout << "GetFrameLayerInfo failed for Discardable frame! ret:" << ret << " dts:" << dts << endl;
                 checkResult = false;
                 break;
-            } 
+            }
         }
     }
     return checkResult;
 }
 
+bool InnerDemuxerParserSample::RunSeekScene(WorkPts workPts)
+{
+    int64_t pts = GetPtsFromWorkPts(workPts);
+    float durationNum = 0.0;
+    if (pts > duration / durationNum) {
+        cout << "pts > duration" << endl;
+        return true;
+    }
+    int32_t ret = 0;
+    ret = this->demuxer_->StartReferenceParser(pts);
+    cout << "StartReferenceParser pts:" << pts << endl;
+    if (ret != 0) {
+        cout << "StartReferenceParser fail ret:" << ret << endl;
+        return false;
+    }
+    ret = demuxer_->SeekToTime(pts, Media::SeekMode::SEEK_PREVIOUS_SYNC);
+    if (ret != 0) {
+        cout << "SeekToTime fail ret:" << ret << endl;
+        return false;
+    }
+    usleep(usleepTime);
+    return CheckSeekScene(pts);
+}
+
 bool InnerDemuxerParserSample::RunSpeedScene(WorkPts workPts)
 {
     int64_t pts = GetPtsFromWorkPts(workPts);
-    int32_t ret = 0;
-    ret = demuxer_->SeekToTime(pts, Media::SeekMode::SEEK_PREVIOUS_SYNC);
-    if (ret != 0) {
-        return false;
-    }
-    ret = this->demuxer_->StartReferenceParser(pts);
-    if (ret != 0) {
+    if (demuxer_->SeekToTime(pts, Media::SeekMode::SEEK_PREVIOUS_SYNC) != 0 ||
+        demuxer_->StartReferenceParser(pts) != 0) {
         return false;
     }
     usleep(usleepTime);
@@ -362,48 +363,37 @@ bool InnerDemuxerParserSample::RunSpeedScene(WorkPts workPts)
     bool checkResult = true;
     int num = 0;
     while (isEosFlag) {
-        ret = this->demuxer_->ReadSampleBuffer(videoTrackIdx, avBuffer);
-        if (ret != 0) {
+        int32_t ret = demuxer_->ReadSampleBuffer(videoTrackIdx, avBuffer);
+        if (ret != 0 || (avBuffer->flag_ & AVCODEC_BUFFER_FLAG_EOS)) {
             isEosFlag = false;
             break;
         }
-        if (avBuffer->flag_ & AVCODEC_BUFFER_FLAG_EOS) {
-            isEosFlag = false;
-            break;
+        if (avBuffer->pts_ < pts * num) {
+            continue;
         }
-        if (avBuffer->pts_ >= pts * num) {
-            ret = this->demuxer_->GetFrameLayerInfo(avBuffer, frameLayerInfo);
-            if (ret == 0) { // 成功获取FrameLayerInfo
-                checkResult = CheckFrameLayerResult(frameLayerInfo, avBuffer->dts_, true);
-                if (!checkResult) break;
-                ret = this->demuxer_->GetGopLayerInfo(frameLayerInfo.gopId, gopLayerInfo);
-                if (ret != 0) {
-                    checkResult = false;
-                    break;
-                }
+        ret = demuxer_->GetFrameLayerInfo(avBuffer, frameLayerInfo);
+        if (ret == 0) { // 成功获取FrameLayerInfo
+            if (!CheckFrameLayerResult(frameLayerInfo, avBuffer->dts_, true)) {
+                checkResult = false;
+            } else if (demuxer_->GetGopLayerInfo(frameLayerInfo.gopId, gopLayerInfo) != 0) {
+                checkResult = false;
+            } else {
                 checkResult = CheckGopLayerResult(gopLayerInfo, frameLayerInfo.gopId);
-                if (!checkResult) break;
-            } else { // 获取FrameLayerInfo失败, Map为空，优化生效
-                if (frameMap_.count(avBuffer->dts_) == 0) {
-                    cout << "Error: DTS not found in json map" << endl;
-                    checkResult = false;
-                    break;
-                }
-                JsonFrameLayerInfo expected = frameMap_[avBuffer->dts_];
-                if (expected.discardable) {
-                    cout << "Check Fail: Complex frame (discardable) missing info! pts=" 
-                         << avBuffer->pts_ << " ret=" << ret << endl;
-                    checkResult = false;
-                    break;
-                } else {
-                    cout << "Optimization hit: Simple frame passed." << endl;
-                    checkResult = true;
-                }
             }
+        } else { // 获取FrameLayerInfo失败, Map为空，优化生效
+            auto it = frameMap_.find(avBuffer->dts_);
+            if (it == frameMap_.end() || it->second.discardable) {
+                cout << "Check Fail: Frame missing info! pts=" << avBuffer->pts_ << endl;
+                checkResult = false;
+            }
+        }
+        if (!checkResult) {
+            break;
         }
     }
     return checkResult;
 }
+
 
 bool InnerDemuxerParserSample::CheckFrameLayerResult(FrameLayerInfo &info, int64_t dts, bool speedScene)
 {
