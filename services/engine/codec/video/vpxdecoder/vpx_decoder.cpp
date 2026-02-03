@@ -553,16 +553,13 @@ void VpxDecoder::GetVp9CapProf(std::vector<CapabilityData> &capaArray)
         capsData.blockPerFrame.maxVal = VP9_BLOCKPERFRAME_SIZE;
         capsData.frameRate.maxVal = VP9_FRAMERATE_MAX_SIZE;
         capsData.supportSwapWidthHeight = true;
-        capsData.profiles = {static_cast<int32_t>(VP9_PROFILE_0), static_cast<int32_t>(VP9_PROFILE_1),
-                             static_cast<int32_t>(VP9_PROFILE_2), static_cast<int32_t>(VP9_PROFILE_3)};
+        capsData.profiles = {static_cast<int32_t>(VP9_PROFILE_0), static_cast<int32_t>(VP9_PROFILE_1)};
         std::vector<int32_t> levels;
         for (int32_t j = 0; j <= static_cast<int32_t>(VP9Level::VP9_LEVEL_62); ++j) {
             levels.emplace_back(j);
         }
         capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(VP9_PROFILE_0), levels));
         capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(VP9_PROFILE_1), levels));
-        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(VP9_PROFILE_2), levels));
-        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(VP9_PROFILE_3), levels));
     }
 }
 

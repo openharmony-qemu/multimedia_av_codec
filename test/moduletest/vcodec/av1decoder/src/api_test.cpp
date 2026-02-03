@@ -42,6 +42,7 @@
 #endif
 
 #define PIXFORMAT_NUM 2
+#define PROFILE_NUM 2
 
 using namespace std;
 using namespace OHOS;
@@ -85,8 +86,7 @@ static bool CheckPixelFormat(int32_t pixelFormat)
 static bool CheckProfile(int32_t profile)
 {
     if (profile == AV1_PROFILE_MAIN ||
-        profile == AV1_PROFILE_HIGH ||
-        profile == AV1_PROFILE_PROFESSIONAL) {
+        profile == AV1_PROFILE_HIGH) {
         return true;
     } else {
         return false;
@@ -129,8 +129,7 @@ static bool CheckLevels(int32_t level)
 static bool CheckLevelsForProfile(int32_t profile, int32_t level)
 {
     if (profile == AV1_PROFILE_MAIN ||
-        profile == AV1_PROFILE_HIGH ||
-        profile == AV1_PROFILE_PROFESSIONAL) {
+        profile == AV1_PROFILE_HIGH) {
             return CheckLevels(level);
     }
     return false;
@@ -1702,7 +1701,7 @@ HWTEST_F(Av1decApiNdkTest, VIDEO_AV1DEC_CAP_API_3700, TestSize.Level1)
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetSupportedProfiles(capability, &profiles, &profileNum);
     ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_EQ(profileNum, 3);
+    ASSERT_EQ(profileNum, PROFILE_NUM);
     ASSERT_NE(nullptr, profiles);
     for (int i = 0; i < profileNum; i++) {
         ASSERT_EQ(CheckProfile(profiles[i]), true);
@@ -1725,7 +1724,7 @@ HWTEST_F(Av1decApiNdkTest, VIDEO_AV1DEC_CAP_API_3800, TestSize.Level1)
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetSupportedProfiles(capability, &profiles, &profileNum);
     ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_EQ(profileNum, 3);
+    ASSERT_EQ(profileNum, PROFILE_NUM);
     ASSERT_NE(nullptr, profiles);
     for (int i = 0; i < profileNum; i++) {
         cout << "profiles[" << i << "] = " << profiles[i] << endl;
@@ -1801,7 +1800,7 @@ HWTEST_F(Av1decApiNdkTest, VIDEO_AV1DEC_CAP_API_3901, TestSize.Level1)
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetSupportedProfiles(capability, &profiles, &profileNum);
     ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_EQ(profileNum, 3);
+    ASSERT_EQ(profileNum, PROFILE_NUM);
     ASSERT_NE(nullptr, profiles);
     for (int i = 0; i < profileNum; i++) {
         ASSERT_EQ(profiles[i], i);
