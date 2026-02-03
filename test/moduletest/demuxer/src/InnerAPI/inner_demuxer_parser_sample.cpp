@@ -394,7 +394,6 @@ bool InnerDemuxerParserSample::RunSpeedScene(WorkPts workPts)
     return checkResult;
 }
 
-
 bool InnerDemuxerParserSample::CheckFrameLayerResult(FrameLayerInfo &info, int64_t dts, bool speedScene)
 {
     JsonFrameLayerInfo frame = frameMap_[dts];
