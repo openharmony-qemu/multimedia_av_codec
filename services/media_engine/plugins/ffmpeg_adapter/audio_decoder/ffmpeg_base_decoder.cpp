@@ -112,7 +112,7 @@ void FfmpegBaseDecoder::SetSkipSamplesInfo(const std::shared_ptr<AVBuffer> &inpu
     if (!meta->GetData(Tag::BUFFER_SKIP_SAMPLES_INFO, skipInfo)) {
         return;
     }
-    AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "skip info size:%{public}zu", skipInfo.size());
+    AVCODEC_LOGI_LIMIT(LOGD_FREQUENCY, "skip info size:%{public}zu", skipInfo.size());
     uint8_t *p = av_packet_new_side_data(avPacket_.get(), AV_PKT_DATA_SKIP_SAMPLES, skipInfo.size());
     if (p == nullptr || memcpy_s(p, skipInfo.size(), skipInfo.data(), skipInfo.size()) != EOK) {
         AVCODEC_LOGE("copy skip info failed!is null:%{public}d size:%{public}zu",
@@ -383,7 +383,7 @@ Status FfmpegBaseDecoder::InitContext(const std::shared_ptr<Meta> &format)
     }
     format->GetData(Tag::AUDIO_MAX_INPUT_SIZE, maxInputSize_);
     int32_t enableSkipSamples = 0;
-    format->GetData("enable_buffer_skip_samples", enableSkipSamples);
+    format->GetData(Tag::ENABLE_BUFFER_SKIP_SAMPLES, enableSkipSamples);
     isEnableSkipSamples_ = (enableSkipSamples == 1);
 
     Status ret = SetCodecExtradata(format);
@@ -399,6 +399,7 @@ Status FfmpegBaseDecoder::InitContext(const std::shared_ptr<Meta> &format)
     avCodecContext_->workaround_bugs =
         static_cast<uint32_t>(avCodecContext_->workaround_bugs) | static_cast<uint32_t>(FF_BUG_AUTODETECT);
     avCodecContext_->err_recognition = 1;
+    AVCODEC_LOGI("enableSkipSamples: %{public}d", enableSkipSamples);
     return Status::OK;
 }
 
