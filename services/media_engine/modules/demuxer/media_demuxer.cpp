@@ -1771,7 +1771,14 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
             ScopedTimer timer("seek closest", SEEK_LOCAL_WARNING_MS);
             ret = demuxerPluginManager_->SeekTo(seekTime, mode, realSeekTime);
         }
+        ResetSampleQueueStatus(seekTime);
     }
+    MEDIA_LOG_D("Out");
+    return ret;
+}
+
+void MediaDemuxer::ResetAfterSeek(Status ret)
+{
     isSeeked_ = true;
     if (isVideoMuted_ || needRestore_) {
         if (sampleQueueMap_[videoTrackId_] != nullptr) {
@@ -1791,8 +1798,6 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
     }
     isFirstFrameAfterSeek_.store(true);
     convertErrorTime_.store(0);
-    MEDIA_LOG_D("Out");
-    return ret;
 }
 
 Status MediaDemuxer::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
