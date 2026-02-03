@@ -62,7 +62,7 @@ bool VideoParser::IsAvccHvccFrame(const uint8_t *sample, int32_t size)
         return false;
     }
 
-    uint32_t naluSize = 0;
+    uint64_t naluSize = 0;
     uint64_t pos = 0;
     uint64_t cmpSize = static_cast<uint64_t>(size);
     while (pos + nalSizeLen_ <= cmpSize) {
