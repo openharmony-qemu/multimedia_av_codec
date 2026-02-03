@@ -1367,7 +1367,6 @@ typedef enum OH_HEVCProfile {
 typedef enum OH_AV1Profile {
     /** Main profile */
     AV1_PROFILE_MAIN = 0,
-
     /** High profile */
     AV1_PROFILE_HIGH = 1,
     /** Professional profile */

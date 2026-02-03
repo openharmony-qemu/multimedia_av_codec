@@ -43,7 +43,7 @@
 
 #define SIZE_ZERO 0
 #define PIXFORMAT_NUM 2
-#define PROFILE_NUM 4
+#define PROFILE_NUM 2
 #define LEVEL_NUM 14
 
 using namespace std;
