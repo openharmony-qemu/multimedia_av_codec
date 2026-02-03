@@ -97,7 +97,7 @@ public:
         int32_t sliceSize);
     Status RollbackBuffer(std::shared_ptr<AVBuffer>& sampleBuffer);
     Status PopRollbackBuffer(std::shared_ptr<AVBuffer>& sampleBuffer);
-    Status PeekRollbackBuffer(std::shared_ptr<AVBuffer>& sampleBuffer);
+    Status PeekRollbackBuffer(size_t& sz);
     Status PushRollbackBuffer(std::shared_ptr<AVBuffer>& sampleBuffer);
     uint32_t GetFilledBufferSize();
     Status UpdateLastOutSamplePts(int64_t lastOutSamplePts);
