@@ -510,7 +510,7 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H264_FUNC_0230, TestSize.Level1)
     }
     shared_ptr<InnerDemuxerParserSample> parserSample = make_shared<InnerDemuxerParserSample>(g_file_ipb_frame_avc);
     parserSample->InitParameter(MP4Scene::IPB_FRAME_AVC);
-    ASSERT_TRUE(parserSample->RunSpeedScene(WorkPts::RANDOM_PTS));
+    ASSERT_TRUE(parserSample->RunSpeedScene(WorkPts::START_PTS));
 }
 
 /**
