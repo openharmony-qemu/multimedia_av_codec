@@ -34,6 +34,7 @@
 #include "surface_tools.h"
 #include "surface_utils.h"
 #include "codeclist_core.h"
+#include "avcodec_trace.h"
 #ifdef SUPPORT_DRM
 #include "imedia_key_session_service.h"
 #endif
@@ -1727,19 +1728,10 @@ void CodecServer::HandleOutputBufferAvailability(uint32_t index, std::shared_ptr
 {
     CHECK_AND_RETURN_LOG(buffer != nullptr, "HandleOutputBufferAvailability AVBuffer is null");
     if (isLocalReleaseMode_) {
-        if ((buffer->flag_ & BUFFER_IS_EOS) == BUFFER_IS_EOS) {
-            ; // EOS buffer, no operation needed. Proceed to call video callback.
-        } else if (buffer->pts_ > lastBufferPts_.load()) {
-            lastBufferPts_ = buffer->pts_;
-            std::unique_lock<std::mutex> lockNotEos(releaseBufferMutex_);
-            indexs_.push_back(index);
-            releaseBufferCondition_.notify_all();
-            return;
-        } else {
-            AVCODEC_LOGW_WITH_TAG("Buffer drop index:  %{public}u pts:  %{public}" PRId64, index, buffer->pts_);
-            dropIndexs_.push_back(index);
-            return;
-        }
+        std::unique_lock<std::mutex> lockBuffer(releaseBufferMutex_);
+        indexs_.push_back(std::make_pair(index, buffer));
+        releaseBufferCondition_.notify_all();
+        return;
     }
     std::shared_lock<std::shared_mutex> lock(cbMutex_);
     CHECK_AND_RETURN_LOG_WITH_TAG(videoCb_ != nullptr, "videoCb_ is nullptr!");
@@ -1750,25 +1742,46 @@ void CodecServer::ReleaseBuffer()
 {
     AVCODEC_LOGI_WITH_TAG("CodecServer::ReleaseBuffer");
     while (!isReleaseFree_) {
-        std::vector<uint32_t> indexs;
+        std::vector<std::pair<uint32_t, std::shared_ptr<AVBuffer>>> indexs;
         std::vector<uint32_t> dropIndexs;
+        std::pair<uint32_t, std::shared_ptr<AVBuffer>> eosBuffer;
+        bool isEos = false;
         {
             std::unique_lock<std::mutex> lock(releaseBufferMutex_);
             releaseBufferCondition_.wait(lock, [this] {
-                return isReleaseFree_ || !indexs_.empty() || !dropIndexs_.empty();
+                return isReleaseFree_ || !indexs_.empty();
             });
             indexs = indexs_;
             indexs_.clear();
-            dropIndexs = dropIndexs_;
-            dropIndexs_.clear();
         }
         for (auto &index : indexs) {
-            AVCODEC_LOGD_WITH_TAG("ReleaseBuffer buffer, index: %{public}u", index);
-            ReleaseOutputBuffer(index, true);
+            AVCODEC_LOGD_WITH_TAG("ReleaseBuffer buffer, index: %{public}u", index.first);
+            std::shared_ptr<AVBuffer> indexBuffer = index.second;
+            CHECK_AND_CONTINUE_LOG_WITH_TAG(indexBuffer != nullptr, "indexBuffer is nullptr!");
+            if ((indexBuffer->flag_ & BUFFER_IS_EOS) == BUFFER_IS_EOS) {
+                isEos = true;
+                eosBuffer = index;
+                continue;
+            } else if (indexBuffer->pts_ > lastBufferPts_.load()) {
+                lastBufferPts_ = indexBuffer->pts_;
+            } else {
+                AVCODEC_LOGW_WITH_TAG("Buffer drop index:  %{public}u pts:  %{public}" PRId64,
+                    index.first, indexBuffer->pts_);
+                dropIndexs.push_back(index.first);
+            }
+            MediaAVCodec::AVCodecTrace trace("CodecServer::ReleaseBuffer " + std::to_string(index.first));
+            ReleaseOutputBuffer(index.first, true);
         }
         for (auto &dropIndex : dropIndexs) {
-            AVCODEC_LOGD_WITH_TAG("Drop buffer, index:  %{public}u", dropIndex);
+            MediaAVCodec::AVCodecTrace trace("CodecServer::ReleaseDropedBuffer " + std::to_string(dropIndex));
             ReleaseOutputBuffer(dropIndex, false);
+        }
+        if (isEos) {
+            std::shared_lock<std::shared_mutex> lock(cbMutex_);
+            CHECK_AND_RETURN_LOG_WITH_TAG(videoCb_ != nullptr, "videoCb_ is nullptr!");
+            CHECK_AND_RETURN_LOG_WITH_TAG(eosBuffer.second != nullptr, "eosBuffer is nullptr!");
+            AVCODEC_LOGI_WITH_TAG("ReleaseBuffer buffer is eos, index: %{public}u", eosBuffer.first);
+            videoCb_->OnOutputBufferAvailable(eosBuffer.first, eosBuffer.second);
         }
     }
     AVCODEC_LOGI_WITH_TAG("CodecServer::ReleaseBuffer end");
