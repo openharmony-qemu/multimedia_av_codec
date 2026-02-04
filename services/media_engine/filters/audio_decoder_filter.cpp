@@ -401,6 +401,7 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
     UpdateTrackInfoSampleFormat(mime, meta);
+    meta->Set<Tag::ENABLE_BUFFER_SKIP_SAMPLES>(1);
     meta_ = meta;
     SetParameter(meta);
     Status ret = Status::OK;

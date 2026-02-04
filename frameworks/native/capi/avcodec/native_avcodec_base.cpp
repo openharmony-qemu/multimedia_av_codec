@@ -114,6 +114,7 @@ const char *OH_MD_MAX_OUTPUT_BUFFER_COUNT = "max_output_buffer_count";
 const char *OH_MD_KEY_VIDEO_IS_HDR_VIVID = "video_is_hdr_vivid";
 const char *OH_MD_KEY_BLOCK_ALIGN = "audio_block_align";
 const char *OH_MD_KEY_BUFFER_SKIP_SAMPLES_INFO = "buffer_skip_samples_info";
+const char *OH_MD_KEY_ENABLE_BUFFER_SKIP_SAMPLES = "enable_buffer_skip_samples";
 
 const char *OH_MD_KEY_TITLE = "title";
 const char *OH_MD_KEY_ARTIST = "artist";
