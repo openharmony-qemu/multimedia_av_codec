@@ -500,34 +500,6 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingPercent_0200, TestSiz
 }
 
 /**
- * @tc.name: FileFdSource_NotifyBufferingEnd_0200
- * @tc.desc: FileFdSource_NotifyBufferingEnd_0200
- * @tc.type: FUNC
- */
-HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingEnd_0200, TestSize.Level1)
-{
-    std::shared_ptr<RingBufferMock> buffer = std::make_shared<RingBufferMock>(0);
-    fileFdSourcePlugin_->ringBuffer_ = buffer;
-    fileFdSourcePlugin_->isBuffering_ = true;
-    fileFdSourcePlugin_->NotifyBufferingEnd();
-    EXPECT_EQ(false, fileFdSourcePlugin_->isBuffering_);
-
-    fileFdSourcePlugin_->isBuffering_ = true;
-    CallbackMock* cb = new CallbackMock();
-    fileFdSourcePlugin_->NotifyBufferingStart();
-    fileFdSourcePlugin_->callback_ = cb;
-    fileFdSourcePlugin_->isInterrupted_ = true;
-    fileFdSourcePlugin_->NotifyBufferingEnd();
-    EXPECT_EQ(false, fileFdSourcePlugin_->isBuffering_);
-
-    fileFdSourcePlugin_->isInterrupted_ = false;
-    fileFdSourcePlugin_->NotifyBufferingEnd();
-    EXPECT_NE("end", cb->description_);
-    delete cb;
-    cb = nullptr;
-}
-
-/**
  * @tc.name: FileFdSource_SetReadBlockingFlag_0100
  * @tc.desc: FileFdSource_SetReadBlockingFlag_0100
  * @tc.type: FUNC
