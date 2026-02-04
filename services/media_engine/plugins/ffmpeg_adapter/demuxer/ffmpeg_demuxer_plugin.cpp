@@ -2351,11 +2351,20 @@ void FFmpegDemuxerPlugin::MaybeInitSeekCalibAfterRead(uint32_t trackId, AVPacket
     if (pkt->pts == AV_NOPTS_VALUE || pkt->dts == AV_NOPTS_VALUE || pkt->pts < 0 || pkt->dts < 0) {
         return;
     }
-    AVStream *stream = formatContext_->streams[trackId];
-    if (stream == nullptr || !FFmpegFormatHelper::IsVideoType(*stream)) {
+
+    const AVStreamSnapshot* snapshot = GetStreamSnapshot(trackId);
+    if (snapshot == nullptr || !snapshot->valid || snapshot->codecType != AVMEDIA_TYPE_VIDEO) {
         return;
     }
-    if (!IsSyncFrame(stream, pkt)) {
+
+    bool isSyncFrame = true;
+    if (FFmpegFormatHelper::IsValidCodecId(snapshot->codecId)) {
+        isSyncFrame = (static_cast<uint32_t>(pkt->flags) & static_cast<uint32_t>(AV_PKT_FLAG_KEY)) != 0;
+        if (!isSyncFrame && snapshot->codecId == AV_CODEC_ID_HEVC) {
+            isSyncFrame = (!IsSyncFrameCheckNeeded(formatContext_) || IsHevcSyncFrame(pkt->data, pkt->size));
+        }
+    }
+    if (!isSyncFrame) {
         return;
     }
     seekCalibMap_[trackId] = pkt->pts - pkt->dts;
