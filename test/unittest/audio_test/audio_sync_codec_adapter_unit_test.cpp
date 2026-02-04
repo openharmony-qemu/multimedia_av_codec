@@ -483,7 +483,7 @@ HWTEST_F(DrmAvcodecAudioCodecImplTest, SetAudioDecryptionConfig_NullKeySession, 
     AVCodecAudioCodecInnerImpl impl;
     sptr<IMediaKeySessionService> keySession;
     int32_t result = impl.SetAudioDecryptionConfig(keySession, false);
-    EXPECT_EQ(result, 0);
+    EXPECT_NE(result, 0);
 }
 
 HWTEST_F(DrmAvcodecAudioCodecImplTest, SetAudioDecryptionConfig_WithSvpFlag, TestSize.Level0)
