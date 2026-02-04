@@ -51,9 +51,14 @@ std::string g_codecNameHevc = "";
 void HwEncInnerFuncBTest::SetUpTestCase()
 {
     OH_AVCapability *capHevc = OH_AVCodec_GetCapabilityByCategory(g_codecMimeHevc.c_str(), true, HARDWARE);
-    const char *tmpCodecNameHevc = OH_AVCapability_GetName(capHevc);
-    g_codecNameHevc = tmpCodecNameHevc;
-    cout << "g_codecNameHevc: " << g_codecNameHevc << endl;
+    if (capHevc != nullptr) {
+        const char *tmpCodecNameHevc = OH_AVCapability_GetName(capHevc);
+        g_codecNameHevc = tmpCodecNameHevc;
+        cout << "g_codecNameHevc: " << g_codecNameHevc << endl;
+    } else {
+        return;
+    }
+
 }
 
 void HwEncInnerFuncBTest::TearDownTestCase() {}
@@ -221,6 +226,49 @@ HWTEST_F(HwEncInnerFuncBTest, VIDEO_HW_ENCODE_INNER_SQR_FUNC_002, TestSize.Level
     vEncInnerSample->DEFAULT_MAX_BITERATE_RUN = 100000000;
     vEncInnerSample->DEFAULT_SQR_FACTOR_RUN = 1;
     vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_SQR_FUNC_002.h265";
+    ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecNameHevc));
+    ASSERT_EQ(AV_ERR_OK, vEncInnerSample->SetCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncInnerSample->ConfigureVideoEncoderSqr());
+    ASSERT_EQ(AV_ERR_OK, vEncInnerSample->StartVideoEncoder());
+    vEncInnerSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, vEncInnerSample->errCount);
+}
+
+/**
+ * @tc.number    : VIDEO_HW_ENCODE_INNER_PTS_FUNC_001
+ * @tc.name      : setparemeter sqrfactor and max bitrate
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncInnerFuncBTest, VIDEO_HW_ENCODE_INNER_PTS_FUNC_001, TestSize.Level0)
+{
+    auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
+    string timeStampFilePath = "/data/test/media/case_07_sqr_surface.txt";
+    string inputDir = "";
+    string outputDir = "";
+    uint32_t width = 0;
+    uint32_t height = 0;
+    uint32_t bitrateMode = 0;
+    uint32_t bitRate = 0;
+    bool surfaceMode = false;
+    vEncInnerSample->LoadTimeStampData(timeStampFilePath, inputDir, outputDir, width, height, bitrateMode, bitRate, surfaceMode);
+    char *input = new char[1024];
+    char *output = new char[1024];
+    snprintf(input, 1024, "%s", inputDir.c_str());
+    snprintf(output, 1024, "%s", outputDir.c_str());
+
+    printf("input = %s\n", input);
+    printf("input = %s\n", output);
+    vEncInnerSample->enablePTSBasedRateControl = true;
+    vEncInnerSample->SETBIRATE = true;
+    vEncInnerSample->MODE_ENABLE = true;
+    vEncInnerSample->INP_DIR = input;
+    vEncInnerSample->OUT_DIR = output;
+    vEncInnerSample->DEFAULT_WIDTH = width;
+    vEncInnerSample->DEFAULT_HEIGHT = height;
+    vEncInnerSample->DEFAULT_BITRATE_MODE = bitrateMode;
+    vEncInnerSample->DEFAULT_BITRATE = bitRate;
+    vEncInnerSample->surfaceInput = surfaceMode;
+    vEncInnerSample->DEFAULT_KEY_FRAME_INTERVAL = 2000;
     ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecNameHevc));
     ASSERT_EQ(AV_ERR_OK, vEncInnerSample->SetCallback());
     ASSERT_EQ(AV_ERR_OK, vEncInnerSample->ConfigureVideoEncoderSqr());

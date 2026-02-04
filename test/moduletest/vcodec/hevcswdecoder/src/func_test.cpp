@@ -49,6 +49,7 @@ protected:
     const char *INP_DIR_71 = "/data/test/media/95_71_Rext_gray.h265";
     const char *INP_DIR_var = "/data/test/media/95_71_Rext_gray.h265";
     const char *INP_DIR_1080_64_var = "/data/test/media/1920_1080_64_64_var.h265";
+    const char *INP_DIR_NAL_1280_720_B = "/data/test/media/1280_720_Main_30_93_443271.h265";
 };
 } // namespace Media
 } // namespace OHOS
@@ -2111,6 +2112,32 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_DECODE_TRANSFORM_0270, TestSize.Level0)
         vDecSample->WaitForEOS();
         ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
         ASSERT_EQ(vDecSample->beforeSwitchTransform, vDecSample->afterSwitchTransform);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_H265_FLUSH_THREE_0010
+ * @tc.name      : config OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN, decoder h265 swd
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_H265_FLUSH_THREE_0010, TestSize.Level2)
+{
+    if (cap_hevc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_NAL_1280_720_B;
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        vDecSample->NEED_MD5_COMPAIRE = false;
+        vDecSample->INPUT_NAL_NUM = 3;
+        vDecSample->INPUT_STREAM_TYPE = OHOS::Media::VDecAPI11Sample::Input_Stream_Type_000001;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHevc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
 } // namespace

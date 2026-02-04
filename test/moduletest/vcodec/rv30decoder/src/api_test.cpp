@@ -149,7 +149,7 @@ void Rv30decApiNdkTest::TearDown()
         OH_VideoDecoder_Destroy(vdec_);
         vdec_ = nullptr;
     }
-    if (g_fd > 0) {
+   if (g_fd > 0) {
         close(g_fd);
         g_fd = -1;
     }

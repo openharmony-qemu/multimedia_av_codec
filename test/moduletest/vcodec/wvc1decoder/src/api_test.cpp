@@ -71,7 +71,7 @@ VDecAPI11Signal *signal_;
 constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
 constexpr uint32_t DEFAULT_FRAME_RATE = 30;
-OH_AVFormat *format;
+OH_AVFormat *format = nullptr;
 static int g_fd = -1;
 static OH_AVMemory *memory = nullptr;
 static OH_AVSource *source = nullptr;

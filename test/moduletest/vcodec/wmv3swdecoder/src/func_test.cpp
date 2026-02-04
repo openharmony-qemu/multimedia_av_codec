@@ -958,4 +958,36 @@ HWTEST_F(Wmv3SwdecFuncNdkTest, VIDEO_DECODE_SWWMV3_BLANK_FRAME_0020, TestSize.Le
         ASSERT_EQ(FRAMESIZE90, vDecSample->outFrameCount);
     }
 }
+
+/**
+ * @tc.number    : VIDEO_WMV3SWDEC_FUNCTION_GRAPH_0010
+ * @tc.name      : decode WMV3 buffer,graph PixelFormat
+ * @tc.desc      : function test
+ */
+HWTEST_F(Wmv3SwdecFuncNdkTest, VIDEO_WMV3SWDEC_FUNCTION_GRAPH_0010, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecAPI11Sample>();
+    int32_t pixfmt[4] = {28, 24, 25, 12};
+    vDecSample->INP_DIR = "/data/test/media/profile0_128x96_10.wmv3";
+    vDecSample->DEFAULT_WIDTH = 128;
+    vDecSample->DEFAULT_HEIGHT = 96;
+    vDecSample->DEFAULT_FRAME_RATE = 10;
+    vDecSample->outputYuvFlag = true;
+    vDecSample->isGetVideoSupportedPixelFormats = true;
+    vDecSample->isGetFormatKey = true;
+    vDecSample->avcodecMimeType = OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
+    vDecSample->isEncoder = false;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.WMV3"));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(0, vDecSample->errCount);
+    ASSERT_EQ(4, vDecSample->pixlFormatNum);
+    for(int i = 0; i < vDecSample->pixlFormatNum; i++) {
+        ASSERT_EQ(vDecSample->pixlFormats[i], pixfmt[i]);
+    }
+    ASSERT_EQ(FRAMESIZE90, vDecSample->outFrameCount);
+}
+
 }  // namespace

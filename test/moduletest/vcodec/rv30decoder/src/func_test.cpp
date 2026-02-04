@@ -845,4 +845,34 @@ HWTEST_F(Rv30decFuncNdkTest, VIDEO_RV30DEC_FUNCTION_0050, TestSize.Level0)
     ASSERT_EQ(0, vDecSample->errCount);
     ASSERT_EQ(FRAMESIZE688, vDecSample->outFrameCount);
 }
+
+/**
+ * @tc.number    : VIDEO_RV30DEC_FUNCTION_0051
+ * @tc.name      : Decode Rv30 buffer graph pixel format
+ * @tc.desc      : function test
+ */
+HWTEST_F(Rv30decFuncNdkTest, VIDEO_RV30DEC_FUNCTION_0051, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecAPI11Sample>();
+    int32_t pixfmt[4] = {28, 24, 25, 12};
+    vDecSample->INP_DIR = INP_DIR_1;
+    vDecSample->getFormat(INP_DIR_2);
+    vDecSample->outputYuvFlag = true;
+    vDecSample->NocaleHash = true;
+    vDecSample->isGetVideoSupportedPixelFormats = true;
+    vDecSample->isGetFormatKey = true;
+    vDecSample->avcodecMimeType = OH_AVCODEC_MIMETYPE_VIDEO_RV30;
+    vDecSample->isEncoder = false;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameRv30.c_str()));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderReadStream());
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(0, vDecSample->errCount);
+    ASSERT_EQ(4, vDecSample->pixlFormatNum);
+    for(int i = 0; i < vDecSample->pixlFormatNum; i++) {
+        ASSERT_EQ(vDecSample->pixlFormats[i], pixfmt[i]);
+    }
+    ASSERT_EQ(FRAMESIZE688, vDecSample->outFrameCount);
+}
 } // namespace

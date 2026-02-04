@@ -36,12 +36,16 @@ constexpr uint32_t MAX_PIXEL_FMT = 5;
 constexpr uint32_t IDR_FRAME_INTERVAL = 10;
 constexpr uint32_t MILLION = 1000000;
 std::random_device rd;
+constexpr uint32_t ZERO = 0;
+constexpr uint32_t ONE = 1;
 constexpr uint8_t RGBA_SIZE = 4;
 constexpr uint8_t THREE = 3;
-constexpr uint8_t TWO = 3;
+constexpr uint8_t TWO = 2;
+constexpr uint8_t FOUR = 4;
 constexpr uint8_t FILE_END = -1;
 constexpr uint8_t LOOP_END = 0;
 constexpr uint32_t FIVE = 5;
+constexpr uint32_t SIX = 6;
 VEncNdkInnerSample *enc_sample = nullptr;
 int32_t g_picWidth;
 int32_t g_picHeight;
@@ -180,6 +184,7 @@ int32_t VEncNdkInnerSample::ConfigureVideoEncoderSqr()
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, DEFAULT_PIX_FMT);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, DEFAULT_KEY_FRAME_INTERVAL);
     if (MODE_ENABLE) {
         format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, DEFAULT_BITRATE_MODE);
     }
@@ -203,6 +208,9 @@ int32_t VEncNdkInnerSample::ConfigureVideoEncoderSqr()
     }
     if (MAXBFRAMES_ENABLE) {
         format.PutIntValue(Media::Tag::VIDEO_ENCODER_MAX_B_FRAME, DEFAULT_MAX_B_FRAMES);
+    }
+    if (enablePTSBasedRateControl) {
+        format.PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_PTS_BASED_RATECONTROL, 1);
     }
     return venc_->Configure(format);
 }
@@ -543,9 +551,13 @@ int32_t VEncNdkInnerSample::PushData(std::shared_ptr<AVSharedMemory> buffer, uin
         SetEOS(index);
         return 0;
     }
-
     AVCodecBufferInfo info;
-    info.presentationTimeUs = GetSystemTimeUs();
+    if (!enablePTSBasedRateControl) {
+        info.presentationTimeUs = GetSystemTimeUs();
+    } else {
+        info.presentationTimeUs = timeList[frameIndex];
+    }
+    frameIndex++;
     info.size = yuvSize;
     info.offset = 0;
     AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
@@ -680,7 +692,14 @@ int32_t VEncNdkInnerSample::InputProcess(OH_NativeBuffer *nativeBuffer, OHNative
     rect->w = DEFAULT_WIDTH;
     rect->h = DEFAULT_HEIGHT;
     region.rects = rect;
-    NativeWindowHandleOpt(nativeWindow, SET_UI_TIMESTAMP, GetSystemTimeUs());
+    int64_t tmp = GetSystemTimeUs();
+    if (!enablePTSBasedRateControl) {
+        tmp = GetSystemTimeUs();
+    } else {
+        tmp = timeList[frameIndex];
+    }
+    frameIndex++;
+    NativeWindowHandleOpt(nativeWindow, SET_UI_TIMESTAMP, tmp);
     ret = OH_NativeBuffer_Unmap(nativeBuffer);
     if (ret != 0) {
         cout << "OH_NativeBuffer_Unmap failed" << endl;
@@ -1484,4 +1503,57 @@ bool VEncNdkInnerSample::GetWaterMarkCapability(std::string codecMimeType)
         std::cout << " Not support watermark" << std::endl;
         return false;
     }
+}
+
+int32_t VEncNdkInnerSample::LoadTimeStampData(std::string filePath, std::string &inputDir,
+                                              std::string &outputDir, uint32_t &w, uint32_t &h,
+                                              uint32_t &bitrateMode, uint32_t &bitRate, bool &surfaceMode)
+{
+    std::ifstream file(filePath);
+    if (!file.is_open()) {
+        return AV_ERR_IO;
+    }
+    std::string temp;
+    int32_t num = 0;
+    while (getline(file, temp)) {
+        if (num == ZERO) {
+            inputDir = temp;
+            num++;
+            continue;
+        }
+        if (num == ONE) {
+            outputDir = temp;
+            num++;
+            continue;
+        }
+        if (num == TWO) {
+            w = stoi(temp);
+            num++;
+            continue;
+        }
+        if (num == THREE) {
+            h = stoi(temp);
+            num++;
+            continue;
+        }
+        if (num == FOUR) {
+            bitrateMode = stoi(temp);
+            num++;
+            continue;
+        }
+        if (num == FIVE) {
+            bitRate = stoi(temp);
+            num++;
+            continue;
+        }
+        if (num == SIX) {
+            surfaceMode = stoi(temp) == 1 ? true : false;
+            num++;
+            continue;
+        }
+        timeList.push_back(stoll(temp));
+        num++;
+    }
+    file.close();
+    return AV_ERR_OK;
 }

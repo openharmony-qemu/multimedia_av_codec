@@ -1171,4 +1171,35 @@ HWTEST_F(Mpeg1decFuncNdkTest, VIDEO_MPEG1DEC_FUNCTION_0055, TestSize.Level0)
     ASSERT_EQ(0, vDecSample->errCount);
     ASSERT_EQ(FRAMESIZE182, vDecSample->outFrameCount);
 }
+
+/**
+ * @tc.number    : VIDEO_MPEG1DEC_FUNCTION_0056
+ * @tc.name      : Decode mpeg1 buffer graph pixel format
+ * @tc.desc      : function test
+ */
+HWTEST_F(Mpeg1decFuncNdkTest, VIDEO_MPEG1DEC_FUNCTION_0056, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecAPI11Sample>();
+    int32_t pixfmt[4] = {28, 24, 25, 12};
+    vDecSample->getFormat(INP_DIR_19);
+    vDecSample->outputYuvFlag = true;
+    vDecSample->defaultWidth = 720;
+    vDecSample->defaultHeight = 480;
+    vDecSample->defaultFrameRate = 60;
+    vDecSample->isGetVideoSupportedPixelFormats = true;
+    vDecSample->isGetFormatKey = true;
+    vDecSample->avcodecMimeType = OH_AVCODEC_MIMETYPE_VIDEO_MPEG1;
+    vDecSample->isEncoder = false;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg1.c_str()));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(0, vDecSample->errCount);
+    ASSERT_EQ(4, vDecSample->pixlFormatNum);
+    for(int i = 0; i < vDecSample->pixlFormatNum; i++) {
+        ASSERT_EQ(vDecSample->pixlFormats[i], pixfmt[i]);
+    }
+    ASSERT_EQ(FRAMESIZE182, vDecSample->outFrameCount);
+}
 } // namespace

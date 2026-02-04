@@ -250,7 +250,7 @@ static void DumpHashValue(std::vector<uint8_t> &srcHashVal, uint8_t outputHashVa
         }
     }
     printf("--------------standard hash value----------------\n");
-    for (int i = 1; i < SHA512_DIGEST_LENGTH + 1; i++) {
+    for (int i = 1; i < (SHA512_DIGEST_LENGTH + 1) && i <= srcHashVal.size(); i++) {
         printf("%02x,", srcHashVal[i - 1]);
         if (i % SIXTEEN == 0) {
             printf("\n");
@@ -260,6 +260,9 @@ static void DumpHashValue(std::vector<uint8_t> &srcHashVal, uint8_t outputHashVa
 
 bool VDecAPI11Sample::MdCompare(uint8_t source[])
 {
+    if (!NEED_MD5_COMPAIRE) {
+        return true;
+    }
     std::vector<uint8_t> srcHashVal = LoadHashFile();
     DumpHashValue(srcHashVal, source);
     if (srcHashVal.size() != SHA512_DIGEST_LENGTH) {
@@ -473,6 +476,10 @@ void VDecAPI11Sample::ReleaseInFile()
         inFile_.reset();
         inFile_ = nullptr;
     }
+    if (iptMultiStreamsBuf_ != nullptr) {
+        free(iptMultiStreamsBuf_);
+        iptMultiStreamsBuf_ = nullptr;
+    }
 }
 
 void VDecAPI11Sample::StopInloop()
@@ -515,6 +522,10 @@ int32_t VDecAPI11Sample::StartDecoder()
         inFile_ = nullptr;
         return AV_ERR_UNKNOWN;
     }
+    if (InitReadFileNals() != 0) {
+        return AV_ERR_UNKNOWN;
+    }
+
     inputLoop_ = make_unique<thread>(&VDecAPI11Sample::InputFuncTest, this);
     if (inputLoop_ == nullptr) {
         cout << "Failed to create input loop" << endl;
@@ -555,7 +566,13 @@ int32_t VDecAPI11Sample::StartSyncDecoder()
         inFile_ = nullptr;
         return AV_ERR_UNKNOWN;
     }
-    signal_ = new VDecAPI11Signal();
+    if (signal_ == nullptr) {
+        signal_ = new VDecAPI11Signal();
+    }
+    if (InitReadFileNals() != 0) {
+        return AV_ERR_UNKNOWN;
+    }
+
     inputLoop_ = make_unique<thread>(&VDecAPI11Sample::SyncInputFunc, this);
     if (inputLoop_ == nullptr) {
         cout << "Failed to create input loop" << endl;
@@ -661,6 +678,11 @@ void VDecAPI11Sample::InFuncTest()
         inFile_->seekg(0, ios::beg);
         OH_VideoDecoder_Start(vdec_);
     }
+    if (INPUT_STREAM_TYPE == Input_Stream_Type_000001 && (outFrameCount % (INPUT_NAL_NUM * 10) == 0)) {
+        OH_VideoDecoder_Flush(vdec_);
+        Flush_buffer();
+        OH_VideoDecoder_Start(vdec_);
+    }
 }
 
 void VDecAPI11Sample::InputFuncTest()
@@ -734,6 +756,81 @@ void VDecAPI11Sample::SyncInputFunc()
     }
 }
 
+int32_t VDecAPI11Sample::ReadFileAvccFrameLen(uint32_t index, uint32_t& bufferSize, OH_AVBuffer *buffer)
+{
+    char ch[4] = {};
+    (void)inFile_->read(ch, START_CODE_SIZE);
+    if (repeatRun && inFile_->eof()) {
+        static uint32_t repeat_count = 0;
+        inFile_->clear();
+        inFile_->seekg(0, ios::beg);
+        cout << "repeat run" << repeat_count << endl;
+        repeat_count++;
+        return 0;
+    }
+    if (inFile_->eof()) {
+        SetEOS(index, buffer);
+        return 1;
+    }
+    bufferSize = (uint32_t)(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) | ((ch[1] & 0xFF) << SIXTEEN) |
+                            ((ch[0] & 0xFF) << TWENTY_FOUR));
+    if (useHDRSource) {
+        uint32_t zero = 0;
+        uint32_t one = 1;
+        uint32_t two = 2;
+        uint32_t three = 3;
+        bufferSize = (uint32_t)(((ch[zero] & 0xFF)) | ((ch[one] & 0xFF) << EIGHT) | ((ch[two] & 0xFF) << SIXTEEN) |
+                                     ((ch[three] & 0xFF) << TWENTY_FOUR));
+    }
+    return 0;
+}
+
+int32_t VDecAPI11Sample::ReadFileNalsFrame(uint32_t index, uint32_t& bufferSize, OH_AVBuffer *buffer)
+{
+    if (iptMultiStreamsBuf_ == nullptr || inFile_ == nullptr) {
+        std::cout << "input empty fail!" << std::endl;
+        return -1;
+    }
+    if (inFile_->eof() || (startPos_ + START_CODE_SIZE) >= nFileSize_) {
+        SetEOS(index, buffer);
+        return 1;
+    }
+    char *inputBuffer = reinterpret_cast<char*>(iptMultiStreamsBuf_);
+    inFile_->seekg(startPos_, std::ios::beg);
+    uint64_t currentPos = inFile_->tellg();
+    if (currentPos != startPos_) {
+        std::cout << "telg fail " << strerror(errno) << ", file size" << nFileSize_
+            << ", cur " << currentPos << std::endl;
+        return -3;
+    }
+    uint64_t maxReadable = nFileSize_ - currentPos;
+    size_t bytesToRead = static_cast<size_t>(std::min(
+        static_cast<uint64_t>(DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1), maxReadable));
+    inFile_->read(inputBuffer, bytesToRead);
+    uint64_t bytesRead = inFile_->gcount();
+    if (bytesRead == 0) {
+        if (inFile_->bad()) {
+            std::cout << "Read error: " << strerror(errno) << std::endl;
+            return -5;
+        } else if (inFile_->fail()) {
+            std::cout << "Read error: " << strerror(errno) << std::endl;
+            return -4;
+        }
+    }
+    uint32_t startSeparator = ((inputBuffer[0] & 0xFF) << 24) | ((inputBuffer[1] & 0xFF) << 16)
+        | ((inputBuffer[2] & 0xFF) << 8) | (inputBuffer[3] & 0XFF);
+    if (startSeparator != 1) {
+        startSeparator = ((iptMultiStreamsBuf_[0] & 0xFF) << 16) | ((iptMultiStreamsBuf_[1] & 0xFF) << 8)
+            | (iptMultiStreamsBuf_[2] & 0xFF);
+        if (startSeparator != 1) {
+            std::cout << "Input file type error:" << startSeparator << std::endl;
+            return -6;
+        }
+    }
+    bufferSize = bytesRead;
+    return 0;
+}
+
 int32_t VDecAPI11Sample::PushData(uint32_t index, OH_AVBuffer *buffer)
 {
     OH_AVCodecBufferAttr attr;
@@ -746,35 +843,19 @@ int32_t VDecAPI11Sample::PushData(uint32_t index, OH_AVBuffer *buffer)
         attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
         BEFORE_EOS_INPUT_INPUT = false;
     }
-    char ch[4] = {};
-    (void)inFile_->read(ch, START_CODE_SIZE);
-    if (repeatRun && inFile_->eof()) {
-        static uint32_t repeat_count = 0;
-        inFile_->clear();
-        inFile_->seekg(0, ios::beg);
-        cout << "repeat run " << repeat_count << endl;
-        repeat_count++;
-        return 0;
-    }
-    if (inFile_->eof()) {
-        SetEOS(index, buffer);
+
+    uint32_t bufferSize = 0;
+    if ((INPUT_STREAM_TYPE != Input_Stream_Type_000001 ?
+        ReadFileAvccFrameLen(index, bufferSize, buffer) : ReadFileNalsFrame(index, bufferSize, buffer)) != 0) {
         return 1;
     }
-    uint32_t bufferSize = (uint32_t)(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) | ((ch[1] & 0xFF) << SIXTEEN) |
-                                     ((ch[0] & 0xFF) << TWENTY_FOUR));
-    if (useHDRSource) {
-        uint32_t zero = 0;
-        uint32_t one = 1;
-        uint32_t two = 2;
-        uint32_t three = 3;
-        bufferSize = (uint32_t)(((ch[zero] & 0xFF)) | ((ch[one] & 0xFF) << EIGHT) | ((ch[two] & 0xFF) << SIXTEEN) |
-                                     ((ch[three] & 0xFF) << TWENTY_FOUR));
-    }
-    if (bufferSize >= DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1) {
+
+    if (bufferSize > DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1) {
         cout << "read bufferSize abnormal. buffersize = " << bufferSize << endl;
         return 1;
     }
-    return SendData(bufferSize, index, buffer);
+    return INPUT_STREAM_TYPE != Input_Stream_Type_000001 ?
+        SendData(bufferSize, index, buffer) : SendDataNals(bufferSize, index, buffer);
 }
 
 int32_t VDecAPI11Sample::CheckAndReturnBufferSize(OH_AVBuffer *buffer)
@@ -830,10 +911,124 @@ uint32_t VDecAPI11Sample::SendData(uint32_t bufferSize, uint32_t index, OH_AVBuf
         OH_AVBuffer_SetBufferAttr(buffer, &attr);
         OH_VideoDecoder_PushInputBuffer(vdec_, index) == AV_ERR_OK ? (0) : (errCount++);
         frameCount_ = frameCount_ + 1;
-        outCount = outCount + 1;
+        cout << "frameCount_" << frameCount_ << endl;
         SwitchSurfaceGetTransform();
     }
     delete[] fileBuffer;
+    return 0;
+}
+
+static int32_t H265DecLoadAU(uint8_t* pStream, uint32_t iStreamLen, uint32_t* pFrameLen)
+{
+    uint32_t i;
+    uint32_t state = 0xffffffff;
+    bool bFrameStartFound = false;
+
+    *pFrameLen = 0;
+    if (NULL == pStream || iStreamLen <= 4) {
+        return -1;
+    }
+
+    for (i = 0; i < iStreamLen; i++) {
+        if ((state & 0xFFFFFF7E) >= 0x100 && (state & 0xFFFFFF7E) <= 0x13E) {
+            if (bFrameStartFound) {
+                if ((pStream[i+1] >> 7) == 1) {
+                    *pFrameLen = i - 4;
+                    return 0;
+                }
+            } else {
+                bFrameStartFound = true;
+            }
+        }
+
+        if ((state & 0xFFFFFF7E) == 0x140 || (state & 0xFFFFFF7E) == 0x142 ||
+            (state & 0xFFFFFF7E) == 0x144 || (state & 0xFFFFFF7E) == 0x14e ||
+            (state & 0xFFFFFF7E) == 0x150) {
+            if (bFrameStartFound) {
+                *pFrameLen = i - 4;
+                return 0;
+            } else {
+                bFrameStartFound = true;
+            }
+        }
+        state = (state << 8) | pStream[i];
+    }
+    *pFrameLen = i;
+    return (bFrameStartFound && iStreamLen == i) ? 0 : -1;
+}
+
+void VDecAPI11Sample::ReadNalsFromFixBuffer(uint32_t bufferSize, uint8_t nNALNum, uint32_t& consumeByteLen)
+{
+    uint8_t * pDecStream = iptMultiStreamsBuf_;
+    uint32_t iInputLen = bufferSize;
+    bool bStreamEnd = false;
+    uint32_t uiStreamLen = 0;
+    uint32_t multiNumLen = 0;
+    uint8_t* multiNumFrmStart = pDecStream;
+    uint32_t numFrames = 0;
+    while (!bStreamEnd) {
+        bStreamEnd = H265DecLoadAU(pDecStream, iInputLen, &uiStreamLen);
+        if (bStreamEnd != 0) {
+            if (numFrames != 0) {
+                std::cout << "num frames " << iFrameIdxAU_ << ", frames len " << multiNumLen
+                    << ", remain len " << iInputLen << ",startPos_ " << startPos_ << std::endl;
+            }
+            break;
+        }
+        iFrameIdxAU_++;
+        if (numFrames == 0) {
+            multiNumFrmStart = pDecStream;
+        }
+        pDecStream += uiStreamLen;
+        iInputLen -= uiStreamLen;
+        multiNumLen += uiStreamLen;
+
+        numFrames++;
+        if (numFrames == nNALNum) {
+            break;
+        }
+    }
+    
+    consumeByteLen = multiNumLen;
+    startPos_ += consumeByteLen;
+    return;
+}
+
+uint32_t  VDecAPI11Sample::SendDataNals(uint32_t bufferSize, uint32_t index, OH_AVBuffer *buffer)
+{
+    uint32_t consumeByteLen = 0;
+    ReadNalsFromFixBuffer(bufferSize, INPUT_NAL_NUM, consumeByteLen);
+
+    OH_AVCodecBufferAttr attr;
+    uint8_t *fileBuffer = iptMultiStreamsBuf_;
+    if ((fileBuffer[START_CODE_SIZE] & H264_NALU_TYPE) == SPS ||
+        (fileBuffer[START_CODE_SIZE] & H264_NALU_TYPE) == PPS) {
+            attr.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
+    } else {
+        attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
+    } 
+    int32_t size = CheckAndReturnBufferSize(buffer);
+    if (size < consumeByteLen) {
+        std::cout << "AVBuf size: " << size << "input size: " << bufferSize << std::endl;
+        return 1;
+    }
+    uint8_t *avBuffer = OH_AVBuffer_GetAddr(buffer);
+    if (avBuffer == nullptr) {
+        inFile_->clear();
+        inFile_->seekg(0, ios::beg);
+        std::cout << "AVBuf get addr error " << std::endl;
+        return 1;
+    }
+    int64_t startPts = GetSystemTimeUs();
+    attr.pts = startPts;
+    attr.size = consumeByteLen;
+    attr.offset = 0;
+    if (isRunning_.load()) {
+        OH_AVBuffer_SetBufferAttr(buffer, &attr);
+        OH_VideoDecoder_PushInputBuffer(vdec_, index) == AV_ERR_OK ? (0) : (errCount++);
+        frameCount_ = frameCount_ + 1;
+        SwitchSurfaceGetTransform();
+    }
     return 0;
 }
 
@@ -1088,6 +1283,8 @@ void VDecAPI11Sample::ProcessOutputData(OH_AVBuffer *buffer, uint32_t index)
         if (OH_VideoDecoder_FreeOutputBuffer(vdec_, index) != AV_ERR_OK) {
             cout << "Fatal: ReleaseOutputBuffer fail" << endl;
             errCount = errCount + 1;
+        } else {
+            ++outCount;
         }
     } else {
         if (rsAtTime) {
@@ -1096,6 +1293,8 @@ void VDecAPI11Sample::ProcessOutputData(OH_AVBuffer *buffer, uint32_t index)
             if (OH_VideoDecoder_RenderOutputBuffer(vdec_, index) != AV_ERR_OK) {
                 cout << "Fatal: RenderOutputBuffer fail" << endl;
                 errCount = errCount + 1;
+            } else {
+                ++outCount;
             }
         }
     }
@@ -1370,4 +1569,32 @@ void VDecAPI11Sample::SwitchSurfaceGetTransform()
             GetSurfaceTransform(switchSurfaceFlag) == DEFAULT_TRANSFORM ? (0) : (errCount++);
         }
     }
+}
+
+int32_t VDecAPI11Sample::InitReadFileNals()
+{
+    if (INPUT_STREAM_TYPE != Input_Stream_Type_000001) {
+        return 0;
+    }
+
+    if (INPUT_NAL_NUM == 0 || INPUT_NAL_NUM >=4) {
+        std::cout << "input NAL num error" << std::endl;
+        return 1;
+    }
+    if (!inFile_->is_open()) {
+        std::cout << "file not open" << std::endl;
+        return 1;
+    }
+    inFile_->seekg(0, ios::end);
+    nFileSize_ = inFile_->tellg();
+    inFile_->seekg(0, std::ios::beg);
+    startPos_ = 0;
+
+    iptMultiStreamsBuf_ = (uint8_t*)malloc(DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1);
+    if (iptMultiStreamsBuf_ == NULL) {
+        std::cout << "malloc fail: " << strerror(errno) << std::endl;
+        return 1;
+    }
+
+    return 0;
 }
