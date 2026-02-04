@@ -2353,7 +2353,7 @@ void FFmpegDemuxerPlugin::MaybeInitSeekCalibAfterRead(uint32_t trackId, AVPacket
     }
 
     const AVStreamSnapshot* snapshot = GetStreamSnapshot(trackId);
-    if (snapshot == nullptr || !snapshot->valid || snapshot->codecType != AVMEDIA_TYPE_VIDEO) {
+    if (snapshot == nullptr || !snapshot->valid || snapshot->isVideo == false) {
         return;
     }
 
