@@ -3480,7 +3480,7 @@ Status FFmpegDemuxerPlugin::SeekToFrameByDts(int32_t trackId, int64_t seekTime,
     MEDIA_LOG_D("Seek by DTS based on track " PUBLIC_LOG_D32, ctx.trackIndex);
     MEDIA_LOG_I("Seek DTS: " PUBLIC_LOG_D64 " ms -> " PUBLIC_LOG_D64 " (FFmpeg time_base)",
         seekTime, ctx.ffDts);
-    int ffRet = AVSeekFrameLock(ctx.trackIndex, ctx.ffDts, AVSEEK_FLAG_FRAME | AVSEEK_FLAG_BACKWARD);
+    int ffRet = AVSeekFrameLock(ctx.trackIndex, ctx.ffDts, AVSEEK_FLAG_BACKWARD);
     if (ffRet < 0) {
         MEDIA_LOG_E("Call av_seek_frame failed, err: " PUBLIC_LOG_S, AVStrError(ffRet).c_str());
         HiviewDFX::XCollie::GetInstance().CancelTimer(id);
