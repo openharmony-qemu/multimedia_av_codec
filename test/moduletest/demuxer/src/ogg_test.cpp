@@ -70,7 +70,7 @@ static int64_t GetFileSize(const char *filename)
  */
 HWTEST_F(DemuxerOggFuncNdkTest, DEMUXER_OGG_FUNCTION_0010, TestSize.Level0)
 {
-    const char *file = "/data/test/media/OGG_48000_1.ogg";
+    const char *file = "/data/test/media/audio/OGG_48000_1.ogg";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     OH_AVSource *source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -95,7 +95,7 @@ HWTEST_F(DemuxerOggFuncNdkTest, DEMUXER_OGG_FUNCTION_0010, TestSize.Level0)
  */
 HWTEST_F(DemuxerOggFuncNdkTest, DEMUXER_OGG_FUNCTION_0020, TestSize.Level0)
 {
-    const char *file = "/data/test/media/OGG_48000_1.ogg";
+    const char *file = "/data/test/media/audio/OGG_48000_1.ogg";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     OH_AVSource *source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -120,7 +120,7 @@ HWTEST_F(DemuxerOggFuncNdkTest, DEMUXER_OGG_FUNCTION_0020, TestSize.Level0)
  */
 HWTEST_F(DemuxerOggFuncNdkTest, DEMUXER_OGG_FUNCTION_0030, TestSize.Level0)
 {
-    const char *file = "/data/test/media/OGG_192K_2.ogg";
+    const char *file = "/data/test/media/audio/OGG_192K_2.ogg";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     OH_AVSource *source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -145,7 +145,7 @@ HWTEST_F(DemuxerOggFuncNdkTest, DEMUXER_OGG_FUNCTION_0030, TestSize.Level0)
  */
 HWTEST_F(DemuxerOggFuncNdkTest, DEMUXER_OGG_FUNCTION_0040, TestSize.Level0)
 {
-    const char *file = "/data/test/media/OGG_192K_2.ogg";
+    const char *file = "/data/test/media/audio/OGG_192K_2.ogg";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     OH_AVSource *source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -170,7 +170,7 @@ HWTEST_F(DemuxerOggFuncNdkTest, DEMUXER_OGG_FUNCTION_0040, TestSize.Level0)
  */
 HWTEST_F(DemuxerOggFuncNdkTest, DEMUXER_OGG_FUNCTION_0050, TestSize.Level0)
 {
-    const char *file = "/data/test/media/OGG_192K_2.ogg";
+    const char *file = "/data/test/media/audio/OGG_192K_2.ogg";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     OH_AVSource *source = OH_AVSource_CreateWithFD(fd, 0, size);
