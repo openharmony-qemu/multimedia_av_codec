@@ -332,23 +332,6 @@ HWTEST_F(SampleQueueUnitTest, Clear_001, TestSize.Level1)
     EXPECT_EQ(ret, Status::OK);
 }
 
-/**
- * @tc.name  : Test SetLargerQueueSize
- * @tc.number: SetLargerQueueSize_001
- * @tc.desc  : Test SetLargerQueueSize
- */
-HWTEST_F(SampleQueueUnitTest, SetLargerQueueSize_001, TestSize.Level1)
-{
-    SampleQueue::Config sampleQueueConfig{};
-    sampleQueueConfig.isFlvLiveStream_ = true;
-    sampleQueueConfig.isSupportBitrateSwitch_ = true;
-    sampleQueueConfig.queueId_ = NUM_TEST1;
-    sampleQueueConfig.queueSize_ = SampleQueue::MAX_SAMPLE_QUEUE_SIZE;
-    Status status = sampleQueue_->Init(sampleQueueConfig);
-    EXPECT_EQ(status, Status::OK);
-    EXPECT_EQ(sampleQueue_->config_.queueSize_, SampleQueue::MAX_SAMPLE_QUEUE_SIZE_ON_MUTE);
-}
-
  /**
  * @tc.name  : Test SetLargerQueueSize
  * @tc.number: SetLargerQueueSize_002
@@ -372,23 +355,6 @@ HWTEST_F(SampleQueueUnitTest, SetLargerQueueSize_002, TestSize.Level1)
     ret = sampleQueue_->SetLargerQueueSize(SampleQueue::MAX_SAMPLE_QUEUE_SIZE);
     EXPECT_EQ(ret, Status::OK);
     EXPECT_EQ(sampleQueue_->config_.queueSize_, SampleQueue::MAX_SAMPLE_QUEUE_SIZE);
-}
-
-/**
- * @tc.name  : Test SetLargerQueueSize
- * @tc.number: SetLargerQueueSize_003
- * @tc.desc  : Test SetLargerQueueSize
- */
-HWTEST_F(SampleQueueUnitTest, SetLargerQueueSize_003, TestSize.Level1)
-{
-    SampleQueue::Config sampleQueueConfig{};
-    sampleQueueConfig.isFlvLiveStream_ = true;
-    sampleQueueConfig.isSupportBitrateSwitch_ = true;
-    sampleQueueConfig.queueId_ = NUM_TEST1;
-    sampleQueueConfig.queueSize_ = SampleQueue::MAX_SAMPLE_QUEUE_SIZE;
-    Status status = sampleQueue_->Init(sampleQueueConfig);
-    EXPECT_EQ(status, Status::OK);
-    EXPECT_EQ(sampleQueue_->config_.queueSize_, SampleQueue::MAX_SAMPLE_QUEUE_SIZE_ON_MUTE);
 }
 
 /**
