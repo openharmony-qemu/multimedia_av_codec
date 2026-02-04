@@ -522,7 +522,8 @@ int32_t VEncNdkInnerSample::testApi()
     return AVCS_ERR_OK;
 }
 
-int32_t VEncNdkInnerSample::PushData(std::shared_ptr<AVSharedMemory> buffer, uint32_t index, int32_t &result)
+int32_t VEncNdkInnerSample::PushData(std::shared_ptr<AVSharedMemory> buffer,
+     uint32_t index, int32_t &result)
 {
     int32_t res = -2;
     uint32_t yuvSize = 0;
@@ -534,7 +535,6 @@ int32_t VEncNdkInnerSample::PushData(std::shared_ptr<AVSharedMemory> buffer, uin
     }
     uint8_t *fileBuffer = buffer->GetBase();
     if (fileBuffer == nullptr) {
-        cout << "Fatal: no memory" << endl;
         return -1;
     }
     (void)inFile_->read((char *)fileBuffer, yuvSize);
@@ -543,7 +543,6 @@ int32_t VEncNdkInnerSample::PushData(std::shared_ptr<AVSharedMemory> buffer, uin
         inFile_->clear();
         inFile_->seekg(0, ios::beg);
         encodeCount++;
-        cout << "repeat" << "  encodeCount:" << encodeCount << endl;
         return -1;
     }
 
@@ -561,13 +560,10 @@ int32_t VEncNdkInnerSample::PushData(std::shared_ptr<AVSharedMemory> buffer, uin
     info.size = yuvSize;
     info.offset = 0;
     AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
-
     int32_t size = buffer->GetSize();
     if (size < (int32_t)yuvSize) {
-        cout << "bufferSize smaller than yuv size" << endl;
         return -1;
     }
-
     if (enableForceIDR && (frameCount % IDR_FRAME_INTERVAL == 0)) {
         Format format;
         format.PutIntValue(MediaDescriptionKey::MD_KEY_REQUEST_I_FRAME, 1);
@@ -579,7 +575,6 @@ int32_t VEncNdkInnerSample::PushData(std::shared_ptr<AVSharedMemory> buffer, uin
         signal_->inIdxQueue_.pop();
         signal_->inBufferQueue_.pop();
     }
-
     return res;
 }
 

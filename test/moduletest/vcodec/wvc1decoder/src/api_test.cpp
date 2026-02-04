@@ -30,7 +30,6 @@
 #include "native_averrors.h"
 #include "native_avcodec_base.h"
 #include "native_avcapability.h"
-
 #include "native_avdemuxer.h"
 #include "native_avsource.h"
 #include "native_avmemory.h"

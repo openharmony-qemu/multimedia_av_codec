@@ -61,7 +61,7 @@ protected:
     const char *inpDirHlgLimit = "/data/test/media/hlgHdrVivid_1080p.h265";
 };
 } // namespace Media
-} // namespace OHOS  
+} // namespace OHOS
 
 namespace {
 static OH_AVCapability *cap = nullptr;
@@ -715,7 +715,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0001, TestSize.Level0
     }
 }
 
-/**  
+/**
  * @tc.number    : HEVC_SW_HDR2SDR_INNER_FUNC_0002
  * @tc.name      : h265 soft decode surface, nv12, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE BT709 LIMIT, 720p HLG FULL
  * @tc.desc      : function test
@@ -820,7 +820,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0006, TestSize.Level0
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SF_OUTPUT = true;
     vDecSample->BT709_LIMIT_FLAG = true;
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false; 
+    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
     ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameSwHEVC));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
@@ -917,8 +917,6 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0011, TestSize.Level0
         ASSERT_EQ(AVCS_ERR_INVALID_OPERATION, vDecSample->Start());
     }
 }
-
-
   
 /**
  * @tc.number    : HEVC_SW_HDR2SDR_INNER_FUNC_0012

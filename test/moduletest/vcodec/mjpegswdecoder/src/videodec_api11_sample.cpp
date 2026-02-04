@@ -934,7 +934,7 @@ int32_t VDecAPI11Sample::CheckAttrFlag(OH_AVCodecBufferAttr attr)
         OPENSSL_cleanse(&g_c, sizeof(g_c));
         if (!SF_OUTPUT) {
             if (!MdCompare(g_md)) {
-                cout << "MdCompare failed" << endl;
+                errCount++;
             }
         }
         return -1;

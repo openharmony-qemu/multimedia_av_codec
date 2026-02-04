@@ -664,6 +664,7 @@ void VDecAPI11Sample::WaitForEOS()
 
 void VDecAPI11Sample::InFuncTest()
 {
+    const int REFRESH_INTERVAL  = 10;
     if (REPEAT_START_FLUSH_BEFORE_EOS > 0) {
         REPEAT_START_FLUSH_BEFORE_EOS--;
         OH_VideoDecoder_Flush(vdec_);
@@ -678,7 +679,7 @@ void VDecAPI11Sample::InFuncTest()
         inFile_->seekg(0, ios::beg);
         OH_VideoDecoder_Start(vdec_);
     }
-    if (INPUT_STREAM_TYPE == Input_Stream_Type_000001 && (outFrameCount % (INPUT_NAL_NUM * 10) == 0)) {
+    if (INPUT_STREAM_TYPE == Input_Stream_Type_000001 && (outFrameCount % (INPUT_NAL_NUM * REFRESH_INTERVAL) == 0)) {
         OH_VideoDecoder_Flush(vdec_);
         Flush_buffer();
         OH_VideoDecoder_Start(vdec_);
@@ -759,6 +760,10 @@ void VDecAPI11Sample::SyncInputFunc()
 int32_t VDecAPI11Sample::ReadFileAvccFrameLen(uint32_t index, uint32_t& bufferSize, OH_AVBuffer *buffer)
 {
     char ch[4] = {};
+    uint32_t zero = 0;
+    uint32_t one = 1;
+    uint32_t two = 2;
+    uint32_t three = 3;
     (void)inFile_->read(ch, START_CODE_SIZE);
     if (repeatRun && inFile_->eof()) {
         static uint32_t repeat_count = 0;
@@ -772,13 +777,9 @@ int32_t VDecAPI11Sample::ReadFileAvccFrameLen(uint32_t index, uint32_t& bufferSi
         SetEOS(index, buffer);
         return 1;
     }
-    bufferSize = (uint32_t)(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) | ((ch[1] & 0xFF) << SIXTEEN) |
-                            ((ch[0] & 0xFF) << TWENTY_FOUR));
+    bufferSize = (uint32_t)(((ch[three] & 0xFF)) | ((ch[two] & 0xFF) << EIGHT) | ((ch[one] & 0xFF) << SIXTEEN) |
+                            ((ch[zero] & 0xFF) << TWENTY_FOUR));
     if (useHDRSource) {
-        uint32_t zero = 0;
-        uint32_t one = 1;
-        uint32_t two = 2;
-        uint32_t three = 3;
         bufferSize = (uint32_t)(((ch[zero] & 0xFF)) | ((ch[one] & 0xFF) << EIGHT) | ((ch[two] & 0xFF) << SIXTEEN) |
                                      ((ch[three] & 0xFF) << TWENTY_FOUR));
     }
@@ -787,8 +788,11 @@ int32_t VDecAPI11Sample::ReadFileAvccFrameLen(uint32_t index, uint32_t& bufferSi
 
 int32_t VDecAPI11Sample::ReadFileNalsFrame(uint32_t index, uint32_t& bufferSize, OH_AVBuffer *buffer)
 {
+    const int READ_BAD_ERROR = -5;
+    const int READ_FAIL_ERROR = -4;
+    const int SEEK_FAILYRE = -3;
+    const int SIX_RE = -6
     if (iptMultiStreamsBuf_ == nullptr || inFile_ == nullptr) {
-        std::cout << "input empty fail!" << std::endl;
         return -1;
     }
     if (inFile_->eof() || (startPos_ + START_CODE_SIZE) >= nFileSize_) {
@@ -801,7 +805,7 @@ int32_t VDecAPI11Sample::ReadFileNalsFrame(uint32_t index, uint32_t& bufferSize,
     if (currentPos != startPos_) {
         std::cout << "telg fail " << strerror(errno) << ", file size" << nFileSize_
             << ", cur " << currentPos << std::endl;
-        return -3;
+        return SEEK_FAILYRE;
     }
     uint64_t maxReadable = nFileSize_ - currentPos;
     size_t bytesToRead = static_cast<size_t>(std::min(
@@ -811,20 +815,21 @@ int32_t VDecAPI11Sample::ReadFileNalsFrame(uint32_t index, uint32_t& bufferSize,
     if (bytesRead == 0) {
         if (inFile_->bad()) {
             std::cout << "Read error: " << strerror(errno) << std::endl;
-            return -5;
+            return READ_BAD_ERROR;
         } else if (inFile_->fail()) {
             std::cout << "Read error: " << strerror(errno) << std::endl;
-            return -4;
+            return READ_FAIL_ERROR;
         }
     }
-    uint32_t startSeparator = ((inputBuffer[0] & 0xFF) << 24) | ((inputBuffer[1] & 0xFF) << 16)
-        | ((inputBuffer[2] & 0xFF) << 8) | (inputBuffer[3] & 0XFF);
-    if (startSeparator != 1) {
-        startSeparator = ((iptMultiStreamsBuf_[0] & 0xFF) << 16) | ((iptMultiStreamsBuf_[1] & 0xFF) << 8)
-            | (iptMultiStreamsBuf_[2] & 0xFF);
-        if (startSeparator != 1) {
-            std::cout << "Input file type error:" << startSeparator << std::endl;
-            return -6;
+    const uint32_t START_VALYE = 1;
+    const uint32_t START_SEPARATOR = 0xFF
+    uint32_t startSeparator = ((inputBuffer[0] & START_SEPARATOR) << 24) | ((inputBuffer[1] & START_SEPARATOR) << 16)
+        | ((inputBuffer[2] & START_SEPARATOR) << 8) | (inputBuffer[3] & START_SEPARATOR);
+    if (startSeparator != START_VALYE) {
+        startSeparator = ((iptMultiStreamsBuf_[0] & START_SEPARATOR) << 16) |
+         ((iptMultiStreamsBuf_[1] & START_SEPARATOR) << 8) | (iptMultiStreamsBuf_[2] & START_SEPARATOR);
+        if (startSeparator != START_VALYE) {
+            return SIX_RE;
         }
     }
     bufferSize = bytesRead;
@@ -923,35 +928,39 @@ static int32_t H265DecLoadAU(uint8_t* pStream, uint32_t iStreamLen, uint32_t* pF
     uint32_t i;
     uint32_t state = 0xffffffff;
     bool bFrameStartFound = false;
-
+    const int FRAME_HEADER_SIZE = 4;
+    const int BIT_MASK = 1 << 7;
+    const int EIGHT = 8;
     *pFrameLen = 0;
-    if (NULL == pStream || iStreamLen <= 4) {
+    if (NULL == pStream || iStreamLen <= FRAME_HEADER_SIZE) {
         return -1;
     }
-
     for (i = 0; i < iStreamLen; i++) {
-        if ((state & 0xFFFFFF7E) >= 0x100 && (state & 0xFFFFFF7E) <= 0x13E) {
-            if (bFrameStartFound) {
-                if ((pStream[i+1] >> 7) == 1) {
-                    *pFrameLen = i - 4;
-                    return 0;
-                }
-            } else {
+        uint32_t maskedState = state & 0xFFFFFF7E;
+        if (maskedState >= 0x100 && maskedState <= 0x13E) {
+            if (!bFrameStartFound) {
                 bFrameStartFound = true;
+                state = (state << EIGHT) | pStream[i];
+                continue;
             }
-        }
-
-        if ((state & 0xFFFFFF7E) == 0x140 || (state & 0xFFFFFF7E) == 0x142 ||
-            (state & 0xFFFFFF7E) == 0x144 || (state & 0xFFFFFF7E) == 0x14e ||
-            (state & 0xFFFFFF7E) == 0x150) {
-            if (bFrameStartFound) {
-                *pFrameLen = i - 4;
+            if ((pStream[i+1] & BIT_MASK) == BIT_MASK) {
+                *pFrameLen = i - FRAME_HEADER_SIZE;
                 return 0;
-            } else {
+            }            
+            state = (state << EIGHT) | pStream[i];
+            continue;
+        }
+        if (maskedState == 0x140 || maskedState == 0x142 ||
+            maskedState == 0x144 || maskedState == 0x14e ||
+            maskedState == 0x150) {
+            if (!bFrameStartFound) {
                 bFrameStartFound = true;
+            } else {
+                *pFrameLen = i - FRAME_HEADER_SIZE;
+                return 0;
             }
         }
-        state = (state << 8) | pStream[i];
+        state = (state << EIGHT) | pStream[i];
     }
     *pFrameLen = i;
     return (bFrameStartFound && iStreamLen == i) ? 0 : -1;
@@ -959,7 +968,7 @@ static int32_t H265DecLoadAU(uint8_t* pStream, uint32_t iStreamLen, uint32_t* pF
 
 void VDecAPI11Sample::ReadNalsFromFixBuffer(uint32_t bufferSize, uint8_t nNALNum, uint32_t& consumeByteLen)
 {
-    uint8_t * pDecStream = iptMultiStreamsBuf_;
+    uint8_t* pDecStream = iptMultiStreamsBuf_;
     uint32_t iInputLen = bufferSize;
     bool bStreamEnd = false;
     uint32_t uiStreamLen = 0;
@@ -1006,7 +1015,7 @@ uint32_t  VDecAPI11Sample::SendDataNals(uint32_t bufferSize, uint32_t index, OH_
             attr.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
     } else {
         attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
-    } 
+    }
     int32_t size = CheckAndReturnBufferSize(buffer);
     if (size < consumeByteLen) {
         std::cout << "AVBuf size: " << size << "input size: " << bufferSize << std::endl;

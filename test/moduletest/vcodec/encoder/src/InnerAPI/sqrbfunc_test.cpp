@@ -58,7 +58,6 @@ void HwEncInnerFuncBTest::SetUpTestCase()
     } else {
         return;
     }
-
 }
 
 void HwEncInnerFuncBTest::TearDownTestCase() {}
@@ -250,14 +249,16 @@ HWTEST_F(HwEncInnerFuncBTest, VIDEO_HW_ENCODE_INNER_PTS_FUNC_001, TestSize.Level
     uint32_t bitrateMode = 0;
     uint32_t bitRate = 0;
     bool surfaceMode = false;
-    vEncInnerSample->LoadTimeStampData(timeStampFilePath, inputDir, outputDir, width, height, bitrateMode, bitRate, surfaceMode);
+    vEncInnerSample->LoadTimeStampData(timeStampFilePath,
+         inputDir, outputDir, width, height, bitrateMode, bitRate, surfaceMode);
     char *input = new char[1024];
     char *output = new char[1024];
-    snprintf(input, 1024, "%s", inputDir.c_str());
-    snprintf(output, 1024, "%s", outputDir.c_str());
-
+    strncpy(input, inputDir.c_str(), 1023);
+    input[1023] = '\0';
+    strncpy(output, outputDir.c_str(), 1023);
+    output[1023] = '\0';
     printf("input = %s\n", input);
-    printf("input = %s\n", output);
+    printf("output = %s\n", output);
     vEncInnerSample->enablePTSBasedRateControl = true;
     vEncInnerSample->SETBIRATE = true;
     vEncInnerSample->MODE_ENABLE = true;

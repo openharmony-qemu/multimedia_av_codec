@@ -989,7 +989,7 @@ HWTEST_F(DvcntscDecFuncNdkTest, VIDEO_DVCNTSCDEC_FUNCTION_0040, TestSize.Level0)
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
     ASSERT_EQ(4, vDecSample->pixlFormatNum);
-    for(int i = 0; i < vDecSample->pixlFormatNum; i++) {
+    for(int i = 0; i < vDecSample->pixlFormatNum; ++i) {
         ASSERT_EQ(vDecSample->pixlFormats[i], pixfmt[i]);
     }
     ASSERT_EQ(FRAMESIZE5, vDecSample->outFrameCount);
