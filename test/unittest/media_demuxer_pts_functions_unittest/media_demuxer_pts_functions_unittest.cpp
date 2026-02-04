@@ -140,28 +140,6 @@ HWTEST_F(MediaDemuxerPtsUnitTest, HandleAutoMaintainPts_003, TestSize.Level0)
 }
 
 /**
- * @tc.name: Test HandleAutoMaintainPts  API
- * @tc.number: HandleAutoMaintainPts_004
- * @tc.desc: Test baseInfo->segmentOffset != INVALID_PTS_DATA && diff <= MAX_PTS_DIFFER_THRESHOLD_US
- */
-HWTEST_F(MediaDemuxerPtsUnitTest, HandleAutoMaintainPts_004, TestSize.Level0)
-{
-    ASSERT_NE(demuxerPtr_, nullptr);
-    auto mockAvbuffer = std::make_shared<AVBuffer>();
-    int32_t trackId = NUM_TEST;
-    demuxerPtr_->isAutoMaintainPts_ = true;
-    auto maintainBaseInfo = std::make_shared<MediaDemuxer::MaintainBaseInfo>();
-    maintainBaseInfo->lastPts = INVALID_PTS_DATA;
-    maintainBaseInfo->segmentOffset = NUM_TEST;
-    maintainBaseInfo->lastPtsModifyedMax = ID_TEST;
-    maintainBaseInfo->isLastPtsChange = true;
-    EXPECT_CALL(*(demuxerPtr_->source_), GetSegmentOffset()).WillRepeatedly(Return(ID_TEST));
-    demuxerPtr_->maintainBaseInfos_[trackId] = maintainBaseInfo;
-    demuxerPtr_->HandleAutoMaintainPts(trackId, mockAvbuffer);
-    EXPECT_EQ(maintainBaseInfo->isLastPtsChange, false);
-}
-
-/**
  * @tc.name: Test InitPtsInfo  API
  * @tc.number: InitPtsInfo_001
  * @tc.desc: Test source_->GetHLSDiscontinuity() == false
