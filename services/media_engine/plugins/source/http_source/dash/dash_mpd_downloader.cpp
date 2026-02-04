@@ -88,11 +88,37 @@ std::string DashMpdDownloader::GetContentType()
     return downloader_->GetContentType();
 }
 
+bool SafeStringToInt(const std::string& str, int& result, int base)
+{
+    if (str.empty()) {
+        return false;
+    }
+    char* endptr;
+    errno = 0;
+    long num = std::strtol(str.c_str(), &endptr, base);
+
+    if (errno == ERANGE) {
+        return false;
+    }
+    if (*endptr != '\0') {
+        return false;
+    }
+
+    if (num < INT_MIN || num > INT_MAX) {
+        return false;
+    }
+    result = static_cast<int>(num);
+    return true;
+}
+
 static int64_t ParseStartNumber(const std::string &numberStr)
 {
     int64_t startNum = 1;
     if (numberStr.length() > 0) {
-        startNum = atoi(numberStr.c_str());
+        auto ret = SafeStringToInt(numberStr, startNum, DECMA);
+        if (ret == false) {
+            startNum = 1;
+        }
     }
 
     return startNum;
@@ -848,7 +874,11 @@ void DashMpdDownloader::DoOpen(const std::string& url, int64_t startRange, int64
 uint32_t DashMpdDownloader::SaveData(uint8_t* data, uint32_t len, bool notBlock)
 {
     MEDIA_LOG_D("SaveData:size=%{public}u len=%{public}u", (unsigned int)downloadContent_.size(), len);
-    downloadContent_.append(reinterpret_cast<const char*>(data), len);
+    if (data == nullptr) {
+        downloadContent_.append(nullptr, len);
+    } else {
+        downloadContent_.append(reinterpret_cast<const char*>(data), len);
+    }
     return len;
 }
 
@@ -2072,6 +2102,9 @@ Status DashMpdDownloader::GetStreamInfo(std::vector<StreamInfo> &streams)
     unsigned int audioAdptSetIndex = streamDescriptions_.size();
     unsigned int subtitleAdptSetIndex = audioAdptSetIndex;
     for (unsigned int index = 0; index < streamDescriptions_.size(); index++) {
+        if (streamDescriptions_[index] == nullptr) {
+            continue;
+        }
         if (streamDescriptions_[index]->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_AUD) {
             if (streamDescriptions_[index]->adptSetIndex_ == audioAdptSetIndex) {
                 MEDIA_LOG_D("GetStreamInfo skip audio stream:" PUBLIC_LOG_D32 ",lang:" PUBLIC_LOG_S,

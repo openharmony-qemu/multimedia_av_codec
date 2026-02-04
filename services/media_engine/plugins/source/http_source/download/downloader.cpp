@@ -787,6 +787,9 @@ void Downloader::HandlePlayingFinish()
 
 void Downloader::HandleRetOK()
 {
+    if (currentRequest_ == nullptr || currentRequest_->headerInfo_.fileContentLen < 0) {
+        return;
+    }
     if (currentRequest_->retryTimes_ > 0) {
         currentRequest_->retryTimes_ = 0;
     }

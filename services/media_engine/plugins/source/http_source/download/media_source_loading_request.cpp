@@ -66,10 +66,10 @@ int64_t MediaSourceLoadingRequest::Open(int64_t uuid, const std::shared_ptr<Netw
     if (it != requestMap_.end()) {
         MEDIA_LOG_W("0x%{public}06" PRIXPTR "MediaSourceLoadingRequest Open, uuid has opened: " PUBLIC_LOG_D64,
             FAKE_POINTER(this), uuid);
-        return 0;
+        return -1;
     }
     auto element = std::make_shared<LoadingRequestElements>(uuid, client);
-    FALSE_RETURN_V_MSG(element != nullptr, 0, "MediaSourceLoadingRequest Open, no enough memory.");
+    FALSE_RETURN_V_MSG(element != nullptr, -1, "MediaSourceLoadingRequest Open, no enough memory.");
     requestMap_.emplace(uuid, element);
     return 0;
 }
@@ -162,8 +162,8 @@ int64_t MediaSourceLoaderCombinations::Open(const std::string &url, const std::m
     int64_t uuid = loader_->Open(url, header);
     MEDIA_LOG_I("0x%{public}06" PRIXPTR "MediaSourceLoaderCombinations Open, uuid: " PUBLIC_LOG_D64,
         FAKE_POINTER(this), uuid);
-    request_->Open(uuid, client);
-    return uuid;
+    auto ret = request_->Open(uuid, client);
+    return ret == -1? 0 : uuid;
 }
 
 int32_t MediaSourceLoaderCombinations::Close(int64_t uuid)
