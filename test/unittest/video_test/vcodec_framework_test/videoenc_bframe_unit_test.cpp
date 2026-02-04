@@ -47,6 +47,7 @@ public:
     void CreateByNameWithParam(int32_t param);
     void SetFormatWithParam(int32_t param);
     void PrepareSource(int32_t param);
+    void IsBFrameSupported(int32_t param);
 
 protected:
     std::shared_ptr<CodecListMock> capability_ = nullptr;
@@ -66,6 +67,29 @@ void TEST_SUIT::SetUpTestCase(void)
 }
 
 void TEST_SUIT::TearDownTestCase(void) {}
+
+void TEST_SUIT::IsBFrameSupported(int32_t param)
+{
+    std::string codecName = "";
+    std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
+    CapabilityData *capabilityData = nullptr;
+    if (param == CodecMimeType::VIDEO_AVC) {
+        capabilityData = codecCapability->GetCapability(CodecMimeType::VIDEO_AVC.data(), true,
+                                                        AVCodecCategory::AVCODEC_HARDWARE);
+    } else if (param == CodecMimeType::VIDEO_HEVC) {
+        capabilityData = codecCapability->GetCapability(CodecMimeType::VIDEO_HEVC.data(), true,
+                                                        AVCodecCategory::AVCODEC_HARDWARE);
+    } else {
+        capabilityData = codecCapability->GetCapability(CodecMimeType::VIDEO_AVC.data(), true,
+                                                        AVCodecCategory::AVCODEC_HARDWARE);
+    }
+
+    if ((!capabilityData ||
+         !capabilityData->featuresMap.count(static_cast<int32_t>(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME)))) {
+        GTEST_SKIP() << "Unsupport B Frame!";
+    }
+
+}
 
 void TEST_SUIT::SetUp(void)
 {
@@ -87,6 +111,7 @@ void TEST_SUIT::SetUp(void)
 
     format_ = FormatMockFactory::CreateFormat();
     ASSERT_NE(nullptr, format_);
+    IsBFrameSupported(GetParam());
 }
 
 void TEST_SUIT::TearDown(void)
