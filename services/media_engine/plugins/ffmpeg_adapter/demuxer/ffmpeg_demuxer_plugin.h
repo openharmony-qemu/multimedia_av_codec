@@ -98,6 +98,7 @@ public:
     Status SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode, int64_t& realSeekTime) override;
     Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample) override;
     Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout) override;
+    Status ReadSampleZeroCopy(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout) override;
     Status GetNextSampleSize(uint32_t trackId, int32_t& size) override;
     Status GetNextSampleSize(uint32_t trackId, int32_t& size, uint32_t timeout) override;
     Status Pause() override;
@@ -257,7 +258,7 @@ private:
         std::shared_ptr<SamplePacket> dstSamplePacket);
     Status ConvertPacketToAnnexb(Plugins::AVPacketWrapperPtr srcWrapper, std::shared_ptr<SamplePacket> samplePacket,
         Plugins::AVPacketWrapperPtr& outWrapper);
-    Status SetEosSample(std::shared_ptr<AVBuffer> sample);
+    Status SetEosSample(std::shared_ptr<AVBuffer> sample, bool replaceMemory);
     Status WriteBuffer(std::shared_ptr<AVBuffer> outBuffer, const uint8_t *writeData, uint32_t writeSize);
     void ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, size_t drmInfoSize,
         std::multimap<std::string, std::vector<uint8_t>>& drmInfo);

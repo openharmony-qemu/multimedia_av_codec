@@ -122,25 +122,60 @@ struct DemuxerPlugin : public PluginBase {
     /**
      * @brief Reads data frames within @param timeout milliseconds (asynchronous version).
      *
-     * This function uses an asynchronous implementation mechanism. It is valid only after the RUNNING state.
+     * This function uses an asynchronous implementation mechanism.
+     * It is valid only after the RUNNING state.
      *
-     * @note This asynchronous interface must be used together with the asynchronous version of GetNextSampleSize.
-     *       Synchronous and asynchronous interfaces (with and without timeout) cannot be mixed in the same instance.
+     * @note This asynchronous interface must be used together with the asynchronous version
+     *       of GetNextSampleSize. Synchronous and asynchronous interfaces
+     *       (with and without timeout) cannot be mixed in the same instance.
      *
-     * @note Memory management: The function will create new memory internally and replace sample->memory_ with it.
-     *       The caller does not need to pre-allocate memory in sample->memory_. The original memory will be replaced.
+     * @note Memory management: The data will be copied into the memory provided by
+     *       @param sample->memory_. The caller must pre-allocate sufficient memory in
+     *       sample->memory_ before calling this function.
+     *
+     * @note If the buffer capacity is insufficient, the sample data will be split across
+     *       multiple calls (the buffer flag indicates partial data). The caller should call
+     *       this function again to copy the remaining data until all data is copied.
      *
      * @param trackId Identifies the media track. ignore the invalid value is passed.
-     * @param sample Buffer where store data frames. The sample->memory_ will be replaced with the new memory.
      * @param timeout If no result is available after @param timeout milliseconds, the function returns.
      * @return  Execution Status return
      *  @retval OK: Plugin ReadFrame succeeded.
      *  @retval ERROR_WAIT_TIMEOUT: Operation timeout.
      *  @retval END_OF_STREAM: Read end (EOS).
      *  @retval ERROR_UNKNOWN: Call av_read_frame failed.
-     *  @retval ERROR_NULL_POINTER: Call av_packet_alloc failed.
+     *  @retval ERROR_NULL_POINTER: Call av_packet_alloc failed or sample->memory_ is nullptr.
      */
-    virtual Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout) = 0;
+        virtual Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout) = 0;
+
+    /**
+    * @brief Reads data frames within @param timeout milliseconds
+    *        (asynchronous version, zero-copy mode).
+    *
+    * This function uses an asynchronous implementation mechanism with zero-copy optimization.
+    * It is valid only after the RUNNING state.
+    *
+    * @note This asynchronous interface must be used together with the asynchronous version
+    *       of GetNextSampleSize. Synchronous and asynchronous interfaces
+    *       (with and without timeout) cannot be mixed in the same instance.
+    *
+    * @note Memory management: The function will create new memory internally and replace
+    *       sample->memory_ with it. The caller does not need to pre-allocate memory in
+    *       sample->memory_. The original memory will be replaced. The memory is managed
+    *       internally through AVPacketMemory, achieving zero-copy mechanism.
+    *
+    * @param trackId Identifies the media track. ignore the invalid value is passed.
+    * @param sample Buffer where store data frames. The sample->memory_ will be replaced with
+    *               the new memory created internally.
+    * @param timeout If no result is available after @param timeout milliseconds, the function returns.
+    * @return  Execution Status return
+    *  @retval OK: Plugin ReadFrame succeeded.
+    *  @retval ERROR_WAIT_TIMEOUT: Operation timeout.
+    *  @retval END_OF_STREAM: Read end (EOS).
+    *  @retval ERROR_UNKNOWN: Call av_read_frame failed.
+    *  @retval ERROR_NULL_POINTER: Call av_packet_alloc failed.
+    */
+    virtual Status ReadSampleZeroCopy(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout) = 0;
 
     /**
      * @brief Get next sample size (synchronous version).
