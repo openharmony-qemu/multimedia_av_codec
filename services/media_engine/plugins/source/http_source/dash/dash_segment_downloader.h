@@ -19,6 +19,7 @@
 #include <memory>
 #include <list>
 #include <mutex>
+#include <shared_mutex>
 #include <atomic>
 #include "dash_common.h"
 #include "download/downloader.h"
