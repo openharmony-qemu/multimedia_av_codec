@@ -1862,4 +1862,38 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_H265_FLUSH_0020, TestSize.Level
         ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
+
+/**
+ * @tc.number    : API11_VIDEO_MJPEGSWDEC_FUNCTION_1000
+ * @tc.name      : buffer graph pixel format
+ * @tc.desc      : function test
+ */
+HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_FUNCTION_1000, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        int32_t pixfmt[4] = {28, 24, 25, 12};
+        const char *file = "/data/test/media/1920_1080_30.avi";
+        vDecSample->getFormat(file);
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->isGetVideoSupportedPixelFormats = true;
+        vDecSample->isGetFormatKey = true;
+        vDecSample->avcodecMimeType = OH_AVCODEC_MIMETYPE_VIDEO_MJPEG;
+        vDecSample->isEncoder = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMjpeg));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(4, vDecSample->pixlFormatNum);
+        for (int i = 0; i < vDecSample->pixlFormatNum; i++) {
+            ASSERT_EQ(vDecSample->pixlFormats[i], pixfmt[i]);
+        }
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
 } // namespace

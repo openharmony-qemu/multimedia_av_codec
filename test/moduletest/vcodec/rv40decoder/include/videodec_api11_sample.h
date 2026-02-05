@@ -32,6 +32,7 @@
 #include "native_avmemory.h"
 #include "native_avformat.h"
 #include "native_averrors.h"
+#include "native_avcapability.h"
 #include "surface/window.h"
 #include "iconsumer_surface.h"
 #include "native_avdemuxer.h"
@@ -155,6 +156,17 @@ public:
     bool MdCompare(unsigned char *buffer, int len, const char *source[]);
     int32_t inputoutputloop();
     int32_t inputoutputsyncloop();
+    void GetVideoSupportedPixelFormats();
+    void GetFormatKey();
+    bool isGetVideoSupportedPixelFormats = false;
+    bool isGetFormatKey = false;
+    int isGetVideoSupportedPixelFormatsNum = 0;
+    int isGetFormatKeyNum = 0;
+    const char *avcodecMimeType = nullptr;
+    bool isEncoder = true;
+    const OH_NativeBuffer_Format *pixlFormats = nullptr;
+    uint32_t pixlFormatNum = 0;
+    int firstCallBackKey = 0;
     VDecAPI11Signal *signal_;
     uint32_t errCount = 0;
     uint32_t outCount = 0;

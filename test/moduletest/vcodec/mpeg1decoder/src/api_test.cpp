@@ -71,66 +71,9 @@ static constexpr uint32_t DEFAULTWIDTH = 720;
 static constexpr uint32_t DEFAULTHEIGHT = 480;
 static constexpr uint32_t DEFAULTFRAMERATE = 60;
 OH_AVFormat *g_format = nullptr;
-static int g_fd = -1;
-static OH_AVSource *g_source = nullptr;
-static OH_AVDemuxer *g_demuxer = nullptr;
-static OH_AVFormat *g_sourceFormat = nullptr;
-static OH_AVFormat *g_trackFormat = nullptr;
-static int32_t g_trackCount;
 
-static int64_t GetFileSize(const char *fileName)
-{
-    int64_t fileSize = 0;
-    if (fileName != nullptr) {
-        struct stat fileStatus {};
-        if (stat(fileName, &fileStatus) == 0) {
-            fileSize = static_cast<int64_t>(fileStatus.st_size);
-        }
-    }
-    return fileSize;
-}
-
-static void GetFormat(const char *fileName)
-{
-    int trackType = 0;
-    g_fd = open(fileName, O_RDONLY);
-    int64_t size = GetFileSize(fileName);
-    cout << fileName << "-------" << g_fd << "-------" << size << endl;
-    g_source = OH_AVSource_CreateWithFD(g_fd, 0, size);
-    ASSERT_NE(g_source, nullptr);
-    g_demuxer = OH_AVDemuxer_CreateWithSource(g_source);
-    ASSERT_NE(g_demuxer, nullptr);
-    g_sourceFormat = OH_AVSource_GetSourceFormat(g_source);
-    ASSERT_NE(g_sourceFormat, nullptr);
-    ASSERT_TRUE(OH_AVFormat_GetIntValue(g_sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
-    cout << "g_trackCount----" << g_trackCount << endl;
-    for (int32_t index = 0; index < g_trackCount; index++) {
-        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(g_demuxer, index));
-    }
-    for (int32_t index = 0; index < g_trackCount; index++) {
-        g_trackFormat = OH_AVSource_GetTrackFormat(g_source, index);
-        ASSERT_NE(g_trackFormat, nullptr);
-        ASSERT_TRUE(OH_AVFormat_GetIntValue(g_trackFormat, OH_MD_KEY_TRACK_TYPE, &trackType));
-        if (trackType == MEDIA_TYPE_VID) {
-            break;
-        }
-    }
-    close(g_fd);
-    g_fd = -1;
-}
-
-void Mpeg1decApiNdkTest::SetUpTestCase()
-{
-    const char *file = "/data/test/media/mpeg1.mkv";
-    GetFormat(file);
-}
-void Mpeg1decApiNdkTest::TearDownTestCase()
-{
-    if (g_trackFormat != nullptr) {
-        OH_AVFormat_Destroy(g_trackFormat);
-        g_trackFormat = nullptr;
-    }
-}
+void Mpeg1decApiNdkTest::SetUpTestCase() {}
+void Mpeg1decApiNdkTest::TearDownTestCase() {}
 void Mpeg1decApiNdkTest::SetUp()
 {
     g_signal = new VDecAPI11Signal();
@@ -148,22 +91,6 @@ void Mpeg1decApiNdkTest::TearDown()
     if (g_vdec != NULL) {
         OH_VideoDecoder_Destroy(g_vdec);
         g_vdec = nullptr;
-    }
-    if (g_fd > 0) {
-        close(g_fd);
-        g_fd = -1;
-    }
-    if (g_source != nullptr) {
-        OH_AVSource_Destroy(g_source);
-        g_source = nullptr;
-    }
-    if (g_demuxer != nullptr) {
-        OH_AVDemuxer_Destroy(g_demuxer);
-        g_demuxer = nullptr;
-    }
-    if (g_sourceFormat != nullptr) {
-        OH_AVFormat_Destroy(g_sourceFormat);
-        g_sourceFormat = nullptr;
     }
 }
 } // namespace Media
@@ -225,7 +152,7 @@ HWTEST_F(Mpeg1decApiNdkTest, VIDEO_MPEG1DEC_API_0300, TestSize.Level2)
     (void)OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_HEIGHT, DEFAULTHEIGHT);
     (void)OH_AVFormat_SetDoubleValue(g_format, OH_MD_KEY_FRAME_RATE, DEFAULTFRAMERATE);
 
-    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(g_vdec, g_trackFormat));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(g_vdec, g_format));
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(g_vdec));
     ASSERT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Start(g_vdec));
     OH_AVFormat_Destroy(g_format);
@@ -249,7 +176,7 @@ HWTEST_F(Mpeg1decApiNdkTest, VIDEO_MPEG1DEC_API_0400, TestSize.Level2)
     (void)OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_HEIGHT, DEFAULTHEIGHT);
     (void)OH_AVFormat_SetDoubleValue(g_format, OH_MD_KEY_FRAME_RATE, DEFAULTFRAMERATE);
 
-    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(g_vdec, g_trackFormat));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(g_vdec, g_format));
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(g_vdec));
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Stop(g_vdec));
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Stop(g_vdec));
@@ -274,7 +201,7 @@ HWTEST_F(Mpeg1decApiNdkTest, VIDEO_MPEG1DEC_API_0500, TestSize.Level2)
     (void)OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_HEIGHT, DEFAULTHEIGHT);
     (void)OH_AVFormat_SetDoubleValue(g_format, OH_MD_KEY_FRAME_RATE, DEFAULTFRAMERATE);
 
-    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(g_vdec, g_trackFormat));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(g_vdec, g_format));
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(g_vdec));
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Stop(g_vdec));
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Reset(g_vdec));
@@ -300,7 +227,7 @@ HWTEST_F(Mpeg1decApiNdkTest, VIDEO_MPEG1DEC_API_0600, TestSize.Level2)
     (void)OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_HEIGHT, DEFAULTHEIGHT);
     (void)OH_AVFormat_SetDoubleValue(g_format, OH_MD_KEY_FRAME_RATE, DEFAULTFRAMERATE);
 
-    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(g_vdec, g_trackFormat));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(g_vdec, g_format));
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(g_vdec));
 
     OH_AVCodecBufferAttr attr;
@@ -332,7 +259,7 @@ HWTEST_F(Mpeg1decApiNdkTest, VIDEO_MPEG1DEC_API_0700, TestSize.Level2)
     (void)OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_HEIGHT, DEFAULTHEIGHT);
     (void)OH_AVFormat_SetDoubleValue(g_format, OH_MD_KEY_FRAME_RATE, DEFAULTFRAMERATE);
 
-    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(g_vdec, g_trackFormat));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(g_vdec, g_format));
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(g_vdec));
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Flush(g_vdec));
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Flush(g_vdec));
@@ -357,7 +284,7 @@ HWTEST_F(Mpeg1decApiNdkTest, VIDEO_MPEG1DEC_API_0800, TestSize.Level2)
     (void)OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_HEIGHT, DEFAULTHEIGHT);
     (void)OH_AVFormat_SetDoubleValue(g_format, OH_MD_KEY_FRAME_RATE, DEFAULTFRAMERATE);
 
-    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(g_vdec, g_trackFormat));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(g_vdec, g_format));
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(g_vdec));
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Stop(g_vdec));
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Destroy(g_vdec));
