@@ -1202,6 +1202,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0052, TestSize.Level0)
     ASSERT_EQ(FRAMESIZE52, vDecSample->outFrameCount);
 }
 
+#ifdef SUPPORT_10BIT_TEST
 /**
  * @tc.number    : VIDEO_VP9DEC_FUNCTION_0053
  * @tc.name      : Decode VP9 buffer with level1, profile2
@@ -1243,6 +1244,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0054, TestSize.Level0)
     ASSERT_EQ(0, vDecSample->errCount);
     ASSERT_EQ(FRAMESIZE52, vDecSample->outFrameCount);
 }
+#endif
 
 /**
  * @tc.number    : VIDEO_VP9DEC_FUNCTION_0055
@@ -1286,6 +1288,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0056, TestSize.Level0)
     ASSERT_EQ(FRAMESIZE100, vDecSample->outFrameCount);
 }
 
+#ifdef SUPPORT_10BIT_TEST
 /**
  * @tc.number    : VIDEO_VP9DEC_FUNCTION_0057
  * @tc.name      : Decode VP9 buffer with level1.1, profile2
@@ -1327,6 +1330,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0058, TestSize.Level0)
     ASSERT_EQ(0, vDecSample->errCount);
     ASSERT_EQ(FRAMESIZE100, vDecSample->outFrameCount);
 }
+#endif
 
 /**
  * @tc.number    : VIDEO_VP9DEC_FUNCTION_0059
@@ -1370,6 +1374,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0060, TestSize.Level0)
     ASSERT_EQ(FRAMESIZE100, vDecSample->outFrameCount);
 }
 
+#ifdef SUPPORT_10BIT_TEST
 /**
  * @tc.number    : VIDEO_VP9DEC_FUNCTION_0061
  * @tc.name      : Decode VP9 buffer with level2.0, profile2
@@ -1411,6 +1416,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0062, TestSize.Level0)
     ASSERT_EQ(0, vDecSample->errCount);
     ASSERT_EQ(FRAMESIZE100, vDecSample->outFrameCount);
 }
+#endif
 
 /**
  * @tc.number    : VIDEO_VP9DEC_FUNCTION_0063
@@ -1454,6 +1460,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0064, TestSize.Level0)
     ASSERT_EQ(FRAMESIZE100, vDecSample->outFrameCount);
 }
 
+#ifdef SUPPORT_10BIT_TEST
 /**
  * @tc.number    : VIDEO_VP9DEC_FUNCTION_0065
  * @tc.name      : Decode VP9 buffer with level2.1, profile2
@@ -1495,6 +1502,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0066, TestSize.Level0)
     ASSERT_EQ(0, vDecSample->errCount);
     ASSERT_EQ(FRAMESIZE100, vDecSample->outFrameCount);
 }
+#endif
 
 /**
  * @tc.number    : VIDEO_VP9DEC_FUNCTION_0067
@@ -1538,6 +1546,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0068, TestSize.Level0)
     ASSERT_EQ(FRAMESIZE100, vDecSample->outFrameCount);
 }
 
+#ifdef SUPPORT_10BIT_TEST
 /**
  * @tc.number    : VIDEO_VP9DEC_FUNCTION_0069
  * @tc.name      : Decode VP9 buffer with level3.0, profile2
@@ -1579,6 +1588,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0070, TestSize.Level0)
     ASSERT_EQ(0, vDecSample->errCount);
     ASSERT_EQ(FRAMESIZE100, vDecSample->outFrameCount);
 }
+#endif
 
 /**
  * @tc.number    : VIDEO_VP9DEC_FUNCTION_0071
@@ -1622,6 +1632,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0072, TestSize.Level0)
     ASSERT_EQ(FRAMESIZE100, vDecSample->outFrameCount);
 }
 
+#ifdef SUPPORT_10BIT_TEST
 /**
  * @tc.number    : VIDEO_VP9DEC_FUNCTION_0073
  * @tc.name      : Decode VP9 buffer with level3.1, profile2
@@ -1663,6 +1674,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0074, TestSize.Level0)
     ASSERT_EQ(0, vDecSample->errCount);
     ASSERT_EQ(FRAMESIZE100, vDecSample->outFrameCount);
 }
+#endif
 
 /**
  * @tc.number    : VIDEO_VP9DEC_FUNCTION_0075
@@ -1706,6 +1718,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0076, TestSize.Level0)
     ASSERT_EQ(FRAMESIZE100, vDecSample->outFrameCount);
 }
 
+#ifdef SUPPORT_10BIT_TEST
 /**
  * @tc.number    : VIDEO_VP9DEC_FUNCTION_0077
  * @tc.name      : Decode VP9 buffer with level4.0, profile2
@@ -1747,6 +1760,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0078, TestSize.Level0)
     ASSERT_EQ(0, vDecSample->errCount);
     ASSERT_EQ(FRAMESIZE100, vDecSample->outFrameCount);
 }
+#endif
 
 /**
  * @tc.number    : VIDEO_VP9DEC_FUNCTION_0079
@@ -1790,6 +1804,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0080, TestSize.Level0)
     ASSERT_EQ(FRAMESIZE100, vDecSample->outFrameCount);
 }
 
+#ifdef SUPPORT_10BIT_TEST
 /**
  * @tc.number    : VIDEO_VP9DEC_FUNCTION_0081
  * @tc.name      : Decode VP9 buffer with level4.1, profile2
@@ -1831,6 +1846,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0082, TestSize.Level0)
     ASSERT_EQ(0, vDecSample->errCount);
     ASSERT_EQ(FRAMESIZE100, vDecSample->outFrameCount);
 }
+#endif
 
 /**
  * @tc.number    : VIDEO_VP9DEC_FUNCTION_0083
@@ -1874,6 +1890,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0084, TestSize.Level0)
     ASSERT_EQ(FRAMESIZE100, vDecSample->outFrameCount);
 }
 
+#ifdef SUPPORT_10BIT_TEST
 /**
  * @tc.number    : VIDEO_VP9DEC_FUNCTION_0085
  * @tc.name      : Decode VP9 buffer with level5.0, profile2
@@ -1915,6 +1932,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0086, TestSize.Level0)
     ASSERT_EQ(0, vDecSample->errCount);
     ASSERT_EQ(FRAMESIZE100, vDecSample->outFrameCount);
 }
+#endif
 
 /**
  * @tc.number    : VIDEO_VP9DEC_FUNCTION_0087
@@ -1958,6 +1976,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0088, TestSize.Level0)
     ASSERT_EQ(FRAMESIZE100, vDecSample->outFrameCount);
 }
 
+#ifdef SUPPORT_10BIT_TEST
 /**
  * @tc.number    : VIDEO_VP9DEC_FUNCTION_0089
  * @tc.name      : Decode VP9 buffer with level5.1, profile2
@@ -1999,6 +2018,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0090, TestSize.Level0)
     ASSERT_EQ(0, vDecSample->errCount);
     ASSERT_EQ(FRAMESIZE100, vDecSample->outFrameCount);
 }
+#endif
 
 /**
  * @tc.number    : VIDEO_VP9DEC_FUNCTION_0091
@@ -2042,6 +2062,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0092, TestSize.Level0)
     ASSERT_EQ(FRAMESIZE100, vDecSample->outFrameCount);
 }
 
+#ifdef SUPPORT_10BIT_TEST
 /**
  * @tc.number    : VIDEO_VP9DEC_FUNCTION_0093
  * @tc.name      : Decode VP9 buffer with level5.2, profile2
@@ -2083,6 +2104,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0094, TestSize.Level0)
     ASSERT_EQ(0, vDecSample->errCount);
     ASSERT_EQ(FRAMESIZE100, vDecSample->outFrameCount);
 }
+#endif
 
 /**
  * @tc.number    : VIDEO_VP9DEC_FUNCTION_0095
@@ -2126,6 +2148,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0096, TestSize.Level0)
     ASSERT_EQ(FRAMESIZE100, vDecSample->outFrameCount);
 }
 
+#ifdef SUPPORT_10BIT_TEST
 /**
  * @tc.number    : VIDEO_VP9DEC_FUNCTION_0097
  * @tc.name      : Decode VP9 buffer with level6.0, profile2
@@ -2167,6 +2190,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0098, TestSize.Level0)
     ASSERT_EQ(0, vDecSample->errCount);
     ASSERT_EQ(FRAMESIZE100, vDecSample->outFrameCount);
 }
+#endif
 
 /**
  * @tc.number    : VIDEO_VP9DEC_FUNCTION_0099
@@ -2210,6 +2234,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0100, TestSize.Level0)
     ASSERT_EQ(FRAMESIZE100, vDecSample->outFrameCount);
 }
 
+#ifdef SUPPORT_10BIT_TEST
 /**
  * @tc.number    : VIDEO_VP9DEC_FUNCTION_0101
  * @tc.name      : Decode VP9 buffer with level6.1, profile2
@@ -2251,6 +2276,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0102, TestSize.Level0)
     ASSERT_EQ(0, vDecSample->errCount);
     ASSERT_EQ(FRAMESIZE100, vDecSample->outFrameCount);
 }
+#endif
 
 /**
  * @tc.number    : VIDEO_VP9DEC_FUNCTION_0103
@@ -2294,6 +2320,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0104, TestSize.Level0)
     ASSERT_EQ(FRAMESIZE100, vDecSample->outFrameCount);
 }
 
+#ifdef SUPPORT_10BIT_TEST
 /**
  * @tc.number    : VIDEO_VP9DEC_FUNCTION_0105
  * @tc.name      : Decode VP9 buffer with level6.2, profile2
@@ -2335,6 +2362,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0106, TestSize.Level0)
     ASSERT_EQ(0, vDecSample->errCount);
     ASSERT_EQ(FRAMESIZE100, vDecSample->outFrameCount);
 }
+#endif
 
 /**
  * @tc.number    : VIDEO_VP9DEC_FUNCTION_0107

@@ -70,11 +70,6 @@ Vp9VDecServerSample::~Vp9VDecServerSample()
         VideoDecoder *codec = static_cast<VideoDecoder*>(codec_.get());
         codec->DecStrongRef(codec);
     }
-    for (auto cs : cs_vector) {
-        if (cs != nullptr) {
-            cs->DecStrongRef(cs);
-        }
-    }
 }
 
 int32_t Vp9VDecServerSample::ConfigServerDecoder()
