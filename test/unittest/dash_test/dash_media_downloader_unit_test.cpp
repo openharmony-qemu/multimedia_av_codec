@@ -289,7 +289,6 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_SELECT_BITRATE_AFTER_SWITCH, TestSize
                 usingAudioStreamId = stream.streamId;
                 continue;
             }
-            
             if (stream.streamId != usingAudioStreamId) {
                 switchingAudioStreamId = stream.streamId;
                 continue;
@@ -299,7 +298,6 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_SELECT_BITRATE_AFTER_SWITCH, TestSize
                 usingVideoStreamId = stream.streamId;
                 continue;
             }
-            
             if (stream.streamId != usingVideoStreamId) {
                 switchingBitrate = stream.bitRate;
                 continue;
