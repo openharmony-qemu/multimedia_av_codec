@@ -89,14 +89,14 @@ std::string DashMpdDownloader::GetContentType()
     return downloader_->GetContentType();
 }
 
-static bool SafeStringToInt(const std::string& str, int& result, int base)
+static bool SafeStringToInt(const std::string& str, int64_t& result, int base)
 {
     if (str.empty()) {
         return false;
     }
     char* endptr;
     errno = 0;
-    long num = std::strtol(str.c_str(), &endptr, base);
+    int64_t num = std::strtol(str.c_str(), &endptr, base);
 
     if (errno == ERANGE) {
         return false;
@@ -105,10 +105,10 @@ static bool SafeStringToInt(const std::string& str, int& result, int base)
         return false;
     }
 
-    if (num < INT_MIN || num > INT_MAX) {
+    if (num < MIN_INT64 || num > MAX_INT64) {
         return false;
     }
-    result = static_cast<int>(num);
+    result = num;
     return true;
 }
 
