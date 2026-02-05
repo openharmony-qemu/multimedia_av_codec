@@ -82,22 +82,24 @@ public:
     template <typename T = uint8_t, typename U = uint32_t>
     T RbspGetBits(int32_t size)
     {
-        if (!RbspCheckSize(size)) {
+        if (!RbspCheckSize(size) || size < 1 || static_cast<uint32_t>(size) > sizeof(U) * 0x08) {
             RbspSkipBits(size);
             return 0;
         }
 
         uint8_t *buf = buf_.data();
-        U temp = *(reinterpret_cast<U *>(buf + byteIndex_));
-
-        int32_t dataSize = sizeof(temp);
         U reverseData = 0;
-        for (int32_t i = 0; i < dataSize; ++i) {
-            reverseData = (reverseData << 8) | (temp & 0xFF);  // 8
-            temp = temp >> 8;  // 8
+        int32_t byteCount = (bitIndex_ + size + 0x07) / 0x08;
+        for (int32_t i = 0; i < byteCount; ++i) {
+            if (byteIndex_ + i >= size_) {
+                return 0;
+            }
+            reverseData = (reverseData << 0x08) | (*(buf + static_cast<uint32_t>(byteIndex_ + i)) & 0xFF);
         }
+        reverseData = (sizeof(U) >= byteCount) ? reverseData << (0x08 * (sizeof(U) - byteCount)) : reverseData;
+        T data = static_cast<T>((reverseData << static_cast<uint32_t>(bitIndex_)) >>
+            (0x08 * sizeof(U) - static_cast<uint32_t>(size)));
 
-        T data = static_cast<T>((reverseData << bitIndex_) >> (8 * dataSize - size));
         RbspSkipBits(size);
         return data;
     }
@@ -107,9 +109,9 @@ private:
 
 private:
     std::vector<uint8_t> buf_;
-    int32_t size_;
-    int32_t byteIndex_;
-    int32_t bitIndex_;
+    int32_t size_ = 0;
+    int32_t byteIndex_ = 0;
+    int32_t bitIndex_ = 0;
 };
 } // Mpeg4
 } // Plugins
