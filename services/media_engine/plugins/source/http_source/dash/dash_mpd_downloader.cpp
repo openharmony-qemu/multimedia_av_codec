@@ -99,10 +99,9 @@ static int64_t ParseStartNumber(const std::string &numberStr)
 {
     int64_t startNum = 1;
     if (numberStr.length() > 0) {
-        auto ret = SafeStoI64(numberStr, startNum);
-        if (ret == false) {
-            startNum = 0;
-        }
+        int64_t startNumTmp = 1;
+        auto ret = SafeStoI64(numberStr, startNumTmp);
+        startNum = ret? startNumTmp : 0;
     }
 
     return startNum;
