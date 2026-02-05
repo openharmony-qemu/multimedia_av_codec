@@ -44,6 +44,7 @@ enum class M3U8MediaType : int32_t {
 struct M3U8Fragment {
     M3U8Fragment(const std::string &uri, double duration, int sequence, bool discont);
     M3U8Fragment(const M3U8Fragment &m3u8, const uint8_t *key, const uint8_t *iv);
+    ~M3U8Fragment();
     std::string uri_;
     double duration_;
     int64_t sequence_;
