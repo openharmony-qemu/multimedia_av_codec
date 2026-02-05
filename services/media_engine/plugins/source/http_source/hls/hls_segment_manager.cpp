@@ -549,7 +549,8 @@ Status HlsSegmentManager::ReadDelegate(unsigned char* buff, ReadDataInfo& readDa
         readDataInfo.wantReadLength_, readDataInfo.realReadLength_, readOffset_, readTsIndex_.load(),
         GetCrossTsBuffersize(), cacheMediaBuffer_->GetFreeSize(), readDataInfo.streamId_, readDataInfo.nextStreamId_,
         type_);
-    if (readDataInfo.realReadLength_ == 0 && playlistDownloader_->IsLive()) {
+    if (readDataInfo.realReadLength_ == 0 && playlistDownloader_ != nullptr &&
+        playlistDownloader_->IsLive()) {
         return Status::ERROR_AGAIN;
     }
     return Status::OK;

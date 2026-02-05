@@ -177,6 +177,7 @@ Status HttpSourcePlugin::GetParameter(std::shared_ptr<Meta> &meta)
 Status HttpSourcePlugin::SetParameter(const std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("SetParameter enter.");
+    FALSE_RETURN_V(meta != nullptr, Status::ERROR_NULL_POINTER);
     meta->GetData(Tag::BUFFERING_SIZE, bufferSize_);
     meta->GetData(Tag::WATERLINE_HIGH, waterline_);
     return Status::OK;
