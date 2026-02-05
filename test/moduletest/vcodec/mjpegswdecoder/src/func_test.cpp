@@ -1890,7 +1890,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_FUNCTION_1000, TestSize.L
         ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
         vDecSample->WaitForEOS();
         ASSERT_EQ(4, vDecSample->pixlFormatNum);
-        for(int i = 0; i < vDecSample->pixlFormatNum; i++) {
+        for (int i = 0; i < vDecSample->pixlFormatNum; i++) {
             ASSERT_EQ(vDecSample->pixlFormats[i], pixfmt[i]);
         }
         ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);

@@ -36,7 +36,7 @@
 #include "iconsumer_surface.h"
 #include "native_avdemuxer.h"
 #include "native_avsource.h"
-#include "native_avcapability.h"  
+#include "native_avcapability.h"
 #include <fcntl.h>
 #include "gtest/gtest.h"
 

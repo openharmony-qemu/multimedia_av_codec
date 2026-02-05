@@ -984,7 +984,7 @@ HWTEST_F(Wmv3SwdecFuncNdkTest, VIDEO_WMV3SWDEC_FUNCTION_GRAPH_0010, TestSize.Lev
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
     ASSERT_EQ(4, vDecSample->pixlFormatNum);
-    for(int i = 0; i < vDecSample->pixlFormatNum; i++) {
+    for (int i = 0; i < vDecSample->pixlFormatNum; i++) {
         ASSERT_EQ(vDecSample->pixlFormats[i], pixfmt[i]);
     }
     ASSERT_EQ(FRAMESIZE90, vDecSample->outFrameCount);

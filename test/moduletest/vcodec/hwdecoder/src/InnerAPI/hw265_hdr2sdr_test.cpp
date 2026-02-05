@@ -955,7 +955,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0013, TestSize.Level0
         vDecSample->SF_OUTPUT = true;
         vDecSample->P3_FULL_FLAG = true;
         vDecSample->DEFAULT_FORMAT = static_cast<int32_t>(VideoPixelFormat::NV21);
-        vDecSample->AFTER_EOS_DESTORY_CODEC = false;   
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->CreateByName(g_codecNameSwHEVC));
     }
 }

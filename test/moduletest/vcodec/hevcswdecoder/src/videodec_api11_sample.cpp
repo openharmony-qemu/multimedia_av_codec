@@ -826,8 +826,10 @@ int32_t VDecAPI11Sample::ReadFileNalsFrame(uint32_t index, uint32_t& bufferSize,
     uint32_t startSeparator = ((inputBuffer[0] & START_SEPARATOR) << 24) | ((inputBuffer[1] & START_SEPARATOR) << 16)
         | ((inputBuffer[2] & START_SEPARATOR) << 8) | (inputBuffer[3] & START_SEPARATOR);
     if (startSeparator != START_VALUE) {
-        startSeparator = ((iptMultiStreamsBuf_[0] & START_SEPARATOR) << 16) |
-         ((iptMultiStreamsBuf_[1] & START_SEPARATOR) << 8) | (iptMultiStreamsBuf_[2] & START_SEPARATOR);
+        int32_t SIXTEEN = 16;
+        int32_t EIGHT = 8;
+        startSeparator = ((iptMultiStreamsBuf_[0] & START_SEPARATOR) << SIXTEEN) |
+         ((iptMultiStreamsBuf_[1] & START_SEPARATOR) << EIGHT) | (iptMultiStreamsBuf_[2] & START_SEPARATOR);
         if (startSeparator != START_VALUE) {
             return SIX_RE;
         }
@@ -932,7 +934,7 @@ static int32_t H265DecLoadAU(uint8_t* pStream, uint32_t iStreamLen, uint32_t* pF
     const int bitMask = 1 << 7;
     const int eight = 8;
     *pFrameLen = 0;
-    if (nullptr == pStream || iStreamLen <= frameHeaderSize) {
+    if (pStream == nullptr || iStreamLen <= frameHeaderSize) {
         return -1;
     }
     for (i = 0; i < iStreamLen; i++) {
