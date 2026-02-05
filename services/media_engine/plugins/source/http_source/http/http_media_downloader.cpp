@@ -296,9 +296,9 @@ bool HttpMediaDownloader::HandleBuffering()
     }
     if (!isBuffering_ && isFirstFrameArrived_ && callback_ != nullptr) {
         MEDIA_LOG_I("HTTP CacheData onEvent BUFFERING_END, bufferSize: " PUBLIC_LOG_U64 ", waterLineAbove_: "
-        PUBLIC_LOG_ZU ", isBuffering: " PUBLIC_LOG_D32 ", canWrite: " PUBLIC_LOG_D32 " readOffset: "
-        PUBLIC_LOG_ZU " writeOffset: " PUBLIC_LOG_ZU, GetCurrentBufferSize(), waterLineAbove_, isBuffering_.load(),
-        canWrite_.load(), readOffset_, writeOffset_);
+            PUBLIC_LOG_ZU ", isBuffering: " PUBLIC_LOG_D32 ", canWrite: " PUBLIC_LOG_D32 " readOffset: "
+            PUBLIC_LOG_ZU " writeOffset: " PUBLIC_LOG_ZU, GetCurrentBufferSize(), waterLineAbove_,
+            isBuffering_.load(), canWrite_.load(), readOffset_, writeOffset_);
         UpdateCachedPercent(BufferingInfoType::BUFFERING_END);
         bufferingTime_ = 0;
     }
@@ -381,10 +381,8 @@ bool HttpMediaDownloader::StartBufferingCheck(unsigned int& wantReadLength)
     if (isRingBuffer_ && extraCache_ >= IGNORE_BUFFERING_EXTRA_CACHE_BEYOND_MS) {
         return false;
     }
-    if (GetCurrentBufferSize() >= cacheWaterLine) {
-        return false;
-    }
-    if (GetCurrentBufferSize() >= wantReadLength) {
+    auto currentBufferSize = GetCurrentBufferSize();
+    if (currentBufferSize >= cacheWaterLine || currentBufferSize >= wantReadLength) {
         return false;
     }
     return true;
