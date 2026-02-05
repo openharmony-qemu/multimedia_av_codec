@@ -275,7 +275,8 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_SELECT_BITRATE_AFTER_SWITCH, TestSize
 
     mediaDownloader->Open(testUrl, httpHeader);
     mediaDownloader->GetSeekable();
-
+    int32_t appUid = 1;
+    mediaDownloader->SetAppUid(appUid);
     std::vector<StreamInfo> streams;
     mediaDownloader->GetStreamInfo(streams);
     EXPECT_GE(streams.size(), 0);
