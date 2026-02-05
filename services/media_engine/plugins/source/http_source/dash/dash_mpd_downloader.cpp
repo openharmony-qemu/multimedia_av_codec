@@ -20,7 +20,6 @@
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
-#include <charconv>
 #include "network/network_typs.h"
 #include "dash_mpd_downloader.h"
 #include "dash_mpd_util.h"
@@ -93,7 +92,6 @@ static int64_t ParseStartNumber(const std::string &numberStr)
 {
     int64_t startNum = 1;
     if (numberStr.length() > 0) {
-        int64_t startNumTmp = 1;
         startNum = atoi(numberStr.c_str());
     }
 
