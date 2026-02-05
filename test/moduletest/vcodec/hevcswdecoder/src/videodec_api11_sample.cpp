@@ -32,6 +32,9 @@ namespace {
 constexpr int64_t NANOS_IN_SECOND = 1000000000L;
 constexpr int64_t MICRO_IN_SECOND = 1000000L;
 constexpr int64_t NANOS_IN_MICRO = 1000L;
+constexpr int32_t ZERO = 0;
+constexpr int32_t ONE = 1;
+constexpr int32_t TWO = 2;
 constexpr int32_t THREE = 3;
 constexpr int32_t EIGHT = 8;
 constexpr int32_t TEN = 10;
@@ -828,8 +831,8 @@ int32_t VDecAPI11Sample::ReadFileNalsFrame(uint32_t index, uint32_t& bufferSize,
     if (startSeparator != START_VALUE) {
         int32_t SIXTEEN = 16;
         int32_t EIGHT = 8;
-        startSeparator = ((iptMultiStreamsBuf_[0] & START_SEPARATOR) << SIXTEEN) |
-         ((iptMultiStreamsBuf_[1] & START_SEPARATOR) << EIGHT) | (iptMultiStreamsBuf_[2] & START_SEPARATOR);
+        startSeparator = ((iptMultiStreamsBuf_[ZERO] & START_SEPARATOR) << SIXTEEN) |
+         ((iptMultiStreamsBuf_[ONE] & START_SEPARATOR) << EIGHT) | (iptMultiStreamsBuf_[TWO] & START_SEPARATOR);
         if (startSeparator != START_VALUE) {
             return SIX_RE;
         }
