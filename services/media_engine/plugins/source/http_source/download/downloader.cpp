@@ -800,8 +800,8 @@ void Downloader::HandleRetOK()
     }
     int64_t remaining = 0;
     if (currentRequest_->endPos_ <= 0) {
-        remaining = static_cast<int64_t>(currentRequest_->headerInfo_.fileContentLen) > currentRequest_->startPos_?
-            static_cast<int64_t>(currentRequest_->headerInfo_.fileContentLen) - currentRequest_->startPos_ : 0;
+        remaining = static_cast<int64_t>(currentRequest_->headerInfo_.fileContentLen) -
+            std::min(static_cast<int64_t>(currentRequest_->headerInfo_.fileContentLen), currentRequest_->startPos_);
     } else {
         remaining = currentRequest_->endPos_ - currentRequest_->startPos_ + 1;
     }
