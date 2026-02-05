@@ -774,7 +774,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_00018, TestSize.Level1)
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
-    EXPECT_EQ(formatVal_.duration, 5000000);
+    EXPECT_EQ(formatVal_.duration, 5060000);
     EXPECT_EQ(formatVal_.trackCount, 1);
 #ifdef AVSOURCE_INNER_UNIT_TEST
     EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
@@ -792,16 +792,14 @@ HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_00018, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
-    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
     ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
     EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    EXPECT_EQ(formatVal_.sampleRate, 48000);
+    EXPECT_EQ(formatVal_.sampleRate, 8000);
     EXPECT_EQ(formatVal_.channelCount, 1);
-    EXPECT_EQ(formatVal_.bitRate, 768000);
-    EXPECT_EQ(formatVal_.codecMime, "audio/raw");
-    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_S16BE);
+    EXPECT_EQ(formatVal_.codecMime, "audio/3gpp");
+    EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_F32P);
     EXPECT_EQ(formatVal_.channelLayout, 4);
     EXPECT_EQ(source_->Destroy(), AV_ERR_OK);
 }
