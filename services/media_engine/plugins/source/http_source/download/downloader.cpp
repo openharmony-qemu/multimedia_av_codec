@@ -956,6 +956,7 @@ void Downloader::UpdateRequestSize(Downloader* mediaDownloader)
 
 size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* userParam)
 {
+    FALSE_RETURN_V(userParam != nullptr, 0);
     auto mediaDownloader = static_cast<Downloader *>(userParam);
     size_t dataLen = size * nitems;
     int64_t curLen = mediaDownloader->currentRequest_->realRecvContentLen_;
@@ -1128,6 +1129,7 @@ void Downloader::ToLower(char* str)
 
 size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam)
 {
+    FALSE_RETURN_V(userParam != nullptr, 0);
     MediaAVCodec::AVCodecTrace trace("Downloader::RxHeaderData");
     auto mediaDownloader = static_cast<Downloader *>(userParam);
     HeaderInfo* info = &(mediaDownloader->currentRequest_->headerInfo_);

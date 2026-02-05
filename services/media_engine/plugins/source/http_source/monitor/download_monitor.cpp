@@ -306,7 +306,7 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
 void DownloadMonitor::OnDownloadStatus(std::shared_ptr<Downloader>& downloader,
                                        std::shared_ptr<DownloadRequest>& request)
 {
-    FALSE_RETURN_MSG(downloader != nullptr, "downloader is nullptr.");
+    FALSE_RETURN_MSG(downloader != nullptr && request != nullptr, "downloader is nullptr.");
     if (NeedRetry(request)) {
         if (isNeedClearBuffer_) {
             downloader_->ClearBuffer();
