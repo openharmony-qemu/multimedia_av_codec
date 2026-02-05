@@ -787,9 +787,7 @@ void Downloader::HandlePlayingFinish()
 
 void Downloader::HandleRetOK()
 {
-    if (currentRequest_ == nullptr) {
-        return;
-    }
+    FALSE_RETURN_MSG(currentRequest_ != nullptr, "currentRequest is nullptr");
     if (currentRequest_->retryTimes_ > 0) {
         currentRequest_->retryTimes_ = 0;
     }
