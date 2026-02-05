@@ -400,6 +400,8 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_SEEK_TO_TIME, TestSize.Level1)
 HWTEST_F(DashMediaDownloaderUnitTest, TEST_GET_READ, TestSize.Level1)
 {
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
+    int32_t appUid = 0;
+    mediaDownloader->SetAppUid(appUid);
     mediaDownloader->Init();
     std::string testUrl = MPD_SEGMENT_LIST;
     std::map<std::string, std::string> httpHeader;
@@ -410,7 +412,7 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_GET_READ, TestSize.Level1)
 
     mediaDownloader->Open(testUrl, httpHeader);
     mediaDownloader->GetSeekable();
-    int32_t appUid = 1;
+    appUid = 1;
     mediaDownloader->SetAppUid(appUid);
     std::vector<StreamInfo> streams;
     mediaDownloader->GetStreamInfo(streams);

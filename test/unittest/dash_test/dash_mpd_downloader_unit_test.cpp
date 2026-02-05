@@ -48,6 +48,8 @@ void DashMpdDownloaderUnitTest::SetUpTestCase(void)
     std::cout << "start" << std::endl;
 
     g_mpdDownloader = std::make_shared<DashMpdDownloader>();
+    std::vector<StreamInfo> streams;
+    Status status = g_mpdDownloader->GetStreamInfo(streams);
     g_mpdDownloader->Init();
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                               std::shared_ptr<DownloadRequest>& request) {};
