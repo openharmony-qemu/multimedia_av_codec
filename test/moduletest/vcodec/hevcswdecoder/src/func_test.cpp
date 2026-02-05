@@ -49,7 +49,6 @@ protected:
     const char *ginpDir71 = "/data/test/media/95_71_Rext_gray.h265";
     const char *ginpDirVar = "/data/test/media/95_71_Rext_gray.h265";
     const char *ginpDirVar1080 = "/data/test/media/1920_1080_64_64_var.h265";
-    const char *ginpDirNal1280 = "/data/test/media/1280_720_Main_30_93_443271.h265";
 };
 } // namespace Media
 } // namespace OHOS
@@ -2124,9 +2123,9 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_H265_FLUSH_THREE_0010, TestSize.Level
 {
     if (cap_hevc != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = ginpDirNal1280;
-        vDecSample->DEFAULT_WIDTH = 1280;
-        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->INP_DIR = ginpDir1080;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
         vDecSample->NEED_MD5_COMPAIRE = false;

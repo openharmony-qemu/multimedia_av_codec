@@ -829,8 +829,6 @@ int32_t VDecAPI11Sample::ReadFileNalsFrame(uint32_t index, uint32_t& bufferSize,
     uint32_t startSeparator = ((inputBuffer[0] & START_SEPARATOR) << 24) | ((inputBuffer[1] & START_SEPARATOR) << 16)
         | ((inputBuffer[2] & START_SEPARATOR) << 8) | (inputBuffer[3] & START_SEPARATOR);
     if (startSeparator != START_VALUE) {
-        int32_t SIXTEEN = 16;
-        int32_t EIGHT = 8;
         startSeparator = ((iptMultiStreamsBuf_[ZERO] & START_SEPARATOR) << SIXTEEN) |
          ((iptMultiStreamsBuf_[ONE] & START_SEPARATOR) << EIGHT) | (iptMultiStreamsBuf_[TWO] & START_SEPARATOR);
         if (startSeparator != START_VALUE) {
