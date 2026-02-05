@@ -798,10 +798,8 @@ void Downloader::HandleRetOK()
         PauseLoop(true);
         return;
     }
-
     int64_t remaining = 0;
     if (currentRequest_->endPos_ <= 0) {
-
         remaining = currentRequest_->headerInfo_.fileContentLen > currentRequest_->startPos_?
             static_cast<int64_t>(currentRequest_->headerInfo_.fileContentLen) - currentRequest_->startPos_ : 0;
     } else {
