@@ -89,19 +89,12 @@ std::string DashMpdDownloader::GetContentType()
     return downloader_->GetContentType();
 }
 
-static bool SafeStoI64(const std::string& str, int64_t& result)
-{
-    auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
-    return ec == std::errc() && ptr == str.data() + str.size();
-}
-
 static int64_t ParseStartNumber(const std::string &numberStr)
 {
     int64_t startNum = 1;
     if (numberStr.length() > 0) {
         int64_t startNumTmp = 1;
-        auto ret = SafeStoI64(numberStr, startNumTmp);
-        startNum = ret ? startNumTmp : 0;
+        startNum = atoi(numberStr.c_str());
     }
 
     return startNum;
