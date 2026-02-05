@@ -1552,7 +1552,7 @@ void VDecAPI11Sample::GetVideoSupportedPixelFormats()
     OH_AVCapability *capability = OH_AVCodec_GetCapability(avcodecMimeType, isEncoder);
     OH_AVCapability_GetVideoSupportedNativeBufferFormats(capability, &pixlFormats, &pixlFormatNum);
     std::cout << "pixlFormats:" << *pixlFormats << "pixlFormatNum:" << pixlFormatNum << std::endl;
-    for(int i = 0; i < pixlFormatNum; ++i) {
+    for (int i = 0; i < pixlFormatNum; ++i) {
         std::cout << "pixFormats[" << i << "]: " << *(pixlFormats + i) << std::endl;
     }
     isGetVideoSupportedPixelFormatsNum++;

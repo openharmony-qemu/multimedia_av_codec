@@ -251,19 +251,11 @@ HWTEST_F(HwEncInnerFuncBTest, VIDEO_HW_ENCODE_INNER_PTS_FUNC_001, TestSize.Level
     bool surfaceMode = false;
     vEncInnerSample->LoadTimeStampData(timeStampFilePath,
          inputDir, outputDir, width, height, bitrateMode, bitRate, surfaceMode);
-    char *input = new char[1024];
-    char *output = new char[1024];
-    strncpy(input, inputDir.c_str(), 1023);
-    input[1023] = '\0';
-    strncpy(output, outputDir.c_str(), 1023);
-    output[1023] = '\0';
-    printf("input = %s\n", input);
-    printf("output = %s\n", output);
     vEncInnerSample->enablePTSBasedRateControl = true;
     vEncInnerSample->SETBIRATE = true;
     vEncInnerSample->MODE_ENABLE = true;
-    vEncInnerSample->INP_DIR = input;
-    vEncInnerSample->OUT_DIR = output;
+    vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv12.yuv";
+    vEncInnerSample->OUT_DIR = "/data/test/media/1280_720_nv12.h265";
     vEncInnerSample->DEFAULT_WIDTH = width;
     vEncInnerSample->DEFAULT_HEIGHT = height;
     vEncInnerSample->DEFAULT_BITRATE_MODE = bitrateMode;

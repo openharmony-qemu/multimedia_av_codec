@@ -142,6 +142,7 @@ public:
     void InputFuncSurface();
     void InputFunc();
     void SyncInputFunc();
+    void IdrPush();
     void OutputFunc();
     void SyncOutputFunc();
     void OutputFuncFail();
@@ -162,7 +163,6 @@ public:
     int32_t LoadTimeStampData(std::string filePath, std::string &inputDir,
                               std::string &outputDir, uint32_t &w, uint32_t &h,
                               uint32_t &bitrateMode, uint32_t &bitRate, bool &surfaceMode);
-
     const char *INP_DIR = "/data/test/media/1280_720_nv.yuv";
     const char *OUT_DIR = "/data/test/media/VEncTest.h264";
     const char *WATER_MARK_DIR = "/data/test/media/128_72_0.rgba";

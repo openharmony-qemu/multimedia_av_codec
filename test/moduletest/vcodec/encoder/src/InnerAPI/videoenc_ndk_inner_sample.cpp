@@ -522,22 +522,30 @@ int32_t VEncNdkInnerSample::testApi()
     return AVCS_ERR_OK;
 }
 
-int32_t VEncNdkInnerSample::PushData(std::shared_ptr<AVSharedMemory> buffer,
-     uint32_t index, int32_t &result)
+void VEncNdkInnerSample::IdrPush()
 {
-    int32_t res = -2;
-    uint32_t yuvSize = 0;
+    if (enableForceIDR && (frameCount % IDR_FRAME_INTERVAL == 0)) {
+        Format format;
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_REQUEST_I_FRAME, 1);
+        venc_->SetParameter(format);
+    }
+}
+
+int32_t VEncNdkInnerSample::PushData(std::shared_ptr<AVSharedMemory> buffer, uint32_t index, int32_t &result)
+{
+    int32_t resPush = -2;
+    uint32_t yuvSizePush = 0;
     if (DEFAULT_PIX_FMT == static_cast<int32_t>(VideoPixelFormat::RGBA1010102) ||
         DEFAULT_PIX_FMT == static_cast<int32_t>(VideoPixelFormat::RGBA)) {
-        yuvSize = DEFAULT_WIDTH * DEFAULT_HEIGHT * RGBA_SIZE;
+        yuvSizePush = DEFAULT_WIDTH * DEFAULT_HEIGHT * RGBA_SIZE;
     } else {
-        yuvSize = DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE / TWO;
+        yuvSizePush = DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE / TWO;
     }
     uint8_t *fileBuffer = buffer->GetBase();
     if (fileBuffer == nullptr) {
         return -1;
     }
-    (void)inFile_->read((char *)fileBuffer, yuvSize);
+    (void)inFile_->read((char *)fileBuffer, yuvSizePush);
 
     if (repeatRun && inFile_->eof()) {
         inFile_->clear();
@@ -545,7 +553,6 @@ int32_t VEncNdkInnerSample::PushData(std::shared_ptr<AVSharedMemory> buffer,
         encodeCount++;
         return -1;
     }
-
     if (inFile_->eof()) {
         SetEOS(index);
         return 0;
@@ -557,25 +564,22 @@ int32_t VEncNdkInnerSample::PushData(std::shared_ptr<AVSharedMemory> buffer,
         info.presentationTimeUs = timeList[frameIndex];
     }
     frameIndex++;
-    info.size = yuvSize;
+    info.size = yuvSizePush;
     info.offset = 0;
     AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
     int32_t size = buffer->GetSize();
-    if (size < (int32_t)yuvSize) {
+    if (size < (int32_t)yuvSizePush) {
         return -1;
     }
-    if (enableForceIDR && (frameCount % IDR_FRAME_INTERVAL == 0)) {
-        Format format;
-        format.PutIntValue(MediaDescriptionKey::MD_KEY_REQUEST_I_FRAME, 1);
-        venc_->SetParameter(format);
-    }
+    IdrPush();
     result = venc_->QueueInputBuffer(index, info, flag);
     if (enbleSyncMode == 0) {
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inIdxQueue_.pop();
         signal_->inBufferQueue_.pop();
     }
-    return res;
+
+    return resPush;
 }
 
 int32_t VEncNdkInnerSample::SyncPushData(std::shared_ptr<AVBuffer> buffer, uint32_t index, int32_t &result)

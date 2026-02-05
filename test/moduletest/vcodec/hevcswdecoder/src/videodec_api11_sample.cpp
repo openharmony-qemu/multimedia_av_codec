@@ -791,7 +791,7 @@ int32_t VDecAPI11Sample::ReadFileNalsFrame(uint32_t index, uint32_t& bufferSize,
     const int READ_BAD_ERROR = -5;
     const int READ_FAIL_ERROR = -4;
     const int SEEK_FAILYRE = -3;
-    const int SIX_RE = -6
+    const int SIX_RE = -6;
     if (iptMultiStreamsBuf_ == nullptr || inFile_ == nullptr) {
         return -1;
     }
@@ -821,14 +821,14 @@ int32_t VDecAPI11Sample::ReadFileNalsFrame(uint32_t index, uint32_t& bufferSize,
             return READ_FAIL_ERROR;
         }
     }
-    const uint32_t START_VALYE = 1;
-    const uint32_t START_SEPARATOR = 0xFF
+    const uint32_t START_VALUE = 1;
+    const uint32_t START_SEPARATOR = 0xFF;
     uint32_t startSeparator = ((inputBuffer[0] & START_SEPARATOR) << 24) | ((inputBuffer[1] & START_SEPARATOR) << 16)
         | ((inputBuffer[2] & START_SEPARATOR) << 8) | (inputBuffer[3] & START_SEPARATOR);
-    if (startSeparator != START_VALYE) {
+    if (startSeparator != START_VALUE) {
         startSeparator = ((iptMultiStreamsBuf_[0] & START_SEPARATOR) << 16) |
          ((iptMultiStreamsBuf_[1] & START_SEPARATOR) << 8) | (iptMultiStreamsBuf_[2] & START_SEPARATOR);
-        if (startSeparator != START_VALYE) {
+        if (startSeparator != START_VALUE) {
             return SIX_RE;
         }
     }
@@ -928,11 +928,11 @@ static int32_t H265DecLoadAU(uint8_t* pStream, uint32_t iStreamLen, uint32_t* pF
     uint32_t i;
     uint32_t state = 0xffffffff;
     bool bFrameStartFound = false;
-    const int FRAME_HEADER_SIZE = 4;
-    const int BIT_MASK = 1 << 7;
-    const int EIGHT = 8;
+    const int frameHeaderSize = 4;
+    const int bitMask = 1 << 7;
+    const int eight = 8;
     *pFrameLen = 0;
-    if (NULL == pStream || iStreamLen <= FRAME_HEADER_SIZE) {
+    if (nullptr == pStream || iStreamLen <= frameHeaderSize) {
         return -1;
     }
     for (i = 0; i < iStreamLen; i++) {
@@ -940,14 +940,14 @@ static int32_t H265DecLoadAU(uint8_t* pStream, uint32_t iStreamLen, uint32_t* pF
         if (maskedState >= 0x100 && maskedState <= 0x13E) {
             if (!bFrameStartFound) {
                 bFrameStartFound = true;
-                state = (state << EIGHT) | pStream[i];
+                state = (state << eight) | pStream[i];
                 continue;
             }
-            if ((pStream[i+1] & BIT_MASK) == BIT_MASK) {
-                *pFrameLen = i - FRAME_HEADER_SIZE;
+            if ((pStream[i + 1] & bitMask) == bitMask) {
+                *pFrameLen = i - frameHeaderSize;
                 return 0;
-            }            
-            state = (state << EIGHT) | pStream[i];
+            }
+            state = (state << eight) | pStream[i];
             continue;
         }
         if (maskedState == 0x140 || maskedState == 0x142 ||
@@ -956,11 +956,11 @@ static int32_t H265DecLoadAU(uint8_t* pStream, uint32_t iStreamLen, uint32_t* pF
             if (!bFrameStartFound) {
                 bFrameStartFound = true;
             } else {
-                *pFrameLen = i - FRAME_HEADER_SIZE;
+                *pFrameLen = i - frameHeaderSize;
                 return 0;
             }
         }
-        state = (state << EIGHT) | pStream[i];
+        state = (state << eight) | pStream[i];
     }
     *pFrameLen = i;
     return (bFrameStartFound && iStreamLen == i) ? 0 : -1;
@@ -1582,11 +1582,13 @@ void VDecAPI11Sample::SwitchSurfaceGetTransform()
 
 int32_t VDecAPI11Sample::InitReadFileNals()
 {
+    const int MAIN_NAL_NUM = 0;
+    const int MAX_NAL_NUM = 4;
     if (INPUT_STREAM_TYPE != Input_Stream_Type_000001) {
         return 0;
     }
 
-    if (INPUT_NAL_NUM == 0 || INPUT_NAL_NUM >=4) {
+    if (INPUT_NAL_NUM == MAIN_NAL_NUM || INPUT_NAL_NUM >= MAX_NAL_NUM) {
         std::cout << "input NAL num error" << std::endl;
         return 1;
     }
