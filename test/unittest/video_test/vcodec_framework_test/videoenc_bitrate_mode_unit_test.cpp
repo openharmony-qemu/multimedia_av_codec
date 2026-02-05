@@ -79,22 +79,25 @@ void TEST_SUIT::IsBFrameSupported(int32_t param)
     std::string codecName = "";
     std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
     CapabilityData *capabilityData = nullptr;
-    if (param == CodecMimeType::VIDEO_AVC) {
-        capabilityData = codecCapability->GetCapability(CodecMimeType::VIDEO_AVC.data(), true,
-                                                        AVCodecCategory::AVCODEC_HARDWARE);
-    } else if (param == CodecMimeType::VIDEO_HEVC) {
-        capabilityData = codecCapability->GetCapability(CodecMimeType::VIDEO_HEVC.data(), true,
-                                                        AVCodecCategory::AVCODEC_HARDWARE);
-    } else {
-        capabilityData = codecCapability->GetCapability(CodecMimeType::VIDEO_AVC.data(), true,
-                                                        AVCodecCategory::AVCODEC_HARDWARE);
-    }
+    switch (param) {
+        case VCodecTestCode::HW_AVC:
+            capabilityData = codecCapability->GetCapability(CodecMimeType::VIDEO_AVC.data(), true,
+                                                            AVCodecCategory::AVCODEC_HARDWARE);
+            break;
+        case VCodecTestCode::HW_HEVC:
+            capabilityData = codecCapability->GetCapability(CodecMimeType::VIDEO_HEVC.data(), true,
+                                                            AVCodecCategory::AVCODEC_HARDWARE);
+            break;
+        default:
+            capabilityData = codecCapability->GetCapability(CodecMimeType::VIDEO_AVC.data(), true,
+                                                            AVCodecCategory::AVCODEC_HARDWARE);
+            break;
+        }
 
     if ((!capabilityData ||
          !capabilityData->featuresMap.count(static_cast<int32_t>(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME)))) {
-        GTEST_SKIP() << "Unsupport B Frame!";
+        GTEST_SKIP() << "capabilityData is nullptr or unsupport b frame!";
     }
-
 }
 
 void TEST_SUIT::SetUp(void)
