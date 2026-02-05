@@ -83,10 +83,17 @@ public:
     void ClearCaches(bool cleanExpiredOnly = true)
     {
         std::lock_guard<std::shared_mutex> lock(mutex_);
-        auto [begin, end] = cleanExpiredOnly ?
-            std::equal_range(caches_.begin(), caches_.end(), [](const auto &a) { return a.second.expired(); }) :
-            std::make_pair(caches_.begin(), caches_.end());
-        caches_.erase(begin, end);
+        if (cleanExpiredOnly) {
+            for (auto it = caches_.begin(); it != caches_.end();) {
+            if (it->second.expired()) {
+                it = caches_.erase(it);
+            } else {
+                ++it;
+            }
+            }
+        } else {
+            caches_.clear();
+        }
     }
 
 private:
