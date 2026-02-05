@@ -34,6 +34,7 @@ public:
     MOCK_METHOD1(UnselectTrack, Status(uint32_t));
     MOCK_METHOD2(ReadSample, Status(uint32_t, std::shared_ptr<AVBuffer>));
     MOCK_METHOD3(ReadSample, Status(uint32_t, std::shared_ptr<AVBuffer>, uint32_t));
+    MOCK_METHOD3(ReadSampleZeroCopy, Status(uint32_t, std::shared_ptr<AVBuffer>, uint32_t));
     MOCK_METHOD2(GetNextSampleSize, Status(uint32_t, int32_t&));
     MOCK_METHOD3(GetNextSampleSize, Status(uint32_t, int32_t&, uint32_t));
     MOCK_METHOD4(SeekTo, Status(int32_t, int64_t, SeekMode, int64_t&));

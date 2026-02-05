@@ -1146,19 +1146,17 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
     return ret;
 }
 
-Status FFmpegDemuxerPlugin::SetEosSample(std::shared_ptr<AVBuffer> sample)
+Status FFmpegDemuxerPlugin::SetEosSample(std::shared_ptr<AVBuffer> sample, bool replaceMemory)
 {
     MEDIA_LOG_D("In");
-    // 0 mean sync read, 1 mean async read
-    // sync read (0) need check memory_, async read (1) don't need check memory_
-    bool isAsyncRead = (readModeMap_.find(1) != readModeMap_.end() && readModeMap_[1] == 1);
-    if (!isAsyncRead) {
-        FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_ != nullptr, Status::ERROR_INVALID_PARAMETER,
-            "AVBuffer or memory is nullptr");
+    FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_INVALID_PARAMETER, "AVBuffer is nullptr");
+    if (!replaceMemory) {
+        FALSE_RETURN_V_MSG_E(sample->memory_ != nullptr, Status::ERROR_INVALID_PARAMETER,
+            "AVBuffer memory is nullptr");
     }
     sample->pts_ = 0;
     sample->flag_ = (uint32_t)(AVBufferFlag::EOS);
-    if (isAsyncRead) {
+    if (replaceMemory) {
         auto avPacketWrapper = std::make_shared<AVPacketWrapper>();
         FALSE_RETURN_V_MSG_E(avPacketWrapper != nullptr, Status::ERROR_INVALID_OPERATION, "Create pktWrapper failed");
         auto pkt = avPacketWrapper->GetAVPacket();
@@ -2861,7 +2859,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     auto samplePacket = cacheQueue_.Front(trackId);
     FALSE_RETURN_V_MSG_E(samplePacket != nullptr, Status::ERROR_NULL_POINTER, "Cache packet is nullptr");
     if (samplePacket->isEOS) {
-        ret = SetEosSample(sample);
+        ret = SetEosSample(sample, false);
         if (ret == Status::OK) {
             DumpPacketInfo(trackId, Stage::FILE_END);
             cacheQueue_.Pop(trackId);
