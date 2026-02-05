@@ -857,7 +857,6 @@ void DashMpdDownloader::DoOpen(const std::string& url, int64_t startRange, int64
 uint32_t DashMpdDownloader::SaveData(uint8_t* data, uint32_t len, bool notBlock)
 {
     MEDIA_LOG_D("SaveData:size=%{public}u len=%{public}u", (unsigned int)downloadContent_.size(), len);
-    
     downloadContent_.append(reinterpret_cast<const char*>(data), len);
     return len;
 }
