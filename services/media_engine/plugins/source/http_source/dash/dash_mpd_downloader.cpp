@@ -36,6 +36,7 @@ constexpr size_t RETRY_TIMES = 15000;
 constexpr unsigned int SLEEP_TIME = 1;
 constexpr int32_t MPD_HTTP_TIME_OUT_MS = 5 * 1000;
 constexpr unsigned int SEGMENT_DURATION_DELTA = 100; // ms
+constexpr int32_t DECIMAL = 10;
 
 DashMpdDownloader::DashMpdDownloader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
 {
@@ -88,7 +89,7 @@ std::string DashMpdDownloader::GetContentType()
     return downloader_->GetContentType();
 }
 
-bool SafeStringToInt(const std::string& str, int& result, int base)
+static bool SafeStringToInt(const std::string& str, int& result, int base)
 {
     if (str.empty()) {
         return false;
@@ -115,9 +116,9 @@ static int64_t ParseStartNumber(const std::string &numberStr)
 {
     int64_t startNum = 1;
     if (numberStr.length() > 0) {
-        auto ret = SafeStringToInt(numberStr, startNum, DECMA);
+        auto ret = SafeStringToInt(numberStr, startNum, DECIMAL);
         if (ret == false) {
-            startNum = 1;
+            startNum = 0;
         }
     }
 
@@ -874,11 +875,8 @@ void DashMpdDownloader::DoOpen(const std::string& url, int64_t startRange, int64
 uint32_t DashMpdDownloader::SaveData(uint8_t* data, uint32_t len, bool notBlock)
 {
     MEDIA_LOG_D("SaveData:size=%{public}u len=%{public}u", (unsigned int)downloadContent_.size(), len);
-    if (data == nullptr) {
-        downloadContent_.append(nullptr, len);
-    } else {
-        downloadContent_.append(reinterpret_cast<const char*>(data), len);
-    }
+    
+    downloadContent_.append(reinterpret_cast<const char*>(data), len);
     return len;
 }
 
