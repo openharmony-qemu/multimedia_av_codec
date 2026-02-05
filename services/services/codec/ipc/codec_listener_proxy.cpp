@@ -85,11 +85,11 @@ public:
         std::lock_guard<std::shared_mutex> lock(mutex_);
         if (cleanExpiredOnly) {
             for (auto it = caches_.begin(); it != caches_.end();) {
-            if (it->second.expired()) {
-                it = caches_.erase(it);
-            } else {
-                ++it;
-            }
+                if (it->second.expired()) {
+                    it = caches_.erase(it);
+                } else {
+                    ++it;
+                }
             }
         } else {
             caches_.clear();
