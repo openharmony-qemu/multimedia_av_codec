@@ -20,6 +20,7 @@
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
+#include <charconv>
 #include "network/network_typs.h"
 #include "dash_mpd_downloader.h"
 #include "dash_mpd_util.h"
