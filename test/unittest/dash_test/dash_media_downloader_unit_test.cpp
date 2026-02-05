@@ -272,7 +272,6 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_SELECT_BITRATE_AFTER_SWITCH, TestSize
         std::shared_ptr<DownloadRequest>& request) {
     };
     mediaDownloader->SetStatusCallback(statusCallback);
-
     mediaDownloader->Open(testUrl, httpHeader);
     mediaDownloader->GetSeekable();
     int32_t appUid = 1;
@@ -280,7 +279,6 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_SELECT_BITRATE_AFTER_SWITCH, TestSize
     std::vector<StreamInfo> streams;
     mediaDownloader->GetStreamInfo(streams);
     EXPECT_GE(streams.size(), 0);
-
     int32_t usingAudioStreamId = -1;
     int32_t switchingAudioStreamId = -1;
     int32_t usingVideoStreamId = -1;
@@ -310,10 +308,8 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_SELECT_BITRATE_AFTER_SWITCH, TestSize
             continue;
         }
     }
-
     Status status = mediaDownloader->SelectStream(switchingAudioStreamId);
     bool result = mediaDownloader->SelectBitRate(switchingBitrate);
-
     usleep(WAIT_FOR_SIDX_TIME);
     mediaDownloader->Close(false);
     mediaDownloader = nullptr;
