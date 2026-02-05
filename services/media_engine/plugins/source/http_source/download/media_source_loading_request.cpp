@@ -163,7 +163,7 @@ int64_t MediaSourceLoaderCombinations::Open(const std::string &url, const std::m
     MEDIA_LOG_I("0x%{public}06" PRIXPTR "MediaSourceLoaderCombinations Open, uuid: " PUBLIC_LOG_D64,
         FAKE_POINTER(this), uuid);
     auto ret = request_->Open(uuid, client);
-    return ret == -1? 0 : uuid;
+    return ret == -1 ? 0 : uuid;
 }
 
 int32_t MediaSourceLoaderCombinations::Close(int64_t uuid)
