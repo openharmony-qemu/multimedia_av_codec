@@ -36,7 +36,6 @@ constexpr size_t RETRY_TIMES = 15000;
 constexpr unsigned int SLEEP_TIME = 1;
 constexpr int32_t MPD_HTTP_TIME_OUT_MS = 5 * 1000;
 constexpr unsigned int SEGMENT_DURATION_DELTA = 100; // ms
-constexpr int32_t DECIMAL = 10;
 
 DashMpdDownloader::DashMpdDownloader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
 {
@@ -89,34 +88,17 @@ std::string DashMpdDownloader::GetContentType()
     return downloader_->GetContentType();
 }
 
-static bool SafeStringToInt(const std::string& str, int64_t& result, int base)
+static bool SafeStoI64(const std::string& str, int64_t& result)
 {
-    if (str.empty()) {
-        return false;
-    }
-    char* endptr;
-    errno = 0;
-    int64_t num = std::strtol(str.c_str(), &endptr, base);
-
-    if (errno == ERANGE) {
-        return false;
-    }
-    if (*endptr != '\0') {
-        return false;
-    }
-
-    if (num < MIN_INT64 || num > MAX_INT64) {
-        return false;
-    }
-    result = num;
-    return true;
+    auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
+    return ec == std::errc() && ptr == str.data() + str.size();
 }
 
 static int64_t ParseStartNumber(const std::string &numberStr)
 {
     int64_t startNum = 1;
     if (numberStr.length() > 0) {
-        auto ret = SafeStringToInt(numberStr, startNum, DECIMAL);
+        auto ret = SafeStoI64(numberStr, startNum);
         if (ret == false) {
             startNum = 0;
         }
