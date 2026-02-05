@@ -101,7 +101,7 @@ static int64_t ParseStartNumber(const std::string &numberStr)
     if (numberStr.length() > 0) {
         int64_t startNumTmp = 1;
         auto ret = SafeStoI64(numberStr, startNumTmp);
-        startNum = ret? startNumTmp : 0;
+        startNum = ret ? startNumTmp : 0;
     }
 
     return startNum;
