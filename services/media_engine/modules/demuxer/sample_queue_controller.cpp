@@ -64,7 +64,8 @@ bool SampleQueueController::ShouldStartConsume(int32_t trackId, std::shared_ptr<
     auto cacheDuration = sampleQueue->NewGetCacheDuration();
     if (cacheDuration < GetBufferingDuration() &&
         sampleQueue->GetFilledBufferSize() < SampleQueue::DEFAULT_SAMPLE_QUEUE_SIZE - 1 &&
-        (isFirstArrived_[trackId] ||cacheDuration < static_cast<uint64_t>(FIRST_START_CONSUME_WATER_LOOP)) && !inPreroll) {
+        (isFirstArrived_[trackId] ||cacheDuration < static_cast<uint64_t>(FIRST_START_CONSUME_WATER_LOOP)) &&
+            !inPreroll) {
         return false;
     }
     DisableFirstBufferingDuration();
