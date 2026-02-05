@@ -146,7 +146,7 @@ struct DemuxerPlugin : public PluginBase {
      *  @retval ERROR_UNKNOWN: Call av_read_frame failed.
      *  @retval ERROR_NULL_POINTER: Call av_packet_alloc failed or sample->memory_ is nullptr.
      */
-        virtual Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout) = 0;
+    virtual Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout) = 0;
 
     /**
     * @brief Reads data frames within @param timeout milliseconds
