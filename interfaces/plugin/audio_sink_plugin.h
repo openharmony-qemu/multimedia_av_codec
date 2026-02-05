@@ -298,6 +298,16 @@ struct AudioSinkPlugin : public Plugins::PluginBase {
         return Status::OK;
     }
 
+    virtual void SetResponseCallback(bool isNeedResponseCallback)
+    {
+        (void)isNeedResponseCallback;
+    }
+
+    virtual bool IsNeedResponseCallback()
+    {
+        return true;
+    }
+
     virtual void SetAudioPassFlag(bool isAudioPass)
     {
         (void)isAudioPass;

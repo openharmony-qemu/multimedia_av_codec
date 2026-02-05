@@ -119,6 +119,7 @@ private:
     Status SetCodecExtradata(const std::shared_ptr<Meta> &format);
     void CheckFormatChange();
     void SetSkipSamplesInfo(const std::shared_ptr<AVBuffer> &inputBuffer);
+    bool isEnableSkipSamples_ = false;
 };
 } // namespace Ffmpeg
 } // namespace Plugins

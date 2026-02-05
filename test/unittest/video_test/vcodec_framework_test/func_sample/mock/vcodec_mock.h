@@ -163,6 +163,9 @@ enum VCodecTestCode : int32_t {
     SW_MPEG1,
     SW_DVVIDEO,
     SW_RAWVIDEO,
+    SW_CINEPAK,
+    SW_VP8,
+    SW_VP9,
 };
 
 enum VCodecPixelFormat : int32_t {
@@ -190,7 +193,10 @@ const std::map<int32_t, std::string> decSourcePathMap_ = {{HW_AVC, "/data/test/m
                                                           {SW_MPEG1, "/data/test/media/test.mpeg1"},
                                                           {SW_DVVIDEO,
                                                            "/data/test/media/DVCPAL_720x576_25_411_dvpp.dvvideo"},
-                                                          {SW_RAWVIDEO, "/data/test/media/rawvideo.dat"}};
+                                                          {SW_RAWVIDEO, "/data/test/media/rawvideo.dat"},
+                                                          {SW_CINEPAK, "/data/test/media/cinepak.mkv"},
+                                                          {SW_VP8, "/data/test/media/test.vp8"},
+                                                          {SW_VP9, "/data/test/media/test.vp9"}};
 
 constexpr uint32_t DEFAULT_BITRATE = 12000;
 

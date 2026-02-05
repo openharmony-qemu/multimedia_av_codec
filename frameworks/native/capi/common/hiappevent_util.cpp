@@ -86,13 +86,12 @@ void AppEventReporter::UploadRecordData(const std::string &apiName) const
     event.AddParam("api_name", apiName);
     event.AddParam("sdk_name", std::string("AVCodecKit"));
     event.AddParam("call_times", static_cast<int32_t>(errorCode_.size()));
-    
     int32_t successTime = 0;
     for (const auto &errCode : errorCode_) {
         if (errCode == 0) {
             successTime++;
         } else {
-            std::string err = OHAVErrCodeToString(AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(errCode)));
+            std::string err = std::to_string(errCode);
             errType2Num[err] = !errType2Num[err] ? 1 : errType2Num[err] + 1;
         }
     }

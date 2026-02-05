@@ -101,6 +101,13 @@ private:
     int32_t CreateMpeg1Reader();
     int32_t CreateDvvideoReader();
     int32_t CreateRawvideoReader();
+#ifdef SUPPORT_CODEC_VP8
+    int32_t CreateVp8Reader();
+#endif
+#ifdef SUPPORT_CODEC_VP9
+    int32_t CreateVp9Reader();
+#endif
+    int32_t CreateCinepakReader();
     int32_t CreateReader(const std::string& inPath);
     bool CompareHdrInfo(std::shared_ptr<AVBufferMock> buffer);
     bool CompareMetadata(std::shared_ptr<std::ifstream> file, int32_t size,
@@ -144,6 +151,13 @@ private:
     std::shared_ptr<Mpeg1Reader> mpeg1Reader_ = nullptr;
     std::shared_ptr<DvvideoReader> dvvideoReader_ = nullptr;
     std::shared_ptr<RawvideoReader> rawvideoReader_ = nullptr;
+    std::shared_ptr<CinepakReader> cinepakReader_ = nullptr;
+#ifdef SUPPORT_CODEC_VP8
+    std::shared_ptr<Vp8Reader> vp8Reader_ = nullptr;
+#endif
+#ifdef SUPPORT_CODEC_VP9
+    std::shared_ptr<Vp9Reader> vp9Reader_ = nullptr;
+#endif
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -32,7 +32,21 @@ const map<string, string> g_httpHeader = {
     {"User-Agent", "ABC"},
     {"Referer", "DEF"},
 };
+constexpr int BUFF_READ_SIZE = 5 * 1024 * 1024;
+constexpr int BUFF_SIZE_MAX = 20000000;
+constexpr int BUFF_SIZE_MIN = 50000;
+unsigned char g_buffRead[BUFF_READ_SIZE];
 
+Status ReadData(std::shared_ptr<HlsMediaDownloader> &hlsMediaDownloader, int32_t streamID, uint32_t readLength,
+    bool isEos)
+{
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = streamID;
+    readDataInfo.wantReadLength_ = (readLength == 0 || readLength > sizeof(g_buffRead))
+        ? sizeof(g_buffRead) : readLength;
+    readDataInfo.isEos_ = isEos;
+    return hlsMediaDownloader->Read(g_buffRead, readDataInfo);
+}
 
 bool StartFuzzTest(FuzzedDataProvider *fdp, size_t size)
 {
@@ -98,7 +112,10 @@ bool StartFuzzTest1(FuzzedDataProvider *fdp, size_t size)
     int32_t streamID = fdp->ConsumeIntegral<uint32_t>();
     hlsMediaDownloader->SetCurrentBitRate(bitRate, streamID);
     hlsMediaDownloader->SelectBitRate(bitRate);
-
+    uint32_t readLen = fdp->ConsumeIntegralInRange<uint32_t>(10, BUFF_READ_SIZE);
+    ReadData(hlsMediaDownloader, streamID, readLen, fdp->ConsumeBool());
+    hlsMediaDownloader->SetInitialBufferSize(0, BUFF_SIZE_MIN); // buf size 50000B
+    hlsMediaDownloader->SetInitialBufferSize(0, BUFF_SIZE_MAX);
     cout << " Run in size " << size << ", appUid " << appUid << ", isInterrupt " << isInterruptNeeded
     << ", bitRate " << bitRate << ", streamID " << streamID << ", duration " << duration << endl;
     this_thread::sleep_for(chrono::seconds(1));
@@ -109,7 +126,6 @@ bool StartFuzzTest1(FuzzedDataProvider *fdp, size_t size)
 
     return true;
 }
-
 } // namespace OHOS::Media::Plugins::HttpPlugin
 
 /* Fuzzer entry point */

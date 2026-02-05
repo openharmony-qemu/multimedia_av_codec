@@ -40,7 +40,7 @@ DashSegListNode::~DashSegListNode()
 
 void DashSegListNode::ParseNode(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement)
 {
-    if (xmlParser != nullptr) {
+    if (xmlParser != nullptr && rootElement != nullptr) {
         for (uint32_t index = 0; index < DASH_SEG_LIST_ATTR_NUM; index++) {
             if (static_cast<int32_t>(XmlBaseRtnValue::XML_BASE_OK) ==
                 xmlParser->GetAttribute(rootElement, segListAttr_[index].attr_, segListAttr_[index].val_)) {

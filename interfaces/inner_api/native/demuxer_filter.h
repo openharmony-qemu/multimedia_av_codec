@@ -18,6 +18,7 @@
 
 #include <string>
 #include <unordered_set>
+#include <utility>
 #include "common/seek_callback.h"
 #include "filter/filter.h"
 #include "demuxer/media_demuxer.h"
@@ -111,6 +112,7 @@ public:
     // drm callback
     void OnDrmInfoUpdated(const std::multimap<std::string, std::vector<uint8_t>> &drmInfo);
     bool GetDuration(int64_t& durationMs);
+    bool GetStartInfo(std::pair<int64_t, bool>& startInfo);
     Status OptimizeDecodeSlow(bool isDecodeOptimizationEnabled);
     Status SetSpeed(float speed);
     void SetDumpFlag(bool isdump);

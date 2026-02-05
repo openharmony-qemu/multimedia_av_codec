@@ -147,7 +147,8 @@ void CacheMediaChunkBufferImpl::UpdateAccessPos(FragmentIterator& fragmentPos, C
         } else {
             fragmentPos->accessPos = preChunkPos;
         }
-    } else if (*chunkPos != nullptr && (*chunkPos)->offset == offsetChunk) {
+    } else if (chunkPos != fragmentPos->chunks.end() && *chunkPos != nullptr &&
+        (*chunkPos)->offset == offsetChunk) {
             fragmentPos->accessPos = chunkPos;
     } else {
         fragmentPos->accessPos = std::prev(chunkPos);
@@ -290,10 +291,7 @@ bool CacheMediaChunkBufferImpl::WriteInPlace(FragmentIterator& fragmentPos, uint
 
 bool CacheMediaChunkBufferImpl::WriteMergerPre(uint64_t offset, size_t writeSize, FragmentIterator& nextFragmentPos)
 {
-    if (writePos_ == fragmentCacheBuffer_.end()) {
-        MEDIA_LOG_W("writePos is invalid");
-        return false;
-    }
+    FALSE_RETURN_V_MSG_E(writePos_ != fragmentCacheBuffer_.end(), false, "writePos is invalid");
     nextFragmentPos = std::next(writePos_);
     bool isLoop = true;
     while (isLoop) {
@@ -332,6 +330,7 @@ bool CacheMediaChunkBufferImpl::WriteMergerPre(uint64_t offset, size_t writeSize
             break;
         } else {
             freeChunks_.splice(freeChunks_.end(), nextFragmentPos->chunks);
+            FALSE_RETURN_V_MSG_E(writePos_ != fragmentCacheBuffer_.end(), false, "Loop writePos is invalid");
             writePos_->totalReadSize += nextFragmentPos->totalReadSize;
             nextFragmentPos->totalReadSize = 0; // avoid total size sub, chunk num reduce.
             nextFragmentPos = EraseFragmentCache(nextFragmentPos);
@@ -1175,6 +1174,28 @@ bool CacheMediaChunkBufferImpl::ClearFragmentBeforeOffset(uint64_t offset)
     return res;
 }
 
+bool CacheMediaChunkBufferImpl::ClearFragmentAfterOffset(uint64_t offset)
+{
+    std::lock_guard lock(mutex_);
+    bool res = false;
+    for (auto iter = fragmentCacheBuffer_.begin(); iter != fragmentCacheBuffer_.end();) {
+        if (iter->offsetBegin + static_cast<uint64_t>(iter->dataLength) <= offset) {
+            iter++;
+            continue;
+        }
+        if (iter->offsetBegin >= offset) {
+            MEDIA_LOG_D("ClearFragmentAfterOffset clear fragment, offsetBegin: " PUBLIC_LOG_U64 " offsetEnd "
+                PUBLIC_LOG_U64, iter->offsetBegin, iter->offsetBegin + iter->dataLength);
+            freeChunks_.splice(freeChunks_.end(), iter->chunks);
+            iter = EraseFragmentCache(iter);
+            res = true;
+            continue;
+        }
+        iter++;
+    }
+    return res;
+}
+
 // Release all chunks of read fragment between minReadOffset and maxReadOffset.
 bool CacheMediaChunkBufferImpl::ClearMiddleReadFragment(uint64_t minOffset, uint64_t maxOffset)
 {
@@ -1346,6 +1367,11 @@ uint64_t CacheMediaChunkBuffer::GetFreeSize()
 bool CacheMediaChunkBuffer::ClearFragmentBeforeOffset(uint64_t offset)
 {
     return impl_->ClearFragmentBeforeOffset(offset);
+}
+
+bool CacheMediaChunkBuffer::ClearFragmentAfterOffset(uint64_t offset)
+{
+    return impl_->ClearFragmentAfterOffset(offset);
 }
 
 bool CacheMediaChunkBuffer::ClearChunksOfFragment(uint64_t offset)

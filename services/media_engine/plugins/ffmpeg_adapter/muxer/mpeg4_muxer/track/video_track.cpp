@@ -625,6 +625,11 @@ void VideoTrack::DisposeColor()
 void VideoTrack::DisposeCuva()
 {
     // 需要通过buffer或设置获取hdr vivid
+    HevcParser* parser = VideoParser::GetVideoParserPtr<HevcParser>(videoParser_);
+    if (parser != nullptr && parser->IsHdrVivid()) {
+        MEDIA_LOG_I("set cuva hdr (hdr vivid) true by video parser");
+        isCuvaHDR_ = true;
+    }
     if (isCuvaHDR_ && mimeType_.compare(AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_HEVC) == 0) {
         // hvc1
         auto videoBox = BasicBox::GetBoxPtr<VideoBox>(moov_, trackPath_ + ".mdia.minf.stbl.stsd." + codingType_);

@@ -85,7 +85,6 @@ ohos_shared_library("avcodec_hiappevent") {
   sanitize = av_codec_sanitize
   sources =
       [ "$av_codec_root_dir/frameworks/native/capi/common/hiappevent_util.cpp",
-        "$av_codec_root_dir/frameworks/native/common/avcodec_errors.cpp",
       ]
 
   public_configs = [ ":av_codec_capi_header_config" ]
@@ -104,6 +103,7 @@ ohos_shared_library("avcodec_hiappevent") {
 }
 
 ohos_shared_library("native_media_avmuxer") {
+  branch_protector_ret = "pac_ret"
   install_enable = true
   sources =
       [ "$av_codec_root_dir/frameworks/native/capi/avmuxer/native_avmuxer.cpp" ]
@@ -226,6 +226,7 @@ ohos_shared_library("native_media_codecbase") {
 }
 
 ohos_shared_library("native_media_acodec") {
+  branch_protector_ret = "pac_ret"
   install_enable = true
   sources = [
     "$av_codec_root_dir/frameworks/native/capi/avcodec/native_audio_codec.cpp",
@@ -263,6 +264,7 @@ ohos_shared_library("native_media_acodec") {
 }
 
 ohos_shared_library("native_media_adec") {
+  branch_protector_ret = "pac_ret"
   install_enable = true
   sources = [ "$av_codec_root_dir/frameworks/native/capi/avcodec/native_audio_decoder.cpp" ]
 
@@ -289,6 +291,7 @@ ohos_shared_library("native_media_adec") {
 }
 
 ohos_shared_library("native_media_aenc") {
+  branch_protector_ret = "pac_ret"
   install_enable = true
   sources = [ "$av_codec_root_dir/frameworks/native/capi/avcodec/native_audio_encoder.cpp" ]
 

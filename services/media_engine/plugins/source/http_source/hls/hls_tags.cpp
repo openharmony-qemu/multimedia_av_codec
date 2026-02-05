@@ -18,10 +18,21 @@
 #include <stack>
 #include <utility>
 #include "hls_tags.h"
+#include <regex>
+#include <utility>
+#include <unordered_map>
+#include <algorithm>
+#include <cctype>
+#include <iostream>
+
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
+namespace {
+constexpr size_t EXT_X_DEFINE_LEN = 14;
+constexpr size_t MIN_MATCH_GROUPS = 3;
+}
 struct {
     const char* name;
     HlsTag type;
@@ -43,6 +54,7 @@ struct {
     {"ext-x-stream-inf",             HlsTag::EXTXSTREAMINF},
     {"ext-x-i-frame-stream-inf",     HlsTag::EXTXIFRAMESTREAMINF},
     {"ext-x-session-key",            HlsTag::EXTXSESSIONKEY},
+    {"ext-x-skip",                   HlsTag::EXTXSKIP},
     {"extinf",                       HlsTag::EXTINF},
     {"",                             HlsTag::URI}
 };
@@ -332,6 +344,7 @@ std::shared_ptr<Tag> TagFactory::CreateTagByName(const std::string& name, const 
             case HlsTag::EXTXSTART:
             case HlsTag::EXTXSTREAMINF:
             case HlsTag::EXTXIFRAMESTREAMINF:
+            case HlsTag::EXTXSKIP:
                 return std::make_shared<AttributesTag>(g_exttagmapping[i].type, value);
             default:
                 return nullptr;
@@ -410,8 +423,185 @@ static void ParseURI(std::list<std::shared_ptr<Tag>>& entriesList,
     lastTag = nullptr;
 }
 
-std::list<std::shared_ptr<Tag>> ParseEntries(const std::string& s)
+static bool ContainsNonAscii(const std::string& str)
 {
+    return std::any_of(str.begin(), str.end(),
+        [](unsigned char c) {
+            return c > 127;  // ASCII: 0-127
+        });
+}
+ 	 
+static std::pair<std::string, std::string> ParseDefine(const std::string& s,
+    const std::unordered_map<std::string, std::string>& tagMasterMap,
+    const std::unordered_map<std::string, std::string>& tagUriMap)
+{
+    if (s.length() <= EXT_X_DEFINE_LEN) {
+        return std::make_pair("", "");
+    }
+    if (ContainsNonAscii(s)) {
+        return std::make_pair("", "");
+    }
+    std::string content = s.substr(EXT_X_DEFINE_LEN);
+    std::regex combinedRegex(
+        R"(NAME\s*=\s*\"([a-zA-Z0-9-_]+)\"\s*,\s*VALUE\s*=\s*\"([^\"]*)\")"
+        "|"
+        R"(IMPORT\s*=\s*\"([a-zA-Z0-9-_]+)\")"
+        "|"
+        R"(QUERYPARAM\s*=\s*\"([a-zA-Z0-9-_]+)\")"
+    );
+    std::smatch match;
+    if (!std::regex_match(content, match, combinedRegex)) {
+        return std::make_pair("", "");
+    }
+    if (match[1].matched && match[2].matched) { // {1:NAME, 2:VALUE}
+        return std::make_pair(match[1].str(), match[2].str()); // {1:NAME, 2:VALUE}
+    }
+    if (match[3].matched) { // {3:IMPORT}
+        std::string importName = match[3].str(); // {3:IMPORT}
+        auto it = tagMasterMap.find(importName);
+        if (it != tagMasterMap.end()) {
+            return std::make_pair(importName, it->second);
+        }
+    }
+    if (match[4].matched) { // {4:QUERYPARAM}
+        std::string paramName = match[4].str(); // {4:QUERYPARAM}
+        auto it = tagUriMap.find(paramName);
+        if (it != tagUriMap.end()) {
+            return std::make_pair(paramName, it->second);
+        }
+    }
+    return std::make_pair("", "");
+}
+ 	 
+static std::string ReplacePlaceholders(const std::string& s,
+    const std::unordered_map<std::string, std::string>& tagDefineMap)
+{
+    if (s.find("{$") == std::string::npos) {
+        return s;
+    }
+    if (ContainsNonAscii(s)) {
+        return "";
+    }
+    const std::regex pattern(R"(\{\$([a-zA-Z0-9_-]+)\})");
+    std::smatch match;
+    if (!std::regex_search(s, match, pattern)) {
+        return s;
+    }
+    if (tagDefineMap.empty()) {
+        return "";
+    }
+    std::string result;
+    std::string::const_iterator searchStart = s.cbegin();
+    while (std::regex_search(searchStart, s.cend(), match, pattern)) {
+        result.append(searchStart, match[0].first);
+        std::string placeholderName = match[1].str();
+        auto it = tagDefineMap.find(placeholderName);
+        if (it == tagDefineMap.end()) {
+            return "";
+        }
+        result.append(it->second);
+        searchStart = match[0].second;
+    }
+    result.append(searchStart, s.cend());
+    return result;
+}
+ 	 
+static bool IsHexValid(const std::string& hex)
+{
+    if (hex.empty()) {
+        return true;
+    }
+    auto it = std::find_if(hex.begin(), hex.end(),
+        [](char c) {return !std::isxdigit(static_cast<unsigned char>(c));});
+    return it == hex.end();
+}
+
+static void UriInsert(std::string& result, std::string& hex, int base)
+{
+    int resultTmp = 0;
+    bool ret = Attribute::SafeStringToInt(hex, resultTmp, base);
+    if (ret) {
+        result += static_cast<char>(resultTmp);
+    }
+}
+ 	 
+static std::string UriDecode(const std::string& uri)
+{
+    std::string result;
+    result.reserve(uri.size());
+    uint64_t i = 0;
+    while (i < uri.size()) {
+        if (uri[i] == '%' && i + 2 <= uri.size()) { // 2:“%20”
+            std::string hex = uri.substr(i + 1, 2); // 2
+            if (IsHexValid(hex)) {
+                UriInsert(result, hex, 16); // 16:hex
+                i += 3; // 3:“%20”
+            } else {
+                result += uri.substr(i, 3); // 3
+                i += 3; // 3
+            }
+        } else if (uri[i] == '+') {
+            result += ' ';
+            i++;
+        } else {
+            result += uri[i];
+            i++;
+        }
+    }
+    return result;
+}
+ 	 
+static std::unordered_map<std::string, std::string> ExtractPairs(const std::string& decodedQuery)
+{
+    std::unordered_map<std::string, std::string> params;
+    if (decodedQuery.empty()) {
+        return params;
+    }
+    std::size_t start = 0;
+    std::regex paramRegex("^([^&=]+)=([^&]*)$");
+    while (start < decodedQuery.length()) {
+        std::size_t end = decodedQuery.find('&', start);
+        std::string paramPair = (end == std::string::npos) ?
+            decodedQuery.substr(start) : decodedQuery.substr(start, end - start);
+        start = (end == std::string::npos) ? decodedQuery.length() : end + 1;
+        if (ContainsNonAscii(paramPair)) {
+            continue;
+        }
+        std::smatch match;
+        if (!std::regex_match(paramPair, match, paramRegex) || match.size() < MIN_MATCH_GROUPS) {
+            continue;
+        }
+        const std::string& key = match[1].str();
+        if (params.find(key) == params.end()) {
+            params[key] = match[2].str(); // 2, match {{key-vale}, {key}, {value}}
+        }
+    }
+    return params;
+}
+ 	 
+std::unordered_map<std::string, std::string> ParseUriQuery(const std::string& uri)
+{
+    std::unordered_map<std::string, std::string> params;
+    uint64_t queryStart = uri.find('?');
+    if (queryStart == std::string::npos) {
+        return params;
+    }
+    std::string queryString = uri.substr(queryStart + 1);
+    if (ContainsNonAscii(queryString)) {
+        return params;
+    }
+    if (queryString.find('%') != std::string::npos || queryString.find('+') != std::string::npos) {
+        queryString = UriDecode(queryString);
+    }
+    params = ExtractPairs(queryString);
+    return params;
+}
+ 	 
+std::pair<std::list<std::shared_ptr<Tag>>, std::unordered_map<std::string, std::string>>ParseEntries(
+    const std::string& s, const std::unordered_map<std::string, std::string>& tagMasterMap,
+    const std::unordered_map<std::string, std::string>& tagUriMap)
+{
+    std::unordered_map<std::string, std::string> tagDefineMap;
     std::list<std::shared_ptr<Tag>> list;
     std::shared_ptr<Tag> lastTag = nullptr;
     auto lines = Split(s, "\r\n");
@@ -426,17 +616,25 @@ std::list<std::shared_ptr<Tag>> ParseEntries(const std::string& s)
         lines = newLines;
     }
     for (auto line : lines) {
-        if (line[0] == '#') {
-            ParseTag(list, lastTag, line);
-        } else if (!line.empty()) {
-            /* URI */
-            ParseURI(list, lastTag, line);
+        if (line.find("#EXT-X-DEFINE:") != std::string::npos) {
+            auto ret = ParseDefine(line, tagMasterMap, tagUriMap);
+            if (!ret.first.empty()) {
+                tagDefineMap.insert(ret);
+            }
         } else {
-            // drop
-            lastTag = nullptr;
+            auto newLine = ReplacePlaceholders(line, tagDefineMap);
+            if (!newLine.empty() && newLine[0] == '#') {
+                ParseTag(list, lastTag, newLine);
+            } else if (!newLine.empty()) {
+                /* URI */
+                ParseURI(list, lastTag, newLine);
+            } else {
+                // drop
+                lastTag = nullptr;
+            }
         }
     }
-    return list;
+    return {list, tagDefineMap};
 }
 }
 }

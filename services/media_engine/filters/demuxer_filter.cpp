@@ -16,6 +16,7 @@
 #define MEDIA_PIPELINE
 #define HST_LOG_TAG "DemuxerFilter"
 
+#include <utility>
 #include "avcodec_common.h"
 #include "avcodec_trace.h"
 #include "filter/filter_factory.h"
@@ -749,6 +750,8 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
         MEDIA_LOG_W("Get file type failed");
     }
     std::vector<std::shared_ptr<Meta>> trackInfos = GetStreamMetaInfo();
+    FALSE_RETURN_V_MSG_E(trackId >= 0 && trackId < trackInfos.size(), Status::ERROR_INVALID_OPERATION,
+        "trackId invalid");
     std::shared_ptr<Meta> meta = trackInfos[trackId];
     for (MapIt iter = meta->begin(); iter != meta->end(); iter++) {
         MEDIA_LOG_D_SHORT("Link " PUBLIC_LOG_S, iter->first.c_str());
@@ -970,6 +973,12 @@ bool DemuxerFilter::GetDuration(int64_t& durationMs)
 {
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
     return demuxer_->GetDuration(durationMs);
+}
+
+bool DemuxerFilter::GetStartInfo(std::pair<int64_t, bool>& startInfo)
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
+    return demuxer_->GetStartInfo(startInfo);
 }
 
 Status DemuxerFilter::OptimizeDecodeSlow(bool isDecodeOptimizationEnabled)

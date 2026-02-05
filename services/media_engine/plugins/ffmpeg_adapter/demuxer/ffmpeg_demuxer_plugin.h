@@ -320,6 +320,7 @@ private:
     void InitIoContextInDemuxer(const std::shared_ptr<DataSource>& source);
     Status ParserRefInit();
     Status ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId);
+    Status UpdateParserGopId(int32_t iFramePosSize);
     Status SelectProGopId();
     void ParserBoxInfo();
     AVStream *GetVideoStream();
@@ -512,6 +513,16 @@ private:
         TimeoutGuard &timeoutGuard, TimeRange &readRange);
     Status SeekToKeyFrameCheckParam(int64_t seekTime, SeekMode mode,
         int32_t &trackIndex, int64_t &ffTime, AVStream* &avStream);
+
+    struct SeekToFrameByDtsContext {
+        int32_t trackIndex {0};
+        AVStream* avStream {nullptr};
+        int64_t ffDts {AV_NOPTS_VALUE};
+    };
+    Status SeekToFrameByDtsCheckParam(int32_t trackId, int64_t seekTime, SeekMode mode,
+        SeekToFrameByDtsContext &ctx);
+    Status ReadUntilDtsReached(SeekToFrameByDtsContext &ctx, int64_t seekTime,
+        int64_t &realSeekTime, TimeoutGuard &timeoutGuard);
     void ResetAfterSeek(int64_t seekTime, SeekMode mode);
 
     std::unordered_map<int32_t, int32_t> mp4FirstKeyFrameIdx_; // key: track index, value: first key frame index

@@ -80,7 +80,6 @@ ohos_unittest("decoder_filter_unit_test") {
   ]
   sources = decoder_filter_test_sources + [
               "audio_decoder_filter_unit_test.cpp",
-              "metadata_filter_unit_test.cpp",
               "surface_encoder_filter_unit_test.cpp",
               "video_decoder_adapter_unit_test.cpp",
               "video_resize_filter_unit_test.cpp",

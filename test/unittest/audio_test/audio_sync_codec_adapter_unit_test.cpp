@@ -7,10 +7,16 @@
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
 #include "avcodec_trace.h"
+#ifdef SUPPORT_DRM
+#include "mock_imediakeysessionServices.h"
+#endif
 
 using namespace testing;
 using namespace testing::ext;
 using namespace OHOS::MediaAVCodec;
+#ifdef SUPPORT_DRM
+using namespace OHOS::DrmStandard;
+#endif
 
 namespace {
 constexpr int32_t DEFAULT_BUFFER_SIZE = 4;
@@ -102,7 +108,13 @@ protected:
     sptr<MockAVBufferQueueProducer> mockBufferQueueProducer_;
     std::shared_ptr<MockAVBufferQueue> mockBufferQueue_;
 };
-
+#ifdef SUPPORT_DRM
+class DrmAvcodecAudioCodecImplTest : public ::testing::Test {
+protected:
+    void SetUp() override {}
+    void TearDown() override {}
+};
+#endif
 HWTEST_F(SyncCodecAdapterTest, ATC_ReleaseOutputBuffer_ShouldReturnInvalidState_WhenNotInitialized, TestSize.Level0)
 {
     syncCodecAdapter_->init_ = false;
@@ -445,5 +457,48 @@ HWTEST_F(SyncCodecAdapterTest, ATC_OnBufferAvailable_ShouldIncreaseOutputAvaliab
     syncCodecAdapter_->OnBufferAvailable();
     EXPECT_EQ(initialOutputAvaliableNum + 1, syncCodecAdapter_->outputAvaliableNum_);
 }
+
+#ifdef SUPPORT_DRM
+HWTEST_F(SyncCodecAdapterTest, SetAudioDecryptionConfig, TestSize.Level0)
+{
+    auto innerImpl = std::make_shared<AVCodecAudioCodecInnerImpl>();
+    innerImpl->codecService_ = nullptr;
+    sptr<DrmStandard::IMediaKeySessionService> keySession = nullptr;
+    auto ret = innerImpl->SetAudioDecryptionConfig(keySession, false);
+    EXPECT_EQ(ret, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION);
+}
+
+HWTEST_F(DrmAvcodecAudioCodecImplTest, SetAudioDecryptionConfig_Normal, TestSize.Level0)
+{
+    AVCodecAudioCodecInnerImpl impl;
+    int32_t result0 = impl.Init(AVCodecType::AVCODEC_TYPE_AUDIO_DECODER, false, "OH.Media.Codec.Decoder.Audio.Mpeg");
+    EXPECT_EQ(result0, 0);
+    sptr<IMediaKeySessionService> keySession;
+    int32_t result = impl.SetAudioDecryptionConfig(keySession, false);
+    EXPECT_EQ(result, 0);
+}
+
+HWTEST_F(DrmAvcodecAudioCodecImplTest, SetAudioDecryptionConfig_NullKeySession, TestSize.Level0)
+{
+    AVCodecAudioCodecInnerImpl impl;
+    sptr<IMediaKeySessionService> keySession;
+    int32_t result = impl.SetAudioDecryptionConfig(keySession, false);
+    EXPECT_NE(result, 0);
+}
+
+HWTEST_F(DrmAvcodecAudioCodecImplTest, SetAudioDecryptionConfig_WithSvpFlag, TestSize.Level0)
+{
+    AVCodecAudioCodecInnerImpl impl;
+    int32_t result0 = impl.Init(AVCodecType::AVCODEC_TYPE_AUDIO_DECODER, false, "OH.Media.Codec.Decoder.Audio.Mpeg");
+    EXPECT_EQ(result0, 0);
+    sptr<IMediaKeySessionService> keySession;
+    bool flag = true;
+    int32_t result1 = impl.SetAudioDecryptionConfig(keySession, flag);
+    EXPECT_EQ(result1, 0);
+    flag = false;
+    int32_t result2 = impl.SetAudioDecryptionConfig(keySession, flag);
+    EXPECT_EQ(result2, 0);
+}
+#endif
 }  // namespace Media
 }  // namespace OHOS

@@ -32,11 +32,12 @@ DashSegTmlineNode::~DashSegTmlineNode() {}
 
 void DashSegTmlineNode::ParseNode(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement)
 {
-    if (xmlParser != nullptr) {
-        for (uint32_t index = 0; index < DASH_SEG_TIMELINE_ATTR_NUM; index++) {
-            if (static_cast<int32_t>(XmlBaseRtnValue::XML_BASE_OK) ==
-                xmlParser->GetAttribute(rootElement, segTmlineAttr_[index].attr_, segTmlineAttr_[index].val_)) {
-            }
+    if (xmlParser == nullptr || rootElement == nullptr) {
+        return;
+    }
+    for (uint32_t index = 0; index < DASH_SEG_TIMELINE_ATTR_NUM; index++) {
+        if (static_cast<int32_t>(XmlBaseRtnValue::XML_BASE_OK) ==
+            xmlParser->GetAttribute(rootElement, segTmlineAttr_[index].attr_, segTmlineAttr_[index].val_)) {
         }
     }
 }

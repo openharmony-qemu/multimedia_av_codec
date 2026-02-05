@@ -161,6 +161,9 @@ int32_t CodecServiceStub::DestroyStub()
     auto callerInfo = std::static_pointer_cast<CodecServer>(codecServer_)->GetCallerInfo();
     (void)InnerRelease();
     codecServer_ = nullptr;
+    if (listener_ != nullptr) {
+        static_cast<CodecListenerProxy *>(listener_.GetRefPtr())->ClearListenerCache();
+    }
     AVCodecServerManager::GetInstance().DestroyStubObject(AVCodecServerManager::CODEC, AsObject());
     EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_RELEASE, *callerInfo);
     return AVCS_ERR_OK;
@@ -296,6 +299,7 @@ int32_t CodecServiceStub::Stop()
     int32_t ret = codecServer_->Stop();
     if (ret == AVCS_ERR_OK) {
         (void)OHOS::IPCSkeleton::FlushCommands(listener_->AsObject().GetRefPtr());
+        static_cast<CodecListenerProxy *>(listener_.GetRefPtr())->ClearListenerCache();
     }
     return ret;
 }

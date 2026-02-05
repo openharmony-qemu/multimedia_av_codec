@@ -17,6 +17,7 @@
 #define MEDIA_ATOMIC_ABILITY
 
 #include "avcodec_trace.h"
+#include <utility>
 #include "cpp_ext/type_traits_ext.h"
 #include "common/log.h"
 #include "osal/utils/util.h"
@@ -558,6 +559,14 @@ int64_t Source::GetDuration()
     Status ret = plugin_->GetDuration(duration);
     FALSE_RETURN_V_MSG_W(ret == Status::OK, Plugins::HST_TIME_NONE, "Source GetDuration from source plugin failed");
     return duration;
+}
+
+std::pair<int64_t, bool> Source::GetStartInfo()
+{
+    FALSE_RETURN_V_MSG_W(plugin_ != nullptr, std::make_pair(0, false), "GetStartInfo Source plugin is nullptr!");
+    std::pair<int64_t, bool> startInfo;
+    plugin_->GetStartInfo(startInfo);
+    return startInfo;
 }
 
 Status Source::GetSize(uint64_t &fileSize)

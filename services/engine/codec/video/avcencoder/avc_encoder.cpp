@@ -602,34 +602,32 @@ void AvcEncoder::GetRequestIDRFromUser(const Format &format)
 
 void AvcEncoder::GetColorAspects(const Format &format)
 {
-    int range = 0;
-    int primary = static_cast<int>(COLOR_PRIMARY_UNSPECIFIED);
-    int transfer = static_cast<int>(TRANSFER_CHARACTERISTIC_UNSPECIFIED);
-    int matrix = static_cast<int>(MATRIX_COEFFICIENT_UNSPECIFIED);
+    int range;
+    int primary;
+    int transfer;
+    int matrix;
 
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, range)) {
         AVCODEC_LOGI("user set range flag %{public}d", range);
+        srcRange_ = static_cast<uint8_t>(range);
     }
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES, primary)) {
         AVCODEC_LOGI("user set primary %{public}d", primary);
+        srcPrimary_ = static_cast<ColorPrimary>(primary);
     }
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS, transfer)) {
         AVCODEC_LOGI("user set transfer %{public}d", transfer);
+        srcTransfer_ = static_cast<TransferCharacteristic>(transfer);
     }
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, matrix)) {
         AVCODEC_LOGI("user set matrix %{public}d", matrix);
+        srcMatrix_ = static_cast<MatrixCoefficient>(matrix);
     }
-    if (primary < 0 || primary > ColorPrimary::COLOR_PRIMARY_P3D65 ||
-        transfer < 0 || transfer > TransferCharacteristic::TRANSFER_CHARACTERISTIC_HLG ||
-        matrix < 0 || matrix > MatrixCoefficient::MATRIX_COEFFICIENT_ICTCP) {
+    if (srcPrimary_ < 0 || srcPrimary_ > ColorPrimary::COLOR_PRIMARY_P3D65 ||
+        srcTransfer_ < 0 || srcTransfer_ > TransferCharacteristic::TRANSFER_CHARACTERISTIC_HLG ||
+        srcMatrix_ < 0 || srcMatrix_ > MatrixCoefficient::MATRIX_COEFFICIENT_ICTCP) {
         AVCODEC_LOGW("user set invalid color");
-        return;
     }
-
-    srcRange_ = static_cast<uint8_t>(range);
-    srcPrimary_ = static_cast<ColorPrimary>(primary);
-    srcTransfer_ = static_cast<TransferCharacteristic>(transfer);
-    srcMatrix_ = static_cast<MatrixCoefficient>(matrix);
     return;
 }
 
@@ -1560,6 +1558,7 @@ int32_t AvcEncoder::EncoderAvcFrame(AVC_ENC_INARGS &inArgs, AVC_ENC_OUTARGS &out
     } else {
         outputAVBuffer->flag_ = AVCODEC_BUFFER_FLAG_NONE;
         AVCODEC_LOGE("Cannot send frame to encodec: %{public}d", ret);
+        return AVCS_ERR_VID_ENC_FAILED;
     }
 
     outputBuffer->owner_ = FBuffer::Owner::OWNED_BY_USER;

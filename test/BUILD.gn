@@ -31,10 +31,13 @@ group("av_codec_unit_test") {
       deps += [
         "unittest/audio_capture_test:audio_capture_module_unit_test",
         "unittest/audio_capture_unittest:audio_capture_module_unittest",
+        "unittest/audio_decoder_filter_callback_unittest:audio_decoder_filter_callback_unittest",
         "unittest/audio_decoder_filter_unittest:audio_decoder_filter_unittest",
         "unittest/audio_encoder_filter_test:audio_encoder_filter_optimize_unitest",
         "unittest/audio_encoder_filter_test:audio_encoder_filter_unitest",
+        "unittest/audio_encoder_filter_unittest:audio_encoder_filter_unittest",
         "unittest/audio_sampleformat_unittest:audio_sampleformat_unittest",
+        "unittest/audio_server_sink_plugin_unittest:audio_server_sink_plugin_unittest",
         "unittest/audio_sink_unit_test:av_audio_sink_test",
         "unittest/audio_test:audio_amrnb_multiframe_decode_unit_test",
         "unittest/audio_test:audio_codec_inner_avbuffer_unit_test",
@@ -142,11 +145,13 @@ group("av_codec_unit_test") {
         "unittest/http_source_test:http_source_plugin_unit_test",
         "unittest/http_source_test:http_source_plugin_unittest",
         "unittest/media_demuxer_ext_test:media_demuxer_ext_unit_test",
+        "unittest/media_demuxer_pts_functions_unittest:media_demuxer_pts_functions_unittest",
         "unittest/media_demuxer_test:media_demuxer_unit_test",
         "unittest/media_engine/filters:media_engine_filter_unit_test",
         "unittest/media_sink_test:av_audio_sink_unit_test",
         "unittest/media_synchronous_sink_unittest:media_synchronous_sink_unittest",
         "unittest/media_sync_manager_unittest:media_sync_manager_unittest",
+        "unittest/metadata_filter_unit_test:metadata_filter_unit_test",
         "unittest/plugins_source_test:plugins_source_unit_test",
         "unittest/post_processor_test:post_processor_unit_test",
         "unittest/pts_and_index_conversion_test:pts_and_index_conversion_unit_test",
@@ -159,6 +164,7 @@ group("av_codec_unit_test") {
         "unittest/source_unit_test:source_test",
         "unittest/subtitle_sink_unittest:subtitle_sink_unittest",
         "unittest/surface_encoder_adapter_unittest:surface_encoder_adapter_unittest",
+        "unittest/video_capture_filter_unit_test:video_capture_filter_unit_test",
         "unittest/video_resize_filter_test:video_resize_filter_test",
         "unittest/video_sink_unittest:video_sink_unittest",
       ]
@@ -502,7 +508,40 @@ group("av_codec_fuzz_test") {
       "fuzztest/pluginsink_fuzzer:PluginSinkFuzzTest",
       "fuzztest/pluginsinkfuzzsecondtest_fuzzer:PluginSinkFuzzSecondTest",
       "fuzztest/audiodecoderadapter_fuzzer:AudioDecoderAdapterFuzzTest",
+      "fuzztest/cinepakdecoderconfigure_fuzzer:CinepakdecoderConfigureFuzzTest",
+      "fuzztest/cinepakdecoderresource_fuzzer:CinepakdecoderResourceFuzzTest",
+      "fuzztest/cinepakdecodersetparameter_fuzzer:CinepakdecoderSetParameterFuzzTest",
     ]
+    if(av_codec_support_vp8_decoder) {
+      deps += [
+        "fuzztest/vp8swdecoderconfigure_fuzzer:Vp8SwdecoderConfigureFuzzTest",
+        "fuzztest/vp8swdecoderserver_fuzzer:Vp8SwdecoderServerFuzzTest",
+        "fuzztest/vp8swdecoderservermemrecycle_fuzzer:Vp8SwdecoderServerMemrecycleFuzzTest",
+        "fuzztest/vp8swdecoderservernormal_fuzzer:Vp8SwdecoderServerNormalFuzzTest",
+        "fuzztest/vp8swdecoderserversurface_fuzzer:Vp8SwdecoderServerSurfaceFuzzTest",
+        "fuzztest/vp8swdecodersetparameter_fuzzer:Vp8SwdecoderSetParameterFuzzTest",
+      ]
+    }
+    if(av_codec_support_vp9_decoder) {
+      deps += [
+        "fuzztest/vp9swdecoderconfigure_fuzzer:Vp9SwdecoderConfigureFuzzTest",
+        "fuzztest/vp9swdecoderserver_fuzzer:Vp9SwdecoderServerFuzzTest",
+        "fuzztest/vp9swdecoderservermemrecycle_fuzzer:Vp9SwdecoderServerMemrecycleFuzzTest",
+        "fuzztest/vp9swdecoderservernormal_fuzzer:Vp9SwdecoderServerNormalFuzzTest",
+        "fuzztest/vp9swdecoderserversurface_fuzzer:Vp9SwdecoderServerSurfaceFuzzTest",
+        "fuzztest/vp9swdecodersetparameter_fuzzer:Vp9SwdecoderSetParameterFuzzTest",
+      ]
+    }
+    if(av_codec_support_av1_decoder) {
+      deps += [
+        "fuzztest/av1swdecoderconfigure_fuzzer:Av1SwdecoderConfigureFuzzTest",
+        "fuzztest/av1swdecoderserver_fuzzer:Av1SwdecoderServerFuzzTest",
+        "fuzztest/av1swdecoderservermemrecycle_fuzzer:Av1SwdecoderServerMemrecycleFuzzTest",
+        "fuzztest/av1swdecoderservernormal_fuzzer:Av1SwdecoderServerNormalFuzzTest",
+        "fuzztest/av1swdecoderserversurface_fuzzer:Av1SwdecoderServerSurfaceFuzzTest",
+        "fuzztest/av1swdecodersetparameter_fuzzer:Av1SwdecoderSetParameterFuzzTest",
+      ]
+    }
     if(av_codec_enable_codec_eac3) {
       deps += [ "fuzztest/audiodecodereac3_fuzzer:AudioDecoderEac3FuzzTest" ]
     }

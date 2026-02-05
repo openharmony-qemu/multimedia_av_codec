@@ -334,6 +334,7 @@ private:
     bool isBuffering_ {false};
     bool isAudioPass_ {false};
     bool isFirstFrameWrite_ {false};
+    std::shared_ptr<Meta> globalMeta_ = std::make_shared<Meta>();
 };
 }
 }
