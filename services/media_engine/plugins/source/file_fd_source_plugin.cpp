@@ -94,7 +94,7 @@ constexpr int32_t READ_ERROR_IO                 = EIO;
 constexpr int32_t READ_ERROR_NOMEM              = ENOMEM;
 constexpr float CACHE_LEVEL_1                   = 0.3;
 constexpr size_t SIZE_INDEX                     = 3;
-constexpr size_t IOCTL_CLOUD                    = 2;
+constexpr int32_t IOCTL_CLOUD                   = 2;
 
 constexpr unsigned int HMDFS_IOC = 0xf2;
 #define HMDFS_IOC_HAS_CACHE _IOW(HMDFS_IOC, 6, struct HmdfsHasCache)
@@ -707,7 +707,7 @@ Seekable FileFdSourcePlugin::GetSeekable()
 
 void FileFdSourcePlugin::CheckFileType()
 {
-    int32_t loc; // 1本地，2云端
+    int loc; // 1本地，2云端
     int ioResult = ioctl(fd_, HMDFS_IOC_GET_LOCATION, &loc);
     MEDIA_LOG_I("SetSource ioctl loc, ret " PUBLIC_LOG_D32 ", loc " PUBLIC_LOG_D32 ", errno"
         PUBLIC_LOG_D32, ioResult, loc, errno);
