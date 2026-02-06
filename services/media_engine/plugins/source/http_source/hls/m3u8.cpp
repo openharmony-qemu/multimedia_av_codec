@@ -619,7 +619,7 @@ bool M3U8::SetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
 {
     std::string::size_type n;
     std::string psshString;
-    uint8_t pssh[2048]; // 2048: pssh len
+    std::vector<uint8_t> pssh; // 2048: pssh len
     uint32_t psshSize = 2048; // 2048: pssh len
     if (keyUri_ == nullptr) {
         return false;
@@ -632,7 +632,7 @@ bool M3U8::SetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
         return false;
     }
     bool ret = Base64Utils::Base64Decode(reinterpret_cast<const uint8_t *>(psshString.c_str()),
-        static_cast<uint32_t>(psshString.length()), pssh, &psshSize);
+        static_cast<uint32_t>(psshString.length()), pssh.data(), &psshSize);
     if (ret) {
         uint32_t uuidSize = 16; // 16: uuid len
         if (psshSize >= DRM_UUID_OFFSET + uuidSize) {

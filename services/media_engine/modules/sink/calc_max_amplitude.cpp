@@ -35,7 +35,7 @@ float CalculateMaxAmplitudeForPCM8Bit(int8_t *frame, uint64_t nSamples)
 {
     FALSE_RETURN_V(frame != nullptr && nSamples != 0, 0.0f);
     int curMaxAmplitude = 0;
-    for (uint32_t i = nSamples; i > 0; --i) {
+    for (uint64_t i = nSamples; i > 0; --i) {
         int8_t value = *frame++;
         if (value == INT8_MIN) {
             value = INT8_MAX;
