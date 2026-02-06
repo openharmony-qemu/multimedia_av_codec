@@ -34,17 +34,14 @@ namespace {
     };
     const std::set<int32_t> CLIENT_RETRY_ERROR_CODES = {
         -1, // Application resource not ready for access
-        0,
-        5,
-        6,
-        7,
-        18,
         23, // notBlock
         25, // Upload faild.
         26, // Faild to open/read local data from file/application.
         28, // Timeout was reached.
-        35,
         56,
+        18,
+        0,
+        7,
     };
     const std::set<int32_t> SERVER_RETRY_ERROR_CODES = {
         300,
