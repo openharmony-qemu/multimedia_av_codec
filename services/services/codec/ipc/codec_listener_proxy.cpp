@@ -297,6 +297,7 @@ void CodecListenerProxy::ClearListenerCache()
 
 void CodecListenerProxy::ResetParcel(MessageParcel &parcel)
 {
+    parcel.ClearFileDescriptor();
     parcel.RewindRead(0);
     parcel.RewindWrite(0);
     parcel.SetDataSize(0);
