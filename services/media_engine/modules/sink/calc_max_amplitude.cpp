@@ -54,7 +54,7 @@ float CalculateMaxAmplitudeForPCM16Bit(int16_t *frame, uint64_t nSamples)
 {
     FALSE_RETURN_V(frame != nullptr && nSamples != 0, 0.0f);
     int curMaxAmplitude = 0;
-    for (uint32_t i = nSamples; i > 0; --i) {
+    for (uint64_t i = nSamples; i > 0; --i) {
         int16_t value = *frame++;
         if (value == INT16_MIN) {
             value = INT16_MAX;
@@ -73,7 +73,7 @@ float CalculateMaxAmplitudeForPCM24Bit(char *frame, uint64_t nSamples)
 {
     FALSE_RETURN_V(frame != nullptr && nSamples != 0, 0.0f);
     int curMaxAmplitude = 0;
-    for (uint32_t i = 0; i < nSamples; ++i) {
+    for (uint64_t i = 0; i < nSamples; ++i) {
         char *curPos = frame + (i * SAMPLE_S24_BYTE_NUM);
         int32_t curValue = 0;
         for (uint32_t j = 0; j < SAMPLE_S24_BYTE_NUM; ++j) {
@@ -96,7 +96,7 @@ float CalculateMaxAmplitudeForPCM32Bit(int32_t *frame, uint64_t nSamples)
 {
     FALSE_RETURN_V(frame != nullptr && nSamples != 0, 0.0f);
     int curMaxAmplitude = 0;
-    for (uint32_t i = nSamples; i > 0; --i) {
+    for (uint64_t i = nSamples; i > 0; --i) {
         int32_t value = *frame++;
         if (value == INT32_MIN) {
             value = INT32_MAX;
