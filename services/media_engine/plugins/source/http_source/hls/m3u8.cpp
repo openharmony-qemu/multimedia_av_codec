@@ -637,14 +637,14 @@ bool M3U8::SetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
         uint32_t uuidSize = 16; // 16: uuid len
         if (psshSize >= DRM_UUID_OFFSET + uuidSize) {
             uint8_t uuid[16]; // 16: uuid len
-            NZERO_RETURN_V(memcpy_s(uuid, sizeof(uuid), pssh + DRM_UUID_OFFSET, uuidSize), false);
+            NZERO_RETURN_V(memcpy_s(uuid, sizeof(uuid), pssh.data() + DRM_UUID_OFFSET, uuidSize), false);
             std::stringstream ssConverter;
             std::string uuidString;
             for (uint32_t i = 0; i < uuidSize; i++) {
                 ssConverter << std::hex << std::setfill('0') << std::setw(2) << static_cast<int32_t>(uuid[i]); // 2:w
                 uuidString = ssConverter.str();
             }
-            drmInfo.insert({ uuidString, std::vector<uint8_t>(pssh, pssh + psshSize) });
+            drmInfo.insert({ uuidString, std::vector<uint8_t>(pssh.data(), pssh.data() + psshSize) });
             return true;
         }
     }
