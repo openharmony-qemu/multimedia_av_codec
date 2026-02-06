@@ -395,6 +395,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, StartTask_001, TestSize.Level1)
     auto iter = mediaDemuxer_->taskMap_.find(trackId);
     EXPECT_TRUE(iter != mediaDemuxer_->taskMap_.end());
     EXPECT_EQ(mediaDemuxer_->StartTask(trackId), Status::OK);
+    mediaDemuxer_->StopAllTask();
 }
 
 /**
@@ -413,6 +414,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, StartTask_002, TestSize.Level1)
     mediaDemuxer_->taskMap_[trackId] = std::move(taskPtr);
     Status ret = mediaDemuxer_->StartTask(trackId);
     EXPECT_EQ(ret, Status::OK);
+    mediaDemuxer_->StopAllTask();
 }
 
 /**
@@ -431,6 +433,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, StartTask_003, TestSize.Level1)
     mediaDemuxer_->taskMap_[trackId] = std::move(taskPtr);
     Status ret = mediaDemuxer_->StartTask(trackId);
     EXPECT_EQ(ret, Status::OK);
+    mediaDemuxer_->StopAllTask();
 }
 
 /**
@@ -451,6 +454,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, StartTask_004, TestSize.Level1)
     EXPECT_TRUE(iter == mediaDemuxer_->taskMap_.end());
     Status ret = mediaDemuxer_->StartTask(trackId);
     EXPECT_EQ(ret, Status::OK);
+    mediaDemuxer_->StopAllTask();
 }
 
 /**
@@ -468,6 +472,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, StartTask_005, TestSize.Level1)
     int32_t trackId = NUM_2;
     Status ret = mediaDemuxer_->StartTask(trackId);
     EXPECT_EQ(ret, Status::OK);
+    mediaDemuxer_->StopAllTask();
 }
 
 /**
@@ -485,6 +490,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, StartTask_006, TestSize.Level1)
     int32_t trackId = 4;
     Status ret = mediaDemuxer_->StartTask(trackId);
     EXPECT_EQ(ret, Status::OK);
+    mediaDemuxer_->StopAllTask();
 }
 
 /**
