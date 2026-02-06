@@ -11,6 +11,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ 
  */
 #include <cstdint>
 #include <string>
@@ -271,7 +272,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 
     // 2) 逐文本解析并强打Attribute解码器
     for (const auto& s : texts) {
-        std::list<std::shared_ptr<Tag>> tags = ParseEntries(s);
+        auto result = ParseEntries(s);
+        std::list<std::shared_ptr<Tag>> tags = result.first;
         for (auto& tg : tags) {
             if (!tg) continue;
             HlsTag tp = tg->GetType();

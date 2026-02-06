@@ -594,7 +594,9 @@ std::shared_ptr<BasicBox> BoxParser::VideoBoxGenerate(std::shared_ptr<BasicTrack
         if (videoTrack->IsCuvaHDR() && mimeType.compare(AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_HEVC) == 0) {
             std::string name = "CUVA HDR Video";
             videoBox->compressorLen_ = static_cast<uint8_t>(name.length());
-            (void)memcpy_s(videoBox->compressor_, sizeof(videoBox->compressor_), name.data(), name.length());
+            if (memcpy_s(videoBox->compressor_, sizeof(videoBox->compressor_), name.data(), name.length()) != EOK) {
+                MEDIA_LOG_W("copy video box compressor failed!");
+            }
         }
         videoBox->AddChild(std::make_shared<PaspBox>(0, "pasp"));
         videoBox->AddChild(ColrBoxGenerate(track));

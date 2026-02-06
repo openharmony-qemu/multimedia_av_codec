@@ -14,8 +14,10 @@
  */
 
 #include "codeclist_client.h"
-#include "avcodec_log.h"
 #include "avcodec_errors.h"
+#include "avcodec_log.h"
+#include "i_avcodec_service.h"
+#include "i_standard_avcodec_service.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecListClient"};
@@ -48,26 +50,29 @@ CodecListClient::~CodecListClient()
 void CodecListClient::AVCodecServerDied()
 {
     std::lock_guard<std::mutex> lock(mutex_);
+    if (codecListProxy_ != nullptr) {
+        (void)codecListProxy_->DestroyStub();
+    }
     codecListProxy_ = nullptr;
 }
 
 bool CodecListClient::IsServiceDied()
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    return codecListProxy_ == nullptr;
+    return !EnsureProxyValid();
 }
 
 std::string CodecListClient::FindDecoder(const Format &format)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(codecListProxy_ != nullptr, "", "Find decoder failed: codeclist service does not exist.");
+    CHECK_AND_RETURN_RET_LOG(EnsureProxyValid(), "", "Find decoder failed: ensure proxy valid failed");
     return codecListProxy_->FindDecoder(format);
 }
 
 std::string CodecListClient::FindEncoder(const Format &format)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(codecListProxy_ != nullptr, "", "Find encoder failed: codeclist service does not exist.");
+    CHECK_AND_RETURN_RET_LOG(EnsureProxyValid(), "", "Find encoder failed: ensure proxy valid failed");
     return codecListProxy_->FindEncoder(format);
 }
 
@@ -75,9 +80,23 @@ int32_t CodecListClient::GetCapability(CapabilityData &capabilityData, const std
                                        const AVCodecCategory &category)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(codecListProxy_ != nullptr, AVCS_ERR_NO_MEMORY,
-                             "Get capability failed: codeclist service does not exist.");
+    CHECK_AND_RETURN_RET_LOG(EnsureProxyValid(), AVCS_ERR_INVALID_OPERATION,
+                             "Get capability failed: ensure proxy valid failed");
     return codecListProxy_->GetCapability(capabilityData, mime, isEncoder, category);
+}
+
+bool CodecListClient::EnsureProxyValid()
+{
+    if (codecListProxy_ != nullptr) {
+        return true;
+    }
+    AVCODEC_LOGI("codecListProxy is invalid, attempting to reconnect...");
+    auto &avCodecService = AVCodecServiceFactory::GetInstance();
+    codecListProxy_ = avCodecService.GetCodecListServiceProxy();
+    CHECK_AND_RETURN_RET_LOG(codecListProxy_ != nullptr, false, "Failed to reconnect to codecListProxy");
+
+    AVCODEC_LOGI("Successfully reconnected to codecListProxy");
+    return true;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

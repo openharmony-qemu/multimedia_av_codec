@@ -218,6 +218,24 @@ HWTEST_F(DashAdptSetManagerUnitTest, Dash_Adpt_SetManager_GetMime_003, TestSize.
 }
 
 /**
+ * @tc.name  : Test GetMime API
+ * @tc.number: Dash_Adpt_SetManager_GetMime_004
+ * @tc.desc  : Test Dash Adpt Set Manager GetMime interface
+ */
+HWTEST_F(DashAdptSetManagerUnitTest, Dash_Adpt_SetManager_GetMime_004, TestSize.Level1)
+{
+    DashAdptSetInfo info;
+    std::string mimeType = "";
+    DashRepresentationInfo reInfo;
+    reInfo.commonAttrsAndElements_.mimeType_ = mimeType;
+    info.representationList_.emplace_back(nullptr);
+    info.representationList_.emplace_back(&reInfo);
+    DashAdptSetManager setManager {&info};
+    ASSERT_NE(nullptr, setManager.adptSetInfo_);
+    ASSERT_EQ(mimeType, setManager.GetMime());
+}
+
+/**
  * @tc.name  : Test IsOnDemand API
  * @tc.number: Dash_Adpt_SetManager_IsOnDemand_001
  * @tc.desc  : Test Dash Adpt Set Manager IsOnDemand interface

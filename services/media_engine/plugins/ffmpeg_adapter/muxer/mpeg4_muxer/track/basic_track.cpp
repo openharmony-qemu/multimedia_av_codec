@@ -211,13 +211,7 @@ void BasicTrack::DisposeStts(int64_t duration, int64_t pts)
         MEDIA_LOG_E("track[%{public}d] stts sample_delta must <= INT32_MAX and >= 0, but the value is "
             PUBLIC_LOG_D64 ". the pts is " PUBLIC_LOG_D64, trackId_, duration, pts);
     }
-    size_t size = stts_->timeToSamples_.size();
-    if (size > 0 && stts_->timeToSamples_[size - 1].second == static_cast<uint32_t>(duration)) {
-        stts_->timeToSamples_[size - 1].first++;
-    } else {
-        stts_->entryCount_++;
-        stts_->timeToSamples_.emplace_back(std::pair<uint32_t, uint32_t>(1, static_cast<uint32_t>(duration)));
-    }
+    stts_->AddData(static_cast<uint32_t>(duration));
 }
 
 void BasicTrack::DisposeStco(int64_t pos)

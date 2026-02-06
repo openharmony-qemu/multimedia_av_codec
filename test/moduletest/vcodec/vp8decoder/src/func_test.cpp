@@ -1182,4 +1182,31 @@ HWTEST_F(Vp8decFuncNdkTest, VIDEO_DECODE_SYNC_VP8_FUNC_0003, TestSize.Level1)
     ASSERT_EQ(FRAMESIZE52, vDecSample->outFrameCount);
 }
 
+/**
+ * @tc.number    : VIDEO_VP8DEC_FUNCTION_0052
+ * @tc.name      : Decode VP8 buffer with default settings
+ * @tc.desc      : function test
+ */
+HWTEST_F(Vp8decFuncNdkTest, VIDEO_VP8DEC_FUNCTION_0052, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecAPI11Sample>();
+    int32_t pixfmt[4] = {24, 25, 35, 36};
+    vDecSample->INP_DIR = INP_DIR_1;
+    vDecSample->outputYuvFlag = true;
+    vDecSample->isGetVideoSupportedPixelFormats = true;
+    vDecSample->isGetFormatKey = true;
+    vDecSample->avcodecMimeType = OH_AVCODEC_MIMETYPE_VIDEO_VP8;
+    vDecSample->isEncoder = false;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.VP8"));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderReadStream());
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(0, vDecSample->errCount);
+    ASSERT_EQ(4, vDecSample->pixlFormatNum);
+    for (int i = 0; i < vDecSample->pixlFormatNum; i++) {
+        ASSERT_EQ(vDecSample->pixlFormats[i], pixfmt[i]);
+    }
+    ASSERT_EQ(FRAMESIZE52, vDecSample->outFrameCount);
+}
 } // namespace

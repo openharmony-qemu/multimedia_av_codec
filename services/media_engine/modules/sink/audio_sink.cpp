@@ -187,7 +187,7 @@ Status AudioSink::EnqueueBufferDesc(const AudioStandard::BufferDesc &bufferDesc)
 bool AudioSink::IsInputBufferDataEnough(int32_t size, bool isAudioVivid)
 {
     std::lock_guard<std::mutex> lock(availBufferMutex_);
-    if (!isAudioVivid) {
+    if (!isAudioVivid && !isAudioPass_) {
         maxCbDataSize_ = std::max(maxCbDataSize_, size);
     } else {
         // audioVivid use min(size, availDataSize) as maxDataSize to ensure that audioVivid dont use swapBuffers
@@ -198,7 +198,7 @@ bool AudioSink::IsInputBufferDataEnough(int32_t size, bool isAudioVivid)
     }
     DriveBufferCircle();
     std::unique_lock<std::mutex> formatLock(formatChangeMutex_);
-    return availDataSize_.load() >= static_cast<size_t>(size) || isEosBuffer_ || formatChange_.load();
+    return availDataSize_.load() >= static_cast<size_t>(size) || isEosBuffer_ || formatChange_.load() || isAudioPass_;
 }
 
 Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver)
@@ -283,6 +283,7 @@ sptr<AVBufferQueueConsumer> AudioSink::GetBufferQueueConsumer()
 
 Status AudioSink::SetParameter(const std::shared_ptr<Meta>& meta)
 {
+    globalMeta_ = meta;
     UpdateMediaTimeRange(meta);
     FALSE_RETURN_V(meta != nullptr, Status::ERROR_NULL_POINTER);
     meta->GetData(Tag::APP_PID, appPid_);
@@ -789,7 +790,8 @@ bool AudioSink::CopyAudioVividBufferData(AudioStandard::BufferDesc &bufferDesc, 
 bool AudioSink::IsBufferDataDrained(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
     size_t &size, size_t &cacheBufferSize, bool isAudioVivid, int64_t &bufferPts)
 {
-    FALSE_RETURN_V_MSG(cacheBufferSize <= size || !isAudioVivid, false, "copy from cache buffer may fail.");
+    FALSE_RETURN_V_MSG(cacheBufferSize <= size || !isAudioVivid || !isAudioPass_, false,
+        "copy from cache buffer may fail.");
     MEDIA_TRACE_DEBUG("AudioSink::CopyBuffer");
     bool ret = isAudioVivid || isAudioPass_
         ? CopyAudioVividBufferData(bufferDesc, buffer, size, cacheBufferSize, bufferPts) :
@@ -1549,6 +1551,7 @@ Status AudioSink::ChangeTrackForFormatChange()
     std::lock_guard<std::mutex> lock(pluginMutex_);
     std::shared_ptr<Plugins::AudioSinkPlugin> plugin = std::move(plugin_);
     FALSE_RETURN_V(plugin != nullptr && changeTrackTask_ != nullptr, Status::ERROR_NULL_POINTER);
+    plugin->SetResponseCallback(false);
     changeTrackTask_->SubmitJobOnce([plugin] {
         plugin->Stop();
         plugin->Deinit();
@@ -1560,6 +1563,7 @@ Status AudioSink::ChangeTrackForFormatChange()
     hasPluginCreateTaskFinished_ = false;
     FALSE_RETURN_V(newPlugin_ != nullptr, Status::ERROR_NULL_POINTER);
     plugin_ = std::move(newPlugin_);
+    plugin_->SetParameter(globalMeta_);
     SetAudioSinkPluginParameters(plugin_);
 
     forceUpdateTimeAnchorNextTime_ = true;

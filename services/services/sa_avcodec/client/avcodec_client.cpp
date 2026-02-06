@@ -15,12 +15,12 @@
 
 #include "avcodec_client.h"
 #include <thread>
+#include "avcodec_sysevent.h"
+#include "avcodec_trace.h"
 #include "avcodec_xcollie.h"
 #include "ipc_skeleton.h"
 #include "iservice_registry.h"
 #include "system_ability_definition.h"
-#include "avcodec_trace.h"
-#include "avcodec_sysevent.h"
 
 #ifdef SUPPORT_CODEC
 #include "i_standard_codec_service.h"
@@ -68,8 +68,7 @@ bool AVCodecClient::IsAlived()
 }
 
 int32_t AVCodecClient::CreateInstanceAndTryInTimes(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
-                                                   sptr<IRemoteObject> &object,
-                                                   uint32_t tryTimes)
+                                                   sptr<IRemoteObject> &object, uint32_t tryTimes)
 {
     int32_t ret = AVCS_ERR_OK;
     do {
@@ -124,16 +123,17 @@ int32_t AVCodecClient::GetActiveSecureDecoderPids(std::vector<pid_t> &pidList)
 int32_t AVCodecClient::CreateCodecService(std::shared_ptr<ICodecService> &codecClient)
 {
     std::lock_guard<std::mutex> lock(mutex_);
+    CancelTimer();
 
     sptr<IRemoteObject> object = nullptr;
     int32_t ret = CreateInstanceAndTryInTimes(IStandardAVCodecService::AVCodecSystemAbility::AVCODEC_CODEC, object);
-    CHECK_AND_RETURN_RET_LOG(object != nullptr, ret, "Create codec proxy object failed.");
+    CHECK_AND_RETURN_RET_LOG(object != nullptr, ret, "Create codec proxy object failed");
 
     sptr<IStandardCodecService> codecProxy = iface_cast<IStandardCodecService>(object);
-    CHECK_AND_RETURN_RET_LOG(codecProxy != nullptr, AVCS_ERR_UNSUPPORT, "Codec proxy is nullptr.");
+    CHECK_AND_RETURN_RET_LOG(codecProxy != nullptr, AVCS_ERR_UNSUPPORT, "Codec proxy is nullptr");
 
     ret = CodecClient::Create(codecProxy, codecClient);
-    CHECK_AND_RETURN_RET_LOG(codecClient != nullptr, ret, "Failed to create codec client.");
+    CHECK_AND_RETURN_RET_LOG(codecClient != nullptr, ret, "Failed to create codec client");
 
     codecClientList_.push_back(codecClient);
     return AVCS_ERR_OK;
@@ -142,8 +142,9 @@ int32_t AVCodecClient::CreateCodecService(std::shared_ptr<ICodecService> &codecC
 int32_t AVCodecClient::DestroyCodecService(std::shared_ptr<ICodecService> codecClient)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(codecClient != nullptr, AVCS_ERR_NO_MEMORY, "codec client is nullptr.");
+    CHECK_AND_RETURN_RET_LOG(codecClient != nullptr, AVCS_ERR_NO_MEMORY, "codec client is nullptr");
     codecClientList_.remove(codecClient);
+    ScheduleReleaseResources();
     return AVCS_ERR_OK;
 }
 #endif
@@ -151,27 +152,43 @@ int32_t AVCodecClient::DestroyCodecService(std::shared_ptr<ICodecService> codecC
 std::shared_ptr<ICodecListService> AVCodecClient::CreateCodecListService()
 {
     std::lock_guard<std::mutex> lock(mutex_);
-
     sptr<IRemoteObject> object = nullptr;
     (void)CreateInstanceAndTryInTimes(IStandardAVCodecService::AVCodecSystemAbility::AVCODEC_CODECLIST, object);
-    CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "Create codeclist proxy object failed.");
+    CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "Create codeclist proxy object failed");
 
     sptr<IStandardCodecListService> codecListProxy = iface_cast<IStandardCodecListService>(object);
-    CHECK_AND_RETURN_RET_LOG(codecListProxy != nullptr, nullptr, "codeclist proxy is nullptr.");
+    CHECK_AND_RETURN_RET_LOG(codecListProxy != nullptr, nullptr, "codeclist proxy is nullptr");
 
     std::shared_ptr<CodecListClient> codecListClient = CodecListClient::Create(codecListProxy);
-    CHECK_AND_RETURN_RET_LOG(codecListClient != nullptr, nullptr, "failed to create codeclist client.");
+    CHECK_AND_RETURN_RET_LOG(codecListClient != nullptr, nullptr, "failed to create codeclist client");
 
     codecListClientList_.push_back(codecListClient);
+
+    ScheduleReleaseResources();
     return codecListClient;
 }
 
 int32_t AVCodecClient::DestroyCodecListService(std::shared_ptr<ICodecListService> codecListClient)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(codecListClient != nullptr, AVCS_ERR_NO_MEMORY, "codeclist client is nullptr.");
+    CHECK_AND_RETURN_RET_LOG(codecListClient != nullptr, AVCS_ERR_NO_MEMORY, "codeclist client is nullptr");
     codecListClientList_.remove(codecListClient);
+    ScheduleReleaseResources();
     return AVCS_ERR_OK;
+}
+
+sptr<IStandardCodecListService> AVCodecClient::GetCodecListServiceProxy()
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    sptr<IRemoteObject> object = nullptr;
+    (void)CreateInstanceAndTryInTimes(IStandardAVCodecService::AVCodecSystemAbility::AVCODEC_CODECLIST, object);
+    CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "Get codeclist service proxy failed");
+
+    sptr<IStandardCodecListService> codecListProxy = iface_cast<IStandardCodecListService>(object);
+    CHECK_AND_RETURN_RET_LOG(codecListProxy != nullptr, nullptr, "codeclist proxy is nullptr");
+
+    ScheduleReleaseResources();
+    return codecListProxy;
 }
 #endif
 
@@ -180,8 +197,8 @@ sptr<IStandardAVCodecService> AVCodecClient::GetAVCodecProxy()
     AVCODEC_LOGI("In");
     sptr<ISystemAbilityManager> samgr = nullptr;
     CLIENT_COLLIE_LISTEN(samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager(),
-        "AVCodecClient GetAVCodecProxy");
-    CHECK_AND_RETURN_RET_LOG(samgr != nullptr, nullptr, "system ability manager is nullptr.");
+                         "AVCodecClient GetAVCodecProxy");
+    CHECK_AND_RETURN_RET_LOG(samgr != nullptr, nullptr, "system ability manager is nullptr");
 
     sptr<IRemoteObject> object = nullptr;
     CLIENT_COLLIE_LISTEN(object = samgr->CheckSystemAbility(OHOS::AV_CODEC_SERVICE_ID),
@@ -189,8 +206,8 @@ sptr<IStandardAVCodecService> AVCodecClient::GetAVCodecProxy()
     if (object == nullptr) {
         CLIENT_COLLIE_LISTEN(object = samgr->LoadSystemAbility(OHOS::AV_CODEC_SERVICE_ID, 30), // 30: timeout
                              "AVCodecClient LoadSystemAbility");
-        CHECK_AND_RETURN_RET_LOG(object != nullptr,
-            nullptr, "AVCodec object is nullptr, maybe avcodec service does not exist");
+        CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr,
+                                 "AVCodec object is nullptr, maybe avcodec service does not exist");
     }
 
     avCodecProxy_ = iface_cast<IStandardAVCodecService>(object);
@@ -215,7 +232,7 @@ sptr<IStandardAVCodecService> AVCodecClient::GetTemporaryAVCodecProxy()
     sptr<ISystemAbilityManager> samgr = nullptr;
     CLIENT_COLLIE_LISTEN(samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager(),
                          "AVCodecClient GetTemporaryAVCodecProxy");
-    CHECK_AND_RETURN_RET_LOG(samgr != nullptr, nullptr, "system ability manager is nullptr.");
+    CHECK_AND_RETURN_RET_LOG(samgr != nullptr, nullptr, "system ability manager is nullptr");
 
     sptr<IRemoteObject> object = nullptr;
     CLIENT_COLLIE_LISTEN(object = samgr->CheckSystemAbility(OHOS::AV_CODEC_SERVICE_ID),
@@ -240,6 +257,7 @@ void AVCodecClient::AVCodecServerDied(pid_t pid)
 void AVCodecClient::DoAVCodecServerDied()
 {
     std::lock_guard<std::mutex> lock(mutex_);
+    CancelTimer();
     if (avCodecProxy_ != nullptr) {
         (void)avCodecProxy_->AsObject()->RemoveDeathRecipient(deathRecipient_);
         avCodecProxy_ = nullptr;
@@ -264,5 +282,71 @@ void AVCodecClient::DoAVCodecServerDied()
     }
 #endif
 }
+
+#ifndef SUPPORT_START_STOP_ON_DEMAND
+void AVCodecClient::CancelTimer() {}
+void AVCodecClient::ScheduleReleaseResources() {}
+void AVCodecClient::TryReleaseResources() {}
+#else
+void AVCodecClient::ReleaseTimerCallback(void *data)
+{
+    std::lock_guard<std::mutex> lock(g_avCodecClientMutex);
+    CHECK_AND_RETURN_LOG(!g_isDestructed, "AVCodecClient is destructed");
+    g_avCodecClientInstance.TryReleaseResources();
+}
+
+void AVCodecClient::CancelTimer()
+{
+    // Cancel release timer if exists
+    if (releaseTimerId_ != 0) {
+        AVCodecXCollie::GetInstance().CancelTimer(releaseTimerId_);
+        releaseTimerId_ = 0;
+    }
+}
+
+void AVCodecClient::ScheduleReleaseResources()
+{
+    CancelTimer();
+    // Check if all client lists are empty before setting timer
+    bool hasAnyClient = false;
+#ifdef SUPPORT_CODEC
+    hasAnyClient = hasAnyClient || !codecClientList_.empty();
+#endif
+    // Only set timer if no clients exist
+    if (!hasAnyClient) {
+        releaseTimerId_ = AVCodecXCollie::GetInstance().SetTimer("AVCodecClient_ReleaseResources", false, false,
+                                                                 RELEASE_DELAY_SECONDS, ReleaseTimerCallback);
+        CHECK_AND_RETURN_LOG(releaseTimerId_ != 0, "Failed to set release timer");
+    }
+}
+
+void AVCodecClient::TryReleaseResources()
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    // Check if all client lists are empty
+    bool hasAnyClient = false;
+#ifdef SUPPORT_CODEC
+    hasAnyClient = hasAnyClient || !codecClientList_.empty();
+#endif
+#ifdef SUPPORT_CODECLIST
+    for (auto &it : codecListClientList_) {
+        auto codecListClient = std::static_pointer_cast<CodecListClient>(it);
+        if (codecListClient != nullptr) {
+            codecListClient->AVCodecServerDied();
+        }
+    }
+#endif
+    // Only release if no codec clients exist
+    if (!hasAnyClient && avCodecProxy_ != nullptr) {
+        (void)avCodecProxy_->AsObject()->RemoveDeathRecipient(deathRecipient_);
+        avCodecProxy_ = nullptr;
+        listenerStub_ = nullptr;
+        deathRecipient_ = nullptr;
+        AVCODEC_LOGI("Release resources due to all codec clients destroyed");
+    }
+    // Reset timer ID
+    releaseTimerId_ = 0;
+}
+#endif
 } // namespace MediaAVCodec
 } // namespace OHOS

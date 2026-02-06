@@ -307,6 +307,16 @@
               ],
               "header_base": "//foundation/multimedia/av_codec/services/engine/codec/video/hevcdecoder"
             }
+          },
+          {
+              "type": "so",
+              "name": "//foundation/multimedia/av_codec/services/media_engine/plugins/source/http_source/download/network_client:http_curl_client",
+              "header": {
+                  "header_files": [
+                      "http_curl_client.h"
+                  ],
+                  "header_base": "//foundation/multimedia/av_codec/services/media_engine/plugins/source/http_source/download/network_client"
+              }
           }
         ],
       "test": [

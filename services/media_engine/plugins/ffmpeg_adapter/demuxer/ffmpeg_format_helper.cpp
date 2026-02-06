@@ -157,6 +157,7 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_AV1, MimeType::VIDEO_AV1},
     {AV_CODEC_ID_DVVIDEO, MimeType::VIDEO_DVVIDEO},
     {AV_CODEC_ID_RAWVIDEO, MimeType::VIDEO_RAWVIDEO},
+    {AV_CODEC_ID_CINEPAK, MimeType::VIDEO_CINEPAK},
 
     {AV_CODEC_ID_AVS3DA, MimeType::AUDIO_AVS3DA},
     {AV_CODEC_ID_APE, MimeType::AUDIO_APE},
@@ -641,14 +642,18 @@ int64_t GetDefaultTrackStartTime(const AVFormatContext& avFormatContext)
 
 static int FfAv3aGetNbObjects(AVChannelLayout *channelLayout)
 {
-    if (channelLayout == nullptr || channelLayout->nb_channels < 0 || channelLayout->nb_channels > INT32_MAX) {
+    if (channelLayout == nullptr) {
         return 0;
     }
     int nbObjects = 0;
     if (channelLayout->order != AV_CHANNEL_ORDER_CUSTOM) {
         return 0;
     }
-    for (int i = 0; i < channelLayout->nb_channels; i++) {
+    int nbChannels = channelLayout->nb_channels;
+    if (nbChannels <= 0 || nbChannels > INT32_MAX) {
+        return 0;
+    }
+    for (int i = 0; i < nbChannels; i++) {
         if (channelLayout->u.map[i].id == AV3A_CH_AUDIO_OBJECT) {
             nbObjects++;
         }
@@ -658,14 +663,18 @@ static int FfAv3aGetNbObjects(AVChannelLayout *channelLayout)
 
 static uint64_t FfAv3aGetChannelLayoutMask(AVChannelLayout *channelLayout)
 {
-    if (channelLayout == nullptr || channelLayout->nb_channels < 0 || channelLayout->nb_channels > INT32_MAX) {
+    if (channelLayout == nullptr) {
         return 0;
     }
     uint64_t mask = 0L;
     if (channelLayout->order != AV_CHANNEL_ORDER_CUSTOM) {
         return 0;
     }
-    for (int i = 0; i < channelLayout->nb_channels; i++) {
+    int nbChannels = channelLayout->nb_channels;
+    if (nbChannels <= 0 || nbChannels > INT32_MAX) {
+        return 0;
+    }
+    for (int i = 0; i < nbChannels; i++) {
         if (channelLayout->u.map[i].id == AV3A_CH_AUDIO_OBJECT) {
             return mask;
         }

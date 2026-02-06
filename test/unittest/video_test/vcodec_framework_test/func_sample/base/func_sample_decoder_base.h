@@ -41,7 +41,10 @@ enum VCodecDataProducerType : int32_t {
     WVC1_STREAM = 1 << 12,
     MPEG1_STREAM = 1 << 13,
     DVVIDEO_STREAM = 1 << 14,
-    RAWVIDEO_STREAM = 1 << 15
+    RAWVIDEO_STREAM = 1 << 15,
+    CINEPAK_STREAM = 1 << 16,
+    VP8_STREAM = 1 << 17,
+    VP9_STREAM = 1 << 18,
 };
 
 inline std::unordered_map<std::string, int32_t> fileTypeMap = {
@@ -58,7 +61,11 @@ inline std::unordered_map<std::string, int32_t> fileTypeMap = {
     {"wvc1", WVC1_STREAM},
     {"mpeg1", MPEG1_STREAM},
     {"dvvideo", DVVIDEO_STREAM},
-    {"rawvideo", RAWVIDEO_STREAM}
+    {"rawvideo", RAWVIDEO_STREAM},
+    {"cinepak", CINEPAK_STREAM},
+    {"vp8", VP8_STREAM},
+    {"vp9", VP9_STREAM},
+    {"av1", AV1_STREAM},
 };
 
 inline constexpr uint32_t BUFFER_COUNT = 59;

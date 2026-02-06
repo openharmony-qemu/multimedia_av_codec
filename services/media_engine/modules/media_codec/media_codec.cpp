@@ -195,7 +195,11 @@ void MediaCodec::IODump(const std::shared_ptr<Meta> &meta)
     }
 
     std::ostringstream common;
-    common << "/data/media/";
+    if (!isRunInApp_) {
+        common << "/data/media/";
+    } else {
+        common << "/data/storage/el2/base/cache/";
+    }
     common << std::put_time(tm, "%H%M%S");
     common << "_" << reinterpret_cast<void*>(this);
 
@@ -1041,8 +1045,8 @@ void MediaCodec::OnInputBufferDone(const std::shared_ptr<AVBuffer> &inputBuffer)
     if (dumpIOEnable == "true" && dumpDataInputFs_) {
         if (dumpDataInputFs_->is_open() && inputBuffer->memory_->GetAddr()) {
             AVCODEC_LOGD("dumpIOE writing");
-            dumpDataInputFs_->write(reinterpret_cast<const char*>(inputBuffer->memory_->GetAddr() +
-                                    inputBuffer->memory_->GetOffset()), inputBuffer->memory_->GetSize());
+            dumpDataInputFs_->write(reinterpret_cast<const char*>(inputBuffer->memory_->GetAddr()),
+                inputBuffer->memory_->GetSize());
         }
     }
     Status ret = inputBufferQueueConsumer_->ReleaseBuffer(inputBuffer);
@@ -1064,8 +1068,8 @@ void MediaCodec::OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffe
     if (dumpIOEnable == "true" && dumpDataOutputFs_) {
         if (dumpDataOutputFs_->is_open() && outputBuffer->memory_->GetAddr()) {
             AVCODEC_LOGD("dumpIOE writing");
-            dumpDataOutputFs_->write(reinterpret_cast<const char*>(outputBuffer->memory_->GetAddr() +
-                                     outputBuffer->memory_->GetOffset()), outputBuffer->memory_->GetSize());
+            dumpDataOutputFs_->write(reinterpret_cast<const char*>(outputBuffer->memory_->GetAddr()),
+                outputBuffer->memory_->GetSize());
         }
     }
     // LCOV_EXCL_STOP
@@ -1194,8 +1198,10 @@ uint32_t MediaCodec::GetApiVersion()
     AppExecFwk::BundleInfo bundleInfo;
     if (iBundleMgr->GetBundleInfoForSelf(0, bundleInfo) == ERR_OK) {
         apiVersion = bundleInfo.targetVersion % API_VERSION_MOD;
+        isRunInApp_ = true;
         AVCODEC_LOGI("GetApiVersion targetVersion: %{public}u", bundleInfo.targetVersion);
     } else {
+        isRunInApp_ = false;
         AVCODEC_LOGW("GetApiVersion failed, call by SA or test maybe");
     }
     return apiVersion;

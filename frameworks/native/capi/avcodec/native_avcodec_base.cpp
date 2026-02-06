@@ -21,10 +21,10 @@ extern "C" {
 
 const char *OH_AVCODEC_MIMETYPE_VIDEO_MSVIDEO1 = "video/msvideo1";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_VC1 = "video/vc1";
-const char *OH_AVCODEC_MIMETYPE_VIDEO_WVC1 = "video/wvc1";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_VP8 = "video/vp8";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_VP9 = "video/vp9";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_AV1 = "video/av1";
+const char *OH_AVCODEC_MIMETYPE_VIDEO_WVC1 = "video/wvc1";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_AVC = "video/avc";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG4 = "video/mp4v-es";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2 = "video/mp4v-es";
@@ -37,6 +37,7 @@ const char *OH_AVCODEC_MIMETYPE_VIDEO_RV30 = "video/rv30";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_RV40 = "video/rv40";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_DVVIDEO = "video/dvvideo";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_RAWVIDEO = "video/rawvideo";
+const char *OH_AVCODEC_MIMETYPE_VIDEO_CINEPAK = "video/cinepak";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_AAC = "audio/mp4a-latm";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_FLAC = "audio/flac";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_VORBIS = "audio/vorbis";
@@ -113,6 +114,7 @@ const char *OH_MD_MAX_OUTPUT_BUFFER_COUNT = "max_output_buffer_count";
 const char *OH_MD_KEY_VIDEO_IS_HDR_VIVID = "video_is_hdr_vivid";
 const char *OH_MD_KEY_BLOCK_ALIGN = "audio_block_align";
 const char *OH_MD_KEY_BUFFER_SKIP_SAMPLES_INFO = "buffer_skip_samples_info";
+const char *OH_MD_KEY_ENABLE_BUFFER_SKIP_SAMPLES = "enable_buffer_skip_samples";
 
 const char *OH_MD_KEY_TITLE = "title";
 const char *OH_MD_KEY_ARTIST = "artist";

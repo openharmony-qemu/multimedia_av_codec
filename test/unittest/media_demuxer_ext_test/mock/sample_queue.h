@@ -44,6 +44,7 @@ class SampleQueue : public std::enable_shared_from_this<SampleQueue> {
 public:
     static constexpr uint32_t MAX_SAMPLE_QUEUE_SIZE = 1;
     static constexpr uint32_t DEFAULT_SAMPLE_QUEUE_SIZE = 1;
+    static constexpr uint32_t FD_SAMPLE_QUEUE_SIZE = 300;
     static constexpr uint32_t MAX_SAMPLE_BUFFER_CAP = 10 * 1024 * 1024;
     static constexpr uint32_t DEFAULT_VIDEO_SAMPLE_BUFFER_CAP = 1 * 1024 * 1024;
     static constexpr uint32_t DEFAULT_SAMPLE_BUFFER_CAP = 4 * 1024;
@@ -91,6 +92,7 @@ public:
     MOCK_METHOD(uint32_t, GetFilledBufferSize, (), ());
     MOCK_METHOD(Status, UpdateLastOutSamplePts, (int64_t), ());
     MOCK_METHOD(Status, UpdateLastEnterSamplePts, (int64_t), ());
+    MOCK_METHOD(int64_t, GetLastEnterSamplePts, (), ());
     MOCK_METHOD(int64_t, GetLastOutSamplePts, (), ());
     MOCK_METHOD(Status, CopyBufferSlice, (std::shared_ptr<AVBuffer>&, std::shared_ptr<AVBuffer>&, int32_t), ());
     MOCK_METHOD(Status, RollbackBuffer, (std::shared_ptr<AVBuffer>&), ());

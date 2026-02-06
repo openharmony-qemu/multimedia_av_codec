@@ -115,6 +115,7 @@ VideoTrack::VideoTrack(std::string mimeType, std::shared_ptr<BasicBox> moov,
 {
     hdlrType_ = 'vide';
     hdlrName_ = "VideoHandler";
+    tempCtts_ = std::make_shared<SttsBox>(0, "temp");
 }
 
 VideoTrack::~VideoTrack()
@@ -270,9 +271,16 @@ Status VideoTrack::WriteSample(std::shared_ptr<AVIOStream> io, const std::shared
 Status VideoTrack::WriteTailer()
 {
     FALSE_RETURN_V_MSG_E(stsz_ != nullptr, Status::ERROR_INVALID_OPERATION, "stsz box is empty");
+    if (lastDuration_ == 0 && stsz_->sampleCount_ > 1) {
+        lastDuration_ = ConvertTime(ConvertTimeToMpeg4(lastTimestampUs_ - startTimestampUs_, timeScale_),
+            stsz_->sampleCount_ - 1, 1);
+    }
     if (stsz_->sampleCount_ > 0) {
-        DisposeCtts();
-        DisposeSttsAllPts();
+        if (isHaveBFrame_) {
+            DisposeCttsAndStts();
+        } else {
+            DisposeSttsOnly();
+        }
         DisposeDuration();
         DisposeBitrate();
         DisposeColor();
@@ -363,7 +371,7 @@ void VideoTrack::InitCuva(const std::shared_ptr<Meta> &trackDesc)
     isCuvaHDR_ = false;
     if (trackDesc->Find(Tag::VIDEO_IS_HDR_VIVID) != trackDesc->end()) {
         trackDesc->Get<Tag::VIDEO_IS_HDR_VIVID>(isCuvaHDR_);
-        MEDIA_LOG_D("hdr type: %{public}d", isCuvaHDR_);
+        MEDIA_LOG_I("hdr type: %{public}d", isCuvaHDR_);
     }
 }
 
@@ -391,54 +399,37 @@ void VideoTrack::DisposeCtts(int64_t pts)
     }
 }
 
-void VideoTrack::DisposeCtts()
-{
-    FALSE_RETURN_MSG(stsz_ != nullptr, "stsz box is empty");
-    FALSE_RETURN_MSG(ctts_ != nullptr, "ctts box is empty");
-    if (lastDuration_ == 0 && stsz_->sampleCount_ > 1) {
-        lastDuration_ = ConvertTime(ConvertTimeToMpeg4(lastTimestampUs_ - startTimestampUs_, timeScale_),
-            stsz_->sampleCount_ - 1, 1);
-    }
-    if (isHaveBFrame_) {
-        while (allPts_.size() > 0) {
-            auto& pts = allPts_.front();
-            DisposeCttsByFrameRate(pts);
-            allPts_.pop();
-        }
-        for (auto& ctts : ctts_->timeToSamples_) {
-            int64_t tmpNum = static_cast<int64_t>(static_cast<int32_t>(ctts.second)) - delay_;
-            if (tmpNum < INT32_MIN) {
-                tmpNum = INT32_MIN;
-            } else if (tmpNum > INT32_MAX) {
-                tmpNum = INT32_MAX;
-            }
-            ctts.second = static_cast<uint32_t>(tmpNum);
-        }
-        delay_ += startDts_;
-        if (ctts_->entryCount_ == 1) {
-            ctts_->entryCount_ = 0;
-            ctts_->timeToSamples_.clear();
-        }
-    }
-}
-
 void VideoTrack::DisposeCttsByFrameRate(int64_t pts)
 {
-    FALSE_RETURN_MSG(ctts_ != nullptr, "ctts box is empty");
+    FALSE_RETURN_MSG(tempCtts_ != nullptr, "ctts box is empty");
     int64_t cts = ConvertTimeToMpeg4(pts, timeScale_) - dts_;
     if (cts > INT32_MAX || cts < INT32_MIN) {
         MEDIA_LOG_E("ctts sample_offset must <= INT32_MAX and >= INT32_MIN, but the value is " PUBLIC_LOG_D64 ", "
             "the pts is " PUBLIC_LOG_D64, cts, pts);
     }
     delay_ = std::min(cts, delay_);
-    size_t size = ctts_->timeToSamples_.size();
-    if (size > 0 && ctts_->timeToSamples_[size - 1].second == static_cast<uint32_t>(cts)) {
-        ctts_->timeToSamples_[size - 1].first++;
-    } else {
-        ctts_->entryCount_++;
-        ctts_->timeToSamples_.emplace_back(std::pair<uint32_t, uint32_t>(1, static_cast<uint32_t>(cts)));
-    }
+    tempCtts_->AddData(static_cast<uint32_t>(cts));
     dts_ += lastDuration_;
+}
+
+void VideoTrack::DisposeCttsAndStts(int64_t mpeg4Pts)
+{
+    FALSE_RETURN_MSG(ctts_ != nullptr, "ctts box is empty");
+    int64_t dtsMin = dts_;
+    if (mpeg4Pts > ptsMax_) {
+        // 更新dts为上一次ptsMax和dts的最大值
+        dts_ = std::max(ptsMax_, dts_);
+        ptsMax_ = mpeg4Pts;
+    }
+    int64_t cts = mpeg4Pts - dtsMin;
+    if (cts > INT32_MAX || cts < INT32_MIN) {
+        MEDIA_LOG_E("ctts sample_offset must <= INT32_MAX and >= INT32_MIN, but the value is " PUBLIC_LOG_D64 ", "
+            "the pts is " PUBLIC_LOG_D64, cts, mpeg4Pts);
+    }
+    delay_ = std::min(cts, delay_);
+    ctts_->AddData(static_cast<uint32_t>(cts));
+    dts_ += lastDuration_;
+    DisposeStts(dts_ - dtsMin, mpeg4Pts);
 }
 
 void VideoTrack::DisposeSttsNoPts()
@@ -446,10 +437,10 @@ void VideoTrack::DisposeSttsNoPts()
     int64_t dts = 0;
     int64_t lastTimestamp = 0;
     bool isFirst = true;
-    while (ctts_->timeToSamples_.size() > 0) {
-        auto timeToSample = ctts_->timeToSamples_.front();
-        ctts_->timeToSamples_.pop_front();
-        ctts_->entryCount_--;
+    while (tempCtts_->timeToSamples_.size() > 0) {
+        auto timeToSample = tempCtts_->timeToSamples_.front();
+        tempCtts_->timeToSamples_.pop_front();
+        tempCtts_->entryCount_--;
         for (uint32_t j = 0; j < timeToSample.first; ++j) {
             if (isFirst) {
                 isFirst = false;
@@ -468,14 +459,9 @@ void VideoTrack::DisposeSttsNoPts()
     DisposeStts(lastDuration_, lastTimestamp);
 }
 
-void VideoTrack::DisposeSttsAllPts()
+void VideoTrack::DisposeSttsOnly()
 {
-    FALSE_RETURN_MSG(stts_ != nullptr && stsz_ != nullptr, "stts or stsz box is empty");
-    if (isHaveBFrame_) {
-        stts_->entryCount_ = 1;
-        stts_->timeToSamples_.emplace_back(std::pair<uint32_t, uint32_t>(stsz_->sampleCount_,
-            static_cast<uint32_t>(lastDuration_)));
-    } else if (allPts_.size() > 0) {
+    if (allPts_.size() > 0) {
         int64_t lastTimestampUs = allPts_.front();
         allPts_.pop();
         while (allPts_.size() > 0) {
@@ -488,6 +474,47 @@ void VideoTrack::DisposeSttsAllPts()
         DisposeStts(lastDuration_, lastTimestampUs);
     } else {
         DisposeSttsNoPts();
+    }
+}
+
+void VideoTrack::DisposeCttsAndStts()
+{
+    delay_ = 0;
+    dts_ = startDts_;
+    ptsMax_ = startDts_;
+    if (allPts_.size() > 0) {  // 没有设置帧率
+        while (allPts_.size() > 0) {
+            int64_t pts = allPts_.front();
+            allPts_.pop();
+            DisposeCttsAndStts(ConvertTimeToMpeg4(pts, timeScale_));
+        }
+    } else {  // 有帧率，用ctts还原pts，再计算ctts和stts
+        int64_t dts = startDts_;
+        while (tempCtts_->timeToSamples_.size() > 0) {
+            auto timeToSample = tempCtts_->timeToSamples_.front();
+            tempCtts_->timeToSamples_.pop_front();
+            tempCtts_->entryCount_--;
+            for (uint32_t j = 0; j < timeToSample.first; ++j) {
+                int64_t pts = dts + static_cast<int32_t>(timeToSample.second);
+                DisposeCttsAndStts(pts);
+                dts += lastDuration_;
+            }
+        }
+    }
+    // 更新ctts
+    for (auto& ctts : ctts_->timeToSamples_) {
+        int64_t tmpNum = static_cast<int64_t>(static_cast<int32_t>(ctts.second)) - delay_;
+        if (tmpNum < INT32_MIN) {
+            tmpNum = INT32_MIN;
+        } else if (tmpNum > INT32_MAX) {
+            tmpNum = INT32_MAX;
+        }
+        ctts.second = static_cast<uint32_t>(tmpNum);
+    }
+    delay_ += startDts_;
+    if (ctts_->entryCount_ == 1) {
+        ctts_->entryCount_ = 0;
+        ctts_->timeToSamples_.clear();
     }
 }
 
@@ -598,6 +625,11 @@ void VideoTrack::DisposeColor()
 void VideoTrack::DisposeCuva()
 {
     // 需要通过buffer或设置获取hdr vivid
+    HevcParser* parser = VideoParser::GetVideoParserPtr<HevcParser>(videoParser_);
+    if (parser != nullptr && parser->IsHdrVivid()) {
+        MEDIA_LOG_I("set cuva hdr (hdr vivid) true by video parser");
+        isCuvaHDR_ = true;
+    }
     if (isCuvaHDR_ && mimeType_.compare(AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_HEVC) == 0) {
         // hvc1
         auto videoBox = BasicBox::GetBoxPtr<VideoBox>(moov_, trackPath_ + ".mdia.minf.stbl.stsd." + codingType_);

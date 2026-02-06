@@ -167,6 +167,11 @@ void GetHttpProxyInfo(std::string &host, int32_t &port, std::string &exclusions)
     exclusions = ToString(httpProxy.GetExclusionList());
 }
 
+NetworkClient *CreateNetworkClient(RxHeader headCallback, RxBody bodyCallback, void *userParam)
+{
+    return new HttpCurlClient(headCallback, bodyCallback, userParam);
+}
+
 std::shared_ptr<NetworkClient> NetworkClient::GetInstance(RxHeader headCallback, RxBody bodyCallback, void *userParam)
 {
     return std::make_shared<HttpCurlClient>(headCallback, bodyCallback, userParam);

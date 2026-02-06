@@ -66,6 +66,9 @@ public:
             return;
         }
         auto listPos = it->second;
+        if (listPos == itemList_.end()) {
+            return;
+        }
         listPos->first = keyNew;
         listPos->second = val;
         it->second->first = keyNew;

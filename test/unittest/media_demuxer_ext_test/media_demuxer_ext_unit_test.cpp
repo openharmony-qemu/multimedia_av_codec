@@ -2477,8 +2477,8 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectBitRateChangeStream_004,
         .WillRepeatedly(Return(Status::OK));
 
     // isHlsFmp4_ false
-    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTrackInfoByStreamID(_, _, _)).Times(1);
-    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), UpdateTempTrackMapInfo(_, _, _)).Times(1);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTrackInfoByStreamID(_, _, _, _)).Times(2);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), UpdateTempTrackMapInfo(_, _, _)).Times(2);
 
     // InnerSelectTrack return error
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillRepeatedly(Return(false));
@@ -2684,10 +2684,12 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoSampleQueue_001, TestS
 HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoTrack_001, TestSize.Level1)
 {
     mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->audioTrackId_ = NUM_1;
     std::shared_ptr<AVBuffer> videoSample = std::make_shared<AVBuffer>();
     videoSample->pts_ = NUM_0;
     mediaDemuxer_->bufferMap_[0] = videoSample;
     mediaDemuxer_->sampleQueueMap_[0] = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[1] = std::make_shared<SampleQueue>();
     auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
     mediaDemuxer_->eventReceiver_ = mockEventReceiver;
     EXPECT_CALL(*(mockEventReceiver), OnEvent(_)).Times(NUM_1);
@@ -2713,10 +2715,12 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoTrack_001, TestSize.Le
 HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoTrack_002, TestSize.Level1)
 {
     mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->audioTrackId_ = NUM_1;
     std::shared_ptr<AVBuffer> videoSample = std::make_shared<AVBuffer>();
     videoSample->pts_ = NUM_0;
     mediaDemuxer_->bufferMap_[0] = videoSample;
     mediaDemuxer_->sampleQueueMap_[0] = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[1] = std::make_shared<SampleQueue>();
     EXPECT_CALL(*(mediaDemuxer_->sampleQueueMap_[NUM_0]), Clear()).WillRepeatedly(Return(Status::OK));
     auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
     mediaDemuxer_->eventReceiver_ = mockEventReceiver;
@@ -2873,10 +2877,6 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_GetBufferFromUserQueue_001, TestS
     EXPECT_EQ(ret, true);
 
     mediaDemuxer_->hasSetLargeSize_ = true;
-    EXPECT_CALL(*(mediaDemuxer_->sampleQueueMap_[NUM_0]), IsEmpty()).WillOnce(Return(false));
-    ret = mediaDemuxer_->GetBufferFromUserQueue(NUM_0, NUM_100);
-    EXPECT_EQ(ret, false);
-
     int64_t duration = 0;
     mediaDemuxer_->mediaMetaData_.globalMeta = std::make_shared<Meta>();
     mediaDemuxer_->mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(duration);

@@ -580,8 +580,7 @@ int32_t Av1Decoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         };
         capsData.profiles = {
             static_cast<int32_t>(AV1_PROFILE_MAIN),
-            static_cast<int32_t>(AV1_PROFILE_HIGH),
-            static_cast<int32_t>(AV1_PROFILE_PROFESSIONAL)
+            static_cast<int32_t>(AV1_PROFILE_HIGH)
         };
         std::vector<int32_t> levels;
         for (int32_t j = 0; j <= static_cast<int32_t>(AV1Level::AV1_LEVEL_73); ++j) {
@@ -589,7 +588,6 @@ int32_t Av1Decoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         }
         capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(AV1_PROFILE_MAIN), levels));
         capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(AV1_PROFILE_HIGH), levels));
-        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(AV1_PROFILE_PROFESSIONAL), levels));
         capaArray.emplace_back(capsData);
     }
     return AVCS_ERR_OK;

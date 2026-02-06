@@ -27,6 +27,7 @@ namespace Media {
 
 BlockQueuePool::~BlockQueuePool()
 {
+    std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
     MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S, name_.c_str());
     for (auto que : quePool_) {
         FreeQueue(que.first);
@@ -375,6 +376,7 @@ bool BlockQueuePool::InnerQueueIsFull(uint32_t queueIndex)
 
 bool BlockQueuePool::HasQueue(uint32_t trackIndex)
 {
+    std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
     MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32, name_.c_str(), trackIndex);
     return queMap_.count(trackIndex) > 0;
 }

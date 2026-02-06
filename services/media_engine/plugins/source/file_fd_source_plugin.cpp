@@ -51,6 +51,22 @@ bool StrToLong(const std::string_view& str, int64_t& value)
     value = result;
     return true;
 }
+
+bool StrToInt(const std::string_view& str, int32_t& value)
+{
+    FALSE_RETURN_V_MSG_E(!str.empty() && (isdigit(str.front()) || (str.front() == '-')),
+        false, "no valid string.");
+    std::string valStr(str);
+    char* end = nullptr;
+    errno = 0;
+    int64_t result = strtoll(valStr.c_str(), &end, 10); /* 10 means decimal */
+    FALSE_RETURN_V_MSG_E(result >= INT32_MIN && result <= INT32_MAX, false,
+        "call StrToInt func false,  input str is: %{public}s!", valStr.c_str());
+    FALSE_RETURN_V_MSG_E(end != valStr.c_str() && end[0] == '\0' && errno != ERANGE, false,
+        "call StrToInt func false,  input str is: %{public}s!", valStr.c_str());
+    value = static_cast<int32_t>(result);
+    return true;
+}
 }
 
 namespace OHOS {
@@ -77,6 +93,7 @@ constexpr int32_t READ_RETRY                    = 2;
 constexpr int32_t READ_ERROR_IO                 = EIO;
 constexpr int32_t READ_ERROR_NOMEM              = ENOMEM;
 constexpr float CACHE_LEVEL_1                   = 0.3;
+constexpr size_t SIZE_INDEX                     = 3;
 
 constexpr unsigned int HMDFS_IOC = 0xf2;
 #define IOCTL_CLOUD 2
@@ -374,8 +391,8 @@ Status FileFdSourcePlugin::ParseUriInfo(const std::string& uri)
         Status::ERROR_INVALID_PARAMETER, "Invalid fd uri format");
     FALSE_RETURN_V_MSG_E(fdUriMatch.size() >= FDPOS && isNumber(fdUriMatch[1].str()),
         Status::ERROR_INVALID_PARAMETER, "Invalid fd uri format");
-    fd_ = std::stoi(fdUriMatch[1].str()); // 1: sub match fd subscript
-    FALSE_RETURN_V_MSG_E(fd_ != -1 && FileSystem::IsRegularFile(fd_),
+    std::string fdStr = fdUriMatch[1].str();
+    FALSE_RETURN_V_MSG_E(StrToInt(fdStr, fd_) && fd_ != -1 && FileSystem::IsRegularFile(fd_),
         Status::ERROR_INVALID_PARAMETER, "Invalid fd: " PUBLIC_LOG_D32, fd_);
     fileSize_ = GetFileSize(fd_);
     if (fdUriMatch.size() == 4) { // 4：4 sub match
@@ -385,7 +402,11 @@ Status FileFdSourcePlugin::ParseUriInfo(const std::string& uri)
         if (static_cast<uint64_t>(offset_) > fileSize_) {
             offset_ = static_cast<int64_t>(fileSize_);
         }
-        size_ = static_cast<uint64_t>(std::stoll(fdUriMatch[3].str())); // 3: sub match size subscript
+        int64_t tempSize = 0;
+        std::string sizeStr = fdUriMatch[SIZE_INDEX].str();
+        FALSE_RETURN_V_MSG_E(StrToLong(sizeStr, tempSize), Status::ERROR_INVALID_PARAMETER,
+            "Failed to read size.");
+        size_ = static_cast<uint64_t>(tempSize);
         uint64_t remainingSize = fileSize_ - static_cast<uint64_t>(offset_);
         if (size_ > remainingSize) {
             size_ = remainingSize;

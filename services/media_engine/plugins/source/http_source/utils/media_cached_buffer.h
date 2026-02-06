@@ -91,6 +91,7 @@ public:
     void Reset();
     uint64_t GetFreeSize();
     bool ClearFragmentBeforeOffset(uint64_t offset);
+    bool ClearFragmentAfterOffset(uint64_t offset);
     bool ClearChunksOfFragment(uint64_t offset);
     bool ClearMiddleReadFragment(uint64_t minOffset, uint64_t maxOffset);
     bool IsReadSplit(uint64_t offset);
@@ -98,7 +99,7 @@ public:
 
 protected:
     virtual CacheChunk* GetFreeCacheChunk(uint64_t offset, bool checkAllowFailContinue = false);
-    virtual ChunkIterator AddFragmentCacheBuffer(uint64_t offset);
+    virtual bool AddFragmentCacheBuffer(uint64_t offset, ChunkIterator& chunkPos);
     FragmentIterator GetFragmentIterator(FragmentIterator& currFragmentIter,
         uint64_t offset, ChunkIterator chunkPos, CacheChunk* splitHead, CacheChunk*& chunkInfo);
     virtual ChunkIterator SplitFragmentCacheBuffer(FragmentIterator& currFragmentIter,
@@ -214,6 +215,7 @@ public:
     virtual void Dump(uint64_t param) = 0;
     virtual uint64_t GetFreeSize() = 0;
     virtual bool ClearFragmentBeforeOffset(uint64_t offset) = 0;
+    virtual bool ClearFragmentAfterOffset(uint64_t offset) = 0;
     virtual bool ClearChunksOfFragment(uint64_t offset) = 0;
     virtual bool ClearMiddleReadFragment(uint64_t minOffset, uint64_t maxOffset) = 0;
     virtual bool IsReadSplit(uint64_t offset) = 0;
@@ -242,6 +244,7 @@ public:
     bool Check();
     uint64_t GetFreeSize() override;
     bool ClearFragmentBeforeOffset(uint64_t offset) override;
+    bool ClearFragmentAfterOffset(uint64_t offset) override;
     bool ClearChunksOfFragment(uint64_t offset) override;
     bool ClearMiddleReadFragment(uint64_t minOffset, uint64_t maxOffset) override;
     bool IsReadSplit(uint64_t offset) override;
@@ -255,7 +258,7 @@ protected:
     CacheChunk* GetFreeCacheChunk(uint64_t offset, bool checkAllowFailContinue = false) override;
     ChunkIterator SplitFragmentCacheBuffer(FragmentIterator& currFragmentIter, uint64_t offset,
         ChunkIterator chunkPos) override;
-    ChunkIterator AddFragmentCacheBuffer(uint64_t offset) override;
+    bool AddFragmentCacheBuffer(uint64_t offset, ChunkIterator& chunkPos) override;
     size_t Write(void* ptr, uint64_t inOffset, size_t inWriteSize) override;
 };
 

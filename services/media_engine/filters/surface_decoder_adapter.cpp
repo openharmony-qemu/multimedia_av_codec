@@ -107,6 +107,7 @@ SurfaceDecoderAdapter::SurfaceDecoderAdapter()
 SurfaceDecoderAdapter::~SurfaceDecoderAdapter()
 {
     MEDIA_LOG_I("encoder adapter destroy");
+    std::unique_lock<std::shared_mutex> lock(codecServerMutex_);
     if (codecServer_) {
         codecServer_->Release();
     }
@@ -120,10 +121,13 @@ Status SurfaceDecoderAdapter::Init(const std::string &mime)
     std::shared_ptr<Media::Meta> callerInfo = std::make_shared<Media::Meta>();
     callerInfo->SetData(Media::Tag::VIDEO_ENABLE_LOCAL_RELEASE, true);
     format.SetMeta(callerInfo);
-    int ret = MediaAVCodec::VideoDecoderFactory::CreateByMime(mime, format, codecServer_);
-    if (ret != 0 || !codecServer_) {
-        MEDIA_LOG_I("Create codecServer failed");
-        return Status::ERROR_UNKNOWN;
+    {
+        std::unique_lock<std::shared_mutex> lock(codecServerMutex_);
+        int ret = MediaAVCodec::VideoDecoderFactory::CreateByMime(mime, format, codecServer_);
+        if (ret != 0 || !codecServer_) {
+            MEDIA_LOG_I("Create codecServer failed");
+            return Status::ERROR_UNKNOWN;
+        }
     }
     if (!releaseBufferTask_) {
         releaseBufferTask_ = std::make_shared<Task>("SurfaceDecoder");
@@ -156,8 +160,11 @@ Status SurfaceDecoderAdapter::Init(const std::string &mime, bool isHdr)
     std::shared_ptr<Media::Meta> callerInfo = std::make_shared<Media::Meta>();
     callerInfo->SetData(Media::Tag::VIDEO_ENABLE_LOCAL_RELEASE, true);
     format.SetMeta(callerInfo);
-    int ret = MediaAVCodec::VideoDecoderFactory::CreateByName(capabilityData->codecName, format, codecServer_);
-    FALSE_RETURN_V_MSG(ret == 0 && codecServer_ != nullptr, Status::ERROR_UNKNOWN, "get capability data failed");
+    {
+        std::unique_lock<std::shared_mutex> lock(codecServerMutex_);
+        int ret = MediaAVCodec::VideoDecoderFactory::CreateByName(capabilityData->codecName, format, codecServer_);
+        FALSE_RETURN_V_MSG(ret == 0 && codecServer_ != nullptr, Status::ERROR_UNKNOWN, "get capability data failed");
+    }
     if (!releaseBufferTask_) {
         releaseBufferTask_ = std::make_shared<Task>("SurfaceDecoder");
         FALSE_RETURN_V(releaseBufferTask_ != nullptr, Status::ERROR_NULL_POINTER);
@@ -172,6 +179,7 @@ Status SurfaceDecoderAdapter::Init(const std::string &mime, bool isHdr)
 Status SurfaceDecoderAdapter::Configure(const Format &format)
 {
     MEDIA_LOG_I("Configure");
+    std::shared_lock<std::shared_mutex> lock(codecServerMutex_);
     if (!codecServer_) {
         return Status::ERROR_UNKNOWN;
     }
@@ -212,6 +220,7 @@ Status SurfaceDecoderAdapter::SetDecoderAdapterCallback(
     std::shared_ptr<MediaAVCodec::MediaCodecCallback> surfaceDecoderAdapterCallback =
         std::make_shared<SurfaceDecoderAdapterCallback>(shared_from_this());
     decoderAdapterCallback_ = decoderAdapterCallback;
+    std::shared_lock<std::shared_mutex> lock(codecServerMutex_);
     if (!codecServer_) {
         return Status::ERROR_UNKNOWN;
     }
@@ -226,6 +235,7 @@ Status SurfaceDecoderAdapter::SetDecoderAdapterCallback(
 Status SurfaceDecoderAdapter::SetOutputSurface(sptr<Surface> surface)
 {
     MEDIA_LOG_I("SetOutputSurface");
+    std::shared_lock<std::shared_mutex> lock(codecServerMutex_);
     if (!codecServer_) {
         return Status::ERROR_UNKNOWN;
     }
@@ -242,6 +252,7 @@ Status SurfaceDecoderAdapter::SetOutputSurface(sptr<Surface> surface)
 Status SurfaceDecoderAdapter::Start()
 {
     MEDIA_LOG_I("Start");
+    std::shared_lock<std::shared_mutex> lock(codecServerMutex_);
     if (!codecServer_) {
         return Status::ERROR_UNKNOWN;
     }
@@ -279,6 +290,7 @@ Status SurfaceDecoderAdapter::Stop()
         releaseBufferTask_->Stop();
         MEDIA_LOG_I("releaseBufferTask_ Stop");
     }
+    std::shared_lock<std::shared_mutex> lock(codecServerMutex_);
     if (!codecServer_) {
         return Status::OK;
     }
@@ -306,6 +318,7 @@ Status SurfaceDecoderAdapter::Resume()
 Status SurfaceDecoderAdapter::Flush()
 {
     MEDIA_LOG_I("Flush");
+    std::shared_lock<std::shared_mutex> lock(codecServerMutex_);
     if (!codecServer_) {
         return Status::ERROR_UNKNOWN;
     }
@@ -320,6 +333,7 @@ Status SurfaceDecoderAdapter::Flush()
 Status SurfaceDecoderAdapter::Release()
 {
     MEDIA_LOG_I("Release");
+    std::shared_lock<std::shared_mutex> lock(codecServerMutex_);
     if (!codecServer_) {
         return Status::OK;
     }
@@ -334,6 +348,7 @@ Status SurfaceDecoderAdapter::Release()
 Status SurfaceDecoderAdapter::SetParameter(const Format &format)
 {
     MEDIA_LOG_I("SetParameter");
+    std::shared_lock<std::shared_mutex> lock(codecServerMutex_);
     if (!codecServer_) {
         return Status::ERROR_UNKNOWN;
     }
@@ -409,6 +424,7 @@ void SurfaceDecoderAdapter::AcquireAvailableInputBuffer()
     int32_t metaIndex;
     FALSE_RETURN_MSG(filledInputBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, metaIndex), "get index failed.");
     uint32_t index = static_cast<uint32_t>(metaIndex);
+    std::shared_lock<std::shared_mutex> lock(codecServerMutex_);
     FALSE_RETURN_MSG(codecServer_ != nullptr, "codecServer_ is nullptr.");
     if (codecServer_->QueueInputBuffer(index) != ERR_OK) {
         MEDIA_LOG_E("QueueInputBuffer failed, index: %{public}u,  bufferid: %{public}" PRIu64
@@ -439,6 +455,7 @@ void SurfaceDecoderAdapter::ReleaseBuffer()
         }
         for (auto &index : indexs) {
             MEDIA_LOG_D("Release buffer, index: " PUBLIC_LOG_U32, index);
+            std::shared_lock<std::shared_mutex> lock(codecServerMutex_);
             codecServer_->ReleaseOutputBuffer(index, true);
             if (index == eosBufferIndex_) {
                 int64_t lastBufferPts = GetLastBufferPts();
@@ -451,6 +468,7 @@ void SurfaceDecoderAdapter::ReleaseBuffer()
         for (auto &dropIndex : dropIndexs) {
             MediaAVCodec::AVCodecTrace trace("ReleaseBuffer drop " + std::to_string(dropIndex));
             MEDIA_LOG_D("Drop buffer, index: " PUBLIC_LOG_U32, dropIndex);
+            std::shared_lock<std::shared_mutex> lock(codecServerMutex_);
             codecServer_->ReleaseOutputBuffer(dropIndex, false);
         }
     }

@@ -98,6 +98,7 @@ public:
     Status SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode, int64_t& realSeekTime) override;
     Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample) override;
     Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout) override;
+    Status ReadSampleZeroCopy(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout) override;
     Status GetNextSampleSize(uint32_t trackId, int32_t& size) override;
     Status GetNextSampleSize(uint32_t trackId, int32_t& size, uint32_t timeout) override;
     Status Pause() override;
@@ -257,7 +258,7 @@ private:
         std::shared_ptr<SamplePacket> dstSamplePacket);
     Status ConvertPacketToAnnexb(Plugins::AVPacketWrapperPtr srcWrapper, std::shared_ptr<SamplePacket> samplePacket,
         Plugins::AVPacketWrapperPtr& outWrapper);
-    Status SetEosSample(std::shared_ptr<AVBuffer> sample);
+    Status SetEosSample(std::shared_ptr<AVBuffer> sample, bool replaceMemory);
     Status WriteBuffer(std::shared_ptr<AVBuffer> outBuffer, const uint8_t *writeData, uint32_t writeSize);
     void ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, size_t drmInfoSize,
         std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
@@ -320,6 +321,7 @@ private:
     void InitIoContextInDemuxer(const std::shared_ptr<DataSource>& source);
     Status ParserRefInit();
     Status ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId);
+    Status UpdateParserGopId(int32_t iFramePosSize);
     Status SelectProGopId();
     void ParserBoxInfo();
     AVStream *GetVideoStream();
@@ -512,6 +514,16 @@ private:
         TimeoutGuard &timeoutGuard, TimeRange &readRange);
     Status SeekToKeyFrameCheckParam(int64_t seekTime, SeekMode mode,
         int32_t &trackIndex, int64_t &ffTime, AVStream* &avStream);
+
+    struct SeekToFrameByDtsContext {
+        int32_t trackIndex {0};
+        AVStream* avStream {nullptr};
+        int64_t ffDts {AV_NOPTS_VALUE};
+    };
+    Status SeekToFrameByDtsCheckParam(int32_t trackId, int64_t seekTime, SeekMode mode,
+        SeekToFrameByDtsContext &ctx);
+    Status ReadUntilDtsReached(SeekToFrameByDtsContext &ctx, int64_t seekTime,
+        int64_t &realSeekTime, TimeoutGuard &timeoutGuard);
     void ResetAfterSeek(int64_t seekTime, SeekMode mode);
 
     std::unordered_map<int32_t, int32_t> mp4FirstKeyFrameIdx_; // key: track index, value: first key frame index

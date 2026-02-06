@@ -32,6 +32,11 @@ namespace MediaAVCodec {
 
 constexpr uint32_t MAX_VIDEO_BITRATE = 300000000;
 constexpr uint32_t MAX_VIDEO_FRAME_RATE = 60;
+const uint32_t MIN_WIDTH = 2;
+const uint32_t MIN_HEIGHT = 2;
+const uint32_t MAX_WIDTH = 4095;
+const uint32_t MAX_HEIGHT = 4095;
+const uint32_t MAX_FRAME_RATE = 30;
 
 void CapsUnitTest::SetUpTestCase(void) {}
 
@@ -217,6 +222,8 @@ void CapsUnitTest::CheckVideoCaps(const std::shared_ptr<VideoCaps> &videoCaps) c
         CheckAVEncAVC(videoCaps);
     } else if (codecName.compare(AVCodecCodecName::VIDEO_DECODER_WMV3_NAME) == 0) {
         CheckAVDecWMV3(videoCaps);
+    } else if (codecName.compare(AVCodecCodecName::VIDEO_DECODER_CINEPAK_NAME) == 0) {
+        CheckAVDecCINEPAK(videoCaps);
     }
 }
 
@@ -454,6 +461,37 @@ void CapsUnitTest::CheckAVEncAVC(const std::shared_ptr<VideoCaps> &videoCaps) co
     EXPECT_LT(0, videoCaps->GetSupportedFormats().size());
     EXPECT_LT(0, videoCaps->GetSupportedGraphicFormats().size());
     EXPECT_LE(3, videoCaps->GetSupportedBitrateMode().size()); // 3: test value
+    EXPECT_LE(0, videoCaps->GetSupportedLevels().size());
+    EXPECT_EQ(false, videoCaps->IsSupportDynamicIframe());
+    EXPECT_EQ(false, videoCaps->IsSizeAndRateSupported(videoCaps->GetSupportedWidth().minVal,
+                                                       videoCaps->GetSupportedHeight().maxVal,
+                                                       videoCaps->GetSupportedFrameRate().maxVal + 1));
+}
+
+void CapsUnitTest::CheckAVDecCINEPAK(const std::shared_ptr<VideoCaps> &videoCaps) const
+{
+    std::shared_ptr<AVCodecInfo> videoCodecCaps = videoCaps->GetCodecInfo();
+    EXPECT_EQ(AVCODEC_TYPE_VIDEO_DECODER, videoCodecCaps->GetType());
+    EXPECT_EQ(CodecMimeType::VIDEO_CINEPAK, videoCodecCaps->GetMimeType());
+    EXPECT_EQ(0, videoCodecCaps->IsHardwareAccelerated());
+    EXPECT_EQ(1, videoCodecCaps->IsSoftwareOnly());
+    EXPECT_EQ(0, videoCodecCaps->IsVendor());
+    EXPECT_GE(1, videoCaps->GetSupportedBitrate().minVal);
+    EXPECT_LE(0, videoCaps->GetSupportedWidthAlignment());
+    EXPECT_LE(0, videoCaps->GetSupportedHeightAlignment());
+    EXPECT_GE(MIN_WIDTH, videoCaps->GetSupportedWidth().minVal);
+    EXPECT_LE(MAX_WIDTH, videoCaps->GetSupportedWidth().maxVal);
+    EXPECT_GE(MIN_HEIGHT, videoCaps->GetSupportedHeight().minVal);
+    EXPECT_LE(MAX_HEIGHT, videoCaps->GetSupportedHeight().maxVal);
+    EXPECT_GE(1, videoCaps->GetSupportedFrameRate().minVal);
+    EXPECT_LE(MAX_FRAME_RATE, videoCaps->GetSupportedFrameRate().maxVal);
+    EXPECT_LE(0, videoCaps->GetSupportedQuality().minVal);
+    EXPECT_LE(0, videoCaps->GetSupportedQuality().maxVal);
+    EXPECT_LE(0, videoCaps->GetSupportedComplexity().minVal);
+    EXPECT_LE(0, videoCaps->GetSupportedComplexity().maxVal);
+    EXPECT_LT(0, videoCaps->GetSupportedFormats().size());
+    EXPECT_LT(0, videoCaps->GetSupportedProfiles().size());
+    EXPECT_LE(0, videoCaps->GetSupportedBitrateMode().size());
     EXPECT_LE(0, videoCaps->GetSupportedLevels().size());
     EXPECT_EQ(false, videoCaps->IsSupportDynamicIframe());
     EXPECT_EQ(false, videoCaps->IsSizeAndRateSupported(videoCaps->GetSupportedWidth().minVal,

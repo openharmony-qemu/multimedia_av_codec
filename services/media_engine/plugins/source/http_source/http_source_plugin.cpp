@@ -11,6 +11,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ 
  */
 #define HST_LOG_TAG "HttpSourcePlugin"
 
@@ -176,6 +177,7 @@ Status HttpSourcePlugin::GetParameter(std::shared_ptr<Meta> &meta)
 Status HttpSourcePlugin::SetParameter(const std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("SetParameter enter.");
+    FALSE_RETURN_V(meta != nullptr, Status::ERROR_NULL_POINTER);
     meta->GetData(Tag::BUFFERING_SIZE, bufferSize_);
     meta->GetData(Tag::WATERLINE_HIGH, waterline_);
     return Status::OK;
@@ -449,6 +451,13 @@ Status HttpSourcePlugin::GetDuration(int64_t& duration)
 {
     FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
     duration = downloader_->GetDuration();
+    return Status::OK;
+}
+
+Status HttpSourcePlugin::GetStartInfo(std::pair<int64_t, bool>& startInfo)
+{
+    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
+    startInfo = downloader_->GetStartInfo();
     return Status::OK;
 }
 

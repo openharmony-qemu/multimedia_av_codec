@@ -97,7 +97,9 @@ int32_t AudioDecoderInnerMock::Start(int32_t sampleRate, int32_t channel, std::v
     if (audioCodec_ == nullptr || innerBufferQueue_ == nullptr) {
         return -1;
     }
+    int32_t enable = 1;
     auto meta = std::make_shared<Media::Meta>();
+    meta->Set<Tag::ENABLE_BUFFER_SKIP_SAMPLES>(enable);
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(channel);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(sampleRate);
     meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);

@@ -1382,4 +1382,32 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_DECODE_SYNC_VC1_FUNC_0004, TestSize.Level0)
     ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
 }
 
+/**
+ * @tc.number    : VIDEO_VC1DEC_FUNCTION_0057
+ * @tc.name      : decode Vc1 buffer graph pixel format
+ * @tc.desc      : function test
+ */
+HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0057, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecAPI11Sample>();
+    const char *file = "/data/test/media/test_vc1.avi";
+    int32_t pixfmt[4] = {28, 24, 25, 12};
+    vDecSample->getFormat(file);
+    vDecSample->outputYuvFlag = true;
+    vDecSample->isGetVideoSupportedPixelFormats = true;
+    vDecSample->isGetFormatKey = true;
+    vDecSample->avcodecMimeType = OH_AVCODEC_MIMETYPE_VIDEO_VC1;
+    vDecSample->isEncoder = false;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.VC1"));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(0, vDecSample->errCount);
+    ASSERT_EQ(4, vDecSample->pixlFormatNum);
+    for (int i = 0; i < vDecSample->pixlFormatNum; i++) {
+        ASSERT_EQ(vDecSample->pixlFormats[i], pixfmt[i]);
+    }
+    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
+}
 } // namespace

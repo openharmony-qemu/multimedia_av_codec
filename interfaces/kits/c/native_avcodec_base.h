@@ -385,6 +385,13 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_RV30;
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_RV40;
 
 /**
+ * @brief Enumerates the MIME type of video CINEPAK codec.
+ *
+ * @since 23
+ */
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_CINEPAK;
+
+/**
  * @brief Enumerates the types of audio and video muxer
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
@@ -1190,6 +1197,16 @@ extern const char *OH_MD_KEY_BLOCK_ALIGN;
 extern const char *OH_MD_KEY_BUFFER_SKIP_SAMPLES_INFO;
 
 /**
+ * @brief Key to enable {@link OH_MD_KEY_BUFFER_SKIP_SAMPLES_INFO} in audio decoder,
+ * value type is int32_t (0 or 1):1 is enabled, 0 is disabled.
+ *
+ * This is an optional key, default is 0.
+ *
+ * @since 23
+ */
+extern const char *OH_MD_KEY_ENABLE_BUFFER_SKIP_SAMPLES;
+
+/**
  * @brief Media type.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
@@ -1360,7 +1377,6 @@ typedef enum OH_HEVCProfile {
 typedef enum OH_AV1Profile {
     /** Main profile */
     AV1_PROFILE_MAIN = 0,
-
     /** High profile */
     AV1_PROFILE_HIGH = 1,
     /** Professional profile */
@@ -1476,16 +1492,6 @@ typedef enum OH_VC1Profile {
 } OH_VC1Profile;
 
 /**
- * @brief WVC1 Profile
- *
- * @since 23
- */
-typedef enum OH_WVC1Profile {
-    /** Advanced profile */
-    WVC1_PROFILE_ADVANCED = 0,
-} OH_WVC1Profile;
-
-/**
  * @brief VP9 Profile
  *
  * @since 23
@@ -1500,6 +1506,16 @@ typedef enum OH_VP9Profile {
     /** profile 3 */
     VP9_PROFILE_3 = 3,
 } OH_VP9Profile;
+
+/**
+ * @brief WVC1 Profile
+ *
+ * @since 23
+ */
+typedef enum OH_WVC1Profile {
+    /** Advanced profile */
+    WVC1_PROFILE_ADVANCED = 0,
+} OH_WVC1Profile;
 
 /**
  * @brief Enumerates the muxer output file format.
@@ -1907,24 +1923,6 @@ typedef enum OH_VC1Level {
 } OH_VC1Level;
 
 /**
- * @brief WVC1 Level.
- *
- * @since 23
- */
-typedef enum OH_WVC1Level {
-    /** L0 level */
-    WVC1_LEVEL_L0 = 0,
-    /** L1 level */
-    WVC1_LEVEL_L1 = 1,
-    /** L2 level */
-    WVC1_LEVEL_L2 = 2,
-    /** L3 level */
-    WVC1_LEVEL_L3 = 3,
-    /** L4 level */
-    WVC1_LEVEL_L4 = 4,
-} OH_WVC1Level;
-
-/**
  * @brief VP9 Level.
  *
  * @since 23
@@ -1959,6 +1957,24 @@ typedef enum OH_VP9Level {
     /** 6.2 level */
     VP9_LEVEL_62 = 13,
 } OH_VP9Level;
+
+/**
+ * @brief WVC1 Level.
+ *
+ * @since 23
+ */
+typedef enum OH_WVC1Level {
+    /** L0 level */
+    WVC1_LEVEL_L0 = 0,
+    /** L1 level */
+    WVC1_LEVEL_L1 = 1,
+    /** L2 level */
+    WVC1_LEVEL_L2 = 2,
+    /** L3 level */
+    WVC1_LEVEL_L3 = 3,
+    /** L4 level */
+    WVC1_LEVEL_L4 = 4,
+} OH_WVC1Level;
 
 /**
  * @brief The bitrate mode of encoder.

@@ -46,6 +46,40 @@ protected:
     const char *INP_URI_1 = "http://127.0.0.1:46666/test_msmpeg4_wma.asf";
     const char *INP_DIR_2 = "/data/test/media/test_mpeg4_wma.asf";
     const char *INP_URI_2 = "http://127.0.0.1:46666/test_mpeg4_wma.asf";
+    const char *INP_DIR_3 = "/data/test/media/h263_aac.asf";
+    const char *INP_DIR_4 = "/data/test/media/h264_aac.asf";
+    const char *INP_DIR_5 = "/data/test/media/h264_ac3.asf";
+    const char *INP_DIR_6 = "/data/test/media/h264_adpcm_g722.asf";
+    const char *INP_DIR_7 = "/data/test/media/h264_adpcm_g726.asf";
+    const char *INP_DIR_8 = "/data/test/media/h264_adpcm_ima_wav.asf";
+    const char *INP_DIR_9 = "/data/test/media/h264_adpcm_ms.asf";
+    const char *INP_DIR_11 = "/data/test/media/h264_adpcm_yamaha.asf";
+    const char *INP_DIR_12 = "/data/test/media/h264_amr_nb.asf";
+    const char *INP_DIR_13 = "/data/test/media/h264_amr_wb.asf";
+    const char *INP_DIR_14 = "/data/test/media/h264_av1_aac.asf";
+    const char *INP_DIR_15 = "/data/test/media/h264_eac3.asf";
+    const char *INP_DIR_16 = "/data/test/media/h264_flac.asf";
+    const char *INP_DIR_17 = "/data/test/media/h264_gsm_ms.asf";
+    const char *INP_DIR_18 = "/data/test/media/h264_mp2.asf";
+    const char *INP_DIR_19 = "/data/test/media/h264_mp3.asf";
+    const char *INP_DIR_20 = "/data/test/media/h264_pcm_alaw.asf";
+    const char *INP_DIR_21 = "/data/test/media/h264_pcm_f32le.asf";
+    const char *INP_DIR_22 = "/data/test/media/h264_pcm_f64le.asf";
+    const char *INP_DIR_23 = "/data/test/media/h264_pcm_mulaw.asf";
+    const char *INP_DIR_24 = "/data/test/media/h264_pcm_s16le.asf";
+    const char *INP_DIR_25 = "/data/test/media/h264_pcm_s24le.asf";
+    const char *INP_DIR_26 = "/data/test/media/h264_pcm_s32le.asf";
+    const char *INP_DIR_27 = "/data/test/media/h264_pcm_s64le.asf";
+    const char *INP_DIR_28 = "/data/test/media/h264_pcm_u8.asf";
+    const char *INP_DIR_29 = "/data/test/media/h264_vorbis.asf";
+    const char *INP_DIR_30 = "/data/test/media/h264_wmav1.asf";
+    const char *INP_DIR_31 = "/data/test/media/h264_wmav2.asf";
+    const char *INP_DIR_32 = "/data/test/media/mjpeg_aac.asf";
+    const char *INP_DIR_33 = "/data/test/media/mpeg2_aac.asf";
+    const char *INP_DIR_34 = "/data/test/media/mpeg4_aac.asf";
+    const char *INP_DIR_35 = "/data/test/media/msvideo1_aac.asf";
+    const char *INP_DIR_36 = "/data/test/media/vp9_aac.asf";
+    const char *INP_DIR_37 = "/data/test/media/test_error.asf";
 };
 
 static unique_ptr<FileServerDemo> server = nullptr;
@@ -277,6 +311,51 @@ static void DemuxerResult()
     g_fd = -1;
 }
 
+static void DemuxerAsfResult(const char *file, int aFrames, int vFrames)
+{
+    int trackType = 0;
+    OH_AVCodecBufferAttr attr;
+    g_fd = open(file, O_RDONLY);
+    if (g_fd < 0) {
+        return;
+    }
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        trackFormat = OH_AVSource_GetTrackFormat(source, index);
+        ASSERT_NE(trackFormat, nullptr);
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &trackType));
+        bool readEnd = false;
+        int32_t frameNum = 0;
+        while (!readEnd) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                readEnd = true;
+                break;
+            }
+            frameNum++;
+        }
+        if (trackType == MEDIA_TYPE_VID) {
+            cout << "vFrames---" << frameNum << endl;
+            ASSERT_EQ(vFrames, frameNum);
+        } else if (trackType == MEDIA_TYPE_AUD) {
+            cout << "aFrames---" << frameNum << endl;
+            ASSERT_EQ(aFrames, frameNum);
+        }
+    }
+    close(g_fd);
+    g_fd = -1;
+}
+
 /**
  * @tc.number    : DEMUXER_ASF_FUNC_0100
  * @tc.name      : demuxer ASF, GetVideoTrackFormat,MD_KEY_HEIGHT, Local
@@ -475,6 +554,360 @@ HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_URI_1600, TestSize.Level3)
 }
 
 /**
+ * @tc.number    : DEMUXER_ASF_FUNC_1700
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, h263_aac.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_1700, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_3, 132, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_1800
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, h264_aac.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_1800, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_4, 131, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_1900
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, h264_ac3.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_1900, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_5, 87, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_2000
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, h264_adpcm_g722.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_2000, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_6, 416, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_2100
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, h264_adpcm_g726.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_2100, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_7, 12, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_2200
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, h264_adpcm_ima_wav.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_2200, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_8, 131, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_2300
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, h264_adpcm_ms.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_2300, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_9, 132, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_2500
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, h264_adpcm_yamaha.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_2500, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_11, 130, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_2600
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, h264_amr_nb.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_2600, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_12, 152, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_2700
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, h264_amr_wb.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_2700, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_13, 151, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_2800
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, h264_av1_aac.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_2800, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_14, 130, 179);
+}
+
+#ifdef SUPPORT_DEMUXER_EAC3
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_2900
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, h264_eac3.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_2900, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_15, 87, 184);
+}
+#endif
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_3000
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, h264_flac.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_3000, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_16, 29, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_3100
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, h264_gsm_ms.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_3100, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_17, 76, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_3300
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, h264_mp3.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_3300, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_19, 117, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_3400
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, h264_pcm_alaw.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_3400, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_20, 130, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_5700
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, h264_pcm_f32le.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_5700, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_20, 130, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_3600
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, h264_pcm_f64le.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_3600, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_21, 130, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_3700
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, h264_pcm_mulaw.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_3700, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_22, 130, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_3900
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, h264_pcm_s24le.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_3900, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_24, 130, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_4000
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, h264_pcm_s32le.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_4000, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_25, 130, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_4100
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, h264_pcm_s64le.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_4100, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_26, 130, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_4200
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, h264_pcm_u8.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_4200, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_27, 130, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_4300
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, h264_vorbis.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_4300, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_28, 130, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_4500
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, h264_wmav2.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_4500, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_30, 65, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_4700
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, mpeg2_aac.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_4700, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_32, 132, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_4800
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, mpeg4_aac.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_4800, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_33, 132, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_4900
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, msvideo1_aac.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_4900, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_34, 132, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_5000
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, vp9_aac.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_5000, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_35, 132, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_5100
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, vp9_aac.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_5100, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_36, 132, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_5200
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, h264_mp2.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_5200, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_18, 116, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_5300
+ * @tc.name      : demuxer ASF, Seek to middle time, previous mode, Local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_5300, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_1, SEEK_MODE_PREVIOUS_SYNC, 3000, 216, 155};
+    CreateFdSource(INP_DIR_1);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_5400
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, h264_pcm_s16le.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_5400, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_23, 130, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_5500
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, h264_wmav1.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_5500, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_29, 131, 184);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_5600
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, mjpeg_aac.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_5600, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_31, 65, 184);
+}
+
+/**
  * @tc.number    : DEMUXER_ASF_FUNC_3200
  * @tc.name      : demuxer ASF, Seek to start time, previous mode, Local
  * @tc.desc      : 本地ASF文件跳转到起始时间（0ms），PREVIOUS_SYNC模式
@@ -577,4 +1010,556 @@ HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_4600, TestSize.Level2)
     ASSERT_EQ(ret, AV_ERR_OPERATE_NOT_PERMIT);
     close(g_fd);
     g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_5900
+ * @tc.name      : demuxer damaged rmvb audio file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_5900, TestSize.Level2)
+{
+    const char *file = INP_DIR_37;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_EQ(source, nullptr);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_6000
+ * @tc.name      : seek to a invalid time, closest mode
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_6000, TestSize.Level2)
+{
+    const char *file = INP_DIR_1;
+    srand(time(nullptr));
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+
+    ASSERT_NE(demuxer, nullptr);
+    int64_t invalidPts = 12000 * 16666;
+    ret = OH_AVDemuxer_SeekToTime(demuxer, invalidPts, SEEK_MODE_CLOSEST_SYNC);
+    ASSERT_NE(ret, AV_ERR_OK);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_6100
+ * @tc.name      : remove track before add track
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_6100, TestSize.Level2)
+{
+    const char *file = INP_DIR_1;
+    srand(time(nullptr));
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    ret = OH_AVDemuxer_UnselectTrackByID(demuxer, 0);
+    ASSERT_EQ(ret, AV_ERR_OK);
+    ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
+    ASSERT_EQ(ret, AV_ERR_OK);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_6200
+ * @tc.name      : remove all tracks before demux finish
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_6200, TestSize.Level2)
+{
+    OH_AVCodecBufferAttr attr;
+    const char *file = INP_DIR_1;
+    bool isEnd = false;
+    int count = 0;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(g_trackCount, TWO);
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    srand(time(nullptr));
+    int pos = rand() % 250;
+    cout << " pos= " << pos << endl;
+    while (!isEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (count == pos) {
+                cout << count << " count == pos!!!!!!!!!" << endl;
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_UnselectTrackByID(demuxer, 0));
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_UnselectTrackByID(demuxer, 1));
+                ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+                isEnd = true;
+                break;
+            }
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                isEnd = true;
+                cout << "is end !!!!!!!!!!!!!!!" << endl;
+            }
+            if (index == MEDIA_TYPE_AUD) {
+                count++;
+            }
+        }
+    }
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_6300
+ * @tc.name      : start demux before add track
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_6300, TestSize.Level2)
+{
+    uint32_t trackIndex = 0;
+    OH_AVCodecBufferAttr attr;
+    const char *file = INP_DIR_1;
+    srand(time(nullptr));
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    ret = OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr);
+    ASSERT_EQ(ret, AV_ERR_OPERATE_NOT_PERMIT);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_6400
+ * @tc.name      : input invalid rmvb uri file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_6400, TestSize.Level2)
+{
+    const char *uri = "http://192.168.3.11:8080/share/invalid.asf";
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
+    ASSERT_EQ(source, nullptr);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_6500
+ * @tc.name      : demuxer ASF, Seek to middle time, next mode, h263_aac.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_6500, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_3, SEEK_MODE_NEXT_SYNC, 3000, 4, 2};
+    CreateFdSource(INP_DIR_3);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_6600
+ * @tc.name      : demuxer ASF, Seek to middle time, previous mode, h264_aac.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_6600, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_4, SEEK_MODE_PREVIOUS_SYNC, 3000, 184, 131};
+    CreateFdSource(INP_DIR_4);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_6700
+ * @tc.name      : demuxer ASF, Seek to middle time, closest mode, h264_ac3.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_6700, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_5, SEEK_MODE_CLOSEST_SYNC, 3000, 184, 87};
+    CreateFdSource(INP_DIR_5);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_6800
+ * @tc.name      : demuxer ASF, Seek to middle time, next mode, h264_adpcm_g722.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_6800, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_6, SEEK_MODE_NEXT_SYNC, 3000, 0, 416};
+    CreateFdSource(INP_DIR_6);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_6900
+ * @tc.name      : demuxer ASF, Seek to middle time, previous mode, h264_adpcm_g726.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_6900, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_7, SEEK_MODE_PREVIOUS_SYNC, 3000, 184, 12};
+    CreateFdSource(INP_DIR_7);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_7000
+ * @tc.name      : demuxer ASF, Seek to middle time, closest mode, h264_adpcm_ima_wav.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_7000, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_8, SEEK_MODE_CLOSEST_SYNC, 3000, 184, 131};
+    CreateFdSource(INP_DIR_8);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_7100
+ * @tc.name      : demuxer ASF, Seek to middle time, next mode, h264_adpcm_ms.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_7100, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_9, SEEK_MODE_NEXT_SYNC, 3000, 0, 132};
+    CreateFdSource(INP_DIR_9);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_7300
+ * @tc.name      : demuxer ASF, Seek to middle time, closest mode, h264_adpcm_yamaha.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_7300, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_11, SEEK_MODE_CLOSEST_SYNC, 3000, 184, 130};
+    CreateFdSource(INP_DIR_11);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_7400
+ * @tc.name      : demuxer ASF, Seek to middle time, next mode, h264_amr_nb.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_7400, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_12, SEEK_MODE_NEXT_SYNC, 3000, 0, 152};
+    CreateFdSource(INP_DIR_12);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_7500
+ * @tc.name      : demuxer ASF, Seek to middle time, previous mode, h264_amr_wb.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_7500, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_13, SEEK_MODE_PREVIOUS_SYNC, 3000, 184, 151};
+    CreateFdSource(INP_DIR_13);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_7600
+ * @tc.name      : demuxer ASF, Seek to middle time, closest mode, h264_av1_aac.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_7600, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_14, SEEK_MODE_CLOSEST_SYNC, 3000, 179, 130};
+    CreateFdSource(INP_DIR_14);
+    CheckSeekMode(fileTest1);
+}
+
+#ifdef SUPPORT_DEMUXER_EAC3
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_7700
+ * @tc.name      : demuxer ASF, Seek to middle time, next mode, h264_eac3.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_7700, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_15, SEEK_MODE_NEXT_SYNC, 3000, 0, 87};
+    CreateFdSource(INP_DIR_15);
+    CheckSeekMode(fileTest1);
+}
+#endif
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_7800
+ * @tc.name      : demuxer ASF, Seek to middle time, previous mode, h264_flac.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_7800, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_16, SEEK_MODE_PREVIOUS_SYNC, 3000, 184, 29};
+    CreateFdSource(INP_DIR_16);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_7900
+ * @tc.name      : demuxer ASF, Seek to middle time, closest mode, h264_gsm_ms.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_7900, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_17, SEEK_MODE_CLOSEST_SYNC, 3000, 184, 76};
+    CreateFdSource(INP_DIR_17);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_8000
+ * @tc.name      : demuxer ASF, Seek to middle time, next mode, h264_mp2.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_8000, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_18, SEEK_MODE_NEXT_SYNC, 3000, 0, 116};
+    CreateFdSource(INP_DIR_18);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_8100
+ * @tc.name      : demuxer ASF, Seek to middle time, previous mode, h264_mp3.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_8100, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_19, SEEK_MODE_PREVIOUS_SYNC, 3000, 184, 117};
+    CreateFdSource(INP_DIR_19);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_8200
+ * @tc.name      : demuxer ASF, Seek to middle time, closest mode, h264_pcm_alaw.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_8200, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_20, SEEK_MODE_CLOSEST_SYNC, 3000, 184, 130};
+    CreateFdSource(INP_DIR_20);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_8300
+ * @tc.name      : demuxer ASF, Seek to middle time, next mode, h264_pcm_f32le.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_8300, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_21, SEEK_MODE_NEXT_SYNC, 3000, 0, 130};
+    CreateFdSource(INP_DIR_21);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_8400
+ * @tc.name      : demuxer ASF, Seek to middle time, previous mode, h264_pcm_f64le.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_8400, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_22, SEEK_MODE_PREVIOUS_SYNC, 3000, 184, 130};
+    CreateFdSource(INP_DIR_22);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_8500
+ * @tc.name      : demuxer ASF, Seek to middle time, closest mode, h264_pcm_mulaw.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_8500, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_23, SEEK_MODE_CLOSEST_SYNC, 3000, 184, 130};
+    CreateFdSource(INP_DIR_23);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_8600
+ * @tc.name      : demuxer ASF, Seek to middle time, next mode, h264_pcm_s16le.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_8600, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_24, SEEK_MODE_NEXT_SYNC, 3000, 0, 130};
+    CreateFdSource(INP_DIR_24);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_8700
+ * @tc.name      : demuxer ASF, Seek to middle time, previous mode, h264_pcm_s24le.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_8700, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_25, SEEK_MODE_PREVIOUS_SYNC, 3000, 184, 130};
+    CreateFdSource(INP_DIR_25);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_8800
+ * @tc.name      : demuxer ASF, Seek to middle time, closest mode, h264_pcm_s32le.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_8800, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_26, SEEK_MODE_CLOSEST_SYNC, 3000, 184, 130};
+    CreateFdSource(INP_DIR_26);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_8900
+ * @tc.name      : demuxer ASF, Seek to middle time, next mode, h264_pcm_s64le.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_8900, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_27, SEEK_MODE_NEXT_SYNC, 3000, 0, 130};
+    CreateFdSource(INP_DIR_27);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_9000
+ * @tc.name      : demuxer ASF, Seek to middle time, previous mode, h264_pcm_u8.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_9000, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_28, SEEK_MODE_PREVIOUS_SYNC, 3000, 184, 130};
+    CreateFdSource(INP_DIR_28);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_9100
+ * @tc.name      : demuxer ASF, Seek to middle time, closest mode, h264_vorbis.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_9100, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_29, SEEK_MODE_CLOSEST_SYNC, 3000, 184, 131};
+    CreateFdSource(INP_DIR_29);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_9200
+ * @tc.name      : demuxer ASF, Seek to middle time, next mode, h264_wmav1.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_9200, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_30, SEEK_MODE_NEXT_SYNC, 3000, 0, 64};
+    CreateFdSource(INP_DIR_30);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_9300
+ * @tc.name      : demuxer ASF, Seek to middle time, previous mode, h264_wmav2.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_9300, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_31, SEEK_MODE_PREVIOUS_SYNC, 3000, 184, 65};
+    CreateFdSource(INP_DIR_31);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_9400
+ * @tc.name      : demuxer ASF, Seek to middle time, closest mode, mjpeg_aac.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_9400, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_32, SEEK_MODE_CLOSEST_SYNC, 3000, 12, 8};
+    CreateFdSource(INP_DIR_32);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_9500
+ * @tc.name      : demuxer ASF, Seek to middle time, next mode, mpeg2_aac.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_9500, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_33, SEEK_MODE_NEXT_SYNC, 3000, 4, 2};
+    CreateFdSource(INP_DIR_33);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_9600
+ * @tc.name      : demuxer ASF, Seek to middle time, previous mode, mpeg4_aac.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_9600, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_34, SEEK_MODE_PREVIOUS_SYNC, 3000, 16, 11};
+    CreateFdSource(INP_DIR_34);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_9700
+ * @tc.name      : demuxer ASF, Seek to middle time, closest mode, msvideo1_aac.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_9700, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_35, SEEK_MODE_CLOSEST_SYNC, 3000, 28, 19};
+    CreateFdSource(INP_DIR_35);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_9800
+ * @tc.name      : demuxer ASF, Seek to middle time, next mode, vp9_aac.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_9800, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_36, SEEK_MODE_NEXT_SYNC, 3000, 56, 39};
+    CreateFdSource(INP_DIR_36);
+    CheckSeekMode(fileTest1);
 }

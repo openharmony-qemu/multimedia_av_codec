@@ -89,7 +89,10 @@ std::string BaseStreamDemuxer::SnifferMediaType(int32_t streamID)
 
 void BaseStreamDemuxer::SetDemuxerState(int32_t streamId, DemuxerState state)
 {
-    pluginStateMap_[streamId] = state;
+    {
+        std::lock_guard lock(pluginStateMutex_);
+        pluginStateMap_[streamId] = state;
+    }
     if ((IsDash() || streamId == 0) && state == DemuxerState::DEMUXER_STATE_PARSE_FRAME) {
         source_->SetDemuxerState(streamId);
     }

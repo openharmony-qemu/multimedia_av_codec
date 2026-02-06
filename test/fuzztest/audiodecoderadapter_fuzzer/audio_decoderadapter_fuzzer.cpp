@@ -26,7 +26,6 @@ using namespace Media;
 namespace OHOS {
 namespace Media {
 static const int32_t MIN_SIZE_NUM = 4;
-static const size_t MAX_ALLOWED_SIZE = 4096;
 AudioDecoderAdapterFuzzer::AudioDecoderAdapterFuzzer()
 {
 }
@@ -79,7 +78,7 @@ void AudioDecoderAdapterFuzzer::NotifyEosFuzzTest()
  /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(uint8_t* data, size_t size)
 {
-    if ((data == nullptr) || (size < MIN_SIZE_NUM) || (size > MAX_ALLOWED_SIZE)) {
+    if ((data == nullptr) || (size < MIN_SIZE_NUM)) {
         return 0;
     }
     FuzzedDataProvider provider(data, size);

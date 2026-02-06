@@ -43,7 +43,7 @@ public:
         flag_ = static_cast<CacheFlag>(parcel.ReadUint8());
         if (flag_ == CacheFlag::HIT_CACHE && iter == caches_.end()) {
             AVCODEC_LOGW_WITH_TAG("Mark hit cache, but can find the index's cache, index: %{public}u", index);
-            flag_ = CacheFlag::UPDATE_CACHE;
+            return false;
         }
         if (flag_ == CacheFlag::HIT_CACHE) {
             isOutput_ ? HitOutputCache(iter->second, parcel) : HitInputCache(iter->second, parcel);

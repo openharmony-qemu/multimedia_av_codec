@@ -33,6 +33,7 @@
 #include "native_avmemory.h"
 #include "native_avformat.h"
 #include "native_averrors.h"
+#include "native_avcapability.h"
 #include "surface/window.h"
 #include "iconsumer_surface.h"
 #include "native_avdemuxer.h"
@@ -113,6 +114,8 @@ public:
     int32_t StartVideoDecoderFor263();
     int32_t PushDataFor263(uint32_t index, OH_AVBuffer *buffer);
     void InputFor263FuncTest();
+    void GetVideoSupportedPixelFormats();
+    void GetFormatKey();
 
     const char *inputDir = "";
     const char *outputDir = "/data/test/media/Mpeg1DecTest.yuv";
@@ -140,6 +143,15 @@ public:
     bool sleepOnFPS = false;
     bool autoSwitchSurface = false;
     int32_t enbleSyncMode = 0;
+    bool isGetVideoSupportedPixelFormats = false;
+    bool isGetFormatKey = false;
+    int isGetVideoSupportedPixelFormatsNum = 0;
+    int isGetFormatKeyNum = 0;
+    const char *avcodecMimeType = nullptr;
+    bool isEncoder = true;
+    const OH_NativeBuffer_Format *pixlFormats = nullptr;
+    uint32_t pixlFormatNum = 0;
+    int firstCallBackKey = 0;
 private:
     uint32_t originalWidth_ = 0;
     uint32_t originalHeight_ = 0;

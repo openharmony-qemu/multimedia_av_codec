@@ -92,6 +92,7 @@ int32_t AudioDecoderCapiMock::CreateByName(const char *name)
 int32_t AudioDecoderCapiMock::Start(int32_t sampleRate, int32_t channel, std::vector<uint8_t> *codecConfig)
 {
     OH_AVFormat *format = OH_AVFormat_Create();
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_ENABLE_BUFFER_SKIP_SAMPLES, 1);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channel);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
     if (codecConfig != nullptr && codecConfig->size() > 0) {
