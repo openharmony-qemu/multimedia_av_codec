@@ -876,7 +876,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_GET_SECURE_DECODER_PIDS_001, TestSize.Level1)
         ret = AVCodecMonitor::GetActiveSecureDecoderPids(pidList);
         ASSERT_EQ(AVCS_ERR_OK, ret);
         ASSERT_TRUE(std::find(pidList.begin(), pidList.end(), pid) == pidList.end());
-   }
+    }
 }
 
 /**
