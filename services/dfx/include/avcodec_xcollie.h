@@ -22,6 +22,7 @@
 #include <functional>
 #include <ctime>
 #include <memory>
+#include <atomic>
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -45,10 +46,11 @@ private:
     };
 
     AVCodecXCollie() = default;
-    ~AVCodecXCollie() = default;
+    ~AVCodecXCollie();
 
     std::shared_mutex mutex_;
     std::map<int32_t, std::shared_ptr<TimerInfo>> dfxDumper_;
+    std::atomic<bool> destroyed_{false};
 
 // For interfacec timer
 private:
