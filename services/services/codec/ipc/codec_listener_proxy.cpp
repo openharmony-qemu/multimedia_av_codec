@@ -80,15 +80,19 @@ public:
         return nullptr;
     }
 
-    void ClearCaches()
+    void ClearCaches(bool cleanExpiredOnly = true)
     {
         std::lock_guard<std::shared_mutex> lock(mutex_);
-        for (auto iter = caches_.begin(); iter != caches_.end();) {
-            if (iter->second.expired()) {
-                iter = caches_.erase(iter);
-            } else {
-                ++iter;
+        if (cleanExpiredOnly) {
+            for (auto it = caches_.begin(); it != caches_.end();) {
+                if (it->second.expired()) {
+                    it = caches_.erase(it);
+                } else {
+                    ++it;
+                }
             }
+        } else {
+            caches_.clear();
         }
     }
 
@@ -154,7 +158,7 @@ void CodecListenerProxy::OnOutputFormatChanged(const Format &format)
     data.WriteUint64(GetGeneration());
     (void)AVCodecParcel::Marshalling(data, format);
     CHECK_AND_RETURN_LOG_WITH_TAG(outputBufferCache_ != nullptr, "Output buffer cache is nullptr");
-    outputBufferCache_->ClearCaches();
+    outputBufferCache_->ClearCaches(false);
     int error = Remote()->SendRequest(static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_FORMAT_CHANGED), data,
                                       reply, option);
     CHECK_AND_RETURN_LOG_WITH_TAG(error == AVCS_ERR_OK, "Send request failed");
@@ -293,6 +297,7 @@ void CodecListenerProxy::ClearListenerCache()
 
 void CodecListenerProxy::ResetParcel(MessageParcel &parcel)
 {
+    parcel.ClearFileDescriptor();
     parcel.RewindRead(0);
     parcel.RewindWrite(0);
     parcel.SetDataSize(0);
