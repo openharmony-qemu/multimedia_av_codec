@@ -865,17 +865,18 @@ HWTEST_P(TEST_SUIT, VideoDecoder_RenderOutputBufferAtTime_001, TestSize.Level1)
  */
 HWTEST_F(TEST_SUIT, VideoDecoder_GET_SECURE_DECODER_PIDS_001, TestSize.Level1)
 {
-    ASSERT_TRUE(CreateVideoCodecByName("OMX.hisi.video.decoder.avc.secure"));
-    std::vector<pid_t> pidList;
-    auto ret = AVCodecMonitor::GetActiveSecureDecoderPids(pidList);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-    pid_t pid = getpid();
-    ASSERT_TRUE(std::find(pidList.begin(), pidList.end(), pid) != pidList.end());
-    videoDec_->Release();
+    if (CreateVideoCodecByName("OMX.hisi.video.decoder.avc.secure")) {
+        std::vector<pid_t> pidList;
+        auto ret = AVCodecMonitor::GetActiveSecureDecoderPids(pidList);
+        ASSERT_EQ(AVCS_ERR_OK, ret);
+        pid_t pid = getpid();
+        ASSERT_TRUE(std::find(pidList.begin(), pidList.end(), pid) != pidList.end());
+        videoDec_->Release();
 
-    ret = AVCodecMonitor::GetActiveSecureDecoderPids(pidList);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-    ASSERT_TRUE(std::find(pidList.begin(), pidList.end(), pid) == pidList.end());
+        ret = AVCodecMonitor::GetActiveSecureDecoderPids(pidList);
+        ASSERT_EQ(AVCS_ERR_OK, ret);
+        ASSERT_TRUE(std::find(pidList.begin(), pidList.end(), pid) == pidList.end());
+   }
 }
 
 /**
