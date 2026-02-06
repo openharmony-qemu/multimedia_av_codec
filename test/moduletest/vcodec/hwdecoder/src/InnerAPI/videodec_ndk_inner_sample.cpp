@@ -572,7 +572,6 @@ int32_t VDecNdkInnerSample::SendData(uint32_t bufferSize, uint32_t index, std::s
 {
     AVCodecBufferInfo info;
     AVCodecBufferFlag flag;
-
     uint8_t *fileBuffer = new uint8_t[bufferSize + START_CODE_SIZE];
     if (fileBuffer == nullptr) {
         delete[] fileBuffer;
@@ -581,7 +580,6 @@ int32_t VDecNdkInnerSample::SendData(uint32_t bufferSize, uint32_t index, std::s
     if (memcpy_s(fileBuffer, bufferSize + START_CODE_SIZE, START_CODE, START_CODE_SIZE) != EOK) {
         cout << "Fatal: memory copy failed" << endl;
     }
-
     (void)inFile_->read((char *)fileBuffer + START_CODE_SIZE, bufferSize);
     if (SetXps(flag, fileBuffer) == 0) {
         return 0;

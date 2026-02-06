@@ -32,10 +32,11 @@ DashPeriodNode::~DashPeriodNode() {}
 
 void DashPeriodNode::ParseNode(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement)
 {
-    if (xmlParser != nullptr) {
-        for (uint32_t index = 0; index < DASH_PERIOD_ATTR_NUM; index++) {
-            xmlParser->GetAttribute(rootElement, periodAttr_[index].attr_, periodAttr_[index].val_);
-        }
+    if (xmlParser == nullptr || rootElement == nullptr) {
+        return;
+    }
+    for (uint32_t index = 0; index < DASH_PERIOD_ATTR_NUM; index++) {
+        xmlParser->GetAttribute(rootElement, periodAttr_[index].attr_, periodAttr_[index].val_);
     }
 }
 

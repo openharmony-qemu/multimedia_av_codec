@@ -45,6 +45,7 @@ public:
     static constexpr uint32_t MAX_SAMPLE_QUEUE_SIZE = 16;
     static constexpr uint32_t MAX_SAMPLE_QUEUE_SIZE_ON_MUTE = 500;
     static constexpr uint32_t DEFAULT_SAMPLE_QUEUE_SIZE = 500;
+    static constexpr uint32_t FD_SAMPLE_QUEUE_SIZE = 300;
     static constexpr uint32_t DEFAULT_SAMPLE_BUFFER_CAP = 0;
     static constexpr uint32_t MAX_SAMPLE_BUFFER_CAP = DEFAULT_SAMPLE_BUFFER_CAP;
     static constexpr uint32_t DEFAULT_VIDEO_SAMPLE_BUFFER_CAP = DEFAULT_SAMPLE_BUFFER_CAP;
@@ -96,10 +97,9 @@ public:
         int32_t sliceSize);
     Status RollbackBuffer(std::shared_ptr<AVBuffer>& sampleBuffer);
     Status PopRollbackBuffer(std::shared_ptr<AVBuffer>& sampleBuffer);
-    Status PeekRollbackBuffer(std::shared_ptr<AVBuffer>& sampleBuffer);
+    Status PeekRollbackBuffer(size_t& sz);
     Status PushRollbackBuffer(std::shared_ptr<AVBuffer>& sampleBuffer);
     uint32_t GetFilledBufferSize();
-    Status AttachOneBuffer(uint32_t size);
     Status UpdateLastOutSamplePts(int64_t lastOutSamplePts);
     Status UpdateLastEnterSamplePts(int64_t lastEnterSamplePts);
     int64_t GetLastEnterSamplePts() const;

@@ -154,6 +154,7 @@ private:
     std::atomic<int32_t> newSubtitleStreamID_ = -1;
     std::atomic<bool> changeStreamFlag_ = true;
     std::mutex typeFinderMutex_ {};
+    std::mutex pluginStateMutex_ {};
 };
 } // namespace Media
 } // namespace OHOS

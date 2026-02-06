@@ -110,6 +110,24 @@ HWTEST_F(DashPeriodNodeUnittest, GetAttr_005, TestSize.Level0)
     dashPtr_->GetAttr(attrName, uiAttrVal);
     EXPECT_EQ(uiAttrVal, RET_TEST);
 }
+
+/**
+ * @tc.name  : Test ParseNode
+ * @tc.number: ParseNode_nullptr
+ * @tc.desc  : Test ParseNode xmlParser nullptr, rootElement nullptr
+ */
+HWTEST_F(DashPeriodNodeUnittest, ParseNode_nullptr, TestSize.Level0)
+{
+    ASSERT_NE(dashPtr_, nullptr);
+    dashPtr_->ParseNode(nullptr, nullptr);
+    dashPtr_->ParseNode(std::make_shared<XmlParser>(), nullptr);
+    xmlNodePtr element = xmlNewNode(nullptr, BAD_CAST "root");
+    dashPtr_->ParseNode(std::make_shared<XmlParser>(), std::make_shared<XmlElement>(element));
+    std::string attrName = "id";
+    std::string sAttrVal = "";
+    dashPtr_->GetAttr(attrName, sAttrVal);
+    EXPECT_TRUE(sAttrVal.empty());
+}
 }
 }
 }

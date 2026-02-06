@@ -21,6 +21,7 @@
 #include <string>
 #include <shared_mutex>
 #include <unordered_set>
+#include <utility>
 
 #include "osal/task/condition_variable.h"
 #include "avcodec_common.h"
@@ -122,6 +123,7 @@ public:
 
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver);
     bool GetDuration(int64_t& durationMs);
+    bool GetStartInfo(std::pair<int64_t, bool>& startInfo);
     void SetPlayerId(std::string playerId);
     void SetDumpInfo(bool isDump, uint64_t instanceId);
 
@@ -401,6 +403,7 @@ private:
     void SetTrackNeedDropFrame(int32_t trackId, uint32_t frameCount);
     bool GetTrackSeekNeedDrop(int32_t trackId);
     void SetTrackSeekNeedDrop(int32_t trackId, bool needDrop);
+    void ResetAfterSeek(Status ret);
 
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;

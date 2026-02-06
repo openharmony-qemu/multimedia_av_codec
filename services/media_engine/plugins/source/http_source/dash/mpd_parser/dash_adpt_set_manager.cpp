@@ -24,6 +24,12 @@ namespace Plugins {
 namespace HttpPlugin {
 static bool SortByBitrate(const DashRepresentationInfo *x, const DashRepresentationInfo *y)
 {
+    if (x == nullptr) {
+        return true;
+    }
+    if (y == nullptr) {
+        return false;
+    }
     return x->bandwidth_ < y->bandwidth_;
 }
 
@@ -204,8 +210,14 @@ DashRepresentationInfo *DashAdptSetManager::GetLowRepresentation()
 
 static void GetMimeTypeFromRepresentation(const DashAdptSetInfo *adptSetInfo, std::string &mimeType)
 {
+    if (adptSetInfo == nullptr) {
+        return;
+    }
     DashList<DashRepresentationInfo *> representationList = adptSetInfo->representationList_;
     for (DashRepresentationInfo *representationInfo : representationList) {
+        if (representationInfo == nullptr) {
+            continue;
+        }
         mimeType = representationInfo->commonAttrsAndElements_.mimeType_;
         if (!mimeType.empty()) {
             break;
@@ -246,6 +258,9 @@ bool DashAdptSetManager::IsOnDemand()
         }
     } else {
         for (auto representation : adptSetInfo_->representationList_) {
+            if (representation == nullptr) {
+                continue;
+            }
             if (representation->representationSegList_ != nullptr) {
                 return false;
             }

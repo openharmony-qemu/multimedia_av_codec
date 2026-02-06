@@ -93,13 +93,14 @@ ohos_unittest("demuxer_native_module_test") {
       "./src/seek_test.cpp",
       "./src/wmafunc_test.cpp",
       "./src/adpcm_ms_test.cpp",
-
+      "./src/ogg_test.cpp",
       #"./src/net_test.cpp",
       #"./src/net2_test.cpp",
       #"./src/net3_test.cpp",
       "./src/InnerAPI/demuxer_asyn_func_test.cpp",
       "./src/InnerAPI/demuxer_cachesize_func_test.cpp",
       "./src/InnerAPI/demuxer_plugin_func_test.cpp",
+      "./src/InnerAPI/demuxer_ts_seek_test.cpp",
       "./src/vobfunc_test.cpp",
       "./src/format_test.cpp",
       "./src/proc_test.cpp",
@@ -116,7 +117,10 @@ ohos_unittest("demuxer_native_module_test") {
       "./src/dtsfunc_test.cpp",
       "./src/rmvbfunc_test.cpp",
       "./src/rmfunc_test.cpp",
-      "./src/asffunc_test.cpp"
+      "./src/asffunc_test.cpp",
+      "./src/sunaufunc_test.cpp",
+      "./src/aifcfunc_test.cpp",
+      "./src/aifffunc_test.cpp"
     ]
   }
 

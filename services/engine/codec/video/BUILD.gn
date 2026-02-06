@@ -44,18 +44,6 @@ ohos_static_library("av_codec_video_loader") {
     "$av_codec_root_dir/services/engine/codec/video/video_codec_loader.cpp",
   ]
 
-  if (av_codec_support_vp8_decoder) {
-    sources += [ "$av_codec_root_dir/services/engine/codec/video/vp8_decoder_loader.cpp", ]
-  }
-
-  if (av_codec_support_vp9_decoder) {
-    sources += [ "$av_codec_root_dir/services/engine/codec/video/vp9_decoder_loader.cpp", ]
-  }
-
-  if (av_codec_support_av1_decoder) {
-    sources += [ "$av_codec_root_dir/services/engine/codec/video/av1_decoder_loader.cpp" ]
-  }
-
   deps = [ "$av_codec_root_dir/services/engine/base:av_codec_codec_base" ]
 
   public_deps = [
@@ -75,6 +63,18 @@ ohos_static_library("av_codec_video_loader") {
     "ipc:ipc_single",
     "media_foundation:media_foundation",
   ]
+
+  if (av_codec_support_av1_decoder) {
+    sources += [ "$av_codec_root_dir/services/engine/codec/video/av1_decoder_loader.cpp" ]
+  }
+
+  if (av_codec_support_vp8_decoder) {
+    sources += [ "$av_codec_root_dir/services/engine/codec/video/vp8_decoder_loader.cpp", ]
+  }
+
+  if (av_codec_support_vp9_decoder) {
+    sources += [ "$av_codec_root_dir/services/engine/codec/video/vp9_decoder_loader.cpp", ]
+  }
 
   subsystem_name = "multimedia"
   part_name = "av_codec"

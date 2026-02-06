@@ -46,7 +46,7 @@ public:
     void SetQueueSize(int32_t trackId, uint64_t size);
     void AddQueueSize(int32_t trackId, uint64_t size);
     bool ShouldStartConsume(int32_t trackId, std::shared_ptr<SampleQueue> sampleQueue,
-        const std::unique_ptr<Task> &task);
+        const std::unique_ptr<Task> &task, bool inPreroll);
     bool ShouldStopConsume(int32_t trackId, std::shared_ptr<SampleQueue> sampleQueue,
         const std::unique_ptr<Task> &task);
     bool ShouldStartProduce(int32_t trackId, std::shared_ptr<SampleQueue> sampleQueue,

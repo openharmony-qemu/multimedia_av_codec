@@ -284,6 +284,18 @@ HWTEST_F(AudioSinkFilterUnitTest, SetVolumeWithRamp_001, TestSize.Level0)
     EXPECT_GE(ret, -1);
 }
 
+/**
+ * @tc.name  : Test SetAudioPassFlag
+ * @tc.number: SetAudioPassFlag_001
+ * @tc.desc  : Test SetAudioPassFlag covers the function implementation
+ */
+HWTEST_F(AudioSinkFilterUnitTest, SetAudioPassFlag_001, TestSize.Level0)
+{
+    auto filter = std::make_shared<AudioSinkFilter>("testAudioSinkFilter");
+    filter->audioSink_ = std::make_shared<AudioSink>();
+    filter->SetAudioPassFlag(true);
+    EXPECT_TRUE(filter->audioSink_->isAudioPass_);
+}
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS

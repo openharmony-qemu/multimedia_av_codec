@@ -228,6 +228,7 @@ private:
     int64_t outputBytesSum_;
     size_t inputCount_;
     size_t outputCount_;
+    bool isRunInApp_ = false;
 };
 } // namespace Media
 } // namespace OHOS

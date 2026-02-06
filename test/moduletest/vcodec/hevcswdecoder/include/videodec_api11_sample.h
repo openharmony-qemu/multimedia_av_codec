@@ -166,7 +166,7 @@ public:
     int32_t SetParameterTransform();
     int32_t SetParameter();
     int32_t GetSurfaceTransform(int32_t surfaceFlag);
-    VDecAPI11Signal *signal_;
+    VDecAPI11Signal *signal_ = nullptr;
     uint32_t errCount = 0;
     uint32_t outCount = 0;
     int64_t renderTimestampNs = 0;
@@ -192,6 +192,27 @@ public:
     int32_t DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
     int32_t DecodeSetSurface();
     int enbleBlankFrame = 0;
+
+public:
+    enum InputStreamType {
+        Input_Stream_Type_Avcc = 0,
+        Input_Stream_Type_000001 = 1,
+    };
+    uint32_t INPUT_NAL_NUM = 1;
+    InputStreamType INPUT_STREAM_TYPE = Input_Stream_Type_Avcc;
+    bool NEED_MD5_COMPAIRE = true;
+
+private:
+    int32_t InitReadFileNals();
+    void ReadNalsFromFixBuffer(uint32_t bufferSize, uint8_t nNALNum, uint32_t& consumeByteLen);
+    int32_t ReadFileNalsFrame(uint32_t index, uint32_t& bufferSize, OH_AVBuffer *buffer);
+    int32_t ReadFileAvccFrameLen(uint32_t index, uint32_t& bufferSize, OH_AVBuffer *buffer);
+    uint32_t SendDataNals(uint32_t bufferSize, uint32_t index, OH_AVBuffer *buffer);
+private:
+    uint64_t nFileSize_ = 0;
+    uint32_t iFrameIdxAU_ = 0;
+    uint64_t startPos_ = 0;
+    uint8_t* iptMultiStreamsBuf_ = nullptr;
 private:
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;

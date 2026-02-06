@@ -42,6 +42,7 @@
 #endif
 
 #define PIXFORMAT_NUM 2
+#define PROFILE_NUM 2
 
 using namespace std;
 using namespace OHOS;
@@ -85,8 +86,7 @@ static bool CheckPixelFormat(int32_t pixelFormat)
 static bool CheckProfile(int32_t profile)
 {
     if (profile == AV1_PROFILE_MAIN ||
-        profile == AV1_PROFILE_HIGH ||
-        profile == AV1_PROFILE_PROFESSIONAL) {
+        profile == AV1_PROFILE_HIGH) {
         return true;
     } else {
         return false;
@@ -129,8 +129,7 @@ static bool CheckLevels(int32_t level)
 static bool CheckLevelsForProfile(int32_t profile, int32_t level)
 {
     if (profile == AV1_PROFILE_MAIN ||
-        profile == AV1_PROFILE_HIGH ||
-        profile == AV1_PROFILE_PROFESSIONAL) {
+        profile == AV1_PROFILE_HIGH) {
             return CheckLevels(level);
     }
     return false;
@@ -1702,7 +1701,7 @@ HWTEST_F(Av1decApiNdkTest, VIDEO_AV1DEC_CAP_API_3700, TestSize.Level1)
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetSupportedProfiles(capability, &profiles, &profileNum);
     ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_EQ(profileNum, 3);
+    ASSERT_EQ(profileNum, PROFILE_NUM);
     ASSERT_NE(nullptr, profiles);
     for (int i = 0; i < profileNum; i++) {
         ASSERT_EQ(CheckProfile(profiles[i]), true);
@@ -1725,7 +1724,7 @@ HWTEST_F(Av1decApiNdkTest, VIDEO_AV1DEC_CAP_API_3800, TestSize.Level1)
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetSupportedProfiles(capability, &profiles, &profileNum);
     ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_EQ(profileNum, 3);
+    ASSERT_EQ(profileNum, PROFILE_NUM);
     ASSERT_NE(nullptr, profiles);
     for (int i = 0; i < profileNum; i++) {
         cout << "profiles[" << i << "] = " << profiles[i] << endl;
@@ -1801,7 +1800,7 @@ HWTEST_F(Av1decApiNdkTest, VIDEO_AV1DEC_CAP_API_3901, TestSize.Level1)
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetSupportedProfiles(capability, &profiles, &profileNum);
     ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_EQ(profileNum, 3);
+    ASSERT_EQ(profileNum, PROFILE_NUM);
     ASSERT_NE(nullptr, profiles);
     for (int i = 0; i < profileNum; i++) {
         ASSERT_EQ(profiles[i], i);
@@ -1864,5 +1863,59 @@ HWTEST_F(Av1decApiNdkTest, VIDEO_AV1DEC_CAP_API_4300, TestSize.Level1)
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AV1, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ASSERT_EQ(false, OH_AVCapability_AreProfileAndLevelSupported(capability, AV1_PROFILE_MAIN, -1));
+}
+
+/**
+ * @tc.number    : VIDEO_CAPABILITY_CONIFG_1000
+ * @tc.name      : set widthRange  heightRange  max and min  test
+ * @tc.desc      : configure test
+ */
+HWTEST_F(Av1decApiNdkTest, VIDEO_CAPABILITY_CONIFG_1000, TestSize.Level2)
+{
+    string codecName = "";
+    OH_AVErrCode  ret = AV_ERR_OK;
+    OH_AVRange widthRange;
+    OH_AVRange heightRange;
+    memset_s(&widthRange, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+    memset_s(&heightRange, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+    OH_AVCapability  *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AV1, false, SOFTWARE);
+    if (capability == nullptr) {
+        return;
+    }
+    ret = OH_AVCapability_GetVideoWidthRange(capability, &widthRange);
+    ret = OH_AVCapability_GetVideoHeightRange(capability, &heightRange);
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ASSERT_GE(widthRange.minVal, 0);
+    ASSERT_GE(widthRange.maxVal, 0);
+    ASSERT_GE(heightRange.minVal, 0);
+    ASSERT_GE(heightRange.minVal, 0);
+    codecName = OH_AVCapability_GetName(capability);
+    OH_AVCodec  *vdec = OH_VideoDecoder_CreateByName(codecName.c_str());
+    ASSERT_NE(nullptr, vdec);
+    OH_AVFormat *format = OH_AVFormat_Create();
+    ASSERT_NE(nullptr, format);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, widthRange.minVal);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, heightRange.maxVal);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+    EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec, format));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Reset(vdec));
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, heightRange.minVal);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, widthRange.maxVal);
+    EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec, format));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Reset(vdec));
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, widthRange.maxVal+1);
+    EXPECT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec, format));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Reset(vdec));
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, widthRange.minVal-1);
+    EXPECT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec, format));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Reset(vdec));
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, widthRange.minVal);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, heightRange.minVal-1);
+    EXPECT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec, format));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Reset(vdec));
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, heightRange.maxVal+1);
+    EXPECT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec, format));
+    OH_VideoDecoder_Destroy(vdec);
+    OH_AVFormat_Destroy(format);
 }
 } // namespace

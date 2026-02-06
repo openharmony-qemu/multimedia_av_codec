@@ -40,6 +40,9 @@ void DashMpdManager::SetMpdInfo(DashMpdInfo *mpdInfomation, const std::string &m
 
 const DashList<DashPeriodInfo *> &DashMpdManager::GetPeriods() const
 {
+    if (mpdInfo_ == nullptr) {
+        return DashList<DashPeriodInfo *>();
+    }
     return this->mpdInfo_->periodInfoList_;
 }
 

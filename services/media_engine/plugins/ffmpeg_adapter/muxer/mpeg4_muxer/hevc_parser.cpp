@@ -81,6 +81,15 @@ int32_t HevcParser::WriteFrame(const std::shared_ptr<AVIOStream> &io, const std:
             MEDIA_LOG_W("codec config not set or err! non annexb frame, must set codec config");
         }
     }
+    /* HDR 10bit encode skip first FD NAL */
+    if (size > 0) {
+        int32_t offset = parser_->GetFirstFillerDataNalSize(buffer, size);
+        MEDIA_LOG_D("skip fd nal, offset:%{public}d, frame size:%{public}d", offset, size);
+        if (offset > 0 && offset < size) {
+            buffer += offset;
+            size -= offset;
+        }
+    }
     if (isAnnexbFrame_) {
         return WriteAnnexBFrame(io, buffer, size);
     }
@@ -139,6 +148,14 @@ bool HevcParser::GetColorRange()
 {
     if (parser_) {
         return parser_->GetColorRange();
+    }
+    return false;
+}
+
+bool HevcParser::IsHdrVivid()
+{
+    if (parser_) {
+        return parser_->IsHdrVivid();
     }
     return false;
 }

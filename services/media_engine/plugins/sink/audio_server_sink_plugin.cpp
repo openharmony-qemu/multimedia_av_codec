@@ -181,6 +181,7 @@ AudioServerSinkPlugin::AudioFirstFrameCallbackImpl::AudioFirstFrameCallbackImpl(
 void AudioServerSinkPlugin::AudioRendererCallbackImpl::OnInterrupt(
     const OHOS::AudioStandard::InterruptEvent &interruptEvent)
 {
+    FALSE_RETURN_MSG(isNeedResponseCallback_, "AudioRendererCallbackImpl is not need response callback");
     MEDIA_LOG_D_SHORT("OnInterrupt forceType is " PUBLIC_LOG_U32, static_cast<uint32_t>(interruptEvent.forceType));
     if (interruptEvent.forceType == OHOS::AudioStandard::INTERRUPT_FORCE) {
         switch (interruptEvent.hintType) {
@@ -200,6 +201,11 @@ void AudioServerSinkPlugin::AudioRendererCallbackImpl::OnInterrupt(
     FALSE_RETURN(playerEventReceiver_ != nullptr);
     MEDIA_LOG_D_SHORT("OnInterrupt event upload ");
     playerEventReceiver_->OnEvent(event);
+}
+
+void AudioServerSinkPlugin::AudioRendererCallbackImpl::SetResponseCallback(bool isNeedResponseCallback)
+{
+    isNeedResponseCallback_ = isNeedResponseCallback;
 }
 
 void AudioServerSinkPlugin::AudioRendererCallbackImpl::OnStateChange(
@@ -1470,6 +1476,14 @@ void AudioServerSinkPlugin::OnFirstFrameWriting()
     auto cb = audioSinkDataCallback_.lock();
     FALSE_RETURN_MSG(cb != nullptr, "AudioServerSinkPlugin OnFirstFrameWriting callback is nullptr");
     cb->OnFirstFrameWriting();
+}
+
+void AudioServerSinkPlugin::SetResponseCallback(bool isNeedResponseCallback)
+{
+    MEDIA_LOG_D("isNeedResponseCallback %{public}d", isNeedResponseCallback);
+    isNeedResponseCallback_ = isNeedResponseCallback;
+    FALSE_RETURN_MSG(audioRendererCallback_ != nullptr, "audioRendererCallback_ is nullptr");
+    audioRendererCallback_->SetResponseCallback(isNeedResponseCallback);
 }
 } // namespace Plugin
 } // namespace Media

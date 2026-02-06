@@ -38,6 +38,7 @@
 #include "videodec_api11_sample.h"
 #include "native_avdemuxer.h"
 #include "native_avsource.h"
+#include "native_avcapability.h"
 #include "gtest/gtest.h"
 
 namespace OHOS {
@@ -112,6 +113,8 @@ public:
     int32_t StartVideoDecoderFor263();
     int32_t PushDataFor263(uint32_t index, OH_AVBuffer *buffer);
     void InputFor263FuncTest();
+    void GetVideoSupportedPixelFormats();
+    void GetFormatKey();
 
     const char *inputDir = "";
     const char *outputDir = "/data/test/media/DvVideoDecTest.yuv";
@@ -147,6 +150,15 @@ public:
     OH_AVFormat *trackFormat = nullptr;
     bool isOnError = false;
     bool nocaleHash = false;
+    bool isGetVideoSupportedPixelFormats = false;
+    bool isGetFormatKey = false;
+    int isGetVideoSupportedPixelFormatsNum = 0;
+    int isGetFormatKeyNum = 0;
+    const char *avcodecMimeType = nullptr;
+    bool isEncoder = true;
+    const OH_NativeBuffer_Format *pixlFormats = nullptr;
+    uint32_t pixlFormatNum = 0;
+    int firstCallBackKey = 0;
 private:
     std::atomic<bool> isStarted_ = false;
     int32_t trackCount_ = 0;

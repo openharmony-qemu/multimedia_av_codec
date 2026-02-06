@@ -142,6 +142,7 @@ public:
     void InputFuncSurface();
     void InputFunc();
     void SyncInputFunc();
+    void IdrPush();
     void OutputFunc();
     void SyncOutputFunc();
     void OutputFuncFail();
@@ -159,7 +160,9 @@ public:
     bool ReadCustomDataToAVBuffer(const std::string &fileName, std::shared_ptr<AVBuffer> buffer);
     bool GetWaterMarkCapability(std::string codecMimeType);
     int32_t InitBuffer(OHNativeWindowBuffer *&ohNativeWindowBuffer, OH_NativeBuffer *&nativeBuffer, uint8_t *&dst);
-
+    int32_t LoadTimeStampData(std::string filePath, std::string &inputDir,
+                              std::string &outputDir, uint32_t &w, uint32_t &h,
+                              uint32_t &bitrateMode, uint32_t &bitRate, bool &surfaceMode);
     const char *INP_DIR = "/data/test/media/1280_720_nv.yuv";
     const char *OUT_DIR = "/data/test/media/VEncTest.h264";
     const char *WATER_MARK_DIR = "/data/test/media/128_72_0.rgba";
@@ -209,6 +212,7 @@ public:
     int32_t videoCoordinateY = 100;
     int32_t videoCoordinateWidth = 400;
     int32_t videoCoordinateHeight = 400;
+    int64_t frameIndex = 0;
     int32_t DEFAULT_QUALITY = 32;
     int32_t DEFAULT_BITRATE_RUN = 5000000;
     int32_t DEFAULT_MAX_B_FRAMES = 3;
@@ -233,6 +237,7 @@ public:
     bool SETBIRATE_RUN = false;
     bool GOPMODE_ENABLE = false;
     bool MAXBFRAMES_ENABLE = false;
+    bool enablePTSBasedRateControl = false;
     int32_t enbleSyncMode = 0;
     int64_t syncInputWaitTime = -1;
     int64_t syncOutputWaitTime = -1;
@@ -240,6 +245,7 @@ public:
     bool queryInputBufferEOS = false;
     std::atomic<bool> isRunning_ { false };
     std::shared_ptr<VEncInnerSignal> signal_;
+    std::vector<time_t> timeList;
 private:
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;

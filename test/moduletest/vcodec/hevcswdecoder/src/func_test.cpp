@@ -40,15 +40,15 @@ public:
     int32_t Stop();
 
 protected:
-    const char *INP_DIR_1080_30 = "/data/test/media/1920_1080_30.h265";
-    const char *INP_DIR_144 = "/data/test/media/176_144_Main10.h265";
-    const char *INP_DIR_64 = "/data/test/media/64_64_Main.h265";
-    const char *INP_DIR_1158 = "/data/test/media/1544_1158_Rext_gray.h265";
-    const char *INP_DIR_1440 = "/data/test/media/1920_1440_Main_HEIF.h265";
-    const char *INP_DIR_1022 = "/data/test/media/1858_1022_Main.h265";
-    const char *INP_DIR_71 = "/data/test/media/95_71_Rext_gray.h265";
-    const char *INP_DIR_var = "/data/test/media/95_71_Rext_gray.h265";
-    const char *INP_DIR_1080_64_var = "/data/test/media/1920_1080_64_64_var.h265";
+    const char *ginpDir1080 = "/data/test/media/1920_1080_30.h265";
+    const char *ginpDir144 = "/data/test/media/176_144_Main10.h265";
+    const char *ginpDir64 = "/data/test/media/64_64_Main.h265";
+    const char *ginpDir1158 = "/data/test/media/1544_1158_Rext_gray.h265";
+    const char *ginpDir1440 = "/data/test/media/1920_1440_Main_HEIF.h265";
+    const char *ginpDir1022 = "/data/test/media/1858_1022_Main.h265";
+    const char *ginpDir71 = "/data/test/media/95_71_Rext_gray.h265";
+    const char *ginpDirVar = "/data/test/media/95_71_Rext_gray.h265";
+    const char *ginpDirVar1080 = "/data/test/media/1920_1080_64_64_var.h265";
 };
 } // namespace Media
 } // namespace OHOS
@@ -100,7 +100,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0320, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -120,7 +120,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0330, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -141,7 +141,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0400, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->SF_OUTPUT = true;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
@@ -160,7 +160,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0410, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->SF_OUTPUT = true;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
@@ -180,7 +180,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0700, TestSize.Level1)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -203,7 +203,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0800, TestSize.Level1)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -226,7 +226,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0900, TestSize.Level1)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -250,7 +250,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_1200, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -274,7 +274,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_1300, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-        vDecSample->INP_DIR = INP_DIR_1080_64_var;
+        vDecSample->INP_DIR = ginpDirVar1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -297,7 +297,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, SURF_CHANGE_FUNC_001, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecNdkSample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
         vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -321,7 +321,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, SURF_CHANGE_FUNC_002, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecNdkSample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
         vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -345,7 +345,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, SURF_CHANGE_FUNC_003, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -367,7 +367,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, SURF_CHANGE_FUNC_004, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecNdkSample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
         vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -390,7 +390,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, MAX_INPUT_SIZE_CHECK_001, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -412,7 +412,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, MAX_INPUT_SIZE_CHECK_002, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -460,7 +460,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, SUB_MEDIA_VIDEO_SWDEC_H265_SWITCH_002, TestSize.L
         for (int i = 0; i <= 30; i++) {
             if (i == 30) {
                 shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-                vDecSample->INP_DIR = INP_DIR_1080_30;
+                vDecSample->INP_DIR = ginpDir1080;
                 vDecSample->DEFAULT_WIDTH = 1920;
                 vDecSample->DEFAULT_HEIGHT = 1080;
                 vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -494,7 +494,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_0310, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -515,7 +515,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_0320, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -536,7 +536,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_0400, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->SF_OUTPUT = true;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
@@ -555,7 +555,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_0410, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->SF_OUTPUT = true;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
@@ -575,7 +575,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_0420, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->SF_OUTPUT = true;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
@@ -594,7 +594,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_0430, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->SF_OUTPUT = true;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
@@ -614,7 +614,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_0700, TestSize.Level1)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -637,7 +637,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_0800, TestSize.Level1)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -660,7 +660,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_0900, TestSize.Level1)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -684,7 +684,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_1000, TestSize.Level1)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -714,7 +714,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_1100, TestSize.Level1)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -744,7 +744,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_1200, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -768,7 +768,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_FUNCTION_1300, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_var;
+        vDecSample->INP_DIR = ginpDirVar;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -791,7 +791,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_001, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
         vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -815,7 +815,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_002, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
         vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -839,7 +839,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_003, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -862,7 +862,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_004, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
         vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -884,7 +884,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_005, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
         vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -908,7 +908,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_006, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
         vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -930,7 +930,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_007, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
         vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -953,7 +953,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_008, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
         vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -975,7 +975,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_009, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
         vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -997,7 +997,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_012, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
         vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -1022,7 +1022,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_013, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -1046,7 +1046,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_014, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -1069,7 +1069,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_016, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -1081,7 +1081,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_016, TestSize.Level0)
         vDecSample->WaitForEOS();
 
         auto vDecSample_1 = make_shared<VDecAPI11Sample>();
-        vDecSample_1->INP_DIR = INP_DIR_1080_30;
+        vDecSample_1->INP_DIR = ginpDir1080;
         vDecSample_1->DEFAULT_WIDTH = 1920;
         vDecSample_1->DEFAULT_HEIGHT = 1080;
         vDecSample_1->DEFAULT_FRAME_RATE = 30;
@@ -1103,7 +1103,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_017, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
         vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -1126,7 +1126,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_018, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
         vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -1152,7 +1152,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_MAX_INPUT_SIZE_CHECK_001, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -1174,7 +1174,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_MAX_INPUT_SIZE_CHECK_002, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -1328,7 +1328,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_007, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = -1;
@@ -1349,7 +1349,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_008, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 0;
@@ -1370,7 +1370,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_008_2, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 0.1;
@@ -1391,7 +1391,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_009, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 1;
@@ -1412,7 +1412,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_010, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 100000;
@@ -1433,7 +1433,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_011, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = -1;
         vDecSample->DEFAULT_HEIGHT = -1;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -1452,7 +1452,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_012, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 0;
         vDecSample->DEFAULT_HEIGHT = 0;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -1471,7 +1471,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_013, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1;
         vDecSample->DEFAULT_HEIGHT = 1;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -1490,7 +1490,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_014, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 10000;
         vDecSample->DEFAULT_HEIGHT = 10000;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -1509,7 +1509,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PARA_015, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 64;
         vDecSample->DEFAULT_HEIGHT = 64;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -1619,7 +1619,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_STAB_FUNC_0100, TestSize.Level0
     if (!access("/system/lib64/media/", 0)) {
         for (int i = 0; i < g_reliCount2; i++) {
             shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-            vDecSample->INP_DIR = INP_DIR_144;
+            vDecSample->INP_DIR = ginpDir144;
             vDecSample->SF_OUTPUT = false;
             vDecSample->DEFAULT_WIDTH = 176;
             vDecSample->DEFAULT_HEIGHT = 144;
@@ -1628,7 +1628,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_STAB_FUNC_0100, TestSize.Level0
             vDecSample->WaitForEOS();
 
             shared_ptr<VDecAPI11Sample> vDecSample1 = make_shared<VDecAPI11Sample>();
-            vDecSample1->INP_DIR = INP_DIR_1080_30;
+            vDecSample1->INP_DIR = ginpDir1080;
             vDecSample1->SF_OUTPUT = true;
             vDecSample1->DEFAULT_WIDTH = 1920;
             vDecSample1->DEFAULT_HEIGHT = 1080;
@@ -1649,7 +1649,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_STABLITY_FUNC_0110, TestSize.Le
     if (!access("/system/lib64/media/", 0)) {
         for (int i = 0; i < g_reliCount2; i++) {
             shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-            vDecSample->INP_DIR = INP_DIR_1080_30;
+            vDecSample->INP_DIR = ginpDir1080;
             vDecSample->DEFAULT_WIDTH = WidthRand();
             cout << "rand width is: " << vDecSample->DEFAULT_WIDTH << endl;
             vDecSample->DEFAULT_HEIGHT = HighRand();
@@ -1676,7 +1676,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_STABLITY_FUNC_0120, TestSize.Le
     if (!access("/system/lib64/media/", 0)) {
         for (int i = 0; i < g_reliCount2; i++) {
             shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-            vDecSample->INP_DIR = INP_DIR_64;
+            vDecSample->INP_DIR = ginpDir64;
             vDecSample->DEFAULT_WIDTH = WidthRand();
             cout << "rand width is: " << vDecSample->DEFAULT_WIDTH << endl;
             vDecSample->DEFAULT_HEIGHT = HighRand();
@@ -1703,7 +1703,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_VIDEO_SWDEC_STABLITY_FUNC_0130, TestSize.Le
     if (!access("/system/lib64/media/", 0)) {
         for (int i = 0; i < g_reliCount2; i++) {
             shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-            vDecSample->INP_DIR = INP_DIR_144;
+            vDecSample->INP_DIR = ginpDir144;
             vDecSample->DEFAULT_WIDTH = WidthRand();
             cout << "rand width is: " << vDecSample->DEFAULT_WIDTH << endl;
             vDecSample->DEFAULT_HEIGHT = HighRand();
@@ -1729,7 +1729,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_001, TestSize.Level3)
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->SF_OUTPUT = false;
-        vDecSample->INP_DIR = INP_DIR_1158;
+        vDecSample->INP_DIR = ginpDir1158;
         vDecSample->DEFAULT_WIDTH = 1544;
         vDecSample->DEFAULT_HEIGHT = 1158;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -1747,7 +1747,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_002, TestSize.Level3)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1440;
+        vDecSample->INP_DIR = ginpDir1440;
         vDecSample->SF_OUTPUT = false;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1440;
@@ -1767,7 +1767,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_003, TestSize.Level3)
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->SF_OUTPUT = false;
-        vDecSample->INP_DIR = INP_DIR_1022;
+        vDecSample->INP_DIR = ginpDir1022;
         vDecSample->DEFAULT_WIDTH = 1858;
         vDecSample->DEFAULT_HEIGHT = 1022;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -1786,7 +1786,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_004, TestSize.Level3)
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->SF_OUTPUT = false;
-        vDecSample->INP_DIR = INP_DIR_71;
+        vDecSample->INP_DIR = ginpDir71;
         vDecSample->DEFAULT_WIDTH = 95;
         vDecSample->DEFAULT_HEIGHT = 71;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -1829,7 +1829,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_DECODE_SYNC_SW265_FUNC_0010, TestSize.Level
 {
     if (cap_hevc != nullptr) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -1852,7 +1852,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_DECODE_SYNC_SW265_FUNC_0020, TestSize.Level
 {
     if (cap_hevc != nullptr) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -1875,7 +1875,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_DECODE_SYNC_SW265_FUNC_0030, TestSize.Level
 {
     if (cap_hevc != nullptr) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->SF_OUTPUT = true;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
@@ -1900,7 +1900,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_H265_BLANK_FRAME_0010, TestSize.Level
 {
     if (cap_hevc != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -1921,7 +1921,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_H265_BLANK_FRAME_0020, TestSize.Level
 {
     if (cap_hevc != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -1946,7 +1946,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_H265_FLUSH_0010, TestSize.Level1)
 {
     if (cap_hevc != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -1971,7 +1971,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_H265_FLUSH_0020, TestSize.Level1)
 {
     if (cap_hevc != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -1996,7 +1996,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PIXE_FORMAT_HEVC_0010, TestSize.Level
 {
     if (cap_hevc != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->isGetVideoSupportedPixelFormats = true;
         vDecSample->isGetFormatKey = true;
         vDecSample->avcodecMimeType = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
@@ -2021,7 +2021,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_DECODE_TRANSFORM_0060, TestSize.Level0)
 {
     if (cap_hevc != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -2061,7 +2061,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_DECODE_TRANSFORM_0150, TestSize.Level0)
 {
     if (cap_hevc != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->INP_DIR = ginpDir1080;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -2111,6 +2111,32 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_DECODE_TRANSFORM_0270, TestSize.Level0)
         vDecSample->WaitForEOS();
         ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
         ASSERT_EQ(vDecSample->beforeSwitchTransform, vDecSample->afterSwitchTransform);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_H265_FLUSH_THREE_0010
+ * @tc.name      : config OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN, decoder h265 swd
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_H265_FLUSH_THREE_0010, TestSize.Level2)
+{
+    if (cap_hevc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = ginpDir1080;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        vDecSample->NEED_MD5_COMPAIRE = false;
+        vDecSample->INPUT_NAL_NUM = 3;
+        vDecSample->INPUT_STREAM_TYPE = OHOS::Media::VDecAPI11Sample::Input_Stream_Type_000001;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHevc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
 } // namespace

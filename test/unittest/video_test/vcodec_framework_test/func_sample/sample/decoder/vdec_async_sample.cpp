@@ -330,6 +330,16 @@ int32_t VideoDecAsyncSample::CreateReader(const std::string &inPath)
             return CreateDvvideoReader();
         case RAWVIDEO_STREAM:
             return CreateRawvideoReader();
+        case CINEPAK_STREAM:
+            return CreateCinepakReader();
+#ifdef SUPPORT_CODEC_VP8
+        case VP8_STREAM:
+            return CreateVp8Reader();
+#endif
+#ifdef SUPPORT_CODEC_VP9
+        case VP9_STREAM:
+            return CreateVp9Reader();
+#endif
         default:
             return CreateAvccReader();
     }
@@ -649,6 +659,41 @@ int32_t VideoDecAsyncSample::CreateRawvideoReader()
     return ret;
 }
 
+int32_t VideoDecAsyncSample::CreateCinepakReader()
+{
+    std::shared_ptr<CinepakReaderInfo> info = std::make_shared<CinepakReaderInfo>();
+    info->inPath = inPath_;
+    info->isMainStream = false;
+
+    cinepakReader_ = std::make_shared<CinepakReader>();
+    int32_t ret = cinepakReader_->Init(info);
+    return ret;
+}
+
+#ifdef SUPPORT_CODEC_VP8
+int32_t VideoDecAsyncSample::CreateVp8Reader()
+{
+    std::shared_ptr<Vp8ReaderInfo> info = std::make_shared<Vp8ReaderInfo>();
+    info->inPath = inPath_;
+
+    vp8Reader_ = std::make_shared<Vp8Reader>();
+    int32_t ret = vp8Reader_->Init(info);
+    return ret;
+}
+#endif
+
+#ifdef SUPPORT_CODEC_VP9
+int32_t VideoDecAsyncSample::CreateVp9Reader()
+{
+    std::shared_ptr<Vp9ReaderInfo> info = std::make_shared<Vp9ReaderInfo>();
+    info->inPath = inPath_;
+
+    vp9Reader_ = std::make_shared<Vp9Reader>();
+    int32_t ret = vp9Reader_->Init(info);
+    return ret;
+}
+#endif
+
 void VideoDecAsyncSample::FlushInner()
 {
     if (signal_ == nullptr) {
@@ -901,6 +946,16 @@ int32_t VideoDecAsyncSample::InputLoopInner()
         dvvideoReader_->FillBuffer(buffer->GetAddr(), attr);
     } else if (rawvideoReader_ != nullptr) {
         rawvideoReader_->FillBuffer(buffer->GetAddr(), attr);
+    } else if (cinepakReader_ != nullptr) {
+        cinepakReader_->FillBuffer(buffer->GetAddr(), attr);
+#ifdef SUPPORT_CODEC_VP8
+    } else if (vp8Reader_ != nullptr) {
+        vp8Reader_->FillBuffer(buffer->GetAddr(), attr);
+#endif
+#ifdef SUPPORT_CODEC_VP9
+    } else if (vp9Reader_ != nullptr) {
+        vp9Reader_->FillBuffer(buffer->GetAddr(), attr);
+#endif
     } else {
         msvideo1Reader_->FillBuffer(buffer->GetAddr(), attr);
     }
@@ -1109,7 +1164,9 @@ int32_t VideoDecAsyncSample::OutputLoopInnerExt()
                         testParam_ == VCodecTestParam::SW_WMV3 || testParam_ == VCodecTestParam::SW_RV30 ||
                         testParam_ == VCodecTestParam::SW_RV40_TEST || testParam_ == VCodecTestParam::SW_WVC1 ||
                         testParam_ == VCodecTestParam::SW_MPEG1 || testParam_ == VCodecTestParam::SW_DVVIDEO ||
-                        testParam_ == VCodecTestParam::SW_RAWVIDEO)
+                        testParam_ == VCodecTestParam::SW_RAWVIDEO || testParam_ == VCodecTestParam::SW_CINEPAK ||
+                        testParam_ == VCodecTestParam::SW_VP8 || testParam_ == VCodecTestParam::SW_VP9 ||
+                        testParam_ == VCodecTestParam::SW_AV1_TEST)
                            ? attr.size : buffer->GetNativeBuffer()->GetSize();
         UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
                                           "Fatal: GetOutputBuffer fail, exit, index: %d", index);
@@ -1207,6 +1264,16 @@ int32_t VideoDecAsyncSample::InputLoopInnerExt()
         dvvideoReader_->FillBuffer(buffer->GetAddr(), attr);
     } else if (rawvideoReader_ != nullptr) {
         rawvideoReader_->FillBuffer(buffer->GetAddr(), attr);
+    } else if (cinepakReader_ != nullptr) {
+        cinepakReader_->FillBuffer(buffer->GetAddr(), attr);
+#ifdef SUPPORT_CODEC_VP8
+    } else if (vp8Reader_ != nullptr) {
+        vp8Reader_->FillBuffer(buffer->GetAddr(), attr);
+#endif
+#ifdef SUPPORT_CODEC_VP9
+    } else if (vp9Reader_ != nullptr) {
+        vp9Reader_->FillBuffer(buffer->GetAddr(), attr);
+#endif
     } else {
         msvideo1Reader_->FillBuffer(buffer->GetAddr(), attr);
     }

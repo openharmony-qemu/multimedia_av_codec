@@ -1044,8 +1044,10 @@ void FFmpegDemuxerPlugin::WebvttMP4EOSProcess(const AVPacket *pkt)
 
 void FFmpegDemuxerPlugin::ResetContext()
 {
-    formatContext_->pb->eof_reached = 0;
-    formatContext_->pb->error = 0;
+    if (formatContext_ != nullptr && formatContext_->pb != nullptr) {
+        formatContext_->pb->eof_reached = 0;
+        formatContext_->pb->error = 0;
+    }
     ioContext_.retry = false;
 }
 
@@ -1144,19 +1146,17 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
     return ret;
 }
 
-Status FFmpegDemuxerPlugin::SetEosSample(std::shared_ptr<AVBuffer> sample)
+Status FFmpegDemuxerPlugin::SetEosSample(std::shared_ptr<AVBuffer> sample, bool replaceMemory)
 {
     MEDIA_LOG_D("In");
-    // 0 mean sync read, 1 mean async read
-    // sync read (0) need check memory_, async read (1) don't need check memory_
-    bool isAsyncRead = (readModeMap_.find(1) != readModeMap_.end() && readModeMap_[1] == 1);
-    if (!isAsyncRead) {
-        FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_ != nullptr, Status::ERROR_INVALID_PARAMETER,
-            "AVBuffer or memory is nullptr");
+    FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_INVALID_PARAMETER, "AVBuffer is nullptr");
+    if (!replaceMemory) {
+        FALSE_RETURN_V_MSG_E(sample->memory_ != nullptr, Status::ERROR_INVALID_PARAMETER,
+            "AVBuffer memory is nullptr");
     }
     sample->pts_ = 0;
     sample->flag_ = (uint32_t)(AVBufferFlag::EOS);
-    if (isAsyncRead) {
+    if (replaceMemory) {
         auto avPacketWrapper = std::make_shared<AVPacketWrapper>();
         FALSE_RETURN_V_MSG_E(avPacketWrapper != nullptr, Status::ERROR_INVALID_OPERATION, "Create pktWrapper failed");
         auto pkt = avPacketWrapper->GetAVPacket();
@@ -1484,7 +1484,8 @@ void FFmpegDemuxerPlugin::UpdateStreamSnapshots()
             snapshot.isVideo = FFmpegFormatHelper::IsVideoType(*stream);
             snapshot.isAudio = FFmpegFormatHelper::IsAudioType(*stream);
             snapshot.needCombineFrame =
-                (fileType_ == FileType::MPEGTS && snapshot.codecId == AV_CODEC_ID_HEVC);
+                ((fileType_ == FileType::MPEGTS || fileType_ == FileType::MPEGPS) &&
+                snapshot.codecId == AV_CODEC_ID_HEVC);
         }
         streamSnapshots_.emplace_back(snapshot);
     }
@@ -2349,11 +2350,20 @@ void FFmpegDemuxerPlugin::MaybeInitSeekCalibAfterRead(uint32_t trackId, AVPacket
     if (pkt->pts == AV_NOPTS_VALUE || pkt->dts == AV_NOPTS_VALUE || pkt->pts < 0 || pkt->dts < 0) {
         return;
     }
-    AVStream *stream = formatContext_->streams[trackId];
-    if (stream == nullptr || !FFmpegFormatHelper::IsVideoType(*stream)) {
+
+    const AVStreamSnapshot* snapshot = GetStreamSnapshot(trackId);
+    if (snapshot == nullptr || !snapshot->valid || snapshot->isVideo == false) {
         return;
     }
-    if (!IsSyncFrame(stream, pkt)) {
+
+    bool isSyncFrame = true;
+    if (FFmpegFormatHelper::IsValidCodecId(snapshot->codecId)) {
+        isSyncFrame = (static_cast<uint32_t>(pkt->flags) & static_cast<uint32_t>(AV_PKT_FLAG_KEY)) != 0;
+        if (!isSyncFrame && snapshot->codecId == AV_CODEC_ID_HEVC) {
+            isSyncFrame = (!IsSyncFrameCheckNeeded(formatContext_) || IsHevcSyncFrame(pkt->data, pkt->size));
+        }
+    }
+    if (!isSyncFrame) {
         return;
     }
     seekCalibMap_[trackId] = pkt->pts - pkt->dts;
@@ -2849,7 +2859,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     auto samplePacket = cacheQueue_.Front(trackId);
     FALSE_RETURN_V_MSG_E(samplePacket != nullptr, Status::ERROR_NULL_POINTER, "Cache packet is nullptr");
     if (samplePacket->isEOS) {
-        ret = SetEosSample(sample);
+        ret = SetEosSample(sample, false);
         if (ret == Status::OK) {
             DumpPacketInfo(trackId, Stage::FILE_END);
             cacheQueue_.Pop(trackId);
@@ -3405,6 +3415,57 @@ Status FFmpegDemuxerPlugin::SeekToStart()
     return Status::OK;
 }
 
+Status FFmpegDemuxerPlugin::SeekToFrameByDtsCheckParam(int32_t trackId, int64_t seekTime, SeekMode mode,
+    SeekToFrameByDtsContext &ctx)
+{
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
+    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
+    FALSE_RETURN_V_MSG_E(seekTime >= INT64_MIN / MS_TO_NS && seekTime <= INT64_MAX / MS_TO_NS,
+        Status::ERROR_INVALID_PARAMETER, "Seek time " PUBLIC_LOG_D64 " is not supported", seekTime);
+    FALSE_RETURN_V_MSG_E(mode == SeekMode::SEEK_CLOSEST, Status::ERROR_INVALID_PARAMETER,
+        "Seek mode " PUBLIC_LOG_U32 " is not supported", static_cast<uint32_t>(mode));
+    FALSE_RETURN_V_MSG_E(trackId >= 0 && trackId < static_cast<int32_t>(formatContext_->nb_streams),
+        Status::ERROR_INVALID_PARAMETER, "Invalid trackId " PUBLIC_LOG_D32, trackId);
+    FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_OPERATION,
+        "Track " PUBLIC_LOG_D32 " is not selected", trackId);
+
+    ctx.trackIndex = trackId;
+    ctx.avStream = formatContext_->streams[ctx.trackIndex];
+    FALSE_RETURN_V_MSG_E(ctx.avStream != nullptr, Status::ERROR_NULL_POINTER, "AVStream is nullptr");
+    ctx.ffDts = ConvertTimeToFFmpeg(seekTime * MS_TO_NS, ctx.avStream->time_base);
+    return Status::OK;
+}
+
+Status FFmpegDemuxerPlugin::ReadUntilDtsReached(SeekToFrameByDtsContext &ctx, int64_t seekTime,
+    int64_t &realSeekTime, TimeoutGuard &timeoutGuard)
+{
+    Plugins::AVPacketWrapperPtr pktWrapper = std::make_shared<Plugins::AVPacketWrapper>();
+    FALSE_RETURN_V_MSG_E(pktWrapper != nullptr && pktWrapper->GetAVPacket() != nullptr,
+        Status::ERROR_NULL_POINTER, "Create AVPacketWrapper failed");
+
+    int ffRet = 0;
+    while ((ffRet = AVReadFrameLimit(pktWrapper->GetAVPacket())) >= 0) {
+        FALSE_RETURN_V_MSG_E(!timeoutGuard.IsTimeout(), Status::ERROR_WAIT_TIMEOUT,
+            "Timeout while reading frames");
+        if (pktWrapper->GetStreamIndex() != ctx.trackIndex || pktWrapper->GetDts() == AV_NOPTS_VALUE) {
+            av_packet_unref(pktWrapper->GetAVPacket());
+            continue;
+        }
+        if (pktWrapper->GetDts() < ctx.ffDts) {
+            av_packet_unref(pktWrapper->GetAVPacket());
+            continue;
+        }
+        realSeekTime = ConvertTimeFromFFmpeg(pktWrapper->GetDts(), ctx.avStream->time_base);
+        Status ret = AddPacketToCacheQueue(pktWrapper);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "AddPacketToCacheQueue failed");
+        MEDIA_LOG_I("Seek by DTS succeeded: target=" PUBLIC_LOG_D64 " ms, real=" PUBLIC_LOG_D64 " (ns)",
+            seekTime, realSeekTime);
+        return Status::OK;
+    }
+
+    return (ffRet == AVERROR_EOF) ? Status::END_OF_STREAM : Status::ERROR_UNKNOWN;
+}
+
 Status FFmpegDemuxerPlugin::SeekToFrameByDts(int32_t trackId, int64_t seekTime,
     SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs)
 {
@@ -3417,38 +3478,31 @@ Status FFmpegDemuxerPlugin::SeekToFrameByDts(int32_t trackId, int64_t seekTime,
     if (readThread_ != nullptr) {
         SyncSeekThread();
     }
-    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
-    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
-    FALSE_RETURN_V_MSG_E(seekTime >= 0 && seekTime <= INT64_MAX / MS_TO_NS, Status::ERROR_INVALID_PARAMETER,
-        "Seek time " PUBLIC_LOG_D64 " is not supported", seekTime);
-    FALSE_RETURN_V_MSG_E(mode == SeekMode::SEEK_CLOSEST, Status::ERROR_INVALID_PARAMETER,
-        "Seek mode " PUBLIC_LOG_U32 " is not supported", static_cast<uint32_t>(mode));
-    int trackIndex = SelectSeekTrack();
-    MEDIA_LOG_D("Seek by DTS based on track " PUBLIC_LOG_D32, trackIndex);
-    AVStream* avStream = formatContext_->streams[trackIndex];
-    FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER,
-        "AVStream is nullptr");
-    int64_t ffDts = ConvertTimeToFFmpeg(seekTime * MS_TO_NS, avStream->time_base);
-    MEDIA_LOG_D("Seek DTS: " PUBLIC_LOG_D64 " ms -> " PUBLIC_LOG_D64 " (FFmpeg time_base)",
-        seekTime, ffDts);
-    int ffRet = AVSeekFrameLock(trackIndex, ffDts, AVSEEK_FLAG_ANY);
-    // 如果不支持（返回 EPERM 或其他错误），回退到 AVSEEK_FLAG_FRAME
-    if (ffRet < 0) {
-        MEDIA_LOG_W("AVSEEK_FLAG_ANY failed (err: " PUBLIC_LOG_S "), fallback to AVSEEK_FLAG_FRAME",
-            AVStrError(ffRet).c_str());
-        ffRet = AVSeekFrameLock(trackIndex, ffDts, AVSEEK_FLAG_FRAME);
+    SeekToFrameByDtsContext ctx;
+    Status ret = SeekToFrameByDtsCheckParam(trackId, seekTime, mode, ctx);
+    if (ret != Status::OK) {
+        HiviewDFX::XCollie::GetInstance().CancelTimer(id);
+        return ret;
     }
-    FALSE_RETURN_V_MSG_E(ffRet >= 0, Status::ERROR_UNKNOWN,
-        "Call av_seek_frame failed, err: " PUBLIC_LOG_S, AVStrError(ffRet).c_str());
+    MEDIA_LOG_D("Seek by DTS based on track " PUBLIC_LOG_D32, ctx.trackIndex);
+    MEDIA_LOG_I("Seek DTS: " PUBLIC_LOG_D64 " ms -> " PUBLIC_LOG_D64 " (FFmpeg time_base)",
+        seekTime, ctx.ffDts);
+    int ffRet = AVSeekFrameLock(ctx.trackIndex, ctx.ffDts, AVSEEK_FLAG_BACKWARD);
+    if (ffRet < 0) {
+        MEDIA_LOG_E("Call av_seek_frame failed, err: " PUBLIC_LOG_S, AVStrError(ffRet).c_str());
+        HiviewDFX::XCollie::GetInstance().CancelTimer(id);
+        return Status::ERROR_UNKNOWN;
+    }
     formatContext_->pb->error = 0;
-    FALSE_RETURN_V_MSG_E(!timeoutGuard.IsTimeout(), Status::ERROR_WAIT_TIMEOUT,
-        "Timeout after av_seek_frame");
-    realSeekTime = ConvertTimeFromFFmpeg(ffDts, avStream->time_base);
+    if (timeoutGuard.IsTimeout()) {
+        MEDIA_LOG_E("Timeout after av_seek_frame");
+        HiviewDFX::XCollie::GetInstance().CancelTimer(id);
+        return Status::ERROR_WAIT_TIMEOUT;
+    }
     ResetAfterSeek(seekTime, mode);
+    ret = ReadUntilDtsReached(ctx, seekTime, realSeekTime, timeoutGuard);
     HiviewDFX::XCollie::GetInstance().CancelTimer(id);
-    MEDIA_LOG_I("Seek by DTS succeeded: target=" PUBLIC_LOG_D64 " ms, real=" PUBLIC_LOG_D64 " (ns)",
-        seekTime, realSeekTime);
-    return Status::OK;
+    return ret;
 }
 
 namespace { // plugin set

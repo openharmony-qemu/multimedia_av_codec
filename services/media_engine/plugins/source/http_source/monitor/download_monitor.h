@@ -53,6 +53,7 @@ public:
     void Resume() override;
     size_t GetContentLength() const override;
     int64_t GetDuration() const override;
+    std::pair<int64_t, bool> GetStartInfo() const override;
     Seekable GetSeekable() const override;
     void SetCallback(Callback *cb) override;
     void SetStatusCallback(StatusCallbackFunc cb) override;

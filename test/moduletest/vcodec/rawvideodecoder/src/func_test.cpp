@@ -1382,4 +1382,35 @@ HWTEST_F(RawVideodecFuncNdkTest, VIDEO_RAWVIDEODEC_FUNCTION_0071, TestSize.Level
     ASSERT_EQ(0, vDecSample->errCount);
     ASSERT_EQ(FRAMESIZE5, vDecSample->outFrameCount);
 }
+
+/**
+ * @tc.number    : VIDEO_RAWVIDEODEC_FUNCTION_0080
+ * @tc.name      : Decode RawVideo buffer grap
+ * @tc.desc      : function test
+ */
+HWTEST_F(RawVideodecFuncNdkTest, VIDEO_RAWVIDEODEC_FUNCTION_0080, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecAPI11Sample>();
+    int32_t pixfmt[4] = {28, 24, 25, 12};
+    vDecSample->inputDir = INP_DIR_8;
+    vDecSample->outputYuvFlag = true;
+    vDecSample->defaultWidth = 4;
+    vDecSample->defaultHeight = 4;
+    vDecSample->pixFmt = AV_PIX_FMT_YUV420P;
+    vDecSample->isGetVideoSupportedPixelFormats = true;
+    vDecSample->isGetFormatKey = true;
+    vDecSample->avcodecMimeType = OH_AVCODEC_MIMETYPE_VIDEO_RAWVIDEO;
+    vDecSample->isEncoder = false;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameRawVideo.c_str()));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderReadStream());
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(0, vDecSample->errCount);
+    ASSERT_EQ(4, vDecSample->pixlFormatNum);
+    for (int i = 0; i < vDecSample->pixlFormatNum; i++) {
+        ASSERT_EQ(vDecSample->pixlFormats[i], pixfmt[i]);
+    }
+    ASSERT_EQ(FRAMESIZE7, vDecSample->outFrameCount);
+}
 } // namespace
