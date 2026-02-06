@@ -401,7 +401,6 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_GET_READ, TestSize.Level1)
 {
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
     int32_t appUid = 0;
-    mediaDownloader->SetAppUid(appUid);
     mediaDownloader->Init();
     std::string testUrl = MPD_SEGMENT_LIST;
     std::map<std::string, std::string> httpHeader;
