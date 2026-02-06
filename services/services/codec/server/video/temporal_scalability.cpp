@@ -124,15 +124,15 @@ void TemporalScalability::SetDisposableFlag(shared_ptr<Media::AVBuffer> buffer)
     int32_t nextPoc = (lastPoc_ + 1) % gopSize_;
     if (curPoc == 0 && nextPoc != 0) {
         isIdrChanged_ = true;
-        needFixFlay = true;
+        needFixFlag_ = true;
         changeNum_ = outputFrameCounter_;
         AVCODEC_LOGI_WITH_TAG("outframe: %{public}d is new IDR!, flag: %{public}u", outputFrameCounter_, flag);
     }
-    if (!isIdrChanged_ && needFixFlay && isLTR) {
-        needFixFlay = false;
+    if (!isIdrChanged_ && needFixFlag_ && isLTR) {
+        needFixFlag_ = false;
         AVCODEC_LOGI_WITH_TAG("outframe: %{public}d, new ltr: %{public}d", outputFrameCounter_, isLTR);
     }
-    if (needFixFlay) {
+    if (needFixFlag_) {
         flag = AVCODEC_BUFFER_FLAG_NONE;
         AVCODEC_LOGI_WITH_TAG("outframe: %{public}d, flag -> %{public}u", outputFrameCounter_, flag);
     }

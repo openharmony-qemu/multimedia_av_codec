@@ -63,7 +63,7 @@ private:
     std::unordered_map<uint32_t, std::shared_ptr<Media::AVBuffer>> inputBufferMap_;
     std::shared_ptr<BlockQueue<uint32_t>> inputIndexQueue_;
     std::atomic<bool> isIdrChanged_ = false;
-    std::atomic<bool> needFixFlay = false;
+    std::atomic<bool> needFixFlag_ = false;
     int32_t changeNum_ = -1;
     int32_t lastPoc_ = -1;
     bool IsLTRSolution();
