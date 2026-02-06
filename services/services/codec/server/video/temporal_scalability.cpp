@@ -82,6 +82,8 @@ void TemporalScalability::ValidateTemporalGopParam(Format &format)
         format.PutIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, tRefMode_);
         AVCODEC_LOGW_WITH_TAG("Get temporal reference mode failed, use default value ADJACENT_REFERENCE");
     }
+    AVCODEC_LOGI_WITH_TAG(
+        "gopSize: %{public}d, temporalGopSize: %{public}d, mode: %{public}d", gopSize_, temporalGopSize_, tRefMode_);
     svcLTR_ = IsLTRSolution();
     if (svcLTR_) {
         int32_t ltrFrameNum = LTRFrameNumCalculate(temporalGopSize_);
@@ -111,7 +113,30 @@ void TemporalScalability::SetBlockQueueActive()
 void TemporalScalability::SetDisposableFlag(shared_ptr<Media::AVBuffer> buffer)
 {
     lock_guard<shared_mutex> frameFlagMapLock(frameFlagMapMutex_);
+    bool isLTR = false;
+    int32_t curPoc = -1;
+    buffer->meta_->GetData(Tag::VIDEO_PER_FRAME_POC, curPoc);
+    buffer->meta_->GetData(Tag::VIDEO_PER_FRAME_IS_LTR, isLTR);
     uint32_t flag = frameFlagMap_[outputFrameCounter_];
+    AVCODEC_LOGD_WITH_TAG(
+        "outframe: %{public}d, lastPoc: %{public}d, poc: %{public}d, flag: %{public}u, isLTR: %{public}d",
+        outputFrameCounter_, lastPoc_, curPoc, flag, isLTR);
+    int32_t nextPoc = (lastPoc_ + 1) % gopSize_;
+    if (curPoc == 0 && nextPoc != 0) {
+        isIdrChanged_ = true;
+        needFixFlag_ = true;
+        changeNum_ = outputFrameCounter_;
+        AVCODEC_LOGI_WITH_TAG("outframe: %{public}d is new IDR!, flag: %{public}u", outputFrameCounter_, flag);
+    }
+    if (!isIdrChanged_ && needFixFlag_ && isLTR) {
+        needFixFlag_ = false;
+        AVCODEC_LOGI_WITH_TAG("outframe: %{public}d, new ltr: %{public}d", outputFrameCounter_, isLTR);
+    }
+    if (needFixFlag_) {
+        flag = AVCODEC_BUFFER_FLAG_NONE;
+        AVCODEC_LOGI_WITH_TAG("outframe: %{public}d, flag -> %{public}u", outputFrameCounter_, flag);
+    }
+    lastPoc_ = curPoc;
     buffer->flag_ |= flag;
     frameFlagMap_.erase(outputFrameCounter_);
     outputFrameCounter_++;
@@ -213,6 +238,18 @@ uint32_t TemporalScalability::DisposableDecision() const
     return AVCODEC_BUFFER_FLAG_NONE;
 }
 
+void TemporalScalability::FixLTRParameter()
+{
+    if (isIdrChanged_) {
+        frameNum_ = inputFrameCounter_ - changeNum_;
+        AVCODEC_LOGI_WITH_TAG(
+            "frame(%{public}d) change IDR, current input frame(%{public}d)", changeNum_, inputFrameCounter_);
+        isIdrChanged_ = false;
+    } else {
+        return;
+    }
+}
+
 void TemporalScalability::ConfigureLTR(uint32_t index)
 {
     bool isFinded = false;
@@ -225,6 +262,7 @@ void TemporalScalability::ConfigureLTR(uint32_t index)
                 frameNum_ = 0;
                 AVCODEC_LOGI_WITH_TAG("Request IDR frame");
             }
+            FixLTRParameter();
             LTRDecision();
             inputBufferMap_[index]->meta_->SetData(Tag::VIDEO_ENCODER_PER_FRAME_MARK_LTR, isMarkLTR_);
             if (isUseLTR_) {
