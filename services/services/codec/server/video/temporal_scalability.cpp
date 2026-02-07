@@ -241,9 +241,9 @@ uint32_t TemporalScalability::DisposableDecision() const
 void TemporalScalability::FixLTRParameter()
 {
     if (isIdrChanged_) {
-        frameNum_ = inputFrameCounter_ - changeNum_;
+        frameNum_ = static_cast<uint32_t>(inputFrameCounter_ - changeNum_);
         AVCODEC_LOGI_WITH_TAG(
-            "frame(%{public}d) change IDR, current input frame(%{public}d)", changeNum_, inputFrameCounter_);
+            "frame(%{public}u) change IDR, current input frame(%{public}u)", changeNum_, inputFrameCounter_);
         isIdrChanged_ = false;
     } else {
         return;
