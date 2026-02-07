@@ -225,7 +225,6 @@ void M3U8::InitTagUpdatersMap()
         info.discontinuity = true;
     };
     tagUpdatersMap_[HlsTag::EXTXKEY] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
-        FALSE_RETURN(tag != nullptr);
         PrepareDecrptionKeys(tag);
     };
     tagUpdatersMap_[HlsTag::EXTXMAP] = [this](const std::shared_ptr<Tag> &tag, const M3U8Info &info) {
@@ -1025,7 +1024,7 @@ void M3U8MasterPlaylist::BindVideoMedia(std::string mediaType)
             continue;
         }
         for (const auto &mediaStream : mediaList) {
-            if (videoStream == nullptr) {
+            if (mediaStream == nullptr) {
                 continue;
             }
             if (videoStreamId != mediaStream->groupID_) {
