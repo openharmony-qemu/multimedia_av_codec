@@ -64,7 +64,7 @@ private:
     std::shared_ptr<BlockQueue<uint32_t>> inputIndexQueue_;
     std::atomic<bool> isIdrChanged_ = false;
     std::atomic<bool> needFixFlag_ = false;
-    int32_t changeNum_ = -1;
+    uint32_t changeNum_ = 0;
     int32_t lastPoc_ = -1;
     bool IsLTRSolution();
     int32_t LTRFrameNumCalculate(int32_t tGopSize) const;
