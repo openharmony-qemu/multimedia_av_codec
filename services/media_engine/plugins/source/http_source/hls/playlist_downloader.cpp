@@ -115,6 +115,8 @@ void PlayListDownloader::DoOpen(const std::string& url)
     auto weakDownloader = weak_from_this();
     auto realStatusCallback = [weakDownloader] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
+        FALSE_RETURN(request != nullptr);
+
         auto shareDownloader = weakDownloader.lock();
         FALSE_RETURN_MSG(shareDownloader != nullptr, "realStatusCb, playlist downloader already destructed.");
         // 目标资源永久删除，需要重头重新请求
@@ -289,6 +291,8 @@ void PlayListDownloader::UpdateDownloadFinished(const std::string& url, const st
 void PlayListDownloader::OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader>&,
                                           std::shared_ptr<DownloadRequest>& request)
 {
+    FALSE_RETURN(request != nullptr);
+
     // This should not be called normally
     MEDIA_LOG_D("Should not call this OnDownloadStatus, should call monitor.");
     if (request->GetClientError() != 0 || request->GetServerError() != 0) {

@@ -216,7 +216,7 @@ AttributesTag::AttributesTag(HlsTag type, const std::string& v) : Tag(type)
 std::shared_ptr<Attribute> AttributesTag::GetAttributeByName(const char* name) const
 {
     auto iter = std::find_if(attributes.begin(), attributes.end(), [&](const std::shared_ptr<Attribute>& attribute) {
-        return attribute->GetName() == name;
+        return attribute != nullptr && attribute->GetName() == name;
     });
     if (iter != attributes.end()) {
         return *iter;

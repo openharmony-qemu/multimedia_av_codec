@@ -95,6 +95,7 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     bool precise_ {false};
     bool isStart_ {false};
     std::string playList_;
+    void PrepareDecrptionKeys(std::shared_ptr<Tag>& tag);
     void ParseKey(const std::shared_ptr<AttributesTag> &tag);
     void DownloadKey();
     uint32_t SaveData(uint8_t *data, uint32_t len, bool notBlock);
