@@ -19,6 +19,7 @@
 #include "video_decoder.h"
 #include "Av1Dec_Typedef.h"
 #include "avcodec_info.h"
+#include "dav1d.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -26,12 +27,11 @@ namespace Codec {
 
 class Av1Decoder : public VideoDecoder {
 public:
-    explicit Av1Decoder(const std::string &name, const std::string &path);
+    explicit Av1Decoder(const std::string &name);
     ~Av1Decoder() override;
 
     int32_t CreateDecoder() override;
     void DeleteDecoder() override;
-    void DecoderFuncMatch() override;
     bool CheckVideoPixelFormat(VideoPixelFormat vpf) override;
     void ConfigurelWidthAndHeight(const Format &format, const std::string_view &formatKey, bool isWidth) override;
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
@@ -41,22 +41,12 @@ public:
     static int32_t GetCodecCapability(std::vector<CapabilityData> &capaArray);
 
 protected:
-    using Av1DecoderLogFunc = void (*)(void *cookie, const char *format, va_list ap);
-    using Av1CreateDecoderFuncType = INT32 (*)(void **av1Decoder, Av1DecoderLogFunc logFxn);
-    using Av1DecodeFrameFuncType = INT32 (*)(void *av1Decoder, const unsigned char *frame, unsigned int frame_size,
-                                             int64_t timestamp);
-    using Av1GetFrameFuncType = INT32 (*)(void *av1Decoder, Dav1dPicture *outputImg);
-    using Av1PictureUnrefFuncType = void (*)(Dav1dPicture *const picture);
-    using Av1DestroyDecoderFuncType = void (*)(void **av1Decoder);
-
     int32_t Initialize() override;
     void InitParams() override;
-    void ReleaseHandle() override;
     void SendFrame()override;
     int32_t DecodeFrameOnce() override;
     int32_t DecodeAv1FrameOnce();
     void ConvertDecOutToAVFrame();
-    static int32_t CheckAv1DecLibStatus();
 
 private:
     AVPixelFormat ConvertAv1FmtToAVPixFmt(Dav1dPixelLayout fmt, int32_t bpc);
@@ -65,18 +55,14 @@ private:
                                      std::vector<uint8_t> &staticMetadataVec);
     bool CheckStateRunning();
 
-    AV1_DEC_HANDLE av1DecHandle_ = nullptr;
+    Dav1dContext *dav1dCtx_ = nullptr;
     AV1_DEC_INARGS av1DecoderInputArgs_;
     Dav1dPicture *av1DecOutputImg_ = nullptr;
-    Av1CreateDecoderFuncType av1DecoderCreateFunc_ = nullptr;
-    Av1DecodeFrameFuncType av1DecoderFrameFunc_ = nullptr;
-    Av1GetFrameFuncType av1DecoderGetFrameFunc_ = nullptr;
-    Av1PictureUnrefFuncType av1DecoderPictureUnrefFunc_ = nullptr;
-    Av1DestroyDecoderFuncType av1DecoderDestroyFunc_ = nullptr;
     AV1ColorSpaceInfo colorSpaceInfo_;
 };
 
 void AV1DecLog(void *cookie, const char *format, va_list ap);
+void Av1FreeCallback(const uint8_t *data, void *userData);
 } // namespace Codec
 } // namespace MediaAVCodec
 } // namespace OHOS

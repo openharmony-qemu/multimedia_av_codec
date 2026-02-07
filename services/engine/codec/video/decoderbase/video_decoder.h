@@ -42,7 +42,7 @@ using FormatDataType = Media::FormatDataType;
 
 class VideoDecoder : public RenderSurface, public CodecBase {
 public:
-    VideoDecoder(const std::string &name, const std::string &path);
+    explicit VideoDecoder(const std::string &name);
     ~VideoDecoder() = default;
     int32_t Init(Media::Meta &callerInfo) override;
     int32_t Start() override;
@@ -91,7 +91,6 @@ public:
     static std::vector<uint32_t> decInstanceIDSet_;
     void* handle_ = nullptr;
     std::string codecName_;
-    std::string libPath_ = "";
     bool isValid_ = true;
     std::shared_ptr<MediaCodecCallback> callback_;
     bool isOutBufSetted_ = false;
@@ -128,8 +127,6 @@ private:
     void SetSurfaceParameter();
     int32_t Detach(sptr<SurfaceBuffer> surfaceBuffer);
     virtual int32_t DecodeFrameOnce() = 0;
-    virtual void DecoderFuncMatch() = 0;
-    virtual void ReleaseHandle() = 0;
     virtual void InitParams() = 0;
     void SetCallerToBuffer(sptr<SurfaceBuffer> surfaceBuffer);
     int32_t SetSurfaceFormat();

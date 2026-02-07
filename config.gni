@@ -159,13 +159,22 @@ if (av_codec_support_vc1_decoder) {
   av_codec_defines += ["SUPPORT_CODEC_VC1"]
 }
 
+if (!(defined(global_parts_info) && defined(global_parts_info.thirdparty_dav1d))) {
+  av_codec_support_av1_decoder = false
+}
+
+if (!(defined(global_parts_info) && defined(global_parts_info.thirdparty_libvpx))) {
+  av_codec_support_vp8_decoder = false
+  av_codec_support_vp9_decoder = false
+}
+
 if (!av_codec_support_software_codec) {
   av_codec_support_fcodec = false
   av_codec_support_avc_encoder = false
   av_codec_support_hevc_decoder = false
-  av_codec_support_vp8_decoder = true
-  av_codec_support_vp9_decoder = true
-  av_codec_support_av1_decoder = true
+  av_codec_support_vp8_decoder = false
+  av_codec_support_vp9_decoder = false
+  av_codec_support_av1_decoder = false
 }
 
 if (av_codec_support_vp8_decoder) {
