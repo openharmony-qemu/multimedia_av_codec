@@ -47,7 +47,7 @@ public:
     Seekable GetSeekable() override;
     Status SeekTo(uint64_t offset) override;
     Status SeekToTime(int64_t seekTime, SeekMode mode) override;
-    Status SeekToTimeByStreamId(int64_t seekTime, SeekMode mode, int32_t streamId) override;
+    Status MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode, int32_t streamId) override;
     Status GetDuration(int64_t& duration) override;
     Status GetStartInfo(std::pair<int64_t, bool>& startInfo) override;
     bool IsSeekToTimeSupported() override;

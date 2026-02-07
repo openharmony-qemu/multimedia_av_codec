@@ -74,6 +74,7 @@ private:
     std::function<Status(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange_;
     std::function<void(std::string)> typeFound_;
     int32_t streamID_ = -1;
+    std::atomic<uint64_t> sniffSize_ {0};
     std::mutex mutex_;
     std::condition_variable readCond_;
     std::atomic<bool> isInterruptNeeded_{false};
