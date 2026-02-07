@@ -71,7 +71,7 @@ inline time_t String2Time(const std::string szTime)
     }
 
     if (sscanf_s(szTime.c_str(), "%4d-%2d-%2dT%2d:%2d:%2d", &tm1.tm_year, &tm1.tm_mon, &tm1.tm_mday, &tm1.tm_hour,
-                       &tm1.tm_min, &tm1.tm_sec) <= 0) {
+        &tm1.tm_min, &tm1.tm_sec) <= 0) {
         return 0;
     }
 
