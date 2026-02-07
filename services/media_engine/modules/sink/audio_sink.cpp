@@ -422,7 +422,7 @@ Status AudioSink::Flush()
     std::lock_guard<std::mutex> lockPlugin(pluginMutex_);
     MEDIA_LOG_D("do audioSink flush");
     underrunDetector_.Reset();
-    lagDetector_.Reset();    
+    lagDetector_.Reset();
     {
         AutoLock lock(eosMutex_);
         eosInterruptType_ = EosInterruptState::NONE;

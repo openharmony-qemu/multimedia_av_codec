@@ -160,7 +160,7 @@ public:
     bool IsNeedResponseCallback() override
     {
         return isNeedResponseCallback_;
-    }    
+    }
 private:
     class AudioRendererCallbackImpl : public OHOS::AudioStandard::AudioRendererCallback,
         public OHOS::AudioStandard::AudioRendererOutputDeviceChangeCallback {

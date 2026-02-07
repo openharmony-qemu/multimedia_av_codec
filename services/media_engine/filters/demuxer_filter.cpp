@@ -1012,7 +1012,7 @@ Status DemuxerFilter::DisableMediaTrack(Plugins::MediaType mediaType)
 
 void DemuxerFilter::OnDumpInfo(int32_t fd)
 {
-    MEDIA_LOG_D_SHORT("DemuxerFilter::OnDumpInfo called.");
+    MEDIA_LOG_D("DemuxerFilter::OnDumpInfo called.");
     if (demuxer_ != nullptr) {
         demuxer_->OnDumpInfo(fd);
     }
@@ -1020,7 +1020,7 @@ void DemuxerFilter::OnDumpInfo(int32_t fd)
 
 bool DemuxerFilter::IsRenderNextVideoFrameSupported()
 {
-    MEDIA_LOG_D_SHORT("DemuxerFilter::OnDumpInfo called.");
+    MEDIA_LOG_D("DemuxerFilter::OnDumpInfo called.");
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
     return demuxer_->IsRenderNextVideoFrameSupported();
 }
