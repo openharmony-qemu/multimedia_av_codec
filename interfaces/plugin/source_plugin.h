@@ -50,6 +50,7 @@ public:
     int32_t streamId;
     StreamType type;
     uint32_t bitRate;
+    uint64_t sniffSize;
 
     int32_t videoHeight = 0;
     int32_t videoWidth = 0;

@@ -59,7 +59,7 @@ public:
     void SetStatusCallback(StatusCallbackFunc cb) override;
     bool GetStartedStatus() override;
     bool SeekToTime(int64_t seekTime, SeekMode mode) override;
-    bool SeekToTimeByStreamId(int64_t seekTime, SeekMode mode, int32_t streamId) override;
+    bool MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode, int32_t streamId) override;
     std::vector<uint32_t> GetBitRates() override;
     bool SelectBitRate(uint32_t bitRate) override;
     bool AutoSelectBitRate(uint32_t bitRate) override;

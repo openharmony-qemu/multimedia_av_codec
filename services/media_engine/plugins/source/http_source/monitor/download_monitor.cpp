@@ -199,7 +199,7 @@ bool DownloadMonitor::MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode, i
         AutoLock lock(taskMutex_);
         retryTasks_.clear();
     }
-    return downloader_ != nullptr && downloader_->MediaSeekTimeByStreamId(seekTime, mode);
+    return downloader_ != nullptr && downloader_->MediaSeekTimeByStreamId(seekTime, mode, streamId);
 }
 
 std::vector<uint32_t> DownloadMonitor::GetBitRates()
