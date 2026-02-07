@@ -23,9 +23,9 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
-const char* ProcessPrefix(const char* str, bool& has_error)
+const char* ProcessPrefix(const char* str, bool& hasError)
 {
-    bool hasError = false;
+    hasError = false;
     if (!str || *str == '\0') {
         hasError = true;
         return str;
@@ -54,7 +54,8 @@ const char* ProcessPrefix(const char* str, bool& has_error)
 }
 
 template<typename T>
-bool StringToInteger(const std::string& str, T& value) {
+bool StringToInteger(const std::string& str, T& value)
+{
     bool hasError = false;
     const char* strPtr = str.data();
     const char* processed = ProcessPrefix(strPtr, hasError);
@@ -74,10 +75,12 @@ bool StringToInteger(const std::string& str, T& value) {
 }
 } // namespace
 
-bool StringUtil::SafeStoInt32(const std::string& str, int32_t& value) {
+bool StringUtil::SafeStoInt32(const std::string& str, int32_t& value)
+{
     return StringToInteger(str, value);
 }
-bool StringUtil::SafeStoInt64(const std::string& str, int64_t& value) {
+bool StringUtil::SafeStoInt64(const std::string& str, int64_t& value)
+{
     return StringToInteger(str, value);
 }
 }
