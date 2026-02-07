@@ -18,6 +18,7 @@
 #include "hls/hls_segment_manager.h"
 #include "http_server_mock.h"
 #include "test_template.h"
+
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;

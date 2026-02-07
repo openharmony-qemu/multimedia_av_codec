@@ -14,6 +14,7 @@
  */
 
 #include <cstdint>
+
 #include "dash_adpt_set_node.h"
 #include "dash_mpd_util.h"
 
