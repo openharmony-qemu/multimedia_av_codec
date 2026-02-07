@@ -46,6 +46,7 @@ dash_test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/network_client/http_curl_client.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_element.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_parser.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/string_utils.cpp",
 ]
 config("dash_unittest_cfg") {
   defines = [

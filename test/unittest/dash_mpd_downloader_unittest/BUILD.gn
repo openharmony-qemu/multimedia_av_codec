@@ -49,6 +49,7 @@ dash_test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_parser.cpp",
   #"$av_codec_root_dir/test/unittest/dash_mpd_downloader_unittest/mock/downloader.cpp",
   "$av_codec_root_dir/test/unittest/dash_mpd_downloader_unittest/mock/media_source_loading_request.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/string_utils.cpp",
 ]
 config("dash_unittest_cfg") {
   defines = [

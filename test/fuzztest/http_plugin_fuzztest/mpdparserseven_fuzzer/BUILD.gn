@@ -75,6 +75,7 @@ dash_sources = [
   "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/mpd_parser/sidx_box_parser.cpp",
   "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/xml/xml_parser.cpp",
   "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/xml/xml_element.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/utils/string_utils.cpp",
 ]
 
 ########################## xml fuzz ###########################
