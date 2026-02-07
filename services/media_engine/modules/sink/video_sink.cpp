@@ -33,11 +33,11 @@ static const int64_t MS_PER_US = 1000; // us change to ms
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
-int64_t GetvideoLatencyFixDelay()
+int64_t GetVideoLatencyFixDelay()
 {
     constexpr uint64_t defaultValue = 0;
     static uint64_t fixDelay = OHOS::system::GetUintParameter("debug.media_service.video_sync_fix_delay", defaultValue);
-    MEDIA_LOG_I_SHORT("video_sync_fix_delay, pid:%{public}d, fixdelay: " PUBLIC_LOG_U64, getprocpid(), fixDelay);
+    MEDIA_LOG_I("video_sync_fix_delay, pid:%{public}d , fixdelay: %{public}ld", getprocpid(), fixDelay);
     return (int64_t)fixDelay;
 }
 
@@ -67,16 +67,16 @@ VideoSink::VideoSink()
 {
     refreshTime_ = 0;
     syncerPriority_ = IMediaSynchronizer::VIDEO_SINK;
-    fixDelay_ = GetvideoLatencyFixDelay();
+    fixDelay_ = GetVideoLatencyFixDelay();
     enableRenderAtTime_ = system::GetParameter("debug.media_service.enable_renderattime", "1") == "1";
     renderAdvanceThreshold_ = static_cast<int64_t>
         (system::GetIntParameter("debug.media_service.renderattime_advance", MAX_ADVANCE_US));
-    MEDIA_LOG_I_SHORT("VideoSink ctor called...");
+    MEDIA_LOG_I("VideoSink ctor called...");
 }
 
 VideoSink::~VideoSink()
 {
-    MEDIA_LOG_I_SHORT("dtor");
+    MEDIA_LOG_I("dtor");
     this->eventReceiver_ = nullptr;
 }
 
@@ -141,7 +141,7 @@ int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
         ReportPts(buffer->pts_);
         lastBufferRelativePts_ = buffer->pts_ - firstPts_;
     } else {
-        MEDIA_LOG_I_SHORT("Video sink EOS");
+        MEDIA_LOG_I("Video sink EOS");
         if (syncCenter) {
             syncCenter->ReportEos(this);
         }
@@ -209,7 +209,7 @@ Status VideoSink::GetLatency(uint64_t& nanoSec)
 
 void VideoSink::SetSeekFlag()
 {
-    seekFlag_ = true;
+    seekFlag_ = true;  // seek后首次不走平滑
 }
 
 void VideoSink::SetLastPts(int64_t lastPts, int64_t renderDelay)
@@ -286,11 +286,16 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
         waitTimeUs = 0 - diff;
         RenderAtTimeLog(waitTimeUs);
         if (waitTimeUs > WAIT_TIME_US_THRESHOLD && !needDropOnMute_.load()) {
-            waitTimeUs = WAIT_TIME_US_THRESHOLD;
+            int64_t ptsDiff = static_cast<int64_t>(buffer->pts_ - lastPts_);
+            if (ptsDiff > WAIT_TIME_US_THRESHOLD) {
+                waitTimeUs = ptsDiff;
+            } else {
+                waitTimeUs = WAIT_TIME_US_THRESHOLD;
+            }
         }
     } else if (diff > 0 && Plugins::HstTime2Ms(diff * HST_USECOND) > 40) { // > 40ms, buffer is late
         tooLate = true;
-        MEDIA_LOG_D_SHORT("buffer is too late");
+        MEDIA_LOG_D("buffer is too late");
     }
     lastBufferAnchoredClockTime_ = bufferAnchoredClockTime;
     bool dropFlag = tooLate && ((buffer->flag_ & BUFFER_FLAG_KEY_FRAME) == 0); // buffer is too late, drop it
@@ -310,7 +315,7 @@ void VideoSink::RenderAtTimeLog(int64_t waitTimeUs)
 
 void VideoSink::SetSyncCenter(std::shared_ptr<Pipeline::MediaSyncManager> syncCenter)
 {
-    MEDIA_LOG_D_SHORT("VideoSink::SetSyncCenter");
+    MEDIA_LOG_I("VideoSink::SetSyncCenter");
     syncCenter_ = syncCenter;
     MediaSynchronousSink::Init();
 }

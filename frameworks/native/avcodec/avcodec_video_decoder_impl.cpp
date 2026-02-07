@@ -307,8 +307,8 @@ int32_t AVCodecVideoDecoderImpl::NotifyMemoryExchange(const bool exchangeFlag)
 {
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
-    AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT;
-    return codecClient_->NotifyMemoryExchange(exchangeFlag);
+    AVCODEC_SYNC_TRACE;
+    return codecClient_->NotifyMemoryExchange(exchangeFlag);71
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

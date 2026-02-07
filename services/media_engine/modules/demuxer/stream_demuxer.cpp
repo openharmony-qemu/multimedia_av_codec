@@ -48,21 +48,21 @@ const int32_t TRY_READ_TIMES = 10;
 constexpr int64_t SOURCE_READ_WARNING_MS = 100;
 StreamDemuxer::StreamDemuxer() : position_(0)
 {
-    MEDIA_LOG_D("VodStreamDemuxer called");
+    MEDIA_LOG_I("VodStreamDemuxer called");
 }
 
 StreamDemuxer::~StreamDemuxer()
 {
-    MEDIA_LOG_D("~VodStreamDemuxer called");
+    MEDIA_LOG_I("~VodStreamDemuxer called");
     ResetAllCache();
 }
 
 Status StreamDemuxer::ReadFrameData(int32_t streamID, uint64_t offset, size_t size,
     std::shared_ptr<Buffer>& bufferPtr)
 {
+    std::unique_lock<std::mutex> lock(cacheDataMutex_);
     if (IsDash() || GetIsDataSrcNoSeek()) {
         MEDIA_LOG_D("GetPeekRange read cache, offset: " PUBLIC_LOG_U64 " streamID: " PUBLIC_LOG_D32, offset, streamID);
-        std::unique_lock<std::mutex> lock(cacheDataMutex_);
         if (cacheDataMap_.find(streamID) != cacheDataMap_.end() && cacheDataMap_[streamID].CheckCacheExist(offset)) {
             MEDIA_LOG_D("GetPeekRange read cache, offset: " PUBLIC_LOG_U64, offset);
             auto memory = cacheDataMap_[streamID].GetData()->GetMemory();
@@ -80,7 +80,7 @@ Status StreamDemuxer::ReadHeaderData(int32_t streamID, uint64_t offset, size_t s
 {
     std::unique_lock<std::mutex> lock(cacheDataMutex_);
     if (cacheDataMap_.find(streamID) != cacheDataMap_.end() && cacheDataMap_[streamID].CheckCacheExist(offset)) {
-        MEDIA_LOG_D("GetPeekRange read cache, offset: " PUBLIC_LOG_U64, offset);
+        MEDIA_LOG_DD("GetPeekRange read cache, offset: " PUBLIC_LOG_U64, offset);
         auto memory = cacheDataMap_[streamID].GetData()->GetMemory();
         if (memory != nullptr && memory->GetSize() > 0) {
             MEDIA_LOG_D("GetPeekRange read cache, Read data from cache data.");
@@ -116,7 +116,7 @@ Status StreamDemuxer::GetPeekRange(int32_t streamID, uint64_t offset, size_t siz
 Status StreamDemuxer::Init(const std::string& uri)
 {
     MediaAVCodec::AVCodecTrace trace("StreamDemuxer::Init");
-    MEDIA_LOG_D("StreamDemuxer::Init called");
+    MEDIA_LOG_I("StreamDemuxer::Init called");
     checkRange_ = [](int32_t streamID, uint64_t offset, uint32_t size) {
         return Status::OK;
     };
@@ -207,7 +207,7 @@ Status StreamDemuxer::PullDataWithoutCache(int32_t streamID, uint64_t offset, si
 {
     Status ret = PullData(streamID, offset, size, bufferPtr);
     if (ret != Status::OK) {
-        MEDIA_LOG_D("PullDataWithoutCache, PullData error " PUBLIC_LOG_D32, static_cast<int32_t>(ret));
+        MEDIA_LOG_E("PullDataWithoutCache, PullData error " PUBLIC_LOG_D32, static_cast<int32_t>(ret));
         return ret;
     }
     if (cacheDataMap_.find(streamID) != cacheDataMap_.end()) {
@@ -422,7 +422,7 @@ Status StreamDemuxer::HandleReadPacket(int32_t streamID, int64_t offset, std::sh
         }
         return ret;
     }
-    MEDIA_LOG_D("Demuxer parse DEMUXER_STATE_PARSE_FRAME, getRange_ failed, ret = " PUBLIC_LOG_D32, ret);
+    MEDIA_LOG_W("Demuxer parse DEMUXER_STATE_PARSE_FRAME, getRange_ failed, ret = " PUBLIC_LOG_D32, ret);
     return ret;
 }
 
@@ -469,7 +469,7 @@ Status StreamDemuxer::CallbackReadAt(int32_t streamID, int64_t offset, std::shar
 
 void StreamDemuxer::SetInterruptState(bool isInterruptNeeded)
 {
-    MEDIA_LOG_DD("StreamDemuxer OnInterrupted %{public}d", isInterruptNeeded);
+    MEDIA_LOG_I("StreamDemuxer OnInterrupted %{public}d", isInterruptNeeded);
     {
         std::unique_lock<std::mutex> lock(mutex_);
         isInterruptNeeded_ = isInterruptNeeded;

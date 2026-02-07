@@ -102,7 +102,7 @@ private:
     int64_t lastClockTime_ = -1;
     std::atomic<bool> isRenderStarted_{false};
     VideoLagDetector lagDetector_ {};
-    int64_t renderAdvanceThreshold_ {80000};
+    int64_t renderAdvanceThreshold_ { 80000 };
     bool enableRenderAtTime_ {true};
     PerfRecorder perfRecorder_ {};
     bool isMuted_ = false;

@@ -35,7 +35,7 @@
 #include "scoped_timer.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
 using namespace OHOS::Media::Plugins;
 constexpr int TUPLE_SECOND_ITEM_INDEX = 2;
 constexpr int32_t DEFAULT_BUFFER_NUM = 8;
@@ -181,8 +181,8 @@ AudioServerSinkPlugin::AudioFirstFrameCallbackImpl::AudioFirstFrameCallbackImpl(
 void AudioServerSinkPlugin::AudioRendererCallbackImpl::OnInterrupt(
     const OHOS::AudioStandard::InterruptEvent &interruptEvent)
 {
-    FALSE_RETURN_MSG(isNeedResponseCallback_, "AudioRendererCallbackImpl is not need response callback");
     MEDIA_LOG_D_SHORT("OnInterrupt forceType is " PUBLIC_LOG_U32, static_cast<uint32_t>(interruptEvent.forceType));
+    FALSE_RETURN_MSG(isNeedResponseCallback_, "AudioRendererCallbackImpl is not need response callback");
     if (interruptEvent.forceType == OHOS::AudioStandard::INTERRUPT_FORCE) {
         switch (interruptEvent.hintType) {
             case OHOS::AudioStandard::INTERRUPT_HINT_PAUSE:
@@ -199,7 +199,7 @@ void AudioServerSinkPlugin::AudioRendererCallbackImpl::OnInterrupt(
         .param = interruptEvent
     };
     FALSE_RETURN(playerEventReceiver_ != nullptr);
-    MEDIA_LOG_D_SHORT("OnInterrupt event upload ");
+    MEDIA_LOG_D_T("OnInterrupt event upload ");
     playerEventReceiver_->OnEvent(event);
 }
 
@@ -211,7 +211,7 @@ void AudioServerSinkPlugin::AudioRendererCallbackImpl::SetResponseCallback(bool 
 void AudioServerSinkPlugin::AudioRendererCallbackImpl::OnStateChange(
     const OHOS::AudioStandard::RendererState state, const OHOS::AudioStandard::StateChangeCmdType cmdType)
 {
-    MEDIA_LOG_D_SHORT("RenderState is " PUBLIC_LOG_U32, static_cast<uint32_t>(state));
+    MEDIA_LOG_D_T("RenderState is " PUBLIC_LOG_U32, static_cast<uint32_t>(state));
     if (cmdType == AudioStandard::StateChangeCmdType::CMD_FROM_SYSTEM) {
         Event event {
             .srcFilter = "Audio state change event",
@@ -226,7 +226,7 @@ void AudioServerSinkPlugin::AudioRendererCallbackImpl::OnStateChange(
 void AudioServerSinkPlugin::AudioRendererCallbackImpl::OnOutputDeviceChange(
     const AudioStandard::AudioDeviceDescriptor &deviceInfo, const AudioStandard::AudioStreamDeviceChangeReason reason)
 {
-    MEDIA_LOG_D_SHORT("DeviceChange reason is " PUBLIC_LOG_D32, static_cast<int32_t>(reason));
+    MEDIA_LOG_D_T("DeviceChange reason is " PUBLIC_LOG_D32, static_cast<int32_t>(reason));
     auto param = std::make_pair(deviceInfo, reason);
     Event event {
         .srcFilter = "Audio deviceChange change event",
@@ -239,7 +239,7 @@ void AudioServerSinkPlugin::AudioRendererCallbackImpl::OnOutputDeviceChange(
 
 void AudioServerSinkPlugin::AudioFirstFrameCallbackImpl::OnFirstFrameWriting(uint64_t latency)
 {
-    MEDIA_LOG_I_SHORT("OnFirstFrameWriting latency: " PUBLIC_LOG_U64, latency);
+    MEDIA_LOG_I_T("OnFirstFrameWriting latency: " PUBLIC_LOG_U64, latency);
     Event event {
         .srcFilter = "Audio render first frame writing event",
         .type = EventType::EVENT_AUDIO_FIRST_FRAME,
@@ -247,7 +247,8 @@ void AudioServerSinkPlugin::AudioFirstFrameCallbackImpl::OnFirstFrameWriting(uin
     };
     FALSE_RETURN(playerEventReceiver_ != nullptr);
     playerEventReceiver_->OnEvent(event);
-    MEDIA_LOG_I_SHORT("OnFirstFrameWriting event upload ");
+    MEDIA_LOG_I_T("OnFirstFrameWriting event upload ");
+
     auto plugin = plugin_.lock();
     FALSE_RETURN_MSG(plugin != nullptr, "AudioServerSinkPlugin OnFirstFrameWriting plugin_ is nullptr");
     plugin->OnFirstFrameWriting();
@@ -255,14 +256,14 @@ void AudioServerSinkPlugin::AudioFirstFrameCallbackImpl::OnFirstFrameWriting(uin
 
 void AudioServerSinkPlugin::AudioServiceDiedCallbackImpl::OnAudioPolicyServiceDied()
 {
-    MEDIA_LOG_I_SHORT("OnAudioPolicyServiceDied enter");
+    MEDIA_LOG_I_T("OnAudioPolicyServiceDied enter");
     Event event {
         .srcFilter = "Audio service died event",
         .type = EventType::EVENT_AUDIO_SERVICE_DIED
     };
     FALSE_RETURN(playerEventReceiver_ != nullptr);
     playerEventReceiver_->OnEvent(event);
-    MEDIA_LOG_I_SHORT("OnAudioPolicyServiceDied end");
+    MEDIA_LOG_I_T("OnAudioPolicyServiceDied end");
 }
 
 AudioServerSinkPlugin::AudioServerSinkPlugin(std::string name)
@@ -274,7 +275,7 @@ AudioServerSinkPlugin::AudioServerSinkPlugin(std::string name)
 
 AudioServerSinkPlugin::~AudioServerSinkPlugin()
 {
-    MEDIA_LOG_D("~AudioServerSinkPlugin() entered.");
+    MEDIA_LOG_I_T("~AudioServerSinkPlugin() entered.");
     ReleaseRender();
     ReleaseFile();
 }
@@ -282,12 +283,12 @@ AudioServerSinkPlugin::~AudioServerSinkPlugin()
 Status AudioServerSinkPlugin::Init()
 {
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Init");
-    MEDIA_LOG_I_SHORT("Init entered.");
+    MEDIA_LOG_I_T("Init entered.");
     FALSE_RETURN_V_MSG(audioRenderer_ == nullptr, Status::OK, "audio renderer already create ");
     AudioStandard::AppInfo appInfo;
     appInfo.appPid = appPid_;
     appInfo.appUid = appUid_;
-    MEDIA_LOG_I_SHORT("Create audio renderer for apppid_ " PUBLIC_LOG_D32 " appuid_ " PUBLIC_LOG_D32
+    MEDIA_LOG_I_T("Create audio renderer for apppid_ " PUBLIC_LOG_D32 " appuid_ " PUBLIC_LOG_D32
                 " contentType " PUBLIC_LOG_D32 " streamUsage " PUBLIC_LOG_D32 " rendererFlags " PUBLIC_LOG_D32
                 " audioInterruptMode_ " PUBLIC_LOG_U32,
                 appPid_, appUid_, audioRenderInfo_.contentType, audioRenderInfo_.streamUsage,
@@ -308,7 +309,7 @@ Status AudioServerSinkPlugin::Init()
     rendererOptions_.streamInfo.channels = rendererParams_.channelCount;
     rendererOptions_.rendererInfo.playerType = AudioStandard::PlayerType::PLAYER_TYPE_AV_PLAYER;
     rendererOptions_.privacyType = static_cast<AudioStandard::AudioPrivacyType>(privacyType_);
-    MEDIA_LOG_I_SHORT("Create audio renderer for samplingRate " PUBLIC_LOG_D32 " encoding " PUBLIC_LOG_D32
+    MEDIA_LOG_I_T("Create audio renderer for samplingRate " PUBLIC_LOG_D32 " encoding " PUBLIC_LOG_D32
                 " sampleFormat " PUBLIC_LOG_D32 " channels " PUBLIC_LOG_D32,
                 rendererOptions_.streamInfo.samplingRate, rendererOptions_.streamInfo.encoding,
                 rendererOptions_.streamInfo.format, rendererOptions_.streamInfo.channels);
@@ -393,7 +394,7 @@ void AudioServerSinkPlugin::ReleaseFile()
 
 Status AudioServerSinkPlugin::Deinit()
 {
-    MEDIA_LOG_D_SHORT("Deinit entered");
+    MEDIA_LOG_D_T("Deinit entered");
     ReleaseRender();
     return Status::OK;
 }
@@ -401,7 +402,7 @@ Status AudioServerSinkPlugin::Deinit()
 Status AudioServerSinkPlugin::Prepare()
 {
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Prepare");
-    MEDIA_LOG_D_SHORT("Prepare >>");
+    MEDIA_LOG_D_T("Prepare >>");
     auto types = AudioStandard::AudioRenderer::GetSupportedEncodingTypes();
     bool ret = CppExt::AnyOf(types.begin(), types.end(), [](AudioStandard::AudioEncodingType tmp) -> bool {
         return tmp == AudioStandard::ENCODING_PCM;
@@ -424,7 +425,7 @@ Status AudioServerSinkPlugin::Prepare()
             audioRenderer_->RegisterAudioPolicyServerDiedCb(getprocpid(), audioServiceDiedCallback_);
         }
     }
-    MEDIA_LOG_I_SHORT("Prepare <<");
+    MEDIA_LOG_I_T("Prepare <<");
     return Status::OK;
 }
 
@@ -447,7 +448,7 @@ bool AudioServerSinkPlugin::StopRender()
 Status AudioServerSinkPlugin::Reset()
 {
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Reset");
-    MEDIA_LOG_I_SHORT("Reset entered.");
+    MEDIA_LOG_I_T("Reset entered.");
     FALSE_RETURN_V_MSG(StopRender(), Status::ERROR_UNKNOWN, "stop render error");
     ResetAudioRendererParams(rendererParams_);
     fmtSupported_ = false;
@@ -467,29 +468,29 @@ Status AudioServerSinkPlugin::Reset()
 Status AudioServerSinkPlugin::Start()
 {
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Start");
-    MEDIA_LOG_D_SHORT("Start entered.");
+    MEDIA_LOG_D_T("Start entered.");
     if (audioRenderer_ == nullptr) {
         return Status::ERROR_WRONG_STATE;
     }
     ApplyAudioHapticsSyncId();
     bool ret = audioRenderer_->Start();
     FALSE_RETURN_V_MSG(ret, Status::ERROR_UNKNOWN, "AudioRenderer::Start failed");
-    MEDIA_LOG_I_SHORT("AudioRenderer::Start end");
+    MEDIA_LOG_I_T("AudioRenderer::Start end");
     return Status::OK;
 }
 
 Status AudioServerSinkPlugin::Stop()
 {
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Stop");
-    MEDIA_LOG_D_SHORT("Stop entered.");
+    MEDIA_LOG_D_T("Stop entered.");
     FALSE_RETURN_V_MSG(StopRender(), Status::ERROR_UNKNOWN, "stop render failed");
-    MEDIA_LOG_I_SHORT("stop render success");
+    MEDIA_LOG_I_T("stop render success");
     return Status::OK;
 }
 
 int32_t AudioServerSinkPlugin::SetVolumeWithRamp(float targetVolume, int32_t duration)
 {
-    MEDIA_LOG_D_SHORT("SetVolumeWithRamp entered.");
+    MEDIA_LOG_D_T("SetVolumeWithRamp entered.");
     int32_t ret = 0;
     {
         if (audioRenderer_ == nullptr) {
@@ -498,13 +499,13 @@ int32_t AudioServerSinkPlugin::SetVolumeWithRamp(float targetVolume, int32_t dur
         if (duration == 0) {
             ret = audioRenderer_->SetVolume(targetVolume);
         } else {
-            MEDIA_LOG_I_SHORT("plugin set vol AudioRenderer::SetVolumeWithRamp start");
+            MEDIA_LOG_I_T("plugin set vol AudioRenderer::SetVolumeWithRamp start");
             ret = audioRenderer_->SetVolumeWithRamp(targetVolume, duration);
-            MEDIA_LOG_I_SHORT("plugin set vol AudioRenderer::SetVolumeWithRamp end");
+            MEDIA_LOG_I_T("plugin set vol AudioRenderer::SetVolumeWithRamp end");
         }
     }
     OHOS::Media::SleepInJob(duration + 40); // fade out sleep more 40 ms
-    MEDIA_LOG_I_SHORT("SetVolumeWithRamp end.");
+    MEDIA_LOG_I_T("SetVolumeWithRamp end.");
     return ret;
 }
 
@@ -513,7 +514,7 @@ Status AudioServerSinkPlugin::GetParameter(std::shared_ptr<Meta> &meta)
     AudioStandard::AudioRendererParams params;
     meta->Set<Tag::MEDIA_BITRATE>(bitRate_);
     if (audioRenderer_ && audioRenderer_->GetParams(params) == AudioStandard::SUCCESS) {
-        MEDIA_LOG_I_SHORT("get param with fmt " PUBLIC_LOG_D32 " sampleRate " PUBLIC_LOG_D32 " channel " PUBLIC_LOG_D32
+        MEDIA_LOG_I_T("get param with fmt " PUBLIC_LOG_D32 " sampleRate " PUBLIC_LOG_D32 " channel " PUBLIC_LOG_D32
                     " encode type " PUBLIC_LOG_D32,
                     params.sampleFormat, params.sampleRate, params.channelCount, params.encodingType);
         if (params.sampleRate != rendererParams_.sampleRate) {
@@ -546,7 +547,7 @@ bool AudioServerSinkPlugin::AssignSampleRateIfSupported(uint32_t sampleRate)
     for (const auto &rate : supportedSampleRateList) {
         if (static_cast<uint32_t>(rate) == sampleRate) {
             rendererParams_.sampleRate = rate;
-            MEDIA_LOG_D_SHORT("sampleRate: " PUBLIC_LOG_U32, rendererParams_.sampleRate);
+            MEDIA_LOG_D_T("sampleRate: " PUBLIC_LOG_U32, rendererParams_.sampleRate);
             return true;
         }
     }
@@ -564,27 +565,27 @@ bool AudioServerSinkPlugin::AssignChannelNumIfSupported(uint32_t channelNum)
     for (const auto &channel : supportedChannelsList) {
         if (static_cast<uint32_t>(channel) == channelNum) {
             rendererParams_.channelCount = channel;
-            MEDIA_LOG_D_SHORT("channelCount: " PUBLIC_LOG_U32, rendererParams_.channelCount);
+            MEDIA_LOG_D_T("channelCount: " PUBLIC_LOG_U32, rendererParams_.channelCount);
             return true;
         }
     }
-    MEDIA_LOG_E_SHORT("channel num " PUBLIC_LOG_U32 "not supported", channelNum);
+    MEDIA_LOG_E_T("channel num " PUBLIC_LOG_U32 "not supported", channelNum);
     return false;
 }
 
 bool AudioServerSinkPlugin::AssignSampleFmtIfSupported(Plugins::AudioSampleFormat sampleFormat)
 {
-    MEDIA_LOG_I_SHORT("AssignSampleFmtIfSupported AudioSampleFormat " PUBLIC_LOG_D32, sampleFormat);
+    MEDIA_LOG_I_T("AssignSampleFmtIfSupported AudioSampleFormat " PUBLIC_LOG_D32, sampleFormat);
     const auto &item = std::find_if(g_aduFmtMap.begin(), g_aduFmtMap.end(), [&sampleFormat](const auto &tmp) -> bool {
         return std::get<0>(tmp) == sampleFormat;
     });
     auto stdFmt = std::get<1>(*item);
     if (stdFmt == OHOS::AudioStandard::AudioSampleFormat::INVALID_WIDTH) {
         if (std::get<2>(*item) == AV_SAMPLE_FMT_NONE) { // 2
-            MEDIA_LOG_I_SHORT("AssignSampleFmtIfSupported AV_SAMPLE_FMT_NONE");
+            MEDIA_LOG_I_T("AssignSampleFmtIfSupported AV_SAMPLE_FMT_NONE");
             fmtSupported_ = false;
         } else {
-            MEDIA_LOG_I_SHORT("AssignSampleFmtIfSupported needReformat_");
+            MEDIA_LOG_I_T("AssignSampleFmtIfSupported needReformat_");
             fmtSupported_ = true;
             needReformat_ = true;
             reSrcFfFmt_ = std::get<2>(*item); // 2
@@ -594,7 +595,7 @@ bool AudioServerSinkPlugin::AssignSampleFmtIfSupported(Plugins::AudioSampleForma
         auto supportedFmts = OHOS::AudioStandard::AudioRenderer::GetSupportedFormats();
         if (CppExt::AnyOf(supportedFmts.begin(), supportedFmts.end(),
                           [&stdFmt](const auto &tmp) -> bool { return tmp == stdFmt; })) {
-            MEDIA_LOG_I_SHORT("AssignSampleFmtIfSupported needReformat_ false");
+            MEDIA_LOG_I_T("AssignSampleFmtIfSupported needReformat_ false");
             fmtSupported_ = true;
             needReformat_ = false;
         } else {
@@ -660,7 +661,7 @@ void AudioServerSinkPlugin::SetUpMimeTypeSetter()
         FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<std::string>(para), Status::ERROR_MISMATCHED_TYPE,
                              "mimeType type should be string");
         mimeType_ = AnyCast<std::string>(para);
-        MEDIA_LOG_I_SHORT("Set mimeType: " PUBLIC_LOG_S, mimeType_.c_str());
+        MEDIA_LOG_I_T("Set mimeType: " PUBLIC_LOG_S, mimeType_.c_str());
         return Status::OK;
     };
 }
@@ -671,9 +672,9 @@ void AudioServerSinkPlugin::SetUpSampleRateSetter()
         FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<int32_t>(para), Status::ERROR_MISMATCHED_TYPE,
                              "sample rate type should be int32_t");
         if (!AssignSampleRateIfSupported(AnyCast<int32_t>(para))) {
-            MEDIA_LOG_E_SHORT("sampleRate isn't supported");
-            playerEventReceiver_->OnEvent({
-                "sampleRate isn't supported", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_SAMPLE_RATE, "sample_rate"});
+            MEDIA_LOG_E_T("sampleRate isn't supported");
+            playerEventReceiver_->OnEvent({"sampleRate isn't supported",
+                EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_SAMPLE_RATE, "sample_rate"});
             return Status::ERROR_INVALID_PARAMETER;
         }
         return Status::OK;
@@ -686,11 +687,11 @@ void AudioServerSinkPlugin::SetUpAudioOutputChannelsSetter()
         FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<int32_t>(para), Status::ERROR_MISMATCHED_TYPE,
                              "channels type should be int32_t");
         channels_ = AnyCast<uint32_t>(para);
-        MEDIA_LOG_I_SHORT("Set outputChannels: " PUBLIC_LOG_U32, channels_);
+        MEDIA_LOG_I_T("Set outputChannels: " PUBLIC_LOG_U32, channels_);
         if (!AssignChannelNumIfSupported(channels_)) {
-            MEDIA_LOG_E_SHORT("channel isn't supported");
-            playerEventReceiver_->OnEvent({
-                "channel isn't supported", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_CHANNEL_NUM, "channel_num"});
+            MEDIA_LOG_E_T("channel isn't supported");
+            playerEventReceiver_->OnEvent({"channel isn't supported",
+                EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_CHANNEL_NUM, "channel_num"});
             return Status::ERROR_INVALID_PARAMETER;
         }
         return Status::OK;
@@ -709,13 +710,13 @@ void AudioServerSinkPlugin::SetUpMediaBitRateSetter()
 void AudioServerSinkPlugin::SetUpAudioSampleFormatSetter()
 {
     paramsSetterMap_[Tag::AUDIO_SAMPLE_FORMAT] = [this](const ValueType &para) {
-        MEDIA_LOG_I_SHORT("SetUpAudioSampleFormat");
+        MEDIA_LOG_I_T("SetUpAudioSampleFormat");
         FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<AudioSampleFormat>(para), Status::ERROR_MISMATCHED_TYPE,
                              "AudioSampleFormat type should be AudioSampleFormat");
         if (!AssignSampleFmtIfSupported(AnyCast<AudioSampleFormat>(para))) {
-            MEDIA_LOG_E_SHORT("sampleFmt isn't supported by audio renderer or resample lib");
-            playerEventReceiver_->OnEvent({
-                "sampleFmt isn't supported", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_PARAMS, "sample_format"});
+            MEDIA_LOG_E_T("sampleFmt isn't supported by audio renderer or resample lib");
+            playerEventReceiver_->OnEvent({"sampleFmt isn't supported",
+                EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_PARAMS, "sample_format"});
             return Status::ERROR_INVALID_PARAMETER;
         }
         return Status::OK;
@@ -727,7 +728,7 @@ void AudioServerSinkPlugin::SetUpAudioOutputChannelLayoutSetter()
         FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<AudioChannelLayout>(para), Status::ERROR_MISMATCHED_TYPE,
                              "channel layout type should be AudioChannelLayout");
         channelLayout_ = AnyCast<AudioChannelLayout>(para);
-        MEDIA_LOG_I_SHORT("Set outputChannelLayout: " PUBLIC_LOG_U64, channelLayout_);
+        MEDIA_LOG_I_T("Set outputChannelLayout: " PUBLIC_LOG_U64, channelLayout_);
         return Status::OK;
     };
 }
@@ -800,7 +801,7 @@ void AudioServerSinkPlugin::SetUpAudioRenderSetFlagSetter()
 {
     paramsSetterMap_[Tag::AUDIO_RENDER_SET_FLAG] = [this](const ValueType &para) {
         if (!Any::IsSameTypeWith<bool>(para)) {
-            MEDIA_LOG_E_SHORT("AUDIO_RENDER_SET_FLAG type should be bool");
+            MEDIA_LOG_E_T("AUDIO_RENDER_SET_FLAG type should be bool");
             playerEventReceiver_->OnEvent({"AUDIO_RENDER_SET_FLAG type is not bool",
                 EventType::EVENT_ERROR, MSERR_EXT_API9_INVALID_PARAMETER});
             return Status::ERROR_MISMATCHED_TYPE;
@@ -834,7 +835,7 @@ void AudioServerSinkPlugin::SetUpAudioRenderSourceDurationSetter()
 Status AudioServerSinkPlugin::SetParameter(const std::shared_ptr<Meta> &meta)
 {
     for (MapIt iter = meta->begin(); iter != meta->end(); iter++) {
-        MEDIA_LOG_D_SHORT("SetParameter iter->first " PUBLIC_LOG_S, iter->first.c_str());
+        MEDIA_LOG_D_T("SetParameter iter->first " PUBLIC_LOG_S, iter->first.c_str());
         if (paramsSetterMap_.find(iter->first) == paramsSetterMap_.end()) {
             continue;
         }
@@ -846,7 +847,7 @@ Status AudioServerSinkPlugin::SetParameter(const std::shared_ptr<Meta> &meta)
 
 Status AudioServerSinkPlugin::GetVolume(float &volume)
 {
-    MEDIA_LOG_I_SHORT("GetVolume entered.");
+    MEDIA_LOG_I_T("GetVolume entered.");
     if (audioRenderer_ != nullptr) {
         volume = audioRenderer_->GetVolume();
         return Status::OK;
@@ -877,10 +878,10 @@ Status AudioServerSinkPlugin::SetVolumeMode(int32_t mode)
 
 Status AudioServerSinkPlugin::GetAudioEffectMode(int32_t &effectMode)
 {
-    MEDIA_LOG_I_SHORT("GetAudioEffectMode entered.");
+    MEDIA_LOG_I_T("GetAudioEffectMode entered.");
     if (audioRenderer_ != nullptr) {
         effectMode = audioRenderer_->GetAudioEffectMode();
-        MEDIA_LOG_I_SHORT("GetAudioEffectMode %{public}d", effectMode);
+        MEDIA_LOG_I_T("GetAudioEffectMode %{public}d", effectMode);
         return Status::OK;
     }
     return Status::ERROR_WRONG_STATE;
@@ -888,7 +889,7 @@ Status AudioServerSinkPlugin::GetAudioEffectMode(int32_t &effectMode)
 
 Status AudioServerSinkPlugin::SetAudioEffectMode(int32_t effectMode)
 {
-    MEDIA_LOG_I_SHORT("SetAudioEffectMode %{public}d", effectMode);
+    MEDIA_LOG_I_T("SetAudioEffectMode %{public}d", effectMode);
     if (audioRenderer_ != nullptr) {
         int32_t ret = audioRenderer_->SetAudioEffectMode(static_cast<OHOS::AudioStandard::AudioEffectMode>(effectMode));
         FALSE_RETURN_V_MSG(ret == OHOS::AudioStandard::SUCCESS, Status::ERROR_UNKNOWN,
@@ -900,7 +901,7 @@ Status AudioServerSinkPlugin::SetAudioEffectMode(int32_t effectMode)
 
 Status AudioServerSinkPlugin::GetSpeed(float &speed)
 {
-    MEDIA_LOG_I_SHORT("GetSpeed entered.");
+    MEDIA_LOG_I_T("GetSpeed entered.");
     if (audioRenderer_ != nullptr) {
         speed = audioRenderer_->GetSpeed();
         return Status::OK;
@@ -910,7 +911,7 @@ Status AudioServerSinkPlugin::GetSpeed(float &speed)
 
 Status AudioServerSinkPlugin::SetSpeed(float speed)
 {
-    MEDIA_LOG_I_SHORT("SetSpeed entered.");
+    MEDIA_LOG_I_T("SetSpeed entered.");
     if (audioRenderer_ != nullptr) {
         int32_t ret = audioRenderer_->SetSpeed(speed);
         FALSE_RETURN_V_MSG(ret == OHOS::AudioStandard::SUCCESS, Status::ERROR_UNKNOWN,
@@ -923,35 +924,35 @@ Status AudioServerSinkPlugin::SetSpeed(float speed)
 Status AudioServerSinkPlugin::Resume()
 {
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Resume");
-    MEDIA_LOG_D_SHORT("Resume entered");
+    MEDIA_LOG_D_T("Resume entered");
     return Start();
 }
 
 Status AudioServerSinkPlugin::Pause()
 {
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Pause");
-    MEDIA_LOG_I_SHORT("Pause entered");
+    MEDIA_LOG_I_T("Pause entered");
     OHOS::Media::AutoLock renderlock(renderMutex_);
     FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, Status::ERROR_UNKNOWN, "audio renderer pause fail");
     FALSE_RETURN_V_MSG(audioRenderer_->GetStatus() == OHOS::AudioStandard::RENDERER_RUNNING,
         Status::OK, "audio renderer no need pause");
     sliceCount_++;
     FALSE_RETURN_V_MSG_W(audioRenderer_->Pause(), Status::ERROR_UNKNOWN, "renderer pause fail.");
-    MEDIA_LOG_I_SHORT("audio renderer pause success");
+    MEDIA_LOG_I_T("audio renderer pause success");
     return Status::OK;
 }
 
 Status AudioServerSinkPlugin::PauseTransitent()
 {
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::PauseTransitent");
-    MEDIA_LOG_I_SHORT("PauseTransitent entered.");
+    MEDIA_LOG_I_T("PauseTransitent entered.");
     OHOS::Media::AutoLock renderlock(renderMutex_);
     FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, Status::ERROR_UNKNOWN, "audio renderer pauseTransitent fail");
     FALSE_RETURN_V_MSG(audioRenderer_->GetStatus() == OHOS::AudioStandard::RENDERER_RUNNING,
         Status::OK, "audio renderer no need pauseTransitent");
     sliceCount_++;
     FALSE_RETURN_V_MSG_W(audioRenderer_->PauseTransitent(), Status::ERROR_UNKNOWN, "renderer pauseTransitent fail.");
-    MEDIA_LOG_I_SHORT("audio renderer pauseTransitent success");
+    MEDIA_LOG_I_T("audio renderer pauseTransitent success");
     return Status::OK;
 }
 
@@ -1073,8 +1074,10 @@ Status AudioServerSinkPlugin::Write(const std::shared_ptr<OHOS::Media::AVBuffer>
         inputBuffer->memory_->GetSize() != 0, Status::OK, "Receive empty buffer."); // return ok
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Write, bufferSize: "
         + std::to_string(inputBuffer->memory_->GetSize()));
+    int32_t ret = 0;
     if (mimeType_ == MimeType::AUDIO_AVS3DA) {
-        return WriteAudioVivid(inputBuffer) >= 0 ? Status::OK : Status::ERROR_UNKNOWN;
+        ret = WriteAudioVivid(inputBuffer);
+        return ret >= 0 ? Status::OK : Status::ERROR_UNKNOWN;
     }
     auto mem = inputBuffer->memory_;
     auto srcBuffer = mem->GetAddr();
@@ -1130,16 +1133,16 @@ Status AudioServerSinkPlugin::Flush()
         return Status::ERROR_WRONG_STATE;
     }
     if (audioRenderer_->Flush()) {
-        MEDIA_LOG_D_SHORT("flush renderer success");
+        MEDIA_LOG_D_T("flush renderer success");
         return Status::OK;
     }
-    MEDIA_LOG_E_SHORT("flush renderer fail");
+    MEDIA_LOG_E_T("flush renderer fail");
     return Status::ERROR_UNKNOWN;
 }
 
 Status AudioServerSinkPlugin::Drain()
 {
-    MEDIA_LOG_I_SHORT("Drain entered.");
+    MEDIA_LOG_I_T("Drain entered.");
     if (audioRenderer_ == nullptr) {
         DrainCacheData(false);
         return Status::ERROR_WRONG_STATE;
@@ -1156,7 +1159,7 @@ Status AudioServerSinkPlugin::Drain()
             OHOS::Media::SleepInJob(latency);
         }
     }
-    MEDIA_LOG_I_SHORT("drain renderer success");
+    MEDIA_LOG_I_T("drain renderer success");
     return Status::OK;
 }
 
@@ -1206,7 +1209,7 @@ void AudioServerSinkPlugin::SetAudioDumpBySysParam()
     if (sliceDumpRes == 0 && !dumpSliceEnable.empty() && dumpSliceEnable == "true") {
         enableDumpSlice_ = true;
     }
-    MEDIA_LOG_D_SHORT("sys.media.sink.entiredump.enable: " PUBLIC_LOG_S ", sys.media.sink.slicedump.enable: "
+    MEDIA_LOG_D_T("sys.media.sink.entiredump.enable: " PUBLIC_LOG_S ", sys.media.sink.slicedump.enable: "
         PUBLIC_LOG_S, dumpAllEnable.c_str(), dumpSliceEnable.c_str());
 }
 
@@ -1264,19 +1267,6 @@ int64_t AudioServerSinkPlugin::GetWriteDurationMs()
     return writeDuration;
 }
 
-void AudioServerSinkPlugin::SetInterruptState(bool isInterruptNeeded)
-{
-    MEDIA_LOG_I("onInterrupted %{public}d", isInterruptNeeded);
-    {
-        std::unique_lock<std::mutex> lock(mutex_);
-        isInterruptNeeded_ = isInterruptNeeded;
-        writeCond_.notify_all();
-    }
-    FALSE_RETURN_NOLOG(audioRenderWriteCallback_ != nullptr);
-    MEDIA_LOG_I("NotifyInterrupt");
-    audioRenderWriteCallback_->NotifyInterrupt(isInterruptNeeded);
-}
-
 void AudioServerSinkPlugin::Freeze()
 {
     FALSE_RETURN_NOLOG(audioRenderWriteCallback_ != nullptr);
@@ -1289,21 +1279,6 @@ void AudioServerSinkPlugin::UnFreeze()
     FALSE_RETURN_NOLOG(audioRenderWriteCallback_ != nullptr);
     MEDIA_LOG_I("NotifyUnFreeze");
     audioRenderWriteCallback_->NotifyUnFreeze();
-}
-
-void AudioServerSinkPlugin::OnWriteData(size_t length)
-{
-    // First check if can get lock
-    std::unique_lock<std::mutex> lock(releaseRenderMutex_, std::try_to_lock);
-    FALSE_RETURN_MSG(lock.owns_lock(), "AudioServerSinkPlugin OnWriteData try to get lock failed");
-
-    // Then check if callback untied
-    FALSE_RETURN_MSG(!isReleasingRender_, "AudioServerSinkPlugin OnWriteData is releasing ");
-    
-    ScopedTimer timer("OnWriteData", ON_WRITE_WARNING_MS);
-    auto cb = audioSinkDataCallback_.lock();
-    FALSE_RETURN_MSG(cb != nullptr, "AudioServerSinkPlugin OnWriteData callback is nullptr");
-    cb->OnWriteData(length, isAudioVivid_);
 }
 
 AudioServerSinkPlugin::AudioRendererWriteCallbackImpl::AudioRendererWriteCallbackImpl(
@@ -1440,10 +1415,40 @@ bool AudioServerSinkPlugin::GetAudioPosition(timespec &time, uint32_t &framePosi
     return ret;
 }
 
+void AudioServerSinkPlugin::SetInterruptState(bool isInterruptNeeded)
+{
+    MEDIA_LOG_I("onInterrupted %{public}d", isInterruptNeeded);
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        isInterruptNeeded_ = isInterruptNeeded;
+        writeCond_.notify_all();
+    }
+    FALSE_RETURN_NOLOG(audioRenderWriteCallback_ != nullptr);
+    MEDIA_LOG_I("NotifyInterrupt");
+    audioRenderWriteCallback_->NotifyInterrupt(isInterruptNeeded);
+}
+
+void AudioServerSinkPlugin::OnWriteData(size_t length)
+{
+    // First check if can get lock
+    std::unique_lock<std::mutex> lock(releaseRenderMutex_, std::try_to_lock);
+    FALSE_RETURN_MSG(lock.owns_lock(), "AudioServerSinkPlugin OnWriteData try to get lock failed");
+
+    // Then check if callback untied
+    FALSE_RETURN_MSG(!isReleasingRender_, "AudioServerSinkPlugin OnWriteData is releasing ");
+    
+    ScopedTimer timer("OnWriteData", ON_WRITE_WARNING_MS);
+    auto cb = audioSinkDataCallback_.lock();
+    FALSE_RETURN_MSG(cb != nullptr, "AudioServerSinkPlugin OnWriteData callback is nullptr");
+    cb->OnWriteData(length, isAudioVivid_);
+}
+
 bool AudioServerSinkPlugin::IsOffloading()
 {
     FALSE_RETURN_V(audioRenderer_ != nullptr, false);
-    return audioRenderer_->IsOffloadEnable();
+    bool ret = audioRenderer_->IsOffloadEnable();
+    MEDIA_LOG_I("IsOffloading %{public}d", ret);
+    return ret;
 }
 
 Status AudioServerSinkPlugin::SetAudioHapticsSyncId(int32_t syncId)

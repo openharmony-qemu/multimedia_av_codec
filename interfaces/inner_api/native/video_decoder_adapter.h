@@ -65,12 +65,12 @@ public:
         const bool svpFlag);
     void OnDumpInfo(int32_t fd);
 
-    void SetCallingInfo(int32_t appUid, int32_t appPid, std::string bundleName, uint64_t instanceId);
+    void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string& bundleName, uint64_t instanceId);
     void ResetRenderTime();
     Status SetPerfRecEnabled(bool isPerfRecEnabled);
-    void NotifyMemoryExchange(bool exchangeFlag);
     bool IsHwDecoder();
     void InitDefaultSurface();
+    void NotifyMemoryExchange(bool exchangeFlag);
 
 private:
     void PerfRecord(const std::shared_ptr<AVBuffer> buffer);
