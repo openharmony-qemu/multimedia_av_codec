@@ -53,37 +53,43 @@ constexpr int64_t S_2_NS = S_2_MS * MS_2_NS;
 
 constexpr int64_t MEDIA_PTS_UNSET = INT64_MIN + 1;
 
-inline time_t String2Time(const std::string szTime)
-{
-    if (szTime.length() == 0) {
-        return 0;
-    }
+class String2Time {
+    std::string str_;
+public:
+    String2Time(const std::string& s): str_(s) {}
 
-    struct tm tm1;
-    errno_t result = memset_s(&tm1, sizeof(tm1), 0, sizeof(tm1));
-    if (result != 0) {
-        return 0;
-    }
-    struct tm tmBase;
-    result = memset_s(&tmBase, sizeof(tmBase), 0, sizeof(tmBase));
-    if (result != 0) {
-        return 0;
-    }
+    time_t operator()() const
+    {
+        if (str_.length() == 0) {
+            return 0;
+        }
 
-    if (sscanf_s(szTime.c_str(), "%4d-%2d-%2dT%2d:%2d:%2d", &tm1.tm_year, &tm1.tm_mon, &tm1.tm_mday, &tm1.tm_hour,
-        &tm1.tm_min, &tm1.tm_sec) <= 0) {
-        return 0;
+        struct tm tm1;
+        errno_t result = memset_s(&tm1, sizeof(tm1), 0, sizeof(tm1));
+        if (result != 0) {
+            return 0;
+        }
+        struct tm tmBase;
+        result = memset_s(&tmBase, sizeof(tmBase), 0, sizeof(tmBase));
+        if (result != 0) {
+            return 0;
+        }
+
+        if (sscanf_s(str_.c_str(), "%4d-%2d-%2dT%2d:%2d:%2d", &tm1.tm_year, &tm1.tm_mon, &tm1.tm_mday, &tm1.tm_hour,
+            &tm1.tm_min, &tm1.tm_sec) <= 0) {
+            return 0;
+        }
+
+        tm1.tm_year -= DEFAULT_YEAR;
+        tm1.tm_mon--;
+        tm1.tm_isdst = -1;
+
+        tmBase.tm_mday = BASE_DAY;
+        tmBase.tm_year = BASE_YEAR;
+        tmBase.tm_isdst = -1;
+        return mktime(&tm1) - mktime(&tmBase);
     }
-
-    tm1.tm_year -= DEFAULT_YEAR;
-    tm1.tm_mon--;
-    tm1.tm_isdst = -1;
-
-    tmBase.tm_mday = BASE_DAY;
-    tmBase.tm_year = BASE_YEAR;
-    tmBase.tm_isdst = -1;
-    return mktime(&tm1) - mktime(&tmBase);
-}
+};
 } // namespace HttpPluginLite
 } // namespace Plugin
 } // namespace Media

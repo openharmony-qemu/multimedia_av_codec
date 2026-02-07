@@ -713,7 +713,7 @@ HWTEST_F(DashMpdParserUnitTest, ClearRoleList_001, TestSize.Level0)
 HWTEST_F(DashMpdParserUnitTest, String2Time_001, TestSize.Level0)
 {
     ASSERT_NE(dashMpdParser_, nullptr);
-    EXPECT_EQ(String2Time(""), NUM_0);
+    EXPECT_EQ(String2Time("")(), NUM_0);
 }
 
 /**
@@ -725,7 +725,7 @@ HWTEST_F(DashMpdParserUnitTest, String2Time_001, TestSize.Level0)
 HWTEST_F(DashMpdParserUnitTest, String2Time_002, TestSize.Level0)
 {
     ASSERT_NE(dashMpdParser_, nullptr);
-    EXPECT_EQ(String2Time("       "), NUM_0);
+    EXPECT_EQ(String2Time("       ")(), NUM_0);
 }
 
 /**
@@ -737,7 +737,7 @@ HWTEST_F(DashMpdParserUnitTest, String2Time_002, TestSize.Level0)
 HWTEST_F(DashMpdParserUnitTest, String2Time_003, TestSize.Level0)
 {
     ASSERT_NE(dashMpdParser_, nullptr);
-    EXPECT_EQ(String2Time("abchudfwehuifhq"), NUM_0);
+    EXPECT_EQ(String2Time("abchudfwehuifhq")(), NUM_0);
 }
 
 /**
@@ -749,7 +749,7 @@ HWTEST_F(DashMpdParserUnitTest, String2Time_003, TestSize.Level0)
 HWTEST_F(DashMpdParserUnitTest, String2Time_004, TestSize.Level0)
 {
     ASSERT_NE(dashMpdParser_, nullptr);
-    EXPECT_EQ(String2Time("1970-01-01T00:00:00Z"), NUM_0);
+    EXPECT_EQ(String2Time("1970-01-01T00:00:00Z")(), NUM_0);
 }
 
 /**
@@ -761,7 +761,7 @@ HWTEST_F(DashMpdParserUnitTest, String2Time_004, TestSize.Level0)
 HWTEST_F(DashMpdParserUnitTest, String2Time_005, TestSize.Level0)
 {
     ASSERT_NE(dashMpdParser_, nullptr);
-    EXPECT_EQ(String2Time("2024-05-20T10:00:00Z"), 1716199200);
+    EXPECT_EQ(String2Time("2024-05-20T10:00:00Z")(), 1716199200);
 }
 } // namespace HttpPluginLite
 } // namespace Plugin

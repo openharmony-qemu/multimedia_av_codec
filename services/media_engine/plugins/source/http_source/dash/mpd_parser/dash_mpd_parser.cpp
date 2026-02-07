@@ -964,7 +964,7 @@ void DashMpdParser::GetMpdAttr(IDashMpdNode *mpdNode)
 
     std::string startTime;
     mpdNode->GetAttr("availabilityStartTime", startTime);
-    dashMpdInfo_.availabilityStartTime_ = (int64_t)String2Time(startTime) * S_2_MS;
+    dashMpdInfo_.availabilityStartTime_ = (int64_t)String2Time(startTime)() * S_2_MS;
 }
 
 void DashMpdParser::GetMpdElement(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement)
