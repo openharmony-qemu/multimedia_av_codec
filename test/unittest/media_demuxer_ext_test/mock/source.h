@@ -89,6 +89,7 @@ public:
     MOCK_METHOD(int64_t, GetDuration, (), ());
     MOCK_METHOD((std::pair<int64_t, bool>), GetStartInfo, (), ());
     MOCK_METHOD(Status, SeekToTime, (int64_t seekTime, SeekMode mode), ());
+    MOCK_METHOD(Status, SeekToTimeByStreamId, (int64_t seekTime, SeekMode mode, int32_t streamId), ());
     MOCK_METHOD(Status, SeekTo, (uint64_t offset), ());
     MOCK_METHOD(Status, GetBitRates, (std::vector<uint32_t> & bitRates), ());
     MOCK_METHOD(Status, SelectBitRate, (uint32_t bitRate), ());

@@ -29,6 +29,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "Source" };
 constexpr int64_t SOURCE_INIT_WARNING_MS = 20;
+constexpr int64_t NS_TO_US = 1000;
 }
 
 namespace OHOS {
@@ -249,6 +250,17 @@ Status Source::SeekToTime(int64_t seekTime, SeekMode mode)
     } else {
         return Status::ERROR_INVALID_PARAMETER;
     }
+}
+
+Status Source::MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode, int32_t streamId)
+{
+    if (seekable_ != Seekable::SEEKABLE) {
+        GetSeekable();
+    }
+    int64_t timeUs;
+    return (plugin_ != nullptr && Plugins::Us2HstTime(seekTime, timeUs)) ?
+        plugin_->MediaSeekTimeByStreamId(timeUS, mode, streamId) :
+        Status::ERROR_INVALID_PARAMETER;
 }
 
 Status Source::GetDownloadInfo(DownloadInfo& downloadInfo)

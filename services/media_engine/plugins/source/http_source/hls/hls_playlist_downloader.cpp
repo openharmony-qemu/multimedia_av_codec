@@ -33,6 +33,7 @@ const std::string M3U8_END_TAG = "#EXT-X-ENDLIST";
 const std::string M3U8_TS_TAG = "#EXTINF";
 const std::string M3U8_X_MAP_TAG = "#EXT-X-MAP";
 constexpr unsigned int MAX_LIVE_TS_NUM = 3;
+constexpr uint64_t DEFAULT_SUBTITLE_SNIFFSIZE = 128;
 }
 // StateMachine thread: call plugin SetSource -> call Open
 // StateMachine thread: call plugin GetSeekable -> call GetSeekable
@@ -709,6 +710,7 @@ void HlsPlayListDownloader::GetMediaStreams(StreamType streamType, std::vector<S
         if (streamType == StreamType::SUBTITLE) {
             isDefault = currentVariant_->defaultSubtitles_ != nullptr &&
                 media->streamId_ == currentVariant_->defaultSubtitles_->streamId_;
+                streams.sniffSize = DEFAULT_SUBTITLE_SNIFFSIZE;
         }
         
         if (isDefault) {

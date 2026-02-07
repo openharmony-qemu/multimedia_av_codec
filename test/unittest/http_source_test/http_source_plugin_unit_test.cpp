@@ -443,6 +443,19 @@ HWTEST_F(HttpSourcePluginUnitTest, SetInterruptState2, TestSize.Level1)
     EXPECT_EQ(httpSourcePlugin->isInterruptNeeded_, isInterruptNeeded);
 }
 
+HWTEST_F(HttpSourcePluginUnitTest, SEEK_TO_TIME_BY_STREAMID_001, TestSize.Level1)
+{
+    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(M3U8_SEGMENT_BASE);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    httpSourcePlugin->SetSource(source);
+    httpSourcePlugin->SetCallback(sourceCallback);
+    httpSourcePlugin->GetSeekable();
+    httpSourcePlugin->Read(1, buffer, 10, 100);
+    OSAL::SleepFor(1 * 1000);
+    httpSourcePlugin->MediaSeekTimeByStreamId(1, SeekMode::SEEK_NEXT_SYNC, 1);
+    EXPECT_TRUE(httpSourcePlugin);
+}
+
 HWTEST_F(HttpSourcePluginUnitTest, INIT_HTTP_SOURCE_001, TestSize.Level1)
 {
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(FLV_SEGMENT_BASE);

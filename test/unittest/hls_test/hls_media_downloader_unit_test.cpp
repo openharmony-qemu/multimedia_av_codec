@@ -1220,6 +1220,33 @@ HWTEST_F(HlsMediaDownloaderTest, SEEK_TO_TIME_004, TestSize.Level1)
     sourceCallback = nullptr;
 }
 
+HWTEST_F(HlsMediaDownloaderTest, SEEK_TO_TIME_BY_STREAMID_001, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideo();
+    auto ret = downloader->MediaSeekTimeByStreamId(0, SeekMode::SEEK_PREVIOUS_SYNC, 3);
+    EXPECT_TRUE(ret);
+    ret = downloader->MediaSeekTimeByStreamId(0, SeekMode::SEEK_PREVIOUS_SYNC, 4);
+    EXPECT_TRUE(ret);
+    downloader->Close(true);
+    CloseHlsDetachAudioVideo(downloader);
+}
+
+HWTEST_F(HlsMediaDownloaderTest, SEEK_TO_TIME_BY_STREAMID_002, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideo();
+    downloader->subtitlesSegManager_ = nullptr;
+    auto ret = downloader->MediaSeekTimeByStreamId(0, SeekMode::SEEK_PREVIOUS_SYNC, 4);
+    EXPECT_FALSE(ret);
+    downloader->audioSegManager_ = nullptr;
+    ret = downloader->MediaSeekTimeByStreamId(0, SeekMode::SEEK_PREVIOUS_SYNC, 3);
+    EXPECT_FALSE(ret);
+    downloader->videoSegManager_ = nullptr;
+    ret = downloader->MediaSeekTimeByStreamId(0, SeekMode::SEEK_PREVIOUS_SYNC, 1);
+    EXPECT_FALSE(ret);
+    downloader->Close(true);
+    CloseHlsDetachAudioVideo(downloader);
+}
+
 HWTEST_F(HlsMediaDownloaderTest, ON_MASTER_READY_001, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE_UT,

@@ -193,6 +193,20 @@ bool HlsMediaDownloader::SeekToTime(int64_t seekTime, SeekMode mode)
     return ret;
 }
 
+bool HlsMediaDownloader::MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode, int32_t streamId)
+{
+    FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, false, "SeekToTimeByStreamId no video segment manager found!");
+    auto segType = videoSegManager_->GetSegType(streamId);
+    if (segType == HlsSegmentManager::SEG_AUDIO && audioSegManager_) {
+        return audioSegManager_->SeekToTime(seekTime, mode);
+    }
+    if (segType == HlsSegmentManager::SEG_SUBTITLE && subtitlesSegManager_) {
+        return subtitlesSegManager_->SeekToTime(seekTime, mode);
+    }
+    MEDIA_LOG_E("no audio and subtitle segment manager found");
+    return ret;
+}
+
 size_t HlsMediaDownloader::GetContentLength() const
 {
     return 0;

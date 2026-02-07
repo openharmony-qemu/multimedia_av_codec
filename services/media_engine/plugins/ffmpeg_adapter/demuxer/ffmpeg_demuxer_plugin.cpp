@@ -3575,6 +3575,10 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
         return SniffWithSize(pluginName, dataSource, TRUEHD_SNIFF_SIZE);
     }
 #endif
+    uint64_t sniffSize = dataSource->GetSniffSize();
+    if (sniffSize) {
+        return SniffWithSize(pluginName, dataSource, sniffSize);
+    }
     return SniffWithSize(pluginName, dataSource, DEFAULT_SNIFF_SIZE);
 }
 

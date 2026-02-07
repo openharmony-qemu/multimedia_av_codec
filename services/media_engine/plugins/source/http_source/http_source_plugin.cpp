@@ -430,6 +430,16 @@ Status HttpSourcePlugin::SeekToTime(int64_t seekTime, SeekMode mode)
     return Status::OK;
 }
 
+Status HttpSourcePlugin::MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode, int32_t streamId)
+{
+    // Not use mutex to avoid deadlock in continuously multi times in seeking
+    std::shared_ptr<MediaDownloader> downloader = downloader_;
+    FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
+    FALSE_RETURN_V(downloader->GetSeekable() == Seekable::SEEKABLE, Status::ERROR_INVALID_OPERATION);
+    FALSE_RETURN_V(seekTime <= downloader->GetDuration(), Status::ERROR_INVALID_PARAMETER);
+    FALSE_RETURN_V(downloader->MediaSeekTimeByStreamId(seekTime, mode, streamId), Status::ERROR_UNKNOWN);
+    return Status::OK;
+}
 
 void HttpSourcePlugin::CloseUri(bool isAsync)
 {

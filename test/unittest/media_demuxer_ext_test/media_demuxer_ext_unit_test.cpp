@@ -1468,6 +1468,52 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleDashSelectTrack_004, Tes
 }
 
 /**
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleDashSelectTrack API
+ * @tc.number: MediaDemuxerExt_HandleDashSelectTrack_005
+ * @tc.desc  : Test trackId != curTrackId &&
+ *             targetStreamID != demuxerPluginManager_->GetTmpStreamIDByTrackID(curTrackId)
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleDashSelectTrack_005, TestSize.Level1)
+{
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
+        GetStreamIDByTrackID(_)).WillRepeatedly(Return(NUM_2));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
+        GetTrackTypeByTrackID(_)).WillRepeatedly(Return(TrackType::TRACK_SUBTITLE));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
+        GetTmpStreamIDByTrackID(_)).WillRepeatedly(Return(NUM_1));
+    mediaDemuxer_->source_ = std::make_shared<Source>();
+    mediaDemuxer_->subtitleTrackId_ = NUM_1;
+    mediaDemuxer_->isHls = true;
+    mediaDemuxer_->syncCenter_ = std::make_shared<MediaSyncManager>();
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(_)).WillRepeatedly(::testing::Return(Status::OK));
+    auto result = mediaDemuxer_->HandleDashSelectTrack(NUM_1);
+    EXPECT_EQ(result, Status::OK);
+    mediaDemuxer_->isHls = false;
+    result = mediaDemuxer_->HandleDashSelectTrack(NUM_1);
+    EXPECT_EQ(result, Status::OK);
+    mediaDemuxer_->subtitleTrackId_ = NUM_1;
+    mediaDemuxer_->syncCenter_ = nullptr;
+    result = mediaDemuxer_->HandleDashSelectTrack(NUM_1);
+    EXPECT_EQ(result, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleRebootPlugin API
+ * @tc.number: MediaDemuxerExt_HandleSelectSubtitle_001
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSelectSubtitle_001, TestSize.Level1)
+{
+    mediaDemuxer_->subtitleTrackId_ = NUM_1;
+    mediaDemuxer_->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetStreamIDByTrackID(_)).WillOnce(::testing::Return(NUM_2));
+    mediaDemuxer_->source_ = std::make_shared<Source>();
+    EXPECT_CALL(*mediaDemuxer_->source_, IsSeekToTimeSupported()).WillOnce(::testing::Return(true));
+    EXPECT_CALL(*mediaDemuxer_->source_, SeekToTimeByStreamId(_, _, _)).WillOnce(::testing::Return(Status::OK));
+    auto result = mediaDemuxer_->MediaSeekTimeByStreamId(0, Plugins::SEEK_PREVIOUS_SYNC, NUM_2);
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+}
+
+/**
  * @tc.name  : Test MediaDemuxerExtUnitTest HandleRebootPlugin API
  * @tc.number: MediaDemuxerExt_HandleRebootPlugin_001
  * @tc.desc  : Test isInterruptNeeded_.load() &&
