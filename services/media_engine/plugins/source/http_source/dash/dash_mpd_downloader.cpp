@@ -1627,7 +1627,8 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsWithTmpltTimelineStatic(const
                 continue;
             }
 
-            unsigned int segDuration = ((*it)->d_ * S_2_MS) / timeScale;
+            unsigned int segDuration = ((*it)->d_ <= std::numeric_limits<uint64_t>::max() / S_2_MS ?
+                (*it)->d_ * S_2_MS : std::numeric_limits<uint64_t>::max()) / timeScale;
             MediaSegSampleInfo sampleInfo;
             sampleInfo.mediaUrl_ = mediaUrl;
             sampleInfo.segCount_ = segCount;
