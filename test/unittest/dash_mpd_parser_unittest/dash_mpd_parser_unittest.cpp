@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Copyright (C) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -704,6 +704,65 @@ HWTEST_F(DashMpdParserUnitTest, ClearRoleList_001, TestSize.Level0)
     EXPECT_EQ(roleList.size(), NUM_0);
 }
 
+/**
+ * @tc.name  : Test String2Time
+ * @tc.number: String2Time_001
+ * @tc.desc  : Test szTime.length() > 0
+ *             Test return 0
+ */
+HWTEST_F(DashMpdParserUnitTest, String2Time_001, TestSize.Level0)
+{
+    ASSERT_NE(dashMpdParser_, nullptr);
+    EXPECT_EQ(String2Time(""), NUM_0);
+}
+
+/**
+ * @tc.name  : Test String2Time
+ * @tc.number: String2Time_002
+ * @tc.desc  : Test szTime empty
+ *             Test return 0
+ */
+HWTEST_F(DashMpdParserUnitTest, String2Time_002, TestSize.Level0)
+{
+    ASSERT_NE(dashMpdParser_, nullptr);
+    EXPECT_EQ(String2Time("       "), NUM_0);
+}
+
+/**
+ * @tc.name  : Test String2Time
+ * @tc.number: String2Time_003
+ * @tc.desc  : Test szTime not a time
+ *             Test return 0
+ */
+HWTEST_F(DashMpdParserUnitTest, String2Time_003, TestSize.Level0)
+{
+    ASSERT_NE(dashMpdParser_, nullptr);
+    EXPECT_EQ(String2Time("abchudfwehuifhq"), NUM_0);
+}
+
+/**
+ * @tc.name  : Test String2Time
+ * @tc.number: String2Time_004
+ * @tc.desc  : Test szTime base time
+ *             Test return 0
+ */
+HWTEST_F(DashMpdParserUnitTest, String2Time_004, TestSize.Level0)
+{
+    ASSERT_NE(dashMpdParser_, nullptr);
+    EXPECT_EQ(String2Time("1970-01-01T00:00:00Z"), NUM_0);
+}
+
+/**
+ * @tc.name  : Test String2Time
+ * @tc.number: String2Time_005
+ * @tc.desc  : Test szTime normal time
+ *             Test return 0
+ */
+HWTEST_F(DashMpdParserUnitTest, String2Time_005, TestSize.Level0)
+{
+    ASSERT_NE(dashMpdParser_, nullptr);
+    EXPECT_EQ(String2Time("2024-05-20T10:00:00Z"), 1716199200);
+}
 } // namespace HttpPluginLite
 } // namespace Plugin
 } // namespace Media
