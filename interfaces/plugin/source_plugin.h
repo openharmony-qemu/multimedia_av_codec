@@ -206,7 +206,7 @@ public:
         return Status::OK;
     }
 
-    virtual Status SeekToTimeByStreamId(int64_t seekTime, SeekMode mode, int32_t streamId)
+    virtual Status MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode, int32_t streamId)
     {
         return Status::OK;
     }

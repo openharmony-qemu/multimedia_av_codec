@@ -710,7 +710,7 @@ void HlsPlayListDownloader::GetMediaStreams(StreamType streamType, std::vector<S
         if (streamType == StreamType::SUBTITLE) {
             isDefault = currentVariant_->defaultSubtitles_ != nullptr &&
                 media->streamId_ == currentVariant_->defaultSubtitles_->streamId_;
-                streams.sniffSize = DEFAULT_SUBTITLE_SNIFFSIZE;
+                streamInfo.sniffSize = DEFAULT_SUBTITLE_SNIFFSIZE;
         }
         
         if (isDefault) {
