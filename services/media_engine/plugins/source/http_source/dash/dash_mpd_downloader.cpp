@@ -35,6 +35,7 @@ constexpr uint32_t DRM_UUID_OFFSET = 12;
 constexpr size_t RETRY_TIMES = 15000;
 constexpr unsigned int SLEEP_TIME = 1;
 constexpr int32_t MPD_HTTP_TIME_OUT_MS = 5 * 1000;
+constexpr uint32_t MPD_MAX_SIZE = 100 * 1024 * 1024;
 constexpr unsigned int SEGMENT_DURATION_DELTA = 100; // ms
 
 DashMpdDownloader::DashMpdDownloader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
@@ -848,6 +849,7 @@ void DashMpdDownloader::DoOpen(const std::string& url, int64_t startRange, int64
 uint32_t DashMpdDownloader::SaveData(uint8_t* data, uint32_t len, bool notBlock)
 {
     MEDIA_LOG_D("SaveData:size=%{public}u len=%{public}u", (unsigned int)downloadContent_.size(), len);
+    FALSE_RETURN_V_MSG(data != nullptr && len <= MPD_MAX_SIZE, 0, "SaveData failed, dash mpd data too large.");
     downloadContent_.append(reinterpret_cast<const char*>(data), len);
     return len;
 }

@@ -48,6 +48,8 @@ constexpr double ZERO_THRESHOLD = 1e-9;
 constexpr size_t MAX_BUFFERING_TIME_OUT = 30 * 1000;
 constexpr size_t DOWNLOADER_RESUME_THRESHOLD = 2 * 1024 * 1024;
 constexpr int WRITTING_DATA_LOG_FREQUENCY = 20;
+constexpr uint32_t HEADER_MAX_SIZE = 100 * 1024 * 1024;
+constexpr uint32_t BODY_MAX_SIZE = 100 * 1024 * 1024;
 
 static const std::map<MediaAVCodec::MediaType, uint32_t> BUFFER_SIZE_MAP = {
     {MediaAVCodec::MediaType::MEDIA_TYPE_VID, VID_RING_BUFFER_SIZE},
@@ -904,10 +906,14 @@ uint32_t DashSegmentDownloader::SaveData(uint8_t* data, uint32_t len, bool notBl
         if (initSegment != nullptr && initSegment->writeState_ == INIT_SEGMENT_STATE_USING) {
             MEDIA_LOG_I("SaveData:streamId:" PUBLIC_LOG_D32 ", writeState:"
                 PUBLIC_LOG_D32, streamId_, initSegment->writeState_);
+            FALSE_RETURN_V_MSG(data != nullptr && len <= HEADER_MAX_SIZE, 0,
+                "SaveData, failed, dash seg header too large, streamId:" PUBLIC_LOG_D32, streamId_);
             initSegment->content_.append(reinterpret_cast<const char*>(data), len);
             return len;
         }
     }
+    FALSE_RETURN_V_MSG(data != nullptr && len <= BODY_MAX_SIZE, 0,
+        "SaveData failed, dash seg data too large, streamId:" PUBLIC_LOG_D32, streamId_);
 
     size_t bufferTail = buffer_->GetTail();
     bool writeRet = buffer_->WriteBuffer(data, len);

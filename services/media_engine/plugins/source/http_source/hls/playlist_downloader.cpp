@@ -32,6 +32,7 @@ constexpr int RETRY_DELTA_TIME_TO_REPORT_ERROR = 5 * 1000; // 5s
 constexpr int RETRY_TIME_TO_REPORT_ERROR = 10; // 10
 constexpr int HTTP_SERVER_ERROR_410 = 410; // 410 表示请求的资源已经从服务器上永久删除，不再可用
 constexpr int MAX_FILE_SIZE = 20 * 1024 * 1024; // 20M
+constexpr uint32_t PLAYLIST_MAX_SIZE = 100 * 1024 * 1024;
 
 static bool isNumber(const std::string& str)
 {
@@ -260,7 +261,7 @@ bool PlayListDownloader::GetPlayListDownloadStatus()
 
 uint32_t PlayListDownloader::SaveData(uint8_t* data, uint32_t len, bool notBlock)
 {
-    if (data == nullptr || len == 0) {
+    if (data == nullptr || len == 0 || len > PLAYLIST_MAX_SIZE) {
         return 0;
     }
     playList_.reserve(playList_.size() + len);
