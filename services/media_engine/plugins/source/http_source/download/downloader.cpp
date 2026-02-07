@@ -19,9 +19,9 @@
 #include "downloader.h"
 #include "avcodec_trace.h"
 #include "securec.h"
-
 #include "plugin/plugin_time.h"
 #include "syspara/parameter.h"
+#include "utils/string_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -1081,7 +1081,10 @@ bool Downloader::HandleContentLength(HeaderInfo* info, char* key, char* next, Do
         char* token = strtok_s(nullptr, ":", &next);
         FALSE_RETURN_V(token != nullptr, false);
         if (info != nullptr && mediaDownloader != nullptr) {
-            info->contentLen = atol(StringTrim(token));
+            std::string strToken(StringTrim(token));
+            long tempContentLen;
+            FALSE_RETURN_V(StringUtil::SafeStoLong(strToken, tempContentLen), false);
+            info->contentLen = tempContentLen;
             MEDIA_LOG_I("content-length: " PUBLIC_LOG_D32, static_cast<int32_t>(info->contentLen));
             if (info->contentLen <= 0 && !mediaDownloader->currentRequest_->IsM3u8Request()) {
                 info->isChunked = true;
