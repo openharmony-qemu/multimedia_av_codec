@@ -61,7 +61,7 @@ int64_t GetAudioLatencyFixDelay()
 
     constexpr uint64_t defaultValue = 120 * HST_USECOND;
     static uint64_t fixDelay = OHOS::system::GetUintParameter("debug.media_service.audio_sync_fix_delay", defaultValue);
-    MEDIA_LOG_I("audio_sync_fix_delay, pid:%{public}d , fixdelay: %{public}ld", getprocpid(), fixDelay);
+    MEDIA_LOG_I("audio_sync_fix_delay, pid:%{public}d , fixdelay: %{public}llu", getprocpid(), fixDelay);
     return static_cast<int64_t>(fixDelay);
 }
 

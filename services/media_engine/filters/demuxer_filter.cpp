@@ -724,7 +724,7 @@ Status DemuxerFilter::SelectTrack(int32_t trackId)
 std::vector<std::shared_ptr<Meta>> DemuxerFilter::GetStreamMetaInfo() const
 {
     auto trackMetas = demuxer_->GetStreamMetaInfo();
-    for (size_t index = 0; i < trackMetas.size(); index++) {
+    for (size_t index = 0; index < trackMetas.size(); index++) {
         std::shared_ptr<Meta> meta = trackMetas[index];
         FALSE_CONTINUE_LOGD(meta != nullptr, "meta is nullptr, index: %zu", index);
         meta->SetData(Tag::REGULAR_TRACK_ID, static_cast<int32_t>(index));

@@ -288,8 +288,8 @@ void SubtitleSink::RenderLoop()
         }
         FALSE_RETURN(!isThreadExit_.load());
         // wait timeout, seek or stop
-        SubtitleInfo subtitleInfo = static_cast<int64_t>(subtitleInfoVec_.front());
-        int64_t waitTime = CalcWaitTime(subtitleInfo);
+        SubtitleInfo subtitleInfo = subtitleInfoVec_.front();
+        int64_t waitTime = static_cast<int64_t>(CalcWaitTime(subtitleInfo));
         updateCond_.wait_for(lock, std::chrono::microseconds(waitTime),
                              [this] { return isThreadExit_.load() || shouldUpdate_; });
         if (isFlush_) {
