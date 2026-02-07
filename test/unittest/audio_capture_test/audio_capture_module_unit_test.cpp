@@ -47,41 +47,32 @@ void AudioCaptureModuleUnitTest::SetUpTestCase(void)
         .isSystemApp = true
     };
 
+    auto createPermissionState = [](const std::string& permissionName) {
+        return PermissionStateFull {
+            .permissionName = permissionName,
+            .isGeneral = true,
+            .resDeviceID = { "local" },
+            .grantStatus = { PermissionState::PERMISSION_GRANTED },
+            .grantFlags = { 1 }
+        };
+    };
+    
+    std::vector<PermissionStateFull> permissionList = {
+        createPermissionState("ohos.permission.MICROPHONE"),
+        createPermissionState("ohos.permission.READ_MEDIA"),
+        createPermissionState("ohos.permission.WRITE_MEDIA"),
+        createPermissionState("ohos.permission.KEEP_BACKGROUND_RUNNING"),
+        createPermissionState("ohos.permission.GET_BUNDLE_INFO"),
+        createPermissionState("ohos.permission.GET_BUNDLE_INFO_PRIVILEGED")
+    };
+
     HapPolicyParams policy = {
         .apl = APL_SYSTEM_BASIC,
         .domain = "test.audiocapturermodule",
         .permList = { },
-        .permStateList = {
-            {
-                .permissionName = "ohos.permission.MICROPHONE",
-                .isGeneral = true,
-                .resDeviceID = { "local" },
-                .grantStatus = { PermissionState::PERMISSION_GRANTED },
-                .grantFlags = { 1 }
-            },
-            {
-                .permissionName = "ohos.permission.READ_MEDIA",
-                .isGeneral = true,
-                .resDeviceID = { "local" },
-                .grantStatus = { PermissionState::PERMISSION_GRANTED },
-                .grantFlags = { 1 }
-            },
-            {
-                .permissionName = "ohos.permission.WRITE_MEDIA",
-                .isGeneral = true,
-                .resDeviceID = { "local" },
-                .grantStatus = { PermissionState::PERMISSION_GRANTED },
-                .grantFlags = { 1 }
-            },
-            {
-                .permissionName = "ohos.permission.KEEP_BACKGROUND_RUNNING",
-                .isGeneral = true,
-                .resDeviceID = { "local" },
-                .grantStatus = { PermissionState::PERMISSION_GRANTED },
-                .grantFlags = { 1 }
-            }
-        }
+        .permStateList = permissionList
     };
+
     AccessTokenIDEx tokenIdEx = { 0 };
     tokenIdEx = AccessTokenKit::AllocHapToken(info, policy);
     int ret = SetSelfTokenID(tokenIdEx.tokenIDEx);
