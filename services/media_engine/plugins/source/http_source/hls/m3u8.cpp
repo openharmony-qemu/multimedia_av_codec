@@ -98,6 +98,12 @@ M3U8Fragment::M3U8Fragment(const std::string &uri, double duration, int sequence
 {
 }
 
+M3U8Fragment::~M3U8Fragment()
+{
+    NZERO_LOG(memset_s(key_, sizeof(key_), 0, sizeof(key_)));
+    NZERO_LOG(memset_s(iv_, sizeof(iv_), 0, sizeof(iv_)));
+}
+
 M3U8::M3U8(const std::string &uri, const std::string &name,
     const std::unordered_map<std::string, std::string> tagMasterMap, StatusCallbackFunc statusCallback,
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
@@ -119,8 +125,8 @@ M3U8::~M3U8()
     }
     delete[] fmp4Header_;
     fmp4Header_ = nullptr;
-    std::fill(std::begin(key_), std::end(key_), 0);
-    std::fill(std::begin(iv_), std::end(iv_), 0);
+    NZERO_LOG(memset_s(key_, sizeof(key_), 0, sizeof(key_)));
+    NZERO_LOG(memset_s(iv_, sizeof(iv_), 0, sizeof(iv_)));
 }
 
 void M3U8::SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback)
@@ -712,8 +718,8 @@ M3U8MasterPlaylist::M3U8MasterPlaylist(const std::string& playList, const std::s
 
 M3U8MasterPlaylist::~M3U8MasterPlaylist()
 {
-    std::fill(std::begin(key_), std::end(key_), 0);
-    std::fill(std::begin(iv_), std::end(iv_), 0);
+    NZERO_LOG(memset_s(key_, sizeof(key_), 0, sizeof(key_)));
+    NZERO_LOG(memset_s(iv_, sizeof(iv_), 0, sizeof(iv_)));
 }
 
 void M3U8MasterPlaylist::SetSourceloader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
