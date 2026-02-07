@@ -1082,9 +1082,9 @@ bool Downloader::HandleContentLength(HeaderInfo* info, char* key, char* next, Do
         FALSE_RETURN_V(token != nullptr, false);
         if (info != nullptr && mediaDownloader != nullptr) {
             std::string strToken(StringTrim(token));
-            long tempContentLen;
-            FALSE_RETURN_V(StringUtil::SafeStoLong(strToken, tempContentLen), false);
-            info->contentLen = tempContentLen;
+            int32_t tempContentLen;
+            FALSE_RETURN_V(StringUtil::SafeStoInt32(strToken, tempContentLen), false);
+            info->contentLen = static_cast<long>(tempContentLen);
             MEDIA_LOG_I("content-length: " PUBLIC_LOG_D32, static_cast<int32_t>(info->contentLen));
             if (info->contentLen <= 0 && !mediaDownloader->currentRequest_->IsM3u8Request()) {
                 info->isChunked = true;

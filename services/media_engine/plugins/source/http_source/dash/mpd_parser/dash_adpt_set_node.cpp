@@ -63,8 +63,9 @@ void DashAdptSetNode::GetAttr(const std::string &attrName, uint32_t &uiAttrVal)
     uint32_t index = DashGetAttrIndex(attrName, adptSetAttrs_, DASH_ADAPTATION_SET_ATTR_NUM);
     if (index < DASH_ADAPTATION_SET_ATTR_NUM) {
         if (adptSetAttr_[index].val_.length() > 0) {
-            uint32_t tempUiAttrVal = 0;
- 	  	    uiAttrVal = StringUtil::SafeStoUInt32(adptSetAttr_[index].val_, tempUiAttrVal) ? tempUiAttrVal : 0;
+            int64_t tempUiAttrVal = 0;
+ 	  	    uiAttrVal = StringUtil::SafeStoInt64(adptSetAttr_[index].val_, tempUiAttrVal) ?
+                static_cast<uint32_t>(tempUiAttrVal) : 0;
         } else {
             uiAttrVal = 0;
         }
@@ -78,8 +79,9 @@ void DashAdptSetNode::GetAttr(const std::string &attrName, int32_t &iAttrVal)
     uint32_t index = DashGetAttrIndex(attrName, adptSetAttrs_, DASH_ADAPTATION_SET_ATTR_NUM);
     if (index < DASH_ADAPTATION_SET_ATTR_NUM) {
         if (adptSetAttr_[index].val_.length() > 0) {
-            int32_t tempiAttrVal = 0;
- 	  	    iAttrVal = StringUtil::SafeStoInt32(adptSetAttr_[index].val_, tempiAttrVal) ? tempiAttrVal : 0;
+            int64_t tempiAttrVal = 0;
+ 	  	    iAttrVal = StringUtil::SafeStoInt64(adptSetAttr_[index].val_, tempiAttrVal) ?
+                static_cast<int32_t>(tempiAttrVal) : 0;
         } else {
             iAttrVal = 0;
         }
@@ -93,8 +95,9 @@ void DashAdptSetNode::GetAttr(const std::string &attrName, uint64_t &ullAttrVal)
     uint32_t index = DashGetAttrIndex(attrName, adptSetAttrs_, DASH_ADAPTATION_SET_ATTR_NUM);
     if (index < DASH_ADAPTATION_SET_ATTR_NUM) {
         if (adptSetAttr_[index].val_.length() > 0) {
-            uint64_t tempUllAttrVal = 0;
- 	  	    ullAttrVal = StringUtil::SafeStoUInt64(adptSetAttr_[index].val_, tempUllAttrVal) ? tempUllAttrVal : 0;
+            int64_t tempUllAttrVal = 0;
+ 	  	    ullAttrVal = StringUtil::SafeStoInt64(adptSetAttr_[index].val_, tempUllAttrVal) ?
+                static_cast<uint64_t>(tempUllAttrVal) : 0;
         } else {
             ullAttrVal = 0;
         }

@@ -14,33 +14,70 @@
  */
 
 #include "string_utils.h"
+#include <string>
+#include <cstdint>
+#include <charconv>
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-bool StringUtil::SafeStoInt(const std::string& str, int& value) {
-    return StringToInteger(str, value);
+namespace {
+const char* ProcessPrefix(const char* str, bool& has_error)
+{
+    bool hasError = false;
+    if (!str || *str == '\0') {
+        hasError = true;
+        return str;
+    }
+    const char* p = str;
+    while (std::isspace(*p)) {
+        ++p;
+    }
+    if (*p == '\0') {
+        hasError = true;
+        return p;
+    }
+    if (*p == '+') {
+        const char* next = p + 1;
+        if (*next == '+') {
+            hasError = true;
+            return p;
+        }
+        if (*next < '0' || *next > '9') {
+            hasError = true;
+            return p;
+        }
+        p = next;
+    }
+    return p;
 }
-bool StringUtil::SafeStoLong(const std::string& str, long& value) {
-    return StringToInteger(str, value);
+
+template<typename T>
+bool StringToInteger(const std::string& str, T& value) {
+    bool hasError = false;
+    const char* strPtr = str.data();
+    const char* processed = ProcessPrefix(strPtr, hasError);
+    if (hasError) {
+        return false;
+    }
+    char firstChar = *processed;
+    if (firstChar == '\0') {
+        return false;
+    }
+    if (firstChar != '-' && (firstChar < '0' || firstChar > '9')) {
+        return false;
+    }
+    size_t startPos = processed - strPtr;
+    auto [ptr, ec] = std::from_chars(str.data() + startPos, str.data() + str.size(), value);
+    return ec == std::errc();
 }
-bool StringUtil::SafeStoLongLong(const std::string& str, long long& value) {
-    return StringToInteger(str, value);
-}
+} // namespace
+
 bool StringUtil::SafeStoInt32(const std::string& str, int32_t& value) {
     return StringToInteger(str, value);
 }
-bool StringUtil::SafeStoUInt32(const std::string& str, uint32_t& value) {
-    return StringToInteger(str, value);
-}
 bool StringUtil::SafeStoInt64(const std::string& str, int64_t& value) {
-    return StringToInteger(str, value);
-}
-bool StringUtil::SafeStoUInt64(const std::string& str, uint64_t& value) {
-    return StringToInteger(str, value);
-}
-bool StringUtil::SafeStoSizeT(const std::string& str, size_t& value) {
     return StringToInteger(str, value);
 }
 }
