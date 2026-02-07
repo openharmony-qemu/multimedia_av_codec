@@ -3136,6 +3136,7 @@ Status MediaDemuxer::CopyFrameToUserQueue(int32_t trackId)
 
 void MediaDemuxer::StartConsume(int32_t trackId)
 {
+    FALSE_RETURN(isBuffering_.load());
     bool startConsumeResult = false;
     if (trackId == videoTrackId_ && isVideoMuted_) {
         SetTrackIsBuffering(trackId, false);
