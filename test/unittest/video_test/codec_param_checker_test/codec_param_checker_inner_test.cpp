@@ -909,4 +909,40 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1574,
         ASSERT_EQ(AVCS_ERR_CODEC_PARAM_INCORRECT, videoEncHevcInner_->Configure(formatInner_));
     }
 }
+
+/**
+ * @tc.name: VIDEO_CODEC_SCENARIO_TEST_001
+ * @tc.desc: codec video scenario checkout
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, VIDEO_CODEC_SCENARIO_TEST_001, TestSize.Level3)
+{
+    SetFormatBasicParam(formatInner_);
+    formatInner_.PutIntValue(OHOS::Media::Tag::VIDEO_CODEC_SCENARIO, SCENARIO_RECORDING - 1);
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoEncHevcInner_->Configure(formatInner_));
+}
+
+/**
+ * @tc.name: VIDEO_CODEC_SCENARIO_TEST_002
+ * @tc.desc: codec video scenario checkout
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, VIDEO_CODEC_SCENARIO_TEST_002, TestSize.Level3)
+{
+    SetFormatBasicParam(formatInner_);
+    formatInner_.PutIntValue(OHOS::Media::Tag::VIDEO_CODEC_SCENARIO, SCENARIO_RECORDING);
+    ASSERT_EQ(AVCS_ERR_OK, videoEncHevcInner_->Configure(formatInner_));
+}
+
+/**
+ * @tc.name: VIDEO_CODEC_SCENARIO_TEST_003
+ * @tc.desc: codec video scenario checkout
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, VIDEO_CODEC_SCENARIO_TEST_003, TestSize.Level3)
+{
+    SetFormatBasicParam(formatInner_);
+    formatInner_.PutIntValue(OHOS::Media::Tag::VIDEO_CODEC_SCENARIO, SCENARIO_INVALID);
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoEncHevcInner_->Configure(formatInner_));
+}
 }

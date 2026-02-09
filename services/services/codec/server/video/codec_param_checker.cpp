@@ -106,6 +106,7 @@ int32_t ScalingModeChecker(CapabilityData &capData, Format &format, CodecScenari
 int32_t PostProcessingChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t BFrameParamChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t TransformTypeChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t VideoCodecScenarioChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 
 // Checkers list define
 using ScenarioCheckerType =
@@ -126,6 +127,7 @@ const ParamCheckerListType VIDEO_ENCODER_CONFIGURE_CHECKER_LIST = {
     MatrixCoefficientsChecker,
     LTRFrameCountChecker,
     BFrameParamChecker,
+    VideoCodecScenarioChecker,
 };
 
 const ParamCheckerListType VIDEO_ENCODER_TEMPORAL_SCALABILITY_CONFIGURE_CHECKER_LIST = {
@@ -143,6 +145,7 @@ const ParamCheckerListType VIDEO_ENCODER_TEMPORAL_SCALABILITY_CONFIGURE_CHECKER_
     TransferCharacteristicsChecker,
     MatrixCoefficientsChecker,
     LTRFrameCountChecker,
+    VideoCodecScenarioChecker,
 };
 
 const ParamCheckerListType VIDEO_DECODER_CONFIGURE_CHECKER_LIST = {
@@ -813,6 +816,24 @@ int32_t TransformTypeChecker(CapabilityData &capData, Format &format, CodecScena
     if (videoOrientationType < static_cast<int32_t>(OHOS::GraphicTransformType::GRAPHIC_ROTATE_NONE) ||
         videoOrientationType >= static_cast<int32_t>(OHOS::GraphicTransformType::GRAPHIC_ROTATE_BUTT)) {
         AVCODEC_LOGE("Param invalid, %{public}s: %{public}d", Tag::VIDEO_ORIENTATION_TYPE, videoOrientationType);
+        return AVCS_ERR_INVALID_VAL;
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t VideoCodecScenarioChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
+{
+    (void)capData;
+    (void)scenario;
+    int32_t videoCodecScenario;
+    bool videoCodecScenarioExist = format.GetIntValue(Tag::VIDEO_CODEC_SCENARIO, videoCodecScenario);
+    if (!videoCodecScenarioExist) {
+        return AVCS_ERR_OK;
+    }
+
+    if (videoCodecScenario < static_cast<int32_t>(Plugins::VideoCodecScenario::SCENARIO_RECORDING) ||
+        videoCodecScenario >= static_cast<int32_t>(Plugins::VideoCodecScenario::SCENARIO_INVALID)) {
+        AVCODEC_LOGE("Param invalid, %{public}s: %{public}d", Tag::VIDEO_CODEC_SCENARIO, videoCodecScenario);
         return AVCS_ERR_INVALID_VAL;
     }
     return AVCS_ERR_OK;
