@@ -212,8 +212,7 @@ bool PlayListDownloader::ParseUriInfo(const std::string& uri)
         }
         int64_t tempSize = 0;
         auto ret = StringUtil::SafeStoInt64(fdUriMatch[3].str(), tempSize); // 3
-        size_ = (ret && tempSize >= 0 && tempSize <=  std::numeric_limits<uint64_t>::max()) ?
-            static_cast<uint64_t>(tempSize) : 0;
+        size_ = (ret && tempSize >= 0) ? static_cast<uint64_t>(tempSize) : 0;
         uint64_t remainingSize = fileSize_ - static_cast<uint64_t>(offset_);
         if (size_ > remainingSize) {
             size_ = remainingSize;
