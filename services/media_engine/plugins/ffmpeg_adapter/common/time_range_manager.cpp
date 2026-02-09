@@ -14,6 +14,7 @@
  */
 
 #include <algorithm>
+#include <vector>
 #include "time_range_manager.h"
 
 namespace OHOS {
