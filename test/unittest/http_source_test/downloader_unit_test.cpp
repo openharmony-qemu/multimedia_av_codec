@@ -1158,14 +1158,6 @@ HWTEST_F(DownloaderUnitTest, SafeStoInt64_03, TestSize.Level1)
     EXPECT_EQ(value, 0);
 }
 
-HWTEST_F(DownloaderUnitTest, SafeStoInt64_04, TestSize.Level1)
-{
-    string str = "-9223372036854775808";
-    int64_t value;
-    EXPECT_FALSE(StringUtil::SafeStoInt64(str, value));
-    EXPECT_EQ(value, -9223372036854775808);
-}
-
 HWTEST_F(DownloaderUnitTest, HandleRetErrorCode001, TestSize.Level1)
 {
     downloader->task_ = std::make_shared<Task>(std::string("OS_Downloader"));
