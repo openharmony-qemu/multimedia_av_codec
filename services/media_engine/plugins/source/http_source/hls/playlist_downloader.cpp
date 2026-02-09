@@ -17,6 +17,7 @@
 #include <fstream>
 #include <iostream>
 #include <regex>
+#include <limits>
 #include "playlist_downloader.h"
 #include "network/network_typs.h"
 #include "osal/filesystem/file_system.h"
@@ -199,19 +200,20 @@ bool PlayListDownloader::ParseUriInfo(const std::string& uri)
     FALSE_RETURN_V_MSG_E(fdUriMatch.size() >= FDPOS && isNumber(fdUriMatch[1].str()),
         false, "Invalid fd uri format");
     int32_t tempFd = 0;
-    fd_ = StringUtil::SafeStoInt32(fdUriMatch[1].str(), tempFd) == true ? tempFd : -1; // 1
+    fd_ = StringUtil::SafeStoInt32(fdUriMatch[1].str(), tempFd) ? tempFd : -1; // 1
     FALSE_RETURN_V_MSG_E(fd_ != -1 && FileSystem::IsRegularFile(fd_),
         false, "Invalid fd: " PUBLIC_LOG_D32, fd_);
     fileSize_ = GetFileSize(fd_);
     if (fdUriMatch.size() == 4) { // 4：4 sub match
         int64_t tempOffset = 0;
-        offset_ = StringUtil::SafeStoInt64(fdUriMatch[2].str(), tempOffset) == true ? tempOffset : 0; // 2
+        offset_ = StringUtil::SafeStoInt64(fdUriMatch[2].str(), tempOffset) ? tempOffset : 0; // 2
         if (static_cast<uint64_t>(offset_) > fileSize_) {
             offset_ = static_cast<int64_t>(fileSize_);
         }
         int64_t tempSize = 0;
-        size_ = StringUtil::SafeStoInt64(fdUriMatch[3].str(), tempSize) == true ?
-            static_cast<uint64_t>(tempSize) : 0; // 3
+        auto ret = StringUtil::SafeStoInt64(fdUriMatch[3].str(), tempSize); // 3
+        size_ = (ret && tempSize >= 0 && tempSize <=  std::numeric_limits<uint64_t>::max()) ?
+            static_cast<uint64_t>(tempSize) : 0;
         uint64_t remainingSize = fileSize_ - static_cast<uint64_t>(offset_);
         if (size_ > remainingSize) {
             size_ = remainingSize;
