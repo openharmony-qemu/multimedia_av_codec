@@ -391,7 +391,6 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_SEEK_TO_TIME, TestSize.Level1)
 
     mediaDownloader->Open(testUrl, httpHeader);
     mediaDownloader->GetSeekable();
-
     bool result = mediaDownloader->SeekToTime(1, SeekMode::SEEK_NEXT_SYNC);
     mediaDownloader->Close(false);
     mediaDownloader = nullptr;
@@ -411,7 +410,8 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_GET_READ, TestSize.Level1)
 
     mediaDownloader->Open(testUrl, httpHeader);
     mediaDownloader->GetSeekable();
-
+    int32_t appUid = 1;
+    mediaDownloader->SetAppUid(appUid);
     std::vector<StreamInfo> streams;
     mediaDownloader->GetStreamInfo(streams);
     EXPECT_GT(streams.size(), 0);

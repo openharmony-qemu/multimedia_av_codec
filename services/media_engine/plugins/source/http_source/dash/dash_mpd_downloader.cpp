@@ -2075,6 +2075,9 @@ Status DashMpdDownloader::GetStreamInfo(std::vector<StreamInfo> &streams)
     unsigned int audioAdptSetIndex = streamDescriptions_.size();
     unsigned int subtitleAdptSetIndex = audioAdptSetIndex;
     for (unsigned int index = 0; index < streamDescriptions_.size(); index++) {
+        if (streamDescriptions_[index] == nullptr) {
+            continue;
+        }
         if (streamDescriptions_[index]->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_AUD) {
             if (streamDescriptions_[index]->adptSetIndex_ == audioAdptSetIndex) {
                 MEDIA_LOG_D("GetStreamInfo skip audio stream:" PUBLIC_LOG_D32 ",lang:" PUBLIC_LOG_S,
