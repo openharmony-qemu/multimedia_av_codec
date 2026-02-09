@@ -531,19 +531,19 @@ public:
     {
         std::lock_guard<std::mutex> lock(mutex_);
         ParseAndAccumulateSpeedData(
-            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_TOTAL.data(), decDurationTotal_, decCntTotal_);
+            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_TOTAL, decDurationTotal_, decCntTotal_);
         ParseAndAccumulateSpeedData(
-            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_0_75X.data(), decDuration075x_, decCnt075x_);
+            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_0_75X, decDuration075x_, decCnt075x_);
         ParseAndAccumulateSpeedData(
-            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_1_00X.data(), decDuration100x_, decCnt100x_);
+            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_1_00X, decDuration100x_, decCnt100x_);
         ParseAndAccumulateSpeedData(
-            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_1_25X.data(), decDuration125x_, decCnt125x_);
+            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_1_25X, decDuration125x_, decCnt125x_);
         ParseAndAccumulateSpeedData(
-            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_1_50X.data(), decDuration150x_, decCnt150x_);
+            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_1_50X, decDuration150x_, decCnt150x_);
         ParseAndAccumulateSpeedData(
-            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_2_00X.data(), decDuration200x_, decCnt200x_);
+            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_2_00X, decDuration200x_, decCnt200x_);
         ParseAndAccumulateSpeedData(
-            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_3_00X.data(), decDuration300x_, decCnt300x_);
+            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_3_00X, decDuration300x_, decCnt300x_);
     }
 
     void OnSummateEventInfo(StatisticsSubmitInfo &submitInfo) override
