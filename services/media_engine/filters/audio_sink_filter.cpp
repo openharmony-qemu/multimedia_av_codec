@@ -122,6 +122,7 @@ void AudioSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
 
 Status AudioSinkFilter::DoInitAfterLink()
 {
+    FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
     audioSink_->SetParameter(globalMeta_);
     Status ret = audioSink_->Init(trackMeta_, eventReceiver_);
     needImmediateRender_ = audioSink_->NeedImmediateRender();

@@ -63,9 +63,6 @@ void MediaSyncManager::RemoveSynchronizer(IMediaSynchronizer* syncer)
 
 Status MediaSyncManager::SetPlaybackRate(float rate)
 {
-    if (rate < 0) {
-        return Status::ERROR_INVALID_PARAMETER;
-    }
     FALSE_RETURN_V_MSG_W(rate >= 0, Status::ERROR_INVALID_PARAMETER, "Invalid playback Rate: %{public}f", rate);
     OHOS::Media::AutoLock lock(clockMutex_);
     MEDIA_LOG_I_SHORT("set play rate " PUBLIC_LOG_F, rate);
@@ -379,7 +376,7 @@ int64_t MediaSyncManager::GetClockTimeNow()
 bool MediaSyncManager::IsPlayRateValid(float playRate)
 {
     static constexpr float MIN_PLAYRATE = 1e-9;
-    FALSE_RETURN_V_NOLOG(std::fabs(playRate_) >= MIN_PLAYRATE, false);
+    FALSE_RETURN_V_NOLOG(std::fabs(playRate) >= MIN_PLAYRATE, false);
     return true;
 }
 
