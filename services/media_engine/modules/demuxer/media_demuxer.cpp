@@ -1336,7 +1336,6 @@ Status MediaDemuxer::HandleDashSelectTrack(int32_t trackId)
         MEDIA_LOG_E("Get stream failed");
         return Status::ERROR_UNKNOWN;
     }
-
     int32_t curTrackId = TRACK_ID_INVALID;
     TrackType trackType = demuxerPluginManager_->GetTrackTypeByTrackID(trackId);
     if (trackType == TrackType::TRACK_AUDIO) {
@@ -1349,19 +1348,29 @@ Status MediaDemuxer::HandleDashSelectTrack(int32_t trackId)
         MEDIA_LOG_E("Track type invalid");
         return Status::ERROR_UNKNOWN;
     }
-
     if (trackId == curTrackId || targetStreamID != demuxerPluginManager_->GetTmpStreamIDByTrackID(curTrackId)) {
         MEDIA_LOG_I("Select stream");
         {
             std::lock_guard<std::mutex> lock(isSelectTrackMutex_);
             inSelectTrackType_[static_cast<int32_t>(trackType)] = trackId;
         }
-        return source_->SelectStream(targetStreamID);
+        FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_UNKNOWN, "source_ is null");
+        auto ret = source_->SelectStream(targetStreamID);
+        if (ret == Status::OK && isHls_ && curTrackId == subtitleTrackId_ && syncCenter_ != nullptr) {
+            HandleSelectSubtitle(syncCenter_->GetMediaTimeNow(), SeekMode::SEEK_PREVIOUS_SYNC, trackId);
+        }
+        return ret;
     }
-
     // same streamID
     Status ret = DoSelectTrack(trackId, curTrackId);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "DoSelectTrack track failed");
+    ReportTrackChangeEvent(trackId);
+    return Status::OK;
+}
+
+void MediaDemuxer::ReportTrackChangeEvent(int32_t trackId)
+{
+    TrackType trackType = demuxerPluginManager_->GetTrackTypeByTrackID(trackId);
     if (eventReceiver_ != nullptr) {
         if (trackType == TrackType::TRACK_AUDIO) {
             eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_AUDIO_TRACK_CHANGE, trackId});
@@ -1374,7 +1383,6 @@ Status MediaDemuxer::HandleDashSelectTrack(int32_t trackId)
             subtitleTrackId_ = trackId;
         } else {}
     }
-    return Status::OK;
 }
 
 Status MediaDemuxer::DoSelectTrack(int32_t trackId, int32_t curTrackId)
@@ -1743,6 +1751,22 @@ void MediaDemuxer::HandleSeekToTime(int64_t seekTime)
     ResetSampleQueueStatus(seekTime);
 }
 
+Status MediaDemuxer::HandleSelectSubtitle(int64_t seekTime, Plugins::SeekMode mode, int32_t trackId)
+{
+    int32_t targetStreamID = demuxerPluginManager_->GetStreamIDByTrackID(trackId);
+    FALSE_RETURN_V_MSG_E(targetStreamID != INVALID_STREAM_OR_TRACK_ID, Status::ERROR_INVALID_PARAMETER,
+        "Invalid streamId");
+    FALSE_RETURN_V_MSG_E(source_ != nullptr && source_->IsSeekToTimeSupported(), Status::ERROR_INVALID_PARAMETER,
+        "Source is null or seek operation not supported");
+    auto ret = source_->MediaSeekTimeByStreamId(seekTime, SeekMode::SEEK_PREVIOUS_SYNC, targetStreamID);
+    FALSE_RETURN_V_MSG_E(streamDemuxer_ != nullptr && ret == Status::OK, Status::ERROR_UNKNOWN,
+        "Source SeekToSubtitle fail");
+    streamDemuxer_->SetNewSubtitleStreamID(targetStreamID);
+    FALSE_RETURN_V_MSG_E(HandleDashChangeStream(subtitleTrackId_), Status::ERROR_UNKNOWN,
+        "HandleDashChangeStream fail");
+    return Status::OK;
+}
+
 Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
 {
     MediaAVCodec::AVCODEC_SYNC_TRACE;
@@ -1773,6 +1797,7 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
         }
         ResetSampleQueueStatus(seekTime);
     }
+    ResetAfterSeek(ret);
     MEDIA_LOG_D("Out");
     return ret;
 }

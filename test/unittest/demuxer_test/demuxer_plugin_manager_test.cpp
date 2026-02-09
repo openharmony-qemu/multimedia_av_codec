@@ -529,7 +529,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, SnifferMediaType_Timeout, TestSize.Level1
 {
     int32_t streamId = 0;
     EXPECT_CALL(*streamDemuxer_, SnifferMediaType(_))
-        .WillRepeatedly([](int32_t streamID) {
+        .WillRepeatedly([](const StreamInfo& streamInfo) {
             std::this_thread::sleep_for(std::chrono::milliseconds(300));
             return "DEMUXER";
         });

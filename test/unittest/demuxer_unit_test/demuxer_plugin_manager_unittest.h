@@ -64,7 +64,7 @@ public:
     MOCK_METHOD(int32_t, GetNewAudioStreamID, (), ());
     MOCK_METHOD(int32_t, GetNewSubtitleStreamID, (), ());
     MOCK_METHOD(int32_t, GetNewVideoStreamID, (), ());
-    MOCK_METHOD(std::string, SnifferMediaType, (int32_t streamID), ());
+    MOCK_METHOD(std::string, SnifferMediaType, (const StreamInfo& streamInfo), ());
     MOCK_METHOD(bool, SetSourceInitialBufferSize, (int32_t offset, int32_t size), (override));
 };
 }  // namespace Media

@@ -893,11 +893,7 @@ void HlsSegmentManager::PlaylistBackup(const PlayInfo& fragment)
 void HlsSegmentManager::OnPlayListChanged(const std::vector<PlayInfo>& playList)
 {
     MEDIA_LOG_I("HLS OnPlayListChanged in: %{public}zu, type: %{public}d", playList.size(), type_);
-    if (type_ == HlsSegmentType::SEG_SUBTITLE) {
-        SubtitlePlayListChanged(playList);
-    } else {
-        PlayListChanged(playList);
-    }
+    PlayListChanged(playList);
     if (!isDownloadStarted_ && !playList_->Empty() && !isInterruptNeeded_.load()) {
         auto playInfo = playList_->Pop();
         std::string url = playInfo.url_;
@@ -911,51 +907,6 @@ void HlsSegmentManager::OnPlayListChanged(const std::vector<PlayInfo>& playList)
     }
     MEDIA_LOG_I("HLS OnPlayListChanged out playlist: %{public}zu, back: %{public}zu, writeTsIndex_: %{public}u,"
         "type: %{public}d", playList_->Size(), backPlayList_.size(), writeTsIndex_, type_);
-}
-
-void HlsSegmentManager::SubtitlePlayListChanged(const std::vector<PlayInfo>& playList)
-{
-    ResetPlaylistCapacity(static_cast<size_t>(playList.size()));
-    int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
-    for (uint32_t i = 0; i < static_cast<uint32_t>(playList.size()); i++) {
-        if (CheckLoopTimeout(loopStartTime)) {
-            break;
-        }
-        if (isInterruptNeeded_.load()) {
-            MEDIA_LOG_I("HLS SubtitlePlayListChanged isInterruptNeeded, type: %{public}d", type_);
-            break;
-        }
-        auto fragment = playList[i];
-        PlaylistBackup(fragment);
-        if (isSelectingBitrate_.load() && (GetSeekable() == Seekable::SEEKABLE)) {
-            fragmentDownloadStart[fragment.url_] = true;
-            if (readTsIndex_ == i) {
-                HandleSeekOperation(playList);
-                isSelectingBitrate_.store(false);
-            } else {
-                continue;
-            }
-        }
-        if (!fragmentDownloadStart[fragment.url_] && !fragmentPushed[fragment.url_]) {
-            playList_->Push(fragment);
-            fragmentPushed[fragment.url_] = true;
-        }
-    }
-}
- 
-void HlsSegmentManager::HandleSeekOperation(const std::vector<PlayInfo>& playList)
-{
-    if (readTsIndex_.load(std::memory_order_relaxed) + 1 < writeTsIndex_) {
-        cacheMediaBuffer_->ClearFragmentAfterOffset(SpliceOffset(
-            readTsIndex_.load(std::memory_order_relaxed) + 2, 0)); // 2
-        writeTsIndex_ = readTsIndex_.load() + 1;
-        for (uint32_t j = 0; j < static_cast<uint32_t>(playList.size()); j++) {
-            AutoLock lock(tsStorageInfoMutex_);
-            if (j >= writeTsIndex_ && tsStorageInfo_.find(writeTsIndex_) != tsStorageInfo_.end()) {
-                tsStorageInfo_.erase(j);
-            }
-        }
-    }
 }
 
 void HlsSegmentManager::PlayListChanged(const std::vector<PlayInfo>& playList)
