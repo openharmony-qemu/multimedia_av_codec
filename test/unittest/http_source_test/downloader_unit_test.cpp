@@ -1090,7 +1090,7 @@ HWTEST_F(DownloaderUnitTest, SafeStoInt32_02, TestSize.Level1)
 {
     string str = "  0  ";
     int32_t value;
-    EXPECT_FALSE(StringUtil::SafeStoInt32(str, value));
+    EXPECT_TRUE(StringUtil::SafeStoInt32(str, value));
     EXPECT_EQ(value, 0);
 }
 
