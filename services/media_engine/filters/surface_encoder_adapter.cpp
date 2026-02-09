@@ -138,7 +138,7 @@ Status SurfaceEncoderAdapter::Init(const std::string &mime, bool isEncoder)
         return Status::ERROR_UNKNOWN;
     }
     if (!releaseBufferTask_) {
-        releaseBufferTask_ = std::make_shared<Task>("SurfaceEncoder",  "", TaskType::SINGLETON);
+        releaseBufferTask_ = std::make_shared<Task>("SurfaceEncoder");
         releaseBufferTask_->RegisterJob([this] {
             ReleaseBuffer();
             return 0;
@@ -686,8 +686,7 @@ void SurfaceEncoderAdapter::ConfigureAboutEnableTemporalScale(MediaAVCodec::Form
             MEDIA_LOG_I("video encoder enableTemporalScale is false!");
             return;
         }
-        OH_AVCapability *capability = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true);
-        bool isSupported = OH_AVCapability_IsFeatureSupported(capability, VIDEO_ENCODER_TEMPORAL_SCALABILITY);
+        bool isSupported = true;
         if (isSupported) {
             MEDIA_LOG_I("VIDEO_ENCODER_TEMPORAL_SCALABILITY is supported!");
             format.PutIntValue(MediaAVCodec::MediaDescriptionKey::OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY,
@@ -736,8 +735,8 @@ void SurfaceEncoderAdapter::OnInputParameterWithAttrAvailable(uint32_t index, st
     int64_t currentPts = 0;
     attribute->GetLongValue(Tag::MEDIA_TIME_STAMP, currentPts);
     bool isDroppedFrames = CheckFrames(currentPts, checkFramesPauseTime_);
-    MEDIA_LOG_D("currentPts " PUBLIC_LOG_D64 "checkFramesPauseTime_ " PUBLIC_LOG_D64
-        "isDroppedFrames " PUBLIC_LOG_S, currentPts, checkFramesPauseTime_, isDroppedFrames ? "true" : "false");
+    MEDIA_LOG_D("currentPts " PUBLIC_LOG_D64 " checkFramesPauseTime_ " PUBLIC_LOG_D64
+        " isDroppedFrames " PUBLIC_LOG_S, currentPts, checkFramesPauseTime_, isDroppedFrames ? "true" : "false");
     {
         std::lock_guard<std::mutex> mappingLock(mappingPtsMutex_);
         int64_t adjustPts = currentPts - totalPauseTimeQueue_[0] + checkFramesPauseTime_;
@@ -919,7 +918,8 @@ void SurfaceEncoderAdapter::HandleWaitforStop()
 
 Status SurfaceEncoderAdapter::CheckAndAdjustFrameRate()
 {
-    if (!isStopKeyFramePts_ || !isSupportBoostFrameRate_ || hasBoostVideoFrameRate_) {
+    bool shouldNotAdjustFrameRate = !isStopKeyFramePts_ || !isSupportBoostFrameRate_ || hasBoostVideoFrameRate_;
+    if (shouldNotAdjustFrameRate) {
         return Status::OK;
     }
 

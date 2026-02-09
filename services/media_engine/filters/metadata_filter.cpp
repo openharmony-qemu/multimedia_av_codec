@@ -365,7 +365,7 @@ bool MetaDataFilter::AcquireInputBuffer(sptr<SurfaceBuffer>& buffer, int64_t& ti
         extraData->ExtraGet("dataSize", bufferSize);
     }
 
-    MEDIA_LOG_D("Input buffer timestamp:%{public}lld, size:%{public}d", timestamp, bufferSize);
+    MEDIA_LOG_D("Input buffer timestamp:" PUBLIC_LOG_D64 ", size:%{public}d", timestamp, bufferSize);
 
     if (timestamp == 0 || timestamp <= latestBufferTime_) {
         MEDIA_LOG_E("timestamp invalid.");
