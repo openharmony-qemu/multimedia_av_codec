@@ -29,7 +29,6 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "Source" };
 constexpr int64_t SOURCE_INIT_WARNING_MS = 20;
-constexpr int64_t NS_TO_US = 1000;
 }
 
 namespace OHOS {
