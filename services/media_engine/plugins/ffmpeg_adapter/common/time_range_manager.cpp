@@ -20,6 +20,8 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 
+constexpr int32_t IDX_INTERVAL = 2;
+
 bool TimeRangeManager::IsInTimeRanges(const int64_t targetTs, TimeRange &timeRange)
 {
     auto it = std::find_if(timeRanges_.begin(), timeRanges_.end(),
@@ -64,8 +66,7 @@ void TimeRangeManager::ReduceRanges()
     for (size_t i = 0; i < ranges.size(); ++i) {
         if (i == 0 || i == ranges.size() - 1) {
             timeRanges_.insert(ranges[i]);
-        }
-        else if (i % 2 == 0) {
+        } else if (!(i % IDX_INTERVAL)) {
             timeRanges_.insert(ranges[i]);
         }
     }
