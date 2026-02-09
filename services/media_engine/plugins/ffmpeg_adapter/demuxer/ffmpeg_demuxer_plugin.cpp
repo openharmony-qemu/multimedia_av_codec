@@ -527,6 +527,7 @@ void FFmpegDemuxerPlugin::ResetParam()
 {
     readatIndex_ = 0;
     avpacketIndex_ = 0;
+    readModeFlags_.store(0, std::memory_order_release);
     ioContext_.offset = 0;
     ioContext_.retry = false;
     ioContext_.eos = false;
@@ -663,9 +664,8 @@ Status FFmpegDemuxerPlugin::SetDrmCencInfo(
     std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket)
 {
     FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_INVALID_OPERATION, "Sample is nullptr");
-    // 0 mean sync read, 1 mean async read
-    // sync read (0) need check memory_, async read (1) don't need check memory_
-    bool isAsyncRead = (readModeMap_.find(1) != readModeMap_.end() && readModeMap_[1] == 1);
+    // Sync read needs check memory_, async read doesn't.
+    bool isAsyncRead = (readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::ASYNC)) != 0;
     FALSE_RETURN_V_MSG_E(isAsyncRead || sample->memory_ != nullptr, Status::ERROR_INVALID_OPERATION,
         "Memory is nullptr");
     FALSE_RETURN_V_MSG_E((samplePacket != nullptr && samplePacket->pkts.size() > 0), Status::ERROR_INVALID_OPERATION,
@@ -848,9 +848,8 @@ Status FFmpegDemuxerPlugin::BufferIsValid(std::shared_ptr<AVBuffer> sample, std:
     FALSE_RETURN_V_MSG_E(snapshot != nullptr && snapshot->valid,
         Status::ERROR_INVALID_OPERATION, "Stream snapshot is invalid");
     MEDIA_LOG_D("Convert packet info for track " PUBLIC_LOG_D32, samplePacket->pkts[0]->GetStreamIndex());
-    // 0 mean sync read, 1 mean async read
-    // sync read (0) need check memory_, async read (1) don't need check memory_
-    bool isAsyncRead = (readModeMap_.find(1) != readModeMap_.end() && readModeMap_[1] == 1);
+    // Sync read needs check memory_, async read doesn't.
+    bool isAsyncRead = (readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::ASYNC)) != 0;
     if (isAsyncRead) {
         FALSE_RETURN_V_MSG_E(sample != nullptr && sample->meta_ != nullptr, Status::ERROR_INVALID_OPERATION,
             "Input sample is error");
@@ -1860,8 +1859,8 @@ Status FFmpegDemuxerPlugin::GetDrmInfo(std::multimap<std::string, std::vector<ui
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MEDIA_LOG_D("In");
     // Only read from cache when async mode is confirmed and DRM info is cached
-    // If ReadSample interface hasn't been called, readModeMap_ cannot determine the mode, default to sync path
-    bool isAsyncRead = (readModeMap_.find(1) != readModeMap_.end() && readModeMap_[1] == 1);
+    // If ReadSample interface hasn't been called, readModeFlags_ cannot determine the mode, default to sync path
+    bool isAsyncRead = (readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::ASYNC)) != 0;
     {
         std::lock_guard<std::mutex> drmLock(cachedDrmInfoMutex_);
         if (isAsyncRead && drmInfoCached_.load()) {
@@ -1870,7 +1869,7 @@ Status FFmpegDemuxerPlugin::GetDrmInfo(std::multimap<std::string, std::vector<ui
             return Status::OK;
         }
     }
-    // Other cases (sync mode, readModeMap_ not set, DRM info not cached): read from formatContext_
+    // Other cases (sync mode, readModeFlags_ not set, DRM info not cached): read from formatContext_
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
 
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
@@ -2843,13 +2842,14 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_PARAMETER, "Track has not been selected");
     FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_ != nullptr, Status::ERROR_INVALID_PARAMETER,
         "AVBuffer or memory is nullptr");
-    FALSE_RETURN_V_MSG_E(readModeMap_.find(1) == readModeMap_.end(), Status::ERROR_INVALID_OPERATION,
+    FALSE_RETURN_V_MSG_E((readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::ASYNC)) == 0,
+        Status::ERROR_INVALID_OPERATION,
         "Cannot use sync and async Read together");
     if (needClear_) {
         ClearUnselectTrackCache();
         needClear_ = false;
     }
-    readModeMap_[0] = 1;
+    readModeFlags_.fetch_or(ReadModeToFlags(ReadMode::SYNC), std::memory_order_acq_rel);
     auto id = HiviewDFX::XCollie::GetInstance().SetTimer("av_codec::demuxer_read", SETTIMER_TIMEOUT,
         nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
     Status ret = WaitForCacheReady(trackId);
@@ -2885,9 +2885,10 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size)
     MEDIA_LOG_D("In, track " PUBLIC_LOG_D32, trackId);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN, "AVFormatContext is nullptr");
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_UNKNOWN, "Track has not been selected");
-    FALSE_RETURN_V_MSG_E(readModeMap_.find(1) == readModeMap_.end(), Status::ERROR_INVALID_OPERATION,
+    FALSE_RETURN_V_MSG_E((readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::ASYNC)) == 0,
+        Status::ERROR_INVALID_OPERATION,
         "Cannot use sync and async Read together");
-    readModeMap_[0] = 1;
+    readModeFlags_.fetch_or(ReadModeToFlags(ReadMode::SYNC), std::memory_order_acq_rel);
     Status ret;
     if (NeedCombineFrame(trackId) && cacheQueue_.GetCacheSize(trackId) == 1) {
         ret = ReadPacketToCacheQueue(trackId);

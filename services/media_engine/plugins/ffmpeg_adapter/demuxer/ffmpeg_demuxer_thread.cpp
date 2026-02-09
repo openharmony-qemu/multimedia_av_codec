@@ -172,9 +172,10 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_PARAMETER, "Track has not been selected");
     FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_ != nullptr, Status::ERROR_INVALID_PARAMETER,
         "AVBuffer or memory is nullptr");
-    FALSE_RETURN_V_MSG_E(readModeMap_.find(0) == readModeMap_.end(), Status::ERROR_INVALID_OPERATION,
+    FALSE_RETURN_V_MSG_E((readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::SYNC)) == 0,
+        Status::ERROR_INVALID_OPERATION,
         "Cannot use sync and async Read together");
-    readModeMap_[1] = 1;
+    readModeFlags_.fetch_or(ReadModeToFlags(ReadMode::ASYNC), std::memory_order_acq_rel);
     isPauseReadPacket_.store(false);
     if (ioContext_.invokerType != InvokerType::READ) {
         std::lock_guard<std::mutex> readLock(ioContext_.invokerTypeMutex);
@@ -223,9 +224,10 @@ Status FFmpegDemuxerPlugin::ReadSampleZeroCopy(uint32_t trackId, std::shared_ptr
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_PARAMETER, "Track has not been selected");
     FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_INVALID_PARAMETER, "AVBuffer is nullptr");
-    FALSE_RETURN_V_MSG_E(readModeMap_.find(0) == readModeMap_.end(), Status::ERROR_INVALID_OPERATION,
+    FALSE_RETURN_V_MSG_E((readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::SYNC)) == 0,
+        Status::ERROR_INVALID_OPERATION,
         "Cannot use sync and async Read together");
-    readModeMap_[1] = 1;
+    readModeFlags_.fetch_or(ReadModeToFlags(ReadMode::ASYNC), std::memory_order_acq_rel);
     isPauseReadPacket_.store(false);
     if (ioContext_.invokerType != InvokerType::READ) {
         std::lock_guard<std::mutex> readLock(ioContext_.invokerTypeMutex);
@@ -529,9 +531,10 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size, u
     MEDIA_LOG_D("In, track " PUBLIC_LOG_D32, trackId);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN, "AVFormatContext is nullptr");
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_UNKNOWN, "Track has not been selected");
-    FALSE_RETURN_V_MSG_E(readModeMap_.find(0) == readModeMap_.end(), Status::ERROR_INVALID_OPERATION,
+    FALSE_RETURN_V_MSG_E((readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::SYNC)) == 0,
+        Status::ERROR_INVALID_OPERATION,
         "Cannot use sync and async Read together");
-    readModeMap_[1] = 1;
+    readModeFlags_.fetch_or(ReadModeToFlags(ReadMode::ASYNC), std::memory_order_acq_rel);
     isPauseReadPacket_.store(false);
     if (ioContext_.invokerType != InvokerType::READ) {
         std::lock_guard<std::mutex> readLock(ioContext_.invokerTypeMutex);
