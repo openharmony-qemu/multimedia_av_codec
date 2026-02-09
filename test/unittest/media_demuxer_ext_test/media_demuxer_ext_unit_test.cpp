@@ -1483,12 +1483,12 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleDashSelectTrack_005, Tes
         GetTmpStreamIDByTrackID(_)).WillRepeatedly(Return(NUM_1));
     mediaDemuxer_->source_ = std::make_shared<Source>();
     mediaDemuxer_->subtitleTrackId_ = NUM_1;
-    mediaDemuxer_->isHls = true;
+    mediaDemuxer_->isHls_ = true;
     mediaDemuxer_->syncCenter_ = std::make_shared<MediaSyncManager>();
     EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(_)).WillRepeatedly(::testing::Return(Status::OK));
     auto result = mediaDemuxer_->HandleDashSelectTrack(NUM_1);
     EXPECT_EQ(result, Status::OK);
-    mediaDemuxer_->isHls = false;
+    mediaDemuxer_->isHls_ = false;
     result = mediaDemuxer_->HandleDashSelectTrack(NUM_1);
     EXPECT_EQ(result, Status::OK);
     mediaDemuxer_->subtitleTrackId_ = NUM_1;
@@ -1508,9 +1508,9 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSelectSubtitle_001, Test
     EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetStreamIDByTrackID(_)).WillOnce(::testing::Return(NUM_2));
     mediaDemuxer_->source_ = std::make_shared<Source>();
     EXPECT_CALL(*mediaDemuxer_->source_, IsSeekToTimeSupported()).WillOnce(::testing::Return(true));
-    EXPECT_CALL(*mediaDemuxer_->source_, SeekToTimeByStreamId(_, _, _)).WillOnce(::testing::Return(Status::OK));
-    auto result = mediaDemuxer_->MediaSeekTimeByStreamId(0, Plugins::SEEK_PREVIOUS_SYNC, NUM_2);
-    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+    EXPECT_CALL(*mediaDemuxer_->source_, MediaSeekTimeByStreamId(_, _, _)).WillOnce(::testing::Return(Status::OK));
+    auto result = mediaDemuxer_->HandleSelectSubtitle(0, Plugins::SeekMode::SEEK_PREVIOUS_SYNC, NUM_2);
+    EXPECT_EQ(result, Status::ERROR_UNKNOWN);
 }
 
 /**
