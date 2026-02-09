@@ -66,7 +66,7 @@ void TimeRangeManager::ReduceRanges()
     for (size_t i = 0; i < ranges.size(); ++i) {
         if (i == 0 || i == ranges.size() - 1) {
             timeRanges_.insert(ranges[i]);
-        } else if (!(i % IDX_INTERVAL)) {
+        } else if (i % IDX_INTERVAL == 0) {
             timeRanges_.insert(ranges[i]);
         }
     }
