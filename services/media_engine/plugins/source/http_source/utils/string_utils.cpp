@@ -26,7 +26,7 @@ namespace {
 const char* ProcessPrefix(const char* str, bool& hasError)
 {
     hasError = false;
-    if (!str || *str == '\0') {
+    if (*str == '\0') {
         hasError = true;
         return str;
     }
