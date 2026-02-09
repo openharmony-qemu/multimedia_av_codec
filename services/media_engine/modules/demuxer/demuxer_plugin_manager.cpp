@@ -666,8 +666,8 @@ Status DemuxerPluginManager::RebootPlugin(int32_t streamId, TrackType trackType,
     if (streamInfoMap_[streamId].pluginName.empty()) {
         StreamInfo streamInfo;
         streamInfo.streamId = streamId;
-        streamInfo.type = streamInfoMap_[streamID].type;
-        streamInfo.sniffSize = streamInfoMap_[streamID].sniffSize;
+        streamInfo.type = streamInfoMap_[streamId].type;
+        streamInfo.sniffSize = streamInfoMap_[streamId].sniffSize;
         streamInfoMap_[streamId].pluginName = streamDemuxer->SnifferMediaType(streamInfo);
     }
     MediaTypeFound(streamDemuxer, streamInfoMap_[streamId].pluginName, streamId);

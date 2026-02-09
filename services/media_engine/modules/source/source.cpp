@@ -258,7 +258,7 @@ Status Source::MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode, int32_t 
     }
     int64_t timeUs;
     return (plugin_ != nullptr && Plugins::Us2HstTime(seekTime, timeUs)) ?
-        plugin_->MediaSeekTimeByStreamId(timeUS, mode, streamId) :
+        plugin_->MediaSeekTimeByStreamId(timeUs, mode, streamId) :
         Status::ERROR_INVALID_PARAMETER;
 }
 
