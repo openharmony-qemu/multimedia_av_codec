@@ -25,14 +25,8 @@ namespace Plugins {
 namespace HttpPlugin {
 class StringUtil {
 public:
-    static bool SafeStoInt(const std::string& str, int& value);
-    static bool SafeStoLong(const std::string& str, long& value);
-    static bool SafeStoLongLong(const std::string& str, long long& value);
     static bool SafeStoInt32(const std::string& str, int32_t& value);
-    static bool SafeStoUInt32(const std::string& str, uint32_t& value);
     static bool SafeStoInt64(const std::string& str, int64_t& value);
-    static bool SafeStoUInt64(const std::string& str, uint64_t& value);
-    static bool SafeStoSizeT(const std::string& str, size_t& value);
 };
 }
 }
