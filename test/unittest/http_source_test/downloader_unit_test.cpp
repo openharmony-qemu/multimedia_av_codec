@@ -1150,7 +1150,7 @@ HWTEST_F(DownloaderUnitTest, SafeStoInt64_02, TestSize.Level1)
     EXPECT_EQ(value, 9223372036854775807);
 }
 
-HWTEST_F(DownloaderUnitTest, SafeStoInt64_02, TestSize.Level1)
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_03, TestSize.Level1)
 {
     string str = "9223372036854775808";
     int64_t value;
@@ -1158,7 +1158,7 @@ HWTEST_F(DownloaderUnitTest, SafeStoInt64_02, TestSize.Level1)
     EXPECT_EQ(value, 0);
 }
 
-HWTEST_F(DownloaderUnitTest, SafeStoInt64_02, TestSize.Level1)
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_04, TestSize.Level1)
 {
     string str = "-9223372036854775808";
     int64_t value;
