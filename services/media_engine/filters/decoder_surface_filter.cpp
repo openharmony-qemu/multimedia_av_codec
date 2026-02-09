@@ -394,7 +394,7 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
     }
 
     ret = Configure(meta_);
-    if (ret != Status::OK) {
+    if (ret != Status::OK && eventReceiver_ != nullptr) {
         eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_SRC_TYPE, GetMime()});
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
@@ -741,6 +741,7 @@ static OHOS::ScalingMode ConvertMediaScaleType(VideoScaleType scaleType)
 void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("SetParameter %{public}i", parameter != nullptr);
+    FALSE_RETURN_MSG(parameter != nullptr, "SetParameter parameter is null");
     Format format;
     if (parameter->Find(Tag::VIDEO_SCALE_TYPE) != parameter->end()) {
         int32_t scaleType;
@@ -749,10 +750,7 @@ void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
         OHOS::ScalingMode scalingMode = ConvertMediaScaleType(static_cast<VideoScaleType>(scaleType));
         if (videoSurface_) {
             GSError err = videoSurface_->SetScalingMode(scalingMode);
-            if (err != GSERROR_OK) {
-                MEDIA_LOG_W("set ScalingMode %{public}d to surface failed", static_cast<int>(scalingMode));
-                return;
-            }
+            FALSE_RETURN_MSG(err == GSERROR_OK, "set ScalingMode to surface failed");
             MEDIA_LOG_D("set ScalingMode %{public}d to surface success", static_cast<int>(scalingMode));
         }
         parameter->Remove(Tag::VIDEO_SCALE_TYPE);
@@ -771,6 +769,7 @@ void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
         format.PutDoubleValue(Tag::VIDEO_FRAME_RATE, rate);
     }
     // cannot set parameter when codec at [ CONFIGURED / INITIALIZED ] state
+    FALSE_RETURN_MSG(videoDecoder_ != nullptr, "videoDecoder_ is null");
     auto ret = videoDecoder_->SetParameter(format);
     if (ret == MediaAVCodec::AVCS_ERR_INVALID_STATE) {
         MEDIA_LOG_W("SetParameter at invalid state");
@@ -1450,7 +1449,7 @@ void DecoderSurfaceFilter::OnOutputFormatChanged(const MediaAVCodec::Format &for
         MEDIA_LOG_W("invaild video size");
         return;
     }
-    if (surfaceWidth_ == 0 || surfaceWidth_ == 0) {
+    if (surfaceWidth_ == 0 || surfaceHeight_ == 0) {
         MEDIA_LOG_I("receive first output Format");
         surfaceWidth_ = width;
         surfaceHeight_ = height;
@@ -1469,6 +1468,7 @@ void DecoderSurfaceFilter::OnOutputFormatChanged(const MediaAVCodec::Format &for
     MEDIA_LOG_I("ReportVideoSizeChange videoWidth: " PUBLIC_LOG_D32 " videoHeight: "
         PUBLIC_LOG_D32, surfaceWidth_, surfaceHeight_);
     std::pair<int32_t, int32_t> videoSize {surfaceWidth_, surfaceHeight_};
+    FALSE_RETURN_MSG(eventReceiver_ != nullptr, "eventReceiver_ is null");
     eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_RESOLUTION_CHANGE, videoSize});
 }
 
