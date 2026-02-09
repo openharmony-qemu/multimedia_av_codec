@@ -56,14 +56,17 @@ void TimeRangeManager::AddTimeRange(const TimeRange &range)
 
 void TimeRangeManager::ReduceRanges()
 {
-    if (timeRanges_.size() >= static_cast<size_t>(maxEntries_)) {
-        auto it = std::next(timeRanges_.begin());
-        auto last = std::prev(timeRanges_.end());
-        while (it != last) {
-            it = timeRanges_.erase(it);
-            if (it != last) {
-                ++it;
-            }
+    if (timeRanges_.size() < static_cast<size_t>(maxEntries_)) {
+        return;
+    }
+    std::vector<TimeRange> ranges(timeRanges_.begin(), timeRanges_.end());
+    timeRanges_.clear();
+    for (size_t i = 0; i < ranges.size(); ++i) {
+        if (i == 0 || i == ranges.size() - 1) {
+            timeRanges_.insert(ranges[i]);
+        }
+        else if (i % 2 == 0) {
+            timeRanges_.insert(ranges[i]);
         }
     }
 }
