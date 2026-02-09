@@ -192,6 +192,16 @@ bool DownloadMonitor::SeekToTime(int64_t seekTime, SeekMode mode)
     return downloader_->SeekToTime(seekTime, mode);
 }
 
+bool DownloadMonitor::MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode, int32_t streamId)
+{
+    isPlaying_ = true;
+    {
+        AutoLock lock(taskMutex_);
+        retryTasks_.clear();
+    }
+    return downloader_ != nullptr && downloader_->MediaSeekTimeByStreamId(seekTime, mode, streamId);
+}
+
 std::vector<uint32_t> DownloadMonitor::GetBitRates()
 {
     return downloader_->GetBitRates();

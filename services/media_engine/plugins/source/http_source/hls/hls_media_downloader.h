@@ -58,7 +58,7 @@ public:
     void Resume() override;
     Status Read(unsigned char* buff, ReadDataInfo& readDataInfo) override;
     bool SeekToTime(int64_t seekTime, SeekMode mode) override;
-
+    bool MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode, int32_t streamId) override;
     size_t GetContentLength() const override;
     int64_t GetDuration() const override;
     std::pair<int64_t, bool> GetStartInfo() const override;

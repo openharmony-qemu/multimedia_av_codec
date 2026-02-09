@@ -85,6 +85,11 @@ public:
         MEDIA_LOG_E("SeekToTime is unimplemented.");
         return false;
     }
+    virtual bool MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode, int32_t streamId)
+    {
+        MEDIA_LOG_E("MediaSeekTimeByStreamId is unimplemented.");
+        return false;
+    }
     virtual std::vector<uint32_t> GetBitRates()
     {
         MEDIA_LOG_E("GetBitRates is unimplemented.");
