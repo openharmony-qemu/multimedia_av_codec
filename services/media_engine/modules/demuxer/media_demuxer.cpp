@@ -1773,6 +1773,7 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
         }
         ResetSampleQueueStatus(seekTime);
     }
+    ResetAfterSeek(ret);
     MEDIA_LOG_D("Out");
     return ret;
 }
