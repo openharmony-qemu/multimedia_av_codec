@@ -2761,10 +2761,26 @@ Status FFmpegDemuxerPlugin::Flush()
     Status ret = Status::OK;
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MEDIA_LOG_I("In");
+
+    // Pause async read loop first, otherwise it may repopulate cacheQueue_ after we clear it.
+    isPauseReadPacket_.store(true);
+
+    // Avoid locking invokerTypeMutex_ here: async read thread may hold it while waiting.
     if (ioContext_.invokerType != InvokerType::FLUSH) {
-        std::lock_guard<std::mutex> seekLock(ioContext_.invokerTypeMutex);
-        ioContext_.invokerType = InvokerType::FLUSH;
+        ioContext_.invokerType.store(InvokerType::FLUSH);
     }
+    {
+        std::unique_lock<std::mutex> readLock(readPacketMutex_);
+        ioContext_.readCbReady.store(true);
+        readCbCv_.notify_all();
+    }
+
+    if (readThread_ != nullptr && threadState_ == READING) {
+        MEDIA_LOG_I("Flush wait async read thread");
+        std::unique_lock<std::mutex> waitLock(seekWaitMutex_);
+        seekWaitCv_.wait(waitLock, [this] { return threadState_ == WAITING || threadState_ == NOT_STARTED; });
+    }
+
     for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
         ret = cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
         ret = cacheQueue_.AddTrackQueue(selectedTrackIds_[i]);
