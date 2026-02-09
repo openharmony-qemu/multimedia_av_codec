@@ -177,7 +177,7 @@ bool BlockQueuePool::ResetInfo(std::shared_ptr<SamplePacket> block)
     }
     return true;
 }
-
+ 
 bool BlockQueuePool::SetInfo(std::shared_ptr<SamplePacket> block)
 {
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
