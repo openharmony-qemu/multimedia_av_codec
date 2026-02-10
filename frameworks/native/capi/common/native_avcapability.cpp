@@ -70,7 +70,7 @@ OH_AVCapability *OH_AVCodec_GetCapabilityByCategory(const char *mime, bool isEnc
     } else if (category == SOFTWARE) {
         innerCategory = AVCodecCategory::AVCODEC_SOFTWARE;
     } else {
-        AVCODEC_LOGE("Unsupported category {public}%d", static_cast<int32_t>(category));
+        AVCODEC_LOGE("Unsupported category %{public}d", static_cast<int32_t>(category));
         return nullptr;
     }
     uint32_t sizeOfCap = sizeof(OH_AVCapability);
