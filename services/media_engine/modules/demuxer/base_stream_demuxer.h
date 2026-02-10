@@ -112,7 +112,7 @@ public:
     bool GetIsIgnoreParse();
     Plugins::Seekable GetSeekable();
     virtual void SetInterruptState(bool isInterruptNeeded);
-    virtual std::string SnifferMediaType(int32_t streamID);
+    virtual std::string SnifferMediaType(const StreamInfo& streamInfo);
     bool IsDash() const;
     void SetIsDash(bool flag);
 
@@ -154,6 +154,7 @@ private:
     std::atomic<int32_t> newSubtitleStreamID_ = -1;
     std::atomic<bool> changeStreamFlag_ = true;
     std::mutex typeFinderMutex_ {};
+    std::mutex pluginStateMutex_ {};
 };
 } // namespace Media
 } // namespace OHOS

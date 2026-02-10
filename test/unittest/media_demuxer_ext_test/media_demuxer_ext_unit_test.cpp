@@ -395,6 +395,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, StartTask_001, TestSize.Level1)
     auto iter = mediaDemuxer_->taskMap_.find(trackId);
     EXPECT_TRUE(iter != mediaDemuxer_->taskMap_.end());
     EXPECT_EQ(mediaDemuxer_->StartTask(trackId), Status::OK);
+    mediaDemuxer_->StopAllTask();
 }
 
 /**
@@ -413,6 +414,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, StartTask_002, TestSize.Level1)
     mediaDemuxer_->taskMap_[trackId] = std::move(taskPtr);
     Status ret = mediaDemuxer_->StartTask(trackId);
     EXPECT_EQ(ret, Status::OK);
+    mediaDemuxer_->StopAllTask();
 }
 
 /**
@@ -431,6 +433,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, StartTask_003, TestSize.Level1)
     mediaDemuxer_->taskMap_[trackId] = std::move(taskPtr);
     Status ret = mediaDemuxer_->StartTask(trackId);
     EXPECT_EQ(ret, Status::OK);
+    mediaDemuxer_->StopAllTask();
 }
 
 /**
@@ -451,6 +454,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, StartTask_004, TestSize.Level1)
     EXPECT_TRUE(iter == mediaDemuxer_->taskMap_.end());
     Status ret = mediaDemuxer_->StartTask(trackId);
     EXPECT_EQ(ret, Status::OK);
+    mediaDemuxer_->StopAllTask();
 }
 
 /**
@@ -468,6 +472,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, StartTask_005, TestSize.Level1)
     int32_t trackId = NUM_2;
     Status ret = mediaDemuxer_->StartTask(trackId);
     EXPECT_EQ(ret, Status::OK);
+    mediaDemuxer_->StopAllTask();
 }
 
 /**
@@ -485,6 +490,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, StartTask_006, TestSize.Level1)
     int32_t trackId = 4;
     Status ret = mediaDemuxer_->StartTask(trackId);
     EXPECT_EQ(ret, Status::OK);
+    mediaDemuxer_->StopAllTask();
 }
 
 /**
@@ -1465,6 +1471,52 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleDashSelectTrack_004, Tes
     mediaDemuxer_->eventReceiver_ = mockEventReceiver;
     auto result = mediaDemuxer_->HandleDashSelectTrack(NUM_1);
     EXPECT_EQ(result, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleDashSelectTrack API
+ * @tc.number: MediaDemuxerExt_HandleDashSelectTrack_005
+ * @tc.desc  : Test trackId != curTrackId &&
+ *             targetStreamID != demuxerPluginManager_->GetTmpStreamIDByTrackID(curTrackId)
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleDashSelectTrack_005, TestSize.Level1)
+{
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
+        GetStreamIDByTrackID(_)).WillRepeatedly(Return(NUM_2));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
+        GetTrackTypeByTrackID(_)).WillRepeatedly(Return(TrackType::TRACK_SUBTITLE));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
+        GetTmpStreamIDByTrackID(_)).WillRepeatedly(Return(NUM_1));
+    mediaDemuxer_->source_ = std::make_shared<Source>();
+    mediaDemuxer_->subtitleTrackId_ = NUM_1;
+    mediaDemuxer_->isHls_ = true;
+    mediaDemuxer_->syncCenter_ = std::make_shared<MediaSyncManager>();
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(_)).WillRepeatedly(::testing::Return(Status::OK));
+    auto result = mediaDemuxer_->HandleDashSelectTrack(NUM_1);
+    EXPECT_EQ(result, Status::OK);
+    mediaDemuxer_->isHls_ = false;
+    result = mediaDemuxer_->HandleDashSelectTrack(NUM_1);
+    EXPECT_EQ(result, Status::OK);
+    mediaDemuxer_->subtitleTrackId_ = NUM_1;
+    mediaDemuxer_->syncCenter_ = nullptr;
+    result = mediaDemuxer_->HandleDashSelectTrack(NUM_1);
+    EXPECT_EQ(result, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleRebootPlugin API
+ * @tc.number: MediaDemuxerExt_HandleSelectSubtitle_001
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSelectSubtitle_001, TestSize.Level1)
+{
+    mediaDemuxer_->subtitleTrackId_ = NUM_1;
+    mediaDemuxer_->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetStreamIDByTrackID(_)).WillOnce(::testing::Return(NUM_2));
+    mediaDemuxer_->source_ = std::make_shared<Source>();
+    EXPECT_CALL(*mediaDemuxer_->source_, IsSeekToTimeSupported()).WillOnce(::testing::Return(true));
+    EXPECT_CALL(*mediaDemuxer_->source_, MediaSeekTimeByStreamId(_, _, _)).WillOnce(::testing::Return(Status::OK));
+    auto result = mediaDemuxer_->HandleSelectSubtitle(0, Plugins::SeekMode::SEEK_PREVIOUS_SYNC, NUM_2);
+    EXPECT_EQ(result, Status::ERROR_UNKNOWN);
 }
 
 /**

@@ -34,6 +34,7 @@
 #include "native_avsource.h"
 #include "native_avformat.h"
 #include "native_averrors.h"
+#include "native_avcapability.h"
 #include "window.h"
 #include "iconsumer_surface.h"
 #include <fcntl.h>
@@ -147,6 +148,8 @@ public:
     void RenderOutAtTime(uint32_t index);
     bool MdCompare(uint8_t source[]);
     void FlushStatus();
+    void GetVideoSupportedPixelFormats();
+    void GetFormatKey();
     std::vector<uint8_t> LoadHashFile();
     VDecAPI11Signal *signal_;
     uint32_t errCount = 0;
@@ -170,6 +173,15 @@ public:
     bool outputCallbackStop = false;
     bool useHDRSource = false;
     bool isAPI = false;
+    bool isGetVideoSupportedPixelFormats = false;
+    bool isGetFormatKey = false;
+    int isGetVideoSupportedPixelFormatsNum = 0;
+    int isGetFormatKeyNum = 0;
+    const char *avcodecMimeType = nullptr;
+    bool isEncoder = true;
+    const OH_NativeBuffer_Format *pixlFormats = nullptr;
+    uint32_t pixlFormatNum = 0;
+    int firstCallBackKey = 0;
     int32_t DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
     int32_t DecodeSetSurface();
     void getFormat(const char *fileName);

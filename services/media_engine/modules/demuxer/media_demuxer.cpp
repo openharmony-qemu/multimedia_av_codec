@@ -1336,7 +1336,6 @@ Status MediaDemuxer::HandleDashSelectTrack(int32_t trackId)
         MEDIA_LOG_E("Get stream failed");
         return Status::ERROR_UNKNOWN;
     }
-
     int32_t curTrackId = TRACK_ID_INVALID;
     TrackType trackType = demuxerPluginManager_->GetTrackTypeByTrackID(trackId);
     if (trackType == TrackType::TRACK_AUDIO) {
@@ -1349,19 +1348,29 @@ Status MediaDemuxer::HandleDashSelectTrack(int32_t trackId)
         MEDIA_LOG_E("Track type invalid");
         return Status::ERROR_UNKNOWN;
     }
-
     if (trackId == curTrackId || targetStreamID != demuxerPluginManager_->GetTmpStreamIDByTrackID(curTrackId)) {
         MEDIA_LOG_I("Select stream");
         {
             std::lock_guard<std::mutex> lock(isSelectTrackMutex_);
             inSelectTrackType_[static_cast<int32_t>(trackType)] = trackId;
         }
-        return source_->SelectStream(targetStreamID);
+        FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_UNKNOWN, "source_ is null");
+        auto ret = source_->SelectStream(targetStreamID);
+        if (ret == Status::OK && isHls_ && curTrackId == subtitleTrackId_ && syncCenter_ != nullptr) {
+            HandleSelectSubtitle(syncCenter_->GetMediaTimeNow(), SeekMode::SEEK_PREVIOUS_SYNC, trackId);
+        }
+        return ret;
     }
-
     // same streamID
     Status ret = DoSelectTrack(trackId, curTrackId);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "DoSelectTrack track failed");
+    ReportTrackChangeEvent(trackId);
+    return Status::OK;
+}
+
+void MediaDemuxer::ReportTrackChangeEvent(int32_t trackId)
+{
+    TrackType trackType = demuxerPluginManager_->GetTrackTypeByTrackID(trackId);
     if (eventReceiver_ != nullptr) {
         if (trackType == TrackType::TRACK_AUDIO) {
             eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_AUDIO_TRACK_CHANGE, trackId});
@@ -1374,7 +1383,6 @@ Status MediaDemuxer::HandleDashSelectTrack(int32_t trackId)
             subtitleTrackId_ = trackId;
         } else {}
     }
-    return Status::OK;
 }
 
 Status MediaDemuxer::DoSelectTrack(int32_t trackId, int32_t curTrackId)
@@ -1743,6 +1751,22 @@ void MediaDemuxer::HandleSeekToTime(int64_t seekTime)
     ResetSampleQueueStatus(seekTime);
 }
 
+Status MediaDemuxer::HandleSelectSubtitle(int64_t seekTime, Plugins::SeekMode mode, int32_t trackId)
+{
+    int32_t targetStreamID = demuxerPluginManager_->GetStreamIDByTrackID(trackId);
+    FALSE_RETURN_V_MSG_E(targetStreamID != INVALID_STREAM_OR_TRACK_ID, Status::ERROR_INVALID_PARAMETER,
+        "Invalid streamId");
+    FALSE_RETURN_V_MSG_E(source_ != nullptr && source_->IsSeekToTimeSupported(), Status::ERROR_INVALID_PARAMETER,
+        "Source is null or seek operation not supported");
+    auto ret = source_->MediaSeekTimeByStreamId(seekTime, SeekMode::SEEK_PREVIOUS_SYNC, targetStreamID);
+    FALSE_RETURN_V_MSG_E(streamDemuxer_ != nullptr && ret == Status::OK, Status::ERROR_UNKNOWN,
+        "Source SeekToSubtitle fail");
+    streamDemuxer_->SetNewSubtitleStreamID(targetStreamID);
+    FALSE_RETURN_V_MSG_E(HandleDashChangeStream(subtitleTrackId_), Status::ERROR_UNKNOWN,
+        "HandleDashChangeStream fail");
+    return Status::OK;
+}
+
 Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
 {
     MediaAVCodec::AVCODEC_SYNC_TRACE;
@@ -1771,7 +1795,15 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
             ScopedTimer timer("seek closest", SEEK_LOCAL_WARNING_MS);
             ret = demuxerPluginManager_->SeekTo(seekTime, mode, realSeekTime);
         }
+        ResetSampleQueueStatus(seekTime);
     }
+    ResetAfterSeek(ret);
+    MEDIA_LOG_D("Out");
+    return ret;
+}
+
+void MediaDemuxer::ResetAfterSeek(Status ret)
+{
     isSeeked_ = true;
     if (isVideoMuted_ || needRestore_) {
         if (sampleQueueMap_[videoTrackId_] != nullptr) {
@@ -1791,8 +1823,6 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
     }
     isFirstFrameAfterSeek_.store(true);
     convertErrorTime_.store(0);
-    MEDIA_LOG_D("Out");
-    return ret;
 }
 
 Status MediaDemuxer::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
@@ -3100,7 +3130,7 @@ Status MediaDemuxer::CopyFrameToUserQueue(int32_t trackId)
     }
     GetMemoryUsage(trackId, pluginTemp);
     int32_t size = 0;
-    Status ret = !isTranscoderMode_ && enableAsyncDemuxer_ ?
+    Status ret = enableAsyncDemuxer_ ?
         pluginTemp->GetNextSampleSize(static_cast<uint32_t>(innerTrackID), size, timeout_) :
         pluginTemp->GetNextSampleSize(static_cast<uint32_t>(innerTrackID), size);
     FALSE_RETURN_V_MSG_E(ret != Status::ERROR_WAIT_TIMEOUT, ret, "Get size timeout " PUBLIC_LOG_D32, trackId);
@@ -3131,6 +3161,7 @@ Status MediaDemuxer::CopyFrameToUserQueue(int32_t trackId)
 
 void MediaDemuxer::StartConsume(int32_t trackId)
 {
+    FALSE_RETURN(isBuffering_.load());
     bool startConsumeResult = false;
     if (trackId == videoTrackId_ && isVideoMuted_) {
         SetTrackIsBuffering(trackId, false);
@@ -3245,9 +3276,6 @@ Status MediaDemuxer::InnerReadSample(int32_t trackId, std::shared_ptr<AVBuffer> 
     int64_t threshold = trackId == audioTrackId_ ? READSAMPLE_AUIDO_WARNING_MS : READSAMPLE_WARNING_MS;
     Status ret = Status::OK;
     {
-        if (isTranscoderMode_) {
-            isAVDemuxer = true;
-        }
         ScopedTimer timer("ReadSample", threshold);
         ret = ReadSampleWithPerfRecord(pluginTemp, innerTrackID, sample, isAVDemuxer);
     }
@@ -3275,10 +3303,17 @@ Status MediaDemuxer::ReadSampleWithPerfRecord(const std::shared_ptr<Plugins::Dem
         demuxDuration =
             CALC_EXPR_TIME_MS(ret = pluginTemp->ReadSample(static_cast<uint32_t>(innerTrackID), sample));
     } else {
-        FALSE_RETURN_V_NOLOG(perfRecEnabled_,
-            pluginTemp->ReadSample(static_cast<uint32_t>(innerTrackID), sample, timeout_));
-        demuxDuration =
-            CALC_EXPR_TIME_MS(ret = pluginTemp->ReadSample(static_cast<uint32_t>(innerTrackID), sample, timeout_));
+        if (isPlayerMode_) {
+            FALSE_RETURN_V_NOLOG(perfRecEnabled_,
+                pluginTemp->ReadSampleZeroCopy(static_cast<uint32_t>(innerTrackID), sample, timeout_));
+            demuxDuration = CALC_EXPR_TIME_MS(
+                ret = pluginTemp->ReadSampleZeroCopy(static_cast<uint32_t>(innerTrackID), sample, timeout_));
+        } else {
+            FALSE_RETURN_V_NOLOG(perfRecEnabled_,
+                pluginTemp->ReadSample(static_cast<uint32_t>(innerTrackID), sample, timeout_));
+            demuxDuration =
+                CALC_EXPR_TIME_MS(ret = pluginTemp->ReadSample(static_cast<uint32_t>(innerTrackID), sample, timeout_));
+        }
     }
     FALSE_RETURN_V_MSG(eventReceiver_ != nullptr, Status::OK, "Report perf failed, callback is nullptr");
     FALSE_RETURN_V_NOLOG(perfRecorder_.Record(demuxDuration) == PerfRecorder::FULL, ret);
@@ -3478,7 +3513,7 @@ void MediaDemuxer::AfterSeekNeedDrop(int32_t trackId)
         return;
     }
     std::shared_ptr<AVBuffer> sample = AVBuffer::CreateAVBuffer();
-    pluginTemp->ReadSample(static_cast<int32_t>(innerTrackID), sample, timeout_);
+    pluginTemp->ReadSampleZeroCopy(static_cast<int32_t>(innerTrackID), sample, timeout_);
     if (sample->dts_ >= afterDropDts_[trackId]) {
         SetTrackSeekNeedDrop(trackId, false);
     }
@@ -4822,7 +4857,7 @@ Status MediaDemuxer::ReadSampleToDrop(int32_t trackId, std::shared_ptr<AVBuffer>
     if (pluginTemp == nullptr) {
         return Status::ERROR_UNKNOWN;
     }
-    Status status = pluginTemp->ReadSample(static_cast<uint32_t>(innerTrackID), sample, timeout_);
+    Status status = pluginTemp->ReadSampleZeroCopy(static_cast<uint32_t>(innerTrackID), sample, timeout_);
     return status;
 }
 

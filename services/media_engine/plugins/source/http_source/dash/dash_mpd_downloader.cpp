@@ -35,6 +35,7 @@ constexpr uint32_t DRM_UUID_OFFSET = 12;
 constexpr size_t RETRY_TIMES = 15000;
 constexpr unsigned int SLEEP_TIME = 1;
 constexpr int32_t MPD_HTTP_TIME_OUT_MS = 5 * 1000;
+constexpr uint32_t MPD_MAX_SIZE = 100 * 1024 * 1024;
 constexpr unsigned int SEGMENT_DURATION_DELTA = 100; // ms
 
 DashMpdDownloader::DashMpdDownloader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
@@ -848,6 +849,7 @@ void DashMpdDownloader::DoOpen(const std::string& url, int64_t startRange, int64
 uint32_t DashMpdDownloader::SaveData(uint8_t* data, uint32_t len, bool notBlock)
 {
     MEDIA_LOG_D("SaveData:size=%{public}u len=%{public}u", (unsigned int)downloadContent_.size(), len);
+    FALSE_RETURN_V_MSG(data != nullptr && len <= MPD_MAX_SIZE, 0, "SaveData failed, dash mpd data too large.");
     downloadContent_.append(reinterpret_cast<const char*>(data), len);
     return len;
 }
@@ -1625,7 +1627,8 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsWithTmpltTimelineStatic(const
                 continue;
             }
 
-            unsigned int segDuration = ((*it)->d_ * S_2_MS) / timeScale;
+            unsigned int segDuration = ((*it)->d_ <= std::numeric_limits<uint64_t>::max() / S_2_MS ?
+                (*it)->d_ * S_2_MS : std::numeric_limits<uint64_t>::max()) / timeScale;
             MediaSegSampleInfo sampleInfo;
             sampleInfo.mediaUrl_ = mediaUrl;
             sampleInfo.segCount_ = segCount;
@@ -2072,6 +2075,9 @@ Status DashMpdDownloader::GetStreamInfo(std::vector<StreamInfo> &streams)
     unsigned int audioAdptSetIndex = streamDescriptions_.size();
     unsigned int subtitleAdptSetIndex = audioAdptSetIndex;
     for (unsigned int index = 0; index < streamDescriptions_.size(); index++) {
+        if (streamDescriptions_[index] == nullptr) {
+            continue;
+        }
         if (streamDescriptions_[index]->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_AUD) {
             if (streamDescriptions_[index]->adptSetIndex_ == audioAdptSetIndex) {
                 MEDIA_LOG_D("GetStreamInfo skip audio stream:" PUBLIC_LOG_D32 ",lang:" PUBLIC_LOG_S,

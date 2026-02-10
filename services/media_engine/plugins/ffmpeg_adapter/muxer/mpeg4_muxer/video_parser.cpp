@@ -16,6 +16,7 @@
 #include "video_parser.h"
 #include <algorithm>
 #include <vector>
+#include "common/log.h"
 
 namespace OHOS {
 namespace Media {
@@ -24,6 +25,7 @@ namespace Mpeg4 {
 
 namespace {
 constexpr uint8_t EMULATION_CODE[] = {0x00, 0x00, 0x03};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_MUXER, "VideoParser" };
 }
 
 VideoParser::VideoParser(VideoParserStreamType streamType) : streamType_(streamType) {}
@@ -62,7 +64,7 @@ bool VideoParser::IsAvccHvccFrame(const uint8_t *sample, int32_t size)
         return false;
     }
 
-    uint32_t naluSize = 0;
+    uint64_t naluSize = 0;
     uint64_t pos = 0;
     uint64_t cmpSize = static_cast<uint64_t>(size);
     while (pos + nalSizeLen_ <= cmpSize) {
@@ -129,7 +131,7 @@ void RbspContext::InitRbsp(const std::vector<uint8_t> &buf)
 bool RbspContext::RbspCheckSize(int32_t size)
 {
     int32_t byteIndex = byteIndex_ + (bitIndex_ + size) / 8;  // 8 bit
-    if (byteIndex > size_) {
+    if (byteIndex >= size_) {
         return false;
     }
     return true;
@@ -137,7 +139,7 @@ bool RbspContext::RbspCheckSize(int32_t size)
 
 void RbspContext::RbspSkipBits(int32_t size)
 {
-    if (byteIndex_ > size_) {
+    if (byteIndex_ >= size_) {
         return;
     }
 
@@ -147,6 +149,10 @@ void RbspContext::RbspSkipBits(int32_t size)
 
 uint8_t RbspContext::RbspGetBit()
 {
+    if (byteIndex_ >= size_) {
+        MEDIA_LOG_W("RbspGetBit out of index (%{public}d, %{public}d), return 0", byteIndex_, size_);
+        return 0;
+    }
     uint8_t *buf = buf_.data();
     uint8_t data = *(reinterpret_cast<uint8_t *>(buf + byteIndex_));
     data = (data >> (7 - bitIndex_)) & 0x01;  // 7

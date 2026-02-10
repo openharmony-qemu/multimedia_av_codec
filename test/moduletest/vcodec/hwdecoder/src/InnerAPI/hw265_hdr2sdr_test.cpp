@@ -66,8 +66,10 @@ protected:
 namespace {
 static OH_AVCapability *cap = nullptr;
 static OH_AVCapability *cap_hevc = nullptr;
+static OH_AVCapability *cap_swhevc = nullptr;
 static string g_codecName = "";
 static string g_codecNameHEVC = "";
+static string g_codecNameSwHEVC = "";
 } // namespace
 
 void HwdecHdr2SdrInnerTest::SetUpTestCase()
@@ -78,6 +80,9 @@ void HwdecHdr2SdrInnerTest::SetUpTestCase()
     cap_hevc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
     g_codecNameHEVC = OH_AVCapability_GetName(cap_hevc);
     cout << "g_codecNameHEVC: " << g_codecNameHEVC << endl;
+    cap_swhevc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
+    g_codecNameSwHEVC = OH_AVCapability_GetName(cap_swhevc);
+    cout << "g_codecNameSwHEVC: " << g_codecNameSwHEVC << endl;
 }
 void HwdecHdr2SdrInnerTest::TearDownTestCase() {}
 void HwdecHdr2SdrInnerTest::SetUp() {}
@@ -685,6 +690,273 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0024, TestSize.Level0
         ASSERT_EQ(AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, vDecSample->Configure());
     } else {
         ASSERT_EQ(AVCS_ERR_UNSUPPORT, vDecSample->Configure());
+    }
+}
+
+/**
+ * @tc.number    : HEVC_SW_HDR2SDR_INNER_FUNC_0001
+ * @tc.name      : h265 soft decode surface, nv12, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE P3 FULL, 720p HLG FULL
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0001, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = INP_DIR_720_10;
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 10;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->P3_FULL_FLAG = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameSwHEVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : HEVC_SW_HDR2SDR_INNER_FUNC_0002
+ * @tc.name      : h265 soft decode surface, nv12, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE BT709 LIMIT, 720p HLG FULL
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0002, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = INP_DIR_720_10;
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 10;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->BT709_LIMIT_FLAG = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameSwHEVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : HEVC_SW_HDR2SDR_INNER_FUNC_0003
+ * @tc.name      : h265 soft decode surface, nv21, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE P3 FULL, 1080p HLG FULL
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0003, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = INP_DIR_1080_10;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 10;
+        vDecSample->DEFAULT_FORMAT = static_cast<int32_t>(VideoPixelFormat::NV21);
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->P3_FULL_FLAG = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameSwHEVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : HEVC_SW_HDR2SDR_INNER_FUNC_0004
+ * @tc.name      : 265 sw surface, nv21, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE BT709 LIMIT, 1080p HLG FULL
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0004, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = INP_DIR_1080_10;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 10;
+        vDecSample->DEFAULT_FORMAT = static_cast<int32_t>(VideoPixelFormat::NV21);
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->BT709_LIMIT_FLAG = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameSwHEVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : HEVC_SW_HDR2SDR_INNER_FUNC_0005
+ * @tc.name      : 265 sd surface, nv12, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE P3 FULL, 1920_1440 HLG FULL
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0005, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = INP_DIR_1920_1440_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1440;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->P3_FULL_FLAG = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameSwHEVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : HEVC_SW_HDR2SDR_INNER_FUNC_0006
+ * @tc.name      : 265 hw surface, nv12, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE BT709 LIMIT, 1920_1440 HLG FULL
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0006, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+    shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
+    vDecSample->INP_DIR = INP_DIR_1920_1440_30;
+    vDecSample->DEFAULT_WIDTH = 1920;
+    vDecSample->DEFAULT_HEIGHT = 1440;
+    vDecSample->DEFAULT_FRAME_RATE = 30;
+    vDecSample->SF_OUTPUT = true;
+    vDecSample->BT709_LIMIT_FLAG = true;
+    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+    ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameSwHEVC));
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : HEVC_SW_HDR2SDR_INNER_FUNC_0007
+ * @tc.name      : H265 sw, nv12, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE BT709 FULL
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0007, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = INP_DIR_720_10;
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 10;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->BT709_FULL_FLAG = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->CreateByName(g_codecNameSwHEVC));
+        ASSERT_EQ(AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, vDecSample->Configure());
+    }
+}
+
+/**
+ * @tc.number    : HEVC_SW_HDR2SDR_INNER_FUNC_0008
+ * @tc.name      : H265 sw, rgba, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE P3 FULL
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0008, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = INP_DIR_720_10;
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 10;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->P3_FULL_FLAG = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->DEFAULT_FORMAT = static_cast<int32_t>(VideoPixelFormat::RGBA);
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->CreateByName(g_codecNameSwHEVC));
+        ASSERT_EQ(AVCS_ERR_UNSUPPORT, vDecSample->Configure());
+    }
+}
+
+/**
+ * @tc.number    : HEVC_SW_HDR2SDR_INNER_FUNC_0010
+ * @tc.name      : H265 soft decode surface, nv12, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE P3 FULL, HLG limit
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0010, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = inpDirHlgLimit;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->P3_FULL_FLAG = true;
+        vDecSample->HDR2SDR = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameSwHEVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : HEVC_SW_HDR2SDR_INNER_FUNC_0011
+ * @tc.name      : H265 sw surface, nv12, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE P3 FULL, no prepare before start
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0011, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = INP_DIR_720_10;
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 10;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->P3_FULL_FLAG = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->CreateSurface();
+        ASSERT_NE(vDecSample->nativeWindow[0], nullptr);
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->CreateByName(g_codecNameSwHEVC));
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->Configure());
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->SetOutputSurface());
+        ASSERT_EQ(AVCS_ERR_INVALID_OPERATION, vDecSample->Start());
+    }
+}
+  
+/**
+ * @tc.number    : HEVC_SW_HDR2SDR_INNER_FUNC_0012
+ * @tc.name      : H265 sw buffer, nv12, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE P3 FULL
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0012, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = INP_DIR_720_10;
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 10;
+        vDecSample->P3_FULL_FLAG = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        ASSERT_EQ(AVCS_ERR_INVALID_OPERATION, vDecSample->RunVideoDecoder(g_codecNameSwHEVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : HEVC_SW_HDR2SDR_INNER_FUNC_0013
+ * @tc.name      : H265 soft decode, nv21, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE P3 FULL, HLG FULl
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0013, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = INP_DIR_720_10;
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 10;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->P3_FULL_FLAG = true;
+        vDecSample->DEFAULT_FORMAT = static_cast<int32_t>(VideoPixelFormat::NV21);
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->CreateByName(g_codecNameSwHEVC));
     }
 }
 } //namespace

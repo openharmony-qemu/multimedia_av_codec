@@ -74,12 +74,13 @@ void BaseStreamDemuxer::SetSourceType(SourceType type)
     sourceType_ = type;
 }
 
-std::string BaseStreamDemuxer::SnifferMediaType(int32_t streamID)
+std::string BaseStreamDemuxer::SnifferMediaType(const StreamInfo& streamInfo)
 {
     MediaAVCodec::AVCodecTrace trace("BaseStreamDemuxer::SnifferMediaType");
     MEDIA_LOG_D("BaseStreamDemuxer::SnifferMediaType called");
     typeFinder_ = std::make_shared<TypeFinder>();
-    typeFinder_->Init(uri_, mediaDataSize_, checkRange_, peekRange_, streamID);
+    typeFinder_->Init(uri_, mediaDataSize_, checkRange_, peekRange_, streamInfo.streamId);
+    typeFinder_->SetSniffSize(streamInfo.sniffSize);
     std::string type = typeFinder_->FindMediaType();
     std::unique_lock<std::mutex> lock(typeFinderMutex_);
     typeFinder_ = nullptr;
@@ -89,7 +90,10 @@ std::string BaseStreamDemuxer::SnifferMediaType(int32_t streamID)
 
 void BaseStreamDemuxer::SetDemuxerState(int32_t streamId, DemuxerState state)
 {
-    pluginStateMap_[streamId] = state;
+    {
+        std::lock_guard lock(pluginStateMutex_);
+        pluginStateMap_[streamId] = state;
+    }
     if ((IsDash() || streamId == 0) && state == DemuxerState::DEMUXER_STATE_PARSE_FRAME) {
         source_->SetDemuxerState(streamId);
     }

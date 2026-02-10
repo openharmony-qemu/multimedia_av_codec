@@ -37,6 +37,7 @@
 #include "iconsumer_surface.h"
 #include "native_avdemuxer.h"
 #include "native_avsource.h"
+#include "native_avcapability.h"
 #include "libavutil/pixfmt.h"
 #include "gtest/gtest.h"
 
@@ -116,6 +117,8 @@ public:
     void InputFor263FuncTest();
     bool readChunkHeader(char* chunkId, uint32_t& chunkSize);
     bool findMoviChunk();
+    void GetVideoSupportedPixelFormats();
+    void GetFormatKey();
 
     const char *inputDir = "";
     const char *outputDir = "/data/test/media/RawVideoDecTest.yuv";
@@ -128,6 +131,15 @@ public:
     bool outputYuvFlag = false;
     uint32_t errCount = 0;
     uint32_t outFrameCount = 0;
+    bool isGetVideoSupportedPixelFormats = false;
+    bool isGetFormatKey = false;
+    int isGetVideoSupportedPixelFormatsNum = 0;
+    int isGetFormatKeyNum = 0;
+    const char *avcodecMimeType = nullptr;
+    bool isEncoder = true;
+    const OH_NativeBuffer_Format *pixlFormats = nullptr;
+    uint32_t pixlFormatNum = 0;
+    int firstCallBackKey = 0;
     OH_AVFormat *trackFormat = nullptr;
     bool afterEosDestroyCodec = true;
     bool sleepOnFPS = false;

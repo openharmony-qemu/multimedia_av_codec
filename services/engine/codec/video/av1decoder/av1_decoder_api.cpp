@@ -27,12 +27,11 @@ int32_t GetAv1DecoderCapabilityList(std::vector<CapabilityData> &caps)
 
 void CreateAv1DecoderByName(const std::string &name, std::shared_ptr<CodecBase> &codec)
 {
-    sptr<Av1Decoder> av1Decoder = new (std::nothrow) Av1Decoder(name, "libdav1d.z.so");
+    sptr<Av1Decoder> av1Decoder = new (std::nothrow) Av1Decoder(name);
     if (av1Decoder == nullptr || !av1Decoder->IsValid()) {
         codec = nullptr;
         return;
     }
-    av1Decoder->DecoderFuncMatch();
     av1Decoder->IncStrongRef(av1Decoder.GetRefPtr());
     codec = std::shared_ptr<Av1Decoder>(av1Decoder.GetRefPtr(), [](Av1Decoder *ptr) { (void)ptr; });
 }

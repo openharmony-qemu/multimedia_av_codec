@@ -76,6 +76,7 @@ constexpr size_t IGNORE_BUFFERING_EXTRA_CACHE_BEYOND_MS = 300;
 constexpr float FLV_AUTO_SELECT_SMOOTH_FACTOR = 0.8;
 constexpr size_t FLV_AUTO_SELECT_TIME_GAP = 3;
 constexpr uint32_t CHUNK_SIZE = 16 * 1024;
+constexpr uint32_t BODY_MAX_SIZE = 100 * 1024 * 1024;
 } // namespace
 
 void HttpMediaDownloader::InitRingBuffer(size_t duration)
@@ -296,9 +297,9 @@ bool HttpMediaDownloader::HandleBuffering()
     }
     if (!isBuffering_ && isFirstFrameArrived_ && callback_ != nullptr) {
         MEDIA_LOG_I("HTTP CacheData onEvent BUFFERING_END, bufferSize: " PUBLIC_LOG_U64 ", waterLineAbove_: "
-        PUBLIC_LOG_ZU ", isBuffering: " PUBLIC_LOG_D32 ", canWrite: " PUBLIC_LOG_D32 " readOffset: "
-        PUBLIC_LOG_ZU " writeOffset: " PUBLIC_LOG_ZU, GetCurrentBufferSize(), waterLineAbove_, isBuffering_.load(),
-        canWrite_.load(), readOffset_, writeOffset_);
+            PUBLIC_LOG_ZU ", isBuffering: " PUBLIC_LOG_D32 ", canWrite: " PUBLIC_LOG_D32 " readOffset: "
+            PUBLIC_LOG_ZU " writeOffset: " PUBLIC_LOG_ZU, GetCurrentBufferSize(), waterLineAbove_,
+            isBuffering_.load(), canWrite_.load(), readOffset_, writeOffset_);
         UpdateCachedPercent(BufferingInfoType::BUFFERING_END);
         bufferingTime_ = 0;
     }
@@ -381,10 +382,8 @@ bool HttpMediaDownloader::StartBufferingCheck(unsigned int& wantReadLength)
     if (isRingBuffer_ && extraCache_ >= IGNORE_BUFFERING_EXTRA_CACHE_BEYOND_MS) {
         return false;
     }
-    if (GetCurrentBufferSize() >= cacheWaterLine) {
-        return false;
-    }
-    if (GetCurrentBufferSize() >= wantReadLength) {
+    auto currentBufferSize = GetCurrentBufferSize();
+    if (currentBufferSize >= cacheWaterLine || currentBufferSize >= wantReadLength) {
         return false;
     }
     return true;
@@ -987,6 +986,7 @@ uint32_t HttpMediaDownloader::SaveRingBufferData(uint8_t* data, uint32_t len)
 
 uint32_t HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len, bool notBlock)
 {
+    FALSE_RETURN_V_MSG(data != nullptr && len <= BODY_MAX_SIZE, 0, "SaveData failed, http data too large.");
     if (!isRingBuffer_ && (cacheMediaBuffer_ == nullptr || !isCacheBufferInited_)) {
         FALSE_RETURN_V_MSG(downloadRequest_ != nullptr, 0, "downloadRequest_ nullptr");
         if (cacheMediaBuffer_ == nullptr) {

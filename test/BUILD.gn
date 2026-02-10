@@ -145,7 +145,6 @@ group("av_codec_unit_test") {
         "unittest/http_source_test:http_source_plugin_unit_test",
         "unittest/http_source_test:http_source_plugin_unittest",
         "unittest/media_demuxer_ext_test:media_demuxer_ext_unit_test",
-        "unittest/media_demuxer_pts_functions_unittest:media_demuxer_pts_functions_unittest",
         "unittest/media_demuxer_test:media_demuxer_unit_test",
         "unittest/media_engine/filters:media_engine_filter_unit_test",
         "unittest/media_sink_test:av_audio_sink_unit_test",

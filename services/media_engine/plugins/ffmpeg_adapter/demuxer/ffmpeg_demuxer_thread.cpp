@@ -170,10 +170,12 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_PARAMETER, "Track has not been selected");
-    FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_INVALID_PARAMETER, "AVBuffer is nullptr");
-    FALSE_RETURN_V_MSG_E(readModeMap_.find(0) == readModeMap_.end(), Status::ERROR_INVALID_OPERATION,
+    FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_ != nullptr, Status::ERROR_INVALID_PARAMETER,
+        "AVBuffer or memory is nullptr");
+    FALSE_RETURN_V_MSG_E((readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::SYNC)) == 0,
+        Status::ERROR_INVALID_OPERATION,
         "Cannot use sync and async Read together");
-    readModeMap_[1] = 1;
+    readModeFlags_.fetch_or(ReadModeToFlags(ReadMode::ASYNC), std::memory_order_acq_rel);
     isPauseReadPacket_.store(false);
     if (ioContext_.invokerType != InvokerType::READ) {
         std::lock_guard<std::mutex> readLock(ioContext_.invokerTypeMutex);
@@ -194,7 +196,59 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     FALSE_RETURN_V_MSG_E(samplePacket != nullptr, Status::ERROR_NULL_POINTER, "Cache packet is nullptr");
 
     if (samplePacket->isEOS) {
-        ret = SetEosSample(sample);
+        ret = SetEosSample(sample, false);
+        if (ret == Status::OK) {
+            DumpPacketInfo(trackId, Stage::FILE_END);
+            cacheQueue_.Pop(trackId);
+        }
+        return ret;
+    }
+    SupplementFirstFrameIfPending(trackId, samplePacket);
+    ret = ConvertAVPacketToSample(sample, samplePacket);
+    DumpPacketInfo(trackId, Stage::FIRST_READ);
+    if (ret == Status::ERROR_NOT_ENOUGH_DATA) {
+        return Status::OK;
+    } else if (ret == Status::OK) {
+        MEDIA_LOG_D("All partial sample has been copied");
+        cacheQueue_.Pop(trackId);
+    }
+    return ret;
+}
+
+Status FFmpegDemuxerPlugin::ReadSampleZeroCopy(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout)
+{
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
+    Status ret;
+    MediaAVCodec::AVCodecTrace trace(std::string("ReadSampleZeroCopy_timeout_") + std::to_string(trackId));
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
+    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
+    FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_PARAMETER, "Track has not been selected");
+    FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_INVALID_PARAMETER, "AVBuffer is nullptr");
+    FALSE_RETURN_V_MSG_E((readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::SYNC)) == 0,
+        Status::ERROR_INVALID_OPERATION,
+        "Cannot use sync and async Read together");
+    readModeFlags_.fetch_or(ReadModeToFlags(ReadMode::ASYNC), std::memory_order_acq_rel);
+    isPauseReadPacket_.store(false);
+    if (ioContext_.invokerType != InvokerType::READ) {
+        std::lock_guard<std::mutex> readLock(ioContext_.invokerTypeMutex);
+        ioContext_.invokerType = InvokerType::READ;
+    }
+    trackId_ = trackId;
+    if (!cacheQueue_.HasCache(trackId) && timeout == 0) {
+        return Status::ERROR_WAIT_TIMEOUT;
+    }
+    if (!readThread_) {
+        readThread_ = std::make_unique<std::thread>(&FFmpegDemuxerPlugin::FFmpegReadLoop, this);
+    }
+    ret = WaitForLoop(trackId, timeout);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Frame reading thread error, ret = " PUBLIC_LOG_D32, ret);
+
+    std::lock_guard<std::mutex> lockTrack(*trackMtx_[trackId].get());
+    auto samplePacket = cacheQueue_.Front(trackId);
+    FALSE_RETURN_V_MSG_E(samplePacket != nullptr, Status::ERROR_NULL_POINTER, "Cache packet is nullptr");
+
+    if (samplePacket->isEOS) {
+        ret = SetEosSample(sample, true);
         if (ret == Status::OK) {
             DumpPacketInfo(trackId, Stage::FILE_END);
             cacheQueue_.Pop(trackId);
@@ -205,7 +259,6 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     ret = ConvertAVPacketToSampleMemory(sample, samplePacket);
     DumpPacketInfo(trackId, Stage::FIRST_READ);
     if (ret == Status::OK) {
-        MEDIA_LOG_D("All partial sample has been copied");
         cacheQueue_.Pop(trackId);
     }
     return ret;
@@ -478,9 +531,10 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size, u
     MEDIA_LOG_D("In, track " PUBLIC_LOG_D32, trackId);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN, "AVFormatContext is nullptr");
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_UNKNOWN, "Track has not been selected");
-    FALSE_RETURN_V_MSG_E(readModeMap_.find(0) == readModeMap_.end(), Status::ERROR_INVALID_OPERATION,
+    FALSE_RETURN_V_MSG_E((readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::SYNC)) == 0,
+        Status::ERROR_INVALID_OPERATION,
         "Cannot use sync and async Read together");
-    readModeMap_[1] = 1;
+    readModeFlags_.fetch_or(ReadModeToFlags(ReadMode::ASYNC), std::memory_order_acq_rel);
     isPauseReadPacket_.store(false);
     if (ioContext_.invokerType != InvokerType::READ) {
         std::lock_guard<std::mutex> readLock(ioContext_.invokerTypeMutex);

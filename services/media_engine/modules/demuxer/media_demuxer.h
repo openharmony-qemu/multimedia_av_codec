@@ -317,6 +317,7 @@ private:
 
     Status HandleSelectTrack(int32_t trackId);
     Status HandleDashSelectTrack(int32_t trackId);
+    void ReportTrackChangeEvent(int32_t trackId);
     Status DoSelectTrack(int32_t trackId, int32_t curTrackId);
     Status HandleRebootPlugin(int32_t trackId, bool& isRebooted);
     Status HandleHlsRebootPlugin(int32_t trackId);
@@ -403,6 +404,8 @@ private:
     void SetTrackNeedDropFrame(int32_t trackId, uint32_t frameCount);
     bool GetTrackSeekNeedDrop(int32_t trackId);
     void SetTrackSeekNeedDrop(int32_t trackId, bool needDrop);
+    Status HandleSelectSubtitle(int64_t seekTime, Plugins::SeekMode mode, int32_t trackId);
+    void ResetAfterSeek(Status ret);
 
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;

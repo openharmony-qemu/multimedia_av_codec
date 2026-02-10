@@ -251,6 +251,17 @@ Status Source::SeekToTime(int64_t seekTime, SeekMode mode)
     }
 }
 
+Status Source::MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode, int32_t streamId)
+{
+    if (seekable_ != Seekable::SEEKABLE) {
+        GetSeekable();
+    }
+    int64_t timeUs;
+    return (plugin_ != nullptr && Plugins::Us2HstTime(seekTime, timeUs)) ?
+        plugin_->MediaSeekTimeByStreamId(timeUs, mode, streamId) :
+        Status::ERROR_INVALID_PARAMETER;
+}
+
 Status Source::GetDownloadInfo(DownloadInfo& downloadInfo)
 {
     MEDIA_LOG_D("GetDownloadInfo");

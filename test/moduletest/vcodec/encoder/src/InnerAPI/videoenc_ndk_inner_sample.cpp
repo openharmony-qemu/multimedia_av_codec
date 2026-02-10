@@ -36,12 +36,16 @@ constexpr uint32_t MAX_PIXEL_FMT = 5;
 constexpr uint32_t IDR_FRAME_INTERVAL = 10;
 constexpr uint32_t MILLION = 1000000;
 std::random_device rd;
+constexpr uint32_t ZERO = 0;
+constexpr uint32_t ONE = 1;
 constexpr uint8_t RGBA_SIZE = 4;
 constexpr uint8_t THREE = 3;
-constexpr uint8_t TWO = 3;
+constexpr uint8_t TWO = 2;
+constexpr uint8_t FOUR = 4;
 constexpr uint8_t FILE_END = -1;
 constexpr uint8_t LOOP_END = 0;
 constexpr uint32_t FIVE = 5;
+constexpr uint32_t SIX = 6;
 VEncNdkInnerSample *enc_sample = nullptr;
 int32_t g_picWidth;
 int32_t g_picHeight;
@@ -180,6 +184,7 @@ int32_t VEncNdkInnerSample::ConfigureVideoEncoderSqr()
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, DEFAULT_PIX_FMT);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, DEFAULT_KEY_FRAME_INTERVAL);
     if (MODE_ENABLE) {
         format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, DEFAULT_BITRATE_MODE);
     }
@@ -203,6 +208,9 @@ int32_t VEncNdkInnerSample::ConfigureVideoEncoderSqr()
     }
     if (MAXBFRAMES_ENABLE) {
         format.PutIntValue(Media::Tag::VIDEO_ENCODER_MAX_B_FRAME, DEFAULT_MAX_B_FRAMES);
+    }
+    if (enablePTSBasedRateControl) {
+        format.PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_PTS_BASED_RATECONTROL, 1);
     }
     return venc_->Configure(format);
 }
@@ -514,53 +522,56 @@ int32_t VEncNdkInnerSample::testApi()
     return AVCS_ERR_OK;
 }
 
-int32_t VEncNdkInnerSample::PushData(std::shared_ptr<AVSharedMemory> buffer, uint32_t index, int32_t &result)
+void VEncNdkInnerSample::IdrPush()
 {
-    int32_t res = -2;
-    uint32_t yuvSize = 0;
-    if (DEFAULT_PIX_FMT == static_cast<int32_t>(VideoPixelFormat::RGBA1010102) ||
-        DEFAULT_PIX_FMT == static_cast<int32_t>(VideoPixelFormat::RGBA)) {
-        yuvSize = DEFAULT_WIDTH * DEFAULT_HEIGHT * RGBA_SIZE;
-    } else {
-        yuvSize = DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE / TWO;
-    }
-    uint8_t *fileBuffer = buffer->GetBase();
-    if (fileBuffer == nullptr) {
-        cout << "Fatal: no memory" << endl;
-        return -1;
-    }
-    (void)inFile_->read((char *)fileBuffer, yuvSize);
-
-    if (repeatRun && inFile_->eof()) {
-        inFile_->clear();
-        inFile_->seekg(0, ios::beg);
-        encodeCount++;
-        cout << "repeat" << "  encodeCount:" << encodeCount << endl;
-        return -1;
-    }
-
-    if (inFile_->eof()) {
-        SetEOS(index);
-        return 0;
-    }
-
-    AVCodecBufferInfo info;
-    info.presentationTimeUs = GetSystemTimeUs();
-    info.size = yuvSize;
-    info.offset = 0;
-    AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
-
-    int32_t size = buffer->GetSize();
-    if (size < (int32_t)yuvSize) {
-        cout << "bufferSize smaller than yuv size" << endl;
-        return -1;
-    }
-
     if (enableForceIDR && (frameCount % IDR_FRAME_INTERVAL == 0)) {
         Format format;
         format.PutIntValue(MediaDescriptionKey::MD_KEY_REQUEST_I_FRAME, 1);
         venc_->SetParameter(format);
     }
+}
+
+int32_t VEncNdkInnerSample::PushData(std::shared_ptr<AVSharedMemory> buffer, uint32_t index, int32_t &result)
+{
+    int32_t resPush = -2;
+    uint32_t yuvSizePush = 0;
+    if (DEFAULT_PIX_FMT == static_cast<int32_t>(VideoPixelFormat::RGBA1010102) ||
+        DEFAULT_PIX_FMT == static_cast<int32_t>(VideoPixelFormat::RGBA)) {
+        yuvSizePush = DEFAULT_WIDTH * DEFAULT_HEIGHT * RGBA_SIZE;
+    } else {
+        yuvSizePush = DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE / TWO;
+    }
+    uint8_t *fileBuffer = buffer->GetBase();
+    if (fileBuffer == nullptr) {
+        return -1;
+    }
+    (void)inFile_->read((char *)fileBuffer, yuvSizePush);
+
+    if (repeatRun && inFile_->eof()) {
+        inFile_->clear();
+        inFile_->seekg(0, ios::beg);
+        encodeCount++;
+        return -1;
+    }
+    if (inFile_->eof()) {
+        SetEOS(index);
+        return 0;
+    }
+    AVCodecBufferInfo info;
+    if (!enablePTSBasedRateControl) {
+        info.presentationTimeUs = GetSystemTimeUs();
+    } else {
+        info.presentationTimeUs = timeList[frameIndex];
+    }
+    frameIndex++;
+    info.size = yuvSizePush;
+    info.offset = 0;
+    AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
+    int32_t size = buffer->GetSize();
+    if (size < (int32_t)yuvSizePush) {
+        return -1;
+    }
+    IdrPush();
     result = venc_->QueueInputBuffer(index, info, flag);
     if (enbleSyncMode == 0) {
         unique_lock<mutex> lock(signal_->inMutex_);
@@ -568,7 +579,7 @@ int32_t VEncNdkInnerSample::PushData(std::shared_ptr<AVSharedMemory> buffer, uin
         signal_->inBufferQueue_.pop();
     }
 
-    return res;
+    return resPush;
 }
 
 int32_t VEncNdkInnerSample::SyncPushData(std::shared_ptr<AVBuffer> buffer, uint32_t index, int32_t &result)
@@ -680,7 +691,14 @@ int32_t VEncNdkInnerSample::InputProcess(OH_NativeBuffer *nativeBuffer, OHNative
     rect->w = DEFAULT_WIDTH;
     rect->h = DEFAULT_HEIGHT;
     region.rects = rect;
-    NativeWindowHandleOpt(nativeWindow, SET_UI_TIMESTAMP, GetSystemTimeUs());
+    int64_t tmp = GetSystemTimeUs();
+    if (!enablePTSBasedRateControl) {
+        tmp = GetSystemTimeUs();
+    } else {
+        tmp = timeList[frameIndex];
+    }
+    frameIndex++;
+    NativeWindowHandleOpt(nativeWindow, SET_UI_TIMESTAMP, tmp);
     ret = OH_NativeBuffer_Unmap(nativeBuffer);
     if (ret != 0) {
         cout << "OH_NativeBuffer_Unmap failed" << endl;
@@ -1484,4 +1502,57 @@ bool VEncNdkInnerSample::GetWaterMarkCapability(std::string codecMimeType)
         std::cout << " Not support watermark" << std::endl;
         return false;
     }
+}
+
+int32_t VEncNdkInnerSample::LoadTimeStampData(std::string filePath, std::string &inputDir,
+                                              std::string &outputDir, uint32_t &w, uint32_t &h,
+                                              uint32_t &bitrateMode, uint32_t &bitRate, bool &surfaceMode)
+{
+    std::ifstream file(filePath);
+    if (!file.is_open()) {
+        return AV_ERR_IO;
+    }
+    std::string temp;
+    int32_t num = 0;
+    while (getline(file, temp)) {
+        if (num == ZERO) {
+            inputDir = temp;
+            num++;
+            continue;
+        }
+        if (num == ONE) {
+            outputDir = temp;
+            num++;
+            continue;
+        }
+        if (num == TWO) {
+            w = stoi(temp);
+            num++;
+            continue;
+        }
+        if (num == THREE) {
+            h = stoi(temp);
+            num++;
+            continue;
+        }
+        if (num == FOUR) {
+            bitrateMode = stoi(temp);
+            num++;
+            continue;
+        }
+        if (num == FIVE) {
+            bitRate = stoi(temp);
+            num++;
+            continue;
+        }
+        if (num == SIX) {
+            surfaceMode = stoi(temp) == 1 ? true : false;
+            num++;
+            continue;
+        }
+        timeList.push_back(stoll(temp));
+        num++;
+    }
+    file.close();
+    return AV_ERR_OK;
 }

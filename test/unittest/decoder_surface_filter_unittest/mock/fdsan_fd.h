@@ -28,19 +28,30 @@ namespace Media {
 class FdsanFd {
 public:
     FdsanFd() = default;
-    explicit FdsanFd(int32_t fd) {}
-    ~FdsanFd();
+    explicit FdsanFd(int32_t fd) : fd_(fd) {}
+    ~FdsanFd() {}
     FdsanFd(const FdsanFd &copy) = delete;
-    FdsanFd(FdsanFd &&move);
-    FdsanFd &operator=(const FdsanFd &copy) = delete;
-    FdsanFd &operator=(FdsanFd &&move);
-    int32_t Get()
+    FdsanFd(FdsanFd &&move) noexcept
     {
-        return 0;
+        fd_ = move.fd_;
+        move.fd_ = invalidFd;
+    }
+    FdsanFd &operator=(const FdsanFd &copy) = delete;
+    FdsanFd &operator=(FdsanFd &&move) noexcept
+    {
+        if (this != &move) {
+            fd_ = move.fd_;
+            move.fd_ = invalidFd;
+        }
+        return *this;
+    }
+    int32_t Get() const
+    {
+        return fd_;
     }
     void Reset(int32_t newFd = invalidFd)
     {
-        fd_ = 0;
+        fd_ = newFd;
     }
 
 private:

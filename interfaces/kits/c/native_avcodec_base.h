@@ -1197,6 +1197,16 @@ extern const char *OH_MD_KEY_BLOCK_ALIGN;
 extern const char *OH_MD_KEY_BUFFER_SKIP_SAMPLES_INFO;
 
 /**
+ * @brief Key to enable {@link OH_MD_KEY_BUFFER_SKIP_SAMPLES_INFO} in audio decoder,
+ * value type is int32_t (0 or 1):1 is enabled, 0 is disabled.
+ *
+ * This is an optional key, default is 0.
+ *
+ * @since 23
+ */
+extern const char *OH_MD_KEY_ENABLE_BUFFER_SKIP_SAMPLES;
+
+/**
  * @brief Media type.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
@@ -1367,7 +1377,6 @@ typedef enum OH_HEVCProfile {
 typedef enum OH_AV1Profile {
     /** Main profile */
     AV1_PROFILE_MAIN = 0,
-
     /** High profile */
     AV1_PROFILE_HIGH = 1,
     /** Professional profile */

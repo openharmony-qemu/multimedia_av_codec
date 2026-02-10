@@ -52,10 +52,20 @@ AVCodecXCollie &AVCodecXCollie::GetInstance()
     return instance;
 }
 
+AVCodecXCollie::~AVCodecXCollie()
+{
+    destroyed_.store(true, std::memory_order_release);
+}
+
 int32_t AVCodecXCollie::SetTimer(const std::string &name, bool recovery, bool dumpLog, uint32_t timeout,
                                  std::function<void(void *)> callback)
 {
+    CHECK_AND_RETURN_RET_LOG(!destroyed_.load(std::memory_order_acquire), COLLIE_INVALID_INDEX,
+                             "AVCodecXCollie is destructed");
+
     std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(!destroyed_.load(std::memory_order_relaxed), COLLIE_INVALID_INDEX,
+                             "AVCodecXCollie is destructed");
 
     unsigned int flag = HiviewDFX::XCOLLIE_FLAG_NOOP;
     flag |= (recovery ? HiviewDFX::XCOLLIE_FLAG_RECOVERY : 0);
@@ -90,7 +100,9 @@ void AVCodecXCollie::CancelTimer([[maybe_unused]]int32_t timerId)
     if (timerId == COLLIE_INVALID_INDEX) {
         return;
     }
+    CHECK_AND_RETURN_LOG(!destroyed_.load(std::memory_order_acquire), "AVCodecXCollie is destructed");
     std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_LOG(!destroyed_.load(std::memory_order_relaxed), "AVCodecXCollie is destructed");
     HiviewDFX::XCollie::GetInstance().CancelTimer(timerId);
 
     auto it = dfxDumper_.find(timerId);
@@ -103,8 +115,10 @@ void AVCodecXCollie::CancelTimer([[maybe_unused]]int32_t timerId)
 
 int32_t AVCodecXCollie::Dump(int32_t fd)
 {
+    CHECK_AND_RETURN_RET_LOG(!destroyed_.load(std::memory_order_acquire), AVCS_ERR_OK, "AVCodecXCollie is destructed");
     using namespace std::string_literals;
     std::shared_lock<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(!destroyed_.load(std::memory_order_relaxed), AVCS_ERR_OK, "AVCodecXCollie is destructed");
     if (dfxDumper_.empty()) {
         return AVCS_ERR_OK;
     }

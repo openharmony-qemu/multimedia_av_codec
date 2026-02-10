@@ -177,6 +177,7 @@ Status HttpSourcePlugin::GetParameter(std::shared_ptr<Meta> &meta)
 Status HttpSourcePlugin::SetParameter(const std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("SetParameter enter.");
+    FALSE_RETURN_V(meta != nullptr, Status::ERROR_NULL_POINTER);
     meta->GetData(Tag::BUFFERING_SIZE, bufferSize_);
     meta->GetData(Tag::WATERLINE_HIGH, waterline_);
     return Status::OK;
@@ -430,6 +431,16 @@ Status HttpSourcePlugin::SeekToTime(int64_t seekTime, SeekMode mode)
     return Status::OK;
 }
 
+Status HttpSourcePlugin::MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode, int32_t streamId)
+{
+    // Not use mutex to avoid deadlock in continuously multi times in seeking
+    std::shared_ptr<MediaDownloader> downloader = downloader_;
+    FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
+    FALSE_RETURN_V(downloader->GetSeekable() == Seekable::SEEKABLE, Status::ERROR_INVALID_OPERATION);
+    FALSE_RETURN_V(seekTime <= downloader->GetDuration(), Status::ERROR_INVALID_PARAMETER);
+    FALSE_RETURN_V(downloader->MediaSeekTimeByStreamId(seekTime, mode, streamId), Status::ERROR_UNKNOWN);
+    return Status::OK;
+}
 
 void HttpSourcePlugin::CloseUri(bool isAsync)
 {

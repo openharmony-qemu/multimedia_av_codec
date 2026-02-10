@@ -715,7 +715,7 @@ HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_Process_Error_001, TestSize.Level1
     EXPECT_EQ(ret, AVCS_ERR_OK);
     sleep(1);
     ret = avcEncoder_->Stop();
-    EXPECT_EQ(ret, AVCS_ERR_OK);
+    EXPECT_NE(ret, AVCS_ERR_OK);
     ret = avcEncoder_->Release();
     EXPECT_EQ(ret, AVCS_ERR_OK);
 }

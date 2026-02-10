@@ -14,7 +14,7 @@
 import("//build/ohos.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
-config("ffmpeg_adapter_config") {
+config("ffmpeg_adapter_muxer_config") {
   defines = [
     "HST_ANY_WITH_NO_RTTI",
     "MEDIA_OHOS",
@@ -47,6 +47,40 @@ config("ffmpeg_adapter_config") {
   ]
 }
 
+config("ffmpeg_adapter_demuxer_config") {
+  defines = [
+    "HST_ANY_WITH_NO_RTTI",
+    "MEDIA_OHOS",
+  ]
+
+  cflags = [
+    "-fno-exceptions",
+    "-Wall",
+    "-fno-common",
+    "-fstack-protector-all",
+    "-Wshadow",
+    "-FPIC",
+    "-FS",
+    "-O2",
+    "-D_FORTIFY_SOURCE=2",
+    "-Wformat=2",
+    "-Wdate-time",
+  ]
+
+  cflags_cc = [
+    "-std=c++17",
+    "-fno-rtti",
+  ]
+
+  include_dirs = [
+    "$av_codec_root_dir/interfaces",
+    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter",
+    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/muxer",
+    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common",
+    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/demuxer",
+  ]
+}
+
 ohos_shared_library("media_plugin_FFmpegMuxer") {
   branch_protector_ret = "pac_ret"
   install_enable = true
@@ -54,7 +88,7 @@ ohos_shared_library("media_plugin_FFmpegMuxer") {
   sanitize = av_codec_sanitize
 
   configs = [
-    ":ffmpeg_adapter_config",
+    ":ffmpeg_adapter_muxer_config",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
 
@@ -92,14 +126,14 @@ ohos_shared_library("media_plugin_FFmpegDemuxer") {
   ]
   defines += av_codec_defines
 
-  public_configs = [ ":ffmpeg_adapter_config" ]
+  public_configs = [ ":ffmpeg_adapter_demuxer_config" ]
 
   if (build_variant != "user") {
     defines += [ "BUILD_ENG_VERSION" ]
   }
 
   configs = [
-    ":ffmpeg_adapter_config",
+    ":ffmpeg_adapter_demuxer_config",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
 

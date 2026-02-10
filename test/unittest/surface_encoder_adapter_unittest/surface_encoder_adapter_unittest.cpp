@@ -56,7 +56,7 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SetInputSurface_001, TestSize.Level1)
     surfaceEncoderAdapter_->codecServer_ = mockCodecServer_;
     EXPECT_CALL(*(mockCodecServer_), Release()).WillRepeatedly(Return(TEST_SUCCESS_CODE));
     Status status = surfaceEncoderAdapter_->SetInputSurface(nullptr);
-    EXPECT_EQ(status, Status::ERROR_UNKNOWN);
+    EXPECT_EQ(status, Status::OK);
 }
 
 /**

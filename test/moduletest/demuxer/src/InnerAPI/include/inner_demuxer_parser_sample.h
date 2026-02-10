@@ -95,6 +95,7 @@ private:
     void InitHEVCScene(MP4Scene scene);
     bool CheckGopLayerResult(GopLayerInfo &info, int32_t gopId);
     bool CheckFrameLayerResult(FrameLayerInfo &info, int64_t dts, bool speedScene);
+    bool CheckSeekScene(int64_t pts);
     uint32_t GetGopIdFromFrameId(int32_t frameId);
     int64_t GetPtsFromWorkPts(WorkPts workPts);
     std::shared_ptr<AVSource> avsource_ = nullptr;

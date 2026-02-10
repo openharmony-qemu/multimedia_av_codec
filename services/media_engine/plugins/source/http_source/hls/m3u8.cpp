@@ -98,6 +98,12 @@ M3U8Fragment::M3U8Fragment(const std::string &uri, double duration, int sequence
 {
 }
 
+M3U8Fragment::~M3U8Fragment()
+{
+    NZERO_LOG(memset_s(key_, sizeof(key_), 0, sizeof(key_)));
+    NZERO_LOG(memset_s(iv_, sizeof(iv_), 0, sizeof(iv_)));
+}
+
 M3U8::M3U8(const std::string &uri, const std::string &name,
     const std::unordered_map<std::string, std::string> tagMasterMap, StatusCallbackFunc statusCallback,
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
@@ -119,8 +125,8 @@ M3U8::~M3U8()
     }
     delete[] fmp4Header_;
     fmp4Header_ = nullptr;
-    std::fill(std::begin(key_), std::end(key_), 0);
-    std::fill(std::begin(iv_), std::end(iv_), 0);
+    NZERO_LOG(memset_s(key_, sizeof(key_), 0, sizeof(key_)));
+    NZERO_LOG(memset_s(iv_, sizeof(iv_), 0, sizeof(iv_)));
 }
 
 void M3U8::SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback)
@@ -172,31 +178,38 @@ bool M3U8::Update(const std::string& playList, bool isNeedCleanFiles)
 void M3U8::InitTagUpdaters()
 {
     tagUpdatersMap_[HlsTag::EXTXPLAYLISTTYPE] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
+        FALSE_RETURN(tag != nullptr);
         bLive_ = std::static_pointer_cast<SingleValueTag>(tag)->GetValue().QuotedString() != "VOD";
         if (sourceLoader_ != nullptr && sourceLoader_->GetenableOfflineCache()) {
             sourceLoader_->Close(-1);
         }
     };
     tagUpdatersMap_[HlsTag::EXTXTARGETDURATION] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
+        FALSE_RETURN(tag != nullptr);
         std::ignore = info;
         targetDuration_ = std::static_pointer_cast<SingleValueTag>(tag)->GetValue().FloatingPoint();
     };
     tagUpdatersMap_[HlsTag::EXTXMEDIASEQUENCE] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
+        FALSE_RETURN(tag != nullptr);
         std::ignore = info;
         sequence_ = std::static_pointer_cast<SingleValueTag>(tag)->GetValue().Decimal();
         initSequence_ = sequence_;
     };
     tagUpdatersMap_[HlsTag::EXTXDISCONTINUITYSEQUENCE] = [this](std::shared_ptr<Tag> &tag, M3U8Info &info) {
+        FALSE_RETURN(tag != nullptr);
         discontSequence_ = static_cast<int>(std::static_pointer_cast<SingleValueTag>(tag)->GetValue().Decimal());
         info.discontinuity = true;
     };
     tagUpdatersMap_[HlsTag::EXTINF] = [this](const std::shared_ptr<Tag> &tag, M3U8Info &info) {
+        FALSE_RETURN(tag != nullptr);
         GetExtInf(tag, info.duration);
     };
     tagUpdatersMap_[HlsTag::URI] = [this](std::shared_ptr<Tag> &tag, M3U8Info &info) {
+        FALSE_RETURN(tag != nullptr);
         info.uri = UriJoin(uri_, std::static_pointer_cast<SingleValueTag>(tag)->GetValue().QuotedString());
     };
     tagUpdatersMap_[HlsTag::EXTXBYTERANGE] = [this](const std::shared_ptr<Tag> &tag, const M3U8Info &info) {
+        FALSE_RETURN(tag != nullptr);
         std::ignore = info;
         std::string value = std::static_pointer_cast<SingleValueTag>(tag)->GetValue().QuotedString();
         std::shared_ptr<Attribute> attr = std::make_shared<Attribute>("BYTERANGE", value);
@@ -218,26 +231,15 @@ void M3U8::InitTagUpdatersMap()
         info.discontinuity = true;
     };
     tagUpdatersMap_[HlsTag::EXTXKEY] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
-        if (!isDecryptAble_ && !isDecryptKeyReady_) {
-            if (sourceLoader_ != nullptr && sourceLoader_->GetenableOfflineCache()) {
-                sourceLoader_->Close(-1);
-            }
-            isDecryptAble_ = true;
-            isDecryptKeyReady_ = false;
-            ParseKey(std::static_pointer_cast<AttributesTag>(tag));
-            if ((keyUri_ != nullptr) && (keyUri_->length() > DRM_PSSH_TITLE_LEN) &&
-                (keyUri_->substr(0, DRM_PSSH_TITLE_LEN) == DRM_PSSH_TITLE)) {
-                ProcessDrmInfos();
-            } else {
-                DownloadKey();
-            }
-        }
+        PrepareDecrptionKeys(tag);
     };
     tagUpdatersMap_[HlsTag::EXTXMAP] = [this](const std::shared_ptr<Tag> &tag, const M3U8Info &info) {
+        FALSE_RETURN(tag != nullptr);
         std::ignore = info;
         ParseMap(std::static_pointer_cast<AttributesTag>(tag));
     };
     tagUpdatersMap_[HlsTag::EXTXSKIP] = [this](const std::shared_ptr<Tag> &tag, const M3U8Info &info) {
+        FALSE_RETURN(tag != nullptr);
         std::ignore = info;
         auto item = std::static_pointer_cast<AttributesTag>(tag);
         auto skipSegmentsNum = item->GetAttributeByName("SKIPPED-SEGMENTS");
@@ -246,6 +248,7 @@ void M3U8::InitTagUpdatersMap()
         }
     };
     tagUpdatersMap_[HlsTag::EXTXSTART] = [this](const std::shared_ptr<Tag> &tag, const M3U8Info &info) {
+        FALSE_RETURN(tag != nullptr);
         std::ignore = info;
         auto item = std::static_pointer_cast<AttributesTag>(tag);
         auto precise = item->GetAttributeByName("PRECISE");
@@ -260,8 +263,29 @@ void M3U8::InitTagUpdatersMap()
     };
 }
 
+void M3U8::PrepareDecrptionKeys(std::shared_ptr<Tag>& tag)
+{
+    FALSE_RETURN(tag != nullptr);
+    if (isDecryptAble_ || isDecryptKeyReady_) {
+        return;
+    }
+    if (sourceLoader_ != nullptr && sourceLoader_->GetenableOfflineCache()) {
+        sourceLoader_->Close(-1);
+    }
+    isDecryptAble_ = true;
+    isDecryptKeyReady_ = false;
+    ParseKey(std::static_pointer_cast<AttributesTag>(tag));
+    if ((keyUri_ != nullptr) && (keyUri_->length() > DRM_PSSH_TITLE_LEN) &&
+        (keyUri_->substr(0, DRM_PSSH_TITLE_LEN) == DRM_PSSH_TITLE)) {
+        ProcessDrmInfos();
+    } else {
+        DownloadKey();
+    }
+}
+
 void M3U8::ParseMap(const std::shared_ptr<AttributesTag>& tag)
 {
+    FALSE_RETURN(tag != nullptr);
     std::string uri;
     auto uriAttribute = tag->GetAttributeByName("URI");
     if (uriAttribute) {
@@ -360,6 +384,7 @@ void M3U8::UpdateDownloadFinished(const std::string& url, const std::string& loc
 
 uint32_t M3U8::SaveMapData(uint8_t* data, uint32_t len, bool notBlock)
 {
+    FALSE_RETURN_V(data != nullptr, 0);
     if (fmp4Header_ == nullptr && downloadHeaderRequest_) {
         uint32_t headerLen = downloadHeaderRequest_->GetFileContentLengthNoWait();
         headerLen = headerLen > 0 ? headerLen : DEFAULT_HEADER_SIZE; // 1MB
@@ -520,6 +545,7 @@ bool M3U8::IsLive() const
 
 void M3U8::ParseKey(const std::shared_ptr<AttributesTag> &tag)
 {
+    FALSE_RETURN(tag != nullptr);
     auto methodAttribute = tag->GetAttributeByName("METHOD");
     if (methodAttribute) {
         method_ = std::make_shared<std::string>(methodAttribute->QuotedString());
@@ -590,6 +616,7 @@ void M3U8::DownloadKey()
 
 uint32_t M3U8::SaveData(uint8_t *data, uint32_t len, bool notBlock)
 {
+    FALSE_RETURN_V(data != nullptr, 0);
     // 16 is a magic number
     if (len <= MAX_LOOP && len != 0) {
         NZERO_RETURN_V(memcpy_s(key_, MAX_LOOP, data, len), 0);
@@ -604,6 +631,7 @@ uint32_t M3U8::SaveData(uint8_t *data, uint32_t len, bool notBlock)
 void M3U8::OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader> &,
     std::shared_ptr<DownloadRequest> &request)
 {
+    FALSE_RETURN(request != nullptr);
     // This should not be called normally
     if (request->GetClientError() != 0 || request->GetServerError() != 0) {
         MEDIA_LOG_E("OnDownloadStatus " PUBLIC_LOG_D32, status);
@@ -712,8 +740,8 @@ M3U8MasterPlaylist::M3U8MasterPlaylist(const std::string& playList, const std::s
 
 M3U8MasterPlaylist::~M3U8MasterPlaylist()
 {
-    std::fill(std::begin(key_), std::end(key_), 0);
-    std::fill(std::begin(iv_), std::end(iv_), 0);
+    NZERO_LOG(memset_s(key_, sizeof(key_), 0, sizeof(key_)));
+    NZERO_LOG(memset_s(iv_, sizeof(iv_), 0, sizeof(iv_)));
 }
 
 void M3U8MasterPlaylist::SetSourceloader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
@@ -827,6 +855,7 @@ void M3U8MasterPlaylist::UpdateMasterPlaylist()
 void M3U8MasterPlaylist::ProcessAllTags(std::list<std::shared_ptr<Tag>>& tags)
 {
     std::for_each(tags.begin(), tags.end(), [this] (std::shared_ptr<Tag>& tag) {
+        FALSE_RETURN(tag != nullptr);
         switch (tag->GetType()) {
             case HlsTag::EXTXSESSIONKEY:
                 DownloadSessionKey(tag);
@@ -990,6 +1019,9 @@ void M3U8MasterPlaylist::BindVideoMedia(std::string mediaType)
         return;
     }
     for (auto &videoStream : variants_) {
+        if (videoStream == nullptr) {
+            continue;
+        }
         auto& videoStreamId = (mediaType == "audio") ? videoStream->audio_ : videoStream->subtitles_;
         auto& videoStreamMedia = (mediaType == "audio") ? videoStream->audioMedia_ : videoStream->subtitlesMedia_;
         if (videoStreamId.empty()) {
@@ -998,6 +1030,9 @@ void M3U8MasterPlaylist::BindVideoMedia(std::string mediaType)
             continue;
         }
         for (const auto &mediaStream : mediaList) {
+            if (mediaStream == nullptr) {
+                continue;
+            }
             if (videoStreamId != mediaStream->groupID_) {
                 MEDIA_LOG_I("not compare: video %{public}s, %{public}s %s", videoStreamId.c_str(),
                     mediaType.c_str(), mediaStream->groupID_.c_str());
@@ -1014,53 +1049,40 @@ void M3U8MasterPlaylist::BindVideoMedia(std::string mediaType)
 
 void M3U8MasterPlaylist::GetDefaultMedieStream(std::shared_ptr<M3U8VariantStream>& videoStream, std::string mediaType)
 {
-    std::list<std::shared_ptr<M3U8Media>> mediaContainer;
-    if (mediaType == "audio" && !videoStream->audioMedia_.empty()) {
-        mediaContainer = videoStream->audioMedia_;
-    } else if (!videoStream->subtitlesMedia_.empty()) {
-        mediaContainer = videoStream->subtitlesMedia_;
-    } else { return;}
-    auto forcedItor = std::find_if(mediaContainer.rbegin(), mediaContainer.rend(),
+    FALSE_RETURN(videoStream != nullptr);
+    const auto &allMedia = mediaType == "audio" ? videoStream->audioMedia_ : videoStream->subtitlesMedia_;
+    if (allMedia.empty()) {
+        return;
+    }
+    auto &mediaStream = mediaType == "audio" ? videoStream->defaultAudio_ : videoStream->defaultSubtitles_;
+    auto forcedItor = std::find_if(allMedia.rbegin(), allMedia.rend(),
         [] (const std::shared_ptr<M3U8Media>& mediaStream) {
+            FALSE_RETURN_V(mediaStream != nullptr, false);
             return mediaStream->forced_;
         });
-    if (forcedItor != mediaContainer.rend()) {
-        if (mediaType == "audio") {
-            videoStream->defaultAudio_ = *forcedItor;
-        } else {
-            videoStream->defaultSubtitles_ = *forcedItor;
-        }
+    if (forcedItor != allMedia.rend()) {
+        mediaStream = *forcedItor;
         return;
     }
-    auto defaultItor = std::find_if(mediaContainer.rbegin(), mediaContainer.rend(),
+    auto defaultItor = std::find_if(allMedia.rbegin(), allMedia.rend(),
         [] (const std::shared_ptr<M3U8Media>& mediaStream) {
+            FALSE_RETURN_V(mediaStream != nullptr, false);
             return mediaStream->isDefault_ && mediaStream->characteristics_.empty();
         });
-    if (defaultItor != mediaContainer.rend()) {
-        if (mediaType == "audio") {
-            videoStream->defaultAudio_ = *defaultItor;
-        } else {
-            videoStream->defaultSubtitles_ = *defaultItor;
-        }
+    if (defaultItor != allMedia.rend()) {
+        mediaStream = *defaultItor;
         return;
     }
-    auto autoSelectItor = std::find_if(mediaContainer.rbegin(), mediaContainer.rend(),
+    auto autoSelectItor = std::find_if(allMedia.rbegin(), allMedia.rend(),
         [] (const std::shared_ptr<M3U8Media>& mediaStream) {
+            FALSE_RETURN_V(mediaStream != nullptr, false);
             return mediaStream->autoSelect_;
         });
-    if (autoSelectItor != mediaContainer.rend()) {
-        if (mediaType == "audio") {
-            videoStream->defaultAudio_ = *autoSelectItor;
-        } else {
-            videoStream->defaultSubtitles_ = *autoSelectItor;
-        }
+    if (autoSelectItor != allMedia.rend()) {
+        mediaStream = *autoSelectItor;
         return;
     }
-    if (mediaType == "audio") {
-        videoStream->defaultAudio_ = mediaContainer.back();
-    } else {
-        videoStream->defaultSubtitles_ = mediaContainer.back();
-    }
+    mediaStream = allMedia.back();
 }
 
 bool M3U8MasterPlaylist::IsVideoStream(const std::string& codecs)

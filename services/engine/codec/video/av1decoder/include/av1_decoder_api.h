@@ -25,6 +25,7 @@ namespace OHOS::MediaAVCodec {
 extern "C" {  // these functions will be dlsym by avcodec
 int32_t GetAv1DecoderCapabilityList(std::vector<CapabilityData> &caps);
 void CreateAv1DecoderByName(const std::string& name, std::shared_ptr<CodecBase>& codec);
+void Av1DecStrongRef(CodecBase* ptr);
 }
 }
 
