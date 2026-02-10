@@ -260,6 +260,8 @@ struct AudioSinkPlugin : public Plugins::PluginBase {
      */
     virtual int64_t GetWriteDurationMs() { return 0; };
 
+    virtual bool IsOffloading() { return false; }
+
     virtual Status SetRequestDataCallback(const std::shared_ptr<AudioSinkDataCallback> &callback) = 0;
 
     virtual bool GetAudioPosition(timespec &time, uint32_t &framePosition) = 0;
@@ -286,8 +288,6 @@ struct AudioSinkPlugin : public Plugins::PluginBase {
 
     virtual Status EnqueueBufferDesc(const AudioStandard::BufferDesc &bufDesc) = 0;
 
-    virtual bool IsOffloading() { return false; }
-
     virtual bool IsFormatSupported(const std::shared_ptr<Meta> &meta) = 0;
 
     virtual Status SetAudioHapticsSyncId(int32_t syncId) = 0;
@@ -298,6 +298,12 @@ struct AudioSinkPlugin : public Plugins::PluginBase {
         return Status::OK;
     }
 
+    virtual void SetAudioPassFlag(bool isAudioPass)
+    {
+        (void)isAudioPass;
+        return;
+    }
+
     virtual void SetResponseCallback(bool isNeedResponseCallback)
     {
         (void)isNeedResponseCallback;
@@ -306,12 +312,6 @@ struct AudioSinkPlugin : public Plugins::PluginBase {
     virtual bool IsNeedResponseCallback()
     {
         return true;
-    }
-
-    virtual void SetAudioPassFlag(bool isAudioPass)
-    {
-        (void)isAudioPass;
-        return;
     }
 };
 
