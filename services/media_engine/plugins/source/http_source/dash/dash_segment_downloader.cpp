@@ -851,7 +851,7 @@ bool DashSegmentDownloader::CleanBufferByTime(int64_t& remainLastNumberSeq, bool
     });
 
     auto downloader = std::make_shared<Downloader>("dashSegment", sourceLoader_);
-    if (downloadCallback_ != nullptr) {
+    if (downloadCallback_ != nullptr && downloadCallback_ != nullptr) {
         downloader->SetDownloadCallback(downloadCallback_);
     }
     downloader->Init();
@@ -913,13 +913,13 @@ uint32_t DashSegmentDownloader::SaveData(uint8_t* data, uint32_t len, bool notBl
             MEDIA_LOG_I("SaveData:streamId:" PUBLIC_LOG_D32 ", writeState:" PUBLIC_LOG_D32, streamId_,
                 initSegment->writeState_);
             FALSE_RETURN_V_MSG(data != nullptr && len <= HEADER_MAX_SIZE, 0,
-                               "SaveData, failed, dash seg header too large, streamId:" PUBLIC_LOG_D32, streamId_);
+                "SaveData, failed, dash seg header too large, streamId:" PUBLIC_LOG_D32, streamId_);
             initSegment->content_.append(reinterpret_cast<const char*>(data), len);
             return len;
         }
     }
     FALSE_RETURN_V_MSG(data != nullptr && len <= BODY_MAX_SIZE, 0,
-                       "SaveData failed, dash seg data too large, streamId:" PUBLIC_LOG_D32, streamId_);
+        "SaveData failed, dash seg data too large, streamId:" PUBLIC_LOG_D32, streamId_);
 
     size_t bufferTail = buffer_->GetTail();
     bool writeRet = buffer_->WriteBuffer(data, len);

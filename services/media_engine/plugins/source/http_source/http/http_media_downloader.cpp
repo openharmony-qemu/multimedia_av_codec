@@ -399,10 +399,8 @@ bool HttpMediaDownloader::StartBufferingCheck(unsigned int& wantReadLength)
     if (isRingBuffer_ && extraCache_ >= IGNORE_BUFFERING_EXTRA_CACHE_BEYOND_MS) {
         return false;
     }
-    if (GetCurrentBufferSize() >= cacheWaterLine) {
-        return false;
-    }
-    if (GetCurrentBufferSize() >= wantReadLength) {
+    auto currentBufferSize = GetCurrentBufferSize();
+    if (currentBufferSize >= cacheWaterLine || currentBufferSize >= wantReadLength) {
         return false;
     }
     return true;
