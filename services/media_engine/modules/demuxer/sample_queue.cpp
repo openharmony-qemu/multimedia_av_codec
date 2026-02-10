@@ -421,9 +421,7 @@ Status SampleQueue::PeekRollbackBuffer(size_t& sz)
         return Status::ERROR_UNKNOWN;
     }
     auto sampleBuffer = rollbackBufferQueue_.front();
-    if (sampleBuffer == nullptr || sampleBuffer->memory_ == nullptr) {
-        return Status::ERROR_NULL_POINT_BUFFER;
-    }
+    FALSE_RETURN_V(sampleBuffer != nullptr && sampleBuffer->memory_ != nullptr, Status::ERROR_NULL_POINT_BUFFER);
     sz = static_cast<size_t>(sampleBuffer->memory_->GetSize());
     return Status::OK;
 }
