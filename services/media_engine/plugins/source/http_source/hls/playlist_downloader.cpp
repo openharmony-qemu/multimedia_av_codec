@@ -166,6 +166,7 @@ void PlayListDownloader::DoOpenNative(const std::string& url)
 {
     std::string uri = url;
     FALSE_RETURN_MSG(ParseUriInfo(uri), "ParseUriInfo error.");
+    size_ = size_ > MAX_FILE_SIZE ? 0 : size_;
     char* buf = new(std::nothrow) char[size_ + 1];
     FALSE_RETURN_MSG(buf != nullptr, "ParseUriInfo error, no memory.");
 
