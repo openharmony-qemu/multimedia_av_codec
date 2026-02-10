@@ -89,7 +89,7 @@ void TEST_SUIT::IsBFrameSupported(int32_t param)
         }
 
     if ((!capabilityData ||
-         !capabilityData->featuresMap.count(static_cast<int32_t>(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME)))) {
+         !capabilityData->featuresMap.count(static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_B_FRAME)))) {
         GTEST_SKIP() << "capabilityData is nullptr or unsupport b frame!";
     }
 }
