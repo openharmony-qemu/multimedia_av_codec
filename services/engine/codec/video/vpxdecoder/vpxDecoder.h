@@ -19,7 +19,6 @@
 #include "video_decoder.h"
 #include "VpxDec_Typedef.h"
 #include "avcodec_info.h"
-#include "libavutil/mastering_display_metadata.h"
 #include "vpx_decoder.h"
 #include "tools_common.h"
 #include "video_reader.h"
