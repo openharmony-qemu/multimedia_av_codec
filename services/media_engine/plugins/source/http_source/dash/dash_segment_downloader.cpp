@@ -536,7 +536,7 @@ bool DashSegmentDownloader::ReadInitSegment(uint8_t *buff, uint32_t wantReadLeng
 void DashSegmentDownloader::ClearReadSegmentList()
 {
     std::lock_guard<std::mutex> lock(segmentMutex_);
-    for (auto it = segmentList_.begin(); it != segmentList_.end(); ++it) {
+    for (auto it = segmentList_.begin(); it != segmentList_.end();) {
         if (buffer_->GetHead() != 0 && (*it)->isEos_ && buffer_->GetHead() >= (*it)->bufferPosTail_) {
             MEDIA_LOG_D("Read:streamId:" PUBLIC_LOG_D32 ", erase numberSeq:"
                 PUBLIC_LOG_D64, (*it)->streamId_, (*it)->numberSeq_);

@@ -386,6 +386,7 @@ bool HlsSegmentManager::CheckReadStatus()
     FALSE_RETURN_V(playlistDownloader_ != nullptr, false);
     auto downloadRequest = GetDownloadRequest();
     FALSE_RETURN_V(downloadRequest != nullptr, false);
+    FALSE_RETURN_V(playList_ != nullptr, false);
     isEos_ = playList_->Empty() && (downloadRequest != nullptr) && downloadRequest->IsEos() &&
         playlistDownloader_ != nullptr && (playlistDownloader_->GetDuration() > 0) &&
         playlistDownloader_->IsParseAndNotifyFinished();
