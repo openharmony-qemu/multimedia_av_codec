@@ -456,9 +456,9 @@ void M3U8::DownloadKey()
     }
 
     if (sourceLoader_ != nullptr) {
-        downloaderHeader_ = std::make_shared<Downloader>("hlsSourceKey", sourceLoader_);
+        downloader_ = std::make_shared<Downloader>("hlsSourceKey", sourceLoader_);
     } else {
-        downloaderHeader_ = std::make_shared<Downloader>("hlsSourceKey");
+        downloader_ = std::make_shared<Downloader>("hlsSourceKey");
     }
 
     if (downloader_ != nullptr && downloadCallback_ != nullptr) {
