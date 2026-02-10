@@ -1386,7 +1386,6 @@ void MediaDemuxer::ReportTrackChangeEvent(int32_t trackId)
             subtitleTrackId_ = trackId;
         } else {}
     }
-    return Status::OK;
 }
 
 Status MediaDemuxer::DoSelectTrack(int32_t trackId, int32_t curTrackId)
@@ -1827,8 +1826,6 @@ void MediaDemuxer::ResetAfterSeek(Status ret)
     }
     isFirstFrameAfterSeek_.store(true);
     convertErrorTime_.store(0);
-    MEDIA_LOG_D("Out");
-    return ret;
 }
 
 Status MediaDemuxer::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
