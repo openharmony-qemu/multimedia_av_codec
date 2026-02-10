@@ -30,6 +30,7 @@
 #include "ipc_skeleton.h"
 #include "background_event_handler.h"
 #include "qos.h"
+#include "surface_utils.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServiceStub"};
@@ -607,6 +608,9 @@ int32_t CodecServiceStub::SetOutputSurface(MessageParcel &data, MessageParcel &r
 
     sptr<OHOS::Surface> surface = OHOS::Surface::CreateSurfaceAsProducer(producer);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(surface != nullptr, AVCS_ERR_NO_MEMORY, "Surface create failed");
+
+    sptr<OHOS::Surface> surfaceTemp = SurfaceUtils::GetInstance()->GetSurface(surface->GetUniqueId());
+    surface = (surfaceTemp != nullptr) ? surfaceTemp : surface;
 
     std::string format = data.ReadString();
     AVCODEC_LOGD_WITH_TAG("Surface format is %{public}s!", format.c_str());
