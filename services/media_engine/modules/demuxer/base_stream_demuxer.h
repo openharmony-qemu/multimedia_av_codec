@@ -113,6 +113,7 @@ public:
     Plugins::Seekable GetSeekable();
     virtual void SetInterruptState(bool isInterruptNeeded);
     virtual std::string SnifferMediaType(int32_t streamID);
+    virtual std::string SnifferMediaType(const StreamInfo& streamInfo);
     bool IsDash() const;
     void SetIsDash(bool flag);
 

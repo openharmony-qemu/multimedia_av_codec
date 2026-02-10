@@ -172,6 +172,11 @@ int64_t DownloadMonitor::GetDuration() const
     return downloader_->GetDuration();
 }
 
+std::pair<int64_t, bool> DownloadMonitor::GetStartInfo() const
+{
+    return downloader_->GetStartInfo();
+}
+
 Seekable DownloadMonitor::GetSeekable() const
 {
     return downloader_->GetSeekable();
@@ -185,6 +190,16 @@ bool DownloadMonitor::SeekToTime(int64_t seekTime, SeekMode mode)
         retryTasks_.clear();
     }
     return downloader_->SeekToTime(seekTime, mode);
+}
+
+bool DownloadMonitor::MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode, int32_t streamId)
+{
+    isPlaying_ = true;
+    {
+        AutoLock lock(taskMutex_);
+        retryTasks_.clear();
+    }
+    return downloader_ != nullptr && downloader_->MediaSeekTimeByStreamId(seekTime, mode, streamId);
 }
 
 std::vector<uint32_t> DownloadMonitor::GetBitRates()
@@ -301,7 +316,7 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
 void DownloadMonitor::OnDownloadStatus(std::shared_ptr<Downloader>& downloader,
                                        std::shared_ptr<DownloadRequest>& request)
 {
-    FALSE_RETURN_MSG(downloader != nullptr, "downloader is nullptr.");
+    FALSE_RETURN_MSG(downloader != nullptr && request != nullptr, "downloader is nullptr.");
     if (NeedRetry(request)) {
         if (isNeedClearBuffer_) {
             downloader_->ClearBuffer();

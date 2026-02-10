@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -29,50 +29,10 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-namespace {
-    constexpr unsigned int DEFAULT_YEAR = 1900;
-    constexpr unsigned int DEFAULT_YEAR_LEN = 70;
-    constexpr unsigned int DEFAULT_DAY = 2;
-}
 
 DashMpdParser::~DashMpdParser()
 {
     Clear();
-}
-
-time_t DashMpdParser::String2Time(const std::string szTime)
-{
-    if (szTime.length() == 0) {
-        return 0;
-    }
-
-    struct tm tm1;
-    memset_s(&tm1, sizeof(tm1), 0, sizeof(tm1));
-    struct tm tmBase;
-    memset_s(&tmBase, sizeof(tmBase), 0, sizeof(tmBase));
-    time_t t1;
-    time_t tBase;
-
-    if (-1 == sscanf_s(szTime.c_str(), "%4d-%2d-%2dT%2d:%2d:%2d", &tm1.tm_year, &tm1.tm_mon, &tm1.tm_mday, &tm1.tm_hour,
-                       &tm1.tm_min, &tm1.tm_sec)) {
-        MEDIA_LOG_E("String2Time format error " PUBLIC_LOG_S, szTime.c_str());
-    }
-
-    tm1.tm_year -= DEFAULT_YEAR;
-    tm1.tm_mon--;
-    // day + 1 for as 1970/1/1 00:00:00.000 in windows(return -1) and mac(return -28800) return different
-    tm1.tm_mday += 1;
-
-    tm1.tm_isdst = -1;
-
-    tmBase.tm_mday = DEFAULT_DAY;
-    tmBase.tm_year = DEFAULT_YEAR_LEN;
-    tmBase.tm_isdst = -1;
-
-    t1 = mktime(&tm1);
-    tBase = mktime(&tmBase);
-
-    return t1 - tBase;
 }
 
 void DashMpdParser::ParsePeriod(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement)
@@ -590,7 +550,7 @@ void DashMpdParser::ParseSegmentTemplate(std::shared_ptr<XmlParser> xmlParser, s
         return;
     }
 
-    DashSegTmpltInfo *segTmplt = new DashSegTmpltInfo;
+    DashSegTmpltInfo *segTmplt =  new(std::nothrow) DashSegTmpltInfo;
     if (segTmplt != nullptr) {
         IDashMpdNode *segTmpltNode = IDashMpdNode::CreateNode(MPD_LABEL_SEGMENT_TEMPLATE);
         if (segTmpltNode == nullptr) {
@@ -1004,7 +964,7 @@ void DashMpdParser::GetMpdAttr(IDashMpdNode *mpdNode)
 
     std::string startTime;
     mpdNode->GetAttr("availabilityStartTime", startTime);
-    dashMpdInfo_.availabilityStartTime_ = (int64_t)String2Time(startTime) * S_2_MS;
+    dashMpdInfo_.availabilityStartTime_ = (int64_t)String2Time(startTime)() * S_2_MS;
 }
 
 void DashMpdParser::GetMpdElement(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement)

@@ -121,7 +121,6 @@ private:
     void InheritMultSegBase(DashMultSegBaseInfo *lowerMultSegBaseInfo,
                             const DashMultSegBaseInfo *higherMultSegBaseInfo);
     void InheritSegBase(DashSegBaseInfo *lowerSegBaseInfo, const DashSegBaseInfo *higherSegBaseInfo) const;
-    time_t String2Time(const std::string szTime);
     void ParseElement(std::shared_ptr<XmlParser> &xmlParser, DashSegTmpltInfo *segTmplt,
                       std::shared_ptr<XmlElement> &childElement);
     void ParsePeriodElement(std::shared_ptr<XmlParser> &xmlParser,

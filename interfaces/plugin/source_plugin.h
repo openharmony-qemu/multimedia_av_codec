@@ -18,6 +18,7 @@
 
 #include <map>
 #include <string>
+#include <utility>
 
 #include "common/media_source.h"
 #include "plugin/plugin_base.h"
@@ -49,6 +50,7 @@ public:
     int32_t streamId;
     StreamType type;
     uint32_t bitRate;
+    uint64_t sniffSize;
 
     int32_t videoHeight = 0;
     int32_t videoWidth = 0;
@@ -204,9 +206,19 @@ public:
         return Status::OK;
     }
 
+    virtual Status MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode, int32_t streamId)
+    {
+        return Status::OK;
+    }
+
     virtual Status GetDuration(int64_t& duration)
     {
         duration = Plugins::HST_TIME_NONE;
+        return Status::OK;
+    }
+
+    virtual Status GetStartInfo(std::pair<int64_t, bool>& startInfo)
+    {
         return Status::OK;
     }
 

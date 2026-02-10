@@ -18,6 +18,7 @@
 
 #include <vector>
 #include <map>
+#include <utility>
 #include "download/downloader.h"
 #include "plugin/plugin_base.h"
 #include "plugin/source_plugin.h"
@@ -39,7 +40,7 @@ struct PlayInfo {
 };
 struct PlayListChangeCallback {
     virtual ~PlayListChangeCallback() = default;
-    virtual void OnMasterReady(bool needAudioManager, bool needSubTitleManager) = 0;
+    virtual void OnMasterReady(bool needAudioManager, bool needSubtitlesManager) = 0;
     virtual void OnPlayListChanged(const std::vector<PlayInfo>& playList) = 0;
     virtual void OnSourceKeyChange(const uint8_t* key, size_t keyLen, const uint8_t* iv) = 0;
     virtual void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) = 0;
@@ -64,6 +65,7 @@ public:
     virtual void ParseManifest(const std::string& location, bool isPreParse = false) = 0;
     virtual void SetPlayListCallback(std::weak_ptr<PlayListChangeCallback> callback) = 0;
     virtual int64_t GetDuration() const = 0;
+    virtual std::pair<int64_t, bool> GetStartInfo() const = 0;
     virtual Seekable GetSeekable() const = 0;
     virtual void SelectBitRate(uint32_t bitRate) = 0;
     virtual std::vector<uint32_t> GetBitRates() = 0;
@@ -71,7 +73,7 @@ public:
     virtual int GetVideoHeight() = 0;
     virtual int GetVideoWidth() = 0;
     virtual bool IsBitrateSame(uint32_t bitRate) = 0;
-    virtual bool IsAudioSame(uint32_t streamId) = 0;
+    virtual bool IsMediaSame(uint32_t streamId, HlsSegmentType mediaType) = 0;
     virtual uint32_t GetCurBitrate() = 0;
     virtual bool IsLive() const = 0;
     virtual void SetMimeType(const std::string& mimeType) = 0;
@@ -85,10 +87,11 @@ public:
     virtual bool IsPureByteRange() = 0;
     virtual void ReOpen(void) = 0;
     virtual std::shared_ptr<StreamInfo> GetStreamInfoById(int32_t streamId) = 0;
-    virtual int32_t GetDefaultAudioStreamId() = 0;
-    virtual void SelectAudio(int32_t streamId) = 0;
-    virtual void SetDefaultAudio() = 0;
-    virtual void UpdateAudio() = 0;
+    virtual int32_t GetDefaultMediaStreamId(HlsSegmentType mediaType) = 0;
+    virtual void SelectMedia(int32_t streamId, HlsSegmentType mediaType) = 0;
+    virtual void SetDefaultMedia(HlsSegmentType mediaType) = 0;
+    virtual void UpdateMedia(HlsSegmentType mediaType) = 0;
+    virtual uint32_t GetCurStreamId() = 0;
 
     void SetInterruptState(bool isInterruptNeeded);
     void Resume();

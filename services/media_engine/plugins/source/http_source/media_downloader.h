@@ -17,6 +17,7 @@
 #define HISTREAMER_MEDIA_DOWNLOADER_H
 
 #include <string>
+#include <utility>
 #include "plugin/plugin_base.h"
 #include "meta/media_types.h"
 #include "plugin/source_plugin.h"
@@ -82,6 +83,11 @@ public:
     virtual bool SeekToTime(int64_t seekTime, SeekMode mode)
     {
         MEDIA_LOG_E("SeekToTime is unimplemented.");
+        return false;
+    }
+    virtual bool MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode, int32_t streamId)
+    {
+        MEDIA_LOG_E("MediaSeekTimeByStreamId is unimplemented.");
         return false;
     }
     virtual std::vector<uint32_t> GetBitRates()
@@ -155,6 +161,11 @@ public:
     {
         MEDIA_LOG_W("StopBufferring is unimplemented.");
         return Status::OK;
+    }
+
+    virtual std::pair<int64_t, bool> GetStartInfo() const
+    {
+        return std::make_pair(0, false);
     }
 
     virtual void WaitForBufferingEnd() {}

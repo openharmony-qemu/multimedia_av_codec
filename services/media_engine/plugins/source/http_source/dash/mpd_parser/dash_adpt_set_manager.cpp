@@ -258,6 +258,9 @@ bool DashAdptSetManager::IsOnDemand()
         }
     } else {
         for (auto representation : adptSetInfo_->representationList_) {
+            if (representation == nullptr) {
+                continue;
+            }
             if (representation->representationSegList_ != nullptr) {
                 return false;
             }

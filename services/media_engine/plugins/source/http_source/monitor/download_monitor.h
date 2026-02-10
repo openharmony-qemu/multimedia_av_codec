@@ -53,11 +53,13 @@ public:
     void Resume() override;
     size_t GetContentLength() const override;
     int64_t GetDuration() const override;
+    std::pair<int64_t, bool> GetStartInfo() const override;
     Seekable GetSeekable() const override;
     void SetCallback(Callback *cb) override;
     void SetStatusCallback(StatusCallbackFunc cb) override;
     bool GetStartedStatus() override;
     bool SeekToTime(int64_t seekTime, SeekMode mode) override;
+    bool MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode, int32_t streamId) override;
     std::vector<uint32_t> GetBitRates() override;
     bool SelectBitRate(uint32_t bitRate) override;
     bool AutoSelectBitRate(uint32_t bitRate) override;

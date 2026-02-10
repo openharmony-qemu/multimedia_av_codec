@@ -32,6 +32,7 @@ constexpr int RETRY_DELTA_TIME_TO_REPORT_ERROR = 5 * 1000; // 5s
 constexpr int RETRY_TIME_TO_REPORT_ERROR = 10; // 10
 constexpr int HTTP_SERVER_ERROR_410 = 410; // 410 表示请求的资源已经从服务器上永久删除，不再可用
 constexpr int MAX_FILE_SIZE = 20 * 1024 * 1024; // 20M
+constexpr uint32_t PLAYLIST_MAX_SIZE = 100 * 1024 * 1024;
 
 static bool isNumber(const std::string& str)
 {
@@ -115,6 +116,8 @@ void PlayListDownloader::DoOpen(const std::string& url)
     auto weakDownloader = weak_from_this();
     auto realStatusCallback = [weakDownloader] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
+        FALSE_RETURN(request != nullptr);
+
         auto shareDownloader = weakDownloader.lock();
         FALSE_RETURN_MSG(shareDownloader != nullptr, "realStatusCb, playlist downloader already destructed.");
         // 目标资源永久删除，需要重头重新请求
@@ -166,6 +169,7 @@ void PlayListDownloader::DoOpenNative(const std::string& url)
 {
     std::string uri = url;
     FALSE_RETURN_MSG(ParseUriInfo(uri), "ParseUriInfo error.");
+    size_ = size_ > MAX_FILE_SIZE ? 0 : size_;
     char* buf = new(std::nothrow) char[size_ + 1];
     FALSE_RETURN_MSG(buf != nullptr, "ParseUriInfo error, no memory.");
 
@@ -257,7 +261,7 @@ bool PlayListDownloader::GetPlayListDownloadStatus()
 
 uint32_t PlayListDownloader::SaveData(uint8_t* data, uint32_t len, bool notBlock)
 {
-    if (data == nullptr || len == 0) {
+    if (data == nullptr || len == 0 || len > PLAYLIST_MAX_SIZE) {
         return 0;
     }
     playList_.reserve(playList_.size() + len);
@@ -288,6 +292,8 @@ void PlayListDownloader::UpdateDownloadFinished(const std::string& url, const st
 void PlayListDownloader::OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader>&,
                                           std::shared_ptr<DownloadRequest>& request)
 {
+    FALSE_RETURN(request != nullptr);
+
     // This should not be called normally
     MEDIA_LOG_D("Should not call this OnDownloadStatus, should call monitor.");
     if (request->GetClientError() != 0 || request->GetServerError() != 0) {

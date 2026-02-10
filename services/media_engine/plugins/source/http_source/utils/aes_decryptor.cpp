@@ -19,6 +19,7 @@
 #include "openssl/aes.h"
 #include "common/log.h"
 #include "securec.h"
+#include <openssl/crypto.h>
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_PLAYER, "HiStreamerAesDec" };
@@ -39,6 +40,7 @@ AesDecryptor::~AesDecryptor()
     NZERO_LOG(memset_s(iv_, BLOCK_LEN, 0, BLOCK_LEN));
     NZERO_LOG(memset_s(initIv_, BLOCK_LEN, 0, BLOCK_LEN));
     NZERO_LOG(memset_s(key_, BLOCK_LEN, 0, BLOCK_LEN));
+    OPENSSL_cleanse(&aesKey_, sizeof(aesKey_));
 }
 
 void AesDecryptor::Init()
