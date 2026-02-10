@@ -787,6 +787,7 @@ void Downloader::HandlePlayingFinish()
 
 void Downloader::HandleRetOK()
 {
+    FALSE_RETURN_MSG(currentRequest_ != nullptr, "currentRequest is nullptr");
     if (currentRequest_->retryTimes_ > 0) {
         currentRequest_->retryTimes_ = 0;
     }
@@ -795,11 +796,10 @@ void Downloader::HandleRetOK()
         PauseLoop(true);
         return;
     }
-
     int64_t remaining = 0;
     if (currentRequest_->endPos_ <= 0) {
-        remaining = static_cast<int64_t>(currentRequest_->headerInfo_.fileContentLen) -
-                    currentRequest_->startPos_;
+        int64_t fileContentLenTmp = static_cast<int64_t>(currentRequest_->headerInfo_.fileContentLen);
+        remaining = fileContentLenTmp - std::min(fileContentLenTmp, currentRequest_->startPos_);
     } else {
         remaining = currentRequest_->endPos_ - currentRequest_->startPos_ + 1;
     }

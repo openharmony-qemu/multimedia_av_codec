@@ -221,9 +221,7 @@ private:
     std::shared_ptr<DownloadRequest> GetDownloadRequest();
     bool CheckCanReadOneSeconds(uint64_t wantReadLength);
     bool IsAllDownloadFinish();
-    void SubtitlePlayListChanged(const std::vector<PlayInfo>& playList);
     void PlayListChanged(const std::vector<PlayInfo>& playList);
-    void HandleSeekOperation(const std::vector<PlayInfo>& playList);
 
 private:
     HlsSegmentType type_ = HlsSegmentType::SEG_VIDEO;

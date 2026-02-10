@@ -94,9 +94,9 @@ constexpr int32_t READ_ERROR_IO                 = EIO;
 constexpr int32_t READ_ERROR_NOMEM              = ENOMEM;
 constexpr float CACHE_LEVEL_1                   = 0.3;
 constexpr size_t SIZE_INDEX                     = 3;
+constexpr int32_t IOCTL_CLOUD                   = 2;
 
 constexpr unsigned int HMDFS_IOC = 0xf2;
-#define IOCTL_CLOUD 2
 #define HMDFS_IOC_HAS_CACHE _IOW(HMDFS_IOC, 6, struct HmdfsHasCache)
 #define HMDFS_IOC_GET_LOCATION _IOR(HMDFS_IOC, 7, __u32)
 #define HMDFS_IOC_CANCEL_READ _IO(HMDFS_IOC, 8)

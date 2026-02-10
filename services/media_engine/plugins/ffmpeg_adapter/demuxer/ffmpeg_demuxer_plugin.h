@@ -24,9 +24,9 @@
 #include <mutex>
 #include <shared_mutex>
 #include <list>
+#include <set>
 #include <functional>
 #include <unordered_map>
-#include <set>
 #include <chrono>
 #include "buffer/avbuffer.h"
 #include "plugin/demuxer_plugin.h"
@@ -479,7 +479,18 @@ private:
     std::atomic<ThreadState> threadState_ {ThreadState::NOT_STARTED};
     std::atomic<Status> readLoopStatus_ = {Status::OK};
     std::atomic<bool> isPauseReadPacket_ = false;
-    std::unordered_map<int, int> readModeMap_; // 0 mean sync read, 1 mean async read
+
+    enum class ReadMode : uint32_t {
+        NONE = 0,
+        SYNC = 1U << 0,
+        ASYNC = 1U << 1,
+    };
+
+    static constexpr uint32_t ReadModeToFlags(ReadMode mode)
+    {
+        return static_cast<uint32_t>(mode);
+    }
+    std::atomic<uint32_t> readModeFlags_ {0};
     std::mutex seekWaitMutex_;
     std::condition_variable seekWaitCv_;
     std::atomic<bool> threadReady_ {false};

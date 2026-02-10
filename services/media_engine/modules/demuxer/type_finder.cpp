@@ -91,6 +91,16 @@ void TypeFinder::Init(std::string uri, uint64_t mediaDataSize,
     }
 }
 
+uint64_t TypeFinder::GetSniffSize()
+{
+    return sniffSize_;
+}
+
+void TypeFinder::SetSniffSize(uint64_t sniffSize)
+{
+    sniffSize_ = sniffSize;
+}
+
 /**
  * FindMediaType for seekable source, is a sync interface.
  * @return plugin names for the found media type.

@@ -1193,6 +1193,20 @@ enum FileType : int32_t {
     FILE_TYPE_M4A = 206,
     FILE_TYPE_WAV = 207,
 };
+
+/**
+ * @brief Video codec scenarios
+ *
+ * @since 6.1
+ */
+enum VideoCodecScenario : int32_t {
+    /** video recording scenario */
+    SCENARIO_RECORDING = 0,
+    /** moving photo scenario */
+    SCENARIO_MOVING_PHOTO,
+    /** invalid scenario */
+    SCENARIO_INVALID
+};
 } // namespace MediaAVCodec
 } // namespace OHOS
 #endif // MEDIA_AVCODEC_INFO_H
