@@ -349,7 +349,7 @@ int32_t Av1Decoder::DecodeAv1FrameOnce()
         if (!isSendEos_) {
             Dav1dData dav1dDataBuf;
             ret = dav1d_data_wrap(&dav1dDataBuf, av1DecoderInputArgs_.pStream, av1DecoderInputArgs_.uiStreamLen,
-                                  Av1FreeCallback, nullptr);
+                                  AV1FreeCallback, nullptr);
             CHECK_AND_RETURN_RET_LOG(ret >= 0, ret, "feed av1 input stream failed!");
             dav1dDataBuf.m.timestamp = av1DecoderInputArgs_.uiTimeStamp;
             ret = dav1d_send_data(dav1dCtx_, &dav1dDataBuf);
@@ -533,9 +533,8 @@ void Av1Decoder::FlushAllFrames()
         Dav1dPicture pic = { 0 };
         Dav1dPicture *outputImg = &pic;
         if (dav1dCtx_ != nullptr) {
-            ret = dav1d_get_picture(dav1dCtx_, av1DecOutputImg_);
-            dav1d_picture_unref(av1DecOutputImg_);
-            av1DecOutputImg_ = nullptr;
+            ret = dav1d_get_picture(dav1dCtx_, outputImg);
+            dav1d_picture_unref(outputImg);
         } else {
             AVCODEC_LOGE("load libdav1d.z.so failed, get generated picture form av1 decoder failed.");
             ret = -1;
@@ -609,7 +608,7 @@ void AV1DecLog(void *cookie, const char *format, va_list ap)
     AVCODEC_LOGI("%{public}s", msg.c_str());
 }
 
-void Av1FreeCallback(const uint8_t *data, void *userData)
+void AV1FreeCallback(const uint8_t *data, void *userData)
 {
     (void)data;
     (void)userData;

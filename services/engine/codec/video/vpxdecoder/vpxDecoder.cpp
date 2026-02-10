@@ -24,6 +24,7 @@
 #include "v1_0/cm_color_space.h"
 #include "v1_0/hdr_static_metadata.h"
 #include "v1_0/buffer_handle_meta_key_type.h"
+#include "libavutil/mastering_display_metadata.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -123,19 +124,6 @@ void VpxDecoder::InitParams()
     vpxDecoderInputArgs_.uiTimeStamp = 0;
 }
 
-void VpxDecoder::ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal,
-    int32_t maxVal)
-{
-    int32_t val32 = 0;
-    if (format.GetIntValue(formatKey, val32) && val32 >= minVal && val32 <= maxVal) {
-        format_.PutIntValue(formatKey, val32);
-    } else {
-        AVCODEC_LOGW("Set parameter failed: %{public}s, which minimum threshold=%{public}d, "
-                     "maximum threshold=%{public}d",
-                     formatKey.data(), minVal, maxVal);
-    }
-}
-
 void VpxDecoder::ConfigureHdrMetadata(const Format &format)
 {
     if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, colorSpaceInfo_.fullRangeFlag)) {
@@ -186,6 +174,19 @@ void VpxDecoder::ConfigureHdrMetadata(const Format &format)
     hdrMetadata_.maxDisplayMasteringLuminance = safeDiv(metadata->max_luminance.num, metadata->max_luminance.den);
     hdrMetadata_.minDisplayMasteringLuminance = safeDiv(metadata->min_luminance.num, metadata->min_luminance.den);
     colorSpaceInfo_.colorDescriptionPresentFlag = 1;
+}
+
+void VpxDecoder::ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal,
+    int32_t maxVal)
+{
+    int32_t val32 = 0;
+    if (format.GetIntValue(formatKey, val32) && val32 >= minVal && val32 <= maxVal) {
+        format_.PutIntValue(formatKey, val32);
+    } else {
+        AVCODEC_LOGW("Set parameter failed: %{public}s, which minimum threshold=%{public}d, "
+                     "maximum threshold=%{public}d",
+                     formatKey.data(), minVal, maxVal);
+    }
 }
 
 bool VpxDecoder::CheckVideoPixelFormat(VideoPixelFormat vpf)
@@ -241,67 +242,6 @@ int32_t VpxDecoder::Initialize()
     AVCODEC_LOGI("Init codec successful,  state: Uninitialized -> Initialized");
     return AVCS_ERR_OK;
 }
-
-
-int VpxDecoder::VpxCreateDecoderFunc(void **vpxDecoder, const char *name)
-{
-    const VpxInterface *decoder = nullptr;
-    vpx_codec_ctx_t *ctx = (vpx_codec_ctx_t *)malloc(sizeof(*ctx));
-    if (!ctx) {
-        AVCODEC_LOGE("Error: Failed to allocate memory for vpx_codec_ctx_t");
-        return -1;
-    }
-
-    decoder = get_vpx_decoder_by_name(name);
-    if (!decoder) {
-        free(ctx);
-        AVCODEC_LOGE("Error: Unknown input codec!");
-        return -1;
-    }
-    if (vpx_codec_dec_init(ctx, decoder->codec_interface(), nullptr, VPX_CODEC_USE_FRAME_THREADING)) {
-        free(ctx);
-        AVCODEC_LOGE("Error: Failed to initialize decoder.");
-        return -1;
-    }
-    *vpxDecoder = ctx;
-    return 0;
-}
-
-int VpxDecoder::VpxDestroyDecoderFunc(void **vpxDecoder)
-{
-    if (vpxDecoder == nullptr || *vpxDecoder == nullptr) {
-        return -1;
-    }
-    vpx_codec_ctx_t *codec = (vpx_codec_ctx_t *)(*vpxDecoder);
-    vpx_codec_err_t res = vpx_codec_destroy(codec);
-    free(codec);
-    *vpxDecoder = nullptr;
-    if (res != VPX_CODEC_OK) {
-        AVCODEC_LOGE("Error: Failed to destroy decoder: %s\n", vpx_codec_err_to_string(res));
-        return -1;
-    }
-    return 0;
-}
-
-int VpxDecoder::VpxDecodeFrameFunc(void *vpxDecoder, const unsigned char *frame, unsigned int frameSize)
-{
-    vpx_codec_ctx_t *codec = (vpx_codec_ctx_t *)vpxDecoder;
-    int ret = vpx_codec_decode(codec, frame, (unsigned int)frameSize, nullptr, 0);
-    if (ret) {
-        AVCODEC_LOGE("Error: Failed to decode frame.");
-        return ret;
-    }
-    return 0;
-}
-
-int VpxDecoder::VpxGetFrameFunc(void *vpxDecoder, vpx_image_t **outputImg)
-{
-    vpx_codec_ctx_t *codec = (vpx_codec_ctx_t *)vpxDecoder;
-    vpx_codec_iter_t iter = nullptr;
-    *outputImg = vpx_codec_get_frame(codec, &iter);
-    return 0;
-}
-
 
 int32_t VpxDecoder::CreateDecoder()
 {
@@ -651,6 +591,66 @@ int32_t VpxDecoder::ConvertHdrStaticMetadata(const HdrMetadata &hdrMetadata, std
     hdrStaticMetadata->smpte2086.minLuminance = static_cast<float>(hdrMetadata.minDisplayMasteringLuminance);
     return AVCS_ERR_OK;
 }
+
+int VpxDecoder::VpxCreateDecoderFunc(void **vpxDecoder, const char *name)
+{
+    const VpxInterface *decoder = NULL;
+    vpx_codec_ctx_t *ctx = (vpx_codec_ctx_t *)malloc(sizeof(*ctx));
+    if (!ctx) {
+        AVCODEC_LOGE("Error: Failed to allocate memory for vpx_codec_ctx_t");
+        return -1;
+    }
+
+    decoder = get_vpx_decoder_by_name(name);
+    if (!decoder) {
+        free(ctx);
+        AVCODEC_LOGE("Error: Unknown input codec!");
+        return -1;
+    }
+    if (vpx_codec_dec_init(ctx, decoder->codec_interface(), NULL, VPX_CODEC_USE_FRAME_THREADING)) {
+        free(ctx);
+        AVCODEC_LOGE("Error: Failed to initialize decoder.");
+        return -1;
+    }
+    *vpxDecoder = ctx;
+    return 0;
+}
+
+int VpxDecoder::VpxDestroyDecoderFunc(void **vpxDecoder)
+{
+    if (vpxDecoder == NULL || *vpxDecoder == NULL) {
+        return -1;
+    }
+    vpx_codec_ctx_t *codec = (vpx_codec_ctx_t *)(*vpxDecoder);
+    vpx_codec_err_t res = vpx_codec_destroy(codec);
+    free(codec);
+    *vpxDecoder = NULL;
+    if (res != VPX_CODEC_OK) {
+        AVCODEC_LOGE("Error: Failed to destroy decoder: %s\n", vpx_codec_err_to_string(res));
+        return -1;
+    }
+    return 0;
+}
+
+int VpxDecoder::VpxDecodeFrameFunc(void *vpxDecoder, const unsigned char *frame, unsigned int frameSize)
+{
+    vpx_codec_ctx_t *codec = (vpx_codec_ctx_t *)vpxDecoder;
+    int ret = vpx_codec_decode(codec, frame, (unsigned int)frameSize, NULL, 0);
+    if (ret) {
+        AVCODEC_LOGE("Error: Failed to decode frame.");
+        return ret;
+    }
+    return 0;
+}
+
+int VpxDecoder::VpxGetFrameFunc(void *vpxDecoder, vpx_image_t **outputImg)
+{
+    vpx_codec_ctx_t *codec = (vpx_codec_ctx_t *)vpxDecoder;
+    vpx_codec_iter_t iter = NULL;
+    *outputImg = vpx_codec_get_frame(codec, &iter);
+    return 0;
+}
+
 } // namespace Codec
 } // namespace MediaAVCodec
 } // namespace OHOS
