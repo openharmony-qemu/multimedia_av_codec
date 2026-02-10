@@ -76,7 +76,7 @@ VideoSink::VideoSink()
 
 VideoSink::~VideoSink()
 {
-    MEDIA_LOG_I("dtor");
+    MEDIA_LOG_I("VideoSink dtor called...");
     this->eventReceiver_ = nullptr;
 }
 
@@ -141,7 +141,7 @@ int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
         ReportPts(buffer->pts_);
         lastBufferRelativePts_ = buffer->pts_ - firstPts_;
     } else {
-        MEDIA_LOG_I("Video sink EOS");
+        MEDIA_LOG_I("Video receives EOS.");
         if (syncCenter) {
             syncCenter->ReportEos(this);
         }

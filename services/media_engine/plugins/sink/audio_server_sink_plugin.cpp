@@ -181,7 +181,7 @@ AudioServerSinkPlugin::AudioFirstFrameCallbackImpl::AudioFirstFrameCallbackImpl(
 void AudioServerSinkPlugin::AudioRendererCallbackImpl::OnInterrupt(
     const OHOS::AudioStandard::InterruptEvent &interruptEvent)
 {
-    MEDIA_LOG_D_SHORT("OnInterrupt forceType is " PUBLIC_LOG_U32, static_cast<uint32_t>(interruptEvent.forceType));
+    MEDIA_LOG_D_T("OnInterrupt forceType is " PUBLIC_LOG_U32, static_cast<uint32_t>(interruptEvent.forceType));
     FALSE_RETURN_MSG(isNeedResponseCallback_, "AudioRendererCallbackImpl is not need response callback");
     if (interruptEvent.forceType == OHOS::AudioStandard::INTERRUPT_FORCE) {
         switch (interruptEvent.hintType) {
@@ -1417,7 +1417,7 @@ bool AudioServerSinkPlugin::GetAudioPosition(timespec &time, uint32_t &framePosi
 
 void AudioServerSinkPlugin::SetInterruptState(bool isInterruptNeeded)
 {
-    MEDIA_LOG_I("onInterrupted %{public}d", isInterruptNeeded);
+    MEDIA_LOG_D("onInterrupted %{public}d", isInterruptNeeded);
     {
         std::unique_lock<std::mutex> lock(mutex_);
         isInterruptNeeded_ = isInterruptNeeded;

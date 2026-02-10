@@ -125,7 +125,7 @@ VideoDecoderAdapter::VideoDecoderAdapter()
 
 VideoDecoderAdapter::~VideoDecoderAdapter()
 {
-    MEDIA_LOG_I("~VideoDecoderAdapter()");
+    MEDIA_LOG_I("~VideoDecoderAdapter. ");
     FALSE_RETURN_MSG(mediaCodec_ != nullptr, "mediaCodec_ is nullptr");
     mediaCodec_->Release();
     std::unique_lock<std::mutex> lock(dtsQueMutex_);
@@ -403,7 +403,7 @@ void VideoDecoderAdapter::OnInputBufferAvailable(uint32_t index, std::shared_ptr
 {
     AVCodecTrace trace("VideoDecoderAdapter::OnInputBufferAvailable");
     FALSE_RETURN_MSG(buffer != nullptr && buffer->meta_ != nullptr, "meta_ is nullptr.");
-    MEDIA_LOG_I("OnInputBufferAvailable enter. index: %{public}u, bufferid: %{public}" PRIu64", pts: %{public}" PRIu64
+    MEDIA_LOG_D("OnInputBufferAvailable enter. index: %{public}u, bufferid: %{public}" PRIu64", pts: %{public}" PRIu64
         ", flag: %{public}u", index, buffer->GetUniqueId(), buffer->pts_, buffer->flag_);
     buffer->meta_->SetData(Tag::REGULAR_TRACK_ID, static_cast<int32_t>(index));
     if (inputBufferQueueConsumer_ == nullptr) {

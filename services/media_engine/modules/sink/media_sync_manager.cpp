@@ -361,7 +361,7 @@ int64_t MediaSyncManager::GetMediaTimeNow()
     }
     currentMediaTime = BoundMediaProgress(currentMediaTime);
     lastReportMediaTime_ = currentMediaTime;
-    MEDIA_LOG_W("GetMediaTimeNow currentMediaTime: %{public}" PRId64, currentMediaTime);
+    MEDIA_LOG_D("GetMediaTimeNow currentMediaTime: %{public}" PRId64, currentMediaTime);
     return currentMediaTime;
 }
 
