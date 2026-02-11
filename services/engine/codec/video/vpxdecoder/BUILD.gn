@@ -42,7 +42,7 @@ ohos_shared_library("vpx_decoder") {
   sources = [
     "$av_codec_root_dir/services/engine/codec/video/decoderbase/video_decoder.cpp",
     "$av_codec_root_dir/services/engine/codec/video/decoderbase/render_surface.cpp",
-    "$av_codec_root_dir/services/engine/codec/video/vpxdecoder/vpx_decoder.cpp",
+    "$av_codec_root_dir/services/engine/codec/video/vpxdecoder/vpxDecoder.cpp",
     "$av_codec_root_dir/services/engine/codec/video/vpxdecoder/vpx_decoder_api.cpp",
   ]
 
@@ -67,6 +67,7 @@ ohos_shared_library("vpx_decoder") {
     "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
+    "libvpx:vpxdec_ohos",
     "media_foundation:media_foundation",
   ]
 

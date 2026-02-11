@@ -46,7 +46,7 @@ constexpr char DUMP_PATH[] = "/data/misc/VideoDecoderdump";
 #endif
 } // namespace
 using namespace OHOS::Media;
-VideoDecoder::VideoDecoder(const std::string &name, const std::string &path) : codecName_(name), libPath_(path) {}
+VideoDecoder::VideoDecoder(const std::string &name) : codecName_(name) {}
 
 int32_t VideoDecoder::Init(Meta &callerInfo)
 {

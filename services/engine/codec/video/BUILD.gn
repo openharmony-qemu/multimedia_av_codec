@@ -66,14 +66,17 @@ ohos_static_library("av_codec_video_loader") {
 
   if (av_codec_support_av1_decoder) {
     sources += [ "$av_codec_root_dir/services/engine/codec/video/av1_decoder_loader.cpp" ]
+    external_deps += [ "dav1d:dav1d_ohos" ]
   }
 
   if (av_codec_support_vp8_decoder) {
     sources += [ "$av_codec_root_dir/services/engine/codec/video/vp8_decoder_loader.cpp", ]
+    external_deps += ["libvpx:vpxdec_ohos"]
   }
 
   if (av_codec_support_vp9_decoder) {
     sources += [ "$av_codec_root_dir/services/engine/codec/video/vp9_decoder_loader.cpp", ]
+    external_deps += ["libvpx:vpxdec_ohos"]
   }
 
   subsystem_name = "multimedia"
