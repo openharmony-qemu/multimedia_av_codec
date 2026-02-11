@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Copyright (C) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,6 +20,7 @@
 #include "gmock/gmock.h"
 #include "mock/xml_element.h"
 #include "dash_mpd_parser.h"
+#include "utils/time_utils.h"
 
 namespace OHOS {
 namespace Media {

@@ -647,7 +647,7 @@ bool M3U8::SetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
 {
     std::string::size_type n;
     std::string psshString;
-    uint8_t pssh[2048]; // 2048: pssh len
+    std::vector<uint8_t> pssh; // 2048: pssh len
     uint32_t psshSize = 2048; // 2048: pssh len
     if (keyUri_ == nullptr) {
         return false;
@@ -660,19 +660,19 @@ bool M3U8::SetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
         return false;
     }
     bool ret = Base64Utils::Base64Decode(reinterpret_cast<const uint8_t *>(psshString.c_str()),
-        static_cast<uint32_t>(psshString.length()), pssh, &psshSize);
+        static_cast<uint32_t>(psshString.length()), pssh.data(), &psshSize);
     if (ret) {
         uint32_t uuidSize = 16; // 16: uuid len
         if (psshSize >= DRM_UUID_OFFSET + uuidSize) {
             uint8_t uuid[16]; // 16: uuid len
-            NZERO_RETURN_V(memcpy_s(uuid, sizeof(uuid), pssh + DRM_UUID_OFFSET, uuidSize), false);
+            NZERO_RETURN_V(memcpy_s(uuid, sizeof(uuid), pssh.data() + DRM_UUID_OFFSET, uuidSize), false);
             std::stringstream ssConverter;
             std::string uuidString;
             for (uint32_t i = 0; i < uuidSize; i++) {
                 ssConverter << std::hex << std::setfill('0') << std::setw(2) << static_cast<int32_t>(uuid[i]); // 2:w
                 uuidString = ssConverter.str();
             }
-            drmInfo.insert({ uuidString, std::vector<uint8_t>(pssh, pssh + psshSize) });
+            drmInfo.insert({ uuidString, std::vector<uint8_t>(pssh.data(), pssh.data() + psshSize) });
             return true;
         }
     }

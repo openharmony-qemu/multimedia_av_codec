@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
+#include "muxer_filter.h"
 #include <sys/timeb.h>
 #include <thread>
 #include <unordered_map>
-#include "muxer_filter.h"
 #include "common/log.h"
 #include "common/media_core.h"
 #include "filter/filter_factory.h"
@@ -96,9 +96,8 @@ MuxerFilter::~MuxerFilter()
 
 Status MuxerFilter::SetOutputParameter(int32_t appUid, int32_t appPid, int32_t fd, int32_t format)
 {
-    MEDIA_LOG_I("SetOutputParameter, appUid:" PUBLIC_LOG_D32 ", appPid:" PUBLIC_LOG_D32 ", format:"
-    PUBLIC_LOG_D32, static_cast<int32_t>(appUid), static_cast<int32_t>(appPid),
-    static_cast<int32_t>(format));
+    MEDIA_LOG_I("SetOutputParameter, appUid:" PUBLIC_LOG_D32 ", appPid:" PUBLIC_LOG_D32 ", format:" PUBLIC_LOG_D32,
+        static_cast<int32_t>(appUid), static_cast<int32_t>(appPid), static_cast<int32_t>(format));
     mediaMuxer_ = std::make_shared<MediaMuxer>(appUid, appPid);
     Status ret = mediaMuxer_->Init(fd, (Plugins::OutputFormat)format);
     outputFormat_ = (Plugins::OutputFormat)format;
