@@ -70,7 +70,7 @@ public:
     ~FSurfaceMemory();
     int32_t AllocSurfaceBuffer(int32_t width, int32_t height);
     void ReleaseSurfaceBuffer();
-    sptr<SurfaceBuffer> GetSurfaceBuffer();
+    sptr<SurfaceBuffer> GetSurfaceBuffer(bool isReturnBuf = false);
     void SetSurfaceBuffer(sptr<SurfaceBuffer> surfaceBuffer, Owner toChangeOwner, sptr<SyncFence> fence = nullptr);
     int32_t GetSurfaceBufferStride();
     sptr<SyncFence> GetFence();
