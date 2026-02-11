@@ -1,17 +1,17 @@
 /*
-* Copyright (c) 2023-2025 Huawei Device Co., Ltd.
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #include "audio_sink.h"
 #include "avcodec_trace.h"
@@ -61,7 +61,7 @@ int64_t GetAudioLatencyFixDelay()
 
     constexpr uint64_t defaultValue = 120 * HST_USECOND;
     static uint64_t fixDelay = OHOS::system::GetUintParameter("debug.media_service.audio_sync_fix_delay", defaultValue);
-    MEDIA_LOG_I("audio_sync_fix_delay, pid:%{public}d, fixdelay: " PUBLIC_LOG_U64, getprocpid(), fixDelay);
+    MEDIA_LOG_I("audio_sync_fix_delay, pid:%{public}d , fixdelay: %{public}llu", getprocpid(), fixDelay);
     return static_cast<int64_t>(fixDelay);
 }
 
@@ -92,7 +92,7 @@ AudioSink::AudioSink(bool isRenderCallbackMode, bool isProcessInputMerged)
 
 AudioSink::~AudioSink()
 {
-    MEDIA_LOG_D("AudioSink dtor");
+    MEDIA_LOG_I("AudioSink dtor");
 }
 
 AudioSink::AudioSinkDataCallbackImpl::AudioSinkDataCallbackImpl(std::shared_ptr<AudioSink> sink): audioSink_(sink) {}
@@ -423,7 +423,6 @@ Status AudioSink::Flush()
     MEDIA_LOG_D("do audioSink flush");
     underrunDetector_.Reset();
     lagDetector_.Reset();
-    
     {
         AutoLock lock(eosMutex_);
         eosInterruptType_ = EosInterruptState::NONE;
@@ -501,7 +500,7 @@ int32_t AudioSink::SetVolumeWithRamp(float targetVolume, int32_t duration)
 
 Status AudioSink::SetIsTransitent(bool isTransitent)
 {
-    MEDIA_LOG_I("SetIsTransitent");
+    MEDIA_LOG_I("AudioSink::SetIsTransitent entered.");
     isTransitent_ = isTransitent;
     return Status::OK;
 }
@@ -1470,7 +1469,7 @@ Status AudioSink::SetSpeed(float speed)
 
 Status AudioSink::SetAudioEffectMode(int32_t effectMode)
 {
-    MEDIA_LOG_I("SetAudioEffectMode");
+    MEDIA_LOG_I("AudioSink::SetAudioEffectMode entered.");
     if (plugin_ == nullptr) {
         return Status::ERROR_NULL_POINTER;
     }
@@ -1480,7 +1479,7 @@ Status AudioSink::SetAudioEffectMode(int32_t effectMode)
 
 Status AudioSink::GetAudioEffectMode(int32_t &effectMode)
 {
-    MEDIA_LOG_I("GetAudioEffectMode");
+    MEDIA_LOG_I("AudioSink::GetAudioEffectMode entered.");
     if (plugin_ == nullptr) {
         return Status::ERROR_NULL_POINTER;
     }
@@ -1573,7 +1572,7 @@ Status AudioSink::ChangeTrackForFormatChange()
 
 Status AudioSink::ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver)
 {
-    MEDIA_LOG_I("GetAudioEffectMode ChangeTrack. ");
+    MEDIA_LOG_I("AudioSink::GetAudioEffectMode ChangeTrack. ");
     std::lock_guard<std::mutex> lock(pluginMutex_);
     if (plugin_) {
         plugin_->Stop();
@@ -1656,18 +1655,18 @@ Status AudioSink::SetMuted(bool isMuted)
     return plugin_->SetMuted(isMuted);
 }
 
-int32_t AudioSink::SetMaxAmplitudeCbStatus(bool status)
-{
-    calMaxAmplitudeCbStatus_ = status;
-    MEDIA_LOG_I("audio SetMaxAmplitudeCbStatus  = " PUBLIC_LOG_D32, calMaxAmplitudeCbStatus_);
-    return 0;
-}
-
 Status AudioSink::SetSeekTime(int64_t seekTime)
 {
     MEDIA_LOG_I("AudioSink SetSeekTime pts = " PUBLIC_LOG_D64, seekTime);
     seekTimeUs_ = seekTime;
     return Status::OK;
+}
+
+int32_t AudioSink::SetMaxAmplitudeCbStatus(bool status)
+{
+    calMaxAmplitudeCbStatus_ = status;
+    MEDIA_LOG_I("audio SetMaxAmplitudeCbStatus  = " PUBLIC_LOG_D32, calMaxAmplitudeCbStatus_);
+    return 0;
 }
 
 void AudioSink::OnInterrupted(bool isInterruptNeeded)

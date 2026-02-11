@@ -17,9 +17,11 @@
 #include <fstream>
 #include <iostream>
 #include <regex>
+#include <limits>
 #include "playlist_downloader.h"
 #include "network/network_typs.h"
 #include "osal/filesystem/file_system.h"
+#include "utils/string_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -200,16 +202,20 @@ bool PlayListDownloader::ParseUriInfo(const std::string& uri)
         false, "Invalid fd uri format");
     FALSE_RETURN_V_MSG_E(fdUriMatch.size() >= FDPOS && isNumber(fdUriMatch[1].str()),
         false, "Invalid fd uri format");
-    fd_ = std::stoi(fdUriMatch[1].str()); // 1: sub match fd subscript
+    int32_t tempFd = 0;
+    fd_ = StringUtil::SafeStoInt32(fdUriMatch[1].str(), tempFd) ? tempFd : -1; // 1
     FALSE_RETURN_V_MSG_E(fd_ != -1 && FileSystem::IsRegularFile(fd_),
         false, "Invalid fd: " PUBLIC_LOG_D32, fd_);
     fileSize_ = GetFileSize(fd_);
     if (fdUriMatch.size() == 4) { // 4：4 sub match
-        offset_ = std::stoll(fdUriMatch[2].str()); // 2: sub match offset subscript
+        int64_t tempOffset = 0;
+        offset_ = StringUtil::SafeStoInt64(fdUriMatch[2].str(), tempOffset) ? tempOffset : 0; // 2
         if (static_cast<uint64_t>(offset_) > fileSize_) {
             offset_ = static_cast<int64_t>(fileSize_);
         }
-        size_ = static_cast<uint64_t>(std::stoll(fdUriMatch[3].str())); // 3: sub match size subscript
+        int64_t tempSize = 0;
+        auto ret = StringUtil::SafeStoInt64(fdUriMatch[3].str(), tempSize); // 3
+        size_ = (ret && tempSize >= 0) ? static_cast<uint64_t>(tempSize) : 0;
         uint64_t remainingSize = fileSize_ - static_cast<uint64_t>(offset_);
         if (size_ > remainingSize) {
             size_ = remainingSize;

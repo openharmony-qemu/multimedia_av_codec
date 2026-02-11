@@ -257,6 +257,7 @@ MediaDemuxer::~MediaDemuxer()
 std::shared_ptr<Plugins::DemuxerPlugin> MediaDemuxer::GetCurFFmpegPlugin()
 {
     int32_t tempTrackId = (IsValidTrackId(videoTrackId_) ? videoTrackId_ : audioTrackId_);
+    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, nullptr, "Plugin manager is nullptr");
     int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(tempTrackId);
     return demuxerPluginManager_->GetPluginByStreamID(streamID);
 }
@@ -1002,6 +1003,7 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
         sampleQueueController_->SetBufferingDuration(source->GetPlayStrategy());
     }
     isPrepared_.store(false);
+    FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_INVALID_PARAMETER, "Source is nullptr");
     source_->SetCallback(this);
     auto res = source_->SetSource(source);
     FALSE_RETURN_V_MSG_E(res == Status::OK, res, "Plugin set source failed");

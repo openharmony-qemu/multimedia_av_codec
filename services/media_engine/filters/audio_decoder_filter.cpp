@@ -173,6 +173,7 @@ AudioDecoderFilter::~AudioDecoderFilter()
             MEDIA_LOG_W_SHORT("AudioDecoderFilter has beed released.");
         } else {
             isReleased_.store(true);
+            FALSE_RETURN_MSG(decoder_ != nullptr, "decoder_ is nullptr");
             decoder_->Release();
         }
     }

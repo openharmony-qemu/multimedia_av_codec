@@ -336,6 +336,7 @@ Status DemuxerPluginManager::LoadCurrentAllPlugin(std::shared_ptr<BaseStreamDemu
         Status ret = LoadDemuxerPlugin(curVideoStreamID_, streamDemuxer);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "LoadDemuxerPlugin video plugin failed.");
     }
+
     if (curSubTitleStreamID_ != INVALID_STREAM_OR_TRACK_ID) {
         MEDIA_LOG_I("LoadCurrentAllPlugin subtitle plugin");
         Status ret = LoadDemuxerPlugin(curSubTitleStreamID_, streamDemuxer);
@@ -388,7 +389,7 @@ Status DemuxerPluginManager::AddTrackMapInfo(int32_t streamID, int32_t trackInde
             return Status::OK;
         }
     }
-    int32_t index = static_cast<int32_t>(trackInfoMap_.size());
+    size_t index = trackInfoMap_.size();
     trackInfoMap_[index].streamID = streamID;
     trackInfoMap_[index].innerTrackIndex = trackIndex;
     return Status::OK;
@@ -409,7 +410,7 @@ void DemuxerPluginManager::UpdateTempTrackMapInfo(int32_t oldTrackId, int32_t ne
         temp2TrackInfoMap_[oldTrackId].innerTrackIndex = trackInfoMap_[newTrackId].innerTrackIndex;
     } else {
         MEDIA_LOG_I("UpdateTempTrackMapInfo oldTrackId =  "  PUBLIC_LOG_D32 " newTrackId = " PUBLIC_LOG_D32
-            " innerTrackIndex = " PUBLIC_LOG_D32, oldTrackId, newTrackId, newInnerTrackIndex);
+            "innerTrackIndex = " PUBLIC_LOG_D32, oldTrackId, newTrackId, newInnerTrackIndex);
         temp2TrackInfoMap_[oldTrackId].innerTrackIndex = newInnerTrackIndex;
     }
 }

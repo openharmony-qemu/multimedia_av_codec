@@ -60,6 +60,7 @@ ohos_shared_library("media_plugin_FileFdSource") {
   sources = [ 
     "file_fd_source_plugin.cpp",
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/http_media_utils.cpp",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/string_utils.cpp",
   ]
   deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
   external_deps = [
