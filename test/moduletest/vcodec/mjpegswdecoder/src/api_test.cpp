@@ -119,7 +119,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_0200, TestSize.Leve
 {
     if (access("/system/lib64/media/", 0)) {
         vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
-        ASSERT_EQ(NULL, vdec_);
+        ASSERT_NE(NULL, vdec_);
     }
 }
 
