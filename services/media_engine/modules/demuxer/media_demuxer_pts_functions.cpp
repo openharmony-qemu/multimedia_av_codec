@@ -39,6 +39,7 @@
 #include "media_core.h"
 #include "osal/utils/dump_buffer.h"
 #include "demuxer_plugin_manager.h"
+#include "avcodec_log.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "MediaDemuxer" };
@@ -49,6 +50,8 @@ namespace Media {
 constexpr int64_t MAX_PTS_DIFFER_THRESHOLD_US = 2000000; // The maximum difference between Segment 2s.
 constexpr int64_t INVALID_PTS_DATA = -1; // The invalid pts data -1.
 constexpr int64_t PTS_MICRO_ADJUSTMENT_US = 1000;
+constexpr int64_t LOG_INTERVAL_MS_COUNT = 2000; // 2s
+constexpr uint32_t LOG_MAX_PRINTS_COUNT = 10; // 10 times
 
 void MediaDemuxer::HandleAutoMaintainPts(int32_t trackId, std::shared_ptr<AVBuffer> sample)
 {
@@ -97,7 +100,8 @@ void MediaDemuxer::HandleAutoMaintainPts(int32_t trackId, std::shared_ptr<AVBuff
     }
     baseInfo->lastPtsModifyedMax = std::max(sample->pts_, baseInfo->lastPtsModifyedMax);
 
-    MEDIA_LOG_I("Success, track:" PUBLIC_LOG_D32 ", orgPts:"
+    AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGI, LOG_INTERVAL_MS_COUNT, LOG_MAX_PRINTS_COUNT,
+        "Success, track:" PUBLIC_LOG_D32 ", orgPts:"
         PUBLIC_LOG_D64 ", pts:" PUBLIC_LOG_D64 ", basePts:" PUBLIC_LOG_D64, trackId,
         curPacketPts, sample->pts_, baseInfo->basePts);
 }
