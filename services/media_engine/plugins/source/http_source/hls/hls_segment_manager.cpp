@@ -20,7 +20,6 @@
 #include <algorithm>
 #include <utility>
 #include <cstdint>
-
 #include "hls_segment_manager.h"
 #include "media_downloader.h"
 #include "hls_playlist_downloader.h"
