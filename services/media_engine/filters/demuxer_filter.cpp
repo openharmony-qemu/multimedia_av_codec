@@ -16,7 +16,6 @@
 #define MEDIA_PIPELINE
 #define HST_LOG_TAG "DemuxerFilter"
 
-#include <utility>
 #include "avcodec_common.h"
 #include "avcodec_trace.h"
 #include "filter/filter_factory.h"
@@ -984,12 +983,6 @@ bool DemuxerFilter::GetDuration(int64_t& durationMs)
 {
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
     return demuxer_->GetDuration(durationMs);
-}
-
-bool DemuxerFilter::GetStartInfo(std::pair<int64_t, bool>& startInfo)
-{
-    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
-    return demuxer_->GetStartInfo(startInfo);
 }
 
 Status DemuxerFilter::OptimizeDecodeSlow(bool isDecodeOptimizationEnabled)
