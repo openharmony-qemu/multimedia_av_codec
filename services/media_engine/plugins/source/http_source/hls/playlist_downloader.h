@@ -19,7 +19,6 @@
 #include <vector>
 #include <map>
 #include <utility>
-
 #include "download/downloader.h"
 #include "plugin/plugin_base.h"
 #include "plugin/source_plugin.h"
