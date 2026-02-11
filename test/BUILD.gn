@@ -158,6 +158,7 @@ group("av_codec_unit_test") {
         "unittest/sample_queue_test:sample_queue_unit_test",
         "unittest/sample_queue_unit_test:sample_queue_test",
         "unittest/sample_queue_controller_unit_test:sample_queue_controller_unit_test",
+        "unittest/sei_parser_helper_unittest:sei_parser_helper_unittest",
         "unittest/source_test:source_unit_test",
         "unittest/source_unit_test:source_test",
         "unittest/subtitle_sink_unittest:subtitle_sink_unittest",
