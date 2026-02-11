@@ -3737,6 +3737,10 @@ bool MediaDemuxer::CheckDropAudioFrame(std::shared_ptr<AVBuffer> sample, int32_t
             MEDIA_LOG_I("Set last audio pts " PUBLIC_LOG_D64, lastAudioPts_);
             return false;
         }
+        if (sample->pts_ <= lastAudioPts_) { 
+             MEDIA_LOG_I("Drop audio buffer pts " PUBLIC_LOG_D64, sample->pts_); 
+             return true; 
+        }
         if (shouldCheckAudioFramePts_) {
             shouldCheckAudioFramePts_ = false;
             lastAudioPts_ = sample->pts_;
@@ -3747,10 +3751,6 @@ bool MediaDemuxer::CheckDropAudioFrame(std::shared_ptr<AVBuffer> sample, int32_t
             lastSubtitlePts_ = sample->pts_;
             MEDIA_LOG_I("Set last subtitle pts " PUBLIC_LOG_D64, lastSubtitlePts_);
             return false;
-        }
-        if (sample->pts_ <= lastSubtitlePts_) {
-            MEDIA_LOG_I("Drop subtitle buffer pts " PUBLIC_LOG_D64, sample->pts_);
-            return true;
         }
         if (shouldCheckSubtitleFramePts_) {
             shouldCheckSubtitleFramePts_ = false;
