@@ -184,7 +184,13 @@ group("vcodec_framework_test") {
     }
 
     if (av_codec_support_av1_decoder) {
-      deps += [ ":videodec_av1dec_unit_test", ]
+      deps += [
+        ":videodec_av1dec_unit_test",
+        ":videodec_av1_capi_async_unit_test",
+        ":videodec_av1_capi_sync_unit_test",
+        ":videodec_av1_func_async_unit_test",
+        ":videodec_av1_func_sync_unit_test",
+      ]
     }
     
     if (av_codec_support_vc1_decoder) {
@@ -2350,6 +2356,112 @@ ohos_unittest("videodec_rv40_func_async_unit_test") {
   resource_config_file = resource_configuration_file
 }
 
+#################################################################
+ohos_unittest("videodec_av1_func_sync_unit_test") {
+  sanitize = av_codec_test_sanitize
+  module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test_config",
+  ]
+  include_dirs = [
+    "./",
+    "./common/utils",
+    "./common/data_producer/avcc_reader/",
+    "./common/data_producer/base/",
+    "./func_sample/base",
+    "./func_sample/mock",
+    "./func_sample/mock/inner",
+    "./func_sample/sample/decoder",
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test/",
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test/inner",
+    "$av_codec_root_dir/test/unittest/common/",
+  ]
+
+  defines = [
+    "TEST_SUIT=VideoAV1DecInnerSyncTest",
+    "VIDEODEC_SYNC_UNIT_TEST",
+    "VIDEODEC_AV1_FUNC_UNIT_TEST",
+    "VideoDecSample=VideoDecSyncSample",
+  ]
+
+  cflags = vcodec_unittest_cflags
+
+  sources = [
+    "$av_codec_root_dir/frameworks/native/common/avcodec_errors.cpp",
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test/inner/codeclist_inner_mock.cpp",
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test/inner/codeclist_inner_mock_factory.cpp",
+    "./common/data_producer/avcc_reader/avcc_reader.cpp",
+    "./common/utils/unittest_utils.cpp",
+    "./func_sample/mock/inner/vcodec_inner_mock_factory.cpp",
+    "./func_sample/mock/inner/videodec_inner_mock.cpp",
+    "./func_sample/sample/decoder/vdec_sync_sample.cpp",
+    "./videodec_av1dec_fun_unit_test.cpp",
+  ]
+
+  deps = ["$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test"]
+  deps += av_codec_inner_deps
+  external_deps = av_codec_inner_external_deps
+
+  if (av_codec_support_drm) {
+    external_deps += [ "drm_framework:drm_framework" ]
+  }
+
+  resource_config_file = resource_configuration_file
+}
+
+#################################################################
+ohos_unittest("videodec_av1_func_async_unit_test") {
+  sanitize = av_codec_test_sanitize
+  module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test_config",
+  ]
+  include_dirs = [
+    "./",
+    "./common/utils",
+    "./common/data_producer/avcc_reader/",
+    "./common/data_producer/base/",
+    "./func_sample/base",
+    "./func_sample/mock",
+    "./func_sample/mock/inner",
+    "./func_sample/sample/decoder",
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test/",
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test/inner",
+    "$av_codec_root_dir/test/unittest/common/",
+  ]
+
+  defines = [
+    "TEST_SUIT=VideoAV1DecInnerAsyncTest",
+    "VIDEODEC_ASYNC_UNIT_TEST",
+    "VIDEODEC_AV1_FUNC_UNIT_TEST",
+    "VideoDecSample=VideoDecAsyncSample",
+  ]
+
+  cflags = vcodec_unittest_cflags
+
+  sources = [
+    "$av_codec_root_dir/frameworks/native/common/avcodec_errors.cpp",
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test/inner/codeclist_inner_mock.cpp",
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test/inner/codeclist_inner_mock_factory.cpp",
+    "./common/data_producer/avcc_reader/avcc_reader.cpp",
+    "./common/utils/unittest_utils.cpp",
+    "./func_sample/mock/inner/vcodec_inner_mock_factory.cpp",
+    "./func_sample/mock/inner/videodec_inner_mock.cpp",
+    "./func_sample/sample/decoder/vdec_async_sample.cpp",
+    "./videodec_av1dec_fun_unit_test.cpp",
+  ]
+
+  deps = ["$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test"]
+  deps += av_codec_inner_deps
+  external_deps = av_codec_inner_external_deps
+
+  if (av_codec_support_drm) {
+    external_deps += [ "drm_framework:drm_framework" ]
+  }
+
+  resource_config_file = resource_configuration_file
+}
+
 #################################################################################################################videodec
 ohos_unittest("videodec_rv30_capi_async_unit_test") {
   sanitize = av_codec_test_sanitize
@@ -2561,6 +2673,121 @@ ohos_unittest("videodec_rv40_capi_sync_unit_test") {
     "./func_sample/mock/capi/videodec_capi_mock.cpp",
     "./func_sample/sample/decoder/vdec_sync_sample.cpp",
     "./videodec_rv40dec_fun_unit_test.cpp",
+  ]
+
+  deps = ["$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test"]
+  deps += av_codec_capi_deps
+  external_deps = av_codec_capi_external_deps
+
+  if (av_codec_support_drm) {
+    include_dirs +=
+        [ "$av_codec_root_dir/test/unittest/common/common_mock/drm_mock/capi/" ]
+    sources += [ "$av_codec_root_dir/test/unittest/common/common_mock/drm_mock/capi/media_key_system_mock.cpp" ]
+    external_deps += [
+      "drm_framework:drm_framework",
+      "drm_framework:native_drm",
+    ]
+  }
+
+  resource_config_file = resource_configuration_file
+}
+
+#################################################################################################################videodec
+ohos_unittest("videodec_av1_capi_async_unit_test") {
+  sanitize = av_codec_test_sanitize
+  module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test_config",
+  ]
+  include_dirs = [
+    "./",
+    "./common/utils",
+    "./common/data_producer/avcc_reader/",
+    "./common/data_producer/base/",
+    "./func_sample/base",
+    "./func_sample/mock",
+    "./func_sample/mock/capi",
+    "./func_sample/sample/decoder",
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test",
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test/capi",
+    "$av_codec_root_dir/test/unittest/common/",
+  ]
+
+  defines = [
+    "TEST_SUIT=VideoAV1DecCapiAsyncTest",
+    "VIDEODEC_ASYNC_UNIT_TEST",
+    "VIDEODEC_CAPI_UNIT_TEST",
+    "VideoDecSample=VideoDecAsyncSample",
+  ]
+
+  cflags = vcodec_unittest_cflags
+
+  sources = [
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test/capi/codeclist_capi_mock.cpp",
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test/capi/codeclist_capi_mock_factory.cpp",
+    "./common/data_producer/avcc_reader/avcc_reader.cpp",
+    "./common/utils/unittest_utils.cpp",
+    "./func_sample/mock/capi/vcodec_capi_mock_factory.cpp",
+    "./func_sample/mock/capi/videodec_capi_mock.cpp",
+    "./func_sample/sample/decoder/vdec_async_sample.cpp",
+    "./videodec_av1dec_fun_unit_test.cpp",
+  ]
+  deps = ["$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test"]
+  deps += av_codec_capi_deps
+  external_deps = av_codec_capi_external_deps
+
+  if (av_codec_support_drm) {
+    include_dirs +=
+        [ "$av_codec_root_dir/test/unittest/common/common_mock/drm_mock/capi/" ]
+    sources += [ "$av_codec_root_dir/test/unittest/common/common_mock/drm_mock/capi/media_key_system_mock.cpp" ]
+    external_deps += [
+      "drm_framework:drm_framework",
+      "drm_framework:native_drm",
+    ]
+  }
+
+  resource_config_file = resource_configuration_file
+}
+
+##\############################################################################################################videodec
+ohos_unittest("videodec_av1_capi_sync_unit_test") {
+  sanitize = av_codec_test_sanitize
+  module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test_config",
+  ]
+  include_dirs = [
+    "./",
+    "./common/utils",
+    "./common/data_producer/avcc_reader/",
+    "./common/data_producer/base/",
+    "./func_sample/base",
+    "./func_sample/mock",
+    "./func_sample/mock/capi",
+    "./func_sample/sample/decoder",
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test",
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test/capi",
+    "$av_codec_root_dir/test/unittest/common/",
+  ]
+
+  defines = [
+    "TEST_SUIT=VideoAV1DecCapiSyncTest",
+    "VIDEODEC_CAPI_UNIT_TEST",
+    "VIDEODEC_SYNC_UNIT_TEST",
+    "VideoDecSample=VideoDecSyncSample",
+  ]
+
+  cflags = vcodec_unittest_cflags
+
+  sources = [
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test/capi/codeclist_capi_mock.cpp",
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test/capi/codeclist_capi_mock_factory.cpp",
+    "./common/data_producer/avcc_reader/avcc_reader.cpp",
+    "./common/utils/unittest_utils.cpp",
+    "./func_sample/mock/capi/vcodec_capi_mock_factory.cpp",
+    "./func_sample/mock/capi/videodec_capi_mock.cpp",
+    "./func_sample/sample/decoder/vdec_sync_sample.cpp",
+    "./videodec_av1dec_fun_unit_test.cpp",
   ]
 
   deps = ["$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test"]
