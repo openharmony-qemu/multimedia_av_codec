@@ -23,7 +23,6 @@
 #include <functional>
 #include <utility>
 #include <map>
-
 #include "hls_tags.h"
 #include "playlist_downloader.h"
 #include "download/downloader.h"
