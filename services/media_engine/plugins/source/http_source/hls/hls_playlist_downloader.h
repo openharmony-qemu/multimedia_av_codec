@@ -18,7 +18,6 @@
 
 #include <set>
 #include <utility>
-
 #include "playlist_downloader.h"
 #include "m3u8.h"
 
