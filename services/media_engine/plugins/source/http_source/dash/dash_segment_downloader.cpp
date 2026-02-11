@@ -851,7 +851,7 @@ bool DashSegmentDownloader::CleanBufferByTime(int64_t& remainLastNumberSeq, bool
     });
 
     auto downloader = std::make_shared<Downloader>("dashSegment", sourceLoader_);
-    if (downloadCallback_ != nullptr && downloadCallback_ != nullptr) {
+    if (downloadCallback_ != nullptr) {
         downloader->SetDownloadCallback(downloadCallback_);
     }
     downloader->Init();

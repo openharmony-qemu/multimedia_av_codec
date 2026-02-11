@@ -141,7 +141,7 @@ void HttpMediaDownloader::Init()
     MEDIA_LOG_D("0x%{public}06" PRIXPTR " Init", FAKE_POINTER(this));
     downloadMetricsInfo_ = std::make_shared<DownloadMetricsInfo>();
     auto downloader = GetDownloader();
-    if (downloader != nullptr && downloadMetricsInfo_ != nullptr) {
+    if (downloader != nullptr) {
         downloader->SetDownloadCallback(downloadMetricsInfo_);
     }
 }
