@@ -60,7 +60,6 @@ ohos_shared_library("media_plugin_AudioServerSink") {
 
   external_deps = [
     "audio_framework:audio_client",
-    "audio_framework:audio_foundation",
     "audio_framework:audio_renderer",
     "c_utils:utils",
     "ffmpeg:libohosffmpeg",
@@ -71,6 +70,7 @@ ohos_shared_library("media_plugin_AudioServerSink") {
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "safwk:system_ability_fwk",
+    "audio_framework:audio_foundation",
   ]
 
   relative_install_dir = "media/media_plugins"
