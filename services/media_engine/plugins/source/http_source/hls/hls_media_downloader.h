@@ -20,7 +20,6 @@
 #include <thread>
 #include <unistd.h>
 #include <utility>
-
 #include "playlist_downloader.h"
 #include "download/downloader.h"
 #include "media_downloader.h"
