@@ -408,7 +408,7 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
         ScopedTimer timer("AudioDecoder Init", DECODER_INIT_WARNING_MS);
         ret = decoder_->Init(true, mime);
         if (ret != Status::OK) {
-            MEDIA_LOG_I("AudioDecoderFilter cannot get mime");
+            MEDIA_LOG_I("decoder init fail.");
             eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE, ""});
         }
     }
