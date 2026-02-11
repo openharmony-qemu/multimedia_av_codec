@@ -294,11 +294,11 @@ void AudioCodecWorker::ReleaseOutputBuffer(const uint32_t &index, const int32_t 
 
 void AudioCodecWorker::SetFirstAndEosStatus(std::shared_ptr<AudioBufferInfo> &outBuffer, bool isEos, uint32_t index)
 {
-    if (isEos) {
+    if (isEos && outBuffer != nullptr) {
         AVCODEC_LOGD("set buffer EOS. index:%{public}u", index);
         outBuffer->SetEos(isEos);
     }
-    if (isFirFrame_) {
+    if (isFirFrame_ && outBuffer != nullptr) {
         outBuffer->SetFirstFrame();
         isFirFrame_ = false;
     }
