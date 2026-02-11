@@ -140,7 +140,9 @@ void Source::SetBundleName(const std::string& bundleName)
 
 void Source::SetDemuxerState(int32_t streamId)
 {
-    plugin_->SetDemuxerState(streamId);
+    if (plugin_ != nullptr) {
+        plugin_->SetDemuxerState(streamId);
+    }
 }
 
 std::string Source::GetContentType()

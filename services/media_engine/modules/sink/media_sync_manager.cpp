@@ -24,7 +24,7 @@
 #include "osal/utils/steady_clock.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "MediaSyncManager" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "MediasyncManager" };
 }
 
 namespace OHOS {
@@ -36,7 +36,7 @@ using namespace std::chrono;
 
 MediaSyncManager::~MediaSyncManager()
 {
-    MEDIA_LOG_D_SHORT("~MediaSyncManager enter.");
+    MEDIA_LOG_I("~MediaSyncManager enter.");
 }
 
 void MediaSyncManager::AddSynchronizer(IMediaSynchronizer* syncer)
@@ -68,7 +68,7 @@ Status MediaSyncManager::SetPlaybackRate(float rate)
     }
     FALSE_RETURN_V_MSG_W(rate >= 0, Status::ERROR_INVALID_PARAMETER, "Invalid playback Rate: %{public}f", rate);
     OHOS::Media::AutoLock lock(clockMutex_);
-    MEDIA_LOG_I_SHORT("set play rate " PUBLIC_LOG_F, rate);
+    MEDIA_LOG_I("set play rate " PUBLIC_LOG_F, rate);
     int64_t currentClockTime = GetSystemClock();
     int64_t currentMediaTime = std::min(GetMediaTime(currentClockTime), GetMaxMediaProgress());
     if (currentMediaTime != HST_TIME_NONE) {
@@ -91,7 +91,7 @@ void MediaSyncManager::SetMediaTimeRangeStart(int64_t startMediaTime, int32_t tr
     OHOS::Media::AutoLock lock(clockMutex_);
     if (minRangeStartOfMediaTime_ == HST_TIME_NONE || startMediaTime < minRangeStartOfMediaTime_) {
         minRangeStartOfMediaTime_ = startMediaTime;
-        MEDIA_LOG_I_SHORT("set media started at " PUBLIC_LOG_D64, minRangeStartOfMediaTime_);
+        MEDIA_LOG_I("set media started at " PUBLIC_LOG_D64, minRangeStartOfMediaTime_);
     }
 }
 
@@ -102,7 +102,7 @@ void MediaSyncManager::SetMediaTimeRangeEnd(int64_t endMediaTime, int32_t trackI
     OHOS::Media::AutoLock lock(clockMutex_);
     if (maxRangeEndOfMediaTime_ == HST_TIME_NONE || endMediaTime > maxRangeEndOfMediaTime_) {
         maxRangeEndOfMediaTime_ = endMediaTime;
-        MEDIA_LOG_I_SHORT("set media end at " PUBLIC_LOG_D64, maxRangeEndOfMediaTime_);
+        MEDIA_LOG_I("set media end at " PUBLIC_LOG_D64, maxRangeEndOfMediaTime_);
     }
 }
 
@@ -143,7 +143,7 @@ Status MediaSyncManager::Resume()
     }
     FALSE_RETURN_V_NOLOG(clockState_ != State::RESUMED, Status::OK);
     SetAllSyncShouldWaitNoLock();
-    MEDIA_LOG_I_SHORT("resume");
+    MEDIA_LOG_I("resume");
     clockState_ = State::RESUMED;
     return Status::OK;
 }
@@ -171,7 +171,7 @@ Status MediaSyncManager::Seek(int64_t mediaTime, bool isClosest)
     FALSE_RETURN_V_NOLOG(minRangeStartOfMediaTime_ != HST_TIME_NONE && maxRangeEndOfMediaTime_ != HST_TIME_NONE,
         Status::ERROR_INVALID_OPERATION);
     isSeeking_ = true;
-    MEDIA_LOG_I_SHORT("isSeeking_ mediaTime: %{public}" PRId64, mediaTime);
+    MEDIA_LOG_I("isSeeking_ mediaTime: %{public}" PRId64, mediaTime);
     seekingMediaTime_ = mediaTime;
     alreadySetSyncersShouldWait_ = false; // set already as false
     SetAllSyncShouldWaitNoLock(); // all suppliers should sync preroll again after seek
@@ -263,8 +263,8 @@ bool MediaSyncManager::UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, IM
     if (IsSupplierValid(supplier) && supplier->GetPriority() >= currentSyncerPriority_) {
         currentSyncerPriority_ = supplier->GetPriority();
         SimpleUpdateTimeAnchor(clockTime, iMediaTime.mediaTime);
-        MEDIA_LOG_D_SHORT("update time anchor to priority " PUBLIC_LOG_D32 ", mediaTime " PUBLIC_LOG_D64 ", clockTime "
-        PUBLIC_LOG_D64, currentSyncerPriority_, currentAnchorMediaTime_, currentAnchorClockTime_);
+        MEDIA_LOG_D("update time anchor to priority " PUBLIC_LOG_D32 ", mediaTime " PUBLIC_LOG_D64 ", clockTime "
+            PUBLIC_LOG_D64, currentSyncerPriority_, currentAnchorMediaTime_, currentAnchorClockTime_);
         if (isSeeking_) {
             MEDIA_LOG_I_SHORT("leaving seeking_");
             isSeeking_ = false;
@@ -361,7 +361,7 @@ int64_t MediaSyncManager::GetMediaTimeNow()
     }
     currentMediaTime = BoundMediaProgress(currentMediaTime);
     lastReportMediaTime_ = currentMediaTime;
-    MEDIA_LOG_D_SHORT("GetMediaTimeNow currentMediaTime: %{public}" PRId64, currentMediaTime);
+    MEDIA_LOG_D("GetMediaTimeNow currentMediaTime: %{public}" PRId64, currentMediaTime);
     return currentMediaTime;
 }
 
@@ -396,11 +396,11 @@ int64_t MediaSyncManager::GetAnchoredClockTime(int64_t mediaTime)
 {
     OHOS::Media::AutoLock lock(clockMutex_);
     if (minRangeStartOfMediaTime_ != HST_TIME_NONE && mediaTime < minRangeStartOfMediaTime_) {
-        MEDIA_LOG_D_SHORT("media time " PUBLIC_LOG_D64 " less than min media time " PUBLIC_LOG_D64,
+        MEDIA_LOG_W("media time " PUBLIC_LOG_D64 " less than min media time " PUBLIC_LOG_D64,
                 mediaTime, minRangeStartOfMediaTime_);
     }
     if (maxRangeEndOfMediaTime_ != HST_TIME_NONE && mediaTime > maxRangeEndOfMediaTime_) {
-        MEDIA_LOG_D_SHORT("media time " PUBLIC_LOG_D64 " exceed max media time " PUBLIC_LOG_D64,
+        MEDIA_LOG_W("media time " PUBLIC_LOG_D64 " exceed max media time " PUBLIC_LOG_D64,
                 mediaTime, maxRangeEndOfMediaTime_);
     }
 
@@ -420,7 +420,7 @@ void MediaSyncManager::ReportPrerolled(IMediaSynchronizer* supplier)
     OHOS::Media::AutoLock lock(syncersMutex_);
     auto ite = std::find(prerolledSyncers_.begin(), prerolledSyncers_.end(), supplier);
     if (ite != prerolledSyncers_.end()) {
-        MEDIA_LOG_I_SHORT("supplier already reported prerolled");
+        MEDIA_LOG_I("supplier already reported prerolled");
         return;
     }
     prerolledSyncers_.emplace_back(supplier);
@@ -481,13 +481,13 @@ void MediaSyncManager::ReportStreamEos()
 
 void MediaSyncManager::SetLastVideoBufferAbsPts(int64_t lastVideoBufferAbsPts)
 {
-    MEDIA_LOG_D("SetLastVideoBufferAbsPts " PUBLIC_LOG_D64, lastVideoBufferAbsPts);
+    MEDIA_LOG_DD("SetLastVideoBufferAbsPts " PUBLIC_LOG_D64, lastVideoBufferAbsPts);
     lastVideoBufferAbsPts_ = lastVideoBufferAbsPts;
 }
  
 int64_t MediaSyncManager::GetLastVideoBufferAbsPts() const
 {
-    MEDIA_LOG_D("GetLastVideoBufferAbsPts" PUBLIC_LOG_D64, lastVideoBufferAbsPts_);
+    MEDIA_LOG_DD("GetLastVideoBufferAbsPts" PUBLIC_LOG_D64, lastVideoBufferAbsPts_);
     return lastVideoBufferAbsPts_;
 }
 } // namespace Pipeline

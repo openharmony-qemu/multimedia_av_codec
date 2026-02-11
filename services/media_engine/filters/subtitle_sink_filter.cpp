@@ -95,9 +95,8 @@ Status SubtitleSinkFilter::DoPrepare()
 {
     subtitleSink_->Prepare();
     inputBufferQueueConsumer_ = subtitleSink_->GetBufferQueueConsumer();
-    if (inputBufferQueueConsumer_ == nullptr) {
-        return Status::ERROR_INVALID_OPERATION;
-    }
+    FALSE_RETURN_V_MSG(inputBufferQueueConsumer_ != nullptr, Status::ERROR_INVALID_OPERATION,
+        "inputBufferQueueConsumer_ is nullptr");
     sptr<IConsumerListener> listener = new AVBufferAvailableListener(shared_from_this());
     inputBufferQueueConsumer_->SetBufferAvailableListener(listener);
     if (onLinkedResultCallback_ != nullptr) {
@@ -118,6 +117,10 @@ Status SubtitleSinkFilter::DoStart()
         return Status::ERROR_INVALID_OPERATION;
     }
     auto err = subtitleSink_->Start();
+    if (err != Status::OK) {
+        MEDIA_LOG_E("subtitleSink_ start failed");
+        return err;
+    }
     state_ = FilterState::RUNNING;
     frameCnt_ = 0;
     return err;
