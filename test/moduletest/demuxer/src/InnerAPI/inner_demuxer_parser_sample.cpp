@@ -328,11 +328,6 @@ bool InnerDemuxerParserSample::CheckSeekScene(int64_t pts)
 bool InnerDemuxerParserSample::RunSeekScene(WorkPts workPts)
 {
     int64_t pts = GetPtsFromWorkPts(workPts);
-    float durationNum = 0.0;
-    if (pts > duration / durationNum) {
-        cout << "pts > duration" << endl;
-        return true;
-    }
     int32_t ret = 0;
     ret = this->demuxer_->StartReferenceParser(pts);
     cout << "StartReferenceParser pts:" << pts << endl;
