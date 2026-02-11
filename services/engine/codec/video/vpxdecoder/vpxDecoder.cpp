@@ -20,7 +20,7 @@
 #include "avcodec_trace.h"
 #include "avcodec_log.h"
 #include "avcodec_codec_name.h"
-#include "vpx_decoder.h"
+#include "vpxDecoder.h"
 #include "v1_0/cm_color_space.h"
 #include "v1_0/hdr_static_metadata.h"
 #include "v1_0/buffer_handle_meta_key_type.h"
@@ -29,10 +29,6 @@ namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "VpxDecoderLoader"};
-const char *VPX_DEC_CREATE_DECODER_FUNC_NAME = "vpx_create_decoder_api";
-const char *VPX_DEC_DECODE_FRAME_FUNC_NAME = "vpx_codec_decode_api";
-const char *VPX_DEC_GET_FRAME_FUNC_NAME = "vpx_codec_get_frame_api";
-const char *VPX_DEC_DELETE_FUNC_NAME = "vpx_destroy_decoder_api";
 
 const char *VP8_CODEC = "vp8";
 const char *VP9_CODEC = "vp9";
@@ -67,8 +63,7 @@ constexpr uint32_t DEFAULT_TRY_DECODE_TIME = 1;
 constexpr uint32_t INDEX_INPUT = 0;
 constexpr uint32_t INDEX_OUTPUT = 1;
 using namespace OHOS::Media;
-
-VpxDecoder::VpxDecoder(const std::string &name, const std::string &path) : VideoDecoder(name, path)
+VpxDecoder::VpxDecoder(const std::string &name) : VideoDecoder(name)
 {
     AVCODEC_SYNC_TRACE;
     std::unique_lock<std::mutex> lock(decoderCountMutex_);
@@ -86,24 +81,19 @@ VpxDecoder::VpxDecoder(const std::string &name, const std::string &path) : Video
     lock.unlock();
 
     if (decInstanceID_ < VIDEO_INSTANCE_SIZE) {
-        handle_ = dlopen(libPath_.c_str(), RTLD_LAZY);
-        if (handle_ == nullptr) {
-            AVCODEC_LOGE("Load codec failed: %{public}s", libPath_.c_str());
-            isValid_ = false;
-        }
-        DecoderFuncMatch();
         AVCODEC_LOGI("Num %{public}u Decoder entered, state: Uninitialized", decInstanceID_);
     } else {
         AVCODEC_LOGE("Decoder already has %{public}d instances, cannot has more instances", VIDEO_INSTANCE_SIZE);
         isValid_ = false;
     }
+    InitParams();
+    renderSurface_ = std::make_shared<RenderSurface>();
 }
 
 VpxDecoder::~VpxDecoder()
 {
     ReleaseResource();
     callback_ = nullptr;
-    ReleaseHandle();
     if (decInstanceID_ < VIDEO_INSTANCE_SIZE) {
         std::lock_guard<std::mutex> lock(decoderCountMutex_);
         freeIDSet_.push_back(decInstanceID_);
@@ -225,48 +215,6 @@ void VpxDecoder::ConfigurelWidthAndHeight(const Format &format, const std::strin
     }
 }
 
-void VpxDecoder::DecoderFuncMatch()
-{
-    if (handle_ != nullptr) {
-        std::unique_lock<std::mutex> runlock(decRunMutex_);
-        vpxDecoderCreateFunc_ = reinterpret_cast<VpxCreateDecoderFuncType>(dlsym(handle_,
-            VPX_DEC_CREATE_DECODER_FUNC_NAME));
-        vpxDecoderFrameFunc_ = reinterpret_cast<VpxDecodeFrameFuncType>(dlsym(handle_,
-            VPX_DEC_DECODE_FRAME_FUNC_NAME));
-        vpxDecoderGetFrameFunc_ = reinterpret_cast<VpxGetFrameFuncType>(dlsym(handle_,
-            VPX_DEC_GET_FRAME_FUNC_NAME));
-        vpxDecoderDestroyFunc_ = reinterpret_cast<VpxDestroyDecoderFuncType>(dlsym(handle_,
-            VPX_DEC_DELETE_FUNC_NAME));
-        if (vpxDecoderCreateFunc_ == nullptr || vpxDecoderFrameFunc_ == nullptr ||
-            vpxDecoderGetFrameFunc_ == nullptr || vpxDecoderDestroyFunc_ == nullptr) {
-                AVCODEC_LOGE("VpxDecoder vpx DecoderFuncMatch failed!");
-                ReleaseHandle();
-        }
-    }
-
-    InitParams();
-    renderSurface_ = std::make_shared<RenderSurface>();
-}
-
-void VpxDecoder::ReleaseHandle()
-{
-    std::unique_lock<std::mutex> runLock(decRunMutex_);
-    vpxDecoderCreateFunc_ = nullptr;
-    vpxDecoderFrameFunc_ = nullptr;
-    vpxDecoderGetFrameFunc_ = nullptr;
-    vpxDecoderDestroyFunc_ = nullptr;
-    if (handle_ != nullptr) {
-        dlclose(handle_);
-        handle_ = nullptr;
-    }
-    runLock.unlock();
-
-    if (sInfo_.surface != nullptr) {
-        UnRegisterListenerToSurface(sInfo_.surface);
-        StopRequestSurfaceBufferThread();
-    }
-}
-
 int32_t VpxDecoder::Initialize()
 {
     AVCODEC_SYNC_TRACE;
@@ -294,15 +242,76 @@ int32_t VpxDecoder::Initialize()
     return AVCS_ERR_OK;
 }
 
+
+int VpxDecoder::VpxCreateDecoderFunc(void **vpxDecoder, const char *name)
+{
+    const VpxInterface *decoder = nullptr;
+    vpx_codec_ctx_t *ctx = (vpx_codec_ctx_t *)malloc(sizeof(*ctx));
+    if (!ctx) {
+        AVCODEC_LOGE("Error: Failed to allocate memory for vpx_codec_ctx_t");
+        return -1;
+    }
+
+    decoder = get_vpx_decoder_by_name(name);
+    if (!decoder) {
+        free(ctx);
+        AVCODEC_LOGE("Error: Unknown input codec!");
+        return -1;
+    }
+    if (vpx_codec_dec_init(ctx, decoder->codec_interface(), nullptr, VPX_CODEC_USE_FRAME_THREADING)) {
+        free(ctx);
+        AVCODEC_LOGE("Error: Failed to initialize decoder.");
+        return -1;
+    }
+    *vpxDecoder = ctx;
+    return 0;
+}
+
+int VpxDecoder::VpxDestroyDecoderFunc(void **vpxDecoder)
+{
+    if (vpxDecoder == nullptr || *vpxDecoder == nullptr) {
+        return -1;
+    }
+    vpx_codec_ctx_t *codec = (vpx_codec_ctx_t *)(*vpxDecoder);
+    vpx_codec_err_t res = vpx_codec_destroy(codec);
+    free(codec);
+    *vpxDecoder = nullptr;
+    if (res != VPX_CODEC_OK) {
+        AVCODEC_LOGE("Error: Failed to destroy decoder: %s\n", vpx_codec_err_to_string(res));
+        return -1;
+    }
+    return 0;
+}
+
+int VpxDecoder::VpxDecodeFrameFunc(void *vpxDecoder, const unsigned char *frame, unsigned int frameSize)
+{
+    vpx_codec_ctx_t *codec = (vpx_codec_ctx_t *)vpxDecoder;
+    int ret = vpx_codec_decode(codec, frame, (unsigned int)frameSize, nullptr, 0);
+    if (ret) {
+        AVCODEC_LOGE("Error: Failed to decode frame.");
+        return ret;
+    }
+    return 0;
+}
+
+int VpxDecoder::VpxGetFrameFunc(void *vpxDecoder, vpx_image_t **outputImg)
+{
+    vpx_codec_ctx_t *codec = (vpx_codec_ctx_t *)vpxDecoder;
+    vpx_codec_iter_t iter = nullptr;
+    *outputImg = vpx_codec_get_frame(codec, &iter);
+    return 0;
+}
+
+
 int32_t VpxDecoder::CreateDecoder()
 {
     std::unique_lock<std::mutex> runLock(decRunMutex_);
     int32_t createRet = 0;
-    if (vpxDecHandle_ == nullptr && vpxDecoderCreateFunc_ != nullptr) {
+    if (vpxDecHandle_ == nullptr) {
         if (codecName_ == AVCodecCodecName::VIDEO_DECODER_VP8_NAME) {
-            createRet = vpxDecoderCreateFunc_(&vpxDecHandle_, VP8_CODEC);
+            createRet = VpxCreateDecoderFunc(&vpxDecHandle_, VP8_CODEC);
         } else {
-            createRet = vpxDecoderCreateFunc_(&vpxDecHandle_, VP9_CODEC);
+            createRet = VpxCreateDecoderFunc(&vpxDecHandle_, VP9_CODEC);
         }
     }
     runLock.unlock();
@@ -314,8 +323,8 @@ int32_t VpxDecoder::CreateDecoder()
 void VpxDecoder::DeleteDecoder()
 {
     std::unique_lock<std::mutex> runLock(decRunMutex_);
-    if (vpxDecHandle_ != nullptr && vpxDecoderDestroyFunc_ != nullptr) {
-        int ret = vpxDecoderDestroyFunc_(&vpxDecHandle_);
+    if (vpxDecHandle_ != nullptr) {
+        int ret = VpxDestroyDecoderFunc(&vpxDecHandle_);
         if (ret != 0) {
             AVCODEC_LOGE("Error: VpxDecoder delete error: %{public}d", ret);
             if (callback_ != nullptr) {
@@ -328,7 +337,7 @@ void VpxDecoder::DeleteDecoder()
     runLock.unlock();
 }
 
-AVPixelFormat VpxDecoder::ConvertVpxFmtToAVPixFmt(VpxImageFmt fmt)
+AVPixelFormat VpxDecoder::ConvertVpxFmtToAVPixFmt(vpx_img_fmt_t fmt)
 {
     AVPixelFormat ret = AVPixelFormat::AV_PIX_FMT_NONE;
     switch (fmt) {
@@ -459,16 +468,16 @@ void VpxDecoder::SendFrame()
 int32_t VpxDecoder::DecodeFrameOnce()
 {
     int32_t ret = 0;
-    if (vpxDecHandle_ != nullptr && vpxDecoderFrameFunc_ != nullptr && vpxDecoderGetFrameFunc_ != nullptr) {
+    if (vpxDecHandle_ != nullptr) {
         if (!isSendEos_) {
-            ret = vpxDecoderFrameFunc_(vpxDecHandle_, vpxDecoderInputArgs_.pStream, vpxDecoderInputArgs_.uiStreamLen);
+            ret = VpxDecodeFrameFunc(vpxDecHandle_, vpxDecoderInputArgs_.pStream, vpxDecoderInputArgs_.uiStreamLen);
         }
     } else {
         AVCODEC_LOGW("vpxDecoderFrameFunc_ = nullptr || vpxDecHandle_ = nullptr");
         ret = -1;
     }
-    if (vpxDecHandle_ != nullptr && vpxDecoderGetFrameFunc_ != nullptr) {
-        vpxDecoderGetFrameFunc_(vpxDecHandle_, &vpxDecOutputImg_);
+    if (vpxDecHandle_ != nullptr) {
+        VpxGetFrameFunc(vpxDecHandle_, &vpxDecOutputImg_);
         ret = vpxDecOutputImg_ == nullptr ? -1 : 0;
     } else {
         AVCODEC_LOGW("vpxDecoderGetFrameFunc_ = nullptr || vpxDecHandle_ = nullptr");
@@ -503,44 +512,12 @@ int32_t VpxDecoder::DecodeFrameOnce()
 void VpxDecoder::FlushAllFrames()
 {
     std::unique_lock<std::mutex> runlock(decRunMutex_);
-    if (vpxDecoderGetFrameFunc_ != nullptr) {
+    if (vpxDecHandle_ != nullptr) {
         do {
-            vpxDecoderGetFrameFunc_(vpxDecHandle_, &vpxDecOutputImg_);
+            VpxGetFrameFunc(vpxDecHandle_, &vpxDecOutputImg_);
         } while (vpxDecOutputImg_ != nullptr);
     }
     runlock.unlock();
-}
-
-int32_t VpxDecoder::CheckVpxDecLibStatus()
-{
-    void* handle = dlopen("libvpxdec_ohos.z.so", RTLD_LAZY);
-    if (handle != nullptr) {
-        auto vpxDecoderCreateFunc = reinterpret_cast<VpxCreateDecoderFuncType>(
-            dlsym(handle, VPX_DEC_CREATE_DECODER_FUNC_NAME));
-        auto vpxDecoderDecodeFrameFunc = reinterpret_cast<VpxDecodeFrameFuncType>(
-            dlsym(handle, VPX_DEC_DECODE_FRAME_FUNC_NAME));
-        auto vpxDecoderGetFrameFunc = reinterpret_cast<VpxGetFrameFuncType>(
-            dlsym(handle, VPX_DEC_GET_FRAME_FUNC_NAME));
-        auto vpxDecoderDestroyFunc = reinterpret_cast<VpxDestroyDecoderFuncType>(
-            dlsym(handle, VPX_DEC_DELETE_FUNC_NAME));
-        if (vpxDecoderCreateFunc == nullptr || vpxDecoderDecodeFrameFunc == nullptr ||
-            vpxDecoderGetFrameFunc == nullptr || vpxDecoderDestroyFunc == nullptr) {
-                AVCODEC_LOGE("VpxDecoder vpxFuncMatch_ failed!");
-                vpxDecoderCreateFunc = nullptr;
-                vpxDecoderDecodeFrameFunc = nullptr;
-                vpxDecoderGetFrameFunc = nullptr;
-                vpxDecoderDestroyFunc = nullptr;
-                dlclose(handle);
-                handle = nullptr;
-        }
-    }
-    if (handle == nullptr) {
-        return AVCS_ERR_UNSUPPORT;
-    }
-    dlclose(handle);
-    handle = nullptr;
-
-    return AVCS_ERR_OK;
 }
 
 void VpxDecoder::GetVp9CapProf(std::vector<CapabilityData> &capaArray)
@@ -580,8 +557,6 @@ void VpxDecoder::GetVp8CapProf(std::vector<CapabilityData> &capaArray)
 
 int32_t VpxDecoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
 {
-    CHECK_AND_RETURN_RET_LOG(CheckVpxDecLibStatus() == AVCS_ERR_OK, AVCS_ERR_UNSUPPORT,
-                             "vpx decoder libs not available");
     for (uint32_t i = 0; i < SUPPORT_VPX_DECODER_NUM; ++i) {
         CapabilityData capsData;
         capsData.codecName = static_cast<std::string>(SUPPORT_VPX_DECODER[i].codecName);
