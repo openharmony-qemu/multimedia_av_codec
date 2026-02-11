@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2025 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -127,12 +127,6 @@ public:
  
     bool IsOffloading() override;
 
-    void SetInterruptState(bool isInterruptNeeded) override;
-
-    void OnWriteData(size_t length);
-
-    void OnFirstFrameWriting();
-
     Status SetRequestDataCallback(const std::shared_ptr<AudioSinkDataCallback> &callback) override;
  
     bool GetAudioPosition(timespec &time, uint32_t &framePosition) override;
@@ -147,11 +141,19 @@ public:
  
     Status GetBufferDesc(AudioStandard::BufferDesc &bufferDesc) override;
 
+    void SetInterruptState(bool isInterruptNeeded) override;
+
     bool IsFormatSupported(const std::shared_ptr<Meta>& meta) override;
+
+    void OnWriteData(size_t length);
 
     Status SetAudioHapticsSyncId(int32_t syncId) override;
 
     Status SetLoudnessGain(float loudnessGain) override;
+
+    void OnFirstFrameWriting();
+
+    void SetAudioPassFlag(bool isAudioPass) override;
 
     void SetResponseCallback(bool isNeedResponseCallback) override;
 
@@ -159,8 +161,6 @@ public:
     {
         return isNeedResponseCallback_;
     }
-
-    void SetAudioPassFlag(bool isAudioPass) override;
 private:
     class AudioRendererCallbackImpl : public OHOS::AudioStandard::AudioRendererCallback,
         public OHOS::AudioStandard::AudioRendererOutputDeviceChangeCallback {
@@ -290,10 +290,10 @@ private:
     bool audioRenderSetFlag_ {false};
     std::list<std::vector<uint8_t>> cachedBuffers_;
     int64_t writeDuration_ = 0;
+    std::shared_ptr<AudioRendererWriteCallbackImpl> audioRenderWriteCallback_ {nullptr};
     std::atomic<bool> isInterruptNeeded_{false};
     std::mutex mutex_;
     std::condition_variable writeCond_;
-    std::shared_ptr<AudioRendererWriteCallbackImpl> audioRenderWriteCallback_ {nullptr};
     std::mutex releaseRenderMutex_;
     bool isReleasingRender_ {false};
     std::weak_ptr<AudioSinkDataCallback> audioSinkDataCallback_;
@@ -302,8 +302,8 @@ private:
     int32_t audioHapticsSyncId_ {0};
     uint32_t customSampleRate_{0};
     int32_t privacyType_ {0};
-    bool isNeedResponseCallback_ {true};
     bool isAudioPass_ {false};
+    bool isNeedResponseCallback_ {true};
 };
 } // namespace Plugin
 } // namespace Media
