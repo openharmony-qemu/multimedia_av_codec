@@ -19,6 +19,7 @@
 #include "utils/media_cached_buffer.h"
 #include "download/network_client/http_curl_client.h"
 #include "gtest/gtest.h"
+#include "utils/string_utils.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -1075,6 +1076,110 @@ HWTEST_F(DownloaderUnitTest, IsExcluded_04, TestSize.Level1)
     string exclusions = "example";
     string split = ",";
     EXPECT_FALSE(IsExcluded(str, exclusions, split));
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_01, TestSize.Level1)
+{
+    string str = "  ++123";
+    int32_t value;
+    EXPECT_FALSE(StringUtil::SafeStoInt32(str, value));
+    EXPECT_EQ(value, 0);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_02, TestSize.Level1)
+{
+    string str = "  0  ";
+    int32_t value;
+    EXPECT_TRUE(StringUtil::SafeStoInt32(str, value));
+    EXPECT_EQ(value, 0);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_03, TestSize.Level1)
+{
+    string str = "ABC123";
+    int32_t value;
+    EXPECT_FALSE(StringUtil::SafeStoInt32(str, value));
+    EXPECT_EQ(value, 0);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_04, TestSize.Level1)
+{
+    string str = "4294967295";
+    int32_t value;
+    EXPECT_FALSE(StringUtil::SafeStoInt32(str, value));
+    EXPECT_EQ(value, 0);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_05, TestSize.Level1)
+{
+    string str = "123";
+    int32_t value;
+    EXPECT_TRUE(StringUtil::SafeStoInt32(str, value));
+    EXPECT_EQ(value, 123);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_06, TestSize.Level1)
+{
+    string str = "-123";
+    int32_t value;
+    EXPECT_TRUE(StringUtil::SafeStoInt32(str, value));
+    EXPECT_EQ(value, -123);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_07, TestSize.Level1)
+{
+    string str = "123abc";
+    int32_t value;
+    EXPECT_TRUE(StringUtil::SafeStoInt32(str, value));
+    EXPECT_EQ(value, 123);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_01, TestSize.Level1)
+{
+    string str = "-4294967295";
+    int64_t value;
+    EXPECT_TRUE(StringUtil::SafeStoInt64(str, value));
+    EXPECT_EQ(value, -4294967295);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_02, TestSize.Level1)
+{
+    string str = "9223372036854775807";
+    int64_t value;
+    EXPECT_TRUE(StringUtil::SafeStoInt64(str, value));
+    EXPECT_EQ(value, 9223372036854775807);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_03, TestSize.Level1)
+{
+    string str = "9223372036854775808";
+    int64_t value;
+    EXPECT_FALSE(StringUtil::SafeStoInt64(str, value));
+    EXPECT_EQ(value, 0);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_04, TestSize.Level1)
+{
+    string str = "+";
+    int64_t value;
+    EXPECT_FALSE(StringUtil::SafeStoInt64(str, value));
+    EXPECT_EQ(value, 0);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_05, TestSize.Level1)
+{
+    string str = "--123";
+    int64_t value;
+    EXPECT_FALSE(StringUtil::SafeStoInt64(str, value));
+    EXPECT_EQ(value, 0);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_06, TestSize.Level1)
+{
+    string str = "";
+    int64_t value;
+    EXPECT_FALSE(StringUtil::SafeStoInt64(str, value));
+    EXPECT_EQ(value, 0);
 }
 
 HWTEST_F(DownloaderUnitTest, HandleRetErrorCode001, TestSize.Level1)
