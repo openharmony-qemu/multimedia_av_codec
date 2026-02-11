@@ -70,8 +70,11 @@ void FSurfaceMemory::ReleaseSurfaceBuffer()
     surfaceBuffer_ = nullptr;
 }
 
-sptr<SurfaceBuffer> FSurfaceMemory::GetSurfaceBuffer()
+sptr<SurfaceBuffer> FSurfaceMemory::GetSurfaceBuffer(bool isReturnBuf)
 {
+    if (isReturnBuf) {
+        return surfaceBuffer_;
+    }
     if (isAttached && owner == Owner::OWNED_BY_SURFACE) {
         CHECK_AND_RETURN_RET_LOG(RequestSurfaceBuffer() == AVCS_ERR_OK, nullptr, "Get surface buffer failed!");
     }
