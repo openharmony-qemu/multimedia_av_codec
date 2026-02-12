@@ -155,16 +155,14 @@ std::pair<int64_t, bool> HlsPlayListDownloader::GetStartInfo() const
     if (master_->isStart_) {
         int64_t timeOffset = ((int64_t)(master_->timeOffset_ * HST_SECOND) / HST_MSECOND);
         if (duration != -1) {
-            startInfo.first = timeOffset < 0 ? std::max(timeOffset + duration, static_cast<int64_t>(0)) :
-                (timeOffset > duration ? duration : timeOffset);
+            startInfo.first = timeOffset < 0 ? std::max(timeOffset + duration, 0ll) : duration;
             startInfo.second = master_->precise_;
         }
     } else if (master_->defaultVariant_ && master_->defaultVariant_->m3u8_ &&
             master_->defaultVariant_->m3u8_->isStart_) {
         int64_t timeOffset = ((int64_t)(master_->defaultVariant_->m3u8_->timeOffset_ * HST_SECOND) / HST_MSECOND);
         if (duration != -1) {
-            startInfo.first = timeOffset < 0 ? std::max(timeOffset + duration, static_cast<int64_t>(0)) :
-                (timeOffset > duration ? duration : timeOffset);
+            startInfo.first = timeOffset < 0 ? std::max(timeOffset + duration, 0ll) : duration;
             startInfo.second = master_->defaultVariant_->m3u8_->precise_;
         }
     } else {

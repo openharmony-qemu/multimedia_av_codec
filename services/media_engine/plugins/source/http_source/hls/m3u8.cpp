@@ -1062,8 +1062,6 @@ void M3U8MasterPlaylist::GetDefaultMedieStream(std::shared_ptr<M3U8VariantStream
         });
     if (forcedItor != allMedia.rend()) {
         mediaStream = *forcedItor;
-        MEDIA_LOG_I("GetDefaultMediaStream type: %{public}s, streamId:" PUBLIC_LOG_U32, mediaType.c_str(),
-            mediaStream->streamId_);
         return;
     }
     auto defaultItor = std::find_if(allMedia.rbegin(), allMedia.rend(),
@@ -1073,8 +1071,6 @@ void M3U8MasterPlaylist::GetDefaultMedieStream(std::shared_ptr<M3U8VariantStream
         });
     if (defaultItor != allMedia.rend()) {
         mediaStream = *defaultItor;
-        MEDIA_LOG_I("GetDefaultMediaStream type: %{public}s, streamId:" PUBLIC_LOG_U32, mediaType.c_str(),
-            mediaStream->streamId_);
         return;
     }
     auto autoSelectItor = std::find_if(allMedia.rbegin(), allMedia.rend(),
@@ -1084,13 +1080,9 @@ void M3U8MasterPlaylist::GetDefaultMedieStream(std::shared_ptr<M3U8VariantStream
         });
     if (autoSelectItor != allMedia.rend()) {
         mediaStream = *autoSelectItor;
-        MEDIA_LOG_I("GetDefaultMediaStream type: %{public}s, streamId:" PUBLIC_LOG_U32, mediaType.c_str(),
-            mediaStream->streamId_);
         return;
     }
     mediaStream = allMedia.back();
-    MEDIA_LOG_I("GetDefaultMediaStream type: %{public}s, streamId:" PUBLIC_LOG_U32, mediaType.c_str(),
-            mediaStream->streamId_);
 }
 
 bool M3U8MasterPlaylist::IsVideoStream(const std::string& codecs)
