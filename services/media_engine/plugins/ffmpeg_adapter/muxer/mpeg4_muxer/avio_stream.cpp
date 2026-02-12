@@ -120,12 +120,56 @@ void AVIOStream::Write(const char *data, int32_t size)
 void AVIOStream::Write(const uint8_t* data, int32_t size)
 {
     FALSE_RETURN_MSG((data != nullptr && size > 0), "failed to write, data is empty.");
+    if (maxCacheSize_ > 0) {
+        WriteCache(data, size);
+        return;
+    }
     pos_ = dataSink_->Seek(pos_, SEEK_SET);
     int32_t writeSize = dataSink_->Write(data, size);
     if (writeSize > 0) {
         pos_ += writeSize;
         end_ = pos_ > end_ ? pos_ : end_;
     }
+}
+
+void AVIOStream::InitCache(uint32_t cacheSize)
+{
+    FlushCache();
+    cache_.clear();
+    maxCacheSize_ = cacheSize;
+    if (cacheSize > 0) {
+        cache_.resize(cacheSize + 8, 0); // 8
+    }
+    MEDIA_LOG_I("cache size:%{public}u, container:%{public}zu", cacheSize, cache_.size());
+}
+
+void AVIOStream::WriteCache(const uint8_t* data, int32_t size)
+{
+    for (int i = 0; i < size; i++) {
+        if (cacheSize_ >= maxCacheSize_) {
+            FlushCache();
+        }
+        cache_.data()[cacheSize_++] = data[i];
+    }
+}
+
+void AVIOStream::FlushCache()
+{
+    auto cacheSize = static_cast<int32_t>(cacheSize_);
+    if (cacheSize <= 0) {
+        cacheSize_ = 0;
+        return;
+    }
+    pos_ = dataSink_->Seek(pos_, SEEK_SET);
+    int32_t writeSize = dataSink_->Write(cache_.data(), cacheSize);
+    if (writeSize > 0) {
+        pos_ += writeSize;
+        end_ = pos_ > end_ ? pos_ : end_;
+    }
+    if (writeSize != cacheSize) {
+        MEDIA_LOG_E("write cache error! write size:%{public}d, cache size:%{public}d", writeSize, cacheSize);
+    }
+    cacheSize_ = 0;
 }
 
 int32_t AVIOStream::Read(uint8_t *data, int32_t size)
@@ -161,7 +205,7 @@ void AVIOStream::Seek(int64_t offset, int32_t whence)
 int64_t AVIOStream::GetPos()
 {
     FALSE_RETURN_V_MSG_E(dataSink_ != nullptr, -1, "failed to get pos, dataSink is nullptr.");
-    return pos_;
+    return pos_ + static_cast<int64_t>(cacheSize_);
 }
 
 bool AVIOStream::CanRead()

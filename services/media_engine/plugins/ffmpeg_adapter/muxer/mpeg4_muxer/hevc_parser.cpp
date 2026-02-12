@@ -160,6 +160,14 @@ bool HevcParser::IsHdrVivid()
     }
     return false;
 }
+
+std::vector<uint8_t> HevcParser::GetLogInfo()
+{
+    if (parser_) {
+        return parser_->GetLogInfo();
+    }
+    return std::vector<uint8_t>();
+}
 } // namespace Mpeg4
 } // namespace Plugins
 } // namespace Media

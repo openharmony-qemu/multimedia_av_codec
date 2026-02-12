@@ -37,9 +37,8 @@
 #include "meta/mime_type.h"
 
 namespace {
-#ifndef _WIN32
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_MUXER, "Mpeg4MuxerPlugin"};
-#endif // !_WIN32
+constexpr uint32_t CACHE_MAX_SIZE = 4096;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS::Media;
 using namespace Plugins;
@@ -398,6 +397,9 @@ Status Mpeg4MuxerPlugin::Stop()
     FALSE_RETURN_V_MSG_E(mdatPos_ > 0, Status::ERROR_WRONG_STATE, "Stop failed! Did not write header!");
     FALSE_RETURN_V_MSG_E(io_ != nullptr, Status::ERROR_INVALID_OPERATION, "data sink is not set");
     FALSE_RETURN_V_MSG_E(moov_ != nullptr, Status::ERROR_INVALID_OPERATION, "moov is not set");
+    for (auto &track : tracks_) {
+        track->UpdateUserMeta(userMeta_);
+    }
     WriteMdatSize();
     SetCreationTime(param_);
     boxParser_->AddMoovUdtaBox();
@@ -471,8 +473,10 @@ Status Mpeg4MuxerPlugin::WriteTailer()
     if (isMoovFront == 1 && !io_->CanRead()) {
         MEDIA_LOG_W("do not have read permission. cancel move moov to front!");
     }
-    moov_->GetSize();
+    uint32_t moovSize = moov_->GetSize();
+    io_->InitCache(moovSize > CACHE_MAX_SIZE ? CACHE_MAX_SIZE : moovSize);
     moov_->Write(io_);
+    io_->InitCache(0);
     moov_ = nullptr;
     return Status::NO_ERROR;
 }
@@ -502,7 +506,9 @@ Status Mpeg4MuxerPlugin::MoveMoovBoxToFront(bool isNeedFree)
     std::vector<std::pair<uint8_t*, int32_t>> buffer = {{nullptr, 0}, {nullptr, 0}};
     buffer[0].first = new uint8_t[offset];
     buffer[0].second = io->Read(buffer[0].first, offset);
+    io_->InitCache(moovSize > CACHE_MAX_SIZE ? CACHE_MAX_SIZE : moovSize);
     moov_->Write(io_);
+    io_->InitCache(0);
     if (isNeedFree) {
         io_->Write(static_cast<uint32_t>(8));  // 8
         io_->Write("free", 4);  // 4
