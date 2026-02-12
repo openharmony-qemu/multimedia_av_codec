@@ -33,6 +33,9 @@ declare_args() {
     av_codec_support_video_processing_engine = true
   }
   av_codec_support_libcurl = true
+  if (defined(global_parts_info) && defined(global_parts_info.multimedia_histreamer_ext)) {
+    av_codec_support_libcurl = false
+  }
   av_codec_support_software_codec = true
   av_codec_support_fcodec = true
   av_codec_support_avc_encoder = true
