@@ -702,7 +702,7 @@ Status DemuxerFilter::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& 
     MEDIA_LOG_D("SeekTo in");
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     if (fileType_ == FileType::MPEGTS) {
-        return demuxer_->SeekToKeyFrame(seekTime, mode, realSeekTime);
+        return demuxer_->SeekToKeyFrame(seekTime, mode, realSeekTime, MediaDemuxer::CallerType::PLAYER);
     }
     return demuxer_->SeekTo(seekTime, mode, realSeekTime);
 }
