@@ -77,6 +77,7 @@ constexpr uint8_t ADTS_SYNCWORD_BYTE0 = 0xFF; // ADTS syncword high 8 bits
 constexpr uint8_t ADTS_SYNCWORD_MASK_BYTE1 = 0xF0; // ADTS syncword high 4 bits in byte[1]
 constexpr uint8_t ADTS_RAW_DATA_BLOCKS_MASK = 0x03; // raw_data_blocks_in_frame is 2 bits in byte[6]
 constexpr int32_t AAC_SAMPLES_PER_RAW_DATA_BLOCK = 1024; // AAC-LC: 1024 PCM samples per raw_data_block
+constexpr int64_t US_PER_SEC = 1000000LL; // 1 second = 1,000,000 microseconds (AVBuffer timestamps use us)
 const uint32_t RANK_MAX = 100;
 const uint64_t INIT_DOWNLOADS_DATA_SIZE_THRESHOLD = 2 * 1024 * 1024;
 const int64_t LIVE_FLV_PROBE_SIZE = 100 * 1024 * 2;
@@ -918,9 +919,6 @@ bool FFmpegDemuxerPlugin::SupplementAudioDurationIfNeeded(std::shared_ptr<AVBuff
     if (frameSamples <= 0) {
         return false;
     }
-
-    // 1 second = 1,000,000 microseconds (AVBuffer timestamps use us)
-    constexpr int64_t US_PER_SEC = 1000000LL;
     const int64_t durationUs = (static_cast<int64_t>(frameSamples) * US_PER_SEC) / snapshot.sampleRate;
     FALSE_RETURN_V_MSG_E(durationUs > 0, false,
         "Invalid durationUs=" PUBLIC_LOG_D64 ", frameSamples=" PUBLIC_LOG_D32 " sampleRate=" PUBLIC_LOG_D32,
