@@ -62,7 +62,7 @@ private:
 };
 
 void AV1DecLog(void *cookie, const char *format, va_list ap);
-void Av1FreeCallback(const uint8_t *data, void *userData);
+void AV1FreeCallback(const uint8_t *data, void *userData);
 } // namespace Codec
 } // namespace MediaAVCodec
 } // namespace OHOS
