@@ -1558,6 +1558,7 @@ int32_t AvcEncoder::EncoderAvcFrame(AVC_ENC_INARGS &inArgs, AVC_ENC_OUTARGS &out
     } else {
         outputAVBuffer->flag_ = AVCODEC_BUFFER_FLAG_NONE;
         AVCODEC_LOGE("Cannot send frame to encodec: %{public}d", ret);
+        return AVCS_ERR_VID_ENC_FAILED;
     }
 
     outputBuffer->owner_ = FBuffer::Owner::OWNED_BY_USER;
