@@ -505,4 +505,35 @@ HWTEST_F(HwdecFunc3NdkTest, VIDEO_DECODE_TRANSFORM_0240, TestSize.Level0)
         ASSERT_EQ(beforeReleaseTroform, afterReleaseTroform);
     }
 }
+
+/**
+ * @tc.number    : VIDEO_DECODE_ANOTHER_0010
+ * @tc.name      : 解码器1正常解码，解码器2状态轮转
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFunc3NdkTest, VIDEO_DECODE_ANOTHER_0010, TestSize.Level2)
+{
+    if (cap_hevc != nullptr) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = INP_DIR_1080_20;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        auto vDecSample2 = make_shared<VDecAPI11Sample>();
+        ASSERT_EQ(AV_ERR_OK, vDecSample2->CreateVideoDecoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample2->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample2->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample2->Start());
+        ASSERT_EQ(AV_ERR_OK, vDecSample2->Flush());
+        ASSERT_EQ(AV_ERR_OK, vDecSample2->Start());
+        ASSERT_EQ(AV_ERR_OK, vDecSample2->Stop());
+        ASSERT_EQ(AV_ERR_OK, vDecSample2->Start());
+        ASSERT_EQ(AV_ERR_OK, vDecSample2->Reset());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
 }

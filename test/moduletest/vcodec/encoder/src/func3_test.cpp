@@ -27,6 +27,7 @@
 #include "native_avcodec_videoencoder.h"
 #include "native_averrors.h"
 #include "videoenc_api11_sample.h"
+#include "videoenc_sample.h"
 #include "native_avcodec_base.h"
 #include "avcodec_codec_name.h"
 #include "native_avcapability.h"
@@ -1273,6 +1274,38 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_PIXE_FORMAT_0020, TestSize.Level2)
         ASSERT_LT(1, vEncSample->pixlFormatNum);
         ASSERT_EQ(0, vEncSample->firstCallBackKey);
         ASSERT_EQ(0, vEncSample->onStreamChangedKey);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_ANOTHER_0010
+ * @tc.name      : 编码器1正常编码，编码器2状态机轮转
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_ANOTHER_0010, TestSize.Level2)
+{
+    if (cap_hevc != nullptr) {
+        auto vEncSample = make_unique<VEncNdkSample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        auto vEncSample2 = make_unique<VEncAPI11Sample>();
+        ASSERT_EQ(AV_ERR_OK, vEncSample2->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample2->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample2->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample2->Start());
+        ASSERT_EQ(AV_ERR_OK, vEncSample2->Flush());
+        ASSERT_EQ(AV_ERR_OK, vEncSample2->Start());
+        ASSERT_EQ(AV_ERR_OK, vEncSample2->Stop());
+        ASSERT_EQ(AV_ERR_OK, vEncSample2->Start());
+        ASSERT_EQ(AV_ERR_OK, vEncSample2->Reset());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
     }
 }
 } // namespace
