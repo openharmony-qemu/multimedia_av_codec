@@ -14,11 +14,14 @@
  */
 
 #include <algorithm>
+#include <vector>
 #include "time_range_manager.h"
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
+
+constexpr int32_t IDX_INTERVAL = 2;
 
 bool TimeRangeManager::IsInTimeRanges(const int64_t targetTs, TimeRange &timeRange)
 {
@@ -54,16 +57,18 @@ void TimeRangeManager::AddTimeRange(const TimeRange &range)
     timeRanges_.insert(newRange);
 }
 
-void TimeRangeManager::ReduceRanges()
+ void TimeRangeManager::ReduceRanges()
 {
-    if (timeRanges_.size() >= static_cast<size_t>(maxEntries_)) {
-        auto it = std::next(timeRanges_.begin());
-        auto last = std::prev(timeRanges_.end());
-        while (it != last) {
-            it = timeRanges_.erase(it);
-            if (it != last) {
-                ++it;
-            }
+    if (timeRanges_.size() < static_cast<size_t>(maxEntries_)) {
+        return;
+    }
+    std::vector<TimeRange> ranges(timeRanges_.begin(), timeRanges_.end());
+    timeRanges_.clear();
+    for (size_t i = 0; i < ranges.size(); ++i) {
+        if (i == 0 || i == ranges.size() - 1) {
+            timeRanges_.insert(ranges[i]);
+        } else if (i % IDX_INTERVAL == 0) {
+            timeRanges_.insert(ranges[i]);
         }
     }
 }
