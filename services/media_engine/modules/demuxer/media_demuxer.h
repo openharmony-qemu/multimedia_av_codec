@@ -73,6 +73,12 @@ public:
     explicit MediaDemuxer();
     ~MediaDemuxer() override;
 
+    enum class CallerType : int32_t {
+        PLAYER = 0,
+        AVMETADATA,
+        TRANSCODER,
+    }
+
     Status SetDataSource(const std::shared_ptr<MediaSource> &source);
     Status SetSubtitleSource(const std::shared_ptr<MediaSource> &source);
     void SetBundleName(const std::string& bundleName);
@@ -83,7 +89,7 @@ public:
     std::shared_ptr<Meta> GetUserMeta();
 
     Status SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
-    Status SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
+    Status SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime, CallerType callerType);
     Status Reset();
     Status Start();
     Status Stop();
