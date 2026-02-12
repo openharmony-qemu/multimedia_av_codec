@@ -15,6 +15,8 @@
 
 #include "video_track.h"
 #include <set>
+#include <iomanip>
+#include <sstream>
 #include "avcodec_common.h"
 #include "avcodec_mime_type.h"
 #include "mpeg4_utils.h"
@@ -337,6 +339,25 @@ void VideoTrack::SetCttsBox(std::shared_ptr<SttsBox> ctts)
 void VideoTrack::SetStssBox(std::shared_ptr<StssBox> stss)
 {
     stss_ = stss;
+}
+
+void VideoTrack::UpdateUserMeta(const std::shared_ptr<Meta> &userMeta)
+{
+    HevcParser* parser = VideoParser::GetVideoParserPtr<HevcParser>(videoParser_);
+    FALSE_RETURN_MSG(parser != nullptr && userMeta != nullptr, "parser or user meta is nullptr");
+    if (mimeType_.compare(AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_HEVC) == 0 &&
+        parser->GetColorTransfer() == static_cast<uint8_t>(TransferCharacteristic::UNSPECIFIED)) {
+        constexpr uint32_t maxSize = 128;
+        std::ostringstream oss;
+        std::vector<uint8_t> logInfo = parser->GetLogInfo();
+        FALSE_RETURN_MSG_W(!logInfo.empty() && logInfo.size() <= maxSize,
+            "invalid logInfo, logInfo.size: %{public}zu", logInfo.size());
+        for (uint8_t info : logInfo) {
+            oss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(info); // 2 characters indicate
+        }
+        userMeta->SetData("com.openharmony.video.sei.h_log", oss.str());
+        MEDIA_LOG_I("set h265 log info finished");
+    }
 }
 
 bool VideoTrack::InitColor(const std::shared_ptr<Meta> &trackDesc)

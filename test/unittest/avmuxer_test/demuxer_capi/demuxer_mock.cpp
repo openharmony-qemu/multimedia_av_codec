@@ -60,6 +60,8 @@ int32_t DemuxerMock::Start(std::string fileName)
         std::cout << "OH_AVDemuxer_CreateWithSource failed!" << std::endl;
         return -1;
     }
+
+    userMetaFormat_ = OH_AVSource_GetCustomMetadataFormat(source_);
     return UpdateTrackInfo();
 }
 

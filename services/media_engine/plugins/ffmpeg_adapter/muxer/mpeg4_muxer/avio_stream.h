@@ -36,15 +36,21 @@ public:
     void Write(std::string data);
     void Write(const char *data, int32_t size);
     void Write(const uint8_t* data, int32_t size);
+    void InitCache(uint32_t cacheSize);
     int32_t Read(uint8_t *data, int32_t size);
     void Seek(int64_t offset, int whence = SEEK_SET);
     int64_t GetPos();
     bool CanRead();
+    void FlushCache();
 
 private:
+    void WriteCache(const uint8_t* data, int32_t size);
     std::shared_ptr<DataSink> dataSink_ = nullptr;
     int64_t pos_ = 0;
     int64_t end_ = -1;
+    std::vector<uint8_t> cache_;
+    uint32_t cacheSize_ = 0;
+    uint32_t maxCacheSize_ = 0;
 };
 } // Plugins
 } // Media

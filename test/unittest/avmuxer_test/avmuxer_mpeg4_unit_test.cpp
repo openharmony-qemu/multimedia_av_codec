@@ -1322,6 +1322,13 @@ HWTEST_F(Mpeg4MuxerUnitTest, Muxer_Hevc_WriteSample_005, TestSize.Level0)
     }
     ASSERT_EQ(ret, 0);
     EXPECT_EQ(avmuxer_->Stop(), 0);
+
+    std::shared_ptr<DemuxerMock> demuxer = std::make_shared<DemuxerMock>();
+    demuxer->Start(outputFile);
+    ASSERT_NE(demuxer->GetUserMetaFormat(), nullptr);
+    const char* logInfo = nullptr;
+    OH_AVFormat_GetStringValue(demuxer->GetUserMetaFormat(), "com.openharmony.video.sei.h_log", &logInfo);
+    ASSERT_NE(logInfo, nullptr);
 }
 
 /**
