@@ -171,8 +171,7 @@ private:
     std::mutex outBufMutex_;
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> outBufMap_;
     std::condition_variable releaseBufferCondition_;
-    std::vector<uint32_t> indexs_;
-    std::vector<uint32_t> dropIndexs_;
+    std::vector<std::pair<uint32_t, std::shared_ptr<AVBuffer>>> indexs_;
     std::atomic<int64_t> lastBufferPts_ = INT64_MIN;
     std::mutex releaseBufferMutex_;
     bool isReleaseFree_ = false;
