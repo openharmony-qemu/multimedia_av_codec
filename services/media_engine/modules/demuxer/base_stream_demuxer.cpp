@@ -55,6 +55,7 @@ BaseStreamDemuxer::~BaseStreamDemuxer()
 void BaseStreamDemuxer::SetSource(const std::shared_ptr<Source>& source)
 {
     MEDIA_LOG_D("BaseStreamDemuxer::SetSource");
+    FALSE_RETURN_MSG(source != nullptr, "source is nullptr");
     source_ = source;
     source_->GetSize(mediaDataSize_);
     seekable_ = source_->GetSeekable();
