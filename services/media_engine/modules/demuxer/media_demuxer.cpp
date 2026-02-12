@@ -4053,7 +4053,7 @@ void MediaDemuxer::SetEnableOnlineFdCache(bool isEnableFdCache)
 
 void MediaDemuxer::WaitForBufferingEnd()
 {
-    FALSE_RETURN_MSG(source_ != nullptr, "Source is nullptr");
+    FALSE_RETURN_MSG(source_ != nullptr, "Source is nullptr!");
     source_->WaitForBufferingEnd();
 }
 
