@@ -2634,7 +2634,7 @@ void MediaDemuxer::HandleSelectTrackStreamSeek(int32_t streamID, int32_t& trackI
 
 bool MediaDemuxer::HandleSelectTrackChangeStream(int32_t trackId, int32_t newStreamID, int32_t& newTrackId)
 {
-    MEDIA_LOG_I("SelectTrackChangeStream: TrackId: " PUBLIC_LOG_D32, trackId);
+    MEDIA_LOG_D("SelectTrackChangeStream: TrackId: " PUBLIC_LOG_D32, trackId);
     StreamType streamType = demuxerPluginManager_->GetStreamTypeByTrackID(trackId);
     TrackType type = demuxerPluginManager_->GetTrackTypeByTrackID(trackId);
     int32_t currentStreamID = demuxerPluginManager_->GetStreamIDByTrackType(type);
@@ -3233,7 +3233,8 @@ void MediaDemuxer::BufferingStatus()
     if (GetTrackIsBuffering(mainTrackId)) {
         int64_t percent = static_cast<int64_t>((sampleQueueMap_[mainTrackId]->NewGetCacheDuration() * 100) /
             SampleQueueController::START_CONSUME_WATER_LOOP);
-        MEDIA_LOG_I("BUFFERING_PERCENT: %{public}lld", percent);
+        AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGI, LOG_INTERVAL_MS, LOG_MAX_COUNT,
+            "BUFFERING_PERCENT: %{public}lld", percent);
         if (eventReceiver_) {
             eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_BUFFER_PROGRESS, percent});
         }
@@ -3809,7 +3810,7 @@ bool MediaDemuxer::CheckDropAudioFrame(std::shared_ptr<AVBuffer> sample, int32_t
         }
         if (shouldCheckAudioFramePts_ == false) {
             lastAudioPts_ = sample->pts_;
-            MEDIA_LOG_I("Set last audio pts " PUBLIC_LOG_D64, lastAudioPts_);
+            MEDIA_LOG_D("Set last audio pts " PUBLIC_LOG_D64, lastAudioPts_);
             return false;
         }
         if (sample->pts_ <= lastAudioPts_) {
@@ -4052,7 +4053,7 @@ void MediaDemuxer::SetEnableOnlineFdCache(bool isEnableFdCache)
 
 void MediaDemuxer::WaitForBufferingEnd()
 {
-    FALSE_RETURN_MSG(source_ != nullptr, "Source is nullptr");
+    FALSE_RETURN_MSG(source_ != nullptr, "Source is nullptr!");
     source_->WaitForBufferingEnd();
 }
 
