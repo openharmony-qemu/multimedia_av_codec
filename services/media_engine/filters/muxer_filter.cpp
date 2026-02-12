@@ -381,7 +381,9 @@ void MuxerFilter::OnTransCoderBufferFilled(std::shared_ptr<AVBuffer> &inputBuffe
             inputBufferQueue->ReturnBuffer(inputBuffer, true);
         }
     } else if (streamType == StreamType::STREAMTYPE_ENCODED_VIDEO) {
-        lastVideoPts_ = inputBuffer->pts_;
+        if (!videoIsEos) {
+            lastVideoPts_ = inputBuffer->pts_;
+        }
         std::unique_lock<std::mutex> lock(stopMutex_);
         stopCondition_.notify_all();
         inputBufferQueue->ReturnBuffer(inputBuffer, true);
