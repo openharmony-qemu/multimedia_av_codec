@@ -893,7 +893,7 @@ void HlsSegmentManager::PlaylistBackup(const PlayInfo& fragment)
 void HlsSegmentManager::OnPlayListChanged(const std::vector<PlayInfo>& playList)
 {
     MEDIA_LOG_I("HLS OnPlayListChanged in: %{public}zu, type: %{public}d", playList.size(), type_);
-    PlayListChanged(playList);
+    HandlePlayListChanged(playList);
     if (!isDownloadStarted_ && !playList_->Empty() && !isInterruptNeeded_.load()) {
         auto playInfo = playList_->Pop();
         std::string url = playInfo.url_;
@@ -909,7 +909,7 @@ void HlsSegmentManager::OnPlayListChanged(const std::vector<PlayInfo>& playList)
         "type: %{public}d", playList_->Size(), backPlayList_.size(), writeTsIndex_, type_);
 }
 
-void HlsSegmentManager::PlayListChanged(const std::vector<PlayInfo>& playList)
+void HlsSegmentManager::HandlePlayListChanged(const std::vector<PlayInfo>& playList)
 {
     ResetPlaylistCapacity(static_cast<size_t>(playList.size()));
     int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
