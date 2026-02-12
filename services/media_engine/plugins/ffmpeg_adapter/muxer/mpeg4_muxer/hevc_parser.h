@@ -35,6 +35,7 @@ public:
     uint8_t GetColorMatrixCoeff();
     bool GetColorRange();
     bool IsHdrVivid();
+    std::vector<uint8_t> GetLogInfo();
 
 private:
     int32_t WriteAnnexBFrame(const std::shared_ptr<AVIOStream> &io, const uint8_t* sample, int32_t size);

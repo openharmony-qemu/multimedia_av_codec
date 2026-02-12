@@ -34,6 +34,7 @@ public:
     Status WriteSample(std::shared_ptr<AVIOStream> io, const std::shared_ptr<AVBuffer> &sample) override;
     Status WriteTailer() override;
     Any GetPointer() override {return Any(this);}
+    void UpdateUserMeta(const std::shared_ptr<Meta> &userMeta) override;
     int32_t GetWidth() const;
     int32_t GetHeight() const;
     bool IsColor() const;

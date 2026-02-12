@@ -25,12 +25,15 @@ public:
     ~DemuxerMock();
     int32_t Start(std::string fileName);
     int32_t GetVideoFrame(OH_AVBuffer *buffer, OH_AVCodecBufferAttr *info);
+    OH_AVFormat *GetSourceFormat() {return sourceFormat_;}
+    OH_AVFormat *GetUserMetaFormat() {return userMetaFormat_;}
 private:
     int32_t UpdateTrackInfo();
     int fd_ = 0;
     OH_AVSource *source_ = nullptr;
     OH_AVDemuxer *demuxer_ = nullptr;
     OH_AVFormat *sourceFormat_ = nullptr;
+    OH_AVFormat *userMetaFormat_ = nullptr;
     uint32_t videoTrackId_ = 0xffffffff;
     uint32_t audioTrackId_ = 0xffffffff;
 };
