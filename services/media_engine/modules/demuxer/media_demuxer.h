@@ -65,6 +65,12 @@ enum class DemuxerTrackType : int32_t {
     SUBTITLE,
 };
 
+enum class DemuxerCallerType : int32_t {
+    PLAYER = 0,
+    AVMETADATA,
+    TRANSCODER,
+};
+
 class MediaDemuxer : public std::enable_shared_from_this<MediaDemuxer>,
                      public Plugins::Callback,
                      public InterruptListener,
@@ -72,12 +78,6 @@ class MediaDemuxer : public std::enable_shared_from_this<MediaDemuxer>,
 public:
     explicit MediaDemuxer();
     ~MediaDemuxer() override;
-
-    enum class CallerType : int32_t {
-        PLAYER = 0,
-        AVMETADATA,
-        TRANSCODER,
-    }
 
     Status SetDataSource(const std::shared_ptr<MediaSource> &source);
     Status SetSubtitleSource(const std::shared_ptr<MediaSource> &source);
@@ -89,7 +89,8 @@ public:
     std::shared_ptr<Meta> GetUserMeta();
 
     Status SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
-    Status SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime, CallerType callerType);
+    Status SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode,
+        int64_t& realSeekTime, DemuxerCallerType callerType);
     Status Reset();
     Status Start();
     Status Stop();
