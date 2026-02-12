@@ -57,7 +57,7 @@ void TimeRangeManager::AddTimeRange(const TimeRange &range)
     timeRanges_.insert(newRange);
 }
 
- void TimeRangeManager::ReduceRanges()
+void TimeRangeManager::ReduceRanges()
 {
     if (timeRanges_.size() < static_cast<size_t>(maxEntries_)) {
         return;
