@@ -167,6 +167,7 @@ if (!(defined(global_parts_info) && defined(global_parts_info.thirdparty_libvpx)
   av_codec_support_vp8_decoder = false
   av_codec_support_vp9_decoder = false
 }
+
 if (!av_codec_support_software_codec) {
   av_codec_support_fcodec = false
   av_codec_support_avc_encoder = false
