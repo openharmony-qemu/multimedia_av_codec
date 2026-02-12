@@ -22,6 +22,7 @@
 #include "vpx_decoder.h"
 #include "tools_common.h"
 #include "video_reader.h"
+#include "libavutil/mastering_display_metadata.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

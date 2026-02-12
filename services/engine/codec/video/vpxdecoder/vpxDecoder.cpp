@@ -24,7 +24,6 @@
 #include "v1_0/cm_color_space.h"
 #include "v1_0/hdr_static_metadata.h"
 #include "v1_0/buffer_handle_meta_key_type.h"
-#include "libavutil/mastering_display_metadata.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
