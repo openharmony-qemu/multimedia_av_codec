@@ -863,8 +863,7 @@ bool FFmpegDemuxerPlugin::SupplementAudioTimestampIfNeeded(std::shared_ptr<AVBuf
     return durationUpdated || ptsDtsUpdated;
 }
 
-namespace {
-int32_t GetFrameSamplesFromFFmpeg(const AVStreamSnapshot &snapshot, int32_t pktSize)
+int32_t FFmpegDemuxerPlugin::GetFrameSamplesFromFFmpeg(const AVStreamSnapshot &snapshot, int32_t pktSize)
 {
     // Prefer FFmpeg's own logic to avoid plugin-side magic numbers.
     AVCodecParameters par {};
@@ -880,7 +879,7 @@ int32_t GetFrameSamplesFromFFmpeg(const AVStreamSnapshot &snapshot, int32_t pktS
     return av_get_audio_frame_duration2(&par, pktSize);
 }
 
-int32_t GetAacFrameSamplesFromAdts(const AVPacket &pkt)
+int32_t FFmpegDemuxerPlugin::GetAacFrameSamplesFromAdts(const AVPacket &pkt)
 {
     // For ADTS AAC in TS, derive raw_data_blocks_in_frame from ADTS header.
     FALSE_RETURN_V_MSG_E(pkt.data != nullptr && pkt.size >= ADTS_FIXED_HEADER_SIZE, 0,
@@ -895,7 +894,6 @@ int32_t GetAacFrameSamplesFromAdts(const AVPacket &pkt)
     // ADTS header stores (raw_data_blocks_in_frame), actual blocks = rawBlocks + 1.
     return AAC_SAMPLES_PER_RAW_DATA_BLOCK * (rawBlocks + 1);
 }
-} // namespace
 
 bool FFmpegDemuxerPlugin::SupplementAudioDurationIfNeeded(std::shared_ptr<AVBuffer> sample, const AVPacket &firstPkt,
     const AVStreamSnapshot &snapshot)
@@ -996,7 +994,7 @@ Status FFmpegDemuxerPlugin::BufferIsValid(std::shared_ptr<AVBuffer> sample, std:
         FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_ != nullptr && sample->meta_ != nullptr,
             Status::ERROR_INVALID_OPERATION, "Input sample is nullptr");
         FALSE_RETURN_V_MSG_E(sample->memory_->GetCapacity() >= 0, Status::ERROR_INVALID_DATA,
-            "Invalid capability[" PUBLIC_LOG_D32 "]", sample->memory_->GetCapacity());
+            "Invalid capability[%{public}d]", sample->memory_->GetCapacity());
     }
     return Status::OK;
 }
@@ -1034,8 +1032,7 @@ Status FFmpegDemuxerPlugin::PrepareBufferMetadata(std::shared_ptr<AVBuffer> samp
 {
     FALSE_RETURN_V_MSG_E(tempPktWrapper->GetSize() >= 0 &&
         static_cast<uint32_t>(tempPktWrapper->GetSize()) >= samplePacket->offset, Status::ERROR_INVALID_DATA,
-        "Invalid size[" PUBLIC_LOG_D32 "] offset[" PUBLIC_LOG_U32 "]", tempPktWrapper->GetSize(),
-        samplePacket->offset);
+        "Invalid size[%{public}d] offset[%{public}u]", tempPktWrapper->GetSize(), samplePacket->offset);
     uint32_t remainSize = static_cast<uint32_t>(tempPktWrapper->GetSize()) - samplePacket->offset;
     uint32_t capability = static_cast<uint32_t>(sample->memory_->GetCapacity()); // memory_ is checked in BufferIsValid
     copySize = remainSize < capability ? remainSize : capability;
@@ -1099,7 +1096,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     uint32_t remainSize = static_cast<uint32_t>(tempPktWrapper->GetSize()) - samplePacket->offset;
     if (copySize < remainSize) {
         FALSE_RETURN_V_MSG_E(samplePacket->offset <= UINT32_MAX - copySize, Status::ERROR_INVALID_DATA,
-            "Invalid offset[" PUBLIC_LOG_U32 "] copySize[" PUBLIC_LOG_U32 "]", samplePacket->offset, copySize);
+            "Invalid offset[%{public}u] copySize[%{public}u]", samplePacket->offset, copySize);
         samplePacket->offset += copySize;
         MEDIA_LOG_D("Buffer is not enough, next buffer to copy remain data");
         return Status::ERROR_NOT_ENOUGH_DATA;
@@ -3464,7 +3461,7 @@ void FFmpegDemuxerPlugin::MaybeNotifyCachePressure(uint32_t trackId, uint32_t ca
 
 void FFmpegDemuxerPlugin::SetInterruptState(bool isInterruptNeeded)
 {
-    MEDIA_LOG_I("SetInterruptState " PUBLIC_LOG_D32, isInterruptNeeded);
+    MEDIA_LOG_I("SetInterruptState %{public}d", isInterruptNeeded);
     isInterruptNeeded_ = isInterruptNeeded;
 }
 

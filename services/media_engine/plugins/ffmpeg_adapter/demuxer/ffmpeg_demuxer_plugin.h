@@ -277,6 +277,8 @@ private:
         const AVStreamSnapshot &snapshot);
     bool SupplementAudioPtsDtsIfNeeded(std::shared_ptr<AVBuffer> sample, const AVPacket &firstPkt,
         const AVStreamSnapshot &snapshot, uint32_t trackIndex);
+    static int32_t GetFrameSamplesFromFFmpeg(const AVStreamSnapshot &snapshot, int32_t pktSize);
+    static int32_t GetAacFrameSamplesFromAdts(const AVPacket &pkt);
     Plugins::AVPacketWrapperPtr CombinePackets(std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
