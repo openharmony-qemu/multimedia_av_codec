@@ -22,6 +22,7 @@
 #include "osal/utils/steady_clock.h"
 #include "osal/task/task.h"
 #include "download/download_metrics_info.h"
+#include "utils/thread_safe_container.h"
 
 namespace OHOS {
 namespace Media {
@@ -117,7 +118,7 @@ private:
     StatusCallbackFunc statusCallback_ {nullptr};
 
     std::shared_ptr<DashMpdDownloader> mpdDownloader_ {nullptr};
-    std::vector<std::shared_ptr<DashSegmentDownloader>> segmentDownloaders_;
+    ThreadSafeContainer<std::shared_ptr<DashSegmentDownloader>, std::vector> segmentDownloaders_;
 
     std::atomic<bool> isInterruptNeeded_{false};
     bool isAutoSelectBitrate_ {true};
