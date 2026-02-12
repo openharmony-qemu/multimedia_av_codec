@@ -1829,7 +1829,7 @@ void MediaDemuxer::ResetAfterSeek(Status ret)
 }
 
 Status MediaDemuxer::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode,
-    int64_t& realSeekTime, CallerType callerType)
+    int64_t& realSeekTime, DemuxerCallerType callerType)
 {
     MediaAVCodec::AVCODEC_SYNC_TRACE;
     Status ret;
@@ -1867,7 +1867,7 @@ Status MediaDemuxer::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode,
     for (auto item : requestBufferErrorCountMap_) {
         requestBufferErrorCountMap_[item.first] = 0;
     }
-    if (ret != Status::OK && callerType == CallerType::PLAYER) {
+    if (ret != Status::OK && callerType == DemuxerCallerType::PLAYER) {
         isSeekError_.store(true);
     }
     isFirstFrameAfterSeek_.store(true);

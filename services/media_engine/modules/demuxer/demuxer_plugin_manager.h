@@ -122,7 +122,7 @@ public:
     Status Flush();
     Status SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
     Status SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode,
-        int64_t& realSeekTime, MediaDemuxer::CallerType callerType);
+        int64_t& realSeekTime, DemuxerCallerType callerType);
     Status SeekToFrameByDts(int32_t streamID, int32_t trackId, int64_t seekTime, Plugins::SeekMode mode,
         int64_t& realSeekTime);
     int32_t GetStreamID(int32_t trackId);

@@ -760,7 +760,7 @@ Status DemuxerPluginManager::SeekTo(int64_t seekTime, Plugins::SeekMode mode, in
 }
 
 Status DemuxerPluginManager::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode,
-    int64_t& realSeekTime, MediaDemuxer::CallerType callerType)
+    int64_t& realSeekTime, DemuxerCallerType callerType)
 {
     if (curAudioStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curAudioStreamID_].plugin->SeekTo(-1, seekTime, mode, realSeekTime);
@@ -778,7 +778,7 @@ Status DemuxerPluginManager::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode 
     if (curVideoStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curVideoStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curVideoStreamID_].plugin->SeekToKeyFrame(
             -1, seekTime, Plugins::SeekMode::SEEK_NEXT_SYNC, realSeekTime, SEEKTOKEYFRAME_WARNING_MS);
-        if (callerType == MediaDemuxer::CallerType::AVMETADATA && ret == Status::END_OF_STREAM) {
+        if (callerType == DemuxerCallerType::AVMETADATA && ret == Status::END_OF_STREAM) {
             return ret;
         }
         if (ret != Status::OK) {

@@ -46,6 +46,8 @@ enum TrackType {
     TRACK_INVALID
 };
 
+enum class DemuxerCallerType : int32_t;
+
 class DemuxerPluginManager {
 public:
     DemuxerPluginManager() = default;
@@ -82,7 +84,8 @@ public:
     MOCK_METHOD0(Stop, Status());
     MOCK_METHOD0(Flush, Status());
     MOCK_METHOD3(SeekTo, Status(int64_t seekTime, Plugins::SeekMode mode, int64_t &realSeekTime));
-    MOCK_METHOD3(SeekToKeyFrame, Status(int64_t seekTime, Plugins::SeekMode mode, int64_t &realSeekTime));
+    MOCK_METHOD4(SeekToKeyFrame, Status(int64_t seekTime, Plugins::SeekMode mode,
+        int64_t &realSeekTime, DemuxerCallerType callerType));
     MOCK_METHOD5(SeekToFrameByDts, Status(int32_t streamID, int32_t trackId, int64_t seekTime,
                                    Plugins::SeekMode mode, int64_t& realSeekTime));
     MOCK_METHOD1(GetStreamID, int32_t(int32_t trackId));
