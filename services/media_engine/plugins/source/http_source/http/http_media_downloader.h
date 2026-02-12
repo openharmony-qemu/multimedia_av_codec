@@ -19,7 +19,6 @@
 #include <string>
 #include <memory>
 #include <unistd.h>
-#include <shared_mutex>
 #include "timer.h"
 #include "osal/utils/ring_buffer.h"
 #include "osal/utils/steady_clock.h"
@@ -163,10 +162,6 @@ private:
     bool IsAutoSelectConditionOk();
     void WaitCacheBufferInit();
     void UpdateDownloadFinished(const std::string &url, const std::string& location);
-    void SetDownloadRequest(std::shared_ptr<DownloadRequest> downloadRequest);
-    std::shared_ptr<DownloadRequest> GetDownloadRequest() const;
-    void SetDownloader(std::shared_ptr<Downloader> downloader);
-    std::shared_ptr<Downloader> GetDownloader() const;
 
 private:
     std::shared_ptr<RingBuffer> ringBuffer_;
@@ -174,8 +169,6 @@ private:
     std::shared_ptr<Downloader> downloader_;
     std::shared_ptr<DownloadRequest> downloadRequest_;
     Mutex mutex_;
-    mutable std::shared_mutex downloaderMutex_;
-    mutable std::shared_mutex downloadRequestMutex_;
     ConditionVariable cvReadWrite_;
     Callback* callback_ {nullptr};
     StatusCallbackFunc statusCallback_ {nullptr};

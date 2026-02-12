@@ -218,8 +218,6 @@ private:
     void SetDownloadRequest(std::shared_ptr<DownloadRequest> downloadRequest);
     std::shared_ptr<DownloadRequest> GetDownloadRequest() const;
     bool CheckDownloadRequest(const std::shared_ptr<DownloadRequest>& downloadRequest);
-    std::shared_ptr<Downloader> GetDownloader() const;
-    void SetDownloader(std::shared_ptr<Downloader> downloader);
 
 private:
     static constexpr uint32_t MIN_RETENTION_DURATION_MS = 5 * 1000;
@@ -231,7 +229,6 @@ private:
     std::vector<std::shared_ptr<DashInitSegment>> initSegments_;
     std::mutex segmentMutex_;
     std::mutex initSegmentMutex_;
-    mutable std::shared_mutex downloaderMutex_;
     mutable std::shared_mutex downloadRequestMutex_;
     DataSaveFunc dataSave_;
     StatusCallbackFunc statusCallback_;
