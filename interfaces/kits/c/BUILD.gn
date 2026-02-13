@@ -83,7 +83,7 @@ config("av_cenc_info_capi_config") {
 ohos_shared_library("avcodec_hiappevent") {
   install_enable = true
   sanitize = av_codec_sanitize
-  sources = 
+  sources =
       [ 
         "$av_codec_root_dir/frameworks/native/capi/common/hiappevent_util.cpp",
       ]
