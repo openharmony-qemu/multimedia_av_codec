@@ -372,14 +372,31 @@ void TimeAndIndexConversion::ParseMdhd(uint32_t boxSize)
     const uint8_t* ptr = memory->GetReadOnlyData();
     FALSE_RETURN_MSG(ptr != nullptr, "ParseMdhd failed due to nullptr");
     size_t size = memory->GetSize();
-    if (size < sizeof(uint32_t) * 3) { // 3 is used to check for version, flags, and creation_time
-        MEDIA_LOG_E("Not enough data in buffer to read MDHD header");
+
+    // mdhd(full box): version(1)+flags(3) + creation/modification + timescale + duration
+    // version 0: creation/modification/timescale/duration are uint32
+    // version 1: creation/modification/duration are uint64, timescale is uint32
+    FALSE_RETURN_MSG(size >= sizeof(uint32_t), "Not enough data in buffer to read MDHD version");
+    uint8_t version = ptr[0];
+    size_t timeScaleOffset = 0;
+    size_t minBytesForTimeScale = 0;
+    if (version == 1) {
+        timeScaleOffset = sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint64_t);
+        minBytesForTimeScale = timeScaleOffset + sizeof(uint32_t);
+    } else {
+        timeScaleOffset = sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t);
+        minBytesForTimeScale = timeScaleOffset + sizeof(uint32_t);
+    }
+    if (size < minBytesForTimeScale) {
+        MEDIA_LOG_E("Not enough data in buffer to read MDHD timeScale, size: " PUBLIC_LOG_ZU ", need: "
+            PUBLIC_LOG_ZU, size, minBytesForTimeScale);
         return;
     }
-    // 读取versionAndFlags，creation_time，modification_time，timeScale，和duration
-    uint32_t versionAndFlags = *reinterpret_cast<const uint32_t*>(ptr);
+
+    // 读取versionAndFlags/ timeScale
+    uint32_t versionAndFlags = ntohl(*reinterpret_cast<const uint32_t*>(ptr));
     MEDIA_LOG_D("versionAndFlags: " PUBLIC_LOG_D32, versionAndFlags);
-    uint32_t timeScale = *reinterpret_cast<const uint32_t*>(ptr + sizeof(uint32_t) * 3); // 3 is used to check data
+    uint32_t timeScale = *reinterpret_cast<const uint32_t*>(ptr + timeScaleOffset);
     timeScale = ntohl(timeScale);
     MEDIA_LOG_D("timeScale: " PUBLIC_LOG_D32, timeScale);
     curTrakInfo_.timeScale = timeScale;
