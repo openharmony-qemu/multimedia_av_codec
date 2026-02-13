@@ -75,9 +75,9 @@ DashSegmentDownloader::DashSegmentDownloader(Callback *callback, int streamId, M
     buffer_->Init();
 
     sourceLoader_ = sourceLoader;
-    downloader_ = std::make_shared<Downloader>("dashSegment", sourceLoader_);
-    downloader_->Init();
-
+    auto downloader = std::make_shared<Downloader>("dashSegment", sourceLoader_);
+    downloader->Init();
+    SetDownloader(downloader);
     SetDownloadRequest(nullptr);
     mediaSegment_ = nullptr;
     loopInterruptClock_.Reset();
@@ -89,8 +89,9 @@ DashSegmentDownloader::~DashSegmentDownloader()
     if (buffer_ != nullptr) {
         buffer_->SetActive(false, true);
     }
-    if (downloader_ != nullptr) {
-        downloader_->Stop(false);
+    auto downloader = GetDownloader();
+    if (downloader) {
+        downloader->Stop(false);
     }
     segmentList_.clear();
 }
@@ -104,8 +105,9 @@ void DashSegmentDownloader::Init()
         return shareDownloader->SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len),
             std::forward<decltype(notBlock)>(notBlock));
     };
-    if (downloader_ != nullptr && downloadCallback_ != nullptr) {
-        downloader_->SetDownloadCallback(downloadCallback_);
+    auto downloader = GetDownloader();
+    if (downloader != nullptr && downloadCallback_ != nullptr) {
+        downloader->SetDownloadCallback(downloadCallback_);
     }
 }
 
@@ -156,7 +158,7 @@ bool DashSegmentDownloader::Open(const std::shared_ptr<DashSegment>& dashSegment
         PutRequestIntoDownloader(mediaSegment_->duration_, mediaSegment_->startRangeValue_,
                                  mediaSegment_->endRangeValue_, mediaSegment_->url_);
     }
-    
+
     return true;
 }
 
@@ -164,8 +166,10 @@ void DashSegmentDownloader::Close(bool isAsync, bool isClean)
 {
     MEDIA_LOG_I("Close enter");
     buffer_->SetActive(false, isClean);
-    downloader_->Stop(isAsync);
-
+    auto downloader = GetDownloader();
+    if (downloader) {
+        downloader->Stop(isAsync);
+    }
     auto request = GetDownloadRequest();
     if (CheckDownloadRequest(request)) {
         request->Close();
@@ -176,14 +180,20 @@ void DashSegmentDownloader::Pause()
 {
     MEDIA_LOG_I("Pause enter");
     buffer_->SetActive(false);
-    downloader_->Pause();
+    auto downloader = GetDownloader();
+    if (downloader) {
+        downloader->Pause();
+    }
 }
 
 void DashSegmentDownloader::Resume()
 {
     MEDIA_LOG_I("Resume enter");
     buffer_->SetActive(true);
-    downloader_->Resume();
+    auto downloader = GetDownloader();
+    if (downloader) {
+        downloader->Resume();
+    }
 }
 
 DashReadRet DashSegmentDownloader::Read(uint8_t *buff, ReadDataInfo &readDataInfo,
@@ -222,9 +232,10 @@ DashReadRet DashSegmentDownloader::Read(uint8_t *buff, ReadDataInfo &readDataInf
     uint32_t maxReadLength = GetMaxReadLength(wantReadLength, currentSegment, currentStreamId);
     realReadLength = buffer_->ReadBuffer(buff, maxReadLength, DEFAULT_WAIT_TIME);
     size_t bufferSize = buffer_->GetSize();
-    if (downloader_ != nullptr && sourceLoader_ != nullptr && !canWriteTmp && realReadLength > 0
+    auto downloader = GetDownloader();
+    if (downloader && sourceLoader_ != nullptr && !canWriteTmp && realReadLength > 0
         && bufferSize < DOWNLOADER_RESUME_THRESHOLD) {
-        downloader_->Resume();
+        downloader->Resume();
         MEDIA_LOG_D("Dash downloader resume.");
     }
     if (realReadLength == 0) {
@@ -683,33 +694,31 @@ bool DashSegmentDownloader::IsSegmentFinish() const
 
 bool DashSegmentDownloader::CleanAllSegmentBuffer(bool isCleanAll, int64_t& remainLastNumberSeq)
 {
-    if (isCleanAll) {
-        MEDIA_LOG_I("CleanAllSegmentBuffer clean all");
-        isCleaningBuffer_.store(true);
-        Close(false, true);
-        std::lock_guard<std::mutex> lock(segmentMutex_);
-        isAllSegmentFinished_.store(false);
-        for (const auto &it: segmentList_) {
-            if (it == nullptr || buffer_->GetHead() > it->bufferPosTail_) {
-                continue;
-            }
-
-            remainLastNumberSeq = it->numberSeq_;
-            break;
+    FALSE_RETURN_V_MSG(isCleanAll, false, "segmentBuffer is clean all");
+    MEDIA_LOG_I("CleanAllSegmentBuffer clean all");
+    isCleaningBuffer_.store(true);
+    Close(false, true);
+    std::lock_guard<std::mutex> lock(segmentMutex_);
+    isAllSegmentFinished_.store(false);
+    for (const auto &it: segmentList_) {
+        if (it == nullptr || buffer_->GetHead() > it->bufferPosTail_) {
+            continue;
         }
 
-        downloader_ = std::make_shared<Downloader>("dashSegment", sourceLoader_);
-        if (downloader_ != nullptr && downloadCallback_ != nullptr) {
-            downloader_->SetDownloadCallback(downloadCallback_);
-        }
-        downloader_->Init();
-        buffer_->Clear();
-        segmentList_.clear();
-        buffer_->SetActive(true);
-        return true;
+        remainLastNumberSeq = it->numberSeq_;
+        break;
     }
 
-    return false;
+    auto downloader = std::make_shared<Downloader>("dashSegment", sourceLoader_);
+    if (downloadCallback_ != nullptr) {
+        downloader->SetDownloadCallback(downloadCallback_);
+    }
+    downloader->Init();
+    SetDownloader(downloader);
+    buffer_->Clear();
+    segmentList_.clear();
+    buffer_->SetActive(true);
+    return true;
 }
 
 bool DashSegmentDownloader::CleanSegmentBuffer(bool isCleanAll, int64_t& remainLastNumberSeq)
@@ -744,28 +753,26 @@ bool DashSegmentDownloader::CleanSegmentBuffer(bool isCleanAll, int64_t& remainL
         MEDIA_LOG_I("CleanSegmentBuffer:streamId:" PUBLIC_LOG_D32 ", remain numberSeq:"
             PUBLIC_LOG_D64, streamId_, remainLastNumberSeq);
     }
+    FALSE_RETURN_V_MSG(clearTail > 0, false, "clearTail <= 0");
+    isCleaningBuffer_.store(true);
+    Close(false, false);
+    std::lock_guard<std::mutex> lock(segmentMutex_);
+    isAllSegmentFinished_.store(false);
+    segmentList_.remove_if([&remainLastNumberSeq](std::shared_ptr<DashBufferSegment> bufferSegment) {
+        return (bufferSegment->numberSeq_ > remainLastNumberSeq);
+    });
 
-    if (clearTail > 0) {
-        isCleaningBuffer_.store(true);
-        Close(false, false);
-        std::lock_guard<std::mutex> lock(segmentMutex_);
-        isAllSegmentFinished_.store(false);
-        segmentList_.remove_if([&remainLastNumberSeq](std::shared_ptr<DashBufferSegment> bufferSegment) {
-            return (bufferSegment->numberSeq_ > remainLastNumberSeq);
-        });
-
-        downloader_ = std::make_shared<Downloader>("dashSegment", sourceLoader_);
-        if (downloader_ != nullptr && downloadCallback_ != nullptr) {
-            downloader_->SetDownloadCallback(downloadCallback_);
-        }
-        downloader_->Init();
-        MEDIA_LOG_I("CleanSegmentBuffer bufferHead:" PUBLIC_LOG_ZU " ,bufferTail:" PUBLIC_LOG_ZU " ,clearTail:"
-            PUBLIC_LOG_ZU, buffer_->GetHead(), buffer_->GetTail(), clearTail);
-        buffer_->SetTail(clearTail);
-        buffer_->SetActive(true);
-        return true;
+    auto downloader = std::make_shared<Downloader>("dashSegment", sourceLoader_);
+    if (downloadCallback_ != nullptr) {
+        downloader->SetDownloadCallback(downloadCallback_);
     }
-    return false;
+    downloader->Init();
+    SetDownloader(downloader);
+    MEDIA_LOG_I("CleanSegmentBuffer bufferHead:" PUBLIC_LOG_ZU " ,bufferTail:" PUBLIC_LOG_ZU " ,clearTail:"
+        PUBLIC_LOG_ZU, buffer_->GetHead(), buffer_->GetTail(), clearTail);
+    buffer_->SetTail(clearTail);
+    buffer_->SetActive(true);
+    return true;
 }
 
 void DashSegmentDownloader::CleanByTimeInternal(int64_t& remainLastNumberSeq, size_t& clearTail, bool& isEnd)
@@ -837,25 +844,24 @@ bool DashSegmentDownloader::CleanBufferByTime(int64_t& remainLastNumberSeq, bool
         PUBLIC_LOG_D64 ", isEnd:" PUBLIC_LOG_D32 ", size:" PUBLIC_LOG_ZU, streamId_,
         remainLastNumberSeq, isEnd, segmentList_.size());
 
-    if (clearTail > 0) {
-        isCleaningBuffer_.store(true);
-        segmentList_.remove_if([&remainLastNumberSeq](std::shared_ptr<DashBufferSegment> bufferSegment) {
-            return (bufferSegment->numberSeq_ > remainLastNumberSeq);
-        });
+    FALSE_RETURN_V_MSG(clearTail > 0, false, "clearTail <= 0");
+    isCleaningBuffer_.store(true);
+    segmentList_.remove_if([&remainLastNumberSeq](std::shared_ptr<DashBufferSegment> bufferSegment) {
+        return (bufferSegment->numberSeq_ > remainLastNumberSeq);
+    });
 
-        downloader_ = std::make_shared<Downloader>("dashSegment", sourceLoader_);
-        if (downloader_ != nullptr && downloadCallback_ != nullptr) {
-            downloader_->SetDownloadCallback(downloadCallback_);
-        }
-        downloader_->Init();
-        MEDIA_LOG_I("CleanBufferByTime bufferHead:" PUBLIC_LOG_ZU " ,bufferTail:" PUBLIC_LOG_ZU " ,clearTail:"
-            PUBLIC_LOG_ZU " ,seq:" PUBLIC_LOG_D64 ",size:" PUBLIC_LOG_ZU, buffer_->GetHead(), buffer_->GetTail(),
-            clearTail, remainLastNumberSeq, segmentList_.size());
-        buffer_->SetTail(clearTail);
-        buffer_->SetActive(true);
-        return true;
+    auto downloader = std::make_shared<Downloader>("dashSegment", sourceLoader_);
+    if (downloadCallback_ != nullptr) {
+        downloader->SetDownloadCallback(downloadCallback_);
     }
-    return false;
+    downloader->Init();
+    SetDownloader(downloader);
+    MEDIA_LOG_I("CleanBufferByTime bufferHead:" PUBLIC_LOG_ZU " ,bufferTail:" PUBLIC_LOG_ZU " ,clearTail:"
+        PUBLIC_LOG_ZU " ,seq:" PUBLIC_LOG_D64 ",size:" PUBLIC_LOG_ZU, buffer_->GetHead(), buffer_->GetTail(),
+        clearTail, remainLastNumberSeq, segmentList_.size());
+    buffer_->SetTail(clearTail);
+    buffer_->SetActive(true);
+    return true;
 }
 
 bool DashSegmentDownloader::SeekToTime(const std::shared_ptr<DashSegment> &segment, int32_t& streamId)
@@ -904,8 +910,8 @@ uint32_t DashSegmentDownloader::SaveData(uint8_t* data, uint32_t len, bool notBl
         std::lock_guard<std::mutex> lock(initSegmentMutex_);
         std::shared_ptr<DashInitSegment> initSegment = GetDashInitSegment(streamId_);
         if (initSegment != nullptr && initSegment->writeState_ == INIT_SEGMENT_STATE_USING) {
-            MEDIA_LOG_I("SaveData:streamId:" PUBLIC_LOG_D32 ", writeState:"
-                PUBLIC_LOG_D32, streamId_, initSegment->writeState_);
+            MEDIA_LOG_I("SaveData:streamId:" PUBLIC_LOG_D32 ", writeState:" PUBLIC_LOG_D32, streamId_,
+                initSegment->writeState_);
             FALSE_RETURN_V_MSG(data != nullptr && len <= HEADER_MAX_SIZE, 0,
                 "SaveData, failed, dash seg header too large, streamId:" PUBLIC_LOG_D32, streamId_);
             initSegment->content_.append(reinterpret_cast<const char*>(data), len);
@@ -1019,8 +1025,9 @@ uint64_t DashSegmentDownloader::GetDownloadSpeed() const
 
 void DashSegmentDownloader::GetIp(std::string& ip)
 {
-    if (downloader_) {
-        downloader_->GetIp(ip);
+    auto downloader = GetDownloader();
+    if (downloader) {
+        downloader->GetIp(ip);
     }
 }
 
@@ -1068,8 +1075,9 @@ void DashSegmentDownloader::PutRequestIntoDownloader(unsigned int duration, int6
         std::shared_ptr<DownloadRequest> &request) {
         auto shareDownloader = weakDownloader.lock();
         FALSE_RETURN_MSG(shareDownloader != nullptr, "realStatusCb, dash seg downloader already destructed.");
-        shareDownloader->statusCallback_(status, shareDownloader->downloader_,
-            std::forward<decltype(request)>(request));
+        auto downloaderPtr = shareDownloader->GetDownloader();
+        FALSE_RETURN_MSG(downloaderPtr != nullptr, "downloaderPtr is nullptr");
+        shareDownloader->statusCallback_(status, downloaderPtr, std::forward<decltype(request)>(request));
     };
     auto downloadDoneCallback = [weakDownloader](const std::string &url, const std::string &location) {
         auto shareDownloader = weakDownloader.lock();
@@ -1094,9 +1102,10 @@ void DashSegmentDownloader::PutRequestIntoDownloader(unsigned int duration, int6
     MEDIA_LOG_I("PutRequestIntoDownloader:range=" PUBLIC_LOG_D64 "-" PUBLIC_LOG_D64, startPos, endPos);
 
     isCleaningBuffer_.store(false);
-    if (downloader_ != nullptr) {
-        downloader_->Download(request, -1); // -1
-        downloader_->Start();
+    auto downloader = GetDownloader();
+    if (downloader) {
+        downloader->Download(request, -1); // -1
+        downloader->Start();
     }
     SetDownloadRequest(request);
 }
@@ -1139,8 +1148,8 @@ void DashSegmentDownloader::UpdateDownloadFinished(const std::string& url, const
             isAllSegmentFinished_.store(true);
         }
         MEDIA_LOG_I("UpdateDownloadFinished: segmentNum:" PUBLIC_LOG_D64 ", contentLength:" PUBLIC_LOG_ZU
-        ", isCleaningBuffer:" PUBLIC_LOG_D32 " isLast: " PUBLIC_LOG_D32, mediaSegment_->numberSeq_,
-                mediaSegment_->contentLength_, isCleaningBuffer_.load(), mediaSegment_->isLast_);
+            ", isCleaningBuffer:" PUBLIC_LOG_D32 " isLast: " PUBLIC_LOG_D32, mediaSegment_->numberSeq_,
+            mediaSegment_->contentLength_, isCleaningBuffer_.load(), mediaSegment_->isLast_);
     }
 
     SaveDataHandleBuffering();
@@ -1189,8 +1198,9 @@ std::shared_ptr<DashInitSegment> DashSegmentDownloader::GetDashInitSegment(int32
 
 void DashSegmentDownloader::SetInterruptState(bool isInterruptNeeded)
 {
-    FALSE_RETURN(downloader_ != nullptr && buffer_ != nullptr);
-    downloader_->SetInterruptState(isInterruptNeeded);
+    auto downloader = GetDownloader();
+    FALSE_RETURN(downloader != nullptr && buffer_ != nullptr);
+    downloader->SetInterruptState(isInterruptNeeded);
     if (isInterruptNeeded) {
         buffer_->SetActive(false);
     }
@@ -1198,8 +1208,9 @@ void DashSegmentDownloader::SetInterruptState(bool isInterruptNeeded)
 
 void DashSegmentDownloader::SetAppUid(int32_t appUid)
 {
-    if (downloader_) {
-        downloader_->SetAppUid(appUid);
+    auto downloader = GetDownloader();
+    if (downloader) {
+        downloader->SetAppUid(appUid);
     }
 }
 
@@ -1287,14 +1298,15 @@ bool DashSegmentDownloader::CheckLoopTimeout(int64_t startLoopTime)
 Status DashSegmentDownloader::StopBufferring(bool isAppBackground)
 {
     MEDIA_LOG_I("DashSegmentDownloader:StopBufferring enter");
-    FALSE_RETURN_V(buffer_ != nullptr && downloader_ != nullptr, Status::ERROR_NULL_POINTER);
-    downloader_->SetAppState(isAppBackground);
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V(buffer_ != nullptr && downloader != nullptr, Status::ERROR_NULL_POINTER);
+    downloader->SetAppState(isAppBackground);
     if (isAppBackground) {
         buffer_->SetActive(false, false);
     } else {
         buffer_->SetActive(true, false);
     }
-    downloader_->StopBufferring();
+    downloader->StopBufferring();
     return Status::OK;
 }
 
@@ -1313,6 +1325,18 @@ std::shared_ptr<DownloadRequest> DashSegmentDownloader::GetDownloadRequest() con
 bool DashSegmentDownloader::CheckDownloadRequest(const std::shared_ptr<DownloadRequest>& downloadRequest)
 {
     return downloadRequest != nullptr && !downloadRequest->IsClosed();
+}
+
+std::shared_ptr<Downloader> DashSegmentDownloader::GetDownloader() const
+{
+    std::shared_lock<std::shared_mutex> lock(downloaderMutex_);
+    return downloader_;
+}
+
+void DashSegmentDownloader::SetDownloader(std::shared_ptr<Downloader> downloader)
+{
+    std::unique_lock<std::shared_mutex> lock(downloaderMutex_);
+    downloader_ = std::move(downloader);
 }
 }
 }
