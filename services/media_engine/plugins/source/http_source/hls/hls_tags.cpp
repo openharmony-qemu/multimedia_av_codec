@@ -453,18 +453,18 @@ static std::pair<std::string, std::string> ParseDefine(const std::string& s,
     if (!std::regex_match(content, match, combinedRegex)) {
         return std::make_pair("", "");
     }
-    if (match[1].matched && match[2].matched) {
-        return std::make_pair(match[1].str(), match[2].str());
+    if (match[1].matched && match[2].matched) { // {1:NAME, 2:VALUE}
+        return std::make_pair(match[1].str(), match[2].str()); // {1:NAME, 2:VALUE}
     }
-    if (match[3].matched) {
-        std::string importName = match[3].str();
+    if (match[3].matched) { // {3:IMPORT}
+        std::string importName = match[3].str(); // {3:IMPORT}
         auto it = tagMasterMap.find(importName);
         if (it != tagMasterMap.end()) {
             return std::make_pair(importName, it->second);
         }
     }
-    if (match[4].matched) {
-        std::string paramName = match[4].str();
+    if (match[4].matched) { // {4:QUERYPARAM}
+        std::string paramName = match[4].str(); // {4:QUERYPARAM}
         auto it = tagUriMap.find(paramName);
         if (it != tagUriMap.end()) {
             return std::make_pair(paramName, it->second);
@@ -534,7 +534,7 @@ static std::string UriDecode(const std::string& uri)
         if (uri[i] == '%' && i + 2 <= uri.size()) { // 2:“%20”
             std::string hex = uri.substr(i + 1, 2); // 2
             if (IsHexValid(hex)) {
-                UriInsert(result, hex, 16);
+                UriInsert(result, hex, 16); // 16:hex
                 i += 3; // 3:“%20”
             } else {
                 result += uri.substr(i, 3); // 3
@@ -573,7 +573,7 @@ static std::unordered_map<std::string, std::string> ExtractPairs(const std::stri
         }
         const std::string& key = match[1].str();
         if (params.find(key) == params.end()) {
-            params[key] = match[2].str();
+            params[key] = match[2].str(); // 2, match {{key-vale}, {key}, {value}}
         }
     }
     return params;
