@@ -23,12 +23,18 @@ demuxer_plugin_test_sources = [
   "$av_codec_root_dir/services/media_engine/modules/source/source.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/demuxer/avpacket_wrapper.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/demuxer/avpacket_memory.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/demuxer/demuxer_log_compressor.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/demuxer/ffmpeg_demuxer_plugin.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/demuxer/ffmpeg_demuxer_thread.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/demuxer/block_queue_pool.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/demuxer/ffmpeg_format_helper.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/demuxer/ffmpeg_reference_parser.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/ffmpeg_converter.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/ffmpeg_convert.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/reference_parser_manager.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/ffmpeg_utils.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/multi_stream_parser_manager.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/time_range_manager.cpp",
   "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
 ]
 config("demuxer_plugin_test_unittest_cfg") {
