@@ -60,6 +60,7 @@ constexpr int64_t ONE_SECOND_US = 1000 * 1000;
 constexpr int32_t TEST_TRACK_INDEX = 0;
 constexpr int32_t TEST_SAMPLE_RATE_48K = 48000;
 constexpr int32_t TEST_FRAME_SAMPLES_1024 = 1024;
+constexpr int32_t TEST_SNAPSHOT_CHANNELS_2 = 2;
 } // namespace
 
 // ==================== AVPacketWrapper Tests ====================
@@ -287,7 +288,7 @@ FFmpegDemuxerPlugin::AVStreamSnapshot CreateAudioSnapshot(int32_t sampleRate, in
     snapshot.timeBase = TEST_TIME_BASE;
     snapshot.sampleRate = sampleRate;
     snapshot.frameSize = frameSize;
-    snapshot.channels = 2; // channels is not used for timestamp supplement logic, so set to a typical value
+    snapshot.channels = TEST_SNAPSHOT_CHANNELS_2;
     snapshot.blockAlign = 0;
     snapshot.bitsPerCodedSample = 0;
     snapshot.bitRate = 0;
