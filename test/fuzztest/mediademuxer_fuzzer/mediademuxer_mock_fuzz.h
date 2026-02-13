@@ -95,6 +95,10 @@ public:
     {
         return mapStatus_[name_];
     }
+    Status ReadSampleZeroCopy(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout) override
+    {
+        return mapStatus_[name_];
+    }
     Status GetNextSampleSize(uint32_t trackId, int32_t& size) override
     {
         return mapStatus_[name_];
