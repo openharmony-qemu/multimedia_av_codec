@@ -37,12 +37,10 @@ bool DynamicInterface::Load()
 
 void DynamicInterface::Unload()
 {
-#ifndef CLANG_COVERAGE
     ClearSymbols();
     AVCODEC_LOGD("Symbols cleared.");
     CloseLibrary();
     AVCODEC_LOGD("Library closed.");
-#endif
 }
 
 bool DynamicInterface::OpenLibrary()
