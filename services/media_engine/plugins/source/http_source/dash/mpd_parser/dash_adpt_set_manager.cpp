@@ -24,6 +24,9 @@ namespace Plugins {
 namespace HttpPlugin {
 static bool SortByBitrate(const DashRepresentationInfo *x, const DashRepresentationInfo *y)
 {
+    if (x == nullptr && y == nullptr) {
+        return false;
+    }
     if (x == nullptr) {
         return true;
     }

@@ -362,12 +362,12 @@ private:
     HlsSegmentEventCbFunc segEventCb_;
     HlsSegmentBufferingCbFunc bufferingCbFunc_;
     std::string masterString_;
+    std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
     bool isEos_ {false};
     std::shared_mutex downloadRequestMutex_;
 
     std::mutex canReadMutex_;
     std::condition_variable canReadCond_;
-    std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
     InfoIndexMap InfoIndexMap_;
 };
 }
