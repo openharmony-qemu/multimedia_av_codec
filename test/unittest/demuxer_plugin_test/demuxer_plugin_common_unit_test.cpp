@@ -287,7 +287,7 @@ FFmpegDemuxerPlugin::AVStreamSnapshot CreateAudioSnapshot(int32_t sampleRate, in
     snapshot.timeBase = TEST_TIME_BASE;
     snapshot.sampleRate = sampleRate;
     snapshot.frameSize = frameSize;
-    snapshot.channels = 2;
+    snapshot.channels = 2; // channels is not used for timestamp supplement logic, so set to a typical value
     snapshot.blockAlign = 0;
     snapshot.bitsPerCodedSample = 0;
     snapshot.bitRate = 0;
