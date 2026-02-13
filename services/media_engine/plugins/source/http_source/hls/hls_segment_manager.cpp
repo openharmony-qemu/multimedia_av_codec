@@ -543,7 +543,7 @@ Status HlsSegmentManager::ReadDelegate(unsigned char* buff, ReadDataInfo& readDa
     }
     FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, Status::END_OF_STREAM, "eos, wantReadLength_ <= 0");
     ReadCacheBuffer(buff, readDataInfo);
-    MEDIA_LOG_D("HLS Read success: wantReadLength " PUBLIC_LOG_D32 " realReadLen: " PUBLIC_LOG_D32 " readOffset: "
+    MEDIA_LOG_D("HLS Read success: wantReadLength " PUBLIC_LOG_U32 " realReadLen: " PUBLIC_LOG_U32 " readOffset: "
         PUBLIC_LOG_U64 " readTsIndex: " PUBLIC_LOG_U32 " bufferSize: " PUBLIC_LOG_U64 ", free size: " PUBLIC_LOG_U64
         ", streamId: " PUBLIC_LOG_D32 ", next id: " PUBLIC_LOG_D32 ", type: %{public}d",
         readDataInfo.wantReadLength_, readDataInfo.realReadLength_, readOffset_, readTsIndex_.load(),
