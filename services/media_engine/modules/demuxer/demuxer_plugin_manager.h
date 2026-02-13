@@ -73,6 +73,7 @@ public:
     int32_t streamID = -1;
     bool activated = false;
     StreamType type;
+    uint64_t sniffSize;
     uint32_t bitRate;
     std::string pluginName = "";
     std::shared_ptr<Plugins::DemuxerPlugin> plugin = nullptr;

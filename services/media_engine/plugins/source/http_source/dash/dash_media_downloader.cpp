@@ -1241,7 +1241,9 @@ bool DashMediaDownloader::GetBufferingTimeOut()
 void DashMediaDownloader::SetAppUid(int32_t appUid)
 {
     for (size_t i = 0; i < segmentDownloaders_.size(); i++) {
-        segmentDownloaders_[i]->SetAppUid(appUid);
+        if (segmentDownloaders_[i] != nullptr) {
+            segmentDownloaders_[i]->SetAppUid(appUid);
+        }
     }
 }
 

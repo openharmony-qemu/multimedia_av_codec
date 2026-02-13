@@ -18,6 +18,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <regex>
+#include <utility>
 #include "hls_media_downloader.h"
 #include "media_downloader.h"
 #include "common/media_core.h"
@@ -30,6 +31,7 @@ namespace HttpPlugin {
 namespace {
     constexpr uint32_t AUDIO_BUFFERING_FLAG = 1;
     constexpr uint32_t VIDEO_BUFFERING_FLAG = 2;
+    constexpr uint32_t SUBTITLES_BUFFERING_FLAG = 4;
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -62,10 +64,10 @@ void HlsMediaDownloader::Init()
 {
     FALSE_RETURN_MSG(videoSegManager_ != nullptr, "Init no video segment manager found!");
     auto weakDownloader = weak_from_this();
-    auto callback = [weakDownloader] (bool needAudioManager, bool needSubTitleManager) {
+    auto callback = [weakDownloader] (bool needAudioManager, bool needSubtitlesManager) {
         auto shareDownloader = weakDownloader.lock();
         FALSE_RETURN_MSG(shareDownloader != nullptr, "masterReadyCb, Hls Media Downloader already destoryed.");
-        shareDownloader->OnMasterReady(needAudioManager, needSubTitleManager);
+        shareDownloader->OnMasterReady(needAudioManager, needSubtitlesManager);
     };
     videoSegManager_->SetMasterReadyCallback(callback);
     auto bufferingCallback = [weakDownloader] (HlsSegmentType mediaType, BufferingInfoType type) {
@@ -82,24 +84,27 @@ void HlsMediaDownloader::Init()
     videoSegManager_->SetSegmentAllCallback(segEventCallback);
 }
 
-void HlsMediaDownloader::OnMasterReady(bool needAudioManager, bool needSubTitleManager)
+void HlsMediaDownloader::OnMasterReady(bool needAudioManager, bool needSubtitlesManager)
 {
     FALSE_RETURN_MSG(videoSegManager_ != nullptr, "OnMasterReady no video segment manager found!");
-    (void)needSubTitleManager;
-    if (!needAudioManager) {
-        MEDIA_LOG_I("no need audio seg manager.");
-        return;
+    MEDIA_LOG_I("HlsMediaDownloader OnMasterReady Audio: %{public}d, Subtitles: %{public}d", needAudioManager,
+        needSubtitlesManager);
+    if (needAudioManager && !audioSegManager_) {
+        MEDIA_LOG_I("HlsMediaDownloader Audio OnMasterReady: 0x%{public}06" PRIXPTR, FAKE_POINTER(this));
+        audioSegManager_ = std::make_shared<HlsSegmentManager>(videoSegManager_, HlsSegmentType::SEG_AUDIO);
+        audioSegManager_->Init();
+        audioSegManager_->Clone(videoSegManager_);
+        auto audioDefaultStreamId = videoSegManager_->GetDefaultMediaStreamId(HlsSegmentType::SEG_AUDIO);
+        audioSegManager_->StartMediaDownload(audioDefaultStreamId, HlsSegmentType::SEG_AUDIO);
     }
-    if (audioSegManager_) {
-        MEDIA_LOG_I("already create audio seg manager.");
-        return;
+    if (needSubtitlesManager && !subtitlesSegManager_) {
+        MEDIA_LOG_I("HlsMediaDownloader Subtitles OnMasterReady: 0x%{public}06" PRIXPTR, FAKE_POINTER(this));
+        subtitlesSegManager_ = std::make_shared<HlsSegmentManager>(videoSegManager_, HlsSegmentType::SEG_SUBTITLE);
+        subtitlesSegManager_->Init();
+        subtitlesSegManager_->Clone(videoSegManager_);
+        auto subtitlesDefaultStreamId = videoSegManager_->GetDefaultMediaStreamId(HlsSegmentType::SEG_SUBTITLE);
+        subtitlesSegManager_->StartMediaDownload(subtitlesDefaultStreamId, HlsSegmentType::SEG_SUBTITLE);
     }
-    MEDIA_LOG_I("HlsMediaDownloader OnMasterReady: 0x%{public}06" PRIXPTR, FAKE_POINTER(this));
-    audioSegManager_ = std::make_shared<HlsSegmentManager>(videoSegManager_, HlsSegmentType::SEG_AUDIO);
-    audioSegManager_->Init();
-    audioSegManager_->Clone(videoSegManager_);
-    auto audioDefaultStreamId = videoSegManager_->GetDefaultAudioStreamId();
-    audioSegManager_->StartAudioDownload(audioDefaultStreamId);
 }
 
 HlsMediaDownloader::~HlsMediaDownloader()
@@ -107,6 +112,7 @@ HlsMediaDownloader::~HlsMediaDownloader()
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsMediaDownloader dtor in", FAKE_POINTER(this));
     videoSegManager_ = nullptr;
     audioSegManager_ = nullptr;
+    subtitlesSegManager_ = nullptr;
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsMediaDownloader dtor out", FAKE_POINTER(this));
 }
 
@@ -132,6 +138,9 @@ void HlsMediaDownloader::Close(bool isAsync)
     if (audioSegManager_ != nullptr) {
         audioSegManager_->Close(isAsync);
     }
+    if (subtitlesSegManager_ != nullptr) {
+        subtitlesSegManager_->Close(isAsync);
+    }
 }
 
 void HlsMediaDownloader::Pause()
@@ -143,6 +152,9 @@ void HlsMediaDownloader::Pause()
     if (audioSegManager_ != nullptr) {
         audioSegManager_->Pause();
     }
+    if (subtitlesSegManager_ != nullptr) {
+        subtitlesSegManager_->Pause();
+    }
 }
 
 void HlsMediaDownloader::Resume()
@@ -153,6 +165,9 @@ void HlsMediaDownloader::Resume()
 
     if (audioSegManager_ != nullptr) {
         audioSegManager_->Resume();
+    }
+    if (subtitlesSegManager_ != nullptr) {
+        subtitlesSegManager_->Resume();
     }
 }
 
@@ -169,9 +184,27 @@ bool HlsMediaDownloader::SeekToTime(int64_t seekTime, SeekMode mode)
     auto ret = videoSegManager_->SeekToTime(seekTime, mode);
     FALSE_RETURN_V_MSG(ret != false, ret, "video segment manager seek failed!");
     if (audioSegManager_ != nullptr) {
-        return audioSegManager_->SeekToTime(seekTime, mode);
+        ret = audioSegManager_->SeekToTime(seekTime, mode);
+    }
+    FALSE_RETURN_V_MSG(ret != false, ret, "audio segment manager seek failed!");
+    if (subtitlesSegManager_ != nullptr) {
+        ret = subtitlesSegManager_->SeekToTime(seekTime, mode);
     }
     return ret;
+}
+
+bool HlsMediaDownloader::MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode, int32_t streamId)
+{
+    FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, false, "SeekToTimeByStreamId no video segment manager found!");
+    auto segType = videoSegManager_->GetSegType(streamId);
+    if (segType == HlsSegmentType::SEG_AUDIO && audioSegManager_) {
+        return audioSegManager_->SeekToTime(seekTime, mode);
+    }
+    if (segType == HlsSegmentType::SEG_SUBTITLE && subtitlesSegManager_) {
+        return subtitlesSegManager_->SeekToTime(seekTime, mode);
+    }
+    MEDIA_LOG_E("no audio and subtitle segment manager found");
+    return false;
 }
 
 size_t HlsMediaDownloader::GetContentLength() const
@@ -185,6 +218,13 @@ int64_t HlsMediaDownloader::GetDuration() const
     return videoSegManager_->GetDuration();
 }
 
+std::pair<int64_t, bool> HlsMediaDownloader::GetStartInfo() const
+{
+    FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, std::make_pair(0, false),
+        "GetStartInfo no video segment manager found!");
+    return videoSegManager_->GetStartInfo();
+}
+
 Seekable HlsMediaDownloader::GetSeekable() const
 {
     FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, Seekable::INVALID, "GetSeekable no video segment manager found!");
@@ -196,8 +236,10 @@ void HlsMediaDownloader::SetCallback(Callback* cb)
     callback_ = cb;
     FALSE_RETURN_MSG(videoSegManager_ != nullptr, "SetCallback no video segment manager found!");
     videoSegManager_->SetCallback(cb);
-    FALSE_RETURN(audioSegManager_ != nullptr);
+    FALSE_RETURN_MSG(audioSegManager_ != nullptr, "SetCallback no audio segment manager found!");
     audioSegManager_->SetCallback(cb);
+    FALSE_RETURN_MSG(subtitlesSegManager_ != nullptr, "SetCallback no subtitles segment manager found!");
+    subtitlesSegManager_->SetCallback(cb);
 }
 
 bool HlsMediaDownloader::GetStartedStatus()
@@ -205,7 +247,10 @@ bool HlsMediaDownloader::GetStartedStatus()
     FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, false, "GetStartedStatus no video segment manager found!");
     auto isVideoStarted = videoSegManager_->GetStartedStatus();
     if (audioSegManager_ != nullptr) {
-        return isVideoStarted && audioSegManager_->GetStartedStatus();
+        isVideoStarted = isVideoStarted && audioSegManager_->GetStartedStatus();
+    }
+    if (subtitlesSegManager_ != nullptr) {
+        isVideoStarted = isVideoStarted && subtitlesSegManager_->GetStartedStatus();
     }
     return isVideoStarted;
 }
@@ -215,7 +260,10 @@ void HlsMediaDownloader::SetStatusCallback(StatusCallbackFunc cb)
     FALSE_RETURN_MSG(videoSegManager_ != nullptr, "SetStatusCallback no video segment manager found!");
     videoSegManager_->SetStatusCallback(cb);
     if (audioSegManager_ != nullptr) {
-        return audioSegManager_->SetStatusCallback(cb);
+        audioSegManager_->SetStatusCallback(cb);
+    }
+    if (subtitlesSegManager_ != nullptr) {
+        subtitlesSegManager_->SetStatusCallback(cb);
     }
 }
 
@@ -250,6 +298,9 @@ void HlsMediaDownloader::SetDemuxerState(int32_t streamId)
     if (audioSegManager_ != nullptr) {
         audioSegManager_->SetDemuxerState(streamId);
     }
+    if (subtitlesSegManager_ != nullptr) {
+        subtitlesSegManager_->SetDemuxerState(streamId);
+    }
 }
 
 void HlsMediaDownloader::SetDownloadErrorState()
@@ -258,6 +309,9 @@ void HlsMediaDownloader::SetDownloadErrorState()
     videoSegManager_->SetDownloadErrorState();
     if (audioSegManager_ != nullptr) {
         audioSegManager_->SetDownloadErrorState();
+    }
+    if (subtitlesSegManager_ != nullptr) {
+        subtitlesSegManager_->SetDownloadErrorState();
     }
 }
 
@@ -273,6 +327,9 @@ void HlsMediaDownloader::SetInterruptState(bool isInterruptNeeded)
     videoSegManager_->SetInterruptState(isInterruptNeeded);
     if (audioSegManager_ != nullptr) {
         audioSegManager_->SetInterruptState(isInterruptNeeded);
+    }
+    if (subtitlesSegManager_ != nullptr) {
+        subtitlesSegManager_->SetInterruptState(isInterruptNeeded);
     }
 }
 
@@ -317,6 +374,9 @@ void HlsMediaDownloader::SetAppUid(int32_t appUid)
     if (audioSegManager_ != nullptr) {
         audioSegManager_->SetAppUid(appUid);
     }
+    if (subtitlesSegManager_ != nullptr) {
+        subtitlesSegManager_->SetAppUid(appUid);
+    }
 }
 
 uint64_t HlsMediaDownloader::GetBufferSize() const
@@ -355,7 +415,11 @@ bool HlsMediaDownloader::GetHLSDiscontinuity()
     auto ret = videoSegManager_->GetHLSDiscontinuity();
     FALSE_RETURN_V_MSG(ret != true, ret, "video segment manager GetHLSDiscontinuity true!");
     if (audioSegManager_ != nullptr) {
-        return audioSegManager_->GetHLSDiscontinuity();
+        ret = audioSegManager_->GetHLSDiscontinuity();
+    }
+    FALSE_RETURN_V_MSG(ret != true, ret, "audio segment manager GetHLSDiscontinuity true!");
+    if (subtitlesSegManager_ != nullptr) {
+        ret = subtitlesSegManager_->GetHLSDiscontinuity();
     }
     return ret;
 }
@@ -367,7 +431,11 @@ Status HlsMediaDownloader::StopBufferring(bool isAppBackground)
     auto ret = videoSegManager_->StopBufferring(isAppBackground);
     FALSE_RETURN_V_MSG(ret == Status::OK, ret, "video segment manager StopBufferring failed!");
     if (audioSegManager_ != nullptr) {
-        return audioSegManager_->StopBufferring(isAppBackground);
+        ret = audioSegManager_->StopBufferring(isAppBackground);
+    }
+    FALSE_RETURN_V_MSG(ret == Status::OK, ret, "audio segment manager StopBufferring failed!");
+    if (subtitlesSegManager_ != nullptr) {
+        ret = subtitlesSegManager_->StopBufferring(isAppBackground);
     }
     return ret;
 }
@@ -385,6 +453,9 @@ void HlsMediaDownloader::SetIsReportedErrorCode()
     if (audioSegManager_ != nullptr) {
         audioSegManager_->SetIsReportedErrorCode();
     }
+    if (subtitlesSegManager_ != nullptr) {
+        subtitlesSegManager_->SetIsReportedErrorCode();
+    }
 }
 
 bool HlsMediaDownloader::SetInitialBufferSize(int32_t offset, int32_t size)
@@ -393,7 +464,11 @@ bool HlsMediaDownloader::SetInitialBufferSize(int32_t offset, int32_t size)
     auto ret = videoSegManager_->SetInitialBufferSize(offset, size);
     FALSE_RETURN_V_MSG(ret != false, ret, "video segment manager SetInitialBufferSize failed!");
     if (audioSegManager_ != nullptr) {
-        return audioSegManager_->SetInitialBufferSize(offset, size);
+        ret = audioSegManager_->SetInitialBufferSize(offset, size);
+    }
+    FALSE_RETURN_V_MSG(ret != false, ret, "audio segment manager SetInitialBufferSize failed!");
+    if (subtitlesSegManager_ != nullptr) {
+        ret = subtitlesSegManager_->SetInitialBufferSize(offset, size);
     }
     return ret;
 }
@@ -405,6 +480,9 @@ void HlsMediaDownloader::SetPlayStrategy(const std::shared_ptr<PlayStrategy>& pl
     if (audioSegManager_ != nullptr) {
         audioSegManager_->SetPlayStrategy(playStrategy);
     }
+    if (subtitlesSegManager_ != nullptr) {
+        subtitlesSegManager_->SetPlayStrategy(playStrategy);
+    }
 }
 
 void HlsMediaDownloader::NotifyInitSuccess()
@@ -413,6 +491,9 @@ void HlsMediaDownloader::NotifyInitSuccess()
     videoSegManager_->NotifyInitSuccess();
     if (audioSegManager_ != nullptr) {
         audioSegManager_->NotifyInitSuccess();
+    }
+    if (subtitlesSegManager_ != nullptr) {
+        subtitlesSegManager_->NotifyInitSuccess();
     }
 }
 
@@ -455,6 +536,8 @@ std::shared_ptr<HlsSegmentManager> HlsMediaDownloader::GetSegmentManager(uint32_
     switch (segType) {
         case HlsSegmentType::SEG_AUDIO:
             return audioSegManager_;
+        case HlsSegmentType::SEG_SUBTITLE:
+            return subtitlesSegManager_;
         case HlsSegmentType::SEG_VIDEO:
         default:
             return videoSegManager_;
@@ -475,14 +558,23 @@ Status HlsMediaDownloader::SelectStream(int32_t streamId)
         }
         SelectBitRate(streamInfo->bitRate);
         if (audioSegManager_ != nullptr) {
-            auto defaultAudioStreamId = videoSegManager_->GetDefaultAudioStreamId();
-            audioSegManager_->SelectAudio(defaultAudioStreamId);
+            auto defaultAudioStreamId = videoSegManager_->GetDefaultMediaStreamId(HlsSegmentType::SEG_AUDIO);
+            audioSegManager_->SelectMedia(defaultAudioStreamId, HlsSegmentType::SEG_AUDIO);
+        }
+        if (subtitlesSegManager_ != nullptr) {
+            auto defaultSubtitlesStreamId = videoSegManager_->GetDefaultMediaStreamId(HlsSegmentType::SEG_SUBTITLE);
+            subtitlesSegManager_->SelectMedia(defaultSubtitlesStreamId, HlsSegmentType::SEG_SUBTITLE);
         }
         return Status::OK;
     } else if (segType == HlsSegmentType::SEG_AUDIO) {
         FALSE_RETURN_V_MSG(audioSegManager_ != nullptr, Status::ERROR_UNKNOWN,
             "SelectStream no audio segment manager found!");
-        audioSegManager_->SelectAudio(streamId);
+        audioSegManager_->SelectMedia(streamId, HlsSegmentType::SEG_AUDIO);
+        return Status::OK;
+    } else if (segType == HlsSegmentType::SEG_SUBTITLE) {
+        FALSE_RETURN_V_MSG(subtitlesSegManager_ != nullptr, Status::ERROR_UNKNOWN,
+            "SelectStream no subtitles segment manager found!");
+        subtitlesSegManager_->SelectMedia(streamId, HlsSegmentType::SEG_SUBTITLE);
         return Status::OK;
     } else {
         return Status::ERROR_INVALID_PARAMETER;
@@ -529,7 +621,21 @@ void HlsMediaDownloader::PostBufferingEvent(HlsSegmentType mediaType, BufferingI
 {
     FALSE_RETURN_MSG(callback_, "PostBufferingEvent no callback");
     std::lock_guard<std::mutex> bufferingLock(bufferingMutex_);
-    uint32_t flag = mediaType == HlsSegmentType::SEG_VIDEO ? VIDEO_BUFFERING_FLAG : AUDIO_BUFFERING_FLAG;
+    uint32_t flag;
+    switch (mediaType) {
+        case HlsSegmentType::SEG_VIDEO:
+            flag = VIDEO_BUFFERING_FLAG;
+            break;
+        case HlsSegmentType::SEG_AUDIO:
+            flag = AUDIO_BUFFERING_FLAG;
+            break;
+        case HlsSegmentType::SEG_SUBTITLE:
+            flag = SUBTITLES_BUFFERING_FLAG;
+            break;
+        default:
+            MEDIA_LOG_D("PostBufferingEvent unknown media type");
+            return;
+    }
     MEDIA_LOG_I("PostBufferingEvent flag: %{public}u, start: %{public}d, end: %{public}d, type: %{public}d",
         bufferingFlag_, type == BufferingInfoType::BUFFERING_START, type == BufferingInfoType::BUFFERING_END, type);
     if (type == BufferingInfoType::BUFFERING_START) {

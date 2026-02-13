@@ -76,7 +76,7 @@ void DashAdptSetNode::GetAttr(const std::string &attrName, int32_t &iAttrVal)
     uint32_t index = DashGetAttrIndex(attrName, adptSetAttrs_, DASH_ADAPTATION_SET_ATTR_NUM);
     if (index < DASH_ADAPTATION_SET_ATTR_NUM) {
         if (adptSetAttr_[index].val_.length() > 0) {
-            iAttrVal = static_cast<int32_t>(std::atoll(adptSetAttr_[index].val_.c_str()));
+            iAttrVal = static_cast<uint32_t>(std::atoll(adptSetAttr_[index].val_.c_str()));
         } else {
             iAttrVal = 0;
         }

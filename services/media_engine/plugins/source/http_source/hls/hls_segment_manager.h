@@ -90,10 +90,11 @@ public:
 
     size_t GetContentLength() const;
     int64_t GetDuration() const;
+    std::pair<int64_t, bool> GetStartInfo() const;
     Seekable GetSeekable() const;
     void SetCallback(Callback* cb);
     void OnPlayListChanged(const std::vector<PlayInfo>& playList) override;
-    void OnMasterReady(bool needAudioManager, bool needSubTitleManager) override;
+    void OnMasterReady(bool needAudioManager, bool needSubtitlesManager) override;
     void SetStatusCallback(StatusCallbackFunc cb);
     bool GetStartedStatus();
     std::vector<uint32_t> GetBitRates();
@@ -136,10 +137,10 @@ public:
     uint64_t GetMemorySize();
     std::string GetContentType();
     bool IsHlsEnd();
-    bool SelectAudio(int32_t streamId);
-    bool StartAudioDownload(int32_t streamId);
+    bool SelectMedia(int32_t streamId, HlsSegmentType mediaType);
+    bool StartMediaDownload(int32_t streamId, HlsSegmentType mediaType);
     std::shared_ptr<StreamInfo> GetStreamInfoById(int32_t streamId);
-    int32_t GetDefaultAudioStreamId();
+    int32_t GetDefaultMediaStreamId(HlsSegmentType mediaType);
     void SetDemuxerState(int32_t streamId);
     void SetDownloadErrorState();
     void SetSegmentBufferingCallback(HlsSegmentBufferingCbFunc bufferingCbFunc);
@@ -220,6 +221,7 @@ private:
     std::shared_ptr<DownloadRequest> GetDownloadRequest();
     bool CheckCanReadOneSeconds(uint64_t wantReadLength);
     bool IsAllDownloadFinish();
+    void HandlePlayListChanged(const std::vector<PlayInfo>& playList);
 
 private:
     HlsSegmentType type_ = HlsSegmentType::SEG_VIDEO;
@@ -240,7 +242,7 @@ private:
     std::map<std::string, bool> fragmentDownloadStart;
     std::map<std::string, bool> fragmentPushed;
     std::deque<PlayInfo> backPlayList_;
-    bool isSelectingBitrate_ {false};
+    std::atomic<bool> isSelectingBitrate_ {false};
     bool isDownloadStarted_ {false};
 
     /* aes decrypt */

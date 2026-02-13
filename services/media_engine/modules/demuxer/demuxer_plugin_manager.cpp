@@ -218,6 +218,7 @@ void DemuxerPluginManager::InitSubtitleTrack(const StreamInfo& info)
         streamInfoMap_[info.streamId].mediaInfo.general.Set<Tag::MEDIA_TRACK_COUNT>(1);
     }
     streamInfoMap_[info.streamId].type = SUBTITLE;
+    streamInfoMap_[info.streamId].sniffSize = info.sniffSize;
 }
 
 Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& streams)
@@ -298,8 +299,12 @@ Status DemuxerPluginManager::LoadDemuxerPlugin(int32_t streamID, std::shared_ptr
 
     std::string type;
     {
+        StreamInfo streamInfo;
+        streamInfo.streamId = streamID;
+        streamInfo.type = streamInfoMap_[streamID].type;
+        streamInfo.sniffSize = streamInfoMap_[streamID].sniffSize;
         ScopedTimer timer("SnifferMediaType", SNIFF_WARNING_MS);
-        type = streamDemuxer->SnifferMediaType(streamID);
+        type = streamDemuxer->SnifferMediaType(streamInfo);
         if (!type.empty() && pluginName_.empty()) {
             MEDIA_LOG_D("PluginName: " PUBLIC_LOG_S, type.c_str());
             pluginName_ = type;
@@ -660,7 +665,11 @@ Status DemuxerPluginManager::RebootPlugin(int32_t streamId, TrackType trackType,
         streamInfoMap_[streamId].plugin.reset();
     }
     if (streamInfoMap_[streamId].pluginName.empty()) {
-        streamInfoMap_[streamId].pluginName = streamDemuxer->SnifferMediaType(streamId);
+        StreamInfo streamInfo;
+        streamInfo.streamId = streamId;
+        streamInfo.type = streamInfoMap_[streamId].type;
+        streamInfo.sniffSize = streamInfoMap_[streamId].sniffSize;
+        streamInfoMap_[streamId].pluginName = streamDemuxer->SnifferMediaType(streamInfo);
     }
     MediaTypeFound(streamDemuxer, streamInfoMap_[streamId].pluginName, streamId);
     FALSE_RETURN_V_MSG_E(streamInfoMap_[streamId].plugin != nullptr, Status::ERROR_INVALID_PARAMETER,

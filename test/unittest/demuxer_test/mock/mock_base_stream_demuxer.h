@@ -47,7 +47,7 @@ public:
     MOCK_METHOD(int32_t, GetNewAudioStreamID, (), (override));
     MOCK_METHOD(int32_t, GetNewSubtitleStreamID, (), (override));
     MOCK_METHOD(int32_t, GetNewVideoStreamID, (), (override));
-    MOCK_METHOD(std::string, SnifferMediaType, (int32_t streamID), (override));
+    MOCK_METHOD(std::string, SnifferMediaType, (const StreamInfo& streamInfo), (override));
 };
 } // namespace Media
 } // namespace OHOS

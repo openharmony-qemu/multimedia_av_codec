@@ -1928,7 +1928,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_HandleSelectTrack_001, TestSize.Leve
     demuxer->subtitleTrackId_ = 1;
 
     EXPECT_EQ(demuxer->HandleSelectTrack(0), Status::ERROR_INVALID_PARAMETER);
-    EXPECT_EQ(demuxer->HandleSelectTrack(1), Status::ERROR_INVALID_PARAMETER);
+    EXPECT_EQ(demuxer->HandleSelectTrack(1), Status::OK);
 }
 
 /**

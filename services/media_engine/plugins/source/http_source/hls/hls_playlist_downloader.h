@@ -17,6 +17,7 @@
 #define HISTREAMER_HLS_PLAYLIST_DOWNLOADER_H
 
 #include <set>
+#include <utility>
 #include "playlist_downloader.h"
 #include "m3u8.h"
 
@@ -35,6 +36,7 @@ public:
     void ParseManifest(const std::string& location, bool isPreParse = false) override;
     void SetPlayListCallback(std::weak_ptr<PlayListChangeCallback> callback) override;
     int64_t GetDuration() const override;
+    std::pair<int64_t, bool> GetStartInfo() const override;
     Seekable GetSeekable() const override;
     void SelectBitRate(uint32_t bitRate) override;
     std::vector<uint32_t> GetBitRates() override;
@@ -42,7 +44,7 @@ public:
     int GetVideoHeight() override;
     int GetVideoWidth() override;
     bool IsBitrateSame(uint32_t bitRate) override;
-    bool IsAudioSame(uint32_t streamId) override;
+    bool IsMediaSame(uint32_t streamId, HlsSegmentType mediaType) override;
     uint32_t GetCurBitrate() override;
     bool IsLive() const override;
     void NotifyListChange();
@@ -65,19 +67,26 @@ public:
     bool IsPureByteRange() override;
     void ReOpen(void) override;
     std::shared_ptr<StreamInfo> GetStreamInfoById(int32_t streamId) override;
-    int32_t GetDefaultAudioStreamId() override;
-    void SelectAudio(int32_t streamId) override;
-    void SetDefaultAudio() override;
-    void UpdateAudio() override;
+    int32_t GetDefaultMediaStreamId(HlsSegmentType mediaType) override;
+    void SelectMedia(int32_t streamId, HlsSegmentType mediaType) override;
+    void SetDefaultMedia(HlsSegmentType mediaType) override;
+    void UpdateMedia(HlsSegmentType mediaType) override;
     void UpdateStreamInfo() override;
     HlsSegmentType GetSegType(uint32_t streamId) override;
+    uint32_t GetCurStreamId() override;
 
 private:
     void UpdateMasterInfo(bool isPreParse);
     void UpdateMasterAndNotifyList(bool isPreParse);
+    bool UpdatePlaylists(bool isSimple);
+    bool ReadMediaHeader(const std::list<std::shared_ptr<M3U8Media>>& mediaList, uint8_t* buffer, uint32_t wantLen,
+        uint32_t& readLen, uint32_t streamId);
+    bool ReadStreamHeader(const std::list<std::shared_ptr<M3U8VariantStream>>& streamList, uint8_t* buffer,
+        uint32_t wantLen, uint32_t& readLen, uint32_t streamId);
+    void GetMediaStreams(StreamType streamType, std::vector<StreamInfo>& streams);
     void CopyFragmentInfo(PlayInfo& playInfo, std::shared_ptr<M3U8Fragment> file);
     void KeyChange(void);
-    void OnMasterReady(bool needAudioManager, bool needSubTitleManager);
+    void OnMasterReady(bool needAudioManager, bool needSubtitlesManager);
 
 private:
     std::string url_ {};
@@ -91,13 +100,15 @@ private:
     std::atomic<bool> isNotifyPlayListFinished_ {false};
     std::atomic<bool> isLiveUpdateTaskStarted_ {false};
     std::atomic<bool> needAudioManager_ {false};
-    std::atomic<bool> needSubTitleManager_ {false};
+    std::atomic<bool> needSubtitlesManager_ {false};
     uint32_t initResolution_ {0};
-    std::mutex audioMutex_;
+    std::mutex mediaMutex_;
     std::shared_ptr<M3U8Media> currentAudio_;
+    std::shared_ptr<M3U8Media> currentSubtitles_;
     std::mutex streamIdMutex;
     std::set<uint32_t> videoStreamIds_ = std::set<uint32_t>();
     std::set<uint32_t> audioStreamIds_ = std::set<uint32_t>();
+    std::set<uint32_t> subtitlesStreamIds_ = std::set<uint32_t>();
 };
 }
 }

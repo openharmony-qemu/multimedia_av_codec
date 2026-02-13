@@ -20,6 +20,11 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <utility>
+#include <unordered_map>
+ 
+#include "common/media_core.h"
+#include "common/log.h"
 
 namespace OHOS {
 namespace Media {
@@ -75,6 +80,7 @@ enum struct HlsTag : uint32_t {
     EXTXSTREAMINF,
     EXTXIFRAMESTREAMINF,
     EXTXSESSIONKEY,
+    EXTXSKIP,
 
     EXTINF = SECTION_VALUES_LIST_START,
 };
@@ -124,7 +130,11 @@ public:
     static std::shared_ptr<Tag> CreateTagByName(const std::string& name, const std::string& value);
 };
 
-std::list<std::shared_ptr<Tag>> ParseEntries(const std::string& s);
+std::pair<std::list<std::shared_ptr<Tag>>, std::unordered_map<std::string, std::string>> ParseEntries(
+    const std::string& s,
+    const std::unordered_map<std::string, std::string>& tagMasterMap = {},
+    const std::unordered_map<std::string, std::string>& tagUriMap = {});
+std::unordered_map<std::string, std::string> ParseUriQuery(const std::string& uri);
 }
 }
 }
