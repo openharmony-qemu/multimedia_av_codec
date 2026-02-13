@@ -430,7 +430,7 @@ static bool ContainsNonAscii(const std::string& str)
             return c > 127;  // ASCII: 0-127
         });
 }
- 	 
+
 static std::pair<std::string, std::string> ParseDefine(const std::string& s,
     const std::unordered_map<std::string, std::string>& tagMasterMap,
     const std::unordered_map<std::string, std::string>& tagUriMap)
@@ -453,18 +453,18 @@ static std::pair<std::string, std::string> ParseDefine(const std::string& s,
     if (!std::regex_match(content, match, combinedRegex)) {
         return std::make_pair("", "");
     }
-    if (match[1].matched && match[2].matched) { // {1:NAME, 2:VALUE}
-        return std::make_pair(match[1].str(), match[2].str()); // {1:NAME, 2:VALUE}
+    if (match[1].matched && match[2].matched) {
+        return std::make_pair(match[1].str(), match[2].str());
     }
-    if (match[3].matched) { // {3:IMPORT}
-        std::string importName = match[3].str(); // {3:IMPORT}
+    if (match[3].matched) {
+        std::string importName = match[3].str();
         auto it = tagMasterMap.find(importName);
         if (it != tagMasterMap.end()) {
             return std::make_pair(importName, it->second);
         }
     }
-    if (match[4].matched) { // {4:QUERYPARAM}
-        std::string paramName = match[4].str(); // {4:QUERYPARAM}
+    if (match[4].matched) {
+        std::string paramName = match[4].str();
         auto it = tagUriMap.find(paramName);
         if (it != tagUriMap.end()) {
             return std::make_pair(paramName, it->second);
@@ -472,7 +472,7 @@ static std::pair<std::string, std::string> ParseDefine(const std::string& s,
     }
     return std::make_pair("", "");
 }
- 	 
+
 static std::string ReplacePlaceholders(const std::string& s,
     const std::unordered_map<std::string, std::string>& tagDefineMap)
 {
@@ -505,7 +505,7 @@ static std::string ReplacePlaceholders(const std::string& s,
     result.append(searchStart, s.cend());
     return result;
 }
- 	 
+
 static bool IsHexValid(const std::string& hex)
 {
     if (hex.empty()) {
@@ -524,7 +524,7 @@ static void UriInsert(std::string& result, std::string& hex, int base)
         result += static_cast<char>(resultTmp);
     }
 }
- 	 
+
 static std::string UriDecode(const std::string& uri)
 {
     std::string result;
@@ -534,7 +534,7 @@ static std::string UriDecode(const std::string& uri)
         if (uri[i] == '%' && i + 2 <= uri.size()) { // 2:“%20”
             std::string hex = uri.substr(i + 1, 2); // 2
             if (IsHexValid(hex)) {
-                UriInsert(result, hex, 16); // 16:hex
+                UriInsert(result, hex, 16);
                 i += 3; // 3:“%20”
             } else {
                 result += uri.substr(i, 3); // 3
@@ -550,7 +550,7 @@ static std::string UriDecode(const std::string& uri)
     }
     return result;
 }
- 	 
+
 static std::unordered_map<std::string, std::string> ExtractPairs(const std::string& decodedQuery)
 {
     std::unordered_map<std::string, std::string> params;
@@ -573,12 +573,12 @@ static std::unordered_map<std::string, std::string> ExtractPairs(const std::stri
         }
         const std::string& key = match[1].str();
         if (params.find(key) == params.end()) {
-            params[key] = match[2].str(); // 2, match {{key-vale}, {key}, {value}}
+            params[key] = match[2].str();
         }
     }
     return params;
 }
- 	 
+
 std::unordered_map<std::string, std::string> ParseUriQuery(const std::string& uri)
 {
     std::unordered_map<std::string, std::string> params;
@@ -596,7 +596,7 @@ std::unordered_map<std::string, std::string> ParseUriQuery(const std::string& ur
     params = ExtractPairs(queryString);
     return params;
 }
- 	 
+
 std::pair<std::list<std::shared_ptr<Tag>>, std::unordered_map<std::string, std::string>>ParseEntries(
     const std::string& s, const std::unordered_map<std::string, std::string>& tagMasterMap,
     const std::unordered_map<std::string, std::string>& tagUriMap)

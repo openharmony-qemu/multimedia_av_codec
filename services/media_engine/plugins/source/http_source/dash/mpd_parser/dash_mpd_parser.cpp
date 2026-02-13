@@ -550,7 +550,7 @@ void DashMpdParser::ParseSegmentTemplate(std::shared_ptr<XmlParser> xmlParser, s
         return;
     }
 
-    DashSegTmpltInfo *segTmplt =  new(std::nothrow) DashSegTmpltInfo;
+    DashSegTmpltInfo *segTmplt = new(std::nothrow) DashSegTmpltInfo;
     if (segTmplt != nullptr) {
         IDashMpdNode *segTmpltNode = IDashMpdNode::CreateNode(MPD_LABEL_SEGMENT_TEMPLATE);
         if (segTmpltNode == nullptr) {
