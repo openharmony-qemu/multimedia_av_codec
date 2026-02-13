@@ -195,9 +195,6 @@ Status FfmpegBaseDecoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
         CheckFormatChange();
         status = ReceiveFrameSucc(outBuffer);
         if (invalidStatus.find(status) == invalidStatus.end()) {
-            if ((outBuffer->flag_ & MediaAVCodec::AVCODEC_BUFFER_FLAG_EOS) != 0) {
-                outBuffer->flag_ &= (~MediaAVCodec::AVCODEC_BUFFER_FLAG_EOS);
-            }
             SafeCallOutputBufferDone(dataCallback_, outBuffer);
         }
     } else if (ret == AVERROR_EOF) {

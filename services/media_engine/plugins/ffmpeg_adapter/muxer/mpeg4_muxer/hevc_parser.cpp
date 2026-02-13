@@ -151,6 +151,14 @@ bool HevcParser::GetColorRange()
     }
     return false;
 }
+
+bool HevcParser::IsHdrVivid()
+{
+    if (parser_) {
+        return parser_->IsHdrVivid();
+    }
+    return false;
+}
 } // namespace Mpeg4
 } // namespace Plugins
 } // namespace Media

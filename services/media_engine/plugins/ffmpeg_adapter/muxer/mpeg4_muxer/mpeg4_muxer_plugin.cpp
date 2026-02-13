@@ -387,7 +387,7 @@ Status Mpeg4MuxerPlugin::WriteSample(uint32_t trackIndex, const std::shared_ptr<
 {
     FALSE_RETURN_V_MSG_E(mdatPos_ > 0, Status::ERROR_WRONG_STATE, "WriteSample failed! Did not write header!");
     FALSE_RETURN_V_MSG_E(io_ != nullptr, Status::ERROR_INVALID_OPERATION, "data sink is not set");
-    FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_ != nullptr,
+    FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_ != nullptr && sample->memory_->GetAddr() != nullptr,
         Status::ERROR_NULL_POINTER, "sample is null!");
     FALSE_RETURN_V_MSG_E(trackIndex < tracks_.size(), Status::ERROR_INVALID_PARAMETER, "track index is invalid!");
     return tracks_[trackIndex]->WriteSample(io_, sample);
