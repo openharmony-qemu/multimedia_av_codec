@@ -337,7 +337,7 @@ uint64_t SubtitleSink::CalcWaitTime(SubtitleInfo &subtitleInfo)
 uint32_t SubtitleSink::ActionToDo(SubtitleInfo &subtitleInfo)
 {
     auto curTime = GetMediaTime();
-    if (shouldUpdate_ || subtitleInfo.pts_ + subtitleInfo.duration_ < curTime) {
+    if (subtitleInfo.pts_ + subtitleInfo.duration_ < curTime) {
         MEDIA_LOG_D("SubtitleInfo pts " PUBLIC_LOG_D64 " duration " PUBLIC_LOG_D64 " drop",
             subtitleInfo.pts_, subtitleInfo.duration_);
         return SubtitleBufferState::DROP;
