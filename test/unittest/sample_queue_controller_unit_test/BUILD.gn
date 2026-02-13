@@ -17,6 +17,7 @@ import("//foundation/multimedia/av_codec/config.gni")
 module_output_path = "av_codec/AVCodec_Video/unittest"
 sample_queue_controller_unit_test_sources = [
   "$av_codec_root_dir/services/media_engine/modules/demuxer/sample_queue_controller.cpp",
+  "$av_codec_root_dir/services/media_engine/modules/demuxer/sample_queue.cpp",
 ]
 config("sample_queue_controller_unit_test_cfg") {
   defines = [
