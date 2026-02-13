@@ -1646,7 +1646,7 @@ void HlsSegmentManager::RiseBufferSize()
 {
     if (totalBufferSize_ >= maxCacheBufferSize_) {
         MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCY, "HLS increasing buffer size failed, already reach the max buffer "
-            "size: " PUBLIC_LOG_D64 ", current buffer size: " PUBLIC_LOG_ZU ", type: %{public}d", maxCacheBufferSize_,
+            "size: " PUBLIC_LOG_ZU ", current buffer size: " PUBLIC_LOG_ZU ", type: %{public}d", maxCacheBufferSize_,
             totalBufferSize_, type_);
         return;
     }
