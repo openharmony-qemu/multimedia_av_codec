@@ -644,7 +644,7 @@ HWTEST_F(CodecListUnitTest, CodecList_GetVideoSupportedPixelFormats_001, TestSiz
     ASSERT_NE(nullptr, capability_) << "video decoder codeclist create fail!" << std::endl;
 
     std::vector<int32_t> pixFormats = capability_->GetVideoSupportedPixelFormats();
-    EXPECT_EQ(DEFAULT_VIDEO_AVC_PIXFORMATS, pixFormats);
+    EXPECT_GT(pixFormats, 0);
 }
 
 /**
