@@ -131,8 +131,8 @@ void DownloadMonitor::Close(bool isAsync)
         downloader_->Close(true);
         task_->Stop();
     } else {
-        downloader_->Close(false);
         task_->Stop();
+        downloader_->Close(false);
     }
     isPlaying_ = false;
 }
