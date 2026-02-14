@@ -105,7 +105,8 @@ M3U8Fragment::~M3U8Fragment()
 }
 
 M3U8::M3U8(const std::string &uri, const std::string &name,
-    const std::unordered_map<std::string, std::string> tagMasterMap, StatusCallbackFunc statusCallback,
+    const std::unordered_map<std::string, std::string> tagMasterMap,
+    StatusCallbackFunc statusCallback,
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
     : uri_(std::move(uri)), name_(std::move(name))
 {

@@ -1,0 +1,539 @@
+From a8e8f8ff7409572666b35a0414378eae6ce9ac52 Mon Sep 17 00:00:00 2001
+From: zzs110 <zhouzishuai@huawei.com>
+Date: Fri, 13 Feb 2026 16:14:57 +0800
+Subject: [PATCH 1/4] =?UTF-8?q?=E8=93=9D=E9=BB=84=E4=B8=8D=E4=B8=80?=
+ =?UTF-8?q?=E8=87=B4?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Signed-off-by: zzs110 <zhouzishuai@huawei.com>
+---
+ .../http_source/dash/dash_mpd_downloader.h    |  3 +-
+ .../dash/mpd_parser/dash_adpt_set_manager.cpp |  3 ++
+ .../dash/mpd_parser/dash_mpd_parser.cpp       |  2 +-
+ .../http_source/hls/hls_segment_manager.cpp   | 35 ++++++++-----------
+ .../http_source/hls/hls_segment_manager.h     |  2 +-
+ .../source/http_source/hls/hls_tags.cpp       | 30 ++++++++--------
+ 6 files changed, 36 insertions(+), 39 deletions(-)
+
+diff --git a/services/media_engine/plugins/source/http_source/dash/dash_mpd_downloader.h b/services/media_engine/plugins/source/http_source/dash/dash_mpd_downloader.h
+index 69bd5a872a4..b120f1c42be 100644
+--- a/services/media_engine/plugins/source/http_source/dash/dash_mpd_downloader.h
++++ b/services/media_engine/plugins/source/http_source/dash/dash_mpd_downloader.h
+@@ -261,9 +261,8 @@ private:
+     std::atomic<bool> isInterruptNeeded_{false};
+     std::vector<DashDrmInfo> localDrmInfos_;
+     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
+-
+-    std::shared_mutex downloadRequestMutex_;
+     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
++    std::shared_mutex downloadRequestMutex_;
+ };
+ }
+ }
+diff --git a/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_adpt_set_manager.cpp b/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_adpt_set_manager.cpp
+index 0554ccf0a0f..2d720645859 100644
+--- a/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_adpt_set_manager.cpp
++++ b/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_adpt_set_manager.cpp
+@@ -24,6 +24,9 @@ namespace Plugins {
+ namespace HttpPlugin {
+ static bool SortByBitrate(const DashRepresentationInfo *x, const DashRepresentationInfo *y)
+ {
++    if (x == nullptr && y == nullptr) {
++        return false;
++    }
+     if (x == nullptr) {
+         return true;
+     }
+diff --git a/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_parser.cpp b/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_parser.cpp
+index e847cb48e32..716828b20a0 100644
+--- a/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_parser.cpp
++++ b/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_parser.cpp
+@@ -550,7 +550,7 @@ void DashMpdParser::ParseSegmentTemplate(std::shared_ptr<XmlParser> xmlParser, s
+         return;
+     }
+ 
+-    DashSegTmpltInfo *segTmplt =  new(std::nothrow) DashSegTmpltInfo;
++    DashSegTmpltInfo *segTmplt = new(std::nothrow) DashSegTmpltInfo;
+     if (segTmplt != nullptr) {
+         IDashMpdNode *segTmpltNode = IDashMpdNode::CreateNode(MPD_LABEL_SEGMENT_TEMPLATE);
+         if (segTmpltNode == nullptr) {
+diff --git a/services/media_engine/plugins/source/http_source/hls/hls_segment_manager.cpp b/services/media_engine/plugins/source/http_source/hls/hls_segment_manager.cpp
+index 12f0290ceaa..f5fcf38dc70 100644
+--- a/services/media_engine/plugins/source/http_source/hls/hls_segment_manager.cpp
++++ b/services/media_engine/plugins/source/http_source/hls/hls_segment_manager.cpp
+@@ -545,7 +545,7 @@ Status HlsSegmentManager::ReadDelegate(unsigned char* buff, ReadDataInfo& readDa
+     ReadCacheBuffer(buff, readDataInfo);
+     MEDIA_LOG_D("HLS Read success: wantReadLength " PUBLIC_LOG_D32 " realReadLen: " PUBLIC_LOG_D32 " readOffset: "
+         PUBLIC_LOG_U64 " readTsIndex: " PUBLIC_LOG_U32 " bufferSize: " PUBLIC_LOG_U64 ", free size: " PUBLIC_LOG_U64
+-        ", streamId: " PUBLIC_LOG_D32 ", next id: " PUBLIC_LOG_U32 ", type: %{public}d",
++        ", streamId: " PUBLIC_LOG_D32 ", next id: " PUBLIC_LOG_D32 ", type: %{public}d",
+         readDataInfo.wantReadLength_, readDataInfo.realReadLength_, readOffset_, readTsIndex_.load(),
+         GetCrossTsBuffersize(), cacheMediaBuffer_->GetFreeSize(), readDataInfo.streamId_, readDataInfo.nextStreamId_,
+         type_);
+@@ -719,7 +719,6 @@ Status HlsSegmentManager::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
+     }
+ 
+     HandleFfmpegReadback(readDataInfo.ffmpegOffset);
+-
+     auto ret = ReadDelegate(buff, readDataInfo);
+ 
+     uint64_t freeSize = cacheMediaBuffer_->GetFreeSize();
+@@ -728,7 +727,6 @@ Status HlsSegmentManager::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
+         isNeedResume_.store(false);
+         MEDIA_LOG_D("HLS downloader resume, type: %{public}d", type_);
+     }
+-
+     readTotalBytes_ += readDataInfo.realReadLength_;
+     if (now > lastReadCheckTime_ && now - lastReadCheckTime_ > SAMPLE_INTERVAL) {
+         readRecordDuringTime_ = now - lastReadCheckTime_;
+@@ -905,8 +903,8 @@ void HlsSegmentManager::OnPlayListChanged(const std::vector<PlayInfo>& playList)
+         }
+         PutRequestIntoDownloader(playInfo);
+     }
+-    MEDIA_LOG_I("HLS OnPlayListChanged out playlist: %{public}zu, back: %{public}zu, writeTsIndex_: %{public}u,"
+-        "type: %{public}d", playList_->Size(), backPlayList_.size(), writeTsIndex_, type_);
++    MEDIA_LOG_I("HLS OnPlayListChanged out playlist: %{public}zu, back: %{public}zu, writeTsIndex_: %{public}u"
++        ", type: %{public}d", playList_->Size(), backPlayList_.size(), writeTsIndex_, type_);
+ }
+ 
+ void HlsSegmentManager::PlayListChanged(const std::vector<PlayInfo>& playList)
+@@ -914,13 +912,6 @@ void HlsSegmentManager::PlayListChanged(const std::vector<PlayInfo>& playList)
+     ResetPlaylistCapacity(static_cast<size_t>(playList.size()));
+     int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
+     for (uint32_t i = 0; i < static_cast<uint32_t>(playList.size()); i++) {
+-        PlayInfo playerTmp = playList[i];
+-        if (InfoIndexMap_.urlMap.find(playList[i].url_) == InfoIndexMap_.urlMap.end()) {
+-            playerTmp.sumDuration_ = InfoIndexMap_.lastPlay.sumDuration_ +
+-                static_cast<uint64_t>(playerTmp.duration_) * ONE_USSECONDS;
+-            InfoIndexMap_.urlMap[playList[i].url_] = playerTmp;
+-            InfoIndexMap_.lastPlay = playerTmp;
+-        }
+         if (CheckLoopTimeout(loopStartTime)) {
+             break;
+         }
+@@ -928,11 +919,18 @@ void HlsSegmentManager::PlayListChanged(const std::vector<PlayInfo>& playList)
+             MEDIA_LOG_I("HLS OnPlayListChanged isInterruptNeeded, type: %{public}d", type_);
+             break;
+         }
++        PlayInfo playerTmp = playList[i];
++        if (InfoIndexMap_.urlMap.find(playList[i].url_) == InfoIndexMap_.urlMap.end()) {
++            playerTmp.sumDuration_ = InfoIndexMap_.lastPlay.sumDuration_ +
++                static_cast<uint64_t>(playerTmp.duration_) * ONE_USSECONDS;
++            InfoIndexMap_.urlMap[playList[i].url_] = playerTmp;
++            InfoIndexMap_.lastPlay = playerTmp;
++        }
+         auto fragment = playList[i];
+         PlaylistBackup(fragment);
+         if (isSelectingBitrate_.load() && (GetSeekable() == Seekable::SEEKABLE)) {
+             fragmentDownloadStart[fragment.url_] = true;
+-            if (writeTsIndex_ == i) {
++            if (i == writeTsIndex_) {
+                 MEDIA_LOG_I("HLS Switch bitrate, type: %{public}d", type_);
+                 isSelectingBitrate_.store(false);
+             } else {
+@@ -1065,7 +1063,7 @@ uint32_t HlsSegmentManager::SaveData(uint8_t* data, uint32_t len, bool notBlock)
+     }
+ 
+     uint64_t freeSize = cacheMediaBuffer_->GetFreeSize();
+-    MEDIA_LOG_D("HLS SaveData, writeOffset: " PUBLIC_LOG_U64 " writeTsIndex: " PUBLIC_LOG_U32 "bufferSize: "
++    MEDIA_LOG_D("HLS SaveData, writeOffset: " PUBLIC_LOG_U64 " writeTsIndex: " PUBLIC_LOG_U32 " bufferSize: "
+         PUBLIC_LOG_U64 ", free size: " PUBLIC_LOG_U64 ", stream id: " PUBLIC_LOG_D32 ", type: %{public}d",
+         writeOffset_, writeTsIndex_, GetCrossTsBuffersize(), freeSize, curStreamId_, type_);
+     canReadCond_.notify_all();
+@@ -1513,7 +1511,6 @@ void HlsSegmentManager::UpdateDownloadFinished(const std::string &url, const std
+     }
+ }
+ 
+-
+ void HlsSegmentManager::SetReadBlockingFlag(bool isReadBlockingAllowed)
+ {
+     MEDIA_LOG_D("SetReadBlockingFlag entered, type: %{public}d, isReadBlockingAllowed: %{public}d",
+@@ -1649,7 +1646,7 @@ void HlsSegmentManager::RiseBufferSize()
+ {
+     if (totalBufferSize_ >= maxCacheBufferSize_) {
+         MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCY, "HLS increasing buffer size failed, already reach the max buffer "
+-            "size: " PUBLIC_LOG_ZU ", current buffer size: " PUBLIC_LOG_ZU ", type: %{public}d", maxCacheBufferSize_,
++            "size: " PUBLIC_LOG_D64 ", current buffer size: " PUBLIC_LOG_ZU ", type: %{public}d", maxCacheBufferSize_,
+             totalBufferSize_, type_);
+         return;
+     }
+@@ -1991,8 +1988,7 @@ bool HlsSegmentManager::GetHLSDiscontinuity()
+ 
+ Status HlsSegmentManager::StopBufferring(bool isAppBackground)
+ {
+-    MEDIA_LOG_W("HlsSegmentManager:StopBufferring enter, isBackground: %{public}d, type: %{public}d", isAppBackground,
+-        type_);
++    MEDIA_LOG_I("HlsSegmentManager:StopBufferring enter, type: %{public}d", type_);
+     if (cacheMediaBuffer_ == nullptr || downloader_ == nullptr || playlistDownloader_ == nullptr) {
+         MEDIA_LOG_E("StopBufferring error, type: %{public}d", type_);
+         return Status::ERROR_NULL_POINTER;
+@@ -2006,8 +2002,7 @@ Status HlsSegmentManager::StopBufferring(bool isAppBackground)
+     bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
+     downloader_->StopBufferring();
+     playlistDownloader_->StopBufferring(isAppBackground);
+-    MEDIA_LOG_W("HlsSegmentManager:StopBufferring out, isBackground: %{public}d, type: %{public}d", isAppBackground,
+-        type_);
++    MEDIA_LOG_I("HlsSegmentManager:StopBufferring out, type: %{public}d", type_);
+     return Status::OK;
+ }
+ 
+diff --git a/services/media_engine/plugins/source/http_source/hls/hls_segment_manager.h b/services/media_engine/plugins/source/http_source/hls/hls_segment_manager.h
+index f2b1fe72009..274775e0259 100644
+--- a/services/media_engine/plugins/source/http_source/hls/hls_segment_manager.h
++++ b/services/media_engine/plugins/source/http_source/hls/hls_segment_manager.h
+@@ -362,12 +362,12 @@ private:
+     HlsSegmentEventCbFunc segEventCb_;
+     HlsSegmentBufferingCbFunc bufferingCbFunc_;
+     std::string masterString_;
++    std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
+     bool isEos_ {false};
+     std::shared_mutex downloadRequestMutex_;
+ 
+     std::mutex canReadMutex_;
+     std::condition_variable canReadCond_;
+-    std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
+     InfoIndexMap InfoIndexMap_;
+ };
+ }
+diff --git a/services/media_engine/plugins/source/http_source/hls/hls_tags.cpp b/services/media_engine/plugins/source/http_source/hls/hls_tags.cpp
+index 584a9c19964..57e7ce44c03 100644
+--- a/services/media_engine/plugins/source/http_source/hls/hls_tags.cpp
++++ b/services/media_engine/plugins/source/http_source/hls/hls_tags.cpp
+@@ -430,7 +430,7 @@ static bool ContainsNonAscii(const std::string& str)
+             return c > 127;  // ASCII: 0-127
+         });
+ }
+- 	 
++
+ static std::pair<std::string, std::string> ParseDefine(const std::string& s,
+     const std::unordered_map<std::string, std::string>& tagMasterMap,
+     const std::unordered_map<std::string, std::string>& tagUriMap)
+@@ -453,18 +453,18 @@ static std::pair<std::string, std::string> ParseDefine(const std::string& s,
+     if (!std::regex_match(content, match, combinedRegex)) {
+         return std::make_pair("", "");
+     }
+-    if (match[1].matched && match[2].matched) { // {1:NAME, 2:VALUE}
+-        return std::make_pair(match[1].str(), match[2].str()); // {1:NAME, 2:VALUE}
++    if (match[1].matched && match[2].matched) {
++        return std::make_pair(match[1].str(), match[2].str());
+     }
+-    if (match[3].matched) { // {3:IMPORT}
+-        std::string importName = match[3].str(); // {3:IMPORT}
++    if (match[3].matched) {
++        std::string importName = match[3].str();
+         auto it = tagMasterMap.find(importName);
+         if (it != tagMasterMap.end()) {
+             return std::make_pair(importName, it->second);
+         }
+     }
+-    if (match[4].matched) { // {4:QUERYPARAM}
+-        std::string paramName = match[4].str(); // {4:QUERYPARAM}
++    if (match[4].matched) {
++        std::string paramName = match[4].str();
+         auto it = tagUriMap.find(paramName);
+         if (it != tagUriMap.end()) {
+             return std::make_pair(paramName, it->second);
+@@ -472,7 +472,7 @@ static std::pair<std::string, std::string> ParseDefine(const std::string& s,
+     }
+     return std::make_pair("", "");
+ }
+- 	 
++
+ static std::string ReplacePlaceholders(const std::string& s,
+     const std::unordered_map<std::string, std::string>& tagDefineMap)
+ {
+@@ -505,7 +505,7 @@ static std::string ReplacePlaceholders(const std::string& s,
+     result.append(searchStart, s.cend());
+     return result;
+ }
+- 	 
++
+ static bool IsHexValid(const std::string& hex)
+ {
+     if (hex.empty()) {
+@@ -524,7 +524,7 @@ static void UriInsert(std::string& result, std::string& hex, int base)
+         result += static_cast<char>(resultTmp);
+     }
+ }
+- 	 
++
+ static std::string UriDecode(const std::string& uri)
+ {
+     std::string result;
+@@ -534,7 +534,7 @@ static std::string UriDecode(const std::string& uri)
+         if (uri[i] == '%' && i + 2 <= uri.size()) { // 2:“%20”
+             std::string hex = uri.substr(i + 1, 2); // 2
+             if (IsHexValid(hex)) {
+-                UriInsert(result, hex, 16); // 16:hex
++                UriInsert(result, hex, 16);
+                 i += 3; // 3:“%20”
+             } else {
+                 result += uri.substr(i, 3); // 3
+@@ -550,7 +550,7 @@ static std::string UriDecode(const std::string& uri)
+     }
+     return result;
+ }
+- 	 
++
+ static std::unordered_map<std::string, std::string> ExtractPairs(const std::string& decodedQuery)
+ {
+     std::unordered_map<std::string, std::string> params;
+@@ -573,12 +573,12 @@ static std::unordered_map<std::string, std::string> ExtractPairs(const std::stri
+         }
+         const std::string& key = match[1].str();
+         if (params.find(key) == params.end()) {
+-            params[key] = match[2].str(); // 2, match {{key-vale}, {key}, {value}}
++            params[key] = match[2].str();
+         }
+     }
+     return params;
+ }
+- 	 
++
+ std::unordered_map<std::string, std::string> ParseUriQuery(const std::string& uri)
+ {
+     std::unordered_map<std::string, std::string> params;
+@@ -596,7 +596,7 @@ std::unordered_map<std::string, std::string> ParseUriQuery(const std::string& ur
+     params = ExtractPairs(queryString);
+     return params;
+ }
+- 	 
++
+ std::pair<std::list<std::shared_ptr<Tag>>, std::unordered_map<std::string, std::string>>ParseEntries(
+     const std::string& s, const std::unordered_map<std::string, std::string>& tagMasterMap,
+     const std::unordered_map<std::string, std::string>& tagUriMap)
+-- 
+GitCode
+
+
+From b78f910e399642911230b890cfdb125884df572c Mon Sep 17 00:00:00 2001
+From: zzs110 <zhouzishuai@huawei.com>
+Date: Fri, 13 Feb 2026 17:17:10 +0800
+Subject: [PATCH 2/4] =?UTF-8?q?=E8=93=9D=E9=BB=84=E4=B8=8D=E4=B8=80?=
+ =?UTF-8?q?=E8=87=B4?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Signed-off-by: zzs110 <zhouzishuai@huawei.com>
+---
+ .../http_source/hls/hls_segment_manager.cpp      |  2 +-
+ .../plugins/source/http_source/hls/hls_tags.cpp  | 16 ++++++++--------
+ 2 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/services/media_engine/plugins/source/http_source/hls/hls_segment_manager.cpp b/services/media_engine/plugins/source/http_source/hls/hls_segment_manager.cpp
+index f5fcf38dc70..f6143ac1bee 100644
+--- a/services/media_engine/plugins/source/http_source/hls/hls_segment_manager.cpp
++++ b/services/media_engine/plugins/source/http_source/hls/hls_segment_manager.cpp
+@@ -543,7 +543,7 @@ Status HlsSegmentManager::ReadDelegate(unsigned char* buff, ReadDataInfo& readDa
+     }
+     FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, Status::END_OF_STREAM, "eos, wantReadLength_ <= 0");
+     ReadCacheBuffer(buff, readDataInfo);
+-    MEDIA_LOG_D("HLS Read success: wantReadLength " PUBLIC_LOG_D32 " realReadLen: " PUBLIC_LOG_D32 " readOffset: "
++    MEDIA_LOG_D("HLS Read success: wantReadLength " PUBLIC_LOG_U32 " realReadLen: " PUBLIC_LOG_U32 " readOffset: "
+         PUBLIC_LOG_U64 " readTsIndex: " PUBLIC_LOG_U32 " bufferSize: " PUBLIC_LOG_U64 ", free size: " PUBLIC_LOG_U64
+         ", streamId: " PUBLIC_LOG_D32 ", next id: " PUBLIC_LOG_D32 ", type: %{public}d",
+         readDataInfo.wantReadLength_, readDataInfo.realReadLength_, readOffset_, readTsIndex_.load(),
+diff --git a/services/media_engine/plugins/source/http_source/hls/hls_tags.cpp b/services/media_engine/plugins/source/http_source/hls/hls_tags.cpp
+index 57e7ce44c03..5b956e9b58c 100644
+--- a/services/media_engine/plugins/source/http_source/hls/hls_tags.cpp
++++ b/services/media_engine/plugins/source/http_source/hls/hls_tags.cpp
+@@ -453,18 +453,18 @@ static std::pair<std::string, std::string> ParseDefine(const std::string& s,
+     if (!std::regex_match(content, match, combinedRegex)) {
+         return std::make_pair("", "");
+     }
+-    if (match[1].matched && match[2].matched) {
+-        return std::make_pair(match[1].str(), match[2].str());
++    if (match[1].matched && match[2].matched) { // {1:NAME, 2:VALUE}
++        return std::make_pair(match[1].str(), match[2].str()); // {1:NAME, 2:VALUE}
+     }
+-    if (match[3].matched) {
+-        std::string importName = match[3].str();
++    if (match[3].matched) { // {3:IMPORT}
++        std::string importName = match[3].str(); // {3:IMPORT}
+         auto it = tagMasterMap.find(importName);
+         if (it != tagMasterMap.end()) {
+             return std::make_pair(importName, it->second);
+         }
+     }
+-    if (match[4].matched) {
+-        std::string paramName = match[4].str();
++    if (match[4].matched) { // {4:QUERYPARAM}
++        std::string paramName = match[4].str(); // {4:QUERYPARAM}
+         auto it = tagUriMap.find(paramName);
+         if (it != tagUriMap.end()) {
+             return std::make_pair(paramName, it->second);
+@@ -534,7 +534,7 @@ static std::string UriDecode(const std::string& uri)
+         if (uri[i] == '%' && i + 2 <= uri.size()) { // 2:“%20”
+             std::string hex = uri.substr(i + 1, 2); // 2
+             if (IsHexValid(hex)) {
+-                UriInsert(result, hex, 16);
++                UriInsert(result, hex, 16); // 16:hex
+                 i += 3; // 3:“%20”
+             } else {
+                 result += uri.substr(i, 3); // 3
+@@ -573,7 +573,7 @@ static std::unordered_map<std::string, std::string> ExtractPairs(const std::stri
+         }
+         const std::string& key = match[1].str();
+         if (params.find(key) == params.end()) {
+-            params[key] = match[2].str();
++            params[key] = match[2].str(); // 2, match {{key-vale}, {key}, {value}}
+         }
+     }
+     return params;
+-- 
+GitCode
+
+
+From 3810a319137366fe4a0b4117565a0baa53903f1e Mon Sep 17 00:00:00 2001
+From: zzs110 <zhouzishuai@huawei.com>
+Date: Fri, 13 Feb 2026 17:53:52 +0800
+Subject: [PATCH 3/4] =?UTF-8?q?=E8=93=9D=E9=BB=84=E4=B8=8D=E4=B8=80?=
+ =?UTF-8?q?=E8=87=B4?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Signed-off-by: zzs110 <zhouzishuai@huawei.com>
+---
+ .../plugins/source/http_source/hls/hls_segment_manager.cpp      | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/services/media_engine/plugins/source/http_source/hls/hls_segment_manager.cpp b/services/media_engine/plugins/source/http_source/hls/hls_segment_manager.cpp
+index f6143ac1bee..b95c089ee9a 100644
+--- a/services/media_engine/plugins/source/http_source/hls/hls_segment_manager.cpp
++++ b/services/media_engine/plugins/source/http_source/hls/hls_segment_manager.cpp
+@@ -1646,7 +1646,7 @@ void HlsSegmentManager::RiseBufferSize()
+ {
+     if (totalBufferSize_ >= maxCacheBufferSize_) {
+         MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCY, "HLS increasing buffer size failed, already reach the max buffer "
+-            "size: " PUBLIC_LOG_D64 ", current buffer size: " PUBLIC_LOG_ZU ", type: %{public}d", maxCacheBufferSize_,
++            "size: " PUBLIC_LOG_ZU ", current buffer size: " PUBLIC_LOG_ZU ", type: %{public}d", maxCacheBufferSize_,
+             totalBufferSize_, type_);
+         return;
+     }
+-- 
+GitCode
+
+
+From 2e361aee6c25e7678b8bf7b229f5a2cce1cc13bc Mon Sep 17 00:00:00 2001
+From: zzs110 <zhouzishuai@huawei.com>
+Date: Sat, 14 Feb 2026 14:36:36 +0800
+Subject: [PATCH 4/4] =?UTF-8?q?=E8=93=9D=E9=BB=84=E4=B8=8D=E4=B8=80?=
+ =?UTF-8?q?=E8=87=B4?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Signed-off-by: zzs110 <zhouzishuai@huawei.com>
+---
+ .../plugins/source/http_source/dash/dash_mpd_downloader.cpp | 1 -
+ .../media_engine/plugins/source/http_source/hls/m3u8.cpp    | 3 ++-
+ services/media_engine/plugins/source/http_source/hls/m3u8.h | 3 +--
+ .../plugins/source/http_source/http_source_plugin.cpp       | 1 -
+ .../plugins/source/http_source/monitor/download_monitor.cpp | 2 +-
+ .../source/http_source/utils/media_cached_buffer.cpp        | 6 +++---
+ 6 files changed, 7 insertions(+), 9 deletions(-)
+
+diff --git a/services/media_engine/plugins/source/http_source/dash/dash_mpd_downloader.cpp b/services/media_engine/plugins/source/http_source/dash/dash_mpd_downloader.cpp
+index 0b4e77b5fdc..d81942a525a 100644
+--- a/services/media_engine/plugins/source/http_source/dash/dash_mpd_downloader.cpp
++++ b/services/media_engine/plugins/source/http_source/dash/dash_mpd_downloader.cpp
+@@ -1661,7 +1661,6 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsInOneTimeline(const DashSegTi
+ {
+     int repeat = 0;
+     int segCountTmp = sampleInfo.segCount_;
+-
+     while (repeat <= segCountTmp) {
+         repeat++;
+         if (segmentSeq == -1) {
+diff --git a/services/media_engine/plugins/source/http_source/hls/m3u8.cpp b/services/media_engine/plugins/source/http_source/hls/m3u8.cpp
+index a678c19b145..41fed18512f 100644
+--- a/services/media_engine/plugins/source/http_source/hls/m3u8.cpp
++++ b/services/media_engine/plugins/source/http_source/hls/m3u8.cpp
+@@ -105,7 +105,8 @@ M3U8Fragment::~M3U8Fragment()
+ }
+ 
+ M3U8::M3U8(const std::string &uri, const std::string &name,
+-    const std::unordered_map<std::string, std::string> tagMasterMap, StatusCallbackFunc statusCallback,
++    const std::unordered_map<std::string, std::string> tagMasterMap,
++    StatusCallbackFunc statusCallback,
+     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
+     : uri_(std::move(uri)), name_(std::move(name))
+ {
+diff --git a/services/media_engine/plugins/source/http_source/hls/m3u8.h b/services/media_engine/plugins/source/http_source/hls/m3u8.h
+index ec0cf22a160..8ef853f9510 100644
+--- a/services/media_engine/plugins/source/http_source/hls/m3u8.h
++++ b/services/media_engine/plugins/source/http_source/hls/m3u8.h
+@@ -216,8 +216,7 @@ struct M3U8MasterPlaylist {
+     void ProcessAllTags(std::list<std::shared_ptr<Tag>>& tags);
+     void ProcessStreamInfoTag(std::shared_ptr<Tag> tag);
+     void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
+-    void ParseAttributes(const std::shared_ptr<AttributesTag>& item,
+-        std::shared_ptr<M3U8VariantStream>& stream);
++    void ParseAttributes(const std::shared_ptr<AttributesTag>& item, std::shared_ptr<M3U8VariantStream>& stream);
+     std::list<std::shared_ptr<M3U8VariantStream>> variants_;
+     std::shared_ptr<M3U8VariantStream> defaultVariant_;
+     std::shared_ptr<M3U8VariantStream> firstVideoStream_;
+diff --git a/services/media_engine/plugins/source/http_source/http_source_plugin.cpp b/services/media_engine/plugins/source/http_source/http_source_plugin.cpp
+index 8765941dce2..8a5bfb3f58d 100644
+--- a/services/media_engine/plugins/source/http_source/http_source_plugin.cpp
++++ b/services/media_engine/plugins/source/http_source/http_source_plugin.cpp
+@@ -11,7 +11,6 @@
+  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  * See the License for the specific language governing permissions and
+  * limitations under the License.
+- 
+  */
+ #define HST_LOG_TAG "HttpSourcePlugin"
+ 
+diff --git a/services/media_engine/plugins/source/http_source/monitor/download_monitor.cpp b/services/media_engine/plugins/source/http_source/monitor/download_monitor.cpp
+index 56f3513008f..fc661e72dad 100644
+--- a/services/media_engine/plugins/source/http_source/monitor/download_monitor.cpp
++++ b/services/media_engine/plugins/source/http_source/monitor/download_monitor.cpp
+@@ -131,8 +131,8 @@ void DownloadMonitor::Close(bool isAsync)
+         downloader_->Close(true);
+         task_->Stop();
+     } else {
+-        downloader_->Close(false);
+         task_->Stop();
++        downloader_->Close(false);
+     }
+     isPlaying_ = false;
+ }
+diff --git a/services/media_engine/plugins/source/http_source/utils/media_cached_buffer.cpp b/services/media_engine/plugins/source/http_source/utils/media_cached_buffer.cpp
+index a7aa0aebe01..0eb1fea0297 100644
+--- a/services/media_engine/plugins/source/http_source/utils/media_cached_buffer.cpp
++++ b/services/media_engine/plugins/source/http_source/utils/media_cached_buffer.cpp
+@@ -397,7 +397,7 @@ size_t CacheMediaChunkBufferImpl::Write(void* ptr, uint64_t inOffset, size_t inW
+         return dupWriteSize;
+     }
+     if (writePos_ == fragmentCacheBuffer_.end()) {
+-        MEDIA_LOG_W("writePos is invalid");
++        MEDIA_LOG_W("Write: writePos is invalid");
+         return dupWriteSize;
+     }
+     auto writeSizeTmp = WriteChunk(*writePos_, chunkPos, src, offset, writeSize);
+@@ -448,7 +448,7 @@ size_t CacheMediaChunkBufferHlsImpl::Write(void* ptr, uint64_t inOffset, size_t
+         return dupWriteSize;
+     }
+     if (writePos_ == fragmentCacheBuffer_.end()) {
+-        MEDIA_LOG_W("writePos is invalid");
++        MEDIA_LOG_W("HlsImpl Write: writePos is invalid");
+         return dupWriteSize;
+     }
+     auto writeSizeTmp = WriteChunk(*writePos_, chunkPos, src, offset, writeSize);
+@@ -959,7 +959,7 @@ bool CacheMediaChunkBufferImpl::AddFragmentCacheBuffer(uint64_t offset, ChunkIte
+     newFragmentPos->totalReadSize = newReadSizeInit;
+     writePos_ = newFragmentPos;
+     if (writePos_ == fragmentCacheBuffer_.end()) {
+-        MEDIA_LOG_W("writePos is invalid");
++        MEDIA_LOG_W("AddFragmentCacheBuffer writePos is invalid");
+         return false;
+     }
+     writePos_->accessPos = writePos_->chunks.end();
+-- 
+GitCode
+
