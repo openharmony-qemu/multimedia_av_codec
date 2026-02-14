@@ -11,6 +11,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ 
  */
 
 #include <string>
@@ -459,6 +460,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ProcessVideoStartTime_001, TestSize.
     demuxer->isVideoMuted_ = false;
     std::shared_ptr<AVBuffer> vBuffer = AVBuffer::CreateAVBuffer();
     demuxer->bufferMap_[trackId] = vBuffer;
+    demuxer->SetPlayerMode();
     EXPECT_EQ(Status::OK, demuxer->HandleReadSample(trackId));
 }
 
@@ -2133,6 +2135,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_VideoStreamCallback_001, TestSize.Le
     demuxer->RegisterVideoStreamReadyCallback(std::make_shared<VideoStreamReadyTestCallback>());
     std::shared_ptr<AVBuffer> vBuffer = AVBuffer::CreateAVBuffer();
     demuxer->bufferMap_[trackId] = vBuffer;
+    demuxer->SetPlayerMode();
     EXPECT_EQ(Status::OK, demuxer->HandleReadSample(trackId));
 }
 
