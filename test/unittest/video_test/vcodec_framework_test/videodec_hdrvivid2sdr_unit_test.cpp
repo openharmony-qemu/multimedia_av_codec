@@ -51,9 +51,28 @@ public:
     void CreateByNameWithParam(std::string_view param);
     void PrepareSource(ResourceType param);
     void ConfigureHdrVivid2Sdr(std::string_view testCode, ResourceType resourceType);
+    void ISHDR2SDRSupported();
     static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK,
                                                           STRINGFY(HEVC_TEST_SUIT)};
 };
+
+void HEVC_TEST_SUIT::ISHDR2SDRSupported()
+{
+    VideoProcessing_ColorSpaceInfo sourceVideoInfo = {-1, -1, -1};
+    VideoProcessing_ColorSpaceInfo destinationVideoInfo = {-1, -1, -1};
+
+    sourceVideoInfo.metadataType = static_cast<int32_t>(OH_VIDEO_HDR_VIVID);
+    sourceVideoInfo.colorSpace = static_cast<int32_t>(OH_COLORSPACE_BT2020_HLG_FULL);
+    sourceVideoInfo.pixelFormat = static_cast<int32_t>(NATIVEBUFFER_PIXEL_FMT_RGBA_1010102);
+
+    destinationVideoInfo.metadataType = static_cast<int32_t>(OH_VIDEO_NONE);
+    destinationVideoInfo.colorSpace = static_cast<int32_t>(OH_COLORSPACE_BT709_LIMIT);
+    destinationVideoInfo.pixelFormat = static_cast<int32_t>(NATIVEBUFFER_PIXEL_FMT_RGBA_8888);
+    bool ret = OH_VideoProcessing_IsColorSpaceConversionSupported(&sourceVideoInfo, &destinationVideoInfo);
+    if (!ret) {
+        GTEST_SKIP() << "Unsupport HDR2SDR";
+    }
+}
 
 void HEVC_TEST_SUIT::SetUpTestCase(void)
 {
