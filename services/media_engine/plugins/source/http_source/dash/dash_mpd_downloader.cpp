@@ -1661,7 +1661,6 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsInOneTimeline(const DashSegTi
 {
     int repeat = 0;
     int segCountTmp = sampleInfo.segCount_;
-
     while (repeat <= segCountTmp) {
         repeat++;
         if (segmentSeq == -1) {

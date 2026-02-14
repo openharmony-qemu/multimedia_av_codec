@@ -397,7 +397,7 @@ size_t CacheMediaChunkBufferImpl::Write(void* ptr, uint64_t inOffset, size_t inW
         return dupWriteSize;
     }
     if (writePos_ == fragmentCacheBuffer_.end()) {
-        MEDIA_LOG_W("writePos is invalid");
+        MEDIA_LOG_W("Write: writePos is invalid");
         return dupWriteSize;
     }
     auto writeSizeTmp = WriteChunk(*writePos_, chunkPos, src, offset, writeSize);
@@ -448,7 +448,7 @@ size_t CacheMediaChunkBufferHlsImpl::Write(void* ptr, uint64_t inOffset, size_t 
         return dupWriteSize;
     }
     if (writePos_ == fragmentCacheBuffer_.end()) {
-        MEDIA_LOG_W("writePos is invalid");
+        MEDIA_LOG_W("HlsImpl Write: writePos is invalid");
         return dupWriteSize;
     }
     auto writeSizeTmp = WriteChunk(*writePos_, chunkPos, src, offset, writeSize);
@@ -959,7 +959,7 @@ bool CacheMediaChunkBufferImpl::AddFragmentCacheBuffer(uint64_t offset, ChunkIte
     newFragmentPos->totalReadSize = newReadSizeInit;
     writePos_ = newFragmentPos;
     if (writePos_ == fragmentCacheBuffer_.end()) {
-        MEDIA_LOG_W("writePos is invalid");
+        MEDIA_LOG_W("AddFragmentCacheBuffer writePos is invalid");
         return false;
     }
     writePos_->accessPos = writePos_->chunks.end();
