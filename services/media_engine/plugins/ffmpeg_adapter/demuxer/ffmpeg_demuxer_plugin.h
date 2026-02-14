@@ -239,6 +239,7 @@ private:
     Status ConvertAvcToAnnexb(AVPacket& pkt);
     Status PushEOSToAllCache();
     bool TrackIsSelected(const uint32_t trackId);
+    Status HandleReadFrameResult(int ffmpegRet);
     Status ReadPacketToCacheQueue(const uint32_t readId);
     Status AddPacketToCacheQueue(Plugins::AVPacketWrapperPtr pkt);
     Status SetDrmCencInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
@@ -367,6 +368,18 @@ private:
     bool AllVideoFirstFramesReady();
     bool AllSupportTrackFramesReady();
     Status SetVideoFirstFrame(Plugins::AVPacketWrapperPtr pkt, bool isConvert = true);
+    Status AccumulateXpsPkt(Plugins::AVPacketWrapperPtr pkt);
+    void AccumulateXpsPktRelease(uint32_t trackIndex);
+    void AccumulateXpsPktReleaseAll();
+    enum class AccumulateAction {
+        ERROR,
+        CONTINUE_PROCESSING,
+        SKIP_PACKET,
+    };
+    AccumulateAction ProcessAccumulateXpsPkt(Plugins::AVPacketWrapperPtr& pktWrapper,
+        int ffmpegRet, Status& status);
+    std::map<int32_t, Plugins::AVPacketWrapperPtr> accumulatePktMap_ {};
+    std::map<int32_t, bool> accumulatePktFinishMap_ {};
     bool VideoFirstFrameValid(uint32_t trackIndex);
     std::map<int32_t, Plugins::AVPacketWrapperPtr> videoFirstFrameMap_ {};
     std::unordered_map<int32_t, int64_t> seekCalibMap_ {};
@@ -463,6 +476,7 @@ private:
     void HandleReadWait();
     bool EnsurePacketAllocated(Plugins::AVPacketWrapperPtr& pktWrapper);
     bool ReadAndProcessFrame(Plugins::AVPacketWrapperPtr& pktWrapper);
+    bool HandleAVPacketNormal(Plugins::AVPacketWrapperPtr& pktWrapper);
     void HandleAVPacketEndOfStream(Plugins::AVPacketWrapperPtr& pktWrapper);
     void HandleAVPacketReadError(Plugins::AVPacketWrapperPtr& pktWrapper, int ffmpegRet);
     bool ReadOnePacketAndProcessWebVTT(Plugins::AVPacketWrapperPtr& pktWrapper);

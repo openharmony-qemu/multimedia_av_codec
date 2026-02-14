@@ -553,6 +553,7 @@ void FFmpegDemuxerPlugin::ResetParam()
     minTsPktInfo_.streamIndex = -1;
     minTsPktInfo_.minPts = AV_NOPTS_VALUE;
     minTsPktInfo_.minDts = AV_NOPTS_VALUE;
+    AccumulateXpsPktReleaseAll();
 }
 
 Status FFmpegDemuxerPlugin::Reset()
@@ -1097,6 +1098,22 @@ int FFmpegDemuxerPlugin::AVReadFrameLimit(AVPacket *pkt)
     return ffmpegRet;
 }
 
+Status FFmpegDemuxerPlugin::HandleReadFrameResult(int ffmpegRet)
+{
+    if (ffmpegRet == AVERROR_EOF) { // eos
+        WebvttMP4EOSProcess(nullptr);
+        Status ret = PushEOSToAllCache();
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Push eos failed");
+        return Status::END_OF_STREAM;
+    }
+    if (ffmpegRet < 0) { // fail
+        MEDIA_LOG_E("Call av_read_frame failed:" PUBLIC_LOG_S ", retry: " PUBLIC_LOG_D32,
+            AVStrError(ffmpegRet).c_str(), int(ioContext_.retry));
+        return ioContext_.retry ? (ResetContext(), Status::ERROR_AGAIN) : Status::ERROR_UNKNOWN;
+    }
+    return Status::OK;
+}
+
 Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -1111,17 +1128,18 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
                 Status::ERROR_NULL_POINTER, "Create AVPacketWrapper failed");
         }
         int ffmpegRet = AVReadFrameLimit(pktWrapper->GetAVPacket());
-        UpdMinTsPacketInfo(pktWrapper->GetAVPacket());
-        if (ffmpegRet == AVERROR_EOF) { // eos
-            WebvttMP4EOSProcess(pktWrapper->GetAVPacket());
-            ret = PushEOSToAllCache();
-            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Push eos failed");
-            return Status::END_OF_STREAM;
+        Status accumulateStatus = Status::OK;
+        auto action = ProcessAccumulateXpsPkt(pktWrapper, ffmpegRet, accumulateStatus);
+        FALSE_RETURN_V_MSG_E(accumulateStatus == Status::OK, accumulateStatus, "PsAccumulateXpsPkt failed");
+        if (action == AccumulateAction::SKIP_PACKET) {
+            pktWrapper = nullptr;
+            continue;
         }
-        if (ffmpegRet < 0) { // fail
-            MEDIA_LOG_E("Call av_read_frame failed:" PUBLIC_LOG_S ", retry: " PUBLIC_LOG_D32,
-                AVStrError(ffmpegRet).c_str(), int(ioContext_.retry));
-            return ioContext_.retry ? (ResetContext(), Status::ERROR_AGAIN) : Status::ERROR_UNKNOWN;
+        UpdMinTsPacketInfo(pktWrapper->GetAVPacket());
+        ret = HandleReadFrameResult(ffmpegRet);
+        if (ret != Status::OK) {
+            AccumulateXpsPktReleaseAll();
+            return ret;
         }
         auto trackId = pktWrapper->GetStreamIndex();
         if (!TrackIsSelected(trackId) || NeedDropAfterSeek(trackId, pktWrapper->GetPts())) {
@@ -1951,7 +1969,95 @@ Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(Plugins::AVPacketWrapperPtr pk
             }
         }
     }
+    AccumulateXpsPktRelease(trackId);
     return ret;
+}
+
+Status FFmpegDemuxerPlugin::AccumulateXpsPkt(Plugins::AVPacketWrapperPtr pkt)
+{
+    FALSE_RETURN_V_MSG_E(pkt != nullptr && pkt->GetAVPacket() != nullptr, Status::ERROR_NULL_POINTER, "Pkt is nullptr");
+    FALSE_RETURN_V_MSG_E(fileType_ == FileType::MPEGPS, Status::OK, "FileType is not MPEGPS");
+    FALSE_RETURN_V_MSG_E(pkt->GetData() != nullptr && pkt->GetSize() >= 0,
+        Status::ERROR_INVALID_DATA, "Invalid packet data " PUBLIC_LOG_P " or size " PUBLIC_LOG_D32,
+        pkt->GetData(), pkt->GetSize());
+    int32_t trackIndex = pkt->GetStreamIndex();
+    FALSE_RETURN_V_MSG_E(trackIndex >= 0, Status::ERROR_INVALID_DATA, "Invalid track index");
+    int32_t ffRet = 0;
+    bool onlyXps = IsPktOnlyParameterSets(pkt->GetData(), pkt->GetSize());
+    if (accumulatePktMap_.find(trackIndex) == accumulatePktMap_.end()) {
+        accumulatePktMap_[trackIndex] = pkt;
+        if (!onlyXps) {
+            accumulatePktFinishMap_[trackIndex] = true;
+            return Status::OK;
+        }
+        accumulatePktFinishMap_[trackIndex] = false;
+    } else {
+        AVPacket* dstPkt = accumulatePktMap_[trackIndex]->GetAVPacket();
+        int pktSize = pkt->GetSize();
+        if (pktSize < 0 || pktSize > INT_MAX - dstPkt->size) {
+            MEDIA_LOG_E("Invalid packet size for concatenation: dst=" PUBLIC_LOG_D32 ", src=" PUBLIC_LOG_D32,
+                        dstPkt->size, pktSize);
+            return Status::ERROR_INVALID_DATA;
+        }
+        ffRet = av_grow_packet(dstPkt, pktSize);
+        FALSE_RETURN_V_MSG_E(ffRet >= 0, Status::ERROR_INVALID_DATA, "Call av_grow_packet failed");
+        uint8_t* dstPos = dstPkt->data + (dstPkt->size - pktSize);
+        const uint8_t* srcPos = pkt->GetData();
+        if (dstPos < dstPkt->data || dstPos > dstPkt->data + dstPkt->size || srcPos == nullptr) {
+            MEDIA_LOG_E("Invalid pointer for memcpy");
+            return Status::ERROR_INVALID_DATA;
+        }
+        auto ret = memcpy_s(dstPos, pktSize, srcPos, pktSize);
+        FALSE_RETURN_V_MSG_E(ret == EOK, Status::ERROR_INVALID_DATA, "Memcpy failed, ret:" PUBLIC_LOG_D32, ret);
+        if (!onlyXps) {
+            accumulatePktFinishMap_[trackIndex] = true;
+        }
+    }
+    return Status::OK;
+}
+
+void FFmpegDemuxerPlugin::AccumulateXpsPktRelease(uint32_t trackIndex)
+{
+    if (fileType_ != FileType::MPEGPS || !streamParsers_->ParserIsCreated(trackIndex)) {
+        return;
+    }
+    if (accumulatePktMap_.find(trackIndex) != accumulatePktMap_.end()) {
+        accumulatePktMap_[trackIndex].reset();
+        accumulatePktMap_.erase(trackIndex);
+    }
+    if (accumulatePktFinishMap_.find(trackIndex) != accumulatePktFinishMap_.end()) {
+        accumulatePktFinishMap_.erase(trackIndex);
+    }
+}
+
+void FFmpegDemuxerPlugin::AccumulateXpsPktReleaseAll()
+{
+    for (auto &it : accumulatePktMap_) {
+        AccumulateXpsPktRelease(static_cast<uint32_t>(it.first));
+    }
+    accumulatePktMap_.clear();
+    accumulatePktFinishMap_.clear();
+}
+
+FFmpegDemuxerPlugin::AccumulateAction FFmpegDemuxerPlugin::ProcessAccumulateXpsPkt(
+    Plugins::AVPacketWrapperPtr& pktWrapper, int ffmpegRet, Status& status)
+{
+    int32_t trackId = pktWrapper->GetStreamIndex();
+    if (fileType_ != FileType::MPEGPS || !streamParsers_->ParserIsCreated(trackId) || ffmpegRet < 0) {
+        return AccumulateAction::CONTINUE_PROCESSING;
+    }
+    status = AccumulateXpsPkt(pktWrapper);
+    if (status != Status::OK) {
+        MEDIA_LOG_E("PsAccumulateXpsPkt failed");
+        return AccumulateAction::ERROR;  // 错误由调用者处理
+    }
+    if (!accumulatePktFinishMap_[trackId]) {
+        MEDIA_LOG_I("PsAccumulateXpsPkt not finish, skip");
+        // pktWrapper = nullptr;
+        return AccumulateAction::SKIP_PACKET;
+    }
+    pktWrapper = accumulatePktMap_[trackId];
+    return AccumulateAction::CONTINUE_PROCESSING;
 }
 
 Status FFmpegDemuxerPlugin::SetVideoFirstFrame(Plugins::AVPacketWrapperPtr pktWrapper, bool isConvert)
@@ -2188,15 +2294,18 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFramesFull()
                 Status::ERROR_NULL_POINTER, "Create AVPacketWrapper failed");
         }
         int32_t ffmpegRet = AVReadFrameLimit(pktWrapper->GetAVPacket());
-        if (ffmpegRet < 0) {
-            MEDIA_LOG_E("Call av_read_frame failed, ret:" PUBLIC_LOG_D32, ffmpegRet);
-            pktWrapper.reset();
-            break;
-        }
+        FALSE_RETURN_V_MSG_E(ffmpegRet >= 0, ret, "Call av_read_frame failed, ret:" PUBLIC_LOG_D32, ffmpegRet);
         int32_t trackId = pktWrapper->GetStreamIndex();
         auto stream = formatContext_->streams[trackId];
         FALSE_RETURN_V_MSG_E(stream != nullptr && stream->codecpar != nullptr,
             Status::ERROR_NULL_POINTER, "Stream " PUBLIC_LOG_D32 " is invalid", trackId);
+        Status accumulateStatus = Status::OK;
+        auto action = ProcessAccumulateXpsPkt(pktWrapper, ffmpegRet, accumulateStatus);
+        FALSE_RETURN_V_MSG_E(accumulateStatus == Status::OK, accumulateStatus, "PsAccumulateXpsPkt failed");
+        if (action == AccumulateAction::SKIP_PACKET) {
+            pktWrapper = nullptr;
+            continue;
+        }
         InitMinTsPacketInfo(pktWrapper->GetAVPacket());
         ret = AddPacketToCacheQueue(pktWrapper);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add to cache failed");
@@ -2213,10 +2322,7 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFramesFull()
         } else if (extraType && FFmpegFormatHelper::IsVideoType(*stream)) {
             ret = SetVideoFirstFrame(pktWrapper, false);
         }
-        if (ret != Status::OK) {
-            MEDIA_LOG_E("Set first frame failed, track " PUBLIC_LOG_D32, trackId);
-            return ret;
-        }
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Set first frame failed" PUBLIC_LOG_D32, trackId);
         pktWrapper = nullptr;
     }
     return ret;
@@ -2254,6 +2360,13 @@ Status FFmpegDemuxerPlugin::ReadAndValidateLimitedPacket(Plugins::AVPacketWrappe
     auto stream = formatContext_->streams[trackId];
     FALSE_RETURN_V_MSG_E(stream != nullptr && stream->codecpar != nullptr,
         Status::ERROR_NULL_POINTER, "Stream " PUBLIC_LOG_D32 " is invalid", trackId);
+    Status accumulateStatus = Status::OK;
+    auto action = ProcessAccumulateXpsPkt(pktWrapper, ffmpegRet, accumulateStatus);
+    FALSE_RETURN_V_MSG_E(accumulateStatus == Status::OK, accumulateStatus, "PsAccumulateXpsPkt failed");
+    if (action == AccumulateAction::SKIP_PACKET) {
+        pktWrapper = nullptr;
+        return Status::OK;
+    }
     InitMinTsPacketInfo(pktWrapper->GetAVPacket());
     Status ret = AddPacketToCacheQueue(pktWrapper);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add to cache failed");
@@ -2792,6 +2905,7 @@ Status FFmpegDemuxerPlugin::Flush()
         sLock.unlock();
     }
     minTsPktInfo_.isUpd = true;
+    AccumulateXpsPktReleaseAll();
     return ret;
 }
 
