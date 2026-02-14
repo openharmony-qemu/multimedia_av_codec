@@ -1131,7 +1131,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
         Status accumulateStatus = Status::OK;
         auto action = ProcessAccumulateXpsPkt(pktWrapper, ffmpegRet, accumulateStatus);
         FALSE_RETURN_V_MSG_E(accumulateStatus == Status::OK, accumulateStatus, "PsAccumulateXpsPkt failed");
-        if (action == AccumulateAction::SKIP_PACKET) {
+        if (action == AccumulateAction::ACCUMULATE_NOT_COMPLETED) {
             pktWrapper = nullptr;
             continue;
         }
@@ -1983,13 +1983,8 @@ Status FFmpegDemuxerPlugin::AccumulateXpsPkt(Plugins::AVPacketWrapperPtr pkt)
     int32_t trackIndex = pkt->GetStreamIndex();
     FALSE_RETURN_V_MSG_E(trackIndex >= 0, Status::ERROR_INVALID_DATA, "Invalid track index");
     int32_t ffRet = 0;
-    bool onlyXps = IsPktOnlyParameterSets(pkt->GetData(), pkt->GetSize());
     if (accumulatePktMap_.find(trackIndex) == accumulatePktMap_.end()) {
         accumulatePktMap_[trackIndex] = pkt;
-        if (!onlyXps) {
-            accumulatePktFinishMap_[trackIndex] = true;
-            return Status::OK;
-        }
         accumulatePktFinishMap_[trackIndex] = false;
     } else {
         AVPacket* dstPkt = accumulatePktMap_[trackIndex]->GetAVPacket();
@@ -2008,10 +2003,13 @@ Status FFmpegDemuxerPlugin::AccumulateXpsPkt(Plugins::AVPacketWrapperPtr pkt)
             return Status::ERROR_INVALID_DATA;
         }
         auto ret = memcpy_s(dstPos, pktSize, srcPos, pktSize);
-        FALSE_RETURN_V_MSG_E(ret == EOK, Status::ERROR_INVALID_DATA, "Memcpy failed, ret:" PUBLIC_LOG_D32, ret);
-        if (!onlyXps) {
-            accumulatePktFinishMap_[trackIndex] = true;
+        if (ret != EOK) {
+            MEDIA_LOG_E("Memcpy failed, ret:" PUBLIC_LOG_D32, ret);
+            return Status::ERROR_UNKNOWN;
         }
+    }
+    if (!IsPktOnlyParameterSets(pkt->GetData(), pkt->GetSize())) {
+        accumulatePktFinishMap_[trackIndex] = true;
     }
     return Status::OK;
 }
@@ -2044,20 +2042,19 @@ FFmpegDemuxerPlugin::AccumulateAction FFmpegDemuxerPlugin::ProcessAccumulateXpsP
 {
     int32_t trackId = pktWrapper->GetStreamIndex();
     if (fileType_ != FileType::MPEGPS || !streamParsers_->ParserIsCreated(trackId) || ffmpegRet < 0) {
-        return AccumulateAction::CONTINUE_PROCESSING;
+        return AccumulateAction::NOT_SUPPORT_TYPE;
     }
     status = AccumulateXpsPkt(pktWrapper);
     if (status != Status::OK) {
         MEDIA_LOG_E("PsAccumulateXpsPkt failed");
-        return AccumulateAction::ERROR;  // 错误由调用者处理
+        return AccumulateAction::ERROR;
     }
     if (!accumulatePktFinishMap_[trackId]) {
-        MEDIA_LOG_I("PsAccumulateXpsPkt not finish, skip");
-        // pktWrapper = nullptr;
-        return AccumulateAction::SKIP_PACKET;
+        MEDIA_LOG_I("PsAccumulateXpsPkt not completed, skip");
+        return AccumulateAction::ACCUMULATE_NOT_COMPLETED;
     }
     pktWrapper = accumulatePktMap_[trackId];
-    return AccumulateAction::CONTINUE_PROCESSING;
+    return AccumulateAction::ACCUMULATE_COMPLETED;
 }
 
 Status FFmpegDemuxerPlugin::SetVideoFirstFrame(Plugins::AVPacketWrapperPtr pktWrapper, bool isConvert)
@@ -2302,7 +2299,7 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFramesFull()
         Status accumulateStatus = Status::OK;
         auto action = ProcessAccumulateXpsPkt(pktWrapper, ffmpegRet, accumulateStatus);
         FALSE_RETURN_V_MSG_E(accumulateStatus == Status::OK, accumulateStatus, "PsAccumulateXpsPkt failed");
-        if (action == AccumulateAction::SKIP_PACKET) {
+        if (action == AccumulateAction::ACCUMULATE_NOT_COMPLETED) {
             pktWrapper = nullptr;
             continue;
         }
@@ -2363,7 +2360,7 @@ Status FFmpegDemuxerPlugin::ReadAndValidateLimitedPacket(Plugins::AVPacketWrappe
     Status accumulateStatus = Status::OK;
     auto action = ProcessAccumulateXpsPkt(pktWrapper, ffmpegRet, accumulateStatus);
     FALSE_RETURN_V_MSG_E(accumulateStatus == Status::OK, accumulateStatus, "PsAccumulateXpsPkt failed");
-    if (action == AccumulateAction::SKIP_PACKET) {
+    if (action == AccumulateAction::ACCUMULATE_NOT_COMPLETED) {
         pktWrapper = nullptr;
         return Status::OK;
     }

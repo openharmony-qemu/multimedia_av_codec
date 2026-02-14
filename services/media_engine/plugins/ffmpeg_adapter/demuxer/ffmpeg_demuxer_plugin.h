@@ -373,8 +373,9 @@ private:
     void AccumulateXpsPktReleaseAll();
     enum class AccumulateAction {
         ERROR,
-        CONTINUE_PROCESSING,
-        SKIP_PACKET,
+        NOT_SUPPORT_TYPE,
+        ACCUMULATE_COMPLETED,
+        ACCUMULATE_NOT_COMPLETED,
     };
     AccumulateAction ProcessAccumulateXpsPkt(Plugins::AVPacketWrapperPtr& pktWrapper,
         int ffmpegRet, Status& status);

@@ -418,7 +418,7 @@ bool FFmpegDemuxerPlugin::ReadAndProcessFrame(Plugins::AVPacketWrapperPtr& pktWr
         Status accumulateStatus = Status::OK;
         auto action = ProcessAccumulateXpsPkt(pktWrapper, ffmpegRet, accumulateStatus);
         FALSE_RETURN_V_MSG_E(accumulateStatus == Status::OK, false, "PsAccumulateXpsPkt failed");
-        if (action == AccumulateAction::SKIP_PACKET) {
+        if (action == AccumulateAction::ACCUMULATE_NOT_COMPLETED) {
             pktWrapper.reset();
             return true;
         }
