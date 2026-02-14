@@ -60,11 +60,9 @@ void HEVC_TEST_SUIT::ISHDR2SDRSupported()
 {
     VideoProcessing_ColorSpaceInfo sourceVideoInfo = {-1, -1, -1};
     VideoProcessing_ColorSpaceInfo destinationVideoInfo = {-1, -1, -1};
-
     sourceVideoInfo.metadataType = static_cast<int32_t>(OH_VIDEO_HDR_VIVID);
     sourceVideoInfo.colorSpace = static_cast<int32_t>(OH_COLORSPACE_BT2020_HLG_FULL);
     sourceVideoInfo.pixelFormat = static_cast<int32_t>(NATIVEBUFFER_PIXEL_FMT_RGBA_1010102);
-
     destinationVideoInfo.metadataType = static_cast<int32_t>(OH_VIDEO_NONE);
     destinationVideoInfo.colorSpace = static_cast<int32_t>(OH_COLORSPACE_BT709_LIMIT);
     destinationVideoInfo.pixelFormat = static_cast<int32_t>(NATIVEBUFFER_PIXEL_FMT_RGBA_8888);
@@ -284,7 +282,6 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1011, TestSize.Level1)
 {
     auto params = GetParam();
     std::string_view mimeType = std::get<0>(params);
-
     ResourceType resourceType = std::get<1>(params);
     CreateByNameWithParam(mimeType.data());
     std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
