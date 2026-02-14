@@ -21,6 +21,7 @@
 #include "avcodec_log.h"
 #include "avcodec_suspend.h"
 #include "meta/meta_key.h"
+#include "syspara/parameters.h"
 #include "unittest_utils.h"
 #ifdef VIDEODEC_ASYNC_UNIT_TEST
 #include "vdec_async_sample.h"
@@ -70,6 +71,11 @@ void TEST_SUIT::SetUpTestCase(void)
     auto capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), false,
                                                                     AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_AVC).data() << " can not found!" << std::endl;
+
+    bool supportMemoryRecycle = OHOS::system::GetBoolParameter("resourceschedule.memmgr.dma.reclaimable", false);
+    if (!supportMemoryRecycle) {
+        GTEST_SKIP() << "Unsupport memory recycle";
+    }
 }
 
 void TEST_SUIT::TearDownTestCase(void) {}

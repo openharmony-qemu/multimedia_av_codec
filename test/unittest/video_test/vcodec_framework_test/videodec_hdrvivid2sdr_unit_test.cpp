@@ -19,6 +19,8 @@
 #include "avcodec_log.h"
 #include "native_avcodec_base.h"
 #include "unittest_utils.h"
+#include "video_processing_types.h"
+#include "video_processing.h"
 #include "videodec_hdrvivid2sdr_unit_test.h"
 
 using namespace std;
@@ -58,6 +60,8 @@ void HEVC_TEST_SUIT::SetUpTestCase(void)
     auto capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_HEVC).data(), false,
                                                                     AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_HEVC).data() << " can not found!" << std::endl;
+
+    ISHDR2SDRSupported();
 }
 
 void HEVC_TEST_SUIT::TearDownTestCase(void) {}
@@ -123,7 +127,6 @@ void HEVC_TEST_SUIT::PrepareSource(ResourceType param)
     videoDec_->SetOutPath(prefix + fileName);
 }
 
-#ifdef HMOS_TEST
 void GetInitialParam(ResourceType resourceType, int32_t &initialWidth, int32_t &initialHeight,
                      int32_t &initialColorSpace)
 {
@@ -198,7 +201,6 @@ void HEVC_TEST_SUIT::ConfigureHdrVivid2Sdr(std::string_view mimeType, ResourceTy
             break;
     }
 }
-#endif
 
 INSTANTIATE_TEST_SUITE_P(,
                          HEVC_TEST_SUIT,
@@ -250,7 +252,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_0021, TestSize.Level1)
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpace);
     ASSERT_EQ(AV_ERR_INVALID_VAL, videoDec_->Configure(format_));
 }
-#ifdef HMOS_TEST
+
 /**
  * @tc.name: VideoDecoder_HRDVivid2SDR_1011
  * @tc.desc: 1. key pixel format unset;
@@ -263,6 +265,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1011, TestSize.Level1)
 {
     auto params = GetParam();
     std::string_view mimeType = std::get<0>(params);
+
     ResourceType resourceType = std::get<1>(params);
     CreateByNameWithParam(mimeType.data());
     std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
@@ -880,7 +883,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1221, TestSize.Level1)
         }
     }
 }
-#else
+
 /**
  * @tc.name: VideoDecoder_HRDVivid2SDR_2011
  * @tc.desc: 1. key pixel format is RGBA;
@@ -998,7 +1001,6 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_2061, TestSize.Level1)
                          OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
     ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, videoDec_->Configure(format_));
 }
-#endif // HMOS_TEST
 } // namespace HevcTestSuit
 
 namespace AvcTestSuit {

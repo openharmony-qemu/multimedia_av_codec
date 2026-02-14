@@ -1614,6 +1614,14 @@ ohos_unittest("videodec_hdrvivid2sdr_async_unit_test") {
     ]
   }
 
+  if (defined(av_codec_support_video_processing_engine) &&
+      av_codec_support_video_processing_engine) {
+      external_deps += [
+        "video_processing_engine:videoprocessingengine",
+        "video_processing_engine:video_processing",
+      ]
+  }
+
   resource_config_file = resource_configuration_file
 }
 
@@ -3831,6 +3839,14 @@ ohos_unittest("videodec_hdrvivid2sdr_sync_unit_test") {
       "drm_framework:drm_framework",
       "drm_framework:native_drm",
     ]
+  }
+
+    if (defined(av_codec_support_video_processing_engine) &&
+      av_codec_support_video_processing_engine) {
+      external_deps += [
+        "video_processing_engine:videoprocessingengine",
+        "video_processing_engine:video_processing",
+      ]
   }
 
   resource_config_file = resource_configuration_file
