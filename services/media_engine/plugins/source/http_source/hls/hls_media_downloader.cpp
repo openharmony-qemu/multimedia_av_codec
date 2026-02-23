@@ -195,7 +195,7 @@ bool HlsMediaDownloader::SeekToTime(int64_t seekTime, SeekMode mode)
 
 bool HlsMediaDownloader::MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode, int32_t streamId)
 {
-    FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, false, "SeekToTimeByStreamId no video segment manager found!");
+    FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, false, "MediaSeekTimeByStreamId no video segment manager found!");
     auto segType = videoSegManager_->GetSegType(streamId);
     if (segType == HlsSegmentType::SEG_AUDIO && audioSegManager_) {
         return audioSegManager_->SeekToTime(seekTime, mode);
@@ -203,7 +203,7 @@ bool HlsMediaDownloader::MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode
     if (segType == HlsSegmentType::SEG_SUBTITLE && subtitlesSegManager_) {
         return subtitlesSegManager_->SeekToTime(seekTime, mode);
     }
-    MEDIA_LOG_E("no audio and subtitle segment manager found");
+    MEDIA_LOG_E("no media segment manager found");
     return false;
 }
 
