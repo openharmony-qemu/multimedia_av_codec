@@ -631,9 +631,7 @@ bool HlsPlayListDownloader::ReadMediaHeader(const std::list<std::shared_ptr<M3U8
             !stream->m3u8_->isHeaderReady_) {
             continue;
         }
-        errno_t err = memcpy_s(buffer, wantLen,
-            stream->m3u8_->fmp4Header_,
-            stream->m3u8_->downloadHeaderLen_);
+        errno_t err = memcpy_s(buffer, wantLen, stream->m3u8_->fmp4Header_, stream->m3u8_->downloadHeaderLen_);
         if (err == 0) {
             readLen = stream->m3u8_->downloadHeaderLen_;
             return true;
@@ -653,8 +651,7 @@ bool HlsPlayListDownloader::ReadStreamHeader(const std::list<std::shared_ptr<M3U
             !stream->m3u8_->isHeaderReady_) {
             continue;
         }
-        errno_t err = memcpy_s(buffer, wantLen, stream->m3u8_->fmp4Header_,
-            stream->m3u8_->downloadHeaderLen_);
+        errno_t err = memcpy_s(buffer, wantLen, stream->m3u8_->fmp4Header_, stream->m3u8_->downloadHeaderLen_);
         if (err == 0) {
             readLen = stream->m3u8_->downloadHeaderLen_;
             return true;
@@ -710,7 +707,7 @@ void HlsPlayListDownloader::GetMediaStreams(StreamType streamType, std::vector<S
         if (streamType == StreamType::SUBTITLE) {
             isDefault = currentVariant_->defaultSubtitles_ != nullptr &&
                 media->streamId_ == currentVariant_->defaultSubtitles_->streamId_;
-                streamInfo.sniffSize = DEFAULT_SUBTITLE_SNIFFSIZE;
+            streamInfo.sniffSize = DEFAULT_SUBTITLE_SNIFFSIZE;
         }
         
         if (isDefault) {

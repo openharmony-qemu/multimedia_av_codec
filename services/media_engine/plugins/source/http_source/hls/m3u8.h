@@ -244,7 +244,6 @@ struct M3U8MasterPlaylist {
     std::atomic<bool> isPureByteRange_ {false};
     uint32_t defaultStreamId_ {0};
     StatusCallbackFunc monitorStatusCallback_;
-    std::list<std::shared_ptr<M3U8Media>> mediaList_;
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
     std::list<std::shared_ptr<M3U8Media>> audioList_;
     std::list<std::shared_ptr<M3U8Media>> subtitlesList_;
