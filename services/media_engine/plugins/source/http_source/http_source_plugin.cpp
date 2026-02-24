@@ -115,7 +115,7 @@ Status HttpSourcePlugin::Reset()
 Status HttpSourcePlugin::SetReadBlockingFlag(bool isReadBlockingAllowed)
 {
     MEDIA_LOG_D("SetReadBlockingFlag entered, IsReadBlockingAllowed %{public}d", isReadBlockingAllowed);
-    FALSE_RETURN_V(downloader_ != nullptr, Status::OK);
+    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_UNKNOWN);
     downloader_->SetReadBlockingFlag(isReadBlockingAllowed);
     return Status::OK;
 }
@@ -241,9 +241,7 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
 {
     FALSE_RETURN_MSG(source != nullptr, "source is null.");
     std::shared_ptr<PlayStrategy> playStrategy;
-    if (source != nullptr) {
-        playStrategy = PlayStrategyInit(source);
-    }
+    playStrategy = PlayStrategyInit(source);
     if (source->GetSourceLoader() != nullptr) {
         loaderCombinations_ = std::make_shared<MediaSourceLoaderCombinations>(source->GetSourceLoader());
         loaderCombinations_->EnableOfflineCache(source->GetenableOfflineCache());

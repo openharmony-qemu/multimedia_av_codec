@@ -287,7 +287,7 @@ HWTEST_F(HttpSourcePluginUnitTest, SetReadBlockingFlag_01, TestSize.Level1)
 {
     bool isReadBlockingAllowed = true;
     Status status = httpSourcePlugin->SetReadBlockingFlag(isReadBlockingAllowed);
-    EXPECT_EQ(status, Status::OK);
+    EXPECT_EQ(status, Status::ERROR_UNKNOWN);
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, SetReadBlockingFlag_02, TestSize.Level1)
@@ -295,7 +295,7 @@ HWTEST_F(HttpSourcePluginUnitTest, SetReadBlockingFlag_02, TestSize.Level1)
     httpSourcePlugin->downloader_ = nullptr;
     bool isReadBlockingAllowed = true;
     Status status = httpSourcePlugin->SetReadBlockingFlag(isReadBlockingAllowed);
-    EXPECT_EQ(status, Status::OK);
+    EXPECT_EQ(status, Status::ERROR_UNKNOWN);
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, HttpSourcePlugin_Start, TestSize.Level1)
