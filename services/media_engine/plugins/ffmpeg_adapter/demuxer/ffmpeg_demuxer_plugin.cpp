@@ -824,7 +824,7 @@ void FFmpegDemuxerPlugin::WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std:
         if (VideoFirstFrameValid(trackIndex)) {
             Plugins::AVPacketWrapperPtr firstFrameWrapper = videoFirstFrameMap_[trackIndex];
             AVPacket *firstFrame = (firstFrameWrapper != nullptr) ? firstFrameWrapper->GetAVPacket() : nullptr;
-            if (firstFrame != nullptr && firstPkt->dts == firstFrame->dts && streamParsers_ != nullptr) {
+            if (firstFrame != nullptr && firstPkt->pos == firstFrame->pos && streamParsers_ != nullptr) {
                 streamParsers_->ResetXPSSendStatus(trackIndex);
             }
         } else if (streamParsers_ != nullptr && firstPkt->dts != AV_NOPTS_VALUE && firstPkt->dts <= 0) {
