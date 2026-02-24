@@ -71,6 +71,13 @@ const uint32_t TRUEHD_SNIFF_SIZE = 1024 * 1024;
 #endif
 const int32_t MP3_PROBE_SCORE_LIMIT = 5;
 const int32_t DEF_PROBE_SCORE_LIMIT = 50;
+// ADTS fixed header is 7 bytes (or 9 bytes if CRC present; we only need byte[6] here).
+constexpr int32_t ADTS_FIXED_HEADER_SIZE = 7;
+constexpr uint8_t ADTS_SYNCWORD_BYTE0 = 0xFF; // ADTS syncword high 8 bits
+constexpr uint8_t ADTS_SYNCWORD_MASK_BYTE1 = 0xF0; // ADTS syncword high 4 bits in byte[1]
+constexpr uint8_t ADTS_RAW_DATA_BLOCKS_MASK = 0x03; // raw_data_blocks_in_frame is 2 bits in byte[6]
+constexpr int32_t AAC_SAMPLES_PER_RAW_DATA_BLOCK = 1024; // AAC-LC: 1024 PCM samples per raw_data_block
+constexpr int64_t US_PER_SEC = 1000000LL; // 1 second = 1,000,000 microseconds (AVBuffer timestamps use us)
 const uint32_t RANK_MAX = 100;
 const uint64_t INIT_DOWNLOADS_DATA_SIZE_THRESHOLD = 2 * 1024 * 1024;
 const int64_t LIVE_FLV_PROBE_SIZE = 100 * 1024 * 2;
@@ -811,6 +818,8 @@ void FFmpegDemuxerPlugin::WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std:
         sample->meta_->SetData(Media::Tag::BUFFER_DECODING_TIMESTAMP, dts);
     }
 
+    (void)SupplementAudioTimestampIfNeeded(sample, *firstPkt, *snapshot, trackIndex);
+
     if (snapshot->isVideo && snapshot->codecId != AV_CODEC_ID_H264) {
         if (VideoFirstFrameValid(trackIndex)) {
             Plugins::AVPacketWrapperPtr firstFrameWrapper = videoFirstFrameMap_[trackIndex];
@@ -835,6 +844,132 @@ void FFmpegDemuxerPlugin::WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std:
             sample->meta_->SetData(Tag::BUFFER_SKIP_SAMPLES_INFO, skipInfo);
         }
     }
+}
+
+bool FFmpegDemuxerPlugin::SupplementAudioTimestampIfNeeded(std::shared_ptr<AVBuffer> sample, const AVPacket &firstPkt,
+    const AVStreamSnapshot &snapshot, uint32_t trackIndex)
+{
+    FALSE_RETURN_V_MSG_E(sample != nullptr && sample->meta_ != nullptr, false, "Sample or meta is nullptr");
+    const bool isUnseekable = (seekable_ != Seekable::SEEKABLE);
+    const bool isMpegTs = (fileType_ == FileType::MPEGTS);
+    const bool hasInvalidPts = (firstPkt.pts == AV_NOPTS_VALUE);
+    const bool hasInvalidDts = (firstPkt.dts == AV_NOPTS_VALUE);
+    const bool hasInvalidDuration = (firstPkt.duration == AV_NOPTS_VALUE) || (firstPkt.duration <= 0);
+    if (!isUnseekable || !isMpegTs || !snapshot.isAudio || (!hasInvalidPts && !hasInvalidDts && !hasInvalidDuration)) {
+        return false;
+    }
+
+    const bool durationUpdated = SupplementAudioDurationIfNeeded(sample, firstPkt, snapshot);
+    const bool ptsDtsUpdated = SupplementAudioPtsDtsIfNeeded(sample, firstPkt, snapshot, trackIndex);
+    return durationUpdated || ptsDtsUpdated;
+}
+
+int32_t FFmpegDemuxerPlugin::GetFrameSamplesFromFFmpeg(const AVStreamSnapshot &snapshot, int32_t pktSize)
+{
+    // Prefer FFmpeg's own logic to avoid plugin-side magic numbers.
+    AVCodecParameters par {};
+    par.codec_type = snapshot.codecType;
+    par.codec_id = snapshot.codecId;
+    par.sample_rate = snapshot.sampleRate;
+    par.ch_layout.nb_channels = snapshot.channels;
+    par.block_align = snapshot.blockAlign;
+    par.bits_per_coded_sample = snapshot.bitsPerCodedSample;
+    par.bit_rate = snapshot.bitRate;
+    par.codec_tag = snapshot.codecTag;
+    par.frame_size = snapshot.frameSize;
+    return av_get_audio_frame_duration2(&par, pktSize);
+}
+
+int32_t FFmpegDemuxerPlugin::GetAacFrameSamplesFromAdts(const AVPacket &pkt)
+{
+    // For ADTS AAC in TS, derive raw_data_blocks_in_frame from ADTS header.
+    FALSE_RETURN_V_MSG_E(pkt.data != nullptr && pkt.size >= ADTS_FIXED_HEADER_SIZE, 0,
+        "AAC ADTS parse failed due to invalid packet, size=" PUBLIC_LOG_D32, pkt.size);
+    const uint8_t *data = pkt.data;
+    const bool isAdts = (data[0] == ADTS_SYNCWORD_BYTE0) &&
+        ((data[1] & ADTS_SYNCWORD_MASK_BYTE1) == ADTS_SYNCWORD_MASK_BYTE1);
+    if (!isAdts) {
+        return 0;
+    }
+    const int32_t rawBlocks = static_cast<int32_t>(data[6] & ADTS_RAW_DATA_BLOCKS_MASK);
+    // ADTS header stores (raw_data_blocks_in_frame), actual blocks = rawBlocks + 1.
+    return AAC_SAMPLES_PER_RAW_DATA_BLOCK * (rawBlocks + 1);
+}
+
+bool FFmpegDemuxerPlugin::SupplementAudioDurationIfNeeded(std::shared_ptr<AVBuffer> sample, const AVPacket &firstPkt,
+    const AVStreamSnapshot &snapshot)
+{
+    FALSE_RETURN_V_MSG_E(sample != nullptr && sample->meta_ != nullptr, false, "Sample or meta is nullptr");
+    const bool hasInvalidDuration = (firstPkt.duration == AV_NOPTS_VALUE) || (firstPkt.duration <= 0);
+    if (!hasInvalidDuration || sample->duration_ > 0) {
+        return false;
+    }
+    FALSE_RETURN_V_MSG_E(snapshot.sampleRate > 0, false,
+        "Invalid sampleRate=" PUBLIC_LOG_D32 " when supplement duration, codecId=" PUBLIC_LOG_D32
+        " pktSize=" PUBLIC_LOG_D32,
+        snapshot.sampleRate, static_cast<int32_t>(snapshot.codecId), firstPkt.size);
+
+    int32_t frameSamples = snapshot.frameSize;
+    if (frameSamples <= 0) {
+        frameSamples = GetFrameSamplesFromFFmpeg(snapshot, firstPkt.size);
+    }
+    if (frameSamples <= 0 && snapshot.codecId == AV_CODEC_ID_AAC) {
+        frameSamples = GetAacFrameSamplesFromAdts(firstPkt);
+    }
+    if (frameSamples <= 0) {
+        return false;
+    }
+    const int64_t durationUs = (static_cast<int64_t>(frameSamples) * US_PER_SEC) / snapshot.sampleRate;
+    FALSE_RETURN_V_MSG_E(durationUs > 0, false,
+        "Invalid durationUs=" PUBLIC_LOG_D64 ", frameSamples=" PUBLIC_LOG_D32 " sampleRate=" PUBLIC_LOG_D32,
+        durationUs, frameSamples, snapshot.sampleRate);
+    sample->duration_ = durationUs;
+    sample->meta_->SetData(Media::Tag::BUFFER_DURATION, durationUs);
+    return true;
+}
+
+bool FFmpegDemuxerPlugin::SupplementAudioPtsDtsIfNeeded(std::shared_ptr<AVBuffer> sample, const AVPacket &firstPkt,
+    const AVStreamSnapshot &snapshot, uint32_t trackIndex)
+{
+    FALSE_RETURN_V_MSG_E(sample != nullptr && sample->meta_ != nullptr, false, "Sample or meta is nullptr");
+    const bool hasInvalidPts = (firstPkt.pts == AV_NOPTS_VALUE);
+    const bool hasInvalidDts = (firstPkt.dts == AV_NOPTS_VALUE);
+    if (!hasInvalidPts && !hasInvalidDts) {
+        return false;
+    }
+
+    if (hasInvalidDts && !hasInvalidPts) {
+        sample->dts_ = sample->pts_;
+        sample->meta_->SetData(Media::Tag::BUFFER_DECODING_TIMESTAMP, sample->pts_);
+        return true;
+    }
+    if (hasInvalidPts && !hasInvalidDts) {
+        sample->pts_ = sample->dts_;
+        return true;
+    }
+
+    const auto &dfx = trackDfxInfoMap_[static_cast<int32_t>(trackIndex)];
+    const int64_t stepDuration = (dfx.lastDuration > 0) ? dfx.lastDuration : sample->duration_;
+    FALSE_RETURN_V_MSG_E(stepDuration > 0, false,
+        "Cannot supplement pts/dts without duration, track=" PUBLIC_LOG_U32 " lastPts=" PUBLIC_LOG_D64
+        " lastDuration=" PUBLIC_LOG_D64 " sampleDuration=" PUBLIC_LOG_D64,
+        trackIndex, dfx.lastPts, dfx.lastDuration, sample->duration_);
+
+    int64_t nextPtsUs = AV_NOPTS_VALUE;
+    if (dfx.lastPts != AV_NOPTS_VALUE) {
+        nextPtsUs = dfx.lastPts + stepDuration;
+    } else if (snapshot.startTime != AV_NOPTS_VALUE) {
+        nextPtsUs = AvTime2Us(ConvertTimeFromFFmpeg(snapshot.startTime, snapshot.timeBase));
+    } else {
+        // No history and no stream start_time: fall back to 0us as the origin.
+        nextPtsUs = 0;
+    }
+    FALSE_RETURN_V_MSG_E(nextPtsUs != AV_NOPTS_VALUE, false, "Supplement pts/dts failed: nextPtsUs is NOPTS");
+
+    sample->pts_ = nextPtsUs;
+    sample->dts_ = nextPtsUs;
+    sample->meta_->SetData(Media::Tag::BUFFER_DECODING_TIMESTAMP, nextPtsUs);
+    return true;
 }
 
 Status FFmpegDemuxerPlugin::BufferIsValid(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket)
@@ -1478,6 +1613,13 @@ void FFmpegDemuxerPlugin::UpdateStreamSnapshots()
             snapshot.codecId = stream->codecpar->codec_id;
             snapshot.codecType = stream->codecpar->codec_type;
             snapshot.timeBase = stream->time_base;
+            snapshot.sampleRate = stream->codecpar->sample_rate;
+            snapshot.frameSize = stream->codecpar->frame_size;
+            snapshot.channels = stream->codecpar->ch_layout.nb_channels;
+            snapshot.blockAlign = stream->codecpar->block_align;
+            snapshot.bitsPerCodedSample = stream->codecpar->bits_per_coded_sample;
+            snapshot.bitRate = stream->codecpar->bit_rate;
+            snapshot.codecTag = stream->codecpar->codec_tag;
             snapshot.extradataSize = stream->codecpar->extradata_size;
             snapshot.startTime = stream->start_time;
             snapshot.isVideo = FFmpegFormatHelper::IsVideoType(*stream);
