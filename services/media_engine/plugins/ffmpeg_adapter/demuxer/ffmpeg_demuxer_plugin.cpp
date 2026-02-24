@@ -948,7 +948,7 @@ bool FFmpegDemuxerPlugin::SupplementAudioPtsDtsIfNeeded(std::shared_ptr<AVBuffer
         return true;
     }
 
-    auto &dfx = trackDfxInfoMap_[static_cast<int32_t>(trackIndex)];
+    const auto &dfx = trackDfxInfoMap_[static_cast<int32_t>(trackIndex)];
     const int64_t stepDuration = (dfx.lastDuration > 0) ? dfx.lastDuration : sample->duration_;
     FALSE_RETURN_V_MSG_E(stepDuration > 0, false,
         "Cannot supplement pts/dts without duration, track=" PUBLIC_LOG_U32 " lastPts=" PUBLIC_LOG_D64
