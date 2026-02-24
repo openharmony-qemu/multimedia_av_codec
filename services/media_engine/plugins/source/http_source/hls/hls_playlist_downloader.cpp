@@ -155,14 +155,16 @@ std::pair<int64_t, bool> HlsPlayListDownloader::GetStartInfo() const
     if (master_->isStart_) {
         int64_t timeOffset = ((int64_t)(master_->timeOffset_ * HST_SECOND) / HST_MSECOND);
         if (duration != -1) {
-            startInfo.first = timeOffset < 0 ? std::max(timeOffset + duration, 0ll) : duration;
+            startInfo.first = timeOffset < 0 ? std::max(timeOffset + duration, static_cast<int64_t>(0)) :
+                (timeOffset > duration ? duration : timeOffset);
             startInfo.second = master_->precise_;
         }
     } else if (master_->defaultVariant_ && master_->defaultVariant_->m3u8_ &&
             master_->defaultVariant_->m3u8_->isStart_) {
         int64_t timeOffset = ((int64_t)(master_->defaultVariant_->m3u8_->timeOffset_ * HST_SECOND) / HST_MSECOND);
         if (duration != -1) {
-            startInfo.first = timeOffset < 0 ? std::max(timeOffset + duration, 0ll) : duration;
+            startInfo.first = timeOffset < 0 ? std::max(timeOffset + duration, static_cast<int64_t>(0)) :
+                (timeOffset > duration ? duration : timeOffset);
             startInfo.second = master_->defaultVariant_->m3u8_->precise_;
         }
     } else {
@@ -631,9 +633,7 @@ bool HlsPlayListDownloader::ReadMediaHeader(const std::list<std::shared_ptr<M3U8
             !stream->m3u8_->isHeaderReady_) {
             continue;
         }
-        errno_t err = memcpy_s(buffer, wantLen,
-            stream->m3u8_->fmp4Header_,
-            stream->m3u8_->downloadHeaderLen_);
+        errno_t err = memcpy_s(buffer, wantLen, stream->m3u8_->fmp4Header_, stream->m3u8_->downloadHeaderLen_);
         if (err == 0) {
             readLen = stream->m3u8_->downloadHeaderLen_;
             return true;
@@ -653,8 +653,7 @@ bool HlsPlayListDownloader::ReadStreamHeader(const std::list<std::shared_ptr<M3U
             !stream->m3u8_->isHeaderReady_) {
             continue;
         }
-        errno_t err = memcpy_s(buffer, wantLen, stream->m3u8_->fmp4Header_,
-            stream->m3u8_->downloadHeaderLen_);
+        errno_t err = memcpy_s(buffer, wantLen, stream->m3u8_->fmp4Header_, stream->m3u8_->downloadHeaderLen_);
         if (err == 0) {
             readLen = stream->m3u8_->downloadHeaderLen_;
             return true;
@@ -710,7 +709,7 @@ void HlsPlayListDownloader::GetMediaStreams(StreamType streamType, std::vector<S
         if (streamType == StreamType::SUBTITLE) {
             isDefault = currentVariant_->defaultSubtitles_ != nullptr &&
                 media->streamId_ == currentVariant_->defaultSubtitles_->streamId_;
-                streamInfo.sniffSize = DEFAULT_SUBTITLE_SNIFFSIZE;
+            streamInfo.sniffSize = DEFAULT_SUBTITLE_SNIFFSIZE;
         }
         
         if (isDefault) {

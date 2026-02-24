@@ -286,7 +286,7 @@ void HlsSegmentManager::PutRequestIntoDownloader(const PlayInfo& playInfo)
     }
     writeOffset_ = SpliceOffset(writeTsIndex_, 0);
     MEDIA_LOG_I("HLS PutRequestIntoDownloader update writeOffset_: " PUBLIC_LOG_U64 " writeTsIndex_: " PUBLIC_LOG_U32
-        ", type: %{public}d", writeOffset_, writeTsIndex_, type_);
+        ", streamId: " PUBLIC_LOG_U32 ", type: %{public}d", writeOffset_, writeTsIndex_, playInfo.streamId_, type_);
     {
         AutoLock lock(tsStorageInfoMutex_);
         if (tsStorageInfo_.find(writeTsIndex_) == tsStorageInfo_.end()) {
@@ -1061,7 +1061,6 @@ uint32_t HlsSegmentManager::SaveData(uint8_t* data, uint32_t len, bool notBlock)
     } else {
         res = SaveEncryptData(data, len, notBlock);
     }
-
     uint64_t freeSize = cacheMediaBuffer_->GetFreeSize();
     MEDIA_LOG_D("HLS SaveData, writeOffset: " PUBLIC_LOG_U64 " writeTsIndex: " PUBLIC_LOG_U32 " bufferSize: "
         PUBLIC_LOG_U64 ", free size: " PUBLIC_LOG_U64 ", stream id: " PUBLIC_LOG_D32 ", type: %{public}d",
@@ -1500,10 +1499,12 @@ void HlsSegmentManager::UpdateDownloadFinished(const std::string &url, const std
         MEDIA_LOG_D("Download done, data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D64 "ms, type: %{public}d",
             totalBits_, downloadTime * 1000, type_);
     }
+
     if (type_ == HlsSegmentType::SEG_SUBTITLE) {
         MEDIA_LOG_I("UpdateDownloadFinished subtitle no need auto select bitrate");
         return;
     }
+
     // bitrate above 0, user is not selecting, auto seliect is not going, playlist is done, is not seeking
     if ((bitRate > 0) && !isSelectingBitrate_ && isAutoSelectBitrate_ &&
         playlistDownloader_ != nullptr && playlistDownloader_->IsParseAndNotifyFinished() && !isSeekingFlag) {
@@ -2156,6 +2157,8 @@ void HlsSegmentManager::HandleSeekReady(int32_t streamId, int32_t isEos)
     MEDIA_LOG_D("StreamType: " PUBLIC_LOG_D32 " StreamId: " PUBLIC_LOG_D32 " isEOS: " PUBLIC_LOG_D32
         " seekStartTimePos: " PUBLIC_LOG_D64 ", type: %{public}d", type, streamId, isEos, seekStartTimePos_, type_);
     if (segEventCb_) {
+        MEDIA_LOG_I("HLS Seek Ready, streamId: " PUBLIC_LOG_D32 ", isEOS: " PUBLIC_LOG_D32 ", time: " PUBLIC_LOG_D64
+            ", type: " PUBLIC_LOG_D32, streamId, isEos, seekStartTimePos_, type_);
         HlsSegEvent event {.segType = type_, .type = PluginEventType::HLS_SEEK_READY, .seekReadyInfo = seekReadyInfo,
             .str = "hls_seek_ready"};
         segEventCb_(event);
