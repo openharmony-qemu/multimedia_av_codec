@@ -1978,8 +1978,7 @@ Status FFmpegDemuxerPlugin::AccumulateXpsPkt(Plugins::AVPacketWrapperPtr pkt)
     FALSE_RETURN_V_MSG_E(pkt != nullptr && pkt->GetAVPacket() != nullptr, Status::ERROR_NULL_POINTER, "Pkt is nullptr");
     FALSE_RETURN_V_MSG_E(fileType_ == FileType::MPEGPS, Status::OK, "FileType is not MPEGPS");
     FALSE_RETURN_V_MSG_E(pkt->GetData() != nullptr && pkt->GetSize() >= 0,
-        Status::ERROR_INVALID_DATA, "Invalid packet data " PUBLIC_LOG_P " or size " PUBLIC_LOG_D32,
-        pkt->GetData(), pkt->GetSize());
+        Status::ERROR_INVALID_DATA, "Invalid packet data or size " PUBLIC_LOG_D32, pkt->GetSize());
     int32_t trackIndex = pkt->GetStreamIndex();
     FALSE_RETURN_V_MSG_E(trackIndex >= 0, Status::ERROR_INVALID_DATA, "Invalid track index");
     int32_t ffRet = 0;
