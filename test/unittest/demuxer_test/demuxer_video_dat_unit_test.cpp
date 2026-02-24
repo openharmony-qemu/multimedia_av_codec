@@ -40,6 +40,7 @@ unique_ptr<FileServerDemo> server = nullptr;
 static const string TEST_FILE_PATH = "/data/test/media/";
 static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
 
+const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_hevc_parser.z.so";
 list<SeekMode> seekModes = {SeekMode::SEEK_NEXT_SYNC, SeekMode::SEEK_PREVIOUS_SYNC,
     SeekMode::SEEK_CLOSEST_SYNC};
 
@@ -324,26 +325,28 @@ HWTEST_F(DemuxerUnitTest, Demuxer_DAT_SeekToTime_0008, TestSize.Level1)
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_DAT_ReadSample_0009, TestSize.Level1)
 {
-    InitResource(g_datPath3, LOCAL);
-    ASSERT_TRUE(initStatus_);
-    ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
-    ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
-    ASSERT_NE(sharedMem_, nullptr);
-    ASSERT_TRUE(SetInitValue());
-    while (!isEOS(eosFlag_)) {
-        for (auto idx : selectedTrackIds_) {
-            ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-            CountFrames(idx);
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        InitResource(g_datPath3, LOCAL);
+        ASSERT_TRUE(initStatus_);
+        ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+        ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
+        sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+        ASSERT_NE(sharedMem_, nullptr);
+        ASSERT_TRUE(SetInitValue());
+        while (!isEOS(eosFlag_)) {
+            for (auto idx : selectedTrackIds_) {
+                ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+                CountFrames(idx);
+            }
         }
+        printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+        printf("frames_[1]=%d | kFrames[1]=%d\n", frames_[1], keyFrames_[1]);
+        ASSERT_EQ(frames_[0], 180);
+        ASSERT_EQ(frames_[1], 283);
+        ASSERT_EQ(keyFrames_[0], 180);
+        ASSERT_EQ(keyFrames_[1], 283);
+        RemoveValue();
     }
-    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
-    printf("frames_[1]=%d | kFrames[1]=%d\n", frames_[1], keyFrames_[1]);
-    ASSERT_EQ(frames_[0], 180);
-    ASSERT_EQ(frames_[1], 283);
-    ASSERT_EQ(keyFrames_[0], 0);
-    ASSERT_EQ(keyFrames_[1], 283);
-    RemoveValue();
 }
 
 /**
@@ -353,26 +356,28 @@ HWTEST_F(DemuxerUnitTest, Demuxer_DAT_ReadSample_0009, TestSize.Level1)
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_DAT_ReadSample_0010, TestSize.Level1)
 {
-    InitResource(g_datUri3, URI);
-    ASSERT_TRUE(initStatus_);
-    ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
-    ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
-    ASSERT_NE(sharedMem_, nullptr);
-    ASSERT_TRUE(SetInitValue());
-    while (!isEOS(eosFlag_)) {
-        for (auto idx : selectedTrackIds_) {
-            ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-            CountFrames(idx);
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        InitResource(g_datUri3, URI);
+        ASSERT_TRUE(initStatus_);
+        ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+        ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
+        sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+        ASSERT_NE(sharedMem_, nullptr);
+        ASSERT_TRUE(SetInitValue());
+        while (!isEOS(eosFlag_)) {
+            for (auto idx : selectedTrackIds_) {
+                ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+                CountFrames(idx);
+            }
         }
+        printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+        printf("frames_[1]=%d | kFrames[1]=%d\n", frames_[1], keyFrames_[1]);
+        ASSERT_EQ(frames_[0], 180);
+        ASSERT_EQ(frames_[1], 283);
+        ASSERT_EQ(keyFrames_[0], 180);
+        ASSERT_EQ(keyFrames_[1], 283);
+        RemoveValue();
     }
-    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
-    printf("frames_[1]=%d | kFrames[1]=%d\n", frames_[1], keyFrames_[1]);
-    ASSERT_EQ(frames_[0], 180);
-    ASSERT_EQ(frames_[1], 283);
-    ASSERT_EQ(keyFrames_[0], 0);
-    ASSERT_EQ(keyFrames_[1], 283);
-    RemoveValue();
 }
 
 /**
