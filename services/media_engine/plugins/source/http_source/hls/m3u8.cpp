@@ -474,22 +474,20 @@ void M3U8::ProcessInfo(M3U8Info& info, size_t& duration)
         firstFragment_ = info;
         isFirstFragmentReady_ = true;
     }
-    // add key_ and iv_ to M3U8Fragment(file)
+    auto fragment = std::make_shared<M3U8Fragment>(info.uri, info.duration, sequence_, info.discontinuity);
     if (isDecryptAble_) {
-        auto m3u8 = M3U8Fragment(info.uri, info.duration, sequence_++, info.discontinuity);
-        auto fragment = std::make_shared<M3U8Fragment>(m3u8, key_, iv_);
-        AddFile(fragment, duration);
-    } else {
-        auto fragment = std::make_shared<M3U8Fragment>(info.uri, info.duration, sequence_++,
-            info.discontinuity);
-        AddFile(fragment, duration);
+        auto m3u8 = M3U8Fragment(info.uri, info.duration, sequence_, info.discontinuity);
+        fragment = std::make_shared<M3U8Fragment>(m3u8, key_, iv_);
     }
+    sequence_++;
+    AddFile(fragment, duration);
     duration += static_cast<size_t>(info.duration * SECOND_TO_MICROSECOND);
-    info.uri = "", info.duration = 0, info.discontinuity = false;
+    info.uri = "";
+    info.duration = 0;
+    info.discontinuity = false;
 }
 
-bool M3U8::ShouldSkipSegment(const std::string& uri, uint64_t skippedSegments,
-    uint64_t initSequence)
+bool M3U8::ShouldSkipSegment(const std::string& uri, uint64_t skippedSegments, uint64_t initSequence)
 {
     if (skippedSegments == 0) {
         return false;
