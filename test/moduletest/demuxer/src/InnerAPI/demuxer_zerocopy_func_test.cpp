@@ -550,9 +550,9 @@ HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_ZEROCOPY_INNER_FUNC_0003, TestSiz
     ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_LOCAL_VVC, {254}, {4}}));
     ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_VVC, {254}, {4}}));
     ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_LOCAL_MUXER_PREY_DEPTH,
-        {16,77, 77}, {1, 3, 3}}));
+        {16, 77, 77}, {1, 3, 3}}));
     ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MUXER_PREY_DEPTH,
-        {16,77, 77}, {1, 3, 3}}));
+        {16, 77, 77}, {1, 3, 3}}));
     ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_LOCAL_MUXER_META,
         {210, 211, 210}, {210, 211, 210}}));
     ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MUXER_META,

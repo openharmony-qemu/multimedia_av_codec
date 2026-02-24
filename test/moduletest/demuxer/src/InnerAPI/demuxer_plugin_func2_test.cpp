@@ -337,7 +337,7 @@ bool DemuxerPluginInnerFunc2Test::CallbackResult()
         callbackCount_ ++;
         std::thread t(CallbackThreadFun, trackId, bytes);
         t.join();
-        std::cout << "CallbackResult trackId:" << trackId << "   callbackCount_:" << callbackCount_ << 
+        std::cout << "CallbackResult trackId:" << trackId << "   callbackCount_:" << callbackCount_ <<
         "   g_initialFrameCount:" << g_initialFrameCount << "   g_initialCacheSize:" << g_initialCacheSize << std::endl;
     });
     if (status != Status::OK) {
@@ -537,7 +537,7 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_API_0001, Tes
         ASSERT_EQ(Status::OK, demuxerPlugin_->SetCachePressureCallback(nullptr));
         ASSERT_TRUE(PluginReadSample(g_secondTrackID, readCount.secondReadCount[0], 0));
         usleep(g_testWindowMs * THOUNSAND);
-        ASSERT_TRUE(PluginReadSample(g_secondTrackID, readCount.secondReadCount[1], 0));        
+        ASSERT_TRUE(PluginReadSample(g_secondTrackID, readCount.secondReadCount[1], 0));
         usleep(g_testWindowMs * THOUNSAND);
         ASSERT_EQ(callbackCount_, 0);
     }

@@ -155,7 +155,6 @@ void DemuxerPluginTypeTest::DemuxerPlugintask(MediaInfo& mediaInfo, AVBufferWrap
         } else {
             demuxerPlugin_->ReadSampleZeroCopy(idx, buffer.mediaAVBuffer, interfaceTimeout_);
         }
-        
     }
     int64_t seekTime = 0;
     demuxerPlugin_->SeekTo(0, seekTimeDefault_, SeekMode::SEEK_PREVIOUS_SYNC, seekTime);
