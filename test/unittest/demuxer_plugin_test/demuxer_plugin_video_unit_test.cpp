@@ -573,48 +573,6 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_0001, TestSize.Level1)
 }
 
 /**
- * @tc.name: Demuxer_ReadSample_FLV_AsyncCopyMode_0001
- * @tc.desc: ReadSample(flv) async copy-mode, external memory
- * @tc.type: FUNC
- */
-HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_FLV_AsyncCopyMode_0001, TestSize.Level1)
-{
-    std::string pluginName = "avdemux_flv";
-    InitResource(g_flvPath, pluginName);
-    ASSERT_TRUE(initStatus_);
-    ASSERT_NE(demuxerPlugin_, nullptr);
-    ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
-
-    OHOS::Media::AVBufferWrapper buffer(DEFAULT_BUFFSIZE);
-    auto oldMemory = buffer.mediaAVBuffer->memory_;
-    ASSERT_NE(oldMemory, nullptr);
-
-    ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, DEFAULT_TIMEOUT), Status::OK);
-    EXPECT_EQ(buffer.mediaAVBuffer->memory_, oldMemory);
-}
-
-/**
- * @tc.name: Demuxer_ReadSample_FLV_AsyncZeroCopyMode_0002
- * @tc.desc: ReadSample(flv) async zero-copy mode, internal memory
- * @tc.type: FUNC
- */
-HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_FLV_AsyncZeroCopyMode_0002, TestSize.Level1)
-{
-    std::string pluginName = "avdemux_flv";
-    InitResource(g_flvPath, pluginName);
-    ASSERT_TRUE(initStatus_);
-    ASSERT_NE(demuxerPlugin_, nullptr);
-    ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
-
-    OHOS::Media::AVBufferWrapper buffer(DEFAULT_BUFFSIZE);
-    auto oldMemory = buffer.mediaAVBuffer->memory_;
-
-    ASSERT_EQ(demuxerPlugin_->ReadSampleZeroCopy(0, buffer.mediaAVBuffer, DEFAULT_TIMEOUT), Status::OK);
-    ASSERT_NE(buffer.mediaAVBuffer->memory_, nullptr);
-    EXPECT_NE(buffer.mediaAVBuffer->memory_, oldMemory);
-}
-
-/**
  * @tc.name: Demuxer_BoostReadThreadPriority_0001
  * @tc.desc: Test BoostReadThreadPriority
  * @tc.type: FUNC

@@ -527,7 +527,6 @@ void FFmpegDemuxerPlugin::ResetParam()
 {
     readatIndex_ = 0;
     avpacketIndex_ = 0;
-    readModeFlags_.store(0, std::memory_order_release);
     ioContext_.offset = 0;
     ioContext_.retry = false;
     ioContext_.eos = false;
@@ -664,8 +663,9 @@ Status FFmpegDemuxerPlugin::SetDrmCencInfo(
     std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket)
 {
     FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_INVALID_OPERATION, "Sample is nullptr");
-    // Sync read needs check memory_, async read doesn't.
-    bool isAsyncRead = (readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::ASYNC)) != 0;
+    // 0 mean sync read, 1 mean async read
+    // sync read (0) need check memory_, async read (1) don't need check memory_
+    bool isAsyncRead = (readModeMap_.find(1) != readModeMap_.end() && readModeMap_[1] == 1);
     FALSE_RETURN_V_MSG_E(isAsyncRead || sample->memory_ != nullptr, Status::ERROR_INVALID_OPERATION,
         "Memory is nullptr");
     FALSE_RETURN_V_MSG_E((samplePacket != nullptr && samplePacket->pkts.size() > 0), Status::ERROR_INVALID_OPERATION,
@@ -848,8 +848,9 @@ Status FFmpegDemuxerPlugin::BufferIsValid(std::shared_ptr<AVBuffer> sample, std:
     FALSE_RETURN_V_MSG_E(snapshot != nullptr && snapshot->valid,
         Status::ERROR_INVALID_OPERATION, "Stream snapshot is invalid");
     MEDIA_LOG_D("Convert packet info for track " PUBLIC_LOG_D32, samplePacket->pkts[0]->GetStreamIndex());
-    // Sync read needs check memory_, async read doesn't.
-    bool isAsyncRead = (readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::ASYNC)) != 0;
+    // 0 mean sync read, 1 mean async read
+    // sync read (0) need check memory_, async read (1) don't need check memory_
+    bool isAsyncRead = (readModeMap_.find(1) != readModeMap_.end() && readModeMap_[1] == 1);
     if (isAsyncRead) {
         FALSE_RETURN_V_MSG_E(sample != nullptr && sample->meta_ != nullptr, Status::ERROR_INVALID_OPERATION,
             "Input sample is error");
@@ -1145,17 +1146,19 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
     return ret;
 }
 
-Status FFmpegDemuxerPlugin::SetEosSample(std::shared_ptr<AVBuffer> sample, bool replaceMemory)
+Status FFmpegDemuxerPlugin::SetEosSample(std::shared_ptr<AVBuffer> sample)
 {
     MEDIA_LOG_D("In");
-    FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_INVALID_PARAMETER, "AVBuffer is nullptr");
-    if (!replaceMemory) {
-        FALSE_RETURN_V_MSG_E(sample->memory_ != nullptr, Status::ERROR_INVALID_PARAMETER,
-            "AVBuffer memory is nullptr");
+    // 0 mean sync read, 1 mean async read
+    // sync read (0) need check memory_, async read (1) don't need check memory_
+    bool isAsyncRead = (readModeMap_.find(1) != readModeMap_.end() && readModeMap_[1] == 1);
+    if (!isAsyncRead) {
+        FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_ != nullptr, Status::ERROR_INVALID_PARAMETER,
+            "AVBuffer or memory is nullptr");
     }
     sample->pts_ = 0;
     sample->flag_ = (uint32_t)(AVBufferFlag::EOS);
-    if (replaceMemory) {
+    if (isAsyncRead) {
         auto avPacketWrapper = std::make_shared<AVPacketWrapper>();
         FALSE_RETURN_V_MSG_E(avPacketWrapper != nullptr, Status::ERROR_INVALID_OPERATION, "Create pktWrapper failed");
         auto pkt = avPacketWrapper->GetAVPacket();
@@ -1859,8 +1862,8 @@ Status FFmpegDemuxerPlugin::GetDrmInfo(std::multimap<std::string, std::vector<ui
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MEDIA_LOG_D("In");
     // Only read from cache when async mode is confirmed and DRM info is cached
-    // If ReadSample interface hasn't been called, readModeFlags_ cannot determine the mode, default to sync path
-    bool isAsyncRead = (readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::ASYNC)) != 0;
+    // If ReadSample interface hasn't been called, readModeMap_ cannot determine the mode, default to sync path
+    bool isAsyncRead = (readModeMap_.find(1) != readModeMap_.end() && readModeMap_[1] == 1);
     {
         std::lock_guard<std::mutex> drmLock(cachedDrmInfoMutex_);
         if (isAsyncRead && drmInfoCached_.load()) {
@@ -1869,7 +1872,7 @@ Status FFmpegDemuxerPlugin::GetDrmInfo(std::multimap<std::string, std::vector<ui
             return Status::OK;
         }
     }
-    // Other cases (sync mode, readModeFlags_ not set, DRM info not cached): read from formatContext_
+    // Other cases (sync mode, readModeMap_ not set, DRM info not cached): read from formatContext_
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
 
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
@@ -2349,20 +2352,11 @@ void FFmpegDemuxerPlugin::MaybeInitSeekCalibAfterRead(uint32_t trackId, AVPacket
     if (pkt->pts == AV_NOPTS_VALUE || pkt->dts == AV_NOPTS_VALUE || pkt->pts < 0 || pkt->dts < 0) {
         return;
     }
-
-    const AVStreamSnapshot* snapshot = GetStreamSnapshot(trackId);
-    if (snapshot == nullptr || !snapshot->valid || snapshot->isVideo == false) {
+    AVStream *stream = formatContext_->streams[trackId];
+    if (stream == nullptr || !FFmpegFormatHelper::IsVideoType(*stream)) {
         return;
     }
-
-    bool isSyncFrame = true;
-    if (FFmpegFormatHelper::IsValidCodecId(snapshot->codecId)) {
-        isSyncFrame = (static_cast<uint32_t>(pkt->flags) & static_cast<uint32_t>(AV_PKT_FLAG_KEY)) != 0;
-        if (!isSyncFrame && snapshot->codecId == AV_CODEC_ID_HEVC) {
-            isSyncFrame = (!IsSyncFrameCheckNeeded(formatContext_) || IsHevcSyncFrame(pkt->data, pkt->size));
-        }
-    }
-    if (!isSyncFrame) {
+    if (!IsSyncFrame(stream, pkt)) {
         return;
     }
     seekCalibMap_[trackId] = pkt->pts - pkt->dts;
@@ -2761,26 +2755,10 @@ Status FFmpegDemuxerPlugin::Flush()
     Status ret = Status::OK;
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MEDIA_LOG_I("In");
-
-    // Pause async read loop first, otherwise it may repopulate cacheQueue_ after we clear it.
-    isPauseReadPacket_.store(true);
-
-    // Avoid locking invokerTypeMutex_ here: async read thread may hold it while waiting.
     if (ioContext_.invokerType != InvokerType::FLUSH) {
-        ioContext_.invokerType.store(InvokerType::FLUSH);
+        std::lock_guard<std::mutex> seekLock(ioContext_.invokerTypeMutex);
+        ioContext_.invokerType = InvokerType::FLUSH;
     }
-    {
-        std::unique_lock<std::mutex> readLock(readPacketMutex_);
-        ioContext_.readCbReady.store(true);
-        readCbCv_.notify_all();
-    }
-
-    if (readThread_ != nullptr && threadState_ == READING) {
-        MEDIA_LOG_I("Flush wait async read thread");
-        std::unique_lock<std::mutex> waitLock(seekWaitMutex_);
-        seekWaitCv_.wait(waitLock, [this] { return threadState_ == WAITING || threadState_ == NOT_STARTED; });
-    }
-
     for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
         ret = cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
         ret = cacheQueue_.AddTrackQueue(selectedTrackIds_[i]);
@@ -2858,14 +2836,13 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_PARAMETER, "Track has not been selected");
     FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_ != nullptr, Status::ERROR_INVALID_PARAMETER,
         "AVBuffer or memory is nullptr");
-    FALSE_RETURN_V_MSG_E((readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::ASYNC)) == 0,
-        Status::ERROR_INVALID_OPERATION,
+    FALSE_RETURN_V_MSG_E(readModeMap_.find(1) == readModeMap_.end(), Status::ERROR_INVALID_OPERATION,
         "Cannot use sync and async Read together");
     if (needClear_) {
         ClearUnselectTrackCache();
         needClear_ = false;
     }
-    readModeFlags_.fetch_or(ReadModeToFlags(ReadMode::SYNC), std::memory_order_acq_rel);
+    readModeMap_[0] = 1;
     auto id = HiviewDFX::XCollie::GetInstance().SetTimer("av_codec::demuxer_read", SETTIMER_TIMEOUT,
         nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
     Status ret = WaitForCacheReady(trackId);
@@ -2875,7 +2852,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     auto samplePacket = cacheQueue_.Front(trackId);
     FALSE_RETURN_V_MSG_E(samplePacket != nullptr, Status::ERROR_NULL_POINTER, "Cache packet is nullptr");
     if (samplePacket->isEOS) {
-        ret = SetEosSample(sample, false);
+        ret = SetEosSample(sample);
         if (ret == Status::OK) {
             DumpPacketInfo(trackId, Stage::FILE_END);
             cacheQueue_.Pop(trackId);
@@ -2901,10 +2878,9 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size)
     MEDIA_LOG_D("In, track " PUBLIC_LOG_D32, trackId);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN, "AVFormatContext is nullptr");
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_UNKNOWN, "Track has not been selected");
-    FALSE_RETURN_V_MSG_E((readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::ASYNC)) == 0,
-        Status::ERROR_INVALID_OPERATION,
+    FALSE_RETURN_V_MSG_E(readModeMap_.find(1) == readModeMap_.end(), Status::ERROR_INVALID_OPERATION,
         "Cannot use sync and async Read together");
-    readModeFlags_.fetch_or(ReadModeToFlags(ReadMode::SYNC), std::memory_order_acq_rel);
+    readModeMap_[0] = 1;
     Status ret;
     if (NeedCombineFrame(trackId) && cacheQueue_.GetCacheSize(trackId) == 1) {
         ret = ReadPacketToCacheQueue(trackId);
@@ -3504,7 +3480,7 @@ Status FFmpegDemuxerPlugin::SeekToFrameByDts(int32_t trackId, int64_t seekTime,
     MEDIA_LOG_D("Seek by DTS based on track " PUBLIC_LOG_D32, ctx.trackIndex);
     MEDIA_LOG_I("Seek DTS: " PUBLIC_LOG_D64 " ms -> " PUBLIC_LOG_D64 " (FFmpeg time_base)",
         seekTime, ctx.ffDts);
-    int ffRet = AVSeekFrameLock(ctx.trackIndex, ctx.ffDts, AVSEEK_FLAG_BACKWARD);
+    int ffRet = AVSeekFrameLock(ctx.trackIndex, ctx.ffDts, AVSEEK_FLAG_FRAME | AVSEEK_FLAG_BACKWARD);
     if (ffRet < 0) {
         MEDIA_LOG_E("Call av_seek_frame failed, err: " PUBLIC_LOG_S, AVStrError(ffRet).c_str());
         HiviewDFX::XCollie::GetInstance().CancelTimer(id);
