@@ -44,7 +44,6 @@ struct AVBufferWrapper {
         } else {
             mediaAVBuffer = MediaAVBuffer::CreateAVBuffer();
         }
-
     }
 private:
     AVBufferWrapper() = delete;

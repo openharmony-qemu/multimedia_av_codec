@@ -35,8 +35,8 @@ using namespace OHOS::Media::Plugins::Ffmpeg;
 namespace OHOS {
 namespace Media {
 constexpr uint32_t THREE = 3;
-uint32_t initialFrameCount = 0;
-uint32_t initialCacheSize = 0;
+uint32_t g_initialFrameCount = 0;
+uint32_t g_initialCacheSize = 0;
 DemuxerPluginTypeTest::DemuxerPluginTypeTest() = default;
 
 DemuxerPluginTypeTest::~DemuxerPluginTypeTest()
@@ -161,9 +161,10 @@ void DemuxerPluginTypeTest::DemuxerPlugintask(MediaInfo& mediaInfo, AVBufferWrap
     demuxerPlugin_->SeekTo(0, seekTimeDefault_, SeekMode::SEEK_PREVIOUS_SYNC, seekTime);
 }
 
-void DemuxerPluginTypeTest::CallbackThreadFun(uint32_t trackId, uint32_t bytes) {
-    demuxerPlugin_->GetCurrentCacheFrameCount(trackId, initialFrameCount);
-    demuxerPlugin_->GetCurrentCacheSize(trackId, initialCacheSize);
+void DemuxerPluginTypeTest::CallbackThreadFun(uint32_t trackId, uint32_t bytes)
+{
+    demuxerPlugin_->GetCurrentCacheFrameCount(trackId, g_initialFrameCount);
+    demuxerPlugin_->GetCurrentCacheSize(trackId, g_initialCacheSize);
 }
 
 void DemuxerPluginTypeTest::DemuxerPluginCallback(MediaInfo& mediaInfo)

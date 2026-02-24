@@ -44,8 +44,7 @@ public:
 
 protected:
     std::shared_ptr<DataSourceImpl> dataSourceImpl_{ nullptr };
-    typedef struct readCounts
-    {
+    typedef struct readCounts {
         std::vector<uint32_t> firstReadCount;
         std::vector<uint32_t> secondReadCount;
     } readCounts;
@@ -73,22 +72,21 @@ private:
 };
 
 static const int DEF_PROB_SIZE = 16 * 1024;
+static const int THOUNSAND = 1000;
 static unique_ptr<FileServerDemo> SERVER{nullptr };
-uint32_t initialFrameCount = 0;
-uint32_t initialCacheSize = 0;
+uint32_t g_initialFrameCount = 0;
+uint32_t g_initialCacheSize = 0;
 std::map<uint32_t, uint32_t> callbackFrameCount_;
 std::map<uint32_t, uint32_t> callbackFrameCache_;
-uint32_t firstLimitBytes = 8 * 1024;
-uint32_t secondLimitBytes = 7 * 1024;
-uint32_t testWindowMs = 500;
-uint32_t secondTrackID = 1;
-uint32_t firstTrackID = 0;
-// uint32_t firstReadCount = 0; // 需要超出缓存上限，触发回调
-// uint32_t secondReadCount = 0; // 需要超出缓存上限，触发回调
+uint32_t g_firstLimitBytes = 8 * 1024;
+uint32_t g_secondLimitBytes = 7 * 1024;
+uint32_t g_testWindowMs = 500;
+uint32_t g_secondTrackID = 1;
+uint32_t g_firstTrackID = 0;
 
 std::shared_ptr<Media::DemuxerPlugin> demuxerPlugin_;
-bool readSaveTime = false;
-int64_t readDts = 0;
+bool g_readSaveTime = false;
+int64_t g_readDts = 0;
 
 static const std::string DEMUXER_PLUGIN_NAME_AAC = "avdemux_aac";
 static const std::string DEMUXER_PLUGIN_NAME_AMR = "avdemux_amr";
@@ -292,8 +290,8 @@ bool DemuxerPluginInnerFunc2Test::PluginReadSample(uint32_t idx, uint32_t count,
         if (status != Status::OK) {
             std::cout << "demuxerPlugin_->ReadSample status:" << (int)status << "  idx:" << idx << std::endl;
         }
-        if (readSaveTime) {
-            readDts = avBuf->dts_;
+        if (g_readSaveTime) {
+            g_readDts = avBuf->dts_;
         }
     }
     return true;
@@ -317,18 +315,19 @@ void DemuxerPluginInnerFunc2Test::RemoveValue()
         callbackFrameCache_.clear();
     }
     callbackCount_ = 0;
-    readSaveTime = false;
-    readDts = 0;
+    g_readSaveTime = false;
+    g_readDts = 0;
 }
 
-void CallbackThreadFun(uint32_t trackId, uint32_t bytes) {
-    Status status = demuxerPlugin_->GetCurrentCacheFrameCount(trackId, initialFrameCount);
+void CallbackThreadFun(uint32_t trackId, uint32_t bytes)
+{
+    Status status = demuxerPlugin_->GetCurrentCacheFrameCount(trackId, g_initialFrameCount);
     if (status == Status::OK) {
-        callbackFrameCount_[trackId] = initialFrameCount;
+        callbackFrameCount_[trackId] = g_initialFrameCount;
     }
-    status = demuxerPlugin_->GetCurrentCacheSize(trackId, initialCacheSize);
+    status = demuxerPlugin_->GetCurrentCacheSize(trackId, g_initialCacheSize);
     if (status == Status::OK) {
-        callbackFrameCache_[trackId] = initialCacheSize;
+        callbackFrameCache_[trackId] = g_initialCacheSize;
     }
 }
 
@@ -339,23 +338,25 @@ bool DemuxerPluginInnerFunc2Test::CallbackResult()
         std::thread t(CallbackThreadFun, trackId, bytes);
         t.join();
         std::cout << "CallbackResult trackId:" << trackId << "   callbackCount_:" << callbackCount_ << 
-        "   initialFrameCount:" << initialFrameCount << "   initialCacheSize:" << initialCacheSize << std::endl;
+        "   g_initialFrameCount:" << g_initialFrameCount << "   g_initialCacheSize:" << g_initialCacheSize << std::endl;
     });
     if (status != Status::OK) {
         std::cout << "SetCachePressureCallback fail:" << static_cast<int32_t>(status) << std::endl;
         return false;
     }
-    status = demuxerPlugin_->SetTrackCacheLimit(firstTrackID, firstLimitBytes, testWindowMs);
+    status = demuxerPlugin_->SetTrackCacheLimit(g_firstTrackID, g_firstLimitBytes, g_testWindowMs);
     EXPECT_EQ(status, Status::OK);
-    status = demuxerPlugin_->SetTrackCacheLimit(secondTrackID, secondLimitBytes, testWindowMs);
+    status = demuxerPlugin_->SetTrackCacheLimit(g_secondTrackID, g_secondLimitBytes, g_testWindowMs);
     EXPECT_EQ(status, Status::OK);
     return true;
 }
 
-bool DemuxerPluginInnerFunc2Test::AssertCallback(int assertCount, uint32_t trackId, uint32_t assertFCount, uint32_t assertFCache)
+bool DemuxerPluginInnerFunc2Test::AssertCallback(int assertCount, uint32_t trackId,
+    uint32_t assertFCount, uint32_t assertFCache)
 {
     if (callbackCount_ != assertCount) {
-        std::cout << "callbackCount_ != assertCount callbackCount_:" << callbackCount_ << "   assertCount:" << assertCount << std::endl;
+        std::cout << "callbackCount_ != assertCount callbackCount_:"
+            << callbackCount_ << "   assertCount:" << assertCount << std::endl;
         return false;
     }
     if (callbackFrameCount_.find(trackId) == callbackFrameCount_.end()) {
@@ -363,7 +364,8 @@ bool DemuxerPluginInnerFunc2Test::AssertCallback(int assertCount, uint32_t track
         return false;
     }
     if (callbackFrameCount_[trackId] != assertFCount) {
-        std::cout << "callbackFrameCount_[trackId] != assertFCount:" << callbackFrameCount_[trackId] << "   assertFCount:" << assertFCount << std::endl;
+        std::cout << "callbackFrameCount_[trackId] != assertFCount:"
+            << callbackFrameCount_[trackId] << "   assertFCount:" << assertFCount << std::endl;
         return false;
     }
     if (callbackFrameCache_.find(trackId) == callbackFrameCache_.end()) {
@@ -371,7 +373,8 @@ bool DemuxerPluginInnerFunc2Test::AssertCallback(int assertCount, uint32_t track
         return false;
     }
     if (callbackFrameCache_[trackId] != assertFCache) {
-        std::cout << "callbackFrameCache_[trackId] != assertFCache:" << callbackFrameCache_[trackId] << "   assertFCache:" << assertFCache << std::endl;
+        std::cout << "callbackFrameCache_[trackId] != assertFCache:"
+            << callbackFrameCache_[trackId] << "   assertFCache:" << assertFCache << std::endl;
         return false;
     }
     return true;
@@ -388,7 +391,7 @@ bool DemuxerPluginInnerFunc2Test::ReadAndAssertCache(uint32_t trackId, bool read
         std::cout << "PluginReadSample fail!" << std::endl;
         return false;
     }
-    Status status = demuxerPlugin_->GetCurrentCacheSize(trackId, initialCacheSize);
+    Status status = demuxerPlugin_->GetCurrentCacheSize(trackId, g_initialCacheSize);
     if (status != Status::OK) {
         std::cout << "GetCurrentCacheSize fail!" << std::endl;
         return false;
@@ -397,15 +400,16 @@ bool DemuxerPluginInnerFunc2Test::ReadAndAssertCache(uint32_t trackId, bool read
         std::cout << "callbackFrameCache_.find(trackId)!!!" << std::endl;
         return false;
     }
-    if (readEnd && initialCacheSize != 0) {
-        std::cout << "readEnd && initialCacheSize != 0:" << initialCacheSize << std::endl;
+    if (readEnd && g_initialCacheSize != 0) {
+        std::cout << "readEnd && g_initialCacheSize != 0:" << g_initialCacheSize << std::endl;
         return false;
     }
-    if (!readEnd && initialCacheSize >= callbackFrameCache_[trackId]) {
-        std::cout << "initialCacheSize >= callbackFrameCache_:" << initialCacheSize << " callbackFrameCache_[trackId]:" << callbackFrameCache_[trackId] << std::endl;
+    if (!readEnd && g_initialCacheSize >= callbackFrameCache_[trackId]) {
+        std::cout << "g_initialCacheSize >= callbackFrameCache_:"
+            << g_initialCacheSize << " callbackFrameCache_[trackId]:" << callbackFrameCache_[trackId] << std::endl;
         return false;
     }
-    status = demuxerPlugin_->GetCurrentCacheFrameCount(trackId, initialFrameCount);
+    status = demuxerPlugin_->GetCurrentCacheFrameCount(trackId, g_initialFrameCount);
     if (status != Status::OK) {
         std::cout << "GetCurrentCacheFrameCount fail!" << std::endl;
         return false;
@@ -414,33 +418,37 @@ bool DemuxerPluginInnerFunc2Test::ReadAndAssertCache(uint32_t trackId, bool read
         std::cout << "callbackFrameCount_.find(trackId)!!!" << std::endl;
         return false;
     }
-    if (readEnd && initialFrameCount != 0) {
-        std::cout << "readEnd && initialFrameCount != 0:" << initialFrameCount << std::endl;
+    if (readEnd && g_initialFrameCount != 0) {
+        std::cout << "readEnd && g_initialFrameCount != 0:" << g_initialFrameCount << std::endl;
         return false;
     }
-    if (!readEnd && initialFrameCount >= callbackFrameCount_[trackId]) {
-        std::cout << "initialFrameCount >= callbackFrameCount_:" << initialFrameCount << " callbackFrameCount_[trackId]:" << callbackFrameCount_[trackId] << std::endl;
+    if (!readEnd && g_initialFrameCount >= callbackFrameCount_[trackId]) {
+        std::cout << "g_initialFrameCount >= callbackFrameCount_:"
+            << g_initialFrameCount << " callbackFrameCount_[trackId]:" << callbackFrameCount_[trackId] << std::endl;
         return false;
     }
     return true;
 }
 
-bool DemuxerPluginInnerFunc2Test::AssertTrackCache(uint32_t fTrackID, uint32_t sTrackID, std::vector<uint32_t> readCount)
+bool DemuxerPluginInnerFunc2Test::AssertTrackCache(uint32_t fTrackID,
+    uint32_t sTrackID, std::vector<uint32_t> readCount)
 {
     // testcase 1
     if (!PluginReadSample(sTrackID, readCount[0], 0)) {
         std::cout << "PluginReadSample1 fail" << std::endl;
         return false;
     }
-    usleep(testWindowMs * 1000);
+    usleep(g_testWindowMs * THOUNSAND);
     int cacheBytes = 0;
     if (fTrackID == 0) {
-        cacheBytes = firstLimitBytes;
+        cacheBytes = g_firstLimitBytes;
     } else {
-        cacheBytes = secondLimitBytes;
+        cacheBytes = g_secondLimitBytes;
     }
     if (callbackCount_ <= 0 || callbackFrameCount_[fTrackID] <= 0 || callbackFrameCache_[fTrackID] <= cacheBytes) {
-        std::cout << "callbackCount_: " << callbackCount_ << " callbackFrameCount_[fTrackID]: " << callbackFrameCount_[fTrackID] << "callbackFrameCache_[fTrackID]: " << callbackFrameCache_[fTrackID] << "cacheBytes: " << cacheBytes << std::endl;
+        std::cout << "callbackCount_: " << callbackCount_ <<" callbackFrameCount_[fTrackID]: "
+            << callbackFrameCount_[fTrackID] << "callbackFrameCache_[fTrackID]: "
+            << callbackFrameCache_[fTrackID] << "cacheBytes: " << cacheBytes << std::endl;
         return false;
     }
     // testcase 2
@@ -448,16 +456,16 @@ bool DemuxerPluginInnerFunc2Test::AssertTrackCache(uint32_t fTrackID, uint32_t s
         std::cout << "PluginReadSample2 fail" << std::endl;
         return false;
     }
-    usleep(testWindowMs * 1000);
-    Status status = demuxerPlugin_->GetCurrentCacheFrameCount(fTrackID, initialFrameCount);
+    usleep(g_testWindowMs * THOUNSAND);
+    Status status = demuxerPlugin_->GetCurrentCacheFrameCount(fTrackID, g_initialFrameCount);
     if (status != Status::OK) {
         return false;
     }
-    status = demuxerPlugin_->GetCurrentCacheSize(fTrackID, initialCacheSize);
+    status = demuxerPlugin_->GetCurrentCacheSize(fTrackID, g_initialCacheSize);
     if (status != Status::OK) {
         return false;
     }
-    if (initialFrameCount < callbackFrameCount_[fTrackID] || initialCacheSize < callbackFrameCache_[fTrackID]) {
+    if (g_initialFrameCount < callbackFrameCount_[fTrackID] || g_initialCacheSize < callbackFrameCache_[fTrackID]) {
         return false;
     }
     // testcase 3
@@ -475,14 +483,14 @@ bool DemuxerPluginInnerFunc2Test::AssertTrackCache(uint32_t fTrackID, uint32_t s
 
 bool DemuxerPluginInnerFunc2Test::AssertCacheBack(readCounts readCount)
 {
-    if (!AssertTrackCache(firstTrackID, secondTrackID, readCount.secondReadCount)) {
-        std::cout << "AssertTrackCache(firstTrackID, secondTrackID) fail" << std::endl;
+    if (!AssertTrackCache(g_firstTrackID, g_secondTrackID, readCount.secondReadCount)) {
+        std::cout << "AssertTrackCache(g_firstTrackID, g_secondTrackID) fail" << std::endl;
         return false;
     }
     std::cout << "start testcase 2-1" << std::endl;
     callbackCount_ = 0;
-    if (!AssertTrackCache(secondTrackID, firstTrackID, readCount.firstReadCount)) {
-        std::cout << "AssertTrackCache(secondTrackID, firstTrackID) fail" << std::endl;
+    if (!AssertTrackCache(g_secondTrackID, g_firstTrackID, readCount.firstReadCount)) {
+        std::cout << "AssertTrackCache(g_secondTrackID, g_firstTrackID) fail" << std::endl;
         return false;
     }
     return true;
@@ -496,12 +504,12 @@ bool DemuxerPluginInnerFunc2Test::AssertSeekDts(int32_t trackId, int64_t seekTim
         cout << "SeekToFrameByDts failed" << endl;
         return false;
     }
-    readSaveTime = true;
+    g_readSaveTime = true;
     if (!PluginReadSample(trackId, 1, 0)) {
         return false;
     }
-    if (readDts != assertDts) {
-        std::cout << "readDts:" << readDts << "   assertDts:" << assertDts << std::endl;
+    if (g_readDts != assertDts) {
+        std::cout << "g_readDts:" << g_readDts << "   assertDts:" << assertDts << std::endl;
         return false;
     }
     return true;
@@ -519,18 +527,18 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_API_0001, Tes
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        firstLimitBytes = 8 * 1024;
-        secondLimitBytes = 7 * 1024;
-        testWindowMs = 500;
+        g_firstLimitBytes = 8 * 1024;
+        g_secondLimitBytes = 7 * 1024;
+        g_testWindowMs = 500;
         readCounts readCount = {{6, 6}, {6, 6}};
         ASSERT_EQ(CallbackResult(), true);
         ASSERT_EQ(AssertCacheBack(readCount), true);
         RemoveValue();
         ASSERT_EQ(Status::OK, demuxerPlugin_->SetCachePressureCallback(nullptr));
-        ASSERT_TRUE(PluginReadSample(secondTrackID, readCount.secondReadCount[0], 0));
-        usleep(testWindowMs * 1000);
-        ASSERT_TRUE(PluginReadSample(secondTrackID, readCount.secondReadCount[1], 0));        
-        usleep(testWindowMs * 1000);
+        ASSERT_TRUE(PluginReadSample(g_secondTrackID, readCount.secondReadCount[0], 0));
+        usleep(g_testWindowMs * THOUNSAND);
+        ASSERT_TRUE(PluginReadSample(g_secondTrackID, readCount.secondReadCount[1], 0));        
+        usleep(g_testWindowMs * THOUNSAND);
         ASSERT_EQ(callbackCount_, 0);
     }
 }
@@ -547,14 +555,14 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0001, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        firstLimitBytes = 8 * 1024;
-        secondLimitBytes = 7 * 1024;
-        testWindowMs = 500;
+        g_firstLimitBytes = 8 * 1024;
+        g_secondLimitBytes = 7 * 1024;
+        g_testWindowMs = 500;
         readCounts readCount = {{6, 6}, {6, 6}};
         ASSERT_EQ(CallbackResult(), true);
         ASSERT_EQ(AssertCacheBack(readCount), true);
-        ASSERT_EQ(AssertSeekDts(secondTrackID, 80, 80000), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 24, 26122), true);
+        ASSERT_EQ(AssertSeekDts(g_secondTrackID, 80, 80000), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 24, 26122), true);
     }
 }
 
@@ -570,14 +578,14 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0002, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        firstLimitBytes = 574100;
-        secondLimitBytes = 1000;
-        testWindowMs = 500;
+        g_firstLimitBytes = 574100;
+        g_secondLimitBytes = 1000;
+        g_testWindowMs = 500;
         readCounts readCount = {{4, 2}, {48, 3}};
         ASSERT_EQ(CallbackResult(), true);
         ASSERT_EQ(AssertCacheBack(readCount), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 1001, 1001000), true);
-        ASSERT_EQ(AssertSeekDts(secondTrackID, 448, 448000), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 1001, 1001000), true);
+        ASSERT_EQ(AssertSeekDts(g_secondTrackID, 448, 448000), true);
     }
 }
 
@@ -593,14 +601,14 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0003, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        firstLimitBytes = 44800;
-        secondLimitBytes = 1200;
-        testWindowMs = 500;
+        g_firstLimitBytes = 44800;
+        g_secondLimitBytes = 1200;
+        g_testWindowMs = 500;
         readCounts readCount = {{4, 3}, {5, 3}};
         ASSERT_EQ(CallbackResult(), true);
         ASSERT_EQ(AssertCacheBack(readCount), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, -34, -33658), true);
-        ASSERT_EQ(AssertSeekDts(secondTrackID, -26, -25056), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, -34, -33658), true);
+        ASSERT_EQ(AssertSeekDts(g_secondTrackID, -26, -25056), true);
     }
 }
 
@@ -616,14 +624,14 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0004, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        firstLimitBytes = 74900;
-        secondLimitBytes = 1300;
-        testWindowMs = 500;
+        g_firstLimitBytes = 74900;
+        g_secondLimitBytes = 1300;
+        g_testWindowMs = 500;
         readCounts readCount = {{4, 3}, {2, 2}};
         ASSERT_EQ(CallbackResult(), true);
         ASSERT_EQ(AssertCacheBack(readCount), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 1366, 1366687), true);
-        ASSERT_EQ(AssertSeekDts(secondTrackID, 41, 41700), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 1366, 1366687), true);
+        ASSERT_EQ(AssertSeekDts(g_secondTrackID, 41, 41700), true);
     }
 }
 
@@ -639,14 +647,14 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0005, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        firstLimitBytes = 239500;
-        secondLimitBytes = 1900;
-        testWindowMs = 500;
+        g_firstLimitBytes = 239500;
+        g_secondLimitBytes = 1900;
+        g_testWindowMs = 500;
         readCounts readCount = {{6, 3}, {7, 3}};
         ASSERT_EQ(CallbackResult(), true);
         ASSERT_EQ(AssertCacheBack(readCount), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 389, 389000), true);
-        ASSERT_EQ(AssertSeekDts(secondTrackID, 900, 900816), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 389, 389000), true);
+        ASSERT_EQ(AssertSeekDts(g_secondTrackID, 900, 900816), true);
     }
 }
 
@@ -662,14 +670,14 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0006, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        firstLimitBytes = 4410;
-        secondLimitBytes = 1370;
-        testWindowMs = 500;
+        g_firstLimitBytes = 4410;
+        g_secondLimitBytes = 1370;
+        g_testWindowMs = 500;
         readCounts readCount = {{5, 5}, {5, 5}};
         ASSERT_EQ(CallbackResult(), true);
         ASSERT_EQ(AssertCacheBack(readCount), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 500, 500000), true);
-        ASSERT_EQ(AssertSeekDts(secondTrackID, 1578, 1578956), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 500, 500000), true);
+        ASSERT_EQ(AssertSeekDts(g_secondTrackID, 1578, 1578956), true);
     }
 }
 
@@ -685,14 +693,14 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0007, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        firstLimitBytes = 82280;
-        secondLimitBytes = 3160;
-        testWindowMs = 300;
+        g_firstLimitBytes = 82280;
+        g_secondLimitBytes = 3160;
+        g_testWindowMs = 300;
         readCounts readCount = {{5, 5}, {245, 5}};
         ASSERT_EQ(CallbackResult(), true);
         ASSERT_EQ(AssertCacheBack(readCount), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 5088, 5088000), true);
-        ASSERT_EQ(AssertSeekDts(secondTrackID, 1344, 1344000), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 5088, 5088000), true);
+        ASSERT_EQ(AssertSeekDts(g_secondTrackID, 1344, 1344000), true);
     }
 }
 
@@ -708,14 +716,14 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0008, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MATROSKA, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        firstLimitBytes = 72270;
-        secondLimitBytes = 530;
-        testWindowMs = 300;
+        g_firstLimitBytes = 72270;
+        g_secondLimitBytes = 530;
+        g_testWindowMs = 300;
         readCounts readCount = {{5, 5}, {5, 5}};
         ASSERT_EQ(CallbackResult(), true);
         ASSERT_EQ(AssertCacheBack(readCount), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 1500, 1500000), true);
-        ASSERT_EQ(AssertSeekDts(secondTrackID, 1486, 1486000), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 1500, 1500000), true);
+        ASSERT_EQ(AssertSeekDts(g_secondTrackID, 1486, 1486000), true);
     }
 }
 
@@ -731,14 +739,14 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0009, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AVI, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        firstLimitBytes = 50800;
-        secondLimitBytes = 2000;
-        testWindowMs = 500;
+        g_firstLimitBytes = 50800;
+        g_secondLimitBytes = 2000;
+        g_testWindowMs = 500;
         readCounts readCount = {{4, 4}, {5, 5}};
         ASSERT_EQ(CallbackResult(), true);
         ASSERT_EQ(AssertCacheBack(readCount), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 200, 200000), true);
-        ASSERT_EQ(AssertSeekDts(secondTrackID, 208, 208979), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 200, 200000), true);
+        ASSERT_EQ(AssertSeekDts(g_secondTrackID, 208, 208979), true);
     }
 }
 
@@ -754,14 +762,14 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0010, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        firstLimitBytes = 45200;
-        secondLimitBytes = 640;
-        testWindowMs = 500;
+        g_firstLimitBytes = 45200;
+        g_secondLimitBytes = 640;
+        g_testWindowMs = 500;
         readCounts readCount = {{4, 4}, {5, 5}};
         ASSERT_EQ(CallbackResult(), true);
         ASSERT_EQ(AssertCacheBack(readCount), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 200, 200000), true);
-        ASSERT_EQ(AssertSeekDts(secondTrackID, 505, 505468), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 200, 200000), true);
+        ASSERT_EQ(AssertSeekDts(g_secondTrackID, 505, 505468), true);
     }
 }
 
@@ -777,14 +785,14 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0011, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEG, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        firstLimitBytes = 85000;
-        secondLimitBytes = 7500;
-        testWindowMs = 500;
+        g_firstLimitBytes = 85000;
+        g_secondLimitBytes = 7500;
+        g_testWindowMs = 500;
         readCounts readCount = {{5, 5}, {5, 5}};
         ASSERT_EQ(CallbackResult(), true);
         ASSERT_EQ(AssertCacheBack(readCount), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 2210, 2210911), true);
-        ASSERT_EQ(AssertSeekDts(secondTrackID, 1780, 1780000), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 2210, 2210911), true);
+        ASSERT_EQ(AssertSeekDts(g_secondTrackID, 1780, 1780000), true);
     }
 }
 
@@ -800,14 +808,14 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0012, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEGTS, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        firstLimitBytes = 61635;
-        secondLimitBytes = 5000;
-        testWindowMs = 500;
+        g_firstLimitBytes = 61635;
+        g_secondLimitBytes = 5000;
+        g_testWindowMs = 500;
         readCounts readCount = {{9, 13}, {13, 7}};
         ASSERT_EQ(CallbackResult(), true);
         ASSERT_EQ(AssertCacheBack(readCount), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 1950, 1950000), true);
-        ASSERT_EQ(AssertSeekDts(secondTrackID, 2308, 2308000), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 1950, 1950000), true);
+        ASSERT_EQ(AssertSeekDts(g_secondTrackID, 2308, 2308000), true);
     }
 }
 
@@ -823,14 +831,14 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0013, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEGTS, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        firstLimitBytes = 69000;
-        secondLimitBytes = 2300;
-        testWindowMs = 500;
+        g_firstLimitBytes = 69000;
+        g_secondLimitBytes = 2300;
+        g_testWindowMs = 500;
         readCounts readCount = {{9, 13}, {13, 7}};
         ASSERT_EQ(CallbackResult(), true);
         ASSERT_EQ(AssertCacheBack(readCount), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 1950, 1950000), true);
-        ASSERT_EQ(AssertSeekDts(secondTrackID, 2324, 2324000), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 1950, 1950000), true);
+        ASSERT_EQ(AssertSeekDts(g_secondTrackID, 2324, 2324000), true);
     }
 }
 
@@ -846,14 +854,14 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0014, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEGTS, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        firstLimitBytes = 61900;
-        secondLimitBytes = 3100;
-        testWindowMs = 400;
+        g_firstLimitBytes = 61900;
+        g_secondLimitBytes = 3100;
+        g_testWindowMs = 400;
         readCounts readCount = {{10, 5}, {13, 7}};
         ASSERT_EQ(CallbackResult(), true);
         ASSERT_EQ(AssertCacheBack(readCount), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 1594, 1594355), true);
-        ASSERT_EQ(AssertSeekDts(secondTrackID, 2360, 2360000), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 1594, 1594355), true);
+        ASSERT_EQ(AssertSeekDts(g_secondTrackID, 2360, 2360000), true);
     }
 }
 
@@ -869,14 +877,14 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0015, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        firstLimitBytes = 160500;
-        secondLimitBytes = 1900;
-        testWindowMs = 500;
+        g_firstLimitBytes = 160500;
+        g_secondLimitBytes = 1900;
+        g_testWindowMs = 500;
         readCounts readCount = {{4, 2}, {5, 2}};
         ASSERT_EQ(CallbackResult(), true);
         ASSERT_EQ(AssertCacheBack(readCount), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 200, 200000), true);
-        ASSERT_EQ(AssertSeekDts(secondTrackID, 2089, 2089795), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 200, 200000), true);
+        ASSERT_EQ(AssertSeekDts(g_secondTrackID, 2089, 2089795), true);
     }
 }
 
@@ -892,14 +900,14 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0016, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEG, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        firstLimitBytes = 8000;
-        secondLimitBytes = 8000;
-        testWindowMs = 500;
+        g_firstLimitBytes = 8000;
+        g_secondLimitBytes = 8000;
+        g_testWindowMs = 500;
         readCounts readCount = {{5, 2}, {3, 2}};
         ASSERT_EQ(CallbackResult(), true);
         ASSERT_EQ(AssertCacheBack(readCount), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 1501, 1501000), true);
-        ASSERT_EQ(AssertSeekDts(secondTrackID, 1275, 1275688), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 1501, 1501000), true);
+        ASSERT_EQ(AssertSeekDts(g_secondTrackID, 1275, 1275688), true);
     }
 }
 
@@ -915,14 +923,14 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0017, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_ASF, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        firstLimitBytes = 48100;
-        secondLimitBytes = 2900;
-        testWindowMs = 500;
+        g_firstLimitBytes = 48100;
+        g_secondLimitBytes = 2900;
+        g_testWindowMs = 500;
         readCounts readCount = {{14, 3}, {4, 3}};
         ASSERT_EQ(CallbackResult(), true);
         ASSERT_EQ(AssertCacheBack(readCount), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 1946, 1946000), true);
-        ASSERT_EQ(AssertSeekDts(secondTrackID, 696, 696000), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 1946, 1946000), true);
+        ASSERT_EQ(AssertSeekDts(g_secondTrackID, 696, 696000), true);
     }
 }
 
@@ -938,14 +946,14 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0018, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MATROSKA, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        firstLimitBytes = 103480;
-        secondLimitBytes = 2000;
-        testWindowMs = 500;
+        g_firstLimitBytes = 103480;
+        g_secondLimitBytes = 2000;
+        g_testWindowMs = 500;
         readCounts readCount = {{17, 2}, {3, 2}};
         ASSERT_EQ(CallbackResult(), true);
         ASSERT_EQ(AssertCacheBack(readCount), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 117, 117000), true);
-        ASSERT_EQ(AssertSeekDts(secondTrackID, 139, 139000), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 117, 117000), true);
+        ASSERT_EQ(AssertSeekDts(g_secondTrackID, 139, 139000), true);
     }
 }
 
@@ -961,14 +969,14 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0019, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_RM, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        firstLimitBytes = 10200;
-        secondLimitBytes = 88800;
-        testWindowMs = 500;
+        g_firstLimitBytes = 10200;
+        g_secondLimitBytes = 88800;
+        g_testWindowMs = 500;
         readCounts readCount = {{1, 80}, {53, 55}};
         ASSERT_EQ(CallbackResult(), true);
         ASSERT_EQ(AssertCacheBack(readCount), true);
-        ASSERT_EQ(AssertSeekDts(secondTrackID, 4092, 4092000), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 3144, 3144000), true);
+        ASSERT_EQ(AssertSeekDts(g_secondTrackID, 4092, 4092000), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 3144, 3144000), true);
     }
 }
 
@@ -984,14 +992,14 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0020, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_RM, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        firstLimitBytes = 156400;
-        secondLimitBytes = 22100;
-        testWindowMs = 500;
+        g_firstLimitBytes = 156400;
+        g_secondLimitBytes = 22100;
+        g_testWindowMs = 500;
         readCounts readCount = {{1, 48}, {81, 80}};
         ASSERT_EQ(CallbackResult(), true);
         ASSERT_EQ(AssertCacheBack(readCount), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 5600, 5600000), true);
-        ASSERT_EQ(AssertSeekDts(secondTrackID, 5826, 5826000), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 5600, 5600000), true);
+        ASSERT_EQ(AssertSeekDts(g_secondTrackID, 5826, 5826000), true);
     }
 }
 
@@ -1007,14 +1015,14 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0021, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_FLV, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        firstLimitBytes = 182800;
-        secondLimitBytes = 800;
-        testWindowMs = 500;
+        g_firstLimitBytes = 182800;
+        g_secondLimitBytes = 800;
+        g_testWindowMs = 500;
         readCounts readCount = {{5, 5}, {5, 5}};
         ASSERT_EQ(CallbackResult(), true);
         ASSERT_EQ(AssertCacheBack(readCount), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 4425, 4425000), true);
-        ASSERT_EQ(AssertSeekDts(secondTrackID, 810, 810000), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 4425, 4425000), true);
+        ASSERT_EQ(AssertSeekDts(g_secondTrackID, 810, 810000), true);
     }
 }
 
@@ -1030,14 +1038,14 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0022, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEGTS, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        firstLimitBytes = 37000;
-        secondLimitBytes = 1800;
-        testWindowMs = 500;
+        g_firstLimitBytes = 37000;
+        g_secondLimitBytes = 1800;
+        g_testWindowMs = 500;
         readCounts readCount = {{5, 5}, {10, 5}};
         ASSERT_EQ(CallbackResult(), true);
         ASSERT_EQ(AssertCacheBack(readCount), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 4500, 4500000), true);
-        ASSERT_EQ(AssertSeekDts(secondTrackID, 3779, 3779000), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 4500, 4500000), true);
+        ASSERT_EQ(AssertSeekDts(g_secondTrackID, 3779, 3779000), true);
     }
 }
 
@@ -1053,14 +1061,14 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0023, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_ASF, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        firstLimitBytes = 2500;
-        secondLimitBytes = 3000;
-        testWindowMs = 500;
+        g_firstLimitBytes = 2500;
+        g_secondLimitBytes = 3000;
+        g_testWindowMs = 500;
         readCounts readCount = {{10, 5}, {10, 5}};
         ASSERT_EQ(CallbackResult(), true);
         ASSERT_EQ(AssertCacheBack(readCount), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 175, 175000), true);
-        ASSERT_EQ(AssertSeekDts(secondTrackID, 209, 209000), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 175, 175000), true);
+        ASSERT_EQ(AssertSeekDts(g_secondTrackID, 209, 209000), true);
     }
 }
 
@@ -1076,14 +1084,14 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0024, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        firstLimitBytes = 6000;
-        secondLimitBytes = 5700;
-        testWindowMs = 500;
+        g_firstLimitBytes = 6000;
+        g_secondLimitBytes = 5700;
+        g_testWindowMs = 500;
         readCounts readCount = {{10, 10}, {10, 10}};
         ASSERT_EQ(CallbackResult(), true);
         ASSERT_EQ(AssertCacheBack(readCount), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 256, 256000), true);
-        ASSERT_EQ(AssertSeekDts(secondTrackID, 298, 298666), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 256, 256000), true);
+        ASSERT_EQ(AssertSeekDts(g_secondTrackID, 298, 298666), true);
     }
 }
 
@@ -1099,14 +1107,14 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0025, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_OGG, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        firstLimitBytes = 3550;
-        secondLimitBytes = 4950;
-        testWindowMs = 500;
+        g_firstLimitBytes = 3550;
+        g_secondLimitBytes = 4950;
+        g_testWindowMs = 500;
         readCounts readCount = {{1, 33}, {51, 49}};
         ASSERT_EQ(CallbackResult(), true);
         ASSERT_EQ(AssertCacheBack(readCount), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 224, 224000), true);
-        ASSERT_EQ(AssertSeekDts(secondTrackID, 944, 944000), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 224, 224000), true);
+        ASSERT_EQ(AssertSeekDts(g_secondTrackID, 944, 944000), true);
     }
 }
 
@@ -1122,7 +1130,7 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0026, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AAC, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 6013, 6013968), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 6013, 6013968), true);
     }
 }
 
@@ -1138,7 +1146,7 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0027, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AMR, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 780, 780000), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 780, 780000), true);
     }
 }
 
@@ -1154,7 +1162,7 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0028, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_APE, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 9216, 9216000), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 9216, 9216000), true);
     }
 }
 
@@ -1170,7 +1178,7 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0029, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MP3, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 219240, 219240000), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 219240, 219240000), true);
     }
 }
 
@@ -1186,7 +1194,7 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0030, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_FLAC, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 217920, 217920000), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 217920, 217920000), true);
     }
 }
 
@@ -1202,7 +1210,7 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0031, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_WAV, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 193792, 193792000), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 193792, 193792000), true);
     }
 }
 
@@ -1219,7 +1227,7 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0032, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_EAC3, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 72512, 72512000), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 72512, 72512000), true);
     }
 #endif
 }
@@ -1236,7 +1244,7 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0033, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_DTS, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 4736, 4736000), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 4736, 4736000), true);
     }
 }
 
@@ -1252,7 +1260,7 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0034, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_SRT, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 24900, 24900000), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 24900, 24900000), true);
     }
 }
 
@@ -1268,7 +1276,7 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0035, Te
         RemoveValue();
         ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_WEBVTT, file, DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
-        ASSERT_EQ(AssertSeekDts(firstTrackID, 6100, 6100000), true);
+        ASSERT_EQ(AssertSeekDts(g_firstTrackID, 6100, 6100000), true);
     }
 }
 
@@ -1282,12 +1290,12 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0036, Te
     RemoveValue();
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MP4_1, DEF_PROB_SIZE), true);
     ASSERT_EQ(PluginSelectTracks(), true);
-    firstLimitBytes = 0;
-    secondLimitBytes = 0;
-    testWindowMs = 100;
+    g_firstLimitBytes = 0;
+    g_secondLimitBytes = 0;
+    g_testWindowMs = 100;
     uint32_t readCount = 5;
     ASSERT_EQ(CallbackResult(), true);
-    ASSERT_EQ(PluginReadSample(secondTrackID, readCount, 0), true);
+    ASSERT_EQ(PluginReadSample(g_secondTrackID, readCount, 0), true);
     ASSERT_EQ(callbackCount_, 0);
 }
 
@@ -1299,13 +1307,13 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0036, Te
 HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0037, TestSize.Level2)
 {
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MP4_1, DEF_PROB_SIZE), true);
-    demuxerPlugin_->SelectTrack(static_cast<uint32_t>(secondTrackID));
+    demuxerPlugin_->SelectTrack(static_cast<uint32_t>(g_secondTrackID));
     ASSERT_EQ(CallbackResult(), true);
     uint32_t readCount = 6;
-    ASSERT_EQ(PluginReadSample(secondTrackID, readCount, 0), true);
-    Status status = demuxerPlugin_->GetCurrentCacheFrameCount(firstTrackID, initialFrameCount);
+    ASSERT_EQ(PluginReadSample(g_secondTrackID, readCount, 0), true);
+    Status status = demuxerPlugin_->GetCurrentCacheFrameCount(g_firstTrackID, g_initialFrameCount);
     ASSERT_EQ(status, Status::ERROR_INVALID_PARAMETER);
-    status = demuxerPlugin_->GetCurrentCacheSize(firstTrackID, initialCacheSize);
+    status = demuxerPlugin_->GetCurrentCacheSize(g_firstTrackID, g_initialCacheSize);
     ASSERT_EQ(status, Status::ERROR_INVALID_PARAMETER);
 }
 
@@ -1318,9 +1326,9 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0038, Te
 {
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MP4_1, DEF_PROB_SIZE), true);
     ASSERT_EQ(CallbackResult(), true);
-    Status status = demuxerPlugin_->GetCurrentCacheFrameCount(firstTrackID, initialFrameCount);
+    Status status = demuxerPlugin_->GetCurrentCacheFrameCount(g_firstTrackID, g_initialFrameCount);
     ASSERT_EQ(status, Status::ERROR_INVALID_OPERATION);
-    status = demuxerPlugin_->GetCurrentCacheSize(firstTrackID, initialCacheSize);
+    status = demuxerPlugin_->GetCurrentCacheSize(g_firstTrackID, g_initialCacheSize);
     ASSERT_EQ(status, Status::ERROR_INVALID_OPERATION);
 }
 
@@ -1331,14 +1339,14 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0038, Te
  */
 HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_CACHE_CALLBACK_INNER_FUNC_0039, TestSize.Level2)
 {
-    ASSERT_EQ(CreateDataSource(TEST_FILE_URI_MP4_1) ,true);
+    ASSERT_EQ(CreateDataSource(TEST_FILE_URI_MP4_1), true);
     pluginBase_ = Plugins::PluginManagerV2::Instance().CreatePluginByName(DEMUXER_PLUGIN_NAME_MOV_S);
     ASSERT_NE(pluginBase_, nullptr);
     demuxerPlugin_ = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
     ASSERT_NE(demuxerPlugin_, nullptr);
-    Status status = demuxerPlugin_->GetCurrentCacheFrameCount(firstTrackID, initialFrameCount);
+    Status status = demuxerPlugin_->GetCurrentCacheFrameCount(g_firstTrackID, g_initialFrameCount);
     ASSERT_EQ(status, Status::ERROR_NULL_POINTER);
-    status = demuxerPlugin_->GetCurrentCacheSize(firstTrackID, initialCacheSize);
+    status = demuxerPlugin_->GetCurrentCacheSize(g_firstTrackID, g_initialCacheSize);
     ASSERT_EQ(status, Status::ERROR_NULL_POINTER);
 }
 
@@ -1353,7 +1361,8 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_SEEK_DTS_INNER_FUNC_0040, TestSize
     ASSERT_EQ(PluginSelectTracks(), true);
     int64_t realSeekTime = 0;
     int64_t nonExistentSeekTime = 999999999999999;
-    Status status = demuxerPlugin_->SeekToFrameByDts(firstTrackID, nonExistentSeekTime, SeekMode::SEEK_CLOSEST, realSeekTime, 1000);
+    Status status = demuxerPlugin_->SeekToFrameByDts(g_firstTrackID, nonExistentSeekTime,
+        SeekMode::SEEK_CLOSEST, realSeekTime, 1000);
     ASSERT_EQ(status, Status::ERROR_INVALID_PARAMETER);
 }
 
@@ -1369,7 +1378,8 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_SEEK_DTS_INNER_FUNC_0041, TestSize
     int64_t realSeekTime = 0;
     int64_t seekTimeDts = 7200;
     int64_t nonExistentTrackId = 3;
-    Status status = demuxerPlugin_->SeekToFrameByDts(nonExistentTrackId, seekTimeDts, SeekMode::SEEK_CLOSEST, realSeekTime, 1000);
+    Status status = demuxerPlugin_->SeekToFrameByDts(nonExistentTrackId, seekTimeDts,
+        SeekMode::SEEK_CLOSEST, realSeekTime, 1000);
     ASSERT_EQ(status, Status::ERROR_INVALID_PARAMETER);
 }
 
@@ -1381,10 +1391,11 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_SEEK_DTS_INNER_FUNC_0041, TestSize
 HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_SEEK_DTS_INNER_FUNC_0042, TestSize.Level2)
 {
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MP4_1, DEF_PROB_SIZE), true);
-    demuxerPlugin_->SelectTrack(static_cast<uint32_t>(secondTrackID));
+    demuxerPlugin_->SelectTrack(static_cast<uint32_t>(g_secondTrackID));
     int64_t realSeekTime = 0;
     int64_t seekTimeDts = 7200;
-    Status status = demuxerPlugin_->SeekToFrameByDts(firstTrackID, seekTimeDts, SeekMode::SEEK_CLOSEST, realSeekTime, 1000);
+    Status status = demuxerPlugin_->SeekToFrameByDts(g_firstTrackID, seekTimeDts,
+        SeekMode::SEEK_CLOSEST, realSeekTime, 1000);
     ASSERT_EQ(status, Status::ERROR_INVALID_OPERATION);
 }
 
@@ -1399,7 +1410,8 @@ HWTEST_F(DemuxerPluginInnerFunc2Test, DEMUXER_SEEK_DTS_INNER_FUNC_0043, TestSize
     ASSERT_EQ(PluginSelectTracks(), true);
     int64_t realSeekTime = 0;
     int64_t seekTimeDts = 7200;
-    Status status = demuxerPlugin_->SeekToFrameByDts(firstTrackID, seekTimeDts, SeekMode::SEEK_NEXT_SYNC, realSeekTime, 1000);
+    Status status = demuxerPlugin_->SeekToFrameByDts(g_firstTrackID, seekTimeDts,
+        SeekMode::SEEK_NEXT_SYNC, realSeekTime, 1000);
     ASSERT_EQ(status, Status::ERROR_INVALID_PARAMETER);
 }
 }  // namespace Media
