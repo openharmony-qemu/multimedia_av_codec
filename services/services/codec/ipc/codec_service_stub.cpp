@@ -849,7 +849,7 @@ void CodecServiceStub::OnActive()
     }
     if (suspended_) {
         auto ret = std::static_pointer_cast<CodecServer>(codecServer_)->NotifyResume();
-        suspended_ = ret = AVCS_ERR_OK ? false : true;
+        suspended_ = ret == AVCS_ERR_OK ? false : true;
         needClear = ret == AVCS_ERR_OK ? needClear : false;
     }
     if (needClear) {
