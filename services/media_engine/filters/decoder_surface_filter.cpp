@@ -1134,7 +1134,7 @@ void DecoderSurfaceFilter::RenderNextOutput(uint32_t index, std::shared_ptr<AVBu
     }
     int64_t actionClock = 0;
     int64_t waitTime = CalculateNextRender(index, outputBuffer, actionClock);
-    if (waitTime >= 0 && !isInSeekContinous_) {
+    if (waitTime >= 0 && !isInSeekContinous_ && outputBuffer->pts_ >= 0) {
         videoSink_->SetLastPts(outputBuffer->pts_, waitTime);
     }
     if (enableRenderAtTime_) {
