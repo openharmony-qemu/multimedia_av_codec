@@ -5,5 +5,3 @@
 .clang-format
 services/engine/plugin/plugins/parser
 services/media_engine/plugins/parser
-
-.codemate
