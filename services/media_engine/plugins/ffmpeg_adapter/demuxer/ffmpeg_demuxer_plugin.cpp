@@ -2033,6 +2033,9 @@ void FFmpegDemuxerPlugin::AccumulateXpsPktRelease(uint32_t trackIndex)
 
 void FFmpegDemuxerPlugin::AccumulateXpsPktReleaseAll()
 {
+    if (fileType_ != FileType::MPEGPS) {
+        return;
+    }
     for (auto &it : accumulatePktMap_) {
         AccumulateXpsPktRelease(static_cast<uint32_t>(it.first));
     }
@@ -2823,6 +2826,7 @@ void FFmpegDemuxerPlugin::ResetAfterSeek(int64_t seekTime, SeekMode mode)
     }
     seekTime_ = seekTime;
     seekMode_ = mode;
+    AccumulateXpsPktReleaseAll();
 }
 
 Status FFmpegDemuxerPlugin::SeekToKeyFrame(int32_t trackId, int64_t seekTime,
