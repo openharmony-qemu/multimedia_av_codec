@@ -116,6 +116,7 @@ group("av_codec_unit_test") {
         "unittest/dash_mult_seg_base_node_unittest:dash_mult_seg_base_node_unittest",
         "unittest/dash_period_manager_unittest:dash_period_manager_unit_test",
         "unittest/dash_period_node_unittest:dash_period_node_unittest",
+        "unittest/dash_representation_manager_unittest:dash_representation_manager_unittest",
         "unittest/dash_seg_list_node_unittest:dash_seg_list_node_unittest",
         "unittest/dash_seg_template_node_unittest:dash_seg_template_node_unittest",
         "unittest/dash_test:dash_adpt_set_manager_unit_test",
