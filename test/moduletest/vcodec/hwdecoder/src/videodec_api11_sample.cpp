@@ -1475,6 +1475,11 @@ int32_t VDecAPI11Sample::DecodeSetSurface()
     return OH_VideoDecoder_SetSurface(vdec_, nativeWindow[0]);
 }
 
+int32_t VDecAPI11Sample::SetAnotherSurface(OHNativeWindow *anotherWindow)
+{
+    return OH_VideoDecoder_SetSurface(vdec_, anotherWindow);
+}
+
 int32_t VDecAPI11Sample::OpenFile()
 {
     inFile_ = make_unique<ifstream>();

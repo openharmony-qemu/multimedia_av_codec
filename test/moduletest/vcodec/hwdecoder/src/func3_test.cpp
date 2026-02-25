@@ -536,4 +536,41 @@ HWTEST_F(HwdecFunc3NdkTest, VIDEO_DECODE_ANOTHER_0010, TestSize.Level2)
         ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
+
+/**
+ * @tc.number    : VIDEO_DECODE_ANOTHER_0020
+ * @tc.name      : 解码器1正常解码，解码器2状态机轮转, 共用surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFunc3NdkTest, VIDEO_DECODE_ANOTHER_0020, TestSize.Level2)
+{
+    if (cap_hevc != nullptr) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        auto vDecSample2 = make_shared<VDecAPI11Sample>();
+        vDecSample2->INP_DIR = INP_DIR_1080_20;
+        vDecSample2->DEFAULT_WIDTH = 1920;
+        vDecSample2->DEFAULT_HEIGHT = 1080;
+        vDecSample2->SF_OUTPUT = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->DecodeSetSurface());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Start());
+        
+        ASSERT_EQ(AV_ERR_OK, vDecSample2->CreateVideoDecoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample2->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample2->SetAnotherSurface(vDecSample->nativeWindow[0]));
+        ASSERT_EQ(AV_ERR_OK, vDecSample2->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample2->StartVideoDecoder());
+
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Stop());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Start());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Start());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Reset());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Release());
+        vDecSample2->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample2->errCount);
+    }
+}
 }

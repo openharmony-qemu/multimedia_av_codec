@@ -757,3 +757,27 @@ int32_t VDecNdkSample::SetParameter(OH_AVFormat *format)
 {
     return OH_VideoDecoder_SetParameter(vdec_, format);
 }
+
+void VDecNdkSample::CreateSurface()
+{
+    cs_[0] = Surface::CreateSurfaceAsConsumer();
+    sptr<IBufferConsumerListener> listener = new TestConsumerListener(cs_[0], OUT_DIR);
+    cs_[0]->RegisterConsumerListener(listener);
+    auto p = cs_[0]->GetProducer();
+    ps_[0] = Surface::CreateSurfaceAsProducer(p);
+    nativeWindows[0] = CreateNativeWindowFromSurface(&ps_[0]);
+    if (autoSwitchSurface)  {
+        cs_[1] = Surface::CreateSurfaceAsConsumer();
+        sptr<IBufferConsumerListener> listener2 = new TestConsumerListener(cs_[1], OUT_DIR2);
+        cs_[1]->RegisterConsumerListener(listener2);
+        auto p2 = cs_[1]->GetProducer();
+        ps_[1] = Surface::CreateSurfaceAsProducer(p2);
+        nativeWindows[1] = CreateNativeWindowFromSurface(&ps_[1]);
+    }
+}
+
+int32_t VDecNdkSample::DecodeSetSurface()
+{
+    CreateSurface();
+    return OH_VideoDecoder_SetSurface(vdec_, nativeWindows[0]);
+}

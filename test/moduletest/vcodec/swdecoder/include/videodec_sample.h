@@ -33,6 +33,7 @@
 #include "nocopyable.h"
 #include "securec.h"
 #include "window.h"
+#include "iconsumer_surface.h"
 
 namespace OHOS {
 namespace Media {
@@ -57,6 +58,7 @@ public:
     int32_t RunVideoDec(std::string codeName = "");
     const char *INP_DIR = "/data/test/media/1920_1080_10_30Mb.h264";
     const char *OUT_DIR = "/data/test/media/VDecTest.yuv";
+    const char *OUT_DIR2 = "/data/test/media/VDecTest2.yuv";
     bool SURFACE_OUTPUT = false;
     uint32_t DEFAULT_WIDTH = 1920;
     uint32_t DEFAULT_HEIGHT = 1080;
@@ -108,6 +110,8 @@ public:
     void StopOutloop();
     bool IsRender();
     bool MdCompare(unsigned char *buffer, int len, const char *source[]);
+    int32_t DecodeSetSurface();
+    void CreateSurface();
     VDecSignal *signal_;
     uint32_t errCount = 0;
     uint32_t outCount = 0;
@@ -118,7 +122,9 @@ public:
     int64_t end_time = 0;
     bool setParameters = false;
     bool checkOutPut = true;
+    bool autoSwitchSurface = false;
     OH_AVCodec *vdec_;
+    OHNativeWindow *nativeWindows[2] = {};
 
 private:
     std::atomic<bool> isRunning_ { false };
@@ -131,6 +137,8 @@ private:
     int64_t timeStamp_ { 0 };
     int64_t lastRenderedTimeUs_ { 0 };
     bool isFirstFrame_ = true;
+    sptr<Surface> cs_[2] = {};
+    sptr<Surface> ps_[2] = {};
 };
 } // namespace Media
 } // namespace OHOS
