@@ -1109,7 +1109,11 @@ Status FFmpegDemuxerPlugin::HandleReadFrameResult(int ffmpegRet)
     if (ffmpegRet < 0) { // fail
         MEDIA_LOG_E("Call av_read_frame failed:" PUBLIC_LOG_S ", retry: " PUBLIC_LOG_D32,
             AVStrError(ffmpegRet).c_str(), int(ioContext_.retry));
-        return ioContext_.retry ? (ResetContext(), Status::ERROR_AGAIN) : Status::ERROR_UNKNOWN;
+        if (ioContext_.retry) {
+            ResetContext();
+            return Status::ERROR_AGAIN;
+        }
+        return Status::ERROR_UNKNOWN;
     }
     return Status::OK;
 }
