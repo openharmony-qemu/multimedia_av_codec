@@ -1422,7 +1422,7 @@ void FFmpegFormatHelper::ParseHevcInfo(
         MEDIA_LOG_D("Parse hevc level failed: " PUBLIC_LOG_D32, level);
     }
     auto fileType = GetFileTypeByName(avFormatContext);
-    if (fileType == FileType::MPEGTS ||
+    if (fileType == FileType::MPEGTS || fileType == FileType::MPEGPS ||
         fileType == FileType::FLV) {
         format.Set<Tag::VIDEO_WIDTH>(static_cast<uint32_t>(parse.picWidInLumaSamples));
         format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(parse.picHetInLumaSamples));
