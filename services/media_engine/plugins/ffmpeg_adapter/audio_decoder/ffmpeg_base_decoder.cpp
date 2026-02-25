@@ -56,7 +56,8 @@ FfmpegBaseDecoder::FfmpegBaseDecoder()
       avPacket_(nullptr),
       format_(nullptr),
       needResample_(false),
-      destFmt_(AV_SAMPLE_FMT_NONE)
+      destFmt_(AV_SAMPLE_FMT_NONE),
+      againIndex_(0)
 {
 }
 
@@ -184,13 +185,16 @@ Status FfmpegBaseDecoder::ProcessReceiveData(std::shared_ptr<AVBuffer> &outBuffe
 
 Status FfmpegBaseDecoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
 {
-    auto ret = avcodec_receive_frame(avCodecContext_.get(), cachedFrame_.get());
+    const bool lastStatusIsAgain = againIndex_ > 0;
+    auto ret = lastStatusIsAgain ? 0 : avcodec_receive_frame(avCodecContext_.get(), cachedFrame_.get());
     Status status;
     if (ret >= 0) {
         AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "receive one frame");
         if (cachedFrame_->pts == AV_NOPTS_VALUE) {
             cachedFrame_->pts = (inputPts_ == 0 ? nextPts_ : inputPts_);
             inputPts_ = 0;
+        } else if (lastStatusIsAgain) {
+            cachedFrame_->pts = nextPts_;
         }
         CheckFormatChange();
         status = ReceiveFrameSucc(outBuffer);
@@ -211,12 +215,15 @@ Status FfmpegBaseDecoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
         AVCODEC_LOGE("audio decoder receive unknow error,ffmpeg error message:%{public}s", AVStrError(ret).data());
         status = Status::ERROR_UNKNOWN;
     }
-    av_frame_unref(cachedFrame_.get());
+
+    if (againIndex_ == 0) {
+        av_frame_unref(cachedFrame_.get());
+    }
     AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "end received");
     return status;
 }
 
-Status FfmpegBaseDecoder::ConvertPlanarFrame(std::shared_ptr<AVBuffer> &outBuffer)
+Status FfmpegBaseDecoder::ConvertPlanarFrame()
 {
     if (resample_.ConvertFrame(convertedFrame_.get(), cachedFrame_.get()) != Status::OK) {
         AVCODEC_LOGE("convert frame failed");
@@ -253,46 +260,54 @@ void FfmpegBaseDecoder::CheckFormatChange()
 
 Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
 {
-    if (isFirst || currentFrameFormatChanged_) {
-        isFirst = false;
-        auto layout = FFMpegConverter::ConvertFFToOHAudioChannelLayoutV2(avCodecContext_->ch_layout.u.mask,
-                                                                         avCodecContext_->ch_layout.nb_channels);
-        if (avCodecContext_->ch_layout.u.mask == 0) {
-            avCodecContext_->ch_layout.u.mask = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(layout);
-            av_channel_layout_from_mask(&avCodecContext_->ch_layout, avCodecContext_->ch_layout.u.mask);
-        }
-        format_->SetData(Tag::AUDIO_CHANNEL_LAYOUT, layout);
-        if (InitResample() != Status::OK) {
-            currentFrameFormatChanged_ = false;
-            return Status::ERROR_UNKNOWN;
-        }
-        int32_t sampleRate = avCodecContext_->sample_rate;
-        durationTime_ = TIME_BASE_FFMPEG / sampleRate;
-        currentFrameFormatChanged_ = false;
+    Status ret = HandleFirstFrame();
+    if (ret != Status::OK) {
+        return ret;
     }
-    nextPts_ = cachedFrame_->pts + static_cast<int64_t>(cachedFrame_->nb_samples * durationTime_);
+    
     auto outFrame = cachedFrame_;
+    const bool isNewFrame = againIndex_ == 0;
     if (needResample_) {
-        if (ConvertPlanarFrame(outBuffer) != Status::OK) {
-            return Status::ERROR_UNKNOWN;
+        if (isNewFrame) {
+            if (ConvertPlanarFrame() != Status::OK) {
+                return Status::ERROR_UNKNOWN;
+            }
         }
         outFrame = convertedFrame_;
     }
     auto ioInfoMem = outBuffer->memory_;
     int32_t bytePerSample = av_get_bytes_per_sample(static_cast<AVSampleFormat>(outFrame->format));
-    int32_t outputSize = outFrame->nb_samples * bytePerSample * outFrame->ch_layout.nb_channels;
-    AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "RecvFrameSucc buffer real size:%{public}u,size:%{public}u, name:%{public}s",
-                       outputSize, ioInfoMem->GetCapacity(), name_.data());
-    if (ioInfoMem->GetCapacity() < outputSize) {
-        AVCODEC_LOGE("output buffer size is not enough,output size:%{public}d", outputSize);
-        return Status::ERROR_NO_MEMORY;
+    const int index = againIndex_;
+    int32_t outputSize = outFrame->nb_samples * bytePerSample * outFrame->ch_layout.nb_channels - index;
+    if (bytePerSample == 0 || outFrame->ch_layout.nb_channels == 0) {
+        AVCODEC_LOGE("outFrame format error, bytePerSample: %{public}" PRId32 ", channels: %{public}" PRId32,
+            bytePerSample, outFrame->ch_layout.nb_channels);
+        return Status::ERROR_UNKNOWN;
     }
-    ioInfoMem->Write(outFrame->data[0], outputSize, 0);
+
+    AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY,
+        "RecvFrameSucc buffer real size:%{public}u,size:%{public}u, name:%{public}s",
+        outputSize, ioInfoMem->GetCapacity(), name_.data());
+    if (ioInfoMem->GetCapacity() < outputSize) {
+        outputSize = ioInfoMem->GetCapacity();
+        againIndex_ = index + outputSize;
+        AVCODEC_LOGD("output buffer size is not enough,output size: %{public}" PRId32, outputSize);
+    } else {
+        againIndex_ = 0;
+    }
+    const int64_t duration =
+        static_cast<int64_t>(outputSize) * durationTime_ / bytePerSample / outFrame->ch_layout.nb_channels;
+    nextPts_ = cachedFrame_->pts + duration;
+    ioInfoMem->Write(outFrame->data[0] + index, outputSize, 0);
     outBuffer->pts_ = cachedFrame_->pts;
-    outBuffer->duration_ = static_cast<int64_t>(cachedFrame_->nb_samples * durationTime_);
+    outBuffer->duration_ = duration;
     format_->SetData(Tag::AUDIO_SAMPLE_PER_FRAME, outFrame->nb_samples);
     ioInfoMem->SetSize(outputSize);
-    if (needResample_) {
+
+    AVCODEC_LOGD("output pts %{public}" PRId64 ", duration %{public}" PRId64 ", outputSize %{public}" PRId32
+                 ", index %{public}" PRId32 ", frameSize %{public}" PRId32,
+        outBuffer->pts_, duration, outputSize, index, outputSize + index);
+    if (needResample_ && againIndex_ == 0) {
         av_frame_unref(convertedFrame_.get());
     }
     return Status::ERROR_AGAIN;
@@ -563,6 +578,29 @@ Status FfmpegBaseDecoder::SetCodecExtradata(const std::shared_ptr<Meta> &format)
     }
     return Status::OK;
 }
+
+Status FfmpegBaseDecoder::HandleFirstFrame()
+{
+    if (isFirst || currentFrameFormatChanged_) {
+        isFirst = false;
+        auto layout = FFMpegConverter::ConvertFFToOHAudioChannelLayoutV2(
+            avCodecContext_->ch_layout.u.mask, avCodecContext_->ch_layout.nb_channels);
+        if (avCodecContext_->ch_layout.u.mask == 0) {
+            avCodecContext_->ch_layout.u.mask = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(layout);
+            av_channel_layout_from_mask(&avCodecContext_->ch_layout, avCodecContext_->ch_layout.u.mask);
+        }
+        format_->SetData(Tag::AUDIO_CHANNEL_LAYOUT, layout);
+        if (InitResample() != Status::OK) {
+            currentFrameFormatChanged_ = false;
+            return Status::ERROR_UNKNOWN;
+        }
+        int32_t sampleRate = avCodecContext_->sample_rate;
+        durationTime_ = TIME_BASE_FFMPEG / sampleRate;
+        currentFrameFormatChanged_ = false;
+    }
+    return Status::OK;
+}
+
 } // namespace Ffmpeg
 } // namespace Plugins
 } // namespace Media
