@@ -1322,6 +1322,27 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_UnselectTrack_001, TestSize.Le
 }
 
 /**
+ * @tc.name  : Test MediaDemuxerExtUnitTest UnselectTrack API
+ * @tc.number: MediaDemuxerExt_UnselectTrack_002
+ * @tc.desc  : Test IsNeedMapToInnerTrackID() is true
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_UnselectTrack_002, TestSize.Level1)
+{
+    mediaDemuxer_->isFlvLiveStream_ = true;
+    std::string audioMimeType = "audio/mp3";
+    int64_t startTime = NUM_1000;
+    std::shared_ptr<Meta> trackMeta = std::make_shared<Meta>();
+    trackMeta->SetData(Tag::MIME_TYPE, audioMimeType);
+    trackMeta->SetData(Tag::MEDIA_START_TIME, startTime);
+    mediaDemuxer_->mediaMetaData_.trackMetas.push_back(trackMeta);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_)).Times(NUM_1);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetPluginByStreamID(_)).Times(NUM_1);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillRepeatedly(Return(true));
+    auto ret = mediaDemuxer_->UnselectTrack(NUM_0);
+    EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
+}
+
+/**
  * @tc.name  : Test MediaDemuxerExtUnitTest OnInterrupted API
  * @tc.number: MediaDemuxerExt_OnInterrupted_001
  * @tc.desc  : Test demuxerPluginManager_ != nullptr && demuxerPluginManager_->IsDash()
@@ -1387,6 +1408,42 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetTargetVideoTrackId_004, Tes
     vector.push_back(audioMeta);
     uint32_t result = mediaDemuxer_->GetTargetVideoTrackId(vector);
     EXPECT_EQ(result, NUM_0);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest GetTargetVideoTrackId API
+ * @tc.number: MediaDemuxerExt_GetTargetVideoTrackId_005
+ * @tc.desc  : Test no video track in trackInfos → return original targetVideoTrackId_
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetTargetVideoTrackId_005, TestSize.Level1)
+{
+    mediaDemuxer_->targetVideoTrackId_ = NEG_1;
+    std::vector<std::shared_ptr<Meta>> trackInfos;
+    auto audioMeta = std::make_shared<Meta>();
+    audioMeta->SetData(Tag::MEDIA_TYPE, Plugins::MediaType::AUDIO);
+    trackInfos.push_back(audioMeta);
+    auto subtitleMeta = std::make_shared<Meta>();
+    subtitleMeta->SetData(Tag::MEDIA_TYPE, Plugins::MediaType::SUBTITLE);
+    trackInfos.push_back(subtitleMeta);
+    int32_t ret = mediaDemuxer_->GetTargetVideoTrackId(trackInfos);
+    EXPECT_EQ(ret, NEG_1);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest GetTargetVideoTrackId API
+ * @tc.number: MediaDemuxerExt_GetTargetVideoTrackId_006
+ * @tc.desc  : Test find first video track → set targetVideoTrackId_ = index
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetTargetVideoTrackId_006, TestSize.Level1)
+{
+    mediaDemuxer_->targetVideoTrackId_ = NUM_1;
+    std::vector<std::shared_ptr<Meta>> trackInfos;
+    auto videoMeta = std::make_shared<Meta>();
+    videoMeta->SetData(Tag::MEDIA_TYPE, Plugins::MediaType::VIDEO);
+    trackInfos.push_back(videoMeta);
+    int32_t ret = mediaDemuxer_->GetTargetVideoTrackId(trackInfos);
+    EXPECT_EQ(ret, NUM_1);
+    EXPECT_EQ(mediaDemuxer_->targetVideoTrackId_, NUM_1);
 }
 
 /**
@@ -2735,6 +2792,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoSampleQueue_001, TestS
  */
 HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoTrack_001, TestSize.Level1)
 {
+    mediaDemuxer_->audioTrackId_ = NUM_0;
     mediaDemuxer_->videoTrackId_ = NUM_0;
     mediaDemuxer_->audioTrackId_ = NUM_1;
     std::shared_ptr<AVBuffer> videoSample = std::make_shared<AVBuffer>();
@@ -2766,6 +2824,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoTrack_001, TestSize.Le
  */
 HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoTrack_002, TestSize.Level1)
 {
+    mediaDemuxer_->audioTrackId_ = NUM_0;
     mediaDemuxer_->videoTrackId_ = NUM_0;
     mediaDemuxer_->audioTrackId_ = NUM_1;
     std::shared_ptr<AVBuffer> videoSample = std::make_shared<AVBuffer>();
@@ -3250,6 +3309,189 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSegmentEos_002, TestSize
 }
 
 /**
+ * @tc.name  : MediaDemuxerExt_HandleSegmentEos_003
+ * @tc.number: MediaDemuxerExt_HandleSegmentEos_003
+ * @tc.desc  : Test demuxerPluginManager is nullptr → return ERROR_NULL_POINTER
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSegmentEos_003, TestSize.Level1)
+{
+    mediaDemuxer_->demuxerPluginManager_ = nullptr;
+
+    int32_t trackId = NUM_0;
+    Status ret = mediaDemuxer_->HandleSegmentEos(trackId);
+    EXPECT_EQ(ret, Status::ERROR_NULL_POINTER);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_HandleSegmentEos_004
+ * @tc.number: MediaDemuxerExt_HandleSegmentEos_004
+ * @tc.desc  : Test IsAVInOneStream is false → return HandleSegmentChange result
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSegmentEos_004, TestSize.Level1)
+{
+    mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->segmentEosMap_[NUM_0] = true;
+    mediaDemuxer_->audioTrackId_ = NUM_0;
+    mediaDemuxer_->segmentEosMap_[NUM_1] = true;
+
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_))
+        .WillRepeatedly(Return(NUM_0));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTrackTypeByTrackID(_))
+        .WillOnce(Return(TrackType::TRACK_VIDEO));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), RebootPlugin(_, _, _, _))
+        .WillOnce(Return(Status::OK));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash())
+        .WillRepeatedly(Return(true));
+    auto plugin = std::make_shared<DemuxerPlugin>("MockPlugin");
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetPluginByStreamID(_)).WillRepeatedly(Return(plugin));
+    mediaDemuxer_->subtitleTrackId_ = NUM_1;
+
+    int32_t trackId = NUM_0;
+    Status ret = mediaDemuxer_->HandleSegmentEos(trackId);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_HandleSegmentEos_005
+ * @tc.number: MediaDemuxerExt_HandleSegmentEos_005
+ * @tc.desc  : Test IsAVInOneStream is false → return HandleSegmentChange result
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSegmentEos_005, TestSize.Level1)
+{
+    mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->segmentEosMap_[NUM_0] = true;
+    mediaDemuxer_->audioTrackId_ = NUM_0;
+    mediaDemuxer_->segmentEosMap_[NUM_1] = true;
+
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_))
+        .WillRepeatedly(Return(NUM_0));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTrackTypeByTrackID(_))
+        .WillOnce(Return(TrackType::TRACK_VIDEO));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash())
+        .WillRepeatedly(Return(true));
+    auto plugin = std::make_shared<DemuxerPlugin>("MockPlugin");
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetPluginByStreamID(_)).WillRepeatedly(Return(plugin));
+    mediaDemuxer_->subStreamDemuxer_ = nullptr;
+
+    int32_t trackId = NUM_0;
+    Status ret = mediaDemuxer_->HandleSegmentEos(trackId);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_HandleSegmentEos_006
+ * @tc.number: MediaDemuxerExt_HandleSegmentEos_006
+ * @tc.desc  : Test IsAVInOneStream is false → return HandleSegmentChange result
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSegmentEos_006, TestSize.Level1)
+{
+    mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->segmentEosMap_[NUM_0] = true;
+    mediaDemuxer_->audioTrackId_ = NUM_0;
+    mediaDemuxer_->segmentEosMap_[NUM_1] = true;
+
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_))
+        .WillRepeatedly(Return(NUM_0));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTrackTypeByTrackID(_))
+        .WillOnce(Return(TrackType::TRACK_VIDEO));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash())
+        .WillRepeatedly(Return(true));
+    auto plugin = std::make_shared<DemuxerPlugin>("MockPlugin");
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetPluginByStreamID(_)).WillRepeatedly(Return(plugin));
+    int32_t trackId = NEG_1;
+    Status ret = mediaDemuxer_->HandleSegmentEos(trackId);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_HandleSegmentEos_007
+ * @tc.number: MediaDemuxerExt_HandleSegmentEos_007
+ * @tc.desc  : Test IsSegmentEos is false → return ERROR_ONE_TRACK_SEGMENT_EOS
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSegmentEos_007, TestSize.Level1)
+{
+    mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->segmentEosMap_[NUM_0] = false;
+    mediaDemuxer_->audioTrackId_ = NUM_1;
+    mediaDemuxer_->segmentEosMap_[NUM_1] = false;
+
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_))
+        .WillRepeatedly(Return(NEG_1));
+
+    int32_t trackId = NUM_0;
+    Status ret = mediaDemuxer_->HandleSegmentEos(trackId);
+    EXPECT_EQ(ret, Status::ERROR_ONE_TRACK_SEGMENT_EOS);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_HandleSegmentEos_008
+ * @tc.number: MediaDemuxerExt_HandleSegmentEos_008
+ * @tc.desc  : Test IsSegmentEos is false → return ERROR_ONE_TRACK_SEGMENT_EOS
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSegmentEos_008, TestSize.Level1)
+{
+    mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->segmentEosMap_[NUM_0] = true;
+    mediaDemuxer_->audioTrackId_ = NUM_1;
+    mediaDemuxer_->segmentEosMap_[NUM_1] = false;
+
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_))
+        .WillRepeatedly(Return(NUM_0));
+    auto plugin = std::make_shared<DemuxerPlugin>("MockPlugin");
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetPluginByStreamID(_)).WillRepeatedly(Return(plugin));
+    EXPECT_CALL(*plugin, SelectTrack(_)).WillRepeatedly(Return(Status::OK));
+
+    int32_t trackId = NUM_0;
+    Status ret = mediaDemuxer_->HandleSegmentEos(trackId);
+    EXPECT_EQ(ret, Status::ERROR_ONE_TRACK_SEGMENT_EOS);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_HandleSegmentEos_009
+ * @tc.number: MediaDemuxerExt_HandleSegmentEos_009
+ * @tc.desc  : Test IsSegmentEos is false → return ERROR_ONE_TRACK_SEGMENT_EOS
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSegmentEos_009, TestSize.Level1)
+{
+    mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->segmentEosMap_[NUM_0] = true;
+    mediaDemuxer_->audioTrackId_ = NUM_1;
+    mediaDemuxer_->segmentEosMap_[NUM_1] = true;
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_))
+        .WillRepeatedly(Return(NUM_0));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTrackTypeByTrackID(_))
+        .WillOnce(Return(TrackType::TRACK_INVALID));
+
+    auto plugin = std::make_shared<DemuxerPlugin>("MockPlugin");
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetPluginByStreamID(_)).WillRepeatedly(Return(plugin));
+    EXPECT_CALL(*plugin, SelectTrack(_)).WillRepeatedly(Return(Status::OK));
+
+    int32_t trackId = NUM_0;
+    Status ret = mediaDemuxer_->HandleSegmentEos(trackId);
+    EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_HandleSegmentEos_010
+ * @tc.number: MediaDemuxerExt_HandleSegmentEos_010
+ * @tc.desc  : Test IsAVInOneStream is false → return ERROR_ONE_TRACK_SEGMENT_EOS
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSegmentEos_010, TestSize.Level1)
+{
+    mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->segmentEosMap_[NUM_0] = true;
+    mediaDemuxer_->audioTrackId_ = NUM_1;
+    mediaDemuxer_->segmentEosMap_[NUM_1] = true;
+
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_))
+        .WillRepeatedly(Return(NEG_1));
+
+    int32_t trackId = NUM_0;
+    Status ret = mediaDemuxer_->HandleSegmentEos(trackId);
+    EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
+}
+
+/**
  * @tc.name  : MediaDemuxerExt_HandleHlsSeek_001
  * @tc.number: MediaDemuxerExt_HandleHlsSeek_001
  * @tc.desc  : Test isAVStreamIdSame is true
@@ -3375,5 +3617,1381 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_IsBufferingMap, TestSize.Level1)
     EXPECT_TRUE(mediaDemuxer_->GetTrackIsBuffering(trackId));
     mediaDemuxer_->SetTrackIsBuffering(trackId, false);
     EXPECT_FALSE(mediaDemuxer_->GetTrackIsBuffering(trackId));
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest BoostReadThreadPriority API
+ * @tc.number: MediaDemuxerExt_BoostReadThreadPriority_001
+ * @tc.desc  : Test plugin == nullptr
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_BoostReadThreadPriority_001, TestSize.Level1)
+{
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_)).WillRepeatedly(Return(
+        INVALID_STREAM_OR_TRACK_ID));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetPluginByStreamID(_)).WillRepeatedly(Return(nullptr));
+
+    auto res = mediaDemuxer_->BoostReadThreadPriority();
+    EXPECT_EQ(res, Status::ERROR_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest BoostReadThreadPriority API
+ * @tc.number: MediaDemuxerExt_BoostReadThreadPriority_002
+ * @tc.desc  : Test (plugin->BoostReadThreadPriority()) != Status::OK
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_BoostReadThreadPriority_002, TestSize.Level1)
+{
+    mediaDemuxer_->isFirstParser_ = true;
+    mockRetInt32_ = MSERR_OK;
+    std::shared_ptr<DemuxerPlugin> plugin = std::make_shared<DemuxerPlugin>("MockPlugin");
+    EXPECT_CALL(*(plugin), ParserRefUpdatePos(_, _)).WillRepeatedly(Return(Status::OK));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_)).WillRepeatedly(Return(0));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetPluginByStreamID(_)).WillRepeatedly(Return(plugin));
+
+    EXPECT_CALL(*(plugin), BoostReadThreadPriority()).WillOnce(Return(Status::ERROR_WRONG_STATE));
+
+    auto res = mediaDemuxer_->BoostReadThreadPriority();
+    EXPECT_EQ(res, Status::ERROR_WRONG_STATE);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest BoostThreadPriorityIfNeeded API
+ * @tc.number: MediaDemuxerExt_BoostThreadPriorityIfNeeded_001
+ * @tc.desc  : Test boostAudioRet != Status::OK
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_BoostThreadPriorityIfNeeded_001, TestSize.Level1)
+{
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_)).WillRepeatedly(Return(
+        INVALID_STREAM_OR_TRACK_ID));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetPluginByStreamID(_)).WillRepeatedly(Return(nullptr));
+
+    auto res = mediaDemuxer_->BoostThreadPriorityIfNeeded();
+    EXPECT_EQ(res, false);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest IsHitPlugin API
+ * @tc.number: MediaDemuxerExt_IsHitPlugin_001
+ * @tc.desc  : Test pluginName without header matches contentType → return tru
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_IsHitPlugin_001, TestSize.Level1)
+{
+    std::string pluginName = "flv";
+    std::string contentType = "video/flv";
+    bool ret = mediaDemuxer_->IsHitPlugin(pluginName, contentType);
+
+    EXPECT_TRUE(ret);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest IsHitPlugin API
+ * @tc.number: MediaDemuxerExt_IsHitPlugin_002
+ * @tc.desc  : Test empty contentType → return false
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_IsHitPlugin_002, TestSize.Level1)
+{
+    std::string pluginName = "flv";
+    std::string contentType = "";
+    bool ret = mediaDemuxer_->IsHitPlugin(pluginName, contentType);
+
+    EXPECT_FALSE(ret);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest IsHitPlugin API
+ * @tc.number: MediaDemuxerExt_IsHitPlugin_003
+ * @tc.desc  : Test token empty after erase header → return false
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_IsHitPlugin_003, TestSize.Level1)
+{
+    std::string pluginName = "demuxer_";
+    std::string contentType = "video/mp4";
+    bool ret = mediaDemuxer_->IsHitPlugin(pluginName, contentType);
+
+    EXPECT_FALSE(ret);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest IsHitPlugin API
+ * @tc.number: MediaDemuxerExt_IsHitPlugin_004
+ * @tc.desc  : Test pluginName with header matches contentType → return true
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_IsHitPlugin_004, TestSize.Level1)
+{
+    std::string pluginName = "mp4";
+    std::string contentType = "video/mp4";
+    bool ret = mediaDemuxer_->IsHitPlugin(pluginName, contentType);
+
+    EXPECT_TRUE(ret);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest IsHitPlugin API
+ * @tc.number: MediaDemuxerExt_IsHitPlugin_005
+ * @tc.desc  : Test multi-token pluginName with one match → return true
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_IsHitPlugin_005, TestSize.Level1)
+{
+    std::string pluginName = "mp4,flv,mkv";
+    std::string contentType = "video/flv";
+    bool ret = mediaDemuxer_->IsHitPlugin(pluginName, contentType);
+
+    EXPECT_TRUE(ret);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest IsHitPlugin API
+ * @tc.number: MediaDemuxerExt_IsHitPlugin_006
+ * @tc.desc  : Test token not empty but no match → return false
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_IsHitPlugin_006, TestSize.Level1)
+{
+    std::string pluginName = "avi";
+    std::string contentType = "video/mp4";
+    bool ret = mediaDemuxer_->IsHitPlugin(pluginName, contentType);
+
+    EXPECT_FALSE(ret);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest IsHitPlugin API
+ * @tc.number: MediaDemuxerExt_IsHitPlugin_007
+ * @tc.desc  : Test empty pluginName → return false
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_IsHitPlugin_007, TestSize.Level1)
+{
+    std::string pluginName = "";
+    std::string contentType = "video/mp4";
+    bool ret = mediaDemuxer_->IsHitPlugin(pluginName, contentType);
+
+    EXPECT_FALSE(ret);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest IsHitPlugin API
+ * @tc.number: MediaDemuxerExt_IsHitPlugin_008
+ * @tc.desc  : Test multi-token pluginName with no match → return false
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_IsHitPlugin_008, TestSize.Level1)
+{
+    std::string pluginName = "avi,wmv,rmvb";
+    std::string contentType = "video/mp4";
+    bool ret = mediaDemuxer_->IsHitPlugin(pluginName, contentType);
+
+    EXPECT_FALSE(ret);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest IsHitPlugin API
+ * @tc.number: MediaDemuxerExt_IsHitPlugin_009
+ * @tc.desc  : Test pluginName with only delimiters → return false
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_IsHitPlugin_009, TestSize.Level1)
+{
+    std::string pluginName = ",,,";
+    std::string contentType = "video/mp4";
+    bool ret = mediaDemuxer_->IsHitPlugin(pluginName, contentType);
+
+    EXPECT_FALSE(ret);
+}
+
+/**
+ * @tc.name  : MediaDemuxer_ReadSampleToDrop_001
+ * @tc.number: MediaDemuxer_ReadSampleToDrop_001
+ * @tc.desc  : test ReadSampleToDrop when plugin is nullptr
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_ReadSampleToDrop_001, TestSize.Level1)
+{
+    mediaDemuxer_->isFlvLiveStream_ = true;
+    std::shared_ptr<AVBuffer> sample = std::make_shared<AVBuffer>();
+    int32_t trackId = NUM_0;
+
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTmpStreamIDByTrackID(_))
+        .WillOnce(Return(0));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetPluginByStreamID(_))
+        .WillOnce(Return(nullptr));
+
+    Status ret = mediaDemuxer_->ReadSampleToDrop(trackId, sample);
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+}
+
+/**
+ * @tc.name  : MediaDemuxer_NeedDroped_001
+ * @tc.number: MediaDemuxer_NeedDroped_001
+ * @tc.desc  : test NeedDroped when cache duration reaches STOP_PRODUCE_WATER_LOOP
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_NeedDroped_001, TestSize.Level1)
+{
+    int32_t trackId = NUM_0;
+    auto sampleQueue = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[trackId] = sampleQueue;
+
+    EXPECT_CALL(*sampleQueue, NewGetCacheDuration())
+        .WillOnce(Return(SampleQueueController::STOP_PRODUCE_WATER_LOOP));
+    EXPECT_CALL(*sampleQueue, GetFilledBufferSize()).Times(0);
+
+    bool ret = mediaDemuxer_->NeedDroped(trackId);
+    EXPECT_TRUE(ret);
+}
+
+/**
+ * @tc.name  : MediaDemuxer_CachePressuredCallback_001
+ * @tc.number: MediaDemuxer_CachePressuredCallback_001
+ * @tc.desc  : test CachePressuredCallback returns early when sample queue is disabled
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_CachePressuredCallback_001, TestSize.Level1)
+{
+    int32_t trackId = NUM_0;
+    uint32_t cachedBytes = 0;
+
+    mediaDemuxer_->enableSampleQueue_ = false;
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTmpStreamIDByTrackID(_)).Times(0);
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetStreamIDByTrackID(_)).Times(0);
+    mediaDemuxer_->CachePressuredCallback(trackId, cachedBytes);
+}
+
+/**
+ * @tc.name  : MediaDemuxer_CachePressuredCallback_002
+ * @tc.number: MediaDemuxer_CachePressuredCallback_002
+ * @tc.desc  : test CachePressuredCallback when pluginTemp is nullptr
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_CachePressuredCallback_002, TestSize.Level1)
+{
+    int32_t trackId = NUM_0;
+    uint32_t cachedBytes = 0;
+
+    mediaDemuxer_->enableSampleQueue_ = true;
+    mediaDemuxer_->isFlvLiveStream_ = true;
+
+    mediaDemuxer_->hasDropedMap_[trackId].store(false);
+
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTmpStreamIDByTrackID(_))
+        .WillOnce(Return(0));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetPluginByStreamID(_))
+        .WillOnce(Return(nullptr));
+    mediaDemuxer_->CachePressuredCallback(trackId, cachedBytes);
+}
+
+/**
+ * @tc.name  : MediaDemuxer_CachePressuredCallback_003
+ * @tc.number: MediaDemuxer_CachePressuredCallback_003
+ * @tc.desc  : test CachePressuredCallback when GetCurrentCacheFrameCount returns error
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_CachePressuredCallback_003, TestSize.Level1)
+{
+    int32_t trackId = NUM_0;
+    uint32_t cachedBytes = 0;
+
+    mediaDemuxer_->enableSampleQueue_ = true;
+    mediaDemuxer_->isFlvLiveStream_ = false;
+
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, IsDash()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTmpStreamIDByTrackID(_))
+        .WillRepeatedly(Return(-1));
+
+    auto plugin = std::make_shared<DemuxerPlugin>("MockPlugin");
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetStreamIDByTrackID(_))
+        .WillOnce(Return(0));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetPluginByStreamID(_))
+        .WillOnce(Return(plugin));
+
+    EXPECT_CALL(*plugin, GetCurrentCacheFrameCount(_, _))
+        .WillOnce(Return(Status::ERROR_UNKNOWN));
+
+    mediaDemuxer_->CachePressuredCallback(trackId, cachedBytes);
+}
+
+/**
+ * @tc.name  : MediaDemuxer_CachePressuredCallback_004
+ * @tc.number: MediaDemuxer_CachePressuredCallback_004
+ * @tc.desc  : test CachePressuredCallback when NeedDroped is true but demuxer is stopped
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_CachePressuredCallback_004, TestSize.Level1)
+{
+    int32_t trackId = NUM_0;
+    uint32_t cachedBytes = 0;
+
+    mediaDemuxer_->enableSampleQueue_ = true;
+    mediaDemuxer_->isFlvLiveStream_ = false;
+
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, IsDash()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTmpStreamIDByTrackID(_))
+        .WillRepeatedly(Return(-1));
+
+    auto plugin = std::make_shared<DemuxerPlugin>("MockPlugin");
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetStreamIDByTrackID(_))
+        .WillOnce(Return(0));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetPluginByStreamID(_))
+        .WillOnce(Return(plugin));
+
+    uint32_t frameCount = 5;
+    EXPECT_CALL(*plugin, GetCurrentCacheFrameCount(_, _))
+        .WillOnce(DoAll(SetArgReferee<1>(frameCount), Return(Status::OK)));
+
+    auto sampleQueue = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[trackId] = sampleQueue;
+    EXPECT_CALL(*sampleQueue, NewGetCacheDuration())
+        .WillOnce(Return(0));
+    EXPECT_CALL(*sampleQueue, GetFilledBufferSize())
+        .WillOnce(Return(0));
+    mediaDemuxer_->isStopped_ = true;
+    mediaDemuxer_->CachePressuredCallback(trackId, cachedBytes);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleSeekChangeStream API
+ * @tc.number: MediaDemuxerExt_HandleSeekChangeStream_001
+ * @tc.desc  : Test streamDemuxer is nullptr → skip if block, return OK
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSeekChangeStream_001, TestSize.Level1)
+{
+    mediaDemuxer_->streamDemuxer_ = nullptr;
+    int32_t currentStreamId = NUM_0;
+    int32_t newStreamId = NUM_1;
+    int32_t trackId = NUM_0;
+    auto ret = mediaDemuxer_->HandleSeekChangeStream(currentStreamId, newStreamId, trackId);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleSeekChangeStream API
+ * @tc.number: MediaDemuxerExt_HandleSeekChangeStream_002
+ * @tc.desc  : Test streamDemuxer is valid but HasEosTrack is false → skip if block, return OK
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSeekChangeStream_002, TestSize.Level1)
+{
+    int32_t testId = NUM_0;
+    mediaDemuxer_->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    mediaDemuxer_->eosMap_[testId] = false;
+    int32_t currentStreamId = NUM_0;
+    int32_t newStreamId = NUM_1;
+    int32_t trackId = NUM_0;
+    auto ret = mediaDemuxer_->HandleSeekChangeStream(currentStreamId, newStreamId, trackId);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleSeekChangeStream API
+ * @tc.number: MediaDemuxerExt_HandleSeekChangeStream_003
+ * @tc.desc  : Test enter if block but not Dash stream → skip HandleDashChangeStream, return OK
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSeekChangeStream_003, TestSize.Level1)
+{
+    int32_t testId = NUM_0;
+    mediaDemuxer_->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    mediaDemuxer_->eosMap_[testId] = true;
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), SetNewVideoStreamID(_)).WillRepeatedly(Return(Status::OK));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillRepeatedly(Return(false));
+    int32_t currentStreamId = NUM_0;
+    int32_t newStreamId = NUM_1;
+    int32_t trackId = NUM_0;
+    auto ret = mediaDemuxer_->HandleSeekChangeStream(currentStreamId, newStreamId, trackId);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleSeekChangeStream API
+ * @tc.number: MediaDemuxerExt_HandleSeekChangeStream_004
+ * @tc.desc  : Test enter if block but not Dash stream → skip HandleDashChangeStream, return OK
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSeekChangeStream_004, TestSize.Level1)
+{
+    int32_t testId = NUM_0;
+    mediaDemuxer_->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    mediaDemuxer_->eosMap_[testId] = true;
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), SetNewVideoStreamID(_)).WillRepeatedly(Return(Status::OK));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillRepeatedly(Return(true));
+    int32_t currentStreamId = NUM_0;
+    int32_t newStreamId = NUM_1;
+    int32_t trackId = NUM_0;
+    auto ret = mediaDemuxer_->HandleSeekChangeStream(currentStreamId, newStreamId, trackId);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_NotifyResumeUnMute_001
+ * @tc.number: MediaDemuxerExt_NotifyResumeUnMute_001
+ * @tc.desc  : Test NotifyResumeUnMute when video is not muted and task not running
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_NotifyResumeUnMute_001, TestSize.Level1)
+{
+    mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->isVideoMuted_ = false;
+
+    std::string taskName = "SampleConsumerV";
+    std::unique_ptr<MockTask> taskPtr = std::make_unique<MockTask>(taskName, mediaDemuxer_->playerId_);
+    EXPECT_CALL(*(taskPtr), IsTaskRunning())
+        .WillOnce(Return(false));
+    EXPECT_CALL(*(taskPtr), Start())
+        .Times(1);
+    mediaDemuxer_->sampleConsumerTaskMap_[NUM_0] = std::move(taskPtr);
+    mediaDemuxer_->NotifyResumeUnMute();
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_NotifyResumeUnMute_002
+ * @tc.number: MediaDemuxerExt_NotifyResumeUnMute_002
+ * @tc.desc  : Test NotifyResumeUnMute when video is muted
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_NotifyResumeUnMute_002, TestSize.Level1)
+{
+    mediaDemuxer_->videoTrackId_ = NUM_0;
+    std::string taskName = "SampleConsumerV";
+    std::unique_ptr<MockTask> taskPtr = std::make_unique<MockTask>(taskName, mediaDemuxer_->playerId_);
+
+    mediaDemuxer_->isVideoMuted_ = true;
+    EXPECT_CALL(*(taskPtr), IsTaskRunning()).Times(0);
+    EXPECT_CALL(*(taskPtr), Start()).Times(0);
+    mediaDemuxer_->sampleConsumerTaskMap_[NUM_0] = std::move(taskPtr);
+    mediaDemuxer_->NotifyResumeUnMute();
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_NotifyResumeUnMute_003
+ * @tc.number: MediaDemuxerExt_NotifyResumeUnMute_003
+ * @tc.desc  : Test NotifyResumeUnMute when task already running
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_NotifyResumeUnMute_003, TestSize.Level1)
+{
+    mediaDemuxer_->videoTrackId_ = NUM_0;
+    std::string taskName = "SampleConsumerV";
+    std::unique_ptr<MockTask> taskPtr = std::make_unique<MockTask>(taskName, mediaDemuxer_->playerId_);
+
+    mediaDemuxer_->isVideoMuted_ = false;
+    EXPECT_CALL(*(taskPtr), IsTaskRunning())
+        .WillOnce(Return(true));
+    EXPECT_CALL(*(taskPtr), Start()).Times(0);
+    mediaDemuxer_->sampleConsumerTaskMap_[NUM_0] = std::move(taskPtr);
+    mediaDemuxer_->NotifyResumeUnMute();
+}
+
+
+/**
+ * @tc.name  : MediaDemuxerExt_IsSegmentEos_002
+ * @tc.number: MediaDemuxerExt_IsSegmentEos_002
+ * @tc.desc  : Test IsSegmentEos() == false when any track segmentEos is false
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_IsSegmentEos_002, TestSize.Level1)
+{
+    mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->segmentEosMap_[NUM_0] = false;
+    mediaDemuxer_->audioTrackId_ = NUM_1;
+    mediaDemuxer_->segmentEosMap_[NUM_1] = true;
+
+    EXPECT_EQ(mediaDemuxer_->IsSegmentEos(), false);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_HandleNotAllTrackEos_001
+ * @tc.number: MediaDemuxerExt_HandleNotAllTrackEos_001
+ * @tc.desc  : Test GetTrackIsBuffering(trackId) == false, condition not satisfied
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleNotAllTrackEos_001, TestSize.Level1)
+{
+    int32_t trackId = NUM_0;
+    mediaDemuxer_->SetTrackIsBuffering(trackId, false);
+
+    auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
+    mediaDemuxer_->eventReceiver_ = mockEventReceiver;
+    EXPECT_CALL(*(mockEventReceiver), OnEvent(_)).Times(0);
+
+    mediaDemuxer_->HandleNotAllTrackEos(trackId);
+
+    EXPECT_TRUE(mediaDemuxer_->hlsSegmentEosMap_[trackId]);
+    EXPECT_FALSE(mediaDemuxer_->GetTrackIsBuffering(trackId));
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_HandleNotAllTrackEos_002
+ * @tc.number: MediaDemuxerExt_HandleNotAllTrackEos_002
+ * @tc.desc  : Test GetTrackIsBuffering(trackId) == true and one task is not running
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleNotAllTrackEos_002, TestSize.Level1)
+{
+    int32_t trackId = NUM_0;
+    mediaDemuxer_->audioTrackId_ = trackId;
+    mediaDemuxer_->videoTrackId_ = NUM_1;
+
+    mediaDemuxer_->SetTrackIsBuffering(trackId, true);
+    mediaDemuxer_->isBuffering_.store(true);
+
+    std::string taskName = "Demux";
+    std::unique_ptr<MockTask> audioTaskPtr = std::make_unique<MockTask>(taskName, mediaDemuxer_->playerId_);
+    EXPECT_CALL(*(audioTaskPtr), IsTaskRunning()).WillRepeatedly(Return(false));
+    mediaDemuxer_->taskMap_[mediaDemuxer_->audioTrackId_] = std::move(audioTaskPtr);
+
+    std::unique_ptr<MockTask> videoTaskPtr = std::make_unique<MockTask>(taskName, mediaDemuxer_->playerId_);
+    EXPECT_CALL(*(videoTaskPtr), IsTaskRunning()).WillRepeatedly(Return(true));
+    mediaDemuxer_->taskMap_[mediaDemuxer_->videoTrackId_] = std::move(videoTaskPtr);
+
+    auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
+    mediaDemuxer_->eventReceiver_ = mockEventReceiver;
+    EXPECT_CALL(*(mockEventReceiver), OnEvent(_)).Times(1);
+
+    mediaDemuxer_->HandleNotAllTrackEos(trackId);
+
+    EXPECT_TRUE(mediaDemuxer_->hlsSegmentEosMap_[trackId]);
+    EXPECT_FALSE(mediaDemuxer_->GetTrackIsBuffering(trackId));
+    EXPECT_FALSE(mediaDemuxer_->isBuffering_.load());
+}
+
+
+/**
+ * @tc.name  : MediaDemuxerExt_AfterSeekNeedDrop_001
+ * @tc.number: MediaDemuxerExt_AfterSeekNeedDrop_001
+ * @tc.desc  : Test non-mapping mode when pluginTemp is nullptr
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_AfterSeekNeedDrop_001, TestSize.Level1)
+{
+    int32_t trackId = NUM_0;
+    mediaDemuxer_->SetTrackSeekNeedDrop(trackId, true);
+    mediaDemuxer_->isFlvLiveStream_ = false;
+    mediaDemuxer_->subtitleTrackId_ = NUM_1;
+
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillOnce(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(mediaDemuxer_->subtitleTrackId_))
+        .WillOnce(Return(NEG_1));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetStreamIDByTrackID(trackId))
+        .WillOnce(Return(NUM_0));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetPluginByStreamID(NUM_0))
+        .WillOnce(Return(std::shared_ptr<Plugins::DemuxerPlugin>(nullptr)));
+
+    mediaDemuxer_->AfterSeekNeedDrop(trackId);
+    EXPECT_TRUE(mediaDemuxer_->GetTrackSeekNeedDrop(trackId));
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_HandleFrameDropForTrack_001
+ * @tc.number: MediaDemuxerExt_HandleFrameDropForTrack_001
+ * @tc.desc  : Test IsLocalFd() == true returns 0 and does not change frameCount
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleFrameDropForTrack_001, TestSize.Level1)
+{
+    int32_t trackId = NUM_0;
+    mediaDemuxer_->SetTrackNeedDropFrame(trackId, NUM_1);
+
+    auto source = std::static_pointer_cast<Source>(mediaDemuxer_->source_);
+    ASSERT_NE(source, nullptr);
+    EXPECT_CALL(*source, IsLocalFd()).WillOnce(Return(true));
+
+    auto result = mediaDemuxer_->HandleFrameDropForTrack(trackId);
+    EXPECT_EQ(result, 0);
+    EXPECT_EQ(mediaDemuxer_->GetTrackNeedDropFrame(trackId), static_cast<uint32_t>(NUM_1));
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_HandleFrameDropForTrack_002
+ * @tc.number: MediaDemuxerExt_HandleFrameDropForTrack_002
+ * @tc.desc  : Test non-mapping mode when ReadSampleToDrop returns error (plugin is nullptr)
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleFrameDropForTrack_002, TestSize.Level1)
+{
+    int32_t trackId = NUM_0;
+    mediaDemuxer_->SetTrackNeedDropFrame(trackId, NUM_1);
+
+    auto source = std::static_pointer_cast<Source>(mediaDemuxer_->source_);
+    ASSERT_NE(source, nullptr);
+    EXPECT_CALL(*source, IsLocalFd()).WillOnce(Return(false));
+
+    mediaDemuxer_->isFlvLiveStream_ = false;
+    mediaDemuxer_->subtitleTrackId_ = NUM_1;
+
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillOnce(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
+        GetTmpStreamIDByTrackID(mediaDemuxer_->subtitleTrackId_)).WillOnce(Return(NEG_1));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetStreamIDByTrackID(trackId)).WillOnce(Return(NUM_0));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetPluginByStreamID(NUM_0))
+        .WillOnce(Return(std::shared_ptr<Plugins::DemuxerPlugin>(nullptr)));
+
+    auto result = mediaDemuxer_->HandleFrameDropForTrack(trackId);
+    EXPECT_EQ(result, 0);
+    EXPECT_EQ(mediaDemuxer_->GetTrackNeedDropFrame(trackId), static_cast<uint32_t>(0));
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ResetSampleQueueStatus_001
+ * @tc.number: MediaDemuxerExt_ResetSampleQueueStatus_001
+ * @tc.desc  : Test video/audio track valid and in sampleQueueMap → reset both queues and set buffering
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ResetSampleQueueStatus_001, TestSize.Level1)
+{
+    int32_t videoTrackId = NUM_0;
+    int32_t audioTrackId = NUM_1;
+    mediaDemuxer_->videoTrackId_ = videoTrackId;
+    mediaDemuxer_->audioTrackId_ = audioTrackId;
+    auto mockVideoQueue = std::make_shared<SampleQueue>();
+    auto mockAudioQueue = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[videoTrackId] = mockVideoQueue;
+    mediaDemuxer_->sampleQueueMap_[audioTrackId] = mockAudioQueue;
+    int64_t seekTime = NUM_1000;
+    EXPECT_CALL(*mockVideoQueue, Clear()).WillOnce(Return(Status::OK));
+    EXPECT_CALL(*mockVideoQueue, UpdateLastOutSamplePts(_)).WillOnce(Return(Status::OK));
+    EXPECT_CALL(*mockVideoQueue, UpdateLastEnterSamplePts(_)).WillOnce(Return(Status::OK));
+    EXPECT_CALL(*mockAudioQueue, Clear()).WillOnce(Return(Status::OK));
+    EXPECT_CALL(*mockAudioQueue, UpdateLastOutSamplePts(_)).WillOnce(Return(Status::OK));
+    EXPECT_CALL(*mockAudioQueue, UpdateLastEnterSamplePts(_)).WillOnce(Return(Status::OK));
+    mediaDemuxer_->ResetSampleQueueStatus(seekTime);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ResetSampleQueueStatus_002
+ * @tc.number: MediaDemuxerExt_ResetSampleQueueStatus_002
+ * @tc.desc  : Test video track valid and in sampleQueueMap, audio track valid but not in map → reset only video queue
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ResetSampleQueueStatus_002, TestSize.Level1)
+{
+    int32_t videoTrackId = NUM_0;
+    int32_t audioTrackId = NUM_1;
+    mediaDemuxer_->videoTrackId_ = videoTrackId;
+    mediaDemuxer_->audioTrackId_ = audioTrackId;
+    auto mockVideoQueue = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[videoTrackId] = mockVideoQueue;
+    int64_t seekTime = NUM_1000;
+    EXPECT_CALL(*mockVideoQueue, Clear()).WillOnce(Return(Status::OK));
+    EXPECT_CALL(*mockVideoQueue, UpdateLastOutSamplePts(_)).WillOnce(Return(Status::OK));
+    EXPECT_CALL(*mockVideoQueue, UpdateLastEnterSamplePts(_)).WillOnce(Return(Status::OK));
+    mediaDemuxer_->ResetSampleQueueStatus(seekTime);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ResetSampleQueueStatus_003
+ * @tc.number: MediaDemuxerExt_ResetSampleQueueStatus_003
+ * @tc.desc  : Test video track valid and in sampleQueueMap, audio track invalid and not in map → reset only video queue
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ResetSampleQueueStatus_003, TestSize.Level1)
+{
+    int32_t videoTrackId = NUM_0;
+    int32_t audioTrackId = NEG_1;
+    mediaDemuxer_->videoTrackId_ = videoTrackId;
+    mediaDemuxer_->audioTrackId_ = audioTrackId;
+    auto mockVideoQueue = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[videoTrackId] = mockVideoQueue;
+    int64_t seekTime = NUM_1000;
+    EXPECT_CALL(*mockVideoQueue, Clear()).WillOnce(Return(Status::OK));
+    EXPECT_CALL(*mockVideoQueue, UpdateLastOutSamplePts(_)).WillOnce(Return(Status::OK));
+    EXPECT_CALL(*mockVideoQueue, UpdateLastEnterSamplePts(_)).WillOnce(Return(Status::OK));
+    mediaDemuxer_->ResetSampleQueueStatus(seekTime);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ResetSampleQueueStatus_004
+ * @tc.number: MediaDemuxerExt_ResetSampleQueueStatus_004
+ * @tc.desc  : Test video track valid and in sampleQueueMap, audio track invalid and not in map → reset only video queue
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ResetSampleQueueStatus_004, TestSize.Level1)
+{
+    int32_t videoTrackId = NEG_1;
+    int32_t audioTrackId = NUM_0;
+    mediaDemuxer_->videoTrackId_ = videoTrackId;
+    mediaDemuxer_->audioTrackId_ = audioTrackId;
+    auto mockAudioQueue  = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[audioTrackId] = mockAudioQueue;
+    int64_t seekTime = NUM_1000;
+    EXPECT_CALL(*mockAudioQueue, Clear()).WillOnce(Return(Status::OK));
+    EXPECT_CALL(*mockAudioQueue, UpdateLastOutSamplePts(_)).WillOnce(Return(Status::OK));
+    EXPECT_CALL(*mockAudioQueue, UpdateLastEnterSamplePts(_)).WillOnce(Return(Status::OK));
+    mediaDemuxer_->ResetSampleQueueStatus(seekTime);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ResetSampleQueueStatus_005
+ * @tc.number: MediaDemuxerExt_ResetSampleQueueStatus_005
+ * @tc.desc  : Test video/audio track invalid and not in sampleQueueMap → no queue reset and no buffering set
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ResetSampleQueueStatus_005, TestSize.Level1)
+{
+    int32_t videoTrackId = NEG_1;
+    int32_t audioTrackId = NEG_1;
+    mediaDemuxer_->videoTrackId_ = videoTrackId;
+    mediaDemuxer_->audioTrackId_ = audioTrackId;
+    int64_t seekTime = NUM_1000;
+    mediaDemuxer_->ResetSampleQueueStatus(seekTime);
+    EXPECT_EQ(mediaDemuxer_->sampleQueueMap_.size(), NUM_0);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SeekTo_001
+ * @tc.number: MediaDemuxerExt_SeekTo_001
+ * @tc.desc  : Test source_ != nullptr , mode=SEEK_CLOSEST_INNER, has subtitle, IsSeekToTimeSupported=true,
+ *             return Status::OK
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SeekTo_001, TestSize.Level1)
+{
+    mediaDemuxer_->source_ = std::make_shared<Source>();
+    mediaDemuxer_->subtitleSource_ = std::make_shared<Source>();
+    int64_t seekTime = NUM_1000;
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsSeekToTimeSupported()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SeekToTime(_, _)).WillRepeatedly(Return(Status::OK));
+    Plugins::SeekMode testMode = SeekMode::SEEK_CLOSEST_INNER;
+    int64_t testRealSeekTime;
+    EXPECT_EQ(mediaDemuxer_->SeekTo(seekTime, testMode, testRealSeekTime), Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SeekTo_002
+ * @tc.number: MediaDemuxerExt_SeekTo_002
+ * @tc.desc  : Test source_ != nullptr , mode != SEEK_CLOSEST_INNER, has subtitle, IsSeekToTimeSupported=true,
+ *             return Status::OK
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SeekTo_002, TestSize.Level1)
+{
+    mediaDemuxer_->source_ = std::make_shared<Source>();
+    int64_t seekTime = NUM_1000;
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsSeekToTimeSupported()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SeekToTime(_, _)).WillRepeatedly(Return(Status::OK));
+    Plugins::SeekMode testMode = SeekMode::SEEK_NEXT_SYNC;
+    int64_t testRealSeekTime;
+    EXPECT_EQ(mediaDemuxer_->SeekTo(seekTime, testMode, testRealSeekTime), Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SeekTo_003
+ * @tc.number: MediaDemuxerExt_SeekTo_003
+ * @tc.desc  : Test source_ != nullptr , mode != SEEK_CLOSEST_INNER, has subtitle, IsSeekToTimeSupported=false,
+ *             return Status::OK
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SeekTo_003, TestSize.Level1)
+{
+    mediaDemuxer_->source_ = std::make_shared<Source>();
+    int64_t seekTime = NUM_1000;
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsSeekToTimeSupported()).WillRepeatedly(Return(false));
+    int64_t testRealSeekTime;
+    auto sampleQueue = std::make_shared<SampleQueue>();
+    int32_t videoTrackId = NUM_0;
+    mediaDemuxer_->isVideoMuted_ = true;
+    mediaDemuxer_->needRestore_ = true;
+    mediaDemuxer_->videoTrackId_ = videoTrackId;
+    Plugins::SeekMode testMode = SeekMode::SEEK_NEXT_SYNC;
+    auto mockVideoQueue = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[videoTrackId] = mockVideoQueue;
+    EXPECT_EQ(mediaDemuxer_->SeekTo(seekTime, testMode, testRealSeekTime), Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest ProduceWaterLoopControl API
+ * @tc.number: MediaDemuxerExt_ProduceWaterLoopControl_001
+ * @tc.desc  : Test early return when sampleQueueController_ is nullptr
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ProduceWaterLoopControl_001, TestSize.Level1)
+{
+    int32_t trackId = NUM_0;
+    mediaDemuxer_->sampleQueueController_ = nullptr;
+
+    auto source = std::static_pointer_cast<Source>(mediaDemuxer_->source_);
+    ASSERT_NE(source, nullptr);
+    EXPECT_CALL(*source, IsLocalFd()).Times(0);
+
+    mediaDemuxer_->ProduceWaterLoopControl(trackId);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest ProduceWaterLoopControl API
+ * @tc.number: MediaDemuxerExt_ProduceWaterLoopControl_002
+ * @tc.desc  : Test path when StartConsume and ProduceWaterLoopControl both early return because video is muted
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ProduceWaterLoopControl_002, TestSize.Level1)
+{
+    int32_t trackId = NUM_0;
+    mediaDemuxer_->subtitleTrackId_ = NUM_1; // ensure trackId != subtitleTrackId_
+    mediaDemuxer_->videoTrackId_ = trackId;  // trackId is video track
+    mediaDemuxer_->enableSampleQueue_ = true;
+    mediaDemuxer_->isTranscoderMode_ = false;
+    mediaDemuxer_->isVideoMuted_ = true;     // make StartConsume and second if early-return
+
+    auto source = std::static_pointer_cast<Source>(mediaDemuxer_->source_);
+    ASSERT_NE(source, nullptr);
+    // make GetEnableSampleQueueFlag() true and IsLocalFd() false so first if is skipped
+    mediaDemuxer_->isAudioDemuxDecodeAsync_ = true;
+    EXPECT_CALL(*source, IsLocalFd()).WillOnce(Return(false));
+
+    mediaDemuxer_->ProduceWaterLoopControl(trackId);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest ProduceWaterLoopControl API
+ * @tc.number: MediaDemuxerExt_ProduceWaterLoopControl_003
+ * @tc.desc  : Test early return when IsLocalFd() is true
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ProduceWaterLoopControl_003, TestSize.Level1)
+{
+    int32_t trackId = NUM_0;
+    // keep sampleQueueController_ non-null, trackId != subtitleTrackId_, and enable sample queue
+    mediaDemuxer_->subtitleTrackId_ = NUM_1;
+    mediaDemuxer_->enableSampleQueue_ = true;
+    mediaDemuxer_->isTranscoderMode_ = false;
+    mediaDemuxer_->isAudioDemuxDecodeAsync_ = true;
+
+    auto source = std::static_pointer_cast<Source>(mediaDemuxer_->source_);
+    ASSERT_NE(source, nullptr);
+    EXPECT_CALL(*source, IsLocalFd()).WillOnce(Return(true));
+
+    mediaDemuxer_->ProduceWaterLoopControl(trackId);
+}
+
+/**
+ * @tc.name  : MediaDemuxer_CheckAndReportBufferingStatus_001
+ * @tc.number: MediaDemuxer_CheckAndReportBufferingStatus_001
+ * @tc.desc  : Test BUFFERING_END when isBuffering_ is false (no event, state unchanged)
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_CheckAndReportBufferingStatus_001, TestSize.Level1)
+{
+    mediaDemuxer_->isBuffering_.store(false);
+
+    auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
+    mediaDemuxer_->eventReceiver_ = mockEventReceiver;
+    EXPECT_CALL(*mockEventReceiver, OnEvent(_)).Times(0);
+
+    mediaDemuxer_->CheckAndReportBufferingStatus(EventType::BUFFERING_END);
+
+    EXPECT_FALSE(mediaDemuxer_->isBuffering_.load());
+}
+
+/**
+ * @tc.name  : MediaDemuxer_CheckAndReportBufferingStatus_002
+ * @tc.number: MediaDemuxer_CheckAndReportBufferingStatus_002
+ * @tc.desc  : Test BUFFERING_END when isBuffering_ is true (event sent, state to false)
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_CheckAndReportBufferingStatus_002, TestSize.Level1)
+{
+    mediaDemuxer_->isBuffering_.store(true);
+
+    auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
+    mediaDemuxer_->eventReceiver_ = mockEventReceiver;
+    EXPECT_CALL(*mockEventReceiver, OnEvent(_)).Times(1);
+
+    mediaDemuxer_->CheckAndReportBufferingStatus(EventType::BUFFERING_END);
+
+    EXPECT_FALSE(mediaDemuxer_->isBuffering_.load());
+}
+
+/**
+ * @tc.name  : MediaDemuxer_CheckAndReportBufferingStatus_003
+ * @tc.number: MediaDemuxer_CheckAndReportBufferingStatus_003
+ * @tc.desc  : Test BUFFERING_START when isBuffering_ is false (event sent, state to true)
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_CheckAndReportBufferingStatus_003, TestSize.Level1)
+{
+    mediaDemuxer_->isBuffering_.store(false);
+
+    auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
+    mediaDemuxer_->eventReceiver_ = mockEventReceiver;
+    EXPECT_CALL(*mockEventReceiver, OnEvent(_)).Times(1);
+
+    mediaDemuxer_->CheckAndReportBufferingStatus(EventType::BUFFERING_START);
+
+    EXPECT_TRUE(mediaDemuxer_->isBuffering_.load());
+}
+
+/**
+ * @tc.name  : MediaDemuxer_CheckAndReportBufferingStatus_004
+ * @tc.number: MediaDemuxer_CheckAndReportBufferingStatus_004
+ * @tc.desc  : Test BUFFERING_START when isBuffering_ is true (no event, state unchanged)
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_CheckAndReportBufferingStatus_004, TestSize.Level1)
+{
+    mediaDemuxer_->isBuffering_.store(true);
+
+    auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
+    mediaDemuxer_->eventReceiver_ = mockEventReceiver;
+    EXPECT_CALL(*mockEventReceiver, OnEvent(_)).Times(0);
+
+    mediaDemuxer_->CheckAndReportBufferingStatus(EventType::BUFFERING_START);
+
+    EXPECT_TRUE(mediaDemuxer_->isBuffering_.load());
+}
+
+/**
+ * @tc.name  : MediaDemuxer_CheckAndReportBufferingStatus_005
+ * @tc.number: MediaDemuxer_CheckAndReportBufferingStatus_005
+ * @tc.desc  : Test BUFFERING_END when isBuffering_ is true and eventReceiver_ is nullptr
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_CheckAndReportBufferingStatus_005, TestSize.Level1)
+{
+    mediaDemuxer_->isBuffering_.store(true);
+
+    mediaDemuxer_->eventReceiver_ = nullptr;
+
+    mediaDemuxer_->CheckAndReportBufferingStatus(EventType::BUFFERING_END);
+
+    EXPECT_FALSE(mediaDemuxer_->isBuffering_.load());
+}
+
+/**
+ * @tc.name  : MediaDemuxer_CheckAndReportBufferingStatus_006
+ * @tc.number: MediaDemuxer_CheckAndReportBufferingStatus_006
+ * @tc.desc  : Test BUFFERING_START when isBuffering_ is false and eventReceiver_ is nullptr
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_CheckAndReportBufferingStatus_006, TestSize.Level1)
+{
+    mediaDemuxer_->isBuffering_.store(false);
+
+    mediaDemuxer_->eventReceiver_ = nullptr;
+
+    mediaDemuxer_->CheckAndReportBufferingStatus(EventType::BUFFERING_START);
+
+    EXPECT_TRUE(mediaDemuxer_->isBuffering_.load());
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SeekToKeyFrame_001
+ * @tc.number: MediaDemuxerExt_SeekToKeyFrame_001
+ * @tc.desc  : Test source_ != nullptr , mode=SEEK_CLOSEST_INNER, has subtitle, IsSeekToTimeSupported=true,
+ *             return Status::OK
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SeekToKeyFrame_001, TestSize.Level1)
+{
+    mediaDemuxer_->source_ = std::make_shared<Source>();
+    mediaDemuxer_->subtitleSource_ = std::make_shared<Source>();
+    int64_t seekTime = NUM_1000;
+    mediaDemuxer_->isVideoMuted_ = false;
+    mediaDemuxer_->needRestore_ = true;
+    int32_t videoTrackId = NUM_0;
+    mediaDemuxer_->videoTrackId_ = videoTrackId;
+    auto mockVideoQueue = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[videoTrackId] = mockVideoQueue;
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsSeekToTimeSupported()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SeekToTime(_, _)).WillRepeatedly(Return(Status::OK));
+    Plugins::SeekMode testMode = SeekMode::SEEK_CLOSEST_INNER;
+    int64_t testRealSeekTime;
+    EXPECT_EQ(mediaDemuxer_->SeekToKeyFrame(seekTime, testMode, testRealSeekTime), Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SeekToKeyFrame_002
+ * @tc.number: MediaDemuxerExt_SeekToKeyFrame_002
+ * @tc.desc  : Test source_ != nullptr , mode=SEEK_CLOSEST_SYNC, has subtitle, IsSeekToTimeSupported=true,
+ *             return Status::OK
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SeekToKeyFrame_002, TestSize.Level1)
+{
+    mediaDemuxer_->source_ = std::make_shared<Source>();
+    mediaDemuxer_->subtitleSource_ = std::make_shared<Source>();
+    int64_t seekTime = NUM_1000;
+    mediaDemuxer_->isVideoMuted_ = true;
+    mediaDemuxer_->needRestore_ = false;
+    int32_t videoTrackId = NUM_1;
+    mediaDemuxer_->videoTrackId_ = videoTrackId;
+    auto mockVideoQueue = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[videoTrackId] = mockVideoQueue;
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsSeekToTimeSupported()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SeekToTime(_, _)).WillRepeatedly(Return(Status::OK));
+    Plugins::SeekMode testMode = SeekMode::SEEK_CLOSEST_SYNC;
+    int64_t testRealSeekTime;
+    EXPECT_EQ(mediaDemuxer_->SeekToKeyFrame(seekTime, testMode, testRealSeekTime), Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SeekToKeyFrame_003
+ * @tc.number: MediaDemuxerExt_SeekToKeyFrame_003
+ * @tc.desc  : Test source_ != nullptr , mode=SEEK_CLOSEST_INNER, has subtitle, IsSeekToTimeSupported=true,
+ *             return Status::OK, subtitleSource_ == nullptr
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SeekToKeyFrame_003, TestSize.Level1)
+{
+    mediaDemuxer_->source_ = std::make_shared<Source>();
+    mediaDemuxer_->subtitleSource_ = nullptr;
+    int64_t seekTime = NUM_1000;
+    mediaDemuxer_->isVideoMuted_ = true;
+    mediaDemuxer_->needRestore_ = true;
+    int32_t videoTrackId = NUM_1;
+    mediaDemuxer_->videoTrackId_ = videoTrackId;
+    auto mockVideoQueue = nullptr;
+    mediaDemuxer_->sampleQueueMap_[videoTrackId] = mockVideoQueue;
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsSeekToTimeSupported()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SeekToTime(_, _)).WillRepeatedly(Return(Status::OK));
+    Plugins::SeekMode testMode = SeekMode::SEEK_CLOSEST_INNER;
+    int64_t testRealSeekTime;
+    EXPECT_EQ(mediaDemuxer_->SeekToKeyFrame(seekTime, testMode, testRealSeekTime), Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SeekToKeyFrame_004
+ * @tc.number: MediaDemuxerExt_SeekToKeyFrame_004
+ * @tc.desc  : Test source_ != nullptr , mode=SEEK_CLOSEST_SYNC, has subtitle, IsSeekToTimeSupported=true,
+ *             return Status::OK, subtitleSource_ == nullptr
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SeekToKeyFrame_004, TestSize.Level1)
+{
+    mediaDemuxer_->source_ = std::make_shared<Source>();
+    mediaDemuxer_->subtitleSource_ = nullptr;
+    int64_t seekTime = NUM_1000;
+    mediaDemuxer_->isVideoMuted_ = false;
+    mediaDemuxer_->needRestore_ = false;
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsSeekToTimeSupported()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SeekToTime(_, _)).WillRepeatedly(Return(Status::OK));
+    Plugins::SeekMode testMode = SeekMode::SEEK_CLOSEST_SYNC;
+    int64_t testRealSeekTime;
+    EXPECT_EQ(mediaDemuxer_->SeekToKeyFrame(seekTime, testMode, testRealSeekTime), Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SeekToKeyFrame_005
+ * @tc.number: MediaDemuxerExt_SeekToKeyFrame_005
+ * @tc.desc  : Test source_ != nullptr , mode=SEEK_CLOSEST_SYNC, has subtitle, IsSeekToTimeSupported=true,
+ *             return Status::ERROR_WRONG_STATE, subtitleSource_ == nullptr
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SeekToKeyFrame_005, TestSize.Level1)
+{
+    mediaDemuxer_->source_ = std::make_shared<Source>();
+    mediaDemuxer_->subtitleSource_ = nullptr;
+    int64_t seekTime = NUM_1000;
+    mediaDemuxer_->isVideoMuted_ = false;
+    mediaDemuxer_->needRestore_ = false;
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsSeekToTimeSupported()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SeekToTime(_, _)).WillRepeatedly(Return(Status::ERROR_WRONG_STATE));
+    Plugins::SeekMode testMode = SeekMode::SEEK_CLOSEST_SYNC;
+    int64_t testRealSeekTime;
+    EXPECT_EQ(mediaDemuxer_->SeekToKeyFrame(seekTime, testMode, testRealSeekTime), Status::ERROR_WRONG_STATE);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SeekToKeyFrame_006
+ * @tc.number: MediaDemuxerExt_SeekToKeyFrame_006
+ * @tc.desc  : Test source_ == nullptr , mode=SEEK_CLOSEST_INNER, has subtitle, return Status::OK
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SeekToKeyFrame_006, TestSize.Level1)
+{
+    mediaDemuxer_->source_ = nullptr;
+    int64_t seekTime = NUM_1000;
+    mediaDemuxer_->isVideoMuted_ = false;
+    mediaDemuxer_->needRestore_ = true;
+    int32_t videoTrackId = NUM_0;
+    mediaDemuxer_->videoTrackId_ = videoTrackId;
+    auto mockVideoQueue = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[videoTrackId] = mockVideoQueue;
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), SeekToKeyFrame(_, _, _)).WillRepeatedly(Return(Status::OK));
+    Plugins::SeekMode testMode = SeekMode::SEEK_CLOSEST_INNER;
+    int64_t testRealSeekTime;
+    EXPECT_EQ(mediaDemuxer_->SeekToKeyFrame(seekTime, testMode, testRealSeekTime), Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SeekToKeyFrame_007
+ * @tc.number: MediaDemuxerExt_SeekToKeyFrame_007
+ * @tc.desc  : Test source_ == nullptr , mode=SEEK_CLOSEST_SYNC, has subtitle, return Status::OK
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SeekToKeyFrame_007, TestSize.Level1)
+{
+    mediaDemuxer_->source_ = nullptr;
+    int64_t seekTime = NUM_1000;
+    mediaDemuxer_->isVideoMuted_ = true;
+    mediaDemuxer_->needRestore_ = true;
+    int32_t videoTrackId = NUM_0;
+    mediaDemuxer_->videoTrackId_ = videoTrackId;
+    auto mockVideoQueue = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[videoTrackId] = mockVideoQueue;
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), SeekToKeyFrame(_, _, _)).WillRepeatedly(Return(Status::OK));
+    Plugins::SeekMode testMode = SeekMode::SEEK_CLOSEST_SYNC;
+    int64_t testRealSeekTime;
+    EXPECT_EQ(mediaDemuxer_->SeekToKeyFrame(seekTime, testMode, testRealSeekTime), Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SeekToKeyFrame_008
+ * @tc.number: MediaDemuxerExt_SeekToKeyFrame_008
+ * @tc.desc  : Test source_ != nullptr , mode=SEEK_CLOSEST_SYNC, has subtitle, IsSeekToTimeSupported=false,
+ *             return Status::OK
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SeekToKeyFrame_008, TestSize.Level1)
+{
+    mediaDemuxer_->source_ = std::make_shared<Source>();;
+    int64_t seekTime = NUM_1000;
+    mediaDemuxer_->isVideoMuted_ = true;
+    int32_t videoTrackId = NUM_0;
+    mediaDemuxer_->videoTrackId_ = videoTrackId;
+    auto mockVideoQueue = nullptr;
+    mediaDemuxer_->sampleQueueMap_[videoTrackId] = mockVideoQueue;
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsSeekToTimeSupported()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), SeekToKeyFrame(_, _, _)).WillRepeatedly(Return(Status::OK));
+    Plugins::SeekMode testMode = SeekMode::SEEK_CLOSEST_SYNC;
+    int64_t testRealSeekTime;
+    EXPECT_EQ(mediaDemuxer_->SeekToKeyFrame(seekTime, testMode, testRealSeekTime), Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SeekToKeyFrame_009
+ * @tc.number: MediaDemuxerExt_SeekToKeyFrame_009
+ * @tc.desc  : Test source_ != nullptr , mode=SEEK_CLOSEST_SYNC, has subtitle, IsSeekToTimeSupported=false,
+ *             return Status::ERROR_WRONG_STATE
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SeekToKeyFrame_009, TestSize.Level1)
+{
+    mediaDemuxer_->source_ = std::make_shared<Source>();;
+    int64_t seekTime = NUM_1000;
+    mediaDemuxer_->isVideoMuted_ = false;
+    mediaDemuxer_->needRestore_ = false;
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsSeekToTimeSupported()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), SeekToKeyFrame(_, _, _)).
+        WillRepeatedly(Return(Status::ERROR_WRONG_STATE));
+    Plugins::SeekMode testMode = SeekMode::SEEK_CLOSEST_SYNC;
+    int64_t testRealSeekTime;
+    EXPECT_EQ(mediaDemuxer_->SeekToKeyFrame(seekTime, testMode, testRealSeekTime), Status::ERROR_WRONG_STATE);
+}
+
+/**
+ * @tc.name  : MediaDemuxer_HandleSeek_001
+ * @tc.number: MediaDemuxer_HandleSeek_001
+ * @tc.desc  : Outer if condition false because source_ is nullptr
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleSeek_001, TestSize.Level1)
+{
+    int32_t trackId = NUM_0;
+    mediaDemuxer_->source_ = nullptr;
+    mediaDemuxer_->isSeeked_ = true;
+    mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->HandleSeek(trackId);
+
+    EXPECT_TRUE(mediaDemuxer_->isSeeked_);
+}
+
+/**
+ * @tc.name  : MediaDemuxer_HandleSeek_002
+ * @tc.number: MediaDemuxer_HandleSeek_002
+ * @tc.desc  : Outer if true, inner (trackId == videoTrackId_) is false → inner block skipped
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleSeek_002, TestSize.Level1)
+{
+    int32_t trackId = NUM_0;
+    mediaDemuxer_->videoTrackId_ = NUM_1; // trackId != videoTrackId_
+    mediaDemuxer_->isSeeked_ = true;
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsSeekToTimeSupported())
+        .WillOnce(Return(true));
+
+    mediaDemuxer_->HandleSeek(trackId);
+
+    EXPECT_FALSE(mediaDemuxer_->isSeeked_);
+}
+
+/**
+ * @tc.name  : MediaDemuxer_HandleSeek_003
+ * @tc.number: MediaDemuxer_HandleSeek_003
+ * @tc.desc  : Outer if true, trackId == videoTrackId_ but isFirstFrameAfterSeek_ is false → inner block skipped
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleSeek_003, TestSize.Level1)
+{
+    int32_t trackId = NUM_1;
+    mediaDemuxer_->videoTrackId_ = NUM_1;
+    mediaDemuxer_->isSeeked_ = true;
+    mediaDemuxer_->isFirstFrameAfterSeek_.store(false);
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsSeekToTimeSupported())
+        .WillOnce(Return(true));
+
+    mediaDemuxer_->HandleSeek(trackId);
+
+    EXPECT_FALSE(mediaDemuxer_->isSeeked_);
+    EXPECT_FALSE(mediaDemuxer_->isFirstFrameAfterSeek_.load());
+}
+
+/**
+ * @tc.name  : MediaDemuxer_HandleSeek_004
+ * @tc.number: MediaDemuxer_HandleSeek_004
+ * @tc.desc  : Outer if true, first frame after seek is sync frame → no error log branch, flag cleared
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleSeek_004, TestSize.Level1)
+{
+    int32_t trackId = NUM_1;
+    mediaDemuxer_->videoTrackId_ = NUM_1;
+    mediaDemuxer_->isSeeked_ = true;
+    mediaDemuxer_->isFirstFrameAfterSeek_.store(true);
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsSeekToTimeSupported())
+        .WillOnce(Return(true));
+    auto buffer = std::make_shared<AVBuffer>();
+    buffer->flag_ = static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME);
+    mediaDemuxer_->bufferMap_[trackId] = buffer;
+
+    mediaDemuxer_->HandleSeek(trackId);
+    EXPECT_FALSE(mediaDemuxer_->isFirstFrameAfterSeek_.load());
+    EXPECT_FALSE(mediaDemuxer_->isSeeked_);
+}
+
+/**
+ * @tc.name  : MediaDemuxer_HandleSeek_005
+ * @tc.number: MediaDemuxer_HandleSeek_005
+ * @tc.desc  : Outer if true, first frame after seek is not sync frame → error branch executed, flag cleared
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleSeek_005, TestSize.Level1)
+{
+    int32_t trackId = NUM_1;
+    mediaDemuxer_->videoTrackId_ = NUM_1;
+    mediaDemuxer_->isSeeked_ = true;
+    mediaDemuxer_->isFirstFrameAfterSeek_.store(true);
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsSeekToTimeSupported())
+        .WillOnce(Return(true));
+    auto buffer = std::make_shared<AVBuffer>();
+    buffer->flag_ = 0;
+    mediaDemuxer_->bufferMap_[trackId] = buffer;
+
+    mediaDemuxer_->HandleSeek(trackId);
+
+    EXPECT_FALSE(mediaDemuxer_->isFirstFrameAfterSeek_.load());
+    EXPECT_FALSE(mediaDemuxer_->isSeeked_);
+}
+
+/**
+ * @tc.name  : Test TranscoderUpdateOutputBufferPts
+ * @tc.number: TranscoderUpdateOutputBufferPts_005
+ * @tc.desc  : transcoderStartPts_ > 0 && outputBuffer != nullptr → pts_ reduced
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, TranscoderUpdateOutputBufferPts_005, TestSize.Level1)
+{
+    std::shared_ptr<AVBuffer> outputBuffer = std::make_shared<AVBuffer>();
+    outputBuffer->pts_ = NUM_1000; // initial pts
+
+    mediaDemuxer_->isTranscoderMode_ = true;
+    mediaDemuxer_->transcoderStartPts_ = NUM_1;
+
+    mediaDemuxer_->TranscoderUpdateOutputBufferPts(NUM_1, outputBuffer);
+    EXPECT_EQ(outputBuffer->pts_, NUM_1000 - NUM_1);
+}
+
+/**
+ * @tc.name: MediaDemuxerExt_HandleVideoTrack_003
+ * @tc.desc: isVideoMuted_ is false → outer if not entered, decoder not released
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoTrack_003, TestSize.Level1)
+{
+    mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->audioTrackId_ = NUM_1;
+
+    std::shared_ptr<AVBuffer> videoSample = std::make_shared<AVBuffer>();
+    videoSample->pts_ = NUM_0;
+    videoSample->flag_ = static_cast<uint32_t>(Plugins::AVBufferFlag::SYNC_FRAME);
+    mediaDemuxer_->bufferMap_[NUM_0] = videoSample;
+    mediaDemuxer_->sampleQueueMap_[NUM_0] = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[NUM_1] = std::make_shared<SampleQueue>();
+    mediaDemuxer_->isVideoMuted_ = false;
+    mediaDemuxer_->needReleaseVideoDecoder_ = true;
+    mediaDemuxer_->hasSetLargeSize_ = false;
+    auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
+    mediaDemuxer_->eventReceiver_ = mockEventReceiver;
+    EXPECT_CALL(*mockEventReceiver, OnEvent(_)).Times(0);
+
+    mediaDemuxer_->HandleVideoTrack(NUM_0);
+
+    EXPECT_TRUE(mediaDemuxer_->needReleaseVideoDecoder_);
+    EXPECT_FALSE(mediaDemuxer_->hasSetLargeSize_);
+    EXPECT_EQ(mediaDemuxer_->lastVideoPts_, videoSample->pts_);
+}
+
+/**
+ * @tc.name: MediaDemuxerExt_HandleVideoTrack_004
+ * @tc.desc: Non-sync frame while muted → outer if not entered, decoder not released
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoTrack_004, TestSize.Level1)
+{
+    mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->audioTrackId_ = NUM_1;
+    std::shared_ptr<AVBuffer> videoSample = std::make_shared<AVBuffer>();
+    videoSample->pts_ = NUM_0;
+    videoSample->flag_ = 0;
+    mediaDemuxer_->bufferMap_[NUM_0] = videoSample;
+    mediaDemuxer_->sampleQueueMap_[NUM_0] = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[NUM_1] = std::make_shared<SampleQueue>();
+    mediaDemuxer_->isVideoMuted_ = true;
+    mediaDemuxer_->needReleaseVideoDecoder_ = true;
+    mediaDemuxer_->hasSetLargeSize_ = false;
+    auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
+    mediaDemuxer_->eventReceiver_ = mockEventReceiver;
+    EXPECT_CALL(*mockEventReceiver, OnEvent(_)).Times(0);
+
+    mediaDemuxer_->HandleVideoTrack(NUM_0);
+
+    EXPECT_TRUE(mediaDemuxer_->needReleaseVideoDecoder_);
+    EXPECT_FALSE(mediaDemuxer_->hasSetLargeSize_);
+    EXPECT_EQ(mediaDemuxer_->lastVideoPts_, videoSample->pts_);
+}
+
+/**
+ * @tc.name: MediaDemuxerExt_HandleVideoTrack_005
+ * @tc.desc: needReleaseVideoDecoder_ is false → decoder-release block skipped, only pts update path
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoTrack_005, TestSize.Level1)
+{
+    mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->audioTrackId_ = NUM_1;
+    std::shared_ptr<AVBuffer> videoSample = std::make_shared<AVBuffer>();
+    videoSample->pts_ = NUM_0;
+    videoSample->flag_ = static_cast<uint32_t>(Plugins::AVBufferFlag::SYNC_FRAME);
+    mediaDemuxer_->bufferMap_[NUM_0] = videoSample;
+    mediaDemuxer_->sampleQueueMap_[NUM_0] = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[NUM_1] = std::make_shared<SampleQueue>();
+    mediaDemuxer_->isVideoMuted_ = true;
+    mediaDemuxer_->needReleaseVideoDecoder_ = false;
+    mediaDemuxer_->hasSetLargeSize_ = false;
+    auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
+    mediaDemuxer_->eventReceiver_ = mockEventReceiver;
+    EXPECT_CALL(*mockEventReceiver, OnEvent(_)).Times(0);
+
+    mediaDemuxer_->HandleVideoTrack(NUM_0);
+
+    EXPECT_FALSE(mediaDemuxer_->needReleaseVideoDecoder_);
+    EXPECT_FALSE(mediaDemuxer_->hasSetLargeSize_);
+    EXPECT_EQ(mediaDemuxer_->lastVideoPts_, videoSample->pts_);
+}
+
+/**
+ * @tc.name: MediaDemuxerExt_HandleVideoTrack_006
+ * @tc.desc: sampleConsumerTaskMap_ has key but nullptr value → C2 false branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoTrack_006, TestSize.Level1)
+{
+    mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->audioTrackId_ = NUM_1;
+    std::shared_ptr<AVBuffer> videoSample = std::make_shared<AVBuffer>();
+    videoSample->pts_ = NUM_0;
+    videoSample->flag_ = static_cast<uint32_t>(Plugins::AVBufferFlag::SYNC_FRAME);
+    mediaDemuxer_->bufferMap_[NUM_0] = videoSample;
+    mediaDemuxer_->sampleQueueMap_[NUM_0] = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[NUM_1] = std::make_shared<SampleQueue>();
+    mediaDemuxer_->isVideoMuted_ = true;
+    mediaDemuxer_->needReleaseVideoDecoder_ = true;
+    mediaDemuxer_->hasSetLargeSize_ = false;
+    auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
+    mediaDemuxer_->eventReceiver_ = mockEventReceiver;
+    EXPECT_CALL(*mockEventReceiver, OnEvent(_)).Times(1);
+    std::unique_ptr<MockTask> nullTask;
+    mediaDemuxer_->sampleConsumerTaskMap_[NUM_0] = std::move(nullTask);
+
+    mediaDemuxer_->HandleVideoTrack(NUM_0);
+
+    EXPECT_FALSE(mediaDemuxer_->needReleaseVideoDecoder_);
+    EXPECT_TRUE(mediaDemuxer_->hasSetLargeSize_);
+    EXPECT_EQ(mediaDemuxer_->lastVideoPts_, videoSample->pts_);
+}
+
+/**
+ * @tc.name: MediaDemuxerExt_HandleVideoTrack_007
+ * @tc.desc: pts_ > lastOutSamplePts_ → F false branch (no clear)
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoTrack_007, TestSize.Level1)
+{
+    mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->audioTrackId_ = NUM_1;
+    std::shared_ptr<AVBuffer> videoSample = std::make_shared<AVBuffer>();
+    videoSample->pts_ = NUM_1000;
+    videoSample->flag_ = static_cast<uint32_t>(Plugins::AVBufferFlag::SYNC_FRAME);
+    mediaDemuxer_->bufferMap_[NUM_0] = videoSample;
+    auto videoQueue = std::make_shared<SampleQueue>();
+    auto audioQueue = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[NUM_0] = videoQueue;
+    mediaDemuxer_->sampleQueueMap_[NUM_1] = audioQueue;
+    mediaDemuxer_->isVideoMuted_ = true;
+    mediaDemuxer_->needReleaseVideoDecoder_ = false;
+    mediaDemuxer_->hasSetLargeSize_ = false;
+    auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
+    mediaDemuxer_->eventReceiver_ = mockEventReceiver;
+    EXPECT_CALL(*mockEventReceiver, OnEvent(_)).Times(0);
+    EXPECT_CALL(*audioQueue, GetLastOutSamplePts())
+        .WillOnce(Return(static_cast<int64_t>(NUM_0)));
+    EXPECT_CALL(*videoQueue, Clear()).Times(0);
+
+    mediaDemuxer_->HandleVideoTrack(NUM_0);
+
+    EXPECT_EQ(mediaDemuxer_->lastVideoPts_, videoSample->pts_);
 }
 }  // namespace OHOS::Media
