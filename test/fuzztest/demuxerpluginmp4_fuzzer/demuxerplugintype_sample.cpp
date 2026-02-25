@@ -35,6 +35,8 @@ using namespace OHOS::Media::Plugins::Ffmpeg;
 namespace OHOS {
 namespace Media {
 constexpr uint32_t THREE = 3;
+uint32_t g_initialFrameCount = 0;
+uint32_t g_initialCacheSize = 0;
 DemuxerPluginTypeTest::DemuxerPluginTypeTest() = default;
 
 DemuxerPluginTypeTest::~DemuxerPluginTypeTest()
@@ -108,7 +110,7 @@ void DemuxerPluginTypeTest::PrepareDemuxerPlugin(MediaInfo& mediaInfo, size_t& b
         }
     }
     bufferSize = width * height * 3; // 3 bytes per pixel (RGB)
-    buffer = AVBufferWrapper(bufferSize);
+    buffer = AVBufferWrapper(bufferSize, isEmptyBuffer);
 }
 
 void DemuxerPluginTypeTest::OperateDemuxerPlugin(MediaInfo& mediaInfo, size_t bufferSize, AVBufferWrapper& buffer)
@@ -124,8 +126,13 @@ void DemuxerPluginTypeTest::OperateDemuxerPlugin(MediaInfo& mediaInfo, size_t bu
     }
     demuxerPlugin_->SeekToStart();
     for (uint32_t idx = 0; idx < mediaInfo.tracks.size(); ++idx) {
-        demuxerPlugin_->ReadSample(idx, buffer.mediaAVBuffer, interfaceTimeout_);
-        demuxerPlugin_->ReadSample(idx, buffer.mediaAVBuffer);
+        if (!isEmptyBuffer) {
+            demuxerPlugin_->ReadSample(idx, buffer.mediaAVBuffer, interfaceTimeout_);
+            demuxerPlugin_->ReadSample(idx, buffer.mediaAVBuffer);
+        } else {
+            demuxerPlugin_->ReadSampleZeroCopy(idx, buffer.mediaAVBuffer, interfaceTimeout_);
+        }
+
         int32_t nextSampleSize = 0;
         int64_t pts = 0;
         demuxerPlugin_->GetNextSampleSize(idx, nextSampleSize, interfaceTimeout_);
@@ -143,10 +150,35 @@ void DemuxerPluginTypeTest::OperateDemuxerPlugin(MediaInfo& mediaInfo, size_t bu
 void DemuxerPluginTypeTest::DemuxerPlugintask(MediaInfo& mediaInfo, AVBufferWrapper& buffer)
 {
     for (uint32_t idx = 0; idx < mediaInfo.tracks.size(); ++idx) {
-        demuxerPlugin_->ReadSample(idx, buffer.mediaAVBuffer, interfaceTimeout_);
+        if (!isEmptyBuffer) {
+            demuxerPlugin_->ReadSample(idx, buffer.mediaAVBuffer, interfaceTimeout_);
+        } else {
+            demuxerPlugin_->ReadSampleZeroCopy(idx, buffer.mediaAVBuffer, interfaceTimeout_);
+        }
     }
     int64_t seekTime = 0;
     demuxerPlugin_->SeekTo(0, seekTimeDefault_, SeekMode::SEEK_PREVIOUS_SYNC, seekTime);
+}
+
+void DemuxerPluginTypeTest::CallbackThreadFun(uint32_t trackId, uint32_t bytes)
+{
+    demuxerPlugin_->GetCurrentCacheFrameCount(trackId, g_initialFrameCount);
+    demuxerPlugin_->GetCurrentCacheSize(trackId, g_initialCacheSize);
+}
+
+void DemuxerPluginTypeTest::DemuxerPluginCallback(MediaInfo& mediaInfo)
+{
+    demuxerPlugin_->SetCachePressureCallback([this](uint32_t trackId, uint32_t bytes) {
+        std::thread t(&DemuxerPluginTypeTest::CallbackThreadFun, this, trackId, bytes);
+        t.join();
+    });
+    for (uint32_t idx = 0; idx < mediaInfo.tracks.size(); ++idx) {
+        int64_t seekDts = 0;
+        int64_t realSeekTime = 0;
+        uint32_t limitBytes = 1024;
+        demuxerPlugin_->SeekToFrameByDts(idx, seekDts, SeekMode::SEEK_CLOSEST, realSeekTime, interfaceTimeout_);
+        demuxerPlugin_->SetTrackCacheLimit(idx, limitBytes, interfaceTimeout_);
+    }
 }
 
 void DemuxerPluginTypeTest::RunDemuxerInterfaceFuzz()
@@ -156,7 +188,7 @@ void DemuxerPluginTypeTest::RunDemuxerInterfaceFuzz()
     }
     MediaInfo mediaInfo;
     size_t bufferSize = 0;
-    AVBufferWrapper buffer(1); // 占位初始化
+    AVBufferWrapper buffer(1, isEmptyBuffer); // 占位初始化
     PrepareDemuxerPlugin(mediaInfo, bufferSize, buffer);
     if (!demuxerPlugin_) {
         return;
@@ -169,14 +201,15 @@ void DemuxerPluginTypeTest::RunDemuxerInterfaceFuzz()
     for (uint32_t idx = 0; idx < mediaInfo.tracks.size(); ++idx) {
         demuxerPlugin_->SelectTrack(idx);
     }
+    DemuxerPluginCallback(mediaInfo);
     std::thread readPluginThread1([mediaInfo, this]() {
         MediaInfo Info = mediaInfo;
-        AVBufferWrapper buf(videoWidthDefault_ * videoHeightDefault_ * THREE);
+        AVBufferWrapper buf(videoWidthDefault_ * videoHeightDefault_ * THREE, isEmptyBuffer);
         DemuxerPlugintask(Info, buf);
     });
     std::thread readPluginThread2([mediaInfo, this]() {
         MediaInfo Info1 = mediaInfo;
-        AVBufferWrapper buf1(videoWidthDefault_ * videoHeightDefault_ * THREE);
+        AVBufferWrapper buf1(videoWidthDefault_ * videoHeightDefault_ * THREE, isEmptyBuffer);
         DemuxerPlugintask(Info1, buf1);
     });
     readPluginThread1.join();
