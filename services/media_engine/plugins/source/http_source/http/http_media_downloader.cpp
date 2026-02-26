@@ -368,10 +368,13 @@ bool HttpMediaDownloader::StartBufferingCheck(unsigned int& wantReadLength)
 {
     AutoLock lk(savedataMutex_);
     if (!isFirstFrameArrived_ || IsStartDurationOfFlvMultiStream()) {
+        wantReadLength =
+            std::min(static_cast<uint32_t>(totalBufferSize_ * WATER_LINE_ABOVE_LIMIT_RATIO), wantReadLength);
         if (GetCurrentBufferSize() >= wantReadLength || HandleBreak()) {
             return false;
         } else {
             waterLineAbove_ = wantReadLength;
+            MEDIA_LOG_I("HTTP StartBufferingCheck, set waterline: " PUBLIC_LOG_U32, wantReadLength);
             return true;
         }
     }
