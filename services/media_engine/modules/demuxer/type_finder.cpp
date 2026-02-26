@@ -36,6 +36,7 @@ namespace {
 
 const int32_t WAIT_TIME = 5;
 const uint32_t DEFAULT_SNIFF_SIZE = 4096 * 4;
+constexpr int32_t MAX_TRY_TIMES = 4;
 
 void ToLower(std::string& str)
 {
@@ -165,7 +166,15 @@ std::string TypeFinder::SniffMediaType()
     auto bufData = buffer->WrapMemory(buff.data(), DEFAULT_SNIFF_SIZE, DEFAULT_SNIFF_SIZE);
     FALSE_RETURN_V_MSG_E(
         buffer->GetMemory() != nullptr, "", "Alloc failed, sniffSize " PUBLIC_LOG_U32, DEFAULT_SNIFF_SIZE);
-    Status ret = dataSource->ReadAt(0, buffer, DEFAULT_SNIFF_SIZE);
+    int try_cnt = 0;
+    Status ret = Status::OK;
+    while (try_cnt < MAX_TRY_TIMES) {
+        ret = dataSource->ReadAt(0, buffer, DEFAULT_SNIFF_SIZE);
+        if (ret != Status::ERROR_AGAIN) {
+            break;
+        }
+        ++try_cnt;
+    }
     size_t getDataSize = buffer->GetMemory()->GetSize();
     FALSE_RETURN_V_MSG_E(ret == Status::OK && getDataSize > 0, "", "Not data for sniff " PUBLIC_LOG_ZU, getDataSize);
     pluginName = Plugins::PluginManagerV2::Instance().SnifferPlugin(PluginType::DEMUXER, dataSource);
