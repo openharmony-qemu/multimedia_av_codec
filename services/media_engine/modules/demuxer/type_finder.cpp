@@ -166,7 +166,7 @@ std::string TypeFinder::SniffMediaType()
     auto bufData = buffer->WrapMemory(buff.data(), DEFAULT_SNIFF_SIZE, DEFAULT_SNIFF_SIZE);
     FALSE_RETURN_V_MSG_E(
         buffer->GetMemory() != nullptr, "", "Alloc failed, sniffSize " PUBLIC_LOG_U32, DEFAULT_SNIFF_SIZE);
-    int tryCnt = 0;
+    int32_t tryCnt = 0;
     Status ret = Status::OK;
     size_t getDataSize = 0;
     while (tryCnt < MAX_TRY_TIMES) {
@@ -177,7 +177,7 @@ std::string TypeFinder::SniffMediaType()
             break;
         }
         MEDIA_LOG_D("SniffMediaType ReadAt failed, tryCnt: " PUBLIC_LOG_D32 " ret " PUBLIC_LOG_D32
-            " got size: " PUBLIC_LOG_ZU, tryCnt, ret, buffer->GetMemory()->GetSize());
+            " got size: " PUBLIC_LOG_ZU, tryCnt, ret, getDataSize);
         ++tryCnt;
     }
     FALSE_RETURN_V_MSG_E(ret == Status::OK && getDataSize > 0, "", "Not data for sniff " PUBLIC_LOG_ZU, getDataSize);
