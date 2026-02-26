@@ -1183,7 +1183,7 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_ANOTHER_0010, TestSize.Level2)
         
         ASSERT_EQ(AV_ERR_OK, vDecSample2->CreateVideoDecoder(g_codecNameAvc));
         ASSERT_EQ(AV_ERR_OK, vDecSample2->ConfigureVideoDecoder());
-        ASSERT_EQ(AV_ERR_OK, vDecSample2->SetAnotherSurface(vDecSample->nativeWindows[0]));
+        ASSERT_EQ(AV_ERR_OK, vDecSample2->SetAnotherSurface(vDecSample->nativeWindows));
         ASSERT_EQ(AV_ERR_OK, vDecSample2->SetVideoDecoderCallback());
         ASSERT_EQ(AV_ERR_OK, vDecSample2->StartVideoDecoder());
 

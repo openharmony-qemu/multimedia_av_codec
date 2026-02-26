@@ -58,7 +58,6 @@ public:
     int32_t RunVideoDec(std::string codeName = "");
     const char *INP_DIR = "/data/test/media/1920_1080_10_30Mb.h264";
     const char *OUT_DIR = "/data/test/media/VDecTest.yuv";
-    const char *OUT_DIR2 = "/data/test/media/VDecTest2.yuv";
     bool SURFACE_OUTPUT = false;
     uint32_t DEFAULT_WIDTH = 1920;
     uint32_t DEFAULT_HEIGHT = 1080;
@@ -122,9 +121,8 @@ public:
     int64_t end_time = 0;
     bool setParameters = false;
     bool checkOutPut = true;
-    bool autoSwitchSurface = false;
     OH_AVCodec *vdec_;
-    OHNativeWindow *nativeWindows[2] = {};
+    OHNativeWindow *nativeWindows = nullptr;
 
 private:
     std::atomic<bool> isRunning_ { false };
@@ -137,8 +135,6 @@ private:
     int64_t timeStamp_ { 0 };
     int64_t lastRenderedTimeUs_ { 0 };
     bool isFirstFrame_ = true;
-    sptr<Surface> cs_[2] = {};
-    sptr<Surface> ps_[2] = {};
 };
 } // namespace Media
 } // namespace OHOS
