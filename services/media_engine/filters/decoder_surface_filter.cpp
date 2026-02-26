@@ -1136,7 +1136,8 @@ void DecoderSurfaceFilter::RenderNextOutput(uint32_t index, std::shared_ptr<AVBu
     int64_t waitTime = CalculateNextRender(index, outputBuffer, actionClock);
     if (waitTime >= 0 && !isInSeekContinous_ && outputBuffer->pts_ >= 0
         && !(outputBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS)
-        && (playRangeEndTime_ == PLAY_RANGE_DEFAULT_VALUE || outputBuffer->pts_ <= playRangeEndTime_ * MICROSECONDS_CONVERT_UNIT)) {
+        && (playRangeEndTime_ == PLAY_RANGE_DEFAULT_VALUE
+        || outputBuffer->pts_ <= playRangeEndTime_ * MICROSECONDS_CONVERT_UNIT)) {
         videoSink_->SetLastPts(outputBuffer->pts_, waitTime);
     }
     if (enableRenderAtTime_) {
