@@ -149,7 +149,7 @@ void RbspContext::RbspSkipBits(int32_t size)
 
 uint8_t RbspContext::RbspGetBit()
 {
-    if (byteIndex_ >= size_) {
+    if (byteIndex_ >= size_ || byteIndex_ < 0) {
         MEDIA_LOG_W("RbspGetBit out of index (%{public}d, %{public}d), return 0", byteIndex_, size_);
         return 0;
     }
