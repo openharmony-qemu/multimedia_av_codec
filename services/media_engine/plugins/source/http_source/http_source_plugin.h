@@ -25,7 +25,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-class HttpSourcePlugin : public SourcePlugin {
+class __attribute__((visibility("default"))) HttpSourcePlugin : public SourcePlugin {
 public:
     explicit HttpSourcePlugin(const std::string &name) noexcept;
     ~HttpSourcePlugin() override;
