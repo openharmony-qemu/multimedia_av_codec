@@ -211,9 +211,8 @@ Status FFmpegAACEncoderPlugin::Init()
     return Status::OK;
 }
 
-Status FFmpegAACEncoderPlugin::Start()
+Status FFmpegAACEncoderPlugin::CreateCtxAndFifo()
 {
-    MEDIA_LOG_I("Start enter");
     Status status = AllocateContext("aac");
     CHECK_AND_RETURN_RET_LOG(status == Status::OK, status, "Allocat aac context failed, status = %{public}d", status);
 
@@ -227,7 +226,16 @@ Status FFmpegAACEncoderPlugin::Start()
 
     status = InitFrame();
     CHECK_AND_RETURN_RET_LOG(status == Status::OK, status, "Init frame failed, status = %{public}d", status);
+    isCreateCxtAndFifo_ = true;
+    return Status::OK;
+}
 
+Status FFmpegAACEncoderPlugin::Start()
+{
+    MEDIA_LOG_I("Start enter");
+    CHECK_AND_RETURN_RET_LOGD(!isCreateCxtAndFifo_, Status::OK, "context and fifo already created");
+    Status status = CreateCtxAndFifo();
+    CHECK_AND_RETURN_RET_LOG(status == Status::OK, status, "Start CreateCtxAndFifo failed!");
     return Status::OK;
 }
 
@@ -647,6 +655,14 @@ Status FFmpegAACEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &meta)
     }
     audioParameter_ = *meta;
     audioParameter_.Set<Tag::AUDIO_SAMPLE_PER_FRAME>(AAC_FRAME_SIZE);
+
+    CHECK_AND_RETURN_RET_LOGD(!isCreateCxtAndFifo_, ret, "context and fifo already created");
+    CHECK_AND_RETURN_RET_LOG(CreateCtxAndFifo() == Status::OK, ret, "SetParameter CreateCtxAndFifo failed!");
+    if (avCodecContext_ != nullptr && avCodecContext_->extradata != nullptr && avCodecContext_->extradata_size > 0) {
+        std::vector<uint8_t> codecConfig(
+            avCodecContext_->extradata, avCodecContext_->extradata + avCodecContext_->extradata_size);
+        audioParameter_.Set<Tag::MEDIA_CODEC_CONFIG>(codecConfig);
+    }
     return ret;
 }
 
@@ -851,6 +867,7 @@ Status FFmpegAACEncoderPlugin::CloseCtxLocked()
         av_audio_fifo_free(fifo_);
         fifo_ = nullptr;
     }
+    isCreateCxtAndFifo_ = false;
     return Status::OK;
 }
 } // namespace Ffmpeg

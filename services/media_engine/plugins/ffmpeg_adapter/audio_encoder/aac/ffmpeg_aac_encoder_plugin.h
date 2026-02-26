@@ -91,6 +91,7 @@ private:
     Status SendOutputBuffer(std::shared_ptr<AVBuffer> &outputBuffer);
     Status GetAdtsHeader(std::string &adtsHeader, int32_t &headerSize, std::shared_ptr<AVCodecContext> ctx,
                          int aacLength);
+    Status CreateCtxAndFifo();
     Status InitFrame();
     Status InitContext();
     Status ReAllocateContext();
@@ -148,6 +149,7 @@ private:
     FILE *outfile;
     bool isEosFlush_ = false;
     int32_t initPadding_ = 0;
+    bool isCreateCxtAndFifo_ = false;
 };
 } // namespace Ffmpeg
 } // namespace Plugins
