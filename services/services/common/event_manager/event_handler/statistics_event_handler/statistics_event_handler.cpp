@@ -32,18 +32,22 @@ using AVCodecSpecifiedType = std::pair<bool, std::string>;
 using VCodecSpecifiedType = std::pair<VideoCodecType, std::string>;
 
 namespace {
-static constexpr const char DOMAIN[] = "AV_CODEC";
-static constexpr const char EVENT_STATISTICS_INFO[] = "STATISTICS_INFO";
-static constexpr const char QUERY_CAP_TIMES[] = "QueryCapTimes";
-static constexpr const char CREATE_CODEC_TIMES[] = "CreateCodecTimes";
-static constexpr const char CODEC_SPECIFIED_INFO[] = "CodecSpecifiedInfo";
-static constexpr const char APP_NAME_DICT[] = "AppNameDict";
-static constexpr const char CAP_UNSUPPORTED_INFO[] = "CapUnsupportedInfo";
-static constexpr const char QUERY_CAP_UNSUPPORTED_INFO[] = "QueryCapUnsupportedInfo";
-static constexpr const char CREATE_CODEC_UNSUPPORTED_INFO[] = "CreateCodecUnsupportedInfo";
-static constexpr const char DEC_ABNORMAL_OCCUPATION_INFO[] = "DecAbnormalOccupationInfo";
-static constexpr const char SPEED_DECODING_INFO[] = "SpeedDecodingInfo";
-static constexpr const char CODEC_ERROR_INFO[] = "CodecErrorInfo";
+// EVENT_STR_L0
+static constexpr const char EVENT_DOMAIN[]                          = "AV_CODEC";
+// EVENT_STR_L1
+static constexpr const char EVENT_STATISTICS_INFO[]                 = "STATISTICS_INFO";
+// EVENT_STR_L2
+static constexpr const char QUERY_CAP_TIMES[]                       = "QUERY_CAP_TIMES";
+static constexpr const char CREATE_CODEC_TIMES[]                    = "CREATE_CODEC_TIMES";
+static constexpr const char CODEC_SPECIFIED_INFO[]                  = "CODEC_SPECIFIED_INFO";
+static constexpr const char APP_NAME_DICT[]                         = "APP_NAME_DICT";
+static constexpr const char CAP_UNSUPPORTED_INFO[]                  = "CAP_UNSUPPORTED_INFO";
+static constexpr const char DEC_ABNORMAL_OCCUPATION_INFO[]          = "DEC_ABNORMAL_OCCUPATION_INFO";
+static constexpr const char SPEED_DECODING_INFO[]                   = "SPEED_DECODING_INFO";
+static constexpr const char CODEC_ERROR_INFO[]                      = "CODEC_ERROR_INFO";
+// EVENT_STR_L3
+static constexpr const char QUERY_CAP_UNSUPPORTED_INFO[]            = "QUERY_CAP_UNSUPPORTED_INFO";
+static constexpr const char CREATE_CODEC_UNSUPPORTED_INFO[]         = "CREATE_CODEC_UNSUPPORTED_INFO";
 
 const std::unordered_map<VideoCodecType, std::string> VIDEO_CODEC_TYPE_TO_STRING = {
     { VideoCodecType::DECODER_HARDWARE, "HDec" },
@@ -749,7 +753,7 @@ void StatisticsEventInfo::OnSubmitEventInfo()
     };
 
     HiSysEventWrite(
-        DOMAIN, EVENT_STATISTICS_INFO,
+        EVENT_DOMAIN, EVENT_STATISTICS_INFO,
         OHOS::HiviewDFX::HiSysEvent::EventType::STATISTIC,
         QUERY_CAP_TIMES,                    submitInfo.queryCapTimes,
         CREATE_CODEC_TIMES,                 submitInfo.createCodecTimes,
