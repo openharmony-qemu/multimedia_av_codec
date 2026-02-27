@@ -1181,3 +1181,8 @@ void VDecAPI11Sample::SwitchSurfaceGetTransform()
         }
     }
 }
+
+int32_t VDecAPI11Sample::SetAnotherSurface(OHNativeWindow *anotherWindow)
+{
+    return OH_VideoDecoder_SetSurface(vdec_, anotherWindow);
+}

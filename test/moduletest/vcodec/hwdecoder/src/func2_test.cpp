@@ -1397,22 +1397,30 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_HWDEC_H266_FLUSH_0020, TestSize.Level1)
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0010, TestSize.Level0)
 {
     if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
-        auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = inpDirHdr106400Metadata;
-        vDecSample->STATIC_METADATA_FILE = "hdr10_static_meta_6400.bin";
-        vDecSample->DEFAULT_WIDTH = 6400;
-        vDecSample->DEFAULT_HEIGHT = 6400;
-        vDecSample->DEFAULT_FRAME_RATE = 30;
-        vDecSample->enbleSyncMode = 1;
-        vDecSample->needCompareHdrInof = true;
-        vDecSample->is8bitYuv = false;
-        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
-        vDecSample->hdrType = OH_VIDEO_HDR_HDR10;
-        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHEVC));
-        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
-        vDecSample->WaitForEOS();
-        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        OH_AVRange widthRange;
+        OH_AVRange heightRange;
+        memset_s(&widthRange, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+        memset_s(&heightRange, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+        ASSERT_EQ(AV_ERR_OK, OH_AVCapability_GetVideoWidthRange(cap_hevc, &widthRange));
+        ASSERT_EQ(AV_ERR_OK, OH_AVCapability_GetVideoHeightRange(cap_hevc, &heightRange));
+        if (widthRange.maxVal >= 6400 && heightRange.maxVal >= 6400) {
+            auto vDecSample = make_shared<VDecAPI11Sample>();
+            vDecSample->INP_DIR = inpDirHdr106400Metadata;
+            vDecSample->STATIC_METADATA_FILE = "hdr10_static_meta_6400.bin";
+            vDecSample->DEFAULT_WIDTH = 6400;
+            vDecSample->DEFAULT_HEIGHT = 6400;
+            vDecSample->DEFAULT_FRAME_RATE = 30;
+            vDecSample->enbleSyncMode = 1;
+            vDecSample->needCompareHdrInof = true;
+            vDecSample->is8bitYuv = false;
+            vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+            vDecSample->hdrType = OH_VIDEO_HDR_HDR10;
+            ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHEVC));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+            ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+            vDecSample->WaitForEOS();
+            ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        }
     }
 }
 
@@ -1424,22 +1432,30 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0010, TestSize.Level0)
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0020, TestSize.Level0)
 {
     if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
-        auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = inpDirHdr106400Metadata;
-        vDecSample->STATIC_METADATA_FILE = "hdr10_static_meta_6400.bin";
-        vDecSample->DEFAULT_WIDTH = 6400;
-        vDecSample->DEFAULT_HEIGHT = 6400;
-        vDecSample->DEFAULT_FRAME_RATE = 30;
-        vDecSample->needCompareHdrInof = true;
-        vDecSample->is8bitYuv = false;
-        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
-        vDecSample->hdrType = OH_VIDEO_HDR_HDR10;
-        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHEVC));
-        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
-        vDecSample->WaitForEOS();
-        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        OH_AVRange widthRange;
+        OH_AVRange heightRange;
+        memset_s(&widthRange, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+        memset_s(&heightRange, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+        ASSERT_EQ(AV_ERR_OK, OH_AVCapability_GetVideoWidthRange(cap_hevc, &widthRange));
+        ASSERT_EQ(AV_ERR_OK, OH_AVCapability_GetVideoHeightRange(cap_hevc, &heightRange));
+        if (widthRange.maxVal >= 6400 && heightRange.maxVal >= 6400) {
+            auto vDecSample = make_shared<VDecAPI11Sample>();
+            vDecSample->INP_DIR = inpDirHdr106400Metadata;
+            vDecSample->STATIC_METADATA_FILE = "hdr10_static_meta_6400.bin";
+            vDecSample->DEFAULT_WIDTH = 6400;
+            vDecSample->DEFAULT_HEIGHT = 6400;
+            vDecSample->DEFAULT_FRAME_RATE = 30;
+            vDecSample->needCompareHdrInof = true;
+            vDecSample->is8bitYuv = false;
+            vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
+            vDecSample->hdrType = OH_VIDEO_HDR_HDR10;
+            ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHEVC));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+            ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+            vDecSample->WaitForEOS();
+            ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        }
     }
 }
 
@@ -1451,7 +1467,14 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0020, TestSize.Level0)
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0030, TestSize.Level2)
 {
     if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
-        if (OH_AVCapability_IsFeatureSupported(cap_hevc, VIDEO_LOW_LATENCY)) {
+        OH_AVRange widthRange;
+        OH_AVRange heightRange;
+        memset_s(&widthRange, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+        memset_s(&heightRange, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+        ASSERT_EQ(AV_ERR_OK, OH_AVCapability_GetVideoWidthRange(cap_hevc, &widthRange));
+        ASSERT_EQ(AV_ERR_OK, OH_AVCapability_GetVideoHeightRange(cap_hevc, &heightRange));
+        if (OH_AVCapability_IsFeatureSupported(cap_hevc, VIDEO_LOW_LATENCY) && widthRange.maxVal >= 6400 &&
+            heightRange.maxVal >= 6400) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = inpDirHdr106400Metadata;
             vDecSample->STATIC_METADATA_FILE = "hdr10_static_meta_6400.bin";

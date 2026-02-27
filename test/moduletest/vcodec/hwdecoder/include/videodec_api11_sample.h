@@ -236,6 +236,7 @@ public:
     bool needCompareHdrInof = false;
     int32_t DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
     int32_t DecodeSetSurface();
+    int32_t SetAnotherSurface(OHNativeWindow *anotherWindow);
     int32_t OpenFile();
     std::map<uint32_t, OH_AVBuffer*>indexBufferBefore;
     std::map<uint32_t, OH_AVBuffer*>indexBufferAfter;
