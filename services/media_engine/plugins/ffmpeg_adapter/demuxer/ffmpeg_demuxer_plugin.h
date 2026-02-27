@@ -197,6 +197,13 @@ private:
         AVCodecID codecId {AV_CODEC_ID_NONE};
         AVMediaType codecType {AVMEDIA_TYPE_UNKNOWN};
         AVRational timeBase {0, 1};
+        int32_t sampleRate {0};
+        int32_t frameSize {0};
+        int32_t channels {0};
+        int32_t blockAlign {0};
+        int32_t bitsPerCodedSample {0};
+        int64_t bitRate {0};
+        uint32_t codecTag {0};
         int32_t extradataSize {0};
         int64_t startTime {AV_NOPTS_VALUE};
         bool needCombineFrame {false};
@@ -264,6 +271,14 @@ private:
         std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
     void UpdateCachedDrmInfoFromStream(AVStream* avStream);
     bool NeedCombineFrame(uint32_t trackId);
+    bool SupplementAudioTimestampIfNeeded(std::shared_ptr<AVBuffer> sample, const AVPacket &firstPkt,
+        const AVStreamSnapshot &snapshot, uint32_t trackIndex);
+    bool SupplementAudioDurationIfNeeded(std::shared_ptr<AVBuffer> sample, const AVPacket &firstPkt,
+        const AVStreamSnapshot &snapshot);
+    bool SupplementAudioPtsDtsIfNeeded(std::shared_ptr<AVBuffer> sample, const AVPacket &firstPkt,
+        const AVStreamSnapshot &snapshot, uint32_t trackIndex);
+    static int32_t GetFrameSamplesFromFFmpeg(const AVStreamSnapshot &snapshot, int32_t pktSize);
+    static int32_t GetAacFrameSamplesFromAdts(const AVPacket &pkt);
     Plugins::AVPacketWrapperPtr CombinePackets(std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
@@ -418,9 +433,9 @@ private:
     // dfx
     struct TrackDfxInfo {
         int frameIndex = 0; // for each track
-        int64_t lastPts;
-        int64_t lastPos;
-        int64_t lastDuration;
+        int64_t lastPts {AV_NOPTS_VALUE};
+        int64_t lastPos {0};
+        int64_t lastDuration {0};
         bool dumpFirstInfo = false;
     };
     enum Stage : int32_t {

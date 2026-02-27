@@ -23,6 +23,7 @@
 #include "buffer/avbuffer.h"
 #include "plugin/plugin_buffer.h"
 #include "plugin/plugin_definition.h"
+#include "avcodec_log.h"
 #include "common/log.h"
 #include "meta/video_types.h"
 #include "demuxer_log_compressor.h"
@@ -32,6 +33,8 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "FfmpegDemuxerThread" };
+constexpr int64_t LOG_INTERVAL_MS = 2000; // 2s
+constexpr uint32_t LOG_MAX_COUNT = 10; // 10 times
 }
 
 namespace OHOS {
@@ -157,7 +160,8 @@ void FFmpegDemuxerPlugin::UpdateInitDownloadData(IOContext* ioContext, int dataS
         if (ioContext->initDownloadDataSize <= UINT64_MAX - static_cast<uint64_t>(dataSize)) {
             ioContext->initDownloadDataSize += static_cast<uint64_t>(dataSize);
         } else {
-            MEDIA_LOG_W("DataSize " PUBLIC_LOG_U64 " is invalid", static_cast<uint64_t>(dataSize));
+            AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGW, LOG_INTERVAL_MS, LOG_MAX_COUNT,
+                "DataSize " PUBLIC_LOG_U64 " is invalid", static_cast<uint64_t>(dataSize));
         }
     }
 }

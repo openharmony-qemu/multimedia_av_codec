@@ -55,6 +55,12 @@ constexpr int TEST_FLAGS = AV_PKT_FLAG_KEY;
 constexpr int64_t TEST_DURATION = 40;
 constexpr int64_t TEST_POS = 1024;
 constexpr AVRational TEST_TIME_BASE = {1, 90000};
+
+constexpr int64_t ONE_SECOND_US = 1000 * 1000;
+constexpr int32_t TEST_TRACK_INDEX = 0;
+constexpr int32_t TEST_SAMPLE_RATE_48K = 48000;
+constexpr int32_t TEST_FRAME_SAMPLES_1024 = 1024;
+constexpr int32_t TEST_SNAPSHOT_CHANNELS_2 = 2;
 } // namespace
 
 // ==================== AVPacketWrapper Tests ====================
@@ -257,6 +263,325 @@ HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_061310, TestSize.Lev
     // Test with duration
     pkt->duration = TEST_DURATION;
     EXPECT_EQ(wrapper.GetDuration(), TEST_DURATION);
+}
+
+// ==================== FFmpegDemuxerPlugin Timestamp Supplement Tests ====================
+
+namespace {
+std::shared_ptr<MediaAVBuffer> CreateTestSampleBuffer(uint32_t bufferSize = TEST_DATA_SIZE)
+{
+    AVBufferWrapper wrapper(bufferSize);
+    auto sample = wrapper.mediaAVBuffer;
+    if (sample != nullptr && sample->meta_ == nullptr) {
+        sample->meta_ = std::make_shared<Meta>();
+    }
+    return sample;
+}
+
+FFmpegDemuxerPlugin::AVStreamSnapshot CreateAudioSnapshot(int32_t sampleRate, int32_t frameSize)
+{
+    FFmpegDemuxerPlugin::AVStreamSnapshot snapshot {};
+    snapshot.valid = true;
+    snapshot.isAudio = true;
+    snapshot.codecType = AVMEDIA_TYPE_AUDIO;
+    snapshot.codecId = AV_CODEC_ID_AAC;
+    snapshot.timeBase = TEST_TIME_BASE;
+    snapshot.sampleRate = sampleRate;
+    snapshot.frameSize = frameSize;
+    snapshot.channels = TEST_SNAPSHOT_CHANNELS_2;
+    snapshot.blockAlign = 0;
+    snapshot.bitsPerCodedSample = 0;
+    snapshot.bitRate = 0;
+    snapshot.codecTag = 0;
+    snapshot.startTime = AV_NOPTS_VALUE;
+    return snapshot;
+}
+} // namespace
+
+/**
+ * @tc.name: AVDemuxer_Enhance_TimestampSupplement_061401
+ * @tc.desc: SupplementAudioTimestampIfNeeded should not trigger when seekable or not MPEGTS or not audio
+ * @tc.type: FUNC
+ */
+HWTEST(FFmpegDemuxerPluginTimestampTest, AVDemuxer_Enhance_TimestampSupplement_061401, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mpegts");
+    ASSERT_NE(plugin, nullptr);
+    plugin->seekable_ = Seekable::SEEKABLE;
+    plugin->fileType_ = FileType::MPEGTS;
+
+    auto sample = CreateTestSampleBuffer();
+    ASSERT_NE(sample, nullptr);
+    ASSERT_NE(sample->meta_, nullptr);
+
+    AVPacket pkt {};
+    pkt.pts = AV_NOPTS_VALUE;
+    pkt.dts = AV_NOPTS_VALUE;
+    pkt.duration = AV_NOPTS_VALUE;
+    pkt.size = TEST_DATA_SIZE;
+
+    auto snapshot = CreateAudioSnapshot(TEST_SAMPLE_RATE_48K, TEST_FRAME_SAMPLES_1024);
+    const bool updated = plugin->SupplementAudioTimestampIfNeeded(sample, pkt, snapshot,
+        static_cast<uint32_t>(TEST_TRACK_INDEX));
+    EXPECT_FALSE(updated);
+}
+
+/**
+ * @tc.name: AVDemuxer_Enhance_TimestampSupplement_061402
+ * @tc.desc: SupplementAudioDurationIfNeeded uses snapshot.frameSize when duration is invalid
+ * @tc.type: FUNC
+ */
+HWTEST(FFmpegDemuxerPluginTimestampTest, AVDemuxer_Enhance_TimestampSupplement_061402, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mpegts");
+    ASSERT_NE(plugin, nullptr);
+
+    auto sample = CreateTestSampleBuffer();
+    ASSERT_NE(sample, nullptr);
+    ASSERT_NE(sample->meta_, nullptr);
+
+    AVPacket pkt {};
+    pkt.duration = AV_NOPTS_VALUE;
+    pkt.size = TEST_DATA_SIZE;
+
+    auto snapshot = CreateAudioSnapshot(TEST_SAMPLE_RATE_48K, TEST_FRAME_SAMPLES_1024);
+    const bool ok = plugin->SupplementAudioDurationIfNeeded(sample, pkt, snapshot);
+    EXPECT_TRUE(ok);
+    EXPECT_GT(sample->duration_, 0);
+
+    int64_t durationMeta = 0;
+    EXPECT_TRUE(sample->meta_->GetData(Tag::BUFFER_DURATION, durationMeta));
+    EXPECT_EQ(durationMeta, sample->duration_);
+}
+
+/**
+ * @tc.name: AVDemuxer_Enhance_TimestampSupplement_061403
+ * @tc.desc: GetFrameSamplesFromFFmpeg should return frame_size when set
+ * @tc.type: FUNC
+ */
+HWTEST(FFmpegDemuxerPluginTimestampTest, AVDemuxer_Enhance_TimestampSupplement_061403, TestSize.Level1)
+{
+    auto snapshot = CreateAudioSnapshot(TEST_SAMPLE_RATE_48K, TEST_FRAME_SAMPLES_1024);
+    const int32_t samples = FFmpegDemuxerPlugin::GetFrameSamplesFromFFmpeg(snapshot, TEST_DATA_SIZE);
+    EXPECT_EQ(samples, TEST_FRAME_SAMPLES_1024);
+}
+
+/**
+ * @tc.name: AVDemuxer_Enhance_TimestampSupplement_061404
+ * @tc.desc: GetAacFrameSamplesFromAdts returns 0 for invalid packet or non-ADTS
+ * @tc.type: FUNC
+ */
+HWTEST(FFmpegDemuxerPluginTimestampTest, AVDemuxer_Enhance_TimestampSupplement_061404, TestSize.Level1)
+{
+    AVPacket pktInvalid {};
+    pktInvalid.data = nullptr;
+    pktInvalid.size = 0;
+    EXPECT_EQ(FFmpegDemuxerPlugin::GetAacFrameSamplesFromAdts(pktInvalid), 0);
+
+    uint8_t notAdts[7] = {0};
+    AVPacket pktNotAdts {};
+    pktNotAdts.data = notAdts;
+    pktNotAdts.size = sizeof(notAdts);
+    EXPECT_EQ(FFmpegDemuxerPlugin::GetAacFrameSamplesFromAdts(pktNotAdts), 0);
+}
+
+/**
+ * @tc.name: AVDemuxer_Enhance_TimestampSupplement_061405
+ * @tc.desc: SupplementAudioDurationIfNeeded falls back to ADTS parsing for AAC when FFmpeg duration is not available
+ * @tc.type: FUNC
+ */
+HWTEST(FFmpegDemuxerPluginTimestampTest, AVDemuxer_Enhance_TimestampSupplement_061405, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mpegts");
+    ASSERT_NE(plugin, nullptr);
+
+    auto sample = CreateTestSampleBuffer();
+    ASSERT_NE(sample, nullptr);
+    ASSERT_NE(sample->meta_, nullptr);
+
+    // Minimal ADTS fixed header (7 bytes). Ensure syncword matches and raw_data_blocks_in_frame is 0.
+    uint8_t adts[7] = {0xFF, 0xF1, 0x50, 0x80, 0x00, 0x1F, 0x00};
+    AVPacket pkt {};
+    pkt.data = adts;
+    pkt.size = sizeof(adts);
+    pkt.duration = AV_NOPTS_VALUE;
+
+    auto snapshot = CreateAudioSnapshot(44100, 0);
+    snapshot.codecId = AV_CODEC_ID_AAC;
+
+    const bool ok = plugin->SupplementAudioDurationIfNeeded(sample, pkt, snapshot);
+    EXPECT_TRUE(ok);
+    EXPECT_GT(sample->duration_, 0);
+}
+
+/**
+ * @tc.name: AVDemuxer_Enhance_TimestampSupplement_061406
+ * @tc.desc: SupplementAudioPtsDtsIfNeeded aligns missing dts/pts from existing timestamp
+ * @tc.type: FUNC
+ */
+HWTEST(FFmpegDemuxerPluginTimestampTest, AVDemuxer_Enhance_TimestampSupplement_061406, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mpegts");
+    ASSERT_NE(plugin, nullptr);
+
+    auto sample = CreateTestSampleBuffer();
+    ASSERT_NE(sample, nullptr);
+    ASSERT_NE(sample->meta_, nullptr);
+
+    // Case 1: dts invalid, pts valid
+    {
+        AVPacket pkt {};
+        pkt.pts = 9000;
+        pkt.dts = AV_NOPTS_VALUE;
+        auto snapshot = CreateAudioSnapshot(TEST_SAMPLE_RATE_48K, TEST_FRAME_SAMPLES_1024);
+        sample->pts_ = 12345;
+        sample->dts_ = AV_NOPTS_VALUE;
+        const bool ok = plugin->SupplementAudioPtsDtsIfNeeded(sample, pkt, snapshot,
+            static_cast<uint32_t>(TEST_TRACK_INDEX));
+        EXPECT_TRUE(ok);
+        EXPECT_EQ(sample->dts_, sample->pts_);
+        int64_t dtsMeta = AV_NOPTS_VALUE;
+        EXPECT_TRUE(sample->meta_->GetData(Tag::BUFFER_DECODING_TIMESTAMP, dtsMeta));
+        EXPECT_EQ(dtsMeta, sample->pts_);
+    }
+
+    // Case 2: pts invalid, dts valid
+    {
+        AVPacket pkt {};
+        pkt.pts = AV_NOPTS_VALUE;
+        pkt.dts = 8000;
+        auto snapshot = CreateAudioSnapshot(TEST_SAMPLE_RATE_48K, TEST_FRAME_SAMPLES_1024);
+        sample->dts_ = 777;
+        sample->pts_ = AV_NOPTS_VALUE;
+        const bool ok = plugin->SupplementAudioPtsDtsIfNeeded(sample, pkt, snapshot,
+            static_cast<uint32_t>(TEST_TRACK_INDEX));
+        EXPECT_TRUE(ok);
+        EXPECT_EQ(sample->pts_, sample->dts_);
+    }
+}
+
+/**
+ * @tc.name: AVDemuxer_Enhance_TimestampSupplement_061407
+ * @tc.desc: SupplementAudioPtsDtsIfNeeded derives pts/dts from history (lastPts + duration)
+ * @tc.type: FUNC
+ */
+HWTEST(FFmpegDemuxerPluginTimestampTest, AVDemuxer_Enhance_TimestampSupplement_061407, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mpegts");
+    ASSERT_NE(plugin, nullptr);
+
+    auto sample = CreateTestSampleBuffer();
+    ASSERT_NE(sample, nullptr);
+    ASSERT_NE(sample->meta_, nullptr);
+
+    AVPacket pkt {};
+    pkt.pts = AV_NOPTS_VALUE;
+    pkt.dts = AV_NOPTS_VALUE;
+
+    auto snapshot = CreateAudioSnapshot(TEST_SAMPLE_RATE_48K, TEST_FRAME_SAMPLES_1024);
+    const uint32_t trackIndex = static_cast<uint32_t>(TEST_TRACK_INDEX);
+    plugin->trackDfxInfoMap_[static_cast<int32_t>(trackIndex)].lastPts = 100;
+    plugin->trackDfxInfoMap_[static_cast<int32_t>(trackIndex)].lastDuration = 20;
+    sample->duration_ = 0;
+
+    const bool ok = plugin->SupplementAudioPtsDtsIfNeeded(sample, pkt, snapshot, trackIndex);
+    EXPECT_TRUE(ok);
+    EXPECT_EQ(sample->pts_, 120);
+    EXPECT_EQ(sample->dts_, 120);
+}
+
+/**
+ * @tc.name: AVDemuxer_Enhance_TimestampSupplement_061408
+ * @tc.desc: SupplementAudioPtsDtsIfNeeded uses stream start_time when no history exists
+ * @tc.type: FUNC
+ */
+HWTEST(FFmpegDemuxerPluginTimestampTest, AVDemuxer_Enhance_TimestampSupplement_061408, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mpegts");
+    ASSERT_NE(plugin, nullptr);
+
+    auto sample = CreateTestSampleBuffer();
+    ASSERT_NE(sample, nullptr);
+    ASSERT_NE(sample->meta_, nullptr);
+
+    AVPacket pkt {};
+    pkt.pts = AV_NOPTS_VALUE;
+    pkt.dts = AV_NOPTS_VALUE;
+
+    auto snapshot = CreateAudioSnapshot(TEST_SAMPLE_RATE_48K, TEST_FRAME_SAMPLES_1024);
+    snapshot.startTime = TEST_TIME_BASE.den; // 1 second in time_base units (time_base = 1/90000)
+    sample->duration_ = 20000;
+
+    const bool ok = plugin->SupplementAudioPtsDtsIfNeeded(sample, pkt, snapshot,
+        static_cast<uint32_t>(TEST_TRACK_INDEX));
+    EXPECT_TRUE(ok);
+    EXPECT_EQ(sample->pts_, ONE_SECOND_US);
+    EXPECT_EQ(sample->dts_, ONE_SECOND_US);
+}
+
+/**
+ * @tc.name: AVDemuxer_Enhance_TimestampSupplement_061409
+ * @tc.desc: SupplementAudioPtsDtsIfNeeded fails when duration is unavailable (no history + sample duration <= 0)
+ * @tc.type: FUNC
+ */
+HWTEST(FFmpegDemuxerPluginTimestampTest, AVDemuxer_Enhance_TimestampSupplement_061409, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mpegts");
+    ASSERT_NE(plugin, nullptr);
+
+    auto sample = CreateTestSampleBuffer();
+    ASSERT_NE(sample, nullptr);
+    ASSERT_NE(sample->meta_, nullptr);
+    sample->duration_ = 0;
+
+    AVPacket pkt {};
+    pkt.pts = AV_NOPTS_VALUE;
+    pkt.dts = AV_NOPTS_VALUE;
+
+    auto snapshot = CreateAudioSnapshot(TEST_SAMPLE_RATE_48K, TEST_FRAME_SAMPLES_1024);
+    const bool ok = plugin->SupplementAudioPtsDtsIfNeeded(sample, pkt, snapshot,
+        static_cast<uint32_t>(TEST_TRACK_INDEX));
+    EXPECT_FALSE(ok);
+}
+
+/**
+ * @tc.name: AVDemuxer_Enhance_TimestampSupplement_061410
+ * @tc.desc: SupplementAudioTimestampIfNeeded triggers in MPEGTS + audio + unseekable with invalid timestamps
+ * @tc.type: FUNC
+ */
+HWTEST(FFmpegDemuxerPluginTimestampTest, AVDemuxer_Enhance_TimestampSupplement_061410, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mpegts");
+    ASSERT_NE(plugin, nullptr);
+    plugin->seekable_ = Seekable::UNSEEKABLE;
+    plugin->fileType_ = FileType::MPEGTS;
+
+    auto sample = CreateTestSampleBuffer();
+    ASSERT_NE(sample, nullptr);
+    ASSERT_NE(sample->meta_, nullptr);
+
+    // Both pts/dts/duration invalid => supplement should update duration and pts/dts.
+    uint8_t adts[7] = {0xFF, 0xF1, 0x50, 0x80, 0x00, 0x1F, 0x00};
+    AVPacket pkt {};
+    pkt.pts = AV_NOPTS_VALUE;
+    pkt.dts = AV_NOPTS_VALUE;
+    pkt.duration = AV_NOPTS_VALUE;
+    pkt.data = adts;
+    pkt.size = sizeof(adts);
+    pkt.stream_index = TEST_STREAM_INDEX;
+
+    auto snapshot = CreateAudioSnapshot(44100, 0);
+    snapshot.codecId = AV_CODEC_ID_AAC;
+    sample->duration_ = 0;
+    plugin->trackDfxInfoMap_[TEST_STREAM_INDEX].lastPts = 100;
+    plugin->trackDfxInfoMap_[TEST_STREAM_INDEX].lastDuration = 20000;
+
+    const bool ok = plugin->SupplementAudioTimestampIfNeeded(sample, pkt, snapshot,
+        static_cast<uint32_t>(TEST_STREAM_INDEX));
+    EXPECT_TRUE(ok);
+    EXPECT_GT(sample->duration_, 0);
+    EXPECT_GE(sample->pts_, 0);
+    EXPECT_EQ(sample->pts_, sample->dts_);
 }
 
 /**
