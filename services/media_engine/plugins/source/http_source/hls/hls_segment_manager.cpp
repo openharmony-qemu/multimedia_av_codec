@@ -2004,7 +2004,7 @@ Status HlsSegmentManager::StopBufferring(bool isAppBackground)
     bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
     downloader_->StopBufferring();
     playlistDownloader_->StopBufferring(isAppBackground);
-    MEDIA_LOG_W("HlsSegmentManager:StopBufferring out, isBackground: %{public}d, type: %{public}d", isAppBackground,
+    MEDIA_LOG_W("HlsSegmentManager:StopBufferring enter, isBackground: %{public}d, type: %{public}d", isAppBackground,
         type_);
     return Status::OK;
 }
