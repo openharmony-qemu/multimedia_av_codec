@@ -1827,7 +1827,8 @@ void MediaDemuxer::ResetAfterSeek(Status ret)
     convertErrorTime_.store(0);
 }
 
-Status MediaDemuxer::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
+Status MediaDemuxer::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode,
+    int64_t& realSeekTime, DemuxerCallerType callerType)
 {
     MediaAVCodec::AVCODEC_SYNC_TRACE;
     Status ret;
@@ -1849,7 +1850,7 @@ Status MediaDemuxer::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode, in
     } else {
         MEDIA_LOG_I("Demuxer seek");
         ScopedTimer timer("seek closest", SEEK_LOCAL_WARNING_MS);
-        ret = demuxerPluginManager_->SeekToKeyFrame(seekTime, mode, realSeekTime);
+        ret = demuxerPluginManager_->SeekToKeyFrame(seekTime, mode, realSeekTime, callerType);
     }
     isSeeked_ = true;
     if (isVideoMuted_ || needRestore_) {
@@ -1865,7 +1866,7 @@ Status MediaDemuxer::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode, in
     for (auto item : requestBufferErrorCountMap_) {
         requestBufferErrorCountMap_[item.first] = 0;
     }
-    if (ret != Status::OK) {
+    if (ret != Status::OK && callerType == DemuxerCallerType::PLAYER) {
         isSeekError_.store(true);
     }
     isFirstFrameAfterSeek_.store(true);
