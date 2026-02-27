@@ -133,7 +133,7 @@ HWTEST_F(DecoderSurfaceFilterUnittest, CallbackOnOutputBufferAvailable_002, Test
     ASSERT_NE(decoderSurfaceFilter_, nullptr);
     decoderSurfaceFilter_->prerollDone_.store(true);
     decoderSurfaceFilter_->inPreroll_.store(true);
-    decoderSurfaceFilter_->isInSeekContinous_ = false;
+    decoderSurfaceFilter_->isInSeekContinuous_ = false;
     decoderSurfaceFilter_->isSeek_ = false;
     EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), Start()).WillRepeatedly(Return(Status::OK));
     EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), Release()).WillRepeatedly(Return(Status::OK));
@@ -706,12 +706,12 @@ HWTEST_F(DecoderSurfaceFilterUnittest, SetSeekTime_001, TestSize.Level0)
  * @tc.name: Test HandleRender API
  * @tc.number: HandleRender_001
  * @tc.desc: Test eventReceiver_== nullptr && lastRenderTimeNs = 0L
- *                isInSeekContinous_ = false
+ *                isInSeekContinuous_ = false
  */
 HWTEST_F(DecoderSurfaceFilterUnittest, HandleRender_001, TestSize.Level0)
 {
     ASSERT_NE(decoderSurfaceFilter_, nullptr);
-    decoderSurfaceFilter_->isInSeekContinous_ = false;
+    decoderSurfaceFilter_->isInSeekContinuous_ = false;
     auto buffer = std::make_shared<AVBuffer>();
     buffer->pts_ = 0;
     buffer->meta_ = std::make_shared<Meta>();

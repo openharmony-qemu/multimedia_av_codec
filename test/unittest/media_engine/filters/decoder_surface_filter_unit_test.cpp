@@ -336,7 +336,7 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_ReleaseOutputBuffer,
     auto buffer = AVBuffer::CreateAVBuffer();
 
     decoderSurfaceFilter_->isRenderStarted_ = false;
-    decoderSurfaceFilter_->isInSeekContinous_ = false;
+    decoderSurfaceFilter_->isInSeekContinuous_ = false;
     buffer->flag_ = 0;
     decoderSurfaceFilter_->playRangeEndTime_ = 1;
     buffer->pts_ = 2000;
@@ -345,7 +345,7 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_ReleaseOutputBuffer,
     EXPECT_EQ(decoderSurfaceFilter_->isRenderStarted_, true);
 
     decoderSurfaceFilter_->isRenderStarted_ = true;
-    decoderSurfaceFilter_->isInSeekContinous_ = false;
+    decoderSurfaceFilter_->isInSeekContinuous_ = false;
     buffer->flag_ |= static_cast<uint32_t>(Plugins::AVBufferFlag::EOS);
     decoderSurfaceFilter_->playRangeEndTime_ = -1;
     decoderSurfaceFilter_->lastRenderTimeNs_ = HST_TIME_NONE;
