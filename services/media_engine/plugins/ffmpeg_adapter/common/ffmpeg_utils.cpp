@@ -25,6 +25,12 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
 constexpr uint32_t FLAC_CODEC_CONFIG_SIZE = 34;
+
+constexpr uint8_t HEVC_NAL_TYPE_MASK = 0x7E; // NAL unit type mask (bits 1-6 of first byte)
+constexpr uint8_t HEVC_NAL_TYPE_SHIFT = 1;   // Right shift to get NAL type
+constexpr uint8_t HEVC_NAL_TYPE_VPS = 32;    // Video Parameter Set
+constexpr uint8_t HEVC_NAL_TYPE_SPS = 33;    // Sequence Parameter Set
+constexpr uint8_t HEVC_NAL_TYPE_PPS = 34;    // Picture Parameter Set
 }
 
 #define AV_CODEC_TIME_BASE (static_cast<int64_t>(1))
@@ -723,6 +729,81 @@ bool IsAnnexbSyncFrame(const uint8_t *sample, int32_t size)
         nalStart = nalEnd + startCodeLen;
     }
     return false;
+}
+
+static bool IsHvccOnlyParameterSets(const uint8_t *sample, int32_t size)
+{
+    if (sample == nullptr || size < 0 || size > INT32_MAX) {
+        return false;
+    }
+    const uint8_t* nalStart = sample;
+    const uint8_t* end = nalStart + size;
+    int32_t sizeLen = NAL_START_CODE_SIZE;
+    int32_t naluSize = 0;
+    naluSize = GetNaluSize(nalStart);
+    if (naluSize <= 0 || nalStart > end - sizeLen) {
+        return false;
+    }
+    nalStart = nalStart + sizeLen;
+    while (nalStart < end) {
+        uint8_t naluType = static_cast<uint8_t>((nalStart[0] & HEVC_NAL_TYPE_MASK) >> HEVC_NAL_TYPE_SHIFT);
+        if (naluType != HEVC_NAL_TYPE_VPS && naluType != HEVC_NAL_TYPE_SPS && naluType != HEVC_NAL_TYPE_PPS) {
+            return false;
+        }
+        if (nalStart > end - naluSize) {
+            return false;
+        }
+        nalStart = nalStart + naluSize;
+        if (nalStart > end - sizeLen) {
+            return true;
+        }
+        naluSize = GetNaluSize(nalStart);
+        if (naluSize < 0) {
+            return false;
+        }
+        nalStart = nalStart + sizeLen;
+    }
+    return true;
+}
+
+static bool IsAnnexbOnlyParameterSets(const uint8_t *sample, int32_t size)
+{
+    if (sample == nullptr || size < 0 || size > INT32_MAX) {
+        return false;
+    }
+    const uint8_t* nalStart = sample;
+    const uint8_t* end = nalStart + size;
+    const uint8_t* nalEnd = nullptr;
+    int32_t startCodeLen = 0;
+    nalStart = FindNalStartCode(nalStart, end, startCodeLen);
+    if (nalStart > end - startCodeLen) {
+        return false;
+    }
+    nalStart = nalStart + startCodeLen;
+    while (nalStart < end) {
+        nalEnd = FindNalStartCode(nalStart, end, startCodeLen);
+        uint8_t naluType = static_cast<uint8_t>((nalStart[0] & HEVC_NAL_TYPE_MASK) >> HEVC_NAL_TYPE_SHIFT);
+        if (naluType != HEVC_NAL_TYPE_VPS && naluType != HEVC_NAL_TYPE_SPS && naluType != HEVC_NAL_TYPE_PPS) {
+            return false;
+        }
+        if (nalEnd > end - startCodeLen) {
+            return true;
+        }
+        nalStart = nalEnd + startCodeLen;
+    }
+    return true;
+}
+
+bool IsPktOnlyParameterSets(const uint8_t *sample, int32_t size)
+{
+    if (sample == nullptr || size < 0 || size > INT32_MAX) {
+        return false;
+    }
+    if (IsBeginAsAnnexb(sample, size)) {
+        return IsAnnexbOnlyParameterSets(sample, size);
+    } else {
+        return IsHvccOnlyParameterSets(sample, size);
+    }
 }
 
 bool IsHevcSyncFrame(const uint8_t *sample, int32_t size)

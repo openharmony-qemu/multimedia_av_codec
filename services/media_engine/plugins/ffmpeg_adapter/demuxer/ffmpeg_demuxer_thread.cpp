@@ -419,6 +419,13 @@ bool FFmpegDemuxerPlugin::ReadAndProcessFrame(Plugins::AVPacketWrapperPtr& pktWr
         readLoopStatus_ = Status::OK;
         int ffmpegRet = AVReadFrameLimit(pkt);
         std::unique_lock<std::mutex> sLock(syncMutex_);
+        Status accumulateStatus = Status::OK;
+        auto action = ProcessAccumulateXpsPkt(pktWrapper, ffmpegRet, accumulateStatus);
+        FALSE_RETURN_V_MSG_E(accumulateStatus == Status::OK, false, "PsAccumulateXpsPkt failed");
+        if (action == AccumulateAction::ACCUMULATE_NOT_COMPLETED) {
+            pktWrapper.reset();
+            return true;
+        }
         UpdMinTsPacketInfo(pktWrapper->GetAVPacket());
         if (ffmpegRet == AVERROR_EOF) {
             HandleAVPacketEndOfStream(pktWrapper);
@@ -429,6 +436,13 @@ bool FFmpegDemuxerPlugin::ReadAndProcessFrame(Plugins::AVPacketWrapperPtr& pktWr
             return false;
         }
     }
+    return HandleAVPacketNormal(pktWrapper);
+}
+
+bool FFmpegDemuxerPlugin::HandleAVPacketNormal(Plugins::AVPacketWrapperPtr& pktWrapper)
+{
+    AVPacket *pkt = (pktWrapper != nullptr) ? pktWrapper->GetAVPacket() : nullptr;
+    FALSE_RETURN_V_MSG_E(pkt != nullptr, false, "Pkt is nullptr");
     auto trackId = pkt->stream_index;
     if (!TrackIsSelected(trackId)) {
         av_packet_unref(pkt);
@@ -466,6 +480,7 @@ bool FFmpegDemuxerPlugin::ReadAndProcessFrame(Plugins::AVPacketWrapperPtr& pktWr
 void FFmpegDemuxerPlugin::HandleAVPacketEndOfStream(Plugins::AVPacketWrapperPtr& pktWrapper)
 {
     AVPacket *pkt = (pktWrapper != nullptr) ? pktWrapper->GetAVPacket() : nullptr;
+    AccumulateXpsPktReleaseAll();
     WebvttMP4EOSProcess(pkt);
     pktWrapper.reset();
     Status ret = PushEOSToAllCache();
@@ -482,6 +497,7 @@ void FFmpegDemuxerPlugin::HandleAVPacketEndOfStream(Plugins::AVPacketWrapperPtr&
 
 void FFmpegDemuxerPlugin::HandleAVPacketReadError(Plugins::AVPacketWrapperPtr& pktWrapper, int ffmpegRet)
 {
+    AccumulateXpsPktReleaseAll();
     AVPacket *pkt = (pktWrapper != nullptr) ? pktWrapper->GetAVPacket() : nullptr;
     FALSE_RETURN_MSG(pkt != nullptr, "AVPacket is nullptr");
     pktWrapper.reset();
