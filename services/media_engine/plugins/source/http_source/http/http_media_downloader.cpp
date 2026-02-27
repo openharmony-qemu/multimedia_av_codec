@@ -100,6 +100,7 @@ HttpMediaDownloader::HttpMediaDownloader(std::string url, uint32_t expectBufferD
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
 {
     if (url.find(".flv") != std::string::npos) {
+        isLive_.store(true);
         MEDIA_LOG_I("HTTP isflv.");
         isRingBuffer_ = true;
         if (sourceLoader != nullptr && sourceLoader->GetenableOfflineCache()) {
@@ -134,6 +135,12 @@ HttpMediaDownloader::~HttpMediaDownloader()
 {
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HttpMediaDownloader dtor", FAKE_POINTER(this));
     Close(false);
+    FALSE_RETURN_MSG(reportInfo_ != nullptr, "reportInfo_ is nullptr");
+    if (isLive_.load()) {
+        reportInfo_->sourceType_ = static_cast<int8_t>(MediaAVCodec::DfxSourceType::HTTPLIVE);
+    } else {
+        reportInfo_->sourceType_ = static_cast<int8_t>(MediaAVCodec::DfxSourceType::HTTPVOD);
+    }
 }
 
 void HttpMediaDownloader::Init()
@@ -144,6 +151,12 @@ void HttpMediaDownloader::Init()
     if (downloader != nullptr) {
         downloader->SetDownloadCallback(downloadMetricsInfo_);
     }
+}
+
+void HttpMediaDownloader::SetSourceStatisticsDfx(
+    std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr)
+{
+    reportInfo_ = rpInfoPtr;
 }
 
 std::string HttpMediaDownloader::GetContentType()

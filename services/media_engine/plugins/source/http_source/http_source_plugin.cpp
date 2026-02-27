@@ -76,6 +76,11 @@ HttpSourcePlugin::~HttpSourcePlugin()
 {
     MEDIA_LOG_D("~HttpSourcePlugin enter.");
     CloseUri();
+    FALSE_RETURN_MSG(reportInfo_ != nullptr, "reportInfo_ is nullptr");
+    OHOS::MediaAVCodec::SourceStatisticsReportInfo reportInfoCopy;
+    std::thread([reportInfoCopy = std::move(this->reportInfo_)]() {
+        OHOS::MediaAVCodec::SourceStatisticsEventWrite(*reportInfoCopy);
+    }).detach();
 }
 
 std::string HttpSourcePlugin::GetContentType()
@@ -218,6 +223,12 @@ Status HttpSourcePlugin::InitSourcePlugin(const std::shared_ptr<MediaSource>& so
         downloader_->SetCallback(callback_);
     }
     FALSE_RETURN_V(downloader_->Open(uri_, httpHeader_), Status::ERROR_UNKNOWN);
+    auto uuid = source->GetAppUid();
+    std::string bundleName = OHOS::Media::HttpMediaUtils::GetClientBundleName(uuid);
+    if (reportInfo_ != nullptr) {
+        reportInfo_->appName_ = bundleName;
+        reportInfo_->sourceUri_ = uri_;
+    }
     return Status::OK;
 }
 
@@ -236,6 +247,14 @@ void HttpSourcePlugin::MediaStreamDfxTrace(std::shared_ptr<MediaSource> source)
     std::string bundleName = OHOS::Media::HttpMediaUtils::GetClientBundleName(uuid);
     MediaAVCodec::StreamAppPackageNameEventWrite("AVSource", bundleName,
         "OH_AVSource_CreateWithURI", "{\"result\": \"success\"}");
+}
+
+static void UserDefinedDuration(std::shared_ptr<PlayStrategy> strategy, bool& uDefinedDuration, uint32_t& expectDur)
+{
+    if (strategy != nullptr && strategy->duration > 0) {
+        expectDur = strategy->duration;
+        uDefinedDuration = true;  // 以用户配置为准，不许调节
+    }
 }
 
 void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source)
@@ -258,18 +277,19 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
     if (IsDash()) {
         downloader_ = std::make_shared<DownloadMonitor>(
                       std::make_shared<DashMediaDownloader>(loaderCombinations_));
+        FALSE_RETURN_MSG(downloader_ != nullptr, "SetDownloaderBySource downloader is nullptr");
         downloader_->Init();
+        downloader_->SetSourceStatisticsDfx(reportInfo_);
         delayReady_ = false;
     } else if (IsSeekToTimeSupported() && mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
         bool userDefinedDuration = false;  // 允许自动调节缓冲区大小
         uint32_t expectDuration = DEFAULT_EXPECT_DURATION;
-        if (playStrategy != nullptr && playStrategy->duration > 0) {
-            expectDuration = playStrategy->duration;
-            userDefinedDuration = true;  // 以用户配置为准，不许调节
-        }
+        UserDefinedDuration(playStrategy, userDefinedDuration, expectDuration);
         downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>
                       (expectDuration, userDefinedDuration, httpHeader_, loaderCombinations_));
+        FALSE_RETURN_MSG(downloader_ != nullptr, "SetDownloaderBySource downloader is nullptr");
         downloader_->Init();
+        downloader_->SetSourceStatisticsDfx(reportInfo_);
         delayReady_ = false;
     } else if (uri_.compare(0, 4, "http") == 0) { // 0 : position, 4: count
         InitHttpSource(source);
@@ -308,6 +328,7 @@ void HttpSourcePlugin::InitHttpSource(const std::shared_ptr<MediaSource>& source
     downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>
         (uri_, expectDuration, loaderCombinations_));
     downloader_->Init();
+    downloader_->SetSourceStatisticsDfx(reportInfo_);
     downloader_->SetMediaStreams(playMediaStreams);
 }
 
@@ -529,6 +550,9 @@ Status HttpSourcePlugin::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
     if (downloader_ == nullptr) {
         MEDIA_LOG_E("SetCurrentBitRate failed, downloader_ is nullptr");
         return Status::ERROR_INVALID_OPERATION;
+    }
+    if (reportInfo_ != nullptr) {
+        reportInfo_->bitRate_ = bitRate;
     }
     return downloader_->SetCurrentBitRate(bitRate, streamID);
 }

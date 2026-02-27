@@ -52,6 +52,7 @@ public:
         const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>());
     ~HlsMediaDownloader() override;
     void Init() override;
+    void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr) override;
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
     void Pause() override;
@@ -113,6 +114,7 @@ private:
     uint32_t bufferingFlag_ {0};
     std::mutex bufferingMutex_;
     std::shared_ptr<DownloadMetricsInfo> downloadMetricsInfo_ {nullptr};
+    std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
 };
 }
 }

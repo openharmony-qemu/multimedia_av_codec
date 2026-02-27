@@ -64,6 +64,11 @@ void DashMediaDownloader::Init()
 bool DashMediaDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
     mpdDownloader_->Open(url);
+    if (reportInfo_ != nullptr) {
+        std::vector<StreamInfo> streams;
+        GetStreamInfo(streams);
+        reportInfo_->videoStreamCnt_ = streams.size();
+    }
     return true;
 }
 
@@ -474,6 +479,7 @@ void DashMediaDownloader::OpenInitSegment(
         downloader->SetDownloadCallback(downloadMetricsInfo_);
     }
     downloader->Init();
+    downloader->SetSourceStatisticsDfx(reportInfo_);
     if (statusCallback_ != nullptr) {
         downloader->SetStatusCallback(statusCallback_);
     }
@@ -500,6 +506,14 @@ void DashMediaDownloader::OpenInitSegment(
     downloader->Open(seg);
     MEDIA_LOG_I("dash first get segment in streamId " PUBLIC_LOG_D32 ", type "
         PUBLIC_LOG_D32, streamDesc->streamId_, streamDesc->type_);
+}
+
+void DashMediaDownloader::SetSourceStatisticsDfx(
+    std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr)
+{
+    reportInfo_ = rpInfoPtr;
+    FALSE_RETURN_MSG(mpdDownloader_ != nullptr, "mpdDownloader_ is nullptr");
+    mpdDownloader_->SetSourceStatisticsDfx(reportInfo_);
 }
 
 void DashMediaDownloader::ReceiveMpdParseOkEvent()

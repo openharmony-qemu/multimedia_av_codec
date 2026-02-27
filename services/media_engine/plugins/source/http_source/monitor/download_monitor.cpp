@@ -259,6 +259,14 @@ void DownloadMonitor::NotifyError(int32_t clientErrorCode, int32_t serverErrorCo
     }
 }
 
+void DownloadMonitor::SetSourceStatisticsDfx(
+    std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr)
+{
+    if (downloader_ != nullptr) {
+        downloader_->SetSourceStatisticsDfx(rpInfoPtr);
+    }
+}
+
 bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
 {
     auto clientError = request->GetClientError();

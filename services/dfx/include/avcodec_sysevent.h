@@ -29,6 +29,18 @@ enum class FaultType : int32_t {
     FAULT_TYPE_END,
 };
 
+enum class DfxSourceType :int8_t {
+    NONE = 0,
+    DASHVOD,
+    HTTPVOD,
+    HLSVOD,
+    FMP4VOD,
+    FMP4LIVE,
+    HLSLIVE,
+    HTTPLIVE,
+    DASHLIVE,
+};
+
 struct CodecDfxInfo {
     pid_t clientPid;
     uid_t clientUid;
@@ -89,6 +101,18 @@ struct AudioSourceFaultInfo {
     std::string errMsg;
 };
 
+struct SourceStatisticsReportInfo {
+    std::string appName_;
+    int8_t sourceType_;
+    std::string sourceUri_;
+    uint32_t playStrategyDuration_;
+    double playStrateBufferDurationForPlaying_;
+    uint32_t bitRate_;
+    uint32_t videoStreamCnt_;
+    uint32_t audioStreamCnt_;
+    uint32_t subtitleCnt_;
+};
+
 void FaultEventWrite(FaultType faultType, const std::string& msg,
                      const std::string& module);
 void ServiceStartEventWrite(uint32_t useTime, const std::string& module);
@@ -102,6 +126,7 @@ void FaultMuxerEventWrite(MuxerFaultInfo& muxerFaultInfo);
 void FaultRecordAudioEventWrite(AudioSourceFaultInfo& audioSourceFaultInfo);
 void StreamAppPackageNameEventWrite(const std::string& sysCap, const std::string& packageName,
                                     const std::string& apiCall, const std::string& mediaEvents);
+void SourceStatisticsEventWrite(SourceStatisticsReportInfo& sourceReportInfo);
 } // namespace MediaAVCodec
 } // namespace OHOS
 #endif // AVCODEC_SYSEVENT_H

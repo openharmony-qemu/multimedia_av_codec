@@ -40,6 +40,7 @@ public:
     explicit DashMediaDownloader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = nullptr);
     ~DashMediaDownloader() override;
     void Init() override;
+    void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr) override;
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
     void Pause() override;
@@ -136,6 +137,7 @@ private:
 
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
     std::shared_ptr<DownloadMetricsInfo> downloadMetricsInfo_ {nullptr};
+    std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
 };
 }
 }

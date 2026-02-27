@@ -45,6 +45,7 @@ public:
     explicit DownloadMonitor(std::shared_ptr<MediaDownloader> downloader) noexcept;
     ~DownloadMonitor() override = default;
     void Init() override;
+    void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr) override;
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
     Status Read(unsigned char* buff, ReadDataInfo& readDataInfo) override;

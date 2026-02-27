@@ -62,6 +62,13 @@ DashMpdDownloader::~DashMpdDownloader()
         downloader_->Stop(false);
     }
     streamDescriptions_.clear();
+    FALSE_RETURN_MSG(reportInfo_ != nullptr, "reportInfo_ is nullptr");
+    FALSE_RETURN_MSG(mpdInfo_ != nullptr, "mpdInfo_ is nullptr");
+    if (mpdInfo_->type_ == DashType::DASH_TYPE_STATIC) {
+        reportInfo_->sourceType_ = static_cast<int8_t>(MediaAVCodec::DfxSourceType::DASHVOD);
+    } else if (mpdInfo_->type_ == DashType::DASH_TYPE_DYNAMIC) {
+        reportInfo_->sourceType_ = static_cast<int8_t>(MediaAVCodec::DfxSourceType::DASHLIVE);
+    }
 }
 
 void DashMpdDownloader::Init()
@@ -2067,6 +2074,37 @@ static VideoType GetVideoType(DashVideoType videoType)
     }
 }
 
+void DashMpdDownloader::SetSourceStatisticsDfx(
+    std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr)
+{
+    reportInfo_ = rpInfoPtr;
+}
+
+void DashMpdDownloader::DfxAudioCntIncrease()
+{
+    FALSE_RETURN_MSG(reportInfo_ != nullptr, "reportInfo_ is nullptr");
+    reportInfo_->audioStreamCnt_++;
+}
+
+void DashMpdDownloader::DfxSubtitleCntIncrease()
+{
+    FALSE_RETURN_MSG(reportInfo_ != nullptr, "reportInfo_ is nullptr");
+    reportInfo_->subtitleCnt_++;
+}
+
+StreamInfo DashMpdDownloader::AssignStreamInfo(unsigned int index)
+{
+    StreamInfo info;
+    FALSE_RETURN_V_MSG(streamDescriptions_[index] != nullptr, info, "AssignStreamInfo fail");
+    info.streamId = streamDescriptions_[index]->streamId_;
+    info.bitRate = streamDescriptions_[index]->bandwidth_;
+    info.videoWidth = static_cast<int32_t>(streamDescriptions_[index]->width_);
+    info.videoHeight = static_cast<int32_t>(streamDescriptions_[index]->height_);
+    info.lang = streamDescriptions_[index]->lang_;
+    info.videoType = GetVideoType(streamDescriptions_[index]->videoType_);
+    return info;
+}
+
 Status DashMpdDownloader::GetStreamInfo(std::vector<StreamInfo> &streams)
 {
     MEDIA_LOG_I("GetStreamInfo");
@@ -2079,6 +2117,7 @@ Status DashMpdDownloader::GetStreamInfo(std::vector<StreamInfo> &streams)
         }
         if (streamDescriptions_[index]->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_AUD) {
             if (streamDescriptions_[index]->adptSetIndex_ == audioAdptSetIndex) {
+                DfxAudioCntIncrease();
                 MEDIA_LOG_D("GetStreamInfo skip audio stream:" PUBLIC_LOG_D32 ",lang:" PUBLIC_LOG_S,
                     streamDescriptions_[index]->streamId_, streamDescriptions_[index]->lang_.c_str());
                 continue;
@@ -2087,6 +2126,7 @@ Status DashMpdDownloader::GetStreamInfo(std::vector<StreamInfo> &streams)
             audioAdptSetIndex = streamDescriptions_[index]->adptSetIndex_;
         } else if (streamDescriptions_[index]->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE) {
             if (streamDescriptions_[index]->adptSetIndex_ == subtitleAdptSetIndex) {
+                DfxSubtitleCntIncrease();
                 MEDIA_LOG_D("GetStreamInfo skip subtitle stream:" PUBLIC_LOG_D32 ",lang:" PUBLIC_LOG_S,
                     streamDescriptions_[index]->streamId_, streamDescriptions_[index]->lang_.c_str());
                 continue;
@@ -2094,13 +2134,7 @@ Status DashMpdDownloader::GetStreamInfo(std::vector<StreamInfo> &streams)
             subtitleAdptSetIndex = streamDescriptions_[index]->adptSetIndex_;
         }
 
-        StreamInfo info;
-        info.streamId = streamDescriptions_[index]->streamId_;
-        info.bitRate = streamDescriptions_[index]->bandwidth_;
-        info.videoWidth = static_cast<int32_t>(streamDescriptions_[index]->width_);
-        info.videoHeight = static_cast<int32_t>(streamDescriptions_[index]->height_);
-        info.lang = streamDescriptions_[index]->lang_;
-        info.videoType = GetVideoType(streamDescriptions_[index]->videoType_);
+        StreamInfo info = AssignStreamInfo(index);
         if (streamDescriptions_[index]->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE) {
             info.type = SUBTITLE;
         } else if (streamDescriptions_[index]->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_AUD) {

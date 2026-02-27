@@ -103,6 +103,8 @@ private:
     std::atomic<bool> isInterruptNeeded_{false};
     std::shared_ptr<MediaSourceLoaderCombinations> loaderCombinations_ {nullptr};
     std::string redirectUrl_ {};
+    std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ =
+        std::make_shared<OHOS::MediaAVCodec::SourceStatisticsReportInfo>();
 };
 } // namespace HttpPluginLite
 } // namespace Plugin
