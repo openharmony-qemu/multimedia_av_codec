@@ -53,6 +53,7 @@ int32_t HevcParser::SetConfig(const std::shared_ptr<BasicBox> &box, std::vector<
 
 int32_t HevcParser::WriteFrame(const std::shared_ptr<AVIOStream> &io, const std::shared_ptr<AVBuffer> &sample)
 {
+    FALSE_RETURN_V_MSG_E(sample->memory_->GetAddr() != nullptr, -1, "sample is null");
     auto buffer = sample->memory_->GetAddr();
     auto size = sample->memory_->GetSize();
     if (isFirstFrame_) {
@@ -158,6 +159,14 @@ bool HevcParser::IsHdrVivid()
         return parser_->IsHdrVivid();
     }
     return false;
+}
+
+std::vector<uint8_t> HevcParser::GetLogInfo()
+{
+    if (parser_) {
+        return parser_->GetLogInfo();
+    }
+    return std::vector<uint8_t>();
 }
 } // namespace Mpeg4
 } // namespace Plugins

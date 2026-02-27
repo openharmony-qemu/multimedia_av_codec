@@ -36,6 +36,7 @@ public:
     virtual Status WriteSample(std::shared_ptr<AVIOStream> io, const std::shared_ptr<AVBuffer> &sample);
     virtual Status WriteTailer();
     virtual Any GetPointer() {return Any();}
+    virtual void UpdateUserMeta(const std::shared_ptr<Meta> &userMeta) {return;}
     void SetTrackId(int32_t trackId);
     void SetTrackPath(std::string trackPath);
     void SetCodingType(std::string codingType);
