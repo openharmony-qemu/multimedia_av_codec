@@ -1081,11 +1081,6 @@ Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const s
                     index, static_cast<uint32_t>(render), outBuffer->pts_);
         DoReleaseOutputBuffer(index, render, outBuffer->pts_);
     }
-    if (!isInSeekContinous_) {
-        int64_t renderDelay = renderTime > 0L && render ?
-            (renderTime - GetSystimeTimeNs()) / MICROSECONDS_CONVERT_UNIT : 0;
-        videoSink_->SetLastPts(outBuffer->pts_, renderDelay);
-    }
     return Status::OK;
 }
 
@@ -1139,6 +1134,12 @@ void DecoderSurfaceFilter::RenderNextOutput(uint32_t index, std::shared_ptr<AVBu
     }
     int64_t actionClock = 0;
     int64_t waitTime = CalculateNextRender(index, outputBuffer, actionClock);
+    if (waitTime >= 0 && !isInSeekContinous_ && outputBuffer->pts_ >= 0
+        && !(outputBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS))
+        && (playRangeEndTime_ == PLAY_RANGE_DEFAULT_VALUE
+        || outputBuffer->pts_ <= playRangeEndTime_ * MICROSECONDS_CONVERT_UNIT)) {
+        videoSink_->SetLastPts(outputBuffer->pts_, waitTime);
+    }
     if (enableRenderAtTime_) {
         int64_t renderTimeNs = (waitTime + actionClock) * NS_PER_US;
         MEDIA_LOG_D("RenderNextOutput enter. pts: " PUBLIC_LOG_D64 "  waitTime: " PUBLIC_LOG_D64

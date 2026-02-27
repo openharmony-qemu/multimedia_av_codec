@@ -234,7 +234,7 @@ int64_t VideoSink::CalcBufferDiff(const std::shared_ptr<OHOS::Media::AVBuffer>& 
     auto videoDiff = (currentClockTime - lastClockTime_)
         - static_cast<int64_t>((buffer->pts_ - lastPts_) / AdjustPlaybackRate(playbackRate));
     // render time per frame reduced by initialVideoWaitPeriod_
-    auto thresholdAdjustedVideoDiff = videoDiff - initialVideoWaitPeriod_;
+    auto thresholdAdjustedVideoDiff = videoDiff - static_cast<int64_t>(initialVideoWaitPeriod_ / 2);
 
     auto diff = anchorDiff;
     if (discardFrameCnt_ + renderFrameCnt_ < VIDEO_SINK_START_FRAME) {
