@@ -109,16 +109,18 @@ private:
     std::shared_ptr<AVFrame> convertedFrame_;
     DataCallback *dataCallback_{nullptr};
     std::vector<uint8_t> config_data;
+    int32_t againIndex_;
 
 private:
     Status SendBuffer(const std::shared_ptr<AVBuffer> &inputBuffer);
     Status ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer);
     Status InitResample();
-    Status ConvertPlanarFrame(std::shared_ptr<AVBuffer> &outBuffer);
+    Status ConvertPlanarFrame();
     void EnableResample(AVSampleFormat destFmt);
     Status SetCodecExtradata(const std::shared_ptr<Meta> &format);
     void CheckFormatChange();
     void SetSkipSamplesInfo(const std::shared_ptr<AVBuffer> &inputBuffer);
+    Status HandleFirstFrame();
     bool isEnableSkipSamples_ = false;
 };
 } // namespace Ffmpeg
