@@ -151,7 +151,7 @@ Status MuxerFilter::DoStart()
         SetFaultEvent("MuxerFilter::DoStart error", (int32_t)ret);
     } else {
         isStarted = true;
-        isReachMaxDuration_ = false;
+        isReachMaxDuration_.store(false);
     }
     return ret;
 }
@@ -294,9 +294,15 @@ Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &met
     sptr<IBrokerListener> listener = new MuxerBrokerListener(shared_from_this(), trackIndex,
         inType, inputBufferQueue);
     inputBufferQueue->SetBufferFilledListener(listener);
-    preFilterCount_++;
-    bufferPtsMap_.insert(std::pair<int32_t, int64_t>(trackIndex, 0));
+    UpdateTrackState(trackIndex);
     return Status::OK;
+}
+
+void MuxerFilter::UpdateTrackState(int32_t trackIndex)
+{
+    preFilterCount_++;
+    std::lock_guard<std::mutex> lock(ptsMapMutex_);
+    bufferPtsMap_.insert(std::pair<int32_t, int64_t>(trackIndex, 0));
 }
 
 Status MuxerFilter::OnUpdated(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -320,19 +326,22 @@ void MuxerFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::OnBufferFilled");
     if (!isTransCoderMode) {
         int64_t currentBufferPts = inputBuffer->pts_;
-        if (currentBufferPts / US_TO_MS > maxDuration_ * S_TO_MS && isReachMaxDuration_ == false) {
+        if (currentBufferPts / US_TO_MS > maxDuration_ * S_TO_MS && isReachMaxDuration_.load() == false) {
             MEDIA_LOG_I("MuxerFilter::OnBufferFilled currentBufferPts > maxDuration_ start to stop");
-            isReachMaxDuration_ = true;
+            isReachMaxDuration_.store(true);
             std::thread asyncThread(std::bind(&MuxerFilter::EventCompleteStopAsync, this));
             asyncThread.detach();
         }
         int64_t anotherBufferPts = 0;
-        for (auto mapInterator = bufferPtsMap_.begin(); mapInterator != bufferPtsMap_.end(); mapInterator++) {
-            if (mapInterator->first != trackIndex) {
-                anotherBufferPts = mapInterator->second;
+        {
+            std::lock_guard<std::mutex> lock(ptsMapMutex_);
+            for (auto mapInterator = bufferPtsMap_.begin(); mapInterator != bufferPtsMap_.end(); mapInterator++) {
+                if (mapInterator->first != trackIndex) {
+                    anotherBufferPts = mapInterator->second;
+                }
             }
+            bufferPtsMap_[trackIndex] = currentBufferPts;
         }
-        bufferPtsMap_[trackIndex] = currentBufferPts;
         if (preFilterCount_ != 1 && std::abs(currentBufferPts - anotherBufferPts) >= WAIT_TIME_OUT_NS) {
             MEDIA_LOG_I("OnBufferFilled pts time interval is greater than 3 seconds");
         }
