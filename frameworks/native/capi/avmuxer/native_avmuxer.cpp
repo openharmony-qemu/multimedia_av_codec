@@ -187,6 +187,31 @@ static OH_AVErrCode SetGenreMeta(std::shared_ptr<Meta> definedMeta, std::shared_
     return AV_ERR_OK;
 }
 
+static OH_AVErrCode SetLocationMeta(std::shared_ptr<Meta> definedMeta, std::shared_ptr<Meta> &param)
+{
+    if (definedMeta->Find(Tag::MEDIA_LATITUDE) != definedMeta->end()) {
+        AVCODEC_LOGI("set format defined key %{public}s", Tag::MEDIA_LATITUDE);
+        float latitude;
+        definedMeta->Get<Tag::MEDIA_LATITUDE>(latitude);
+        param->Set<Tag::MEDIA_LATITUDE>(latitude);
+    }
+
+    if (definedMeta->Find(Tag::MEDIA_LONGITUDE) != definedMeta->end()) {
+        AVCODEC_LOGI("set format defined key %{public}s", Tag::MEDIA_LONGITUDE);
+        float longitude;
+        definedMeta->Get<Tag::MEDIA_LONGITUDE>(longitude);
+        param->Set<Tag::MEDIA_LONGITUDE>(longitude);
+    }
+
+    if (definedMeta->Find(Tag::MEDIA_ALTITUDE) != definedMeta->end()) {
+        AVCODEC_LOGI("set format defined key %{public}s", Tag::MEDIA_ALTITUDE);
+        float altitude;
+        definedMeta->Get<Tag::MEDIA_ALTITUDE>(altitude);
+        param->Set<Tag::MEDIA_ALTITUDE>(altitude);
+    }
+    return AV_ERR_OK;
+}
+
 static OH_AVErrCode SetDefinedMetaParam(std::shared_ptr<Meta> definedMeta, AVMuxerObject* object)
 {
     std::shared_ptr<Meta> param = std::make_shared<Meta>();
@@ -199,6 +224,8 @@ static OH_AVErrCode SetDefinedMetaParam(std::shared_ptr<Meta> definedMeta, AVMux
     CHECK_AND_RETURN_RET_LOG(metaRet == AV_ERR_OK, AV_ERR_INVALID_VAL, "input format is invalid");
     metaRet = SetGenreMeta(definedMeta, param);
     CHECK_AND_RETURN_RET_LOG(metaRet == AV_ERR_OK, AV_ERR_INVALID_VAL, "input genre is invalid");
+    metaRet = SetLocationMeta(definedMeta, param);
+    CHECK_AND_RETURN_RET_LOG(metaRet == AV_ERR_OK, AV_ERR_INVALID_VAL, "input location is invalid");
 
     if (param->Empty()) {
         AVCODEC_LOGW("input format does not have a valid key");

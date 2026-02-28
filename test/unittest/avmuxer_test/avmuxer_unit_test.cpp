@@ -3071,6 +3071,34 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_IsMoovFront_002, TestSize.Level0)
     ret = avmuxer_->WriteSample(trackId, buffer_, info);
     ASSERT_EQ(ret, 0);
 }
+
+/**
+ * @tc.name: Muxer_SetLocation_001
+ * @tc.desc: Muxer mp4 set location(latitude、longitude、altitude)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetLocation_001, TestSize.Level0)
+{
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetLocation_001.mp4");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+    
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> metaData = FormatMockFactory::CreateFormat();
+    metaData->PutFloatValue(OH_MD_KEY_LATITUDE, 90.0f);
+    metaData->PutFloatValue(OH_MD_KEY_LONGITUDE, 180.0f);
+    metaData->PutFloatValue(OH_MD_KEY_ALTITUDE, 123.4f);
+
+    ASSERT_EQ(avmuxer_->SetFormat(audioParams), 0);
+    metaData->InitAudioTrackFormat(Plugins::MimeType::AUDIO_MPEG, 48000, 2);
+    ASSERT_EQ(avmuxer_->AddTrack(trackId, audioParams), 0);
+    
+    ASSERT_EQ(avmuxer_->Start(), 0);
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+}
 #endif // AVMUXER_UNITTEST_CAPI
 
 #ifdef AVMUXER_UNITTEST_INNER_API
