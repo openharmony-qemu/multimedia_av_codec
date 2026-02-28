@@ -76,7 +76,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_M3U8_pause_resume, TestSize.Level1)
     httpSourcePlugin->Pause();
     httpSourcePlugin->Resume();
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(M3U8_SEGMENT_BASE);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     httpSourcePlugin->SetSource(source);
     httpSourcePlugin->SetCallback(sourceCallback);
     httpSourcePlugin->GetSeekable();
@@ -96,7 +96,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_MP4_SetPlayStrategy, TestSize.Level1)
     playStrategy->preferHDR = false;
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(MP4_SEGMENT_BASE);
     source->SetPlayStrategy(playStrategy);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     httpSourcePlugin->SetSource(source);
     httpSourcePlugin->SetCallback(sourceCallback);
     httpSourcePlugin->GetSeekable();
@@ -114,7 +114,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_M3U8_SetPlayStrategy, TestSize.Level1)
     playStrategy->preferHDR = false;
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(M3U8_SEGMENT_BASE);
     source->SetPlayStrategy(playStrategy);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     httpSourcePlugin->SetSource(source);
     httpSourcePlugin->SetCallback(sourceCallback);
     httpSourcePlugin->GetSeekable();
@@ -132,7 +132,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_MPD_SetPlayStrategy, TestSize.Level1)
     playStrategy->preferHDR = false;
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(MPD_SEGMENT_BASE);
     source->SetPlayStrategy(playStrategy);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     httpSourcePlugin->SetSource(source);
     httpSourcePlugin->SetCallback(sourceCallback);
     httpSourcePlugin->GetSeekable();
@@ -144,7 +144,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_MPD_SetPlayStrategy, TestSize.Level1)
 HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MP4, TestSize.Level0)
 {
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(MP4_SEGMENT_BASE);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     httpSourcePlugin->SetSource(source);
     httpSourcePlugin->SetCallback(sourceCallback);
     httpSourcePlugin->GetSeekable();
@@ -158,7 +158,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MP4, TestSize.Level0)
 HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MP4_DumuxState, TestSize.Level0)
 {
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(MP4_SEGMENT_BASE);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     httpSourcePlugin->SetSource(source);
     httpSourcePlugin->SetCallback(sourceCallback);
     httpSourcePlugin->GetSeekable();
@@ -181,7 +181,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_FUNC, TestSize.Level1)
     httpSourcePlugin->GetSeekable();
     httpSourcePlugin->SetCurrentBitRate(10, 0);
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(MP4_SEGMENT_BASE);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     httpSourcePlugin->SetSource(source);
     httpSourcePlugin->SetCallback(sourceCallback);
     httpSourcePlugin->GetSeekable();
@@ -205,7 +205,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_INFO, TestSize.Level1)
     httpSourcePlugin->GetPlaybackInfo(playbackInfo);
     httpSourcePlugin->GetStreamInfo(streams);
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(MP4_SEGMENT_BASE);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     httpSourcePlugin->SetSource(source);
     httpSourcePlugin->SetCallback(sourceCallback);
     httpSourcePlugin->GetSeekable();
@@ -223,7 +223,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_INFO, TestSize.Level1)
 HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MPD, TestSize.Level1)
 {
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(MPD_SEGMENT_BASE);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     httpSourcePlugin->SetSource(source);
     httpSourcePlugin->SetCallback(sourceCallback);
     httpSourcePlugin->GetSeekable();
@@ -237,7 +237,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MPD, TestSize.Level1)
 HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_M3U8, TestSize.Level1)
 {
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(M3U8_SEGMENT_BASE);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     httpSourcePlugin->SetSource(source);
     httpSourcePlugin->SetCallback(sourceCallback);
     httpSourcePlugin->GetSeekable();
@@ -251,7 +251,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_M3U8, TestSize.Level1)
 HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_M3U8_SetDemuxerState, TestSize.Level1)
 {
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(M3U8_SEGMENT_BASE);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     httpSourcePlugin->SetSource(source);
     httpSourcePlugin->SetCallback(sourceCallback);
     httpSourcePlugin->GetSeekable();
@@ -446,7 +446,7 @@ HWTEST_F(HttpSourcePluginUnitTest, SetInterruptState2, TestSize.Level1)
 HWTEST_F(HttpSourcePluginUnitTest, SEEK_TO_TIME_BY_STREAMID_001, TestSize.Level1)
 {
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(M3U8_SEGMENT_BASE);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     httpSourcePlugin->SetSource(source);
     httpSourcePlugin->SetCallback(sourceCallback);
     httpSourcePlugin->GetSeekable();
@@ -459,7 +459,7 @@ HWTEST_F(HttpSourcePluginUnitTest, SEEK_TO_TIME_BY_STREAMID_001, TestSize.Level1
 HWTEST_F(HttpSourcePluginUnitTest, INIT_HTTP_SOURCE_001, TestSize.Level1)
 {
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(FLV_SEGMENT_BASE);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     MediaStreamList mediaStreams;
     std::shared_ptr<PlayMediaStream> mediaStreamA = std::make_shared<PlayMediaStream>();
     mediaStreamA->width = 480;

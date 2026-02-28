@@ -162,7 +162,7 @@ Status Source::InitPlugin(const std::shared_ptr<MediaSource>& source)
     Status ret = plugin_->Init();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "InitPlugin failed");
 
-    plugin_->SetCallback(this);
+    plugin_->SetCallback(shared_from_this());
     plugin_->SetEnableOnlineFdCache(isEnableFdCache_);
     ret = plugin_->SetSource(source);
 

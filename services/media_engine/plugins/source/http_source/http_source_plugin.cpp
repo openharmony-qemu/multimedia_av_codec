@@ -183,13 +183,13 @@ Status HttpSourcePlugin::SetParameter(const std::shared_ptr<Meta> &meta)
     return Status::OK;
 }
 
-Status HttpSourcePlugin::SetCallback(Callback* cb)
+Status HttpSourcePlugin::SetCallback(const std::shared_ptr<Callback>& cb)
 {
     MEDIA_LOG_D("SetCallback enter.");
     callback_ = cb;
     AutoLock lock(mutex_);
     if (downloader_ != nullptr) {
-        downloader_->SetCallback(cb);
+        downloader_->SetCallback(callback_);
     }
     return Status::OK;
 }

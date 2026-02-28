@@ -92,7 +92,7 @@ public:
     int64_t GetDuration() const;
     std::pair<int64_t, bool> GetStartInfo() const;
     Seekable GetSeekable() const;
-    void SetCallback(Callback* cb);
+    void SetCallback(const std::shared_ptr<Callback>& cb);
     void OnPlayListChanged(const std::vector<PlayInfo>& playList) override;
     void OnMasterReady(bool needAudioManager, bool needSubtitlesManager) override;
     void SetStatusCallback(StatusCallbackFunc cb);
@@ -230,7 +230,7 @@ private:
     size_t totalBufferSize_ {0};
     std::shared_ptr<Downloader> downloader_;
     std::shared_ptr<DownloadRequest> downloadRequest_;
-    Callback* callback_ {nullptr};
+    std::weak_ptr<Callback> callback_;
     DataSaveFunc dataSave_;
     StatusCallbackFunc statusCallback_;
     std::function<void(bool, bool)> masterReadyCallback_;
@@ -362,12 +362,12 @@ private:
     HlsSegmentEventCbFunc segEventCb_;
     HlsSegmentBufferingCbFunc bufferingCbFunc_;
     std::string masterString_;
-    std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
     bool isEos_ {false};
     std::shared_mutex downloadRequestMutex_;
 
     std::mutex canReadMutex_;
     std::condition_variable canReadCond_;
+    std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
     InfoIndexMap InfoIndexMap_;
 };
 }

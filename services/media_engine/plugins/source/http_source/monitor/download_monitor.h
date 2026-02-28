@@ -55,7 +55,7 @@ public:
     int64_t GetDuration() const override;
     std::pair<int64_t, bool> GetStartInfo() const override;
     Seekable GetSeekable() const override;
-    void SetCallback(Callback *cb) override;
+    void SetCallback(const std::shared_ptr<Callback>& cb) override;
     void SetStatusCallback(StatusCallbackFunc cb) override;
     bool GetStartedStatus() override;
     bool SeekToTime(int64_t seekTime, SeekMode mode) override;
@@ -111,7 +111,7 @@ private:
     std::atomic<bool> isPlaying_ {false};
     std::shared_ptr<Task> task_;
     time_t lastReadTime_ {0};
-    Callback* callback_ {nullptr};
+    std::weak_ptr<Callback> callback_;
     Mutex taskMutex_ {};
     uint64_t haveReadData_ {0};
     bool isNeedClearBuffer_ {false};

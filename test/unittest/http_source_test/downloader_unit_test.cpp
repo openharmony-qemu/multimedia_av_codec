@@ -1510,7 +1510,7 @@ HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_001, TestSize.Level1)
     std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
         (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
     downloader->Init();
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->callback_ = sourceCallback;
     downloader->NotifyError(52, 403);
     std::shared_ptr<DownloadRequest> request = std::make_shared<DownloadRequest>("", nullptr, nullptr,  false);
@@ -1553,7 +1553,7 @@ HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_002, TestSize.Level1)
     std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
         (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
     downloader->Init();
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->downloader_ = nullptr;
     downloader->callback_ = sourceCallback;
     downloader->NotifyError(52, 403);

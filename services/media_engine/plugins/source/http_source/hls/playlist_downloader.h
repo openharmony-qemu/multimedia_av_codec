@@ -105,7 +105,7 @@ public:
     void Init();
     void UpdateDownloadFinished(const std::string& url, const std::string& location);
     std::map<std::string, std::string> GetHttpHeader();
-    void SetCallback(Callback* cb);
+    void SetCallback(const std::shared_ptr<Callback>& cb);
     void SetAppUid(int32_t appUid);
     virtual size_t GetSegmentOffset(uint32_t tsIndex)
     {
@@ -157,7 +157,7 @@ protected:
     Seekable seekable_ {Seekable::SEEKABLE};
     uint64_t position_ {0};
     int64_t retryStartTime_ {0};
-    Callback* eventCallback_ {nullptr};
+    std::weak_ptr<Callback> eventCallback_;
     std::atomic<bool> isInterruptNeeded_{false};
     std::atomic<bool> isAppBackground_ {false};
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};

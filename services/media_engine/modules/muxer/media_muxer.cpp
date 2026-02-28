@@ -124,7 +124,7 @@ Status MediaMuxer::Init(int32_t fd, Plugins::OutputFormat format)
     muxer_ = CreatePlugin(format_);
     if (muxer_ != nullptr) {
         state_ = State::INITIALIZED;
-        muxer_->SetCallback(this);
+        muxer_->SetCallback(shared_from_this());
         MEDIA_LOG_I("The state is INITIALIZED");
     } else {
         MEDIA_LOG_E("The state is UNINITIALIZED");
@@ -148,7 +148,7 @@ Status MediaMuxer::Init(FILE *file, Plugins::OutputFormat format)
     muxer_ = CreatePlugin(format_);
     if (muxer_ != nullptr) {
         state_ = State::INITIALIZED;
-        muxer_->SetCallback(this);
+        muxer_->SetCallback(shared_from_this());
         MEDIA_LOG_I("The state is INITIALIZED");
     } else {
         MEDIA_LOG_E("The state is UNINITIALIZED");

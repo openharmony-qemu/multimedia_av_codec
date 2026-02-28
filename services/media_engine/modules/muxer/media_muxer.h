@@ -27,7 +27,7 @@
 
 namespace OHOS {
 namespace Media {
-class MediaMuxer : public Plugins::Callback {
+class MediaMuxer : public Plugins::Callback, public std::enable_shared_from_this<MediaMuxer> {
 public:
     MediaMuxer(int32_t appUid, int32_t appPid);
     virtual ~MediaMuxer();

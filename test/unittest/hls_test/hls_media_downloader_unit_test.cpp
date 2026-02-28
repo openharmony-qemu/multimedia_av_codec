@@ -92,7 +92,7 @@ std::shared_ptr<HlsMediaDownloader> OpenHlsDetachAudioVideo(std::string url = "t
         std::shared_ptr<DownloadRequest>& request) {
     };
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->SetCallback(sourceCallback);
 
     std::string testUrl = TEST_URI_PATH + url;
@@ -105,10 +105,7 @@ std::shared_ptr<HlsMediaDownloader> OpenHlsDetachAudioVideo(std::string url = "t
 
 void CloseHlsDetachAudioVideo(std::shared_ptr<HlsMediaDownloader> downloader)
 {
-    auto sourceCallback = downloader->callback_;
     downloader = nullptr;
-    delete sourceCallback;
-    sourceCallback = nullptr;
 }
 }
 
@@ -171,7 +168,7 @@ HWTEST_F(HlsMediaDownloaderTest, GET_DOWNLOAD_INFO_002, TestSize.Level1)
 {
     auto downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
     downloader->Init();
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->SetCallback(sourceCallback);
 
     auto info = downloader->GetDownloadInfo();
@@ -182,8 +179,6 @@ HWTEST_F(HlsMediaDownloaderTest, GET_DOWNLOAD_INFO_002, TestSize.Level1)
     info = downloader->GetDownloadInfo();
     EXPECT_EQ(info.first, 0);
     EXPECT_EQ(info.second, 0);
-    delete sourceCallback;
-    sourceCallback = nullptr;
 }
 
 HWTEST_F(HlsMediaDownloaderTest, GET_BUFFER_SIZE_001, TestSize.Level1)
@@ -459,7 +454,7 @@ HWTEST_F(HlsMediaDownloaderTest, TEST_CALLBACK_001, TestSize.Level1)
         std::shared_ptr<DownloadRequest>& request) {
     };
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->SetCallback(sourceCallback);
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
@@ -482,8 +477,6 @@ HWTEST_F(HlsMediaDownloaderTest, TEST_CALLBACK_001, TestSize.Level1)
     downloader->SetReadBlockingFlag(true);
     downloader->Close(true);
     downloader = nullptr;
-    delete sourceCallback;
-    sourceCallback = nullptr;
 }
 
 HWTEST_F(HlsMediaDownloaderTest, TEST_CALLBACK_002, TestSize.Level1)
@@ -497,7 +490,7 @@ HWTEST_F(HlsMediaDownloaderTest, TEST_CALLBACK_002, TestSize.Level1)
         std::shared_ptr<DownloadRequest>& request) {
     };
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->SetCallback(sourceCallback);
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
@@ -511,8 +504,6 @@ HWTEST_F(HlsMediaDownloaderTest, TEST_CALLBACK_002, TestSize.Level1)
     downloader->Close(true);
     downloader = nullptr;
     EXPECT_GE(readDataInfo.realReadLength_, 0);
-    delete sourceCallback;
-    sourceCallback = nullptr;
 }
 
 HWTEST_F(HlsMediaDownloaderTest, TEST_CALLBACK_003, TestSize.Level1)
@@ -525,7 +516,7 @@ HWTEST_F(HlsMediaDownloaderTest, TEST_CALLBACK_003, TestSize.Level1)
         std::shared_ptr<DownloadRequest>& request) {
     };
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->SetCallback(sourceCallback);
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
@@ -548,8 +539,6 @@ HWTEST_F(HlsMediaDownloaderTest, TEST_CALLBACK_003, TestSize.Level1)
     downloader->SetReadBlockingFlag(true);
     downloader->Close(true);
     downloader = nullptr;
-    delete sourceCallback;
-    sourceCallback = nullptr;
 }
 
 HWTEST_F(HlsMediaDownloaderTest, TEST_CALLBACK_004, TestSize.Level1)
@@ -562,7 +551,7 @@ HWTEST_F(HlsMediaDownloaderTest, TEST_CALLBACK_004, TestSize.Level1)
         std::shared_ptr<DownloadRequest>& request) {
     };
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->SetCallback(sourceCallback);
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
@@ -576,8 +565,6 @@ HWTEST_F(HlsMediaDownloaderTest, TEST_CALLBACK_004, TestSize.Level1)
     downloader->Close(true);
     downloader = nullptr;
     EXPECT_GE(readDataInfo.realReadLength_, 0);
-    delete sourceCallback;
-    sourceCallback = nullptr;
 }
 
 HWTEST_F(HlsMediaDownloaderTest, TEST_CALLBACK_005, TestSize.Level1)
@@ -591,7 +578,7 @@ HWTEST_F(HlsMediaDownloaderTest, TEST_CALLBACK_005, TestSize.Level1)
         std::shared_ptr<DownloadRequest>& request) {
     };
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->SetCallback(sourceCallback);
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
@@ -614,8 +601,6 @@ HWTEST_F(HlsMediaDownloaderTest, TEST_CALLBACK_005, TestSize.Level1)
     downloader->SetReadBlockingFlag(true);
     downloader->Close(true);
     downloader = nullptr;
-    delete sourceCallback;
-    sourceCallback = nullptr;
 }
 
 HWTEST_F(HlsMediaDownloaderTest, TEST_CALLBACK_006, TestSize.Level1)
@@ -629,7 +614,7 @@ HWTEST_F(HlsMediaDownloaderTest, TEST_CALLBACK_006, TestSize.Level1)
         std::shared_ptr<DownloadRequest>& request) {
     };
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->SetCallback(sourceCallback);
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
@@ -643,8 +628,6 @@ HWTEST_F(HlsMediaDownloaderTest, TEST_CALLBACK_006, TestSize.Level1)
     downloader->Close(true);
     downloader = nullptr;
     EXPECT_GE(readDataInfo.realReadLength_, 0);
-    delete sourceCallback;
-    sourceCallback = nullptr;
 }
 
 HWTEST_F(HlsMediaDownloaderTest, GET_SEGMENT_OFFSET_001, TestSize.Level1)
@@ -904,8 +887,8 @@ HWTEST_F(HlsMediaDownloaderTest, SET_INITIAL_BUFFERSIZE_001, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
     PlayInfo playInfo;
     playInfo.url_ = testUrl;
@@ -914,8 +897,6 @@ HWTEST_F(HlsMediaDownloaderTest, SET_INITIAL_BUFFERSIZE_001, TestSize.Level1)
     downloader->videoSegManager_->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
     downloader->videoSegManager_->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE_UT);
     EXPECT_FALSE(downloader->SetInitialBufferSize(0, 20000000));
-    delete sourceCallback;
-    sourceCallback = nullptr;
 }
 
 HWTEST_F(HlsMediaDownloaderTest, SET_INITIAL_BUFFERSIZE_002, TestSize.Level1)
@@ -929,8 +910,8 @@ HWTEST_F(HlsMediaDownloaderTest, SET_INITIAL_BUFFERSIZE_002, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
     PlayInfo playInfo;
     playInfo.url_ = testUrl;
@@ -939,8 +920,6 @@ HWTEST_F(HlsMediaDownloaderTest, SET_INITIAL_BUFFERSIZE_002, TestSize.Level1)
     downloader->videoSegManager_->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
     downloader->videoSegManager_->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE_UT);
     EXPECT_FALSE(downloader->SetInitialBufferSize(0, 50000));
-    delete sourceCallback;
-    sourceCallback = nullptr;
 }
 
 HWTEST_F(HlsMediaDownloaderTest, SET_INITIAL_BUFFERSIZE_003, TestSize.Level1)
@@ -1116,15 +1095,13 @@ HWTEST_F(HlsMediaDownloaderTest, GET_STREAM_INFO_001, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     std::vector<StreamInfo> streams;
     EXPECT_EQ(downloader->GetStreamInfo(streams), Status::OK);
 
     downloader->videoSegManager_ = nullptr;
     EXPECT_EQ(downloader->GetStreamInfo(streams), Status::ERROR_UNKNOWN);
-    delete sourceCallback;
-    sourceCallback = nullptr;
 }
 
 HWTEST_F(HlsMediaDownloaderTest, IS_HLS_FMP4_001, TestSize.Level1)
@@ -1154,12 +1131,10 @@ HWTEST_F(HlsMediaDownloaderTest, SEEK_TO_TIME_001, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     auto ret = downloader->SeekToTime(0, SeekMode::SEEK_NEXT_SYNC);
     EXPECT_TRUE(ret);
-    delete sourceCallback;
-    sourceCallback = nullptr;
 }
 
 HWTEST_F(HlsMediaDownloaderTest, SEEK_TO_TIME_002, TestSize.Level1)
@@ -1171,12 +1146,10 @@ HWTEST_F(HlsMediaDownloaderTest, SEEK_TO_TIME_002, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     auto ret = downloader->SeekToTime(0, SeekMode::SEEK_NEXT_SYNC);
     EXPECT_FALSE(ret);
-    delete sourceCallback;
-    sourceCallback = nullptr;
 }
 
 HWTEST_F(HlsMediaDownloaderTest, SEEK_TO_TIME_003, TestSize.Level1)
@@ -1188,12 +1161,10 @@ HWTEST_F(HlsMediaDownloaderTest, SEEK_TO_TIME_003, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     auto ret = downloader->SeekToTime(0, SeekMode::SEEK_NEXT_SYNC);
     EXPECT_FALSE(ret);
-    delete sourceCallback;
-    sourceCallback = nullptr;
 }
 
 HWTEST_F(HlsMediaDownloaderTest, SEEK_TO_TIME_004, TestSize.Level1)
@@ -1212,12 +1183,10 @@ HWTEST_F(HlsMediaDownloaderTest, SEEK_TO_TIME_004, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     auto ret = downloader->SeekToTime(0, SeekMode::SEEK_NEXT_SYNC);
     EXPECT_TRUE(ret);
-    delete sourceCallback;
-    sourceCallback = nullptr;
 }
 
 HWTEST_F(HlsMediaDownloaderTest, SEEK_TO_TIME_BY_STREAMID_001, TestSize.Level1)
@@ -1317,7 +1286,7 @@ HWTEST_F(HlsMediaDownloaderTest, POST_BUFFERING_EVENT_001, TestSize.Level1)
 {
     auto downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
     downloader->Init();
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->SetCallback(sourceCallback);
     EXPECT_EQ(downloader->bufferingFlag_, 0);
     downloader->PostBufferingEvent(HlsSegmentType::SEG_VIDEO, BufferingInfoType::BUFFERING_START);
@@ -1331,15 +1300,13 @@ HWTEST_F(HlsMediaDownloaderTest, POST_BUFFERING_EVENT_001, TestSize.Level1)
     downloader->PostBufferingEvent(HlsSegmentType::SEG_AUDIO, BufferingInfoType::BUFFERING_END);
     downloader->PostBufferingEvent(HlsSegmentType::SEG_VIDEO, BufferingInfoType::BUFFERING_END);
     EXPECT_EQ(downloader->bufferingFlag_, 0);
-    delete sourceCallback;
-    sourceCallback = nullptr;
 }
 
 HWTEST_F(HlsMediaDownloaderTest, GET_CONTENT_TYPE_001, TestSize.Level1)
 {
     auto downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
     downloader->Init();
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->SetCallback(sourceCallback);
     auto type = downloader->GetContentType();
     EXPECT_EQ(type, "");
@@ -1347,8 +1314,6 @@ HWTEST_F(HlsMediaDownloaderTest, GET_CONTENT_TYPE_001, TestSize.Level1)
     downloader->videoSegManager_ = nullptr;
     auto typeNullptr = downloader->GetContentType();
     EXPECT_EQ(typeNullptr, "");
-    delete sourceCallback;
-    sourceCallback = nullptr;
 }
 
 HWTEST_F(HlsMediaDownloaderTest, GET_STARTED_STATUS_001, TestSize.Level1)
@@ -1371,7 +1336,7 @@ HWTEST_F(HlsMediaDownloaderTest, GET_STARTED_STATUS_003, TestSize.Level1)
 {
     auto downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
     downloader->Init();
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->SetCallback(sourceCallback);
     auto ret = downloader->GetStartedStatus();
     EXPECT_FALSE(ret);
@@ -1386,7 +1351,7 @@ HWTEST_F(HlsMediaDownloaderTest, SELECT_BITRATE_001, TestSize.Level1)
 {
     auto downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
     downloader->Init();
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->SetCallback(sourceCallback);
     auto ret = downloader->SelectBitRate(100000);
     EXPECT_EQ(ret, true);
@@ -1394,15 +1359,13 @@ HWTEST_F(HlsMediaDownloaderTest, SELECT_BITRATE_001, TestSize.Level1)
     downloader->videoSegManager_ = nullptr;
     ret = downloader->SelectBitRate(100000);
     EXPECT_EQ(ret, false);
-    delete sourceCallback;
-    sourceCallback = nullptr;
 }
 
 HWTEST_F(HlsMediaDownloaderTest, SET_IS_TRIGGER_AUTO_MODE_001, TestSize.Level1)
 {
     auto downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
     downloader->Init();
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->SetCallback(sourceCallback);
 
     EXPECT_TRUE(downloader->videoSegManager_->isAutoSelectBitrate_);
@@ -1414,8 +1377,6 @@ HWTEST_F(HlsMediaDownloaderTest, SET_IS_TRIGGER_AUTO_MODE_001, TestSize.Level1)
     downloader->videoSegManager_ = nullptr;
     downloader->SetIsTriggerAutoMode(false);
     downloader->SetAppUid(TEST_APP_UID);
-    delete sourceCallback;
-    sourceCallback = nullptr;
 }
 
 HWTEST_F(HlsMediaDownloaderTest, GET_BUFFERING_TIMEOUT_001, TestSize.Level1)
@@ -1607,7 +1568,7 @@ HWTEST_F(HlsMediaDownloaderTest, POST_ALL_EVENT_001, TestSize.Level1)
 {
     auto downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
     downloader->Init();
-    Plugins::Callback* eventCallback = new EventCallback();
+    auto eventCallback = std::make_shared<EventCallback>();
     downloader->SetCallback(eventCallback);
 
     g_eventStatus = 0;
@@ -1625,8 +1586,6 @@ HWTEST_F(HlsMediaDownloaderTest, POST_ALL_EVENT_001, TestSize.Level1)
     EXPECT_EQ(g_eventStatus, 0);
 
     downloader = nullptr;
-    delete eventCallback;
-    eventCallback = nullptr;
 }
 
 HWTEST_F(HlsMediaDownloaderTest, INIT_SOURCE_LOADER_001, TestSize.Level1)

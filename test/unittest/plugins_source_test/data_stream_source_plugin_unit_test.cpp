@@ -196,11 +196,11 @@ HWTEST_F(DataStreamSourceUnitTest, HandleBufferingStart_001, TestSize.Level1)
 HWTEST_F(DataStreamSourceUnitTest, HandleBufferingStart_002, TestSize.Level1)
 {
     plugin_->isBufferingStart = false;
-    plugin_->callback_ = new TestCallback();
+    auto callback = std::make_shared<TestCallback>();
+    plugin_->callback_ = callback;
 
     plugin_->HandleBufferingStart();
     EXPECT_TRUE(plugin_->isBufferingStart);
-    delete plugin_->callback_;
 }
 
 /**
@@ -238,11 +238,11 @@ HWTEST_F(DataStreamSourceUnitTest, HandleBufferingEnd_001, TestSize.Level1)
 HWTEST_F(DataStreamSourceUnitTest, HandleBufferingEnd_002, TestSize.Level1)
 {
     plugin_->isBufferingStart = true;
-    plugin_->callback_ = new TestCallback();
+    auto callback = std::make_shared<TestCallback>();
+    plugin_->callback_ = callback;
 
     plugin_->HandleBufferingEnd();
     EXPECT_FALSE(plugin_->isBufferingStart);
-    delete plugin_->callback_;
 }
 
 /**

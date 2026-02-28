@@ -53,7 +53,7 @@ public:
     size_t GetContentLength() const override;
     int64_t GetDuration() const override;
     Seekable GetSeekable() const override;
-    void SetCallback(Callback* cb) override;
+    void SetCallback(const std::shared_ptr<Callback>& cb) override;
     void SetStatusCallback(StatusCallbackFunc cb) override;
     bool GetStartedStatus() override;
     void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
@@ -177,7 +177,7 @@ private:
     mutable std::shared_mutex downloaderMutex_;
     mutable std::shared_mutex downloadRequestMutex_;
     ConditionVariable cvReadWrite_;
-    Callback* callback_ {nullptr};
+    std::weak_ptr<Callback> callback_;
     StatusCallbackFunc statusCallback_ {nullptr};
     bool aboveWaterline_ {false};
     bool startedPlayStatus_ {false};

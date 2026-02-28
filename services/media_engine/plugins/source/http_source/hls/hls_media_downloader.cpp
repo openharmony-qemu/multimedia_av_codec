@@ -231,7 +231,7 @@ Seekable HlsMediaDownloader::GetSeekable() const
     return videoSegManager_->GetSeekable();
 }
 
-void HlsMediaDownloader::SetCallback(Callback* cb)
+void HlsMediaDownloader::SetCallback(const std::shared_ptr<Callback>& cb)
 {
     callback_ = cb;
     FALSE_RETURN_MSG(videoSegManager_ != nullptr, "SetCallback no video segment manager found!");
@@ -583,34 +583,35 @@ Status HlsMediaDownloader::SelectStream(int32_t streamId)
 
 void HlsMediaDownloader::PostAllEvent(HlsSegEvent event)
 {
-    FALSE_RETURN_MSG(callback_, "PostAllEvent no callback, %{public}d", event.type);
+    auto callback = callback_.lock();
+    FALSE_RETURN_MSG(callback, "PostAllEvent no callback, %{public}d", event.type);
     MEDIA_LOG_I("PostAllEvent: %{public}d, msg: %{public}s", event.type, event.str.c_str());
     switch (event.type) {
         case PluginEventType::CLIENT_ERROR:
-            callback_->OnEvent({event.type, event.networkError, event.str});
+            callback->OnEvent({event.type, event.networkError, event.str});
             break;
         case PluginEventType::INITIAL_BUFFER_SUCCESS:
-            callback_->OnEvent({event.type, event.bufferType, event.str});
+            callback->OnEvent({event.type, event.bufferType, event.str});
             break;
         case PluginEventType::SOURCE_DRM_INFO_UPDATE:
-            callback_->OnEvent({event.type, event.drmInfos, event.str});
+            callback->OnEvent({event.type, event.drmInfos, event.str});
             break;
         case PluginEventType::VIDEO_SIZE_CHANGE:
-            callback_->OnEvent({event.type, event.videoSize, event.str});
+            callback->OnEvent({event.type, event.videoSize, event.str});
             break;
         case PluginEventType::SOURCE_BITRATE_START:
-            callback_->OnEvent({event.type, event.bitRate, event.str});
+            callback->OnEvent({event.type, event.bitRate, event.str});
             break;
         case PluginEventType::CACHED_DURATION:
-            callback_->OnEvent({event.type, event.cachedDuration, event.str});
+            callback->OnEvent({event.type, event.cachedDuration, event.str});
             break;
         case PluginEventType::EVENT_BUFFER_PROGRESS:
             if (event.segType == HlsSegmentType::SEG_VIDEO) {
-                callback_->OnEvent({event.type, event.percent, event.str});
+                callback->OnEvent({event.type, event.percent, event.str});
             }
             break;
         case PluginEventType::HLS_SEEK_READY:
-            callback_->OnEvent({event.type, event.seekReadyInfo, event.str});
+            callback->OnEvent({event.type, event.seekReadyInfo, event.str});
             break;
         default:
             break;
@@ -619,7 +620,8 @@ void HlsMediaDownloader::PostAllEvent(HlsSegEvent event)
 
 void HlsMediaDownloader::PostBufferingEvent(HlsSegmentType mediaType, BufferingInfoType type)
 {
-    FALSE_RETURN_MSG(callback_, "PostBufferingEvent no callback");
+    auto callback = callback_.lock();
+    FALSE_RETURN_MSG(callback, "PostBufferingEvent no callback");
     std::lock_guard<std::mutex> bufferingLock(bufferingMutex_);
     uint32_t flag;
     switch (mediaType) {
@@ -641,7 +643,7 @@ void HlsMediaDownloader::PostBufferingEvent(HlsSegmentType mediaType, BufferingI
     if (type == BufferingInfoType::BUFFERING_START) {
         if (bufferingFlag_ == 0) {
             MEDIA_LOG_I("PostBufferingEvent buffering start");
-            callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
+            callback->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
         }
         bufferingFlag_ |= flag;
     } else if (type == BufferingInfoType::BUFFERING_END) {
@@ -651,7 +653,7 @@ void HlsMediaDownloader::PostBufferingEvent(HlsSegmentType mediaType, BufferingI
         }
         if (lastBufferingFlag > 0 && bufferingFlag_ == 0) {
             MEDIA_LOG_I("PostBufferingEvent buffering end");
-            callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
+            callback->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
         }
     } else {
         MEDIA_LOG_D("PostBufferingEvent unknown type");

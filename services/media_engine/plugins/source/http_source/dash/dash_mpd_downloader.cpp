@@ -570,8 +570,9 @@ void DashMpdDownloader::ParseManifest()
             return;
         }
 
-        if (callback_ != nullptr) {
-            callback_->OnMpdInfoUpdate(DASH_MPD_EVENT_STREAM_INIT);
+        auto callback = callback_.lock();
+        if (callback) {
+            callback->OnMpdInfoUpdate(DASH_MPD_EVENT_STREAM_INIT);
         }
 
         ProcessDrmInfos();
@@ -663,8 +664,9 @@ void DashMpdDownloader::ProcessDrmInfos()
         }
     }
 
-    if (callback_ != nullptr) {
-        callback_->OnDrmInfoChanged(drmInfoMap);
+    auto callback = callback_.lock();
+    if (callback) {
+        callback->OnDrmInfoChanged(drmInfoMap);
     }
 }
 
@@ -723,17 +725,18 @@ void DashMpdDownloader::ParseSidx()
 
     BuildDashSegment(subSegIndexList);
     currentDownloadStream_->segsState_ = DASH_SEGS_STATE_FINISH;
+    auto callback = callback_.lock();
     if (!notifyOpenOk_) {
         if (!PutStreamToDownload()) {
-            if (callback_ != nullptr) {
-                callback_->OnMpdInfoUpdate(DASH_MPD_EVENT_STREAM_INIT);
+            if (callback) {
+                callback->OnMpdInfoUpdate(DASH_MPD_EVENT_STREAM_INIT);
             }
 
             notifyOpenOk_ = true;
         }
     } else {
-        if (callback_ != nullptr) {
-            callback_->OnMpdInfoUpdate(DASH_MPD_EVENT_PARSE_OK);
+        if (callback) {
+            callback->OnMpdInfoUpdate(DASH_MPD_EVENT_PARSE_OK);
         }
     }
 }
@@ -854,7 +857,7 @@ uint32_t DashMpdDownloader::SaveData(uint8_t* data, uint32_t len, bool notBlock)
     return len;
 }
 
-void DashMpdDownloader::SetMpdCallback(DashMpdCallback *callback)
+void DashMpdDownloader::SetMpdCallback(const std::shared_ptr<DashMpdCallback>& callback)
 {
     callback_ = callback;
 }

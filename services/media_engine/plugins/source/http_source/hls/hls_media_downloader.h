@@ -63,7 +63,7 @@ public:
     int64_t GetDuration() const override;
     std::pair<int64_t, bool> GetStartInfo() const override;
     Seekable GetSeekable() const override;
-    void SetCallback(Callback* cb) override;
+    void SetCallback(const std::shared_ptr<Callback>& cb) override;
     void SetStatusCallback(StatusCallbackFunc cb) override;
     bool GetStartedStatus() override;
     std::vector<uint32_t> GetBitRates() override;
@@ -106,7 +106,7 @@ private:
     void OnMasterReady(bool needAudioManager, bool needSubtitlesManager);
 
 private:
-    Callback* callback_ {nullptr};
+    std::weak_ptr<Callback> callback_;
     std::shared_ptr<HlsSegmentManager> videoSegManager_ {nullptr};
     std::shared_ptr<HlsSegmentManager> audioSegManager_ {nullptr};
     std::shared_ptr<HlsSegmentManager> subtitlesSegManager_ {nullptr};

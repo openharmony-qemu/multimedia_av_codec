@@ -77,7 +77,7 @@ private:
     Callback* callbackWrap_ {nullptr};
 };
 
-class Source : public Plugins::Callback {
+class Source : public Plugins::Callback, public std::enable_shared_from_this<Source> {
 public:
     explicit Source();
     ~Source() override;
