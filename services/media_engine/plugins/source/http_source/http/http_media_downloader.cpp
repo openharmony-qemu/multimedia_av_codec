@@ -286,7 +286,7 @@ void HttpMediaDownloader::OnClientErrorEvent()
 bool HttpMediaDownloader::HandleBuffering()
 {
     auto callback = callback_.lock();
-    if (isBuffering_ && GetBufferingTimeOut() && callback) {
+    if (isBuffering_ && GetBufferingTimeOut() && callback != nullptr) {
         MEDIA_LOG_I("HTTP cachebuffer buffering time out.");
         callback->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "buffering"});
         isTimeoutErrorNotified_.store(true);
@@ -314,7 +314,7 @@ bool HttpMediaDownloader::HandleBuffering()
         bufferingTime_ = 0;
     }
     auto callback = callback_.lock();
-    if (!isBuffering_ && isFirstFrameArrived_ && callback) {
+    if (!isBuffering_ && isFirstFrameArrived_ && callback != nullptr) {
         MEDIA_LOG_I("HTTP CacheData onEvent BUFFERING_END, bufferSize: " PUBLIC_LOG_U64 ", waterLineAbove_: "
         PUBLIC_LOG_ZU ", isBuffering: " PUBLIC_LOG_D32 ", canWrite: " PUBLIC_LOG_D32 " readOffset: "
         PUBLIC_LOG_ZU " writeOffset: " PUBLIC_LOG_ZU, GetCurrentBufferSize(), waterLineAbove_, isBuffering_.load(),
@@ -1790,7 +1790,7 @@ bool HttpMediaDownloader::IsNeedBufferForPlaying()
         bufferingEndCond_.NotifyAll();
         isDemuxerInitSuccess_.store(false);
         bufferingTime_ = 0;
-        if (isRingBuffer_ && callback_) {
+        if (isRingBuffer_ && callback_.lock()) {
             MEDIA_LOG_I("HTTP ringbuffer BUFFERING_END");
         }
         return false;
