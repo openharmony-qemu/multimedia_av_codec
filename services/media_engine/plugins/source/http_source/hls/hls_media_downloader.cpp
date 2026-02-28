@@ -126,6 +126,21 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
 {
     FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, false, "hls media downloader open failed, no video seg manager!");
     videoSegManager_->Open(url, httpHeader);
+    if (reportInfo_ != nullptr) {
+        std::vector<StreamInfo> videoStreams;
+        videoSegManager_->GetStreamInfo(videoStreams);
+        reportInfo_->videoStreamCnt_ = videoStreams.size();
+        if (audioSegManager_ != nullptr) {
+            std::vector<StreamInfo> audioStreams;
+            audioSegManager_->GetStreamInfo(audioStreams);
+            reportInfo_->audioStreamCnt_ = audioStreams.size();
+        }
+        if (subtitlesSegManager_ != nullptr) {
+            std::vector<StreamInfo> subtitleStreams;
+            subtitlesSegManager_->GetStreamInfo(subtitleStreams);
+            reportInfo_->subtitleCnt_ = subtitleStreams.size();
+        }
+    }
     return true;
 }
 
@@ -331,6 +346,12 @@ void HlsMediaDownloader::SetInterruptState(bool isInterruptNeeded)
     if (subtitlesSegManager_ != nullptr) {
         subtitlesSegManager_->SetInterruptState(isInterruptNeeded);
     }
+}
+
+void HlsMediaDownloader::SetSourceStatisticsDfx(
+    std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr)
+{
+    reportInfo_ = rpInfoPtr;
 }
 
 void HlsMediaDownloader::GetDownloadInfo(DownloadInfo& downloadInfo)

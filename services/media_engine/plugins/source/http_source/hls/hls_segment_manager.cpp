@@ -175,6 +175,12 @@ void HlsSegmentManager::SetType(HlsSegmentType type)
     }
 }
 
+void HlsSegmentManager::SetSourceStatisticsDfx(
+    std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr)
+{
+    reportInfo_ = rpInfoPtr;
+}
+
 void HlsSegmentManager::Init()
 {
     if (sourceLoader_ != nullptr) {
@@ -203,7 +209,9 @@ void HlsSegmentManager::Init()
     if (playlistDownloader_ != nullptr && downloadCallback_ != nullptr) {
         playlistDownloader_->SetDownloadCallback(downloadCallback_);
     }
+    FALSE_RETURN_MSG(playlistDownloader_ != nullptr, "init playlistDownloader_ is nullptr");
     playlistDownloader_->Init();
+    playlistDownloader_->SetSourceStatisticsDfx(reportInfo_, IsHlsFmp4());
     writeBitrateCaculator_ = std::make_shared<WriteBitrateCaculator>();
     waterLineAbove_ = PLAY_WATER_LINE;
     steadyClock_.Reset();

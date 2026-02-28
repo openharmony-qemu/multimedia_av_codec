@@ -19,6 +19,7 @@
 #include <vector>
 #include <map>
 #include <utility>
+#include "avcodec_sysevent.h"
 #include "download/downloader.h"
 #include "plugin/plugin_base.h"
 #include "plugin/source_plugin.h"
@@ -92,6 +93,8 @@ public:
     virtual void SetDefaultMedia(HlsSegmentType mediaType) = 0;
     virtual void UpdateMedia(HlsSegmentType mediaType) = 0;
     virtual uint32_t GetCurStreamId() = 0;
+    virtual void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr,
+        bool fmp4 = false) = 0;
 
     void SetInterruptState(bool isInterruptNeeded);
     void Resume();

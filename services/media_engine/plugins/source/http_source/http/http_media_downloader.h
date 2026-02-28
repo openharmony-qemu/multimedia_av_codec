@@ -44,6 +44,7 @@ public:
                                  std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = nullptr);
     ~HttpMediaDownloader() override;
     void Init() override;
+    void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr) override;
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
     void Pause() override;
@@ -276,6 +277,8 @@ private:
     uint32_t videoBitrate_ {0};
     bool isAppBackground_ {false};
     std::shared_ptr<DownloadMetricsInfo> downloadMetricsInfo_ {nullptr};
+    std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
+    std::atomic<bool> isLive_ {false};
 };
 }
 }

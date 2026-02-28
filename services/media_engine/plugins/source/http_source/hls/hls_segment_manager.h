@@ -146,6 +146,7 @@ public:
     void SetSegmentBufferingCallback(HlsSegmentBufferingCbFunc bufferingCbFunc);
     void SetSegmentAllCallback(HlsSegmentEventCbFunc segEventCallback);
     void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
+    void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr);
 
 public:
     static constexpr size_t VIDEO_MIN_BUFFER_SIZE = 1 * 1024 * 1024;
@@ -369,6 +370,7 @@ private:
     std::mutex canReadMutex_;
     std::condition_variable canReadCond_;
     InfoIndexMap InfoIndexMap_;
+    std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
 };
 }
 }

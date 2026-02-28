@@ -122,6 +122,10 @@ public:
     {
         return true;
     }
+    void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr) override
+    {
+        return;
+    }
 private:
     size_t contentLength_ {4};
     size_t segmentOffset_ {1};

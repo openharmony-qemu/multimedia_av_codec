@@ -117,6 +117,7 @@ public:
     virtual ~DashMpdDownloader();
 
     void Init();
+    void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr);
     void Open(const std::string &url);
     void Close(bool isAsync);
     void SetStatusCallback(StatusCallbackFunc cb);
@@ -234,6 +235,9 @@ private:
 
     void SetDownloadRequest(std::shared_ptr<DownloadRequest> downloadRequest);
     std::shared_ptr<DownloadRequest> GetDownloadRequest();
+    StreamInfo AssignStreamInfo(unsigned int index);
+    void DfxAudioCntIncrease();
+    void DfxSubtitleCntIncrease();
 
 private:
     std::string url_ {};
@@ -262,6 +266,7 @@ private:
     std::vector<DashDrmInfo> localDrmInfos_;
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
+    std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
     std::shared_mutex downloadRequestMutex_;
 };
 }

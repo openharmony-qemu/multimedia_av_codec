@@ -828,6 +828,12 @@ void DashSegmentDownloader::CleanByTimeInternal(int64_t& remainLastNumberSeq, si
     }
 }
 
+void DashSegmentDownloader::SetSourceStatisticsDfx(
+    std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr)
+{
+    reportInfo_ = rpInfoPtr;
+}
+
 bool DashSegmentDownloader::CleanBufferByTime(int64_t& remainLastNumberSeq, bool& isEnd)
 {
     Close(false, false);

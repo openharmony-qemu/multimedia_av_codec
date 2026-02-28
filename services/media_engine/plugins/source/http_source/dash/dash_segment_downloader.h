@@ -144,6 +144,7 @@ public:
     virtual ~DashSegmentDownloader();
 
     void Init();
+    void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr);
     bool Open(const std::shared_ptr<DashSegment> &dashSegment);
     void Close(bool isAsync, bool isClean);
     void Pause();
@@ -280,6 +281,7 @@ private:
     std::atomic<bool> canWrite_{true};
     SteadyClock loopInterruptClock_;
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
+    std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
 };
 }
 }
