@@ -55,7 +55,7 @@ public:
 
     Status SetParameter(const std::shared_ptr<Meta> &meta) override;
 
-    Status SetCallback(const std::shared_ptr<Callback>& cb) override
+    Status SetCallback(Callback *cb) override
     {
         callback_ = cb;
         return Status::OK;
@@ -247,7 +247,7 @@ private:
     AudioStandard::AudioEncodingType GetEncodingType(std::string mime);
 
     OHOS::Media::Mutex renderMutex_{};
-    std::shared_ptr<Callback> callback_{};
+    Callback *callback_{};
     AudioRenderInfo audioRenderInfo_{};
     AudioStandard::AudioRendererOptions rendererOptions_{};
     AudioStandard::InterruptMode audioInterruptMode_{AudioStandard::InterruptMode::SHARE_MODE};

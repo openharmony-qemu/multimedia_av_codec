@@ -19,6 +19,7 @@
 #include <map>
 #include <string>
 #include <utility>
+#include <memory>
 
 #include "common/media_source.h"
 #include "plugin/plugin_base.h"
@@ -71,6 +72,18 @@ class SourcePlugin : public PluginBase {
     /// constructor
 public:
     explicit SourcePlugin(std::string name): PluginBase(std::move(name)) {}
+
+    virtual Status SetCallback(const std::shared_ptr<Callback>& cb)
+    {
+        (void)cb;
+        return Status::OK;
+    }
+
+    virtual Status SetCallback(Callback* cb) override
+    {
+        (void)cb;
+        return Status::OK;
+    }
     /**
      * @brief Set the data source to source plugin.
      *
@@ -338,8 +351,7 @@ public:
  * @version 1.0
  */
 struct SourcePluginDef : public PluginDefBase {
-    SourcePluginDef()
-        : PluginDefBase()
+    SourcePluginDef() : PluginDefBase()
     {
         apiVersion = SOURCE_API_VERSION; ///< Source plugin version.
         pluginType = PluginType::SOURCE; ///< Plugin type, MUST be SOURCE.
