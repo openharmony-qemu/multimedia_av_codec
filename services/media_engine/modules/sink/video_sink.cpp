@@ -16,6 +16,7 @@
 #include "video_sink.h"
 
 #include <algorithm>
+#include <cinttypes>
 
 #include "common/log.h"
 #include "media_sync_manager.h"
@@ -37,7 +38,7 @@ int64_t GetVideoLatencyFixDelay()
 {
     constexpr uint64_t defaultValue = 0;
     static uint64_t fixDelay = OHOS::system::GetUintParameter("debug.media_service.video_sync_fix_delay", defaultValue);
-    MEDIA_LOG_I("video_sync_fix_delay, pid:%{public}d , fixdelay: %{public}llu", getprocpid(), fixDelay);
+    MEDIA_LOG_I("video_sync_fix_delay, pid:%{public}d , fixdelay: %{public}" PRIu64, getprocpid(), fixDelay);
     return (int64_t)fixDelay;
 }
 
