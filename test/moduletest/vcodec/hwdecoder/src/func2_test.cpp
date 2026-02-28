@@ -67,7 +67,6 @@ static string g_codecName = "";
 static string g_codecNameHEVC = "";
 static string g_codecNameVVC = "";
 constexpr uint32_t ONE_HUNDRED_THIRTY = 130;
-constexpr uint32_t CHANGE_VVC_NOCALEHASH_FRAME = 1650;
 } // namespace
 
 void HwdecFunc2NdkTest::SetUpTestCase()
