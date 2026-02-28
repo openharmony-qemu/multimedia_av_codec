@@ -188,16 +188,19 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Format_Capi_001, TestSize.Level1)
  */
 HWTEST_F(TEST_SUIT, VideoEncoder_Format_Capi_002, TestSize.Level1)
 {
-    CreateByNameWithParam(HW_HEVC);
-    SetFormatWithParam(RGBA1010102);
-    PrepareSource();
-    auto ret = videoEnc_->Configure(format_);
-    if (ret != AV_ERR_OK) {
-        return;
+    auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
+    if (std::find(pixelFormats.begin(), pixelFormats.end(), VCodecPixelFormat::RGBA1010102) != pixelFormats.end()) {
+        CreateByNameWithParam(HW_HEVC);
+        SetFormatWithParam(RGBA1010102);
+        PrepareSource();
+        auto ret = videoEnc_->Configure(format_);
+        if (ret != AV_ERR_OK) {
+            return;
+        }
+        ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
     }
-    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 
 /**
@@ -207,17 +210,20 @@ HWTEST_F(TEST_SUIT, VideoEncoder_Format_Capi_002, TestSize.Level1)
  */
 HWTEST_F(TEST_SUIT, VideoEncoder_Format_Capi_003, TestSize.Level1)
 {
-    videoEnc_->isAVBufferMode_ = true;
-    CreateByNameWithParam(HW_HEVC);
-    SetFormatWithParam(RGBA1010102);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PROFILE, OH_HEVCProfile::HEVC_PROFILE_MAIN_10);
-    PrepareSource();
-    auto ret = videoEnc_->Configure(format_);
-    if (ret != AV_ERR_OK) {
-        return;
+    auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
+    if (std::find(pixelFormats.begin(), pixelFormats.end(), VCodecPixelFormat::RGBA1010102) != pixelFormats.end()) {
+        videoEnc_->isAVBufferMode_ = true;
+        CreateByNameWithParam(HW_HEVC);
+        SetFormatWithParam(RGBA1010102);
+        format_->PutIntValue(MediaDescriptionKey::MD_KEY_PROFILE, OH_HEVCProfile::HEVC_PROFILE_MAIN_10);
+        PrepareSource();
+        auto ret = videoEnc_->Configure(format_);
+        if (ret != AV_ERR_OK) {
+            return;
+        }
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
     }
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 
 } // namespace

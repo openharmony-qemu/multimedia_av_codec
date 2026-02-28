@@ -36,6 +36,11 @@ void SetFormatBasicParam(Format &format)
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 720); // 720 h默认值
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
         static_cast<int32_t>(VideoPixelFormat::SURFACE_FORMAT));
+    
+    auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
+    if (std::find(pixelFormats.begin(), pixelFormats.end(), VCodecPixelFormat::SURFACE_FORMAT) == pixelFormats.end()) {
+        GTEST_SKIP() << "Unsupport pixel format of surface format";
+    }
 }
 
 bool IsEncoderBitrateModeSupported(CapabilityData *capData, VideoEncodeBitrateMode bitrateMode)

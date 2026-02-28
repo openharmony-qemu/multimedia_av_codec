@@ -18,6 +18,7 @@
 #include <gtest/gtest.h>
 #include "avcodec_list.h"
 #include "avcodec_video_encoder.h"
+#include "codeclist_mock.h"
 #include "format.h"
 class AVCodecParamCheckerTest : public testing::Test {
 public:
@@ -28,6 +29,7 @@ public:
 
     std::shared_ptr<OHOS::MediaAVCodec::AVCodecList> codeclist_;
     std::shared_ptr<OHOS::MediaAVCodec::AVCodecVideoEncoder> videoEncHevcInner_;
+    std::shared_ptr<OHOS::MediaAVCodec::CodecListMock> capability_ = nullptr;
     OHOS::MediaAVCodec::CapabilityData *capabilityDataHevc_;
     OHOS::MediaAVCodec::Format formatInner_;
 };

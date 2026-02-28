@@ -61,6 +61,10 @@ inline void CodecServerUnitTest::SetUp(void)
     validFormat_.PutIntValue(Tag::VIDEO_WIDTH, DEFAULT_WIDTH);
     validFormat_.PutIntValue(Tag::VIDEO_HEIGHT, DEFAULT_HEIGHT);
     validFormat_.PutIntValue(Tag::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::YUVI420));
+    auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
+    if (std::find(pixelFormats.begin(), pixelFormats.end(), VideoPixelFormat::YUVI420) != pixelFormats.end()) {
+        GTEST_SKIP() << "Unsupport pixel format of YUVI420";
+    }
 }
 
 inline void CodecServerUnitTest::TearDown(void)

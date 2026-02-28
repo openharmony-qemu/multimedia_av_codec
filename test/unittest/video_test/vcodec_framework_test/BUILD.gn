@@ -1514,8 +1514,15 @@ ohos_unittest("videodec_rv40_stable_unit_test") {
 ohos_unittest("videodec_mpeg1_stable_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
-  include_dirs = []
-  sources = [ "./videodec_mpeg1_stable_unit_test.cpp" ]
+  include_dirs = [
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test/",
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test/inner",
+  ]
+  sources = [
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test/inner/codeclist_inner_mock.cpp",
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test/inner/codeclist_inner_mock_factory.cpp",
+    "./videodec_mpeg1_stable_unit_test.cpp",
+    ]
   deps = [ "./stable_sample:video_sample" ]
   resource_config_file = resource_configuration_file
 }

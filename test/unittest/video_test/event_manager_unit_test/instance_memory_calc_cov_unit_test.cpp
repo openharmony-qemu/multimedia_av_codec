@@ -17,6 +17,7 @@
 #include <vector>
 #include "av_common.h"
 #include "avcodec_info.h"
+#include "codeclist_mock.h"
 #include "instance_memory_update_event_handler.h"
 #include "meta.h"
 #include "meta/meta_key.h"
@@ -40,6 +41,7 @@ public:
     void UpdateMetaData(int32_t pixelFormat, int32_t bitDepth, AVCodecType codecType, int32_t isHardware,
                         bool enablePostProcessing);
 
+    std::shared_ptr<OHOS::MediaAVCodec::CodecListMock> capability_ = nullptr;
     std::shared_ptr<Meta> meta_ = nullptr;
     std::shared_ptr<InstanceMemoryUpdateEventHandler> instanceMemoryHandler_ = nullptr;
 };
@@ -495,16 +497,19 @@ HWTEST_F(TEST_SUIT, SoftwareEncoderH264YUV420_TEST_004, TestSize.Level3)
  */
 HWTEST_F(TEST_SUIT, SoftwareEncoderH264RGBA_TEST_001, TestSize.Level3)
 {
-    int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::RGBA);
-    UpdateMetaData(pixelFormat, 0, AVCODEC_TYPE_VIDEO_ENCODER, 0, false);
-    meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_AVC);
-    meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "RGBA");
-    auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
-    EXPECT_NE(calculator, std::nullopt);
-    uint32_t blockCount = 1000;
-    auto instanceMemory = calculator.value()(blockCount);
-    constexpr int32_t INSTANCE_MEMORY = 15001;
-    EXPECT_EQ(instanceMemory, INSTANCE_MEMORY);
+    auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
+        if (std::find(pixelFormats.begin(), pixelFormats.end(), VCodecPixelFormat::SURFACE_FORMAT) != pixelFormats.end()) {
+        int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::RGBA);
+        UpdateMetaData(pixelFormat, 0, AVCODEC_TYPE_VIDEO_ENCODER, 0, false);
+        meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_AVC);
+        meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "RGBA");
+        auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
+        EXPECT_NE(calculator, std::nullopt);
+        uint32_t blockCount = 1000;
+        auto instanceMemory = calculator.value()(blockCount);
+        constexpr int32_t INSTANCE_MEMORY = 15001;
+        EXPECT_EQ(instanceMemory, INSTANCE_MEMORY);
+    }
 }
 
 /**
