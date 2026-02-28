@@ -341,7 +341,8 @@ HWTEST_F(HttpSourcePluginUnitTest, HttpSourcePlugin_SetParameter3, TestSize.Leve
 HWTEST_F(HttpSourcePluginUnitTest, HttpSourcePlugin_SetCallback, TestSize.Level1)
 {
     httpSourcePlugin->downloader_ = nullptr;
-    Status status = httpSourcePlugin->SetCallback(httpSourcePlugin->callback_);
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    Status status = httpSourcePlugin->SetCallback(sourceCallback);
     EXPECT_EQ(status, Status::OK);
 }
 

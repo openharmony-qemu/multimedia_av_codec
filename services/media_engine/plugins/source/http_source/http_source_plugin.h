@@ -93,7 +93,7 @@ private:
     uint32_t bufferSize_;
     uint32_t waterline_;
     uint32_t seekErrorCount_{0};
-    std::shared_ptr<Callback> callback_;
+    std::weak_ptr<Callback> callback_;
     std::shared_ptr<MediaDownloader> downloader_;
     Mutex mutex_ {};
     bool delayReady_ {true};
