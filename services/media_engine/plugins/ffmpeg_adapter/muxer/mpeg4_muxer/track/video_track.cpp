@@ -483,12 +483,12 @@ void VideoTrack::DisposeSttsNoPts()
 void VideoTrack::DisposeSttsOnly()
 {
     if (allPts_.size() > 0) {
-        int64_t lastTimestampUs = allPts_.front();
+        int64_t lastTimestampUs = ConvertTimeToMpeg4(allPts_.front(), timeScale_);
         allPts_.pop();
         while (allPts_.size() > 0) {
-            int64_t pts = allPts_.front();
+            int64_t pts = ConvertTimeToMpeg4(allPts_.front(), timeScale_);
             allPts_.pop();
-            int64_t duration = ConvertTimeToMpeg4(pts - lastTimestampUs, timeScale_);
+            int64_t duration = pts - lastTimestampUs;
             lastTimestampUs = pts;
             DisposeStts(duration, lastTimestampUs);
         }
