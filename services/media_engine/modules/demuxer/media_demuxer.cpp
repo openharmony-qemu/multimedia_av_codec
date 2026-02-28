@@ -3213,7 +3213,7 @@ void MediaDemuxer::ProduceWaterLoopControl(int32_t trackId)
         || !GetEnableSampleQueueFlag()) {
         return;
     }
-    FALSE_RETURN(isBuffering_.load());
+    FALSE_RETURN_NOLOG(isBuffering_.load());
     StartConsume(trackId);
     if (trackId == videoTrackId_ && isVideoMuted_) {
         return;
