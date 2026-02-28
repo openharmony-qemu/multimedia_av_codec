@@ -108,6 +108,12 @@ int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize, int
         return dataSize;
     }
     if (ioContext->invokerType != InvokerType::READ) {
+        if (ioContext->invokerType == InvokerType::FLUSH || ioContext->invokerType == InvokerType::DESTORY) {
+            MEDIA_LOG_I("AVReadPacket interrupted, invokerType:" PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64,
+                static_cast<int32_t>(ioContext->invokerType.load()), ioContext->offset);
+            // Stop inner retry loop quickly during flush/destroy.
+            return AV_READ_PACKET_READ_ERROR;
+        }
         switch (ioContext->avReadPacketStopState.load()) {
             case AVReadPacketStopState::TRUE:
                 MEDIA_LOG_I("AVReadPacket stopped");
