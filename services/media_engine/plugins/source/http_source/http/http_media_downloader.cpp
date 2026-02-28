@@ -313,7 +313,6 @@ bool HttpMediaDownloader::HandleBuffering()
     if (!isBuffering_ && !isFirstFrameArrived_) {
         bufferingTime_ = 0;
     }
-    auto callback = callback_.lock();
     if (!isBuffering_ && isFirstFrameArrived_ && callback != nullptr) {
         MEDIA_LOG_I("HTTP CacheData onEvent BUFFERING_END, bufferSize: " PUBLIC_LOG_U64 ", waterLineAbove_: "
         PUBLIC_LOG_ZU ", isBuffering: " PUBLIC_LOG_D32 ", canWrite: " PUBLIC_LOG_D32 " readOffset: "
