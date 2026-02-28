@@ -2771,10 +2771,10 @@ HWTEST_F(Mpeg4MuxerUnitTest, Muxer_SetMeta_001, TestSize.Level0)
     metaData->PutFloatValue(OH_MD_KEY_LONGITUDE, 180.0f);
     metaData->PutFloatValue(OH_MD_KEY_ALTITUDE, 100.0f);
 
-    EXPECT_EQ(avmuxer->SetFormat(metaData), 0);
+    EXPECT_EQ(avmuxer_->SetFormat(metaData), 0);
 
-    ASSERT_EQ(avmuxer->Start(), 0);
-    ASSERT_EQ(avmuxer->Stop(), 0);
+    ASSERT_EQ(avmuxer_->Start(), 0);
+    ASSERT_EQ(avmuxer_->Stop(), 0);
 }
 
 /**
@@ -2798,10 +2798,10 @@ HWTEST_F(Mpeg4MuxerUnitTest, Muxer_SetMeta_002, TestSize.Level0)
     metaData->PutFloatValue(OH_MD_KEY_ALTITUDE, 102.0f);
     metaData->PutIntValue("com.openharmony.version", 5);
 
-    EXPECT_EQ(avmuxer->SetFormat(metaData), 0);
+    EXPECT_EQ(avmuxer_->SetFormat(metaData), 0);
 
-    ASSERT_EQ(avmuxer->Start(), 0);
-    ASSERT_EQ(avmuxer->Stop(), 0);
+    ASSERT_EQ(avmuxer_->Start(), 0);
+    ASSERT_EQ(avmuxer_->Stop(), 0);
 }
 
 /**
@@ -2825,10 +2825,10 @@ HWTEST_F(Mpeg4MuxerUnitTest, Muxer_SetMeta_003, TestSize.Level0)
     metaData->PutFloatValue(OH_MD_KEY_ALTITUDE, 0.0f);
     metaData->PutIntValue("com.openharmony.version", 5);
 
-    EXPECT_EQ(avmuxer->SetFormat(metaData), 0);
+    EXPECT_EQ(avmuxer_->SetFormat(metaData), 0);
 
-    ASSERT_EQ(avmuxer->Start(), 0);
-    ASSERT_EQ(avmuxer->Stop(), 0);
+    ASSERT_EQ(avmuxer_->Start(), 0);
+    ASSERT_EQ(avmuxer_->Stop(), 0);
 }
 
 /**

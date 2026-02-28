@@ -3092,9 +3092,9 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetLocation_001, TestSize.Level0)
     metaData->PutFloatValue(OH_MD_KEY_LONGITUDE, 180.0f);
     metaData->PutFloatValue(OH_MD_KEY_ALTITUDE, 123.4f);
 
-    ASSERT_EQ(avmuxer_->SetFormat(audioParams), 0);
+    EXPECT_EQ(avmuxer_->SetFormat(metaData), 0);
     metaData->InitAudioTrackFormat(Plugins::MimeType::AUDIO_MPEG, 48000, 2);
-    ASSERT_EQ(avmuxer_->AddTrack(trackId, audioParams), 0);
+    ASSERT_EQ(avmuxer_->AddTrack(trackId, metaData), 0);
     
     ASSERT_EQ(avmuxer_->Start(), 0);
     ASSERT_EQ(avmuxer_->Stop(), 0);
