@@ -479,7 +479,6 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_DASH_SEGMENT_DOWNLOADER_WATERLINE_0
     result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded);
     segmentDownloaderSp->Close(true, true);
     EXPECT_EQ(result, DASH_READ_AGAIN);
-
 }
 
 HWTEST_F(DashSegmentDownloaderUnitTest, TEST_DASH_SEGMENT_DOWNLOADER_WATERLINE_004, TestSize.Level1)
