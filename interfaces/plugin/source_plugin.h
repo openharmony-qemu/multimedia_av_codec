@@ -17,9 +17,9 @@
 #define AVCODEC_SOURCE_PLUGIN_H
 
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
-#include <memory>
 
 #include "common/media_source.h"
 #include "plugin/plugin_base.h"
