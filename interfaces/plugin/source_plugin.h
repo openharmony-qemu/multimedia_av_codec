@@ -166,7 +166,7 @@ public:
      */
     virtual Status SeekTo(uint64_t offset) = 0;
 
-    virtual Status Reset() = 0;
+    Status Reset() override = 0;
 
     virtual void SetDemuxerState(int32_t streamId) {}
 
