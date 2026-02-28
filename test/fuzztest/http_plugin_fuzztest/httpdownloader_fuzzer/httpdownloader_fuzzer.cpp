@@ -179,7 +179,7 @@ void HttpDownloaderRun(FuzzedDataProvider &fdp)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {};
     httpMediaDownloader->SetStatusCallback(statusCallback);
-    Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     httpMediaDownloader->SetCallback(sourceCallback);
     httpMediaDownloader->Open(MP4_SEGMENT_BASE, g_httpHeader);
     httpMediaDownloader->GetSeekable();
@@ -220,7 +220,7 @@ void HttpDownloaderRun2(FuzzedDataProvider &fdp)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {};
     httpMediaDownloader->SetStatusCallback(statusCallback);
-    Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     httpMediaDownloader->SetCallback(sourceCallback);
     httpMediaDownloader->Open(MP4_SEGMENT_BASE, g_httpHeader);
     httpMediaDownloader->GetSeekable();
@@ -254,7 +254,7 @@ void HttpDownloaderFlvRun(FuzzedDataProvider &fdp)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {};
     httpMediaDownloader->SetStatusCallback(statusCallback);
-    Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     httpMediaDownloader->SetCallback(sourceCallback);
     httpMediaDownloader->Open(FLV_SEGMENT_BASE, httpHeader);
     httpMediaDownloader->GetSeekable();

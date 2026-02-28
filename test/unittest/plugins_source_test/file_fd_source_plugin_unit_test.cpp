@@ -478,14 +478,14 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingPercent_0200, TestSiz
     fileFdSourcePlugin_->NotifyBufferingPercent();
     fileFdSourcePlugin_->waterLineAbove_ = 1;
     fileFdSourcePlugin_->isBuffering_ = true;
-    CallbackMock* cb = new CallbackMock();
+    auto cb = std::make_shared<CallbackMock>();
     fileFdSourcePlugin_->callback_ = cb;
     fileFdSourcePlugin_->NotifyBufferingStart();
     EXPECT_EQ("start", cb->description_);
     fileFdSourcePlugin_->isInterrupted_ = true;;
     fileFdSourcePlugin_->NotifyBufferingPercent();
 
-    fileFdSourcePlugin_->callback_ = nullptr;
+    fileFdSourcePlugin_->callback_.reset();
     fileFdSourcePlugin_->NotifyBufferingPercent();
 
     fileFdSourcePlugin_->isBuffering_ = false;
@@ -498,8 +498,6 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingPercent_0200, TestSiz
     fileFdSourcePlugin_->NotifyBufferingPercent();
 
     EXPECT_EQ("0", cb->description_);
-    delete cb;
-    cb = nullptr;
 }
 
 /**
@@ -516,7 +514,7 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingEnd_0200, TestSize.Le
     EXPECT_EQ(false, fileFdSourcePlugin_->isBuffering_);
 
     fileFdSourcePlugin_->isBuffering_ = true;
-    CallbackMock* cb = new CallbackMock();
+    auto cb = std::make_shared<CallbackMock>();
     fileFdSourcePlugin_->NotifyBufferingStart();
     fileFdSourcePlugin_->callback_ = cb;
     fileFdSourcePlugin_->isInterrupted_ = true;
@@ -683,7 +681,7 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_CheckReadTime_0100, TestSize.Level1)
  */
 HWTEST_F(FileFdSourceUnitTest, FileFdSource_checkReadTime_0200, TestSize.Level1)
 {
-    fileFdSourcePlugin_->callback_ = nullptr;
+    fileFdSourcePlugin_->callback_.reset();
     int64_t curTime = 0;
     int64_t lastTime = 0;
     auto isValidTime = fileFdSourcePlugin_->IsValidTime(curTime, lastTime);

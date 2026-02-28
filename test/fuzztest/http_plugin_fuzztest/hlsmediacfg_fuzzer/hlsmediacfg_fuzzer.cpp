@@ -133,7 +133,7 @@ void Seek(std::shared_ptr<HlsMediaDownloader> &hlsMediaDownloader, FuzzedDataPro
 }
 
 std::shared_ptr<HlsMediaDownloader> CreateFuzzTestObj(bool useCase,
-    FuzzedDataProvider *fdp, Plugins::Callback* &sourceCb)
+    FuzzedDataProvider *fdp, std::shared_ptr<Plugins::Callback> &sourceCb)
 {
     std::shared_ptr<HlsMediaDownloader> hlsMediaDownloader= nullptr;
     sourceCb = nullptr;
@@ -156,7 +156,7 @@ std::shared_ptr<HlsMediaDownloader> CreateFuzzTestObj(bool useCase,
         std::shared_ptr<DownloadRequest>& request) {};
     hlsMediaDownloader->SetStatusCallback(statusCallback);
 
-    sourceCb = new SourceCallback();
+    sourceCb = std::make_shared<SourceCallback>();
     if (sourceCb == nullptr) {
         return nullptr;
     }
@@ -168,7 +168,7 @@ bool StartFuzzTest(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider fdProvider(data, size);
     FuzzedDataProvider *fdp = &fdProvider;
-    Plugins::Callback* sourceCb = nullptr;
+    std::shared_ptr<Plugins::Callback> sourceCb = nullptr;
     std::shared_ptr<HlsMediaDownloader> hlsMediaDownloader = CreateFuzzTestObj(true, nullptr, sourceCb);
     if (hlsMediaDownloader == nullptr) {
         cout << "  Memory 1 apply failed." << endl;
@@ -216,9 +216,6 @@ bool StartFuzzTest(const uint8_t *data, size_t size)
 
     bool isAsync = true;
     hlsMediaDownloader->Close(isAsync);
-    hlsMediaDownloader->SetCallback(nullptr);
-    delete sourceCb;
-    sourceCb = nullptr;
     hlsMediaDownloader = nullptr;
 
     return true;
@@ -228,7 +225,7 @@ bool StartFuzzTestRead(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider fdProvider(data, size);
     FuzzedDataProvider *fdp = &fdProvider;
-    Plugins::Callback* sourceCb = nullptr;
+    std::shared_ptr<Plugins::Callback> sourceCb = nullptr;
     std::shared_ptr<HlsMediaDownloader> hlsMediaDownloader = CreateFuzzTestObj(true, fdp, sourceCb);
     if (hlsMediaDownloader == nullptr) {
         cout << "  Memory 2 apply failed." << endl;
@@ -273,9 +270,6 @@ bool StartFuzzTestRead(const uint8_t *data, size_t size)
     hlsMediaDownloader->SeekToTime(seekTime, mode);
     hlsMediaDownloader->SetInterruptState(fdp->ConsumeBool());
     hlsMediaDownloader->Close(true);
-    hlsMediaDownloader->SetCallback(nullptr);
-    delete sourceCb;
-    sourceCb = nullptr;
     hlsMediaDownloader = nullptr;
 
     return true;
@@ -285,7 +279,7 @@ bool StartFuzzTestMultiUrl(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider fdProvider(data, size);
     FuzzedDataProvider *fdp = &fdProvider;
-    Plugins::Callback* sourceCb = nullptr;
+    std::shared_ptr<Plugins::Callback> sourceCb = nullptr;
     std::shared_ptr<HlsMediaDownloader> hlsMediaDownloader = CreateFuzzTestObj(false, fdp, sourceCb);
     if (hlsMediaDownloader == nullptr) {
         cout << "  Memory 3 apply failed." << endl;
@@ -325,9 +319,6 @@ bool StartFuzzTestMultiUrl(const uint8_t *data, size_t size)
 
     hlsMediaDownloader->SetInterruptState(true);
     hlsMediaDownloader->Close(fdp->ConsumeBool());
-    hlsMediaDownloader->SetCallback(nullptr);
-    delete sourceCb;
-    sourceCb = nullptr;
     hlsMediaDownloader = nullptr;
 
     return true;

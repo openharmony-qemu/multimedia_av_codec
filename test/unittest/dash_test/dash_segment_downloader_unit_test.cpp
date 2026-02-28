@@ -408,7 +408,7 @@ public:
 
 HWTEST_F(DashSegmentDownloaderUnitTest, TEST_DASH_SEGMENT_DOWNLOADER_WATERLINE_002, TestSize.Level1)
 {
-    Plugins::Callback* sourceCallback = new SourceCallbackMock();
+    auto sourceCallback = std::make_shared<SourceCallbackMock>();
     std::shared_ptr<DashSegmentDownloader> segmentDownloaderSp = std::make_shared<DashSegmentDownloader>(sourceCallback,
         0, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10, nullptr);
     segmentDownloaderSp->Init();
@@ -442,13 +442,11 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_DASH_SEGMENT_DOWNLOADER_WATERLINE_0
     result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded);
     segmentDownloaderSp->Close(true, true);
     EXPECT_EQ(result, DASH_READ_END);
-    delete sourceCallback;
-    sourceCallback = nullptr;
 }
 
 HWTEST_F(DashSegmentDownloaderUnitTest, TEST_DASH_SEGMENT_DOWNLOADER_WATERLINE_003, TestSize.Level1)
 {
-    Plugins::Callback* sourceCallback = new SourceCallbackMock();
+    auto sourceCallback = std::make_shared<SourceCallbackMock>();
     std::shared_ptr<DashSegmentDownloader> segmentDownloaderSp = std::make_shared<DashSegmentDownloader>(sourceCallback,
         0, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10, nullptr);
     segmentDownloaderSp->Init();
@@ -481,13 +479,12 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_DASH_SEGMENT_DOWNLOADER_WATERLINE_0
     result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded);
     segmentDownloaderSp->Close(true, true);
     EXPECT_EQ(result, DASH_READ_AGAIN);
-    delete sourceCallback;
-    sourceCallback = nullptr;
+
 }
 
 HWTEST_F(DashSegmentDownloaderUnitTest, TEST_DASH_SEGMENT_DOWNLOADER_WATERLINE_004, TestSize.Level1)
 {
-    Plugins::Callback* sourceCallback = new SourceCallbackMock();
+    auto sourceCallback = std::make_shared<SourceCallbackMock>();
     std::shared_ptr<DashSegmentDownloader> segmentDownloaderSp = std::make_shared<DashSegmentDownloader>(sourceCallback,
         0, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10, nullptr);
     segmentDownloaderSp->Init();
@@ -521,13 +518,12 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_DASH_SEGMENT_DOWNLOADER_WATERLINE_0
     result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded);
     segmentDownloaderSp->Close(true, true);
     EXPECT_EQ(result, DASH_READ_INTERRUPT);
-    delete sourceCallback;
-    sourceCallback = nullptr;
+
 }
 
 HWTEST_F(DashSegmentDownloaderUnitTest, SET_DURATION_FOR_PLAYING_001, TestSize.Level1)
 {
-    Plugins::Callback* sourceCallback = new SourceCallbackMock();
+    auto sourceCallback = std::make_shared<SourceCallbackMock>();
     std::shared_ptr<DashSegmentDownloader> segmentDownloaderSp = std::make_shared<DashSegmentDownloader>(sourceCallback,
         0, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10, nullptr);
     segmentDownloaderSp->Init();
@@ -542,7 +538,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, SET_DURATION_FOR_PLAYING_001, TestSize.L
 
 HWTEST_F(DashSegmentDownloaderUnitTest, IS_NEED_BUFFER_FOR_PLAYING_001, TestSize.Level1)
 {
-    Plugins::Callback* sourceCallback = new SourceCallbackMock();
+    auto sourceCallback = std::make_shared<SourceCallbackMock>();
     std::shared_ptr<DashSegmentDownloader> segmentDownloaderSp = std::make_shared<DashSegmentDownloader>(sourceCallback,
         0, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10, nullptr);
     segmentDownloaderSp->Init();
@@ -567,7 +563,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, IS_NEED_BUFFER_FOR_PLAYING_001, TestSize
 
 HWTEST_F(DashSegmentDownloaderUnitTest, IS_NEED_BUFFER_FOR_PLAYING_002, TestSize.Level1)
 {
-    Plugins::Callback* sourceCallback = new SourceCallbackMock();
+    auto sourceCallback = std::make_shared<SourceCallbackMock>();
     std::shared_ptr<DashSegmentDownloader> segmentDownloaderSp = std::make_shared<DashSegmentDownloader>(sourceCallback,
         0, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10, nullptr);
     segmentDownloaderSp->Init();
@@ -591,7 +587,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, IS_NEED_BUFFER_FOR_PLAYING_002, TestSize
 
 HWTEST_F(DashSegmentDownloaderUnitTest, NOTIFY_INIT_SUCCESS_001, TestSize.Level1)
 {
-    Plugins::Callback* sourceCallback = new SourceCallbackMock();
+    auto sourceCallback = std::make_shared<SourceCallbackMock>();
     std::shared_ptr<DashSegmentDownloader> segmentDownloaderSp = std::make_shared<DashSegmentDownloader>(sourceCallback,
         0, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10, nullptr);
     segmentDownloaderSp->Init();

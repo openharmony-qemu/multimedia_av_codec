@@ -1524,7 +1524,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, HANDLE_SEEK_READY_001, TestSize.Level1)
     downloader->GetStreamInfo(streams);
     downloader->HandleSeekReady(1, 0);
     EXPECT_EQ(downloader->IsHlsFmp4(), true);
-    downloader->callback_ = nullptr;
+    downloader->callback_.reset();
     downloader->HandleSeekReady(1, 0);
     EXPECT_EQ(downloader->IsHlsFmp4(), true);
     downloader->playlistDownloader_ = nullptr;
