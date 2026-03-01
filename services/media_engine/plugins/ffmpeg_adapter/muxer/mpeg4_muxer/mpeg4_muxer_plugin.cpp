@@ -48,6 +48,8 @@ constexpr float LATITUDE_MIN = -90.0f;
 constexpr float LATITUDE_MAX = 90.0f;
 constexpr float LONGITUDE_MIN = -180.0f;
 constexpr float LONGITUDE_MAX = 180.0f;
+constexpr float ALTITUDE_MIN = -32768.0f;
+constexpr float ALTITUDE_MAX = 32767.0f;
 constexpr int32_t MAX_USERMETA_STRING_LENGTH = 256;
 
 const std::vector<TagType> g_gltfTags = {
@@ -252,6 +254,7 @@ Status Mpeg4MuxerPlugin::SetLocation(const std::shared_ptr<Meta> &param)
 {
     float latitude = latitude_;
     float longitude = longitude_;
+    float altitude = altitude_;
     if (param->Find(Tag::MEDIA_LATITUDE) == param->end() &&
         param->Find(Tag::MEDIA_LONGITUDE) == param->end()) {
         return Status::NO_ERROR;
@@ -267,6 +270,16 @@ Status Mpeg4MuxerPlugin::SetLocation(const std::shared_ptr<Meta> &param)
         Status::ERROR_INVALID_DATA, "latitude must be in [-90, 90]!");
     FALSE_RETURN_V_MSG_E(longitude >= LONGITUDE_MIN && longitude <= LONGITUDE_MAX,
         Status::ERROR_INVALID_DATA, "longitude must be in [-180, 180]!");
+    if (param->Find(Tag::MEDIA_ALTITUDE) != param->end()) {
+        param->Get<Tag::MEDIA_ALTITUDE>(altitude); // altitude
+        if (altitude >= ALTITUDE_MIN && altitude <= ALTITUDE_MAX) {
+            MEDIA_LOG_I("has altitude.");
+            hasAltitude_ = true;
+            altitude_ = altitude;
+        } else {
+            MEDIA_LOG_E("altitude must be in [-32768.0, 32767.0]");
+        }
+    }
     latitude_ = latitude;
     longitude_ = longitude;
     MEDIA_LOG_I("set latitude and longitude successfully");
@@ -405,16 +418,16 @@ Status Mpeg4MuxerPlugin::Stop()
     boxParser_->AddMoovUdtaBox();
     if (hasAigc_) {
         boxParser_->AddGnreBox(param_, !userMeta_->Empty(), "udta");  // gnre box
-        boxParser_->AddMoovUdtaGeoTag(latitude_, longitude_, !userMeta_->Empty());
+        boxParser_->AddMoovUdtaGeoTag(latitude_, longitude_, !userMeta_->Empty(), altitude_, hasAltitude_);
         boxParser_->AddUserMetaBox(userMeta_, "udta");  // user meta box, moov.udta.meta
     } else {
-        boxParser_->AddMoovUdtaGeoTag(latitude_, longitude_, !userMeta_->Empty());
+        boxParser_->AddMoovUdtaGeoTag(latitude_, longitude_, !userMeta_->Empty(), altitude_, hasAltitude_);
         boxParser_->AddMoovUdtaMetaBox();  // moov.udta.meta
         boxParser_->AddIlstMetaData(param_);  // moov.udta.meta.ilst
         boxParser_->AddGnreBox(param_, !userMeta_->Empty());  // gnre box
         boxParser_->AddUserMetaBox(userMeta_);  // user meta box, moov.meta
     }
-    boxParser_->AddMoovUdtaLociBox(latitude_, longitude_);
+    boxParser_->AddMoovUdtaLociBox(latitude_, longitude_, altitude_, hasAltitude_);
     WriteFileLevelMetafBox();
     return WriteTailer();
 }

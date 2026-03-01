@@ -68,6 +68,8 @@ private:
     bool isH264_ = false;
     float latitude_ = 1000.0f;
     float longitude_ = 1000.0f;
+    float altitude_ = 0.0f;
+    bool hasAltitude_ = false;
     bool hasGltf_ = false;
     bool useTimedMeta_ = false;
     bool needFree_ = false;

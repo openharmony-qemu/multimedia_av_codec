@@ -1207,6 +1207,30 @@ extern const char *OH_MD_KEY_BUFFER_SKIP_SAMPLES_INFO;
 extern const char *OH_MD_KEY_ENABLE_BUFFER_SKIP_SAMPLES;
 
 /**
+ * @brief Key for latitude, value type is float, The range is [-90.0, 90.0].
+ * Represents the latitude of the geographic location.
+ *
+ * @since 24
+ */
+extern const char *OH_MD_KEY_LATITUDE;
+
+/**
+ * @brief Key for longitude, value type is float, The range is [-180.0, 180.0].
+ * Represents the longitude of the geographic location.
+ *
+ * @since 24
+ */
+extern const char *OH_MD_KEY_LONGITUDE;
+
+/**
+ * @brief Key for altitude, value type is float.
+ * This is an optional key. Represents the altitude of the geographic location.
+ *
+ * @since 24
+ */
+extern const char *OH_MD_KEY_ALTITUDE;
+
+/**
  * @brief Media type.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9

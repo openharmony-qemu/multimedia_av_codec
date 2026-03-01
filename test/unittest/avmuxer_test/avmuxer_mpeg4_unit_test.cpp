@@ -2655,6 +2655,48 @@ HWTEST_F(Mpeg4MuxerUnitTest, Muxer_SetParameter_003, TestSize.Level0)
 }
 
 /**
+ * @tc.name: Muxer_SetParameter_004
+ * @tc.desc: Muxer SetParameter after Create(include altitude)
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4MuxerUnitTest, Muxer_SetParameter_004, TestSize.Level0)
+{
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetParameter.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    std::shared_ptr<AVMuxerMock> avmuxerMock = AVMuxerMockFactory::CreateMuxer(fd_, AV_OUTPUT_FORMAT_MPEG_4);
+    ASSERT_NE(avmuxerMock, nullptr);
+    UnitTestMuxerType* avmuxer = reinterpret_cast<UnitTestMuxerType*>(avmuxerMock.get());
+
+    std::shared_ptr<Meta> videoParams = std::make_shared<Meta>();
+    videoParams->Set<Tag::MIME_TYPE>(Plugins::MimeType::VIDEO_AVC);
+    videoParams->Set<Tag::VIDEO_WIDTH>(TEST_WIDTH);
+    videoParams->Set<Tag::VIDEO_HEIGHT>(TEST_HEIGHT);
+
+    int32_t ret = avmuxer->AddTrack(trackId, videoParams);
+    ASSERT_EQ(ret, 0);
+    ASSERT_GE(trackId, 0);
+
+    std::shared_ptr<Meta> param = std::make_shared<Meta>();
+    param->Set<Tag::MEDIA_LATITUDE>(90.0f); // 90.0f test latitude
+    param->Set<Tag::MEDIA_LONGITUDE>(180.0f); // 180.0f test longitude
+    param->Set<Tag::MEDIA_ALTITUDE>(100.0f); // 100.0f test altitude
+    ret = avmuxer->SetParameter(param);
+    EXPECT_EQ(ret, 0);
+
+    param->Set<Tag::MEDIA_ALTITUDE>(-300000.0f); // -300000.0f test altitude
+    ret = avmuxer->SetParameter(param);
+    EXPECT_EQ(ret, 0);
+
+    param->Set<Tag::MEDIA_ALTITUDE>(0.0f); // 0.0f test altitude
+    ret = avmuxer->SetParameter(param);
+    EXPECT_EQ(ret, 0);
+
+    ASSERT_EQ(avmuxer->Start(), 0);
+    ASSERT_EQ(avmuxer->Stop(), 0);
+}
+
+/**
  * @tc.name: Muxer_SetUserMeta_001
  * @tc.desc: Muxer SetUserMeta after Create
  * @tc.type: FUNC
@@ -2707,6 +2749,86 @@ HWTEST_F(Mpeg4MuxerUnitTest, Muxer_SetUserMeta_001, TestSize.Level0)
 
     ASSERT_EQ(avmuxer->Start(), 0);
     ASSERT_EQ(avmuxer->Stop(), 0);
+}
+
+/**
+ * @tc.name: Muxer_SetMeta_001
+ * @tc.desc: Muxer Mp4 set meta(latitude、longitude、altitude)
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4MuxerUnitTest, Muxer_SetMeta_001, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetMeta_001.mp4");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    // 添加metadata
+    std::shared_ptr<FormatMock> metaData = FormatMockFactory::CreateFormat();
+    metaData->PutFloatValue(OH_MD_KEY_LATITUDE, 90.0f);
+    metaData->PutFloatValue(OH_MD_KEY_LONGITUDE, 180.0f);
+    metaData->PutFloatValue(OH_MD_KEY_ALTITUDE, 100.0f);
+
+    EXPECT_EQ(avmuxer_->SetFormat(metaData), 0);
+
+    ASSERT_EQ(avmuxer_->Start(), 0);
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+}
+
+/**
+ * @tc.name: Muxer_SetMeta_002
+ * @tc.desc: Muxer Mp4 set meta(latitude、longitude、altitude) include usermeta
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4MuxerUnitTest, Muxer_SetMeta_002, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetMeta_002.mp4");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    // 添加metadata
+    std::shared_ptr<FormatMock> metaData = FormatMockFactory::CreateFormat();
+    metaData->PutFloatValue(OH_MD_KEY_LATITUDE, 90.0f);
+    metaData->PutFloatValue(OH_MD_KEY_LONGITUDE, 180.0f);
+    metaData->PutFloatValue(OH_MD_KEY_ALTITUDE, 102.0f);
+    metaData->PutIntValue("com.openharmony.version", 5);
+
+    EXPECT_EQ(avmuxer_->SetFormat(metaData), 0);
+
+    ASSERT_EQ(avmuxer_->Start(), 0);
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+}
+
+/**
+ * @tc.name: Muxer_SetMeta_003
+ * @tc.desc: Muxer Mp4 set meta(latitude、longitude、altitude = 0) include usermeta
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4MuxerUnitTest, Muxer_SetMeta_003, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetMeta_003.mp4");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    // 添加metadata
+    std::shared_ptr<FormatMock> metaData = FormatMockFactory::CreateFormat();
+    metaData->PutFloatValue(OH_MD_KEY_LATITUDE, 90.0f);
+    metaData->PutFloatValue(OH_MD_KEY_LONGITUDE, 180.0f);
+    metaData->PutFloatValue(OH_MD_KEY_ALTITUDE, 0.0f);
+    metaData->PutIntValue("com.openharmony.version", 5);
+
+    EXPECT_EQ(avmuxer_->SetFormat(metaData), 0);
+
+    ASSERT_EQ(avmuxer_->Start(), 0);
+    ASSERT_EQ(avmuxer_->Stop(), 0);
 }
 
 /**

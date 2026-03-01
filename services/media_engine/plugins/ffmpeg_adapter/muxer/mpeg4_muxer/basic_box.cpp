@@ -1112,7 +1112,7 @@ int64_t LociBox::Write(std::shared_ptr<AVIOStream> io)
     io->Write(static_cast<uint8_t>(0));  // role of place, 0:shooting 1:real 2:fictional
     io->Write(static_cast<uint32_t>(longitude_));
     io->Write(static_cast<uint32_t>(latitude_));
-    io->Write(static_cast<uint32_t>(0));  // altitude
+    io->Write(static_cast<uint32_t>(altitude_));  // altitude
     io->Write(astronomicalBody_);
     io->Write(static_cast<uint8_t>(0));
     WriteChild(io);

@@ -72,7 +72,7 @@ void BoxParser::AddTrakBox(std::shared_ptr<BasicTrack> track)
     mvhdBox->nextTrackId_++;
 }
 
-void BoxParser::AddMoovUdtaLociBox(float latitude, float longitude)
+void BoxParser::AddMoovUdtaLociBox(float latitude, float longitude, float altitude, bool hasAltitude)
 {
     FALSE_RETURN_MSG(moov_ != nullptr, "moov box is empty");
     FALSE_RETURN_MSG_I(latitude >= LATITUDE_MIN && latitude <= LATITUDE_MAX && longitude >= LONGITUDE_MIN &&
@@ -82,6 +82,9 @@ void BoxParser::AddMoovUdtaLociBox(float latitude, float longitude)
     std::shared_ptr<LociBox> lociBox = std::make_shared<LociBox>(0, "loci");
     lociBox->latitude_ = static_cast<int32_t>((1 << 16) * static_cast<double>(latitude));  // 16
     lociBox->longitude_ = static_cast<int32_t>((1 << 16) * static_cast<double>(longitude));  // 16
+    if (hasAltitude) {
+        lociBox->altitude_ = static_cast<int32_t>((1 << 16) * static_cast<double>(altitude));  // 16
+    }
     udtaBox->AddChild(lociBox);
 }
 
@@ -360,7 +363,7 @@ void BoxParser::AddUserMetaBox(const std::shared_ptr<Meta> &userMeta, std::strin
     parentBox->AddChild(metaBox);
 }
 
-void BoxParser::AddMoovUdtaGeoTag(float latitude, float longitude, bool needGenerate)
+void BoxParser::AddMoovUdtaGeoTag(float latitude, float longitude, bool needGenerate, float altitude, bool hasAltitude)
 {
     FALSE_RETURN_MSG_I(needGenerate, "user meta and aigc not set, not generate geo tag");
     FALSE_RETURN_MSG(moov_ != nullptr, "moov box is empty");
@@ -388,6 +391,14 @@ void BoxParser::AddMoovUdtaGeoTag(float latitude, float longitude, bool needGene
     longitude10000 = longitude10000 < 0 ? (-longitude10000) : longitude10000;
     ss << sign << std::setfill('0') << std::setw(lonWholeNum) << (longitude10000 / cof) << "."
         << std::setfill('0') << std::setw(fractionNum) << (longitude10000 % cof);
+
+    if (hasAltitude) {
+        if (altitude < 0) {
+            ss << altitude;
+        } else {
+            ss << '+' << altitude;
+        }
+    }
 
     std::shared_ptr<AnyBox> geoTag = std::make_shared<AnyBox>(0, "\251xyz");
     geoTag->SetFunc([locString = ss.str()] (std::shared_ptr<AVIOStream> io) {
