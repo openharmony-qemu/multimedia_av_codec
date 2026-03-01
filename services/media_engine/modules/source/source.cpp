@@ -66,10 +66,9 @@ Source::~Source()
     }
 }
 
-void Source::SetCallback(Callback* callback)
+void Source::SetCallback(const std::shared_ptr<Callback>& callback)
 {
-    MEDIA_LOG_D("SetCallback entered.");
-    FALSE_RETURN_MSG(callback != nullptr, "callback is nullptr");
+    MEDIA_LOG_D("SetCallback(shared_ptr) entered.");
     FALSE_RETURN_MSG(mediaDemuxerCallback_ != nullptr, "mediaDemuxerCallback is nullptr");
     mediaDemuxerCallback_->SetCallbackWrap(callback);
 }

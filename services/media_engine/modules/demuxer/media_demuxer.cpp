@@ -1004,7 +1004,7 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     }
     isPrepared_.store(false);
     FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_INVALID_PARAMETER, "Source is nullptr");
-    source_->SetCallback(this);
+    source_->SetCallback(shared_from_this());
     auto res = source_->SetSource(source);
     FALSE_RETURN_V_MSG_E(res == Status::OK, res, "Plugin set source failed");
     isFlvLiveStream_ = source_->IsFlvLiveStream();
@@ -1109,7 +1109,7 @@ Status MediaDemuxer::SetSubtitleSource(const std::shared_ptr<MediaSource> &subSo
         MEDIA_LOG_W("Found subtitle track, not support ext");
         return Status::OK;
     }
-    subtitleSource_->SetCallback(this);
+    subtitleSource_->SetCallback(shared_from_this());
     subtitleSource_->SetSource(subSource);
     Status ret = subtitleSource_->GetSize(subMediaDataSize_);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Get file size failed");

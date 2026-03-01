@@ -41,40 +41,44 @@ class CallbackImpl : public Plugins::Callback {
 public:
     void OnEvent(const Plugins::PluginEvent &event) override
     {
-        if (callbackWrap_) {
-            callbackWrap_->OnEvent(event);
+        auto callback = callbackWrap_.lock();
+        if (callback) {
+            callback->OnEvent(event);
         }
     }
     
     void OnDfxEvent(const Plugins::PluginDfxEvent &event) override
     {
-        if (callbackWrap_) {
-            callbackWrap_->OnDfxEvent(event);
+        auto callback = callbackWrap_.lock();
+        if (callback) {
+            callback->OnDfxEvent(event);
         }
     }
 
     void SetSelectBitRateFlag(bool flag, uint32_t desBitRate) override
     {
-        if (callbackWrap_) {
-            callbackWrap_->SetSelectBitRateFlag(flag, desBitRate);
+        auto callback = callbackWrap_.lock();
+        if (callback) {
+            callback->SetSelectBitRateFlag(flag, desBitRate);
         }
     }
 
     bool CanAutoSelectBitRate() override
     {
-        if (callbackWrap_) {
-            return callbackWrap_->CanAutoSelectBitRate();
+        auto callback = callbackWrap_.lock();
+        if (callback) {
+            return callback->CanAutoSelectBitRate();
         }
         return false;
     }
 
-    void SetCallbackWrap(Callback* callbackWrap)
+    void SetCallbackWrap(const std::shared_ptr<Callback>& callbackWrap)
     {
-        callbackWrap_ = callbackWrap;
+        callbackWrap_ = callbackWrap;  // shared_ptr 赋值给 weak_ptr
     }
 
 private:
-    Callback* callbackWrap_ {nullptr};
+    std::weak_ptr<Callback> callbackWrap_;
 };
 
 class Source : public Plugins::Callback, public std::enable_shared_from_this<Source> {
@@ -114,7 +118,7 @@ public:
     Status SetStartPts(int64_t startPts);
     Status SetExtraCache(uint64_t cacheDuration);
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID);
-    void SetCallback(Callback* callback);
+    void SetCallback(const std::shared_ptr<Callback>& callback);
     bool IsNeedPreDownload();
     void SetDemuxerState(int32_t streamId);
     Status GetStreamInfo(std::vector<StreamInfo>& streams);
