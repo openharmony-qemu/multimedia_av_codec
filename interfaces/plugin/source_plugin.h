@@ -84,6 +84,7 @@ public:
         (void)cb;
         return Status::OK;
     }
+
     /**
      * @brief Set the data source to source plugin.
      *

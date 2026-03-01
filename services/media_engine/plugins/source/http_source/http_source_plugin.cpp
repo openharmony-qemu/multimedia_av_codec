@@ -186,10 +186,10 @@ Status HttpSourcePlugin::SetParameter(const std::shared_ptr<Meta> &meta)
 Status HttpSourcePlugin::SetCallback(const std::shared_ptr<Callback>& cb)
 {
     MEDIA_LOG_D("SetCallback enter.");
-    callback_ = cb;  // weak_ptr 自动从 shared_ptr 赋值
+    callback_ = cb;
     AutoLock lock(mutex_);
     if (downloader_ != nullptr) {
-        downloader_->SetCallback(cb);  // 传递 shared_ptr 给下层
+        downloader_->SetCallback(cb);
     }
     return Status::OK;
 }
@@ -214,9 +214,9 @@ Status HttpSourcePlugin::InitSourcePlugin(const std::shared_ptr<MediaSource>& so
 {
     SetDownloaderBySource(source);
     FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
-    auto cb = callback_.lock();  // 从 weak_ptr 获取 shared_ptr
+    auto cb = callback_.lock();
     if (cb) {
-        downloader_->SetCallback(cb);  // 传递 shared_ptr 给下层
+        downloader_->SetCallback(cb);
     }
     FALSE_RETURN_V(downloader_->Open(uri_, httpHeader_), Status::ERROR_UNKNOWN);
     return Status::OK;
@@ -410,8 +410,8 @@ Status HttpSourcePlugin::SeekTo(uint64_t offset)
         MEDIA_LOG_I("SeekTo enter fail, content = " PUBLIC_LOG_ZU, downloader_->GetContentLength());
         seekErrorCount_++;
         if (seekErrorCount_ > ERROR_COUNT) {
-            auto cb = callback_.lock();  // 安全获取 callback
-            if (cb) {
+            auto cb = callback_.lock();
+            if (cb != nullptr) {
                 cb->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "seek error"});
             }
         }
