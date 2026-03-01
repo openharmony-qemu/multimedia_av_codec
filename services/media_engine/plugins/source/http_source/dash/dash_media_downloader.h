@@ -39,6 +39,10 @@ class DashMediaDownloader : public MediaDownloader, public DashMpdCallback,
 public:
     explicit DashMediaDownloader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = nullptr);
     ~DashMediaDownloader() override;
+
+    DashMediaDownloader(const DashMediaDownloader&) = delete;
+    DashMediaDownloader& operator=(const DashMediaDownloader&) = delete;
+
     void Init() override;
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;

@@ -88,6 +88,7 @@ bool Source::IsFlvLiveStream() const
 {
     return isFlvLiveStream_;
 }
+
 Status Source::SetSource(const std::shared_ptr<MediaSource>& source)
 {
     MediaAVCodec::AVCodecTrace trace("Source::SetSource");

@@ -157,9 +157,6 @@ std::shared_ptr<HlsMediaDownloader> CreateFuzzTestObj(bool useCase,
     hlsMediaDownloader->SetStatusCallback(statusCallback);
 
     sourceCb = std::make_shared<SourceCallback>();
-    if (sourceCb == nullptr) {
-        return nullptr;
-    }
     hlsMediaDownloader->SetCallback(sourceCb);
     return hlsMediaDownloader;
 }

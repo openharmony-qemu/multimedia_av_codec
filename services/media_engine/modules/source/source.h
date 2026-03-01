@@ -81,6 +81,9 @@ class Source : public Plugins::Callback, public std::enable_shared_from_this<Sou
 public:
     explicit Source();
     ~Source() override;
+    
+    Source(const Source&) = delete;
+    Source& operator=(const Source&) = delete;
 
     virtual Status SetSource(const std::shared_ptr<MediaSource>& source);
     void SetBundleName(const std::string& bundleName);

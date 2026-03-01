@@ -159,9 +159,6 @@ std::shared_ptr<HlsSegmentManager> CreateFuzzTestObj(bool useCase,
     hlsSegmentManager->SetStatusCallback(statusCallback);
 
     sourceCb = std::make_shared<SourceCallback>();
-    if (sourceCb == nullptr) {
-        return nullptr;
-    }
     hlsSegmentManager->SetCallback(sourceCb);
     return hlsSegmentManager;
 }
