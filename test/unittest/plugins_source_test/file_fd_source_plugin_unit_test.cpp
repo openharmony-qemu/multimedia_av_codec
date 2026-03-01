@@ -496,7 +496,6 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingPercent_0200, TestSiz
     fileFdSourcePlugin_->isBuffering_ = true;
     fileFdSourcePlugin_->isInterrupted_ = false;
     fileFdSourcePlugin_->NotifyBufferingPercent();
-
     EXPECT_EQ("0", cb->description_);
 }
 
@@ -524,8 +523,6 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingEnd_0200, TestSize.Le
     fileFdSourcePlugin_->isInterrupted_ = false;
     fileFdSourcePlugin_->NotifyBufferingEnd();
     EXPECT_NE("end", cb->description_);
-    delete cb;
-    cb = nullptr;
 }
 
 /**
