@@ -65,7 +65,6 @@ constexpr uint32_t KILO = 1024;
 constexpr float DOWNLOAD_RESUME_THRESHOLD_RATIO = 0.5;
 constexpr float DOWNLOAD_THROTTLE_THRESHOLD_RATIO = 0.25;
 constexpr float SOURCE_LOADER_CLEAR_THRESHOLD_RATIO = 0.3;
-constexpr uint64_t RESUME_FREE_SIZE_THRESHOLD = 400 * 1024;
 constexpr size_t STORP_WRITE_BUFFER_REDUNDANCY = 200 * 1024;
 constexpr int MAX_RETRY = 10;
 constexpr uint32_t MAX_LOOP_TIMES = 100;
@@ -732,7 +731,7 @@ Status HlsSegmentManager::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
         ClearChunksInLargeSegment();
         if (freeSize > GetDownloadResumeThreshold()) {
             downloader_->Resume();
-            isNeedResume_.store(fasle);
+            isNeedResume_.store(false);
             MEDIA_LOG_I("HLS download resume, type: %{public}d", type_);
         }
     }
@@ -979,8 +978,8 @@ uint32_t HlsSegmentManager::SaveCacheBufferDataNotblock(uint8_t* data, uint32_t 
     if (len + throttleThreshold >= freeSize && len + throttleThreshold <= totalSize) {
         if (!isNeedResume_.load()) {
             isNeedResume_.store(true);
-            MEDIA_LOG_I("HLS stop write, freeSize: " PUBLIC_LOG_U64 " len: " PUBLIC_LOG_U32 ",
-                type: %{public}d", freeSize, len, type_);
+            MEDIA_LOG_I("HLS stop write, freeSize: " PUBLIC_LOG_U64 " len: " PUBLIC_LOG_U32 
+                ",type: %{public}d", freeSize, len, type_);
         }
     }
     if (freeSize <= (len + STORP_WRITE_BUFFER_REDUNDANCY) && !isNeedResume_.load()) {
@@ -1011,8 +1010,8 @@ uint32_t HlsSegmentManager::SaveCacheBufferDataNotblock(uint8_t* data, uint32_t 
     }
     if (res != len && !isNeedResume_.load()) {
         isNeedResume_.store(true);
-        MEDIA_LOG_W("HLS stop write, write not complete, freeSize: " PUBLIC_LOG_U64 " len: " PUBLIC_LOG_U32 ",
-            written: ", PUBLIC_LOG_ZU ", type: %{public}d", freeSize, len, res, type_);
+        MEDIA_LOG_W("HLS stop write, write not complete, freeSize: " PUBLIC_LOG_U64 " len: " PUBLIC_LOG_U32 
+            ", written: " PUBLIC_LOG_ZU ", type: %{public}d", freeSize, len, res, type_);
     }
     return res;
 }
