@@ -77,7 +77,7 @@ public:
     {
         return Seekable::SEEKABLE;
     }
-    void SetCallback(Callback* cb) override
+    void SetCallback(const std::shared_ptr<Callback>& cb) override
     {
         (void)cb;
         return;
@@ -200,8 +200,8 @@ HWTEST_F(HttpSourcePluginUnitTest, SeekTo_001, TestSize.Level1)
     ASSERT_NE(nullptr, plugin_);
     plugin_->downloader_ = std::make_shared<MockMediaDownloader>();
     plugin_->seekErrorCount_ = 5;
-    MockCallback mockCallback;
-    plugin_->callback_ = &mockCallback;
+    auto mockCallback = std::make_shared<MockCallback>();
+    plugin_->callback_ = mockCallback;
     uint64_t mockOffset {5};
     ASSERT_EQ(Status::ERROR_INVALID_PARAMETER, plugin_->SeekTo(mockOffset));
     plugin_->seekErrorCount_ = 0;

@@ -970,7 +970,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, IsNeedBufferForPlaying_001, TestSize.Lev
     segmentDownloader_->isBuffering_.store(true);
     segmentDownloader_->IsNeedBufferForPlaying();
 
-    MockCallback *mockCallback = new MockCallback();
+    auto mockCallback = std::make_shared<MockCallback>();
     EXPECT_CALL(*mockCallback, OnEvent(testing::_)).Times(TIMES_ONE);
     segmentDownloader_->callback_ = mockCallback;
     segmentDownloader_->isDemuxerInitSuccess_.store(true);
@@ -985,8 +985,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, IsNeedBufferForPlaying_001, TestSize.Lev
     segmentDownloader_->isBuffering_.store(true);
     segmentDownloader_->IsNeedBufferForPlaying();
 
-    delete mockCallback;
-    segmentDownloader_->callback_ = nullptr;
+    segmentDownloader_->callback_.reset();
     segmentDownloader_->isDemuxerInitSuccess_.store(true);
     segmentDownloader_->isBuffering_.store(true);
     segmentDownloader_->IsNeedBufferForPlaying();

@@ -139,7 +139,7 @@ std::shared_ptr<Allocator> FileSourcePlugin::GetAllocator()
     return mAllocator_;
 }
 
-Status FileSourcePlugin::SetCallback(Callback* cb)
+Status FileSourcePlugin::SetCallback(const std::shared_ptr<Callback>& cb)
 {
     MEDIA_LOG_D("IN");
     return Status::ERROR_UNIMPLEMENTED;

@@ -66,10 +66,9 @@ Source::~Source()
     }
 }
 
-void Source::SetCallback(Callback* callback)
+void Source::SetCallback(const std::shared_ptr<Callback>& callback)
 {
-    MEDIA_LOG_D("SetCallback entered.");
-    FALSE_RETURN_MSG(callback != nullptr, "callback is nullptr");
+    MEDIA_LOG_D("SetCallback(shared_ptr) entered.");
     FALSE_RETURN_MSG(mediaDemuxerCallback_ != nullptr, "mediaDemuxerCallback is nullptr");
     mediaDemuxerCallback_->SetCallbackWrap(callback);
 }
@@ -88,6 +87,7 @@ bool Source::IsFlvLiveStream() const
 {
     return isFlvLiveStream_;
 }
+
 Status Source::SetSource(const std::shared_ptr<MediaSource>& source)
 {
     MediaAVCodec::AVCodecTrace trace("Source::SetSource");
@@ -162,7 +162,7 @@ Status Source::InitPlugin(const std::shared_ptr<MediaSource>& source)
     Status ret = plugin_->Init();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "InitPlugin failed");
 
-    plugin_->SetCallback(this);
+    plugin_->SetCallback(shared_from_this());
     plugin_->SetEnableOnlineFdCache(isEnableFdCache_);
     ret = plugin_->SetSource(source);
 

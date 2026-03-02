@@ -182,9 +182,9 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_SetDataSource_001, TestSize.
     std::string uri = "http://127.0.0.1:46666/" + srtPath;
 
     std::shared_ptr<DemuxerPluginManager> demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
-    SourceCallback cb = SourceCallback(demuxerPluginManager);
+    auto cb = std::make_shared<SourceCallback>(demuxerPluginManager);
     std::shared_ptr<Source> source = std::make_shared<Source>();
-    source->SetCallback(&cb);
+    source->SetCallback(cb);
     EXPECT_EQ(source->SetSource(std::make_shared<MediaSource>(uri)), Status::OK);
     std::vector<StreamInfo> streams;
     source->GetStreamInfo(streams);
@@ -214,9 +214,9 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_SetDataSource_002, TestSize.
     std::string uri = "http://127.0.0.1:46666/" + srtPath;
 
     std::shared_ptr<DemuxerPluginManager> demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
-    SourceCallback cb = SourceCallback(demuxerPluginManager);
+    auto cb = std::make_shared<SourceCallback>(demuxerPluginManager);
     std::shared_ptr<Source> source = std::make_shared<Source>();
-    source->SetCallback(&cb);
+    source->SetCallback(cb);
     EXPECT_EQ(source->SetSource(std::make_shared<MediaSource>(uri)), Status::OK);
     std::vector<StreamInfo> streams;
     source->GetStreamInfo(streams);
@@ -245,9 +245,9 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_SetDataSource_003, TestSize.
     string srtPath = "H264_AAC_multi_track.mp4";
     std::string uri = "http://127.0.0.1:46666/" + srtPath;
     std::shared_ptr<DemuxerPluginManager> demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
-    SourceCallback cb = SourceCallback(demuxerPluginManager);
+    auto cb = std::make_shared<SourceCallback>(demuxerPluginManager);
     std::shared_ptr<Source> source = std::make_shared<Source>();
-    source->SetCallback(&cb);
+    source->SetCallback(cb);
     EXPECT_EQ(source->SetSource(std::make_shared<MediaSource>(uri)), Status::OK);
     std::vector<StreamInfo> streams;
     source->GetStreamInfo(streams);

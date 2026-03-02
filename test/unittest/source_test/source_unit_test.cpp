@@ -110,7 +110,6 @@ HWTEST_F(SourceUnitTest, Source_SetBundleName_0200, TestSize.Level1)
 HWTEST_F(SourceUnitTest, Source_SetBundleName_0300, TestSize.Level1)
 {
     source_->SetBundleName("testSource");
-    source_->SetCallback(nullptr);
     EXPECT_EQ(Status::OK, source_->Prepare());
 }
 /**

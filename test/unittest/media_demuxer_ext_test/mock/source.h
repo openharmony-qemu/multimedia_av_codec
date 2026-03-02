@@ -28,40 +28,44 @@ class CallbackImpl : public Plugins::Callback {
 public:
     void OnEvent(const Plugins::PluginEvent &event) override
     {
-        if (callbackWrap_) {
-            callbackWrap_->OnEvent(event);
+        auto cb = callbackWrap_.lock();
+        if (cb) {
+            cb->OnEvent(event);
         }
     }
 
     void OnDfxEvent(const Plugins::PluginDfxEvent &event) override
     {
-        if (callbackWrap_) {
-            callbackWrap_->OnDfxEvent(event);
+        auto cb = callbackWrap_.lock();
+        if (cb) {
+            cb->OnDfxEvent(event);
         }
     }
 
     void SetSelectBitRateFlag(bool flag, uint32_t desBitRate) override
     {
-        if (callbackWrap_) {
-            callbackWrap_->SetSelectBitRateFlag(flag, desBitRate);
+        auto cb = callbackWrap_.lock();
+        if (cb) {
+            cb->SetSelectBitRateFlag(flag, desBitRate);
         }
     }
 
     bool CanAutoSelectBitRate() override
     {
-        if (callbackWrap_) {
-            return callbackWrap_->CanAutoSelectBitRate();
+        auto cb = callbackWrap_.lock();
+        if (cb) {
+            return cb->CanAutoSelectBitRate();
         }
         return false;
     }
 
-    void SetCallbackWrap(Callback *callbackWrap)
+    void SetCallbackWrap(const std::shared_ptr<Callback> &callbackWrap)
     {
         callbackWrap_ = callbackWrap;
     }
 
 private:
-    Callback *callbackWrap_{ nullptr };
+    std::weak_ptr<Callback> callbackWrap_;
 };
 
 class Source : public Plugins::Callback {
@@ -98,7 +102,7 @@ public:
     MOCK_METHOD(Status, SetStartPts, (int64_t startPts), ());
     MOCK_METHOD(Status, SetExtraCache, (uint64_t cacheDuration), ());
     MOCK_METHOD(Status, SetCurrentBitRate, (int32_t bitRate, int32_t streamID), ());
-    MOCK_METHOD(void, SetCallback, (Callback * callback), ());
+    MOCK_METHOD(void, SetCallback, (const std::shared_ptr<Callback> &callback), ());
     MOCK_METHOD(bool, IsNeedPreDownload, (), ());
     MOCK_METHOD(void, SetDemuxerState, (int32_t streamId), ());
     MOCK_METHOD(Status, GetStreamInfo, (std::vector<StreamInfo> & streams), ());

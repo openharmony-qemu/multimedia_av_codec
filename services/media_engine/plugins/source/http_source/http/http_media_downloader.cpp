@@ -288,18 +288,20 @@ void HttpMediaDownloader::UpdateDownloadFinished(const std::string &url, const s
 
 void HttpMediaDownloader::OnClientErrorEvent()
 {
-    if (callback_ != nullptr) {
+    auto callback = callback_.lock();
+    if (callback != nullptr) {
         MEDIA_LOG_I("HTTP Read time out, OnEvent");
-        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+        callback->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
         isTimeoutErrorNotified_.store(true);
     }
 }
 
 bool HttpMediaDownloader::HandleBuffering()
 {
-    if (isBuffering_ && GetBufferingTimeOut() && callback_) {
+    auto callback = callback_.lock();
+    if (isBuffering_ && GetBufferingTimeOut() && callback != nullptr) {
         MEDIA_LOG_I("HTTP cachebuffer buffering time out.");
-        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "buffering"});
+        callback->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "buffering"});
         isTimeoutErrorNotified_.store(true);
         isBuffering_ = false;
         return false;
@@ -324,7 +326,7 @@ bool HttpMediaDownloader::HandleBuffering()
     if (!isBuffering_ && !isFirstFrameArrived_) {
         bufferingTime_ = 0;
     }
-    if (!isBuffering_ && isFirstFrameArrived_ && callback_ != nullptr) {
+    if (!isBuffering_ && isFirstFrameArrived_ && callback != nullptr) {
         MEDIA_LOG_I("HTTP CacheData onEvent BUFFERING_END, bufferSize: " PUBLIC_LOG_U64 ", waterLineAbove_: "
         PUBLIC_LOG_ZU ", isBuffering: " PUBLIC_LOG_D32 ", canWrite: " PUBLIC_LOG_D32 " readOffset: "
         PUBLIC_LOG_ZU " writeOffset: " PUBLIC_LOG_ZU, GetCurrentBufferSize(), waterLineAbove_, isBuffering_.load(),
@@ -356,8 +358,9 @@ void HttpMediaDownloader::HandleWaterline()
                 " avgDownloadSpeed: " PUBLIC_LOG_F, GetCurrentBufferSize(), currentWaterLine, avgDownloadSpeed_);
             MEDIA_LOG_I("initCacheSize_: " PUBLIC_LOG_D32, static_cast<int32_t>(initCacheSize_.load()));
             isBuffering_ = false;
-            if (initCacheSize_.load() != -1) {
-                callback_->OnEvent({PluginEventType::INITIAL_BUFFER_SUCCESS,
+            auto callback = callback_.lock();
+            if (initCacheSize_.load() != -1 && callback) {
+                callback->OnEvent({PluginEventType::INITIAL_BUFFER_SUCCESS,
                                         {BufferingInfoType::BUFFERING_END}, "end"});
                 MEDIA_LOG_I("initCacheSize_: " PUBLIC_LOG_D32, static_cast<int32_t>(initCacheSize_.load()));
                 initCacheSize_.store(-1);
@@ -454,7 +457,7 @@ bool HttpMediaDownloader::StartBuffering(unsigned int& wantReadLength)
     if (!isFirstFrameArrived_) {
         return true;
     }
-    if (callback_ != nullptr) {
+    if (callback_.lock() != nullptr) {
         MEDIA_LOG_I("HTTP CacheData OnEvent BUFFERING_START, waterLineAbove: " PUBLIC_LOG_ZU " bufferSize "
             PUBLIC_LOG_U64 " readOffset: " PUBLIC_LOG_ZU " writeOffset: " PUBLIC_LOG_ZU, waterLineAbove_,
             GetCurrentBufferSize(), readOffset_, writeOffset_);
@@ -608,9 +611,10 @@ void HttpMediaDownloader::CheckDownloadPos(unsigned int wantReadLength)
 
 Status HttpMediaDownloader::HandleRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    if (isBuffering_ && GetBufferingTimeOut() && callback_ && !isReportedErrorCode_) {
+    auto callback = callback_.lock();
+    if (isBuffering_ && GetBufferingTimeOut() && callback && !isReportedErrorCode_) {
         MEDIA_LOG_I("HTTP ringbuffer read time out.");
-        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+        callback->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
         isTimeoutErrorNotified_.store(true);
         return Status::END_OF_STREAM;
     }
@@ -629,9 +633,10 @@ Status HttpMediaDownloader::HandleRingBuffer(unsigned char* buff, ReadDataInfo& 
 
 Status HttpMediaDownloader::HandleCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    if (isBuffering_ && GetBufferingTimeOut() && callback_ && !isReportedErrorCode_) {
+    auto callback = callback_.lock();
+    if (isBuffering_ && GetBufferingTimeOut() && callback && !isReportedErrorCode_) {
         MEDIA_LOG_I("HTTP cachebuffer read time out.");
-        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+        callback->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
         isTimeoutErrorNotified_.store(true);
         return Status::END_OF_STREAM;
     }
@@ -971,7 +976,7 @@ Seekable HttpMediaDownloader::GetSeekable() const
     return downloadRequest ? downloadRequest->IsChunked(isInterruptNeeded_) : Seekable::UNSEEKABLE;
 }
 
-void HttpMediaDownloader::SetCallback(Callback* cb)
+void HttpMediaDownloader::SetCallback(const std::shared_ptr<Callback>& cb)
 {
     callback_ = cb;
 }
@@ -1005,15 +1010,17 @@ uint32_t HttpMediaDownloader::SaveRingBufferData(uint8_t* data, uint32_t len)
     if ((bufferSize >= WATER_LINE || bufferSize >= fileContentLength / 2) && !aboveWaterline_) { // 2
         aboveWaterline_ = true;
         MEDIA_LOG_D("HTTP Send http aboveWaterline event, ringbuffer ratio " PUBLIC_LOG_F, ratio);
-        if (callback_ != nullptr) {
-            callback_->OnEvent({PluginEventType::ABOVE_LOW_WATERLINE, {ratio}, "http"});
+        auto callback = callback_.lock();
+        if (callback != nullptr) {
+            callback->OnEvent({PluginEventType::ABOVE_LOW_WATERLINE, {ratio}, "http"});
         }
         startedPlayStatus_ = true;
     } else if (bufferSize < WATER_LINE && aboveWaterline_) {
         aboveWaterline_ = false;
         MEDIA_LOG_D("HTTP Send http belowWaterline event, ringbuffer ratio " PUBLIC_LOG_F, ratio);
-        if (callback_ != nullptr) {
-            callback_->OnEvent({PluginEventType::BELOW_LOW_WATERLINE, {ratio}, "http"});
+        auto callback = callback_.lock();
+        if (callback != nullptr) {
+            callback->OnEvent({PluginEventType::BELOW_LOW_WATERLINE, {ratio}, "http"});
         }
     }
     if (writeBitrateCaculator_ != nullptr) {
@@ -1093,8 +1100,11 @@ bool HttpMediaDownloader::CacheBufferFullLoop()
         AutoLock lock(initCacheMutex_);
         if (initCacheSize_.load() != -1 &&
             GetBufferSize() >= static_cast<size_t>(initCacheSize_.load())) {
-            callback_->OnEvent({PluginEventType::INITIAL_BUFFER_SUCCESS,
-                                    {BufferingInfoType::BUFFERING_END}, "end"});
+            auto callback = callback_.lock();
+            if (callback) {
+                callback->OnEvent({PluginEventType::INITIAL_BUFFER_SUCCESS,
+                    {BufferingInfoType::BUFFERING_END}, "end"});
+            }
             initCacheSize_.store(-1);
             expectOffset_.store(-1);
         }
@@ -1195,9 +1205,12 @@ void HttpMediaDownloader::OnWriteBuffer(uint32_t len)
 {
     {
         AutoLock lock(initCacheMutex_);
-        if (initCacheSize_.load() != -1 &&
-            GetCurrentBufferSize() >= static_cast<uint64_t>(initCacheSize_.load())) {
-            callback_->OnEvent({ PluginEventType::INITIAL_BUFFER_SUCCESS, {BufferingInfoType::BUFFERING_END}, "end"});
+        if (initCacheSize_.load() != -1 && GetCurrentBufferSize() >= static_cast<uint64_t>(initCacheSize_.load())) {
+            auto callback = callback_.lock();
+            if (callback) {
+                callback->OnEvent({ PluginEventType::INITIAL_BUFFER_SUCCESS,
+                    {BufferingInfoType::BUFFERING_END}, "end"});
+            }
             initCacheSize_.store(-1);
             expectOffset_.store(-1);
         }
@@ -1281,8 +1294,9 @@ void HttpMediaDownloader::SetDownloadErrorState()
 {
     MEDIA_LOG_I("HTTP SetDownloadErrorState");
     downloadErrorState_ = true;
-    if (callback_ != nullptr && !isReportedErrorCode_) {
-        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_NOT_RETRY}, "read"});
+    auto callback = callback_.lock();
+    if (callback != nullptr && !isReportedErrorCode_) {
+        callback->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_NOT_RETRY}, "read"});
         isTimeoutErrorNotified_.store(true);
     }
     Close(true);
@@ -1466,7 +1480,7 @@ Status HttpMediaDownloader::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 void HttpMediaDownloader::HandleCachedDuration()
 {
     int32_t tmpBitRate = currentBitRate_;
-    if (tmpBitRate <= 0 || callback_ == nullptr) {
+    if (tmpBitRate <= 0 || callback_.lock() == nullptr) {
         return;
     }
     cachedDuration_ = GetCurrentBufferSize() *
@@ -1483,7 +1497,7 @@ void HttpMediaDownloader::HandleCachedDuration()
 
 void HttpMediaDownloader::UpdateCachedPercent(BufferingInfoType infoType)
 {
-    if (waterLineAbove_ == 0 || callback_ == nullptr) {
+    if (waterLineAbove_ == 0 || callback_.lock() == nullptr) {
         MEDIA_LOG_E("UpdateCachedPercent: ERROR");
         return;
     }
@@ -1767,8 +1781,9 @@ bool HttpMediaDownloader::IsNeedBufferForPlaying()
         return false;
     }
     if (GetBufferingTimeOut()) {
-        if (callback_) {
-            callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT},
+        auto callback = callback_.lock();
+        if (callback) {
+            callback->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT},
                 "buffer for playing"});
         }
         isTimeoutErrorNotified_.store(true);
@@ -1787,7 +1802,7 @@ bool HttpMediaDownloader::IsNeedBufferForPlaying()
         bufferingEndCond_.NotifyAll();
         isDemuxerInitSuccess_.store(false);
         bufferingTime_ = 0;
-        if (isRingBuffer_ && callback_) {
+        if (isRingBuffer_ && callback_.lock()) {
             MEDIA_LOG_I("HTTP ringbuffer BUFFERING_END");
         }
         return false;
@@ -2025,8 +2040,9 @@ bool HttpMediaDownloader::CheckAutoSelectBitrate()
         return false;
     }
     MEDIA_LOG_I("HTTP CheckAutoSelectBitrate aveRate " PUBLIC_LOG_U64 " desRate " PUBLIC_LOG_U32, aveSpeed, desBitRate);
-    if (isAutoSelectBitrate_.load() && callback_) {
-        callback_->OnEvent({PluginEventType::FLV_AUTO_SELECT_BITRATE, {desBitRate},
+    auto callback = callback_.lock();
+    if (isAutoSelectBitrate_.load() && callback) {
+        callback->OnEvent({PluginEventType::FLV_AUTO_SELECT_BITRATE, {desBitRate},
             "auto select bitrate"});
     }
     return true;
