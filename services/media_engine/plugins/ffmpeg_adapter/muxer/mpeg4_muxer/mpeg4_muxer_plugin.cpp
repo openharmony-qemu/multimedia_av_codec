@@ -38,7 +38,6 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_MUXER, "Mpeg4MuxerPlugin"};
-constexpr uint32_t CACHE_MAX_SIZE = 4096;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS::Media;
 using namespace Plugins;
@@ -487,7 +486,7 @@ Status Mpeg4MuxerPlugin::WriteTailer()
         MEDIA_LOG_W("do not have read permission. cancel move moov to front!");
     }
     uint32_t moovSize = moov_->GetSize();
-    io_->InitCache(moovSize > CACHE_MAX_SIZE ? CACHE_MAX_SIZE : moovSize);
+    io_->InitCache(moovSize);
     moov_->Write(io_);
     io_->InitCache(0);
     moov_ = nullptr;
@@ -519,7 +518,7 @@ Status Mpeg4MuxerPlugin::MoveMoovBoxToFront(bool isNeedFree)
     std::vector<std::pair<uint8_t*, int32_t>> buffer = {{nullptr, 0}, {nullptr, 0}};
     buffer[0].first = new uint8_t[offset];
     buffer[0].second = io->Read(buffer[0].first, offset);
-    io_->InitCache(moovSize > CACHE_MAX_SIZE ? CACHE_MAX_SIZE : moovSize);
+    io_->InitCache(moovSize);
     moov_->Write(io_);
     io_->InitCache(0);
     if (isNeedFree) {

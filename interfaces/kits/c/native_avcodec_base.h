@@ -1202,7 +1202,7 @@ extern const char *OH_MD_KEY_BUFFER_SKIP_SAMPLES_INFO;
  *
  * This is an optional key, default is 0.
  *
- * @since 23
+ * @since 24
  */
 extern const char *OH_MD_KEY_ENABLE_BUFFER_SKIP_SAMPLES;
 
