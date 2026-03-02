@@ -191,6 +191,77 @@ void CodecListenerStub::Init()
     outputBufferCache_->SetTag(tag + "[out]");
 }
 
+bool CodecListenerStub::ShouldNotify(MessageParcel &data) const
+{
+    uint64_t messageGeneration = data.ReadUint64();
+    return needListen_ && CheckGeneration(messageGeneration);
+}
+
+int CodecListenerStub::HandleOnBufferAvailable(MessageParcel &data, const bool needNotify, CodecBufferCache &bufferCache,
+    const BufferNotifyFunc &notifyFunc)
+{
+    uint32_t index = data.ReadUint32();
+    std::shared_ptr<AVBuffer> buffer;
+    bool ret = bufferCache.ReadFromParcel(index, data, buffer);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret, AVCS_ERR_OK, "read from parcel failed");
+    if (!needNotify) {
+        return AVCS_ERR_OK;
+    }
+
+    std::shared_ptr<MediaCodecCallback> mediaCb = callback_.lock();
+    if (mediaCb != nullptr && static_cast<bool>(notifyFunc)) {
+        notifyFunc(mediaCb, index, buffer);
+    }
+    return AVCS_ERR_OK;
+}
+
+int CodecListenerStub::HandleOnError(MessageParcel &data, bool needNotify)
+{
+    if (!needNotify) {
+        AVCODEC_LOGW_LIMIT(LOG_FREQ, "abandon message: ON_ERROR");
+        return AVCS_ERR_OK;
+    }
+    int32_t errorType = data.ReadInt32();
+    int32_t errorCode = data.ReadInt32();
+    OnError(static_cast<AVCodecErrorType>(errorType), errorCode);
+    return AVCS_ERR_OK;
+}
+
+int CodecListenerStub::HandleOnOutputFormatChanged(MessageParcel &data, bool needNotify)
+{
+    if (!needNotify) {
+        AVCODEC_LOGW_LIMIT(LOG_FREQ, "abandon message: ON_OUTPUT_FORMAT_CHANGED");
+        return AVCS_ERR_OK;
+    }
+    Format format;
+    (void)AVCodecParcel::Unmarshalling(data, format);
+    outputBufferCache_->ClearCaches();
+    OnOutputFormatChanged(format);
+    return AVCS_ERR_OK;
+}
+
+int CodecListenerStub::HandleOnInputBufferAvailable(MessageParcel &data, bool needNotify)
+{
+    return HandleOnBufferAvailable(
+        data,
+        needNotify,
+        *inputBufferCache_,
+        [](const std::shared_ptr<MediaCodecCallback> &mediaCb, uint32_t index, const std::shared_ptr<AVBuffer> &buffer) {
+            mediaCb->OnInputBufferAvailable(index, buffer);
+        });
+}
+
+int CodecListenerStub::HandleOnOutputBufferAvailable(MessageParcel &data, bool needNotify)
+{
+    return HandleOnBufferAvailable(
+        data,
+        needNotify,
+        *outputBufferCache_,
+        [](const std::shared_ptr<MediaCodecCallback> &mediaCb, uint32_t index, const std::shared_ptr<AVBuffer> &buffer) {
+            mediaCb->OnOutputBufferAvailable(index, buffer);
+        });
+}
+
 int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option)
 {
     auto remoteDescriptor = data.ReadInterfaceToken();
@@ -207,55 +278,19 @@ int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(syncMutex_ != nullptr, AVCS_ERR_INVALID_OPERATION, "sync mutex is nullptr");
     std::lock_guard<std::recursive_mutex> lock(*syncMutex_);
 
-    uint64_t messageGeneration = data.ReadUint64();
-    bool needNotify = needListen_ && CheckGeneration(messageGeneration);
+    bool needNotify = ShouldNotify(data);
     switch (code) {
         case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_ERROR): {
-            if (!needNotify) {
-                AVCODEC_LOGW_LIMIT(LOG_FREQ, "abandon message: ON_ERROR");
-                return AVCS_ERR_OK;
-            }
-            int32_t errorType = data.ReadInt32();
-            int32_t errorCode = data.ReadInt32();
-            OnError(static_cast<AVCodecErrorType>(errorType), errorCode);
-            return AVCS_ERR_OK;
+            return HandleOnError(data, needNotify);
         }
         case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_FORMAT_CHANGED): {
-            if (!needNotify) {
-                AVCODEC_LOGW_LIMIT(LOG_FREQ, "abandon message: ON_OUTPUT_FORMAT_CHANGED");
-                return AVCS_ERR_OK;
-            }
-            Format format;
-            (void)AVCodecParcel::Unmarshalling(data, format);
-            outputBufferCache_->ClearCaches();
-            OnOutputFormatChanged(format);
-            return AVCS_ERR_OK;
+            return HandleOnOutputFormatChanged(data, needNotify);
         }
         case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_INPUT_BUFFER_AVAILABLE): {
-            uint32_t index = data.ReadUint32();
-            std::shared_ptr<AVBuffer> buffer;
-            bool ret = inputBufferCache_->ReadFromParcel(index, data, buffer);
-            CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret, AVCS_ERR_OK, "read from parcel failed");
-            if (needNotify) {
-                std::shared_ptr<MediaCodecCallback> mediaCb = callback_.lock();
-                if (mediaCb != nullptr) {
-                    mediaCb->OnInputBufferAvailable(index, buffer);
-                }
-            }
-            return AVCS_ERR_OK;
+            return HandleOnInputBufferAvailable(data, needNotify);
         }
         case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_BUFFER_AVAILABLE): {
-            uint32_t index = data.ReadUint32();
-            std::shared_ptr<AVBuffer> buffer;
-            bool ret = outputBufferCache_->ReadFromParcel(index, data, buffer);
-            CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret, AVCS_ERR_OK, "read from parcel failed");
-            if (needNotify) {
-                std::shared_ptr<MediaCodecCallback> mediaCb = callback_.lock();
-                if (mediaCb != nullptr) {
-                    mediaCb->OnOutputBufferAvailable(index, buffer);
-                }
-            }
-            return AVCS_ERR_OK;
+            return HandleOnOutputBufferAvailable(data, needNotify);
         }
         default: {
             AVCODEC_LOGE_WITH_TAG("Default case, please check codec listener stub");
@@ -299,6 +334,27 @@ void CodecListenerStub::OnOutputFormatChanged(const Format &format)
         vCb->OnOutputFormatChanged(format);
         return;
     }
+}
+
+void CodecListenerStub::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
+{
+    (void)index;
+    (void)buffer;
+}
+
+void CodecListenerStub::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
+{
+    (void)index;
+    (void)buffer;
+}
+
+void CodecListenerStub::OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &bufferMap)
+{
+    (void)bufferMap;
+}
+
+void CodecListenerStub::OnOutputBufferUnbinded()
+{
 }
 
 void CodecListenerStub::OnOutputBufferBinded(MessageParcel &data)

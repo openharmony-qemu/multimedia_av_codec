@@ -18,6 +18,7 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <functional>
 #include <mutex>
 #include <thread>
 #include <unordered_map>
@@ -38,10 +39,10 @@ public:
     bool OnRequestExtras(uint32_t code, MessageParcel &data);
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Format &format) override;
-    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override {};
-    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override {};
-    void OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &bufferMap) override {};
-    void OnOutputBufferUnbinded() override {};
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
+    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
+    void OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &bufferMap) override;
+    void OnOutputBufferUnbinded() override;
 
     void SetCallback(const std::shared_ptr<MediaCodecCallback> &callback);
     void Init();
@@ -54,11 +55,24 @@ public:
     void SetNeedListen(const bool needListen);
 
 private:
+    class CodecBufferCache;
+
+    using BufferNotifyFunc = std::function<void(const std::shared_ptr<MediaCodecCallback> &mediaCb, uint32_t index,
+        const std::shared_ptr<AVBuffer> &buffer)>;
+
+    bool ShouldNotify(MessageParcel &data) const;
+
+    int HandleOnBufferAvailable(MessageParcel &data, const bool needNotify, CodecBufferCache &bufferCache,
+        const BufferNotifyFunc &notifyFunc);
+
+    int HandleOnError(MessageParcel &data, bool needNotify);
+    int HandleOnOutputFormatChanged(MessageParcel &data, bool needNotify);
+    int HandleOnInputBufferAvailable(MessageParcel &data, bool needNotify);
+    int HandleOnOutputBufferAvailable(MessageParcel &data, bool needNotify);
+
     void OnOutputBufferBinded(MessageParcel &data);
     void OnOutputBufferUnbinded(MessageParcel &data);
     bool CheckGeneration(uint64_t messageGeneration) const;
-
-    class CodecBufferCache;
     std::unique_ptr<CodecBufferCache> inputBufferCache_;
     std::unique_ptr<CodecBufferCache> outputBufferCache_;
     std::weak_ptr<MediaCodecCallback> callback_;
