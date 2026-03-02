@@ -1799,7 +1799,6 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
             ScopedTimer timer("seek closest", SEEK_LOCAL_WARNING_MS);
             ret = demuxerPluginManager_->SeekTo(seekTime, mode, realSeekTime);
         }
-        ResetSampleQueueStatus(seekTime);
     }
     ResetAfterSeek(ret);
     MEDIA_LOG_D("Out");
@@ -2328,7 +2327,7 @@ Status MediaDemuxer::Start()
         }
     }
     source_->Start();
-    return SetCachePressureCallback();
+    return demuxerPluginManager_->Start();
 }
 
 Status MediaDemuxer::SetCachePressureCallback()

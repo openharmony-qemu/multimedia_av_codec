@@ -45,7 +45,7 @@ public:
     static constexpr uint32_t MAX_SAMPLE_QUEUE_SIZE = 16;
     static constexpr uint32_t MAX_SAMPLE_QUEUE_SIZE_ON_MUTE = 500;
     static constexpr uint32_t DEFAULT_SAMPLE_QUEUE_SIZE = 500;
-    static constexpr uint32_t FD_SAMPLE_QUEUE_SIZE = 300;
+    static constexpr uint32_t FD_SAMPLE_QUEUE_SIZE = 16;
     static constexpr uint32_t DEFAULT_SAMPLE_BUFFER_CAP = 0;
     static constexpr uint32_t MAX_SAMPLE_BUFFER_CAP = DEFAULT_SAMPLE_BUFFER_CAP;
     static constexpr uint32_t DEFAULT_VIDEO_SAMPLE_BUFFER_CAP = DEFAULT_SAMPLE_BUFFER_CAP;
