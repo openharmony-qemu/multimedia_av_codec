@@ -197,8 +197,8 @@ bool CodecListenerStub::ShouldNotify(MessageParcel &data) const
     return needListen_ && CheckGeneration(messageGeneration);
 }
 
-int CodecListenerStub::HandleOnBufferAvailable(MessageParcel &data, const bool needNotify, CodecBufferCache &bufferCache,
-    const BufferNotifyFunc &notifyFunc)
+int CodecListenerStub::HandleOnBufferAvailable(MessageParcel &data, const bool needNotify,
+                                               CodecBufferCache &bufferCache, const BufferNotifyFunc &notifyFunc)
 {
     uint32_t index = data.ReadUint32();
     std::shared_ptr<AVBuffer> buffer;
@@ -246,7 +246,8 @@ int CodecListenerStub::HandleOnInputBufferAvailable(MessageParcel &data, bool ne
         data,
         needNotify,
         *inputBufferCache_,
-        [](const std::shared_ptr<MediaCodecCallback> &mediaCb, uint32_t index, const std::shared_ptr<AVBuffer> &buffer) {
+        [](const std::shared_ptr<MediaCodecCallback> &mediaCb, uint32_t index,
+            const std::shared_ptr<AVBuffer> &buffer) {
             mediaCb->OnInputBufferAvailable(index, buffer);
         });
 }
@@ -257,7 +258,8 @@ int CodecListenerStub::HandleOnOutputBufferAvailable(MessageParcel &data, bool n
         data,
         needNotify,
         *outputBufferCache_,
-        [](const std::shared_ptr<MediaCodecCallback> &mediaCb, uint32_t index, const std::shared_ptr<AVBuffer> &buffer) {
+        [](const std::shared_ptr<MediaCodecCallback> &mediaCb, uint32_t index,
+            const std::shared_ptr<AVBuffer> &buffer) {
             mediaCb->OnOutputBufferAvailable(index, buffer);
         });
 }
