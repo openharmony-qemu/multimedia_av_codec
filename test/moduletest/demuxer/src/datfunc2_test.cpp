@@ -1220,6 +1220,40 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0340, TestSize.Level2)
 }
 
 /**
+ * @tc.number    : DEMUXER_DAT_FUNC_0350
+ * @tc.name      : demuxer DAT, Read Seek with Local rv30_cook_rm.dat(rm)
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0350, TestSize.Level2)
+{
+    CreateFdSource(INP_DIR_9);
+    DemuxerResult(1937, 2720);
+    seekInfo fileTestDirPrevious{INP_DIR_9, SEEK_MODE_PREVIOUS_SYNC, 0, 1937, 2720};
+    seekInfo fileTestDirClosest{INP_DIR_9, SEEK_MODE_CLOSEST_SYNC, 1000, 1937, 2720};
+    seekInfo fileTestDirNext{INP_DIR_9, SEEK_MODE_NEXT_SYNC, 5570, 1760, 2480};
+    CheckSeekMode(fileTestDirPrevious);
+    CheckSeekMode(fileTestDirClosest);
+    CheckSeekMode(fileTestDirNext);
+}
+
+/**
+ * @tc.number    : DEMUXER_DAT_FUNC_0360
+ * @tc.name      : demuxer DAT, Read Seek with URI rv30_cook_rm.dat(rm)
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0360, TestSize.Level2)
+{
+    CreateUriSource(INP_URI_9);
+    DemuxerResult(1937, 2720);
+    seekInfo fileTestUriPrevious{INP_URI_9, SEEK_MODE_PREVIOUS_SYNC, 0, 1937, 2720};
+    seekInfo fileTestUriClosest{INP_URI_9, SEEK_MODE_CLOSEST_SYNC, 1000, 1937, 2720};
+    seekInfo fileTestUriNext{INP_URI_9, SEEK_MODE_NEXT_SYNC, 5570, 1760, 2480};
+    CheckSeekMode(fileTestUriPrevious);
+    CheckSeekMode(fileTestUriClosest);
+    CheckSeekMode(fileTestUriNext);
+}
+
+/**
  * @tc.number    : DEMUXER_DAT_FUNC_0370
  * @tc.name      : demuxer DAT, GetTrackFormat, Local rv40_cook_rmvb.dat(rmvb)
  * @tc.desc      : function test
@@ -1294,8 +1328,8 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0390, TestSize.Level2)
 {
     CreateFdSource(INP_DIR_10);
     DemuxerResult(251, 480);
-    seekInfo fileTestDirPrevious{INP_DIR_10, SEEK_MODE_PREVIOUS_SYNC, 0, 251, 480};
-    seekInfo fileTestDirClosest{INP_DIR_10, SEEK_MODE_CLOSEST_SYNC, 100, 251, 480};
+    seekInfo fileTestDirPrevious{INP_DIR_10, SEEK_MODE_PREVIOUS_SYNC, 0, 2, 80};
+    seekInfo fileTestDirClosest{INP_DIR_10, SEEK_MODE_CLOSEST_SYNC, 100, 2, 80};
     seekInfo fileTestDirNext{INP_DIR_10, SEEK_MODE_NEXT_SYNC, 557, 2, 80};
     CheckSeekMode(fileTestDirPrevious);
     CheckSeekMode(fileTestDirClosest);
@@ -1311,8 +1345,8 @@ HWTEST_F(DemuxerDAT2FuncNdkTest, DEMUXER_DAT_FUNC_0400, TestSize.Level2)
 {
     CreateUriSource(INP_URI_10);
     DemuxerResult(251, 480);
-    seekInfo fileTestUriPrevious{INP_URI_10, SEEK_MODE_PREVIOUS_SYNC, 0, 251, 480};
-    seekInfo fileTestUriClosest{INP_URI_10, SEEK_MODE_CLOSEST_SYNC, 100, 251, 480};
+    seekInfo fileTestUriPrevious{INP_URI_10, SEEK_MODE_PREVIOUS_SYNC, 0, 2, 80};
+    seekInfo fileTestUriClosest{INP_URI_10, SEEK_MODE_CLOSEST_SYNC, 100, 2, 80};
     seekInfo fileTestUriNext{INP_URI_10, SEEK_MODE_NEXT_SYNC, 557, 2, 80};
     CheckSeekMode(fileTestUriPrevious);
     CheckSeekMode(fileTestUriClosest);
