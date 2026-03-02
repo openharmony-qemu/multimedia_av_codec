@@ -133,6 +133,9 @@ public:
         SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs) override;
     Status SeekToFrameByDts(int32_t trackId, int64_t seekTime,
         SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs) override;
+    bool GetVideoTrack(int &trackIndex) const;
+    bool GetAudioTrack(int &trackIndex) const;
+    Status SeekToRmKeyFrame(SeekMode mode, int64_t &realSeekTime);
 
     // cache pressure control
     Status SetCachePressureCallback(CachePressureCallback cb) override;

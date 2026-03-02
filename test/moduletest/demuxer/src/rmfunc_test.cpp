@@ -845,7 +845,7 @@ HWTEST_F(DemuxerRmFuncNdkTest, DEMUXER_RM_FUNC_3400, TestSize.Level2)
  */
 HWTEST_F(DemuxerRmFuncNdkTest, DEMUXER_RM_FUNC_3500, TestSize.Level1)
 {
-    seekInfo fileTest1{INP_DIR_4, SEEK_MODE_NEXT_SYNC, 557000, 2640, 1916};
+    seekInfo fileTest1{INP_DIR_4, SEEK_MODE_NEXT_SYNC, 557000, 2720, 1937};
     CheckSeekMode(fileTest1);
 }
 
