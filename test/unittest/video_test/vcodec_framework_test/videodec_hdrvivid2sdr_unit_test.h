@@ -63,5 +63,21 @@ void HdrVivid2SdrBaseSuit::SetFormatWithParam(VideoPixelFormat format)
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(format));
 }
+
+void ISHDR2SDRSupported()
+    {
+        VideoProcessing_ColorSpaceInfo sourceVideoInfo = {-1, -1, -1};
+        VideoProcessing_ColorSpaceInfo destinationVideoInfo = {-1, -1, -1};
+        sourceVideoInfo.metadataType = static_cast<int32_t>(OH_VIDEO_HDR_VIVID);
+        sourceVideoInfo.colorSpace = static_cast<int32_t>(OH_COLORSPACE_BT2020_HLG_FULL);
+        sourceVideoInfo.pixelFormat = static_cast<int32_t>(NATIVEBUFFER_PIXEL_FMT_RGBA_1010102);
+        destinationVideoInfo.metadataType = static_cast<int32_t>(OH_VIDEO_NONE);
+        destinationVideoInfo.colorSpace = static_cast<int32_t>(OH_COLORSPACE_BT709_LIMIT);
+        destinationVideoInfo.pixelFormat = static_cast<int32_t>(NATIVEBUFFER_PIXEL_FMT_RGBA_8888);
+        bool ret = OH_VideoProcessing_IsColorSpaceConversionSupported(&sourceVideoInfo, &destinationVideoInfo);
+        if (!ret) {
+            GTEST_SKIP() << "Unsupport func of HDR2SDR";
+        }
+    }
 } // namespace TESTBASE
 #endif // VIDEODEC_HDRVIVID2SDR_UNIT_TEST_H
