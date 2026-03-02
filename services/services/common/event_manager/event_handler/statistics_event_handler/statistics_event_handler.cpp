@@ -449,8 +449,9 @@ public:
                         lastOccupationHDecAppInfoVec_.emplace_back(appIndex, count);
                     }
 
+                    lastCallerNameIndex_ = callerNameIndex;
                     isInOccupationHDecEvent_.store(true);
-                    RegisterOccupationHDecLimitExceededEventHook(callerNameIndex);
+                    RegisterOccupationHDecLimitExceededEventHook();
                 }
                 break;
             }
@@ -474,6 +475,10 @@ public:
             return;
         }
 
+        if (isInOccupationHDecEvent_.load()) {
+            hdecLimitExceededInfo_.emplace(lastCallerNameIndex_, lastOccupationHDecAppInfoVec_);
+            isInOccupationHDecEvent_.store(false);
+        }
         auto hdecLimitExceededInfoJsonObj = cJSON_AddObjectToObject(jsonObj.get(), "HDecLimitExceededInfo");
         for (const auto &[appIndex, appInfoVec] : hdecLimitExceededInfo_) {
             auto appInfoArrayJsonObj = cJSON_AddArrayToObject(
@@ -497,23 +502,24 @@ public:
     {
         std::lock_guard<std::mutex> lock(mutex_);
         isInOccupationHDecEvent_.store(false);
+        lastCallerNameIndex_ = INVALID_APP_NAME_INDEX;
         lastOccupationHDecAppInfoVec_.clear();
         hdecLimitExceededInfo_.clear();
         longTimeInBgInfo_.clear();
     }
 
 private:
-    void RegisterOccupationHDecLimitExceededEventHook(AppNameIndex callerNameIndex)
+    void RegisterOccupationHDecLimitExceededEventHook()
     {
         StatisticsEventInfo::GetInstance().RegisterEventHook(
             StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO,
-            [this, callerNameIndex] (const Media::Meta &eventMeta) -> bool {
+            [this] (const Media::Meta &eventMeta) -> bool {
                 if (!isInOccupationHDecEvent_.load()) {
                     return true;
                 }
 
                 std::lock_guard<std::mutex> lock(mutex_);
-                hdecLimitExceededInfo_.emplace(callerNameIndex, lastOccupationHDecAppInfoVec_);
+                hdecLimitExceededInfo_.emplace(lastCallerNameIndex_, lastOccupationHDecAppInfoVec_);
                 isInOccupationHDecEvent_.store(false);
                 return true;
             });
@@ -522,6 +528,7 @@ private:
     using HDecLimitExceededAppInfoVector = std::vector<std::pair<AppNameIndex, uint32_t>>; // AppNameIndex, count
     constexpr static size_t maxOccupationHDecRecordCount = 200;
     std::atomic<bool> isInOccupationHDecEvent_{ false };
+    AppNameIndex lastCallerNameIndex_ = INVALID_APP_NAME_INDEX;
     HDecLimitExceededAppInfoVector lastOccupationHDecAppInfoVec_;
     std::unordered_multimap<AppNameIndex, HDecLimitExceededAppInfoVector> hdecLimitExceededInfo_;
     std::unordered_multimap<AppNameIndex, uint32_t> longTimeInBgInfo_;  // AppNameIndex, elapsedTime
