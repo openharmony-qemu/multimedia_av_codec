@@ -79,7 +79,7 @@ bool TypeFinder::IsSniffNeeded(std::string uri)
 
 void TypeFinder::Init(std::string uri, uint64_t mediaDataSize,
     std::function<Status(int32_t, uint64_t, size_t)> checkRange,
-    std::function<Status(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange, int32_t streamId)
+    std::function<Status(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&, bool)> peekRange, int32_t streamId)
 {
     streamID_ = streamId;
     mediaDataSize_ = mediaDataSize;
@@ -140,7 +140,7 @@ Status TypeFinder::ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_
         MEDIA_LOG_E("ReadAt failed try 5 times");
         return Status::ERROR_NOT_ENOUGH_DATA;
     }
-    FALSE_LOG_MSG(peekRange_(streamID_, static_cast<uint64_t>(offset), expectedLen, buffer) == Status::OK,
+    FALSE_LOG_MSG(peekRange_(streamID_, static_cast<uint64_t>(offset), expectedLen, buffer, true) == Status::OK,
         "PeekRange failed");
     return Status::OK;
 }
