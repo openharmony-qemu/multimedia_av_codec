@@ -2605,6 +2605,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_DefinedKey_001, TestSize.Level0)
     audioParams->PutStringValue(Tag::MEDIA_CREATION_TIME, "2023-12-19T03:16:00.000000Z");
     audioParams->PutLongValue(Tag::MEDIA_BITRATE, 128000);
     audioParams->PutFloatValue(Tag::MEDIA_LATITUDE, 22.67f);
+    audioParams->PutFloatValue(Tag::MEDIA_LONGITUDE, 45.67f);
     int32_t ret = avmuxer_->SetFormat(audioParams);
     ASSERT_EQ(ret, 0);
 }
@@ -2628,6 +2629,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_DefinedKey_002, TestSize.Level0)
     audioParams->PutIntValue(Tag::AUDIO_SAMPLE_RATE, 48000);
     audioParams->PutLongValue(Tag::MEDIA_BITRATE, 128000);
     audioParams->PutFloatValue(Tag::MEDIA_LATITUDE, 22.67f);
+    audioParams->PutFloatValue(Tag::MEDIA_LONGITUDE, 45.67f);
     int32_t ret = avmuxer_->SetFormat(audioParams);
     ASSERT_EQ(ret, 0);
 }
