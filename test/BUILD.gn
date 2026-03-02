@@ -167,6 +167,7 @@ group("av_codec_unit_test") {
         "unittest/surface_encoder_adapter_unittest:surface_encoder_adapter_unittest",
         "unittest/video_resize_filter_test:video_resize_filter_test",
         "unittest/video_sink_unittest:video_sink_unittest",
+        "unittest/video_capture_filter_unit_test:video_capture_filter_unit_test",
       ]
       if (av_codec_support_hcodec) {
         deps += [ "unittest/hcodec_test:hcodec_unit_test" ]
