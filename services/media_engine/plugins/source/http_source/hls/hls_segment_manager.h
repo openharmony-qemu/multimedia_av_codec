@@ -135,6 +135,10 @@ public:
     Status GetStreamInfo(std::vector<StreamInfo>& streams);
     bool IsHlsFmp4();
     uint64_t GetMemorySize();
+    bool GetDownloadResumeThreshold();
+    bool GetDownloadThrottleThreshold();
+    bool GetsourceLoaderClearThreshold();
+    void ClearChunksInLargeSegment();
     std::string GetContentType();
     bool IsHlsEnd();
     bool SelectMedia(int32_t streamId, HlsSegmentType mediaType);

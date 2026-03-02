@@ -47,7 +47,7 @@ constexpr int IS_DOWNLOAD_MIN_BIT = 100; // Determine whether it is downloading
 constexpr uint32_t DURATION_CHANGE_AMOUT_MILLISECONDS = 500;
 constexpr int SEEK_STATUS_RETRY_TIMES = 100;
 constexpr int SEEK_STATUS_SLEEP_TIME = 50;
-constexpr uint64_t CURRENT_BIT_RATE = 1 * 1024 * 1024; // bps
+constexpr uint64_t CURRENT_BIT_RATE = 200 * 1024; // bps
 constexpr int32_t ONE_SECONDS = 1000;
 constexpr uint64_t ONE_USSECONDS = 1000 * 1000;
 constexpr float CACHE_LEVEL_1 = 0.5;
@@ -62,6 +62,9 @@ constexpr int32_t HALF_DIVIDE = 2;
 constexpr uint64_t READ_BACK_SAVE_SIZE = 200 * 1024;
 constexpr int32_t SAVE_DATA_LOG_FREQUENCY = 50;
 constexpr uint32_t KILO = 1024;
+constexpr float DOWNLOAD_RESUME_THRESHOLD_RATIO = 0.5;
+constexpr float DOWNLOAD_THROTTLE_THRESHOLD_RATIO = 0.25;
+constexpr float SOURCE_LOADER_CLEAR_THRESHOLD_RATIO = 0.3;
 constexpr uint64_t RESUME_FREE_SIZE_THRESHOLD = 400 * 1024;
 constexpr size_t STORP_WRITE_BUFFER_REDUNDANCY = 200 * 1024;
 constexpr int MAX_RETRY = 10;
@@ -110,6 +113,7 @@ HlsSegmentManager::HlsSegmentManager(int expectBufferDuration, bool userDefinedD
         cacheMediaBuffer_->Init(maxCacheBufferSize_, CHUNK_SIZE);
         bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
         totalBufferSize_ = maxCacheBufferSize_;
+        memorySize_ = maxCacheBufferSize_;
     }
     httpHeader_ = httpHeader;
     timeoutInterval_ = MAX_BUFFERING_TIME_OUT;
@@ -149,6 +153,7 @@ HlsSegmentManager::HlsSegmentManager(const std::shared_ptr<HlsSegmentManager> &o
         cacheMediaBuffer_->Init(maxCacheBufferSize_, CHUNK_SIZE);
         bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
         totalBufferSize_ = maxCacheBufferSize_;
+        memorySize_ = maxCacheBufferSize_;
     }
     sourceLoader_ = other->sourceLoader_;
     mimeType_ = other->mimeType_;
@@ -692,17 +697,9 @@ bool HlsSegmentManager::CheckCanReadOneSeconds(uint64_t wantReadLength)
     uint64_t len = isFirstFrameArrived_ ? 1 : wantReadLength;
     std::unique_lock<std::mutex> lock(canReadMutex_);
     canReadCond_.wait_for(lock, std::chrono::milliseconds(ONE_SECONDS), [this, len]() {
-        auto index = (!isFirstFrameArrived_ && type_ == HlsSegmentType::SEG_SUBTITLE) ?
-            readTsIndex_.load() : writeTsIndex_;
-        return GetCrossTsBuffersize() >= len || (GetSeekable() == Seekable::SEEKABLE &&
-            tsStorageInfo_.find(index) != tsStorageInfo_.end() && tsStorageInfo_[index].second) ||
-            IsAllDownloadFinish();
+        return GetCrossTsBuffersize() >= len || IsAllDownloadFinish();
     });
-    auto index = (!isFirstFrameArrived_ && type_ == HlsSegmentType::SEG_SUBTITLE) ?
-        readTsIndex_.load() : writeTsIndex_;
-    auto canRead = GetCrossTsBuffersize() >= len || (GetSeekable() == Seekable::SEEKABLE &&
-        tsStorageInfo_.find(index) != tsStorageInfo_.end() && tsStorageInfo_[index].second) ||
-        IsAllDownloadFinish();
+    auto canRead = GetCrossTsBuffersize() >= len || IsAllDownloadFinish();
     if (!canRead) {
         MEDIA_LOG_I("HLS CheckCanReadOneSeconds out, can read: %{public}d, type: %{public}d", canRead, type_);
     }
@@ -712,8 +709,8 @@ bool HlsSegmentManager::CheckCanReadOneSeconds(uint64_t wantReadLength)
 bool HlsSegmentManager::IsAllDownloadFinish()
 {
     return (CheckReadStatus() || isStopped) && GetSeekable() == Seekable::SEEKABLE &&
-        tsStorageInfo_.find(writeTsIndex_) != tsStorageInfo_.end() &&
-        tsStorageInfo_[writeTsIndex_].second;
+        tsStorageInfo_.find(readTsIndex_.load()) != tsStorageInfo_.end() &&
+        tsStorageInfo_[readTsIndex_.load()].second;
 }
 
 Status HlsSegmentManager::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
@@ -731,10 +728,13 @@ Status HlsSegmentManager::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     auto ret = ReadDelegate(buff, readDataInfo);
 
     uint64_t freeSize = cacheMediaBuffer_->GetFreeSize();
-    if (freeSize > RESUME_FREE_SIZE_THRESHOLD && isNeedResume_.load()) {
-        downloader_->Resume();
-        isNeedResume_.store(false);
-        MEDIA_LOG_D("HLS downloader resume, type: %{public}d", type_);
+    if (isNeedResume_.load()) {
+        ClearChunksInLargeSegment();
+        if (freeSize > GetDownloadResumeThreshold()) {
+            downloader_->Resume();
+            isNeedResume_.store(fasle);
+            MEDIA_LOG_I("HLS download resume, type: %{public}d", type_);
+        }
     }
     readTotalBytes_ += readDataInfo.realReadLength_;
     if (now > lastReadCheckTime_ && now - lastReadCheckTime_ > SAMPLE_INTERVAL) {
@@ -783,6 +783,7 @@ void HlsSegmentManager::PrepareToSeek()
         cacheMediaBuffer_->Reset();
     }
     auto initRet = cacheMediaBuffer_->Init(totalBufferSize_, CHUNK_SIZE);
+    memorySize_ = totalBufferSize_;
     MEDIA_LOG_I("HLS Seek, reset cache media buffer, ret: %{public}d, size: %{public}zu, type: %{public}d",
         initRet, totalBufferSize_, type_);
     memorySize_ = totalBufferSize_;
@@ -973,6 +974,14 @@ bool HlsSegmentManager::CacheBufferFullLoop()
 uint32_t HlsSegmentManager::SaveCacheBufferDataNotblock(uint8_t* data, uint32_t len)
 {
     uint64_t freeSize = cacheMediaBuffer_->GetFreeSize();
+    uint64_t throttleThreshold = GetDownloadThrottleThreshold();
+    uint64_t totalSize = GetMemorySize();
+    if (len + throttleThreshold >= freeSize && len + throttleThreshold <= totalSize) {
+        if (!isNeedResume_.load()) {
+            isNeedResume_.store(true);
+            MEDIA_LOG_I("HLS stop write, freeSize: " PUBLIC_LOG_U64 " len: " PUBLIC_LOG_U32 ", type: %{public}d", freeSize, len, type_);
+        }
+    }
     if (freeSize <= (len + STORP_WRITE_BUFFER_REDUNDANCY) && !isNeedResume_.load()) {
         isNeedResume_.store(true);
         MEDIA_LOG_I("HLS stop write, freeSize: " PUBLIC_LOG_U64 " len: " PUBLIC_LOG_U32 ", type: %{public}d",
@@ -998,6 +1007,10 @@ uint32_t HlsSegmentManager::SaveCacheBufferDataNotblock(uint8_t* data, uint32_t 
     uint64_t writeTime  = writeBitrateCaculator_->GetWriteTime() / SECOND_TO_MILLISECONDS;
     if (writeTime > ONE_SECONDS) {
         writeBitrateCaculator_->ResetClock();
+    }
+    if (res != len && !isNeedResume_.load()) {
+        isNeedResume_.store(true);
+        MEDIA_LOG_W("HLS stop write, write not complete, freeSize: " PUBLIC_LOG_U64 " len: " PUBLIC_LOG_U32 ", written: ", PUBLIC_LOG_ZU ", type: %{public}d", freeSize, len, res, type_);
     }
     return res;
 }
@@ -2198,6 +2211,29 @@ uint64_t HlsSegmentManager::GetTotalTsBuffersize()
 uint64_t HlsSegmentManager::GetMemorySize()
 {
     return memorySize_;
+}
+
+bool HlsSegmentManager::GetDownloadResumeThreshold()
+{
+    return GetMemorySize() * DOWNLOAD_RESUME_THRESHOLD_RATIO;
+}
+
+bool HlsSegmentManager::GetDownloadThrottleThreshold()
+{
+    return GetMemorySize() * DOWNLOAD_THROTTLE_THRESHOLD_RATIO;
+}
+
+bool HlsSegmentManager::GetsourceLoaderClearThreshold()
+{
+    return GetMemorySize() * SOURCE_LOADER_CLEAR_THRESHOLD_RATIO;
+}
+
+void HlsSegmentManager::ClearChunksInLargeSegment()
+{
+    if (writeTsIndex_ == readTsIndex_.load() && writeOffset_ >= readOffset_ &&
+        writeOffset_ - readOffset_ < GetsourceLoaderClearThreshold()) {
+        cacheMediaBuffer_->ClearMiddleReadFragment(0, readOffset_);
+    }
 }
 
 bool HlsSegmentManager::IsHlsEnd()
