@@ -979,7 +979,8 @@ uint32_t HlsSegmentManager::SaveCacheBufferDataNotblock(uint8_t* data, uint32_t 
     if (len + throttleThreshold >= freeSize && len + throttleThreshold <= totalSize) {
         if (!isNeedResume_.load()) {
             isNeedResume_.store(true);
-            MEDIA_LOG_I("HLS stop write, freeSize: " PUBLIC_LOG_U64 " len: " PUBLIC_LOG_U32 ", type: %{public}d", freeSize, len, type_);
+            MEDIA_LOG_I("HLS stop write, freeSize: " PUBLIC_LOG_U64 " len: " PUBLIC_LOG_U32 ",
+                type: %{public}d", freeSize, len, type_);
         }
     }
     if (freeSize <= (len + STORP_WRITE_BUFFER_REDUNDANCY) && !isNeedResume_.load()) {
@@ -1010,7 +1011,8 @@ uint32_t HlsSegmentManager::SaveCacheBufferDataNotblock(uint8_t* data, uint32_t 
     }
     if (res != len && !isNeedResume_.load()) {
         isNeedResume_.store(true);
-        MEDIA_LOG_W("HLS stop write, write not complete, freeSize: " PUBLIC_LOG_U64 " len: " PUBLIC_LOG_U32 ", written: ", PUBLIC_LOG_ZU ", type: %{public}d", freeSize, len, res, type_);
+        MEDIA_LOG_W("HLS stop write, write not complete, freeSize: " PUBLIC_LOG_U64 " len: " PUBLIC_LOG_U32 ",
+            written: ", PUBLIC_LOG_ZU ", type: %{public}d", freeSize, len, res, type_);
     }
     return res;
 }
