@@ -3150,7 +3150,7 @@ Status MediaDemuxer::CopyFrameToUserQueue(int32_t trackId)
         return HandleSegmentEos(trackId);
     }
     SetTrackNotifyFlag(trackId, true);
-    if (!GetBufferFromUserQueue(trackId, size)) {
+    if (!GetBufferFromUserQueue(trackId, isPlayerMode_ ? SampleQueue::DEFAULT_SAMPLE_BUFFER_CAP : size)) {
         return Status::ERROR_INVALID_PARAMETER;
     }
     SetTrackNotifyFlag(trackId, false);
