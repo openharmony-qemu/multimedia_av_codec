@@ -38,10 +38,10 @@ public:
     bool OnRequestExtras(uint32_t code, MessageParcel &data);
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Format &format) override;
-    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
-    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
-    void OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &bufferMap) override;
-    void OnOutputBufferUnbinded() override;
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override {};
+    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override {};
+    void OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &bufferMap) override {};
+    void OnOutputBufferUnbinded() override {};
 
     void SetCallback(const std::shared_ptr<MediaCodecCallback> &callback);
     void Init();
@@ -54,8 +54,6 @@ public:
     void SetNeedListen(const bool needListen);
 
 private:
-    void OnInputBufferAvailable(uint32_t index, MessageParcel &data);
-    void OnOutputBufferAvailable(uint32_t index, MessageParcel &data);
     void OnOutputBufferBinded(MessageParcel &data);
     void OnOutputBufferUnbinded(MessageParcel &data);
     bool CheckGeneration(uint64_t messageGeneration) const;

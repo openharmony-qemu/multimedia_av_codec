@@ -301,50 +301,6 @@ void CodecListenerStub::OnOutputFormatChanged(const Format &format)
     }
 }
 
-void CodecListenerStub::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
-{
-    (void)index;
-    (void)buffer;
-}
-
-void CodecListenerStub::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
-{
-    (void)index;
-    (void)buffer;
-}
-
-void CodecListenerStub::OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &bufferMap)
-{
-    (void)bufferMap;
-}
-void CodecListenerStub::OnOutputBufferUnbinded()
-{
-}
-
-void CodecListenerStub::OnInputBufferAvailable(uint32_t index, MessageParcel &data)
-{
-    std::shared_ptr<AVBuffer> buffer;
-    std::shared_ptr<MediaCodecCallback> mediaCb = callback_.lock();
-    if (mediaCb != nullptr) {
-        bool ret = inputBufferCache_->ReadFromParcel(index, data, buffer);
-        CHECK_AND_RETURN_LOG_WITH_TAG(ret, "read from parel failed");
-        mediaCb->OnInputBufferAvailable(index, buffer);
-        return;
-    }
-}
-
-void CodecListenerStub::OnOutputBufferAvailable(uint32_t index, MessageParcel &data)
-{
-    std::shared_ptr<AVBuffer> buffer;
-    std::shared_ptr<MediaCodecCallback> mediaCb = callback_.lock();
-    if (mediaCb != nullptr) {
-        bool ret = outputBufferCache_->ReadFromParcel(index, data, buffer);
-        CHECK_AND_RETURN_LOG_WITH_TAG(ret, "read from parel failed");
-        mediaCb->OnOutputBufferAvailable(index, buffer);
-        return;
-    }
-}
-
 void CodecListenerStub::OnOutputBufferBinded(MessageParcel &data)
 {
     std::shared_ptr<MediaCodecCallback> mediaCb = callback_.lock();
