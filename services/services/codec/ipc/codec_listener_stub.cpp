@@ -42,7 +42,7 @@ public:
         auto iter = caches_.find(index);
         flag_ = static_cast<CacheFlag>(parcel.ReadUint8());
         if (flag_ == CacheFlag::HIT_CACHE && iter == caches_.end()) {
-            AVCODEC_LOGW_WITH_TAG("Mark hit cache, but can find the index's cache, index: %{public}u", index);
+            AVCODEC_LOGW_WITH_TAG("Mark hit cache, but can't find the index's cache, index: %{public}u", index);
             return false;
         }
         if (flag_ == CacheFlag::HIT_CACHE) {
@@ -206,18 +206,25 @@ int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
 
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(syncMutex_ != nullptr, AVCS_ERR_INVALID_OPERATION, "sync mutex is nullptr");
     std::lock_guard<std::recursive_mutex> lock(*syncMutex_);
-    if (!needListen_ || !CheckGeneration(data.ReadUint64())) {
-        AVCODEC_LOGW_LIMIT(LOG_FREQ, "abandon message");
-        return AVCS_ERR_OK;
-    }
+
+    uint64_t messageGeneration = data.ReadUint64();
+    bool needNotify = needListen_ && CheckGeneration(messageGeneration);
     switch (code) {
         case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_ERROR): {
+            if (!needNotify) {
+                AVCODEC_LOGW_LIMIT(LOG_FREQ, "abandon message: ON_ERROR");
+                return AVCS_ERR_OK;
+            }
             int32_t errorType = data.ReadInt32();
             int32_t errorCode = data.ReadInt32();
             OnError(static_cast<AVCodecErrorType>(errorType), errorCode);
             return AVCS_ERR_OK;
         }
         case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_FORMAT_CHANGED): {
+            if (!needNotify) {
+                AVCODEC_LOGW_LIMIT(LOG_FREQ, "abandon message: ON_OUTPUT_FORMAT_CHANGED");
+                return AVCS_ERR_OK;
+            }
             Format format;
             (void)AVCodecParcel::Unmarshalling(data, format);
             outputBufferCache_->ClearCaches();
@@ -226,12 +233,28 @@ int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
         }
         case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_INPUT_BUFFER_AVAILABLE): {
             uint32_t index = data.ReadUint32();
-            OnInputBufferAvailable(index, data);
+            std::shared_ptr<AVBuffer> buffer;
+            bool ret = inputBufferCache_->ReadFromParcel(index, data, buffer);
+            CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret, AVCS_ERR_OK, "read from parcel failed");
+            if (needNotify) {
+                std::shared_ptr<MediaCodecCallback> mediaCb = callback_.lock();
+                if (mediaCb != nullptr) {
+                    mediaCb->OnInputBufferAvailable(index, buffer);
+                }
+            }
             return AVCS_ERR_OK;
         }
         case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_BUFFER_AVAILABLE): {
             uint32_t index = data.ReadUint32();
-            OnOutputBufferAvailable(index, data);
+            std::shared_ptr<AVBuffer> buffer;
+            bool ret = outputBufferCache_->ReadFromParcel(index, data, buffer);
+            CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret, AVCS_ERR_OK, "read from parcel failed");
+            if (needNotify) {
+                std::shared_ptr<MediaCodecCallback> mediaCb = callback_.lock();
+                if (mediaCb != nullptr) {
+                    mediaCb->OnOutputBufferAvailable(index, buffer);
+                }
+            }
             return AVCS_ERR_OK;
         }
         default: {
