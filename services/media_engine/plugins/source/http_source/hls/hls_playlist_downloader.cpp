@@ -403,6 +403,11 @@ bool HlsPlayListDownloader::UpdatePlaylists(bool isSimple)
     return ret;
 }
 
+bool HlsPlayListDownloader::IsEndList()
+{
+    return endList_;
+}
+
 void HlsPlayListDownloader::UpdateMasterInfo(bool isPreParse)
 {
     std::lock_guard<std::mutex> lock(mediaMutex_);
@@ -419,6 +424,7 @@ void HlsPlayListDownloader::UpdateMasterInfo(bool isPreParse)
     if (master_->bLive_ && !m3u8->IsLive()) {
         MEDIA_LOG_I("Live stream ended and transitioning to Vod");
         updateTask_->Stop();
+        endList_ = true;
     }
     master_->bLive_ = m3u8->IsLive();
     master_->isFmp4_ = m3u8->isHeaderReady_.load();

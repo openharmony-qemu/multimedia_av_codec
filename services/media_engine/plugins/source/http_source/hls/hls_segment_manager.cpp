@@ -1978,9 +1978,12 @@ bool HlsSegmentManager::GetReadTimeOut(bool isDelay)
 size_t HlsSegmentManager::GetSegmentOffset()
 {
     if (playlistDownloader_) {
-        std::string url = InfoIndexMap_.writeMap[readTsIndex_];
-        return InfoIndexMap_.urlMap[url].sumDuration_ -
-            static_cast<uint64_t>(InfoIndexMap_.urlMap[url].duration_) * ONE_USSECONDS;
+        if (playlistDownloader_->IsLive() || playlistDownloader_->IsEndList()) {
+            std::string url = InfoIndexMap_.writeMap[readTsIndex_];
+            return InfoIndexMap_.urlMap[url].sumDuration_ -
+                static_cast<uint64_t>(InfoIndexMap_.urlMap[url].duration_) * ONE_USSECONDS;
+        }
+        return playlistDownloader_->GetSegmentOffset(readTsIndex_);
     }
     return 0;
 }
