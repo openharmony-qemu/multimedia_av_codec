@@ -354,13 +354,13 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicQueryAndCreateInfo_001, TestS
     WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
-    auto item = cJSON_GetObjectItem(data.get(), "QueryCapTimes");
+    auto item = cJSON_GetObjectItem(data.get(), "QUERY_CAP_TIMES");
     ASSERT_NE(nullptr, item);
     ASSERT_TRUE(cJSON_IsNumber(item));
     int32_t queryCapTimes = item->valueint;
     ASSERT_EQ(1, queryCapTimes);
 
-    item = cJSON_GetObjectItem(data.get(), "CreateCodecTimes");
+    item = cJSON_GetObjectItem(data.get(), "CREATE_CODEC_TIMES");
     ASSERT_NE(nullptr, item);
     ASSERT_TRUE(cJSON_IsNumber(item));
     int32_t createCodecTimes = item->valueint;
@@ -385,7 +385,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_001, Test
     meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckJsonValue("CodecSpecifiedInfo", "");
+    CheckJsonValue("CODEC_SPECIFIED_INFO", "");
 }
 
 /**
@@ -524,7 +524,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedQueryCapInfo_001, Te
     }
 
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckJsonValue("CapUnsupportedInfo", "QueryCapUnsupportedInfo");
+    CheckJsonValue("CAP_UNSUPPORTED_INFO", "QUERY_CAP_UNSUPPORTED_INFO");
 }
 
 /**
@@ -593,7 +593,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedCreateCapInfo_001, T
     }
 
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckJsonValue("CapUnsupportedInfo", "CreateCodecUnsupportedInfo");
+    CheckJsonValue("CAP_UNSUPPORTED_INFO", "CREATE_CODEC_UNSUPPORTED_INFO");
 }
 
 /**
@@ -705,7 +705,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecLimitExceededInfo_001, TestSize
     }
 
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckJsonValue("DecAbnormalOccupationInfo", "HDecLimitExceededInfo");
+    CheckJsonValue("DEC_ABNORMAL_OCCUPATION_INFO", "HDecLimitExceededInfo");
 }
 
 /**
@@ -766,7 +766,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecAbnormalOccupationLongTimeInBGI
     }
 
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckJsonValue("DecAbnormalOccupationInfo", "LongTimeInBgInfo");
+    CheckJsonValue("DEC_ABNORMAL_OCCUPATION_INFO", "LongTimeInBgInfo");
 }
 
 /**
@@ -778,7 +778,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_SpeedDecodingInfo_001, TestSize.Le
 {
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::SPEED_DECODING_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckJsonValue("SpeedDecodingInfo", "");
+    CheckJsonValue("SPEED_DECODING_INFO", "");
 }
 
 /**
@@ -836,6 +836,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_002, TestSize.Level
     meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(AV_ERR_INVALID_VAL));
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckJsonValue("CodecErrorInfo", "");
+    CheckJsonValue("CODEC_ERROR_INFO", "");
 }
 } // namespace
