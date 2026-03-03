@@ -123,7 +123,7 @@ std::shared_ptr<BasicBox> BoxParser::IlstBoxGenerate()
     std::shared_ptr<DataBox> dataBox = std::make_shared<DataBox>(0, "data");
     dataBox->dataType_ = 1;
     dataBox->default_ = 0;
-    std::string tool = "Openharmony4.1";
+    std::string tool = "Openharmony6.1";
     dataBox->data_.reserve(tool.length());
     dataBox->data_.assign(tool.data(), tool.data() + tool.length());
     tooBox->AddChild(dataBox);
