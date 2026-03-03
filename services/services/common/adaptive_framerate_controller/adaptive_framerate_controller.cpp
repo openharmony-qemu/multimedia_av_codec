@@ -47,7 +47,7 @@ FramerateCalculator::~FramerateCalculator()
     }
 }
 
-void FramerateCalculator::OnFrameConsumed(std::shared_ptr<AVBuffer> buffer)
+void FramerateCalculator::OnFrameConsumed(int64_t pts)
 {
     if (!afcEnable) {
         return;
@@ -64,7 +64,7 @@ void FramerateCalculator::OnFrameConsumed(std::shared_ptr<AVBuffer> buffer)
     }
 
     if (behaviorAnalyzer_) {
-        behaviorAnalyzer_->OnFrameConsumed(buffer);
+        behaviorAnalyzer_->OnFrameConsumed(pts);
     }
     frameCount_++;
 }

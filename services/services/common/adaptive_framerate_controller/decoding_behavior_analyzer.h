@@ -18,12 +18,11 @@
 
 #include <chrono>
 #include <deque>
+#include <mutex>
 #include <vector>
-#include "buffer/avbuffer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-using AVBuffer = OHOS::Media::AVBuffer;
 
 // 解码行为类型
 enum class DecodingBehaviorType {
@@ -53,7 +52,7 @@ union SpeedStatsUnion {
 class DecodingBehaviorAnalyzer {
 public:
     DecodingBehaviorAnalyzer();
-    void OnFrameConsumed(std::shared_ptr<AVBuffer> buffer);
+    void OnFrameConsumed(int64_t pts);
     void OnStopped(bool isDecEnd);
     void OnChecked(double decFps);
 

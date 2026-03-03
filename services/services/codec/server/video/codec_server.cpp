@@ -773,15 +773,15 @@ int32_t CodecServer::ReleaseOutputBuffer(uint32_t index, bool render)
                                       "In invalid state, %{public}s", GetStatusDescription(status_).data());
 
     if (framerateCalculator_ && status_ == RUNNING) {
-        std::shared_ptr<AVBuffer> buffer = nullptr;
+        int64_t pts = -1;
         {
-            std::lock_guard<std::mutex> outBuflock(outBufMutex_);
-            auto it = outBufMap_.find(index);
-            if (it != outBufMap_.end()) {
-                buffer = it->second;
+            std::lock_guard<std::mutex> outPtslock(outPtsMutex_);
+            auto it = outPtsMap_.find(index);
+            if (it != outPtsMap_.end()) {
+                pts = it->second;
             }
         }
-        framerateCalculator_->OnFrameConsumed(buffer);
+        framerateCalculator_->OnFrameConsumed(pts);
     }
     if (postProcessing_) {
         return ReleaseOutputBufferOfPostProcessing(index, render);
@@ -1153,8 +1153,8 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuff
 {
     CHECK_AND_RETURN_LOG_WITH_TAG(buffer != nullptr, "buffer is nullptr!");
     {
-        std::lock_guard<std::mutex> outBuflock(outBufMutex_);
-        outBufMap_[index] = buffer;
+        std::lock_guard<std::mutex> outPtslock(outPtsMutex_);
+        outPtsMap_[index] = buffer->pts_;
     }
     if (temporalScalability_ != nullptr && !(buffer->flag_ == AVCODEC_BUFFER_FLAG_CODEC_DATA)) {
         temporalScalability_->SetDisposableFlag(buffer);
