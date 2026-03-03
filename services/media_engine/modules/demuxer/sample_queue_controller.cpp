@@ -61,7 +61,7 @@ bool SampleQueueController::ShouldStartConsume(int32_t trackId, std::shared_ptr<
     if (sampleQueue == nullptr || task == nullptr) {
         return false;
     }
-    auto cacheDuration = sampleQueue->NewGetCacheDuration();
+    uint64_t cacheDuration = sampleQueue->NewGetCacheDuration();
     if (cacheDuration < GetBufferingDuration() &&
         sampleQueue->GetFilledBufferSize() < SampleQueue::DEFAULT_SAMPLE_QUEUE_SIZE - 1 &&
         (isFirstArrived_[trackId] ||cacheDuration < static_cast<uint64_t>(FIRST_START_CONSUME_WATER_LOOP)) &&
@@ -88,7 +88,6 @@ bool SampleQueueController::ShouldStopConsume(int32_t trackId, std::shared_ptr<S
     if (cacheDuration > STOP_CONSUME_WATER_LOOP) {
         return false;
     }
-
     if (task->IsTaskRunning()) {
         MEDIA_LOG_I("StopConsume, cacheDuration: %{public}llu, trackId: %{public}d", cacheDuration, trackId);
         task->Pause();
@@ -102,11 +101,10 @@ bool SampleQueueController::ShouldStartProduce(int32_t trackId, std::shared_ptr<
     if (sampleQueue == nullptr || task == nullptr) {
         return false;
     }
-    auto cacheDuration = sampleQueue->NewGetCacheDuration();
-    if (cacheDuration > START_PRODUCE_WATER_LOOP) {
+    uint64_t cacheDuration = sampleQueue->NewGetCacheDuration();
+    if (cacheDuration > GetPlayBufferingDuration()) {
         return false;
     }
-
     if (!task->IsTaskRunning()) {
         MEDIA_LOG_I("StartProduce, cacheDuration: %{public}llu, trackId: %{public}d", cacheDuration, trackId);
         task->Start();
@@ -121,7 +119,7 @@ bool SampleQueueController::ShouldStopProduce(int32_t trackId, std::shared_ptr<S
         return false;
     }
     auto cacheDuration = sampleQueue->NewGetCacheDuration();
-    if (cacheDuration < STOP_PRODUCE_WATER_LOOP &&
+    if (cacheDuration < GetBufferingDuration() &&
         sampleQueue->GetFilledBufferSize() < SampleQueue::DEFAULT_SAMPLE_QUEUE_SIZE - 1) {
         return false;
     }
@@ -171,21 +169,17 @@ void SampleQueueController::ConsumeSpeed(int32_t trackId)
     countInfo->OnEventTimeRecord();
 }
 
-int64_t SampleQueueController::GetFilledBufferPercent(int32_t trackId, std::shared_ptr<SampleQueue> sampleQueue)
-{
-    auto filledBufferSize = sampleQueue->GetFilledBufferSize();
-    auto queueSize = GetQueueSize(trackId);
-    int64_t percent = static_cast<int64_t>(filledBufferSize * 100 / (queueSize * GetBufferingDuration()));
-    return percent;
-}
-
 void SampleQueueController::SetBufferingDuration(std::shared_ptr<Plugins::PlayStrategy> strategy)
 {
     if (strategy == nullptr) {
         MEDIA_LOG_W("SetBufferingDuration strategy nullptr!");
         return;
     }
-
+    if (strategy->duration != 0 && strategy->bufferDurationForPlaying != 0 &&
+        strategy->duration < strategy->bufferDurationForPlaying) {
+        MEDIA_LOG_E("Buffer duration for playing must be less than total playback duration.");
+        return;
+    }
     if (strategy->duration != 0) {
         bufferingDuration_.store(std::max(MIN_DURATION,
             std::min(MAX_DURATION, static_cast<uint64_t>(strategy->duration))) * S_TO_US);
@@ -202,8 +196,12 @@ void SampleQueueController::SetBufferingDuration(std::shared_ptr<Plugins::PlaySt
 
 uint64_t SampleQueueController::GetBufferingDuration()
 {
-    return isSetFirstBufferingDuration_.load() ? firstBufferingDuration_.load() :
-        (bufferingDuration_.load() > 0 ? bufferingDuration_.load() : START_CONSUME_WATER_LOOP);
+    return bufferingDuration_.load() > 0 ? bufferingDuration_.load() : STOP_PRODUCE_WATER_LOOP;
+}
+
+uint64_t SampleQueueController::GetBufferingDuration()
+{
+    return isSetFirstBufferingDuration_.load() ? firstBufferingDuration_.load() : START_CONSUME_WATER_LOOP;
 }
 
 void SampleQueueController::DisableFirstBufferingDuration()

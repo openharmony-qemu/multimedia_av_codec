@@ -24,9 +24,6 @@ using namespace OHOS::Media;
 
 namespace {
 constexpr uint32_t S_TO_US = 1000 * 1000;
-constexpr double MIN_FIRST_DURATION = 0;
-constexpr double MAX_FIRST_DURATION = 20;
-constexpr uint64_t MIN_DURATION = 1;
 constexpr uint64_t MAX_DURATION = 20;
 constexpr uint64_t START_CONSUME_WATER_LOOP = 5 * 1000 * 1000;
 }
@@ -54,7 +51,7 @@ void SampleQueueControllerUnitTest::TearDown()
  */
 HWTEST_F(SampleQueueControllerUnitTest, TEST_BUFFERING_DURATION, TestSize.Level1)
 {
-    EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), START_CONSUME_WATER_LOOP);
+    EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), 10 * S_TO_US);
     EXPECT_FALSE(sampleQueueController_->isSetFirstBufferingDuration_);
     sampleQueueController_->DisableFirstBufferingDuration();
     EXPECT_FALSE(sampleQueueController_->isSetFirstBufferingDuration_);
@@ -64,41 +61,45 @@ HWTEST_F(SampleQueueControllerUnitTest, TEST_BUFFERING_DURATION, TestSize.Level1
     strategy->bufferDurationForPlaying = 3;
     strategy->duration = 0;
     sampleQueueController_->SetBufferingDuration(strategy);
-    EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), 3 * S_TO_US);
+    EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), 10 * S_TO_US);
+    EXPECT_EQ(sampleQueueController_->GetPlayBufferingDuration(), 3 * S_TO_US);
     EXPECT_EQ(sampleQueueController_->firstBufferingDuration_, 3 * S_TO_US);
     EXPECT_TRUE(sampleQueueController_->isSetFirstBufferingDuration_);
     EXPECT_EQ(sampleQueueController_->bufferingDuration_, 0);
     sampleQueueController_->DisableFirstBufferingDuration();
-    EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), START_CONSUME_WATER_LOOP);
+    EXPECT_EQ(sampleQueueController_->GetPlayBufferingDuration(), START_CONSUME_WATER_LOOP);
     EXPECT_FALSE(sampleQueueController_->isSetFirstBufferingDuration_);
 
     // case duration min
     strategy->duration = 1;
     sampleQueueController_->SetBufferingDuration(strategy);
-    EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), 3 * S_TO_US);
-    EXPECT_TRUE(sampleQueueController_->isSetFirstBufferingDuration_);
-    EXPECT_EQ(sampleQueueController_->bufferingDuration_, static_cast<uint64_t>(MIN_DURATION) * S_TO_US);
+    EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), 10 * S_TO_US);
+    EXPECT_EQ(sampleQueueController_->bufferingDuration_, 0);
     sampleQueueController_->DisableFirstBufferingDuration();
-    EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), static_cast<uint64_t>(MIN_DURATION) * S_TO_US);
+    EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), 10 * S_TO_US);
     EXPECT_FALSE(sampleQueueController_->isSetFirstBufferingDuration_);
 
     // case duration max
     strategy->duration = 99;
     sampleQueueController_->SetBufferingDuration(strategy);
-    EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), 3 * S_TO_US);
+    EXPECT_EQ(sampleQueueController_->GetPlayBufferingDuration(), 3 * S_TO_US);
+    EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), static_cast<uint64_t>(MAX_DURATION) * S_TO_US);
     EXPECT_TRUE(sampleQueueController_->isSetFirstBufferingDuration_);
     EXPECT_EQ(sampleQueueController_->bufferingDuration_, static_cast<uint64_t>(MAX_DURATION) * S_TO_US);
     sampleQueueController_->DisableFirstBufferingDuration();
+    EXPECT_EQ(sampleQueueController_->GetPlayBufferingDuration(), 5 * S_TO_US);
     EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), static_cast<uint64_t>(MAX_DURATION) * S_TO_US);
     EXPECT_FALSE(sampleQueueController_->isSetFirstBufferingDuration_);
 
     // case duration normal
     strategy->duration = 10;
     sampleQueueController_->SetBufferingDuration(strategy);
-    EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), 3 * S_TO_US);
+    EXPECT_EQ(sampleQueueController_->GetPlayBufferingDuration(), 3 * S_TO_US);
+    EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), 10 * S_TO_US);
     EXPECT_TRUE(sampleQueueController_->isSetFirstBufferingDuration_);
     EXPECT_EQ(sampleQueueController_->bufferingDuration_, 10 * S_TO_US);
     sampleQueueController_->DisableFirstBufferingDuration();
+    EXPECT_EQ(sampleQueueController_->GetPlayBufferingDuration(), 5 * S_TO_US);
     EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), 10 * S_TO_US);
     EXPECT_FALSE(sampleQueueController_->isSetFirstBufferingDuration_);
 }

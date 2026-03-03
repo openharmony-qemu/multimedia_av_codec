@@ -3391,9 +3391,32 @@ std::string MediaDemuxer::GetMime()
 void MediaDemuxer::HandleNotAllTrackEos(int32_t trackId)
 {
     hlsSegmentEosMap_[trackId] = true;
+    // check sampleQueue video and audio exit
+    bool audioQueueExits = smapleQueueMap_.find(audioTrackId_) != sampleQueueMap_.end()
+        && sampleQueueMap_[audioTrackId_] != nullptr;
+    bool videoQueueExits = smapleQueueMap_.find(videoTrackId_) != sampleQueueMap_.end()
+        && sampleQueueMap_[videoTrackId_] != nullptr;
+    // if sampleQueue reached the limit.
     if (GetTrackIsBuffering(trackId) && (!taskMap_[audioTrackId_]->IsTaskRunning() ||
-        !taskMap_[videoTrackId_]->IsTaskRunning())) {
+        !taskMap_[videoTrackId_]->IsTaskRunning() ||
+        (audioQueueExits &&
+            sampleQueueMap_[audioTrackId_]->GetFilledBufferSize() >= SampleQueue::DEFAULT_SAMPLE_QUEUE_SIZE - 1) ||
+        (videoQueueExits &&
+            sampleQueueMap_[videoTrackId_]->GetFilledBufferSize() >= SampleQueue::DEFAULT_SAMPLE_QUEUE_SIZE - 1))) {
         SetTrackIsBuffering(trackId, false);
+        // check sampleConsumerTaskMap video and audio exit
+        bool audioConsumerExits = sampleConsumerTaskMap_.find(audioTrackId_) != sampleConsumerTaskMap_.end()
+            && sampleConsumerTaskMap_[audioTrackId_] != nullptr;
+        bool videoConsumerExits = sampleConsumerTaskMap_.find(videoTrackId_) != sampleConsumerTaskMap_.end()
+            && sampleConsumerTaskMap_[videoTrackId_] != nullptr;
+        if (audioConsumerExits && !sampleConsumerTaskMap_[audioTrackId_]->IsTaskRunning()) {
+            MEDIA_LOG_I("Audio StartConsume, trackId: %{public}d", audioTrackId_);
+            sampleConsumerTaskMap_[audioTrackId_]->Start();
+        }
+        if (videoConsumerExits && !sampleConsumerTaskMap_[videoTrackId_]->IsTaskRunning()) {
+            MEDIA_LOG_I("Video StartConsume, trackId: %{public}d", videoTrackId_);
+            sampleConsumerTaskMap_[videoTrackId_]->Start();
+        }
         CheckAndReportBufferingStatus(EventType::BUFFERING_END);
     }
 }
