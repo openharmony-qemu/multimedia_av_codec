@@ -164,6 +164,14 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
+    <target name="cinepakdecoder_native_module_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_decoder/cinepak/. -> /data/test/media" src="res"/>
+            <option name="push" value="video_decoder/profile0_level10_I_128x96.h263 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
     <target name="encoder_native_module_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
