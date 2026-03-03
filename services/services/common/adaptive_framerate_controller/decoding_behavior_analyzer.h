@@ -58,7 +58,7 @@ public:
 
 private:
     static constexpr size_t stdSpeedLevels = 8;
-    static constexpr std::array<double, stdSpeedLevels> STANDARD_SPEEDS = {0.0, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0, 4.0};
+    static constexpr std::array<double, stdSpeedLevels> standardSpeeds = {0.0, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0, 4.0};
     std::mutex mutex_;
     int64_t startPtsMs_ = -1;
     int64_t endPtsMs_ = -1;
