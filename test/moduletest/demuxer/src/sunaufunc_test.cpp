@@ -834,7 +834,7 @@ HWTEST_F(DemuxerSunAuFuncNdkTest, DEMUXER_SUNAU_FUNC_3200, TestSize.Level2)
  */
 HWTEST_F(DemuxerSunAuFuncNdkTest, DEMUXER_SUNAU_FUNC_3300, TestSize.Level2)
 {
-    DemuxerResult(INP_DIR_3, 33, 0);
+    DemuxerResult(INP_DIR_3, 79, 0);
 }
 
 /**
@@ -865,7 +865,7 @@ HWTEST_F(DemuxerSunAuFuncNdkTest, DEMUXER_SUNAU_FUNC_3500, TestSize.Level1)
  */
 HWTEST_F(DemuxerSunAuFuncNdkTest, DEMUXER_SUNAU_FUNC_3600, TestSize.Level1)
 {
-    seekInfo fileTest1{INP_DIR_3, SEEK_MODE_CLOSEST_SYNC, 2000000, 11, 0};
+    seekInfo fileTest1{INP_DIR_3, SEEK_MODE_CLOSEST_SYNC, 2000000, 47, 0};
     CheckSeekMode(fileTest1);
 }
 

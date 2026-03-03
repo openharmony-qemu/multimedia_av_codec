@@ -3,6 +3,7 @@ test/unittest/resources/video_res/*.m2v filter=lfs diff=lfs merge=lfs -text
 test/unittest/resources/video_res/*.m4v filter=lfs diff=lfs merge=lfs -text
 test/unittest/resources/demuxer_res/3gp_h264_aac.3gp filter=lfs diff=lfs merge=lfs -text
 test/unittest/resources/demuxer_res/wmv_wmv3_wmapro.wmv filter=lfs diff=lfs merge=lfs -text
+test/unittest/resources/demuxer_res/DVCPROHD_1280x1080_29_422_dvh6.asf filter=lfs diff=lfs merge=lfs -text
 test/moduletest/resources/demuxer/vob_mpeg2_main@level6_1280_720_mp2_2.vob filter=lfs diff=lfs merge=lfs -text
 test/moduletest/resources/demuxer/m4v_h264_high@level31_1280_720_aac_31.m4v filter=lfs diff=lfs merge=lfs -text
 test/unittest/resources/demuxer_res/3gp_amr_nb.3gp filter=lfs diff=lfs merge=lfs -text
@@ -23,6 +24,7 @@ test/fuzztest/demuxerwmvapi11_fuzzer/corpus/wmv_h264_main@level99_720_380_eac3_1
 test/fuzztest/demuxerwmvapi11_fuzzer/corpus/wmv_h264_main@level99_720_380_eac3_2.wmv filter=lfs diff=lfs merge=lfs -text
 test/fuzztest/demuxerwmvapi11_fuzzer/corpus/wmv_h264_main@level99_720_380_eac3_31.wmv filter=lfs diff=lfs merge=lfs -text
 test/fuzztest/demuxerwmvapi11_fuzzer/corpus/wmv_wmv3_main@level99_320_240_1.wmv filter=lfs diff=lfs merge=lfs -text
+test/moduletest/resources/demuxer/DVCPROHD_1280x1080_29_422_dvh6.asf filter=lfs diff=lfs merge=lfs -text
 test/moduletest/resources/demuxer/3g2_h263_simple@level1_720_480_mp4a_2.3g2 filter=lfs diff=lfs merge=lfs -text
 test/moduletest/resources/demuxer/3g2_h264_720_480_mp4a_31.3g2 filter=lfs diff=lfs merge=lfs -text
 test/moduletest/resources/demuxer/3g2_h264_amrnb_simple@level1_720_480_mp4a_2.3g2 filter=lfs diff=lfs merge=lfs -text

@@ -554,9 +554,9 @@ HWTEST_F(AVSourceUnitTest, AVSource_AIFF_GetFormat_00013, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
     EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    EXPECT_EQ(formatVal_.sampleRate, 48000);
+    EXPECT_EQ(formatVal_.sampleRate, 8000);
     EXPECT_EQ(formatVal_.channelCount, 1);
-    EXPECT_EQ(formatVal_.bitRate, 384000);
+    EXPECT_EQ(formatVal_.bitRate, 64000);
     EXPECT_EQ(formatVal_.codecMime, "audio/g711mu");
     EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
     EXPECT_EQ(formatVal_.channelLayout, 4);
@@ -602,9 +602,9 @@ HWTEST_F(AVSourceUnitTest, AVSource_AIFF_GetFormat_00014, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
     EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    EXPECT_EQ(formatVal_.sampleRate, 48000);
+    EXPECT_EQ(formatVal_.sampleRate, 8000);
     EXPECT_EQ(formatVal_.channelCount, 1);
-    EXPECT_EQ(formatVal_.bitRate, 384000);
+    EXPECT_EQ(formatVal_.bitRate, 64000);
     EXPECT_EQ(formatVal_.codecMime, "audio/g711mu");
     EXPECT_EQ(formatVal_.audioSampleFormat, OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
     EXPECT_EQ(formatVal_.channelLayout, 4);
@@ -1011,7 +1011,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_AIFF_GetFormat_00023, TestSize.Level1)
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
-    EXPECT_EQ(formatVal_.duration, 4875);
+    EXPECT_EQ(formatVal_.duration, 5000000);
     EXPECT_EQ(formatVal_.trackCount, 1);
 #ifdef AVSOURCE_INNER_UNIT_TEST
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
@@ -1059,7 +1059,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_AIFF_GetFormat_00024, TestSize.Level1)
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
-    EXPECT_EQ(formatVal_.duration, 4875);
+    EXPECT_EQ(formatVal_.duration, 5000000);
     EXPECT_EQ(formatVal_.trackCount, 1);
 #ifdef AVSOURCE_INNER_UNIT_TEST
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));

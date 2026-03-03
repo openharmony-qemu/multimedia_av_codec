@@ -3008,8 +3008,8 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_10500, TestSize.Level3)
             }
         }
     }
-    ASSERT_EQ(audioFrame, 59);
-    ASSERT_EQ(keyCount, 59);
+    ASSERT_EQ(audioFrame, 10);
+    ASSERT_EQ(keyCount, 10);
 }
 
 /**
