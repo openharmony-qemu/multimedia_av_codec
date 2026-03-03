@@ -55,13 +55,20 @@ public:
     Status ResetAllCache() override;
     int64_t GetFirstFrameDecapsulationTime() override;
 private:
-    Status PullData(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Plugins::Buffer>& data);
-    Status PullDataWithoutCache(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
-    Status PullDataWithCache(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
-    Status GetPeekRange(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
-    Status ReadHeaderData(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
-    Status ReadFrameData(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
-    Status ReadRetry(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Plugins::Buffer>& data);
+    Status PullData(int32_t streamID, uint64_t offset, size_t size,
+        std::shared_ptr<Plugins::Buffer>& data, bool isSniffCase);
+    Status PullDataWithoutCache(int32_t streamID, uint64_t offset, size_t size,
+        std::shared_ptr<Buffer>& bufferPtr, bool isSniffCase);
+    Status PullDataWithCache(int32_t streamID, uint64_t offset, size_t size,
+        std::shared_ptr<Buffer>& bufferPtr, bool isSniffCase);
+    Status GetPeekRange(int32_t streamID, uint64_t offset, size_t size,
+        std::shared_ptr<Buffer>& bufferPtr, bool isSniffCase);
+    Status ReadHeaderData(int32_t streamID, uint64_t offset, size_t size,
+        std::shared_ptr<Buffer>& bufferPtr, bool isSniffCase);
+    Status ReadFrameData(int32_t streamID, uint64_t offset, size_t size,
+        std::shared_ptr<Buffer>& bufferPtr, bool isSniffCase);
+    Status ReadRetry(int32_t streamID, uint64_t offset, size_t size,
+        std::shared_ptr<Plugins::Buffer>& data, bool isSniffCase);
     Status HandleReadHeader(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen);
     Status HandleReadPacket(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen);
     Status CheckChangeStreamID(int32_t streamID, std::shared_ptr<Buffer>& buffer);

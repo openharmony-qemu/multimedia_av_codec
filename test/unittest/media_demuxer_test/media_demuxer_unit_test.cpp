@@ -1732,7 +1732,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_CheckChangeStreamID_002, TestSize.Le
 
     std::shared_ptr<Buffer> bufferPtr = nullptr;
     streamDemuxer->isInterruptNeeded_ = false;
-    EXPECT_EQ(streamDemuxer->GetPeekRange(0, 0, 100, bufferPtr), Status::ERROR_INVALID_PARAMETER);
+    EXPECT_EQ(streamDemuxer->GetPeekRange(0, 0, 100, bufferPtr, true), Status::ERROR_INVALID_PARAMETER);
     EXPECT_EQ(streamDemuxer->Start(), Status::OK);
 
     streamDemuxer->pluginStateMap_[0] = DemuxerState::DEMUXER_STATE_NULL;
