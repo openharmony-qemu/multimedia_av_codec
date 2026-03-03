@@ -1049,23 +1049,26 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Abnormal_004, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_SetParameter_001, TestSize.Level1)
 {
-    IsPixelFormatSupported(VideoPixelFormat::YUVI420);
-    CreateByNameWithParam(GetParam());
-    SetFormatWithParam(GetParam());
-    PrepareSource(GetParam());
-    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
+    if (std::find(pixelFormats.begin(), pixelFormats.end(), static_cast<int32_t>(VideoPixelFormat::YUV420P)) !=
+        pixelFormats.end()) {
+        CreateByNameWithParam(GetParam());
+        SetFormatWithParam(GetParam());
+        PrepareSource(GetParam());
+        ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
-    format_ = FormatMockFactory::CreateFormat();
-    ASSERT_NE(nullptr, format_);
+        format_ = FormatMockFactory::CreateFormat();
+        ASSERT_NE(nullptr, format_);
 
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::YUVI420));
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+        format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::YUVI420));
+        format_->PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
 
-    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-    EXPECT_EQ(AV_ERR_OK, videoDec_->SetParameter(format_));
-    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+        EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+        EXPECT_EQ(AV_ERR_OK, videoDec_->SetParameter(format_));
+        EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+    }
 }
 
 /**
@@ -1075,23 +1078,26 @@ HWTEST_P(TEST_SUIT, VideoDecoder_SetParameter_001, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_SetParameter_002, TestSize.Level1)
 {
-    IsPixelFormatSupported(VideoPixelFormat::YUVI420);
-    CreateByNameWithParam(GetParam());
-    SetFormatWithParam(GetParam());
-    PrepareSource(GetParam());
-    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
+    if (std::find(pixelFormats.begin(), pixelFormats.end(), static_cast<int32_t>(VideoPixelFormat::YUV420P)) !=
+        pixelFormats.end()) {
+        CreateByNameWithParam(GetParam());
+        SetFormatWithParam(GetParam());
+        PrepareSource(GetParam());
+        ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
-    format_ = FormatMockFactory::CreateFormat();
-    ASSERT_NE(nullptr, format_);
+        format_ = FormatMockFactory::CreateFormat();
+        ASSERT_NE(nullptr, format_);
 
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, -2);  // invalid width size -2
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, -2); // invalid height size -2
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::YUVI420));
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+        format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, -2);  // invalid width size -2
+        format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, -2); // invalid height size -2
+        format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::YUVI420));
+        format_->PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
 
-    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-    EXPECT_EQ(AV_ERR_OK, videoDec_->SetParameter(format_));
-    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+        EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+        EXPECT_EQ(AV_ERR_OK, videoDec_->SetParameter(format_));
+        EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+    }
 }
 
 /**

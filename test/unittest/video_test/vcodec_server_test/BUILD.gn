@@ -83,6 +83,7 @@ codec_server_coverage_include_dirs = [
 
   "$av_codec_root_dir/test/unittest/common",
   "$av_codec_root_dir/test/unittest/common/common_mock/avformat",
+  "$av_codec_root_dir/test/unittest/common/common_mock/avformat/capi",
   "$av_codec_root_dir/test/unittest/video_test/codeclist_test",
   "$av_codec_root_dir/test/unittest/video_test/codeclist_test/capi",
 ]

@@ -757,7 +757,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Start_001, TestSize.Level1)
 HWTEST_P(TEST_SUIT, VideoEncoder_SetParameter_001, TestSize.Level1)
 {
     auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
-    if (std::find(pixelFormats.begin(), pixelFormats.end(), VideoPixelFormat::YUV420P) != pixelFormats.end()) {
+    if (std::find(pixelFormats.begin(), pixelFormats.end(), static_cast<int32_t>(VideoPixelFormat::YUV420P)) !=
+        pixelFormats.end()) {
         CreateByNameWithParam(GetParam());
         SetFormatWithParam(GetParam());
         PrepareSource(GetParam());
@@ -785,7 +786,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetParameter_001, TestSize.Level1)
 HWTEST_P(TEST_SUIT, VideoEncoder_SetParameter_002, TestSize.Level1)
 {
     auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
-    if (std::find(pixelFormats.begin(), pixelFormats.end(), VideoPixelFormat::YUV420P) != pixelFormats.end()) {
+    if (std::find(pixelFormats.begin(), pixelFormats.end(), static_cast<int32_t>(VideoPixelFormat::YUV420P)) !=
+        pixelFormats.end()) {
         CreateByNameWithParam(GetParam());
         SetFormatWithParam(GetParam());
         PrepareSource(GetParam());

@@ -40,9 +40,9 @@ public:
     static void TearDownTestCase(void);
     void SetUp(void);
     void TearDown(void);
+    std::shared_ptr<OHOS::MediaAVCodec::CodecListMock> capability_ = nullptr;
 
 private:
-    std::shared_ptr<OHOS::MediaAVCodec::CodecListMock> capability_ = nullptr;
     shared_ptr<HeapMemoryThread> heapThread_ = nullptr;
 };
 

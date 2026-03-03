@@ -17,8 +17,9 @@
 #define VIDEODEC_HDRVIVID2SDR_UNIT_TEST_H
 #include "av_common.h"
 #include "meta/meta_key.h"
+#include "video_processing.h"
+#include "video_processing_types.h"
 #include "videodec_capi_mock.h"
-
 #ifdef VIDEODEC_ASYNC_UNIT_TEST
 #include "vdec_async_sample.h"
 #else
@@ -32,7 +33,7 @@ class HdrVivid2SdrBaseSuit {
 public:
     bool CreateVideoCodecByName(const std::string &decName);
     void SetFormatWithParam(VideoPixelFormat format);
-
+    void IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat pixelFormat);
 protected:
     std::shared_ptr<CodecListMock> capability_ = nullptr;
     std::shared_ptr<VideoDecSample> videoDec_ = nullptr;
@@ -65,19 +66,27 @@ void HdrVivid2SdrBaseSuit::SetFormatWithParam(VideoPixelFormat format)
 }
 
 void ISHDR2SDRSupported()
-    {
-        VideoProcessing_ColorSpaceInfo sourceVideoInfo = {-1, -1, -1};
-        VideoProcessing_ColorSpaceInfo destinationVideoInfo = {-1, -1, -1};
-        sourceVideoInfo.metadataType = static_cast<int32_t>(OH_VIDEO_HDR_VIVID);
-        sourceVideoInfo.colorSpace = static_cast<int32_t>(OH_COLORSPACE_BT2020_HLG_FULL);
-        sourceVideoInfo.pixelFormat = static_cast<int32_t>(NATIVEBUFFER_PIXEL_FMT_RGBA_1010102);
-        destinationVideoInfo.metadataType = static_cast<int32_t>(OH_VIDEO_NONE);
-        destinationVideoInfo.colorSpace = static_cast<int32_t>(OH_COLORSPACE_BT709_LIMIT);
-        destinationVideoInfo.pixelFormat = static_cast<int32_t>(NATIVEBUFFER_PIXEL_FMT_RGBA_8888);
-        bool ret = OH_VideoProcessing_IsColorSpaceConversionSupported(&sourceVideoInfo, &destinationVideoInfo);
-        if (!ret) {
-            GTEST_SKIP() << "Unsupport func of HDR2SDR";
-        }
+{
+    VideoProcessing_ColorSpaceInfo sourceVideoInfo = {-1, -1, -1};
+    VideoProcessing_ColorSpaceInfo destinationVideoInfo = {-1, -1, -1};
+    sourceVideoInfo.metadataType = static_cast<int32_t>(OH_VIDEO_HDR_VIVID);
+    sourceVideoInfo.colorSpace = static_cast<int32_t>(OH_COLORSPACE_BT2020_HLG_FULL);
+    sourceVideoInfo.pixelFormat = static_cast<int32_t>(NATIVEBUFFER_PIXEL_FMT_RGBA_1010102);
+    destinationVideoInfo.metadataType = static_cast<int32_t>(OH_VIDEO_NONE);
+    destinationVideoInfo.colorSpace = static_cast<int32_t>(OH_COLORSPACE_BT709_LIMIT);
+    destinationVideoInfo.pixelFormat = static_cast<int32_t>(NATIVEBUFFER_PIXEL_FMT_RGBA_8888);
+    bool ret = OH_VideoProcessing_IsColorSpaceConversionSupported(&sourceVideoInfo, &destinationVideoInfo);
+    if (!ret) {
+        GTEST_SKIP() << "Unsupport func of HDR2SDR";
     }
+}
+
+void HdrVivid2SdrBaseSuit::IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat pixelFormat)
+{
+    auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
+    if (std::find(pixelFormats.begin(), pixelFormats.end(), static_cast<int32_t>(pixelFormat)) == pixelFormats.end()) {
+        GTEST_SKIP() << "Unsupport pixel format = " << static_cast<int32_t>(pixelFormat);
+    }
+}
 } // namespace TESTBASE
 #endif // VIDEODEC_HDRVIVID2SDR_UNIT_TEST_H

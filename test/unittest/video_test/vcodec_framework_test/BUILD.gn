@@ -1517,6 +1517,7 @@ ohos_unittest("videodec_mpeg1_stable_unit_test") {
   include_dirs = [
     "$av_codec_root_dir/interfaces/kits/c",
     "$av_codec_root_dir/test/unittest/common/common_mock/avformat",
+    "$av_codec_root_dir/test/unittest/common/common_mock/avformat/inner",
     "$av_codec_root_dir/test/unittest/video_test/codeclist_test/",
     "$av_codec_root_dir/test/unittest/video_test/codeclist_test/inner",
   ]
@@ -1524,7 +1525,7 @@ ohos_unittest("videodec_mpeg1_stable_unit_test") {
     "$av_codec_root_dir/test/unittest/video_test/codeclist_test/inner/codeclist_inner_mock.cpp",
     "$av_codec_root_dir/test/unittest/video_test/codeclist_test/inner/codeclist_inner_mock_factory.cpp",
     "./videodec_mpeg1_stable_unit_test.cpp",
-    ]
+  ]
   deps = [ "./stable_sample:video_sample" ]
   resource_config_file = resource_configuration_file
 }

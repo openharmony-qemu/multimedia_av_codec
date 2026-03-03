@@ -99,6 +99,7 @@ public:
     void SetFormatWithParam(int32_t param);
     void PrepareSource(int32_t param);
     void PrepareSource(int32_t param, std::string sourcePath);
+    void IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat pixelFormat);
     static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, STRINGFY(TEST_SUIT)};
 
 protected:
@@ -173,11 +174,11 @@ bool TEST_SUIT::CreateVideoCodecByName(const std::string &decName)
     return true;
 }
 
-bool IsPixelFormatSupported(VideoPixelFormat pixelFormat)
+void TEST_SUIT::IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat pixelFormat)
 {
     auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
     if (std::find(pixelFormats.begin(), pixelFormats.end(), static_cast<int32_t>(pixelFormat)) == pixelFormats.end()) {
-        GTEST_SKIP() << "Unsupport pixel format = " << pixelFormat;
+        GTEST_SKIP() << "Unsupport pixel format = " << static_cast<int32_t>(pixelFormat);
     }
 }
 } // namespace VFTSUIT

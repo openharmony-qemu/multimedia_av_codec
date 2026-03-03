@@ -19,8 +19,6 @@
 #include "avcodec_log.h"
 #include "native_avcodec_base.h"
 #include "unittest_utils.h"
-#include "video_processing_types.h"
-#include "video_processing.h"
 #include "videodec_hdrvivid2sdr_unit_test.h"
 
 using namespace std;

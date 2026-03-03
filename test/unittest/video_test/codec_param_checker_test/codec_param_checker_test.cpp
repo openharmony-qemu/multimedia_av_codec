@@ -28,6 +28,7 @@
 using namespace testing::ext;
 using namespace OHOS;
 using namespace OHOS::Media;
+using namespace TESTBASE;
 
 constexpr double DEFAULT_FRAME_RATE = 30.0;
 uint32_t DEFAULT_QUALITY = 30;
@@ -122,14 +123,6 @@ void AVCodecParamCheckerTest::TearDown(void)
     OH_AVFormat_Destroy(g_format);
 }
 
-void SetFormatBasicParam(bool isDecoder)
-{
-    ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
-    ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
-    if (!isDecoder) {
-        ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_PIXEL_FORMAT, ENCODER_PIXEL_FORMAT));
-    }
-}
 namespace {
 /**
  * @tc.name: ENCODE_KEY_WIDTH_INVALID_TEST_0101
