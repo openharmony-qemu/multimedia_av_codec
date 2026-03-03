@@ -111,7 +111,8 @@ HWTEST_F(SampleQueueControllerUnitTest, TEST_BUFFERING_DURATION, TestSize.Level1
  */
 HWTEST_F(SampleQueueControllerUnitTest, TEST_BUFFERING_DURATION_FOR_PLAYING, TestSize.Level1)
 {
-    EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), START_CONSUME_WATER_LOOP);
+    EXPECT_EQ(sampleQueueController_->GetPlayBufferingDuration(), START_CONSUME_WATER_LOOP);
+    EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), 10 * S_TO_US);
     EXPECT_FALSE(sampleQueueController_->isSetFirstBufferingDuration_);
     sampleQueueController_->DisableFirstBufferingDuration();
     EXPECT_FALSE(sampleQueueController_->isSetFirstBufferingDuration_);
@@ -122,7 +123,7 @@ HWTEST_F(SampleQueueControllerUnitTest, TEST_BUFFERING_DURATION_FOR_PLAYING, Tes
     strategy->duration = 10;
     strategy->bufferDurationForPlaying = 5;
     sampleQueueController_->SetBufferingDuration(strategy);
-    EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), 5 * S_TO_US);
+    EXPECT_EQ(sampleQueueController_->GePlaytBufferingDuration(), 5 * S_TO_US);
     EXPECT_EQ(sampleQueueController_->firstBufferingDuration_, 5 * S_TO_US);
     EXPECT_TRUE(sampleQueueController_->isSetFirstBufferingDuration_);
     EXPECT_EQ(sampleQueueController_->bufferingDuration_, 10 * S_TO_US);
@@ -134,9 +135,8 @@ HWTEST_F(SampleQueueControllerUnitTest, TEST_BUFFERING_DURATION_FOR_PLAYING, Tes
     // case duration for playing max
     strategy->bufferDurationForPlaying = 99;
     sampleQueueController_->SetBufferingDuration(strategy);
-    EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), MAX_FIRST_DURATION * S_TO_US);
-    EXPECT_EQ(sampleQueueController_->firstBufferingDuration_, MAX_FIRST_DURATION * S_TO_US);
-    EXPECT_TRUE(sampleQueueController_->isSetFirstBufferingDuration_);
+    EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), 10 * S_TO_US);
+    EXPECT_EQ(sampleQueueController_->GetPlayBufferingDuration(), 5 * S_TO_US);
     sampleQueueController_->DisableFirstBufferingDuration();
     EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), 10 * S_TO_US);
     EXPECT_FALSE(sampleQueueController_->isSetFirstBufferingDuration_);
@@ -144,8 +144,8 @@ HWTEST_F(SampleQueueControllerUnitTest, TEST_BUFFERING_DURATION_FOR_PLAYING, Tes
     // case duration for playing min
     strategy->bufferDurationForPlaying = -1;
     sampleQueueController_->SetBufferingDuration(strategy);
-    EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), MIN_FIRST_DURATION * S_TO_US);
-    EXPECT_EQ(sampleQueueController_->firstBufferingDuration_, MIN_FIRST_DURATION * S_TO_US);
+    EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), 10 * S_TO_US);
+    EXPECT_EQ(sampleQueueController_->GetPlayBufferingDuration(), 0);
     EXPECT_TRUE(sampleQueueController_->isSetFirstBufferingDuration_);
     sampleQueueController_->DisableFirstBufferingDuration();
     EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), 10 * S_TO_US);

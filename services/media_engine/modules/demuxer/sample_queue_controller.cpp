@@ -62,7 +62,7 @@ bool SampleQueueController::ShouldStartConsume(int32_t trackId, std::shared_ptr<
         return false;
     }
     uint64_t cacheDuration = sampleQueue->NewGetCacheDuration();
-    if (cacheDuration < GetBufferingDuration() &&
+    if (cacheDuration < GetPlayBufferingDuration() &&
         sampleQueue->GetFilledBufferSize() < SampleQueue::DEFAULT_SAMPLE_QUEUE_SIZE - 1 &&
         (isFirstArrived_[trackId] ||cacheDuration < static_cast<uint64_t>(FIRST_START_CONSUME_WATER_LOOP)) &&
         !inPreroll) {
@@ -84,7 +84,7 @@ bool SampleQueueController::ShouldStopConsume(int32_t trackId, std::shared_ptr<S
     if (sampleQueue == nullptr || task == nullptr) {
         return false;
     }
-    auto cacheDuration = sampleQueue->NewGetCacheDuration();
+    uint64_t cacheDuration = sampleQueue->NewGetCacheDuration();
     if (cacheDuration > STOP_CONSUME_WATER_LOOP) {
         return false;
     }
@@ -118,7 +118,7 @@ bool SampleQueueController::ShouldStopProduce(int32_t trackId, std::shared_ptr<S
     if (sampleQueue == nullptr || task == nullptr) {
         return false;
     }
-    auto cacheDuration = sampleQueue->NewGetCacheDuration();
+    uint64_t cacheDuration = sampleQueue->NewGetCacheDuration();
     if (cacheDuration < GetBufferingDuration() &&
         sampleQueue->GetFilledBufferSize() < SampleQueue::DEFAULT_SAMPLE_QUEUE_SIZE - 1) {
         return false;
@@ -199,7 +199,7 @@ uint64_t SampleQueueController::GetBufferingDuration()
     return bufferingDuration_.load() > 0 ? bufferingDuration_.load() : STOP_PRODUCE_WATER_LOOP;
 }
 
-uint64_t SampleQueueController::GetBufferingDuration()
+uint64_t SampleQueueController::GetPlayBufferingDuration()
 {
     return isSetFirstBufferingDuration_.load() ? firstBufferingDuration_.load() : START_CONSUME_WATER_LOOP;
 }
