@@ -4801,10 +4801,10 @@ bool MediaDemuxer::NeedDroped(int32_t trackId)
 
 void MediaDemuxer::AfterDrop(int32_t trackId)
 {
-    if (!hasDropedMap_[trackId].load()) {
+    if (!GetEnableSampleQueueFlag()) {
         return;
     }
-    if (!GetEnableSampleQueueFlag()) {
+    if (!hasDropedMap_[trackId].load()) {
         return;
     }
     if (IsLocalFd()) {
