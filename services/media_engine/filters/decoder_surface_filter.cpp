@@ -1002,7 +1002,7 @@ void DecoderSurfaceFilter::HandleRender(
     RenderAtTimeDfx(renderTime, currentSysTimeNs, lastRenderTimeNs);
     DoRenderOutputBufferAtTime(index, renderTime, outBuffer->pts_);
 
-    if (eventReceiver_!= nullptr && lastRenderTimeNs > 0 && !isFirstRenderFrameAfterResume_ && !isInSeekContinous_) {
+    if (eventReceiver_!= nullptr && lastRenderTimeNs > 0 && !isFirstRenderFrameAfterResume_ && !isInSeekContinuous_) {
         int64_t frameIntervalMs = videoSink_->GetFrameInterval();
         std::vector<int64_t> timeStampList;
         outBuffer->meta_->GetData(Tag::STALLING_TIMESTAMP, timeStampList);
@@ -1043,7 +1043,7 @@ Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const s
                                                  int64_t renderTime)
 {
     if (!isRenderStarted_.load() && render && !(outBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS))
-        && !isInSeekContinous_ && !isVideoMuted_.load()) {
+        && !isInSeekContinuous_ && !isVideoMuted_.load()) {
         MEDIA_LOG_I("render first frame pts is " PUBLIC_LOG_D64, outBuffer->pts_);
         HandleFirstOutput();
     }
@@ -1055,7 +1055,7 @@ Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const s
         return Status::OK;
     }
 
-    if ((outBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS)) && !isInSeekContinous_) {
+    if ((outBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS)) && !isInSeekContinuous_) {
         ResetSeekInfo();
         MEDIA_LOG_I("ReleaseBuffer for eos, index: %{public}u,  bufferid: %{public}" PRIu64
                 ", pts: %{public}" PRIu64", flag: %{public}u", index, outBuffer->GetUniqueId(),
@@ -1072,7 +1072,7 @@ Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const s
 
     if (renderTime > 0L && render) {
         HandleRender(index, render, outBuffer, renderTime);
-        if (!isInSeekContinous_) {
+        if (!isInSeekContinuous_) {
             isFirstRenderFrameAfterResume_ = false;
             lastRenderTimeNs_ = renderTime;
         }
@@ -1128,13 +1128,13 @@ int64_t DecoderSurfaceFilter::CalculateNextRender(uint32_t index, std::shared_pt
 void DecoderSurfaceFilter::RenderNextOutput(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
     FALSE_RETURN_MSG(!isBuffering_ || !isFirstFrameWrite_, "RenderNextOutput Buffering");
-    if (isInSeekContinous_) {
+    if (isInSeekContinuous_) {
         Filter::ProcessOutputBuffer(false, 0);
         return;
     }
     int64_t actionClock = 0;
     int64_t waitTime = CalculateNextRender(index, outputBuffer, actionClock);
-    if (waitTime >= 0 && !isInSeekContinous_ && outputBuffer->pts_ >= 0
+    if (waitTime >= 0 && !isInSeekContinuous_ && outputBuffer->pts_ >= 0
         && !(outputBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS))
         && (playRangeEndTime_ == PLAY_RANGE_DEFAULT_VALUE
         || outputBuffer->pts_ <= playRangeEndTime_ * MICROSECONDS_CONVERT_UNIT)) {
@@ -1240,7 +1240,7 @@ void DecoderSurfaceFilter::RenderLoop()
 
 bool DecoderSurfaceFilter::DrainSeekContinuous(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
-    FALSE_RETURN_V_NOLOG(isInSeekContinous_, false);
+    FALSE_RETURN_V_NOLOG(isInSeekContinuous_, false);
     bool isEOS = outputBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS);
     FALSE_RETURN_V_NOLOG(!isEOS, false);
     outputBufferMap_.insert(std::make_pair(index, outputBuffer));
@@ -1476,7 +1476,7 @@ void DecoderSurfaceFilter::OnOutputFormatChanged(const MediaAVCodec::Format &for
 void DecoderSurfaceFilter::RegisterVideoFrameReadyCallback(std::shared_ptr<VideoFrameReadyCallback> &callback)
 {
     std::unique_lock<std::mutex> draggingLock(draggingMutex_);
-    isInSeekContinous_ = true;
+    isInSeekContinuous_ = true;
     FALSE_RETURN(callback != nullptr);
     videoFrameReadyCallback_ = callback;
     FALSE_RETURN_NOLOG(postProcessor_ != nullptr);
@@ -1486,7 +1486,7 @@ void DecoderSurfaceFilter::RegisterVideoFrameReadyCallback(std::shared_ptr<Video
 void DecoderSurfaceFilter::DeregisterVideoFrameReadyCallback()
 {
     std::unique_lock<std::mutex> draggingLock(draggingMutex_);
-    isInSeekContinous_ = false;
+    isInSeekContinuous_ = false;
     videoFrameReadyCallback_ = nullptr;
     FALSE_RETURN_NOLOG(postProcessor_ != nullptr);
     postProcessor_->StopSeekContinous();
@@ -1494,13 +1494,13 @@ void DecoderSurfaceFilter::DeregisterVideoFrameReadyCallback()
 
 Status DecoderSurfaceFilter::StartSeekContinous()
 {
-    isInSeekContinous_ = true;
+    isInSeekContinuous_ = true;
     return Status::OK;
 }
 
 Status DecoderSurfaceFilter::StopSeekContinous()
 {
-    isInSeekContinous_ = false;
+    isInSeekContinuous_ = false;
     return Status::OK;
 }
 

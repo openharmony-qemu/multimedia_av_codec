@@ -63,6 +63,7 @@ declare_args() {
   av_codec_support_vp8_decoder = false
   av_codec_support_vp9_decoder = false
   av_codec_support_10bit_test = false
+  av_codec_enable_player_startup_optimization = false
 }
 av_codec_sanitize = {
   boundary_sanitize = true
