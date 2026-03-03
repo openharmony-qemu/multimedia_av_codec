@@ -44,13 +44,13 @@ DecodingBehaviorAnalyzer::DecodingBehaviorAnalyzer()
     startTime_ = std::chrono::steady_clock::now();
 }
 
-void DecodingBehaviorAnalyzer::OnFrameConsumed(std::shared_ptr<AVBuffer> buffer)
+void DecodingBehaviorAnalyzer::OnFrameConsumed(int64_t pts)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (buffer == nullptr) {
+    if (pts < 0) {
         return;
     }
-    int64_t ptsMs = buffer->pts_ / 1000; // 1000: us to ms
+    int64_t ptsMs = pts / 1000; // 1000: us to ms
     if (ptsMs < startPtsMs_) { // handle looped playback
         frameCnt_ = 0;
     }
