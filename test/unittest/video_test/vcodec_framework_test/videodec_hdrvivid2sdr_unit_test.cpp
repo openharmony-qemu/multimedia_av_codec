@@ -629,7 +629,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1131, TestSize.Level1)
     SetFormatWithParam(VideoPixelFormat::NV21);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-                        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+                         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, videoDec_->Start());
 }
@@ -652,7 +652,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1141, TestSize.Level1)
     SetFormatWithParam(VideoPixelFormat::NV21);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-                        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+                         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
     ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, videoDec_->Start());
@@ -676,7 +676,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1151, TestSize.Level1)
     SetFormatWithParam(VideoPixelFormat::NV21);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-                        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+                         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, videoDec_->Prepare());
 }
@@ -699,7 +699,7 @@ HWTEST_F(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1161, TestSize.Level1)
     SetFormatWithParam(VideoPixelFormat::NV21);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-                        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+                         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
@@ -727,7 +727,7 @@ HWTEST_F(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1162, TestSize.Level1)
     SetFormatWithParam(VideoPixelFormat::NV21);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-                        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL);
+                         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL);
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
@@ -753,7 +753,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1171, TestSize.Level1)
     SetFormatWithParam(VideoPixelFormat::NV21);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-                        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
+                         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
     ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, videoDec_->Configure(format_));
 }
 
@@ -904,7 +904,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_2011, TestSize.Level1)
     SetFormatWithParam(VideoPixelFormat::RGBA);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-                        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+                         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
     ASSERT_EQ(AV_ERR_UNSUPPORT, videoDec_->Configure(format_));
 }
 
@@ -964,7 +964,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_2041, TestSize.Level1)
     SetFormatWithParam(VideoPixelFormat::RGBA);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-                        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
+                         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
     ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, videoDec_->Configure(format_));
 }
 
