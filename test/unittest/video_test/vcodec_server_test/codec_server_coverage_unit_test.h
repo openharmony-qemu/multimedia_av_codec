@@ -18,6 +18,7 @@
 #include "gtest/gtest.h"
 #include "av_common.h"
 #include "codecbase.h"
+#include "codeclist_mock.h"
 #include "codec_server.h"
 
 namespace OHOS {
@@ -38,6 +39,7 @@ public:
     void CreateHCodecByMime();
     std::shared_ptr<CodecBaseMock> codecBaseMock_ = nullptr;
     std::shared_ptr<CodecServer> server_ = nullptr;
+    std::shared_ptr<OHOS::MediaAVCodec::CodecListMock> capability_ = nullptr;
 private:
     Format validFormat_;
 };
@@ -62,7 +64,8 @@ inline void CodecServerUnitTest::SetUp(void)
     validFormat_.PutIntValue(Tag::VIDEO_HEIGHT, DEFAULT_HEIGHT);
     validFormat_.PutIntValue(Tag::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::YUVI420));
     auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
-    if (std::find(pixelFormats.begin(), pixelFormats.end(), VideoPixelFormat::YUVI420) != pixelFormats.end()) {
+    if (std::find(pixelFormats.begin(), pixelFormats.end(), static_cast<int32_t>(VideoPixelFormat::YUVI420)) ==
+        pixelFormats.end()) {
         GTEST_SKIP() << "Unsupport pixel format of YUVI420";
     }
 }

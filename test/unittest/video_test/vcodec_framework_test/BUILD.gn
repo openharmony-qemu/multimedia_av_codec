@@ -1515,6 +1515,8 @@ ohos_unittest("videodec_mpeg1_stable_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   include_dirs = [
+    "$av_codec_root_dir/interfaces/kits/c",
+    "$av_codec_root_dir/test/unittest/common/common_mock/avformat",
     "$av_codec_root_dir/test/unittest/video_test/codeclist_test/",
     "$av_codec_root_dir/test/unittest/video_test/codeclist_test/inner",
   ]

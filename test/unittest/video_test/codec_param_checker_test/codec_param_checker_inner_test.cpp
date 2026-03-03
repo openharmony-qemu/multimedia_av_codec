@@ -38,7 +38,8 @@ void SetFormatBasicParam(Format &format)
         static_cast<int32_t>(VideoPixelFormat::SURFACE_FORMAT));
     
     auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
-    if (std::find(pixelFormats.begin(), pixelFormats.end(), VCodecPixelFormat::SURFACE_FORMAT) == pixelFormats.end()) {
+    if (std::find(pixelFormats.begin(), pixelFormats.end(), static_cast<int32_t>(VCodecPixelFormat::SURFACE_FORMAT)) ==
+        pixelFormats.end()) {
         GTEST_SKIP() << "Unsupport pixel format of surface format";
     }
 }

@@ -498,7 +498,8 @@ HWTEST_F(TEST_SUIT, SoftwareEncoderH264YUV420_TEST_004, TestSize.Level3)
 HWTEST_F(TEST_SUIT, SoftwareEncoderH264RGBA_TEST_001, TestSize.Level3)
 {
     auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
-        if (std::find(pixelFormats.begin(), pixelFormats.end(), VCodecPixelFormat::SURFACE_FORMAT) != pixelFormats.end()) {
+    if (std::find(pixelFormats.begin(), pixelFormats.end(), static_cast<int32_t>(VCodecPixelFormat::SURFACE_FORMAT)) !=
+        pixelFormats.end()) {
         int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::RGBA);
         UpdateMetaData(pixelFormat, 0, AVCODEC_TYPE_VIDEO_ENCODER, 0, false);
         meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_AVC);
