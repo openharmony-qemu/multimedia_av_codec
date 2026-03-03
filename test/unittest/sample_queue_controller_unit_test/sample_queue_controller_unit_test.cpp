@@ -123,7 +123,7 @@ HWTEST_F(SampleQueueControllerUnitTest, TEST_BUFFERING_DURATION_FOR_PLAYING, Tes
     strategy->duration = 10;
     strategy->bufferDurationForPlaying = 5;
     sampleQueueController_->SetBufferingDuration(strategy);
-    EXPECT_EQ(sampleQueueController_->GePlayBufferingDuration(), 5 * S_TO_US);
+    EXPECT_EQ(sampleQueueController_->GetPlayBufferingDuration(), 5 * S_TO_US);
     EXPECT_EQ(sampleQueueController_->firstBufferingDuration_, 5 * S_TO_US);
     EXPECT_TRUE(sampleQueueController_->isSetFirstBufferingDuration_);
     EXPECT_EQ(sampleQueueController_->bufferingDuration_, 10 * S_TO_US);
