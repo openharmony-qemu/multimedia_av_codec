@@ -1510,7 +1510,6 @@ Status MediaDemuxer::UnselectTrack(uint32_t trackIndex)
 
 Status MediaDemuxer::HandleSegmentEos(int32_t trackId)
 {
-    segmentEosMap_[trackId] = true;
     FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER, "Plugin manager is nullptr");
     bool isAVInOneStream = IsAVInOneStream();
     Status ret = Status::OK;
