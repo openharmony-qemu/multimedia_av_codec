@@ -514,14 +514,14 @@ HWTEST_F(DemuxerUnitTest, Demuxer_AIFC_ReadSample_And_SeekToTime_0001, TestSize.
         }
     }
     printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
-    EXPECT_EQ(frames_[0], 59);
-    EXPECT_EQ(keyFrames_[0], 59);
+    EXPECT_EQ(frames_[0], 10);
+    EXPECT_EQ(keyFrames_[0], 10);
 
     for (auto idx : selectedTrackIds_) {
         EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
     list<int64_t> toPtsList = {0, 1000, 700, 1500}; // ms
-    vector<int32_t> audioVals = {59, 59, 59, 47, 47, 47, 51, 51, 51, 42, 42, 42};
+    vector<int32_t> audioVals = {10, 10, 10, 8, 8, 8, 9, 9, 9, 7, 7, 7};
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
             ret_ = demuxer_->SeekToTime(*toPts, *mode);
@@ -559,14 +559,14 @@ HWTEST_F(DemuxerUnitTest, Demuxer_AIFC_ReadSample_And_SeekToTime_0002, TestSize.
         }
     }
     printf("frames_[0]=%d | kFrames_[0]=%d\n", frames_[0], keyFrames_[0]);
-    EXPECT_EQ(frames_[0], 59);
-    EXPECT_EQ(keyFrames_[0], 59);
+    EXPECT_EQ(frames_[0], 10);
+    EXPECT_EQ(keyFrames_[0], 10);
 
     for (auto idx : selectedTrackIds_) {
         EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
     list<int64_t> toPtsList = {0, 1000, 700, 1500}; // ms
-    vector<int32_t> audioVals = {59, 59, 59, 47, 47, 47, 51, 51, 51, 42, 42, 42};
+    vector<int32_t> audioVals = {10, 10, 10, 8, 8, 8, 9, 9, 9, 7, 7, 7};
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
             ret_ = demuxer_->SeekToTime(*toPts, *mode);
@@ -970,8 +970,8 @@ HWTEST_F(DemuxerUnitTest, Demuxer_AIFC_ReadSample_And_SeekToTime_0011, TestSize.
     for (auto idx : selectedTrackIds_) {
         EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
-    list<int64_t> toPtsList = {0, 10, 7, 15}; // ms
-    vector<int32_t> audioVals = {30, 30, 30, 94, 94, 94, 101, 101, 101, 83, 83, 83};
+    list<int64_t> toPtsList = {0, 1000, 2000, 3000}; // ms
+    vector<int32_t> audioVals = {30, 30, 30, 24, 24, 24, 18, 18, 18, 12, 12, 12};
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
             ret_ = demuxer_->SeekToTime(*toPts, *mode);
@@ -1015,8 +1015,8 @@ HWTEST_F(DemuxerUnitTest, Demuxer_AIFC_ReadSample_And_SeekToTime_0012, TestSize.
     for (auto idx : selectedTrackIds_) {
         EXPECT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
-    list<int64_t> toPtsList = {0, 10, 7, 15}; // ms
-    vector<int32_t> audioVals = {30, 30, 30, 94, 94, 94, 101, 101, 101, 83, 83, 83};
+    list<int64_t> toPtsList = {0, 1000, 2000, 3000}; // ms
+    vector<int32_t> audioVals = {30, 30, 30, 24, 24, 24, 18, 18, 18, 12, 12, 12};
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
             ret_ = demuxer_->SeekToTime(*toPts, *mode);
