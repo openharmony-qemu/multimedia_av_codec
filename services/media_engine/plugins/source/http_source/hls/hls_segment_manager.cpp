@@ -978,6 +978,7 @@ uint32_t HlsSegmentManager::SaveCacheBufferDataNotblock(uint8_t* data, uint32_t 
             MEDIA_LOG_I("HLS stop write, freeSize: " PUBLIC_LOG_U64 " len: " PUBLIC_LOG_U32
                 ",type: %{public}d", freeSize, len, type_);
         }
+        return 0;
     }
 
     size_t res = cacheMediaBuffer_->Write(data, writeOffset_, len);
