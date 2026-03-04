@@ -102,7 +102,7 @@ public:
     int32_t GetTmpInnerTrackIDByTrackID(int32_t trackId);
     TrackType GetTmpTrackTypeByTrackID(int32_t trackId);
     void UpdateTempTrackMapInfo(int32_t oldTrackId, int32_t newTrackId, int32_t newInnerTrackIndex);
-    void UpdateTempTrackMapByStremId(int32_t oldTrackId, int32_t newStreamId, TrackType trackType);
+    void UpdateTempTrackMapByStremId(int32_t oldTrackId, int32_t newStreamId, TrackType type);
     void DeleteTempTrackMapInfo(int32_t oldTrackId);
 
     int32_t GetInnerTrackIDByTrackID(int32_t trackId);
