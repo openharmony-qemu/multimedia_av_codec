@@ -65,7 +65,6 @@ constexpr uint32_t KILO = 1024;
 constexpr float DOWNLOAD_RESUME_THRESHOLD_RATIO = 0.5;
 constexpr float DOWNLOAD_THROTTLE_THRESHOLD_RATIO = 0.25;
 constexpr float SOURCE_LOADER_CLEAR_THRESHOLD_RATIO = 0.3;
-constexpr size_t STORP_WRITE_BUFFER_REDUNDANCY = 200 * 1024;
 constexpr int MAX_RETRY = 10;
 constexpr uint32_t MAX_LOOP_TIMES = 100;
 constexpr uint64_t MAX_EXPECT_DURATION = 19;
