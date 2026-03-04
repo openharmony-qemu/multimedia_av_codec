@@ -87,7 +87,7 @@ HWTEST_F(SampleQueueControllerUnitTest, TEST_BUFFERING_DURATION, TestSize.Level1
     EXPECT_TRUE(sampleQueueController_->isSetFirstBufferingDuration_);
     EXPECT_EQ(sampleQueueController_->bufferingDuration_, static_cast<uint64_t>(MAX_DURATION) * S_TO_US);
     sampleQueueController_->DisableFirstBufferingDuration();
-    EXPECT_EQ(sampleQueueController_->GetPlayBufferingDuration(), 12 * S_TO_US);
+    EXPECT_EQ(sampleQueueController_->GetPlayBufferingDuration(), 5 * S_TO_US);
     EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), static_cast<uint64_t>(MAX_DURATION) * S_TO_US);
     EXPECT_FALSE(sampleQueueController_->isSetFirstBufferingDuration_);
 
@@ -99,7 +99,7 @@ HWTEST_F(SampleQueueControllerUnitTest, TEST_BUFFERING_DURATION, TestSize.Level1
     EXPECT_TRUE(sampleQueueController_->isSetFirstBufferingDuration_);
     EXPECT_EQ(sampleQueueController_->bufferingDuration_, 10 * S_TO_US);
     sampleQueueController_->DisableFirstBufferingDuration();
-    EXPECT_EQ(sampleQueueController_->GetPlayBufferingDuration(), 6 * S_TO_US);
+    EXPECT_EQ(sampleQueueController_->GetPlayBufferingDuration(), 5 * S_TO_US);
     EXPECT_EQ(sampleQueueController_->GetBufferingDuration(), 10 * S_TO_US);
     EXPECT_FALSE(sampleQueueController_->isSetFirstBufferingDuration_);
 }
