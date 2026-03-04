@@ -35,7 +35,7 @@ void AVCodecParamCheckerTest::SetFormatBasicParam(OHOS::MediaAVCodec::Format &fo
     
     auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
     if (std::find(pixelFormats.begin(), pixelFormats.end(),
-        static_cast<int32_t>(VCodecPixelFormat::SURFACE_FORMAT)) == pixelFormats.end()) {
+        static_cast<int32_t>(VideoPixelFormat::SURFACE_FORMAT)) == pixelFormats.end()) {
         GTEST_SKIP() << "Unsupport pixel format of surface format";
     }
 }
