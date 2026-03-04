@@ -25,6 +25,7 @@ constexpr double MIN_FIRST_DURATION = 0;
 constexpr double MAX_FIRST_DURATION = 20;
 constexpr uint64_t MIN_DURATION = 1;
 constexpr uint64_t MAX_DURATION = 20;
+constexpr double CONSUME_RATE = 0.6;
 }
 
 namespace OHOS {
@@ -201,7 +202,10 @@ uint64_t SampleQueueController::GetBufferingDuration()
 
 uint64_t SampleQueueController::GetPlayBufferingDuration()
 {
-    return isSetFirstBufferingDuration_.load() ? firstBufferingDuration_.load() : START_CONSUME_WATER_LOOP;
+    return isSetFirstBufferingDuration_.load() ? firstBufferingDuration_.load() :
+        (bufferingDuration_.load() > 0 ?
+            std::min(static_cast<uint64_t>(std::ceil(bufferingDuration_.load() * CONSUME_RATE)),
+                START_CONSUME_WATER_LOOP) : START_CONSUME_WATER_LOOP);
 }
 
 void SampleQueueController::DisableFirstBufferingDuration()
