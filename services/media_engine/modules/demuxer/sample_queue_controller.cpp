@@ -205,7 +205,7 @@ uint64_t SampleQueueController::GetPlayBufferingDuration()
     return isSetFirstBufferingDuration_.load() ? firstBufferingDuration_.load() :
         (bufferingDuration_.load() > 0 ?
             std::min(static_cast<uint64_t>(std::ceil(bufferingDuration_.load() * CONSUME_RATE)),
-            START_CONSUME_WATER_LOOP) : START_CONSUME_WATER_LOOP);
+                START_CONSUME_WATER_LOOP) : START_CONSUME_WATER_LOOP);
 }
 
 void SampleQueueController::DisableFirstBufferingDuration()
