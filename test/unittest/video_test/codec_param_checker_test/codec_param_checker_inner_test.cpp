@@ -25,6 +25,21 @@ using namespace OHOS::MediaAVCodec;
 using namespace testing::ext;
 using namespace TESTBASE;
 
+void AVCodecParamCheckerTest::SetFormatBasicParam(OHOS::MediaAVCodec::Format &format)
+{
+    format = Format();
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1280); // 1280 w默认值
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 720); // 720 h默认值
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
+        static_cast<int32_t>(VideoPixelFormat::SURFACE_FORMAT));
+    
+    auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
+    if (std::find(pixelFormats.begin(), pixelFormats.end(),
+        static_cast<int32_t>(VCodecPixelFormat::SURFACE_FORMAT)) == pixelFormats.end()) {
+        GTEST_SKIP() << "Unsupport pixel format of surface format";
+    }
+}
+
 namespace {
 uint32_t DEFAULT_QUALITY = 30; // 30 默认值
 uint32_t DEFAULT_BITRATE = 10000000; // 10000000 默认值

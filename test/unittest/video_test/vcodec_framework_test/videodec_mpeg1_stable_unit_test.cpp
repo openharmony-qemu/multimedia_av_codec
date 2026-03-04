@@ -40,7 +40,6 @@ public:
     static void TearDownTestCase(void);
     void SetUp(void);
     void TearDown(void);
-    std::shared_ptr<OHOS::MediaAVCodec::CodecListMock> capability_ = nullptr;
 
 private:
     shared_ptr<HeapMemoryThread> heapThread_ = nullptr;
@@ -111,8 +110,10 @@ HWMTEST_F(VideoDecMpeg1DecTest, VideoDecoder_mpeg1decoder_Release_001, TestSize.
 HWMTEST_F(VideoDecMpeg1DecTest, VideoDecoder_mpeg1decoder_Create_AVBuffer_001, TestSize.Level1,
           VideoDecSample::threadNum_)
 {
+    std::shared_ptr<OHOS::MediaAVCodec::CodecListMock> capability_ = nullptr;
     auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
-    if (std::find(pixelFormats.begin(), pixelFormats.end(), VideoPixelFormat::RGBA) != pixelFormats.end()) {
+    if (std::find(pixelFormats.begin(), pixelFormats.end(), static_cast<int32_t>(VideoPixelFormat::RGBA)) !=
+        pixelFormats.end()) {
         auto vdec = make_shared<VideoDecSample>();
         auto signal = make_shared<VCodecSignal>(vdec);
         vdec->frameCount_ = 30; // 30: input frame num
