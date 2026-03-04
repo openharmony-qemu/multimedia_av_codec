@@ -40,7 +40,7 @@ public:
     void TearDown(void);
     void UpdateMetaData(int32_t pixelFormat, int32_t bitDepth, AVCodecType codecType, int32_t isHardware,
                         bool enablePostProcessing);
-    void IsPixelFormatSupported(VideoPixelFormat pixelFormat);
+    void IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat pixelFormat);
 
     std::shared_ptr<OHOS::MediaAVCodec::CodecListMock> capability_ = nullptr;
     std::shared_ptr<Meta> meta_ = nullptr;
@@ -63,7 +63,7 @@ void TEST_SUIT::TearDown(void)
     meta_->Clear();
 }
 
-void TEST_SUIT::IsPixelFormatSupported(VideoPixelFormat pixelFormat)
+void TEST_SUIT::IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat pixelFormat)
 {
     auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
     if (std::find(pixelFormats.begin(), pixelFormats.end(), static_cast<int32_t>(pixelFormat)) == pixelFormats.end()) {
@@ -88,7 +88,7 @@ void TEST_SUIT::UpdateMetaData(int32_t pixelFormat, int32_t bitDepth, AVCodecTyp
  */
 HWTEST_F(TEST_SUIT, HardwareDecoderHevc10BitYUV420_TEST_001, TestSize.Level3)
 {
-    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::NV12);
+    int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::NV12);
     UpdateMetaData(pixelFormat, 1, AVCODEC_TYPE_VIDEO_DECODER, 1, false);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_HEVC);
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "NV12_10bit");
@@ -107,7 +107,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderHevc10BitYUV420_TEST_001, TestSize.Level3)
  */
 HWTEST_F(TEST_SUIT, HardwareDecoderHevc10BitYUV420_TEST_002, TestSize.Level3)
 {
-    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::NV12);
+    int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::NV12);
     UpdateMetaData(pixelFormat, 1, AVCODEC_TYPE_VIDEO_DECODER, 1, false);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_HEVC);
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "NV12_10bit");
@@ -126,7 +126,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderHevc10BitYUV420_TEST_002, TestSize.Level3)
  */
 HWTEST_F(TEST_SUIT, HardwareDecoderHevc10BitYUV420_TEST_003, TestSize.Level3)
 {
-    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::NV12);
+    int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::NV12);
     UpdateMetaData(pixelFormat, 1, AVCODEC_TYPE_VIDEO_DECODER, 1, false);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_HEVC);
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "NV12_10bit");
@@ -145,7 +145,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderHevc10BitYUV420_TEST_003, TestSize.Level3)
  */
 HWTEST_F(TEST_SUIT, HardwareDecoderHevc10BitYUV420_TEST_004, TestSize.Level3)
 {
-    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::NV12);
+    int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::NV12);
     UpdateMetaData(pixelFormat, 1, AVCODEC_TYPE_VIDEO_DECODER, 1, false);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_HEVC);
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "NV12_10bit");
@@ -164,7 +164,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderHevc10BitYUV420_TEST_004, TestSize.Level3)
  */
 HWTEST_F(TEST_SUIT, HardwareDecoderHevcYUV420PostProcessing_TEST_001, TestSize.Level3)
 {
-    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::NV12);
+    int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::NV12);
     UpdateMetaData(pixelFormat, 0, AVCODEC_TYPE_VIDEO_DECODER, 1, true);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_HEVC);
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "NV12");
@@ -183,7 +183,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderHevcYUV420PostProcessing_TEST_001, TestSize.L
  */
 HWTEST_F(TEST_SUIT, HardwareDecoderHevcYUV420PostProcessing_TEST_002, TestSize.Level3)
 {
-    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::NV12);
+    int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::NV12);
     UpdateMetaData(pixelFormat, 0, AVCODEC_TYPE_VIDEO_DECODER, 1, true);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_HEVC);
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "NV12");
@@ -202,7 +202,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderHevcYUV420PostProcessing_TEST_002, TestSize.L
  */
 HWTEST_F(TEST_SUIT, HardwareDecoderHevcYUV420PostProcessing_TEST_003, TestSize.Level3)
 {
-    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::NV12);
+    int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::NV12);
     UpdateMetaData(pixelFormat, 0, AVCODEC_TYPE_VIDEO_DECODER, 1, true);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_HEVC);
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "NV12");
@@ -221,7 +221,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderHevcYUV420PostProcessing_TEST_003, TestSize.L
  */
 HWTEST_F(TEST_SUIT, HardwareDecoderHevcYUV420PostProcessing_TEST_004, TestSize.Level3)
 {
-    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::NV12);
+    int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::NV12);
     UpdateMetaData(pixelFormat, 0, AVCODEC_TYPE_VIDEO_DECODER, 1, true);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_HEVC);
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "NV12");
@@ -240,7 +240,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderHevcYUV420PostProcessing_TEST_004, TestSize.L
  */
 HWTEST_F(TEST_SUIT, HardwareDecoderVvc10BitYUV420_TEST_001, TestSize.Level3)
 {
-    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::NV12);
+    int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::NV12);
     UpdateMetaData(pixelFormat, 1, AVCODEC_TYPE_VIDEO_DECODER, 1, false);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_VVC);
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "NV12_10bit");
@@ -259,7 +259,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderVvc10BitYUV420_TEST_001, TestSize.Level3)
  */
 HWTEST_F(TEST_SUIT, HardwareDecoderVvc10BitYUV420_TEST_002, TestSize.Level3)
 {
-    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::NV12);
+    int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::NV12);
     UpdateMetaData(pixelFormat, 1, AVCODEC_TYPE_VIDEO_DECODER, 1, false);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_VVC);
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "NV12_10bit");
@@ -278,7 +278,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderVvc10BitYUV420_TEST_002, TestSize.Level3)
  */
 HWTEST_F(TEST_SUIT, HardwareDecoderVvc10BitYUV420_TEST_003, TestSize.Level3)
 {
-    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::NV12);
+    int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::NV12);
     UpdateMetaData(pixelFormat, 1, AVCODEC_TYPE_VIDEO_DECODER, 1, false);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_VVC);
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "NV12_10bit");
@@ -297,7 +297,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderVvc10BitYUV420_TEST_003, TestSize.Level3)
  */
 HWTEST_F(TEST_SUIT, HardwareDecoderVvcYUV420_TEST_001, TestSize.Level3)
 {
-    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::NV12);
+    int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::NV12);
     UpdateMetaData(pixelFormat, 0, AVCODEC_TYPE_VIDEO_DECODER, 1, false);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_VVC);
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "NV12");
@@ -316,7 +316,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderVvcYUV420_TEST_001, TestSize.Level3)
  */
 HWTEST_F(TEST_SUIT, HardwareDecoderVvcYUV420_TEST_002, TestSize.Level3)
 {
-    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::NV12);
+    int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::NV12);
     UpdateMetaData(pixelFormat, 0, AVCODEC_TYPE_VIDEO_DECODER, 1, false);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_VVC);
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "NV12");
@@ -335,7 +335,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderVvcYUV420_TEST_002, TestSize.Level3)
  */
 HWTEST_F(TEST_SUIT, HardwareDecoderVvcYUV420_TEST_003, TestSize.Level3)
 {
-    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::NV12);
+    int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::NV12);
     UpdateMetaData(pixelFormat, 0, AVCODEC_TYPE_VIDEO_DECODER, 1, false);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_VVC);
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "NV12");
@@ -354,7 +354,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderVvcYUV420_TEST_003, TestSize.Level3)
  */
 HWTEST_F(TEST_SUIT, HardwareDecoderYUV420_TEST_001, TestSize.Level3)
 {
-    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::NV12);
+    int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::NV12);
     UpdateMetaData(pixelFormat, 0, AVCODEC_TYPE_VIDEO_DECODER, 1, false);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_AVC);
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "NV12");
@@ -373,7 +373,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderYUV420_TEST_001, TestSize.Level3)
  */
 HWTEST_F(TEST_SUIT, HardwareDecoderYUV420_TEST_002, TestSize.Level3)
 {
-    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::NV12);
+    int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::NV12);
     UpdateMetaData(pixelFormat, 0, AVCODEC_TYPE_VIDEO_DECODER, 1, false);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_AVC);
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "NV12");
@@ -392,7 +392,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderYUV420_TEST_002, TestSize.Level3)
  */
 HWTEST_F(TEST_SUIT, HardwareDecoderYUV420_TEST_003, TestSize.Level3)
 {
-    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::NV12);
+    int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::NV12);
     UpdateMetaData(pixelFormat, 0, AVCODEC_TYPE_VIDEO_DECODER, 1, false);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_AVC);
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "NV12");
@@ -411,7 +411,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderYUV420_TEST_003, TestSize.Level3)
  */
 HWTEST_F(TEST_SUIT, HardwareDecoderYUV420_TEST_004, TestSize.Level3)
 {
-    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::NV12);
+    int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::NV12);
     UpdateMetaData(pixelFormat, 0, AVCODEC_TYPE_VIDEO_DECODER, 1, false);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_AVC);
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "NV12");
@@ -430,7 +430,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderYUV420_TEST_004, TestSize.Level3)
  */
 HWTEST_F(TEST_SUIT, SoftwareEncoderH264YUV420_TEST_001, TestSize.Level3)
 {
-    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::NV12);
+    int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::NV12);
     UpdateMetaData(pixelFormat, 0, AVCODEC_TYPE_VIDEO_ENCODER, 0, false);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_AVC);
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "NV12");
@@ -449,7 +449,7 @@ HWTEST_F(TEST_SUIT, SoftwareEncoderH264YUV420_TEST_001, TestSize.Level3)
  */
 HWTEST_F(TEST_SUIT, SoftwareEncoderH264YUV420_TEST_002, TestSize.Level3)
 {
-    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::NV12);
+    int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::NV12);
     UpdateMetaData(pixelFormat, 0, AVCODEC_TYPE_VIDEO_ENCODER, 0, false);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_AVC);
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "NV12");
@@ -468,7 +468,7 @@ HWTEST_F(TEST_SUIT, SoftwareEncoderH264YUV420_TEST_002, TestSize.Level3)
  */
 HWTEST_F(TEST_SUIT, SoftwareEncoderH264YUV420_TEST_003, TestSize.Level3)
 {
-    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::NV12);
+    int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::NV12);
     UpdateMetaData(pixelFormat, 0, AVCODEC_TYPE_VIDEO_ENCODER, 0, false);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_AVC);
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "NV12");
@@ -487,7 +487,7 @@ HWTEST_F(TEST_SUIT, SoftwareEncoderH264YUV420_TEST_003, TestSize.Level3)
  */
 HWTEST_F(TEST_SUIT, SoftwareEncoderH264YUV420_TEST_004, TestSize.Level3)
 {
-    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::NV12);
+    int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::NV12);
     UpdateMetaData(pixelFormat, 0, AVCODEC_TYPE_VIDEO_ENCODER, 0, false);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_AVC);
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "NV12");
@@ -506,8 +506,8 @@ HWTEST_F(TEST_SUIT, SoftwareEncoderH264YUV420_TEST_004, TestSize.Level3)
  */
 HWTEST_F(TEST_SUIT, SoftwareEncoderH264RGBA_TEST_001, TestSize.Level3)
 {
-    IsPixelFormatSupported(VideoPixelFormat::RGBA);
-    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::RGBA);
+    IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat::RGBA);
+    int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::RGBA);
     UpdateMetaData(pixelFormat, 0, AVCODEC_TYPE_VIDEO_ENCODER, 0, false);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_AVC);
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "RGBA");
@@ -526,8 +526,8 @@ HWTEST_F(TEST_SUIT, SoftwareEncoderH264RGBA_TEST_001, TestSize.Level3)
  */
 HWTEST_F(TEST_SUIT, SoftwareEncoderH264RGBA_TEST_002, TestSize.Level3)
 {
-    IsPixelFormatSupported(VideoPixelFormat::RGBA);
-    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::RGBA);
+    IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat::RGBA);
+    int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::RGBA);
     UpdateMetaData(pixelFormat, 0, AVCODEC_TYPE_VIDEO_ENCODER, 0, false);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_AVC);
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "RGBA");
@@ -546,8 +546,7 @@ HWTEST_F(TEST_SUIT, SoftwareEncoderH264RGBA_TEST_002, TestSize.Level3)
  */
 HWTEST_F(TEST_SUIT, SoftwareEncoderH264RGBA_TEST_003, TestSize.Level3)
 {
-    IsPixelFormatSupported(VideoPixelFormat::RGBA);
-    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::RGBA);
+    IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat::RGBA);
     UpdateMetaData(pixelFormat, 0, AVCODEC_TYPE_VIDEO_ENCODER, 0, false);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_AVC);
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "RGBA");
@@ -566,8 +565,7 @@ HWTEST_F(TEST_SUIT, SoftwareEncoderH264RGBA_TEST_003, TestSize.Level3)
  */
 HWTEST_F(TEST_SUIT, SoftwareEncoderH264RGBA_TEST_004, TestSize.Level3)
 {
-    IsPixelFormatSupported(VideoPixelFormat::RGBA);
-    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::RGBA);
+    IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat::RGBA);
     UpdateMetaData(pixelFormat, 0, AVCODEC_TYPE_VIDEO_ENCODER, 0, false);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_AVC);
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "RGBA");
