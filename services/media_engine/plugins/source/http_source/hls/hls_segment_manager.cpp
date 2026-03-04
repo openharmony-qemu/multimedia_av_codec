@@ -157,7 +157,6 @@ HlsSegmentManager::HlsSegmentManager(const std::shared_ptr<HlsSegmentManager> &o
     mimeType_ = other->mimeType_;
     httpHeader_ = other->httpHeader_;
     timeoutInterval_ = MAX_BUFFERING_TIME_OUT;
-    memorySize_ = maxCacheBufferSize_;
     MEDIA_LOG_I("HLS copy constructor size: " PUBLIC_LOG_ZU ", type: %{public}d", totalBufferSize_, type_);
 }
 
@@ -695,16 +694,16 @@ bool HlsSegmentManager::CheckCanReadOneSeconds(uint64_t wantReadLength)
     uint64_t len = isFirstFrameArrived_ ? 1 : wantReadLength;
     std::unique_lock<std::mutex> lock(canReadMutex_);
     canReadCond_.wait_for(lock, std::chrono::milliseconds(ONE_SECONDS), [this, len]() {
-        return GetCrossTsBuffersize() >= len || IsAllDownloadFinish();
+        return GetCrossTsBuffersize() >= len || IsCurrentDownloadFinish();
     });
-    auto canRead = GetCrossTsBuffersize() >= len || IsAllDownloadFinish();
+    auto canRead = GetCrossTsBuffersize() >= len || IsCurrentDownloadFinish();
     if (!canRead) {
         MEDIA_LOG_I("HLS CheckCanReadOneSeconds out, can read: %{public}d, type: %{public}d", canRead, type_);
     }
     return canRead || playlistDownloader_->IsLive();
 }
 
-bool HlsSegmentManager::IsAllDownloadFinish()
+bool HlsSegmentManager::IsCurrentDownloadFinish()
 {
     return (CheckReadStatus() || isStopped) && GetSeekable() == Seekable::SEEKABLE &&
         tsStorageInfo_.find(readTsIndex_.load()) != tsStorageInfo_.end() &&
@@ -784,7 +783,6 @@ void HlsSegmentManager::PrepareToSeek()
     memorySize_ = totalBufferSize_;
     MEDIA_LOG_I("HLS Seek, reset cache media buffer, ret: %{public}d, size: %{public}zu, type: %{public}d",
         initRet, totalBufferSize_, type_);
-    memorySize_ = totalBufferSize_;
     canWrite_ = true;
 
     AutoLock lock(tsStorageInfoMutex_);
@@ -980,12 +978,6 @@ uint32_t HlsSegmentManager::SaveCacheBufferDataNotblock(uint8_t* data, uint32_t 
             MEDIA_LOG_I("HLS stop write, freeSize: " PUBLIC_LOG_U64 " len: " PUBLIC_LOG_U32
                 ",type: %{public}d", freeSize, len, type_);
         }
-    }
-    if (freeSize <= (len + STORP_WRITE_BUFFER_REDUNDANCY) && !isNeedResume_.load()) {
-        isNeedResume_.store(true);
-        MEDIA_LOG_I("HLS stop write, freeSize: " PUBLIC_LOG_U64 " len: " PUBLIC_LOG_U32 ", type: %{public}d",
-            freeSize, len, type_);
-        return 0;
     }
 
     size_t res = cacheMediaBuffer_->Write(data, writeOffset_, len);
@@ -2213,17 +2205,17 @@ uint64_t HlsSegmentManager::GetMemorySize()
     return memorySize_;
 }
 
-bool HlsSegmentManager::GetDownloadResumeThreshold()
+uint64_t HlsSegmentManager::GetDownloadResumeThreshold()
 {
     return GetMemorySize() * DOWNLOAD_RESUME_THRESHOLD_RATIO;
 }
 
-bool HlsSegmentManager::GetDownloadThrottleThreshold()
+uint64_t HlsSegmentManager::GetDownloadThrottleThreshold()
 {
     return GetMemorySize() * DOWNLOAD_THROTTLE_THRESHOLD_RATIO;
 }
 
-bool HlsSegmentManager::GetsourceLoaderClearThreshold()
+uint64_t HlsSegmentManager::GetsourceLoaderClearThreshold()
 {
     return GetMemorySize() * SOURCE_LOADER_CLEAR_THRESHOLD_RATIO;
 }
