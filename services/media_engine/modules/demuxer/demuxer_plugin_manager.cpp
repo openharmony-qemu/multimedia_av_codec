@@ -1090,7 +1090,7 @@ void DemuxerPluginManager::SetIsHlsFmp4(bool isHlsFmp4)
     isHlsFmp4_ = isHlsFmp4;
 }
 
-TrackType GetTmpTrackTypeByTrackID(int32_t trackId)
+TrackType DemuxerPluginManager::GetTmpTrackTypeByTrackID(int32_t trackId)
 {
     auto iter = temp2TrackInfoMap_.find(trackId);
     if (iter != temp2TrackInfoMap_.end()) {
@@ -1099,7 +1099,7 @@ TrackType GetTmpTrackTypeByTrackID(int32_t trackId)
     return GetTrackTypeByTrackID(trackId);
 }
 
-void UpdateTempTrackMapByStremId(int32_t oldTrackId, int32_t newStreamId, TrackType trackType)
+void DemuxerPluginManager::UpdateTempTrackMapByStremId(int32_t oldTrackId, int32_t newStreamId, TrackType trackType)
 {
     int32_t newTrackId = -1;
     int32_t newInnerTrackId = -1;
