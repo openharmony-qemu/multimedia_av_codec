@@ -276,7 +276,7 @@ Status Mpeg4MuxerPlugin::SetLocation(const std::shared_ptr<Meta> &param)
             hasAltitude_ = true;
             altitude_ = altitude;
         } else {
-            MEDIA_LOG_E("altitude must be in [-32768.0, 32767.0]");
+            MEDIA_LOG_W("The type of altitude is float, must be in [-32768.0, 32767.0]");
         }
     }
     latitude_ = latitude;
