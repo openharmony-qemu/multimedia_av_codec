@@ -3721,6 +3721,17 @@ Status FFmpegDemuxerPlugin::SeekToStartInternal()
     } else if (minTsPktInfo_.isInit) {
         seekTs = (static_cast<uint32_t>(pluginImpl_->flags) & AVFMT_SEEK_TO_PTS) &&
             !FFmpegFormatHelper::IsMpeg4File(fileType_) ? minTsPktInfo_.minPts : minTsPktInfo_.minDts;
+        if (fileType_ == FileType::RM) {
+            int64_t realSeekTime = 0;
+            int32_t trackId = minTsPktInfo_.streamIndex;
+            FALSE_RETURN_V_MSG_E(trackId >= 0 && trackId < static_cast<int32_t>(formatContext_->nb_streams),
+                Status::ERROR_INVALID_PARAMETER, "Invalid trackId " PUBLIC_LOG_D32, trackId);
+            auto avStream = formatContext_->streams[trackId];
+            realSeekTime = ConvertTimeFromFFmpeg(seekTs, avStream->time_base);
+            MEDIA_LOG_I("rm seekTo start. seekTs = " PUBLIC_LOG_D64 " realSeekTime = " PUBLIC_LOG_D64,
+                seekTs, realSeekTime);
+            return SeekToRmKeyFrame(SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime);
+        }
         ffRet = AVSeekFrameLock(minTsPktInfo_.streamIndex, seekTs, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
         MEDIA_LOG_I("av_seek_frame stream_index " PUBLIC_LOG_U32 " seekTs " PUBLIC_LOG_D64 " ffRet " PUBLIC_LOG_D32,
             minTsPktInfo_.streamIndex, seekTs, ffRet);
