@@ -3232,7 +3232,7 @@ void MediaDemuxer::BufferingStatus()
     }
     if (GetTrackIsBuffering(mainTrackId)) {
         int64_t percent = static_cast<int64_t>((sampleQueueMap_[mainTrackId]->NewGetCacheDuration() * 100) /
-            SampleQueueController::START_CONSUME_WATER_LOOP);
+            sampleQueueController_->GetPlayBufferingDuration());
         AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGI, LOG_INTERVAL_MS, LOG_MAX_COUNT,
             "BUFFERING_PERCENT: %{public}lld", percent);
         if (eventReceiver_) {
