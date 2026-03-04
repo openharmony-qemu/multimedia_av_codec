@@ -3141,7 +3141,7 @@ Status MediaDemuxer::CopyFrameToUserQueue(int32_t trackId)
     FALSE_RETURN_V_MSG_E(ret != Status::ERROR_NO_MEMORY, ret, "Get size failed for track " PUBLIC_LOG_D32, trackId);
     FALSE_RETURN_V_MSG_E(ret != Status::ERROR_WRONG_STATE, ret, " Get size interrupt");
     int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
-    bool isHlsSegmentEos = isHls_ && ret == Status::END_OF_STREAM && !source_->IsHlsEnd(streamId)
+    bool isHlsSegmentEos = isHls_ && ret == Status::END_OF_STREAM && !source_->IsHlsEnd(streamId);
     if (isHlsSegmentEos) {
         segmentEosMap_[trackId] = true;
     }
