@@ -4810,17 +4810,17 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_UpdateTrackMapTest_001, TestSi
     mediaDemuxer_->audioTrackId_ = NUM_1;
     int32_t defaultStreamId = 0;
 
-    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(mediaDemuxer_->videoTrackId_))
-        .WillOnce(Return(defaultStreamId));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_))
+        .WillRepeatedly(Return(defaultStreamId));
 
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpTrackTypeByTrackID(mediaDemuxer_->videoTrackId_))
         .WillOnce(Return(TrackType::TRACK_AUDIO));
-    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), UpdateTempTrackMapByStremId(mediaDemuxer_->audioTrackId_,
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), UpdateTempTrackMapByStremId(mediaDemuxer_->videoTrackId_,
         defaultStreamId, TRACK_VIDEO)).Times(1);
 
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpTrackTypeByTrackID(mediaDemuxer_->audioTrackId_))
         .WillOnce(Return(TrackType::TRACK_VIDEO));
-    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), UpdateTempTrackMapByStremId(mediaDemuxer_->videoTrackId_,
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), UpdateTempTrackMapByStremId(mediaDemuxer_->audioTrackId_,
         defaultStreamId, TRACK_AUDIO)).Times(1);
 
     mediaDemuxer_->UpdateTrackMap();
