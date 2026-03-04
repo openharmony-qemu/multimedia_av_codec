@@ -547,6 +547,7 @@ HWTEST_F(TEST_SUIT, SoftwareEncoderH264RGBA_TEST_002, TestSize.Level3)
 HWTEST_F(TEST_SUIT, SoftwareEncoderH264RGBA_TEST_003, TestSize.Level3)
 {
     IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat::RGBA);
+    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::RGBA);
     UpdateMetaData(pixelFormat, 0, AVCODEC_TYPE_VIDEO_ENCODER, 0, false);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_AVC);
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "RGBA");
@@ -566,6 +567,7 @@ HWTEST_F(TEST_SUIT, SoftwareEncoderH264RGBA_TEST_003, TestSize.Level3)
 HWTEST_F(TEST_SUIT, SoftwareEncoderH264RGBA_TEST_004, TestSize.Level3)
 {
     IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat::RGBA);
+    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::RGBA);
     UpdateMetaData(pixelFormat, 0, AVCODEC_TYPE_VIDEO_ENCODER, 0, false);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_AVC);
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "RGBA");
