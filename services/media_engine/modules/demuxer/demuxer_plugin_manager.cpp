@@ -404,6 +404,7 @@ void DemuxerPluginManager::DeleteTempTrackMapInfo(int32_t oldTrackId)
 void DemuxerPluginManager::UpdateTempTrackMapInfo(int32_t oldTrackId, int32_t newTrackId, int32_t newInnerTrackIndex)
 {
     temp2TrackInfoMap_[oldTrackId].streamID = trackInfoMap_[newTrackId].streamID;
+    temp2TrackInfoMap_[oldTrackId].trackID = newTrackId;
     if (newInnerTrackIndex == -1) {
         MEDIA_LOG_D("UpdateTempTrackMapInfo oldTrackId =  "  PUBLIC_LOG_D32 " newTrackId = " PUBLIC_LOG_D32
             " innerTrackIndex = " PUBLIC_LOG_D32, oldTrackId, newTrackId, trackInfoMap_[newTrackId].innerTrackIndex);
@@ -1087,6 +1088,23 @@ void DemuxerPluginManager::SetApiVersion(int32_t apiVersion)
 void DemuxerPluginManager::SetIsHlsFmp4(bool isHlsFmp4)
 {
     isHlsFmp4_ = isHlsFmp4;
+}
+
+TrackType GetTmpTrackTypeByTrackID(int32_t trackId)
+{
+    auto iter = temp2TrackInfoMap_.find(trackId);
+    if (iter != temp2TrackInfoMap_.end()) {
+        return GetTrackTypeByTrackID(iter->second.trackID);
+    }
+    return GetTrackTypeByTrackID(trackId);
+}
+
+void UpdateTempTrackMapByStremId(int32_t oldTrackId, int32_t newStreamId, TrackType trackType)
+{
+    int32_t newTrackId = -1;
+    int32_t newInnerTrackId = -1;
+    GetTrackInfoByStreamID(newStreamId, newTrackId, newInnerTrackId);
+    UpdateTempTrackMapInfo(oldTrackId, newTrackId, newInnerTrackId);
 }
 } // namespace Media
 } // namespace OHOS

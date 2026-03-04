@@ -1527,6 +1527,7 @@ Status MediaDemuxer::HandleSegmentEos(int32_t trackId)
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "HandleSegmentChange mixed failed");
     ret = (tmpTrackId == videoTrackId_ && IsValidTrackId(audioTrackId_)) ? InnerSelectTrack(audioTrackId_) : Status::OK;
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "HandleSegmentChange Select audio track failed");
+    UpdateTrackMap();
     if (IsAVInOneStream()) {
         for (auto &[track, isEos]: hlsSegmentEosMap_) {
             isEos = false;
@@ -1576,6 +1577,7 @@ Status MediaDemuxer::HandleHlsSeek()
         ret = (trackId == videoTrackId_ && IsValidTrackId(audioTrackId_)) ? InnerSelectTrack(audioTrackId_) :
             Status::OK;
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Select audio track failed");
+        UpdateTrackMap();
     } else {
         ret = HandleHlsRebootPlugin(audioTrackId_);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Reboot audio plugin failed");
@@ -4922,6 +4924,23 @@ void MediaDemuxer::SetTrackSeekNeedDrop(int32_t trackId, bool needDrop)
 {
     std::lock_guard<std::mutex> lock(afterSeekNeedDropMutex_);
     afterSeekNeedDrop_[trackId] = needDrop;
+}
+
+void MediaDemuxer::UpdateTrackMap()
+{
+    FALSE_RETURN_NOLOG(demuxerPluginManager_ != nullptr);
+    FALSE_RETURN_NOLOG(IsValidTrackId(videoTrackId_) && IsValidTrackId(audioTrackId_));
+
+    // Update track map in track type change case
+    int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID();
+    if (demuxerPluginManager_->GetTmpTrackTypeByTrackID(videoTrackId_) == TRACK_VIDEO) {
+        demuxerPluginManager_->UpdateTempTrackMapByStremId(videoTrackId_, streamId, TRACK_VIDEO);
+        InnerSelectTrack(videoTrackId_);
+    }
+    if (demuxerPluginManager_->GetTmpTrackTypeByTrackID(audioTrackId_) == TRACK_AUDIO) {
+        demuxerPluginManager_->UpdateTempTrackMapByStremId(audioTrackId_, streamId, TRACK_AUDIO);
+        InnerSelectTrack(audioTrackId_);
+    }
 }
 } // namespace Media
 } // namespace OHOS

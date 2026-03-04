@@ -4798,4 +4798,31 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoTrack_007, TestSize.Le
 
     EXPECT_EQ(mediaDemuxer_->lastVideoPts_, videoSample->pts_);
 }
+
+ /**
+  * @tc.name  : MediaDemuxerExt_UpdateTrackMapTest_001
+  * @tc.number: MediaDemuxerExt_UpdateTrackMapTest_001
+  * @tc.desc  : test UpdateTrackMap should update track map
+  */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_UpdateTrackMapTest_001, TestSize.Level1)
+{
+    mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->audioTrackId_ = NUM_1;
+    int32_t defaultStreamId = 0;
+
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(mediaDemuxer_->videoTrackId_))
+        .WillOnce(Return(defaultStreamId));
+
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpTrackTypeByTrackID(mediaDemuxer_->videoTrackId_))
+        .WillOnce(Return(TrackType::TRACK_AUDIO));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), UpdateTempTrackMapByStremId(mediaDemuxer_->audioTrackId_,
+        defaultStreamId, TRACK_VIDEO)).Times(1);
+
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpTrackTypeByTrackID(mediaDemuxer_->audioTrackId_))
+        .WillOnce(Return(TrackType::TRACK_VIDEO));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), UpdateTempTrackMapByStremId(mediaDemuxer_->videoTrackId_,
+        defaultStreamId, TRACK_AUDIO)).Times(1);
+
+    mediaDemuxer_->UpdateTrackMap();
+}
 }  // namespace OHOS::Media

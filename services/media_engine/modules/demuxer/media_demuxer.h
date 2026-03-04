@@ -413,6 +413,7 @@ private:
     void SetTrackSeekNeedDrop(int32_t trackId, bool needDrop);
     Status HandleSelectSubtitle(int64_t seekTime, Plugins::SeekMode mode, int32_t trackId);
     void ResetAfterSeek(Status ret);
+    void UpdateTrackMap();
 
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
