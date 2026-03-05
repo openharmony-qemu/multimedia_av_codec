@@ -1099,7 +1099,7 @@ TrackType DemuxerPluginManager::GetTmpTrackTypeByTrackID(int32_t trackId)
     return GetTrackTypeByTrackID(trackId);
 }
 
-void DemuxerPluginManager::UpdateTempTrackMapByStremId(int32_t oldTrackId, int32_t newStreamId, TrackType type)
+void DemuxerPluginManager::UpdateTempTrackMapByStreamId(int32_t oldTrackId, int32_t newStreamId, TrackType type)
 {
     int32_t newTrackId = -1;
     int32_t newInnerTrackId = -1;
