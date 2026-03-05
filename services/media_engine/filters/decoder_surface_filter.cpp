@@ -53,6 +53,7 @@ static const int64_t MICROSECONDS_CONVERT_UNIT = 1000; // ms change to us
 static const int64_t NS_PER_US = 1000; // us change to ns
 static const int64_t NS_PER_MS = 1000 * 1000; // ms change to ns
 static const uint32_t PREROLL_WAIT_TIME = 1000; // Lock wait for 1000ms.
+static const uint32_t SEEK_CLOSEST_WAIT_TIME = 4000; // Lock wait for 4000ms.
 static const uint32_t TASK_DELAY_TOLERANCE = 5 * 1000 * 1000; // task delay tolerance 5_000_000ns also 5ms
 static const int64_t MAX_DEBUG_LOG = 10;
 static const int32_t MAX_ADVANCE_US = 80000; // max advance us at render time
@@ -817,6 +818,7 @@ void DecoderSurfaceFilter::OnInterrupted(bool isInterruptNeeded)
     std::lock_guard<std::mutex> lock(prerollMutex_);
     isInterruptNeeded_ = isInterruptNeeded;
     prerollDoneCond_.notify_all();
+    closestSeekCond_.notify_all();
 }
 
 Status DecoderSurfaceFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
@@ -1286,7 +1288,8 @@ bool DecoderSurfaceFilter::DrainSeekClosest(uint32_t index, std::shared_ptr<AVBu
     MEDIA_LOG_I("Seek arrive target video pts: " PUBLIC_LOG_D64, seekTimeUs_);
     {
         std::unique_lock<std::mutex> lock(closestSeekMutex_);
-        closestSeekCond_.wait(lock, [this] { return isClosestSeekDone_.load() || isInterruptNeeded_.load(); });
+        closestSeekCond_.wait_for(lock, std::chrono::milliseconds(SEEK_CLOSEST_WAIT_TIME),
+            [this] { return isClosestSeekDone_.load() || isInterruptNeeded_.load(); });
     }
     isSeek_ = false;
     return false;
@@ -1351,13 +1354,12 @@ Status DecoderSurfaceFilter::SetDecryptConfig(const sptr<DrmStandard::IMediaKeyS
     return Status::OK;
 }
 
-void DecoderSurfaceFilter::SetSeekTime(int64_t seekTimeUs, PlayerSeekMode mode, bool needWait)
+void DecoderSurfaceFilter::SetSeekTime(int64_t seekTimeUs, PlayerSeekMode mode)
 {
     MEDIA_LOG_I("SetSeekTime");
     if (mode == PlayerSeekMode::SEEK_CLOSEST) {
         isSeek_ = true;
         seekTimeUs_ = seekTimeUs;
-        isClosestSeekDone_.store(!needWait);
     }
     FALSE_RETURN_NOLOG(postProcessor_ != nullptr);
     postProcessor_->SetSeekTime(seekTimeUs, mode);
@@ -1372,13 +1374,14 @@ void DecoderSurfaceFilter::ResetSeekInfo()
     postProcessor_->ResetSeekInfo();
 }
 
-void DecoderSurfaceFilter::ClosestSeekDone()
+void DecoderSurfaceFilter::ClosestSeekDone(bool isSeekDone)
 {
-    MEDIA_LOG_I("ClosestSeekDone");
+    MEDIA_LOG_I("ClosestSeekDone %{public}d", isSeekDone);
     {
         std::unique_lock<std::mutex> lock(closestSeekMutex_);
-        isClosestSeekDone_.store(true);
+        isClosestSeekDone_.store(isSeekDone);
     }
+    FALSE_RETURN_NOLOG(isSeekDone);
     closestSeekCond_.notify_one();
 }
 
