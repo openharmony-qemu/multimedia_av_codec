@@ -694,15 +694,13 @@ bool HlsSegmentManager::CheckCanReadOneSeconds(uint64_t wantReadLength)
     canReadCond_.wait_for(lock, std::chrono::milliseconds(ONE_SECONDS), [this, len]() {
         auto index = (!isFirstFrameArrived_ && type_ == HlsSegmentType::SEG_SUBTITLE) ?
             readTsIndex_.load() : writeTsIndex_;
-        return GetCrossTsBuffersize() >= len || (GetSeekable() == Seekable::SEEKABLE &&
-            tsStorageInfo_.find(index) != tsStorageInfo_.end() && tsStorageInfo_[index].second) ||
-            IsAllDownloadFinish();
+        return GetCrossTsBuffersize() >= len || (tsStorageInfo_.find(index) != tsStorageInfo_.end() &&
+            tsStorageInfo_[index].second && GetSeekable() == Seekable::SEEKABLE) || IsAllDownloadFinish();
     });
     auto index = (!isFirstFrameArrived_ && type_ == HlsSegmentType::SEG_SUBTITLE) ?
         readTsIndex_.load() : writeTsIndex_;
-    auto canRead = GetCrossTsBuffersize() >= len || (GetSeekable() == Seekable::SEEKABLE &&
-        tsStorageInfo_.find(index) != tsStorageInfo_.end() && tsStorageInfo_[index].second) ||
-        IsAllDownloadFinish();
+    auto canRead = GetCrossTsBuffersize() >= len || (tsStorageInfo_.find(index) != tsStorageInfo_.end() &&
+        tsStorageInfo_[index].second && GetSeekable() == Seekable::SEEKABLE) || IsAllDownloadFinish();
     if (!canRead) {
         MEDIA_LOG_I("HLS CheckCanReadOneSeconds out, can read: %{public}d, type: %{public}d", canRead, type_);
     }
@@ -711,9 +709,8 @@ bool HlsSegmentManager::CheckCanReadOneSeconds(uint64_t wantReadLength)
 
 bool HlsSegmentManager::IsAllDownloadFinish()
 {
-    return (CheckReadStatus() || isStopped) && GetSeekable() == Seekable::SEEKABLE &&
-        tsStorageInfo_.find(writeTsIndex_) != tsStorageInfo_.end() &&
-        tsStorageInfo_[writeTsIndex_].second;
+    return (CheckReadStatus() || isStopped) && tsStorageInfo_.find(writeTsIndex_) != tsStorageInfo_.end() &&
+        tsStorageInfo_[writeTsIndex_].second && GetSeekable() == Seekable::SEEKABLE;
 }
 
 Status HlsSegmentManager::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
