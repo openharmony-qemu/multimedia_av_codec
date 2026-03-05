@@ -63,7 +63,7 @@ public:
     MOCK_METHOD1(GetTmpStreamIDByTrackID, int32_t(int32_t trackId));
     MOCK_METHOD1(GetTmpInnerTrackIDByTrackID, int32_t(int32_t trackId));
     MOCK_METHOD3(UpdateTempTrackMapInfo, void(int32_t oldTrackId, int32_t newTrackId, int32_t newInnerTrackIndex));
-    MOCK_METHOD3(UpdateTempTrackMapByStremId, void(int32_t oldTrackId, int32_t newStreamId, TrackType type));
+    MOCK_METHOD3(UpdateTempTrackMapByStreamId, void(int32_t oldTrackId, int32_t newStreamId, TrackType type));
     MOCK_METHOD1(DeleteTempTrackMapInfo, void(int32_t oldTrackId));
 
     MOCK_METHOD1(GetInnerTrackIDByTrackID, int32_t(int32_t trackId));
