@@ -177,7 +177,8 @@ Status VideoDecoderAdapter::Configure(const Format &format)
     metaInfo->GetData(Tag::MIME_TYPE, codecMimeType_);
     if (codecMimeType_ != MediaAVCodec::CodecMimeType::VIDEO_VC1 &&
         codecMimeType_ != MediaAVCodec::CodecMimeType::VIDEO_WMV3 &&
-        codecMimeType_ != MediaAVCodec::CodecMimeType::VIDEO_RV30) {
+        codecMimeType_ != MediaAVCodec::CodecMimeType::VIDEO_RV30 &&
+        codecMimeType_ != MediaAVCodec::CodecMimeType::VIDEO_MPEG4) {
         metaInfoCopy->Remove(std::string(MediaDescriptionKey::MD_KEY_CODEC_CONFIG));
     }
     int32_t ret = mediaCodec_->Configure(formatCopy);
