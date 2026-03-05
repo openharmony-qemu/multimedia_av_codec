@@ -275,7 +275,7 @@ private:
     bool CheckDropAudioFrame(std::shared_ptr<AVBuffer> sample, int32_t trackId);
     bool IsTrackDisabled(Plugins::MediaType mediaType);
     bool CheckTrackEnabledById(int32_t trackId);
-    bool HandleDashChangeStream(int32_t trackId);
+    bool HandleDashChangeStream(int32_t trackId, bool isNeedAllEos = false);
 
     void GetMemoryUsage(int32_t trackId, std::shared_ptr<Plugins::DemuxerPlugin> &pluginTemp);
     void ReportMemoryUsage(int32_t trackId, std::shared_ptr<Plugins::DemuxerPlugin> &pluginTemp);

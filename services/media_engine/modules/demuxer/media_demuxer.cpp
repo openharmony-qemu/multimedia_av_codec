@@ -1510,7 +1510,6 @@ Status MediaDemuxer::UnselectTrack(uint32_t trackIndex)
 
 Status MediaDemuxer::HandleSegmentEos(int32_t trackId)
 {
-    segmentEosMap_[trackId] = true;
     FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER, "Plugin manager is nullptr");
     bool isAVInOneStream = IsAVInOneStream();
     Status ret = Status::OK;
@@ -3062,7 +3061,7 @@ void MediaDemuxer::TranscoderUpdateOutputBufferPts(int32_t trackId, std::shared_
     }
 }
 
-bool MediaDemuxer::HandleDashChangeStream(int32_t trackId)
+bool MediaDemuxer::HandleDashChangeStream(int32_t trackId, bool isNeedAllEos)
 {
     // the caller should insure demuxerPluginManager_ not nullptr and isDash_ true
     FALSE_RETURN_V_MSG_E(streamDemuxer_ != nullptr, false, "Stream is nullptr");
@@ -3073,7 +3072,7 @@ bool MediaDemuxer::HandleDashChangeStream(int32_t trackId)
     int32_t newStreamID = demuxerPluginManager_->GetStreamDemuxerNewStreamID(type, streamDemuxer_);
     bool ret = false;
     FALSE_RETURN_V_NOLOG(newStreamID != -1 && currentStreamID != newStreamID, ret);
-
+    FALSE_RETURN_V_NOLOG(!isNeedAllEos || !isHls_ || !IsAVInOneStream() || IsSegmentEos(), false);
     AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGE, LOG_INTERVAL_MS, LOG_MAX_COUNT,
         "Change stream begin, currentStreamID: " PUBLIC_LOG_D32 " newStreamID: " PUBLIC_LOG_D32,
         currentStreamID, newStreamID);
@@ -3141,12 +3140,16 @@ Status MediaDemuxer::CopyFrameToUserQueue(int32_t trackId)
         "Get size failed for track " PUBLIC_LOG_D32 ", retry", trackId);
     FALSE_RETURN_V_MSG_E(ret != Status::ERROR_NO_MEMORY, ret, "Get size failed for track " PUBLIC_LOG_D32, trackId);
     FALSE_RETURN_V_MSG_E(ret != Status::ERROR_WRONG_STATE, ret, " Get size interrupt");
-    if (demuxerPluginManager_->IsDash() && HandleDashChangeStream(trackId)) {
+    int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
+    bool isHlsSegmentEos = isHls_ && ret == Status::END_OF_STREAM && !source_->IsHlsEnd(streamId);
+    if (isHlsSegmentEos) {
+        segmentEosMap_[trackId] = true;
+    }
+    if (demuxerPluginManager_->IsDash() && HandleDashChangeStream(trackId, true)) {
         MEDIA_LOG_I("HandleDashChangeStream success");
         return Status::OK;
     }
-    int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
-    if (isHls_ && ret == Status::END_OF_STREAM && !source_->IsHlsEnd(streamId)) {
+    if (isHlsSegmentEos) {
         return HandleSegmentEos(trackId);
     }
     SetTrackNotifyFlag(trackId, true);
