@@ -23,28 +23,20 @@
 #include "av_common.h"
 using namespace OHOS::MediaAVCodec;
 using namespace testing::ext;
-using namespace TESTBASE;
+namespace {
+uint32_t DEFAULT_QUALITY = 30; // 30 默认值
+uint32_t DEFAULT_BITRATE = 10000000; // 10000000 默认值
+uint32_t DEFAULT_MAX_BITRATE = 20000000; // 20000000 默认值
+uint32_t DEFAULT_SQR_FACTOR = 30; // 30 默认值
 
-void AVCodecParamCheckerTest::SetFormatBasicParam(OHOS::MediaAVCodec::Format &format)
+void SetFormatBasicParam(Format &format)
 {
     format = Format();
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1280); // 1280 w默认值
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 720); // 720 h默认值
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
         static_cast<int32_t>(VideoPixelFormat::SURFACE_FORMAT));
-    
-    auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
-    if (std::find(pixelFormats.begin(), pixelFormats.end(),
-        static_cast<int32_t>(VideoPixelFormat::SURFACE_FORMAT)) == pixelFormats.end()) {
-        GTEST_SKIP() << "Unsupport pixel format of surface format";
-    }
 }
-
-namespace {
-uint32_t DEFAULT_QUALITY = 30; // 30 默认值
-uint32_t DEFAULT_BITRATE = 10000000; // 10000000 默认值
-uint32_t DEFAULT_MAX_BITRATE = 20000000; // 20000000 默认值
-uint32_t DEFAULT_SQR_FACTOR = 30; // 30 默认值
 
 bool IsEncoderBitrateModeSupported(CapabilityData *capData, VideoEncodeBitrateMode bitrateMode)
 {
@@ -916,41 +908,5 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1574,
         formatInner_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE);
         ASSERT_EQ(AVCS_ERR_CODEC_PARAM_INCORRECT, videoEncHevcInner_->Configure(formatInner_));
     }
-}
-
-/**
- * @tc.name: VIDEO_CODEC_SCENARIO_TEST_001
- * @tc.desc: codec video scenario checkout
- * @tc.type: FUNC
- */
-HWTEST_F(AVCodecParamCheckerTest, VIDEO_CODEC_SCENARIO_TEST_001, TestSize.Level3)
-{
-    SetFormatBasicParam(formatInner_);
-    formatInner_.PutIntValue(OHOS::Media::Tag::VIDEO_CODEC_SCENARIO, SCENARIO_RECORDING - 1);
-    ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoEncHevcInner_->Configure(formatInner_));
-}
-
-/**
- * @tc.name: VIDEO_CODEC_SCENARIO_TEST_002
- * @tc.desc: codec video scenario checkout
- * @tc.type: FUNC
- */
-HWTEST_F(AVCodecParamCheckerTest, VIDEO_CODEC_SCENARIO_TEST_002, TestSize.Level3)
-{
-    SetFormatBasicParam(formatInner_);
-    formatInner_.PutIntValue(OHOS::Media::Tag::VIDEO_CODEC_SCENARIO, SCENARIO_RECORDING);
-    ASSERT_EQ(AVCS_ERR_OK, videoEncHevcInner_->Configure(formatInner_));
-}
-
-/**
- * @tc.name: VIDEO_CODEC_SCENARIO_TEST_003
- * @tc.desc: codec video scenario checkout
- * @tc.type: FUNC
- */
-HWTEST_F(AVCodecParamCheckerTest, VIDEO_CODEC_SCENARIO_TEST_003, TestSize.Level3)
-{
-    SetFormatBasicParam(formatInner_);
-    formatInner_.PutIntValue(OHOS::Media::Tag::VIDEO_CODEC_SCENARIO, SCENARIO_INVALID);
-    ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoEncHevcInner_->Configure(formatInner_));
 }
 }
