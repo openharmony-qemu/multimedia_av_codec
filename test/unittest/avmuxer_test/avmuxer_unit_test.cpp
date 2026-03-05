@@ -1327,19 +1327,22 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Hevc_AddTrack_001, TestSize.Level0)
         FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, TEST_WIDTH, TEST_HEIGHT);
 
     videoParams->PutIntValue("video_delay", validVideoDelay);
-    avmuxer_->AddTrack(trackId, videoParams);
+    ret = avmuxer_->AddTrack(trackId, videoParams);
 
     videoParams->PutIntValue("video_delay", invalidVideoDelay);
     videoParams->PutDoubleValue(OH_MD_KEY_FRAME_RATE, validFrameRate);
-    avmuxer_->AddTrack(trackId, videoParams);
+    ret = avmuxer_->AddTrack(trackId, videoParams);
+    ASSERT_NE(ret, 0);
 
     videoParams->PutIntValue("video_delay", validVideoDelay);
     videoParams->PutDoubleValue(OH_MD_KEY_FRAME_RATE, invalidFrameRate);
-    avmuxer_->AddTrack(trackId, videoParams);
+    ret = avmuxer_->AddTrack(trackId, videoParams);
+    ASSERT_NE(ret, 0);
 
     videoParams->PutIntValue("video_delay", 0xFF);
     videoParams->PutDoubleValue(OH_MD_KEY_FRAME_RATE, validFrameRate);
-    avmuxer_->AddTrack(trackId, videoParams);
+    ret = avmuxer_->AddTrack(trackId, videoParams);
+    ASSERT_NE(ret, 0);
 
     videoParams->PutIntValue("video_delay", validVideoDelay);
     videoParams->PutDoubleValue(OH_MD_KEY_FRAME_RATE, validFrameRate);
