@@ -68,7 +68,7 @@ void AVCodecParamCheckerTest::SetUpTestCase(void)
 
     if (OH_AVCapability_GetEncoderBitrateRange(encoderCapability, &range) == AV_ERR_OK) {
         std::cout << "bitrate min = " << range.minVal << " bitrate max = " << range.maxVal << std::endl;
-        DEFAULT_BITRATE = (range.minVal + range.maxVal) /. DIVISOR;
+        DEFAULT_BITRATE = (range.minVal + range.maxVal) / DIVISOR;
     }
 
     const int32_t *pixFormats = nullptr;
@@ -136,7 +136,7 @@ namespace {
  * @tc.desc: codec video configure not exsit width
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest,  , TestSize.Level3)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_WIDTH_INVALID_TEST_0101, TestSize.Level3)
 {
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_PIXEL_FORMAT, ENCODER_PIXEL_FORMAT));
