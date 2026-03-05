@@ -2140,7 +2140,11 @@ Status FFmpegDemuxerPlugin::AccumulateXpsPkt(Plugins::AVPacketWrapperPtr pkt)
             return Status::ERROR_INVALID_DATA;
         }
         ffRet = av_grow_packet(dstPkt, pktSize);
-        FALSE_RETURN_V_MSG_E(ffRet >= 0, Status::ERROR_INVALID_DATA, "Call av_grow_packet failed");
+        if (ffRet < 0) {
+            AccumulateXpsPktRelease(trackIndex);
+            MEDIA_LOG_E("Call av_grow_packet failed, ret:" PUBLIC_LOG_D32, ffRet);
+            return Status::ERROR_INVALID_DATA;
+        }
         uint8_t* dstPos = dstPkt->data + (dstPkt->size - pktSize);
         const uint8_t* srcPos = pkt->GetData();
         if (dstPos < dstPkt->data || dstPos > dstPkt->data + dstPkt->size || srcPos == nullptr) {
