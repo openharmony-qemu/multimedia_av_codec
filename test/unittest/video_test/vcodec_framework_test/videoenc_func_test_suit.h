@@ -40,6 +40,7 @@ public:
     bool GetWaterMarkCapability(int32_t param);
     bool GetTemporalScalabilityCapability(int32_t param);
     bool GetTemporalScalabilityCapability(int32_t param, bool isTemporalScalability);
+    void IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat pixelFormat);
     static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, STRINGFY(TEST_SUIT)};
 
 protected:
@@ -119,6 +120,14 @@ bool TEST_SUIT::CreateVideoCodecByName(const std::string &name)
         }
     }
     return true;
+}
+
+void TEST_SUIT::IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat pixelFormat)
+{
+    auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
+    if (std::find(pixelFormats.begin(), pixelFormats.end(), static_cast<int32_t>(pixelFormat)) == pixelFormats.end()) {
+        GTEST_SKIP() << "Unsupport pixel format = " << static_cast<int32_t>(pixelFormat);
+    }
 }
 } // namespace VFTSUIT
 #endif //VIDEOENC_FUNC_TEST_SUIT_H

@@ -46,6 +46,7 @@ public:
     void CreateByNameWithParam(int32_t param);
     void SetFormatWithParam(int32_t param);
     void PrepareSource();
+    void IsPixelFormatSupported(VideoPixelFormat pixelFormat);
 
 protected:
     std::shared_ptr<CodecListMock> capability_ = nullptr;
@@ -136,6 +137,14 @@ void TEST_SUIT::CreateByNameWithParam(int32_t param)
     ASSERT_TRUE(CreateVideoCodecByName(codecName));
 }
 
+void TEST_SUIT::IsPixelFormatSupported(VideoPixelFormat pixelFormat)
+{
+    auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
+    if (std::find(pixelFormats.begin(), pixelFormats.end(), static_cast<int32_t>(pixelFormat)) == pixelFormats.end()) {
+        GTEST_SKIP() << "Unsupport pixel format = " << static_cast<int32_t>(pixelFormat);
+    }
+}
+
 void TEST_SUIT::PrepareSource()
 {
     const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
@@ -188,19 +197,17 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Format_Capi_001, TestSize.Level1)
  */
 HWTEST_F(TEST_SUIT, VideoEncoder_Format_Capi_002, TestSize.Level1)
 {
-    auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
-    if (std::find(pixelFormats.begin(), pixelFormats.end(), VCodecPixelFormat::RGBA1010102) != pixelFormats.end()) {
-        CreateByNameWithParam(HW_HEVC);
-        SetFormatWithParam(RGBA1010102);
-        PrepareSource();
-        auto ret = videoEnc_->Configure(format_);
-        if (ret != AV_ERR_OK) {
-            return;
-        }
-        ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
-        EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-        EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+    CreateByNameWithParam(HW_HEVC);
+    IsPixelFormatSupported(RGBA1010102);
+    SetFormatWithParam(RGBA1010102);
+    PrepareSource();
+    auto ret = videoEnc_->Configure(format_);
+    if (ret != AV_ERR_OK) {
+        return;
     }
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 
 /**
@@ -210,20 +217,18 @@ HWTEST_F(TEST_SUIT, VideoEncoder_Format_Capi_002, TestSize.Level1)
  */
 HWTEST_F(TEST_SUIT, VideoEncoder_Format_Capi_003, TestSize.Level1)
 {
-    auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
-    if (std::find(pixelFormats.begin(), pixelFormats.end(), VCodecPixelFormat::RGBA1010102) != pixelFormats.end()) {
-        videoEnc_->isAVBufferMode_ = true;
-        CreateByNameWithParam(HW_HEVC);
-        SetFormatWithParam(RGBA1010102);
-        format_->PutIntValue(MediaDescriptionKey::MD_KEY_PROFILE, OH_HEVCProfile::HEVC_PROFILE_MAIN_10);
-        PrepareSource();
-        auto ret = videoEnc_->Configure(format_);
-        if (ret != AV_ERR_OK) {
-            return;
-        }
-        EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-        EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+    videoEnc_->isAVBufferMode_ = true;
+    CreateByNameWithParam(HW_HEVC);
+    IsPixelFormatSupported(RGBA1010102);
+    SetFormatWithParam(RGBA1010102);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PROFILE, OH_HEVCProfile::HEVC_PROFILE_MAIN_10);
+    PrepareSource();
+    auto ret = videoEnc_->Configure(format_);
+    if (ret != AV_ERR_OK) {
+        return;
     }
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 
 } // namespace

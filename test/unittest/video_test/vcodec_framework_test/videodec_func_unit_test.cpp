@@ -514,8 +514,8 @@ HWTEST_P(TEST_SUIT, VideoDecoder_SetParameter_Transform_002, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_SetParameter_001, TestSize.Level1)
 {
-    IsPixelFormatSupported(VideoPixelFormat::YUV420P);
     CreateByNameWithParam(GetParam());
+    IsPixelFormatSupported(VideoPixelFormat::YUV420P);
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
@@ -540,8 +540,8 @@ HWTEST_P(TEST_SUIT, VideoDecoder_SetParameter_001, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_SetParameter_002, TestSize.Level1)
 {
-    IsPixelFormatSupported(VideoPixelFormat::YUV420P);
     CreateByNameWithParam(GetParam());
+    IsPixelFormatSupported(VideoPixelFormat::YUV420P);
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));

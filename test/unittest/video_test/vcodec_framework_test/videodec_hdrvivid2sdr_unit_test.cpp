@@ -619,11 +619,11 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1121, TestSize.Level1)
  */
 HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1131, TestSize.Level1)
 {
-    IsPixelFormatSupported(VideoPixelFormat::NV21);
     auto params = GetParam();
     std::string_view mimeType = std::get<0>(params);
     ResourceType resourceType = std::get<1>(params);
     CreateByNameWithParam(mimeType.data());
+    IsPixelFormatSupported(VideoPixelFormat::NV21);
     SetFormatWithParam(VideoPixelFormat::NV21);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
@@ -642,11 +642,11 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1131, TestSize.Level1)
  */
 HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1141, TestSize.Level1)
 {
-    IsPixelFormatSupported(VideoPixelFormat::NV21);
     auto params = GetParam();
     std::string_view mimeType = std::get<0>(params);
     ResourceType resourceType = std::get<1>(params);
     CreateByNameWithParam(mimeType.data());
+    IsPixelFormatSupported(VideoPixelFormat::NV21);
     SetFormatWithParam(VideoPixelFormat::NV21);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
@@ -666,11 +666,11 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1141, TestSize.Level1)
  */
 HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1151, TestSize.Level1)
 {
-    IsPixelFormatSupported(VideoPixelFormat::NV21);
     auto params = GetParam();
     std::string_view mimeType = std::get<0>(params);
     ResourceType resourceType = std::get<1>(params);
     CreateByNameWithParam(mimeType.data());
+    IsPixelFormatSupported(VideoPixelFormat::NV21);
     SetFormatWithParam(VideoPixelFormat::NV21);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
@@ -690,10 +690,10 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1151, TestSize.Level1)
  */
 HWTEST_F(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1161, TestSize.Level1)
 {
-    IsPixelFormatSupported(VideoPixelFormat::NV21);
     std::string_view mimeType = CodecMimeType::VIDEO_HEVC;
     ResourceType resourceType = ResourceType::HDR;
     CreateByNameWithParam(mimeType);
+    IsPixelFormatSupported(VideoPixelFormat::NV21);
     SetFormatWithParam(VideoPixelFormat::NV21);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
@@ -718,10 +718,10 @@ HWTEST_F(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1161, TestSize.Level1)
  */
 HWTEST_F(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1162, TestSize.Level1)
 {
-    IsPixelFormatSupported(VideoPixelFormat::NV21);
     std::string_view mimeType = CodecMimeType::VIDEO_HEVC;
     ResourceType resourceType = ResourceType::HDR_HLG_FULL;
     CreateByNameWithParam(mimeType);
+    IsPixelFormatSupported(VideoPixelFormat::NV21);
     SetFormatWithParam(VideoPixelFormat::NV21);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
@@ -743,11 +743,11 @@ HWTEST_F(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1162, TestSize.Level1)
  */
 HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1171, TestSize.Level1)
 {
-    IsPixelFormatSupported(VideoPixelFormat::NV21);
     auto params = GetParam();
     std::string_view mimeType = std::get<0>(params);
     ResourceType resourceType = std::get<1>(params);
     CreateByNameWithParam(mimeType.data());
+    IsPixelFormatSupported(VideoPixelFormat::NV21);
     SetFormatWithParam(VideoPixelFormat::NV21);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
@@ -894,11 +894,11 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1221, TestSize.Level1)
  */
 HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_2011, TestSize.Level1)
 {
-    IsPixelFormatSupported(VideoPixelFormat::RGBA);
     auto params = GetParam();
     std::string_view mimeType = std::get<0>(params);
     ResourceType resourceType = std::get<1>(params);
     CreateByNameWithParam(mimeType.data());
+    IsPixelFormatSupported(VideoPixelFormat::RGBA);
     SetFormatWithParam(VideoPixelFormat::RGBA);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
@@ -954,11 +954,11 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_2031, TestSize.Level1)
  */
 HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_2041, TestSize.Level1)
 {
-    IsPixelFormatSupported(VideoPixelFormat::RGBA);
     auto params = GetParam();
     std::string_view mimeType = std::get<0>(params);
     ResourceType resourceType = std::get<1>(params);
     CreateByNameWithParam(mimeType.data());
+    IsPixelFormatSupported(VideoPixelFormat::RGBA);
     SetFormatWithParam(VideoPixelFormat::RGBA);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,

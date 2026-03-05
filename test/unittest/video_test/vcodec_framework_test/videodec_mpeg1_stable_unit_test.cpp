@@ -110,8 +110,11 @@ HWMTEST_F(VideoDecMpeg1DecTest, VideoDecoder_mpeg1decoder_Release_001, TestSize.
 HWMTEST_F(VideoDecMpeg1DecTest, VideoDecoder_mpeg1decoder_Create_AVBuffer_001, TestSize.Level1,
           VideoDecSample::threadNum_)
 {
-    std::shared_ptr<OHOS::MediaAVCodec::CodecListMock> capability_ = nullptr;
-    auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
+    std::shared_ptr<CodecListMock> capability = nullptr;
+    capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_MPEG1).data(), false,
+                                                                AVCodecCategory::AVCODEC_SOFTWARE);
+    ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_MPEG1).data() << " can not found!" << std::endl;
+    auto pixelFormats = capability->GetVideoSupportedPixelFormats();
     if (std::find(pixelFormats.begin(), pixelFormats.end(), static_cast<int32_t>(VideoPixelFormat::RGBA)) !=
         pixelFormats.end()) {
         auto vdec = make_shared<VideoDecSample>();

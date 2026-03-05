@@ -35,7 +35,7 @@ namespace {
 class TEST_SUIT : public testing::Test {
 public:
     static void SetUpTestCase(void);
-    static void TearDownTestCase(void){};
+    static void TearDownTestCase(void);
     void SetUp(void);
     void TearDown(void);
     void UpdateMetaData(int32_t pixelFormat, int32_t bitDepth, AVCodecType codecType, int32_t isHardware,
@@ -47,7 +47,17 @@ public:
     std::shared_ptr<InstanceMemoryUpdateEventHandler> instanceMemoryHandler_ = nullptr;
 };
 
-void TEST_SUIT::SetUpTestCase(void) {}
+void TEST_SUIT::SetUpTestCase(void)
+{
+    capability_ = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), false,
+                                                                 AVCodecCategory::AVCODEC_HARDWARE);
+    ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_AVC).data() << " can not found!" << std::endl;
+}
+
+void TEST_SUIT::TearDownTestCase(void)
+{
+    capability_ = nullptr;
+}
 
 void TEST_SUIT::SetUp(void)
 {

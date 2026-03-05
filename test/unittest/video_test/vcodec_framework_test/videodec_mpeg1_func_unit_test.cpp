@@ -874,8 +874,8 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Abnormal_004, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_SetParameter_001, TestSize.Level1)
 {
-    IsPixelFormatSupported(VideoPixelFormat::RGBA);
     CreateByNameWithParam(GetParam());
+    IsPixelFormatSupported(VideoPixelFormat::RGBA);
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
@@ -900,8 +900,8 @@ HWTEST_P(TEST_SUIT, VideoDecoder_SetParameter_001, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_SetParameter_002, TestSize.Level1)
 {
-    IsPixelFormatSupported(VideoPixelFormat::RGBA);
     CreateByNameWithParam(GetParam());
+    IsPixelFormatSupported(VideoPixelFormat::RGBA);
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));

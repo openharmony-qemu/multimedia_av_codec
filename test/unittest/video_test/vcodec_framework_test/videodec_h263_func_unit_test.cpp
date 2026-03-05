@@ -837,8 +837,8 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Release_003, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_RGBA_001, TestSize.Level1)
 {
-    IsPixelFormatSupported(VideoPixelFormat::RGBA);
     CreateByNameWithParam(GetParam());
+    IsPixelFormatSupported(VideoPixelFormat::RGBA);
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
@@ -855,8 +855,8 @@ HWTEST_P(TEST_SUIT, VideoDecoder_RGBA_001, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_YUVI420_001, TestSize.Level1)
 {
-    IsPixelFormatSupported(VideoPixelFormat::YUVI420);
     CreateByNameWithParam(GetParam());
+    IsPixelFormatSupported(VideoPixelFormat::YUVI420);
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
@@ -873,8 +873,8 @@ HWTEST_P(TEST_SUIT, VideoDecoder_YUVI420_001, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_NV21_001, TestSize.Level1)
 {
-    IsPixelFormatSupported(VideoPixelFormat::NV21);
     CreateByNameWithParam(GetParam());
+    IsPixelFormatSupported(VideoPixelFormat::NV21);
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
@@ -1041,8 +1041,8 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Abnormal_004, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_SetParameter_001, TestSize.Level1)
 {
-    IsPixelFormatSupported(VideoPixelFormat::YUV420P);
     CreateByNameWithParam(GetParam());
+    IsPixelFormatSupported(VideoPixelFormat::YUV420P);
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
@@ -1067,8 +1067,8 @@ HWTEST_P(TEST_SUIT, VideoDecoder_SetParameter_001, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_SetParameter_002, TestSize.Level1)
 {
-    IsPixelFormatSupported(VideoPixelFormat::YUV420P);
     CreateByNameWithParam(GetParam());
+    IsPixelFormatSupported(VideoPixelFormat::YUV420P);
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
