@@ -4934,11 +4934,11 @@ void MediaDemuxer::UpdateTrackMap()
     // Update track map in track type change case
     int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(videoTrackId_);
     if (demuxerPluginManager_->GetTmpTrackTypeByTrackID(videoTrackId_) != TRACK_VIDEO) {
-        demuxerPluginManager_->UpdateTempTrackMapByStremId(videoTrackId_, streamId, TRACK_VIDEO);
+        demuxerPluginManager_->UpdateTempTrackMapByStreamId(videoTrackId_, streamId, TRACK_VIDEO);
         InnerSelectTrack(videoTrackId_);
     }
     if (demuxerPluginManager_->GetTmpTrackTypeByTrackID(audioTrackId_) != TRACK_AUDIO) {
-        demuxerPluginManager_->UpdateTempTrackMapByStremId(audioTrackId_, streamId, TRACK_AUDIO);
+        demuxerPluginManager_->UpdateTempTrackMapByStreamId(audioTrackId_, streamId, TRACK_AUDIO);
         InnerSelectTrack(audioTrackId_);
     }
 }

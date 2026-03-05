@@ -4815,12 +4815,12 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_UpdateTrackMapTest_001, TestSi
 
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpTrackTypeByTrackID(mediaDemuxer_->videoTrackId_))
         .WillOnce(Return(TrackType::TRACK_AUDIO));
-    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), UpdateTempTrackMapByStremId(mediaDemuxer_->videoTrackId_,
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), UpdateTempTrackMapByStreamId(mediaDemuxer_->videoTrackId_,
         defaultStreamId, TRACK_VIDEO)).Times(1);
 
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpTrackTypeByTrackID(mediaDemuxer_->audioTrackId_))
         .WillOnce(Return(TrackType::TRACK_VIDEO));
-    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), UpdateTempTrackMapByStremId(mediaDemuxer_->audioTrackId_,
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), UpdateTempTrackMapByStreamId(mediaDemuxer_->audioTrackId_,
         defaultStreamId, TRACK_AUDIO)).Times(1);
 
     mediaDemuxer_->UpdateTrackMap();
