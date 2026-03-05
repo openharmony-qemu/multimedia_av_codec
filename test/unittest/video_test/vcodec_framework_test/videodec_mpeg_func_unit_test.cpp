@@ -51,6 +51,7 @@ public:
     static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, STRINGFY(TEST_SUIT)};
 
 protected:
+    std::shared_ptr<OHOS::MediaAVCodec::CodecListMock> capability_ = nullptr;
     std::shared_ptr<VideoDecSample> videoDec_ = nullptr;
     std::shared_ptr<FormatMock> format_ = nullptr;
     std::shared_ptr<VDecCallbackTest> vdecCallback_ = nullptr;

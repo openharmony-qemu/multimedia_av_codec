@@ -49,15 +49,12 @@ public:
 
 void TEST_SUIT::SetUpTestCase(void)
 {
-    capability_ = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), false,
-                                                                 AVCodecCategory::AVCODEC_HARDWARE);
+    auto capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), true,
+                                                                     AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_AVC).data() << " can not found!" << std::endl;
 }
 
-void TEST_SUIT::TearDownTestCase(void)
-{
-    capability_ = nullptr;
-}
+void TEST_SUIT::TearDownTestCase(void) {}
 
 void TEST_SUIT::SetUp(void)
 {
@@ -75,6 +72,8 @@ void TEST_SUIT::TearDown(void)
 
 void TEST_SUIT::IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat pixelFormat)
 {
+    capability_ = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), true,
+                                                                 AVCodecCategory::AVCODEC_HARDWARE);
     auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
     if (std::find(pixelFormats.begin(), pixelFormats.end(), static_cast<int32_t>(pixelFormat)) == pixelFormats.end()) {
         GTEST_SKIP() << "Unsupport pixel format = " << static_cast<int32_t>(pixelFormat);

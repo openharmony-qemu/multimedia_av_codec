@@ -27,8 +27,8 @@ constexpr uint32_t DEFAULT_WIDTH = 4096;
 constexpr uint32_t DEFAULT_HEIGHT = 4096;
 class CodecServerUnitTest : public testing::Test {
 public:
-    static void SetUpTestCase(void);
-    static void TearDownTestCase(void);
+    static void SetUpTestCase(void){};
+    static void TearDownTestCase(void){};
     void SetUp(void);
     void TearDown(void);
 
@@ -63,6 +63,15 @@ inline void CodecServerUnitTest::SetUp(void)
     validFormat_.PutIntValue(Tag::VIDEO_WIDTH, DEFAULT_WIDTH);
     validFormat_.PutIntValue(Tag::VIDEO_HEIGHT, DEFAULT_HEIGHT);
     validFormat_.PutIntValue(Tag::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::YUVI420));
+
+    capability_ = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), false,
+                                                                 AVCodecCategory::AVCODEC_HARDWARE);
+    ASSERT_NE(nullptr, capability_) << (CodecMimeType::VIDEO_AVC).data() << " can not found!" << std::endl;
+    auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
+    if (std::find(pixelFormats.begin(), pixelFormats.end(), static_cast<int32_t>(VideoPixelFormat::YUVI420)) ==
+        pixelFormats.end()) {
+        GTEST_SKIP() << "Unsupport pixel format of YUVI420";
+    }
 }
 
 inline void CodecServerUnitTest::TearDown(void)
@@ -71,23 +80,6 @@ inline void CodecServerUnitTest::TearDown(void)
     server_ = nullptr;
     codecBaseMock_ = nullptr;
     validFormat_ = Format();
-}
-
-static void CodecServerUnitTest::SetUpTestCase(void)
-{
-    capability_ = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), false,
-                                                                    AVCodecCategory::AVCODEC_HARDWARE);
-    ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_AVC).data() << " can not found!" << std::endl;
-    auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
-    if (std::find(pixelFormats.begin(), pixelFormats.end(), static_cast<int32_t>(VideoPixelFormat::YUVI420)) ==
-        pixelFormats.end()) {
-        GTEST_SKIP() << "Unsupport pixel format of YUVI420";
-    }
-}
-
-static void CodecServerUnitTest::TearDownTestCase(void)
-{
-    capability_ = nullptr;
 }
 } // name space MediaAVCodec
 } // namespace OHOS

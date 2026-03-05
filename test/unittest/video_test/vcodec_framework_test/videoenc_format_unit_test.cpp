@@ -198,7 +198,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Format_Capi_001, TestSize.Level1)
 HWTEST_F(TEST_SUIT, VideoEncoder_Format_Capi_002, TestSize.Level1)
 {
     CreateByNameWithParam(HW_HEVC);
-    IsPixelFormatSupported(RGBA1010102);
+    IsPixelFormatSupported(VideoPixelFormat::RGBA1010102);
     SetFormatWithParam(RGBA1010102);
     PrepareSource();
     auto ret = videoEnc_->Configure(format_);
@@ -219,7 +219,7 @@ HWTEST_F(TEST_SUIT, VideoEncoder_Format_Capi_003, TestSize.Level1)
 {
     videoEnc_->isAVBufferMode_ = true;
     CreateByNameWithParam(HW_HEVC);
-    IsPixelFormatSupported(RGBA1010102);
+    IsPixelFormatSupported(VideoPixelFormat::RGBA1010102);
     SetFormatWithParam(RGBA1010102);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PROFILE, OH_HEVCProfile::HEVC_PROFILE_MAIN_10);
     PrepareSource();
