@@ -135,6 +135,10 @@ public:
     Status GetStreamInfo(std::vector<StreamInfo>& streams);
     bool IsHlsFmp4();
     uint64_t GetMemorySize();
+    uint64_t GetDownloadResumeThreshold();
+    uint64_t GetDownloadThrottleThreshold();
+    uint64_t GetsourceLoaderClearThreshold();
+    void ClearChunksInLargeSegment();
     std::string GetContentType();
     bool IsHlsEnd();
     bool SelectMedia(int32_t streamId, HlsSegmentType mediaType);
@@ -221,7 +225,7 @@ private:
     void SetDownloadRequest(std::shared_ptr<DownloadRequest> downloadRequest);
     std::shared_ptr<DownloadRequest> GetDownloadRequest();
     bool CheckCanReadOneSeconds(uint64_t wantReadLength);
-    bool IsAllDownloadFinish();
+    bool IsCurrentDownloadFinish();
     void PlayListChanged(const std::vector<PlayInfo>& playList);
 
 private:
