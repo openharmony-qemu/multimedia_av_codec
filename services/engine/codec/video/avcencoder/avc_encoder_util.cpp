@@ -58,7 +58,7 @@ AVCodecBufferFlag AvcFrameTypeToBufferFlag(uint32_t frameType)
     AVCodecBufferFlag flag = AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_NONE;
     switch (frameType) {
         case AVC_ENCODER_P_FRAMETYPE:
-            flag = AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_PARTIAL_FRAME;
+            flag = AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_NONE;
             break;
         case AVC_ENCODER_I_FRAMETYPE:
             flag = AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME;
