@@ -139,7 +139,7 @@ using SegmentBufferingCbFunc = std::function<void(int, BufferingInfoType)>;
 
 class DashSegmentDownloader : public std::enable_shared_from_this<DashSegmentDownloader> {
 public:
-    DashSegmentDownloader(Callback *callback, int streamId, MediaAVCodec::MediaType streamType,
+    DashSegmentDownloader(const std::shared_ptr<Callback>& callback, int streamId, MediaAVCodec::MediaType streamType,
                           uint64_t expectDuration, std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader);
     virtual ~DashSegmentDownloader();
 
@@ -264,7 +264,7 @@ private:
     SteadyClock steadyClock_;
 
     // play water line
-    Callback* callback_{nullptr};
+    std::weak_ptr<Callback> callback_;
     uint32_t waterLineAbove_{0};
     std::atomic<bool> isBuffering_{false};
     uint32_t downloadBiteRate_{0};

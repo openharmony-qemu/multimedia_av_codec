@@ -863,7 +863,7 @@ Seekable HlsSegmentManager::GetSeekable() const
     return playlistDownloader_->GetSeekable();
 }
 
-void HlsSegmentManager::SetCallback(Callback* cb)
+void HlsSegmentManager::SetCallback(const std::shared_ptr<Callback>& cb)
 {
     FALSE_RETURN(playlistDownloader_ != nullptr);
     callback_ = cb;
@@ -1318,13 +1318,14 @@ bool HlsSegmentManager::SelectBitRate(uint32_t bitRate)
         // audio do not auto select bitrate
         return true;
     }
-    if (callback_ && isAutoSelectBitrate_ && !CheckReadStatus()) {
+    auto callback = callback_.lock();
+    if (callback && isAutoSelectBitrate_ && !CheckReadStatus()) {
         bool switchFlag = true;
-        switchFlag = callback_->CanAutoSelectBitRate();
+        switchFlag = callback->CanAutoSelectBitRate();
         if (!switchFlag) {
             return true;
         }
-        callback_->SetSelectBitRateFlag(true, bitRate);
+        callback->SetSelectBitRateFlag(true, bitRate);
     }
     if (isEos_) {
         MEDIA_LOG_I("HLS download done, type: %{public}d", type_);

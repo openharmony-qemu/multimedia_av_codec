@@ -1327,19 +1327,22 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Hevc_AddTrack_001, TestSize.Level0)
         FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, TEST_WIDTH, TEST_HEIGHT);
 
     videoParams->PutIntValue("video_delay", validVideoDelay);
-    avmuxer_->AddTrack(trackId, videoParams);
+    ret = avmuxer_->AddTrack(trackId, videoParams);
 
     videoParams->PutIntValue("video_delay", invalidVideoDelay);
     videoParams->PutDoubleValue(OH_MD_KEY_FRAME_RATE, validFrameRate);
-    avmuxer_->AddTrack(trackId, videoParams);
+    ret = avmuxer_->AddTrack(trackId, videoParams);
+    ASSERT_NE(ret, 0);
 
     videoParams->PutIntValue("video_delay", validVideoDelay);
     videoParams->PutDoubleValue(OH_MD_KEY_FRAME_RATE, invalidFrameRate);
-    avmuxer_->AddTrack(trackId, videoParams);
+    ret = avmuxer_->AddTrack(trackId, videoParams);
+    ASSERT_NE(ret, 0);
 
     videoParams->PutIntValue("video_delay", 0xFF);
     videoParams->PutDoubleValue(OH_MD_KEY_FRAME_RATE, validFrameRate);
-    avmuxer_->AddTrack(trackId, videoParams);
+    ret = avmuxer_->AddTrack(trackId, videoParams);
+    ASSERT_NE(ret, 0);
 
     videoParams->PutIntValue("video_delay", validVideoDelay);
     videoParams->PutDoubleValue(OH_MD_KEY_FRAME_RATE, validFrameRate);
@@ -2605,6 +2608,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_DefinedKey_001, TestSize.Level0)
     audioParams->PutStringValue(Tag::MEDIA_CREATION_TIME, "2023-12-19T03:16:00.000000Z");
     audioParams->PutLongValue(Tag::MEDIA_BITRATE, 128000);
     audioParams->PutFloatValue(Tag::MEDIA_LATITUDE, 22.67f);
+    audioParams->PutFloatValue(Tag::MEDIA_LONGITUDE, 45.67f);
     int32_t ret = avmuxer_->SetFormat(audioParams);
     ASSERT_EQ(ret, 0);
 }
@@ -2628,6 +2632,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_DefinedKey_002, TestSize.Level0)
     audioParams->PutIntValue(Tag::AUDIO_SAMPLE_RATE, 48000);
     audioParams->PutLongValue(Tag::MEDIA_BITRATE, 128000);
     audioParams->PutFloatValue(Tag::MEDIA_LATITUDE, 22.67f);
+    audioParams->PutFloatValue(Tag::MEDIA_LONGITUDE, 45.67f);
     int32_t ret = avmuxer_->SetFormat(audioParams);
     ASSERT_EQ(ret, 0);
 }

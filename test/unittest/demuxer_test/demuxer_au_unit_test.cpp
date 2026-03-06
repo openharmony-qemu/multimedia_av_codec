@@ -149,8 +149,8 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_0003, TestSize.Level1)
         }
     }
     printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
-    ASSERT_EQ(frames_[0], 33);
-    ASSERT_EQ(keyFrames_[0], 33);
+    ASSERT_EQ(frames_[0], 79);
+    ASSERT_EQ(keyFrames_[0], 79);
     RemoveValue();
     ASSERT_EQ(demuxer_->UnselectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->UnselectTrackByID(1), AV_ERR_OK);
@@ -172,7 +172,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_0004, TestSize.Level1)
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
     list<int64_t> toPtsList = {0, 1000, 1500, 2000, 2900}; // ms
-    vector<int32_t> audioVals = {33, 33, 33, 22, 22, 22, 17, 17, 17, 11, 11, 11, 2, 2, 2};
+    vector<int32_t> audioVals = {79, 79, 79, 63, 63, 63, 55, 55, 55, 47, 47, 47, 33, 33, 33};
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {

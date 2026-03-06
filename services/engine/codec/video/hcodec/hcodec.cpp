@@ -1501,6 +1501,7 @@ int32_t HCodec::OnAllocateComponent()
         HLOGE("GetCodecComponentManager failed");
         return AVCS_ERR_UNKNOWN;
     }
+    maxDecInst_ = GetMaxDecInstCnt();
     compCb_ = new HdiCallback(m_token);
     int32_t ret = compMgr_->CreateComponent(compNode_, componentId_, caps_.compName, 0, compCb_);
     if (ret != HDF_SUCCESS || compNode_ == nullptr) {
@@ -1508,9 +1509,14 @@ int32_t HCodec::OnAllocateComponent()
         compMgr_ = nullptr;
         HLOGE("CreateComponent failed, ret=%d", ret);
         PrintAllCaller();
+        std::unique_lock<std::shared_mutex> lk(g_mtx);
+        size_t totalInstCntNow = CalculateTotalInstCnt();
+        size_t singleAppInstCntNow = g_decCallers[caller_.app].size();
+        if ((totalInstCntNow >= totalWarnInstCnt_) || (singleAppInstCntNow >= singleAppWarnInstCnt_)) {
+            ReportToRss();
+        }
         return ret == OMX_ErrorInsufficientResources ? AVCS_ERR_INSUFFICIENT_HARDWARE_RESOURCES : AVCS_ERR_UNKNOWN;
     }
-    maxDecInst_ = GetMaxDecInstCnt();
     totalWarnInstCnt_ = maxDecInst_ * 0.6;
     singleAppWarnInstCnt_ = maxDecInst_ * 0.5;
     compUniqueStr_ = to_string(componentId_) + (isEncoder_ ? "_e" : "_d");

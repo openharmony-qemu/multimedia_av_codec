@@ -23,6 +23,7 @@
 #include "osal/task/task.h"
 #include "osal/utils/steady_clock.h"
 
+
 namespace OHOS {
 namespace Media {
 struct SpeedCountInfo {
@@ -56,11 +57,11 @@ public:
     void ProduceIncrementFrameCount(int32_t trackId);
     void ProduceOnEventTimeRecord(int32_t trackId);
     void ConsumeSpeed(int32_t trackId);
-    int64_t GetFilledBufferPercent(int32_t trackId, std::shared_ptr<SampleQueue> sampleQueue);
     void SetSpeed(float speed);
     float GetSpeed();
     void SetBufferingDuration(std::shared_ptr<Plugins::PlayStrategy> strategy);
     uint64_t GetBufferingDuration();
+    uint64_t GetPlayBufferingDuration();
     void DisableFirstBufferingDuration();
 
     static constexpr uint64_t QUEUE_SIZE_MIN = 30;
@@ -79,7 +80,7 @@ private:
     std::atomic<bool> isSetFirstBufferingDuration_ {};
     std::atomic<uint64_t> bufferingDuration_ {};
     std::atomic<uint64_t> firstBufferingDuration_ {};
-    std::atomic<float> speed_ {1};
+    std::atomic<float> speed_ {1.0f};
 };
 } // namespace Media
 } // namespace OHOS

@@ -56,8 +56,9 @@ static const std::map<MediaAVCodec::MediaType, uint32_t> BUFFER_SIZE_MAP = {
     {MediaAVCodec::MediaType::MEDIA_TYPE_AUD, AUD_RING_BUFFER_SIZE},
     {MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE, SUBTITLE_RING_BUFFER_SIZE}};
 
-DashSegmentDownloader::DashSegmentDownloader(Callback *callback, int streamId, MediaAVCodec::MediaType streamType,
-    uint64_t expectDuration, std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
+DashSegmentDownloader::DashSegmentDownloader(const std::shared_ptr<Callback>& callback, int streamId,
+    MediaAVCodec::MediaType streamType, uint64_t expectDuration,
+    std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
 {
     callback_ = callback;
     streamId_ = streamId;
@@ -430,7 +431,7 @@ void DashSegmentDownloader::HandleCachedDuration()
          cachedDuration - lastDurationRecord_ > DURATION_CHANGE_AMOUT_MILLIONSECOND) ||
         (lastDurationRecord_ > cachedDuration &&
          lastDurationRecord_ - cachedDuration > DURATION_CHANGE_AMOUT_MILLIONSECOND)) {
-        if (callback_ != nullptr) {
+        if (callback_.lock() != nullptr) {
             MEDIA_LOG_D("HandleCachedDuration OnEvent streamId: " PUBLIC_LOG_D32 " cachedDuration: "
                 PUBLIC_LOG_U64, streamId_, cachedDuration);
         }
@@ -1243,8 +1244,9 @@ bool DashSegmentDownloader::IsNeedBufferForPlaying()
     if (bufferDurationForPlaying_ <= 0 || !isDemuxerInitSuccess_.load() || !isBuffering_.load()) {
         return false;
     }
-    if (GetBufferingTimeOut() && callback_) {
-        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT},
+    auto callback = callback_.lock();
+    if (GetBufferingTimeOut() && callback != nullptr) {
+        callback->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT},
                             "buffer for playing"});
         isBuffering_.store(false);
         isDemuxerInitSuccess_.store(false);

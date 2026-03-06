@@ -133,9 +133,10 @@ void PlayListDownloader::DoOpen(const std::string& url)
         int64_t nowTime = request->GetNowTime();
         bool isNeedReportError = (nowTime - shareDownloader->retryStartTime_) >= RETRY_DELTA_TIME_TO_REPORT_ERROR
                                   || request->GetRetryTimes() >= RETRY_TIME_TO_REPORT_ERROR;
-        if (isNeedReportError && shareDownloader->eventCallback_ != nullptr) {
+        auto eventCallback = shareDownloader->eventCallback_.lock();
+        if (isNeedReportError && eventCallback) {
             MEDIA_LOG_E("fail to download m3u8.");
-            shareDownloader->eventCallback_->OnEvent({PluginEventType::CLIENT_ERROR,
+            eventCallback->OnEvent({PluginEventType::CLIENT_ERROR,
                 {NetworkClientErrorCode::ERROR_TIME_OUT}, "download m3u8"});
 
             return;
@@ -381,7 +382,7 @@ std::map<std::string, std::string> PlayListDownloader::GetHttpHeader()
     return httpHeader_;
 }
 
-void PlayListDownloader::SetCallback(Callback* cb)
+void PlayListDownloader::SetCallback(const std::shared_ptr<Callback>& cb)
 {
     eventCallback_ = cb;
 }

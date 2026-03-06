@@ -151,9 +151,9 @@ void DemuxerPluginUnitTest::InitWeakNetworkDemuxerPluginURI(
     std::string uri = TEST_URI_PATH + filePath.substr(TEST_RELATIVE_PATH.size());
     printf("DemuxerPluginUnitTest::InitWeakNetworkDemuxerPluginURI, uri: %s\n", uri.c_str());
     std::shared_ptr<DemuxerPluginManager> demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
-    SourceCallback cb = SourceCallback(demuxerPluginManager);
+    auto cb = std::make_shared<SourceCallback>(demuxerPluginManager);
     std::shared_ptr<Source> source = std::make_shared<Source>();
-    source->SetCallback(&cb);
+    source->SetCallback(cb);
     EXPECT_EQ(source->SetSource(std::make_shared<MediaSource>(uri)), Status::OK);
     std::vector<StreamInfo> streams;
     source->GetStreamInfo(streams);
@@ -278,9 +278,9 @@ void DemuxerPluginUnitTest::InitWeakNetworkDemuxerPlugin(
     }
     auto uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
     std::shared_ptr<DemuxerPluginManager> demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
-    SourceCallback cb = SourceCallback(demuxerPluginManager);
+    auto cb = std::make_shared<SourceCallback>(demuxerPluginManager);
     std::shared_ptr<Source> source = std::make_shared<Source>();
-    source->SetCallback(&cb);
+    source->SetCallback(cb);
     EXPECT_EQ(source->SetSource(std::make_shared<MediaSource>(uri)), Status::OK);
     std::vector<StreamInfo> streams;
     source->GetStreamInfo(streams);
@@ -310,9 +310,9 @@ void TestAVReadPacketStopState(const std::string& pluginName, const std::string&
     auto uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
 
     auto demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
-    SourceCallback cb(demuxerPluginManager);
+    auto cb = std::make_shared<SourceCallback>(demuxerPluginManager);
     auto source = std::make_shared<Source>();
-    source->SetCallback(&cb);
+    source->SetCallback(cb);
     EXPECT_EQ(source->SetSource(std::make_shared<MediaSource>(uri)), Status::OK);
     std::vector<StreamInfo> streams;
     source->GetStreamInfo(streams);

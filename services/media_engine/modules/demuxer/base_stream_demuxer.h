@@ -133,8 +133,8 @@ protected:
     std::shared_ptr<Source> source_;
     std::shared_ptr<TypeFinder> typeFinder_;
     std::function<Status(int32_t, uint64_t, size_t)> checkRange_;
-    std::function<Status(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange_;
-    std::function<Status(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> getRange_;
+    std::function<Status(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&, bool)> peekRange_;
+    std::function<Status(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&, bool)> getRange_;
     std::map<int32_t, DemuxerState> pluginStateMap_;
     std::atomic<bool> isIgnoreParse_{false};
     std::atomic<bool> isInterruptNeeded_{false};

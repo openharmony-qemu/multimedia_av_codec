@@ -47,7 +47,7 @@ FramerateCalculator::~FramerateCalculator()
     }
 }
 
-void FramerateCalculator::OnFrameConsumed(std::shared_ptr<AVBuffer> buffer)
+void FramerateCalculator::OnFrameConsumed(int64_t pts)
 {
     if (!afcEnable) {
         return;
@@ -64,7 +64,7 @@ void FramerateCalculator::OnFrameConsumed(std::shared_ptr<AVBuffer> buffer)
     }
 
     if (behaviorAnalyzer_) {
-        behaviorAnalyzer_->OnFrameConsumed(buffer);
+        behaviorAnalyzer_->OnFrameConsumed(pts);
     }
     frameCount_++;
 }
@@ -98,7 +98,7 @@ bool FramerateCalculator::CheckAndResetFramerate()
         actualFramerate = std::min(DEFAULT_FRAMERATE, configuredFramerate_);
     }
     auto fluctuationFramerate = std::abs(actualFramerate - lastFramerate_);
-    if (!(fluctuationFramerate > 5 && (fluctuationFramerate / lastFramerate_ > 0.1))) { // 5/0.1: reset threshold
+    if (!(fluctuationFramerate > 3 && (fluctuationFramerate / lastFramerate_ > 0.1))) { // 3/0.1: reset threshold
         if (decreseCheckTimes_ != MAX_DECREASE_CHECK_TIMES) {
             decreseCheckTimes_ = MAX_DECREASE_CHECK_TIMES;
         }

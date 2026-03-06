@@ -47,7 +47,6 @@ int32_t AvcParser::SetConfig(const std::shared_ptr<BasicBox> &box, std::vector<u
 
 int32_t AvcParser::WriteFrame(const std::shared_ptr<AVIOStream> &io, const std::shared_ptr<AVBuffer> &sample)
 {
-    FALSE_RETURN_V_MSG_E(sample->memory_->GetAddr() != nullptr, -1, "sample is null");
     if (!IsAvccHvccFrame(sample->memory_->GetAddr(), sample->memory_->GetSize()) &&
         IsAnnexbFrame(sample->memory_->GetAddr(), sample->memory_->GetSize())) {
         return WriteAnnexBFrame(io, sample);
@@ -58,6 +57,8 @@ int32_t AvcParser::WriteFrame(const std::shared_ptr<AVIOStream> &io, const std::
 
 int32_t AvcParser::WriteAnnexBFrame(const std::shared_ptr<AVIOStream> &io, const std::shared_ptr<AVBuffer> &sample)
 {
+    FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_ != nullptr && sample->memory_->GetAddr() != nullptr,
+        -1, "WriteAnnexBFrame error parameter");
     const uint8_t* nalStart = sample->memory_->GetAddr();
     const uint8_t* end = nalStart + sample->memory_->GetSize();
     const uint8_t* nalEnd = nullptr;

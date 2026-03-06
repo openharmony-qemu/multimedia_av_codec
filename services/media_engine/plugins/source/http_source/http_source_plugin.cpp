@@ -188,7 +188,7 @@ Status HttpSourcePlugin::SetParameter(const std::shared_ptr<Meta> &meta)
     return Status::OK;
 }
 
-Status HttpSourcePlugin::SetCallback(Callback* cb)
+Status HttpSourcePlugin::SetCallback(const std::shared_ptr<Callback>& cb)
 {
     MEDIA_LOG_D("SetCallback enter.");
     callback_ = cb;
@@ -219,8 +219,9 @@ Status HttpSourcePlugin::InitSourcePlugin(const std::shared_ptr<MediaSource>& so
 {
     SetDownloaderBySource(source);
     FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
-    if (callback_ != nullptr) {
-        downloader_->SetCallback(callback_);
+    auto cb = callback_.lock();
+    if (cb) {
+        downloader_->SetCallback(cb);
     }
     FALSE_RETURN_V(downloader_->Open(uri_, httpHeader_), Status::ERROR_UNKNOWN);
     auto uuid = source->GetAppUid();
@@ -430,7 +431,10 @@ Status HttpSourcePlugin::SeekTo(uint64_t offset)
         MEDIA_LOG_I("SeekTo enter fail, content = " PUBLIC_LOG_ZU, downloader_->GetContentLength());
         seekErrorCount_++;
         if (seekErrorCount_ > ERROR_COUNT) {
-            callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "seek error"});
+            auto cb = callback_.lock();
+            if (cb != nullptr) {
+                cb->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "seek error"});
+            }
         }
         FALSE_RETURN_V(offset <= downloader_->GetContentLength(), Status::ERROR_INVALID_PARAMETER);
     }

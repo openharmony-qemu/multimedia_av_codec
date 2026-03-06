@@ -103,7 +103,7 @@ HWTEST_F(DashMediaDownloaderUnittest, Read_002, TestSize.Level0)
     EXPECT_FALSE(mediaDownloader_->segmentDownloaders_.empty());
     mediaDownloader_->downloadErrorState_ = true;
     auto callback = std::make_shared<TestCallback>();
-    mediaDownloader_->callback_ = callback.get();
+    mediaDownloader_->callback_ = callback;
     auto ret = mediaDownloader_->Read(&buff, readDataInfo);
     EXPECT_EQ(ret, Status::ERROR_AGAIN);
 }
@@ -116,20 +116,20 @@ HWTEST_F(DashMediaDownloaderUnittest, Read_002, TestSize.Level0)
 HWTEST_F(DashMediaDownloaderUnittest, PostBufferingEvent_001, TestSize.Level0)
 {
     ASSERT_NE(mediaDownloader_, nullptr);
-    mediaDownloader_->callback_ = nullptr;
+    mediaDownloader_->callback_.reset();
     mediaDownloader_->mpdDownloader_ = nullptr;
     mediaDownloader_->PostBufferingEvent(NUM_TEST, BufferingInfoType::BUFFERING_START);
-    EXPECT_TRUE(mediaDownloader_->callback_ == nullptr || mediaDownloader_->mpdDownloader_ == nullptr);
+    EXPECT_TRUE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
 
     mediaDownloader_->mpdDownloader_ = std::make_shared<DashMpdDownloader>(nullptr);
     mediaDownloader_->PostBufferingEvent(NUM_TEST, BufferingInfoType::BUFFERING_START);
-    EXPECT_TRUE(mediaDownloader_->callback_ == nullptr || mediaDownloader_->mpdDownloader_ == nullptr);
+    EXPECT_TRUE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
 
     auto callback = std::make_shared<TestCallback>();
-    mediaDownloader_->callback_ = callback.get();
+    mediaDownloader_->callback_ = callback;
     mediaDownloader_->mpdDownloader_ = nullptr;
     mediaDownloader_->PostBufferingEvent(NUM_TEST, BufferingInfoType::BUFFERING_START);
-    EXPECT_TRUE(mediaDownloader_->callback_ == nullptr || mediaDownloader_->mpdDownloader_ == nullptr);
+    EXPECT_TRUE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
 }
 
 /**
@@ -144,12 +144,12 @@ HWTEST_F(DashMediaDownloaderUnittest, PostBufferingEvent_002, TestSize.Level0)
 
     mediaDownloader_->mpdDownloader_ = std::make_shared<DashMpdDownloader>(nullptr);
     auto callback = std::make_shared<TestCallback>();
-    mediaDownloader_->callback_ = callback.get();
+    mediaDownloader_->callback_ = callback;
     std::shared_ptr<DashStreamDescription> streamDesc =
         mediaDownloader_->mpdDownloader_->GetStreamByStreamId(NUM_TEST);
     EXPECT_EQ(streamDesc, nullptr);
     mediaDownloader_->PostBufferingEvent(NUM_TEST, BufferingInfoType::BUFFERING_START);
-    EXPECT_FALSE(mediaDownloader_->callback_ == nullptr || mediaDownloader_->mpdDownloader_ == nullptr);
+    EXPECT_FALSE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
 }
 
 /**
@@ -166,7 +166,7 @@ HWTEST_F(DashMediaDownloaderUnittest, PostBufferingEvent_003, TestSize.Level0)
     int streamId = ID_TEST;
     mediaDownloader_->mpdDownloader_ = std::make_shared<DashMpdDownloader>(nullptr);
     auto callback = std::make_shared<TestCallback>();
-    mediaDownloader_->callback_ = callback.get();
+    mediaDownloader_->callback_ = callback;
     auto ptr = std::make_shared<DashStreamDescription>();
     ptr->segsState_ = DashSegsState::DASH_SEGS_STATE_NONE;
     ptr->streamId_ = streamId;
@@ -177,7 +177,7 @@ HWTEST_F(DashMediaDownloaderUnittest, PostBufferingEvent_003, TestSize.Level0)
     EXPECT_NE(streamDesc, nullptr);
     mediaDownloader_->bufferingFlag_ = 0;
     mediaDownloader_->PostBufferingEvent(streamId, BufferingInfoType::BUFFERING_START);
-    EXPECT_FALSE(mediaDownloader_->callback_ == nullptr || mediaDownloader_->mpdDownloader_ == nullptr);
+    EXPECT_FALSE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
 }
 
 /**
@@ -191,7 +191,7 @@ HWTEST_F(DashMediaDownloaderUnittest, PostBufferingEvent_004, TestSize.Level0)
     int streamId = ID_TEST;
     mediaDownloader_->mpdDownloader_ = std::make_shared<DashMpdDownloader>(nullptr);
     auto callback = std::make_shared<TestCallback>();
-    mediaDownloader_->callback_ = callback.get();
+    mediaDownloader_->callback_ = callback;
     auto ptr = std::make_shared<DashStreamDescription>();
     ptr->segsState_ = DashSegsState::DASH_SEGS_STATE_NONE;
     ptr->streamId_ = streamId;
@@ -202,7 +202,7 @@ HWTEST_F(DashMediaDownloaderUnittest, PostBufferingEvent_004, TestSize.Level0)
     EXPECT_NE(streamDesc, nullptr);
     mediaDownloader_->bufferingFlag_ = 1;
     mediaDownloader_->PostBufferingEvent(streamId, BufferingInfoType::BUFFERING_START);
-    EXPECT_FALSE(mediaDownloader_->callback_ == nullptr || mediaDownloader_->mpdDownloader_ == nullptr);
+    EXPECT_FALSE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
 }
 
 /**
@@ -218,7 +218,7 @@ HWTEST_F(DashMediaDownloaderUnittest, PostBufferingEvent_005, TestSize.Level0)
     int streamId = ID_TEST;
     mediaDownloader_->mpdDownloader_ = std::make_shared<DashMpdDownloader>(nullptr);
     auto callback = std::make_shared<TestCallback>();
-    mediaDownloader_->callback_ = callback.get();
+    mediaDownloader_->callback_ = callback;
     auto ptr = std::make_shared<DashStreamDescription>();
     ptr->segsState_ = DashSegsState::DASH_SEGS_STATE_NONE;
     ptr->streamId_ = streamId;
@@ -229,7 +229,7 @@ HWTEST_F(DashMediaDownloaderUnittest, PostBufferingEvent_005, TestSize.Level0)
     EXPECT_NE(streamDesc, nullptr);
     mediaDownloader_->bufferingFlag_ = 0;
     mediaDownloader_->PostBufferingEvent(streamId, BufferingInfoType::BUFFERING_END);
-    EXPECT_FALSE(mediaDownloader_->callback_ == nullptr || mediaDownloader_->mpdDownloader_ == nullptr);
+    EXPECT_FALSE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
 }
 
 /**
@@ -245,7 +245,7 @@ HWTEST_F(DashMediaDownloaderUnittest, PostBufferingEvent_006, TestSize.Level0)
     int streamId = ID_TEST;
     mediaDownloader_->mpdDownloader_ = std::make_shared<DashMpdDownloader>(nullptr);
     auto callback = std::make_shared<TestCallback>();
-    mediaDownloader_->callback_ = callback.get();
+    mediaDownloader_->callback_ = callback;
     auto ptr = std::make_shared<DashStreamDescription>();
     ptr->segsState_ = DashSegsState::DASH_SEGS_STATE_NONE;
     ptr->streamId_ = streamId;
@@ -256,7 +256,7 @@ HWTEST_F(DashMediaDownloaderUnittest, PostBufferingEvent_006, TestSize.Level0)
     EXPECT_NE(streamDesc, nullptr);
     mediaDownloader_->bufferingFlag_ = 1;
     mediaDownloader_->PostBufferingEvent(streamId, BufferingInfoType::BUFFERING_END);
-    EXPECT_FALSE(mediaDownloader_->callback_ == nullptr || mediaDownloader_->mpdDownloader_ == nullptr);
+    EXPECT_FALSE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
 }
 
 /**
@@ -270,7 +270,7 @@ HWTEST_F(DashMediaDownloaderUnittest, PostBufferingEvent_007, TestSize.Level0)
     int streamId = ID_TEST;
     mediaDownloader_->mpdDownloader_ = std::make_shared<DashMpdDownloader>(nullptr);
     auto callback = std::make_shared<TestCallback>();
-    mediaDownloader_->callback_ = callback.get();
+    mediaDownloader_->callback_ = callback;
     auto ptr = std::make_shared<DashStreamDescription>();
     ptr->segsState_ = DashSegsState::DASH_SEGS_STATE_NONE;
     ptr->streamId_ = streamId;
@@ -281,7 +281,7 @@ HWTEST_F(DashMediaDownloaderUnittest, PostBufferingEvent_007, TestSize.Level0)
     EXPECT_NE(streamDesc, nullptr);
     mediaDownloader_->bufferingFlag_ = 1;
     mediaDownloader_->PostBufferingEvent(streamId, BufferingInfoType::CACHED_DURATION);
-    EXPECT_FALSE(mediaDownloader_->callback_ == nullptr || mediaDownloader_->mpdDownloader_ == nullptr);
+    EXPECT_FALSE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
 }
 
 /**
@@ -295,7 +295,7 @@ HWTEST_F(DashMediaDownloaderUnittest, PostBufferingEvent_008, TestSize.Level0)
     int streamId = ID_TEST;
     mediaDownloader_->mpdDownloader_ = std::make_shared<DashMpdDownloader>(nullptr);
     auto callback = std::make_shared<TestCallback>();
-    mediaDownloader_->callback_ = callback.get();
+    mediaDownloader_->callback_ = callback;
     auto ptr = std::make_shared<DashStreamDescription>();
     ptr->segsState_ = DashSegsState::DASH_SEGS_STATE_NONE;
     ptr->streamId_ = streamId;
@@ -305,7 +305,7 @@ HWTEST_F(DashMediaDownloaderUnittest, PostBufferingEvent_008, TestSize.Level0)
     streamDesc->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE;
     EXPECT_NE(streamDesc, nullptr);
     mediaDownloader_->PostBufferingEvent(streamId, BufferingInfoType::BUFFERING_START);
-    EXPECT_FALSE(mediaDownloader_->callback_ == nullptr || mediaDownloader_->mpdDownloader_ == nullptr);
+    EXPECT_FALSE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
 }
 
 /**
@@ -322,7 +322,7 @@ HWTEST_F(DashMediaDownloaderUnittest, PostBufferingEvent_009, TestSize.Level0)
     int streamId = ID_TEST;
     mediaDownloader_->mpdDownloader_ = std::make_shared<DashMpdDownloader>(nullptr);
     auto callback = std::make_shared<TestCallback>();
-    mediaDownloader_->callback_ = callback.get();
+    mediaDownloader_->callback_ = callback;
     auto ptr = std::make_shared<DashStreamDescription>();
     ptr->segsState_ = DashSegsState::DASH_SEGS_STATE_NONE;
     ptr->streamId_ = streamId;
@@ -335,12 +335,12 @@ HWTEST_F(DashMediaDownloaderUnittest, PostBufferingEvent_009, TestSize.Level0)
             1, MediaAVCodec::MediaType::MEDIA_TYPE_VID, NUM_10, nullptr);
     mediaDownloader_->segmentDownloaders_.clear();
     mediaDownloader_->PostBufferingEvent(streamId, BufferingInfoType::BUFFERING_PERCENT);
-    EXPECT_FALSE(mediaDownloader_->callback_ == nullptr || mediaDownloader_->mpdDownloader_ == nullptr);
+    EXPECT_FALSE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
     EXPECT_EQ(mediaDownloader_->segmentDownloaders_.size(), 0);
 
     mediaDownloader_->segmentDownloaders_.push_back(segmentDownloader);
     mediaDownloader_->PostBufferingEvent(streamId, BufferingInfoType::BUFFERING_PERCENT);
-    EXPECT_FALSE(mediaDownloader_->callback_ == nullptr || mediaDownloader_->mpdDownloader_ == nullptr);
+    EXPECT_FALSE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
     EXPECT_EQ(mediaDownloader_->segmentDownloaders_.size(), 1);
 
     segmentDownloader = std::make_shared<DashSegmentDownloader>(nullptr,
@@ -348,7 +348,7 @@ HWTEST_F(DashMediaDownloaderUnittest, PostBufferingEvent_009, TestSize.Level0)
     mediaDownloader_->segmentDownloaders_.clear();
     mediaDownloader_->segmentDownloaders_.push_back(segmentDownloader);
     mediaDownloader_->PostBufferingEvent(streamId, BufferingInfoType::BUFFERING_PERCENT);
-    EXPECT_FALSE(mediaDownloader_->callback_ == nullptr || mediaDownloader_->mpdDownloader_ == nullptr);
+    EXPECT_FALSE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
     EXPECT_EQ(mediaDownloader_->segmentDownloaders_.size(), 1);
 }
 
@@ -362,8 +362,8 @@ HWTEST_F(DashMediaDownloaderUnittest, BufferConditionCase_010, TestSize.Level0) 
     int streamId = ID_TEST;
     mediaDownloader_->mpdDownloader_ = std::make_shared<DashMpdDownloader>(nullptr);
     auto callback = std::make_shared<TestCallback>();
-    mediaDownloader_->callback_ = callback.get();
-    EXPECT_NE(mediaDownloader_->callback_, nullptr);
+    mediaDownloader_->callback_ = callback;
+    EXPECT_FALSE(mediaDownloader_->callback_.expired());
     auto ptr = std::make_shared<DashStreamDescription>();
     ptr->segsState_ = DashSegsState::DASH_SEGS_STATE_NONE;
     ptr->streamId_ = streamId;
@@ -396,8 +396,8 @@ HWTEST_F(DashMediaDownloaderUnittest, BufferConditionCase_011, TestSize.Level0)
     int streamId = ID_TEST;
     mediaDownloader_->mpdDownloader_ = std::make_shared<DashMpdDownloader>(nullptr);
     auto callback = std::make_shared<TestCallback>();
-    mediaDownloader_->callback_ = callback.get();
-    EXPECT_NE(mediaDownloader_->callback_, nullptr);
+    mediaDownloader_->callback_ = callback;
+    EXPECT_FALSE(mediaDownloader_->callback_.expired());
     auto ptr = std::make_shared<DashStreamDescription>();
     ptr->segsState_ = DashSegsState::DASH_SEGS_STATE_NONE;
     ptr->streamId_ = streamId;
@@ -431,8 +431,8 @@ HWTEST_F(DashMediaDownloaderUnittest, BufferConditionCase_012, TestSize.Level0)
     int streamId = ID_TEST;
     mediaDownloader_->mpdDownloader_ = std::make_shared<DashMpdDownloader>(nullptr);
     auto callback = std::make_shared<TestCallback>();
-    mediaDownloader_->callback_ = callback.get();
-    EXPECT_NE(mediaDownloader_->callback_, nullptr);
+    mediaDownloader_->callback_ = callback;
+    EXPECT_FALSE(mediaDownloader_->callback_.expired());
     auto ptr = std::make_shared<DashStreamDescription>();
     ptr->segsState_ = DashSegsState::DASH_SEGS_STATE_NONE;
     ptr->streamId_ = streamId;
@@ -466,8 +466,8 @@ HWTEST_F(DashMediaDownloaderUnittest, BufferConditionCase_013, TestSize.Level0)
     int streamId = ID_TEST;
     mediaDownloader_->mpdDownloader_ = std::make_shared<DashMpdDownloader>(nullptr);
     auto callback = std::make_shared<TestCallback>();
-    mediaDownloader_->callback_ = callback.get();
-    EXPECT_NE(mediaDownloader_->callback_, nullptr);
+    mediaDownloader_->callback_ = callback;
+    EXPECT_FALSE(mediaDownloader_->callback_.expired());
     auto ptr = std::make_shared<DashStreamDescription>();
     ptr->segsState_ = DashSegsState::DASH_SEGS_STATE_NONE;
     ptr->streamId_ = streamId;

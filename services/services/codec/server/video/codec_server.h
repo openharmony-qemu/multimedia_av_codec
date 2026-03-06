@@ -168,8 +168,8 @@ private:
     bool isFree_ = false;
     std::shared_ptr<TaskThread> inputParamTask_ = nullptr;
     CodecScenario scenario_ = CodecScenario::CODEC_SCENARIO_ENC_NORMAL;
-    std::mutex outBufMutex_;
-    std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> outBufMap_;
+    std::mutex outPtsMutex_;
+    std::unordered_map<uint32_t, int64_t> outPtsMap_;
     std::condition_variable releaseBufferCondition_;
     std::vector<std::pair<uint32_t, std::shared_ptr<AVBuffer>>> indexs_;
     std::atomic<int64_t> lastBufferPts_ = INT64_MIN;

@@ -423,7 +423,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_FLV_ERROR, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {};
     httpMediaDownloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     httpMediaDownloader->SetCallback(sourceCallback);
     std::map<std::string, std::string> httpHeader;
     httpMediaDownloader->Open(FLV_SEGMENT_BASE, httpHeader);
@@ -450,7 +450,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_MP4_NULL, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {};
     httpMediaDownloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     httpMediaDownloader->SetCallback(sourceCallback);
     std::map<std::string, std::string> httpHeader;
     httpMediaDownloader->Open(MP4_NULL_SEGMENT_BASE, httpHeader);
@@ -586,7 +586,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, HANDLE_WATER_LINE_001, TestSize.Level1)
     std::shared_ptr<HttpMediaDownloader> httpMediaDownloader =
         std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 5, nullptr);
     httpMediaDownloader->Init();
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     httpMediaDownloader->callback_ = sourceCallback;
     httpMediaDownloader->canWrite_ = false;
     httpMediaDownloader->waterLineAbove_ = 0;
@@ -602,7 +602,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, CACHE_BUFFER_FULL_LOOP_001, TestSize.Level
     std::shared_ptr<HttpMediaDownloader> httpMediaDownloader =
         std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 5, nullptr);
     httpMediaDownloader->Init();
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     httpMediaDownloader->callback_ = sourceCallback;
     httpMediaDownloader->isHitSeeking_ = true;
     httpMediaDownloader->initCacheSize_ = 1;
@@ -621,7 +621,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, SET_INITIAL_BUFFER_SIZE_001, TestSize.Leve
                         std::shared_ptr<DownloadRequest>& request) {};
     httpMediaDownloader->SetStatusCallback(statusCallback);
     httpMediaDownloader->Open(MP4_SEGMENT_BASE, httpHeader);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     httpMediaDownloader->callback_ = sourceCallback;
     httpMediaDownloader->isBuffering_ = false;
     EXPECT_EQ(httpMediaDownloader->SetInitialBufferSize(0, 0), false);
@@ -638,7 +638,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, SET_PLAY_STRATEGY_001, TestSize.Level1)
                         std::shared_ptr<DownloadRequest>& request) {};
     httpMediaDownloader->SetStatusCallback(statusCallback);
     httpMediaDownloader->Open(MP4_SEGMENT_BASE, httpHeader);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     httpMediaDownloader->callback_ = sourceCallback;
     httpMediaDownloader->SetPlayStrategy(nullptr);
     EXPECT_EQ(httpMediaDownloader->waterlineForPlaying_, 0);
@@ -656,7 +656,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, IS_NEED_BUFFER_FOR_PLAYING_001, TestSize.L
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                         std::shared_ptr<DownloadRequest>& request) {};
     httpMediaDownloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     httpMediaDownloader->callback_ = sourceCallback;
     EXPECT_EQ(httpMediaDownloader->IsNeedBufferForPlaying(), false);
     httpMediaDownloader->bufferDurationForPlaying_ = 5;
@@ -678,7 +678,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, NOTIFY_INIT_SUCCESS_001, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                         std::shared_ptr<DownloadRequest>& request) {};
     httpMediaDownloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     httpMediaDownloader->callback_ = sourceCallback;
     httpMediaDownloader->isBuffering_ = false;
     httpMediaDownloader->NotifyInitSuccess();
@@ -699,7 +699,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, SET_PLAY_STRATEGY_002, TestSize.Level1)
                         std::shared_ptr<DownloadRequest>& request) {};
     httpMediaDownloader->SetStatusCallback(statusCallback);
     httpMediaDownloader->Open(MP4_SEGMENT_BASE, httpHeader);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     httpMediaDownloader->callback_ = sourceCallback;
 
     MediaStreamList mediaStreams;
@@ -749,7 +749,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, SELECT_BIT_RATE_001, TestSize.Level1)
                         std::shared_ptr<DownloadRequest>& request) {};
     httpMediaDownloader->SetStatusCallback(statusCallback);
     httpMediaDownloader->Open(FLV_SEGMENT_BASE, httpHeader);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     httpMediaDownloader->callback_ = sourceCallback;
     MediaStreamList mediaStreams;
     std::shared_ptr<PlayMediaStream> mediaStreamA = std::make_shared<PlayMediaStream>();
@@ -793,7 +793,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, CHECK_AUTO_SELECT_BITRATE_001, TestSize.Le
                         std::shared_ptr<DownloadRequest>& request) {};
     httpMediaDownloader->SetStatusCallback(statusCallback);
     httpMediaDownloader->Open(FLV_SEGMENT_BASE, httpHeader);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     httpMediaDownloader->callback_ = sourceCallback;
     MediaStreamList mediaStreams;
     std::shared_ptr<PlayMediaStream> mediaStreamA = std::make_shared<PlayMediaStream>();
@@ -936,7 +936,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, IsAutoSelectConditionOk_2, TestSize.Level1
                         std::shared_ptr<DownloadRequest>& request) {};
     httpMediaDownloader->SetStatusCallback(statusCallback);
     httpMediaDownloader->Open(FLV_SEGMENT_BASE, httpHeader);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     httpMediaDownloader->callback_ = sourceCallback;
     MediaStreamList mediaStreams;
     std::shared_ptr<PlayMediaStream> mediaStreamA = std::make_shared<PlayMediaStream>();

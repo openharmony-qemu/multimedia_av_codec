@@ -97,9 +97,10 @@ public:
             }
             reverseData = (reverseData << 0x08) | (*(buf + static_cast<uint32_t>(index)) & 0xFF);
         }
-        reverseData = (sizeof(U) >= byteCount) ? reverseData << (0x08 * (sizeof(U) - byteCount)) : reverseData;
+        reverseData = (static_cast<int32_t>(sizeof(U)) >= byteCount) ?
+            reverseData << (0x08 * static_cast<uint32_t>(static_cast<int32_t>(sizeof(U)) - byteCount)) : reverseData;
         T data = static_cast<T>((reverseData << static_cast<uint32_t>(bitIndex_)) >>
-            (0x08 * sizeof(U) - static_cast<uint32_t>(size)));
+            (0x08 * static_cast<uint32_t>(sizeof(U)) - static_cast<uint32_t>(size)));
 
         RbspSkipBits(size);
         return data;

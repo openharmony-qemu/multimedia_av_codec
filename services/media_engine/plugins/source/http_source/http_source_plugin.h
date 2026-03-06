@@ -39,7 +39,7 @@ public:
     Status Resume() override;
     Status GetParameter(std::shared_ptr<Meta> &meta) override;
     Status SetParameter(const std::shared_ptr<Meta> &meta) override;
-    Status SetCallback(Callback* cb) override;
+    Status SetCallback(const std::shared_ptr<Callback>& cb) override;
     Status SetSource(std::shared_ptr<MediaSource> source) override;
     Status Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen) override;
     Status Read(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen) override;
@@ -93,7 +93,7 @@ private:
     uint32_t bufferSize_;
     uint32_t waterline_;
     uint32_t seekErrorCount_{0};
-    Callback* callback_ {};
+    std::weak_ptr<Callback> callback_;
     std::shared_ptr<MediaDownloader> downloader_;
     Mutex mutex_ {};
     bool delayReady_ {true};

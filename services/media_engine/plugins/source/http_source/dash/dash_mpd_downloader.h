@@ -121,7 +121,7 @@ public:
     void Open(const std::string &url);
     void Close(bool isAsync);
     void SetStatusCallback(StatusCallbackFunc cb);
-    void SetMpdCallback(DashMpdCallback *callback);
+    void SetMpdCallback(const std::shared_ptr<DashMpdCallback>& callback);
     int64_t GetDuration() const;
     Seekable GetSeekable() const;
     std::vector<uint32_t> GetBitRates() const;
@@ -244,7 +244,7 @@ private:
     std::string downloadContent_ {}; // mpd content or sidx content
     std::string defaultAudioLang_ {};
     std::string defaultSubtitleLang_ {};
-    DashMpdCallback* callback_ {nullptr};
+    std::weak_ptr<DashMpdCallback> callback_;
     std::shared_ptr<Downloader> downloader_ {nullptr};
     std::shared_ptr<DownloadRequest> downloadRequest_ {nullptr};
     std::shared_ptr<DashMpdParser> mpdParser_ {nullptr};

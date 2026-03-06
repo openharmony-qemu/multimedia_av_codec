@@ -39,7 +39,6 @@ DashMediaDownloader::DashMediaDownloader(std::shared_ptr<MediaSourceLoaderCombin
         sourceLoader_ = sourceLoader;
     }
     mpdDownloader_ = std::make_shared<DashMpdDownloader>(sourceLoader);
-    mpdDownloader_->SetMpdCallback(this);
 }
 
 DashMediaDownloader::~DashMediaDownloader()
@@ -58,6 +57,7 @@ void DashMediaDownloader::Init()
     if (mpdDownloader_ != nullptr && downloadMetricsInfo_ != nullptr) {
         mpdDownloader_->SetDownloadCallback(downloadMetricsInfo_);
     }
+    mpdDownloader_->SetMpdCallback(shared_from_this());
     mpdDownloader_->Init();
 }
 
@@ -110,9 +110,10 @@ Status DashMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
     }
 
     if (downloadErrorState_) {
-        if (callback_ != nullptr) {
+        auto callback = callback_.lock();
+        if (callback) {
             MEDIA_LOG_I("Read Client Error, OnEvent");
-            callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+            callback->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
         }
         for (auto &segmentDownloader : segmentDownloaders_) {
             segmentDownloader->Close(false, true);
@@ -198,7 +199,7 @@ void DashMediaDownloader::UpdateDownloadFinished(int streamId)
 
 void DashMediaDownloader::PostBufferingEvent(int streamId, BufferingInfoType type)
 {
-    if (callback_ == nullptr || mpdDownloader_ == nullptr) {
+    if (callback_.lock() == nullptr || mpdDownloader_ == nullptr) {
         MEDIA_LOG_I("PostBufferingEvent streamId: " PUBLIC_LOG_D32 " type: " PUBLIC_LOG_D32, streamId, type);
         return;
     }
@@ -297,7 +298,7 @@ Seekable DashMediaDownloader::GetSeekable() const
     return value;
 }
 
-void DashMediaDownloader::SetCallback(Callback* cb)
+void DashMediaDownloader::SetCallback(const std::shared_ptr<Callback>& cb)
 {
     callback_ = cb;
 }
@@ -406,8 +407,9 @@ void DashMediaDownloader::SetIsTriggerAutoMode(bool isAuto)
 void DashMediaDownloader::SetDownloadErrorState()
 {
     MEDIA_LOG_I("Dash SetDownloadErrorState");
-    if (callback_) {
-        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "download"});
+    auto callback = callback_.lock();
+    if (callback) {
+        callback->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "download"});
     }
     downloadErrorState_ = true;
 }
@@ -473,8 +475,9 @@ void DashMediaDownloader::ReceiveMpdStreamInitEvent()
 void DashMediaDownloader::OpenInitSegment(
     const std::shared_ptr<DashStreamDescription> &streamDesc, const std::shared_ptr<DashSegment> &seg)
 {
+    auto callback = callback_.lock();
     std::shared_ptr<DashSegmentDownloader> downloader = std::make_shared<DashSegmentDownloader>(
-        callback_, streamDesc->streamId_, streamDesc->type_, expectDuration_, sourceLoader_);
+        callback, streamDesc->streamId_, streamDesc->type_, expectDuration_, sourceLoader_);
     if (downloadMetricsInfo_ != nullptr) {
         downloader->SetDownloadCallback(downloadMetricsInfo_);
     }
@@ -566,16 +569,17 @@ void DashMediaDownloader::VideoSegmentDownloadFinished(int streamId)
         } else {
             // auto switch
             bool switchFlag = true;
-            if (callback_ != nullptr) {
-                switchFlag = callback_->CanAutoSelectBitRate();
+            auto callback = callback_.lock();
+            if (callback) {
+                switchFlag = callback->CanAutoSelectBitRate();
             }
             std::shared_ptr<DashSegmentDownloader> segmentDownloader = GetSegmentDownloaderByType(
                 MediaAVCodec::MediaType::MEDIA_TYPE_VID);
             if (segmentDownloader != nullptr && !segmentDownloader->IsAllSegmentFinished() &&
                 switchFlag && isAutoSelectBitrate_) {
                 bool flag = CheckAutoSelectBitrate(streamId);
-                if (callback_ != nullptr) {
-                    callback_->SetSelectBitRateFlag(flag, bitrateParam_.bitrate_);
+                if (callback) {
+                    callback->SetSelectBitRateFlag(flag, bitrateParam_.bitrate_);
                 }
                 if (flag) {
                     // switch success
@@ -834,9 +838,10 @@ void DashMediaDownloader::HandleSeekReady(int32_t streamType, int32_t streamId, 
     seekReadyInfo.PutIntValue("isEOS", isEos);
     MEDIA_LOG_D("StreamType: " PUBLIC_LOG_D32 " StreamId: " PUBLIC_LOG_D32
         " seekTime: " PUBLIC_LOG_D64 " isEOS: " PUBLIC_LOG_D32, streamType, streamId, seekTimeMs, isEos);
-    if (callback_ != nullptr) {
+    auto callback = callback_.lock();
+    if (callback) {
         MEDIA_LOG_D("Onevent dash seek ready");
-        callback_->OnEvent({PluginEventType::DASH_SEEK_READY, seekReadyInfo, "dash_seek_ready"});
+        callback->OnEvent({PluginEventType::DASH_SEEK_READY, seekReadyInfo, "dash_seek_ready"});
     }
 }
 
@@ -1163,8 +1168,9 @@ void DashMediaDownloader::ResetTrackParam()
 
 void DashMediaDownloader::OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos)
 {
-    if (callback_ != nullptr) {
-        callback_->OnEvent({PluginEventType::SOURCE_DRM_INFO_UPDATE, {drmInfos}, "drm_info_update"});
+    auto callback = callback_.lock();
+    if (callback) {
+        callback->OnEvent({PluginEventType::SOURCE_DRM_INFO_UPDATE, {drmInfos}, "drm_info_update"});
     }
 }
 

@@ -1106,7 +1106,6 @@ void AudioSink::SetIsInPrePausing(bool isInPrePausing)
 
 void AudioSink::DriveBufferCircle()
 {
-    FALSE_RETURN_NOLOG(!isEosBuffer_);
     FALSE_RETURN_NOLOG(!availOutputBuffers_.empty() && inputBufferQueue_ != nullptr);
     FALSE_RETURN_NOLOG(availOutputBuffers_.size() >= inputBufferQueue_->GetQueueSize());
     size_t availDataSize = availDataSize_.load();

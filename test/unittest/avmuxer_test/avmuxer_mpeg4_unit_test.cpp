@@ -2758,12 +2758,19 @@ HWTEST_F(Mpeg4MuxerUnitTest, Muxer_SetUserMeta_001, TestSize.Level0)
  */
 HWTEST_F(Mpeg4MuxerUnitTest, Muxer_SetMeta_001, TestSize.Level0)
 {
+    int32_t vidTrackId = -1;
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetMeta_001.mp4");
     OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
 
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
+
+    // 添加视频轨
+    std::shared_ptr<FormatMock> videoParams =
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+    ASSERT_EQ(avmuxer_->AddTrack(vidTrackId, videoParams), 0);
+    ASSERT_GE(vidTrackId, 0);
 
     // 添加metadata
     std::shared_ptr<FormatMock> metaData = FormatMockFactory::CreateFormat();
@@ -2784,12 +2791,19 @@ HWTEST_F(Mpeg4MuxerUnitTest, Muxer_SetMeta_001, TestSize.Level0)
  */
 HWTEST_F(Mpeg4MuxerUnitTest, Muxer_SetMeta_002, TestSize.Level0)
 {
+    int32_t vidTrackId = -1;
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetMeta_002.mp4");
     OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
 
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
+
+    // 添加视频轨
+    std::shared_ptr<FormatMock> videoParams =
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+    ASSERT_EQ(avmuxer_->AddTrack(vidTrackId, videoParams), 0);
+    ASSERT_GE(vidTrackId, 0);
 
     // 添加metadata
     std::shared_ptr<FormatMock> metaData = FormatMockFactory::CreateFormat();
@@ -2811,12 +2825,19 @@ HWTEST_F(Mpeg4MuxerUnitTest, Muxer_SetMeta_002, TestSize.Level0)
  */
 HWTEST_F(Mpeg4MuxerUnitTest, Muxer_SetMeta_003, TestSize.Level0)
 {
+    int32_t vidTrackId = -1;
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetMeta_003.mp4");
     OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
 
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
+
+    // 添加视频轨
+    std::shared_ptr<FormatMock> videoParams =
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+    ASSERT_EQ(avmuxer_->AddTrack(vidTrackId, videoParams), 0);
+    ASSERT_GE(vidTrackId, 0);
 
     // 添加metadata
     std::shared_ptr<FormatMock> metaData = FormatMockFactory::CreateFormat();
