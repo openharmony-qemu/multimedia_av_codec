@@ -489,6 +489,9 @@ bool HlsSegmentManager::CheckDataIntegrity()
 
 bool HlsSegmentManager::CheckLiveLastSegment()
 {
+    if (playList_ == nullptr) {
+        return false;
+    }
     return lastPlaychanged_.load() && playList_->Size() == 0 &&
         readTsIndex_.load() == writeTsIndex_ && GetBufferSize() > 0;
 }
@@ -496,7 +499,7 @@ bool HlsSegmentManager::CheckLiveLastSegment()
 bool HlsSegmentManager::CheckVodEnd()
 {
     AutoLock lock(tsStorageInfoMutex_);
-    if (playlistDownloader_->IsLiveEnd()) {
+    if (playlistDownloader_ != nullptr && playlistDownloader_->IsLiveEnd()) {
         return false;
     }
 
@@ -509,7 +512,7 @@ bool HlsSegmentManager::CheckVodEnd()
 
 Status HlsSegmentManager::CheckPlaylist(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    if (playlistDownloader_->IsLiveEnd()) {
+    if (playlistDownloader_ != nullptr && playlistDownloader_->IsLiveEnd()) {
         if (!CheckLiveLastSegment()) {
             return Status::ERROR_UNKNOWN;
         }
@@ -540,7 +543,7 @@ Status HlsSegmentManager::CheckPlaylist(unsigned char* buff, ReadDataInfo& readD
             readTsIndexTempValue, type_);
         return Status::OK;
     }
-    bool liveEnd = playlistDownloader_->IsLiveEnd() && CheckLiveToVodEnd();
+    bool liveEnd = playlistDownloader_ != nullptr && playlistDownloader_->IsLiveEnd() && CheckLiveToVodEnd();
     if (liveEnd || CheckVodEnd()) {
         readDataInfo.realReadLength_ = 0;
         MEDIA_LOG_I("HLS CheckPlaylist, eos, type: %{public}d", type_);
@@ -592,13 +595,16 @@ Status HlsSegmentManager::ReadDelegate(unsigned char* buff, ReadDataInfo& readDa
 bool HlsSegmentManager::CheckLiveToVodEnd()
 {
     AutoLock lock(tsStorageInfoMutex_);
+    if (playList_ == nullptr) {
+        return false;
+    }
     return lastPlaychanged_.load() && playList_->Size() == 0 && readTsIndex_.load() == writeTsIndex_ &&
         tsStorageInfo_[readTsIndex_.load()].second && GetBufferSize() == 0;
 }
 
 bool HlsSegmentManager::CheckTsEndOrEos(ReadDataInfo& readDataInfo)
 {
-    if (playlistDownloader_->IsLiveEnd()) {
+    if (playlistDownloader_ != nullptr && playlistDownloader_->IsLiveEnd()) {
         return CheckLiveToVodEnd();
     }
     if (isTsEnd_.load()) {
@@ -2239,7 +2245,7 @@ uint64_t HlsSegmentManager::GetMemorySize()
 
 bool HlsSegmentManager::IsHlsEnd()
 {
-    if (playlistDownloader_->IsLiveEnd()) {
+    if (playlistDownloader_ != nullptr && playlistDownloader_->IsLiveEnd()) {
         if (lastPlaychanged_.load() && playList_->Size() == 0 && readTsIndex_.load() == writeTsIndex_ &&
             tsStorageInfo_[readTsIndex_.load()].second && GetBufferSize() == 0) {
             return true;
