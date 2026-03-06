@@ -856,7 +856,6 @@ HWTEST_P(TEST_SUIT, VideoDecoder_RGBA_001, TestSize.Level1)
 HWTEST_P(TEST_SUIT, VideoDecoder_YUVI420_001, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
-    IsPixelFormatSupported(VideoPixelFormat::YUVI420);
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));

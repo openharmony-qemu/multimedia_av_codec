@@ -44,7 +44,6 @@ public:
     static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, STRINGFY(TEST_SUIT)};
 
 protected:
-    std::shared_ptr<OHOS::MediaAVCodec::CodecListMock> capability_ = nullptr;
     std::shared_ptr<OHOS::MediaAVCodec::VideoEncSample> videoEnc_ = nullptr;
     std::shared_ptr<OHOS::MediaAVCodec::FormatMock> format_ = nullptr;
     std::shared_ptr<OHOS::MediaAVCodec::VEncCallbackTest> vencCallback_ = nullptr;
@@ -120,14 +119,6 @@ bool TEST_SUIT::CreateVideoCodecByName(const std::string &name)
         }
     }
     return true;
-}
-
-void TEST_SUIT::IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat pixelFormat)
-{
-    auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
-    if (std::find(pixelFormats.begin(), pixelFormats.end(), static_cast<int32_t>(pixelFormat)) == pixelFormats.end()) {
-        GTEST_SKIP() << "Unsupport pixel format = " << static_cast<int32_t>(pixelFormat);
-    }
 }
 } // namespace VFTSUIT
 #endif //VIDEOENC_FUNC_TEST_SUIT_H
