@@ -499,6 +499,8 @@ bool HlsSegmentManager::CheckVodEnd()
     if (playlistDownloader_->IsLiveEnd()) {
         return false;
     }
+
+    bool isFinishedPlay = CheckReadStatus() || isStopped;
     return isFinishedPlay &&
         GetBufferSize() == 0 && GetSeekable() == Seekable::SEEKABLE &&
         tsStorageInfo_.find(writeTsIndex_) != tsStorageInfo_.end() &&
@@ -587,7 +589,7 @@ Status HlsSegmentManager::ReadDelegate(unsigned char* buff, ReadDataInfo& readDa
     return Status::OK;
 }
 
-bool CheckLiveToVodEnd()
+bool HlsSegmentManager::CheckLiveToVodEnd()
 {
     AutoLock lock(tsStorageInfoMutex_);
     return lastPlaychanged_.load() && playList_->Size() == 0 && readTsIndex_.load() == writeTsIndex_ &&
