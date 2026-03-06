@@ -62,6 +62,8 @@ constexpr int32_t HALF_DIVIDE = 2;
 constexpr uint64_t READ_BACK_SAVE_SIZE = 200 * 1024;
 constexpr int32_t SAVE_DATA_LOG_FREQUENCY = 50;
 constexpr uint32_t KILO = 1024;
+constexpr uint64_t RESUME_FREE_SIZE_THRESHOLD = 400 * 1024; 
+constexpr size_t STORP_WRITE_BUFFER_REDUNDANCY = 200 * 1024;
 constexpr int MAX_RETRY = 10;
 constexpr uint32_t MAX_LOOP_TIMES = 100;
 constexpr uint64_t MAX_EXPECT_DURATION = 19;
@@ -487,6 +489,11 @@ bool HlsSegmentManager::CheckDataIntegrity()
 
 Status HlsSegmentManager::CheckPlaylist(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
+    if (playlistDownloader_->IsEndList()) {
+        if (!(LastPlaychanged_ && playList_->Size() == 0 && readTsIndex_.load() == writeTsIndex_ && GetBufferSize() >0)) {
+            return Status::ERROR_UNKNOWN;
+        }
+    }
     bool isFinishedPlay = CheckReadStatus() || isStopped;
     auto downloadRequest = GetDownloadRequest();
     if (downloadRequest != nullptr) {
@@ -513,9 +520,9 @@ Status HlsSegmentManager::CheckPlaylist(unsigned char* buff, ReadDataInfo& readD
             readTsIndexTempValue, type_);
         return Status::OK;
     }
-    if (isFinishedPlay && GetBufferSize() == 0 && GetSeekable() == Seekable::SEEKABLE &&
+    if ((playlistDownloader_->IsEndList() && CheckLiveToVodEnd()) || (isFinishedPlay && GetBufferSize() == 0 && GetSeekable() == Seekable::SEEKABLE &&
         tsStorageInfo_.find(writeTsIndex_) != tsStorageInfo_.end() &&
-        tsStorageInfo_[writeTsIndex_].second) {
+        tsStorageInfo_[writeTsIndex_].second)) {
         readDataInfo.realReadLength_ = 0;
         MEDIA_LOG_I("HLS CheckPlaylist, eos, type: %{public}d", type_);
         return Status::END_OF_STREAM;
@@ -563,8 +570,19 @@ Status HlsSegmentManager::ReadDelegate(unsigned char* buff, ReadDataInfo& readDa
     return Status::OK;
 }
 
+bool CheckLiveToVodEnd()
+{
+    if (LastPlaychanged_ && playList_->Size() == 0 && readTsIndex_.load() == writeTsIndex_ && tsStorageInfo_[readTsIndex_.load()].second && GetBufferSize() == 0) {
+        return true;
+    }
+    return false;
+}
+
 bool HlsSegmentManager::CheckTsEndOrEos(ReadDataInfo& readDataInfo)
 {
+    if (playlistDownloader_->IsEndList()) {
+        return CheckLiveToVodEnd();
+    }
     if (isTsEnd_.load()) {
         MEDIA_LOG_I("HLS READ TS END, type: %{public}d", type_);
         isTsEnd_.store(false);
@@ -909,6 +927,9 @@ void HlsSegmentManager::OnPlayListChanged(const std::vector<PlayInfo>& playList)
             writeTsIndex_ > 0 ? writeTsIndex_++ : 0;
         }
         PutRequestIntoDownloader(playInfo);
+    }
+    if (playlistDownloader_->IsEndList()) {
+        LastPlaychanged_ = true;
     }
     MEDIA_LOG_I("HLS OnPlayListChanged out playlist: %{public}zu, back: %{public}zu, writeTsIndex_: %{public}u,"
         "type: %{public}d", playList_->Size(), backPlayList_.size(), writeTsIndex_, type_);
@@ -2200,6 +2221,12 @@ uint64_t HlsSegmentManager::GetMemorySize()
 
 bool HlsSegmentManager::IsHlsEnd()
 {
+    if (playlistDownloader_->IsEndList()) {
+        if (LastPlaychanged_ && playList_->Size() == 0 && readTsIndex_.load() == writeTsIndex_ && tsStorageInfo_[readTsIndex_.load()].second && GetBufferSize() == 0){
+            return true;
+        }
+        return false;
+    }
     if (CheckReadStatus() && GetBufferSize() == 0 && readTsIndex_ + 1 == backPlayList_.size() &&
         tsStorageInfo_.find(readTsIndex_) != tsStorageInfo_.end() &&
         tsStorageInfo_[readTsIndex_].second) {
