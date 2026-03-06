@@ -60,7 +60,6 @@ config("ffmpeg_adapter_config") {
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/wma",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/adpcm",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/ilbc",
-    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/truehd",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/twinvq",
   ]
 }
@@ -91,15 +90,22 @@ ohos_shared_library("media_plugin_FFmpegAudioDecoders") {
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/wma/ffmpeg_wma_decoder_plugin.cpp",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/adpcm/ffmpeg_adpcm_decoder_plugin.cpp",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/ilbc/ffmpeg_ilbc_decoder_plugin.cpp",
-    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/truehd/ffmpeg_truehd_decoder_plugin.cpp",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/twinvq/ffmpeg_twinvq_decoder_plugin.cpp",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/dvaudio/ffmpeg_dvaudio_decoder_plugin.cpp",
-    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/dts/ffmpeg_dts_decoder_plugin.cpp",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/cook/ffmpeg_cook_decoder_plugin.cpp",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/ffmpeg_convert.cpp",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/ffmpeg_converter.cpp",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/ffmpeg_utils.cpp",
   ]
+
+  if (av_codec_enable_codec_truehd) {
+    sources +=
+        [ "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/truehd/ffmpeg_truehd_decoder_plugin.cpp", ]
+  }
+  if (av_codec_enable_codec_dts) {
+    sources +=
+        [ "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/dts/ffmpeg_dts_decoder_plugin.cpp", ]
+  }
 
   external_deps = [
     "c_utils:utils",

@@ -35,7 +35,9 @@ constexpr int MAX_CHANNEL_COUNT_WMA = 2;
 constexpr int MAX_CHANNEL_COUNT_RAW = 16;
 constexpr int MAX_CHANNEL_COUNT_G711A = 6;
 constexpr int MAX_CHANNEL_COUNT_DVAUDIO = 2;
+#ifdef SUPPORT_CODEC_DTS
 constexpr int MAX_CHANNEL_COUNT_DTS = 6;
+#endif
 
 constexpr int MIN_BIT_RATE_AAC = 8000;
 constexpr int MAX_BIT_RATE_AAC = 960000;
@@ -72,7 +74,9 @@ const std::vector<int32_t> AUDIO_RAW_SAMPLE_RATE = {8000, 11025, 12000, 16000, 2
     44100, 48000, 64000, 88200, 96000, 192000};
 
 const std::vector<int32_t> AUDIO_DVAUDIO_SAMPLE_RATE = {48000};
+#ifdef SUPPORT_CODEC_DTS
 const std::vector<int32_t> AUDIO_DTS_SAMPLE_RATE = {8000, 16000, 32000, 11025, 22050, 44100, 12000, 24000, 48000};
+#endif
 
 constexpr int MIN_BIT_RATE_FLAC = 32000;
 constexpr int MAX_BIT_RATE_FLAC = 1536000;
@@ -93,7 +97,9 @@ constexpr int MAX_BIT_RATE_AAC_ENCODER = 500000;
 constexpr int MAX_BIT_RATE_RAW = 1536000;
 
 constexpr int MAX_BIT_RATE_DVAUDIO = 1536000;
+#ifdef SUPPORT_CODEC_DTS
 constexpr int MAX_BIT_RATE_DTS = 1536000;
+#endif
 
 #ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
 const std::vector<int32_t> AUDIO_VIVID_SAMPLE_RATE = {32000, 44100, 48000, 96000, 192000};
@@ -162,10 +168,12 @@ constexpr int32_t MAX_CHANNEL_COUNT_ILBC = 1;
 constexpr int32_t AUDIO_ILBC_MIN_BITRATE = 13330;
 constexpr int32_t AUDIO_ILBC_MAX_BITRATE = 15200;
 const std::vector<int32_t> AUDIO_ILBC_SAMPLE_RATE = {8000};
+#ifdef SUPPORT_CODEC_TRUEHD
 constexpr int MIN_BIT_RATE_TRUEHD = 640000;
 constexpr int MAX_BIT_RATE_TRUEHD = 18000000;
 constexpr int MAX_CHANNEL_COUNT_TRUEHD = 8;
 const std::vector<int32_t> AUDIO_TRUEHD_SAMPLE_RATE = {44100, 48000, 88200, 96000, 176400, 192000};
+#endif
 constexpr int MIN_BIT_RATE_TWINVQ = 8000;
 constexpr int MAX_BIT_RATE_TWINVQ = 48000;
 constexpr int MAX_CHANNEL_COUNT_TWINVQ = 2;
@@ -334,6 +342,7 @@ CapabilityData AudioCodeclistInfo::GetIlbcDecoderCapability()
     return audioIlbcCapability;
 }
 
+#ifdef SUPPORT_CODEC_TRUEHD
 CapabilityData AudioCodeclistInfo::GetTruehdDecoderCapability()
 {
     CapabilityData audioTruehdCapability;
@@ -348,6 +357,7 @@ CapabilityData AudioCodeclistInfo::GetTruehdDecoderCapability()
     audioTruehdCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioTruehdCapability;
 }
+#endif
 
 CapabilityData AudioCodeclistInfo::GetTwinVQDecoderCapability()
 {
@@ -783,6 +793,7 @@ CapabilityData  AudioCodeclistInfo::GetDVAudioDecoderCapability()
     return audioDVAudioCapability;
 }
 
+#ifdef SUPPORT_CODEC_DTS
 CapabilityData  AudioCodeclistInfo::GetDtsDecoderCapability()
 {
     CapabilityData audioDtsCapability;
@@ -797,6 +808,7 @@ CapabilityData  AudioCodeclistInfo::GetDtsDecoderCapability()
     audioDtsCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioDtsCapability;
 }
+#endif
 
 CapabilityData  AudioCodeclistInfo::GetCookDecoderCapability()
 {
@@ -875,12 +887,17 @@ AudioCodeclistInfo::AudioCodeclistInfo()
                           GetMP3EncoderCapability(), GetG711aDecoderCapability(), GetAc3DecoderCapability(),
                           GetGsmMsDecoderCapability(), GetGsmDecoderCapability(), GetAlacDecoderCapability(),
                           GetWMAV1DecoderCapability(), GetWMAV2DecoderCapability(), GetWMAProDecoderCapability(),
-                          GetIlbcDecoderCapability(), GetTruehdDecoderCapability(), GetTwinVQDecoderCapability(),
+                          GetIlbcDecoderCapability(), GetTwinVQDecoderCapability(),
+#ifdef SUPPORT_CODEC_TRUEHD
+                          GetTruehdDecoderCapability(),
+#endif
 #ifdef SUPPORT_CODEC_OPUS
                           GetOpusDecoderCapability(), GetOpusEncoderCapability(),
 #endif
     GetDVAudioDecoderCapability(),
+#ifdef SUPPORT_CODEC_DTS
     GetDtsDecoderCapability(),
+#endif
     GetCookDecoderCapability(),
 #ifdef SUPPORT_CODEC_EAC3
     GetEac3DecoderCapability(),

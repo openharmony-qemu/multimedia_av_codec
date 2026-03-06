@@ -49,7 +49,9 @@ public:
     CapabilityData GetWMAV2DecoderCapability();
     CapabilityData GetWMAProDecoderCapability();
     CapabilityData GetIlbcDecoderCapability();
+#ifdef SUPPORT_CODEC_TRUEHD
     CapabilityData GetTruehdDecoderCapability();
+#endif
     CapabilityData GetTwinVQDecoderCapability();
 #ifdef SUPPORT_CODEC_EAC3
     CapabilityData GetEac3DecoderCapability();
@@ -66,7 +68,9 @@ public:
     CapabilityData GetOpusEncoderCapability();
 #endif
     CapabilityData GetDVAudioDecoderCapability();
+#ifdef SUPPORT_CODEC_DTS
     CapabilityData GetDtsDecoderCapability();
+#endif
     CapabilityData GetCookDecoderCapability();
 private:
     std::vector<CapabilityData> audioCapabilities_;
