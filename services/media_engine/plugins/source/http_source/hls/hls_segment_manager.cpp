@@ -487,11 +487,25 @@ bool HlsSegmentManager::CheckDataIntegrity()
     }
 }
 
+bool HlsSegmentManager::CheckLiveLastSegment()
+{
+    return lastPlaychanged_ && playList_->Size() == 0 &&
+        readTsIndex_.load() == writeTsIndex_ && GetBufferSize() >0;
+}
+
+bool HlsSegmentManager::CheckVodEnd()
+{
+    AutoLock lock(tsStorageInfoMutex_);
+    return isFinishedPlay &&
+        GetBufferSize() == 0 && GetSeekable() == Seekable::SEEKABLE &&
+        tsStorageInfo_.find(writeTsIndex_) != tsStorageInfo_.end() &&
+        tsStorageInfo_[writeTsIndex_].second;
+}
+
 Status HlsSegmentManager::CheckPlaylist(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    if (playlistDownloader_->IsEndList()) {
-        if (!(LastPlaychanged_ && playList_->Size() == 0 &&
-            readTsIndex_.load() == writeTsIndex_ && GetBufferSize() >0)) {
+    if (playlistDownloader_->IsLiveEnd()) {
+        if (!CheckLiveLastSegment()) {
             return Status::ERROR_UNKNOWN;
         }
     }
@@ -521,10 +535,8 @@ Status HlsSegmentManager::CheckPlaylist(unsigned char* buff, ReadDataInfo& readD
             readTsIndexTempValue, type_);
         return Status::OK;
     }
-    if ((playlistDownloader_->IsEndList() && CheckLiveToVodEnd()) || (isFinishedPlay &&
-        GetBufferSize() == 0 && GetSeekable() == Seekable::SEEKABLE &&
-        tsStorageInfo_.find(writeTsIndex_) != tsStorageInfo_.end() &&
-        tsStorageInfo_[writeTsIndex_].second)) {
+    bool liveEnd = playlistDownloader_->IsLiveEnd() && CheckLiveToVodEnd();
+    if (liveEnd || CheckVodEnd()) {
         readDataInfo.realReadLength_ = 0;
         MEDIA_LOG_I("HLS CheckPlaylist, eos, type: %{public}d", type_);
         return Status::END_OF_STREAM;
@@ -574,16 +586,14 @@ Status HlsSegmentManager::ReadDelegate(unsigned char* buff, ReadDataInfo& readDa
 
 bool CheckLiveToVodEnd()
 {
-    if (LastPlaychanged_ && playList_->Size() == 0 && readTsIndex_.load() == writeTsIndex_ &&
-        tsStorageInfo_[readTsIndex_.load()].second && GetBufferSize() == 0) {
-        return true;
-    }
-    return false;
+    AutoLock lock(tsStorageInfoMutex_);
+    return lastPlaychanged_ && playList_->Size() == 0 && readTsIndex_.load() == writeTsIndex_ &&
+        tsStorageInfo_[readTsIndex_.load()].second && GetBufferSize() == 0;
 }
 
 bool HlsSegmentManager::CheckTsEndOrEos(ReadDataInfo& readDataInfo)
 {
-    if (playlistDownloader_->IsEndList()) {
+    if (playlistDownloader_->IsLiveEnd()) {
         return CheckLiveToVodEnd();
     }
     if (isTsEnd_.load()) {
@@ -931,8 +941,8 @@ void HlsSegmentManager::OnPlayListChanged(const std::vector<PlayInfo>& playList)
         }
         PutRequestIntoDownloader(playInfo);
     }
-    if (playlistDownloader_->IsEndList()) {
-        LastPlaychanged_ = true;
+    if (playlistDownloader_->IsLiveEnd()) {
+        lastPlaychanged_ = true;
     }
     MEDIA_LOG_I("HLS OnPlayListChanged out playlist: %{public}zu, back: %{public}zu, writeTsIndex_: %{public}u,"
         "type: %{public}d", playList_->Size(), backPlayList_.size(), writeTsIndex_, type_);
@@ -2000,7 +2010,7 @@ bool HlsSegmentManager::GetReadTimeOut(bool isDelay)
 size_t HlsSegmentManager::GetSegmentOffset()
 {
     if (playlistDownloader_) {
-        if (playlistDownloader_->IsLive() || playlistDownloader_->IsEndList()) {
+        if (playlistDownloader_->IsLive() || playlistDownloader_->IsLiveEnd()) {
             std::string url = InfoIndexMap_.writeMap[readTsIndex_];
             return InfoIndexMap_.urlMap[url].sumDuration_ -
                 static_cast<uint64_t>(InfoIndexMap_.urlMap[url].duration_) * ONE_USSECONDS;
@@ -2224,8 +2234,8 @@ uint64_t HlsSegmentManager::GetMemorySize()
 
 bool HlsSegmentManager::IsHlsEnd()
 {
-    if (playlistDownloader_->IsEndList()) {
-        if (LastPlaychanged_ && playList_->Size() == 0 && readTsIndex_.load() == writeTsIndex_ &&
+    if (playlistDownloader_->IsLiveEnd()) {
+        if (lastPlaychanged_ && playList_->Size() == 0 && readTsIndex_.load() == writeTsIndex_ &&
             tsStorageInfo_[readTsIndex_.load()].second && GetBufferSize() == 0){
             return true;
         }

@@ -403,9 +403,9 @@ bool HlsPlayListDownloader::UpdatePlaylists(bool isSimple)
     return ret;
 }
 
-bool HlsPlayListDownloader::IsEndList()
+bool HlsPlayListDownloader::IsLiveEnd()
 {
-    return endList_;
+    return isLiveEnd_;
 }
 
 void HlsPlayListDownloader::UpdateMasterInfo(bool isPreParse)
@@ -424,7 +424,7 @@ void HlsPlayListDownloader::UpdateMasterInfo(bool isPreParse)
     if (master_->bLive_ && !m3u8->IsLive()) {
         MEDIA_LOG_I("Live stream ended and transitioning to Vod");
         updateTask_->Stop();
-        endList_ = true;
+        isLiveEnd_ = true;
     }
     master_->bLive_ = m3u8->IsLive();
     master_->isFmp4_ = m3u8->isHeaderReady_.load();
