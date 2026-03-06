@@ -489,13 +489,16 @@ bool HlsSegmentManager::CheckDataIntegrity()
 
 bool HlsSegmentManager::CheckLiveLastSegment()
 {
-    return lastPlaychanged_ && playList_->Size() == 0 &&
-        readTsIndex_.load() == writeTsIndex_ && GetBufferSize() >0;
+    return lastPlaychanged_.load() && playList_->Size() == 0 &&
+        readTsIndex_.load() == writeTsIndex_ && GetBufferSize() > 0;
 }
 
 bool HlsSegmentManager::CheckVodEnd()
 {
     AutoLock lock(tsStorageInfoMutex_);
+    if (playlistDownloader_->IsLiveEnd()) {
+        return false;
+    }
     return isFinishedPlay &&
         GetBufferSize() == 0 && GetSeekable() == Seekable::SEEKABLE &&
         tsStorageInfo_.find(writeTsIndex_) != tsStorageInfo_.end() &&
@@ -587,7 +590,7 @@ Status HlsSegmentManager::ReadDelegate(unsigned char* buff, ReadDataInfo& readDa
 bool CheckLiveToVodEnd()
 {
     AutoLock lock(tsStorageInfoMutex_);
-    return lastPlaychanged_ && playList_->Size() == 0 && readTsIndex_.load() == writeTsIndex_ &&
+    return lastPlaychanged_.load() && playList_->Size() == 0 && readTsIndex_.load() == writeTsIndex_ &&
         tsStorageInfo_[readTsIndex_.load()].second && GetBufferSize() == 0;
 }
 
@@ -942,7 +945,7 @@ void HlsSegmentManager::OnPlayListChanged(const std::vector<PlayInfo>& playList)
         PutRequestIntoDownloader(playInfo);
     }
     if (playlistDownloader_->IsLiveEnd()) {
-        lastPlaychanged_ = true;
+        lastPlaychanged_.store(true);
     }
     MEDIA_LOG_I("HLS OnPlayListChanged out playlist: %{public}zu, back: %{public}zu, writeTsIndex_: %{public}u,"
         "type: %{public}d", playList_->Size(), backPlayList_.size(), writeTsIndex_, type_);
@@ -2235,7 +2238,7 @@ uint64_t HlsSegmentManager::GetMemorySize()
 bool HlsSegmentManager::IsHlsEnd()
 {
     if (playlistDownloader_->IsLiveEnd()) {
-        if (lastPlaychanged_ && playList_->Size() == 0 && readTsIndex_.load() == writeTsIndex_ &&
+        if (lastPlaychanged_.load() && playList_->Size() == 0 && readTsIndex_.load() == writeTsIndex_ &&
             tsStorageInfo_[readTsIndex_.load()].second && GetBufferSize() == 0){
             return true;
         }
