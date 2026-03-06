@@ -885,7 +885,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1221, TestSize.Level1)
         }
     }
 }
-
+#ifdef ONLY_FOR_NOT_FLAGSHIP_CHIP
 /**
  * @tc.name: VideoDecoder_HRDVivid2SDR_2011
  * @tc.desc: 1. key pixel format is RGBA;
@@ -1005,6 +1005,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_2061, TestSize.Level1)
                          OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
     ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, videoDec_->Configure(format_));
 }
+#endif // ONLY_FOR_NOT_FLAGSHIP_CHIP
 } // namespace HevcTestSuit
 
 namespace AvcTestSuit {

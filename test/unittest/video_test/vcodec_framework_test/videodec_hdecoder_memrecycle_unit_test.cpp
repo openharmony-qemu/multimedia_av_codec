@@ -941,7 +941,6 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Memory_Recycle_002, TestSize.Level1)
     SuspendActive();
 }
 
-#ifdef HMOS_TEST
 /**
  * @tc.name: VideoDecoder_Hardware_Freeze_003
  * @tc.desc: decoder is Prepared and freeze process
@@ -1083,7 +1082,6 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Hardware_Active_011, TestSize.Level1)
     SuspendFreeze();
     SuspendActive();
 }
-#endif // HMOS_TEST
 } // namespace
 
 int main(int argc, char **argv)

@@ -40,10 +40,10 @@ public:
     bool GetWaterMarkCapability(int32_t param);
     bool GetTemporalScalabilityCapability(int32_t param);
     bool GetTemporalScalabilityCapability(int32_t param, bool isTemporalScalability);
-    void IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat pixelFormat);
     static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, STRINGFY(TEST_SUIT)};
 
 protected:
+    std::shared_ptr<OHOS::MediaAVCodec::CodecListMock> capability_ = nullptr;
     std::shared_ptr<OHOS::MediaAVCodec::VideoEncSample> videoEnc_ = nullptr;
     std::shared_ptr<OHOS::MediaAVCodec::FormatMock> format_ = nullptr;
     std::shared_ptr<OHOS::MediaAVCodec::VEncCallbackTest> vencCallback_ = nullptr;

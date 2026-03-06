@@ -497,8 +497,8 @@ ohos_unittest("videodec_capi_async_unit_test") {
     "VideoDecSample=VideoDecAsyncSample",
   ]
   defines += av_codec_defines
-  if (target_cpu == "arm64") {
-    defines += [ "HMOS_TEST" ]
+  if (av_codec_enable_only_for_flagship_chip) {
+    defines += [ "ONLY_FOR_FLAGSHIP_CHIP" ]
   }
 
   cflags = vcodec_unittest_cflags
@@ -614,8 +614,8 @@ ohos_unittest("videodec_inner_async_unit_test") {
     "VIDEODEC_INNER_UNIT_TEST",
     "VideoDecSample=VideoDecAsyncSample",
   ]
-  if (target_cpu == "arm64") {
-    defines += [ "HMOS_TEST" ]
+  if (av_codec_enable_only_for_flagship_chip) {
+    defines += [ "ONLY_FOR_FLAGSHIP_CHIP" ]
   }
 
   cflags = vcodec_unittest_cflags
@@ -881,8 +881,8 @@ ohos_unittest("videoenc_capi_async_unit_test") {
     "VIDEOENC_CAPI_UNIT_TEST",
     "VideoEncSample=VideoEncAsyncSample",
   ]
-  if (target_cpu == "arm64") {
-    defines += [ "HMOS_TEST" ]
+  if (av_codec_enable_only_for_flagship_chip) {
+    defines += [ "ONLY_FOR_FLAGSHIP_CHIP" ]
   }
 
   cflags = vcodec_unittest_cflags
@@ -928,8 +928,8 @@ ohos_unittest("videoenc_inner_async_unit_test") {
     "VIDEOENC_INNER_UNIT_TEST",
     "VideoEncSample=VideoEncAsyncSample",
   ]
-  if (target_cpu == "arm64") {
-    defines += [ "HMOS_TEST" ]
+  if (av_codec_enable_only_for_flagship_chip) {
+    defines += [ "ONLY_FOR_FLAGSHIP_CHIP" ]
   }
 
   cflags = vcodec_unittest_cflags
@@ -976,9 +976,6 @@ ohos_unittest("videoenc_temporal_scalability_capi_unit_test") {
     "VIDEOENC_CAPI_UNIT_TEST",
     "VideoEncSample=VideoEncAsyncSample",
   ]
-  if (target_cpu == "arm64") {
-    defines += [ "HMOS_TEST" ]
-  }
 
   cflags = vcodec_unittest_cflags
 
@@ -1022,9 +1019,6 @@ ohos_unittest("videoenc_temporal_scalability_inner_unit_test") {
     "VIDEOENC_INNER_UNIT_TEST",
     "VideoEncSample=VideoEncAsyncSample",
   ]
-  if (target_cpu == "arm64") {
-    defines += [ "HMOS_TEST" ]
-  }
 
   cflags = vcodec_unittest_cflags
 
@@ -1074,9 +1068,6 @@ ohos_unittest("videoenc_bframe_capi_async_unit_test") {
     "VIDEOENC_CAPI_UNIT_TEST",
     "VideoEncSample=VideoEncAsyncSample",
   ]
-  if (target_cpu == "arm64") {
-    defines += [ "HMOS_TEST" ]
-  }
 
   cflags = vcodec_unittest_cflags
 
@@ -1119,9 +1110,6 @@ ohos_unittest("videoenc_bframe_inner_async_unit_test") {
     "VIDEOENC_INNER_UNIT_TEST",
     "VideoEncSample=VideoEncAsyncSample",
   ]
-  if (target_cpu == "arm64") {
-    defines += [ "HMOS_TEST" ]
-  }
 
   cflags = vcodec_unittest_cflags
 
@@ -1170,9 +1158,6 @@ ohos_unittest("videoenc_bframe_capi_sync_unit_test") {
     "VIDEOENC_CAPI_UNIT_TEST",
     "VideoEncSample=VideoEncSyncSample",
   ]
-  if (target_cpu == "arm64") {
-    defines += [ "HMOS_TEST" ]
-  }
 
   cflags = vcodec_unittest_cflags
 
@@ -1215,9 +1200,6 @@ ohos_unittest("videoenc_bframe_inner_sync_unit_test") {
     "VIDEOENC_INNER_UNIT_TEST",
     "VideoEncSample=VideoEncSyncSample",
   ]
-  if (target_cpu == "arm64") {
-    defines += [ "HMOS_TEST" ]
-  }
 
   cflags = vcodec_unittest_cflags
 
@@ -1268,8 +1250,8 @@ ohos_unittest("videoenc_repeat_previous_frame_unit_test") {
     "VIDEOENC_CAPI_UNIT_TEST",
     "VideoEncSample=VideoEncAsyncSample",
   ]
-  if (target_cpu == "arm64") {
-    defines += [ "HMOS_TEST" ]
+  if (av_codec_enable_only_for_flagship_chip) {
+    defines += [ "ONLY_FOR_FLAGSHIP_CHIP" ]
   }
 
   cflags = vcodec_unittest_cflags
@@ -1313,9 +1295,6 @@ ohos_unittest("videoenc_format_capi_unit_test") {
     "VIDEOENC_CAPI_UNIT_TEST",
     "VideoEncSample=VideoEncAsyncSample",
   ]
-  if (target_cpu == "arm64") {
-    defines += [ "HMOS_TEST" ]
-  }
 
   cflags = vcodec_unittest_cflags
 
@@ -1359,9 +1338,6 @@ ohos_unittest("videoenc_bitrate_mode_capi_unit_test") {
     "VIDEOENC_CAPI_UNIT_TEST",
     "VideoEncSample=VideoEncSyncSample",
   ]
-  if (target_cpu == "arm64") {
-    defines += [ "HMOS_TEST" ]
-  }
 
   cflags = vcodec_unittest_cflags
 
@@ -1591,8 +1567,8 @@ ohos_unittest("videodec_hdrvivid2sdr_async_unit_test") {
     "VIDEODEC_ASYNC_UNIT_TEST",
     "VideoDecSample=VideoDecAsyncSample",
   ]
-  if (target_cpu == "arm64") {
-    defines += [ "HMOS_TEST" ]
+  if (!av_codec_enable_only_for_flagship_chip) {
+    defines += [ "ONLY_FOR_NOT_FLAGSHIP_CHIP" ]
   }
 
   cflags = vcodec_unittest_cflags
@@ -1665,9 +1641,6 @@ ohos_unittest("videodec_hdecoder_memrecycle_async_unit_test") {
     "VIDEODEC_HARDWARE_MEMRECYCLE_UNIT_TEST",
     "VideoDecSample=VideoDecAsyncSample",
   ]
-  if (target_cpu == "arm64") {
-    defines += [ "HMOS_TEST" ]
-  }
 
   cflags = vcodec_unittest_cflags
 
@@ -1805,8 +1778,8 @@ ohos_unittest("videodec_capi_sync_unit_test") {
     "VideoDecSample=VideoDecSyncSample",
   ]
   defines += av_codec_defines
-  if (target_cpu == "arm64") {
-    defines += [ "HMOS_TEST" ]
+  if (av_codec_enable_only_for_flagship_chip) {
+    defines += [ "ONLY_FOR_FLAGSHIP_CHIP" ]
   }
 
   cflags = vcodec_unittest_cflags
@@ -1922,8 +1895,8 @@ ohos_unittest("videodec_inner_sync_unit_test") {
     "VIDEODEC_SYNC_UNIT_TEST",
     "VideoDecSample=VideoDecSyncSample",
   ]
-  if (target_cpu == "arm64") {
-    defines += [ "HMOS_TEST" ]
+  if (av_codec_enable_only_for_flagship_chip) {
+    defines += [ "ONLY_FOR_FLAGSHIP_CHIP" ]
   }
 
   cflags = vcodec_unittest_cflags
@@ -3816,8 +3789,8 @@ ohos_unittest("videodec_hdrvivid2sdr_sync_unit_test") {
     "VIDEODEC_SYNC_UNIT_TEST",
     "VideoDecSample=VideoDecSyncSample",
   ]
-  if (target_cpu == "arm64") {
-    defines += [ "HMOS_TEST" ]
+  if (av_codec_enable_only_for_flagship_chip) {
+    defines += [ "ONLY_FOR_NOT_FLAGSHIP_CHIP" ]
   }
 
   cflags = vcodec_unittest_cflags
@@ -3892,9 +3865,6 @@ ohos_unittest("videodec_hdecoder_memrecycle_sync_unit_test") {
     "VIDEODEC_SYNC_UNIT_TEST",
     "VideoDecSample=VideoDecSyncSample",
   ]
-  if (target_cpu == "arm64") {
-    defines += [ "HMOS_TEST" ]
-  }
 
   cflags = vcodec_unittest_cflags
 
@@ -3949,8 +3919,8 @@ ohos_unittest("videoenc_capi_sync_unit_test") {
     "VIDEOENC_SYNC_UNIT_TEST",
     "VideoEncSample=VideoEncSyncSample",
   ]
-  if (target_cpu == "arm64") {
-    defines += [ "HMOS_TEST" ]
+  if (av_codec_enable_only_for_flagship_chip) {
+    defines += [ "ONLY_FOR_FLAGSHIP_CHIP" ]
   }
 
   cflags = vcodec_unittest_cflags
@@ -3997,8 +3967,8 @@ ohos_unittest("videoenc_inner_sync_unit_test") {
     "VIDEOENC_SYNC_UNIT_TEST",
     "VideoEncSample=VideoEncSyncSample",
   ]
-  if (target_cpu == "arm64") {
-    defines += [ "HMOS_TEST" ]
+  if (av_codec_enable_only_for_flagship_chip) {
+    defines += [ "ONLY_FOR_FLAGSHIP_CHIP" ]
   }
 
   cflags = vcodec_unittest_cflags
@@ -4188,8 +4158,8 @@ ohos_unittest("videodec_detailed_error_code_async_unit_test") {
     "VideoDecSample=VideoDecAsyncSample",
   ]
   defines += av_codec_defines
-  if (target_cpu == "arm64") {
-    defines += [ "HMOS_TEST" ]
+  if (av_codec_enable_only_for_flagship_chip) {
+    defines += [ "ONLY_FOR_FLAGSHIP_CHIP" ]
   }
 
   cflags = vcodec_unittest_cflags
