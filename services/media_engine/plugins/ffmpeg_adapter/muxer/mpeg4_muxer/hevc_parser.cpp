@@ -27,7 +27,7 @@ namespace Media {
 namespace Plugins {
 namespace Mpeg4 {
 using namespace OHOS::Media::Plugins;
-HevcParser::HevcParser() : VideoParser(VideoParserStreamType::H265)
+HevcParser::HevcParser(bool &videoDelay) : VideoParser(VideoParserStreamType::H265), hasVideoDelay_(videoDelay)
 {}
 
 int32_t HevcParser::Init()
@@ -72,6 +72,7 @@ int32_t HevcParser::WriteFrame(const std::shared_ptr<AVIOStream> &io, const std:
                 hvccBox_->data.clear();
                 hvccBox_->data.assign(extra, extra + extraSize);
             }
+            FALSE_RETURN_V_MSG_E(SetVideoDelay() == Status::NO_ERROR, -1, "set Video Delay failed!");
             MEDIA_LOG_I("avmuxer h265 first frame size:%{public}d, extra data size:%{public}d, box data"
                 " size:%{public}zu", size, extraSize, hvccBox_->data.size());
             if (!(sample->flag_ & static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME))) {
@@ -114,6 +115,18 @@ int32_t HevcParser::WriteAnnexBFrame(const std::shared_ptr<AVIOStream> &io, cons
         nalStart = nalEnd + startCodeLen;
     }
     return writeSize;
+}
+
+Status HevcParser::SetVideoDelay()
+{
+    FALSE_RETURN_V_MSG_E(parser_ != nullptr, Status::ERROR_INVALID_DATA, "hevc parser is null");
+    uint32_t maxReorderPic = parser_->GetMaxReorderPic();
+    if (maxReorderPic > 0) {
+        hasVideoDelay_ = (maxReorderPic > 0 && maxReorderPic <= 16);  // max 16
+    }
+    MEDIA_LOG_I("hevc parser get video delay:%{public}d, set:%{public}d",
+        maxReorderPic, static_cast<int32_t>(hasVideoDelay_));
+    return Status::NO_ERROR;
 }
 
 bool HevcParser::IsParserColor()
