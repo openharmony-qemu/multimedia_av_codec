@@ -224,6 +224,8 @@ private:
     bool IsAllDownloadFinish();
     void PlayListChanged(const std::vector<PlayInfo>& playList);
     bool CheckLiveToVodEnd();
+    bool CheckVodEnd();
+    bool CheckLiveLastSegment();
 
 private:
     HlsSegmentType type_ = HlsSegmentType::SEG_VIDEO;
