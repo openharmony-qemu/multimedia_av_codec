@@ -234,6 +234,7 @@ private:
     static int AVReadPacket(void* opaque, uint8_t* buf, int bufSize);
     static int HandleReadOK(IOContext* ioContext, int dataSize);
     static int HandleReadAgain(IOContext* ioContext, int dataSize, int& tryCount);
+    static int HandleNonReadAgain(IOContext* ioContext, int& tryCount);
     static int HandleReadEOS(IOContext* ioContext);
     static int HandleReadError(int result);
     static void UpdateInitDownloadData(IOContext* ioContext, int dataSize);

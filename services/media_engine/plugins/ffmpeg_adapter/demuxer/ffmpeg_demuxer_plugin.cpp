@@ -1563,6 +1563,9 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     FALSE_RETURN_V_MSG_E(formatContext_ == nullptr, Status::ERROR_WRONG_STATE,
         "AVFormatContext has been initialized");
     FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "DataSource is nullptr");
+    ioContext_.retry = false;
+    ioContext_.initErrorAgain = false;
+    ioContext_.avReadPacketStopState.store(AVReadPacketStopState::FALSE);
     if (ioContext_.invokerType != InvokerType::INIT) {
         std::lock_guard<std::mutex> initLock(ioContext_.invokerTypeMutex);
         ioContext_.invokerType = InvokerType::INIT;
@@ -2788,6 +2791,8 @@ Status FFmpegDemuxerPlugin::CheckSeekParams(int64_t seekTime, SeekMode mode) con
 
 void FFmpegDemuxerPlugin::SyncSeekThread()
 {
+    ioContext_.retry = false;
+    ioContext_.avReadPacketStopState.store(AVReadPacketStopState::FALSE);
     if (readThread_ == nullptr) {
         return;
     }
@@ -3846,6 +3851,32 @@ Status FFmpegDemuxerPlugin::SeekToFrameByDts(int32_t trackId, int64_t seekTime,
 
 namespace { // plugin set
 
+constexpr int32_t PROBE_READ_RETRY_TIMES = 10;
+constexpr useconds_t PROBE_READ_SLEEP_TIME_US = 10 * 1000;
+
+Status ReadProbeData(const std::shared_ptr<DataSource>& dataSource, int64_t offset,
+    std::shared_ptr<Buffer>& bufferInfo, size_t bufferSize, const std::string& traceName)
+{
+    Status ret = Status::ERROR_UNKNOWN;
+    for (int32_t retryTimes = 0; retryTimes <= PROBE_READ_RETRY_TIMES; ++retryTimes) {
+        MediaAVCodec::AVCodecTrace trace(traceName.c_str());
+        ret = dataSource->ReadAt(offset, bufferInfo, bufferSize);
+        auto memory = bufferInfo->GetMemory();
+        size_t dataSize = memory != nullptr ? memory->GetSize() : 0;
+        if (ret == Status::OK && dataSize > 0) {
+            return Status::OK;
+        }
+        if (ret != Status::OK && ret != Status::ERROR_AGAIN) {
+            return ret;
+        }
+        if (retryTimes == PROBE_READ_RETRY_TIMES) {
+            return ret == Status::OK ? Status::ERROR_AGAIN : ret;
+        }
+        usleep(PROBE_READ_SLEEP_TIME_US);
+    }
+    return ret;
+}
+
 int IsStartWithID3(const uint8_t *buf, const char *tagName)
 {
     return buf[POS_0] == tagName[POS_0] &&
@@ -3883,12 +3914,8 @@ int32_t GetConfidence(std::shared_ptr<AVInputFormat> plugin, std::shared_ptr<FFI
     auto bufData = bufferInfo->WrapMemory(buff.data(), bufferSize, bufferSize);
     FALSE_RETURN_V_MSG_E(bufferInfo->GetMemory() != nullptr, -1,
         "Alloc buffer failed for " PUBLIC_LOG_S, pluginName.c_str());
-    Status ret = Status::OK;
-    {
-        std::string traceName = "Sniff_" + pluginName + "_Readat";
-        MediaAVCodec::AVCodecTrace trace(traceName.c_str());
-        ret = dataSource->ReadAt(0, bufferInfo, bufferSize);
-    }
+    std::string traceName = "Sniff_" + pluginName + "_Readat";
+    Status ret = ReadProbeData(dataSource, 0, bufferInfo, bufferSize, traceName);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, -1, "Read probe data failed for " PUBLIC_LOG_S, pluginName.c_str());
     getData = bufferInfo->GetMemory()->GetSize();
     FALSE_RETURN_V_MSG_E(getData > 0, -1, "No data for sniff " PUBLIC_LOG_S, pluginName.c_str());
@@ -3902,7 +3929,7 @@ int32_t GetConfidence(std::shared_ptr<AVInputFormat> plugin, std::shared_ptr<FFI
             bufferSize = (bufferSize < remainSize) ? bufferSize : remainSize;
             int resetRet = memset_s(buff.data(), bufferSize, 0, bufferSize);
             FALSE_RETURN_V_MSG_E(resetRet == EOK, -1, "Reset buff failed for " PUBLIC_LOG_S, pluginName.c_str());
-            ret = dataSource->ReadAt(id3Len, bufferInfo, bufferSize);
+            ret = ReadProbeData(dataSource, id3Len, bufferInfo, bufferSize, traceName);
             FALSE_RETURN_V_MSG_E(ret == Status::OK, -1, "Read probe data failed for " PUBLIC_LOG_S, pluginName.c_str());
             getData = bufferInfo->GetMemory()->GetSize();
             FALSE_RETURN_V_MSG_E(getData > 0, -1, "No data for sniff " PUBLIC_LOG_S, pluginName.c_str());
