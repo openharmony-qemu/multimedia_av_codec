@@ -47,11 +47,10 @@ public:
     void CreateByNameWithParam(int32_t param);
     void SetFormatWithParam(int32_t param);
     void PrepareSource(int32_t param);
-    void IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat pixelFormat);
     static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, STRINGFY(TEST_SUIT)};
 
 protected:
-    std::shared_ptr<OHOS::MediaAVCodec::CodecListMock> capability_ = nullptr;
+    std::shared_ptr<CodecListMock> capability_ = nullptr;
     std::shared_ptr<VideoDecSample> videoDec_ = nullptr;
     std::shared_ptr<FormatMock> format_ = nullptr;
     std::shared_ptr<VDecCallbackTest> vdecCallback_ = nullptr;
@@ -140,14 +139,6 @@ void TEST_SUIT::CreateByNameWithParam(int32_t param)
     codecName = capability_->GetName();
     std::cout << "CodecName: " << codecName << "\n";
     ASSERT_TRUE(CreateVideoCodecByName(codecName));
-}
-
-void TEST_SUIT::IsPixelFormatSupported(VideoPixelFormat pixelFormat)
-{
-    auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
-    if (std::find(pixelFormats.begin(), pixelFormats.end(), static_cast<int32_t>(pixelFormat)) == pixelFormats.end()) {
-        GTEST_SKIP() << "Unsupport pixel format = " << static_cast<int32_t>(pixelFormat);
-    }
 }
 
 void TEST_SUIT::PrepareSource(int32_t param)
@@ -1059,7 +1050,6 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Abnormal_004, TestSize.Level1)
 HWTEST_P(TEST_SUIT, VideoDecoder_SetParameter_001, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
-    IsPixelFormatSupported(VideoPixelFormat::YUVI420);
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
@@ -1085,7 +1075,6 @@ HWTEST_P(TEST_SUIT, VideoDecoder_SetParameter_001, TestSize.Level1)
 HWTEST_P(TEST_SUIT, VideoDecoder_SetParameter_002, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
-    IsPixelFormatSupported(VideoPixelFormat::YUVI420);
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));

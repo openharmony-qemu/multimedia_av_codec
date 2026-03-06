@@ -123,7 +123,7 @@ void HEVC_TEST_SUIT::PrepareSource(ResourceType param)
     (void)fileName.erase(std::remove_if(fileName.begin(), fileName.end(), check), fileName.end());
     videoDec_->SetOutPath(prefix + fileName);
 }
-
+#ifdef ONLY_FOR_FLAGSHIP_CHIP
 void GetInitialParam(ResourceType resourceType, int32_t &initialWidth, int32_t &initialHeight,
                      int32_t &initialColorSpace)
 {
@@ -198,7 +198,7 @@ void HEVC_TEST_SUIT::ConfigureHdrVivid2Sdr(std::string_view mimeType, ResourceTy
             break;
     }
 }
-
+#endif // ONLY_FOR_FLAGSHIP_CHIP
 INSTANTIATE_TEST_SUITE_P(,
                          HEVC_TEST_SUIT,
                          testing::Values(std::make_tuple(CodecMimeType::VIDEO_HEVC, ResourceType::SDR,
@@ -249,7 +249,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_0021, TestSize.Level1)
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpace);
     ASSERT_EQ(AV_ERR_INVALID_VAL, videoDec_->Configure(format_));
 }
-
+#ifdef ONLY_FOR_FLAGSHIP_CHIP
 /**
  * @tc.name: VideoDecoder_HRDVivid2SDR_1011
  * @tc.desc: 1. key pixel format unset;
@@ -885,7 +885,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1221, TestSize.Level1)
         }
     }
 }
-#ifdef ONLY_FOR_NOT_FLAGSHIP_CHIP
+#else
 /**
  * @tc.name: VideoDecoder_HRDVivid2SDR_2011
  * @tc.desc: 1. key pixel format is RGBA;

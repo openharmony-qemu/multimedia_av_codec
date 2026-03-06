@@ -1567,8 +1567,8 @@ ohos_unittest("videodec_hdrvivid2sdr_async_unit_test") {
     "VIDEODEC_ASYNC_UNIT_TEST",
     "VideoDecSample=VideoDecAsyncSample",
   ]
-  if (!av_codec_enable_only_for_flagship_chip) {
-    defines += [ "ONLY_FOR_NOT_FLAGSHIP_CHIP" ]
+  if (av_codec_enable_only_for_flagship_chip) {
+    defines += [ "ONLY_FOR_FLAGSHIP_CHIP" ]
   }
 
   cflags = vcodec_unittest_cflags
@@ -3790,7 +3790,7 @@ ohos_unittest("videodec_hdrvivid2sdr_sync_unit_test") {
     "VideoDecSample=VideoDecSyncSample",
   ]
   if (av_codec_enable_only_for_flagship_chip) {
-    defines += [ "ONLY_FOR_NOT_FLAGSHIP_CHIP" ]
+    defines += [ "ONLY_FOR_FLAGSHIP_CHIP" ]
   }
 
   cflags = vcodec_unittest_cflags
