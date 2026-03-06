@@ -1557,12 +1557,8 @@ void FFmpegDemuxerPlugin::InitIoContextInDemuxer(const std::shared_ptr<DataSourc
     MEDIA_LOG_I("FileSize: " PUBLIC_LOG_U64 ", seekable: " PUBLIC_LOG_D32, ioContext_.fileSize, seekable_);
 }
 
-Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& source)
+void FFmpegDemuxerPlugin::PrepareSetDataSourceContext()
 {
-    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
-    FALSE_RETURN_V_MSG_E(formatContext_ == nullptr, Status::ERROR_WRONG_STATE,
-        "AVFormatContext has been initialized");
-    FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "DataSource is nullptr");
     ioContext_.retry = false;
     ioContext_.initErrorAgain = false;
     ioContext_.avReadPacketStopState.store(AVReadPacketStopState::FALSE);
@@ -1570,6 +1566,15 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
         std::lock_guard<std::mutex> initLock(ioContext_.invokerTypeMutex);
         ioContext_.invokerType = InvokerType::INIT;
     }
+}
+
+Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& source)
+{
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
+    FALSE_RETURN_V_MSG_E(formatContext_ == nullptr, Status::ERROR_WRONG_STATE,
+        "AVFormatContext has been initialized");
+    FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "DataSource is nullptr");
+    PrepareSetDataSourceContext();
     auto id = HiviewDFX::XCollie::GetInstance().SetTimer("av_codec::demuxer_setdatasource", SETTIMER_TIMEOUT,
         nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
     InitIoContextInDemuxer(source);

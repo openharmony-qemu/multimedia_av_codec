@@ -244,6 +244,7 @@ private:
     std::shared_ptr<AVFormatContext> InitAVFormatContext(IOContext *ioContext);
     static int CheckContextIsValid(void* opaque, int &bufSize);
     void NotifyInitializationCompleted();
+    void PrepareSetDataSourceContext();
 
     void InitParser();
     void InitBitStreamContext(const AVStream& avStream);
