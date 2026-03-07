@@ -29,6 +29,7 @@ config("http_source_plugin_config") {
     "-FPIC",
     "-FS",
     "-O2",
+    "-fvisibility=hidden",
     "-D_FORTIFY_SOURCE=2",
     "-Wformat=2",
     "-Wdate-time",
