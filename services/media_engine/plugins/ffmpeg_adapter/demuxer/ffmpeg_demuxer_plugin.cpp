@@ -1561,7 +1561,6 @@ void FFmpegDemuxerPlugin::PrepareSetDataSourceContext()
 {
     ioContext_.retry = false;
     ioContext_.initErrorAgain = false;
-    ioContext_.avReadPacketStopState.store(AVReadPacketStopState::FALSE);
     if (ioContext_.invokerType != InvokerType::INIT) {
         std::lock_guard<std::mutex> initLock(ioContext_.invokerTypeMutex);
         ioContext_.invokerType = InvokerType::INIT;
@@ -1615,12 +1614,6 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     NotifyInitializationCompleted();
     MEDIA_LOG_I("Out");
     cachelimitSize_ = DEFAULT_CACHE_LIMIT;
-    if (ioContext_.initErrorAgain == true && formatContext_->pb != nullptr && formatContext_->pb->error == -1) {
-        // -1 means error_again during init
-        MEDIA_LOG_E("Initialization error_again occurred");
-        ResetContext();
-        ioContext_.initErrorAgain = false;
-    }
     HiviewDFX::XCollie::GetInstance().CancelTimer(id);
     return Status::OK;
 }
