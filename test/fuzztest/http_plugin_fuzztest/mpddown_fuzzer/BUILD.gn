@@ -119,6 +119,7 @@ ohos_fuzztest("MpdDownFuzzTest") {
   deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
   external_deps = [
     "c_utils:utils",
+    "certificate_manager:cert_manager_sdk",
     "hilog:libhilog",
     "media_foundation:media_foundation",
     "curl:curl_shared",

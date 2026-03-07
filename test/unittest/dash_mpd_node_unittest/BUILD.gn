@@ -105,6 +105,7 @@ ohos_unittest("dash_mpd_node_unittest") {
 
   external_deps = [
     "c_utils:utils",
+    "certificate_manager:cert_manager_sdk",
     "curl:curl_shared",
     "graphic_surface:surface",
     "googletest:gmock",

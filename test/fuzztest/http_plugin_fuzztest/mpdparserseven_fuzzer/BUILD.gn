@@ -97,6 +97,7 @@ ohos_fuzztest("MpdParserSevenFuzzTest") {
 
   external_deps = [
     "c_utils:utils",
+    "certificate_manager:cert_manager_sdk",
     "curl:curl_shared",
     "graphic_surface:surface",
     "googletest:gmock",
