@@ -24,6 +24,7 @@
 #include "http_curl_client.h"
 #include "osal/task/autolock.h"
 #include "net_conn_client.h"
+#include "cm_type.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOURCE, "HiStreamer" };
@@ -335,13 +336,9 @@ Status HttpCurlClient::InitCurlEnvironment(const std::string& url, int32_t timeo
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
     curl_easy_setopt(easyHandle_, CURLOPT_URL, UrlParse(url).c_str());
     curl_easy_setopt(easyHandle_, CURLOPT_CONNECTTIMEOUT, 5); // 5
-    curl_easy_setopt(easyHandle_, CURLOPT_SSL_VERIFYPEER, 0L);
-    curl_easy_setopt(easyHandle_, CURLOPT_SSL_VERIFYHOST, 0L);
-#ifndef CA_DIR
-    curl_easy_setopt(easyHandle_, CURLOPT_CAINFO, "/etc/ssl/certs/" "cacert.pem");
-#else
-    curl_easy_setopt(easyHandle_, CURLOPT_CAINFO, CA_DIR "cacert.pem");
-#endif
+    curl_easy_setopt(easyHandle_, CURLOPT_SSL_VERIFYPEER, 1L);
+    curl_easy_setopt(easyHandle_, CURLOPT_SSL_VERIFYHOST, 2L);
+    curl_easy_setopt(easyHandle_, CURLOPT_CAPATH, CA_STORE_PATH_SYSTEM);
     curl_easy_setopt(easyHandle_, CURLOPT_HTTPGET, 1L);
     curl_easy_setopt(easyHandle_, CURLOPT_FORBID_REUSE, 0L);
     curl_easy_setopt(easyHandle_, CURLOPT_FOLLOWLOCATION, 1L);

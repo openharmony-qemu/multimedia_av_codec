@@ -55,6 +55,7 @@ ohos_static_library("http_curl_client") {
 
   external_deps = [
     "c_utils:utils",
+    "certificate_manager:cert_manager_sdk",
     "curl:curl_shared",
     "hilog:libhilog",
     "media_foundation:media_foundation",

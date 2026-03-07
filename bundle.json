@@ -103,7 +103,8 @@
           "memory_utils",
           "config_policy",
           "json",
-          "resource_schedule_service"
+          "resource_schedule_service",
+          "certificate_manager"
         ],
         "third_party": []
       },

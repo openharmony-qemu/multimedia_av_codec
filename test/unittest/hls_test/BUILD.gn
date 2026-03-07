@@ -96,6 +96,7 @@ ohos_unittest("hls_media_downloader_unit_test") {
 
   external_deps = [
     "c_utils:utils",
+    "certificate_manager:cert_manager_sdk",
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
@@ -127,6 +128,7 @@ ohos_unittest("hls_segment_manager_unit_test") {
 
   external_deps = [
     "c_utils:utils",
+    "certificate_manager:cert_manager_sdk",
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
@@ -158,6 +160,7 @@ ohos_unittest("hls_playlist_downloader_unit_test") {
 
   external_deps = [
     "c_utils:utils",
+    "certificate_manager:cert_manager_sdk",
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
@@ -189,6 +192,7 @@ ohos_unittest("hls_tags_unit_test") {
 
   external_deps = [
     "c_utils:utils",
+    "certificate_manager:cert_manager_sdk",
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
@@ -220,6 +224,7 @@ ohos_unittest("m3u8_unit_test") {
 
   external_deps = [
     "c_utils:utils",
+    "certificate_manager:cert_manager_sdk",
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
