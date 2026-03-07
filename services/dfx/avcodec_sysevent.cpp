@@ -16,6 +16,7 @@
 #include <avcodec_sysevent.h>
 #include <unistd.h>
 #include <unordered_map>
+#include <mutex>
 #include <cstring>
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
@@ -32,8 +33,6 @@ const std::unordered_map<OHOS::MediaAVCodec::FaultType, std::string> FAULT_TYPE_
     {OHOS::MediaAVCodec::FaultType::FAULT_TYPE_CRASH,           "Crash"},
     {OHOS::MediaAVCodec::FaultType::FAULT_TYPE_INNER_ERROR,     "Inner error"},
 };
-std::list<std::string> reportInfoList_;
-std::chrono::system_clock::time_point currentTime_ = std::chrono::system_clock::now();
 constexpr static int32_t SOURCE_STATISTICS_REPORT_HOURS = 4;
 } // namespace
 
@@ -156,6 +155,11 @@ void FaultRecordAudioEventWrite(AudioSourceFaultInfo& audioSourceFaultInfo)
 
 void SourceStatisticsEventWrite(SourceStatisticsReportInfo& sourceReportInfo)
 {
+    static std::list<std::string> reportInfoList;
+    static std::chrono::system_clock::time_point lastUpdateTime = std::chrono::system_clock::now();
+    static std::mutex sourceMutex;
+
+    std::lock_guard<std::mutex> lock(sourceMutex);
     Json json;
     json["APP_NAME"] = sourceReportInfo.appName_;
     json["MEDIA_EVENTS"]["SOURCE_TYPE"] = sourceReportInfo.sourceType_;
@@ -168,19 +172,19 @@ void SourceStatisticsEventWrite(SourceStatisticsReportInfo& sourceReportInfo)
     json["MEDIA_EVENTS"]["AUDIO_STREAM_CNT"] = sourceReportInfo.audioStreamCnt_;
     json["MEDIA_EVENTS"]["SUBTITLE_STREAM_CNT"] = sourceReportInfo.subtitleCnt_;
     std::string jsonString = json.dump();
-    reportInfoList_.push_back(jsonString);
+    reportInfoList.push_back(jsonString);
     auto currentTime = std::chrono::system_clock::now();
-    auto diff = currentTime - currentTime_;
+    auto diff = currentTime - lastUpdateTime;
     auto hour = std::chrono::duration_cast<std::chrono::hours>(diff).count();
     if (hour >= SOURCE_STATISTICS_REPORT_HOURS) {
-        for (auto& report : reportInfoList_) {
+        for (auto& report : reportInfoList) {
             HiSysEventWrite(OHOS::HiviewDFX::HiSysEvent::Domain::MULTI_MEDIA,
                 "SOURCE_STATISTICS",
                 OHOS::HiviewDFX::HiSysEvent::EventType::STATISTIC,
                 "EVENTS", report);
         }
-        reportInfoList_.clear();
-        currentTime_ = currentTime;
+        reportInfoList.clear();
+        lastUpdateTime = currentTime;
     }
 }
 } // namespace MediaAVCodec
