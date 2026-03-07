@@ -38,14 +38,6 @@ const int32_t WAIT_TIME = 5;
 const uint32_t DEFAULT_SNIFF_SIZE = 4096 * 4;
 constexpr int32_t MAX_TRY_TIMES = 5;
 
-bool ShouldRetrySniffRead(Status ret, size_t getDataSize, size_t expectedLen)
-{
-    if (ret == Status::OK) {
-        return getDataSize < expectedLen;
-    }
-    return ret == Status::ERROR_AGAIN || ret == Status::ERROR_NOT_ENOUGH_DATA;
-}
-
 void ToLower(std::string& str)
 {
     std::transform(str.begin(), str.end(), str.begin(), [](unsigned char ch) { return std::tolower(ch); });
@@ -186,7 +178,9 @@ std::string TypeFinder::SniffMediaType()
         }
         MEDIA_LOG_D("SniffMediaType ReadAt failed, tryCnt: " PUBLIC_LOG_D32 " ret " PUBLIC_LOG_D32
             " got size: " PUBLIC_LOG_ZU, tryCnt, ret, getDataSize);
-        if (!ShouldRetrySniffRead(ret, getDataSize, DEFAULT_SNIFF_SIZE) || isInterruptNeeded_.load() ||
+        if (((ret == Status::OK) && (getDataSize >= DEFAULT_SNIFF_SIZE)) ||
+            ((ret != Status::OK) && (ret != Status::ERROR_AGAIN) && (ret != Status::ERROR_NOT_ENOUGH_DATA)) ||
+            isInterruptNeeded_.load() ||
             tryCnt == MAX_TRY_TIMES - 1) {
             break;
         }
