@@ -351,6 +351,8 @@ Status HttpCurlClient::InitCurlEnvironment(const std::string& url, int32_t timeo
     int32_t timeout = timeoutMs > 0 ? timeoutMs / MILLS_TO_SECOND : DEFAULT_LOW_SPEED_TIME;
     curl_easy_setopt(easyHandle_, CURLOPT_LOW_SPEED_LIMIT, DEFAULT_LOW_SPEED_LIMIT);
     curl_easy_setopt(easyHandle_, CURLOPT_LOW_SPEED_TIME, timeout);
+    curl_easy_setopt(easyHandle_, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+    curl_easy_setopt(easyHandle_, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
     InitCurProxy(url);
     return Status::OK;
 }
