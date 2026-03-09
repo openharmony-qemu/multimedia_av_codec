@@ -553,6 +553,7 @@ private:
     void UpdMinTsPacketInfo(AVPacket *pkt);
     bool IsSkipGetMinTsPktInfo();
     Status SeekToStartInternal();
+    int RMSeekToStart();
 
     int AVSeekFrameLock(int idx, int64_t timestamp, int flags);
     TimeRangeManager timeRangeManager_;
