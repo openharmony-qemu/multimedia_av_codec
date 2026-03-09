@@ -37,6 +37,7 @@ public:
     void CreateFCodecByMime();
     void CreateHCodecByName();
     void CreateHCodecByMime();
+    void IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat pixelFormat);
     std::shared_ptr<CodecBaseMock> codecBaseMock_ = nullptr;
     std::shared_ptr<CodecServer> server_ = nullptr;
     std::shared_ptr<OHOS::MediaAVCodec::CodecListMock> capability_ = nullptr;
@@ -52,26 +53,28 @@ public:
     void TearDown(void){};
 };
 
+void CodecServerUnitTest::IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat pixelFormat)
+{
+    capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), false,
+                                                                AVCodecCategory::AVCODEC_HARDWARE);
+    ASSERT_NE(nullptr, capability_) << (CodecMimeType::VIDEO_AVC).data() << " can not found!" << std::endl;
+    auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
+    if (std::find(pixelFormats.begin(), pixelFormats.end(), static_cast<int32_t>(pixelFormat)) ==
+        pixelFormats.end()) {
+        GTEST_SKIP() << "Unsupport pixel format of YUVI420";
+    }
+}
+
 inline void CodecServerUnitTest::SetUp(void)
 {
     codecBaseMock_ = std::make_shared<CodecBaseMock>();
     CodecBase::RegisterMock(codecBaseMock_);
-
     server_ = std::static_pointer_cast<CodecServer>(CodecServer::Create());
     EXPECT_NE(server_, nullptr);
-
     validFormat_.PutIntValue(Tag::VIDEO_WIDTH, DEFAULT_WIDTH);
     validFormat_.PutIntValue(Tag::VIDEO_HEIGHT, DEFAULT_HEIGHT);
     validFormat_.PutIntValue(Tag::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::YUVI420));
-
-    capability_ = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), false,
-                                                                 AVCodecCategory::AVCODEC_HARDWARE);
-    ASSERT_NE(nullptr, capability_) << (CodecMimeType::VIDEO_AVC).data() << " can not found!" << std::endl;
-    auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
-    if (std::find(pixelFormats.begin(), pixelFormats.end(), static_cast<int32_t>(VideoPixelFormat::YUVI420)) ==
-        pixelFormats.end()) {
-        GTEST_SKIP() << "Unsupport pixel format of YUVI420";
-    }
+    IsPixelFormatSupported(VideoPixelFormat::YUVI420);
 }
 
 inline void CodecServerUnitTest::TearDown(void)
