@@ -310,15 +310,17 @@ HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_GetCurrentCapturerChange
  */
 HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_GetMaxAmplitude_001, TestSize.Level1)
 {
+    int32_t amplitude;
     audioCaptureFilter_->audioCaptureModule_ = nullptr;
-    int32_t result = audioCaptureFilter_->GetMaxAmplitude();
-    EXPECT_EQ(result, (int32_t)Status::ERROR_INVALID_OPERATION);
+    Status result = audioCaptureFilter_->GetMaxAmplitude(amplitude);
+    EXPECT_EQ(result, Status::ERROR_INVALID_OPERATION);
     auto audioCaptureModule = std::make_shared<AudioCaptureModule::AudioCaptureModule>();
     audioCaptureFilter_->audioCaptureModule_ = audioCaptureModule;
     int32_t maxAmplitude = 12345;
     audioCaptureFilter_->audioCaptureModule_->maxAmplitude_ = maxAmplitude;
-    result = audioCaptureFilter_->GetMaxAmplitude();
-    EXPECT_EQ(result, 12345);
+    result = audioCaptureFilter_->GetMaxAmplitude(amplitude);
+    EXPECT_EQ(result, Status::OK);
+    EXPECT_EQ(amplitude, maxAmplitude);
 }
 
 /**
