@@ -1865,7 +1865,7 @@ Status MediaDemuxer::SeekToStart(int64_t seekTime, Plugins::SeekMode mode, int64
     for (auto item : requestBufferErrorCountMap_) {
         requestBufferErrorCountMap_[item.first] = 0;
     }
-    if (ret != Status::OK && callerType == DemuxerCallerType::PLAYER) {
+    if (ret != Status::OK) {
         isSeekError_.store(true);
     }
     isFirstFrameAfterSeek_.store(true);
