@@ -190,7 +190,8 @@ static const std::vector<FileType> g_fileSkipGetMinTsPktInfo = {
     FileType::WMV,
     FileType::WMA,
     FileType::MPEGTS,
-    FileType::MPEGPS
+    FileType::MPEGPS,
+    FileType::RM
 };
 
 template <typename T>
@@ -2974,6 +2975,7 @@ Status FFmpegDemuxerPlugin::ReadUntilKeyFrame(Plugins::AVPacketWrapperPtr pktWra
                     "Call av_seek_frame failed, err: " PUBLIC_LOG_S, AVStrError(ffRet).c_str());
             }
         }
+        av_packet_unref(pktWrapper->GetAVPacket());
     }
     return ffRet == AVERROR_EOF ? Status::END_OF_STREAM : Status::ERROR_UNKNOWN;
 }
@@ -3696,6 +3698,30 @@ void FFmpegDemuxerPlugin::UpdMinTsPacketInfo(AVPacket *pkt)
     }
 }
 
+int FFmpegDemuxerPlugin::RMSeekToStart()
+{
+    int ffRet = -1;
+    FALSE_RETURN_V_MSG_E(fileType_ == FileType::RM, ffRet, "File type is not RM");
+    int seekTrackIndex = -1;
+    int64_t seekTs = AV_NOPTS_VALUE;
+    int64_t minPos = INT64_MAX;
+    for (uint32_t i = 0; i < formatContext_->nb_streams; i++) {
+        auto stream = formatContext_->streams[i];
+        const AVIndexEntry *entry = avformat_index_get_entry(stream, POS_0);
+        int64_t pos = entry != nullptr ? entry->pos : INT64_MAX;
+        if (pos < minPos) {
+            minPos = pos;
+            seekTrackIndex = i;
+            seekTs = entry->timestamp;
+        }
+    }
+    
+    if (seekTrackIndex >= 0) {
+        ffRet = AVSeekFrameLock(seekTrackIndex, seekTs, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
+    }
+    return ffRet;
+}
+
 Status FFmpegDemuxerPlugin::SeekToStartInternal()
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
@@ -3709,6 +3735,8 @@ Status FFmpegDemuxerPlugin::SeekToStartInternal()
     if (IsSkipGetMinTsPktInfo()) {
         if (fileType_ == FileType::MPEGPS || fileType_ == FileType::MPEGTS) {
             ffRet = AVSeekFrameLock(SEEK_TRACK_DEFAULT, POS_0, AVSEEK_FLAG_BYTE);
+        } else if (fileType_ == FileType::RM) {
+            ffRet = RMSeekToStart();
         } else {
             av_dict_set_int(&formatContext_->metadata, "seekToStart", 1, 0);
             ffRet = AVSeekFrameLock(SEEK_TRACK_DEFAULT, seekTs, AVSEEK_FLAG_ANY);
@@ -3717,17 +3745,6 @@ Status FFmpegDemuxerPlugin::SeekToStartInternal()
     } else if (minTsPktInfo_.isInit) {
         seekTs = (static_cast<uint32_t>(pluginImpl_->flags) & AVFMT_SEEK_TO_PTS) &&
             !FFmpegFormatHelper::IsMpeg4File(fileType_) ? minTsPktInfo_.minPts : minTsPktInfo_.minDts;
-        if (fileType_ == FileType::RM) {
-            int64_t realSeekTime = 0;
-            int32_t trackId = minTsPktInfo_.streamIndex;
-            FALSE_RETURN_V_MSG_E(trackId >= 0 && trackId < static_cast<int32_t>(formatContext_->nb_streams),
-                Status::ERROR_INVALID_PARAMETER, "Invalid trackId " PUBLIC_LOG_D32, trackId);
-            auto avStream = formatContext_->streams[trackId];
-            realSeekTime = ConvertTimeFromFFmpeg(seekTs, avStream->time_base);
-            MEDIA_LOG_I("rm seekTo start. seekTs = " PUBLIC_LOG_D64 " realSeekTime = " PUBLIC_LOG_D64,
-                seekTs, realSeekTime);
-            return SeekToRmKeyFrame(SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime);
-        }
         ffRet = AVSeekFrameLock(minTsPktInfo_.streamIndex, seekTs, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
         MEDIA_LOG_I("av_seek_frame stream_index " PUBLIC_LOG_U32 " seekTs " PUBLIC_LOG_D64 " ffRet " PUBLIC_LOG_D32,
             minTsPktInfo_.streamIndex, seekTs, ffRet);
