@@ -1827,6 +1827,53 @@ void MediaDemuxer::ResetAfterSeek(Status ret)
     convertErrorTime_.store(0);
 }
 
+Status MediaDemuxer::SeekToStart(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
+{
+    MediaAVCodec::AVCODEC_SYNC_TRACE;
+    Status ret;
+    isSeekError_.store(false);
+    if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
+        MEDIA_LOG_I("Source seek");
+        if (mode == SeekMode::SEEK_CLOSEST_INNER) {
+            ScopedTimer timer("seek closest online", SEEKCLOSEST_ONLINE_WARNING_MS);
+            ret = source_->SeekToTime(seekTime, SeekMode::SEEK_PREVIOUS_SYNC);
+        } else {
+            ScopedTimer timer("seek online", SEEK_ONLINE_WARNING_MS);
+            ret = source_->SeekToTime(seekTime, SeekMode::SEEK_CLOSEST_SYNC);
+        }
+        if (subtitleSource_) {
+            demuxerPluginManager_->localSubtitleSeekToStart(seekTime);
+        }
+        HandleSeekToTime(seekTime);
+        Plugins::Ms2HstTime(seekTime, realSeekTime);
+    } else {
+        MEDIA_LOG_I("Demuxer seek");
+        ScopedTimer timer("SeekToStart", SEEK_LOCAL_WARNING_MS);
+        ret = demuxerPluginManager_->SeekToStart(seekTime, realSeekTime);
+    }
+    isSeeked_ = true;
+    if (isVideoMuted_ || needRestore_) {
+        if (sampleQueueMap_[videoTrackId_] != nullptr) {
+            sampleQueueMap_[videoTrackId_]->Clear();
+        }
+        lastVideoPts_ = -1;
+    }
+    for (auto item : eosMap_) {
+        eosMap_[item.first] = false;
+    }
+    ResetSegmentEosMap();
+    for (auto item : requestBufferErrorCountMap_) {
+        requestBufferErrorCountMap_[item.first] = 0;
+    }
+    if (ret != Status::OK && callerType == DemuxerCallerType::PLAYER) {
+        isSeekError_.store(true);
+    }
+    isFirstFrameAfterSeek_.store(true);
+    convertErrorTime_.store(0);
+    MEDIA_LOG_D("Out");
+    return ret;
+}
+
 Status MediaDemuxer::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode,
     int64_t& realSeekTime, DemuxerCallerType callerType)
 {

@@ -123,6 +123,7 @@ public:
     Status Stop();
     Status Flush();
     Status SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
+    Status SeekToStart(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
     Status SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode,
         int64_t& realSeekTime, DemuxerCallerType callerType);
     Status SeekToFrameByDts(int32_t streamID, int32_t trackId, int64_t seekTime, Plugins::SeekMode mode,
@@ -151,6 +152,7 @@ public:
     bool CheckTrackIsActive(int32_t trackId);
     int32_t AddExternalSubtitle();
     Status localSubtitleSeekTo(int64_t seekTime);
+    Status localSubtitleSeekToStart(int64_t seekTime);
     void NotifyInitialBufferingEnd(bool isInitialBufferingSucc);
     void SetApiVersion(int32_t apiVersion);
     void SetIsHlsFmp4(bool isHlsFmp4);
