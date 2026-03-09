@@ -62,6 +62,8 @@ declare_args() {
   }
   av_codec_support_vp8_decoder = false
   av_codec_support_vp9_decoder = false
+  av_codec_support_10bit_test = false
+  av_codec_enable_player_startup_optimization = false
   av_codec_enable_only_for_flagship_chip = false
 }
 av_codec_sanitize = {
@@ -231,4 +233,8 @@ if (av_codec_enable_demuxer_dtshd) {
 
 if (av_codec_enable_demuxer_truehd) {
   av_codec_defines += [ "SUPPORT_DEMUXER_TRUEHD" ]
+}
+
+if (av_codec_support_10bit_test) {
+  av_codec_defines += ["SUPPORT_10BIT_TEST"]
 }
