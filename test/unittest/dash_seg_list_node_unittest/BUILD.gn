@@ -101,6 +101,7 @@ ohos_unittest("dash_seg_list_node_unittest") {
 
   external_deps = [
     "c_utils:utils",
+    "certificate_manager:cert_manager_sdk",
     "curl:curl_shared",
     "googletest:gmock",
     "graphic_surface:surface",

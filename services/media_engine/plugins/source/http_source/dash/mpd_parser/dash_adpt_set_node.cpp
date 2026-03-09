@@ -100,7 +100,7 @@ void DashAdptSetNode::GetAttr(const std::string &attrName, uint64_t &ullAttrVal)
         if (adptSetAttr_[index].val_.length() > 0) {
             int64_t tempUllAttrVal = 0;
             auto ret = StringUtil::SafeStoInt64(adptSetAttr_[index].val_, tempUllAttrVal);
-            ullAttrVal = (ret && tempUllAttrVal >= 0 && tempUllAttrVal <= std::numeric_limits<uint64_t>::max()) ?
+            ullAttrVal = (ret && tempUllAttrVal >= 0) ?
                 static_cast<uint64_t>(tempUllAttrVal) : 0;
         } else {
             ullAttrVal = 0;

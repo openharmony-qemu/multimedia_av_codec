@@ -135,6 +135,10 @@ public:
     Status GetStreamInfo(std::vector<StreamInfo>& streams);
     bool IsHlsFmp4();
     uint64_t GetMemorySize();
+    uint64_t GetDownloadResumeThreshold();
+    uint64_t GetDownloadThrottleThreshold();
+    uint64_t GetsourceLoaderClearThreshold();
+    void ClearChunksInLargeSegment();
     std::string GetContentType();
     bool IsHlsEnd();
     bool SelectMedia(int32_t streamId, HlsSegmentType mediaType);
@@ -221,8 +225,11 @@ private:
     void SetDownloadRequest(std::shared_ptr<DownloadRequest> downloadRequest);
     std::shared_ptr<DownloadRequest> GetDownloadRequest();
     bool CheckCanReadOneSeconds(uint64_t wantReadLength);
-    bool IsAllDownloadFinish();
+    bool IsCurrentDownloadFinish();
     void PlayListChanged(const std::vector<PlayInfo>& playList);
+    bool CheckLiveToVodEnd();
+    bool CheckVodEnd();
+    bool CheckLiveLastSegment();
 
 private:
     HlsSegmentType type_ = HlsSegmentType::SEG_VIDEO;
@@ -245,6 +252,7 @@ private:
     std::deque<PlayInfo> backPlayList_;
     std::atomic<bool> isSelectingBitrate_ {false};
     bool isDownloadStarted_ {false};
+    std::atomic<bool> lastPlaychanged_ {false};
 
     /* aes decrypt */
     std::shared_ptr<AesDecryptor> aesDecryptor_;

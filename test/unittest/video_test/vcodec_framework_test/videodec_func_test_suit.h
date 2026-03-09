@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef VIDEODEC_FUNC_TEST_SUIT_H
 #define VIDEODEC_FUNC_TEST_SUIT_H
 #include "avcodec_log.h"
@@ -84,6 +99,7 @@ public:
     void SetFormatWithParam(int32_t param);
     void PrepareSource(int32_t param);
     void PrepareSource(int32_t param, std::string sourcePath);
+    void IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat pixelFormat);
     static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, STRINGFY(TEST_SUIT)};
 
 protected:
@@ -157,6 +173,13 @@ bool TEST_SUIT::CreateVideoCodecByName(const std::string &decName)
     }
     return true;
 }
-}
 
-#endif //VIDEODEC_FUNC_TEST_SUIT_H
+void TEST_SUIT::IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat pixelFormat)
+{
+    auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
+    if (std::find(pixelFormats.begin(), pixelFormats.end(), static_cast<int32_t>(pixelFormat)) == pixelFormats.end()) {
+        GTEST_SKIP() << "Unsupport pixel format = " << static_cast<int32_t>(pixelFormat);
+    }
+}
+} // namespace VFTSUIT
+#endif // VIDEODEC_FUNC_TEST_SUIT_H

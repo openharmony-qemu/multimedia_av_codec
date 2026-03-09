@@ -53,18 +53,11 @@ group("av_codec_unit_test") {
         "unittest/audio_test:audio_sync_mode_capi_unit_test",
         "unittest/audio_test:audio_sync_mode_gsm_capi_unit_test",
         "unittest/audio_test:audio_sync_mode_gsm_ms_capi_unit_test",
-        "unittest/audio_test:audio_sync_mode_truehd_capi_unit_test",
         # "unittest/audio_test:audio_truehd_capi_decoder_unit_stable_test",
-        "unittest/audio_test:audio_truehd_decoder_unit_test",
-        "unittest/audio_test:audio_truehd_decoder_capi_unit_test",
         "unittest/audio_test:audio_dvaudio_decoder_unit_test",
         "unittest/audio_test:audio_dvaudio_capi_decoder_unit_test",
         "unittest/audio_test:audio_sync_mode_dvaudio_capi_unit_test",
         # "unittest/audio_test:audio_dvaudio_capi_decoder_unit_stable_test",
-        "unittest/audio_test:audio_dts_decoder_unit_test",
-        "unittest/audio_test:audio_dts_decoder_plugin_unit_test",
-        "unittest/audio_test:audio_dts_capi_decoder_unit_test",
-        "unittest/audio_test:audio_sync_mode_dts_capi_unit_test",
         # "unittest/audio_test:audio_dts_capi_decoder_unit_stable_test",
         "unittest/audio_test:audio_cook_decoder_unit_test",
         "unittest/audio_test:audio_cook_capi_decoder_unit_test",
@@ -177,6 +170,21 @@ group("av_codec_unit_test") {
         deps += [ "unittest/audio_test:audio_eac3_decoder_capi_unit_test" ]
         deps += [ "unittest/audio_test:audio_sync_mode_eac3_capi_unit_test" ]
       }
+      if (av_codec_enable_codec_truehd) {
+        deps += [
+          "unittest/audio_test:audio_sync_mode_truehd_capi_unit_test",
+          "unittest/audio_test:audio_truehd_decoder_unit_test",
+          "unittest/audio_test:audio_truehd_decoder_capi_unit_test",
+        ]
+      }
+      if (av_codec_enable_codec_dts) {
+        deps += [ 
+          "unittest/audio_test:audio_dts_decoder_unit_test",
+          "unittest/audio_test:audio_dts_decoder_plugin_unit_test",
+          "unittest/audio_test:audio_dts_capi_decoder_unit_test",
+          "unittest/audio_test:audio_sync_mode_dts_capi_unit_test",
+        ]
+      }
       if (av_codec_enable_special_codec) {
         deps += [
           "unittest/audio_vivid_test:audio_vivid_ability_unit_test",
@@ -246,7 +254,6 @@ group("av_codec_fuzz_test") {
   deps = []
   if (av_codec_support_test) {
     deps += [
-      "fuzztest/audiodecodertruehd_fuzzer:AudioDecoderTruehdFuzzTest",
       "fuzztest/audiodecodertwinvq_fuzzer:AudioDecoderTwinvqFuzzTest",
       "fuzztest/audiodecoder_fuzzer:AudioDecoderFuzzTest",
       "fuzztest/audiodecoderaac_fuzzer:AudioDecoderAacFuzzTest",
@@ -255,7 +262,6 @@ group("av_codec_fuzz_test") {
       "fuzztest/audiodecoderape_fuzzer:AudioDecoderApeFuzzTest",
       "fuzztest/audiodecoderconfigure_fuzzer:AudiodecoderConfigureFuzzTest",
       "fuzztest/audiodecodercook_fuzzer:AudioDecoderCookFuzzTest",
-      "fuzztest/audiodecoderdts_fuzzer:AudioDecoderDtsFuzzTest",
       "fuzztest/audiodecoderdvaudio_fuzzer:AudioDecoderDvaudioFuzzTest",
       "fuzztest/audiodecoderflac_fuzzer:AudioDecoderFlacFuzzTest",
       "fuzztest/audiodecoderflush_fuzzer:AudioDecoderFlushFuzzTest",
@@ -545,6 +551,12 @@ group("av_codec_fuzz_test") {
     }
     if(av_codec_enable_codec_eac3) {
       deps += [ "fuzztest/audiodecodereac3_fuzzer:AudioDecoderEac3FuzzTest" ]
+    }
+    if(av_codec_enable_codec_truehd) {
+      deps += [ "fuzztest/audiodecodertruehd_fuzzer:AudioDecoderTruehdFuzzTest" ]
+    }
+    if(av_codec_enable_codec_dts) {
+      deps += [ "fuzztest/audiodecoderdts_fuzzer:AudioDecoderDtsFuzzTest" ]
     }
     if(av_codec_enable_codec_rv) {
       deps += [

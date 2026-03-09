@@ -234,6 +234,7 @@ private:
     static int AVReadPacket(void* opaque, uint8_t* buf, int bufSize);
     static int HandleReadOK(IOContext* ioContext, int dataSize);
     static int HandleReadAgain(IOContext* ioContext, int dataSize, int& tryCount);
+    static int HandleNonReadAgain(IOContext* ioContext, int& tryCount);
     static int HandleReadEOS(IOContext* ioContext);
     static int HandleReadError(int result);
     static void UpdateInitDownloadData(IOContext* ioContext, int dataSize);
@@ -243,6 +244,7 @@ private:
     std::shared_ptr<AVFormatContext> InitAVFormatContext(IOContext *ioContext);
     static int CheckContextIsValid(void* opaque, int &bufSize);
     void NotifyInitializationCompleted();
+    void PrepareSetDataSourceContext();
 
     void InitParser();
     void InitBitStreamContext(const AVStream& avStream);
@@ -551,6 +553,7 @@ private:
     void UpdMinTsPacketInfo(AVPacket *pkt);
     bool IsSkipGetMinTsPktInfo();
     Status SeekToStartInternal();
+    int RMSeekToStart();
 
     int AVSeekFrameLock(int idx, int64_t timestamp, int flags);
     TimeRangeManager timeRangeManager_;

@@ -43,6 +43,8 @@
         "av_codec_enable_codec_rv",
         "av_codec_enable_codec_eac3",
         "av_codec_enable_codec_opus",
+        "av_codec_enable_codec_truehd",
+        "av_codec_enable_codec_dts",
         "av_codec_enable_demuxer_lrc",
         "av_codec_enable_demuxer_sami",
         "av_codec_enable_demuxer_ass",
@@ -103,7 +105,8 @@
           "memory_utils",
           "config_policy",
           "json",
-          "resource_schedule_service"
+          "resource_schedule_service",
+          "certificate_manager"
         ],
         "third_party": []
       },

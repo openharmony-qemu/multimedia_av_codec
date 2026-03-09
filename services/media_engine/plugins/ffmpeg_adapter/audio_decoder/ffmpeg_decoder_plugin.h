@@ -33,10 +33,14 @@
 #include "wma/ffmpeg_wma_decoder_plugin.h"
 #include "adpcm/ffmpeg_adpcm_decoder_plugin.h"
 #include "ilbc/ffmpeg_ilbc_decoder_plugin.h"
+#ifdef SUPPORT_CODEC_TRUEHD
 #include "truehd/ffmpeg_truehd_decoder_plugin.h"
+#endif
 #include "twinvq/ffmpeg_twinvq_decoder_plugin.h"
 #include "dvaudio/ffmpeg_dvaudio_decoder_plugin.h"
+#ifdef SUPPORT_CODEC_DTS
 #include "dts/ffmpeg_dts_decoder_plugin.h"
+#endif
 #include "cook/ffmpeg_cook_decoder_plugin.h"
 
 #endif // FFMPEG_DECODER_PLUGIN_H

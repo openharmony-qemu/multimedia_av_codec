@@ -58,6 +58,7 @@ void HEVC_TEST_SUIT::SetUpTestCase(void)
     auto capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_HEVC).data(), false,
                                                                     AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_HEVC).data() << " can not found!" << std::endl;
+    ISHDR2SDRSupported();
 }
 
 void HEVC_TEST_SUIT::TearDownTestCase(void) {}
@@ -122,8 +123,7 @@ void HEVC_TEST_SUIT::PrepareSource(ResourceType param)
     (void)fileName.erase(std::remove_if(fileName.begin(), fileName.end(), check), fileName.end());
     videoDec_->SetOutPath(prefix + fileName);
 }
-
-#ifdef HMOS_TEST
+#ifdef ONLY_FOR_FLAGSHIP_CHIP
 void GetInitialParam(ResourceType resourceType, int32_t &initialWidth, int32_t &initialHeight,
                      int32_t &initialColorSpace)
 {
@@ -198,8 +198,7 @@ void HEVC_TEST_SUIT::ConfigureHdrVivid2Sdr(std::string_view mimeType, ResourceTy
             break;
     }
 }
-#endif
-
+#endif // ONLY_FOR_FLAGSHIP_CHIP
 INSTANTIATE_TEST_SUITE_P(,
                          HEVC_TEST_SUIT,
                          testing::Values(std::make_tuple(CodecMimeType::VIDEO_HEVC, ResourceType::SDR,
@@ -250,7 +249,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_0021, TestSize.Level1)
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpace);
     ASSERT_EQ(AV_ERR_INVALID_VAL, videoDec_->Configure(format_));
 }
-#ifdef HMOS_TEST
+#ifdef ONLY_FOR_FLAGSHIP_CHIP
 /**
  * @tc.name: VideoDecoder_HRDVivid2SDR_1011
  * @tc.desc: 1. key pixel format unset;
@@ -624,6 +623,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1131, TestSize.Level1)
     std::string_view mimeType = std::get<0>(params);
     ResourceType resourceType = std::get<1>(params);
     CreateByNameWithParam(mimeType.data());
+    IsPixelFormatSupported(VideoPixelFormat::NV21);
     SetFormatWithParam(VideoPixelFormat::NV21);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
@@ -646,6 +646,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1141, TestSize.Level1)
     std::string_view mimeType = std::get<0>(params);
     ResourceType resourceType = std::get<1>(params);
     CreateByNameWithParam(mimeType.data());
+    IsPixelFormatSupported(VideoPixelFormat::NV21);
     SetFormatWithParam(VideoPixelFormat::NV21);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
@@ -669,6 +670,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1151, TestSize.Level1)
     std::string_view mimeType = std::get<0>(params);
     ResourceType resourceType = std::get<1>(params);
     CreateByNameWithParam(mimeType.data());
+    IsPixelFormatSupported(VideoPixelFormat::NV21);
     SetFormatWithParam(VideoPixelFormat::NV21);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
@@ -691,6 +693,7 @@ HWTEST_F(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1161, TestSize.Level1)
     std::string_view mimeType = CodecMimeType::VIDEO_HEVC;
     ResourceType resourceType = ResourceType::HDR;
     CreateByNameWithParam(mimeType);
+    IsPixelFormatSupported(VideoPixelFormat::NV21);
     SetFormatWithParam(VideoPixelFormat::NV21);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
@@ -718,6 +721,7 @@ HWTEST_F(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1162, TestSize.Level1)
     std::string_view mimeType = CodecMimeType::VIDEO_HEVC;
     ResourceType resourceType = ResourceType::HDR_HLG_FULL;
     CreateByNameWithParam(mimeType);
+    IsPixelFormatSupported(VideoPixelFormat::NV21);
     SetFormatWithParam(VideoPixelFormat::NV21);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
@@ -743,6 +747,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1171, TestSize.Level1)
     std::string_view mimeType = std::get<0>(params);
     ResourceType resourceType = std::get<1>(params);
     CreateByNameWithParam(mimeType.data());
+    IsPixelFormatSupported(VideoPixelFormat::NV21);
     SetFormatWithParam(VideoPixelFormat::NV21);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
@@ -893,6 +898,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_2011, TestSize.Level1)
     std::string_view mimeType = std::get<0>(params);
     ResourceType resourceType = std::get<1>(params);
     CreateByNameWithParam(mimeType.data());
+    IsPixelFormatSupported(VideoPixelFormat::RGBA);
     SetFormatWithParam(VideoPixelFormat::RGBA);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
@@ -952,6 +958,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_2041, TestSize.Level1)
     std::string_view mimeType = std::get<0>(params);
     ResourceType resourceType = std::get<1>(params);
     CreateByNameWithParam(mimeType.data());
+    IsPixelFormatSupported(VideoPixelFormat::RGBA);
     SetFormatWithParam(VideoPixelFormat::RGBA);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
@@ -998,7 +1005,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_2061, TestSize.Level1)
                          OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
     ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, videoDec_->Configure(format_));
 }
-#endif // HMOS_TEST
+#endif // ONLY_FOR_NOT_FLAGSHIP_CHIP
 } // namespace HevcTestSuit
 
 namespace AvcTestSuit {
@@ -1019,6 +1026,7 @@ void AVC_TEST_SUIT::SetUpTestCase(void)
     auto capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), false,
                                                                     AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_AVC).data() << " can not found!" << std::endl;
+    ISHDR2SDRSupported();
 }
 
 void AVC_TEST_SUIT::TearDownTestCase(void) {}

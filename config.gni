@@ -48,6 +48,8 @@ declare_args() {
   av_codec_enable_codec_rm = true
   av_codec_enable_codec_rv = true
   av_codec_enable_codec_eac3 = false
+  av_codec_enable_codec_truehd = true
+  av_codec_enable_codec_dts = true
   av_codec_enable_codec_opus = false
   av_codec_enable_demuxer_lrc = false
   av_codec_enable_demuxer_eac3 = false
@@ -64,6 +66,7 @@ declare_args() {
   av_codec_support_vp9_decoder = false
   av_codec_support_10bit_test = false
   av_codec_enable_player_startup_optimization = false
+  av_codec_enable_only_for_flagship_chip = false
 }
 av_codec_sanitize = {
   boundary_sanitize = true
@@ -204,6 +207,14 @@ if (av_codec_enable_codec_rv) {
 
 if (av_codec_enable_codec_eac3) {
   av_codec_defines += [ "SUPPORT_CODEC_EAC3" ]
+}
+
+if (av_codec_enable_codec_truehd) {
+  av_codec_defines += [ "SUPPORT_CODEC_TRUEHD" ]
+}
+
+if (av_codec_enable_codec_dts) {
+  av_codec_defines += [ "SUPPORT_CODEC_DTS" ]
 }
 
 if (av_codec_enable_codec_opus) {

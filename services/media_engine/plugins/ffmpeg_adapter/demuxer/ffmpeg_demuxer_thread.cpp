@@ -16,6 +16,7 @@
 #define MEDIA_PLUGIN
 #include <unistd.h>
 #include <chrono>
+#include <string>
 #include "avcodec_trace.h"
 #include "securec.h"
 #include "ffmpeg_format_helper.h"
@@ -44,10 +45,27 @@ namespace Ffmpeg {
 const int32_t AV_READ_PACKET_READ_ERROR = -1;
 const int32_t AV_READ_PACKET_READ_AGAIN = -2;
 const int32_t AV_READ_PACKET_RETRY_UPPER_LIMIT = 9;
+const int32_t AV_READ_PACKET_NON_READ_RETRY_UPPER_LIMIT = 10;
 const int32_t AV_READ_PACKET_SLEEP_TIME = 50;
+const int32_t AV_READ_PACKET_NON_READ_SLEEP_TIME = 10;
 
 std::condition_variable FFmpegDemuxerPlugin::readCbCv_;
 std::mutex FFmpegDemuxerPlugin::readPacketMutex_;
+
+namespace {
+int RetryNonReadAgainBounded(int& tryCount, int32_t sleepTimeMs, const std::string& logPrefix, int64_t offset)
+{
+    ++tryCount;
+    if (tryCount > AV_READ_PACKET_NON_READ_RETRY_UPPER_LIMIT) {
+        MEDIA_LOG_I("%{public}s exceeds retry, offset:" PUBLIC_LOG_D64, logPrefix.c_str(), offset);
+        return AV_READ_PACKET_READ_ERROR;
+    }
+    MEDIA_LOG_I("%{public}s, retry count:" PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64,
+        logPrefix.c_str(), tryCount, offset);
+    std::this_thread::sleep_for(std::chrono::milliseconds(sleepTimeMs));
+    return AV_READ_PACKET_READ_AGAIN;
+}
+}
 
 // Write packet data into the buffer provided by ffmpeg
 int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
@@ -101,20 +119,17 @@ int FFmpegDemuxerPlugin::HandleReadOK(IOContext* ioContext, int dataSize)
     return AV_READ_PACKET_READ_ERROR;
 }
 
-int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize, int& tryCount)
+int FFmpegDemuxerPlugin::HandleNonReadAgain(IOContext* ioContext, int& tryCount)
 {
-    if (dataSize > 0) {
-        ioContext->offset += dataSize;
-        return dataSize;
+    auto invokerType = ioContext->invokerType.load();
+    if (invokerType == InvokerType::FLUSH || invokerType == InvokerType::DESTORY) {
+        MEDIA_LOG_I("AVReadPacket interrupted, invokerType:" PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64,
+            static_cast<int32_t>(invokerType), ioContext->offset);
+        return AV_READ_PACKET_READ_ERROR;
     }
-    if (ioContext->invokerType != InvokerType::READ) {
-        if (ioContext->invokerType == InvokerType::FLUSH || ioContext->invokerType == InvokerType::DESTORY) {
-            MEDIA_LOG_I("AVReadPacket interrupted, invokerType:" PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64,
-                static_cast<int32_t>(ioContext->invokerType.load()), ioContext->offset);
-            // Stop inner retry loop quickly during flush/destroy.
-            return AV_READ_PACKET_READ_ERROR;
-        }
-        switch (ioContext->avReadPacketStopState.load()) {
+    auto stopState = ioContext->avReadPacketStopState.load();
+    if (invokerType == InvokerType::INIT) {
+        switch (stopState) {
             case AVReadPacketStopState::TRUE:
                 MEDIA_LOG_I("AVReadPacket stopped");
                 return AV_READ_PACKET_READ_ERROR;
@@ -124,13 +139,31 @@ int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize, int
                 return AV_READ_PACKET_READ_AGAIN;
             case AVReadPacketStopState::UNSET:
                 ioContext->retry = true;
-                ioContext->initErrorAgain = (ioContext->invokerType == InvokerType::INIT ? true : false);
-                MEDIA_LOG_I("Read again, UNSET state, offset:" PUBLIC_LOG_D64, ioContext->offset);
-                return AV_READ_PACKET_READ_ERROR;
+                ioContext->initErrorAgain = true;
+                return RetryNonReadAgainBounded(tryCount, AV_READ_PACKET_NON_READ_SLEEP_TIME,
+                    "Read again and retry, UNSET state", ioContext->offset);
             default:
                 MEDIA_LOG_E("Invalid AVReadPacketStopState");
-                break;
+                return AV_READ_PACKET_READ_ERROR;
         }
+    }
+    if (stopState == AVReadPacketStopState::TRUE) {
+        MEDIA_LOG_I("AVReadPacket stopped");
+        return AV_READ_PACKET_READ_ERROR;
+    }
+    ioContext->retry = true;
+    return RetryNonReadAgainBounded(tryCount, AV_READ_PACKET_NON_READ_SLEEP_TIME,
+        "Read again and retry, non-read path", ioContext->offset);
+}
+
+int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize, int& tryCount)
+{
+    if (dataSize > 0) {
+        ioContext->offset += dataSize;
+        return dataSize;
+    }
+    if (ioContext->invokerType != InvokerType::READ) {
+        return HandleNonReadAgain(ioContext, tryCount);
     }
     tryCount++;
     if (tryCount >= AV_READ_PACKET_RETRY_UPPER_LIMIT) {

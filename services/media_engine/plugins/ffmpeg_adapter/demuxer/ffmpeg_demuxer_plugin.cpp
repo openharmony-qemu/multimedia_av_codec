@@ -66,9 +66,6 @@ namespace Plugins {
 namespace Ffmpeg {
 const uint32_t DEFAULT_READ_SIZE = 4096;
 const uint32_t DEFAULT_SNIFF_SIZE = 4096 * 4;
-#ifdef SUPPORT_DEMUXER_TRUEHD
-const uint32_t TRUEHD_SNIFF_SIZE = 1024 * 1024;
-#endif
 const int32_t MP3_PROBE_SCORE_LIMIT = 5;
 const int32_t DEF_PROBE_SCORE_LIMIT = 50;
 // ADTS fixed header is 7 bytes (or 9 bytes if CRC present; we only need byte[6] here).
@@ -193,7 +190,8 @@ static const std::vector<FileType> g_fileSkipGetMinTsPktInfo = {
     FileType::WMV,
     FileType::WMA,
     FileType::MPEGTS,
-    FileType::MPEGPS
+    FileType::MPEGPS,
+    FileType::RM
 };
 
 template <typename T>
@@ -1560,16 +1558,23 @@ void FFmpegDemuxerPlugin::InitIoContextInDemuxer(const std::shared_ptr<DataSourc
     MEDIA_LOG_I("FileSize: " PUBLIC_LOG_U64 ", seekable: " PUBLIC_LOG_D32, ioContext_.fileSize, seekable_);
 }
 
+void FFmpegDemuxerPlugin::PrepareSetDataSourceContext()
+{
+    ioContext_.retry = false;
+    ioContext_.initErrorAgain = false;
+    if (ioContext_.invokerType != InvokerType::INIT) {
+        std::lock_guard<std::mutex> initLock(ioContext_.invokerTypeMutex);
+        ioContext_.invokerType = InvokerType::INIT;
+    }
+}
+
 Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& source)
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     FALSE_RETURN_V_MSG_E(formatContext_ == nullptr, Status::ERROR_WRONG_STATE,
         "AVFormatContext has been initialized");
     FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "DataSource is nullptr");
-    if (ioContext_.invokerType != InvokerType::INIT) {
-        std::lock_guard<std::mutex> initLock(ioContext_.invokerTypeMutex);
-        ioContext_.invokerType = InvokerType::INIT;
-    }
+    PrepareSetDataSourceContext();
     auto id = HiviewDFX::XCollie::GetInstance().SetTimer("av_codec::demuxer_setdatasource", SETTIMER_TIMEOUT,
         nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
     InitIoContextInDemuxer(source);
@@ -1610,12 +1615,6 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     NotifyInitializationCompleted();
     MEDIA_LOG_I("Out");
     cachelimitSize_ = DEFAULT_CACHE_LIMIT;
-    if (ioContext_.initErrorAgain == true && formatContext_->pb != nullptr && formatContext_->pb->error == -1) {
-        // -1 means error_again during init
-        MEDIA_LOG_E("Initialization error_again occurred");
-        ResetContext();
-        ioContext_.initErrorAgain = false;
-    }
     HiviewDFX::XCollie::GetInstance().CancelTimer(id);
     return Status::OK;
 }
@@ -2791,6 +2790,8 @@ Status FFmpegDemuxerPlugin::CheckSeekParams(int64_t seekTime, SeekMode mode) con
 
 void FFmpegDemuxerPlugin::SyncSeekThread()
 {
+    ioContext_.retry = false;
+    ioContext_.avReadPacketStopState.store(AVReadPacketStopState::FALSE);
     if (readThread_ == nullptr) {
         return;
     }
@@ -2977,6 +2978,7 @@ Status FFmpegDemuxerPlugin::ReadUntilKeyFrame(Plugins::AVPacketWrapperPtr pktWra
                     "Call av_seek_frame failed, err: " PUBLIC_LOG_S, AVStrError(ffRet).c_str());
             }
         }
+        av_packet_unref(pktWrapper->GetAVPacket());
     }
     return ffRet == AVERROR_EOF ? Status::END_OF_STREAM : Status::ERROR_UNKNOWN;
 }
@@ -3699,6 +3701,33 @@ void FFmpegDemuxerPlugin::UpdMinTsPacketInfo(AVPacket *pkt)
     }
 }
 
+int FFmpegDemuxerPlugin::RMSeekToStart()
+{
+    int ffRet = -1;
+    FALSE_RETURN_V_MSG_E(fileType_ == FileType::RM, ffRet, "File type is not RM");
+    int seekTrackIndex = -1;
+    int64_t seekTs = AV_NOPTS_VALUE;
+    int64_t minPos = INT64_MAX;
+    for (uint32_t i = 0; i < formatContext_->nb_streams; i++) {
+        auto stream = formatContext_->streams[i];
+        const AVIndexEntry *entry = avformat_index_get_entry(stream, POS_0);
+        if (entry == nullptr) {
+            MEDIA_LOG_E("avformat_index_get_entry failed");
+            continue;
+        }
+        if (entry->pos < minPos) {
+            minPos = entry->pos;
+            seekTrackIndex = i;
+            seekTs = entry->pos;
+        }
+    }
+    
+    if (seekTrackIndex >= 0) {
+        ffRet = AVSeekFrameLock(seekTrackIndex, seekTs, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
+    }
+    return ffRet;
+}
+
 Status FFmpegDemuxerPlugin::SeekToStartInternal()
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
@@ -3712,6 +3741,8 @@ Status FFmpegDemuxerPlugin::SeekToStartInternal()
     if (IsSkipGetMinTsPktInfo()) {
         if (fileType_ == FileType::MPEGPS || fileType_ == FileType::MPEGTS) {
             ffRet = AVSeekFrameLock(SEEK_TRACK_DEFAULT, POS_0, AVSEEK_FLAG_BYTE);
+        } else if (fileType_ == FileType::RM) {
+            ffRet = RMSeekToStart();
         } else {
             av_dict_set_int(&formatContext_->metadata, "seekToStart", 1, 0);
             ffRet = AVSeekFrameLock(SEEK_TRACK_DEFAULT, seekTs, AVSEEK_FLAG_ANY);
@@ -3720,17 +3751,6 @@ Status FFmpegDemuxerPlugin::SeekToStartInternal()
     } else if (minTsPktInfo_.isInit) {
         seekTs = (static_cast<uint32_t>(pluginImpl_->flags) & AVFMT_SEEK_TO_PTS) &&
             !FFmpegFormatHelper::IsMpeg4File(fileType_) ? minTsPktInfo_.minPts : minTsPktInfo_.minDts;
-        if (fileType_ == FileType::RM) {
-            int64_t realSeekTime = 0;
-            int32_t trackId = minTsPktInfo_.streamIndex;
-            FALSE_RETURN_V_MSG_E(trackId >= 0 && trackId < static_cast<int32_t>(formatContext_->nb_streams),
-                Status::ERROR_INVALID_PARAMETER, "Invalid trackId " PUBLIC_LOG_D32, trackId);
-            auto avStream = formatContext_->streams[trackId];
-            realSeekTime = ConvertTimeFromFFmpeg(seekTs, avStream->time_base);
-            MEDIA_LOG_I("rm seekTo start. seekTs = " PUBLIC_LOG_D64 " realSeekTime = " PUBLIC_LOG_D64,
-                seekTs, realSeekTime);
-            return SeekToRmKeyFrame(SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime);
-        }
         ffRet = AVSeekFrameLock(minTsPktInfo_.streamIndex, seekTs, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
         MEDIA_LOG_I("av_seek_frame stream_index " PUBLIC_LOG_U32 " seekTs " PUBLIC_LOG_D64 " ffRet " PUBLIC_LOG_D32,
             minTsPktInfo_.streamIndex, seekTs, ffRet);
@@ -3849,6 +3869,32 @@ Status FFmpegDemuxerPlugin::SeekToFrameByDts(int32_t trackId, int64_t seekTime,
 
 namespace { // plugin set
 
+constexpr int32_t PROBE_READ_RETRY_TIMES = 10;
+constexpr useconds_t PROBE_READ_SLEEP_TIME_US = 10 * 1000;
+
+Status ReadProbeData(const std::shared_ptr<DataSource>& dataSource, int64_t offset,
+    std::shared_ptr<Buffer>& bufferInfo, size_t bufferSize, const std::string& traceName)
+{
+    Status ret = Status::ERROR_UNKNOWN;
+    for (int32_t retryTimes = 0; retryTimes <= PROBE_READ_RETRY_TIMES; ++retryTimes) {
+        MediaAVCodec::AVCodecTrace trace(traceName.c_str());
+        ret = dataSource->ReadAt(offset, bufferInfo, bufferSize);
+        auto memory = bufferInfo->GetMemory();
+        size_t dataSize = memory != nullptr ? memory->GetSize() : 0;
+        if (ret == Status::OK && dataSize > 0) {
+            return Status::OK;
+        }
+        if (ret != Status::OK && ret != Status::ERROR_AGAIN) {
+            return ret;
+        }
+        if (retryTimes == PROBE_READ_RETRY_TIMES) {
+            return ret == Status::OK ? Status::ERROR_AGAIN : ret;
+        }
+        usleep(PROBE_READ_SLEEP_TIME_US);
+    }
+    return ret;
+}
+
 int IsStartWithID3(const uint8_t *buf, const char *tagName)
 {
     return buf[POS_0] == tagName[POS_0] &&
@@ -3886,12 +3932,8 @@ int32_t GetConfidence(std::shared_ptr<AVInputFormat> plugin, std::shared_ptr<FFI
     auto bufData = bufferInfo->WrapMemory(buff.data(), bufferSize, bufferSize);
     FALSE_RETURN_V_MSG_E(bufferInfo->GetMemory() != nullptr, -1,
         "Alloc buffer failed for " PUBLIC_LOG_S, pluginName.c_str());
-    Status ret = Status::OK;
-    {
-        std::string traceName = "Sniff_" + pluginName + "_Readat";
-        MediaAVCodec::AVCodecTrace trace(traceName.c_str());
-        ret = dataSource->ReadAt(0, bufferInfo, bufferSize);
-    }
+    std::string traceName = "Sniff_" + pluginName + "_Readat";
+    Status ret = ReadProbeData(dataSource, 0, bufferInfo, bufferSize, traceName);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, -1, "Read probe data failed for " PUBLIC_LOG_S, pluginName.c_str());
     getData = bufferInfo->GetMemory()->GetSize();
     FALSE_RETURN_V_MSG_E(getData > 0, -1, "No data for sniff " PUBLIC_LOG_S, pluginName.c_str());
@@ -3905,7 +3947,7 @@ int32_t GetConfidence(std::shared_ptr<AVInputFormat> plugin, std::shared_ptr<FFI
             bufferSize = (bufferSize < remainSize) ? bufferSize : remainSize;
             int resetRet = memset_s(buff.data(), bufferSize, 0, bufferSize);
             FALSE_RETURN_V_MSG_E(resetRet == EOK, -1, "Reset buff failed for " PUBLIC_LOG_S, pluginName.c_str());
-            ret = dataSource->ReadAt(id3Len, bufferInfo, bufferSize);
+            ret = ReadProbeData(dataSource, id3Len, bufferInfo, bufferSize, traceName);
             FALSE_RETURN_V_MSG_E(ret == Status::OK, -1, "Read probe data failed for " PUBLIC_LOG_S, pluginName.c_str());
             getData = bufferInfo->GetMemory()->GetSize();
             FALSE_RETURN_V_MSG_E(getData > 0, -1, "No data for sniff " PUBLIC_LOG_S, pluginName.c_str());
@@ -3919,11 +3961,6 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
 {
     FALSE_RETURN_V_MSG_E(!pluginName.empty(), 0, "Plugin name is empty");
     FALSE_RETURN_V_MSG_E(dataSource != nullptr, 0, "DataSource is nullptr");
-#ifdef SUPPORT_DEMUXER_TRUEHD
-    if (pluginName == "avdemux_truehd") {
-        return SniffWithSize(pluginName, dataSource, TRUEHD_SNIFF_SIZE);
-    }
-#endif
     uint64_t sniffSize = dataSource->GetSniffSize();
     if (sniffSize) {
         return SniffWithSize(pluginName, dataSource, sniffSize);
