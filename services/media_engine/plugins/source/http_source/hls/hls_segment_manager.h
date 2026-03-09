@@ -225,7 +225,7 @@ private:
     void SetDownloadRequest(std::shared_ptr<DownloadRequest> downloadRequest);
     std::shared_ptr<DownloadRequest> GetDownloadRequest();
     bool CheckCanReadOneSeconds(uint64_t wantReadLength);
-    bool IsCurrentDownloadFinish();
+    bool IsAllDownloadFinish();
     void PlayListChanged(const std::vector<PlayInfo>& playList);
     bool CheckLiveToVodEnd();
     bool CheckVodEnd();
