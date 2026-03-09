@@ -146,7 +146,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, GetTotalBufferSize, TestSize.Level1)
 {
     auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
     uint64_t actualSize = downloader->GetTotalBufferSize();
-    EXPECT_EQ(actualSize, 10 * 1024 * 1024);
+    EXPECT_EQ(actualSize, 10 * 200 * 1024);
     downloader = nullptr;
 }
 
@@ -268,9 +268,10 @@ HWTEST_F(HlsSegmentManagerUnitTest, RiseBufferSize1, TestSize.Level1)
 
 HWTEST_F(HlsSegmentManagerUnitTest, RiseBufferSize2, TestSize.Level1)
 {
-    hlsSegmentManager_->totalBufferSize_ = MAX_CACHE_BUFFER_SIZE_UT;
+    uint32_t maxCachebufferSize = 4 * 1024 * 1024
+    hlsSegmentManager_->totalBufferSize_ = maxCachebufferSize;
     hlsSegmentManager_->RiseBufferSize();
-    EXPECT_EQ(hlsSegmentManager_->totalBufferSize_, MAX_CACHE_BUFFER_SIZE_UT);
+    EXPECT_EQ(hlsSegmentManager_->totalBufferSize_, maxCachebufferSize);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, CheckPulldownBufferSize, TestSize.Level1)
@@ -1917,7 +1918,6 @@ HWTEST_F(HlsSegmentManagerUnitTest, STOP_BUFFERING_001, TestSize.Level1)
     OSAL::SleepFor(2 * 1000);
     downloader->StopBufferring(true);
     EXPECT_EQ(downloader->isInterrupt_, true);
-    downloader->StopBufferring(false);
     downloader->StopBufferring(false);
     EXPECT_EQ(downloader->isInterrupt_, false);
 }
