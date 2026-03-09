@@ -86,6 +86,7 @@ public:
     MOCK_METHOD0(Stop, Status());
     MOCK_METHOD0(Flush, Status());
     MOCK_METHOD3(SeekTo, Status(int64_t seekTime, Plugins::SeekMode mode, int64_t &realSeekTime));
+    MOCK_METHOD2(SeekToStart, Status(int64_t seekTime, int64_t &realSeekTime));
     MOCK_METHOD4(SeekToKeyFrame, Status(int64_t seekTime, Plugins::SeekMode mode,
         int64_t &realSeekTime, DemuxerCallerType callerType));
     MOCK_METHOD5(SeekToFrameByDts, Status(int32_t streamID, int32_t trackId, int64_t seekTime,
@@ -111,6 +112,7 @@ public:
     MOCK_METHOD1(GetPluginName, bool(const std::string& pluginName));
     MOCK_METHOD0(AddExternalSubtitle, int32_t());
     MOCK_METHOD1(localSubtitleSeekTo, Status(int64_t seekTime));
+    MOCK_METHOD1(localSubtitleSeekToStart, Status(int64_t seekTime));
     MOCK_METHOD1(NotifyInitialBufferingEnd, void(bool isInitialBufferingSucc));
     MOCK_METHOD1(SetApiVersion, void(int32_t apiVersion));
     MOCK_METHOD1(SetIsHlsFmp4, void(bool isHlsFmp4));

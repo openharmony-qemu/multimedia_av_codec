@@ -724,6 +724,17 @@ Status DemuxerPluginManager::localSubtitleSeekTo(int64_t seekTime)
     return plugin->SeekTo(-1, seekTime, Plugins::SeekMode::SEEK_NEXT_SYNC, realSeekTime);
 }
 
+Status DemuxerPluginManager::localSubtitleSeekToStart(int64_t seekTime)
+{
+    FALSE_RETURN_V_MSG_E(curSubTitleStreamID_ != -1 && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr,
+                         Status::ERROR_NO_MEMORY, "subtitle seek failed, no subtitle");
+    int64_t realSeekTime = 0;
+    auto plugin = streamInfoMap_[curSubTitleStreamID_].plugin;
+    auto seekRes = plugin->SeekToStart();
+    FALSE_RETURN_V(seekRes != Status::OK, Status::OK);
+    return plugin->SeekTo(-1, seekTime, Plugins::SeekMode::SEEK_NEXT_SYNC, realSeekTime);
+}
+
 Status DemuxerPluginManager::SingleStreamSeekTo(int64_t seekTime, Plugins::SeekMode mode, int32_t streamID,
     int64_t& realSeekTime)
 {
@@ -753,6 +764,30 @@ Status DemuxerPluginManager::SeekTo(int64_t seekTime, Plugins::SeekMode mode, in
     if (curSubTitleStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curSubTitleStreamID_].plugin->SeekTo(-1, seekTime, mode, realSeekTime);
         if (ret != Status::OK && mode != Plugins::SeekMode::SEEK_NEXT_SYNC) {
+            ret = streamInfoMap_[curSubTitleStreamID_].plugin->SeekTo(
+                -1, seekTime, Plugins::SeekMode::SEEK_NEXT_SYNC, realSeekTime);
+        }
+    }
+    return Status::OK;
+}
+
+Status DemuxerPluginManager::SeekToStart(int64_t seekTime, int64_t& realSeekTime)
+{
+    if (curAudioStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {
+        Status ret = streamInfoMap_[curAudioStreamID_].plugin->SeekToStart();
+        if (ret != Status::OK) {
+            return ret;
+        }
+    }
+    if (curVideoStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curVideoStreamID_].plugin != nullptr) {
+        Status ret = streamInfoMap_[curVideoStreamID_].plugin->SeekToStart();
+        if (ret != Status::OK) {
+            return ret;
+        }
+    }
+    if (curSubTitleStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
+        Status ret = streamInfoMap_[curSubTitleStreamID_].plugin->SeekToStart();
+        if (ret != Status::OK) {
             ret = streamInfoMap_[curSubTitleStreamID_].plugin->SeekTo(
                 -1, seekTime, Plugins::SeekMode::SEEK_NEXT_SYNC, realSeekTime);
         }
