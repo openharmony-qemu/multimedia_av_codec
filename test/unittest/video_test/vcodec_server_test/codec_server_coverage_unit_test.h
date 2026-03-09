@@ -53,10 +53,10 @@ public:
     void TearDown(void){};
 };
 
-void CodecServerUnitTest::IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat pixelFormat)
+inline void CodecServerUnitTest::IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat pixelFormat)
 {
     capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), false,
-                                                                AVCodecCategory::AVCODEC_HARDWARE);
+                                                                AVCodecCategory::AVCODEC_SOFTWARE);
     ASSERT_NE(nullptr, capability_) << (CodecMimeType::VIDEO_AVC).data() << " can not found!" << std::endl;
     auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
     if (std::find(pixelFormats.begin(), pixelFormats.end(), static_cast<int32_t>(pixelFormat)) ==
