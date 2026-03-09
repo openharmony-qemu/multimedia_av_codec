@@ -3708,11 +3708,14 @@ int FFmpegDemuxerPlugin::RMSeekToStart()
     for (uint32_t i = 0; i < formatContext_->nb_streams; i++) {
         auto stream = formatContext_->streams[i];
         const AVIndexEntry *entry = avformat_index_get_entry(stream, POS_0);
-        int64_t pos = entry != nullptr ? entry->pos : INT64_MAX;
-        if (pos < minPos) {
-            minPos = pos;
+        if (entry == nullptr) {
+            MEDIA_LOG_E("avformat_index_get_entry failed");
+            continue;
+        }
+        if (entry->pos < minPos) {
+            minPos = entry->pos;
             seekTrackIndex = i;
-            seekTs = entry->timestamp;
+            seekTs = entry->pos;
         }
     }
     
