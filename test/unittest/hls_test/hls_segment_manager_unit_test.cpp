@@ -268,7 +268,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, RiseBufferSize1, TestSize.Level1)
 
 HWTEST_F(HlsSegmentManagerUnitTest, RiseBufferSize2, TestSize.Level1)
 {
-    uint32_t maxCachebufferSize = 4 * 1024 * 1024
+    uint32_t maxCachebufferSize = 4 * 1024 * 1024;
     hlsSegmentManager_->totalBufferSize_ = maxCachebufferSize;
     hlsSegmentManager_->RiseBufferSize();
     EXPECT_EQ(hlsSegmentManager_->totalBufferSize_, maxCachebufferSize);
