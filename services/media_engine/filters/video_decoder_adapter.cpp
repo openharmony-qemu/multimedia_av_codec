@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -177,7 +177,8 @@ Status VideoDecoderAdapter::Configure(const Format &format)
     metaInfo->GetData(Tag::MIME_TYPE, codecMimeType_);
     if (codecMimeType_ != MediaAVCodec::CodecMimeType::VIDEO_VC1 &&
         codecMimeType_ != MediaAVCodec::CodecMimeType::VIDEO_WMV3 &&
-        codecMimeType_ != MediaAVCodec::CodecMimeType::VIDEO_RV30) {
+        codecMimeType_ != MediaAVCodec::CodecMimeType::VIDEO_RV30 &&
+        codecMimeType_ != MediaAVCodec::CodecMimeType::VIDEO_MPEG4) {
         metaInfoCopy->Remove(std::string(MediaDescriptionKey::MD_KEY_CODEC_CONFIG));
     }
     int32_t ret = mediaCodec_->Configure(formatCopy);
