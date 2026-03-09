@@ -123,7 +123,7 @@ public:
     Status Stop();
     Status Flush();
     Status SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
-    Status SeekToStart(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
+    Status SeekToStart(int64_t seekTime, int64_t& realSeekTime);
     Status SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode,
         int64_t& realSeekTime, DemuxerCallerType callerType);
     Status SeekToFrameByDts(int32_t streamID, int32_t trackId, int64_t seekTime, Plugins::SeekMode mode,
