@@ -535,9 +535,9 @@ int32_t VideoEncSyncSample::OutputLoopInnerExt()
     }
     UpdateSHA(outFile_, bufferAddr, size, needCheckSHA_, needDump_);
 
-#ifdef HMOS_TEST
+#ifdef ONLY_FOR_FLAGSHIP_CHIP
     CheckFormatKey(attr, buffer);
-#endif
+#endif // ONLY_FOR_FLAGSHIP_CHIP
 
     if (attr.flags == AVCODEC_BUFFER_FLAG_CODEC_DATA) {
         frameOutputCount_--;
