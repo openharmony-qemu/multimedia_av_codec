@@ -1582,13 +1582,14 @@ int32_t HevcDecoder::ReleaseOutputBuffer(uint32_t index)
     CHECK_AND_RETURN_RET_LOG(index < buffers_[INDEX_OUTPUT].size(), AVCS_ERR_INVALID_VAL,
                              "Failed to release output buffer: invalid index");
     std::shared_ptr<HBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
-    oLock.unlock();
     if (frameBuffer->owner_ == Owner::OWNED_BY_USER) {
         frameBuffer->owner_ = Owner::OWNED_BY_CODEC;
+        oLock.unlock();
         codecAvailQue_->Push(index);
         return AVCS_ERR_OK;
     } else {
-        AVCODEC_LOGE("Release output buffer failed: check your index=%{public}u", index);
+        AVCODEC_LOGE("Release output buffer failed: check your index=%{public}u, owner=%{public}d",
+            index, frameBuffer->owner_.load());
         return AVCS_ERR_INVALID_VAL;
     }
 }
@@ -1669,8 +1670,9 @@ int32_t HevcDecoder::RenderOutputBuffer(uint32_t index)
     CHECK_AND_RETURN_RET_LOG(index < buffers_[INDEX_OUTPUT].size(), AVCS_ERR_INVALID_VAL,
                              "Failed to render output buffer: invalid index");
     std::shared_ptr<HBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
-    oLock.unlock();
     if (frameBuffer->owner_ == Owner::OWNED_BY_USER) {
+        frameBuffer->owner_ = Owner::OWNED_BY_SURFACE;
+        oLock.unlock();
         std::shared_ptr<FSurfaceMemory> surfaceMemory = frameBuffer->sMemory;
         int32_t ret = FlushSurfaceMemory(surfaceMemory, index);
         if (ret != AVCS_ERR_OK) {
@@ -1678,10 +1680,10 @@ int32_t HevcDecoder::RenderOutputBuffer(uint32_t index)
         } else {
             AVCODEC_LOGD("Flush surface memory(index=%{public}u) successful.", index);
         }
-        frameBuffer->owner_ = Owner::OWNED_BY_SURFACE;
         return AVCS_ERR_OK;
     } else {
-        AVCODEC_LOGE("Failed to render output buffer with bad index, index=%{public}u", index);
+        AVCODEC_LOGE("Failed to render output buffer with bad index, index=%{public}u, owner=%{public}d",
+            index, frameBuffer->owner_.load());
         return AVCS_ERR_INVALID_VAL;
     }
 }

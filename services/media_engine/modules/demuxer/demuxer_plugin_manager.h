@@ -100,7 +100,9 @@ public:
     
     int32_t GetTmpStreamIDByTrackID(int32_t trackId);
     int32_t GetTmpInnerTrackIDByTrackID(int32_t trackId);
+    TrackType GetTmpTrackTypeByTrackID(int32_t trackId);
     void UpdateTempTrackMapInfo(int32_t oldTrackId, int32_t newTrackId, int32_t newInnerTrackIndex);
+    void UpdateTempTrackMapByStreamId(int32_t oldTrackId, int32_t newStreamId, TrackType type);
     void DeleteTempTrackMapInfo(int32_t oldTrackId);
 
     int32_t GetInnerTrackIDByTrackID(int32_t trackId);
@@ -121,7 +123,8 @@ public:
     Status Stop();
     Status Flush();
     Status SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
-    Status SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
+    Status SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode,
+        int64_t& realSeekTime, DemuxerCallerType callerType);
     Status SeekToFrameByDts(int32_t streamID, int32_t trackId, int64_t seekTime, Plugins::SeekMode mode,
         int64_t& realSeekTime);
     int32_t GetStreamID(int32_t trackId);

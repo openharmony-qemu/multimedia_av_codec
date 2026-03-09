@@ -132,7 +132,7 @@ int32_t VideoTrack::CreateParser()
         videoParser_ = tmpParser;
         MEDIA_LOG_I("VideoTrack create AvcParser");
     } else if (mimeType_.compare(AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_HEVC) == 0) {
-        auto tmpParser = std::make_shared<HevcParser>();
+        auto tmpParser = std::make_shared<HevcParser>(hasVideoDelay_);
         FALSE_RETURN_V_MSG_E(tmpParser->Init() == 0, -1, "VideoTrack create h265 parser failed!");
         videoParser_ = tmpParser;
         MEDIA_LOG_I("VideoTrack create HevcParser");
@@ -187,6 +187,26 @@ Status VideoTrack::Init(const std::shared_ptr<Meta> &trackDesc)
         FALSE_RETURN_V_MSG_E(GetSrcTrackIds(trackDesc), Status::ERROR_INVALID_PARAMETER, "get src track ids failed!");
         return SetAuxiliaryTrackParam(trackDesc);
     }
+    FALSE_RETURN_V_MSG_E(SetVideoDelay(trackDesc) == Status::NO_ERROR,
+        Status::ERROR_MISMATCHED_TYPE, "SetVideoDelay failed!");
+    return Status::NO_ERROR;
+}
+
+Status VideoTrack::SetVideoDelay(const std::shared_ptr<Meta> &trackDesc)
+{
+    constexpr int32_t maxVideoDelay = 16;
+    int32_t videoDelay = 0;
+    if (trackDesc->Find(Tag::VIDEO_DELAY) != trackDesc->end()) {
+        trackDesc->Get<Tag::VIDEO_DELAY>(videoDelay); // video delay
+        FALSE_RETURN_V_MSG_E(videoDelay >= 0, Status::ERROR_MISMATCHED_TYPE,
+            "get video delay failed! video delay:%{public}d", videoDelay);
+        hasVideoDelay_ = videoDelay > 0 && videoDelay <= maxVideoDelay;  // max 16
+        MEDIA_LOG_I("video track get video delay:%{public}d, has:%{public}d",
+            videoDelay, static_cast<int32_t>(hasVideoDelay_));
+    }
+    FALSE_RETURN_V_MSG_E((videoDelay > 0 && videoDelay <= maxVideoDelay && frameRate_ > 0) || videoDelay == 0,
+        Status::ERROR_MISMATCHED_TYPE, "If the video delayed, the frame rate is required. "
+        "The delay is greater than or equal to 0 and less than or equal to 16.");
     return Status::NO_ERROR;
 }
 
@@ -251,6 +271,9 @@ Status VideoTrack::WriteSample(std::shared_ptr<AVIOStream> io, const std::shared
     FALSE_RETURN_V_MSG_E(stss_ != nullptr && stsz_ != nullptr,
         Status::ERROR_INVALID_OPERATION, "stss or stsz box is empty");
     FALSE_RETURN_V_MSG_E(videoParser_ != nullptr, Status::ERROR_INVALID_OPERATION, "videoParser is null");
+    FALSE_RETURN_V_MSG_E(hasVideoDelay_ || sample->pts_ >= lastTimestampUs_, Status::ERROR_INVALID_PARAMETER,
+        "hasVideoDelay:%{public}d, pts: " PUBLIC_LOG_D64 " error, < " PUBLIC_LOG_D64, hasVideoDelay_,
+        sample->pts_, lastTimestampUs_);
     if (!hasSetParserConfig_) {
         ParserSetConfig();
     }
@@ -483,12 +506,12 @@ void VideoTrack::DisposeSttsNoPts()
 void VideoTrack::DisposeSttsOnly()
 {
     if (allPts_.size() > 0) {
-        int64_t lastTimestampUs = allPts_.front();
+        int64_t lastTimestampUs = ConvertTimeToMpeg4(allPts_.front(), timeScale_);
         allPts_.pop();
         while (allPts_.size() > 0) {
-            int64_t pts = allPts_.front();
+            int64_t pts = ConvertTimeToMpeg4(allPts_.front(), timeScale_);
             allPts_.pop();
-            int64_t duration = ConvertTimeToMpeg4(pts - lastTimestampUs, timeScale_);
+            int64_t duration = pts - lastTimestampUs;
             lastTimestampUs = pts;
             DisposeStts(duration, lastTimestampUs);
         }

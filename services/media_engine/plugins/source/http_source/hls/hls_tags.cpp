@@ -430,7 +430,7 @@ static bool ContainsNonAscii(const std::string& str)
             return c > 127;  // ASCII: 0-127
         });
 }
- 	 
+
 static std::pair<std::string, std::string> ParseDefine(const std::string& s,
     const std::unordered_map<std::string, std::string>& tagMasterMap,
     const std::unordered_map<std::string, std::string>& tagUriMap)
@@ -472,7 +472,7 @@ static std::pair<std::string, std::string> ParseDefine(const std::string& s,
     }
     return std::make_pair("", "");
 }
- 	 
+
 static std::string ReplacePlaceholders(const std::string& s,
     const std::unordered_map<std::string, std::string>& tagDefineMap)
 {
@@ -505,7 +505,7 @@ static std::string ReplacePlaceholders(const std::string& s,
     result.append(searchStart, s.cend());
     return result;
 }
- 	 
+
 static bool IsHexValid(const std::string& hex)
 {
     if (hex.empty()) {
@@ -524,7 +524,7 @@ static void UriInsert(std::string& result, std::string& hex, int base)
         result += static_cast<char>(resultTmp);
     }
 }
- 	 
+
 static std::string UriDecode(const std::string& uri)
 {
     std::string result;
@@ -550,7 +550,7 @@ static std::string UriDecode(const std::string& uri)
     }
     return result;
 }
- 	 
+
 static std::unordered_map<std::string, std::string> ExtractPairs(const std::string& decodedQuery)
 {
     std::unordered_map<std::string, std::string> params;
@@ -578,7 +578,7 @@ static std::unordered_map<std::string, std::string> ExtractPairs(const std::stri
     }
     return params;
 }
- 	 
+
 std::unordered_map<std::string, std::string> ParseUriQuery(const std::string& uri)
 {
     std::unordered_map<std::string, std::string> params;
@@ -596,7 +596,7 @@ std::unordered_map<std::string, std::string> ParseUriQuery(const std::string& ur
     params = ExtractPairs(queryString);
     return params;
 }
- 	 
+
 std::pair<std::list<std::shared_ptr<Tag>>, std::unordered_map<std::string, std::string>>ParseEntries(
     const std::string& s, const std::unordered_map<std::string, std::string>& tagMasterMap,
     const std::unordered_map<std::string, std::string>& tagUriMap)

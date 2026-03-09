@@ -242,12 +242,9 @@ void VDecServerSample::Flush()
         cout << "Flush Error: codec is nullptr" << endl;
         return;
     }
-    int32_t err = codec_->Flush();
-    if (err != AVCS_ERR_OK) {
-        cout << "Flush fail" << endl;
-        isRunning_.store(false);
-        signal_->inCond_.notify_all();
-    }
+    codec_->Flush();
+    isRunning_.store(false);
+    signal_->inCond_.notify_all();
 }
 
 void VDecServerSample::Reset()
@@ -256,12 +253,9 @@ void VDecServerSample::Reset()
         cout << "Reset Error: codec is nullptr" << endl;
         return;
     }
-    int32_t err = codec_->Reset();
-    if (err != AVCS_ERR_OK) {
-        cout << "Reset fail" << endl;
-        isRunning_.store(false);
-        signal_->inCond_.notify_all();
-    }
+    codec_->Reset();
+    isRunning_.store(false);
+    signal_->inCond_.notify_all();
 }
 
 void VDecServerSample::Stop()
@@ -270,10 +264,7 @@ void VDecServerSample::Stop()
         cout << "Stop Error: codec is nullptr" << endl;
         return;
     }
-    int32_t err = codec_->Stop();
-    if (err != AVCS_ERR_OK) {
-        cout << "Stop fail" << endl;
-        isRunning_.store(false);
-        signal_->inCond_.notify_all();
-    }
+    codec_->Stop();
+    isRunning_.store(false);
+    signal_->inCond_.notify_all();
 }

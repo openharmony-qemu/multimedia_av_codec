@@ -264,7 +264,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_AU_GetFormat_0006, TestSize.Level1)
     ASSERT_NE(format_, nullptr);
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
-    ASSERT_EQ(formatVal_.duration, 3018594);
+    ASSERT_EQ(formatVal_.duration, 5000000);
     ASSERT_EQ(formatVal_.trackCount, 1);
 #ifdef AVSOURCE_INNER_UNIT_TEST
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
@@ -286,12 +286,12 @@ HWTEST_F(AVSourceUnitTest, AVSource_AU_GetFormat_0006, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    ASSERT_EQ(formatVal_.sampleRate, 44100);
-    ASSERT_EQ(formatVal_.channelCount, 2);
-    ASSERT_EQ(formatVal_.bitRate, 705600);
+    ASSERT_EQ(formatVal_.sampleRate, 8000);
+    ASSERT_EQ(formatVal_.channelCount, 1);
+    ASSERT_EQ(formatVal_.bitRate, 64000);
     ASSERT_EQ(formatVal_.codecMime, "audio/g711mu");
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_S16LE);
-    ASSERT_EQ(formatVal_.channelLayout, 3);
+    ASSERT_EQ(formatVal_.channelLayout, 4);
     ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
 }
 

@@ -397,7 +397,7 @@ size_t CacheMediaChunkBufferImpl::Write(void* ptr, uint64_t inOffset, size_t inW
         return dupWriteSize;
     }
     if (writePos_ == fragmentCacheBuffer_.end()) {
-        MEDIA_LOG_W("writePos is invalid");
+        MEDIA_LOG_W("Write: writePos is invalid");
         return dupWriteSize;
     }
     auto writeSizeTmp = WriteChunk(*writePos_, chunkPos, src, offset, writeSize);
@@ -448,7 +448,7 @@ size_t CacheMediaChunkBufferHlsImpl::Write(void* ptr, uint64_t inOffset, size_t 
         return dupWriteSize;
     }
     if (writePos_ == fragmentCacheBuffer_.end()) {
-        MEDIA_LOG_W("writePos is invalid");
+        MEDIA_LOG_W("HlsImpl Write: writePos is invalid");
         return dupWriteSize;
     }
     auto writeSizeTmp = WriteChunk(*writePos_, chunkPos, src, offset, writeSize);
@@ -959,7 +959,7 @@ bool CacheMediaChunkBufferImpl::AddFragmentCacheBuffer(uint64_t offset, ChunkIte
     newFragmentPos->totalReadSize = newReadSizeInit;
     writePos_ = newFragmentPos;
     if (writePos_ == fragmentCacheBuffer_.end()) {
-        MEDIA_LOG_W("writePos is invalid");
+        MEDIA_LOG_W("AddFragmentCacheBuffer writePos is invalid");
         return false;
     }
     writePos_->accessPos = writePos_->chunks.end();
@@ -1020,35 +1020,37 @@ void CacheMediaChunkBufferImpl::Dump(uint64_t param)
     DumpInner(param);
 }
 
+#define CACHE_DUMP MEDIA_LOG_D
+
 void CacheMediaChunkBufferImpl::DumpInner(uint64_t param)
 {
     (void)param;
-    MEDIA_LOG_D("cacheBuff total buffer size : " PUBLIC_LOG_U64, totalBuffSize_);
-    MEDIA_LOG_D("cacheBuff total chunk size  : " PUBLIC_LOG_U32, chunkSize_);
-    MEDIA_LOG_D("cacheBuff total chunk num   : " PUBLIC_LOG_U32, chunkMaxNum_);
-    MEDIA_LOG_D("cacheBuff total read size   : " PUBLIC_LOG_U64, totalReadSize_);
-    MEDIA_LOG_D("cacheBuff read size factor  : " PUBLIC_LOG_F, initReadSizeFactor_);
-    MEDIA_LOG_D("cacheBuff free chunk num    : " PUBLIC_LOG_ZU, freeChunks_.size());
-    MEDIA_LOG_D("cacheBuff fragment num      : " PUBLIC_LOG_ZU, fragmentCacheBuffer_.size());
+    CACHE_DUMP("cacheBuff total buffer size : " PUBLIC_LOG_U64, totalBuffSize_);
+    CACHE_DUMP("cacheBuff total chunk size  : " PUBLIC_LOG_U32, chunkSize_);
+    CACHE_DUMP("cacheBuff total chunk num   : " PUBLIC_LOG_U32, chunkMaxNum_);
+    CACHE_DUMP("cacheBuff total read size   : " PUBLIC_LOG_U64, totalReadSize_);
+    CACHE_DUMP("cacheBuff read size factor  : " PUBLIC_LOG_F, initReadSizeFactor_);
+    CACHE_DUMP("cacheBuff free chunk num    : " PUBLIC_LOG_ZU, freeChunks_.size());
+    CACHE_DUMP("cacheBuff fragment num      : " PUBLIC_LOG_ZU, fragmentCacheBuffer_.size());
     for (auto const & fragment : fragmentCacheBuffer_) {
-        MEDIA_LOG_D("cacheBuff - fragment offset : " PUBLIC_LOG_U64, fragment.offsetBegin);
-        MEDIA_LOG_D("cacheBuff   fragment length : " PUBLIC_LOG_D64, fragment.dataLength);
-        MEDIA_LOG_D("cacheBuff   chunk num       : " PUBLIC_LOG_ZU, fragment.chunks.size());
-        MEDIA_LOG_D("cacheBuff   access length   : " PUBLIC_LOG_U64, fragment.accessLength);
-        MEDIA_LOG_D("cacheBuff   read size       : " PUBLIC_LOG_U64, fragment.totalReadSize);
+        CACHE_DUMP("cacheBuff - fragment offset : " PUBLIC_LOG_U64, fragment.offsetBegin);
+        CACHE_DUMP("cacheBuff   fragment length : " PUBLIC_LOG_D64, fragment.dataLength);
+        CACHE_DUMP("cacheBuff   chunk num       : " PUBLIC_LOG_ZU, fragment.chunks.size());
+        CACHE_DUMP("cacheBuff   access length   : " PUBLIC_LOG_U64, fragment.accessLength);
+        CACHE_DUMP("cacheBuff   read size       : " PUBLIC_LOG_U64, fragment.totalReadSize);
         if (fragment.accessPos != fragment.chunks.end()) {
             auto &chunkInfo = *fragment.accessPos;
-            MEDIA_LOG_D("cacheBuff   access offset: " PUBLIC_LOG_D64 ", len: " PUBLIC_LOG_U32,
+            CACHE_DUMP("cacheBuff   access offset: " PUBLIC_LOG_D64 ", len: " PUBLIC_LOG_U32,
                 chunkInfo->offset, chunkInfo->dataLength);
         } else {
-            MEDIA_LOG_D("cacheBuff   access ended");
+            CACHE_DUMP("cacheBuff   access ended");
         }
         if (!fragment.chunks.empty()) {
             auto &chunkInfo = fragment.chunks.back();
-            MEDIA_LOG_D("cacheBuff   last chunk offset: " PUBLIC_LOG_D64 ", len: " PUBLIC_LOG_U32,
+            CACHE_DUMP("cacheBuff   last chunk offset: " PUBLIC_LOG_D64 ", len: " PUBLIC_LOG_U32,
                 chunkInfo->offset, chunkInfo->dataLength);
         }
-        MEDIA_LOG_D("cacheBuff ");
+        CACHE_DUMP("cacheBuff ");
     }
 }
 

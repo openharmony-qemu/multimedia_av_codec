@@ -404,6 +404,7 @@ void DemuxerPluginManager::DeleteTempTrackMapInfo(int32_t oldTrackId)
 void DemuxerPluginManager::UpdateTempTrackMapInfo(int32_t oldTrackId, int32_t newTrackId, int32_t newInnerTrackIndex)
 {
     temp2TrackInfoMap_[oldTrackId].streamID = trackInfoMap_[newTrackId].streamID;
+    temp2TrackInfoMap_[oldTrackId].trackID = newTrackId;
     if (newInnerTrackIndex == -1) {
         MEDIA_LOG_D("UpdateTempTrackMapInfo oldTrackId =  "  PUBLIC_LOG_D32 " newTrackId = " PUBLIC_LOG_D32
             " innerTrackIndex = " PUBLIC_LOG_D32, oldTrackId, newTrackId, trackInfoMap_[newTrackId].innerTrackIndex);
@@ -759,7 +760,8 @@ Status DemuxerPluginManager::SeekTo(int64_t seekTime, Plugins::SeekMode mode, in
     return Status::OK;
 }
 
-Status DemuxerPluginManager::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
+Status DemuxerPluginManager::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode,
+    int64_t& realSeekTime, DemuxerCallerType callerType)
 {
     if (curAudioStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curAudioStreamID_].plugin->SeekTo(-1, seekTime, mode, realSeekTime);
@@ -777,6 +779,9 @@ Status DemuxerPluginManager::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode 
     if (curVideoStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curVideoStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curVideoStreamID_].plugin->SeekToKeyFrame(
             -1, seekTime, Plugins::SeekMode::SEEK_NEXT_SYNC, realSeekTime, SEEKTOKEYFRAME_WARNING_MS);
+        if (callerType == DemuxerCallerType::AVMETADATA && ret == Status::END_OF_STREAM) {
+            return ret;
+        }
         if (ret != Status::OK) {
             MEDIA_LOG_W("TS SeekToKeyFrame failed");
         }
@@ -1083,6 +1088,23 @@ void DemuxerPluginManager::SetApiVersion(int32_t apiVersion)
 void DemuxerPluginManager::SetIsHlsFmp4(bool isHlsFmp4)
 {
     isHlsFmp4_ = isHlsFmp4;
+}
+
+TrackType DemuxerPluginManager::GetTmpTrackTypeByTrackID(int32_t trackId)
+{
+    auto iter = temp2TrackInfoMap_.find(trackId);
+    if (iter != temp2TrackInfoMap_.end()) {
+        return GetTrackTypeByTrackID(iter->second.trackID);
+    }
+    return GetTrackTypeByTrackID(trackId);
+}
+
+void DemuxerPluginManager::UpdateTempTrackMapByStreamId(int32_t oldTrackId, int32_t newStreamId, TrackType type)
+{
+    int32_t newTrackId = -1;
+    int32_t newInnerTrackId = -1;
+    GetTrackInfoByStreamID(newStreamId, newTrackId, newInnerTrackId, type);
+    UpdateTempTrackMapInfo(oldTrackId, newTrackId, newInnerTrackId);
 }
 } // namespace Media
 } // namespace OHOS

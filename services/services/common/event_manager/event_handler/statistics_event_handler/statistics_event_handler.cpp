@@ -32,18 +32,22 @@ using AVCodecSpecifiedType = std::pair<bool, std::string>;
 using VCodecSpecifiedType = std::pair<VideoCodecType, std::string>;
 
 namespace {
-static constexpr const char DOMAIN[] = "AV_CODEC";
-static constexpr const char EVENT_STATISTICS_INFO[] = "STATISTICS_INFO";
-static constexpr const char QUERY_CAP_TIMES[] = "QueryCapTimes";
-static constexpr const char CREATE_CODEC_TIMES[] = "CreateCodecTimes";
-static constexpr const char CODEC_SPECIFIED_INFO[] = "CodecSpecifiedInfo";
-static constexpr const char APP_NAME_DICT[] = "AppNameDict";
-static constexpr const char CAP_UNSUPPORTED_INFO[] = "CapUnsupportedInfo";
-static constexpr const char QUERY_CAP_UNSUPPORTED_INFO[] = "QueryCapUnsupportedInfo";
-static constexpr const char CREATE_CODEC_UNSUPPORTED_INFO[] = "CreateCodecUnsupportedInfo";
-static constexpr const char DEC_ABNORMAL_OCCUPATION_INFO[] = "DecAbnormalOccupationInfo";
-static constexpr const char SPEED_DECODING_INFO[] = "SpeedDecodingInfo";
-static constexpr const char CODEC_ERROR_INFO[] = "CodecErrorInfo";
+// EVENT_STR_L0
+static constexpr const char EVENT_DOMAIN[]                          = "AV_CODEC";
+// EVENT_STR_L1
+static constexpr const char EVENT_STATISTICS_INFO[]                 = "STATISTICS_INFO";
+// EVENT_STR_L2
+static constexpr const char QUERY_CAP_TIMES[]                       = "QUERY_CAP_TIMES";
+static constexpr const char CREATE_CODEC_TIMES[]                    = "CREATE_CODEC_TIMES";
+static constexpr const char CODEC_SPECIFIED_INFO[]                  = "CODEC_SPECIFIED_INFO";
+static constexpr const char APP_NAME_DICT[]                         = "APP_NAME_DICT";
+static constexpr const char CAP_UNSUPPORTED_INFO[]                  = "CAP_UNSUPPORTED_INFO";
+static constexpr const char DEC_ABNORMAL_OCCUPATION_INFO[]          = "DEC_ABNORMAL_OCCUPATION_INFO";
+static constexpr const char SPEED_DECODING_INFO[]                   = "SPEED_DECODING_INFO";
+static constexpr const char CODEC_ERROR_INFO[]                      = "CODEC_ERROR_INFO";
+// EVENT_STR_L3
+static constexpr const char QUERY_CAP_UNSUPPORTED_INFO[]            = "QUERY_CAP_UNSUPPORTED_INFO";
+static constexpr const char CREATE_CODEC_UNSUPPORTED_INFO[]         = "CREATE_CODEC_UNSUPPORTED_INFO";
 
 const std::unordered_map<VideoCodecType, std::string> VIDEO_CODEC_TYPE_TO_STRING = {
     { VideoCodecType::DECODER_HARDWARE, "HDec" },
@@ -445,8 +449,9 @@ public:
                         lastOccupationHDecAppInfoVec_.emplace_back(appIndex, count);
                     }
 
+                    lastCallerNameIndex_ = callerNameIndex;
                     isInOccupationHDecEvent_.store(true);
-                    RegisterOccupationHDecLimitExceededEventHook(callerNameIndex);
+                    RegisterOccupationHDecLimitExceededEventHook();
                 }
                 break;
             }
@@ -470,6 +475,10 @@ public:
             return;
         }
 
+        if (isInOccupationHDecEvent_.load()) {
+            hdecLimitExceededInfo_.emplace(lastCallerNameIndex_, lastOccupationHDecAppInfoVec_);
+            isInOccupationHDecEvent_.store(false);
+        }
         auto hdecLimitExceededInfoJsonObj = cJSON_AddObjectToObject(jsonObj.get(), "HDecLimitExceededInfo");
         for (const auto &[appIndex, appInfoVec] : hdecLimitExceededInfo_) {
             auto appInfoArrayJsonObj = cJSON_AddArrayToObject(
@@ -493,23 +502,24 @@ public:
     {
         std::lock_guard<std::mutex> lock(mutex_);
         isInOccupationHDecEvent_.store(false);
+        lastCallerNameIndex_ = INVALID_APP_NAME_INDEX;
         lastOccupationHDecAppInfoVec_.clear();
         hdecLimitExceededInfo_.clear();
         longTimeInBgInfo_.clear();
     }
 
 private:
-    void RegisterOccupationHDecLimitExceededEventHook(AppNameIndex callerNameIndex)
+    void RegisterOccupationHDecLimitExceededEventHook()
     {
         StatisticsEventInfo::GetInstance().RegisterEventHook(
             StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO,
-            [this, callerNameIndex] (const Media::Meta &eventMeta) -> bool {
+            [this] (const Media::Meta &eventMeta) -> bool {
                 if (!isInOccupationHDecEvent_.load()) {
                     return true;
                 }
 
                 std::lock_guard<std::mutex> lock(mutex_);
-                hdecLimitExceededInfo_.emplace(callerNameIndex, lastOccupationHDecAppInfoVec_);
+                hdecLimitExceededInfo_.emplace(lastCallerNameIndex_, lastOccupationHDecAppInfoVec_);
                 isInOccupationHDecEvent_.store(false);
                 return true;
             });
@@ -518,6 +528,7 @@ private:
     using HDecLimitExceededAppInfoVector = std::vector<std::pair<AppNameIndex, uint32_t>>; // AppNameIndex, count
     constexpr static size_t maxOccupationHDecRecordCount = 200;
     std::atomic<bool> isInOccupationHDecEvent_{ false };
+    AppNameIndex lastCallerNameIndex_ = INVALID_APP_NAME_INDEX;
     HDecLimitExceededAppInfoVector lastOccupationHDecAppInfoVec_;
     std::unordered_multimap<AppNameIndex, HDecLimitExceededAppInfoVector> hdecLimitExceededInfo_;
     std::unordered_multimap<AppNameIndex, uint32_t> longTimeInBgInfo_;  // AppNameIndex, elapsedTime
@@ -749,7 +760,7 @@ void StatisticsEventInfo::OnSubmitEventInfo()
     };
 
     HiSysEventWrite(
-        DOMAIN, EVENT_STATISTICS_INFO,
+        EVENT_DOMAIN, EVENT_STATISTICS_INFO,
         OHOS::HiviewDFX::HiSysEvent::EventType::STATISTIC,
         QUERY_CAP_TIMES,                    submitInfo.queryCapTimes,
         CREATE_CODEC_TIMES,                 submitInfo.createCodecTimes,

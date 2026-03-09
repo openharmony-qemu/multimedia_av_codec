@@ -92,7 +92,7 @@ public:
     int64_t GetDuration() const;
     std::pair<int64_t, bool> GetStartInfo() const;
     Seekable GetSeekable() const;
-    void SetCallback(Callback* cb);
+    void SetCallback(const std::shared_ptr<Callback>& cb);
     void OnPlayListChanged(const std::vector<PlayInfo>& playList) override;
     void OnMasterReady(bool needAudioManager, bool needSubtitlesManager) override;
     void SetStatusCallback(StatusCallbackFunc cb);
@@ -135,6 +135,10 @@ public:
     Status GetStreamInfo(std::vector<StreamInfo>& streams);
     bool IsHlsFmp4();
     uint64_t GetMemorySize();
+    uint64_t GetDownloadResumeThreshold();
+    uint64_t GetDownloadThrottleThreshold();
+    uint64_t GetsourceLoaderClearThreshold();
+    void ClearChunksInLargeSegment();
     std::string GetContentType();
     bool IsHlsEnd();
     bool SelectMedia(int32_t streamId, HlsSegmentType mediaType);
@@ -146,6 +150,7 @@ public:
     void SetSegmentBufferingCallback(HlsSegmentBufferingCbFunc bufferingCbFunc);
     void SetSegmentAllCallback(HlsSegmentEventCbFunc segEventCallback);
     void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
+    void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr);
 
 public:
     static constexpr size_t VIDEO_MIN_BUFFER_SIZE = 1 * 1024 * 1024;
@@ -220,8 +225,11 @@ private:
     void SetDownloadRequest(std::shared_ptr<DownloadRequest> downloadRequest);
     std::shared_ptr<DownloadRequest> GetDownloadRequest();
     bool CheckCanReadOneSeconds(uint64_t wantReadLength);
-    bool IsAllDownloadFinish();
+    bool IsCurrentDownloadFinish();
     void PlayListChanged(const std::vector<PlayInfo>& playList);
+    bool CheckLiveToVodEnd();
+    bool CheckVodEnd();
+    bool CheckLiveLastSegment();
 
 private:
     HlsSegmentType type_ = HlsSegmentType::SEG_VIDEO;
@@ -230,7 +238,7 @@ private:
     size_t totalBufferSize_ {0};
     std::shared_ptr<Downloader> downloader_;
     std::shared_ptr<DownloadRequest> downloadRequest_;
-    Callback* callback_ {nullptr};
+    std::weak_ptr<Callback> callback_;
     DataSaveFunc dataSave_;
     StatusCallbackFunc statusCallback_;
     std::function<void(bool, bool)> masterReadyCallback_;
@@ -244,6 +252,7 @@ private:
     std::deque<PlayInfo> backPlayList_;
     std::atomic<bool> isSelectingBitrate_ {false};
     bool isDownloadStarted_ {false};
+    std::atomic<bool> lastPlaychanged_ {false};
 
     /* aes decrypt */
     std::shared_ptr<AesDecryptor> aesDecryptor_;
@@ -369,6 +378,7 @@ private:
     std::condition_variable canReadCond_;
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
     InfoIndexMap InfoIndexMap_;
+    std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
 };
 }
 }

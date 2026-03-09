@@ -46,6 +46,8 @@ enum TrackType {
     TRACK_INVALID
 };
 
+enum class DemuxerCallerType : int32_t;
+
 class DemuxerPluginManager {
 public:
     DemuxerPluginManager() = default;
@@ -61,6 +63,7 @@ public:
     MOCK_METHOD1(GetTmpStreamIDByTrackID, int32_t(int32_t trackId));
     MOCK_METHOD1(GetTmpInnerTrackIDByTrackID, int32_t(int32_t trackId));
     MOCK_METHOD3(UpdateTempTrackMapInfo, void(int32_t oldTrackId, int32_t newTrackId, int32_t newInnerTrackIndex));
+    MOCK_METHOD3(UpdateTempTrackMapByStreamId, void(int32_t oldTrackId, int32_t newStreamId, TrackType type));
     MOCK_METHOD1(DeleteTempTrackMapInfo, void(int32_t oldTrackId));
 
     MOCK_METHOD1(GetInnerTrackIDByTrackID, int32_t(int32_t trackId));
@@ -71,6 +74,7 @@ public:
         GetStreamDemuxerNewStreamID, int32_t(TrackType trackType, std::shared_ptr<BaseStreamDemuxer> streamDemuxer));
 
     MOCK_METHOD1(GetTrackTypeByTrackID, TrackType(int32_t trackId));
+    MOCK_METHOD1(GetTmpTrackTypeByTrackID, TrackType(int32_t trackId));
 
     MOCK_METHOD2(LoadCurrentAllPlugin, Status(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, MediaInfo &mediaInfo));
     MOCK_METHOD2(LoadCurrentSubtitlePlugin,
@@ -82,7 +86,8 @@ public:
     MOCK_METHOD0(Stop, Status());
     MOCK_METHOD0(Flush, Status());
     MOCK_METHOD3(SeekTo, Status(int64_t seekTime, Plugins::SeekMode mode, int64_t &realSeekTime));
-    MOCK_METHOD3(SeekToKeyFrame, Status(int64_t seekTime, Plugins::SeekMode mode, int64_t &realSeekTime));
+    MOCK_METHOD4(SeekToKeyFrame, Status(int64_t seekTime, Plugins::SeekMode mode,
+        int64_t &realSeekTime, DemuxerCallerType callerType));
     MOCK_METHOD5(SeekToFrameByDts, Status(int32_t streamID, int32_t trackId, int64_t seekTime,
                                    Plugins::SeekMode mode, int64_t& realSeekTime));
     MOCK_METHOD1(GetStreamID, int32_t(int32_t trackId));

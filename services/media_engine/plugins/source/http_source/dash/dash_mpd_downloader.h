@@ -117,10 +117,11 @@ public:
     virtual ~DashMpdDownloader();
 
     void Init();
+    void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr);
     void Open(const std::string &url);
     void Close(bool isAsync);
     void SetStatusCallback(StatusCallbackFunc cb);
-    void SetMpdCallback(DashMpdCallback *callback);
+    void SetMpdCallback(const std::shared_ptr<DashMpdCallback>& callback);
     int64_t GetDuration() const;
     Seekable GetSeekable() const;
     std::vector<uint32_t> GetBitRates() const;
@@ -234,13 +235,16 @@ private:
 
     void SetDownloadRequest(std::shared_ptr<DownloadRequest> downloadRequest);
     std::shared_ptr<DownloadRequest> GetDownloadRequest();
+    StreamInfo AssignStreamInfo(unsigned int index);
+    void DfxAudioCntIncrease();
+    void DfxSubtitleCntIncrease();
 
 private:
     std::string url_ {};
     std::string downloadContent_ {}; // mpd content or sidx content
     std::string defaultAudioLang_ {};
     std::string defaultSubtitleLang_ {};
-    DashMpdCallback* callback_ {nullptr};
+    std::weak_ptr<DashMpdCallback> callback_;
     std::shared_ptr<Downloader> downloader_ {nullptr};
     std::shared_ptr<DownloadRequest> downloadRequest_ {nullptr};
     std::shared_ptr<DashMpdParser> mpdParser_ {nullptr};
@@ -261,9 +265,9 @@ private:
     std::atomic<bool> isInterruptNeeded_{false};
     std::vector<DashDrmInfo> localDrmInfos_;
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
-
-    std::shared_mutex downloadRequestMutex_;
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
+    std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
+    std::shared_mutex downloadRequestMutex_;
 };
 }
 }

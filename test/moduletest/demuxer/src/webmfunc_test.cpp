@@ -43,7 +43,7 @@ public:
 protected:
     const char *INP_DIR_1 = "/data/test/media/av1_vorbis_3s.webm";
     const char *INP_DIR_2 = "/data/test/media/error.webm";
-    const char *INP_DIR_3 = "/data/test/media/av1_vorbis.webm";
+    const char *INP_DIR_3 = "/data/test/media/av1_vorbis_10s.webm";
     const char *INP_DIR_4 = "/data/test/media/opus_vp8.webm";
     const char *INP_DIR_5 = "/data/test/media/vorbis_vp9.webm";
 };

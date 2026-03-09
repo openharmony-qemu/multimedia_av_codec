@@ -133,6 +133,9 @@ public:
         SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs) override;
     Status SeekToFrameByDts(int32_t trackId, int64_t seekTime,
         SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs) override;
+    bool GetVideoTrack(int &trackIndex) const;
+    bool GetAudioTrack(int &trackIndex) const;
+    Status SeekToRmKeyFrame(SeekMode mode, int64_t &realSeekTime);
 
     // cache pressure control
     Status SetCachePressureCallback(CachePressureCallback cb) override;
@@ -197,6 +200,13 @@ private:
         AVCodecID codecId {AV_CODEC_ID_NONE};
         AVMediaType codecType {AVMEDIA_TYPE_UNKNOWN};
         AVRational timeBase {0, 1};
+        int32_t sampleRate {0};
+        int32_t frameSize {0};
+        int32_t channels {0};
+        int32_t blockAlign {0};
+        int32_t bitsPerCodedSample {0};
+        int64_t bitRate {0};
+        uint32_t codecTag {0};
         int32_t extradataSize {0};
         int64_t startTime {AV_NOPTS_VALUE};
         bool needCombineFrame {false};
@@ -239,6 +249,7 @@ private:
     Status ConvertAvcToAnnexb(AVPacket& pkt);
     Status PushEOSToAllCache();
     bool TrackIsSelected(const uint32_t trackId);
+    Status HandleReadFrameResult(int ffmpegRet);
     Status ReadPacketToCacheQueue(const uint32_t readId);
     Status AddPacketToCacheQueue(Plugins::AVPacketWrapperPtr pkt);
     Status SetDrmCencInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
@@ -264,6 +275,14 @@ private:
         std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
     void UpdateCachedDrmInfoFromStream(AVStream* avStream);
     bool NeedCombineFrame(uint32_t trackId);
+    bool SupplementAudioTimestampIfNeeded(std::shared_ptr<AVBuffer> sample, const AVPacket &firstPkt,
+        const AVStreamSnapshot &snapshot, uint32_t trackIndex);
+    bool SupplementAudioDurationIfNeeded(std::shared_ptr<AVBuffer> sample, const AVPacket &firstPkt,
+        const AVStreamSnapshot &snapshot);
+    bool SupplementAudioPtsDtsIfNeeded(std::shared_ptr<AVBuffer> sample, const AVPacket &firstPkt,
+        const AVStreamSnapshot &snapshot, uint32_t trackIndex);
+    static int32_t GetFrameSamplesFromFFmpeg(const AVStreamSnapshot &snapshot, int32_t pktSize);
+    static int32_t GetAacFrameSamplesFromAdts(const AVPacket &pkt);
     Plugins::AVPacketWrapperPtr CombinePackets(std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
@@ -367,6 +386,19 @@ private:
     bool AllVideoFirstFramesReady();
     bool AllSupportTrackFramesReady();
     Status SetVideoFirstFrame(Plugins::AVPacketWrapperPtr pkt, bool isConvert = true);
+    Status AccumulateXpsPkt(Plugins::AVPacketWrapperPtr pkt);
+    void AccumulateXpsPktRelease(uint32_t trackIndex);
+    void AccumulateXpsPktReleaseAll();
+    enum class AccumulateAction {
+        ERROR,
+        NOT_SUPPORT_TYPE,
+        ACCUMULATE_COMPLETED,
+        ACCUMULATE_NOT_COMPLETED,
+    };
+    AccumulateAction ProcessAccumulateXpsPkt(Plugins::AVPacketWrapperPtr& pktWrapper,
+        int ffmpegRet, Status& status);
+    std::map<int32_t, Plugins::AVPacketWrapperPtr> accumulatePktMap_ {};
+    std::map<int32_t, bool> accumulatePktFinishMap_ {};
     bool VideoFirstFrameValid(uint32_t trackIndex);
     std::map<int32_t, Plugins::AVPacketWrapperPtr> videoFirstFrameMap_ {};
     std::unordered_map<int32_t, int64_t> seekCalibMap_ {};
@@ -418,9 +450,9 @@ private:
     // dfx
     struct TrackDfxInfo {
         int frameIndex = 0; // for each track
-        int64_t lastPts;
-        int64_t lastPos;
-        int64_t lastDuration;
+        int64_t lastPts {AV_NOPTS_VALUE};
+        int64_t lastPos {0};
+        int64_t lastDuration {0};
         bool dumpFirstInfo = false;
     };
     enum Stage : int32_t {
@@ -463,6 +495,7 @@ private:
     void HandleReadWait();
     bool EnsurePacketAllocated(Plugins::AVPacketWrapperPtr& pktWrapper);
     bool ReadAndProcessFrame(Plugins::AVPacketWrapperPtr& pktWrapper);
+    bool HandleAVPacketNormal(Plugins::AVPacketWrapperPtr& pktWrapper);
     void HandleAVPacketEndOfStream(Plugins::AVPacketWrapperPtr& pktWrapper);
     void HandleAVPacketReadError(Plugins::AVPacketWrapperPtr& pktWrapper, int ffmpegRet);
     bool ReadOnePacketAndProcessWebVTT(Plugins::AVPacketWrapperPtr& pktWrapper);

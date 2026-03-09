@@ -44,13 +44,13 @@ DecodingBehaviorAnalyzer::DecodingBehaviorAnalyzer()
     startTime_ = std::chrono::steady_clock::now();
 }
 
-void DecodingBehaviorAnalyzer::OnFrameConsumed(std::shared_ptr<AVBuffer> buffer)
+void DecodingBehaviorAnalyzer::OnFrameConsumed(int64_t pts)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (buffer == nullptr) {
+    if (pts < 0) {
         return;
     }
-    int64_t ptsMs = buffer->pts_ / 1000; // 1000: us to ms
+    int64_t ptsMs = pts / 1000; // 1000: us to ms
     if (ptsMs < startPtsMs_) { // handle looped playback
         frameCnt_ = 0;
     }
@@ -71,7 +71,7 @@ void DecodingBehaviorAnalyzer::SaveDecodingBehaviorAsSnapshot(
     history_.push_back(snapshot);
     startTime_ = endTime;
     AVCODEC_LOGD("snapshot: %{public}d-%{public}.2fx-%{public}u, history size %{public}zu ",
-        snapshot.type, STANDARD_SPEEDS[snapshot.decSpeedIdx], snapshot.duration, history_.size());
+        snapshot.type, standardSpeeds[snapshot.decSpeedIdx], snapshot.duration, history_.size());
 }
 
 void DecodingBehaviorAnalyzer::ReportSpeedDecodingInfo()
@@ -125,9 +125,9 @@ void DecodingBehaviorAnalyzer::OnStopped(bool isDecEnd)
 size_t DecodingBehaviorAnalyzer::MatchAndUpdateSpeedStats(double decSpeed)
 {
     size_t closestIndex = 0;
-    double minDiff = std::abs(decSpeed - STANDARD_SPEEDS[0]);
+    double minDiff = std::abs(decSpeed - standardSpeeds[0]);
     for (size_t i = 1; i < stdSpeedLevels; ++i) {
-        double diff = std::abs(decSpeed - STANDARD_SPEEDS[i]);
+        double diff = std::abs(decSpeed - standardSpeeds[i]);
         if (diff < minDiff) {
             minDiff = diff;
             closestIndex = i;
@@ -163,7 +163,7 @@ DecodingBehaviorType DecodingBehaviorAnalyzer::DetermineDecodingBehaviorType()
     // 0.0 and 4.0 are placeholders for extremely slow and extremely fast speeds respectively
     bool isUniformSpeed = (maxCntIdx != 0u) && (maxCntIdx != stdSpeedLevels - 1);
     AVCODEC_LOGD("MaxCnt %{public}zu, maxPSpeed %{public}.2fx, isStable %{public}d, isUniformSpeed %{public}d",
-        maxCnt, STANDARD_SPEEDS[maxCntIdx], isStable, isUniformSpeed);
+        maxCnt, standardSpeeds[maxCntIdx], isStable, isUniformSpeed);
     if (isStable && isUniformSpeed) {
         return DecodingBehaviorType::UNIFORM_SPEED;
     }
@@ -203,7 +203,7 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
         std::chrono::steady_clock::time_point endTime = lastCheckTime_ != std::chrono::steady_clock::time_point{} ?
             lastCheckTime_ : std::chrono::steady_clock::now();
         AVCODEC_LOGD("type %{public}d, speed %{public}.2fx, newType %{public}d, new speed %{public}.2fx,",
-            type_, STANDARD_SPEEDS[lastDecSpeedIdx], newType, STANDARD_SPEEDS[newSpeedIdx]);
+            type_, standardSpeeds[lastDecSpeedIdx], newType, standardSpeeds[newSpeedIdx]);
         SaveDecodingBehaviorAsSnapshot(type_, endTime, lastDecSpeedIdx);
     }
     type_ = newType;

@@ -1327,19 +1327,22 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Hevc_AddTrack_001, TestSize.Level0)
         FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, TEST_WIDTH, TEST_HEIGHT);
 
     videoParams->PutIntValue("video_delay", validVideoDelay);
-    avmuxer_->AddTrack(trackId, videoParams);
+    ret = avmuxer_->AddTrack(trackId, videoParams);
 
     videoParams->PutIntValue("video_delay", invalidVideoDelay);
     videoParams->PutDoubleValue(OH_MD_KEY_FRAME_RATE, validFrameRate);
-    avmuxer_->AddTrack(trackId, videoParams);
+    ret = avmuxer_->AddTrack(trackId, videoParams);
+    ASSERT_NE(ret, 0);
 
     videoParams->PutIntValue("video_delay", validVideoDelay);
     videoParams->PutDoubleValue(OH_MD_KEY_FRAME_RATE, invalidFrameRate);
-    avmuxer_->AddTrack(trackId, videoParams);
+    ret = avmuxer_->AddTrack(trackId, videoParams);
+    ASSERT_NE(ret, 0);
 
     videoParams->PutIntValue("video_delay", 0xFF);
     videoParams->PutDoubleValue(OH_MD_KEY_FRAME_RATE, validFrameRate);
-    avmuxer_->AddTrack(trackId, videoParams);
+    ret = avmuxer_->AddTrack(trackId, videoParams);
+    ASSERT_NE(ret, 0);
 
     videoParams->PutIntValue("video_delay", validVideoDelay);
     videoParams->PutDoubleValue(OH_MD_KEY_FRAME_RATE, validFrameRate);
@@ -2605,6 +2608,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_DefinedKey_001, TestSize.Level0)
     audioParams->PutStringValue(Tag::MEDIA_CREATION_TIME, "2023-12-19T03:16:00.000000Z");
     audioParams->PutLongValue(Tag::MEDIA_BITRATE, 128000);
     audioParams->PutFloatValue(Tag::MEDIA_LATITUDE, 22.67f);
+    audioParams->PutFloatValue(Tag::MEDIA_LONGITUDE, 45.67f);
     int32_t ret = avmuxer_->SetFormat(audioParams);
     ASSERT_EQ(ret, 0);
 }
@@ -2628,6 +2632,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_DefinedKey_002, TestSize.Level0)
     audioParams->PutIntValue(Tag::AUDIO_SAMPLE_RATE, 48000);
     audioParams->PutLongValue(Tag::MEDIA_BITRATE, 128000);
     audioParams->PutFloatValue(Tag::MEDIA_LATITUDE, 22.67f);
+    audioParams->PutFloatValue(Tag::MEDIA_LONGITUDE, 45.67f);
     int32_t ret = avmuxer_->SetFormat(audioParams);
     ASSERT_EQ(ret, 0);
 }
@@ -3070,6 +3075,34 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_IsMoovFront_002, TestSize.Level0)
     info.size = sizeof(buffer_);
     ret = avmuxer_->WriteSample(trackId, buffer_, info);
     ASSERT_EQ(ret, 0);
+}
+
+/**
+ * @tc.name: Muxer_SetLocation_001
+ * @tc.desc: Muxer mp4 set location(latitude、longitude、altitude)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetLocation_001, TestSize.Level0)
+{
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetLocation_001.mp4");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+    
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> metaData = FormatMockFactory::CreateFormat();
+    metaData->PutFloatValue(OH_MD_KEY_LATITUDE, 90.0f);
+    metaData->PutFloatValue(OH_MD_KEY_LONGITUDE, 180.0f);
+    metaData->PutFloatValue(OH_MD_KEY_ALTITUDE, 123.4f);
+
+    EXPECT_EQ(avmuxer_->SetFormat(metaData), 0);
+    metaData->InitAudioTrackFormat(Plugins::MimeType::AUDIO_MPEG, 48000, 2);
+    ASSERT_EQ(avmuxer_->AddTrack(trackId, metaData), 0);
+    
+    ASSERT_EQ(avmuxer_->Start(), 0);
+    ASSERT_EQ(avmuxer_->Stop(), 0);
 }
 #endif // AVMUXER_UNITTEST_CAPI
 

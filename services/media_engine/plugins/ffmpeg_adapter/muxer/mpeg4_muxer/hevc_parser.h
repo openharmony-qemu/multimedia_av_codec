@@ -24,7 +24,7 @@ namespace Plugins {
 namespace Mpeg4 {
 class HevcParser : public VideoParser {
 public:
-    HevcParser();
+    explicit HevcParser(bool &videoDelay);
     int32_t WriteFrame(const std::shared_ptr<AVIOStream> &io, const std::shared_ptr<AVBuffer> &sample) override;
     int32_t SetConfig(const std::shared_ptr<BasicBox> &box, std::vector<uint8_t> &codecConfig) override;
     int32_t Init();
@@ -38,6 +38,7 @@ public:
     std::vector<uint8_t> GetLogInfo();
 
 private:
+    Status SetVideoDelay();
     int32_t WriteAnnexBFrame(const std::shared_ptr<AVIOStream> &io, const uint8_t* sample, int32_t size);
 
 private:
@@ -47,6 +48,7 @@ private:
     bool isParserColor_ = false;
     bool isFirstFrame_ = true;
     bool isAnnexbFrame_ = false;
+    bool &hasVideoDelay_;
 };
 } // Mpeg4
 } // Plugins

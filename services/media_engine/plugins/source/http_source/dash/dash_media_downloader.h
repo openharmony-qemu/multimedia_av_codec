@@ -39,7 +39,12 @@ class DashMediaDownloader : public MediaDownloader, public DashMpdCallback,
 public:
     explicit DashMediaDownloader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = nullptr);
     ~DashMediaDownloader() override;
+
+    DashMediaDownloader(const DashMediaDownloader&) = delete;
+    DashMediaDownloader& operator=(const DashMediaDownloader&) = delete;
+
     void Init() override;
+    void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr) override;
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
     void Pause() override;
@@ -50,7 +55,7 @@ public:
     size_t GetContentLength() const override;
     int64_t GetDuration() const override;
     Seekable GetSeekable() const override;
-    void SetCallback(Callback* cb) override;
+    void SetCallback(const std::shared_ptr<Callback>& cb) override;
     void SetStatusCallback(StatusCallbackFunc cb) override;
     bool GetStartedStatus() override;
     std::vector<uint32_t> GetBitRates() override;
@@ -113,7 +118,7 @@ private:
 
 private:
 
-    Callback* callback_ {nullptr};
+    std::weak_ptr<Callback> callback_;
     StatusCallbackFunc statusCallback_ {nullptr};
 
     std::shared_ptr<DashMpdDownloader> mpdDownloader_ {nullptr};
@@ -136,6 +141,7 @@ private:
 
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
     std::shared_ptr<DownloadMetricsInfo> downloadMetricsInfo_ {nullptr};
+    std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
 };
 }
 }

@@ -138,9 +138,13 @@ void AVIOStream::InitCache(uint32_t cacheSize)
     cache_.clear();
     maxCacheSize_ = cacheSize;
     if (cacheSize > 0) {
-        cache_.resize(cacheSize + 8, 0); // 8
+        constexpr uint32_t maxSize = 4096;
+        uint32_t tempSize = cacheSize > maxSize ? maxSize : cacheSize;
+        maxCacheSize_ = tempSize;
+        cache_.resize(tempSize + 8, 0); // 8
     }
-    MEDIA_LOG_I("cache size:%{public}u, container:%{public}zu", cacheSize, cache_.size());
+    MEDIA_LOG_I("cache size:%{public}u, container:%{public}zu, maxSize:%{public}u",
+        cacheSize, cache_.size(), maxCacheSize_);
 }
 
 void AVIOStream::WriteCache(const uint8_t* data, int32_t size)

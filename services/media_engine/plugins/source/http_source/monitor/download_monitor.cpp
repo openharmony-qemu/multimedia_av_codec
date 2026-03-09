@@ -22,7 +22,7 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
-    constexpr int RETRY_TIMES_TO_REPORT_ERROR = 200;
+    constexpr int RETRY_TIMES_TO_REPORT_ERROR = 10;
     constexpr int APP_DOWNLOAD_RETRY_TIMES = 60;
     constexpr int SERVER_ERROR_THRESHOLD = 500;
     constexpr int32_t READ_LOG_FEQUENCE = 50;
@@ -41,7 +41,6 @@ namespace {
         56,
         18,
         0,
-        7,
     };
     const std::set<int32_t> SERVER_RETRY_ERROR_CODES = {
         300,
@@ -131,8 +130,8 @@ void DownloadMonitor::Close(bool isAsync)
         downloader_->Close(true);
         task_->Stop();
     } else {
-        downloader_->Close(false);
         task_->Stop();
+        downloader_->Close(false);
     }
     isPlaying_ = false;
 }
@@ -217,7 +216,7 @@ bool DownloadMonitor::AutoSelectBitRate(uint32_t bitRate)
     return downloader_->AutoSelectBitRate(bitRate);
 }
 
-void DownloadMonitor::SetCallback(Callback* cb)
+void DownloadMonitor::SetCallback(const std::shared_ptr<Callback>& cb)
 {
     callback_ = cb;
     downloader_->SetCallback(cb);
@@ -236,7 +235,8 @@ bool DownloadMonitor::GetStartedStatus()
 // Notify client and server error.
 void DownloadMonitor::NotifyError(int32_t clientErrorCode, int32_t serverErrorCode)
 {
-    if (callback_ == nullptr) {
+    auto callback = callback_.lock();
+    if (callback == nullptr) {
         MEDIA_LOG_E("callback_ is nullptr, notify error failed.");
         return;
     }
@@ -246,7 +246,7 @@ void DownloadMonitor::NotifyError(int32_t clientErrorCode, int32_t serverErrorCo
         if (downloader_ != nullptr) {
             downloader_->SetIsReportedErrorCode();
         }
-        callback_->OnEvent({PluginEventType::SERVER_ERROR, {errorCode}, "client error"});
+        callback->OnEvent({PluginEventType::SERVER_ERROR, {errorCode}, "client error"});
         MEDIA_LOG_E("Notify http client error, code " PUBLIC_LOG_D32, clientErrorCode);
     }
     if (serverErrorCode != 0) {
@@ -255,8 +255,16 @@ void DownloadMonitor::NotifyError(int32_t clientErrorCode, int32_t serverErrorCo
         if (downloader_ != nullptr) {
             downloader_->SetIsReportedErrorCode();
         }
-        callback_->OnEvent({PluginEventType::SERVER_ERROR, {errorCode}, "server error"});
+        callback->OnEvent({PluginEventType::SERVER_ERROR, {errorCode}, "server error"});
         MEDIA_LOG_E("Notify http server error, code " PUBLIC_LOG_D32, serverErrorCode);
+    }
+}
+
+void DownloadMonitor::SetSourceStatisticsDfx(
+    std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr)
+{
+    if (downloader_ != nullptr) {
+        downloader_->SetSourceStatisticsDfx(rpInfoPtr);
     }
 }
 

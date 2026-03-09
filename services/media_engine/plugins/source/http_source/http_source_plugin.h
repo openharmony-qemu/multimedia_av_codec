@@ -25,7 +25,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-class HttpSourcePlugin : public SourcePlugin {
+class __attribute__((visibility("default"))) HttpSourcePlugin : public SourcePlugin {
 public:
     explicit HttpSourcePlugin(const std::string &name) noexcept;
     ~HttpSourcePlugin() override;
@@ -39,7 +39,7 @@ public:
     Status Resume() override;
     Status GetParameter(std::shared_ptr<Meta> &meta) override;
     Status SetParameter(const std::shared_ptr<Meta> &meta) override;
-    Status SetCallback(Callback* cb) override;
+    Status SetCallback(const std::shared_ptr<Callback>& cb) override;
     Status SetSource(std::shared_ptr<MediaSource> source) override;
     Status Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen) override;
     Status Read(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen) override;
@@ -93,7 +93,7 @@ private:
     uint32_t bufferSize_;
     uint32_t waterline_;
     uint32_t seekErrorCount_{0};
-    Callback* callback_ {};
+    std::weak_ptr<Callback> callback_;
     std::shared_ptr<MediaDownloader> downloader_;
     Mutex mutex_ {};
     bool delayReady_ {true};
@@ -103,6 +103,8 @@ private:
     std::atomic<bool> isInterruptNeeded_{false};
     std::shared_ptr<MediaSourceLoaderCombinations> loaderCombinations_ {nullptr};
     std::string redirectUrl_ {};
+    std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ =
+        std::make_shared<OHOS::MediaAVCodec::SourceStatisticsReportInfo>();
 };
 } // namespace HttpPluginLite
 } // namespace Plugin

@@ -139,11 +139,12 @@ using SegmentBufferingCbFunc = std::function<void(int, BufferingInfoType)>;
 
 class DashSegmentDownloader : public std::enable_shared_from_this<DashSegmentDownloader> {
 public:
-    DashSegmentDownloader(Callback *callback, int streamId, MediaAVCodec::MediaType streamType,
+    DashSegmentDownloader(const std::shared_ptr<Callback>& callback, int streamId, MediaAVCodec::MediaType streamType,
                           uint64_t expectDuration, std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader);
     virtual ~DashSegmentDownloader();
 
     void Init();
+    void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr);
     bool Open(const std::shared_ptr<DashSegment> &dashSegment);
     void Close(bool isAsync, bool isClean);
     void Pause();
@@ -218,6 +219,8 @@ private:
     void SetDownloadRequest(std::shared_ptr<DownloadRequest> downloadRequest);
     std::shared_ptr<DownloadRequest> GetDownloadRequest() const;
     bool CheckDownloadRequest(const std::shared_ptr<DownloadRequest>& downloadRequest);
+    std::shared_ptr<Downloader> GetDownloader() const;
+    void SetDownloader(std::shared_ptr<Downloader> downloader);
 
 private:
     static constexpr uint32_t MIN_RETENTION_DURATION_MS = 5 * 1000;
@@ -229,6 +232,7 @@ private:
     std::vector<std::shared_ptr<DashInitSegment>> initSegments_;
     std::mutex segmentMutex_;
     std::mutex initSegmentMutex_;
+    mutable std::shared_mutex downloaderMutex_;
     mutable std::shared_mutex downloadRequestMutex_;
     DataSaveFunc dataSave_;
     StatusCallbackFunc statusCallback_;
@@ -260,7 +264,7 @@ private:
     SteadyClock steadyClock_;
 
     // play water line
-    Callback* callback_{nullptr};
+    std::weak_ptr<Callback> callback_;
     uint32_t waterLineAbove_{0};
     std::atomic<bool> isBuffering_{false};
     uint32_t downloadBiteRate_{0};
@@ -277,6 +281,7 @@ private:
     std::atomic<bool> canWrite_{true};
     SteadyClock loopInterruptClock_;
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
+    std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
 };
 }
 }

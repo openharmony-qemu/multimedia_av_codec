@@ -63,6 +63,30 @@ HlsPlayListDownloader::~HlsPlayListDownloader()
         downloader_->Stop(false);
     }
     MEDIA_LOG_I("~HlsPlayListDownloader out");
+    FALSE_RETURN_MSG(reportInfo_ != nullptr, "reportInfo_ is nullptr");
+    FALSE_RETURN_MSG(currentVariant_ != nullptr, "currentVariant_ is nullptr");
+    auto m3u8 = currentVariant_->m3u8_;
+    FALSE_RETURN_MSG(m3u8 != nullptr, "m3u8 is nullptr");
+    if (m3u8->IsLive()) {
+        if (isFmp4_.load()) {
+            reportInfo_->sourceType_ = static_cast<int8_t>(MediaAVCodec::DfxSourceType::FMP4LIVE);
+        } else {
+            reportInfo_->sourceType_ = static_cast<int8_t>(MediaAVCodec::DfxSourceType::HLSLIVE);
+        }
+    } else {
+        if (isFmp4_.load()) {
+            reportInfo_->sourceType_ = static_cast<int8_t>(MediaAVCodec::DfxSourceType::FMP4VOD);
+        } else {
+            reportInfo_->sourceType_ = static_cast<int8_t>(MediaAVCodec::DfxSourceType::HLSVOD);
+        }
+    }
+}
+
+void HlsPlayListDownloader::SetSourceStatisticsDfx(
+    std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr, bool isFmp4)
+{
+    reportInfo_ = rpInfoPtr;
+    isFmp4_.store(isFmp4);
 }
 
 void HlsPlayListDownloader::UpdateManifest()
@@ -312,10 +336,13 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPr
     } else {
         UpdateMasterAndNotifyList(isPreParse);
     }
-    if (!master_->isParseSuccess_ && eventCallback_ != nullptr) {
-        MEDIA_LOG_E("ParseManifest parse failed.");
-        eventCallback_->OnEvent({PluginEventType::CLIENT_ERROR,
-                                {NetworkClientErrorCode::ERROR_TIME_OUT}, "parse m3u8"});
+    if (!master_->isParseSuccess_) {
+        auto callback = eventCallback_.lock();
+        if (callback) {
+            MEDIA_LOG_E("ParseManifest parse failed.");
+            callback->OnEvent({PluginEventType::CLIENT_ERROR,
+                              {NetworkClientErrorCode::ERROR_TIME_OUT}, "parse m3u8"});
+        }
     }
 }
 
@@ -379,6 +406,11 @@ bool HlsPlayListDownloader::UpdatePlaylists(bool isSimple)
     return ret;
 }
 
+bool HlsPlayListDownloader::IsLiveEnd()
+{
+    return isLiveEnd_;
+}
+
 void HlsPlayListDownloader::UpdateMasterInfo(bool isPreParse)
 {
     std::lock_guard<std::mutex> lock(mediaMutex_);
@@ -391,6 +423,11 @@ void HlsPlayListDownloader::UpdateMasterInfo(bool isPreParse)
     }
     if (currentSubtitles_ && currentSubtitles_->m3u8_) {
         m3u8 = currentSubtitles_->m3u8_;
+    }
+    if (master_->bLive_ && !m3u8->IsLive()) {
+        MEDIA_LOG_I("Live stream ended and transitioning to Vod");
+        updateTask_->Stop();
+        isLiveEnd_ = true;
     }
     master_->bLive_ = m3u8->IsLive();
     master_->isFmp4_ = m3u8->isHeaderReady_.load();
@@ -633,9 +670,7 @@ bool HlsPlayListDownloader::ReadMediaHeader(const std::list<std::shared_ptr<M3U8
             !stream->m3u8_->isHeaderReady_) {
             continue;
         }
-        errno_t err = memcpy_s(buffer, wantLen,
-            stream->m3u8_->fmp4Header_,
-            stream->m3u8_->downloadHeaderLen_);
+        errno_t err = memcpy_s(buffer, wantLen, stream->m3u8_->fmp4Header_, stream->m3u8_->downloadHeaderLen_);
         if (err == 0) {
             readLen = stream->m3u8_->downloadHeaderLen_;
             return true;
@@ -655,8 +690,7 @@ bool HlsPlayListDownloader::ReadStreamHeader(const std::list<std::shared_ptr<M3U
             !stream->m3u8_->isHeaderReady_) {
             continue;
         }
-        errno_t err = memcpy_s(buffer, wantLen, stream->m3u8_->fmp4Header_,
-            stream->m3u8_->downloadHeaderLen_);
+        errno_t err = memcpy_s(buffer, wantLen, stream->m3u8_->fmp4Header_, stream->m3u8_->downloadHeaderLen_);
         if (err == 0) {
             readLen = stream->m3u8_->downloadHeaderLen_;
             return true;
@@ -712,7 +746,7 @@ void HlsPlayListDownloader::GetMediaStreams(StreamType streamType, std::vector<S
         if (streamType == StreamType::SUBTITLE) {
             isDefault = currentVariant_->defaultSubtitles_ != nullptr &&
                 media->streamId_ == currentVariant_->defaultSubtitles_->streamId_;
-                streamInfo.sniffSize = DEFAULT_SUBTITLE_SNIFFSIZE;
+            streamInfo.sniffSize = DEFAULT_SUBTITLE_SNIFFSIZE;
         }
         
         if (isDefault) {

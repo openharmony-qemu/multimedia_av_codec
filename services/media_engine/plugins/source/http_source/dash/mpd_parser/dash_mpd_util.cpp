@@ -32,6 +32,8 @@ namespace HttpPlugin {
 static const int MATRIX_COEFFICIENTS_BT_2020 = 9;
 static const int COLOUR_PRIMARIES_BT_2020 = 9;
 static const int TRANSFER_CHARACTERISTICS_BT_2020 = 14;
+
+constexpr int32_t MAX_SUBSTITUTION_FORMAT_WIDTH = 32;
  
 static const std::string MPD_SCHEME_CICP_MATRIX_COEFFICIENTS = "cicp:MatrixCoefficients";
 static const std::string MPD_SCHEME_CICP_COLOUR_PRIMARIES = "cicp:ColourPrimaries";
@@ -93,7 +95,7 @@ void BuildSrcUrl(std::string &srcUrl, std::string &baseUrl)
 
 static std::string &ReplaceSubStr(std::string &str, uint32_t position, uint32_t length, const std::string &dstSubStr)
 {
-    if (str.length() > position + length) {
+    if (str.length() >= position + length) {
         return str.replace(position, length, dstSubStr);
     }
     return str;
@@ -136,10 +138,20 @@ void GetSubstitutionStr(std::string &substitutionStr, std::string &str)
     size_t strLength = strlen("%0");
     str = str.substr(strLength);
     int32_t formatWidth = atoi(str.c_str());
-    if (static_cast<int32_t>(substitutionStr.length()) < formatWidth) {
-        for (int32_t i = formatWidth - static_cast<int32_t>(substitutionStr.length()); i > 0; i--) {
-            substitutionStr = "0" + substitutionStr;
-        }
+    if (formatWidth <= 0) {
+        MEDIA_LOG_W("Invalid format width " PUBLIC_LOG_D32 ", no padding applied", formatWidth);
+        return;
+    }
+
+    if (formatWidth > MAX_SUBSTITUTION_FORMAT_WIDTH) {
+        MEDIA_LOG_W("Format width " PUBLIC_LOG_D32 " exceeds max " PUBLIC_LOG_D32 ", using max value",
+            formatWidth, MAX_SUBSTITUTION_FORMAT_WIDTH);
+        formatWidth = MAX_SUBSTITUTION_FORMAT_WIDTH;
+    }
+
+    int32_t paddingCount = formatWidth - static_cast<int32_t>(substitutionStr.length());
+    if (paddingCount > 0) {
+        substitutionStr = std::string(paddingCount, '0') + substitutionStr;
     }
 }
 

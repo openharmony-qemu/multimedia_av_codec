@@ -30,11 +30,11 @@ public:
     std::shared_ptr<BasicBox> MoovBoxGenerate();
     void AddMoovUdtaBox();
     void AddTrakBox(std::shared_ptr<BasicTrack> track);
-    void AddMoovUdtaLociBox(float latitude, float longitude);
+    void AddMoovUdtaLociBox(float latitude, float longitude, float altitude, bool hasAltitude);
     void AddIlstMetaData(const std::shared_ptr<Meta> &param);  // udta.meta.ilst
     void AddGnreBox(const std::shared_ptr<Meta> &param, bool needGenerate, std::string path = "");
     void AddUserMetaBox(const std::shared_ptr<Meta> &userMeta, std::string path = "");
-    void AddMoovUdtaGeoTag(float latitude, float longitude, bool needGenerate = true);
+    void AddMoovUdtaGeoTag(float latitude, float longitude, bool needGenerate, float altitude, bool hasAltitude);
     void AddMoovUdtaMetaBox();
     void SetEdtsBoxFlag(bool flag) {enableEdtsBox_ = flag;}
     std::shared_ptr<BasicBox> FileLevelMetaBoxGenerate(const std::shared_ptr<Meta> &param);

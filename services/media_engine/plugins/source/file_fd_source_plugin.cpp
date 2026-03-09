@@ -156,7 +156,7 @@ FileFdSourcePlugin::~FileFdSourcePlugin()
     MEDIA_LOG_D("~FileFdSourcePlugin out.");
 }
 
-Status FileFdSourcePlugin::SetCallback(Callback* cb)
+Status FileFdSourcePlugin::SetCallback(const std::shared_ptr<Callback>& cb)
 {
     MEDIA_LOG_D("SetCallback in " PUBLIC_LOG_D32, cb != nullptr);
     callback_ = cb;
@@ -583,11 +583,12 @@ void FileFdSourcePlugin::NotifyBufferingStart()
 {
     MEDIA_LOG_I("NotifyBufferingStart, ringBuffer.size() " PUBLIC_LOG_ZU
         ", waterLineAbove_ " PUBLIC_LOG_U64, ringBuffer_->GetSize(), waterLineAbove_);
-    if (callback_ != nullptr && !isInterrupted_) {
-        callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
+    auto callback = callback_.lock();
+    if (callback && !isInterrupted_) {
+        callback->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
         MEDIA_LOG_I("Read OnEvent BUFFERING_START.");
     } else {
-        MEDIA_LOG_E("BUFFERING_START callback_ is nullptr or isInterrupted_ is true");
+        MEDIA_LOG_E("BUFFERING_START callback is nullptr or isInterrupted_ is true");
     }
     isBuffering_.store(true);
 }
@@ -597,13 +598,14 @@ void FileFdSourcePlugin::NotifyBufferingPercent()
     if (waterLineAbove_ != 0) {
         int64_t bp = static_cast<float>(ringBuffer_->GetSize()) / waterLineAbove_ * PERCENT_100;
         bp = bp > PERCENT_100 ? PERCENT_100 : bp;
-        if (isBuffering_ && callback_ != nullptr && !isInterrupted_) {
+        auto callback = callback_.lock();
+        if (isBuffering_ && callback && !isInterrupted_) {
             MEDIA_LOG_I("NotifyBufferingPercent, ringBuffer.size() " PUBLIC_LOG_ZU ", waterLineAbove_ " PUBLIC_LOG_U64
                 ", PERCENT " PUBLIC_LOG_D32, ringBuffer_->GetSize(), waterLineAbove_, static_cast<int32_t>(bp));
-            callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS,
+            callback->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS,
                 {BufferingInfoType::BUFFERING_PERCENT}, std::to_string(bp)});
         } else {
-            MEDIA_LOG_E("EVENT_BUFFER_PROGRESS callback_ is nullptr or isInterrupted_ \
+            MEDIA_LOG_E("EVENT_BUFFER_PROGRESS callback is nullptr or isInterrupted_ \
                 is true or isBuffering_ is false");
         }
     }
@@ -615,11 +617,12 @@ void FileFdSourcePlugin::NotifyBufferingEnd()
     MEDIA_LOG_I("NotifyBufferingEnd, ringBuffer.size() " PUBLIC_LOG_ZU
         ", waterLineAbove_ " PUBLIC_LOG_U64, ringBuffer_->GetSize(), waterLineAbove_);
     lastReadTime_ = 0;
-    if (callback_ != nullptr && !isInterrupted_) {
-        callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
+    auto callback = callback_.lock();
+    if (callback && !isInterrupted_) {
+        callback->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
         MEDIA_LOG_I("NotifyBufferingEnd success .");
     } else {
-        MEDIA_LOG_E("BUFFERING_END callback_ is nullptr or isInterrupted_ is true");
+        MEDIA_LOG_E("BUFFERING_END callback is nullptr or isInterrupted_ is true");
     }
     isBuffering_.store(false);
 }
@@ -627,12 +630,13 @@ void FileFdSourcePlugin::NotifyBufferingEnd()
 void FileFdSourcePlugin::NotifyReadFail()
 {
     MEDIA_LOG_I("NotifyReadFail in.");
-    if (callback_ != nullptr && !isInterrupted_) {
+    auto callback = callback_.lock();
+    if (callback && !isInterrupted_) {
         MEDIA_LOG_I("Read OnEvent read fail");
-        callback_->OnEvent({PluginEventType::CLIENT_ERROR,
+        callback->OnEvent({PluginEventType::CLIENT_ERROR,
             static_cast<int32_t>(NetworkClientErrorCode::ERROR_TIME_OUT), "read"});
     } else {
-        MEDIA_LOG_E("CLIENT_ERROR callback_ is nullptr or isInterrupted_ is true");
+        MEDIA_LOG_E("CLIENT_ERROR callback is nullptr or isInterrupted_ is true");
     }
 }
 

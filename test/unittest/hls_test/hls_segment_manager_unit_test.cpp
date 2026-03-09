@@ -489,7 +489,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, ReportVideoSizeChange_001, TestSize.Level1)
         std::shared_ptr<DownloadRequest>& request) {
     };
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->SetCallback(sourceCallback);
     downloader->ReportVideoSizeChange();
     downloader->Open(testUrl, httpHeader);
@@ -505,7 +505,6 @@ HWTEST_F(HlsSegmentManagerUnitTest, ReportVideoSizeChange_001, TestSize.Level1)
     downloader->ReportVideoSizeChange();
     downloader->Close(true);
     downloader = nullptr;
-    delete sourceCallback;
     EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
@@ -625,7 +624,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, TEST_CALLBACK, TestSize.Level1)
         std::shared_ptr<DownloadRequest>& request) {
     };
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->SetCallback(sourceCallback);
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
@@ -666,7 +665,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, TEST_CALLBACK1, TestSize.Level1)
         std::shared_ptr<DownloadRequest>& request) {
     };
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->SetCallback(sourceCallback);
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
@@ -691,7 +690,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, TEST_DownloadReport, TestSize.Level1)
         std::shared_ptr<DownloadRequest>& request) {
     };
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->SetCallback(sourceCallback);
     downloader->Open(testUrl, httpHeader);
     ReadDataInfo readDataInfo;
@@ -719,7 +718,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, TEST_DownloadReport_5M, TestSize.Level1)
         std::shared_ptr<DownloadRequest>& request) {
     };
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->SetCallback(sourceCallback);
     downloader->Open(testUrl, httpHeader);
     OSAL::SleepFor(6 * 1000);
@@ -747,7 +746,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, TEST_DownloadReport_5M_default, TestSize.Lev
         std::shared_ptr<DownloadRequest>& request) {
     };
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->SetCallback(sourceCallback);
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
@@ -780,7 +779,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, TEST_read_all, TestSize.Level1)
         std::shared_ptr<DownloadRequest>& request) {
     };
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->SetCallback(sourceCallback);
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
@@ -807,7 +806,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, TEST_Read_Live, TestSize.Level1)
         std::shared_ptr<DownloadRequest>& request) {
     };
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->SetCallback(sourceCallback);
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
@@ -1162,8 +1161,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, SET_INITIAL_BUFFERSIZE_001, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
     PlayInfo playInfo;
     playInfo.url_ = testUrl;
@@ -1182,8 +1181,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, SET_PLAY_STRATEGY_001, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     downloader->SetPlayStrategy(nullptr);
     EXPECT_EQ(downloader->waterlineForPlaying_, 0);
     std::shared_ptr<PlayStrategy> playStrategy = std::make_shared<PlayStrategy>();
@@ -1201,8 +1200,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, NOTIFY_INIT_SUCCESS_001, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     downloader->bufferDurationForPlaying_ = 0;
     downloader->NotifyInitSuccess();
     EXPECT_EQ(downloader->waterlineForPlaying_, 0);
@@ -1219,10 +1218,10 @@ HWTEST_F(HlsSegmentManagerUnitTest, IS_CACHED_INIT_SIZE_READY_001, TestSize.Leve
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
     downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
-    downloader->callback_ = sourceCallback;
+    downloader->SetCallback(sourceCallback);
     EXPECT_EQ(downloader->IsCachedInitSizeReady(-1), false);
     PlayInfo playInfo;
     downloader->backPlayList_.push_back(playInfo);
@@ -1244,8 +1243,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, CACHE_BUFFER_FULL_LOOP_001, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     PlayInfo playInfo;
     downloader->backPlayList_.push_back(playInfo);
     downloader->initCacheSize_ = 100;
@@ -1465,8 +1464,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, GET_STREAM_INFO_001, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     std::vector<StreamInfo> streams;
     EXPECT_EQ(downloader->GetStreamInfo(streams), Status::OK);
     downloader->isInterruptNeeded_ = true;
@@ -1500,8 +1499,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, IS_HLS_FMP4_001, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     EXPECT_EQ(downloader->IsHlsFmp4(), false);
     downloader->playlistDownloader_ = nullptr;
     EXPECT_EQ(downloader->IsHlsFmp4(), false);
@@ -1515,8 +1514,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, HANDLE_SEEK_READY_001, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     downloader->HandleSeekReady(1, 0);
     EXPECT_EQ(downloader->IsHlsFmp4(), false);
     std::string testUrl = TEST_URI_PATH + "test_hls/testXMap.m3u8";
@@ -1525,7 +1524,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, HANDLE_SEEK_READY_001, TestSize.Level1)
     downloader->GetStreamInfo(streams);
     downloader->HandleSeekReady(1, 0);
     EXPECT_EQ(downloader->IsHlsFmp4(), true);
-    downloader->callback_ = nullptr;
+    downloader->callback_.reset();
     downloader->HandleSeekReady(1, 0);
     EXPECT_EQ(downloader->IsHlsFmp4(), true);
     downloader->playlistDownloader_ = nullptr;
@@ -1541,8 +1540,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, REMOVE_FMP4_PADDING_DATA_001, TestSize.Level
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     std::string testUrl = TEST_URI_PATH + "test_hls/testXMap.m3u8";
     downloader->Open(testUrl, httpHeader);
     std::vector<StreamInfo> streams;
@@ -1578,8 +1577,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, READ_HEADER_DATA_001, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     unsigned char * buffer = new unsigned char[1 * 1024 * 1024];
     ReadDataInfo readDataInfo;
     readDataInfo.streamId_ = 1;
@@ -1613,8 +1612,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, IS_PURE_BYTE_RANGE_001, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     EXPECT_EQ(downloader->IsPureByteRange(), false);
     std::string testUrl = TEST_URI_PATH + "test_hls/testByteRange.m3u8";
     downloader->Open(testUrl, httpHeader);
@@ -1633,8 +1632,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, PUT_REQUEST_INTO_DOWNLOADER_001, TestSize.Le
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     PlayInfo playInfo;
     playInfo.url_ = TEST_URI_PATH + "test_hls/testByteRange.m3u8";
     playInfo.length_ = 1000;
@@ -1660,8 +1659,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, HANDLE_FFMPEG_READ_BACK_001, TestSize.Level1
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     downloader->curStreamId_ = 1;
     downloader->isNeedResetOffset_ = true;
     downloader->HandleFfmpegReadback(100);
@@ -1683,8 +1682,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, READ_DELEGATE_001, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     std::string testUrl = TEST_URI_PATH + "test_hls/testByteRange.m3u8";
     downloader->Open(testUrl, httpHeader);
     std::vector<StreamInfo> streams;
@@ -1730,8 +1729,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, PREPARE_TO_SEEK_001, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     downloader->PrepareToSeek();
     EXPECT_EQ(downloader->playlistDownloader_->IsParseAndNotifyFinished(), false);
     downloader->isInterruptNeeded_ = true;
@@ -1755,8 +1754,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, SEEK_TO_TIME_001, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     downloader->SeekToTime(0, SeekMode::SEEK_NEXT_SYNC);
     EXPECT_EQ(downloader->GetBufferSize(), 0);
 
@@ -1782,8 +1781,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, ON_PLAYLIST_CHANGED_001, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     std::string testUrl = TEST_URI_PATH + "test_hls/testXMap.m3u8";
     downloader->Open(testUrl, httpHeader);
     std::vector<StreamInfo> streams;
@@ -1811,8 +1810,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, UPDATE_MASTER_PLAYLIST_001, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     std::string testUrl = TEST_URI_PATH + "test_hls/testMutiStream.m3u8";
     downloader->Open(testUrl, httpHeader);
     std::vector<StreamInfo> streams;
@@ -1828,8 +1827,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, PLAYLIST_DOWNLOADER_001, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     uint8_t data[1] = {1};
     EXPECT_EQ(downloader->playlistDownloader_->SaveData(data, 0, true), 0);
     EXPECT_EQ(downloader->playlistDownloader_->SaveData(nullptr, 0, true), 0);
@@ -1843,8 +1842,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, PLAYLIST_DOWNLOADER_002, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     std::shared_ptr<Downloader> downloader1 = std::make_shared<Downloader>("hlsPlayList");
     downloader1->Init();
     std::shared_ptr<DownloadRequest> request = std::make_shared<DownloadRequest>("", nullptr, nullptr,  false);
@@ -1866,8 +1865,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, PLAYLIST_DOWNLOADER_003, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     downloader->playlistDownloader_->downloader_ = nullptr;
     downloader->playlistDownloader_->GetHttpHeader();
     EXPECT_EQ(downloader->playlistDownloader_->IsLive(), false);
@@ -1890,8 +1889,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, PLAYLIST_DOWNLOADER_004, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     std::string testUrl = TEST_URI_PATH + "test_hls/testHlsLive.m3u8";
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
@@ -1931,8 +1930,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, PLAYLIST_DOWNLOADER_005, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
     std::string testUrl = TEST_URI_PATH + "test_hls/testHlsLive.m3u8";
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
@@ -1949,7 +1948,6 @@ HWTEST_F(HlsSegmentManagerUnitTest, PLAYLIST_DOWNLOADER_005, TestSize.Level1)
     EXPECT_NE(downloader->playlistDownloader_->updateTask_, nullptr);
     downloader->Close(true);
     downloader = nullptr;
-    delete sourceCallback;
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, SAVE_DATA_001, TestSize.Level1)

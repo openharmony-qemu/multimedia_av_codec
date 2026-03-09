@@ -33,6 +33,7 @@
 #include "nocopyable.h"
 #include "securec.h"
 #include "window.h"
+#include "iconsumer_surface.h"
 
 namespace OHOS {
 namespace Media {
@@ -108,6 +109,8 @@ public:
     void StopOutloop();
     bool IsRender();
     bool MdCompare(unsigned char *buffer, int len, const char *source[]);
+    int32_t DecodeSetSurface();
+    void CreateSurface();
     VDecSignal *signal_;
     uint32_t errCount = 0;
     uint32_t outCount = 0;
@@ -119,6 +122,7 @@ public:
     bool setParameters = false;
     bool checkOutPut = true;
     OH_AVCodec *vdec_;
+    OHNativeWindow *nativeWindows = nullptr;
 
 private:
     std::atomic<bool> isRunning_ { false };

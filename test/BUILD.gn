@@ -116,6 +116,7 @@ group("av_codec_unit_test") {
         "unittest/dash_mult_seg_base_node_unittest:dash_mult_seg_base_node_unittest",
         "unittest/dash_period_manager_unittest:dash_period_manager_unit_test",
         "unittest/dash_period_node_unittest:dash_period_node_unittest",
+        "unittest/dash_representation_manager_unittest:dash_representation_manager_unittest",
         "unittest/dash_seg_list_node_unittest:dash_seg_list_node_unittest",
         "unittest/dash_seg_template_node_unittest:dash_seg_template_node_unittest",
         "unittest/dash_test:dash_adpt_set_manager_unit_test",
@@ -158,6 +159,7 @@ group("av_codec_unit_test") {
         "unittest/sample_queue_test:sample_queue_unit_test",
         "unittest/sample_queue_unit_test:sample_queue_test",
         "unittest/sample_queue_controller_unit_test:sample_queue_controller_unit_test",
+        "unittest/sei_parser_filter_unittest:sei_parser_filter_unittest",
         "unittest/sei_parser_helper_unittest:sei_parser_helper_unittest",
         "unittest/source_test:source_unit_test",
         "unittest/source_unit_test:source_test",
@@ -165,6 +167,7 @@ group("av_codec_unit_test") {
         "unittest/surface_encoder_adapter_unittest:surface_encoder_adapter_unittest",
         "unittest/video_resize_filter_test:video_resize_filter_test",
         "unittest/video_sink_unittest:video_sink_unittest",
+        "unittest/video_capture_filter_unit_test:video_capture_filter_unit_test",
       ]
       if (av_codec_support_hcodec) {
         deps += [ "unittest/hcodec_test:hcodec_unit_test" ]
@@ -210,6 +213,7 @@ group("av_codec_module_test") {
       "moduletest/vcodec/mpeg4swdecoder:mpeg4swdecoder_native_module_test",
       "moduletest/vcodec/swdecoder:swdecoder_native_module_test",
       "moduletest/vcodec/msvideo1decoder:msvideo1decoder_native_module_test",
+      "moduletest/vcodec/cinepakdecoder:cinepakdecoder_native_module_test",
       "moduletest/vcodec/mjpegswdecoder:mjpegswdecoder_native_module_test",
       "moduletest/vcodec/rawvideodecoder:rawvideodecoder_native_module_test",
     ]
@@ -303,7 +307,6 @@ group("av_codec_fuzz_test") {
       "fuzztest/audiomuxermp3_fuzzer:AudioMuxerMp3FuzzTest",
       "fuzztest/avcapability_fuzzer:AvcapabilityFuzzTest",
       "fuzztest/avcencinfo_fuzzer:AvCencInfoFuzzTest",
-      "fuzztest/avcodecservicestub_fuzzer:AVCodecServiceStubFuzzTest",
       "fuzztest/audiomuxerflac_fuzzer:AudioMuxerFlacFuzzTest",
       "fuzztest/avcodecsuspend_fuzzer:AvcodecSuspendFuzzTest",
       "fuzztest/avsourcefunc_fuzzer:AvSourceFuncFuzzTest",

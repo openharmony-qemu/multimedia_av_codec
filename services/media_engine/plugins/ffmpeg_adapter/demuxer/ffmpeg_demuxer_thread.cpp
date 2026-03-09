@@ -23,6 +23,7 @@
 #include "buffer/avbuffer.h"
 #include "plugin/plugin_buffer.h"
 #include "plugin/plugin_definition.h"
+#include "avcodec_log.h"
 #include "common/log.h"
 #include "meta/video_types.h"
 #include "demuxer_log_compressor.h"
@@ -32,6 +33,8 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "FfmpegDemuxerThread" };
+constexpr int64_t LOG_INTERVAL_MS = 2000; // 2s
+constexpr uint32_t LOG_MAX_COUNT = 10; // 10 times
 }
 
 namespace OHOS {
@@ -105,6 +108,12 @@ int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize, int
         return dataSize;
     }
     if (ioContext->invokerType != InvokerType::READ) {
+        if (ioContext->invokerType == InvokerType::FLUSH || ioContext->invokerType == InvokerType::DESTORY) {
+            MEDIA_LOG_I("AVReadPacket interrupted, invokerType:" PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64,
+                static_cast<int32_t>(ioContext->invokerType.load()), ioContext->offset);
+            // Stop inner retry loop quickly during flush/destroy.
+            return AV_READ_PACKET_READ_ERROR;
+        }
         switch (ioContext->avReadPacketStopState.load()) {
             case AVReadPacketStopState::TRUE:
                 MEDIA_LOG_I("AVReadPacket stopped");
@@ -157,7 +166,8 @@ void FFmpegDemuxerPlugin::UpdateInitDownloadData(IOContext* ioContext, int dataS
         if (ioContext->initDownloadDataSize <= UINT64_MAX - static_cast<uint64_t>(dataSize)) {
             ioContext->initDownloadDataSize += static_cast<uint64_t>(dataSize);
         } else {
-            MEDIA_LOG_W("DataSize " PUBLIC_LOG_U64 " is invalid", static_cast<uint64_t>(dataSize));
+            AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGW, LOG_INTERVAL_MS, LOG_MAX_COUNT,
+                "DataSize " PUBLIC_LOG_U64 " is invalid", static_cast<uint64_t>(dataSize));
         }
     }
 }
@@ -415,6 +425,13 @@ bool FFmpegDemuxerPlugin::ReadAndProcessFrame(Plugins::AVPacketWrapperPtr& pktWr
         readLoopStatus_ = Status::OK;
         int ffmpegRet = AVReadFrameLimit(pkt);
         std::unique_lock<std::mutex> sLock(syncMutex_);
+        Status accumulateStatus = Status::OK;
+        auto action = ProcessAccumulateXpsPkt(pktWrapper, ffmpegRet, accumulateStatus);
+        FALSE_RETURN_V_MSG_E(accumulateStatus == Status::OK, false, "PsAccumulateXpsPkt failed");
+        if (action == AccumulateAction::ACCUMULATE_NOT_COMPLETED) {
+            pktWrapper.reset();
+            return true;
+        }
         UpdMinTsPacketInfo(pktWrapper->GetAVPacket());
         if (ffmpegRet == AVERROR_EOF) {
             HandleAVPacketEndOfStream(pktWrapper);
@@ -425,6 +442,13 @@ bool FFmpegDemuxerPlugin::ReadAndProcessFrame(Plugins::AVPacketWrapperPtr& pktWr
             return false;
         }
     }
+    return HandleAVPacketNormal(pktWrapper);
+}
+
+bool FFmpegDemuxerPlugin::HandleAVPacketNormal(Plugins::AVPacketWrapperPtr& pktWrapper)
+{
+    AVPacket *pkt = (pktWrapper != nullptr) ? pktWrapper->GetAVPacket() : nullptr;
+    FALSE_RETURN_V_MSG_E(pkt != nullptr, false, "Pkt is nullptr");
     auto trackId = pkt->stream_index;
     if (!TrackIsSelected(trackId)) {
         av_packet_unref(pkt);
@@ -462,6 +486,7 @@ bool FFmpegDemuxerPlugin::ReadAndProcessFrame(Plugins::AVPacketWrapperPtr& pktWr
 void FFmpegDemuxerPlugin::HandleAVPacketEndOfStream(Plugins::AVPacketWrapperPtr& pktWrapper)
 {
     AVPacket *pkt = (pktWrapper != nullptr) ? pktWrapper->GetAVPacket() : nullptr;
+    AccumulateXpsPktReleaseAll();
     WebvttMP4EOSProcess(pkt);
     pktWrapper.reset();
     Status ret = PushEOSToAllCache();
@@ -478,6 +503,7 @@ void FFmpegDemuxerPlugin::HandleAVPacketEndOfStream(Plugins::AVPacketWrapperPtr&
 
 void FFmpegDemuxerPlugin::HandleAVPacketReadError(Plugins::AVPacketWrapperPtr& pktWrapper, int ffmpegRet)
 {
+    AccumulateXpsPktReleaseAll();
     AVPacket *pkt = (pktWrapper != nullptr) ? pktWrapper->GetAVPacket() : nullptr;
     FALSE_RETURN_MSG(pkt != nullptr, "AVPacket is nullptr");
     pktWrapper.reset();

@@ -323,7 +323,7 @@ static void DemuxerFile(const char *file)
  */
 HWTEST_F(DemuxerAifcFuncNdkTest, DEMUXER_AIFC_FUNC_0100, TestSize.Level2)
 {
-    DemuxerResult(INP_DIR_1, 59, 0);
+    DemuxerResult(INP_DIR_1, 10, 0);
 }
 /**
  * @tc.number    : DEMUXER_AIFC_FUNC_0200
@@ -376,7 +376,7 @@ HWTEST_F(DemuxerAifcFuncNdkTest, DEMUXER_AIFC_FUNC_0400, TestSize.Level2)
         ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
         ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, &sr));
         if (tarckType == MEDIA_TYPE_AUD) {
-            ASSERT_EQ(sr, 48000);
+            ASSERT_EQ(sr, 8000);
         }
         OH_AVFormat_Destroy(trackFormat);
         trackFormat = nullptr;
@@ -399,7 +399,7 @@ HWTEST_F(DemuxerAifcFuncNdkTest, DEMUXER_AIFC_FUNC_0500, TestSize.Level2)
         ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
         ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &br));
         if (tarckType == MEDIA_TYPE_AUD) {
-            ASSERT_EQ(br, 384000);
+            ASSERT_EQ(br, 64000);
         }
         OH_AVFormat_Destroy(trackFormat);
         trackFormat = nullptr;
@@ -582,7 +582,7 @@ HWTEST_F(DemuxerAifcFuncNdkTest, DEMUXER_AIFC_FUNC_1500, TestSize.Level2)
  */
 HWTEST_F(DemuxerAifcFuncNdkTest, DEMUXER_AIFC_FUNC_1600, TestSize.Level1)
 {
-    seekInfo fileTest1{INP_DIR_1, SEEK_MODE_PREVIOUS_SYNC, 0, 59, 0};
+    seekInfo fileTest1{INP_DIR_1, SEEK_MODE_PREVIOUS_SYNC, 0, 10, 0};
     CheckSeekMode(fileTest1);
 }
 
@@ -593,7 +593,7 @@ HWTEST_F(DemuxerAifcFuncNdkTest, DEMUXER_AIFC_FUNC_1600, TestSize.Level1)
  */
 HWTEST_F(DemuxerAifcFuncNdkTest, DEMUXER_AIFC_FUNC_1700, TestSize.Level1)
 {
-    seekInfo fileTest1{INP_DIR_1, SEEK_MODE_NEXT_SYNC, 0, 59, 0};
+    seekInfo fileTest1{INP_DIR_1, SEEK_MODE_NEXT_SYNC, 0, 10, 0};
     CheckSeekMode(fileTest1);
 }
 
@@ -604,7 +604,7 @@ HWTEST_F(DemuxerAifcFuncNdkTest, DEMUXER_AIFC_FUNC_1700, TestSize.Level1)
  */
 HWTEST_F(DemuxerAifcFuncNdkTest, DEMUXER_AIFC_FUNC_1800, TestSize.Level1)
 {
-    seekInfo fileTest1{INP_DIR_1, SEEK_MODE_CLOSEST_SYNC, 0, 59, 0};
+    seekInfo fileTest1{INP_DIR_1, SEEK_MODE_CLOSEST_SYNC, 0, 10, 0};
     CheckSeekMode(fileTest1);
 }
 

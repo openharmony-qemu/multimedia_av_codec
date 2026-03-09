@@ -33,13 +33,17 @@ namespace OHOS {
 namespace Media {
 struct AVBufferWrapper {
     std::shared_ptr<MediaAVBuffer> mediaAVBuffer;
-    explicit AVBufferWrapper(uint32_t size)
+    explicit AVBufferWrapper(uint32_t size, bool isEmptyBuffer)
     {
         if (size == 0) {
             size = DEFAULT_BUFFSIZE;
         }
-        ptr = std::make_unique<uint8_t []>(size);
-        mediaAVBuffer = MediaAVBuffer::CreateAVBuffer(ptr.get(), size, 0);
+        if (!isEmptyBuffer) {
+            ptr = std::make_unique<uint8_t []>(size);
+            mediaAVBuffer = MediaAVBuffer::CreateAVBuffer(ptr.get(), size, 0);
+        } else {
+            mediaAVBuffer = MediaAVBuffer::CreateAVBuffer();
+        }
     }
 private:
     AVBufferWrapper() = delete;
@@ -53,12 +57,15 @@ public:
     bool InitWithData(const uint8_t* data, size_t size);
     void RunDemuxerInterfaceFuzz();
     void DemuxerPlugintask(MediaInfo& mediaInfo, AVBufferWrapper& buffer);
+    void CallbackThreadFun(uint32_t trackId, uint32_t bytes);
+    void DemuxerPluginCallback(MediaInfo& mediaInfo);
     const char* testFilePath_ = "/data/test/demuxerpluginmp4.mp4";
     std::string demuxerPluginName_ = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
     int32_t videoHeightDefault_ = 1080;
     int32_t videoWidthDefault_ = 1920;
     uint32_t interfaceTimeout_ = 100;
     int64_t seekTimeDefault_ = 1000;
+    bool isEmptyBuffer = false;
 
 protected:
     std::shared_ptr<DataSourceImpl> dataSource{ nullptr };

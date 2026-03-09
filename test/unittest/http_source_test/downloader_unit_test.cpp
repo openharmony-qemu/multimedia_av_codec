@@ -1510,7 +1510,7 @@ HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_001, TestSize.Level1)
     std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
         (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
     downloader->Init();
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->callback_ = sourceCallback;
     downloader->NotifyError(52, 403);
     std::shared_ptr<DownloadRequest> request = std::make_shared<DownloadRequest>("", nullptr, nullptr,  false);
@@ -1553,7 +1553,7 @@ HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_002, TestSize.Level1)
     std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
         (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
     downloader->Init();
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->downloader_ = nullptr;
     downloader->callback_ = sourceCallback;
     downloader->NotifyError(52, 403);
@@ -1586,11 +1586,11 @@ HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_002, TestSize.Level1)
     downloader->SetAppUid(1);
     downloader->GetPlayable();
     EXPECT_EQ(downloader->downloader_, nullptr);
-    downloader->callback_ = nullptr;
+    downloader->callback_.reset();
     downloader->NotifyError(52, 403);
     downloader->NotifyError(52, 0);
     downloader->NotifyError(0, 0);
-    EXPECT_EQ(downloader->callback_, nullptr);
+    EXPECT_TRUE(downloader->callback_.expired());
 }
 
 void ThreadFinishLoading(std::shared_ptr<NetworkClient> client, int64_t uuid, LoadingRequestError error)

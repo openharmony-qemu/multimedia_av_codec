@@ -2582,7 +2582,7 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_9500, TestSize.Level3)
     }
     OH_AVCodecBufferAttr attr;
     int tarckType = 0;
-    const char *file = "/data/test/media/av1_vorbis.webm";
+    const char *file = "/data/test/media/av1_vorbis_10s.webm";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     cout << file << "----------------------" << fd << "---------" << size << endl;
@@ -3008,8 +3008,8 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_10500, TestSize.Level3)
             }
         }
     }
-    ASSERT_EQ(audioFrame, 59);
-    ASSERT_EQ(keyCount, 59);
+    ASSERT_EQ(audioFrame, 10);
+    ASSERT_EQ(keyCount, 10);
 }
 
 /**

@@ -702,10 +702,10 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DrainOutputBuffer_001, TestSize.Level1)
     uint32_t index = 0;
     uint8_t data[100];
     std::shared_ptr<AVBuffer> outBuffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
-    decoderSurfaceFilter_->isInSeekContinous_ = true;
+    decoderSurfaceFilter_->isInSeekContinuous_ = true;
     cout << "1" <<endl;
     decoderSurfaceFilter_->DrainOutputBuffer(index, outBuffer);
-    decoderSurfaceFilter_->isInSeekContinous_ = false;
+    decoderSurfaceFilter_->isInSeekContinuous_ = false;
     system::SetParameter("persist.media_service.async_filter", "0");
     decoderSurfaceFilter_->outputBuffers_.push_back(make_pair(1, outBuffer));
     cout << "2" <<endl;
@@ -970,14 +970,14 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DoSetPlayRange_001, TestSize.Level1)
 HWTEST_F(DecoderSurfaceFilterUnitTest, StartSeekContinous_001, TestSize.Level1)
 {
     // 1. Set up the test environment
-    decoderSurfaceFilter_->isInSeekContinous_ = false;
+    decoderSurfaceFilter_->isInSeekContinuous_ = false;
 
     // 2. Call the function to be tested
     Status status = decoderSurfaceFilter_->StartSeekContinous();
 
     // 3. Verify the result
     EXPECT_EQ(status, Status::OK);
-    EXPECT_EQ(decoderSurfaceFilter_->isInSeekContinous_, true);
+    EXPECT_EQ(decoderSurfaceFilter_->isInSeekContinuous_, true);
 }
 
 HWTEST_F(DecoderSurfaceFilterUnitTest, StopSeekContinous_001, TestSize.Level1)
@@ -985,7 +985,7 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, StopSeekContinous_001, TestSize.Level1)
     Status status = decoderSurfaceFilter_->StopSeekContinous();
 
     EXPECT_EQ(status, Status::OK);
-    EXPECT_EQ(decoderSurfaceFilter_->isInSeekContinous_, false);
+    EXPECT_EQ(decoderSurfaceFilter_->isInSeekContinuous_, false);
 }
 
 HWTEST_F(DecoderSurfaceFilterUnitTest, SetBitrateStart_001, TestSize.Level1)
@@ -1060,9 +1060,9 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, RenderNextOutput_001, TestSize.Level1)
     uint8_t data[100];
     std::shared_ptr<AVBuffer> outBuffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
     decoderSurfaceFilter_->enableRenderAtTime_ = false;
-    decoderSurfaceFilter_->isInSeekContinous_ = false;
+    decoderSurfaceFilter_->isInSeekContinuous_ = false;
     decoderSurfaceFilter_->RenderNextOutput(index, outBuffer);
-    decoderSurfaceFilter_->isInSeekContinous_ = true;
+    decoderSurfaceFilter_->isInSeekContinuous_ = true;
     decoderSurfaceFilter_->RenderNextOutput(index, outBuffer);
     EXPECT_EQ(decoderSurfaceFilter_->seekTimeUs_, 0);
 }
@@ -1078,7 +1078,7 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, RenderNextOutput_002, TestSize.Level1)
     uint8_t data[100];
     std::shared_ptr<AVBuffer> outBuffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
     decoderSurfaceFilter_->enableRenderAtTime_ = true;
-    decoderSurfaceFilter_->isInSeekContinous_ = false;
+    decoderSurfaceFilter_->isInSeekContinuous_ = false;
     decoderSurfaceFilter_->RenderNextOutput(index, outBuffer);
     EXPECT_EQ(decoderSurfaceFilter_->renderTimeMaxAdvanceUs_, 80000);
 }

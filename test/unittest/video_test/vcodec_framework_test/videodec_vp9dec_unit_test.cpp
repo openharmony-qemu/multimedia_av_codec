@@ -969,6 +969,7 @@ AVCODEC_MTEST_P(VideoDecVP9DecTest, VideoDecoder_vp9decoder_AVBuffer_With_Queue_
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
+#ifdef SUPPORT_10BIT_TEST
 /**
  * @tc.name: VideoDecoder_vp9decoder_Create_AVBuffer_Main10_001
  * @tc.desc: 1. push/free buffer in callback;
@@ -1905,6 +1906,7 @@ AVCODEC_MTEST_P(VideoDecVP9DecTest, VideoDecoder_vp9decoder_AVBuffer_With_Queue_
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
+#endif
 #endif
 
 bool CheckCapabilitySupport()
