@@ -126,9 +126,8 @@ Status TypeFinder::ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_
         return Status::ERROR_INVALID_PARAMETER;
     }
 
-    const int maxTryTimes = 3;
     int i = 0;
-    while ((checkRange_(streamID_, offset, expectedLen) != Status::OK) && (i < maxTryTimes) &&
+    while ((checkRange_(streamID_, offset, expectedLen) != Status::OK) && (i < MAX_TRY_TIMES) &&
            !isInterruptNeeded_.load()) {
         i++;
         std::unique_lock<std::mutex> lock(mutex_);
@@ -136,13 +135,13 @@ Status TypeFinder::ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_
     }
     FALSE_RETURN_V_MSG_E(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE,
         "ReadAt interrupt " PUBLIC_LOG_D32 " " PUBLIC_LOG_U64 " " PUBLIC_LOG_ZU, streamID_, offset, expectedLen);
-    if (i == maxTryTimes) {
-        MEDIA_LOG_E("ReadAt failed try 5 times");
+    if (i == MAX_TRY_TIMES) {
+        MEDIA_LOG_E("ReadAt failed after max retries");
         return Status::ERROR_NOT_ENOUGH_DATA;
     }
-    FALSE_LOG_MSG(peekRange_(streamID_, static_cast<uint64_t>(offset), expectedLen, buffer, true) == Status::OK,
-        "PeekRange failed");
-    return Status::OK;
+    auto ret = peekRange_(streamID_, static_cast<uint64_t>(offset), expectedLen, buffer, true);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "PeekRange failed, ret: " PUBLIC_LOG_D32, ret);
+    return ret;
 }
 
 Status TypeFinder::GetSize(uint64_t& size)
@@ -170,6 +169,7 @@ std::string TypeFinder::SniffMediaType()
     Status ret = Status::OK;
     size_t getDataSize = 0;
     while (tryCnt < MAX_TRY_TIMES) {
+        buffer->GetMemory()->Reset();
         ret = dataSource->ReadAt(0, buffer, DEFAULT_SNIFF_SIZE);
         getDataSize = buffer->GetMemory()->GetSize();
         if (ret == Status::OK && getDataSize == DEFAULT_SNIFF_SIZE) {
@@ -178,6 +178,14 @@ std::string TypeFinder::SniffMediaType()
         }
         MEDIA_LOG_D("SniffMediaType ReadAt failed, tryCnt: " PUBLIC_LOG_D32 " ret " PUBLIC_LOG_D32
             " got size: " PUBLIC_LOG_ZU, tryCnt, ret, getDataSize);
+        if (((ret == Status::OK) && (getDataSize >= DEFAULT_SNIFF_SIZE)) ||
+            ((ret != Status::OK) && (ret != Status::ERROR_AGAIN) && (ret != Status::ERROR_NOT_ENOUGH_DATA)) ||
+            isInterruptNeeded_.load() ||
+            tryCnt == MAX_TRY_TIMES - 1) {
+            break;
+        }
+        std::unique_lock<std::mutex> lock(mutex_);
+        readCond_.wait_for(lock, std::chrono::milliseconds(WAIT_TIME), [&] { return isInterruptNeeded_.load(); });
         ++tryCnt;
     }
     FALSE_RETURN_V_MSG_E(ret == Status::OK && getDataSize > 0, "", "Not data for sniff " PUBLIC_LOG_ZU, getDataSize);

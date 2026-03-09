@@ -1557,16 +1557,23 @@ void FFmpegDemuxerPlugin::InitIoContextInDemuxer(const std::shared_ptr<DataSourc
     MEDIA_LOG_I("FileSize: " PUBLIC_LOG_U64 ", seekable: " PUBLIC_LOG_D32, ioContext_.fileSize, seekable_);
 }
 
+void FFmpegDemuxerPlugin::PrepareSetDataSourceContext()
+{
+    ioContext_.retry = false;
+    ioContext_.initErrorAgain = false;
+    if (ioContext_.invokerType != InvokerType::INIT) {
+        std::lock_guard<std::mutex> initLock(ioContext_.invokerTypeMutex);
+        ioContext_.invokerType = InvokerType::INIT;
+    }
+}
+
 Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& source)
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     FALSE_RETURN_V_MSG_E(formatContext_ == nullptr, Status::ERROR_WRONG_STATE,
         "AVFormatContext has been initialized");
     FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "DataSource is nullptr");
-    if (ioContext_.invokerType != InvokerType::INIT) {
-        std::lock_guard<std::mutex> initLock(ioContext_.invokerTypeMutex);
-        ioContext_.invokerType = InvokerType::INIT;
-    }
+    PrepareSetDataSourceContext();
     auto id = HiviewDFX::XCollie::GetInstance().SetTimer("av_codec::demuxer_setdatasource", SETTIMER_TIMEOUT,
         nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
     InitIoContextInDemuxer(source);
@@ -1607,12 +1614,6 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     NotifyInitializationCompleted();
     MEDIA_LOG_I("Out");
     cachelimitSize_ = DEFAULT_CACHE_LIMIT;
-    if (ioContext_.initErrorAgain == true && formatContext_->pb != nullptr && formatContext_->pb->error == -1) {
-        // -1 means error_again during init
-        MEDIA_LOG_E("Initialization error_again occurred");
-        ResetContext();
-        ioContext_.initErrorAgain = false;
-    }
     HiviewDFX::XCollie::GetInstance().CancelTimer(id);
     return Status::OK;
 }
@@ -2788,6 +2789,8 @@ Status FFmpegDemuxerPlugin::CheckSeekParams(int64_t seekTime, SeekMode mode) con
 
 void FFmpegDemuxerPlugin::SyncSeekThread()
 {
+    ioContext_.retry = false;
+    ioContext_.avReadPacketStopState.store(AVReadPacketStopState::FALSE);
     if (readThread_ == nullptr) {
         return;
     }
@@ -3846,6 +3849,32 @@ Status FFmpegDemuxerPlugin::SeekToFrameByDts(int32_t trackId, int64_t seekTime,
 
 namespace { // plugin set
 
+constexpr int32_t PROBE_READ_RETRY_TIMES = 10;
+constexpr useconds_t PROBE_READ_SLEEP_TIME_US = 10 * 1000;
+
+Status ReadProbeData(const std::shared_ptr<DataSource>& dataSource, int64_t offset,
+    std::shared_ptr<Buffer>& bufferInfo, size_t bufferSize, const std::string& traceName)
+{
+    Status ret = Status::ERROR_UNKNOWN;
+    for (int32_t retryTimes = 0; retryTimes <= PROBE_READ_RETRY_TIMES; ++retryTimes) {
+        MediaAVCodec::AVCodecTrace trace(traceName.c_str());
+        ret = dataSource->ReadAt(offset, bufferInfo, bufferSize);
+        auto memory = bufferInfo->GetMemory();
+        size_t dataSize = memory != nullptr ? memory->GetSize() : 0;
+        if (ret == Status::OK && dataSize > 0) {
+            return Status::OK;
+        }
+        if (ret != Status::OK && ret != Status::ERROR_AGAIN) {
+            return ret;
+        }
+        if (retryTimes == PROBE_READ_RETRY_TIMES) {
+            return ret == Status::OK ? Status::ERROR_AGAIN : ret;
+        }
+        usleep(PROBE_READ_SLEEP_TIME_US);
+    }
+    return ret;
+}
+
 int IsStartWithID3(const uint8_t *buf, const char *tagName)
 {
     return buf[POS_0] == tagName[POS_0] &&
@@ -3883,12 +3912,8 @@ int32_t GetConfidence(std::shared_ptr<AVInputFormat> plugin, std::shared_ptr<FFI
     auto bufData = bufferInfo->WrapMemory(buff.data(), bufferSize, bufferSize);
     FALSE_RETURN_V_MSG_E(bufferInfo->GetMemory() != nullptr, -1,
         "Alloc buffer failed for " PUBLIC_LOG_S, pluginName.c_str());
-    Status ret = Status::OK;
-    {
-        std::string traceName = "Sniff_" + pluginName + "_Readat";
-        MediaAVCodec::AVCodecTrace trace(traceName.c_str());
-        ret = dataSource->ReadAt(0, bufferInfo, bufferSize);
-    }
+    std::string traceName = "Sniff_" + pluginName + "_Readat";
+    Status ret = ReadProbeData(dataSource, 0, bufferInfo, bufferSize, traceName);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, -1, "Read probe data failed for " PUBLIC_LOG_S, pluginName.c_str());
     getData = bufferInfo->GetMemory()->GetSize();
     FALSE_RETURN_V_MSG_E(getData > 0, -1, "No data for sniff " PUBLIC_LOG_S, pluginName.c_str());
@@ -3902,7 +3927,7 @@ int32_t GetConfidence(std::shared_ptr<AVInputFormat> plugin, std::shared_ptr<FFI
             bufferSize = (bufferSize < remainSize) ? bufferSize : remainSize;
             int resetRet = memset_s(buff.data(), bufferSize, 0, bufferSize);
             FALSE_RETURN_V_MSG_E(resetRet == EOK, -1, "Reset buff failed for " PUBLIC_LOG_S, pluginName.c_str());
-            ret = dataSource->ReadAt(id3Len, bufferInfo, bufferSize);
+            ret = ReadProbeData(dataSource, id3Len, bufferInfo, bufferSize, traceName);
             FALSE_RETURN_V_MSG_E(ret == Status::OK, -1, "Read probe data failed for " PUBLIC_LOG_S, pluginName.c_str());
             getData = bufferInfo->GetMemory()->GetSize();
             FALSE_RETURN_V_MSG_E(getData > 0, -1, "No data for sniff " PUBLIC_LOG_S, pluginName.c_str());
