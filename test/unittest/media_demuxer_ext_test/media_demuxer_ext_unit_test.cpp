@@ -3940,10 +3940,10 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_CachePressuredCallback_004, TestS
 
 /**
  * @tc.name  : Test MediaDemuxerExtUnitTest HandleSeekChangeStream API
- * @tc.number: MediaDemuxerExt_HandleSeekChangeStream_001
+ * @tc.number: MediaDemuxerExt_HandleSeekChangeStream_005
  * @tc.desc  : Test streamDemuxer is nullptr → skip if block, return OK
  */
-HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSeekChangeStream_001, TestSize.Level1)
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSeekChangeStream_005, TestSize.Level1)
 {
     mediaDemuxer_->streamDemuxer_ = nullptr;
     int32_t currentStreamId = NUM_0;
@@ -4799,11 +4799,11 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoTrack_007, TestSize.Le
     EXPECT_EQ(mediaDemuxer_->lastVideoPts_, videoSample->pts_);
 }
 
- /**
-  * @tc.name  : MediaDemuxerExt_UpdateTrackMapTest_001
-  * @tc.number: MediaDemuxerExt_UpdateTrackMapTest_001
-  * @tc.desc  : test UpdateTrackMap should update track map
-  */
+/**
+ * @tc.name  : MediaDemuxerExt_UpdateTrackMapTest_001
+ * @tc.number: MediaDemuxerExt_UpdateTrackMapTest_001
+ * @tc.desc  : test UpdateTrackMap should update track map
+ */
 HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_UpdateTrackMapTest_001, TestSize.Level1)
 {
     mediaDemuxer_->videoTrackId_ = NUM_0;
@@ -4824,5 +4824,24 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_UpdateTrackMapTest_001, TestSi
         defaultStreamId, TRACK_AUDIO)).Times(1);
 
     mediaDemuxer_->UpdateTrackMap();
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_HandleSeekChangeStream_001
+ * @tc.number: MediaDemuxerExt_HandleSeekChangeStream_001
+ * @tc.desc  : test HandleSeekChangeStream change stream when isHls_ is true
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSeekChangeStream_001, TestSize.Level1)
+{
+    int32_t currentStreamId = 0;
+    int32_t newStreamId = 1;
+    int32_t trackId = 0;
+    mediaDemuxer_->isHls_ = true;
+    mediaDemuxer_->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), SetNewVideoStreamID(newStreamId)).Times(1);
+
+    Status ret = mediaDemuxer_->HandleSeekChangeStream(currentStreamId, newStreamId, trackId);
+    EXPECT_EQ(ret, Status::OK);
 }
 }  // namespace OHOS::Media
