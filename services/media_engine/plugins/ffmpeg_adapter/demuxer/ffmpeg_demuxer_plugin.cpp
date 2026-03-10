@@ -3709,13 +3709,13 @@ int FFmpegDemuxerPlugin::RMSeekToStart()
         auto stream = formatContext_->streams[i];
         const AVIndexEntry *entry = avformat_index_get_entry(stream, POS_0);
         if (entry == nullptr) {
-            MEDIA_LOG_E("avformat_index_get_entry failed");
+            MEDIA_LOG_E("trackIndex " PUBLIC_LOG_U32 "avformat_index_get_entry failed", i);
             continue;
         }
         if (entry->pos < minPos) {
             minPos = entry->pos;
-            seekTrackIndex = i;
-            seekTs = entry->pos;
+            seekTrackIndex = static_cast<int>(i);
+            seekTs = entry->timestamp;
         }
     }
     
