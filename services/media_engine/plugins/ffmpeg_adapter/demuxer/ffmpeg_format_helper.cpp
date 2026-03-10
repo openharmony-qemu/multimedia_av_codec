@@ -253,7 +253,8 @@ static std::map<std::string, TagType> g_formatToString = {
     {"author",        Tag::MEDIA_AUTHOR},
     {"composer",      Tag::MEDIA_COMPOSER},
     {"creation_time", Tag::MEDIA_CREATION_TIME},
-    {"aigc",          Tag::MEDIA_AIGC}
+    {"aigc",          Tag::MEDIA_AIGC},
+    {"encoder",       Tag::MEDIA_ENCODER}
 };
 
 static std::map<std::string, TagType> g_trackLevelBaseInfo = {
