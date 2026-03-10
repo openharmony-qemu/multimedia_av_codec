@@ -1511,7 +1511,7 @@ int32_t HCodec::OnAllocateComponent()
         PrintAllCaller();
         std::unique_lock<std::shared_mutex> lk(g_mtx);
         size_t totalInstCntNow = CalculateTotalInstCnt();
-        size_t singleAppInstCntNow = g_decCallers[caller_.app].size();
+        size_t singleAppInstCntNow = g_decCallers.count(caller_.app) > 0 ? g_decCallers[caller_.app].size() : 0;
         if ((totalInstCntNow >= totalWarnInstCnt_) || (singleAppInstCntNow >= singleAppWarnInstCnt_)) {
             ReportToRss();
         }
