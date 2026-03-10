@@ -61,6 +61,8 @@ constexpr uint32_t INDEX_INPUT = 0;
 constexpr uint32_t INDEX_OUTPUT = 1;
 constexpr int32_t VIDEO_MAX_FRAMERATE = 300;
 constexpr int32_t DAV1D_AGAIN = -11;
+static constexpr float PRIMARY_SCALE = 0.00002;
+static constexpr float LUMI_SCALE    = 0.0001;
 using namespace OHOS::Media;
 
 Av1Decoder::Av1Decoder(const std::string &name) : VideoDecoder(name)
@@ -459,22 +461,21 @@ int32_t Av1Decoder::ConvertHdrStaticMetadata(Dav1dContentLightLevel *contentLigh
     HdrStaticMetadata* hdrStaticMetadata = reinterpret_cast<HdrStaticMetadata*>(staticMetadataVec.data());
     CHECK_AND_RETURN_RET_LOG(hdrStaticMetadata != nullptr, AVCS_ERR_INVALID_VAL,
                              "vector convert to CM_HDR_Metadata_Type error");
-    hdrStaticMetadata->smpte2086.displayPrimaryGreen.x =
-        static_cast<float>(masteringDisplay->primaries[0][0]); // 0:G
-    hdrStaticMetadata->smpte2086.displayPrimaryBlue.x =
-        static_cast<float>(masteringDisplay->primaries[1][0]); // 1:B
-    hdrStaticMetadata->smpte2086.displayPrimaryRed.x =
-        static_cast<float>(masteringDisplay->primaries[2][0]); // 2:R
-    hdrStaticMetadata->smpte2086.displayPrimaryGreen.y =
-        static_cast<float>(masteringDisplay->primaries[0][1]); // 0:G
-    hdrStaticMetadata->smpte2086.displayPrimaryBlue.y =
-        static_cast<float>(masteringDisplay->primaries[1][1]); // 1:B
-    hdrStaticMetadata->smpte2086.displayPrimaryRed.y =
-        static_cast<float>(masteringDisplay->primaries[2][1]); // 2:R
-    hdrStaticMetadata->smpte2086.whitePoint.x = static_cast<float>(masteringDisplay->white_point[0]);
-    hdrStaticMetadata->smpte2086.whitePoint.y = static_cast<float>(masteringDisplay->white_point[1]);
-    hdrStaticMetadata->smpte2086.maxLuminance = static_cast<float>(masteringDisplay->max_luminance);
-    hdrStaticMetadata->smpte2086.minLuminance = static_cast<float>(masteringDisplay->min_luminance);
+    hdrStaticMetadata->smpte2086.displayPrimaryGreen.x = masteringDisplay->primaries[0][0] * PRIMARY_SCALE; // 0:G
+    hdrStaticMetadata->smpte2086.displayPrimaryBlue.x  = masteringDisplay->primaries[1][0] * PRIMARY_SCALE; // 1:B
+    hdrStaticMetadata->smpte2086.displayPrimaryRed.x   = masteringDisplay->primaries[2][0] * PRIMARY_SCALE; // 2:R
+    hdrStaticMetadata->smpte2086.displayPrimaryGreen.y = masteringDisplay->primaries[0][1] * PRIMARY_SCALE; // 0:G
+    hdrStaticMetadata->smpte2086.displayPrimaryBlue.y  = masteringDisplay->primaries[1][1] * PRIMARY_SCALE; // 1:B
+    hdrStaticMetadata->smpte2086.displayPrimaryRed.y   = masteringDisplay->primaries[2][1] * PRIMARY_SCALE; // 2:R
+
+    hdrStaticMetadata->smpte2086.whitePoint.x = masteringDisplay->white_point[0] * PRIMARY_SCALE;
+    hdrStaticMetadata->smpte2086.whitePoint.y = masteringDisplay->white_point[1] * PRIMARY_SCALE;
+
+    hdrStaticMetadata->smpte2086.maxLuminance = masteringDisplay->max_luminance * LUMI_SCALE;
+    hdrStaticMetadata->smpte2086.minLuminance = masteringDisplay->min_luminance * LUMI_SCALE;
+    if (hdrStaticMetadata->smpte2086.maxLuminance < hdrStaticMetadata->smpte2086.minLuminance) {
+        std::swap(hdrStaticMetadata->smpte2086.maxLuminance, hdrStaticMetadata->smpte2086.minLuminance);
+    }
     hdrStaticMetadata->cta861.maxContentLightLevel = static_cast<float>(contentLight->max_content_light_level);
     hdrStaticMetadata->cta861.maxFrameAverageLightLevel =
         static_cast<float>(contentLight->max_frame_average_light_level);
