@@ -68,6 +68,8 @@ constexpr int32_t VIDEO_INSTANCE_SIZE = 64;
 constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 36864;
 constexpr int32_t VIDEO_BLOCKPERSEC_SIZE = 983040;
 constexpr uint32_t LOG_LOW_FREQUENCY = 100;
+static constexpr float PRIMARY_SCALE = 0.00002;
+static constexpr float LUMI_SCALE    = 0.0001;
 #ifdef BUILD_ENG_VERSION
 constexpr uint32_t PATH_MAX_LEN = 128;
 constexpr char DUMP_PATH[] = "/data/misc/hevcdecoderdump";
@@ -1318,22 +1320,23 @@ int32_t HevcDecoder::ConvertHdrStaticMetadata(const HEVC_HDR_METADATA &hevcHdrMe
     HdrStaticMetadata* hdrStaticMetadata = reinterpret_cast<HdrStaticMetadata*>(staticMetadataVec.data());
     CHECK_AND_RETURN_RET_LOG(hdrStaticMetadata != nullptr, AVCS_ERR_INVALID_VAL,
         "vector convert to CM_HDR_Metadata_Type error");
-    hdrStaticMetadata->smpte2086.displayPrimaryGreen.x =
-        static_cast<float>(hevcHdrMetadata.displayPrimariesX[0]); // 0: Y
-    hdrStaticMetadata->smpte2086.displayPrimaryBlue.x =
-        static_cast<float>(hevcHdrMetadata.displayPrimariesX[1]); // 1: U
-    hdrStaticMetadata->smpte2086.displayPrimaryRed.x =
-        static_cast<float>(hevcHdrMetadata.displayPrimariesX[2]); // 2: V
-    hdrStaticMetadata->smpte2086.displayPrimaryGreen.y =
-        static_cast<float>(hevcHdrMetadata.displayPrimariesY[0]); // 0: Y
-    hdrStaticMetadata->smpte2086.displayPrimaryBlue.y =
-        static_cast<float>(hevcHdrMetadata.displayPrimariesY[1]); // 1: U
-    hdrStaticMetadata->smpte2086.displayPrimaryRed.y =
-        static_cast<float>(hevcHdrMetadata.displayPrimariesY[2]); // 2: V
-    hdrStaticMetadata->smpte2086.whitePoint.x = static_cast<float>(hevcHdrMetadata.whitePointX);
-    hdrStaticMetadata->smpte2086.whitePoint.y = static_cast<float>(hevcHdrMetadata.whitePointY);
-    hdrStaticMetadata->smpte2086.maxLuminance = static_cast<float>(hevcHdrMetadata.maxDisplayMasteringLuminance);
-    hdrStaticMetadata->smpte2086.minLuminance = static_cast<float>(hevcHdrMetadata.minDisplayMasteringLuminance);
+
+    hdrStaticMetadata->smpte2086.displayPrimaryGreen.x = hevcHdrMetadata.displayPrimariesX[0] * PRIMARY_SCALE; // 0: Y
+    hdrStaticMetadata->smpte2086.displayPrimaryBlue.x  = hevcHdrMetadata.displayPrimariesX[1] * PRIMARY_SCALE; // 1: U
+    hdrStaticMetadata->smpte2086.displayPrimaryRed.x   = hevcHdrMetadata.displayPrimariesX[2] * PRIMARY_SCALE; // 2: V
+    hdrStaticMetadata->smpte2086.displayPrimaryGreen.y = hevcHdrMetadata.displayPrimariesY[0] * PRIMARY_SCALE; // 0: Y
+    hdrStaticMetadata->smpte2086.displayPrimaryBlue.y  = hevcHdrMetadata.displayPrimariesY[1] * PRIMARY_SCALE; // 1: U
+    hdrStaticMetadata->smpte2086.displayPrimaryRed.y   = hevcHdrMetadata.displayPrimariesY[2] * PRIMARY_SCALE; // 2: V
+
+    hdrStaticMetadata->smpte2086.whitePoint.x = hevcHdrMetadata.whitePointX * PRIMARY_SCALE;
+    hdrStaticMetadata->smpte2086.whitePoint.y = hevcHdrMetadata.whitePointY * PRIMARY_SCALE;
+
+    hdrStaticMetadata->smpte2086.maxLuminance = hevcHdrMetadata.maxDisplayMasteringLuminance * LUMI_SCALE;
+    hdrStaticMetadata->smpte2086.minLuminance = hevcHdrMetadata.minDisplayMasteringLuminance  * LUMI_SCALE;
+    if (hdrStaticMetadata->smpte2086.maxLuminance < hdrStaticMetadata->smpte2086.minLuminance) {
+        std::swap(hdrStaticMetadata->smpte2086.maxLuminance, hdrStaticMetadata->smpte2086.minLuminance);
+    }
+
     hdrStaticMetadata->cta861.maxContentLightLevel = static_cast<float>(hevcHdrMetadata.maxContentLightLevel);
     hdrStaticMetadata->cta861.maxFrameAverageLightLevel = static_cast<float>(hevcHdrMetadata.maxPicAverageLightLevel);
     return AVCS_ERR_OK;
