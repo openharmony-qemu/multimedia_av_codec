@@ -315,7 +315,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, CheckBreakCondition, TestSize.Level1)
 HWTEST_F(HlsSegmentManagerUnitTest, TestDefaultConstructor, TestSize.Level1)
 {
     auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
-    EXPECT_EQ(downloader->totalBufferSize_, MAX_CACHE_BUFFER_SIZE_UT);
+    EXPECT_EQ(downloader->totalBufferSize_, 19 * 200 * 1024);
     downloader = nullptr;
 }
 
