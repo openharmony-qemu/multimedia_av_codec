@@ -2866,32 +2866,51 @@ bool FFmpegDemuxerPlugin::GetAudioTrack(int &trackIndex) const
     return false;
 }
 
-Status FFmpegDemuxerPlugin::SeekToRmKeyFrame(SeekMode mode, int64_t& realSeekTime)
+Status FFmpegDemuxerPlugin::ReadRmUntilPos(AVPacket *pkt, int64_t pos)
+{
+    while (true) {
+        int32_t ffRet = AVReadFrameLimit(pkt);
+        FALSE_RETURN_V_MSG_E(ffRet >= 0, Status::ERROR_WRONG_STATE, "Call av_read_frame failed");
+        if (avio_tell(formatContext_->pb) >= pos) {
+            break;
+        }
+        av_packet_unref(pkt);
+    }
+    return Status::OK;
+}
+
+Status FFmpegDemuxerPlugin::SeekToRmKeyFrame(int trackIndex, int64_t seekTime, int64_t ffTime,
+    SeekMode mode, int64_t& realSeekTime)
 {
     Status ret = Status::OK;
-    int videoTrackIndex = selectedTrackIds_[0];
-    int audioTrackIndex = selectedTrackIds_[0];
+    int32_t videoTrackIndex = selectedTrackIds_[0];
+    int32_t audioTrackIndex = selectedTrackIds_[0];
     if (GetVideoTrack(videoTrackIndex) && GetAudioTrack(audioTrackIndex)) {
         Plugins::AVPacketWrapperPtr pktWrapper = std::make_shared<Plugins::AVPacketWrapper>();
         FALSE_RETURN_V_MSG_E(pktWrapper != nullptr && pktWrapper->GetAVPacket() != nullptr,
             Status::ERROR_NULL_POINTER, "Create AVPacketWrapper failed");
-        int ffRet = AVReadFrameLimit(pktWrapper->GetAVPacket());
+        int32_t ffRet = AVReadFrameLimit(pktWrapper->GetAVPacket());
         FALSE_RETURN_V_MSG_E(ffRet == 0, Status::ERROR_WRONG_STATE, "Call av_read_frame failed");
+        int64_t videoPos = avio_tell(formatContext_->pb);
         int64_t timestamp = pktWrapper->GetPts();
         ffRet = AVSeekFrameLock(audioTrackIndex, timestamp, AVSEEK_FLAG_BACKWARD);
         FALSE_RETURN_V_MSG_E(ffRet >= 0, Status::ERROR_UNKNOWN,
             "Call av_seek_frame failed, err: " PUBLIC_LOG_S, AVStrError(ffRet).c_str());
-        TimeoutGuard timeoutGuard(0);
-        TimeRange readRange;
-        ret = ReadUntilKeyFrame(pktWrapper, videoTrackIndex, timeoutGuard, readRange);
-        timestamp = pktWrapper->GetPts();
-        auto avStream = formatContext_->streams[videoTrackIndex];
-        realSeekTime = ConvertTimeFromFFmpeg(timestamp, avStream->time_base);
-        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret,
-            "Read frame failed, err: " PUBLIC_LOG_S, AVStrError(ffRet).c_str());
-        ResetAfterSeek(pktWrapper->GetDts(), mode);
-        ret = AddPacketToCacheQueue(pktWrapper);
-        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "AddPacketToCacheQueue failed");
+        int64_t audioPos = avio_tell(formatContext_->pb);
+        if (videoPos <= audioPos) {
+            DoSeekInternal(trackIndex, seekTime, ffTime, mode, realSeekTime);
+        } else {
+            ret = ReadRmUntilPos(pktWrapper->GetAVPacket(), videoPos);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_WRONG_STATE, "Read rm frame until pos failed");
+            timestamp = pktWrapper->GetPts();
+            auto avStream = formatContext_->streams[videoTrackIndex];
+            realSeekTime = ConvertTimeFromFFmpeg(timestamp, avStream->time_base);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret,
+                "Read frame failed, err: " PUBLIC_LOG_S, AVStrError(ffRet).c_str());
+            ResetAfterSeek(pktWrapper->GetDts(), mode);
+            ret = AddPacketToCacheQueue(pktWrapper);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "AddPacketToCacheQueue failed");
+        }
     }
     return ret;
 }
@@ -2932,7 +2951,7 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
     }
     ret = DoSeekInternal(trackIndex, seekTime, ffTime, mode, realSeekTime);
     if (fileType_ == FileType::RM && ret  == Status::OK) {
-        ret = SeekToRmKeyFrame(mode, realSeekTime);
+        ret = SeekToRmKeyFrame(trackIndex, seekTime, ffTime, mode, realSeekTime);
     }
     HiviewDFX::XCollie::GetInstance().CancelTimer(id);
     return ret;
