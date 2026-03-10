@@ -1761,6 +1761,7 @@ void CodecServer::ReleaseBuffer()
                 AVCODEC_LOGW_WITH_TAG("Buffer drop index:  %{public}u pts:  %{public}" PRId64,
                     index.first, indexBuffer->pts_);
                 dropIndexs.push_back(index.first);
+                continue;
             }
             MediaAVCodec::AVCodecTrace trace("CodecServer::ReleaseBuffer " + std::to_string(index.first));
             ReleaseOutputBuffer(index.first, true);
