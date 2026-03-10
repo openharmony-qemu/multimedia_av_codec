@@ -934,6 +934,16 @@ int64_t AudioSink::AudioDataSynchroizer::GetBufferDuration() const
     return bufferDuration_;
 }
 
+int64_t AudioSink::AudioDataSynchroizer::GetCurrentRenderPTS() const
+{
+    return currentRenderPTS_;
+}
+
+int64_t AudioSink::AudioDataSynchroizer::GetCurrentRenderClockTime() const
+{
+    return currentRenderClockTime_;
+}
+
 void AudioSink::AudioDataSynchroizer::UpdateReportTime(int64_t nowClockTime)
 {
     lastReportedClockTime_ = nowClockTime;
@@ -968,6 +978,20 @@ bool AudioSink::IsTimeAnchorNeedUpdate()
     MEDIA_LOG_DD("Calculate latency = " PUBLIC_LOG_U64, latency);
     int64_t lastBufferPTS = innerSynchroizer_->GetLastBufferPTS();
     int64_t lastBufferDuration = innerSynchroizer_->GetBufferDuration();
+    if (isAudioPass_) {
+        int64_t currentRenderPTS = innerSynchroizer_->GetCurrentRenderPTS();
+        int64_t currentRenderClockTime = innerSynchroizer_->GetCurrentRenderClockTime();
+        Pipeline::IMediaSyncCenter::IMediaTime iPassMediaTime = {lastBufferPTS - firstPts_,
+            currentRenderPTS, lastBufferDuration};
+        syncCenter->UpdateTimeAnchor(currentRenderClockTime, 0, iPassMediaTime, this);
+        MEDIA_LOG_I("DolbyPassthrough AudioSink , pts-f: " PUBLIC_LOG_D64
+            " us, currentRenderPTS: " PUBLIC_LOG_D64 " us"
+            " us, currentRenderClockTime: " PUBLIC_LOG_D64 " us",
+            lastBufferPTS - firstPts_, currentRenderPTS, currentRenderClockTime);
+        forceUpdateTimeAnchorNextTime_ = false;
+        innerSynchroizer_->UpdateReportTime(currentRenderClockTime);
+        return true;
+    }
     Pipeline::IMediaSyncCenter::IMediaTime iMediaTime = {lastBufferPTS - firstPts_, lastBufferPTS,
         lastBufferDuration};
     syncCenter->UpdateTimeAnchor(nowCt, latency + fixDelay_, iMediaTime, this);

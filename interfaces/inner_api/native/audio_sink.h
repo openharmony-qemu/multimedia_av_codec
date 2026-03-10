@@ -310,6 +310,8 @@ private:
             int64_t GetLastReportedClockTime() const;
             int64_t GetLastBufferPTS() const;
             int64_t GetBufferDuration() const;
+            int64_t GetCurrentRenderPTS() const;
+            int64_t GetCurrentRenderClockTime() const;
             int64_t CalculateAudioLatency();
             void UpdateReportTime(int64_t nowClockTime);
             void UpdateLastBufferPTS(int64_t bufferOffset, float speed);
