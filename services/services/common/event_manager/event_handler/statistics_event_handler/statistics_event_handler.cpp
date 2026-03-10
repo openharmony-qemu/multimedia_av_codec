@@ -33,21 +33,21 @@ using VCodecSpecifiedType = std::pair<VideoCodecType, std::string>;
 
 namespace {
 // EVENT_STR_L0
-static constexpr const char EVENT_DOMAIN[]                          = "AV_CODEC";
+static constexpr const char EVENT_DOMAIN[] = "AV_CODEC";
 // EVENT_STR_L1
-static constexpr const char EVENT_STATISTICS_INFO[]                 = "STATISTICS_INFO";
+static constexpr const char EVENT_STATISTICS_INFO[] = "STATISTICS_INFO";
 // EVENT_STR_L2
-static constexpr const char QUERY_CAP_TIMES[]                       = "QUERY_CAP_TIMES";
-static constexpr const char CREATE_CODEC_TIMES[]                    = "CREATE_CODEC_TIMES";
-static constexpr const char CODEC_SPECIFIED_INFO[]                  = "CODEC_SPECIFIED_INFO";
-static constexpr const char APP_NAME_DICT[]                         = "APP_NAME_DICT";
-static constexpr const char CAP_UNSUPPORTED_INFO[]                  = "CAP_UNSUPPORTED_INFO";
-static constexpr const char DEC_ABNORMAL_OCCUPATION_INFO[]          = "DEC_ABNORMAL_OCCUPATION_INFO";
-static constexpr const char SPEED_DECODING_INFO[]                   = "SPEED_DECODING_INFO";
-static constexpr const char CODEC_ERROR_INFO[]                      = "CODEC_ERROR_INFO";
+static constexpr const char QUERY_CAP_TIMES[] = "QUERY_CAP_TIMES";
+static constexpr const char CREATE_CODEC_TIMES[] = "CREATE_CODEC_TIMES";
+static constexpr const char CODEC_SPECIFIED_INFO[] = "CODEC_SPECIFIED_INFO";
+static constexpr const char APP_NAME_DICT[] = "APP_NAME_DICT";
+static constexpr const char CAP_UNSUPPORTED_INFO[] = "CAP_UNSUPPORTED_INFO";
+static constexpr const char DEC_ABNORMAL_OCCUPATION_INFO[] = "DEC_ABNORMAL_OCCUPATION_INFO";
+static constexpr const char SPEED_DECODING_INFO[] = "SPEED_DECODING_INFO";
+static constexpr const char CODEC_ERROR_INFO[] = "CODEC_ERROR_INFO";
 // EVENT_STR_L3
-static constexpr const char QUERY_CAP_UNSUPPORTED_INFO[]            = "QUERY_CAP_UNSUPPORTED_INFO";
-static constexpr const char CREATE_CODEC_UNSUPPORTED_INFO[]         = "CREATE_CODEC_UNSUPPORTED_INFO";
+static constexpr const char QUERY_CAP_UNSUPPORTED_INFO[] = "QUERY_CAP_UNSUPPORTED_INFO";
+static constexpr const char CREATE_CODEC_UNSUPPORTED_INFO[] = "CREATE_CODEC_UNSUPPORTED_INFO";
 
 const std::unordered_map<VideoCodecType, std::string> VIDEO_CODEC_TYPE_TO_STRING = {
     { VideoCodecType::DECODER_HARDWARE, "HDec" },
@@ -477,6 +477,7 @@ public:
 
         if (isInOccupationHDecEvent_.load()) {
             hdecLimitExceededInfo_.emplace(lastCallerNameIndex_, lastOccupationHDecAppInfoVec_);
+            lastOccupationHDecAppInfoVec_.clear();
             isInOccupationHDecEvent_.store(false);
         }
         auto hdecLimitExceededInfoJsonObj = cJSON_AddObjectToObject(jsonObj.get(), "HDecLimitExceededInfo");
@@ -520,6 +521,7 @@ private:
 
                 std::lock_guard<std::mutex> lock(mutex_);
                 hdecLimitExceededInfo_.emplace(lastCallerNameIndex_, lastOccupationHDecAppInfoVec_);
+                lastOccupationHDecAppInfoVec_.clear();
                 isInOccupationHDecEvent_.store(false);
                 return true;
             });
