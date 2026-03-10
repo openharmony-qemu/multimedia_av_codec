@@ -525,7 +525,7 @@ HWTEST_F(DemuxerRmvbFuncNdkTest, DEMUXER_RMVB_FUNC_1400, TestSize.Level2)
  */
 HWTEST_F(DemuxerRmvbFuncNdkTest, DEMUXER_RMVB_FUNC_1500, TestSize.Level1)
 {
-    seekInfo fileTest1{INP_DIR_1, SEEK_MODE_PREVIOUS_SYNC, 0, 80, 2};
+    seekInfo fileTest1{INP_DIR_1, SEEK_MODE_PREVIOUS_SYNC, 0, 480, 251};
     CheckSeekMode(fileTest1);
 }
 
@@ -536,7 +536,7 @@ HWTEST_F(DemuxerRmvbFuncNdkTest, DEMUXER_RMVB_FUNC_1500, TestSize.Level1)
  */
 HWTEST_F(DemuxerRmvbFuncNdkTest, DEMUXER_RMVB_FUNC_1600, TestSize.Level1)
 {
-    seekInfo fileTest1{INP_DIR_1, SEEK_MODE_NEXT_SYNC, 0, 80, 2};
+    seekInfo fileTest1{INP_DIR_1, SEEK_MODE_NEXT_SYNC, 0, 480, 251};
     CheckSeekMode(fileTest1);
 }
 
@@ -547,7 +547,7 @@ HWTEST_F(DemuxerRmvbFuncNdkTest, DEMUXER_RMVB_FUNC_1600, TestSize.Level1)
  */
 HWTEST_F(DemuxerRmvbFuncNdkTest, DEMUXER_RMVB_FUNC_1700, TestSize.Level1)
 {
-    seekInfo fileTest1{INP_DIR_1, SEEK_MODE_CLOSEST_SYNC, 0, 80, 2};
+    seekInfo fileTest1{INP_DIR_1, SEEK_MODE_CLOSEST_SYNC, 0, 480, 251};
     CheckSeekMode(fileTest1);
 }
 
@@ -591,7 +591,7 @@ HWTEST_F(DemuxerRmvbFuncNdkTest, DEMUXER_RMVB_FUNC_2000, TestSize.Level1)
  */
 HWTEST_F(DemuxerRmvbFuncNdkTest, DEMUXER_RMVB_FUNC_2100, TestSize.Level1)
 {
-    seekInfo fileTest1{INP_DIR_1, SEEK_MODE_PREVIOUS_SYNC, 4500000, 80, 2};
+    seekInfo fileTest1{INP_DIR_1, SEEK_MODE_PREVIOUS_SYNC, 4500000, 480, 251};
     CheckSeekMode(fileTest1);
 }
 
@@ -613,7 +613,7 @@ HWTEST_F(DemuxerRmvbFuncNdkTest, DEMUXER_RMVB_FUNC_2200, TestSize.Level1)
  */
 HWTEST_F(DemuxerRmvbFuncNdkTest, DEMUXER_RMVB_FUNC_2300, TestSize.Level1)
 {
-    seekInfo fileTest1{INP_DIR_1, SEEK_MODE_CLOSEST_SYNC, 4500000, 80, 2};
+    seekInfo fileTest1{INP_DIR_1, SEEK_MODE_CLOSEST_SYNC, 4500000, 480, 251};
     CheckSeekMode(fileTest1);
 }
 
@@ -624,8 +624,8 @@ HWTEST_F(DemuxerRmvbFuncNdkTest, DEMUXER_RMVB_FUNC_2300, TestSize.Level1)
  */
 HWTEST_F(DemuxerRmvbFuncNdkTest, DEMUXER_RMVB_FUNC_2400, TestSize.Level1)
 {
-    seekInfo fileTest1{INP_DIR_1, SEEK_MODE_PREVIOUS_SYNC, 0, 80, 2};
-    seekInfo fileTest2{INP_DIR_1, SEEK_MODE_CLOSEST_SYNC, 4500000, 80, 2};
+    seekInfo fileTest1{INP_DIR_1, SEEK_MODE_PREVIOUS_SYNC, 0, 480, 251};
+    seekInfo fileTest2{INP_DIR_1, SEEK_MODE_CLOSEST_SYNC, 4500000, 480, 251};
     CheckSeekModeCombination(fileTest1, fileTest2);
 }
 
@@ -636,7 +636,7 @@ HWTEST_F(DemuxerRmvbFuncNdkTest, DEMUXER_RMVB_FUNC_2400, TestSize.Level1)
  */
 HWTEST_F(DemuxerRmvbFuncNdkTest, DEMUXER_RMVB_FUNC_2500, TestSize.Level1)
 {
-    seekInfo fileTest1{INP_DIR_1, SEEK_MODE_PREVIOUS_SYNC, 0, 80, 2};
+    seekInfo fileTest1{INP_DIR_1, SEEK_MODE_PREVIOUS_SYNC, 0, 480, 251};
     seekInfo fileTest2{INP_DIR_1, SEEK_MODE_NEXT_SYNC, 10000000, 80, 2};
     CheckSeekModeCombination(fileTest1, fileTest2);
 }

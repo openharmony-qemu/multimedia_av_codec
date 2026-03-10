@@ -43,6 +43,7 @@
 extern "C" {
 #endif
 #include "libavformat/avformat.h"
+#include "libavformat/internal.h"
 #include "libavcodec/avcodec.h"
 #include "libavutil/dict.h"
 #include "libavutil/opt.h"
@@ -135,7 +136,7 @@ public:
         SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs) override;
     bool GetVideoTrack(int &trackIndex) const;
     bool GetAudioTrack(int &trackIndex) const;
-    Status SeekToRmKeyFrame(SeekMode mode, int64_t &realSeekTime);
+    Status SeekToRmKeyFrame(int trackIndex, int64_t seekTime, int64_t ffTime, SeekMode mode, int64_t &realSeekTime);
 
     // cache pressure control
     Status SetCachePressureCallback(CachePressureCallback cb) override;
@@ -572,6 +573,7 @@ private:
     Status ReadUntilDtsReached(SeekToFrameByDtsContext &ctx, int64_t seekTime,
         int64_t &realSeekTime, TimeoutGuard &timeoutGuard);
     void ResetAfterSeek(int64_t seekTime, SeekMode mode);
+    Status ReadRmUntilPos(AVPacket *pkt, int64_t pos);
 
     std::unordered_map<int32_t, int32_t> mp4FirstKeyFrameIdx_; // key: track index, value: first key frame index
 };
