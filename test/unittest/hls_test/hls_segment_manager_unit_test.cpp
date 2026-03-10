@@ -23,7 +23,7 @@ using namespace std;
 using namespace testing::ext;
 
 constexpr uint32_t RING_BUFFER_SIZE = 1 * 1024 * 1024;
-constexpr uint64_t MAX_CACHE_BUFFER_SIZE_UT = 19 * 1024 * 1024;
+constexpr uint64_t MAX_CACHE_BUFFER_SIZE_UT = 4 * 1024 * 1024;
 
 const std::map<std::string, std::string> httpHeader = {
     {"User-Agent", "ABC"},
@@ -268,10 +268,9 @@ HWTEST_F(HlsSegmentManagerUnitTest, RiseBufferSize1, TestSize.Level1)
 
 HWTEST_F(HlsSegmentManagerUnitTest, RiseBufferSize2, TestSize.Level1)
 {
-    uint32_t maxCachebufferSize = 4 * 1024 * 1024;
-    hlsSegmentManager_->totalBufferSize_ = maxCachebufferSize;
+    hlsSegmentManager_->totalBufferSize_ = MAX_CACHE_BUFFER_SIZE_UT;
     hlsSegmentManager_->RiseBufferSize();
-    EXPECT_EQ(hlsSegmentManager_->totalBufferSize_, maxCachebufferSize);
+    EXPECT_EQ(hlsSegmentManager_->totalBufferSize_, MAX_CACHE_BUFFER_SIZE_UT);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, CheckPulldownBufferSize, TestSize.Level1)
