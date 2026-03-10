@@ -3442,6 +3442,9 @@ std::string MediaDemuxer::GetMime()
 
 void MediaDemuxer::HandleNotAllTrackEos(int32_t trackId)
 {
+    std::unique_lock<std::mutex> stopLock(stopMutex_);
+    FALSE_RETURN(!isStopped_);
+    AutoLock lock(mapMutex_);
     hlsSegmentEosMap_[trackId] = true;
     // check sampleQueue video and audio exit
     bool audioQueueExists = sampleQueueMap_.find(audioTrackId_) != sampleQueueMap_.end()
