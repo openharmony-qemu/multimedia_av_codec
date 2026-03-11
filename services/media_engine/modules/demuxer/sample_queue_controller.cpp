@@ -26,6 +26,7 @@ constexpr double MAX_FIRST_DURATION = 20;
 constexpr uint64_t MIN_DURATION = 1;
 constexpr uint64_t MAX_DURATION = 20;
 constexpr double CONSUME_RATE = 0.6;
+constexpr int64_t MAX_SAMPLE_IDLE_TIME_MS = 100;
 }
 
 namespace OHOS {
