@@ -1572,9 +1572,16 @@ void HlsSegmentManager::UpdateDownloadFinished(const std::string &url, const std
 
     // bitrate above 0, user is not selecting, auto seliect is not going, playlist is done, is not seeking
     if ((bitRate > 0) && !isSelectingBitrate_ && isAutoSelectBitrate_ &&
-        playlistDownloader_ != nullptr && playlistDownloader_->IsParseAndNotifyFinished() && !isSeekingFlag) {
+        playlistDownloader_ != nullptr && playlistDownloader_->IsParseAndNotifyFinished() && !isSeekingFlag &&
+        !IsDownloadLastSplice()) {
         AutoSelectBitrate(bitRate);
     }
+}
+
+bool HlsSegmentManager::IsDownloadLastSplice()
+{
+    return playlistDownloader_ != nullptr && !playlistDownloader_->IsLive() &&
+        writeTsIndex_ + 1 == backPlayList_.size();
 }
 
 void HlsSegmentManager::SetReadBlockingFlag(bool isReadBlockingAllowed)
