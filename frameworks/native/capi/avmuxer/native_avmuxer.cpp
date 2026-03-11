@@ -316,7 +316,9 @@ OH_AVErrCode OH_AVMuxer_WriteSample(OH_AVMuxer *muxer, uint32_t trackIndex,
     CHECK_AND_RETURN_RET_LOG(sample->magic_ == MFMagic::MFMAGIC_SHARED_MEMORY, AV_ERR_INVALID_VAL,
         "sample magic error!");
     CHECK_AND_RETURN_RET_LOG(sample->memory_ != nullptr && info.offset >= 0 && info.size >= 0 &&
-        sample->memory_->GetSize() >= (info.offset + info.size), AV_ERR_INVALID_VAL, "invalid memory");
+        static_cast<int64_t>(sample->memory_->GetSize()) >=
+        static_cast<int64_t>(info.offset) + static_cast<int64_t>(info.size),
+        AV_ERR_INVALID_VAL, "invalid memory");
 
     struct AVMuxerObject *object = reinterpret_cast<AVMuxerObject *>(muxer);
     CHECK_AND_RETURN_RET_LOG(object->muxer_ != nullptr, AV_ERR_INVALID_VAL, "muxer_ is nullptr!");
