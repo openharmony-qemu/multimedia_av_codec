@@ -87,12 +87,21 @@ bool SampleQueueController::ShouldStopConsume(int32_t trackId, std::shared_ptr<S
     }
     uint64_t cacheDuration = sampleQueue->NewGetCacheDuration();
     if (cacheDuration > STOP_CONSUME_WATER_LOOP) {
+        stopConsumeStartTime_[trackId] = 0;
         return false;
     }
+
+    auto now = SteadyClock::GetCurrentTimeMs();
+    if (stopConsumeStartTime_[trackId] == 0) {
+        stopConsumeStartTime_[trackId] = now;
+    }
+    FALSE_RETURN_V_NOLOG((now - stopConsumeStartTime_[trackId]) >= MAX_SAMPLE_IDLE_TIME_MS, false);
+
     if (task->IsTaskRunning()) {
         MEDIA_LOG_I("StopConsume, cacheDuration: %{public}llu, trackId: %{public}d", cacheDuration, trackId);
         task->Pause();
     }
+    stopConsumeStartTime_[trackId] = 0;
     return true;
 }
 
