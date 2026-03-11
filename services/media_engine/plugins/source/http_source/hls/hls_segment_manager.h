@@ -230,6 +230,7 @@ private:
     bool CheckLiveToVodEnd();
     bool CheckVodEnd();
     bool CheckLiveLastSegment();
+    bool IsDownloadLastSplice();
 
 private:
     HlsSegmentType type_ = HlsSegmentType::SEG_VIDEO;
