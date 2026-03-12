@@ -193,7 +193,8 @@ static const std::vector<FileType> g_fileSkipGetMinTsPktInfo = {
     FileType::WMV,
     FileType::WMA,
     FileType::MPEGTS,
-    FileType::MPEGPS
+    FileType::MPEGPS,
+    FileType::RM
 };
 
 template <typename T>
@@ -2844,6 +2845,77 @@ Status FFmpegDemuxerPlugin::DoSeekInternal(int trackIndex, int64_t seekTime, int
     return Status::OK;
 }
 
+bool FFmpegDemuxerPlugin::GetVideoTrack(int &trackIndex) const
+{
+    for (size_t i = 0; i < selectedTrackIds_.size(); i++) {
+        trackIndex = static_cast<int>(selectedTrackIds_[i]);
+        if (formatContext_->streams[trackIndex]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool FFmpegDemuxerPlugin::GetAudioTrack(int &trackIndex) const
+{
+    for (size_t i = 0; i < selectedTrackIds_.size(); i++) {
+        trackIndex = static_cast<int>(selectedTrackIds_[i]);
+        if (formatContext_->streams[trackIndex]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+            return true;
+        }
+    }
+    return false;
+}
+
+Status FFmpegDemuxerPlugin::ReadRmUntilPos(AVPacket *pkt, int64_t pos)
+{
+    while (true) {
+        int32_t ffRet = AVReadFrameLimit(pkt);
+        FALSE_RETURN_V_MSG_E(ffRet >= 0, Status::ERROR_WRONG_STATE, "Call av_read_frame failed");
+        if (avio_tell(formatContext_->pb) >= pos) {
+            break;
+        }
+        av_packet_unref(pkt);
+    }
+    return Status::OK;
+}
+
+Status FFmpegDemuxerPlugin::SeekToRmKeyFrame(int trackIndex, int64_t seekTime, int64_t ffTime,
+    SeekMode mode, int64_t& realSeekTime)
+{
+    Status ret = Status::OK;
+    int videoTrackIndex = static_cast<int>(selectedTrackIds_[0]);
+    int audioTrackIndex = static_cast<int>(selectedTrackIds_[0]);
+    if (GetVideoTrack(videoTrackIndex) && GetAudioTrack(audioTrackIndex)) {
+        Plugins::AVPacketWrapperPtr pktWrapper = std::make_shared<Plugins::AVPacketWrapper>();
+        FALSE_RETURN_V_MSG_E(pktWrapper != nullptr && pktWrapper->GetAVPacket() != nullptr,
+            Status::ERROR_NULL_POINTER, "Create AVPacketWrapper failed");
+        int32_t ffRet = AVReadFrameLimit(pktWrapper->GetAVPacket());
+        FALSE_RETURN_V_MSG_E(ffRet == 0, Status::ERROR_WRONG_STATE, "Call av_read_frame failed");
+        int64_t videoPos = avio_tell(formatContext_->pb);
+        int64_t timestamp = pktWrapper->GetPts();
+        ffRet = AVSeekFrameLock(audioTrackIndex, timestamp, AVSEEK_FLAG_BACKWARD);
+        FALSE_RETURN_V_MSG_E(ffRet >= 0, Status::ERROR_UNKNOWN,
+            "Call av_seek_frame failed, err: " PUBLIC_LOG_S, AVStrError(ffRet).c_str());
+        int64_t audioPos = avio_tell(formatContext_->pb);
+        if (videoPos <= audioPos) {
+            DoSeekInternal(trackIndex, seekTime, ffTime, mode, realSeekTime);
+        } else {
+            ret = ReadRmUntilPos(pktWrapper->GetAVPacket(), videoPos);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_WRONG_STATE, "Read rm frame until pos failed");
+            timestamp = pktWrapper->GetPts();
+            auto avStream = formatContext_->streams[videoTrackIndex];
+            realSeekTime = ConvertTimeFromFFmpeg(timestamp, avStream->time_base);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret,
+                "Read frame failed, err: " PUBLIC_LOG_S, AVStrError(ffRet).c_str());
+            ResetAfterSeek(pktWrapper->GetDts(), mode);
+            ret = AddPacketToCacheQueue(pktWrapper);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "AddPacketToCacheQueue failed");
+        }
+    }
+    return ret;
+}
+
 Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode, int64_t& realSeekTime)
 {
     (void) trackId;
@@ -2879,6 +2951,9 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
         ffTime = videoFirstFrameMap_[trackIndex]->GetDts();
     }
     ret = DoSeekInternal(trackIndex, seekTime, ffTime, mode, realSeekTime);
+    if (fileType_ == FileType::RM && ret  == Status::OK) {
+        ret = SeekToRmKeyFrame(trackIndex, seekTime, ffTime, mode, realSeekTime);
+    }
     HiviewDFX::XCollie::GetInstance().CancelTimer(id);
     return ret;
 }
@@ -2923,6 +2998,7 @@ Status FFmpegDemuxerPlugin::ReadUntilKeyFrame(Plugins::AVPacketWrapperPtr pktWra
                     "Call av_seek_frame failed, err: " PUBLIC_LOG_S, AVStrError(ffRet).c_str());
             }
         }
+        av_packet_unref(pktWrapper->GetAVPacket());
     }
     return ffRet == AVERROR_EOF ? Status::END_OF_STREAM : Status::ERROR_UNKNOWN;
 }
@@ -3645,6 +3721,33 @@ void FFmpegDemuxerPlugin::UpdMinTsPacketInfo(AVPacket *pkt)
     }
 }
 
+int FFmpegDemuxerPlugin::RMSeekToStart()
+{
+    int ffRet = -1;
+    FALSE_RETURN_V_MSG_E(fileType_ == FileType::RM, ffRet, "File type is not RM");
+    int seekTrackIndex = -1;
+    int64_t seekTs = AV_NOPTS_VALUE;
+    int64_t minPos = INT64_MAX;
+    for (uint32_t i = 0; i < formatContext_->nb_streams; i++) {
+        auto stream = formatContext_->streams[i];
+        const AVIndexEntry *entry = avformat_index_get_entry(stream, POS_0);
+        if (entry == nullptr) {
+            MEDIA_LOG_E("trackIndex " PUBLIC_LOG_U32 "avformat_index_get_entry failed", i);
+            continue;
+        }
+        if (entry->pos < minPos) {
+            minPos = entry->pos;
+            seekTrackIndex = static_cast<int>(i);
+            seekTs = entry->timestamp;
+        }
+    }
+    
+    if (seekTrackIndex >= 0) {
+        ffRet = AVSeekFrameLock(seekTrackIndex, seekTs, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
+    }
+    return ffRet;
+}
+
 Status FFmpegDemuxerPlugin::SeekToStartInternal()
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
@@ -3658,6 +3761,8 @@ Status FFmpegDemuxerPlugin::SeekToStartInternal()
     if (IsSkipGetMinTsPktInfo()) {
         if (fileType_ == FileType::MPEGPS || fileType_ == FileType::MPEGTS) {
             ffRet = AVSeekFrameLock(SEEK_TRACK_DEFAULT, POS_0, AVSEEK_FLAG_BYTE);
+        } else if (fileType_ == FileType::RM) {
+            ffRet = RMSeekToStart();
         } else {
             av_dict_set_int(&formatContext_->metadata, "seekToStart", 1, 0);
             ffRet = AVSeekFrameLock(SEEK_TRACK_DEFAULT, seekTs, AVSEEK_FLAG_ANY);
