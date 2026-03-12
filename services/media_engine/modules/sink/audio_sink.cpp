@@ -1754,8 +1754,8 @@ Status AudioSink::CacheBuffer()
 
         std::shared_ptr<Meta> meta = buffer->meta_;
         std::vector<uint8_t> metaData;
-        FALSE_RETURN_V_MSG_W(meta != nullptr && meta->GetData(Tag::OH_MD_KEY_AUDIO_VIVID_METADATA, metaData), Status::OK,
-            "except audiovivid not need cacheBuffer");
+        FALSE_RETURN_V_MSG_W(meta != nullptr && meta->GetData(Tag::OH_MD_KEY_AUDIO_VIVID_METADATA, metaData),
+            Status::OK, "except audiovivid not need cacheBuffer");
         AVBufferConfig avBufferConfig;
         avBufferConfig.capacity = static_cast<int32_t>(buffer->memory_->GetSize());
         avBufferConfig.memoryType = bufferMemoryType_;
