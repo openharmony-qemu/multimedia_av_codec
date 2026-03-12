@@ -71,11 +71,8 @@ bool StartFuzzTest(FuzzedDataProvider *fdp, size_t size)
     return true;
 }
 
-bool SegMentFuzzTest(const uint8_t *data, size_t size)
+bool SegMentFuzzTest(FuzzedDataProvider *fdp)
 {
-    if (data == nullptr) {
-        return false;
-    }
     std::string mimeType = "audio";
     std::map<std::string, std::string> httpHeader = {
         {"User-Agent", "ABC"},
@@ -91,16 +88,16 @@ bool SegMentFuzzTest(const uint8_t *data, size_t size)
     url += FAKE_FUZZ_M3U8;  // 虚假m3u8文件，需通过 fuzz data 喂入
     hlsSegmentManager->Open(url, g_httpHeader);
     hlsSegmentManager->SetIsReportedErrorCode();
-    int32_t streamId = GetData<int32_t>();
+    int32_t streamId = fdp->ConsumeIntegral<int32_t>();
     hlsSegmentManager->SelectMedia(streamId, HlsSegmentType::SEG_AUDIO);
     hlsSegmentManager->StartMediaDownload(streamId, HlsSegmentType::SEG_AUDIO);
     hlsSegmentManager->OnDrmInfoChanged(drmInfos);
     hlsSegmentManager->GetDownloadRateAndSpeed();
-    bool isDelay = GetData<bool>();
+    bool isDelay = fdp->ConsumeIntegral<bool>();
     hlsSegmentManager->GetReadTimeOut(isDelay);
     hlsSegmentManager->GetSegmentOffset();
     hlsSegmentManager->GetHLSDiscontinuity();
-    bool isAppBackground = GetData<bool>();
+    bool isAppBackground = fdp->ConsumeIntegral<bool>();
     hlsSegmentManager->StopBufferring(isAppBackground);
     hlsSegmentManager->WaitForBufferingEnd();
     hlsSegmentManager->GetTotalTsBuffersize();
