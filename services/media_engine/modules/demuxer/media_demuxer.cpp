@@ -4992,5 +4992,11 @@ void MediaDemuxer::UpdateTrackMap()
         InnerSelectTrack(audioTrackId_);
     }
 }
+
+bool MediaDemuxer::IsCloudFd()
+{
+    FALSE_RETURN_V_MSG_E(source_ != nullptr, false, "source_ is nullptr");
+    return source_->IsCloudFd();
+}
 } // namespace Media
 } // namespace OHOS

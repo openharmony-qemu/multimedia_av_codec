@@ -128,6 +128,7 @@ public:
     MOCK_METHOD(bool, IsHlsFmp4, (), ());
     MOCK_METHOD(bool, IsHlsEnd, (int32_t streamId), ());
     MOCK_METHOD(bool, IsHls, (), ());
+    MOCK_METHOD(bool, IsCloudFd, (), ());
 };
 }  // namespace Media
 }  // namespace OHOS

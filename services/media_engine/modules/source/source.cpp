@@ -676,5 +676,11 @@ bool Source::IsHls()
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, false, "plugin_ is nullptr");
     return plugin_->IsHls();
 }
+
+bool Source::IsCloudFd()
+{
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, false, "plugin_ is nullptr");
+    return plugin_->IsCloudFd();
+}
 } // namespace Media
 } // namespace OHOS
