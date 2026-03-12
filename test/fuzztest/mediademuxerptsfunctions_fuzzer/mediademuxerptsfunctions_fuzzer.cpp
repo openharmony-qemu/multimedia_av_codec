@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include "securec.h"
+#include "fuzzer/FuzzedDataProvider"
 
 #include <iostream>
 
@@ -61,7 +62,9 @@ bool MediaDemuxerPtsFunctionsFuzzTest(const uint8_t *data, size_t size)
     std::shared_ptr<MediaSource> mediaSource =
         std::make_shared<MediaSource>(MP4_PATH);
     mediaDemuxer->SetDataSource(mediaSource);
-    int32_t trackId = size % SELECT_TRACK;
+
+    FuzzedDataProvider fdp(data, size);
+    int32_t trackId = fdp.ConsumeIntegral<int32_t>() % SELECT_TRACK;
     
     std::shared_ptr<Media::AVBufferQueue> implBufferQueue_ =
         Media::AVBufferQueue::Create(size, Media::MemoryType::SHARED_MEMORY, "InnerDemo");  // 4
