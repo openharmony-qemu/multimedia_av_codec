@@ -41,6 +41,12 @@ ohos_fuzztest("AudioMuxerHevcFuzzTest") {
     "$MEDIA_ROOT_DIR/services/services/factory",
     "$MEDIA_ROOT_DIR/services/utils/include",
     "$MEDIA_ROOT_DIR/test/nativedemo/include",
+    "$MEDIA_ROOT_DIR/test/unittest/avmuxer_test/mpeg4_plugin",
+    "$MEDIA_ROOT_DIR/test/unittest/avmuxer_test",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/track",
+    "$MEDIA_ROOT_DIR/interfaces/plugin",
+    "$MEDIA_ROOT_DIR/services/media_engine/modules/muxer",
   ]
   cflags = [
     "-g",
@@ -48,9 +54,28 @@ ohos_fuzztest("AudioMuxerHevcFuzzTest") {
     "-Wno-unused-variable",
     "-fno-omit-frame-pointer",
   ]
-  sources = [
+  mpeg4_sources = [
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/track/audio_track.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/track/basic_track.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/track/cover_track.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/track/video_track.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/track/timed_meta_track.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/avc_parser.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/avio_stream.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/basic_box.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/box_parser.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/hevc_parser.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/mpeg4_muxer_plugin.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/mpeg4_utils.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/video_parser.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/ffmpeg_adapter/common/stream_parser_manager.cpp",
+  ]
+  sources = mpeg4_sources + [
     "audio_muxer_demo.cpp",
     "audiomuxer_fuzzer.cpp",
+    "$MEDIA_ROOT_DIR/test/unittest/avmuxer_test/mpeg4_plugin/avmuxer_mpeg4_plugin_mock_factory.cpp",
+    "$MEDIA_ROOT_DIR/test/unittest/avmuxer_test/mpeg4_plugin/avmuxer_mpeg4_plugin_mock.cpp",
+    "$MEDIA_ROOT_DIR/test/unittest/avmuxer_test/avmuxer_sample.cpp",
   ]
 
   defines = []
@@ -75,6 +100,8 @@ ohos_fuzztest("AudioMuxerHevcFuzzTest") {
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avsource",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
     "$MEDIA_ROOT_DIR/services/services:av_codec_service",
+    "$MEDIA_ROOT_DIR/test/unittest/common:av_codec_inner_unit_test",
+    "$MEDIA_ROOT_DIR/services/media_engine/modules:av_codec_media_engine_modules",
   ]
 }
 

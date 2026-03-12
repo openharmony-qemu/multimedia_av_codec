@@ -82,6 +82,7 @@ public:
     void WriteTrackCover(OH_AVMuxer *muxer, int32_t trackIndex);
     void WriteSingleTrackSampleAVBuffer(OH_AVMuxer *muxer, int32_t trackIndex);
     bool UpdateWriteBufferInfoAVBuffer(OH_AVBuffer **buffer, OH_AVCodecBufferAttr *info);
+    void SetParameter(const uint8_t *data, size_t size);
 
 private:
     OH_AVMuxer *avmuxer_ = {nullptr};
