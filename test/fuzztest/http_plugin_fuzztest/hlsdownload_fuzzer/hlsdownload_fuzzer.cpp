@@ -126,7 +126,7 @@ extern "C" int LLVMFuzzerTestOneInput(uint8_t *data, size_t size)
     g_baseFuzzPos = 0;
     FuzzedDataProvider fdp(data, size);
     OHOS::Media::Plugins::HttpPlugin::StartFuzzTest(&fdp, size);
-    OHOS::Media::Plugins::HttpPlugin::SegMentFuzzTest(data, size);
+    OHOS::Media::Plugins::HttpPlugin::SegMentFuzzTest(&fdp);
     if (!CloseServer()) {
         cout << "Close server error" << endl;
         return -1;
