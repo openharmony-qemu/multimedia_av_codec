@@ -1292,7 +1292,7 @@ HWTEST_F(DemuxerCafFuncNdkTest, DEMUXER_CAF_FUNC_7200, TestSize.Level1)
  */
 HWTEST_F(DemuxerCafFuncNdkTest, DEMUXER_CAF_FUNC_7300, TestSize.Level1)
 {
-    seekInfo fileTest1{INP_DIR_15, SEEK_MODE_PREVIOUS_SYNC, 2500000, 30, 0};
+    seekInfo fileTest1{INP_DIR_15, SEEK_MODE_PREVIOUS_SYNC, 2500000, 5, 0};
     CheckSeekMode(fileTest1);
 }
 
