@@ -1128,4 +1128,35 @@ HWTEST_F(CinepakdecFuncNdkTest, VIDEO_CINEPAKDEC_FUNCTION_0062, TestSize.Level0)
     ASSERT_EQ(0, vDecSample->errCount);
     ASSERT_EQ(FRAMESIZE5, vDecSample->outFrameCount);
 }
+
+/**
+ * @tc.number    : VIDEO_CINEPAKDEC_FUNCTION_0063
+ * @tc.name      : graph pixel format
+ * @tc.desc      : function test
+ */
+HWTEST_F(CinepakdecFuncNdkTest, VIDEO_CINEPAKDEC_FUNCTION_0063, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecAPI11Sample>();
+    int32_t pixfmt[4] = {28, 24, 25, 12};
+    vDecSample->getFormat(INP_DIR_16);
+    vDecSample->outputYuvFlag = true;
+    vDecSample->defaultWidth = 4096;
+    vDecSample->defaultHeight = 4096;
+    vDecSample->defaultFrameRate = 30;
+    vDecSample->isGetVideoSupportedPixelFormats = true;
+    vDecSample->isGetFormatKey = true;
+    vDecSample->avcodecMimeType = OH_AVCODEC_MIMETYPE_VIDEO_CINEPAK;
+    vDecSample->isEncoder = false;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameCinepak.c_str()));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(0, vDecSample->errCount);
+    ASSERT_EQ(4, vDecSample->pixelFormatNum);
+    for (int i = 0; i < vDecSample->pixelFormatNum; i++) {
+        ASSERT_EQ(vDecSample->pixelFormats[i], pixfmt[i]);
+    }
+    ASSERT_EQ(FRAMESIZE5, vDecSample->outFrameCount);
+}
 } // namespace
