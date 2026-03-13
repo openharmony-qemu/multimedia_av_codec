@@ -76,7 +76,6 @@ public:
     uint32_t GetCurStreamId() override;
     void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr,
         bool isFmp4 = false) override;
-    bool IsLiveEnd() override;
 
 private:
     void UpdateMasterInfo(bool isPreParse);
@@ -114,7 +113,6 @@ private:
     std::set<uint32_t> subtitlesStreamIds_ = std::set<uint32_t>();
     std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
     std::atomic<bool> isFmp4_ {false};
-    bool isLiveEnd_ {false};
 };
 }
 }
