@@ -489,34 +489,34 @@ bool HlsSegmentManager::CheckDataIntegrity()
     }
 }
 
-bool HlsSegmentManager::CheckLiveLastSegment() 
-{ 
-    if (playList_ == nullptr) { 
-        return false; 
-    } 
-    return lastPlaychanged_.load() && playList_->Size() == 0 && 
-        readTsIndex_.load() == writeTsIndex_ && GetBufferSize() > 0; 
-} 
+bool HlsSegmentManager::CheckLiveLastSegment()
+{
+    if (playList_ == nullptr) {
+        return false;
+    }
+    return lastPlaychanged_.load() && playList_->Size() == 0 &&
+        readTsIndex_.load() == writeTsIndex_ && GetBufferSize() > 0;
+}
  
-bool HlsSegmentManager::CheckVodEnd() 
-{ 
-    AutoLock lock(tsStorageInfoMutex_); 
-    if (playlistDownloader_ != nullptr && playlistDownloader_->IsLiveEnd()) { 
-        return false; 
-    } 
-    bool isFinishedPlay = CheckReadStatus() || isStopped; 
-    return isFinishedPlay && 
-        GetBufferSize() == 0 && GetSeekable() == Seekable::SEEKABLE && 
-        tsStorageInfo_.find(writeTsIndex_) != tsStorageInfo_.end() && 
-        tsStorageInfo_[writeTsIndex_].second; 
+bool HlsSegmentManager::CheckVodEnd()
+{
+    AutoLock lock(tsStorageInfoMutex_);
+    if (playlistDownloader_ != nullptr && playlistDownloader_->IsLiveEnd()) {
+        return false;
+    }
+    bool isFinishedPlay = CheckReadStatus() || isStopped;
+    return isFinishedPlay &&
+        GetBufferSize() == 0 && GetSeekable() == Seekable::SEEKABLE &&
+        tsStorageInfo_.find(writeTsIndex_) != tsStorageInfo_.end() &&
+        tsStorageInfo_[writeTsIndex_].second;
 }
 
 Status HlsSegmentManager::CheckPlaylist(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    if (playlistDownloader_ != nullptr && playlistDownloader_->IsLiveEnd()) { 
-        if (!CheckLiveLastSegment()) { 
-            return Status::ERROR_UNKNOWN; 
-        } 
+    if (playlistDownloader_ != nullptr && playlistDownloader_->IsLiveEnd()) {
+        if (!CheckLiveLastSegment()) {
+            return Status::ERROR_UNKNOWN;
+        }
     }
     bool isFinishedPlay = CheckReadStatus() || isStopped;
     auto downloadRequest = GetDownloadRequest();
@@ -593,20 +593,20 @@ Status HlsSegmentManager::ReadDelegate(unsigned char* buff, ReadDataInfo& readDa
     return Status::OK;
 }
 
-bool HlsSegmentManager::CheckLiveToVodEnd() 
- { 
-     AutoLock lock(tsStorageInfoMutex_); 
-     if (playList_ == nullptr) { 
-         return false; 
-     } 
-     return lastPlaychanged_.load() && playList_->Size() == 0 && readTsIndex_.load() == writeTsIndex_ && 
-         tsStorageInfo_[readTsIndex_.load()].second && GetBufferSize() == 0; 
- }
+bool HlsSegmentManager::CheckLiveToVodEnd()
+{
+    AutoLock lock(tsStorageInfoMutex_);
+    if (playList_ == nullptr) {
+        return false;
+    }
+    return lastPlaychanged_.load() && playList_->Size() == 0 && readTsIndex_.load() == writeTsIndex_ &&
+        tsStorageInfo_[readTsIndex_.load()].second && GetBufferSize() == 0;
+}
 
 bool HlsSegmentManager::CheckTsEndOrEos(ReadDataInfo& readDataInfo)
 {
-    if (playlistDownloader_ != nullptr && playlistDownloader_->IsLiveEnd()) { 
-        return CheckLiveToVodEnd(); 
+    if (playlistDownloader_ != nullptr && playlistDownloader_->IsLiveEnd()) {
+        return CheckLiveToVodEnd();
     }
     if (isTsEnd_.load()) {
         MEDIA_LOG_I("HLS READ TS END, type: %{public}d", type_);
@@ -954,8 +954,8 @@ void HlsSegmentManager::OnPlayListChanged(const std::vector<PlayInfo>& playList)
         }
         PutRequestIntoDownloader(playInfo);
     }
-    if (playlistDownloader_->IsLiveEnd()) { 
-        lastPlaychanged_.store(true); 
+    if (playlistDownloader_->IsLiveEnd()) {
+        lastPlaychanged_.store(true);
     }
     MEDIA_LOG_I("HLS OnPlayListChanged out playlist: %{public}zu, back: %{public}zu, writeTsIndex_: %{public}u,"
         "type: %{public}d", playList_->Size(), backPlayList_.size(), writeTsIndex_, type_);
@@ -2287,12 +2287,12 @@ void HlsSegmentManager::ClearChunksInLargeSegment()
 
 bool HlsSegmentManager::IsHlsEnd()
 {
-    if (playlistDownloader_ != nullptr && playlistDownloader_->IsLiveEnd()) { 
-        if (lastPlaychanged_.load() && playList_->Size() == 0 && readTsIndex_.load() == writeTsIndex_ && 
-            tsStorageInfo_[readTsIndex_.load()].second && GetBufferSize() == 0) { 
-            return true; 
-        } 
-        return false; 
+    if (playlistDownloader_ != nullptr && playlistDownloader_->IsLiveEnd()) {
+        if (lastPlaychanged_.load() && playList_->Size() == 0 && readTsIndex_.load() == writeTsIndex_ &&
+            tsStorageInfo_[readTsIndex_.load()].second && GetBufferSize() == 0) {
+            return true;
+        }
+        return false;
     }
     if (CheckReadStatus() && GetBufferSize() == 0 && readTsIndex_ + 1 == backPlayList_.size() &&
         tsStorageInfo_.find(readTsIndex_) != tsStorageInfo_.end() &&

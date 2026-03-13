@@ -228,8 +228,8 @@ private:
     bool IsAllDownloadFinish();
     void PlayListChanged(const std::vector<PlayInfo>& playList);
     bool IsDownloadLastSplice();
-    bool CheckLiveToVodEnd(); 
-    bool CheckVodEnd(); 
+    bool CheckLiveToVodEnd();
+    bool CheckVodEnd();
     bool CheckLiveLastSegment();
 
 private:
