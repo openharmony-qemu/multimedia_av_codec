@@ -476,4 +476,150 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_DestroyStubObjectForPid_004, T
     manager.DestroyStubObjectForPid(INVALID_NUM);
     manager.DestroyStubObjectForPid(callerId);
 }
+
+/**
+ * @tc.name: AVCodec_ServerManager_SetCritical_SkipDuplicate_001
+ * @tc.desc: SetCritical skip duplicate call when same value and last succeeded
+ */
+HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_SetCritical_SkipDuplicate_001, TestSize.Level1)
+{
+    AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
+    manager.memMgrStarted_ = true;
+    manager.setCriticalFunc_ = MockSetCriticalForFuncPtr;
+    EXPECT_CALL(*memMgrMock_, SetCritical(_, true, _)).Times(1).WillOnce(Return(-1)); // -1: mock set critical failure
+    manager.SetCritical(true);
+    EXPECT_TRUE(manager.setCriticalFailed_);
+    EXPECT_TRUE(manager.lastSetCriticalValue_);
+    EXPECT_CALL(*memMgrMock_, SetCritical(_, true, _)).Times(1).WillOnce(Return(0));
+    manager.SetCritical(true);
+    EXPECT_FALSE(manager.setCriticalFailed_);
+    manager.SetCritical(true);
+    EXPECT_CALL(*memMgrMock_, SetCritical(_, false, _)).Times(1).WillOnce(Return(0));
+    manager.SetCritical(false);
+    EXPECT_FALSE(manager.setCriticalFailed_);
+    manager.SetCritical(false);
+}
+
+/**
+ * @tc.name: AVCodec_ServerManager_SetCritical_FailedState_001
+ * @tc.desc: SetCritical retry when last set failed
+ */
+HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_SetCritical_FailedState_001, TestSize.Level1)
+{
+    AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
+    manager.memMgrStarted_ = true;
+    manager.setCriticalFunc_ = MockSetCriticalForFuncPtr;
+    EXPECT_CALL(*memMgrMock_, SetCritical(_, true, _)).Times(1).WillOnce(Return(-1)); // -1: mock set critical failure
+    manager.SetCritical(true);
+    EXPECT_TRUE(manager.setCriticalFailed_);
+    EXPECT_TRUE(manager.lastSetCriticalValue_);
+    EXPECT_CALL(*memMgrMock_, SetCritical(_, true, _)).Times(1).WillOnce(Return(0));
+    manager.SetCritical(true);
+    EXPECT_FALSE(manager.setCriticalFailed_);
+}
+
+/**
+ * @tc.name: AVCodec_ServerManager_SetCritical_FailedState_002
+ * @tc.desc: SetCritical mark failed when setCriticalFunc_ fails
+ */
+HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_SetCritical_FailedState_002, TestSize.Level1)
+{
+    AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
+    manager.memMgrStarted_ = true;
+    manager.setCriticalFunc_ = MockSetCriticalForFuncPtr;
+    EXPECT_CALL(*memMgrMock_, SetCritical(_, false, _)).Times(1).WillOnce(Return(0));
+    manager.SetCritical(false);
+    EXPECT_FALSE(manager.setCriticalFailed_);
+    EXPECT_FALSE(manager.lastSetCriticalValue_);
+    EXPECT_CALL(*memMgrMock_, SetCritical(_, true, _)).Times(1).WillOnce(Return(-1)); // -1: mock set critical failure
+    manager.SetCritical(true);
+    EXPECT_TRUE(manager.setCriticalFailed_);
+    EXPECT_TRUE(manager.lastSetCriticalValue_);
+}
+
+/**
+ * @tc.name: AVCodec_ServerManager_NotifyProcessStatus_Retry_001
+ * @tc.desc: NotifyProcessStatus retry failed SetCritical(true) when status=1
+ */
+HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_NotifyProcessStatus_Retry_001, TestSize.Level1)
+{
+    AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
+    manager.memMgrStarted_ = true;
+    manager.notifyProcessStatusFunc_ = MockNotifyProcessStatusForFuncPtr;
+    manager.setCriticalFunc_ = MockSetCriticalForFuncPtr;
+    EXPECT_CALL(*memMgrMock_, SetCritical(_, true, _)).Times(1).WillOnce(Return(-1)); // -1: mock set critical failure
+    manager.SetCritical(true);
+    EXPECT_TRUE(manager.setCriticalFailed_);
+    EXPECT_TRUE(manager.lastSetCriticalValue_);
+    EXPECT_CALL(*memMgrMock_, NotifyProcessStatus(_, _, 1, _)).Times(1).WillOnce(Return(0));
+    EXPECT_CALL(*memMgrMock_, SetCritical(_, true, _)).Times(1).WillOnce(Return(0));
+    manager.NotifyProcessStatus(1);
+    EXPECT_FALSE(manager.setCriticalFailed_);
+}
+
+/**
+ * @tc.name: AVCodec_ServerManager_NotifyProcessStatus_Retry_002
+ * @tc.desc: NotifyProcessStatus not retry SetCritical when status=0
+ */
+HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_NotifyProcessStatus_Retry_002, TestSize.Level1)
+{
+    AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
+    manager.memMgrStarted_ = true;
+    manager.notifyProcessStatusFunc_ = MockNotifyProcessStatusForFuncPtr;
+    manager.setCriticalFunc_ = MockSetCriticalForFuncPtr;
+    manager.setCriticalFailed_ = false;
+    manager.lastSetCriticalValue_ = false;
+    EXPECT_CALL(*memMgrMock_, SetCritical(_, true, _)).Times(1).WillOnce(Return(-1)); // -1: mock set critical failure
+    manager.SetCritical(true);
+    EXPECT_TRUE(manager.setCriticalFailed_);
+    EXPECT_TRUE(manager.lastSetCriticalValue_);
+    EXPECT_CALL(*memMgrMock_, NotifyProcessStatus(_, _, 0, _)).Times(1).WillOnce(Return(0));
+    EXPECT_CALL(*memMgrMock_, SetCritical(_, _, _)).Times(0);
+    manager.NotifyProcessStatus(0);
+    EXPECT_TRUE(manager.setCriticalFailed_);
+}
+
+/**
+ * @tc.name: AVCodec_ServerManager_NotifyProcessStatus_Retry_003
+ * @tc.desc: NotifyProcessStatus not retry when last value was false
+ */
+HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_NotifyProcessStatus_Retry_003, TestSize.Level1)
+{
+    AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
+    manager.memMgrStarted_ = true;
+    manager.notifyProcessStatusFunc_ = MockNotifyProcessStatusForFuncPtr;
+    manager.setCriticalFunc_ = MockSetCriticalForFuncPtr;
+    manager.setCriticalFailed_ = true;
+    manager.lastSetCriticalValue_ = true;
+    EXPECT_CALL(*memMgrMock_, SetCritical(_, false, _)).Times(1).WillOnce(Return(-1)); // -1: mock set critical failure
+    manager.SetCritical(false);
+    EXPECT_TRUE(manager.setCriticalFailed_);
+    EXPECT_FALSE(manager.lastSetCriticalValue_);
+    EXPECT_CALL(*memMgrMock_, NotifyProcessStatus(_, _, 1, _)).Times(1).WillOnce(Return(0));
+    EXPECT_CALL(*memMgrMock_, SetCritical(_, _, _)).Times(0);
+    manager.NotifyProcessStatus(1);
+    EXPECT_TRUE(manager.setCriticalFailed_);
+}
+
+/**
+ * @tc.name: AVCodec_ServerManager_NotifyProcessStatus_Retry_004
+ * @tc.desc: NotifyProcessStatus not retry when last set succeeded
+ */
+HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_NotifyProcessStatus_Retry_004, TestSize.Level1)
+{
+    AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
+    manager.memMgrStarted_ = true;
+    manager.notifyProcessStatusFunc_ = MockNotifyProcessStatusForFuncPtr;
+    manager.setCriticalFunc_ = MockSetCriticalForFuncPtr;
+    manager.setCriticalFailed_ = false;
+    manager.lastSetCriticalValue_ = false;
+    EXPECT_CALL(*memMgrMock_, SetCritical(_, true, _)).Times(1).WillOnce(Return(0));
+    manager.SetCritical(true);
+    EXPECT_FALSE(manager.setCriticalFailed_);
+    EXPECT_TRUE(manager.lastSetCriticalValue_);
+    EXPECT_CALL(*memMgrMock_, NotifyProcessStatus(_, _, 1, _)).Times(1).WillOnce(Return(0));
+    EXPECT_CALL(*memMgrMock_, SetCritical(_, _, _)).Times(0);
+    manager.NotifyProcessStatus(1);
+    EXPECT_FALSE(manager.setCriticalFailed_);
+}
 } // namespace
