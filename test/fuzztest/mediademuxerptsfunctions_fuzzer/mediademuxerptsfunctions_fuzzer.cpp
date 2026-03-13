@@ -19,7 +19,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include "securec.h"
-#include "fuzzer/FuzzedDataProvider"
+#include "fuzzer/FuzzedDataProvider.h"
 
 #include <iostream>
 
