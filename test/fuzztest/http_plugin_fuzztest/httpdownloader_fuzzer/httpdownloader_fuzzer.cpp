@@ -270,8 +270,8 @@ void DownloaderFuzz(FuzzedDataProvider &fdp)
     std::shared_ptr<DownloadRequest> request =
         std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     downloader->Retry(request);
-    downloader->isAppBackground_ = fdp->ConsumeIntegral<bool>();
-    downloader->isDestructor_ = fdp->ConsumeIntegral<bool>();
+    downloader->isAppBackground_ = fdp.ConsumeIntegral<bool>();
+    downloader->isDestructor_ = fdp.ConsumeIntegral<bool>();
     downloader->Retry(request);
     downloader->GetContentType();
     downloader->ReStart();
