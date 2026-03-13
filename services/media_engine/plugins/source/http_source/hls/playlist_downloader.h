@@ -95,7 +95,6 @@ public:
     virtual uint32_t GetCurStreamId() = 0;
     virtual void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr,
         bool fmp4 = false) = 0;
-    virtual bool IsLiveEnd() = 0;
 
     void SetInterruptState(bool isInterruptNeeded);
     void Resume();

@@ -227,9 +227,6 @@ private:
     bool CheckCanReadOneSeconds(uint64_t wantReadLength);
     bool IsAllDownloadFinish();
     void PlayListChanged(const std::vector<PlayInfo>& playList);
-    bool CheckLiveToVodEnd();
-    bool CheckVodEnd();
-    bool CheckLiveLastSegment();
     bool IsDownloadLastSplice();
 
 private:
@@ -253,7 +250,6 @@ private:
     std::deque<PlayInfo> backPlayList_;
     std::atomic<bool> isSelectingBitrate_ {false};
     bool isDownloadStarted_ {false};
-    std::atomic<bool> lastPlaychanged_ {false};
 
     /* aes decrypt */
     std::shared_ptr<AesDecryptor> aesDecryptor_;
