@@ -60,6 +60,7 @@ public:
     void SetEnableOnlineFdCache(bool isEnableFdCache) override;
     bool IsLocalFd() override;
     Status GetDownloadInfo(DownloadInfo& downloadInfo) override;
+    bool IsCloudFd() override;
 
 private:
     Status ParseUriInfo(const std::string& uri);

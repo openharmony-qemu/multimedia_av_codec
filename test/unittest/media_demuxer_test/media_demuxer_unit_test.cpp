@@ -2226,4 +2226,27 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SetMediaMuted, TestSize.Level1)
     demuxer->SetMediaMuted(Media::MediaType::MEDIA_TYPE_AUD, true);
     EXPECT_EQ(demuxer->isVideoMuted_, false);
 }
+
+/**
+ * @tc.name: MediaDemuxer_IsCloudFd
+ * @tc.desc: test IsCloudFd
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_IsCloudFd_001, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/h264_fmp4.mp4";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+ 
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    EXPECT_FALSE(demuxer->IsCloudFd());
+}
 }

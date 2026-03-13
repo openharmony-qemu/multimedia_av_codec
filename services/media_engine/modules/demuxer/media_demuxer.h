@@ -209,6 +209,7 @@ public:
     bool BoostThreadPriorityIfNeeded();
     bool IsWatchDevice();
     bool IsBuffering();
+    bool IsCloudFd();
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
