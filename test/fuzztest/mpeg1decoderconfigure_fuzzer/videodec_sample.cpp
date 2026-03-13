@@ -23,9 +23,6 @@ namespace {
 constexpr int64_t NANOS_IN_SECOND = 1000000000L;
 constexpr int64_t NANOS_IN_MICRO = 1000L;
 
-constexpr int32_t EIGHT = 8;
-constexpr int32_t SIXTEEN = 16;
-constexpr int32_t TWENTY_FOUR = 24;
 constexpr uint32_t START_CODE_SIZE = 4;
 constexpr uint8_t START_CODE[START_CODE_SIZE] = {0, 0, 0, 1};
 VDecFuzzSample *g_decSample = nullptr;
@@ -308,54 +305,61 @@ void VDecFuzzSample::CopyStartCode(uint8_t *frameBuffer, uint32_t bufferSize, OH
 
 int32_t VDecFuzzSample::ReadData(uint32_t index, OH_AVBuffer *buffer)
 {
-    uint8_t ch[4] = {};
-    (void)inFile_->read(reinterpret_cast<char *>(ch), START_CODE_SIZE);
-    if (inFile_->eof()) {
+    if (fileData_.empty()) {
+        fileData_.assign(std::istreambuf_iterator<char>(*inFile_), std::istreambuf_iterator<char>());
+        inFile_->clear();
+    }
+    if (readOffset_ >= fileData_.size()) {
         SetEOS(buffer, index);
         return 1;
     }
-    uint32_t bufferSize = static_cast<uint32_t>(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) |
-    ((ch[1] & 0xFF) << SIXTEEN) | ((ch[0] & 0xFF) << TWENTY_FOUR));
-    return SendData(bufferSize, index, buffer);
+    auto findStart = [this](size_t from) -> size_t {
+        for (size_t i = from; i + 3 < this->fileData_.size(); ++i) {
+            if (this->fileData_[i] == 0x00 && this->fileData_[i + 1] == 0x00 &&
+                this->fileData_[i + 2] == 0x01 && this->fileData_[i + 3] == 0x00) {
+                return i;
+            }
+        }
+        return this->fileData_.size();
+    };
+    size_t picStart = findStart(readOffset_);
+    if (picStart == fileData_.size()) {
+        SetEOS(buffer, index);
+        return 1;
+    }
+    size_t nextStart = findStart(picStart + 4);
+    size_t frameEnd = (nextStart == fileData_.size()) ? fileData_.size() : nextStart;
+    size_t frameSize = frameEnd - picStart;
+    int32_t capacity = OH_AVBuffer_GetCapacity(buffer);
+    if (frameSize == 0 || capacity < static_cast<int32_t>(frameSize)) {
+        cout << "Frame too large or empty, size=" << frameSize << " cap=" << capacity << endl;
+        SetEOS(buffer, index);
+        return 1;
+    }
+    uint8_t *addr = OH_AVBuffer_GetAddr(buffer);
+    if (memcpy_s(addr, capacity, fileData_.data() + picStart, frameSize) != EOK) {
+        cout << "Fatal: memcpy fail" << endl;
+        return 1;
+    }
+    return SendData(static_cast<uint32_t>(frameSize), index, buffer, frameEnd);
 }
 
-uint32_t VDecFuzzSample::SendData(uint32_t bufferSize, uint32_t index, OH_AVBuffer *buffer)
+uint32_t VDecFuzzSample::SendData(uint32_t bufferSize, uint32_t index, OH_AVBuffer *buffer, size_t frameEnd)
 {
     OH_AVCodecBufferAttr attr;
-    uint8_t *frameBuffer = nullptr;
-    if (bufferSize <= 0) {
-        return 0;
-    }
-    
-    frameBuffer = new uint8_t[bufferSize];
-    attr.size = bufferSize;
-    attr.flags = (bufferSize != 0) ?
-     (AVCODEC_BUFFER_FLAGS_SYNC_FRAME + AVCODEC_BUFFER_FLAGS_CODEC_DATA) : AVCODEC_BUFFER_FLAGS_EOS;
-    int32_t size = OH_AVBuffer_GetCapacity(buffer);
-    if (size < attr.size) {
-        delete[] frameBuffer;
-        cout << "ERROR:AVBuffer not enough, buffer size" << attr.size << "   AVBuffer Size " << size << endl;
-        isRunning_.store(false);
-        return 1;
-    }
-    uint8_t *bufferAddr = OH_AVBuffer_GetAddr(buffer);
-    if (memcpy_s(bufferAddr, size, frameBuffer, attr.size) != EOK) {
-        delete[] frameBuffer;
-        cout << "Fatal: memcpy fail" << endl;
-        isRunning_.store(false);
-        return 1;
-    }
-    delete[] frameBuffer;
     attr.pts = GetSystemTimeUs();
     attr.size = bufferSize;
     attr.offset = 0;
+    attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
+    OH_AVBuffer_SetBufferAttr(buffer, &attr);
     int32_t ret = OH_VideoDecoder_PushInputBuffer(vdec_, index);
     if (ret != AV_ERR_OK) {
         errCount++;
         cout << "push input data failed, error:" << ret << endl;
     }
-    frameCount_ = frameCount_ + 1;
-    if (inFile_->eof()) {
+    frameCount_++;
+    readOffset_ = frameEnd;
+    if (readOffset_ >= fileData_.size()) {
         isRunning_.store(false);
     }
     return 0;
