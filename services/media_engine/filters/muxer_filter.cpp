@@ -218,6 +218,16 @@ void MuxerFilter::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
     }
 }
 
+Status MuxerFilter::SetCustomInfo(const std::shared_ptr<Meta> &customInfo)
+{
+    MEDIA_LOG_I("SetCustomInfo enter");
+    Status ret = mediaMuxer_->SetUserMeta(customInfo);
+    if (ret != Status::OK) {
+        MEDIA_LOG_I("SetCustomInfo failed");
+    }
+    return ret;
+}
+
 void MuxerFilter::GetParameter(std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("GetParameter");
