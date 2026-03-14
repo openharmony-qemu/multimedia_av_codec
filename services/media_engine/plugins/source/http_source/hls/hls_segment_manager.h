@@ -228,7 +228,7 @@ private:
     bool CheckCanReadOneSeconds(uint64_t wantReadLength);
     void UpdateAesDecryptor(const PlayInfo& playInfo);
     bool IsAllDownloadFinish();
-    void PlayListChanged(const std::vector<PlayInfo>& playList);
+    void HandlePlayListChanged(const std::vector<PlayInfo>& playList);
     bool IsDownloadLastSplice();
 
 private:
@@ -378,6 +378,7 @@ private:
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
     InfoIndexMap InfoIndexMap_;
     std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
+
     std::unordered_map<uint64_t, std::shared_ptr<AesDecryptor>> keyAesDecryptorsMap_;
     std::unordered_map<uint64_t, std::shared_ptr<AesDecryptor>> sessionKeyAesDecryptorsMap_;
     std::shared_ptr<AesDecryptor> initAesDecryptor_;
