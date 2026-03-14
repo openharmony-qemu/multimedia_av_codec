@@ -207,14 +207,14 @@ void MuxerFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("SetParameter");
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::SetParameter");
-    FALSE_RETURN_V_MSG(mediaMuxer_ != nullptr, Status::ERROR_NULL_POINTER, "MediaMuxer is nullptr.");
+    FALSE_RETURN_MSG(mediaMuxer_ != nullptr, "mediaDemuxer_ is nullptr");
     mediaMuxer_->SetParameter(parameter);
 }
 
 void MuxerFilter::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
 {
     MEDIA_LOG_I("SetUserMeta enter");
-    FALSE_RETURN_V_MSG(mediaMuxer_ != nullptr, Status::ERROR_NULL_POINTER, "MediaMuxer is nullptr.");
+    FALSE_RETURN_MSG(mediaMuxer_ != nullptr, "mediaDemuxer_ is nullptr");
     Status ret = mediaMuxer_->SetUserMeta(userMeta);
     if (ret != Status::OK) {
         MEDIA_LOG_I("SetUserMeta failed");
