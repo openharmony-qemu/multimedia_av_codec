@@ -173,6 +173,7 @@ Status MuxerFilter::DoResume()
 Status MuxerFilter::DoStop()
 {
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::Stop");
+    FALSE_RETURN_V_MSG(mediaMuxer_ != nullptr, Status::ERROR_NULL_POINTER, "MediaMuxer is nullptr.");
     stopCount_++;
     MEDIA_LOG_I("MuxerFilter Stop, stopCount_: %{public}d, preFilterCount_: %{public}d",
         stopCount_, preFilterCount_);
@@ -206,16 +207,29 @@ void MuxerFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("SetParameter");
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::SetParameter");
+    FALSE_RETURN_MSG(mediaMuxer_ != nullptr, "mediaMuxer_ is nullptr");
     mediaMuxer_->SetParameter(parameter);
 }
 
 void MuxerFilter::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
 {
     MEDIA_LOG_I("SetUserMeta enter");
+    FALSE_RETURN_MSG(mediaMuxer_ != nullptr, "mediaMuxer_ is nullptr");
     Status ret = mediaMuxer_->SetUserMeta(userMeta);
     if (ret != Status::OK) {
         MEDIA_LOG_I("SetUserMeta failed");
     }
+}
+
+Status MuxerFilter::SetCustomInfo(const std::shared_ptr<Meta> &customInfo)
+{
+    MEDIA_LOG_I("SetCustomInfo enter");
+    FALSE_RETURN_V_MSG(mediaMuxer_ != nullptr, Status::ERROR_NULL_POINTER, "MediaMuxer is nullptr.");
+    Status ret = mediaMuxer_->SetUserMeta(customInfo);
+    if (ret != Status::OK) {
+        MEDIA_LOG_I("SetCustomInfo failed");
+    }
+    return ret;
 }
 
 void MuxerFilter::GetParameter(std::shared_ptr<Meta> &parameter)
@@ -406,7 +420,7 @@ void MuxerFilter::OnTransCoderBufferFilled(std::shared_ptr<AVBuffer> &inputBuffe
 
 void MuxerFilter::HandleTransCoderComplete()
 {
-    FALSE_RETURN_MSG(mediaMuxer_ != nullptr, "mediaDemuxer_ is nullptr");
+    FALSE_RETURN_MSG(mediaMuxer_ != nullptr, "mediaMuxer_ is nullptr");
     MEDIA_LOG_I("mediaMuxer_ stop begin");
     stopCount_ = preFilterCount_;
     Status res = mediaMuxer_->Stop();

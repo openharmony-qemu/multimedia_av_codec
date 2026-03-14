@@ -681,14 +681,15 @@ Status AudioCaptureFilter::GetCurrentCapturerChangeInfo(AudioStandard::AudioCapt
     return Status::OK;
 }
 
-int32_t AudioCaptureFilter::GetMaxAmplitude()
+Status AudioCaptureFilter::GetMaxAmplitude(int32_t &amplitude)
 {
     MEDIA_LOG_I("GetMaxAmplitude");
     if (audioCaptureModule_ == nullptr) {
         MEDIA_LOG_E("audioCaptureModule_ is nullptr, cannot get audio capturer change info");
-        return (int32_t)Status::ERROR_INVALID_OPERATION;
+        return Status::ERROR_INVALID_OPERATION;
     }
-    return audioCaptureModule_->GetMaxAmplitude();
+    amplitude = audioCaptureModule_->GetMaxAmplitude();
+    return Status::OK;
 }
 
 Status AudioCaptureFilter::SetWillMuteWhenInterrupted(bool muteWhenInterrupted)
