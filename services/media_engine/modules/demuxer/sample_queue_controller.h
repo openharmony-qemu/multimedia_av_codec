@@ -81,6 +81,7 @@ private:
     std::atomic<uint64_t> bufferingDuration_ {};
     std::atomic<uint64_t> firstBufferingDuration_ {};
     std::atomic<float> speed_ {1.0f};
+    std::map<int32_t, int64_t> stopConsumeStartTime_;
 };
 } // namespace Media
 } // namespace OHOS
