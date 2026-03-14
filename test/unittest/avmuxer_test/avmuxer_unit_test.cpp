@@ -37,6 +37,10 @@ constexpr int32_t TEST_WIDTH = 720;
 constexpr int32_t TEST_HEIGHT = 480;
 constexpr int32_t TEST_ROTATION = 90;
 constexpr int32_t INVALID_FORMAT = -99;
+#ifdef AVMUXER_UNITTEST_CAPI
+constexpr int32_t ABNORMAL_COLOR_VALUE = 100;
+constexpr int32_t ABNORMAL_COLOR_VALUE_1 = -1;
+#endif
 const std::string TEST_FILE_PATH = "/data/test/media/";
 const std::string INPUT_FILE_PATH = "/data/test/media/h264_720_480.dat";
 const std::string LOGINFO_INPUT_FILE_PATH = "/data/test/media/h265_logInfo.dat";
@@ -3103,6 +3107,238 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetLocation_001, TestSize.Level0)
     
     ASSERT_EQ(avmuxer_->Start(), 0);
     ASSERT_EQ(avmuxer_->Stop(), 0);
+}
+
+/**
+ * @tc.name: Muxer_SetColorBoxInfo_001
+ * @tc.desc: Muxer mp4 colorBox info(h265)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetColorBoxInfo_001, TestSize.Level0)
+{
+    int32_t audioTrackId = -1;
+    int32_t videoTrackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetColorBoxInfo_001.mp4");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    // 添加音频轨
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 44100); // 44100 sample rate
+    audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 2); // 2 channels
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
+    audioParams->PutLongValue(OH_MD_KEY_BITRATE, 199000); // 199000 bit rate
+    audioParams->PutIntValue("audio_samples_per_frame", 1024); // 1024 frame size
+    audioParams->PutIntValue(OH_MD_KEY_PROFILE, AAC_PROFILE_LC);
+    audioParams->PutIntValue(OH_MD_KEY_AAC_IS_ADTS, 0);
+    ASSERT_EQ(avmuxer_->AddTrack(audioTrackId, audioParams), 0);
+
+    // 添加视频轨
+    std::shared_ptr<FormatMock> videoParams = FormatMockFactory::CreateFormat();
+    videoParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
+    videoParams->PutIntValue(OH_MD_KEY_WIDTH, TEST_WIDTH);
+    videoParams->PutIntValue(OH_MD_KEY_HEIGHT, TEST_HEIGHT);
+
+    videoParams->PutIntValue(OH_MD_KEY_COLOR_PRIMARIES, COLOR_PRIMARY_BT2020); // primary
+    videoParams->PutIntValue(OH_MD_KEY_TRANSFER_CHARACTERISTICS, TRANSFER_CHARACTERISTIC_UNSPECIFIED); // transfer
+    videoParams->PutIntValue(OH_MD_KEY_MATRIX_COEFFICIENTS, MATRIX_COEFFICIENT_BT2020_NCL); // matrix
+    videoParams->PutIntValue(OH_MD_KEY_RANGE_FLAG, 0); // range
+    videoParams->PutIntValue(OH_MD_KEY_VIDEO_IS_HDR_VIVID, 1);
+    ASSERT_EQ(avmuxer_->AddTrack(videoTrackId, videoParams), 0);
+
+    // 添加metadata
+    std::shared_ptr<FormatMock> metaData = FormatMockFactory::CreateFormat();
+    metaData->PutStringValue(Tag::MEDIA_CREATION_TIME, "2025-08-14T00:01:02.000000Z");
+    EXPECT_EQ(avmuxer_->SetFormat(metaData), 0);
+
+    // start
+    ASSERT_EQ(avmuxer_->Start(), 0);
+
+    // audio write sample
+    std::string inputFilePath = "/data/test/media/aac_44100_2.dat";
+    TrackWriteSample(inputFilePath, audioTrackId);
+
+    // video write sample
+    TrackWriteSample(LOGINFO_INPUT_FILE_PATH, videoTrackId);
+
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+}
+
+/**
+ * @tc.name: Muxer_SetColorBoxInfo_002
+ * @tc.desc: Muxer mp4 colorBox info(h264)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetColorBoxInfo_002, TestSize.Level0)
+{
+    int32_t audioTrackId = -1;
+    int32_t videoTrackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetColorBoxInfo_002.mp4");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    // 添加音频轨
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 44100); // 44100 sample rate
+    audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 2); // 2 channels
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
+    audioParams->PutLongValue(OH_MD_KEY_BITRATE, 199000); // 199000 bit rate
+    audioParams->PutIntValue("audio_samples_per_frame", 1024); // 1024 frame size
+    audioParams->PutIntValue(OH_MD_KEY_PROFILE, AAC_PROFILE_LC);
+    audioParams->PutIntValue(OH_MD_KEY_AAC_IS_ADTS, 0);
+    ASSERT_EQ(avmuxer_->AddTrack(audioTrackId, audioParams), 0);
+
+    // 添加视频轨
+    std::shared_ptr<FormatMock> videoParams = FormatMockFactory::CreateFormat();
+    videoParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    videoParams->PutIntValue(OH_MD_KEY_WIDTH, TEST_WIDTH);
+    videoParams->PutIntValue(OH_MD_KEY_HEIGHT, TEST_HEIGHT);
+
+    videoParams->PutIntValue(OH_MD_KEY_COLOR_PRIMARIES, COLOR_PRIMARY_BT2020); // primary
+    videoParams->PutIntValue(OH_MD_KEY_TRANSFER_CHARACTERISTICS, TRANSFER_CHARACTERISTIC_UNSPECIFIED); // transfer
+    videoParams->PutIntValue(OH_MD_KEY_MATRIX_COEFFICIENTS, MATRIX_COEFFICIENT_BT2020_NCL); // matrix
+    videoParams->PutIntValue(OH_MD_KEY_RANGE_FLAG, 0); // range
+    videoParams->PutIntValue(OH_MD_KEY_VIDEO_IS_HDR_VIVID, 1);
+    ASSERT_EQ(avmuxer_->AddTrack(videoTrackId, videoParams), 0);
+
+    // 添加metadata
+    std::shared_ptr<FormatMock> metaData = FormatMockFactory::CreateFormat();
+    metaData->PutStringValue(Tag::MEDIA_CREATION_TIME, "2025-08-14T00:01:02.000000Z");
+    EXPECT_EQ(avmuxer_->SetFormat(metaData), 0);
+
+    // start
+    ASSERT_EQ(avmuxer_->Start(), 0);
+
+    // audio write sample
+    std::string inputFilePath = "/data/test/media/aac_44100_2.dat";
+    TrackWriteSample(inputFilePath, audioTrackId);
+
+    // video write sample
+    TrackWriteSample(INPUT_FILE_PATH, videoTrackId);
+
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+}
+
+/**
+ * @tc.name: Muxer_SetColorBoxInfo_004
+ * @tc.desc: Muxer mp4 colorBox info(error value)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetColorBoxInfo_004, TestSize.Level0)
+{
+    int32_t videoTrackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetColorBoxInfo_004.mp4");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    // 添加视频轨
+    std::shared_ptr<FormatMock> videoParams = FormatMockFactory::CreateFormat();
+    videoParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
+    videoParams->PutIntValue(OH_MD_KEY_WIDTH, TEST_WIDTH);
+    videoParams->PutIntValue(OH_MD_KEY_HEIGHT, TEST_HEIGHT);
+
+    EXPECT_EQ(videoParams->PutIntValue(OH_MD_KEY_COLOR_PRIMARIES, ABNORMAL_COLOR_VALUE), true); // primary
+    EXPECT_NE(avmuxer_->AddTrack(videoTrackId, videoParams), 0);
+    EXPECT_EQ(videoParams->PutIntValue(OH_MD_KEY_COLOR_PRIMARIES, ABNORMAL_COLOR_VALUE_1), true); // primary
+    EXPECT_NE(avmuxer_->AddTrack(videoTrackId, videoParams), 0);
+    EXPECT_EQ(videoParams->PutIntValue(OH_MD_KEY_COLOR_PRIMARIES, COLOR_PRIMARY_BT2020), true); // primary
+    EXPECT_EQ(avmuxer_->AddTrack(videoTrackId, videoParams), 0);
+    EXPECT_EQ(videoParams->PutIntValue(OH_MD_KEY_TRANSFER_CHARACTERISTICS, ABNORMAL_COLOR_VALUE), true); // transfer
+    EXPECT_NE(avmuxer_->AddTrack(videoTrackId, videoParams), 0);
+    EXPECT_EQ(videoParams->PutIntValue(OH_MD_KEY_TRANSFER_CHARACTERISTICS, ABNORMAL_COLOR_VALUE_1), true); // transfer
+    EXPECT_NE(avmuxer_->AddTrack(videoTrackId, videoParams), 0);
+    EXPECT_EQ(videoParams->PutIntValue(OH_MD_KEY_TRANSFER_CHARACTERISTICS, TRANSFER_CHARACTERISTIC_UNSPECIFIED), true);
+    EXPECT_EQ(avmuxer_->AddTrack(videoTrackId, videoParams), 0);
+    EXPECT_EQ(videoParams->PutIntValue(OH_MD_KEY_MATRIX_COEFFICIENTS, ABNORMAL_COLOR_VALUE), true); // matrix
+    EXPECT_NE(avmuxer_->AddTrack(videoTrackId, videoParams), 0);
+    EXPECT_EQ(videoParams->PutIntValue(OH_MD_KEY_MATRIX_COEFFICIENTS, ABNORMAL_COLOR_VALUE_1), true); // matrix
+    EXPECT_NE(avmuxer_->AddTrack(videoTrackId, videoParams), 0);
+    EXPECT_EQ(videoParams->PutIntValue(OH_MD_KEY_MATRIX_COEFFICIENTS, MATRIX_COEFFICIENT_BT2020_NCL), true); // matrix
+    EXPECT_EQ(avmuxer_->AddTrack(videoTrackId, videoParams), 0);
+    EXPECT_EQ(videoParams->PutIntValue(OH_MD_KEY_RANGE_FLAG, ABNORMAL_COLOR_VALUE), true); // range
+    EXPECT_EQ(avmuxer_->AddTrack(videoTrackId, videoParams), 0);
+    EXPECT_EQ(videoParams->PutIntValue(OH_MD_KEY_RANGE_FLAG, ABNORMAL_COLOR_VALUE_1), true); // range
+    EXPECT_EQ(avmuxer_->AddTrack(videoTrackId, videoParams), 0);
+    EXPECT_EQ(videoParams->PutIntValue(OH_MD_KEY_RANGE_FLAG, 1), true); // range
+    EXPECT_EQ(avmuxer_->AddTrack(videoTrackId, videoParams), 0);
+    EXPECT_EQ(videoParams->PutIntValue(OH_MD_KEY_RANGE_FLAG, 0), true); // range
+    EXPECT_EQ(avmuxer_->AddTrack(videoTrackId, videoParams), 0);
+
+    // start
+    ASSERT_EQ(avmuxer_->Start(), 0);
+
+    // video write sample
+    TrackWriteSample(LOGINFO_INPUT_FILE_PATH, videoTrackId);
+
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+}
+
+/**
+ * @tc.name: Muxer_SetColorBoxInfo_005
+ * @tc.desc: Muxer mp4 colorBox info(include demuxer)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetColorBoxInfo_005, TestSize.Level0)
+{
+    int32_t videoTrackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetColorBoxInfo_005.mp4");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    // 添加视频轨
+    std::shared_ptr<FormatMock> videoParams = FormatMockFactory::CreateFormat();
+    videoParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
+    videoParams->PutIntValue(OH_MD_KEY_WIDTH, TEST_WIDTH);
+    videoParams->PutIntValue(OH_MD_KEY_HEIGHT, TEST_HEIGHT);
+
+    videoParams->PutIntValue(OH_MD_KEY_COLOR_PRIMARIES, COLOR_PRIMARY_BT2020); // primary
+    videoParams->PutIntValue(OH_MD_KEY_TRANSFER_CHARACTERISTICS, TRANSFER_CHARACTERISTIC_UNSPECIFIED); // transfer
+    videoParams->PutIntValue(OH_MD_KEY_MATRIX_COEFFICIENTS, MATRIX_COEFFICIENT_BT2020_NCL); // matrix
+    videoParams->PutIntValue(OH_MD_KEY_RANGE_FLAG, 0); // range
+    videoParams->PutIntValue(OH_MD_KEY_VIDEO_IS_HDR_VIVID, 1);
+    ASSERT_EQ(avmuxer_->AddTrack(videoTrackId, videoParams), 0);
+
+    // start
+    ASSERT_EQ(avmuxer_->Start(), 0);
+
+    // video write sample
+    TrackWriteSample(LOGINFO_INPUT_FILE_PATH, videoTrackId);
+
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+
+    struct stat fileStatus {};
+    ASSERT_EQ(stat(outputFile.c_str(), &fileStatus), 0);
+    int64_t fileSize = static_cast<int64_t>(fileStatus.st_size);
+    OH_AVSource *source = OH_AVSource_CreateWithFD(fd_, 0, fileSize);
+    OH_AVFormat *format = OH_AVSource_GetTrackFormat(source, videoTrackId);
+    ASSERT_NE(format, nullptr);
+    int32_t primaries = ABNORMAL_COLOR_VALUE_1;
+    int32_t transfer = ABNORMAL_COLOR_VALUE_1;
+    int32_t matrix = ABNORMAL_COLOR_VALUE_1;
+    int32_t range = ABNORMAL_COLOR_VALUE_1;
+    EXPECT_EQ(OH_AVFormat_GetIntValue(format, OH_MD_KEY_COLOR_PRIMARIES, &primaries), true);
+    EXPECT_EQ(OH_AVFormat_GetIntValue(format, OH_MD_KEY_TRANSFER_CHARACTERISTICS, &transfer), true);
+    EXPECT_EQ(OH_AVFormat_GetIntValue(format, OH_MD_KEY_MATRIX_COEFFICIENTS, &matrix), true);
+    EXPECT_EQ(OH_AVFormat_GetIntValue(format, OH_MD_KEY_RANGE_FLAG, &range), true);
+    ASSERT_EQ(primaries, COLOR_PRIMARY_BT2020);
+    ASSERT_EQ(transfer, TRANSFER_CHARACTERISTIC_UNSPECIFIED);
+    ASSERT_EQ(matrix, MATRIX_COEFFICIENT_BT2020_NCL);
+    ASSERT_EQ(range, 0);
+    OH_AVSource_Destroy(source);
 }
 #endif // AVMUXER_UNITTEST_CAPI
 
