@@ -49,10 +49,11 @@ struct M3U8Fragment {
     double duration_;
     int64_t sequence_;
     bool discont_ {false};
-    uint8_t key_[16] { 0 };
-    int iv_[16] {0};
+    uint8_t iv_[16] {0};
+    uint8_t key_[16] {0};
     uint32_t offset_ {0};
     uint32_t length_ {0};
+    uint64_t keyIndex_ {0};
 };
 
 struct M3U8Info {
@@ -97,8 +98,8 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     std::string playList_;
     void PrepareDecrptionKeys(std::shared_ptr<Tag>& tag);
     void ParseKey(const std::shared_ptr<AttributesTag> &tag);
-    void DownloadKey();
-    uint32_t SaveData(uint8_t *data, uint32_t len, bool notBlock);
+    void DownloadKey(bool isKey);
+    uint32_t SaveData(uint8_t *data, uint32_t len, bool notBlock, uint64_t keyIndex);
     static void OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader> &,
         std::shared_ptr<DownloadRequest> &request);
     bool SetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
@@ -122,7 +123,7 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     size_t keyLen_ { 0 };
     std::shared_ptr<Downloader> downloader_;
     std::shared_ptr<DownloadRequest> downloadRequest_;
-    DataSaveFunc dataSave_;
+    KeyDataSaveFunc keyDataSave_;
     StatusCallbackFunc statusCallback_;
     PlayListChangeCallback *callback_ { nullptr };
     bool startedDownloadStatus_ { false };
@@ -151,6 +152,11 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     Mutex sleepMutex_ {};
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
+    uint64_t keyIndex_ {0};
+    std::unordered_map<uint64_t, KeyInfo> keyInfoMap_;
+    uint64_t sessionKeyIndex_ {0};
+    std::atomic<int> keyAllDownload_ {0};
+    bool isSessionKey_ {false};
 };
 
 struct M3U8Media {
@@ -248,6 +254,8 @@ struct M3U8MasterPlaylist {
     std::list<std::shared_ptr<M3U8Media>> audioList_;
     std::list<std::shared_ptr<M3U8Media>> subtitlesList_;
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
+    uint64_t sessionKeyIndex_ {0};
+    std::unordered_map<uint64_t, KeyInfo> sessionKeyInfoMap_;
 };
 }
 }

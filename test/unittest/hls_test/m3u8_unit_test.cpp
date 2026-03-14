@@ -243,12 +243,15 @@ HWTEST_F(M3u8UnitTest, SAVE_DATA_VALID_DATA, TestSize.Level1)
     M3U8 m3u8("http://example.com/test.m3u8", "");
     uint8_t data[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
     uint32_t len = 10;
+    m3u8.isSessionKey_ = true;
+    m3u8.keyAllDownload_ = 1;
 
-    bool result = m3u8.SaveData(data, len, false);
+    bool result = m3u8.SaveData(data, len, false, 0);
 
     EXPECT_TRUE(result);
     EXPECT_EQ(m3u8.keyLen_, len);
     EXPECT_TRUE(m3u8.isDecryptKeyReady_);
+    EXPECT_EQ(m3u8.keyAllDownload_, 1);
 }
 
 HWTEST_F(M3u8UnitTest, SAVE_DATA_INVALID_DATA, TestSize.Level1)
@@ -257,7 +260,7 @@ HWTEST_F(M3u8UnitTest, SAVE_DATA_INVALID_DATA, TestSize.Level1)
     uint8_t data[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
     uint32_t len = 10;
 
-    bool result = m3u8.SaveData(data, len, false);
+    bool result = m3u8.SaveData(data, len, false, 0);
 
     EXPECT_TRUE(result);
     EXPECT_EQ(m3u8.keyLen_, len);
@@ -270,7 +273,7 @@ HWTEST_F(M3u8UnitTest, SAVE_DATA_EXVEEDS_MAX_LOOP, TestSize.Level1)
     uint8_t data[MAX_LOOP + 1];
     uint32_t len = MAX_LOOP + 1;
 
-    bool result = m3u8.SaveData(data, len, false);
+    bool result = m3u8.SaveData(data, len, false, 0);
 
     EXPECT_FALSE(result);
     EXPECT_EQ(m3u8.keyLen_, 0);
@@ -445,7 +448,7 @@ HWTEST_F(M3u8UnitTest, ParseKeyTest, TestSize.Level1)
 HWTEST_F(M3u8UnitTest, SaveDataTest, TestSize.Level1)
 {
     uint8_t data[] = {0x01, 0x02, 0x03, 0x04};
-    bool result = testM3u8->SaveData(data, sizeof(data), false);
+    bool result = testM3u8->SaveData(data, sizeof(data), false, 0);
     ASSERT_TRUE(result);
 
     // 验证 key_ 成员变量中的数据是否与传入的数据一致
@@ -503,8 +506,6 @@ HWTEST_F(M3u8UnitTest, UPDATE_MEDIA_PLAYLIST_001, TestSize.Level1)
 {
     std::shared_ptr<M3U8MasterPlaylist> master = std::make_shared<M3U8MasterPlaylist>("", "https://example.com/key");
     master->StartParsing();
-    master->isDecryptAble_ = true;
-    master->keyLen_ = 1;
     master->UpdateMediaPlaylist();
     EXPECT_EQ(master->isSimple_, true);
 }
@@ -614,7 +615,8 @@ HWTEST_F(M3u8UnitTest, SetInterruptState_001, TestSize.Level1)
     auto m3u8 = std::make_shared<M3U8>(testUri, "");
     m3u8->uri_ = url;
     m3u8->keyUri_ = std::make_shared<std::string>(url);
-    m3u8->DownloadKey();
+    m3u8->keyIndex_ = 1;
+    m3u8->DownloadKey(true);
     m3u8->DownloadMap(url, 0, 0);
     EXPECT_NE(m3u8->downloadHeaderRequest_, nullptr);
     EXPECT_NE(m3u8->downloadRequest_, nullptr);
@@ -647,5 +649,31 @@ HWTEST_F(M3u8UnitTest, IsVideoStream_001, TestSize.Level1)
     EXPECT_EQ(master->IsVideoStream(codecs), false);
     codecs = "  ,  .  ,  .  ";
     EXPECT_EQ(master->IsVideoStream(codecs), false);
+}
+
+HWTEST_F(M3u8UnitTest, ADDFILE_001, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    M3U8Fragment fragment("http://example.com", 10.0, 1, false);
+    m3u8.minFragDuration_ = 1;
+    m3u8.isDecryptAble_ = true;
+    m3u8.method_ = std::make_shared<std::string>("NONE");
+    m3u8.keyIndex_ = 1;
+    m3u8.AddFile(std::make_shared<M3U8Fragment>(fragment), 5);
+    EXPECT_EQ(m3u8.files_.front()->keyIndex_, 0);
+}
+
+HWTEST_F(M3u8UnitTest, PREPAREDECRYPTIONKEYS_001, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "TestPlaylist");
+    std::string testPlaylist = "#EXTM3U\n#EXT-X-KEY:METHOD=AES-128,URI=\"abcdata:textplain;base\"";
+    EXPECT_TRUE(m3u8.Update(testPlaylist, true));
+}
+
+HWTEST_F(M3u8UnitTest, PREPAREDECRYPTIONKEYS_002, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "TestPlaylist");
+    std::string testPlaylist = "#EXTM3U\n#EXT-X-KEY:METHOD=AES-128,URI=\"data:text/plain;base\"";
+    EXPECT_TRUE(m3u8.Update(testPlaylist, true));
 }
 }

@@ -1442,8 +1442,12 @@
             <option name="push" value="video_res/test_hls/enc.key -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_hls/out000.ts -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_hls/out001.ts -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/out002.ts -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_hls/testHLSEncode.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testHLSEncode_01.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testHLSEncode_02.m3u8 -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_hls/testHLSEncode_session_key.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testHLSEncode_session_key_01.m3u8 -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192.m3u8-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_live_endlist.m3u8-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192init.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>

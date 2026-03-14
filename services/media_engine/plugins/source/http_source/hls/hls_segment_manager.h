@@ -21,6 +21,7 @@
 #include <thread>
 #include <unistd.h>
 #include <utility>
+#include <unordered_map>
 #include "playlist_downloader.h"
 #include "av_common.h"
 #include "download/downloader.h"
@@ -99,7 +100,7 @@ public:
     bool GetStartedStatus();
     std::vector<uint32_t> GetBitRates();
     bool SelectBitRate(uint32_t bitRate);
-    void OnSourceKeyChange(const uint8_t *key, size_t keyLen, const uint8_t *iv) override;
+    void OnSourceKeyChange(const std::unordered_map<uint64_t, KeyInfo> keyInfoMap, bool isKey) override;
     void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) override;
     void SetIsTriggerAutoMode(bool isAuto);
     void SetReadBlockingFlag(bool isReadBlockingAllowed);
@@ -225,6 +226,7 @@ private:
     void SetDownloadRequest(std::shared_ptr<DownloadRequest> downloadRequest);
     std::shared_ptr<DownloadRequest> GetDownloadRequest();
     bool CheckCanReadOneSeconds(uint64_t wantReadLength);
+    void UpdateAesDecryptor(const PlayInfo& playInfo);
     bool IsAllDownloadFinish();
     void PlayListChanged(const std::vector<PlayInfo>& playList);
     bool IsDownloadLastSplice();
@@ -376,6 +378,10 @@ private:
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
     InfoIndexMap InfoIndexMap_;
     std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
+    std::unordered_map<uint64_t, std::shared_ptr<AesDecryptor>> keyAesDecryptorsMap_;
+    std::unordered_map<uint64_t, std::shared_ptr<AesDecryptor>> sessionKeyAesDecryptorsMap_;
+    std::shared_ptr<AesDecryptor> initAesDecryptor_;
+    bool needAesDecryptor_ {false};
 };
 }
 }

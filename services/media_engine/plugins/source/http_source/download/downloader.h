@@ -73,6 +73,7 @@ struct HeaderInfo {
 // uint8_t* : the data should save
 // uint32_t : length
 using DataSaveFunc = std::function<uint32_t(uint8_t*, uint32_t, bool)>;
+using KeyDataSaveFunc = std::function<uint32_t(uint8_t*, uint32_t, bool, uint64_t)>;
 class Downloader;
 class DownloadRequest;
 using StatusCallbackFunc = std::function<void(DownloadStatus, std::shared_ptr<Downloader>&,
@@ -95,6 +96,8 @@ public:
                     bool requestWholeFile = false);
     DownloadRequest(double duration, DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo requestInfo,
                     bool requestWholeFile = false);
+    DownloadRequest(uint64_t keyIndex, KeyDataSaveFunc keySaveData, StatusCallbackFunc statusCallback,
+        RequestInfo requestInfo, bool requestWholeFile = false);
     ~DownloadRequest();
     size_t GetFileContentLength() const;
     size_t GetFileContentLengthNoWait() const;
@@ -158,6 +161,7 @@ private:
     std::string url_;
     double duration_ {0.0};
     DataSaveFunc saveData_;
+    KeyDataSaveFunc keySaveData_;
     StatusCallbackFunc statusCallback_;
     DownloadDoneCbFunc downloadDoneCallback_;
     mutable std::atomic<bool> isHeaderUpdating_ {false};
@@ -191,6 +195,7 @@ private:
     bool isAuthRequest_ {false};
     RequestProtocolType protocolType_ {RequestProtocolType::HTTP};
     int32_t bitRateToRequestSize_ {0};
+    uint64_t keyIndex_ {0};
 };
 
 class Downloader : public std::enable_shared_from_this<Downloader> {
