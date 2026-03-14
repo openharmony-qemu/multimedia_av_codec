@@ -425,9 +425,10 @@ void HlsPlayListDownloader::UpdateMasterInfo(bool isPreParse)
     if (currentSubtitles_ && currentSubtitles_->m3u8_) {
         m3u8 = currentSubtitles_->m3u8_;
     }
-    if (master_ == nullptr || m3u8 == nullptr) {
-        return;
-    }
+
+    FALSE_RETURN_MSG(master_ != nullptr, "master_ is nullptr");
+    FALSE_RETURN_MSG(m3u8 != nullptr, "m3u8 is nullptr");
+
     if (isPreParseFinished_.load() && master_->bLive_ && !m3u8->IsLive()) {
         MEDIA_LOG_I("Live stream ended and transitioning to Vod");
         updateTask_->Stop();
