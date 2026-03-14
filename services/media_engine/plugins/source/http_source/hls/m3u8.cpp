@@ -274,8 +274,6 @@ void M3U8::PrepareDecrptionKeys(std::shared_ptr<Tag>& tag)
     isDecryptAble_ = true;
     isDecryptKeyReady_ = false;
     ParseKey(std::static_pointer_cast<AttributesTag>(tag));
-    if ((keyUri_ != nullptr) && (keyUri_->length() > DRM_PSSH_TITLE_LEN) &&
-        (keyUri_->substr(0, DRM_PSSH_TITLE_LEN) == DRM_PSSH_TITLE)) {
     auto keyTag = std::static_pointer_cast<AttributesTag>(tag);
     auto keyUri = keyTag ? keyTag->GetAttributeByName("URI") : nullptr;
     FALSE_RETURN(keyUri != nullptr);
