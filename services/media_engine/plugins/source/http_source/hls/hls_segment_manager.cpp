@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <utility>
 #include <cstdint>
+#include <unordered_map>
 #include "hls_segment_manager.h"
 #include "media_downloader.h"
 #include "hls_playlist_downloader.h"
@@ -218,7 +219,7 @@ void HlsSegmentManager::Init()
     waterLineAbove_ = PLAY_WATER_LINE;
     steadyClock_.Reset();
     loopInterruptClock_.Reset();
-    aesDecryptor_ = std::make_shared<AesDecryptor>();
+    aesDecryptor_ = std::make_shared<AesDecryptor>(AesDecryptorType::NONE_AES, 0);
     aesDecryptor_->Init();
 }
 
@@ -237,6 +238,8 @@ HlsSegmentManager::~HlsSegmentManager()
     if (playlistDownloader_ != nullptr) {
         playlistDownloader_ = nullptr;
     }
+    keyAesDecryptorsMap_.clear();
+    sessionKeyAesDecryptorsMap_.clear();
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsSegmentManager dtor out, type: %{public}d, "
         "writeTsIndex: " PUBLIC_LOG_U32 " writeOffset: " PUBLIC_LOG_U64, FAKE_POINTER(this), type_,
         writeTsIndex_, writeOffset_);
@@ -311,11 +314,44 @@ void HlsSegmentManager::PutRequestIntoDownloader(const PlayInfo& playInfo)
             downloadRequest->SetRangePos(playInfo.offset_, playInfo.offset_ + playInfo.length_ - 1); // 1
         }
     }
+    UpdateAesDecryptor(playInfo);
     downloadRequest->SetRequestProtocolType(RequestProtocolType::HLS);
     downloadRequest->SetDownloadDoneCb(downloadDoneCallback);
     downloadRequest->SetStartTimePos(startTimePos);
     downloader_->Download(downloadRequest, -1); // -1
     downloader_->Start();
+}
+
+void HlsSegmentManager::UpdateAesDecryptor(const PlayInfo& playInfo)
+{
+    FALSE_RETURN(needAesDecryptor_);
+    auto findAesDecryptor = [](uint64_t index,
+        std::unordered_map<uint64_t, std::shared_ptr<AesDecryptor>>& aesDecryptorsMap) -> bool {
+        return index > 0 && aesDecryptorsMap.find(index) != aesDecryptorsMap.end() &&
+        aesDecryptorsMap[index] != nullptr;
+    };
+    if (playInfo.keyIndex_ == UINT64_MAX) { // #ext-x-key:method=NONE
+        if (aesDecryptor_->type_ != AesDecryptorType::NONE_AES) {
+            aesDecryptor_ = initAesDecryptor_;
+        }
+        return;
+    }
+    if (findAesDecryptor(playInfo.keyIndex_, keyAesDecryptorsMap_)) { // #ext-x-key
+        if (aesDecryptor_->type_ != AesDecryptorType::KEY_AES || aesDecryptor_->id_ != playInfo.keyIndex_) {
+            aesDecryptor_ = keyAesDecryptorsMap_[playInfo.keyIndex_];
+        }
+        NZERO_LOG(memcpy_s(aesDecryptor_->iv_, AES_BLOCK_LEN, aesDecryptor_->initIv_, AES_BLOCK_LEN));
+        return;
+    }
+    if (findAesDecryptor(playInfo.sessionKeyIndex_, sessionKeyAesDecryptorsMap_)) { // #ext-x-session-key
+        if (aesDecryptor_->type_ != AesDecryptorType::SESSIONKEY_AES ||
+            aesDecryptor_->id_ != playInfo.sessionKeyIndex_) {
+            aesDecryptor_ = sessionKeyAesDecryptorsMap_[playInfo.sessionKeyIndex_];
+        }
+        NZERO_LOG(memcpy_s(aesDecryptor_->iv_, AES_BLOCK_LEN, aesDecryptor_->initIv_, AES_BLOCK_LEN));
+        return;
+    }
+    aesDecryptor_ = initAesDecryptor_; // no-key
 }
 
 void HlsSegmentManager::SaveHttpHeader(const std::map<std::string, std::string>& httpHeader)
@@ -904,7 +940,7 @@ void HlsSegmentManager::PlaylistBackup(const PlayInfo& fragment)
 void HlsSegmentManager::OnPlayListChanged(const std::vector<PlayInfo>& playList)
 {
     MEDIA_LOG_I("HLS OnPlayListChanged in: %{public}zu, type: %{public}d", playList.size(), type_);
-    PlayListChanged(playList);
+    HandlePlayListChanged(playList);
     if (!isDownloadStarted_ && !playList_->Empty() && !isInterruptNeeded_.load()) {
         auto playInfo = playList_->Pop();
         std::string url = playInfo.url_;
@@ -920,7 +956,7 @@ void HlsSegmentManager::OnPlayListChanged(const std::vector<PlayInfo>& playList)
         "type: %{public}d", playList_->Size(), backPlayList_.size(), writeTsIndex_, type_);
 }
 
-void HlsSegmentManager::PlayListChanged(const std::vector<PlayInfo>& playList)
+void HlsSegmentManager::HandlePlayListChanged(const std::vector<PlayInfo>& playList)
 {
     ResetPlaylistCapacity(static_cast<size_t>(playList.size()));
     int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
@@ -1285,11 +1321,18 @@ void HlsSegmentManager::DownloadReport()
     }
 }
 
-void HlsSegmentManager::OnSourceKeyChange(const uint8_t *key, size_t keyLen, const uint8_t *iv)
+void HlsSegmentManager::OnSourceKeyChange(const std::unordered_map<uint64_t, KeyInfo> keyInfoMap, bool isKey)
 {
-    if (aesDecryptor_ != nullptr) {
-        aesDecryptor_->OnSourceKeyChange(key, keyLen, iv);
+    std::unordered_map<uint64_t, std::shared_ptr<AesDecryptor>>& aesDecryptorsMap_ = isKey ? keyAesDecryptorsMap_ :
+        sessionKeyAesDecryptorsMap_;
+    AesDecryptorType type = isKey ? AesDecryptorType::KEY_AES : AesDecryptorType::SESSIONKEY_AES;
+    for (auto iter : keyInfoMap) {
+        std::shared_ptr<AesDecryptor> tempAesDecryptor = std::make_shared<AesDecryptor>(type, iter.first);
+        tempAesDecryptor->OnSourceKeyChange(iter.second.key_, iter.second.keyLen_, iter.second.iv_);
+        aesDecryptorsMap_[iter.first] = tempAesDecryptor;
     }
+    initAesDecryptor_ = std::make_shared<AesDecryptor>(AesDecryptorType::NONE_AES, 0);
+    needAesDecryptor_ = true;
 }
 
 void HlsSegmentManager::OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos)
@@ -1393,6 +1436,8 @@ int64_t HlsSegmentManager::RequestNewTs(uint64_t seekTime, SeekMode mode, double
     playInfo.duration_ = item.duration_;
     playInfo.offset_ = item.offset_;
     playInfo.length_ = item.length_;
+    playInfo.keyIndex_ = item.keyIndex_;
+    playInfo.sessionKeyIndex_ = item.sessionKeyIndex_;
     if (mode == SeekMode::SEEK_PREVIOUS_SYNC) {
         double lastTotalDuration = totalDuration - hstTime;
         if (static_cast<uint64_t>(lastTotalDuration) <= seekTime) {
@@ -1484,6 +1529,8 @@ int64_t HlsSegmentManager::RequestNewTsForRead(const PlayInfo& item)
     playInfo.duration_ = item.duration_;
     playInfo.offset_ = item.offset_;
     playInfo.length_ = item.length_;
+    playInfo.keyIndex_ = item.keyIndex_;
+    playInfo.sessionKeyIndex_ = item.sessionKeyIndex_;
     playInfo.startTimePos_ = 0;
     PushPlayInfo(playInfo);
     return 0;
@@ -2275,9 +2322,6 @@ void HlsSegmentManager::Clone(const std::shared_ptr<HlsSegmentManager> &other)
     totalBufferSize_ = other->totalBufferSize_;
     callback_ = other->callback_;
     statusCallback_ = other->statusCallback_;
-    if (other->aesDecryptor_ != nullptr) {
-        OnSourceKeyChange(other->aesDecryptor_->key_, other->aesDecryptor_->keyLen_, other->aesDecryptor_->iv_);
-    }
     isAutoSelectBitrate_ = other->isAutoSelectBitrate_;
     seekTime_ = other->seekTime_;
     downloadErrorState_ = other->downloadErrorState_;

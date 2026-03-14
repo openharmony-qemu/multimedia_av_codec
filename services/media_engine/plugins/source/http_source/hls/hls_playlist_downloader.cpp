@@ -221,24 +221,19 @@ void HlsPlayListDownloader::KeyChange(void)
         return;
     }
 
-    if (currentVariant_->m3u8_->isDecryptAble_) {
+    if (currentVariant_->m3u8_ && !(currentVariant_->m3u8_->keyInfoMap_.empty())) {
         int32_t times = 0;
-        while (!currentVariant_->m3u8_->isDecryptKeyReady_ && !isInterruptNeeded_) {
+        while (currentVariant_->m3u8_->keyAllDownload_ > 0 && !isInterruptNeeded_) {
             Task::SleepInTask(5); // sleep 5ms
             if ((times++) >= RETRY_TIMES) {
                 MEDIA_LOG_E("Download decrypkey failed.");
                 break;
             }
         }
-        callback->OnSourceKeyChange(currentVariant_->m3u8_->key_, currentVariant_->m3u8_->keyLen_,
-            currentVariant_->m3u8_->iv_);
-    } else {
-        MEDIA_LOG_E("Decrypkey is not needed.");
-        if (master_ != nullptr) {
-            callback->OnSourceKeyChange(master_->key_, master_->keyLen_, master_->iv_);
-        } else {
-            callback->OnSourceKeyChange(nullptr, 0, nullptr);
-        }
+        callback->OnSourceKeyChange(currentVariant_->m3u8_->keyInfoMap_, true);
+    }
+    if (master_ && !(master_->sessionKeyInfoMap_.empty())) {
+        callback->OnSourceKeyChange(master_->sessionKeyInfoMap_, false);
     }
 }
 
@@ -252,13 +247,16 @@ void HlsPlayListDownloader::NotifyListChange()
         return;
     }
     auto files = currentVariant_->m3u8_->files_;
+    uint64_t sessionKeyIndex = currentVariant_->m3u8_->sessionKeyIndex_;
     {
         std::lock_guard<std::mutex> lock(mediaMutex_);
         if (currentSubtitles_ && currentSubtitles_->m3u8_) {
             files = currentSubtitles_->m3u8_->files_;
+            sessionKeyIndex = currentSubtitles_->m3u8_->sessionKeyIndex_;
         }
         if (currentAudio_ && currentAudio_->m3u8_) {
             files = currentAudio_->m3u8_->files_;
+            sessionKeyIndex = currentAudio_->m3u8_->sessionKeyIndex_;
         }
     }
     auto playList = std::vector<PlayInfo>();
@@ -273,7 +271,7 @@ void HlsPlayListDownloader::NotifyListChange()
             break;
         }
         PlayInfo palyInfo;
-        CopyFragmentInfo(palyInfo, file);
+        CopyFragmentInfo(palyInfo, file, sessionKeyIndex);
         playList.push_back(palyInfo);
     }
     if (!currentVariant_->m3u8_->localDrmInfos_.empty()) {
@@ -292,8 +290,10 @@ void HlsPlayListDownloader::NotifyListChange()
     }
 }
 
-void HlsPlayListDownloader::CopyFragmentInfo(PlayInfo& playInfo, std::shared_ptr<M3U8Fragment> file)
+void HlsPlayListDownloader::CopyFragmentInfo(PlayInfo& playInfo, std::shared_ptr<M3U8Fragment> file,
+    uint64_t sessionKeyIndex)
 {
+    FALSE_RETURN_MSG(file != nullptr, "file is nullptr");
     playInfo.duration_ = file->duration_;
     playInfo.offset_ = file->offset_;
     playInfo.length_ = file->length_;
@@ -305,6 +305,8 @@ void HlsPlayListDownloader::CopyFragmentInfo(PlayInfo& playInfo, std::shared_ptr
         playInfo.url_ = file->uri_;
     }
     playInfo.streamId_ = GetCurStreamId();
+    playInfo.keyIndex_ = file->keyIndex_;
+    playInfo.sessionKeyIndex_ = sessionKeyIndex;
 }
 
 void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPreParse)

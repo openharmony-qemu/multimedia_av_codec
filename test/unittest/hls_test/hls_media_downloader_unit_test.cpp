@@ -32,6 +32,10 @@ const std::map<std::string, std::string> httpHeader = {
     {"Referer", "DEF"},
 };
 const std::string TEST_URI_PATH = "http://127.0.0.1:46666/";
+const std::string M3U8_PATH_1 = "test_hls/testHLSEncode.m3u8";
+const std::string M3U8_PATH_2 = "test_hls/testHLSEncode_session_key.m3u8";
+const std::string M3U8_PATH_3 = "test_hls/testHLSEncode_session_key_01.m3u8";
+const std::string M3U8_PATH_4 = "test_hls/testHLSEncode_01.m3u8";
 int g_eventStatus = 0;
 const std::map<PluginEventType, int> POST_ALL_EVENT_STATUS = {
     {PluginEventType::CLIENT_ERROR, 1},
@@ -1643,5 +1647,33 @@ HWTEST_F(HlsMediaDownloaderTest, LIVE_ENDLIST_MEDIA_PLAYLIST, TestSize.Level1)
 
         CloseHlsDetachAudioVideo(std::move(downloader));
     }
+}
+
+HWTEST_F(HlsMediaDownloaderTest, OPEN_HLS_ENCODE_001, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideo(M3U8_PATH_1);
+    EXPECT_EQ(downloader->videoSegManager_->keyAesDecryptorsMap_.size(), 1);
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderTest, OPEN_HLS_ENCODE_002, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideo(M3U8_PATH_2);
+    EXPECT_EQ(downloader->videoSegManager_->sessionKeyAesDecryptorsMap_.size(), 1);
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderTest, OPEN_HLS_ENCODE_003, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideo(M3U8_PATH_3);
+    EXPECT_EQ(downloader->videoSegManager_->sessionKeyAesDecryptorsMap_.size(), 1);
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderTest, OPEN_HLS_ENCODE_004, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideo(M3U8_PATH_4);
+    EXPECT_EQ(downloader->videoSegManager_->keyAesDecryptorsMap_.size(), 1);
+    downloader = nullptr;
 }
 }

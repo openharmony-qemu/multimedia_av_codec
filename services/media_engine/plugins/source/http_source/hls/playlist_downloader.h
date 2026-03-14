@@ -38,12 +38,19 @@ struct PlayInfo {
     std::string rangeUrl_;
     uint32_t streamId_ {0};
     uint64_t sumDuration_ {0};
+    uint64_t keyIndex_ {0};
+    uint64_t sessionKeyIndex_ {0};
+};
+struct KeyInfo {
+    uint8_t iv_[16] {0};
+    uint8_t key_[16] {0};
+    size_t keyLen_ {0};
 };
 struct PlayListChangeCallback {
     virtual ~PlayListChangeCallback() = default;
     virtual void OnMasterReady(bool needAudioManager, bool needSubtitlesManager) = 0;
     virtual void OnPlayListChanged(const std::vector<PlayInfo>& playList) = 0;
-    virtual void OnSourceKeyChange(const uint8_t* key, size_t keyLen, const uint8_t* iv) = 0;
+    virtual void OnSourceKeyChange(const std::unordered_map<uint64_t, KeyInfo> keyInfoMap, bool isKey) = 0;
     virtual void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) = 0;
 };
 enum class HlsSegmentType : int {
