@@ -1054,6 +1054,8 @@ int32_t VDecAPI11Sample::SyncOutputFuncEos(OH_AVCodecBufferAttr attr, uint32_t i
 
 void VDecAPI11Sample::ProcessOutputData(OH_AVBuffer *buffer, uint32_t index, int32_t size)
 {
+    GetVideoSupportedPixelFormats();
+    GetFormatKey();
     if (!sfOutput) {
         if (size >= ((defaultWidth * defaultHeight * THREE) >> 1)) {
             uint8_t *cropBuffer = new uint8_t[size];
@@ -1422,4 +1424,32 @@ int32_t VDecAPI11Sample::PushDataFor263(uint32_t index, OH_AVBuffer *buffer)
         cout << "read bufferSize abnormal. buffersize = " << bufferSize << endl;
     }
     return SendData(bufferSize, index, buffer);
+}
+
+void VDecAPI11Sample::GetVideoSupportedPixelFormats()
+{
+    if (!isGetVideoSupportedPixelFormats || isGetVideoSupportedPixelFormatsNum_ != 0) {
+        return;
+    }
+    OH_AVCapability *capability = OH_AVCodec_GetCapability(avcodecMimeType, isEncoder);
+    OH_AVCapability_GetVideoSupportedNativeBufferFormats(capability, &pixelFormats, &pixelFormatNum);
+    std::cout << "pixelFormats:" << *pixelFormats << "pixelFormatNum:" << pixelFormatNum << std::endl;
+    for (int i = 0; i < pixelFormatNum; i++) {
+        std::cout << "pixFormats[" << i << "]: " << *(pixelFormats + i) << std::endl;
+    }
+    isGetVideoSupportedPixelFormatsNum_++;
+}
+
+void VDecAPI11Sample::GetFormatKey()
+{
+    if (!isGetFormatKey || isGetFormatKeyNum_ != 0) {
+        return;
+    }
+    OH_AVFormat *format = OH_AVFormat_Create();
+    OH_VideoDecoder_Configure(vdec_, format);
+    format = OH_VideoDecoder_GetOutputDescription(vdec_);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_NATIVE_BUFFER_FORMAT, &firstCallBackKey_);
+    OH_AVFormat_Destroy(format);
+    std::cout << "firstCallBackKey_:" << firstCallBackKey_ << std::endl;
+    isGetFormatKeyNum_++;
 }

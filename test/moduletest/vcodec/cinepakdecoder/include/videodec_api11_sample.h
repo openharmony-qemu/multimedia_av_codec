@@ -37,6 +37,7 @@
 #include "iconsumer_surface.h"
 #include "native_avdemuxer.h"
 #include "native_avsource.h"
+#include "native_avcapability.h"
 #include "gtest/gtest.h"
 
 namespace OHOS {
@@ -113,6 +114,8 @@ public:
     int32_t StartVideoDecoderFor263();
     int32_t PushDataFor263(uint32_t index, OH_AVBuffer *buffer);
     void InputFor263FuncTest();
+    void GetVideoSupportedPixelFormats();
+    void GetFormatKey();
 
     const char *inputDir = "";
     const char *outputDir = "/data/test/media/CinepakDecTest.yuv";
@@ -140,6 +143,12 @@ public:
     bool sleepOnFPS = false;
     bool autoSwitchSurface = false;
     int32_t enbleSyncMode = 0;
+    bool isGetVideoSupportedPixelFormats = false;
+    bool isGetFormatKey = false;
+    const char *avcodecMimeType = nullptr;
+    bool isEncoder = true;
+    const OH_NativeBuffer_Format *pixelFormats = nullptr;
+    uint32_t pixelFormatNum = 0;
 private:
     uint32_t originalWidth_ = 0;
     uint32_t originalHeight_ = 0;
@@ -210,6 +219,9 @@ private:
     OHNativeWindow *nativeWindow[2] = {};
     sptr<Surface> cs[2] = {};
     sptr<Surface> ps[2] = {};
+    int isGetVideoSupportedPixelFormatsNum_ = 0;
+    int isGetFormatKeyNum_ = 0;
+    int firstCallBackKey_ = 0;
 };
 } // namespace Media
 } // namespace OHOS
