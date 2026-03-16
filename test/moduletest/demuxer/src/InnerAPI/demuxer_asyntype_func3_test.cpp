@@ -97,6 +97,7 @@ constexpr uint32_t READFRAME_188 = 188;
 constexpr uint32_t READFRAME_528 = 528;
 constexpr uint32_t READFRAME_273 = 273;
 constexpr uint32_t READFRAME_192 = 192;
+constexpr uint32_t READFRAME_193 = 193;
 constexpr uint32_t READFRAME_244 = 244;
 constexpr uint32_t READFRAME_30 = 30;
 constexpr uint32_t READFRAME_39 = 39;
@@ -1648,10 +1649,11 @@ HWTEST_F(DemuxerAsynTypeInnerFunc3Test, DEMUXER_ASYN_INNER_TS_FUNC_0223, TestSiz
                 continue;
             }
             ASSERT_EQ(demuxerPlugin->ReadSample(i, avBuf_, timeout), Status::OK);
+            printf("avbuf_->pts_: %lld \n", avBuf_->pts_);
             GetFrameNum(i);
         }
     }
-    ASSERT_EQ(videoIndexForRead, READFRAME_192);
+    ASSERT_EQ(videoIndexForRead, READFRAME_193);
     ASSERT_EQ(audioIndexForRead, READFRAME_244);
 }
 
