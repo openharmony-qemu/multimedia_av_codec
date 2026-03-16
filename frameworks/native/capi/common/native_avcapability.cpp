@@ -62,7 +62,8 @@ OH_AVCapability **OH_AVCodec_GetCapabilityList(OH_AVCodecType codecType, uint32_
     static OH_AVCapability* objArray[MAX_CAPNUM] = {nullptr};
     static AppEventReporter appEventReporter = AppEventReporter();
     ApiInvokeRecorder apiInvokeRecorder("OH_AVCodec_GetCapabilityList", appEventReporter);
-    CHECK_AND_RETURN_RET_LOG(codecType >= 0,nullptr, "Invalid codec type: %{public}d", codecType);
+    CHECK_AND_RETURN_RET_LOG(codecType >= AVCODEC_TYPE_VIDEO_ENCODER && codecType <= AVCODEC_TYPE_AUDIO_DECODER,
+        nullptr, "Invalid codec type: %{public}d", codecType);
     CHECK_AND_RETURN_RET_LOG(count != nullptr, nullptr, "Get capability list failed: count is nullptr");
     std::shared_ptr<AVCodecList> codeclist = AVCodecListFactory::CreateAVCodecList();
     CHECK_AND_RETURN_RET_LOG(codeclist != nullptr, nullptr, "Get capability list failed: CreateAVCodecList failed");
@@ -141,7 +142,7 @@ const char *OH_AVCapability_GetMimeType(OH_AVCapability *capability)
     return mimeType.data();
 }
 
-bool OH_AVCapability_CheckMineType(OH_AVCapability *capability, const char *mimeType)
+bool OH_AVCapability_CheckMimeType(OH_AVCapability *capability, const char *mimeType)
 {
     CHECK_AND_RETURN_RET_LOG(capability != nullptr && capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY,
         false, "Invalid parameter");

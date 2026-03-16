@@ -1243,15 +1243,15 @@ HWTEST_F(CapsUnitTest, AVCaps_FeatureCheck_002, TestSize.Level1)
  * @tc.desc: AVCaps feature check, valid input
  * @tc.type: FUNC
  * @tc.require:
- * /
+ */
 HWTEST_F(CapsUnitTest, AVCaps_FeatureCheck_003, TestSize.Level1)
 {
-    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCodecType::AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
     EXPECT_NE(cap, nullptr);
     const char *targetMimeType = OH_AVCapability_GetMimeType(cap);
-    EXPECT_STREQ(targetMimeType, OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
-    EXPECT_TRUE(OH_AVCapability_CheckMimeType(cap, OH_AVCODEC_MIMETYPE_VIDEO_HEVC));
-    EXPECT_FALSE(OH_AVCapability_CheckMimeType(cap, OH_AVCODEC_MIMETYPE_VIDEO_AVC));
+    EXPECT_STREQ(targetMimeType, OH_AVCodecType::AVCODEC_MIMETYPE_VIDEO_HEVC);
+    EXPECT_TRUE(OH_AVCapability_CheckMimeType(cap, OH_AVCodecType::AVCODEC_MIMETYPE_VIDEO_HEVC));
+    EXPECT_FALSE(OH_AVCapability_CheckMimeType(cap, OH_AVCodecType::AVCODEC_MIMETYPE_VIDEO_AVC));
 }
 
 /**
@@ -1262,16 +1262,16 @@ HWTEST_F(CapsUnitTest, AVCaps_FeatureCheck_003, TestSize.Level1)
  */
 HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_001, TestSize.Level1)
 {
-    OH_AVCodecType codecType[] = {
-        OH_AVCodecType::OH_AVCODEC_TYPE_VIDEO_DECODER,
-        OH_AVCodecType::OH_AVCODEC_TYPE_VIDEO_ENCODER,
-        OH_AVCodecType::OH_AVCODEC_TYPE_AUDIO_ENCODER,
-        OH_AVCodecType::OH_AVCODEC_TYPE_AUDIO_DECODER,
+    OH_AVCodecType codecTypes[] = {
+        OH_AVCodecType::AVCODEC_TYPE_VIDEO_ENCODER,
+        OH_AVCodecType::AVCODEC_TYPE_VIDEO_DECODER,
+        OH_AVCodecType::AVCODEC_TYPE_AUDIO_ENCODER,
+        OH_AVCodecType::AVCODEC_TYPE_AUDIO_DECODER,
     };
 
     for (auto codecType : codecTypes) {
         uint32_t count = 0;
-        OH_AVcapability **capList = OH_AVCodec_GetCapabilityList(codecType, &count);
+        OH_AVCapability **capList = OH_AVCodec_GetCapabilityList(codecType, &count);
 
         ASSERT_NE(capList, nullptr);
         ASSERT_GT(count, 0);
@@ -1297,16 +1297,16 @@ HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_001, TestSize.Level1)
  */
 HWTEST_F(CapsUnitTest, AVCaps_IsSecure_001, TestSize.Level1)
 {
-    OH_AVCodecType codecType[] = {
-        OH_AVCodecType::OH_AVCODEC_TYPE_VIDEO_DECODER,
-        OH_AVCodecType::OH_AVCODEC_TYPE_VIDEO_ENCODER,
-        OH_AVCodecType::OH_AVCODEC_TYPE_AUDIO_ENCODER,
-        OH_AVCodecType::OH_AVCODEC_TYPE_AUDIO_DECODER,
+    OH_AVCodecType codecTypes[] = {
+        OH_AVCodecType::AVCODEC_TYPE_VIDEO_ENCODER,
+        OH_AVCodecType::AVCODEC_TYPE_VIDEO_DECODER,
+        OH_AVCodecType::AVCODEC_TYPE_AUDIO_ENCODER,
+        OH_AVCodecType::AVCODEC_TYPE_AUDIO_DECODER,
     };
 
     for (auto codecType : codecTypes) {
         uint32_t count = 0;
-        OH_AVcapability **capList = OH_AVCodec_GetCapabilityList(codecType, &count);
+        OH_AVCapability **capList = OH_AVCodec_GetCapabilityList(codecType, &count);
 
         ASSERT_NE(capList, nullptr);
         ASSERT_GT(count, 0);
@@ -1318,7 +1318,7 @@ HWTEST_F(CapsUnitTest, AVCaps_IsSecure_001, TestSize.Level1)
             bool secureAgain = OH_AVCapability_IsSecure(capList[i]);
             EXPECT_EQ(secure, secureAgain);
         }
-
+    }
 }
 
 /** 
