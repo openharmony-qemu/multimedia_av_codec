@@ -25,7 +25,6 @@ const static std::string M3U8_PATH_MASTER = "test_cbr/test_cbr.m3u8";
 const static std::string M3U8_PATH_MEDIA = "test_cbr/720_1M/video_720.m3u8";
 const static std::string M3U8_PATH_LIVE = "test_hls/testHlsLive.m3u8";
 const static std::string M3U8_PATH_XMAP = "test_hls/testXMap.m3u8";
-const static std::string M3U8_PATH_ENCODE = "test_hls/testHLSEncode_session_key.m3u8";
 const static std::map<std::string, std::string> httpHeader = {
     {"User-Agent", "userAgent"},
     {"Referer", "DEF"},
