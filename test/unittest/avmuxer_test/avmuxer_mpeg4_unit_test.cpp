@@ -3536,6 +3536,8 @@ HWTEST_F(Mpeg4MuxerUnitTest, Muxer_SetColorBoxInfo_002, TestSize.Level0)
 HWTEST_F(Mpeg4MuxerUnitTest, Muxer_SetColorBoxInfo_003, TestSize.Level0)
 {
     int32_t videoTrackId = -1;
+    int32_t videoTrackId1 = -1;
+    int32_t videoTrackId2 = -1;
     std::string outputFile = TEST_FILE_PATH + std::string("Mpeg4_SetColorBoxInfo_003.mp4");
     OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
 
@@ -3563,7 +3565,7 @@ HWTEST_F(Mpeg4MuxerUnitTest, Muxer_SetColorBoxInfo_003, TestSize.Level0)
     videoParams->PutIntValue(OH_MD_KEY_MATRIX_COEFFICIENTS, MATRIX_COEFFICIENT_BT2020_NCL); // matrix
     videoParams->PutIntValue(OH_MD_KEY_RANGE_FLAG, 1); // range
     videoParams->PutIntValue(OH_MD_KEY_VIDEO_IS_HDR_VIVID, 1);
-    ASSERT_EQ(avmuxer_->AddTrack(videoTrackId, videoParams), 0);
+    ASSERT_EQ(avmuxer_->AddTrack(videoTrackId1, videoParams), 0);
 
     videoParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
     videoParams->PutIntValue(OH_MD_KEY_WIDTH, TEST_WIDTH);
@@ -3573,13 +3575,13 @@ HWTEST_F(Mpeg4MuxerUnitTest, Muxer_SetColorBoxInfo_003, TestSize.Level0)
     videoParams->PutIntValue(OH_MD_KEY_MATRIX_COEFFICIENTS, ABNORMAL_COLOR_VALUE); // matrix
     videoParams->PutIntValue(OH_MD_KEY_RANGE_FLAG, ABNORMAL_COLOR_VALUE); // range
     videoParams->PutIntValue(OH_MD_KEY_VIDEO_IS_HDR_VIVID, 1);
-    ASSERT_NE(avmuxer_->AddTrack(videoTrackId, videoParams), 0);
+    ASSERT_NE(avmuxer_->AddTrack(videoTrackId2, videoParams), 0);
 
     // start
     ASSERT_EQ(avmuxer_->Start(), 0);
 
     // video write sample
-    TrackWriteSample(LOGINFO_INPUT_FILE_PATH, videoTrackId);
+    TrackWriteSample(LOGINFO_INPUT_FILE_PATH, videoTrackId1);
 
     ASSERT_EQ(avmuxer_->Stop(), 0);
 }
