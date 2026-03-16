@@ -29,18 +29,13 @@ public:
                                   const AVCodecCategory &category) = 0;
     virtual int32_t GetCapabilityList(std::vector<std::shared_ptr<CapabilityData>> &outList)
     {
-        void(outList);
+        (void)outList;
         return 0;
     }
-     virtual std::vector<std::shared_ptr<CapabilityData>> GetCapabilityList(int32_t codecType)
-    {
-        void(codecType);
-        return {};
-    }  
     virtual int32_t GetCapabilityAt(CapabilityData &capabilityData, int32_t index)
     {
-        void(capabilityData);
-        void(index);
+        (void)capabilityData;
+        (void)index;
         return 0;
     }
     virtual bool IsServiceDied()

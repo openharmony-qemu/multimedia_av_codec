@@ -83,7 +83,7 @@ typedef enum OH_AVCodecType {
     AVCODEC_TYPE_VIDEO_ENCODER = 0,
     AVCODEC_TYPE_VIDEO_DECODER,
     AVCODEC_TYPE_AUDIO_ENCODER,
-    AVCODEC_TYPE_AUDIO_DECODER,
+    AVCODEC_TYPE_AUDIO_DECODER
 } OH_AVCodecType;
 
 /**
@@ -139,7 +139,7 @@ OH_AVCapability *OH_AVCodec_GetCapabilityByCategory(const char *mime, bool isEnc
  * returns NULL if no matching codecs are found
  * @since 24
 */
-OH_AVCapability **OH_AVCodec_GetCapabilityList(const char *mime, bool isEncoder, OH_AVCodecType codecType, uint32_t *count);
+OH_AVCapability **OH_AVCodec_GetCapabilityList(OH_AVCodecType codecType, uint32_t *count);
 
 /**
  * @brief Check if the capability instance is describing a hardware codec.
@@ -170,21 +170,21 @@ bool OH_AVCapability_IsSecure(OH_AVCapability *capability);
  */
 const char *OH_AVCapability_GetName(OH_AVCapability *capability);
 
-/** 
+/**
  * @brief Get the codec mime type.
- * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * 
  * @param capability Codec capability pointer
- * @return Returns the MIME type string
+ * @return Returns codec mime type string
  * @since 24
  */
 const char *OH_AVCapability_GetMimeType(OH_AVCapability *capability);
 
-/** 
+/**
  * @brief Check the codec mime type.
  * 
  * @param capability Codec capability pointer
- * @param mimeType target mime type string to cheack
- * @return Returns true if the time type matches, false otherwise
+ * @param mimeType target mime type string to check
+ * @return Returns true if the mime type matches, false otherwise
  * @since 24
  */
 bool OH_AVCapability_CheckMimeType(OH_AVCapability *capability, const char *mimeType);

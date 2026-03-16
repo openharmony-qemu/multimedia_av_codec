@@ -130,7 +130,7 @@ CapabilityData *AVCodecListImpl::GetCapability(const std::string &mime, const bo
 std::vector<std::shared_ptr<CapabilityData>> AVCodecListImpl::GetCapabilityList(int32_t codecType)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    // Serch capbility List from cache
+    // Search capbility List from cache
     if (!capabilityListCache_.empty()) {
         std::vector<std::shared_ptr<CapabilityData>> resultList;
         resultList.reserve(capabilityListCache_.size());
@@ -142,14 +142,14 @@ std::vector<std::shared_ptr<CapabilityData>> AVCodecListImpl::GetCapabilityList(
                 resultList.push_back(sharedCap);
             }
         }
-        AVCODC_LOGD("GetCapabilityList: Cache hit, filtered count: %{public}zu", resultList.size());
+        AVCODEC_LOGD("GetCapabilityList: Cache hit, filtered count: %{public}zu", resultList.size());
         return resultList;
     }
 
     // Get capbility List from service
     std::vector<std::shared_ptr<CapabilityData>> remoteCapList;
     int32_t ret = codecListService_->GetCapabilityList(remoteCapList);
-    if (ret != AVS_ERR_OK || remoteCapList.empty()) {
+    if (ret != AVCS_ERR_OK || remoteCapList.empty()) {
         AVCODEC_LOGE("GetCapabilityList failed from service, ret: %{public}d", ret);
         return std::vector<std::shared_ptr<CapabilityData>>();
     }

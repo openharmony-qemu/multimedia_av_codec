@@ -358,7 +358,8 @@ int32_t CodecListCore::GetCapabilityAt(CapabilityData &capabilityData, int32_t i
         AVCODEC_LOGE("index is out of range, index: %{public}d, capa size: %{public}zu", index, capsDataArray.size());
         return AVCS_ERR_NOT_ENOUGH_DATA;
     }
-    capabilityData = capsDataArray[index];
+    const CapabilityData &targetCap = capsDataArray[index];
+    capabilityData = targetCap;
     return AVCS_ERR_OK;
 }
 

@@ -93,14 +93,10 @@ int32_t CodecListClient::GetCapabilityList(std::vector<std::shared_ptr<Capabilit
     int32_t index = 0;
     const int32_t MAX_LIMIT = 500;
     while (index < MAX_LIMIT) {
-        Cap
-        int32_t ret = codecListProxy_->GetCapabilityAt(capabilityData, index);
-        if (ret != AVCS_ERR_OK) {
-            auto capabilityData = std::make_shared<CapabilityData>();
-            int32_t ret = codecListProxy_->GetCapabilityAt(*capabilityData, index);
-            CHECK_AND_RERURN_RET_LOG(ret == AVCS_ERR_OK || ret == AVCS_ERR_NOT_ENOUGH_DATA, AVCS_ERR_UNKNOWN,
-                "Get capability at index %{public}d failed: ret %{public}d", index, ret);
-        }
+        auto capabilityData = std::make_shared<CapabilityData>();
+        int32_t ret = codecListProxy_->GetCapabilityAt(*capabilityData, index);
+        CHECK_AND_RERURN_RET_LOG(ret == AVCS_ERR_OK || ret == AVCS_ERR_NOT_ENOUGH_DATA, AVCS_ERR_UNKNOWN,
+            "Get capability at index %{public}d failed: ret %{public}d", index, ret);
         if (ret == AVCS_ERR_NOT_ENOUGH_DATA) {
             AVCODEC_LOGD("Get capability list: no more data at index %{public}d, stop fetching", index);
             break;

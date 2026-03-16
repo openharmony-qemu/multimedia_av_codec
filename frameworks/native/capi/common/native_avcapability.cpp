@@ -27,7 +27,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "NativeAVCapability"};
 constexpr uint32_t MAX_LENGTH = 255;
-constexpr uint32_t MAX_CAPNUM = 100;
+constexpr uint32_t MAX_CAPNUM = 1000;
 }
 using namespace OHOS::MediaAVCodec;
 
@@ -57,8 +57,6 @@ OH_AVCapability *OH_AVCodec_GetCapability(const char *mime, bool isEncoder)
     return obj;
 }
 
-
-// ccm
 OH_AVCapability **OH_AVCodec_GetCapabilityList(OH_AVCodecType codecType, uint32_t *count)
 {
     static OH_AVCapability* objArray[MAX_CAPNUM] = {nullptr};
@@ -68,16 +66,16 @@ OH_AVCapability **OH_AVCodec_GetCapabilityList(OH_AVCodecType codecType, uint32_
     CHECK_AND_RETURN_RET_LOG(count != nullptr, nullptr, "Get capability list failed: count is nullptr");
     std::shared_ptr<AVCodecList> codeclist = AVCodecListFactory::CreateAVCodecList();
     CHECK_AND_RETURN_RET_LOG(codeclist != nullptr, nullptr, "Get capability list failed: CreateAVCodecList failed");
-    std::vector<std::shared_ptr<CapabilityData>> capabilitDatayList = codeclist->GetCapabilityList(codecType);
-    if (capabilitDatayList.empty()) {
+    std::vector<std::shared_ptr<CapabilityData>> capabilityDataList = codeclist->GetCapabilityList(codecType);
+    if (capabilityDataList.empty()) {
         *count = 0;
-        AVCODE_LOGD("OH_AVCodec_GetCapabilityList: no capability found for codec type %{public}d", codecType);
+        AVCODEC_LOGD("OH_AVCodec_GetCapabilityList: no capability found for codec type %{public}d", codecType);
         return nullptr;
     }
-    uint32_t validcount = 0;
-    uint32_t size = capabilitDatayList.size();
-    for (uint32_t i = 0; i < size && validcount < MAX_CAPNUM; ++i) {
-        CapabilityData *capabilityData = capabilitDatayList[i].get();
+    uint32_t validCount = 0;
+    uint32_t size = capabilityDataList.size();
+    for (uint32_t i = 0; i < size && validCount < MAX_CAPNUM; ++i) {
+        CapabilityData *capabilityData = capabilityDataList[i].get();
         uint32_t sizeOfCap = sizeof(OH_AVCapability);
         const std::string &name = capabilityData->codecName;
         CHECK_AND_RETURN_RET_LOG(!name.empty(), nullptr, "Get capability list failed: cannot find matched capability");
@@ -86,11 +84,11 @@ OH_AVCapability **OH_AVCodec_GetCapabilityList(OH_AVCodecType codecType, uint32_
         OH_AVCapability *obj = static_cast<OH_AVCapability *>(addr);
         obj->magic_ = AVMagic::AVCODEC_MAGIC_AVCAPABILITY;
         obj->capabilityData_ = capabilityData;
-        objArray[validcount++] = obj;
+        objArray[validCount++] = obj;
     }
-    *count = validcount;
+    *count = validCount;
     AVCODEC_LOGD("OH_AVCodec_GetCapabilityList successful, found %{public}u capabilities for codec type %{public}d",
-        validcount, codecType);
+        validCount, codecType);
     return objArray;
 }
 

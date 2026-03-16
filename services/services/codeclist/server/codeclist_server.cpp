@@ -83,7 +83,7 @@ int32_t CodecListServer::GetCapabilityAt(CapabilityData &capabilityData, int32_t
     EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::BASIC_QUERY_CAP_INFO);
     if (ret != AVCS_ERR_OK) {
         Media::Meta eventMeta;
-        eventMeta.SetData(EventInfoExtentedKey::ERROR_CODEC.data(), ret);
+        eventMeta.SetData(EventInfoExtentedKey::ERROR_CODE.data(), ret);
         eventMeta.SetData("request_index", index);
         if (ret == AVCS_ERR_NOT_ENOUGH_DATA) {
             return ret;
@@ -92,5 +92,6 @@ int32_t CodecListServer::GetCapabilityAt(CapabilityData &capabilityData, int32_t
         }
     }
     return ret;
+}
 } // namespace MediaAVCodec
 } // namespace OHOS
