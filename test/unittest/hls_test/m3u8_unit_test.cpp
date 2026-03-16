@@ -676,4 +676,13 @@ HWTEST_F(M3u8UnitTest, PREPAREDECRYPTIONKEYS_002, TestSize.Level1)
     std::string testPlaylist = "#EXTM3U\n#EXT-X-KEY:METHOD=AES-128,URI=\"data:text/plain;base\"";
     EXPECT_TRUE(m3u8.Update(testPlaylist, true));
 }
+
+HWTEST_F(M3u8UnitTest, WAIT_KEY_DOWNLOAD_001, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "TestPlaylist");
+    m3u8.keyAllDownload_ = 1;
+    m3u8.isInterruptNeeded_ = false;
+    m3u8.WaitKeyDownload();
+    EXPECT_EQ(m3u8.keyAllDownload_, 1);
+}
 }
