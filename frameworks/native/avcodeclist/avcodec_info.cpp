@@ -671,6 +671,13 @@ bool AVCodecInfo::IsHardwareAccelerated()
     return data_->isVendor;
 }
 
+bool AVCodecInfo::IsSecure()
+{
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, false, "data is null");
+    return data_->isSecure;
+}
+
+
 int32_t AVCodecInfo::GetMaxSupportedInstances()
 {
     CHECK_AND_RETURN_RET_LOG(data_ != nullptr, 0, "data is null");

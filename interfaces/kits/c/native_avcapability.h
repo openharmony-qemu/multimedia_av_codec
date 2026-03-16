@@ -75,6 +75,18 @@ typedef enum OH_AVCodecCategory {
 } OH_AVCodecCategory;
 
 /**
+ * @brief The codec type
+ * 
+ * @since 24
+ */
+typedef enum OH_AVCodecType {
+    AVCODEC_TYPE_VIDEO_ENCODER = 0,
+    AVCODEC_TYPE_VIDEO_DECODER,
+    AVCODEC_TYPE_AUDIO_ENCODER,
+    AVCODEC_TYPE_AUDIO_DECODER,
+} OH_AVCodecType;
+
+/**
  * @brief The enum of optional features that can be used in specific codec seenarios.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
@@ -117,6 +129,18 @@ OH_AVCapability *OH_AVCodec_GetCapability(const char *mime, bool isEncoder);
  */
 OH_AVCapability *OH_AVCodec_GetCapabilityByCategory(const char *mime, bool isEncoder, OH_AVCodecCategory category);
 
+/** 
+ * @brief Get a codec capability list with the specified codec type. By specifying the codec type, 
+ * get all matching codec capabilities.
+ * 
+ * @paeam codecType The codec type
+ * @param count The pointer to store the number of matched codec capabilities in the codec capability list
+ * @return Returns a list of capability instances if matching codecs are found,
+ * returns NULL if no matching codecs are found
+ * @since 24
+*/
+OH_AVCapability **OH_AVCodec_GetCapabilityList(const char *mime, bool isEncoder, OH_AVCodecType codecType, uint32_t *count);
+
 /**
  * @brief Check if the capability instance is describing a hardware codec.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
@@ -128,6 +152,16 @@ OH_AVCapability *OH_AVCodec_GetCapabilityByCategory(const char *mime, bool isEnc
 bool OH_AVCapability_IsHardware(OH_AVCapability *capability);
 
 /**
+ * @brief Check if the capability instance is describing a secure codec.
+ * 
+ * @param capability Codec capability pointer
+ * @return Returns true if the capability instance is describing a secure codec,
+ * false if the capability instance is describing a non-secure codec
+ * @since 24
+ */
+bool OH_AVCapability_IsSecure(OH_AVCapability *capability);
+
+/**
  * @brief Get the codec name.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @param capability Codec capability pointer
@@ -135,6 +169,25 @@ bool OH_AVCapability_IsHardware(OH_AVCapability *capability);
  * @since 10
  */
 const char *OH_AVCapability_GetName(OH_AVCapability *capability);
+
+/** 
+ * @brief Get the codec mime type.
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @param capability Codec capability pointer
+ * @return Returns the MIME type string
+ * @since 24
+ */
+const char *OH_AVCapability_GetMimeType(OH_AVCapability *capability);
+
+/** 
+ * @brief Check the codec mime type.
+ * 
+ * @param capability Codec capability pointer
+ * @param mimeType target mime type string to cheack
+ * @return Returns true if the time type matches, false otherwise
+ * @since 24
+ */
+bool OH_AVCapability_CheckMimeType(OH_AVCapability *capability, const char *mimeType);
 
 /**
  * @brief Get the supported max instance number of the codec.

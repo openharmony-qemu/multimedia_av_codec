@@ -29,6 +29,7 @@ bool CodecListParcel::Marshalling(MessageParcel &parcel, CapabilityData &capabil
     (void)parcel.WriteString(capabilityData.codecName);
     (void)parcel.WriteString(capabilityData.mimeType);
     (void)parcel.WriteBool(capabilityData.isVendor);
+    (void)parcel.WriteBool(capabilityData.isSecure);
     (void)parcel.WriteInt32(capabilityData.codecType);
     (void)parcel.WriteInt32(capabilityData.maxInstance);
     (void)parcel.WriteInt32(capabilityData.bitrate.minVal);
@@ -129,6 +130,7 @@ bool CodecListParcel::Unmarshalling(MessageParcel &parcel, CapabilityData &capab
     capabilityData.codecName = parcel.ReadString();
     capabilityData.mimeType = parcel.ReadString();
     capabilityData.isVendor = parcel.ReadBool();
+    capabilityData.isSecure = parcel.ReadBool();
     capabilityData.codecType = parcel.ReadInt32();
     capabilityData.maxInstance = parcel.ReadInt32();
     capabilityData.bitrate.minVal = parcel.ReadInt32();

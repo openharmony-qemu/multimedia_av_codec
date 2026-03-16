@@ -1239,6 +1239,100 @@ HWTEST_F(CapsUnitTest, AVCaps_FeatureCheck_002, TestSize.Level1)
 }
 
 /**
+ * @tc.name: AVCaps_FeatureCheck_003
+ * @tc.desc: AVCaps feature check, valid input
+ * @tc.type: FUNC
+ * @tc.require:
+ * /
+HWTEST_F(CapsUnitTest, AVCaps_FeatureCheck_003, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
+    EXPECT_NE(cap, nullptr);
+    const char *targetMimeType = OH_AVCapability_GetMimeType(cap);
+    EXPECT_STREQ(targetMimeType, OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
+    EXPECT_TRUE(OH_AVCapability_CheckMimeType(cap, OH_AVCODEC_MIMETYPE_VIDEO_HEVC));
+    EXPECT_FALSE(OH_AVCapability_CheckMimeType(cap, OH_AVCODEC_MIMETYPE_VIDEO_AVC));
+}
+
+/**
+ * @tc.name: AVCaps_GetCapabilityList_001
+ * @tc.desc: AVCaps GetCapabilityList with valid codec type
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_001, TestSize.Level1)
+{
+    OH_AVCodecType codecType[] = {
+        OH_AVCodecType::OH_AVCODEC_TYPE_VIDEO_DECODER,
+        OH_AVCodecType::OH_AVCODEC_TYPE_VIDEO_ENCODER,
+        OH_AVCodecType::OH_AVCODEC_TYPE_AUDIO_ENCODER,
+        OH_AVCodecType::OH_AVCODEC_TYPE_AUDIO_DECODER,
+    };
+
+    for (auto codecType : codecTypes) {
+        uint32_t count = 0;
+        OH_AVcapability **capList = OH_AVCodec_GetCapabilityList(codecType, &count);
+
+        ASSERT_NE(capList, nullptr);
+        ASSERT_GT(count, 0);
+
+        for (uint32_t i = 0; i < count; i++) {
+            ASSERT_NE(capList[i], nullptr);
+            const char *codecName = OH_AVCapability_GetName(capList[i]);
+            const char *mimeType = OH_AVCapability_GetMimeType(capList[i]);
+            ASSERT_NE(codecName, nullptr);
+            ASSERT_NE(mimeType, nullptr);
+            EXPECT_GT(strlen(codecName), 0U);
+            EXPECT_GT(strlen(mimeType), 0U);
+            EXPECT_TRUE(OH_AVCapability_CheckMimeType(capList[i], mimeType));
+        }
+    }
+}
+
+/**
+ * @tc.name: AVCaps_IsSecure_001
+ * @tc.desc: Check IsSecure with valid capability, and call twice to check the result is same
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_IsSecure_001, TestSize.Level1)
+{
+    OH_AVCodecType codecType[] = {
+        OH_AVCodecType::OH_AVCODEC_TYPE_VIDEO_DECODER,
+        OH_AVCodecType::OH_AVCODEC_TYPE_VIDEO_ENCODER,
+        OH_AVCodecType::OH_AVCODEC_TYPE_AUDIO_ENCODER,
+        OH_AVCodecType::OH_AVCODEC_TYPE_AUDIO_DECODER,
+    };
+
+    for (auto codecType : codecTypes) {
+        uint32_t count = 0;
+        OH_AVcapability **capList = OH_AVCodec_GetCapabilityList(codecType, &count);
+
+        ASSERT_NE(capList, nullptr);
+        ASSERT_GT(count, 0);
+
+        for (uint32_t i = 0; i < count; i++) {
+            ASSERT_NE(capList[i], nullptr);
+
+            bool secure = OH_AVCapability_IsSecure(capList[i]);
+            bool secureAgain = OH_AVCapability_IsSecure(capList[i]);
+            EXPECT_EQ(secure, secureAgain);
+        }
+
+}
+
+/** 
+ * @tc.name: AVCaps_IsSecure_002
+ * @tc.desc: Check IsSecure with nullptr
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_IsSecure_002, TestSize.Level1)
+{
+    EXPECT_FALSE(OH_AVCapability_IsSecure(nullptr));
+}
+
+/**
  * @tc.name: AVCaps_FeatureProperties_001
  * @tc.desc: AVCaps query feature with properties
  * @tc.type: FUNC

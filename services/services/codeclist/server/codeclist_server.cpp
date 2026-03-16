@@ -77,5 +77,20 @@ int32_t CodecListServer::GetCapability(CapabilityData &capabilityData, const std
     }
     return ret;
 }
+int32_t CodecListServer::GetCapabilityAt(CapabilityData &capabilityData, int32_t index)
+{
+    int32_t ret = codecListCore_->GetCapabilityAt(capabilityData, index);
+    EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::BASIC_QUERY_CAP_INFO);
+    if (ret != AVCS_ERR_OK) {
+        Media::Meta eventMeta;
+        eventMeta.SetData(EventInfoExtentedKey::ERROR_CODEC.data(), ret);
+        eventMeta.SetData("request_index", index);
+        if (ret == AVCS_ERR_NOT_ENOUGH_DATA) {
+            return ret;
+        } else {
+            EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, eventMeta);
+        }
+    }
+    return ret;
 } // namespace MediaAVCodec
 } // namespace OHOS

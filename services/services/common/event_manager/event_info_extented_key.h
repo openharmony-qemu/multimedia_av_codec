@@ -41,6 +41,7 @@ public:
     static constexpr std::string_view SPEED_DECODING_INFO_1_50X = "speed_decoding_info_1_50x";
     static constexpr std::string_view SPEED_DECODING_INFO_2_00X = "speed_decoding_info_2_00x";
     static constexpr std::string_view SPEED_DECODING_INFO_3_00X = "speed_decoding_info_3_00x";
+    static constexpr std::string_view ERROR_CODE = "error_code";
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

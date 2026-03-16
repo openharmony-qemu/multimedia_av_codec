@@ -33,6 +33,8 @@ namespace {
             "CodecListServiceStub DoFindEncoder" },
         { static_cast<uint32_t>(OHOS::MediaAVCodec::AVCodecListServiceInterfaceCode::GET_CAPABILITY),
             "CodecListServiceStub DoGetCapability" },
+        { static_cast<uint32_t>(OHOS::MediaAVCodec::AVCodecListServiceInterfaceCode::GET_CAPABILITY_AT),
+            "CodecListServiceStub DoGetCapabilityAt" },
         { static_cast<uint32_t>(OHOS::MediaAVCodec::AVCodecListServiceInterfaceCode::DESTROY),
             "CodecListServiceStub DoDestroyStub" },
     };
@@ -104,6 +106,9 @@ int CodecListServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Me
         case static_cast<uint32_t>(AVCodecListServiceInterfaceCode::DESTROY):
             ret = DoDestroyStub(data, reply);
             break;
+        case static_cast<uint32_t>(AVCodecListServiceInterfaceCode::GET_CAPABILITY_AT):
+            ret = DoGetCapabilityAt(data, reply);
+            break;
         default:
             AVCODEC_LOGW("CodecListServiceStub: no member func supporting, applying default process");
             return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
@@ -135,6 +140,14 @@ int32_t CodecListServiceStub::GetCapability(CapabilityData &capabilityData, cons
     return codecListServer_->GetCapability(capabilityData, mime, isEncoder, category);
 }
 
+int32_t CodecListServiceStub::GetCapabilityAt(CapabilityData &capabilityData, int32_t index)
+{
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(codecListServer_ != nullptr, AVCS_ERR_NO_MEMORY,
+                             "Get capability at failed: avcodeclist server is null");
+    return codecListServer_->GetCapabilityAt(capabilityData, index);
+}
+
 int32_t CodecListServiceStub::DoFindDecoder(MessageParcel &data, MessageParcel &reply)
 {
     Format format;
@@ -158,6 +171,19 @@ int32_t CodecListServiceStub::DoGetCapability(MessageParcel &data, MessageParcel
     AVCodecCategory category = static_cast<AVCodecCategory>(data.ReadInt32());
     CapabilityData capabilityData;
     (void)GetCapability(capabilityData, mime, isEncoder, category);
+    (void)CodecListParcel::Marshalling(reply, capabilityData);
+    return AVCS_ERR_OK;
+}
+
+int32_t CodecListServiceStub::DoGetCapabilityAt(MessageParcel &data, MessageParcel &reply)
+{
+    int32_t index = data.ReadInt32();
+    CapabilityData capabilityData;
+    int32_t ret = GetCapabilityAt(capabilityData, index);
+    // ERR OR END
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
     (void)CodecListParcel::Marshalling(reply, capabilityData);
     return AVCS_ERR_OK;
 }

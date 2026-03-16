@@ -37,6 +37,7 @@ public:
     std::string FindEncoder(const Media::Format &format) override;
     int32_t GetCapability(CapabilityData &capabilityData, const std::string &mime, const bool isEncoder,
                           const AVCodecCategory &category) override;
+    int32_t GetCapabilityAt(CapabilityData &capabilityData, int32_t index) override;
     int32_t DestroyStub() override;
 
 private:
@@ -45,6 +46,7 @@ private:
     int32_t DoFindDecoder(MessageParcel &data, MessageParcel &reply);
     int32_t DoFindEncoder(MessageParcel &data, MessageParcel &reply);
     int32_t DoGetCapability(MessageParcel &data, MessageParcel &reply);
+    int32_t DoGetCapabilityAt(MessageParcel &data, MessageParcel &reply);
     int32_t DoDestroyStub(MessageParcel &data, MessageParcel &reply);
     std::shared_ptr<ICodecListService> codecListServer_ = nullptr;
     std::shared_mutex mutex_;

@@ -22,6 +22,7 @@
 #include "hdf_base.h"
 #include "iservmgr_hdi.h"
 #include "hcodec_log.h"
+#include "hcodec_utils.h"
 #include "type_converter.h"
 #include "avcodec_info.h"
 #include "meta/meta.h"
@@ -187,6 +188,7 @@ CapabilityData HCodecList::HdiCapToUserCap(const CodecCompCapability &hdiCap)
     const CodecVideoPortCap& hdiVideoCap = hdiCap.port.video;
     CapabilityData userCap;
     userCap.codecName = hdiCap.compName;
+    userCap.isSecure = IsSecureMode(hdiCap.compName);
     userCap.codecType = TypeConverter::HdiCodecTypeToInnerCodecType(hdiCap.type).value_or(AVCODEC_TYPE_NONE);
     userCap.mimeType = TypeConverter::HdiRoleToMime(hdiCap.role);
     userCap.isVendor = true;
