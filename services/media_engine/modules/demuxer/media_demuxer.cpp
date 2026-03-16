@@ -17,6 +17,8 @@
 
 #include "media_demuxer.h"
 
+#include <cinttypes>
+
 #include <algorithm>
 #include <map>
 #include <memory>
@@ -1776,7 +1778,7 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
     Status ret;
     isSeekError_.store(false);
     if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
-        MEDIA_LOG_I("Source seek time: %{public}lld", seekTime);
+        MEDIA_LOG_I("Source seek time: %{public}" PRId64, seekTime);
         if (mode == SeekMode::SEEK_CLOSEST_INNER) {
             ScopedTimer timer("seek closest online", SEEKCLOSEST_ONLINE_WARNING_MS);
             ret = source_->SeekToTime(seekTime, SeekMode::SEEK_PREVIOUS_SYNC);

@@ -18,6 +18,8 @@
 #include "common/log.h"
 #include "sample_queue_controller.h"
 
+#include <cinttypes>
+
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_PLAYER, "SampleQueueController" };
 constexpr uint32_t S_TO_US = 1000 * 1000;
@@ -73,7 +75,7 @@ bool SampleQueueController::ShouldStartConsume(int32_t trackId, std::shared_ptr<
     DisableFirstBufferingDuration();
 
     if (!task->IsTaskRunning()) {
-        MEDIA_LOG_I("StartConsume, cacheDuration: %{public}llu, trackId: %{public}d", cacheDuration, trackId);
+        MEDIA_LOG_I("StartConsume, cacheDuration: %{public}" PRIu64 ", trackId: %{public}d", cacheDuration, trackId);
         task->Start();
         isFirstArrived_[trackId] = true;
     }
@@ -99,7 +101,7 @@ bool SampleQueueController::ShouldStopConsume(int32_t trackId, std::shared_ptr<S
     FALSE_RETURN_V_NOLOG((now - stopConsumeStartTime_[trackId]) >= MAX_SAMPLE_IDLE_TIME_MS, false);
 
     if (task->IsTaskRunning()) {
-        MEDIA_LOG_I("StopConsume, cacheDuration: %{public}llu, trackId: %{public}d", cacheDuration, trackId);
+        MEDIA_LOG_I("StopConsume, cacheDuration: %{public}" PRIu64 ", trackId: %{public}d", cacheDuration, trackId);
         task->Pause();
     }
     stopConsumeStartTime_[trackId] = 0;
@@ -117,7 +119,7 @@ bool SampleQueueController::ShouldStartProduce(int32_t trackId, std::shared_ptr<
         return false;
     }
     if (!task->IsTaskRunning()) {
-        MEDIA_LOG_I("StartProduce, cacheDuration: %{public}llu, trackId: %{public}d", cacheDuration, trackId);
+        MEDIA_LOG_I("StartProduce, cacheDuration: %{public}" PRIu64 ", trackId: %{public}d", cacheDuration, trackId);
         task->Start();
     }
     return true;
@@ -136,7 +138,7 @@ bool SampleQueueController::ShouldStopProduce(int32_t trackId, std::shared_ptr<S
     }
 
     if (task->IsTaskRunning()) {
-        MEDIA_LOG_I("StopProduce, cacheDuration: %{public}llu, trackId: %{public}d", cacheDuration, trackId);
+        MEDIA_LOG_I("StopProduce, cacheDuration: %{public}" PRIu64 ", trackId: %{public}d", cacheDuration, trackId);
         task->Pause();
     }
     return true;

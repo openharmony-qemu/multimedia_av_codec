@@ -22,6 +22,8 @@
 #include "scoped_timer.h"
 #include "avcodec_info.h"
 
+#include <cinttypes>
+
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "AudioSink" };
 constexpr int64_t MAX_BUFFER_DURATION_US = 200000; // Max buffer duration is 200 ms
@@ -61,7 +63,7 @@ int64_t GetAudioLatencyFixDelay()
 
     constexpr uint64_t defaultValue = 120 * HST_USECOND;
     static uint64_t fixDelay = OHOS::system::GetUintParameter("debug.media_service.audio_sync_fix_delay", defaultValue);
-    MEDIA_LOG_I("audio_sync_fix_delay, pid:%{public}d , fixdelay: %{public}llu", getprocpid(), fixDelay);
+    MEDIA_LOG_I("audio_sync_fix_delay, pid:%{public}d , fixdelay: %{public}" PRIu64, getprocpid(), fixDelay);
     return static_cast<int64_t>(fixDelay);
 }
 
