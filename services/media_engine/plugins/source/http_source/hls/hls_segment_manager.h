@@ -382,11 +382,6 @@ private:
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
     InfoIndexMap InfoIndexMap_;
     std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
-
-    std::unordered_map<uint64_t, std::shared_ptr<AesDecryptor>> keyAesDecryptorsMap_;
-    std::unordered_map<uint64_t, std::shared_ptr<AesDecryptor>> sessionKeyAesDecryptorsMap_;
-    std::shared_ptr<AesDecryptor> initAesDecryptor_;
-    bool needAesDecryptor_ {false};
 };
 }
 }

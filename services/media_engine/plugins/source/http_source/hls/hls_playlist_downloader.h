@@ -20,6 +20,7 @@
 #include <utility>
 #include "playlist_downloader.h"
 #include "m3u8.h"
+#include "utils/aes_decryptor.h"
 
 namespace OHOS {
 namespace Media {
@@ -77,6 +78,7 @@ public:
     void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr,
         bool isFmp4 = false) override;
     bool IsLiveEnd() override;
+    std::shared_ptr<AesDecryptor> GetAesDecryptor(uint64_t keyIndex) override;
 private:
     void UpdateMasterInfo(bool isPreParse);
     void UpdateMasterAndNotifyList(bool isPreParse);
@@ -87,7 +89,7 @@ private:
         uint32_t wantLen, uint32_t& readLen, uint32_t streamId);
     void GetMediaStreams(StreamType streamType, std::vector<StreamInfo>& streams);
     void CopyFragmentInfo(PlayInfo& playInfo, std::shared_ptr<M3U8Fragment> file, uint64_t sessionKeyIndex);
-    void KeyChange(void);
+    uint64_t KeyChange(std::list<std::shared_ptr<M3U8Fragment>>& files);
     void OnMasterReady(bool needAudioManager, bool needSubtitlesManager);
 
 private:
@@ -115,6 +117,9 @@ private:
     std::atomic<bool> isFmp4_ {false};
     bool isLiveEnd_ {false};
     std::atomic<bool> isPreParseFinished_ {false};
+    uint64_t maxSessionKeyIndex_ {0};
+    std::unordered_map<uint64_t, std::shared_ptr<AesDecryptor>> aesDecryptorsMap_;
+    std::mutex aesDecryptorsMapMutex_;
 };
 }
 }

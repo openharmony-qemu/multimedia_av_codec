@@ -16,6 +16,7 @@
 #include <mutex>
 #include <unistd.h>
 #include <utility>
+#include <algorithm>
 #include "plugin/plugin_time.h"
 #include "hls_playlist_downloader.h"
 #include "common/media_source.h"
@@ -34,6 +35,14 @@ const std::string M3U8_TS_TAG = "#EXTINF";
 const std::string M3U8_X_MAP_TAG = "#EXT-X-MAP";
 constexpr unsigned int MAX_LIVE_TS_NUM = 3;
 constexpr uint64_t DEFAULT_SUBTITLE_SNIFFSIZE = 128;
+std::vector<KeyInfo> MergeVectors(const std::vector<KeyInfo>& keyVector, const std::vector<KeyInfo>& sessionKeyVector)
+{
+    std::vector<KeyInfo> result;
+    result.reserve(keyVector.size() + sessionKeyVector.size());
+    result.insert(result.end(), sessionKeyVector.begin(), sessionKeyVector.end());
+    result.insert(result.end(), keyVector.begin(), keyVector.end());
+    return result;
+}
 }
 // StateMachine thread: call plugin SetSource -> call Open
 // StateMachine thread: call plugin GetSeekable -> call GetSeekable
@@ -62,6 +71,7 @@ HlsPlayListDownloader::~HlsPlayListDownloader()
     if (downloader_ != nullptr) {
         downloader_->Stop(false);
     }
+    aesDecryptorsMap_.clear();
     MEDIA_LOG_I("~HlsPlayListDownloader out");
     FALSE_RETURN_MSG(reportInfo_ != nullptr, "reportInfo_ is nullptr");
     FALSE_RETURN_MSG(currentVariant_ != nullptr, "currentVariant_ is nullptr");
@@ -214,27 +224,47 @@ Seekable HlsPlayListDownloader::GetSeekable() const
     return master_->bLive_ ? Seekable::UNSEEKABLE : Seekable::SEEKABLE;
 }
 
-void HlsPlayListDownloader::KeyChange(void)
+uint64_t HlsPlayListDownloader::KeyChange(std::list<std::shared_ptr<M3U8Fragment>>& files)
 {
-    auto callback = callbackWeak_.lock();
-    if (currentVariant_ == nullptr || callback == nullptr) {
-        return;
-    }
-
-    if (currentVariant_->m3u8_ && !(currentVariant_->m3u8_->keyInfoMap_.empty())) {
-        int32_t times = 0;
-        while (currentVariant_->m3u8_->keyAllDownload_ > 0 && !isInterruptNeeded_) {
-            Task::SleepInTask(5); // sleep 5ms
-            if ((times++) >= RETRY_TIMES) {
-                MEDIA_LOG_E("Download decrypkey failed.");
-                break;
-            }
+    files = currentVariant_->m3u8_->files_;
+    uint64_t sessionKeyIndex = currentVariant_->sessionKeyIndex_;
+    currentVariant_->m3u8_->WaitKeyDownload();
+    std::vector<KeyInfo> keyInfos;
+    currentVariant_->m3u8_->GetKeyInfos(keyInfos);
+    {
+        std::lock_guard<std::mutex> lock(mediaMutex_);
+        if (currentSubtitles_ && currentSubtitles_->m3u8_) {
+            files = currentSubtitles_->m3u8_->files_;
+            sessionKeyIndex = currentSubtitles_->sessionKeyIndex_;
+            currentSubtitles_->m3u8_->WaitKeyDownload();
+            currentSubtitles_->m3u8_->GetKeyInfos(keyInfos);
         }
-        callback->OnSourceKeyChange(currentVariant_->m3u8_->keyInfoMap_, true);
+        if (currentAudio_ && currentAudio_->m3u8_) {
+            files = currentAudio_->m3u8_->files_;
+            sessionKeyIndex = currentAudio_->sessionKeyIndex_;
+            currentAudio_->m3u8_->WaitKeyDownload();
+            currentAudio_->m3u8_->GetKeyInfos(keyInfos);
+        }
     }
-    if (master_ && !(master_->sessionKeyInfoMap_.empty())) {
-        callback->OnSourceKeyChange(master_->sessionKeyInfoMap_, false);
+    std::vector<KeyInfo> sessionKeyInfos;
+    if (master_) {
+        master_->GetSessionKeyInfos(sessionKeyInfos);
     }
+    maxSessionKeyIndex_ = sessionKeyInfos.size();
+    auto keyInfoVec = MergeVectors(keyInfos, sessionKeyInfos);
+    for (size_t i = 0; i < keyInfoVec.size(); ++i) {
+        std::shared_ptr<AesDecryptor> tempAesDecryptor = std::make_shared<AesDecryptor>();
+        tempAesDecryptor->OnSourceKeyChange(keyInfoVec[i].key_, keyInfoVec[i].keyLen_, keyInfoVec[i].iv_);
+        std::lock_guard<std::mutex> lock(aesDecryptorsMapMutex_);
+        aesDecryptorsMap_[i + 1] = tempAesDecryptor;
+    }
+    return sessionKeyIndex;
+}
+
+std::shared_ptr<AesDecryptor> HlsPlayListDownloader::GetAesDecryptor(uint64_t keyIndex)
+{
+    std::lock_guard<std::mutex> lock(aesDecryptorsMapMutex_);
+    return (aesDecryptorsMap_.find(keyIndex) != aesDecryptorsMap_.end()) ? aesDecryptorsMap_[keyIndex] : nullptr;
 }
 
 void HlsPlayListDownloader::NotifyListChange()
@@ -246,23 +276,9 @@ void HlsPlayListDownloader::NotifyListChange()
     if (currentVariant_->m3u8_ == nullptr) {
         return;
     }
-    auto files = currentVariant_->m3u8_->files_;
-    uint64_t sessionKeyIndex = currentVariant_->m3u8_->sessionKeyIndex_;
-    {
-        std::lock_guard<std::mutex> lock(mediaMutex_);
-        if (currentSubtitles_ && currentSubtitles_->m3u8_) {
-            files = currentSubtitles_->m3u8_->files_;
-            sessionKeyIndex = currentSubtitles_->m3u8_->sessionKeyIndex_;
-        }
-        if (currentAudio_ && currentAudio_->m3u8_) {
-            files = currentAudio_->m3u8_->files_;
-            sessionKeyIndex = currentAudio_->m3u8_->sessionKeyIndex_;
-        }
-    }
+    std::list<std::shared_ptr<M3U8Fragment>> files;
+    auto sessionKeyIndex = KeyChange(files);
     auto playList = std::vector<PlayInfo>();
-
-    KeyChange();
-
     FALSE_RETURN_MSG(!isInterruptNeeded_, "HLS Seek return, isInterruptNeeded_.");
     playList.reserve(files.size());
     for (const auto &file: files) {
@@ -306,8 +322,15 @@ void HlsPlayListDownloader::CopyFragmentInfo(PlayInfo& playInfo, std::shared_ptr
         playInfo.url_ = file->uri_;
     }
     playInfo.streamId_ = GetCurStreamId();
-    playInfo.keyIndex_ = file->keyIndex_;
-    playInfo.sessionKeyIndex_ = sessionKeyIndex;
+    if (file->keyIndex_ == UINT64_MAX) {
+        playInfo.keyIndex_ = 0;
+    } else if (file->keyIndex_ > 0) {
+        playInfo.keyIndex_ = file->keyIndex_ + maxSessionKeyIndex_;
+    } else if (sessionKeyIndex > 0) {
+        playInfo.keyIndex_ = sessionKeyIndex;
+    } else {
+        playInfo.keyIndex_ = 0;
+    }
 }
 
 void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPreParse)

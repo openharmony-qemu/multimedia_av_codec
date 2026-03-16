@@ -1652,28 +1652,36 @@ HWTEST_F(HlsMediaDownloaderTest, LIVE_ENDLIST_MEDIA_PLAYLIST, TestSize.Level1)
 HWTEST_F(HlsMediaDownloaderTest, OPEN_HLS_ENCODE_001, TestSize.Level1)
 {
     auto downloader = OpenHlsDetachAudioVideo(M3U8_PATH_1);
-    EXPECT_EQ(downloader->videoSegManager_->keyAesDecryptorsMap_.size(), 1);
+    auto playlistDownloader =
+        std::static_pointer_cast<HlsPlayListDownloader>(downloader->videoSegManager_->playlistDownloader_);
+    EXPECT_EQ(playlistDownloader->aesDecryptorsMap_.size(), 1);
     downloader = nullptr;
 }
 
 HWTEST_F(HlsMediaDownloaderTest, OPEN_HLS_ENCODE_002, TestSize.Level1)
 {
     auto downloader = OpenHlsDetachAudioVideo(M3U8_PATH_2);
-    EXPECT_EQ(downloader->videoSegManager_->sessionKeyAesDecryptorsMap_.size(), 1);
+    auto playlistDownloader =
+        std::static_pointer_cast<HlsPlayListDownloader>(downloader->videoSegManager_->playlistDownloader_);
+    EXPECT_EQ(playlistDownloader->aesDecryptorsMap_.size(), 2);
     downloader = nullptr;
 }
 
 HWTEST_F(HlsMediaDownloaderTest, OPEN_HLS_ENCODE_003, TestSize.Level1)
 {
     auto downloader = OpenHlsDetachAudioVideo(M3U8_PATH_3);
-    EXPECT_EQ(downloader->videoSegManager_->sessionKeyAesDecryptorsMap_.size(), 1);
+    auto playlistDownloader =
+        std::static_pointer_cast<HlsPlayListDownloader>(downloader->videoSegManager_->playlistDownloader_);
+    EXPECT_EQ(playlistDownloader->aesDecryptorsMap_.size(), 1);
     downloader = nullptr;
 }
 
 HWTEST_F(HlsMediaDownloaderTest, OPEN_HLS_ENCODE_004, TestSize.Level1)
 {
     auto downloader = OpenHlsDetachAudioVideo(M3U8_PATH_4);
-    EXPECT_EQ(downloader->videoSegManager_->keyAesDecryptorsMap_.size(), 1);
+    auto playlistDownloader =
+        std::static_pointer_cast<HlsPlayListDownloader>(downloader->videoSegManager_->playlistDownloader_);
+    EXPECT_EQ(playlistDownloader->aesDecryptorsMap_.size(), 1);
     downloader = nullptr;
 }
 }

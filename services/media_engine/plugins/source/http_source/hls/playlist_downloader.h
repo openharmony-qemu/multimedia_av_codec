@@ -24,6 +24,7 @@
 #include "plugin/plugin_base.h"
 #include "plugin/source_plugin.h"
 #include "download/download_metrics_info.h"
+#include "utils/aes_decryptor.h"
 
 namespace OHOS {
 namespace Media {
@@ -39,7 +40,6 @@ struct PlayInfo {
     uint32_t streamId_ {0};
     uint64_t sumDuration_ {0};
     uint64_t keyIndex_ {0};
-    uint64_t sessionKeyIndex_ {0};
 };
 struct KeyInfo {
     uint8_t iv_[16] {0};
@@ -50,7 +50,6 @@ struct PlayListChangeCallback {
     virtual ~PlayListChangeCallback() = default;
     virtual void OnMasterReady(bool needAudioManager, bool needSubtitlesManager) = 0;
     virtual void OnPlayListChanged(const std::vector<PlayInfo>& playList) = 0;
-    virtual void OnSourceKeyChange(const std::unordered_map<uint64_t, KeyInfo> keyInfoMap, bool isKey) = 0;
     virtual void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) = 0;
 };
 enum class HlsSegmentType : int {
@@ -139,6 +138,7 @@ public:
     void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
     std::shared_ptr<MediaSourceLoaderCombinations> GetSourceLoader();
     void SetSourceLoader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader);
+    virtual std::shared_ptr<AesDecryptor> GetAesDecryptor(uint64_t keyIndex) = 0;
 
 protected:
     uint32_t SaveData(uint8_t* data, uint32_t len, bool notBlock);

@@ -115,6 +115,8 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
         uint64_t initSequence);
     void ProcessInfo(M3U8Info& info, size_t& duration);
     void InitDownloadHeader();
+    void WaitKeyDownload();
+    void GetKeyInfos(std::vector<KeyInfo>& keyInfos);
 
     std::shared_ptr<std::string> method_;
     std::shared_ptr<std::string> keyUri_;
@@ -153,7 +155,8 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
     uint64_t keyIndex_ {0};
-    std::unordered_map<uint64_t, KeyInfo> keyInfoMap_;
+    std::vector<KeyInfo> keyInfos_;
+    std::mutex keyMutex_;
     uint64_t sessionKeyIndex_ {0};
     std::atomic<int> keyAllDownload_ {0};
     bool isSessionKey_ {false};
@@ -174,6 +177,7 @@ struct M3U8Media {
     bool forced_ {false};
     std::shared_ptr<M3U8> m3u8_ {nullptr};
     uint32_t streamId_ {0};
+    uint64_t sessionKeyIndex_ {0};
 };
 
 struct M3U8VariantStream {
@@ -195,6 +199,7 @@ struct M3U8VariantStream {
     std::shared_ptr<M3U8Media> defaultAudio_;
     std::shared_ptr<M3U8Media> defaultSubtitles_;
     bool isVideo_ {false};
+    uint64_t sessionKeyIndex_ {0};
 };
 
 struct M3U8MasterPlaylist {
@@ -223,6 +228,7 @@ struct M3U8MasterPlaylist {
     void ProcessStreamInfoTag(std::shared_ptr<Tag> tag);
     void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
     void ParseAttributes(const std::shared_ptr<AttributesTag>& item, std::shared_ptr<M3U8VariantStream>& stream);
+    void GetSessionKeyInfos(std::vector<KeyInfo>& sessionKeyInfos);
     std::list<std::shared_ptr<M3U8VariantStream>> variants_;
     std::shared_ptr<M3U8VariantStream> defaultVariant_;
     std::shared_ptr<M3U8VariantStream> firstVideoStream_;
@@ -255,7 +261,8 @@ struct M3U8MasterPlaylist {
     std::list<std::shared_ptr<M3U8Media>> subtitlesList_;
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
     uint64_t sessionKeyIndex_ {0};
-    std::unordered_map<uint64_t, KeyInfo> sessionKeyInfoMap_;
+    std::vector<KeyInfo> sessionKeyInfos_;
+    std::mutex sessionKeyMutex_;
 };
 }
 }
