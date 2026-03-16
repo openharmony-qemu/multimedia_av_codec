@@ -166,7 +166,7 @@ Status FFmpegTwinVQDecoderPlugin::CheckFormat(const std::shared_ptr<Meta> &forma
         return Status::ERROR_INVALID_PARAMETER;
     }
     if (extradata.size() < EXTRADATA_SIZE) {
-        AVCODEC_LOGE("Missing or incomplete extradata, size: %{public}d", extradata.size());
+        AVCODEC_LOGE("Missing or incomplete extradata, size: %{public}zu", extradata.size());
         return Status::ERROR_INVALID_PARAMETER;
     }
     if (!basePlugin->CheckSampleFormat(format, channelCount)) {
