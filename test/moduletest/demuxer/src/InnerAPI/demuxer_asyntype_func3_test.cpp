@@ -1649,7 +1649,6 @@ HWTEST_F(DemuxerAsynTypeInnerFunc3Test, DEMUXER_ASYN_INNER_TS_FUNC_0223, TestSiz
                 continue;
             }
             ASSERT_EQ(demuxerPlugin->ReadSample(i, avBuf_, timeout), Status::OK);
-            printf("avbuf_->pts_: %lld \n", avBuf_->pts_);
             GetFrameNum(i);
         }
     }
