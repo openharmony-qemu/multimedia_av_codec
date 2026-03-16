@@ -236,8 +236,6 @@ HlsSegmentManager::~HlsSegmentManager()
     if (playlistDownloader_ != nullptr) {
         playlistDownloader_ = nullptr;
     }
-    keyAesDecryptorsMap_.clear();
-    sessionKeyAesDecryptorsMap_.clear();
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsSegmentManager dtor out, type: %{public}d, "
         "writeTsIndex: " PUBLIC_LOG_U32 " writeOffset: " PUBLIC_LOG_U64, FAKE_POINTER(this), type_,
         writeTsIndex_, writeOffset_);

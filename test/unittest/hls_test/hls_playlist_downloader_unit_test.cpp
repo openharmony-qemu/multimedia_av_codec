@@ -356,16 +356,4 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, GET_SEEKABLE_002, TestSize.Level0)
     OSAL::SleepFor(100);
     EXPECT_EQ(downloader->GetSeekable(), Seekable::UNSEEKABLE);
 }
-
-HWTEST_F(HlsPlayListDownloaderUnitTest, NOTIFY_LIST_CHANGE_001, TestSize.Level0)
-{
-    auto downloader = std::make_shared<HlsPlayListDownloader>(httpHeader, nullptr);
-    downloader->Init();
-    std::string testUrl = TEST_URI_PATH + M3U8_PATH_ENCODE;
-    downloader->Open(testUrl, httpHeader);
-    OSAL::SleepFor(100);
-    downloader->master_ = nullptr;
-    downloader->NotifyListChange();
-    EXPECT_EQ(downloader->maxSessionKeyIndex_, 0);
-}
 }

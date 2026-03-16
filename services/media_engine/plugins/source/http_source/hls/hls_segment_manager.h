@@ -100,7 +100,6 @@ public:
     bool GetStartedStatus();
     std::vector<uint32_t> GetBitRates();
     bool SelectBitRate(uint32_t bitRate);
-    void OnSourceKeyChange(const std::unordered_map<uint64_t, KeyInfo> keyInfoMap, bool isKey) override;
     void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) override;
     void SetIsTriggerAutoMode(bool isAuto);
     void SetReadBlockingFlag(bool isReadBlockingAllowed);
