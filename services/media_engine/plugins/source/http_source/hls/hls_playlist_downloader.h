@@ -119,7 +119,7 @@ private:
     std::atomic<bool> isPreParseFinished_ {false};
     uint64_t maxSessionKeyIndex_ {0};
     std::unordered_map<uint64_t, std::shared_ptr<AesDecryptor>> aesDecryptorsMap_;
-    std::mutex aesDecryptorsMapMutex_;
+    std::shared_mutex aesDecryptorsMapMutex_;
 };
 }
 }

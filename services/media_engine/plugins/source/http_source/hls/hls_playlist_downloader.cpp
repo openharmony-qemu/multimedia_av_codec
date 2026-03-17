@@ -71,7 +71,70 @@ HlsPlayListDownloader::~HlsPlayListDownloader()
     if (downloader_ != nullptr) {
         downloader_->Stop(false);
     }
-    aesDecryptorsMap_.clear();
+    {
+        std::unique_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
+        aesDecryptorsMap_.clear();
+    }
+    MEDIA_LOG_I("~HlsPlayListDownloader out");
+    FALSE_RETURN_MSG(reportInfo_ != nullptr, "reportInfo_ is nullptr");
+    FALSE_RETURN_MSG(currentVariant_ != nullptr, "currentVariant_ is nullptr");
+    auto m3u8 = currentVariant_->m3u8_;
+    FALSE_RETURN_MSG(m3u8 != nullptr, "m3u8 is nullptr");
+    if (m3u8->IsLive()) {
+        if (isFmp4_.load()) {
+            reportInfo_->sourceType_ = static_cast<int8_t>(MediaAVCodec::DfxSourceType::FMP4LIVE);
+        } else {
+            reportInfo_->sourceType_ = static_cast<int8_t>(MediaAVCodec::DfxSourceType::HLSLIVE);
+        }
+    } else {
+        if (isFmp4_.load()) {
+            reportInfo_->sourceType_ = static_cast<int8_t>(MediaAVCodec::DfxSourceType::FMP4VOD);
+        } else {
+            reportInfo_->sourceType_ = static_cast<int8_t>(MediaAVCodec::DfxSourceType::HLSVOD);
+        }
+    }
+}
+    
+    // 停止任务和下载器
+    if (updateTask_ != nullptr) {
+        updateTask_->Stop();
+    }
+    if (downloader_ != nullptr) {
+        downloader_->Stop(false);
+    }
+    
+    // 清理 aesDecryptorsMap_
+    {
+        std::unique_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
+        aesDecryptorsMap_.clear();
+    }
+    
+    // 更新统计信息
+    if (reportInfo_ != nullptr) {
+        if (isLive) {
+            if (isFmp4) {
+                reportInfo_->sourceType_ = static_cast<int8_t>(MediaAVCodec::DfxSourceType::FMP4LIVE);
+            } else {
+                reportInfo_->sourceType_ = static_cast<int8_t>(MediaAVCodec::DfxSourceType::HLSLIVE);
+            }
+        } else {
+            if (isFmp4) {
+                reportInfo_->sourceType_ = static_cast<int8_t>(MediaAVCodec::DfxSourceType::FMP4VOD);
+            } else {
+                reportInfo_->sourceType_ = static_cast<int8_t>(MediaAVCodec::DfxSourceType::HLSVOD);
+            }
+        }
+    }
+    
+    MEDIA_LOG_I("~HlsPlayListDownloader out");
+}
+    if (downloader_ != nullptr) {
+        downloader_->Stop(false);
+    }
+    {
+        std::unique_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
+        aesDecryptorsMap_.clear();
+    }
     MEDIA_LOG_I("~HlsPlayListDownloader out");
     FALSE_RETURN_MSG(reportInfo_ != nullptr, "reportInfo_ is nullptr");
     FALSE_RETURN_MSG(currentVariant_ != nullptr, "currentVariant_ is nullptr");
@@ -227,7 +290,7 @@ Seekable HlsPlayListDownloader::GetSeekable() const
 uint64_t HlsPlayListDownloader::KeyChange(std::list<std::shared_ptr<M3U8Fragment>>& files)
 {
     files = currentVariant_->m3u8_->files_;
-    uint64_t sessionKeyIndex = currentVariant_->sessionKeyIndex_;
+    uint64_t sessionKeyIndex = currentVariant_->sessionKeyIndex_.load(std::memory_order_relaxed);
     currentVariant_->m3u8_->WaitKeyDownload();
     std::vector<KeyInfo> keyInfos;
     currentVariant_->m3u8_->GetKeyInfos(keyInfos);
@@ -235,13 +298,13 @@ uint64_t HlsPlayListDownloader::KeyChange(std::list<std::shared_ptr<M3U8Fragment
         std::lock_guard<std::mutex> lock(mediaMutex_);
         if (currentSubtitles_ && currentSubtitles_->m3u8_) {
             files = currentSubtitles_->m3u8_->files_;
-            sessionKeyIndex = currentSubtitles_->sessionKeyIndex_;
+            sessionKeyIndex = currentSubtitles_->sessionKeyIndex_.load(std::memory_order_relaxed);
             currentSubtitles_->m3u8_->WaitKeyDownload();
             currentSubtitles_->m3u8_->GetKeyInfos(keyInfos);
         }
         if (currentAudio_ && currentAudio_->m3u8_) {
             files = currentAudio_->m3u8_->files_;
-            sessionKeyIndex = currentAudio_->sessionKeyIndex_;
+            sessionKeyIndex = currentAudio_->sessionKeyIndex_.load(std::memory_order_relaxed);
             currentAudio_->m3u8_->WaitKeyDownload();
             currentAudio_->m3u8_->GetKeyInfos(keyInfos);
         }
@@ -252,19 +315,27 @@ uint64_t HlsPlayListDownloader::KeyChange(std::list<std::shared_ptr<M3U8Fragment
     }
     maxSessionKeyIndex_ = sessionKeyInfos.size();
     auto keyInfoVec = MergeVectors(keyInfos, sessionKeyInfos);
+    
+    std::unordered_map<uint64_t, std::shared_ptr<AesDecryptor>> newAesDecryptorsMap;
+    newAesDecryptorsMap.reserve(keyInfoVec.size());
     for (size_t i = 0; i < keyInfoVec.size(); ++i) {
         std::shared_ptr<AesDecryptor> tempAesDecryptor = std::make_shared<AesDecryptor>();
         tempAesDecryptor->OnSourceKeyChange(keyInfoVec[i].key_, keyInfoVec[i].keyLen_, keyInfoVec[i].iv_);
-        std::lock_guard<std::mutex> lock(aesDecryptorsMapMutex_);
-        aesDecryptorsMap_[i + 1] = tempAesDecryptor;
+        newAesDecryptorsMap[i + 1] = tempAesDecryptor;
+    }
+    
+    {
+        std::unique_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
+        aesDecryptorsMap_.swap(newAesDecryptorsMap);
     }
     return sessionKeyIndex;
 }
 
 std::shared_ptr<AesDecryptor> HlsPlayListDownloader::GetAesDecryptor(uint64_t keyIndex)
 {
-    std::lock_guard<std::mutex> lock(aesDecryptorsMapMutex_);
-    return (aesDecryptorsMap_.find(keyIndex) != aesDecryptorsMap_.end()) ? aesDecryptorsMap_[keyIndex] : nullptr;
+    std::shared_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
+    auto it = aesDecryptorsMap_.find(keyIndex);
+    return (it != aesDecryptorsMap_.end()) ? it->second : nullptr;
 }
 
 void HlsPlayListDownloader::NotifyListChange()

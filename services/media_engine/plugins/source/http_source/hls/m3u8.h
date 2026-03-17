@@ -154,10 +154,10 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     Mutex sleepMutex_ {};
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
-    uint64_t keyIndex_ {0};
+    std::atomic<uint64_t> keyIndex_ {0};
     std::vector<KeyInfo> keyInfos_;
-    std::mutex keyMutex_;
-    uint64_t sessionKeyIndex_ {0};
+    std::shared_mutex keyMutex_;
+    std::atomic<uint64_t> sessionKeyIndex_ {0};
     std::atomic<int> keyAllDownload_ {0};
     bool isSessionKey_ {false};
 };
@@ -260,9 +260,9 @@ struct M3U8MasterPlaylist {
     std::list<std::shared_ptr<M3U8Media>> audioList_;
     std::list<std::shared_ptr<M3U8Media>> subtitlesList_;
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
-    uint64_t sessionKeyIndex_ {0};
+    std::atomic<uint64_t> sessionKeyIndex_ {0};
     std::vector<KeyInfo> sessionKeyInfos_;
-    std::mutex sessionKeyMutex_;
+    std::shared_mutex sessionKeyMutex_;
 };
 }
 }

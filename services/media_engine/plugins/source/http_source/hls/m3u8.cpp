@@ -127,7 +127,10 @@ M3U8::~M3U8()
     }
     delete[] fmp4Header_;
     fmp4Header_ = nullptr;
-    keyInfos_.clear();
+    {
+        std::unique_lock<std::shared_mutex> lock(keyMutex_);
+        keyInfos_.clear();
+    }
     NZERO_LOG(memset_s(key_, sizeof(key_), 0, sizeof(key_)));
     NZERO_LOG(memset_s(iv_, sizeof(iv_), 0, sizeof(iv_)));
 }
@@ -281,13 +284,13 @@ void M3U8::PrepareDecrptionKeys(std::shared_ptr<Tag>& tag)
     if ((keyUri_->length() > DRM_PSSH_TITLE_LEN) && (keyUri_->substr(0, DRM_PSSH_TITLE_LEN) == DRM_PSSH_TITLE)) {
         ProcessDrmInfos();
     } else {
-        keyIndex_++;
         KeyInfo keyInfo;
         std::copy(std::begin(iv_), std::end(iv_), std::begin(keyInfo.iv_));
         {
-            std::lock_guard<std::mutex> lock(keyMutex_);
+            std::unique_lock<std::shared_mutex> lock(keyMutex_);
             keyInfos_.emplace_back(keyInfo);
         }
+        keyIndex_.fetch_add(1, std::memory_order_relaxed);
         keyAllDownload_.fetch_add(1, std::memory_order_relaxed);
         DownloadKey(true);
     }
@@ -516,7 +519,7 @@ void M3U8::AddFile(std::shared_ptr<M3U8Fragment> fragment, size_t duration)
     if (isDecryptAble_ && method_ != nullptr && *method_ == "NONE") {
         fragment->keyIndex_ = UINT64_MAX;
     } else {
-        fragment->keyIndex_ = keyIndex_;
+        fragment->keyIndex_ = keyIndex_.load(std::memory_order_relaxed);
     }
     files_.emplace_back(fragment);
 }
@@ -621,7 +624,8 @@ void M3U8::DownloadKey(bool isKey)
     RequestInfo requestInfo;
     requestInfo.url = realKeyUrl;
     requestInfo.httpHeader = httpHeader_;
-    uint64_t index = isKey ? keyIndex_ : sessionKeyIndex_;
+    uint64_t index = isKey ? keyIndex_.load(std::memory_order_relaxed) :
+        sessionKeyIndex_.load(std::memory_order_relaxed);
     downloadRequest_ = std::make_shared<DownloadRequest>(index, keyDataSave_, realStatusCallback, requestInfo, true);
     downloadRequest_->SetIsAuthRequest(true);
     downloader_->Download(downloadRequest_, -1);
@@ -638,10 +642,12 @@ uint32_t M3U8::SaveData(uint8_t *data, uint32_t len, bool notBlock, uint64_t key
         isDecryptKeyReady_ = true;
         if (!isSessionKey_) {
             keyAllDownload_.fetch_sub(1, std::memory_order_relaxed);
-            std::lock_guard<std::mutex> lock(keyMutex_);
-            FALSE_RETURN_V_MSG(keyIndex > 0 && keyIndex - 1 < keyInfos_.size(), len, "keyIndex out of bounds");
-            std::copy(std::begin(key_), std::end(key_), std::begin(keyInfos_[keyIndex - 1].key_));
-            keyInfos_[keyIndex - 1].keyLen_ = keyLen_;
+            {
+                std::unique_lock<std::shared_mutex> lock(keyMutex_);
+                FALSE_RETURN_V_MSG(keyIndex > 0 && keyIndex - 1 < keyInfos_.size(), len, "keyIndex out of bounds");
+                std::copy(std::begin(key_), std::end(key_), std::begin(keyInfos_[keyIndex - 1].key_));
+                keyInfos_[keyIndex - 1].keyLen_ = keyLen_;
+            }
         }
         MEDIA_LOG_I("DownloadKey hlsSourceKey end, index:" PUBLIC_LOG_U64, keyIndex);
         return len;
@@ -758,7 +764,7 @@ void M3U8::WaitKeyDownload()
 
 void M3U8::GetKeyInfos(std::vector<KeyInfo>& keyInfos)
 {
-    std::lock_guard<std::mutex> lock(keyMutex_);
+    std::shared_lock<std::shared_mutex> lock(keyMutex_);
     keyInfos = keyInfos_;
 }
 
@@ -779,7 +785,10 @@ M3U8MasterPlaylist::M3U8MasterPlaylist(const std::string& playList, const std::s
 
 M3U8MasterPlaylist::~M3U8MasterPlaylist()
 {
-    sessionKeyInfos_.clear();
+    {
+        std::unique_lock<std::shared_mutex> lock(sessionKeyMutex_);
+        sessionKeyInfos_.clear();
+    }
     NZERO_LOG(memset_s(key_, sizeof(key_), 0, sizeof(key_)));
     NZERO_LOG(memset_s(iv_, sizeof(iv_), 0, sizeof(iv_)));
 }
@@ -848,9 +857,9 @@ void M3U8MasterPlaylist::DownloadSessionKey(std::shared_ptr<Tag>& tag)
     m3u8->isDecryptAble_ = true;
     m3u8->isDecryptKeyReady_ = false;
     m3u8->ParseKey(std::static_pointer_cast<AttributesTag>(tag));
-    sessionKeyIndex_++;
+    uint64_t currentSessionKeyIndex = sessionKeyIndex_.fetch_add(1, std::memory_order_relaxed);
     m3u8->isSessionKey_ = true;
-    m3u8->sessionKeyIndex_ = sessionKeyIndex_;
+    m3u8->sessionKeyIndex_.store(currentSessionKeyIndex, std::memory_order_relaxed);
     KeyInfo sessionKeyInfo;
     std::copy(std::begin(m3u8->iv_), std::end(m3u8->iv_), std::begin(sessionKeyInfo.iv_));
     m3u8->DownloadKey(false);
@@ -865,8 +874,10 @@ void M3U8MasterPlaylist::DownloadSessionKey(std::shared_ptr<Tag>& tag)
     keyLen_ = m3u8->keyLen_;
     std::copy(std::begin(m3u8->key_), std::end(m3u8->key_), std::begin(sessionKeyInfo.key_));
     sessionKeyInfo.keyLen_ = m3u8->keyLen_;
-    std::lock_guard<std::mutex> lock(sessionKeyMutex_);
-    sessionKeyInfos_.emplace_back(sessionKeyInfo);
+    {
+        std::unique_lock<std::shared_mutex> lock(sessionKeyMutex_);
+        sessionKeyInfos_.emplace_back(sessionKeyInfo);
+    }
 }
 
 void M3U8MasterPlaylist::UpdateMasterPlaylist()
@@ -1234,7 +1245,7 @@ void M3U8MasterPlaylist::SetInterruptState(bool isInterruptNeeded)
 
 void M3U8MasterPlaylist::GetSessionKeyInfos(std::vector<KeyInfo>& sessionKeyInfos)
 {
-    std::lock_guard<std::mutex> lock(sessionKeyMutex_);
+    std::shared_lock<std::shared_mutex> lock(sessionKeyMutex_);
     sessionKeyInfos = sessionKeyInfos_;
 }
 
