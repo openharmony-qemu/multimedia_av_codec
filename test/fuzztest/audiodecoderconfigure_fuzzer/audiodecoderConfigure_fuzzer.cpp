@@ -28,6 +28,7 @@ const size_t THRESHOLD = 10;
 static const uint8_t* RAW_DATA = nullptr;
 static size_t g_dataSize = 0;
 static size_t g_pos;
+typedef void (*TestFuncs)();
 
 template<class T>
 T GetData()
@@ -49,7 +50,6 @@ template<class T>
 uint32_t GetArrLength(T& arr)
 {
     if (arr == nullptr) {
-        AUDIO_INFO_LOG("%{public}s: The array length is equal to 0", __func__);
         return 0;
     }
     return sizeof(arr) / sizeof(arr[0]);
@@ -600,7 +600,7 @@ bool FuzzTest(const uint8_t* rawData, size_t size)
     if (len > 0) {
         g_testFuncs[code % len]();
     } else {
-        AUDIO_INFO_LOG("%{public}s: The len length is equal to 0", __func__);
+        return false;
     }
 
     return true;
