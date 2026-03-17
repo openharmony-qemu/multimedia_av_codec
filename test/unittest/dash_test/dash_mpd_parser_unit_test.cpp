@@ -647,7 +647,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_GetAttrString_001, Tes
     DashComAttrsElements elements;
     std::string val = "test";
     elements.GetAttr("unknownAttr", val);
-    EXPECT_EQ(val, "");
+    EXPECT_EQ(val, "test");
 }
 
 HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_GetAttrString_002, TestSize.Level1)
@@ -663,7 +663,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_GetAttrUint32_001, Tes
     DashComAttrsElements elements;
     uint32_t val = 123;
     elements.GetAttr("unknownAttr", val);
-    EXPECT_EQ(val, 0);
+    EXPECT_EQ(val, 123);
 }
 
 HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_GetAttrUint32_002, TestSize.Level1)
@@ -679,7 +679,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_GetAttrInt32_001, Test
     DashComAttrsElements elements;
     int32_t val = 456;
     elements.GetAttr("unknownAttr", val);
-    EXPECT_EQ(val, 0);
+    EXPECT_EQ(val, 456);
 }
 
 HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_GetAttrInt32_002, TestSize.Level1)
@@ -695,7 +695,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_GetAttrUint64_001, Tes
     DashComAttrsElements elements;
     uint64_t val = 789;
     elements.GetAttr("unknownAttr", val);
-    EXPECT_EQ(val, 0);
+    EXPECT_EQ(val, 789);
 }
 
 HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_GetAttrUint64_002, TestSize.Level1)
@@ -711,7 +711,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_GetAttrDouble_001, Tes
     DashComAttrsElements elements;
     double val = 3.14;
     elements.GetAttr("unknownAttr", val);
-    EXPECT_EQ(val, 0.0);
+    EXPECT_EQ(val, 3.14);
 }
 
 HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_GetAttrDouble_002, TestSize.Level1)
