@@ -24,6 +24,37 @@
 #include <fuzzer/FuzzedDataProvider.h>
 #define FUZZ_PROJECT_NAME "audiodecoderSetParameter_fuzzer"
 namespace OHOS {
+const size_t THRESHOLD = 10;
+static const uint8_t* RAW_DATA = nullptr;
+static size_t g_dataSize = 0;
+static size_t g_pos;
+
+template<class T>
+T GetData()
+{
+    T object {};
+    size_t objectSize = sizeof(object);
+    if (RAW_DATA == nullptr || objectSize > g_dataSize - g_pos) {
+        return object;
+    }
+    errno_t ret = memcpy_s(&object, objectSize, RAW_DATA + g_pos, objectSize);
+    if (ret != EOK) {
+        return {};
+    }
+    g_pos += objectSize;
+    return object;
+}
+
+template<class T>
+uint32_t GetArrLength(T& arr)
+{
+    if (arr == nullptr) {
+        AUDIO_INFO_LOG("%{public}s: The array length is equal to 0", __func__);
+        return 0;
+    }
+    return sizeof(arr) / sizeof(arr[0]);
+}
+
 bool AudioAACSetParameterFuzzTest(const uint8_t *data, size_t size)
 {
     if (size < sizeof(int64_t)) {
@@ -539,22 +570,51 @@ bool AudioVividSetParameterFuzzTest(const uint8_t *data, size_t size)
     return true;
 }
 
+TestFuncs g_testFuncs[] = {
+    AudioAACSetParameterFuzzTest,
+    AudioFlacSetParameterFuzzTest,
+    AudioMP3SetParameterFuzzTest,
+    AudioVorbisSetParameterFuzzTest,
+    AudioLBVCSetParameterFuzzTest,
+    AudioAMRNBSetParameterFuzzTest,
+    AudioAMRWBSetParameterFuzzTest,
+    AudioAPESetParameterFuzzTest,
+    AudioOPUSSetParameterFuzzTest,
+    AudioG711SetParameterFuzzTest,
+    AudioVividSetParameterFuzzTest,
+};
+
+bool FuzzTest(const uint8_t* rawData, size_t size)
+{
+    if (rawData == nullptr) {
+        return false;
+    }
+
+    // initialize data
+    RAW_DATA = rawData;
+    g_dataSize = size;
+    g_pos = 0;
+
+    uint32_t code = GetData<uint32_t>();
+    uint32_t len = GetArrLength(g_testFuncs);
+    if (len > 0) {
+        g_testFuncs[code % len]();
+    } else {
+        AUDIO_INFO_LOG("%{public}s: The len length is equal to 0", __func__);
+    }
+
+    return true;
+}
 } // namespace OHOS
 
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::AudioAACSetParameterFuzzTest(data, size);
-    OHOS::AudioFlacSetParameterFuzzTest(data, size);
-    OHOS::AudioMP3SetParameterFuzzTest(data, size);
-    OHOS::AudioVorbisSetParameterFuzzTest(data, size);
-    OHOS::AudioLBVCSetParameterFuzzTest(data, size);
-    OHOS::AudioAMRNBSetParameterFuzzTest(data, size);
-    OHOS::AudioAMRWBSetParameterFuzzTest(data, size);
-    OHOS::AudioAPESetParameterFuzzTest(data, size);
-    OHOS::AudioOPUSSetParameterFuzzTest(data, size);
-    OHOS::AudioG711SetParameterFuzzTest(data, size);
-    OHOS::AudioVividSetParameterFuzzTest(data, size);
+    if (size < OHOS::THRESHOLD) {
+        return 0;
+    }
+
+    OHOS::FuzzTest(data, size);
     return 0;
 }
