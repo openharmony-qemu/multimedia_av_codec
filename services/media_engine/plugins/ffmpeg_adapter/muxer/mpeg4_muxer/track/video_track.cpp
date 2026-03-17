@@ -271,9 +271,15 @@ Status VideoTrack::WriteSample(std::shared_ptr<AVIOStream> io, const std::shared
     FALSE_RETURN_V_MSG_E(stss_ != nullptr && stsz_ != nullptr,
         Status::ERROR_INVALID_OPERATION, "stss or stsz box is empty");
     FALSE_RETURN_V_MSG_E(videoParser_ != nullptr, Status::ERROR_INVALID_OPERATION, "videoParser is null");
-    FALSE_RETURN_V_MSG_E(hasVideoDelay_ || sample->pts_ >= lastTimestampUs_, Status::ERROR_INVALID_PARAMETER,
-        "hasVideoDelay:%{public}d, pts: " PUBLIC_LOG_D64 " error, < " PUBLIC_LOG_D64, hasVideoDelay_,
-        sample->pts_, lastTimestampUs_);
+    auto pts = sample->pts_;
+    if (!hasVideoDelay_ && sample->flag_ & static_cast<uint32_t>(AVBufferFlag::CODEC_DATA) && pts < lastTimestampUs_) {
+        MEDIA_LOG_I("[%{public}d] change video pts:" PUBLIC_LOG_D64 " -> " PUBLIC_LOG_D64,
+            trackId_, pts, lastTimestampUs_);
+        pts = lastTimestampUs_;
+    }
+    FALSE_RETURN_V_MSG_E(hasVideoDelay_ || pts >= lastTimestampUs_, Status::ERROR_INVALID_PARAMETER,
+        "[%{public}d] hasVideoDelay:%{public}d, pts: " PUBLIC_LOG_D64 " error, < " PUBLIC_LOG_D64,
+        trackId_, hasVideoDelay_, sample->pts_, lastTimestampUs_);
     if (!hasSetParserConfig_) {
         ParserSetConfig();
     }
@@ -281,7 +287,7 @@ Status VideoTrack::WriteSample(std::shared_ptr<AVIOStream> io, const std::shared
     int32_t size = videoParser_->WriteFrame(io, sample);
     FALSE_RETURN_V_MSG_E(size > 0, (size == 0 ? Status::NO_ERROR : Status::ERROR_INVALID_DATA),
         "video write frame err:%{public}d", size);
-    DisposeCtts(sample->pts_);
+    DisposeCtts(pts);
     DisposeStco(pos);
     DisposeSdtp(sample->flag_);
     DisposeStsz(static_cast<uint32_t>(size));
