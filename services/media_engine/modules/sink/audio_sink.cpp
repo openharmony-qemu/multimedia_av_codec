@@ -1748,7 +1748,6 @@ std::shared_ptr<Plugins::AudioSinkPlugin> AudioSink::PreCreateNewPlugin(const st
 // empty availOutputBuffers_ stroe to swapOutputBuffers_
 Status AudioSink::CacheBuffer()
 {
-    FALSE_RETURN_V(!isEosBuffer_, Status::OK);
     FALSE_RETURN_V(inputBufferQueue_ != nullptr, Status::OK);
     std::lock_guard<std::mutex> lock(availBufferMutex_);
     while (availOutputBuffers_.size() > 0) {
@@ -1756,13 +1755,14 @@ Status AudioSink::CacheBuffer()
         FALSE_RETURN_V(buffer != nullptr && buffer->memory_->GetSize() > 0, Status::OK);
 
         std::shared_ptr<Meta> meta = buffer->meta_;
+        std::vector<uint8_t> metaData;
+        FALSE_RETURN_V_MSG_W(meta != nullptr && meta->GetData(Tag::OH_MD_KEY_AUDIO_VIVID_METADATA, metaData),
+            Status::OK, "except audiovivid not need cacheBuffer");
         AVBufferConfig avBufferConfig;
         avBufferConfig.capacity = static_cast<int32_t>(buffer->memory_->GetSize());
         avBufferConfig.memoryType = bufferMemoryType_;
         std::shared_ptr<AVBuffer> swapBuffer = AVBuffer::CreateAVBuffer(avBufferConfig);
         FALSE_RETURN_V(swapBuffer != nullptr && swapBuffer->memory_ != nullptr, Status::ERROR_NO_MEMORY);
-        std::vector<uint8_t> metaData;
-        meta->GetData(Tag::OH_MD_KEY_AUDIO_VIVID_METADATA, metaData);
         if (metaData.size() > 0) {
             std::vector<uint8_t> swapMetaData;
             swapMetaData = metaData;
