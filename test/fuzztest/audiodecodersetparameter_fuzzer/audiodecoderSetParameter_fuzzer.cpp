@@ -28,7 +28,6 @@ const size_t THRESHOLD = 10;
 static const uint8_t* RAW_DATA = nullptr;
 static size_t g_dataSize = 0;
 static size_t g_pos;
-typedef void (*TestFuncs)();
 
 template<class T>
 T GetData()
@@ -570,6 +569,7 @@ bool AudioVividSetParameterFuzzTest(const uint8_t *data, size_t size)
     return true;
 }
 
+typedef bool (*TestFuncs)(const uint8_t *data, size_t size);
 TestFuncs g_testFuncs[] = {
     AudioAACSetParameterFuzzTest,
     AudioFlacSetParameterFuzzTest,
@@ -598,7 +598,7 @@ bool FuzzTest(const uint8_t* rawData, size_t size)
     uint32_t code = GetData<uint32_t>();
     uint32_t len = GetArrLength(g_testFuncs);
     if (len > 0) {
-        g_testFuncs[code % len]();
+        g_testFuncs[code % len](rawData, size);
     } else {
         return false;
     }
