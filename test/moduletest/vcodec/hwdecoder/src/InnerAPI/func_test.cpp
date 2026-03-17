@@ -1733,8 +1733,8 @@ HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_GET_PIDS_0040, TestSize.Level
     if (cap != nullptr) {
         auto vDecSample = make_shared<VDecNdkInnerSample>();
         auto vDecSample2 = make_shared<VDecNdkInnerSample>();
-        if (vDecSample->CreateByName("OMX.hisi.video.decoder.avc.secure") == AVCS_ERR_OK && 
-        vDecSample2->CreateByName("OMX.hisi.video.decoder.avc.secure") == AVCS_ERR_OK) {
+        if (vDecSample->CreateByName("OMX.hisi.video.decoder.avc.secure") == AVCS_ERR_OK &&
+    vDecSample2->CreateByName("OMX.hisi.video.decoder.avc.secure") == AVCS_ERR_OK) {
             std::vector<pid_t> pidList;
             auto ret = AVCodecMonitor::GetActiveSecureDecoderPids(pidList);
             ASSERT_EQ(AVCS_ERR_OK, ret);
