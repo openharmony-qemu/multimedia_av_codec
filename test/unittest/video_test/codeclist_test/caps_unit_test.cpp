@@ -1321,7 +1321,7 @@ HWTEST_F(CapsUnitTest, AVCaps_IsSecure_001, TestSize.Level1)
     }
 }
 
-/** 
+/**
  * @tc.name: AVCaps_IsSecure_002
  * @tc.desc: Check IsSecure with nullptr
  * @tc.type: FUNC

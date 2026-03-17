@@ -81,7 +81,8 @@ OH_AVCapability **OH_AVCodec_GetCapabilityList(OH_AVCodecType codecType, uint32_
         const std::string &name = capabilityData->codecName;
         CHECK_AND_RETURN_RET_LOG(!name.empty(), nullptr, "Get capability list failed: cannot find matched capability");
         void *addr = codeclist->GetBuffer(name, sizeOfCap);
-        CHECK_AND_RETURN_RET_LOG(addr != nullptr, nullptr, "Get capability list failed: malloc capability buffer failed");
+        CHECK_AND_RETURN_RET_LOG(addr != nullptr, nullptr,
+                                 "Get capability list failed: malloc capability buffer failed");
         OH_AVCapability *obj = static_cast<OH_AVCapability *>(addr);
         obj->magic_ = AVMagic::AVCODEC_MAGIC_AVCAPABILITY;
         obj->capabilityData_ = capabilityData;
