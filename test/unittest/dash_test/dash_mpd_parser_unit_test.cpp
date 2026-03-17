@@ -20,8 +20,10 @@
 #include "mpd_parser/dash_period_manager.h"
 #include "mpd_parser/dash_adpt_set_manager.h"
 #include "mpd_parser/i_dash_mpd_node.h"
+#include "mpd_parser/dash_com_attrs_elements.h"
 #include "base64_utils.h"
 #include "dash_segment_downloader.h"
+#include "xml/xml_parser.h"
 
 namespace OHOS {
 namespace Media {
@@ -610,6 +612,179 @@ HWTEST_F(DashMpdParserUnitTest, Test_Base64_003, TestSize.Level1)
 
     bool ret = Base64Utils::Base64Decode(src, sizeof(src) - 1, dest, &destSize);
     EXPECT_FALSE(ret);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_Construct_001, TestSize.Level1)
+{
+    DashComAttrsElements elements;
+    std::string val;
+    elements.GetAttr("profiles", val);
+    EXPECT_EQ(val, "");
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_ParseAttrs_001, TestSize.Level1)
+{
+    DashComAttrsElements elements;
+    auto xmlParser = std::make_shared<XmlParser>();
+    auto rootElement = std::make_shared<XmlElement>(nullptr);
+    elements.ParseAttrs(xmlParser, rootElement);
+    std::string val;
+    elements.GetAttr("profiles", val);
+    EXPECT_EQ(val, "");
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_ParseAttrs_002, TestSize.Level1)
+{
+    DashComAttrsElements elements;
+    elements.ParseAttrs(nullptr, nullptr);
+    std::string val;
+    elements.GetAttr("profiles", val);
+    EXPECT_EQ(val, "");
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_GetAttrString_001, TestSize.Level1)
+{
+    DashComAttrsElements elements;
+    std::string val = "test";
+    elements.GetAttr("unknownAttr", val);
+    EXPECT_EQ(val, "");
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_GetAttrString_002, TestSize.Level1)
+{
+    DashComAttrsElements elements;
+    std::string val;
+    elements.GetAttr("profiles", val);
+    EXPECT_EQ(val, "");
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_GetAttrUint32_001, TestSize.Level1)
+{
+    DashComAttrsElements elements;
+    uint32_t val = 123;
+    elements.GetAttr("unknownAttr", val);
+    EXPECT_EQ(val, 0);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_GetAttrUint32_002, TestSize.Level1)
+{
+    DashComAttrsElements elements;
+    uint32_t val = 123;
+    elements.GetAttr("width", val);
+    EXPECT_EQ(val, 0);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_GetAttrInt32_001, TestSize.Level1)
+{
+    DashComAttrsElements elements;
+    int32_t val = 456;
+    elements.GetAttr("unknownAttr", val);
+    EXPECT_EQ(val, 0);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_GetAttrInt32_002, TestSize.Level1)
+{
+    DashComAttrsElements elements;
+    int32_t val = 456;
+    elements.GetAttr("height", val);
+    EXPECT_EQ(val, 0);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_GetAttrUint64_001, TestSize.Level1)
+{
+    DashComAttrsElements elements;
+    uint64_t val = 789;
+    elements.GetAttr("unknownAttr", val);
+    EXPECT_EQ(val, 0);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_GetAttrUint64_002, TestSize.Level1)
+{
+    DashComAttrsElements elements;
+    uint64_t val = 789;
+    elements.GetAttr("frameRate", val);
+    EXPECT_EQ(val, 0);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_GetAttrDouble_001, TestSize.Level1)
+{
+    DashComAttrsElements elements;
+    double val = 3.14;
+    elements.GetAttr("unknownAttr", val);
+    EXPECT_EQ(val, 0.0);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_GetAttrDouble_002, TestSize.Level1)
+{
+    DashComAttrsElements elements;
+    double val = 3.14;
+    elements.GetAttr("maxPlayoutRate", val);
+    EXPECT_EQ(val, 0.0);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_GetAttrString_003, TestSize.Level1)
+{
+    DashComAttrsElements elements;
+    auto xmlParser = std::make_shared<XmlParser>();
+    std::string xml = "<root profiles=\"test_profile\"/>";
+    xmlParser->ParseFromBuffer(xml.c_str(), xml.length());
+    auto rootElement = xmlParser->GetRootElement();
+    elements.ParseAttrs(xmlParser, rootElement);
+    std::string val;
+    elements.GetAttr("profiles", val);
+    EXPECT_EQ(val, "test_profile");
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_GetAttrUint32_003, TestSize.Level1)
+{
+    DashComAttrsElements elements;
+    auto xmlParser = std::make_shared<XmlParser>();
+    std::string xml = "<root width=\"1920\"/>";
+    xmlParser->ParseFromBuffer(xml.c_str(), xml.length());
+    auto rootElement = xmlParser->GetRootElement();
+    elements.ParseAttrs(xmlParser, rootElement);
+    uint32_t val = 0;
+    elements.GetAttr("width", val);
+    EXPECT_EQ(val, 1920);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_GetAttrInt32_003, TestSize.Level1)
+{
+    DashComAttrsElements elements;
+    auto xmlParser = std::make_shared<XmlParser>();
+    std::string xml = "<root height=\"1080\"/>";
+    xmlParser->ParseFromBuffer(xml.c_str(), xml.length());
+    auto rootElement = xmlParser->GetRootElement();
+    elements.ParseAttrs(xmlParser, rootElement);
+    int32_t val = 0;
+    elements.GetAttr("height", val);
+    EXPECT_EQ(val, 1080);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_GetAttrUint64_003, TestSize.Level1)
+{
+    DashComAttrsElements elements;
+    auto xmlParser = std::make_shared<XmlParser>();
+    std::string xml = "<root frameRate=\"30\"/>";
+    xmlParser->ParseFromBuffer(xml.c_str(), xml.length());
+    auto rootElement = xmlParser->GetRootElement();
+    elements.ParseAttrs(xmlParser, rootElement);
+    uint64_t val = 0;
+    elements.GetAttr("frameRate", val);
+    EXPECT_EQ(val, 30);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_GetAttrDouble_003, TestSize.Level1)
+{
+    DashComAttrsElements elements;
+    auto xmlParser = std::make_shared<XmlParser>();
+    std::string xml = "<root maxPlayoutRate=\"1.5\"/>";
+    xmlParser->ParseFromBuffer(xml.c_str(), xml.length());
+    auto rootElement = xmlParser->GetRootElement();
+    elements.ParseAttrs(xmlParser, rootElement);
+    double val = 0.0;
+    elements.GetAttr("maxPlayoutRate", val);
+    EXPECT_EQ(val, 1.5);
 }
 }
 }
