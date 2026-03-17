@@ -230,7 +230,7 @@ Seekable HlsPlayListDownloader::GetSeekable() const
 uint64_t HlsPlayListDownloader::KeyChange(std::list<std::shared_ptr<M3U8Fragment>>& files)
 {
     files = currentVariant_->m3u8_->files_;
-    uint64_t sessionKeyIndex = currentVariant_->sessionKeyIndex_.load(std::memory_order_relaxed);
+    uint64_t sessionKeyIndex = currentVariant_->sessionKeyIndex_;
     currentVariant_->m3u8_->WaitKeyDownload();
     std::vector<KeyInfo> keyInfos;
     currentVariant_->m3u8_->GetKeyInfos(keyInfos);
@@ -238,13 +238,13 @@ uint64_t HlsPlayListDownloader::KeyChange(std::list<std::shared_ptr<M3U8Fragment
         std::lock_guard<std::mutex> lock(mediaMutex_);
         if (currentSubtitles_ && currentSubtitles_->m3u8_) {
             files = currentSubtitles_->m3u8_->files_;
-            sessionKeyIndex = currentSubtitles_->sessionKeyIndex_.load(std::memory_order_relaxed);
+            sessionKeyIndex = currentSubtitles_->sessionKeyIndex_;
             currentSubtitles_->m3u8_->WaitKeyDownload();
             currentSubtitles_->m3u8_->GetKeyInfos(keyInfos);
         }
         if (currentAudio_ && currentAudio_->m3u8_) {
             files = currentAudio_->m3u8_->files_;
-            sessionKeyIndex = currentAudio_->sessionKeyIndex_.load(std::memory_order_relaxed);
+            sessionKeyIndex = currentAudio_->sessionKeyIndex_;
             currentAudio_->m3u8_->WaitKeyDownload();
             currentAudio_->m3u8_->GetKeyInfos(keyInfos);
         }
