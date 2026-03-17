@@ -1266,7 +1266,7 @@ HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_001, TestSize.Level1)
         OH_AVCodecType::AVCODEC_TYPE_VIDEO_ENCODER,
         OH_AVCodecType::AVCODEC_TYPE_VIDEO_DECODER,
         OH_AVCodecType::AVCODEC_TYPE_AUDIO_ENCODER,
-        OH_AVCodecType::AVCODEC_TYPE_AUDIO_DECODER,
+        OH_AVCodecType::AVCODEC_TYPE_AUDIO_DECODER
     };
 
     for (auto codecType : codecTypes) {
@@ -1301,7 +1301,7 @@ HWTEST_F(CapsUnitTest, AVCaps_IsSecure_001, TestSize.Level1)
         OH_AVCodecType::AVCODEC_TYPE_VIDEO_ENCODER,
         OH_AVCodecType::AVCODEC_TYPE_VIDEO_DECODER,
         OH_AVCodecType::AVCODEC_TYPE_AUDIO_ENCODER,
-        OH_AVCodecType::AVCODEC_TYPE_AUDIO_DECODER,
+        OH_AVCodecType::AVCODEC_TYPE_AUDIO_DECODER
     };
 
     for (auto codecType : codecTypes) {
