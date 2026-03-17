@@ -15,7 +15,7 @@
 
 #ifndef HISTREAMER_M3U8_H
 #define HISTREAMER_M3U8_H
-
+ 
 #include <memory>
 #include <string>
 #include <list>
@@ -23,6 +23,8 @@
 #include <functional>
 #include <utility>
 #include <map>
+#include <shared_mutex>
+#include <atomic>
 #include "hls_tags.h"
 #include "playlist_downloader.h"
 #include "download/downloader.h"
