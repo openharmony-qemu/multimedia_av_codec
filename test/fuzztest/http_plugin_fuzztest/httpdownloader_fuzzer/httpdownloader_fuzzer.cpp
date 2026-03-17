@@ -212,36 +212,6 @@ void HttpDownloaderRun(FuzzedDataProvider &fdp)
     CallHttpDownloaderFuncs(httpMediaDownloader, fdp);
 }
 
-void HttpDownloaderRun2(FuzzedDataProvider &fdp)
-{
-    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader =
-        std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 4, nullptr);  // 4
-    httpMediaDownloader->Init();
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-        std::shared_ptr<DownloadRequest>& request) {};
-    httpMediaDownloader->SetStatusCallback(statusCallback);
-    auto sourceCallback = std::make_shared<SourceCallback>();
-    httpMediaDownloader->SetCallback(sourceCallback);
-    httpMediaDownloader->Open(MP4_SEGMENT_BASE, g_httpHeader);
-    httpMediaDownloader->GetSeekable();
-    httpMediaDownloader->SetDemuxerState(0);
-    ReadDataInfo readDataInfo;
-    for (int i = 0; i < 800; i++) {  // 800
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));  // 10ms
-        httpMediaDownloader->isServerAcceptRange_ = true;
-        httpMediaDownloader->DownloadReport();
-        readDataInfo.streamId_ = 0;
-        readDataInfo.wantReadLength_ = 100 * 1024;  // 100 * 1024
-        readDataInfo.isEos_ = false;
-        httpMediaDownloader->Read(g_buffer, readDataInfo);
-        if (i == 3) {  // 3
-            httpMediaDownloader->SetDemuxerState(0);
-        }
-    }
-    httpMediaDownloader->Close(true);
-    httpMediaDownloader = nullptr;
-}
-
 void HttpDownloaderFlvRun(FuzzedDataProvider &fdp)
 {
     const std::map<std::string, std::string> httpHeader = {
@@ -284,11 +254,8 @@ void HttpDownloaderFlvRun(FuzzedDataProvider &fdp)
     httpMediaDownloader = nullptr;
 }
 
-void DownloaderFuzz(uint8_t *data, size_t size)
+void DownloaderFuzz(FuzzedDataProvider &fdp)
 {
-    g_baseFuzzData = data;
-    g_baseFuzzSize = size;
-    g_baseFuzzPos = 0;
     RequestInfo requestInfo;
     requestInfo.url = "http";
     requestInfo.httpHeader = g_httpHeader;
@@ -303,8 +270,8 @@ void DownloaderFuzz(uint8_t *data, size_t size)
     std::shared_ptr<DownloadRequest> request =
         std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     downloader->Retry(request);
-    downloader->isAppBackground_ = GetData<bool>();
-    downloader->isDestructor_ = GetData<bool>();
+    downloader->isAppBackground_ = fdp.ConsumeIntegral<bool>();
+    downloader->isDestructor_ = fdp.ConsumeIntegral<bool>();
     downloader->Retry(request);
     downloader->GetContentType();
     downloader->ReStart();
@@ -335,7 +302,7 @@ extern "C" int LLVMFuzzerTestOneInput(uint8_t *data, size_t size)
     }
     HttpDownloaderRun(fdp);
     HttpDownloaderFlvRun(fdp);
-    DownloaderFuzz(data, size);
+    DownloaderFuzz(fdp);
     if (!CloseServer()) {
         std::cout << "Close server error" << std::endl;
         return -1;
