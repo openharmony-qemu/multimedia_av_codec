@@ -1246,12 +1246,12 @@ HWTEST_F(CapsUnitTest, AVCaps_FeatureCheck_002, TestSize.Level1)
  */
 HWTEST_F(CapsUnitTest, AVCaps_FeatureCheck_003, TestSize.Level1)
 {
-    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCodecType::AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
     EXPECT_NE(cap, nullptr);
     const char *targetMimeType = OH_AVCapability_GetMimeType(cap);
-    EXPECT_STREQ(targetMimeType, OH_AVCodecType::AVCODEC_MIMETYPE_VIDEO_HEVC);
-    EXPECT_TRUE(OH_AVCapability_CheckMimeType(cap, OH_AVCodecType::AVCODEC_MIMETYPE_VIDEO_HEVC));
-    EXPECT_FALSE(OH_AVCapability_CheckMimeType(cap, OH_AVCodecType::AVCODEC_MIMETYPE_VIDEO_AVC));
+    EXPECT_STREQ(targetMimeType, OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
+    EXPECT_TRUE(OH_AVCapability_CheckMimeType(cap, OH_AVCODEC_MIMETYPE_VIDEO_HEVC));
+    EXPECT_FALSE(OH_AVCapability_CheckMimeType(cap, OH_AVCODEC_MIMETYPE_VIDEO_AVC));
 }
 
 /**
