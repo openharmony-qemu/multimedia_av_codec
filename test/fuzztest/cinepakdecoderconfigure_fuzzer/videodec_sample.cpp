@@ -25,7 +25,6 @@ constexpr int64_t NANOS_IN_MICRO = 1000L;
 
 constexpr int32_t EIGHT = 8;
 constexpr int32_t SIXTEEN = 16;
-constexpr int32_t TWENTY_FOUR = 24;
 constexpr uint32_t START_CODE_SIZE = 4;
 constexpr uint8_t START_CODE[START_CODE_SIZE] = {0, 0, 0, 1};
 VDecFuzzSample *g_decSample = nullptr;
@@ -315,7 +314,8 @@ int32_t VDecFuzzSample::ReadData(uint32_t index, OH_AVBuffer *buffer)
         return 1;
     }
     uint32_t bufferSize = static_cast<uint32_t>(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) |
-    ((ch[1] & 0xFF) << SIXTEEN) | ((ch[0] & 0xFF) << TWENTY_FOUR));
+    ((ch[1] & 0xFF) << SIXTEEN));
+    (void)inFile_->seekg(-START_CODE_SIZE, std::ios::cur);
     return SendData(bufferSize, index, buffer);
 }
 
