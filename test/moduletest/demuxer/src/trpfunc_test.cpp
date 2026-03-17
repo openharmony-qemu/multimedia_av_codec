@@ -1067,15 +1067,15 @@ HWTEST_F(DemuxerTrpFuncNdkTest, TRP_DEMUXER_SEEK_TEST_0700, TestSize.Level0)
     CheckSeekMode(fileTest6);
     cout << "-----------------fileTest6_finish-----------------"<< endl;
     seekInfo fileTest7{"/data/test/media/mpeg4_aac.trp", SEEK_MODE_PREVIOUS_SYNC,
-        6200000, 116, 169, 0};
+        6200000, 117, 169, 0};
     CheckSeekMode(fileTest7);
     cout << "-----------------fileTest7_finish-----------------"<< endl;
     seekInfo fileTest8{"/data/test/media/mpeg4_aac.trp", SEEK_MODE_CLOSEST_SYNC,
-        6200000, 116, 169, 0};
+        6200000, 117, 169, 0};
     CheckSeekMode(fileTest8);
     cout << "-----------------fileTest8_finish-----------------"<< endl;
     seekInfo fileTest9{"/data/test/media/mpeg4_aac.trp", SEEK_MODE_NEXT_SYNC,
-        6200000, 116, 169, 0};
+        6200000, 117, 169, 0};
     CheckSeekMode(fileTest9);
     cout << "-----------------fileTest9_finish-----------------"<< endl;
 }
@@ -1112,15 +1112,15 @@ HWTEST_F(DemuxerTrpFuncNdkTest, TRP_DEMUXER_SEEK_TEST_0800, TestSize.Level0)
     CheckSeekMode(fileTest6);
     cout << "-----------------fileTest6_finish-----------------"<< endl;
     seekInfo fileTest7{"/data/test/media/mpeg4_mp3.trp", SEEK_MODE_PREVIOUS_SYNC,
-        6200000, 116, 149, 0};
+        6200000, 117, 149, 0};
     CheckSeekMode(fileTest7);
     cout << "-----------------fileTest7_finish-----------------"<< endl;
     seekInfo fileTest8{"/data/test/media/mpeg4_mp3.trp", SEEK_MODE_CLOSEST_SYNC,
-        6200000, 116, 149, 0};
+        6200000, 117, 149, 0};
     CheckSeekMode(fileTest8);
     cout << "-----------------fileTest8_finish-----------------"<< endl;
     seekInfo fileTest9{"/data/test/media/mpeg4_mp3.trp", SEEK_MODE_NEXT_SYNC,
-        6200000, 116, 149, 0};
+        6200000, 117, 149, 0};
     CheckSeekMode(fileTest9);
     cout << "-----------------fileTest9_finish-----------------"<< endl;
 }
