@@ -15,14 +15,14 @@
 
 #ifndef HISTREAMER_HLS_PLAYLIST_DOWNLOADER_H
 #define HISTREAMER_HLS_PLAYLIST_DOWNLOADER_H
- 
+
 #include <set>
 #include <utility>
-#include <shared_mutex>
-#include <atomic>
 #include "playlist_downloader.h"
 #include "m3u8.h"
 #include "utils/aes_decryptor.h"
+#include <shared_mutex>
+#include <atomic>
 
 namespace OHOS {
 namespace Media {

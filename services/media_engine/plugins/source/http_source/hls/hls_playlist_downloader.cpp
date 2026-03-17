@@ -94,66 +94,6 @@ HlsPlayListDownloader::~HlsPlayListDownloader()
         }
     }
 }
-    
-    // 停止任务和下载器
-    if (updateTask_ != nullptr) {
-        updateTask_->Stop();
-    }
-    if (downloader_ != nullptr) {
-        downloader_->Stop(false);
-    }
-    
-    // 清理 aesDecryptorsMap_
-    {
-        std::unique_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
-        aesDecryptorsMap_.clear();
-    }
-    
-    // 更新统计信息
-    if (reportInfo_ != nullptr) {
-        if (isLive) {
-            if (isFmp4) {
-                reportInfo_->sourceType_ = static_cast<int8_t>(MediaAVCodec::DfxSourceType::FMP4LIVE);
-            } else {
-                reportInfo_->sourceType_ = static_cast<int8_t>(MediaAVCodec::DfxSourceType::HLSLIVE);
-            }
-        } else {
-            if (isFmp4) {
-                reportInfo_->sourceType_ = static_cast<int8_t>(MediaAVCodec::DfxSourceType::FMP4VOD);
-            } else {
-                reportInfo_->sourceType_ = static_cast<int8_t>(MediaAVCodec::DfxSourceType::HLSVOD);
-            }
-        }
-    }
-    
-    MEDIA_LOG_I("~HlsPlayListDownloader out");
-}
-    if (downloader_ != nullptr) {
-        downloader_->Stop(false);
-    }
-    {
-        std::unique_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
-        aesDecryptorsMap_.clear();
-    }
-    MEDIA_LOG_I("~HlsPlayListDownloader out");
-    FALSE_RETURN_MSG(reportInfo_ != nullptr, "reportInfo_ is nullptr");
-    FALSE_RETURN_MSG(currentVariant_ != nullptr, "currentVariant_ is nullptr");
-    auto m3u8 = currentVariant_->m3u8_;
-    FALSE_RETURN_MSG(m3u8 != nullptr, "m3u8 is nullptr");
-    if (m3u8->IsLive()) {
-        if (isFmp4_.load()) {
-            reportInfo_->sourceType_ = static_cast<int8_t>(MediaAVCodec::DfxSourceType::FMP4LIVE);
-        } else {
-            reportInfo_->sourceType_ = static_cast<int8_t>(MediaAVCodec::DfxSourceType::HLSLIVE);
-        }
-    } else {
-        if (isFmp4_.load()) {
-            reportInfo_->sourceType_ = static_cast<int8_t>(MediaAVCodec::DfxSourceType::FMP4VOD);
-        } else {
-            reportInfo_->sourceType_ = static_cast<int8_t>(MediaAVCodec::DfxSourceType::HLSVOD);
-        }
-    }
-}
 
 void HlsPlayListDownloader::SetSourceStatisticsDfx(
     std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr, bool isFmp4)

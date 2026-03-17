@@ -15,7 +15,7 @@
 
 #ifndef HISTREAMER_M3U8_H
 #define HISTREAMER_M3U8_H
- 
+
 #include <memory>
 #include <string>
 #include <list>
