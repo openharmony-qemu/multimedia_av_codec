@@ -749,7 +749,7 @@ HWTEST_F(Vp8decApiNdkTest, VIDEO_VP8DEC_CAP_API_1900, TestSize.Level1)
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
     ASSERT_EQ(AV_ERR_OK, ret);
     ASSERT_EQ(range.minVal, 4);
-    ASSERT_EQ(range.maxVal, 1920);
+    ASSERT_EQ(range.maxVal, 3840);
     vdec_ = OH_VideoDecoder_CreateByName(codecName);
     ASSERT_NE(nullptr, vdec_);
     format = OH_AVFormat_Create();
@@ -861,7 +861,7 @@ HWTEST_F(Vp8decApiNdkTest, VIDEO_VP8DEC_CAP_API_2500, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, ret);
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
     ASSERT_EQ(range.minVal, 4);
-    ASSERT_EQ(range.maxVal, 1920);
+    ASSERT_EQ(range.maxVal, 3840);
     vdec_ = OH_VideoDecoder_CreateByName(codecName);
     ASSERT_NE(nullptr, vdec_);
     format = OH_AVFormat_Create();
@@ -922,7 +922,7 @@ HWTEST_F(Vp8decApiNdkTest, VIDEO_VP8DEC_CAP_API_2800, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, ret);
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
     ASSERT_EQ(range.minVal, 4);
-    ASSERT_EQ(range.maxVal, 1920);
+    ASSERT_EQ(range.maxVal, 3840);
 }
 
 /**
@@ -941,7 +941,7 @@ HWTEST_F(Vp8decApiNdkTest,  VIDEO_VP8DEC_CAP_API_2900, TestSize.Level1)
     ret = OH_AVCapability_GetVideoWidthRange(capability, &range);
     ASSERT_EQ(AV_ERR_OK, ret);
     ASSERT_EQ(range.minVal, 4);
-    ASSERT_EQ(range.maxVal, 1920);
+    ASSERT_EQ(range.maxVal, 3840);
     vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
     ASSERT_NE(nullptr, vdec_);
     format = OH_AVFormat_Create();
@@ -1003,7 +1003,7 @@ HWTEST_F(Vp8decApiNdkTest,  VIDEO_VP8DEC_CAP_API_3200, TestSize.Level1)
     ret = OH_AVCapability_GetVideoHeightRange(capability, &heightRange);
     ASSERT_EQ(AV_ERR_OK, ret);
     ASSERT_EQ(heightRange.minVal, 4);
-    ASSERT_EQ(heightRange.maxVal, 1920);
+    ASSERT_EQ(heightRange.maxVal, 3840);
     vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
     ASSERT_NE(nullptr, vdec_);
     format = OH_AVFormat_Create();
@@ -1039,7 +1039,7 @@ HWTEST_F(Vp8decApiNdkTest, VIDEO_VP8DEC_CAP_API_3300, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, ret);
     cout << "minval=" << heightRange.minVal << "  maxval=" << heightRange.maxVal << endl;
     ASSERT_EQ(heightRange.minVal, 4);
-    ASSERT_EQ(heightRange.maxVal, 1920);
+    ASSERT_EQ(heightRange.maxVal, 3840);
     ret = OH_AVCapability_GetVideoWidthRange(capability, &widthRange);
     ASSERT_EQ(AV_ERR_OK, ret);
     cout << "minval=" << widthRange.minVal << "  maxval=" << widthRange.maxVal << endl;

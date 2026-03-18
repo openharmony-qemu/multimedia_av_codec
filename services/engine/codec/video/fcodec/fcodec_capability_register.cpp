@@ -37,11 +37,11 @@ constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 139264;
 constexpr int32_t VIDEO_BLOCKPERSEC_SIZE = 983040;
 #ifdef SUPPORT_CODEC_VC1
 constexpr int32_t VC1_ALIGNMENT_SIZE = 2;
-constexpr int32_t VC1_MAX_WIDTH_SIZE = 2048;
-constexpr int32_t VC1_MAX_HEIGHT_SIZE = 2048;
+constexpr int32_t VC1_MAX_WIDTH_SIZE = 1920;
+constexpr int32_t VC1_MAX_HEIGHT_SIZE = 1080;
 constexpr int32_t VC1_BITRATE_MAX_SIZE = 135000000;
-constexpr int32_t VC1_BLOCKPERFRAME_SIZE = 16384;
-constexpr int32_t VC1_BLOCKPERSEC_SIZE = 491520;
+constexpr int32_t VC1_BLOCKPERFRAME_SIZE = 8160;
+constexpr int32_t VC1_BLOCKPERSEC_SIZE = 489600;
 #endif
 constexpr int32_t MSVIDEO1_MIN_WIDTH_SIZE = 4;
 constexpr int32_t MSVIDEO1_MIN_HEIGHT_SIZE = 4;
