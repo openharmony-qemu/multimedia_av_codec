@@ -314,20 +314,14 @@ bool CheckStartTime(const AVFormatContext *formatContext, const AVStream *stream
 int ConvertFlagsToFFmpeg(AVStream *avStream, int64_t ffTime, SeekMode mode, int64_t seekTime, FileType fileType)
 {
     FALSE_RETURN_V_MSG_E(avStream != nullptr && avStream->codecpar != nullptr, -1, "AVStream is nullptr");
+
+    // Handle subtitle, audio, non-video, and sync modes early
     if (avStream->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE && ffTime == 0) {
         return AVSEEK_FLAG_FRAME;
     }
     if (FFmpegFormatHelper::IsAudioType(*avStream) && seekTime != 0) {
-        int64_t streamDuration = avStream->duration;
-        if (streamDuration == AV_NOPTS_VALUE || streamDuration <= 0) {
-            streamDuration = GetStreamDuration(*avStream);
-        }
-        // When the seekTime is within the last 0.5s, still use BACKWARD mode to ensure consistent func behavior.
-        int64_t buffering = ConvertTimeToFFmpeg(500 * MS_TO_NS, avStream->time_base); // 0.5s
-        if (streamDuration > 0  && (streamDuration < buffering || ffTime >= streamDuration - buffering)) {
-            return AVSEEK_FLAG_BACKWARD;
-        }
-        return g_seekModeToFFmpegSeekFlags.at(mode);
+        int32_t flag = GetAudioSeekFlag(*avStream, seekTime);
+        return (flag != 0) ? flag : g_seekModeToFFmpegSeekFlags.at(mode);
     }
     if (!FFmpegFormatHelper::IsVideoType(*avStream) || seekTime == 0) {
         return AVSEEK_FLAG_BACKWARD;
@@ -356,11 +350,22 @@ int ConvertFlagsToFFmpeg(AVStream *avStream, int64_t ffTime, SeekMode mode, int6
         }
     }
 
-    if (ffTimePrev == ffTimeNext || (ffTimeNext - ffTime < ffTime - ffTimePrev)) {
-        return AVSEEK_FLAG_FRAME;
-    } else {
+    return (ffTimePrev == ffTimeNext || (ffTimeNext - ffTime < ffTime - ffTimePrev)) ?
+        AVSEEK_FLAG_FRAME : AVSEEK_FLAG_BACKWARD;
+}
+
+static int32_t GetAudioSeekFlag(const AVStream &avStream, int64_t seekTime)
+{
+    int64_t streamDuration = avStream.duration;
+    if (streamDuration == AV_NOPTS_VALUE || streamDuration <= 0) {
+        streamDuration = GetStreamDuration(avStream);
+    }
+    // When the seekTime is within the last 0.5s, still use BACKWARD mode to ensure consistent func behavior.
+    int64_t buffering = ConvertTimeToFFmpeg(500 * MS_TO_NS, avStream.time_base);
+    if (streamDuration > 0 && (streamDuration < buffering || seekTime >= streamDuration - buffering)) {
         return AVSEEK_FLAG_BACKWARD;
     }
+    return 0;
 }
 
 bool IsSupportedTrackType(const AVStream& avStream)
