@@ -17,12 +17,14 @@
 #include "videodec_inner_sample.h"
 #include <fuzzer/FuzzedDataProvider.h>
 #include "native_avcapability.h"
+#include "avcodec_monitor.h"
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 #define FUZZ_PROJECT_NAME "hwdecoderinner_fuzzer"
 VDecNdkInnerFuzzSample *g_vDecSample = nullptr;
+std::vector<pid_t> pidList;
 
 namespace OHOS {
 
@@ -38,6 +40,7 @@ bool HwdecoderInnerFuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int32_t)) {
         return false;
     }
+    AVCodecMonitor::GetActiveSecureDecoderPids(pidList);
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
     if (cap == nullptr) {
         return false;
