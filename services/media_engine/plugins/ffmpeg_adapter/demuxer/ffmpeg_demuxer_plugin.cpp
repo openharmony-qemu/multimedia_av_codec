@@ -2665,26 +2665,21 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFramesLimited()
     while ((extraType && !AllSupportTrackFramesReady()) ||
            (!extraType && !AllVideoFirstFramesReady() &&
             !streamParsers_->AllParserInited())) {
-        FALSE_RETURN_V_MSG_E(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE,
-            "ParseVideoFirstFrames interrupt");
+        FALSE_RETURN_V_MSG_E(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE, "ParseVideoFirstFrames interrupt");
+        if (CheckLimitedProbeExitConditions(hasVideoTrack, hasAudioTrack, softLimit, hardLimit)) {
+            break;
+        }
         ret = ReadAndValidateLimitedPacket(pktWrapper);
         if (ret == Status::ERROR_WRONG_STATE) {
             break;
         }
-        if (ret != Status::OK) {
-            continue;
-        }
-        if (pktWrapper == nullptr || pktWrapper->GetAVPacket() == nullptr) {
+        if (ret != Status::OK || pktWrapper == nullptr || pktWrapper->GetAVPacket() == nullptr) {
             continue;
         }
         int32_t trackId = pktWrapper->GetStreamIndex();
         auto stream = formatContext_->streams[trackId];
         ret = ProcessLimitedPacketFirstFrame(pktWrapper, extraType, trackId, stream);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Process first frame failed");
-        if (CheckLimitedProbeExitConditions(hasVideoTrack, hasAudioTrack,
-            softLimit, hardLimit)) {
-            break;
-        }
         pktWrapper = nullptr;
     }
     MEDIA_LOG_I("initReadFrameCount_ : " PUBLIC_LOG_U32, initReadFrameCount_);
