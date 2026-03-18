@@ -37,7 +37,6 @@ public:
                                   const AVCodecCategory &category) override;
     void *GetBuffer(const std::string &name, uint32_t sizeOfCap) override;
     void *NewBuffer(size_t bufSize) override;
-    //ccm
     std::vector<std::shared_ptr<CapabilityData>> GetCapabilityList(int32_t codecType) override;
 private:
     std::shared_ptr<ICodecListService> codecListService_ = nullptr;
@@ -45,8 +44,7 @@ private:
     std::unordered_map<std::string, void *> nameAddrMap_;
     std::set<uint8_t *> bufAddrSet_;
     std::mutex mutex_;
-    //ccm
-    std::vector<std::shared_ptr<CapabilityData>> capabilityListCache_;
+    std::unordered_multimap<int32_t, std::shared_ptr<CapabilityData>> capabilityListCache_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

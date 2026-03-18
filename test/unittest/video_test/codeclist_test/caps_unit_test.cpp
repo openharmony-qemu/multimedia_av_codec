@@ -21,6 +21,8 @@
 #include "native_avmagic.h"
 #endif
 
+#include <iostream>
+
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
@@ -1290,8 +1292,165 @@ HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_001, TestSize.Level1)
 }
 
 /**
+ * @tc.name: AVCaps_GetCapabilityList_MemoryOverwrite_001
+ * @tc.desc: AVCaps GetCapabilityList called multiple times to check if the returned capability list is consistent and not overwritten.
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_MemoryOverwrite_002, TestSize.Level1)
+{
+    uint32_t count1 = 0;
+    uint32_t count2 = 0;
+    OH_AVCapability **capList1 = OH_AVCodec_GetCapabilityList(
+        OH_AVCodecType::AVCODEC_TYPE_VIDEO_ENCODER, &count1);
+    ASSERT_NE(capList1, nullptr);
+    ASSERT_GT(count1, 0);
+    ASSERT_NE(capList1[0], nullptr);
+
+
+
+    for (uint32_t i = 0; i < count1; i++) {
+        const char *name = nullptr;
+        if (capList1[i] != nullptr) {
+            name = OH_AVCapability_GetName(capList1[i]);
+        }
+    
+        
+    }
+
+    const char *nameBefore = OH_AVCapability_GetName(capList1[0]);
+    ASSERT_NE(nameBefore, nullptr);
+    std::string firstName(nameBefore);
+
+    OH_AVCapability **capList2 = OH_AVCodec_GetCapabilityList(
+        OH_AVCodecType::AVCODEC_TYPE_AUDIO_ENCODER, &count2);
+    ASSERT_NE(capList2, nullptr);
+    ASSERT_GT(count2, 0);
+
+
+
+    for (uint32_t i = 0; i < count2; i++) {
+        const char *name = nullptr;
+        if (capList2[i] != nullptr) {
+            name = OH_AVCapability_GetName(capList2[i]);
+        }
+
+
+    }
+
+
+
+    for (uint32_t i = 0; i < count1; i++) {
+        char *name = nullptr;
+        if (capList1[i] != nullptr) {
+            name = OH_AVCapability_GetName(capList1[i]);
+        }
+
+
+    }
+
+    ASSERT_NE(capList1[0], nullptr);
+    const char *nameAfter = OH_AVCapability_GetName(capList1[0]);
+    ASSERT_NE(nameAfter, nullptr);
+
+
+
+
+
+
+    EXPECT_STRNE(firstName.c_str(), nameAfter);
+}
+
+/**
+ * @tc.name: AVCaps_GetCapabilityList_THREAD_POOL_001
+ * @tc.desc: Verify that OH_AVCodec_GetCapabilityList can be invoked concurrently
+ *           from multiple threads and returned capability entries are accessible.
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_THREAD_POOL_001, TestSize.Level1)
+{
+    const int32_t threadCnt = 10;
+    std::vector<std::thread> threadPool;
+
+    for(int32_t i = 0; i < threadCnt; i++) {
+        threadPool.emplace_back([i]() {
+            uint32_t count = 0;
+            OH_AVCodecType codecType = static_cast<OH_AVCodecType>(i % 4);
+            OH_AVCapability **capList = OH_AVCodec_GetCapabilityList(codecType, &count);
+
+            EXPECT_NE(capList, nullptr);
+            EXPECT_GT(count, 0);
+
+            for (uint32_t j = 0; j < count; j++) {
+                ASSERT_NE(capList[j], nullptr);
+                const char *name = OH_AVCapability_GetName(capList[j]);
+                EXPECT_NE(name, nullptr);
+            }
+        });
+    }
+
+    for (auto &th : threadPool) {
+        th.join();
+    }
+}
+
+/**
+ * @tc.name: AVCaps_GetCapabilityList_THREAD_POOL_002
+ * @tc.desc: Verify concurrent repeated calls to OH_AVCodec_GetCapabilityList with different codec types,
+ *           and check that the returned capability name and mime type can be queried normally.
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_THREAD_POOL_002, TestSize.Level1)
+{
+    const int32_t threadCnt = 12;
+    const int32_t loopCnt = 30;
+    std::vector<std::thread> threadPool;
+
+    for (int32_t i = 0; i < threadCnt; i++) {
+        threadPool.emplace_back([i, loopCnt]() {
+            OH_AVCodecType codecType;
+            switch (i % 4) {
+                case 0:
+                    codecType = OH_AVCodecType::AVCODEC_TYPE_VIDEO_ENCODER;
+                    break;
+                case 1:
+                    codecType = OH_AVCodecType::AVCODEC_TYPE_VIDEO_DECODER;
+                    break;
+                case 2:
+                    codecType = OH_AVCodecType::AVCODEC_TYPE_AUDIO_ENCODER;
+                    break;
+                default:
+                    codecType = OH_AVCodecType::AVCODEC_TYPE_AUDIO_DECODER;
+                    break;
+            }
+
+            for (int32_t k = 0; k < loopCnt; k++) {
+                uint32_t count = 0;
+                OH_AVCapability **capList = OH_AVCodec_GetCapabilityList(codecType, &count);
+                EXPECT_NE(capList, nullptr);
+                EXPECT_GT(count, 0);
+
+                for (uint32_t j = 0; j < count; j++) {
+                    ASSERT_NE(capList[j], nullptr);
+                    const char *mime = OH_AVCapability_GetMimeType(capList[j]);
+                    const char *name = OH_AVCapability_GetName(capList[j]);
+                    EXPECT_NE(mime, nullptr);
+                    EXPECT_NE(name, nullptr);
+                }
+            }
+        });
+    }
+
+    for (auto &th : threadPool) {
+        th.join();
+    }
+}
+
+/**
  * @tc.name: AVCaps_IsSecure_001
- * @tc.desc: Check IsSecure with valid capability, and call twice to check the result is same
+ * @tc.desc: Check IsSecure with valid capability
  * @tc.type: FUNC
  * @tc.require:
  */

@@ -91,7 +91,7 @@ int32_t CodecListClient::GetCapabilityList(std::vector<std::shared_ptr<Capabilit
     CHECK_AND_RETURN_RET_LOG(EnsureProxyValid(), AVCS_ERR_INVALID_OPERATION,
                              "Get capability list failed: ensure proxy valid failed");
     int32_t index = 0;
-    const int32_t MAX_LIMIT = 500;
+    const int32_t MAX_LIMIT = 200;
     while (index < MAX_LIMIT) {
         auto capabilityData = std::make_shared<CapabilityData>();
         int32_t ret = codecListProxy_->GetCapabilityAt(*capabilityData, index);

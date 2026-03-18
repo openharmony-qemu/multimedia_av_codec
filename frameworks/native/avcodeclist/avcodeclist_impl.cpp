@@ -74,6 +74,7 @@ AVCodecListImpl::~AVCodecListImpl()
     }
     bufAddrSet_.clear();
     mimeCapsMap_.clear();
+    capabilityListCache_.clear();
     AVCODEC_LOGD("Destroy AVCodecList instances successful");
 }
 
@@ -131,21 +132,11 @@ std::vector<std::shared_ptr<CapabilityData>> AVCodecListImpl::GetCapabilityList(
 {
     std::lock_guard<std::mutex> lock(mutex_);
     // Search capbility List from cache
-    if (!capabilityListCache_.empty()) {
-        std::vector<std::shared_ptr<CapabilityData>> resultList;
-        resultList.reserve(capabilityListCache_.size());
-        for (const auto& sharedCap : capabilityListCache_) {
-            if (sharedCap == nullptr) {
-                continue;
-            }
-            if (sharedCap->codecType == codecType) {
-                resultList.push_back(sharedCap);
-            }
-        }
-        AVCODEC_LOGD("GetCapabilityList: Cache hit, filtered count: %{public}zu", resultList.size());
-        return resultList;
+    auto iter = capabilityListCache_.find(codecType);
+    if (iter != capabilityListCache_.end()) {
+        return iter->second;
     }
-
+       
     // Get capbility List from service
     std::vector<std::shared_ptr<CapabilityData>> remoteCapList;
     int32_t ret = codecListService_->GetCapabilityList(remoteCapList);
@@ -153,21 +144,21 @@ std::vector<std::shared_ptr<CapabilityData>> AVCodecListImpl::GetCapabilityList(
         AVCODEC_LOGE("GetCapabilityList failed from service, ret: %{public}d", ret);
         return std::vector<std::shared_ptr<CapabilityData>>();
     }
-
-    capabilityListCache_ = remoteCapList;
-    std::vector<std::shared_ptr<CapabilityData>> resultList;
-    resultList.reserve(capabilityListCache_.size());
-
-    for (const auto& sharedCap : capabilityListCache_) {
-        if (sharedCap == nullptr) {
+    std::unordered_multimap<int32_t, std::vector<shared_ptr<CapabilityData>>> newCache;
+     for (const auto& cap : remoteCapList) {
+        if (cap == nullptr) {
             continue;
         }
-        if (sharedCap->codecType == codecType) {
-            resultList.push_back(sharedCap);
-        }
+        newCache[cap->codecType].push_back(cap);
     }
-    AVCODEC_LOGD("Get CapabilityList Successfully, Filtered result count: %{public}zu", resultList.size());
-    return resultList;
+    capabilityListCache_ = std::move(newCache);
+    auto resultIter = capabilityListCache_.find(codecType);
+    if (resultIter != capabilityListCache_.end()) {
+        AVCODEC_LOGD("Get CapabilityList Successfully from service, codecType: %{public}d, count: %{public}zu",
+                     codecType, resultIter->second.size());
+        return resultIter->second;
+    }
+    return std::vector<std::shared_ptr<CapabilityData>>();
 }
 
 void *AVCodecListImpl::GetBuffer(const std::string &name, uint32_t sizeOfCap)

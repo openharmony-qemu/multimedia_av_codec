@@ -80,10 +80,14 @@ typedef enum OH_AVCodecCategory {
  * @since 24
  */
 typedef enum OH_AVCodecType {
-    AVCODEC_TYPE_VIDEO_ENCODER = 0,
-    AVCODEC_TYPE_VIDEO_DECODER,
-    AVCODEC_TYPE_AUDIO_ENCODER,
-    AVCODEC_TYPE_AUDIO_DECODER
+    /** Video encoder */
+    AVCODEC_TYPE_VIDEO_ENCODER = 0,  
+    /** Video decoder */
+    AVCODEC_TYPE_VIDEO_DECODER = 1,
+    /** Audio encoder */
+    AVCODEC_TYPE_AUDIO_ENCODER = 2,
+    /** Audio decoder */
+    AVCODEC_TYPE_AUDIO_DECODER = 3
 } OH_AVCodecType;
 
 /**
@@ -129,16 +133,17 @@ OH_AVCapability *OH_AVCodec_GetCapability(const char *mime, bool isEncoder);
  */
 OH_AVCapability *OH_AVCodec_GetCapabilityByCategory(const char *mime, bool isEncoder, OH_AVCodecCategory category);
 
-/** 
- * @brief Get a codec capability list with the specified codec type. By specifying the codec type, 
- * get all matching codec capabilities.
+/**
+ * @brief Get a codec capability list within the specified codec type. By specifying the codec type,
+ * get all matching codec capabilities. 
  * 
- * @paeam codecType The codec type
+ * @param codecType The codec type
  * @param count The pointer to store the number of matched codec capabilities in the codec capability list
  * @return Returns a list of capability instances if matching codecs are found,
- * returns NULL if no matching codecs are found
+ * returns NULL if no matching codecs are found.
+ * No need for developers to allocate or free the memory for the codec capability list.
  * @since 24
-*/
+ */
 OH_AVCapability **OH_AVCodec_GetCapabilityList(OH_AVCodecType codecType, uint32_t *count);
 
 /**
@@ -180,7 +185,7 @@ const char *OH_AVCapability_GetName(OH_AVCapability *capability);
 const char *OH_AVCapability_GetMimeType(OH_AVCapability *capability);
 
 /**
- * @brief Check the codec mime type.
+ * @brief Check if the mime type of the codec of the capability matches the specified mime type.
  * 
  * @param capability Codec capability pointer
  * @param mimeType target mime type string to check

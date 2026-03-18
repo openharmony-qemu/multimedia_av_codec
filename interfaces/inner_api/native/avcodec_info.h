@@ -252,8 +252,8 @@ public:
     /**
      * @brief Check whether the codec is secure.
      * @return Returns true if the codec is secure; false otherwise.
-     * @since 3.1
-     * @version 4.0
+     * @since 6.1
+     * @version 6.1
      */
     bool IsSecure();
 
