@@ -88,6 +88,9 @@ protected:
     const char *INP_DIR_43 = "/data/test/media/vc1.asf";
     const char *INP_DIR_44 = "/data/test/media/vp8_aac.asf";
     const char *INP_DIR_45 = "/data/test/media/wmv3_wmapro.asf";
+    const char *INP_DIR_46 = "/data/test/media/mpeg1_dts.asf";
+    const char *INP_DIR_47 = "/data/test/media/rawvideo_dts.asf";
+    const char *INP_DIR_48 = "/data/test/media/cinepak_dts.asf";
 };
 
 static unique_ptr<FileServerDemo> server = nullptr;
@@ -1746,5 +1749,93 @@ HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_11400, TestSize.Level1)
 {
     seekInfo fileTest1{INP_DIR_45, SEEK_MODE_CLOSEST_SYNC, 3000, 106, 8};
     CreateFdSource(INP_DIR_45);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_11500
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, test_mpeg4_wma.asf.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_11500, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_2, 216, 300);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_11600
+ * @tc.name      : demuxer ASF, Seek to middle time, closest mode, test_mpeg4_wma.asf.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_11600, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_2, SEEK_MODE_CLOSEST_SYNC, 9000, 36, 26};
+    CreateFdSource(INP_DIR_2);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_11700
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, mpeg1_dts.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_11700, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_46, 262, 185);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_11800
+ * @tc.name      : demuxer ASF, Seek to middle time, closest mode, mpeg1_dts.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_11800, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_46, SEEK_MODE_CLOSEST_SYNC, 2000, 77, 109};
+    CreateFdSource(INP_DIR_46);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_11900
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, rawvideo_dts.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_11900, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_47, 130, 90);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_12000
+ * @tc.name      : demuxer ASF, Seek to middle time, closest mode, rawvideo_dts.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_12000, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_47, SEEK_MODE_CLOSEST_SYNC, 1000, 36, 53};
+    CreateFdSource(INP_DIR_47);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_12100
+ * @tc.name      : demuxer ASF, Create source with g_fd, Local, cinepak_dts.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_12100, TestSize.Level3)
+{
+    DemuxerAsfResult(INP_DIR_48, 262, 185);
+}
+
+/**
+ * @tc.number    : DEMUXER_ASF_FUNC_12200
+ * @tc.name      : demuxer ASF, Seek to middle time, closest mode, cinepak_dts.asf
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAsfFuncNdkTest, DEMUXER_ASF_FUNC_12200, TestSize.Level1)
+{
+    seekInfo fileTest1{INP_DIR_48, SEEK_MODE_CLOSEST_SYNC, 2000, 77, 107};
+    CreateFdSource(INP_DIR_48);
     CheckSeekMode(fileTest1);
 }

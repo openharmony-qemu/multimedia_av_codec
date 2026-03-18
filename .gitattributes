@@ -302,5 +302,11 @@ test/moduletest/resources/demuxer/pcm_bluray.m2ts filter=lfs diff=lfs merge=lfs 
 test/moduletest/resources/demuxer/rawvideo_4_4_30.avi filter=lfs diff=lfs merge=lfs -text
 test/moduletest/resources/demuxer/truehd.mkv filter=lfs diff=lfs merge=lfs -text
 test/moduletest/resources/demuxer/vc1_ts.ts filter=lfs diff=lfs merge=lfs -text
+test/moduletest/resources/demuxer/cinepak_dts.asf filter=lfs diff=lfs merge=lfs -text
+test/moduletest/resources/demuxer/mpeg1_dts.asf filter=lfs diff=lfs merge=lfs -text
+test/moduletest/resources/demuxer/rawvideo_dts.asf filter=lfs diff=lfs merge=lfs -text
+test/unittest/resources/demuxer_res/cinepak_dts.asf filter=lfs diff=lfs merge=lfs -text
+test/unittest/resources/demuxer_res/mpeg1_dts.asf filter=lfs diff=lfs merge=lfs -text
+test/unittest/resources/demuxer_res/rawvideo_dts.asf filter=lfs diff=lfs merge=lfs -text
 /test/moduletest/resources/demuxer/mkv.mkv filter=lfs diff=lfs merge=lfs -text
 /test/unittest/resources/reference_parser_test/mp4/ippp_0.mp4 filter=lfs diff=lfs merge=lfs -text
