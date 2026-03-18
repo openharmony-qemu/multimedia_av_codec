@@ -80,7 +80,7 @@ public:
     int32_t UpdateOutputBuffer(uint32_t index);
     int32_t UpdateSurfaceMemory(uint32_t index);
     int32_t GetSurfaceBufferStride(const std::shared_ptr<CodecBuffer> &frameBuffer);
-    virtual int32_t GetDecoderWidthStride(void) { return width_};
+    virtual int32_t GetDecoderWidthStride(void) { return width_; }
     virtual void CalculateBufferSize();
     virtual void FlushAllFrames() {};
     virtual void FillHdrInfo(sptr<SurfaceBuffer> surfaceBuffer) {};

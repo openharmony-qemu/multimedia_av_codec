@@ -43,7 +43,7 @@ public:
 protected:
     void HevcFuncMatch();
     void ReleaseHandle();
-    void InitParams();
+    void InitParams() override;
     void InitHdrParams();
 
     int32_t Initialize() override;
@@ -55,12 +55,17 @@ private:
     void UpdateColorAspects(const HEVC_COLOR_SPACE_INFO &colorInfo);
     int32_t ConvertHdrStaticMetadata(const HEVC_HDR_METADATA &hevcHdrMetadata,
                                      std::vector<uint8_t> &staticMetadataVec);
+private:
     void* handle_ = nullptr;
-
     HEVC_DEC_INIT_PARAM initParams_;
     HEVC_DEC_INARGS hevcDecoderInputArgs_;
     HEVC_DEC_OUTARGS hevcDecoderOutpusArgs_;
 
+    using CreateHevcDecoderFuncType = INT32 (*)(HEVC_DEC_HANDLE *phDecoder, HEVC_DEC_INIT_PARAM *pstInitParam);
+    using DecodeFuncType = INT32 (*)(HEVC_DEC_HANDLE hDecoder, HEVC_DEC_INARGS *pstInArgs,
+                                                  HEVC_DEC_OUTARGS *pstOutArgs);
+    using FlushFuncType = INT32 (*)(HEVC_DEC_HANDLE hDecoder, HEVC_DEC_OUTARGS *pstOutArgs);
+    using DeleteFuncType = INT32 (*)(HEVC_DEC_HANDLE hDecoder);
     HEVC_DEC_HANDLE hevcSDecoder_ = nullptr;
     CreateHevcDecoderFuncType hevcDecoderCreateFunc_ = nullptr;
     DecodeFuncType hevcDecoderDecodecFrameFunc_ = nullptr;
