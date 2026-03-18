@@ -85,7 +85,7 @@ OH_AVCapability **OH_AVCodec_GetCapabilityList(OH_AVCodecType codecType, uint32_
     }
     int typeIndex = GetTypeIndex(codecType);
     if (typeIndex < 0 || typeIndex >= TOTAL_CODEC_TYPES) {
-        AVCODEC_LOGD("Get capability list failed: Invalid codec type %{public}d", codecType);
+        AVCODEC_LOGD("Get capability list failed: Invalid codec type: %{public}d", codecType);
         *count = 0;
         return nullptr;
     }

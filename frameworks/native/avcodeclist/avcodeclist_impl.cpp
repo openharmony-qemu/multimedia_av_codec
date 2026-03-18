@@ -136,7 +136,7 @@ std::vector<std::shared_ptr<CapabilityData>> AVCodecListImpl::GetCapabilityList(
     if (iter != capabilityListCache_.end()) {
         return iter->second;
     }
-       
+
     // Get capbility List from service
     std::vector<std::shared_ptr<CapabilityData>> remoteCapList;
     int32_t ret = codecListService_->GetCapabilityList(remoteCapList);
@@ -144,8 +144,8 @@ std::vector<std::shared_ptr<CapabilityData>> AVCodecListImpl::GetCapabilityList(
         AVCODEC_LOGE("GetCapabilityList failed from service, ret: %{public}d", ret);
         return std::vector<std::shared_ptr<CapabilityData>>();
     }
-    std::unordered_map<int32_t, std::vector<shared_ptr<CapabilityData>>> newCache;
-     for (const auto& cap : remoteCapList) {
+    std::unordered_map<int32_t, std::vector<std::shared_ptr<CapabilityData>>> newCache;
+    for (const auto& cap : remoteCapList) {
         if (cap == nullptr) {
             continue;
         }

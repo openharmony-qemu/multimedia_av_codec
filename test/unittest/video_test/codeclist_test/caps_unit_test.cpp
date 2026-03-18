@@ -1373,7 +1373,7 @@ HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_THREAD_POOL_001, TestSize.Level2
     const int32_t threadCnt = 10;
     std::vector<std::thread> threadPool;
 
-    for(int32_t i = 0; i < threadCnt; i++) {
+    for (int32_t i = 0; i < threadCnt; i++) {
         threadPool.emplace_back([i]() {
             uint32_t count = 0;
             OH_AVCodecType codecType = static_cast<OH_AVCodecType>(i % 4);
@@ -1398,7 +1398,7 @@ HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_THREAD_POOL_001, TestSize.Level2
 /**
  * @tc.name: AVCaps_GetCapabilityList_THREAD_POOL_002
  * @tc.desc: Verify concurrent repeated calls to OH_AVCodec_GetCapabilityList with different codec types,
- *           and check that the returned capability name and mime type can be queried normally.
+ *           and check that returned capability name and mime type can be queried normally.
  * @tc.type: FUNC
  * @tc.require:
  */
