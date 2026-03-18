@@ -44,6 +44,7 @@ class VideoDecoder : public RenderSurface, public CodecBase {
 public:
     explicit VideoDecoder(const std::string &name);
     ~VideoDecoder() = default;
+
     int32_t Init(Media::Meta &callerInfo) override;
     int32_t Start() override;
     int32_t Stop() override;
@@ -58,15 +59,17 @@ public:
     int32_t NotifyMemoryRecycle() override;
     int32_t NotifyMemoryWriteBack() override;
     int32_t Configure(const Format &format) override;
+
     virtual bool CheckVideoPixelFormat(VideoPixelFormat vpf) = 0;
     virtual void ConfigurelWidthAndHeight(const Format &format, const std::string_view &formatKey, bool isWidth) = 0;
-    virtual void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
-        int32_t maxVal = INT_MAX) = 0;
+    void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
+        int32_t maxVal = INT_MAX);
     virtual void ConfigureHdrMetadata(const Format &format);
     void ConfigureSurface(const Format &format, const std::string_view &formatKey, FormatDataType formatType);
     int32_t SetOutputSurface(sptr<Surface> surface) override;
     int32_t RenderOutputBuffer(uint32_t index) override;
     int32_t CheckFormatChange(uint32_t index, int width, int height, int bitDepth);
+
     virtual int32_t CreateDecoder() = 0;
     virtual void DeleteDecoder() = 0;
     bool IsValid() const { return isValid_; }
@@ -77,8 +80,11 @@ public:
     int32_t UpdateOutputBuffer(uint32_t index);
     int32_t UpdateSurfaceMemory(uint32_t index);
     int32_t GetSurfaceBufferStride(const std::shared_ptr<CodecBuffer> &frameBuffer);
+    virtual int32_t GetDecoderWidthStride(void) { return width_};
+    virtual void CalculateBufferSize();
     virtual void FlushAllFrames() {};
     virtual void FillHdrInfo(sptr<SurfaceBuffer> surfaceBuffer) {};
+    
 #ifdef BUILD_ENG_VERSION
     void OpenDumpFile();
     void DumpOutputBuffer(int32_t bitDepth = BITS_PER_PIXEL_COMPONENT_8);
@@ -114,7 +120,6 @@ public:
 private:
     virtual int32_t Initialize() = 0;
     bool IsActive() const;
-    void CalculateBufferSize();
     int32_t AllocateBuffers();
     void InitBuffers();
     void ResetBuffers();

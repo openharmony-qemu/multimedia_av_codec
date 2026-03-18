@@ -129,19 +129,6 @@ void Av1Decoder::InitParams()
     colorSpaceInfo_.mtrx = DAV1D_MC_UNKNOWN;
 }
 
-void Av1Decoder::ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal,
-    int32_t maxVal)
-{
-    int32_t val32 = 0;
-    if (format.GetIntValue(formatKey, val32) && val32 >= minVal && val32 <= maxVal) {
-        format_.PutIntValue(formatKey, val32);
-    } else {
-        AVCODEC_LOGW("Set parameter failed: %{public}s, which minimum threshold=%{public}d, "
-                     "maximum threshold=%{public}d",
-                     formatKey.data(), minVal, maxVal);
-    }
-}
-
 bool Av1Decoder::CheckVideoPixelFormat(VideoPixelFormat vpf)
 {
     if (vpf == VideoPixelFormat::NV12 || vpf == VideoPixelFormat::NV21) {

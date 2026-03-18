@@ -40,6 +40,8 @@ constexpr int32_t DEFAULT_VIDEO_HEIGHT = 1080;
 constexpr int32_t DEFAULT_OUT_BUFFER_CNT = 3;
 constexpr int32_t DEFAULT_IN_BUFFER_CNT = 4;
 constexpr int32_t DEFAULT_MAX_BUFFER_CNT = 10;
+constexpr uint32_t LOG_LOW_FREQUENCY = 100;
+
 #ifdef BUILD_ENG_VERSION
 constexpr uint32_t PATH_MAX_LEN = 128;
 constexpr char DUMP_PATH[] = "/data/misc/VideoDecoderdump";
@@ -61,7 +63,7 @@ int32_t VideoDecoder::Init(Meta &callerInfo)
     int32_t ret = Initialize();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Failed to initialize");
     decInfo_.instanceId = std::to_string(instanceId_);
-    AVCODEC_LOGI("Decoder codec name: %{public}s", decName_.c_str());
+    AVCODEC_LOGI("Num %{public}u Decoder codec name: %{public}s", decInstanceID_, decName_.c_str());
     return AVCS_ERR_OK;
 }
 
@@ -105,6 +107,19 @@ void VideoDecoder::OpenDumpFile()
     }
 }
 #endif
+
+void VideoDecoder::ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal,
+    int32_t maxVal)
+{
+    int32_t val32 = 0;
+    if (format.GetIntValue(formatKey, val32) && val32 >= minVal && val32 <= maxVal) {
+        format_.PutIntValue(formatKey, val32);
+    } else {
+        AVCODEC_LOGW("Set parameter failed: %{public}s, which minimum threshold=%{public}d, "
+                     "maximum threshold=%{public}d",
+                     formatKey.data(), minVal, maxVal);
+    }
+}
 
 void VideoDecoder::GetSurfaceCfgFromFmt(const Format &format)
 {
@@ -175,7 +190,7 @@ int32_t VideoDecoder::Start()
     isSendEos_ = false;
     sendTask_->Start();
     state_ = State::RUNNING;
-    AVCODEC_LOGI("%{public}s Start codec successful, state: Running", decName_.c_str());
+    AVCODEC_LOGI("Num %{public}u %{public}s Start codec successful, state: Running", decInstanceID_, decName_.c_str());
     return AVCS_ERR_OK;
 }
 
@@ -355,7 +370,7 @@ int32_t VideoDecoder::Stop()
     DeleteDecoder();
     ReleaseBuffers();
     state_ = State::CONFIGURED;
-    AVCODEC_LOGI("Stop codec successful, state: Configured");
+    AVCODEC_LOGI("Num %{public}u Stop codec successful, state: Configured", decInstanceID_);
     return AVCS_ERR_OK;
 }
 
@@ -373,14 +388,14 @@ int32_t VideoDecoder::Flush()
     ResetBuffers();
     FlushAllFrames();
     state_ = State::FLUSHED;
-    AVCODEC_LOGI("%{public}s Flush codec successful, state: Flushed", decName_.c_str());
+    AVCODEC_LOGI("Num %{public}u %{public}s Flush codec successful, state: Flushed", decInstanceID_, decName_.c_str());
     return AVCS_ERR_OK;
 }
 
 int32_t VideoDecoder::Reset()
 {
     AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGI("Reset codec called");
+    AVCODEC_LOGI("Num %{public}u Reset codec called", decInstanceID_);
     int32_t ret = Release();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Reset codec failed: cannot release codec");
     ret = Initialize();
@@ -410,7 +425,7 @@ int32_t VideoDecoder::Release()
     state_ = State::STOPPING;
     ReleaseResource();
     state_ = State::UNINITIALIZED;
-    AVCODEC_LOGI("Release codec successful, state: Uninitialized");
+    AVCODEC_LOGI("Num %{public}u Release codec successful, state: Uninitialized", decInstanceID_);
     return AVCS_ERR_OK;
 }
 
@@ -567,12 +582,15 @@ int32_t VideoDecoder::RenderOutputBuffer(uint32_t index)
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNSUPPORT,
                              "Render output buffer failed, surface is nullptr!");
+    AVCODEC_LOGI_LIMIT(LOG_LOW_FREQUENCY, "Num %{public}u render output buffer with index=%{public}u",
+        decInstanceID_, index);
     std::unique_lock<std::mutex> oLock(outputMutex_);
     CHECK_AND_RETURN_RET_LOG(index < buffers_[INDEX_OUTPUT].size(), AVCS_ERR_INVALID_VAL,
                              "Failed to render output buffer: invalid index");
     std::shared_ptr<CodecBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
-    oLock.unlock();
     if (frameBuffer->owner_ == Owner::OWNED_BY_USER) {
+        frameBuffer->owner_ = Owner::OWNED_BY_SURFACE;
+        oLock.unlock();
         std::shared_ptr<FSurfaceMemory> surfaceMemory = frameBuffer->sMemory;
         int32_t ret = FlushSurfaceMemory(surfaceMemory, index);
         if (ret != AVCS_ERR_OK) {
@@ -580,11 +598,11 @@ int32_t VideoDecoder::RenderOutputBuffer(uint32_t index)
         } else {
             AVCODEC_LOGD("Flush surface memory(index=%{public}u) successful.", index);
         }
-        frameBuffer->owner_ = Owner::OWNED_BY_SURFACE;
         AVCODEC_LOGD("render output buffer with index, index=%{public}u", index);
         return AVCS_ERR_OK;
     } else {
-        AVCODEC_LOGE("Failed to render output buffer with bad index, index=%{public}u", index);
+        AVCODEC_LOGE("Failed to render output buffer with bad index, index=%{public}u, owner=%{public}d",
+            index, frameBuffer->owner_.load());
         return AVCS_ERR_INVALID_VAL;
     }
 }
@@ -594,7 +612,7 @@ int32_t VideoDecoder::GetOutputFormat(Format &format)
     AVCODEC_SYNC_TRACE;
     if (!format_.ContainKey(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE)) {
         int32_t maxInputSize = static_cast<int32_t>(static_cast<UINT32>(
-            width_ * height_ * VIDEO_PLANE_COUNT_YUV) >> 1);
+            GetDecoderWidthStride() * height_ * VIDEO_PLANE_COUNT_YUV) >> 1);
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize);
     }
 
@@ -834,11 +852,15 @@ void VideoDecoder::ReleaseBuffers()
     std::unique_lock<std::mutex> oLock(outputMutex_);
     codecAvailQue_->Clear();
     if (sInfo_.surface != nullptr) {
-        StopRequestSurfaceBufferThread();
+        {
+            std::lock_guard<std::mutex> sLock(surfaceMutex_);
+            StopRequestSurfaceBufferThread();
+            sInfo_.surface->CleanCache();
+        }
         renderAvailQue_->Clear();
         requestSurfaceBufferQue_->Clear();
         {
-            std::unique_lock<std::mutex> mLock(renderBufferMapMutex_);
+            std::lock_guard<std::mutex> mLock(renderBufferMapMutex_);
             renderSurfaceBufferMap_.clear();
         }
         for (uint32_t i = 0; i < buffers_[INDEX_OUTPUT].size(); i++) {
@@ -849,8 +871,7 @@ void VideoDecoder::ReleaseBuffers()
                 outputBuffer->owner_ = Owner::OWNED_BY_SURFACE;
             }
         }
-        sInfo_.surface->CleanCache();
-        AVCODEC_LOGI("surface cleancache success");
+        AVCODEC_LOGI("Num %{public}u surface cleancache success", decInstanceID_);
     }
     buffers_[INDEX_OUTPUT].clear();
     outputBufferCnt_ = 0;
@@ -997,17 +1018,20 @@ void VideoDecoder::DumpConvertOut(struct SurfaceInfo &surfaceInfo)
 int32_t VideoDecoder::ReleaseOutputBuffer(uint32_t index)
 {
     AVCODEC_SYNC_TRACE;
+    AVCODEC_LOGI_LIMIT(LOG_LOW_FREQUENCY, "Num %{public}u release output buffer with index=%{public}u",
+        decInstanceID_, index);
     std::unique_lock<std::mutex> oLock(outputMutex_);
     CHECK_AND_RETURN_RET_LOG(index < buffers_[INDEX_OUTPUT].size(), AVCS_ERR_INVALID_VAL,
                              "Failed to release output buffer: invalid index");
     std::shared_ptr<CodecBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
-    oLock.unlock();
     if (frameBuffer->owner_ == Owner::OWNED_BY_USER) {
         frameBuffer->owner_ = Owner::OWNED_BY_CODEC;
+        oLock.unlock();
         codecAvailQue_->Push(index);
         return AVCS_ERR_OK;
     } else {
-        AVCODEC_LOGE("Release output buffer failed: check your index=%{public}u", index);
+        AVCODEC_LOGE("Release output buffer failed: check your index=%{public}u, owner=%{public}d",
+            index, frameBuffer->owner_.load());
         return AVCS_ERR_INVALID_VAL;
     }
 }
