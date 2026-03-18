@@ -44,7 +44,7 @@ private:
     std::unordered_map<std::string, void *> nameAddrMap_;
     std::set<uint8_t *> bufAddrSet_;
     std::mutex mutex_;
-    std::unordered_multimap<int32_t, std::shared_ptr<CapabilityData>> capabilityListCache_;
+    std::unordered_map<int32_t, std::vector<std::shared_ptr<CapabilityData>>> capabilityListCache_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

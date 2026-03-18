@@ -1302,7 +1302,7 @@ HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_MemoryOverwrite_002, TestSize.Le
     uint32_t count1 = 0;
     uint32_t count2 = 0;
     OH_AVCapability **capList1 = OH_AVCodec_GetCapabilityList(
-        OH_AVCodecType::AVCODEC_TYPE_VIDEO_ENCODER, &count1);
+        OH_AVCodecType::AVCODEC_TYPE_VIDEO_DECODER, &count1);
     ASSERT_NE(capList1, nullptr);
     ASSERT_GT(count1, 0);
     ASSERT_NE(capList1[0], nullptr);
@@ -1341,7 +1341,7 @@ HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_MemoryOverwrite_002, TestSize.Le
 
 
     for (uint32_t i = 0; i < count1; i++) {
-        char *name = nullptr;
+        const char *name = nullptr;
         if (capList1[i] != nullptr) {
             name = OH_AVCapability_GetName(capList1[i]);
         }
@@ -1368,7 +1368,7 @@ HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_MemoryOverwrite_002, TestSize.Le
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_THREAD_POOL_001, TestSize.Level1)
+HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_THREAD_POOL_001, TestSize.Level2)
 {
     const int32_t threadCnt = 10;
     std::vector<std::thread> threadPool;
@@ -1402,7 +1402,7 @@ HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_THREAD_POOL_001, TestSize.Level1
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_THREAD_POOL_002, TestSize.Level1)
+HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_THREAD_POOL_002, TestSize.Level2)
 {
     const int32_t threadCnt = 12;
     const int32_t loopCnt = 30;
@@ -1450,7 +1450,7 @@ HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_THREAD_POOL_002, TestSize.Level1
 
 /**
  * @tc.name: AVCaps_IsSecure_001
- * @tc.desc: Check IsSecure with valid capability
+ * @tc.desc: Check IsSecure with valid capability, and call twice to check the result is same
  * @tc.type: FUNC
  * @tc.require:
  */

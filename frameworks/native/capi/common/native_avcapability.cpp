@@ -80,12 +80,12 @@ OH_AVCapability *OH_AVCodec_GetCapability(const char *mime, bool isEncoder)
 OH_AVCapability **OH_AVCodec_GetCapabilityList(OH_AVCodecType codecType, uint32_t *count)
 {
     if (count == nullptr) {
-        AVCODEC_LOGE("Get capability list failed: count is nullptr");
+        AVCODEC_LOGD("Get capability list failed: count is nullptr");
         return nullptr;
     }
     int typeIndex = GetTypeIndex(codecType);
     if (typeIndex < 0 || typeIndex >= TOTAL_CODEC_TYPES) {
-        AVCODEC_LOGE("Get capabilityLlist failed: invalid codec type %{public}d", codecType);
+        AVCODEC_LOGD("Get capability list failed: Invalid codec type %{public}d", codecType);
         *count = 0;
         return nullptr;
     }
@@ -97,7 +97,7 @@ OH_AVCapability **OH_AVCodec_GetCapabilityList(OH_AVCodecType codecType, uint32_
         ApiInvokeRecorder apiInvokeRecorder("OH_AVCodec_GetCapabilityList", appEventReporter);
         std::shared_ptr<AVCodecList> codeclist = AVCodecListFactory::CreateAVCodecList();
         if (codeclist == nullptr) {
-            AVCODEC_LOGE("Get capability list failed: CreateAVCodecList failed");
+            AVCODEC_LOGD("Get capability list failed: CreateAVCodecList failed");
             return;
         }
         std::vector<std::shared_ptr<CapabilityData>> capabilityDataList = codeclist->GetCapabilityList(codecType);
@@ -105,19 +105,19 @@ OH_AVCapability **OH_AVCodec_GetCapabilityList(OH_AVCodecType codecType, uint32_
             AVCODEC_LOGD("Get capability list: no capability found for codec type %{public}d", codecType);
             return;
         }
-        int32_t validCount = 0;
+        uint32_t validCount = 0;
         uint32_t size = capabilityDataList.size();
         for (uint32_t i = 0; i < size && validCount < MAX_CAP_NUM; ++i) {
             CapabilityData *capabilityData = capabilityDataList[i].get();
             uint32_t sizeOfCap = sizeof(OH_AVCapability);
             const std::string &name = capabilityData->codecName;
             if (name.empty()) {
-                AVCODEC_LOGW("Get capability list failed: cannot find matched capability");
+                AVCODEC_LOGD("Get capability list failed: cannot find matched capability");
                 continue;
             }
             void *addr = codeclist->GetBuffer(name, sizeOfCap);
             if (addr == nullptr) {
-                AVCODEC_LOGE("Get capability list failed: malloc capability buffer failed");
+                AVCODEC_LOGD("Get capability list failed: malloc capability buffer failed");
                 continue;
             }
             OH_AVCapability *obj = static_cast<OH_AVCapability *>(addr);

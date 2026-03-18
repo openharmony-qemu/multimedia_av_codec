@@ -677,7 +677,6 @@ bool AVCodecInfo::IsSecure()
     return data_->isSecure;
 }
 
-
 int32_t AVCodecInfo::GetMaxSupportedInstances()
 {
     CHECK_AND_RETURN_RET_LOG(data_ != nullptr, 0, "data is null");
