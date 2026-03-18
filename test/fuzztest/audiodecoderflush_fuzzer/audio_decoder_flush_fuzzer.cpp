@@ -27,6 +27,35 @@ using namespace OHOS;
 using namespace OHOS::MediaAVCodec::AudioBufferDemo;
 
 namespace OHOS {
+const size_t THRESHOLD = 10;
+static const uint8_t* RAW_DATA = nullptr;
+static size_t g_dataSize = 0;
+static size_t g_pos;
+
+template<class T>
+T GetData()
+{
+    T object {};
+    size_t objectSize = sizeof(object);
+    if (RAW_DATA == nullptr || objectSize > g_dataSize - g_pos) {
+        return object;
+    }
+    errno_t ret = memcpy_s(&object, objectSize, RAW_DATA + g_pos, objectSize);
+    if (ret != EOK) {
+        return {};
+    }
+    g_pos += objectSize;
+    return object;
+}
+
+template<class T>
+uint32_t GetArrLength(T& arr)
+{
+    if (arr == nullptr) {
+        return 0;
+    }
+    return sizeof(arr) / sizeof(arr[0]);
+}
 
 bool AudioDecoderFuzzTest(const uint8_t *data, size_t size)
 {
@@ -189,22 +218,53 @@ bool AudioDecoderMP3FlushFuzzTest(const uint8_t *data, size_t size)
     return res;
 }
 
+typedef bool (*TestFuncs)(const uint8_t *data, size_t size);
+TestFuncs g_testFuncs[] = {
+    AudioDecoderFuzzTest,
+    AudioDecoderAACFlushFuzzTest,
+    AudioDecoderFlacFlushFuzzTest,
+    AudioDecoderAPEFlushFuzzTest,
+    AudioDecoderG711FlushFuzzTest,
+    AudioDecoderOPUSFlushFuzzTest,
+    AudioDecoderLBVCFlushFuzzTest,
+    AudioDecoderVividFlushFuzzTest,
+    AudioDecoderAMRNBFlushFuzzTest,
+    AudioDecoderAMRWBFlushFuzzTest,
+    AudioDecoderMP3FlushFuzzTest,
+};
+
+bool FuzzTest(const uint8_t* rawData, size_t size)
+{
+    if (rawData == nullptr) {
+        return false;
+    }
+
+    // initialize data
+    RAW_DATA = rawData;
+    g_dataSize = size;
+    g_pos = 0;
+
+    uint32_t code = GetData<uint32_t>();
+    uint32_t len = GetArrLength(g_testFuncs);
+    if (len > 0) {
+        g_testFuncs[code % len](rawData, size);
+    } else {
+        return false;
+    }
+
+    return true;
+}
+
 }
 
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::AudioDecoderFuzzTest(data, size);
-    OHOS::AudioDecoderAACFlushFuzzTest(data, size);
-    OHOS::AudioDecoderFlacFlushFuzzTest(data, size);
-    OHOS::AudioDecoderAPEFlushFuzzTest(data, size);
-    OHOS::AudioDecoderG711FlushFuzzTest(data, size);
-    OHOS::AudioDecoderOPUSFlushFuzzTest(data, size);
-    OHOS::AudioDecoderLBVCFlushFuzzTest(data, size);
-    OHOS::AudioDecoderVividFlushFuzzTest(data, size);
-    OHOS::AudioDecoderAMRNBFlushFuzzTest(data, size);
-    OHOS::AudioDecoderAMRWBFlushFuzzTest(data, size);
-    OHOS::AudioDecoderMP3FlushFuzzTest(data, size);
+    if (size < OHOS::THRESHOLD) {
+        return 0;
+    }
+
+    OHOS::FuzzTest(data, size);
     return 0;
 }
