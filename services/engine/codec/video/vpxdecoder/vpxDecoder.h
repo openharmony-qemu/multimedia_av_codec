@@ -53,8 +53,8 @@ protected:
 
 private:
     struct HdrMetadata {
-        INT32 displayPrimariesX[3] = {0, 0, 0};
-        INT32 displayPrimariesY[3] = {0, 0, 0};
+        double displayPrimariesX[3] = {0, 0, 0};
+        double displayPrimariesY[3] = {0, 0, 0};
         INT32 whitePointX = 0;
         INT32 whitePointY = 0;
         INT32 maxDisplayMasteringLuminance = 0;
