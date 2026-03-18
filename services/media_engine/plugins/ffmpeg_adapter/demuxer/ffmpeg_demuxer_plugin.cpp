@@ -100,6 +100,7 @@ constexpr uint32_t LOG_MAX_COUNT = 10; // 10 times
 constexpr int32_t SEEK_TRACK_DEFAULT = -1;
 constexpr int32_t RECHECK_TIMES = 5;
 constexpr int32_t MAX_READ_CNT = 5;
+constexpr int32_t FLV_EOS_TAG_SIZE = 4;
 
 // id3v2 tag position
 const int32_t POS_0 = 0;
@@ -310,7 +311,7 @@ bool CheckStartTime(const AVFormatContext *formatContext, const AVStream *stream
     return true;
 }
 
-int ConvertFlagsToFFmpeg(AVStream *avStream, int64_t ffTime, SeekMode mode, int64_t seekTime)
+int ConvertFlagsToFFmpeg(AVStream *avStream, int64_t ffTime, SeekMode mode, int64_t seekTime, FileType fileType)
 {
     FALSE_RETURN_V_MSG_E(avStream != nullptr && avStream->codecpar != nullptr, -1, "AVStream is nullptr");
     if (avStream->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE && ffTime == 0) {
@@ -345,6 +346,16 @@ int ConvertFlagsToFFmpeg(AVStream *avStream, int64_t ffTime, SeekMode mode, int6
     int64_t ffTimeNext = CalculateTimeByFrameIndex(avStream, keyFrameNext);
     MEDIA_LOG_D("FfTime=" PUBLIC_LOG_D64 ", ffTimePrev=" PUBLIC_LOG_D64 ", ffTimeNext=" PUBLIC_LOG_D64,
         ffTime, ffTimePrev, ffTimeNext);
+
+    // [FLV FIX] For FLV + H264, check if the next keyframe is an EOS frame
+    // If size == FLV_EOS_TAG_SIZE, use AVSEEK_FLAG_BACKWARD to avoid seek to EOS frame
+    if (fileType == FileType::FLV && avStream->codecpar->codec_id == AV_CODEC_ID_H264) {
+        const AVIndexEntry *entry = avformat_index_get_entry(avStream, keyFrameNext);
+        if (entry != nullptr && entry->size == FLV_EOS_TAG_SIZE) {
+            return AVSEEK_FLAG_BACKWARD;
+        }
+    }
+
     if (ffTimePrev == ffTimeNext || (ffTimeNext - ffTime < ffTime - ffTimePrev)) {
         return AVSEEK_FLAG_FRAME;
     } else {
@@ -2825,7 +2836,7 @@ Status FFmpegDemuxerPlugin::DoSeekInternal(int trackIndex, int64_t seekTime, int
     auto avStream = formatContext_->streams[trackIndex];
     FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER, "AVStream is nullptr");
     realSeekTime = ConvertTimeFromFFmpeg(ffTime, avStream->time_base);
-    int flag = ConvertFlagsToFFmpeg(avStream, ffTime, mode, seekTime);
+    int flag = ConvertFlagsToFFmpeg(avStream, ffTime, mode, seekTime, fileType_);
     MEDIA_LOG_I("Time [" PUBLIC_LOG_U64 "/" PUBLIC_LOG_U64 "/" PUBLIC_LOG_D64 "] flag ["
                 PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "]",
                 seekTime, ffTime, realSeekTime, static_cast<int32_t>(mode), flag);
