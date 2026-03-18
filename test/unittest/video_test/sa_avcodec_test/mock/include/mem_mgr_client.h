@@ -58,6 +58,10 @@ public:
     int32_t NotifyProcessStatus(pid_t pid, int32_t status, int32_t start, int32_t saId) override;
     int32_t SetCritical(pid_t pid, bool flag, int32_t saId) override;
 };
+
+// Mock functions for AVCodecServerManager function pointers
+int32_t MockSetCriticalForFuncPtr(int32_t pid, bool critical, int32_t saId);
+int32_t MockNotifyProcessStatusForFuncPtr(int32_t pid, int32_t type, int32_t status, int32_t saId);
 } // namespace Memory
 } // namespace OHOS
 #endif // CODECLIST_SERVICE_STUB_MOCK_H

@@ -41,7 +41,6 @@ public:
     void DestroyStubObjectForPid(pid_t pid);
     int32_t Dump(int32_t fd, const std::vector<std::u16string>& args);
     void NotifyProcessStatus(const int32_t status);
-    void SetMemMgrStatus(const bool isStarted);
     void SetCritical(const bool isKeyService);
     uint32_t GetInstanceCount();
     std::vector<CodecInstance> GetInstanceInfoListByPid(pid_t pid);
@@ -53,6 +52,7 @@ public:
     std::vector<pid_t> GetActiveSecureDecoderPids();
 
 private:
+    void SetCriticalInner(const bool isKeyService);
     AVCodecServerManager();
 
 #ifdef SUPPORT_CODEC
@@ -95,6 +95,8 @@ private:
     NotifyProcessStatusFunc notifyProcessStatusFunc_ = nullptr;
     SetCriticalFunc setCriticalFunc_ = nullptr;
     std::atomic<bool> memMgrStarted_ = false;
+    bool setCriticalFailed_ = false;
+    bool lastSetCriticalValue_ = false;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
