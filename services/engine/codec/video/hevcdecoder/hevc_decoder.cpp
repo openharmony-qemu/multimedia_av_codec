@@ -173,7 +173,8 @@ HevcDecoder::~HevcDecoder()
     }
 #endif
     mallopt(M_FLUSH_THREAD_CACHE, 0);
-}-
+}
+
 void HevcDecoder::InitParams()
 {
     hevcDecoderInputArgs_.pStream = nullptr;
