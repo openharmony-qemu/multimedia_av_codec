@@ -1376,7 +1376,7 @@ HWTEST_F(CapsUnitTest, AVCaps_THREAD_POOL_005, TestSize.Level2)
 /**
  * @tc.name: AVCaps_THREAD_POOL_006
  * @tc.desc: Verify concurrent repeated calls to OH_AVCodec_GetCapabilityList with different codec types,
- *           and check that returned capability name and mime type can be queried normally.
+ * and check that returned capability name and mime type can be queried normally.
  * @tc.type: FUNC
  * @tc.require:
  */

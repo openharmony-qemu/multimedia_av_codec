@@ -64,9 +64,10 @@ OH_AVCapability *OH_AVCodec_GetCapability(const char *mime, bool isEncoder)
 }
 
 OH_AVCapability **OH_AVCodec_GetCapabilityList(OH_AVCodecType codecType,
-                                                 uint32_t *count)
+                                               uint32_t *count)
 {
-    CHECK_AND_RETURN_RET_LOG(count != nullptr, nullptr, "Get capability list failed: Invalid codec type: %{public}d", codecType);
+    CHECK_AND_RETURN_RET_LOG(count != nullptr, nullptr,
+                             "Get capability list failed: Invalid codec type: %{public}d", codecType);
     *count = 0;
     int typeIndex = static_cast<int32_t>(codecType);
     CHECK_AND_RETURN_RET_LOG(typeIndex >= static_cast<int32_t>(OH_AVCodecType::AVCODEC_TYPE_VIDEO_ENCODER)
@@ -80,11 +81,8 @@ OH_AVCapability **OH_AVCodec_GetCapabilityList(OH_AVCodecType codecType,
         std::shared_ptr<AVCodecList> codeclist = AVCodecListFactory::CreateAVCodecList();
         CHECK_AND_RETURN_LOG(codeclist != nullptr, "Get capability list failed: CreateAVCodecList failed");
         std::vector<std::shared_ptr<CapabilityData>> capabilityDataList = codeclist->GetCapabilityList(codecType);
-        CHECK_AND_RETURN_LOG(!capabilityDataList.empty(), "Get capability list: no capability found for codec type %{public}d", codecType)；
-        if (capabilityDataList.empty()) {
-            AVCODEC_LOGD("Get capability list: no capability found for codec type %{public}d", codecType);
-            return;
-        }
+        CHECK_AND_RETURN_LOG(!capabilityDataList.empty(),
+                             "Get capability list: no capability found for codec type %{public}d", codecType);
         uint32_t validCount = 0;
         uint32_t size = capabilityDataList.size();
         for (uint32_t i = 0; i < size && validCount < MAX_CAP_NUM; ++i) {

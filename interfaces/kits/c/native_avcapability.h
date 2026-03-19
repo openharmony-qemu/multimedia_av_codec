@@ -76,7 +76,7 @@ typedef enum OH_AVCodecCategory {
 
 /**
  * @brief The codec type
- * 
+ *
  * @since 24
  */
 typedef enum OH_AVCodecType {
