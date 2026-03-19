@@ -80,7 +80,7 @@ int32_t CodecListServer::GetCapability(CapabilityData &capabilityData, const std
 
 int32_t CodecListServer::GetCapabilityAt(CapabilityData &capabilityData, int32_t index)
 {
-    return ret = codecListCore_->GetCapabilityAt(capabilityData, index);
+    return codecListCore_->GetCapabilityAt(capabilityData, index);
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
