@@ -376,7 +376,7 @@ void HevcDecoder::SendFrame()
 int32_t HevcDecoder::DecodeFrameOnce()
 {
     int32_t ret = 0;
-     if (hevcSDecoder_ == nullptr || hevcDecoderFlushFrameFunc_ == nullptr ||
+    if (hevcSDecoder_ == nullptr || hevcDecoderFlushFrameFunc_ == nullptr ||
         hevcDecoderDecodecFrameFunc_ == nullptr) {
         AVCODEC_LOGE("Num %{public}u Hevc decoder resources not available, cannot call decoder", decInstanceID_);
         callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_VID_DEC_FAILED);
