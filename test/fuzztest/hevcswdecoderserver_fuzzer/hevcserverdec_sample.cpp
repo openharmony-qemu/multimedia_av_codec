@@ -69,7 +69,7 @@ VDecServerSample::~VDecServerSample()
     if (codec_ != nullptr) {
         codec_->Stop();
         codec_->Release();
-        HevcDecoder *codec = reinterpret_cast<HevcDecoder*>(codec_.get());
+        HevcDecoder *codec = static_cast<HevcDecoder*>(codec_.get());
         codec->DecStrongRef(codec);
     }
 }
