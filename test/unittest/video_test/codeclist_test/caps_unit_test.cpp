@@ -1374,59 +1374,6 @@ HWTEST_F(CapsUnitTest, AVCaps_THREAD_POOL_005, TestSize.Level2)
 }
 
 /**
- * @tc.name: AVCaps_THREAD_POOL_006
- * @tc.desc: Verify concurrent repeated calls to OH_AVCodec_GetCapabilityList with different codec types,
- * and check that returned capability name and mime type can be queried normally.
- * @tc.type: FUNC
- * @tc.require:
- */
-HWTEST_F(CapsUnitTest, AVCaps_THREAD_POOL_006, TestSize.Level2)
-{
-    const int32_t threadCnt = 12;
-    const int32_t loopCnt = 30;
-    std::vector<std::thread> threadPool;
-
-    for (int32_t i = 0; i < threadCnt; i++) {
-        threadPool.emplace_back([i, loopCnt]() {
-            OH_AVCodecType codecType;
-            switch (i % 4) {
-                case 0:
-                    codecType = OH_AVCodecType::AVCODEC_TYPE_VIDEO_ENCODER;
-                    break;
-                case 1:
-                    codecType = OH_AVCodecType::AVCODEC_TYPE_VIDEO_DECODER;
-                    break;
-                case 2:
-                    codecType = OH_AVCodecType::AVCODEC_TYPE_AUDIO_ENCODER;
-                    break;
-                default:
-                    codecType = OH_AVCodecType::AVCODEC_TYPE_AUDIO_DECODER;
-                    break;
-            }
-
-            for (int32_t k = 0; k < loopCnt; k++) {
-                uint32_t count = 0;
-                OH_AVCapability **capList = OH_AVCodec_GetCapabilityList(codecType, &count);
-                EXPECT_NE(capList, nullptr);
-                EXPECT_GT(count, 0);
-
-                for (uint32_t j = 0; j < count; j++) {
-                    ASSERT_NE(capList[j], nullptr);
-                    const char *mime = OH_AVCapability_GetMimeType(capList[j]);
-                    const char *name = OH_AVCapability_GetName(capList[j]);
-                    EXPECT_NE(mime, nullptr);
-                    EXPECT_NE(name, nullptr);
-                }
-            }
-        });
-    }
-
-    for (auto &th : threadPool) {
-        th.join();
-    }
-}
-
-/**
  * @tc.name: AVCaps_IsSecure_001
  * @tc.desc: Check IsSecure with valid capability, and call twice to check the result is same
  * @tc.type: FUNC

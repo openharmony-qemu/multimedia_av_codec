@@ -136,7 +136,7 @@ OH_AVCapability *OH_AVCodec_GetCapabilityByCategory(const char *mime, bool isEnc
 /**
  * @brief Obtains a list of codec capabilities for a specified codec type.
  * This function retrieves all matching codec capabilities based on the provided codec type.
- * 
+ *
  * @param codecType The type of codec to filter by, refer to {@link OH_AVCodecType}.
  * @param count Output parameter. A pointer to a uint32_t variable that will store
  * the number of matched codec capabilities found.
