@@ -160,7 +160,7 @@ bool OH_AVCapability_IsHardware(OH_AVCapability *capability);
 
 /**
  * @brief Check if the capability instance is describing a secure codec.
- * 
+ *
  * @param capability Codec capability pointer
  * @return Returns true if the capability instance is describing a secure codec,
  * false if the capability instance is describing a non-secure codec
