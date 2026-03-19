@@ -230,7 +230,6 @@ struct M3U8MasterPlaylist {
     void ProcessStreamInfoTag(std::shared_ptr<Tag> tag);
     void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
     void ParseAttributes(const std::shared_ptr<AttributesTag>& item, std::shared_ptr<M3U8VariantStream>& stream);
-    void GetSessionKeyInfos(std::vector<KeyInfo>& sessionKeyInfos);
     std::list<std::shared_ptr<M3U8VariantStream>> variants_;
     std::shared_ptr<M3U8VariantStream> defaultVariant_;
     std::shared_ptr<M3U8VariantStream> firstVideoStream_;
@@ -263,8 +262,6 @@ struct M3U8MasterPlaylist {
     std::list<std::shared_ptr<M3U8Media>> subtitlesList_;
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
     uint64_t sessionKeyIndex_ {0};
-    std::vector<KeyInfo> sessionKeyInfos_;
-    std::shared_mutex sessionKeyMutex_;
 };
 }
 }

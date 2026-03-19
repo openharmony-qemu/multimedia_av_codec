@@ -249,24 +249,17 @@ uint64_t HlsPlayListDownloader::KeyChange(std::list<std::shared_ptr<M3U8Fragment
             currentAudio_->m3u8_->GetKeyInfos(keyInfos);
         }
     }
-    std::vector<KeyInfo> sessionKeyInfos;
-    if (master_) {
-        master_->GetSessionKeyInfos(sessionKeyInfos);
+    std::vector<KeyInfo> sessionKeyInfo;
+    if (master_ && master_->keyLen_ > 0) {
+        maxSessionKeyIndex_ = 1;
+        std::shared_ptr<AesDecryptor> sessionAesDecryptor = std::make_shared<AesDecryptor>();
+        sessionAesDecryptor->OnSourceKeyChange(master_->key_, master_->keyLen_, master_->iv_);
+        aesDecryptorsMap_[1] = sessionAesDecryptor;
     }
-    maxSessionKeyIndex_ = sessionKeyInfos.size();
-    auto keyInfoVec = MergeVectors(keyInfos, sessionKeyInfos);
-    
-    std::unordered_map<uint64_t, std::shared_ptr<AesDecryptor>> newAesDecryptorsMap;
-    newAesDecryptorsMap.reserve(keyInfoVec.size());
-    for (size_t i = 0; i < keyInfoVec.size(); ++i) {
+    for (size_t i = 0; i < keyInfos.size(); ++i) {
         std::shared_ptr<AesDecryptor> tempAesDecryptor = std::make_shared<AesDecryptor>();
-        tempAesDecryptor->OnSourceKeyChange(keyInfoVec[i].key_, keyInfoVec[i].keyLen_, keyInfoVec[i].iv_);
-        newAesDecryptorsMap[i + 1] = tempAesDecryptor;
-    }
-    
-    {
-        std::unique_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
-        aesDecryptorsMap_.swap(newAesDecryptorsMap);
+        tempAesDecryptor->OnSourceKeyChange(keyInfos[i].key_, keyInfos[i].keyLen_, keyInfos[i].iv_);
+        aesDecryptorsMap_[i + 1 + maxSessionKeyIndex_] = tempAesDecryptor;
     }
     return sessionKeyIndex;
 }

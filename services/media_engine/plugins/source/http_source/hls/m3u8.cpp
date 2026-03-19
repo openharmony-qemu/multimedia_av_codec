@@ -848,6 +848,7 @@ void M3U8MasterPlaylist::UpdateMediaPlaylist()
 
 void M3U8MasterPlaylist::DownloadSessionKey(std::shared_ptr<Tag>& tag)
 {
+    FALSE_RETURN(sessionKeyIndex_ > 0);
     auto m3u8 = std::make_shared<M3U8>(uri_, "", tagMasterMap_, monitorStatusCallback_, sourceLoader_);
     FALSE_RETURN_NOLOG(m3u8 != nullptr);
     if (downloadCallback_ != nullptr) {
@@ -859,8 +860,6 @@ void M3U8MasterPlaylist::DownloadSessionKey(std::shared_ptr<Tag>& tag)
     sessionKeyIndex_++;
     m3u8->isSessionKey_ = true;
     m3u8->sessionKeyIndex_ = sessionKeyIndex_;
-    KeyInfo sessionKeyInfo;
-    std::copy(std::begin(m3u8->iv_), std::end(m3u8->iv_), std::begin(sessionKeyInfo.iv_));
     m3u8->DownloadKey(false);
     uint32_t downloadTime = 0;
     while (!m3u8->isDecryptKeyReady_ && downloadTime < MAX_DOWNLOAD_TIME && !isInterruptNeeded_) {
@@ -871,12 +870,6 @@ void M3U8MasterPlaylist::DownloadSessionKey(std::shared_ptr<Tag>& tag)
     isDecryptKeyReady_ = m3u8->isDecryptKeyReady_;
     std::copy(std::begin(m3u8->iv_), std::end(m3u8->iv_), std::begin(iv_));
     keyLen_ = m3u8->keyLen_;
-    std::copy(std::begin(m3u8->key_), std::end(m3u8->key_), std::begin(sessionKeyInfo.key_));
-    sessionKeyInfo.keyLen_ = m3u8->keyLen_;
-    {
-        std::unique_lock<std::shared_mutex> lock(sessionKeyMutex_);
-        sessionKeyInfos_.emplace_back(sessionKeyInfo);
-    }
 }
 
 void M3U8MasterPlaylist::UpdateMasterPlaylist()
@@ -1240,12 +1233,6 @@ void M3U8MasterPlaylist::SetInterruptState(bool isInterruptNeeded)
         defaultVariant_->m3u8_->sleepCond_.NotifyOne();
     }
     MEDIA_LOG_I("M3U8MasterPlaylist SetInterruptState %{public}d.", isInterruptNeeded);
-}
-
-void M3U8MasterPlaylist::GetSessionKeyInfos(std::vector<KeyInfo>& sessionKeyInfos)
-{
-    std::shared_lock<std::shared_mutex> lock(sessionKeyMutex_);
-    sessionKeyInfos = sessionKeyInfos_;
 }
 
 M3U8Media::M3U8Media(const std::string &name, const std::string &uri, std::shared_ptr<M3U8> m3u8)
