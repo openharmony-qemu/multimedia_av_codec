@@ -117,6 +117,9 @@ public:
     std::shared_ptr<std::ofstream> dumpConvertFile_ = nullptr;
 #endif
 
+protected:
+    int32_t inputBufferSize_ = 0;
+
 private:
     virtual int32_t Initialize() = 0;
     bool IsActive() const;
@@ -137,7 +140,6 @@ private:
     int32_t SetSurfaceFormat();
     void GetSurfaceCfgFromFmt(const Format &format);
 
-    int32_t inputBufferSize_ = 0;
     int32_t inputBufferCnt_ = 0;
     uint8_t *scaleData_[AV_NUM_DATA_POINTERS] = {nullptr};
     int32_t scaleLineSize_[AV_NUM_DATA_POINTERS] = {0};

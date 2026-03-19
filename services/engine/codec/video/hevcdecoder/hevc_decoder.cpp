@@ -56,6 +56,8 @@ constexpr int32_t VIDEO_MAX_WIDTH_SIZE = 1920;
 constexpr int32_t VIDEO_MAX_HEIGHT_SIZE = 1920;
 
 constexpr uint32_t DEFAULT_TRY_DECODE_TIME = 1;
+constexpr uint32_t INDEX_INPUT = 0;
+constexpr uint32_t INDEX_OUTPUT = 1;
 constexpr int32_t VIDEO_INSTANCE_SIZE = 64;
 constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 36864;
 constexpr int32_t VIDEO_BLOCKPERSEC_SIZE = 983040;
@@ -77,7 +79,7 @@ static std::mutex g_surfaceMapMutex;
 } // namespace
 using namespace OHOS::Media;
 
-HevcDecoder::HevcDecoder(const std::string &name) : codecName_(name), state_(State::UNINITIALIZED)
+HevcDecoder::HevcDecoder(const std::string &name) : VideoDecoder(name)
 {
     AVCODEC_SYNC_TRACE;
     std::unique_lock<std::mutex> lock(decoderCountMutex_);
@@ -217,6 +219,16 @@ void HevcDecoder::InitHdrParams()
     colorSpaceInfo_.matrixCoeffs = 0;
 }
 
+bool HevcDecoder::CheckVideoPixelFormat(VideoPixelFormat vpf)
+{
+    if (vpf == VideoPixelFormat::NV12 || vpf == VideoPixelFormat::NV21) {
+        return true;
+    } else {
+        AVCODEC_LOGE("Set parameter failed: pixel format value %{public}d invalid", vpf);
+        return false;
+    }
+}
+
 void HevcDecoder::ConfigurelWidthAndHeight(const Format &format, const std::string_view &formatKey, bool isWidth)
 {
     if (isWidth == true) {
@@ -290,7 +302,7 @@ void HevcDecoder::ConvertDecOutToAVFrame(int32_t bitDepth)
     cachedFrame_->data[0] = hevcDecoderOutpusArgs_.pucOutYUV[0];
     cachedFrame_->data[1] = hevcDecoderOutpusArgs_.pucOutYUV[1]; // 1 u channel
     cachedFrame_->data[2] = hevcDecoderOutpusArgs_.pucOutYUV[2]; // 2 v channel
-    if (bitDepth == BIT_DEPTH8BIT) {
+    if (bitDepth == BITS_PER_PIXEL_COMPONENT_8) {
         cachedFrame_->format = static_cast<int>(AVPixelFormat::AV_PIX_FMT_YUV420P);
         cachedFrame_->linesize[0] = static_cast<int32_t>(hevcDecoderOutpusArgs_.uiDecStride);
         cachedFrame_->linesize[1] = static_cast<int32_t>(hevcDecoderOutpusArgs_.uiDecStride >> 1); // 1 u channel
@@ -383,7 +395,7 @@ int32_t HevcDecoder::DecodeFrameOnce()
     }
     int32_t bitDepth = static_cast<int32_t>(hevcDecoderOutpusArgs_.uiDecBitDepth);
     if (ret == 0) {
-        CHECK_AND_RETURN_RET_LOG(bitDepth == BIT_DEPTH8BIT || bitDepth == BIT_DEPTH10BIT, -1,
+        CHECK_AND_RETURN_RET_LOG(bitDepth == BITS_PER_PIXEL_COMPONENT_8 || bitDepth == BITS_PER_PIXEL_COMPONENT_10, -1,
                                  "Unsupported bitDepth %{public}d", bitDepth);
         ConvertDecOutToAVFrame(bitDepth);
 #ifdef BUILD_ENG_VERSION
@@ -523,7 +535,7 @@ void HevcDecoder::FlushAllFrames()
 
 int32_t HevcDecoder::GetDecoderWidthStride(void)
 {
-    hevcDecoderOutpusArgs_.uiDecStride == 0 ? width_ ? static_cast<int32_t>(hevcDecoderOutpusArgs_.uiDecStride);
+    hevcDecoderOutpusArgs_.uiDecStride == 0 ? width_ : static_cast<int32_t>(hevcDecoderOutpusArgs_.uiDecStride);
 }
 void HevcDecoder::CalculateBufferSize(void)
 {

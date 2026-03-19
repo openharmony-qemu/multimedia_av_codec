@@ -436,7 +436,7 @@ int32_t VideoDecoder::SetParameter(const Format &format)
         GetSurfaceCfgFromFmt(format);
         SetSurfaceParameter();
     }
-    AVCODEC_LOGI("Set parameter successful");
+    AVCODEC_LOGI("Num %{public}u Set parameter successful", decInstanceID_);
     return AVCS_ERR_OK;
 }
 
@@ -573,7 +573,7 @@ int32_t VideoDecoder::SetOutputSurface(sptr<Surface> surface)
     CHECK_AND_RETURN_RET_LOG(ret == GSERROR_OK, ret,
                              "surface(%{public}" PRIu64 ") register listener to surface failed, GSError=%{public}d",
                              sInfo_.surface->GetUniqueId(), ret);
-    AVCODEC_LOGI("Set surface(%{public}" PRIu64 ") success.", surfaceId);
+    AVCODEC_LOGI("Num %{public}u Set surface(%{public}" PRIu64 ") success.", decInstanceID_, surfaceId);
     return AVCS_ERR_OK;
 }
 
@@ -1058,7 +1058,7 @@ int32_t VideoDecoder::NotifyMemoryRecycle()
     CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNKNOWN, "Only surface mode support!");
     CHECK_AND_RETURN_RET_LOGD(state_ == State::RUNNING || state_ == State::FLUSHED || state_ == State::EOS,
                               AVCS_ERR_INVALID_STATE, "Current state can't recycle memory!");
-    AVCODEC_LOGI("Begin to freeze this codec");
+    AVCODEC_LOGI("Num %{public}u Begin to freeze this codec", decInstanceID_);
     State currentState = state_;
     state_ = State::FREEZING;
     int32_t errCode = FreezeBuffers(currentState);
@@ -1070,7 +1070,7 @@ int32_t VideoDecoder::NotifyMemoryRecycle()
 int32_t VideoDecoder::NotifyMemoryWriteBack()
 {
     CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNKNOWN, "Only surface mode support!");
-    AVCODEC_LOGI("Begin to active this codec");
+    AVCODEC_LOGI("Num %{public}u Begin to active this codec", decInstanceID_);
     int32_t errCode = ActiveBuffers();
     CHECK_AND_RETURN_RET_LOG(errCode == AVCS_ERR_OK, errCode, "Codec active buffers failed!");
     state_ = State::RUNNING;

@@ -31,7 +31,7 @@ public:
 
     int32_t CreateDecoder() override;
     void DeleteDecoder() override;
-    //bool CheckVideoPixelFormat(VideoPixelFormat vpf) override;
+    bool CheckVideoPixelFormat(VideoPixelFormat vpf) override;
     void ConfigurelWidthAndHeight(const Format &format, const std::string_view &formatKey, bool isWidth) override;
 
     void FlushAllFrames() override;
@@ -49,7 +49,7 @@ protected:
     int32_t Initialize() override;
     void SendFrame()override;
     int32_t DecodeFrameOnce() override;
-    void ConvertDecOutToAVFrame();
+    void ConvertDecOutToAVFrame(int32_t bitDepth);
 
 private:
     void UpdateColorAspects(const HEVC_COLOR_SPACE_INFO &colorInfo);
