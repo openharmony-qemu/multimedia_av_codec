@@ -415,6 +415,10 @@ void PlayListDownloader::StopBufferring(bool isAppBackground)
     downloader_->StopBufferring();
 }
 
+AesDecryptorManager::AesDecryptorManager()
+{
+}
+
 AesDecryptorManager::~AesDecryptorManager()
 {
     std::shared_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
