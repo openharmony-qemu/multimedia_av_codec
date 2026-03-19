@@ -159,8 +159,8 @@ OH_AVCapability **OH_AVCodec_GetCapabilityList(OH_AVCodecType codecType, uint32_
 bool OH_AVCapability_IsHardware(OH_AVCapability *capability);
 
 /**
- * @brief Check if the capability instance is describing a secure codec, and
- * whether supports processing encrypted resources.
+ * @brief Check if the capability instance is describing a secure codec, which
+ * supports processing encrypted resources.
  *
  * @param capability Codec capability pointer
  * @return Returns true if the capability instance is decribing a secure codec, which

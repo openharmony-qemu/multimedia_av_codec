@@ -104,10 +104,11 @@ int32_t CodecListServiceProxy::GetCapabilityAt(CapabilityData &capabilityData, i
         AVCODEC_LOGD("Get capability at index %{public}d failed: no more data", index);
     } else if (ret != AVCS_ERR_OK) {
         AVCODEC_LOGE("Get capability at index %{public}d failed: unknown error, ret %{public}d", index, ret);
-    }
-    AVCODEC_LOGD("Get capability at index %{public}d successfully", index);
-    CHECK_AND_RETURN_RET_LOG(CodecListParcel::Unmarshalling(reply, capabilityData), AVCS_ERR_UNKNOWN,
+    } else {
+        AVCODEC_LOGD("Get capability at index %{public}d successfully", index);
+        CHECK_AND_RETURN_RET_LOG(CodecListParcel::Unmarshalling(reply, capabilityData), AVCS_ERR_UNKNOWN,
                              "GetCodecCapabilityInfos failed, Unmarshalling error");
+    }
     return ret;
 }
 
