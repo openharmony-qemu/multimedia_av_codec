@@ -37,7 +37,6 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace ContainerFeature {
-// check is associative container -> map/set
 template<typename C>
 struct IsAssociative : std::false_type {};
 
@@ -53,7 +52,6 @@ struct IsAssociative<std::set<K, Comp, Alloc>> : std::true_type {};
 template<typename K, typename Hash, typename Pred, typename Alloc>
 struct IsAssociative<std::unordered_set<K, Hash, Pred, Alloc>> : std::true_type {};
 
-// check is sequence container -> vector/deque/list
 template<typename C>
 struct IsSequence : std::false_type {};
 
@@ -65,41 +63,49 @@ struct IsSequence<std::deque<T, Alloc>> : std::true_type {};
 
 template<typename T, typename Alloc>
 struct IsSequence<std::list<T, Alloc>> : std::true_type {};
-} // namespace ContainerFeature
 
-// for containers in which element is copyable type, provide add, del, query, modify with thread safety
-template<typename T, template<typename...> class Container>
+template<typename C>
+struct HasMappedType : std::false_type {};
+
+template<typename K, typename V, typename Comp, typename Alloc>
+struct HasMappedType<std::map<K, V, Comp, Alloc>> : std::true_type {};
+
+template<typename K, typename V, typename Hash, typename Pred, typename Alloc>
+struct HasMappedType<std::unordered_map<K, V, Hash, Pred, Alloc>> : std::true_type {};
+} 
+
+template<typename Container>
 class ThreadSafeContainer {
 public:
     ThreadSafeContainer() : container_() {}
 
-    explicit ThreadSafeContainer(Container<T> init) : container_(std::move(init)) {}
+    explicit ThreadSafeContainer(Container init) : container_(std::move(init)) {}
 
     ThreadSafeContainer(const ThreadSafeContainer&) = delete;
     ThreadSafeContainer& operator=(const ThreadSafeContainer&) = delete;
 
-    ThreadSafeContainer(ThreadSafeContainer&&) noexcept = default;
-    ThreadSafeContainer& operator=(ThreadSafeContainer&&) noexcept = default;
+    ThreadSafeContainer(ThreadSafeContainer&&) = delete;
+    ThreadSafeContainer& operator=(ThreadSafeContainer&&) = delete;
 
     template<typename Func>
     void Modify(Func&& f)
     {
-        static_assert(std::is_invocable_v<Func, Container<T>&>, "modify Func must be callable with Container<T>&");
+        static_assert(std::is_invocable_v<Func, Container&>, "modify Func must be callable with Container&");
         std::unique_lock<std::shared_mutex> lock(mutex_);
         std::forward<Func>(f)(container_);
     }
 
     template<typename Func>
-    auto ModifyWithResult(Func&& f) -> decltype(f(std::declval<Container<T>&>()))
+    auto ModifyWithResult(Func&& f) -> decltype(f(std::declval<Container&>()))
     {
-        static_assert(std::is_invocable_v<Func, Container<T>&>, "modify res Func must be callable with Container<T>&");
+        static_assert(std::is_invocable_v<Func, Container&>, "modify res Func must be callable with Container&");
         std::unique_lock<std::shared_mutex> lock(mutex_);
         return std::forward<Func>(f)(container_);
     }
 
     void Clear()
     {
-        Modify([](Container<T>& c) {
+        Modify([](Container& c) {
             c.clear();
         });
     }
@@ -116,16 +122,33 @@ public:
         return container_.empty();
     }
 
-    template<typename U = Container<T>>
-    std::enable_if_t<ContainerFeature::IsAssociative<U>::value, bool> Contains(const typename U::key_type& key) const
+    template<typename Func, typename C = Container>
+    std::enable_if_t<ContainerFeature::HasMappedType<C>::value> ForeachKV(Func&& f) const
     {
         std::shared_lock<std::shared_mutex> lock(mutex_);
-        return container_.find(key) != container_.end();
+        for (const auto& [key, value] : container_) {
+            f(key, value);
+        }
     }
 
-    template<typename U = Container<T>>
-    std::enable_if_t<ContainerFeature::IsAssociative<U>::value, std::optional<typename U::mapped_type>> Get(
-        const typename U::key_type& key) const
+    template<typename Func, typename C = Container>
+    std::enable_if_t<!ContainerFeature::HasMappedType<C>::value> Foreach(Func&& f) const
+    {
+        std::shared_lock<std::shared_mutex> lock(mutex_);
+        std::for_each(container_.begin(), container_.end(), std::forward<Func>(f));
+    }
+
+    template<typename Func, typename C = Container> void ForeachSnapshot(Func&& f)
+    {
+        std::shared_lock<std::shared_mutex> lock(mutex_);
+        C snapshot = container_;
+        lock.unlock();
+        std::for_each(snapshot.begin(), snapshot.end(), std::forward<Func>(f));
+    }
+
+    template<typename C = Container>
+    std::enable_if_t<ContainerFeature::HasMappedType<C>::value, std::optional<typename C::mapped_type>> Get(
+        const typename C::key_type& key) const
     {
         std::shared_lock<std::shared_mutex> lock(mutex_);
         auto iter = container_.find(key);
@@ -135,110 +158,77 @@ public:
         return iter->second;
     }
 
-    template<typename U = Container<T>>
-    std::enable_if_t<ContainerFeature::IsAssociative<U>::value, void> Set(const typename U::key_type& key,
-        const typename U::mapped_type& value)
+    template<typename C = Container>
+    std::enable_if_t<ContainerFeature::HasMappedType<C>::value, void> Set(const typename C::key_type& key,
+        const typename C::mapped_type& value)
     {
-        Modify([&](U& c) {
+        Modify([&](C& c) {
             c[key] = value;
         });
     }
 
-    template<typename U = Container<T>>
-    std::enable_if_t<ContainerFeature::IsAssociative<U>::value, void> Set(const typename U::key_type& key,
-        typename U::mapped_type&& value)
+    template<typename C = Container>
+    std::enable_if_t<ContainerFeature::HasMappedType<C>::value, void> Set(const typename C::key_type& key,
+        typename C::mapped_type&& value)
     {
-        Modify([&](U& c) {
+        Modify([&](C& c) {
             c[key] = std::move(value);
         });
     }
 
-    template<typename U = Container<T>>
-    std::enable_if_t<ContainerFeature::IsAssociative<U>::value, void> Remove(const typename U::key_type& key)
-    {
-        Modify([&](U& c) {
-            c.erase(key);
-        });
-    }
-
-    template<typename U = Container<T>>
-    std::enable_if_t<ContainerFeature::IsSequence<U>::value, void> PushBack(const T& value)
-    {
-        Modify([&](U& c) {
-            c.push_back(value);
-        });
-    }
-
-    template<typename U = Container<T>>
-    std::enable_if_t<ContainerFeature::IsSequence<U>::value, void> PushBack(T&& value)
-    {
-        Modify([&](U& c) {
-            c.push_back(std::move(value));
-        });
-    }
-
-    template<typename U = Container<T>>
-    std::enable_if_t<ContainerFeature::IsSequence<U>::value, void> PopBack()
-    {
-        Modify([&](U& c) {
-            if (c.empty()) {
-                return;
-            }
-            c.pop_back();
-        });
-    }
-
-    template<typename U = Container<T>>
-    std::enable_if_t<ContainerFeature::IsSequence<U>::value, std::optional<T>> Front() const
+    template<typename C = Container>
+    std::enable_if_t<ContainerFeature::IsAssociative<C>::value, bool> Contains(const typename C::key_type& key) const
     {
         std::shared_lock<std::shared_mutex> lock(mutex_);
-        if (container_.empty()) {
-            return std::nullopt;
-        }
-        return container_.front();
+        return container_.find(key) != container_.end();
     }
 
-    template<typename U = Container<T>>
-    std::enable_if_t<ContainerFeature::IsSequence<U>::value, std::optional<T>> Back() const
+    template<typename C = Container>
+    std::enable_if_t<ContainerFeature::HasMappedType<C>::value, void> Insert(const typename C::key_type& key,
+        const typename C::mapped_type& value)
     {
-        std::shared_lock<std::shared_mutex> lock(mutex_);
-        if (container_.empty()) {
-            return std::nullopt;
-        }
-        return container_.back();
+        Modify([&](C& c) {
+            c.insert(typename C::value_type(key, value));
+        });
     }
 
-    template<typename U = Container<T>>
-    std::enable_if_t<ContainerFeature::IsAssociative<U>::value, void> Insert(const typename U::key_type& value)
+    template<typename C = Container>
+    std::enable_if_t<ContainerFeature::HasMappedType<C>::value, void> Insert(const typename C::key_type& key,
+        typename C::mapped_type&& value)
     {
-        Modify([&](U& c) {
+        Modify([&](C& c) {
+            c.insert(typename C::value_type(key, std::move(value)));
+        });
+    }
+
+    template<typename C = Container>
+    std::enable_if_t<!ContainerFeature::HasMappedType<C>::value && ContainerFeature::IsAssociative<C>::value, void> Insert(
+        const typename C::value_type& value)
+    {
+        Modify([&](C& c) {
             c.insert(value);
         });
     }
 
-    template<typename Func, typename U = Container<T>> void Foreach(Func&& f) const
+    template<typename C = Container>
+    std::enable_if_t<ContainerFeature::HasMappedType<C>::value, void> Remove(const typename C::key_type& key)
     {
-        std::shared_lock<std::shared_mutex> lock(mutex_);
-        std::for_each(container_.begin(), container_.end(), std::forward<Func>(f));
+        Modify([&](C& c) {
+            c.erase(key);
+        });
     }
 
-    template<typename Func, typename U = Container<T>> void ForeachSnapshot(Func&& f)
+    template<typename C = Container>
+    std::enable_if_t<!ContainerFeature::HasMappedType<C>::value && ContainerFeature::IsAssociative<C>::value, void> Remove(
+        const typename C::value_type& value)
     {
-        // lock shared for copy
-        std::shared_lock<std::shared_mutex> lock(mutex_);
-
-        // copy container to snapshot
-        U snapshot = container_;
-
-        // unlock after copy
-        lock.unlock();
-
-        // traverse each element in snapshot
-        std::for_each(snapshot.begin(), snapshot.end(), std::forward<Func>(f));
+        Modify([&](C& c) {
+            c.erase(value);
+        });
     }
 
-    template<typename Func, typename U = Container<T>>
-    std::enable_if_t<ContainerFeature::IsAssociative<U>::value, std::optional<typename U::mapped_type>> FindIf(
+    template<typename Func, typename C = Container>
+    std::enable_if_t<ContainerFeature::HasMappedType<C>::value, std::optional<typename C::mapped_type>> FindIf(
         Func&& f) const
     {
         std::shared_lock<std::shared_mutex> lock(mutex_);
@@ -249,8 +239,67 @@ public:
         return iter->second;
     }
 
-    template<typename Func, typename U = Container<T>>
-    std::enable_if_t<ContainerFeature::IsSequence<U>::value, std::optional<T>> FindIf(Func&& f) const
+    template<typename C = Container>
+    std::enable_if_t<ContainerFeature::IsSequence<C>::value, void> PushBack(const typename C::value_type& value)
+    {
+        Modify([&](C& c) {
+            c.push_back(value);
+        });
+    }
+
+    template<typename C = Container>
+    std::enable_if_t<ContainerFeature::IsSequence<C>::value, void> PushBack(typename C::value_type&& value)
+    {
+        Modify([&](C& c) {
+            c.push_back(std::move(value));
+        });
+    }
+
+    template<typename C = Container>
+    std::enable_if_t<ContainerFeature::IsSequence<C>::value, void> PopBack()
+    {
+        Modify([&](C& c) {
+            if (c.empty()) {
+                return;
+            }
+            c.pop_back();
+        });
+    }
+
+    template<typename C = Container>
+    std::enable_if_t<ContainerFeature::IsSequence<C>::value, std::optional<typename C::value_type>> Front() const
+    {
+        std::shared_lock<std::shared_mutex> lock(mutex_);
+        if (container_.empty()) {
+            return std::nullopt;
+        }
+        return container_.front();
+    }
+
+    template<typename C = Container>
+    std::enable_if_t<ContainerFeature::IsSequence<C>::value, std::optional<typename C::value_type>> Back() const
+    {
+        std::shared_lock<std::shared_mutex> lock(mutex_);
+        if (container_.empty()) {
+            return std::nullopt;
+        }
+        return container_.back();
+    }
+
+    template<typename Func, typename C = Container>
+    std::enable_if_t<!ContainerFeature::HasMappedType<C>::value && ContainerFeature::IsAssociative<C>::value,
+        std::optional<typename C::value_type>> FindIf(Func&& f) const
+    {
+        std::shared_lock<std::shared_mutex> lock(mutex_);
+        auto iter = std::find_if(container_.begin(), container_.end(), std::forward<Func>(f));
+        if (iter == container_.end()) {
+            return std::nullopt;
+        }
+        return *iter;
+    }
+
+    template<typename Func, typename C = Container>
+    std::enable_if_t<ContainerFeature::IsSequence<C>::value, std::optional<typename C::value_type>> FindIf(Func&& f) const
     {
         std::shared_lock<std::shared_mutex> lock(mutex_);
         auto iter = std::find_if(container_.begin(), container_.end(), std::forward<Func>(f));
@@ -262,7 +311,7 @@ public:
 
 private:
     mutable std::shared_mutex mutex_;
-    Container<T> container_;
+    Container container_;
 };
 
 }
