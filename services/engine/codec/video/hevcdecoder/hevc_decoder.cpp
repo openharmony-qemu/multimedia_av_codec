@@ -63,10 +63,7 @@ constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 36864;
 constexpr int32_t VIDEO_BLOCKPERSEC_SIZE = 983040;
 static constexpr float PRIMARY_SCALE = 0.00002;
 static constexpr float LUMI_SCALE    = 0.0001;
-#ifdef BUILD_ENG_VERSION
-constexpr uint32_t PATH_MAX_LEN = 128;
-constexpr char DUMP_PATH[] = "/data/misc/hevcdecoderdump";
-#endif
+
 constexpr struct {
     const std::string_view codecName;
     const std::string_view mimeType;
