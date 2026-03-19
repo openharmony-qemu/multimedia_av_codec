@@ -35,14 +35,6 @@ const std::string M3U8_TS_TAG = "#EXTINF";
 const std::string M3U8_X_MAP_TAG = "#EXT-X-MAP";
 constexpr unsigned int MAX_LIVE_TS_NUM = 3;
 constexpr uint64_t DEFAULT_SUBTITLE_SNIFFSIZE = 128;
-std::vector<KeyInfo> MergeVectors(const std::vector<KeyInfo>& keyVector, const std::vector<KeyInfo>& sessionKeyVector)
-{
-    std::vector<KeyInfo> result;
-    result.reserve(keyVector.size() + sessionKeyVector.size());
-    result.insert(result.end(), sessionKeyVector.begin(), sessionKeyVector.end());
-    result.insert(result.end(), keyVector.begin(), keyVector.end());
-    return result;
-}
 }
 // StateMachine thread: call plugin SetSource -> call Open
 // StateMachine thread: call plugin GetSeekable -> call GetSeekable
@@ -249,12 +241,14 @@ uint64_t HlsPlayListDownloader::KeyChange(std::list<std::shared_ptr<M3U8Fragment
             currentAudio_->m3u8_->GetKeyInfos(keyInfos);
         }
     }
-    std::vector<KeyInfo> sessionKeyInfo;
-    if (master_ && master_->keyLen_ > 0) {
+    std::unique_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
+    if (master_ && master_->keyLen_ > 0) { // session-key
         maxSessionKeyIndex_ = 1;
         std::shared_ptr<AesDecryptor> sessionAesDecryptor = std::make_shared<AesDecryptor>();
         sessionAesDecryptor->OnSourceKeyChange(master_->key_, master_->keyLen_, master_->iv_);
         aesDecryptorsMap_[1] = sessionAesDecryptor;
+    } else {
+        maxSessionKeyIndex_ = 0;
     }
     for (size_t i = 0; i < keyInfos.size(); ++i) {
         std::shared_ptr<AesDecryptor> tempAesDecryptor = std::make_shared<AesDecryptor>();
