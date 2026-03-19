@@ -1336,7 +1336,7 @@ HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_MemoryOverwrite_001, TestSize.Le
     ASSERT_NE(capList1[0], nullptr);
     const char *nameAfter = OH_AVCapability_GetName(capList1[0]);
     ASSERT_NE(nameAfter, nullptr);
-    EXPECT_TRNE(firstName.c_str(), nameAfter);
+    EXPECT_TRUE(firstName.c_str(), nameAfter);
 }
 
 /**
