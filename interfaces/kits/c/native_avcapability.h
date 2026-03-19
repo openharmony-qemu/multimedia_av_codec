@@ -179,7 +179,7 @@ const char *OH_AVCapability_GetName(OH_AVCapability *capability);
 
 /**
  * @brief Get the codec mime type.
- * 
+ *
  * @param capability Codec capability pointer
  * @return Returns codec mime type string
  * @since 24
