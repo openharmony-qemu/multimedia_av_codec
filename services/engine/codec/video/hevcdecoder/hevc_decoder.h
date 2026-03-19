@@ -50,6 +50,7 @@ protected:
     void SendFrame()override;
     int32_t DecodeFrameOnce() override;
     void ConvertDecOutToAVFrame(int32_t bitDepth);
+    static int32_t CheckHevcDecLibStatus();
 
 private:
     void UpdateColorAspects(const HEVC_COLOR_SPACE_INFO &colorInfo);

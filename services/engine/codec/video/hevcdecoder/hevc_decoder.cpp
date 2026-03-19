@@ -533,10 +533,6 @@ void HevcDecoder::FlushAllFrames()
     runLock.unlock();
 }
 
-int32_t HevcDecoder::GetDecoderWidthStride(void)
-{
-    hevcDecoderOutpusArgs_.uiDecStride == 0 ? width_ : static_cast<int32_t>(hevcDecoderOutpusArgs_.uiDecStride);
-}
 void HevcDecoder::CalculateBufferSize(void)
 {
     if ((static_cast<UINT32>(width_ * height_ * VIDEO_PIX_DEPTH_YUV) >> 1) <= VIDEO_MIN_BUFFER_SIZE) {
@@ -546,6 +542,41 @@ void HevcDecoder::CalculateBufferSize(void)
     }
     AVCODEC_LOGI("width = %{public}d, height = %{public}d, Input buffer size = %{public}d",
                  width_, height_, inputBufferSize_);
+}
+int32_t HevcDecoder::GetDecoderWidthStride(void)
+{
+    return hevcDecoderOutpusArgs_.uiDecStride == 0 ? width_ : static_cast<int32_t>(hevcDecoderOutpusArgs_.uiDecStride);
+}
+
+int32_t HevcDecoder::CheckHevcDecLibStatus()
+{
+    void* handle = dlopen(HEVC_DEC_LIB_PATH, RTLD_LAZY);
+    if (handle != nullptr) {
+        auto hevcDecoderCreateFunc = reinterpret_cast<CreateHevcDecoderFuncType>(
+            dlsym(handle, HEVC_DEC_CREATE_FUNC_NAME));
+        auto hevcDecoderDecodecFrameFunc = reinterpret_cast<DecodeFuncType>(
+            dlsym(handle, HEVC_DEC_DECODE_FRAME_FUNC_NAME));
+        auto hevcDecoderFlushFrameFunc = reinterpret_cast<FlushFuncType>(dlsym(handle, HEVC_DEC_FLUSH_FRAME_FUNC_NAME));
+        auto hevcDecoderDeleteFunc = reinterpret_cast<DeleteFuncType>(dlsym(handle, HEVC_DEC_DELETE_FUNC_NAME));
+        if (hevcDecoderCreateFunc == nullptr || hevcDecoderDecodecFrameFunc == nullptr ||
+            hevcDecoderDeleteFunc == nullptr || hevcDecoderFlushFrameFunc == nullptr) {
+                AVCODEC_LOGE("HevcDecoder hevcFuncMatch_ failed!");
+                hevcDecoderCreateFunc = nullptr;
+                hevcDecoderDecodecFrameFunc = nullptr;
+                hevcDecoderFlushFrameFunc = nullptr;
+                hevcDecoderDeleteFunc = nullptr;
+                dlclose(handle);
+                handle = nullptr;
+            }
+    }
+
+    if (handle == nullptr) {
+        return AVCS_ERR_UNSUPPORT;
+    }
+    dlclose(handle);
+    handle = nullptr;
+
+    return AVCS_ERR_OK;
 }
 
 int32_t HevcDecoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
