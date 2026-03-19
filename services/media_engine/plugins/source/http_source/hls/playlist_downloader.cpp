@@ -425,7 +425,7 @@ AesDecryptorManager::~AesDecryptorManager()
     aesDecryptorsMap_.clear();
 }
 
-std::shared_ptr<AesDecryptor> AesDecryptorManager::GetAesDecryptor(uint64_t keyIndex)
+std::shared_ptr<AesDecryptor> AesDecryptorManager::GetOneAesDecryptor(uint64_t keyIndex)
 {
     std::shared_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
     auto it = aesDecryptorsMap_.find(keyIndex);
