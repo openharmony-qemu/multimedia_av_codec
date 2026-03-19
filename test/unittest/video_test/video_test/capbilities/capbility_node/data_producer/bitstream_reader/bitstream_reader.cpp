@@ -26,7 +26,7 @@ constexpr uint8_t AVCC_FRAME_HEAD_LEN = 4;
 constexpr uint8_t ANNEXB_FRAME_HEAD[] = {0, 0, 1};
 constexpr uint8_t ANNEXB_FRAME_HEAD_LEN = sizeof(ANNEXB_FRAME_HEAD);
 constexpr uint32_t PREREAD_BUFFER_SIZE = 1 * 1024 * 1024; // 1Mb, must greater than ANNEXB_FRAME_HEAD_LEN
-constexpr uint32_t MAX_NALU_SIZE = 2 * 1024 * 1024; // 2Mb
+constexpr uint32_t MAX_NALU_SIZE = 4 * 1024 * 1024; // 4Mb
 
 enum AvcNalType {
     AVC_UNSPECIFIED = 0,
@@ -111,7 +111,7 @@ int32_t BitstreamReader::FillBuffer(CodecBufferInfo &bufferInfo)
 
     do {
         int32_t frameSize = 0;
-        auto ret = nalUnitReader_->ReadNalUnit(bufferAddr, frameSize);
+        auto ret = nalUnitReader_->ReadNalUnit(bufferAddr, frameSize, bufferInfo.bufferCapacity);
         CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Sample failed");
 
         auto naluType = nalDetector_->GetNalType(nalDetector_->GetNalTypeAddr(bufferAddr));
@@ -140,12 +140,20 @@ uint8_t const * BitstreamReader::NalUnitReader::GetNextNalUnitAddr()
     return nalUnit_->data();
 }
 
-int32_t BitstreamReader::NalUnitReader::ReadNalUnit(uint8_t *bufferAddr, int32_t &bufferSize)
+int32_t BitstreamReader::NalUnitReader::ReadNalUnit(uint8_t *bufferAddr, int32_t &bufferSize, uint32_t bufferCapacity)
 {
     CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Got a invalid buffer addr");
     CHECK_AND_RETURN_RET_LOG(nalUnit_, AVCODEC_SAMPLE_ERR_ERROR, "Nal unit buffer is nullptr");
-    bufferSize = nalUnit_->size();
-    memcpy_s(bufferAddr, bufferSize, nalUnit_->data(), bufferSize);
+
+    bufferSize = nalUnit_->size() - readSize_;
+    auto ret =memcpy_s(bufferAddr, bufferSize, nalUnit_->data() + readSize_, bufferSize);
+    CHECK_AND_RETURN_LOG(ret == EOK, "ReadNalUnit failed");
+
+    if (bufferSize > bufferCapacity) {
+        readSize_ = bufferSize;
+    } else {
+        readSize_ = 0;
+    }
 
     if (!IsEOF()) {
         PrereadNalUnit();
