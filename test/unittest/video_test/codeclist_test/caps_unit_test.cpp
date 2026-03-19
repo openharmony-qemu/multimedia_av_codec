@@ -1265,10 +1265,10 @@ HWTEST_F(CapsUnitTest, CheckMimeType_001, TestSize.Level1)
 HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_001, TestSize.Level1)
 {
     OH_AVCodecType codecTypes[] = {
-        OH_AVCodecType::AVCODEC_TYPE_VIDEO_ENCODER,
-        OH_AVCodecType::AVCODEC_TYPE_VIDEO_DECODER,
-        OH_AVCodecType::AVCODEC_TYPE_AUDIO_ENCODER,
-        OH_AVCodecType::AVCODEC_TYPE_AUDIO_DECODER
+        OH_AVCodecType::OH_AVCODEC_TYPE_VIDEO_ENCODER,
+        OH_AVCodecType::OH_AVCODEC_TYPE_VIDEO_DECODER,
+        OH_AVCodecType::OH_AVCODEC_TYPE_AUDIO_ENCODER,
+        OH_AVCodecType::OH_AVCODEC_TYPE_AUDIO_DECODER
     };
 
     for (auto codecType : codecTypes) {
@@ -1303,7 +1303,7 @@ HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_MemoryOverwrite_001, TestSize.Le
     uint32_t count1 = 0;
     uint32_t count2 = 0;
     OH_AVCapability **capList1 = OH_AVCodec_GetCapabilityList(
-        OH_AVCodecType::AVCODEC_TYPE_VIDEO_DECODER, &count1);
+        OH_AVCodecType::OH_AVCODEC_TYPE_VIDEO_DECODER, &count1);
     ASSERT_NE(capList1, nullptr);
     ASSERT_GT(count1, 0);
     ASSERT_NE(capList1[0], nullptr);
@@ -1318,7 +1318,7 @@ HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_MemoryOverwrite_001, TestSize.Le
     std::string firstName(nameBefore);
 
     OH_AVCapability **capList2 = OH_AVCodec_GetCapabilityList(
-        OH_AVCodecType::AVCODEC_TYPE_AUDIO_ENCODER, &count2);
+        OH_AVCodecType::OH_AVCODEC_TYPE_AUDIO_ENCODER, &count2);
     ASSERT_NE(capList2, nullptr);
     ASSERT_GT(count2, 0);
     for (uint32_t i = 0; i < count2; i++) {
@@ -1382,10 +1382,10 @@ HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_THREAD_POOL_001, TestSize.Level2
 HWTEST_F(CapsUnitTest, AVCaps_IsSecure_001, TestSize.Level1)
 {
     OH_AVCodecType codecTypes[] = {
-        OH_AVCodecType::AVCODEC_TYPE_VIDEO_ENCODER,
-        OH_AVCodecType::AVCODEC_TYPE_VIDEO_DECODER,
-        OH_AVCodecType::AVCODEC_TYPE_AUDIO_ENCODER,
-        OH_AVCodecType::AVCODEC_TYPE_AUDIO_DECODER
+        OH_AVCodecType::OH_AVCODEC_TYPE_VIDEO_ENCODER,
+        OH_AVCodecType::OH_AVCODEC_TYPE_VIDEO_DECODER,
+        OH_AVCodecType::OH_AVCODEC_TYPE_AUDIO_ENCODER,
+        OH_AVCodecType::OH_AVCODEC_TYPE_AUDIO_DECODER
     };
 
     for (auto codecType : codecTypes) {

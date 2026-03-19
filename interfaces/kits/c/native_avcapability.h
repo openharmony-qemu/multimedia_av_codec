@@ -81,13 +81,13 @@ typedef enum OH_AVCodecCategory {
  */
 typedef enum OH_AVCodecType {
     /** Video encoder */
-    AVCODEC_TYPE_VIDEO_ENCODER = 0,
+    OH_AVCODEC_TYPE_VIDEO_ENCODER = 0,
     /** Video decoder */
-    AVCODEC_TYPE_VIDEO_DECODER = 1,
+    OH_AVCODEC_TYPE_VIDEO_DECODER = 1,
     /** Audio encoder */
-    AVCODEC_TYPE_AUDIO_ENCODER = 2,
+    OH_AVCODEC_TYPE_AUDIO_ENCODER = 2,
     /** Audio decoder */
-    AVCODEC_TYPE_AUDIO_DECODER = 3
+    OH_AVCODEC_TYPE_AUDIO_DECODER = 3
 } OH_AVCodecType;
 
 /**
