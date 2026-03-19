@@ -354,8 +354,11 @@ int32_t CodecListCore::GetCapabilityAt(CapabilityData &capabilityData, int32_t i
 {
     std::lock_guard<std::mutex> lock(mutex_);
     std::vector<CapabilityData> capsDataArray = CodecAbilitySingleton::GetInstance().GetCapabilityArray();
-    if (index < 0 || index >= static_cast<int32_t>(capsDataArray.size())) {
-        AVCODEC_LOGE("index is out of range, index: %{public}d, capa size: %{public}zu", index, capsDataArray.size());
+    if (index < 0) {
+        AVCODEC_LOGE("Index less than zero, index: %{public}d", index);
+        return AVCS_ERR_UNKNOWN;
+    } else if (index >= static_cast<int32_t>(capsDataArray.size())) {
+        AVCODEC_LOGD("index is out of range, index: %{public}d, capa size: %{public}zu", index, capsDataArray.size());
         return AVCS_ERR_NOT_ENOUGH_DATA;
     }
     const CapabilityData &targetCap = capsDataArray[index];
