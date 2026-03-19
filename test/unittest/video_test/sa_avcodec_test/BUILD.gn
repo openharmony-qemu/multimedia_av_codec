@@ -66,6 +66,7 @@ ohos_unittest("video_sa_avcodec_unit_test") {
     "$av_codec_root_dir/services/engine/base/include",
     "$av_codec_root_dir/services/engine/codec/include/video",
     "$av_codec_root_dir/services/engine/codec/video/avcencoder",
+    "$av_codec_root_dir/services/engine/codec/video/decoderbase",
     "$av_codec_root_dir/services/engine/codec/video/hevcdecoder",
     "$av_codec_root_dir/services/engine/codec/video/fcodec/include",
     "$av_codec_root_dir/services/engine/common/include",
