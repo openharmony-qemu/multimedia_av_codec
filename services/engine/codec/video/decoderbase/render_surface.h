@@ -93,11 +93,11 @@ private:
     GSError BufferReleasedByConsumer(uint64_t surfaceId);
     void RequestBufferFromConsumer();
     void FindAvailIndex(uint32_t index) const;
-    
     void RequestSurfaceBufferThread();
     bool CanSwapOut(bool isOutputBuffer, const std::shared_ptr<CodecBuffer> &codecBuffer);
     int32_t SwapOutBuffers(bool isOutputBuffer, State curState);
     int32_t SwapInBuffers(bool isOutputBuffer) const;
+    sptr<SurfaceBuffer> CreateNewSurfaceBuffer(int32_t index);
 
     std::thread mRequestSurfaceBufferThread_;
     std::atomic<bool> requestSucceed_ = false;

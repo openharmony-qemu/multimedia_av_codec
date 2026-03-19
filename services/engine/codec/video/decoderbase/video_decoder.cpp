@@ -21,6 +21,9 @@
 #include <sstream>
 #include <sys/ioctl.h>
 #include <linux/dma-buf.h>
+#include "v1_0/cm_color_space.h"
+#include "v1_0/hdr_static_metadata.h"
+#include "v1_0/buffer_handle_meta_key_type.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

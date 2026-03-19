@@ -63,6 +63,8 @@ constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 36864;
 constexpr int32_t VIDEO_BLOCKPERSEC_SIZE = 983040;
 static constexpr float PRIMARY_SCALE = 0.00002;
 static constexpr float LUMI_SCALE    = 0.0001;
+constexpr int32_t VIDEO_FRAMERATE_DEFAULT_SIZE = 30;
+constexpr int32_t VIDEO_BITRATE_MAX_SIZE = 300000000;
 
 constexpr struct {
     const std::string_view codecName;
