@@ -63,8 +63,7 @@ OH_AVCapability *OH_AVCodec_GetCapability(const char *mime, bool isEncoder)
     return obj;
 }
 
-OH_AVCapability **OH_AVCodec_GetCapabilityList(OH_AVCodecType codecType,
-                                               uint32_t *count)
+OH_AVCapability **OH_AVCodec_GetCapabilityList(OH_AVCodecType codecType, uint32_t *count)
 {
     CHECK_AND_RETURN_RET_LOG(count != nullptr, nullptr,
                              "Get capability list failed: Invalid codec type: %{public}d", codecType);
@@ -75,9 +74,9 @@ OH_AVCapability **OH_AVCodec_GetCapabilityList(OH_AVCodecType codecType,
                              "Get capability list failed: Invalid codec type: %{public}d", codecType);
     static CapabilityCache g_caches[TOTAL_CODEC_TYPES];
     static std::once_flag g_initFlags[TOTAL_CODEC_TYPES];
+    static AppEventReporter appEventReporter = AppEventReporter();
+    ApiInvokeRecorder apiInvokeRecorder("OH_AVCodec_GetCapabilityList", appEventReporter);
     std::call_once(g_initFlags[typeIndex], [codecType, typeIndex]() {
-        static AppEventReporter appEventReporter = AppEventReporter();
-        ApiInvokeRecorder apiInvokeRecorder("OH_AVCodec_GetCapabilityList", appEventReporter);
         std::shared_ptr<AVCodecList> codeclist = AVCodecListFactory::CreateAVCodecList();
         CHECK_AND_RETURN_LOG(codeclist != nullptr, "Get capability list failed: CreateAVCodecList failed");
         std::vector<std::shared_ptr<CapabilityData>> capabilityDataList = codeclist->GetCapabilityList(codecType);

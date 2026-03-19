@@ -108,13 +108,13 @@ int CodecListServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Me
             break;
         case static_cast<uint32_t>(AVCodecListServiceInterfaceCode::GET_CAPABILITY_AT):
             ret = DoGetCapabilityAt(data, reply);
+            CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK || ret == AVCS_ERR_NOT_ENOUGH_DATA, ret,
+                                     "Failed to call member func %{public}s", funcName.c_str());
             break;
         default:
             AVCODEC_LOGW("CodecListServiceStub: no member func supporting, applying default process");
             return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
     }
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK || ret == AVCS_ERR_NOT_ENOUGH_DATA, ret,
-                             "Failed to call member func %{public}s", funcName.c_str());
     return ret;
 }
 
