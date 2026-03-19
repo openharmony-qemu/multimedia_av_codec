@@ -165,6 +165,7 @@ ohos_shared_library("native_media_avdemuxer") {
 }
 
 ohos_shared_library("native_media_avsource") {
+  branch_protector_ret = "pac_ret"
   install_enable = true
   sources = [
     "$av_codec_root_dir/frameworks/native/capi/avsource/native_avsource.cpp",
