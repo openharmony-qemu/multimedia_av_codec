@@ -69,8 +69,8 @@ OH_AVCapability **OH_AVCodec_GetCapabilityList(OH_AVCodecType codecType, uint32_
                              "Get capability list failed: Invalid codec type: %{public}d", codecType);
     *count = 0;
     int typeIndex = static_cast<int32_t>(codecType);
-    CHECK_AND_RETURN_RET_LOG(typeIndex >= static_cast<int32_t>(OH_AVCodecType::AVCODEC_TYPE_VIDEO_ENCODER)
-                             && typeIndex <= static_cast<int32_t>(OH_AVCodecType::AVCODEC_TYPE_AUDIO_DECODER), nullptr,
+    CHECK_AND_RETURN_RET_LOG(typeIndex >= static_cast<int32_t>(OH_AVCodecType::OH_AVCODEC_TYPE_VIDEO_ENCODER)
+                             && typeIndex <= static_cast<int32_t>(OH_AVCodecType::OH_AVCODEC_TYPE_AUDIO_DECODER), nullptr,
                              "Get capability list failed: Invalid codec type: %{public}d", codecType);
     static CapabilityCache g_caches[TOTAL_CODEC_TYPES];
     static std::once_flag g_initFlags[TOTAL_CODEC_TYPES];
