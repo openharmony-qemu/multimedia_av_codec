@@ -74,7 +74,9 @@ public:
     void UpdateStreamInfo() override;
     HlsSegmentType GetSegType(uint32_t streamId) override;
     uint32_t GetCurStreamId() override;
-
+    void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr,
+        bool isFmp4 = false) override;
+    bool IsLiveEnd() override;
 private:
     void UpdateMasterInfo(bool isPreParse);
     void UpdateMasterAndNotifyList(bool isPreParse);
@@ -84,7 +86,7 @@ private:
     bool ReadStreamHeader(const std::list<std::shared_ptr<M3U8VariantStream>>& streamList, uint8_t* buffer,
         uint32_t wantLen, uint32_t& readLen, uint32_t streamId);
     void GetMediaStreams(StreamType streamType, std::vector<StreamInfo>& streams);
-    void CopyFragmentInfo(PlayInfo& playInfo, std::shared_ptr<M3U8Fragment> file);
+    void CopyFragmentInfo(PlayInfo& playInfo, std::shared_ptr<M3U8Fragment> file, uint64_t sessionKeyIndex);
     void KeyChange(void);
     void OnMasterReady(bool needAudioManager, bool needSubtitlesManager);
 
@@ -109,6 +111,10 @@ private:
     std::set<uint32_t> videoStreamIds_ = std::set<uint32_t>();
     std::set<uint32_t> audioStreamIds_ = std::set<uint32_t>();
     std::set<uint32_t> subtitlesStreamIds_ = std::set<uint32_t>();
+    std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
+    std::atomic<bool> isFmp4_ {false};
+    bool isLiveEnd_ {false};
+    std::atomic<bool> isPreParseFinished_ {false};
 };
 }
 }

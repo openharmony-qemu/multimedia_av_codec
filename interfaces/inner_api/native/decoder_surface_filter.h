@@ -240,7 +240,7 @@ private:
     int32_t surfaceHeight_{0};
 
     std::shared_ptr<VideoFrameReadyCallback> videoFrameReadyCallback_;
-    bool isInSeekContinous_{false};
+    bool isInSeekContinuous_{false};
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> outputBufferMap_;
     std::mutex draggingMutex_ {};
     std::unique_ptr<Task> eosTask_ {nullptr};

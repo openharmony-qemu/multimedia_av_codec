@@ -89,7 +89,7 @@ Status DataStreamSourcePlugin::SetSource(std::shared_ptr<Plugins::MediaSource> s
     return Status::OK;
 }
 
-Status DataStreamSourcePlugin::SetCallback(Plugins::Callback* cb)
+Status DataStreamSourcePlugin::SetCallback(const std::shared_ptr<Plugins::Callback>& cb)
 {
     MEDIA_LOG_D("IN");
     callback_ = cb;
@@ -239,9 +239,10 @@ void DataStreamSourcePlugin::HandleBufferingStart()
 {
     if (!isBufferingStart) {
         isBufferingStart = true;
-        if (callback_ != nullptr) {
+        auto callback = callback_.lock();
+        if (callback) {
             MEDIA_LOG_I("OnEvent BUFFERING_START.");
-            callback_->OnEvent({Plugins::PluginEventType::BUFFERING_START,
+            callback->OnEvent({Plugins::PluginEventType::BUFFERING_START,
                 {BufferingInfoType::BUFFERING_START}, "pause"});
         }
     }
@@ -251,9 +252,10 @@ void DataStreamSourcePlugin::HandleBufferingEnd()
 {
     if (isBufferingStart) {
         isBufferingStart = false;
-        if (callback_ != nullptr) {
+        auto callback = callback_.lock();
+        if (callback) {
             MEDIA_LOG_I("OnEvent BUFFERING_END.");
-            callback_->OnEvent({Plugins::PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
+            callback->OnEvent({Plugins::PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
         }
     }
 }

@@ -16,6 +16,7 @@
 #define MEDIA_PLUGIN
 #include <unistd.h>
 #include <chrono>
+#include <string>
 #include "avcodec_trace.h"
 #include "securec.h"
 #include "ffmpeg_format_helper.h"
@@ -23,6 +24,7 @@
 #include "buffer/avbuffer.h"
 #include "plugin/plugin_buffer.h"
 #include "plugin/plugin_definition.h"
+#include "avcodec_log.h"
 #include "common/log.h"
 #include "meta/video_types.h"
 #include "demuxer_log_compressor.h"
@@ -32,6 +34,8 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "FfmpegDemuxerThread" };
+constexpr int64_t LOG_INTERVAL_MS = 2000; // 2s
+constexpr uint32_t LOG_MAX_COUNT = 10; // 10 times
 }
 
 namespace OHOS {
@@ -41,10 +45,27 @@ namespace Ffmpeg {
 const int32_t AV_READ_PACKET_READ_ERROR = -1;
 const int32_t AV_READ_PACKET_READ_AGAIN = -2;
 const int32_t AV_READ_PACKET_RETRY_UPPER_LIMIT = 9;
+const int32_t AV_READ_PACKET_NON_READ_RETRY_UPPER_LIMIT = 10;
 const int32_t AV_READ_PACKET_SLEEP_TIME = 50;
+const int32_t AV_READ_PACKET_NON_READ_SLEEP_TIME = 10;
 
 std::condition_variable FFmpegDemuxerPlugin::readCbCv_;
 std::mutex FFmpegDemuxerPlugin::readPacketMutex_;
+
+namespace {
+int RetryNonReadAgainBounded(int& tryCount, int32_t sleepTimeMs, const std::string& logPrefix, int64_t offset)
+{
+    ++tryCount;
+    if (tryCount > AV_READ_PACKET_NON_READ_RETRY_UPPER_LIMIT) {
+        MEDIA_LOG_I("%{public}s exceeds retry, offset:" PUBLIC_LOG_D64, logPrefix.c_str(), offset);
+        return AV_READ_PACKET_READ_ERROR;
+    }
+    MEDIA_LOG_I("%{public}s, retry count:" PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64,
+        logPrefix.c_str(), tryCount, offset);
+    std::this_thread::sleep_for(std::chrono::milliseconds(sleepTimeMs));
+    return AV_READ_PACKET_READ_AGAIN;
+}
+}
 
 // Write packet data into the buffer provided by ffmpeg
 int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
@@ -98,14 +119,17 @@ int FFmpegDemuxerPlugin::HandleReadOK(IOContext* ioContext, int dataSize)
     return AV_READ_PACKET_READ_ERROR;
 }
 
-int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize, int& tryCount)
+int FFmpegDemuxerPlugin::HandleNonReadAgain(IOContext* ioContext, int& tryCount)
 {
-    if (dataSize > 0) {
-        ioContext->offset += dataSize;
-        return dataSize;
+    auto invokerType = ioContext->invokerType.load();
+    if (invokerType == InvokerType::FLUSH || invokerType == InvokerType::DESTORY) {
+        MEDIA_LOG_I("AVReadPacket interrupted, invokerType:" PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64,
+            static_cast<int32_t>(invokerType), ioContext->offset);
+        return AV_READ_PACKET_READ_ERROR;
     }
-    if (ioContext->invokerType != InvokerType::READ) {
-        switch (ioContext->avReadPacketStopState.load()) {
+    auto stopState = ioContext->avReadPacketStopState.load();
+    if (invokerType == InvokerType::INIT) {
+        switch (stopState) {
             case AVReadPacketStopState::TRUE:
                 MEDIA_LOG_I("AVReadPacket stopped");
                 return AV_READ_PACKET_READ_ERROR;
@@ -115,13 +139,31 @@ int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize, int
                 return AV_READ_PACKET_READ_AGAIN;
             case AVReadPacketStopState::UNSET:
                 ioContext->retry = true;
-                ioContext->initErrorAgain = (ioContext->invokerType == InvokerType::INIT ? true : false);
-                MEDIA_LOG_I("Read again, UNSET state, offset:" PUBLIC_LOG_D64, ioContext->offset);
-                return AV_READ_PACKET_READ_ERROR;
+                ioContext->initErrorAgain = true;
+                return RetryNonReadAgainBounded(tryCount, AV_READ_PACKET_NON_READ_SLEEP_TIME,
+                    "Read again and retry, UNSET state", ioContext->offset);
             default:
                 MEDIA_LOG_E("Invalid AVReadPacketStopState");
-                break;
+                return AV_READ_PACKET_READ_ERROR;
         }
+    }
+    if (stopState == AVReadPacketStopState::TRUE) {
+        MEDIA_LOG_I("AVReadPacket stopped");
+        return AV_READ_PACKET_READ_ERROR;
+    }
+    ioContext->retry = true;
+    return RetryNonReadAgainBounded(tryCount, AV_READ_PACKET_NON_READ_SLEEP_TIME,
+        "Read again and retry, non-read path", ioContext->offset);
+}
+
+int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize, int& tryCount)
+{
+    if (dataSize > 0) {
+        ioContext->offset += dataSize;
+        return dataSize;
+    }
+    if (ioContext->invokerType != InvokerType::READ) {
+        return HandleNonReadAgain(ioContext, tryCount);
     }
     tryCount++;
     if (tryCount >= AV_READ_PACKET_RETRY_UPPER_LIMIT) {
@@ -157,7 +199,8 @@ void FFmpegDemuxerPlugin::UpdateInitDownloadData(IOContext* ioContext, int dataS
         if (ioContext->initDownloadDataSize <= UINT64_MAX - static_cast<uint64_t>(dataSize)) {
             ioContext->initDownloadDataSize += static_cast<uint64_t>(dataSize);
         } else {
-            MEDIA_LOG_W("DataSize " PUBLIC_LOG_U64 " is invalid", static_cast<uint64_t>(dataSize));
+            AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGW, LOG_INTERVAL_MS, LOG_MAX_COUNT,
+                "DataSize " PUBLIC_LOG_U64 " is invalid", static_cast<uint64_t>(dataSize));
         }
     }
 }
@@ -415,6 +458,13 @@ bool FFmpegDemuxerPlugin::ReadAndProcessFrame(Plugins::AVPacketWrapperPtr& pktWr
         readLoopStatus_ = Status::OK;
         int ffmpegRet = AVReadFrameLimit(pkt);
         std::unique_lock<std::mutex> sLock(syncMutex_);
+        Status accumulateStatus = Status::OK;
+        auto action = ProcessAccumulateXpsPkt(pktWrapper, ffmpegRet, accumulateStatus);
+        FALSE_RETURN_V_MSG_E(accumulateStatus == Status::OK, false, "PsAccumulateXpsPkt failed");
+        if (action == AccumulateAction::ACCUMULATE_NOT_COMPLETED) {
+            pktWrapper.reset();
+            return true;
+        }
         UpdMinTsPacketInfo(pktWrapper->GetAVPacket());
         if (ffmpegRet == AVERROR_EOF) {
             HandleAVPacketEndOfStream(pktWrapper);
@@ -425,6 +475,13 @@ bool FFmpegDemuxerPlugin::ReadAndProcessFrame(Plugins::AVPacketWrapperPtr& pktWr
             return false;
         }
     }
+    return HandleAVPacketNormal(pktWrapper);
+}
+
+bool FFmpegDemuxerPlugin::HandleAVPacketNormal(Plugins::AVPacketWrapperPtr& pktWrapper)
+{
+    AVPacket *pkt = (pktWrapper != nullptr) ? pktWrapper->GetAVPacket() : nullptr;
+    FALSE_RETURN_V_MSG_E(pkt != nullptr, false, "Pkt is nullptr");
     auto trackId = pkt->stream_index;
     if (!TrackIsSelected(trackId)) {
         av_packet_unref(pkt);
@@ -462,6 +519,7 @@ bool FFmpegDemuxerPlugin::ReadAndProcessFrame(Plugins::AVPacketWrapperPtr& pktWr
 void FFmpegDemuxerPlugin::HandleAVPacketEndOfStream(Plugins::AVPacketWrapperPtr& pktWrapper)
 {
     AVPacket *pkt = (pktWrapper != nullptr) ? pktWrapper->GetAVPacket() : nullptr;
+    AccumulateXpsPktReleaseAll();
     WebvttMP4EOSProcess(pkt);
     pktWrapper.reset();
     Status ret = PushEOSToAllCache();
@@ -478,6 +536,7 @@ void FFmpegDemuxerPlugin::HandleAVPacketEndOfStream(Plugins::AVPacketWrapperPtr&
 
 void FFmpegDemuxerPlugin::HandleAVPacketReadError(Plugins::AVPacketWrapperPtr& pktWrapper, int ffmpegRet)
 {
+    AccumulateXpsPktReleaseAll();
     AVPacket *pkt = (pktWrapper != nullptr) ? pktWrapper->GetAVPacket() : nullptr;
     FALSE_RETURN_MSG(pkt != nullptr, "AVPacket is nullptr");
     pktWrapper.reset();

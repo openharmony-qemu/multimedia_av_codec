@@ -23,6 +23,7 @@
 #include "avcodec_suspend.h"
 #include <unistd.h>
 #include "syspara/parameters.h"
+#include "avcodec_monitor.h"
 
 #define MAX_THREAD 16
 
@@ -1647,6 +1648,186 @@ HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_ERRCODE_REPORT_0210, TestSize
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecNameHEVC));
         vDecSample->WaitForEOS();
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_INNER_GET_PIDS_0010
+ * @tc.name      : get secure decoder pids
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_GET_PIDS_0010, TestSize.Level0)
+{
+    if (cap != nullptr) {
+        auto vDecSample = make_shared<VDecNdkInnerSample>();
+        if (vDecSample->CreateByName("OMX.hisi.video.decoder.avc.secure") == AVCS_ERR_OK) {
+            std::vector<pid_t> pidList;
+            auto ret = AVCodecMonitor::GetActiveSecureDecoderPids(pidList);
+            ASSERT_EQ(AVCS_ERR_OK, ret);
+            pid_t pid = getpid();
+            cout << "pid: " << pid << endl;
+            ASSERT_TRUE(std::find(pidList.begin(), pidList.end(), pid) != pidList.end());
+            vDecSample->Release();
+            ret = AVCodecMonitor::GetActiveSecureDecoderPids(pidList);
+            ASSERT_EQ(AVCS_ERR_OK, ret);
+            ASSERT_TRUE(std::find(pidList.begin(), pidList.end(), pid) == pidList.end());
+        }
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_INNER_GET_PIDS_0020
+ * @tc.name      : get secure decoder pids
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_GET_PIDS_0020, TestSize.Level0)
+{
+    if (cap != nullptr) {
+        auto vDecSample = make_shared<VDecNdkInnerSample>();
+        if (vDecSample->CreateByName("OMX.hisi.video.decoder.hevc.secure") == AVCS_ERR_OK) {
+            std::vector<pid_t> pidList;
+            auto ret = AVCodecMonitor::GetActiveSecureDecoderPids(pidList);
+            ASSERT_EQ(AVCS_ERR_OK, ret);
+            pid_t pid = getpid();
+            cout << "pid: " << pid << endl;
+            ASSERT_TRUE(std::find(pidList.begin(), pidList.end(), pid) != pidList.end());
+            vDecSample->Release();
+            ret = AVCodecMonitor::GetActiveSecureDecoderPids(pidList);
+            ASSERT_EQ(AVCS_ERR_OK, ret);
+            ASSERT_TRUE(std::find(pidList.begin(), pidList.end(), pid) == pidList.end());
+        }
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_INNER_GET_PIDS_0030
+ * @tc.name      : get secure decoder pids
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_GET_PIDS_0030, TestSize.Level1)
+{
+    if (cap != nullptr) {
+        auto vDecSample = make_shared<VDecNdkInnerSample>();
+        if (vDecSample->CreateByName("OMX.hisi.video.decoder.vvc.secure") == AVCS_ERR_OK) {
+            std::vector<pid_t> pidList;
+            auto ret = AVCodecMonitor::GetActiveSecureDecoderPids(pidList);
+            ASSERT_EQ(AVCS_ERR_OK, ret);
+            pid_t pid = getpid();
+            cout << "pid: " << pid << endl;
+            ASSERT_TRUE(std::find(pidList.begin(), pidList.end(), pid) != pidList.end());
+            vDecSample->Release();
+            ret = AVCodecMonitor::GetActiveSecureDecoderPids(pidList);
+            ASSERT_EQ(AVCS_ERR_OK, ret);
+            ASSERT_TRUE(std::find(pidList.begin(), pidList.end(), pid) == pidList.end());
+        }
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_INNER_GET_PIDS_0040
+ * @tc.name      : get secure decoder pids
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_GET_PIDS_0040, TestSize.Level2)
+{
+    if (cap != nullptr) {
+        auto vDecSample = make_shared<VDecNdkInnerSample>();
+        auto vDecSample2 = make_shared<VDecNdkInnerSample>();
+        if (vDecSample->CreateByName("OMX.hisi.video.decoder.avc.secure") == AVCS_ERR_OK &&
+    vDecSample2->CreateByName("OMX.hisi.video.decoder.avc.secure") == AVCS_ERR_OK) {
+            std::vector<pid_t> pidList;
+            auto ret = AVCodecMonitor::GetActiveSecureDecoderPids(pidList);
+            ASSERT_EQ(AVCS_ERR_OK, ret);
+            pid_t pid = getpid();
+            cout << "pid: " << pid << endl;
+            ASSERT_TRUE(std::find(pidList.begin(), pidList.end(), pid) != pidList.end());
+            vDecSample->Release();
+            vDecSample2->Release();
+            ret = AVCodecMonitor::GetActiveSecureDecoderPids(pidList);
+            ASSERT_EQ(AVCS_ERR_OK, ret);
+            ASSERT_TRUE(std::find(pidList.begin(), pidList.end(), pid) == pidList.end());
+        }
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_INNER_GET_PIDS_0050
+ * @tc.name      : get secure decoder pids
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_GET_PIDS_0050, TestSize.Level2)
+{
+    if (cap != nullptr) {
+        auto vDecSample = make_shared<VDecNdkInnerSample>();
+        auto vDecSample2 = make_shared<VDecNdkInnerSample>();
+        if (vDecSample->CreateByName("OMX.hisi.video.decoder.hevc.secure") == AVCS_ERR_OK &&
+    vDecSample2->CreateByName("OMX.hisi.video.decoder.hevc.secure") == AVCS_ERR_OK) {
+            std::vector<pid_t> pidList;
+            auto ret = AVCodecMonitor::GetActiveSecureDecoderPids(pidList);
+            ASSERT_EQ(AVCS_ERR_OK, ret);
+            pid_t pid = getpid();
+            cout << "pid: " << pid << endl;
+            ASSERT_TRUE(std::find(pidList.begin(), pidList.end(), pid) != pidList.end());
+            vDecSample->Release();
+            vDecSample2->Release();
+            ret = AVCodecMonitor::GetActiveSecureDecoderPids(pidList);
+            ASSERT_EQ(AVCS_ERR_OK, ret);
+            ASSERT_TRUE(std::find(pidList.begin(), pidList.end(), pid) == pidList.end());
+        }
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_INNER_GET_PIDS_0060
+ * @tc.name      : get secure decoder pids
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_GET_PIDS_0060, TestSize.Level2)
+{
+    if (cap != nullptr) {
+        auto vDecSample = make_shared<VDecNdkInnerSample>();
+        auto vDecSample2 = make_shared<VDecNdkInnerSample>();
+        if (vDecSample->CreateByName("OMX.hisi.video.decoder.vvc.secure") == AVCS_ERR_OK &&
+    vDecSample2->CreateByName("OMX.hisi.video.decoder.vvc.secure") == AVCS_ERR_OK) {
+            std::vector<pid_t> pidList;
+            auto ret = AVCodecMonitor::GetActiveSecureDecoderPids(pidList);
+            ASSERT_EQ(AVCS_ERR_OK, ret);
+            pid_t pid = getpid();
+            cout << "pid: " << pid << endl;
+            ASSERT_TRUE(std::find(pidList.begin(), pidList.end(), pid) != pidList.end());
+            vDecSample->Release();
+            vDecSample2->Release();
+            ret = AVCodecMonitor::GetActiveSecureDecoderPids(pidList);
+            ASSERT_EQ(AVCS_ERR_OK, ret);
+            ASSERT_TRUE(std::find(pidList.begin(), pidList.end(), pid) == pidList.end());
+        }
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_INNER_GET_PIDS_0070
+ * @tc.name      : get secure decoder pids
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_GET_PIDS_0070, TestSize.Level2)
+{
+    if (cap != nullptr) {
+        auto vDecSample = make_shared<VDecNdkInnerSample>();
+        auto vDecSample2 = make_shared<VDecNdkInnerSample>();
+        if (vDecSample->CreateByName("OMX.hisi.video.decoder.avc.secure") == AVCS_ERR_OK &&
+    vDecSample2->CreateByName("OMX.hisi.video.decoder.hevc.secure") == AVCS_ERR_OK) {
+            std::vector<pid_t> pidList;
+            auto ret = AVCodecMonitor::GetActiveSecureDecoderPids(pidList);
+            ASSERT_EQ(AVCS_ERR_OK, ret);
+            pid_t pid = getpid();
+            cout << "pid: " << pid << endl;
+            ASSERT_TRUE(std::find(pidList.begin(), pidList.end(), pid) != pidList.end());
+            vDecSample->Release();
+            vDecSample2->Release();
+            ret = AVCodecMonitor::GetActiveSecureDecoderPids(pidList);
+            ASSERT_EQ(AVCS_ERR_OK, ret);
+            ASSERT_TRUE(std::find(pidList.begin(), pidList.end(), pid) == pidList.end());
+        }
     }
 }
 } // namespace

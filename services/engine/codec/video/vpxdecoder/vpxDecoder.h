@@ -19,10 +19,10 @@
 #include "video_decoder.h"
 #include "VpxDec_Typedef.h"
 #include "avcodec_info.h"
-#include "libavutil/mastering_display_metadata.h"
 #include "vpx_decoder.h"
 #include "tools_common.h"
 #include "video_reader.h"
+#include "libavutil/mastering_display_metadata.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -53,8 +53,8 @@ protected:
 
 private:
     struct HdrMetadata {
-        INT32 displayPrimariesX[3] = {0, 0, 0};
-        INT32 displayPrimariesY[3] = {0, 0, 0};
+        double displayPrimariesX[3] = {0, 0, 0};
+        double displayPrimariesY[3] = {0, 0, 0};
         INT32 whitePointX = 0;
         INT32 whitePointY = 0;
         INT32 maxDisplayMasteringLuminance = 0;

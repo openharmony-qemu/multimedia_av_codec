@@ -121,7 +121,7 @@ int32_t AudioTrack::GetAacAdtsSize(const uint8_t *data, int32_t len)
 
 Status AudioTrack::WriteSample(std::shared_ptr<AVIOStream> io, const std::shared_ptr<AVBuffer> &sample)
 {
-    FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_ != nullptr,
+    FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_ != nullptr && sample->memory_->GetAddr() != nullptr,
         Status::ERROR_NULL_POINTER, "sample is null");
     FALSE_RETURN_V_MSG_E(sample->pts_ >= lastTimestampUs_, Status::ERROR_INVALID_PARAMETER,
         "pts: " PUBLIC_LOG_D64 " error, < " PUBLIC_LOG_D64, sample->pts_, lastTimestampUs_);

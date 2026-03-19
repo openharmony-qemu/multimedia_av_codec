@@ -123,6 +123,25 @@ bool AVMuxerDemo::InitFile(const std::string& inputFile)
     }
     return true;
 }
+
+void AVMuxerDemo::SetParameter(const uint8_t *data, size_t size)
+{
+    OH_AVFormat *format = OH_AVFormat_Create();
+    OH_AVFormat_SetFloatValue(format, "latitude", 10.0);
+    OH_AVFormat_SetFloatValue(format, "longitude", 20.0);
+    OH_AVFormat_SetFloatValue(format, "altitude", 30.0);
+    OH_AVFormat_SetStringValue(format, OH_MD_KEY_COMMENT, "fuzz_test_comment");
+    OH_AVFormat_SetStringValue(format, OH_MD_KEY_TITLE, "fuzz_test_title");
+    OH_AVFormat_SetStringValue(format, OH_MD_KEY_ARTIST, "fuzz_test_artist");
+    OH_AVFormat_SetStringValue(format, OH_MD_KEY_LYRICS, "fuzz_test_artist_lyrics");
+    OH_AVFormat_SetStringValue(format, OH_MD_KEY_GENRE, "fuzz_test_artist_genre");
+    OH_AVFormat_SetIntValue(format, "com.openharmony.version", 5); // 5 test version
+    OH_AVFormat_SetStringValue(format, "com.openharmony.model", "LNA-AL00");
+    OH_AVFormat_SetDoubleValue(format, "com.openharmony.capture.fps", 30.00f); // 30.00f test capture fps
+    OH_AVFormat_SetBuffer(format, "com.openharmony.capture.test.buffer", data, size);
+    OH_AVMuxer_SetFormat(avmuxer_, format);
+}
+
 bool AVMuxerDemo::RunCase(const uint8_t *data, size_t size)
 {
     std::string codecdata(reinterpret_cast<const char *>(data), size);
@@ -133,6 +152,7 @@ bool AVMuxerDemo::RunCase(const uint8_t *data, size_t size)
     avmuxer_ = Create();
     DEMO_CHECK_AND_RETURN_RET_LOG(avmuxer_ != nullptr, false, "Fatal: Create fail");
     DEMO_CHECK_AND_RETURN_RET_LOG(SetRotation(avmuxer_, 0) == AVCS_ERR_OK, false, "Fatal: SetRotation fail");
+    SetParameter(data, size);
     //获取param
     AudioTrackParam param = InitFormatParam(audioType_);
     int32_t trackIndex = -1;

@@ -21,6 +21,7 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "MemMgrClientMock"};
 std::mutex g_mutex;
 std::weak_ptr<OHOS::Memory::MemMgrClientMock> g_mockObject;
+std::weak_ptr<OHOS::Memory::MemMgrClientMock> g_funcPtrMock;
 } // namespace
 namespace OHOS {
 namespace Memory {
@@ -30,6 +31,7 @@ void MemMgrClient::RegisterMock(std::shared_ptr<MemMgrClientMock> &mock)
     std::lock_guard<std::mutex> lock(g_mutex);
     UNITTEST_INFO_LOG("MemMgrClient:0x%" PRIXPTR, FAKE_POINTER(mock.get()));
     g_mockObject = mock;
+    g_funcPtrMock = mock;
 }
 
 MemMgrClient::MemMgrClient()
@@ -64,6 +66,25 @@ int32_t MemMgrClient::SetCritical(pid_t pid, bool flag, int32_t saId)
     auto mock = g_mockObject.lock();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
     return mock->SetCritical(pid, flag, saId);
+}
+
+// Mock functions for AVCodecServerManager function pointers
+int32_t MockSetCriticalForFuncPtr(int32_t pid, bool critical, int32_t saId)
+{
+    auto mock = g_funcPtrMock.lock();
+    if (mock) {
+        return mock->SetCritical(pid, critical, saId);
+    }
+    return 0;
+}
+
+int32_t MockNotifyProcessStatusForFuncPtr(int32_t pid, int32_t type, int32_t status, int32_t saId)
+{
+    auto mock = g_funcPtrMock.lock();
+    if (mock) {
+        return mock->NotifyProcessStatus(pid, type, status, saId);
+    }
+    return 0;
 }
 } // namespace Memory
 } // namespace OHOS

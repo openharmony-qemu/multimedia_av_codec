@@ -17,6 +17,7 @@
 #define AVCODEC_SOURCE_PLUGIN_H
 
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 
@@ -71,6 +72,19 @@ class SourcePlugin : public PluginBase {
     /// constructor
 public:
     explicit SourcePlugin(std::string name): PluginBase(std::move(name)) {}
+
+    virtual Status SetCallback(const std::shared_ptr<Callback>& cb)
+    {
+        (void)cb;
+        return Status::OK;
+    }
+
+    virtual Status SetCallback(Callback* cb) override
+    {
+        (void)cb;
+        return Status::OK;
+    }
+
     /**
      * @brief Set the data source to source plugin.
      *
@@ -153,7 +167,7 @@ public:
      */
     virtual Status SeekTo(uint64_t offset) = 0;
 
-    virtual Status Reset() = 0;
+    Status Reset() override = 0;
 
     virtual void SetDemuxerState(int32_t streamId) {}
 
@@ -320,6 +334,11 @@ public:
     {
         return false;
     }
+
+    virtual bool IsCloudFd()
+    {
+        return false;
+    }
 };
 
 /// Source plugin api major number.
@@ -338,8 +357,7 @@ public:
  * @version 1.0
  */
 struct SourcePluginDef : public PluginDefBase {
-    SourcePluginDef()
-        : PluginDefBase()
+    SourcePluginDef() : PluginDefBase()
     {
         apiVersion = SOURCE_API_VERSION; ///< Source plugin version.
         pluginType = PluginType::SOURCE; ///< Plugin type, MUST be SOURCE.

@@ -85,16 +85,23 @@ public:
     ~ConsumerListener() {}
     void OnBufferAvailable() override
     {
+        sptr<Surface> surface = cs_.promote();
+        if (surface == nullptr) {
+            return;
+        }
         sptr<SurfaceBuffer> buffer;
         int32_t flushFence;
-        cs_->AcquireBuffer(buffer, flushFence, timestamp_, damage_);
-        cs_->ReleaseBuffer(buffer, -1);
+        int32_t ret = surface->AcquireBuffer(buffer, flushFence, timestamp_, damage_);
+        if (ret != 0 || buffer == nullptr) {
+            return;
+        }
+        surface->ReleaseBuffer(buffer, -1);
     }
 
 private:
     int64_t timestamp_ = 0;
     Rect damage_ = {};
-    sptr<Surface> cs_{nullptr};
+    wptr<Surface> cs_{nullptr};
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

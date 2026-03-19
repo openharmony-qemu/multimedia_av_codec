@@ -88,6 +88,10 @@ private:
 };
 VDecNdkSample::~VDecNdkSample()
 {
+    if (nativeWindows != nullptr) {
+        OH_NativeWindow_DestroyNativeWindow(nativeWindows);
+        nativeWindows = nullptr;
+    }
     Release();
 }
 
@@ -756,4 +760,20 @@ void VDecNdkSample::StopOutloop()
 int32_t VDecNdkSample::SetParameter(OH_AVFormat *format)
 {
     return OH_VideoDecoder_SetParameter(vdec_, format);
+}
+
+void VDecNdkSample::CreateSurface()
+{
+    cs = Surface::CreateSurfaceAsConsumer();
+    sptr<IBufferConsumerListener> listener = new TestConsumerListener(cs, OUT_DIR);
+    cs->RegisterConsumerListener(listener);
+    auto p = cs->GetProducer();
+    ps = Surface::CreateSurfaceAsProducer(p);
+    nativeWindows = CreateNativeWindowFromSurface(&ps);
+}
+
+int32_t VDecNdkSample::DecodeSetSurface()
+{
+    CreateSurface();
+    return OH_VideoDecoder_SetSurface(vdec_, nativeWindows);
 }

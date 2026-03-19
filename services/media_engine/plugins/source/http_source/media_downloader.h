@@ -18,6 +18,7 @@
 
 #include <string>
 #include <utility>
+#include "avcodec_sysevent.h"
 #include "plugin/plugin_base.h"
 #include "meta/media_types.h"
 #include "plugin/source_plugin.h"
@@ -45,6 +46,7 @@ public:
     static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOURCE, "HiStreamer" };
     virtual ~MediaDownloader() = default;
     virtual void Init() = 0;
+    virtual void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr) = 0;
     virtual bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) = 0;
     virtual void Close(bool isAsync) = 0;
     virtual void Pause() = 0;
@@ -64,7 +66,7 @@ public:
     virtual size_t GetContentLength() const = 0;
     virtual int64_t GetDuration() const = 0;
     virtual Seekable GetSeekable() const = 0;
-    virtual void SetCallback(Callback* cb) = 0;
+    virtual void SetCallback(const std::shared_ptr<Callback>& cb) = 0;
     virtual void SetStatusCallback(StatusCallbackFunc cb) = 0;
     virtual bool GetStartedStatus() = 0;
     virtual void GetDownloadInfo(DownloadInfo& downloadInfo)

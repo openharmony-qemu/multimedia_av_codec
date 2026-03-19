@@ -19,6 +19,7 @@
 #include "utils/media_cached_buffer.h"
 #include "download/network_client/http_curl_client.h"
 #include "gtest/gtest.h"
+#include "utils/string_utils.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -1077,6 +1078,110 @@ HWTEST_F(DownloaderUnitTest, IsExcluded_04, TestSize.Level1)
     EXPECT_FALSE(IsExcluded(str, exclusions, split));
 }
 
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_01, TestSize.Level1)
+{
+    string str = "  ++123";
+    int32_t value;
+    EXPECT_FALSE(StringUtil::SafeStoInt32(str, value));
+    EXPECT_EQ(value, 0);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_02, TestSize.Level1)
+{
+    string str = "  0  ";
+    int32_t value;
+    EXPECT_TRUE(StringUtil::SafeStoInt32(str, value));
+    EXPECT_EQ(value, 0);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_03, TestSize.Level1)
+{
+    string str = "ABC123";
+    int32_t value;
+    EXPECT_FALSE(StringUtil::SafeStoInt32(str, value));
+    EXPECT_EQ(value, 0);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_04, TestSize.Level1)
+{
+    string str = "4294967295";
+    int32_t value;
+    EXPECT_FALSE(StringUtil::SafeStoInt32(str, value));
+    EXPECT_EQ(value, 0);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_05, TestSize.Level1)
+{
+    string str = "123";
+    int32_t value;
+    EXPECT_TRUE(StringUtil::SafeStoInt32(str, value));
+    EXPECT_EQ(value, 123);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_06, TestSize.Level1)
+{
+    string str = "-123";
+    int32_t value;
+    EXPECT_TRUE(StringUtil::SafeStoInt32(str, value));
+    EXPECT_EQ(value, -123);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_07, TestSize.Level1)
+{
+    string str = "123abc";
+    int32_t value;
+    EXPECT_TRUE(StringUtil::SafeStoInt32(str, value));
+    EXPECT_EQ(value, 123);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_01, TestSize.Level1)
+{
+    string str = "-4294967295";
+    int64_t value;
+    EXPECT_TRUE(StringUtil::SafeStoInt64(str, value));
+    EXPECT_EQ(value, -4294967295);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_02, TestSize.Level1)
+{
+    string str = "9223372036854775807";
+    int64_t value;
+    EXPECT_TRUE(StringUtil::SafeStoInt64(str, value));
+    EXPECT_EQ(value, 9223372036854775807);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_03, TestSize.Level1)
+{
+    string str = "9223372036854775808";
+    int64_t value;
+    EXPECT_FALSE(StringUtil::SafeStoInt64(str, value));
+    EXPECT_EQ(value, 0);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_04, TestSize.Level1)
+{
+    string str = "+";
+    int64_t value;
+    EXPECT_FALSE(StringUtil::SafeStoInt64(str, value));
+    EXPECT_EQ(value, 0);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_05, TestSize.Level1)
+{
+    string str = "--123";
+    int64_t value;
+    EXPECT_FALSE(StringUtil::SafeStoInt64(str, value));
+    EXPECT_EQ(value, 0);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_06, TestSize.Level1)
+{
+    string str = "";
+    int64_t value;
+    EXPECT_FALSE(StringUtil::SafeStoInt64(str, value));
+    EXPECT_EQ(value, 0);
+}
+
 HWTEST_F(DownloaderUnitTest, HandleRetErrorCode001, TestSize.Level1)
 {
     downloader->task_ = std::make_shared<Task>(std::string("OS_Downloader"));
@@ -1405,7 +1510,7 @@ HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_001, TestSize.Level1)
     std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
         (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
     downloader->Init();
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->callback_ = sourceCallback;
     downloader->NotifyError(52, 403);
     std::shared_ptr<DownloadRequest> request = std::make_shared<DownloadRequest>("", nullptr, nullptr,  false);
@@ -1448,7 +1553,7 @@ HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_002, TestSize.Level1)
     std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
         (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
     downloader->Init();
-    Plugins::Callback* sourceCallback = new SourceCallback();
+    auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->downloader_ = nullptr;
     downloader->callback_ = sourceCallback;
     downloader->NotifyError(52, 403);
@@ -1481,11 +1586,11 @@ HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_002, TestSize.Level1)
     downloader->SetAppUid(1);
     downloader->GetPlayable();
     EXPECT_EQ(downloader->downloader_, nullptr);
-    downloader->callback_ = nullptr;
+    downloader->callback_.reset();
     downloader->NotifyError(52, 403);
     downloader->NotifyError(52, 0);
     downloader->NotifyError(0, 0);
-    EXPECT_EQ(downloader->callback_, nullptr);
+    EXPECT_TRUE(downloader->callback_.expired());
 }
 
 void ThreadFinishLoading(std::shared_ptr<NetworkClient> client, int64_t uuid, LoadingRequestError error)

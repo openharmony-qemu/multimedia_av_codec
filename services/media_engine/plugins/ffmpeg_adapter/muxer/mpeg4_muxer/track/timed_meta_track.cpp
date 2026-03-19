@@ -104,7 +104,7 @@ Status TimedMetaTrack::WriteSample(std::shared_ptr<AVIOStream> io, const std::sh
         MEDIA_LOG_I("timedMeta track:" PUBLIC_LOG_D32 ", start timestamp:" PUBLIC_LOG_D64, trackId_, startTimestampUs_);
     } else { // 先写上1帧的时间，最后少一帧stts数据，写tailer前添加
         lastDuration_ = std::max(static_cast<int64_t>(frameSize_),
-            ConvertTimeToMpeg4(sample->pts_ - lastTimestampUs_, timeScale_));
+            ConvertTimeToMpeg4(sample->pts_, timeScale_) - ConvertTimeToMpeg4(lastTimestampUs_, timeScale_));
         DisposeStts(lastDuration_, sample->pts_);
     }
     DisposeStco(pos);

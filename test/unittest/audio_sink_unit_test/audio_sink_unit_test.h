@@ -212,6 +212,18 @@ public:
         (void)syncId;
         return Status::OK;
     }
+    AudioSampleFormat GetSampleFormat() override
+    {
+        return sampleFormat_;
+    }
+
+    void SetSampleFormat(AudioSampleFormat format)
+    {
+        sampleFormat_ = format;
+    }
+
+private:
+    AudioSampleFormat sampleFormat_ { AudioSampleFormat::INVALID_WIDTH };
 };
 } // namespace Test
 } // namespace Media

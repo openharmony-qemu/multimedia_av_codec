@@ -272,12 +272,11 @@ HWTEST_F(DashMpdDownloaderUnittest, ParseManifest_001, TestSize.Level0)
 
     mpdDownloader_->downloadContent_ = "Test";
     mpdDownloader_->ondemandSegBase_ = false;
-    MockDashMpdCallback* callback = new MockDashMpdCallback();
+    auto callback = std::make_shared<MockDashMpdCallback>();
     mpdDownloader_->callback_ = callback;
     mpdDownloader_->ParseManifest();
     EXPECT_EQ(mpdDownloader_->notifyOpenOk_, true);
-    delete callback;
-    mpdDownloader_->callback_ = nullptr;
+    mpdDownloader_->callback_.reset();
 }
 
 /**

@@ -38,7 +38,7 @@ void DashMpdManager::SetMpdInfo(DashMpdInfo *mpdInfomation, const std::string &m
     this->mpdUrl_ = mpdUrlStr;
 }
 
-const DashList<DashPeriodInfo *> &DashMpdManager::GetPeriods() const
+DashList<DashPeriodInfo *> DashMpdManager::GetPeriods() const
 {
     if (mpdInfo_ == nullptr) {
         return DashList<DashPeriodInfo *>();

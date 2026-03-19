@@ -182,9 +182,9 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_SetDataSource_001, TestSize.
     std::string uri = "http://127.0.0.1:46666/" + srtPath;
 
     std::shared_ptr<DemuxerPluginManager> demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
-    SourceCallback cb = SourceCallback(demuxerPluginManager);
+    auto cb = std::make_shared<SourceCallback>(demuxerPluginManager);
     std::shared_ptr<Source> source = std::make_shared<Source>();
-    source->SetCallback(&cb);
+    source->SetCallback(cb);
     EXPECT_EQ(source->SetSource(std::make_shared<MediaSource>(uri)), Status::OK);
     std::vector<StreamInfo> streams;
     source->GetStreamInfo(streams);
@@ -214,9 +214,9 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_SetDataSource_002, TestSize.
     std::string uri = "http://127.0.0.1:46666/" + srtPath;
 
     std::shared_ptr<DemuxerPluginManager> demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
-    SourceCallback cb = SourceCallback(demuxerPluginManager);
+    auto cb = std::make_shared<SourceCallback>(demuxerPluginManager);
     std::shared_ptr<Source> source = std::make_shared<Source>();
-    source->SetCallback(&cb);
+    source->SetCallback(cb);
     EXPECT_EQ(source->SetSource(std::make_shared<MediaSource>(uri)), Status::OK);
     std::vector<StreamInfo> streams;
     source->GetStreamInfo(streams);
@@ -245,9 +245,9 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_SetDataSource_003, TestSize.
     string srtPath = "H264_AAC_multi_track.mp4";
     std::string uri = "http://127.0.0.1:46666/" + srtPath;
     std::shared_ptr<DemuxerPluginManager> demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
-    SourceCallback cb = SourceCallback(demuxerPluginManager);
+    auto cb = std::make_shared<SourceCallback>(demuxerPluginManager);
     std::shared_ptr<Source> source = std::make_shared<Source>();
-    source->SetCallback(&cb);
+    source->SetCallback(cb);
     EXPECT_EQ(source->SetSource(std::make_shared<MediaSource>(uri)), Status::OK);
     std::vector<StreamInfo> streams;
     source->GetStreamInfo(streams);
@@ -1732,7 +1732,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_CheckChangeStreamID_002, TestSize.Le
 
     std::shared_ptr<Buffer> bufferPtr = nullptr;
     streamDemuxer->isInterruptNeeded_ = false;
-    EXPECT_EQ(streamDemuxer->GetPeekRange(0, 0, 100, bufferPtr), Status::ERROR_INVALID_PARAMETER);
+    EXPECT_EQ(streamDemuxer->GetPeekRange(0, 0, 100, bufferPtr, true), Status::ERROR_INVALID_PARAMETER);
     EXPECT_EQ(streamDemuxer->Start(), Status::OK);
 
     streamDemuxer->pluginStateMap_[0] = DemuxerState::DEMUXER_STATE_NULL;
@@ -2225,5 +2225,28 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SetMediaMuted, TestSize.Level1)
     demuxer->isVideoMuted_ = false;
     demuxer->SetMediaMuted(Media::MediaType::MEDIA_TYPE_AUD, true);
     EXPECT_EQ(demuxer->isVideoMuted_, false);
+}
+
+/**
+ * @tc.name: MediaDemuxer_IsCloudFd
+ * @tc.desc: test IsCloudFd
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_IsCloudFd_001, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/h264_fmp4.mp4";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+ 
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    EXPECT_FALSE(demuxer->IsCloudFd());
 }
 }

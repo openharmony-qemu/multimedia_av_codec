@@ -43,6 +43,8 @@
         "av_codec_enable_codec_rv",
         "av_codec_enable_codec_eac3",
         "av_codec_enable_codec_opus",
+        "av_codec_enable_codec_truehd",
+        "av_codec_enable_codec_dts",
         "av_codec_enable_demuxer_lrc",
         "av_codec_enable_demuxer_sami",
         "av_codec_enable_demuxer_ass",
@@ -52,7 +54,8 @@
         "av_codec_support_vp9_decoder",
         "av_codec_support_av1_decoder",
         "av_codec_enable_demuxer_dtshd",
-        "av_codec_enable_demuxer_truehd"
+        "av_codec_enable_demuxer_truehd",
+        "av_codec_enable_player_startup_optimization"
       ],
       "adapted_system_type": [ "standard" ],
       "rom": "10000KB",
@@ -102,7 +105,8 @@
           "memory_utils",
           "config_policy",
           "json",
-          "resource_schedule_service"
+          "resource_schedule_service",
+          "certificate_manager"
         ],
         "third_party": []
       },

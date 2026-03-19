@@ -91,14 +91,16 @@ public:
         U reverseData = 0;
         int32_t byteCount = (bitIndex_ + size + 0x07) / 0x08;
         for (int32_t i = 0; i < byteCount; ++i) {
-            if (byteIndex_ + i >= size_) {
+            int32_t index = byteIndex_ + i;
+            if (index >= size_ || index < 0) {
                 return 0;
             }
-            reverseData = (reverseData << 0x08) | (*(buf + static_cast<uint32_t>(byteIndex_ + i)) & 0xFF);
+            reverseData = (reverseData << 0x08) | (*(buf + static_cast<uint32_t>(index)) & 0xFF);
         }
-        reverseData = (sizeof(U) >= byteCount) ? reverseData << (0x08 * (sizeof(U) - byteCount)) : reverseData;
+        reverseData = (static_cast<int32_t>(sizeof(U)) >= byteCount) ?
+            reverseData << (0x08 * static_cast<uint32_t>(static_cast<int32_t>(sizeof(U)) - byteCount)) : reverseData;
         T data = static_cast<T>((reverseData << static_cast<uint32_t>(bitIndex_)) >>
-            (0x08 * sizeof(U) - static_cast<uint32_t>(size)));
+            (0x08 * static_cast<uint32_t>(sizeof(U)) - static_cast<uint32_t>(size)));
 
         RbspSkipBits(size);
         return data;

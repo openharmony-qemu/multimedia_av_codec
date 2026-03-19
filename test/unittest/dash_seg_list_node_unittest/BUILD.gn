@@ -46,6 +46,7 @@ dash_test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/network_client/http_curl_client.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_element.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_parser.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/string_utils.cpp",
 ]
 config("dash_unittest_cfg") {
   defines = [
@@ -100,6 +101,7 @@ ohos_unittest("dash_seg_list_node_unittest") {
 
   external_deps = [
     "c_utils:utils",
+    "certificate_manager:cert_manager_sdk",
     "curl:curl_shared",
     "googletest:gmock",
     "graphic_surface:surface",

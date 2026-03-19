@@ -14,6 +14,7 @@
  */
 
 #include "demuxer_plugin_manager_unittest.h"
+#include "demuxer_plugin.h"
 
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -28,6 +29,13 @@ static const int32_t ID_TEST = 0;
 static const int32_t INVALID_ID = -1;
 static const int32_t INVALID_TYPE = 5;
 constexpr int32_t API_VERSION_18 = 18;
+constexpr int32_t VIDEO_STREAM_ID_TEST = 1;
+constexpr int32_t TEST_BIT_RATE = 1000;
+constexpr int32_t TEST_VIDEO_WIDTH = 1920;
+constexpr int32_t TEST_VIDEO_HEIGHT = 1080;
+constexpr int32_t SUBTITLE_STREAM_ID_TEST = 2;
+constexpr int64_t TEST_SEEK_TIME = 100;
+
 void DemuxerPluginManagerUnittest::SetUpTestCase(void) {}
 
 void DemuxerPluginManagerUnittest::TearDownTestCase(void) {}
@@ -359,6 +367,311 @@ HWTEST_F(DemuxerPluginManagerUnittest, SingleStreamSeekTo_001, TestSize.Level1)
 }
 
 /**
+* @tc.name  : Test SeekToFrameByDts  API
+* @tc.number: SeekToFrameByDts_001
+* @tc.desc  : Test streamID < 0, guard fails at first condition
+*/
+HWTEST_F(DemuxerPluginManagerUnittest, SeekToFrameByDts_001, TestSize.Level1)
+{
+    ASSERT_NE(demuxerPluginManager_, nullptr);
+
+    int32_t invalidStreamId = INVALID_ID;
+    int32_t trackId = ID_TEST;
+    int64_t seekTime = TEST_SEEK_TIME;
+    int64_t realSeekTime = 0;
+    Plugins::SeekMode mode = Plugins::SeekMode::SEEK_NEXT_SYNC;
+
+    auto ret = demuxerPluginManager_->SeekToFrameByDts(invalidStreamId, trackId, seekTime, mode, realSeekTime);
+
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+* @tc.name  : Test SeekToFrameByDts  API
+* @tc.number: SeekToFrameByDts_002
+* @tc.desc  : Test streamID valid but not found in streamInfoMap_
+*/
+HWTEST_F(DemuxerPluginManagerUnittest, SeekToFrameByDts_002, TestSize.Level1)
+{
+    ASSERT_NE(demuxerPluginManager_, nullptr);
+
+    int32_t streamId = ID_TEST;
+    int32_t trackId = ID_TEST;
+    int64_t seekTime = TEST_SEEK_TIME;
+    int64_t realSeekTime = 0;
+    Plugins::SeekMode mode = Plugins::SeekMode::SEEK_NEXT_SYNC;
+
+    auto ret = demuxerPluginManager_->SeekToFrameByDts(streamId, trackId, seekTime, mode, realSeekTime);
+
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+* @tc.name  : Test SeekToFrameByDts  API
+* @tc.number: SeekToFrameByDts_003
+* @tc.desc  : Test streamID found but plugin is nullptr
+*/
+HWTEST_F(DemuxerPluginManagerUnittest, SeekToFrameByDts_003, TestSize.Level1)
+{
+    ASSERT_NE(demuxerPluginManager_, nullptr);
+
+    int32_t streamId = ID_TEST;
+    MediaStreamInfo mediaInfo;
+    mediaInfo.plugin = nullptr;
+    demuxerPluginManager_->streamInfoMap_[streamId] = mediaInfo;
+
+    int32_t trackId = ID_TEST;
+    int64_t seekTime = TEST_SEEK_TIME;
+    int64_t realSeekTime = 0;
+    Plugins::SeekMode mode = Plugins::SeekMode::SEEK_NEXT_SYNC;
+
+    auto ret = demuxerPluginManager_->SeekToFrameByDts(streamId, trackId, seekTime, mode, realSeekTime);
+
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+* @tc.name  : Test SeekToFrameByDts  API
+* @tc.number: SeekToFrameByDts_004
+* @tc.desc  : Test plugin exists and SeekToFrameByDts returns OK
+*/
+HWTEST_F(DemuxerPluginManagerUnittest, SeekToFrameByDts_004, TestSize.Level1)
+{
+    ASSERT_NE(demuxerPluginManager_, nullptr);
+
+    int32_t streamId = ID_TEST;
+    MediaStreamInfo mediaInfo;
+    auto plugin = std::make_shared<Plugins::TestDemuxerPlugin>(Status::OK, Status::OK, Status::OK);
+    mediaInfo.plugin = plugin;
+    demuxerPluginManager_->streamInfoMap_[streamId] = mediaInfo;
+
+    int32_t trackId = ID_TEST;
+    int64_t seekTime = TEST_SEEK_TIME;
+    int64_t realSeekTime = 0;
+    Plugins::SeekMode mode = Plugins::SeekMode::SEEK_NEXT_SYNC;
+
+    auto ret = demuxerPluginManager_->SeekToFrameByDts(streamId, trackId, seekTime, mode, realSeekTime);
+
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(plugin->GetSeekToFrameByDtsCallCount(), 1);
+}
+
+/**
+* @tc.name  : Test SeekToFrameByDts  API
+* @tc.number: SeekToFrameByDts_005
+* @tc.desc  : Test plugin exists and SeekToFrameByDts returns error
+*/
+HWTEST_F(DemuxerPluginManagerUnittest, SeekToFrameByDts_005, TestSize.Level1)
+{
+    ASSERT_NE(demuxerPluginManager_, nullptr);
+
+    int32_t streamId = ID_TEST;
+    MediaStreamInfo mediaInfo;
+    auto plugin = std::make_shared<Plugins::TestDemuxerPlugin>(Status::OK, Status::OK, Status::ERROR_UNKNOWN);
+    mediaInfo.plugin = plugin;
+    demuxerPluginManager_->streamInfoMap_[streamId] = mediaInfo;
+
+    int32_t trackId = ID_TEST;
+    int64_t seekTime = TEST_SEEK_TIME;
+    int64_t realSeekTime = 0;
+    Plugins::SeekMode mode = Plugins::SeekMode::SEEK_NEXT_SYNC;
+
+    auto ret = demuxerPluginManager_->SeekToFrameByDts(streamId, trackId, seekTime, mode, realSeekTime);
+
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+    EXPECT_EQ(plugin->GetSeekToFrameByDtsCallCount(), 1);
+}
+
+/**
+* @tc.name  : Test Pause  API
+* @tc.number: Pause_001
+* @tc.desc  : Test all current stream IDs invalid, no plugin called
+*/
+HWTEST_F(DemuxerPluginManagerUnittest, Pause_001, TestSize.Level1)
+{
+    ASSERT_NE(demuxerPluginManager_, nullptr);
+
+    demuxerPluginManager_->curVideoStreamID_ = INVALID_ID;
+    demuxerPluginManager_->curAudioStreamID_ = INVALID_ID;
+    demuxerPluginManager_->curSubTitleStreamID_ = INVALID_ID;
+
+    auto ret = demuxerPluginManager_->Pause();
+
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+* @tc.name  : Test Pause  API
+* @tc.number: Pause_002
+* @tc.desc  : Test only video plugin exists and Pause returns OK
+*/
+HWTEST_F(DemuxerPluginManagerUnittest, Pause_002, TestSize.Level1)
+{
+    ASSERT_NE(demuxerPluginManager_, nullptr);
+
+    demuxerPluginManager_->curVideoStreamID_ = VIDEO_STREAM_ID_TEST;
+    demuxerPluginManager_->curAudioStreamID_ = INVALID_ID;
+    demuxerPluginManager_->curSubTitleStreamID_ = INVALID_ID;
+
+    MediaStreamInfo videoInfo;
+    auto videoPlugin = std::make_shared<Plugins::TestDemuxerPlugin>(Status::OK, Status::OK);
+    videoInfo.plugin = videoPlugin;
+    demuxerPluginManager_->streamInfoMap_[VIDEO_STREAM_ID_TEST] = videoInfo;
+
+    auto ret = demuxerPluginManager_->Pause();
+
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(videoPlugin->GetPauseCallCount(), 1);
+}
+
+/**
+* @tc.name  : Test Pause  API
+* @tc.number: Pause_003
+* @tc.desc  : Test video Pause returns error causes early return
+*/
+HWTEST_F(DemuxerPluginManagerUnittest, Pause_003, TestSize.Level1)
+{
+    ASSERT_NE(demuxerPluginManager_, nullptr);
+
+    demuxerPluginManager_->curVideoStreamID_ = VIDEO_STREAM_ID_TEST;
+    demuxerPluginManager_->curAudioStreamID_ = ID_TEST;
+    demuxerPluginManager_->curSubTitleStreamID_ = SUBTITLE_STREAM_ID_TEST;
+
+    MediaStreamInfo videoInfo;
+    auto videoPlugin = std::make_shared<Plugins::TestDemuxerPlugin>(Status::OK, Status::OK, Status::OK,
+        Status::ERROR_UNKNOWN);
+    videoInfo.plugin = videoPlugin;
+    demuxerPluginManager_->streamInfoMap_[VIDEO_STREAM_ID_TEST] = videoInfo;
+
+    MediaStreamInfo audioInfo;
+    auto audioPlugin = std::make_shared<Plugins::TestDemuxerPlugin>(Status::OK, Status::OK);
+    audioInfo.plugin = audioPlugin;
+    demuxerPluginManager_->streamInfoMap_[ID_TEST] = audioInfo;
+
+    MediaStreamInfo subtitleInfo;
+    auto subtitlePlugin = std::make_shared<Plugins::TestDemuxerPlugin>(Status::OK, Status::OK);
+    subtitleInfo.plugin = subtitlePlugin;
+    demuxerPluginManager_->streamInfoMap_[SUBTITLE_STREAM_ID_TEST] = subtitleInfo;
+
+    auto ret = demuxerPluginManager_->Pause();
+
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+    EXPECT_EQ(videoPlugin->GetPauseCallCount(), 1);
+    EXPECT_EQ(audioPlugin->GetPauseCallCount(), 0);
+    EXPECT_EQ(subtitlePlugin->GetPauseCallCount(), 0);
+}
+
+/**
+* @tc.name  : Test Pause  API
+* @tc.number: Pause_004
+* @tc.desc  : Test video OK, audio OK, subtitle OK
+*/
+HWTEST_F(DemuxerPluginManagerUnittest, Pause_004, TestSize.Level1)
+{
+    ASSERT_NE(demuxerPluginManager_, nullptr);
+
+    demuxerPluginManager_->curVideoStreamID_ = VIDEO_STREAM_ID_TEST;
+    demuxerPluginManager_->curAudioStreamID_ = ID_TEST;
+    demuxerPluginManager_->curSubTitleStreamID_ = SUBTITLE_STREAM_ID_TEST;
+
+    MediaStreamInfo videoInfo;
+    auto videoPlugin = std::make_shared<Plugins::TestDemuxerPlugin>(Status::OK, Status::OK);
+    videoInfo.plugin = videoPlugin;
+    demuxerPluginManager_->streamInfoMap_[VIDEO_STREAM_ID_TEST] = videoInfo;
+
+    MediaStreamInfo audioInfo;
+    auto audioPlugin = std::make_shared<Plugins::TestDemuxerPlugin>(Status::OK, Status::OK);
+    audioInfo.plugin = audioPlugin;
+    demuxerPluginManager_->streamInfoMap_[ID_TEST] = audioInfo;
+
+    MediaStreamInfo subtitleInfo;
+    auto subtitlePlugin = std::make_shared<Plugins::TestDemuxerPlugin>(Status::OK, Status::OK);
+    subtitleInfo.plugin = subtitlePlugin;
+    demuxerPluginManager_->streamInfoMap_[SUBTITLE_STREAM_ID_TEST] = subtitleInfo;
+
+    auto ret = demuxerPluginManager_->Pause();
+
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(videoPlugin->GetPauseCallCount(), 1);
+    EXPECT_EQ(audioPlugin->GetPauseCallCount(), 1);
+    EXPECT_EQ(subtitlePlugin->GetPauseCallCount(), 1);
+}
+
+/**
+* @tc.name  : Test Pause  API
+* @tc.number: Pause_005
+* @tc.desc  : Test video OK, audio Pause returns error
+*/
+HWTEST_F(DemuxerPluginManagerUnittest, Pause_005, TestSize.Level1)
+{
+    ASSERT_NE(demuxerPluginManager_, nullptr);
+
+    demuxerPluginManager_->curVideoStreamID_ = VIDEO_STREAM_ID_TEST;
+    demuxerPluginManager_->curAudioStreamID_ = ID_TEST;
+    demuxerPluginManager_->curSubTitleStreamID_ = SUBTITLE_STREAM_ID_TEST;
+
+    MediaStreamInfo videoInfo;
+    auto videoPlugin = std::make_shared<Plugins::TestDemuxerPlugin>(Status::OK, Status::OK);
+    videoInfo.plugin = videoPlugin;
+    demuxerPluginManager_->streamInfoMap_[VIDEO_STREAM_ID_TEST] = videoInfo;
+
+    MediaStreamInfo audioInfo;
+    auto audioPlugin = std::make_shared<Plugins::TestDemuxerPlugin>(Status::OK, Status::OK, Status::OK,
+        Status::ERROR_UNKNOWN);
+    audioInfo.plugin = audioPlugin;
+    demuxerPluginManager_->streamInfoMap_[ID_TEST] = audioInfo;
+
+    MediaStreamInfo subtitleInfo;
+    auto subtitlePlugin = std::make_shared<Plugins::TestDemuxerPlugin>(Status::OK, Status::OK);
+    subtitleInfo.plugin = subtitlePlugin;
+    demuxerPluginManager_->streamInfoMap_[SUBTITLE_STREAM_ID_TEST] = subtitleInfo;
+
+    auto ret = demuxerPluginManager_->Pause();
+
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+    EXPECT_EQ(videoPlugin->GetPauseCallCount(), 1);
+    EXPECT_EQ(audioPlugin->GetPauseCallCount(), 1);
+    EXPECT_EQ(subtitlePlugin->GetPauseCallCount(), 0);
+}
+
+/**
+* @tc.name  : Test Pause  API
+* @tc.number: Pause_006
+* @tc.desc  : Test video OK, audio OK, subtitle Pause returns error
+*/
+HWTEST_F(DemuxerPluginManagerUnittest, Pause_006, TestSize.Level1)
+{
+    ASSERT_NE(demuxerPluginManager_, nullptr);
+
+    demuxerPluginManager_->curVideoStreamID_ = VIDEO_STREAM_ID_TEST;
+    demuxerPluginManager_->curAudioStreamID_ = ID_TEST;
+    demuxerPluginManager_->curSubTitleStreamID_ = SUBTITLE_STREAM_ID_TEST;
+
+    MediaStreamInfo videoInfo;
+    auto videoPlugin = std::make_shared<Plugins::TestDemuxerPlugin>(Status::OK, Status::OK);
+    videoInfo.plugin = videoPlugin;
+    demuxerPluginManager_->streamInfoMap_[VIDEO_STREAM_ID_TEST] = videoInfo;
+
+    MediaStreamInfo audioInfo;
+    auto audioPlugin = std::make_shared<Plugins::TestDemuxerPlugin>(Status::OK, Status::OK);
+    audioInfo.plugin = audioPlugin;
+    demuxerPluginManager_->streamInfoMap_[ID_TEST] = audioInfo;
+
+    MediaStreamInfo subtitleInfo;
+    auto subtitlePlugin = std::make_shared<Plugins::TestDemuxerPlugin>(Status::OK, Status::OK, Status::OK,
+        Status::ERROR_UNKNOWN);
+    subtitleInfo.plugin = subtitlePlugin;
+    demuxerPluginManager_->streamInfoMap_[SUBTITLE_STREAM_ID_TEST] = subtitleInfo;
+
+    auto ret = demuxerPluginManager_->Pause();
+
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+    EXPECT_EQ(videoPlugin->GetPauseCallCount(), 1);
+    EXPECT_EQ(audioPlugin->GetPauseCallCount(), 1);
+    EXPECT_EQ(subtitlePlugin->GetPauseCallCount(), 1);
+}
+
+/**
 * @tc.name  : Test Reset  API
 * @tc.number: Reset_001
 * @tc.desc  : Test return Status::OK
@@ -388,6 +701,43 @@ HWTEST_F(DemuxerPluginManagerUnittest, GetCurrentBitRate_001, TestSize.Level1)
     demuxerPluginManager_->isDash_ = true;
     auto ret = demuxerPluginManager_->GetCurrentBitRate();
     EXPECT_EQ(ret, INVALID_TYPE);
+}
+
+/**
+* @tc.name  : Test InitVideoTrack  API
+* @tc.number: InitVideoTrack_002
+* @tc.desc  : curVideoStreamID_ != -1, apiVersion_ >= API_VERSION_16/18
+*             -> set VIDEO_IS_HDR_VIVID and MIME "video/unknown"
+*/
+HWTEST_F(DemuxerPluginManagerUnittest, InitVideoTrack_002, TestSize.Level1)
+{
+    ASSERT_NE(demuxerPluginManager_, nullptr);
+
+    StreamInfo info;
+    info.streamId = VIDEO_STREAM_ID_TEST;
+    info.bitRate = TEST_BIT_RATE;
+    info.videoWidth = TEST_VIDEO_WIDTH;
+    info.videoHeight = TEST_VIDEO_HEIGHT;
+    info.videoType = Plugins::VideoType::VIDEO_TYPE_HDR_VIVID;
+
+    demuxerPluginManager_->curVideoStreamID_ = ID_TEST; // simulate first video stream already set
+    demuxerPluginManager_->apiVersion_ = API_VERSION_18;
+
+    MediaStreamInfo mediaInfo;
+    demuxerPluginManager_->streamInfoMap_[info.streamId] = mediaInfo;
+
+    demuxerPluginManager_->InitVideoTrack(info);
+
+    ASSERT_FALSE(demuxerPluginManager_->streamInfoMap_[info.streamId].mediaInfo.tracks.empty());
+    auto &trackMeta = demuxerPluginManager_->streamInfoMap_[info.streamId].mediaInfo.tracks[0];
+
+    std::string mime;
+    EXPECT_TRUE(trackMeta.Get<Tag::MIME_TYPE>(mime));
+    EXPECT_EQ(mime, "video/unknown");
+
+    bool isHdrVivid = false;
+    EXPECT_TRUE(trackMeta.Get<Tag::VIDEO_IS_HDR_VIVID>(isHdrVivid));
+    EXPECT_TRUE(isHdrVivid);
 }
 } // namespace Media
 } // namespace OHOS

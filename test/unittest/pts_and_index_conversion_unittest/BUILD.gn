@@ -14,7 +14,7 @@
 import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
-module_output_path = "av_codec/AVCodec_Video/unittest"
+module_output_path = "player_framework/player_framework/av_codec"
 pts_and_index_conversion_test_sources = [
   "$av_codec_root_dir/services/media_engine/modules/pts_index_conversion/pts_and_index_conversion.cpp",
   "$av_codec_root_dir/services/media_engine/modules/demuxer/type_finder.cpp",

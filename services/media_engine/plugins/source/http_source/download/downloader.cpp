@@ -21,6 +21,7 @@
 #include "securec.h"
 #include "plugin/plugin_time.h"
 #include "syspara/parameter.h"
+#include "utils/string_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -97,6 +98,18 @@ DownloadRequest::DownloadRequest(double duration,
     headerInfo_.contentLen = 0;
     url_ = requestInfo.url;
     httpHeader_ = requestInfo.httpHeader;
+}
+
+DownloadRequest::DownloadRequest(uint64_t keyIndex, KeyDataSaveFunc keySaveData, StatusCallbackFunc statusCallback,
+    RequestInfo requestInfo, bool requestWholeFile) : keySaveData_(std::move(keySaveData)),
+    statusCallback_(std::move(statusCallback)), requestInfo_(requestInfo), requestWholeFile_(requestWholeFile)
+{
+    (void)memset_s(&headerInfo_, sizeof(HeaderInfo), 0x00, sizeof(HeaderInfo));
+    headerInfo_.fileContentLen = 0;
+    headerInfo_.contentLen = 0;
+    url_ = requestInfo.url;
+    httpHeader_ = requestInfo.httpHeader;
+    keyIndex_ = keyIndex;
 }
 
 size_t DownloadRequest::GetFileContentLength() const
@@ -877,8 +890,10 @@ size_t Downloader::DropRetryData(void* buffer, size_t dataLen, Downloader* media
         if (secondParam < 0) {
             secondParam = 0;
         }
-        writeLen = currentRequest->saveData_(static_cast<uint8_t *>(buffer) + writeOffSet,
-            static_cast<uint32_t>(secondParam), mediaDownloader->isNotBlock_);
+        writeLen = (currentRequest->keyIndex_ > 0) ? currentRequest->keySaveData_(static_cast<uint8_t *>(buffer) +
+            writeOffSet, static_cast<uint32_t>(secondParam), mediaDownloader->isNotBlock_, currentRequest->keyIndex_) :
+            currentRequest->saveData_(static_cast<uint8_t *>(buffer) + writeOffSet, static_cast<uint32_t>(secondParam),
+            mediaDownloader->isNotBlock_);
         dropRet = writeLen == secondParam;
         currentRequest->dropedDataLen_ = currentRequest->dropedDataLen_ + writeOffSet;
         MEDIA_LOG_D("DropRetryData: last drop, droped len " PUBLIC_LOG_D64 ", startPos_ " PUBLIC_LOG_D64,
@@ -986,8 +1001,11 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
         mediaDownloader->currentRequest_->isDownloading_ = true;
     }
     UpdateDownloadInfo(mediaDownloader, dataLen);
-    uint32_t writeLen = mediaDownloader->currentRequest_->saveData_(static_cast<uint8_t *>(buffer),
-        static_cast<uint32_t>(dataLen), mediaDownloader->isNotBlock_);
+    uint64_t keyIndex = mediaDownloader->currentRequest_->keyIndex_;
+    uint32_t writeLen = (keyIndex > 0) ? mediaDownloader->currentRequest_->keySaveData_(static_cast<uint8_t *>(buffer),
+        static_cast<uint32_t>(dataLen), mediaDownloader->isNotBlock_, keyIndex) :
+        mediaDownloader->currentRequest_->saveData_(static_cast<uint8_t *>(buffer), static_cast<uint32_t>(dataLen),
+        mediaDownloader->isNotBlock_);
     MEDIA_LOGI_LIMIT(DOWNLOAD_LOG_FEQUENCE, "RxBodyData: dataLen " PUBLIC_LOG_ZU ", startPos_ " PUBLIC_LOG_D64, dataLen,
                      mediaDownloader->currentRequest_->startPos_);
     mediaDownloader->currentRequest_->startPos_ = mediaDownloader->currentRequest_->startPos_ +
@@ -1081,7 +1099,10 @@ bool Downloader::HandleContentLength(HeaderInfo* info, char* key, char* next, Do
         char* token = strtok_s(nullptr, ":", &next);
         FALSE_RETURN_V(token != nullptr, false);
         if (info != nullptr && mediaDownloader != nullptr) {
-            info->contentLen = atol(StringTrim(token));
+            std::string strToken(StringTrim(token));
+            int32_t tempContentLen;
+            FALSE_RETURN_V(StringUtil::SafeStoInt32(strToken, tempContentLen), false);
+            info->contentLen = static_cast<long>(tempContentLen);
             MEDIA_LOG_I("content-length: " PUBLIC_LOG_D32, static_cast<int32_t>(info->contentLen));
             if (info->contentLen <= 0 && !mediaDownloader->currentRequest_->IsM3u8Request()) {
                 info->isChunked = true;

@@ -45,6 +45,7 @@ public:
     Status DoRelease() override;
     void SetParameter(const std::shared_ptr<Meta> &parameter) override;
     void SetUserMeta(const std::shared_ptr<Meta> &userMeta);
+    Status SetCustomInfo(const std::shared_ptr<Meta> &customInfo);
     void GetParameter(std::shared_ptr<Meta> &parameter) override;
     Status LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
     Status UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
@@ -68,6 +69,7 @@ public:
 
 private:
     void HandleTransCoderComplete();
+    void UpdateTrackState(int32_t trackIndex);
 
     std::string name_;
 
@@ -99,11 +101,12 @@ private:
     std::mutex stopMutex_;
     std::condition_variable stopCondition_;
     std::mutex eosMutex_;
+    std::mutex ptsMapMutex_;
     
     bool isStarted{false};
 
     int32_t maxDuration_ {INT32_MAX};
-    bool isReachMaxDuration_{false};
+    std::atomic<bool> isReachMaxDuration_{false};
 
     bool isAdts_{true};
     bool mediaProfile_{0}; // default value: AAC_LC

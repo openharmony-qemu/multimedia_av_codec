@@ -30,7 +30,7 @@ public:
     explicit DataStreamSourcePlugin(std::string name);
     ~DataStreamSourcePlugin() override;
 
-    Status SetCallback(Plugins::Callback* cb) override;
+    Status SetCallback(const std::shared_ptr<Plugins::Callback>& cb) override;
     Status SetSource(std::shared_ptr<Plugins::MediaSource> source) override;
     Status Read(std::shared_ptr<Plugins::Buffer>& buffer, uint64_t offset, size_t expectedLen) override;
     Status GetSize(uint64_t& size) override;
@@ -64,7 +64,7 @@ private:
     std::atomic<bool> isExitRead_ {false};
     std::mutex mutex_;
     std::condition_variable readCond_;
-    Plugins::Callback* callback_ {nullptr};
+    std::weak_ptr<Plugins::Callback> callback_;
     int64_t size_ {0};
     uint64_t offset_ {0};
     uint32_t retryTimes_ = 0;

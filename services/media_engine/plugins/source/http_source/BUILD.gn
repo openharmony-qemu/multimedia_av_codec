@@ -29,6 +29,7 @@ config("http_source_plugin_config") {
     "-FPIC",
     "-FS",
     "-O2",
+    "-fvisibility=hidden",
     "-D_FORTIFY_SOURCE=2",
     "-Wformat=2",
     "-Wdate-time",
@@ -127,6 +128,7 @@ ohos_static_library("media_plugin_HttpSource_static") {
     "xml/xml_element.cpp",
     "xml/xml_parser.cpp",
     "utils/storage_usage_util.cpp",
+    "utils/string_utils.cpp",
   ]
 
   deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]

@@ -66,6 +66,7 @@ test_sources = [
   "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/http_media_utils.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/storage_usage_util.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/string_utils.cpp",
 ]
 
 config("fuzz_cfg") {
@@ -129,6 +130,7 @@ ohos_fuzztest("HlsM3u8MutateFuzzTest") {
 
   external_deps = [
     "c_utils:utils",
+    "certificate_manager:cert_manager_sdk",
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",

@@ -50,6 +50,7 @@ dash_test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_element.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_parser.cpp",
   "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/string_utils.cpp",
 ]
 config("dash_unittest_cfg") {
   defines = [
@@ -104,6 +105,7 @@ ohos_unittest("dash_period_manager_unit_test") {
 
   external_deps = [
     "c_utils:utils",
+    "certificate_manager:cert_manager_sdk",
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",

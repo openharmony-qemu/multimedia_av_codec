@@ -55,7 +55,7 @@ public:
     VDecFuzzSample() = default;
     ~VDecFuzzSample();
     int32_t RunVideoDec(std::string codeName = "");
-    const char *inpDir = "/data/test/media/test.cinepak";
+    const char *inpDir = "/data/test/media/cinepak.cinepak";
     const char *outDir = "/data/test/media/VDecTest.yuv";
     std::string randomName = "aabbcc";
     std::string randomMime = "aabbcc";

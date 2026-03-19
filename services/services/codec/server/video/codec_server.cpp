@@ -395,6 +395,7 @@ int32_t CodecServer::Stop()
         temporalScalability_->SetBlockQueueActive();
         inputParamTask_->Stop();
     }
+    
     int32_t retPostProcessing = StopPostProcessing();
     int32_t retCodec = codecBase_->Stop();
     CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
@@ -573,14 +574,6 @@ int32_t CodecServer::SetOutputSurface(sptr<Surface> surface)
                                       GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(surface != nullptr, AVCS_ERR_NO_MEMORY, "Surface is nullptr");
-    GSError gsRet;
-    if (isLpp_) {
-        gsRet = surface->SetSurfaceSourceType(OHSurfaceSource::OH_SURFACE_SOURCE_LOWPOWERVIDEO);
-    } else {
-        gsRet = surface->SetSurfaceSourceType(OHSurfaceSource::OH_SURFACE_SOURCE_VIDEO);
-    }
-    EXPECT_AND_LOGW_WITH_TAG(gsRet != GSERROR_OK, "Set surface source type failed, %{public}s",
-                             GSErrorStr(gsRet).c_str());
     int32_t ret = AVCS_ERR_OK;
     if (postProcessing_) {
         ret = SetOutputSurfaceForPostProcessing(surface);
@@ -780,15 +773,15 @@ int32_t CodecServer::ReleaseOutputBuffer(uint32_t index, bool render)
                                       "In invalid state, %{public}s", GetStatusDescription(status_).data());
 
     if (framerateCalculator_ && status_ == RUNNING) {
-        std::shared_ptr<AVBuffer> buffer = nullptr;
+        int64_t pts = -1;
         {
-            std::lock_guard<std::mutex> outBuflock(outBufMutex_);
-            auto it = outBufMap_.find(index);
-            if (it != outBufMap_.end()) {
-                buffer = it->second;
+            std::lock_guard<std::mutex> outPtslock(outPtsMutex_);
+            auto it = outPtsMap_.find(index);
+            if (it != outPtsMap_.end()) {
+                pts = it->second;
             }
         }
-        framerateCalculator_->OnFrameConsumed(buffer);
+        framerateCalculator_->OnFrameConsumed(pts);
     }
     if (postProcessing_) {
         return ReleaseOutputBufferOfPostProcessing(index, render);
@@ -1160,8 +1153,8 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuff
 {
     CHECK_AND_RETURN_LOG_WITH_TAG(buffer != nullptr, "buffer is nullptr!");
     {
-        std::lock_guard<std::mutex> outBuflock(outBufMutex_);
-        outBufMap_[index] = buffer;
+        std::lock_guard<std::mutex> outPtslock(outPtsMutex_);
+        outPtsMap_[index] = buffer->pts_;
     }
     if (temporalScalability_ != nullptr && !(buffer->flag_ == AVCODEC_BUFFER_FLAG_CODEC_DATA)) {
         temporalScalability_->SetDisposableFlag(buffer);
@@ -1768,6 +1761,7 @@ void CodecServer::ReleaseBuffer()
                 AVCODEC_LOGW_WITH_TAG("Buffer drop index:  %{public}u pts:  %{public}" PRId64,
                     index.first, indexBuffer->pts_);
                 dropIndexs.push_back(index.first);
+                continue;
             }
             MediaAVCodec::AVCodecTrace trace("CodecServer::ReleaseBuffer " + std::to_string(index.first));
             ReleaseOutputBuffer(index.first, true);

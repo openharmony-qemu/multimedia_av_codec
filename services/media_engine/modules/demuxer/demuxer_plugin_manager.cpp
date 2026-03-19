@@ -336,6 +336,7 @@ Status DemuxerPluginManager::LoadCurrentAllPlugin(std::shared_ptr<BaseStreamDemu
         Status ret = LoadDemuxerPlugin(curVideoStreamID_, streamDemuxer);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "LoadDemuxerPlugin video plugin failed.");
     }
+
     if (curSubTitleStreamID_ != INVALID_STREAM_OR_TRACK_ID) {
         MEDIA_LOG_I("LoadCurrentAllPlugin subtitle plugin");
         Status ret = LoadDemuxerPlugin(curSubTitleStreamID_, streamDemuxer);
@@ -388,7 +389,7 @@ Status DemuxerPluginManager::AddTrackMapInfo(int32_t streamID, int32_t trackInde
             return Status::OK;
         }
     }
-    int32_t index = static_cast<int32_t>(trackInfoMap_.size());
+    size_t index = trackInfoMap_.size();
     trackInfoMap_[index].streamID = streamID;
     trackInfoMap_[index].innerTrackIndex = trackIndex;
     return Status::OK;
@@ -403,13 +404,14 @@ void DemuxerPluginManager::DeleteTempTrackMapInfo(int32_t oldTrackId)
 void DemuxerPluginManager::UpdateTempTrackMapInfo(int32_t oldTrackId, int32_t newTrackId, int32_t newInnerTrackIndex)
 {
     temp2TrackInfoMap_[oldTrackId].streamID = trackInfoMap_[newTrackId].streamID;
+    temp2TrackInfoMap_[oldTrackId].trackID = newTrackId;
     if (newInnerTrackIndex == -1) {
         MEDIA_LOG_D("UpdateTempTrackMapInfo oldTrackId =  "  PUBLIC_LOG_D32 " newTrackId = " PUBLIC_LOG_D32
             " innerTrackIndex = " PUBLIC_LOG_D32, oldTrackId, newTrackId, trackInfoMap_[newTrackId].innerTrackIndex);
         temp2TrackInfoMap_[oldTrackId].innerTrackIndex = trackInfoMap_[newTrackId].innerTrackIndex;
     } else {
         MEDIA_LOG_I("UpdateTempTrackMapInfo oldTrackId =  "  PUBLIC_LOG_D32 " newTrackId = " PUBLIC_LOG_D32
-            " innerTrackIndex = " PUBLIC_LOG_D32, oldTrackId, newTrackId, newInnerTrackIndex);
+            "innerTrackIndex = " PUBLIC_LOG_D32, oldTrackId, newTrackId, newInnerTrackIndex);
         temp2TrackInfoMap_[oldTrackId].innerTrackIndex = newInnerTrackIndex;
     }
 }
@@ -722,6 +724,17 @@ Status DemuxerPluginManager::localSubtitleSeekTo(int64_t seekTime)
     return plugin->SeekTo(-1, seekTime, Plugins::SeekMode::SEEK_NEXT_SYNC, realSeekTime);
 }
 
+Status DemuxerPluginManager::localSubtitleSeekToStart(int64_t seekTime)
+{
+    FALSE_RETURN_V_MSG_E(curSubTitleStreamID_ != -1 && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr,
+                         Status::ERROR_NO_MEMORY, "subtitle seek failed, no subtitle");
+    int64_t realSeekTime = 0;
+    auto plugin = streamInfoMap_[curSubTitleStreamID_].plugin;
+    auto seekRes = plugin->SeekToStart();
+    FALSE_RETURN_V(seekRes != Status::OK, Status::OK);
+    return plugin->SeekTo(-1, seekTime, Plugins::SeekMode::SEEK_NEXT_SYNC, realSeekTime);
+}
+
 Status DemuxerPluginManager::SingleStreamSeekTo(int64_t seekTime, Plugins::SeekMode mode, int32_t streamID,
     int64_t& realSeekTime)
 {
@@ -758,7 +771,32 @@ Status DemuxerPluginManager::SeekTo(int64_t seekTime, Plugins::SeekMode mode, in
     return Status::OK;
 }
 
-Status DemuxerPluginManager::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
+Status DemuxerPluginManager::SeekToStart(int64_t seekTime, int64_t& realSeekTime)
+{
+    if (curAudioStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {
+        Status ret = streamInfoMap_[curAudioStreamID_].plugin->SeekToStart();
+        if (ret != Status::OK) {
+            return ret;
+        }
+    }
+    if (curVideoStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curVideoStreamID_].plugin != nullptr) {
+        Status ret = streamInfoMap_[curVideoStreamID_].plugin->SeekToStart();
+        if (ret != Status::OK) {
+            return ret;
+        }
+    }
+    if (curSubTitleStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
+        Status ret = streamInfoMap_[curSubTitleStreamID_].plugin->SeekToStart();
+        if (ret != Status::OK) {
+            ret = streamInfoMap_[curSubTitleStreamID_].plugin->SeekTo(
+                -1, seekTime, Plugins::SeekMode::SEEK_NEXT_SYNC, realSeekTime);
+        }
+    }
+    return Status::OK;
+}
+
+Status DemuxerPluginManager::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode,
+    int64_t& realSeekTime, DemuxerCallerType callerType)
 {
     if (curAudioStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curAudioStreamID_].plugin->SeekTo(-1, seekTime, mode, realSeekTime);
@@ -776,6 +814,9 @@ Status DemuxerPluginManager::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode 
     if (curVideoStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curVideoStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curVideoStreamID_].plugin->SeekToKeyFrame(
             -1, seekTime, Plugins::SeekMode::SEEK_NEXT_SYNC, realSeekTime, SEEKTOKEYFRAME_WARNING_MS);
+        if (callerType == DemuxerCallerType::AVMETADATA && ret == Status::END_OF_STREAM) {
+            return ret;
+        }
         if (ret != Status::OK) {
             MEDIA_LOG_W("TS SeekToKeyFrame failed");
         }
@@ -1042,7 +1083,8 @@ TrackType DemuxerPluginManager::GetTrackTypeByTrackID(int32_t trackId)
 int32_t DemuxerPluginManager::AddExternalSubtitle()
 {
     if (curSubTitleStreamID_ == INVALID_STREAM_OR_TRACK_ID) {
-        int32_t streamIndex = static_cast<int32_t>(streamInfoMap_.size());
+        auto maxKeyIt = streamInfoMap_.rbegin();
+        int32_t streamIndex = streamInfoMap_.size() == 0 ? 0 : maxKeyIt->first + 1;
         curSubTitleStreamID_ = streamIndex;
         streamInfoMap_[streamIndex].activated = true;
         streamInfoMap_[streamIndex].type = SUBTITLE;
@@ -1082,6 +1124,23 @@ void DemuxerPluginManager::SetApiVersion(int32_t apiVersion)
 void DemuxerPluginManager::SetIsHlsFmp4(bool isHlsFmp4)
 {
     isHlsFmp4_ = isHlsFmp4;
+}
+
+TrackType DemuxerPluginManager::GetTmpTrackTypeByTrackID(int32_t trackId)
+{
+    auto iter = temp2TrackInfoMap_.find(trackId);
+    if (iter != temp2TrackInfoMap_.end()) {
+        return GetTrackTypeByTrackID(iter->second.trackID);
+    }
+    return GetTrackTypeByTrackID(trackId);
+}
+
+void DemuxerPluginManager::UpdateTempTrackMapByStreamId(int32_t oldTrackId, int32_t newStreamId, TrackType type)
+{
+    int32_t newTrackId = -1;
+    int32_t newInnerTrackId = -1;
+    GetTrackInfoByStreamID(newStreamId, newTrackId, newInnerTrackId, type);
+    UpdateTempTrackMapInfo(oldTrackId, newTrackId, newInnerTrackId);
 }
 } // namespace Media
 } // namespace OHOS

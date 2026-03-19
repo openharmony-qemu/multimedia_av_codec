@@ -44,6 +44,7 @@ void DemuxerPluginFuzzWithFunc(const uint8_t *data, size_t size)
     free(pstream);
     pstream = nullptr;
     if (ret) {
+        demuxerTest->isEmptyBuffer = fdp.ConsumeBool();
         demuxerTest->RunDemuxerInterfaceFuzz();
     }
 }

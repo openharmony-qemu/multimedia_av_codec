@@ -531,6 +531,7 @@ public:
 
     int32_t latitude_ = 0;
     int32_t longitude_ = 0;
+    int32_t altitude_ = 0;
     std::string place_ = "";
     std::string astronomicalBody_ = "earth";
 };

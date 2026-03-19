@@ -144,6 +144,7 @@ public:
     bool outputCallbackStop = false;
     int32_t DecodeSetSurface();
     bool enableLowLatency = false;
+    OHNativeWindow *nativeWindow[2] = {};
 
 private:
     std::unique_ptr<std::ifstream> inFile_;
@@ -156,7 +157,6 @@ private:
     int64_t timeStamp_ { 0};
     int64_t lastRenderedTimeUs_ { 0 };
     bool isFirstFrame_ = true;
-    OHNativeWindow *nativeWindow[2] = {};
     sptr<Surface> cs[2] = {};
     sptr<Surface> ps[2] = {};
 };

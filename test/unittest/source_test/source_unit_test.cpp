@@ -110,7 +110,6 @@ HWTEST_F(SourceUnitTest, Source_SetBundleName_0200, TestSize.Level1)
 HWTEST_F(SourceUnitTest, Source_SetBundleName_0300, TestSize.Level1)
 {
     source_->SetBundleName("testSource");
-    source_->SetCallback(nullptr);
     EXPECT_EQ(Status::OK, source_->Prepare());
 }
 /**
@@ -315,6 +314,20 @@ HWTEST_F(SourceUnitTest, Source_IsLocalFd_0100, TestSize.Level1)
     source->SetSource(mediaSource);
     // source plugin is file_source_plugin, it is for local fd
     EXPECT_TRUE(source->IsLocalFd());
+}
+
+/**
+ * @tc.name: Source_IsCloudFd_0100
+ * @tc.desc: Source_IsCloudFd_0100
+ * @tc.type: FUNC
+ */
+HWTEST_F(SourceUnitTest, Source_IsCloudFd_0100, TestSize.Level1)
+{
+    std::shared_ptr<Source> source = std::make_shared<Source>();
+    std::shared_ptr<MediaSource> mediaSource = std::make_shared<MediaSource>(VIDEO_FILE1);
+    source->SetSource(mediaSource);
+    // source plugin is file_source_plugin, it is for cloud fd
+    EXPECT_FALSE(source->IsCloudFd());
 }
 } // namespace Media
 } // namespace OHOS

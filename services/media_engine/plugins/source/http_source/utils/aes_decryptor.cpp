@@ -27,12 +27,14 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_PLAYER, "Hi
 
 namespace OHOS {
 namespace Media {
-AesDecryptor::AesDecryptor()
+AesDecryptor::AesDecryptor(AesDecryptorType type, uint64_t id)
 {
     aesKey_.rounds = 0;
     for (size_t i = 0; i < sizeof(aesKey_.rd_key) / sizeof(aesKey_.rd_key[0]); ++i) {
         aesKey_.rd_key[i] = 0;
     }
+    type_ = type;
+    id_ = id;
 }
 
 AesDecryptor::~AesDecryptor()

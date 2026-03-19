@@ -19,6 +19,7 @@
 #include <string>
 #include <memory>
 #include <unistd.h>
+#include <shared_mutex>
 #include "timer.h"
 #include "osal/utils/ring_buffer.h"
 #include "osal/utils/steady_clock.h"
@@ -43,6 +44,7 @@ public:
                                  std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = nullptr);
     ~HttpMediaDownloader() override;
     void Init() override;
+    void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr) override;
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
     void Pause() override;
@@ -52,7 +54,7 @@ public:
     size_t GetContentLength() const override;
     int64_t GetDuration() const override;
     Seekable GetSeekable() const override;
-    void SetCallback(Callback* cb) override;
+    void SetCallback(const std::shared_ptr<Callback>& cb) override;
     void SetStatusCallback(StatusCallbackFunc cb) override;
     bool GetStartedStatus() override;
     void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
@@ -162,6 +164,10 @@ private:
     bool IsAutoSelectConditionOk();
     void WaitCacheBufferInit();
     void UpdateDownloadFinished(const std::string &url, const std::string& location);
+    void SetDownloadRequest(std::shared_ptr<DownloadRequest> downloadRequest);
+    std::shared_ptr<DownloadRequest> GetDownloadRequest() const;
+    void SetDownloader(std::shared_ptr<Downloader> downloader);
+    std::shared_ptr<Downloader> GetDownloader() const;
 
 private:
     std::shared_ptr<RingBuffer> ringBuffer_;
@@ -169,8 +175,10 @@ private:
     std::shared_ptr<Downloader> downloader_;
     std::shared_ptr<DownloadRequest> downloadRequest_;
     Mutex mutex_;
+    mutable std::shared_mutex downloaderMutex_;
+    mutable std::shared_mutex downloadRequestMutex_;
     ConditionVariable cvReadWrite_;
-    Callback* callback_ {nullptr};
+    std::weak_ptr<Callback> callback_;
     StatusCallbackFunc statusCallback_ {nullptr};
     bool aboveWaterline_ {false};
     bool startedPlayStatus_ {false};
@@ -269,6 +277,8 @@ private:
     uint32_t videoBitrate_ {0};
     bool isAppBackground_ {false};
     std::shared_ptr<DownloadMetricsInfo> downloadMetricsInfo_ {nullptr};
+    std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
+    std::atomic<bool> isLive_ {false};
 };
 }
 }

@@ -32,18 +32,22 @@ using AVCodecSpecifiedType = std::pair<bool, std::string>;
 using VCodecSpecifiedType = std::pair<VideoCodecType, std::string>;
 
 namespace {
-static constexpr const char DOMAIN[] = "AV_CODEC";
+// EVENT_STR_L0
+static constexpr const char EVENT_DOMAIN[] = "AV_CODEC";
+// EVENT_STR_L1
 static constexpr const char EVENT_STATISTICS_INFO[] = "STATISTICS_INFO";
-static constexpr const char QUERY_CAP_TIMES[] = "QueryCapTimes";
-static constexpr const char CREATE_CODEC_TIMES[] = "CreateCodecTimes";
-static constexpr const char CODEC_SPECIFIED_INFO[] = "CodecSpecifiedInfo";
-static constexpr const char APP_NAME_DICT[] = "AppNameDict";
-static constexpr const char CAP_UNSUPPORTED_INFO[] = "CapUnsupportedInfo";
-static constexpr const char QUERY_CAP_UNSUPPORTED_INFO[] = "QueryCapUnsupportedInfo";
-static constexpr const char CREATE_CODEC_UNSUPPORTED_INFO[] = "CreateCodecUnsupportedInfo";
-static constexpr const char DEC_ABNORMAL_OCCUPATION_INFO[] = "DecAbnormalOccupationInfo";
-static constexpr const char SPEED_DECODING_INFO[] = "SpeedDecodingInfo";
-static constexpr const char CODEC_ERROR_INFO[] = "CodecErrorInfo";
+// EVENT_STR_L2
+static constexpr const char QUERY_CAP_TIMES[] = "QUERY_CAP_TIMES";
+static constexpr const char CREATE_CODEC_TIMES[] = "CREATE_CODEC_TIMES";
+static constexpr const char CODEC_SPECIFIED_INFO[] = "CODEC_SPECIFIED_INFO";
+static constexpr const char APP_NAME_DICT[] = "APP_NAME_DICT";
+static constexpr const char CAP_UNSUPPORTED_INFO[] = "CAP_UNSUPPORTED_INFO";
+static constexpr const char DEC_ABNORMAL_OCCUPATION_INFO[] = "DEC_ABNORMAL_OCCUPATION_INFO";
+static constexpr const char SPEED_DECODING_INFO[] = "SPEED_DECODING_INFO";
+static constexpr const char CODEC_ERROR_INFO[] = "CODEC_ERROR_INFO";
+// EVENT_STR_L3
+static constexpr const char QUERY_CAP_UNSUPPORTED_INFO[] = "QUERY_CAP_UNSUPPORTED_INFO";
+static constexpr const char CREATE_CODEC_UNSUPPORTED_INFO[] = "CREATE_CODEC_UNSUPPORTED_INFO";
 
 const std::unordered_map<VideoCodecType, std::string> VIDEO_CODEC_TYPE_TO_STRING = {
     { VideoCodecType::DECODER_HARDWARE, "HDec" },
@@ -131,6 +135,12 @@ inline void CreateOrIncrementMapCount(T1 &map, const T2 &key)
     }
 }
 
+struct StatisticsSubmitInfo {
+    uint32_t queryCapTimes {0};
+    uint32_t createCodecTimes {0};
+    std::unordered_map<std::string_view, std::shared_ptr<cJSON>> jsonObjects;
+};
+
 using AppNameIndex = int32_t;
 constexpr AppNameIndex INVALID_APP_NAME_INDEX = -1;
 class AppNameIndexInfo {
@@ -150,6 +160,7 @@ public:
         if (appName.size() > maxAppNameLength) {
             return INVALID_APP_NAME_INDEX;
         }
+        std::lock_guard<std::shared_mutex> lock(mutex_);
         auto dictIter = appNameDict_.find(appName);
         if (dictIter == appNameDict_.end()) {
             if (appNameDict_.size() < maxAppNameCount) {
@@ -164,6 +175,7 @@ public:
 
     std::string GetAppNameByIndex(AppNameIndex appIndex)
     {
+        std::shared_lock<std::shared_mutex> lock(mutex_);
         for (const auto &[name, index] : appNameDict_) {
             if (index == appIndex) {
                 return name;
@@ -178,6 +190,7 @@ public:
         if (jsonObj == nullptr) {
             return;
         }
+        std::shared_lock<std::shared_mutex> lock(mutex_);
         for (const auto &[name, index] : appNameDict_) {
             cJSON_AddNumberToObject(cJSON_AddObjectToObject(jsonObj.get(), name.c_str()), name.c_str(), index);
         }
@@ -186,11 +199,27 @@ public:
 
     void Reset()
     {
+        std::lock_guard<std::shared_mutex> lock(mutex_);
         appNameDict_.clear();
     }
 
 private:
+    std::shared_mutex mutex_;
     std::unordered_map<std::string, AppNameIndex> appNameDict_; // appName, AppNameIndex
+};
+
+class StatisticsEventInfoBase {
+public:
+    StatisticsEventInfoBase() = default;
+    virtual ~StatisticsEventInfoBase() = default;
+
+    virtual void OnAddEventInfo(StatisticsEventType eventType, const Media::Meta &eventMeta) = 0;
+    virtual void OnSummateEventInfo(StatisticsSubmitInfo &submitInfo) = 0;
+    virtual void ResetEventInfo() = 0;
+
+protected:
+    std::mutex mutex_;
+    std::unordered_map<StatisticsEventType, std::shared_ptr<StatisticsEventInfoBase>> eventInfoMap_;
 };
 
 class StatisticsMainEventInfoBase : public StatisticsEventInfoBase {
@@ -216,9 +245,6 @@ public:
             eventInfo.second->ResetEventInfo();
         }
     }
-
-protected:
-    std::mutex mutex_;
 };
 
 /*----------------------------------- BasicInfo -----------------------------------*/
@@ -355,6 +381,7 @@ public:
             }
         };
 
+        std::lock_guard<std::mutex> lock(mutex_);
         auto jsonObj = std::shared_ptr<cJSON>(cJSON_CreateObject(), cJSON_Delete);
         addInfoToJsonObj(jsonObj, QUERY_CAP_UNSUPPORTED_INFO, queryCapUnsupportedInfo_);
         addInfoToJsonObj(jsonObj, CREATE_CODEC_UNSUPPORTED_INFO, createCodecUnsupportedInfo_);
@@ -445,8 +472,9 @@ public:
                         lastOccupationHDecAppInfoVec_.emplace_back(appIndex, count);
                     }
 
+                    lastCallerNameIndex_ = callerNameIndex;
                     isInOccupationHDecEvent_.store(true);
-                    RegisterOccupationHDecLimitExceededEventHook(callerNameIndex);
+                    RegisterOccupationHDecLimitExceededEventHook();
                 }
                 break;
             }
@@ -470,6 +498,12 @@ public:
             return;
         }
 
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (isInOccupationHDecEvent_.load()) {
+            hdecLimitExceededInfo_.emplace(lastCallerNameIndex_, lastOccupationHDecAppInfoVec_);
+            lastOccupationHDecAppInfoVec_.clear();
+            isInOccupationHDecEvent_.store(false);
+        }
         auto hdecLimitExceededInfoJsonObj = cJSON_AddObjectToObject(jsonObj.get(), "HDecLimitExceededInfo");
         for (const auto &[appIndex, appInfoVec] : hdecLimitExceededInfo_) {
             auto appInfoArrayJsonObj = cJSON_AddArrayToObject(
@@ -493,23 +527,25 @@ public:
     {
         std::lock_guard<std::mutex> lock(mutex_);
         isInOccupationHDecEvent_.store(false);
+        lastCallerNameIndex_ = INVALID_APP_NAME_INDEX;
         lastOccupationHDecAppInfoVec_.clear();
         hdecLimitExceededInfo_.clear();
         longTimeInBgInfo_.clear();
     }
 
 private:
-    void RegisterOccupationHDecLimitExceededEventHook(AppNameIndex callerNameIndex)
+    void RegisterOccupationHDecLimitExceededEventHook()
     {
         StatisticsEventInfo::GetInstance().RegisterEventHook(
             StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO,
-            [this, callerNameIndex] (const Media::Meta &eventMeta) -> bool {
+            [this] (const Media::Meta &eventMeta) -> bool {
                 if (!isInOccupationHDecEvent_.load()) {
                     return true;
                 }
 
                 std::lock_guard<std::mutex> lock(mutex_);
-                hdecLimitExceededInfo_.emplace(callerNameIndex, lastOccupationHDecAppInfoVec_);
+                hdecLimitExceededInfo_.emplace(lastCallerNameIndex_, lastOccupationHDecAppInfoVec_);
+                lastOccupationHDecAppInfoVec_.clear();
                 isInOccupationHDecEvent_.store(false);
                 return true;
             });
@@ -518,6 +554,7 @@ private:
     using HDecLimitExceededAppInfoVector = std::vector<std::pair<AppNameIndex, uint32_t>>; // AppNameIndex, count
     constexpr static size_t maxOccupationHDecRecordCount = 200;
     std::atomic<bool> isInOccupationHDecEvent_{ false };
+    AppNameIndex lastCallerNameIndex_ = INVALID_APP_NAME_INDEX;
     HDecLimitExceededAppInfoVector lastOccupationHDecAppInfoVec_;
     std::unordered_multimap<AppNameIndex, HDecLimitExceededAppInfoVector> hdecLimitExceededInfo_;
     std::unordered_multimap<AppNameIndex, uint32_t> longTimeInBgInfo_;  // AppNameIndex, elapsedTime
@@ -531,19 +568,19 @@ public:
     {
         std::lock_guard<std::mutex> lock(mutex_);
         ParseAndAccumulateSpeedData(
-            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_TOTAL.data(), decDurationTotal_, decCntTotal_);
+            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_TOTAL, decDurationTotal_, decCntTotal_);
         ParseAndAccumulateSpeedData(
-            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_0_75X.data(), decDuration075x_, decCnt075x_);
+            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_0_75X, decDuration075x_, decCnt075x_);
         ParseAndAccumulateSpeedData(
-            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_1_00X.data(), decDuration100x_, decCnt100x_);
+            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_1_00X, decDuration100x_, decCnt100x_);
         ParseAndAccumulateSpeedData(
-            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_1_25X.data(), decDuration125x_, decCnt125x_);
+            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_1_25X, decDuration125x_, decCnt125x_);
         ParseAndAccumulateSpeedData(
-            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_1_50X.data(), decDuration150x_, decCnt150x_);
+            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_1_50X, decDuration150x_, decCnt150x_);
         ParseAndAccumulateSpeedData(
-            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_2_00X.data(), decDuration200x_, decCnt200x_);
+            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_2_00X, decDuration200x_, decCnt200x_);
         ParseAndAccumulateSpeedData(
-            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_3_00X.data(), decDuration300x_, decCnt300x_);
+            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_3_00X, decDuration300x_, decCnt300x_);
     }
 
     void OnSummateEventInfo(StatisticsSubmitInfo &submitInfo) override
@@ -669,6 +706,7 @@ public:
         if (jsonObj == nullptr) {
             return;
         }
+        std::lock_guard<std::mutex> lock(mutex_);
         auto codecErrorRootObj = cJSON_AddObjectToObject(jsonObj.get(), CODEC_ERROR_INFO);
         for (const auto &[codecErrorKey, count] : errorCodeInfo_) {
             const auto &[vcodecType, mimeType, errorCode] = codecErrorKey;
@@ -749,7 +787,7 @@ void StatisticsEventInfo::OnSubmitEventInfo()
     };
 
     HiSysEventWrite(
-        DOMAIN, EVENT_STATISTICS_INFO,
+        EVENT_DOMAIN, EVENT_STATISTICS_INFO,
         OHOS::HiviewDFX::HiSysEvent::EventType::STATISTIC,
         QUERY_CAP_TIMES,                    submitInfo.queryCapTimes,
         CREATE_CODEC_TIMES,                 submitInfo.createCodecTimes,
@@ -761,20 +799,15 @@ void StatisticsEventInfo::OnSubmitEventInfo()
         CODEC_ERROR_INFO,                   getJsonField(CODEC_ERROR_INFO).CStr()
     );
 
-    ResetEventInfo();
-    RegisterSubmitEventTimer();
-}
-
-void StatisticsEventInfo::ResetEventInfo()
-{
     {
-        std::lock_guard<std::shared_mutex> lock(eventHookMutex_);
+        std::lock_guard<std::shared_mutex> eventHookLock(eventHookMutex_);
         eventHooks_.clear();
     }
     AppNameIndexInfo::GetInstance().Reset();
     for (auto &eventInfo : eventInfoMap_) {
         eventInfo.second->ResetEventInfo();
     }
+    RegisterSubmitEventTimer();
 }
 
 void StatisticsEventInfo::RegisterEventHook(StatisticsEventType eventType, EventHook hook)

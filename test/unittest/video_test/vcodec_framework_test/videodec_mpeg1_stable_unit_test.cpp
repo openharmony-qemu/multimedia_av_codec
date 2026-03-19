@@ -12,6 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include "codeclist_mock.h"
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
 #include "heap_memory_thread.h"
@@ -108,30 +110,38 @@ HWMTEST_F(VideoDecMpeg1DecTest, VideoDecoder_mpeg1decoder_Release_001, TestSize.
 HWMTEST_F(VideoDecMpeg1DecTest, VideoDecoder_mpeg1decoder_Create_AVBuffer_001, TestSize.Level1,
           VideoDecSample::threadNum_)
 {
-    auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VCodecSignal>(vdec);
-    vdec->frameCount_ = 30; // 30: input frame num
-    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG1;
-    vdec->inPath_ = "test.mpeg1";
-    vdec->sampleWidth_ = 720;
-    vdec->sampleHeight_ = 480;
-    vdec->outPath_ = GetTestName();
-    vdec->dumpKey_ = "mpeg1decoder.dump";
-    vdec->dumpValue_ = "01";
-    vdec->samplePixel_ = AV_PIXEL_FORMAT_RGBA;
-    EXPECT_EQ(vdec->Create(), true);
-    struct OH_AVCodecCallback cb;
-    cb.onError = OnErrorVoid;
-    cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputBuffer = InBufferHandle;
-    cb.onNewOutputBuffer = OutBufferHandle;
-    signal->isRunning_ = true;
-    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    std::shared_ptr<CodecListMock> capability = nullptr;
+    capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_MPEG1).data(), false,
+                                                                AVCodecCategory::AVCODEC_SOFTWARE);
+    ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_MPEG1).data() << " can not found!" << std::endl;
+    auto pixelFormats = capability->GetVideoSupportedPixelFormats();
+    if (std::find(pixelFormats.begin(), pixelFormats.end(), static_cast<int32_t>(VideoPixelFormat::RGBA)) !=
+        pixelFormats.end()) {
+        auto vdec = make_shared<VideoDecSample>();
+        auto signal = make_shared<VCodecSignal>(vdec);
+        vdec->frameCount_ = 30; // 30: input frame num
+        vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_MPEG1;
+        vdec->inPath_ = "test.mpeg1";
+        vdec->sampleWidth_ = 720;
+        vdec->sampleHeight_ = 480;
+        vdec->outPath_ = GetTestName();
+        vdec->dumpKey_ = "mpeg1decoder.dump";
+        vdec->dumpValue_ = "01";
+        vdec->samplePixel_ = AV_PIXEL_FORMAT_RGBA;
+        EXPECT_EQ(vdec->Create(), true);
+        struct OH_AVCodecCallback cb;
+        cb.onError = OnErrorVoid;
+        cb.onStreamChanged = OnStreamChangedVoid;
+        cb.onNeedInputBuffer = InBufferHandle;
+        cb.onNewOutputBuffer = OutBufferHandle;
+        signal->isRunning_ = true;
+        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
+        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
+    }
 }
 
 /**

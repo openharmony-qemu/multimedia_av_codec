@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
+#include "muxer_filter.h"
 #include <sys/timeb.h>
 #include <thread>
 #include <unordered_map>
-#include "muxer_filter.h"
 #include "common/log.h"
 #include "common/media_core.h"
 #include "filter/filter_factory.h"
@@ -96,9 +96,8 @@ MuxerFilter::~MuxerFilter()
 
 Status MuxerFilter::SetOutputParameter(int32_t appUid, int32_t appPid, int32_t fd, int32_t format)
 {
-    MEDIA_LOG_I("SetOutputParameter, appUid:" PUBLIC_LOG_D32 ", appPid:" PUBLIC_LOG_D32 ", format:"
-    PUBLIC_LOG_D32, static_cast<int32_t>(appUid), static_cast<int32_t>(appPid),
-    static_cast<int32_t>(format));
+    MEDIA_LOG_I("SetOutputParameter, appUid:" PUBLIC_LOG_D32 ", appPid:" PUBLIC_LOG_D32 ", format:" PUBLIC_LOG_D32,
+        static_cast<int32_t>(appUid), static_cast<int32_t>(appPid), static_cast<int32_t>(format));
     mediaMuxer_ = std::make_shared<MediaMuxer>(appUid, appPid);
     Status ret = mediaMuxer_->Init(fd, (Plugins::OutputFormat)format);
     outputFormat_ = (Plugins::OutputFormat)format;
@@ -152,7 +151,7 @@ Status MuxerFilter::DoStart()
         SetFaultEvent("MuxerFilter::DoStart error", (int32_t)ret);
     } else {
         isStarted = true;
-        isReachMaxDuration_ = false;
+        isReachMaxDuration_.store(false);
     }
     return ret;
 }
@@ -174,6 +173,7 @@ Status MuxerFilter::DoResume()
 Status MuxerFilter::DoStop()
 {
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::Stop");
+    FALSE_RETURN_V_MSG(mediaMuxer_ != nullptr, Status::ERROR_NULL_POINTER, "MediaMuxer is nullptr.");
     stopCount_++;
     MEDIA_LOG_I("MuxerFilter Stop, stopCount_: %{public}d, preFilterCount_: %{public}d",
         stopCount_, preFilterCount_);
@@ -207,16 +207,29 @@ void MuxerFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("SetParameter");
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::SetParameter");
+    FALSE_RETURN_MSG(mediaMuxer_ != nullptr, "mediaMuxer_ is nullptr");
     mediaMuxer_->SetParameter(parameter);
 }
 
 void MuxerFilter::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
 {
     MEDIA_LOG_I("SetUserMeta enter");
+    FALSE_RETURN_MSG(mediaMuxer_ != nullptr, "mediaMuxer_ is nullptr");
     Status ret = mediaMuxer_->SetUserMeta(userMeta);
     if (ret != Status::OK) {
         MEDIA_LOG_I("SetUserMeta failed");
     }
+}
+
+Status MuxerFilter::SetCustomInfo(const std::shared_ptr<Meta> &customInfo)
+{
+    MEDIA_LOG_I("SetCustomInfo enter");
+    FALSE_RETURN_V_MSG(mediaMuxer_ != nullptr, Status::ERROR_NULL_POINTER, "MediaMuxer is nullptr.");
+    Status ret = mediaMuxer_->SetUserMeta(customInfo);
+    if (ret != Status::OK) {
+        MEDIA_LOG_I("SetCustomInfo failed");
+    }
+    return ret;
 }
 
 void MuxerFilter::GetParameter(std::shared_ptr<Meta> &parameter)
@@ -295,9 +308,15 @@ Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &met
     sptr<IBrokerListener> listener = new MuxerBrokerListener(shared_from_this(), trackIndex,
         inType, inputBufferQueue);
     inputBufferQueue->SetBufferFilledListener(listener);
-    preFilterCount_++;
-    bufferPtsMap_.insert(std::pair<int32_t, int64_t>(trackIndex, 0));
+    UpdateTrackState(trackIndex);
     return Status::OK;
+}
+
+void MuxerFilter::UpdateTrackState(int32_t trackIndex)
+{
+    preFilterCount_++;
+    std::lock_guard<std::mutex> lock(ptsMapMutex_);
+    bufferPtsMap_.insert(std::pair<int32_t, int64_t>(trackIndex, 0));
 }
 
 Status MuxerFilter::OnUpdated(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -321,19 +340,22 @@ void MuxerFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::OnBufferFilled");
     if (!isTransCoderMode) {
         int64_t currentBufferPts = inputBuffer->pts_;
-        if (currentBufferPts / US_TO_MS > maxDuration_ * S_TO_MS && isReachMaxDuration_ == false) {
+        if (currentBufferPts / US_TO_MS > maxDuration_ * S_TO_MS && isReachMaxDuration_.load() == false) {
             MEDIA_LOG_I("MuxerFilter::OnBufferFilled currentBufferPts > maxDuration_ start to stop");
-            isReachMaxDuration_ = true;
+            isReachMaxDuration_.store(true);
             std::thread asyncThread(std::bind(&MuxerFilter::EventCompleteStopAsync, this));
             asyncThread.detach();
         }
         int64_t anotherBufferPts = 0;
-        for (auto mapInterator = bufferPtsMap_.begin(); mapInterator != bufferPtsMap_.end(); mapInterator++) {
-            if (mapInterator->first != trackIndex) {
-                anotherBufferPts = mapInterator->second;
+        {
+            std::lock_guard<std::mutex> lock(ptsMapMutex_);
+            for (auto mapInterator = bufferPtsMap_.begin(); mapInterator != bufferPtsMap_.end(); mapInterator++) {
+                if (mapInterator->first != trackIndex) {
+                    anotherBufferPts = mapInterator->second;
+                }
             }
+            bufferPtsMap_[trackIndex] = currentBufferPts;
         }
-        bufferPtsMap_[trackIndex] = currentBufferPts;
         if (preFilterCount_ != 1 && std::abs(currentBufferPts - anotherBufferPts) >= WAIT_TIME_OUT_NS) {
             MEDIA_LOG_I("OnBufferFilled pts time interval is greater than 3 seconds");
         }
@@ -398,7 +420,7 @@ void MuxerFilter::OnTransCoderBufferFilled(std::shared_ptr<AVBuffer> &inputBuffe
 
 void MuxerFilter::HandleTransCoderComplete()
 {
-    FALSE_RETURN_MSG(mediaMuxer_ != nullptr, "mediaDemuxer_ is nullptr");
+    FALSE_RETURN_MSG(mediaMuxer_ != nullptr, "mediaMuxer_ is nullptr");
     MEDIA_LOG_I("mediaMuxer_ stop begin");
     stopCount_ = preFilterCount_;
     Status res = mediaMuxer_->Stop();

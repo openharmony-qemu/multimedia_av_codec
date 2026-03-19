@@ -253,7 +253,8 @@ static std::map<std::string, TagType> g_formatToString = {
     {"author",        Tag::MEDIA_AUTHOR},
     {"composer",      Tag::MEDIA_COMPOSER},
     {"creation_time", Tag::MEDIA_CREATION_TIME},
-    {"aigc",          Tag::MEDIA_AIGC}
+    {"aigc",          Tag::MEDIA_AIGC},
+    {"encoder",       Tag::MEDIA_ENCODER}
 };
 
 static std::map<std::string, TagType> g_trackLevelBaseInfo = {
@@ -1422,7 +1423,7 @@ void FFmpegFormatHelper::ParseHevcInfo(
         MEDIA_LOG_D("Parse hevc level failed: " PUBLIC_LOG_D32, level);
     }
     auto fileType = GetFileTypeByName(avFormatContext);
-    if (fileType == FileType::MPEGTS ||
+    if (fileType == FileType::MPEGTS || fileType == FileType::MPEGPS ||
         fileType == FileType::FLV) {
         format.Set<Tag::VIDEO_WIDTH>(static_cast<uint32_t>(parse.picWidInLumaSamples));
         format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(parse.picHetInLumaSamples));

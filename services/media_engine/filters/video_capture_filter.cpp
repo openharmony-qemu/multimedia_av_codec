@@ -103,9 +103,6 @@ VideoCaptureFilter::VideoCaptureFilter(std::string name, FilterType type): Filte
 VideoCaptureFilter::~VideoCaptureFilter()
 {
     MEDIA_LOG_I("video capture filter destroy");
-    if (inputSurface_ != nullptr) {
-        inputSurface_->UnregisterConsumerListener();
-    }
 }
 
 Status VideoCaptureFilter::SetCodecFormat(const std::shared_ptr<Meta> &format)
@@ -339,15 +336,16 @@ void VideoCaptureFilter::OnBufferAvailable()
     if (!ProcessAndPushOutputBuffer(inputBuffer, timestamp, bufferSize, isKeyFrame)) {
         MEDIA_LOG_E("ProcessAndPushOutputBuffer fail");
     }
-    
+
     // Release the buffer
     inputSurface_->ReleaseBuffer(inputBuffer, -1);
 }
 
-bool VideoCaptureFilter::AcquireInputBuffer(sptr<SurfaceBuffer>& buffer, int64_t &timestamp,
+bool VideoCaptureFilter::AcquireInputBuffer(sptr<SurfaceBuffer>& buffer, int64_t& timestamp,
     int32_t& bufferSize, int32_t& isKeyFrame)
 {
     FALSE_RETURN_V_MSG(inputSurface_ != nullptr, false, "inputSurface_ is nullptr");
+
     sptr<SyncFence> fence;
     OHOS::Rect damage;
     GSError ret = inputSurface_->AcquireBuffer(buffer, fence, timestamp, damage);
@@ -381,7 +379,7 @@ bool VideoCaptureFilter::ProcessAndPushOutputBuffer(sptr<SurfaceBuffer>& buffer,
     avBufferConfig.memoryFlag = MemoryFlag::MEMORY_READ_WRITE;
     int32_t timeOutMs = 100;
     Status status = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, timeOutMs);
-    
+
     FALSE_RETURN_V_MSG(status == Status::OK && emptyOutputBuffer != nullptr, false, "RequestBuffer fail.");
 
     std::shared_ptr<AVMemory> &bufferMem = emptyOutputBuffer->memory_;
@@ -390,6 +388,7 @@ bool VideoCaptureFilter::ProcessAndPushOutputBuffer(sptr<SurfaceBuffer>& buffer,
     emptyOutputBuffer->flag_ = isKeyFrame != 0 ? static_cast<uint32_t>(Plugins::AVBufferFlag::SYNC_FRAME) : 0;
     bufferMem->Write((const uint8_t *)buffer->GetVirAddr(), bufferSize, 0);
     UpdateBufferConfig(emptyOutputBuffer, timestamp);
+
     status = outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, true);
     FALSE_RETURN_V_MSG(status == Status::OK, false, "PushBuffer fail");
     return true;

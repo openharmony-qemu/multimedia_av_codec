@@ -107,6 +107,7 @@ static std::unordered_map<TagType, std::string> g_formatToIndex = {
     {Tag::ORIGINAL_CODEC_NAME,            "codecName"},
     {Tag::VIDEO_HDR_TYPE,                 "hdrType"},
     {Tag::VIDEO_RAWVIDEO_INPUT_PIXEL_FORMAT, "rawvideoInputPixFmt"},
+    {Tag::MEDIA_ENCODER,                  "encoder"},
 };
 
 std::string DemuxerLogCompressor::FormatTagSerialize(Format& format)

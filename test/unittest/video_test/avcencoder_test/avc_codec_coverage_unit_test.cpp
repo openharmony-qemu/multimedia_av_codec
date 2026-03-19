@@ -1171,7 +1171,7 @@ HWTEST_F(AvcCodecCoverageUnitTest, Test_Encoder_CheckBufferSize_001, TestSize.Le
 HWTEST_F(AvcCodecCoverageUnitTest, Test_Encoder_Utils_001, TestSize.Level1)
 {
     int32_t flag = AvcFrameTypeToBufferFlag(1);
-    EXPECT_EQ(flag, AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_PARTIAL_FRAME);
+    EXPECT_EQ(flag, AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_NONE);
     flag = AvcFrameTypeToBufferFlag(0);
     EXPECT_EQ(flag, AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_CODEC_DATA);
 }

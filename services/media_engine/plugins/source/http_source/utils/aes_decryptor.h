@@ -24,9 +24,16 @@
 
 namespace OHOS {
 namespace Media {
+
+enum class AesDecryptorType : int {
+    KEY_AES = 0,
+    SESSIONKEY_AES = 1,
+    NONE_AES = 2,
+};
+
 class AesDecryptor {
 public:
-    AesDecryptor();
+    AesDecryptor(AesDecryptorType type, uint64_t id);
     ~AesDecryptor();
     void Init();
     void Decrypt(uint8_t *in, uint8_t *out, uint32_t len);
@@ -38,6 +45,8 @@ public:
     size_t keyLen_ {0};
     uint8_t iv_[AesDecryptor::BLOCK_LEN] = {0};
     uint8_t initIv_[AesDecryptor::BLOCK_LEN] = {0};
+    AesDecryptorType type_ = AesDecryptorType::NONE_AES;
+    uint64_t id_ = 0;
 
 private:
     AES_KEY aesKey_;

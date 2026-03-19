@@ -34,6 +34,7 @@ public:
     Status WriteSample(std::shared_ptr<AVIOStream> io, const std::shared_ptr<AVBuffer> &sample) override;
     Status WriteTailer() override;
     Any GetPointer() override {return Any(this);}
+    void UpdateUserMeta(const std::shared_ptr<Meta> &userMeta) override;
     int32_t GetWidth() const;
     int32_t GetHeight() const;
     bool IsColor() const;
@@ -63,6 +64,7 @@ private:
     void DisposeCuva();
     void DisposeSdtp(uint32_t flag);
     void AddSdtpBox();
+    Status SetVideoDelay(const std::shared_ptr<Meta> &trackDesc);
     int32_t width_ = 0;
     int32_t height_ = 0;
     int64_t delay_ = 0;
@@ -85,6 +87,7 @@ private:
     bool hasSetParserConfig_ = false;
     std::vector<std::shared_ptr<BasicTrack>> &tracks_;
     int64_t ptsMax_ = 0;  // mpeg4 time scale
+    bool hasVideoDelay_ = false;
 };
 } // Mpeg4
 } // Plugins
