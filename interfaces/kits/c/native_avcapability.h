@@ -134,14 +134,16 @@ OH_AVCapability *OH_AVCodec_GetCapability(const char *mime, bool isEncoder);
 OH_AVCapability *OH_AVCodec_GetCapabilityByCategory(const char *mime, bool isEncoder, OH_AVCodecCategory category);
 
 /**
- * @brief Get a codec capability list within the specified codec type. By specifying the codec type,
- * get all matching codec capabilities. 
+ * @brief Obtains a list of codec capabilities for a specified codec type.
+ * This function retrieves all matching codec capabilities based on the provided codec type.
  * 
- * @param codecType The codec type
- * @param count The pointer to store the number of matched codec capabilities in the codec capability list
- * @return Returns a list of capability instances if matching codecs are found,
- * returns NULL if no matching codecs are found.
- * No need for developers to allocate or free the memory for the codec capability list.
+ * @param codecType The type of codec to filter by, refer to {@link OH_AVCodecType}.
+ * @param count Output parameter. A pointer to a uint32_t variable that will store
+ * the number of matched codec capabilities found.
+ * @return Returns a pointer to an array of {@link OH_AVCapability} instances if matches are found;
+ * returns NULL if no matching codecs are found or if an error occurs.
+ * @note The memory for the codec capability list is managed internally.
+ * Developers MUST NOT manually allocate or free this memory.
  * @since 24
  */
 OH_AVCapability **OH_AVCodec_GetCapabilityList(OH_AVCodecType codecType, uint32_t *count);
