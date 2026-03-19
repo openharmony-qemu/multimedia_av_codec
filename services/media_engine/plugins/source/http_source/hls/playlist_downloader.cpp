@@ -421,7 +421,7 @@ AesDecryptorManager::AesDecryptorManager()
 
 AesDecryptorManager::~AesDecryptorManager()
 {
-    std::shared_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
+    std::unique_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
     aesDecryptorsMap_.clear();
 }
 
@@ -437,7 +437,7 @@ void AesDecryptorManager::CreateAesDecryptorByKeyInfos(const std::vector<KeyInfo
     for (size_t i = 0; i < keyInfos.size(); ++i) {
         std::shared_ptr<AesDecryptor> tempAesDecryptor = std::make_shared<AesDecryptor>();
         tempAesDecryptor->OnSourceKeyChange(keyInfos[i].key_, keyInfos[i].keyLen_, keyInfos[i].iv_);
-        std::shared_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
+        std::unique_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
         aesDecryptorsMap_[keyInfos[i].index_] = tempAesDecryptor;
     }
 }
@@ -446,7 +446,7 @@ void AesDecryptorManager::CreateAesDecryptor(const KeyInfo& keyInfo)
 {
     std::shared_ptr<AesDecryptor> tempAesDecryptor = std::make_shared<AesDecryptor>();
     tempAesDecryptor->OnSourceKeyChange(keyInfo.key_, keyInfo.keyLen_, keyInfo.iv_);
-    std::shared_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
+    std::unique_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
     aesDecryptorsMap_[keyInfo.index_] = tempAesDecryptor;
 }
 }
