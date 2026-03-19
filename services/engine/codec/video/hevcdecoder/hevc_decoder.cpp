@@ -366,8 +366,6 @@ void HevcDecoder::SendFrame()
         frameBuffer->avBuffer->flag_ = AVCODEC_BUFFER_FLAG_EOS;
         FramePostProcess(buffers_[INDEX_OUTPUT][outIndex], outIndex, AVCS_ERR_OK);
         state_ = State::EOS;
-    } else if (ret < 0) {
-        AVCODEC_LOGE("decode frame error: ret = %{public}d", ret);
     }
 
     inputAvailQue_->Pop();
@@ -378,20 +376,20 @@ void HevcDecoder::SendFrame()
 int32_t HevcDecoder::DecodeFrameOnce()
 {
     int32_t ret = 0;
-    if (hevcSDecoder_ != nullptr && hevcDecoderFlushFrameFunc_ != nullptr &&
-        hevcDecoderDecodecFrameFunc_ != nullptr) {
-        if (isSendEos_) {
-            ret = hevcDecoderFlushFrameFunc_(hevcSDecoder_, &hevcDecoderOutpusArgs_);
-        } else {
-            ret = hevcDecoderDecodecFrameFunc_(hevcSDecoder_, &hevcDecoderInputArgs_, &hevcDecoderOutpusArgs_);
-        }
-    } else {
-        AVCODEC_LOGW("hevcDecoderDecodecFrameFunc_ = nullptr || hevcSDecoder_ = nullptr || "
-                        "hevcDecoderFlushFrameFunc_ = nullptr, cannot call decoder");
-        ret = -1;
+     if (hevcSDecoder_ == nullptr || hevcDecoderFlushFrameFunc_ == nullptr ||
+        hevcDecoderDecodecFrameFunc_ == nullptr) {
+        AVCODEC_LOGE("Num %{public}u Hevc decoder resources not available, cannot call decoder", decInstanceID_);
+        callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_VID_DEC_FAILED);
+        return -1;
     }
-    int32_t bitDepth = static_cast<int32_t>(hevcDecoderOutpusArgs_.uiDecBitDepth);
+    if (isSendEos_) {
+        ret = hevcDecoderFlushFrameFunc_(hevcSDecoder_, &hevcDecoderOutpusArgs_);
+    } else {
+        ret = hevcDecoderDecodecFrameFunc_(hevcSDecoder_, &hevcDecoderInputArgs_, &hevcDecoderOutpusArgs_);
+    }
+
     if (ret == 0) {
+        int32_t bitDepth = static_cast<int32_t>(hevcDecoderOutpusArgs_.uiDecBitDepth);
         CHECK_AND_RETURN_RET_LOG(bitDepth == BITS_PER_PIXEL_COMPONENT_8 || bitDepth == BITS_PER_PIXEL_COMPONENT_10, -1,
                                  "Unsupported bitDepth %{public}d", bitDepth);
         ConvertDecOutToAVFrame(bitDepth);
@@ -418,6 +416,9 @@ int32_t HevcDecoder::DecodeFrameOnce()
         }
         frameBuffer->avBuffer->flag_ = AVCODEC_BUFFER_FLAG_NONE;
         FramePostProcess(frameBuffer, index, status);
+    } else if (ret < -1 || (!isSendEos_ && ret == -1)) {
+        AVCODEC_LOGE("Num %{public}u Hevc decode error: ret = %{public}d", decInstanceID_, ret);
+        callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNSUPPORT_STREAM);
     }
     return ret;
 }
@@ -532,11 +533,14 @@ void HevcDecoder::FlushAllFrames()
 
 void HevcDecoder::CalculateBufferSize(void)
 {
-    if ((static_cast<UINT32>(width_ * height_ * VIDEO_PIX_DEPTH_YUV) >> 1) <= VIDEO_MIN_BUFFER_SIZE) {
+    if (isInputSizeAssigned_.load()) {
+        AVCODEC_LOGI("Num %{public}u find setted max input size, value %{public}d", decInstanceID_, inputBufferSize_);
+    } else if ((static_cast<UINT32>(width_ * height_ * VIDEO_PIX_DEPTH_YUV) >> 1) <= VIDEO_MIN_BUFFER_SIZE) {
         inputBufferSize_ = VIDEO_MIN_BUFFER_SIZE;
     } else {
         inputBufferSize_ = VIDEO_MAX_BUFFER_SIZE;
     }
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, inputBufferSize_);
     AVCODEC_LOGI("width = %{public}d, height = %{public}d, Input buffer size = %{public}d",
                  width_, height_, inputBufferSize_);
 }
@@ -588,18 +592,24 @@ int32_t HevcDecoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         capsData.codecType = AVCODEC_TYPE_VIDEO_DECODER;
         capsData.isVendor = false;
         capsData.maxInstance = VIDEO_INSTANCE_SIZE;
+
         capsData.alignment.width = VIDEO_ALIGNMENT_SIZE;
         capsData.alignment.height = VIDEO_ALIGNMENT_SIZE;
         capsData.width.minVal = VIDEO_MIN_SIZE;
         capsData.width.maxVal = VIDEO_MAX_WIDTH_SIZE;
         capsData.height.minVal = VIDEO_MIN_SIZE;
         capsData.height.maxVal = VIDEO_MAX_HEIGHT_SIZE;
+        capsData.frameRate.minVal = 0;
+        capsData.frameRate.maxVal = VIDEO_FRAMERATE_DEFAULT_SIZE;
+        capsData.bitrate.minVal = 1;
+        capsData.bitrate.maxVal = VIDEO_BITRATE_MAX_SIZE;
         capsData.blockPerFrame.minVal = 1;
         capsData.blockPerFrame.maxVal = VIDEO_BLOCKPERFRAME_SIZE;
         capsData.blockPerSecond.minVal = 1;
         capsData.blockPerSecond.maxVal = VIDEO_BLOCKPERSEC_SIZE;
         capsData.blockSize.width = VIDEO_ALIGN_SIZE;
         capsData.blockSize.height = VIDEO_ALIGN_SIZE;
+
         capsData.pixFormat = {static_cast<int32_t>(VideoPixelFormat::NV12),
             static_cast<int32_t>(VideoPixelFormat::NV21)};
         capsData.graphicPixFormat = {

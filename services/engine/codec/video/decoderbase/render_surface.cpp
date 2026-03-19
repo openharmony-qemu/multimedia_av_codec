@@ -138,13 +138,14 @@ int32_t RenderSurface::SwitchBetweenSurface(const sptr<Surface> &newSurface)
         } else {
             surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
         }
+        if (surfaceBuffer == nullptr) {
+            surfaceBuffer = CreateNewSurfaceBuffer(index);
+        }
         CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, AVCS_ERR_UNKNOWN, "Get old surface buffer error!");
         int32_t err = newSurface->AttachBufferToQueue(surfaceBuffer);
-        if (err != 0) {
-            AVCODEC_LOGE("surface %{public}" PRIu64 ", AttachBufferToQueue(seq=%{public}u) failed, GSError=%{public}d",
-                newId, surfaceBuffer->GetSeqNum(), err);
-            return AVCS_ERR_UNKNOWN;
-        }
+        CHECK_AND_RETURN_RET_LOG(err == AVCS_ERR_OK, AVCS_ERR_UNKNOWN,
+            "surface %{public}" PRIu64 ", AttachBufferToQueue(seq=%{public}u) failed, GSError=%{public}d",
+            newId, surfaceBuffer->GetSeqNum(), err);
         buffers_[INDEX_OUTPUT][index]->sMemory->isAttached = true;
     }
     newSurface->SetTransform(transform_.load());
@@ -497,6 +498,28 @@ int32_t RenderSurface::SwapInBuffers(bool isOutputBuffer) const
     }
     return AVCS_ERR_OK;
 }
+
+sptr<SurfaceBuffer> RenderSurface::CreateNewSurfaceBuffer(int32_t index)
+{
+    auto surfaceMemory = buffers_[INDEX_OUTPUT][index]->sMemory;
+    if (surfaceMemory == nullptr) {
+        AVCODEC_LOGE("Create new surface buffer failed: sMemory is nullptr");
+        return nullptr;
+    }
+
+    surfaceMemory->isAttached = false;
+    surfaceMemory->ReleaseSurfaceBuffer();
+    int32_t ret = surfaceMemory->AllocSurfaceBuffer(width_, height_);
+    if (ret != AVCS_ERR_OK) {
+        AVCODEC_LOGE("Alloc new surface buffer failed: %{public}d", ret);
+        return nullptr;
+    }
+    buffers_[INDEX_OUTPUT][index]->avBuffer =
+        AVBuffer::CreateAVBuffer(surfaceMemory->GetBase(),  surfaceMemory->GetSize());
+    codecAvailQue_->Push(index);
+    return surfaceMemory->GetSurfaceBuffer();
+}
+
 } // namespace Codec
 } // namespace MediaAVCodec
 } // namespace OHOS

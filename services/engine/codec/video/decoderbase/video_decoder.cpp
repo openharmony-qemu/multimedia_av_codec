@@ -449,7 +449,9 @@ int32_t VideoDecoder::SetParameter(const Format &format)
 
 void VideoDecoder::CalculateBufferSize()
 {
-    if (codecName_ == AVCodecCodecName::VIDEO_DECODER_VP8_NAME) {
+    if (isInputSizeAssigned_.load()) {
+        AVCODEC_LOGI("Num %{public}u find setted max input size, value %{public}d", decInstanceID_, inputBufferSize_);
+    } else if (codecName_ == AVCodecCodecName::VIDEO_DECODER_VP8_NAME) {
         inputBufferSize_ = static_cast<UINT32>(width_ * height_ * VIDEO_PLANE_COUNT_YUV) >> 1;
     } else if (codecName_ == AVCodecCodecName::VIDEO_DECODER_VP9_NAME ||
                codecName_ == AVCodecCodecName::VIDEO_DECODER_AV1_NAME) {
@@ -459,6 +461,7 @@ void VideoDecoder::CalculateBufferSize()
     if (inputBufferSize_ <= VIDEO_MIN_BUFFER_SIZE) {
         inputBufferSize_ = VIDEO_MIN_BUFFER_SIZE;
     }
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, inputBufferSize_);
     AVCODEC_LOGI("width = %{public}d, height = %{public}d, Input buffer size = %{public}d",
                  width_, height_, inputBufferSize_);
 }
@@ -617,12 +620,6 @@ int32_t VideoDecoder::RenderOutputBuffer(uint32_t index)
 int32_t VideoDecoder::GetOutputFormat(Format &format)
 {
     AVCODEC_SYNC_TRACE;
-    if (!format_.ContainKey(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE)) {
-        int32_t maxInputSize = static_cast<int32_t>(static_cast<UINT32>(
-            GetDecoderWidthStride() * height_ * VIDEO_PLANE_COUNT_YUV) >> 1);
-        format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize);
-    }
-
     if (!format_.ContainKey(OHOS::Media::Tag::VIDEO_SLICE_HEIGHT)) {
         format_.PutIntValue(OHOS::Media::Tag::VIDEO_SLICE_HEIGHT, height_);
     }
@@ -940,6 +937,7 @@ int32_t VideoDecoder::FillFrameBuffer(const std::shared_ptr<CodecBuffer> &frameB
     } else {
         ret = WriteBufferData(bufferMemory, scaleData_, scaleLineSize_, bufferFormat);
     }
+    SetBufferCropMetadata(surfaceBuffer);
     FillHdrInfo(surfaceBuffer);
 #ifdef BUILD_ENG_VERSION
     DumpConvertOut(surfaceInfo);
@@ -1106,6 +1104,28 @@ void VideoDecoder::SetCallerToBuffer(sptr<SurfaceBuffer> surfaceBuffer)
     std::string pid = std::to_string(decInfo_.pid);
     ioctl(fd, DMA_BUF_SET_NAME_A, pid.c_str());
     ioctl(fd, DMA_BUF_SET_NAME_A, name.c_str());
+}
+
+void VideoDecoder::SetBufferCropMetadata(sptr<SurfaceBuffer> surfaceBuffer)
+{
+    using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
+    if (surfaceBuffer == nullptr) {
+        AVCODEC_LOGE("SetBufferCropMetadata failed: surfaceBuffer is null");
+        return;
+    }
+
+    std::vector<uint8_t> cropVec(sizeof(BufferHandleMetaRegion));
+    BufferHandleMetaRegion* crop = reinterpret_cast<BufferHandleMetaRegion*>(cropVec.data());
+    crop->left = 0;
+    crop->top = 0;
+    crop->width = width_ - 1;
+    crop->height = height_;
+
+    GSError err = surfaceBuffer->SetMetadata(ATTRKEY_CROP_REGION, cropVec);
+    if (err != GSERROR_OK) {
+        AVCODEC_LOGE("SetBufferCropMetadata failed: GSError = %{public}d", err);
+        return;
+    }
 }
 
 std::mutex VideoDecoder::decoderCountMutex_;
