@@ -784,10 +784,6 @@ M3U8MasterPlaylist::M3U8MasterPlaylist(const std::string& playList, const std::s
 
 M3U8MasterPlaylist::~M3U8MasterPlaylist()
 {
-    {
-        std::unique_lock<std::shared_mutex> lock(sessionKeyMutex_);
-        sessionKeyInfos_.clear();
-    }
     NZERO_LOG(memset_s(key_, sizeof(key_), 0, sizeof(key_)));
     NZERO_LOG(memset_s(iv_, sizeof(iv_), 0, sizeof(iv_)));
 }
