@@ -25,6 +25,7 @@
 #include "plugin/source_plugin.h"
 #include "download/download_metrics_info.h"
 #include "utils/aes_decryptor.h"
+#include <shared_mutex>
 
 namespace OHOS {
 namespace Media {
@@ -45,6 +46,7 @@ struct KeyInfo {
     uint8_t iv_[16] {0};
     uint8_t key_[16] {0};
     size_t keyLen_ {0};
+    uint64_t index_ {0};
 };
 struct PlayListChangeCallback {
     virtual ~PlayListChangeCallback() = default;
@@ -56,6 +58,18 @@ enum class HlsSegmentType : int {
     SEG_VIDEO = 0,
     SEG_AUDIO = 1,
     SEG_SUBTITLE = 2,
+};
+class AesDecryptorManager : public std::enable_shared_from_this<AesDecryptorManager> {
+public:
+    AesDecryptorManager();
+    ~AesDecryptorManager();
+    std::shared_ptr<AesDecryptor> GetAesDecryptor(uint64_t keyIndex);
+    void CreateAesDecryptorByKeyInfos(const std::vector<KeyInfo>& keyInfos);
+    void CreateAesDecryptor(const KeyInfo& keyInfo);
+
+private:
+    std::unordered_map<uint64_t, std::shared_ptr<AesDecryptor>> aesDecryptorsMap_;
+    std::shared_mutex aesDecryptorsMapMutex_;
 };
 class PlayListDownloader : public std::enable_shared_from_this<PlayListDownloader> {
 public:

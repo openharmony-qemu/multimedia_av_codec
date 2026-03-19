@@ -119,9 +119,7 @@ private:
     std::atomic<bool> isFmp4_ {false};
     bool isLiveEnd_ {false};
     std::atomic<bool> isPreParseFinished_ {false};
-    uint64_t maxSessionKeyIndex_ {0};
-    std::unordered_map<uint64_t, std::shared_ptr<AesDecryptor>> aesDecryptorsMap_;
-    std::shared_mutex aesDecryptorsMapMutex_;
+    std::shared_ptr<AesDecryptorManager> aesDecryptorManager_;
 };
 }
 }

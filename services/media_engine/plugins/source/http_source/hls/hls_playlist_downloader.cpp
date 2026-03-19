@@ -63,10 +63,7 @@ HlsPlayListDownloader::~HlsPlayListDownloader()
     if (downloader_ != nullptr) {
         downloader_->Stop(false);
     }
-    {
-        std::unique_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
-        aesDecryptorsMap_.clear();
-    }
+    aesDecryptorManager_ = nullptr;
     MEDIA_LOG_I("~HlsPlayListDownloader out");
     FALSE_RETURN_MSG(reportInfo_ != nullptr, "reportInfo_ is nullptr");
     FALSE_RETURN_MSG(currentVariant_ != nullptr, "currentVariant_ is nullptr");
@@ -241,28 +238,27 @@ uint64_t HlsPlayListDownloader::KeyChange(std::list<std::shared_ptr<M3U8Fragment
             currentAudio_->m3u8_->GetKeyInfos(keyInfos);
         }
     }
-    std::unique_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
-    if (master_ && master_->keyLen_ > 0) { // session-key
-        maxSessionKeyIndex_ = 1;
-        std::shared_ptr<AesDecryptor> sessionAesDecryptor = std::make_shared<AesDecryptor>();
-        sessionAesDecryptor->OnSourceKeyChange(master_->key_, master_->keyLen_, master_->iv_);
-        aesDecryptorsMap_[1] = sessionAesDecryptor;
-    } else {
-        maxSessionKeyIndex_ = 0;
+    if (aesDecryptorManager_ == nullptr) {
+        aesDecryptorManager_ = std::make_shared<AesDecryptorManager>();
     }
-    for (size_t i = 0; i < keyInfos.size(); ++i) {
-        std::shared_ptr<AesDecryptor> tempAesDecryptor = std::make_shared<AesDecryptor>();
-        tempAesDecryptor->OnSourceKeyChange(keyInfos[i].key_, keyInfos[i].keyLen_, keyInfos[i].iv_);
-        aesDecryptorsMap_[i + 1 + maxSessionKeyIndex_] = tempAesDecryptor;
+    if (sessionKeyIndex > 0 && master_ != nullptr) {
+        KeyInfo sessionKeyInfo;
+        sessionKeyInfo.index_ = sessionKeyIndex;
+        std::copy(std::begin(master_->key_), std::end(master_->key_), std::begin(sessionKeyInfo.key_));
+        std::copy(std::begin(master_->iv_), std::end(master_->iv_), std::begin(sessionKeyInfo.iv_));
+        sessionKeyInfo.keyLen_ = master_->keyLen_;
+        aesDecryptorManager_->CreateAesDecryptor(sessionKeyInfo);
     }
+    aesDecryptorManager_->CreateAesDecryptorByKeyInfos(keyInfos);
     return sessionKeyIndex;
 }
 
 std::shared_ptr<AesDecryptor> HlsPlayListDownloader::GetAesDecryptor(uint64_t keyIndex)
 {
-    std::shared_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
-    auto it = aesDecryptorsMap_.find(keyIndex);
-    return (it != aesDecryptorsMap_.end()) ? it->second : nullptr;
+    if (aesDecryptorManager_ != nullptr) {
+        return aesDecryptorManager_->GetAesDecryptor(keyIndex);
+    }
+    return nullptr;
 }
 
 void HlsPlayListDownloader::NotifyListChange()
@@ -323,7 +319,7 @@ void HlsPlayListDownloader::CopyFragmentInfo(PlayInfo& playInfo, std::shared_ptr
     if (file->keyIndex_ == UINT64_MAX) {
         playInfo.keyIndex_ = 0;
     } else if (file->keyIndex_ > 0) {
-        playInfo.keyIndex_ = file->keyIndex_ + maxSessionKeyIndex_;
+        playInfo.keyIndex_ = file->keyIndex_;
     } else if (sessionKeyIndex > 0) {
         playInfo.keyIndex_ = sessionKeyIndex;
     } else {
