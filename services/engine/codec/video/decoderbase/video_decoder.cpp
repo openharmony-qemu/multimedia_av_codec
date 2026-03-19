@@ -209,12 +209,19 @@ int32_t VideoDecoder::Configure(const Format &format)
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_VIDEO_HEIGHT);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, DEFAULT_OUT_BUFFER_CNT);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT, DEFAULT_IN_BUFFER_CNT);
+    isInputSizeAssigned_.store(false);
+    int32_t val32;
     for (auto &it : format.GetFormatMap()) {
         if (it.first == MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT) {
             isOutBufSetted_ = true;
             ConfigureDefaultVal(format, it.first, DEFAULT_MIN_BUFFER_CNT, DEFAULT_MAX_BUFFER_CNT);
         } else if (it.first == MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT) {
             ConfigureDefaultVal(format, it.first, DEFAULT_MIN_BUFFER_CNT, DEFAULT_MAX_BUFFER_CNT);
+        } else if (it.first == MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE) {
+            CHECK_AND_CONTINUE_LOG(format.GetIntValue(it.first, val32) && val32 > 0,
+                "not find valid int value for key %{public}s", it.first.data());
+            inputBufferSize_ = val32;
+            isInputSizeAssigned_.store(true);
         } else if (it.first == MediaDescriptionKey::MD_KEY_WIDTH) {
             ConfigurelWidthAndHeight(format, it.first, true);
         } else if (it.first == MediaDescriptionKey::MD_KEY_HEIGHT) {

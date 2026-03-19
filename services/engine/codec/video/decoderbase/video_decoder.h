@@ -116,6 +116,7 @@ public:
 #endif
 
 protected:
+    std::atomic<bool> isInputSizeAssigned_ = false;
     int32_t inputBufferSize_ = 0;
 
 private:
