@@ -135,6 +135,12 @@ inline void CreateOrIncrementMapCount(T1 &map, const T2 &key)
     }
 }
 
+struct StatisticsSubmitInfo {
+    uint32_t queryCapTimes {0};
+    uint32_t createCodecTimes {0};
+    std::unordered_map<std::string_view, std::shared_ptr<cJSON>> jsonObjects;
+};
+
 using AppNameIndex = int32_t;
 constexpr AppNameIndex INVALID_APP_NAME_INDEX = -1;
 class AppNameIndexInfo {
@@ -154,6 +160,7 @@ public:
         if (appName.size() > maxAppNameLength) {
             return INVALID_APP_NAME_INDEX;
         }
+        std::lock_guard<std::shared_mutex> lock(mutex_);
         auto dictIter = appNameDict_.find(appName);
         if (dictIter == appNameDict_.end()) {
             if (appNameDict_.size() < maxAppNameCount) {
@@ -168,6 +175,7 @@ public:
 
     std::string GetAppNameByIndex(AppNameIndex appIndex)
     {
+        std::shared_lock<std::shared_mutex> lock(mutex_);
         for (const auto &[name, index] : appNameDict_) {
             if (index == appIndex) {
                 return name;
@@ -182,6 +190,7 @@ public:
         if (jsonObj == nullptr) {
             return;
         }
+        std::shared_lock<std::shared_mutex> lock(mutex_);
         for (const auto &[name, index] : appNameDict_) {
             cJSON_AddNumberToObject(cJSON_AddObjectToObject(jsonObj.get(), name.c_str()), name.c_str(), index);
         }
@@ -190,11 +199,27 @@ public:
 
     void Reset()
     {
+        std::lock_guard<std::shared_mutex> lock(mutex_);
         appNameDict_.clear();
     }
 
 private:
+    std::shared_mutex mutex_;
     std::unordered_map<std::string, AppNameIndex> appNameDict_; // appName, AppNameIndex
+};
+
+class StatisticsEventInfoBase {
+public:
+    StatisticsEventInfoBase() = default;
+    virtual ~StatisticsEventInfoBase() = default;
+
+    virtual void OnAddEventInfo(StatisticsEventType eventType, const Media::Meta &eventMeta) = 0;
+    virtual void OnSummateEventInfo(StatisticsSubmitInfo &submitInfo) = 0;
+    virtual void ResetEventInfo() = 0;
+
+protected:
+    std::mutex mutex_;
+    std::unordered_map<StatisticsEventType, std::shared_ptr<StatisticsEventInfoBase>> eventInfoMap_;
 };
 
 class StatisticsMainEventInfoBase : public StatisticsEventInfoBase {
@@ -220,9 +245,6 @@ public:
             eventInfo.second->ResetEventInfo();
         }
     }
-
-protected:
-    std::mutex mutex_;
 };
 
 /*----------------------------------- BasicInfo -----------------------------------*/
@@ -359,6 +381,7 @@ public:
             }
         };
 
+        std::lock_guard<std::mutex> lock(mutex_);
         auto jsonObj = std::shared_ptr<cJSON>(cJSON_CreateObject(), cJSON_Delete);
         addInfoToJsonObj(jsonObj, QUERY_CAP_UNSUPPORTED_INFO, queryCapUnsupportedInfo_);
         addInfoToJsonObj(jsonObj, CREATE_CODEC_UNSUPPORTED_INFO, createCodecUnsupportedInfo_);
@@ -475,6 +498,7 @@ public:
             return;
         }
 
+        std::lock_guard<std::mutex> lock(mutex_);
         if (isInOccupationHDecEvent_.load()) {
             hdecLimitExceededInfo_.emplace(lastCallerNameIndex_, lastOccupationHDecAppInfoVec_);
             lastOccupationHDecAppInfoVec_.clear();
@@ -682,6 +706,7 @@ public:
         if (jsonObj == nullptr) {
             return;
         }
+        std::lock_guard<std::mutex> lock(mutex_);
         auto codecErrorRootObj = cJSON_AddObjectToObject(jsonObj.get(), CODEC_ERROR_INFO);
         for (const auto &[codecErrorKey, count] : errorCodeInfo_) {
             const auto &[vcodecType, mimeType, errorCode] = codecErrorKey;
@@ -774,20 +799,15 @@ void StatisticsEventInfo::OnSubmitEventInfo()
         CODEC_ERROR_INFO,                   getJsonField(CODEC_ERROR_INFO).CStr()
     );
 
-    ResetEventInfo();
-    RegisterSubmitEventTimer();
-}
-
-void StatisticsEventInfo::ResetEventInfo()
-{
     {
-        std::lock_guard<std::shared_mutex> lock(eventHookMutex_);
+        std::lock_guard<std::shared_mutex> eventHookLock(eventHookMutex_);
         eventHooks_.clear();
     }
     AppNameIndexInfo::GetInstance().Reset();
     for (auto &eventInfo : eventInfoMap_) {
         eventInfo.second->ResetEventInfo();
     }
+    RegisterSubmitEventTimer();
 }
 
 void StatisticsEventInfo::RegisterEventHook(StatisticsEventType eventType, EventHook hook)
