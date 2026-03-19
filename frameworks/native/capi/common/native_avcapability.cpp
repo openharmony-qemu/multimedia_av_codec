@@ -29,20 +29,6 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "
 constexpr uint32_t MAX_LENGTH = 255;
 constexpr int TOTAL_CODEC_TYPES = 4;
 constexpr uint32_t MAX_CAP_NUM = 200;
-inline int GetTypeIndex(OH_AVCodecType type) {
-    switch (type) {
-        case OH_AVCodecType::AVCODEC_TYPE_VIDEO_ENCODER:
-            return 0;
-        case OH_AVCodecType::AVCODEC_TYPE_VIDEO_DECODER:
-            return 1;
-        case OH_AVCodecType::AVCODEC_TYPE_AUDIO_ENCODER:
-            return 2;
-        case OH_AVCodecType::AVCODEC_TYPE_AUDIO_DECODER:
-            return 3;
-        default:
-            return -1;
-    }
-}
 struct CapabilityCache {
     OH_AVCapability *array[MAX_CAP_NUM] = {nullptr};
     uint32_t count = 0;
@@ -77,30 +63,24 @@ OH_AVCapability *OH_AVCodec_GetCapability(const char *mime, bool isEncoder)
     return obj;
 }
 
-OH_AVCapability **OH_AVCodec_GetCapabilityList(OH_AVCodecType codecType, uint32_t *count)
+OH_AVCapability **OH_AVCodec_GetCapabilityList(OH_AVCodecType codecType,
+                                                 uint32_t *count)
 {
-    if (count == nullptr) {
-        AVCODEC_LOGD("Get capability list failed: count is nullptr");
-        return nullptr;
-    }
-    int typeIndex = GetTypeIndex(codecType);
-    if (typeIndex < 0 || typeIndex >= TOTAL_CODEC_TYPES) {
-        AVCODEC_LOGD("Get capability list failed: Invalid codec type: %{public}d", codecType);
-        *count = 0;
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(count != nullptr, nullptr, "Get capability list failed: Invalid codec type: %{public}d", codecType);
+    *count = 0;
+    int typeIndex = static_cast<int32_t>(codecType);
+    CHECK_AND_RETURN_RET_LOG(typeIndex >= static_cast<int32_t>(OH_AVCodecType::AVCODEC_TYPE_VIDEO_ENCODER)
+                             && typeIndex <= static_cast<int32_t>(OH_AVCodecType::AVCODEC_TYPE_AUDIO_DECODER), nullptr,
+                             "Get capability list failed: Invalid codec type: %{public}d", codecType);
     static CapabilityCache g_caches[TOTAL_CODEC_TYPES];
     static std::once_flag g_initFlags[TOTAL_CODEC_TYPES];
-    *count = 0u;
     std::call_once(g_initFlags[typeIndex], [codecType, typeIndex]() {
         static AppEventReporter appEventReporter = AppEventReporter();
         ApiInvokeRecorder apiInvokeRecorder("OH_AVCodec_GetCapabilityList", appEventReporter);
         std::shared_ptr<AVCodecList> codeclist = AVCodecListFactory::CreateAVCodecList();
-        if (codeclist == nullptr) {
-            AVCODEC_LOGD("Get capability list failed: CreateAVCodecList failed");
-            return;
-        }
+        CHECK_AND_RETURN_LOG(codeclist != nullptr, "Get capability list failed: CreateAVCodecList failed");
         std::vector<std::shared_ptr<CapabilityData>> capabilityDataList = codeclist->GetCapabilityList(codecType);
+        CHECK_AND_RETURN_LOG(!capabilityDataList.empty(), "Get capability list: no capability found for codec type %{public}d", codecType)；
         if (capabilityDataList.empty()) {
             AVCODEC_LOGD("Get capability list: no capability found for codec type %{public}d", codecType);
             return;
@@ -128,10 +108,7 @@ OH_AVCapability **OH_AVCodec_GetCapabilityList(OH_AVCodecType codecType, uint32_
         g_caches[typeIndex].count = validCount;
     });
     *count = g_caches[typeIndex].count;
-    if (*count == 0u) {
-        AVCODEC_LOGD("no capability found for codec type %{public}d", codecType);
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(count != 0, nullptr, "no capability found for codec type %{public}d", codecType);
     AVCODEC_LOGD("Get capability list successful, found %{public}u capabilities for codec type %{public}d",
                  *count, codecType);
     return g_caches[typeIndex].array;

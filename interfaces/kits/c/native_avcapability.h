@@ -81,7 +81,7 @@ typedef enum OH_AVCodecCategory {
  */
 typedef enum OH_AVCodecType {
     /** Video encoder */
-    AVCODEC_TYPE_VIDEO_ENCODER = 0,  
+    AVCODEC_TYPE_VIDEO_ENCODER = 0,
     /** Video decoder */
     AVCODEC_TYPE_VIDEO_DECODER = 1,
     /** Audio encoder */
@@ -188,7 +188,7 @@ const char *OH_AVCapability_GetMimeType(OH_AVCapability *capability);
 
 /**
  * @brief Check if the mime type of the codec of the capability matches the specified mime type.
- * 
+ *
  * @param capability Codec capability pointer
  * @param mimeType target mime type string to check
  * @return Returns true if the mime type matches, false otherwise

@@ -1293,7 +1293,8 @@ HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_001, TestSize.Level1)
 
 /**
  * @tc.name: AVCaps_GetCapabilityList_MemoryOverwrite_001
- * @tc.desc: AVCaps GetCapabilityList called multiple times to check if the returned capability list is consistent and not overwritten.
+ * @tc.desc: AVCaps GetCapabilityList called multiple times to check
+ * if the returned capability list is consistent and not overwritten.
  * @tc.type: FUNC
  * @tc.require:
  */
@@ -1306,18 +1307,12 @@ HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_MemoryOverwrite_002, TestSize.Le
     ASSERT_NE(capList1, nullptr);
     ASSERT_GT(count1, 0);
     ASSERT_NE(capList1[0], nullptr);
-
-
-
     for (uint32_t i = 0; i < count1; i++) {
         const char *name = nullptr;
         if (capList1[i] != nullptr) {
             name = OH_AVCapability_GetName(capList1[i]);
         }
-    
-        
     }
-
     const char *nameBefore = OH_AVCapability_GetName(capList1[0]);
     ASSERT_NE(nameBefore, nullptr);
     std::string firstName(nameBefore);
@@ -1326,49 +1321,32 @@ HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_MemoryOverwrite_002, TestSize.Le
         OH_AVCodecType::AVCODEC_TYPE_AUDIO_ENCODER, &count2);
     ASSERT_NE(capList2, nullptr);
     ASSERT_GT(count2, 0);
-
-
-
     for (uint32_t i = 0; i < count2; i++) {
         const char *name = nullptr;
         if (capList2[i] != nullptr) {
             name = OH_AVCapability_GetName(capList2[i]);
         }
-
-
     }
-
-
-
     for (uint32_t i = 0; i < count1; i++) {
         const char *name = nullptr;
         if (capList1[i] != nullptr) {
             name = OH_AVCapability_GetName(capList1[i]);
         }
-
-
     }
-
     ASSERT_NE(capList1[0], nullptr);
     const char *nameAfter = OH_AVCapability_GetName(capList1[0]);
     ASSERT_NE(nameAfter, nullptr);
-
-
-
-
-
-
     EXPECT_STRNE(firstName.c_str(), nameAfter);
 }
 
 /**
- * @tc.name: AVCaps_GetCapabilityList_THREAD_POOL_001
+ * @tc.name: AVCaps_THREAD_POOL_005
  * @tc.desc: Verify that OH_AVCodec_GetCapabilityList can be invoked concurrently
  *           from multiple threads and returned capability entries are accessible.
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_THREAD_POOL_001, TestSize.Level2)
+HWTEST_F(CapsUnitTest, AVCaps_THREAD_POOL_005, TestSize.Level2)
 {
     const int32_t threadCnt = 10;
     std::vector<std::thread> threadPool;
@@ -1396,13 +1374,13 @@ HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_THREAD_POOL_001, TestSize.Level2
 }
 
 /**
- * @tc.name: AVCaps_GetCapabilityList_THREAD_POOL_002
+ * @tc.name: AVCaps_THREAD_POOL_006
  * @tc.desc: Verify concurrent repeated calls to OH_AVCodec_GetCapabilityList with different codec types,
  *           and check that returned capability name and mime type can be queried normally.
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_THREAD_POOL_002, TestSize.Level2)
+HWTEST_F(CapsUnitTest, AVCaps_THREAD_POOL_006, TestSize.Level2)
 {
     const int32_t threadCnt = 12;
     const int32_t loopCnt = 30;
