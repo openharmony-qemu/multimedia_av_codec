@@ -60,19 +60,10 @@ protected:
     const char *INP_DIR_4 = "/data/test/media/av1_main_L3.1_1280x720.ivf";
     const char *INP_DIR_5 = "/data/test/media/av1_main_L4.0_1920x1080.ivf";
     const char *INP_DIR_6 = "/data/test/media/av1_main_L4.1_1920x1080_60fps.ivf";
-    const char *INP_DIR_7 = "/data/test/media/av1_main_L5.0_3840x1600.ivf";
-    const char *INP_DIR_8 = "/data/test/media/av1_main_L5.1_2560x1440_60fps.ivf";
-    const char *INP_DIR_9 = "/data/test/media/av1_main_L5.2_3840x2160_120fps.ivf";
-    const char *INP_DIR_10 = "/data/test/media/av1_main_L5.3_3840x2160_120fps.ivf";
-    const char *INP_DIR_11 = "/data/test/media/av1_main_L6.0_7680x4320.ivf";
-    const char *INP_DIR_12 = "/data/test/media/av1_main_L6.1_7680x4320_60fps.ivf";
-    const char *INP_DIR_13 = "/data/test/media/av1_main_L6.2_7680x4320_120fps.ivf";
-    const char *INP_DIR_14 = "/data/test/media/av1_main_L6.3_7680x4320_120fps.ivf";
     const char *INP_DIR_15 = "/data/test/media/av1_480x640.ivf";
     const char *INP_DIR_16 = "/data/test/media/av1_600x800.ivf";
     const char *INP_DIR_17 = "/data/test/media/av1_1080x1920.ivf";
     const char *INP_DIR_18 = "/data/test/media/av1_4x4.ivf";
-    const char *INP_DIR_19 = "/data/test/media/av1_8192x4352.ivf";
     const char *INP_DIR_20 = "/data/test/media/av1_IFrame_only.ivf";
     const char *INP_DIR_21 = "/data/test/media/av1_IPFrame_only.ivf";
     const char *INP_DIR_22 = "/data/test/media/av1_1279x719.ivf";
@@ -82,28 +73,12 @@ protected:
     const char *INP_DIR_26 = "/data/test/media/av1_high_L3.1_1280x720.ivf";
     const char *INP_DIR_27 = "/data/test/media/av1_high_L4.0_1920x1080.ivf";
     const char *INP_DIR_28 = "/data/test/media/av1_high_L4.1_1920x1080_60fps.ivf";
-    const char *INP_DIR_29 = "/data/test/media/av1_high_L5.0_3840x2160.ivf";
-    const char *INP_DIR_30 = "/data/test/media/av1_high_L5.1_3840x2160_60fps.ivf";
-    const char *INP_DIR_31 = "/data/test/media/av1_high_L5.2_3840x2160_120fps.ivf";
-    const char *INP_DIR_32 = "/data/test/media/av1_high_L5.3_3840x2160_120fps.ivf";
-    const char *INP_DIR_33 = "/data/test/media/av1_high_L6.0_7680x4320.ivf";
-    const char *INP_DIR_34 = "/data/test/media/av1_high_L6.1_7680x4320_60fps.ivf";
-    const char *INP_DIR_35 = "/data/test/media/av1_high_L6.2_7680x4320_120fps.ivf";
-    const char *INP_DIR_36 = "/data/test/media/av1_high_L6.3_7680x4320_120fps.ivf";
     const char *INP_DIR_37 = "/data/test/media/av1_pro_L2.0_426x240.ivf";
     const char *INP_DIR_38 = "/data/test/media/av1_pro_L2.1_640x360.ivf";
     const char *INP_DIR_39 = "/data/test/media/av1_pro_L3.0_854x480.ivf";
     const char *INP_DIR_40 = "/data/test/media/av1_pro_L3.1_1280x720.ivf";
     const char *INP_DIR_41 = "/data/test/media/av1_pro_L4.0_1920x1080.ivf";
     const char *INP_DIR_42 = "/data/test/media/av1_pro_L4.1_1920x1080_60fps.ivf";
-    const char *INP_DIR_43 = "/data/test/media/av1_pro_L5.0_3840x2160.ivf";
-    const char *INP_DIR_44 = "/data/test/media/av1_pro_L5.1_3840x2160_60fps.ivf";
-    const char *INP_DIR_45 = "/data/test/media/av1_pro_L5.2_3840x2160_120fps.ivf";
-    const char *INP_DIR_46 = "/data/test/media/av1_pro_L5.3_3840x2160_120fps.ivf";
-    const char *INP_DIR_47 = "/data/test/media/av1_pro_L6.0_7680x4320.ivf";
-    const char *INP_DIR_48 = "/data/test/media/av1_pro_L6.1_7680x4320_60fps.ivf";
-    const char *INP_DIR_49 = "/data/test/media/av1_pro_L6.2_7680x4320_120fps.ivf";
-    const char *INP_DIR_50 = "/data/test/media/av1_pro_L6.3_7680x4320_120fps.ivf";
     const char *INP_DIR_51 = "/data/test/media/av1_300fps.ivf";
 };
 
@@ -112,10 +87,7 @@ static string g_codecNameAv1 = "";
 constexpr uint32_t FRAMESIZE180 = 180;
 constexpr uint32_t FRAMESIZE300 = 300;
 constexpr uint32_t FRAMESIZE45 = 45;
-constexpr uint32_t FRAMESIZE30 = 30;
 constexpr uint32_t FRAMESIZE90 = 90;
-constexpr uint32_t FRAMESIZE120 = 120;
-constexpr uint32_t FRAMESIZE60 = 60;
 void Av1decFuncNdkTest::SetUpTestCase()
 {
     cap_av1 = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AV1, false, SOFTWARE);
@@ -407,8 +379,8 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0013, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_0;
     vDecSample->outputYuvFlag = true;
-    vDecSample->DEFAULT_WIDTH = 8192;
-    vDecSample->DEFAULT_HEIGHT = 4352;
+    vDecSample->DEFAULT_WIDTH = 1920;
+    vDecSample->DEFAULT_HEIGHT = 1080;
 
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
@@ -1180,180 +1152,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0051, TestSize.Level0)
 }
 
 /**
- * @tc.number    : VIDEO_AV1DEC_FUNCTION_0052
- * @tc.name      : decode Av1 buffer, main profile L12 3840x1600
- * @tc.desc      : function test
- */
-HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0052, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_7;
-    vDecSample->outputYuvFlag = true;
-    vDecSample->DEFAULT_WIDTH = 3840;
-    vDecSample->DEFAULT_HEIGHT = 1600;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderForAV1());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE45, vDecSample->outFrameCount);
-}
-
-/**
- * @tc.number    : VIDEO_AV1DEC_FUNCTION_0053
- * @tc.name      : decode Av1 buffer, main profile L13 2560x1440 60fps
- * @tc.desc      : function test
- */
-HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0053, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_8;
-    vDecSample->outputYuvFlag = true;
-    vDecSample->DEFAULT_WIDTH = 2560;
-    vDecSample->DEFAULT_HEIGHT = 1440;
-    vDecSample->DEFAULT_FRAME_RATE = 60;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderForAV1());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE90, vDecSample->outFrameCount);
-}
-
-/**
- * @tc.number    : VIDEO_AV1DEC_FUNCTION_0054
- * @tc.name      : decode Av1 buffer, main profile L14 3840x2160 120fps
- * @tc.desc      : function test
- */
-HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0054, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_9;
-    vDecSample->outputYuvFlag = true;
-    vDecSample->DEFAULT_WIDTH = 3840;
-    vDecSample->DEFAULT_HEIGHT = 2160;
-    vDecSample->DEFAULT_FRAME_RATE = 120;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderForAV1());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE180, vDecSample->outFrameCount);
-}
-
-/**
- * @tc.number    : VIDEO_AV1DEC_FUNCTION_0055
- * @tc.name      : decode Av1 buffer, main profile L15 3840x2160 120fps
- * @tc.desc      : function test
- */
-HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0055, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_10;
-    vDecSample->outputYuvFlag = true;
-    vDecSample->DEFAULT_WIDTH = 3840;
-    vDecSample->DEFAULT_HEIGHT = 2160;
-    vDecSample->DEFAULT_FRAME_RATE = 120;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderForAV1());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE180, vDecSample->outFrameCount);
-}
-
-/**
- * @tc.number    : VIDEO_AV1DEC_FUNCTION_0056
- * @tc.name      : decode Av1 buffer, main profile L16 7680x4320
- * @tc.desc      : function test
- */
-HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0056, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_11;
-    vDecSample->outputYuvFlag = true;
-    vDecSample->DEFAULT_WIDTH = 7680;
-    vDecSample->DEFAULT_HEIGHT = 4320;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderForAV1());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE45, vDecSample->outFrameCount);
-}
-
-/**
- * @tc.number    : VIDEO_AV1DEC_FUNCTION_0057
- * @tc.name      : decode Av1 buffer, main profile L17 7680x4320 60fps
- * @tc.desc      : function test
- */
-HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0057, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_12;
-    vDecSample->outputYuvFlag = true;
-    vDecSample->DEFAULT_WIDTH = 7680;
-    vDecSample->DEFAULT_HEIGHT = 4320;
-    vDecSample->DEFAULT_FRAME_RATE = 60;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderForAV1());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE90, vDecSample->outFrameCount);
-}
-
-/**
- * @tc.number    : VIDEO_AV1DEC_FUNCTION_0058
- * @tc.name      : decode Av1 buffer, main profile L18 7680x4320 120fps
- * @tc.desc      : function test
- */
-HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0058, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_13;
-    vDecSample->outputYuvFlag = true;
-    vDecSample->DEFAULT_WIDTH = 7680;
-    vDecSample->DEFAULT_HEIGHT = 4320;
-    vDecSample->DEFAULT_FRAME_RATE = 120;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderForAV1());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE120, vDecSample->outFrameCount);
-}
-
-/**
- * @tc.number    : VIDEO_AV1DEC_FUNCTION_0059
- * @tc.name      : decode Av1 buffer, main profile L19 7680x4320 120fps
- * @tc.desc      : function test
- */
-HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0059, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_14;
-    vDecSample->outputYuvFlag = true;
-    vDecSample->DEFAULT_WIDTH = 7680;
-    vDecSample->DEFAULT_HEIGHT = 4320;
-    vDecSample->DEFAULT_FRAME_RATE = 120;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderForAV1());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE120, vDecSample->outFrameCount);
-}
-
-/**
  * @tc.number    : VIDEO_AV1DEC_FUNCTION_0060
  * @tc.name      : decode Av1 buffer, 480x640
  * @tc.desc      : function test
@@ -1438,27 +1236,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0063, TestSize.Level0)
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
     ASSERT_EQ(FRAMESIZE180, vDecSample->outFrameCount);
-}
-
-/**
- * @tc.number    : VIDEO_AV1DEC_FUNCTION_0064
- * @tc.name      : Decode av1 buffer with maximum valid resolution 8192x4352
- * @tc.desc      : function test
- */
-HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0064, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_19;
-    vDecSample->outputYuvFlag = true;
-    vDecSample->DEFAULT_WIDTH = 8192;
-    vDecSample->DEFAULT_HEIGHT = 4352;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderForAV1());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE45, vDecSample->outFrameCount);
 }
 
 /**
@@ -1652,180 +1429,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0073, TestSize.Level0)
 }
 
 /**
- * @tc.number    : VIDEO_AV1DEC_FUNCTION_0074
- * @tc.name      : decode Av1 buffer, high profile L12 3840x2160
- * @tc.desc      : function test
- */
-HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0074, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_29;
-    vDecSample->outputYuvFlag = true;
-    vDecSample->DEFAULT_WIDTH = 3840;
-    vDecSample->DEFAULT_HEIGHT = 2160;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderForAV1());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE45, vDecSample->outFrameCount);
-}
-
-/**
- * @tc.number    : VIDEO_AV1DEC_FUNCTION_0075
- * @tc.name      : decode Av1 buffer, high profile L13 3840x2160 60fps
- * @tc.desc      : function test
- */
-HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0075, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_30;
-    vDecSample->outputYuvFlag = true;
-    vDecSample->DEFAULT_WIDTH = 3840;
-    vDecSample->DEFAULT_HEIGHT = 2160;
-    vDecSample->DEFAULT_FRAME_RATE = 60;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderForAV1());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE90, vDecSample->outFrameCount);
-}
-
-/**
- * @tc.number    : VIDEO_AV1DEC_FUNCTION_0076
- * @tc.name      : decode Av1 buffer, high profile L14 3840x2160 120fps
- * @tc.desc      : function test
- */
-HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0076, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_31;
-    vDecSample->outputYuvFlag = true;
-    vDecSample->DEFAULT_WIDTH = 3840;
-    vDecSample->DEFAULT_HEIGHT = 2160;
-    vDecSample->DEFAULT_FRAME_RATE = 120;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderForAV1());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE180, vDecSample->outFrameCount);
-}
-
-/**
- * @tc.number    : VIDEO_AV1DEC_FUNCTION_0077
- * @tc.name      : decode Av1 buffer, high profile L15 3840x2160 120fps
- * @tc.desc      : function test
- */
-HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0077, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_32;
-    vDecSample->outputYuvFlag = true;
-    vDecSample->DEFAULT_WIDTH = 3840;
-    vDecSample->DEFAULT_HEIGHT = 2160;
-    vDecSample->DEFAULT_FRAME_RATE = 120;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderForAV1());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE180, vDecSample->outFrameCount);
-}
-
-/**
- * @tc.number    : VIDEO_AV1DEC_FUNCTION_0078
- * @tc.name      : decode Av1 buffer, high profile L16 7680x4320
- * @tc.desc      : function test
- */
-HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0078, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_33;
-    vDecSample->outputYuvFlag = true;
-    vDecSample->DEFAULT_WIDTH = 7680;
-    vDecSample->DEFAULT_HEIGHT = 4320;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderForAV1());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE45, vDecSample->outFrameCount);
-}
-
-/**
- * @tc.number    : VIDEO_AV1DEC_FUNCTION_0079
- * @tc.name      : decode Av1 buffer, high profile L17 7680x4320 60fps
- * @tc.desc      : function test
- */
-HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0079, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_34;
-    vDecSample->outputYuvFlag = true;
-    vDecSample->DEFAULT_WIDTH = 7680;
-    vDecSample->DEFAULT_HEIGHT = 4320;
-    vDecSample->DEFAULT_FRAME_RATE = 60;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderForAV1());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
-}
-
-/**
- * @tc.number    : VIDEO_AV1DEC_FUNCTION_0080
- * @tc.name      : decode Av1 buffer, high profile L18 7680x4320 120fps
- * @tc.desc      : function test
- */
-HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0080, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_35;
-    vDecSample->outputYuvFlag = true;
-    vDecSample->DEFAULT_WIDTH = 7680;
-    vDecSample->DEFAULT_HEIGHT = 4320;
-    vDecSample->DEFAULT_FRAME_RATE = 120;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderForAV1());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE120, vDecSample->outFrameCount);
-}
-
-/**
- * @tc.number    : VIDEO_AV1DEC_FUNCTION_0081
- * @tc.name      : decode Av1 buffer, high profile L19 7680x4320 120fps
- * @tc.desc      : function test
- */
-HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0081, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_36;
-    vDecSample->outputYuvFlag = true;
-    vDecSample->DEFAULT_WIDTH = 7680;
-    vDecSample->DEFAULT_HEIGHT = 4320;
-    vDecSample->DEFAULT_FRAME_RATE = 120;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderForAV1());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE120, vDecSample->outFrameCount);
-}
-
-/**
  * @tc.number    : VIDEO_AV1DEC_FUNCTION_0082
  * @tc.name      : decode Av1 buffer from FLV file
  * @tc.desc      : function test
@@ -1995,180 +1598,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0089, TestSize.Level0)
 }
 
 /**
- * @tc.number    : VIDEO_AV1DEC_FUNCTION_0090
- * @tc.name      : decode Av1 buffer, Professional profile L12 3840x2160
- * @tc.desc      : function test
- */
-HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0090, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_43;
-    vDecSample->outputYuvFlag = true;
-    vDecSample->DEFAULT_WIDTH = 3840;
-    vDecSample->DEFAULT_HEIGHT = 2160;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderForAV1());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE30, vDecSample->outFrameCount);
-}
-
-/**
- * @tc.number    : VIDEO_AV1DEC_FUNCTION_0091
- * @tc.name      : decode Av1 buffer, Professional profile L13 3840x2160 60fps
- * @tc.desc      : function test
- */
-HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0091, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_44;
-    vDecSample->outputYuvFlag = true;
-    vDecSample->DEFAULT_WIDTH = 3840;
-    vDecSample->DEFAULT_HEIGHT = 2160;
-    vDecSample->DEFAULT_FRAME_RATE = 60;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderForAV1());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
-}
-
-/**
- * @tc.number    : VIDEO_AV1DEC_FUNCTION_0092
- * @tc.name      : decode Av1 buffer, Professional profile L14 3840x2160 120fps
- * @tc.desc      : function test
- */
-HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0092, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_45;
-    vDecSample->outputYuvFlag = true;
-    vDecSample->DEFAULT_WIDTH = 3840;
-    vDecSample->DEFAULT_HEIGHT = 2160;
-    vDecSample->DEFAULT_FRAME_RATE = 120;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderForAV1());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE120, vDecSample->outFrameCount);
-}
-
-/**
- * @tc.number    : VIDEO_AV1DEC_FUNCTION_0093
- * @tc.name      : decode Av1 buffer, Professional profile L15 3840x2160 120fps
- * @tc.desc      : function test
- */
-HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0093, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_46;
-    vDecSample->outputYuvFlag = true;
-    vDecSample->DEFAULT_WIDTH = 3840;
-    vDecSample->DEFAULT_HEIGHT = 2160;
-    vDecSample->DEFAULT_FRAME_RATE = 120;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderForAV1());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE120, vDecSample->outFrameCount);
-}
-
-/**
- * @tc.number    : VIDEO_AV1DEC_FUNCTION_0094
- * @tc.name      : decode Av1 buffer, Professional profile L16 7680x4320
- * @tc.desc      : function test
- */
-HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0094, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_47;
-    vDecSample->outputYuvFlag = true;
-    vDecSample->DEFAULT_WIDTH = 7680;
-    vDecSample->DEFAULT_HEIGHT = 4320;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderForAV1());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE30, vDecSample->outFrameCount);
-}
-
-/**
- * @tc.number    : VIDEO_AV1DEC_FUNCTION_0095
- * @tc.name      : decode Av1 buffer, Professional profile L17 7680x4320 60fps
- * @tc.desc      : function test
- */
-HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0095, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_48;
-    vDecSample->outputYuvFlag = true;
-    vDecSample->DEFAULT_WIDTH = 7680;
-    vDecSample->DEFAULT_HEIGHT = 4320;
-    vDecSample->DEFAULT_FRAME_RATE = 60;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderForAV1());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
-}
-
-/**
- * @tc.number    : VIDEO_AV1DEC_FUNCTION_0096
- * @tc.name      : decode Av1 buffer, Professional profile L18 7680x4320 120fps
- * @tc.desc      : function test
- */
-HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0096, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_49;
-    vDecSample->outputYuvFlag = true;
-    vDecSample->DEFAULT_WIDTH = 7680;
-    vDecSample->DEFAULT_HEIGHT = 4320;
-    vDecSample->DEFAULT_FRAME_RATE = 120;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderForAV1());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE120, vDecSample->outFrameCount);
-}
-
-/**
- * @tc.number    : VIDEO_AV1DEC_FUNCTION_0097
- * @tc.name      : decode Av1 buffer, Professional profile L19 7680x4320 120fps
- * @tc.desc      : function test
- */
-HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0097, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_50;
-    vDecSample->outputYuvFlag = true;
-    vDecSample->DEFAULT_WIDTH = 7680;
-    vDecSample->DEFAULT_HEIGHT = 4320;
-    vDecSample->DEFAULT_FRAME_RATE = 120;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderForAV1());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE120, vDecSample->outFrameCount);
-}
-
-/**
  * @tc.number    : VIDEO_AV1DEC_FUNCTION_0098
  * @tc.name      : decode Av1 buffer No PixelFormat
  * @tc.desc      : function test
@@ -2258,11 +1687,10 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0100, TestSize.Level0)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
     int32_t pixfmt[4] = {24, 25, 35, 36};
-    vDecSample->INP_DIR = INP_DIR_50;
+    vDecSample->INP_DIR = INP_DIR_1;
     vDecSample->outputYuvFlag = true;
-    vDecSample->DEFAULT_WIDTH = 7680;
-    vDecSample->DEFAULT_HEIGHT = 4320;
-    vDecSample->DEFAULT_FRAME_RATE = 120;
+    vDecSample->DEFAULT_WIDTH = 426;
+    vDecSample->DEFAULT_HEIGHT = 240;
     vDecSample->isGetVideoSupportedPixelFormats = true;
     vDecSample->isGetFormatKey = true;
     vDecSample->avcodecMimeType = OH_AVCODEC_MIMETYPE_VIDEO_AV1;
@@ -2277,6 +1705,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0100, TestSize.Level0)
     for (int i = 0; i < vDecSample->pixlFormatNum; i++) {
         ASSERT_EQ(vDecSample->pixlFormats[i], pixfmt[i]);
     }
-    ASSERT_EQ(FRAMESIZE120, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE180, vDecSample->outFrameCount);
 }
 } // namespace

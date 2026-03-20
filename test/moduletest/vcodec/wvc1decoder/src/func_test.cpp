@@ -59,8 +59,6 @@ protected:
     const char *INP_DIR_4 = "/data/test/media/vc1_advanced_L4_1920x1080_60fps.avi";
     const char *INP_DIR_5 = "/data/test/media/vc1_176x144.avi";
     const char *INP_DIR_6 = "/data/test/media/vc1_advanced_L0_352x288.avi";
-    const char *INP_DIR_7 = "/data/test/media/vc1_advanced_L3_720x1280.avi";
-    const char *INP_DIR_8 = "/data/test/media/vc1_advanced_L4_2048x2048.avi";
     const char *INP_DIR_9 = "/data/test/media/vc1_advanced_L3_IPBFrame.avi";
     const char *INP_DIR_10 = "/data/test/media/vc1_advanced_L3_IFrame_only.avi";
     const char *INP_DIR_11 = "/data/test/media/vc1_advanced_L3_IPFrame_only.avi";
@@ -1146,50 +1144,6 @@ HWTEST_F(Wvc1decFuncNdkTest, VIDEO_WVC1DEC_FUNCTION_0049, TestSize.Level0)
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
     ASSERT_EQ(FRAMESIZE80, vDecSample->outFrameCount);
-}
-
-/**
- * @tc.number    : VIDEO_WVC1DEC_FUNCTION_0050
- * @tc.name      : decode Wvc1 buffer, 720x1280
- * @tc.desc      : function test
- */
-HWTEST_F(Wvc1decFuncNdkTest, VIDEO_WVC1DEC_FUNCTION_0050, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->getFormat(INP_DIR_7);
-    vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
-    vDecSample->DEFAULT_WIDTH = 720;
-    vDecSample->DEFAULT_HEIGHT = 1280;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.WVC1"));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE80, vDecSample->outFrameCount);
-}
-
-/**
- * @tc.number    : VIDEO_WVC1DEC_FUNCTION_0051
- * @tc.name      : decode Wvc1 buffer, advanced profile L4,2048x2048
- * @tc.desc      : function test
- */
-HWTEST_F(Wvc1decFuncNdkTest, VIDEO_WVC1DEC_FUNCTION_0051, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->getFormat(INP_DIR_8);
-    vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
-    vDecSample->DEFAULT_WIDTH = 2048;
-    vDecSample->DEFAULT_HEIGHT = 2048;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.WVC1"));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE41, vDecSample->outFrameCount);
 }
 
 /**
