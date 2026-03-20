@@ -85,6 +85,34 @@ int32_t CodecListClient::GetCapability(CapabilityData &capabilityData, const std
     return codecListProxy_->GetCapability(capabilityData, mime, isEncoder, category);
 }
 
+int32_t CodecListClient::GetCapabilityList(std::vector<std::shared_ptr<CapabilityData>> &outList)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(EnsureProxyValid(), AVCS_ERR_INVALID_OPERATION,
+                             "Get capability list failed: ensure proxy valid failed");
+    int32_t index = 0;
+    const int32_t MAX_LIMIT = 200;
+    while (index < MAX_LIMIT) {
+        auto capabilityData = std::make_shared<CapabilityData>();
+        CHECK_AND_RETURN_RET_LOG(index >= 0, AVCS_ERR_UNKNOWN,
+                                 "Index is invalid, or less than zero, index: %{public}d", index);
+        int32_t ret = codecListProxy_->GetCapabilityAt(*capabilityData, index);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK || ret == AVCS_ERR_NOT_ENOUGH_DATA, AVCS_ERR_UNKNOWN,
+            "Get capability at index %{public}d failed: ret %{public}d", index, ret);
+        if (ret == AVCS_ERR_NOT_ENOUGH_DATA) {
+            AVCODEC_LOGD("Get capability list: no more data at index %{public}d, stop fetching", index);
+            break;
+        } else if (ret != AVCS_ERR_OK) {
+            AVCODEC_LOGE("Get capability at index %{public}d failed: ret %{public}d", index, ret);
+            return AVCS_ERR_UNKNOWN;
+        }
+        outList.emplace_back(capabilityData);
+        index++;
+    }
+    AVCODEC_LOGD("Get capability list successfully, total count: %{public}zu", outList.size());
+    return AVCS_ERR_OK;
+}
+
 bool CodecListClient::EnsureProxyValid()
 {
     if (codecListProxy_ != nullptr) {

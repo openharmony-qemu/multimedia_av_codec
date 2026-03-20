@@ -69,6 +69,7 @@ enum class AVCodecListServiceInterfaceCode {
     FIND_DECODER = 0,
     FIND_ENCODER,
     GET_CAPABILITY,
+    GET_CAPABILITY_AT,
     DESTROY
 };
 

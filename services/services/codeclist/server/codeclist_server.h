@@ -33,6 +33,7 @@ public:
     std::string FindEncoder(const Format &format) override;
     int32_t GetCapability(CapabilityData &capabilityData, const std::string &mime, const bool isEncoder,
                           const AVCodecCategory &category) override;
+    int32_t GetCapabilityAt(CapabilityData &capabilityData, int32_t index) override;
 
 private:
     bool Init();

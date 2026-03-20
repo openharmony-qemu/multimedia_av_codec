@@ -55,6 +55,7 @@ public:
                                          const AVCodecCategory &category) = 0;
     virtual void *GetBuffer(const std::string &name, uint32_t sizeOfCap) = 0;
     virtual void *NewBuffer(size_t bufSize) = 0;
+    virtual std::vector<std::shared_ptr<CapabilityData>> GetCapabilityList(int32_t codecType) = 0;
 };
 
 class __attribute__((visibility("default"))) AVCodecListFactory {

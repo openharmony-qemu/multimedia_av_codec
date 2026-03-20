@@ -34,6 +34,7 @@ public:
     std::vector<std::string> FindCodecNameArray(const AVCodecType type, const std::string &mime);
     int32_t GetCapability(CapabilityData &capData, const std::string &mime, const bool isEncoder,
                           const AVCodecCategory &category);
+    int32_t GetCapabilityAt(CapabilityData &capabilityData, int32_t index);
 
 private:
     bool CheckBitrate(const Media::Format &format, const CapabilityData &data);

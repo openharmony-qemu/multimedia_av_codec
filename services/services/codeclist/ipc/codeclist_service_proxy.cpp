@@ -88,6 +88,30 @@ int32_t CodecListServiceProxy::GetCapability(CapabilityData &capabilityData, con
     return AVCS_ERR_OK;
 }
 
+int32_t CodecListServiceProxy::GetCapabilityAt(CapabilityData &capabilityData, int32_t index)
+{
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option;
+    Format profileFormat;
+    bool token = data.WriteInterfaceToken(CodecListServiceProxy::GetDescriptor());
+    CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_UNKNOWN, "Write descriptor failed");
+    token = data.WriteInt32(index);
+    CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_UNKNOWN, "Write to parcel failed");
+    int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(AVCodecListServiceInterfaceCode::GET_CAPABILITY_AT), data,
+                                        reply, option);
+    if (ret == AVCS_ERR_NOT_ENOUGH_DATA) {
+        AVCODEC_LOGD("Get capability at index %{public}d failed: no more data", index);
+    } else if (ret != AVCS_ERR_OK) {
+        AVCODEC_LOGE("Get capability at index %{public}d failed: unknown error, ret %{public}d", index, ret);
+    } else {
+        AVCODEC_LOGD("Get capability at index %{public}d successfully", index);
+        CHECK_AND_RETURN_RET_LOG(CodecListParcel::Unmarshalling(reply, capabilityData), AVCS_ERR_UNKNOWN,
+                                 "GetCodecCapabilityInfos failed, Unmarshalling error");
+    }
+    return ret;
+}
+
 int32_t CodecListServiceProxy::DestroyStub()
 {
     MessageParcel data;

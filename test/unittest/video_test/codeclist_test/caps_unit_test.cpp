@@ -21,6 +21,8 @@
 #include "native_avmagic.h"
 #endif
 
+#include <iostream>
+
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
@@ -1236,6 +1238,182 @@ HWTEST_F(CapsUnitTest, AVCaps_FeatureCheck_002, TestSize.Level1)
     EXPECT_NE(cap, nullptr);
     EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, static_cast<OH_AVCapabilityFeature>(-1)), false);
     EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, static_cast<OH_AVCapabilityFeature>(4)), false);
+}
+
+/**
+ * @tc.name: CheckMimeType_001
+ * @tc.desc: AVCaps Get the mimeType of the capability and check.
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, CheckMimeType_001, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
+    EXPECT_NE(cap, nullptr);
+    const char *targetMimeType = OH_AVCapability_GetMimeType(cap);
+    EXPECT_STREQ(targetMimeType, OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
+    EXPECT_TRUE(OH_AVCapability_CheckMimeType(cap, OH_AVCODEC_MIMETYPE_VIDEO_HEVC));
+    EXPECT_FALSE(OH_AVCapability_CheckMimeType(cap, OH_AVCODEC_MIMETYPE_VIDEO_AVC));
+}
+
+/**
+ * @tc.name: AVCaps_GetCapabilityList_001
+ * @tc.desc: AVCaps GetCapabilityList with valid codec type
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_001, TestSize.Level1)
+{
+    OH_AVCodecType codecTypes[] = {
+        OH_AVCodecType::OH_AVCODEC_TYPE_VIDEO_ENCODER,
+        OH_AVCodecType::OH_AVCODEC_TYPE_VIDEO_DECODER,
+        OH_AVCodecType::OH_AVCODEC_TYPE_AUDIO_ENCODER,
+        OH_AVCodecType::OH_AVCODEC_TYPE_AUDIO_DECODER
+    };
+
+    for (auto codecType : codecTypes) {
+        uint32_t count = 0;
+        OH_AVCapability **capList = OH_AVCodec_GetCapabilityList(codecType, &count);
+
+        ASSERT_NE(capList, nullptr);
+        ASSERT_GT(count, 0);
+
+        for (uint32_t i = 0; i < count; i++) {
+            ASSERT_NE(capList[i], nullptr);
+            const char *codecName = OH_AVCapability_GetName(capList[i]);
+            const char *mimeType = OH_AVCapability_GetMimeType(capList[i]);
+            ASSERT_NE(codecName, nullptr);
+            ASSERT_NE(mimeType, nullptr);
+            EXPECT_GT(strlen(codecName), 0U);
+            EXPECT_GT(strlen(mimeType), 0U);
+            EXPECT_TRUE(OH_AVCapability_CheckMimeType(capList[i], mimeType));
+        }
+    }
+}
+
+/**
+ * @tc.name: AVCaps_GetCapabilityList_MemoryOverwrite_001
+ * @tc.desc: AVCaps GetCapabilityList called multiple times to check
+ * if the returned capability list is consistent and not overwritten.
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_MemoryOverwrite_001, TestSize.Level1)
+{
+    uint32_t count1 = 0;
+    uint32_t count2 = 0;
+    OH_AVCapability **capList1 = OH_AVCodec_GetCapabilityList(
+        OH_AVCodecType::OH_AVCODEC_TYPE_VIDEO_DECODER, &count1);
+    ASSERT_NE(capList1, nullptr);
+    ASSERT_GT(count1, 0);
+    ASSERT_NE(capList1[0], nullptr);
+    for (uint32_t i = 0; i < count1; i++) {
+        const char *name = nullptr;
+        if (capList1[i] != nullptr) {
+            name = OH_AVCapability_GetName(capList1[i]);
+        }
+    }
+    const char *nameBefore = OH_AVCapability_GetName(capList1[0]);
+    ASSERT_NE(nameBefore, nullptr);
+    std::string firstName(nameBefore);
+
+    OH_AVCapability **capList2 = OH_AVCodec_GetCapabilityList(
+        OH_AVCodecType::OH_AVCODEC_TYPE_AUDIO_ENCODER, &count2);
+    ASSERT_NE(capList2, nullptr);
+    ASSERT_GT(count2, 0);
+    for (uint32_t i = 0; i < count2; i++) {
+        const char *name = nullptr;
+        if (capList2[i] != nullptr) {
+            name = OH_AVCapability_GetName(capList2[i]);
+        }
+    }
+    for (uint32_t i = 0; i < count1; i++) {
+        const char *name = nullptr;
+        if (capList1[i] != nullptr) {
+            name = OH_AVCapability_GetName(capList1[i]);
+        }
+    }
+    ASSERT_NE(capList1[0], nullptr);
+    const char *nameAfter = OH_AVCapability_GetName(capList1[0]);
+    ASSERT_NE(nameAfter, nullptr);
+    EXPECT_STREQ(firstName.c_str(), nameAfter);
+}
+
+/**
+ * @tc.name: AVCaps_GetCapabilityList_THREAD_POOL_001
+ * @tc.desc: Verify that OH_AVCodec_GetCapabilityList can be invoked concurrently
+ *           from multiple threads and returned capability entries are accessible.
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_THREAD_POOL_001, TestSize.Level2)
+{
+    const int32_t threadCnt = 10;
+    std::vector<std::thread> threadPool;
+
+    for (int32_t i = 0; i < threadCnt; i++) {
+        threadPool.emplace_back([i]() {
+            uint32_t count = 0;
+            OH_AVCodecType codecType = static_cast<OH_AVCodecType>(i % 4);
+            OH_AVCapability **capList = OH_AVCodec_GetCapabilityList(codecType, &count);
+
+            EXPECT_NE(capList, nullptr);
+            EXPECT_GT(count, 0);
+
+            for (uint32_t j = 0; j < count; j++) {
+                ASSERT_NE(capList[j], nullptr);
+                const char *name = OH_AVCapability_GetName(capList[j]);
+                EXPECT_NE(name, nullptr);
+            }
+        });
+    }
+
+    for (auto &th : threadPool) {
+        th.join();
+    }
+}
+
+/**
+ * @tc.name: AVCaps_IsSecure_001
+ * @tc.desc: Check IsSecure with valid capability, and call twice to check the result is same
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_IsSecure_001, TestSize.Level1)
+{
+    OH_AVCodecType codecTypes[] = {
+        OH_AVCodecType::OH_AVCODEC_TYPE_VIDEO_ENCODER,
+        OH_AVCodecType::OH_AVCODEC_TYPE_VIDEO_DECODER,
+        OH_AVCodecType::OH_AVCODEC_TYPE_AUDIO_ENCODER,
+        OH_AVCodecType::OH_AVCODEC_TYPE_AUDIO_DECODER
+    };
+
+    for (auto codecType : codecTypes) {
+        uint32_t count = 0;
+        OH_AVCapability **capList = OH_AVCodec_GetCapabilityList(codecType, &count);
+
+        ASSERT_NE(capList, nullptr);
+        ASSERT_GT(count, 0);
+
+        for (uint32_t i = 0; i < count; i++) {
+            ASSERT_NE(capList[i], nullptr);
+
+            bool secure = OH_AVCapability_IsSecure(capList[i]);
+            bool secureAgain = OH_AVCapability_IsSecure(capList[i]);
+            EXPECT_EQ(secure, secureAgain);
+        }
+    }
+}
+
+/**
+ * @tc.name: AVCaps_IsSecure_002
+ * @tc.desc: Check IsSecure with nullptr
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_IsSecure_002, TestSize.Level1)
+{
+    EXPECT_FALSE(OH_AVCapability_IsSecure(nullptr));
 }
 
 /**
