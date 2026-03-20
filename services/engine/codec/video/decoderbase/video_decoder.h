@@ -139,7 +139,6 @@ private:
     virtual void InitParams() = 0;
     void SetCallerToBuffer(sptr<SurfaceBuffer> surfaceBuffer);
     void SetBufferCropMetadata(sptr<SurfaceBuffer> surfaceBuffer);
-    int32_t SetSurfaceFormat();
     void GetSurfaceCfgFromFmt(const Format &format);
 
     int32_t inputBufferCnt_ = 0;

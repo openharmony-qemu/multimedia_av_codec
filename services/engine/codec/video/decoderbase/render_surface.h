@@ -54,7 +54,7 @@ public:
     int32_t RegisterListenerToSurface(const sptr<Surface> &surface);
     int32_t FreezeBuffers(State curState);
     int32_t ActiveBuffers();
-    void SetSurfaceParameter();
+    int32_t SetSurfaceFormat();
 
     struct CodecBuffer {
     public:

@@ -271,36 +271,27 @@ int32_t RenderSurface::ClearSurfaceAndSetQueueSize(const sptr<Surface> &surface,
     return AVCS_ERR_OK;
 }
 
-void RenderSurface::SetSurfaceParameter()
+int32_t RenderSurface::SetSurfaceFormat()
 {
-    int32_t val = -1;
-    bool setSurfacePixelFormat = false;
-    std::optional<ScalingMode> scaling = std::nullopt;
-    std::optional<GraphicTransformType> orientation = std::nullopt;
-    if (format_.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val)) {
-        setSurfacePixelFormat = true;
+    if (bitDepth_ == BITS_PER_PIXEL_COMPONENT_10) {
+        if (outputPixelFmt_ == VideoPixelFormat::NV12 || outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
+            sInfo_.requestConfig.format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010;
+        } else {
+            sInfo_.requestConfig.format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010;
+        }
+        format_.PutIntValue("av_codec_event_info_bit_depth", 1);
+    } else {
+        VideoPixelFormat targetPixelFmt = outputPixelFmt_;
+        if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
+            targetPixelFmt = VideoPixelFormat::NV12;
+        }
+        GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(targetPixelFmt);
+        CHECK_AND_RETURN_RET_LOG(surfacePixelFmt != GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT, AVCS_ERR_UNSUPPORT,
+                                 "Failed to allocate output buffer: unsupported surface format");
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
+        sInfo_.requestConfig.format = surfacePixelFmt;
     }
-    if (format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val)) {
-        scaling = static_cast<ScalingMode>(val);
-    }
-    if (format_.GetIntValue(OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE, val)) {
-        orientation = static_cast<GraphicTransformType>(val);
-    }
-    std::lock_guard<std::mutex> sLock(surfaceMutex_);
-    if (setSurfacePixelFormat) {
-        CHECK_AND_RETURN_LOG(SetSurfaceFormat() == AVCS_ERR_OK,
-                             "set surface format failed: unsupported surface format");
-    }
-    if (scaling) {
-        sInfo_.scalingMode = scaling.value();
-        sInfo_.surface->SetScalingMode(sInfo_.scalingMode.value());
-    }
-    if (orientation) {
-        transform_.store(orientation.value());
-        AVCODEC_LOGI("Set surface video_orientation_type: %{public}d success.",
-                     static_cast<int32_t>(transform_.load()));
-        sInfo_.surface->SetTransform(transform_.load());
-    }
+    return AVCS_ERR_OK;
 }
 
 int32_t RenderSurface::SetSurfaceCfg()
