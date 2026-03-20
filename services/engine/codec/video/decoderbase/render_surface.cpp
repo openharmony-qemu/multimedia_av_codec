@@ -279,28 +279,23 @@ int32_t RenderSurface::SetSurfaceCfg()
     int32_t val32 = 0;
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val32);
     outputPixelFmt_ = static_cast<VideoPixelFormat>(val32);
-    
-    GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(outputPixelFmt_);
-    CHECK_AND_RETURN_RET_LOG(surfacePixelFmt != GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT, AVCS_ERR_UNSUPPORT,
-                             "Failed to allocate output buffer: unsupported surface format");
-    format_.PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
+
+    std::lock_guard<std::mutex> sLock(surfaceMutex_);
     sInfo_.requestConfig.width = width_;
     sInfo_.requestConfig.height = height_;
-    sInfo_.requestConfig.format = surfacePixelFmt;
+    CHECK_AND_RETURN_RET_LOG(SetSurfaceFormat() == AVCS_ERR_OK, AVCS_ERR_UNSUPPORT,
+                             "set surface format failed: unsupported surface format");
     CHECK_AND_RETURN_RET_LOGD(sInfo_.surface != nullptr, AVCS_ERR_OK, "Buffer mode not need to set surface config.");
-    if (format_.ContainKey(MediaDescriptionKey::MD_KEY_SCALE_TYPE)) {
-        CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val32) && val32 >= 0 &&
-                                 val32 <= static_cast<int32_t>(ScalingMode::SCALING_MODE_SCALE_FIT),
-                                 AVCS_ERR_INVALID_VAL, "Invalid scaling mode %{public}d", val32);
+    if (format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val32)) {
+        CHECK_AND_RETURN_RET_LOG(IsValidScaleType(val32), AVCS_ERR_INVALID_VAL,
+                                 "Invalid scaling mode %{public}d", val32);
         sInfo_.scalingMode = static_cast<ScalingMode>(val32);
         sInfo_.surface->SetScalingMode(sInfo_.scalingMode.value());
     }
-    if (format_.ContainKey(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE)) {
-        CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val32) && val32 >= 0 &&
-                                 val32 <= static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_270),
-                                 AVCS_ERR_INVALID_VAL, "Invalid rotation angle %{public}d", val32);
-        sInfo_.surface->SetTransform(TranslateSurfaceRotation(static_cast<VideoRotation>(val32)));
+    if (format_.GetIntValue(OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE, val32)) {
+        transform_.store(static_cast<GraphicTransformType>(val32));
     }
+    sInfo_.surface->SetTransform(transform_.load());
     return AVCS_ERR_OK;
 }
 
