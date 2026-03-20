@@ -156,6 +156,7 @@ group("av_codec_unit_test") {
         "unittest/sei_parser_helper_unittest:sei_parser_helper_unittest",
         "unittest/source_test:source_unit_test",
         "unittest/source_unit_test:source_test",
+        "unittest/source_utils_test:storage_usage_util_unittest",
         "unittest/subtitle_sink_unittest:subtitle_sink_unittest",
         "unittest/surface_encoder_adapter_unittest:surface_encoder_adapter_unittest",
         "unittest/video_resize_filter_test:video_resize_filter_test",
