@@ -46,12 +46,12 @@ static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
 static const string TEST_TIMED_METADATA = "com.openharmony.timed_metadata.test";
 const int64_t SOURCE_OFFSET = 0;
 const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_hevc_parser.z.so";
-string g_datPath1 = TEST_FILE_PATH + string("dat_mpeg4_aac.dat");
-string g_datPath2 = TEST_FILE_PATH + string("dat_h264_mp3.dat");
-string g_datPath3 = TEST_FILE_PATH + string("dat_h265_aac.dat");
-string g_datUri1 = TEST_URI_PATH + string("dat_mpeg4_aac.dat");
-string g_datUri2 = TEST_URI_PATH + string("dat_h264_mp3.dat");
-string g_datUri3 = TEST_URI_PATH + string("dat_h265_aac.dat");
+string g_datPath1 = TEST_FILE_PATH + string("dat_mpeg4_aac_high_bitrate.dat");
+string g_datPath2 = TEST_FILE_PATH + string("dat_h264_mp3_high_bitrate.dat");
+string g_datPath3 = TEST_FILE_PATH + string("dat_h265_aac_4k_60fps.dat");
+string g_datUri1 = TEST_URI_PATH + string("dat_mpeg4_aac_high_bitrate.dat");
+string g_datUri2 = TEST_URI_PATH + string("dat_h264_mp3_high_bitrate.dat");
+string g_datUri3 = TEST_URI_PATH + string("dat_h265_aac_4k_60fps.dat");
 
 /**
  * @tc.name: AVSource_DAT_GetFormat_0001
