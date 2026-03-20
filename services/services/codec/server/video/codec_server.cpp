@@ -42,19 +42,6 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServer"};
-enum DumpIndex : uint32_t {
-    DUMP_INDEX_FORWARD_CALLER_PID          = 0x01'01'01'00,
-    DUMP_INDEX_FORWARD_CALLER_UID          = 0x01'01'02'00,
-    DUMP_INDEX_FORWARD_CALLER_PROCESS_NAME = 0x01'01'03'00,
-    DUMP_INDEX_CALLER_PID                  = 0x01'01'04'00,
-    DUMP_INDEX_CALLER_UID                  = 0x01'01'05'00,
-    DUMP_INDEX_CALLER_PROCESS_NAME         = 0x01'01'06'00,
-    DUMP_INDEX_INSTANCE_ID                 = 0x01'01'07'00,
-    DUMP_INDEX_STATUS                      = 0x01'01'08'00,
-    DUMP_INDEX_LAST_ERROR                  = 0x01'01'09'00,
-    DUMP_INDEX_CODEC_INFO_START            = 0x01'02'00'00,
-};
-constexpr uint32_t DUMP_OFFSET_8 = 8;
 constexpr uint32_t BUFFER_IS_EOS = 1;
 
 const std::map<OHOS::MediaAVCodec::CodecServer::CodecStatus, std::string> CODEC_STATE_MAP = {
@@ -67,20 +54,6 @@ const std::map<OHOS::MediaAVCodec::CodecServer::CodecStatus, std::string> CODEC_
     {OHOS::MediaAVCodec::CodecServer::ERROR, "error"},
 };
 
-const std::vector<std::pair<std::string_view, const std::string>> VIDEO_DUMP_TABLE = {
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_CODEC_NAME, "CodecName"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_WIDTH, "Width"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_HEIGHT, "Height"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_FRAME_RATE, "FrameRate"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_BITRATE, "BitRate"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, "PixelFormat"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_SCALE_TYPE, "ScaleType"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, "RotationAngle"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, "MaxInputSize"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT, "MaxInputBufferCount"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, "MaxOutputBufferCount"},
-};
-
 const std::map<int32_t, const std::string> PIXEL_FORMAT_STRING_MAP = {
     {static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::YUV420P), "YUV420P"},
     {static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::YUVI420), "YUVI420"},
@@ -89,13 +62,6 @@ const std::map<int32_t, const std::string> PIXEL_FORMAT_STRING_MAP = {
     {static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::SURFACE_FORMAT), "SURFACE_FORMAT"},
     {static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::RGBA), "RGBA"},
     {static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::UNKNOWN), "UNKNOWN_FORMAT"},
-};
-
-const std::map<int32_t, const std::string> SCALE_TYPE_STRING_MAP = {
-    {OHOS::ScalingMode::SCALING_MODE_FREEZE, "Freeze"},
-    {OHOS::ScalingMode::SCALING_MODE_SCALE_TO_WINDOW, "Scale to window"},
-    {OHOS::ScalingMode::SCALING_MODE_SCALE_CROP, "Scale crop"},
-    {OHOS::ScalingMode::SCALING_MODE_NO_SCALE_CROP, "No scale crop"},
 };
 
 struct PostProcessingCallbackUserData {
@@ -967,46 +933,14 @@ void CodecServer::SetDumpInfo(bool isDump, uint64_t instanceId)
     return codecBase_->SetDumpInfo(isDump, instanceId);
 }
 
-int32_t CodecServer::DumpInfo(int32_t fd)
+void CodecServer::GetHiDumperInfo(std::string &statusStr, std::string &lastErrorStr,
+                                  std::string &codecBaseHiDumperInfo)
 {
-    std::lock_guard<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(fd >= 0, AVCS_ERR_OK, "Get a invalid fd");
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-    Format codecFormat;
-    int32_t ret = codecBase_->GetOutputFormat(codecFormat);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret, "Get codec format failed");
-
-    AVCodecDumpControler dumpControler;
+    CHECK_AND_RETURN_LOG_WITH_TAG(codecBase_ != nullptr, "Codecbase is nullptr");
     auto statusIt = CODEC_STATE_MAP.find(status_);
-    if (forwardCaller_.pid != -1 || !forwardCaller_.processName.empty()) {
-        dumpControler.AddInfo(DUMP_INDEX_FORWARD_CALLER_PID, "ForwardCallerPid", std::to_string(forwardCaller_.pid));
-        dumpControler.AddInfo(DUMP_INDEX_FORWARD_CALLER_PROCESS_NAME,
-            "ForwardCallerProcessName", forwardCaller_.processName);
-    }
-    dumpControler.AddInfo(DUMP_INDEX_CALLER_PID, "CallerPid", std::to_string(caller_.pid));
-    dumpControler.AddInfo(DUMP_INDEX_CALLER_PROCESS_NAME, "CallerProcessName", caller_.processName);
-    dumpControler.AddInfo(DUMP_INDEX_INSTANCE_ID, "InstanceId", std::to_string(instanceId_));
-    dumpControler.AddInfo(DUMP_INDEX_STATUS, "Status", statusIt != CODEC_STATE_MAP.end() ? statusIt->second : "");
-    dumpControler.AddInfo(DUMP_INDEX_LAST_ERROR, "LastError", lastErrMsg_.size() ? lastErrMsg_ : "Null");
-
-    uint32_t infoIndex = 1;
-    for (auto iter : VIDEO_DUMP_TABLE) {
-        uint32_t dumpIndex = DUMP_INDEX_CODEC_INFO_START + (infoIndex++ << DUMP_OFFSET_8);
-        if (iter.first == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT) {
-            dumpControler.AddInfoFromFormatWithMapping(dumpIndex, codecFormat,
-                                                       iter.first, iter.second, PIXEL_FORMAT_STRING_MAP);
-        } else if (iter.first == MediaDescriptionKey::MD_KEY_SCALE_TYPE) {
-            dumpControler.AddInfoFromFormatWithMapping(dumpIndex, codecFormat,
-                                                       iter.first, iter.second, SCALE_TYPE_STRING_MAP);
-        } else {
-            dumpControler.AddInfoFromFormat(dumpIndex, codecFormat, iter.first, iter.second);
-        }
-    }
-    std::string dumpString;
-    dumpControler.GetDumpString(dumpString);
-    dumpString += codecBase_->GetHidumperInfo();
-    write(fd, dumpString.c_str(), dumpString.size());
-    return AVCS_ERR_OK;
+    statusStr = statusIt != CODEC_STATE_MAP.end() ? statusIt->second : "";
+    lastErrorStr = lastErrMsg_.size() ? lastErrMsg_ : "Null";
+    codecBaseHiDumperInfo = codecBase_->GetHidumperInfo();
 }
 
 void CodecServer::SetInstanceInfo(AVCodecType type, bool isMimeType, const std::string &name, Meta &callerInfo)

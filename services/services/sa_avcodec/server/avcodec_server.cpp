@@ -167,11 +167,11 @@ int32_t AVCodecServer::Dump(int32_t fd, const std::vector<std::u16string> &args)
     }
 
     auto firstArg = args[0];
-    if (firstArg == u"Codec") {
+    if (firstArg == u"codec") {
         AVCodecServerManager::GetInstance().Dump(fd, args);
-    } else if (firstArg == u"QueryCap") {
+    } else if (firstArg == u"query_capability") {
         CodecAbilitySingleton::GetInstance().Dump(fd, args);
-    } else if (firstArg == u"Collie") {
+    } else if (firstArg == u"collie") {
         AVCodecXCollie::GetInstance().Dump(fd);
     } else if (firstArg == u"report_statistics_event") {
         EventManager::GetInstance().OnInstanceEvent(EventType::STATISTICS_EVENT_SUBMIT);
