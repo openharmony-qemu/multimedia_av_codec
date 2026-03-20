@@ -847,7 +847,7 @@ void M3U8MasterPlaylist::UpdateMediaPlaylist()
 
 void M3U8MasterPlaylist::DownloadSessionKey(std::shared_ptr<Tag>& tag)
 {
-    FALSE_RETURN(sessionKeyIndex_ > 0);
+    FALSE_RETURN(sessionKeyIndex_ == 0);
     auto m3u8 = std::make_shared<M3U8>(uri_, "", tagMasterMap_, monitorStatusCallback_, sourceLoader_);
     FALSE_RETURN_NOLOG(m3u8 != nullptr);
     if (downloadCallback_ != nullptr) {
