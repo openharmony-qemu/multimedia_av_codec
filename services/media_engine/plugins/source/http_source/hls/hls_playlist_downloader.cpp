@@ -421,14 +421,17 @@ bool HlsPlayListDownloader::UpdatePlaylists(bool isSimple)
         if (currentAudio_ && currentAudio_->m3u8_) {
             ret = currentAudio_->m3u8_->Update(playList_, true, master_->totalKeyIndex_);
             master_->totalKeyIndex_ += currentAudio_->m3u8_->keyIndex_;
+            currentAudio_->m3u8_->keyIndex_ = 0;
         } else if (currentSubtitles_ && currentSubtitles_->m3u8_) {
             ret = currentSubtitles_->m3u8_->Update(playList_, true, master_->totalKeyIndex_);
             master_->totalKeyIndex_ += currentSubtitles_->m3u8_->keyIndex_;
+            currentSubtitles_->m3u8_->keyIndex_ = 0;
         } else {
             currentVariant_ = master_->defaultVariant_;
             if (currentVariant_ && currentVariant_->m3u8_) {
                 ret = currentVariant_->m3u8_->Update(playList_, true, master_->totalKeyIndex_);
                 master_->totalKeyIndex_ += currentVariant_->m3u8_->keyIndex_;
+                currentVariant_->m3u8_->keyIndex_ = 0;
             }
         }
     }
