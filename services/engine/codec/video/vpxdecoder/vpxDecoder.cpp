@@ -150,11 +150,11 @@ void VpxDecoder::ConfigureHdrMetadata(const Format &format)
         AVCODEC_LOGE("Get HDR metadata from format failed");
         return;
     }
-    auto safeDiv = [](int num, int den) -> double {
+    auto safeDiv = [](int num, int den) -> float {
         if (den == 0) {
             return 0.0;
         }
-        return static_cast<double>(num) / static_cast<double>(den);
+        return static_cast<float>(num) / static_cast<float>(den);
     };
     hdrMetadata_.displayPrimariesX[0] =
         safeDiv(metadata->display_primaries[0][0].num, metadata->display_primaries[0][0].den); // 0: Y
@@ -572,22 +572,16 @@ int32_t VpxDecoder::ConvertHdrStaticMetadata(const HdrMetadata &hdrMetadata, std
     HdrStaticMetadata* hdrStaticMetadata = reinterpret_cast<HdrStaticMetadata*>(staticMetadataVec.data());
     CHECK_AND_RETURN_RET_LOG(hdrStaticMetadata != nullptr, AVCS_ERR_INVALID_VAL,
         "vector convert to CM_HDR_Metadata_Type error");
-    hdrStaticMetadata->smpte2086.displayPrimaryGreen.x =
-        static_cast<float>(hdrMetadata.displayPrimariesX[0]); // 0: Y
-    hdrStaticMetadata->smpte2086.displayPrimaryBlue.x =
-        static_cast<float>(hdrMetadata.displayPrimariesX[1]); // 1: U
-    hdrStaticMetadata->smpte2086.displayPrimaryRed.x =
-        static_cast<float>(hdrMetadata.displayPrimariesX[2]); // 2: V
-    hdrStaticMetadata->smpte2086.displayPrimaryGreen.y =
-        static_cast<float>(hdrMetadata.displayPrimariesY[0]); // 0: Y
-    hdrStaticMetadata->smpte2086.displayPrimaryBlue.y =
-        static_cast<float>(hdrMetadata.displayPrimariesY[1]); // 1: U
-    hdrStaticMetadata->smpte2086.displayPrimaryRed.y =
-        static_cast<float>(hdrMetadata.displayPrimariesY[2]); // 2: V
-    hdrStaticMetadata->smpte2086.whitePoint.x = static_cast<float>(hdrMetadata.whitePointX);
-    hdrStaticMetadata->smpte2086.whitePoint.y = static_cast<float>(hdrMetadata.whitePointY);
-    hdrStaticMetadata->smpte2086.maxLuminance = static_cast<float>(hdrMetadata.maxDisplayMasteringLuminance);
-    hdrStaticMetadata->smpte2086.minLuminance = static_cast<float>(hdrMetadata.minDisplayMasteringLuminance);
+    hdrStaticMetadata->smpte2086.displayPrimaryGreen.x = hdrMetadata.displayPrimariesX[0]; // 0: Y
+    hdrStaticMetadata->smpte2086.displayPrimaryBlue.x = hdrMetadata.displayPrimariesX[1]; // 1: U
+    hdrStaticMetadata->smpte2086.displayPrimaryRed.x = hdrMetadata.displayPrimariesX[2]; // 2: V
+    hdrStaticMetadata->smpte2086.displayPrimaryGreen.y = hdrMetadata.displayPrimariesY[0]; // 0: Y
+    hdrStaticMetadata->smpte2086.displayPrimaryBlue.y = hdrMetadata.displayPrimariesY[1]; // 1: U
+    hdrStaticMetadata->smpte2086.displayPrimaryRed.y = hdrMetadata.displayPrimariesY[2]; // 2: V
+    hdrStaticMetadata->smpte2086.whitePoint.x = hdrMetadata.whitePointX;
+    hdrStaticMetadata->smpte2086.whitePoint.y = hdrMetadata.whitePointY;
+    hdrStaticMetadata->smpte2086.maxLuminance = hdrMetadata.maxDisplayMasteringLuminance;
+    hdrStaticMetadata->smpte2086.minLuminance = hdrMetadata.minDisplayMasteringLuminance;
     return AVCS_ERR_OK;
 }
 
