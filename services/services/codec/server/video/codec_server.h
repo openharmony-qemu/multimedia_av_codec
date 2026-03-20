@@ -174,7 +174,7 @@ private:
     std::vector<std::pair<uint32_t, std::shared_ptr<AVBuffer>>> indexs_;
     std::atomic<int64_t> lastBufferPts_ = INT64_MIN;
     std::mutex releaseBufferMutex_;
-    bool isReleaseFree_ = false;
+    std::atomic<bool> isReleaseFree_ = false;
     bool isLocalReleaseMode_ = false;
     std::shared_ptr<TaskThread> releaseBufferTask_{nullptr};
     void HandleOutputBufferAvailability(uint32_t index, std::shared_ptr<AVBuffer> buffer);
