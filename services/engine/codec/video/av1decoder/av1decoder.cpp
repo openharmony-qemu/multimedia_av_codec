@@ -360,7 +360,7 @@ int32_t Av1Decoder::DecodeAv1FrameOnce()
             }
         }
         ret = dav1d_get_picture(dav1dCtx_, av1DecOutputImg_);
-        if (ret < 0 && ret != DAV1D_AGAIN) {
+        if (ret < 0 && ret != DAV1D_AGAIN && av1DecOutputImg_ != nullptr) {
             dav1d_picture_unref(av1DecOutputImg_);
             delete av1DecOutputImg_;
             av1DecOutputImg_ = nullptr;
