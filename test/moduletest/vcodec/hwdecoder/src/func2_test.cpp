@@ -1190,6 +1190,62 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_H265_BLANK_FRAME_0030, TestSize.Level2)
 }
 
 /**
+ * @tc.number    : VIDEO_DECODE_H264_BLANK_FRAME_0040
+ * @tc.name      : config OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN, decoder h264, surface, stop-start
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_H264_BLANK_FRAME_0040, TestSize.Level0)
+{
+    if (cap != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_720_30;
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->enbleBlankFrame = 1;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->DecodeSetSurface());
+        for (int i = 0; i < 2; i++) {
+            ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+            vDecSample->WaitForEOS();
+            ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+            ASSERT_EQ(AV_ERR_OK, vDecSample->Stop());
+        }
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_H265_BLANK_FRAME_0050
+ * @tc.name      : config OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN, decoder h265, surface, stop-start
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_H265_BLANK_FRAME_0050, TestSize.Level2)
+{
+    if (cap_hevc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_20;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->enbleBlankFrame = 1;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->DecodeSetSurface());
+        for (int i = 0; i < 2; i++) {
+            ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+            vDecSample->WaitForEOS();
+            ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+            ASSERT_EQ(AV_ERR_OK, vDecSample->Stop());           
+        }
+    }
+}
+
+/**
  * @tc.number    : VIDEO_DECODE_H266_BLANK_FRAME_0020
  * @tc.name      : config OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN, decoder h266, surface
  * @tc.desc      : function test

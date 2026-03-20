@@ -952,6 +952,35 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDECODE_BLANK_FRAME_0020, TestSize.Level2)
 }
 
 /**
+ * @tc.number    : VIDEO_SWDECODE_BLANK_FRAME_0020
+ * @tc.name      : config OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN, decoder h264 swd, surface, stop-start
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDECODE_BLANK_FRAME_0030, TestSize.Level2)
+{
+    if (cap_avc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enbleBlankFrame = 1;
+        vDecSample->SURFACE_OUTPUT = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAvc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->DecodeSetSurface());
+        for (int i = 0; i < 2; i++) {
+            ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+            vDecSample->WaitForEOS();
+            ASSERT_EQ(0, vDecSample->errCount);
+            ASSERT_EQ(AV_ERR_OK, vDecSample->Stop());
+        }
+
+    }
+}
+
+/**
  * @tc.number    : VIDEO_SWDEC_H264_FLUSH_0010
  * @tc.name      : create-start-eos-flush-start-eos
  * @tc.desc      : function test
