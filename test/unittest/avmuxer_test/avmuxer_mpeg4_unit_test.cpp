@@ -3697,4 +3697,167 @@ HWTEST_F(Mpeg4MuxerUnitTest, Muxer_SetColorBoxInfo_005, TestSize.Level0)
     ASSERT_EQ(range, 0);
     OH_AVSource_Destroy(source);
 }
+
+/**
+ * @tc.name: Muxer_AddTrackNodata_001
+ * @tc.desc: Muxer mp4 add 3 no data track
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4MuxerUnitTest, Muxer_AddTrackNodata_001, TestSize.Level0)
+{
+    int32_t audioTrackId = -1;
+    int32_t vidTrackId = -1;
+    int32_t metaTrackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_AddTrackNodata_001.mp4");
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, AV_OUTPUT_FORMAT_MPEG_4);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> videoParams =
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+
+    ASSERT_EQ(avmuxer_->AddTrack(vidTrackId, videoParams), 0);
+    ASSERT_GE(vidTrackId, 0);
+
+    std::shared_ptr<FormatMock> metadataParams = FormatMockFactory::CreateTimedMetadataFormat(
+        TIMED_METADATA_TRACK_MIMETYPE.c_str(), TIMED_METADATA_KEY, vidTrackId);
+    ASSERT_NE(metadataParams, nullptr);
+
+    ASSERT_EQ(avmuxer_->AddTrack(metaTrackId, metadataParams), 0);
+    ASSERT_GE(metaTrackId, 1);
+
+    int32_t ret = avmuxer_->SetTimedMetadata();
+    EXPECT_EQ(ret, 0);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_MPEG);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, TEST_SAMPLE_RATE);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, TEST_CHANNEL_COUNT);
+    EXPECT_EQ(avmuxer_->AddTrack(audioTrackId, audioParams), AV_ERR_OK);
+    EXPECT_GE(audioTrackId, 0);
+
+    ASSERT_EQ(avmuxer_->Start(), 0);
+
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+
+    std::shared_ptr<DemuxerMock> demuxer = std::make_shared<DemuxerMock>();
+    demuxer->Start(outputFile);
+    OH_AVFormat *sourceFromat = demuxer->GetSourceFormat();
+    int32_t trackCount = 0;
+    EXPECT_EQ(OH_AVFormat_GetIntValue(sourceFromat, OH_MD_KEY_TRACK_COUNT, &trackCount), true);
+    EXPECT_EQ(trackCount, 0);
+}
+
+/**
+ * @tc.name: Muxer_AddTrackNodata_002
+ * @tc.desc: Muxer mp4 add 2 no data track
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4MuxerUnitTest, Muxer_AddTrackNodata_002, TestSize.Level0)
+{
+    int32_t audioTrackId = -1;
+    int32_t vidTrackId = -1;
+    int32_t metaTrackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_AddTrackNodata_002.mp4");
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, AV_OUTPUT_FORMAT_MPEG_4);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> videoParams =
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+
+    ASSERT_EQ(avmuxer_->AddTrack(vidTrackId, videoParams), 0);
+    ASSERT_GE(vidTrackId, 0);
+
+    std::shared_ptr<FormatMock> metadataParams = FormatMockFactory::CreateTimedMetadataFormat(
+        TIMED_METADATA_TRACK_MIMETYPE.c_str(), TIMED_METADATA_KEY, vidTrackId);
+    ASSERT_NE(metadataParams, nullptr);
+
+    ASSERT_EQ(avmuxer_->AddTrack(metaTrackId, metadataParams), 0);
+    ASSERT_GE(metaTrackId, 1);
+
+    int32_t ret = avmuxer_->SetTimedMetadata();
+    EXPECT_EQ(ret, 0);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_MPEG);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, TEST_SAMPLE_RATE);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, TEST_CHANNEL_COUNT);
+    EXPECT_EQ(avmuxer_->AddTrack(audioTrackId, audioParams), AV_ERR_OK);
+    EXPECT_GE(audioTrackId, 0);
+
+    ASSERT_EQ(avmuxer_->Start(), 0);
+
+    inputFile_ = std::make_shared<std::ifstream>(INPUT_FILE_PATH, std::ios::binary);
+
+    TrackWriteSample(INPUT_FILE_PATH, vidTrackId);
+
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+
+    std::shared_ptr<DemuxerMock> demuxer = std::make_shared<DemuxerMock>();
+    demuxer->Start(outputFile);
+    OH_AVFormat *sourceFromat = demuxer->GetSourceFormat();
+    int32_t trackCount = 0;
+    EXPECT_EQ(OH_AVFormat_GetIntValue(sourceFromat, OH_MD_KEY_TRACK_COUNT, &trackCount), true);
+    EXPECT_EQ(trackCount, 1);
+}
+
+/**
+ * @tc.name: Muxer_AddTrackNodata_003
+ * @tc.desc: Muxer mp4 add 0 no data track
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4MuxerUnitTest, Muxer_AddTrackNodata_003, TestSize.Level0)
+{
+    int32_t audioTrackId = -1;
+    int32_t vidTrackId = -1;
+    int32_t metaTrackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_AddTrackNodata_003.mp4");
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, AV_OUTPUT_FORMAT_MPEG_4);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> videoParams =
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+
+    ASSERT_EQ(avmuxer_->AddTrack(vidTrackId, videoParams), 0);
+    ASSERT_GE(vidTrackId, 0);
+
+    std::shared_ptr<FormatMock> metadataParams = FormatMockFactory::CreateTimedMetadataFormat(
+        TIMED_METADATA_TRACK_MIMETYPE.c_str(), TIMED_METADATA_KEY, vidTrackId);
+    ASSERT_NE(metadataParams, nullptr);
+
+    ASSERT_EQ(avmuxer_->AddTrack(metaTrackId, metadataParams), 0);
+    ASSERT_GE(metaTrackId, 1);
+
+    int32_t ret = avmuxer_->SetTimedMetadata();
+    EXPECT_EQ(ret, 0);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_MPEG);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, TEST_SAMPLE_RATE);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, TEST_CHANNEL_COUNT);
+    EXPECT_EQ(avmuxer_->AddTrack(audioTrackId, audioParams), AV_ERR_OK);
+    EXPECT_GE(audioTrackId, 0);
+
+    ASSERT_EQ(avmuxer_->Start(), 0);
+
+    inputFile_ = std::make_shared<std::ifstream>(INPUT_FILE_PATH, std::ios::binary);
+
+    TrackWriteSample(INPUT_FILE_PATH, vidTrackId);
+    TrackWriteSample(INPUT_FILE_PATH, metaTrackId);
+    TrackWriteSample(INPUT_AUDIO_FILE_PATH, audioTrackId);
+
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+
+    std::shared_ptr<DemuxerMock> demuxer = std::make_shared<DemuxerMock>();
+    demuxer->Start(outputFile);
+    OH_AVFormat *sourceFromat = demuxer->GetSourceFormat();
+    int32_t trackCount = 0;
+    EXPECT_EQ(OH_AVFormat_GetIntValue(sourceFromat, OH_MD_KEY_TRACK_COUNT, &trackCount), true);
+    EXPECT_EQ(trackCount, 3);  // 3
+}
 }

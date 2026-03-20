@@ -117,6 +117,11 @@ Status TimedMetaTrack::WriteSample(std::shared_ptr<AVIOStream> io, const std::sh
 Status TimedMetaTrack::WriteTailer()
 {
     FALSE_RETURN_V_MSG_E(stsz_ != nullptr, Status::ERROR_INVALID_OPERATION, "stsz box is empty");
+    auto trackBox = moov_->GetChild(std::string("trak") + std::to_string(trackId_));
+    if (trackBox != nullptr && stsz_->sampleCount_ == 0) {
+        trackBox->NeedWrite(false);
+        MEDIA_LOG_I("[%{public}d] sample is null, set not write trak box", trackId_);
+    }
     if (stsz_->sampleCount_ > 0) {
         lastDuration_ = std::max(static_cast<int64_t>(frameSize_), lastDuration_);
         DisposeStts(lastDuration_, lastTimestampUs_);
