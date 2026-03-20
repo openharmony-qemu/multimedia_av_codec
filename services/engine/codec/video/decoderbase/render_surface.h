@@ -86,6 +86,7 @@ public:
     std::mutex outputMutex_;
     std::map<uint32_t, std::pair<sptr<SurfaceBuffer>, OHOS::BufferFlushConfig>> renderSurfaceBufferMap_;
     std::atomic<GraphicTransformType> transform_ = GraphicTransformType::GRAPHIC_ROTATE_NONE;
+    int32_t bitDepth_ = BITS_PER_PIXEL_COMPONENT_8;
 
 private:
     int32_t SetQueueSize(const sptr<Surface> &surface, uint32_t targetSize);
