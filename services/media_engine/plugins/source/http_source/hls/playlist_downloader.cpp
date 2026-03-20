@@ -425,7 +425,7 @@ AesDecryptorManager::~AesDecryptorManager()
     aesDecryptorsMap_.clear();
 }
 
-std::shared_ptr<AesDecryptor> AesDecryptorManager::GetOneAesDecryptor(uint64_t keyIndex)
+std::shared_ptr<AesDecryptor> AesDecryptorManager::GetAesDecryptorByKeyIndex(uint64_t keyIndex)
 {
     std::shared_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
     auto it = aesDecryptorsMap_.find(keyIndex);
@@ -442,7 +442,7 @@ void AesDecryptorManager::CreateAesDecryptorByKeyInfos(const std::vector<KeyInfo
     }
 }
 
-void AesDecryptorManager::CreateAesDecryptor(const KeyInfo& keyInfo)
+void AesDecryptorManager::CreateOneAesDecryptor(const KeyInfo& keyInfo)
 {
     std::shared_ptr<AesDecryptor> tempAesDecryptor = std::make_shared<AesDecryptor>();
     tempAesDecryptor->OnSourceKeyChange(keyInfo.key_, keyInfo.keyLen_, keyInfo.iv_);

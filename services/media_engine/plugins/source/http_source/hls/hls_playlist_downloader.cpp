@@ -247,7 +247,7 @@ uint64_t HlsPlayListDownloader::KeyChange(std::list<std::shared_ptr<M3U8Fragment
         std::copy(std::begin(master_->key_), std::end(master_->key_), std::begin(sessionKeyInfo.key_));
         std::copy(std::begin(master_->iv_), std::end(master_->iv_), std::begin(sessionKeyInfo.iv_));
         sessionKeyInfo.keyLen_ = master_->keyLen_;
-        aesDecryptorManager_->GetOneAesDecryptor(sessionKeyInfo);
+        aesDecryptorManager_->CreateOneAesDecryptor(sessionKeyInfo);
     }
     aesDecryptorManager_->CreateAesDecryptorByKeyInfos(keyInfos);
     return sessionKeyIndex;
@@ -256,7 +256,7 @@ uint64_t HlsPlayListDownloader::KeyChange(std::list<std::shared_ptr<M3U8Fragment
 std::shared_ptr<AesDecryptor> HlsPlayListDownloader::GetAesDecryptor(uint64_t keyIndex)
 {
     if (aesDecryptorManager_ != nullptr) {
-        return aesDecryptorManager_->GetAesDecryptor(keyIndex);
+        return aesDecryptorManager_->GetAesDecryptorByKeyIndex(keyIndex);
     }
     return nullptr;
 }
