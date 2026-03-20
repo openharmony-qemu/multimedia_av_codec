@@ -149,11 +149,7 @@ int32_t BitstreamReader::NalUnitReader::ReadNalUnit(uint8_t *bufferAddr, int32_t
     auto ret = memcpy_s(bufferAddr, bufferSize, nalUnit_->data() + readSize_, bufferSize);
     CHECK_AND_RETURN_RET_LOG(ret == EOK, AVCODEC_SAMPLE_ERR_ERROR, "ReadNalUnit failed");
 
-    if (bufferSize > bufferCapacity) {
-        readSize_ = bufferSize;
-    } else {
-        readSize_ = 0;
-    }
+    readSize_ = (bufferSize > bufferCapacity) ? bufferSize : 0;
 
     if (!IsEOF()) {
         PrereadNalUnit();
