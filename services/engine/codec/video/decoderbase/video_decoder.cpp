@@ -645,38 +645,6 @@ int32_t VideoDecoder::GetOutputFormat(Format &format)
     return AVCS_ERR_OK;
 }
 
-void VideoDecoder::SetSurfaceParameter()
-{
-    int32_t val = -1;
-    bool setSurfacePixelFormat = false;
-    std::optional<ScalingMode> scaling = std::nullopt;
-    std::optional<GraphicTransformType> orientation = std::nullopt;
-    if (format_.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val)) {
-        setSurfacePixelFormat = true;
-    }
-    if (format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val)) {
-        scaling = static_cast<ScalingMode>(val);
-    }
-    if (format_.GetIntValue(OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE, val)) {
-        orientation = static_cast<GraphicTransformType>(val);
-    }
-    std::lock_guard<std::mutex> sLock(surfaceMutex_);
-    if (setSurfacePixelFormat) {
-        CHECK_AND_RETURN_LOG(SetSurfaceFormat() == AVCS_ERR_OK,
-                             "set surface format failed: unsupported surface format");
-    }
-    if (scaling) {
-        sInfo_.scalingMode = scaling.value();
-        sInfo_.surface->SetScalingMode(sInfo_.scalingMode.value());
-    }
-    if (orientation) {
-        transform_.store(orientation.value());
-        AVCODEC_LOGI("Set surface video_orientation_type: %{public}d success.",
-                     static_cast<int32_t>(transform_.load()));
-        sInfo_.surface->SetTransform(transform_.load());
-    }
-}
-
 int32_t VideoDecoder::SetSurfaceFormat()
 {
     if (bitDepth_ == BITS_PER_PIXEL_COMPONENT_10) {
