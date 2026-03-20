@@ -40,6 +40,7 @@ public:
     bool AddChild(std::shared_ptr<BasicBox> box);
     std::shared_ptr<BasicBox> GetChild(std::string typePath);
     size_t GetChildCount();
+    void NeedWrite(bool flag);
     virtual int64_t Write(std::shared_ptr<AVIOStream> io);
     virtual void SetVersion(uint8_t version) {return;}
     virtual Any GetCurBoxPtr() {return Any(this);}
@@ -82,6 +83,7 @@ protected:
     std::string type_;
     std::unordered_map<std::string, std::shared_ptr<BasicBox>> childBoxes_;
     std::vector<std::string> childTypes_;
+    bool needWrite_ = true;
 };
 
 class FullBox : public BasicBox {

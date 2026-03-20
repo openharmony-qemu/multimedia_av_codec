@@ -302,6 +302,11 @@ Status VideoTrack::WriteSample(std::shared_ptr<AVIOStream> io, const std::shared
 Status VideoTrack::WriteTailer()
 {
     FALSE_RETURN_V_MSG_E(stsz_ != nullptr, Status::ERROR_INVALID_OPERATION, "stsz box is empty");
+    auto trackBox = moov_->GetChild(std::string("trak") + std::to_string(trackId_));
+    if (trackBox != nullptr && stsz_->sampleCount_ == 0) {
+        trackBox->NeedWrite(false);
+        MEDIA_LOG_I("[%{public}d] sample is null, set not write trak box", trackId_);
+    }
     if (lastDuration_ == 0 && stsz_->sampleCount_ > 1) {
         lastDuration_ = ConvertTime(ConvertTimeToMpeg4(lastTimestampUs_ - startTimestampUs_, timeScale_),
             stsz_->sampleCount_ - 1, 1);

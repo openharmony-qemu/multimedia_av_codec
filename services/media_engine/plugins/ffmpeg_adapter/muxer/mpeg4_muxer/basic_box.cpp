@@ -37,6 +37,10 @@ BasicBox::BasicBox(uint32_t size, std::string type)
 
 uint32_t BasicBox::GetSize()
 {
+    if (!needWrite_) {
+        MEDIA_LOG_I("get size set 0, %{public}s box", type_.c_str());
+        return 0;
+    }
     size_ = BOX_HEAD_LEN;  // box head size: 8 B
     AppendChildSize();
     return size_;
@@ -50,6 +54,11 @@ void BasicBox::SetType(std::string type)
 std::string BasicBox::GetType()
 {
     return type_;
+}
+
+void BasicBox::NeedWrite(bool flag)
+{
+    needWrite_ = flag;
 }
 
 bool BasicBox::AddChild(std::shared_ptr<BasicBox> box)
@@ -93,6 +102,10 @@ size_t BasicBox::GetChildCount()
 
 int64_t BasicBox::Write(std::shared_ptr<AVIOStream> io)
 {
+    if (!needWrite_) {
+        MEDIA_LOG_I("not write %{public}s box", type_.c_str());
+        return io->GetPos();
+    }
     int64_t pos = io->GetPos();
     io->Write(size_);
     io->Write(type_.data(), BOX_TYPE_LEN);  // box type len: 4 B
