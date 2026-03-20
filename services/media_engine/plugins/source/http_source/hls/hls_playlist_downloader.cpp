@@ -243,7 +243,7 @@ uint64_t HlsPlayListDownloader::KeyChange(std::list<std::shared_ptr<M3U8Fragment
     }
     if (sessionKeyIndex > 0 && master_ != nullptr) {
         KeyInfo sessionKeyInfo;
-        sessionKeyInfo.index_ = sessionKeyIndex;
+        sessionKeyInfo.index_ = UINT64_MAX;
         std::copy(std::begin(master_->key_), std::end(master_->key_), std::begin(sessionKeyInfo.key_));
         std::copy(std::begin(master_->iv_), std::end(master_->iv_), std::begin(sessionKeyInfo.iv_));
         sessionKeyInfo.keyLen_ = master_->keyLen_;
@@ -321,7 +321,7 @@ void HlsPlayListDownloader::CopyFragmentInfo(PlayInfo& playInfo, std::shared_ptr
     } else if (file->keyIndex_ > 0) {
         playInfo.keyIndex_ = file->keyIndex_;
     } else if (sessionKeyIndex > 0) {
-        playInfo.keyIndex_ = sessionKeyIndex;
+        playInfo.keyIndex_ = UINT64_MAX;
     } else {
         playInfo.keyIndex_ = 0;
     }
@@ -405,14 +405,17 @@ bool HlsPlayListDownloader::UpdatePlaylists(bool isSimple)
             ret = currentAudio_->m3u8_->Update(playList_, isParseFinished_, master_->totalKeyIndex_);
             master_->isParseSuccess_ = ret;
             master_->totalKeyIndex_ += currentAudio_->m3u8_->keyIndex_;
+            currentAudio_->m3u8_->keyIndex_ = 0;
         } else if (currentSubtitles_ && currentSubtitles_->m3u8_) {
             ret = currentSubtitles_->m3u8_->Update(playList_, isParseFinished_, master_->totalKeyIndex_);
             master_->isParseSuccess_ = ret;
             master_->totalKeyIndex_ += currentSubtitles_->m3u8_->keyIndex_;
+            currentSubtitles_->m3u8_->keyIndex_ = 0;
         } else if (currentVariant_ && currentVariant_->m3u8_) {
             ret = currentVariant_->m3u8_->Update(playList_, isParseFinished_, master_->totalKeyIndex_);
             master_->isParseSuccess_ = ret;
             master_->totalKeyIndex_ += currentVariant_->m3u8_->keyIndex_;
+            currentVariant_->m3u8_->keyIndex_ = 0;
         } else {}
     } else {
         if (currentAudio_ && currentAudio_->m3u8_) {

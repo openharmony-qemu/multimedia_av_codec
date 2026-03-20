@@ -521,7 +521,7 @@ void M3U8::AddFile(std::shared_ptr<M3U8Fragment> fragment, size_t duration)
     if (isDecryptAble_ && method_ != nullptr && *method_ == "NONE") {
         fragment->keyIndex_ = UINT64_MAX;
     } else {
-        fragment->keyIndex_ = (keyIndex_ != 0) ? (totalKeyIndex_ + keyIndex_) : 0;
+        fragment->keyIndex_ = totalKeyIndex_ + keyIndex_;
     }
     files_.emplace_back(fragment);
 }
@@ -626,7 +626,7 @@ void M3U8::DownloadKey(bool isKey)
     RequestInfo requestInfo;
     requestInfo.url = realKeyUrl;
     requestInfo.httpHeader = httpHeader_;
-    uint64_t index = isKey ? keyIndex_ : sessionKeyIndex_;
+    uint64_t index = isKey ? (keyIndex_ + totalKeyIndex_) : sessionKeyIndex_;
     downloadRequest_ = std::make_shared<DownloadRequest>(index, keyDataSave_, realStatusCallback, requestInfo, true);
     downloadRequest_->SetIsAuthRequest(true);
     downloader_->Download(downloadRequest_, -1);
@@ -835,6 +835,7 @@ void M3U8MasterPlaylist::UpdateMediaPlaylist()
     m3u8->httpHeader_ = httpHeader_;
     isParseSuccess_ = m3u8->Update(playList_, false, totalKeyIndex_);
     totalKeyIndex_ += m3u8->keyIndex_;
+    m3u8->keyIndex_ = 0;
     hasDiscontinuity_ = m3u8->hasDiscontinuity_;
     segmentOffsets_ = m3u8->segmentOffsets_;
     duration_ = m3u8->GetDuration();
@@ -857,7 +858,6 @@ void M3U8MasterPlaylist::DownloadSessionKey(std::shared_ptr<Tag>& tag)
     m3u8->isDecryptKeyReady_ = false;
     m3u8->ParseKey(std::static_pointer_cast<AttributesTag>(tag));
     sessionKeyIndex_++;
-    totalKeyIndex_++;
     m3u8->isSessionKey_ = true;
     m3u8->sessionKeyIndex_ = sessionKeyIndex_;
     m3u8->DownloadKey(false);
