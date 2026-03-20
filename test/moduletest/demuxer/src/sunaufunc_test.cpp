@@ -1017,11 +1017,11 @@ HWTEST_F(DemuxerSunAuFuncNdkTest, DEMUXER_SUNAU_FUNC_5100, TestSize.Level1)
 }
 
 /**
- * @tc.number    : DEMUXER_RM_ILLEGAL_PARA_0100
+ * @tc.number    : DEMUXER_SUNAU_ILLEGAL_PARA_0100
  * @tc.name      : input invalid sunau uri file
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerSunAuFuncNdkTest, DEMUXER_RM_ILLEGAL_PARA_0100, TestSize.Level2)
+HWTEST_F(DemuxerSunAuFuncNdkTest, DEMUXER_SUNAU_ILLEGAL_PARA_0100, TestSize.Level2)
 {
     const char *uri = "http://192.168.3.11:8080/share/invalid.au";
     source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
