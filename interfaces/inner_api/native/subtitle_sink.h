@@ -42,7 +42,7 @@ public:
     Status Stop();
     Status Pause();
     Status Resume();
-    Status Flush();
+    Status Flush(bool isSeekFlush);
     Status Release();
     void DrainOutputBuffer(bool flushed);
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver>& receiver);

@@ -122,5 +122,201 @@ HWTEST_F(SubtitleSinkUnitTest, GetMediaTime_001, TestSize.Level0)
     auto ret = sink_->GetMediaTime();
     EXPECT_EQ(ret, ERROR_RET);
 }
+
+/**
+ * @tc.name  : Test Flush
+ * @tc.number: Flush_001
+ * @tc.desc  : Test Flush with isSeekFlush=true and empty subtitleInfoVec
+ */
+HWTEST_F(SubtitleSinkUnitTest, Flush_001, TestSize.Level0)
+{
+    ASSERT_NE(sink_, nullptr);
+    auto meta = std::make_shared<Meta>();
+    sink_->Init(meta, nullptr);
+    sink_->Prepare();
+    
+    auto ret = sink_->Flush(true);
+    
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_TRUE(sink_->isFlush_.load());
+    EXPECT_TRUE(sink_->subtitleInfoVec_.empty());
+}
+
+/**
+ * @tc.name  : Test Flush
+ * @tc.number: Flush_002
+ * @tc.desc  : Test Flush with isSeekFlush=false and empty subtitleInfoVec
+ */
+HWTEST_F(SubtitleSinkUnitTest, Flush_002, TestSize.Level0)
+{
+    ASSERT_NE(sink_, nullptr);
+    auto meta = std::make_shared<Meta>();
+    sink_->Init(meta, nullptr);
+    sink_->Prepare();
+    
+    auto ret = sink_->Flush(false);
+    
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_TRUE(sink_->isFlush_.load());
+    EXPECT_TRUE(sink_->subtitleInfoVec_.empty());
+}
+
+/**
+ * @tc.name  : Test Flush
+ * @tc.number: Flush_003
+ * @tc.desc  : Test Flush with isSeekFlush=true and non-empty subtitleInfoVec
+ */
+HWTEST_F(SubtitleSinkUnitTest, Flush_003, TestSize.Level0)
+{
+    ASSERT_NE(sink_, nullptr);
+    auto meta = std::make_shared<Meta>();
+    sink_->Init(meta, nullptr);
+    sink_->Prepare();
+    
+    sink_->subtitleInfoVec_.emplace_back(TEXT_A, PTR_100, DURATION_50);
+    sink_->subtitleInfoVec_.emplace_back(TEXT_B, PTR_200, DURATION_50);
+    
+    auto ret = sink_->Flush(true);
+    
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_TRUE(sink_->isFlush_.load());
+    EXPECT_TRUE(sink_->subtitleInfoVec_.empty());
+}
+
+/**
+ * @tc.name  : Test Flush
+ * @tc.number: Flush_004
+ * @tc.desc  : Test Flush with isSeekFlush=false and non-empty subtitleInfoVec
+ */
+HWTEST_F(SubtitleSinkUnitTest, Flush_004, TestSize.Level0)
+{
+    ASSERT_NE(sink_, nullptr);
+    auto meta = std::make_shared<Meta>();
+    sink_->Init(meta, nullptr);
+    sink_->Prepare();
+    
+    auto syncCenter = std::make_shared<Pipeline::MediaSyncManager>();
+    sink_->SetSyncCenter(syncCenter);
+    
+    sink_->subtitleInfoVec_.emplace_back(TEXT_A, PTR_100, DURATION_50);
+    sink_->subtitleInfoVec_.emplace_back(TEXT_B, PTR_200, DURATION_50);
+    
+    auto ret = sink_->Flush(false);
+    
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_TRUE(sink_->isFlush_.load());
+    EXPECT_FALSE(sink_->subtitleInfoVec_.empty());
+}
+
+/**
+ * @tc.name  : Test Flush
+ * @tc.number: Flush_005
+ * @tc.desc  : Test Flush with isSeekFlush=false and expired subtitles
+ */
+HWTEST_F(SubtitleSinkUnitTest, Flush_005, TestSize.Level0)
+{
+    ASSERT_NE(sink_, nullptr);
+    auto meta = std::make_shared<Meta>();
+    sink_->Init(meta, nullptr);
+    sink_->Prepare();
+    
+    auto syncCenter = std::make_shared<Pipeline::MediaSyncManager>();
+    sink_->SetSyncCenter(syncCenter);
+    
+    sink_->subtitleInfoVec_.emplace_back(TEXT_A, PTR_100, DURATION_50);
+    sink_->subtitleInfoVec_.emplace_back(TEXT_B, PTR_200, DURATION_50);
+    
+    auto ret = sink_->Flush(false);
+    
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_TRUE(sink_->isFlush_.load());
+}
+
+/**
+ * @tc.name  : Test Flush
+ * @tc.number: Flush_006
+ * @tc.desc  : Test Flush with isSeekFlush=false and mixed expired/active subtitles
+ */
+HWTEST_F(SubtitleSinkUnitTest, Flush_006, TestSize.Level0)
+{
+    ASSERT_NE(sink_, nullptr);
+    auto meta = std::make_shared<Meta>();
+    sink_->Init(meta, nullptr);
+    sink_->Prepare();
+    
+    auto syncCenter = std::make_shared<Pipeline::MediaSyncManager>();
+    sink_->SetSyncCenter(syncCenter);
+    
+    sink_->subtitleInfoVec_.emplace_back(TEXT_A, PTR_100, DURATION_50);
+    sink_->subtitleInfoVec_.emplace_back(TEXT_B, PTR_200, DURATION_50);
+    
+    auto ret = sink_->Flush(false);
+    
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_TRUE(sink_->isFlush_.load());
+    EXPECT_EQ(sink_->subtitleInfoVec_.size(), RET_2);
+}
+
+/**
+ * @tc.name  : Test Flush
+ * @tc.number: Flush_007
+ * @tc.desc  : Test Flush with null inputBufferQueueConsumer
+ */
+HWTEST_F(SubtitleSinkUnitTest, Flush_007, TestSize.Level0)
+{
+    ASSERT_NE(sink_, nullptr);
+    auto meta = std::make_shared<Meta>();
+    sink_->Init(meta, nullptr);
+    
+    auto ret = sink_->Flush(true);
+    
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_TRUE(sink_->isFlush_.load());
+}
+
+/**
+ * @tc.name  : Test Flush
+ * @tc.number: Flush_008
+ * @tc.desc  : Test Flush with isSeekFlush=true clears all subtitles
+ */
+HWTEST_F(SubtitleSinkUnitTest, Flush_008, TestSize.Level0)
+{
+    ASSERT_NE(sink_, nullptr);
+    auto meta = std::make_shared<Meta>();
+    sink_->Init(meta, nullptr);
+    sink_->Prepare();
+    
+    auto syncCenter = std::make_shared<Pipeline::MediaSyncManager>();
+    sink_->SetSyncCenter(syncCenter);
+    
+    sink_->subtitleInfoVec_.emplace_back(TEXT_A, PTR_100, DURATION_50);
+    sink_->subtitleInfoVec_.emplace_back(TEXT_B, PTR_200, DURATION_50);
+    
+    auto ret = sink_->Flush(true);
+    
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_TRUE(sink_->isFlush_.load());
+    EXPECT_TRUE(sink_->subtitleInfoVec_.empty());
+}
+
+/**
+ * @tc.name  : Test Flush
+ * @tc.number: Flush_009
+ * @tc.desc  : Test Flush sets shouldUpdate flag
+ */
+HWTEST_F(SubtitleSinkUnitTest, Flush_009, TestSize.Level0)
+{
+    ASSERT_NE(sink_, nullptr);
+    auto meta = std::make_shared<Meta>();
+    sink_->Init(meta, nullptr);
+    sink_->Prepare();
+    
+    sink_->shouldUpdate_ = false;
+    
+    auto ret = sink_->Flush(true);
+    
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_TRUE(sink_->shouldUpdate_.load());
+}
 } // namespace Media
 } // namespace OHOS

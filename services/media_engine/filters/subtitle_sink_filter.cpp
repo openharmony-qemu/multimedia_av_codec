@@ -191,7 +191,7 @@ Status SubtitleSinkFilter::DoFlush()
 {
     MEDIA_LOG_I("subtitle sink flush start");
     if (subtitleSink_ != nullptr) {
-        subtitleSink_->Flush();
+        subtitleSink_->Flush(false);
     }
     MEDIA_LOG_I("subtitle sink flush end");
     return Status::OK;
