@@ -100,7 +100,6 @@ public:
     bool GetStartedStatus();
     std::vector<uint32_t> GetBitRates();
     bool SelectBitRate(uint32_t bitRate);
-    void OnSourceKeyChange(const std::unordered_map<uint64_t, KeyInfo> keyInfoMap, bool isKey) override;
     void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) override;
     void SetIsTriggerAutoMode(bool isAuto);
     void SetReadBlockingFlag(bool isReadBlockingAllowed);
@@ -382,11 +381,6 @@ private:
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
     InfoIndexMap InfoIndexMap_;
     std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
-
-    std::unordered_map<uint64_t, std::shared_ptr<AesDecryptor>> keyAesDecryptorsMap_;
-    std::unordered_map<uint64_t, std::shared_ptr<AesDecryptor>> sessionKeyAesDecryptorsMap_;
-    std::shared_ptr<AesDecryptor> initAesDecryptor_;
-    bool needAesDecryptor_ {false};
 };
 }
 }

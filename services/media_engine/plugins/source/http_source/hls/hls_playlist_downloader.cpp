@@ -16,6 +16,7 @@
 #include <mutex>
 #include <unistd.h>
 #include <utility>
+#include <algorithm>
 #include "plugin/plugin_time.h"
 #include "hls_playlist_downloader.h"
 #include "common/media_source.h"
@@ -62,6 +63,7 @@ HlsPlayListDownloader::~HlsPlayListDownloader()
     if (downloader_ != nullptr) {
         downloader_->Stop(false);
     }
+    aesDecryptorManager_ = nullptr;
     MEDIA_LOG_I("~HlsPlayListDownloader out");
     FALSE_RETURN_MSG(reportInfo_ != nullptr, "reportInfo_ is nullptr");
     FALSE_RETURN_MSG(currentVariant_ != nullptr, "currentVariant_ is nullptr");
@@ -214,27 +216,49 @@ Seekable HlsPlayListDownloader::GetSeekable() const
     return master_->bLive_ ? Seekable::UNSEEKABLE : Seekable::SEEKABLE;
 }
 
-void HlsPlayListDownloader::KeyChange(void)
+uint64_t HlsPlayListDownloader::KeyChange(std::list<std::shared_ptr<M3U8Fragment>>& files)
 {
-    auto callback = callbackWeak_.lock();
-    if (currentVariant_ == nullptr || callback == nullptr) {
-        return;
-    }
-
-    if (currentVariant_->m3u8_ && !(currentVariant_->m3u8_->keyInfoMap_.empty())) {
-        int32_t times = 0;
-        while (currentVariant_->m3u8_->keyAllDownload_ > 0 && !isInterruptNeeded_) {
-            Task::SleepInTask(5); // sleep 5ms
-            if ((times++) >= RETRY_TIMES) {
-                MEDIA_LOG_E("Download decrypkey failed.");
-                break;
-            }
+    files = currentVariant_->m3u8_->files_;
+    uint64_t sessionKeyIndex = currentVariant_->sessionKeyIndex_;
+    currentVariant_->m3u8_->WaitKeyDownload();
+    std::unordered_map<uint64_t, KeyInfo> keyInfos;
+    currentVariant_->m3u8_->GetKeyInfos(keyInfos);
+    {
+        std::lock_guard<std::mutex> lock(mediaMutex_);
+        if (currentSubtitles_ && currentSubtitles_->m3u8_) {
+            files = currentSubtitles_->m3u8_->files_;
+            sessionKeyIndex = currentSubtitles_->sessionKeyIndex_;
+            currentSubtitles_->m3u8_->WaitKeyDownload();
+            currentSubtitles_->m3u8_->GetKeyInfos(keyInfos);
         }
-        callback->OnSourceKeyChange(currentVariant_->m3u8_->keyInfoMap_, true);
+        if (currentAudio_ && currentAudio_->m3u8_) {
+            files = currentAudio_->m3u8_->files_;
+            sessionKeyIndex = currentAudio_->sessionKeyIndex_;
+            currentAudio_->m3u8_->WaitKeyDownload();
+            currentAudio_->m3u8_->GetKeyInfos(keyInfos);
+        }
     }
-    if (master_ && !(master_->sessionKeyInfoMap_.empty())) {
-        callback->OnSourceKeyChange(master_->sessionKeyInfoMap_, false);
+    if (aesDecryptorManager_ == nullptr) {
+        aesDecryptorManager_ = std::make_shared<AesDecryptorManager>();
     }
+    if (sessionKeyIndex > 0 && master_ != nullptr) {
+        KeyInfo sessionKeyInfo;
+        sessionKeyInfo.index_ = UINT64_MAX;
+        std::copy(std::begin(master_->key_), std::end(master_->key_), std::begin(sessionKeyInfo.key_));
+        std::copy(std::begin(master_->iv_), std::end(master_->iv_), std::begin(sessionKeyInfo.iv_));
+        sessionKeyInfo.keyLen_ = master_->keyLen_;
+        aesDecryptorManager_->CreateOneAesDecryptor(sessionKeyInfo);
+    }
+    aesDecryptorManager_->CreateAesDecryptorByKeyInfos(keyInfos);
+    return sessionKeyIndex;
+}
+
+std::shared_ptr<AesDecryptor> HlsPlayListDownloader::GetAesDecryptor(uint64_t keyIndex)
+{
+    if (aesDecryptorManager_ != nullptr) {
+        return aesDecryptorManager_->GetAesDecryptorByKeyIndex(keyIndex);
+    }
+    return nullptr;
 }
 
 void HlsPlayListDownloader::NotifyListChange()
@@ -246,23 +270,9 @@ void HlsPlayListDownloader::NotifyListChange()
     if (currentVariant_->m3u8_ == nullptr) {
         return;
     }
-    auto files = currentVariant_->m3u8_->files_;
-    uint64_t sessionKeyIndex = currentVariant_->m3u8_->sessionKeyIndex_;
-    {
-        std::lock_guard<std::mutex> lock(mediaMutex_);
-        if (currentSubtitles_ && currentSubtitles_->m3u8_) {
-            files = currentSubtitles_->m3u8_->files_;
-            sessionKeyIndex = currentSubtitles_->m3u8_->sessionKeyIndex_;
-        }
-        if (currentAudio_ && currentAudio_->m3u8_) {
-            files = currentAudio_->m3u8_->files_;
-            sessionKeyIndex = currentAudio_->m3u8_->sessionKeyIndex_;
-        }
-    }
+    std::list<std::shared_ptr<M3U8Fragment>> files;
+    auto sessionKeyIndex = KeyChange(files);
     auto playList = std::vector<PlayInfo>();
-
-    KeyChange();
-
     FALSE_RETURN_MSG(!isInterruptNeeded_, "HLS Seek return, isInterruptNeeded_.");
     playList.reserve(files.size());
     for (const auto &file: files) {
@@ -306,8 +316,15 @@ void HlsPlayListDownloader::CopyFragmentInfo(PlayInfo& playInfo, std::shared_ptr
         playInfo.url_ = file->uri_;
     }
     playInfo.streamId_ = GetCurStreamId();
-    playInfo.keyIndex_ = file->keyIndex_;
-    playInfo.sessionKeyIndex_ = sessionKeyIndex;
+    if (file->keyIndex_ == UINT64_MAX) {
+        playInfo.keyIndex_ = 0;
+    } else if (file->keyIndex_ > 0) {
+        playInfo.keyIndex_ = file->keyIndex_;
+    } else if (sessionKeyIndex > 0) {
+        playInfo.keyIndex_ = UINT64_MAX;
+    } else {
+        playInfo.keyIndex_ = 0;
+    }
 }
 
 void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPreParse)
@@ -385,24 +402,36 @@ bool HlsPlayListDownloader::UpdatePlaylists(bool isSimple)
     bool ret = false;
     if (isSimple) {
         if (currentAudio_ && currentAudio_->m3u8_) {
-            ret = currentAudio_->m3u8_->Update(playList_, isParseFinished_);
+            ret = currentAudio_->m3u8_->Update(playList_, isParseFinished_, master_->totalKeyIndex_);
             master_->isParseSuccess_ = ret;
+            master_->totalKeyIndex_ += currentAudio_->m3u8_->keyIndex_;
+            currentAudio_->m3u8_->keyIndex_ = 0;
         } else if (currentSubtitles_ && currentSubtitles_->m3u8_) {
-            ret = currentSubtitles_->m3u8_->Update(playList_, isParseFinished_);
+            ret = currentSubtitles_->m3u8_->Update(playList_, isParseFinished_, master_->totalKeyIndex_);
             master_->isParseSuccess_ = ret;
+            master_->totalKeyIndex_ += currentSubtitles_->m3u8_->keyIndex_;
+            currentSubtitles_->m3u8_->keyIndex_ = 0;
         } else if (currentVariant_ && currentVariant_->m3u8_) {
-            ret = currentVariant_->m3u8_->Update(playList_, isParseFinished_);
+            ret = currentVariant_->m3u8_->Update(playList_, isParseFinished_, master_->totalKeyIndex_);
             master_->isParseSuccess_ = ret;
+            master_->totalKeyIndex_ += currentVariant_->m3u8_->keyIndex_;
+            currentVariant_->m3u8_->keyIndex_ = 0;
         } else {}
     } else {
         if (currentAudio_ && currentAudio_->m3u8_) {
-            ret = currentAudio_->m3u8_->Update(playList_, true);
+            ret = currentAudio_->m3u8_->Update(playList_, true, master_->totalKeyIndex_);
+            master_->totalKeyIndex_ += currentAudio_->m3u8_->keyIndex_;
+            currentAudio_->m3u8_->keyIndex_ = 0;
         } else if (currentSubtitles_ && currentSubtitles_->m3u8_) {
-            ret = currentSubtitles_->m3u8_->Update(playList_, true);
+            ret = currentSubtitles_->m3u8_->Update(playList_, true, master_->totalKeyIndex_);
+            master_->totalKeyIndex_ += currentSubtitles_->m3u8_->keyIndex_;
+            currentSubtitles_->m3u8_->keyIndex_ = 0;
         } else {
             currentVariant_ = master_->defaultVariant_;
             if (currentVariant_ && currentVariant_->m3u8_) {
-                ret = currentVariant_->m3u8_->Update(playList_, true);
+                ret = currentVariant_->m3u8_->Update(playList_, true, master_->totalKeyIndex_);
+                master_->totalKeyIndex_ += currentVariant_->m3u8_->keyIndex_;
+                currentVariant_->m3u8_->keyIndex_ = 0;
             }
         }
     }
