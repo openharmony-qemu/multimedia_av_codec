@@ -129,16 +129,6 @@ void Av1Decoder::InitParams()
     colorSpaceInfo_.mtrx = DAV1D_MC_UNKNOWN;
 }
 
-bool Av1Decoder::CheckVideoPixelFormat(VideoPixelFormat vpf)
-{
-    if (vpf == VideoPixelFormat::NV12 || vpf == VideoPixelFormat::NV21) {
-        return true;
-    } else {
-        AVCODEC_LOGE("Set parameter failed: pixel format value %{public}d invalid", vpf);
-        return false;
-    }
-}
-
 void Av1Decoder::ConfigurelWidthAndHeight(const Format &format, const std::string_view &formatKey, bool isWidth)
 {
     if (isWidth == true) {

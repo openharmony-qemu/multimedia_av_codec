@@ -249,42 +249,6 @@ int32_t VideoDecoder::Configure(const Format &format)
     return AVCS_ERR_OK;
 }
 
-void VideoDecoder::ConfigureSurface(const Format &format, const std::string_view &formatKey, FormatDataType formatType)
-{
-    CHECK_AND_RETURN_LOG(formatType == FORMAT_TYPE_INT32, "Set parameter failed: type should be int32");
-
-    int32_t val = 0;
-    CHECK_AND_RETURN_LOG(format.GetIntValue(formatKey, val), "Set parameter failed: get value fail");
-
-    if (formatKey == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT) {
-        VideoPixelFormat vpf = static_cast<VideoPixelFormat>(val);
-        if (!CheckVideoPixelFormat(vpf)) {
-            return;
-        }
-        std::lock_guard<std::mutex> runlock(decRunMutex_);
-        outputPixelFmt_ = vpf;
-        format_.PutIntValue(formatKey, val);
-        GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(outputPixelFmt_);
-        format_.PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
-    } else if (formatKey == MediaDescriptionKey::MD_KEY_ROTATION_ANGLE) {
-        VideoRotation sr = static_cast<VideoRotation>(val);
-        CHECK_AND_RETURN_LOG(sr == VideoRotation::VIDEO_ROTATION_0 || sr == VideoRotation::VIDEO_ROTATION_90 ||
-                                 sr == VideoRotation::VIDEO_ROTATION_180 || sr == VideoRotation::VIDEO_ROTATION_270,
-                             "Set parameter failed: rotation angle value %{public}d invalid", val);
-        format_.PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val);
-    } else if (formatKey == MediaDescriptionKey::MD_KEY_SCALE_TYPE) {
-        ScalingMode scaleMode = static_cast<ScalingMode>(val);
-        CHECK_AND_RETURN_LOG(scaleMode == ScalingMode::SCALING_MODE_SCALE_TO_WINDOW ||
-                                 scaleMode == ScalingMode::SCALING_MODE_SCALE_CROP,
-                             "Set parameter failed: scale type value %{public}d invalid", val);
-        format_.PutIntValue(formatKey, val);
-    } else {
-        AVCODEC_LOGW("Set parameter failed: %{public}s, please check your parameter key", formatKey.data());
-        return;
-    }
-    AVCODEC_LOGI("Set parameter  %{public}s success, val %{public}d", formatKey.data(), val);
-}
-
 void VideoDecoder::InitBuffers()
 {
     inputAvailQue_->SetActive(true);

@@ -31,7 +31,6 @@ public:
 
     int32_t CreateDecoder() override;
     void DeleteDecoder() override;
-    bool CheckVideoPixelFormat(VideoPixelFormat vpf) override;
     void ConfigurelWidthAndHeight(const Format &format, const std::string_view &formatKey, bool isWidth) override;
 
     void FlushAllFrames() override;

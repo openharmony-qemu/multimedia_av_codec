@@ -60,12 +60,10 @@ public:
     int32_t NotifyMemoryWriteBack() override;
     int32_t Configure(const Format &format) override;
 
-    virtual bool CheckVideoPixelFormat(VideoPixelFormat vpf) = 0;
     virtual void ConfigurelWidthAndHeight(const Format &format, const std::string_view &formatKey, bool isWidth) = 0;
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
         int32_t maxVal = INT_MAX);
     virtual void ConfigureHdrMetadata(const Format &format);
-    void ConfigureSurface(const Format &format, const std::string_view &formatKey, FormatDataType formatType);
     int32_t SetOutputSurface(sptr<Surface> surface) override;
     int32_t RenderOutputBuffer(uint32_t index) override;
     int32_t CheckFormatChange(uint32_t index, int width, int height, int bitDepth);
@@ -108,7 +106,6 @@ public:
     std::atomic<bool> isSendEos_ = false;
     std::shared_ptr<BlockQueue<uint32_t>> inputAvailQue_;
     std::shared_ptr<Scale> scale_ = nullptr;
-    int32_t bitDepth_ = BITS_PER_PIXEL_COMPONENT_8;
 #ifdef BUILD_ENG_VERSION
     std::shared_ptr<std::ofstream> dumpInFile_ = nullptr;
     std::shared_ptr<std::ofstream> dumpOutFile_ = nullptr;

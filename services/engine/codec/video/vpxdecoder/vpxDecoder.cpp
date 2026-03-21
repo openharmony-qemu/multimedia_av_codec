@@ -175,16 +175,6 @@ void VpxDecoder::ConfigureHdrMetadata(const Format &format)
     colorSpaceInfo_.colorDescriptionPresentFlag = 1;
 }
 
-bool VpxDecoder::CheckVideoPixelFormat(VideoPixelFormat vpf)
-{
-    if (vpf == VideoPixelFormat::NV12 || vpf == VideoPixelFormat::NV21 || vpf == VideoPixelFormat::YUV420P) {
-        return true;
-    } else {
-        AVCODEC_LOGE("Set parameter failed: pixel format value %{public}d invalid", vpf);
-        return false;
-    }
-}
-
 void VpxDecoder::ConfigurelWidthAndHeight(const Format &format, const std::string_view &formatKey, bool isWidth)
 {
     if (codecName_ == AVCodecCodecName::VIDEO_DECODER_VP8_NAME) {

@@ -218,16 +218,6 @@ void HevcDecoder::InitHdrParams()
     colorSpaceInfo_.matrixCoeffs = 0;
 }
 
-bool HevcDecoder::CheckVideoPixelFormat(VideoPixelFormat vpf)
-{
-    if (vpf == VideoPixelFormat::NV12 || vpf == VideoPixelFormat::NV21) {
-        return true;
-    } else {
-        AVCODEC_LOGE("Set parameter failed: pixel format value %{public}d invalid", vpf);
-        return false;
-    }
-}
-
 void HevcDecoder::ConfigurelWidthAndHeight(const Format &format, const std::string_view &formatKey, bool isWidth)
 {
     if (isWidth == true) {
