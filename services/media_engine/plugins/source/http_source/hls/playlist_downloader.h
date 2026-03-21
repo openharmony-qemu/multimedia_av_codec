@@ -64,7 +64,7 @@ public:
     AesDecryptorManager();
     ~AesDecryptorManager();
     std::shared_ptr<AesDecryptor> GetAesDecryptorByKeyIndex(uint64_t keyIndex);
-    void CreateAesDecryptorByKeyInfos(const std::vector<KeyInfo>& keyInfos);
+    void CreateAesDecryptorByKeyInfos(const std::unordered_map<uint64_t, KeyInfo>& keyInfos);
     void CreateOneAesDecryptor(const KeyInfo& keyInfo);
 
 private:

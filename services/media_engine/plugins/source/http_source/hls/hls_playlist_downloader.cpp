@@ -221,7 +221,7 @@ uint64_t HlsPlayListDownloader::KeyChange(std::list<std::shared_ptr<M3U8Fragment
     files = currentVariant_->m3u8_->files_;
     uint64_t sessionKeyIndex = currentVariant_->sessionKeyIndex_;
     currentVariant_->m3u8_->WaitKeyDownload();
-    std::vector<KeyInfo> keyInfos;
+    std::unordered_map<uint64_t, KeyInfo> keyInfos;
     currentVariant_->m3u8_->GetKeyInfos(keyInfos);
     {
         std::lock_guard<std::mutex> lock(mediaMutex_);

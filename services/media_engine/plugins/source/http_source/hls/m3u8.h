@@ -118,7 +118,7 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     void ProcessInfo(M3U8Info& info, size_t& duration);
     void InitDownloadHeader();
     void WaitKeyDownload();
-    void GetKeyInfos(std::vector<KeyInfo>& keyInfos);
+    void GetKeyInfos(std::unordered_map<uint64_t, KeyInfo>& keyInfos);
 
     std::shared_ptr<std::string> method_;
     std::shared_ptr<std::string> keyUri_;
@@ -157,7 +157,7 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
     uint64_t keyIndex_ {0};
-    std::vector<KeyInfo> keyInfos_;
+    std::unordered_map<uint64_t, KeyInfo> keyInfos_;
     std::shared_mutex keyMutex_;
     uint64_t sessionKeyIndex_ {0};
     std::atomic<int> keyAllDownload_ {0};

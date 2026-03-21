@@ -291,7 +291,7 @@ void M3U8::PrepareDecrptionKeys(std::shared_ptr<Tag>& tag)
             std::unique_lock<std::shared_mutex> lock(keyMutex_);
             keyIndex_++;
             keyInfo.index_ = keyIndex_ + totalKeyIndex_;
-            keyInfos_.emplace_back(keyInfo);
+            keyInfos_[keyInfo.index_] = keyInfo;
         }
         keyAllDownload_.fetch_add(1, std::memory_order_relaxed);
         DownloadKey(true);
@@ -645,9 +645,9 @@ uint32_t M3U8::SaveData(uint8_t *data, uint32_t len, bool notBlock, uint64_t key
             keyAllDownload_.fetch_sub(1, std::memory_order_relaxed);
             {
                 std::unique_lock<std::shared_mutex> lock(keyMutex_);
-                FALSE_RETURN_V_MSG(keyIndex > 0 && keyIndex - 1 < keyInfos_.size(), len, "keyIndex out of bounds");
-                std::copy(std::begin(key_), std::end(key_), std::begin(keyInfos_[keyIndex - 1].key_));
-                keyInfos_[keyIndex - 1].keyLen_ = keyLen_;
+                FALSE_RETURN_V_MSG(keyInfos_.find(keyIndex) != keyInfos_.end(), len, "keyIndex out of bounds");
+                std::copy(std::begin(key_), std::end(key_), std::begin(keyInfos_[keyIndex].key_));
+                keyInfos_[keyIndex].keyLen_ = keyLen_;
             }
         }
         MEDIA_LOG_I("DownloadKey hlsSourceKey end, index:" PUBLIC_LOG_U64, keyIndex);
@@ -763,7 +763,7 @@ void M3U8::WaitKeyDownload()
     }
 }
 
-void M3U8::GetKeyInfos(std::vector<KeyInfo>& keyInfos)
+void M3U8::GetKeyInfos(std::unordered_map<uint64_t, KeyInfo>& keyInfos)
 {
     std::shared_lock<std::shared_mutex> lock(keyMutex_);
     keyInfos = keyInfos_;
