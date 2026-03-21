@@ -1070,8 +1070,8 @@ void VideoDecoder::SetBufferCropMetadata(sptr<SurfaceBuffer> surfaceBuffer)
     BufferHandleMetaRegion* crop = reinterpret_cast<BufferHandleMetaRegion*>(cropVec.data());
     crop->left = 0;
     crop->top = 0;
-    crop->width = width_ - 1;
-    crop->height = height_;
+    crop->width = static_cast<UINT32>(width_ - 1);
+    crop->height = static_cast<UINT32>(height_ - 1);
 
     GSError err = surfaceBuffer->SetMetadata(ATTRKEY_CROP_REGION, cropVec);
     if (err != GSERROR_OK) {
