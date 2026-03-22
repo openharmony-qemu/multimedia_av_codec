@@ -3408,7 +3408,7 @@ int64_t MediaDemuxer::GetReadLoopRetryUs(int32_t trackId)
         ((isVideoMuted_ || needRestore_ || hasSetLargeSize_) && trackId == videoTrackId_)) {
         return NEXT_DELAY_TIME_US;
     }
-    return static_cast<int64_t>(sampleDuration >> SAMPLE_FLOW_CONTROL_RATE_POW);
+    return std::min(sampleDuration >> SAMPLE_FLOW_CONTROL_RATE_POW, static_cast<uint64_t>(SAMPLE_LOOP_DELAY_TIME_US));
 }
 
 int64_t MediaDemuxer::DoBeforeEachLoop(int32_t trackId)
