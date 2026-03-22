@@ -197,7 +197,7 @@ public:
         typename C::mapped_type&& value)
     {
         Modify([&](C& c) {
-            c.insert(typename C::value_type(key, std::move(value)));
+            c.insert(typename C::value_type(key, std::move(value));
         });
     }
 
