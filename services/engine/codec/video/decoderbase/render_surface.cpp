@@ -535,7 +535,7 @@ sptr<SurfaceBuffer> RenderSurface::CreateNewSurfaceBuffer(int32_t index)
     buffers_[INDEX_OUTPUT][index]->avBuffer =
         AVBuffer::CreateAVBuffer(surfaceMemory->GetBase(),  surfaceMemory->GetSize());
     CHECK_AND_RETURN_RET_LOG(buffers_[INDEX_OUTPUT][index]->avBuffer != nullptr, nullptr,
-                                 "Buffer allocate failed, index=%{public}d", index);
+        "Buffer allocate failed, index=%{public}d", index);
     codecAvailQue_->Push(index);
     return surfaceMemory->GetSurfaceBuffer();
 }
