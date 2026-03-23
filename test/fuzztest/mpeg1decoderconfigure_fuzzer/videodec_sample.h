@@ -72,7 +72,7 @@ public:
     int32_t Flush();
     int32_t Reset();
     void SetEOS(OH_AVBuffer *buffer, uint32_t index);
-    uint32_t SendData(uint32_t bufferSize, uint32_t index, OH_AVBuffer *buffer);
+    uint32_t SendData(uint32_t bufferSize, uint32_t index, OH_AVBuffer *buffer, size_t frameEnd);
     void CopyStartCode(uint8_t *frameBuffer, uint32_t bufferSize, OH_AVCodecBufferAttr &attr);
     int32_t ReadData(uint32_t index, OH_AVBuffer *buffer);
     void WaitForEOS();
@@ -113,6 +113,8 @@ private:
     int64_t timeStamp_ { 0 };
     int64_t lastRenderedTimeUs_ { 0 };
     bool isFirstFrame_ = true;
+    std::vector<uint8_t> fileData_;
+    size_t readOffset_ = 0;
 };
 } // namespace Media
 } // namespace OHOS
