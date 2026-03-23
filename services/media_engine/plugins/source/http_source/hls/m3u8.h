@@ -23,6 +23,8 @@
 #include <functional>
 #include <utility>
 #include <map>
+#include <shared_mutex>
+#include <atomic>
 #include "hls_tags.h"
 #include "playlist_downloader.h"
 #include "download/downloader.h"
@@ -72,7 +74,7 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     ~M3U8();
     void InitTagUpdaters();
     void InitTagUpdatersMap();
-    bool Update(const std::string& playList, bool isNeedCleanFiles);
+    bool Update(const std::string& playList, bool isNeedCleanFiles, uint64_t totalKeyIndex = 0);
     void UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags);
     void AddFile(std::shared_ptr<M3U8Fragment> fragment, size_t duration);
     void GetExtInf(const std::shared_ptr<Tag>& tag, double& duration) const;
@@ -115,6 +117,8 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
         uint64_t initSequence);
     void ProcessInfo(M3U8Info& info, size_t& duration);
     void InitDownloadHeader();
+    void WaitKeyDownload();
+    void GetKeyInfos(std::unordered_map<uint64_t, KeyInfo>& keyInfos);
 
     std::shared_ptr<std::string> method_;
     std::shared_ptr<std::string> keyUri_;
@@ -153,10 +157,12 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
     uint64_t keyIndex_ {0};
-    std::unordered_map<uint64_t, KeyInfo> keyInfoMap_;
+    std::unordered_map<uint64_t, KeyInfo> keyInfos_;
+    std::shared_mutex keyMutex_;
     uint64_t sessionKeyIndex_ {0};
     std::atomic<int> keyAllDownload_ {0};
     bool isSessionKey_ {false};
+    uint64_t totalKeyIndex_ {0};
 };
 
 struct M3U8Media {
@@ -174,6 +180,7 @@ struct M3U8Media {
     bool forced_ {false};
     std::shared_ptr<M3U8> m3u8_ {nullptr};
     uint32_t streamId_ {0};
+    uint64_t sessionKeyIndex_ {0};
 };
 
 struct M3U8VariantStream {
@@ -195,6 +202,7 @@ struct M3U8VariantStream {
     std::shared_ptr<M3U8Media> defaultAudio_;
     std::shared_ptr<M3U8Media> defaultSubtitles_;
     bool isVideo_ {false};
+    uint64_t sessionKeyIndex_ {0};
 };
 
 struct M3U8MasterPlaylist {
@@ -255,7 +263,7 @@ struct M3U8MasterPlaylist {
     std::list<std::shared_ptr<M3U8Media>> subtitlesList_;
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
     uint64_t sessionKeyIndex_ {0};
-    std::unordered_map<uint64_t, KeyInfo> sessionKeyInfoMap_;
+    uint64_t totalKeyIndex_ {0};
 };
 }
 }

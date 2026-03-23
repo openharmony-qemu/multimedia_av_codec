@@ -44,12 +44,12 @@ const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_hev
 list<SeekMode> seekModes = {SeekMode::SEEK_NEXT_SYNC, SeekMode::SEEK_PREVIOUS_SYNC,
     SeekMode::SEEK_CLOSEST_SYNC};
 
-string g_datPath1 = TEST_FILE_PATH + string("dat_mpeg4_aac.dat");
-string g_datUri1 = TEST_URI_PATH + string("dat_mpeg4_aac.dat");
-string g_datPath2 = TEST_FILE_PATH + string("dat_h264_mp3.dat");
-string g_datUri2 = TEST_URI_PATH + string("dat_h264_mp3.dat");
-string g_datPath3 = TEST_FILE_PATH + string("dat_h265_aac.dat");
-string g_datUri3 = TEST_URI_PATH + string("dat_h265_aac.dat");
+string g_datPath1 = TEST_FILE_PATH + string("dat_mpeg4_aac_high_bitrate.dat");
+string g_datUri1 = TEST_URI_PATH + string("dat_mpeg4_aac_high_bitrate.dat");
+string g_datPath2 = TEST_FILE_PATH + string("dat_h264_mp3_high_bitrate.dat");
+string g_datUri2 = TEST_URI_PATH + string("dat_h264_mp3_high_bitrate.dat");
+string g_datPath3 = TEST_FILE_PATH + string("dat_h265_aac_4k_60fps.dat");
+string g_datUri3 = TEST_URI_PATH + string("dat_h265_aac_4k_60fps.dat");
 
 } //namespace
 

@@ -27,7 +27,14 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "NativeAVCapability"};
 constexpr uint32_t MAX_LENGTH = 255;
+constexpr int TOTAL_CODEC_TYPES = 4;
+constexpr uint32_t MAX_CAP_NUM = 200;
+struct CapabilityCache {
+    OH_AVCapability *array[MAX_CAP_NUM] = {nullptr};
+    uint32_t count = 0;
+};
 }
+
 using namespace OHOS::MediaAVCodec;
 
 OH_AVCapability::~OH_AVCapability() {}
@@ -38,7 +45,7 @@ OH_AVCapability *OH_AVCodec_GetCapability(const char *mime, bool isEncoder)
     ApiInvokeRecorder apiInvokeRecorder("OH_AVCodec_GetCapability", appEventReporter);
     CHECK_AND_RETURN_RET_LOG(mime != nullptr, nullptr, "Get capability failed: mime is nullptr");
     CHECK_AND_RETURN_RET_LOG(strlen(mime) != 0 && strlen(mime) < MAX_LENGTH, nullptr,
-        "Get capability failed: invalid mime strlen, %{public}zu", strlen(mime));
+                             "Get capability failed: invalid mime strlen, %{public}zu", strlen(mime));
     std::shared_ptr<AVCodecList> codeclist = AVCodecListFactory::CreateAVCodecList();
     CHECK_AND_RETURN_RET_LOG(codeclist != nullptr, nullptr, "Get capability failed: CreateAVCodecList failed");
     uint32_t sizeOfCap = sizeof(OH_AVCapability);
@@ -54,6 +61,54 @@ OH_AVCapability *OH_AVCodec_GetCapability(const char *mime, bool isEncoder)
     obj->capabilityData_ = capabilityData;
     AVCODEC_LOGD("OH_AVCodec_GetCapability successful");
     return obj;
+}
+
+OH_AVCapability **OH_AVCodec_GetCapabilityList(OH_AVCodecType codecType, uint32_t *count)
+{
+    CHECK_AND_RETURN_RET_LOG(count != nullptr, nullptr,
+                             "Get capability list failed: Invalid codec type: %{public}d", codecType);
+    *count = 0;
+    int typeIndex = static_cast<int32_t>(codecType);
+    CHECK_AND_RETURN_RET_LOG(typeIndex >= static_cast<int32_t>(OH_AVCodecType::OH_AVCODEC_TYPE_VIDEO_ENCODER)
+                             && typeIndex <= static_cast<int32_t>(OH_AVCodecType::OH_AVCODEC_TYPE_AUDIO_DECODER),
+                             nullptr, "Get capability list failed: Invalid codec type: %{public}d", codecType);
+    static CapabilityCache g_caches[TOTAL_CODEC_TYPES];
+    static std::once_flag g_initFlags[TOTAL_CODEC_TYPES];
+    static AppEventReporter appEventReporter = AppEventReporter();
+    ApiInvokeRecorder apiInvokeRecorder("OH_AVCodec_GetCapabilityList", appEventReporter);
+    std::call_once(g_initFlags[typeIndex], [codecType, typeIndex]() {
+        std::shared_ptr<AVCodecList> codeclist = AVCodecListFactory::CreateAVCodecList();
+        CHECK_AND_RETURN_LOG(codeclist != nullptr, "Get capability list failed: CreateAVCodecList failed");
+        std::vector<std::shared_ptr<CapabilityData>> capabilityDataList = codeclist->GetCapabilityList(codecType);
+        CHECK_AND_RETURN_LOG(!capabilityDataList.empty(),
+                             "Get capability list: no capability found for codec type %{public}d", codecType);
+        uint32_t validCount = 0;
+        uint32_t size = capabilityDataList.size();
+        for (uint32_t i = 0; i < size && validCount < MAX_CAP_NUM; ++i) {
+            CapabilityData *capabilityData = capabilityDataList[i].get();
+            uint32_t sizeOfCap = sizeof(OH_AVCapability);
+            const std::string &name = capabilityData->codecName;
+            if (name.empty()) {
+                AVCODEC_LOGD("Get capability list failed: cannot find matched capability");
+                continue;
+            }
+            void *addr = codeclist->GetBuffer(name, sizeOfCap);
+            if (addr == nullptr) {
+                AVCODEC_LOGD("Get capability list failed: malloc capability buffer failed");
+                continue;
+            }
+            OH_AVCapability *obj = static_cast<OH_AVCapability *>(addr);
+            obj->magic_ = AVMagic::AVCODEC_MAGIC_AVCAPABILITY;
+            obj->capabilityData_ = capabilityData;
+            g_caches[typeIndex].array[validCount++] = obj;
+        }
+        g_caches[typeIndex].count = validCount;
+    });
+    *count = g_caches[typeIndex].count;
+    CHECK_AND_RETURN_RET_LOG(count != 0, nullptr, "no capability found for codec type %{public}d", codecType);
+    AVCODEC_LOGD("Get capability list successful, found %{public}u capabilities for codec type %{public}d",
+                 *count, codecType);
+    return g_caches[typeIndex].array;
 }
 
 OH_AVCapability *OH_AVCodec_GetCapabilityByCategory(const char *mime, bool isEncoder, OH_AVCodecCategory category)
@@ -97,12 +152,35 @@ const char *OH_AVCapability_GetName(OH_AVCapability *capability)
     return name.data();
 }
 
+const char *OH_AVCapability_GetMimeType(OH_AVCapability *capability)
+{
+    CHECK_AND_RETURN_RET_LOG(capability != nullptr && capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY,
+        "", "Invalid parameter");
+    const auto &mimeType = capability->capabilityData_->mimeType;
+    return mimeType.data();
+}
+
+bool OH_AVCapability_CheckMimeType(OH_AVCapability *capability, const char *mimeType)
+{
+    CHECK_AND_RETURN_RET_LOG(capability != nullptr && capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY,
+        false, "Invalid parameter");
+    return strcmp(OH_AVCapability_GetMimeType(capability), mimeType) == 0;
+}
+
 bool OH_AVCapability_IsHardware(OH_AVCapability *capability)
 {
     CHECK_AND_RETURN_RET_LOG(capability != nullptr && capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY,
         false, "Invalid parameter");
     std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capability->capabilityData_);
     return codecInfo->IsHardwareAccelerated();
+}
+
+bool OH_AVCapability_IsSecure(OH_AVCapability *capability)
+{
+    CHECK_AND_RETURN_RET_LOG(capability != nullptr && capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY,
+        false, "Invalid parameter");
+    std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capability->capabilityData_);
+    return codecInfo->IsSecure();
 }
 
 int32_t OH_AVCapability_GetMaxSupportedInstances(OH_AVCapability *capability)

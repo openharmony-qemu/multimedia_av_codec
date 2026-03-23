@@ -44,8 +44,7 @@ public:
     Status DoFlush() override;
     Status DoRelease() override;
     void SetParameter(const std::shared_ptr<Meta> &parameter) override;
-    void SetUserMeta(const std::shared_ptr<Meta> &userMeta);
-    Status SetCustomInfo(const std::shared_ptr<Meta> &customInfo);
+    Status SetUserMeta(const std::shared_ptr<Meta> &userMeta);
     void GetParameter(std::shared_ptr<Meta> &parameter) override;
     Status LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
     Status UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;

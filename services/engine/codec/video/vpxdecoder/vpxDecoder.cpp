@@ -47,18 +47,18 @@ constexpr struct {
 constexpr uint32_t SUPPORT_VPX_DECODER_NUM = sizeof(SUPPORT_VPX_DECODER) / sizeof(SUPPORT_VPX_DECODER[0]);
 constexpr int32_t VIDEO_INSTANCE_SIZE = 64;
 constexpr int32_t VIDEO_ALIGNMENT_SIZE = 2;
-constexpr int32_t VP8_MAX_WIDTH_SIZE = 1920;
-constexpr int32_t VP8_MAX_HEIGHT_SIZE = 1080;
-constexpr int32_t VP9_MAX_WIDTH_SIZE = 8192;
-constexpr int32_t VP9_MAX_HEIGHT_SIZE = 4352;
+constexpr int32_t VP8_MAX_WIDTH_SIZE = 3840;
+constexpr int32_t VP8_MAX_HEIGHT_SIZE = 2160;
+constexpr int32_t VP9_MAX_WIDTH_SIZE = 3840;
+constexpr int32_t VP9_MAX_HEIGHT_SIZE = 2160;
 constexpr int32_t VIDEO_MIN_WIDTH_SIZE = 4;
 constexpr int32_t VIDEO_MIN_HEIGHT_SIZE = 4;
-constexpr int32_t VP9_BLOCKPERSEC_SIZE = 18104320; // MaxDisplayRate / (block_width*block_height)
-constexpr int32_t VP8_BLOCKPERSEC_SIZE = 489600; // MaxDisplayRate / (block_width*block_height)
+constexpr int32_t VP9_BLOCKPERSEC_SIZE = 648000; // MaxDisplayRate / (block_width*block_height)
+constexpr int32_t VP8_BLOCKPERSEC_SIZE = 972000; // MaxDisplayRate / (block_width*block_height)
 constexpr int32_t VP9_FRAMERATE_MAX_SIZE = 130;
 constexpr int32_t VIDEO_FRAMERATE_DEFAULT_SIZE = 60;
-constexpr int32_t VP8_BLOCKPERFRAME_SIZE = 8160; // MaxPicSize / (block_width*block_height)
-constexpr int32_t VP9_BLOCKPERFRAME_SIZE = 139264; // MaxPicSize / (block_width*block_height)
+constexpr int32_t VP8_BLOCKPERFRAME_SIZE = 32400; // MaxPicSize / (block_width*block_height)
+constexpr int32_t VP9_BLOCKPERFRAME_SIZE = 32400; // MaxPicSize / (block_width*block_height)
 constexpr uint32_t DEFAULT_TRY_DECODE_TIME = 1;
 constexpr uint32_t INDEX_INPUT = 0;
 constexpr uint32_t INDEX_OUTPUT = 1;
@@ -150,11 +150,11 @@ void VpxDecoder::ConfigureHdrMetadata(const Format &format)
         AVCODEC_LOGE("Get HDR metadata from format failed");
         return;
     }
-    auto safeDiv = [](int num, int den) -> double {
+    auto safeDiv = [](int num, int den) -> float {
         if (den == 0) {
             return 0.0;
         }
-        return static_cast<double>(num) / static_cast<double>(den);
+        return static_cast<float>(num) / static_cast<float>(den);
     };
     hdrMetadata_.displayPrimariesX[0] =
         safeDiv(metadata->display_primaries[0][0].num, metadata->display_primaries[0][0].den); // 0: Y
@@ -572,22 +572,16 @@ int32_t VpxDecoder::ConvertHdrStaticMetadata(const HdrMetadata &hdrMetadata, std
     HdrStaticMetadata* hdrStaticMetadata = reinterpret_cast<HdrStaticMetadata*>(staticMetadataVec.data());
     CHECK_AND_RETURN_RET_LOG(hdrStaticMetadata != nullptr, AVCS_ERR_INVALID_VAL,
         "vector convert to CM_HDR_Metadata_Type error");
-    hdrStaticMetadata->smpte2086.displayPrimaryGreen.x =
-        static_cast<float>(hdrMetadata.displayPrimariesX[0]); // 0: Y
-    hdrStaticMetadata->smpte2086.displayPrimaryBlue.x =
-        static_cast<float>(hdrMetadata.displayPrimariesX[1]); // 1: U
-    hdrStaticMetadata->smpte2086.displayPrimaryRed.x =
-        static_cast<float>(hdrMetadata.displayPrimariesX[2]); // 2: V
-    hdrStaticMetadata->smpte2086.displayPrimaryGreen.y =
-        static_cast<float>(hdrMetadata.displayPrimariesY[0]); // 0: Y
-    hdrStaticMetadata->smpte2086.displayPrimaryBlue.y =
-        static_cast<float>(hdrMetadata.displayPrimariesY[1]); // 1: U
-    hdrStaticMetadata->smpte2086.displayPrimaryRed.y =
-        static_cast<float>(hdrMetadata.displayPrimariesY[2]); // 2: V
-    hdrStaticMetadata->smpte2086.whitePoint.x = static_cast<float>(hdrMetadata.whitePointX);
-    hdrStaticMetadata->smpte2086.whitePoint.y = static_cast<float>(hdrMetadata.whitePointY);
-    hdrStaticMetadata->smpte2086.maxLuminance = static_cast<float>(hdrMetadata.maxDisplayMasteringLuminance);
-    hdrStaticMetadata->smpte2086.minLuminance = static_cast<float>(hdrMetadata.minDisplayMasteringLuminance);
+    hdrStaticMetadata->smpte2086.displayPrimaryGreen.x = hdrMetadata.displayPrimariesX[0]; // 0: Y
+    hdrStaticMetadata->smpte2086.displayPrimaryBlue.x = hdrMetadata.displayPrimariesX[1]; // 1: U
+    hdrStaticMetadata->smpte2086.displayPrimaryRed.x = hdrMetadata.displayPrimariesX[2]; // 2: V
+    hdrStaticMetadata->smpte2086.displayPrimaryGreen.y = hdrMetadata.displayPrimariesY[0]; // 0: Y
+    hdrStaticMetadata->smpte2086.displayPrimaryBlue.y = hdrMetadata.displayPrimariesY[1]; // 1: U
+    hdrStaticMetadata->smpte2086.displayPrimaryRed.y = hdrMetadata.displayPrimariesY[2]; // 2: V
+    hdrStaticMetadata->smpte2086.whitePoint.x = hdrMetadata.whitePointX;
+    hdrStaticMetadata->smpte2086.whitePoint.y = hdrMetadata.whitePointY;
+    hdrStaticMetadata->smpte2086.maxLuminance = hdrMetadata.maxDisplayMasteringLuminance;
+    hdrStaticMetadata->smpte2086.minLuminance = hdrMetadata.minDisplayMasteringLuminance;
     return AVCS_ERR_OK;
 }
 

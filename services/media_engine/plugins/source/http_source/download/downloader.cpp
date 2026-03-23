@@ -104,7 +104,7 @@ DownloadRequest::DownloadRequest(uint64_t keyIndex, KeyDataSaveFunc keySaveData,
     RequestInfo requestInfo, bool requestWholeFile) : keySaveData_(std::move(keySaveData)),
     statusCallback_(std::move(statusCallback)), requestInfo_(requestInfo), requestWholeFile_(requestWholeFile)
 {
-    (void)memset_s(&headerInfo_, sizeof(HeaderInfo), 0x00, sizeof(HeaderInfo));
+    NZERO_LOG(memset_s(&headerInfo_, sizeof(HeaderInfo), 0x00, sizeof(HeaderInfo)));
     headerInfo_.fileContentLen = 0;
     headerInfo_.contentLen = 0;
     url_ = requestInfo.url;

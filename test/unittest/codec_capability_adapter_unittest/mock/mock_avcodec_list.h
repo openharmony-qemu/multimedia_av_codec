@@ -32,6 +32,7 @@ public:
         const std::string &, const bool, const MediaAVCodec::AVCodecCategory &));
     MOCK_METHOD2(GetBuffer, void *(const std::string &, uint32_t));
     MOCK_METHOD1(NewBuffer, void *(size_t));
+    MOCK_METHOD1(GetCapabilityList, std::vector<std::shared_ptr<MediaAVCodec::CapabilityData>>(int32_t));
 };
 } // namespace Media
 } // namespace OHOS

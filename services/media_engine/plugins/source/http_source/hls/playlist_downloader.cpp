@@ -414,6 +414,44 @@ void PlayListDownloader::StopBufferring(bool isAppBackground)
     downloader_->SetAppState(isAppBackground);
     downloader_->StopBufferring();
 }
+
+AesDecryptorManager::AesDecryptorManager()
+{
+}
+
+AesDecryptorManager::~AesDecryptorManager()
+{
+    std::unique_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
+    aesDecryptorsMap_.clear();
+}
+
+std::shared_ptr<AesDecryptor> AesDecryptorManager::GetAesDecryptorByKeyIndex(uint64_t keyIndex)
+{
+    std::shared_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
+    auto it = aesDecryptorsMap_.find(keyIndex);
+    return (it != aesDecryptorsMap_.end()) ? it->second : nullptr;
+}
+
+void AesDecryptorManager::CreateAesDecryptorByKeyInfos(const std::unordered_map<uint64_t, KeyInfo>& keyInfos)
+{
+    std::unique_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
+    for (const auto& [index, keyInfo] : keyInfos) {
+        if (aesDecryptorsMap_.find(index) != aesDecryptorsMap_.end()) {
+            continue;
+        }
+        std::shared_ptr<AesDecryptor> tempAesDecryptor = std::make_shared<AesDecryptor>();
+        tempAesDecryptor->OnSourceKeyChange(keyInfo.key_, keyInfo.keyLen_, keyInfo.iv_);
+        aesDecryptorsMap_[index] = tempAesDecryptor;
+    }
+}
+
+void AesDecryptorManager::CreateOneAesDecryptor(const KeyInfo& keyInfo)
+{
+    std::shared_ptr<AesDecryptor> tempAesDecryptor = std::make_shared<AesDecryptor>();
+    tempAesDecryptor->OnSourceKeyChange(keyInfo.key_, keyInfo.keyLen_, keyInfo.iv_);
+    std::unique_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
+    aesDecryptorsMap_[keyInfo.index_] = tempAesDecryptor;
+}
 }
 }
 }

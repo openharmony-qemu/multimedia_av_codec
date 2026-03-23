@@ -157,6 +157,7 @@ struct CapabilityData {
     int32_t codecType = AVCODEC_TYPE_NONE;
     std::string mimeType = "";
     bool isVendor = false;
+    bool isSecure = false;
     int32_t maxInstance = 0;
     Range bitrate;
     Range channels;
@@ -247,6 +248,14 @@ public:
      * @version 4.0
      */
     bool IsHardwareAccelerated();
+
+    /**
+     * @brief Check whether the codec is secure.
+     * @return Returns true if the codec is secure; false otherwise.
+     * @since 6.1
+     * @version 6.1
+     */
+    bool IsSecure();
 
     /**
      * @brief Check whether the codec is accelerated by hardware.

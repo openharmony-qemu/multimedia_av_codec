@@ -53,14 +53,12 @@ protected:
 
 private:
     struct HdrMetadata {
-        double displayPrimariesX[3] = {0, 0, 0};
-        double displayPrimariesY[3] = {0, 0, 0};
-        INT32 whitePointX = 0;
-        INT32 whitePointY = 0;
-        INT32 maxDisplayMasteringLuminance = 0;
-        INT32 minDisplayMasteringLuminance = 0;
-        INT32 maxContentLightLevel = 0;
-        INT32 maxPicAverageLightLevel = 0;
+        float displayPrimariesX[3] = {0, 0, 0};
+        float displayPrimariesY[3] = {0, 0, 0};
+        float whitePointX = 0;
+        float whitePointY = 0;
+        float maxDisplayMasteringLuminance = 0;
+        float minDisplayMasteringLuminance = 0;
     };
 
     struct ColorSpaceInfo {

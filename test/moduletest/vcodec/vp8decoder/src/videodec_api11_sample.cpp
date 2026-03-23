@@ -43,10 +43,10 @@ int32_t g_strideSurface = 0;
 int32_t g_sliceSurface = 0;
 bool g_yuvSurface = false;
 constexpr int32_t MIN_RANGE = 4;
-constexpr int32_t MAX_WIDTH_RANGE = 1920;
-constexpr int32_t MAX_HEIGHT_RANGE = 1080;
+constexpr int32_t MAX_WIDTH_RANGE = 3840;
+constexpr int32_t MAX_HEIGHT_RANGE = 2160;
 constexpr int32_t MIN_FRANGE = 1;
-constexpr int32_t MAX_FRANGE = 60;
+constexpr int32_t MAX_FRANGE = 30;
 constexpr int32_t EVEN_NUMBER = 2;
 void clearIntqueue(std::queue<uint32_t> &q)
 {

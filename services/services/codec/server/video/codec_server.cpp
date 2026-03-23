@@ -377,7 +377,7 @@ int32_t CodecServer::Stop()
     if (isLocalReleaseMode_) {
         {
             std::unique_lock<std::mutex> lock1(releaseBufferMutex_);
-            isReleaseFree_ = true;
+            isReleaseFree_.store(true);
         }
         releaseBufferCondition_.notify_all();
         if (releaseBufferTask_) {
@@ -1734,7 +1734,7 @@ void CodecServer::HandleOutputBufferAvailability(uint32_t index, std::shared_ptr
 void CodecServer::ReleaseBuffer()
 {
     AVCODEC_LOGI_WITH_TAG("CodecServer::ReleaseBuffer");
-    while (!isReleaseFree_) {
+    while (!isReleaseFree_.load()) {
         std::vector<std::pair<uint32_t, std::shared_ptr<AVBuffer>>> indexs;
         std::vector<uint32_t> dropIndexs;
         std::pair<uint32_t, std::shared_ptr<AVBuffer>> eosBuffer;
@@ -1742,7 +1742,7 @@ void CodecServer::ReleaseBuffer()
         {
             std::unique_lock<std::mutex> lock(releaseBufferMutex_);
             releaseBufferCondition_.wait(lock, [this] {
-                return isReleaseFree_ || !indexs_.empty();
+                return isReleaseFree_.load() || !indexs_.empty();
             });
             indexs = indexs_;
             indexs_.clear();
