@@ -1961,8 +1961,8 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_H265_BLANK_FRAME_0030, TestSize.Level
             vDecSample->WaitForEOS();
             ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
             ASSERT_EQ(AV_ERR_OK, vDecSample->Stop());
+            vDecSample->Flush_buffer();
         }
-
     }
 }
 

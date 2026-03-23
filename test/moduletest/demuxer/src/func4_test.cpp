@@ -1196,7 +1196,7 @@ HWTEST_F(DemuxerFunc4NdkTest, DEMUXER_FUNCTION_SAR_0010, TestSize.Level0)
         }
     }
     ASSERT_EQ(audioFrame, 95);
-    ASSERT_EQ(videoFrame, 60);    
+    ASSERT_EQ(videoFrame, 60);
     ASSERT_EQ(aKeyCount, 95);
     ASSERT_EQ(vKeyCount, 1);
     close(fd);

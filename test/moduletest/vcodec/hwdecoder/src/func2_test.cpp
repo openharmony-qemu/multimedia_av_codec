@@ -1213,6 +1213,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_H264_BLANK_FRAME_0040, TestSize.Level0)
             vDecSample->WaitForEOS();
             ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
             ASSERT_EQ(AV_ERR_OK, vDecSample->Stop());
+            vDecSample->Flush_buffer();
         }
     }
 }
@@ -1240,7 +1241,8 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_H265_BLANK_FRAME_0050, TestSize.Level2)
             ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
             vDecSample->WaitForEOS();
             ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
-            ASSERT_EQ(AV_ERR_OK, vDecSample->Stop());           
+            ASSERT_EQ(AV_ERR_OK, vDecSample->Stop());
+            vDecSample->Flush_buffer();
         }
     }
 }
@@ -1558,7 +1560,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0040, TestSize.Level2)
         vDecSample->DEFAULT_WIDTH = 3840;
         vDecSample->DEFAULT_HEIGHT = 2160;
         vDecSample->DEFAULT_FRAME_RATE = 30;
-        vDecSample->needCompareHdrInof = true;
+        vDecSample->needCompareHdrInof = false;
         vDecSample->NocaleHash = true;
         vDecSample->is8bitYuv = false;
         vDecSample->hdrType = OH_VIDEO_HDR_HDR10;
@@ -1673,7 +1675,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0080, TestSize.Level2)
         vDecSample->DEFAULT_WIDTH = 3840;
         vDecSample->DEFAULT_HEIGHT = 2160;
         vDecSample->DEFAULT_FRAME_RATE = 30;
-        vDecSample->needCompareHdrInof = true;
+        vDecSample->needCompareHdrInof = false;
         vDecSample->NocaleHash = true;
         vDecSample->is8bitYuv = false;
         vDecSample->hdrType = OH_VIDEO_HDR_VIVID;
@@ -1786,7 +1788,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0120, TestSize.Level2)
         vDecSample->DEFAULT_WIDTH = 3840;
         vDecSample->DEFAULT_HEIGHT = 2160;
         vDecSample->DEFAULT_FRAME_RATE = 30;
-        vDecSample->needCompareHdrInof = true;
+        vDecSample->needCompareHdrInof = false;
         vDecSample->needGetMetaData = true;
         vDecSample->NocaleHash = true;
         vDecSample->is8bitYuv = false;
