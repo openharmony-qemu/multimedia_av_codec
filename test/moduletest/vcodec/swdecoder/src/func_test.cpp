@@ -977,7 +977,6 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDECODE_BLANK_FRAME_0030, TestSize.Level2)
             ASSERT_EQ(AV_ERR_OK, vDecSample->Stop());
             vDecSample->Flush_buffer();
         }
-
     }
 }
 
