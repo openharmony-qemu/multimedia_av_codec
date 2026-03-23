@@ -157,7 +157,7 @@ int32_t BitstreamReader::NalUnitReader::ReadNalUnit(uint8_t *bufferAddr, int32_t
 
     readSize_ = (bufferSize > bufferCapacity) ? bufferSize : 0;
 
-    if (remainBufferSize > wirtableSize){
+    if (remainBufferSize > wirtableSize) {
         readSize_ += bufferSize;
     } else if (!IsEOF()) {
         if (readSize_ != 0) {
