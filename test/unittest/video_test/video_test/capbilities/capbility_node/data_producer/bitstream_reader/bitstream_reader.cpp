@@ -123,7 +123,7 @@ int32_t BitstreamReader::FillBuffer(CodecBufferInfo &bufferInfo)
         bufferInfo.attr.flags |= nalDetector_->IsIDR(naluType) ? AVCODEC_BUFFER_FLAGS_SYNC_FRAME : 0;
         CHECK_AND_BREAK(
             !(isTruncated) &&
-            !(bufferInfo.bufferCapacity == static_cast<unit32_t>(bufferInfo.attr.size)) &&
+            !(bufferInfo.bufferCapacity == static_cast<uint32_t>(bufferInfo.attr.size)) &&
             !nalDetector_->IsXPS(naluType) &&
             !nalDetector_->IsFullVCL(naluType, nalDetector_->GetNalTypeAddr(nalUnitReader_->GetNextNalUnitAddr())) &&
             !IsEOS()
