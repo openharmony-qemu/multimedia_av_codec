@@ -31,9 +31,9 @@ namespace OHOS {
 const char *FILE_PATH = "/data/test/fuzz_create.mp4";
 const int64_t EXPECT_SIZE = 36;
 
-bool CheckDataValidity(FuzzedDataProvider *fdp, size_t size)
+bool CheckDataValidity(FuzzedDataProvider *fdp, size_t dataSize)
 {
-    if (size <= EXPECT_SIZE) {
+    if (dataSize <= EXPECT_SIZE) {
         return false;
     }
     int32_t fd = open(FILE_PATH, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
@@ -41,7 +41,7 @@ bool CheckDataValidity(FuzzedDataProvider *fdp, size_t size)
         return false;
     }
     uint8_t *pstream = nullptr;
-    uint16_t framesize = size - EXPECT_SIZE;
+    uint16_t framesize = dataSize - EXPECT_SIZE;
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
     if (!pstream) {
         std::cerr << "Memory alloction failed" << std::endl;

@@ -34,9 +34,9 @@ const int64_t URI_COUNT = 20;
 const char FLAG = '\0';
 const size_t LANGUAGE_BUFFER_SIZE = 3;
 const size_t LANGUAGE_COUNT = 2;
-bool CheckDataValidity(FuzzedDataProvider *fdp, size_t size)
+bool CheckDataValidity(FuzzedDataProvider *fdp, size_t dataSize)
 {
-    if (size <= EXPECT_SIZE) {
+    if (dataSize <= EXPECT_SIZE) {
         return false;
     }
     int32_t fd = open(WEBM_PATH, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
