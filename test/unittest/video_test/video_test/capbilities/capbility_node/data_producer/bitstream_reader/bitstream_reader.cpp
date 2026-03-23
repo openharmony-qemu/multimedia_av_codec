@@ -123,7 +123,7 @@ int32_t BitstreamReader::FillBuffer(CodecBufferInfo &bufferInfo)
         bufferInfo.attr.flags |= nalDetector_->IsIDR(naluType) ? AVCODEC_BUFFER_FLAGS_SYNC_FRAME : 0;
         CHECK_AND_BREAK(
             !(isTruncated) &&
-            !(bufferInfo.bufferCapacity == bufferInfo.attr.size) &&
+            !(bufferInfo.bufferCapacity == static_cast<unit32_t>(bufferInfo.attr.size)) &&
             !nalDetector_->IsXPS(naluType) &&
             !nalDetector_->IsFullVCL(naluType, nalDetector_->GetNalTypeAddr(nalUnitReader_->GetNextNalUnitAddr())) &&
             !IsEOS()
@@ -151,7 +151,7 @@ int32_t BitstreamReader::NalUnitReader::ReadNalUnit(uint8_t *bufferAddr, int32_t
     CHECK_AND_RETURN_RET_LOG(nalUnit_, AVCODEC_SAMPLE_ERR_ERROR, "Nal unit buffer is nullptr");
 
     auto remainBufferSize = nalUnit_->size() - readSize_;
-    bufferSize = std::min(wirtableSize, static_cast<unit32_t>(remainBufferSize));
+    bufferSize = std::min(wirtableSize, static_cast<uint32_t>(remainBufferSize));
     auto ret = memcpy_s(bufferAddr, bufferSize, nalUnit_->data() + readSize_, bufferSize);
     CHECK_AND_RETURN_RET_LOG(ret == EOK, AVCODEC_SAMPLE_ERR_ERROR, "ReadNalUnit failed");
 
