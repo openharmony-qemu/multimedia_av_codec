@@ -1313,17 +1313,15 @@ uint64_t DashMediaDownloader::GetMemorySize()
 Status DashMediaDownloader::StopBufferring(bool isAppBackground)
 {
     MEDIA_LOG_I("DashMediaDownloader:StopBufferring enter");
-    auto result = segmentDownloaders_.ModifyWithResult([&](auto& c) {
-        for (const auto& segDownloader : c) {
-            if (segDownloader == nullptr) {
-                return false;
-            }
-            segDownloader->StopBufferring(isAppBackground);
+    auto result = segmentDownloaders_.FindIf([&](const std::shared_ptr<DashSegmentDownloader> &segDownloader) {
+        if (segDownloader == nullptr) {
+            MEDIA_LOG_E("segment nullptr");
+            return true;
         }
-        return true;
+        segDownloader->StopBufferring(isAppBackground);
+        return false;
     });
-    if (!result) {
-        MEDIA_LOG_E("segment nullptr");
+    if (result != std::nullopt) {
         return Status::ERROR_NULL_POINTER;
     }
     return Status::OK;

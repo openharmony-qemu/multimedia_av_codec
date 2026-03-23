@@ -197,13 +197,13 @@ public:
         typename C::mapped_type&& value)
     {
         Modify([&](C& c) {
-            c.insert(typename C::value_type(key, std::move(value));
+            c.insert(typename C::value_type(key, std::move(value)));
         });
     }
 
     template<typename C = Container>
-    std::enable_if_t<!ContainerFeature::HasMappedType<C>::value && ContainerFeature::IsAssociative<C>::value, void> Insert(
-        const typename C::value_type& value)
+    std::enable_if_t<!ContainerFeature::HasMappedType<C>::value && ContainerFeature::IsAssociative<C>::value,
+        void> Insert(const typename C::value_type& value)
     {
         Modify([&](C& c) {
             c.insert(value);
@@ -219,8 +219,8 @@ public:
     }
 
     template<typename C = Container>
-    std::enable_if_t<!ContainerFeature::HasMappedType<C>::value && ContainerFeature::IsAssociative<C>::value, void> Remove(
-        const typename C::value_type& value)
+    std::enable_if_t<!ContainerFeature::HasMappedType<C>::value && ContainerFeature::IsAssociative<C>::value,
+        void> Remove(const typename C::value_type& value)
     {
         Modify([&](C& c) {
             c.erase(value);
@@ -299,7 +299,8 @@ public:
     }
 
     template<typename Func, typename C = Container>
-    std::enable_if_t<ContainerFeature::IsSequence<C>::value, std::optional<typename C::value_type>> FindIf(Func&& f) const
+    std::enable_if_t<ContainerFeature::IsSequence<C>::value,
+        std::optional<typename C::value_type>> FindIf(Func&& f) const
     {
         std::shared_lock<std::shared_mutex> lock(mutex_);
         auto iter = std::find_if(container_.begin(), container_.end(), std::forward<Func>(f));

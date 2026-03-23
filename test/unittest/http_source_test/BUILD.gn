@@ -275,3 +275,22 @@ ohos_unittest("app_client_unit_test") {
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
+
+ohos_unittest("thread_safe_container_unit_test") {
+  sanitize = av_codec_test_sanitize
+  module_out_path = module_output_path
+  testonly = true
+  configs = [
+    ":hls_unittest_cfg",
+    "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
+  ]
+  sources = [ "thread_safe_container_unit_test.cpp" ]
+  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+  ]
+  resource_config_file =
+      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
+}
