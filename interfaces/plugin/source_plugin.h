@@ -48,10 +48,24 @@ enum VideoType {
 
 class StreamInfo {
 public:
-    int32_t streamId;
-    StreamType type;
-    uint32_t bitRate;
-    uint64_t sniffSize;
+    int32_t streamId = 0;
+    StreamType type = StreamType::MIXED;
+    uint32_t bitRate = 0;
+    uint32_t frameRate = 0;
+    uint32_t minBitRate = 0;
+    uint32_t maxBitRate = 0;
+    uint32_t minWidth = 0;
+    uint32_t maxWidth = 0;
+    uint32_t minHeight = 0;
+    uint32_t maxHeight = 0;
+    uint32_t minFrameRate = 0;
+    uint32_t maxFrameRate = 0;
+    uint32_t channels = 0;
+    std::string mimeType = "";
+    bool isSimple = false;
+    std::string codecs = "";
+    std::string originCodecs = "";
+    uint64_t sniffSize = 0;
 
     int32_t videoHeight = 0;
     int32_t videoWidth = 0;
