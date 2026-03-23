@@ -171,7 +171,7 @@ Status SubtitleSink::Flush(bool isSeekFlush)
         {
             std::unique_lock<std::mutex> lock(mutex_);
             shouldUpdate_ = true;
-            int currentTime = GetMediaTime();
+            int64_t currentTime = GetMediaTime();
             while (!subtitleInfoVec_.empty()) {
                 auto& subtitle = subtitleInfoVec_.front();
                 if (subtitle.pts_ + subtitle.duration_ > currentTime && !isSeekFlush) {
