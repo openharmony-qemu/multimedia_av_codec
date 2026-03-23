@@ -138,13 +138,14 @@ int32_t RenderSurface::SwitchBetweenSurface(const sptr<Surface> &newSurface)
         } else {
             surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
         }
+        if (surfaceBuffer == nullptr) {
+            surfaceBuffer = CreateNewSurfaceBuffer(index);
+        }
         CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, AVCS_ERR_UNKNOWN, "Get old surface buffer error!");
         int32_t err = newSurface->AttachBufferToQueue(surfaceBuffer);
-        if (err != 0) {
-            AVCODEC_LOGE("surface %{public}" PRIu64 ", AttachBufferToQueue(seq=%{public}u) failed, GSError=%{public}d",
-                newId, surfaceBuffer->GetSeqNum(), err);
-            return AVCS_ERR_UNKNOWN;
-        }
+        CHECK_AND_RETURN_RET_LOG(err == AVCS_ERR_OK, AVCS_ERR_UNKNOWN,
+            "surface %{public}" PRIu64 ", AttachBufferToQueue(seq=%{public}u) failed, GSError=%{public}d",
+            newId, surfaceBuffer->GetSeqNum(), err);
         buffers_[INDEX_OUTPUT][index]->sMemory->isAttached = true;
     }
     newSurface->SetTransform(transform_.load());
@@ -270,6 +271,29 @@ int32_t RenderSurface::ClearSurfaceAndSetQueueSize(const sptr<Surface> &surface,
     return AVCS_ERR_OK;
 }
 
+int32_t RenderSurface::SetSurfaceFormat()
+{
+    if (bitDepth_ == BITS_PER_PIXEL_COMPONENT_10) {
+        if (outputPixelFmt_ == VideoPixelFormat::NV12 || outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
+            sInfo_.requestConfig.format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010;
+        } else {
+            sInfo_.requestConfig.format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010;
+        }
+        format_.PutIntValue("av_codec_event_info_bit_depth", 1);
+    } else {
+        VideoPixelFormat targetPixelFmt = outputPixelFmt_;
+        if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
+            targetPixelFmt = VideoPixelFormat::NV12;
+        }
+        GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(targetPixelFmt);
+        CHECK_AND_RETURN_RET_LOG(surfacePixelFmt != GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT, AVCS_ERR_UNSUPPORT,
+                                 "Failed to allocate output buffer: unsupported surface format");
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
+        sInfo_.requestConfig.format = surfacePixelFmt;
+    }
+    return AVCS_ERR_OK;
+}
+
 int32_t RenderSurface::SetSurfaceCfg()
 {
     if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
@@ -278,28 +302,23 @@ int32_t RenderSurface::SetSurfaceCfg()
     int32_t val32 = 0;
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val32);
     outputPixelFmt_ = static_cast<VideoPixelFormat>(val32);
-    
-    GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(outputPixelFmt_);
-    CHECK_AND_RETURN_RET_LOG(surfacePixelFmt != GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT, AVCS_ERR_UNSUPPORT,
-                             "Failed to allocate output buffer: unsupported surface format");
-    format_.PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
+
+    std::lock_guard<std::mutex> sLock(surfaceMutex_);
     sInfo_.requestConfig.width = width_;
     sInfo_.requestConfig.height = height_;
-    sInfo_.requestConfig.format = surfacePixelFmt;
+    CHECK_AND_RETURN_RET_LOG(SetSurfaceFormat() == AVCS_ERR_OK, AVCS_ERR_UNSUPPORT,
+                             "set surface format failed: unsupported surface format");
     CHECK_AND_RETURN_RET_LOGD(sInfo_.surface != nullptr, AVCS_ERR_OK, "Buffer mode not need to set surface config.");
-    if (format_.ContainKey(MediaDescriptionKey::MD_KEY_SCALE_TYPE)) {
-        CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val32) && val32 >= 0 &&
-                                 val32 <= static_cast<int32_t>(ScalingMode::SCALING_MODE_SCALE_FIT),
-                                 AVCS_ERR_INVALID_VAL, "Invalid scaling mode %{public}d", val32);
+    if (format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val32)) {
+        CHECK_AND_RETURN_RET_LOG(IsValidScaleType(val32), AVCS_ERR_INVALID_VAL,
+                                 "Invalid scaling mode %{public}d", val32);
         sInfo_.scalingMode = static_cast<ScalingMode>(val32);
         sInfo_.surface->SetScalingMode(sInfo_.scalingMode.value());
     }
-    if (format_.ContainKey(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE)) {
-        CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val32) && val32 >= 0 &&
-                                 val32 <= static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_270),
-                                 AVCS_ERR_INVALID_VAL, "Invalid rotation angle %{public}d", val32);
-        sInfo_.surface->SetTransform(TranslateSurfaceRotation(static_cast<VideoRotation>(val32)));
+    if (format_.GetIntValue(OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE, val32)) {
+        transform_.store(static_cast<GraphicTransformType>(val32));
     }
+    sInfo_.surface->SetTransform(transform_.load());
     return AVCS_ERR_OK;
 }
 
@@ -497,6 +516,30 @@ int32_t RenderSurface::SwapInBuffers(bool isOutputBuffer) const
     }
     return AVCS_ERR_OK;
 }
+
+sptr<SurfaceBuffer> RenderSurface::CreateNewSurfaceBuffer(int32_t index)
+{
+    auto surfaceMemory = buffers_[INDEX_OUTPUT][index]->sMemory;
+    if (surfaceMemory == nullptr) {
+        AVCODEC_LOGE("Create new surface buffer failed: sMemory is nullptr");
+        return nullptr;
+    }
+
+    surfaceMemory->isAttached = false;
+    surfaceMemory->ReleaseSurfaceBuffer();
+    int32_t ret = surfaceMemory->AllocSurfaceBuffer(width_, height_);
+    if (ret != AVCS_ERR_OK) {
+        AVCODEC_LOGE("Alloc new surface buffer failed: %{public}d", ret);
+        return nullptr;
+    }
+    buffers_[INDEX_OUTPUT][index]->avBuffer =
+        AVBuffer::CreateAVBuffer(surfaceMemory->GetBase(),  surfaceMemory->GetSize());
+    CHECK_AND_RETURN_RET_LOG(buffers_[INDEX_OUTPUT][index]->avBuffer != nullptr, nullptr,
+        "Buffer allocate failed, index=%{public}d", index);
+    codecAvailQue_->Push(index);
+    return surfaceMemory->GetSurfaceBuffer();
+}
+
 } // namespace Codec
 } // namespace MediaAVCodec
 } // namespace OHOS

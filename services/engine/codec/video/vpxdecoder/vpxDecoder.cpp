@@ -175,29 +175,6 @@ void VpxDecoder::ConfigureHdrMetadata(const Format &format)
     colorSpaceInfo_.colorDescriptionPresentFlag = 1;
 }
 
-void VpxDecoder::ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal,
-    int32_t maxVal)
-{
-    int32_t val32 = 0;
-    if (format.GetIntValue(formatKey, val32) && val32 >= minVal && val32 <= maxVal) {
-        format_.PutIntValue(formatKey, val32);
-    } else {
-        AVCODEC_LOGW("Set parameter failed: %{public}s, which minimum threshold=%{public}d, "
-                     "maximum threshold=%{public}d",
-                     formatKey.data(), minVal, maxVal);
-    }
-}
-
-bool VpxDecoder::CheckVideoPixelFormat(VideoPixelFormat vpf)
-{
-    if (vpf == VideoPixelFormat::NV12 || vpf == VideoPixelFormat::NV21 || vpf == VideoPixelFormat::YUV420P) {
-        return true;
-    } else {
-        AVCODEC_LOGE("Set parameter failed: pixel format value %{public}d invalid", vpf);
-        return false;
-    }
-}
-
 void VpxDecoder::ConfigurelWidthAndHeight(const Format &format, const std::string_view &formatKey, bool isWidth)
 {
     if (codecName_ == AVCodecCodecName::VIDEO_DECODER_VP8_NAME) {

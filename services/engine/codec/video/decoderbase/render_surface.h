@@ -54,6 +54,8 @@ public:
     int32_t RegisterListenerToSurface(const sptr<Surface> &surface);
     int32_t FreezeBuffers(State curState);
     int32_t ActiveBuffers();
+    int32_t SetSurfaceFormat();
+
     struct CodecBuffer {
     public:
         CodecBuffer() = default;
@@ -84,6 +86,7 @@ public:
     std::mutex outputMutex_;
     std::map<uint32_t, std::pair<sptr<SurfaceBuffer>, OHOS::BufferFlushConfig>> renderSurfaceBufferMap_;
     std::atomic<GraphicTransformType> transform_ = GraphicTransformType::GRAPHIC_ROTATE_NONE;
+    int32_t bitDepth_ = BITS_PER_PIXEL_COMPONENT_8;
 
 private:
     int32_t SetQueueSize(const sptr<Surface> &surface, uint32_t targetSize);
@@ -97,6 +100,7 @@ private:
     bool CanSwapOut(bool isOutputBuffer, const std::shared_ptr<CodecBuffer> &codecBuffer);
     int32_t SwapOutBuffers(bool isOutputBuffer, State curState);
     int32_t SwapInBuffers(bool isOutputBuffer) const;
+    sptr<SurfaceBuffer> CreateNewSurfaceBuffer(int32_t index);
 
     std::thread mRequestSurfaceBufferThread_;
     std::atomic<bool> requestSucceed_ = false;
