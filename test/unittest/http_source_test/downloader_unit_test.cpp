@@ -1207,15 +1207,15 @@ HWTEST_F(DownloaderUnitTest, SafeStoInt32_NegativeNumber, TestSize.Level1)
 HWTEST_F(DownloaderUnitTest, SafeStoInt32_MaxInt32, TestSize.Level1)
 {
     int32_t value = 0;
-    EXPECT_TRUE(StringUtil::SafeStoInt32("2147483647", value));
-    EXPECT_EQ(value, 2147483647);
+    EXPECT_TRUE(StringUtil::SafeStoInt32(std::to_string(INT32_MAX), value));
+    EXPECT_EQ(value, INT32_MAX);
 }
 
 HWTEST_F(DownloaderUnitTest, SafeStoInt32_MinInt32, TestSize.Level1)
 {
     int32_t value = 0;
-    EXPECT_TRUE(StringUtil::SafeStoInt32("-2147483648", value));
-    EXPECT_EQ(value, -2147483648);
+    EXPECT_TRUE(StringUtil::SafeStoInt32(std::to_string(INT32_MIN), value));
+    EXPECT_EQ(value, INT32_MIN);
 }
 
 // SafeStoInt32 前导空格测试
@@ -1359,15 +1359,15 @@ HWTEST_F(DownloaderUnitTest, SafeStoInt64_NegativeNumber, TestSize.Level1)
 HWTEST_F(DownloaderUnitTest, SafeStoInt64_MaxInt64, TestSize.Level1)
 {
     int64_t value = 0;
-    EXPECT_TRUE(StringUtil::SafeStoInt64("9223372036854775807", value));
-    EXPECT_EQ(value, 9223372036854775807);
+    EXPECT_TRUE(StringUtil::SafeStoInt64(std::to_string(INT64_MAX), value));
+    EXPECT_EQ(value, INT64_MAX);
 }
 
 HWTEST_F(DownloaderUnitTest, SafeStoInt64_MinInt64, TestSize.Level1)
 {
     int64_t value = 0;
-    EXPECT_TRUE(StringUtil::SafeStoInt64("-9223372036854775808", value));
-    EXPECT_EQ(value, -9223372036854775807 - 1);
+    EXPECT_TRUE(StringUtil::SafeStoInt64(std::to_string(INT64_MIN), value));
+    EXPECT_EQ(value, INT64_MIN - 1);
 }
 
 // SafeStoInt64 前导空格测试
