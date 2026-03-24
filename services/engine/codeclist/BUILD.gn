@@ -52,6 +52,7 @@ ohos_static_library("av_codec_engine_codeclist") {
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/hdi_codec.cpp",
     "audio_codeclist_info.cpp",
     "codec_ability_singleton.cpp",
+    "codec_capability_helper.cpp",
     "codeclist_builder.cpp",
     "codeclist_core.cpp",
     "codeclist_dump.cpp",

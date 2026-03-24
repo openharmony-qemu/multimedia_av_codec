@@ -34,8 +34,9 @@ public:
     void SetUp(void);
     // TearDown: Called after each test cases
     void TearDown(void);
+private:
+    void SetDefaultStreamId(std::shared_ptr<HlsPlayListDownloader> downloader);
 };
-std::shared_ptr<HlsPlayListDownloader> playListDownloader = std::make_shared<HlsPlayListDownloader>();
 }
 }
 }

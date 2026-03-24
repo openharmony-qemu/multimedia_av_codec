@@ -61,6 +61,7 @@ config("media_demuxer_unittest_cfg") {
     "$av_codec_root_dir/services/drm_decryptor",
     "$av_codec_root_dir/services/media_engine/modules",
     "$av_codec_root_dir/services/media_engine/modules/demuxer",
+    "$av_codec_root_dir/services/engine/codeclist",
     "$av_codec_root_dir/services/utils/include",
     "$av_codec_root_dir/test/unittest/common",
   ]
@@ -76,7 +77,11 @@ ohos_unittest("media_demuxer_unit_test") {
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
   sources = media_demuxer_test_sources + [ "media_demuxer_unit_test.cpp" ]
-  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/services/engine/codeclist:av_codec_engine_codeclist",
+    "$av_codec_root_dir/services/engine:av_codec_engine_package",
+  ]
 
   external_deps = [
     "c_utils:utils",

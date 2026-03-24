@@ -101,6 +101,7 @@ struct DashCommonAttrsAndElements {
     double maxPlayoutRate_{1.0};
     std::string profiles_;
     std::string sar_;
+    uint32_t channels_{0};
     std::string frameRate_;
     std::string audioSamplingRate_;
     DashList<DashDescriptor *> audioChannelConfigurationList_;
@@ -152,9 +153,12 @@ struct DashAdptSetInfo {
     std::string lang_;
     std::string contentType_;
     std::string par_;
+    uint32_t channels_{0};
+    std::string frameRate_;
     std::string minFrameRate_;
     std::string maxFrameRate_;
     std::string mimeType_;
+    std::string codecs_;
     std::string videoType_; // only for hw multi view
 
     DashSegBaseInfo *adptSetSegBase_{nullptr};

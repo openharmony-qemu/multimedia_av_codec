@@ -64,7 +64,7 @@ public:
     void SetInitResolution(uint32_t width, uint32_t height) override;
     size_t GetLiveUpdateGap() const override;
     void InterruptM3U8Parse(bool isInterruptNeeded) override;
-    void GetStreamInfo(std::vector<StreamInfo>& streams) override;
+    void GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate = false) override;
     bool ReadFmp4Header(uint8_t* buffer, uint32_t wantLen, uint32_t& readLen, uint32_t streamId) override;
     bool IsHlsFmp4() override;
     bool IsPureByteRange() override;
@@ -77,6 +77,7 @@ public:
     void UpdateStreamInfo() override;
     HlsSegmentType GetSegType(uint32_t streamId) override;
     uint32_t GetCurStreamId() override;
+    void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) override;
     void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr,
         bool isFmp4 = false) override;
     bool IsLiveEnd() override;
@@ -93,6 +94,8 @@ private:
     void CopyFragmentInfo(PlayInfo& playInfo, std::shared_ptr<M3U8Fragment> file, uint64_t sessionKeyIndex);
     uint64_t KeyChange(std::list<std::shared_ptr<M3U8Fragment>>& files);
     void OnMasterReady(bool needAudioManager, bool needSubtitlesManager);
+    bool ContainsNonDigit(const std::string& str);
+    void UpdateManifestAndNotifyListChange(bool isPreParse);
 
 private:
     std::string url_ {};
@@ -117,6 +120,10 @@ private:
     std::set<uint32_t> subtitlesStreamIds_ = std::set<uint32_t>();
     std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
     std::atomic<bool> isFmp4_ {false};
+    bool isPreParse_ {false};
+    int32_t audioStreamId_ {-1};
+    int32_t subTitleStreamId_ {-1};
+    bool isClone_ {false};
     bool isLiveEnd_ {false};
     std::atomic<bool> isPreParseFinished_ {false};
     std::shared_ptr<AesDecryptorManager> aesDecryptorManager_;

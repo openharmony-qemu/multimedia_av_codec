@@ -110,6 +110,7 @@ public:
     Status UnselectTrack(uint32_t trackIndex); // Interface for AVDemuxer
     Status ReadSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample); // Interface for AVDemuxer
     Status GetBitRates(std::vector<uint32_t> &bitRates);
+    Status SelectStreamId(int32_t streamId);
     Status SelectBitRate(uint32_t bitRate, bool isAutoSelect = false);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
     Status GetPlaybackInfo(PlaybackInfo& playbackInfo);
@@ -209,6 +210,9 @@ public:
     bool BoostThreadPriorityIfNeeded();
     bool IsWatchDevice();
     bool IsBuffering();
+    void SetTrackSelectionFilter(TrackSelectionFilter &filter);
+    void SetIsTriggerAutoMode(bool isAutoSelect);
+    Status SetPlayStrategy(std::shared_ptr<PlayStrategy> playStrategy);
     bool IsCloudFd();
 private:
     class AVBufferQueueProducerListener;
@@ -298,7 +302,15 @@ private:
     Status GenerateDfxBufferQueue(int32_t trackId);
     void InitEnableDfxBufferQueue();
     void CopyBufferToDfxBufferQueue(std::shared_ptr<AVBuffer> buffer, bool dropable);
+    int32_t GetPreferredVideoBitrate();
+    int32_t GetPreferredAudioStreamId();
+    int32_t GetPreferredSubtitleStreamId();
+    void ChooseDefaultStreams();
+    void UpdateDefaultStreamIds(bool isVideoNoFiltered, bool isAudioNoFiltered, bool isSubtitleNoFiltered);
+    void PrintAutoSelectStreamInfo(int32_t desBitRate);
 
+    bool IsLangMatch(const std::string& lang, OHOS::Media::MediaType mediaType);
+    void AutoSelectTrackByBitrate(int32_t trackId);
     Plugins::Seekable seekable_;
     Plugins::Seekable subSeekable_;
     std::string uri_;
@@ -310,6 +322,7 @@ private:
     std::shared_ptr<Source> source_;
     std::shared_ptr<Source> subtitleSource_;
     MediaMetaData mediaMetaData_;
+    std::string currentPlayType_ = {};
 
     int64_t DoBeforeEachLoop(int32_t trackId);
     int64_t DoBeforeSubtitleTrackReadLoop(int32_t trackId);
@@ -325,7 +338,7 @@ private:
     void TryReclaimParserTask();
 
     Status HandleSelectTrack(int32_t trackId);
-    Status HandleDashSelectTrack(int32_t trackId);
+    Status HandleSegmentMediaSelectTrack(int32_t trackId);
     void ReportTrackChangeEvent(int32_t trackId);
     Status DoSelectTrack(int32_t trackId, int32_t curTrackId);
     Status HandleRebootPlugin(int32_t trackId, bool& isRebooted);
@@ -415,7 +428,10 @@ private:
     void SetTrackSeekNeedDrop(int32_t trackId, bool needDrop);
     Status HandleSelectSubtitle(int64_t seekTime, Plugins::SeekMode mode, int32_t trackId);
     void ResetAfterSeek(Status ret);
+    void OnEventStream(const Plugins::PluginEvent &event);
+    int64_t GetCurrentTimeMs();
     void UpdateTrackMap();
+    bool IsNeedPreDownload();
 
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
@@ -568,7 +584,22 @@ private:
     std::map<int32_t, bool> afterSeekNeedDrop_;
     bool videoNeedIFrame_ {false};
     std::mutex frameCountNeedDropMutex_ {};
+    std::recursive_mutex streamMapMutex_ {};
     std::map<int32_t, uint32_t> frameCountNeedDrop_;
+    std::atomic<bool> isAutoSelect_ {true};
+    std::atomic<bool> isForceAutoSelect_ {false};
+    std::atomic<uint32_t> curDownloadBitRate_ {0};
+    std::atomic<uint32_t> lastSwitchDownloadRate_ {0};
+    std::string defaultAudioLang_ {};
+    std::string defaultSubtitleLang_ {};
+    bool isHdrStart_ {false};
+    uint32_t initResolution_ {0};
+    int32_t defaultVideoStreamId_ {-1};
+    int32_t defaultAudioStreamId_ {-1};
+    int32_t defaultSubtitleStreamId_ {-1};
+    TrackSelectionFilter trackSelectionFilter_;
+    int64_t lastCheckAutoSelectTimeMs_ {0};
+    int32_t lastAutoSelectBitRate_ {0};
 };
 } // namespace Media
 } // namespace OHOS

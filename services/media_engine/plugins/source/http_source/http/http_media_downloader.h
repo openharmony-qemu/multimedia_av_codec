@@ -112,6 +112,8 @@ public:
     void ClearBuffer() override;
     uint64_t GetMemorySize() override;
     std::string GetCurUrl() override;
+    Status GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate = false) override;
+    void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) override;
 
 private:
     uint32_t SaveData(uint8_t* data, uint32_t len, bool notBlock);
@@ -161,6 +163,7 @@ private:
     uint32_t GetResolutionDelta(uint32_t width, uint32_t height);
     bool CheckLoopTimeout(int64_t startLoopTime);
     bool CheckAutoSelectBitrate();
+    void ReportBitRate();
     bool IsAutoSelectConditionOk();
     void WaitCacheBufferInit();
     void UpdateDownloadFinished(const std::string &url, const std::string& location);

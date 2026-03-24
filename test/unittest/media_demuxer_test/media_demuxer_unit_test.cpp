@@ -1356,10 +1356,10 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ProcessVideoStartTime_016, TestSize.
     EXPECT_EQ(demuxer->DoSelectTrack(0, MediaDemuxer::TRACK_ID_INVALID), Status::ERROR_UNKNOWN);
 }
 
-HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_HandleDashSelectTrack_016, TestSize.Level1)
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_HandleSegmentMediaSelectTrack_016, TestSize.Level1)
 {
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    EXPECT_EQ(demuxer->HandleDashSelectTrack(0), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(demuxer->HandleSegmentMediaSelectTrack(0), Status::ERROR_UNKNOWN);
 
     Meta metaTmp1;
     metaTmp1.Set<Tag::MIME_TYPE>("audio/xxx");
@@ -1383,10 +1383,10 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_HandleDashSelectTrack_016, TestSize.
     demuxer->videoTrackId_ = 1;
     demuxer->subtitleTrackId_ = 2;
 
-    EXPECT_EQ(demuxer->HandleDashSelectTrack(0), Status::ERROR_INVALID_OPERATION);
-    EXPECT_EQ(demuxer->HandleDashSelectTrack(1), Status::ERROR_INVALID_OPERATION);
-    EXPECT_EQ(demuxer->HandleDashSelectTrack(2), Status::ERROR_INVALID_OPERATION);
-    EXPECT_EQ(demuxer->HandleDashSelectTrack(3), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(demuxer->HandleSegmentMediaSelectTrack(0), Status::ERROR_INVALID_OPERATION);
+    EXPECT_EQ(demuxer->HandleSegmentMediaSelectTrack(1), Status::ERROR_INVALID_OPERATION);
+    EXPECT_EQ(demuxer->HandleSegmentMediaSelectTrack(2), Status::ERROR_INVALID_OPERATION);
+    EXPECT_EQ(demuxer->HandleSegmentMediaSelectTrack(3), Status::ERROR_UNKNOWN);
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SeekToTimeAfter_016, TestSize.Level1)
@@ -1914,7 +1914,7 @@ HWTEST_F(MediaDemuxerUnitTest, GetDownloadInfo_001, TestSize.Level1)
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_HandleSelectTrack_001, TestSize.Level1)
 {
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    EXPECT_EQ(demuxer->HandleDashSelectTrack(0), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(demuxer->HandleSegmentMediaSelectTrack(0), Status::ERROR_UNKNOWN);
 
     Meta metaTmp1;
     metaTmp1.Set<Tag::MIME_TYPE>("video/xxx");

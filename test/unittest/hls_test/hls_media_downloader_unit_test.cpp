@@ -107,6 +107,39 @@ std::shared_ptr<HlsMediaDownloader> OpenHlsDetachAudioVideo(std::string url = "t
     return downloader;
 }
 
+std::shared_ptr<HlsMediaDownloader> OpenHlsDetachAudioVideoWithMasterReady(
+    std::string url = "test_detach_hls/cmaf.m3u8")
+{
+    auto header = std::map<std::string, std::string>();
+    auto downloader = std::make_shared<HlsMediaDownloader>(20, true, header);
+    downloader->Init();
+
+    // set callback to media downloader
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {
+    };
+    downloader->SetStatusCallback(statusCallback);
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
+
+    std::string testUrl = TEST_URI_PATH + url;
+    downloader->Open(testUrl, httpHeader);
+    downloader->GetSeekable();
+    OSAL::SleepFor(DELAY_AFTER_OPEN);
+    int32_t defaultStreamId = 1;
+    downloader->SetDefaultStreamId(defaultStreamId, defaultStreamId, defaultStreamId);
+    downloader->GetSeekable();
+    if (downloader->audioSegManager_ != nullptr) {
+        downloader->audioSegManager_->GetSeekable();
+    }
+    if (downloader->subtitlesSegManager_ != nullptr) {
+        downloader->subtitlesSegManager_->GetSeekable();
+    }
+    downloader->SetAppUid(TEST_APP_UID);
+    
+    return downloader;
+}
+
 void CloseHlsDetachAudioVideo(std::shared_ptr<HlsMediaDownloader> downloader)
 {
     downloader = nullptr;
@@ -395,7 +428,7 @@ HWTEST_F(HlsMediaDownloaderTest, TEST_READ_003, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderTest, TEST_READ_004, TestSize.Level1)
 {
-    auto downloader = OpenHlsDetachAudioVideo();
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
     downloader->GetSeekable();
     int len = 16 * 1024;
     auto *buff = new unsigned char[len];
@@ -412,7 +445,7 @@ HWTEST_F(HlsMediaDownloaderTest, TEST_READ_004, TestSize.Level1)
     readDataInfo.wantReadLength_ = len;
     readDataInfo.isEos_ = false;
     ret = downloader->Read(buff, readDataInfo);
-    EXPECT_EQ(ret, Status::OK);
+    EXPECT_NE(ret, Status::OK);
     EXPECT_GT(readDataInfo.realReadLength_, 0);
     EXPECT_LE(readDataInfo.realReadLength_, len);
 
@@ -1195,7 +1228,7 @@ HWTEST_F(HlsMediaDownloaderTest, SEEK_TO_TIME_004, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderTest, SEEK_TO_TIME_BY_STREAMID_001, TestSize.Level1)
 {
-    auto downloader = OpenHlsDetachAudioVideo();
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
     auto ret = downloader->MediaSeekTimeByStreamId(0, SeekMode::SEEK_PREVIOUS_SYNC, 3);
     EXPECT_TRUE(ret);
     ret = downloader->MediaSeekTimeByStreamId(0, SeekMode::SEEK_PREVIOUS_SYNC, 4);
@@ -1322,15 +1355,17 @@ HWTEST_F(HlsMediaDownloaderTest, GET_CONTENT_TYPE_001, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderTest, GET_STARTED_STATUS_001, TestSize.Level1)
 {
-    auto downloader = OpenHlsDetachAudioVideo();
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
+    OSAL::SleepFor(DELAY_AFTER_OPEN);
     auto ret = downloader->GetStartedStatus();
-    EXPECT_TRUE(ret);
+    EXPECT_FALSE(ret);
     CloseHlsDetachAudioVideo(downloader);
 }
 
 HWTEST_F(HlsMediaDownloaderTest, GET_STARTED_STATUS_002, TestSize.Level1)
 {
-    auto downloader = OpenHlsDetachAudioVideo("test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000.m3u8");
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady("test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000.m3u8");
+    OSAL::SleepFor(DELAY_AFTER_OPEN);
     auto ret = downloader->GetStartedStatus();
     EXPECT_TRUE(ret);
     CloseHlsDetachAudioVideo(downloader);
@@ -1372,7 +1407,7 @@ HWTEST_F(HlsMediaDownloaderTest, SET_IS_TRIGGER_AUTO_MODE_001, TestSize.Level1)
     auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->SetCallback(sourceCallback);
 
-    EXPECT_TRUE(downloader->videoSegManager_->isAutoSelectBitrate_);
+    EXPECT_FALSE(downloader->videoSegManager_->isAutoSelectBitrate_);
     downloader->SetIsTriggerAutoMode(false);
     EXPECT_FALSE(downloader->videoSegManager_->isAutoSelectBitrate_);
     downloader->SetIsTriggerAutoMode(true);
@@ -1416,7 +1451,7 @@ HWTEST_F(HlsMediaDownloaderTest, WAIT_FOR_BUFFERING_END_001, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderTest, SET_IS_REPORTED_ERROR_CODE_001, TestSize.Level1)
 {
-    auto downloader = OpenHlsDetachAudioVideo();
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
     EXPECT_FALSE(downloader->videoSegManager_->isReportedErrorCode_);
     EXPECT_FALSE(downloader->audioSegManager_->isReportedErrorCode_);
     
@@ -1446,7 +1481,7 @@ HWTEST_F(HlsMediaDownloaderTest, SET_IS_REPORTED_ERROR_CODE_002, TestSize.Level1
 
 HWTEST_F(HlsMediaDownloaderTest, SET_IS_REPORTED_ERROR_CODE_003, TestSize.Level1)
 {
-    auto downloader = OpenHlsDetachAudioVideo();
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
     EXPECT_FALSE(downloader->videoSegManager_->isReportedErrorCode_);
     EXPECT_FALSE(downloader->subtitlesSegManager_->isReportedErrorCode_);
     
@@ -1509,7 +1544,7 @@ HWTEST_F(HlsMediaDownloaderTest, IS_HLS_END_001, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderTest, GET_SEGMENT_MANAGER_001, TestSize.Level1)
 {
-    auto downloader = OpenHlsDetachAudioVideo();
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
     
     auto manager = downloader->GetSegmentManager(1);
     EXPECT_TRUE(manager == downloader->videoSegManager_);
@@ -1528,7 +1563,7 @@ HWTEST_F(HlsMediaDownloaderTest, GET_SEGMENT_MANAGER_001, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderTest, GET_SEGMENT_MANAGER_002, TestSize.Level1)
 {
-    auto downloader = OpenHlsDetachAudioVideo();
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
     
     auto manager = downloader->GetSegmentManager(1);
     EXPECT_TRUE(manager == downloader->videoSegManager_);
@@ -1547,7 +1582,7 @@ HWTEST_F(HlsMediaDownloaderTest, GET_SEGMENT_MANAGER_002, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderTest, SELECT_STREAM_001, TestSize.Level1)
 {
-    auto downloader = OpenHlsDetachAudioVideo();
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
     
     auto ret = downloader->SelectStream(1);
     EXPECT_EQ(ret, Status::OK);
@@ -1607,12 +1642,13 @@ HWTEST_F(HlsMediaDownloaderTest, TEST_AUDIO_START_STREAM_ID, TestSize.Level1)
 {
     for (const auto &[k, v]: AUDIO_START_STREAM_ID) {
         std::cout << "TEST_AUDIO_START_STREAM_ID start: " << k << ", start audio id: " << v << std::endl;
-        auto downloader = OpenHlsDetachAudioVideo(k);
+        auto downloader = OpenHlsDetachAudioVideoWithMasterReady(k);
         ASSERT_TRUE(downloader != nullptr);
-        ASSERT_TRUE(downloader->audioSegManager_ != nullptr);
-        ASSERT_TRUE(downloader->audioSegManager_->playlistDownloader_ != nullptr);
+        ASSERT_TRUE(downloader->videoSegManager_ != nullptr);
+        ASSERT_TRUE(downloader->videoSegManager_->playlistDownloader_ != nullptr);
+        downloader->videoSegManager_->playlistDownloader_->SetDefaultMedia(HlsSegmentType::SEG_AUDIO);
         auto playlistDownloader =
-            std::static_pointer_cast<HlsPlayListDownloader>(downloader->audioSegManager_->playlistDownloader_);
+            std::static_pointer_cast<HlsPlayListDownloader>(downloader->videoSegManager_->playlistDownloader_);
         ASSERT_TRUE(playlistDownloader->currentAudio_ != nullptr);
         auto audioStreamId = playlistDownloader->currentAudio_->streamId_;
         EXPECT_EQ(audioStreamId, v);
@@ -1624,7 +1660,7 @@ HWTEST_F(HlsMediaDownloaderTest, TEST_AUDIO_START_STREAM_ID, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderTest, LIVE_ENDLIST_MASTER_PLAYLIST, TestSize.Level1)
 {
-    auto downloader = OpenHlsDetachAudioVideo("test_detach_hls/live_endlist.m3u8");
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady("test_detach_hls/live_endlist.m3u8");
 
     EXPECT_EQ(downloader->GetSeekable(), Seekable::SEEKABLE);
     EXPECT_EQ(downloader->GetDuration(), 60060000000);
@@ -1640,7 +1676,7 @@ HWTEST_F(HlsMediaDownloaderTest, LIVE_ENDLIST_MEDIA_PLAYLIST, TestSize.Level1)
         {"test_detach_hls/subtitles/eng/prog_index_live_endlist.m3u8", 66066000000}
     };
     for (const auto &[playlist, duration]: mediaPlaylistArr) {
-        auto downloader = OpenHlsDetachAudioVideo(playlist);
+        auto downloader = OpenHlsDetachAudioVideoWithMasterReady(playlist);
 
         EXPECT_EQ(downloader->GetSeekable(), Seekable::SEEKABLE);
         EXPECT_EQ(downloader->GetDuration(), duration);
@@ -1651,7 +1687,7 @@ HWTEST_F(HlsMediaDownloaderTest, LIVE_ENDLIST_MEDIA_PLAYLIST, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderTest, OPEN_HLS_ENCODE_001, TestSize.Level1)
 {
-    auto downloader = OpenHlsDetachAudioVideo(M3U8_PATH_1);
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady(M3U8_PATH_1);
     auto playlistDownloader =
         std::static_pointer_cast<HlsPlayListDownloader>(downloader->videoSegManager_->playlistDownloader_);
     EXPECT_TRUE(playlistDownloader->GetAesDecryptor(1) != nullptr);
@@ -1660,7 +1696,12 @@ HWTEST_F(HlsMediaDownloaderTest, OPEN_HLS_ENCODE_001, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderTest, OPEN_HLS_ENCODE_002, TestSize.Level1)
 {
-    auto downloader = OpenHlsDetachAudioVideo(M3U8_PATH_2);
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady(M3U8_PATH_2);
+    int32_t videoStreamId = 0;
+    int32_t audioStreamId = 0;
+    int32_t subtitleStreamId = 0;
+    downloader->SetDefaultStreamId(videoStreamId, audioStreamId, subtitleStreamId);
+    downloader->GetSeekable();
     auto playlistDownloader =
         std::static_pointer_cast<HlsPlayListDownloader>(downloader->videoSegManager_->playlistDownloader_);
     EXPECT_TRUE(playlistDownloader->GetAesDecryptor(1) != nullptr);
@@ -1670,7 +1711,7 @@ HWTEST_F(HlsMediaDownloaderTest, OPEN_HLS_ENCODE_002, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderTest, OPEN_HLS_ENCODE_003, TestSize.Level1)
 {
-    auto downloader = OpenHlsDetachAudioVideo(M3U8_PATH_3);
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady(M3U8_PATH_3);
     auto playlistDownloader =
         std::static_pointer_cast<HlsPlayListDownloader>(downloader->videoSegManager_->playlistDownloader_);
     EXPECT_TRUE(playlistDownloader->GetAesDecryptor(UINT64_MAX) != nullptr);
@@ -1679,7 +1720,7 @@ HWTEST_F(HlsMediaDownloaderTest, OPEN_HLS_ENCODE_003, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderTest, OPEN_HLS_ENCODE_004, TestSize.Level1)
 {
-    auto downloader = OpenHlsDetachAudioVideo(M3U8_PATH_4);
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady(M3U8_PATH_4);
     auto playlistDownloader =
         std::static_pointer_cast<HlsPlayListDownloader>(downloader->videoSegManager_->playlistDownloader_);
     EXPECT_TRUE(playlistDownloader->GetAesDecryptor(1) != nullptr);

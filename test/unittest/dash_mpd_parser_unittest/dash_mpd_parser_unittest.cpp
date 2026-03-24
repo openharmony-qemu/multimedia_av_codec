@@ -546,7 +546,8 @@ HWTEST_F(DashMpdParserUnitTest, ParseAudioChannelConfiguration_001, TestSize.Lev
     auto xmlParser = std::make_shared<XmlParser>();
     auto rootElement = std::make_shared<XmlElement>();
     DashList<DashDescriptor *> propertyList;
-    dashMpdParser_->ParseAudioChannelConfiguration(xmlParser, rootElement, propertyList);
+    uint32_t channels = 0;
+    dashMpdParser_->ParseAudioChannelConfiguration(xmlParser, rootElement, propertyList, channels);
     EXPECT_TRUE(propertyList.empty());
 }
 

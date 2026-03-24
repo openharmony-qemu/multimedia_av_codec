@@ -126,12 +126,11 @@ Status HttpSourcePlugin::SetReadBlockingFlag(bool isReadBlockingAllowed)
     return Status::OK;
 }
 
-Status HttpSourcePlugin::GetStreamInfo(std::vector<StreamInfo>& streams)
+Status HttpSourcePlugin::GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate)
 {
     MEDIA_LOG_D("GetStreamInfo entered");
     FALSE_RETURN_V(downloader_ != nullptr, Status::OK);
-    downloader_->GetStreamInfo(streams);
-    return Status::OK;
+    return downloader_->GetStreamInfo(streams, isUpdate);
 }
 
 Status HttpSourcePlugin::SelectStream(int32_t streamID)
@@ -330,6 +329,10 @@ void HttpSourcePlugin::InitHttpSource(const std::shared_ptr<MediaSource>& source
         (uri_, expectDuration, loaderCombinations_));
     downloader_->Init();
     downloader_->SetSourceStatisticsDfx(reportInfo_);
+    auto cb = callback_.lock();
+    if (cb) {
+        downloader_->SetCallback(cb);
+    }
     downloader_->SetMediaStreams(playMediaStreams);
 }
 
@@ -721,6 +724,12 @@ bool HttpSourcePlugin::IsHlsEnd(int32_t streamId)
 {
     FALSE_RETURN_V_MSG_E(downloader_ != nullptr, false, "downloader_ is nullptr");
     return downloader_->IsHlsEnd(streamId);
+}
+
+void HttpSourcePlugin::SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId)
+{
+    FALSE_RETURN_MSG(downloader_ != nullptr, "downloader_ is nullptr");
+    downloader_->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
 }
 
 bool HttpSourcePlugin::IsHls()
