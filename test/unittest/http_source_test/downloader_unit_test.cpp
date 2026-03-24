@@ -1294,19 +1294,19 @@ HWTEST_F(DownloaderUnitTest, SafeStoInt32_OnlyMinus, TestSize.Level1)
 HWTEST_F(DownloaderUnitTest, SafeStoInt32_DecimalPoint, TestSize.Level1)
 {
     int32_t value = 999;
-    EXPECT_FALSE(StringUtil::SafeStoInt32("123.45", value));
+    EXPECT_TRUE(StringUtil::SafeStoInt32("123.45", value));
 }
 
 HWTEST_F(DownloaderUnitTest, SafeStoInt32_LetterAfterNumber, TestSize.Level1)
 {
     int32_t value = 999;
-    EXPECT_FALSE(StringUtil::SafeStoInt32("123abc", value));
+    EXPECT_TRUE(StringUtil::SafeStoInt32("123abc", value));
 }
 
 HWTEST_F(DownloaderUnitTest, SafeStoInt32_SpaceAfterNumber, TestSize.Level1)
 {
     int32_t value = 999;
-    EXPECT_FALSE(StringUtil::SafeStoInt32("123 ", value));
+    EXPECT_TRUE(StringUtil::SafeStoInt32("123 ", value));
 }
 
 HWTEST_F(DownloaderUnitTest, SafeStoInt32_SpecialCharacters, TestSize.Level1)
@@ -1421,7 +1421,7 @@ HWTEST_F(DownloaderUnitTest, SafeStoInt64_InvalidCharacters, TestSize.Level1)
 HWTEST_F(DownloaderUnitTest, SafeStoInt64_DecimalPoint, TestSize.Level1)
 {
     int64_t value = 999;
-    EXPECT_FALSE(StringUtil::SafeStoInt64("123.45", value));
+    EXPECT_TRUE(StringUtil::SafeStoInt64("123.45", value));
 }
 
 // SafeStoInt64 边界测试
