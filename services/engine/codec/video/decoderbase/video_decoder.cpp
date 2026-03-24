@@ -515,6 +515,8 @@ int32_t VideoDecoder::AllocateOutputBuffersFromSurface(int32_t bufferCnt)
         buf->width = width_;
         outAVBuffer4Surface_.emplace_back(AVBuffer::CreateAVBuffer());
         buf->avBuffer = AVBuffer::CreateAVBuffer(buf->sMemory->GetBase(), buf->sMemory->GetSize());
+        CHECK_AND_RETURN_RET_LOG(buf->avBuffer != nullptr && outAVBuffer4Surface_.back() != nullptr, AVCS_ERR_UNKNOWN,
+            "Num %{public}u Allocate output buffer failed, index=%{public}d", decInstanceID_, i);
         AVCODEC_LOGI("Allocate output surface buffer success, index=%{public}d, size=%{public}d, stride=%{public}d", i,
                      buf->sMemory->GetSize(), buf->sMemory->GetSurfaceBufferStride());
         buffers_[INDEX_OUTPUT].emplace_back(buf);
@@ -764,6 +766,8 @@ int32_t VideoDecoder::UpdateSurfaceMemory(uint32_t index)
         surfaceMemory->isAttached = true;
         outputBuffer->avBuffer =
             AVBuffer::CreateAVBuffer(outputBuffer->sMemory->GetBase(), outputBuffer->sMemory->GetSize());
+        CHECK_AND_RETURN_RET_LOG(outputBuffer->avBuffer != nullptr, AVCS_ERR_NO_MEMORY,
+            "Num %{public}u Buffer allocate failed, index=%{public}d", decInstanceID_, index);
         outputBuffer->width = width_;
         outputBuffer->height = height_;
         outputBuffer->bitDepth = bitDepth_;
@@ -1078,6 +1082,14 @@ void VideoDecoder::SetBufferCropMetadata(sptr<SurfaceBuffer> surfaceBuffer)
         AVCODEC_LOGE("SetBufferCropMetadata failed: GSError = %{public}d", err);
         return;
     }
+}
+
+void VideoDecoder::CallCallBack(AVCodecErrorType errType, AVCodecServiceErrCode serEcode)
+{
+    if (callback_ == nullptr) { return; }
+
+    callback_->OnError(errType, serEcode);
+    state_ = State::ERROR;
 }
 
 std::mutex VideoDecoder::decoderCountMutex_;

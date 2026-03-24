@@ -98,7 +98,6 @@ public:
     bool isOutBufSetted_ = false;
     std::mutex decRunMutex_;
     std::mutex convertDataMutex_;
-    std::shared_ptr<RenderSurface> renderSurface_ = nullptr;
     std::string decName_;
     CallerInfo decInfo_;
     std::shared_ptr<TaskThread> sendTask_ = nullptr;
@@ -113,6 +112,7 @@ public:
 #endif
 
 protected:
+    void CallCallBack(AVCodecErrorType errType, AVCodecServiceErrCode serEcode) override;
     std::atomic<bool> isInputSizeAssigned_ = false;
     int32_t inputBufferSize_ = 0;
 
