@@ -37,9 +37,10 @@ public:
     void GetAttr(const std::string &attrName, double &dAttrVal) override;
 
 private:
-    static constexpr int32_t DASH_REPRESENTATION_ATTR_NUM = 7;
+    static constexpr int32_t DASH_REPRESENTATION_ATTR_NUM = 8;
     static constexpr const char *representationAttrs_[DASH_REPRESENTATION_ATTR_NUM] = {
-        "id", "bandwidth", "qualityRanking", "dependencyId", "mediaStreamStructureId", "volumeAdjust_", "cuvvVersion"};
+        "id", "bandwidth", "qualityRanking", "dependencyId", "mediaStreamStructureId", "volumeAdjust_", "cuvvVersion",
+        "channels"};
 
     NodeAttr representationAttr_[DASH_REPRESENTATION_ATTR_NUM];
     DashComAttrsElements comAttrsElements_;

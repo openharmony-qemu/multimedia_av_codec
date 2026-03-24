@@ -172,6 +172,7 @@ struct M3U8Media {
     std::string name_;
     std::string lang_;
     std::string uri_;
+    std::string originCodec_;
     std::string channels_;
     std::string instreamId_;
     std::string characteristics_;
@@ -191,6 +192,7 @@ struct M3U8VariantStream {
     std::string audio_;
     std::string subtitles_;
     uint64_t bandWidth_ {};
+    uint64_t frameRate_ {0};
     int programID_ {};
     int width_ {};
     int height_ {};
@@ -202,6 +204,7 @@ struct M3U8VariantStream {
     std::shared_ptr<M3U8Media> defaultAudio_;
     std::shared_ptr<M3U8Media> defaultSubtitles_;
     bool isVideo_ {false};
+    bool isSimple_ {false};
     uint64_t sessionKeyIndex_ {0};
 };
 
@@ -222,11 +225,14 @@ struct M3U8MasterPlaylist {
     void DownloadSessionKey(std::shared_ptr<Tag>& tag);
     void CreateVariantStream(const std::shared_ptr<Tag>& tag);
     void ChooseStreamByResolution();
+    void ChooseStreamByStream(int32_t streamId);
     bool IsNearToInitResolution(const std::shared_ptr<M3U8VariantStream> &choosedStream,
     const std::shared_ptr<M3U8VariantStream> &currentStream);
     uint32_t GetResolutionDelta(uint32_t width, uint32_t height);
     void SetInterruptState(bool isInterruptNeeded);
     bool IsVideoStream(const std::string& codecs);
+    std::string GetCodec(StreamType type, const std::string& codecs);
+    std::string GetMimeType(const std::string& codecs);
     void ProcessAllTags(std::list<std::shared_ptr<Tag>>& tags);
     void ProcessStreamInfoTag(std::shared_ptr<Tag> tag);
     void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);

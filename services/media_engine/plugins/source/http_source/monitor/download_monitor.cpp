@@ -371,9 +371,12 @@ void DownloadMonitor::SetInterruptState(bool isInterruptNeeded)
     }
 }
 
-Status DownloadMonitor::GetStreamInfo(std::vector<StreamInfo>& streams)
+Status DownloadMonitor::GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate)
 {
-    return downloader_->GetStreamInfo(streams);
+    if (downloader_ != nullptr) {
+        return downloader_->GetStreamInfo(streams, isUpdate);
+    }
+    return Status::ERROR_NULL_POINTER;
 }
 
 Status DownloadMonitor::SelectStream(int32_t streamId)
@@ -578,6 +581,13 @@ std::string DownloadMonitor::GetCurUrl()
 {
     FALSE_RETURN_V(downloader_ != nullptr, "");
     return downloader_->GetCurUrl();
+}
+
+void DownloadMonitor::SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId)
+{
+    if (downloader_) {
+        downloader_->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+    }
 }
 
 bool DownloadMonitor::IsHlsEnd(int32_t streamId)

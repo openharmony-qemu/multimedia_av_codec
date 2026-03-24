@@ -26,6 +26,7 @@
 #include <openssl/sha.h>
 #include <sstream>
 #include <utility>
+#include <cmath>
 
 #include "avcodec_common.h"
 #include "avcodec_trace.h"
@@ -53,6 +54,7 @@
 #include "parameters.h"
 #include "scope_guard.h"
 #include "syspara/parameters.h"
+#include "codec_capability_helper.h"
 
 namespace {
 const std::string DUMP_PARAM = "a";
@@ -114,6 +116,8 @@ constexpr int32_t CACHE_PRESSURE_LIMIT_TIME = 500;
 constexpr int32_t BITRATE = 8;
 constexpr int32_t CACHE_PRESSURE_TIME = 2;
 constexpr float BASE_SPEED = 1.0f;
+constexpr uint64_t BAND_WIDTH_LIMIT = 3 * 1024 * 1024;
+constexpr int64_t CHECK_AUTO_SELECT_INTERVAL_MS = 2000;
 
 static const std::map<TrackType, DemuxerTrackType> TRACK_MAP = {
     {TrackType::TRACK_AUDIO, DemuxerTrackType::AUDIO},
@@ -138,6 +142,10 @@ std::unordered_set<FileType> ptsManagedFileTypes = {
     FileType::MPEGPS,
     FileType::WMV
 };
+
+std::map<StreamType, std::vector<StreamInfo>> filteredStreamMap_ {};
+
+using StreamFilterPredicate = std::function<bool(StreamInfo)>;
 
 class MediaDemuxer::AVBufferQueueProducerListener : public IRemoteStub<IProducerListener> {
 public:
@@ -1328,7 +1336,7 @@ void MediaDemuxer::UpdateBufferQueueListener(int32_t trackId)
     producer->SetBufferAvailableListener(listener);
 }
 
-Status MediaDemuxer::HandleDashSelectTrack(int32_t trackId)
+Status MediaDemuxer::HandleSegmentMediaSelectTrack(int32_t trackId)
 {
     MEDIA_LOG_I("In, track " PUBLIC_LOG_D32, trackId);
     eosMap_[trackId] = false;
@@ -1478,7 +1486,10 @@ Status MediaDemuxer::SelectTrack(uint32_t trackIndex)
             MEDIA_LOG_W("Wrong state: selecting");
             return Status::ERROR_WRONG_STATE;
         }
-        return HandleDashSelectTrack(trackId);
+        return HandleSegmentMediaSelectTrack(trackId);
+    }
+    if (isHls_) {
+        return HandleSegmentMediaSelectTrack(trackId);
     }
     return HandleSelectTrack(trackId);
 }
@@ -1560,7 +1571,14 @@ Status MediaDemuxer::HandleSegmentChange(int32_t trackId)
     FALSE_RETURN_V_MSG_E(trackType != TRACK_INVALID, Status::ERROR_INVALID_PARAMETER, "TrackType is invalid");
     bool isRebooted = true;
     Status ret = demuxerPluginManager_->RebootPlugin(streamID, trackType, streamDemuxer_, isRebooted);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Reboot demuxer plugin failed");
+    if (ret != Status::OK) {
+        FALSE_RETURN_V_MSG_E(streamDemuxer_ != nullptr, Status::ERROR_NULL_POINTER, "Stream is nullptr");
+        TrackType type = demuxerPluginManager_->GetTrackTypeByTrackID(trackId);
+        int32_t currentStreamID = demuxerPluginManager_->GetStreamIDByTrackType(type);
+        int32_t newStreamID = demuxerPluginManager_->GetStreamDemuxerNewStreamID(type, streamDemuxer_);
+        FALSE_RETURN_V_MSG_E(newStreamID != -1 && currentStreamID != newStreamID, ret, "StreamId not change.");
+        FALSE_RETURN_V_MSG_E(HandleDashChangeStream(trackId), ret, "Reboot demuxer plugin failed");
+    }
     ret = InnerSelectTrack(trackId);
     return ret;
 }
@@ -1931,6 +1949,26 @@ Status MediaDemuxer::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode,
     convertErrorTime_.store(0);
     MEDIA_LOG_D("Out");
     return ret;
+}
+
+Status MediaDemuxer::SelectStreamId(int32_t streamId)
+{
+    MEDIA_LOG_I("In");
+
+    FALSE_RETURN_V(demuxerPluginManager_ != nullptr && streamDemuxer_ != nullptr, Status::ERROR_WRONG_STATE);
+    FALSE_RETURN_V(streamId >= 0, Status::ERROR_WRONG_STATE);
+    if (demuxerPluginManager_->IsDash()) {
+        if (streamDemuxer_->CanDoChangeStream() == false) {
+            MEDIA_LOG_W("Wrong state: selecting");
+            return Status::ERROR_WRONG_STATE;
+        }
+    } else {
+        streamDemuxer_->ResetAllCache();
+    }
+    if (source_ != nullptr) {
+        return source_->SelectStream(streamId);
+    }
+    return Status::OK;
 }
 
 Status MediaDemuxer::SelectBitRate(uint32_t bitRate, bool isAutoSelect)
@@ -2821,7 +2859,6 @@ bool MediaDemuxer::SelectBitRateChangeStream(int32_t trackId)
         Plugins::MediaInfo mediaInfo;
         demuxerPluginManager_->UpdateDefaultStreamID(mediaInfo, VIDEO, newStreamID);
         InitMediaMetaData(mediaInfo); // update mediaMetaData_
-        
         int32_t newInnerTrackId = -1;
         int32_t newTrackId = -1;
         if (IsAVInOneStream()) {
@@ -2847,6 +2884,22 @@ bool MediaDemuxer::SelectBitRateChangeStream(int32_t trackId)
         return true;
     }
     return false;
+}
+
+bool CheckStreamMimeType(const std::string &mimeType, StreamType type)
+{
+    if (type == Plugins::AUDIO) {
+        std::vector<Plugins::PluginDescription> matchedPluginsDescriptions =
+            Plugins::PluginList::GetInstance().GetPluginsByType(Plugins::PluginType::AUDIO_DECODER);
+        return std::any_of(matchedPluginsDescriptions.begin(), matchedPluginsDescriptions.end(),
+            [&mimeType](const Plugins::PluginDescription &description) {
+                const std::string &longer = (description.cap.size() >= mimeType.size()) ? description.cap : mimeType;
+                const std::string &shorter = (description.cap.size() >= mimeType.size()) ? mimeType : description.cap;
+                return longer.find(shorter) != std::string::npos;
+            });
+    }
+    auto capData = MediaAVCodec::CodecCapabilityHelper::GetCapabilityByMime(mimeType);
+    return capData != std::nullopt;
 }
 
 void MediaDemuxer::DumpBufferToFile(int32_t trackId, std::shared_ptr<AVBuffer> buffer)
@@ -3224,6 +3277,82 @@ Status MediaDemuxer::CopyFrameToUserQueue(int32_t trackId)
     return ret;
 }
 
+void PrintStreamInfo(const std::string &logTag, StreamInfo *streamInfo, const std::string &currentPlayType,
+    Status status, int32_t currentBitRate = 0)
+{
+    FALSE_RETURN(streamInfo != nullptr);
+    if (streamInfo->type == StreamType::VIDEO || streamInfo->type == StreamType::MIXED) {
+        MEDIA_LOG_I(PUBLIC_LOG_S "desStreamInfo Video bitrate: " PUBLIC_LOG_D32 " videoHeight: " PUBLIC_LOG_D32
+            " videoWidth: " PUBLIC_LOG_D32 " framerate: " PUBLIC_LOG_D32 " mimeType: " PUBLIC_LOG_S " codec:"
+            PUBLIC_LOG_S " curDownloadBitrate: " PUBLIC_LOG_D32 " success change stream: " PUBLIC_LOG_S, logTag.c_str(),
+            streamInfo->bitRate, streamInfo->videoHeight, streamInfo->videoWidth, streamInfo->frameRate,
+            currentPlayType == "dash" ? streamInfo->mimeType.c_str() : "", streamInfo->originCodecs.c_str(),
+            currentBitRate, status == Status::OK ? "true" : "false");
+    } else if (streamInfo->type == StreamType::AUDIO) {
+        MEDIA_LOG_I(PUBLIC_LOG_S "desStreamInfo Audio channels: " PUBLIC_LOG_D32
+            " bitRate: " PUBLIC_LOG_D32 " mimeType: " PUBLIC_LOG_S  " codec:" PUBLIC_LOG_S " lang: " PUBLIC_LOG_S
+            " success change stream: " PUBLIC_LOG_S, logTag.c_str(), streamInfo->channels, streamInfo->bitRate,
+            currentPlayType == "dash" ? streamInfo->mimeType.c_str() : "", streamInfo->originCodecs.c_str(),
+            streamInfo->lang.c_str(), status == Status::OK ? "true" : "false");
+    } else if (streamInfo->type == StreamType::SUBTITLE) {
+        MEDIA_LOG_I(PUBLIC_LOG_S "desStreamInfo Subtitle lang: " PUBLIC_LOG_S " success change stream: " PUBLIC_LOG_S,
+            logTag.c_str(), streamInfo->lang.c_str(), status == Status::OK ? "true" : "false");
+    }
+}
+
+StreamInfo *GetPreferredVideoStream(uint32_t desBitrate)
+{
+    bool isFirstSelect = true;
+    StreamInfo *destStream = nullptr;
+    uint32_t maxGap = 0;
+    for (StreamInfo &stream : filteredStreamMap_[VIDEO]) {
+        if (stream.type != StreamType::VIDEO && stream.type != StreamType::MIXED) {
+            continue;
+        }
+        uint32_t tempGap = stream.bitRate > desBitrate ? stream.bitRate - desBitrate : desBitrate - stream.bitRate;
+        if (isFirstSelect || tempGap < maxGap) {
+            isFirstSelect = false;
+            maxGap = tempGap;
+            destStream = &stream;
+        }
+    }
+    MEDIA_LOG_I("GetPreferredVideoBitrate destStreamBitRate: " PUBLIC_LOG_D32 " curDownloadRate: " PUBLIC_LOG_D32,
+        destStream->bitRate, desBitrate);
+    return destStream;
+}
+
+void MediaDemuxer::AutoSelectTrackByBitrate(int32_t trackId)
+{
+    FALSE_RETURN_NOLOG(isAutoSelect_.load() && curDownloadBitRate_.load() != 0 &&
+        curDownloadBitRate_.load() != lastSwitchDownloadRate_.load());
+    if (lastCheckAutoSelectTimeMs_ == 0) {
+        lastCheckAutoSelectTimeMs_ = GetCurrentTimeMs();
+        return;
+    }
+    if (GetCurrentTimeMs() - lastCheckAutoSelectTimeMs_ < CHECK_AUTO_SELECT_INTERVAL_MS) {
+        return;
+    }
+    std::lock_guard<std::recursive_mutex> lock(streamMapMutex_);
+    StreamInfo *preferredStreamInfo = GetPreferredVideoStream(curDownloadBitRate_.load());
+    FALSE_RETURN(preferredStreamInfo != nullptr);
+    MEDIA_LOG_D("Check can auto select, trackId: " PUBLIC_LOG_D32 " preferredBitrate: " PUBLIC_LOG_D32
+        "isSelectBitRate_" PUBLIC_LOG_D32 "isSelectTrack_" PUBLIC_LOG_D32 "targetBitRate_: " PUBLIC_LOG_D32
+        "demuxerPluginManager_->GetCurrentBitRate(): " PUBLIC_LOG_D32, trackId, preferredStreamInfo->bitRate,
+        isSelectBitRate_.load(), isSelectTrack_.load(), targetBitRate_, demuxerPluginManager_->GetCurrentBitRate());
+    if (defaultVideoStreamId_ != preferredStreamInfo->streamId &&
+        lastAutoSelectBitRate_ != static_cast<int32_t>(preferredStreamInfo->bitRate) && CanAutoSelectBitRate()) {
+        Status status = SelectBitRate(preferredStreamInfo->bitRate, true);
+        if (status == Status::OK) {
+            defaultVideoStreamId_ = preferredStreamInfo->streamId;
+            lastAutoSelectBitRate_ = preferredStreamInfo->bitRate;
+            lastSwitchDownloadRate_.store(curDownloadBitRate_.load());
+        }
+        PrintStreamInfo(
+            "AutoSelectTrackByBitrate ", preferredStreamInfo, currentPlayType_, status, curDownloadBitRate_.load());
+    }
+    lastCheckAutoSelectTimeMs_ = 0;
+}
+
 void MediaDemuxer::StartConsume(int32_t trackId)
 {
     bool startConsumeResult = false;
@@ -3267,6 +3396,12 @@ void MediaDemuxer::StartConsume(int32_t trackId)
         sampleConsumerTaskMap_[videoTrackId_]->Start();
     }
     CheckAndReportBufferingStatus(EventType::BUFFERING_END);
+}
+
+int64_t MediaDemuxer::GetCurrentTimeMs()
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
 }
 
 void MediaDemuxer::ProduceWaterLoopControl(int32_t trackId)
@@ -3726,7 +3861,34 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
         default:
             break;
     }
+    OnEventStream(event);
     OnEventBuffer(event, eventReceiver);
+}
+
+void MediaDemuxer::OnEventStream(const Plugins::PluginEvent &event)
+{
+    switch (event.type) {
+        case PluginEventType::STREAM_UPDATE: {
+            MEDIA_LOG_D("OnEvent stream update.");
+            FALSE_RETURN(Any::IsSameTypeWith<std::string>(event.param));
+            currentPlayType_ = AnyCast<std::string>(event.param);
+            MEDIA_LOG_I("current play type: %{public}s", currentPlayType_.c_str());
+            ChooseDefaultStreams();
+            FALSE_RETURN(source_ != nullptr);
+            source_->SetDefaultStreamId(defaultVideoStreamId_, defaultAudioStreamId_, defaultSubtitleStreamId_);
+            MEDIA_LOG_I("select default streams: video: " PUBLIC_LOG_D32 ", audio: " PUBLIC_LOG_D32 ", subtitle: "
+                PUBLIC_LOG_D32, defaultVideoStreamId_, defaultAudioStreamId_, defaultSubtitleStreamId_);
+            break;
+        }
+        case PluginEventType::NETWORK_BITRATE_CHANGED: {
+            MEDIA_LOG_D("OnEvent network bitrate change.");
+            FALSE_RETURN(Any::IsSameTypeWith<uint32_t>(event.param));
+            curDownloadBitRate_.store(AnyCast<uint32_t>(event.param));
+            break;
+        }
+        default:
+            break;
+    }
 }
 
 void MediaDemuxer::OnEventBuffer(const Plugins::PluginEvent &event,
@@ -4360,6 +4522,18 @@ void MediaDemuxer::ConsumeWaterLoopControl(int32_t trackId, std::shared_ptr<Samp
     if (!sampleQueueController_ || trackId == subtitleTrackId_ || IsLocalFd() || eosMap_[trackId]) {
         return;
     }
+    StreamType streamType = demuxerPluginManager_->GetStreamTypeByTrackID(trackId);
+    if (!IsCloudFd() && !IsNeedPreDownload() &&
+        (streamType == StreamType::VIDEO || streamType == StreamType::MIXED)) {
+        if (sampleQueueController_->CheckWaterLineStopProduce(trackId, sampleQueueMap_[trackId])) {
+            AutoSelectTrackByBitrate(trackId);
+        } else if (sampleQueueController_->CheckWaterLineStartConsume(trackId, sampleQueueMap_[trackId])) {
+            AutoSelectTrackByBitrate(trackId);
+        } else {
+            lastCheckAutoSelectTimeMs_ = 0;
+        }
+    }
+
     bool stopConsumeResult = false;
     {
         AutoLock lock(mapMutex_);
@@ -4966,6 +5140,602 @@ bool MediaDemuxer::IsBuffering()
     return isBuffering_.load();
 }
 
+void MediaDemuxer::SetIsTriggerAutoMode(bool isAutoSelect)
+{
+    MEDIA_LOG_I("SetIsTriggerAutoMode:" PUBLIC_LOG_S, isAutoSelect ? "true" : "false");
+    isAutoSelect_.store(isAutoSelect);
+}
+
+Status MediaDemuxer::SetPlayStrategy(std::shared_ptr<PlayStrategy> playStrategy)
+{
+    if (playStrategy == nullptr) {
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+    defaultAudioLang_ = playStrategy->audioLanguage;
+    defaultSubtitleLang_ = playStrategy->subtitleLanguage;
+    isHdrStart_ = playStrategy->preferHDR;
+    if (playStrategy->width > 0 && playStrategy->height > 0) {
+        uint64_t resolution = static_cast<uint64_t>(playStrategy->width) * playStrategy->height;
+        if (resolution > UINT32_MAX) {
+            return Status::ERROR_INVALID_PARAMETER;
+        } else {
+            initResolution_ = static_cast<uint32_t>(resolution);
+        }
+    }
+    return Status::OK;
+}
+
+static bool MatchPreferredMimeTypes(const std::vector<std::string> &preferredMimeTypes,
+    const StreamInfo &streamInfo)
+{
+    // Match by explicit mimeType first; if empty, fall back to comparing codec prefix
+    // (e.g. "avc1.64001f" should match preferred "avc1" or "avc1.64001f").
+    if (!streamInfo.mimeType.empty() &&
+        std::find(preferredMimeTypes.begin(), preferredMimeTypes.end(), streamInfo.mimeType) !=
+        preferredMimeTypes.end()) {
+        return true;
+    }
+    if (streamInfo.originCodecs.empty()) {
+        return false;
+    }
+
+    const auto &codecs = streamInfo.originCodecs;
+    for (const auto &mimeType : preferredMimeTypes) {
+        if (mimeType.empty() || codecs.size() < mimeType.size()) {
+            continue;
+        }
+
+        const size_t mimeTypeDotPos = mimeType.find('.');
+        if (mimeTypeDotPos == std::string::npos) {
+            if (codecs.compare(0, mimeType.size(), mimeType, 0, mimeType.size()) == 0 &&
+                (codecs.size() == mimeType.size() || codecs[mimeType.size()] == '.')) {
+                return true;
+            }
+            continue;
+        }
+
+        size_t codecsDotPos = codecs.find('.');
+        if (codecsDotPos == std::string::npos) {
+            codecsDotPos = codecs.size();
+        }
+        if (codecsDotPos != mimeTypeDotPos) {
+            continue;
+        }
+
+        if (codecs.compare(0, mimeType.size(), mimeType, 0, mimeType.size()) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void GetVideoFilterPredicatesExt(const TrackSelectionFilter &filter, std::vector<StreamFilterPredicate> &predicates)
+{
+    if (filter.minVideoFrameRate > 0) {
+        predicates.emplace_back(
+            [minFrameRate = filter.minVideoFrameRate](StreamInfo streamInfo) {
+                return streamInfo.frameRate != 0 && streamInfo.frameRate >= static_cast<uint32_t>(minFrameRate);
+            }
+        );
+    }
+    if (filter.maxVideoResolution.first > 0 && filter.maxVideoResolution.second > 0) {
+        predicates.emplace_back(
+            [filter = filter](StreamInfo streamInfo) {
+                return streamInfo.GetResolution() != 0 && filter.GetMaxVideoResolution() >= streamInfo.GetResolution();
+            }
+        );
+    }
+    if (filter.minVideoResolution.first > 0 && filter.minVideoResolution.second > 0) {
+        predicates.emplace_back(
+            [filter = filter](StreamInfo streamInfo) {
+                return streamInfo.GetResolution() != 0 && filter.GetMinVideoResolution() <= streamInfo.GetResolution();
+            }
+        );
+    }
+    if (!filter.preferredVideoMimeTypes.empty()) {
+        predicates.emplace_back(
+            [preferredMimeTypes = filter.preferredVideoMimeTypes](StreamInfo streamInfo) {
+                return MatchPreferredMimeTypes(preferredMimeTypes, streamInfo);
+            }
+        );
+    }
+}
+
+std::vector<StreamFilterPredicate> GetVideoFilterPredicates(const TrackSelectionFilter &filter)
+{
+    std::vector<StreamFilterPredicate> predicates;
+    if (filter.maxVideoBitrate > 0) {
+        predicates.emplace_back(
+            [maxBitrate = filter.maxVideoBitrate](const StreamInfo &streamInfo) {
+                return streamInfo.bitRate != 0 && streamInfo.bitRate <= static_cast<uint32_t>(maxBitrate);
+            }
+        );
+    }
+    if (filter.minVideoBitrate > 0) {
+        predicates.emplace_back(
+            [minBitrate = filter.minVideoBitrate](const StreamInfo &streamInfo) {
+                return streamInfo.bitRate != 0 && streamInfo.bitRate >= static_cast<uint32_t>(minBitrate);
+            }
+        );
+    }
+    if (filter.maxVideoFrameRate > 0) {
+        predicates.emplace_back(
+            [maxFrameRate = filter.maxVideoFrameRate](const StreamInfo &streamInfo) {
+                return streamInfo.frameRate != 0 && streamInfo.frameRate <= static_cast<uint32_t>(maxFrameRate);
+            }
+        );
+    }
+    GetVideoFilterPredicatesExt(filter, predicates);
+    MEDIA_LOG_I("GetVideoFilterPredicates predicates size: " PUBLIC_LOG_ZU, predicates.size());
+    return predicates;
+}
+
+void GetAudioFilterPredicatesExt(const TrackSelectionFilter &filter, std::vector<StreamFilterPredicate> &predicates)
+{
+    if (!filter.preferredAudioMimeTypes.empty()) {
+        predicates.emplace_back(
+            [preferredMimeTypes = filter.preferredAudioMimeTypes](const StreamInfo &streamInfo) {
+                return MatchPreferredMimeTypes(preferredMimeTypes, streamInfo);
+            }
+        );
+    }
+    if (!filter.preferredAudioLanguages.empty()) {
+        predicates.emplace_back(
+            [preferredLanguages = filter.preferredAudioLanguages](const StreamInfo &streamInfo) {
+                return !streamInfo.lang.empty() && std::find(preferredLanguages.begin(), preferredLanguages.end(),
+                    streamInfo.lang) != preferredLanguages.end();
+            }
+        );
+    }
+}
+
+std::vector<StreamFilterPredicate> GetAudioFilterPredicates(const TrackSelectionFilter &filter)
+{
+    std::vector<StreamFilterPredicate> predicates;
+    if (filter.maxAudioBitrate > 0) {
+        predicates.emplace_back(
+            [maxBitrate = filter.maxAudioBitrate](const StreamInfo &streamInfo) {
+                return streamInfo.bitRate != 0 && streamInfo.bitRate <= static_cast<uint32_t>(maxBitrate);
+            }
+        );
+    }
+    if (filter.minAudioBitrate > 0) {
+        predicates.emplace_back(
+            [minBitrate = filter.minAudioBitrate](const StreamInfo &streamInfo) {
+                return streamInfo.bitRate != 0 && streamInfo.bitRate >= static_cast<uint32_t>(minBitrate);
+            }
+        );
+    }
+    if (filter.maxAudioChannels > 0) {
+        predicates.emplace_back(
+            [maxChannels = filter.maxAudioChannels](const StreamInfo &streamInfo) {
+                return streamInfo.channels != 0 && streamInfo.channels <= static_cast<uint32_t>(maxChannels);
+            }
+        );
+    }
+    GetAudioFilterPredicatesExt(filter, predicates);
+    MEDIA_LOG_I("GetAudioFilterPredicates predicates size: " PUBLIC_LOG_ZU, predicates.size());
+    return predicates;
+}
+
+std::vector<StreamFilterPredicate> GetSubtitleFilterPredicates(const TrackSelectionFilter &filter)
+{
+    std::vector<StreamFilterPredicate> predicates;
+    if (!filter.preferredSubtitleLanguages.empty()) {
+        predicates.emplace_back(
+            [preferredLanguages = filter.preferredSubtitleLanguages](const StreamInfo &streamInfo) {
+                return !streamInfo.lang.empty() && std::find(preferredLanguages.begin(), preferredLanguages.end(),
+                    streamInfo.lang) != preferredLanguages.end();
+            }
+        );
+    }
+    MEDIA_LOG_I("GetSubtitleFilterPredicates predicates size: " PUBLIC_LOG_ZU, predicates.size());
+    return predicates;
+}
+
+StreamInfo *FindStreamForFiledStream(std::vector<StreamInfo> &streams, int32_t lastStreamId,
+    int32_t defaultStreamId, bool &needChange)
+{
+    if (streams.empty()) {
+        return nullptr;
+    }
+    StreamInfo *stream = nullptr;
+    for (auto &item : streams) {
+        if (item.streamId == lastStreamId) {
+            needChange = false;
+            break;
+        }
+
+        if (item.streamId == defaultStreamId) {
+            stream = &item;
+        }
+    }
+    return stream;
+}
+
+void MediaDemuxer::SetTrackSelectionFilter(TrackSelectionFilter &filter)
+{
+    trackSelectionFilter_ = filter;
+    FALSE_RETURN_MSG_W(isPrepared_.load(), "not prepared, cannot auto select bitrate");
+    FALSE_RETURN_MSG_W(!IsCloudFd() && !IsNeedPreDownload(),
+        "cloud fd or need pre-download, cannot auto select bitrate");
+    MEDIA_LOG_I("In");
+    auto lastVideoStreamId = defaultVideoStreamId_;
+    auto lastAudioStreamId = defaultAudioStreamId_;
+    auto lastSubtitleStreamId = defaultSubtitleStreamId_;
+    ChooseDefaultStreams();
+    StreamInfo *stream = nullptr;
+    bool needChange = true;
+    stream = FindStreamForFiledStream(filteredStreamMap_[VIDEO], lastVideoStreamId, defaultVideoStreamId_, needChange);
+    if (needChange && stream != nullptr) {
+        Status states = SelectBitRate(stream->bitRate);
+        if (states == Status::OK) {
+            lastAutoSelectBitRate_ = stream->bitRate;
+            defaultVideoStreamId_ = stream->streamId;
+        }
+        PrintStreamInfo("SetTrackSelectionFilter ", stream, currentPlayType_, states, curDownloadBitRate_.load());
+    } else {
+        MEDIA_LOG_I("video stream does not need to be switched");
+    }
+
+    FALSE_RETURN(currentPlayType_ != "http");
+    stream = nullptr;
+    needChange = true;
+    stream = FindStreamForFiledStream(filteredStreamMap_[AUDIO], lastAudioStreamId, defaultAudioStreamId_, needChange);
+    if (needChange && stream != nullptr) {
+        Status states = SelectStreamId(defaultAudioStreamId_);
+        PrintStreamInfo("SetTrackSelectionFilter ", stream, currentPlayType_, states);
+    } else {
+        MEDIA_LOG_I("audio stream does not need to be switched");
+    }
+
+    stream = nullptr;
+    needChange = true;
+    stream = FindStreamForFiledStream(filteredStreamMap_[SUBTITLE], lastSubtitleStreamId,
+        defaultSubtitleStreamId_, needChange);
+    if (needChange && stream != nullptr) {
+        Status states = SelectStreamId(defaultSubtitleStreamId_);
+        PrintStreamInfo("SetTrackSelectionFilter ", stream, currentPlayType_, states);
+    } else {
+        MEDIA_LOG_I("subtitle stream does not need to be switched");
+    }
+}
+
+bool IsLangMatch(const std::string& defaultLang, const std::string& lang)
+{
+    if (defaultLang.length() > 0) {
+        return defaultLang.compare(lang) == 0;
+    }
+    return true;
+}
+
+uint32_t CalcResolutionGap(uint32_t baseResolution, uint32_t resolution)
+{
+    return (baseResolution > resolution) ? (baseResolution - resolution) : (resolution - baseResolution);
+}
+
+bool IsVideoStreamSelectable(const StreamInfo &stream, const std::string &currentPlayType, bool isHdrStart)
+{
+    if (currentPlayType == "dash" && (stream.videoType != VIDEO_TYPE_SDR) != isHdrStart) {
+        return false;
+    }
+    if (currentPlayType == "hls" && stream.isSimple) {
+        return true;
+    }
+    if (currentPlayType == "hls" && stream.bitRate > BAND_WIDTH_LIMIT) {
+        return false;
+    }
+    return true;
+}
+
+bool IsStreamMatched(const StreamInfo &stream,
+    std::map<StreamType, std::vector<StreamFilterPredicate>> &filteredStreamPredicates)
+{
+    auto type = stream.type;
+    if (type == MIXED) {
+        type = VIDEO;
+    }
+    if (filteredStreamPredicates[type].empty()) {
+        return false;
+    }
+    for (const auto &predicate : filteredStreamPredicates[type]) {
+        if (!predicate(stream)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void ScanStreamsAndBuildMap(const std::vector<StreamInfo> &streams,
+    std::map<StreamType, std::vector<StreamFilterPredicate>> &filteredStreamPredicates,
+    std::map<StreamType, bool> &needFilterMap,
+    std::map<StreamType, std::vector<StreamInfo>> &filteredStreamMap,
+    std::map<StreamType, std::vector<StreamInfo>> &allStreamMap)
+{
+    for (const auto &stream : streams) {
+        auto type = stream.type;
+        if (type == MIXED) {
+            type = VIDEO;
+        }
+        allStreamMap[type].push_back(stream);
+
+        if (needFilterMap[type] && IsStreamMatched(stream, filteredStreamPredicates)) {
+            MEDIA_LOG_D("ScanStreamsAndBuildMap stream matched, type: " PUBLIC_LOG_D32 ", streamId: " PUBLIC_LOG_D32,
+                static_cast<int32_t>(type), stream.streamId);
+            filteredStreamMap[type].push_back(stream);
+        } else {
+            MEDIA_LOG_D("ScanStreamsAndBuildMap stream not matched, type: " PUBLIC_LOG_D32 ", streamId: "
+                PUBLIC_LOG_D32, static_cast<int32_t>(type), stream.streamId);
+        }
+    }
+}
+
+int32_t SelectDefaultVideoId(const std::vector<StreamInfo> &videoStreams, bool isAllStreamSelected,
+    TrackSelectionFilter &trackSelectionFilter, const std::string &currentPlayType, bool isHdrStart,
+    uint32_t initResolution)
+{
+    if ((currentPlayType == "http" || currentPlayType == "dash") && isAllStreamSelected) {
+        return -1;
+    }
+    if (!isAllStreamSelected && !trackSelectionFilter.preferredVideoMimeTypes.empty()) {
+        const auto &preferredMimeTypes = trackSelectionFilter.preferredVideoMimeTypes;
+        for (const auto &mime : preferredMimeTypes) {
+            auto it = std::find_if(videoStreams.begin(), videoStreams.end(),
+                [&mime](const StreamInfo &stream) {
+                    return stream.mimeType == mime;
+                });
+            if (it != videoStreams.end()) {
+                return it->streamId;
+            }
+        }
+    }
+
+    int32_t videoStreamId = -1;
+    uint32_t maxResolutionGap = 0;
+    bool isFirstSelect = true;
+    for (auto stream : videoStreams) {
+        if (!IsVideoStreamSelectable(stream, currentPlayType, isHdrStart)) {
+            continue;
+        }
+
+        if (initResolution == 0) {
+            videoStreamId = stream.streamId;
+            continue;
+        }
+        uint32_t resolutionGap = CalcResolutionGap(initResolution, stream.GetResolution());
+        if (isFirstSelect || resolutionGap < maxResolutionGap) {
+            maxResolutionGap = resolutionGap;
+            videoStreamId = stream.streamId;
+            isFirstSelect = false;
+        }
+    }
+
+    if (videoStreamId == -1 && !videoStreams.empty()) {
+        videoStreamId = videoStreams[0].streamId;
+    }
+    return videoStreamId;
+}
+
+int32_t SelectAudioDefaultId(std::map<StreamType, std::vector<StreamInfo>> &filteredStreamMap,
+    bool isAllStreamSelected, TrackSelectionFilter &trackSelectionFilter, const std::string &defaultLang,
+    const std::string &currentPlayType)
+{
+    if ((currentPlayType == "hls" || currentPlayType == "dash") && isAllStreamSelected) {
+        return -1;
+    }
+    auto &audioStreams = filteredStreamMap[AUDIO];
+    if (audioStreams.empty()) {
+        return -1;
+    }
+
+    if (!isAllStreamSelected && !trackSelectionFilter.preferredAudioLanguages.empty()) {
+        const auto &preferredLangs = trackSelectionFilter.preferredAudioLanguages;
+        for (const auto &lang : preferredLangs) {
+            auto it = std::find_if(audioStreams.begin(), audioStreams.end(),
+                [&lang](const StreamInfo &stream) {
+                    return stream.lang == lang;
+                });
+            if (it != audioStreams.end()) {
+                return it->streamId;
+            }
+        }
+    }
+
+    if (!isAllStreamSelected && !trackSelectionFilter.preferredAudioMimeTypes.empty()) {
+        const auto &preferredMimeTypes = trackSelectionFilter.preferredAudioMimeTypes;
+        for (const auto &mime : preferredMimeTypes) {
+            auto it = std::find_if(audioStreams.begin(), audioStreams.end(),
+                [&mime](const StreamInfo &stream) {
+                    return stream.mimeType == mime;
+                });
+            if (it != audioStreams.end()) {
+                return it->streamId;
+            }
+        }
+    }
+
+    int32_t streamId = -1;
+    for (const auto &stream : audioStreams) {
+        if (IsLangMatch(defaultLang, stream.lang)) {
+            streamId = stream.streamId;
+        }
+    }
+    if (streamId == -1) {
+        return audioStreams.front().streamId;
+    }
+    return streamId;
+}
+
+int32_t SelectSubtitleDefaultId(std::map<StreamType, std::vector<StreamInfo>> &filteredStreamMap,
+    bool isAllStreamSelected, TrackSelectionFilter &trackSelectionFilter, const std::string &defaultLang,
+    const std::string &currentPlayType)
+{
+    if ((currentPlayType == "hls" || currentPlayType == "dash") && isAllStreamSelected) {
+        return -1;
+    }
+    auto &subtitleStreams = filteredStreamMap[SUBTITLE];
+    if (subtitleStreams.empty()) {
+        return -1;
+    }
+
+    if (!isAllStreamSelected && !trackSelectionFilter.preferredSubtitleLanguages.empty()) {
+        const auto &preferredLangs = trackSelectionFilter.preferredSubtitleLanguages;
+        auto it = std::find_if(subtitleStreams.begin(), subtitleStreams.end(),
+            [&preferredLangs](const StreamInfo &stream) {
+                return std::find(preferredLangs.begin(), preferredLangs.end(), stream.lang) != preferredLangs.end();
+            });
+        if (it != subtitleStreams.end()) {
+            return it->streamId;
+        }
+    }
+
+    int32_t streamId = -1;
+    for (const auto &stream : subtitleStreams) {
+        if (IsLangMatch(defaultLang, stream.lang)) {
+            streamId = stream.streamId;
+        }
+    }
+    if (streamId == -1) {
+        return subtitleStreams.front().streamId;
+    }
+    return streamId;
+}
+
+std::vector<StreamInfo> CollectValidStreams(std::vector<StreamInfo> &allStreams, const std::string &currentPlayType,
+    const TrackSelectionFilter &trackSelectionFilter)
+{
+    std::vector<StreamInfo> filteredStreams;
+    bool hasVideoValid = false;
+    bool hasAudioValid = false;
+    std::vector<StreamInfo> videoStreams;
+    std::vector<StreamInfo> audioStreams;
+
+    for (auto &streamInfo : allStreams) {
+        if (streamInfo.type == VIDEO || streamInfo.type == AUDIO) {
+            streamInfo.type == VIDEO ? videoStreams.push_back(streamInfo) : audioStreams.push_back(streamInfo);
+
+            std::vector<std::string> preferedMimeTypes = streamInfo.type == VIDEO ?
+                trackSelectionFilter.preferredVideoMimeTypes : trackSelectionFilter.preferredAudioMimeTypes;
+            if (!preferedMimeTypes.empty() && MatchPreferredMimeTypes(preferedMimeTypes, streamInfo)) {
+                streamInfo.type == VIDEO ? hasVideoValid = true : hasAudioValid = true;
+                filteredStreams.push_back(streamInfo);
+                continue;
+            }
+
+            if (streamInfo.type == VIDEO && streamInfo.mimeType.empty() && currentPlayType == "hls") {
+                continue;
+            }
+
+            if (CheckStreamMimeType(streamInfo.codecs, streamInfo.type)) {
+                streamInfo.type == VIDEO ? hasVideoValid = true : hasAudioValid = true;
+                filteredStreams.push_back(streamInfo);
+            }
+        } else {
+            filteredStreams.push_back(streamInfo);
+        }
+    }
+    if (!hasVideoValid) {
+        filteredStreams.insert(filteredStreams.end(), videoStreams.begin(), videoStreams.end());
+    }
+    if (!hasAudioValid) {
+        filteredStreams.insert(filteredStreams.end(), audioStreams.begin(), audioStreams.end());
+    }
+    return filteredStreams;
+}
+
+void GetNeedFilterMap(std::map<StreamType, std::vector<StreamFilterPredicate>> &filteredStreamPredicates,
+    const TrackSelectionFilter &trackSelectionFilter, const std::string &currentPlayType,
+    std::map<StreamType, bool> &needFilterMap)
+{
+    if (currentPlayType == "http" && (!filteredStreamPredicates[AUDIO].empty() ||
+        !filteredStreamPredicates[SUBTITLE].empty() || !trackSelectionFilter.preferredVideoMimeTypes.empty() ||
+        trackSelectionFilter.maxVideoFrameRate > 0 || trackSelectionFilter.minVideoFrameRate > 0)) {
+        needFilterMap[VIDEO] = false;
+    } else {
+        needFilterMap[VIDEO] = true;
+    }
+
+    if (currentPlayType == "http") {
+        needFilterMap[AUDIO] = false;
+    } else {
+        needFilterMap[AUDIO] = true;
+    }
+
+    if (currentPlayType == "http") {
+        needFilterMap[SUBTITLE] = false;
+    } else {
+        needFilterMap[SUBTITLE] = true;
+    }
+    MEDIA_LOG_I("GetNeedFilterMap currentPlayType: " PUBLIC_LOG_S " needFilterVideo: " PUBLIC_LOG_D32
+        " needFilterAudio: " PUBLIC_LOG_D32 " needFilterSubtitle: " PUBLIC_LOG_D32, currentPlayType.c_str(),
+        needFilterMap[VIDEO], needFilterMap[AUDIO], needFilterMap[SUBTITLE]);
+}
+
+void MediaDemuxer::ChooseDefaultStreams()
+{
+    MEDIA_LOG_I("ChooseDefaultStreams In");
+    std::map<StreamType, std::vector<StreamFilterPredicate>> filteredStreamPredicates;
+    filteredStreamPredicates[VIDEO] = GetVideoFilterPredicates(trackSelectionFilter_);
+    filteredStreamPredicates[AUDIO] = GetAudioFilterPredicates(trackSelectionFilter_);
+    filteredStreamPredicates[SUBTITLE] = GetSubtitleFilterPredicates(trackSelectionFilter_);
+
+    std::vector<StreamInfo> streams;
+    source_->GetStreamInfo(streams, true);
+    streams = CollectValidStreams(streams, currentPlayType_, trackSelectionFilter_);
+
+    std::map<StreamType, std::vector<StreamInfo>> filteredStreamMap;
+    std::map<StreamType, std::vector<StreamInfo>> allStreamMap;
+    std::map<StreamType, bool> needFilterMap;
+    GetNeedFilterMap(filteredStreamPredicates, trackSelectionFilter_, currentPlayType_, needFilterMap);
+    ScanStreamsAndBuildMap(streams, filteredStreamPredicates, needFilterMap, filteredStreamMap, allStreamMap);
+    bool isVideoNoFiltered = filteredStreamMap[VIDEO].empty();
+    bool isAudioNoFiltered = filteredStreamMap[AUDIO].empty();
+    bool isSubtitleNoFiltered = filteredStreamMap[SUBTITLE].empty();
+    MEDIA_LOG_I("ChooseDefaultStreams hasFilteredVideo: " PUBLIC_LOG_D32 " hasFilteredAudio: " PUBLIC_LOG_D32
+        " hasFilteredSubtitle: " PUBLIC_LOG_D32, !isVideoNoFiltered, !isAudioNoFiltered, !isSubtitleNoFiltered);
+    {
+        std::lock_guard<std::recursive_mutex> lock(streamMapMutex_);
+        filteredStreamMap_.clear();
+        filteredStreamMap_[VIDEO] =
+            isVideoNoFiltered ? std::move(allStreamMap[VIDEO]) : std::move(filteredStreamMap[VIDEO]);
+        filteredStreamMap_[AUDIO] =
+            isAudioNoFiltered ? std::move(allStreamMap[AUDIO]) : std::move(filteredStreamMap[AUDIO]);
+        filteredStreamMap_[SUBTITLE] =
+            isSubtitleNoFiltered ? std::move(allStreamMap[SUBTITLE]) : std::move(filteredStreamMap[SUBTITLE]);
+    }
+    MEDIA_LOG_I("ChooseDefaultStreams filtered video stream count: " PUBLIC_LOG_ZU " audio stream count: " PUBLIC_LOG_ZU
+        " subtitle stream count: " PUBLIC_LOG_ZU, filteredStreamMap_[VIDEO].size(), filteredStreamMap_[AUDIO].size(),
+        filteredStreamMap_[SUBTITLE].size());
+    UpdateDefaultStreamIds(isVideoNoFiltered, isAudioNoFiltered, isSubtitleNoFiltered);
+}
+
+void MediaDemuxer::UpdateDefaultStreamIds(bool isVideoNoFiltered, bool isAudioNoFiltered, bool isSubtitleNoFiltered)
+{
+    auto id = SelectDefaultVideoId(filteredStreamMap_[VIDEO], isVideoNoFiltered, trackSelectionFilter_,
+        currentPlayType_, isHdrStart_, initResolution_);
+    if (id != -1) {
+        defaultVideoStreamId_ = id;
+    }
+    if (currentPlayType_ == "http") {
+        return;
+    }
+    id = SelectAudioDefaultId(
+        filteredStreamMap_, isAudioNoFiltered, trackSelectionFilter_, defaultAudioLang_, currentPlayType_);
+    if (id != -1) {
+        defaultAudioStreamId_ = id;
+    }
+
+    id = SelectSubtitleDefaultId(
+        filteredStreamMap_, isSubtitleNoFiltered, trackSelectionFilter_, defaultSubtitleLang_, currentPlayType_);
+    if (id != -1) {
+        defaultSubtitleStreamId_ = id;
+    }
+
+    MEDIA_LOG_I("ChooseDefaultStreams defaultVideoStreamId: " PUBLIC_LOG_D32 " defaultAudioStreamId: " PUBLIC_LOG_D32
+        " defaultSubtitleStreamId: " PUBLIC_LOG_D32, defaultVideoStreamId_, defaultAudioStreamId_,
+        defaultSubtitleStreamId_);
+}
+
 uint32_t MediaDemuxer::GetTrackNeedDropFrame(int32_t trackId)
 {
     std::lock_guard<std::mutex> lock(frameCountNeedDropMutex_);
@@ -5011,6 +5781,12 @@ bool MediaDemuxer::IsCloudFd()
 {
     FALSE_RETURN_V_MSG_E(source_ != nullptr, false, "source_ is nullptr");
     return source_->IsCloudFd();
+}
+
+bool MediaDemuxer::IsNeedPreDownload()
+{
+    FALSE_RETURN_V_MSG_E(source_ != nullptr, false, "source_ is nullptr");
+    return source_->IsNeedPreDownload();
 }
 } // namespace Media
 } // namespace OHOS

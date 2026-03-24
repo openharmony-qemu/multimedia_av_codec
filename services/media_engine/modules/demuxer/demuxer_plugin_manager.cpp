@@ -162,10 +162,14 @@ void DemuxerPluginManager::InitAudioTrack(const StreamInfo& info)
         if (apiVersion_ >= API_VERSION_16) {
             format.Set<Tag::MEDIA_LANGUAGE>(info.lang);
         }
-        if (apiVersion_ >= API_VERSION_18) {
-            format.Set<Tag::MIME_TYPE>("audio/unknown");
+        if (info.mimeType.empty()) {
+            if (apiVersion_ >= API_VERSION_18) {
+                format.Set<Tag::MIME_TYPE>("audio/unknown");
+            } else {
+                format.Set<Tag::MIME_TYPE>("audio/xxx");
+            }
         } else {
-            format.Set<Tag::MIME_TYPE>("audio/xxx");
+            format.Set<Tag::MIME_TYPE>(info.mimeType);
         }
         streamInfoMap_[info.streamId].mediaInfo.tracks.push_back(format);
         streamInfoMap_[info.streamId].mediaInfo.general.Set<Tag::MEDIA_HAS_AUDIO>(true);
@@ -191,11 +195,16 @@ void DemuxerPluginManager::InitVideoTrack(const StreamInfo& info)
             format.Set<Tag::VIDEO_IS_HDR_VIVID>(
                 static_cast<uint32_t>(info.videoType == VideoType::VIDEO_TYPE_HDR_VIVID));
         }
-        if (apiVersion_ >= API_VERSION_18) {
-            format.Set<Tag::MIME_TYPE>("video/unknown");
+		if (info.mimeType.empty()) {
+            if (apiVersion_ >= API_VERSION_18) {
+                format.Set<Tag::MIME_TYPE>("video/unknown");
+            } else {
+                format.Set<Tag::MIME_TYPE>("video/xxx");
+            }
         } else {
-            format.Set<Tag::MIME_TYPE>("video/xxx");
+            format.Set<Tag::MIME_TYPE>(info.mimeType);
         }
+        format.Set<Tag::VIDEO_FRAME_RATE>(info.frameRate);
         streamInfoMap_[info.streamId].mediaInfo.tracks.push_back(format);
         streamInfoMap_[info.streamId].mediaInfo.general.Set<Tag::MEDIA_HAS_VIDEO>(true);
         streamInfoMap_[info.streamId].mediaInfo.general.Set<Tag::MEDIA_TRACK_COUNT>(1);
@@ -227,6 +236,10 @@ Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& stre
     for (const auto& iter : streams) {
         FALSE_RETURN_V_MSG_E(iter.streamId >= 0, Status::ERROR_INVALID_PARAMETER,
             "Invalid streamId, id = " PUBLIC_LOG_D32, iter.streamId);
+        MEDIA_LOG_D("InitDefaultPlay type: %{public}d streamId: %{public}d mimeType: %{public}s width: %{public}d "
+            "height: %{public}d bitrate: %{public}u frameRate: %{public}u lang: %{public}s channels: %{public}u",
+            iter.type, iter.streamId, iter.mimeType.c_str(), iter.videoWidth, iter.videoHeight, iter.bitRate,
+            iter.frameRate, iter.lang.c_str(), iter.channels);
         int32_t streamIndex = iter.streamId;
         streamInfoMap_[streamIndex].streamID = streamIndex;
         streamInfoMap_[streamIndex].bitRate = iter.bitRate;

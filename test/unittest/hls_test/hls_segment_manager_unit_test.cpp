@@ -66,6 +66,14 @@ void HlsSegmentManagerUnitTest ::TearDown(void)
     hlsSegmentManager_ = nullptr;
 }
 
+void HlsSegmentManagerUnitTest::SetDefaultStreamId(std::shared_ptr<HlsSegmentManager> downloader)
+{
+    int32_t videoStreamId = 0;
+    int32_t audioStreamId = 0;
+    int32_t subTitleStreamId = 0;
+    downloader->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+}
+
 HWTEST_F(HlsSegmentManagerUnitTest, GetPlayable_1, TestSize.Level0)
 {
     EXPECT_FALSE(hlsSegmentManager_->GetPlayable());
@@ -1686,6 +1694,9 @@ HWTEST_F(HlsSegmentManagerUnitTest, READ_DELEGATE_001, TestSize.Level1)
     downloader->SetCallback(sourceCallback);
     std::string testUrl = TEST_URI_PATH + "test_hls/testByteRange.m3u8";
     downloader->Open(testUrl, httpHeader);
+    OSAL::SleepFor(100);
+    SetDefaultStreamId(downloader);
+    downloader->GetSeekable();
     std::vector<StreamInfo> streams;
     downloader->GetStreamInfo(streams);
     OSAL::SleepFor(3 * 1000);
@@ -1739,6 +1750,9 @@ HWTEST_F(HlsSegmentManagerUnitTest, PREPARE_TO_SEEK_001, TestSize.Level1)
     downloader->isInterruptNeeded_ = false;
     std::string testUrl = TEST_URI_PATH + "test_hls/testXMap.m3u8";
     downloader->Open(testUrl, httpHeader);
+    OSAL::SleepFor(100);
+    SetDefaultStreamId(downloader);
+    downloader->GetSeekable();
     std::vector<StreamInfo> streams;
     downloader->GetStreamInfo(streams);
     downloader->PrepareToSeek();
@@ -1814,6 +1828,9 @@ HWTEST_F(HlsSegmentManagerUnitTest, UPDATE_MASTER_PLAYLIST_001, TestSize.Level1)
     downloader->SetCallback(sourceCallback);
     std::string testUrl = TEST_URI_PATH + "test_hls/testMutiStream.m3u8";
     downloader->Open(testUrl, httpHeader);
+    OSAL::SleepFor(100);
+    SetDefaultStreamId(downloader);
+    downloader->GetSeekable();
     std::vector<StreamInfo> streams;
     downloader->GetStreamInfo(streams);
     EXPECT_EQ(streams.size(), 2);

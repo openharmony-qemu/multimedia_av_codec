@@ -237,6 +237,8 @@ void DashMpdParser::GetAdptSetCommonAttr(IDashMpdNode *adptSetNode, DashAdptSetI
     adptSetNode->GetAttr("codecs", adptSetInfo->commonAttrsAndElements_.codecs_);
     adptSetNode->GetAttr("audioSamplingRate", adptSetInfo->commonAttrsAndElements_.audioSamplingRate_);
     adptSetNode->GetAttr("frameRate", adptSetInfo->commonAttrsAndElements_.frameRate_);
+    MEDIA_LOG_D("GetAdptSetCommonAttr frameRate " PUBLIC_LOG_S,
+        adptSetInfo->commonAttrsAndElements_.frameRate_.c_str());
     adptSetNode->GetAttr("profiles", adptSetInfo->commonAttrsAndElements_.profiles_);
 }
 
@@ -642,12 +644,17 @@ void DashMpdParser::GetRepresentationAttr(IDashMpdNode *representationNode, Dash
     representationNode->GetAttr("bandwidth", representationInfo->bandwidth_);
     representationNode->GetAttr("qualityRanking", representationInfo->qualityRanking_);
     representationNode->GetAttr("width", representationInfo->commonAttrsAndElements_.width_);
+    MEDIA_LOG_D("GetRepresentationAttr width " PUBLIC_LOG_U32, representationInfo->commonAttrsAndElements_.width_);
     representationNode->GetAttr("height", representationInfo->commonAttrsAndElements_.height_);
+    MEDIA_LOG_D("GetRepresentationAttr height " PUBLIC_LOG_U32, representationInfo->commonAttrsAndElements_.height_);
     representationNode->GetAttr("frameRate", representationInfo->commonAttrsAndElements_.frameRate_);
+    MEDIA_LOG_D("GetRepresentationAttr frameRate " PUBLIC_LOG_S,
+        representationInfo->commonAttrsAndElements_.frameRate_.c_str());
     representationNode->GetAttr("codecs", representationInfo->commonAttrsAndElements_.codecs_);
     representationNode->GetAttr("mimeType", representationInfo->commonAttrsAndElements_.mimeType_);
     representationNode->GetAttr("startWithSAP", representationInfo->commonAttrsAndElements_.startWithSAP_);
     representationNode->GetAttr("cuvvVersion", representationInfo->commonAttrsAndElements_.cuvvVersion_);
+    representationNode->GetAttr("channels", representationInfo->commonAttrsAndElements_.channels_);
 }
 
 void DashMpdParser::GetRepresentationElement(std::shared_ptr<XmlParser> xmlParser,
@@ -736,8 +743,8 @@ void DashMpdParser::ProcessRepresentationElement(std::shared_ptr<XmlParser> &xml
                                    representationInfo->commonAttrsAndElements_.essentialPropertyList_);
         } else if (elementNameStr == MPD_LABEL_AUDIO_CHANNEL_CONFIGURATION) {
             ParseAudioChannelConfiguration(
-                xmlParser, childElement,
-                representationInfo->commonAttrsAndElements_.audioChannelConfigurationList_);
+                xmlParser, childElement, representationInfo->commonAttrsAndElements_.audioChannelConfigurationList_,
+                representationInfo->commonAttrsAndElements_.channels_);
         }
     }
 }
@@ -820,7 +827,8 @@ void DashMpdParser::ParseEssentialProperty(std::shared_ptr<XmlParser> xmlParser,
 
 void DashMpdParser::ParseAudioChannelConfiguration(std::shared_ptr<XmlParser> xmlParser,
                                                    std::shared_ptr<XmlElement> rootElement,
-                                                   DashList<DashDescriptor *> &propertyList)
+                                                   DashList<DashDescriptor *> &propertyList,
+                                                   uint32_t &channels)
 {
     DashDescriptor *channelProperty = new (std::nothrow) DashDescriptor;
     if (channelProperty == nullptr) {
@@ -833,6 +841,26 @@ void DashMpdParser::ParseAudioChannelConfiguration(std::shared_ptr<XmlParser> xm
         node->GetAttr("schemeIdUri", channelProperty->schemeIdUrl_);
         node->GetAttr("value", channelProperty->value_);
         propertyList.push_back(channelProperty);
+
+        const std::string &val = channelProperty->value_;
+        bool isDigit = !val.empty();
+        for (char c : val) {
+            if (!std::isdigit(static_cast<unsigned char>(c))) {
+                isDigit = false;
+                break;
+            }
+        }
+        size_t pos = 0;
+        int32_t base = 10;
+        unsigned long value = std::stoul(val, &pos, base);
+        if (pos < val.length()) {
+            MEDIA_LOG_E("audioChannelConfigurationNode out of range");
+            delete channelProperty;
+            return;
+        }
+        if (isDigit && value < UINT32_MAX) {
+            channels = static_cast<uint32_t>(value);
+        }
 
         IDashMpdNode::DestroyNode(node);
     } else {

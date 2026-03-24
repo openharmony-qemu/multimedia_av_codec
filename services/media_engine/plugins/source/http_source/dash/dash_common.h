@@ -155,6 +155,7 @@ struct DashStreamDescription {
         width_ = desc.width_;
         height_ = desc.height_;
         bandwidth_ = desc.bandwidth_;
+        channels_ = desc.channels_;
         startNumberSeq_ = desc.startNumberSeq_;
         type_ = desc.type_;
         segsState_ = desc.segsState_;
@@ -162,6 +163,17 @@ struct DashStreamDescription {
         videoType_ = desc.videoType_;
         currentNumberSeq_ = desc.currentNumberSeq_;
         lang_ = desc.lang_;
+        minBandwidth_ = desc.minBandwidth_;
+        maxBandwidth_ = desc.maxBandwidth_;
+        minWidth_ = desc.minWidth_;
+        maxWidth_ = desc.maxWidth_;
+        minHeight_ = desc.minHeight_;
+        maxHeight_ = desc.maxHeight_;
+        frameRate_ = desc.frameRate_;
+        minFrameRate_ = desc.minFrameRate_;
+        maxFrameRate_ = desc.maxFrameRate_;
+        mimeType_ = desc.mimeType_;
+        codecs_ = desc.codecs_;
     }
 
     DashStreamDescription& operator=(const DashStreamDescription& desc)
@@ -175,6 +187,7 @@ struct DashStreamDescription {
             width_ = desc.width_;
             height_ = desc.height_;
             bandwidth_ = desc.bandwidth_;
+            channels_ = desc.channels_;
             startNumberSeq_ = desc.startNumberSeq_;
             type_ = desc.type_;
             segsState_ = desc.segsState_;
@@ -182,6 +195,17 @@ struct DashStreamDescription {
             videoType_ = desc.videoType_;
             currentNumberSeq_ = desc.currentNumberSeq_;
             lang_ = desc.lang_;
+            minBandwidth_ = desc.minBandwidth_;
+            maxBandwidth_ = desc.maxBandwidth_;
+            minWidth_ = desc.minWidth_;
+            maxWidth_ = desc.maxWidth_;
+            minHeight_ = desc.minHeight_;
+            maxHeight_ = desc.maxHeight_;
+            frameRate_ = desc.frameRate_;
+            minFrameRate_ = desc.minFrameRate_;
+            maxFrameRate_ = desc.maxFrameRate_;
+            mimeType_ = desc.mimeType_;
+            codecs_ = desc.codecs_;
         }
         return *this;
     }
@@ -198,9 +222,21 @@ struct DashStreamDescription {
     unsigned int width_ = 0;
     unsigned int height_ = 0;
     unsigned int bandwidth_ = 0;
+    unsigned int channels_ = 0;
     int64_t startNumberSeq_ = 1;
     int64_t currentNumberSeq_ = -1;
     std::string lang_ {};
+    unsigned int minBandwidth_ = 0;
+    unsigned int maxBandwidth_ = 0;
+    unsigned int minWidth_ = 0;
+    unsigned int maxWidth_ = 0;
+    unsigned int minHeight_ = 0;
+    unsigned int maxHeight_ = 0;
+    std::string frameRate_ {};
+    std::string minFrameRate_ {};
+    std::string maxFrameRate_ {};
+    std::string mimeType_ {};
+    std::string codecs_ {};
     std::shared_ptr<DashInitSegment> initSegment_ = nullptr;
     std::shared_ptr<DashIndexSegment> indexSegment_ = nullptr;
     std::vector<std::shared_ptr<DashSegment>> mediaSegments_;

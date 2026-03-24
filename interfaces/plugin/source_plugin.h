@@ -51,6 +51,20 @@ public:
     int32_t streamId;
     StreamType type;
     uint32_t bitRate;
+    uint32_t frameRate;
+    uint32_t minBitRate;
+    uint32_t maxBitRate;
+    uint32_t minWidth;
+    uint32_t maxWidth;
+    uint32_t minHeight;
+    uint32_t maxHeight;
+    uint32_t minFrameRate;
+    uint32_t maxFrameRate;
+    uint32_t channels;
+    std::string mimeType;
+    bool isSimple = false;
+    std::string codecs;
+    std::string originCodecs;
     uint64_t sniffSize;
 
     int32_t videoHeight = 0;
@@ -58,6 +72,16 @@ public:
     std::string lang = "";
     VideoType videoType = VideoType::VIDEO_TYPE_SDR;
     std::string trackName = "";
+    uint32_t GetResolution() const
+    {
+        if (videoHeight > 0 && videoWidth > 0) {
+            if (videoWidth > static_cast<int32_t>(UINT32_MAX / videoHeight)) {
+                return UINT32_MAX;
+            }
+            return static_cast<uint32_t>(videoHeight) * static_cast<uint32_t>(videoWidth);
+        }
+        return 0;
+    }
 };
 
 /**
@@ -253,7 +277,7 @@ public:
         return Status::OK;
     }
 
-    virtual Status GetStreamInfo(std::vector<StreamInfo>& streams)
+    virtual Status GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate = false)
     {
         return Status::OK;
     }
@@ -335,6 +359,7 @@ public:
         return false;
     }
 
+    virtual void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) {}
     virtual bool IsCloudFd()
     {
         return false;

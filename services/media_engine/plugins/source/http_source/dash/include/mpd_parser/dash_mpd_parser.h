@@ -72,7 +72,7 @@ private:
     void ParseEssentialProperty(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
                                 DashList<DashDescriptor *> &essentialPropertyList);
     void ParseAudioChannelConfiguration(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
-                                        DashList<DashDescriptor *> &propertyList);
+                                        DashList<DashDescriptor *> &propertyList, uint32_t &channels);
     void ParseSegmentUrl(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
                          DashList<DashSegUrl *> &segUrlList);
     void ParseContentComponent(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,

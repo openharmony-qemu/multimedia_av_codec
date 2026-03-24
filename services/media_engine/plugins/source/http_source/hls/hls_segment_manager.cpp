@@ -226,6 +226,13 @@ void HlsSegmentManager::SetDownloadCallback(const std::shared_ptr<DownloadMetric
     downloadCallback_ = callback;
 }
 
+void HlsSegmentManager::SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId)
+{
+    if (playlistDownloader_ != nullptr) {
+        playlistDownloader_->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+    }
+}
+
 HlsSegmentManager::~HlsSegmentManager()
 {
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsSegmentManager dtor in, type: %{public}d", FAKE_POINTER(this), type_);
@@ -559,6 +566,11 @@ Status HlsSegmentManager::CheckPlaylist(unsigned char* buff, ReadDataInfo& readD
     return Status::ERROR_UNKNOWN;
 }
 
+bool IsChangeStream(const ReadDataInfo& readDataInfo)
+{
+    return readDataInfo.realReadLength_ == 0 && readDataInfo.streamId_ != readDataInfo.nextStreamId_;
+}
+
 Status HlsSegmentManager::ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     FALSE_RETURN_V_MSG(cacheMediaBuffer_ != nullptr, Status::END_OF_STREAM, "eos, cacheMediaBuffer_ is nullptr");
@@ -593,7 +605,7 @@ Status HlsSegmentManager::ReadDelegate(unsigned char* buff, ReadDataInfo& readDa
         GetCrossTsBuffersize(), cacheMediaBuffer_->GetFreeSize(), readDataInfo.streamId_, readDataInfo.nextStreamId_,
         type_);
     if (readDataInfo.realReadLength_ == 0 && playlistDownloader_ != nullptr &&
-        playlistDownloader_->IsLive()) {
+        playlistDownloader_->IsLive() && !IsChangeStream(readDataInfo)) {
         return Status::ERROR_AGAIN;
     }
     return Status::OK;
@@ -1577,6 +1589,11 @@ void HlsSegmentManager::UpdateDownloadFinished(const std::string &url, const std
         !IsDownloadLastSplice()) {
         AutoSelectBitrate(bitRate);
     }
+    auto callback = callback_.lock();
+    if (callback != nullptr) {
+        callback->OnEvent({PluginEventType::NETWORK_BITRATE_CHANGED, {bitRate},
+            "network bitrate change"});
+    }
 }
 
 bool HlsSegmentManager::IsDownloadLastSplice()
@@ -2171,11 +2188,14 @@ bool HlsSegmentManager::CheckLoopTimeout(int64_t loopStartTime)
     return isLoopTimeout;
 }
 
-Status HlsSegmentManager::GetStreamInfo(std::vector<StreamInfo>& streams)
+Status HlsSegmentManager::GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate)
 {
     Seekable seekable = Seekable::INVALID;
     int retry = 0;
     do {
+        if (isUpdate) {
+            break;
+        }
         seekable = GetSeekable();
         retry++;
         if (seekable == Seekable::INVALID) {
@@ -2184,9 +2204,9 @@ Status HlsSegmentManager::GetStreamInfo(std::vector<StreamInfo>& streams)
             }
         }
     } while (seekable == Seekable::INVALID && !isInterruptNeeded_.load());
-    
+
     if (playlistDownloader_) {
-        playlistDownloader_->GetStreamInfo(streams);
+        playlistDownloader_->GetStreamInfo(streams, isUpdate);
         MEDIA_LOG_I("HLS GetStreamInfo " PUBLIC_LOG_ZU ", type: %{public}d", streams.size(), type_);
     }
     return Status::OK;

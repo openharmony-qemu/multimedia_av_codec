@@ -1447,12 +1447,12 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetTargetVideoTrackId_006, Tes
 }
 
 /**
- * @tc.name  : Test MediaDemuxerExtUnitTest HandleDashSelectTrack API
- * @tc.number: MediaDemuxerExt_HandleDashSelectTrack_001
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleSegmentMediaSelectTrack API
+ * @tc.number: MediaDemuxerExt_HandleSegmentMediaSelectTrack_001
  * @tc.desc  : Test trackId != curTrackId &&
  *             targetStreamID == demuxerPluginManager_->GetTmpStreamIDByTrackID(curTrackId)
  */
-HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleDashSelectTrack_001, TestSize.Level1)
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSegmentMediaSelectTrack_001, TestSize.Level1)
 {
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
         GetStreamIDByTrackID(_)).WillRepeatedly(Return(NUM_1));
@@ -1463,17 +1463,17 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleDashSelectTrack_001, Tes
     mediaDemuxer_->audioTrackId_ = NUM_0;
     auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
     mediaDemuxer_->eventReceiver_ = mockEventReceiver;
-    auto result = mediaDemuxer_->HandleDashSelectTrack(NUM_1);
+    auto result = mediaDemuxer_->HandleSegmentMediaSelectTrack(NUM_1);
     EXPECT_EQ(result, Status::ERROR_INVALID_PARAMETER);
 }
 
 /**
- * @tc.name  : Test MediaDemuxerExtUnitTest HandleDashSelectTrack API
- * @tc.number: MediaDemuxerExt_HandleDashSelectTrack_002
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleSegmentMediaSelectTrack API
+ * @tc.number: MediaDemuxerExt_HandleSegmentMediaSelectTrack_002
  * @tc.desc  : Test trackId == curTrackId &&
  *             targetStreamID == demuxerPluginManager_->GetTmpStreamIDByTrackID(curTrackId)
  */
-HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleDashSelectTrack_002, TestSize.Level1)
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSegmentMediaSelectTrack_002, TestSize.Level1)
 {
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
         GetStreamIDByTrackID(_)).WillRepeatedly(Return(NUM_1));
@@ -1484,17 +1484,17 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleDashSelectTrack_002, Tes
     mediaDemuxer_->audioTrackId_ = NUM_1;
     auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
     mediaDemuxer_->eventReceiver_ = mockEventReceiver;
-    auto result = mediaDemuxer_->HandleDashSelectTrack(NUM_1);
+    auto result = mediaDemuxer_->HandleSegmentMediaSelectTrack(NUM_1);
     EXPECT_EQ(result, Status::OK);
 }
 
 /**
- * @tc.name  : Test MediaDemuxerExtUnitTest HandleDashSelectTrack API
- * @tc.number: MediaDemuxerExt_HandleDashSelectTrack_003
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleSegmentMediaSelectTrack API
+ * @tc.number: MediaDemuxerExt_HandleSegmentMediaSelectTrack_003
  * @tc.desc  : Test trackId == curTrackId &&
  *             targetStreamID != demuxerPluginManager_->GetTmpStreamIDByTrackID(curTrackId)
  */
-HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleDashSelectTrack_003, TestSize.Level1)
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSegmentMediaSelectTrack_003, TestSize.Level1)
 {
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
         GetStreamIDByTrackID(_)).WillRepeatedly(Return(NUM_1));
@@ -1505,17 +1505,17 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleDashSelectTrack_003, Tes
     mediaDemuxer_->audioTrackId_ = NUM_1;
     auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
     mediaDemuxer_->eventReceiver_ = mockEventReceiver;
-    auto result = mediaDemuxer_->HandleDashSelectTrack(NUM_1);
+    auto result = mediaDemuxer_->HandleSegmentMediaSelectTrack(NUM_1);
     EXPECT_EQ(result, Status::OK);
 }
 
 /**
- * @tc.name  : Test MediaDemuxerExtUnitTest HandleDashSelectTrack API
- * @tc.number: MediaDemuxerExt_HandleDashSelectTrack_004
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleSegmentMediaSelectTrack API
+ * @tc.number: MediaDemuxerExt_HandleSegmentMediaSelectTrack_004
  * @tc.desc  : Test trackId != curTrackId &&
  *             targetStreamID != demuxerPluginManager_->GetTmpStreamIDByTrackID(curTrackId)
  */
-HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleDashSelectTrack_004, TestSize.Level1)
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSegmentMediaSelectTrack_004, TestSize.Level1)
 {
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
         GetStreamIDByTrackID(_)).WillRepeatedly(Return(NUM_1));
@@ -1526,17 +1526,17 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleDashSelectTrack_004, Tes
     mediaDemuxer_->audioTrackId_ = NUM_2;
     auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
     mediaDemuxer_->eventReceiver_ = mockEventReceiver;
-    auto result = mediaDemuxer_->HandleDashSelectTrack(NUM_1);
+    auto result = mediaDemuxer_->HandleSegmentMediaSelectTrack(NUM_1);
     EXPECT_EQ(result, Status::OK);
 }
 
 /**
- * @tc.name  : Test MediaDemuxerExtUnitTest HandleDashSelectTrack API
- * @tc.number: MediaDemuxerExt_HandleDashSelectTrack_005
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleSegmentMediaSelectTrack API
+ * @tc.number: MediaDemuxerExt_HandleSegmentMediaSelectTrack_005
  * @tc.desc  : Test trackId != curTrackId &&
  *             targetStreamID != demuxerPluginManager_->GetTmpStreamIDByTrackID(curTrackId)
  */
-HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleDashSelectTrack_005, TestSize.Level1)
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSegmentMediaSelectTrack_005, TestSize.Level1)
 {
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
         GetStreamIDByTrackID(_)).WillRepeatedly(Return(NUM_2));
@@ -1549,14 +1549,14 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleDashSelectTrack_005, Tes
     mediaDemuxer_->isHls_ = true;
     mediaDemuxer_->syncCenter_ = std::make_shared<MediaSyncManager>();
     EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(_)).WillRepeatedly(::testing::Return(Status::OK));
-    auto result = mediaDemuxer_->HandleDashSelectTrack(NUM_1);
+    auto result = mediaDemuxer_->HandleSegmentMediaSelectTrack(NUM_1);
     EXPECT_EQ(result, Status::OK);
     mediaDemuxer_->isHls_ = false;
-    result = mediaDemuxer_->HandleDashSelectTrack(NUM_1);
+    result = mediaDemuxer_->HandleSegmentMediaSelectTrack(NUM_1);
     EXPECT_EQ(result, Status::OK);
     mediaDemuxer_->subtitleTrackId_ = NUM_1;
     mediaDemuxer_->syncCenter_ = nullptr;
-    result = mediaDemuxer_->HandleDashSelectTrack(NUM_1);
+    result = mediaDemuxer_->HandleSegmentMediaSelectTrack(NUM_1);
     EXPECT_EQ(result, Status::OK);
 }
 

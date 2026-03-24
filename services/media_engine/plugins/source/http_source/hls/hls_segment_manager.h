@@ -132,7 +132,7 @@ public:
     bool SetInitialBufferSize(int32_t offset, int32_t size);
     void NotifyInitSuccess();
     uint64_t GetCachedDuration();
-    Status GetStreamInfo(std::vector<StreamInfo>& streams);
+    Status GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate = false);
     bool IsHlsFmp4();
     uint64_t GetMemorySize();
     uint64_t GetDownloadResumeThreshold();
@@ -150,6 +150,7 @@ public:
     void SetSegmentBufferingCallback(HlsSegmentBufferingCbFunc bufferingCbFunc);
     void SetSegmentAllCallback(HlsSegmentEventCbFunc segEventCallback);
     void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
+    void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId);
     void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr);
 
 public:
@@ -267,7 +268,7 @@ private:
     uint64_t totalLen_ = 0;
     std::string curUrl_;
     uint32_t writeTsIndex_ = 0;
-    bool isAutoSelectBitrate_ {true};
+    bool isAutoSelectBitrate_ {false};
     uint64_t seekTime_ = 0;
 
     bool isReadFrame_ {false};

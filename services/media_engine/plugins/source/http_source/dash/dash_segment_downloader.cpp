@@ -1183,8 +1183,15 @@ bool DashSegmentDownloader::UpdateInitSegmentFinish()
 uint32_t DashSegmentDownloader::GetSegmentRemainDuration(const std::shared_ptr<DashBufferSegment>& currentSegment)
 {
     if (buffer_->GetHead() > currentSegment->bufferPosHead_) {
-        return (((currentSegment->bufferPosTail_ - buffer_->GetHead()) * currentSegment->duration_) /
-            (currentSegment->bufferPosTail_ - currentSegment->bufferPosHead_));
+        if (buffer_->GetHead() >= currentSegment->bufferPosTail_) {
+            return 0;
+        }
+        double remainBytes = static_cast<double>(currentSegment->bufferPosTail_ - buffer_->GetHead());
+        uint64_t totalBytes = static_cast<uint64_t>(currentSegment->bufferPosTail_ - currentSegment->bufferPosHead_);
+        if (totalBytes == 0) {
+            return 0;
+        }
+        return static_cast<uint32_t>((remainBytes / totalBytes) * static_cast<uint64_t>(currentSegment->duration_));
     } else {
         return currentSegment->duration_;
     }

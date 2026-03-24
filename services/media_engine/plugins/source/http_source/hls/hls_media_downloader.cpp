@@ -524,11 +524,11 @@ uint64_t HlsMediaDownloader::GetCachedDuration()
     return videoSegManager_->GetCachedDuration();
 }
 
-Status HlsMediaDownloader::GetStreamInfo(std::vector<StreamInfo>& streams)
+Status HlsMediaDownloader::GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate)
 {
     FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, Status::ERROR_UNKNOWN,
         "GetStreamInfo no video segment manager found!");
-    return videoSegManager_->GetStreamInfo(streams);
+    return videoSegManager_->GetStreamInfo(streams, isUpdate);
 }
 
 bool HlsMediaDownloader::IsHlsFmp4()
@@ -578,6 +578,10 @@ Status HlsMediaDownloader::SelectStream(int32_t streamId)
             return Status::ERROR_INVALID_PARAMETER;
         }
         SelectBitRate(streamInfo->bitRate);
+        auto callback = callback_.lock();
+        if (callback) {
+            callback->SetSelectBitRateFlag(true, streamInfo->bitRate);
+        }
         if (audioSegManager_ != nullptr) {
             auto defaultAudioStreamId = videoSegManager_->GetDefaultMediaStreamId(HlsSegmentType::SEG_AUDIO);
             audioSegManager_->SelectMedia(defaultAudioStreamId, HlsSegmentType::SEG_AUDIO);
@@ -600,6 +604,12 @@ Status HlsMediaDownloader::SelectStream(int32_t streamId)
     } else {
         return Status::ERROR_INVALID_PARAMETER;
     }
+}
+
+void HlsMediaDownloader::SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId)
+{
+    FALSE_RETURN_MSG(videoSegManager_ != nullptr, "SetDefaultStreamId no video segment manager found!");
+    videoSegManager_->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
 }
 
 void HlsMediaDownloader::PostAllEvent(HlsSegEvent event)

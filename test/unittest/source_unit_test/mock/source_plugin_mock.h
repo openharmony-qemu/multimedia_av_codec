@@ -57,7 +57,7 @@ public:
     MOCK_METHOD(Status, SetReadBlockingFlag, (bool isReadBlockingAllowed), ());
     MOCK_METHOD(void, SetInterruptState, (bool isInterruptNeeded), ());
     MOCK_METHOD(Status, SetCurrentBitRate, (int32_t bitRate, int32_t streamID), ());
-    MOCK_METHOD(Status, GetStreamInfo, (std::vector<Plugins::StreamInfo> & streams), ());
+    MOCK_METHOD(Status, GetStreamInfo, (std::vector<Plugins::StreamInfo> & streams, bool isUpdate), ());
     MOCK_METHOD(Status, SelectStream, (int32_t streamID), ());
     MOCK_METHOD(Status, Pause, (), ());
     MOCK_METHOD(Status, Resume, (), ());
@@ -75,6 +75,8 @@ public:
     MOCK_METHOD(bool, IsHlsFmp4, (), ());
     MOCK_METHOD(uint64_t, GetMemorySize, (), ());
     MOCK_METHOD(std::string, GetContentType, (), ());
+    MOCK_METHOD(void, SetDefaultStreamId, (int32_t &videoStreamId, int32_t &audioStreamId,
+        int32_t &subTitleStreamId), ());
 //PluginBase
     MOCK_METHOD(void, OnEvent, (const Plugins::PluginEvent &event), ());
     MOCK_METHOD(void, OnDfxEvent, (const Plugins::PluginDfxEvent &event), ());

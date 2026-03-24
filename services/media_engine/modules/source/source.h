@@ -121,7 +121,7 @@ public:
     void SetCallback(const std::shared_ptr<Callback>& callback);
     bool IsNeedPreDownload();
     void SetDemuxerState(int32_t streamId);
-    Status GetStreamInfo(std::vector<StreamInfo>& streams);
+    Status GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate = false);
     Status Read(int32_t streamID, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen);
     void SetInterruptState(bool isInterruptNeeded);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
@@ -144,6 +144,7 @@ public:
     Status StopBufferring(bool isAppBackground);
     bool IsHlsEnd(int32_t streamId = -1);
     bool IsHls();
+    void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId);
     bool IsCloudFd();
 
 private:
@@ -154,6 +155,7 @@ private:
     Status FindPlugin(const std::shared_ptr<MediaSource>& source);
     void ClearData();
     Status ReadWithPerfRecord(int32_t streamID, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen);
+    void OnMediaDemuxerEvent(const Plugins::PluginEvent& event);
 
     std::string protocol_;
     bool seekToTimeFlag_{false};

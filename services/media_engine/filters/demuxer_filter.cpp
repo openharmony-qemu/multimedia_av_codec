@@ -721,7 +721,14 @@ Status DemuxerFilter::SelectTrack(int32_t trackId)
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::SelectTrack");
     MEDIA_LOG_I("SelectTrack called");
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
+    demuxer_->SetIsTriggerAutoMode(false);
     return demuxer_->SelectTrack(trackId);
+}
+
+Status DemuxerFilter::SetPlayStrategy(std::shared_ptr<PlayStrategy> playStrategy)
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
+    return demuxer_->SetPlayStrategy(playStrategy);
 }
 
 std::vector<std::shared_ptr<Meta>> DemuxerFilter::GetStreamMetaInfo() const
@@ -826,6 +833,9 @@ Status DemuxerFilter::SelectBitRate(uint32_t bitRate, bool isAutoSelect)
 {
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_INVALID_OPERATION,
         "SelectBitRate failed, demuxer_ = nullptr.");
+    if (!isAutoSelect) {
+        demuxer_->SetIsTriggerAutoMode(false);
+    }
     return demuxer_->SelectBitRate(bitRate, isAutoSelect);
 }
 
@@ -1169,6 +1179,13 @@ bool DemuxerFilter::IsBuffering()
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
     return demuxer_->IsBuffering();
 }
+
+void DemuxerFilter::SetTrackSelectionFilter(TrackSelectionFilter &filter)
+{
+    FALSE_RETURN_MSG(demuxer_ != nullptr, "demuxer_ is nullptr");
+    demuxer_->SetTrackSelectionFilter(filter);
+}
+
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS
