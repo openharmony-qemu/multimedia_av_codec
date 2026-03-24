@@ -5037,4 +5037,144 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSeekChangeStream_001, Te
     Status ret = mediaDemuxer_->HandleSeekChangeStream(currentStreamId, newStreamId, trackId);
     EXPECT_EQ(ret, Status::OK);
 }
+
+/**
+ * @tc.name  : MediaDemuxerExt_SeekTo_006
+ * @tc.number: MediaDemuxerExt_SeekTo_006
+ * @tc.desc  : Test IsLocalFd is false
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SeekTo_006, TestSize.Level1)
+{
+    mediaDemuxer_->source_ = std::make_shared<Source>();
+    int64_t seekTime = NUM_1000;
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsSeekToTimeSupported()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsLocalFd()).WillOnce(Return(false));
+    int64_t testRealSeekTime;
+    auto sampleQueue = std::make_shared<SampleQueue>();
+    int32_t videoTrackId = NUM_0;
+    mediaDemuxer_->isVideoMuted_ = true;
+    mediaDemuxer_->needRestore_ = true;
+    mediaDemuxer_->videoTrackId_ = videoTrackId;
+    Plugins::SeekMode testMode = SeekMode::SEEK_CLOSEST_INNER;
+    auto mockVideoQueue = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[videoTrackId] = mockVideoQueue;
+    EXPECT_EQ(mediaDemuxer_->SeekTo(seekTime, testMode, testRealSeekTime), Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SeekTo_007
+ * @tc.number: MediaDemuxerExt_SeekTo_007
+ * @tc.desc  : Test IsLocalFd is true
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SeekTo_007, TestSize.Level1)
+{
+    mediaDemuxer_->source_ = std::make_shared<Source>();
+    int64_t seekTime = NUM_1000;
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsSeekToTimeSupported()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsLocalFd()).WillOnce(Return(true));
+    int64_t testRealSeekTime;
+    auto sampleQueue = std::make_shared<SampleQueue>();
+    int32_t videoTrackId = NUM_0;
+    mediaDemuxer_->isVideoMuted_ = true;
+    mediaDemuxer_->needRestore_ = true;
+    mediaDemuxer_->videoTrackId_ = videoTrackId;
+    Plugins::SeekMode testMode = SeekMode::SEEK_CLOSEST_INNER;
+    auto mockVideoQueue = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[videoTrackId] = mockVideoQueue;
+    EXPECT_EQ(mediaDemuxer_->SeekTo(seekTime, testMode, testRealSeekTime), Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SeekToStart_004
+ * @tc.number: MediaDemuxerExt_SeekToStart_004
+ * @tc.desc  : Test IsLocalFd is false
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SeekToStart_004, TestSize.Level1)
+{
+    mediaDemuxer_->source_ = std::make_shared<Source>();
+    int64_t seekTime = NUM_1000;
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsSeekToTimeSupported()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsLocalFd()).WillOnce(Return(false));
+    int64_t testRealSeekTime;
+    auto sampleQueue = std::make_shared<SampleQueue>();
+    int32_t videoTrackId = NUM_0;
+    mediaDemuxer_->isVideoMuted_ = true;
+    mediaDemuxer_->needRestore_ = true;
+    mediaDemuxer_->videoTrackId_ = videoTrackId;
+    Plugins::SeekMode testMode = SeekMode::SEEK_CLOSEST_INNER;
+    auto mockVideoQueue = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[videoTrackId] = mockVideoQueue;
+    EXPECT_EQ(mediaDemuxer_->SeekToStart(seekTime, testMode, testRealSeekTime), Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SeekToStart_005
+ * @tc.number: MediaDemuxerExt_SeekToStart_005
+ * @tc.desc  : Test IsLocalFd is true
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SeekToStart_005, TestSize.Level1)
+{
+    mediaDemuxer_->source_ = std::make_shared<Source>();
+    int64_t seekTime = NUM_1000;
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsSeekToTimeSupported()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsLocalFd()).WillOnce(Return(true));
+    int64_t testRealSeekTime;
+    auto sampleQueue = std::make_shared<SampleQueue>();
+    int32_t videoTrackId = NUM_0;
+    mediaDemuxer_->isVideoMuted_ = true;
+    mediaDemuxer_->needRestore_ = true;
+    mediaDemuxer_->videoTrackId_ = videoTrackId;
+    Plugins::SeekMode testMode = SeekMode::SEEK_CLOSEST_INNER;
+    auto mockVideoQueue = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[videoTrackId] = mockVideoQueue;
+    EXPECT_EQ(mediaDemuxer_->SeekToStart(seekTime, testMode, testRealSeekTime), Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SeekToKeyFrame_004
+ * @tc.number: MediaDemuxerExt_SeekToKeyFrame_004
+ * @tc.desc  : Test IsLocalFd is false
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SeekToKeyFrame_004, TestSize.Level1)
+{
+    mediaDemuxer_->source_ = std::make_shared<Source>();
+    int64_t seekTime = NUM_1000;
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsSeekToTimeSupported()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsLocalFd()).WillOnce(Return(false));
+    int64_t testRealSeekTime;
+    auto sampleQueue = std::make_shared<SampleQueue>();
+    int32_t videoTrackId = NUM_0;
+    mediaDemuxer_->isVideoMuted_ = true;
+    mediaDemuxer_->needRestore_ = true;
+    mediaDemuxer_->videoTrackId_ = videoTrackId;
+    Plugins::SeekMode testMode = SeekMode::SEEK_CLOSEST_INNER;
+    auto mockVideoQueue = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[videoTrackId] = mockVideoQueue;
+    DemuxerCallerType callerType = DemuxerCallerType::PLAYER;
+    EXPECT_EQ(mediaDemuxer_->SeekToKeyFrame(seekTime, testMode, testRealSeekTime, callerType), Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SeekToKeyFrame_005
+ * @tc.number: MediaDemuxerExt_SeekToKeyFrame_005
+ * @tc.desc  : Test IsLocalFd is true
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SeekToKeyFrame_005, TestSize.Level1)
+{
+    mediaDemuxer_->source_ = std::make_shared<Source>();
+    int64_t seekTime = NUM_1000;
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsSeekToTimeSupported()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsLocalFd()).WillOnce(Return(true));
+    int64_t testRealSeekTime;
+    auto sampleQueue = std::make_shared<SampleQueue>();
+    int32_t videoTrackId = NUM_0;
+    mediaDemuxer_->isVideoMuted_ = true;
+    mediaDemuxer_->needRestore_ = true;
+    mediaDemuxer_->videoTrackId_ = videoTrackId;
+    Plugins::SeekMode testMode = SeekMode::SEEK_CLOSEST_INNER;
+    auto mockVideoQueue = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[videoTrackId] = mockVideoQueue;
+    DemuxerCallerType callerType = DemuxerCallerType::PLAYER;
+    EXPECT_EQ(mediaDemuxer_->SeekToKeyFrame(seekTime, testMode, testRealSeekTime, callerType), Status::OK);
+}
 }  // namespace OHOS::Media
