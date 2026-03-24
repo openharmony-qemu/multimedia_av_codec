@@ -87,7 +87,6 @@ VpxDecoder::VpxDecoder(const std::string &name) : VideoDecoder(name)
         isValid_ = false;
     }
     InitParams();
-    renderSurface_ = std::make_shared<RenderSurface>();
 }
 
 VpxDecoder::~VpxDecoder()

@@ -89,7 +89,6 @@ Av1Decoder::Av1Decoder(const std::string &name) : VideoDecoder(name)
         isValid_ = false;
     }
     InitParams();
-    renderSurface_ = std::make_shared<RenderSurface>();
 }
 
 Av1Decoder::~Av1Decoder()
