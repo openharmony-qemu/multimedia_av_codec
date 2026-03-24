@@ -59,7 +59,7 @@ SubtitleSink::~SubtitleSink()
 
 void SubtitleSink::NotifySeek()
 {
-    Flush();
+    Flush(true);
 }
 
 void SubtitleSink::GetTargetSubtitleIndex(int64_t currentTime)
@@ -165,13 +165,18 @@ Status SubtitleSink::Resume()
     return Status::OK;
 }
 
-Status SubtitleSink::Flush()
+Status SubtitleSink::Flush(bool isSeekFlush)
 {
     if (inputBufferQueueConsumer_ != nullptr) {
         {
             std::unique_lock<std::mutex> lock(mutex_);
             shouldUpdate_ = true;
+            int64_t currentTime = GetMediaTime();
             while (!subtitleInfoVec_.empty()) {
+                auto& subtitle = subtitleInfoVec_.front();
+                if (subtitle.pts_ + subtitle.duration_ > currentTime && !isSeekFlush) {
+                    break;
+                }
                 inputBufferQueueConsumer_->ReleaseBuffer(subtitleInfoVec_.front().buffer_);
                 subtitleInfoVec_.pop_front();
             }
