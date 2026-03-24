@@ -1367,7 +1367,7 @@ HWTEST_F(DownloaderUnitTest, SafeStoInt64_MinInt64, TestSize.Level1)
 {
     int64_t value = 0;
     EXPECT_TRUE(StringUtil::SafeStoInt64(std::to_string(INT64_MIN), value));
-    EXPECT_EQ(value, INT64_MIN - 1);
+    EXPECT_EQ(value, INT64_MIN);
 }
 
 // SafeStoInt64 前导空格测试
