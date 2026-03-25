@@ -64,10 +64,6 @@ protected:
     const char *INP_DIR_10 = "/data/test/media/cinepak_1080_1920_30.mkv";
     const char *INP_DIR_11 = "/data/test/media/cinepak_1280_720_30.mkv";
     const char *INP_DIR_12 = "/data/test/media/cinepak_1920_1080_30.mkv";
-    const char *INP_DIR_13 = "/data/test/media/cinepak_2560_1440_30.mkv";
-    const char *INP_DIR_14 = "/data/test/media/cinepak_3840_1600_30.mkv";
-    const char *INP_DIR_15 = "/data/test/media/cinepak_3840_2160_30.mkv";
-    const char *INP_DIR_16 = "/data/test/media/cinepak_4096_4096.mkv";
 };
 
 static OH_AVCapability *cap_cinepak = nullptr;
@@ -1042,94 +1038,6 @@ HWTEST_F(CinepakdecFuncNdkTest, VIDEO_CINEPAKDEC_FUNCTION_0058, TestSize.Level0)
 }
 
 /**
- * @tc.number    : VIDEO_CINEPAKDEC_FUNCTION_0059
- * @tc.name      : Decode cinepak buffer with 2560x1440
- * @tc.desc      : function test
- */
-HWTEST_F(CinepakdecFuncNdkTest, VIDEO_CINEPAKDEC_FUNCTION_0059, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->getFormat(INP_DIR_13);
-    vDecSample->outputYuvFlag = true;
-    vDecSample->defaultWidth = 2560;
-    vDecSample->defaultHeight = 1440;
-    vDecSample->defaultFrameRate = 30;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameCinepak.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE5, vDecSample->outFrameCount);
-}
-
-/**
- * @tc.number    : VIDEO_CINEPAKDEC_FUNCTION_0060
- * @tc.name      : Decode cinepak buffer with 3840x1600
- * @tc.desc      : function test
- */
-HWTEST_F(CinepakdecFuncNdkTest, VIDEO_CINEPAKDEC_FUNCTION_0060, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->getFormat(INP_DIR_14);
-    vDecSample->outputYuvFlag = true;
-    vDecSample->defaultWidth = 3840;
-    vDecSample->defaultHeight = 1600;
-    vDecSample->defaultFrameRate = 30;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameCinepak.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE5, vDecSample->outFrameCount);
-}
-
-/**
- * @tc.number    : VIDEO_CINEPAKDEC_FUNCTION_0061
- * @tc.name      : Decode cinepak buffer with 3840x2160
- * @tc.desc      : function test
- */
-HWTEST_F(CinepakdecFuncNdkTest, VIDEO_CINEPAKDEC_FUNCTION_0061, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->getFormat(INP_DIR_15);
-    vDecSample->outputYuvFlag = true;
-    vDecSample->defaultWidth = 3840;
-    vDecSample->defaultHeight = 2160;
-    vDecSample->defaultFrameRate = 30;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameCinepak.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE5, vDecSample->outFrameCount);
-}
-
-/**
- * @tc.number    : VIDEO_CINEPAKDEC_FUNCTION_0062
- * @tc.name      : Decode cinepak buffer with 4096x4096
- * @tc.desc      : function test
- */
-HWTEST_F(CinepakdecFuncNdkTest, VIDEO_CINEPAKDEC_FUNCTION_0062, TestSize.Level0)
-{
-    auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->getFormat(INP_DIR_16);
-    vDecSample->outputYuvFlag = true;
-    vDecSample->defaultWidth = 4096;
-    vDecSample->defaultHeight = 4096;
-    vDecSample->defaultFrameRate = 30;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameCinepak.c_str()));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE5, vDecSample->outFrameCount);
-}
-
-/**
  * @tc.number    : VIDEO_CINEPAKDEC_FUNCTION_0063
  * @tc.name      : graph pixel format
  * @tc.desc      : function test
@@ -1138,10 +1046,10 @@ HWTEST_F(CinepakdecFuncNdkTest, VIDEO_CINEPAKDEC_FUNCTION_0063, TestSize.Level0)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
     int32_t pixfmt[4] = {28, 24, 25, 12};
-    vDecSample->getFormat(INP_DIR_16);
+    vDecSample->getFormat(INP_DIR_12);
     vDecSample->outputYuvFlag = true;
-    vDecSample->defaultWidth = 4096;
-    vDecSample->defaultHeight = 4096;
+    vDecSample->defaultWidth = 1920;
+    vDecSample->defaultHeight = 1080;
     vDecSample->defaultFrameRate = 30;
     vDecSample->isGetVideoSupportedPixelFormats = true;
     vDecSample->isGetFormatKey = true;

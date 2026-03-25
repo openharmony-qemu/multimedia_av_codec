@@ -840,7 +840,7 @@ HWTEST_F(CinepakdecApiNdkTest, VIDEO_CINEPAKDEC_CAP_API_1100, TestSize.Level1)
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
     ASSERT_EQ(AV_ERR_OK, ret);
     ASSERT_EQ(range.minVal, 4);
-    ASSERT_EQ(range.maxVal, 4096);
+    ASSERT_EQ(range.maxVal, 1920);
     g_vdec = OH_VideoDecoder_CreateByName(codecName);
     ASSERT_NE(nullptr, g_vdec);
     g_format = OH_AVFormat_Create();
@@ -958,7 +958,7 @@ HWTEST_F(CinepakdecApiNdkTest, VIDEO_CINEPAKDEC_CAP_API_1500, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, ret);
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
     ASSERT_EQ(range.minVal, 4);
-    ASSERT_EQ(range.maxVal, 4096);
+    ASSERT_EQ(range.maxVal, 1920);
     g_vdec = OH_VideoDecoder_CreateByName(codecName);
     ASSERT_NE(nullptr, g_vdec);
     g_format = OH_AVFormat_Create();
@@ -1022,7 +1022,7 @@ HWTEST_F(CinepakdecApiNdkTest, VIDEO_CINEPAKDEC_CAP_API_1700, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, ret);
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
     ASSERT_EQ(range.minVal, 4);
-    ASSERT_EQ(range.maxVal, 4096);
+    ASSERT_EQ(range.maxVal, 1920);
 }
 
 /**
@@ -1041,7 +1041,7 @@ HWTEST_F(CinepakdecApiNdkTest, VIDEO_CINEPAKDEC_CAP_API_1701, TestSize.Level2)
     ret = OH_AVCapability_GetVideoWidthRange(capability, &range);
     ASSERT_EQ(AV_ERR_OK, ret);
     ASSERT_EQ(range.minVal, 4);
-    ASSERT_EQ(range.maxVal, 4096);
+    ASSERT_EQ(range.maxVal, 1920);
     g_vdec = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
     ASSERT_NE(nullptr, g_vdec);
     g_format = OH_AVFormat_Create();
@@ -1105,7 +1105,7 @@ HWTEST_F(CinepakdecApiNdkTest, VIDEO_CINEPAKDEC_CAP_API_1802, TestSize.Level2)
     ret = OH_AVCapability_GetVideoHeightRange(capability, &heightRange);
     ASSERT_EQ(AV_ERR_OK, ret);
     ASSERT_EQ(heightRange.minVal, 4);
-    ASSERT_EQ(heightRange.maxVal, 4096);
+    ASSERT_EQ(heightRange.maxVal, 1920);
     g_vdec = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
     ASSERT_NE(nullptr, g_vdec);
     g_format = OH_AVFormat_Create();
@@ -1142,11 +1142,11 @@ HWTEST_F(CinepakdecApiNdkTest, VIDEO_CINEPAKDEC_CAP_API_1900, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, ret);
     cout << "minval=" << heightRange.minVal << "  maxval=" << heightRange.maxVal << endl;
     ASSERT_EQ(heightRange.minVal, 4);
-    ASSERT_EQ(heightRange.maxVal, 4096);
+    ASSERT_EQ(heightRange.maxVal, 1920);
     ret = OH_AVCapability_GetVideoWidthRange(capability, &widthRange);
     ASSERT_EQ(AV_ERR_OK, ret);
     ASSERT_EQ(widthRange.minVal, 4);
-    ASSERT_EQ(widthRange.maxVal, 4096);
+    ASSERT_EQ(widthRange.maxVal, 1920);
     cout << "minval=" << widthRange.minVal << "  maxval=" << widthRange.maxVal << endl;
     g_vdec = OH_VideoDecoder_CreateByName(codecName);
     ASSERT_NE(nullptr, g_vdec);
@@ -1440,13 +1440,13 @@ HWTEST_F(CinepakdecApiNdkTest, VIDEO_CINEPAKDEC_CAP_API_2900, TestSize.Level1)
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
     ASSERT_EQ(range.minVal, 0);
     ASSERT_EQ(range.maxVal, 60);
-    width = 2048;
-    height = 1152;
+    width = 1920;
+    height = 1080;
     ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, width, height, &range);
     ASSERT_EQ(AV_ERR_OK, ret);
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
     ASSERT_EQ(range.minVal, 0);
-    ASSERT_EQ(range.maxVal, 60);
+    ASSERT_EQ(range.maxVal, 30);
 }
 
 /**

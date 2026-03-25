@@ -79,8 +79,10 @@ constexpr int32_t RAWVIDEO_MAX_BLOCKPERSEC_SIZE = 3932160;
 
 constexpr int32_t CINEPAK_MIN_WIDTH_SIZE = 4;
 constexpr int32_t CINEPAK_MIN_HEIGHT_SIZE = 4;
-constexpr int32_t CINEPAK_MAX_BLOCKPERFRAME_SIZE = 65536;
-constexpr int32_t CINEPAK_MAX_BLOCKPERSEC_SIZE = 3932160;
+constexpr int32_t CINEPAK_MAX_WIDTH_SIZE = 1920;
+constexpr int32_t CINEPAK_MAX_HEIGHT_SIZE = 1080;
+constexpr int32_t CINEPAK_MAX_BLOCKPERFRAME_SIZE = 8160;
+constexpr int32_t CINEPAK_MAX_BLOCKPERSEC_SIZE = 244800;
 } // namespace
 using namespace OHOS::Media;
 
@@ -395,6 +397,8 @@ void GetCinepakCapProf(std::vector<CapabilityData> &capaArray)
         CapabilityData& capsData = capaArray.back();
         capsData.width.minVal = CINEPAK_MIN_WIDTH_SIZE;
         capsData.height.minVal = CINEPAK_MIN_HEIGHT_SIZE;
+        capsData.width.maxVal = CINEPAK_MAX_WIDTH_SIZE;
+        capsData.height.maxVal = CINEPAK_MAX_HEIGHT_SIZE;
         capsData.blockPerFrame.maxVal = CINEPAK_MAX_BLOCKPERFRAME_SIZE;
         capsData.blockPerSecond.maxVal = CINEPAK_MAX_BLOCKPERSEC_SIZE;
         capsData.supportSwapWidthHeight = true;
