@@ -162,8 +162,8 @@ const char *OH_AVCapability_GetMimeType(OH_AVCapability *capability)
 
 bool OH_AVCapability_CheckMimeType(OH_AVCapability *capability, const char *mimeType)
 {
-    CHECK_AND_RETURN_RET_LOG(capability != nullptr && capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY,
-        false, "Invalid parameter");
+    CHECK_AND_RETURN_RET_LOG(capability != nullptr && mimeType != nullptr &&
+                             capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY, false, "Invalid parameter");
     return strcmp(OH_AVCapability_GetMimeType(capability), mimeType) == 0;
 }
 
