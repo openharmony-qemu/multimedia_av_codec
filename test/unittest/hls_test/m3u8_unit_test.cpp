@@ -685,4 +685,150 @@ HWTEST_F(M3u8UnitTest, WAIT_KEY_DOWNLOAD_001, TestSize.Level1)
     m3u8.WaitKeyDownload();
     EXPECT_EQ(m3u8.keyAllDownload_, 1);
 }
+
+/**
+ * @tc.name: EXTRACT_NUMBER_001
+ * @tc.desc: test ExtractNumber with valid uri containing digits before extension
+ * @tc.type: FUNC
+ */
+HWTEST_F(M3u8UnitTest, EXTRACT_NUMBER_001, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    // normal: number before extension
+    EXPECT_EQ(m3u8.ExtractNumber("seg123.ts"), 123u);
+    // with query string
+    EXPECT_EQ(m3u8.ExtractNumber("seg456.ts?t=1"), 456u);
+    // no digits before dot -> MAX
+    EXPECT_EQ(m3u8.ExtractNumber("seg.ts"), UINT64_MAX);
+    // empty uri -> MAX
+    EXPECT_EQ(m3u8.ExtractNumber(""), UINT64_MAX);
+    // no dot at all -> MAX
+    EXPECT_EQ(m3u8.ExtractNumber("nodot"), UINT64_MAX);
+}
+
+/**
+ * @tc.name: SHOULD_SKIP_SEGMENT_001
+ * @tc.desc: test ShouldSkipSegment with skipped/non-skipped segments
+ * @tc.type: FUNC
+ */
+HWTEST_F(M3u8UnitTest, SHOULD_SKIP_SEGMENT_001, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    // skippedSegments == 0 -> always false
+    EXPECT_FALSE(m3u8.ShouldSkipSegment("seg5.ts", 0, 3));
+    // uri sequence in [initSequence, initSequence+skipped) -> true
+    EXPECT_TRUE(m3u8.ShouldSkipSegment("seg3.ts", 3, 2));  // seq=3, range=[2,5)
+    EXPECT_TRUE(m3u8.ShouldSkipSegment("seg4.ts", 3, 2));  // seq=4, range=[2,5)
+    // uri sequence outside range -> false
+    EXPECT_FALSE(m3u8.ShouldSkipSegment("seg1.ts", 3, 2)); // seq=1, range=[2,5)
+    EXPECT_FALSE(m3u8.ShouldSkipSegment("seg5.ts", 3, 2)); // seq=5 == initSequence+skipped -> false
+}
+
+/**
+ * @tc.name: GET_KEY_INFOS_001
+ * @tc.desc: test GetKeyInfos returns copy of keyInfos_
+ * @tc.type: FUNC
+ */
+HWTEST_F(M3u8UnitTest, GET_KEY_INFOS_001, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    // empty case
+    std::unordered_map<uint64_t, KeyInfo> result;
+    m3u8.GetKeyInfos(result);
+    EXPECT_TRUE(result.empty());
+    // insert one key and verify
+    {
+        std::unique_lock<std::shared_mutex> lock(m3u8.keyMutex_);
+        KeyInfo info;
+        info.index_ = 1;
+        m3u8.keyInfos_[1] = info;
+    }
+    m3u8.GetKeyInfos(result);
+    EXPECT_EQ(result.size(), 1u);
+    EXPECT_EQ(result.count(1), 1u);
+}
+
+/**
+ * @tc.name: CHOOSE_STREAM_BY_STREAM_001
+ * @tc.desc: test ChooseStreamByStream selects stream by streamId
+ * @tc.type: FUNC
+ */
+HWTEST_F(M3u8UnitTest, CHOOSE_STREAM_BY_STREAM_001, TestSize.Level1)
+{
+    auto master = std::make_shared<M3U8MasterPlaylist>("", "https://example.com");
+    auto m3u8a = std::make_shared<M3U8>("https://example.com", "a");
+    auto stream1 = std::make_shared<M3U8VariantStream>("a", "https://example.com/a", m3u8a);
+    stream1->streamId_ = 1;
+    stream1->bandWidth_ = 1000000;
+    auto stream2 = std::make_shared<M3U8VariantStream>("b", "https://example.com/b", m3u8a);
+    stream2->streamId_ = 2;
+    stream2->bandWidth_ = 2000000;
+    master->variants_.push_back(stream1);
+    master->variants_.push_back(stream2);
+    master->defaultVariant_ = stream1;
+    // select streamId -1 -> no change (guard)
+    master->ChooseStreamByStream(-1);
+    EXPECT_EQ(master->defaultVariant_, stream1);
+    // select streamId 2 -> switch to stream2
+    master->ChooseStreamByStream(2);
+    EXPECT_EQ(master->defaultVariant_, stream2);
+}
+
+/**
+ * @tc.name: GET_CODEC_001
+ * @tc.desc: test GetCodec returns correct codec string for VIDEO/AUDIO type
+ * @tc.type: FUNC
+ */
+HWTEST_F(M3u8UnitTest, GET_CODEC_001, TestSize.Level1)
+{
+    auto master = std::make_shared<M3U8MasterPlaylist>("", "https://example.com");
+    // video codec
+    std::string result = master->GetCodec(StreamType::VIDEO, "avc1.42c01e,mp4a.40.2");
+    EXPECT_FALSE(result.empty());
+    // audio codec
+    result = master->GetCodec(StreamType::AUDIO, "avc1.42c01e,mp4a.40.2");
+    EXPECT_FALSE(result.empty());
+    // empty codecs
+    result = master->GetCodec(StreamType::VIDEO, "");
+    EXPECT_TRUE(result.empty());
+}
+
+/**
+ * @tc.name: GET_MIME_TYPE_001
+ * @tc.desc: test GetMimeType returns video for known video codec without mime type
+ * @tc.type: FUNC
+ */
+HWTEST_F(M3u8UnitTest, GET_MIME_TYPE_001, TestSize.Level1)
+{
+    auto master = std::make_shared<M3U8MasterPlaylist>("", "https://example.com");
+    std::string result = master->GetMimeType("avc1.42c01e");
+    EXPECT_EQ(result, "video/avc1");
+    // audio only codec -> empty
+    result = master->GetMimeType("mp4a.40.2");
+    EXPECT_TRUE(result.empty());
+    // empty input -> empty
+    result = master->GetMimeType("");
+    EXPECT_TRUE(result.empty());
+}
+
+/**
+ * @tc.name: BIND_VIDEO_MEDIA_001
+ * @tc.desc: test BindVideoMedia with subtitles only (audioList_ empty)
+ * @tc.type: FUNC
+ */
+HWTEST_F(M3u8UnitTest, BIND_VIDEO_MEDIA_001, TestSize.Level1)
+{
+    auto master = std::make_shared<M3U8MasterPlaylist>("", "https://example.com");
+    auto m3u8 = std::make_shared<M3U8>("https://example.com", "");
+    auto stream = std::make_shared<M3U8VariantStream>("v", "https://example.com/v", m3u8);
+    stream->streamId_ = 1;
+    master->variants_.push_back(stream);
+    auto media = std::make_shared<M3U8Media>("sub", "https://example.com/sub", m3u8);
+    media->streamId_ = 2;
+    media->type_ = M3U8MediaType::M3U8_MEDIA_TYPE_SUBTITLES;
+    master->subtitlesList_.push_back(media);
+    // audioList_ empty, subtitlesList_ non-empty -> subtitles path
+    master->BindVideoMedia("audio");
+    EXPECT_FALSE(stream->subtitlesMedia_.empty());
+}
 }

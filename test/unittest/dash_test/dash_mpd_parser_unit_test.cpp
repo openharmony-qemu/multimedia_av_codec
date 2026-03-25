@@ -614,6 +614,42 @@ HWTEST_F(DashMpdParserUnitTest, Test_Base64_003, TestSize.Level1)
     EXPECT_FALSE(ret);
 }
 
+/**
+ * @tc.name: Test_Base64_004
+ * @tc.desc: test Base64Decode with no padding (src length is multiple of 3, no '=' at end)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DashMpdParserUnitTest, Test_Base64_004, TestSize.Level1)
+{
+    // "abc" base64 encoded without padding
+    const uint8_t src[] = "YWJj";
+    uint8_t dest[20]; // 20:destSize
+    uint32_t destSize = sizeof(dest);
+
+    bool ret = Base64Utils::Base64Decode(src, sizeof(src) - 1, dest, &destSize);
+    ASSERT_TRUE(ret);
+    ASSERT_EQ(destSize, 3u); // 3: length of "abc"
+    ASSERT_EQ(std::string(reinterpret_cast<char *>(dest), destSize), "abc");
+}
+
+/**
+ * @tc.name: Test_Base64_005
+ * @tc.desc: test Base64Decode with double padding (src length % 3 == 1, "==" at end)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DashMpdParserUnitTest, Test_Base64_005, TestSize.Level1)
+{
+    // "a" base64 encoded with double padding
+    const uint8_t src[] = "YQ==";
+    uint8_t dest[20]; // 20:destSize
+    uint32_t destSize = sizeof(dest);
+
+    bool ret = Base64Utils::Base64Decode(src, sizeof(src) - 1, dest, &destSize);
+    ASSERT_TRUE(ret);
+    ASSERT_EQ(destSize, 1u); // 1: length of "a"
+    ASSERT_EQ(dest[0], static_cast<uint8_t>('a'));
+}
+
 HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_Construct_001, TestSize.Level1)
 {
     DashComAttrsElements elements;
