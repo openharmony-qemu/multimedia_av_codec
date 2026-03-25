@@ -62,7 +62,8 @@ namespace MediaAVCodec {
 /******************* avcodec logger wrapper *******************/
 #define AVCODEC_LOG_LIMIT(logger, frequency, fmt, ...)                      \
     do {                                                                    \
-        static uint32_t currentTimes = 0;                                   \
+        thread_local uint32_t currentTimes = 0;                             \
+        if ((currentTimes + 1) == UINT32_MAX) { currentTimes = 0; }         \
         if (currentTimes++ % ((uint32_t)(frequency)) != 0) {                \
             break;                                                          \
         }                                                                   \
@@ -71,7 +72,8 @@ namespace MediaAVCodec {
 
 #define AVCODEC_LOG_LIMIT_POW2(logger, pow2, fmt, ...)                      \
     do {                                                                    \
-        static uint32_t currentTimes = 0;                                   \
+        thread_local uint32_t currentTimes = 0;                             \
+        if ((currentTimes + 1) == UINT32_MAX) { currentTimes = 0; }         \
         if (((currentTimes++) & ((1 << (uint32_t)(pow2)) - 1)) != 0) {      \
             break;                                                          \
         }                                                                   \
