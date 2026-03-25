@@ -795,7 +795,7 @@ HWTEST_F(M3u8UnitTest, GET_CODEC_001, TestSize.Level1)
 
 /**
  * @tc.name: GET_MIME_TYPE_001
- * @tc.desc: test GetMimeType returns video/* for known video codec
+ * @tc.desc: test GetMimeType returns video for known video codec without mime type
  * @tc.type: FUNC
  */
 HWTEST_F(M3u8UnitTest, GET_MIME_TYPE_001, TestSize.Level1)
