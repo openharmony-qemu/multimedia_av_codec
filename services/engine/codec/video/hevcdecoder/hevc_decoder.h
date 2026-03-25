@@ -48,6 +48,7 @@ protected:
     int32_t Initialize() override;
     void SendFrame()override;
     int32_t DecodeFrameOnce() override;
+    void ConfigureOutPutOrder(bool isDisplay) override;
     void ConvertDecOutToAVFrame(int32_t bitDepth);
     static int32_t CheckHevcDecLibStatus();
 

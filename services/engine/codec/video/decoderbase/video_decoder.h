@@ -112,6 +112,7 @@ public:
 #endif
 
 protected:
+    virtual void ConfigureOutPutOrder(bool isDisplay) {};
     void CallCallBack(AVCodecErrorType errType, AVCodecServiceErrCode serEcode) override;
     std::atomic<bool> isInputSizeAssigned_ = false;
     int32_t inputBufferSize_ = 0;

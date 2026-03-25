@@ -44,6 +44,7 @@ typedef struct TagHevcDecInitParam {
     UINT32 uiChannelID;  // [in] channel ID, used for channel info
     IHW265D_VIDEO_ALG_LOG_FXN logFxn;  // log output callback function
     IHW265_DECODE_MODE uiDecodeMode;  // input data type for decoding
+    UINT32 eOutPutOrder;              // 0 Output by decoder order(enable low latency), 1 by disply order(normal)
 } HEVC_DEC_INIT_PARAM;
 
 typedef struct TagHevcDecInArgs {
