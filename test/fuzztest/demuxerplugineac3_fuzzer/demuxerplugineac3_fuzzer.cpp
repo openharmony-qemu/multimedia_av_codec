@@ -24,12 +24,12 @@ using namespace std;
 using namespace OHOS::Media;
 
 namespace OHOS {
-void DemuxerPluginFuzzWithFunc(const uint8_t *data, size_t size)
+void DemuxerPluginFuzzWithFunc(const uint8_t *data, size_t dataSize)
 {
     std::shared_ptr<DemuxerPluginTypeTest> demuxerTest = std::make_shared<DemuxerPluginTypeTest>();
     demuxerTest->testFilePath_ = "/data/test/demuxerplugineac3.eac3";
     demuxerTest->demuxerPluginName_ = "avdemux_eac3";
-    FuzzedDataProvider fdp(data, size);
+    FuzzedDataProvider fdp(data, dataSize);
     uint8_t *pstream = nullptr;
     uint16_t framesize = fdp.ConsumeIntegralInRange<uint16_t>(0, 0xfff);
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));

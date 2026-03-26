@@ -275,6 +275,10 @@ HWTEST_F(DashMpdDownloaderUnittest, ParseManifest_001, TestSize.Level0)
     auto callback = std::make_shared<MockDashMpdCallback>();
     mpdDownloader_->callback_ = callback;
     mpdDownloader_->ParseManifest();
+    OSAL::SleepFor(100);
+    int32_t defaultVideoStreamId = -1;
+    mpdDownloader_->SetDefaultStreamId(defaultVideoStreamId, defaultVideoStreamId, defaultVideoStreamId);
+    mpdDownloader_->GetSeekable();
     EXPECT_EQ(mpdDownloader_->notifyOpenOk_, true);
     mpdDownloader_->callback_.reset();
 }
@@ -646,7 +650,8 @@ HWTEST_F(DashMpdDownloaderUnittest, ChooseStreamToPlay_001, TestSize.Level0)
     MediaAVCodec::MediaType type = MediaAVCodec::MediaType::MEDIA_TYPE_AUD;
     mpdDownloader_->mpdInfo_ = nullptr;
     ASSERT_EQ(mpdDownloader_->streamDescriptions_.size(), 0);
-    auto ret = mpdDownloader_->ChooseStreamToPlay(type);
+    int32_t streamId = 0;
+    auto ret = mpdDownloader_->ChooseStreamToPlay(type, streamId);
     EXPECT_EQ(ret, false);
 }
 

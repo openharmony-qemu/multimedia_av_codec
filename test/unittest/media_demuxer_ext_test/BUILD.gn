@@ -19,6 +19,8 @@ media_demuxer_test_sources = [
   "$av_codec_root_dir/services/media_engine/modules/demuxer/sample_queue.cpp",
   "$av_codec_root_dir/services/media_engine/modules/demuxer/sample_queue_controller.cpp",
   "$av_codec_root_dir/services/media_engine/modules/demuxer/type_finder.cpp",
+  "mock/codec_ability_singleton_mock.cpp",
+  "mock/hcodec_loader_mock.cpp",
 ]
 config("media_demuxer_unittest_cfg") {
   defines = [
@@ -54,6 +56,8 @@ config("media_demuxer_unittest_cfg") {
     "$av_codec_root_dir/interfaces/inner_api/native",
     "$av_codec_root_dir/services/drm_decryptor",
     "$av_codec_root_dir/services/media_engine/modules",
+    "$av_codec_root_dir/services/engine/codec/include",
+    "$av_codec_root_dir/services/engine/codeclist",
     "$av_codec_root_dir/services/utils/include",
     "$av_codec_root_dir/test/unittest/common",
     "./mock",
@@ -70,7 +74,11 @@ ohos_unittest("media_demuxer_ext_unit_test") {
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
   sources = media_demuxer_test_sources + [ "media_demuxer_ext_unit_test.cpp" ]
-  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/services/engine/codeclist:av_codec_engine_codeclist",
+    "$av_codec_root_dir/services/engine:av_codec_engine_package",
+  ]
 
   external_deps = [
     "c_utils:utils",

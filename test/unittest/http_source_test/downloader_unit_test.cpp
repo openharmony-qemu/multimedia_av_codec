@@ -1182,6 +1182,339 @@ HWTEST_F(DownloaderUnitTest, SafeStoInt64_06, TestSize.Level1)
     EXPECT_EQ(value, 0);
 }
 
+// SafeStoInt32 正常数字测试
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_NormalNumber, TestSize.Level1)
+{
+    int32_t value = 0;
+    EXPECT_TRUE(StringUtil::SafeStoInt32("123", value));
+    EXPECT_EQ(value, 123);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_Zero, TestSize.Level1)
+{
+    int32_t value = 999;
+    EXPECT_TRUE(StringUtil::SafeStoInt32("0", value));
+    EXPECT_EQ(value, 0);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_NegativeNumber, TestSize.Level1)
+{
+    int32_t value = 0;
+    EXPECT_TRUE(StringUtil::SafeStoInt32("-456", value));
+    EXPECT_EQ(value, -456);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_MaxInt32, TestSize.Level1)
+{
+    int32_t value = 0;
+    EXPECT_TRUE(StringUtil::SafeStoInt32(std::to_string(INT32_MAX), value));
+    EXPECT_EQ(value, INT32_MAX);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_MinInt32, TestSize.Level1)
+{
+    int32_t value = 0;
+    EXPECT_TRUE(StringUtil::SafeStoInt32(std::to_string(INT32_MIN), value));
+    EXPECT_EQ(value, INT32_MIN);
+}
+
+// SafeStoInt32 前导空格测试
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_LeadingSpaces, TestSize.Level1)
+{
+    int32_t value = 0;
+    EXPECT_TRUE(StringUtil::SafeStoInt32("   123", value));
+    EXPECT_EQ(value, 123);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_MultipleLeadingSpaces, TestSize.Level1)
+{
+    int32_t value = 0;
+    EXPECT_TRUE(StringUtil::SafeStoInt32("     -456", value));
+    EXPECT_EQ(value, -456);
+}
+
+// SafeStoInt32 前导加号测试
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_LeadingPlus, TestSize.Level1)
+{
+    int32_t value = 0;
+    EXPECT_TRUE(StringUtil::SafeStoInt32("+789", value));
+    EXPECT_EQ(value, 789);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_SpaceAndPlus, TestSize.Level1)
+{
+    int32_t value = 0;
+    EXPECT_TRUE(StringUtil::SafeStoInt32("  +789", value));
+    EXPECT_EQ(value, 789);
+}
+
+// SafeStoInt32 错误输入测试
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_EmptyString, TestSize.Level1)
+{
+    int32_t value = 999;
+    EXPECT_FALSE(StringUtil::SafeStoInt32("", value));
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_OnlySpaces, TestSize.Level1)
+{
+    int32_t value = 999;
+    EXPECT_FALSE(StringUtil::SafeStoInt32("   ", value));
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_DoublePlus, TestSize.Level1)
+{
+    int32_t value = 999;
+    EXPECT_FALSE(StringUtil::SafeStoInt32("++123", value));
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_PlusNotFollowedByDigit, TestSize.Level1)
+{
+    int32_t value = 999;
+    EXPECT_FALSE(StringUtil::SafeStoInt32("+ abc", value));
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_InvalidCharacters, TestSize.Level1)
+{
+    int32_t value = 999;
+    EXPECT_FALSE(StringUtil::SafeStoInt32("abc123", value));
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_OnlyPlus, TestSize.Level1)
+{
+    int32_t value = 999;
+    EXPECT_FALSE(StringUtil::SafeStoInt32("+", value));
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_OnlyMinus, TestSize.Level1)
+{
+    int32_t value = 999;
+    EXPECT_FALSE(StringUtil::SafeStoInt32("-", value));
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_DecimalPoint, TestSize.Level1)
+{
+    int32_t value = 999;
+    EXPECT_TRUE(StringUtil::SafeStoInt32("123.45", value));
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_LetterAfterNumber, TestSize.Level1)
+{
+    int32_t value = 999;
+    EXPECT_TRUE(StringUtil::SafeStoInt32("123abc", value));
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_SpaceAfterNumber, TestSize.Level1)
+{
+    int32_t value = 999;
+    EXPECT_TRUE(StringUtil::SafeStoInt32("123 ", value));
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_SpecialCharacters, TestSize.Level1)
+{
+    int32_t value = 999;
+    EXPECT_FALSE(StringUtil::SafeStoInt32("@#$%", value));
+}
+
+// SafeStoInt32 边界测试
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_Overflow, TestSize.Level1)
+{
+    int32_t value = 0;
+    EXPECT_FALSE(StringUtil::SafeStoInt32("2147483648", value));
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_Underflow, TestSize.Level1)
+{
+    int32_t value = 0;
+    EXPECT_FALSE(StringUtil::SafeStoInt32("-2147483649", value));
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_VeryLargeNumber, TestSize.Level1)
+{
+    int32_t value = 0;
+    EXPECT_FALSE(StringUtil::SafeStoInt32("999999999999999999999", value));
+}
+
+// SafeStoInt64 正常数字测试
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_NormalNumber, TestSize.Level1)
+{
+    int64_t value = 0;
+    EXPECT_TRUE(StringUtil::SafeStoInt64("1234567890", value));
+    EXPECT_EQ(value, 1234567890);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_Zero, TestSize.Level1)
+{
+    int64_t value = 999;
+    EXPECT_TRUE(StringUtil::SafeStoInt64("0", value));
+    EXPECT_EQ(value, 0);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_NegativeNumber, TestSize.Level1)
+{
+    int64_t value = 0;
+    EXPECT_TRUE(StringUtil::SafeStoInt64("-9876543210", value));
+    EXPECT_EQ(value, -9876543210);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_MaxInt64, TestSize.Level1)
+{
+    int64_t value = 0;
+    EXPECT_TRUE(StringUtil::SafeStoInt64(std::to_string(INT64_MAX), value));
+    EXPECT_EQ(value, INT64_MAX);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_MinInt64, TestSize.Level1)
+{
+    int64_t value = 0;
+    EXPECT_TRUE(StringUtil::SafeStoInt64(std::to_string(INT64_MIN), value));
+    EXPECT_EQ(value, INT64_MIN);
+}
+
+// SafeStoInt64 前导空格测试
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_LeadingSpaces, TestSize.Level1)
+{
+    int64_t value = 0;
+    EXPECT_TRUE(StringUtil::SafeStoInt64("   1234567890", value));
+    EXPECT_EQ(value, 1234567890);
+}
+
+// SafeStoInt64 前导加号测试
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_LeadingPlus, TestSize.Level1)
+{
+    int64_t value = 0;
+    EXPECT_TRUE(StringUtil::SafeStoInt64("+1234567890", value));
+    EXPECT_EQ(value, 1234567890);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_SpaceAndPlus, TestSize.Level1)
+{
+    int64_t value = 0;
+    EXPECT_TRUE(StringUtil::SafeStoInt64("  +9876543210", value));
+    EXPECT_EQ(value, 9876543210);
+}
+
+// SafeStoInt64 错误输入测试
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_EmptyString, TestSize.Level1)
+{
+    int64_t value = 999;
+    EXPECT_FALSE(StringUtil::SafeStoInt64("", value));
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_OnlySpaces, TestSize.Level1)
+{
+    int64_t value = 999;
+    EXPECT_FALSE(StringUtil::SafeStoInt64("   ", value));
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_DoublePlus, TestSize.Level1)
+{
+    int64_t value = 999;
+    EXPECT_FALSE(StringUtil::SafeStoInt64("++123", value));
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_InvalidCharacters, TestSize.Level1)
+{
+    int64_t value = 999;
+    EXPECT_FALSE(StringUtil::SafeStoInt64("abc123", value));
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_DecimalPoint, TestSize.Level1)
+{
+    int64_t value = 999;
+    EXPECT_TRUE(StringUtil::SafeStoInt64("123.45", value));
+}
+
+// SafeStoInt64 边界测试
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_Overflow, TestSize.Level1)
+{
+    int64_t value = 0;
+    EXPECT_FALSE(StringUtil::SafeStoInt64("9223372036854775808", value));
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_Underflow, TestSize.Level1)
+{
+    int64_t value = 0;
+    EXPECT_FALSE(StringUtil::SafeStoInt64("-9223372036854775809", value));
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_VeryLargeNumber, TestSize.Level1)
+{
+    int64_t value = 0;
+    EXPECT_FALSE(StringUtil::SafeStoInt64("999999999999999999999999999999", value));
+}
+
+// 混合场景测试
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_ValueNotModifiedOnFailure, TestSize.Level1)
+{
+    int32_t value = 999;
+    EXPECT_FALSE(StringUtil::SafeStoInt32("invalid", value));
+    EXPECT_EQ(value, 999);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_ValueNotModifiedOnFailure, TestSize.Level1)
+{
+    int64_t value = 999;
+    EXPECT_FALSE(StringUtil::SafeStoInt64("invalid", value));
+    EXPECT_EQ(value, 999);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_LongString, TestSize.Level1)
+{
+    int32_t value = 0;
+    std::string longStr(1000, '1');
+    EXPECT_FALSE(StringUtil::SafeStoInt32(longStr, value));
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_LongString, TestSize.Level1)
+{
+    int64_t value = 0;
+    std::string longStr(1000, '1');
+    EXPECT_FALSE(StringUtil::SafeStoInt64(longStr, value));
+}
+
+// 补充：多次空格循环测试
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_MultipleSpacesWithPlus, TestSize.Level1)
+{
+    int32_t value = 0;
+    EXPECT_TRUE(StringUtil::SafeStoInt32("     +123", value));
+    EXPECT_EQ(value, 123);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_MultipleSpacesWithPlus, TestSize.Level1)
+{
+    int64_t value = 0;
+    EXPECT_TRUE(StringUtil::SafeStoInt64("     +9876543210", value));
+    EXPECT_EQ(value, 9876543210);
+}
+
+// 补充：加号后大于'9'的字符测试
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_PlusFollowedByGreaterThanNine, TestSize.Level1)
+{
+    int32_t value = 999;
+    EXPECT_FALSE(StringUtil::SafeStoInt32("+:", value));  // ':' ASCII 58 > '9' (57)
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_PlusFollowedByGreaterThanNine, TestSize.Level1)
+{
+    int64_t value = 999;
+    EXPECT_FALSE(StringUtil::SafeStoInt64("+@", value));  // '@' ASCII 64 > '9' (57)
+}
+
+// 补充：多个空格后跟负号
+HWTEST_F(DownloaderUnitTest, SafeStoInt32_MultipleSpacesWithNegative, TestSize.Level1)
+{
+    int32_t value = 0;
+    EXPECT_TRUE(StringUtil::SafeStoInt32("     -456", value));
+    EXPECT_EQ(value, -456);
+}
+
+HWTEST_F(DownloaderUnitTest, SafeStoInt64_MultipleSpacesWithNegative, TestSize.Level1)
+{
+    int64_t value = 0;
+    EXPECT_TRUE(StringUtil::SafeStoInt64("     -9876543210", value));
+    EXPECT_EQ(value, -9876543210);
+}
+
 HWTEST_F(DownloaderUnitTest, HandleRetErrorCode001, TestSize.Level1)
 {
     downloader->task_ = std::make_shared<Task>(std::string("OS_Downloader"));

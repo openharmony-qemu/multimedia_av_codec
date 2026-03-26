@@ -57,7 +57,7 @@ public:
     Status SetStartPts(int64_t startPts) override;
     Status SetExtraCache(uint64_t cacheDuration) override;
     Status SetReadBlockingFlag(bool isReadBlockingAllowed) override;
-    Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
+    Status GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate = false) override;
     Status SelectStream(int32_t streamID) override;
     void SetDemuxerState(int32_t streamId) override;
     void SetDownloadErrorState() override;
@@ -79,6 +79,7 @@ public:
     std::string GetContentType() override;
     bool IsHlsEnd(int32_t streamId = -1) override;
     bool IsHls() override;
+    void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) override;
 
 private:
     void CloseUri(bool isAsync = false);

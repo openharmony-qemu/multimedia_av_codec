@@ -102,7 +102,7 @@ public:
     virtual bool IsParseAndNotifyFinished() = 0;
     virtual bool IsParseFinished() = 0;
     virtual void SetInitResolution(uint32_t width, uint32_t height) = 0;
-    virtual void GetStreamInfo(std::vector<StreamInfo>& streams) = 0;
+    virtual void GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate = false) = 0;
     virtual bool ReadFmp4Header(uint8_t* buffer, uint32_t wantLen, uint32_t& readLen, uint32_t streamId) = 0;
     virtual bool IsHlsFmp4() = 0;
     virtual bool IsPureByteRange() = 0;
@@ -152,6 +152,7 @@ public:
     void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
     std::shared_ptr<MediaSourceLoaderCombinations> GetSourceLoader();
     void SetSourceLoader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader);
+    virtual void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) {}
     virtual std::shared_ptr<AesDecryptor> GetAesDecryptor(uint64_t keyIndex) = 0;
 
 protected:

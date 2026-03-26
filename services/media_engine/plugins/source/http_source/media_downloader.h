@@ -133,7 +133,7 @@ public:
         MEDIA_LOG_W("SetPlayStrategy is unimplemented.");
     }
     virtual void SetInterruptState(bool isInterruptNeeded) = 0;
-    virtual Status GetStreamInfo(std::vector<StreamInfo>& streams)
+    virtual Status GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate = false)
     {
         MEDIA_LOG_W("GetStreamInfo is unimplemented.");
         return Status::OK;
@@ -236,6 +236,8 @@ public:
     {
         return false;
     }
+
+    virtual void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) {}
 };
 }
 }

@@ -145,6 +145,9 @@ public:
     std::shared_ptr<Meta> GetGlobalInfo();
     bool IsMimeInDolbyList(const std::string& mime);
     bool IsBuffering();
+    void SetTrackSelectionFilter(TrackSelectionFilter &filter);
+    Status SetPlayStrategy(std::shared_ptr<PlayStrategy> playStrategy);
+
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;

@@ -41,6 +41,39 @@ using namespace testing::ext;
 std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server = nullptr;
 std::shared_ptr<DashMpdDownloader> g_mpdDownloader = nullptr;
 
+void PrepareDefaultStreamSelection(const std::shared_ptr<DashMpdDownloader>& downloader)
+{
+    if (downloader == nullptr) {
+        return;
+    }
+
+    std::vector<StreamInfo> streams;
+    int32_t defaultVideoStreamId = -1;
+    int32_t defaultAudioStreamId = -1;
+    int32_t defaultSubtitleStreamId = -1;
+    if (downloader->GetStreamInfo(streams) == Status::OK) {
+        for (const auto& stream : streams) {
+            if (stream.type == VIDEO && defaultVideoStreamId == -1) {
+                defaultVideoStreamId = stream.streamId;
+                continue;
+            }
+            if (stream.type == AUDIO && defaultAudioStreamId == -1) {
+                defaultAudioStreamId = stream.streamId;
+                continue;
+            }
+            if (stream.type == SUBTITLE && defaultSubtitleStreamId == -1) {
+                defaultSubtitleStreamId = stream.streamId;
+            }
+        }
+    }
+    if (defaultVideoStreamId != -1) {
+        downloader->SetDefaultStreamId(defaultVideoStreamId,
+                                       defaultAudioStreamId,
+                                       defaultSubtitleStreamId);
+        downloader->GetSeekable();
+    }
+}
+
 void DashMpdDownloaderUnitTest::SetUpTestCase(void)
 {
     g_server = std::make_unique<MediaAVCodec::HttpServerDemo>();
@@ -54,6 +87,9 @@ void DashMpdDownloaderUnitTest::SetUpTestCase(void)
     g_mpdDownloader->SetStatusCallback(statusCallback);
     g_mpdDownloader->SetInitResolution(INIT_WIDTH, INIT_HEIGHT);
     g_mpdDownloader->Open(MPD_SEGMENT_BASE);
+    g_mpdDownloader->GetSeekable();
+
+    PrepareDefaultStreamSelection(g_mpdDownloader);
 }
 
 void DashMpdDownloaderUnitTest::TearDownTestCase(void)
@@ -164,7 +200,7 @@ HWTEST_F(DashMpdDownloaderUnitTest, TEST_SET_CURRENT_NUMBER_SEQ, TestSize.Level1
     int usingStreamId = g_mpdDownloader->GetInUseVideoStreamId();
     g_mpdDownloader->SetCurrentNumberSeqByStreamId(usingStreamId, 10);
     std::shared_ptr<DashStreamDescription> stream = g_mpdDownloader->GetStreamByStreamId(usingStreamId);
-    EXPECT_NE(stream, nullptr);
+    ASSERT_NE(stream, nullptr);
     EXPECT_EQ(stream->currentNumberSeq_, 10);
 }
 
@@ -217,6 +253,7 @@ HWTEST_F(DashMpdDownloaderUnitTest, TEST_SET_HDR_START, TestSize.Level1)
     downloader->SetHdrStart(true);
     downloader->Open(testUrl);
     downloader->GetSeekable();
+    PrepareDefaultStreamSelection(downloader);
     int usingStreamId = downloader->GetInUseVideoStreamId();
     std::shared_ptr<DashStreamDescription> stream = downloader->GetStreamByStreamId(usingStreamId);
     EXPECT_NE(stream, nullptr);

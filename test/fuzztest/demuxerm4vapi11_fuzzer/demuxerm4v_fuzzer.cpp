@@ -35,9 +35,9 @@ const char FLAG = '\0';
 const size_t LANGUAGE_BUFFER_SIZE = 3;
 const size_t LANGUAGE_COUNT = 2;
 
-bool CheckDataValidity(FuzzedDataProvider *fdp, size_t size)
+bool CheckDataValidity(FuzzedDataProvider *fdp, size_t dataSize)
 {
-    if (size <= EXPECT_SIZE) {
+    if (dataSize <= EXPECT_SIZE) {
         return false;
     }
     int32_t fd = open(M4V_PATH, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
@@ -45,7 +45,7 @@ bool CheckDataValidity(FuzzedDataProvider *fdp, size_t size)
         return false;
     }
     uint8_t *pstream = nullptr;
-    uint16_t framesize = size - EXPECT_SIZE;
+    uint16_t framesize = dataSize - EXPECT_SIZE;
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
     if (!pstream) {
         std::cerr << "Memory alloction failed" << std::endl;

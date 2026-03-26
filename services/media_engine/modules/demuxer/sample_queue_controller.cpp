@@ -82,6 +82,27 @@ bool SampleQueueController::ShouldStartConsume(int32_t trackId, std::shared_ptr<
     return true;
 }
 
+bool SampleQueueController::CheckWaterLineStopProduce(int32_t trackId, std::shared_ptr<SampleQueue> sampleQueue)
+{
+    uint64_t cacheDuration = GetCacheDuration(sampleQueue);
+    return cacheDuration > GetBufferingDuration();
+}
+
+bool SampleQueueController::CheckWaterLineStartConsume(int32_t trackId, std::shared_ptr<SampleQueue> sampleQueue)
+{
+    uint64_t cacheDuration = GetCacheDuration(sampleQueue);
+    return cacheDuration < GetPlayBufferingDuration();
+}
+
+uint64_t SampleQueueController::GetCacheDuration(std::shared_ptr<SampleQueue> sampleQueue)
+{
+    if (sampleQueue == nullptr) {
+        return 0;
+    }
+    uint64_t cacheDuration = sampleQueue->NewGetCacheDuration();
+    return cacheDuration;
+}
+
 bool SampleQueueController::ShouldStopConsume(int32_t trackId, std::shared_ptr<SampleQueue> sampleQueue,
     const std::unique_ptr<Task> &task)
 {

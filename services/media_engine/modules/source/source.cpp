@@ -341,6 +341,11 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
         }
         return;
     }
+    OnMediaDemuxerEvent(event);
+}
+
+void Source::OnMediaDemuxerEvent(const Plugins::PluginEvent& event)
+{
     FALSE_RETURN_MSG(mediaDemuxerCallback_ != nullptr, "mediaDemuxerCallback is nullptr");
     if (event.type == PluginEventType::CLIENT_ERROR || event.type == PluginEventType::SERVER_ERROR) {
         MEDIA_LOG_I("Error happened, need notify client by OnEvent");
@@ -371,6 +376,9 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
         mediaDemuxerCallback_->OnEvent(event);
     } else if (event.type == PluginEventType::HLS_SEEK_READY) {
         MEDIA_LOG_D("Onevent hls seek ready.");
+        mediaDemuxerCallback_->OnEvent(event);
+    } else if (event.type == PluginEventType::STREAM_UPDATE || event.type == PluginEventType::NETWORK_BITRATE_CHANGED) {
+        MEDIA_LOG_D("Onevent stream update or network bitrate change.");
         mediaDemuxerCallback_->OnEvent(event);
     } else {
         MEDIA_LOG_I("on event type undefined.");
@@ -475,11 +483,11 @@ Status Source::SeekTo(uint64_t offset)
     return plugin_->SeekTo(offset);
 }
 
-Status Source::GetStreamInfo(std::vector<StreamInfo>& streams)
+Status Source::GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate)
 {
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION,
         "GetStreamInfo, Source plugin is nullptr");
-    Status ret = plugin_->GetStreamInfo(streams);
+    Status ret = plugin_->GetStreamInfo(streams, isUpdate);
     if (ret == Status::OK && streams.size() == 0) {
         MEDIA_LOG_D("GetStreamInfo empty, MIX Stream");
         Plugins::StreamInfo info;
@@ -592,6 +600,12 @@ Status Source::SelectStream(int32_t streamID)
 {
     FALSE_RETURN_V_MSG_W(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "SelectStream Source plugin is nullptr!");
     return plugin_->SelectStream(streamID);
+}
+
+void Source::SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId)
+{
+    FALSE_RETURN_MSG(plugin_ != nullptr, "SetDefaultStreamId source plugin is nullptr");
+    plugin_->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
 }
 
 void Source::SetEnableOnlineFdCache(bool isEnableFdCache)

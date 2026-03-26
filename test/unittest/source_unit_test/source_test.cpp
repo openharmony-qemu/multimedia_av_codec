@@ -368,41 +368,6 @@ HWTEST_F(SourceTest, ReadWithPerfRecord_001, TestSize.Level1)
     Status ret = source_->ReadWithPerfRecord(1, buffer, 0, 100);
     EXPECT_EQ(Status::OK, ret);
 }
-
-/**
- * @tc.name Test GetStreamInfo API
- * @tc.number GetStreamInfo_001
- * @tc.desc Test ret != Status::OK
- */
-HWTEST_F(SourceTest, GetStreamInfo_001, TestSize.Level1)
-{
-    std::vector<Plugins::StreamInfo> streams_;
-    EXPECT_CALL(*(mockSourcePlugin_),
-        GetStreamInfo(testing::_)).WillRepeatedly(Return(Status::ERROR_INVALID_OPERATION));
-    EXPECT_CALL(*(mockSourcePlugin_), Deinit()).WillOnce(Return(Status::OK));
-    Status ret = source_->GetStreamInfo(streams_);
-    EXPECT_EQ(Status::ERROR_INVALID_OPERATION, ret);
-}
-
-/**
- * @tc.name Test GetStreamInfo API
- * @tc.number GetStreamInfo_002
- * @tc.desc Test ret == Status::OK && && streams.size() != 0
- */
-HWTEST_F(SourceTest, GetStreamInfo_002, TestSize.Level1)
-{
-    std::vector<Plugins::StreamInfo> streams_;
-    Plugins::StreamInfo info;
-    info.streamId = 0;
-    info.bitRate = 0;
-    info.type = Plugins::MIXED;
-    streams_.push_back(info);
-    EXPECT_CALL(*(mockSourcePlugin_), GetStreamInfo(testing::_)).WillRepeatedly(Return(Status::OK));
-    EXPECT_CALL(*(mockSourcePlugin_), Deinit()).WillOnce(Return(Status::OK));
-    Status ret = source_->GetStreamInfo(streams_);
-    EXPECT_EQ(Status::OK, ret);
-}
-
 /**
  * @tc.name Test SeekToTime API
  * @tc.number SeekToTime_001

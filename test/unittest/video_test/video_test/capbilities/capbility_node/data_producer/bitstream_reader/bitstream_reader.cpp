@@ -26,7 +26,7 @@ constexpr uint8_t AVCC_FRAME_HEAD_LEN = 4;
 constexpr uint8_t ANNEXB_FRAME_HEAD[] = {0, 0, 1};
 constexpr uint8_t ANNEXB_FRAME_HEAD_LEN = sizeof(ANNEXB_FRAME_HEAD);
 constexpr uint32_t PREREAD_BUFFER_SIZE = 1 * 1024 * 1024; // 1Mb, must greater than ANNEXB_FRAME_HEAD_LEN
-constexpr uint32_t MAX_NALU_SIZE = 2 * 1024 * 1024; // 2Mb
+constexpr uint32_t MAX_NALU_SIZE = 8 * 1024 * 1024; // 8Mb
 
 enum AvcNalType {
     AVC_UNSPECIFIED = 0,
@@ -111,7 +111,9 @@ int32_t BitstreamReader::FillBuffer(CodecBufferInfo &bufferInfo)
 
     do {
         int32_t frameSize = 0;
-        auto ret = nalUnitReader_->ReadNalUnit(bufferAddr, frameSize);
+        bool isTruncated = false;
+        uint32_t writableSize = bufferInfo.bufferCapacity - bufferInfo.attr.size;
+        auto ret = nalUnitReader_->ReadNalUnit(bufferAddr, frameSize, writableSize, isTruncated);
         CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Sample failed");
 
         auto naluType = nalDetector_->GetNalType(nalDetector_->GetNalTypeAddr(bufferAddr));
@@ -120,6 +122,8 @@ int32_t BitstreamReader::FillBuffer(CodecBufferInfo &bufferInfo)
         bufferInfo.attr.flags |= nalDetector_->IsXPS(naluType) ? AVCODEC_BUFFER_FLAGS_CODEC_DATA : 0;
         bufferInfo.attr.flags |= nalDetector_->IsIDR(naluType) ? AVCODEC_BUFFER_FLAGS_SYNC_FRAME : 0;
         CHECK_AND_BREAK(
+            !(isTruncated) &&
+            !(bufferInfo.bufferCapacity == static_cast<uint32_t>(bufferInfo.attr.size)) &&
             !nalDetector_->IsXPS(naluType) &&
             !nalDetector_->IsFullVCL(naluType, nalDetector_->GetNalTypeAddr(nalUnitReader_->GetNextNalUnitAddr())) &&
             !IsEOS()
@@ -140,14 +144,24 @@ uint8_t const * BitstreamReader::NalUnitReader::GetNextNalUnitAddr()
     return nalUnit_->data();
 }
 
-int32_t BitstreamReader::NalUnitReader::ReadNalUnit(uint8_t *bufferAddr, int32_t &bufferSize)
+int32_t BitstreamReader::NalUnitReader::ReadNalUnit(uint8_t *bufferAddr, int32_t &bufferSize, uint32_t wirtableSize,
+                                                    bool &isTruncated)
 {
     CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Got a invalid buffer addr");
     CHECK_AND_RETURN_RET_LOG(nalUnit_, AVCODEC_SAMPLE_ERR_ERROR, "Nal unit buffer is nullptr");
-    bufferSize = nalUnit_->size();
-    memcpy_s(bufferAddr, bufferSize, nalUnit_->data(), bufferSize);
 
-    if (!IsEOF()) {
+    auto remainBufferSize = nalUnit_->size() - readSize_;
+    bufferSize = std::min(wirtableSize, static_cast<uint32_t>(remainBufferSize));
+    auto ret = memcpy_s(bufferAddr, bufferSize, nalUnit_->data() + readSize_, bufferSize);
+    CHECK_AND_RETURN_RET_LOG(ret == EOK, AVCODEC_SAMPLE_ERR_ERROR, "ReadNalUnit failed");
+
+    if (remainBufferSize > wirtableSize) {
+        readSize_ += bufferSize;
+    } else if (!IsEOF()) {
+        if (readSize_ != 0) {
+            isTruncated = true;
+            readSize_ = 0;
+        }
         PrereadNalUnit();
     } else {
         nalUnit_->resize(0);

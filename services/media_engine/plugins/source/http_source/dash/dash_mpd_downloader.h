@@ -28,6 +28,7 @@
 #include "media_downloader.h"
 #include "meta/media_types.h"
 #include "download/download_metrics_info.h"
+#include "plugin/plugin_base.h"
 
 namespace OHOS {
 namespace Media {
@@ -146,6 +147,8 @@ public:
     std::string GetUrl() const;
     std::string GetContentType();
     void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
+    void SetCallback(const std::shared_ptr<Callback>& cb);
+    void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId);
 
 private:
     void ParseManifest();
@@ -167,6 +170,7 @@ private:
     bool IsNearToInitResolution(const std::shared_ptr<DashStreamDescription> &choosedStream,
         const std::shared_ptr<DashStreamDescription> &currentStream);
     bool IsLangMatch(const std::string &lang, MediaAVCodec::MediaType type);
+    bool ChooseStreamToPlay(MediaAVCodec::MediaType type, int32_t streamId);
     bool ChooseStreamToPlay(MediaAVCodec::MediaType type);
     unsigned int GetSegTimeBySeq(const std::vector<std::shared_ptr<DashSegment>> &segments, int64_t segSeq);
     DashSegmentInitValue GetSegmentsInMpd(std::shared_ptr<DashStreamDescription> streamDesc);
@@ -230,14 +234,19 @@ private:
     void GetStreamDescriptions(const std::string &periodBaseUrl, DashStreamDescription &streamDesc,
                                const std::string &adptSetBaseUrl,
                                std::list<DashRepresentationInfo *> &repList);
+    void FillStreamDescription(DashStreamDescription &streamDesc, const DashRepresentationInfo *rep,
+                           unsigned int index, DashVideoType defaultType);
     void GetAdpDrmInfos(std::vector<DashDrmInfo> &drmInfos, DashPeriodInfo *const &periodInfo,
                         const std::string &periodDrmId);
 
     void SetDownloadRequest(std::shared_ptr<DownloadRequest> downloadRequest);
     std::shared_ptr<DownloadRequest> GetDownloadRequest();
+    std::string GetMimeType(const std::string &mimeType, StreamType type);
     StreamInfo AssignStreamInfo(unsigned int index);
     void DfxAudioCntIncrease();
     void DfxSubtitleCntIncrease();
+    bool ContainsNonDigit(const std::string& str);
+    bool ParseFrameRateToUint32(const std::string& str, uint32_t& value);
 
 private:
     std::string url_ {};
@@ -265,9 +274,13 @@ private:
     std::atomic<bool> isInterruptNeeded_{false};
     std::vector<DashDrmInfo> localDrmInfos_;
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
+    std::weak_ptr<Callback> eventCallback_;
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
     std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
     std::shared_mutex downloadRequestMutex_;
+    int32_t videoStreamId_ {-1};
+    int32_t audioStreamId_ {-1};
+    int32_t subTitleStreamId_ {-1};
 };
 }
 }

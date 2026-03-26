@@ -195,7 +195,9 @@ int32_t RenderSurface::RenderNewSurfaceWithOldBuffer(const sptr<Surface> &newSur
 int32_t RenderSurface::FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemory, uint32_t index)
 {
     std::unique_lock<std::mutex> sLock(surfaceMutex_);
-    RequestSurfaceBufferOnce(index);
+    CHECK_AND_RETURN_RET_LOG(RequestSurfaceBufferOnce(index), AVCS_ERR_UNKNOWN,
+        "INum %{public}d request surface buf failed, index=%{public}d", instanceId_, index);
+
     sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
     CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, AVCS_ERR_UNKNOWN, "Get surface buffer failed!");
     if (!surfaceMemory->isAttached) {
@@ -337,7 +339,8 @@ GSError RenderSurface::BufferReleasedByConsumer(uint64_t surfaceId)
 void RenderSurface::RequestBufferFromConsumer()
 {
     auto index = renderAvailQue_->Front();
-    RequestSurfaceBufferOnce(index);
+    CHECK_AND_RETURN_LOG(RequestSurfaceBufferOnce(index),
+        "INum %{public}d request surface buf failed, index=%{public}d", instanceId_, index);
     std::shared_ptr<CodecBuffer> outputBuffer = buffers_[INDEX_OUTPUT][index];
     std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory;
     auto queSize = renderAvailQue_->Size();
@@ -357,6 +360,12 @@ void RenderSurface::RequestBufferFromConsumer()
     if (i == queSize) {
         curIndex = index;
         outputBuffer->avBuffer = AVBuffer::CreateAVBuffer(surfaceMemory->GetBase(), surfaceMemory->GetSize());
+        if (outputBuffer->avBuffer == nullptr) {
+            AVCODEC_LOGE("INum %{public}d Buffer allocate failed, index=%{public}d", instanceId_, index);
+            CallCallBack(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY);
+            return;
+        }
+        
         outputBuffer->width = width_;
         outputBuffer->height = height_;
         FindAvailIndex(curIndex);

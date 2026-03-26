@@ -25,17 +25,17 @@ using namespace OHOS::Media;
 
 namespace OHOS {
 const int64_t EXPECT_SIZE = 4;
-void DemuxerPluginFuzzWithFunc(const uint8_t *data, size_t size)
+void DemuxerPluginFuzzWithFunc(const uint8_t *data, size_t dataSize)
 {
-    if (size < EXPECT_SIZE) {
+    if (dataSize < EXPECT_SIZE) {
         return;
     }
     std::shared_ptr<DemuxerPluginTypeTest> demuxerTest = std::make_shared<DemuxerPluginTypeTest>();
     demuxerTest->testFilePath_ = "/data/test/demuxerpluginflac.flac";
     demuxerTest->demuxerPluginName_ = "avdemux_flac";
-    FuzzedDataProvider fdp(data, size);
+    FuzzedDataProvider fdp(data, dataSize);
     uint8_t *pstream = nullptr;
-    uint16_t framesize = size - EXPECT_SIZE;
+    uint16_t framesize = dataSize - EXPECT_SIZE;
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
     if (!pstream) {
         std::cerr << "Memory alloction failed" << std::endl;

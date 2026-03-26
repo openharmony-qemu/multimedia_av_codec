@@ -63,6 +63,9 @@ public:
     uint64_t GetBufferingDuration();
     uint64_t GetPlayBufferingDuration();
     void DisableFirstBufferingDuration();
+    bool CheckWaterLineStopProduce(int32_t trackId, std::shared_ptr<SampleQueue> sampleQueue);
+    bool CheckWaterLineStartConsume(int32_t trackId, std::shared_ptr<SampleQueue> sampleQueue);
+    uint64_t GetCacheDuration(std::shared_ptr<SampleQueue> sampleQueue);
 
     static constexpr uint64_t QUEUE_SIZE_MIN = 30;
     static constexpr uint64_t START_CONSUME_WATER_LOOP = 5 * 1000 * 1000;

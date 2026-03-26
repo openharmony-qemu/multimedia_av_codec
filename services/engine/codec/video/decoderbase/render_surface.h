@@ -88,6 +88,9 @@ public:
     std::atomic<GraphicTransformType> transform_ = GraphicTransformType::GRAPHIC_ROTATE_NONE;
     int32_t bitDepth_ = BITS_PER_PIXEL_COMPONENT_8;
 
+protected:
+    virtual void CallCallBack(AVCodecErrorType errType, AVCodecServiceErrCode serEcode) = 0;
+
 private:
     int32_t SetQueueSize(const sptr<Surface> &surface, uint32_t targetSize);
     int32_t SwitchBetweenSurface(const sptr<Surface> &newSurface);
