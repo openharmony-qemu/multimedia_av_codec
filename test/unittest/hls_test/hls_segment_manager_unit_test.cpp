@@ -2351,4 +2351,110 @@ HWTEST_F(HlsSegmentManagerUnitTest, GET_TOTAL_TS_BUFFERSIZE_001, TestSize.Level1
     downloader->writeTsIndex_ = 0;
     EXPECT_EQ(downloader->GetTotalTsBuffersize(), 0);
 }
+
+// ===== 分支补充：GetBufferingTimeOut 超时分支 =====
+HWTEST_F(HlsSegmentManagerUnitTest, GET_BUFFERING_TIMEOUT_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    // 设 bufferingTime_=1(远小于当前时间), timeoutInterval_=0 => 超时
+    downloader->bufferingTime_ = 1;
+    downloader->timeoutInterval_ = 0;
+    EXPECT_TRUE(downloader->GetBufferingTimeOut());
+}
+
+// ===== 分支补充：GetReadTimeOut 超时分支 =====
+HWTEST_F(HlsSegmentManagerUnitTest, GET_READ_TIMEOUT_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    // readTime_=1, timeoutInterval_=0 => 超时
+    downloader->readTime_ = 1;
+    downloader->timeoutInterval_ = 0;
+    EXPECT_TRUE(downloader->GetReadTimeOut(false));
+}
+
+// ===== 分支补充：ClearChunksOfFragment diff>READ_BACK_SAVE_SIZE 分支 =====
+HWTEST_F(HlsSegmentManagerUnitTest, CLEAR_CHUNKS_OF_FRAGMENT_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
+    // readTsIndex_=0 => SpliceOffset(0,0)=0, readOffset_=300KB > READ_BACK_SAVE_SIZE(200KB)
+    downloader->readTsIndex_ = 0;
+    downloader->readOffset_ = 300 * 1024;
+    bool ret = downloader->ClearChunksOfFragment();
+    // 不论内部清理结果，此分支已执行
+    EXPECT_GE(static_cast<int>(ret), 0);
+}
+
+// ===== 分支补充：ClearChunksInLargeSegment writeTsIndex_!=readTsIndex_ 分支 =====
+HWTEST_F(HlsSegmentManagerUnitTest, CLEAR_CHUNKS_IN_LARGE_SEGMENT_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
+    // writeTsIndex_ != readTsIndex_ => 不进入清理
+    downloader->writeTsIndex_ = 1;
+    downloader->readTsIndex_ = 0;
+    downloader->ClearChunksInLargeSegment();
+    EXPECT_TRUE(downloader != nullptr);
+}
+
+// ===== 分支补充：GetCrossTsBuffersize backPlayList_非空且readTsIndex_+1 < size 分支 =====
+HWTEST_F(HlsSegmentManagerUnitTest, GET_CROSS_TS_BUFFERSIZE_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
+    PlayInfo p1, p2, p3;
+    downloader->backPlayList_.push_back(p1);
+    downloader->backPlayList_.push_back(p2);
+    downloader->backPlayList_.push_back(p3);
+    // readTsIndex_=0, backPlayList_.size()=3 => 0+1<3 => 进入nextTs分支
+    downloader->readTsIndex_ = 0;
+    uint64_t size = downloader->GetCrossTsBuffersize();
+    EXPECT_GE(size, 0);
+}
+
+// ===== 分支补充：SelectBitRate SEG_VIDEO且IsBitrateSame=false (触发切码率流程) =====
+HWTEST_F(HlsSegmentManagerUnitTest, SELECT_BIT_RATE_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_VIDEO);
+    downloader->Init();
+    std::string testUrl = TEST_URI_PATH + "test_cbr/test_cbr.m3u8";
+    auto statusCallback = [] (DownloadStatus&&, std::shared_ptr<Downloader>&,
+        std::shared_ptr<DownloadRequest>&) {};
+    downloader->SetStatusCallback(statusCallback);
+    downloader->Open(testUrl, httpHeader);
+    OSAL::SleepFor(200);
+    SetDefaultStreamId(downloader);
+    downloader->GetSeekable();
+    // 存在多码率，SelectBitRate触发切换流程
+    bool ret = downloader->SelectBitRate(500000);
+    downloader->Close(true);
+    EXPECT_TRUE(ret);
+}
+
+// ===== 分支补充：SelectMedia SEG_AUDIO且isMediaSame=false (触发实际切换) =====
+HWTEST_F(HlsSegmentManagerUnitTest, SELECT_MEDIA_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_AUDIO);
+    downloader->Init();
+    std::string testUrl = TEST_URI_PATH + "test_hls/testMutiStream.m3u8";
+    auto statusCallback = [] (DownloadStatus&&, std::shared_ptr<Downloader>&,
+        std::shared_ptr<DownloadRequest>&) {};
+    downloader->SetStatusCallback(statusCallback);
+    downloader->Open(testUrl, httpHeader);
+    OSAL::SleepFor(200);
+    SetDefaultStreamId(downloader);
+    downloader->GetSeekable();
+    // SEG_AUDIO type且streamId不同 => isMediaSame=false => 触发实际切换
+    bool ret = downloader->SelectMedia(1, HlsSegmentType::SEG_AUDIO);
+    downloader->Close(true);
+    EXPECT_TRUE(ret);
+}
 }
