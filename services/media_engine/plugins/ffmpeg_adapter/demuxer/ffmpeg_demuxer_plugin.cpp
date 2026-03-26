@@ -1819,12 +1819,9 @@ Status FFmpegDemuxerPlugin::SetAVReadFrameLimit()
         Meta &format = mediaInfo_.tracks[trackIndex];
         format.GetData(Tag::VIDEO_WIDTH, width);
         format.GetData(Tag::VIDEO_HEIGHT, height);
-        if (width * height <= 0) {
-            continue;
-        }
         auto limitSize = CheckedProductForInt32(width, height, DEFAULT_CHANNEL_CNT, READ_SIZE_LIMIT_FACTOR);
-        if (!limitSize) {
-            MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " limit size is overflow", trackIndex);
+        if (!limitSize || *limitSize < 0) {
+            MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " limit size is overflow or < 0", trackIndex);
             continue;
         }
         ioContext_.sizeLimit = std::max(ioContext_.sizeLimit, *limitSize);
