@@ -299,7 +299,7 @@ ohos_unittest("app_client_unit_test") {
   module_out_path = module_output_path
   testonly = true
   configs = [
-    "hls_unittest_cfg",
+    ":hls_unittest_cfg",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
   sources = hls_test_sources + [ "app_client_unit_test.cpp" ]
@@ -331,10 +331,10 @@ ohos_unittest("media_cached_buffer_unit_test") {
   module_out_path = module_output_path
   testonly = true
   configs = [
-    "media_test_sources",
+    ":media_test_sources",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
-  sources = hls_test_sources + [ "media_cached_buffer_unit_test.cpp" ]
+  sources = media_test_sources + [ "media_cached_buffer_unit_test.cpp" ]
   deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
   external_deps = [
