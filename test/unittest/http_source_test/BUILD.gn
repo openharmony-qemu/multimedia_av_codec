@@ -331,7 +331,7 @@ ohos_unittest("media_cached_buffer_unit_test") {
   module_out_path = module_output_path
   testonly = true
   configs = [
-    ":media_test_sources",
+    ":hls_unittest_cfg",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
   sources = media_test_sources + [ "media_cached_buffer_unit_test.cpp" ]
