@@ -107,7 +107,7 @@ struct SourceStatisticsReportInfo {
     std::string sourceUri_;
     uint32_t playStrategyDuration_;
     double playStrateBufferDurationForPlaying_;
-    uint32_t bitRate_;
+    int32_t bitRate_;
     uint32_t videoStreamCnt_;
     uint32_t audioStreamCnt_;
     uint32_t subtitleCnt_;
