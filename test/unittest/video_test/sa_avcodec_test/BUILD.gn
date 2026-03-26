@@ -89,6 +89,7 @@ ohos_unittest("video_sa_avcodec_unit_test") {
     "$av_codec_root_dir/services/services/common/event_manager/event_manager.cpp",
     "$av_codec_root_dir/services/services/sa_avcodec/server/avcodec_server.cpp",
     "$av_codec_root_dir/services/services/sa_avcodec/server/avcodec_server_manager.cpp",
+    "$av_codec_root_dir/services/services/sa_avcodec/server/avcodec_server_dump.cpp",
     "$event_handler_dir/instance_memory_update_event_handler/instance_memory_calculator.cpp",
     "$event_handler_dir/instance_memory_update_event_handler/instance_memory_update_event_handler.cpp",
     "$event_handler_dir/instance_operation_event_handler/instance_operation_event_handler.cpp",

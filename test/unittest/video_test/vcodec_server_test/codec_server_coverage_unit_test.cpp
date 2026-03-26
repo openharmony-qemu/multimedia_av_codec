@@ -1019,22 +1019,6 @@ HWTEST_F(CodecServerUnitTest, OnError_Valid_Test_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: DumpInfo_Valid_Test_001
- * @tc.desc: DumpInfo codec type is video
- */
-HWTEST_F(CodecServerUnitTest, DumpInfo_Valid_Test_001, TestSize.Level1)
-{
-    CreateHCodecByMime();
-    server_->forwardCaller_.processName = "DumpInfo_Valid_Test_001";
-    int32_t fileFd = 0;
-
-    EXPECT_CALL(*codecBaseMock_, GetOutputFormat()).Times(1).WillOnce(Return(AVCS_ERR_OK));
-    EXPECT_CALL(*codecBaseMock_, GetHidumperInfo()).Times(1);
-    int32_t ret = server_->DumpInfo(fileFd);
-    EXPECT_EQ(ret, AVCS_ERR_OK);
-}
-
-/**
  * @tc.name: DrmVideoCencDecrypt_Test_001
  * @tc.desc: DrmVideoCencDecrypt function test
  * @tc.type: FUNC

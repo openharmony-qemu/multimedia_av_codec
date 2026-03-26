@@ -18,9 +18,11 @@
 
 #include <gmock/gmock.h>
 #include <map>
+#include <string>
 #include "avcodec_errors.h"
 #include "avcodec_info.h"
 #include "ipc/av_codec_service_ipc_interface_code.h"
+#include "meta/format.h"
 #include "iremote_broker.h"
 #include "iremote_stub.h"
 #include "nocopyable.h"
@@ -47,6 +49,9 @@ public:
     MOCK_METHOD(int32_t, Init, (AVCodecType type, bool isMimeType, const std::string &name));
     MOCK_METHOD(int32_t, DestroyStub, ());
     MOCK_METHOD(int32_t, Dump, (int32_t fd, const std::vector<std::u16string>& args));
+    MOCK_METHOD(int32_t, GetOutputFormat, (Format &format));
+    MOCK_METHOD(void, GetHiDumperInfo,
+        (std::string &statusStr, std::string &lastErrorStr, std::string &codecBaseHiDumperInfo));
     MOCK_METHOD(void, NotifyMemoryRecycle, ());
     MOCK_METHOD(void, NotifyMemoryWriteBack, ());
 };
@@ -61,6 +66,8 @@ public:
     int32_t Init(AVCodecType type, bool isMimeType, const std::string &name) override;
     int32_t DestroyStub() override;
     int32_t Dump(int32_t fd, const std::vector<std::u16string>& args);
+    int32_t GetOutputFormat(Format &format);
+    void GetHiDumperInfo(std::string &statusStr, std::string &lastErrorStr, std::string &codecBaseHiDumperInfo);
     void NotifyMemoryRecycle();
     void NotifyMemoryWriteBack();
 };
