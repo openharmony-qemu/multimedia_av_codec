@@ -815,8 +815,8 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_SeekToTime_0001, TestSize.Level1)
     }
     int64_t seekTime = 0;
     list<int64_t> toPtsList = {0, 1500, 1000, 1740, 1970, 2100}; // ms
-    vector<int32_t> videoVals = {76, 76, 76, 0, 76, 0, 0, 76, 76, 0, 76, 0, 0, 76, 0, 0, 76, 0};
-    vector<int32_t> audioVals = {107, 107, 107, 0, 107, 0, 0, 107, 107, 0, 107, 0, 0, 107, 0, 0, 107, 0};
+    vector<int32_t> videoVals = {76, 76, 76, 0, 76, 76, 0, 76, 76, 0, 76, 76, 0, 76, 76, 0, 76, 76};
+    vector<int32_t> audioVals = {107, 107, 107, 0, 107, 107, 0, 107, 107, 0, 107, 107, 0, 107, 107, 0, 107, 107};
     OHOS::Media::AVBufferWrapper buffer(videoHeight_ * videoWidth_ * 3);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
