@@ -24,6 +24,8 @@
 #include "base64_utils.h"
 #include "dash_segment_downloader.h"
 #include "xml/xml_parser.h"
+#include "dash_content_comp_node.h"
+#include "dash_period_node.h"
 
 namespace OHOS {
 namespace Media {
@@ -821,6 +823,33 @@ HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_GetAttrDouble_003, Tes
     double val = 0.0;
     elements.GetAttr("maxPlayoutRate", val);
     EXPECT_EQ(val, 1.5);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashContentCompNode_ParseNode_001, TestSize.Level1)
+{
+    std::shared_ptr<DashContentCompNode> contentCompNode = std::make_shared<DashContentCompNode>();
+    std::shared_ptr<XmlParser> xmlParser = nullptr;
+    std::shared_ptr<XmlElement> rootElement = nullptr;
+    contentCompNode->ParseNode(xmlParser, rootElement);
+    std::string attrVal;
+    contentCompNode->GetAttr("id", attrVal);
+    EXPECT_EQ(attrVal, "");
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashContentCompNode_GetAttr_001, TestSize.Level1)
+{
+    std::shared_ptr<DashContentCompNode> contentCompNode = std::make_shared<DashContentCompNode>();
+    std::string attrVal = "test_value";
+    contentCompNode->GetAttr("unknown_attribute", attrVal);
+    EXPECT_EQ(attrVal, "test_value");
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashPeriodNode_GetAttr_001, TestSize.Level1)
+{
+    std::shared_ptr<DashPeriodNode> periodNode = std::make_shared<DashPeriodNode>();
+    std::string attrVal = "test_value";
+    periodNode->GetAttr("unknown_attribute", attrVal);
+    EXPECT_EQ(attrVal, "test_value");
 }
 }
 }
