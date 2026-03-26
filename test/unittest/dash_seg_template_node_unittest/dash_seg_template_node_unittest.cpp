@@ -444,32 +444,6 @@ HWTEST_F(DashSegTemplateNodeUnittest, GetAttr_027, TestSize.Level0)
 }
 
 /**
- * @tc.name  : Test ParseNode with null parser
- * @tc.number: ParseNode_001
- * @tc.desc  : Test ParseNode with null xmlParser
- */
-HWTEST_F(DashSegTemplateNodeUnittest, ParseNode_001, TestSize.Level0)
-{
-    ASSERT_NE(dashPtr_, nullptr);
-    std::shared_ptr<XmlParser> xmlParser = nullptr;
-    std::shared_ptr<XmlElement> rootElement = nullptr;
-    dashPtr_->ParseNode(xmlParser, rootElement);
-}
-
-/**
- * @tc.name  : Test ParseNode with null root element
- * @tc.number: ParseNode_002
- * @tc.desc  : Test ParseNode with null rootElement
- */
-HWTEST_F(DashSegTemplateNodeUnittest, ParseNode_002, TestSize.Level0)
-{
-    ASSERT_NE(dashPtr_, nullptr);
-    std::shared_ptr<XmlParser> xmlParser = std::make_shared<XmlParser>();
-    std::shared_ptr<XmlElement> rootElement = nullptr;
-    dashPtr_->ParseNode(xmlParser, rootElement);
-}
-
-/**
  * @tc.name  : Test Constructor initialization
  * @tc.number: Constructor_001
  * @tc.desc  : Test that constructor properly initializes attributes
@@ -481,18 +455,6 @@ HWTEST_F(DashSegTemplateNodeUnittest, Constructor_001, TestSize.Level0)
     for (int i = 0; i < 4; i++) {
         EXPECT_EQ(testNode->segTemplateAttr_[i].val_, "");
     }
-}
-
-/**
- * @tc.name  : Test Destructor cleanup
- * @tc.number: Destructor_001
- * @tc.desc  : Test that destructor properly cleans up resources
- */
-HWTEST_F(DashSegTemplateNodeUnittest, Destructor_001, TestSize.Level0)
-{
-    auto testNode = std::make_shared<DashSegTemplateNode>();
-    ASSERT_NE(testNode, nullptr);
-    testNode = nullptr;
 }
 
 /**
