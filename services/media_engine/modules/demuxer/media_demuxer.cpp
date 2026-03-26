@@ -1748,7 +1748,6 @@ void MediaDemuxer::ResetSampleQueueStatus(int64_t seekTime)
     if (IsValidTrackId(videoTrackId_)) {
         SetTrackIsBuffering(videoTrackId_, true);
     }
-    CheckAndReportBufferingStatus(EventType::BUFFERING_START);
 }
 
 void MediaDemuxer::HandleSeekToTime(int64_t seekTime)
