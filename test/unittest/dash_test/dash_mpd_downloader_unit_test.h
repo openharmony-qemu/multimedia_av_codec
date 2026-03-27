@@ -18,6 +18,7 @@
 
 #include <memory>
 #include "gtest/gtest.h"
+#include "dash_mpd_downloader.h"
 
 namespace OHOS {
 namespace Media {
@@ -33,6 +34,14 @@ public:
     void SetUp(void);
     // TearDown: Called after each test cases
     void TearDown(void);
+    
+    std::shared_ptr<DashMpdDownloader> mpdDownloader_ = nullptr;
+};
+class MockDashMpdCallback : public DashMpdCallback {
+public:
+    ~MockDashMpdCallback() override = default;
+    void OnMpdInfoUpdate(DashMpdEvent mpdEvent) override {}
+    void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) override {}
 };
 }
 }
