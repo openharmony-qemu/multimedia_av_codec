@@ -828,7 +828,7 @@ HWTEST_F(M3u8UnitTest, BIND_VIDEO_MEDIA_001, TestSize.Level1)
     media->type_ = M3U8MediaType::M3U8_MEDIA_TYPE_SUBTITLES;
     master->subtitlesList_.push_back(media);
     // audioList_ empty, subtitlesList_ non-empty -> subtitles path
-    master->BindVideoMedia("audio");
+    master->BindVideoMedia("subtitle");
     EXPECT_FALSE(stream->subtitlesMedia_.empty());
 }
 

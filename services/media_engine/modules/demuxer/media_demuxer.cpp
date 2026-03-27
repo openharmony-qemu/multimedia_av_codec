@@ -54,7 +54,7 @@
 #include "parameters.h"
 #include "scope_guard.h"
 #include "syspara/parameters.h"
-#include "codec_capability_helper.h"
+#include "avcodec_info.h"
 
 namespace {
 const std::string DUMP_PARAM = "a";
@@ -2886,20 +2886,46 @@ bool MediaDemuxer::SelectBitRateChangeStream(int32_t trackId)
     return false;
 }
 
-bool CheckStreamMimeType(const std::string &mimeType, StreamType type)
+void MediaDemuxer::SetCodecList(const std::shared_ptr<MediaAVCodec::AVCodecList> &codecList)
 {
+    codecList_ = codecList;
+}
+
+bool CheckStreamCodec(const std::string &codecs, StreamType type, std::shared_ptr<MediaAVCodec::AVCodecList> codecList)
+{
+    bool isSupported = true;
     if (type == Plugins::AUDIO) {
-        std::vector<Plugins::PluginDescription> matchedPluginsDescriptions =
+        std::vector<Plugins::PluginDescription> descriptions =
             Plugins::PluginList::GetInstance().GetPluginsByType(Plugins::PluginType::AUDIO_DECODER);
-        return std::any_of(matchedPluginsDescriptions.begin(), matchedPluginsDescriptions.end(),
-            [&mimeType](const Plugins::PluginDescription &description) {
-                const std::string &longer = (description.cap.size() >= mimeType.size()) ? description.cap : mimeType;
-                const std::string &shorter = (description.cap.size() >= mimeType.size()) ? mimeType : description.cap;
-                return longer.find(shorter) != std::string::npos;
+        isSupported = std::any_of(descriptions.begin(), descriptions.end(),
+            [&codecs](const Plugins::PluginDescription &description) {
+                if (description.cap.size() >= codecs.size()) {
+                    return description.cap.find(codecs) != std::string::npos;
+                } else {
+                    return codecs.find(description.cap) != std::string::npos;
+                }
+            });
+    } else {
+        if (codecList == nullptr) {
+            MEDIA_LOG_W("codecList is nullptr");
+            return true;
+        }
+        auto caps = codecList->GetCapabilityList(MediaAVCodec::AVCodecType::AVCODEC_TYPE_VIDEO_DECODER);
+        isSupported = std::any_of(caps.begin(), caps.end(),
+            [&codecs](const std::shared_ptr<MediaAVCodec::CapabilityData> &cap) {
+                if (!cap) {
+                    return false;
+                }
+                const std::string &codecMime = cap->mimeType;
+                if (codecMime.size() >= codecs.size()) {
+                    return codecMime.find(codecs) != std::string::npos;
+                } else {
+                    return codecs.find(codecMime) != std::string::npos;
+                }
             });
     }
-    auto capData = MediaAVCodec::CodecCapabilityHelper::GetCapabilityByMime(mimeType);
-    return capData != std::nullopt;
+    MEDIA_LOG_I("Codec: " PUBLIC_LOG_S " is supported: " PUBLIC_LOG_S, codecs.c_str(), isSupported ? "true" : "false");
+    return isSupported;
 }
 
 void MediaDemuxer::DumpBufferToFile(int32_t trackId, std::shared_ptr<AVBuffer> buffer)
@@ -3316,8 +3342,10 @@ StreamInfo *GetPreferredVideoStream(uint32_t desBitrate)
             destStream = &stream;
         }
     }
-    MEDIA_LOG_I("GetPreferredVideoBitrate destStreamBitRate: " PUBLIC_LOG_D32 " curDownloadRate: " PUBLIC_LOG_D32,
-        destStream->bitRate, desBitrate);
+    if (destStream != nullptr) {
+        MEDIA_LOG_I("GetPreferredVideoBitrate destStreamBitRate: " PUBLIC_LOG_D32 " curDownloadRate: " PUBLIC_LOG_D32,
+            destStream->bitRate, desBitrate);
+    }
     return destStream;
 }
 
@@ -5146,7 +5174,7 @@ void MediaDemuxer::SetIsTriggerAutoMode(bool isAutoSelect)
     isAutoSelect_.store(isAutoSelect);
 }
 
-Status MediaDemuxer::SetPlayStrategy(std::shared_ptr<PlayStrategy> playStrategy)
+Status MediaDemuxer::SetPlayStrategy(const std::shared_ptr<PlayStrategy> playStrategy)
 {
     if (playStrategy == nullptr) {
         return Status::ERROR_INVALID_PARAMETER;
@@ -5353,7 +5381,7 @@ StreamInfo *FindStreamForFiledStream(std::vector<StreamInfo> &streams, int32_t l
     return stream;
 }
 
-void MediaDemuxer::SetTrackSelectionFilter(TrackSelectionFilter &filter)
+void MediaDemuxer::SetTrackSelectionFilter(const TrackSelectionFilter &filter)
 {
     trackSelectionFilter_ = filter;
     FALSE_RETURN_MSG_W(isPrepared_.load(), "not prepared, cannot auto select bitrate");
@@ -5602,7 +5630,7 @@ int32_t SelectSubtitleDefaultId(std::map<StreamType, std::vector<StreamInfo>> &f
 }
 
 std::vector<StreamInfo> CollectValidStreams(std::vector<StreamInfo> &allStreams, const std::string &currentPlayType,
-    const TrackSelectionFilter &trackSelectionFilter)
+    const TrackSelectionFilter &trackSelectionFilter, std::shared_ptr<MediaAVCodec::AVCodecList> codecList)
 {
     std::vector<StreamInfo> filteredStreams;
     bool hasVideoValid = false;
@@ -5614,9 +5642,9 @@ std::vector<StreamInfo> CollectValidStreams(std::vector<StreamInfo> &allStreams,
         if (streamInfo.type == VIDEO || streamInfo.type == AUDIO) {
             streamInfo.type == VIDEO ? videoStreams.push_back(streamInfo) : audioStreams.push_back(streamInfo);
 
-            std::vector<std::string> preferedMimeTypes = streamInfo.type == VIDEO ?
+            std::vector<std::string> preferredMimeTypes = streamInfo.type == VIDEO ?
                 trackSelectionFilter.preferredVideoMimeTypes : trackSelectionFilter.preferredAudioMimeTypes;
-            if (!preferedMimeTypes.empty() && MatchPreferredMimeTypes(preferedMimeTypes, streamInfo)) {
+            if (!preferredMimeTypes.empty() && MatchPreferredMimeTypes(preferredMimeTypes, streamInfo)) {
                 streamInfo.type == VIDEO ? hasVideoValid = true : hasAudioValid = true;
                 filteredStreams.push_back(streamInfo);
                 continue;
@@ -5626,7 +5654,7 @@ std::vector<StreamInfo> CollectValidStreams(std::vector<StreamInfo> &allStreams,
                 continue;
             }
 
-            if (CheckStreamMimeType(streamInfo.codecs, streamInfo.type)) {
+            if (CheckStreamCodec(streamInfo.codecs, streamInfo.type, codecList)) {
                 streamInfo.type == VIDEO ? hasVideoValid = true : hasAudioValid = true;
                 filteredStreams.push_back(streamInfo);
             }
@@ -5681,7 +5709,7 @@ void MediaDemuxer::ChooseDefaultStreams()
 
     std::vector<StreamInfo> streams;
     source_->GetStreamInfo(streams, true);
-    streams = CollectValidStreams(streams, currentPlayType_, trackSelectionFilter_);
+    streams = CollectValidStreams(streams, currentPlayType_, trackSelectionFilter_, codecList_);
 
     std::map<StreamType, std::vector<StreamInfo>> filteredStreamMap;
     std::map<StreamType, std::vector<StreamInfo>> allStreamMap;

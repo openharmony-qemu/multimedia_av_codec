@@ -165,7 +165,7 @@ HWTEST_F(AVMuxerMp4GltfUnitTest, Muxer_MP4_GLTF_001, TestSize.Level0)
     param->Set<Tag::AUDIO_SAMPLE_RATE>(44100); // 44100 sample rate
     param->Set<Tag::AUDIO_CHANNEL_COUNT>(2); // 2 channel count
     param->Set<Tag::MEDIA_PROFILE>(AAC_PROFILE_LC);
-    param->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
+    param->Set<Tag::AUDIO_SAMPLE_FORMAT>(Plugins::AudioSampleFormat::SAMPLE_S16LE);
 
     // 添加文件级元数据
     std::vector<uint8_t> binVec = {
@@ -235,7 +235,7 @@ HWTEST_F(AVMuxerMp4GltfUnitTest, Muxer_MP4_GLTF_002, TestSize.Level0)
     param->Set<Tag::AUDIO_SAMPLE_RATE>(44100); // 44100 sample rate
     param->Set<Tag::AUDIO_CHANNEL_COUNT>(2); // 2 channel count
     param->Set<Tag::MEDIA_PROFILE>(AAC_PROFILE_LC);
-    param->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
+    param->Set<Tag::AUDIO_SAMPLE_FORMAT>(Plugins::AudioSampleFormat::SAMPLE_S16LE);
 
     // 添加文件级元数据
     std::vector<uint8_t> binVec = {
@@ -297,7 +297,7 @@ HWTEST_F(AVMuxerMp4GltfUnitTest, Muxer_MP4_GLTF_003, TestSize.Level0)
     param->Set<Tag::AUDIO_SAMPLE_RATE>(44100); // 44100 sample rate
     param->Set<Tag::AUDIO_CHANNEL_COUNT>(2); // 2 channel count
     param->Set<Tag::MEDIA_PROFILE>(AAC_PROFILE_LC);
-    param->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
+    param->Set<Tag::AUDIO_SAMPLE_FORMAT>(Plugins::AudioSampleFormat::SAMPLE_S16LE);
     param->Set<Tag::MEDIA_ENABLE_MOOV_FRONT>(1); // moov front
 
     // 添加文件级元数据

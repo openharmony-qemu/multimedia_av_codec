@@ -132,9 +132,9 @@ void HlsPlayListDownloader::Clone(std::shared_ptr<PlayListDownloader> ptr)
     initResolution_ = other->initResolution_;
     currentVariant_ = other->currentVariant_;
     playList_ = other->playList_;
-    audioStreamId_ = other->audioStreamId_;
-    subTitleStreamId_ = other->subTitleStreamId_;
-    isClone_ = true;
+    audioStreamId_.store(other->audioStreamId_.load());
+    subtitleStreamId_.store(other->subtitleStreamId_.load());
+    isClone_.store(true);
     ParseManifest("", false);
     // playList_、retryStartTime_ will clear after parse manifest completed, no need clone
 }
@@ -347,12 +347,12 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPr
         master_->StartParsing();
         isPreParse_ = isPreParse;
         auto callback = eventCallback_.lock();
-        if (callback != nullptr && !isClone_) {
+        if (callback != nullptr && !isClone_.load()) {
             std::string type = "hls";
             callback->OnEvent({PluginEventType::STREAM_UPDATE, {type}, "Stream update."});
         } else {
             UpdateManifestAndNotifyListChange(isPreParse);
-            isClone_ = false;
+            isClone_.store(false);
         }
     } else {
         UpdateMasterAndNotifyList(isPreParse);
@@ -391,8 +391,8 @@ void HlsPlayListDownloader::SetDefaultStreamId(
     if (!master_ || videoStreamId == -1) {
         return;
     }
-    audioStreamId_ = audioStreamId;
-    subTitleStreamId_ = subTitleStreamId;
+    audioStreamId_.store(audioStreamId);
+    subtitleStreamId_.store(subTitleStreamId);
     master_->ChooseStreamByStream(videoStreamId);
     UpdateManifestAndNotifyListChange(isPreParse_);
     if (audioStreamId == -1 && currentVariant_ != nullptr && currentVariant_->defaultAudio_ != nullptr) {
@@ -832,17 +832,17 @@ void HlsPlayListDownloader::GetMediaStreams(StreamType streamType, std::vector<S
         streamInfo.type = streamType;
         streamInfo.lang = media->lang_;
         if (streamType == StreamType::AUDIO) {
-            streamInfo.originCodecs = master_->GetCodec(AUDIO, media->originCodec_);
+            streamInfo.originCodecs = master_->GetCodec(StreamType::AUDIO, media->originCodec_);
         }
         bool isDefault = false;
-        if (streamType == StreamType::AUDIO && audioStreamId_ != -1) {
-            isDefault = media->streamId_ == audioStreamId_;
+        if (streamType == StreamType::AUDIO && audioStreamId_.load() != -1) {
+            isDefault = media->streamId_ == audioStreamId_.load();
         } else if (streamType == StreamType::AUDIO && currentVariant_ != nullptr) {
             isDefault = currentVariant_->defaultAudio_ != nullptr &&
                 media->streamId_ == currentVariant_->defaultAudio_->streamId_;
         }
-        if (streamType == StreamType::SUBTITLE && subTitleStreamId_ != -1) {
-            isDefault = media->streamId_ == subTitleStreamId_;
+        if (streamType == StreamType::SUBTITLE && subtitleStreamId_.load() != -1) {
+            isDefault = media->streamId_ == subtitleStreamId_.load();
             streamInfo.sniffSize = DEFAULT_SUBTITLE_SNIFFSIZE;
         } else if (streamType == StreamType::SUBTITLE && currentVariant_ != nullptr) {
             isDefault = currentVariant_->defaultSubtitles_ != nullptr &&
@@ -917,10 +917,10 @@ int32_t HlsPlayListDownloader::GetDefaultMediaStreamId(HlsSegmentType mediaType)
     if (currentVariant_ == nullptr || master_ == nullptr) {
         return -1;
     }
-    if (mediaType == HlsSegmentType::SEG_AUDIO && audioStreamId_ != -1) {
-        return audioStreamId_;
-    } else if (mediaType == HlsSegmentType::SEG_SUBTITLE && subTitleStreamId_ != -1) {
-        return subTitleStreamId_;
+    if (mediaType == HlsSegmentType::SEG_AUDIO && audioStreamId_.load() != -1) {
+        return audioStreamId_.load();
+    } else if (mediaType == HlsSegmentType::SEG_SUBTITLE && subtitleStreamId_.load() != -1) {
+        return subtitleStreamId_.load();
     } else {
         MEDIA_LOG_I("no default streamId.");
     }

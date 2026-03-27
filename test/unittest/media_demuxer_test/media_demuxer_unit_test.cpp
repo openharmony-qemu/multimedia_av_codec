@@ -1779,7 +1779,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_AddGeneral_0100, TestSize.Level1)
     info.mediaInfo.general.Set<Tag::MEDIA_HAS_AUDIO>(true);
     info.mediaInfo.general.Set<Tag::MEDIA_HAS_SUBTITLE>(true);
     info.mediaInfo.general.Set<Tag::MEDIA_TRACK_COUNT>(3);
-    info.mediaInfo.general.Set<Tag::MEDIA_FILE_TYPE>(FileType::UNKNOW);
+    info.mediaInfo.general.Set<Tag::MEDIA_FILE_TYPE>(Plugins::FileType::UNKNOW);
     info.activated = true;
 
     formatNew.Set<Tag::MEDIA_TRACK_COUNT>(0);

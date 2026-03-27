@@ -2287,8 +2287,6 @@ StreamInfo DashMpdDownloader::AssignStreamInfo(unsigned int index)
         info.maxFrameRate = parsedRate;
     }
     info.mimeType = streamDescriptions_[index]->mimeType_;
-    info.codecs = GetMimeType(streamDescriptions_[index]->codecs_, info.type);
-    info.originCodecs = streamDescriptions_[index]->codecs_;
     return info;
 }
 
@@ -2328,7 +2326,8 @@ Status DashMpdDownloader::GetStreamInfo(std::vector<StreamInfo> &streams)
         } else {
             info.type = VIDEO;
         }
-
+        info.codecs = GetMimeType(streamDescriptions_[index]->codecs_, info.type);
+        info.originCodecs = streamDescriptions_[index]->codecs_;
         MEDIA_LOG_D("GetStreamInfo streamId:" PUBLIC_LOG_D32 ", type:" PUBLIC_LOG_D32 ", bitRate:"
             PUBLIC_LOG_U32, info.streamId, info.type, info.bitRate);
         if (streamDescriptions_[index]->inUse_ && streams.size() > 0) {
