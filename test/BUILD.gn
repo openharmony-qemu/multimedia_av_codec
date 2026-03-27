@@ -140,6 +140,7 @@ group("av_codec_unit_test") {
         "unittest/http_source_test:http_source_plugin_unit_test",
         "unittest/http_source_test:http_source_plugin_unittest",
         "unittest/http_source_test:app_client_unit_test",
+        "unittest/http_source_test:media_cached_buffer_unit_test",
         "unittest/media_demuxer_ext_test:media_demuxer_ext_unit_test",
         "unittest/media_demuxer_test:media_demuxer_unit_test",
         "unittest/media_engine/filters:media_engine_filter_unit_test",
