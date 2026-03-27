@@ -760,6 +760,18 @@ std::shared_ptr<Meta> DemuxerFilter::GetGlobalMetaInfo() const
     return demuxer_->GetGlobalMetaInfo();
 }
 
+std::vector<Plugins::SeekRange> DemuxerFilter::GetSeekableRanges()
+{
+    FALSE_RETURN_V(demuxer_ != nullptr, {});
+    return demuxer_->GetSeekableRanges();
+}
+
+std::vector<Plugins::SeekRange> DemuxerFilter::GetLoadedRanges()
+{
+    FALSE_RETURN_V(demuxer_ != nullptr, {});
+    return demuxer_->GetLoadedRanges();
+}
+
 Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
 {
     int32_t trackId = -1;

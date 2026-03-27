@@ -246,6 +246,12 @@ Seekable HlsMediaDownloader::GetSeekable() const
     return videoSegManager_->GetSeekable();
 }
 
+std::vector<SeekRange> HlsMediaDownloader::GetSeekableRanges() const
+{
+    FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, {}, "GetSeekableRanges no video segment manager found!");
+    return videoSegManager_->GetSeekableRanges();
+}
+
 void HlsMediaDownloader::SetCallback(const std::shared_ptr<Callback>& cb)
 {
     callback_ = cb;

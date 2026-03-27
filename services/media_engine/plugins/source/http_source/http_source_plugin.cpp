@@ -24,6 +24,7 @@
 #include "avcodec_sysevent.h"
 #include "http_media_utils.h"
 #include "storage_usage_util.h"
+#include "meta/meta_key.h"
 
 namespace OHOS {
 namespace Media {
@@ -184,6 +185,15 @@ Status HttpSourcePlugin::SetParameter(const std::shared_ptr<Meta> &meta)
     FALSE_RETURN_V(meta != nullptr, Status::ERROR_NULL_POINTER);
     meta->GetData(Tag::BUFFERING_SIZE, bufferSize_);
     meta->GetData(Tag::WATERLINE_HIGH, waterline_);
+    return Status::OK;
+}
+
+Status HttpSourcePlugin::SetMediaDuration(int64_t mediaDuration)
+{
+    MEDIA_LOG_I("SetMediaDuration enter.");
+    if (downloader_ != nullptr && mediaDuration > 0) {
+        downloader_->SetMediaDuration(mediaDuration);
+    }
     return Status::OK;
 }
 
@@ -452,7 +462,11 @@ Status HttpSourcePlugin::SeekToTime(int64_t seekTime, SeekMode mode)
     std::shared_ptr<MediaDownloader> downloader = downloader_;
     FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
     FALSE_RETURN_V(downloader->GetSeekable() == Seekable::SEEKABLE, Status::ERROR_INVALID_OPERATION);
-    FALSE_RETURN_V(seekTime <= downloader->GetDuration(), Status::ERROR_INVALID_PARAMETER);
+    auto duration = downloader->GetDuration();
+    if (duration < -1) {
+        duration *= -1;
+    }
+    FALSE_RETURN_V(seekTime <= duration, Status::ERROR_INVALID_PARAMETER);
     FALSE_RETURN_V(downloader->SeekToTime(seekTime, mode), Status::ERROR_UNKNOWN);
     return Status::OK;
 }
@@ -463,7 +477,11 @@ Status HttpSourcePlugin::MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode
     std::shared_ptr<MediaDownloader> downloader = downloader_;
     FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
     FALSE_RETURN_V(downloader->GetSeekable() == Seekable::SEEKABLE, Status::ERROR_INVALID_OPERATION);
-    FALSE_RETURN_V(seekTime <= downloader->GetDuration(), Status::ERROR_INVALID_PARAMETER);
+    auto duration = downloader->GetDuration();
+    if (duration < -1) {
+        duration *= -1;
+    }
+    FALSE_RETURN_V(seekTime <= duration, Status::ERROR_INVALID_PARAMETER);
     FALSE_RETURN_V(downloader->MediaSeekTimeByStreamId(seekTime, mode, streamId), Status::ERROR_UNKNOWN);
     return Status::OK;
 }
@@ -538,6 +556,12 @@ Status HttpSourcePlugin::GetPlaybackInfo(PlaybackInfo& playbackInfo)
     FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
     downloader_->GetPlaybackInfo(playbackInfo);
     return Status::OK;
+}
+
+std::vector<SeekRange> HttpSourcePlugin::GetSeekableRanges() const
+{
+    FALSE_RETURN_V(downloader_ != nullptr, {});
+    return downloader_->GetSeekableRanges();
 }
 
 void HttpSourcePlugin::SetDemuxerState(int32_t streamId)

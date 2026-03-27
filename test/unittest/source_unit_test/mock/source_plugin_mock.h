@@ -77,6 +77,7 @@ public:
     MOCK_METHOD(std::string, GetContentType, (), ());
     MOCK_METHOD(void, SetDefaultStreamId, (int32_t &videoStreamId, int32_t &audioStreamId,
         int32_t &subTitleStreamId), ());
+    MOCK_METHOD(std::vector<Plugins::SeekRange>, GetSeekableRanges, (), (const));
 //PluginBase
     MOCK_METHOD(void, OnEvent, (const Plugins::PluginEvent &event), ());
     MOCK_METHOD(void, OnDfxEvent, (const Plugins::PluginDfxEvent &event), ());

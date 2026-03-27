@@ -74,6 +74,16 @@ std::map<OHOS::Media::TrackType, OHOS::Media::StreamType> TRACK_TO_STREAM_MAP = 
     {OHOS::Media::TrackType::TRACK_SUBTITLE, OHOS::Media::StreamType::SUBTITLE},
     {OHOS::Media::TrackType::TRACK_INVALID, OHOS::Media::StreamType::MIXED}
 };
+
+bool GetLocalLoadedRange(int64_t durationMs, OHOS::Media::Plugins::SeekRange &range)
+{
+    FALSE_RETURN_V(durationMs > 0, false);
+    int64_t durationHst = 0;
+    FALSE_RETURN_V(OHOS::Media::Plugins::Us2HstTime(durationMs, durationHst) && durationHst > 0, false);
+    range = {0, durationHst};
+    return true;
+}
+
 } // namespace
 
 namespace OHOS {
@@ -606,7 +616,12 @@ bool MediaDemuxer::GetDuration(int64_t& durationMs)
         duration_ = source_->GetDuration();
         if (duration_ != Plugins::HST_TIME_NONE) {
             MEDIA_LOG_I("Hls: " PUBLIC_LOG_D64, duration_);
-            mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(Plugins::HstTime2Us(duration_));
+            int64_t sourceDurationMs = Plugins::HstTime2Us(duration_);
+            mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(sourceDurationMs);
+            if (sourceDurationMs < 0) {
+                sourceDurationMs *= -1;
+            }
+            (void)source_->SetMediaDuration(sourceDurationMs);
         }
         MEDIA_LOG_I("SeekToTime");
         return mediaMetaData_.globalMeta->Get<Tag::MEDIA_DURATION>(durationMs);
@@ -617,13 +632,22 @@ bool MediaDemuxer::GetDuration(int64_t& durationMs)
         duration_ = source_->GetDuration();
         if (duration_ != Plugins::HST_TIME_NONE) {
             MEDIA_LOG_I("Not hls: " PUBLIC_LOG_D64, duration_);
-            mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(Plugins::HstTime2Us(duration_));
+            int64_t sourceDurationMs = Plugins::HstTime2Us(duration_);
+            mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(sourceDurationMs);
+            if (sourceDurationMs < 0) {
+                sourceDurationMs *= -1;
+            }
+            (void)source_->SetMediaDuration(sourceDurationMs);
         }
         MEDIA_LOG_I("Seekble");
         return mediaMetaData_.globalMeta->Get<Tag::MEDIA_DURATION>(durationMs);
     }
     MEDIA_LOG_I("Other");
-    return mediaMetaData_.globalMeta->Get<Tag::MEDIA_DURATION>(durationMs);
+    if (mediaMetaData_.globalMeta->Get<Tag::MEDIA_DURATION>(durationMs)) {
+        (void)source_->SetMediaDuration(durationMs);
+        return true;
+    }
+    return false;
 }
 
 bool MediaDemuxer::GetStartInfo(std::pair<int64_t, bool>& startInfo)
@@ -636,6 +660,107 @@ bool MediaDemuxer::GetStartInfo(std::pair<int64_t, bool>& startInfo)
         return true;
     }
     return false;
+}
+
+std::vector<Plugins::SeekRange> MediaDemuxer::GetSeekableRanges()
+{
+    {
+        AutoLock lock(mapMutex_);
+        FALSE_RETURN_V_MSG(source_ != nullptr, {}, "source is nullptr");
+        int64_t durationMs = 0;
+        if (mediaMetaData_.globalMeta != nullptr &&
+            mediaMetaData_.globalMeta->Get<Tag::MEDIA_DURATION>(durationMs) && durationMs > 0) {
+            (void)source_->SetMediaDuration(durationMs);
+        }
+        auto ranges = source_->GetSeekableRanges();
+        if (!ranges.empty()) {
+            return ranges;
+        }
+        seekable_ = source_->GetSeekable();
+        if (seekable_ == Plugins::Seekable::SEEKABLE) {
+            Plugins::SeekRange fullRange;
+            if (GetLocalLoadedRange(durationMs, fullRange)) {
+                ranges.push_back(fullRange);
+                return ranges;
+            }
+        }
+    }
+    MEDIA_LOG_W("AVSource provides null seekable range, will use loaded range fallback");
+    return GetLoadedRanges();
+}
+
+std::vector<Plugins::SeekRange> MediaDemuxer::GetLoadedRanges()
+{
+    std::vector<Plugins::SeekRange> ranges;
+    {
+        AutoLock lock(mapMutex_);
+        FALSE_RETURN_V_MSG(source_ != nullptr, ranges, "source is nullptr");
+        if (!IsLocalFd()) {
+            Plugins::SeekRange range;
+            if (BuildNetworkLoadedRange(range)) {
+                ranges.push_back(range);
+            }
+            return ranges;
+        }
+    }
+
+    int64_t durationMs = 0;
+    (void)GetDuration(durationMs);
+    {
+        AutoLock lock(mapMutex_);
+        FALSE_RETURN_V_MSG(source_ != nullptr && IsLocalFd(), ranges,
+            "source is nullptr or should be local fd but not");
+        Plugins::SeekRange range;
+        if (GetLocalLoadedRange(durationMs, range)) {
+            ranges.push_back(range);
+            return ranges;
+        }
+    }
+    return ranges;
+}
+
+bool MediaDemuxer::BuildNetworkLoadedRange(Plugins::SeekRange &range)
+{
+    FALSE_RETURN_V(GetEnableSampleQueueFlag() && !sampleQueueMap_.empty(), false);
+
+    int64_t minLastOutSamplePts = Plugins::HST_TIME_NONE;
+    int64_t minLastEnterSamplePts = Plugins::HST_TIME_NONE;
+    bool hasValidQueue = false;
+    for (const auto &sqIt : sampleQueueMap_) {
+        auto &queue = sqIt.second;
+        FALSE_CONTINUE_NOLOG(queue != nullptr);
+        int64_t lastEnterPts = queue->GetLastEnterSamplePts();
+        FALSE_CONTINUE_NOLOG(lastEnterPts > 0);
+        int64_t lastOutPts = queue->GetLastOutSamplePts();
+        if (!hasValidQueue) {
+            minLastOutSamplePts = lastOutPts;
+            minLastEnterSamplePts = lastEnterPts;
+            hasValidQueue = true;
+        } else {
+            minLastOutSamplePts = std::min(minLastOutSamplePts, lastOutPts);
+            minLastEnterSamplePts = std::min(minLastEnterSamplePts, lastEnterPts);
+        }
+    }
+    FALSE_RETURN_V(hasValidQueue, false);
+    int64_t loadedStartUs = (syncCenter_ != nullptr) ? syncCenter_->GetMediaTimeNow() : 0;
+    if (loadedStartUs <= 0 && minLastOutSamplePts != Plugins::HST_TIME_NONE) {
+        loadedStartUs = minLastOutSamplePts;
+    }
+    int64_t bufferedEnd = minLastEnterSamplePts;
+    if (bufferedEnd > 0 && mediaStartPts_ != Plugins::HST_TIME_NONE) {
+        bufferedEnd -= mediaStartPts_;
+    }
+    if (loadedStartUs < 0) {
+        loadedStartUs = 0;
+    }
+    FALSE_RETURN_V(loadedStartUs < bufferedEnd, false);
+    int64_t startHst = 0;
+    int64_t endHst = 0;
+    FALSE_RETURN_V(Plugins::Us2HstTime(loadedStartUs, startHst) && Plugins::Us2HstTime(bufferedEnd, endHst), false);
+    FALSE_RETURN_V(endHst > startHst, false);
+    range = {startHst, endHst};
+
+    return true;
 }
 
 bool MediaDemuxer::GetDrmInfosUpdated(const std::multimap<std::string, std::vector<uint8_t>> &newInfos,
@@ -2564,8 +2689,9 @@ void MediaDemuxer::UpdateMjpegMediaMetaData(Plugins::MediaInfo& mediaInfo)
         bool ret = trackMeta.Get<Tag::MIME_TYPE>(mimeType);
         if (ret && mimeType.find("image/jpeg") == 0) {
             auto isCover = trackMeta.Find(Tag::MEDIA_COVER);
-            if (isCover != trackMeta.end())
+            if (isCover != trackMeta.end()) {
                 continue;
+            }
             mimeType = "video/mjpeg";
             MEDIA_LOG_I("MediaMetaData update to: " PUBLIC_LOG_S, mimeType.c_str());
             trackMeta.Set<Tag::MIME_TYPE>(mimeType);

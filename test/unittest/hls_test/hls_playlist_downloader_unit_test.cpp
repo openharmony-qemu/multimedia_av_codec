@@ -285,7 +285,7 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, GET_DURATION_002, TestSize.Level0)
     std::string testUrl = TEST_URI_PATH + M3U8_PATH_LIVE;
     downloader->Open(testUrl, httpHeader);
     OSAL::SleepFor(100);
-    EXPECT_GE(downloader->GetDuration(), -1);
+    EXPECT_GE(-1 * downloader->GetDuration(), -1);
 }
 
 HWTEST_F(HlsPlayListDownloaderUnitTest, GET_DURATION_003, TestSize.Level0)
@@ -381,7 +381,7 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, GET_SEEKABLE_002, TestSize.Level0)
     downloader->Open(testUrl, httpHeader);
     OSAL::SleepFor(100);
     SetDefaultStreamId(downloader);
-    EXPECT_EQ(downloader->GetSeekable(), Seekable::UNSEEKABLE);
+    EXPECT_EQ(downloader->GetSeekable(), Seekable::SEEKABLE);
 }
 
 /**

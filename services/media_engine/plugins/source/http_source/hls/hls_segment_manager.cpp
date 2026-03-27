@@ -899,6 +899,7 @@ bool HlsSegmentManager::SeekToTime(int64_t seekTime, SeekMode mode)
     HandleSeekReady(curStreamId_, CheckBreakCondition());
     MEDIA_LOG_I("HLS SeekToTime end, type: %{public}d", type_);
     isSeekingFlag = false;
+    isSeekedFlag_ = true;
     notNeedReadBack_.store(false);
     return true;
 }
@@ -927,6 +928,12 @@ Seekable HlsSegmentManager::GetSeekable() const
     return playlistDownloader_->GetSeekable();
 }
 
+std::vector<SeekRange> HlsSegmentManager::GetSeekableRanges() const
+{
+    FALSE_RETURN_V(playlistDownloader_ != nullptr, {});
+    return playlistDownloader_->GetSeekableRanges();
+}
+
 void HlsSegmentManager::SetCallback(const std::shared_ptr<Callback>& cb)
 {
     FALSE_RETURN(playlistDownloader_ != nullptr);
@@ -947,7 +954,18 @@ void HlsSegmentManager::ResetPlaylistCapacity(size_t size)
 void HlsSegmentManager::PlaylistBackup(const PlayInfo& fragment)
 {
     FALSE_RETURN(playlistDownloader_ != nullptr);
-    if (playlistDownloader_->IsParseFinished() && (GetSeekable() == Seekable::UNSEEKABLE)) {
+    if (playlistDownloader_->IsLive()) {
+        auto sameFragment = std::find_if(seekCandidates_.begin(), seekCandidates_.end(),
+            [&fragment](const PlayInfo& item) {
+                return item.url_ == fragment.url_ && item.rangeUrl_ == fragment.rangeUrl_ &&
+                    item.offset_ == fragment.offset_ && item.length_ == fragment.length_;
+            });
+        if (sameFragment != seekCandidates_.end()) {
+            return;
+        }
+        seekCandidates_.push_back(fragment);
+    }
+    if (playlistDownloader_->IsParseFinished() && (playlistDownloader_->IsLive())) {
         if (backPlayList_.size() > 0) {
             backPlayList_.clear();
         }
@@ -1401,6 +1419,10 @@ bool HlsSegmentManager::SelectBitRate(uint32_t bitRate)
     fragmentDownloadStart.clear();
     fragmentPushed.clear();
     backPlayList_.clear();
+    {
+        std::lock_guard<std::mutex> seekCandidatesLock(seekCandidatesMutex_);
+        seekCandidates_.clear();
+    }
     
     // switch to des bitrate
     playlistDownloader_->SelectBitRate(bitRate);
@@ -1418,7 +1440,7 @@ void HlsSegmentManager::SeekToTs(uint64_t seekTime, SeekMode mode)
     isDownloadStarted_ = false;
     playList_->Clear();
     int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
-    for (const auto &item : backPlayList_) {
+    for (const auto &item : SeekListHelper(playlistDownloader_->IsLive())) {
         if (CheckLoopTimeout(loopStartTime)) {
             break;
         }
@@ -1459,7 +1481,11 @@ int64_t HlsSegmentManager::RequestNewTs(uint64_t seekTime, SeekMode mode, double
         if (static_cast<uint64_t>(lastTotalDuration) <= seekTime) {
             startTimePos = static_cast<int64_t>(seekTime) - static_cast<int64_t>(lastTotalDuration);
             seekStartTimePos_ = lastTotalDuration;
-            if (startTimePos > (int64_t)(hstTime / HALF_DIVIDE) && (&item != &backPlayList_.back())) { // 2
+            auto* playlistptr = &backPlayList_;
+            if (playlistDownloader_ != nullptr && playlistDownloader_->IsLive()) {
+                playlistptr = &seekCandidates_;
+            }
+            if (startTimePos > (int64_t)(hstTime / HALF_DIVIDE) && (&item != &(playlistptr->back()))) { // 2
                 writeTsIndex_++;
                 seekStartTimePos_ = totalDuration;
                 MEDIA_LOG_I("writeTsIndex, RequestNewTs update writeTsIndex " PUBLIC_LOG_U32 ", type: %{public}d",
@@ -1469,6 +1495,13 @@ int64_t HlsSegmentManager::RequestNewTs(uint64_t seekTime, SeekMode mode, double
             startTimePos = 0;
         }
         playInfo.startTimePos_ = startTimePos;
+    }
+    bool inCurrentPlaylist = playlistDownloader_ != nullptr ?
+        playlistDownloader_->IsFragmentInCurrentPlayList(playInfo.url_, playInfo.rangeUrl_,
+            playInfo.offset_, playInfo.length_) : false;
+    if (!inCurrentPlaylist) {
+        seekStartTimePos_ = totalDuration;
+        return -1;
     }
     PushPlayInfo(playInfo);
     return 0;
@@ -1486,7 +1519,9 @@ void HlsSegmentManager::PushPlayInfo(PlayInfo playInfo)
         readTsIndex_ = writeTsIndex_;
         {
             AutoLock lock(tsStorageInfoMutex_);
-            if (tsStorageInfo_.find(writeTsIndex_) != tsStorageInfo_.end()) {
+            if (playlistDownloader_->IsLive()) {
+                tsStorageInfo_.clear();
+            } else if (tsStorageInfo_.find(writeTsIndex_) != tsStorageInfo_.end()) {
                 tsStorageInfo_[writeTsIndex_] = std::make_pair(0, false);
             } else {
                 tsStorageInfo_[writeTsIndex_].first = 0;
@@ -1511,6 +1546,11 @@ void HlsSegmentManager::SeekToTsForRead(uint32_t currentTsIndex)
     isDownloadStarted_ = false;
     playList_->Clear();
     int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
+    if (playlistDownloader_->IsLive()) {
+        readOffset_ = 0;
+        writeOffset_ = 0;
+        readTsIndex_.store(0);
+    }
     for (const auto &item : backPlayList_) {
         if (CheckLoopTimeout(loopStartTime)) {
             break;
@@ -2395,6 +2435,10 @@ bool HlsSegmentManager::SelectMedia(int32_t streamId, HlsSegmentType mediaType)
     fragmentDownloadStart.clear();
     fragmentPushed.clear();
     backPlayList_.clear();
+    {
+        std::lock_guard<std::mutex> seekCandidatesLock(seekCandidatesMutex_);
+        seekCandidates_.clear();
+    }
     
     // switch to des bitrate
     playlistDownloader_->SelectMedia(streamId, mediaType);
@@ -2459,6 +2503,26 @@ std::shared_ptr<DownloadRequest> HlsSegmentManager::GetDownloadRequest()
 {
     std::shared_lock<std::shared_mutex> lock(downloadRequestMutex_);
     return downloadRequest_;
+}
+
+std::vector<PlayInfo> HlsSegmentManager::SeekListHelper(bool isLive)
+{
+    std::vector<PlayInfo> seekList;
+    if (isLive) {
+        std::lock_guard<std::mutex> lock(seekCandidatesMutex_);
+        seekList.reserve(seekCandidates_.size());
+        for (const auto &fragment : seekCandidates_) {
+            bool inCurrentPlaylist = playlistDownloader_ != nullptr ?
+                playlistDownloader_->IsFragmentInCurrentPlayList(fragment.url_, fragment.rangeUrl_,
+                    fragment.offset_, fragment.length_) : false;
+            if (inCurrentPlaylist) {
+                seekList.push_back(fragment);
+            }
+        }
+    } else {
+        return std::vector<PlayInfo>(backPlayList_.begin(), backPlayList_.end());
+    }
+    return seekList;
 }
 
 }

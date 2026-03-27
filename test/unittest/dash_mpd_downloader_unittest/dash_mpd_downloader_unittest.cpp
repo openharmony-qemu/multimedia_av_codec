@@ -31,6 +31,14 @@ const static int32_t NUM_TEST = 0;
 const static int32_t NUM7_TEST = 7;
 const static int32_t NUM10_TEST = 10;
 const static int32_t NUM2_TEST = 2;
+const static int32_t NUM1000000_TEST = 1000000;
+const static int32_t NUM100_TEST = 100;
+const static int32_t NUM1000_TEST = 1000;
+const static int32_t NUM200_TEST = 200;
+const static int32_t NUM500_TEST = 500;
+const static int32_t NUM300_TEST = 300;
+const static int32_t NUM400_TEST = 400;
+const static int32_t INVALID50_TEST = -50;
 void DashMpdDownloaderUnittest::SetUpTestCase(void) {}
 void DashMpdDownloaderUnittest::TearDownTestCase(void) {}
 void DashMpdDownloaderUnittest::SetUp(void)
@@ -1190,6 +1198,519 @@ HWTEST_F(DashMpdDownloaderUnittest, GetStreamInfo_001, TestSize.Level0)
     ASSERT_NE(streams.size(), 0);
     EXPECT_EQ(streams[0].type, SUBTITLE);
     EXPECT_EQ(streams[0].videoType, VIDEO_TYPE_HDR_10);
+}
+
+/**
+ * @tc.name  : Test GetDuration
+ * @tc.number: GetDuration_001
+ * @tc.desc  : Test mpdInfo_ != nullptr && mpdInfo_->type_ == DashType::DASH_TYPE_DYNAMIC
+ */
+HWTEST_F(DashMpdDownloaderUnittest, GetDuration_001, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    DashMpdInfo* mpdInfo = new DashMpdInfo();
+    DashPeriodInfo* fakePtr = nullptr;
+    mpdInfo->periodInfoList_.push_back(fakePtr);
+    mpdInfo->type_ = DashType::DASH_TYPE_DYNAMIC;
+    mpdDownloader_->mpdInfo_ = mpdInfo;
+    mpdDownloader_->mpdInfo_->timeShiftBufferDepth_ = 0;
+    mpdDownloader_->duration_ = ID_TEST;
+    auto ret = mpdDownloader_->GetDuration();
+    EXPECT_EQ(ret, NUM1000000_TEST);
+    EXPECT_NE(mpdDownloader_->mpdInfo_, nullptr);
+    EXPECT_EQ(mpdDownloader_->mpdInfo_->periodInfoList_.size(), ID_TEST);
+    delete mpdInfo;
+    mpdDownloader_->mpdInfo_ = nullptr;
+}
+
+/**
+ * @tc.name  : Test GetDuration
+ * @tc.number: GetDuration_002
+ * @tc.desc  : Test mpdInfo_ != nullptr && mpdInfo_->type_ == DashType::DASH_TYPE_DYNAMIC & timeShiftDepth > 0
+ */
+HWTEST_F(DashMpdDownloaderUnittest, GetDuration_002, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    DashMpdInfo* mpdInfo = new DashMpdInfo();
+    DashPeriodInfo* fakePtr = nullptr;
+    mpdInfo->periodInfoList_.push_back(fakePtr);
+    mpdInfo->type_ = DashType::DASH_TYPE_DYNAMIC;
+    mpdDownloader_->mpdInfo_ = mpdInfo;
+    mpdDownloader_->mpdInfo_->timeShiftBufferDepth_ = ID_TEST;
+    mpdDownloader_->duration_ = ID_TEST;
+    auto ret = mpdDownloader_->GetDuration();
+    EXPECT_EQ(ret, NUM1000000_TEST);
+    EXPECT_NE(mpdDownloader_->mpdInfo_, nullptr);
+    EXPECT_EQ(mpdDownloader_->mpdInfo_->periodInfoList_.size(), ID_TEST);
+    delete mpdInfo;
+    mpdDownloader_->mpdInfo_ = nullptr;
+}
+
+/**
+ * @tc.name  : Test GetDuration
+ * @tc.number: GetDuration_003
+ * @tc.desc  : Test mpdInfo_->type_ == DashType::DASH_TYPE_STATIC
+ */
+HWTEST_F(DashMpdDownloaderUnittest, GetDuration_003, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    DashMpdInfo* mpdInfo = new DashMpdInfo();
+    DashPeriodInfo* fakePtr = nullptr;
+    mpdInfo->periodInfoList_.push_back(fakePtr);
+    mpdInfo->type_ = DashType::DASH_TYPE_STATIC;
+    mpdDownloader_->mpdInfo_ = mpdInfo;
+    mpdDownloader_->mpdInfo_->timeShiftBufferDepth_ = 0;
+    mpdDownloader_->duration_ = 0;
+    auto ret = mpdDownloader_->GetDuration();
+    EXPECT_EQ(ret, 0);
+    EXPECT_NE(mpdDownloader_->mpdInfo_, nullptr);
+    EXPECT_EQ(mpdDownloader_->mpdInfo_->periodInfoList_.size(), ID_TEST);
+    delete mpdInfo;
+    mpdDownloader_->mpdInfo_ = nullptr;
+}
+
+/**
+ * @tc.name  : Test GetSeekable
+ * @tc.number: GetSeekable_002
+ * @tc.desc  : Test mpdInfo_->type_ == DASH_TYPE_DYNAMIC & timeShiftBufferDepth_ > 0, return Seekable::SEEKABLE
+ */
+HWTEST_F(DashMpdDownloaderUnittest, GetSeekable_002, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    mpdDownloader_->isInterruptNeeded_ = false;
+    DashMpdInfo* mpdInfo = new DashMpdInfo();
+    mpdInfo->type_ = DashType::DASH_TYPE_DYNAMIC;
+    mpdInfo->timeShiftBufferDepth_ = NUM100_TEST;
+    mpdDownloader_->mpdInfo_ = mpdInfo;
+    mpdDownloader_->notifyOpenOk_ = true;
+    auto ret = mpdDownloader_->GetSeekable();
+    EXPECT_EQ(ret, Seekable::SEEKABLE);
+    delete mpdInfo;
+    mpdDownloader_->mpdInfo_ = nullptr;
+}
+
+/**
+ * @tc.name  : Test GetSeekable
+ * @tc.number: GetSeekable_003
+ * @tc.desc  : Test times >= RETRY_TIMES || isInterruptNeeded_ == false & mpdInfo_->type_ != DashType::DASH_TYPE_DYNAMIC
+ */
+HWTEST_F(DashMpdDownloaderUnittest, GetSeekable_003, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    mpdDownloader_->isInterruptNeeded_ = false;
+    DashMpdInfo* mpdInfo = new DashMpdInfo();
+    DashPeriodInfo* fakePtr = nullptr;
+    mpdInfo->periodInfoList_.push_back(fakePtr);
+    mpdInfo->type_ = DashType::DASH_TYPE_STATIC;
+    mpdDownloader_->mpdInfo_ = mpdInfo;
+    mpdDownloader_->notifyOpenOk_ = true;
+    mpdDownloader_->mpdInfo_->timeShiftBufferDepth_ = 0;
+    auto ret = mpdDownloader_->GetSeekable();
+    EXPECT_EQ(ret, Seekable::SEEKABLE);
+    EXPECT_NE(mpdDownloader_->mpdInfo_, nullptr);
+    EXPECT_EQ(mpdDownloader_->mpdInfo_->periodInfoList_.size(), ID_TEST);
+    delete mpdInfo;
+    mpdDownloader_->mpdInfo_ = nullptr;
+}
+
+/**
+ * @tc.name  : Test GetSeekable
+ * @tc.number: GetSeekable_004
+ * @tc.desc  : Test mpdInfo_->type_ == DASH_TYPE_DYNAMIC & timeShiftBufferDepth_ <= 0, return Seekable::UNSEEKABLE
+ */
+HWTEST_F(DashMpdDownloaderUnittest, GetSeekable_004, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    mpdDownloader_->isInterruptNeeded_ = false;
+    DashMpdInfo* mpdInfo = new DashMpdInfo();
+    mpdInfo->type_ = DashType::DASH_TYPE_DYNAMIC;
+    mpdInfo->timeShiftBufferDepth_ = 0;
+    mpdDownloader_->mpdInfo_ = mpdInfo;
+    mpdDownloader_->notifyOpenOk_ = true;
+    auto ret = mpdDownloader_->GetSeekable();
+    EXPECT_EQ(ret, Seekable::UNSEEKABLE);
+    mpdInfo->timeShiftBufferDepth_ = INVALID50_TEST;
+    ret = mpdDownloader_->GetSeekable();
+    EXPECT_EQ(ret, Seekable::SEEKABLE);
+    delete mpdInfo;
+    mpdDownloader_->mpdInfo_ = nullptr;
+}
+
+/**
+ * @tc.name  : Test UpdateSeekRanges
+ * @tc.number: UpdateSeekRanges_001
+ * @tc.desc  : Test periodRanges empty and duration_ > 0, fill default range
+ */
+HWTEST_F(DashMpdDownloaderUnittest, UpdateSeekRanges_001, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    mpdDownloader_->mpdInfo_ = nullptr;
+    mpdDownloader_->duration_ = NUM1000_TEST;
+    mpdDownloader_->seekRanges_.clear();
+    mpdDownloader_->UpdateSeekRanges();
+    std::lock_guard<std::mutex> lock(mpdDownloader_->seekRangeMutex_);
+    EXPECT_EQ(mpdDownloader_->seekRanges_.size(), 1);
+    EXPECT_EQ(mpdDownloader_->seekRanges_[0].start, 0);
+    EXPECT_EQ(mpdDownloader_->seekRanges_[0].end, NUM1000_TEST * MS_2_NS);
+}
+
+/**
+ * @tc.name  : Test UpdateSeekRanges
+ * @tc.number: UpdateSeekRanges_003
+ * @tc.desc  : Test dynamic type + timeShiftBufferDepth_>0 + windowStart<0
+ */
+HWTEST_F(DashMpdDownloaderUnittest, UpdateSeekRanges_003, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    DashMpdInfo* mpdInfo = new DashMpdInfo();
+    mpdInfo->type_ = DashType::DASH_TYPE_DYNAMIC;
+    mpdInfo->timeShiftBufferDepth_ = NUM500_TEST;
+    DashPeriodInfo* periodInfo = new DashPeriodInfo();
+    periodInfo->start_ = NUM100_TEST;
+    periodInfo->duration_ = NUM200_TEST;
+    mpdInfo->periodInfoList_.push_back(periodInfo);
+    mpdDownloader_->mpdInfo_ = mpdInfo;
+    mpdDownloader_->duration_ = 0;
+    mpdDownloader_->seekRanges_.clear();
+    mpdDownloader_->UpdateSeekRanges();
+    std::lock_guard<std::mutex> lock(mpdDownloader_->seekRangeMutex_);
+    EXPECT_EQ(mpdDownloader_->seekRanges_.size(), ID_TEST);
+    delete periodInfo;
+    delete mpdInfo;
+    mpdDownloader_->mpdInfo_ = nullptr;
+}
+
+/**
+ * @tc.name  : Test UpdateSeekRanges
+ * @tc.number: UpdateSeekRanges_004
+ * @tc.desc  : Test dynamic type + timeShiftBufferDepth_>0 + windowStart≥0
+ */
+HWTEST_F(DashMpdDownloaderUnittest, UpdateSeekRanges_004, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    DashMpdInfo* mpdInfo = new DashMpdInfo();
+    mpdInfo->type_ = DashType::DASH_TYPE_DYNAMIC;
+    mpdInfo->timeShiftBufferDepth_ = NUM200_TEST;
+    DashPeriodInfo* periodInfo = new DashPeriodInfo();
+    periodInfo->start_ = NUM100_TEST;
+    periodInfo->duration_ = NUM300_TEST;
+    mpdInfo->periodInfoList_.push_back(periodInfo);
+
+    mpdDownloader_->mpdInfo_ = mpdInfo;
+    mpdDownloader_->duration_ = 0;
+    mpdDownloader_->seekRanges_.clear();
+    mpdDownloader_->UpdateSeekRanges();
+    std::lock_guard<std::mutex> lock(mpdDownloader_->seekRangeMutex_);
+    EXPECT_EQ(mpdDownloader_->seekRanges_.size(), ID_TEST);
+    EXPECT_EQ(mpdDownloader_->seekRanges_[0].start, NUM200_TEST * MS_2_NS);
+    EXPECT_EQ(mpdDownloader_->seekRanges_[0].end, NUM400_TEST * MS_2_NS);
+    delete periodInfo;
+    delete mpdInfo;
+    mpdDownloader_->mpdInfo_ = nullptr;
+}
+
+/**
+ * @tc.name  : Test UpdateSeekRanges
+ * @tc.number: UpdateSeekRanges_005
+ * @tc.desc  : Test non-dynamic type, directly use periodRanges
+ */
+HWTEST_F(DashMpdDownloaderUnittest, UpdateSeekRanges_005, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    DashMpdInfo* mpdInfo = new DashMpdInfo();
+    mpdInfo->type_ = DashType::DASH_TYPE_STATIC;
+    mpdInfo->timeShiftBufferDepth_ = NUM100_TEST;
+    DashPeriodInfo* p1 = new DashPeriodInfo();
+    p1->start_ = 0;
+    p1->duration_ = NUM500_TEST;
+    DashPeriodInfo* p2 = new DashPeriodInfo();
+    p2->start_ = NUM500_TEST;
+    p2->duration_ = NUM500_TEST;
+    mpdInfo->periodInfoList_.push_back(p1);
+    mpdInfo->periodInfoList_.push_back(p2);
+
+    mpdDownloader_->mpdInfo_ = mpdInfo;
+    mpdDownloader_->duration_ = 0;
+    mpdDownloader_->seekRanges_.clear();
+    mpdDownloader_->UpdateSeekRanges();
+    std::lock_guard<std::mutex> lock(mpdDownloader_->seekRangeMutex_);
+    EXPECT_EQ(mpdDownloader_->seekRanges_.size(), NUM2_TEST);
+    EXPECT_EQ(mpdDownloader_->seekRanges_[0].start, 0);
+    EXPECT_EQ(mpdDownloader_->seekRanges_[0].end, NUM500_TEST * MS_2_NS);
+    EXPECT_EQ(mpdDownloader_->seekRanges_[1].start, NUM500_TEST * MS_2_NS);
+    EXPECT_EQ(mpdDownloader_->seekRanges_[1].end, NUM1000_TEST * MS_2_NS);
+    delete p1;
+    delete p2;
+    delete mpdInfo;
+    mpdDownloader_->mpdInfo_ = nullptr;
+}
+
+/**
+ * @tc.name  : Test UpdateSeekRanges
+ * @tc.number: UpdateSeekRanges_006
+ * @tc.desc  : Test CollectPeriodRanges durationMs=0, fill by nextStartMs
+ */
+HWTEST_F(DashMpdDownloaderUnittest, UpdateSeekRanges_006, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    DashMpdInfo* mpdInfo = new DashMpdInfo();
+    mpdInfo->type_ = DashType::DASH_TYPE_STATIC;
+    DashPeriodInfo* p1 = new DashPeriodInfo();
+    p1->start_ = NUM100_TEST;
+    p1->duration_ = 0;
+    DashPeriodInfo* p2 = new DashPeriodInfo();
+    p2->start_ = NUM400_TEST;
+    p2->duration_ = NUM200_TEST;
+    mpdInfo->periodInfoList_.push_back(p1);
+    mpdInfo->periodInfoList_.push_back(p2);
+
+    mpdDownloader_->mpdInfo_ = mpdInfo;
+    mpdDownloader_->duration_ = 0;
+    mpdDownloader_->seekRanges_.clear();
+    mpdDownloader_->UpdateSeekRanges();
+    std::lock_guard<std::mutex> lock(mpdDownloader_->seekRangeMutex_);
+    EXPECT_EQ(mpdDownloader_->seekRanges_.size(), NUM2_TEST);
+    EXPECT_EQ(mpdDownloader_->seekRanges_[0].start, NUM100_TEST * MS_2_NS);
+    EXPECT_EQ(mpdDownloader_->seekRanges_[0].end, NUM400_TEST * MS_2_NS);
+    delete p1;
+    delete p2;
+    delete mpdInfo;
+    mpdDownloader_->mpdInfo_ = nullptr;
+}
+
+/**
+ * @tc.name  : Test UpdateSeekRanges
+ * @tc.number: UpdateSeekRanges_007
+ * @tc.desc  : Test ClipRangesToWindow empty, fill window range
+ */
+HWTEST_F(DashMpdDownloaderUnittest, UpdateSeekRanges_007, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    DashMpdInfo* mpdInfo = new DashMpdInfo();
+    mpdInfo->type_ = DashType::DASH_TYPE_DYNAMIC;
+    mpdInfo->timeShiftBufferDepth_ = NUM100_TEST;
+    DashPeriodInfo* p1 = new DashPeriodInfo();
+    p1->start_ = NUM200_TEST;
+    p1->duration_ = NUM100_TEST;
+    mpdInfo->periodInfoList_.push_back(p1);
+
+    mpdDownloader_->mpdInfo_ = mpdInfo;
+    mpdDownloader_->duration_ = 0;
+    mpdDownloader_->seekRanges_.clear();
+    mpdDownloader_->UpdateSeekRanges();
+    std::lock_guard<std::mutex> lock(mpdDownloader_->seekRangeMutex_);
+    EXPECT_EQ(mpdDownloader_->seekRanges_.size(), ID_TEST);
+    delete p1;
+    delete mpdInfo;
+    mpdDownloader_->mpdInfo_ = nullptr;
+}
+
+/**
+ * @tc.name  : Test UpdateSeekRanges
+ * @tc.number: UpdateSeekRanges_008
+ * @tc.desc  : Test periodRanges.empty() && duration_ == 0, no range added
+ */
+HWTEST_F(DashMpdDownloaderUnittest, UpdateSeekRanges_008, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    mpdDownloader_->mpdInfo_ = nullptr;
+    mpdDownloader_->duration_ = 0;
+    mpdDownloader_->seekRanges_.clear();
+    mpdDownloader_->UpdateSeekRanges();
+    std::lock_guard<std::mutex> lock(mpdDownloader_->seekRangeMutex_);
+    EXPECT_EQ(mpdDownloader_->seekRanges_.size(), 0);
+}
+
+/**
+ * @tc.name  : Test UpdateSeekRanges
+ * @tc.number: UpdateSeekRanges_009
+ * @tc.desc  : Test CollectPeriodRanges: periodInfo == nullptr in list
+ */
+HWTEST_F(DashMpdDownloaderUnittest, UpdateSeekRanges_009, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    DashMpdInfo* mpdInfo = new DashMpdInfo();
+    mpdInfo->type_ = DashType::DASH_TYPE_STATIC;
+    mpdInfo->periodInfoList_.push_back(nullptr);
+    DashPeriodInfo* p1 = new DashPeriodInfo();
+    p1->start_ = NUM100_TEST;
+    p1->duration_ = NUM200_TEST;
+    mpdInfo->periodInfoList_.push_back(p1);
+
+    mpdDownloader_->mpdInfo_ = mpdInfo;
+    mpdDownloader_->duration_ = 0;
+    mpdDownloader_->seekRanges_.clear();
+    mpdDownloader_->UpdateSeekRanges();
+    std::lock_guard<std::mutex> lock(mpdDownloader_->seekRangeMutex_);
+    EXPECT_EQ(mpdDownloader_->seekRanges_.size(), 1);
+    EXPECT_EQ(mpdDownloader_->seekRanges_[0].start, NUM100_TEST * MS_2_NS);
+    delete p1;
+    delete mpdInfo;
+    mpdDownloader_->mpdInfo_ = nullptr;
+}
+
+/**
+ * @tc.name  : Test UpdateSeekRanges
+ * @tc.number: UpdateSeekRanges_010
+ * @tc.desc  : Test CollectPeriodRanges: durationMs == 0, fill by mediaPresentationDuration_
+ */
+HWTEST_F(DashMpdDownloaderUnittest, UpdateSeekRanges_010, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    DashMpdInfo* mpdInfo = new DashMpdInfo();
+    mpdInfo->type_ = DashType::DASH_TYPE_STATIC;
+    mpdInfo->mediaPresentationDuration_ = NUM1000_TEST;
+    DashPeriodInfo* p1 = new DashPeriodInfo();
+    p1->start_ = NUM100_TEST;
+    p1->duration_ = 0;
+    mpdInfo->periodInfoList_.push_back(p1);
+
+    mpdDownloader_->mpdInfo_ = mpdInfo;
+    mpdDownloader_->duration_ = 0;
+    mpdDownloader_->seekRanges_.clear();
+    mpdDownloader_->UpdateSeekRanges();
+    std::lock_guard<std::mutex> lock(mpdDownloader_->seekRangeMutex_);
+    EXPECT_EQ(mpdDownloader_->seekRanges_.size(), 1);
+    EXPECT_EQ(mpdDownloader_->seekRanges_[0].start, NUM100_TEST * MS_2_NS);
+    EXPECT_EQ(mpdDownloader_->seekRanges_[0].end, NUM1000_TEST * MS_2_NS);
+    delete p1;
+    delete mpdInfo;
+    mpdDownloader_->mpdInfo_ = nullptr;
+}
+
+/**
+ * @tc.name  : Test UpdateSeekRanges
+ * @tc.number: UpdateSeekRanges_011
+ * @tc.desc  : Test CollectPeriodRanges: durationMs == 0, fill by fallbackDurationMs
+ */
+HWTEST_F(DashMpdDownloaderUnittest, UpdateSeekRanges_011, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    DashMpdInfo* mpdInfo = new DashMpdInfo();
+    mpdInfo->type_ = DashType::DASH_TYPE_STATIC;
+    mpdInfo->mediaPresentationDuration_ = 0;
+    DashPeriodInfo* p1 = new DashPeriodInfo();
+    p1->start_ = NUM100_TEST;
+    p1->duration_ = 0;
+    mpdInfo->periodInfoList_.push_back(p1);
+
+    mpdDownloader_->mpdInfo_ = mpdInfo;
+    mpdDownloader_->duration_ = NUM1000_TEST;
+    mpdDownloader_->seekRanges_.clear();
+    mpdDownloader_->UpdateSeekRanges();
+    std::lock_guard<std::mutex> lock(mpdDownloader_->seekRangeMutex_);
+    EXPECT_EQ(mpdDownloader_->seekRanges_.size(), 1);
+    EXPECT_EQ(mpdDownloader_->seekRanges_[0].start, NUM100_TEST * MS_2_NS);
+    EXPECT_EQ(mpdDownloader_->seekRanges_[0].end, NUM1000_TEST * MS_2_NS);
+    delete p1;
+    delete mpdInfo;
+    mpdDownloader_->mpdInfo_ = nullptr;
+}
+
+/**
+ * @tc.name  : Test UpdateSeekRanges
+ * @tc.number: UpdateSeekRanges_012
+ * @tc.desc  : Test CollectPeriodRanges: durationMs == 0 after all attempts, should skip
+ */
+HWTEST_F(DashMpdDownloaderUnittest, UpdateSeekRanges_012, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    DashMpdInfo* mpdInfo = new DashMpdInfo();
+    mpdInfo->type_ = DashType::DASH_TYPE_STATIC;
+    mpdInfo->mediaPresentationDuration_ = 0;
+    DashPeriodInfo* p1 = new DashPeriodInfo();
+    p1->start_ = NUM100_TEST;
+    p1->duration_ = 0;
+    mpdInfo->periodInfoList_.push_back(p1);
+
+    mpdDownloader_->mpdInfo_ = mpdInfo;
+    mpdDownloader_->duration_ = 0;
+    mpdDownloader_->seekRanges_.clear();
+    mpdDownloader_->UpdateSeekRanges();
+    std::lock_guard<std::mutex> lock(mpdDownloader_->seekRangeMutex_);
+    EXPECT_EQ(mpdDownloader_->seekRanges_.size(), 0);
+    delete p1;
+    delete mpdInfo;
+    mpdDownloader_->mpdInfo_ = nullptr;
+}
+
+/**
+ * @tc.name  : Test UpdateSeekRanges
+ * @tc.number: UpdateSeekRanges_013
+ * @tc.desc  : Test CollectPeriodRanges: multiple periods, take max totalEndNs
+ */
+HWTEST_F(DashMpdDownloaderUnittest, UpdateSeekRanges_013, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    DashMpdInfo* mpdInfo = new DashMpdInfo();
+    mpdInfo->type_ = DashType::DASH_TYPE_STATIC;
+    DashPeriodInfo* p1 = new DashPeriodInfo();
+    p1->start_ = 0;
+    p1->duration_ = NUM500_TEST;
+    DashPeriodInfo* p2 = new DashPeriodInfo();
+    p2->start_ = NUM500_TEST;
+    p2->duration_ = NUM500_TEST;
+    mpdInfo->periodInfoList_.push_back(p1);
+    mpdInfo->periodInfoList_.push_back(p2);
+
+    mpdDownloader_->mpdInfo_ = mpdInfo;
+    mpdDownloader_->duration_ = 0;
+    mpdDownloader_->seekRanges_.clear();
+    mpdDownloader_->UpdateSeekRanges();
+    std::lock_guard<std::mutex> lock(mpdDownloader_->seekRangeMutex_);
+    EXPECT_EQ(mpdDownloader_->seekRanges_.size(), 2);
+    EXPECT_EQ(mpdDownloader_->seekRanges_[1].end, NUM1000_TEST * MS_2_NS);
+    delete p1;
+    delete p2;
+    delete mpdInfo;
+    mpdDownloader_->mpdInfo_ = nullptr;
+}
+
+/**
+ * @tc.name  : Test UpdateSeekRanges
+ * @tc.number: UpdateSeekRanges_014
+ * @tc.desc  : Test ClipRangesToWindow: normal clipping case with DYNAMIC type
+ */
+HWTEST_F(DashMpdDownloaderUnittest, UpdateSeekRanges_014, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    DashMpdInfo* mpdInfo = new DashMpdInfo();
+    mpdInfo->type_ = DashType::DASH_TYPE_DYNAMIC;
+    mpdInfo->timeShiftBufferDepth_ = NUM500_TEST;
+    DashPeriodInfo* p1 = new DashPeriodInfo();
+    p1->start_ = 0;
+    p1->duration_ = NUM1000_TEST;
+    mpdInfo->periodInfoList_.push_back(p1);
+
+    mpdDownloader_->mpdInfo_ = mpdInfo;
+    mpdDownloader_->duration_ = 0;
+    mpdDownloader_->seekRanges_.clear();
+    mpdDownloader_->UpdateSeekRanges();
+    std::lock_guard<std::mutex> lock(mpdDownloader_->seekRangeMutex_);
+    EXPECT_EQ(mpdDownloader_->seekRanges_.size(), 1);
+    EXPECT_GE(mpdDownloader_->seekRanges_[0].start, 0);
+    EXPECT_LE(mpdDownloader_->seekRanges_[0].end, NUM1000_TEST * MS_2_NS);
+    delete p1;
+    delete mpdInfo;
+    mpdDownloader_->mpdInfo_ = nullptr;
+}
+
+/**
+ * @tc.name  : Test UpdateSeekRanges
+ * @tc.number: UpdateSeekRanges_015
+ * @tc.desc  : Test mpdInfo_ == nullptr, falls back to duration_
+ */
+HWTEST_F(DashMpdDownloaderUnittest, UpdateSeekRanges_015, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    mpdDownloader_->mpdInfo_ = nullptr;
+    mpdDownloader_->duration_ = NUM500_TEST;
+    mpdDownloader_->seekRanges_.clear();
+    mpdDownloader_->UpdateSeekRanges();
+    std::lock_guard<std::mutex> lock(mpdDownloader_->seekRangeMutex_);
+    EXPECT_EQ(mpdDownloader_->seekRanges_.size(), 1);
+    EXPECT_EQ(mpdDownloader_->seekRanges_[0].start, 0);
+    EXPECT_EQ(mpdDownloader_->seekRanges_[0].end, NUM500_TEST * MS_2_NS);
 }
 }
 }

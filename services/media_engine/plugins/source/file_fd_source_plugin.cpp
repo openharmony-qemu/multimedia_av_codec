@@ -33,6 +33,7 @@
 #include "common/media_core.h"
 #include "http_media_utils.h"
 #include "avcodec_sysevent.h"
+#include "plugin/plugin_time.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "FileFdSourcePlugin" };
@@ -707,6 +708,24 @@ Seekable FileFdSourcePlugin::GetSeekable()
 {
     MEDIA_LOG_D("GetSeekable in");
     return seekable_;
+}
+
+Status FileFdSourcePlugin::SetMediaDuration(int64_t mediaDuration)
+{
+    durationUs_ = mediaDuration;
+    return Status::OK;
+}
+
+std::vector<SeekRange> FileFdSourcePlugin::GetSeekableRanges() const
+{
+    if (seekable_ != Seekable::SEEKABLE || durationUs_ <= 0) {
+        return {};
+    }
+    int64_t durationHst = 0;
+    if (!Plugins::Us2HstTime(durationUs_, durationHst)) {
+        return {};
+    }
+    return {{0, durationHst}};
 }
 
 void FileFdSourcePlugin::CheckFileType()

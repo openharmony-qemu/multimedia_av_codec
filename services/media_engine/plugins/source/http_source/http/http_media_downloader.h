@@ -54,6 +54,8 @@ public:
     size_t GetContentLength() const override;
     int64_t GetDuration() const override;
     Seekable GetSeekable() const override;
+    std::vector<SeekRange> GetSeekableRanges() const override;
+    void SetMediaDuration(int64_t duration) override;
     void SetCallback(const std::shared_ptr<Callback>& cb) override;
     void SetStatusCallback(StatusCallbackFunc cb) override;
     bool GetStartedStatus() override;
@@ -233,6 +235,8 @@ private:
     uint64_t lastCachedSize_ {0};
     std::atomic<bool> isBufferingStart_ {false};
     std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_;
+
+    std::atomic<int64_t> mediaDuration_ {0};
 
     volatile size_t wantedReadLength_ {0};
     volatile size_t bufferingTime_ {0};

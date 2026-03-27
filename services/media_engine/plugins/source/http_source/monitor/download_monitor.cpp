@@ -181,6 +181,16 @@ Seekable DownloadMonitor::GetSeekable() const
     return downloader_->GetSeekable();
 }
 
+std::vector<SeekRange> DownloadMonitor::GetSeekableRanges() const
+{
+    return downloader_->GetSeekableRanges();
+}
+
+void DownloadMonitor::SetMediaDuration(int64_t duration)
+{
+    downloader_->SetMediaDuration(duration);
+}
+
 bool DownloadMonitor::SeekToTime(int64_t seekTime, SeekMode mode)
 {
     isPlaying_ = true;

@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "osal/task/task.h"
 #include "osal/utils/util.h"
@@ -98,6 +99,7 @@ public:
     Status Resume();
     Status SetReadBlockingFlag(bool isReadBlockingAllowed);
     Plugins::Seekable GetSeekable();
+    std::vector<Plugins::SeekRange> GetSeekableRanges();
 
     Status GetSize(uint64_t &fileSize);
 
@@ -117,6 +119,7 @@ public:
     Status AutoSelectBitRate(uint32_t bitRate);
     Status SetStartPts(int64_t startPts);
     Status SetExtraCache(uint64_t cacheDuration);
+    Status SetMediaDuration(int64_t mediaDuration);
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID);
     void SetCallback(const std::shared_ptr<Callback>& callback);
     bool IsNeedPreDownload();

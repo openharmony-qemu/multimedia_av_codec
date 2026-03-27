@@ -20,6 +20,7 @@
 #include "gtest/gtest.h"
 #include "hls/m3u8.h"
 #include "source/source.h"
+#include <gmock/gmock.h>
 
 namespace OHOS {
 namespace Media {
@@ -35,6 +36,33 @@ public:
     void SetUp(void);
 
     void TearDown(void);
+};
+class MockDownloadRequest : public DownloadRequest {
+public:
+    MockDownloadRequest(const std::string& url, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
+                        bool requestWholeFile = false)
+        : DownloadRequest(url, saveData, statusCallback, requestWholeFile)
+    {
+        (void)url;
+        (void)saveData;
+        (void)statusCallback;
+        (void)requestWholeFile;
+    }
+    MockDownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo requestInfo,
+                        bool requestWholeFile = false)
+        : DownloadRequest(saveData, statusCallback, requestInfo, requestWholeFile)
+    {
+        (void)saveData;
+        (void)statusCallback;
+        (void)requestInfo;
+        (void)requestWholeFile;
+    }
+    MOCK_METHOD(size_t, GetFileContentLength, (), (const));
+    MOCK_METHOD(bool, IsEos, (), (const));
+    MOCK_METHOD(bool, IsChunkedVod, (), (const));
+    MOCK_METHOD(bool, IsServerAcceptRange, (), (const));
+    std::atomic<bool> isHeaderUpdated_ {false};
+    std::atomic<bool> haveRedirectRetry_ {false};
 };
 }
 }

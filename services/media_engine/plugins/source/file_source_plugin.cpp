@@ -18,6 +18,7 @@
 #include <sys/stat.h>
 #include "common/log.h"
 #include "file_source_plugin.h"
+#include "plugin/plugin_time.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
@@ -133,6 +134,13 @@ Status FileSourcePlugin::SetParameter(const std::shared_ptr<Meta> &meta)
     return Status::ERROR_UNIMPLEMENTED;
 }
 
+Status FileSourcePlugin::SetMediaDuration(int64_t mediaDuration)
+{
+    MEDIA_LOG_D("IN");
+    durationUs_ = mediaDuration;
+    return Status::OK;
+}
+
 std::shared_ptr<Allocator> FileSourcePlugin::GetAllocator()
 {
     MEDIA_LOG_D("IN");
@@ -225,6 +233,18 @@ Seekable FileSourcePlugin::GetSeekable()
 {
     MEDIA_LOG_DD("IN");
     return seekable_;
+}
+
+std::vector<SeekRange> FileSourcePlugin::GetSeekableRanges() const
+{
+    if (seekable_ != Seekable::SEEKABLE || durationUs_ <= 0) {
+        return {};
+    }
+    int64_t durationHst = 0;
+    if (!Plugins::Us2HstTime(durationUs_, durationHst)) {
+        return {};
+    }
+    return {{0, durationHst}};
 }
 
 Status FileSourcePlugin::SeekTo(uint64_t offset)

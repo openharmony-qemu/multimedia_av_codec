@@ -17,6 +17,7 @@
 #define HISTREAMER_DASH_MPD_DOWNLOADER_H
 
 #include <shared_mutex>
+#include <mutex>
 #include "dash_common.h"
 #include "dash_mpd_def.h"
 #include "dash_mpd_parser.h"
@@ -125,6 +126,7 @@ public:
     void SetMpdCallback(const std::shared_ptr<DashMpdCallback>& callback);
     int64_t GetDuration() const;
     Seekable GetSeekable() const;
+    std::vector<SeekRange> GetSeekableRanges() const;
     std::vector<uint32_t> GetBitRates() const;
     std::vector<uint32_t> GetBitRatesByHdr(bool isHdr) const;
     int64_t SeekToTs(int streamId, int64_t seekTime, std::shared_ptr<DashSegment> &seg) const;
@@ -247,6 +249,7 @@ private:
     void DfxSubtitleCntIncrease();
     bool ContainsNonDigit(const std::string& str);
     bool ParseFrameRateToUint32(const std::string& str, uint32_t& value);
+    void UpdateSeekRanges();
 
 private:
     std::string url_ {};
@@ -281,6 +284,8 @@ private:
     int32_t videoStreamId_ {-1};
     int32_t audioStreamId_ {-1};
     int32_t subTitleStreamId_ {-1};
+    mutable std::mutex seekRangeMutex_ {};
+    std::vector<SeekRange> seekRanges_ {};
 };
 }
 }

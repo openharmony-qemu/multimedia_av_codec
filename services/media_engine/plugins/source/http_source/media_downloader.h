@@ -66,6 +66,14 @@ public:
     virtual size_t GetContentLength() const = 0;
     virtual int64_t GetDuration() const = 0;
     virtual Seekable GetSeekable() const = 0;
+    virtual std::vector<SeekRange> GetSeekableRanges() const
+    {
+        return {};
+    }
+    virtual void SetMediaDuration(int64_t duration)
+    {
+        (void)duration;
+    }
     virtual void SetCallback(const std::shared_ptr<Callback>& cb) = 0;
     virtual void SetStatusCallback(StatusCallbackFunc cb) = 0;
     virtual bool GetStartedStatus() = 0;

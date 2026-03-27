@@ -45,6 +45,8 @@ public:
     Status Read(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen) override;
     Status GetSize(uint64_t& size) override;
     Seekable GetSeekable() override;
+    Status SetMediaDuration(int64_t mediaDuration) override;
+    std::vector<SeekRange> GetSeekableRanges() const override;
     Status SeekTo(uint64_t offset) override;
     Status Reset() override;
     Status Stop() override;
@@ -93,6 +95,7 @@ private:
     uint64_t fileSize_ {0};
     Seekable seekable_ {Seekable::SEEKABLE};
     std::atomic<uint64_t> position_ {0};
+    int64_t durationUs_ {0};
     std::weak_ptr<Callback> callback_;
     std::atomic<bool> isBuffering_ {false};
     std::atomic<bool> isInterrupted_ {false};

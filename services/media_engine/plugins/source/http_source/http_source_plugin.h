@@ -39,6 +39,7 @@ public:
     Status Resume() override;
     Status GetParameter(std::shared_ptr<Meta> &meta) override;
     Status SetParameter(const std::shared_ptr<Meta> &meta) override;
+    Status SetMediaDuration(int64_t mediaDuration) override;
     Status SetCallback(const std::shared_ptr<Callback>& cb) override;
     Status SetSource(std::shared_ptr<MediaSource> source) override;
     Status Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen) override;
@@ -65,6 +66,7 @@ public:
     Status GetDownloadInfo(DownloadInfo& downloadInfo) override;
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     Status GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
+    std::vector<SeekRange> GetSeekableRanges() const override;
     size_t GetSegmentOffset() override;
     bool GetHLSDiscontinuity() override;
     bool SetSourceInitialBufferSize(int32_t offset, int32_t size) override;
