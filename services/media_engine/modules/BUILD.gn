@@ -107,12 +107,7 @@ ohos_shared_library("av_codec_media_engine_modules") {
     sources += [ "post_processor/super_resolution_post_processor.cpp" ]
   }
 
-  deps = [
-    "$av_codec_root_dir/services/engine:av_codec_engine_package",
-    "$av_codec_root_dir/services/engine/base:av_codec_codec_base",
-    "$av_codec_root_dir/services/engine/codeclist:av_codec_engine_codeclist",
-    "$av_codec_root_dir/services/utils:av_codec_service_utils",
-  ]
+  deps = [ "$av_codec_root_dir/services/engine/base:av_codec_codec_base" ]
 
   public_configs =
       [ ":av_codec_media_engine_modules_pts_and_index_convert_config" ]

@@ -43,6 +43,7 @@
 #include "interrupt_listener.h"
 #include "performance_utils.h"
 #include "media_sync_manager.h"
+#include "avcodec_list.h"
 
 namespace OHOS {
 namespace Media {
@@ -210,10 +211,11 @@ public:
     bool BoostThreadPriorityIfNeeded();
     bool IsWatchDevice();
     bool IsBuffering();
-    void SetTrackSelectionFilter(TrackSelectionFilter &filter);
+    void SetTrackSelectionFilter(const TrackSelectionFilter &filter);
     void SetIsTriggerAutoMode(bool isAutoSelect);
-    Status SetPlayStrategy(std::shared_ptr<PlayStrategy> playStrategy);
+    Status SetPlayStrategy(const std::shared_ptr<PlayStrategy> playStrategy);
     bool IsCloudFd();
+    void SetCodecList(const std::shared_ptr<MediaAVCodec::AVCodecList> &codecList);
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -600,6 +602,7 @@ private:
     TrackSelectionFilter trackSelectionFilter_;
     int64_t lastCheckAutoSelectTimeMs_ {0};
     int32_t lastAutoSelectBitRate_ {0};
+    std::shared_ptr<MediaAVCodec::AVCodecList> codecList_ {nullptr};
 };
 } // namespace Media
 } // namespace OHOS

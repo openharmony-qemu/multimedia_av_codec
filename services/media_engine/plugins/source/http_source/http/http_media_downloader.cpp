@@ -178,10 +178,23 @@ void HttpMediaDownloader::SetDefaultStreamId(int32_t &videoStreamId, int32_t &au
     if (playMediaStreams_.empty()) {
         return;
     }
-    for (int index = 0; index < playMediaStreams_.size(); index++) {
-        if (videoStreamId == index) {
-            defaultStream_ = playMediaStreams_[index];
-            break;
+    if (videoStreamId != -1) {
+        if (videoStreamId < static_cast<int32_t>(playMediaStreams_.size())) {
+            defaultStream_ = playMediaStreams_[videoStreamId];
+        }
+        return;
+    }
+    for (size_t index = 0; index < playMediaStreams_.size(); index++) {
+        if (playMediaStreams_[index] == nullptr) {
+            MEDIA_LOG_W("playMediaStreams_ index: [%{public}u] is nullptr.", static_cast<uint32_t>(index));
+            continue;
+        }
+        if (defaultStream_ != nullptr &&
+            (playMediaStreams_[index]->url == defaultStream_->url &&
+             playMediaStreams_[index]->width == defaultStream_->width &&
+             playMediaStreams_[index]->height == defaultStream_->height &&
+             playMediaStreams_[index]->bitrate == defaultStream_->bitrate)) {
+            videoStreamId = index;
         }
     }
 }

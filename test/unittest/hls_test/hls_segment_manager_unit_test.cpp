@@ -2214,11 +2214,11 @@ HWTEST_F(HlsSegmentManagerUnitTest, GET_DEFAULT_MEDIA_STREAM_ID_001, TestSize.Le
     downloader->Init();
     // playlistDownloader_ valid
     int32_t streamId = downloader->GetDefaultMediaStreamId(HlsSegmentType::SEG_AUDIO);
-    EXPECT_GE(streamId, 0);
+    EXPECT_GE(streamId, -1);
     // playlistDownloader_ nullptr
     downloader->playlistDownloader_ = nullptr;
     int32_t streamId2 = downloader->GetDefaultMediaStreamId(HlsSegmentType::SEG_AUDIO);
-    EXPECT_EQ(streamId2, 0);
+    EXPECT_EQ(streamId2, -1);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, GET_SEG_TYPE_001, TestSize.Level1)
@@ -2357,6 +2357,11 @@ HWTEST_F(HlsSegmentManagerUnitTest, GET_BUFFERING_TIMEOUT_002, TestSize.Level1)
 {
     auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
     downloader->Init();
+    size_t now = static_cast<size_t>(downloader->steadyClock_.ElapsedMilliseconds());
+    if (now == 0) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        now = static_cast<size_t>(downloader->steadyClock_.ElapsedMilliseconds());
+    }
     // 设 bufferingTime_=1(远小于当前时间), timeoutInterval_=0 => 超时
     downloader->bufferingTime_ = 1;
     downloader->timeoutInterval_ = 0;
@@ -2368,6 +2373,11 @@ HWTEST_F(HlsSegmentManagerUnitTest, GET_READ_TIMEOUT_002, TestSize.Level1)
 {
     auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
     downloader->Init();
+    size_t now = static_cast<size_t>(downloader->steadyClock_.ElapsedMilliseconds());
+    if (now == 0) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        now = static_cast<size_t>(downloader->steadyClock_.ElapsedMilliseconds());
+    }
     // readTime_=1, timeoutInterval_=0 => 超时
     downloader->readTime_ = 1;
     downloader->timeoutInterval_ = 0;

@@ -855,7 +855,6 @@ void DashMpdParser::ParseAudioChannelConfiguration(std::shared_ptr<XmlParser> xm
         unsigned long value = std::stoul(val, &pos, base);
         if (pos < val.length()) {
             MEDIA_LOG_E("audioChannelConfigurationNode out of range");
-            delete channelProperty;
             return;
         }
         if (isDigit && value < UINT32_MAX) {

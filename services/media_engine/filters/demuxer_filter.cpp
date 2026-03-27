@@ -18,6 +18,7 @@
 
 #include <utility>
 #include "avcodec_common.h"
+#include "avcodec_list.h"
 #include "avcodec_trace.h"
 #include "filter/filter_factory.h"
 #include "common/log.h"
@@ -169,6 +170,8 @@ void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     if (interruptMonitor_) {
         interruptMonitor_->RegisterListener(demuxer_);
     }
+    std::shared_ptr<MediaAVCodec::AVCodecList> codecList = MediaAVCodec::AVCodecListFactory::CreateAVCodecList();
+    demuxer_->SetCodecList(codecList);
 }
 
 Status DemuxerFilter::SetTranscoderMode()

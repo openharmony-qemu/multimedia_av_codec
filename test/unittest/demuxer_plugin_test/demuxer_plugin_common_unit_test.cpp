@@ -308,7 +308,7 @@ HWTEST(FFmpegDemuxerPluginTimestampTest, AVDemuxer_Enhance_TimestampSupplement_0
     auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mpegts");
     ASSERT_NE(plugin, nullptr);
     plugin->seekable_ = Seekable::SEEKABLE;
-    plugin->fileType_ = FileType::MPEGTS;
+    plugin->fileType_ = Plugins::FileType::MPEGTS;
 
     auto sample = CreateTestSampleBuffer();
     ASSERT_NE(sample, nullptr);
@@ -554,7 +554,7 @@ HWTEST(FFmpegDemuxerPluginTimestampTest, AVDemuxer_Enhance_TimestampSupplement_0
     auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mpegts");
     ASSERT_NE(plugin, nullptr);
     plugin->seekable_ = Seekable::UNSEEKABLE;
-    plugin->fileType_ = FileType::MPEGTS;
+    plugin->fileType_ = Plugins::FileType::MPEGTS;
 
     auto sample = CreateTestSampleBuffer();
     ASSERT_NE(sample, nullptr);

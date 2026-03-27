@@ -858,8 +858,8 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, GET_DEFAULT_MEDIA_STREAM_ID_002, TestSiz
     // set audioStreamId_ = 5 -> returns 5
     downloader->audioStreamId_ = 5;
     EXPECT_EQ(downloader->GetDefaultMediaStreamId(HlsSegmentType::SEG_AUDIO), 5);
-    // set subTitleStreamId_ = 8 -> returns 8
-    downloader->subTitleStreamId_ = 8;
+    // set subtitleStreamId_ = 8 -> returns 8
+    downloader->subtitleStreamId_.store(8);
     EXPECT_EQ(downloader->GetDefaultMediaStreamId(HlsSegmentType::SEG_SUBTITLE), 8);
 }
 

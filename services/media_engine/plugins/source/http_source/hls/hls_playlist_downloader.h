@@ -121,9 +121,9 @@ private:
     std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
     std::atomic<bool> isFmp4_ {false};
     bool isPreParse_ {false};
-    int32_t audioStreamId_ {-1};
-    int32_t subTitleStreamId_ {-1};
-    bool isClone_ {false};
+    std::atomic<int32_t> audioStreamId_ {-1};
+    std::atomic<int32_t> subtitleStreamId_ {-1};
+    std::atomic<bool> isClone_ {false};
     bool isLiveEnd_ {false};
     std::atomic<bool> isPreParseFinished_ {false};
     std::shared_ptr<AesDecryptorManager> aesDecryptorManager_;

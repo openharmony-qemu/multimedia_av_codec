@@ -28,7 +28,7 @@ using namespace Media;
 SourceInfoMap  sourceInfoMap = {
     {"test_264_B_Gop25_4sec_cover.mp4",
         {{{Tag::MEDIA_TRACK_COUNT, 3}, {Tag::MEDIA_HAS_VIDEO, 1}, {Tag::MEDIA_HAS_AUDIO, 1},
-          {Tag::MEDIA_FILE_TYPE, static_cast<int32_t>(FileType::MP4)}},
+          {Tag::MEDIA_FILE_TYPE, static_cast<int32_t>(Plugins::FileType::MP4)}},
          {{Tag::MEDIA_DURATION, 4120000}},
          {}, {},
          {{Tag::MEDIA_TITLE, "title"}, {Tag::MEDIA_ARTIST, "artist"}, {Tag::MEDIA_ALBUM, "album"},
