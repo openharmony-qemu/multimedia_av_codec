@@ -48,7 +48,6 @@ public:
     MOCK_METHOD(CodecServiceStub *, Create, ());
     MOCK_METHOD(int32_t, Init, (AVCodecType type, bool isMimeType, const std::string &name));
     MOCK_METHOD(int32_t, DestroyStub, ());
-    MOCK_METHOD(int32_t, Dump, (int32_t fd, const std::vector<std::u16string>& args));
     MOCK_METHOD(int32_t, GetOutputFormat, (Format &format));
     MOCK_METHOD(void, GetHiDumperInfo,
         (std::string &statusStr, std::string &lastErrorStr, std::string &codecBaseHiDumperInfo));
@@ -65,7 +64,6 @@ public:
     ~CodecServiceStub();
     int32_t Init(AVCodecType type, bool isMimeType, const std::string &name) override;
     int32_t DestroyStub() override;
-    int32_t Dump(int32_t fd, const std::vector<std::u16string>& args);
     int32_t GetOutputFormat(Format &format);
     void GetHiDumperInfo(std::string &statusStr, std::string &lastErrorStr, std::string &codecBaseHiDumperInfo);
     void NotifyMemoryRecycle();
