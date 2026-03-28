@@ -1257,12 +1257,12 @@ HWTEST_F(CapsUnitTest, CheckMimeType_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: CheckMimeType_NullInput_Safety
+ * @tc.name: CheckMimeType_NullInput_Safety_001
  * @tc.desc: AVCaps CheckMimeType with null input
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(CapsUnitTest, CheckMimeType_NullInput_Safety, TestSize.Level1)
+HWTEST_F(CapsUnitTest, CheckMimeType_NullInput_Safety_001, TestSize.Level1)
 {
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
     EXPECT_NE(cap, nullptr);
@@ -1355,13 +1355,13 @@ HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_MemoryOverwrite_001, TestSize.Le
 }
 
 /**
- * @tc.name: AVCaps_GetCapabilityList_THREAD_POOL_001
+ * @tc.name: AVCaps_GetCapabilityList_ThreadPool_001
  * @tc.desc: Verify that OH_AVCodec_GetCapabilityList can be invoked concurrently
  *           from multiple threads and returned capability entries are accessible.
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_THREAD_POOL_001, TestSize.Level2)
+HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityList_ThreadPool_001, TestSize.Level2)
 {
     const int32_t threadCnt = 10;
     std::vector<std::thread> threadPool;
