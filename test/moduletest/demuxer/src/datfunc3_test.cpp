@@ -274,6 +274,53 @@ static void CheckSeekMode(seekInfo seekInfo)
     Destroy();
 }
 
+static void CheckSeekMode(seekInfo seekInfo, bool& success)
+{
+    Create(seekInfo);
+    int tarckType = 0;
+    OH_AVCodecBufferAttr attr;
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    cout << "Track count:" << g_trackCount << endl;
+
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        trackFormat = OH_AVSource_GetTrackFormat(source, index);
+        ASSERT_NE(trackFormat, nullptr);
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, seekInfo.millisecond, seekInfo.seekmode));
+        OH_AVFormat_Destroy(trackFormat);
+        trackFormat = nullptr;
+        bool readEnd = false;
+        int32_t frameNum = 0;
+        while (!readEnd) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                readEnd = true;
+                break;
+            }
+            frameNum++;
+        }
+
+        if (tarckType == MEDIA_TYPE_VID) {
+            cout << "Video frame count:" << frameNum << endl;
+            ASSERT_EQ(seekInfo.videoCount, frameNum);
+        } else if (tarckType == MEDIA_TYPE_AUD) {
+            cout << "Audio frame count:" << frameNum << endl;
+            ASSERT_EQ(seekInfo.audioCount, frameNum);
+        }
+    }
+    success = true;
+    Destroy();
+}
+
 static void SetAudioValue(OH_AVCodecBufferAttr attr, bool &audioIsEnd, int &audioFrame, int &aKeyCount)
 {
     if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
@@ -1029,9 +1076,15 @@ HWTEST_F(DemuxerDAT3FuncNdkTest, DEMUXER_DAT_FUNC_0920, TestSize.Level2)
     seekInfo fileTestUriPrevious{INP_URI_8, SEEK_MODE_PREVIOUS_SYNC, 0, 0, 10292};
     seekInfo fileTestUriClosest{INP_URI_8, SEEK_MODE_CLOSEST_SYNC, 109781, 0, 5147};
     seekInfo fileTestUriNext{INP_URI_8, SEEK_MODE_NEXT_SYNC, 219541, 0, 2};
-    CheckSeekMode(fileTestUriPrevious);
-    CheckSeekMode(fileTestUriClosest);
-    CheckSeekMode(fileTestUriNext);
+    bool success = false;
+    CheckSeekMode(fileTestUriPrevious, success);
+    ASSERT_TRUE(success);
+    success = false;
+    CheckSeekMode(fileTestUriClosest, success);
+    ASSERT_TRUE(success);
+    success = false;
+    CheckSeekMode(fileTestUriNext, success);
+    ASSERT_TRUE(success);
     close(g_fd);
     g_fd = -1;
 }

@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Huawei Device Co., Ltd.
+# Copyright (C) 2023-2026 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -163,6 +163,7 @@ config("av_codec_client_codec_config") {
     "$av_codec_root_dir/services/engine/codec/include/audio/",
     "$av_codec_root_dir/services/engine/common/include/",
     "$av_codec_root_dir/services/media_engine/modules/media_codec/",
+    "$av_codec_root_dir/services/media_engine/plugins/demuxer/common/",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/",
   ]
 }

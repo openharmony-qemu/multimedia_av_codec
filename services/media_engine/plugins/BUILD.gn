@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Huawei Device Co., Ltd.
+# Copyright (C) 2023-2026 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -16,7 +16,8 @@ import("//foundation/multimedia/av_codec/config.gni")
 
 group("av_codec_media_engine_plugins") {
   deps = [
-    "ffmpeg_adapter:media_plugin_FFmpegDemuxer",
+    "demuxer:media_plugin_FFmpegDemuxer",
+    "demuxer:media_plugin_Mpeg4Demuxer",
     "ffmpeg_adapter:media_plugin_FFmpegMuxer",
     "ffmpeg_adapter:media_plugin_Mpeg4Muxer",
     "ffmpeg_adapter/audio_decoder:media_plugin_FFmpegAudioDecoders",

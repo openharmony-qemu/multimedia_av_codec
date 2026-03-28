@@ -1,0 +1,168 @@
+# Copyright (C) 2025-2026 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//foundation/multimedia/av_codec/config.gni")
+
+config("demuxer_config") {
+  defines = [
+    "HST_ANY_WITH_NO_RTTI",
+    "MEDIA_OHOS",
+  ]
+
+  cflags = [
+    "-fno-exceptions",
+    "-Wall",
+    "-fno-common",
+    "-fstack-protector-all",
+    "-Wshadow",
+    "-FPIC",
+    "-FS",
+    "-O2",
+    "-D_FORTIFY_SOURCE=2",
+    "-Wformat=2",
+    "-Wdate-time",
+  ]
+
+  cflags_cc = [
+    "-std=c++17",
+    "-fno-rtti",
+  ]
+
+  include_dirs = [
+    "$av_codec_root_dir/interfaces",
+    "$av_codec_root_dir/services/media_engine/plugins/common",
+    "$av_codec_root_dir/services/media_engine/plugins/demuxer/common",
+    "$av_codec_root_dir/services/media_engine/plugins/demuxer/ffmpeg_demuxer",
+    "$av_codec_root_dir/services/media_engine/plugins/demuxer/mpeg4_demuxer",
+  ]
+}
+
+
+if (av_codec_support_demuxer) {
+  ohos_shared_library("media_plugin_FFmpegDemuxer") {
+    branch_protector_ret = "pac_ret"
+    install_enable = true
+
+    sanitize = av_codec_sanitize
+
+    defines = []
+
+    defines += [
+      "OHOS_EXPAND_MP4_INFO",
+      "OHOS_AV3A_DEMUXER",
+    ]
+    defines += av_codec_defines
+
+    public_configs = [ ":demuxer_config" ]
+
+    if (build_variant != "user") {
+      defines += [ "BUILD_ENG_VERSION" ]
+    }
+
+    configs = [
+      ":demuxer_config",
+      "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
+    ]
+
+    sources = [
+      "common/avc_parser_impl.cpp",
+      "common/converter.cpp",
+      "common/demuxer_log_compressor.cpp",
+      "common/reference_parser_manager.cpp",
+      "common/multi_stream_parser_manager.cpp",
+      "common/rbsp_context.cpp",
+      "common/time_range_manager.cpp",
+      "ffmpeg_demuxer/avpacket_memory.cpp",
+      "ffmpeg_demuxer/avpacket_wrapper.cpp",
+      "ffmpeg_demuxer/ffmpeg_demuxer_plugin.cpp",
+      "ffmpeg_demuxer/ffmpeg_demuxer_thread.cpp",
+      "ffmpeg_demuxer/ffmpeg_format_helper.cpp",
+      "ffmpeg_demuxer/ffmpeg_reference_parser.cpp",
+      "ffmpeg_demuxer/ffmpeg_utils.cpp",
+    ]
+
+    deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
+
+    external_deps = [
+      "c_utils:utils",
+      "ffmpeg:libohosffmpeg",
+      "hicollie:libhicollie",
+      "hilog:libhilog",
+      "hisysevent:libhisysevent",
+      "init:libbegetutil",
+      "media_foundation:media_foundation",
+    ]
+
+    relative_install_dir = "media/media_plugins"
+    subsystem_name = "multimedia"
+    part_name = "av_codec"
+  }
+
+  ohos_shared_library("media_plugin_Mpeg4Demuxer") {
+    branch_protector_ret = "pac_ret"
+    install_enable = true
+
+    sanitize = av_codec_sanitize
+
+    defines = []
+
+    defines += [
+      "OHOS_EXPAND_MP4_INFO",
+      "OHOS_AV3A_DEMUXER",
+    ]
+    defines += av_codec_defines
+
+    public_configs = [ ":demuxer_config" ]
+
+    if (build_variant != "user") {
+      defines += [ "BUILD_ENG_VERSION" ]
+    }
+
+    configs = [
+      ":demuxer_config",
+      "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
+    ]
+
+    sources = [
+      "common/avc_parser_impl.cpp",
+      "common/converter.cpp",
+      "common/demuxer_data_reader.cpp",
+      "common/demuxer_log_compressor.cpp",
+      "common/reference_parser_manager.cpp",
+      "common/multi_stream_parser_manager.cpp",
+      "common/rbsp_context.cpp",
+      "mpeg4_demuxer/mpeg4_audio_parser.cpp",
+      "mpeg4_demuxer/mpeg4_box_parser.cpp",
+      "mpeg4_demuxer/mpeg4_demuxer_plugin.cpp",
+      "mpeg4_demuxer/mpeg4_reference_parser.cpp",
+      "mpeg4_demuxer/mpeg4_sample_helper.cpp",
+    ]
+
+    deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
+
+    external_deps = [
+      "c_utils:utils",
+      "ffmpeg:libohosffmpeg",
+      "hicollie:libhicollie",
+      "hilog:libhilog",
+      "hisysevent:libhisysevent",
+      "init:libbegetutil",
+      "media_foundation:media_foundation",
+    ]
+
+    relative_install_dir = "media/media_plugins"
+    subsystem_name = "multimedia"
+    part_name = "av_codec"
+  }
+}

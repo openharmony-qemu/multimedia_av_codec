@@ -1,0 +1,68 @@
+/*
+ * Copyright (C) 2026 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef MPEG4_DEMUXER_MOCK_H
+#define MPEG4_DEMUXER_MOCK_H
+
+#include <cinttypes>
+#include <string>
+#include <memory>
+#include "nocopyable.h"
+#include "avformat_mock.h"
+#include "mpeg4_source_mock.h"
+#include "common_mock.h"
+#include "av_common.h"
+#include "avcodec_common.h"
+
+namespace OHOS {
+namespace MediaAVCodec {
+class Mpeg4DemuxerMock : public NoCopyable {
+public:
+    virtual ~Mpeg4DemuxerMock() = default;
+
+    virtual int32_t Destroy() = 0;
+    virtual int32_t SelectTrackByID(uint32_t trackIndex) = 0;
+    virtual int32_t UnselectTrackByID(uint32_t trackIndex) = 0;
+    virtual int32_t ReadSample(uint32_t trackIndex, std::shared_ptr<AVMemoryMock> sample,
+        AVCodecBufferInfo *bufferInfo, uint32_t &flag, bool checkBufferInfo = false) = 0;
+    virtual int32_t SeekToTime(int64_t mSeconds, Media::SeekMode mode) = 0;
+    virtual int32_t SetMediaKeySystemInfoCallback(bool isNull)
+    {
+        return AV_ERR_OK;
+    }
+    virtual int32_t SetDemuxerMediaKeySystemInfoCallback(bool isNull)
+    {
+        return AV_ERR_OK;
+    }
+    virtual int32_t GetMediaKeySystemInfo()
+    {
+        return AV_ERR_OK;
+    }
+    virtual int32_t GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
+        const uint64_t relativePresentationTimeUs, uint32_t &index) = 0;
+    virtual int32_t GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
+        const uint32_t index, uint64_t &relativePresentationTimeUs) = 0;
+};
+
+class __attribute__((visibility("default"))) Mpeg4DemuxerMockFactory {
+public:
+    static std::shared_ptr<Mpeg4DemuxerMock> CreateDemuxer(std::shared_ptr<Mpeg4SourceMock> source);
+private:
+    Mpeg4DemuxerMockFactory() = delete;
+    ~Mpeg4DemuxerMockFactory() = delete;
+};
+}  // namespace MediaAVCodec
+}  // namespace OHOS
+#endif // MPEG4_DEMUXER_MOCK_H

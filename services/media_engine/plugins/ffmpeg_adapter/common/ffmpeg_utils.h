@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -42,29 +42,15 @@ std::string AVStrError(int errnum);
 int64_t ConvertTimeFromFFmpeg(int64_t pts, AVRational base);
 int64_t ConvertTimeToFFmpeg(int64_t timestampNs, AVRational base);
 int64_t ConvertTimeToFFmpegByUs(int64_t timestampUs, AVRational base);
-bool StartWith(const char* name, const char* chars);
-uint32_t ConvertFlagsFromFFmpeg(const AVPacket& pkt, bool memoryNotEnough);
-int64_t CalculateTimeByFrameIndex(AVStream* avStream, int keyFrameIdx);
 void ReplaceDelimiter(const std::string &delimiters, char newDelimiter, std::string &str);
-
-std::vector<std::string> SplitString(const char* str, char delimiter);
-std::vector<std::string> SplitString(const std::string& str, char delimiter);
 
 std::pair<bool, AVColorPrimaries> ColorPrimary2AVColorPrimaries(ColorPrimary primary);
 std::pair<bool, AVColorTransferCharacteristic> ColorTransfer2AVColorTransfer(TransferCharacteristic transfer);
 std::pair<bool, AVColorSpace> ColorMatrix2AVColorSpace(MatrixCoefficient matrix);
 
 std::vector<uint8_t> GenerateAACCodecConfig(int32_t profile, int32_t sampleRate, int32_t channels);
-void SetDropTag(const AVPacket& pkt, std::shared_ptr<AVBuffer> sample, AVCodecID codecId);
-int64_t AvTime2Us(int64_t hTime);
 std::string hexEncode(const std::vector<uint8_t>& data);
-bool IsBeginAsAnnexb(const uint8_t *sample, int32_t size);
-bool IsHvccSyncFrame(const uint8_t *sample, int32_t size);
-int32_t GetNaluSize(const uint8_t *nalStart);
 const uint8_t* FindNalStartCode(const uint8_t *start, const uint8_t *end, int32_t &startCodeLen);
-bool IsAnnexbSyncFrame(const uint8_t *sample, int32_t size);
-bool IsHevcSyncFrame(const uint8_t *sample, int32_t size);
-bool IsPktOnlyParameterSets(const uint8_t *sample, int32_t size);
 
 struct FlacCodecConfig {
     bool GenerateCodecConfig(const std::shared_ptr<Meta> &trackDesc);
