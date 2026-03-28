@@ -127,7 +127,8 @@ std::unordered_map<int32_t, std::string_view> bitrateModeMap = {
     {CBR, "CBR"},
     {VBR, "VBR"},
     {CQ, "CQ"},
-    {SQR, "SQR"}
+    {SQR, "SQR"},
+	{CBR_HIGH_QUALITY,"CBR_HIGH_QUALITY"}
 };
 
 std::unordered_map<int32_t, std::string_view> graphicPixFormatMap = {
