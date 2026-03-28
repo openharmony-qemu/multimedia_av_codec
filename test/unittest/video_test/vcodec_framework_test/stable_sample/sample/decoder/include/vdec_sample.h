@@ -101,12 +101,13 @@ public:
     std::string dumpValue_ = "";
     int32_t rawvideoPixFmt_ = -1;
     bool setRawVideoPixFmt_ = false;
+    bool isUnregConListener_ = false;
 
 private:
     int32_t HandleInputFrameInner(uint8_t *addr, OH_AVCodecBufferAttr &attr);
     int32_t HandleOutputFrameInner(uint8_t *addr, OH_AVCodecBufferAttr &attr);
-    bool InitInputFile();
-    bool InitOutputFile();
+    int32_t InitInputFile();
+    int32_t InitOutputFile();
     int32_t CreateAvccReader();
     int32_t CreateMpegReader();
     int32_t CreateH263Reader();

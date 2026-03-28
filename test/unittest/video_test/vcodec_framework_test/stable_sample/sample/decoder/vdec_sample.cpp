@@ -155,6 +155,15 @@ public:
         queue_.push(std::move(obj));
     }
 
+    sptr<Surface> GetConsumerSurface()
+    {
+        if (queue_.empty()) {
+            return nullptr;
+        }
+
+        return queue_.back().consumer_;
+    }
+
 private:
     typedef struct WindowObject {
         OHNativeWindow *nativeWindow_ = nullptr;
@@ -214,6 +223,44 @@ bool VideoDecSample::isHardware_ = false;
 bool VideoDecSample::isRosenWindow_ = false;
 uint64_t VideoDecSample::sampleTimout_ = 180;
 uint64_t VideoDecSample::threadNum_ = 1;
+using CreateXReaderFunc = int32_t (VideoDecSample::*)();
+struct {
+    const std::string_view fileType;
+    const CreateXReaderFunc Func;
+    const std::string_view errTip;
+} g_pathkeyFunctip[] = {
+    {"h263", &VideoDecSample::CreateH263Reader, "CreateH263Reader failed"},
+    {"h264", &VideoDecSample::CreateAvccReader, "CreateAvccReader failed"},
+    {"h265", &VideoDecSample::CreateAvccReader, "CreateAvccReader failed"},
+#ifdef SUPPORT_CODEC_VC1
+    {"vc1", &VideoDecSample::CreateVc1Reader, "CreateVc1Reader failed"},
+
+    {"wvc1", &VideoDecSample::CreateWVc1Reader, "CreateWVc1Reader failed"},
+#endif
+    {"msvideo1", &VideoDecSample::CreateMsvideo1Reader, "CreateMsvideo1Reader failed"},
+    {"wmv3", &VideoDecSample::CreateWmv3Reader, "CreateWmv3Reader failed"},
+#ifdef SUPPORT_CODEC_VP8
+    {"vp8", &VideoDecSample::CreateVp8Reader, "CreateVp8Reader failed"},
+#endif
+
+#ifdef SUPPORT_CODEC_VP9
+    {"vp9", &VideoDecSample::CreateVp9Reader, "CreateVp9Reader failed"},
+#endif
+#ifdef SUPPORT_CODEC_AV1
+    {"av1", &VideoDecSample::CreateAv1Reader, "CreateAv1Reader failed"},
+#endif
+#ifdef SUPPORT_CODEC_RV
+    {"rv30", &VideoDecSample::CreateRv30Reader, "CreateRv30Reader failed"},
+    {"rv40", &VideoDecSample::CreateRv40Reader, "CreateRv40Reader failed"},
+#endif
+
+    {"mpeg1", &VideoDecSample::CreateMpeg1Reader, "CreateMpeg1Reader failed"},
+    {"dvvideo", &VideoDecSample::CreateDvvideoReader, "CreateDvvideoReader failed"},
+    {"rawvideo", &VideoDecSample::CreateRawvideoReader, "CreateRawvideoReader failed"},
+    {"cinepak", &VideoDecSample::CreateCinepakReader, "CreateCinepakReader failed"},
+
+    {"", &VideoDecSample::CreateMpegReader, "CreateMpegReader failed"},
+};
 
 VideoDecSample::VideoDecSample()
 {
@@ -274,80 +321,35 @@ bool VideoDecSample::CreateByMime()
     return true;
 }
 
-bool VideoDecSample::InitInputFile()
+int32_t VideoDecSample::InitInputFile()
 {
-    if (signal_->reader_ == nullptr) {
-        if (inPath_.find("h263") != std::string::npos) {
-            int32_t ret = CreateH263Reader();
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateH263Reader failed");
-        } else if (inPath_.find("h264") != std::string::npos || inPath_.find("h265") != std::string::npos) {
-            int32_t ret = CreateAvccReader();
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateAvccReader failed");
-#ifdef SUPPORT_CODEC_VC1
-        } else if (inPath_.find("vc1") != std::string::npos) {
-            int32_t ret = CreateVc1Reader();
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateH263Reader failed");
-        } else if (inPath_.find("wvc1") != std::string::npos) {
-            int32_t ret = CreateWVc1Reader();
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateH263Reader failed");
-#endif
-        } else if (inPath_.find("msvideo1") != std::string::npos) {
-            int32_t ret = CreateMsvideo1Reader();
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateMsvideo1Reader failed");
-        } else if (inPath_.find("wmv3") != std::string::npos) {
-            int32_t ret = CreateWmv3Reader();
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateWmv3Reader failed");
-#ifdef SUPPORT_CODEC_VP8
-        } else if (inPath_.find("vp8") != std::string::npos) {
-            int32_t ret = CreateVp8Reader();
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateVp8Reader failed");
-#endif
-#ifdef SUPPORT_CODEC_VP9
-        } else if (inPath_.find("vp9") != std::string::npos) {
-            int32_t ret = CreateVp9Reader();
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateVp9Reader failed");
-#endif
-#ifdef SUPPORT_CODEC_AV1
-        } else if (inPath_.find("av1") != std::string::npos) {
-            int32_t ret = CreateAv1Reader();
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateAv1Reader failed");
-#endif
-#ifdef SUPPORT_CODEC_RV
-        } else if (inPath_.find("rv30") != std::string::npos) {
-            int32_t ret = CreateRv30Reader();
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateRv30Reader failed");
-        } else if (inPath_.find("rv40") != std::string::npos) {
-            int32_t ret = CreateRv40Reader();
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateRv40Reader failed");
-#endif
-        } else if (inPath_.find("mpeg1") != std::string::npos) {
-            int32_t ret = CreateMpeg1Reader();
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateMpeg1Reader failed");
-        } else if (inPath_.find("dvvideo") != std::string::npos) {
-            int32_t ret = CreateDvvideoReader();
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateDvvideoReader failed");
-        } else if (inPath_.find("rawvideo") != std::string::npos) {
-            int32_t ret = CreateRawvideoReader();
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateRawvideoReader failed");
-        } else if (inPath_.find("cinepak") != std::string::npos) {
-            int32_t ret = CreateCinepakReader();
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateCinepakReader failed");
-        } else {
-            int32_t ret = CreateMpegReader();
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateMpegReader failed");
+    if (signal_->reader_ != nullptr) {
+        return AV_ERR_OK;
+    }
+
+    int32_t ret = AV_ERR_OK;
+    for (int32_t i = 0; i < sizeof(g_pathkeyFunctip) / sizeof(g_pathkeyFunctip[0]); ++i) {
+        if (inPath_.find(g_pathkeyFunctip[i].fileType) != std::string::npos) {
+            auto BoundFunc = std::bind(g_pathkeyFunctip[i].Func, this);
+            ret = BoundFunc();
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, g_pathkeyFunctip[i].errTip.data());
+            UNITTEST_INFO_LOG("Input path:%s", inPath_.c_str());
+            break;
         }
     }
-    return true;
+    return ret;
 }
 
-bool VideoDecSample::InitOutputFile()
+int32_t VideoDecSample::InitOutputFile()
 {
     if (signal_->outFile_ == nullptr && needDump_) {
         signal_->outFile_ = make_unique<ofstream>();
         signal_->outFile_->open(outPath_, ios::out | ios::binary);
-        UNITTEST_CHECK_AND_RETURN_RET_LOG(signal_->outFile_ != nullptr, false, "create signal_->outFile_ failed");
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(signal_->outFile_->is_open(), AV_ERR_UNKNOWN,
+            "create signal_->outFile_ %{public}s failed, errno %{public}s", outPath_.data(), strerror(errno));
+        std::cout << "Output file name: " << outPath_ << std::endl;
     }
-    return true;
+    return AV_ERR_OK;
 }
 
 int32_t VideoDecSample::CreateAvccReader()
@@ -528,11 +530,13 @@ int32_t VideoDecSample::SetCallback(OH_AVCodecAsyncCallback callback, shared_ptr
 {
     TITLE_LOG;
     signal_ = signal;
-    if (!InitInputFile() || !InitOutputFile()) {
-        return AV_ERR_UNKNOWN;
-    }
+    int32_t ret = InitInputFile();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Init input file failed");
+    ret = InitOutputFile();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Init output file failed");
+
     asyncCallback_ = callback;
-    int32_t ret = OH_VideoDecoder_SetCallback(codec_, callback, reinterpret_cast<void *>(signal_.get()));
+    ret = OH_VideoDecoder_SetCallback(codec_, callback, reinterpret_cast<void *>(signal_.get()));
     isAVBufferMode_ = ret != AV_ERR_OK;
     return ret;
 }
@@ -541,11 +545,13 @@ int32_t VideoDecSample::RegisterCallback(OH_AVCodecCallback callback, shared_ptr
 {
     TITLE_LOG;
     signal_ = signal;
-    if (!InitInputFile() || !InitOutputFile()) {
-        return AV_ERR_UNKNOWN;
-    }
+    int32_t ret = InitInputFile();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Init input file failed");
+    ret = InitOutputFile();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Init output file failed");
+
     callback_ = callback;
-    int32_t ret = OH_VideoDecoder_RegisterCallback(codec_, callback, reinterpret_cast<void *>(signal_.get()));
+    ret = OH_VideoDecoder_RegisterCallback(codec_, callback, reinterpret_cast<void *>(signal_.get()));
     isAVBufferMode_ = ret == AV_ERR_OK;
     return ret;
 }
@@ -555,10 +561,27 @@ int32_t VideoDecSample::SetOutputSurface(const bool isNew)
     TITLE_LOG;
     if (surafaceObj_ == nullptr) {
         surafaceObj_ = std::make_shared<SurfaceObject>(signal_, sampleId_);
+        if (surafaceObj_ == nullptr) {
+            UNITTEST_INFO_LOG("Empty consumer surface");
+            return AV_ERR_NO_MEMORY;
+        }
     }
-    int32_t ret = OH_VideoDecoder_SetSurface(codec_, surafaceObj_->GetNativeWindow(isNew));
-    isSurfaceMode_ = (ret == AV_ERR_OK);
-    return ret;
+
+    auto consumerSurface = surafaceObj_->GetConsumerSurface();
+    if (isUnregConListener_ && consumerSurface != nullptr) {
+        OHOS::GSError ret = consumerSurface->UnregisterConsumerListener();
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == OHOS::GSError::GSERROR_OK, AV_ERR_UNKNOWN,
+            "Unregister old consumer listerner fail, gserror %d", ret);
+
+        sleep(1); // 1 wait second
+        int32_t retOH = OH_VideoDecoder_SetSurface(codec_, surafaceObj_->GetNativeWindow(isNew));
+        UNITTEST_INFO_LOG("sleep end, ret %d", retOH);
+        return retOH;
+    } else {
+        int32_t ret = OH_VideoDecoder_SetSurface(codec_, surafaceObj_->GetNativeWindow(isNew));
+        isSurfaceMode_ = (ret == AV_ERR_OK);
+        return ret;
+    }
 }
 
 OHNativeWindow *VideoDecSample::GetSurfaceWindow(const bool isNew)
@@ -858,7 +881,12 @@ int32_t VideoDecSample::HandleInputFrame(std::shared_ptr<CodecBufferInfo> buffer
     }
     uint8_t *addr = bufferInfo->GetAddr();
     OH_AVCodecBufferAttr attr = {0, 0, 0, 0};
-    HandleInputFrameInner(addr, attr);
+    int32_t ret = HandleInputFrameInner(addr, attr);
+    if (ret != AV_ERR_OK) {
+        signal_->isInEos_ = true;
+        attr.flags = AVCODEC_BUFFER_FLAG_EOS;
+        attr.size = 0;
+    }
     bufferInfo->SetAttr(attr);
     UNITTEST_INFO_LOG("attr.size: %d, attr.flags: %d", attr.size, (int32_t)(attr.flags));
     return PushInputData(bufferInfo);
@@ -879,7 +907,9 @@ int32_t VideoDecSample::HandleOutputFrame(std::shared_ptr<CodecBufferInfo> buffe
 
 int32_t VideoDecSample::HandleInputFrameInner(uint8_t *addr, OH_AVCodecBufferAttr &attr)
 {
-    signal_->reader_->FillBuffer(addr, attr);
+    int32_t ret = signal_->reader_->FillBuffer(addr, attr);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fill buffer failed");
+
     // 输入帧数不够时，循环读文件
     if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS || needXps_) {
         needXps_ = false;

@@ -64,6 +64,7 @@ static string g_codecName_hevc = "";
 OH_AVFormat *format;
 constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
+constexpr uint32_t DEFAULT_BUF_SIZE = DEFAULT_WIDTH * DEFAULT_HEIGHT * 3 >> 1;
 constexpr double DEFAULT_FRAME_RATE = 30.0;
 } // namespace
 
@@ -2653,6 +2654,18 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CONFIGURE_0030, TestSize.Level1)
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, -1);
+        ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec, format));
+        OH_VideoDecoder_Destroy(vdec);
+
+        vdec = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
+        ASSERT_NE(NULL, vdec);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, DEFAULT_BUF_SIZE);
+        ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec, format));
+        OH_VideoDecoder_Destroy(vdec);
+
+        vdec = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
+        ASSERT_NE(NULL, vdec);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, DEFAULT_BUF_SIZE * 2); // 2 Test pass
         ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec, format));
         OH_VideoDecoder_Destroy(vdec);
         OH_AVFormat_Destroy(format);

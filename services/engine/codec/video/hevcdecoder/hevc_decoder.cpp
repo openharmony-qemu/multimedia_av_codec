@@ -543,6 +543,7 @@ int32_t HevcDecoder::GetDecoderWidthStride(void)
 void HevcDecoder::ConfigureOutPutOrder(bool isDisplay)
 {
     initParams_.eOutPutOrder = isDisplay ? 1 : 0;  // 1 by disply order
+    AVCODEC_LOGI("Configure output, is display: %{public}d", isDisplay);
 }
 
 int32_t HevcDecoder::CheckHevcDecLibStatus()
