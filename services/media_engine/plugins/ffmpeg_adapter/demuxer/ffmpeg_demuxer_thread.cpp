@@ -613,7 +613,8 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size, u
     std::shared_ptr<SamplePacket> samplePacket = cacheQueue_.Front(trackId);
     FALSE_RETURN_V_MSG_E(samplePacket != nullptr, Status::ERROR_UNKNOWN, "Cache sample is nullptr");
     if (samplePacket->isEOS) {
-        MEDIA_LOG_I("Track " PUBLIC_LOG_D32 " eos", trackId);
+        AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGI, LOG_INTERVAL_MS, LOG_MAX_COUNT,
+            "Track " PUBLIC_LOG_D32 " eos", trackId);
         return Status::END_OF_STREAM;
     }
     FALSE_RETURN_V_MSG_E(samplePacket->pkts.size() > 0, Status::ERROR_UNKNOWN, "Cache sample is empty");
