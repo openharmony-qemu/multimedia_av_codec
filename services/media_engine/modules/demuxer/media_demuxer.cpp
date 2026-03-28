@@ -1658,13 +1658,6 @@ Status MediaDemuxer::HandleSegmentEos(int32_t trackId)
         return ret;
     }
     FALSE_RETURN_V_NOLOG(IsSegmentEos(), Status::ERROR_ONE_TRACK_SEGMENT_EOS);
-    MEDIA_LOG_I("HandleSegmentChange mixed start");
-    int32_t tmpTrackId = IsValidTrackId(videoTrackId_) ? videoTrackId_ : audioTrackId_;
-    ret = HandleSegmentChange(tmpTrackId);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "HandleSegmentChange mixed failed");
-    ret = (tmpTrackId == videoTrackId_ && IsValidTrackId(audioTrackId_)) ? InnerSelectTrack(audioTrackId_) : Status::OK;
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "HandleSegmentChange Select audio track failed");
-    UpdateTrackMap();
     if (IsAVInOneStream()) {
         for (auto &[track, isEos]: hlsSegmentEosMap_) {
             isEos = false;
@@ -1678,6 +1671,13 @@ Status MediaDemuxer::HandleSegmentEos(int32_t trackId)
     if (IsValidTrackId(videoTrackId_)) {
         SetTrackIsBuffering(videoTrackId_, true);
     }
+    MEDIA_LOG_I("HandleSegmentChange mixed start");
+    int32_t tmpTrackId = IsValidTrackId(videoTrackId_) ? videoTrackId_ : audioTrackId_;
+    ret = HandleSegmentChange(tmpTrackId);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "HandleSegmentChange mixed failed");
+    ret = (tmpTrackId == videoTrackId_ && IsValidTrackId(audioTrackId_)) ? InnerSelectTrack(audioTrackId_) : Status::OK;
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "HandleSegmentChange Select audio track failed");
+    UpdateTrackMap();
     MEDIA_LOG_I("HandleSegmentChange mixed end");
     return ret;
 }
