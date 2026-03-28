@@ -56,6 +56,8 @@ public:
     int64_t GetDuration() const override;
     std::pair<int64_t, bool> GetStartInfo() const override;
     Seekable GetSeekable() const override;
+    std::vector<SeekRange> GetSeekableRanges() const override;
+    void SetMediaDuration(int64_t duration) override;
     void SetCallback(const std::shared_ptr<Callback>& cb) override;
     void SetStatusCallback(StatusCallbackFunc cb) override;
     bool GetStartedStatus() override;

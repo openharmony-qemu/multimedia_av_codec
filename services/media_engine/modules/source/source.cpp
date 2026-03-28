@@ -131,6 +131,13 @@ Status Source::SetExtraCache(uint64_t cacheDuration)
     return plugin_->SetExtraCache(cacheDuration);
 }
 
+Status Source::SetMediaDuration(int64_t mediaDuration)
+{
+    FALSE_RETURN_V_MSG_W(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION,
+        "SetMediaDuration source plugin is nullptr");
+    return plugin_->SetMediaDuration(mediaDuration);
+}
+
 void Source::SetBundleName(const std::string& bundleName)
 {
     if (plugin_ != nullptr) {
@@ -426,6 +433,12 @@ Plugins::Seekable Source::GetSeekable()
         }
     } while (seekable_ == Seekable::INVALID && !isInterruptNeeded_.load());
     return seekable_;
+}
+
+std::vector<Plugins::SeekRange> Source::GetSeekableRanges()
+{
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, {}, "GetSeekableRanges, Source plugin is nullptr");
+    return plugin_->GetSeekableRanges();
 }
 
 std::string Source::GetUriSuffix(const std::string& uri)

@@ -39,6 +39,66 @@ constexpr uint32_t MPD_MAX_SIZE = 100 * 1024 * 1024;
 constexpr unsigned int SEGMENT_DURATION_DELTA = 100; // ms
 constexpr double TOLERANCE = 1e-15;
 
+namespace {
+void CollectPeriodRanges(const DashMpdInfo *mpdInfo, uint64_t fallbackDurationMs,
+    std::vector<SeekRange> &periodRanges, int64_t &totalEndNs)
+{
+    totalEndNs = 0;
+    FALSE_RETURN_NOLOG(mpdInfo != nullptr);
+
+    std::vector<DashPeriodInfo*> periodList;
+    for (auto &periodInfo : mpdInfo->periodInfoList_) {
+        if (periodInfo != nullptr) {
+            periodList.push_back(periodInfo);
+        }
+    }
+
+    for (size_t index = 0; index < periodList.size(); ++index) {
+        auto periodInfo = periodList[index];
+        uint64_t startMs = periodInfo->start_;
+        uint64_t durationMs = periodInfo->duration_;
+        if (durationMs == 0) {
+            uint64_t nextStartMs = 0;
+            if (index + 1 < periodList.size()) {
+                nextStartMs = periodList[index + 1]->start_;
+            }
+            if (nextStartMs > startMs) {
+                durationMs = nextStartMs - startMs;
+            } else if (mpdInfo->mediaPresentationDuration_ > startMs) {
+                durationMs = mpdInfo->mediaPresentationDuration_ - startMs;
+            } else if (fallbackDurationMs > startMs) {
+                durationMs = fallbackDurationMs - startMs;
+            }
+        }
+        FALSE_CONTINUE_NOLOG(durationMs != 0);
+
+        int64_t startNs = static_cast<int64_t>(startMs) * MS_2_NS;
+        int64_t endNs = startNs + static_cast<int64_t>(durationMs) * MS_2_NS;
+        if (endNs > startNs) {
+            periodRanges.push_back({startNs, endNs});
+            totalEndNs = std::max(totalEndNs, endNs);
+        }
+    }
+}
+
+std::vector<SeekRange> ClipRangesToWindow(const std::vector<SeekRange> &periodRanges,
+    int64_t windowStart, int64_t windowEnd)
+{
+    std::vector<SeekRange> ranges;
+    for (const auto &range : periodRanges) {
+        int64_t start = std::max(range.start, windowStart);
+        int64_t end = std::min(range.end, windowEnd);
+        if (end > start) {
+            ranges.push_back({start, end});
+        }
+    }
+    if (ranges.empty()) {
+        ranges.push_back({windowStart, windowEnd});
+    }
+    return ranges;
+}
+}
+
 DashMpdDownloader::DashMpdDownloader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
 {
     if (sourceLoader != nullptr) {
@@ -572,6 +632,7 @@ void DashMpdDownloader::ParseManifest()
     if (mpdInfo_ != nullptr) {
         mpdManager_->SetMpdInfo(mpdInfo_, url_);
         mpdManager_->GetDuration(&duration_);
+        UpdateSeekRanges();
         SetOndemandSegBase();
         GetStreamsInfoInMpd();
         ChooseStreamToPlay(MediaAVCodec::MediaType::MEDIA_TYPE_VID);
@@ -955,6 +1016,13 @@ void DashMpdDownloader::SetMpdCallback(const std::shared_ptr<DashMpdCallback>& c
 
 int64_t DashMpdDownloader::GetDuration() const
 {
+    if (mpdInfo_ != nullptr && mpdInfo_->type_ == DashType::DASH_TYPE_DYNAMIC) {
+        uint32_t timeShiftDepth = mpdInfo_->timeShiftBufferDepth_;
+        if (timeShiftDepth > 0) {
+            MEDIA_LOG_I("GetDuration dynamic timeShiftBufferDepth " PUBLIC_LOG_U32, timeShiftDepth);
+            return static_cast<int64_t>(timeShiftDepth) * MS_2_NS;
+        }
+    }
     MEDIA_LOG_I("GetDuration " PUBLIC_LOG_U32, duration_);
     return (duration_ > 0) ? ((int64_t)duration_ * MS_2_NS) : 0;
 }
@@ -977,7 +1045,46 @@ Seekable DashMpdDownloader::GetSeekable() const
     }
 
     MEDIA_LOG_I("GetSeekable end");
-    return mpdInfo_->type_ == DashType::DASH_TYPE_STATIC ? Seekable::SEEKABLE : Seekable::UNSEEKABLE;
+    if (mpdInfo_->type_ == DashType::DASH_TYPE_DYNAMIC) {
+        return mpdInfo_->timeShiftBufferDepth_ > 0 ? Seekable::SEEKABLE : Seekable::UNSEEKABLE;
+    }
+    return Seekable::SEEKABLE;
+}
+
+std::vector<SeekRange> DashMpdDownloader::GetSeekableRanges() const
+{
+    std::lock_guard<std::mutex> lock(seekRangeMutex_);
+    return seekRanges_;
+}
+
+void DashMpdDownloader::UpdateSeekRanges()
+{
+    std::vector<SeekRange> periodRanges;
+    int64_t totalEndNs = 0;
+
+    CollectPeriodRanges(mpdInfo_, duration_, periodRanges, totalEndNs);
+
+    if (periodRanges.empty() && duration_ > 0) {
+        periodRanges.push_back({0, static_cast<int64_t>(duration_) * MS_2_NS});
+        totalEndNs = static_cast<int64_t>(duration_) * MS_2_NS;
+    }
+
+    std::vector<SeekRange> ranges;
+    if (mpdInfo_ != nullptr && mpdInfo_->type_ == DashType::DASH_TYPE_DYNAMIC &&
+        mpdInfo_->timeShiftBufferDepth_ > 0) {
+        int64_t windowNs = static_cast<int64_t>(mpdInfo_->timeShiftBufferDepth_) * MS_2_NS;
+        int64_t windowEnd = totalEndNs > 0 ? totalEndNs : windowNs;
+        int64_t windowStart = windowEnd - windowNs;
+        if (windowStart < 0) {
+            windowStart = 0;
+        }
+        ranges = ClipRangesToWindow(periodRanges, windowStart, windowEnd);
+    } else {
+        ranges = std::move(periodRanges);
+    }
+
+    std::lock_guard<std::mutex> lock(seekRangeMutex_);
+    seekRanges_ = std::move(ranges);
 }
 
 std::vector<uint32_t> DashMpdDownloader::GetBitRates() const

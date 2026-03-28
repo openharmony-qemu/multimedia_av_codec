@@ -85,6 +85,8 @@ public:
 
     std::vector<std::shared_ptr<Meta>> GetStreamMetaInfo() const;
     std::shared_ptr<Meta> GetGlobalMetaInfo() const;
+    std::vector<Plugins::SeekRange> GetSeekableRanges();
+    std::vector<Plugins::SeekRange> GetLoadedRanges();
 
     Status LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
     Status UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;

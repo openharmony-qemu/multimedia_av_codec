@@ -62,6 +62,7 @@ public:
     bool MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode, int32_t streamId) override;
     size_t GetContentLength() const override;
     int64_t GetDuration() const override;
+    std::vector<SeekRange> GetSeekableRanges() const override;
     std::pair<int64_t, bool> GetStartInfo() const override;
     Seekable GetSeekable() const override;
     void SetCallback(const std::shared_ptr<Callback>& cb) override;

@@ -260,6 +260,11 @@ public:
         return Status::OK;
     }
 
+    virtual std::vector<SeekRange> GetSeekableRanges() const
+    {
+        return {};
+    }
+
     virtual bool IsNeedPreDownload()
     {
         return false;
@@ -267,6 +272,12 @@ public:
 
     virtual Status SetReadBlockingFlag(bool isReadBlockingAllowed)
     {
+        return Status::OK;
+    }
+
+    virtual Status SetMediaDuration(int64_t mediaDuration)
+    {
+        (void)mediaDuration;
         return Status::OK;
     }
 

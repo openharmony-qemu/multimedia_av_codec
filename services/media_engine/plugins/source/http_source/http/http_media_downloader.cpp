@@ -999,13 +999,51 @@ size_t HttpMediaDownloader::GetContentLength() const
 
 int64_t HttpMediaDownloader::GetDuration() const
 {
-    return 0;
+    return mediaDuration_.load();
 }
 
 Seekable HttpMediaDownloader::GetSeekable() const
 {
     auto downloadRequest = GetDownloadRequest();
     return downloadRequest ? downloadRequest->IsChunked(isInterruptNeeded_) : Seekable::UNSEEKABLE;
+}
+
+std::vector<SeekRange> HttpMediaDownloader::GetSeekableRanges() const
+{
+    std::shared_lock<std::shared_mutex> lock(downloadRequestMutex_);
+    FALSE_RETURN_V(downloadRequest_ != nullptr, {});
+    size_t fileLength = downloadRequest_->GetFileContentLength();
+    bool isFullyDownloaded = isDownloadFinish_ && downloadRequest_->IsEos();
+    bool canSeek = downloadRequest_->IsServerAcceptRange() || isFullyDownloaded;
+    int64_t durationUs = GetDuration();
+    if (isRingBuffer_ && fileLength == 0 && durationUs <= 0) {
+        return {};
+    }
+    int64_t durationHst = 0;
+    FALSE_RETURN_V(Plugins::Us2HstTime(durationUs, durationHst) && durationHst > 0, {});
+    if (canSeek && GetSeekable() == Seekable::SEEKABLE) {
+        return {{0, durationHst}};
+    }
+
+    bool isOfflineCacheEnabled = sourceLoader_ != nullptr && sourceLoader_->GetenableOfflineCache();
+    FALSE_RETURN_V(isOfflineCacheEnabled && fileLength != 0, {});
+
+    uint64_t maxCachedOffset = std::max<uint64_t>(static_cast<uint64_t>(writeOffset_),
+        static_cast<uint64_t>(readOffset_) + GetCurrentBufferSize());
+    size_t cachedEndOffset = static_cast<size_t>(
+        std::min<uint64_t>(static_cast<uint64_t>(fileLength), maxCachedOffset));
+    FALSE_RETURN_V(cachedEndOffset != 0, {});
+
+    int64_t cachedEndHst = static_cast<int64_t>(static_cast<double>(durationHst) *
+        static_cast<double>(cachedEndOffset) / static_cast<double>(fileLength));
+    cachedEndHst = std::max<int64_t>(0, std::min<int64_t>(cachedEndHst, durationHst));
+    FALSE_RETURN_V(cachedEndHst > 0, {});
+    return {{0, cachedEndHst}};
+}
+
+void HttpMediaDownloader::SetMediaDuration(int64_t duration)
+{
+    mediaDuration_.store(duration);
 }
 
 void HttpMediaDownloader::SetCallback(const std::shared_ptr<Callback>& cb)

@@ -19,6 +19,7 @@
 
 #include <gmock/gmock.h>
 
+#include "meta/meta.h"
 #include "plugin/plugin_base.h"
 #include "plugin/source_plugin.h"
 
@@ -87,6 +88,7 @@ public:
     MOCK_METHOD(Status, Resume, (), ());
     MOCK_METHOD(Status, SetReadBlockingFlag, (bool isReadBlockingAllowed), ());
     MOCK_METHOD(Plugins::Seekable, GetSeekable, (), ());
+    MOCK_METHOD(std::vector<Plugins::SeekRange>, GetSeekableRanges, (), ());
     MOCK_METHOD(Status, GetSize, (uint64_t & fileSize), ());
     MOCK_METHOD(bool, IsSeekToTimeSupported, (), ());
     MOCK_METHOD(bool, IsLocalFd, (), ());
@@ -101,6 +103,7 @@ public:
     MOCK_METHOD(Status, StopBufferring, (bool flag), ());
     MOCK_METHOD(Status, SetStartPts, (int64_t startPts), ());
     MOCK_METHOD(Status, SetExtraCache, (uint64_t cacheDuration), ());
+    MOCK_METHOD(Status, SetMediaDuration, (int64_t mediaDuration), ());
     MOCK_METHOD(Status, SetCurrentBitRate, (int32_t bitRate, int32_t streamID), ());
     MOCK_METHOD(void, SetCallback, (const std::shared_ptr<Callback> &callback), ());
     MOCK_METHOD(bool, IsNeedPreDownload, (), ());

@@ -186,6 +186,7 @@ ohos_unittest("http_media_downloader_unit_test") {
     "init:libbegetutil",
     "ipc:ipc_single",
     "libxml2:libxml2",
+    "googletest:gmock",
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",
     "openssl:libcrypto_shared",

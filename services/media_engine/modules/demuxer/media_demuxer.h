@@ -22,6 +22,7 @@
 #include <shared_mutex>
 #include <unordered_set>
 #include <utility>
+#include <vector>
 
 #include "osal/task/condition_variable.h"
 #include "avcodec_common.h"
@@ -134,6 +135,8 @@ public:
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver);
     bool GetDuration(int64_t& durationMs);
     bool GetStartInfo(std::pair<int64_t, bool>& startInfo);
+    std::vector<Plugins::SeekRange> GetSeekableRanges();
+    std::vector<Plugins::SeekRange> GetLoadedRanges();
     void SetPlayerId(std::string playerId);
     void SetDumpInfo(bool isDump, uint64_t instanceId);
 
@@ -274,6 +277,7 @@ private:
 
     bool GetDrmInfosUpdated(const std::multimap<std::string, std::vector<uint8_t>> &newInfos,
         std::multimap<std::string, std::vector<uint8_t>> &result);
+    bool BuildNetworkLoadedRange(Plugins::SeekRange &range);
     Status ProcessDrmInfos();
     void HandleSourceDrmInfoEvent(const std::multimap<std::string, std::vector<uint8_t>> &info);
     Status ReportDrmInfos(const std::multimap<std::string, std::vector<uint8_t>> &info);

@@ -586,5 +586,21 @@ HWTEST_F(SourceTest, RestartAndClearBuffer_001, TestSize.Level1)
     EXPECT_CALL(*(mockSourcePlugin_), Deinit()).WillOnce(Return(Status::OK));
     source_->RestartAndClearBuffer();
 }
+
+/**
+ * @tc.name Test GetSeekableRanges API
+ * @tc.number GetSeekableRanges_001
+ * @tc.desc Test plugin_ != nullptr
+ */
+HWTEST_F(SourceTest, GetSeekableRanges_001, TestSize.Level1)
+{
+    EXPECT_NE(mockSourcePlugin_, nullptr);
+    std::vector<Plugins::SeekRange> ranges;
+    Plugins::SeekRange range;
+    ranges.push_back(range);
+    EXPECT_CALL(*(mockSourcePlugin_), GetSeekableRanges()).WillRepeatedly(Return(ranges));
+    EXPECT_CALL(*(mockSourcePlugin_), Deinit()).WillOnce(Return(Status::OK));
+    source_->GetSeekableRanges();
+}
 } // namespace Media
 } // namespace OHOS

@@ -55,6 +55,7 @@ public:
     size_t GetContentLength() const override;
     int64_t GetDuration() const override;
     Seekable GetSeekable() const override;
+    std::vector<SeekRange> GetSeekableRanges() const override;
     void SetCallback(const std::shared_ptr<Callback>& cb) override;
     void SetStatusCallback(StatusCallbackFunc cb) override;
     bool GetStartedStatus() override;

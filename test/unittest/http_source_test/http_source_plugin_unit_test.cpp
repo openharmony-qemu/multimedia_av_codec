@@ -338,6 +338,32 @@ HWTEST_F(HttpSourcePluginUnitTest, HttpSourcePlugin_SetParameter3, TestSize.Leve
     EXPECT_EQ(status, Status::OK);
 }
 
+HWTEST_F(HttpSourcePluginUnitTest, HttpSourcePlugin_SetParameter4, TestSize.Level1)
+{
+    std::shared_ptr<Meta> nullMeta = nullptr;
+    Status status = httpSourcePlugin->SetParameter(nullMeta);
+    EXPECT_EQ(status, Status::ERROR_NULL_POINTER);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, HttpSourcePlugin_SetParameter5, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    meta->SetData(Tag::MEDIA_DURATION, static_cast<int64_t>(1000));
+    Status status = httpSourcePlugin->SetParameter(meta);
+    EXPECT_EQ(status, Status::OK);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, HttpSourcePlugin_SetParameter6, TestSize.Level1)
+{
+    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(M3U8_SEGMENT_BASE);
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    httpSourcePlugin->SetSource(source);
+    httpSourcePlugin->SetCallback(sourceCallback);
+    meta->SetData(Tag::MEDIA_DURATION, static_cast<int64_t>(1000));
+    Status status = httpSourcePlugin->SetParameter(meta);
+    EXPECT_EQ(status, Status::OK);
+}
+
 HWTEST_F(HttpSourcePluginUnitTest, HttpSourcePlugin_SetCallback, TestSize.Level1)
 {
     httpSourcePlugin->downloader_ = nullptr;
@@ -454,6 +480,24 @@ HWTEST_F(HttpSourcePluginUnitTest, SEEK_TO_TIME_BY_STREAMID_001, TestSize.Level1
     httpSourcePlugin->Read(1, buffer, 10, 100);
     OSAL::SleepFor(1 * 1000);
     httpSourcePlugin->MediaSeekTimeByStreamId(1, SeekMode::SEEK_NEXT_SYNC, 1);
+    EXPECT_TRUE(httpSourcePlugin);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GET_SEEKABLE_RANGES_001, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    auto ranges = httpSourcePlugin->GetSeekableRanges();
+    EXPECT_EQ(ranges.size(), 0);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GET_SEEKABLE_RANGES_002, TestSize.Level1)
+{
+    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(M3U8_SEGMENT_BASE);
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    httpSourcePlugin->SetSource(source);
+    httpSourcePlugin->SetCallback(sourceCallback);
+    httpSourcePlugin->GetSeekable();
+    auto ranges = httpSourcePlugin->GetSeekableRanges();
     EXPECT_TRUE(httpSourcePlugin);
 }
 

@@ -41,6 +41,7 @@ public:
     int64_t GetDuration() const override;
     std::pair<int64_t, bool> GetStartInfo() const override;
     Seekable GetSeekable() const override;
+    std::vector<SeekRange> GetSeekableRanges() const override;
     void SelectBitRate(uint32_t bitRate) override;
     std::vector<uint32_t> GetBitRates() override;
     uint64_t GetCurrentBitRate() override;
@@ -55,6 +56,8 @@ public:
     void PreParseManifest(const std::string& location) override;
     bool IsParseAndNotifyFinished() override;
     bool IsParseFinished() override;
+    bool IsFragmentInCurrentPlayList(const std::string& url, const std::string& rangeUrl,
+        uint32_t offset, uint32_t length) override;
     std::string GetUrl();
     std::shared_ptr<M3U8MasterPlaylist> GetMaster();
     std::shared_ptr<M3U8VariantStream> GetCurrentVariant();
@@ -83,6 +86,7 @@ public:
     bool IsLiveEnd() override;
     std::shared_ptr<AesDecryptor> GetAesDecryptor(uint64_t keyIndex) override;
 private:
+    bool IsLiveTimeShiftSeekable() const;
     void UpdateMasterInfo(bool isPreParse);
     void UpdateMasterAndNotifyList(bool isPreParse);
     bool UpdatePlaylists(bool isSimple);
@@ -91,6 +95,8 @@ private:
     bool ReadStreamHeader(const std::list<std::shared_ptr<M3U8VariantStream>>& streamList, uint8_t* buffer,
         uint32_t wantLen, uint32_t& readLen, uint32_t streamId);
     void GetMediaStreams(StreamType streamType, std::vector<StreamInfo>& streams);
+    void UpdateSeekRanges(const std::list<std::shared_ptr<M3U8Fragment>>& files);
+    void UpdateLiveBaseOffset(const std::list<std::shared_ptr<M3U8Fragment>>& files);
     void CopyFragmentInfo(PlayInfo& playInfo, std::shared_ptr<M3U8Fragment> file, uint64_t sessionKeyIndex);
     uint64_t KeyChange(std::list<std::shared_ptr<M3U8Fragment>>& files);
     void OnMasterReady(bool needAudioManager, bool needSubtitlesManager);
@@ -127,6 +133,12 @@ private:
     bool isLiveEnd_ {false};
     std::atomic<bool> isPreParseFinished_ {false};
     std::shared_ptr<AesDecryptorManager> aesDecryptorManager_;
+    mutable std::mutex seekRangeMutex_;
+    std::vector<SeekRange> seekRanges_ {};
+    int64_t liveBaseOffset_ {0};
+    int64_t lastFirstSeq_ {-1};
+    std::vector<int64_t> lastSegDurations_ {};
+    mutable std::mutex lastSegDurationsMutex_;
 };
 }
 }

@@ -158,6 +158,59 @@ HWTEST_F(FileSourceUnitTest, FileSource_IsLocalFd_0100, TestSize.Level1)
 {
     ASSERT_TRUE(fileSourcePlugin_->IsLocalFd());
 }
+
+/**
+ * @tc.name: FileSource_GetSeekableRanges_0100
+ * @tc.desc: Test GetSeekableRanges when seekable_ is not SEEKABLE
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileSourceUnitTest, FileSource_GetSeekableRanges_0100, TestSize.Level1)
+{
+    fileSourcePlugin_->seekable_ = Seekable::UNSEEKABLE;
+    auto ranges = fileSourcePlugin_->GetSeekableRanges();
+    ASSERT_TRUE(ranges.empty());
+}
+
+/**
+ * @tc.name: FileSource_GetSeekableRanges_0200
+ * @tc.desc: Test GetSeekableRanges when durationUs_ is 0
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileSourceUnitTest, FileSource_GetSeekableRanges_0200, TestSize.Level1)
+{
+    fileSourcePlugin_->seekable_ = Seekable::SEEKABLE;
+    fileSourcePlugin_->durationUs_ = 0;
+    auto ranges = fileSourcePlugin_->GetSeekableRanges();
+    ASSERT_TRUE(ranges.empty());
+}
+
+/**
+ * @tc.name: FileSource_GetSeekableRanges_0300
+ * @tc.desc: Test GetSeekableRanges when durationUs_ is negative
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileSourceUnitTest, FileSource_GetSeekableRanges_0300, TestSize.Level1)
+{
+    fileSourcePlugin_->seekable_ = Seekable::SEEKABLE;
+    fileSourcePlugin_->durationUs_ = -1;
+    auto ranges = fileSourcePlugin_->GetSeekableRanges();
+    ASSERT_TRUE(ranges.empty());
+}
+
+/**
+ * @tc.name: FileSource_GetSeekableRanges_0400
+ * @tc.desc: Test GetSeekableRanges success case
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileSourceUnitTest, FileSource_GetSeekableRanges_0400, TestSize.Level1)
+{
+    fileSourcePlugin_->seekable_ = Seekable::SEEKABLE;
+    fileSourcePlugin_->durationUs_ = 1000000;
+    auto ranges = fileSourcePlugin_->GetSeekableRanges();
+    ASSERT_EQ(ranges.size(), 1);
+    ASSERT_EQ(ranges[0].start, 0);
+    ASSERT_GT(ranges[0].end, 0);
+}
 } // namespace FileSource
 } // namespace Plugins
 } // namespace Media

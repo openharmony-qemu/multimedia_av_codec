@@ -93,6 +93,7 @@ public:
     int64_t GetDuration() const;
     std::pair<int64_t, bool> GetStartInfo() const;
     Seekable GetSeekable() const;
+    std::vector<SeekRange> GetSeekableRanges() const;
     void SetCallback(const std::shared_ptr<Callback>& cb);
     void OnPlayListChanged(const std::vector<PlayInfo>& playList) override;
     void OnMasterReady(bool needAudioManager, bool needSubtitlesManager) override;
@@ -233,6 +234,7 @@ private:
     bool CheckLiveToVodEnd();
     bool CheckVodEnd();
     bool CheckLiveLastSegment();
+    std::vector<PlayInfo> SeekListHelper(bool isLive);
 
 private:
     HlsSegmentType type_ = HlsSegmentType::SEG_VIDEO;
@@ -253,6 +255,7 @@ private:
     std::map<std::string, bool> fragmentDownloadStart;
     std::map<std::string, bool> fragmentPushed;
     std::deque<PlayInfo> backPlayList_;
+    std::deque<PlayInfo> seekCandidates_;
     std::atomic<bool> isSelectingBitrate_ {false};
     bool isDownloadStarted_ {false};
     std::atomic<bool> lastPlaychanged_ {false};
@@ -382,6 +385,8 @@ private:
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
     InfoIndexMap InfoIndexMap_;
     std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
+    bool isSeekedFlag_ {false};
+    mutable std::mutex seekCandidatesMutex_;
 };
 }
 }
