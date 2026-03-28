@@ -626,8 +626,7 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size, u
     }
 
     const auto* snapshot = GetStreamSnapshot(trackId);
-    FALSE_RETURN_V_MSG_E(snapshot != nullptr && snapshot->valid,
-        Status::ERROR_UNKNOWN, "Stream snapshot is invalid");
+    FALSE_RETURN_V_MSG_E(snapshot != nullptr && snapshot->valid, Status::ERROR_UNKNOWN, "Stream snapshot is invalid");
     if ((std::count(g_streamContainedXPS.begin(), g_streamContainedXPS.end(), snapshot->codecId) > 0)) {
         Plugins::AVPacketWrapperPtr firstWrapper = samplePacket->pkts[0];
         if (firstWrapper != nullptr && firstWrapper->GetAVPacket() != nullptr &&
