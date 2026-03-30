@@ -2016,7 +2016,7 @@ typedef enum OH_BitrateMode {
      * @since 20
      */
     BITRATE_MODE_SQR = 3,
-    /** CBR for High Quality. 
+    /** CBR for High Quality.
      * @since 26.0.0
      */
     BITRATE_MODE_CBR_HIGH_QUALITY = 4
