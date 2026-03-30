@@ -1943,7 +1943,7 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
             ScopedTimer timer("seek closest", SEEK_LOCAL_WARNING_MS);
             ret = demuxerPluginManager_->SeekTo(seekTime, mode, realSeekTime);
         }
-        if (IsCloudFd()) {
+        if (!IsLocalFd()) {
             ResetSampleQueueStatus(seekTime);
         }
     }
@@ -1998,7 +1998,7 @@ Status MediaDemuxer::SeekToStart(int64_t seekTime, Plugins::SeekMode mode, int64
         MEDIA_LOG_I("Demuxer seek");
         ScopedTimer timer("SeekToStart", SEEK_LOCAL_WARNING_MS);
         ret = demuxerPluginManager_->SeekToStart(seekTime, realSeekTime);
-        if (IsCloudFd()) {
+        if (!IsLocalFd()) {
             ResetSampleQueueStatus(seekTime);
         }
     }
@@ -2049,7 +2049,7 @@ Status MediaDemuxer::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode,
         MEDIA_LOG_I("Demuxer seek");
         ScopedTimer timer("seek closest", SEEK_LOCAL_WARNING_MS);
         ret = demuxerPluginManager_->SeekToKeyFrame(seekTime, mode, realSeekTime, callerType);
-        if (IsCloudFd()) {
+        if (!IsLocalFd()) {
             ResetSampleQueueStatus(seekTime);
         }
     }
