@@ -477,6 +477,359 @@ HWTEST_F(DashMediaDownloaderUnitTest, STOP_BUFFERING_001, TestSize.Level1)
     EXPECT_EQ(mediaDownloader->StopBufferring(true), Status::OK);
     EXPECT_EQ(mediaDownloader->StopBufferring(false), Status::OK);
 }
+
+std::shared_ptr<DashMediaDownloader> CreateAndInitMediaDownloader(const std::string& testUrl)
+{
+    auto mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
+    mediaDownloader->Init();
+    std::map<std::string, std::string> httpHeader;
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {};
+    mediaDownloader->SetStatusCallback(statusCallback);
+    mediaDownloader->Open(testUrl, httpHeader);
+    mediaDownloader->GetSeekable();
+    return mediaDownloader;
+}
+
+void PrepareReadDataInfo(ReadDataInfo& readDataInfo, int32_t streamId, int32_t nextStreamId, uint32_t wantReadLength)
+{
+    readDataInfo.streamId_ = streamId;
+    readDataInfo.nextStreamId_ = nextStreamId;
+    readDataInfo.wantReadLength_ = wantReadLength;
+}
+
+HWTEST_F(DashMediaDownloaderUnitTest, TEST_DASH_MEDIA_DOWNLOADER_READ_001, TestSize.Level1)
+{
+    auto mediaDownloader = CreateAndInitMediaDownloader(MPD_SEGMENT_LIST);
+    std::vector<StreamInfo> streams;
+    mediaDownloader->GetStreamInfo(streams);
+    EXPECT_GT(streams.size(), 0);
+
+    unsigned char buff[1024];
+    ReadDataInfo readDataInfo;
+    PrepareReadDataInfo(readDataInfo, 10, streams[0].streamId, 1024);
+    Status status = mediaDownloader->Read(buff, readDataInfo);
+    EXPECT_EQ(status, Status::END_OF_STREAM);
+    mediaDownloader->Close(false);
+}
+
+HWTEST_F(DashMediaDownloaderUnitTest, TEST_DASH_MEDIA_DOWNLOADER_READ_002, TestSize.Level1)
+{
+    auto mediaDownloader = CreateAndInitMediaDownloader(MPD_SEGMENT_LIST);
+    std::vector<StreamInfo> streams;
+    mediaDownloader->GetStreamInfo(streams);
+    EXPECT_GT(streams.size(), 0);
+
+    unsigned char* buff = nullptr;
+    ReadDataInfo readDataInfo;
+    PrepareReadDataInfo(readDataInfo, streams[0].streamId, streams[0].streamId, 1024);
+    Status status = mediaDownloader->Read(buff, readDataInfo);
+    EXPECT_EQ(status, Status::END_OF_STREAM);
+    mediaDownloader->Close(false);
+}
+
+HWTEST_F(DashMediaDownloaderUnitTest, TEST_DASH_MEDIA_DOWNLOADER_READ_003, TestSize.Level1)
+{
+    auto mediaDownloader = CreateAndInitMediaDownloader(MPD_SEGMENT_LIST);
+    std::vector<StreamInfo> streams;
+    mediaDownloader->GetStreamInfo(streams);
+    EXPECT_GT(streams.size(), 0);
+
+    unsigned char buff[1024];
+    ReadDataInfo readDataInfo;
+    PrepareReadDataInfo(readDataInfo, -1, streams[0].streamId, 1024);
+    Status status = mediaDownloader->Read(buff, readDataInfo);
+    EXPECT_EQ(status, Status::END_OF_STREAM);
+    mediaDownloader->Close(false);
+}
+
+HWTEST_F(DashMediaDownloaderUnitTest, TEST_DASH_MEDIA_DOWNLOADER_READ_004, TestSize.Level1)
+{
+    auto mediaDownloader = CreateAndInitMediaDownloader(MPD_SEGMENT_LIST);
+    std::vector<StreamInfo> streams;
+    mediaDownloader->GetStreamInfo(streams);
+    EXPECT_GT(streams.size(), 0);
+
+    mediaDownloader->SetDownloadErrorState();
+    unsigned char buff[1024];
+    ReadDataInfo readDataInfo;
+    PrepareReadDataInfo(readDataInfo, streams[0].streamId, streams[0].streamId, 1024);
+    Status status = mediaDownloader->Read(buff, readDataInfo);
+    EXPECT_EQ(status, Status::ERROR_AGAIN);
+    mediaDownloader->Close(false);
+}
+
+HWTEST_F(DashMediaDownloaderUnitTest, TEST_DASH_MEDIA_DOWNLOADER_READ_005, TestSize.Level1)
+{
+    auto mediaDownloader = CreateAndInitMediaDownloader(MPD_SEGMENT_LIST);
+    std::vector<StreamInfo> streams;
+    mediaDownloader->GetStreamInfo(streams);
+    EXPECT_GT(streams.size(), 0);
+
+    unsigned char buff[1024];
+    ReadDataInfo readDataInfo;
+    PrepareReadDataInfo(readDataInfo, streams[0].streamId, streams[0].streamId, 1024);
+    Status status = Status::OK;
+    int readCount = 0;
+    int maxReadCount = 1000;
+    while (status == Status::OK && readCount < maxReadCount) {
+        status = mediaDownloader->Read(buff, readDataInfo);
+        if (readDataInfo.realReadLength_ > 0) {
+            readCount++;
+        } else {
+            usleep(100);
+        }
+    }
+    EXPECT_EQ(status, Status::END_OF_STREAM);
+    mediaDownloader->Close(false);
+}
+
+HWTEST_F(DashMediaDownloaderUnitTest, TEST_DASH_MEDIA_DOWNLOADER_READ_006, TestSize.Level1)
+{
+    auto mediaDownloader = CreateAndInitMediaDownloader(MPD_SEGMENT_LIST);
+    std::vector<StreamInfo> streams;
+    mediaDownloader->GetStreamInfo(streams);
+    EXPECT_GT(streams.size(), 0);
+
+    mediaDownloader->SetInterruptState(true);
+    unsigned char buff[1024];
+    ReadDataInfo readDataInfo;
+    PrepareReadDataInfo(readDataInfo, streams[0].streamId, streams[0].streamId, 1024);
+    Status status = mediaDownloader->Read(buff, readDataInfo);
+    EXPECT_EQ(status, Status::END_OF_STREAM);
+    mediaDownloader->Close(false);
+}
+
+HWTEST_F(DashMediaDownloaderUnitTest, TEST_DASH_MEDIA_DOWNLOADER_SET_DEMUXER_STATE_001, TestSize.Level1)
+{
+    auto mediaDownloader = CreateAndInitMediaDownloader(MPD_SEGMENT_LIST);
+    std::vector<StreamInfo> streams;
+    mediaDownloader->GetStreamInfo(streams);
+    EXPECT_GT(streams.size(), 0);
+
+    int32_t invalidStreamId = 9999;
+    Status status = mediaDownloader->SetCurrentBitRate(0, invalidStreamId);
+    EXPECT_EQ(status, Status::OK);
+    mediaDownloader->Close(false);
+}
+
+HWTEST_F(DashMediaDownloaderUnitTest, TEST_DASH_MEDIA_DOWNLOADER_UPDATE_DOWNLOAD_FINISHED_001, TestSize.Level1)
+{
+    auto mediaDownloader = CreateAndInitMediaDownloader(MPD_SEGMENT_LIST);
+    std::vector<StreamInfo> streams;
+    mediaDownloader->GetStreamInfo(streams);
+    EXPECT_GT(streams.size(), 0);
+
+    int32_t invalidStreamId = 9999;
+    mediaDownloader->UpdateDownloadFinished(invalidStreamId);
+    mediaDownloader->Close(false);
+}
+
+HWTEST_F(DashMediaDownloaderUnitTest, TEST_DASH_MEDIA_DOWNLOADER_UPDATE_DOWNLOAD_FINISHED_002, TestSize.Level1)
+{
+    auto mediaDownloader = CreateAndInitMediaDownloader(MPD_MULTI_AUDIO_SUB);
+    std::vector<StreamInfo> streams;
+    mediaDownloader->GetStreamInfo(streams);
+    EXPECT_GT(streams.size(), 0);
+
+    int32_t subtitleStreamId = -1;
+    for (auto stream : streams) {
+        if (stream.type == SUBTITLE) {
+            subtitleStreamId = stream.streamId;
+            break;
+        }
+    }
+    
+    if (subtitleStreamId != -1) {
+        mediaDownloader->UpdateDownloadFinished(subtitleStreamId);
+    }
+    mediaDownloader->Close(false);
+}
+
+HWTEST_F(DashMediaDownloaderUnitTest, TEST_DASH_MEDIA_DOWNLOADER_GET_SEEKABLE_001, TestSize.Level1)
+{
+    auto mediaDownloader = CreateAndInitMediaDownloader(MPD_SEGMENT_LIST);
+    mediaDownloader->SetInterruptState(true);
+    Seekable seekable = mediaDownloader->GetSeekable();
+    EXPECT_EQ(seekable, Seekable::INVALID);
+    mediaDownloader->Close(false);
+}
+
+HWTEST_F(DashMediaDownloaderUnitTest, TEST_DASH_MEDIA_DOWNLOADER_GET_SEEKABLE_003, TestSize.Level1)
+{
+    auto mediaDownloader = CreateAndInitMediaDownloader(MPD_SEGMENT_LIST);
+    mediaDownloader->SetInterruptState(true);
+    Seekable seekable = mediaDownloader->GetSeekable();
+    EXPECT_EQ(seekable, Seekable::INVALID);
+    mediaDownloader->Close(false);
+}
+
+HWTEST_F(DashMediaDownloaderUnitTest, TEST_DASH_MEDIA_DOWNLOADER_POST_BUFFERING_EVENT_001, TestSize.Level1)
+{
+    auto mediaDownloader = CreateAndInitMediaDownloader(MPD_SEGMENT_LIST);
+    std::vector<StreamInfo> streams;
+    mediaDownloader->GetStreamInfo(streams);
+    EXPECT_GT(streams.size(), 0);
+
+    int32_t videoStreamId = -1;
+    for (auto stream : streams) {
+        if (stream.type == VIDEO) {
+            videoStreamId = stream.streamId;
+            break;
+        }
+    }
+    EXPECT_NE(videoStreamId, -1);
+
+    unsigned char buff[1024];
+    ReadDataInfo readDataInfo;
+    PrepareReadDataInfo(readDataInfo, videoStreamId, videoStreamId, 1024);
+    
+    Status status = Status::OK;
+    int readCount = 0;
+    int maxReadCount = 100;
+    while (status == Status::OK && readCount < maxReadCount) {
+        status = mediaDownloader->Read(buff, readDataInfo);
+        if (readDataInfo.realReadLength_ > 0) {
+            readCount++;
+        } else {
+            usleep(100);
+        }
+    }
+    
+    EXPECT_EQ(status, Status::OK);
+    
+    mediaDownloader->Close(false);
+}
+
+HWTEST_F(DashMediaDownloaderUnitTest, TEST_DASH_MEDIA_DOWNLOADER_POST_BUFFERING_EVENT_002, TestSize.Level1)
+{
+    auto mediaDownloader = CreateAndInitMediaDownloader(MPD_SEGMENT_LIST);
+    std::vector<StreamInfo> streams;
+    mediaDownloader->GetStreamInfo(streams);
+    EXPECT_GT(streams.size(), 0);
+    int32_t videoStreamId = -1;
+    for (auto stream : streams) {
+        if (stream.type == VIDEO) {
+            videoStreamId = stream.streamId;
+            break;
+        }
+    }
+    EXPECT_NE(videoStreamId, -1);
+    unsigned char buff[1024];
+    ReadDataInfo readDataInfo;
+    PrepareReadDataInfo(readDataInfo, videoStreamId, videoStreamId, 1024);
+    Status status = Status::OK;
+    int readCount = 0;
+    int maxReadCount = 100;
+    while (status == Status::OK && readCount < maxReadCount) {
+        status = mediaDownloader->Read(buff, readDataInfo);
+        if (readDataInfo.realReadLength_ > 0) {
+            readCount++;
+        } else {
+            usleep(100);
+        }
+    }
+    EXPECT_EQ(status, Status::OK);
+    
+    mediaDownloader->Close(false);
+}
+
+HWTEST_F(DashMediaDownloaderUnitTest, TEST_DASH_MEDIA_DOWNLOADER_SELECT_STREAM_001, TestSize.Level1)
+{
+    auto mediaDownloader = CreateAndInitMediaDownloader(MPD_SEGMENT_LIST);
+    int32_t invalidStreamId = 9999;
+    Status status = mediaDownloader->SelectStream(invalidStreamId);
+    EXPECT_EQ(status, Status::ERROR_INVALID_PARAMETER);
+    mediaDownloader->Close(false);
+}
+
+HWTEST_F(DashMediaDownloaderUnitTest, TEST_DASH_MEDIA_DOWNLOADER_SEEK_TO_TS_001, TestSize.Level1)
+{
+    auto mediaDownloader = CreateAndInitMediaDownloader(MPD_SEGMENT_LIST);
+    mediaDownloader->SeekToTs(-1);
+    int64_t duration = mediaDownloader->GetDuration();
+    EXPECT_GE(duration, 0);
+    mediaDownloader->Close(false);
+}
+
+HWTEST_F(DashMediaDownloaderUnitTest, TEST_DASH_MEDIA_DOWNLOADER_SEEK_TO_TS_002, TestSize.Level1)
+{
+    auto mediaDownloader = CreateAndInitMediaDownloader(MPD_SEGMENT_LIST);
+    int64_t duration = mediaDownloader->GetDuration();
+    EXPECT_GE(duration, 0);
+    int64_t seekTimeNs = INT64_MAX;
+    mediaDownloader->SeekToTs(seekTimeNs);
+    mediaDownloader->Close(false);
+}
+
+HWTEST_F(DashMediaDownloaderUnitTest, TEST_DASH_MEDIA_DOWNLOADER_SET_PLAY_STRATEGY_001, TestSize.Level1)
+{
+    auto mediaDownloader = CreateAndInitMediaDownloader(MPD_SEGMENT_LIST);
+    std::shared_ptr<PlayStrategy> playStrategy = nullptr;
+    mediaDownloader->SetPlayStrategy(playStrategy);
+    int64_t duration = mediaDownloader->GetDuration();
+    EXPECT_GE(duration, 0);
+    mediaDownloader->Close(false);
+}
+
+HWTEST_F(DashMediaDownloaderUnitTest, TEST_DASH_MEDIA_DOWNLOADER_ON_MPD_INFO_UPDATE_001, TestSize.Level1)
+{
+    auto mediaDownloader = CreateAndInitMediaDownloader(MPD_SEGMENT_LIST);
+    mediaDownloader->OnMpdInfoUpdate(DASH_MPD_EVENT_OPEN_OK);
+    int64_t duration = mediaDownloader->GetDuration();
+    EXPECT_GE(duration, 0);
+    mediaDownloader->Close(false);
+}
+
+HWTEST_F(DashMediaDownloaderUnitTest, TEST_DASH_MEDIA_DOWNLOADER_ON_MPD_INFO_UPDATE_003, TestSize.Level1)
+{
+    auto mediaDownloader = CreateAndInitMediaDownloader(MPD_SEGMENT_LIST);
+    std::vector<StreamInfo> streams;
+    mediaDownloader->GetStreamInfo(streams);
+    EXPECT_GT(streams.size(), 0);
+
+    int32_t videoStreamId = -1;
+    for (auto stream : streams) {
+        if (stream.type == VIDEO) {
+            videoStreamId = stream.streamId;
+            break;
+        }
+    }
+    EXPECT_NE(videoStreamId, -1);
+    unsigned char buff[1024];
+    ReadDataInfo readDataInfo;
+    PrepareReadDataInfo(readDataInfo, videoStreamId, videoStreamId, 1024);
+    Status status = Status::OK;
+    int readCount = 0;
+    int maxReadCount = 1000;
+    while (status == Status::OK && readCount < maxReadCount) {
+        status = mediaDownloader->Read(buff, readDataInfo);
+        if (readDataInfo.realReadLength_ > 0) {
+            readCount++;
+        } else {
+            usleep(100);
+        }
+    }
+    
+    EXPECT_EQ(readDataInfo.isEos_, true);
+    EXPECT_EQ(status, Status::END_OF_STREAM);
+    mediaDownloader->OnMpdInfoUpdate(DASH_MPD_EVENT_STREAM_INIT);
+    mediaDownloader->Close(false);
+}
+
+HWTEST_F(DashMediaDownloaderUnitTest, TEST_DASH_MEDIA_DOWNLOADER_OPEN_INIT_SEGMENT_001, TestSize.Level1)
+{
+    auto mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
+    mediaDownloader->Init();
+    std::string testUrl = MPD_SEGMENT_LIST;
+    std::map<std::string, std::string> httpHeader;
+    mediaDownloader->Open(testUrl, httpHeader);
+    mediaDownloader->GetSeekable();
+    mediaDownloader->OnMpdInfoUpdate(DASH_MPD_EVENT_STREAM_INIT);
+    int64_t duration = mediaDownloader->GetDuration();
+    EXPECT_GE(duration, 0);
+    mediaDownloader->Close(false);
+}
 }
 }
 }
