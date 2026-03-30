@@ -185,7 +185,9 @@ int32_t HEncoder::SetLTRParam(const Format &format)
 int32_t HEncoder::EnableEncoderParamsFeedback(const Format &format)
 {
     int32_t enableParamsFeedback {};
-    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_PARAMS_FEEDBACK, enableParamsFeedback)) {
+    if (enableTSVC_) {
+        enableParamsFeedback = 1;
+    } else if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_PARAMS_FEEDBACK, enableParamsFeedback)) {
         return AVCS_ERR_OK;
     }
     OMX_CONFIG_BOOLEANTYPE param {};
