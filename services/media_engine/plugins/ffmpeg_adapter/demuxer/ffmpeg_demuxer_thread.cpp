@@ -182,7 +182,7 @@ int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize, int
 
 int FFmpegDemuxerPlugin::HandleReadEOS(IOContext* ioContext)
 {
-    MEDIA_LOG_I("Read end");
+    AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGW, LOG_INTERVAL_MS, LOG_MAX_COUNT, "Read end");
     ioContext->eos = true;
     return AVERROR_EOF;
 }
