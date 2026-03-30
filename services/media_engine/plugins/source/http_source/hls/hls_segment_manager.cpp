@@ -243,6 +243,7 @@ HlsSegmentManager::~HlsSegmentManager()
     if (playlistDownloader_ != nullptr) {
         playlistDownloader_ = nullptr;
     }
+    SetAesDecryptor(nullptr);
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsSegmentManager dtor out, type: %{public}d, "
         "writeTsIndex: " PUBLIC_LOG_U32 " writeOffset: " PUBLIC_LOG_U64, FAKE_POINTER(this), type_,
         writeTsIndex_, writeOffset_);
@@ -328,7 +329,19 @@ void HlsSegmentManager::PutRequestIntoDownloader(const PlayInfo& playInfo)
 void HlsSegmentManager::UpdateAesDecryptor(const PlayInfo& playInfo)
 {
     FALSE_RETURN(playlistDownloader_ != nullptr);
-    aesDecryptor_ = playlistDownloader_->GetAesDecryptor(playInfo.keyIndex_);
+    SetAesDecryptor(playlistDownloader_->GetAesDecryptor(playInfo.keyIndex_));
+}
+
+void HlsSegmentManager::SetAesDecryptor(std::shared_ptr<AesDecryptor> aesDecryptor)
+{
+    std::unique_lock<std::shared_mutex> lock(aesDecryptorMutex_);
+    aesDecryptor_ = aesDecryptor;
+}
+
+std::shared_ptr<AesDecryptor> HlsSegmentManager::GetAesDecryptor()
+{
+    std::shared_lock<std::shared_mutex> lock(aesDecryptorMutex_);
+    return aesDecryptor_;
 }
 
 void HlsSegmentManager::SaveHttpHeader(const std::map<std::string, std::string>& httpHeader)
@@ -693,7 +706,7 @@ void HlsSegmentManager::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readD
     ffmpegOffset_ = readDataInfo.ffmpegOffset + readDataInfo.realReadLength_;
     if ((IsHlsFmp4() && readDataInfo.streamId_ > 0) || IsPureByteRange()) {
         uint64_t remain = cacheMediaBuffer_->GetBufferSize(readOffset_);
-        if (remain > 0 && remain < AES_BLOCK_LEN && aesDecryptor_ != nullptr) {
+        if (remain > 0 && remain < AES_BLOCK_LEN && GetAesDecryptor() != nullptr) {
             size_t readRemain = cacheMediaBuffer_->Read(buff, readOffset_, readDataInfo.wantReadLength_);
             readOffset_ += readRemain;
             ffmpegOffset_ += readRemain;
@@ -730,7 +743,7 @@ void HlsSegmentManager::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readD
 
 void HlsSegmentManager::RemoveFmp4PaddingData(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    if (aesDecryptor_ == nullptr || readDataInfo.realReadLength_ < 1) {
+    if (GetAesDecryptor() == nullptr || readDataInfo.realReadLength_ < 1) {
         return;
     }
     if ((IsHlsFmp4() && readDataInfo.streamId_ > 0) || IsPureByteRange()) {
@@ -856,8 +869,9 @@ void HlsSegmentManager::PrepareToSeek()
     singleBlockLen_ = 0;
     NZERO_LOG(memset_s(decryptBuffer_, AES_DECRYPT_LEN, 0x00, AES_DECRYPT_LEN));
     decryptLen_ = 0;
-    FALSE_RETURN_MSG(aesDecryptor_ != nullptr, "aesDecryptor_ is nullptr");
-    auto ret = memcpy_s(aesDecryptor_->iv_, AES_BLOCK_LEN, aesDecryptor_->initIv_, AES_BLOCK_LEN);
+    auto aesDecryptor = GetAesDecryptor();
+    FALSE_RETURN_MSG(aesDecryptor != nullptr, "aesDecryptor_ is nullptr");
+    auto ret = memcpy_s(aesDecryptor->iv_, AES_BLOCK_LEN, aesDecryptor->initIv_, AES_BLOCK_LEN);
     if (ret != 0) {
         MEDIA_LOG_E("iv copy error, type: %{public}d", type_);
     }
@@ -991,7 +1005,7 @@ void HlsSegmentManager::OnPlayListChanged(const std::vector<PlayInfo>& playList)
         }
         PutRequestIntoDownloader(playInfo);
     }
-    if (playlistDownloader_->IsLiveEnd()) {
+    if (playlistDownloader_ != nullptr && playlistDownloader_->IsLiveEnd()) {
         lastPlaychanged_.store(true);
     }
     MEDIA_LOG_I("HLS OnPlayListChanged out playlist: %{public}zu, back: %{public}zu, writeTsIndex_: %{public}u,"
@@ -1156,7 +1170,7 @@ uint32_t HlsSegmentManager::SaveData(uint8_t* data, uint32_t len, bool notBlock)
     }
     startedPlayStatus_ = true;
     uint32_t res = 0;
-    if (aesDecryptor_ == nullptr) {
+    if (GetAesDecryptor() == nullptr) {
         res = SaveCacheBufferData(data, len, notBlock);
     } else {
         res = SaveEncryptData(data, len, notBlock);
@@ -1183,6 +1197,8 @@ uint32_t HlsSegmentManager::FillSingleBlock(uint8_t *&data, uint32_t &len)
 
 uint32_t HlsSegmentManager::DecryptDataLeft(uint8_t *&data, uint32_t &len, bool notBlock)
 {
+    auto aesDecryptor = GetAesDecryptor();
+    FALSE_RETURN_V_MSG(aesDecryptor != nullptr, 0, "aesDecryptor is nullptr");
     if (!singleBlockLen_) { // if single block has no data, decrypt from 'SaveData' buffer
         return 0;
     }
@@ -1192,7 +1208,7 @@ uint32_t HlsSegmentManager::DecryptDataLeft(uint8_t *&data, uint32_t &len, bool 
     FillSingleBlock(data, len);
 
     // decrypt single block
-    aesDecryptor_->Decrypt(singleBlock_, decryptBuffer_, singleBlockLen_);
+    aesDecryptor->Decrypt(singleBlock_, decryptBuffer_, singleBlockLen_);
     decryptLen_ = singleBlockLen_;
     singleBlockLen_ = 0;
 
@@ -1207,12 +1223,14 @@ uint32_t HlsSegmentManager::DecryptDataLeft(uint8_t *&data, uint32_t &len, bool 
 
 uint32_t HlsSegmentManager::DecryptData(uint8_t *&data, uint32_t &len, bool notBlock)
 {
+    auto aesDecryptor = GetAesDecryptor();
+    FALSE_RETURN_V_MSG(aesDecryptor != nullptr, 0, "aesDecryptor is nullptr");
     // decrypt encryptedBuffer, min(AES_DECRYPT_COUNT, encryptedLen / AES_BLOCK_LEN) * AES_BLOCK_LEN
     auto decryptCount = std::min(AES_DECRYPT_COUNT, len / AES_BLOCK_LEN);
     auto aesDecryptLen = decryptCount * AES_BLOCK_LEN;
 
     // decrypt buffer
-    aesDecryptor_->Decrypt(data, decryptBuffer_, aesDecryptLen);
+    aesDecryptor->Decrypt(data, decryptBuffer_, aesDecryptLen);
 
     // update encrypt buffer index
     len -= aesDecryptLen;
@@ -1594,8 +1612,9 @@ void HlsSegmentManager::UpdateDownloadFinished(const std::string &url, const std
         AutoLock lock(tsStorageInfoMutex_);
         tsStorageInfo_[writeTsIndex_].second = true;
     }
-    if (aesDecryptor_ != nullptr) {
-        NZERO_LOG(memcpy_s(aesDecryptor_->iv_, AES_BLOCK_LEN, aesDecryptor_->initIv_, AES_BLOCK_LEN));
+    auto aesDecryptor = GetAesDecryptor();
+    if (aesDecryptor != nullptr) {
+        NZERO_LOG(memcpy_s(aesDecryptor->iv_, AES_BLOCK_LEN, aesDecryptor->initIv_, AES_BLOCK_LEN));
     }
     auto playInfo = playList_->Pop(POP_TIME_OUT_MS);
     if (!playInfo.url_.empty()) {
