@@ -341,17 +341,17 @@ bool VideoTrack::IsColor() const
     return isColor_;
 }
 
-ColorPrimary VideoTrack::GetColorPrimaries() const
+int32_t VideoTrack::GetColorPrimaries() const
 {
     return colorPrimaries_;
 }
 
-TransferCharacteristic VideoTrack::GetColorTransfer() const
+int32_t VideoTrack::GetColorTransfer() const
 {
     return colorTransfer_;
 }
 
-MatrixCoefficient VideoTrack::GetColorMatrixCoeff() const
+int32_t VideoTrack::GetColorMatrixCoeff() const
 {
     return colorMatrixCoeff_;
 }
@@ -398,24 +398,32 @@ void VideoTrack::UpdateUserMeta(const std::shared_ptr<Meta> &userMeta)
 bool VideoTrack::InitColor(const std::shared_ptr<Meta> &trackDesc)
 {
     isColor_ = false;
+    ColorPrimary primary;
+    TransferCharacteristic transfer;
+    MatrixCoefficient matrix;
+    bool range;
     if (trackDesc->Find(Tag::VIDEO_COLOR_PRIMARIES) != trackDesc->end() ||
         trackDesc->Find(Tag::VIDEO_COLOR_TRC) != trackDesc->end() ||
         trackDesc->Find(Tag::VIDEO_COLOR_MATRIX_COEFF) != trackDesc->end() ||
         trackDesc->Find(Tag::VIDEO_COLOR_RANGE) != trackDesc->end()) {
-        trackDesc->Get<Tag::VIDEO_COLOR_PRIMARIES>(colorPrimaries_);
-        trackDesc->Get<Tag::VIDEO_COLOR_TRC>(colorTransfer_);
-        trackDesc->Get<Tag::VIDEO_COLOR_MATRIX_COEFF>(colorMatrixCoeff_);
-        trackDesc->Get<Tag::VIDEO_COLOR_RANGE>(colorRange_);
+        if (trackDesc->Get<Tag::VIDEO_COLOR_PRIMARIES>(primary)) {
+            colorPrimaries_ = static_cast<int32_t>(primary);
+        }
+        if (trackDesc->Get<Tag::VIDEO_COLOR_TRC>(transfer)) {
+            colorTransfer_ = static_cast<int32_t>(transfer);
+        }
+        if (trackDesc->Get<Tag::VIDEO_COLOR_MATRIX_COEFF>(matrix)) {
+            colorMatrixCoeff_ = static_cast<int32_t>(matrix);
+        }
+        if (trackDesc->Get<Tag::VIDEO_COLOR_RANGE>(range)) {
+            colorRange_ = range;
+        }
         MEDIA_LOG_I("color info.: primary %{public}d, transfer %{public}d, matrix coeff %{public}d,"
-            " range %{public}d,", static_cast<int32_t>(colorPrimaries_), static_cast<int32_t>(colorTransfer_),
-            static_cast<int32_t>(colorMatrixCoeff_), static_cast<int32_t>(colorRange_));
-        if (!CheckColorPrimary(colorPrimaries_) || !CheckColorTransfer(colorTransfer_) ||
-            !CheckColorMatrix(colorMatrixCoeff_)) {
+            " range %{public}d", colorPrimaries_, colorTransfer_, colorMatrixCoeff_, colorRange_);
+        if (!CheckColorPrimary(primary) || !CheckColorTransfer(transfer) || !CheckColorMatrix(matrix)) {
             return false;
         }
-        if (colorPrimaries_ != ColorPrimary::UNSPECIFIED &&
-            colorTransfer_ != TransferCharacteristic::UNSPECIFIED &&
-            colorMatrixCoeff_ != MatrixCoefficient::UNSPECIFIED) {
+        if (colorPrimaries_ != -1 && colorTransfer_ != -1 && colorMatrixCoeff_ != -1) {
             isColor_ = true;
         }
     }
@@ -645,18 +653,15 @@ void VideoTrack::DisposeColor()
         HevcParser* parser = VideoParser::GetVideoParserPtr<HevcParser>(videoParser_);
         if (parser != nullptr) {
             if (parser->IsParserColor()) {
-                colorPrimaries_ = static_cast<ColorPrimary>(parser->GetColorPrimary());
-                colorTransfer_ = static_cast<TransferCharacteristic>(parser->GetColorTransfer());
-                colorMatrixCoeff_ = static_cast<MatrixCoefficient>(parser->GetColorMatrixCoeff());
+                colorPrimaries_ = static_cast<int32_t>(parser->GetColorPrimary());
+                colorTransfer_ = static_cast<int32_t>(parser->GetColorTransfer());
+                colorMatrixCoeff_ = static_cast<int32_t>(parser->GetColorMatrixCoeff());
                 colorRange_ = parser->GetColorRange();
             }
             MEDIA_LOG_I("color info. isParser:%{public}d: primary %{public}d, transfer %{public}d, "
                 "matrix coeff %{public}d, range %{public}d,", static_cast<int32_t>(parser->IsParserColor()),
-                static_cast<int32_t>(colorPrimaries_), static_cast<int32_t>(colorTransfer_),
-                static_cast<int32_t>(colorMatrixCoeff_), static_cast<int32_t>(colorRange_));
-            if (colorPrimaries_ != ColorPrimary::UNSPECIFIED &&
-                colorTransfer_ != TransferCharacteristic::UNSPECIFIED &&
-                colorMatrixCoeff_ != MatrixCoefficient::UNSPECIFIED) {
+                colorPrimaries_, colorTransfer_, colorMatrixCoeff_, colorRange_);
+            if (colorPrimaries_ != -1 && colorTransfer_ != -1 && colorMatrixCoeff_ != -1) {
                 isColor_ = true;
             }
         }
