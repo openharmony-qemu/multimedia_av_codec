@@ -105,6 +105,8 @@ constexpr int MAX_BIT_RATE_DTS = 1536000;
 const std::vector<int32_t> AUDIO_VIVID_SAMPLE_RATE = {32000, 44100, 48000, 96000, 192000};
 constexpr int MIN_BIT_RATE_VIVID_DECODER = 16000;
 constexpr int MAX_BIT_RATE_VIVID_DECODER = 3075000;
+constexpr int32_t MIN_BIT_RATE_VIVID_ENCODER = 32000;
+constexpr int32_t MAX_BIT_RATE_VIVID_ENCODER = 832000;
 constexpr int MAX_CHANNEL_COUNT_VIVID = 16;
 const std::vector<int32_t> AUDIO_L2HC_SAMPLE_RATE = {44100, 48000, 88200, 96000, 176400, 192000};
 constexpr int MIN_BITRATE_L2HC = 160000;
@@ -526,6 +528,21 @@ CapabilityData AudioCodeclistInfo::GetVividDecoderCapability()
     return audioVividCapability;
 }
 
+CapabilityData AudioCodeclistInfo::GetVividEncoderCapability()
+{
+    CapabilityData audioVividCapability;
+    audioVividCapability.codecName = AVCodecCodecName::AUDIO_ENCODER_VIVID_NAME;
+    audioVividCapability.codecType = AVCODEC_TYPE_AUDIO_ENCODER;
+    audioVividCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_VIVID;
+    audioVividCapability.isVendor = false;
+    audioVividCapability.bitrate = Range(MIN_BIT_RATE_VIVID_ENCODER, MAX_BIT_RATE_VIVID_ENCODER);
+    audioVividCapability.channels = Range(1, MAX_CHANNEL_COUNT_VIVID);
+    audioVividCapability.sampleRate = AUDIO_VIVID_SAMPLE_RATE;
+    audioVividCapability.sampleRateRanges = convertVectorToRange(AUDIO_VIVID_SAMPLE_RATE);
+    audioVividCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return audioVividCapability;
+}
+
 CapabilityData AudioCodeclistInfo::GetAmrnbEncoderCapability()
 {
     CapabilityData audioAmrnbCapability;
@@ -878,7 +895,7 @@ AudioCodeclistInfo::AudioCodeclistInfo()
 #ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
                           GetVividDecoderCapability(), GetAmrnbEncoderCapability(), GetAmrwbEncoderCapability(),
                           GetLbvcDecoderCapability(), GetLbvcEncoderCapability(), GetL2hcEncoderCapability(),
-                          GetL2hcDecoderCapability(), GetVendorAacEncoderCapability(),
+                          GetL2hcDecoderCapability(), GetVendorAacEncoderCapability(), GetVividEncoderCapability(),
 #endif
                           GetMP3DecoderCapability(),   GetAacDecoderCapability(),    GetFlacDecoderCapability(),
                           GetVorbisDecoderCapability(), GetAmrnbDecoderCapability(), GetAmrwbDecoderCapability(),

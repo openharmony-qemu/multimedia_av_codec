@@ -58,6 +58,7 @@ public:
 #endif
 #ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
     CapabilityData GetVividDecoderCapability();
+    CapabilityData GetVividEncoderCapability();
     CapabilityData GetAmrnbEncoderCapability();
     CapabilityData GetAmrwbEncoderCapability();
     CapabilityData GetL2hcEncoderCapability();
