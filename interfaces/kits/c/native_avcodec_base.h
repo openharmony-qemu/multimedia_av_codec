@@ -815,7 +815,6 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE;
  *  {@link OH_AVBuffer_GetParameter}.
  * 3. Use {@link OH_AVFormat_GetIntValue} with this key to get the corresponding value.
  *
- * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 26.0.0
  */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_LAYER_ID;
