@@ -806,13 +806,13 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_SIZE;
  */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE;
 /**
- * @brief Key for describing the layer ID in temporal group of picture, value type is int32_t.
- * It is specific to video encoders and is available only when temporal scale is enabled.
- * Retrieval steps:
+ * @brief Key for the temporal layer ID within a Group of Pictures (GOP), the value type is int32_t.
+ * It is specific to video encoders and is available only when temporal level sacle is enabled.
+ * To retrieve the value associated with this key:
  * 1. Obtain the encoded stream information (AVBuffer) via
- *  {@link OH_AVCodecOnNewOutputBuffer} or{@link OH_VideoEncoder_GetOutputBuffer}.
- * 2.Retrieve the parameter information (AVFormat) from the buffer using
- *  {@link OH_AVBuffer_GetParameter}.
+ *  {@link OH_AVCodecOnNewOutputBuffer} or {@link OH_VideoEncoder_GetOutputBuffer}.
+ * 2. Retrieve the parameter information (AVFormat) from the buffer
+ *  using {@link OH_AVBuffer_GetParameter}.
  * 3. Use {@link OH_AVFormat_GetIntValue} with this key to get the corresponding value.
  *
  * @since 26.0.0
