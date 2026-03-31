@@ -84,6 +84,23 @@ public:
         return true;
     }
 };
+class HlsPlayListDownloaderMockForDefaultStream : public HlsPlayListDownloader {
+public:
+    using HlsPlayListDownloader::HlsPlayListDownloader;
+
+    void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) override
+    {
+        called_ = true;
+        videoStreamId_ = videoStreamId;
+        audioStreamId_ = audioStreamId;
+        subTitleStreamId_ = subTitleStreamId;
+    }
+
+    bool called_ {false};
+    int32_t videoStreamId_ {0};
+    int32_t audioStreamId_ {0};
+    int32_t subTitleStreamId_ {0};
+};
 
 std::shared_ptr<HlsMediaDownloader> OpenHlsDetachAudioVideo(std::string url = "test_detach_hls/cmaf.m3u8")
 {
@@ -170,6 +187,46 @@ void HlsMediaDownloaderTest ::SetUp(void)
 void HlsMediaDownloaderTest ::TearDown(void)
 {
     hlsMediaDownloader_ = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderTest, GET_STREAM_INFO_002, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE_UT,
+        true, header_);
+    downloader->Init();
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                            std::shared_ptr<DownloadRequest>& request) {};
+    downloader->SetStatusCallback(statusCallback);
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
+    std::vector<StreamInfo> streams;
+    EXPECT_EQ(downloader->GetStreamInfo(streams, true), Status::OK);
+    downloader->videoSegManager_ = nullptr;
+    EXPECT_EQ(downloader->GetStreamInfo(streams, true), Status::ERROR_UNKNOWN);
+}
+
+HWTEST_F(HlsMediaDownloaderTest, SET_DEFAULT_STREAM_ID_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE_UT,
+        true, header_);
+    downloader->Init();
+    downloader->videoSegManager_ = nullptr;
+    int32_t videoStreamId = 1;
+    int32_t audioStreamId = 2;
+    int32_t subTitleStreamId = 3;
+    downloader->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+    downloader->videoSegManager_ = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
+    downloader->videoSegManager_->Init();
+    auto mockPlaylist = std::make_shared<HlsPlayListDownloaderMockForDefaultStream>();
+    downloader->videoSegManager_->playlistDownloader_ = mockPlaylist;
+    int32_t videoStreamIdNumSec = 4;
+    int32_t audioStreamIdNumSec= 5;
+    int32_t subTitleStreamIdNumSec = 6;
+    downloader->SetDefaultStreamId(videoStreamIdNumSec, audioStreamIdNumSec, subTitleStreamIdNumSec);
+    EXPECT_TRUE(mockPlaylist->called_);
+    EXPECT_EQ(mockPlaylist->videoStreamId_, 4);
+    EXPECT_EQ(mockPlaylist->audioStreamId_, 5);
+    EXPECT_EQ(mockPlaylist->subTitleStreamId_, 6);
 }
 
 HWTEST_F(HlsMediaDownloaderTest, GET_PLAY_INFO_001, TestSize.Level0)

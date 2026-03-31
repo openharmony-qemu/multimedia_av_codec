@@ -214,6 +214,22 @@ HWTEST_F(SourceTest, SetCurrentBitRate_001, TestSize.Level1)
 }
 
 /**
+ * @tc.name Test SetDefaultStreamId API
+ * @tc.number SetDefaultStreamId_001
+ * @tc.desc Test Source forwards parameters to plugin
+ */
+HWTEST_F(SourceTest, SetDefaultStreamId_001, TestSize.Level1)
+{
+    int32_t videoStreamId = 1;
+    int32_t audioStreamId = 2;
+    int32_t subTitleStreamId = 3;
+    EXPECT_CALL(*(mockSourcePlugin_),
+        SetDefaultStreamId(testing::_, testing::_, testing::_)).Times(1);
+    EXPECT_CALL(*(mockSourcePlugin_), Deinit()).WillOnce(Return(Status::OK));
+    source_->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+}
+
+/**
  * @tc.name Test OnEvent API
  * @tc.number OnEvent_001
  * @tc.desc Test protocol_ == "http" && isInterruptNeeded_
@@ -314,6 +330,23 @@ HWTEST_F(SourceTest, OnEvent_006, TestSize.Level1)
 }
 
 /**
+ * @tc.name Test OnMediaDemuxerEvent API
+ * @tc.number OnMediaDemuxerEvent_0100
+ * @tc.desc Test CLIENT_ERROR is forwarded to mediaDemuxerCallback_
+ */
+HWTEST_F(SourceTest, OnMediaDemuxerEvent_0100, TestSize.Level1)
+{
+    source_->protocol_ = "http";
+    source_->isInterruptNeeded_ = false;
+    Plugins::PluginEvent event;
+    event.type = PluginEventType::CLIENT_ERROR;
+    EXPECT_CALL(*(mockCallback_), OnEvent(testing::_)).Times(TEST_TIMES_ONE);
+    EXPECT_CALL(*(mockSourcePlugin_), Deinit()).WillOnce(Return(Status::OK));
+    source_->OnEvent(event);
+    ASSERT_TRUE(source_->mediaDemuxerCallback_ != nullptr);
+}
+
+/**
  * @tc.name Test SetSelectBitRateFlag API
  * @tc.number SetSelectBitRateFlag_001
  * @tc.desc Test mediaDemuxerCallback_ == nullptr
@@ -368,6 +401,41 @@ HWTEST_F(SourceTest, ReadWithPerfRecord_001, TestSize.Level1)
     Status ret = source_->ReadWithPerfRecord(1, buffer, 0, 100);
     EXPECT_EQ(Status::OK, ret);
 }
+
+/**
+ * @tc.name Test GetStreamInfo API
+ * @tc.number GetStreamInfo_001
+ * @tc.desc Test ret != Status::OK
+ */
+HWTEST_F(SourceTest, GetStreamInfo_001, TestSize.Level1)
+{
+    std::vector<Plugins::StreamInfo> streams_;
+    EXPECT_CALL(*(mockSourcePlugin_),
+        GetStreamInfo(testing::_, testing::_)).WillRepeatedly(Return(Status::ERROR_INVALID_OPERATION));
+    EXPECT_CALL(*(mockSourcePlugin_), Deinit()).WillOnce(Return(Status::OK));
+    Status ret = source_->GetStreamInfo(streams_, false);
+    EXPECT_EQ(Status::ERROR_INVALID_OPERATION, ret);
+}
+
+/**
+ * @tc.name Test GetStreamInfo API
+ * @tc.number GetStreamInfo_002
+ * @tc.desc Test ret == Status::OK && && streams.size() != 0
+ */
+HWTEST_F(SourceTest, GetStreamInfo_002, TestSize.Level1)
+{
+    std::vector<Plugins::StreamInfo> streams_;
+    Plugins::StreamInfo info;
+    info.streamId = 0;
+    info.bitRate = 0;
+    info.type = Plugins::MIXED;
+    streams_.push_back(info);
+    EXPECT_CALL(*(mockSourcePlugin_), GetStreamInfo(testing::_, testing::_)).WillRepeatedly(Return(Status::OK));
+    EXPECT_CALL(*(mockSourcePlugin_), Deinit()).WillOnce(Return(Status::OK));
+    Status ret = source_->GetStreamInfo(streams_, false);
+    EXPECT_EQ(Status::OK, ret);
+}
+
 /**
  * @tc.name Test SeekToTime API
  * @tc.number SeekToTime_001
@@ -601,6 +669,22 @@ HWTEST_F(SourceTest, GetSeekableRanges_001, TestSize.Level1)
     EXPECT_CALL(*(mockSourcePlugin_), GetSeekableRanges()).WillRepeatedly(Return(ranges));
     EXPECT_CALL(*(mockSourcePlugin_), Deinit()).WillOnce(Return(Status::OK));
     source_->GetSeekableRanges();
+}
+
+/**
+ * @tc.name Test GetResolution API
+ * @tc.number GetResolution_001
+ * @tc.desc Test GetResolution returns width * height when both are positive
+ */
+HWTEST_F(SourceTest, GetResolution_001, TestSize.Level1)
+{
+    int32_t videoWidthNum = 1920;
+    int32_t videoHeightNum = 1080;
+    Plugins::StreamInfo info;
+    info.videoWidth = videoWidthNum;
+    info.videoHeight = videoHeightNum;
+    auto ret = info.GetResolution();
+    EXPECT_EQ(ret, static_cast<uint32_t>(videoWidthNum * videoHeightNum));
 }
 } // namespace Media
 } // namespace OHOS

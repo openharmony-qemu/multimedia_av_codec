@@ -42,6 +42,70 @@ constexpr int MAX_TEN = 10 * 1024;
 
 std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server = nullptr;
 
+class HlsPlayListDownloaderMockForDefaultStream : public HlsPlayListDownloader {
+public:
+    using HlsPlayListDownloader::HlsPlayListDownloader;
+    void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) override
+    {
+        called_ = true;
+        videoStreamId_ = videoStreamId;
+        audioStreamId_ = audioStreamId;
+        subTitleStreamId_ = subTitleStreamId;
+    }
+
+    bool called_ {false};
+    int32_t videoStreamId_ {0};
+    int32_t audioStreamId_ {0};
+    int32_t subTitleStreamId_ {0};
+};
+
+class HlsPlayListDownloaderMockForUpdate : public HlsPlayListDownloader {
+public:
+    using HlsPlayListDownloader::HlsPlayListDownloader;
+
+    bool IsParseAndNotifyFinished() override
+    {
+        return true;
+    }
+
+    std::vector<uint32_t> GetBitRates() override
+    {
+        calledGetBitRates_ = true;
+        return {currentBitrate_};
+    }
+
+    uint32_t GetCurBitrate() override
+    {
+        return currentBitrate_;
+    }
+
+    bool calledGetBitRates_ {false};
+    uint32_t currentBitrate_ {0};
+};
+
+class HlsNetworkBitrateCallback : public Plugins::Callback {
+public:
+    void OnEvent(const Plugins::PluginEvent &event) override
+    {
+        lastEventType_ = event.type;
+        eventTriggered_ = true;
+    }
+
+    void SetSelectBitRateFlag(bool flag, uint32_t desBitRate) override
+    {
+        (void)flag;
+        (void)desBitRate;
+    }
+
+    bool CanAutoSelectBitRate() override
+    {
+        return true;
+    }
+
+    bool eventTriggered_ {false};
+    Plugins::PluginEventType lastEventType_ {Plugins::PluginEventType::CLIENT_ERROR};
+};
+
 void HlsSegmentManagerUnitTest::SetUpTestCase(void)
 {
     g_server = std::make_unique<MediaAVCodec::HttpServerDemo>();
@@ -72,6 +136,50 @@ void HlsSegmentManagerUnitTest::SetDefaultStreamId(std::shared_ptr<HlsSegmentMan
     int32_t audioStreamId = 0;
     int32_t subTitleStreamId = 0;
     downloader->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+}
+
+HWTEST_F(HlsSegmentManagerUnitTest, SET_DEFAULT_STREAM_ID_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsSegmentManager> downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT,
+        true, header_);
+    downloader->Init();
+    downloader->playlistDownloader_ = nullptr;
+    int32_t videoStreamId = 1;
+    int32_t audioStreamId = 2;
+    int32_t subTitleStreamId = 3;
+    downloader->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+    auto mockPlaylist = std::make_shared<HlsPlayListDownloaderMockForDefaultStream>();
+    downloader->playlistDownloader_ = mockPlaylist;
+    int32_t videoStreamIdNumSec = 4;
+    int32_t audioStreamIdNumSec= 5;
+    int32_t subTitleStreamIdNumSec = 6;
+    downloader->SetDefaultStreamId(videoStreamIdNumSec, audioStreamIdNumSec, subTitleStreamIdNumSec);
+    EXPECT_TRUE(mockPlaylist->called_);
+    EXPECT_EQ(mockPlaylist->videoStreamId_, 4);
+    EXPECT_EQ(mockPlaylist->audioStreamId_, 5);
+    EXPECT_EQ(mockPlaylist->subTitleStreamId_, 6);
+}
+
+HWTEST_F(HlsSegmentManagerUnitTest, GET_STREAM_INFO_002, TestSize.Level1)
+{
+    std::shared_ptr<HlsSegmentManager> downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT,
+        true, header_);
+    downloader->Init();
+    std::vector<StreamInfo> streams;
+    EXPECT_EQ(downloader->GetStreamInfo(streams, true), Status::OK);
+    downloader->playlistDownloader_ = nullptr;
+    EXPECT_EQ(downloader->GetStreamInfo(streams, true), Status::OK);
+}
+
+HWTEST_F(HlsSegmentManagerUnitTest, GET_STREAM_INFO_003, TestSize.Level1)
+{
+    std::shared_ptr<HlsSegmentManager> downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT,
+        true, header_);
+    downloader->Init();
+    std::vector<StreamInfo> streams;
+    downloader->playlistDownloader_ = nullptr;
+    downloader->isInterruptNeeded_.store(true);
+    EXPECT_EQ(downloader->GetStreamInfo(streams, false), Status::OK);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, GetPlayable_1, TestSize.Level0)

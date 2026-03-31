@@ -17,6 +17,7 @@
 
 #include "plugin/plugin_event.h"
 #include "demuxer/stream_demuxer.h"
+#include "meta/meta_key.h"
 
 using namespace std;
 using namespace testing;
@@ -31,9 +32,13 @@ namespace OHOS::Media {
 #define HiSysEventWrite(domain, eventName, type, ...) (mockRetInt32_;)
 
 static const uint32_t UNUM_0 = 0;
+static const uint32_t UNUM_1000 = 1000;
+static const uint32_t UNUM_2000 = 2000;
+static const uint32_t UNUM_3000 = 3000;
 static const int32_t NUM_0 = 0;
 static const int32_t NUM_1 = 1;
 static const int32_t NUM_2 = 2;
+static const int32_t NUM_3 = 3;
 static const int32_t NEG_1 = -1;
 static const int32_t NEG_2 = -2;
 static const int32_t NUM_10 = 100;
@@ -43,7 +48,103 @@ static const int32_t NUM_500 = 500;
 static const int64_t NUM_1000 = 1000;
 static const int64_t NUM_2000 = 2000;
 static const int64_t NUM_3000 = 3000;
+static const int32_t TEST_VIDEO_WIDTH = 1920;
+static const int32_t TEST_VIDEO_HEIGHT = 1080;
+static const char TEST_LANG_ENG[] = "eng";
+static const char TEST_LANG_ZH[] = "zh";
+static const int32_t TEST_MAX_VIDEO_BITRATE = 2000;
+static const int32_t TEST_MIN_VIDEO_BITRATE = 500;
+static const int32_t TEST_MAX_VIDEO_FRAMERATE = 60;
+static const int32_t TEST_MIN_VIDEO_FRAMERATE = 24;
+static const int32_t TEST_MAX_AUDIO_BITRATE = 256000;
+static const int32_t TEST_MIN_AUDIO_BITRATE = 64000;
+static const int32_t TEST_MAX_AUDIO_CHANNELS = 2;
+static const uint32_t TEST_NETWORK_BITRATE = 3000;
+static const int32_t TEST_MIN_VIDEO_WIDTH = 1280;
+static const int32_t TEST_MIN_VIDEO_HEIGHT = 720;
+static const int32_t TEST_VIDEO_BITRATE_1000 = 1000;
+static const int32_t TEST_AUDIO_BITRATE_128000 = 128000;
+static const int32_t TEST_STREAM_ID_1 = 1;
+static const int32_t TEST_STREAM_ID_2 = 2;
+static const int32_t TEST_STREAM_ID_3 = 3;
+static const int32_t TEST_STREAM_ID_4 = 4;
+static const char TEST_LANG_FRA[] = "fra";
+static const char TEST_LANG_EN_SHORT[] = "en";
+static const char TEST_MIME_VIDEO_AVC[] = "video/avc";
+static const char TEST_MIME_AUDIO_AAC[] = "audio/mp4a-latm";
+static std::map<StreamType, std::vector<StreamFilterPredicate>> filteredStreamPredicates_;
+static std::map<StreamType, std::vector<StreamInfo>> filteredStreamMaps_;
 static const int64_t NUM_200000 = 200000;
+constexpr int32_t FILTER_VIDEO_STREAM_ID_1 = 100;
+constexpr int32_t FILTER_VIDEO_STREAM_ID_2 = 101;
+constexpr int32_t FILTER_AUDIO_STREAM_ID_1 = 200;
+constexpr int32_t FILTER_AUDIO_STREAM_ID_2 = 201;
+constexpr int32_t FILTER_SUBTITLE_STREAM_ID_1 = 300;
+constexpr int32_t FILTER_SUBTITLE_STREAM_ID_2 = 301;
+const std::string FILTER_PLAY_TYPE_HTTP = "http";
+const std::string FILTER_PLAY_TYPE_DASH = "dash";
+const std::string FILTER_MIME_VIDEO_AVC = "video/avc";
+const std::string FILTER_MIME_VIDEO_HEVC = "video/hevc";
+const std::string FILTER_LANG_ENG = "eng";
+const std::string FILTER_LANG_CHI = "chi";
+const std::string FILTER_LANG_FRA = "fra";
+class FakeAVCodecList : public MediaAVCodec::AVCodecList {
+public:
+    explicit FakeAVCodecList(std::vector<std::shared_ptr<MediaAVCodec::CapabilityData>> caps)
+        : caps_(std::move(caps))
+    {
+    }
+
+    std::string FindDecoder(const Format &format) override
+    {
+        (void)format;
+        return "";
+    }
+
+    std::string FindEncoder(const Format &format) override
+    {
+        (void)format;
+        return "";
+    }
+
+    MediaAVCodec::CapabilityData *GetCapability(const std::string &mime, const bool isEncoder,
+        const MediaAVCodec::AVCodecCategory &category) override
+    {
+        (void)mime;
+        (void)isEncoder;
+        (void)category;
+        return nullptr;
+    }
+
+    void *GetBuffer(const std::string &name, uint32_t sizeOfCap) override
+    {
+        (void)name;
+        (void)sizeOfCap;
+        return nullptr;
+    }
+
+    void *NewBuffer(size_t bufSize) override
+    {
+        (void)bufSize;
+        return nullptr;
+    }
+
+    std::vector<std::shared_ptr<MediaAVCodec::CapabilityData>> GetCapabilityList(int32_t codecType) override
+    {
+        (void)codecType;
+        return caps_;
+    }
+
+private:
+    std::vector<std::shared_ptr<MediaAVCodec::CapabilityData>> caps_;
+};
+
+static std::shared_ptr<MediaAVCodec::CapabilityData> MakeCodecCapability(const std::string &mimeType)
+{
+    auto capability = std::make_shared<MediaAVCodec::CapabilityData>();
+    capability->mimeType = mimeType;
+    return capability;
+}
 
 void MediaDemuxerExtUnitTest::SetUpTestCase(void) {}
 
@@ -61,6 +162,110 @@ void MediaDemuxerExtUnitTest::SetUp()
 void MediaDemuxerExtUnitTest::TearDown()
 {
     mediaDemuxer_ = nullptr;
+}
+
+static StreamInfo MakeAutoSelectVideoStream(int32_t streamId, uint32_t bitRate,
+    StreamType type = StreamType::VIDEO)
+{
+    StreamInfo streamInfo;
+    streamInfo.streamId = streamId;
+    streamInfo.bitRate = bitRate;
+    streamInfo.type = type;
+    return streamInfo;
+}
+
+static void PrepareAutoSelectTrackByBitrate(const std::shared_ptr<MediaDemuxer> &mediaDemuxer,
+    int32_t streamId, uint32_t currentBitRate)
+{
+    mediaDemuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    filteredStreamMap_[VIDEO].clear();
+    filteredStreamMap_[VIDEO].push_back(MakeAutoSelectVideoStream(streamId, currentBitRate));
+    mediaDemuxer->isAutoSelect_.store(true);
+    mediaDemuxer->curDownloadBitRate_.store(currentBitRate);
+    mediaDemuxer->lastSwitchDownloadRate_.store(UNUM_0);
+    mediaDemuxer->lastCheckAutoSelectTimeMs_ = mediaDemuxer->GetCurrentTimeMs() - NUM_2000;
+    mediaDemuxer->defaultVideoStreamId_ = NEG_1;
+    mediaDemuxer->lastAutoSelectBitRate_ = NEG_1;
+    mediaDemuxer->isPrepared_.store(true);
+    mediaDemuxer->isSelectBitRate_.store(false);
+    mediaDemuxer->isSelectTrack_.store(false);
+    mediaDemuxer->targetBitRate_ = currentBitRate;
+    mediaDemuxer->isFlvLiveStream_ = false;
+}
+
+StreamInfo MakeTrackSelectionFilterStream(int32_t streamId, StreamType type, uint32_t bitRate,
+    const std::string &mimeType, const std::string &lang)
+{
+    StreamInfo stream;
+    stream.streamId = streamId;
+    stream.type = type;
+    stream.bitRate = bitRate;
+    stream.mimeType = mimeType;
+    stream.lang = lang;
+    if (type == VIDEO || type == MIXED) {
+        stream.videoWidth = NUM_1;
+        stream.videoHeight = NUM_1;
+    }
+    return stream;
+}
+
+void PrepareTrackSelectionFilter(const std::shared_ptr<MediaDemuxer> &mediaDemuxer, const std::string &playType,
+    const std::vector<StreamInfo> &streams)
+{
+    filteredStreamMap_.clear();
+    mediaDemuxer->isPrepared_.store(true);
+    mediaDemuxer->currentPlayType_ = playType;
+    mediaDemuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    mediaDemuxer->curDownloadBitRate_.store(UNUM_2000);
+    mediaDemuxer->lastAutoSelectBitRate_ = NEG_1;
+    EXPECT_CALL(*(mediaDemuxer->source_), IsCloudFd()).WillOnce(Return(false));
+    EXPECT_CALL(*(mediaDemuxer->source_), IsNeedPreDownload()).WillOnce(Return(false));
+    EXPECT_CALL(*(mediaDemuxer->source_), GetStreamInfo(_, true)).WillOnce(Invoke(
+        [streams](std::vector<StreamInfo> &outStreams, bool) {
+            outStreams = streams;
+            return Status::OK;
+        }));
+}
+
+StreamInfo MakeSelectAudioDefaultStream(int32_t streamId, const std::string &lang, const std::string &mimeType)
+{
+    StreamInfo stream;
+    stream.streamId = streamId;
+    stream.type = AUDIO;
+    stream.lang = lang;
+    stream.mimeType = mimeType;
+    return stream;
+}
+
+StreamInfo MakeSelectSubtitleDefaultStream(int32_t streamId, const std::string &lang)
+{
+    StreamInfo stream;
+    stream.streamId = streamId;
+    stream.type = SUBTITLE;
+    stream.lang = lang;
+    return stream;
+}
+
+static std::shared_ptr<SampleQueue> PrepareConsumeWaterLoopControl(const std::shared_ptr<MediaDemuxer> &mediaDemuxer,
+    int32_t trackId)
+{
+    auto sampleQueue = std::make_shared<SampleQueue>();
+    mediaDemuxer->sampleQueueController_ = std::make_shared<SampleQueueController>();
+    mediaDemuxer->subtitleTrackId_ = trackId + NUM_1;
+    mediaDemuxer->videoTrackId_ = trackId;
+    mediaDemuxer->sampleQueueMap_[trackId] = sampleQueue;
+    mediaDemuxer->taskMap_[trackId] = std::unique_ptr<Task>();
+    mediaDemuxer->sampleConsumerTaskMap_[trackId] = std::unique_ptr<Task>();
+    mediaDemuxer->eosMap_[trackId] = false;
+    mediaDemuxer->hlsSegmentEosMap_[trackId] = false;
+    mediaDemuxer->isVideoMuted_ = false;
+    mediaDemuxer->isBuffering_.store(false);
+    mediaDemuxer->SetTrackIsBuffering(trackId, false);
+    mediaDemuxer->isAutoSelect_.store(false);
+    mediaDemuxer->curDownloadBitRate_.store(UNUM_0);
+    mediaDemuxer->lastSwitchDownloadRate_.store(UNUM_0);
+    mediaDemuxer->lastCheckAutoSelectTimeMs_ = NUM_1;
+    return sampleQueue;
 }
 
 /**
@@ -5534,5 +5739,2384 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSeekChangeStream_001, Te
 
     Status ret = mediaDemuxer_->HandleSeekChangeStream(currentStreamId, newStreamId, trackId);
     EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectStreamId_001
+ * @tc.number: MediaDemuxerExt_SelectStreamId_001
+ * @tc.desc  : Test SelectStreamId returns wrong state when demuxer is not ready
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectStreamId_001, TestSize.Level1)
+{
+    mediaDemuxer_->demuxerPluginManager_ = nullptr;
+    mediaDemuxer_->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+
+    auto ret = mediaDemuxer_->SelectStreamId(NUM_0);
+    EXPECT_EQ(ret, Status::ERROR_WRONG_STATE);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectStreamId_002
+ * @tc.number: MediaDemuxerExt_SelectStreamId_002
+ * @tc.desc  : Test SelectStreamId returns wrong state for invalid stream id
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectStreamId_002, TestSize.Level1)
+{
+    mediaDemuxer_->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+
+    auto ret = mediaDemuxer_->SelectStreamId(NEG_1);
+    EXPECT_EQ(ret, Status::ERROR_WRONG_STATE);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectStreamId_003
+ * @tc.number: MediaDemuxerExt_SelectStreamId_003
+ * @tc.desc  : Test SelectStreamId returns wrong state when dash is changing stream
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectStreamId_003, TestSize.Level1)
+{
+    mediaDemuxer_->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), CanDoChangeStream()).WillOnce(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), ResetAllCache()).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(_)).Times(0);
+
+    auto ret = mediaDemuxer_->SelectStreamId(NUM_0);
+    EXPECT_EQ(ret, Status::ERROR_WRONG_STATE);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectStreamId_004
+ * @tc.number: MediaDemuxerExt_SelectStreamId_004
+ * @tc.desc  : Test SelectStreamId forwards to source when dash can change stream
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectStreamId_004, TestSize.Level1)
+{
+    mediaDemuxer_->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), CanDoChangeStream()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), ResetAllCache()).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(NUM_1)).WillOnce(Return(Status::OK));
+
+    auto ret = mediaDemuxer_->SelectStreamId(NUM_1);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectStreamId_005
+ * @tc.number: MediaDemuxerExt_SelectStreamId_005
+ * @tc.desc  : Test SelectStreamId returns ok when dash source is null
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectStreamId_005, TestSize.Level1)
+{
+    mediaDemuxer_->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    mediaDemuxer_->source_ = nullptr;
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), CanDoChangeStream()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), ResetAllCache()).Times(0);
+
+    auto ret = mediaDemuxer_->SelectStreamId(NUM_1);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectStreamId_006
+ * @tc.number: MediaDemuxerExt_SelectStreamId_006
+ * @tc.desc  : Test SelectStreamId resets cache and forwards to source for non-dash
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectStreamId_006, TestSize.Level1)
+{
+    mediaDemuxer_->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillOnce(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), ResetAllCache()).WillOnce(Return(Status::OK));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(NUM_2)).WillOnce(Return(Status::ERROR_UNKNOWN));
+
+    auto ret = mediaDemuxer_->SelectStreamId(NUM_2);
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+}
+
+/**
+ * @tc.name  : AutoSelectTrackByBitrate_001
+ * @tc.number: AutoSelectTrackByBitrate_001
+ * @tc.desc  : Test auto select is disabled
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, AutoSelectTrackByBitrate_001, TestSize.Level1)
+{
+    mediaDemuxer_->isAutoSelect_.store(false);
+    mediaDemuxer_->curDownloadBitRate_.store(UNUM_1000);
+    mediaDemuxer_->lastSwitchDownloadRate_.store(UNUM_0);
+
+    mediaDemuxer_->AutoSelectTrackByBitrate(NUM_1);
+    EXPECT_EQ(mediaDemuxer_->lastCheckAutoSelectTimeMs_, 0);
+}
+
+/**
+ * @tc.name  : AutoSelectTrackByBitrate_002
+ * @tc.number: AutoSelectTrackByBitrate_002
+ * @tc.desc  : Test current download bitrate is zero
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, AutoSelectTrackByBitrate_002, TestSize.Level1)
+{
+    mediaDemuxer_->isAutoSelect_.store(true);
+    mediaDemuxer_->curDownloadBitRate_.store(UNUM_0);
+    mediaDemuxer_->lastSwitchDownloadRate_.store(UNUM_1000);
+
+    mediaDemuxer_->AutoSelectTrackByBitrate(NUM_1);
+    EXPECT_EQ(mediaDemuxer_->lastCheckAutoSelectTimeMs_, 0);
+}
+
+/**
+ * @tc.name  : AutoSelectTrackByBitrate_003
+ * @tc.number: AutoSelectTrackByBitrate_003
+ * @tc.desc  : Test current download bitrate equals last switched bitrate
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, AutoSelectTrackByBitrate_003, TestSize.Level1)
+{
+    mediaDemuxer_->isAutoSelect_.store(true);
+    mediaDemuxer_->curDownloadBitRate_.store(UNUM_1000);
+    mediaDemuxer_->lastSwitchDownloadRate_.store(UNUM_1000);
+
+    mediaDemuxer_->AutoSelectTrackByBitrate(NUM_1);
+    EXPECT_EQ(mediaDemuxer_->lastCheckAutoSelectTimeMs_, 0);
+}
+
+/**
+ * @tc.name  : AutoSelectTrackByBitrate_004
+ * @tc.number: AutoSelectTrackByBitrate_004
+ * @tc.desc  : Test first check initializes timestamp
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, AutoSelectTrackByBitrate_004, TestSize.Level1)
+{
+    PrepareAutoSelectTrackByBitrate(mediaDemuxer_, NUM_1, UNUM_1000);
+    mediaDemuxer_->lastCheckAutoSelectTimeMs_ = 0;
+
+    mediaDemuxer_->AutoSelectTrackByBitrate(NUM_1);
+    EXPECT_GT(mediaDemuxer_->lastCheckAutoSelectTimeMs_, 0);
+}
+
+/**
+ * @tc.name  : AutoSelectTrackByBitrate_005
+ * @tc.number: AutoSelectTrackByBitrate_005
+ * @tc.desc  : Test auto select interval not reached
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, AutoSelectTrackByBitrate_005, TestSize.Level1)
+{
+    PrepareAutoSelectTrackByBitrate(mediaDemuxer_, NUM_1, UNUM_1000);
+    int64_t currentTimeMs = mediaDemuxer_->GetCurrentTimeMs();
+    mediaDemuxer_->lastCheckAutoSelectTimeMs_ = currentTimeMs;
+
+    mediaDemuxer_->AutoSelectTrackByBitrate(NUM_1);
+    EXPECT_EQ(mediaDemuxer_->lastCheckAutoSelectTimeMs_, currentTimeMs);
+}
+
+/**
+ * @tc.name  : AutoSelectTrackByBitrate_006
+ * @tc.number: AutoSelectTrackByBitrate_006
+ * @tc.desc  : Test preferred stream is nullptr
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, AutoSelectTrackByBitrate_006, TestSize.Level1)
+{
+    PrepareAutoSelectTrackByBitrate(mediaDemuxer_, NUM_1, UNUM_1000);
+    filteredStreamMap_[VIDEO].clear();
+
+    mediaDemuxer_->AutoSelectTrackByBitrate(NUM_1);
+    EXPECT_NE(mediaDemuxer_->lastCheckAutoSelectTimeMs_, 0);
+}
+
+/**
+ * @tc.name  : AutoSelectTrackByBitrate_007
+ * @tc.number: AutoSelectTrackByBitrate_007
+ * @tc.desc  : Test preferred stream already selected by stream id
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, AutoSelectTrackByBitrate_007, TestSize.Level1)
+{
+    PrepareAutoSelectTrackByBitrate(mediaDemuxer_, NUM_1, UNUM_1000);
+    mediaDemuxer_->defaultVideoStreamId_ = NUM_1;
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetCurrentBitRate()).WillRepeatedly(Return(UNUM_1000));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
+
+    mediaDemuxer_->AutoSelectTrackByBitrate(NUM_1);
+    EXPECT_EQ(mediaDemuxer_->lastCheckAutoSelectTimeMs_, 0);
+}
+
+/**
+ * @tc.name  : AutoSelectTrackByBitrate_008
+ * @tc.number: AutoSelectTrackByBitrate_008
+ * @tc.desc  : Test preferred stream already selected by bitrate
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, AutoSelectTrackByBitrate_008, TestSize.Level1)
+{
+    PrepareAutoSelectTrackByBitrate(mediaDemuxer_, NUM_1, UNUM_1000);
+    mediaDemuxer_->lastAutoSelectBitRate_ = static_cast<int32_t>(UNUM_1000);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetCurrentBitRate()).WillRepeatedly(Return(UNUM_1000));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
+
+    mediaDemuxer_->AutoSelectTrackByBitrate(NUM_1);
+    EXPECT_EQ(mediaDemuxer_->lastCheckAutoSelectTimeMs_, 0);
+}
+
+/**
+ * @tc.name  : AutoSelectTrackByBitrate_009
+ * @tc.number: AutoSelectTrackByBitrate_009
+ * @tc.desc  : Test cannot auto select bitrate
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, AutoSelectTrackByBitrate_009, TestSize.Level1)
+{
+    PrepareAutoSelectTrackByBitrate(mediaDemuxer_, NUM_1, UNUM_1000);
+    mediaDemuxer_->isPrepared_.store(false);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetCurrentBitRate()).WillRepeatedly(Return(UNUM_1000));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
+
+    mediaDemuxer_->AutoSelectTrackByBitrate(NUM_1);
+    EXPECT_EQ(mediaDemuxer_->lastCheckAutoSelectTimeMs_, 0);
+}
+
+/**
+ * @tc.name  : AutoSelectTrackByBitrate_010
+ * @tc.number: AutoSelectTrackByBitrate_010
+ * @tc.desc  : Test auto select bitrate succeeds
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, AutoSelectTrackByBitrate_010, TestSize.Level1)
+{
+    PrepareAutoSelectTrackByBitrate(mediaDemuxer_, NUM_2, UNUM_2000);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetCurrentBitRate()).WillRepeatedly(Return(UNUM_2000));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_),
+    ResetAllCache()).WillOnce(Return(Status::OK));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(UNUM_2000)).WillOnce(Return(Status::OK));
+
+    mediaDemuxer_->AutoSelectTrackByBitrate(NUM_1);
+    EXPECT_EQ(mediaDemuxer_->defaultVideoStreamId_, NUM_2);
+    EXPECT_EQ(mediaDemuxer_->lastAutoSelectBitRate_, static_cast<int32_t>(UNUM_2000));
+    EXPECT_EQ(mediaDemuxer_->lastSwitchDownloadRate_.load(), UNUM_2000);
+    EXPECT_EQ(mediaDemuxer_->lastCheckAutoSelectTimeMs_, 0);
+}
+
+/**
+ * @tc.name  : AutoSelectTrackByBitrate_011
+ * @tc.number: AutoSelectTrackByBitrate_011
+ * @tc.desc  : Test auto select bitrate fails
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, AutoSelectTrackByBitrate_011, TestSize.Level1)
+{
+    PrepareAutoSelectTrackByBitrate(mediaDemuxer_, NUM_2, UNUM_2000);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetCurrentBitRate()).WillRepeatedly(Return(UNUM_2000));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), ResetAllCache()).WillOnce(Return(Status::OK));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(UNUM_2000))
+        .WillOnce(Return(Status::ERROR_UNKNOWN));
+
+    mediaDemuxer_->AutoSelectTrackByBitrate(NUM_1);
+    EXPECT_EQ(mediaDemuxer_->defaultVideoStreamId_, NEG_1);
+    EXPECT_EQ(mediaDemuxer_->lastAutoSelectBitRate_, NEG_1);
+    EXPECT_EQ(mediaDemuxer_->lastSwitchDownloadRate_.load(), UNUM_0);
+    EXPECT_EQ(mediaDemuxer_->lastCheckAutoSelectTimeMs_, 0);
+}
+
+/**
+ * @tc.name  : AutoSelectTrackByBitrate_012
+ * @tc.number: AutoSelectTrackByBitrate_012
+ * @tc.desc  : Test preferred stream selects nearest valid video stream
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, AutoSelectTrackByBitrate_012, TestSize.Level1)
+{
+    PrepareAutoSelectTrackByBitrate(mediaDemuxer_, NUM_1, UNUM_2000);
+    filteredStreamMap_[VIDEO].clear();
+    filteredStreamMap_[VIDEO].push_back(MakeAutoSelectVideoStream(NUM_1, UNUM_1000, StreamType::AUDIO));
+    filteredStreamMap_[VIDEO].push_back(MakeAutoSelectVideoStream(NUM_2, UNUM_3000));
+    filteredStreamMap_[VIDEO].push_back(MakeAutoSelectVideoStream(NUM_3, UNUM_2000));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetCurrentBitRate()).WillRepeatedly(Return(UNUM_2000));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), ResetAllCache()).WillOnce(Return(Status::OK));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(UNUM_2000)).WillOnce(Return(Status::OK));
+
+    mediaDemuxer_->AutoSelectTrackByBitrate(NUM_1);
+    EXPECT_EQ(mediaDemuxer_->defaultVideoStreamId_, NUM_3);
+    EXPECT_EQ(mediaDemuxer_->lastAutoSelectBitRate_, static_cast<int32_t>(UNUM_2000));
+}
+
+/**
+ * @tc.name  : SetTrackSelectionFilter_001
+ * @tc.number: SetTrackSelectionFilter_001
+ * @tc.desc  : Test not prepared early return
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, SetTrackSelectionFilter_001, TestSize.Level1)
+{
+    TrackSelectionFilter filter;
+    filter.minVideoBitrate = NUM_1;
+    mediaDemuxer_->isPrepared_.store(false);
+
+    mediaDemuxer_->SetTrackSelectionFilter(filter);
+    EXPECT_EQ(mediaDemuxer_->trackSelectionFilter_.minVideoBitrate, NUM_1);
+}
+
+/**
+ * @tc.name  : SetTrackSelectionFilter_002
+ * @tc.number: SetTrackSelectionFilter_002
+ * @tc.desc  : Test cloud fd early return
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, SetTrackSelectionFilter_002, TestSize.Level1)
+{
+    TrackSelectionFilter filter;
+    mediaDemuxer_->isPrepared_.store(true);
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsCloudFd()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsNeedPreDownload()).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->source_), GetStreamInfo(_, true)).Times(0);
+
+    mediaDemuxer_->SetTrackSelectionFilter(filter);
+    EXPECT_EQ(mediaDemuxer_->trackSelectionFilter_.maxAudioBitrate, filter.maxAudioBitrate);
+}
+
+/**
+ * @tc.name  : SetTrackSelectionFilter_003
+ * @tc.number: SetTrackSelectionFilter_003
+ * @tc.desc  : Test pre download early return
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, SetTrackSelectionFilter_003, TestSize.Level1)
+{
+    TrackSelectionFilter filter;
+    mediaDemuxer_->isPrepared_.store(true);
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsCloudFd()).WillOnce(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsNeedPreDownload()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->source_), GetStreamInfo(_, true)).Times(0);
+
+    mediaDemuxer_->SetTrackSelectionFilter(filter);
+    EXPECT_EQ(mediaDemuxer_->trackSelectionFilter_.maxVideoBitrate, filter.maxVideoBitrate);
+}
+
+/**
+ * @tc.name  : SetTrackSelectionFilter_004
+ * @tc.number: SetTrackSelectionFilter_004
+ * @tc.desc  : Test video stream does not need switch when last stream remains selected
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, SetTrackSelectionFilter_004, TestSize.Level1)
+{
+    TrackSelectionFilter filter;
+    filter.preferredVideoMimeTypes = {FILTER_MIME_VIDEO_AVC};
+    std::vector<StreamInfo> streams = {
+        MakeTrackSelectionFilterStream(FILTER_VIDEO_STREAM_ID_1, VIDEO, UNUM_1000, FILTER_MIME_VIDEO_AVC, "")
+    };
+    PrepareTrackSelectionFilter(mediaDemuxer_, FILTER_PLAY_TYPE_DASH, streams);
+    mediaDemuxer_->defaultVideoStreamId_ = FILTER_VIDEO_STREAM_ID_1;
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(_)).Times(0);
+
+    mediaDemuxer_->SetTrackSelectionFilter(filter);
+    EXPECT_EQ(mediaDemuxer_->defaultVideoStreamId_, FILTER_VIDEO_STREAM_ID_1);
+}
+
+/**
+ * @tc.name  : SetTrackSelectionFilter_005
+ * @tc.number: SetTrackSelectionFilter_005
+ * @tc.desc  : Test video stream is nullptr
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, SetTrackSelectionFilter_005, TestSize.Level1)
+{
+    TrackSelectionFilter filter;
+    std::vector<StreamInfo> streams = {
+        MakeTrackSelectionFilterStream(FILTER_AUDIO_STREAM_ID_1, AUDIO, UNUM_1000, "audio/aac", FILTER_LANG_ENG)
+    };
+    PrepareTrackSelectionFilter(mediaDemuxer_, FILTER_PLAY_TYPE_HTTP, streams);
+    mediaDemuxer_->defaultVideoStreamId_ = FILTER_VIDEO_STREAM_ID_1;
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(_)).Times(0);
+
+    mediaDemuxer_->SetTrackSelectionFilter(filter);
+    EXPECT_EQ(mediaDemuxer_->defaultVideoStreamId_, FILTER_VIDEO_STREAM_ID_1);
+}
+
+/**
+ * @tc.name  : SetTrackSelectionFilter_006
+ * @tc.number: SetTrackSelectionFilter_006
+ * @tc.desc  : Test video bitrate switch succeeds
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, SetTrackSelectionFilter_006, TestSize.Level1)
+{
+    TrackSelectionFilter filter;
+    filter.preferredVideoMimeTypes = {FILTER_MIME_VIDEO_AVC};
+    std::vector<StreamInfo> streams = {
+        MakeTrackSelectionFilterStream(FILTER_VIDEO_STREAM_ID_1, VIDEO, UNUM_1000, FILTER_MIME_VIDEO_HEVC, ""),
+        MakeTrackSelectionFilterStream(FILTER_VIDEO_STREAM_ID_2, VIDEO, UNUM_2000, FILTER_MIME_VIDEO_AVC, "")
+    };
+    PrepareTrackSelectionFilter(mediaDemuxer_, FILTER_PLAY_TYPE_DASH, streams);
+    mediaDemuxer_->defaultVideoStreamId_ = FILTER_VIDEO_STREAM_ID_1;
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), CanDoChangeStream()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetCurrentBitRate()).WillOnce(Return(UNUM_1000));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(UNUM_2000)).WillOnce(Return(Status::OK));
+
+    mediaDemuxer_->SetTrackSelectionFilter(filter);
+    EXPECT_EQ(mediaDemuxer_->defaultVideoStreamId_, FILTER_VIDEO_STREAM_ID_2);
+    EXPECT_EQ(mediaDemuxer_->lastAutoSelectBitRate_, static_cast<int32_t>(UNUM_2000));
+}
+
+/**
+ * @tc.name  : SetTrackSelectionFilter_007
+ * @tc.number: SetTrackSelectionFilter_007
+ * @tc.desc  : Test video bitrate switch fails
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, SetTrackSelectionFilter_007, TestSize.Level1)
+{
+    TrackSelectionFilter filter;
+    filter.preferredVideoMimeTypes = {FILTER_MIME_VIDEO_AVC};
+    std::vector<StreamInfo> streams = {
+        MakeTrackSelectionFilterStream(FILTER_VIDEO_STREAM_ID_1, VIDEO, UNUM_1000, FILTER_MIME_VIDEO_HEVC, ""),
+        MakeTrackSelectionFilterStream(FILTER_VIDEO_STREAM_ID_2, VIDEO, UNUM_2000, FILTER_MIME_VIDEO_AVC, "")
+    };
+    PrepareTrackSelectionFilter(mediaDemuxer_, FILTER_PLAY_TYPE_DASH, streams);
+    mediaDemuxer_->defaultVideoStreamId_ = FILTER_VIDEO_STREAM_ID_1;
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).Times(NUM_2).WillRepeatedly(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), CanDoChangeStream()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetCurrentBitRate()).WillOnce(Return(UNUM_1000));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(UNUM_2000)).WillOnce(Return(Status::ERROR_UNKNOWN));
+
+    mediaDemuxer_->SetTrackSelectionFilter(filter);
+    EXPECT_EQ(mediaDemuxer_->defaultVideoStreamId_, FILTER_VIDEO_STREAM_ID_2);
+    EXPECT_EQ(mediaDemuxer_->lastAutoSelectBitRate_, NEG_1);
+}
+
+/**
+ * @tc.name  : SetTrackSelectionFilter_008
+ * @tc.number: SetTrackSelectionFilter_008
+ * @tc.desc  : Test http play type returns before audio and subtitle switching
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, SetTrackSelectionFilter_008, TestSize.Level1)
+{
+    TrackSelectionFilter filter;
+    filter.preferredVideoMimeTypes = {FILTER_MIME_VIDEO_AVC};
+    filter.preferredAudioLanguages = {FILTER_LANG_ENG};
+    filter.preferredSubtitleLanguages = {FILTER_LANG_CHI};
+    std::vector<StreamInfo> streams = {
+        MakeTrackSelectionFilterStream(FILTER_VIDEO_STREAM_ID_1, VIDEO, UNUM_1000, FILTER_MIME_VIDEO_AVC, ""),
+        MakeTrackSelectionFilterStream(FILTER_AUDIO_STREAM_ID_1, AUDIO, UNUM_1000, "audio/aac", FILTER_LANG_FRA),
+        MakeTrackSelectionFilterStream(FILTER_AUDIO_STREAM_ID_2, AUDIO, UNUM_1000, "audio/aac", FILTER_LANG_ENG),
+        MakeTrackSelectionFilterStream(FILTER_SUBTITLE_STREAM_ID_1, SUBTITLE, UNUM_0, "", FILTER_LANG_FRA),
+        MakeTrackSelectionFilterStream(FILTER_SUBTITLE_STREAM_ID_2, SUBTITLE, UNUM_0, "", FILTER_LANG_CHI)
+    };
+    PrepareTrackSelectionFilter(mediaDemuxer_, FILTER_PLAY_TYPE_HTTP, streams);
+    mediaDemuxer_->defaultVideoStreamId_ = FILTER_VIDEO_STREAM_ID_1;
+    mediaDemuxer_->defaultAudioStreamId_ = FILTER_AUDIO_STREAM_ID_1;
+    mediaDemuxer_->defaultSubtitleStreamId_ = FILTER_SUBTITLE_STREAM_ID_1;
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(_)).Times(0);
+
+    mediaDemuxer_->SetTrackSelectionFilter(filter);
+    EXPECT_EQ(mediaDemuxer_->defaultAudioStreamId_, FILTER_AUDIO_STREAM_ID_1);
+    EXPECT_EQ(mediaDemuxer_->defaultSubtitleStreamId_, FILTER_SUBTITLE_STREAM_ID_1);
+}
+
+/**
+ * @tc.name  : SetTrackSelectionFilter_009
+ * @tc.number: SetTrackSelectionFilter_009
+ * @tc.desc  : Test audio stream does not need switch when last stream remains selected
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, SetTrackSelectionFilter_009, TestSize.Level1)
+{
+    TrackSelectionFilter filter;
+    filter.preferredVideoMimeTypes = {FILTER_MIME_VIDEO_AVC};
+    filter.preferredAudioLanguages = {FILTER_LANG_ENG};
+    std::vector<StreamInfo> streams = {
+        MakeTrackSelectionFilterStream(FILTER_VIDEO_STREAM_ID_1, VIDEO, UNUM_1000, FILTER_MIME_VIDEO_AVC, ""),
+        MakeTrackSelectionFilterStream(FILTER_AUDIO_STREAM_ID_1, AUDIO, UNUM_1000, "audio/aac", FILTER_LANG_ENG)
+    };
+    PrepareTrackSelectionFilter(mediaDemuxer_, FILTER_PLAY_TYPE_DASH, streams);
+    mediaDemuxer_->defaultVideoStreamId_ = FILTER_VIDEO_STREAM_ID_1;
+    mediaDemuxer_->defaultAudioStreamId_ = FILTER_AUDIO_STREAM_ID_1;
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(_)).Times(0);
+
+    mediaDemuxer_->SetTrackSelectionFilter(filter);
+    EXPECT_EQ(mediaDemuxer_->defaultAudioStreamId_, FILTER_AUDIO_STREAM_ID_1);
+}
+
+/**
+ * @tc.name  : SetTrackSelectionFilter_010
+ * @tc.number: SetTrackSelectionFilter_010
+ * @tc.desc  : Test audio stream is nullptr
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, SetTrackSelectionFilter_010, TestSize.Level1)
+{
+    TrackSelectionFilter filter;
+    filter.preferredVideoMimeTypes = {FILTER_MIME_VIDEO_AVC};
+    std::vector<StreamInfo> streams = {
+        MakeTrackSelectionFilterStream(FILTER_VIDEO_STREAM_ID_1, VIDEO, UNUM_1000, FILTER_MIME_VIDEO_AVC, "")
+    };
+    PrepareTrackSelectionFilter(mediaDemuxer_, FILTER_PLAY_TYPE_DASH, streams);
+    mediaDemuxer_->defaultVideoStreamId_ = FILTER_VIDEO_STREAM_ID_1;
+    mediaDemuxer_->defaultAudioStreamId_ = FILTER_AUDIO_STREAM_ID_1;
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(_)).Times(0);
+
+    mediaDemuxer_->SetTrackSelectionFilter(filter);
+    EXPECT_EQ(mediaDemuxer_->defaultAudioStreamId_, FILTER_AUDIO_STREAM_ID_1);
+}
+
+/**
+ * @tc.name  : SetTrackSelectionFilter_011
+ * @tc.number: SetTrackSelectionFilter_011
+ * @tc.desc  : Test audio stream switch succeeds
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, SetTrackSelectionFilter_011, TestSize.Level1)
+{
+    TrackSelectionFilter filter;
+    filter.preferredVideoMimeTypes = {FILTER_MIME_VIDEO_AVC};
+    filter.preferredAudioLanguages = {FILTER_LANG_ENG};
+    std::vector<StreamInfo> streams = {
+        MakeTrackSelectionFilterStream(FILTER_VIDEO_STREAM_ID_1, VIDEO, UNUM_1000, FILTER_MIME_VIDEO_AVC, ""),
+        MakeTrackSelectionFilterStream(FILTER_AUDIO_STREAM_ID_1, AUDIO, UNUM_1000, "audio/aac", FILTER_LANG_FRA),
+        MakeTrackSelectionFilterStream(FILTER_AUDIO_STREAM_ID_2, AUDIO, UNUM_1000, "audio/aac", FILTER_LANG_ENG)
+    };
+    PrepareTrackSelectionFilter(mediaDemuxer_, FILTER_PLAY_TYPE_DASH, streams);
+    mediaDemuxer_->defaultVideoStreamId_ = FILTER_VIDEO_STREAM_ID_1;
+    mediaDemuxer_->defaultAudioStreamId_ = FILTER_AUDIO_STREAM_ID_1;
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), CanDoChangeStream()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(FILTER_AUDIO_STREAM_ID_2)).WillOnce(Return(Status::OK));
+
+    mediaDemuxer_->SetTrackSelectionFilter(filter);
+    EXPECT_EQ(mediaDemuxer_->defaultAudioStreamId_, FILTER_AUDIO_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : SetTrackSelectionFilter_012
+ * @tc.number: SetTrackSelectionFilter_012
+ * @tc.desc  : Test audio stream switch fails
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, SetTrackSelectionFilter_012, TestSize.Level1)
+{
+    TrackSelectionFilter filter;
+    filter.preferredVideoMimeTypes = {FILTER_MIME_VIDEO_AVC};
+    filter.preferredAudioLanguages = {FILTER_LANG_ENG};
+    std::vector<StreamInfo> streams = {
+        MakeTrackSelectionFilterStream(FILTER_VIDEO_STREAM_ID_1, VIDEO, UNUM_1000, FILTER_MIME_VIDEO_AVC, ""),
+        MakeTrackSelectionFilterStream(FILTER_AUDIO_STREAM_ID_1, AUDIO, UNUM_1000, "audio/aac", FILTER_LANG_FRA),
+        MakeTrackSelectionFilterStream(FILTER_AUDIO_STREAM_ID_2, AUDIO, UNUM_1000, "audio/aac", FILTER_LANG_ENG)
+    };
+    PrepareTrackSelectionFilter(mediaDemuxer_, FILTER_PLAY_TYPE_DASH, streams);
+    mediaDemuxer_->defaultVideoStreamId_ = FILTER_VIDEO_STREAM_ID_1;
+    mediaDemuxer_->defaultAudioStreamId_ = FILTER_AUDIO_STREAM_ID_1;
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), CanDoChangeStream()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(FILTER_AUDIO_STREAM_ID_2))
+        .WillOnce(Return(Status::ERROR_UNKNOWN));
+
+    mediaDemuxer_->SetTrackSelectionFilter(filter);
+    EXPECT_EQ(mediaDemuxer_->defaultAudioStreamId_, FILTER_AUDIO_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : SetTrackSelectionFilter_013
+ * @tc.number: SetTrackSelectionFilter_013
+ * @tc.desc  : Test subtitle stream does not need switch when last stream remains selected
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, SetTrackSelectionFilter_013, TestSize.Level1)
+{
+    TrackSelectionFilter filter;
+    filter.preferredVideoMimeTypes = {FILTER_MIME_VIDEO_AVC};
+    filter.preferredSubtitleLanguages = {FILTER_LANG_CHI};
+    std::vector<StreamInfo> streams = {
+        MakeTrackSelectionFilterStream(FILTER_VIDEO_STREAM_ID_1, VIDEO, UNUM_1000, FILTER_MIME_VIDEO_AVC, ""),
+        MakeTrackSelectionFilterStream(FILTER_SUBTITLE_STREAM_ID_1, SUBTITLE, UNUM_0, "", FILTER_LANG_CHI)
+    };
+    PrepareTrackSelectionFilter(mediaDemuxer_, FILTER_PLAY_TYPE_DASH, streams);
+    mediaDemuxer_->defaultVideoStreamId_ = FILTER_VIDEO_STREAM_ID_1;
+    mediaDemuxer_->defaultSubtitleStreamId_ = FILTER_SUBTITLE_STREAM_ID_1;
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(_)).Times(0);
+
+    mediaDemuxer_->SetTrackSelectionFilter(filter);
+    EXPECT_EQ(mediaDemuxer_->defaultSubtitleStreamId_, FILTER_SUBTITLE_STREAM_ID_1);
+}
+
+/**
+ * @tc.name  : SetTrackSelectionFilter_014
+ * @tc.number: SetTrackSelectionFilter_014
+ * @tc.desc  : Test subtitle stream is nullptr
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, SetTrackSelectionFilter_014, TestSize.Level1)
+{
+    TrackSelectionFilter filter;
+    filter.preferredVideoMimeTypes = {FILTER_MIME_VIDEO_AVC};
+    std::vector<StreamInfo> streams = {
+        MakeTrackSelectionFilterStream(FILTER_VIDEO_STREAM_ID_1, VIDEO, UNUM_1000, FILTER_MIME_VIDEO_AVC, "")
+    };
+    PrepareTrackSelectionFilter(mediaDemuxer_, FILTER_PLAY_TYPE_DASH, streams);
+    mediaDemuxer_->defaultVideoStreamId_ = FILTER_VIDEO_STREAM_ID_1;
+    mediaDemuxer_->defaultSubtitleStreamId_ = FILTER_SUBTITLE_STREAM_ID_1;
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(_)).Times(0);
+
+    mediaDemuxer_->SetTrackSelectionFilter(filter);
+    EXPECT_EQ(mediaDemuxer_->defaultSubtitleStreamId_, FILTER_SUBTITLE_STREAM_ID_1);
+}
+
+/**
+ * @tc.name  : SetTrackSelectionFilter_015
+ * @tc.number: SetTrackSelectionFilter_015
+ * @tc.desc  : Test subtitle stream switch succeeds
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, SetTrackSelectionFilter_015, TestSize.Level1)
+{
+    TrackSelectionFilter filter;
+    filter.preferredVideoMimeTypes = {FILTER_MIME_VIDEO_AVC};
+    filter.preferredSubtitleLanguages = {FILTER_LANG_CHI};
+    std::vector<StreamInfo> streams = {
+        MakeTrackSelectionFilterStream(FILTER_VIDEO_STREAM_ID_1, VIDEO, UNUM_1000, FILTER_MIME_VIDEO_AVC, ""),
+        MakeTrackSelectionFilterStream(FILTER_SUBTITLE_STREAM_ID_1, SUBTITLE, UNUM_0, "", FILTER_LANG_FRA),
+        MakeTrackSelectionFilterStream(FILTER_SUBTITLE_STREAM_ID_2, SUBTITLE, UNUM_0, "", FILTER_LANG_CHI)
+    };
+    PrepareTrackSelectionFilter(mediaDemuxer_, FILTER_PLAY_TYPE_DASH, streams);
+    mediaDemuxer_->defaultVideoStreamId_ = FILTER_VIDEO_STREAM_ID_1;
+    mediaDemuxer_->defaultSubtitleStreamId_ = FILTER_SUBTITLE_STREAM_ID_1;
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), CanDoChangeStream()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(FILTER_SUBTITLE_STREAM_ID_2)).WillOnce(Return(Status::OK));
+
+    mediaDemuxer_->SetTrackSelectionFilter(filter);
+    EXPECT_EQ(mediaDemuxer_->defaultSubtitleStreamId_, FILTER_SUBTITLE_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : SetTrackSelectionFilter_016
+ * @tc.number: SetTrackSelectionFilter_016
+ * @tc.desc  : Test subtitle stream switch fails
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, SetTrackSelectionFilter_016, TestSize.Level1)
+{
+    TrackSelectionFilter filter;
+    filter.preferredVideoMimeTypes = {FILTER_MIME_VIDEO_AVC};
+    filter.preferredSubtitleLanguages = {FILTER_LANG_CHI};
+    std::vector<StreamInfo> streams = {
+        MakeTrackSelectionFilterStream(FILTER_VIDEO_STREAM_ID_1, VIDEO, UNUM_1000, FILTER_MIME_VIDEO_AVC, ""),
+        MakeTrackSelectionFilterStream(FILTER_SUBTITLE_STREAM_ID_1, SUBTITLE, UNUM_0, "", FILTER_LANG_FRA),
+        MakeTrackSelectionFilterStream(FILTER_SUBTITLE_STREAM_ID_2, SUBTITLE, UNUM_0, "", FILTER_LANG_CHI)
+    };
+    PrepareTrackSelectionFilter(mediaDemuxer_, FILTER_PLAY_TYPE_DASH, streams);
+    mediaDemuxer_->defaultVideoStreamId_ = FILTER_VIDEO_STREAM_ID_1;
+    mediaDemuxer_->defaultSubtitleStreamId_ = FILTER_SUBTITLE_STREAM_ID_1;
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), CanDoChangeStream()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(FILTER_SUBTITLE_STREAM_ID_2))
+        .WillOnce(Return(Status::ERROR_UNKNOWN));
+
+    mediaDemuxer_->SetTrackSelectionFilter(filter);
+    EXPECT_EQ(mediaDemuxer_->defaultSubtitleStreamId_, FILTER_SUBTITLE_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : SetTrackSelectionFilter_017
+ * @tc.number: SetTrackSelectionFilter_017
+ * @tc.desc  : Test audio and subtitle switch succeed together
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, SetTrackSelectionFilter_017, TestSize.Level1)
+{
+    TrackSelectionFilter filter;
+    filter.preferredVideoMimeTypes = {FILTER_MIME_VIDEO_AVC};
+    filter.preferredAudioLanguages = {FILTER_LANG_ENG};
+    filter.preferredSubtitleLanguages = {FILTER_LANG_CHI};
+    std::vector<StreamInfo> streams = {
+        MakeTrackSelectionFilterStream(FILTER_VIDEO_STREAM_ID_1, VIDEO, UNUM_1000, FILTER_MIME_VIDEO_AVC, ""),
+        MakeTrackSelectionFilterStream(FILTER_AUDIO_STREAM_ID_1, AUDIO, UNUM_1000, "audio/aac", FILTER_LANG_FRA),
+        MakeTrackSelectionFilterStream(FILTER_AUDIO_STREAM_ID_2, AUDIO, UNUM_1000, "audio/aac", FILTER_LANG_ENG),
+        MakeTrackSelectionFilterStream(FILTER_SUBTITLE_STREAM_ID_1, SUBTITLE, UNUM_0, "", FILTER_LANG_FRA),
+        MakeTrackSelectionFilterStream(FILTER_SUBTITLE_STREAM_ID_2, SUBTITLE, UNUM_0, "", FILTER_LANG_CHI)
+    };
+    PrepareTrackSelectionFilter(mediaDemuxer_, FILTER_PLAY_TYPE_DASH, streams);
+    mediaDemuxer_->defaultVideoStreamId_ = FILTER_VIDEO_STREAM_ID_1;
+    mediaDemuxer_->defaultAudioStreamId_ = FILTER_AUDIO_STREAM_ID_1;
+    mediaDemuxer_->defaultSubtitleStreamId_ = FILTER_SUBTITLE_STREAM_ID_1;
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).Times(2).WillRepeatedly(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), CanDoChangeStream()).Times(2).WillRepeatedly(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(FILTER_AUDIO_STREAM_ID_2)).WillOnce(Return(Status::OK));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(FILTER_SUBTITLE_STREAM_ID_2)).WillOnce(Return(Status::OK));
+
+    mediaDemuxer_->SetTrackSelectionFilter(filter);
+    EXPECT_EQ(mediaDemuxer_->defaultAudioStreamId_, FILTER_AUDIO_STREAM_ID_2);
+    EXPECT_EQ(mediaDemuxer_->defaultSubtitleStreamId_, FILTER_SUBTITLE_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : SetTrackSelectionFilter_018
+ * @tc.number: SetTrackSelectionFilter_018
+ * @tc.desc  : Test audio switch fails and subtitle switch succeeds
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, SetTrackSelectionFilter_018, TestSize.Level1)
+{
+    TrackSelectionFilter filter;
+    filter.preferredVideoMimeTypes = {FILTER_MIME_VIDEO_AVC};
+    filter.preferredAudioLanguages = {FILTER_LANG_ENG};
+    filter.preferredSubtitleLanguages = {FILTER_LANG_CHI};
+    std::vector<StreamInfo> streams = {
+        MakeTrackSelectionFilterStream(FILTER_VIDEO_STREAM_ID_1, VIDEO, UNUM_1000, FILTER_MIME_VIDEO_AVC, ""),
+        MakeTrackSelectionFilterStream(FILTER_AUDIO_STREAM_ID_1, AUDIO, UNUM_1000, "audio/aac", FILTER_LANG_FRA),
+        MakeTrackSelectionFilterStream(FILTER_AUDIO_STREAM_ID_2, AUDIO, UNUM_1000, "audio/aac", FILTER_LANG_ENG),
+        MakeTrackSelectionFilterStream(FILTER_SUBTITLE_STREAM_ID_1, SUBTITLE, UNUM_0, "", FILTER_LANG_FRA),
+        MakeTrackSelectionFilterStream(FILTER_SUBTITLE_STREAM_ID_2, SUBTITLE, UNUM_0, "", FILTER_LANG_CHI)
+    };
+    PrepareTrackSelectionFilter(mediaDemuxer_, FILTER_PLAY_TYPE_DASH, streams);
+    mediaDemuxer_->defaultVideoStreamId_ = FILTER_VIDEO_STREAM_ID_1;
+    mediaDemuxer_->defaultAudioStreamId_ = FILTER_AUDIO_STREAM_ID_1;
+    mediaDemuxer_->defaultSubtitleStreamId_ = FILTER_SUBTITLE_STREAM_ID_1;
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).Times(2).WillRepeatedly(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), CanDoChangeStream()).Times(2).WillRepeatedly(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(FILTER_AUDIO_STREAM_ID_2))
+        .WillOnce(Return(Status::ERROR_UNKNOWN));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(FILTER_SUBTITLE_STREAM_ID_2)).WillOnce(Return(Status::OK));
+
+    mediaDemuxer_->SetTrackSelectionFilter(filter);
+    EXPECT_EQ(mediaDemuxer_->defaultAudioStreamId_, FILTER_AUDIO_STREAM_ID_2);
+    EXPECT_EQ(mediaDemuxer_->defaultSubtitleStreamId_, FILTER_SUBTITLE_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : SetTrackSelectionFilter_019
+ * @tc.number: SetTrackSelectionFilter_019
+ * @tc.desc  : Test audio switch succeeds and subtitle switch fails
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, SetTrackSelectionFilter_019, TestSize.Level1)
+{
+    TrackSelectionFilter filter;
+    filter.preferredVideoMimeTypes = {FILTER_MIME_VIDEO_AVC};
+    filter.preferredAudioLanguages = {FILTER_LANG_ENG};
+    filter.preferredSubtitleLanguages = {FILTER_LANG_CHI};
+    std::vector<StreamInfo> streams = {
+        MakeTrackSelectionFilterStream(FILTER_VIDEO_STREAM_ID_1, VIDEO, UNUM_1000, FILTER_MIME_VIDEO_AVC, ""),
+        MakeTrackSelectionFilterStream(FILTER_AUDIO_STREAM_ID_1, AUDIO, UNUM_1000, "audio/aac", FILTER_LANG_FRA),
+        MakeTrackSelectionFilterStream(FILTER_AUDIO_STREAM_ID_2, AUDIO, UNUM_1000, "audio/aac", FILTER_LANG_ENG),
+        MakeTrackSelectionFilterStream(FILTER_SUBTITLE_STREAM_ID_1, SUBTITLE, UNUM_0, "", FILTER_LANG_FRA),
+        MakeTrackSelectionFilterStream(FILTER_SUBTITLE_STREAM_ID_2, SUBTITLE, UNUM_0, "", FILTER_LANG_CHI)
+    };
+    PrepareTrackSelectionFilter(mediaDemuxer_, FILTER_PLAY_TYPE_DASH, streams);
+    mediaDemuxer_->defaultVideoStreamId_ = FILTER_VIDEO_STREAM_ID_1;
+    mediaDemuxer_->defaultAudioStreamId_ = FILTER_AUDIO_STREAM_ID_1;
+    mediaDemuxer_->defaultSubtitleStreamId_ = FILTER_SUBTITLE_STREAM_ID_1;
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).Times(2).WillRepeatedly(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), CanDoChangeStream()).Times(2).WillRepeatedly(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(FILTER_AUDIO_STREAM_ID_2)).WillOnce(Return(Status::OK));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(FILTER_SUBTITLE_STREAM_ID_2))
+        .WillOnce(Return(Status::ERROR_UNKNOWN));
+
+    mediaDemuxer_->SetTrackSelectionFilter(filter);
+    EXPECT_EQ(mediaDemuxer_->defaultAudioStreamId_, FILTER_AUDIO_STREAM_ID_2);
+    EXPECT_EQ(mediaDemuxer_->defaultSubtitleStreamId_, FILTER_SUBTITLE_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : SetTrackSelectionFilter_020
+ * @tc.number: SetTrackSelectionFilter_020
+ * @tc.desc  : Test audio and subtitle both do not need switch
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, SetTrackSelectionFilter_020, TestSize.Level1)
+{
+    TrackSelectionFilter filter;
+    filter.preferredVideoMimeTypes = {FILTER_MIME_VIDEO_AVC};
+    filter.preferredAudioLanguages = {FILTER_LANG_ENG};
+    filter.preferredSubtitleLanguages = {FILTER_LANG_CHI};
+    std::vector<StreamInfo> streams = {
+        MakeTrackSelectionFilterStream(FILTER_VIDEO_STREAM_ID_1, VIDEO, UNUM_1000, FILTER_MIME_VIDEO_AVC, ""),
+        MakeTrackSelectionFilterStream(FILTER_AUDIO_STREAM_ID_2, AUDIO, UNUM_1000, "audio/aac", FILTER_LANG_ENG),
+        MakeTrackSelectionFilterStream(FILTER_SUBTITLE_STREAM_ID_2, SUBTITLE, UNUM_0, "", FILTER_LANG_CHI)
+    };
+    PrepareTrackSelectionFilter(mediaDemuxer_, FILTER_PLAY_TYPE_DASH, streams);
+    mediaDemuxer_->defaultVideoStreamId_ = FILTER_VIDEO_STREAM_ID_1;
+    mediaDemuxer_->defaultAudioStreamId_ = FILTER_AUDIO_STREAM_ID_2;
+    mediaDemuxer_->defaultSubtitleStreamId_ = FILTER_SUBTITLE_STREAM_ID_2;
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(_)).Times(0);
+
+    mediaDemuxer_->SetTrackSelectionFilter(filter);
+    EXPECT_EQ(mediaDemuxer_->defaultAudioStreamId_, FILTER_AUDIO_STREAM_ID_2);
+    EXPECT_EQ(mediaDemuxer_->defaultSubtitleStreamId_, FILTER_SUBTITLE_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : SelectAudioDefaultId_001
+ * @tc.number: SelectAudioDefaultId_001
+ * @tc.desc  : Test SelectAudioDefaultId returns -1 for hls when all streams selected
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, SelectAudioDefaultId_001, TestSize.Level1)
+{
+    std::map<StreamType, std::vector<StreamInfo>> streamMap;
+    TrackSelectionFilter filter;
+
+    int32_t ret = SelectAudioDefaultId(streamMap, true, filter, FILTER_LANG_ENG, "hls");
+    EXPECT_EQ(ret, NEG_1);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectAudioDefaultId_002
+ * @tc.number: MediaDemuxerExt_SelectAudioDefaultId_002
+ * @tc.desc  : Test SelectAudioDefaultId returns -1 for dash when all streams selected
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectAudioDefaultId_002, TestSize.Level1)
+{
+    std::map<StreamType, std::vector<StreamInfo>> streamMap;
+    TrackSelectionFilter filter;
+
+    int32_t ret = SelectAudioDefaultId(streamMap, true, filter, FILTER_LANG_ENG, FILTER_PLAY_TYPE_DASH);
+    EXPECT_EQ(ret, NEG_1);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectAudioDefaultId_003
+ * @tc.number: MediaDemuxerExt_SelectAudioDefaultId_003
+ * @tc.desc  : Test SelectAudioDefaultId returns -1 when audio stream list is empty
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectAudioDefaultId_003, TestSize.Level1)
+{
+    std::map<StreamType, std::vector<StreamInfo>> streamMap;
+    TrackSelectionFilter filter;
+
+    int32_t ret = SelectAudioDefaultId(streamMap, false, filter, FILTER_LANG_ENG, FILTER_PLAY_TYPE_HTTP);
+    EXPECT_EQ(ret, NEG_1);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectAudioDefaultId_004
+ * @tc.number: MediaDemuxerExt_SelectAudioDefaultId_004
+ * @tc.desc  : Test SelectAudioDefaultId finds stream by first preferred language
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectAudioDefaultId_004, TestSize.Level1)
+{
+    std::map<StreamType, std::vector<StreamInfo>> streamMap;
+    streamMap[AUDIO] = {
+        MakeSelectAudioDefaultStream(FILTER_AUDIO_STREAM_ID_1, FILTER_LANG_ENG, "audio/aac"),
+        MakeSelectAudioDefaultStream(FILTER_AUDIO_STREAM_ID_2, FILTER_LANG_FRA, "audio/mp3")
+    };
+    TrackSelectionFilter filter;
+    filter.preferredAudioLanguages = {FILTER_LANG_ENG, FILTER_LANG_CHI};
+
+    int32_t ret = SelectAudioDefaultId(streamMap, false, filter, FILTER_LANG_FRA, FILTER_PLAY_TYPE_HTTP);
+    EXPECT_EQ(ret, FILTER_AUDIO_STREAM_ID_1);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectAudioDefaultId_005
+ * @tc.number: MediaDemuxerExt_SelectAudioDefaultId_005
+ * @tc.desc  : Test SelectAudioDefaultId finds stream by second preferred language
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectAudioDefaultId_005, TestSize.Level1)
+{
+    std::map<StreamType, std::vector<StreamInfo>> streamMap;
+    streamMap[AUDIO] = {
+        MakeSelectAudioDefaultStream(FILTER_AUDIO_STREAM_ID_1, FILTER_LANG_FRA, "audio/aac"),
+        MakeSelectAudioDefaultStream(FILTER_AUDIO_STREAM_ID_2, FILTER_LANG_CHI, "audio/mp3")
+    };
+    TrackSelectionFilter filter;
+    filter.preferredAudioLanguages = {FILTER_LANG_ENG, FILTER_LANG_CHI};
+
+    int32_t ret = SelectAudioDefaultId(streamMap, false, filter, FILTER_LANG_FRA, FILTER_PLAY_TYPE_HTTP);
+    EXPECT_EQ(ret, FILTER_AUDIO_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectAudioDefaultId_006
+ * @tc.number: MediaDemuxerExt_SelectAudioDefaultId_006
+ * @tc.desc  : Test SelectAudioDefaultId falls through when preferred languages do not match
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectAudioDefaultId_006, TestSize.Level1)
+{
+    std::map<StreamType, std::vector<StreamInfo>> streamMap;
+    streamMap[AUDIO] = {
+        MakeSelectAudioDefaultStream(FILTER_AUDIO_STREAM_ID_1, FILTER_LANG_FRA, "audio/aac"),
+        MakeSelectAudioDefaultStream(FILTER_AUDIO_STREAM_ID_2, FILTER_LANG_CHI, "audio/mp3")
+    };
+    TrackSelectionFilter filter;
+    filter.preferredAudioLanguages = {FILTER_LANG_ENG};
+    filter.preferredAudioMimeTypes = {"audio/mp3"};
+
+    int32_t ret = SelectAudioDefaultId(streamMap, false, filter, FILTER_LANG_FRA, FILTER_PLAY_TYPE_HTTP);
+    EXPECT_EQ(ret, FILTER_AUDIO_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectAudioDefaultId_007
+ * @tc.number: MediaDemuxerExt_SelectAudioDefaultId_007
+ * @tc.desc  : Test SelectAudioDefaultId finds stream by first preferred mime type
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectAudioDefaultId_007, TestSize.Level1)
+{
+    std::map<StreamType, std::vector<StreamInfo>> streamMap;
+    streamMap[AUDIO] = {
+        MakeSelectAudioDefaultStream(FILTER_AUDIO_STREAM_ID_1, FILTER_LANG_FRA, "audio/aac"),
+        MakeSelectAudioDefaultStream(FILTER_AUDIO_STREAM_ID_2, FILTER_LANG_CHI, "audio/mp3")
+    };
+    TrackSelectionFilter filter;
+    filter.preferredAudioMimeTypes = {"audio/aac", "audio/flac"};
+
+    int32_t ret = SelectAudioDefaultId(streamMap, false, filter, FILTER_LANG_CHI, FILTER_PLAY_TYPE_HTTP);
+    EXPECT_EQ(ret, FILTER_AUDIO_STREAM_ID_1);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectAudioDefaultId_008
+ * @tc.number: MediaDemuxerExt_SelectAudioDefaultId_008
+ * @tc.desc  : Test SelectAudioDefaultId finds stream by second preferred mime type
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectAudioDefaultId_008, TestSize.Level1)
+{
+    std::map<StreamType, std::vector<StreamInfo>> streamMap;
+    streamMap[AUDIO] = {
+        MakeSelectAudioDefaultStream(FILTER_AUDIO_STREAM_ID_1, FILTER_LANG_FRA, "audio/aac"),
+        MakeSelectAudioDefaultStream(FILTER_AUDIO_STREAM_ID_2, FILTER_LANG_CHI, "audio/mp3")
+    };
+    TrackSelectionFilter filter;
+    filter.preferredAudioMimeTypes = {"audio/flac", "audio/mp3"};
+
+    int32_t ret = SelectAudioDefaultId(streamMap, false, filter, FILTER_LANG_FRA, FILTER_PLAY_TYPE_HTTP);
+    EXPECT_EQ(ret, FILTER_AUDIO_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectAudioDefaultId_009
+ * @tc.number: MediaDemuxerExt_SelectAudioDefaultId_009
+ * @tc.desc  : Test SelectAudioDefaultId falls through when preferred mime types do not match
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectAudioDefaultId_009, TestSize.Level1)
+{
+    std::map<StreamType, std::vector<StreamInfo>> streamMap;
+    streamMap[AUDIO] = {
+        MakeSelectAudioDefaultStream(FILTER_AUDIO_STREAM_ID_1, FILTER_LANG_FRA, "audio/aac"),
+        MakeSelectAudioDefaultStream(FILTER_AUDIO_STREAM_ID_2, FILTER_LANG_CHI, "audio/mp3")
+    };
+    TrackSelectionFilter filter;
+    filter.preferredAudioMimeTypes = {"audio/flac"};
+
+    int32_t ret = SelectAudioDefaultId(streamMap, false, filter, FILTER_LANG_CHI, FILTER_PLAY_TYPE_HTTP);
+    EXPECT_EQ(ret, FILTER_AUDIO_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectAudioDefaultId_010
+ * @tc.number: MediaDemuxerExt_SelectAudioDefaultId_010
+ * @tc.desc  : Test SelectAudioDefaultId returns last matching stream for default language
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectAudioDefaultId_010, TestSize.Level1)
+{
+    std::map<StreamType, std::vector<StreamInfo>> streamMap;
+    streamMap[AUDIO] = {
+        MakeSelectAudioDefaultStream(FILTER_AUDIO_STREAM_ID_1, FILTER_LANG_ENG, "audio/aac"),
+        MakeSelectAudioDefaultStream(FILTER_AUDIO_STREAM_ID_2, FILTER_LANG_ENG, "audio/mp3")
+    };
+    TrackSelectionFilter filter;
+
+    int32_t ret = SelectAudioDefaultId(streamMap, false, filter, FILTER_LANG_ENG, FILTER_PLAY_TYPE_HTTP);
+    EXPECT_EQ(ret, FILTER_AUDIO_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectAudioDefaultId_011
+ * @tc.number: MediaDemuxerExt_SelectAudioDefaultId_011
+ * @tc.desc  : Test SelectAudioDefaultId returns last stream when default language is empty
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectAudioDefaultId_011, TestSize.Level1)
+{
+    std::map<StreamType, std::vector<StreamInfo>> streamMap;
+    streamMap[AUDIO] = {
+        MakeSelectAudioDefaultStream(FILTER_AUDIO_STREAM_ID_1, FILTER_LANG_FRA, "audio/aac"),
+        MakeSelectAudioDefaultStream(FILTER_AUDIO_STREAM_ID_2, FILTER_LANG_CHI, "audio/mp3")
+    };
+    TrackSelectionFilter filter;
+
+    int32_t ret = SelectAudioDefaultId(streamMap, false, filter, "", FILTER_PLAY_TYPE_HTTP);
+    EXPECT_EQ(ret, FILTER_AUDIO_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectAudioDefaultId_012
+ * @tc.number: MediaDemuxerExt_SelectAudioDefaultId_012
+ * @tc.desc  : Test SelectAudioDefaultId returns first stream when no language matches
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectAudioDefaultId_012, TestSize.Level1)
+{
+    std::map<StreamType, std::vector<StreamInfo>> streamMap;
+    streamMap[AUDIO] = {
+        MakeSelectAudioDefaultStream(FILTER_AUDIO_STREAM_ID_1, FILTER_LANG_FRA, "audio/aac"),
+        MakeSelectAudioDefaultStream(FILTER_AUDIO_STREAM_ID_2, FILTER_LANG_CHI, "audio/mp3")
+    };
+    TrackSelectionFilter filter;
+
+    int32_t ret = SelectAudioDefaultId(streamMap, true, filter, FILTER_LANG_ENG, FILTER_PLAY_TYPE_HTTP);
+    EXPECT_EQ(ret, FILTER_AUDIO_STREAM_ID_1);
+}
+
+/**
+ * @tc.name  : SelectSubtitleDefaultId_001
+ * @tc.number: SelectSubtitleDefaultId_001
+ * @tc.desc  : Test SelectSubtitleDefaultId returns -1 for hls when all streams selected
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, SelectSubtitleDefaultId_001, TestSize.Level1)
+{
+    std::map<StreamType, std::vector<StreamInfo>> streamMap;
+    TrackSelectionFilter filter;
+
+    int32_t ret = SelectSubtitleDefaultId(streamMap, true, filter, FILTER_LANG_ENG, "hls");
+    EXPECT_EQ(ret, NEG_1);
+}
+ 
+/**
+ * @tc.name  : MediaDemuxerExt_SelectSubtitleDefaultId_002
+ * @tc.number: MediaDemuxerExt_SelectSubtitleDefaultId_002
+ * @tc.desc  : Test SelectSubtitleDefaultId returns -1 for dash when all streams selected
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectSubtitleDefaultId_002, TestSize.Level1)
+{
+    std::map<StreamType, std::vector<StreamInfo>> streamMap;
+    TrackSelectionFilter filter;
+
+    int32_t ret = SelectSubtitleDefaultId(streamMap, true, filter, FILTER_LANG_ENG, FILTER_PLAY_TYPE_DASH);
+    EXPECT_EQ(ret, NEG_1);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectSubtitleDefaultId_003
+ * @tc.number: MediaDemuxerExt_SelectSubtitleDefaultId_003
+ * @tc.desc  : Test SelectSubtitleDefaultId returns -1 when subtitle stream list is empty
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectSubtitleDefaultId_003, TestSize.Level1)
+{
+    std::map<StreamType, std::vector<StreamInfo>> streamMap;
+    TrackSelectionFilter filter;
+
+    int32_t ret = SelectSubtitleDefaultId(streamMap, false, filter, FILTER_LANG_ENG, FILTER_PLAY_TYPE_HTTP);
+    EXPECT_EQ(ret, NEG_1);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectSubtitleDefaultId_004
+ * @tc.number: MediaDemuxerExt_SelectSubtitleDefaultId_004
+ * @tc.desc  : Test SelectSubtitleDefaultId finds stream by first preferred language
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectSubtitleDefaultId_004, TestSize.Level1)
+{
+    std::map<StreamType, std::vector<StreamInfo>> streamMap;
+    streamMap[SUBTITLE] = {
+        MakeSelectSubtitleDefaultStream(FILTER_SUBTITLE_STREAM_ID_1, FILTER_LANG_ENG),
+        MakeSelectSubtitleDefaultStream(FILTER_SUBTITLE_STREAM_ID_2, FILTER_LANG_FRA)
+    };
+    TrackSelectionFilter filter;
+    filter.preferredSubtitleLanguages = {FILTER_LANG_ENG, FILTER_LANG_CHI};
+
+    int32_t ret = SelectSubtitleDefaultId(streamMap, false, filter, FILTER_LANG_FRA, FILTER_PLAY_TYPE_HTTP);
+    EXPECT_EQ(ret, FILTER_SUBTITLE_STREAM_ID_1);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectSubtitleDefaultId_005
+ * @tc.number: MediaDemuxerExt_SelectSubtitleDefaultId_005
+ * @tc.desc  : Test SelectSubtitleDefaultId finds stream by later preferred language match
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectSubtitleDefaultId_005, TestSize.Level1)
+{
+    std::map<StreamType, std::vector<StreamInfo>> streamMap;
+    streamMap[SUBTITLE] = {
+        MakeSelectSubtitleDefaultStream(FILTER_SUBTITLE_STREAM_ID_1, FILTER_LANG_FRA),
+        MakeSelectSubtitleDefaultStream(FILTER_SUBTITLE_STREAM_ID_2, FILTER_LANG_CHI)
+    };
+    TrackSelectionFilter filter;
+    filter.preferredSubtitleLanguages = {FILTER_LANG_ENG, FILTER_LANG_CHI};
+
+    int32_t ret = SelectSubtitleDefaultId(streamMap, false, filter, FILTER_LANG_FRA, FILTER_PLAY_TYPE_HTTP);
+    EXPECT_EQ(ret, FILTER_SUBTITLE_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectSubtitleDefaultId_006
+ * @tc.number: MediaDemuxerExt_SelectSubtitleDefaultId_006
+ * @tc.desc  : Test SelectSubtitleDefaultId falls back to default language when preferred language misses
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectSubtitleDefaultId_006, TestSize.Level1)
+{
+    std::map<StreamType, std::vector<StreamInfo>> streamMap;
+    streamMap[SUBTITLE] = {
+        MakeSelectSubtitleDefaultStream(FILTER_SUBTITLE_STREAM_ID_1, FILTER_LANG_ENG),
+        MakeSelectSubtitleDefaultStream(FILTER_SUBTITLE_STREAM_ID_2, FILTER_LANG_FRA)
+    };
+    TrackSelectionFilter filter;
+    filter.preferredSubtitleLanguages = {FILTER_LANG_CHI};
+
+    int32_t ret = SelectSubtitleDefaultId(streamMap, false, filter, FILTER_LANG_FRA, FILTER_PLAY_TYPE_HTTP);
+    EXPECT_EQ(ret, FILTER_SUBTITLE_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectSubtitleDefaultId_007
+ * @tc.number: MediaDemuxerExt_SelectSubtitleDefaultId_007
+ * @tc.desc  : Test SelectSubtitleDefaultId returns last matching stream for default language
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectSubtitleDefaultId_007, TestSize.Level1)
+{
+    std::map<StreamType, std::vector<StreamInfo>> streamMap;
+    streamMap[SUBTITLE] = {
+        MakeSelectSubtitleDefaultStream(FILTER_SUBTITLE_STREAM_ID_1, FILTER_LANG_ENG),
+        MakeSelectSubtitleDefaultStream(FILTER_SUBTITLE_STREAM_ID_2, FILTER_LANG_ENG)
+    };
+    TrackSelectionFilter filter;
+
+    int32_t ret = SelectSubtitleDefaultId(streamMap, false, filter, FILTER_LANG_ENG, FILTER_PLAY_TYPE_HTTP);
+    EXPECT_EQ(ret, FILTER_SUBTITLE_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectSubtitleDefaultId_008
+ * @tc.number: MediaDemuxerExt_SelectSubtitleDefaultId_008
+ * @tc.desc  : Test SelectSubtitleDefaultId returns last stream when default language is empty
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectSubtitleDefaultId_008, TestSize.Level1)
+{
+    std::map<StreamType, std::vector<StreamInfo>> streamMap;
+    streamMap[SUBTITLE] = {
+        MakeSelectSubtitleDefaultStream(FILTER_SUBTITLE_STREAM_ID_1, FILTER_LANG_FRA),
+        MakeSelectSubtitleDefaultStream(FILTER_SUBTITLE_STREAM_ID_2, FILTER_LANG_CHI)
+    };
+    TrackSelectionFilter filter;
+
+    int32_t ret = SelectSubtitleDefaultId(streamMap, false, filter, "", FILTER_PLAY_TYPE_HTTP);
+    EXPECT_EQ(ret, FILTER_SUBTITLE_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectSubtitleDefaultId_009
+ * @tc.number: MediaDemuxerExt_SelectSubtitleDefaultId_009
+ * @tc.desc  : Test SelectSubtitleDefaultId returns first stream when no language matches
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectSubtitleDefaultId_009, TestSize.Level1)
+{
+    std::map<StreamType, std::vector<StreamInfo>> streamMap;
+    streamMap[SUBTITLE] = {
+        MakeSelectSubtitleDefaultStream(FILTER_SUBTITLE_STREAM_ID_1, FILTER_LANG_FRA),
+        MakeSelectSubtitleDefaultStream(FILTER_SUBTITLE_STREAM_ID_2, FILTER_LANG_CHI)
+    };
+    TrackSelectionFilter filter;
+
+    int32_t ret = SelectSubtitleDefaultId(streamMap, false, filter, FILTER_LANG_ENG, FILTER_PLAY_TYPE_HTTP);
+    EXPECT_EQ(ret, FILTER_SUBTITLE_STREAM_ID_1);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectSubtitleDefaultId_010
+ * @tc.number: MediaDemuxerExt_SelectSubtitleDefaultId_010
+ * @tc.desc  : Test SelectSubtitleDefaultId skips preferred language when all streams are already selected on http
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectSubtitleDefaultId_010, TestSize.Level1)
+{
+    std::map<StreamType, std::vector<StreamInfo>> streamMap;
+    streamMap[SUBTITLE] = {
+        MakeSelectSubtitleDefaultStream(FILTER_SUBTITLE_STREAM_ID_1, FILTER_LANG_CHI),
+        MakeSelectSubtitleDefaultStream(FILTER_SUBTITLE_STREAM_ID_2, FILTER_LANG_ENG)
+    };
+    TrackSelectionFilter filter;
+    filter.preferredSubtitleLanguages = {FILTER_LANG_CHI};
+
+    int32_t ret = SelectSubtitleDefaultId(streamMap, true, filter, FILTER_LANG_ENG, FILTER_PLAY_TYPE_HTTP);
+    EXPECT_EQ(ret, FILTER_SUBTITLE_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : UpdateDefaultStreamIds_001
+ * @tc.number: UpdateDefaultStreamIds_001
+ * @tc.desc  : Test UpdateDefaultStreamIds updates default video stream id when selected id is valid
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_001, TestSize.Level1)
+{
+    filteredStreamMap_.clear();
+    filteredStreamMap_[VIDEO] = {
+        MakeTrackSelectionFilterStream(FILTER_VIDEO_STREAM_ID_1, VIDEO, UNUM_1000, FILTER_MIME_VIDEO_AVC, "")
+    };
+    mediaDemuxer_->currentPlayType_ = "hls";
+    mediaDemuxer_->trackSelectionFilter_ = {};
+    mediaDemuxer_->isHdrStart_ = false;
+    mediaDemuxer_->initResolution_ = UNUM_0;
+    mediaDemuxer_->defaultVideoStreamId_ = FILTER_VIDEO_STREAM_ID_2;
+
+    mediaDemuxer_->UpdateDefaultStreamIds(false, false, false);
+    EXPECT_EQ(mediaDemuxer_->defaultVideoStreamId_, FILTER_VIDEO_STREAM_ID_1);
+}
+
+/**
+ * @tc.name  : UpdateDefaultStreamIds_002
+ * @tc.number: UpdateDefaultStreamIds_002
+ * @tc.desc  : Test UpdateDefaultStreamIds keeps default video stream id when selected id is invalid
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_002, TestSize.Level1)
+{
+    filteredStreamMap_.clear();
+    mediaDemuxer_->currentPlayType_ = "hls";
+    mediaDemuxer_->trackSelectionFilter_ = {};
+    mediaDemuxer_->isHdrStart_ = false;
+    mediaDemuxer_->initResolution_ = UNUM_0;
+    mediaDemuxer_->defaultVideoStreamId_ = FILTER_VIDEO_STREAM_ID_2;
+
+    mediaDemuxer_->UpdateDefaultStreamIds(false, false, false);
+    EXPECT_EQ(mediaDemuxer_->defaultVideoStreamId_, FILTER_VIDEO_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : UpdateDefaultStreamIds_003
+ * @tc.number: UpdateDefaultStreamIds_003
+ * @tc.desc  : Test UpdateDefaultStreamIds returns early for http play type
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_003, TestSize.Level1)
+{
+    filteredStreamMap_.clear();
+    filteredStreamMap_[VIDEO] = {
+        MakeTrackSelectionFilterStream(FILTER_VIDEO_STREAM_ID_1, VIDEO, UNUM_1000, FILTER_MIME_VIDEO_AVC, "")
+    };
+    filteredStreamMap_[AUDIO] = {
+        MakeSelectAudioDefaultStream(FILTER_AUDIO_STREAM_ID_1, FILTER_LANG_ENG, "audio/aac")
+    };
+    filteredStreamMap_[SUBTITLE] = {
+        MakeSelectSubtitleDefaultStream(FILTER_SUBTITLE_STREAM_ID_1, FILTER_LANG_CHI)
+    };
+    mediaDemuxer_->currentPlayType_ = FILTER_PLAY_TYPE_HTTP;
+    mediaDemuxer_->trackSelectionFilter_ = {};
+    mediaDemuxer_->isHdrStart_ = false;
+    mediaDemuxer_->initResolution_ = UNUM_0;
+    mediaDemuxer_->defaultAudioLang_ = FILTER_LANG_ENG;
+    mediaDemuxer_->defaultSubtitleLang_ = FILTER_LANG_CHI;
+    mediaDemuxer_->defaultVideoStreamId_ = FILTER_VIDEO_STREAM_ID_2;
+    mediaDemuxer_->defaultAudioStreamId_ = FILTER_AUDIO_STREAM_ID_2;
+    mediaDemuxer_->defaultSubtitleStreamId_ = FILTER_SUBTITLE_STREAM_ID_2;
+
+    mediaDemuxer_->UpdateDefaultStreamIds(false, false, false);
+    EXPECT_EQ(mediaDemuxer_->defaultVideoStreamId_, FILTER_VIDEO_STREAM_ID_1);
+    EXPECT_EQ(mediaDemuxer_->defaultAudioStreamId_, FILTER_AUDIO_STREAM_ID_2);
+    EXPECT_EQ(mediaDemuxer_->defaultSubtitleStreamId_, FILTER_SUBTITLE_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : UpdateDefaultStreamIds_004
+ * @tc.number: UpdateDefaultStreamIds_004
+ * @tc.desc  : Test UpdateDefaultStreamIds continues updating audio and subtitle for non-http play type
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_004, TestSize.Level1)
+{
+    filteredStreamMap_.clear();
+    filteredStreamMap_[AUDIO] = {
+        MakeSelectAudioDefaultStream(FILTER_AUDIO_STREAM_ID_1, FILTER_LANG_ENG, "audio/aac")
+    };
+    filteredStreamMap_[SUBTITLE] = {
+        MakeSelectSubtitleDefaultStream(FILTER_SUBTITLE_STREAM_ID_1, FILTER_LANG_CHI)
+    };
+    mediaDemuxer_->currentPlayType_ = FILTER_PLAY_TYPE_DASH;
+    mediaDemuxer_->trackSelectionFilter_ = {};
+    mediaDemuxer_->defaultAudioLang_ = FILTER_LANG_ENG;
+    mediaDemuxer_->defaultSubtitleLang_ = FILTER_LANG_CHI;
+    mediaDemuxer_->defaultAudioStreamId_ = FILTER_AUDIO_STREAM_ID_2;
+    mediaDemuxer_->defaultSubtitleStreamId_ = FILTER_SUBTITLE_STREAM_ID_2;
+
+    mediaDemuxer_->UpdateDefaultStreamIds(false, false, false);
+    EXPECT_EQ(mediaDemuxer_->defaultAudioStreamId_, FILTER_AUDIO_STREAM_ID_1);
+    EXPECT_EQ(mediaDemuxer_->defaultSubtitleStreamId_, FILTER_SUBTITLE_STREAM_ID_1);
+}
+
+/**
+ * @tc.name  : UpdateDefaultStreamIds_005
+ * @tc.number: UpdateDefaultStreamIds_005
+ * @tc.desc  : Test UpdateDefaultStreamIds updates default audio stream id when selected id is valid
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_005, TestSize.Level1)
+{
+    filteredStreamMap_.clear();
+    filteredStreamMap_[AUDIO] = {
+        MakeSelectAudioDefaultStream(FILTER_AUDIO_STREAM_ID_1, FILTER_LANG_ENG, "audio/aac")
+    };
+    mediaDemuxer_->currentPlayType_ = FILTER_PLAY_TYPE_DASH;
+    mediaDemuxer_->trackSelectionFilter_ = {};
+    mediaDemuxer_->defaultAudioLang_ = FILTER_LANG_ENG;
+    mediaDemuxer_->defaultAudioStreamId_ = FILTER_AUDIO_STREAM_ID_2;
+    mediaDemuxer_->defaultSubtitleStreamId_ = FILTER_SUBTITLE_STREAM_ID_2;
+
+    mediaDemuxer_->UpdateDefaultStreamIds(false, false, false);
+    EXPECT_EQ(mediaDemuxer_->defaultAudioStreamId_, FILTER_AUDIO_STREAM_ID_1);
+}
+
+/**
+ * @tc.name  : UpdateDefaultStreamIds_006
+ * @tc.number: UpdateDefaultStreamIds_006
+ * @tc.desc  : Test UpdateDefaultStreamIds keeps default audio stream id when selected id is invalid
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_006, TestSize.Level1)
+{
+    filteredStreamMap_.clear();
+    mediaDemuxer_->currentPlayType_ = FILTER_PLAY_TYPE_DASH;
+    mediaDemuxer_->trackSelectionFilter_ = {};
+    mediaDemuxer_->defaultAudioLang_ = FILTER_LANG_ENG;
+    mediaDemuxer_->defaultAudioStreamId_ = FILTER_AUDIO_STREAM_ID_2;
+
+    mediaDemuxer_->UpdateDefaultStreamIds(false, false, false);
+    EXPECT_EQ(mediaDemuxer_->defaultAudioStreamId_, FILTER_AUDIO_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : UpdateDefaultStreamIds_007
+ * @tc.number: UpdateDefaultStreamIds_007
+ * @tc.desc  : Test UpdateDefaultStreamIds updates default subtitle stream id when selected id is valid
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_007, TestSize.Level1)
+{
+    filteredStreamMap_.clear();
+    filteredStreamMap_[SUBTITLE] = {
+        MakeSelectSubtitleDefaultStream(FILTER_SUBTITLE_STREAM_ID_1, FILTER_LANG_CHI)
+    };
+    mediaDemuxer_->currentPlayType_ = FILTER_PLAY_TYPE_DASH;
+    mediaDemuxer_->trackSelectionFilter_ = {};
+    mediaDemuxer_->defaultSubtitleLang_ = FILTER_LANG_CHI;
+    mediaDemuxer_->defaultSubtitleStreamId_ = FILTER_SUBTITLE_STREAM_ID_2;
+
+    mediaDemuxer_->UpdateDefaultStreamIds(false, false, false);
+    EXPECT_EQ(mediaDemuxer_->defaultSubtitleStreamId_, FILTER_SUBTITLE_STREAM_ID_1);
+}
+
+/**
+ * @tc.name  : UpdateDefaultStreamIds_008
+ * @tc.number: UpdateDefaultStreamIds_008
+ * @tc.desc  : Test UpdateDefaultStreamIds keeps default subtitle stream id when selected id is invalid
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_008, TestSize.Level1)
+{
+    filteredStreamMap_.clear();
+    mediaDemuxer_->currentPlayType_ = FILTER_PLAY_TYPE_DASH;
+    mediaDemuxer_->trackSelectionFilter_ = {};
+    mediaDemuxer_->defaultSubtitleLang_ = FILTER_LANG_CHI;
+    mediaDemuxer_->defaultSubtitleStreamId_ = FILTER_SUBTITLE_STREAM_ID_2;
+
+    mediaDemuxer_->UpdateDefaultStreamIds(false, false, false);
+    EXPECT_EQ(mediaDemuxer_->defaultSubtitleStreamId_, FILTER_SUBTITLE_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : CheckStreamCodec_001
+ * @tc.number: CheckStreamCodec_001
+ * @tc.desc  : Test CheckStreamCodec returns false when audio codec is unsupported
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, CheckStreamCodec_001, TestSize.Level1)
+{
+    EXPECT_FALSE(CheckStreamCodec("audio/not-supported", AUDIO, nullptr));
+}
+
+/**
+ * @tc.name  : CheckStreamCodec_002
+ * @tc.number: CheckStreamCodec_002
+ * @tc.desc  : Test CheckStreamCodec returns true when codec list is null for video stream
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, CheckStreamCodec_002, TestSize.Level1)
+{
+    EXPECT_TRUE(CheckStreamCodec(FILTER_MIME_VIDEO_AVC, VIDEO, nullptr));
+}
+
+/**
+ * @tc.name  : CheckStreamCodec_003
+ * @tc.number: CheckStreamCodec_003
+ * @tc.desc  : Test CheckStreamCodec returns true when video decoder capability matches codec mime
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, CheckStreamCodec_003, TestSize.Level1)
+{
+    auto codecList = std::make_shared<FakeAVCodecList>(
+        std::vector<std::shared_ptr<MediaAVCodec::CapabilityData>> {
+            nullptr, MakeCodecCapability(FILTER_MIME_VIDEO_AVC)
+        });
+
+    EXPECT_TRUE(CheckStreamCodec(FILTER_MIME_VIDEO_AVC, VIDEO, codecList));
+}
+
+/**
+ * @tc.name  : CheckStreamCodec_004
+ * @tc.number: CheckStreamCodec_004
+ * @tc.desc  : Test CheckStreamCodec returns false when no video decoder capability matches codec mime
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, CheckStreamCodec_004, TestSize.Level1)
+{
+    auto codecList = std::make_shared<FakeAVCodecList>(
+        std::vector<std::shared_ptr<MediaAVCodec::CapabilityData>> {
+            nullptr, MakeCodecCapability(FILTER_MIME_VIDEO_HEVC)
+        });
+
+    EXPECT_FALSE(CheckStreamCodec(FILTER_MIME_VIDEO_AVC, VIDEO, codecList));
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ConsumeWaterLoopControl_001
+ * @tc.number: MediaDemuxerExt_ConsumeWaterLoopControl_001
+ * @tc.desc  : Test early return when sampleQueueController_ is nullptr
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ConsumeWaterLoopControl_001, TestSize.Level1)
+{
+    int32_t trackId = NUM_0;
+    auto sampleQueue = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueController_ = nullptr;
+
+    auto source = std::static_pointer_cast<Source>(mediaDemuxer_->source_);
+    ASSERT_NE(source, nullptr);
+    EXPECT_CALL(*source, IsLocalFd()).Times(0);
+
+    mediaDemuxer_->ConsumeWaterLoopControl(trackId, sampleQueue);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ConsumeWaterLoopControl_002
+ * @tc.number: MediaDemuxerExt_ConsumeWaterLoopControl_002
+ * @tc.desc  : Test early return when track already reaches eos
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ConsumeWaterLoopControl_002, TestSize.Level1)
+{
+    int32_t trackId = NUM_0;
+    auto sampleQueue = PrepareConsumeWaterLoopControl(mediaDemuxer_, trackId);
+    mediaDemuxer_->eosMap_[trackId] = true;
+
+    auto source = std::static_pointer_cast<Source>(mediaDemuxer_->source_);
+    ASSERT_NE(source, nullptr);
+    EXPECT_CALL(*source, IsLocalFd()).WillOnce(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetStreamTypeByTrackID(trackId)).Times(0);
+
+    mediaDemuxer_->ConsumeWaterLoopControl(trackId, sampleQueue);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ConsumeWaterLoopControl_003
+ * @tc.number: MediaDemuxerExt_ConsumeWaterLoopControl_003
+ * @tc.desc  : Test early return when IsLocalFd() is true
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ConsumeWaterLoopControl_003, TestSize.Level1)
+{
+    int32_t trackId = NUM_0;
+    auto sampleQueue = PrepareConsumeWaterLoopControl(mediaDemuxer_, trackId);
+
+    auto source = std::static_pointer_cast<Source>(mediaDemuxer_->source_);
+    ASSERT_NE(source, nullptr);
+    EXPECT_CALL(*source, IsLocalFd()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetStreamTypeByTrackID(trackId)).Times(0);
+
+    mediaDemuxer_->ConsumeWaterLoopControl(trackId, sampleQueue);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ConsumeWaterLoopControl_004
+ * @tc.number: MediaDemuxerExt_ConsumeWaterLoopControl_004
+ * @tc.desc  : Test cloud fd skips water line auto select branch
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ConsumeWaterLoopControl_004, TestSize.Level1)
+{
+    int32_t trackId = NUM_0;
+    auto sampleQueue = PrepareConsumeWaterLoopControl(mediaDemuxer_, trackId);
+    mediaDemuxer_->lastCheckAutoSelectTimeMs_ = NUM_1;
+
+    auto source = std::static_pointer_cast<Source>(mediaDemuxer_->source_);
+    ASSERT_NE(source, nullptr);
+    EXPECT_CALL(*source, IsLocalFd()).WillOnce(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetStreamTypeByTrackID(trackId)).WillOnce(Return(VIDEO));
+    EXPECT_CALL(*source, IsCloudFd()).WillOnce(Return(true));
+    EXPECT_CALL(*source, IsNeedPreDownload()).Times(0);
+
+    mediaDemuxer_->ConsumeWaterLoopControl(trackId, sampleQueue);
+    EXPECT_EQ(mediaDemuxer_->lastCheckAutoSelectTimeMs_, NUM_1);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ConsumeWaterLoopControl_005
+ * @tc.number: MediaDemuxerExt_ConsumeWaterLoopControl_005
+ * @tc.desc  : Test predownload skips water line auto select branch
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ConsumeWaterLoopControl_005, TestSize.Level1)
+{
+    int32_t trackId = NUM_0;
+    auto sampleQueue = PrepareConsumeWaterLoopControl(mediaDemuxer_, trackId);
+    mediaDemuxer_->lastCheckAutoSelectTimeMs_ = NUM_1;
+
+    auto source = std::static_pointer_cast<Source>(mediaDemuxer_->source_);
+    ASSERT_NE(source, nullptr);
+    EXPECT_CALL(*source, IsLocalFd()).WillOnce(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetStreamTypeByTrackID(trackId)).WillOnce(Return(VIDEO));
+    EXPECT_CALL(*source, IsCloudFd()).WillOnce(Return(false));
+    EXPECT_CALL(*source, IsNeedPreDownload()).WillOnce(Return(true));
+
+    mediaDemuxer_->ConsumeWaterLoopControl(trackId, sampleQueue);
+    EXPECT_EQ(mediaDemuxer_->lastCheckAutoSelectTimeMs_, NUM_1);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ConsumeWaterLoopControl_006
+ * @tc.number: MediaDemuxerExt_ConsumeWaterLoopControl_006
+ * @tc.desc  : Test audio stream skips water line auto select branch
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ConsumeWaterLoopControl_006, TestSize.Level1)
+{
+    int32_t trackId = NUM_0;
+    auto sampleQueue = PrepareConsumeWaterLoopControl(mediaDemuxer_, trackId);
+    mediaDemuxer_->lastCheckAutoSelectTimeMs_ = NUM_1;
+
+    auto source = std::static_pointer_cast<Source>(mediaDemuxer_->source_);
+    ASSERT_NE(source, nullptr);
+    EXPECT_CALL(*source, IsLocalFd()).WillOnce(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetStreamTypeByTrackID(trackId)).WillOnce(Return(AUDIO));
+    EXPECT_CALL(*source, IsCloudFd()).WillOnce(Return(false));
+    EXPECT_CALL(*source, IsNeedPreDownload()).WillOnce(Return(false));
+
+    mediaDemuxer_->ConsumeWaterLoopControl(trackId, sampleQueue);
+    EXPECT_EQ(mediaDemuxer_->lastCheckAutoSelectTimeMs_, NUM_1);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ConsumeWaterLoopControl_007
+ * @tc.number: MediaDemuxerExt_ConsumeWaterLoopControl_007
+ * @tc.desc  : Test no stop-consume result keeps buffering state unchanged
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ConsumeWaterLoopControl_007, TestSize.Level1)
+{
+    int32_t trackId = NUM_0;
+    auto sampleQueue = PrepareConsumeWaterLoopControl(mediaDemuxer_, trackId);
+
+    auto source = std::static_pointer_cast<Source>(mediaDemuxer_->source_);
+    ASSERT_NE(source, nullptr);
+    EXPECT_CALL(*source, IsLocalFd()).WillOnce(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetStreamTypeByTrackID(trackId)).WillOnce(Return(AUDIO));
+    EXPECT_CALL(*source, IsCloudFd()).WillOnce(Return(true));
+
+    mediaDemuxer_->ConsumeWaterLoopControl(trackId, sampleQueue);
+    EXPECT_FALSE(mediaDemuxer_->GetTrackIsBuffering(trackId));
+    EXPECT_FALSE(mediaDemuxer_->IsBuffering());
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ConsumeWaterLoopControl_008
+ * @tc.number: MediaDemuxerExt_ConsumeWaterLoopControl_008
+ * @tc.desc  : Test hls segment eos with no stop-consume keeps buffering state unchanged
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ConsumeWaterLoopControl_008, TestSize.Level1)
+{
+    int32_t trackId = NUM_0;
+    auto sampleQueue = PrepareConsumeWaterLoopControl(mediaDemuxer_, trackId);
+    mediaDemuxer_->hlsSegmentEosMap_[trackId] = true;
+    auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
+    mediaDemuxer_->eventReceiver_ = mockEventReceiver;
+    EXPECT_CALL(*mockEventReceiver, OnEvent(_)).Times(0);
+
+    auto source = std::static_pointer_cast<Source>(mediaDemuxer_->source_);
+    ASSERT_NE(source, nullptr);
+    EXPECT_CALL(*source, IsLocalFd()).WillOnce(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetStreamTypeByTrackID(trackId)).WillOnce(Return(AUDIO));
+    EXPECT_CALL(*source, IsCloudFd()).WillOnce(Return(true));
+
+    mediaDemuxer_->ConsumeWaterLoopControl(trackId, sampleQueue);
+    EXPECT_FALSE(mediaDemuxer_->GetTrackIsBuffering(trackId));
+    EXPECT_FALSE(mediaDemuxer_->IsBuffering());
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ConsumeWaterLoopControl_009
+ * @tc.number: MediaDemuxerExt_ConsumeWaterLoopControl_009
+ * @tc.desc  : Test muted video with no stop-consume keeps track buffering state unchanged
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ConsumeWaterLoopControl_009, TestSize.Level1)
+{
+    int32_t trackId = NUM_0;
+    auto sampleQueue = PrepareConsumeWaterLoopControl(mediaDemuxer_, trackId);
+    mediaDemuxer_->isVideoMuted_ = true;
+    mediaDemuxer_->SetTrackIsBuffering(trackId, true);
+    auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
+    mediaDemuxer_->eventReceiver_ = mockEventReceiver;
+    EXPECT_CALL(*mockEventReceiver, OnEvent(_)).Times(0);
+
+    auto source = std::static_pointer_cast<Source>(mediaDemuxer_->source_);
+    ASSERT_NE(source, nullptr);
+    EXPECT_CALL(*source, IsLocalFd()).WillOnce(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetStreamTypeByTrackID(trackId)).WillOnce(Return(AUDIO));
+    EXPECT_CALL(*source, IsCloudFd()).WillOnce(Return(true));
+
+    mediaDemuxer_->ConsumeWaterLoopControl(trackId, sampleQueue);
+    EXPECT_TRUE(mediaDemuxer_->GetTrackIsBuffering(trackId));
+    EXPECT_FALSE(mediaDemuxer_->IsBuffering());
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ConsumeWaterLoopControl_010
+ * @tc.number: MediaDemuxerExt_ConsumeWaterLoopControl_010
+ * @tc.desc  : Test regular no stop-consume path keeps buffering status unchanged
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ConsumeWaterLoopControl_010, TestSize.Level1)
+{
+    int32_t trackId = NUM_0;
+    auto sampleQueue = PrepareConsumeWaterLoopControl(mediaDemuxer_, trackId);
+    auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
+    mediaDemuxer_->eventReceiver_ = mockEventReceiver;
+    EXPECT_CALL(*mockEventReceiver, OnEvent(_)).Times(0);
+
+    auto source = std::static_pointer_cast<Source>(mediaDemuxer_->source_);
+    ASSERT_NE(source, nullptr);
+    EXPECT_CALL(*source, IsLocalFd()).WillOnce(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetStreamTypeByTrackID(trackId)).WillOnce(Return(MIXED));
+    EXPECT_CALL(*source, IsCloudFd()).WillOnce(Return(true));
+
+    mediaDemuxer_->ConsumeWaterLoopControl(trackId, sampleQueue);
+    EXPECT_FALSE(mediaDemuxer_->GetTrackIsBuffering(trackId));
+    EXPECT_FALSE(mediaDemuxer_->IsBuffering());
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_OnEventStream_001
+ * @tc.number: MediaDemuxerExt_OnEventStream_001
+ * @tc.desc  : Test OnEventStream with STREAM_UPDATE
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_OnEventStream_001, TestSize.Level1)
+{
+    EXPECT_CALL(*(mediaDemuxer_->source_), SetDefaultStreamId(_, _, _)).Times(1);
+    PluginEvent event;
+    event.type = PluginEventType::STREAM_UPDATE;
+    std::string playType = "http";
+    event.param = playType;
+    mediaDemuxer_->OnEventStream(event);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_OnEventStream_002
+ * @tc.number: MediaDemuxerExt_OnEventStream_002
+ * @tc.desc  : Test OnEventStream with NETWORK_BITRATE_CHANGED
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_OnEventStream_002, TestSize.Level1)
+{
+    uint32_t bitRate = TEST_NETWORK_BITRATE;
+    PluginEvent event;
+    event.type = PluginEventType::NETWORK_BITRATE_CHANGED;
+    event.param = bitRate;
+    mediaDemuxer_->curDownloadBitRate_.store(0);
+    mediaDemuxer_->OnEventStream(event);
+    EXPECT_EQ(mediaDemuxer_->curDownloadBitRate_.load(), bitRate);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_AutoSelectTrackByBitrate_001
+ * @tc.number: MediaDemuxerExt_AutoSelectTrackByBitrate_001
+ * @tc.desc  : Test AutoSelectTrackByBitrate when should auto select
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_AutoSelectTrackByBitrate_001, TestSize.Level1)
+{
+    mediaDemuxer_->isAutoSelect_ = true;
+    int32_t trackId = NUM_0;
+    auto controller = std::make_shared<SampleQueueController>();
+    mediaDemuxer_->sampleQueueController_ = controller;
+    mediaDemuxer_->sampleQueueMap_[trackId] = std::make_shared<SampleQueue>();
+    mediaDemuxer_->AutoSelectTrackByBitrate(trackId);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ProduceWaterLoopControl_004
+ * @tc.number: MediaDemuxerExt_ProduceWaterLoopControl_004
+ * @tc.desc  : Test ProduceWaterLoopControl for video track
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ProduceWaterLoopControl_004, TestSize.Level1)
+{
+    int32_t trackId = NUM_0;
+    mediaDemuxer_->subtitleTrackId_ = NEG_1;
+    mediaDemuxer_->videoTrackId_ = trackId;
+    mediaDemuxer_->isVideoMuted_ = false;
+    auto controller = std::make_shared<SampleQueueController>();
+    mediaDemuxer_->sampleQueueController_ = controller;
+    mediaDemuxer_->sampleQueueMap_[trackId] = std::make_shared<SampleQueue>();
+    mediaDemuxer_->isBuffering_.store(true);
+    auto source = std::static_pointer_cast<Source>(mediaDemuxer_->source_);
+    ASSERT_NE(source, nullptr);
+    EXPECT_CALL(*source, IsLocalFd()).WillOnce(Return(false));
+    mediaDemuxer_->ProduceWaterLoopControl(trackId);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SetPlayStrategy_001
+ * @tc.number: MediaDemuxerExt_SetPlayStrategy_001
+ * @tc.desc  : Test SetPlayStrategy with nullptr strategy
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SetPlayStrategy_001, TestSize.Level1)
+{
+    Status ret = mediaDemuxer_->SetPlayStrategy(nullptr);
+    EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SetPlayStrategy_002
+ * @tc.number: MediaDemuxerExt_SetPlayStrategy_002
+ * @tc.desc  : Test SetPlayStrategy with valid strategy
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SetPlayStrategy_002, TestSize.Level1)
+{
+    auto strategy = std::make_shared<Plugins::PlayStrategy>();
+    strategy->width = TEST_VIDEO_WIDTH;
+    strategy->height = TEST_VIDEO_HEIGHT;
+    strategy->preferHDR = true;
+    strategy->audioLanguage = TEST_LANG_ENG;
+    strategy->subtitleLanguage = TEST_LANG_ZH;
+
+    Status ret = mediaDemuxer_->SetPlayStrategy(strategy);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(mediaDemuxer_->defaultAudioLang_, TEST_LANG_ENG);
+    EXPECT_EQ(mediaDemuxer_->defaultSubtitleLang_, TEST_LANG_ZH);
+    EXPECT_TRUE(mediaDemuxer_->isHdrStart_);
+    EXPECT_EQ(mediaDemuxer_->initResolution_, static_cast<uint32_t>(TEST_VIDEO_WIDTH * TEST_VIDEO_HEIGHT));
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_IsLangMatch_001
+ * @tc.number: MediaDemuxerExt_IsLangMatch_001
+ * @tc.desc  : Test IsLangMatch for audio and subtitle
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_IsLangMatch_001, TestSize.Level1)
+{
+    EXPECT_TRUE(IsLangMatch(TEST_LANG_ENG, TEST_LANG_ENG));
+    EXPECT_FALSE(IsLangMatch(TEST_LANG_ENG, TEST_LANG_FRA));
+
+    EXPECT_TRUE(IsLangMatch(TEST_LANG_ZH, TEST_LANG_ZH));
+    EXPECT_FALSE(IsLangMatch(TEST_LANG_ZH, TEST_LANG_EN_SHORT));
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SetTrackSelectionFilter_001
+ * @tc.number: MediaDemuxerExt_SetTrackSelectionFilter_001
+ * @tc.desc  : Test SetTrackSelectionFilter builds correct predicates
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SetTrackSelectionFilter_001, TestSize.Level1)
+{
+    filteredStreamPredicates_.clear();
+
+    TrackSelectionFilter filter;
+    filter.maxVideoBitrate = TEST_MAX_VIDEO_BITRATE;
+    filter.minVideoBitrate = TEST_MIN_VIDEO_BITRATE;
+    filter.maxVideoFrameRate = TEST_MAX_VIDEO_FRAMERATE;
+    filter.minVideoFrameRate = TEST_MIN_VIDEO_FRAMERATE;
+    filter.maxVideoResolution = std::make_pair(TEST_VIDEO_WIDTH, TEST_VIDEO_HEIGHT);
+    filter.minVideoResolution = std::make_pair(TEST_MIN_VIDEO_WIDTH, TEST_MIN_VIDEO_HEIGHT);
+    filter.preferredVideoMimeTypes = std::vector<std::string>{TEST_MIME_VIDEO_AVC};
+
+    filter.maxAudioBitrate = TEST_MAX_AUDIO_BITRATE;
+    filter.minAudioBitrate = TEST_MIN_AUDIO_BITRATE;
+    filter.maxAudioChannels = TEST_MAX_AUDIO_CHANNELS;
+    filter.preferredAudioMimeTypes = std::vector<std::string>{TEST_MIME_AUDIO_AAC};
+    filter.preferredAudioLanguages = std::vector<std::string>{TEST_LANG_ENG};
+
+    filter.preferredSubtitleLanguages = std::vector<std::string>{TEST_LANG_ZH};
+
+    mediaDemuxer_->SetTrackSelectionFilter(filter);
+    TrackSelectionFilter outFilter = filter;
+    EXPECT_EQ(outFilter.maxVideoBitrate, TEST_MAX_VIDEO_BITRATE);
+    EXPECT_FALSE(outFilter.preferredVideoMimeTypes.empty());
+    EXPECT_EQ(outFilter.preferredVideoMimeTypes.size(), 1u);
+    filteredStreamPredicates_[StreamType::VIDEO] = GetVideoFilterPredicates(outFilter);
+    filteredStreamPredicates_[StreamType::AUDIO] = GetAudioFilterPredicates(outFilter);
+    filteredStreamPredicates_[StreamType::SUBTITLE] = GetSubtitleFilterPredicates(outFilter);
+
+    EXPECT_FALSE(filteredStreamPredicates_[StreamType::VIDEO].empty());
+    EXPECT_FALSE(filteredStreamPredicates_[StreamType::AUDIO].empty());
+    EXPECT_FALSE(filteredStreamPredicates_[StreamType::SUBTITLE].empty());
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_GetCurrentTimeMs_001
+ * @tc.number: MediaDemuxerExt_GetCurrentTimeMs_001
+ * @tc.desc  : Test GetCurrentTimeMs returns non-decreasing positive time
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetCurrentTimeMs_001, TestSize.Level1)
+{
+    int64_t t1 = mediaDemuxer_->GetCurrentTimeMs();
+    int64_t t2 = mediaDemuxer_->GetCurrentTimeMs();
+    EXPECT_GT(t1, 0);
+    EXPECT_GE(t2, t1);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ChooseDefaultStreams_001
+ * @tc.number: MediaDemuxerExt_ChooseDefaultStreams_001
+ * @tc.desc  : Test ChooseDefaultStreams selects defaults from stream info
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ChooseDefaultStreams_001, TestSize.Level1)
+{
+    mediaDemuxer_->defaultAudioLang_ = TEST_LANG_ENG;
+    mediaDemuxer_->defaultSubtitleLang_ = TEST_LANG_ZH;
+    mediaDemuxer_->initResolution_ = static_cast<uint32_t>(TEST_VIDEO_WIDTH * TEST_VIDEO_HEIGHT);
+    mediaDemuxer_->currentPlayType_ = "http";
+    mediaDemuxer_->trackSelectionFilter_ = TrackSelectionFilter();
+
+    StreamInfo vLow;
+    vLow.streamId = TEST_STREAM_ID_1;
+    vLow.type = StreamType::VIDEO;
+    vLow.mimeType = TEST_MIME_VIDEO_AVC;
+    vLow.videoWidth = TEST_MIN_VIDEO_WIDTH;
+    vLow.videoHeight = TEST_MIN_VIDEO_HEIGHT;
+
+    StreamInfo vHigh;
+    vHigh.streamId = TEST_STREAM_ID_2;
+    vHigh.type = StreamType::VIDEO;
+    vHigh.mimeType = TEST_MIME_VIDEO_AVC;
+    vHigh.videoWidth = TEST_VIDEO_WIDTH;
+    vHigh.videoHeight = TEST_VIDEO_HEIGHT;
+
+    StreamInfo a1;
+    a1.streamId = TEST_STREAM_ID_3;
+    a1.type = StreamType::AUDIO;
+    a1.mimeType = TEST_MIME_AUDIO_AAC;
+    a1.lang = TEST_LANG_ENG;
+
+    StreamInfo s1;
+    s1.streamId = TEST_STREAM_ID_4;
+    s1.type = StreamType::SUBTITLE;
+    s1.lang = TEST_LANG_ZH;
+
+    EXPECT_CALL(*(mediaDemuxer_->source_), GetStreamInfo(_, _))
+        .WillOnce(Invoke([&](std::vector<StreamInfo> &streams, bool) {
+            streams.clear();
+            streams.push_back(vLow);
+            streams.push_back(vHigh);
+            streams.push_back(a1);
+            streams.push_back(s1);
+            return Status::OK;
+        }));
+
+    mediaDemuxer_->ChooseDefaultStreams();
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_CheckStreamMimeType_001
+ * @tc.number: MediaDemuxerExt_CheckStreamMimeType_001
+ * @tc.desc  : Test CheckStreamMimeType behavior for subtitle mime
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_CheckStreamMimeType_001, TestSize.Level1)
+{
+    StreamInfo subtitleStream;
+    subtitleStream.type = StreamType::SUBTITLE;
+    subtitleStream.mimeType = "text/vtt";
+    std::shared_ptr<MediaAVCodec::AVCodecList> codecList {nullptr};
+    EXPECT_FALSE(CheckStreamCodec(subtitleStream.mimeType, Plugins::AUDIO, codecList));
+    EXPECT_TRUE(CheckStreamCodec(subtitleStream.mimeType, Plugins::VIDEO, codecList));
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_CalcResolutionGap_001
+ * @tc.number: MediaDemuxerExt_CalcResolutionGap_001
+ * @tc.desc  : Test CalcResolutionGap returns absolute difference
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_CalcResolutionGap_001, TestSize.Level1)
+{
+    uint32_t baseResolution = static_cast<uint32_t>(TEST_VIDEO_WIDTH * TEST_VIDEO_HEIGHT);
+    uint32_t lowResolution = static_cast<uint32_t>(TEST_MIN_VIDEO_WIDTH * TEST_MIN_VIDEO_HEIGHT);
+
+    EXPECT_EQ(CalcResolutionGap(baseResolution, lowResolution), baseResolution - lowResolution);
+    EXPECT_EQ(CalcResolutionGap(lowResolution, baseResolution), baseResolution - lowResolution);
+    EXPECT_EQ(CalcResolutionGap(baseResolution, baseResolution), 0u);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_IsVideoStreamSelectable_001
+ * @tc.number: MediaDemuxerExt_IsVideoStreamSelectable_001
+ * @tc.desc  : Test IsVideoStreamSelectable for dash/hls and HDR/bandwidth conditions
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_IsVideoStreamSelectable_001, TestSize.Level1)
+{
+    StreamInfo stream {};
+    stream.type = StreamType::VIDEO;
+    stream.bitRate = TEST_VIDEO_BITRATE_1000;
+    stream.videoType = VIDEO_TYPE_SDR;
+    EXPECT_FALSE(IsVideoStreamSelectable(stream, "dash", true));
+    stream.videoType = VIDEO_TYPE_HDR_10;
+    EXPECT_TRUE(IsVideoStreamSelectable(stream, "dash", true));
+    stream.videoType = VIDEO_TYPE_SDR;
+    stream.bitRate = static_cast<uint32_t>(BAND_WIDTH_LIMIT + 1);
+    EXPECT_FALSE(IsVideoStreamSelectable(stream, "hls", false));
+    stream.bitRate = static_cast<uint32_t>(BAND_WIDTH_LIMIT);
+    stream.mimeType = TEST_MIME_VIDEO_AVC;
+    EXPECT_TRUE(IsVideoStreamSelectable(stream, "hls", false));
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_IsStreamMatched_001
+ * @tc.number: MediaDemuxerExt_IsStreamMatched_001
+ * @tc.desc  : Test IsStreamMatched checks all predicates
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_IsStreamMatched_001, TestSize.Level1)
+{
+    StreamInfo stream {};
+    stream.type = StreamType::AUDIO;
+    stream.bitRate = TEST_AUDIO_BITRATE_128000;
+    stream.lang = TEST_LANG_ENG;
+    std::map<StreamType, std::vector<StreamFilterPredicate>> predicates;
+    predicates[StreamType::AUDIO].push_back([](StreamInfo info) {
+        return info.bitRate == TEST_AUDIO_BITRATE_128000;
+    });
+    predicates[StreamType::AUDIO].push_back([](StreamInfo info) {
+        return info.lang == TEST_LANG_ENG;
+    });
+    EXPECT_TRUE(IsStreamMatched(stream, predicates));
+    stream.lang = TEST_LANG_ZH;
+    EXPECT_FALSE(IsStreamMatched(stream, predicates));
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_PrintStreamInfo_001
+ * @tc.number: MediaDemuxerExt_PrintStreamInfo_001
+ * @tc.desc  : Test PrintStreamInfo with nullptr and different stream types
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_PrintStreamInfo_001, TestSize.Level1)
+{
+    PrintStreamInfo("PrintStreamInfo ", nullptr, "dash", Status::OK, TEST_NETWORK_BITRATE);
+
+    StreamInfo videoStream;
+    videoStream.type = StreamType::VIDEO;
+    videoStream.bitRate = TEST_VIDEO_BITRATE_1000;
+    videoStream.videoHeight = TEST_VIDEO_HEIGHT;
+    videoStream.videoWidth = TEST_VIDEO_WIDTH;
+    videoStream.frameRate = TEST_MAX_VIDEO_FRAMERATE;
+    videoStream.mimeType = TEST_MIME_VIDEO_AVC;
+    videoStream.originCodecs = "avc1";
+    PrintStreamInfo("PrintStreamInfo ", &videoStream, "dash", Status::OK, TEST_NETWORK_BITRATE);
+
+    StreamInfo audioStream;
+    audioStream.type = StreamType::AUDIO;
+    audioStream.channels = TEST_MAX_AUDIO_CHANNELS;
+    audioStream.bitRate = TEST_AUDIO_BITRATE_128000;
+    audioStream.mimeType = TEST_MIME_AUDIO_AAC;
+    audioStream.originCodecs = "mp4a";
+    audioStream.lang = TEST_LANG_ENG;
+    PrintStreamInfo("PrintStreamInfo ", &audioStream, "dash", Status::ERROR_UNKNOWN);
+
+    StreamInfo subtitleStream;
+    subtitleStream.type = StreamType::SUBTITLE;
+    subtitleStream.lang = TEST_LANG_ZH;
+    PrintStreamInfo("PrintStreamInfo ", &subtitleStream, "dash", Status::OK);
+
+    SUCCEED();
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_GetPreferredVideoStream_001
+ * @tc.number: MediaDemuxerExt_GetPreferredVideoStream_001
+ * @tc.desc  : Test GetPreferredVideoStream returns nearest valid video stream
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetPreferredVideoStream_001, TestSize.Level1)
+{
+    filteredStreamMap_.clear();
+
+    StreamInfo audioStream;
+    audioStream.streamId = TEST_STREAM_ID_1;
+    audioStream.type = StreamType::AUDIO;
+    audioStream.bitRate = TEST_VIDEO_BITRATE_1000;
+
+    StreamInfo videoStreamLow;
+    videoStreamLow.streamId = TEST_STREAM_ID_2;
+    videoStreamLow.type = StreamType::VIDEO;
+    videoStreamLow.bitRate = 1800;
+
+    StreamInfo mixedStream;
+    mixedStream.streamId = TEST_STREAM_ID_3;
+    mixedStream.type = StreamType::MIXED;
+    mixedStream.bitRate = 2600;
+
+    StreamInfo videoStreamHigh;
+    videoStreamHigh.streamId = TEST_STREAM_ID_4;
+    videoStreamHigh.type = StreamType::VIDEO;
+    videoStreamHigh.bitRate = 4200;
+
+    filteredStreamMap_[VIDEO] = {audioStream, videoStreamLow, mixedStream, videoStreamHigh};
+    StreamInfo *preferredStream = GetPreferredVideoStream(2500);
+
+    ASSERT_NE(preferredStream, nullptr);
+    EXPECT_EQ(preferredStream->streamId, TEST_STREAM_ID_3);
+    EXPECT_EQ(preferredStream->bitRate, 2600u);
+    filteredStreamMap_.clear();
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_GetPreferredVideoStream_002
+ * @tc.number: MediaDemuxerExt_GetPreferredVideoStream_002
+ * @tc.desc  : Test GetPreferredVideoStream returns exact bitrate match
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetPreferredVideoStream_002, TestSize.Level1)
+{
+    filteredStreamMap_.clear();
+
+    StreamInfo videoStreamLow;
+    videoStreamLow.streamId = TEST_STREAM_ID_1;
+    videoStreamLow.type = StreamType::VIDEO;
+    videoStreamLow.bitRate = TEST_VIDEO_BITRATE_1000;
+
+    StreamInfo videoStreamExact;
+    videoStreamExact.streamId = TEST_STREAM_ID_2;
+    videoStreamExact.type = StreamType::VIDEO;
+    videoStreamExact.bitRate = TEST_MAX_VIDEO_BITRATE;
+
+    filteredStreamMap_[VIDEO] = {videoStreamLow, videoStreamExact};
+    StreamInfo *preferredStream = GetPreferredVideoStream(TEST_MAX_VIDEO_BITRATE);
+
+    ASSERT_NE(preferredStream, nullptr);
+    EXPECT_EQ(preferredStream->streamId, TEST_STREAM_ID_2);
+    EXPECT_EQ(preferredStream->bitRate, static_cast<uint32_t>(TEST_MAX_VIDEO_BITRATE));
+    filteredStreamMap_.clear();
+}
+
+
+/**
+ * @tc.name  : MediaDemuxerExt_SetIsTriggerAutoMode_001
+ * @tc.number: MediaDemuxerExt_SetIsTriggerAutoMode_001
+ * @tc.desc  : Test SetIsTriggerAutoMode updates auto select flag
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SetIsTriggerAutoMode_001, TestSize.Level1)
+{
+    mediaDemuxer_->SetIsTriggerAutoMode(true);
+    EXPECT_TRUE(mediaDemuxer_->isAutoSelect_.load());
+
+    mediaDemuxer_->SetIsTriggerAutoMode(false);
+    EXPECT_FALSE(mediaDemuxer_->isAutoSelect_.load());
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_MatchPreferredMimeTypes_001
+ * @tc.number: MediaDemuxerExt_MatchPreferredMimeTypes_001
+ * @tc.desc  : Test MatchPreferredMimeTypes by mime type and codec prefix
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_MatchPreferredMimeTypes_001, TestSize.Level1)
+{
+    StreamInfo streamInfo;
+    streamInfo.mimeType = TEST_MIME_VIDEO_AVC;
+    streamInfo.originCodecs = "avc1.64001f";
+
+    EXPECT_TRUE(MatchPreferredMimeTypes({TEST_MIME_VIDEO_AVC}, streamInfo));
+    EXPECT_TRUE(MatchPreferredMimeTypes({"avc1"}, streamInfo));
+    EXPECT_TRUE(MatchPreferredMimeTypes({"avc1.64001f"}, streamInfo));
+    EXPECT_FALSE(MatchPreferredMimeTypes({"hev1"}, streamInfo));
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_GetVideoFilterPredicatesExt_001
+ * @tc.number: MediaDemuxerExt_GetVideoFilterPredicatesExt_001
+ * @tc.desc  : Test GetVideoFilterPredicatesExt creates valid predicates
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetVideoFilterPredicatesExt_001, TestSize.Level1)
+{
+    TrackSelectionFilter filter;
+    filter.minVideoFrameRate = TEST_MIN_VIDEO_FRAMERATE;
+    filter.maxVideoResolution = std::make_pair(TEST_VIDEO_WIDTH, TEST_VIDEO_HEIGHT);
+    filter.minVideoResolution = std::make_pair(TEST_MIN_VIDEO_WIDTH, TEST_MIN_VIDEO_HEIGHT);
+    filter.preferredVideoMimeTypes = {"avc1"};
+
+    std::vector<StreamFilterPredicate> predicates;
+    GetVideoFilterPredicatesExt(filter, predicates);
+    ASSERT_EQ(predicates.size(), 4u);
+
+    StreamInfo matchedStream;
+    matchedStream.type = StreamType::VIDEO;
+    matchedStream.frameRate = TEST_MAX_VIDEO_FRAMERATE;
+    matchedStream.videoWidth = TEST_VIDEO_WIDTH;
+    matchedStream.videoHeight = TEST_VIDEO_HEIGHT;
+    matchedStream.originCodecs = "avc1.64001f";
+
+    for (const auto &predicate : predicates) {
+        EXPECT_TRUE(predicate(matchedStream));
+    }
+
+    StreamInfo notMatchedStream = matchedStream;
+    notMatchedStream.frameRate = TEST_MIN_VIDEO_FRAMERATE - 1;
+    EXPECT_FALSE(predicates[0](notMatchedStream));
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_GetAudioFilterPredicatesExt_001
+ * @tc.number: MediaDemuxerExt_GetAudioFilterPredicatesExt_001
+ * @tc.desc  : Test GetAudioFilterPredicatesExt creates valid predicates
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetAudioFilterPredicatesExt_001, TestSize.Level1)
+{
+    TrackSelectionFilter filter;
+    filter.preferredAudioMimeTypes = {"mp4a"};
+    filter.preferredAudioLanguages = {TEST_LANG_ENG};
+
+    std::vector<StreamFilterPredicate> predicates;
+    GetAudioFilterPredicatesExt(filter, predicates);
+    ASSERT_EQ(predicates.size(), 2u);
+
+    StreamInfo matchedStream;
+    matchedStream.type = StreamType::AUDIO;
+    matchedStream.originCodecs = "mp4a.40.2";
+    matchedStream.lang = TEST_LANG_ENG;
+
+    EXPECT_TRUE(predicates[0](matchedStream));
+    EXPECT_TRUE(predicates[1](matchedStream));
+
+    matchedStream.lang = TEST_LANG_FRA;
+    EXPECT_FALSE(predicates[1](matchedStream));
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_FindStreamForFiledStream_001
+ * @tc.number: MediaDemuxerExt_FindStreamForFiledStream_001
+ * @tc.desc  : Test FindStreamForFiledStream with empty and default selection
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_FindStreamForFiledStream_001, TestSize.Level1)
+{
+    std::vector<StreamInfo> streams;
+    bool needChange = true;
+    EXPECT_EQ(FindStreamForFiledStream(streams, TEST_STREAM_ID_1, TEST_STREAM_ID_2, needChange), nullptr);
+
+    StreamInfo streamA;
+    streamA.streamId = TEST_STREAM_ID_1;
+    StreamInfo streamB;
+    streamB.streamId = TEST_STREAM_ID_2;
+    streams = {streamA, streamB};
+    needChange = true;
+    StreamInfo *stream = FindStreamForFiledStream(streams, TEST_STREAM_ID_3, TEST_STREAM_ID_2, needChange);
+    ASSERT_NE(stream, nullptr);
+    EXPECT_TRUE(needChange);
+    EXPECT_EQ(stream->streamId, TEST_STREAM_ID_2);
+
+    needChange = true;
+    stream = FindStreamForFiledStream(streams, TEST_STREAM_ID_1, TEST_STREAM_ID_2, needChange);
+    EXPECT_FALSE(needChange);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ScanStreamsAndBuildMap_001
+ * @tc.number: MediaDemuxerExt_ScanStreamsAndBuildMap_001
+ * @tc.desc  : Test ScanStreamsAndBuildMap builds filtered and all stream maps
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ScanStreamsAndBuildMap_001, TestSize.Level1)
+{
+    std::vector<StreamInfo> streams;
+    StreamInfo videoStream;
+    videoStream.streamId = TEST_STREAM_ID_1;
+    videoStream.type = StreamType::VIDEO;
+    videoStream.bitRate = TEST_VIDEO_BITRATE_1000;
+    StreamInfo audioStream;
+    audioStream.streamId = TEST_STREAM_ID_2;
+    audioStream.type = StreamType::AUDIO;
+    audioStream.bitRate = TEST_AUDIO_BITRATE_128000;
+    streams = {videoStream, audioStream};
+
+    std::map<StreamType, std::vector<StreamFilterPredicate>> filteredStreamPredicates;
+    filteredStreamPredicates[VIDEO].emplace_back([](const StreamInfo &stream) {
+        return stream.bitRate == static_cast<uint32_t>(TEST_VIDEO_BITRATE_1000);
+    });
+
+    std::map<StreamType, bool> needFilterMap;
+    needFilterMap[VIDEO] = true;
+    needFilterMap[AUDIO] = false;
+    needFilterMap[SUBTITLE] = false;
+
+    std::map<StreamType, std::vector<StreamInfo>> filteredStreamMap;
+    std::map<StreamType, std::vector<StreamInfo>> allStreamMap;
+    ScanStreamsAndBuildMap(streams, filteredStreamPredicates, needFilterMap, filteredStreamMap, allStreamMap);
+
+    EXPECT_EQ(allStreamMap[VIDEO].size(), 1u);
+    EXPECT_EQ(allStreamMap[AUDIO].size(), 1u);
+    EXPECT_EQ(filteredStreamMap[VIDEO].size(), 1u);
+    EXPECT_TRUE(filteredStreamMap[AUDIO].empty());
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectDefaultVideoId_001
+ * @tc.number: MediaDemuxerExt_SelectDefaultVideoId_001
+ * @tc.desc  : Test SelectDefaultVideoId for all-selected and preferred mime branches
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectDefaultVideoId_001, TestSize.Level1)
+{
+    std::vector<StreamInfo> videoStreams;
+    StreamInfo videoStreamA;
+    videoStreamA.streamId = TEST_STREAM_ID_1;
+    videoStreamA.type = StreamType::VIDEO;
+    videoStreamA.mimeType = "video/hevc";
+    videoStreamA.videoWidth = TEST_MIN_VIDEO_WIDTH;
+    videoStreamA.videoHeight = TEST_MIN_VIDEO_HEIGHT;
+
+    StreamInfo videoStreamB;
+    videoStreamB.streamId = TEST_STREAM_ID_2;
+    videoStreamB.type = StreamType::VIDEO;
+    videoStreamB.mimeType = TEST_MIME_VIDEO_AVC;
+    videoStreamB.videoWidth = TEST_VIDEO_WIDTH;
+    videoStreamB.videoHeight = TEST_VIDEO_HEIGHT;
+    videoStreams = {videoStreamA, videoStreamB};
+
+    TrackSelectionFilter filter;
+    EXPECT_EQ(SelectDefaultVideoId(videoStreams, true, filter, "http", false, 0), -1);
+
+    filter.preferredVideoMimeTypes = {TEST_MIME_VIDEO_AVC};
+    EXPECT_EQ(SelectDefaultVideoId(videoStreams, false, filter, "hls", false, 0), TEST_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectDefaultVideoId_002
+ * @tc.number: MediaDemuxerExt_SelectDefaultVideoId_002
+ * @tc.desc  : Test SelectDefaultVideoId selects stream by nearest resolution
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectDefaultVideoId_002, TestSize.Level1)
+{
+    std::vector<StreamInfo> videoStreams;
+    StreamInfo videoStreamA;
+    videoStreamA.streamId = TEST_STREAM_ID_1;
+    videoStreamA.type = StreamType::VIDEO;
+    videoStreamA.videoWidth = TEST_MIN_VIDEO_WIDTH;
+    videoStreamA.videoHeight = TEST_MIN_VIDEO_HEIGHT;
+
+    StreamInfo videoStreamB;
+    videoStreamB.streamId = TEST_STREAM_ID_2;
+    videoStreamB.type = StreamType::VIDEO;
+    videoStreamB.videoWidth = TEST_VIDEO_WIDTH;
+    videoStreamB.videoHeight = TEST_VIDEO_HEIGHT;
+
+    videoStreams = {videoStreamA, videoStreamB};
+    TrackSelectionFilter filter;
+    EXPECT_EQ(SelectDefaultVideoId(videoStreams, false, filter, "hls", false,
+        static_cast<uint32_t>(TEST_VIDEO_WIDTH * TEST_VIDEO_HEIGHT)), TEST_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectAudioDefaultId_001
+ * @tc.number: MediaDemuxerExt_SelectAudioDefaultId_001
+ * @tc.desc  : Test SelectAudioDefaultId for all-selected and preferred branches
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectAudioDefaultId_001, TestSize.Level1)
+{
+    std::map<StreamType, std::vector<StreamInfo>> filteredStreamMap;
+    StreamInfo audioStreamA;
+    audioStreamA.streamId = TEST_STREAM_ID_1;
+    audioStreamA.type = StreamType::AUDIO;
+    audioStreamA.lang = TEST_LANG_FRA;
+    audioStreamA.mimeType = "audio/flac";
+    StreamInfo audioStreamB;
+    audioStreamB.streamId = TEST_STREAM_ID_2;
+    audioStreamB.type = StreamType::AUDIO;
+    audioStreamB.lang = TEST_LANG_ENG;
+    audioStreamB.mimeType = TEST_MIME_AUDIO_AAC;
+    filteredStreamMap[AUDIO] = {audioStreamA, audioStreamB};
+
+    TrackSelectionFilter filter;
+    EXPECT_EQ(SelectAudioDefaultId(filteredStreamMap, true, filter, TEST_LANG_ENG, "dash"), -1);
+
+    filter.preferredAudioLanguages = {TEST_LANG_ENG};
+    EXPECT_EQ(SelectAudioDefaultId(filteredStreamMap, false, filter, TEST_LANG_FRA, "hls"), TEST_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectSubtitleDefaultId_001
+ * @tc.number: MediaDemuxerExt_SelectSubtitleDefaultId_001
+ * @tc.desc  : Test SelectSubtitleDefaultId for all-selected and preferred branches
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectSubtitleDefaultId_001, TestSize.Level1)
+{
+    std::map<StreamType, std::vector<StreamInfo>> filteredStreamMap;
+    StreamInfo subtitleStreamA;
+    subtitleStreamA.streamId = TEST_STREAM_ID_1;
+    subtitleStreamA.type = StreamType::SUBTITLE;
+    subtitleStreamA.lang = TEST_LANG_ENG;
+    StreamInfo subtitleStreamB;
+    subtitleStreamB.streamId = TEST_STREAM_ID_2;
+    subtitleStreamB.type = StreamType::SUBTITLE;
+    subtitleStreamB.lang = TEST_LANG_ZH;
+    filteredStreamMap[SUBTITLE] = {subtitleStreamA, subtitleStreamB};
+
+    TrackSelectionFilter filter;
+    EXPECT_EQ(SelectSubtitleDefaultId(filteredStreamMap, true, filter, TEST_LANG_ENG, "hls"), -1);
+
+    filter.preferredSubtitleLanguages = {TEST_LANG_ZH};
+    EXPECT_EQ(SelectSubtitleDefaultId(filteredStreamMap, false, filter, TEST_LANG_ENG, "dash"), TEST_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_CollectValidStreams_001
+ * @tc.number: MediaDemuxerExt_CollectValidStreams_001
+ * @tc.desc  : Test CollectValidStreams keeps preferred streams and subtitle stream
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_CollectValidStreams_001, TestSize.Level1)
+{
+    std::vector<StreamInfo> allStreams;
+    StreamInfo videoStream;
+    videoStream.streamId = TEST_STREAM_ID_1;
+    videoStream.type = StreamType::VIDEO;
+    videoStream.mimeType = TEST_MIME_VIDEO_AVC;
+    videoStream.originCodecs = "avc1.64001f";
+    StreamInfo audioStream;
+    audioStream.streamId = TEST_STREAM_ID_2;
+    audioStream.type = StreamType::AUDIO;
+    audioStream.mimeType = TEST_MIME_AUDIO_AAC;
+    audioStream.originCodecs = "mp4a.40.2";
+    StreamInfo subtitleStream;
+    subtitleStream.streamId = TEST_STREAM_ID_3;
+    subtitleStream.type = StreamType::SUBTITLE;
+    subtitleStream.lang = TEST_LANG_ZH;
+    allStreams = {videoStream, audioStream, subtitleStream};
+
+    TrackSelectionFilter filter;
+    filter.preferredVideoMimeTypes = {TEST_MIME_VIDEO_AVC};
+    filter.preferredAudioMimeTypes = {TEST_MIME_AUDIO_AAC};
+    std::shared_ptr<MediaAVCodec::AVCodecList> codecList {nullptr};
+    auto validStreams = CollectValidStreams(allStreams, "hls", filter, codecList);
+
+    EXPECT_EQ(validStreams.size(), 3u);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_CollectValidStreams_002
+ * @tc.number: MediaDemuxerExt_CollectValidStreams_002
+ * @tc.desc  : Test CollectValidStreams falls back to original audio and video streams
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_CollectValidStreams_002, TestSize.Level1)
+{
+    std::vector<StreamInfo> allStreams;
+    StreamInfo videoStream;
+    videoStream.streamId = TEST_STREAM_ID_1;
+    videoStream.type = StreamType::VIDEO;
+    videoStream.mimeType = "";
+    videoStream.codecs = "invalid-codec";
+    StreamInfo audioStream;
+    audioStream.streamId = TEST_STREAM_ID_2;
+    audioStream.type = StreamType::AUDIO;
+    audioStream.codecs = "invalid-codec";
+    allStreams = {videoStream, audioStream};
+
+    TrackSelectionFilter filter;
+    std::shared_ptr<MediaAVCodec::AVCodecList> codecList {nullptr};
+    auto validStreams = CollectValidStreams(allStreams, "hls", filter, codecList);
+
+    EXPECT_EQ(validStreams.size(), 2u);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_GetNeedFilterMap_001
+ * @tc.number: MediaDemuxerExt_GetNeedFilterMap_001
+ * @tc.desc  : Test GetNeedFilterMap for http and dash play types
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetNeedFilterMap_001, TestSize.Level1)
+{
+    std::map<StreamType, std::vector<StreamFilterPredicate>> filteredStreamPredicates;
+    filteredStreamPredicates[AUDIO].emplace_back([](const StreamInfo &) { return true; });
+    std::map<StreamType, bool> needFilterMap;
+    TrackSelectionFilter filter;
+    filter.preferredVideoMimeTypes = {TEST_MIME_VIDEO_AVC};
+    GetNeedFilterMap(filteredStreamPredicates, filter, "http", needFilterMap);
+    EXPECT_FALSE(needFilterMap[VIDEO]);
+    EXPECT_FALSE(needFilterMap[AUDIO]);
+    EXPECT_FALSE(needFilterMap[SUBTITLE]);
+
+    filteredStreamPredicates.clear();
+    needFilterMap.clear();
+    GetNeedFilterMap(filteredStreamPredicates, filter, "dash", needFilterMap);
+    EXPECT_TRUE(needFilterMap[VIDEO]);
+    EXPECT_TRUE(needFilterMap[AUDIO]);
+    EXPECT_TRUE(needFilterMap[SUBTITLE]);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_IsNeedPreDownload_001
+ * @tc.number: MediaDemuxerExt_IsNeedPreDownload_001
+ * @tc.desc  : Test IsNeedPreDownload with nullptr and mocked source
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_IsNeedPreDownload_001, TestSize.Level1)
+{
+    mediaDemuxer_->source_ = nullptr;
+    EXPECT_FALSE(mediaDemuxer_->IsNeedPreDownload());
+
+    mediaDemuxer_->source_ = std::make_shared<Source>();
+    auto source = std::static_pointer_cast<Source>(mediaDemuxer_->source_);
+    ASSERT_NE(source, nullptr);
+    EXPECT_CALL(*source, IsNeedPreDownload()).WillOnce(Return(true));
+    EXPECT_TRUE(mediaDemuxer_->IsNeedPreDownload());
 }
 }  // namespace OHOS::Media

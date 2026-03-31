@@ -166,6 +166,35 @@ void DashMediaDownloaderUnitTest::SetUp(void)
 
 void DashMediaDownloaderUnitTest::TearDown(void) {}
 
+class DashCallbackMock : public Plugins::Callback {
+public:
+    void OnEvent(const Plugins::PluginEvent &event) override
+    {
+        lastEventType_ = event.type;
+        onEventCount_++;
+    }
+
+    void SetSelectBitRateFlag(bool flag, uint32_t desBitRate) override
+    {
+        lastFlag_ = flag;
+        lastBitrate_ = desBitRate;
+        setFlagCount_++;
+    }
+
+    bool CanAutoSelectBitRate() override
+    {
+        canAutoCount_++;
+        return true;
+    }
+
+    Plugins::PluginEventType lastEventType_ {Plugins::PluginEventType::CLIENT_ERROR};
+    bool lastFlag_ {false};
+    uint32_t lastBitrate_ {0};
+    uint32_t onEventCount_ {0};
+    uint32_t setFlagCount_ {0};
+    uint32_t canAutoCount_ {0};
+};
+
 HWTEST_F(DashMediaDownloaderUnitTest, TEST_GET_CONTENT_LENGTH, TestSize.Level1)
 {
     EXPECT_EQ(g_mediaDownloader->GetContentLength(), 0);
@@ -174,6 +203,18 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_GET_CONTENT_LENGTH, TestSize.Level1)
 HWTEST_F(DashMediaDownloaderUnitTest, TEST_GET_STARTED_STATUS, TestSize.Level1)
 {
     EXPECT_TRUE(g_mediaDownloader->GetStartedStatus());
+}
+
+HWTEST_F(DashMediaDownloaderUnitTest, TEST_SET_CALLBACK, TestSize.Level1)
+{
+    auto mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
+    mediaDownloader->Init();
+
+    auto cb = std::make_shared<DashCallbackMock>();
+    mediaDownloader->SetCallback(cb);
+    mediaDownloader->SetDownloadErrorState();
+
+    EXPECT_GE(cb->onEventCount_, 1u);
 }
 
 HWTEST_F(DashMediaDownloaderUnitTest, TEST_OPEN, TestSize.Level1)
@@ -205,6 +246,14 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_GET_STREAM_INFO, TestSize.Level1)
 {
     std::vector<StreamInfo> streams;
     Status status = g_mediaDownloader->GetStreamInfo(streams);
+    EXPECT_EQ(status, Status::OK);
+    EXPECT_GE(streams.size(), 0);
+}
+
+HWTEST_F(DashMediaDownloaderUnitTest, TEST_GET_STREAM_INFO_UPDATE, TestSize.Level1)
+{
+    std::vector<StreamInfo> streams;
+    Status status = g_mediaDownloader->GetStreamInfo(streams, true);
     EXPECT_EQ(status, Status::OK);
     EXPECT_GE(streams.size(), 0);
 }
@@ -262,6 +311,31 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_SELECT_BITRATE, TestSize.Level1)
     EXPECT_TRUE(result);
 }
 
+HWTEST_F(DashMediaDownloaderUnitTest, TEST_SET_DEFAULT_STREAM_ID, TestSize.Level1)
+{
+    std::vector<StreamInfo> streams;
+    Status status = g_mediaDownloader->GetStreamInfo(streams);
+    EXPECT_EQ(status, Status::OK);
+    EXPECT_GT(streams.size(), 0u);
+    int32_t videoId = -1;
+    int32_t audioId = -1;
+    int32_t subId = -1;
+    for (const auto &s : streams) {
+        if (s.type == VIDEO && videoId == -1) {
+            videoId = s.streamId;
+        } else if (s.type == AUDIO && audioId == -1) {
+            audioId = s.streamId;
+        } else if (s.type == SUBTITLE && subId == -1) {
+            subId = s.streamId;
+        }
+    }
+    g_mediaDownloader->SetDefaultStreamId(videoId, audioId, subId);
+    std::vector<StreamInfo> streamsAfter;
+    status = g_mediaDownloader->GetStreamInfo(streamsAfter, true);
+    EXPECT_EQ(status, Status::OK);
+    EXPECT_GE(streamsAfter.size(), 0u);
+}
+
 HWTEST_F(DashMediaDownloaderUnitTest, TEST_SELECT_AUDIO, TestSize.Level1)
 {
     std::vector<StreamInfo> streams;
@@ -309,6 +383,34 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_SELECT_VIDEO, TestSize.Level1)
     }
 
     EXPECT_EQ(status, Status::OK);
+}
+
+HWTEST_F(DashMediaDownloaderUnitTest, TEST_VIDEO_SEGMENT_DOWNLOAD_FINISHED_AUTO_SELECT, TestSize.Level1)
+{
+    auto mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
+    mediaDownloader->Init();
+    auto cb = std::make_shared<DashCallbackMock>();
+    mediaDownloader->SetCallback(cb);
+    mediaDownloader->SetIsTriggerAutoMode(true);
+    std::string testUrl = MPD_SEGMENT_BASE;
+    std::map<std::string, std::string> httpHeader;
+    mediaDownloader->Open(testUrl, httpHeader);
+    mediaDownloader->GetSeekable();
+    usleep(WAIT_FOR_SIDX_TIME);
+    std::vector<StreamInfo> streams;
+    mediaDownloader->GetStreamInfo(streams);
+    EXPECT_GT(streams.size(), 0u);
+    int32_t videoId = -1;
+    for (const auto &s : streams) {
+        if (s.type == VIDEO) {
+            videoId = s.streamId;
+            break;
+        }
+    }
+    ASSERT_NE(videoId, -1);
+    mediaDownloader->UpdateDownloadFinished(videoId);
+    EXPECT_GE(cb->canAutoCount_, 1u);
+    mediaDownloader->Close(false);
 }
 
 HWTEST_F(DashMediaDownloaderUnitTest, TEST_SELECT_SUBTITLE, TestSize.Level1)

@@ -126,6 +126,26 @@ public:
     {
         return;
     }
+    Status GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate = false) override
+    {
+        (void)streams;
+        getStreamInfoCalled_ = true;
+        getStreamInfoIsUpdate_ = isUpdate;
+        return Status::OK;
+    }
+    void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) override
+    {
+        setDefaultStreamIdCalled_ = true;
+        lastVideoId_ = videoStreamId;
+        lastAudioId_ = audioStreamId;
+        lastSubtitleId_ = subTitleStreamId;
+    }
+    bool getStreamInfoCalled_ {false};
+    bool getStreamInfoIsUpdate_ {false};
+    bool setDefaultStreamIdCalled_ {false};
+    int32_t lastVideoId_ {-1};
+    int32_t lastAudioId_ {-1};
+    int32_t lastSubtitleId_ {-1};
 private:
     size_t contentLength_ {4};
     size_t segmentOffset_ {1};
@@ -281,6 +301,74 @@ HWTEST_F(HttpSourcePluginUnitTest, CheckIsM3U8Uri_001, TestSize.Level1)
     std::string mockUri;
     plugin_->uri_.swap(mockUri);
     ASSERT_EQ(false, plugin_->CheckIsM3U8Uri());
+}
+
+/**
+ * @tc.name  : Test GetStreamInfo API
+ * @tc.number: GetStreamInfo_001
+ * @tc.desc  : Test forwarding to downloader_->GetStreamInfo with isUpdate = true
+ */
+HWTEST_F(HttpSourcePluginUnitTest, GetStreamInfo_001, TestSize.Level1)
+{
+    ASSERT_NE(nullptr, plugin_);
+    auto mockDownloader = std::make_shared<MockMediaDownloader>();
+    plugin_->downloader_ = mockDownloader;
+    std::vector<StreamInfo> streams;
+    auto ret = plugin_->GetStreamInfo(streams, true);
+    ASSERT_EQ(Status::OK, ret);
+    ASSERT_TRUE(mockDownloader->getStreamInfoCalled_);
+    ASSERT_TRUE(mockDownloader->getStreamInfoIsUpdate_);
+}
+
+/**
+ * @tc.name  : Test GetStreamInfo API
+ * @tc.number: GetStreamInfo_002
+ * @tc.desc  : Test downloader_ == nullptr returns OK and does nothing
+ */
+HWTEST_F(HttpSourcePluginUnitTest, GetStreamInfo_002, TestSize.Level1)
+{
+    ASSERT_NE(nullptr, plugin_);
+    plugin_->downloader_.reset();
+    std::vector<StreamInfo> streams;
+    auto ret = plugin_->GetStreamInfo(streams, true);
+    ASSERT_EQ(Status::OK, ret);
+    ASSERT_TRUE(streams.empty());
+}
+
+/**
+ * @tc.name  : Test SetDefaultStreamId API
+ * @tc.number: SetDefaultStreamId_001
+ * @tc.desc  : Test forwarding to downloader_->SetDefaultStreamId
+ */
+HWTEST_F(HttpSourcePluginUnitTest, SetDefaultStreamId_001, TestSize.Level1)
+{
+    ASSERT_NE(nullptr, plugin_);
+    auto mockDownloader = std::make_shared<MockMediaDownloader>();
+    plugin_->downloader_ = mockDownloader;
+    int32_t videoId = 1;
+    int32_t audioId = 2;
+    int32_t subtitleId = 3;
+    plugin_->SetDefaultStreamId(videoId, audioId, subtitleId);
+    ASSERT_TRUE(mockDownloader->setDefaultStreamIdCalled_);
+    ASSERT_EQ(videoId, mockDownloader->lastVideoId_);
+    ASSERT_EQ(audioId, mockDownloader->lastAudioId_);
+    ASSERT_EQ(subtitleId, mockDownloader->lastSubtitleId_);
+}
+
+/**
+ * @tc.name  : Test SetDefaultStreamId API
+ * @tc.number: SetDefaultStreamId_002
+ * @tc.desc  : Test downloader_ == nullptr does not crash
+ */
+HWTEST_F(HttpSourcePluginUnitTest, SetDefaultStreamId_002, TestSize.Level1)
+{
+    ASSERT_NE(nullptr, plugin_);
+    plugin_->downloader_.reset();
+    int32_t videoStreamId = 1;
+    int32_t audioStreamId = 2;
+    int32_t subTitleStreamId = 3;
+    plugin_->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+    SUCCEED();
 }
 }
 }

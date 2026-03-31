@@ -21,6 +21,15 @@ namespace OHOS::Media::Plugins::HttpPlugin {
 using namespace testing::ext;
 using namespace std;
 namespace {
+constexpr uint32_t HLS_TEST_STREAM_COUNT = 3;
+constexpr int32_t HLS_TEST_VIDEO_STREAM_ID = 1;
+constexpr int32_t HLS_TEST_AUDIO_STREAM_ID = 2;
+constexpr int32_t HLS_TEST_SUBTITLE_STREAM_ID = 3;
+constexpr uint32_t HLS_TEST_VIDEO_BITRATE = 1000000;
+constexpr uint32_t HLS_TEST_VIDEO_FRAME_RATE = 30;
+constexpr int32_t HLS_TEST_VIDEO_WIDTH = 1280;
+constexpr int32_t HLS_TEST_VIDEO_HEIGHT = 720;
+
 class HlsPlayListDownloaderTestable : public HlsPlayListDownloader {
 public:
     using HlsPlayListDownloader::HlsPlayListDownloader;
@@ -30,6 +39,109 @@ public:
         playList_ = playList;
     }
 };
+class RecordingCallback : public Plugins::Callback {
+public:
+    void OnEvent(const Plugins::PluginEvent &event)
+    {
+        (void)event;
+        onEventCount_++;
+    }
+
+    void SetSelectBitRateFlag(bool flag, uint32_t desBitRate)
+    {
+        (void)flag;
+        (void)desBitRate;
+    }
+
+    bool CanDoSelectBitRate()
+    {
+        return true;
+    }
+
+    uint32_t onEventCount_ = 0;
+};
+
+constexpr uint32_t HLS_VIDEO_STREAM_ID = 100;
+constexpr uint32_t HLS_AUDIO_STREAM_ID = 200;
+constexpr uint32_t HLS_SUBTITLE_STREAM_ID = 300;
+constexpr int32_t INVALID_TEST = -1;
+constexpr int32_t NUM2_TEST = 2;
+
+std::shared_ptr<HlsPlayListDownloaderTestable> CreateSetDefaultStreamIdDownloader(bool isSimple, bool parseSuccess,
+    bool withDefaultVariant)
+{
+    const std::string testUriPath = "http://127.0.0.1:46666/";
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", testUriPath);
+    downloader->master_->isSimple_.store(isSimple);
+    downloader->master_->isParseSuccess_.store(parseSuccess);
+    if (!withDefaultVariant) {
+        return downloader;
+    }
+
+    auto m3u8 = std::make_shared<M3U8>(isSimple ? testUriPath : "", "");
+    auto variant = std::make_shared<M3U8VariantStream>("video", testUriPath, m3u8);
+    variant->streamId_ = HLS_VIDEO_STREAM_ID;
+    downloader->master_->defaultVariant_ = variant;
+    downloader->master_->variants_.push_back(variant);
+    downloader->currentVariant_ = variant;
+    return downloader;
+}
+
+void PrepareHlsDownloaderStreamInfo(std::shared_ptr<HlsPlayListDownloader> &downloader)
+{
+    auto statusCallback = [] (DownloadStatus status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {};
+    std::map<std::string, std::string> header;
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", "", 0, header, statusCallback);
+    auto videoM3u8 = std::make_shared<M3U8>("videoUri", "video",
+        std::unordered_map<std::string, std::string>(), statusCallback, nullptr);
+    auto audioM3u8 = std::make_shared<M3U8>("audioUri", "audio",
+        std::unordered_map<std::string, std::string>(), statusCallback, nullptr);
+    auto subM3u8 = std::make_shared<M3U8>("subUri", "sub",
+        std::unordered_map<std::string, std::string>(), statusCallback, nullptr);
+    auto audioMedia = std::make_shared<M3U8Media>("audio", "audioUri", audioM3u8);
+    audioMedia->lang_ = "eng";
+    audioMedia->channels_ = "2";
+    audioMedia->streamId_ = HLS_TEST_AUDIO_STREAM_ID;
+    auto subMedia = std::make_shared<M3U8Media>("sub", "subUri", subM3u8);
+    subMedia->lang_ = "chi";
+    subMedia->channels_ = "1";
+    subMedia->streamId_ = HLS_TEST_SUBTITLE_STREAM_ID;
+    auto variant = std::make_shared<M3U8VariantStream>("video", "videoUri", videoM3u8);
+    variant->streamId_ = HLS_TEST_VIDEO_STREAM_ID;
+    variant->bandWidth_ = HLS_TEST_VIDEO_BITRATE;
+    variant->frameRate_ = HLS_TEST_VIDEO_FRAME_RATE;
+    variant->width_ = HLS_TEST_VIDEO_WIDTH;
+    variant->height_ = HLS_TEST_VIDEO_HEIGHT;
+    variant->defaultAudio_ = audioMedia;
+    variant->defaultSubtitles_ = subMedia;
+    downloader->master_->variants_.push_back(variant);
+    downloader->master_->audioList_.push_back(audioMedia);
+    downloader->master_->subtitlesList_.push_back(subMedia);
+    downloader->master_->defaultVariant_ = variant;
+    downloader->currentVariant_ = variant;
+}
+
+void CheckHlsStreamInfo(const std::vector<StreamInfo> &streams)
+{
+    EXPECT_EQ(streams.size(), HLS_TEST_STREAM_COUNT);
+    for (const auto &info : streams) {
+        if (info.type == StreamType::VIDEO) {
+            EXPECT_EQ(info.streamId, HLS_TEST_VIDEO_STREAM_ID);
+            EXPECT_EQ(info.bitRate, HLS_TEST_VIDEO_BITRATE);
+            EXPECT_EQ(info.videoWidth, HLS_TEST_VIDEO_WIDTH);
+            EXPECT_EQ(info.videoHeight, HLS_TEST_VIDEO_HEIGHT);
+        } else if (info.type == StreamType::AUDIO) {
+            EXPECT_EQ(info.streamId, HLS_TEST_AUDIO_STREAM_ID);
+            EXPECT_EQ(info.lang, "eng");
+        } else if (info.type == StreamType::SUBTITLE) {
+            EXPECT_EQ(info.streamId, HLS_TEST_SUBTITLE_STREAM_ID);
+            EXPECT_EQ(info.lang, "chi");
+        }
+    }
+}
 }
 const static std::string TEST_URI_PATH = "http://127.0.0.1:46666/";
 const static std::string M3U8_PATH_MASTER = "test_cbr/test_cbr.m3u8";
@@ -77,6 +189,30 @@ R"(#EXTM3U
 1080_3M/video_1080.m3u8
 )";
 std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server = nullptr;
+
+class HlsStreamUpdateCallback : public Plugins::Callback {
+public:
+    void OnEvent(const Plugins::PluginEvent &event) override
+    {
+        lastEventType_ = event.type;
+        eventTriggered_ = true;
+    }
+
+    void SetSelectBitRateFlag(bool flag, uint32_t desBitRate) override
+    {
+        (void)flag;
+        (void)desBitRate;
+    }
+
+    bool CanAutoSelectBitRate() override
+    {
+        return true;
+    }
+
+    bool eventTriggered_ {false};
+    Plugins::PluginEventType lastEventType_ {Plugins::PluginEventType::CLIENT_ERROR};
+};
+
 void HlsPlayListDownloaderUnitTest::SetUpTestCase(void) {}
 
 void HlsPlayListDownloaderUnitTest::TearDownTestCase(void) {}
@@ -99,6 +235,52 @@ void HlsPlayListDownloaderUnitTest::SetDefaultStreamId(std::shared_ptr<HlsPlayLi
     int32_t audioStreamId = 0;
     int32_t subTitleStreamId = 0;
     downloader->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+}
+
+HWTEST_F(HlsPlayListDownloaderUnitTest, SET_DEFAULT_STREAM_ID_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloader>();
+    downloader->Init();
+    int32_t videoStreamId = -1;
+    int32_t audioStreamId = 2;
+    int32_t subTitleStreamId = 3;
+    downloader->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+    EXPECT_EQ(downloader->GetCurrentVariant(), nullptr);
+
+    auto statusCallback = [] (DownloadStatus status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {};
+    std::map<std::string, std::string> header;
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", "", 0, header, statusCallback);
+    auto mediaM3u8 = std::make_shared<M3U8>("", "", std::unordered_map<std::string, std::string>(),
+        statusCallback, nullptr);
+    auto variant = std::make_shared<M3U8VariantStream>("video", "", mediaM3u8);
+    variant->streamId_ = 1;
+    downloader->master_->variants_.push_back(variant);
+    downloader->master_->defaultVariant_ = variant;
+    int32_t videoStreamIdNumSec = 1;
+    int32_t audioStreamIdNumSec= 2;
+    int32_t subTitleStreamIdNumSec = 3;
+    downloader->SetDefaultStreamId(videoStreamIdNumSec, audioStreamIdNumSec, subTitleStreamIdNumSec);
+    EXPECT_EQ(downloader->GetCurrentVariant(), variant);
+}
+
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_STREAM_INFO_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloader>();
+    downloader->Init();
+    std::vector<StreamInfo> streams;
+    downloader->GetStreamInfo(streams, false);
+    EXPECT_TRUE(streams.empty());
+}
+
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_STREAM_INFO_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloader>();
+    downloader->Init();
+    PrepareHlsDownloaderStreamInfo(downloader);
+    std::vector<StreamInfo> streams;
+    downloader->GetStreamInfo(streams, false);
+    CheckHlsStreamInfo(streams);
 }
 
 HWTEST_F(HlsPlayListDownloaderUnitTest, TEST_OPEN, TestSize.Level1)
@@ -903,5 +1085,340 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, INTERRUPT_M3U8_PARSE_002, TestSize.Level
         downloader->InterruptM3U8Parse(false);
         EXPECT_FALSE(downloader->GetMaster()->isInterruptNeeded_);
     }
+}
+
+/**
+ * @tc.name: CONTAINS_NON_DIGIT_001
+ * @tc.desc: test ContainsNonDigit returns true when string contains non-digit character
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, CONTAINS_NON_DIGIT_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloader>();
+    downloader->Init();
+
+    EXPECT_EQ(downloader->ContainsNonDigit("12a34"), true);
+}
+
+/**
+ * @tc.name: CONTAINS_NON_DIGIT_002
+ * @tc.desc: test ContainsNonDigit returns false when string contains only digits
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, CONTAINS_NON_DIGIT_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloader>();
+    downloader->Init();
+
+    EXPECT_EQ(downloader->ContainsNonDigit("123456"), false);
+}
+
+/**
+ * @tc.name: SET_DEFAULT_STREAM_ID_001
+ * @tc.desc: test SetDefaultStreamId returns when master_ is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, HLS_PLAYLIST_SET_DEFAULT_STREAM_ID_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    int32_t videoStreamId = HLS_VIDEO_STREAM_ID;
+    int32_t audioStreamId = HLS_AUDIO_STREAM_ID;
+    int32_t subTitleStreamId = HLS_SUBTITLE_STREAM_ID;
+
+    downloader->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+    EXPECT_EQ(videoStreamId, static_cast<int32_t>(HLS_VIDEO_STREAM_ID));
+    EXPECT_EQ(audioStreamId, static_cast<int32_t>(HLS_AUDIO_STREAM_ID));
+    EXPECT_EQ(subTitleStreamId, static_cast<int32_t>(HLS_SUBTITLE_STREAM_ID));
+}
+
+/**
+ * @tc.name: SET_DEFAULT_STREAM_ID_002
+ * @tc.desc: test SetDefaultStreamId returns when videoStreamId is -1
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, SET_DEFAULT_STREAM_ID_002, TestSize.Level1)
+{
+    auto downloader = CreateSetDefaultStreamIdDownloader(true, true, true);
+    int32_t videoStreamId = -1;
+    int32_t audioStreamId = HLS_AUDIO_STREAM_ID;
+    int32_t subTitleStreamId = HLS_SUBTITLE_STREAM_ID;
+
+    downloader->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+    EXPECT_EQ(audioStreamId, static_cast<int32_t>(HLS_AUDIO_STREAM_ID));
+    EXPECT_EQ(subTitleStreamId, static_cast<int32_t>(HLS_SUBTITLE_STREAM_ID));
+}
+
+/**
+ * @tc.name: SET_DEFAULT_STREAM_ID_003
+ * @tc.desc: test SetDefaultStreamId enters simple playlist update path
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, SET_DEFAULT_STREAM_ID_003, TestSize.Level1)
+{
+    auto downloader = CreateSetDefaultStreamIdDownloader(true, true, true);
+    downloader->isParseFinished_ = false;
+    int32_t videoStreamId = HLS_VIDEO_STREAM_ID;
+    int32_t audioStreamId = HLS_AUDIO_STREAM_ID;
+    int32_t subTitleStreamId = HLS_SUBTITLE_STREAM_ID;
+
+    downloader->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+    EXPECT_EQ(downloader->isParseFinished_, true);
+}
+
+/**
+ * @tc.name: SET_DEFAULT_STREAM_ID_004
+ * @tc.desc: test SetDefaultStreamId enters non-simple playlist update path
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, SET_DEFAULT_STREAM_ID_004, TestSize.Level1)
+{
+    auto downloader = CreateSetDefaultStreamIdDownloader(false, true, true);
+    downloader->isParseFinished_ = false;
+    int32_t videoStreamId = HLS_VIDEO_STREAM_ID;
+    int32_t audioStreamId = HLS_AUDIO_STREAM_ID;
+    int32_t subTitleStreamId = HLS_SUBTITLE_STREAM_ID;
+
+    downloader->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+    EXPECT_EQ(downloader->isParseFinished_, false);
+}
+
+/**
+ * @tc.name: SET_DEFAULT_STREAM_ID_005
+ * @tc.desc: test SetDefaultStreamId keeps audioStreamId when it is not -1
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, SET_DEFAULT_STREAM_ID_005, TestSize.Level1)
+{
+    auto downloader = CreateSetDefaultStreamIdDownloader(true, true, true);
+    auto audio = std::make_shared<M3U8Media>("a", TEST_URI_PATH, downloader->currentVariant_->m3u8_);
+    audio->streamId_ = HLS_AUDIO_STREAM_ID;
+    downloader->currentVariant_->defaultAudio_ = audio;
+    int32_t videoStreamId = HLS_VIDEO_STREAM_ID;
+    int32_t audioStreamId = NUM2_TEST;
+    int32_t subTitleStreamId = HLS_SUBTITLE_STREAM_ID;
+
+    downloader->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+    EXPECT_EQ(audioStreamId, NUM2_TEST);
+}
+
+/**
+ * @tc.name: SET_DEFAULT_STREAM_ID_006
+ * @tc.desc: test SetDefaultStreamId keeps audioStreamId when currentVariant is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, SET_DEFAULT_STREAM_ID_006, TestSize.Level1)
+{
+    auto downloader = CreateSetDefaultStreamIdDownloader(true, true, false);
+    int32_t videoStreamId = HLS_VIDEO_STREAM_ID;
+    int32_t audioStreamId = INVALID_TEST;
+    int32_t subTitleStreamId = HLS_SUBTITLE_STREAM_ID;
+
+    downloader->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+    EXPECT_EQ(audioStreamId, INVALID_TEST);
+}
+
+/**
+ * @tc.name: SET_DEFAULT_STREAM_ID_007
+ * @tc.desc: test SetDefaultStreamId keeps audioStreamId when defaultAudio is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, SET_DEFAULT_STREAM_ID_007, TestSize.Level1)
+{
+    auto downloader = CreateSetDefaultStreamIdDownloader(true, true, true);
+    downloader->currentVariant_->defaultAudio_ = nullptr;
+    int32_t videoStreamId = HLS_VIDEO_STREAM_ID;
+    int32_t audioStreamId = INVALID_TEST;
+    int32_t subTitleStreamId = HLS_SUBTITLE_STREAM_ID;
+
+    downloader->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+    EXPECT_EQ(audioStreamId, INVALID_TEST);
+}
+
+/**
+ * @tc.name: SET_DEFAULT_STREAM_ID_008
+ * @tc.desc: test SetDefaultStreamId updates audioStreamId from defaultAudio
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, SET_DEFAULT_STREAM_ID_008, TestSize.Level1)
+{
+    auto downloader = CreateSetDefaultStreamIdDownloader(true, true, true);
+    auto audio = std::make_shared<M3U8Media>("a", TEST_URI_PATH, downloader->currentVariant_->m3u8_);
+    audio->streamId_ = HLS_AUDIO_STREAM_ID;
+    downloader->currentVariant_->defaultAudio_ = audio;
+    int32_t videoStreamId = HLS_VIDEO_STREAM_ID;
+    int32_t audioStreamId = INVALID_TEST;
+    int32_t subTitleStreamId = HLS_SUBTITLE_STREAM_ID;
+
+    downloader->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+    EXPECT_EQ(audioStreamId, static_cast<int32_t>(HLS_AUDIO_STREAM_ID));
+}
+
+/**
+ * @tc.name: SET_DEFAULT_STREAM_ID_009
+ * @tc.desc: test SetDefaultStreamId keeps subTitleStreamId when it is not -1
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, SET_DEFAULT_STREAM_ID_009, TestSize.Level1)
+{
+    auto downloader = CreateSetDefaultStreamIdDownloader(true, true, true);
+    auto subtitle = std::make_shared<M3U8Media>("s", TEST_URI_PATH, downloader->currentVariant_->m3u8_);
+    subtitle->streamId_ = HLS_SUBTITLE_STREAM_ID;
+    downloader->currentVariant_->defaultSubtitles_ = subtitle;
+    int32_t videoStreamId = HLS_VIDEO_STREAM_ID;
+    int32_t audioStreamId = HLS_AUDIO_STREAM_ID;
+    int32_t subTitleStreamId = NUM2_TEST;
+
+    downloader->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+    EXPECT_EQ(subTitleStreamId, NUM2_TEST);
+}
+
+/**
+ * @tc.name: SET_DEFAULT_STREAM_ID_010
+ * @tc.desc: test SetDefaultStreamId keeps subTitleStreamId when currentVariant is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, SET_DEFAULT_STREAM_ID_010, TestSize.Level1)
+{
+    auto downloader = CreateSetDefaultStreamIdDownloader(true, true, false);
+    int32_t videoStreamId = HLS_VIDEO_STREAM_ID;
+    int32_t audioStreamId = HLS_AUDIO_STREAM_ID;
+    int32_t subTitleStreamId = INVALID_TEST;
+
+    downloader->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+    EXPECT_EQ(subTitleStreamId, INVALID_TEST);
+}
+
+/**
+ * @tc.name: SET_DEFAULT_STREAM_ID_011
+ * @tc.desc: test SetDefaultStreamId keeps subTitleStreamId when defaultSubtitles is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, SET_DEFAULT_STREAM_ID_011, TestSize.Level1)
+{
+    auto downloader = CreateSetDefaultStreamIdDownloader(true, true, true);
+    downloader->currentVariant_->defaultSubtitles_ = nullptr;
+    int32_t videoStreamId = HLS_VIDEO_STREAM_ID;
+    int32_t audioStreamId = HLS_AUDIO_STREAM_ID;
+    int32_t subTitleStreamId = INVALID_TEST;
+
+    downloader->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+    EXPECT_EQ(subTitleStreamId, INVALID_TEST);
+}
+
+/**
+ * @tc.name: SET_DEFAULT_STREAM_ID_012
+ * @tc.desc: test SetDefaultStreamId updates subTitleStreamId from defaultSubtitles
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, SET_DEFAULT_STREAM_ID_012, TestSize.Level1)
+{
+    auto downloader = CreateSetDefaultStreamIdDownloader(true, true, true);
+    auto subtitle = std::make_shared<M3U8Media>("s", TEST_URI_PATH, downloader->currentVariant_->m3u8_);
+    subtitle->streamId_ = HLS_SUBTITLE_STREAM_ID;
+    downloader->currentVariant_->defaultSubtitles_ = subtitle;
+    int32_t videoStreamId = HLS_VIDEO_STREAM_ID;
+    int32_t audioStreamId = HLS_AUDIO_STREAM_ID;
+    int32_t subTitleStreamId = INVALID_TEST;
+
+    downloader->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+    EXPECT_EQ(subTitleStreamId, static_cast<int32_t>(HLS_SUBTITLE_STREAM_ID));
+}
+
+/**
+ * @tc.name: SET_DEFAULT_STREAM_ID_013
+ * @tc.desc: test SetDefaultStreamId does not notify client error when parse succeeds
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, SET_DEFAULT_STREAM_ID_013, TestSize.Level1)
+{
+    auto downloader = CreateSetDefaultStreamIdDownloader(true, true, true);
+    auto callback = std::make_shared<RecordingCallback>();
+    downloader->eventCallback_ = callback;
+    int32_t videoStreamId = HLS_VIDEO_STREAM_ID;
+    int32_t audioStreamId = HLS_AUDIO_STREAM_ID;
+    int32_t subTitleStreamId = HLS_SUBTITLE_STREAM_ID;
+
+    downloader->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+    EXPECT_EQ(callback->onEventCount_, 0u);
+}
+
+/**
+ * @tc.name: SET_DEFAULT_STREAM_ID_014
+ * @tc.desc: test SetDefaultStreamId skips client error when callback is expired
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, SET_DEFAULT_STREAM_ID_014, TestSize.Level1)
+{
+    auto downloader = CreateSetDefaultStreamIdDownloader(true, false, true);
+    std::shared_ptr<RecordingCallback> callback = std::make_shared<RecordingCallback>();
+    downloader->eventCallback_ = callback;
+    callback = nullptr;
+    int32_t videoStreamId = HLS_VIDEO_STREAM_ID;
+    int32_t audioStreamId = HLS_AUDIO_STREAM_ID;
+    int32_t subTitleStreamId = HLS_SUBTITLE_STREAM_ID;
+
+    downloader->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+    EXPECT_EQ(videoStreamId, static_cast<int32_t>(HLS_VIDEO_STREAM_ID));
+}
+
+/**
+ * @tc.name: SET_DEFAULT_STREAM_ID_015
+ * @tc.desc: test SetDefaultStreamId skips client error when callback is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, SET_DEFAULT_STREAM_ID_015, TestSize.Level1)
+{
+    auto downloader = CreateSetDefaultStreamIdDownloader(true, false, true);
+    downloader->eventCallback_.reset();
+    int32_t videoStreamId = HLS_VIDEO_STREAM_ID;
+    int32_t audioStreamId = HLS_AUDIO_STREAM_ID;
+    int32_t subTitleStreamId = HLS_SUBTITLE_STREAM_ID;
+
+    downloader->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+    EXPECT_EQ(audioStreamId, static_cast<int32_t>(HLS_AUDIO_STREAM_ID));
+}
+
+/**
+ * @tc.name: SET_DEFAULT_STREAM_ID_016
+ * @tc.desc: test SetDefaultStreamId reports client error when parse fails and callback exists
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, SET_DEFAULT_STREAM_ID_016, TestSize.Level1)
+{
+    auto downloader = CreateSetDefaultStreamIdDownloader(true, false, true);
+    auto callback = std::make_shared<RecordingCallback>();
+    downloader->eventCallback_ = callback;
+    int32_t videoStreamId = HLS_VIDEO_STREAM_ID;
+    int32_t audioStreamId = HLS_AUDIO_STREAM_ID;
+    int32_t subTitleStreamId = HLS_SUBTITLE_STREAM_ID;
+
+    downloader->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+    EXPECT_EQ(callback->onEventCount_, 1u);
+}
+
+/**
+ * @tc.name: UPDATE_MANIFEST_AND_NOTIFY_LIST_CHANGE_001
+ * @tc.desc: test UpdateManifestAndNotifyListChange updates current variant on simple playlist
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, UPDATE_MANIFEST_AND_NOTIFY_LIST_CHANGE_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    downloader->master_->isSimple_.store(true);
+    auto m3u8 = std::make_shared<M3U8>(TEST_URI_PATH, "");
+    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, m3u8);
+    variant->streamId_ = HLS_VIDEO_STREAM_ID;
+    downloader->master_->defaultVariant_ = variant;
+    downloader->master_->variants_.push_back(variant);
+    downloader->currentVariant_ = nullptr;
+    downloader->isParseFinished_ = false;
+
+    downloader->UpdateManifestAndNotifyListChange(false);
+
+    EXPECT_EQ(downloader->currentVariant_, variant);
+    EXPECT_EQ(downloader->isParseFinished_.load(), true);
 }
 }
