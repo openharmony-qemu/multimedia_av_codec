@@ -1114,7 +1114,7 @@ Status FFmpegDemuxerPlugin::PushEOSToAllCache()
     Status ret = Status::OK;
     for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
         auto streamIndex = selectedTrackIds_[i];
-        MEDIA_LOG_I("Track " PUBLIC_LOG_D32, streamIndex);
+        AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGI, LOG_INTERVAL_MS, LOG_MAX_COUNT, "Track " PUBLIC_LOG_D32, streamIndex);
         std::shared_ptr<SamplePacket> eosSample = std::make_shared<SamplePacket>();
         eosSample->isEOS = true;
         cacheQueue_.Push(streamIndex, eosSample);
@@ -1331,7 +1331,7 @@ Status FFmpegDemuxerPlugin::SetEosSample(std::shared_ptr<AVBuffer> sample, bool 
         Status ret = WriteBuffer(sample, nullptr, 0);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Write buffer failed");
     }
-    MEDIA_LOG_I("Out");
+    AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGI, LOG_INTERVAL_MS, LOG_MAX_COUNT, "Out");
     return Status::OK;
 }
 
@@ -3139,12 +3139,14 @@ void FFmpegDemuxerPlugin::DumpPacketInfo(int32_t trackId, Stage stage)
         return;
     }
     if (stage == Stage::FIRST_READ && !trackDfxInfoMap_[trackId].dumpFirstInfo) {
-        MEDIA_LOG_I("Info Track[" PUBLIC_LOG_D32 "] [first] [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "]",
+        AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGI, LOG_INTERVAL_MS, LOG_MAX_COUNT,
+            "Info Track[" PUBLIC_LOG_D32 "] [first] [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "]",
             trackId, trackDfxInfoMap_[trackId].lastPts,
             trackDfxInfoMap_[trackId].lastDuration, trackDfxInfoMap_[trackId].lastPos);
         trackDfxInfoMap_[trackId].dumpFirstInfo = true;
     } else if (stage == Stage::FILE_END) {
-        MEDIA_LOG_I("Info Track[" PUBLIC_LOG_D32 "] [eos] [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "]",
+        AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGI, LOG_INTERVAL_MS, LOG_MAX_COUNT,
+            "Info Track[" PUBLIC_LOG_D32 "] [eos] [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "]",
             trackId, trackDfxInfoMap_[trackId].lastPts,
             trackDfxInfoMap_[trackId].lastDuration, trackDfxInfoMap_[trackId].lastPos);
     }
@@ -3246,7 +3248,8 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size)
     std::shared_ptr<SamplePacket> samplePacket = cacheQueue_.Front(trackId);
     FALSE_RETURN_V_MSG_E(samplePacket != nullptr, Status::ERROR_UNKNOWN, "Cache sample is nullptr");
     if (samplePacket->isEOS) {
-        MEDIA_LOG_I("Track " PUBLIC_LOG_D32 " eos", trackId);
+        AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGI, LOG_INTERVAL_MS, LOG_MAX_COUNT,
+            "Track " PUBLIC_LOG_D32 " eos", trackId);
         return Status::END_OF_STREAM;
     }
     FALSE_RETURN_V_MSG_E(samplePacket->pkts.size() > 0, Status::ERROR_UNKNOWN, "Cache sample is empty");

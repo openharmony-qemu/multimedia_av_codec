@@ -182,7 +182,7 @@ int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize, int
 
 int FFmpegDemuxerPlugin::HandleReadEOS(IOContext* ioContext)
 {
-    MEDIA_LOG_I("Read end");
+    AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGI, LOG_INTERVAL_MS, LOG_MAX_COUNT, "Read end");
     ioContext->eos = true;
     return AVERROR_EOF;
 }
@@ -613,7 +613,8 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size, u
     std::shared_ptr<SamplePacket> samplePacket = cacheQueue_.Front(trackId);
     FALSE_RETURN_V_MSG_E(samplePacket != nullptr, Status::ERROR_UNKNOWN, "Cache sample is nullptr");
     if (samplePacket->isEOS) {
-        MEDIA_LOG_I("Track " PUBLIC_LOG_D32 " eos", trackId);
+        AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGI, LOG_INTERVAL_MS, LOG_MAX_COUNT,
+            "Track " PUBLIC_LOG_D32 " eos", trackId);
         return Status::END_OF_STREAM;
     }
     FALSE_RETURN_V_MSG_E(samplePacket->pkts.size() > 0, Status::ERROR_UNKNOWN, "Cache sample is empty");
@@ -625,8 +626,7 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size, u
     }
 
     const auto* snapshot = GetStreamSnapshot(trackId);
-    FALSE_RETURN_V_MSG_E(snapshot != nullptr && snapshot->valid,
-        Status::ERROR_UNKNOWN, "Stream snapshot is invalid");
+    FALSE_RETURN_V_MSG_E(snapshot != nullptr && snapshot->valid, Status::ERROR_UNKNOWN, "Stream snapshot is invalid");
     if ((std::count(g_streamContainedXPS.begin(), g_streamContainedXPS.end(), snapshot->codecId) > 0)) {
         AVPacketWrapperPtr firstWrapper = samplePacket->pkts[0];
         if (firstWrapper != nullptr && firstWrapper->GetAVPacket() != nullptr &&
