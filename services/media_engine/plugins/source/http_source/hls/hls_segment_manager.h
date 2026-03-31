@@ -234,6 +234,8 @@ private:
     bool CheckLiveToVodEnd();
     bool CheckVodEnd();
     bool CheckLiveLastSegment();
+    std::shared_ptr<AesDecryptor> GetAesDecryptor();
+    void SetAesDecryptor(std::shared_ptr<AesDecryptor> aesDecryptor);
     std::vector<PlayInfo> SeekListHelper(bool isLive);
 
 private:
@@ -385,6 +387,7 @@ private:
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
     InfoIndexMap InfoIndexMap_;
     std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
+    std::shared_mutex aesDecryptorMutex_;
     bool isSeekedFlag_ {false};
     mutable std::mutex seekCandidatesMutex_;
 };

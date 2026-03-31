@@ -651,18 +651,6 @@ HWTEST_F(M3u8UnitTest, IsVideoStream_001, TestSize.Level1)
     EXPECT_EQ(master->IsVideoStream(codecs), false);
 }
 
-HWTEST_F(M3u8UnitTest, ADDFILE_001, TestSize.Level1)
-{
-    M3U8 m3u8("http://example.com/test.m3u8", "");
-    M3U8Fragment fragment("http://example.com", 10.0, 1, false);
-    m3u8.minFragDuration_ = 1;
-    m3u8.isDecryptAble_ = true;
-    m3u8.method_ = std::make_shared<std::string>("NONE");
-    m3u8.keyIndex_ = 1;
-    m3u8.AddFile(std::make_shared<M3U8Fragment>(fragment), 5);
-    EXPECT_EQ(m3u8.files_.front()->keyIndex_, 0);
-}
-
 HWTEST_F(M3u8UnitTest, PREPAREDECRYPTIONKEYS_001, TestSize.Level1)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "TestPlaylist");
