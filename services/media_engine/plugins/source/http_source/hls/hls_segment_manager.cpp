@@ -226,6 +226,13 @@ void HlsSegmentManager::SetDownloadCallback(const std::shared_ptr<DownloadMetric
     downloadCallback_ = callback;
 }
 
+void HlsSegmentManager::SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId)
+{
+    if (playlistDownloader_ != nullptr) {
+        playlistDownloader_->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+    }
+}
+
 HlsSegmentManager::~HlsSegmentManager()
 {
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsSegmentManager dtor in, type: %{public}d", FAKE_POINTER(this), type_);
@@ -236,6 +243,7 @@ HlsSegmentManager::~HlsSegmentManager()
     if (playlistDownloader_ != nullptr) {
         playlistDownloader_ = nullptr;
     }
+    SetAesDecryptor(nullptr);
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsSegmentManager dtor out, type: %{public}d, "
         "writeTsIndex: " PUBLIC_LOG_U32 " writeOffset: " PUBLIC_LOG_U64, FAKE_POINTER(this), type_,
         writeTsIndex_, writeOffset_);
@@ -321,7 +329,19 @@ void HlsSegmentManager::PutRequestIntoDownloader(const PlayInfo& playInfo)
 void HlsSegmentManager::UpdateAesDecryptor(const PlayInfo& playInfo)
 {
     FALSE_RETURN(playlistDownloader_ != nullptr);
-    aesDecryptor_ = playlistDownloader_->GetAesDecryptor(playInfo.keyIndex_);
+    SetAesDecryptor(playlistDownloader_->GetAesDecryptor(playInfo.keyIndex_));
+}
+
+void HlsSegmentManager::SetAesDecryptor(std::shared_ptr<AesDecryptor> aesDecryptor)
+{
+    std::unique_lock<std::shared_mutex> lock(aesDecryptorMutex_);
+    aesDecryptor_ = aesDecryptor;
+}
+
+std::shared_ptr<AesDecryptor> HlsSegmentManager::GetAesDecryptor()
+{
+    std::shared_lock<std::shared_mutex> lock(aesDecryptorMutex_);
+    return aesDecryptor_;
 }
 
 void HlsSegmentManager::SaveHttpHeader(const std::map<std::string, std::string>& httpHeader)
@@ -559,6 +579,11 @@ Status HlsSegmentManager::CheckPlaylist(unsigned char* buff, ReadDataInfo& readD
     return Status::ERROR_UNKNOWN;
 }
 
+bool IsChangeStream(const ReadDataInfo& readDataInfo)
+{
+    return readDataInfo.realReadLength_ == 0 && readDataInfo.streamId_ != readDataInfo.nextStreamId_;
+}
+
 Status HlsSegmentManager::ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     FALSE_RETURN_V_MSG(cacheMediaBuffer_ != nullptr, Status::END_OF_STREAM, "eos, cacheMediaBuffer_ is nullptr");
@@ -593,7 +618,7 @@ Status HlsSegmentManager::ReadDelegate(unsigned char* buff, ReadDataInfo& readDa
         GetCrossTsBuffersize(), cacheMediaBuffer_->GetFreeSize(), readDataInfo.streamId_, readDataInfo.nextStreamId_,
         type_);
     if (readDataInfo.realReadLength_ == 0 && playlistDownloader_ != nullptr &&
-        playlistDownloader_->IsLive()) {
+        playlistDownloader_->IsLive() && !IsChangeStream(readDataInfo)) {
         return Status::ERROR_AGAIN;
     }
     return Status::OK;
@@ -681,7 +706,7 @@ void HlsSegmentManager::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readD
     ffmpegOffset_ = readDataInfo.ffmpegOffset + readDataInfo.realReadLength_;
     if ((IsHlsFmp4() && readDataInfo.streamId_ > 0) || IsPureByteRange()) {
         uint64_t remain = cacheMediaBuffer_->GetBufferSize(readOffset_);
-        if (remain > 0 && remain < AES_BLOCK_LEN && aesDecryptor_ != nullptr) {
+        if (remain > 0 && remain < AES_BLOCK_LEN && GetAesDecryptor() != nullptr) {
             size_t readRemain = cacheMediaBuffer_->Read(buff, readOffset_, readDataInfo.wantReadLength_);
             readOffset_ += readRemain;
             ffmpegOffset_ += readRemain;
@@ -718,7 +743,7 @@ void HlsSegmentManager::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readD
 
 void HlsSegmentManager::RemoveFmp4PaddingData(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    if (aesDecryptor_ == nullptr || readDataInfo.realReadLength_ < 1) {
+    if (GetAesDecryptor() == nullptr || readDataInfo.realReadLength_ < 1) {
         return;
     }
     if ((IsHlsFmp4() && readDataInfo.streamId_ > 0) || IsPureByteRange()) {
@@ -844,8 +869,9 @@ void HlsSegmentManager::PrepareToSeek()
     singleBlockLen_ = 0;
     NZERO_LOG(memset_s(decryptBuffer_, AES_DECRYPT_LEN, 0x00, AES_DECRYPT_LEN));
     decryptLen_ = 0;
-    FALSE_RETURN_MSG(aesDecryptor_ != nullptr, "aesDecryptor_ is nullptr");
-    auto ret = memcpy_s(aesDecryptor_->iv_, AES_BLOCK_LEN, aesDecryptor_->initIv_, AES_BLOCK_LEN);
+    auto aesDecryptor = GetAesDecryptor();
+    FALSE_RETURN_MSG(aesDecryptor != nullptr, "aesDecryptor_ is nullptr");
+    auto ret = memcpy_s(aesDecryptor->iv_, AES_BLOCK_LEN, aesDecryptor->initIv_, AES_BLOCK_LEN);
     if (ret != 0) {
         MEDIA_LOG_E("iv copy error, type: %{public}d", type_);
     }
@@ -887,6 +913,7 @@ bool HlsSegmentManager::SeekToTime(int64_t seekTime, SeekMode mode)
     HandleSeekReady(curStreamId_, CheckBreakCondition());
     MEDIA_LOG_I("HLS SeekToTime end, type: %{public}d", type_);
     isSeekingFlag = false;
+    isSeekedFlag_ = true;
     notNeedReadBack_.store(false);
     return true;
 }
@@ -915,6 +942,12 @@ Seekable HlsSegmentManager::GetSeekable() const
     return playlistDownloader_->GetSeekable();
 }
 
+std::vector<SeekRange> HlsSegmentManager::GetSeekableRanges() const
+{
+    FALSE_RETURN_V(playlistDownloader_ != nullptr, {});
+    return playlistDownloader_->GetSeekableRanges();
+}
+
 void HlsSegmentManager::SetCallback(const std::shared_ptr<Callback>& cb)
 {
     FALSE_RETURN(playlistDownloader_ != nullptr);
@@ -935,7 +968,18 @@ void HlsSegmentManager::ResetPlaylistCapacity(size_t size)
 void HlsSegmentManager::PlaylistBackup(const PlayInfo& fragment)
 {
     FALSE_RETURN(playlistDownloader_ != nullptr);
-    if (playlistDownloader_->IsParseFinished() && (GetSeekable() == Seekable::UNSEEKABLE)) {
+    if (playlistDownloader_->IsLive()) {
+        auto sameFragment = std::find_if(seekCandidates_.begin(), seekCandidates_.end(),
+            [&fragment](const PlayInfo& item) {
+                return item.url_ == fragment.url_ && item.rangeUrl_ == fragment.rangeUrl_ &&
+                    item.offset_ == fragment.offset_ && item.length_ == fragment.length_;
+            });
+        if (sameFragment != seekCandidates_.end()) {
+            return;
+        }
+        seekCandidates_.push_back(fragment);
+    }
+    if (playlistDownloader_->IsParseFinished() && (playlistDownloader_->IsLive())) {
         if (backPlayList_.size() > 0) {
             backPlayList_.clear();
         }
@@ -961,7 +1005,7 @@ void HlsSegmentManager::OnPlayListChanged(const std::vector<PlayInfo>& playList)
         }
         PutRequestIntoDownloader(playInfo);
     }
-    if (playlistDownloader_->IsLiveEnd()) {
+    if (playlistDownloader_ != nullptr && playlistDownloader_->IsLiveEnd()) {
         lastPlaychanged_.store(true);
     }
     MEDIA_LOG_I("HLS OnPlayListChanged out playlist: %{public}zu, back: %{public}zu, writeTsIndex_: %{public}u,"
@@ -1126,7 +1170,7 @@ uint32_t HlsSegmentManager::SaveData(uint8_t* data, uint32_t len, bool notBlock)
     }
     startedPlayStatus_ = true;
     uint32_t res = 0;
-    if (aesDecryptor_ == nullptr) {
+    if (GetAesDecryptor() == nullptr) {
         res = SaveCacheBufferData(data, len, notBlock);
     } else {
         res = SaveEncryptData(data, len, notBlock);
@@ -1153,6 +1197,8 @@ uint32_t HlsSegmentManager::FillSingleBlock(uint8_t *&data, uint32_t &len)
 
 uint32_t HlsSegmentManager::DecryptDataLeft(uint8_t *&data, uint32_t &len, bool notBlock)
 {
+    auto aesDecryptor = GetAesDecryptor();
+    FALSE_RETURN_V_MSG(aesDecryptor != nullptr, 0, "aesDecryptor is nullptr");
     if (!singleBlockLen_) { // if single block has no data, decrypt from 'SaveData' buffer
         return 0;
     }
@@ -1162,7 +1208,7 @@ uint32_t HlsSegmentManager::DecryptDataLeft(uint8_t *&data, uint32_t &len, bool 
     FillSingleBlock(data, len);
 
     // decrypt single block
-    aesDecryptor_->Decrypt(singleBlock_, decryptBuffer_, singleBlockLen_);
+    aesDecryptor->Decrypt(singleBlock_, decryptBuffer_, singleBlockLen_);
     decryptLen_ = singleBlockLen_;
     singleBlockLen_ = 0;
 
@@ -1177,12 +1223,14 @@ uint32_t HlsSegmentManager::DecryptDataLeft(uint8_t *&data, uint32_t &len, bool 
 
 uint32_t HlsSegmentManager::DecryptData(uint8_t *&data, uint32_t &len, bool notBlock)
 {
+    auto aesDecryptor = GetAesDecryptor();
+    FALSE_RETURN_V_MSG(aesDecryptor != nullptr, 0, "aesDecryptor is nullptr");
     // decrypt encryptedBuffer, min(AES_DECRYPT_COUNT, encryptedLen / AES_BLOCK_LEN) * AES_BLOCK_LEN
     auto decryptCount = std::min(AES_DECRYPT_COUNT, len / AES_BLOCK_LEN);
     auto aesDecryptLen = decryptCount * AES_BLOCK_LEN;
 
     // decrypt buffer
-    aesDecryptor_->Decrypt(data, decryptBuffer_, aesDecryptLen);
+    aesDecryptor->Decrypt(data, decryptBuffer_, aesDecryptLen);
 
     // update encrypt buffer index
     len -= aesDecryptLen;
@@ -1389,6 +1437,10 @@ bool HlsSegmentManager::SelectBitRate(uint32_t bitRate)
     fragmentDownloadStart.clear();
     fragmentPushed.clear();
     backPlayList_.clear();
+    {
+        std::lock_guard<std::mutex> seekCandidatesLock(seekCandidatesMutex_);
+        seekCandidates_.clear();
+    }
     
     // switch to des bitrate
     playlistDownloader_->SelectBitRate(bitRate);
@@ -1406,7 +1458,7 @@ void HlsSegmentManager::SeekToTs(uint64_t seekTime, SeekMode mode)
     isDownloadStarted_ = false;
     playList_->Clear();
     int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
-    for (const auto &item : backPlayList_) {
+    for (const auto &item : SeekListHelper(playlistDownloader_->IsLive())) {
         if (CheckLoopTimeout(loopStartTime)) {
             break;
         }
@@ -1447,7 +1499,11 @@ int64_t HlsSegmentManager::RequestNewTs(uint64_t seekTime, SeekMode mode, double
         if (static_cast<uint64_t>(lastTotalDuration) <= seekTime) {
             startTimePos = static_cast<int64_t>(seekTime) - static_cast<int64_t>(lastTotalDuration);
             seekStartTimePos_ = lastTotalDuration;
-            if (startTimePos > (int64_t)(hstTime / HALF_DIVIDE) && (&item != &backPlayList_.back())) { // 2
+            auto* playlistptr = &backPlayList_;
+            if (playlistDownloader_ != nullptr && playlistDownloader_->IsLive()) {
+                playlistptr = &seekCandidates_;
+            }
+            if (startTimePos > (int64_t)(hstTime / HALF_DIVIDE) && (&item != &(playlistptr->back()))) { // 2
                 writeTsIndex_++;
                 seekStartTimePos_ = totalDuration;
                 MEDIA_LOG_I("writeTsIndex, RequestNewTs update writeTsIndex " PUBLIC_LOG_U32 ", type: %{public}d",
@@ -1457,6 +1513,13 @@ int64_t HlsSegmentManager::RequestNewTs(uint64_t seekTime, SeekMode mode, double
             startTimePos = 0;
         }
         playInfo.startTimePos_ = startTimePos;
+    }
+    bool inCurrentPlaylist = playlistDownloader_ != nullptr ?
+        playlistDownloader_->IsFragmentInCurrentPlayList(playInfo.url_, playInfo.rangeUrl_,
+            playInfo.offset_, playInfo.length_) : false;
+    if (!inCurrentPlaylist) {
+        seekStartTimePos_ = totalDuration;
+        return -1;
     }
     PushPlayInfo(playInfo);
     return 0;
@@ -1474,7 +1537,9 @@ void HlsSegmentManager::PushPlayInfo(PlayInfo playInfo)
         readTsIndex_ = writeTsIndex_;
         {
             AutoLock lock(tsStorageInfoMutex_);
-            if (tsStorageInfo_.find(writeTsIndex_) != tsStorageInfo_.end()) {
+            if (playlistDownloader_->IsLive()) {
+                tsStorageInfo_.clear();
+            } else if (tsStorageInfo_.find(writeTsIndex_) != tsStorageInfo_.end()) {
                 tsStorageInfo_[writeTsIndex_] = std::make_pair(0, false);
             } else {
                 tsStorageInfo_[writeTsIndex_].first = 0;
@@ -1499,6 +1564,11 @@ void HlsSegmentManager::SeekToTsForRead(uint32_t currentTsIndex)
     isDownloadStarted_ = false;
     playList_->Clear();
     int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
+    if (playlistDownloader_->IsLive()) {
+        readOffset_ = 0;
+        writeOffset_ = 0;
+        readTsIndex_.store(0);
+    }
     for (const auto &item : backPlayList_) {
         if (CheckLoopTimeout(loopStartTime)) {
             break;
@@ -1542,8 +1612,9 @@ void HlsSegmentManager::UpdateDownloadFinished(const std::string &url, const std
         AutoLock lock(tsStorageInfoMutex_);
         tsStorageInfo_[writeTsIndex_].second = true;
     }
-    if (aesDecryptor_ != nullptr) {
-        NZERO_LOG(memcpy_s(aesDecryptor_->iv_, AES_BLOCK_LEN, aesDecryptor_->initIv_, AES_BLOCK_LEN));
+    auto aesDecryptor = GetAesDecryptor();
+    if (aesDecryptor != nullptr) {
+        NZERO_LOG(memcpy_s(aesDecryptor->iv_, AES_BLOCK_LEN, aesDecryptor->initIv_, AES_BLOCK_LEN));
     }
     auto playInfo = playList_->Pop(POP_TIME_OUT_MS);
     if (!playInfo.url_.empty()) {
@@ -1576,6 +1647,11 @@ void HlsSegmentManager::UpdateDownloadFinished(const std::string &url, const std
         playlistDownloader_ != nullptr && playlistDownloader_->IsParseAndNotifyFinished() && !isSeekingFlag &&
         !IsDownloadLastSplice()) {
         AutoSelectBitrate(bitRate);
+    }
+    auto callback = callback_.lock();
+    if (callback != nullptr) {
+        callback->OnEvent({PluginEventType::NETWORK_BITRATE_CHANGED, {bitRate},
+            "network bitrate change"});
     }
 }
 
@@ -2171,11 +2247,14 @@ bool HlsSegmentManager::CheckLoopTimeout(int64_t loopStartTime)
     return isLoopTimeout;
 }
 
-Status HlsSegmentManager::GetStreamInfo(std::vector<StreamInfo>& streams)
+Status HlsSegmentManager::GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate)
 {
     Seekable seekable = Seekable::INVALID;
     int retry = 0;
     do {
+        if (isUpdate) {
+            break;
+        }
         seekable = GetSeekable();
         retry++;
         if (seekable == Seekable::INVALID) {
@@ -2184,9 +2263,9 @@ Status HlsSegmentManager::GetStreamInfo(std::vector<StreamInfo>& streams)
             }
         }
     } while (seekable == Seekable::INVALID && !isInterruptNeeded_.load());
-    
+
     if (playlistDownloader_) {
-        playlistDownloader_->GetStreamInfo(streams);
+        playlistDownloader_->GetStreamInfo(streams, isUpdate);
         MEDIA_LOG_I("HLS GetStreamInfo " PUBLIC_LOG_ZU ", type: %{public}d", streams.size(), type_);
     }
     return Status::OK;
@@ -2375,6 +2454,10 @@ bool HlsSegmentManager::SelectMedia(int32_t streamId, HlsSegmentType mediaType)
     fragmentDownloadStart.clear();
     fragmentPushed.clear();
     backPlayList_.clear();
+    {
+        std::lock_guard<std::mutex> seekCandidatesLock(seekCandidatesMutex_);
+        seekCandidates_.clear();
+    }
     
     // switch to des bitrate
     playlistDownloader_->SelectMedia(streamId, mediaType);
@@ -2439,6 +2522,26 @@ std::shared_ptr<DownloadRequest> HlsSegmentManager::GetDownloadRequest()
 {
     std::shared_lock<std::shared_mutex> lock(downloadRequestMutex_);
     return downloadRequest_;
+}
+
+std::vector<PlayInfo> HlsSegmentManager::SeekListHelper(bool isLive)
+{
+    std::vector<PlayInfo> seekList;
+    if (isLive) {
+        std::lock_guard<std::mutex> lock(seekCandidatesMutex_);
+        seekList.reserve(seekCandidates_.size());
+        for (const auto &fragment : seekCandidates_) {
+            bool inCurrentPlaylist = playlistDownloader_ != nullptr ?
+                playlistDownloader_->IsFragmentInCurrentPlayList(fragment.url_, fragment.rangeUrl_,
+                    fragment.offset_, fragment.length_) : false;
+            if (inCurrentPlaylist) {
+                seekList.push_back(fragment);
+            }
+        }
+    } else {
+        return std::vector<PlayInfo>(backPlayList_.begin(), backPlayList_.end());
+    }
+    return seekList;
 }
 
 }

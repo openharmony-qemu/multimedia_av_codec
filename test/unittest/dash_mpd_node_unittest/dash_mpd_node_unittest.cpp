@@ -99,6 +99,23 @@ HWTEST_F(DashMpdNodeUnitTest, GetAttr_004, TestSize.Level0)
     EXPECT_EQ(dAttrVal, NUM_1);
 }
 
+/**
+ * @tc.name  : Test ParseNode(std::shared_ptr<XmlParser>, std::shared_ptr<XmlElement>)
+ * @tc.number: ParseNode_001
+ * @tc.desc  : Test mpdAttr_[index].val_.length() > 0
+ */
+HWTEST_F(DashMpdNodeUnitTest, ParseNode_001, TestSize.Level0)
+{
+    ASSERT_NE(dashMpdNode_, nullptr);
+    dashMpdNode_->ParseNode(nullptr, nullptr);
+    dashMpdNode_->ParseNode(std::make_shared<XmlParser>(), nullptr);
+    xmlNodePtr element = xmlNewNode(nullptr, BAD_CAST "root");
+    dashMpdNode_->ParseNode(std::make_shared<XmlParser>(), std::make_shared<XmlElement>(element));
+    std::string attrName = "media";
+    double uiAttrVal = 0;
+    dashMpdNode_->GetAttr(attrName, uiAttrVal);
+    EXPECT_EQ(uiAttrVal, 0);
+}
 } // namespace HttpPluginLite
 } // namespace Plugin
 } // namespace Media

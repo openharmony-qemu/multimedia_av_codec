@@ -62,6 +62,7 @@ public:
     bool MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode, int32_t streamId) override;
     size_t GetContentLength() const override;
     int64_t GetDuration() const override;
+    std::vector<SeekRange> GetSeekableRanges() const override;
     std::pair<int64_t, bool> GetStartInfo() const override;
     Seekable GetSeekable() const override;
     void SetCallback(const std::shared_ptr<Callback>& cb) override;
@@ -91,7 +92,7 @@ public:
     bool SetInitialBufferSize(int32_t offset, int32_t size) override;
     void NotifyInitSuccess() override;
     uint64_t GetCachedDuration() override;
-    Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
+    Status GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate = false) override;
     bool IsHlsFmp4() override;
     uint64_t GetMemorySize() override;
     std::string GetContentType() override;
@@ -99,6 +100,7 @@ public:
     Status SelectStream(int32_t streamId) override;
     void PostAllEvent(HlsSegEvent event);
     void PostBufferingEvent(HlsSegmentType mediaType, BufferingInfoType type);
+    void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) override;
 
 private:
     void SetDemuxerState(int32_t streamId) override;

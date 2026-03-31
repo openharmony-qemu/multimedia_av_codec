@@ -39,6 +39,7 @@ public:
     Status Resume() override;
     Status GetParameter(std::shared_ptr<Meta> &meta) override;
     Status SetParameter(const std::shared_ptr<Meta> &meta) override;
+    Status SetMediaDuration(int64_t mediaDuration) override;
     Status SetCallback(const std::shared_ptr<Callback>& cb) override;
     Status SetSource(std::shared_ptr<MediaSource> source) override;
     Status Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen) override;
@@ -57,7 +58,7 @@ public:
     Status SetStartPts(int64_t startPts) override;
     Status SetExtraCache(uint64_t cacheDuration) override;
     Status SetReadBlockingFlag(bool isReadBlockingAllowed) override;
-    Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
+    Status GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate = false) override;
     Status SelectStream(int32_t streamID) override;
     void SetDemuxerState(int32_t streamId) override;
     void SetDownloadErrorState() override;
@@ -65,6 +66,7 @@ public:
     Status GetDownloadInfo(DownloadInfo& downloadInfo) override;
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     Status GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
+    std::vector<SeekRange> GetSeekableRanges() const override;
     size_t GetSegmentOffset() override;
     bool GetHLSDiscontinuity() override;
     bool SetSourceInitialBufferSize(int32_t offset, int32_t size) override;
@@ -79,6 +81,7 @@ public:
     std::string GetContentType() override;
     bool IsHlsEnd(int32_t streamId = -1) override;
     bool IsHls() override;
+    void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) override;
 
 private:
     void CloseUri(bool isAsync = false);

@@ -167,6 +167,38 @@ std::string HttpMediaDownloader::GetContentType()
     return downloader->GetContentType();
 }
 
+void HttpMediaDownloader::SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId)
+{
+    if (defaultStream_ == nullptr) {
+        MEDIA_LOG_W("defaultStream_ is nullptr");
+        return;
+    }
+    (void)audioStreamId;
+    (void)subTitleStreamId;
+    if (playMediaStreams_.empty()) {
+        return;
+    }
+    if (videoStreamId != -1) {
+        if (videoStreamId < static_cast<int32_t>(playMediaStreams_.size())) {
+            defaultStream_ = playMediaStreams_[videoStreamId];
+        }
+        return;
+    }
+    for (size_t index = 0; index < playMediaStreams_.size(); index++) {
+        if (playMediaStreams_[index] == nullptr) {
+            MEDIA_LOG_W("playMediaStreams_ index: [%{public}u] is nullptr.", static_cast<uint32_t>(index));
+            continue;
+        }
+        if (defaultStream_ != nullptr &&
+            (playMediaStreams_[index]->url == defaultStream_->url &&
+             playMediaStreams_[index]->width == defaultStream_->width &&
+             playMediaStreams_[index]->height == defaultStream_->height &&
+             playMediaStreams_[index]->bitrate == defaultStream_->bitrate)) {
+            videoStreamId = index;
+        }
+    }
+}
+
 bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
     MEDIA_LOG_I("HTTP Open download in");
@@ -967,13 +999,51 @@ size_t HttpMediaDownloader::GetContentLength() const
 
 int64_t HttpMediaDownloader::GetDuration() const
 {
-    return 0;
+    return mediaDuration_.load();
 }
 
 Seekable HttpMediaDownloader::GetSeekable() const
 {
     auto downloadRequest = GetDownloadRequest();
     return downloadRequest ? downloadRequest->IsChunked(isInterruptNeeded_) : Seekable::UNSEEKABLE;
+}
+
+std::vector<SeekRange> HttpMediaDownloader::GetSeekableRanges() const
+{
+    std::shared_lock<std::shared_mutex> lock(downloadRequestMutex_);
+    FALSE_RETURN_V(downloadRequest_ != nullptr, {});
+    size_t fileLength = downloadRequest_->GetFileContentLength();
+    bool isFullyDownloaded = isDownloadFinish_ && downloadRequest_->IsEos();
+    bool canSeek = downloadRequest_->IsServerAcceptRange() || isFullyDownloaded;
+    int64_t durationUs = GetDuration();
+    if (isRingBuffer_ && fileLength == 0 && durationUs <= 0) {
+        return {};
+    }
+    int64_t durationHst = 0;
+    FALSE_RETURN_V(Plugins::Us2HstTime(durationUs, durationHst) && durationHst > 0, {});
+    if (canSeek && GetSeekable() == Seekable::SEEKABLE) {
+        return {{0, durationHst}};
+    }
+
+    bool isOfflineCacheEnabled = sourceLoader_ != nullptr && sourceLoader_->GetenableOfflineCache();
+    FALSE_RETURN_V(isOfflineCacheEnabled && fileLength != 0, {});
+
+    uint64_t maxCachedOffset = std::max<uint64_t>(static_cast<uint64_t>(writeOffset_),
+        static_cast<uint64_t>(readOffset_) + GetCurrentBufferSize());
+    size_t cachedEndOffset = static_cast<size_t>(
+        std::min<uint64_t>(static_cast<uint64_t>(fileLength), maxCachedOffset));
+    FALSE_RETURN_V(cachedEndOffset != 0, {});
+
+    int64_t cachedEndHst = static_cast<int64_t>(static_cast<double>(durationHst) *
+        static_cast<double>(cachedEndOffset) / static_cast<double>(fileLength));
+    cachedEndHst = std::max<int64_t>(0, std::min<int64_t>(cachedEndHst, durationHst));
+    FALSE_RETURN_V(cachedEndHst > 0, {});
+    return {{0, cachedEndHst}};
+}
+
+void HttpMediaDownloader::SetMediaDuration(int64_t duration)
+{
+    mediaDuration_.store(duration);
 }
 
 void HttpMediaDownloader::SetCallback(const std::shared_ptr<Callback>& cb)
@@ -1035,7 +1105,7 @@ uint32_t HttpMediaDownloader::SaveRingBufferData(uint8_t* data, uint32_t len)
             if (downloadSpeeds_.size() >= FLV_AUTO_SELECT_TIME_GAP) { // 3s
                 downloadSpeeds_.pop_front();
                 downloadSpeeds_.push_back(writeBitrate);
-                CheckAutoSelectBitrate();
+                ReportBitRate();
             } else {
                 downloadSpeeds_.push_back(writeBitrate);
             }
@@ -1941,6 +2011,11 @@ void HttpMediaDownloader::SetMediaStreams(const MediaStreamList& mediaStreams)
     MEDIA_LOG_I("HTTP MediaStreams size is " PUBLIC_LOG_ZU, static_cast<size_t>(mediaStreams.size()));
     playMediaStreams_ = mediaStreams;
     defaultStream_ = playMediaStreams_.empty() ? nullptr : playMediaStreams_.front();
+    auto callback = callback_.lock();
+    if (!playMediaStreams_.empty() && callback != nullptr) {
+        std::string type = "http";
+        callback->OnEvent({PluginEventType::STREAM_UPDATE, {type}, "Stream update."});
+    }
 }
 
 void HttpMediaDownloader::ChooseStreamByResolution()
@@ -2048,6 +2123,23 @@ bool HttpMediaDownloader::CheckAutoSelectBitrate()
     return true;
 }
 
+void HttpMediaDownloader::ReportBitRate()
+{
+    if (!IsAutoSelectConditionOk()) {
+        return;
+    }
+    uint64_t sumSpeed = 0;
+    for (const auto &speed : downloadSpeeds_) {
+        sumSpeed += speed;
+    }
+    auto aveSpeed = downloadSpeeds_.size() ? sumSpeed / downloadSpeeds_.size() : 0;
+    auto callback = callback_.lock();
+    if (callback != nullptr) {
+        callback->OnEvent({PluginEventType::NETWORK_BITRATE_CHANGED, {static_cast<uint32_t>(aveSpeed)},
+            "network bitrate change"});
+    }
+}
+
 bool HttpMediaDownloader::IsAutoSelectConditionOk()
 {
     if (!isAutoSelectBitrate_.load()) {
@@ -2133,6 +2225,32 @@ std::shared_ptr<DownloadRequest> HttpMediaDownloader::GetDownloadRequest() const
 {
     std::shared_lock<std::shared_mutex> lock(downloadRequestMutex_);
     return downloadRequest_;
+}
+
+Status HttpMediaDownloader::GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate)
+{
+    for (size_t index = 0; index < playMediaStreams_.size(); index++) {
+        if (playMediaStreams_[index] == nullptr) {
+            MEDIA_LOG_W("playMediaStreams_ index: [%{public}u] is nullptr.", static_cast<uint32_t>(index));
+            continue;
+        }
+        StreamInfo info;
+        info.streamId = index;
+        info.type = StreamType::MIXED;
+        info.bitRate = playMediaStreams_[index]->bitrate;
+        info.videoWidth = playMediaStreams_[index]->width;
+        info.videoHeight = playMediaStreams_[index]->height;
+        if (defaultStream_ != nullptr &&
+          (playMediaStreams_[index]->url == defaultStream_->url &&
+           playMediaStreams_[index]->width == defaultStream_->width &&
+           playMediaStreams_[index]->height == defaultStream_->height &&
+           playMediaStreams_[index]->bitrate == defaultStream_->bitrate)) {
+            streams.insert(streams.begin(), info);
+        } else {
+            streams.push_back(info);
+        }
+    }
+    return Status::OK;
 }
 }
 }

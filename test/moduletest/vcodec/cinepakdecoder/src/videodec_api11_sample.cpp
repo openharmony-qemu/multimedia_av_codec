@@ -42,9 +42,10 @@ int32_t g_strideSurface = 0;
 int32_t g_sliceSurface = 0;
 bool g_yuvSurface = false;
 constexpr int32_t MIN_RANGE = 4;
-constexpr int32_t MAX_RANGE = 4096;
+constexpr int32_t MAX_WIDTH_RANGE = 1920;
+constexpr int32_t MAX_HEIGHT_RANGE = 1080;
 constexpr int32_t MIN_FRANGE = 1;
-constexpr int32_t MAX_FRANGE = 60;
+constexpr int32_t MAX_FRANGE = 30;
 constexpr int32_t EVEN_NUMBER = 2;
 static const std::vector<uint32_t> cinepakFrameSizes = {
     66952, 16264, 15033, 13483, 13130,
@@ -1261,7 +1262,7 @@ void VDecAPI11Sample::getFormat(const char *fileName)
 int32_t HighRand()
 {
     std::mt19937 rng(std::random_device{}());
-    std::uniform_int_distribution<> dis(MIN_RANGE, MAX_RANGE);
+    std::uniform_int_distribution<> dis(MIN_RANGE, MAX_HEIGHT_RANGE);
     int HRand = dis(rng);
     if (HRand % EVEN_NUMBER != 0) {
         HRand = HRand + 1;
@@ -1285,7 +1286,7 @@ int32_t FrameRand()
 int32_t WidthRand()
 {
     std::mt19937 rng(std::random_device{}());
-    std::uniform_int_distribution<> dis(MIN_RANGE, MAX_RANGE);
+    std::uniform_int_distribution<> dis(MIN_RANGE, MAX_WIDTH_RANGE);
     int WRand = dis(rng);
     if (WRand % EVEN_NUMBER != 0) {
         WRand = WRand + 1;

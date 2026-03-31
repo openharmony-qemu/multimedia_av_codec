@@ -1365,10 +1365,11 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3800, TestSize.Level0)
                 continue;
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
-            if (tarckType == MEDIA_TYPE_AUD && (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_DISCARD)) {
-                audioIsEnd = true;
-                cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
-            }
+            audioFrame++;
+        }
+        if (tarckType == MEDIA_TYPE_AUD && audioFrame == 2) {
+            ASSERT_TRUE(attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_DISCARD);
+            audioIsEnd = true;
         }
     }
     close(fd);

@@ -34,10 +34,7 @@ public:
 
     int32_t CreateDecoder() override;
     void DeleteDecoder() override;
-    bool CheckVideoPixelFormat(VideoPixelFormat vpf) override;
     void ConfigurelWidthAndHeight(const Format &format, const std::string_view &formatKey, bool isWidth) override;
-    void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
-        int32_t maxVal = INT_MAX) override;
     void ConfigureHdrMetadata(const Format &format) override;
     void FillHdrInfo(sptr<SurfaceBuffer> surfaceBuffer) override;
     static int32_t GetCodecCapability(std::vector<CapabilityData> &capaArray);

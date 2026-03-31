@@ -1210,6 +1210,20 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
+    <target name="mpeg4_source_capi_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="demuxer_res/. -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="mpeg4_source_inner_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="demuxer_res/. -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
     <target name="demuxer_capi_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
@@ -1218,6 +1232,20 @@
         </preparer>
     </target>
     <target name="demuxer_inner_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="demuxer_res/. -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="mpeg4_demuxer_capi_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="demuxer_res/. -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="mpeg4_demuxer_inner_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="demuxer_res/. -> /data/test/media" src="res"/>
@@ -1245,6 +1273,20 @@
         </preparer>
     </target>
     <target name="demuxer_inner_buffer_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="demuxer_res/. -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="mpeg4_demuxer_capi_buffer_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="demuxer_res/. -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="mpeg4_demuxer_inner_buffer_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="demuxer_res/. -> /data/test/media" src="res"/>
@@ -1818,6 +1860,43 @@
             <option name="push" value="video_res/test_cbr/1080_3M/video_108011.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
             <option name="push" value="video_res/test_cbr/1080_3M/video_108012.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
             <option name="push" value="video_res/dewu.mp4 -> /data/test/media/" src="res"/>
+        </preparer>
+    </target>
+    <target name="hls_playlist_downloader_coverage_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media/test_hls"/>
+            <option name="push" value="video_res/test_hls/enc.key -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/out000.ts -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/out001.ts -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testHLSEncode.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testHlsLive.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testXMap.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testMediaSeparation.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testDRM.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testSessionKey.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testDiscontinuity.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testStartTag.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testByteRange.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/audio_en.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/audio_es.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/subs_en.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/video_360p.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/video_720p.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/video.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/audio_en_0.ts -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/audio_en_1.ts -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/audio_es_0.ts -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/audio_es_1.ts -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/subs_en_0.vtt -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/subs_en_1.vtt -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/video_360p_0.ts -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/video_360p_1.ts -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/video_720p_0.ts -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/video_720p_1.ts -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/segment0.ts -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/segment1.ts -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/segment2.ts -> /data/test/media/test_hls" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
     <target name="http_media_downloader_unit_test">

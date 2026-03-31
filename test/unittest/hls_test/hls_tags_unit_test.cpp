@@ -604,5 +604,21 @@ HWTEST_F(AttributeUnitTest, SafeStringToInt, TestSize.Level1)
     input = "2147483648";
     result = Attribute::SafeStringToInt(input, output, base);
     EXPECT_FALSE(result);
+    
+    input = "";
+    result = Attribute::SafeStringToInt(input, output, base);
+    EXPECT_FALSE(result);
+
+    input = "-123456789123456789123456789123456789123456789";
+    result = Attribute::SafeStringToInt(input, output, base);
+    EXPECT_FALSE(result);
+}
+
+HWTEST_F(AttributeUnitTest, HLS_TAGS_GetByteRange_002, TestSize.Level1)
+{
+    Attribute attr("name", "\"");
+    auto byteRange = attr.GetByteRange();
+    EXPECT_EQ(byteRange.first, 0);
+    EXPECT_EQ(byteRange.second, 0);
 }
 }

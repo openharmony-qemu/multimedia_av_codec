@@ -33,7 +33,7 @@ private:
         explicit NalUnitReader(std::shared_ptr<std::ifstream> inputFile) : inputFile_(inputFile) {}
         virtual ~NalUnitReader() {};
         uint8_t const *GetNextNalUnitAddr();
-        int32_t ReadNalUnit(uint8_t *bufferAddr, int32_t &bufferSize);
+        int32_t ReadNalUnit(uint8_t *bufferAddr, int32_t &bufferSize, uint32_t wirtableSize, bool &isTruncated);
         virtual bool IsEOS() = 0;
 
     protected:
@@ -43,6 +43,7 @@ private:
 
         std::shared_ptr<std::ifstream> inputFile_ = nullptr;
         std::unique_ptr<std::vector<uint8_t>> nalUnit_;
+        uint32_t readSize_ = 0;
     };
 
     class AnnexbNalUnitReader : public NalUnitReader {

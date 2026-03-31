@@ -254,7 +254,7 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0003, TestSize.Level1)
     CheckSeekMode(fileTest6);
     seekInfo fileTest7{"/data/test/media/avc_mp3.flv", SEEK_MODE_CLOSEST_SYNC, 5042000, 352, 225, 0};
     CheckSeekMode(fileTest7);
-    seekInfo fileTest8{"/data/test/media/avc_mp3.flv", SEEK_MODE_CLOSEST_SYNC, 9980000, 102, 0, 0};
+    seekInfo fileTest8{"/data/test/media/avc_mp3.flv", SEEK_MODE_CLOSEST_SYNC, 9980000, 102, 65, 0};
     CheckSeekMode(fileTest8);
 }
 
@@ -279,7 +279,7 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0004, TestSize.Level2)
     CheckSeekMode(fileTest6);
     seekInfo fileTest7{"/data/test/media/avc_mp3_error.flv", SEEK_MODE_CLOSEST_SYNC, 5058000, 352, 225, 0};
     CheckSeekMode(fileTest7);
-    seekInfo fileTest8{"/data/test/media/avc_mp3_error.flv", SEEK_MODE_CLOSEST_SYNC, 9848000, 102, 0, 0};
+    seekInfo fileTest8{"/data/test/media/avc_mp3_error.flv", SEEK_MODE_CLOSEST_SYNC, 9848000, 102, 65, 0};
     CheckSeekMode(fileTest8);
 }
 

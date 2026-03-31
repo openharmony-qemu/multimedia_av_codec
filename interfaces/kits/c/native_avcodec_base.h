@@ -806,6 +806,19 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_SIZE;
  */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE;
 /**
+ * @brief Key for the temporal layer ID within a Group of Pictures (GOP), the value type is int32_t.
+ * It is specific to video encoders and is available only when temporal level sacle is enabled.
+ * To retrieve the value associated with this key:
+ * 1. Obtain the encoded stream information (AVBuffer) via
+ *  {@link OH_AVCodecOnNewOutputBuffer} or {@link OH_VideoEncoder_GetOutputBuffer}.
+ * 2. Retrieve the parameter information (AVFormat) from the buffer
+ *  using {@link OH_AVBuffer_GetParameter}.
+ * 3. Use {@link OH_AVFormat_GetIntValue} with this key to get the corresponding value.
+ *
+ * @since 26.0.0
+ */
+extern const char *OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_LAYER_ID;
+/**
  * @brief Key for describing the count of used long-term reference frames, value type is int32_t, must be within the
  * supported range. To get supported range, you should query whether the capability is supported through the interface
  * {@link OH_AVCapability_GetFeatureProperties} with enum {@link VIDEO_ENCODER_LONG_TERM_REFERENCE}, otherwise, not set
@@ -2015,7 +2028,11 @@ typedef enum OH_BitrateMode {
     /** Stable Quality Rate Control mode.
      * @since 20
      */
-    BITRATE_MODE_SQR = 3
+    BITRATE_MODE_SQR = 3,
+    /** CBR for High Quality.
+     * @since 26.0.0
+     */
+    BITRATE_MODE_CBR_HIGH_QUALITY = 4
 } OH_BitrateMode;
 
 /**

@@ -37,6 +37,67 @@ constexpr unsigned int SLEEP_TIME = 1;
 constexpr int32_t MPD_HTTP_TIME_OUT_MS = 5 * 1000;
 constexpr uint32_t MPD_MAX_SIZE = 100 * 1024 * 1024;
 constexpr unsigned int SEGMENT_DURATION_DELTA = 100; // ms
+constexpr double TOLERANCE = 1e-15;
+
+namespace {
+void CollectPeriodRanges(const DashMpdInfo *mpdInfo, uint64_t fallbackDurationMs,
+    std::vector<SeekRange> &periodRanges, int64_t &totalEndNs)
+{
+    totalEndNs = 0;
+    FALSE_RETURN_NOLOG(mpdInfo != nullptr);
+
+    std::vector<DashPeriodInfo*> periodList;
+    for (auto &periodInfo : mpdInfo->periodInfoList_) {
+        if (periodInfo != nullptr) {
+            periodList.push_back(periodInfo);
+        }
+    }
+
+    for (size_t index = 0; index < periodList.size(); ++index) {
+        auto periodInfo = periodList[index];
+        uint64_t startMs = periodInfo->start_;
+        uint64_t durationMs = periodInfo->duration_;
+        if (durationMs == 0) {
+            uint64_t nextStartMs = 0;
+            if (index + 1 < periodList.size()) {
+                nextStartMs = periodList[index + 1]->start_;
+            }
+            if (nextStartMs > startMs) {
+                durationMs = nextStartMs - startMs;
+            } else if (mpdInfo->mediaPresentationDuration_ > startMs) {
+                durationMs = mpdInfo->mediaPresentationDuration_ - startMs;
+            } else if (fallbackDurationMs > startMs) {
+                durationMs = fallbackDurationMs - startMs;
+            }
+        }
+        FALSE_CONTINUE_NOLOG(durationMs != 0);
+
+        int64_t startNs = static_cast<int64_t>(startMs) * MS_2_NS;
+        int64_t endNs = startNs + static_cast<int64_t>(durationMs) * MS_2_NS;
+        if (endNs > startNs) {
+            periodRanges.push_back({startNs, endNs});
+            totalEndNs = std::max(totalEndNs, endNs);
+        }
+    }
+}
+
+std::vector<SeekRange> ClipRangesToWindow(const std::vector<SeekRange> &periodRanges,
+    int64_t windowStart, int64_t windowEnd)
+{
+    std::vector<SeekRange> ranges;
+    for (const auto &range : periodRanges) {
+        int64_t start = std::max(range.start, windowStart);
+        int64_t end = std::min(range.end, windowEnd);
+        if (end > start) {
+            ranges.push_back({start, end});
+        }
+    }
+    if (ranges.empty()) {
+        ranges.push_back({windowStart, windowEnd});
+    }
+    return ranges;
+}
+}
 
 DashMpdDownloader::DashMpdDownloader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
 {
@@ -88,6 +149,11 @@ void DashMpdDownloader::Init()
 void DashMpdDownloader::SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback)
 {
     downloadCallback_ = callback;
+}
+
+void DashMpdDownloader::SetCallback(const std::shared_ptr<Callback>& cb)
+{
+    eventCallback_ = cb;
 }
 
 std::string DashMpdDownloader::GetContentType()
@@ -566,25 +632,104 @@ void DashMpdDownloader::ParseManifest()
     if (mpdInfo_ != nullptr) {
         mpdManager_->SetMpdInfo(mpdInfo_, url_);
         mpdManager_->GetDuration(&duration_);
+        UpdateSeekRanges();
         SetOndemandSegBase();
         GetStreamsInfoInMpd();
         ChooseStreamToPlay(MediaAVCodec::MediaType::MEDIA_TYPE_VID);
         ChooseStreamToPlay(MediaAVCodec::MediaType::MEDIA_TYPE_AUD);
         ChooseStreamToPlay(MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE);
-        if (ondemandSegBase_) {
-            PutStreamToDownload();
-            ProcessDrmInfos();
-            return;
+        auto eventCallback = eventCallback_.lock();
+        if (eventCallback) {
+            std::string type = "dash";
+            eventCallback->OnEvent({PluginEventType::STREAM_UPDATE, {type}, "Stream update."});
         }
-
-        auto callback = callback_.lock();
-        if (callback) {
-            callback->OnMpdInfoUpdate(DASH_MPD_EVENT_STREAM_INIT);
-        }
-
-        ProcessDrmInfos();
-        notifyOpenOk_ = true;
     }
+}
+
+bool DashMpdDownloader::ChooseStreamToPlay(MediaAVCodec::MediaType type)
+{
+    if (mpdInfo_ == nullptr || streamDescriptions_.empty()) {
+        return false;
+    }
+    std::shared_ptr<DashStreamDescription> choosedStream = nullptr;
+    std::shared_ptr<DashStreamDescription> backupStream = nullptr;
+    for (const auto &stream : streamDescriptions_) {
+        if (stream->type_ != type || stream->inUse_) {
+            continue;
+        }
+        if (type != MediaAVCodec::MediaType::MEDIA_TYPE_VID) {
+            // audio and subtitle choose first stream to play or get default lang
+            if (choosedStream == nullptr) {
+                choosedStream = stream;
+            }
+            FALSE_CONTINUE_NOLOG(IsLangMatch(stream->lang_, type));
+            choosedStream = stream;
+            break;
+        }
+        if (backupStream == nullptr || IsNearToInitResolution(backupStream, stream) ||
+            (initResolution_ == 0 && backupStream->bandwidth_ > stream->bandwidth_)) {
+            backupStream = stream;
+        }
+        FALSE_CONTINUE_NOLOG((stream->videoType_ != DASH_VIDEO_TYPE_SDR) == isHdrStart_);
+        if (IsChoosedVideoStream(choosedStream, stream)) {
+            choosedStream = stream;
+        }
+    }
+    if (choosedStream == nullptr && type == MediaAVCodec::MediaType::MEDIA_TYPE_VID) {
+        choosedStream = backupStream;
+    }
+    FALSE_RETURN_V(choosedStream != nullptr, false);
+    if (type == MediaAVCodec::MediaType::MEDIA_TYPE_VID) {
+        videoStreamId_ = choosedStream->streamId_;
+    } else if (type == MediaAVCodec::MediaType::MEDIA_TYPE_AUD) {
+        audioStreamId_ = choosedStream->streamId_;
+    } else if (type == MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE) {
+        subTitleStreamId_ = choosedStream->streamId_;
+    } else {
+        MEDIA_LOG_I("ChooseStreamToPlay type error!");
+    }
+    return true;
+}
+
+void DashMpdDownloader::SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId)
+{
+    if (mpdInfo_ == nullptr) {
+        return;
+    }
+    if (videoStreamId != -1) {
+        videoStreamId_ = videoStreamId;
+    } else {
+        videoStreamId = videoStreamId_;
+    }
+
+    if (audioStreamId != -1) {
+        audioStreamId_ = audioStreamId;
+    } else {
+        audioStreamId = audioStreamId_;
+    }
+
+    if (subTitleStreamId != -1) {
+        subTitleStreamId_ = subTitleStreamId;
+    } else {
+        subTitleStreamId = subTitleStreamId_;
+    }
+
+    ChooseStreamToPlay(MediaAVCodec::MediaType::MEDIA_TYPE_VID, videoStreamId_);
+    ChooseStreamToPlay(MediaAVCodec::MediaType::MEDIA_TYPE_AUD, audioStreamId_);
+    ChooseStreamToPlay(MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE, subTitleStreamId_);
+    if (ondemandSegBase_) {
+        PutStreamToDownload();
+        ProcessDrmInfos();
+        return;
+    }
+
+    auto callback = callback_.lock();
+    if (callback) {
+        callback->OnMpdInfoUpdate(DASH_MPD_EVENT_STREAM_INIT);
+    }
+
+    ProcessDrmInfos();
+    notifyOpenOk_ = true;
 }
 
 void DashMpdDownloader::GetDrmInfos(std::vector<DashDrmInfo>& drmInfos)
@@ -871,6 +1016,13 @@ void DashMpdDownloader::SetMpdCallback(const std::shared_ptr<DashMpdCallback>& c
 
 int64_t DashMpdDownloader::GetDuration() const
 {
+    if (mpdInfo_ != nullptr && mpdInfo_->type_ == DashType::DASH_TYPE_DYNAMIC) {
+        uint32_t timeShiftDepth = mpdInfo_->timeShiftBufferDepth_;
+        if (timeShiftDepth > 0) {
+            MEDIA_LOG_I("GetDuration dynamic timeShiftBufferDepth " PUBLIC_LOG_U32, timeShiftDepth);
+            return static_cast<int64_t>(timeShiftDepth) * MS_2_NS;
+        }
+    }
     MEDIA_LOG_I("GetDuration " PUBLIC_LOG_U32, duration_);
     return (duration_ > 0) ? ((int64_t)duration_ * MS_2_NS) : 0;
 }
@@ -893,7 +1045,46 @@ Seekable DashMpdDownloader::GetSeekable() const
     }
 
     MEDIA_LOG_I("GetSeekable end");
-    return mpdInfo_->type_ == DashType::DASH_TYPE_STATIC ? Seekable::SEEKABLE : Seekable::UNSEEKABLE;
+    if (mpdInfo_->type_ == DashType::DASH_TYPE_DYNAMIC) {
+        return mpdInfo_->timeShiftBufferDepth_ > 0 ? Seekable::SEEKABLE : Seekable::UNSEEKABLE;
+    }
+    return Seekable::SEEKABLE;
+}
+
+std::vector<SeekRange> DashMpdDownloader::GetSeekableRanges() const
+{
+    std::lock_guard<std::mutex> lock(seekRangeMutex_);
+    return seekRanges_;
+}
+
+void DashMpdDownloader::UpdateSeekRanges()
+{
+    std::vector<SeekRange> periodRanges;
+    int64_t totalEndNs = 0;
+
+    CollectPeriodRanges(mpdInfo_, duration_, periodRanges, totalEndNs);
+
+    if (periodRanges.empty() && duration_ > 0) {
+        periodRanges.push_back({0, static_cast<int64_t>(duration_) * MS_2_NS});
+        totalEndNs = static_cast<int64_t>(duration_) * MS_2_NS;
+    }
+
+    std::vector<SeekRange> ranges;
+    if (mpdInfo_ != nullptr && mpdInfo_->type_ == DashType::DASH_TYPE_DYNAMIC &&
+        mpdInfo_->timeShiftBufferDepth_ > 0) {
+        int64_t windowNs = static_cast<int64_t>(mpdInfo_->timeShiftBufferDepth_) * MS_2_NS;
+        int64_t windowEnd = totalEndNs > 0 ? totalEndNs : windowNs;
+        int64_t windowStart = windowEnd - windowNs;
+        if (windowStart < 0) {
+            windowStart = 0;
+        }
+        ranges = ClipRangesToWindow(periodRanges, windowStart, windowEnd);
+    } else {
+        ranges = std::move(periodRanges);
+    }
+
+    std::lock_guard<std::mutex> lock(seekRangeMutex_);
+    seekRanges_ = std::move(ranges);
 }
 
 std::vector<uint32_t> DashMpdDownloader::GetBitRates() const
@@ -1142,6 +1333,18 @@ void DashMpdDownloader::GetStreamsInfoInAdptSet(DashAdptSetInfo *adptSetInfo, co
     streamDesc.width_ = adptSetInfo->commonAttrsAndElements_.width_;
     streamDesc.height_ = adptSetInfo->commonAttrsAndElements_.height_;
     streamDesc.lang_ = adptSetInfo->lang_;
+    streamDesc.minBandwidth_ = adptSetInfo->minBandwidth_;
+    streamDesc.maxBandwidth_ = adptSetInfo->maxBandwidth_;
+    streamDesc.minWidth_ = adptSetInfo->minWidth_;
+    streamDesc.maxWidth_ = adptSetInfo->maxWidth_;
+    streamDesc.minHeight_ = adptSetInfo->minHeight_;
+    streamDesc.maxHeight_ = adptSetInfo->maxHeight_;
+    streamDesc.channels_ = adptSetInfo->channels_;
+    streamDesc.frameRate_ = adptSetInfo->commonAttrsAndElements_.frameRate_;
+    streamDesc.minFrameRate_ = adptSetInfo->minFrameRate_;
+    streamDesc.maxFrameRate_ = adptSetInfo->maxFrameRate_;
+    streamDesc.mimeType_ = adptSetInfo->mimeType_;
+    streamDesc.codecs_ = adptSetInfo->codecs_;
     std::string adptSetBaseUrl = periodBaseUrl;
     DashAppendBaseUrl(adptSetBaseUrl, adptSetInfo->baseUrl_);
     adptSetManager_->SetAdptSetInfo(adptSetInfo);
@@ -1175,6 +1378,41 @@ void DashMpdDownloader::GetStreamsInfoInAdptSet(DashAdptSetInfo *adptSetInfo, co
     GetStreamDescriptions(periodBaseUrl, streamDesc, adptSetBaseUrl, repList);
 }
 
+void DashMpdDownloader::FillStreamDescription(DashStreamDescription &streamDesc, const DashRepresentationInfo *rep,
+    unsigned int index, DashVideoType defaultType)
+{
+    streamDesc.representationIndex_ = index;
+    streamDesc.startNumberSeq_ = GetStartNumber(rep);
+    streamDesc.bandwidth_ = rep->bandwidth_;
+    if (rep->commonAttrsAndElements_.width_ > 0) {
+        streamDesc.width_ = rep->commonAttrsAndElements_.width_;
+    }
+
+    if ((rep)->commonAttrsAndElements_.height_ > 0) {
+        streamDesc.height_ = rep->commonAttrsAndElements_.height_;
+    }
+
+    if (!rep->commonAttrsAndElements_.codecs_.empty()) {
+        streamDesc.codecs_ = rep->commonAttrsAndElements_.codecs_;
+    }
+
+    if (!rep->commonAttrsAndElements_.frameRate_.empty()) {
+        streamDesc.frameRate_ = rep->commonAttrsAndElements_.frameRate_;
+    }
+
+    if (rep->commonAttrsAndElements_.channels_ > 0) {
+        streamDesc.channels_ = rep->commonAttrsAndElements_.channels_;
+    }
+
+    if (defaultType != DASH_VIDEO_TYPE_SDR &&
+        rep->commonAttrsAndElements_.cuvvVersion_.find("cuvv.") != std::string::npos) {
+        streamDesc.videoType_ = DASH_VIDEO_TYPE_HDR_VIVID;
+        MEDIA_LOG_I("current stream is hdr vivid, band:" PUBLIC_LOG_U32, streamDesc.bandwidth_);
+    } else {
+        streamDesc.videoType_ = defaultType;
+    }
+}
+
 void DashMpdDownloader::GetStreamDescriptions(const std::string &periodBaseUrl, DashStreamDescription &streamDesc,
                                               const std::string &adptSetBaseUrl,
                                               std::list<DashRepresentationInfo *> &repList)
@@ -1188,24 +1426,7 @@ void DashMpdDownloader::GetStreamDescriptions(const std::string &periodBaseUrl, 
         }
 
         repBaseUrl = adptSetBaseUrl;
-        streamDesc.representationIndex_ = repIndex;
-        streamDesc.startNumberSeq_ = GetStartNumber(*it);
-        streamDesc.bandwidth_ = (*it)->bandwidth_;
-        if ((*it)->commonAttrsAndElements_.width_ > 0) {
-            streamDesc.width_ = (*it)->commonAttrsAndElements_.width_;
-        }
-
-        if ((*it)->commonAttrsAndElements_.height_ > 0) {
-            streamDesc.height_ = (*it)->commonAttrsAndElements_.height_;
-        }
-
-        if (defaultVideoType != DASH_VIDEO_TYPE_SDR &&
-            (*it)->commonAttrsAndElements_.cuvvVersion_.find("cuvv.") != std::string::npos) {
-            streamDesc.videoType_ = DASH_VIDEO_TYPE_HDR_VIVID;
-            MEDIA_LOG_I("current stream is hdr vivid, band:" PUBLIC_LOG_U32, streamDesc.bandwidth_);
-        } else {
-            streamDesc.videoType_ = defaultVideoType;
-        }
+        FillStreamDescription(streamDesc, *it, repIndex, defaultVideoType);
 
         std::shared_ptr<DashStreamDescription> desc = std::make_shared<DashStreamDescription>(streamDesc);
         representationManager_->SetRepresentationInfo(*it);
@@ -1285,55 +1506,32 @@ bool DashMpdDownloader::IsLangMatch(const std::string &lang, MediaAVCodec::Media
     return true;
 }
 
-bool DashMpdDownloader::ChooseStreamToPlay(MediaAVCodec::MediaType type)
+bool DashMpdDownloader::ChooseStreamToPlay(MediaAVCodec::MediaType type, int32_t streamId)
 {
     if (mpdInfo_ == nullptr || streamDescriptions_.size() == 0) {
         return false;
     }
 
     std::shared_ptr<DashStreamDescription> choosedStream = nullptr;
-    std::shared_ptr<DashStreamDescription> backupStream = nullptr;
     for (const auto &stream : streamDescriptions_) {
         if (stream->type_ != type || stream->inUse_) {
             continue;
         }
-        
-        if (type != MediaAVCodec::MediaType::MEDIA_TYPE_VID) {
-            // audio and subtitle choose first stream to play or get default lang
-            if (choosedStream == nullptr) {
-                choosedStream = stream;
-            }
-            if (!IsLangMatch(stream->lang_, type)) {
-                continue;
-            }
 
+        if (streamId == stream->streamId_) {
             choosedStream = stream;
             break;
         }
-        
-        if (backupStream == nullptr || IsNearToInitResolution(backupStream, stream) ||
-            (initResolution_ == 0 && backupStream->bandwidth_ > stream->bandwidth_)) {
-            backupStream = stream;
-        }
-        
-        if ((stream->videoType_ != DASH_VIDEO_TYPE_SDR) != isHdrStart_) {
-            continue;
-        }
-        
-        if (IsChoosedVideoStream(choosedStream, stream)) {
-            choosedStream = stream;
-        }
-    }
-
-    if (choosedStream == nullptr && type == MediaAVCodec::MediaType::MEDIA_TYPE_VID) {
-        MEDIA_LOG_I("ChooseStreamToPlay video can not find hdrstart:" PUBLIC_LOG_D32, isHdrStart_);
-        choosedStream = backupStream;
     }
 
     if (choosedStream != nullptr) {
         choosedStream->inUse_ = true;
-        MEDIA_LOG_I("ChooseStreamToPlay type:" PUBLIC_LOG_D32 ", streamId:"
-            PUBLIC_LOG_D32, (int) type, choosedStream->streamId_);
+        MEDIA_LOG_I("ChooseStreamToPlay type:" PUBLIC_LOG_D32 " type: " PUBLIC_LOG_D32 " mimeType" PUBLIC_LOG_S
+            " frameRate: " PUBLIC_LOG_S " bitRate: " PUBLIC_LOG_D32 "channels: " PUBLIC_LOG_D32
+            " hight: " PUBLIC_LOG_D32 " width:" PUBLIC_LOG_D32 "lang: " PUBLIC_LOG_S,
+            choosedStream->streamId_, choosedStream->type_, choosedStream->mimeType_.c_str(),
+            choosedStream->frameRate_.c_str(), choosedStream->bandwidth_, choosedStream->channels_,
+            choosedStream->height_, choosedStream->width_, choosedStream->lang_.c_str());
         if (!ondemandSegBase_) {
             GetSegmentsInMpd(choosedStream);
         }
@@ -2096,6 +2294,77 @@ void DashMpdDownloader::DfxSubtitleCntIncrease()
     reportInfo_->subtitleCnt_++;
 }
 
+bool DashMpdDownloader::ContainsNonDigit(const std::string& str)
+{
+    auto it = std::find_if(str.begin(), str.end(), [](unsigned char c) {
+        return !std::isdigit(c);
+    });
+    
+    return it != str.end();
+}
+
+bool DashMpdDownloader::ParseFrameRateToUint32(const std::string& str, uint32_t& value)
+{
+    if (str.empty()) {
+        return false;
+    }
+
+    std::string frameRateStr = str;
+    auto slashPos = frameRateStr.find('/');
+    if (slashPos != std::string::npos) {
+        std::string numStr = frameRateStr.substr(0, slashPos);
+        std::string denStr = frameRateStr.substr(slashPos + 1);
+        if (numStr.empty() || denStr.empty()) {
+            return false;
+        }
+        size_t pos = 0;
+        double num = std::stod(numStr, &pos);
+        if (pos < numStr.length()) {
+            return false;
+        }
+        double den = std::stod(denStr, &pos);
+        if (pos < denStr.length()) {
+            return false;
+        }
+        if (den < 0.0 || std::abs(den) < TOLERANCE) {
+            return false;
+        }
+        double fps = num / den;
+        if (fps < 0.0) {
+            return false;
+        }
+        value = static_cast<uint32_t>(std::ceil(fps));
+        return true;
+    }
+    size_t pos = 0;
+    double fps = std::stod(frameRateStr, &pos);
+    if (pos < frameRateStr.length()) {
+        return false;
+    }
+    if (fps < 0.0) {
+        return false;
+    }
+    value = static_cast<uint32_t>(std::ceil(fps));
+    return true;
+}
+
+std::string DashMpdDownloader::GetMimeType(const std::string &mimeType, StreamType type)
+{
+    std::string mimeTypeHead = type == VIDEO ? "video/" : "audio/";
+    std::string suffix = mimeType;
+    auto slashPos = suffix.rfind('/');
+    if (slashPos != std::string::npos && slashPos + 1 < suffix.size()) {
+        suffix = suffix.substr(slashPos + 1);
+    }
+
+    auto dotPos = suffix.find('.');
+    if (dotPos != std::string::npos && dotPos > 0) {
+        suffix = suffix.substr(0, dotPos);
+    }
+
+    return mimeTypeHead + suffix;
+}
+
 StreamInfo DashMpdDownloader::AssignStreamInfo(unsigned int index)
 {
     StreamInfo info;
@@ -2106,6 +2375,25 @@ StreamInfo DashMpdDownloader::AssignStreamInfo(unsigned int index)
     info.videoHeight = static_cast<int32_t>(streamDescriptions_[index]->height_);
     info.lang = streamDescriptions_[index]->lang_;
     info.videoType = GetVideoType(streamDescriptions_[index]->videoType_);
+    info.minBitRate = streamDescriptions_[index]->minBandwidth_;
+    info.maxBitRate = streamDescriptions_[index]->maxBandwidth_;
+    info.minWidth = streamDescriptions_[index]->minWidth_;
+    info.maxWidth = streamDescriptions_[index]->maxWidth_;
+    info.minHeight = streamDescriptions_[index]->minHeight_;
+    info.maxHeight = streamDescriptions_[index]->maxHeight_;
+    info.channels = streamDescriptions_[index]->channels_;
+
+    uint32_t parsedRate = 0;
+    if (ParseFrameRateToUint32(streamDescriptions_[index]->frameRate_, parsedRate)) {
+        info.frameRate = parsedRate;
+    }
+    if (ParseFrameRateToUint32(streamDescriptions_[index]->minFrameRate_, parsedRate)) {
+        info.minFrameRate = parsedRate;
+    }
+    if (ParseFrameRateToUint32(streamDescriptions_[index]->maxFrameRate_, parsedRate)) {
+        info.maxFrameRate = parsedRate;
+    }
+    info.mimeType = streamDescriptions_[index]->mimeType_;
     return info;
 }
 
@@ -2126,7 +2414,6 @@ Status DashMpdDownloader::GetStreamInfo(std::vector<StreamInfo> &streams)
                     streamDescriptions_[index]->streamId_, streamDescriptions_[index]->lang_.c_str());
                 continue;
             }
-
             audioAdptSetIndex = streamDescriptions_[index]->adptSetIndex_;
         } else if (streamDescriptions_[index]->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE) {
             if (streamDescriptions_[index]->adptSetIndex_ == subtitleAdptSetIndex) {
@@ -2146,7 +2433,8 @@ Status DashMpdDownloader::GetStreamInfo(std::vector<StreamInfo> &streams)
         } else {
             info.type = VIDEO;
         }
-
+        info.codecs = GetMimeType(streamDescriptions_[index]->codecs_, info.type);
+        info.originCodecs = streamDescriptions_[index]->codecs_;
         MEDIA_LOG_D("GetStreamInfo streamId:" PUBLIC_LOG_D32 ", type:" PUBLIC_LOG_D32 ", bitRate:"
             PUBLIC_LOG_U32, info.streamId, info.type, info.bitRate);
         if (streamDescriptions_[index]->inUse_ && streams.size() > 0) {

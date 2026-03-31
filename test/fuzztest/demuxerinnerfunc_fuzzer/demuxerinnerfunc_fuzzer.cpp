@@ -24,15 +24,15 @@ using namespace std;
 using namespace OHOS::Media;
 namespace OHOS {
 const int64_t EXPECT_SIZE = 4;
-void RunDemuxerInnerFuncSample(const uint8_t *data, size_t size)
+void RunDemuxerInnerFuncSample(const uint8_t *data, size_t dataSize)
 {
-    if (size < EXPECT_SIZE) {
+    if (dataSize < EXPECT_SIZE) {
         return;
     }
     std::shared_ptr<DemuxerInnerFuncSample> demuxer = std::make_shared<DemuxerInnerFuncSample>();
-    FuzzedDataProvider fdp(data, size);
+    FuzzedDataProvider fdp(data, dataSize);
     uint8_t *pstream = nullptr;
-    uint16_t framesize = size - EXPECT_SIZE;
+    uint16_t framesize = dataSize - EXPECT_SIZE;
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
     if (!pstream) {
         std::cerr << "Memory alloction failed" << std::endl;

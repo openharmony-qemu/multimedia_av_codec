@@ -56,6 +56,8 @@ public:
     int64_t GetDuration() const override;
     std::pair<int64_t, bool> GetStartInfo() const override;
     Seekable GetSeekable() const override;
+    std::vector<SeekRange> GetSeekableRanges() const override;
+    void SetMediaDuration(int64_t duration) override;
     void SetCallback(const std::shared_ptr<Callback>& cb) override;
     void SetStatusCallback(StatusCallbackFunc cb) override;
     bool GetStartedStatus() override;
@@ -69,7 +71,7 @@ public:
     void SetDemuxerState(int32_t streamId) override;
     void SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy) override;
     void SetInterruptState(bool isInterruptNeeded) override;
-    Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
+    Status GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate = false) override;
     Status SelectStream(int32_t streamId) override;
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
     std::pair<int32_t, int32_t> GetDownloadInfo() override;
@@ -97,6 +99,7 @@ public:
     std::string GetContentType() override;
     std::string GetCurUrl() override;
     bool IsHlsEnd(int32_t streamId = -1) override;
+    void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) override;
 
 private:
     int64_t HttpMonitorLoop();

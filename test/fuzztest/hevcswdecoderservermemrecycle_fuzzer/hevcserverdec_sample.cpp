@@ -110,7 +110,7 @@ VDecServerSample::~VDecServerSample()
     if (codec_ != nullptr) {
         codec_->Stop();
         codec_->Release();
-        HevcDecoder *codec = reinterpret_cast<HevcDecoder*>(codec_.get());
+        HevcDecoder *codec = static_cast<HevcDecoder*>(codec_.get());
         codec->DecStrongRef(codec);
     }
 }
@@ -380,7 +380,7 @@ int32_t VDecServerSample::SendData(uint32_t bufferSize, uint32_t index, std::sha
     }
     uint8_t *frameBuffer = new uint8_t[bufferSize + START_CODE_SIZE];
     (void)inFile_->read(reinterpret_cast<char *>(frameBuffer + START_CODE_SIZE), bufferSize);
-    int32_t size = buffer->memory_->GetCapacity();
+    uint32_t size = buffer->memory_->GetCapacity();
     CopyStartCode(frameBuffer, bufferSize, buffer);
     if (size < (bufferSize + START_CODE_SIZE)) {
         delete[] frameBuffer;

@@ -88,6 +88,10 @@ public:
     virtual int64_t GetDuration() const = 0;
     virtual std::pair<int64_t, bool> GetStartInfo() const = 0;
     virtual Seekable GetSeekable() const = 0;
+    virtual std::vector<SeekRange> GetSeekableRanges() const
+    {
+        return {};
+    }
     virtual void SelectBitRate(uint32_t bitRate) = 0;
     virtual std::vector<uint32_t> GetBitRates() = 0;
     virtual uint64_t GetCurrentBitRate() = 0;
@@ -101,8 +105,13 @@ public:
     virtual void PreParseManifest(const std::string& location) = 0;
     virtual bool IsParseAndNotifyFinished() = 0;
     virtual bool IsParseFinished() = 0;
+    virtual bool IsFragmentInCurrentPlayList(const std::string& url, const std::string& rangeUrl,
+        uint32_t offset, uint32_t length)
+    {
+        return false;
+    }
     virtual void SetInitResolution(uint32_t width, uint32_t height) = 0;
-    virtual void GetStreamInfo(std::vector<StreamInfo>& streams) = 0;
+    virtual void GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate = false) = 0;
     virtual bool ReadFmp4Header(uint8_t* buffer, uint32_t wantLen, uint32_t& readLen, uint32_t streamId) = 0;
     virtual bool IsHlsFmp4() = 0;
     virtual bool IsPureByteRange() = 0;
@@ -152,6 +161,7 @@ public:
     void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
     std::shared_ptr<MediaSourceLoaderCombinations> GetSourceLoader();
     void SetSourceLoader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader);
+    virtual void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) {}
     virtual std::shared_ptr<AesDecryptor> GetAesDecryptor(uint64_t keyIndex) = 0;
 
 protected:

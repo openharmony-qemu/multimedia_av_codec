@@ -308,9 +308,19 @@ Seekable DashMediaDownloader::GetSeekable() const
     return value;
 }
 
+std::vector<SeekRange> DashMediaDownloader::GetSeekableRanges() const
+{
+    MEDIA_LOG_I("DashMediaDownloader GetSeekableRanges begin");
+    FALSE_RETURN_V_MSG_E(mpdDownloader_ != nullptr, {}, "mpdDownloader_ is nullptr, unable to get seekable range");
+    return mpdDownloader_->GetSeekableRanges();
+}
+
 void DashMediaDownloader::SetCallback(const std::shared_ptr<Callback>& cb)
 {
     callback_ = cb;
+    if (mpdDownloader_ != nullptr) {
+        mpdDownloader_->SetCallback(cb);
+    }
 }
 
 bool DashMediaDownloader::GetStartedStatus()
@@ -438,9 +448,11 @@ void DashMediaDownloader::SetPlayStrategy(const std::shared_ptr<PlayStrategy>& p
     }
 }
 
-Status DashMediaDownloader::GetStreamInfo(std::vector<StreamInfo>& streams)
+Status DashMediaDownloader::GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate)
 {
-    GetSeekable();
+    if (!isUpdate) {
+        GetSeekable();
+    }
     return mpdDownloader_->GetStreamInfo(streams);
 }
 
@@ -587,6 +599,13 @@ void DashMediaDownloader::VideoSegmentDownloadFinished(int streamId)
             }
             std::shared_ptr<DashSegmentDownloader> segmentDownloader = GetSegmentDownloaderByType(
                 MediaAVCodec::MediaType::MEDIA_TYPE_VID);
+            if (segmentDownloader != nullptr && !segmentDownloader->IsAllSegmentFinished()) {
+                uint32_t downloadSpeed = static_cast<uint32_t>(segmentDownloader->GetDownloadSpeed());
+                if (callback != nullptr) {
+                    callback->OnEvent({PluginEventType::NETWORK_BITRATE_CHANGED, {downloadSpeed},
+                        "network bitrate change"});
+                }
+            }
             if (segmentDownloader != nullptr && !segmentDownloader->IsAllSegmentFinished() &&
                 switchFlag && isAutoSelectBitrate_) {
                 bool flag = CheckAutoSelectBitrate(streamId);
@@ -1325,6 +1344,13 @@ Status DashMediaDownloader::StopBufferring(bool isAppBackground)
         return Status::ERROR_NULL_POINTER;
     }
     return Status::OK;
+}
+
+void DashMediaDownloader::SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId)
+{
+    if (mpdDownloader_ != nullptr) {
+        mpdDownloader_->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+    }
 }
 
 void DashMediaDownloader::GetDownloadInfo(DownloadInfo& downloadInfo)

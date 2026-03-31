@@ -56,6 +56,7 @@ public:
     size_t GetContentLength() const override;
     int64_t GetDuration() const override;
     Seekable GetSeekable() const override;
+    std::vector<SeekRange> GetSeekableRanges() const override;
     void SetCallback(const std::shared_ptr<Callback>& cb) override;
     void SetStatusCallback(StatusCallbackFunc cb) override;
     bool GetStartedStatus() override;
@@ -66,7 +67,7 @@ public:
     void SeekToTs(int64_t seekTime);
     void SetDownloadErrorState() override;
     void SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy) override;
-    Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
+    Status GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate = false) override;
 
     void OnMpdInfoUpdate(DashMpdEvent mpdEvent) override;
     void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) override;
@@ -84,6 +85,7 @@ public:
     std::string GetContentType() override;
     Status StopBufferring(bool isAppBackground) override;
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
+    void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) override;
 
 private:
     void ReceiveMpdStreamInitEvent();
@@ -126,7 +128,7 @@ private:
     ThreadSafeContainer<std::vector<std::shared_ptr<DashSegmentDownloader>>> segmentDownloaders_;
 
     std::atomic<bool> isInterruptNeeded_{false};
-    bool isAutoSelectBitrate_ {true};
+    bool isAutoSelectBitrate_ {false};
     bool downloadErrorState_ {false};
     int64_t breakpoint_ {0};
     DashMpdBitrateParam bitrateParam_;

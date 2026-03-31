@@ -35,6 +35,8 @@ public:
     void SetUp(void);
     // TearDown: Called after each test cases
     void TearDown(void);
+private:
+    void SetDefaultStreamId(std::shared_ptr<HlsSegmentManager> downloader);
 protected:
     std::shared_ptr<HlsSegmentManager> hlsSegmentManager_ {nullptr};
     std::map<std::string, std::string> header_;

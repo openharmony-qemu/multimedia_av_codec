@@ -110,7 +110,7 @@ HWTEST(TestSubtitleSink, do_sync_write_two_frames_case1, TestSize.Level1)
     buffer->flag_ = 0; // not eos
     sink->DoSyncWrite(buffer2, actionClock);
     sink->SetSpeed(2.0F);
-    sink->Flush();
+    sink->Flush(true);
     sink->Pause();
     sink->NotifySeek();
     sink->Resume();
@@ -153,7 +153,7 @@ HWTEST(TestSubtitleSink, do_sync_write_prepare_two_frames_case2, TestSize.Level1
     buffer->flag_ = 0; // not eos
     sink->DoSyncWrite(buffer2, actionClock);
     sink->SetSpeed(2.0F);
-    sink->Flush();
+    sink->Flush(true);
     sink->Pause();
     sink->NotifySeek();
     sink->Resume();
@@ -191,7 +191,7 @@ HWTEST(TestSubtitleSink, do_sync_write_prepare_two_frames_case3, TestSize.Level1
     buffer->flag_ = 0; // not eos
     sink->DoSyncWrite(buffer2, actionClock);
     sink->SetSpeed(2.0F);
-    sink->Flush();
+    sink->Flush(true);
     sink->Pause();
     sink->NotifySeek();
     sink->Resume();
@@ -229,7 +229,7 @@ HWTEST(TestSubtitleSink, do_sync_write_prepare_two_frames_case4, TestSize.Level1
     buffer->flag_ = 0; // not eos
     sink->DoSyncWrite(buffer2, actionClock);
     sink->SetSpeed(2.0F);
-    sink->Flush();
+    sink->Flush(true);
     sink->Pause();
     sink->NotifySeek();
     sink->Resume();
@@ -267,7 +267,7 @@ HWTEST(TestSubtitleSink, do_sync_write_prepare_two_frames_case5, TestSize.Level1
     buffer->flag_ = 0; // not eos
     sink->DoSyncWrite(buffer2, actionClock);
     sink->SetSpeed(2.0F);
-    sink->Flush();
+    sink->Flush(true);
     sink->Pause();
     sink->NotifySeek();
     sink->Resume();
@@ -303,7 +303,7 @@ HWTEST(TestSubtitleSink, do_sync_write_prepare_two_frames_case6, TestSize.Level1
     buffer->flag_ = 0; // not eos
     sink->DoSyncWrite(buffer2, actionClock);
     sink->SetSpeed(2.0F);
-    sink->Flush();
+    sink->Flush(true);
     sink->Pause();
     sink->NotifySeek();
     sink->Resume();
@@ -338,7 +338,7 @@ HWTEST(TestSubtitleSink, do_sync_write_two_frames_case7, TestSize.Level1)
     buffer->flag_ = 0; // not eos
     sink->DoSyncWrite(buffer2, actionClock);
     sink->SetSpeed(2.0F);
-    sink->Flush();
+    sink->Flush(true);
     sink->Pause();
     sink->NotifySeek();
     sink->Resume();
@@ -374,7 +374,7 @@ HWTEST(TestSubtitleSink, do_sync_write_two_frames_case8, TestSize.Level1)
     buffer->flag_ = 0; // not eos
     sink->DoSyncWrite(buffer2, actionClock);
     sink->SetSpeed(2.0F);
-    sink->Flush();
+    sink->Flush(true);
     sink->Pause();
     sink->NotifySeek();
     sink->Resume();

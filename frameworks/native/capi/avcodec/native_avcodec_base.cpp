@@ -145,6 +145,7 @@ const char *OH_FEATURE_PROPERTY_KEY_VIDEO_ENCODER_MAX_LTR_FRAME_COUNT =
 const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY = "video_encoder_enable_temporal_scalability";
 const char *OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_SIZE = "video_encoder_temporal_gop_size";
 const char *OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE = "video_encoder_temporal_gop_reference_mode";
+const char *OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_LAYER_ID = "video_encoder_frame_temporal_id";
 const char *OH_MD_KEY_VIDEO_ENCODER_LTR_FRAME_COUNT = "video_encoder_ltr_frame_count";
 const char *OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_MARK_LTR = "video_encoder_per_frame_mark_ltr";
 const char *OH_MD_KEY_VIDEO_PER_FRAME_IS_LTR = "video_per_frame_is_ltr";

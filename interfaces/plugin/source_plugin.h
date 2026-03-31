@@ -48,16 +48,40 @@ enum VideoType {
 
 class StreamInfo {
 public:
-    int32_t streamId;
-    StreamType type;
-    uint32_t bitRate;
-    uint64_t sniffSize;
+    int32_t streamId = 0;
+    StreamType type = StreamType::MIXED;
+    uint32_t bitRate = 0;
+    uint32_t frameRate = 0;
+    uint32_t minBitRate = 0;
+    uint32_t maxBitRate = 0;
+    uint32_t minWidth = 0;
+    uint32_t maxWidth = 0;
+    uint32_t minHeight = 0;
+    uint32_t maxHeight = 0;
+    uint32_t minFrameRate = 0;
+    uint32_t maxFrameRate = 0;
+    uint32_t channels = 0;
+    std::string mimeType = "";
+    bool isSimple = false;
+    std::string codecs = "";
+    std::string originCodecs = "";
+    uint64_t sniffSize = 0;
 
     int32_t videoHeight = 0;
     int32_t videoWidth = 0;
     std::string lang = "";
     VideoType videoType = VideoType::VIDEO_TYPE_SDR;
     std::string trackName = "";
+    uint32_t GetResolution() const
+    {
+        if (videoHeight > 0 && videoWidth > 0) {
+            if (videoWidth > static_cast<int32_t>(UINT32_MAX / videoHeight)) {
+                return UINT32_MAX;
+            }
+            return static_cast<uint32_t>(videoHeight) * static_cast<uint32_t>(videoWidth);
+        }
+        return 0;
+    }
 };
 
 /**
@@ -236,6 +260,11 @@ public:
         return Status::OK;
     }
 
+    virtual std::vector<SeekRange> GetSeekableRanges() const
+    {
+        return {};
+    }
+
     virtual bool IsNeedPreDownload()
     {
         return false;
@@ -246,6 +275,12 @@ public:
         return Status::OK;
     }
 
+    virtual Status SetMediaDuration(int64_t mediaDuration)
+    {
+        (void)mediaDuration;
+        return Status::OK;
+    }
+
     virtual void SetInterruptState(bool isInterruptNeeded) {}
 
     virtual Status SetCurrentBitRate(int32_t bitRate, int32_t streamID)
@@ -253,7 +288,7 @@ public:
         return Status::OK;
     }
 
-    virtual Status GetStreamInfo(std::vector<StreamInfo>& streams)
+    virtual Status GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate = false)
     {
         return Status::OK;
     }
@@ -335,6 +370,7 @@ public:
         return false;
     }
 
+    virtual void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) {}
     virtual bool IsCloudFd()
     {
         return false;

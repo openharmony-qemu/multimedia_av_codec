@@ -159,7 +159,7 @@ static void CheckSeekMode(seekInfo seekInfo)
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, seekInfo.millisecond / THOUSAND, seekInfo.seekmode));
         bool readEnd = false;
         int32_t frameNum = 0;
-        while (!readEnd) {
+        while (!readEnd && frameNum <= seekInfo.audioCount) {
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 readEnd = true;
@@ -1077,7 +1077,7 @@ HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_1512, TestSize.Level2)
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
     }
     int aKeyCount = 0;
-    while (!audioIsEnd) {
+    while (!audioIsEnd && audioFrame <= 33) {
         for (int32_t index = 0; index < g_trackCount; index++) {
             trackFormat = OH_AVSource_GetTrackFormat(source, index);
             ASSERT_NE(trackFormat, nullptr);

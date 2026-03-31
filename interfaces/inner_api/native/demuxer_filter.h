@@ -85,6 +85,8 @@ public:
 
     std::vector<std::shared_ptr<Meta>> GetStreamMetaInfo() const;
     std::shared_ptr<Meta> GetGlobalMetaInfo() const;
+    std::vector<Plugins::SeekRange> GetSeekableRanges();
+    std::vector<Plugins::SeekRange> GetLoadedRanges();
 
     Status LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
     Status UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
@@ -145,6 +147,9 @@ public:
     std::shared_ptr<Meta> GetGlobalInfo();
     bool IsMimeInDolbyList(const std::string& mime);
     bool IsBuffering();
+    void SetTrackSelectionFilter(TrackSelectionFilter &filter);
+    Status SetPlayStrategy(std::shared_ptr<PlayStrategy> playStrategy);
+
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;

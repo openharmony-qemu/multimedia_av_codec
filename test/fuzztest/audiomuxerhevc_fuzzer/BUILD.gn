@@ -31,6 +31,7 @@ ohos_fuzztest("AudioMuxerHevcFuzzTest") {
     "$MEDIA_ROOT_DIR/services/engine/plugin/core",
     "$MEDIA_ROOT_DIR/services/engine/plugin/interface",
     "$MEDIA_ROOT_DIR/services/utils",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/common",
     "$MEDIA_ROOT_DIR/services/engine/plugin/plugins/muxer/ffmpeg_muxer",
     "$MEDIA_ROOT_DIR/frameworks/native/capi/common",
     "$MEDIA_ROOT_DIR/services/dfx/include",

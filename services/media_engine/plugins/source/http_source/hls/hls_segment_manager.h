@@ -93,6 +93,7 @@ public:
     int64_t GetDuration() const;
     std::pair<int64_t, bool> GetStartInfo() const;
     Seekable GetSeekable() const;
+    std::vector<SeekRange> GetSeekableRanges() const;
     void SetCallback(const std::shared_ptr<Callback>& cb);
     void OnPlayListChanged(const std::vector<PlayInfo>& playList) override;
     void OnMasterReady(bool needAudioManager, bool needSubtitlesManager) override;
@@ -132,7 +133,7 @@ public:
     bool SetInitialBufferSize(int32_t offset, int32_t size);
     void NotifyInitSuccess();
     uint64_t GetCachedDuration();
-    Status GetStreamInfo(std::vector<StreamInfo>& streams);
+    Status GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate = false);
     bool IsHlsFmp4();
     uint64_t GetMemorySize();
     uint64_t GetDownloadResumeThreshold();
@@ -150,6 +151,7 @@ public:
     void SetSegmentBufferingCallback(HlsSegmentBufferingCbFunc bufferingCbFunc);
     void SetSegmentAllCallback(HlsSegmentEventCbFunc segEventCallback);
     void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
+    void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId);
     void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr);
 
 public:
@@ -232,6 +234,9 @@ private:
     bool CheckLiveToVodEnd();
     bool CheckVodEnd();
     bool CheckLiveLastSegment();
+    std::shared_ptr<AesDecryptor> GetAesDecryptor();
+    void SetAesDecryptor(std::shared_ptr<AesDecryptor> aesDecryptor);
+    std::vector<PlayInfo> SeekListHelper(bool isLive);
 
 private:
     HlsSegmentType type_ = HlsSegmentType::SEG_VIDEO;
@@ -252,6 +257,7 @@ private:
     std::map<std::string, bool> fragmentDownloadStart;
     std::map<std::string, bool> fragmentPushed;
     std::deque<PlayInfo> backPlayList_;
+    std::deque<PlayInfo> seekCandidates_;
     std::atomic<bool> isSelectingBitrate_ {false};
     bool isDownloadStarted_ {false};
     std::atomic<bool> lastPlaychanged_ {false};
@@ -267,7 +273,7 @@ private:
     uint64_t totalLen_ = 0;
     std::string curUrl_;
     uint32_t writeTsIndex_ = 0;
-    bool isAutoSelectBitrate_ {true};
+    bool isAutoSelectBitrate_ {false};
     uint64_t seekTime_ = 0;
 
     bool isReadFrame_ {false};
@@ -381,6 +387,9 @@ private:
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
     InfoIndexMap InfoIndexMap_;
     std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
+    std::shared_mutex aesDecryptorMutex_;
+    bool isSeekedFlag_ {false};
+    mutable std::mutex seekCandidatesMutex_;
 };
 }
 }

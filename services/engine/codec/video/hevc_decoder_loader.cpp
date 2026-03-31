@@ -42,7 +42,7 @@ std::shared_ptr<CodecBase> HevcDecoderLoader::CreateByName(const std::string &na
     }
     auto deleter = [&loader](CodecBase *ptr) {
         std::lock_guard<std::mutex> lock(loader.mutex_);
-        HevcDecoder *codec = reinterpret_cast<HevcDecoder*>(ptr);
+        HevcDecoder *codec = static_cast<HevcDecoder*>(ptr);
         codec->DecStrongRef(codec);
         --(loader.hevcDecoderCount_);
         loader.CloseLibrary();

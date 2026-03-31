@@ -66,6 +66,14 @@ public:
     virtual size_t GetContentLength() const = 0;
     virtual int64_t GetDuration() const = 0;
     virtual Seekable GetSeekable() const = 0;
+    virtual std::vector<SeekRange> GetSeekableRanges() const
+    {
+        return {};
+    }
+    virtual void SetMediaDuration(int64_t duration)
+    {
+        (void)duration;
+    }
     virtual void SetCallback(const std::shared_ptr<Callback>& cb) = 0;
     virtual void SetStatusCallback(StatusCallbackFunc cb) = 0;
     virtual bool GetStartedStatus() = 0;
@@ -133,7 +141,7 @@ public:
         MEDIA_LOG_W("SetPlayStrategy is unimplemented.");
     }
     virtual void SetInterruptState(bool isInterruptNeeded) = 0;
-    virtual Status GetStreamInfo(std::vector<StreamInfo>& streams)
+    virtual Status GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate = false)
     {
         MEDIA_LOG_W("GetStreamInfo is unimplemented.");
         return Status::OK;
@@ -236,6 +244,8 @@ public:
     {
         return false;
     }
+
+    virtual void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) {}
 };
 }
 }

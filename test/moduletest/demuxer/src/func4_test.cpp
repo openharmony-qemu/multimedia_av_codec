@@ -1150,3 +1150,55 @@ HWTEST_F(DemuxerFunc4NdkTest, DEMUXER_SKIP_SAMPLE_FUNC_0070, TestSize.Level0)
     close(fd);
     fd = -1;
 }
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_SAR_0010
+ * @tc.name      : demuxer mp4 file with sar is not 1
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc4NdkTest, DEMUXER_FUNCTION_SAR_0010, TestSize.Level0)
+{
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    OH_AVCodecBufferAttr bufferAttr;
+    const char *file = "/data/test/media/sarnot1.mp4";
+    int fd = 0;
+    int64_t size = 0;
+    ASSERT_TRUE(InitFile(file, 2, fd, size));
+    int aKeyCount = 0;
+    int vKeyCount = 0;
+    double sar = 0.0;
+    avBuffer = OH_AVBuffer_Create(size);
+    ASSERT_NE(avBuffer, nullptr);
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_NE(avBuffer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &bufferAttr));
+            if (tarckType == MEDIA_TYPE_AUD) {
+                SetAudioValue(bufferAttr, audioIsEnd, audioFrame, aKeyCount);
+            } else if (tarckType == MEDIA_TYPE_VID) {
+                ASSERT_TRUE(OH_AVFormat_GetDoubleValue(trackFormat, OH_MD_KEY_VIDEO_SAR, &sar));
+                ASSERT_EQ(0.31645569620253167, sar);
+                SetVideoValue(bufferAttr, videoIsEnd, videoFrame, vKeyCount);
+            }
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+        }
+    }
+    ASSERT_EQ(audioFrame, 95);
+    ASSERT_EQ(videoFrame, 60);
+    ASSERT_EQ(aKeyCount, 95);
+    ASSERT_EQ(vKeyCount, 1);
+    close(fd);
+    fd = -1;
+}

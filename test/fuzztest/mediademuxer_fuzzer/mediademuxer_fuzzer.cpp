@@ -1043,7 +1043,7 @@ void FuzzTest45()
 void FuzzTest46()
 {
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    demuxer->HandleDashSelectTrack(0);
+    demuxer->HandleSegmentMediaSelectTrack(0);
 
     Meta metaTmp1;
     metaTmp1.Set<Tag::MIME_TYPE>("audio/xxx");
@@ -1067,10 +1067,10 @@ void FuzzTest46()
     demuxer->videoTrackId_ = 1;
     demuxer->subtitleTrackId_ = NUMBER_2;
 
-    demuxer->HandleDashSelectTrack(0);
-    demuxer->HandleDashSelectTrack(1);
-    demuxer->HandleDashSelectTrack(NUMBER_2);
-    demuxer->HandleDashSelectTrack(NUMBER_3);
+    demuxer->HandleSegmentMediaSelectTrack(0);
+    demuxer->HandleSegmentMediaSelectTrack(1);
+    demuxer->HandleSegmentMediaSelectTrack(NUMBER_2);
+    demuxer->HandleSegmentMediaSelectTrack(NUMBER_3);
 }
 
 void FuzzTest47()

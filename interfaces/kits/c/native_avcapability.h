@@ -80,13 +80,25 @@ typedef enum OH_AVCodecCategory {
  * @since 24
  */
 typedef enum OH_AVCodecType {
-    /** Video encoder */
+    /**
+     * Indicates video encoder.
+     * @since 24
+     */
     OH_AVCODEC_TYPE_VIDEO_ENCODER = 0,
-    /** Video decoder */
+    /**
+     * Indicates video decoder.
+     * @since 24
+     */
     OH_AVCODEC_TYPE_VIDEO_DECODER = 1,
-    /** Audio encoder */
+    /**
+     * Indicates audio encoder
+     * @since 24
+     */
     OH_AVCODEC_TYPE_AUDIO_ENCODER = 2,
-    /** Audio decoder */
+    /**
+     * Indicates audio decoder
+     * @since 24
+     */
     OH_AVCODEC_TYPE_AUDIO_DECODER = 3
 } OH_AVCodecType;
 
