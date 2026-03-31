@@ -1983,7 +1983,7 @@ HWTEST_F(DownloaderUnitTest, APP_CLIENT_001, TestSize.Level1)
 
     for (const auto& error : errors) {
         std::thread threadRequestData(ThreadRequestData, downloader2->client_, 31819, 4096, requestInfo,
-            [](int32_t clientCode, int32_t serverCode, Status status) {}, uuid, error);
+            [](int32_t clientCode, int32_t serverCode, const std::string &ca, Status status) {}, uuid, error);
         if (threadRequestData.joinable()) {
             threadRequestData.join();
         }

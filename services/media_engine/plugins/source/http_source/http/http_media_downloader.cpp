@@ -141,6 +141,8 @@ HttpMediaDownloader::~HttpMediaDownloader()
     } else {
         reportInfo_->sourceType_ = static_cast<int8_t>(MediaAVCodec::DfxSourceType::HTTPVOD);
     }
+    FALSE_RETURN_MSG(downloader_ != nullptr, "downloader_ is nullptr");
+    reportInfo_->ca_ = downloader_->GetCertIssuerNames();
 }
 
 void HttpMediaDownloader::Init()

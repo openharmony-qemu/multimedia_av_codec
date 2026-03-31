@@ -581,6 +581,11 @@ std::string GetUserAgent()
     return userAgent;
 }
 
+std::string Downloader::GetCertIssuerNames()
+{
+    return ca_;
+}
+
 bool Downloader::BeginDownload()
 {
     MEDIA_LOG_I("BeginDownload %{public}s", name_.c_str());
@@ -697,11 +702,11 @@ void Downloader::HandleRedirect(Status& ret)
     }
 }
 
-void Downloader::HandleResponseCb(int32_t clientCode, int32_t serverCode, Status& ret)
+void Downloader::HandleResponseCb(int32_t clientCode, int32_t serverCode, const std::string &ca, Status& ret)
 {
     currentRequest_->clientError_ = clientCode;
     currentRequest_->serverError_ = serverCode;
-
+    ca_ = ca;
     HandleRedirect(ret);
 
     if (isDestructor_) {
@@ -753,10 +758,11 @@ void Downloader::RequestData()
     }
 
     std::weak_ptr<Downloader> weakDownloader = weak_from_this();
-    auto handleResponseCb = [weakDownloader](int32_t clientCode, int32_t serverCode, Status ret) {
+    auto handleResponseCb = [weakDownloader](int32_t clientCode, int32_t serverCode,
+        const std::string &ca, Status ret) {
         auto shareDownloader = weakDownloader.lock();
         FALSE_RETURN_MSG(shareDownloader != nullptr, "handleResponseCb, Downloader is nullptr!");
-        shareDownloader->HandleResponseCb(clientCode, serverCode, ret);
+        shareDownloader->HandleResponseCb(clientCode, serverCode, ca, ret);
     };
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " RequestData enter.", FAKE_POINTER(this));
 

@@ -111,6 +111,7 @@ struct SourceStatisticsReportInfo {
     uint32_t videoStreamCnt_;
     uint32_t audioStreamCnt_;
     uint32_t subtitleCnt_;
+    std::string ca_;
 };
 
 void FaultEventWrite(FaultType faultType, const std::string& msg,

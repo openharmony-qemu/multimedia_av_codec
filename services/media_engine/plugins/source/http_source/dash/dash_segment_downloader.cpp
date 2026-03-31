@@ -110,6 +110,9 @@ void DashSegmentDownloader::Init()
     if (downloader != nullptr && downloadCallback_ != nullptr) {
         downloader->SetDownloadCallback(downloadCallback_);
     }
+    FALSE_RETURN_MSG(reportInfo_ != nullptr, "reportInfo_ is nullptr");
+    FALSE_RETURN_MSG(downloader_ != nullptr, "downloader_ is nullptr");
+    reportInfo_->ca_ = downloader_->GetCertIssuerNames();
 }
 
 void DashSegmentDownloader::SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback)

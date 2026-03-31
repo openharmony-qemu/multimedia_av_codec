@@ -246,6 +246,9 @@ HlsSegmentManager::~HlsSegmentManager()
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsSegmentManager dtor out, type: %{public}d, "
         "writeTsIndex: " PUBLIC_LOG_U32 " writeOffset: " PUBLIC_LOG_U64, FAKE_POINTER(this), type_,
         writeTsIndex_, writeOffset_);
+    FALSE_RETURN_MSG(reportInfo_ != nullptr, "reportInfo_ is nullptr");
+    FALSE_RETURN_MSG(downloader_ != nullptr, "downloader_ is nullptr");
+    reportInfo_->ca_ = downloader_->GetCertIssuerNames();
 }
 
 std::string HlsSegmentManager::GetContentType()
