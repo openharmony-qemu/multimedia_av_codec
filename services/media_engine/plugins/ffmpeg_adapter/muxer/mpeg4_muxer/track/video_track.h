@@ -38,9 +38,9 @@ public:
     int32_t GetWidth() const;
     int32_t GetHeight() const;
     bool IsColor() const;
-    ColorPrimary GetColorPrimaries() const;
-    TransferCharacteristic GetColorTransfer() const;
-    MatrixCoefficient GetColorMatrixCoeff() const;
+    int32_t GetColorPrimaries() const;
+    int32_t GetColorTransfer() const;
+    int32_t GetColorMatrixCoeff() const;
     bool GetColorRange() const;
     bool IsCuvaHDR() const;
     void SetCttsBox(std::shared_ptr<SttsBox> ctts);
@@ -70,9 +70,9 @@ private:
     int64_t delay_ = 0;
     double frameRate_ = 0;
     bool isColor_ = false;
-    ColorPrimary colorPrimaries_ = ColorPrimary::UNSPECIFIED;
-    TransferCharacteristic colorTransfer_ = TransferCharacteristic::UNSPECIFIED;
-    MatrixCoefficient colorMatrixCoeff_ = MatrixCoefficient::UNSPECIFIED;
+    int32_t colorPrimaries_ = -1;
+    int32_t colorTransfer_ = -1;
+    int32_t colorMatrixCoeff_ = -1;
     bool colorRange_ = false;
     bool isCuvaHDR_ = false;
     std::shared_ptr<VideoParser> videoParser_ = nullptr;
