@@ -4092,6 +4092,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_IsSegmentEos_002, TestSize.Lev
 HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleNotAllTrackEos_001, TestSize.Level1)
 {
     int32_t trackId = NUM_0;
+    mediaDemuxer_->isStopped_.store(false);
     mediaDemuxer_->SetTrackIsBuffering(trackId, false);
 
     auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
@@ -4112,6 +4113,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleNotAllTrackEos_001, Test
 HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleNotAllTrackEos_002, TestSize.Level1)
 {
     int32_t trackId = NUM_0;
+    mediaDemuxer_->isStopped_.store(false);
     mediaDemuxer_->audioTrackId_ = trackId;
     mediaDemuxer_->videoTrackId_ = NUM_1;
 
