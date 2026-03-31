@@ -1,4 +1,4 @@
-# Copyright (C) 2023-2025 Huawei Device Co., Ltd.
+# Copyright (C) 2023-2026 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -41,43 +41,10 @@ config("ffmpeg_adapter_muxer_config") {
 
   include_dirs = [
     "$av_codec_root_dir/interfaces",
+    "$av_codec_root_dir/services/media_engine/plugins/common",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/muxer",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common",
-  ]
-}
-
-config("ffmpeg_adapter_demuxer_config") {
-  defines = [
-    "HST_ANY_WITH_NO_RTTI",
-    "MEDIA_OHOS",
-  ]
-
-  cflags = [
-    "-fno-exceptions",
-    "-Wall",
-    "-fno-common",
-    "-fstack-protector-all",
-    "-Wshadow",
-    "-FPIC",
-    "-FS",
-    "-O2",
-    "-D_FORTIFY_SOURCE=2",
-    "-Wformat=2",
-    "-Wdate-time",
-  ]
-
-  cflags_cc = [
-    "-std=c++17",
-    "-fno-rtti",
-  ]
-
-  include_dirs = [
-    "$av_codec_root_dir/interfaces",
-    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter",
-    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/muxer",
-    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common",
-    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/demuxer",
   ]
 }
 
@@ -103,65 +70,6 @@ ohos_shared_library("media_plugin_FFmpegMuxer") {
     "c_utils:utils",
     "ffmpeg:libohosffmpeg",
     "hilog:libhilog",
-    "ipc:ipc_single",
-    "media_foundation:media_foundation",
-  ]
-
-  relative_install_dir = "media/media_plugins"
-  subsystem_name = "multimedia"
-  part_name = "av_codec"
-}
-
-ohos_shared_library("media_plugin_FFmpegDemuxer") {
-  branch_protector_ret = "pac_ret"
-  install_enable = true
-
-  sanitize = av_codec_sanitize
-
-  defines = []
-
-  defines += [
-    "OHOS_EXPAND_MP4_INFO",
-    "OHOS_AV3A_DEMUXER",
-  ]
-  defines += av_codec_defines
-
-  public_configs = [ ":ffmpeg_adapter_demuxer_config" ]
-
-  if (build_variant != "user") {
-    defines += [ "BUILD_ENG_VERSION" ]
-  }
-
-  configs = [
-    ":ffmpeg_adapter_demuxer_config",
-    "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
-  ]
-
-  sources = [
-    "common/ffmpeg_converter.cpp",
-    "common/ffmpeg_utils.cpp",
-    "common/reference_parser_manager.cpp",
-    "common/multi_stream_parser_manager.cpp",
-    "demuxer/avpacket_memory.cpp",
-    "demuxer/avpacket_wrapper.cpp",
-    "demuxer/block_queue_pool.cpp",
-    "demuxer/demuxer_log_compressor.cpp",
-    "demuxer/ffmpeg_demuxer_plugin.cpp",
-    "demuxer/ffmpeg_demuxer_thread.cpp",
-    "demuxer/ffmpeg_format_helper.cpp",
-    "demuxer/ffmpeg_reference_parser.cpp",
-    "common/time_range_manager.cpp",
-  ]
-
-  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
-
-  external_deps = [
-    "c_utils:utils",
-    "ffmpeg:libohosffmpeg",
-    "hicollie:libhicollie",
-    "hilog:libhilog",
-    "hisysevent:libhisysevent",
-    "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
   ]
@@ -208,6 +116,7 @@ ohos_shared_library("media_plugin_Mpeg4Muxer") {
   include_dirs = [
     "$av_codec_root_dir/interfaces",
     "$av_codec_root_dir/interfaces/inner_api/native",
+    "$av_codec_root_dir/services/media_engine/plugins/common",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/track",

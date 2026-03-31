@@ -166,7 +166,7 @@ static void CheckSeekMode(seekInfo seekInfo)
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, seekInfo.millisecond / THOUSAND, seekInfo.seekmode));
         bool readEnd = false;
         int32_t frameNum = 0;
-        while (!readEnd) {
+        while (!readEnd && frameNum <= seekInfo.audioCount) {
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 readEnd = true;
@@ -228,6 +228,48 @@ static void DemuxerResult(const char *fileName)
             SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
         }
     }
+    close(g_fd);
+    g_fd = -1;
+}
+
+static void DemuxerResult(const char *fileName, int32_t frameCount, int32_t& getFrameCount)
+{
+    int tarckType = 0;
+    OH_AVCodecBufferAttr attr;
+    bool audioIsEnd = false;
+    int audioFrame = 0;
+    g_fd = open(fileName, O_RDONLY);
+    int64_t size = GetFileSize(fileName);
+    cout << fileName << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(g_trackCount, 1);
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    int aKeyCount = 0;
+    while (!audioIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+        }
+        if (audioFrame > frameCount) {
+            break;
+        }
+    }
+    getFrameCount = audioFrame;
     close(g_fd);
     g_fd = -1;
 }
@@ -2510,7 +2552,7 @@ HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1507, TestSize.Level2)
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
     }
     int aKeyCount = 0;
-    while (!audioIsEnd) {
+    while (!audioIsEnd && aKeyCount <= 217) {
         for (int32_t index = 0; index < g_trackCount; index++) {
             trackFormat = OH_AVSource_GetTrackFormat(source, index);
             ASSERT_NE(trackFormat, nullptr);
@@ -2654,7 +2696,9 @@ HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1601, TestSize.Level3)
 HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1602, TestSize.Level3)
 {
     DemuxerResult(INP_DIR_WAV_WAV);
-    DemuxerResult(INP_DIR_WAV_MOV);
+    int32_t getFrameCount = -1;
+    DemuxerResult(INP_DIR_WAV_MOV, 217, getFrameCount);
+    ASSERT_EQ(getFrameCount, 217);
     DemuxerResult(INP_DIR_WAV_AVI);
     DemuxerResult(INP_DIR_WAV_MKV);
 }

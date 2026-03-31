@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2025-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -936,7 +936,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_EnsurePacketAllocated_001, TestSize.Leve
     ASSERT_NE(demuxerPlugin_, nullptr); // 检查插件是否初始化成功
     ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
     ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
-    Plugins::AVPacketWrapperPtr avPacketWrapperPtr = std::make_shared<Plugins::AVPacketWrapper>();
+    Plugins::Ffmpeg::AVPacketWrapperPtr avPacketWrapperPtr = std::make_shared<Plugins::Ffmpeg::AVPacketWrapper>();
     demuxerPlugin_->EnsurePacketAllocated(avPacketWrapperPtr);
     avPacketWrapperPtr.reset();
 }

@@ -1,4 +1,4 @@
-# Copyright (C) 2025 Huawei Device Co., Ltd.
+# Copyright (C) 2025-2026 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -148,6 +148,12 @@ group("av_codec_unit_test") {
         "unittest/media_sink_test:av_audio_sink_unit_test",
         "unittest/media_synchronous_sink_unittest:media_synchronous_sink_unittest",
         "unittest/media_sync_manager_unittest:media_sync_manager_unittest",
+        "unittest/mpeg4_demuxer_test:mpeg4_demuxer_capi_buffer_unit_test",
+        "unittest/mpeg4_demuxer_test:mpeg4_demuxer_capi_unit_test",
+        "unittest/mpeg4_demuxer_test:mpeg4_demuxer_inner_buffer_unit_test",
+        "unittest/mpeg4_demuxer_test:mpeg4_demuxer_inner_unit_test",
+        "unittest/mpeg4_source_test:mpeg4_source_capi_unit_test",
+        "unittest/mpeg4_source_test:mpeg4_source_inner_unit_test",
         "unittest/plugins_source_test:plugins_source_unit_test",
         "unittest/post_processor_test:post_processor_unit_test",
         "unittest/pts_and_index_conversion_test:pts_and_index_conversion_unit_test",

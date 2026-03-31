@@ -1,0 +1,101 @@
+/*
+ * Copyright (c) 2023-2026 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef FFMPEG_FORMAT_HELPER_H
+#define FFMPEG_FORMAT_HELPER_H
+
+#include <cstdint>
+#include "meta/meta.h"
+#include "ffmpeg_utils.h"
+#include "multi_stream_parser_manager.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include "libavformat/avformat.h"
+#include "libavutil/channel_layout.h"
+#include "libavcodec/av3a.h"
+#include "libavutil/parseutils.h"
+#ifdef __cplusplus
+}
+#endif
+
+namespace OHOS {
+namespace Media {
+namespace Plugins {
+namespace Ffmpeg {
+struct ParserSdtpInfo {
+    void *pb = nullptr;
+    int refCount = 0;
+    int pbIsCopied = 0;
+    int id = 0;
+    int ffindex = 0;
+    int nextChunk = 0;
+    unsigned int chunkCount = 0;
+    int64_t *chunkOffsets = nullptr;
+    unsigned int sttsCount = 0;
+    void *sttsData = nullptr;
+    unsigned int sdtpCount = 0;
+    uint8_t *sdtpData = nullptr;
+};
+
+class FFmpegFormatHelper {
+public:
+    static void ParseMediaInfo(const AVFormatContext& avFormatContext, Meta& format);
+    static void ParseTrackInfo(const AVStream& avStream, Meta& format, const AVFormatContext& avFormatContext);
+    static void ParseUserMeta(const AVFormatContext& avFormatContext, std::shared_ptr<Meta> format);
+    static void ParseHevcInfo(
+        const AVFormatContext& avFormatContext, const AVStream& avStream, HevcParseFormat parse, Meta &format);
+    static FileType GetFileTypeByName(const AVFormatContext& avFormatContext);
+    static bool IsVideoCodecId(const AVCodecID &codecId);
+    static bool IsImageTrack(const AVStream &avStream);
+    static bool IsVideoType(const AVStream &avStream);
+    static bool IsAudioType(const AVStream &avStream);
+    static bool IsMpeg4File(FileType filetype);
+    static bool IsValidCodecId(const AVCodecID &codecId);
+private:
+    FFmpegFormatHelper() = delete;
+    ~FFmpegFormatHelper() = delete;
+
+    static void ParseBaseTrackInfo(const AVStream& avStream, Meta &format, const AVFormatContext& avFormatContext);
+    static void ParseAVTrackInfo(const AVStream& avStream, Meta &format);
+    static void ParseVideoTrackInfo(const AVStream& avStream, Meta &format, const AVFormatContext& avFormatContext);
+    static void ParseAudioTrackInfo(const AVStream& avStream, Meta &format, const AVFormatContext& avFormatContext);
+    static void ParseAudioApeTrackInfo(const AVStream& avStream, Meta &format, const AVFormatContext& avFormatContext);
+    static void ParseImageTrackInfo(const AVStream& avStream, Meta &format);
+    static void ParseVideoHdrAndColorMetadata(const AVStream& avStream, Meta &format);
+    static void ParseTimedMetaTrackInfo(const AVStream& avStream, Meta &format);
+    static void ParseAuxiliaryTrackInfo(const AVStream& avStream, Meta &format);
+    static void ParseHvccBoxInfo(const AVStream& avStream, Meta &format);
+    static void ParseColorBoxInfo(const AVStream& avStream, Meta &format);
+    static void ParseHdrTypeInfo(const AVStream& avStream, Meta &format, HevcParseFormat parse);
+
+    static void ParseLocationInfo(const AVFormatContext& avFormatContext, Meta &format);
+
+    static void ParseInfoFromMetadata(
+        const AVDictionary* metadata, Meta &format, std::map<std::string, TagType> &tagRange);
+    static void ParseRotationFromMatrix(const AVStream& avStream, Meta &format);
+    static void ParseOrientationFromMatrix(const AVStream& avStream, Meta &format);
+    static void ParseTrackType(const AVFormatContext& avFormatContext, Meta& format);
+
+    static void ParseAv3aInfo(const AVStream& avStream, Meta &format);
+    static void ConvertAv3aSampleFormat(const AVStream& avStream, Meta &format);
+    static void ParseGltfInfo(const AVFormatContext& avFormatContext, Meta &format);
+    static void ParseRawvideoInfo(const AVStream& avStream, Meta &format);
+};
+} // namespace Ffmpeg
+} // namespace Plugins
+} // namespace Media
+} // namespace OHOS
+#endif // FFMPEG_FORMAT_HELPER_H
