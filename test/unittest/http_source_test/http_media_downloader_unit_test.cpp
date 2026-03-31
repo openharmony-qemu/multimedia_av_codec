@@ -1178,4 +1178,132 @@ HWTEST_F(HttpMediaDownloaderUnitTest, GET_SEEKABLE_RANGES_006, TestSize.Level1)
     auto res = downloader->GetSeekableRanges();
     EXPECT_EQ(res.size(), 0);
 }
+
+HWTEST_F(HttpMediaDownloaderUnitTest, TEST_RARE_SPEED_NORMAL, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
+    EXPECT_TRUE(downloader != nullptr);
+    downloader->Init();
+    downloader->GetBuffer();
+    downloader->GetReadFrame();
+    downloader->recordSpeedCount_ = 0;
+    downloader->avgDownloadSpeed_ = 0;
+    auto result = downloader->GetDownloadRateAndSpeed();
+
+    auto expectResult = std::make_pair(0, 0);
+    EXPECT_EQ(result, expectResult);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, TEST_RARE_SPEED_MIN, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
+    EXPECT_TRUE(downloader != nullptr);
+    downloader->Init();
+    downloader->recordSpeedCount_ = 1;
+    downloader->avgDownloadSpeed_ = 0;
+    downloader->avgSpeedSum_ = 1;
+    auto result = downloader->GetDownloadRateAndSpeed();
+
+    auto expectResult = std::make_pair(1, 0);
+    EXPECT_EQ(result, expectResult);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, TEST_GETDOWNLOADERINFO_NORMAL, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
+    EXPECT_TRUE(downloader != nullptr);
+    downloader->Init();
+    downloader->recordSpeedCount_ = 1;
+    downloader->avgDownloadSpeed_ = 0;
+    downloader->avgSpeedSum_ = 1;
+    auto result = downloader->GetDownloadInfo();
+
+    auto expectResult = std::make_pair(1, 0);
+    EXPECT_EQ(result, expectResult);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, TEST_GETREADFRAME_NORMAL, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
+    EXPECT_TRUE(downloader != nullptr);
+    downloader->Init();
+    downloader->isFirstFrameArrived_ = true;
+    auto result = downloader->GetReadFrame();
+
+    EXPECT_EQ(result, true);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, TEST_GETSTATUSCALLBACKFUNC_NORMAL, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
+    EXPECT_TRUE(downloader != nullptr);
+    downloader->Init();
+    downloader->statusCallback_ = nullptr;
+    auto result = downloader->GetStatusCallbackFunc();
+
+    EXPECT_EQ(result, nullptr);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, TEST_GETMEMORYSIZE_NORMAL, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
+    EXPECT_TRUE(downloader != nullptr);
+    downloader->Init();
+    downloader->totalBufferSize_ = 0;
+    auto result = downloader->GetMemorySize();
+
+    EXPECT_EQ(result, 0);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, TEST_GETCURURL_NORMAL, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
+    EXPECT_TRUE(downloader != nullptr);
+    downloader->Init();
+    std::string url = "http";
+    std::shared_ptr<DownloadRequest> downloadRequest = std::make_shared<DownloadRequest>(url, nullptr, nullptr);
+    downloader->downloadRequest_ = downloadRequest;
+    downloadRequest->haveRedirectRetry_.store(true);
+    auto result = downloader->GetCurUrl();
+
+    EXPECT_EQ(result, url);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, TEST_GETRESOLUTIONDELTA_NORMAL, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
+    EXPECT_TRUE(downloader != nullptr);
+    downloader->Init();
+    uint32_t width = USHRT_MAX;
+    uint32_t height = USHRT_MAX;
+    auto result = downloader->GetResolutionDelta(width, height);
+    EXPECT_EQ(result, 0);
+    width = USHRT_MAX - 1;
+    height = USHRT_MAX;
+    result = downloader->GetResolutionDelta(width, height);
+    EXPECT_EQ(result, 0);
+    width = USHRT_MAX;
+    height = USHRT_MAX - 1;
+    result = downloader->GetResolutionDelta(width, height);
+    EXPECT_EQ(result, 0);
+    width = 2;
+    height = 3;
+    downloader->initResolution_ = 1;
+    result = downloader->GetResolutionDelta(width, height);
+    uint32_t expectResult = width * height - downloader->initResolution_;
+    EXPECT_EQ(result, expectResult);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, TEST_ADDPARAMFORURL_NORMAL, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
+    EXPECT_TRUE(downloader != nullptr);
+    downloader->Init();
+    std::string url = "http?";
+    std::string key = "1";
+    std::string value = "1";
+    downloader->AddParamForUrl(url, key, value);
+
+    EXPECT_EQ(url, "http?&1=1");
+}
 }
