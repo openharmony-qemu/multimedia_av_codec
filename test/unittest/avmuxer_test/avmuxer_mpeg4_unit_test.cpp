@@ -3606,6 +3606,10 @@ HWTEST_F(Mpeg4MuxerUnitTest, Muxer_SetColorBoxInfo_004, TestSize.Level0)
     videoParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
     videoParams->PutIntValue(OH_MD_KEY_WIDTH, TEST_WIDTH);
     videoParams->PutIntValue(OH_MD_KEY_HEIGHT, TEST_HEIGHT);
+    EXPECT_EQ(videoParams->PutIntValue(OH_MD_KEY_COLOR_PRIMARIES, COLOR_PRIMARY_UNSPECIFIED), true); // primary
+    EXPECT_EQ(videoParams->PutIntValue(OH_MD_KEY_TRANSFER_CHARACTERISTICS, TRANSFER_CHARACTERISTIC_UNSPECIFIED), true);
+    EXPECT_EQ(videoParams->PutIntValue(OH_MD_KEY_MATRIX_COEFFICIENTS, MATRIX_COEFFICIENT_UNSPECIFIED), true); // matrix
+    EXPECT_EQ(videoParams->PutIntValue(OH_MD_KEY_RANGE_FLAG, 0), true); // range
 
     EXPECT_EQ(videoParams->PutIntValue(OH_MD_KEY_COLOR_PRIMARIES, ABNORMAL_COLOR_VALUE), true); // primary
     EXPECT_NE(avmuxer_->AddTrack(videoTrackId, videoParams), 0);
