@@ -641,20 +641,31 @@ int32_t FCodec::GetOutputFormat(Format &format)
 
 void FCodec::CalculateBufferSize()
 {
-    int32_t stride = AlignUp(width_, VIDEO_ALIGN_SIZE);
-    outputBufferSize_ = static_cast<int32_t>((stride * height_ * VIDEO_PIX_DEPTH_YUV) / UV_SCALE_FACTOR);
+    const int64_t stride = AlignUp(width_, VIDEO_ALIGN_SIZE);
+    int64_t size = stride * height_ * VIDEO_PIX_DEPTH_RGBA;
+    if (outputPixelFmt_ != VideoPixelFormat::RGBA) {
+        size = stride * height_ * VIDEO_PIX_DEPTH_YUV / UV_SCALE_FACTOR;
+    }
+    if (size >= INT32_MAX || size <= 0) {
+        outputBufferSize_ = 0;
+        AVCODEC_LOGE("width = %{public}d, height = %{public}d invalid", width_, height_);
+        return;
+    }
+    outputBufferSize_ = static_cast<int32_t>(size);
     if (rawvideoPixFmt_ == RawVideoPixelFormat::RGBA) {
-        inputBufferSize_ = std::max(static_cast<int32_t>(stride * height_ * VIDEO_PIX_DEPTH_RGBA),
-                                    outputBufferSize_);
+        size = stride * height_ * VIDEO_PIX_DEPTH_RGBA;
     } else {
-        inputBufferSize_ = std::max(VIDEO_MIN_BUFFER_SIZE, outputBufferSize_);
+        size = std::max(VIDEO_MIN_BUFFER_SIZE, outputBufferSize_);
     }
-    if (outputPixelFmt_ == VideoPixelFormat::RGBA) {
-        outputBufferSize_ = static_cast<int32_t>(stride * height_ * VIDEO_PIX_DEPTH_RGBA);
+    if (size >= INT32_MAX || size <= 0) {
+        inputBufferSize_ = 0;
+        AVCODEC_LOGE("width = %{public}d, height = %{public}d invalid", width_, height_);
+        return;
     }
+    inputBufferSize_ = static_cast<int32_t>(size);
     AVCODEC_LOGI("width = %{public}d, height = %{public}d, stride = %{public}d, Input buffer size = %{public}d, output "
                  "buffer size=%{public}d",
-                 width_, height_, stride, inputBufferSize_, outputBufferSize_);
+                 width_, height_, static_cast<int32_t>(stride), inputBufferSize_, outputBufferSize_);
 }
 
 int32_t FCodec::AllocateInputBuffer(int32_t inBufferSize)
@@ -1070,6 +1081,9 @@ int32_t FCodec::CheckFormatChange(uint32_t index, int width, int height)
         ResetData();
         scale_ = nullptr;
         CalculateBufferSize();
+        CHECK_AND_RETURN_RET_LOG(inputBufferSize_ > 0 && outputBufferSize_ > 0, AVCS_ERR_INVALID_VAL,
+                                 "new buffer with input size=%{public}d, output size=%{public}d failed",
+                                 inputBufferSize_, outputBufferSize_);
         PutFormatValue();
         {
             std::lock_guard<std::mutex> sLock(surfaceMutex_);
