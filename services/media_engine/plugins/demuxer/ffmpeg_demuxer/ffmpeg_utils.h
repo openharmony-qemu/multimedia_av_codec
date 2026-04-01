@@ -43,7 +43,6 @@ int64_t ConvertTimeToFFmpegByUs(int64_t timestampUs, AVRational base);
 bool StartWith(const char* name, const char* chars);
 uint32_t ConvertFlagsFromFFmpeg(const AVPacket& pkt, bool memoryNotEnough);
 int64_t CalculateTimeByFrameIndex(AVStream* avStream, int keyFrameIdx);
-void ReplaceDelimiter(const std::string &delimiters, char newDelimiter, std::string &str);
 
 std::vector<std::string> SplitString(const char* str, char delimiter);
 std::vector<std::string> SplitString(const std::string& str, char delimiter);

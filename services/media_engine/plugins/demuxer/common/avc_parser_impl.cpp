@@ -36,10 +36,8 @@ AvcParserImpl::~AvcParserImpl()
 
 bool AvcParserImpl::IsAnnexbFrame(const uint8_t *sample, int32_t size)
 {
-    if (size < SIZE_CODE_LEN || sample == nullptr) {
-        return false;
-    }
-
+    FALSE_RETURN_V(size >= SIZE_CODE_LEN, false);
+    FALSE_RETURN_V(sample != nullptr, false);
     auto *iter = std::search(sample, sample + SIZE_CODE_LEN, START_CODE, START_CODE + sizeof(START_CODE));
     if (iter == sample || (iter == sample + 1 && sample[0] == 0x00)) {
         return true;
@@ -47,12 +45,12 @@ bool AvcParserImpl::IsAnnexbFrame(const uint8_t *sample, int32_t size)
     return false;
 }
 
-void AvcParserImpl::WriteStartCode(uint32_t data, std::vector<uint8_t> &vec)
+void AvcParserImpl::WriteStartCode(std::vector<uint8_t> &vec)
 {
-    int32_t size = sizeof(data);
-    for (int32_t i = size - 1; i >= 0; --i) {
-        vec.emplace_back((data >> (i * 0x08)) & 0xFF);
-    }
+    vec.emplace_back(0x00);
+    vec.emplace_back(0x00);
+    vec.emplace_back(0x00);
+    vec.emplace_back(0x01);
 }
 
 bool AvcParserImpl::ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDataSize)
@@ -89,7 +87,7 @@ bool AvcParserImpl::ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDa
         addrInfoVec.emplace_back(dataAddrInfo_);
     }
     for (auto iter : addrInfoVec) {
-        WriteStartCode(startCode_, annexbExtraDataVec_);
+        WriteStartCode(annexbExtraDataVec_);
         FALSE_RETURN_V_MSG_E(
             static_cast<uint32_t>(iter.bytesIndex) + iter.bufferSize <= static_cast<uint32_t>(extraDataSize),
             false, "Error size");
@@ -99,39 +97,47 @@ bool AvcParserImpl::ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDa
     return true;
 }
 
-void AvcParserImpl::ConvertPacketToAnnexb(
-    uint8_t **hvccPacket, int32_t &hvccPacketSize, uint8_t *sideData, size_t sideDataSize, bool isExtradata)
+void AvcParserImpl::ConvertExtradata(uint8_t **packet, int32_t &packetSize)
 {
-    if (!hvccPacket || !*hvccPacket) {
-        return;
-    }
-    if (isExtradata) {
-        *hvccPacket = annexbExtraDataVec_.data();
-        hvccPacketSize = static_cast<int32_t>(annexbExtraDataVec_.size());
-        return;
-    }
-    annexbFrameVec_.clear();
-    std::shared_ptr<RbspContext> rbspContext = std::make_shared<RbspContext>(*hvccPacket, hvccPacketSize);
-    FALSE_RETURN_MSG(rbspContext != nullptr, "rbspContext is nullptr");
-    std::vector<DataAddrInfo> addrInfoVec;
-    bool gotIrap = false;
-    while (rbspContext->RbspGetLeftBytesNum()) {
+    *packet = annexbExtraDataVec_.data();
+    packetSize = static_cast<int32_t>(annexbExtraDataVec_.size());
+}
+
+bool AvcParserImpl::ParsePacket(
+    std::vector<DataAddrInfo> &dataInfoVec, bool &gotIrap, const uint8_t *packet, int32_t packetSize)
+{
+    std::shared_ptr<RbspContext> rbspContext = std::make_shared<RbspContext>(packet, packetSize);
+    FALSE_RETURN_V_MSG_E(rbspContext != nullptr, false, "rbspContext is nullptr");
+    while (rbspContext->RbspGetLeftBytesNum() > 0) {
         uint32_t naluSize = 0;
         if (rbspContext->RbspGetLeftBytesNum() < naluLength_) {
-            return;
+            return false;
         }
         for (int32_t i = 0; i < naluLength_; ++i) {
             naluSize = (naluSize << 0x08) | rbspContext->RbspGetBits(0x08); // 前4位表示数据大小
         }
         if (naluSize < 0x02 || naluSize > rbspContext->RbspGetLeftBytesNum()) {
-            return;
+            return false;
         }
         int32_t naluType = (rbspContext->RbspGetBits(0x08, false)) & 0x1f; // false 读完后不跳转
         bool isIrap = naluType == AvcNalType::AVC_IDR_W_RADL;
         gotIrap = (gotIrap || isIrap) ? true : false;
         dataAddrInfo_ = {rbspContext->GetBytesIndex(), naluSize};
         rbspContext->RbspSkipBits(naluSize * 0x08);
-        addrInfoVec.emplace_back(dataAddrInfo_);
+        dataInfoVec.emplace_back(dataAddrInfo_);
+    }
+    return true;
+}
+
+void AvcParserImpl::ConvertPacketCore(uint8_t **packet, int32_t &packetSize)
+{
+    annexbFrameVec_.clear();
+    std::vector<DataAddrInfo> addrInfoVec;
+    bool gotIrap = false;
+    bool ret = ParsePacket(addrInfoVec, gotIrap, *packet, packetSize);
+    if (!ret) {
+        MEDIA_LOG_E("ParsePacket failed");
+        return;
     }
     // just add xps to begin of first frame.
     if (!sendXps_ && gotIrap) {
@@ -140,15 +146,30 @@ void AvcParserImpl::ConvertPacketToAnnexb(
         sendXps_ = true;
     }
     for (auto iter : addrInfoVec) {
-        if (iter.bufferSize > static_cast<uint32_t>(hvccPacketSize)) {
+        if (iter.bufferSize > static_cast<uint32_t>(packetSize)) {
             return;
         }
-        WriteStartCode(startCode_, annexbFrameVec_);
+        WriteStartCode(annexbFrameVec_);
         annexbFrameVec_.insert(
-            annexbFrameVec_.end(), *hvccPacket + iter.bytesIndex, *hvccPacket + iter.bytesIndex + iter.bufferSize);
+            annexbFrameVec_.end(), *packet + iter.bytesIndex, *packet + iter.bytesIndex + iter.bufferSize);
     }
-    *hvccPacket = annexbFrameVec_.data();
-    hvccPacketSize = static_cast<int32_t>(annexbFrameVec_.size());
+    *packet = annexbFrameVec_.data();
+    packetSize = static_cast<int32_t>(annexbFrameVec_.size());
+}
+
+void AvcParserImpl::ConvertPacketToAnnexb(
+    uint8_t **hvccPacket, int32_t &hvccPacketSize, uint8_t *sideData, size_t sideDataSize, bool isExtradata)
+{
+    (void)sideData;
+    (void)sideDataSize;
+    if (!hvccPacket || !*hvccPacket) {
+        return;
+    }
+    if (isExtradata) {
+        ConvertExtradata(hvccPacket, hvccPacketSize);
+    } else {
+        ConvertPacketCore(hvccPacket, hvccPacketSize);
+    }
 }
 
 void AvcParserImpl::ResetXPSSendStatus()

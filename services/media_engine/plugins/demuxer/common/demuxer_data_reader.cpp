@@ -54,6 +54,7 @@ Status DemuxerDataReader::ReadUintData(int64_t offset, uint8_t* buffer, size_t s
         if (bufferInfo->GetMemory()->GetSize() == size) {
             break;
         }
+        count++;
         usleep(READ_RETRY_SLEEP_TIME_US);
     }
 
@@ -109,9 +110,9 @@ uint16_t DemuxerBitReader::ShowBits(uint8_t numBits)
 
 uint8_t DemuxerBitReader::ReadBits(uint8_t numBits)
 {
-    if (numBits < 0 || numBits > BYTE_LENGTH || !HasBits(numBits)) {
-        return 0;
-    }
+    FALSE_RETURN_V_NOLOG(numBits > 0, 0);
+    FALSE_RETURN_V(numBits <= BYTE_LENGTH, 0);
+    FALSE_RETURN_V(HasBits(numBits), 0);
     uint8_t value = 0;
     while (numBits > 0) {
         uint8_t bitsInCurrentByte = BYTE_LENGTH - bitOffset_;
@@ -136,6 +137,12 @@ uint8_t DemuxerBitReader::ReadBits(uint8_t numBits)
 
 bool DemuxerBitReader::SkipBits(uint8_t numBits)
 {
+    if (numBits == 0) {
+        return true;
+    }
+    if (!HasBits(numBits)) {
+        return false;
+    }
     while (numBits > 0 && HasBits(numBits)) {
         uint8_t bitsInCurrentByte = BYTE_LENGTH - bitOffset_;
         uint8_t bitsToSkip = std::min(numBits, bitsInCurrentByte);

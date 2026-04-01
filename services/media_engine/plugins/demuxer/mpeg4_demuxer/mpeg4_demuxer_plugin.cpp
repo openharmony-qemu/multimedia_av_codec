@@ -1019,6 +1019,7 @@ Status MPEG4DemuxerPlugin::ReadSampleData(std::shared_ptr<Sample> sample, uint64
         if (buffer->GetMemory()->GetSize() == size) {
             break;
         }
+        count++;
         usleep(READ_RETRY_SLEEP_TIME_US);
     }
     int32_t dataSize = static_cast<int32_t>(buffer->GetMemory()->GetSize());
@@ -1343,7 +1344,7 @@ Status MPEG4DemuxerPlugin::SetDataSourceWithProbSize(const std::shared_ptr<DataS
     FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "DataSource is nullptr");
     FALSE_RETURN_V_MSG_E(probSize >= 0, Status::ERROR_INVALID_PARAMETER, "probSize is invalid");
     
-    int32_t probScore = Sniff(pluginName_, source);
+    int32_t probScore = Sniff("avdemux_mpeg4", source);
     FALSE_RETURN_V_MSG_E(probScore >= DEF_PROBE_SCORE_LIMIT, Status::ERROR_INVALID_PARAMETER,
         "source and inputformat mismatch");
     lock.unlock();
@@ -1574,6 +1575,7 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> source)
     std::string enable = OHOS::system::GetParameter("Mpeg4DemuxerPlugin.enable", "0");
     FALSE_RETURN_V_MSG_W(enable == "1", 0, "Skip Mpeg4Demuxer");
     FALSE_RETURN_V_MSG_E(!pluginName.empty(), 0, "Plugin name is empty");
+    FALSE_RETURN_V_MSG_E(pluginName == "avdemux_mpeg4", 0, "Plugin name is invalid");
     FALSE_RETURN_V_MSG_E(source != nullptr, 0, "source is nullptr");
     auto dataReader = std::make_shared<DemuxerDataReader>();
     FALSE_RETURN_V_MSG_E(dataReader != nullptr, 0, "dataReader allocation failed");

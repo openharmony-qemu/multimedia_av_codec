@@ -308,6 +308,9 @@ bool BlockQueuePool<T>::ResetInfo(std::shared_ptr<T> block)
     MEDIA_LOG_D("Reset for block " PUBLIC_LOG_U32, block->queueIndex);
     uint32_t queIndex = block->queueIndex;
     FALSE_RETURN_V_MSG_E(quePool_.count(queIndex) > 0, false, "Index is invalid");
+    if (quePool_[queIndex].blockQue == nullptr || quePool_[queIndex].blockQue->Size() == 0) {
+        return true;
+    }
     uint32_t blockSize = BlockTraits<T>::GetDataSize(block);
     quePool_[queIndex].dataSize = quePool_[queIndex].dataSize >= blockSize ?
         quePool_[queIndex].dataSize - blockSize : 0;
@@ -322,6 +325,9 @@ bool BlockQueuePool<T>::SetInfo(std::shared_ptr<T> block)
     MEDIA_LOG_D("Set for block " PUBLIC_LOG_U32, block->queueIndex);
     uint32_t queIndex = block->queueIndex;
     FALSE_RETURN_V_MSG_E(quePool_.count(queIndex) > 0, false, "Index is invalid");
+    if (quePool_[queIndex].blockQue == nullptr || quePool_[queIndex].blockQue->Size() == 0) {
+        return true;
+    }
     uint32_t blockSize = BlockTraits<T>::GetDataSize(block);
     if (quePool_[queIndex].dataSize <= UINT32_MAX - blockSize) {
         quePool_[queIndex].dataSize += blockSize;

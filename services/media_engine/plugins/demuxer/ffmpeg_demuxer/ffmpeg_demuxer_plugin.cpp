@@ -134,8 +134,6 @@ int SniffMPEGPS(const std::string& pluginName, std::shared_ptr<DataSource> dataS
 
 Status RegisterPlugins(const std::shared_ptr<Register>& reg);
 
-void ReplaceDelimiter(const std::string &delmiters, char newDelimiter, std::string &str);
-
 inline std::string ProcessPluginName(const std::string& pluginName)
 {
     size_t pos = pluginName.find("avdemux_");
@@ -4053,17 +4051,6 @@ inline static PluginSnifferFunc FindSniffer(const std::string& pluginName)
     return (pluginName == std::string(PLUGIN_NAME_MPEGPS)) ? SniffMPEGPS : Sniff;
 }
 
-void ReplaceDelimiter(const std::string& delmiters, char newDelimiter, std::string& str)
-{
-    MEDIA_LOG_D("Reset from [" PUBLIC_LOG_S "]", str.c_str());
-    for (auto it = str.begin(); it != str.end(); ++it) {
-        if (delmiters.find(newDelimiter) != std::string::npos) {
-            *it = newDelimiter;
-        }
-    }
-    MEDIA_LOG_D("Reset to [" PUBLIC_LOG_S "]", str.c_str());
-};
-
 Status RegisterPlugins(const std::shared_ptr<Register>& reg)
 {
     MEDIA_LOG_I("In");
@@ -4077,8 +4064,6 @@ Status RegisterPlugins(const std::shared_ptr<Register>& reg)
         }
         MEDIA_LOG_D("Check ffmpeg demuxer " PUBLIC_LOG_S "[" PUBLIC_LOG_S "]", plugin->name, plugin->long_name);
         std::string pluginName = "avdemux_" + std::string(plugin->name);
-        ReplaceDelimiter(".,|-<> ", '_', pluginName);
-
         DemuxerPluginDef regInfo;
         regInfo.name = pluginName;
         regInfo.description = "ffmpeg demuxer plugin";

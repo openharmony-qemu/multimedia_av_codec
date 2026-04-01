@@ -29,6 +29,9 @@ RbspContext::RbspContext(const uint8_t *buf, int32_t size)
 
 bool RbspContext::RbspCheckSize(uint32_t size) const
 {
+    if (size == 0) {
+        return true;
+    }
     if (byteIndex_ >= size_) {
         return false;
     }
@@ -43,6 +46,9 @@ bool RbspContext::RbspCheckSize(uint32_t size) const
 
 void RbspContext::RbspSkipBits(uint32_t size)
 {
+    if (size == 0) {
+        return;
+    }
     if (byteIndex_ >= size_) {
         return;
     }
