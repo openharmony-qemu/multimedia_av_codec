@@ -229,7 +229,7 @@ void Mpeg4DemuxerUnitTest::ReadData()
     EXPECT_TRUE(SetInitValue());
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
-            demuxer_->ReadSample(idx, sharedMem_, &info_, flag_);
+            ret_ = demuxer_->ReadSample(idx, sharedMem_, &info_, flag_);
             if (ret_ != AV_ERR_OK) {
                 break;
             }
@@ -478,9 +478,9 @@ HWTEST_F(Mpeg4DemuxerUnitTest, mp4Demuxer_ReadSample_0003, TestSize.Level1)
             CountFrames(idx);
         }
     }
-    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
-    printf("frames_[1]=%d | kFrames[1]=%d\n", frames_[1], keyFrames_[1]);
-    printf("frames_[1]=%d | kFrames[1]=%d\n", frames_[2], keyFrames_[2]);
+    for (int32_t i = 0; i < 3; i++) {
+        printf("frames_[%d]=%d | kFrames[%d]=%d\n", i, frames_[i], i, keyFrames_[i]);
+    }
     EXPECT_EQ(frames_[0], 604);
     EXPECT_EQ(frames_[1], 434);
     EXPECT_EQ(frames_[2], 8);

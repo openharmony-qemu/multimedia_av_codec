@@ -60,8 +60,6 @@ public:
     };
 
 private:
-    bool IsAnnexbFrame(const uint8_t *sample, int32_t size);
-    void WriteStartCode(uint32_t data, std::vector<uint8_t> &vec);
     struct DataAddrInfo {
         uint32_t bytesIndex;
         uint32_t bufferSize;
@@ -71,8 +69,13 @@ private:
     std::vector<uint8_t> annexbExtraDataVec_;
     std::vector<uint8_t> annexbFrameVec_;
     uint8_t naluLength_;
-    uint32_t startCode_ = 1;
     bool sendXps_ = false;
+
+    bool IsAnnexbFrame(const uint8_t *sample, int32_t size);
+    void WriteStartCode(std::vector<uint8_t> &vec);
+    void ConvertExtradata(uint8_t **packet, int32_t &packetSize);
+    void ConvertPacketCore(uint8_t **packet, int32_t &packetSize);
+    bool ParsePacket(std::vector<DataAddrInfo> &dataInfoVec, bool &gotIrap, const uint8_t *packet, int32_t packetSize);
 };
 } // namespace Plugins
 } // namespace Media

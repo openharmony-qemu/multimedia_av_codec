@@ -89,6 +89,9 @@ std::string AVStrError(int errnum)
 int64_t ConvertTimeFromFFmpeg(int64_t pts, AVRational base)
 {
     int64_t out;
+    if (base.den == 0) {
+        return pts;
+    }
     if (pts == AV_NOPTS_VALUE) {
         out = -1;
     } else {
@@ -103,7 +106,7 @@ int64_t ConvertTimeFromFFmpeg(int64_t pts, AVRational base)
 int64_t ConvertTimeToFFmpeg(int64_t timestampNs, AVRational base)
 {
     int64_t result;
-    if (base.num == 0) {
+    if (base.num == 0 || base.den == 0) {
         result = AV_NOPTS_VALUE;
     } else {
         AVRational bq = {1, AV_CODEC_SECOND};
@@ -117,7 +120,7 @@ int64_t ConvertTimeToFFmpeg(int64_t timestampNs, AVRational base)
 int64_t ConvertTimeToFFmpegByUs(int64_t timestampUs, AVRational base)
 {
     int64_t result;
-    if (base.num == 0) {
+    if (base.num == 0 || base.den == 0) {
         result = AV_NOPTS_VALUE;
     } else {
         AVRational bq = {1, AV_CODEC_MSECOND};
@@ -172,39 +175,26 @@ int64_t CalculateTimeByFrameIndex(AVStream* avStream, int keyFrameIdx)
 #endif
 }
 
-void ReplaceDelimiter(const std::string &delimiters, char newDelimiter, std::string &str)
-{
-    for (char &it : str) {
-        if (delimiters.find(newDelimiter) != std::string::npos) {
-            it = newDelimiter;
-        }
-    }
-}
 
 std::vector<std::string> SplitString(const char* str, char delimiter)
 {
     std::vector<std::string> rtv;
-    if (str) {
-        SplitString(std::string(str), delimiter).swap(rtv);
+    if (str == nullptr || *str == '\0') {
+        return rtv;
     }
-    return rtv;
-}
-
-std::vector<std::string> SplitString(const std::string& str, char delimiter)
-{
-    if (str.empty()) {
-        return {};
-    }
-    std::vector<std::string> rtv;
-    std::string::size_type startPos = 0;
-    std::string::size_type endPos = str.find_first_of(delimiter, startPos);
-    while (startPos != endPos) {
-        rtv.emplace_back(str.substr(startPos, endPos - startPos));
-        if (endPos == std::string::npos) {
-            break;
+    const char* start = str;
+    const char* current = str;
+    while (*current) {
+        if (*current == delimiter) {
+            if (current > start) {
+                rtv.emplace_back(start, current - start);
+            }
+            start = current + 1;
         }
-        startPos = endPos + 1;
-        endPos = str.find_first_of(delimiter, startPos);
+        current++;
+    }
+    if (current > start) {
+        rtv.emplace_back(start, current - start);
     }
     return rtv;
 }
@@ -212,6 +202,7 @@ std::vector<std::string> SplitString(const std::string& str, char delimiter)
 int FindNaluSpliter(int size, const uint8_t* data)
 {
     int naluPos = -1;
+    FALSE_RETURN_V_MSG_D(data != nullptr, naluPos, "data is nullptr");
     if (size >= 4 && data[0] == 0x00 && data[1] == 0x00) { // 4: least size
         if (data[2] == 0x01) { // 2: next index
             naluPos = 3; // 3: the actual start pos of nal unit
@@ -225,10 +216,6 @@ int FindNaluSpliter(int size, const uint8_t* data)
 bool CanDropAvcPkt(const AVPacket& pkt)
 {
     const uint8_t *data = pkt.data;
-    if (data == nullptr) {
-        MEDIA_LOG_D("pkt->data is null!");
-        return false;
-    }
     int size = pkt.size;
     int naluPos = FindNaluSpliter(size, data);
     if (naluPos < 0) {
@@ -330,7 +317,7 @@ const uint8_t* FindNalStartCode(const uint8_t *start, const uint8_t *end, int32_
 {
     startCodeLen = sizeof(START_CODE);
     auto *iter = std::search(start, end, START_CODE, START_CODE + startCodeLen);
-    if (iter != end && (iter > start && *(iter - 1) == 0x00)) {
+    if (iter != end && iter > start && *(iter - 1) == 0x00) {
         ++startCodeLen;
         return iter - 1;
     }
