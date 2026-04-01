@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -700,6 +700,51 @@ HWTEST_F(DashMediaDownloaderUnittest, GetPlaybackInfo_001, TestSize.Level0)
     mediaDownloader_->segmentDownloaders_.PushBack(downloader);
     mediaDownloader_->GetPlaybackInfo(playbackInfo);
     EXPECT_EQ(playbackInfo.averageDownloadRate, 1000);
+}
+
+/**
+ * @tc.name  : Test StopBufferring
+ * @tc.number: StopBufferring
+ * @tc.desc  : Test segmentDownloaders_.Empty()
+ */
+HWTEST_F(DashMediaDownloaderUnitTest, STOP_BUFFERING, TestSize.Level1)
+{
+    std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
+    mediaDownloader->Init();
+    EXPECT_EQ(mediaDownloader->StopBufferring(false), Status::OK);
+
+    mediaDownloader->preparedAction_.seekPosition_ = 0;
+    PlaybackInfo info;
+    info.isDownloading = false;
+    mediaDownloader->GetPlaybackInfo(info);
+    mediaDownloader->SeekToTs(0);
+    EXPECT_FALSE(info.isDownloading);
+    
+    std::shared_ptr<DashSegmentDownloader> downloader = std::make_shared<DashSegmentDownloader>(
+        callback, streamDesc->streamId_, streamDesc->type_, expectDuration_, sourceLoader_);
+    downloader->Init();
+    auto bufferingCallback = [weakDownloader] (int streamId, BufferingInfoType type) {
+        (void)streamId;
+        (void)type;
+    };
+    downloader->SetSegmentBufferingCallback(bufferingCallback);
+    mediaDownloader->segmentDownloaders_.PushBack(downloader);
+    mediaDownloader->segmentDownloaders_.PushBack(nullptr);
+    mediaDownloader->NotifyInitSuccess();
+    mediaDownloader->SetAppUid(0);
+    mediaDownloader->GetPlaybackInfo(info);
+    mediaDownloader->SetInterruptState(true);
+    mediaDownloader->SeekInternal(0);
+
+    DashMpdInfo mpdInfo;
+    mediaDownloader->mpdDownloader_->mpdInfo_ = &mpdInfo;
+    mediaDownloader->mpdDownloader_->notifyOpenOk_ = true;
+    EXPECT_EQ(mediaDownloader->GetSeekable(), Seekable::INVALID);
+    mediaDownloader->Pause();
+    mediaDownloader->Resume();
+    mediaDownloader->Close();
+    
+    EXPECT_EQ(mediaDownloader->StopBufferring(false), Status::ERROR_NULL_POINTER);
 }
 }
 }
