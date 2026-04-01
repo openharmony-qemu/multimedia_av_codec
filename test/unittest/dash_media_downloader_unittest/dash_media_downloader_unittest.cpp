@@ -720,8 +720,9 @@ HWTEST_F(DashMediaDownloaderUnittest, STOP_BUFFERING, TestSize.Level1)
     mediaDownloader->SeekToTs(0);
     EXPECT_FALSE(info.isDownloading);
     
+    std::shared_ptr<Callback> callback = nullptr;
     std::shared_ptr<DashSegmentDownloader> downloader = std::make_shared<DashSegmentDownloader>(
-        callback, streamDesc->streamId_, streamDesc->type_, expectDuration_, sourceLoader_);
+        callback, 0, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 0, nullptr);
     downloader->Init();
     auto bufferingCallback = [weakDownloader] (int streamId, BufferingInfoType type) {
         (void)streamId;
