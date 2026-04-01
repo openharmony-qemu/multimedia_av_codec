@@ -707,16 +707,21 @@ void HlsSegmentManager::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readD
     if ((IsHlsFmp4() && readDataInfo.streamId_ > 0) || IsPureByteRange()) {
         uint64_t remain = cacheMediaBuffer_->GetBufferSize(readOffset_);
         if (remain > 0 && remain < AES_BLOCK_LEN && GetAesDecryptor() != nullptr) {
-            size_t readRemain = cacheMediaBuffer_->Read(buff, readOffset_, readDataInfo.wantReadLength_);
+            size_t readRemain = cacheMediaBuffer_->Read(buff + readDataInfo.realReadLength_, readOffset_,
+                readDataInfo.wantReadLength_ - std::min(readDataInfo.wantReadLength_, readDataInfo.realReadLength_));
             readOffset_ += readRemain;
             ffmpegOffset_ += readRemain;
             readDataInfo.realReadLength_ += readRemain;
+            MEDIA_LOG_I("HLS read remain, readOffset: " PUBLIC_LOG_U64 " read remain: " PUBLIC_LOG_ZU
+                ", type: %{public}d", readOffset_, readRemain, type_);
         }
     }
     if (tsStorageInfo_.find(readTsIndex_) != tsStorageInfo_.end() &&
         tsStorageInfo_[readTsIndex_].second == true) {
         uint64_t tsEndOffset = SpliceOffset(readTsIndex_, tsStorageInfo_[readTsIndex_].first);
         if (readOffset_ >= tsEndOffset) {
+            MEDIA_LOG_I("HLS read reach splice end, current: %{public}u, type: %{public}d",
+                readDataInfo.streamId_, type_);
             isTsEnd_.store(true);
             notNeedReadBack_.store(true);
             if (playlistDownloader_->IsHlsFmp4()) {
