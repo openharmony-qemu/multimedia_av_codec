@@ -72,7 +72,7 @@ struct HasMappedType<std::map<K, V, Comp, Alloc>> : std::true_type {};
 
 template<typename K, typename V, typename Hash, typename Pred, typename Alloc>
 struct HasMappedType<std::unordered_map<K, V, Hash, Pred, Alloc>> : std::true_type {};
-} 
+}
 
 template<typename Container>
 class ThreadSafeContainer {
