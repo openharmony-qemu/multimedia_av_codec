@@ -236,6 +236,11 @@ int32_t VideoDecoder::Configure(const Format &format)
             continue;
         } else if (it.first == MediaDescriptionKey::MD_KEY_VIDEO_HDR_METADATA) {
             ConfigureHdrMetadata(format);
+        } else if (it.first == OHOS::Media::Tag::VIDEO_ENABLE_LOW_LATENCY) {
+            CHECK_AND_CONTINUE_LOG(format.GetIntValue(it.first, val32),
+                "not find valid int value for key %{public}s", it.first.data());
+            format_.PutIntValue(it.first, val32);
+            ConfigureOutPutOrder(val32 == 1 ? false : true); // 1 enable low tatency, other enalbe display order
         } else {
             AVCODEC_LOGW("Set parameter failed: size:%{public}s, unsupport key", it.first.data());
         }

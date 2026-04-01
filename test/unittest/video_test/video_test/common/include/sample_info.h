@@ -146,6 +146,7 @@ struct SampleInfo {
     std::string roiFilePath;
     bool enableRoiByNativebuf = false;
     std::string roiFilePathByNativebuf;
+    bool enableDecoderOrder = false;
 };
 
 struct CodecBufferInfo {

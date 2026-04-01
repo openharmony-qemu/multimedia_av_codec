@@ -145,6 +145,73 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Release_001, TestSize.Le
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
+/**.
+ * @tc.name: VideoDecoder_hevcdecoder_outputOrder_001
+ * @tc.desc: 1. push/free buffer in callback;
+ *           2. release not in callback;
+ */
+HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_outputOrder_001, TestSize.Level1, VideoDecSample::threadNum_)
+{
+    auto vdec = make_shared<VideoDecSample>();
+    auto signal = make_shared<VCodecSignal>(vdec);
+    vdec->frameCount_ = 46; // 46: input frame num
+    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
+    vdec->inPath_ = "test_ibpbp_avcc.h265";
+    vdec->sampleWidth_ = 320;
+    vdec->sampleHeight_ = 240;
+    vdec->releaseOtherBuffer_ = true;
+    vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "01";
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataHandle;
+    cb.onNeedOutputData = OutDataHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
+}
+
+/**.
+ * @tc.name: VideoDecoder_hevcdecoder_outputOrder_002
+ * @tc.desc: 1. push/free buffer in callback;
+ *           2. release not in callback;
+ */
+HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_outputOrder_002, TestSize.Level1, VideoDecSample::threadNum_)
+{
+    auto vdec = make_shared<VideoDecSample>();
+    auto signal = make_shared<VCodecSignal>(vdec);
+    vdec->frameCount_ = 46; // 46: input frame num
+    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
+    vdec->inPath_ = "test_ibpbp_avcc.h265";
+    vdec->sampleWidth_ = 320;
+    vdec->sampleHeight_ = 240;
+    vdec->releaseOtherBuffer_ = true;
+    vdec->lowLatency_ = true;
+    vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "01";
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataHandle;
+    cb.onNeedOutputData = OutDataHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
+}
+
 /**
  * @tc.name: VideoDecoder_hevcdecoder_Release_AVBuffer_001
  * @tc.desc: 1. push/free buffer in callback;
@@ -302,6 +369,7 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_004, Tes
     vdec->dumpKey_ = "hevcdecoder.dump";
     vdec->dumpValue_ = "11";
     vdec->setSurfaceParam_ = true;
+    vdec->isUnregConListener_ = true;
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;

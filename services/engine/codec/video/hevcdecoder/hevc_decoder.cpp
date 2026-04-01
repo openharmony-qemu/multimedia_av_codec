@@ -108,11 +108,10 @@ HevcDecoder::HevcDecoder(const std::string &name) : VideoDecoder(name)
         isValid_ = false;
     }
 
-    initParams_.logFxn = nullptr;
-    initParams_.uiChannelID = 0;
-    initParams_.uiDecodeMode = IHW265_DECODE_VIDEO;
     initParams_.uiChannelID = decInstanceID_;
     initParams_.logFxn = HevcDecLog;
+    initParams_.uiDecodeMode = IHW265_DECODE_VIDEO;
+    initParams_.eOutPutOrder = 1; // 1 default: display order
     InitParams();
 }
 
@@ -539,6 +538,12 @@ void HevcDecoder::CalculateBufferSize(void)
 int32_t HevcDecoder::GetDecoderWidthStride(void)
 {
     return hevcDecoderOutpusArgs_.uiDecStride == 0 ? width_ : static_cast<int32_t>(hevcDecoderOutpusArgs_.uiDecStride);
+}
+
+void HevcDecoder::ConfigureOutPutOrder(bool isDisplay)
+{
+    initParams_.eOutPutOrder = isDisplay ? 1 : 0;  // 1 by disply order
+    AVCODEC_LOGI("Configure output, is display: %{public}d", isDisplay);
 }
 
 int32_t HevcDecoder::CheckHevcDecLibStatus()

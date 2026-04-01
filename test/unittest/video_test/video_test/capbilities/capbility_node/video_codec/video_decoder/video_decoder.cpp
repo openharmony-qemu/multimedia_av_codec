@@ -67,6 +67,10 @@ int32_t VideoDecoder::Configure(const SampleInfo &sampleInfo)
         OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_ROTATION, 270);   // rotate 270°
     }
 
+    if (sampleInfo.enableDecoderOrder) {
+        OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_VIDEO_ENABLE_LOW_LATENCY, sampleInfo.enableDecoderOrder);
+    }
+
     int ret = OH_VideoDecoder_Configure(codec_.get(), format.get());
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Config failed, ret: %{public}d", ret);
 

@@ -1231,7 +1231,7 @@ int32_t AvccReader::Init(const std::shared_ptr<AvccReaderInfo> &info)
     std::shared_ptr<std::ifstream> inputFile = std::make_unique<std::ifstream>(info->inPath.data(),
                                                                                std::ios::binary | std::ios::in);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(inputFile != nullptr && inputFile->is_open(),
-                                      AV_ERR_INVALID_VAL, "Open input file failed");
+        AV_ERR_INVALID_VAL, "Open input file %{public}s failed %{public}s", info->inPath.data(), strerror(errno));
 
     nalUnitReader_ = std::static_pointer_cast<NalUnitReader>(std::make_shared<AvccNalUnitReader>(inputFile));
     UNITTEST_CHECK_AND_RETURN_RET_LOG(nalUnitReader_, AV_ERR_INVALID_VAL, "Nal unit reader create failed");
@@ -1273,6 +1273,10 @@ bool AvccReader::CheckFillBuffer(uint8_t naluType)
 
 int32_t AvccReader::FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr)
 {
+    if (nalUnitReader_ == nullptr) {
+        std::cout << "nalUnitReader_ is null." << std::endl;
+        return AVCS_ERR_UNKNOWN;
+    }
     std::lock_guard<std::mutex> lock(mutex_);
 
     do {
