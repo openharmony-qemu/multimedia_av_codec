@@ -707,7 +707,7 @@ HWTEST_F(DashMediaDownloaderUnittest, GetPlaybackInfo_001, TestSize.Level0)
  * @tc.number: StopBufferring
  * @tc.desc  : Test segmentDownloaders_.Empty()
  */
-HWTEST_F(DashMediaDownloaderUnitTest, STOP_BUFFERING, TestSize.Level1)
+HWTEST_F(DashMediaDownloaderUnittest, STOP_BUFFERING, TestSize.Level1)
 {
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
     mediaDownloader->Init();
