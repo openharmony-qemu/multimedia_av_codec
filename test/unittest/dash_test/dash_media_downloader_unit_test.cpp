@@ -163,6 +163,27 @@ void DashMediaDownloaderUnitTest::SetUp(void)
         std::cout << "start server" << std::endl;
     }
 }
+class DashCallbackMock1 : public Plugins::Callback {
+public:
+    void OnEvent(const Plugins::PluginEvent &event) override
+    {
+        switch (event.type) {
+            case PluginEventType::STREAM_UPDATE: {
+                int videoId = -1;
+                int audioId = -1;
+                int textId = -1;
+                mediaDownloader->SetDefaultStreamId(videoId, audioId, textId);
+                break;
+            }
+            default:break;
+        }
+    }
+    void SetDownload(std::shared_ptr<DashMediaDownloader> downloader)
+    {
+        mediaDownloader = downloader;
+    }
+    std::shared_ptr<DashMediaDownloader> mediaDownloader;
+};
 
 void DashMediaDownloaderUnitTest::TearDown(void) {}
 
@@ -584,6 +605,9 @@ std::shared_ptr<DashMediaDownloader> CreateAndInitMediaDownloader(const std::str
 {
     auto mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
     mediaDownloader->Init();
+    auto cb = std::make_shared<DashCallbackMock1>();
+    cb->SetDownload(mediaDownloader);
+    mediaDownloader->SetCallback(cb);
     std::map<std::string, std::string> httpHeader;
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {};
