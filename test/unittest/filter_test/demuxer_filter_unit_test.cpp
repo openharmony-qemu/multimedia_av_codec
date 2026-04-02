@@ -925,6 +925,34 @@ HWTEST_F(DemuxerFilterUnitTest, SetTrackSelectionFilter_0100, TestSize.Level1)
     demuxerFilter_->SetTrackSelectionFilter(filter);
     SUCCEED();
 }
+
+/**
+ * @tc.name: GetSeekableRanges_0100
+ * @tc.desc: GetSeekableRanges
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerFilterUnitTest, GetSeekableRanges_0100, TestSize.Level1)
+{
+    auto demuxerFilter = std::make_shared<DemuxerFilter>("testDemuxerFilter", FilterType::FILTERTYPE_DEMUXER);
+    auto demuxer = std::make_shared<MediaDemuxerMock>();
+    demuxerFilter->demuxer_ = demuxer;
+    auto ret = demuxerFilter->GetSeekableRanges();
+    ASSERT_EQ(ret.size(), 0);
+}
+
+/**
+ * @tc.name: GetLoadedRanges_0100
+ * @tc.desc: GetLoadedRanges
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerFilterUnitTest, GetLoadedRanges_0100, TestSize.Level1)
+{
+    auto demuxerFilter = std::make_shared<DemuxerFilter>("testDemuxerFilter", FilterType::FILTERTYPE_DEMUXER);
+    auto demuxer = std::make_shared<MediaDemuxerMock>();
+    demuxerFilter->demuxer_ = demuxer;
+    auto ret = demuxerFilter->GetLoadedRanges();
+    ASSERT_EQ(ret.size(), 0);
+}
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS

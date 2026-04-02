@@ -17,6 +17,7 @@
 #define HTTP_MEDIA_DOWNLOADER_UNIT_TEST_H
 
 #include "http/http_media_downloader.h"
+#include "download/media_source_loading_request.h"
 #include "gtest/gtest.h"
 #include "hls/m3u8.h"
 #include "source/source.h"
@@ -61,8 +62,16 @@ public:
     MOCK_METHOD(bool, IsEos, (), (const));
     MOCK_METHOD(bool, IsChunkedVod, (), (const));
     MOCK_METHOD(bool, IsServerAcceptRange, (), (const));
+    MOCK_METHOD(Seekable, GetSeekable, (), (const));
+    MOCK_METHOD(bool, IsChunked, (bool), (const));
     std::atomic<bool> isHeaderUpdated_ {false};
     std::atomic<bool> haveRedirectRetry_ {false};
+};
+
+class MockSourceLoader : public MediaSourceLoaderCombinations {
+public:
+    MockSourceLoader() : MediaSourceLoaderCombinations(nullptr) {}
+    MOCK_METHOD(bool, GetenableOfflineCache, (), ());
 };
 }
 }

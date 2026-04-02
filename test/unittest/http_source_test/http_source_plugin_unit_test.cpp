@@ -25,6 +25,66 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
+namespace {
+class MockMediaDownloaderForSeek : public MediaDownloader {
+public:
+    MockMediaDownloaderForSeek() = default;
+    virtual ~MockMediaDownloaderForSeek() = default;
+    bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override
+    {
+        (void)url;
+        (void)httpHeader;
+        return true;
+    }
+    void Init() override {}
+    void Close(bool isAsync) override {(void)isAsync;}
+    void Pause() override {}
+    void Resume() override {}
+    Status Read(unsigned char* buff, ReadDataInfo& readDataInfo) override
+    {
+        (void)buff;
+        (void)readDataInfo;
+        return Status::OK;
+    }
+    uint64_t GetBufferSize() const override { return 0; }
+    bool GetBufferingTimeOut() override { return true; }
+    size_t GetContentLength() const override { return contentLength_; }
+    int64_t GetDuration() const override { return duration_; }
+    Seekable GetSeekable() const override { return seekable_; }
+    void SetCallback(const std::shared_ptr<Callback>& cb) override {(void)cb;}
+    void SetStatusCallback(StatusCallbackFunc cb) override {(void)cb;}
+    bool GetStartedStatus() override { return true; }
+    void SetInterruptState(bool isInterruptNeeded) override {(void)isInterruptNeeded;}
+    void SetAppUid(int32_t appUid) override {(void)appUid;}
+    bool SelectBitRate(uint32_t bitRate) override { return bitRate == 0 ? false : true; }
+    void SetIsTriggerAutoMode(bool isAuto) override {(void)isAuto;}
+    bool AutoSelectBitRate(uint32_t bitRate) override { return bitRate == 0 ? false : true; }
+    size_t GetSegmentOffset() override { return 0; }
+    bool GetHLSDiscontinuity() override { return false; }
+    void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr) override
+    {
+        (void)rpInfoPtr;
+    }
+    bool SeekToTime(int64_t seekTime, SeekMode mode) override
+    {
+        (void)seekTime;
+        (void)mode;
+        return seekToTimeResult_;
+    }
+    bool MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode, int32_t streamId) override
+    {
+        (void)seekTime;
+        (void)mode;
+        (void)streamId;
+        return seekToTimeResult_;
+    }
+
+    int64_t duration_ = 1000;
+    Seekable seekable_ = Seekable::SEEKABLE;
+    bool seekToTimeResult_ = true;
+    size_t contentLength_ = 4000;
+};
+}
 
 const uint32_t BUFFERING_SIZE_ = 1024;
 const uint32_t WATERLINE_HIGH_ = 512;
@@ -541,6 +601,142 @@ HWTEST_F(HttpSourcePluginUnitTest, INIT_HTTP_SOURCE_001, TestSize.Level1)
     httpSourcePlugin->SetSource(source);
     httpSourcePlugin->SetCallback(sourceCallback);
     EXPECT_NE(httpSourcePlugin->downloader_, nullptr);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetMediaDuration_001, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    int64_t mediaDuration = 1000;
+    Status status = httpSourcePlugin->SetMediaDuration(mediaDuration);
+    EXPECT_EQ(status, Status::OK);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetMediaDuration_002, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    int64_t mediaDuration = 0;
+    Status status = httpSourcePlugin->SetMediaDuration(mediaDuration);
+    EXPECT_EQ(status, Status::OK);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetMediaDuration_003, TestSize.Level1)
+{
+    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(FLV_SEGMENT_BASE);
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    httpSourcePlugin->SetSource(source);
+    httpSourcePlugin->SetCallback(sourceCallback);
+    int64_t mediaDuration = 1000;
+    Status status = httpSourcePlugin->SetMediaDuration(mediaDuration);
+    EXPECT_EQ(status, Status::OK);
+    EXPECT_NE(httpSourcePlugin->downloader_, nullptr);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetMediaDuration_004, TestSize.Level1)
+{
+    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(FLV_SEGMENT_BASE);
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    httpSourcePlugin->SetSource(source);
+    httpSourcePlugin->SetCallback(sourceCallback);
+    int64_t mediaDuration = 0;
+    Status status = httpSourcePlugin->SetMediaDuration(mediaDuration);
+    EXPECT_EQ(status, Status::OK);
+    EXPECT_NE(httpSourcePlugin->downloader_, nullptr);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SeekToTime_001, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    Status status = httpSourcePlugin->SeekToTime(1000, SeekMode::SEEK_NEXT_SYNC);
+    EXPECT_EQ(status, Status::ERROR_NULL_POINTER);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SeekToTime_002, TestSize.Level1)
+{
+    auto mockDownloader = std::make_shared<MockMediaDownloaderForSeek>();
+    mockDownloader->seekable_ = Seekable::UNSEEKABLE;
+    httpSourcePlugin->downloader_ = mockDownloader;
+    Status status = httpSourcePlugin->SeekToTime(1000, SeekMode::SEEK_NEXT_SYNC);
+    EXPECT_EQ(status, Status::ERROR_INVALID_OPERATION);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SeekToTime_003, TestSize.Level1)
+{
+    auto mockDownloader = std::make_shared<MockMediaDownloaderForSeek>();
+    mockDownloader->seekable_ = Seekable::SEEKABLE;
+    mockDownloader->duration_ = 500;
+    httpSourcePlugin->downloader_ = mockDownloader;
+    Status status = httpSourcePlugin->SeekToTime(1000, SeekMode::SEEK_NEXT_SYNC);
+    EXPECT_EQ(status, Status::ERROR_INVALID_PARAMETER);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SeekToTime_004, TestSize.Level1)
+{
+    auto mockDownloader = std::make_shared<MockMediaDownloaderForSeek>();
+    mockDownloader->seekable_ = Seekable::SEEKABLE;
+    mockDownloader->duration_ = 2000;
+    mockDownloader->seekToTimeResult_ = false;
+    httpSourcePlugin->downloader_ = mockDownloader;
+    Status status = httpSourcePlugin->SeekToTime(1000, SeekMode::SEEK_NEXT_SYNC);
+    EXPECT_EQ(status, Status::ERROR_UNKNOWN);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SeekToTime_005, TestSize.Level1)
+{
+    auto mockDownloader = std::make_shared<MockMediaDownloaderForSeek>();
+    mockDownloader->seekable_ = Seekable::SEEKABLE;
+    mockDownloader->duration_ = 2000;
+    mockDownloader->seekToTimeResult_ = true;
+    httpSourcePlugin->downloader_ = mockDownloader;
+    Status status = httpSourcePlugin->SeekToTime(1000, SeekMode::SEEK_NEXT_SYNC);
+    EXPECT_EQ(status, Status::OK);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, MediaSeekTimeByStreamId_001, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    Status status = httpSourcePlugin->MediaSeekTimeByStreamId(1000, SeekMode::SEEK_NEXT_SYNC, 0);
+    EXPECT_EQ(status, Status::ERROR_NULL_POINTER);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, MediaSeekTimeByStreamId_002, TestSize.Level1)
+{
+    auto mockDownloader = std::make_shared<MockMediaDownloaderForSeek>();
+    mockDownloader->seekable_ = Seekable::UNSEEKABLE;
+    httpSourcePlugin->downloader_ = mockDownloader;
+    Status status = httpSourcePlugin->MediaSeekTimeByStreamId(1000, SeekMode::SEEK_NEXT_SYNC, 0);
+    EXPECT_EQ(status, Status::ERROR_INVALID_OPERATION);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, MediaSeekTimeByStreamId_003, TestSize.Level1)
+{
+    auto mockDownloader = std::make_shared<MockMediaDownloaderForSeek>();
+    mockDownloader->seekable_ = Seekable::SEEKABLE;
+    mockDownloader->duration_ = 500;
+    httpSourcePlugin->downloader_ = mockDownloader;
+    Status status = httpSourcePlugin->MediaSeekTimeByStreamId(1000, SeekMode::SEEK_NEXT_SYNC, 0);
+    EXPECT_EQ(status, Status::ERROR_INVALID_PARAMETER);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, MediaSeekTimeByStreamId_004, TestSize.Level1)
+{
+    auto mockDownloader = std::make_shared<MockMediaDownloaderForSeek>();
+    mockDownloader->seekable_ = Seekable::SEEKABLE;
+    mockDownloader->duration_ = 2000;
+    mockDownloader->seekToTimeResult_ = false;
+    httpSourcePlugin->downloader_ = mockDownloader;
+    Status status = httpSourcePlugin->MediaSeekTimeByStreamId(1000, SeekMode::SEEK_NEXT_SYNC, 0);
+    EXPECT_EQ(status, Status::ERROR_UNKNOWN);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, MediaSeekTimeByStreamId_005, TestSize.Level1)
+{
+    auto mockDownloader = std::make_shared<MockMediaDownloaderForSeek>();
+    mockDownloader->seekable_ = Seekable::SEEKABLE;
+    mockDownloader->duration_ = 2000;
+    mockDownloader->seekToTimeResult_ = true;
+    httpSourcePlugin->downloader_ = mockDownloader;
+    Status status = httpSourcePlugin->MediaSeekTimeByStreamId(1000, SeekMode::SEEK_NEXT_SYNC, 0);
+    EXPECT_EQ(status, Status::OK);
 }
 }
 }

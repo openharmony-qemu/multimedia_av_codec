@@ -1394,6 +1394,316 @@ HWTEST_F(HttpMediaDownloaderUnitTest, GET_SEEKABLE_RANGES_006, TestSize.Level1)
     EXPECT_EQ(res.size(), 0);
 }
 
+HWTEST_F(HttpMediaDownloaderUnitTest, GET_SEEKABLE_RANGES_007, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
+    ASSERT_NE(downloader, nullptr);
+    DataSaveFunc saveData = [](unsigned char *, unsigned int, bool) -> unsigned int {
+        return 0;
+    };
+    StatusCallbackFunc statusCallback = [](
+        OHOS::Media::Plugins::HttpPlugin::DownloadStatus,
+        std::shared_ptr<OHOS::Media::Plugins::HttpPlugin::Downloader>&,
+        std::shared_ptr<OHOS::Media::Plugins::HttpPlugin::DownloadRequest>&
+    ) {};
+    auto mockReq = std::make_shared<MockDownloadRequest>("test", saveData, statusCallback);
+    EXPECT_CALL(*mockReq, GetFileContentLength())
+        .WillRepeatedly(testing::Return(static_cast<size_t>(1024)));
+    EXPECT_CALL(*mockReq, IsServerAcceptRange())
+        .WillRepeatedly(testing::Return(true));
+    EXPECT_CALL(*mockReq, IsChunkedVod())
+        .WillRepeatedly(testing::Return(false));
+    EXPECT_CALL(*mockReq, IsEos())
+        .WillRepeatedly(testing::Return(true));
+    EXPECT_CALL(*mockReq, IsChunked(testing::_))
+        .WillRepeatedly(testing::Return(false));
+    downloader->downloadRequest_ = mockReq;
+    downloader->isDownloadFinish_ = true;
+    downloader->mediaDuration_ = 1000000;
+    auto res = downloader->GetSeekableRanges();
+    EXPECT_EQ(res.size(), 0);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, GET_SEEKABLE_RANGES_008, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
+    ASSERT_NE(downloader, nullptr);
+    DataSaveFunc saveData = [](unsigned char*, unsigned int, bool) -> unsigned int {
+        return 0;
+    };
+    StatusCallbackFunc statusCallback = [](
+        OHOS::Media::Plugins::HttpPlugin::DownloadStatus,
+        std::shared_ptr<OHOS::Media::Plugins::HttpPlugin::Downloader>&,
+        std::shared_ptr<OHOS::Media::Plugins::HttpPlugin::DownloadRequest>&
+    ) {};
+    auto mockReq = std::make_shared<MockDownloadRequest>("test", saveData, statusCallback);
+    EXPECT_CALL(*mockReq, GetFileContentLength())
+        .WillRepeatedly(testing::Return(static_cast<size_t>(1024)));
+    EXPECT_CALL(*mockReq, IsServerAcceptRange())
+        .WillRepeatedly(testing::Return(true));
+    EXPECT_CALL(*mockReq, IsChunkedVod())
+        .WillRepeatedly(testing::Return(false));
+    EXPECT_CALL(*mockReq, IsEos())
+        .WillRepeatedly(testing::Return(false));
+    EXPECT_CALL(*mockReq, IsChunked(testing::_))
+        .WillRepeatedly(testing::Return(false));
+    downloader->downloadRequest_ = mockReq;
+    downloader->isDownloadFinish_ = false;
+    downloader->mediaDuration_ = 1000000;
+    auto res = downloader->GetSeekableRanges();
+    EXPECT_EQ(res.size(), 0);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, GET_SEEKABLE_RANGES_009, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
+    ASSERT_NE(downloader, nullptr);
+    DataSaveFunc saveData = [](unsigned char*, unsigned int, bool) -> unsigned int {
+        return 0;
+    };
+    StatusCallbackFunc statusCallback = [](
+        OHOS::Media::Plugins::HttpPlugin::DownloadStatus,
+        std::shared_ptr<OHOS::Media::Plugins::HttpPlugin::Downloader>&,
+        std::shared_ptr<OHOS::Media::Plugins::HttpPlugin::DownloadRequest>&
+    ) {};
+    auto mockReq = std::make_shared<MockDownloadRequest>("test", saveData, statusCallback);
+    EXPECT_CALL(*mockReq, GetFileContentLength())
+        .WillRepeatedly(testing::Return(static_cast<size_t>(1024)));
+    EXPECT_CALL(*mockReq, IsServerAcceptRange())
+        .WillRepeatedly(testing::Return(false));
+    EXPECT_CALL(*mockReq, IsChunkedVod())
+        .WillRepeatedly(testing::Return(false));
+    EXPECT_CALL(*mockReq, IsEos())
+        .WillRepeatedly(testing::Return(false));
+    downloader->downloadRequest_ = mockReq;
+    downloader->isDownloadFinish_ = false;
+    downloader->sourceLoader_ = nullptr;
+    auto res = downloader->GetSeekableRanges();
+    EXPECT_EQ(res.size(), 0);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, GET_SEEKABLE_RANGES_010, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
+    ASSERT_NE(downloader, nullptr);
+    DataSaveFunc saveData = [](unsigned char*, unsigned int, bool) -> unsigned int {
+        return 0;
+    };
+    StatusCallbackFunc statusCallback = [](
+        OHOS::Media::Plugins::HttpPlugin::DownloadStatus,
+        std::shared_ptr<OHOS::Media::Plugins::HttpPlugin::Downloader>&,
+        std::shared_ptr<OHOS::Media::Plugins::HttpPlugin::DownloadRequest>&
+    ) {};
+    auto mockReq = std::make_shared<MockDownloadRequest>("test", saveData, statusCallback);
+    auto mockSourceLoader = std::make_shared<MockSourceLoader>();
+    EXPECT_CALL(*mockReq, GetFileContentLength())
+        .WillRepeatedly(testing::Return(static_cast<size_t>(1024)));
+    EXPECT_CALL(*mockReq, IsServerAcceptRange())
+        .WillRepeatedly(testing::Return(false));
+    EXPECT_CALL(*mockReq, IsChunkedVod())
+        .WillRepeatedly(testing::Return(false));
+    EXPECT_CALL(*mockReq, IsEos())
+        .WillRepeatedly(testing::Return(false));
+    EXPECT_CALL(*mockSourceLoader, GetenableOfflineCache())
+        .WillRepeatedly(testing::Return(true));
+    downloader->downloadRequest_ = mockReq;
+    downloader->isDownloadFinish_ = false;
+    downloader->sourceLoader_ = mockSourceLoader;
+    auto res = downloader->GetSeekableRanges();
+    EXPECT_EQ(res.size(), 0);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, GET_SEEKABLE_RANGES_011, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
+    ASSERT_NE(downloader, nullptr);
+    DataSaveFunc saveData = [](unsigned char*, unsigned int, bool) -> unsigned int {
+        return 0;
+    };
+    StatusCallbackFunc statusCallback = [](
+        OHOS::Media::Plugins::HttpPlugin::DownloadStatus,
+        std::shared_ptr<OHOS::Media::Plugins::HttpPlugin::Downloader>&,
+        std::shared_ptr<OHOS::Media::Plugins::HttpPlugin::DownloadRequest>&
+    ) {};
+    auto mockReq = std::make_shared<MockDownloadRequest>("test", saveData, statusCallback);
+    auto mockSourceLoader = std::make_shared<MockSourceLoader>();
+    EXPECT_CALL(*mockReq, GetFileContentLength())
+        .WillRepeatedly(testing::Return(static_cast<size_t>(1024)));
+    EXPECT_CALL(*mockReq, IsServerAcceptRange())
+        .WillRepeatedly(testing::Return(false));
+    EXPECT_CALL(*mockReq, IsChunkedVod())
+        .WillRepeatedly(testing::Return(false));
+    EXPECT_CALL(*mockReq, IsEos())
+        .WillRepeatedly(testing::Return(false));
+    EXPECT_CALL(*mockSourceLoader, GetenableOfflineCache())
+        .WillRepeatedly(testing::Return(true));
+    downloader->downloadRequest_ = mockReq;
+    downloader->isDownloadFinish_ = false;
+    downloader->sourceLoader_ = mockSourceLoader;
+    downloader->writeOffset_ = 0;
+    downloader->readOffset_ = 0;
+    auto res = downloader->GetSeekableRanges();
+    EXPECT_EQ(res.size(), 0);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, GET_SEEKABLE_RANGES_012, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
+    ASSERT_NE(downloader, nullptr);
+    DataSaveFunc saveData = [](unsigned char*, unsigned int, bool) -> unsigned int {
+        return 0;
+    };
+    StatusCallbackFunc statusCallback = [](
+        OHOS::Media::Plugins::HttpPlugin::DownloadStatus,
+        std::shared_ptr<OHOS::Media::Plugins::HttpPlugin::Downloader>&,
+        std::shared_ptr<OHOS::Media::Plugins::HttpPlugin::DownloadRequest>&
+    ) {};
+    auto mockReq = std::make_shared<MockDownloadRequest>("test", saveData, statusCallback);
+    auto mockSourceLoader = std::make_shared<MockSourceLoader>();
+    EXPECT_CALL(*mockReq, GetFileContentLength())
+        .WillRepeatedly(testing::Return(static_cast<size_t>(1024)));
+    EXPECT_CALL(*mockReq, IsServerAcceptRange())
+        .WillRepeatedly(testing::Return(false));
+    EXPECT_CALL(*mockReq, IsChunkedVod())
+        .WillRepeatedly(testing::Return(false));
+    EXPECT_CALL(*mockReq, IsEos())
+        .WillRepeatedly(testing::Return(false));
+    EXPECT_CALL(*mockSourceLoader, GetenableOfflineCache())
+        .WillRepeatedly(testing::Return(true));
+    downloader->downloadRequest_ = mockReq;
+    downloader->isDownloadFinish_ = false;
+    downloader->sourceLoader_ = mockSourceLoader;
+    downloader->writeOffset_ = 100;
+    downloader->mediaDuration_ = 1000000;
+    auto res = downloader->GetSeekableRanges();
+    EXPECT_EQ(res.size(), 0);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, GET_SEEKABLE_RANGES_013, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
+    ASSERT_NE(downloader, nullptr);
+    DataSaveFunc saveData = [](unsigned char*, unsigned int, bool) -> unsigned int {
+        return 0;
+    };
+    StatusCallbackFunc statusCallback = [](
+        OHOS::Media::Plugins::HttpPlugin::DownloadStatus,
+        std::shared_ptr<OHOS::Media::Plugins::HttpPlugin::Downloader>&,
+        std::shared_ptr<OHOS::Media::Plugins::HttpPlugin::DownloadRequest>&
+    ) {};
+    auto mockReq = std::make_shared<MockDownloadRequest>("test", saveData, statusCallback);
+    auto mockSourceLoader = std::make_shared<MockSourceLoader>();
+    EXPECT_CALL(*mockReq, GetFileContentLength())
+        .WillRepeatedly(testing::Return(static_cast<size_t>(1024)));
+    EXPECT_CALL(*mockReq, IsServerAcceptRange())
+        .WillRepeatedly(testing::Return(false));
+    EXPECT_CALL(*mockReq, IsChunkedVod())
+        .WillRepeatedly(testing::Return(false));
+    EXPECT_CALL(*mockReq, IsEos())
+        .WillRepeatedly(testing::Return(false));
+    EXPECT_CALL(*mockSourceLoader, GetenableOfflineCache())
+        .WillRepeatedly(testing::Return(true));
+    downloader->downloadRequest_ = mockReq;
+    downloader->isDownloadFinish_ = false;
+    downloader->sourceLoader_ = mockSourceLoader;
+    downloader->writeOffset_ = 10;
+    auto res = downloader->GetSeekableRanges();
+    EXPECT_EQ(res.size(), 0);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, GET_SEEKABLE_RANGES_014, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
+    ASSERT_NE(downloader, nullptr);
+    DataSaveFunc saveData = [](unsigned char*, unsigned int, bool) -> unsigned int {
+        return 0;
+    };
+    StatusCallbackFunc statusCallback = [](
+        OHOS::Media::Plugins::HttpPlugin::DownloadStatus,
+        std::shared_ptr<OHOS::Media::Plugins::HttpPlugin::Downloader>&,
+        std::shared_ptr<OHOS::Media::Plugins::HttpPlugin::DownloadRequest>&
+    ) {};
+    auto mockReq = std::make_shared<MockDownloadRequest>("test", saveData, statusCallback);
+    auto mockSourceLoader = std::make_shared<MockSourceLoader>();
+    EXPECT_CALL(*mockReq, GetFileContentLength())
+        .WillRepeatedly(testing::Return(static_cast<size_t>(1024)));
+    EXPECT_CALL(*mockReq, IsServerAcceptRange())
+        .WillRepeatedly(testing::Return(false));
+    EXPECT_CALL(*mockReq, IsChunkedVod())
+        .WillRepeatedly(testing::Return(false));
+    EXPECT_CALL(*mockReq, IsEos())
+        .WillRepeatedly(testing::Return(false));
+    EXPECT_CALL(*mockSourceLoader, GetenableOfflineCache())
+        .WillRepeatedly(testing::Return(true));
+    downloader->downloadRequest_ = mockReq;
+    downloader->isDownloadFinish_ = false;
+    downloader->sourceLoader_ = mockSourceLoader;
+    downloader->writeOffset_ = 1000;
+    downloader->mediaDuration_ = 1000000;
+    auto res = downloader->GetSeekableRanges();
+    EXPECT_EQ(res.size(), 0);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, GET_SEEKABLE_RANGES_015, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
+    ASSERT_NE(downloader, nullptr);
+    downloader->Init();
+    DataSaveFunc saveData = [](unsigned char*, unsigned int, bool) -> unsigned int { return 0; };
+    StatusCallbackFunc statusCallback = [](
+        OHOS::Media::Plugins::HttpPlugin::DownloadStatus,
+        std::shared_ptr<OHOS::Media::Plugins::HttpPlugin::Downloader>&,
+        std::shared_ptr<OHOS::Media::Plugins::HttpPlugin::DownloadRequest>&
+    ) {};
+    auto mockReq = std::make_shared<MockDownloadRequest>("test", saveData, statusCallback);
+    auto mockSourceLoader = std::make_shared<MockSourceLoader>();
+    EXPECT_CALL(*mockReq, GetFileContentLength())
+        .WillRepeatedly(testing::Return(static_cast<size_t>(1024)));
+    EXPECT_CALL(*mockReq, IsServerAcceptRange())
+        .WillRepeatedly(testing::Return(false));
+    EXPECT_CALL(*mockReq, IsChunkedVod())
+        .WillRepeatedly(testing::Return(false));
+    EXPECT_CALL(*mockReq, IsEos())
+        .WillRepeatedly(testing::Return(false));
+    EXPECT_CALL(*mockSourceLoader, GetenableOfflineCache())
+        .WillRepeatedly(testing::Return(true));
+    downloader->downloadRequest_ = mockReq;
+    downloader->isDownloadFinish_ = false;
+    downloader->sourceLoader_ = mockSourceLoader;
+    downloader->writeOffset_ = 1;
+    downloader->readOffset_ = 0;
+    downloader->mediaDuration_ = 1000000;
+    auto res = downloader->GetSeekableRanges();
+    EXPECT_EQ(res.size(), 0);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, GET_SEEKABLE_RANGES_016, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
+    ASSERT_NE(downloader, nullptr);
+    downloader->Init();
+    DataSaveFunc saveData = [](unsigned char*, unsigned int, bool) -> unsigned int { return 0; };
+    StatusCallbackFunc statusCallback = [](
+        OHOS::Media::Plugins::HttpPlugin::DownloadStatus,
+        std::shared_ptr<OHOS::Media::Plugins::HttpPlugin::Downloader>&,
+        std::shared_ptr<OHOS::Media::Plugins::HttpPlugin::DownloadRequest>&
+    ) {};
+    auto mockReq = std::make_shared<MockDownloadRequest>("test", saveData, statusCallback);
+    EXPECT_CALL(*mockReq, GetFileContentLength())
+        .WillRepeatedly(testing::Return(static_cast<size_t>(1024)));
+    EXPECT_CALL(*mockReq, IsServerAcceptRange())
+        .WillRepeatedly(testing::Return(false));
+    EXPECT_CALL(*mockReq, IsChunkedVod())
+        .WillRepeatedly(testing::Return(false));
+    EXPECT_CALL(*mockReq, IsEos())
+        .WillRepeatedly(testing::Return(false));
+    downloader->downloadRequest_ = mockReq;
+    downloader->isDownloadFinish_ = false;
+    downloader->mediaDuration_ = 0;
+    auto res = downloader->GetSeekableRanges();
+    EXPECT_EQ(res.size(), 0);
+}
+
 HWTEST_F(HttpMediaDownloaderUnitTest, TEST_RARE_SPEED_NORMAL, TestSize.Level1)
 {
     auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);

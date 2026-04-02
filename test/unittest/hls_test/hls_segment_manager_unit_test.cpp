@@ -106,6 +106,63 @@ public:
     Plugins::PluginEventType lastEventType_ {Plugins::PluginEventType::CLIENT_ERROR};
 };
 
+class TestPlayListDownloader : public PlayListDownloader {
+public:
+    bool returnInPlaylist_ = true;
+
+    void Open(const std::string& url, const std::map<std::string, std::string>& httpHeaderMap) override {}
+    void Clone(std::shared_ptr<PlayListDownloader> other) override {}
+    void UpdateManifest() override {}
+    void ParseManifest(const std::string& location, bool isPreParse = false) override {}
+    void SetPlayListCallback(std::weak_ptr<PlayListChangeCallback> callback) override {}
+    int64_t GetDuration() const override { return 0; }
+    std::pair<int64_t, bool> GetStartInfo() const override { return {0, false}; }
+    Seekable GetSeekable() const override { return Seekable::SEEKABLE; }
+    void SelectBitRate(uint32_t bitRate) override {}
+    std::vector<uint32_t> GetBitRates() override { return {}; }
+    uint64_t GetCurrentBitRate() override { return 0; }
+    int GetVideoHeight() override { return 0; }
+    int GetVideoWidth() override { return 0; }
+    bool IsBitrateSame(uint32_t bitRate) override { return false; }
+    bool IsMediaSame(uint32_t streamId, HlsSegmentType mediaType) override { return false; }
+    uint32_t GetCurBitrate() override { return 0; }
+    bool IsLive() const override { return false; }
+    void SetMimeType(const std::string& mimeType) override {}
+    void PreParseManifest(const std::string& location) override {}
+    bool IsParseAndNotifyFinished() override { return true; }
+    bool IsParseFinished() override { return true; }
+    bool IsFragmentInCurrentPlayList(const std::string& url, const std::string& rangeUrl,
+        uint32_t offset, uint32_t length) override
+    {
+        (void)url;
+        (void)rangeUrl;
+        (void)offset;
+        (void)length;
+        return returnInPlaylist_;
+    }
+    void SetInitResolution(uint32_t width, uint32_t height) override {}
+    void GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate = false) override {}
+    bool ReadFmp4Header(uint8_t *buffer, uint32_t wantLen, uint32_t &readLen, uint32_t streamId) override
+    {
+        return false;
+    }
+    bool IsHlsFmp4() override { return false; }
+    bool IsPureByteRange() override { return false; }
+    void ReOpen(void) override {}
+    std::shared_ptr<StreamInfo> GetStreamInfoById(int32_t streamId) override { return nullptr; }
+    int32_t GetDefaultMediaStreamId(HlsSegmentType mediaType) override { return 0; }
+    void SelectMedia(int32_t streamId, HlsSegmentType mediaType) override {}
+    void SetDefaultMedia(HlsSegmentType mediaType) override {}
+    void UpdateMedia(HlsSegmentType mediaType) override {}
+    uint32_t GetCurStreamId() override { return 0; }
+    void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr,
+        bool fmp4 = false) override {}
+    bool IsLiveEnd() override { return false; }
+    void UpdateStreamInfo() override {}
+    HlsSegmentType GetSegType(uint32_t streamId) override { return HlsSegmentType::SEG_AUDIO; }
+    std::shared_ptr<AesDecryptor> GetAesDecryptor(uint64_t keyIndex) override { return nullptr; }
+};
+
 void HlsSegmentManagerUnitTest::SetUpTestCase(void)
 {
     g_server = std::make_unique<MediaAVCodec::HttpServerDemo>();
@@ -2574,5 +2631,280 @@ HWTEST_F(HlsSegmentManagerUnitTest, SELECT_MEDIA_002, TestSize.Level1)
     bool ret = downloader->SelectMedia(1, HlsSegmentType::SEG_AUDIO);
     downloader->Close(true);
     EXPECT_TRUE(ret);
+}
+
+HWTEST_F(HlsSegmentManagerUnitTest, RequestNewTs_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_VIDEO);
+    downloader->Init();
+    std::string testUrl = TEST_URI_PATH + "test_hls/testMutiStream.m3u8";
+    auto statusCallback = [] (DownloadStatus&&, std::shared_ptr<Downloader>&,
+        std::shared_ptr<DownloadRequest>&) {};
+    downloader->SetStatusCallback(statusCallback);
+    downloader->Open(testUrl, httpHeader);
+    OSAL::SleepFor(200);
+    downloader->GetSeekable();
+    SetDefaultStreamId(downloader);
+    
+    PlayInfo item;
+    item.url_ = "test.ts";
+    item.streamId_ = 0;
+    item.duration_ = 10.0;
+    item.offset_ = 0;
+    item.length_ = 1000;
+    item.keyIndex_ = 0;
+    
+    uint64_t seekTime = 5000;
+    double totalDuration = 100.0;
+    double hstTime = 50.0;
+    
+    // Test SEEK_PREVIOUS_SYNC mode with lastTotalDuration <= seekTime
+    auto res = downloader->RequestNewTs(seekTime, SeekMode::SEEK_PREVIOUS_SYNC, totalDuration, hstTime, item);
+    downloader->Close(true);
+    EXPECT_EQ(res, -1);
+}
+
+HWTEST_F(HlsSegmentManagerUnitTest, RequestNewTs_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_VIDEO);
+    downloader->Init();
+    std::string testUrl = TEST_URI_PATH + "test_hls/testMutiStream.m3u8";
+    auto statusCallback = [] (DownloadStatus&&, std::shared_ptr<Downloader>&,
+        std::shared_ptr<DownloadRequest>&) {};
+    downloader->SetStatusCallback(statusCallback);
+    downloader->Open(testUrl, httpHeader);
+    OSAL::SleepFor(200);
+    downloader->GetSeekable();
+    SetDefaultStreamId(downloader);
+    
+    PlayInfo item;
+    item.url_ = "test.ts";
+    item.streamId_ = 0;
+    item.duration_ = 10.0;
+    item.offset_ = 0;
+    item.length_ = 1000;
+    item.keyIndex_ = 0;
+    
+    uint64_t seekTime = 100;
+    double totalDuration = 100.0;
+    double hstTime = 50.0;
+    
+    // Test else branch (SEEK_CLOSEST) with lastTotalDuration > seekTime
+    auto res = downloader->RequestNewTs(seekTime, SeekMode::SEEK_CLOSEST, totalDuration, hstTime, item);
+    downloader->Close(true);
+    EXPECT_EQ(res, -1);
+}
+
+HWTEST_F(HlsSegmentManagerUnitTest, RequestNewTs_003, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_VIDEO);
+    downloader->Init();
+    std::string testUrl = TEST_URI_PATH + "test_hls/testMutiStream.m3u8";
+    auto statusCallback = [] (DownloadStatus&&, std::shared_ptr<Downloader>&,
+        std::shared_ptr<DownloadRequest>&) {};
+    downloader->SetStatusCallback(statusCallback);
+    downloader->Open(testUrl, httpHeader);
+    OSAL::SleepFor(200);
+    downloader->GetSeekable();
+    
+    PlayInfo item;
+    item.url_ = "test_not_in_playlist.ts";
+    item.streamId_ = 0;
+    item.duration_ = 10.0;
+    item.offset_ = 0;
+    item.length_ = 1000;
+    item.keyIndex_ = 0;
+    
+    uint64_t seekTime = 100;
+    double totalDuration = 100.0;
+    double hstTime = 50.0;
+    
+    // Test inCurrentPlaylist == false branch, should return -1
+    auto res = downloader->RequestNewTs(seekTime, SeekMode::SEEK_CLOSEST, totalDuration, hstTime, item);
+    downloader->Close(true);
+    EXPECT_EQ(res, -1);
+}
+
+HWTEST_F(HlsSegmentManagerUnitTest, RequestNewTs_004, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_VIDEO);
+    downloader->Init();
+    std::string testUrl = TEST_URI_PATH + "test_hls/testMutiStream.m3u8";
+    auto statusCallback = [] (DownloadStatus&&, std::shared_ptr<Downloader>&,
+        std::shared_ptr<DownloadRequest>&) {};
+    downloader->SetStatusCallback(statusCallback);
+    downloader->Open(testUrl, httpHeader);
+    OSAL::SleepFor(200);
+    downloader->GetSeekable();
+    SetDefaultStreamId(downloader);
+    
+    PlayInfo item;
+    item.url_ = "test.ts";
+    item.streamId_ = 0;
+    item.duration_ = 10.0;
+    item.offset_ = 0;
+    item.length_ = 1000;
+    item.keyIndex_ = 0;
+    
+    uint64_t seekTime = 200;
+    double totalDuration = 100.0;
+    double hstTime = 50.0;
+    
+    // Test SEEK_PREVIOUS_SYNC mode with lastTotalDuration > seekTime
+    auto res = downloader->RequestNewTs(seekTime, SeekMode::SEEK_PREVIOUS_SYNC, totalDuration, hstTime, item);
+    downloader->Close(true);
+    EXPECT_EQ(res, -1);
+}
+
+HWTEST_F(HlsSegmentManagerUnitTest, SeekListHelper_001, TestSize.Level1)
+{
+    auto manager = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_VIDEO);
+    manager->Init();
+    auto testPlaylist = std::make_shared<TestPlayListDownloader>();
+    testPlaylist->returnInPlaylist_ = true;
+    manager->playlistDownloader_ = testPlaylist;
+    
+    PlayInfo frag1;
+    frag1.url_ = "test1.ts";
+    frag1.streamId_ = 0;
+    frag1.duration_ = 10.0;
+    frag1.offset_ = 0;
+    frag1.length_ = 1000;
+    manager->seekCandidates_.push_back(frag1);
+    
+    auto result = manager->SeekListHelper(true);
+    EXPECT_EQ(result.size(), 1);
+    EXPECT_EQ(result[0].url_, "test1.ts");
+}
+
+HWTEST_F(HlsSegmentManagerUnitTest, SeekListHelper_002, TestSize.Level1)
+{
+    auto manager = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_VIDEO);
+    manager->Init();
+    auto testPlaylist = std::make_shared<TestPlayListDownloader>();
+    testPlaylist->returnInPlaylist_ = false;
+    manager->playlistDownloader_ = testPlaylist;
+    
+    PlayInfo frag1;
+    frag1.url_ = "test1.ts";
+    frag1.streamId_ = 0;
+    frag1.duration_ = 10.0;
+    frag1.offset_ = 0;
+    frag1.length_ = 1000;
+    manager->seekCandidates_.push_back(frag1);
+    
+    auto result = manager->SeekListHelper(true);
+    EXPECT_EQ(result.size(), 0);
+}
+
+HWTEST_F(HlsSegmentManagerUnitTest, SeekListHelper_003, TestSize.Level1)
+{
+    auto manager = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_VIDEO);
+    manager->Init();
+    manager->playlistDownloader_ = nullptr;
+    
+    PlayInfo frag1;
+    frag1.url_ = "test1.ts";
+    frag1.streamId_ = 0;
+    frag1.duration_ = 10.0;
+    frag1.offset_ = 0;
+    frag1.length_ = 1000;
+    manager->seekCandidates_.push_back(frag1);
+    
+    auto result = manager->SeekListHelper(true);
+    EXPECT_EQ(result.size(), 0);
+}
+
+HWTEST_F(HlsSegmentManagerUnitTest, SeekListHelper_004, TestSize.Level1)
+{
+    auto manager = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_VIDEO);
+    manager->Init();
+    auto testPlaylist = std::make_shared<TestPlayListDownloader>();
+    manager->playlistDownloader_ = testPlaylist;
+    
+    auto result = manager->SeekListHelper(true);
+    EXPECT_EQ(result.size(), 0);
+}
+
+HWTEST_F(HlsSegmentManagerUnitTest, SeekListHelper_005, TestSize.Level1)
+{
+    auto manager = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_VIDEO);
+    manager->Init();
+    auto testPlaylist = std::make_shared<TestPlayListDownloader>();
+    testPlaylist->returnInPlaylist_ = true;
+    manager->playlistDownloader_ = testPlaylist;
+    
+    PlayInfo frag1, frag2, frag3;
+    frag1.url_ = "test1.ts";
+    frag1.streamId_ = 0;
+    frag1.duration_ = 10.0;
+    frag2.url_ = "test2.ts";
+    frag2.streamId_ = 0;
+    frag2.duration_ = 10.0;
+    frag3.url_ = "test3.ts";
+    frag3.streamId_ = 0;
+    frag3.duration_ = 10.0;
+    manager->seekCandidates_.push_back(frag1);
+    manager->seekCandidates_.push_back(frag2);
+    manager->seekCandidates_.push_back(frag3);
+    
+    auto result = manager->SeekListHelper(true);
+    EXPECT_EQ(result.size(), 3);
+}
+
+HWTEST_F(HlsSegmentManagerUnitTest, SeekListHelper_006, TestSize.Level1)
+{
+    auto manager = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_VIDEO);
+    manager->Init();
+    
+    auto result = manager->SeekListHelper(false);
+    EXPECT_EQ(result.size(), 0);
+}
+
+HWTEST_F(HlsSegmentManagerUnitTest, SeekListHelper_007, TestSize.Level1)
+{
+    auto manager = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_VIDEO);
+    manager->Init();
+    
+    PlayInfo item1, item2;
+    item1.url_ = "vod1.ts";
+    item1.streamId_ = 0;
+    item1.duration_ = 10.0;
+    item2.url_ = "vod2.ts";
+    item2.streamId_ = 0;
+    item2.duration_ = 10.0;
+    manager->backPlayList_.push_back(item1);
+    manager->backPlayList_.push_back(item2);
+    
+    auto result = manager->SeekListHelper(false);
+    EXPECT_EQ(result.size(), 2);
+    EXPECT_EQ(result[0].url_, "vod1.ts");
+    EXPECT_EQ(result[1].url_, "vod2.ts");
+}
+
+HWTEST_F(HlsSegmentManagerUnitTest, SeekListHelper_008, TestSize.Level1)
+{
+    auto manager = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_VIDEO);
+    manager->Init();
+    auto testPlaylist = std::make_shared<TestPlayListDownloader>();
+    testPlaylist->returnInPlaylist_ = true;
+    manager->playlistDownloader_ = testPlaylist;
+    
+    PlayInfo frag1, frag2;
+    frag1.url_ = "test1.ts";
+    frag1.streamId_ = 0;
+    frag1.duration_ = 10.0;
+    frag1.offset_ = 0;
+    frag1.length_ = 1000;
+    frag2.url_ = "test2.ts";
+    frag2.streamId_ = 0;
+    frag2.duration_ = 10.0;
+    frag2.offset_ = 1000;
+    frag2.length_ = 1000;
+    manager->seekCandidates_.push_back(frag1);
+    manager->seekCandidates_.push_back(frag2);
+    
+    auto result = manager->SeekListHelper(true);
+    EXPECT_EQ(result.size(), 2);
 }
 }

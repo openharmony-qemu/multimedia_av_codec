@@ -668,7 +668,8 @@ HWTEST_F(SourceTest, GetSeekableRanges_001, TestSize.Level1)
     ranges.push_back(range);
     EXPECT_CALL(*(mockSourcePlugin_), GetSeekableRanges()).WillRepeatedly(Return(ranges));
     EXPECT_CALL(*(mockSourcePlugin_), Deinit()).WillOnce(Return(Status::OK));
-    source_->GetSeekableRanges();
+    auto ret = source_->GetSeekableRanges();
+    EXPECT_EQ(ret.size(), 1);
 }
 
 /**
