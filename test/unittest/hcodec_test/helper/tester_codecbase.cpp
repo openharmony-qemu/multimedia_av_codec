@@ -184,7 +184,7 @@ bool TesterCodecBase::ConfigureEncoder()
     if (opt_.rateMode.has_value()) {
         fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, opt_.rateMode.value());
     }
-    if (opt_.bitRate.has_value()) {
+        if (opt_.bitRate.has_value()) {
         fmt.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, opt_.bitRate.value());
     }
     if (opt_.quality.has_value()) {
@@ -195,6 +195,9 @@ bool TesterCodecBase::ConfigureEncoder()
     }
     if (opt_.maxBitrate.has_value()) {
         fmt.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, opt_.maxBitrate.value());
+    }
+    if (opt_.maxInputBufferCount.has_value()) {
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT, opt_.maxInputBufferCount.value());
     }
     if (opt_.targetQp.has_value()) {
         fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TARGET_QP, opt_.targetQp.value());

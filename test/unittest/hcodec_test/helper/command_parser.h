@@ -128,7 +128,7 @@ struct CommandOpt {
     std::optional<int32_t> iFrameInterval;
     std::optional<int> profile;
     std::optional<VideoEncodeBitrateMode> rateMode;
-    std::optional<uint32_t> bitRate;  // bps
+        std::optional<uint32_t> bitRate;  // bps
     std::optional<uint32_t> quality;
     std::optional<QPRange> qpRange;
     std::optional<uint32_t> ltrListLen;
@@ -145,6 +145,7 @@ struct CommandOpt {
     bool enableQPMap = false;
     std::optional<int32_t> gopBMode;
     bool enableROIByNb = false;
+    std::optional<int32_t> maxInputBufferCount;
 
     // decoder only
     bool decThenEnc = false;
