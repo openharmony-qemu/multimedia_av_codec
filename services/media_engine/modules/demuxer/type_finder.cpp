@@ -36,7 +36,7 @@ namespace {
 
 const int32_t WAIT_TIME = 5;
 const uint32_t DEFAULT_SNIFF_SIZE = 4096 * 4;
-constexpr int32_t MAX_TRY_TIMES = 5;
+constexpr int32_t MAX_TRY_TIMES = 20;
 
 void ToLower(std::string& str)
 {
