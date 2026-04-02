@@ -27,6 +27,9 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_MUXER, "BoxParser" };
 
+constexpr uint32_t MOV_TKHD_FLAG_ENABLED    = 0x0001;  // bit 0: track is enabled
+constexpr uint32_t MOV_TKHD_FLAG_IN_MOVIE   = 0x0002;  // bit 1: track is used in movie
+
 constexpr int32_t BOX_TYPE_LEN = 4;
 constexpr int32_t BOX_FLAG_LEN = 3;
 constexpr float LATITUDE_MIN = -90.0f;
@@ -430,7 +433,11 @@ std::shared_ptr<BasicBox> BoxParser::TrakBoxGenerate(std::shared_ptr<BasicTrack>
 
 std::shared_ptr<BasicBox> BoxParser::TkhdBoxGenerate(std::shared_ptr<BasicTrack> track)
 {
-    std::shared_ptr<TkhdBox> tkhdBox = std::make_shared<TkhdBox>(0, "tkhd");
+    uint32_t flags = MOV_TKHD_FLAG_IN_MOVIE;
+    if (enabledTrackIds_.count(track->GetTrackId()) > 0) {
+        flags |= MOV_TKHD_FLAG_ENABLED;
+    }
+    std::shared_ptr<TkhdBox> tkhdBox = std::make_shared<TkhdBox>(0, "tkhd", 0, flags);
     tkhdBox->creationTime_ = 0;
     tkhdBox->modificationTime_ = 0;
     tkhdBox->trackIndex_ = static_cast<uint32_t>(track->GetTrackId());

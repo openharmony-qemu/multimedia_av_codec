@@ -17,6 +17,7 @@
 #include <functional>
 #include <sys/types.h>
 #include <algorithm>
+#include <set>
 #include <fcntl.h>
 #include <ctime>
 #include <iomanip>
@@ -391,6 +392,7 @@ Status Mpeg4MuxerPlugin::Start()
     FALSE_RETURN_V_MSG_E(mdatPos_ == 0, Status::ERROR_WRONG_STATE, "Start failed! muxer has start!");
     FALSE_RETURN_V_MSG_E(io_ != nullptr, Status::ERROR_INVALID_OPERATION, "data sink is not set");
     hasGltf_ = CheckGltfParam(param_);
+    EnableTracks();
     return WriteHeader();
 }
 
@@ -567,6 +569,33 @@ void Mpeg4MuxerPlugin::WriteFileLevelMetafBox()
     auto metaBox = boxParser_->FileLevelMetaBoxGenerate(param_);
     metaBox->GetSize();
     metaBox->Write(io_);
+}
+
+void Mpeg4MuxerPlugin::EnableTracks()
+{
+    if (boxParser_ == nullptr) {
+        MEDIA_LOG_W("boxParser_ is null, skip EnableTracks");
+        return;
+    }
+    std::set<int32_t> enabledTrackIds;
+    std::set<MediaType> seenTypes;
+
+    for (auto& track : tracks_) {
+        if (track->IsAuxiliary()) {
+            continue;
+        }
+        MediaType type = track->GetMediaType();
+        if (type != MediaType::AUDIO && type != MediaType::VIDEO && type != MediaType::TIMEDMETA) {
+            continue;
+        }
+        if (seenTypes.find(type) == seenTypes.end()) {
+            seenTypes.insert(type);
+            enabledTrackIds.insert(track->GetTrackId());
+            MEDIA_LOG_I("track %{public}d (type %{public}d) set as enabled",
+                track->GetTrackId(), static_cast<int>(type));
+        }
+    }
+    boxParser_->SetEnabledTracks(enabledTrackIds);
 }
 } // Mpeg4
 } // namespace Plugins

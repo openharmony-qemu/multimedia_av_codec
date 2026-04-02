@@ -16,6 +16,7 @@
 #ifndef BOX_PARSER_H
 #define BOX_PARSER_H
 
+#include <set>
 #include "basic_box.h"
 #include "basic_track.h"
 
@@ -37,6 +38,7 @@ public:
     void AddMoovUdtaGeoTag(float latitude, float longitude, bool needGenerate, float altitude, bool hasAltitude);
     void AddMoovUdtaMetaBox();
     void SetEdtsBoxFlag(bool flag) {enableEdtsBox_ = flag;}
+    void SetEnabledTracks(const std::set<int32_t>& enabledTrackIds) { enabledTrackIds_ = enabledTrackIds; }
     std::shared_ptr<BasicBox> FileLevelMetaBoxGenerate(const std::shared_ptr<Meta> &param);
 
 public:
@@ -69,6 +71,7 @@ private:
     uint32_t fileType_;
     std::shared_ptr<BasicBox> moov_ = nullptr;
     bool enableEdtsBox_ = true;
+    std::set<int32_t> enabledTrackIds_;  // 存储需要设置 enabled 标志的轨道 ID
 };
 } // Mpeg4
 } // Plugins

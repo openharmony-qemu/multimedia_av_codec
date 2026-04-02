@@ -53,6 +53,7 @@ private:
     bool CheckGltfParam(std::shared_ptr<Meta> &param);
     void WriteMdatSize();
     void WriteFileLevelMetafBox();
+    void EnableTracks();
 
 private:
     std::shared_ptr<AVIOStream> io_ = nullptr;
