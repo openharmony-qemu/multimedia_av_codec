@@ -59,7 +59,7 @@ int32_t HEncoder::OnConfigure(const Format &format)
 
     (void)ConfigureOutputBitrate(format);
     (void)SetColorAspects(format);
-        (void)SetProcessName();
+    (void)SetProcessName();
     (void)SetFrameRateAdaptiveMode(format);
     CheckIfEnableCb(format);
     ret = SetTemperalLayer(format);
@@ -94,7 +94,7 @@ void HEncoder::EnableVariableFrameRate(const Format &format)
 {
     int32_t enableVariableFrameRate = 0;
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_PTS_BASED_RATECONTROL, enableVariableFrameRate)) {
-HLOGE("fail to get video_encoder_enable_pts_based_ratecontrol");
+        HLOGE("fail to get video_encoder_enable_pts_based_ratecontrol");
         return;
     }
     HLOGI("video_encoder_enable_pts_based_ratecontrol flag is %d", enableVariableFrameRate);
@@ -158,7 +158,7 @@ int32_t HEncoder::SetLTRParam(const Format &format)
     }
     CodecHDI::VideoFeature ltrFeature =
         HCodecList::FindFeature(caps_.port.video.features, CodecHDI::VIDEO_FEATURE_LTR);
-if (!ltrFeature.support || ltrFeature.extendInfo.empty()) {
+    if (!ltrFeature.support || ltrFeature.extendInfo.empty()) {
         HLOGW("platform not support LTR");
         return AVCS_ERR_OK;
     }
@@ -289,7 +289,7 @@ int32_t HEncoder::SetTemperalLayer(const Format &format)
         (enableTemporalScale == 0)) {
         return AVCS_ERR_OK;
     }
-if (!HCodecList::FindFeature(caps_.port.video.features, CodecHDI::VIDEO_FEATURE_TSVC).support) {
+    if (!HCodecList::FindFeature(caps_.port.video.features, CodecHDI::VIDEO_FEATURE_TSVC).support) {
         HLOGW("platform not support temporal scale");
         return AVCS_ERR_OK;
     }
@@ -473,12 +473,6 @@ int32_t HEncoder::SetupPort(const Format &format, std::optional<double> &frameRa
     PortInfo inputPortInfo = {static_cast<uint32_t>(width), static_cast<uint32_t>(height),
                               OMX_VIDEO_CodingUnused, configuredFmt_, frameRate.value()};
     CalcInputBufSize(inputPortInfo, configuredFmt_.innerFmt);
-
-    int32_t inputBufferCount = 0;
-    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT, inputBufferCount)) {
-        inputPortInfo.inputBufferCount = inputBufferCount;
-    }
-        
     int32_t ret = SetVideoPortInfo(OMX_DirInput, inputPortInfo);
     if (ret != AVCS_ERR_OK) {
         return ret;
