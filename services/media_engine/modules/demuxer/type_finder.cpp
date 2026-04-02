@@ -36,7 +36,8 @@ namespace {
 
 const int32_t WAIT_TIME = 5;
 const uint32_t DEFAULT_SNIFF_SIZE = 4096 * 4;
-constexpr int32_t MAX_TRY_TIMES = 20;
+constexpr int32_t MAX_TRY_TIMES = 5;
+constexpr int32_t MAX_SNIFF_TRY_TIMES = 20;
 
 void ToLower(std::string& str)
 {
@@ -168,7 +169,7 @@ std::string TypeFinder::SniffMediaType()
     int32_t tryCnt = 0;
     Status ret = Status::OK;
     size_t getDataSize = 0;
-    while (tryCnt < MAX_TRY_TIMES) {
+    while (tryCnt < MAX_SNIFF_TRY_TIMES) {
         buffer->GetMemory()->Reset();
         ret = dataSource->ReadAt(0, buffer, DEFAULT_SNIFF_SIZE);
         getDataSize = buffer->GetMemory()->GetSize();
@@ -181,7 +182,7 @@ std::string TypeFinder::SniffMediaType()
         if (((ret == Status::OK) && (getDataSize >= DEFAULT_SNIFF_SIZE)) ||
             ((ret != Status::OK) && (ret != Status::ERROR_AGAIN) && (ret != Status::ERROR_NOT_ENOUGH_DATA)) ||
             isInterruptNeeded_.load() ||
-            tryCnt == MAX_TRY_TIMES - 1) {
+            tryCnt == MAX_SNIFF_TRY_TIMES - 1) {
             break;
         }
         std::unique_lock<std::mutex> lock(mutex_);
