@@ -145,6 +145,7 @@ struct CommandOpt {
     bool enableQPMap = false;
     std::optional<int32_t> gopBMode;
     bool enableROIByNb = false;
+    std::optional<int32_t> maxInputBufferCount;
 
     // decoder only
     bool decThenEnc = false;

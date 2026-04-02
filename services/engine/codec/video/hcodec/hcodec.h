@@ -127,6 +127,7 @@ protected:
         std::optional<PixelFmt> pixelFmt;
         double frameRate;
         std::optional<uint32_t> inputBufSize;
+        std::optional<uint32_t> inputBufferCount;
     };
 
     enum DumpMode : unsigned long {

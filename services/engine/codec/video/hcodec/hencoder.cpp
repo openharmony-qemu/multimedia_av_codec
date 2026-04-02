@@ -473,6 +473,10 @@ int32_t HEncoder::SetupPort(const Format &format, std::optional<double> &frameRa
     PortInfo inputPortInfo = {static_cast<uint32_t>(width), static_cast<uint32_t>(height),
                               OMX_VIDEO_CodingUnused, configuredFmt_, frameRate.value()};
     CalcInputBufSize(inputPortInfo, configuredFmt_.innerFmt);
+    int32_t inputBufferCount = 0;
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT, inputBufferCount)) {
+        inputPortInfo.inputBufferCount = inputBufferCount;
+    }
     int32_t ret = SetVideoPortInfo(OMX_DirInput, inputPortInfo);
     if (ret != AVCS_ERR_OK) {
         return ret;

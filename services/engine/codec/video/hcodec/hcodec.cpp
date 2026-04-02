@@ -639,6 +639,10 @@ int32_t HCodec::SetVideoPortInfo(OMX_DIRTYPE portIndex, const PortInfo& info)
         if (portIndex == OMX_DirInput && info.inputBufSize.has_value()) {
             def.nBufferSize = info.inputBufSize.value();
         }
+        if (portIndex == OMX_DirInput && info.inputBufferCount.has_value()) {
+            def.nBufferCountActual = info.inputBufferCount.value();
+            HLOGI("set input buffer count: %d", def.nBufferCountActual);
+        }
         if (!SetParameter(OMX_IndexParamPortDefinition, def)) {
             HLOGE("set port definition failed");
             return AVCS_ERR_UNKNOWN;
