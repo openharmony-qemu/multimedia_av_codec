@@ -1283,6 +1283,13 @@ extern const char *OH_MD_KEY_AUDIO_SOUNDBED_BITRATE;
 extern const char *OH_MD_KEY_AUDIO_OBJECT_BITRATE;
 
 /**
+ * @brief Key for describing the size of screen capture window rect, value type is int32_t*.
+ *
+ * @since 26.0.0
+ */
+extern const char *OH_MD_KEY_SCREEN_CAPTURE_WINDOW_RECT;
+
+/**
  * @brief Media type.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
