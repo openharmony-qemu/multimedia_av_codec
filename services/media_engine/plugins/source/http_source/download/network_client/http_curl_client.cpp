@@ -422,7 +422,7 @@ Status HttpCurlClient::RequestData(long startPos, int len, const RequestInfo& re
             SetIp();
         }
     }
-    completedCb(clientCode, serverCode, ret);
+    completedCb(clientCode, serverCode, std::string(), ret);
     return ret;
 }
 

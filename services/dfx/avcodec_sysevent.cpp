@@ -20,6 +20,7 @@
 #include <cstring>
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
+#include <openssl/evp.h>
 #include "hisysevent.h"
 #include <nlohmann/json.hpp>
 
@@ -161,6 +162,9 @@ void SourceStatisticsEventWrite(SourceStatisticsReportInfo& sourceReportInfo)
 
     std::lock_guard<std::mutex> lock(sourceMutex);
     Json json;
+    uint8_t hash[EVP_MAX_MD_SIZE];
+    uint32_t hashLen;
+    EVP_Digest(sourceReportInfo.ca_.c_str(), sourceReportInfo.ca_.size(), hash, &hashLen, EVP_sha256(), NULL);
     json["APP_NAME"] = sourceReportInfo.appName_;
     json["MEDIA_EVENTS"]["SOURCE_TYPE"] = sourceReportInfo.sourceType_;
     json["MEDIA_EVENTS"]["SOURCE_URI"] = sourceReportInfo.sourceUri_;
@@ -171,6 +175,8 @@ void SourceStatisticsEventWrite(SourceStatisticsReportInfo& sourceReportInfo)
     json["MEDIA_EVENTS"]["VIDEO_STREAM_CNT"] = sourceReportInfo.videoStreamCnt_;
     json["MEDIA_EVENTS"]["AUDIO_STREAM_CNT"] = sourceReportInfo.audioStreamCnt_;
     json["MEDIA_EVENTS"]["SUBTITLE_STREAM_CNT"] = sourceReportInfo.subtitleCnt_;
+    json["MEDIA_EVENTS"]["CERT_ISSUER_NAMES"] = sourceReportInfo.ca_;
+    json["MEDIA_EVENTS"]["CERT_HASH"] = hash;
     std::string jsonString = json.dump();
     reportInfoList.push_back(jsonString);
     auto currentTime = std::chrono::system_clock::now();

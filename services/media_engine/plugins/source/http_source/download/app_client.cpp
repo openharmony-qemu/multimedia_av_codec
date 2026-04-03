@@ -118,14 +118,14 @@ Status AppClient::RequestData(long startPos, int len, const RequestInfo& request
     Status ret = Status::OK;
     if (requestState_ == LoadingRequestError::LOADING_ERROR_SUCCESS) {
         MEDIA_LOG_I("0x%{public}06" PRIXPTR "AppClient RequestData success", FAKE_POINTER(this));
-        completedCb(clientCode, serverCode, ret);
+        completedCb(clientCode, serverCode, std::string(), ret);
     } else {
         MEDIA_LOG_I("0x%{public}06" PRIXPTR "AppClient RequestData fail, clientCode: " PUBLIC_LOG_D32
             " requestState_: " PUBLIC_LOG_D32, FAKE_POINTER(this), clientCode, requestState_);
  
         Task::SleepInTask(RETRY_SLEEP_TIME);
         ret = Status::ERROR_CLIENT;
-        completedCb(clientCode, serverCode, ret);
+        completedCb(clientCode, serverCode, std::string(), ret);
     }
     requestState_ = LoadingRequestError::LOADING_ERROR_SUCCESS;
     return Status::OK;

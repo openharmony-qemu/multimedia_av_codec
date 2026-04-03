@@ -424,9 +424,11 @@ HWTEST_F(AppClientUnitTest, AppClient_RequestData_StartPosMinusOne, TestSize.Lev
     std::mutex m;
     std::condition_variable cv;
     bool callbackInvoked = false;
-    auto completedCb = [&callbackInvoked, &m, &cv](int32_t clientCode, int32_t serverCode, Status status) {
+    auto completedCb = [&callbackInvoked, &m, &cv](int32_t clientCode, int32_t serverCode, const std::string &ca,
+        Status status) {
         (void)clientCode;
         (void)serverCode;
+        (void)ca;
         (void)status;
         std::unique_lock<std::mutex> lk(m);
         callbackInvoked = true;
@@ -455,9 +457,11 @@ HWTEST_F(AppClientUnitTest, AppClient_RequestData_ZeroLength, TestSize.Level1)
     std::mutex m;
     std::condition_variable cv;
     bool callbackInvoked = false;
-    auto completedCb = [&callbackInvoked, &m, &cv](int32_t clientCode, int32_t serverCode, Status status) {
+    auto completedCb = [&callbackInvoked, &m, &cv](int32_t clientCode, int32_t serverCode, const std::string &ca,
+        Status status) {
         (void)clientCode;
         (void)serverCode;
+        (void)ca;
         (void)status;
         std::unique_lock<std::mutex> lk(m);
         callbackInvoked = true;
@@ -486,9 +490,11 @@ HWTEST_F(AppClientUnitTest, AppClient_RequestData_NegativeLength, TestSize.Level
     std::mutex m;
     std::condition_variable cv;
     bool callbackInvoked = false;
-    auto completedCb = [&callbackInvoked, &m, &cv](int32_t clientCode, int32_t serverCode, Status status) {
+    auto completedCb = [&callbackInvoked, &m, &cv](int32_t clientCode, int32_t serverCode, const std::string &ca,
+        Status status) {
         (void)clientCode;
         (void)serverCode;
+        (void)ca;
         (void)status;
         std::unique_lock<std::mutex> lk(m);
         callbackInvoked = true;
@@ -517,9 +523,11 @@ HWTEST_F(AppClientUnitTest, AppClient_RequestData_LargeLength, TestSize.Level1)
     std::mutex m;
     std::condition_variable cv;
     bool callbackInvoked = false;
-    auto completedCb = [&callbackInvoked, &m, &cv](int32_t clientCode, int32_t serverCode, Status status) {
+    auto completedCb = [&callbackInvoked, &m, &cv](int32_t clientCode, int32_t serverCode, const std::string &ca,
+        Status status) {
         (void)clientCode;
         (void)serverCode;
+        (void)ca;
         (void)status;
         std::unique_lock<std::mutex> lk(m);
         callbackInvoked = true;
@@ -548,9 +556,11 @@ HWTEST_F(AppClientUnitTest, AppClient_RequestData_NegativeStartPos, TestSize.Lev
     std::mutex m;
     std::condition_variable cv;
     bool callbackInvoked = false;
-    auto completedCb = [&callbackInvoked, &m, &cv](int32_t clientCode, int32_t serverCode, Status status) {
+    auto completedCb = [&callbackInvoked, &m, &cv](int32_t clientCode, int32_t serverCode, const std::string &ca,
+        Status status) {
         (void)clientCode;
         (void)serverCode;
+        (void)ca;
         (void)status;
         std::unique_lock<std::mutex> lk(m);
         callbackInvoked = true;
@@ -579,9 +589,11 @@ HWTEST_F(AppClientUnitTest, AppClient_RequestData_LargeStartPos, TestSize.Level1
     std::mutex m;
     std::condition_variable cv;
     bool callbackInvoked = false;
-    auto completedCb = [&callbackInvoked, &m, &cv](int32_t clientCode, int32_t serverCode, Status status) {
+    auto completedCb = [&callbackInvoked, &m, &cv](int32_t clientCode, int32_t serverCode, const std::string &ca,
+        Status status) {
         (void)clientCode;
         (void)serverCode;
+        (void)ca;
         (void)status;
         std::unique_lock<std::mutex> lk(m);
         callbackInvoked = true;
