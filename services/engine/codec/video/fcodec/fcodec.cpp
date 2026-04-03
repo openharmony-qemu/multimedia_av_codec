@@ -41,8 +41,8 @@ constexpr int32_t DEFAULT_MIN_BUFFER_CNT = 2;
 constexpr uint32_t VIDEO_PIX_DEPTH_YUV = 3;
 constexpr int32_t VIDEO_MIN_BUFFER_SIZE = 1474560;
 constexpr int32_t VIDEO_MIN_SIZE = 2;
-constexpr int32_t VIDEO_MAX_WIDTH_SIZE = 4096;
-constexpr int32_t VIDEO_MAX_HEIGHT_SIZE = 4096;
+constexpr int32_t VIDEO_MAX_WIDTH_SIZE = 5120;
+constexpr int32_t VIDEO_MAX_HEIGHT_SIZE = 5120;
 constexpr int32_t DEFAULT_VIDEO_WIDTH = 1920;
 constexpr int32_t DEFAULT_VIDEO_HEIGHT = 1080;
 constexpr uint32_t DEFAULT_TRY_DECODE_TIME = 1;
@@ -1078,6 +1078,9 @@ int32_t FCodec::CheckFormatChange(uint32_t index, int width, int height)
                      height_, height);
         width_ = width;
         height_ = height;
+        CHECK_AND_RETURN_RET_LOG(ValidateVideoResolution(codecName_, width_, height_), AVCS_ERR_INVALID_VAL,
+            "Current decoder:%{public}s dosn't support width of %{public}d and height of %{public}d!",
+            codecName_.c_str(), width_, height_);
         ResetData();
         scale_ = nullptr;
         CalculateBufferSize();

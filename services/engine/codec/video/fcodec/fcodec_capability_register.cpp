@@ -31,10 +31,14 @@ constexpr int32_t VIDEO_MIN_WIDTH_H263_SIZE = 20;
 constexpr int32_t VIDEO_MIN_HEIGHT_H263_SIZE = 20;
 constexpr int32_t VIDEO_INSTANCE_SIZE = 64;
 constexpr int32_t VIDEO_BITRATE_MAX_SIZE = 300000000;
-constexpr int32_t VIDEO_FRAMERATE_MAX_SIZE = 120;
 constexpr int32_t VIDEO_FRAMERATE_DEFAULT_SIZE = 60;
 constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 139264;
 constexpr int32_t VIDEO_BLOCKPERSEC_SIZE = 983040;
+// for avc
+constexpr int32_t AVC_MAX_WIDTH_SIZE = 5120;
+constexpr int32_t AVC_MAX_HEIGHT_SIZE = 5120;
+constexpr int32_t AVC_VIDEO_FRAMERATE_MAX_SIZE = 120;
+constexpr int32_t AVC_VIDEO_BLOCKPERSEC_SIZE = 16711680;
 #ifdef SUPPORT_CODEC_VC1
 constexpr int32_t VC1_ALIGNMENT_SIZE = 2;
 constexpr int32_t VC1_MAX_WIDTH_SIZE = 1920;
@@ -244,9 +248,14 @@ void GetAvcCapProf(std::vector<CapabilityData> &capaArray)
 {
     if (!capaArray.empty()) {
         CapabilityData& capsData = capaArray.back();
-        capsData.frameRate.maxVal = VIDEO_FRAMERATE_MAX_SIZE;
-        capsData.profiles = {static_cast<int32_t>(AVC_PROFILE_BASELINE), static_cast<int32_t>(AVC_PROFILE_MAIN),
-                                    static_cast<int32_t>(AVC_PROFILE_HIGH)};
+        capsData.width.maxVal = AVC_MAX_WIDTH_SIZE;
+        capsData.height.maxVal = AVC_MAX_HEIGHT_SIZE;
+        capsData.supportSwapWidthHeight = true;
+        capsData.frameRate.maxVal = AVC_VIDEO_FRAMERATE_MAX_SIZE;
+        capsData.blockPerSecond.maxVal = AVC_VIDEO_BLOCKPERSEC_SIZE;
+        capsData.profiles = {static_cast<int32_t>(AVC_PROFILE_BASELINE),
+                             static_cast<int32_t>(AVC_PROFILE_MAIN),
+                             static_cast<int32_t>(AVC_PROFILE_HIGH)};
         std::vector<int32_t> levels;
         for (int32_t j = 0; j <= static_cast<int32_t>(AVCLevel::AVC_LEVEL_62); ++j) {
             levels.emplace_back(j);
@@ -511,6 +520,68 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         }
     }
     return AVCS_ERR_OK;
+}
+
+// 获取格式对应的宽高范围
+static ResolutionRange GetResolutionRange(const std::string &codecName)
+{
+    ResolutionRange range = {2, 4096, 2, 4096};
+    if (codecName == AVCodecCodecName::VIDEO_DECODER_AVC_NAME) {
+        range = {2, 5120, 2, 5120}; // H.264/AVC: [2, 5120] x [2, 5120]
+    } else if (codecName == AVCodecCodecName::VIDEO_DECODER_H263_NAME) {
+        range = {20, 2048, 20, 1152}; // H.263: [20, 2048] x [20, 1152]
+    } else if (codecName == AVCodecCodecName::VIDEO_DECODER_MPEG2_NAME) {
+        range = {2, 4096, 2, 4096}; // MPEG-2: [2, 4096] x [2, 4096]
+    } else if (codecName == AVCodecCodecName::VIDEO_DECODER_MPEG4_NAME) {
+        range = {2, 4096, 2, 4096}; // MPEG-4: [2, 4096] x [2, 4096]
+    } else if (codecName == AVCodecCodecName::VIDEO_DECODER_MPEG1_NAME) {
+        range = {2, 4096, 2, 4096}; // MPEG-1: [2, 4096] x [2, 4096]
+#ifdef SUPPORT_CODEC_VC1
+    } else if (codecName == AVCodecCodecName::VIDEO_DECODER_VC1_NAME) {
+        range = {2, 1920, 2, 1080}; // VC-1: [2, 1920] x [2, 1080]
+    } else if (codecName == AVCodecCodecName::VIDEO_DECODER_WVC1_NAME) {
+        range = {2, 1920, 2, 1080}; // WVC1: [2, 1920] x [2, 1080]
+#endif
+    } else if (codecName == AVCodecCodecName::VIDEO_DECODER_WMV3_NAME) {
+        range = {16, 1920, 16, 1080}; // WMV3: [16, 1920] x [16, 1080]
+    } else if (codecName == AVCodecCodecName::VIDEO_DECODER_MJPEG_NAME) {
+        range = {2, 4096, 2, 4096}; // MJPEG: [2, 4096] x [2, 4096]
+    } else if (codecName == AVCodecCodecName::VIDEO_DECODER_DVVIDEO_NAME) {
+        range = {720, 1440, 480, 1080}; // DVVIDEO: [720, 1440] x [480, 1080]
+    } else if (codecName == AVCodecCodecName::VIDEO_DECODER_RAWVIDEO_NAME) {
+        range = {2, 4096, 2, 4096}; // RAWVIDEO: [2, 4096] x [2, 4096]
+    } else if (codecName == AVCodecCodecName::VIDEO_DECODER_CINEPAK_NAME) {
+        range = {4, 1920, 4, 1080}; // CINEPAK: [4, 1920] x [4, 1080]
+    } else if (codecName == AVCodecCodecName::VIDEO_DECODER_MSVIDEO1_NAME) {
+        range = {4, 4096, 4, 4096}; // MSVIDEO1: [4, 4096] x [4, 4096]
+#ifdef SUPPORT_CODEC_RV
+    } else if (codecName == AVCodecCodecName::VIDEO_DECODER_RV30_NAME) {
+        range = {2, 4096, 2, 4096}; // RV30: [2, 4096] x [2, 4096]
+    } else if (codecName == AVCodecCodecName::VIDEO_DECODER_RV40_NAME) {
+        range = {2, 4096, 2, 4096}; // RV40: [2, 4096] x [2, 4096]
+#endif
+    }
+    return range;
+}
+
+bool ValidateVideoResolution(const std::string &codecName, int32_t width, int32_t height)
+{
+    if (width <= 0 || height <= 0) {
+        return false;
+    }
+    ResolutionRange range = GetResolutionRange(codecName);
+    int32_t minVal = std::min(range.minWidth, range.minHeight);
+    int32_t maxVal = std::max(range.maxWidth, range.maxHeight);
+    if (width < minVal || width > maxVal || height < minVal || height > maxVal) {
+        return false;
+    }
+    int64_t pixels = static_cast<int64_t>(width) * static_cast<int64_t>(height);
+    int64_t minPixels = static_cast<int64_t>(range.minWidth) * static_cast<int64_t>(range.minHeight);
+    int64_t maxPixels = static_cast<int64_t>(range.maxWidth) * static_cast<int64_t>(range.maxHeight);
+    if (pixels < minPixels || pixels > maxPixels) {
+        return false;
+    }
+    return true;
 }
 } // namespace Codec
 } // namespace MediaAVCodec

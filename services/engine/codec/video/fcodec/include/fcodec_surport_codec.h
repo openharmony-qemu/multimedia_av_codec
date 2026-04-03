@@ -16,6 +16,7 @@
 #ifndef FCODEC_SURPORT_CODEC_H
 #define FCODEC_SURPORT_CODEC_H
 
+#include "avcodec_info.h"
 #include "avcodec_codec_name.h"
 
 namespace OHOS {
@@ -27,6 +28,14 @@ struct CodecInfo {
     const std::string_view codecName;
     const std::string_view mimeType;
     const char *ffmpegCodec;
+};
+
+// 宽高范围
+struct ResolutionRange {
+    int32_t minWidth;
+    int32_t maxWidth;
+    int32_t minHeight;
+    int32_t maxHeight;
 };
 
 // 解码器支持列表
@@ -54,6 +63,9 @@ constexpr CodecInfo SUPPORT_VCODEC[] = {
 
 // 支持的解码器数量
 constexpr uint32_t SUPPORT_VCODEC_NUM = sizeof(SUPPORT_VCODEC) / sizeof(SUPPORT_VCODEC[0]);
+
+// 宽高合法性校验
+bool ValidateVideoResolution(const std::string& codecName, int32_t width, int32_t height);
 } // namespace Codec
 } // namespace MediaAVCodec
 } // namespace OHOS
