@@ -68,7 +68,6 @@ enum ShortOption {
     OPT_TARGET_QP,
     OPT_GOP_B_MODE,
     OPT_ENABLE_ROI_BY_NB,
-    OPT_MAX_INPUT_BUFFER_COUNT,
     // decoder only
     OPT_DEC_THEN_ENC,
     OPT_ROTATION,
@@ -120,7 +119,6 @@ static struct option g_longOptions[] = {
     {"qpMapValue",      required_argument,  nullptr, OPT_QP_MAP_VALUE},
     {"gopBMode",        required_argument,  nullptr, OPT_GOP_B_MODE},
     {"enableROIByNb",   required_argument,  nullptr, OPT_ENABLE_ROI_BY_NB},
-    {"maxInputBufferCount", required_argument, nullptr, OPT_MAX_INPUT_BUFFER_COUNT},
     // decoder only
     {"rotation",        required_argument,  nullptr, OPT_ROTATION},
     {"decThenEnc",      required_argument,  nullptr, OPT_DEC_THEN_ENC},
@@ -174,7 +172,6 @@ void ShowUsage()
     std::cout << " --layerCnt           target encode layerCnt, H264:2, H265:2 and 3" << std::endl;
     std::cout << " --waterMark          eg. /data/test/a.rgba,1280,720,2:16,16,1280,720" << std::endl;
     std::cout << " --gopBMode           gop mode for b frame. 1(adaptive-b mode), 2(h3b mode)" << std::endl;
-    std::cout << " --maxInputBufferCount max input buffer count for encoder" << std::endl;
     std::cout << " [decoder only]" << std::endl;
     std::cout << " --rotation           rotation angle after decode, eg. 0/90/180/270" << std::endl;
     std::cout << " --paramsFeedback     0 means don't feedback, 1 means feedback" << std::endl;
@@ -314,9 +311,6 @@ CommandOpt Parse(int argc, char *argv[])
                 break;
             case OPT_ENABLE_ROI_BY_NB:
                 opt.enableROIByNb = stol(optarg);
-                break;
-            case OPT_MAX_INPUT_BUFFER_COUNT:
-                opt.maxInputBufferCount = stol(optarg);
                 break;
             // decoder only
             case OPT_DEC_THEN_ENC:
@@ -567,9 +561,6 @@ void CommandOpt::Print() const
     if (waterMark.isSet) {
         TLOGI("dstX %d, dstY %d, dstW %d, dstH %d",
               waterMark.dstX, waterMark.dstY, waterMark.dstW, waterMark.dstH);
-    }
-    if (maxInputBufferCount.has_value()) {
-        TLOGI("maxInputBufferCount %d", maxInputBufferCount.value());
     }
     TLOGI("rotation angle %u", rotation);
     TLOGI("flush cnt %d", flushCnt);
