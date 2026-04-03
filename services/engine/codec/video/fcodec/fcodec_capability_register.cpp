@@ -38,6 +38,7 @@ constexpr int32_t VIDEO_BLOCKPERSEC_SIZE = 983040;
 constexpr int32_t AVC_MAX_WIDTH_SIZE = 5120;
 constexpr int32_t AVC_MAX_HEIGHT_SIZE = 5120;
 constexpr int32_t AVC_VIDEO_FRAMERATE_MAX_SIZE = 120;
+constexpr int32_t AVC_VIDEO_BLOCKPERFRAME_SIZE = 139264;
 constexpr int32_t AVC_VIDEO_BLOCKPERSEC_SIZE = 16711680;
 #ifdef SUPPORT_CODEC_VC1
 constexpr int32_t VC1_ALIGNMENT_SIZE = 2;
@@ -252,6 +253,7 @@ void GetAvcCapProf(std::vector<CapabilityData> &capaArray)
         capsData.height.maxVal = AVC_MAX_HEIGHT_SIZE;
         capsData.supportSwapWidthHeight = true;
         capsData.frameRate.maxVal = AVC_VIDEO_FRAMERATE_MAX_SIZE;
+        capsData.blockPerFrame.maxVal = AVC_VIDEO_BLOCKPERFRAME_SIZE;
         capsData.blockPerSecond.maxVal = AVC_VIDEO_BLOCKPERSEC_SIZE;
         capsData.profiles = {static_cast<int32_t>(AVC_PROFILE_BASELINE),
                              static_cast<int32_t>(AVC_PROFILE_MAIN),
