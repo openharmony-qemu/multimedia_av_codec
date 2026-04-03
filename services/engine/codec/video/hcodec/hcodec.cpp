@@ -282,6 +282,7 @@ int32_t HCodec::GetInputFormat(Format& format)
     }
     IF_TRUE_RETURN_VAL_WITH_MSG(!reply->GetValue("format", format),
         AVCS_ERR_UNKNOWN, "input format not replied");
+    OnGetInputFormat(format);
     return AVCS_ERR_OK;
 }
 
@@ -1078,6 +1079,7 @@ void HCodec::OnSignalEndOfInputStream(const MsgInfo &msg)
 int32_t HCodec::InBufUsToOmx(BufferInfo& info)
 {
     SCOPED_TRACE_FMT("id: %u, pts: %" PRId64, info.bufferId, info.omxBuffer->pts);
+    OnFrameSubmitted(info.omxBuffer->pts);
     if (!gotFirstInput_) {
         HLOGI("got first input, pts = %" PRId64 ", len = %u, flags = 0x%x",
             info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag);

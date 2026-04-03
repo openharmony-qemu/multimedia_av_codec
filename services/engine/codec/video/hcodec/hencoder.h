@@ -127,6 +127,8 @@ private:
     void OnSignalEndOfInputStream(const MsgInfo &msg) override;
     void OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode) override;
     void CheckPts(int64_t currentPts);
+    void OnFrameSubmitted(int64_t pts) override;
+    void OnGetInputFormat(Format& format) override;
 
     // per frame param
     void WrapPerFrameParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
@@ -202,6 +204,7 @@ private:
     int32_t repeatMaxCnt_ = 10;  // default repeat 10 times. <0 means repeat forever. =0 means nothing.
     std::optional<int64_t> pts_;
     static constexpr size_t roiNum = 6;
+    std::unordered_set<int64_t> unfinishedFrames_;
 };
 } // namespace OHOS::MediaAVCodec
 #endif // HCODEC_HENCODER_H
