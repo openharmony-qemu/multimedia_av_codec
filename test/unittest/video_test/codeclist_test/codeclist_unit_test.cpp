@@ -361,8 +361,8 @@ HWTEST_F(CodecListUnitTest, CodecList_GetVideoHeightRangeForWidth_001, TestSize.
     ASSERT_NE(nullptr, capability_) << "video decoder codeclist create fail!" << std::endl;
 
     Range widthRange = capability_->GetVideoHeightRangeForWidth(DEFAULT_WIDTH);
-    EXPECT_EQ(DEFAULT_WIDTH_RANGE.minVal, widthRange.minVal);
-    EXPECT_EQ(DEFAULT_WIDTH_RANGE.maxVal, widthRange.maxVal);
+    EXPECT_EQ(DEFAULT_HEIGHT_RANGE_SOFTWARE_AVC.minVal, widthRange.minVal);
+    EXPECT_EQ(DEFAULT_HEIGHT_RANGE_SOFTWARE_AVC.maxVal, widthRange.maxVal);
 }
 
 /**
@@ -378,8 +378,8 @@ HWTEST_F(CodecListUnitTest, CodecList_GetVideoWidthRangeForHeight_001, TestSize.
     ASSERT_NE(nullptr, capability_) << "video decoder codeclist create fail!" << std::endl;
 
     Range heightRange = capability_->GetVideoWidthRangeForHeight(DEFAULT_HEIGHT);
-    EXPECT_EQ(DEFAULT_HEIGHT_RANGE_OF_WIDTH.minVal, heightRange.minVal);
-    EXPECT_EQ(DEFAULT_HEIGHT_RANGE_OF_WIDTH.maxVal, heightRange.maxVal);
+    EXPECT_EQ(DEFAULT_WIDTH_RANGE_SOFTWARE_AVC.minVal, heightRange.minVal);
+    EXPECT_EQ(DEFAULT_WIDTH_RANGE_SOFTWARE_AVC.maxVal, heightRange.maxVal);
 }
 
 /**
@@ -395,8 +395,8 @@ HWTEST_F(CodecListUnitTest, CodecList_GetVideoWidthRange_001, TestSize.Level1)
     ASSERT_NE(nullptr, capability_) << "video decoder codeclist create fail!" << std::endl;
 
     Range widthRange = capability_->GetVideoWidthRange();
-    EXPECT_EQ(DEFAULT_WIDTH_RANGE.minVal, widthRange.minVal);
-    EXPECT_EQ(DEFAULT_WIDTH_RANGE.maxVal, widthRange.maxVal);
+    EXPECT_EQ(DEFAULT_WIDTH_RANGE_SOFTWARE_AVC.minVal, widthRange.minVal);
+    EXPECT_EQ(DEFAULT_WIDTH_RANGE_SOFTWARE_AVC.maxVal, widthRange.maxVal);
 }
 
 /**
@@ -412,8 +412,8 @@ HWTEST_F(CodecListUnitTest, CodecList_GetVideoHeightRange_001, TestSize.Level1)
     ASSERT_NE(nullptr, capability_) << "video decoder codeclist create fail!" << std::endl;
 
     Range heightRange = capability_->GetVideoHeightRange();
-    EXPECT_EQ(DEFAULT_HEIGHT_RANGE.minVal, heightRange.minVal);
-    EXPECT_EQ(DEFAULT_HEIGHT_RANGE.maxVal, heightRange.maxVal);
+    EXPECT_EQ(DEFAULT_HEIGHT_RANGE_SOFTWARE_AVC.minVal, heightRange.minVal);
+    EXPECT_EQ(DEFAULT_HEIGHT_RANGE_SOFTWARE_AVC.maxVal, heightRange.maxVal);
 }
 
 /**
@@ -473,10 +473,10 @@ HWTEST_F(CodecListUnitTest, CodecList_IsVideoSizeSupported_002, TestSize.Level1)
     capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_MIME, false, category);
     ASSERT_NE(nullptr, capability_) << "video decoder codeclist create fail!" << std::endl;
 
-    int32_t wmin = DEFAULT_WIDTH_RANGE.minVal;
-    int32_t wmax = DEFAULT_WIDTH_RANGE.maxVal;
-    int32_t hmin = DEFAULT_HEIGHT_RANGE.minVal;
-    int32_t hmax = DEFAULT_HEIGHT_RANGE.maxVal;
+    int32_t wmin = DEFAULT_WIDTH_RANGE_SOFTWARE_AVC.minVal;
+    int32_t wmax = DEFAULT_WIDTH_RANGE_SOFTWARE_AVC.maxVal;
+    int32_t hmin = DEFAULT_HEIGHT_RANGE_SOFTWARE_AVC.minVal;
+    int32_t hmax = DEFAULT_HEIGHT_RANGE_SOFTWARE_AVC.maxVal;
     // case 1 - 10, negative param
     EXPECT_FALSE(capability_->IsVideoSizeSupported(wmax + 2, hmin))
         << "width:" << wmin + 2 << "height:" << hmin << std::endl;
@@ -589,16 +589,17 @@ HWTEST_F(CodecListUnitTest, CodecList_GetVideoFrameRateRangeForSize_001, TestSiz
     capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_MIME, false, category);
     ASSERT_NE(nullptr, capability_) << "video decoder codeclist create fail!" << std::endl;
 
-    int32_t wmax = DEFAULT_HEIGHT_RANGE_OF_WIDTH.maxVal;
-    int32_t hmax = DEFAULT_WIDTH_RANGE_OF_HEIGHT.maxVal;
     Range framerateRange = capability_->GetVideoFrameRateRangeForSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
     EXPECT_EQ(DEFAULT_FRAMERATE_RANGE.minVal, framerateRange.minVal);
     EXPECT_EQ(DEFAULT_FRAMERATE_RANGE.maxVal, framerateRange.maxVal);
 
+    int32_t wmax = DEFAULT_HEIGHT_RANGE_OF_WIDTH.maxVal;
+    int32_t hmax = DEFAULT_WIDTH_RANGE_OF_HEIGHT.maxVal;
     framerateRange = capability_->GetVideoFrameRateRangeForSize(wmax, hmax);
     EXPECT_EQ(0, framerateRange.minVal);
-    EXPECT_EQ(26, framerateRange.maxVal); // 26: The return values after (2304, 4096) are passed in
+    EXPECT_EQ(120, framerateRange.maxVal); // 120: The return values after (2304, 4096) are passed in
 }
+
 
 /**
  * @tc.name: CodecList_GetVideoFrameRateRangeForSize_002
