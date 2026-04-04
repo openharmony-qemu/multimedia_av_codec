@@ -1894,6 +1894,74 @@ HWTEST_F(Mpeg4MuxerUnitTest, Muxer_Add_Audio_Auxiliary, TestSize.Level0) {
 }
 
 /**
+ * @tc.name: Muxer_Add_Multiple_Tracks
+ * @tc.desc: Muxer add multiple tracks.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4MuxerUnitTest, Muxer_Add_Multiple_Tracks, TestSize.Level0) {
+    int32_t trackIdAudio1 = -1;
+    int32_t trackIdAudio2 = -1;
+    int32_t trackIdVideo1 = -1;
+    int32_t trackIdVideo2 = -1;
+    int32_t trackIdAudio3 = -1;
+    int32_t trackIdVideo3 = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_Add_Multiple_Tracks.mp4");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    // 音频轨1
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 44100); // 44100 sample rate
+    audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 2); // 2 channels
+    ASSERT_EQ(avmuxer_->AddTrack(trackIdAudio1, audioParams), 0);
+
+    // 音频轨2
+    std::shared_ptr<FormatMock> audioParams2 = FormatMockFactory::CreateFormat();
+    audioParams2->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
+    audioParams2->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 44100); // 44100 sample rate
+    audioParams2->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 2); // 2 channels
+    ASSERT_EQ(avmuxer_->AddTrack(trackIdAudio2, audioParams2), 0);
+
+    // 视频轨1
+    std::shared_ptr<FormatMock> videoParams =
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+    ASSERT_EQ(avmuxer_->AddTrack(trackIdVideo1, videoParams), 0);
+
+    // 视频轨2
+    std::shared_ptr<FormatMock> videoParams2 =
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+    ASSERT_EQ(avmuxer_->AddTrack(trackIdVideo2, videoParams2), 0);
+
+    // 音频轨3
+    std::shared_ptr<FormatMock> audioParams3 = FormatMockFactory::CreateFormat();
+    audioParams3->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
+    audioParams3->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 44100); // 44100 sample rate
+    audioParams3->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 2); // 2 channels
+    ASSERT_EQ(avmuxer_->AddTrack(trackIdAudio3, audioParams3), 0);
+
+    // 视频轨3
+    std::shared_ptr<FormatMock> videoParams3 =
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+    ASSERT_EQ(avmuxer_->AddTrack(trackIdVideo3, videoParams3), 0);
+
+    ASSERT_EQ(avmuxer_->Start(), 0);
+
+    std::string inputFilePath = "/data/test/media/aac_2c_44100hz_199k_muxer.dat";
+    TrackWriteSample(inputFilePath, trackIdAudio1);
+    TrackWriteSample(inputFilePath, trackIdAudio2);
+    TrackWriteSample(INPUT_FILE_PATH, trackIdVideo1);
+    TrackWriteSample(INPUT_FILE_PATH, trackIdVideo2);
+    TrackWriteSample(inputFilePath, trackIdAudio3);
+    TrackWriteSample(INPUT_FILE_PATH, trackIdVideo3);
+
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+}
+
+/**
  * @tc.name: Muxer_GENRE_001
  * @tc.desc: Muxer add genre data test
  * @tc.type: FUNC
