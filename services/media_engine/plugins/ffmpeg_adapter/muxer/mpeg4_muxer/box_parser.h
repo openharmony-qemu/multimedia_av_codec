@@ -69,6 +69,8 @@ private:
     uint32_t fileType_;
     std::shared_ptr<BasicBox> moov_ = nullptr;
     bool enableEdtsBox_ = true;
+    bool isFirstVideoTrack_ = true;
+    bool isFirstAudioTrack_ = true;
 };
 } // Mpeg4
 } // Plugins
