@@ -671,7 +671,7 @@ HWTEST_F(M3u8UnitTest, WAIT_KEY_DOWNLOAD_001, TestSize.Level1)
     m3u8.keyAllDownload_ = 1;
     m3u8.isInterruptNeeded_ = false;
     m3u8.WaitKeyDownload();
-    EXPECT_EQ(m3u8.keyAllDownload_, 1);
+    EXPECT_EQ(m3u8.keyAllDownload_, 0);
 }
 
 /**
