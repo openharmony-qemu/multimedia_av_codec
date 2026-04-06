@@ -414,7 +414,7 @@ HWTEST_F(SampleQueueUnitTest, SampleQueue_LargerSampleQueueLoop, TestSize.Level1
     consumerThread.get()->join();
 
     EXPECT_EQ(sqCb_->OnConsumeSum_, frameCount);
-    EXPECT_EQ(sqCb_->OnAvailableSum_, frameCount + SampleQueue::MAX_SAMPLE_QUEUE_SIZE);
+    EXPECT_EQ(sqCb_->OnAvailableSum_, frameCount + SampleQueue::DEFAULT_SAMPLE_QUEUE_SIZE);
 }
 
 /**
