@@ -369,6 +369,7 @@ Status StreamDemuxer::Pause()
 
 Status StreamDemuxer::Flush()
 {
+    ResetAllCache();
     return Status::OK;
 }
 
