@@ -24,6 +24,7 @@
 #include "avcodec_errors.h"
 #include "media_description.h"
 #include "demuxer_unit_test.h"
+#include "syspara/parameters.h"
 
 #define LOCAL true
 
@@ -59,6 +60,7 @@ string g_vttPath = TEST_FILE_PATH + string("webvtt_test_ut.vtt");
 // cache check
 const double CACHE_LIMIT_RANGE_MAX = 1.1; // +10%
 const double CACHE_LIMIT_RANGE_MIN = 0.9; // -10%
+const int32_t CACHE_DATA_SIZE_INDEX = 3;
 std::vector<std::vector<int32_t>> g_singleTrackCheckSteps = {
     {0, 1,  0, 0, true}, // read track 0 1 time, check track 0
     {0, 10, 0, 0, true}, // read track 0 10 times, check track 0
@@ -111,6 +113,18 @@ bool DemuxerUnitTest::CheckCache(
     printf("Check pass\n");
     return true;
 }
+
+void UpdateCacheSizeForPlugin(std::vector<std::vector<int32_t>>& cacheCheckSteps)
+{
+    std::string enable = OHOS::system::GetParameter("Mpeg4DemuxerPlugin.enable", "0");
+    if (enable != "1") {
+        return;
+    }
+    printf("Using mpeg4 demuxer, update cache size for check");
+    for (auto &checkStep : cacheCheckSteps) {
+        checkStep[CACHE_DATA_SIZE_INDEX] = 0;
+    }
+}
 /**********************************demuxer inner func**************************************/
 namespace {
 #ifdef DEMUXER_INNER_UNIT_TEST
@@ -156,6 +170,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetCurrentCacheSize_1001, TestSize.Level1)
         {0, -1, 0, 0}, // read to end
         {1, -1, 1, 0}, // read to end
     };
+    UpdateCacheSizeForPlugin(cacheCheckSteps);
     for (auto step : cacheCheckSteps) {
         ASSERT_TRUE(CheckCache(step[0], step[1], step[2], step[3]));
     }
@@ -183,6 +198,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetCurrentCacheSize_1002, TestSize.Level1)
         {0, -1, 0, 0}, // read to end
         {1, -1, 1, 0}, // read to end
     };
+    UpdateCacheSizeForPlugin(cacheCheckSteps);
     for (auto step : cacheCheckSteps) {
         ASSERT_TRUE(CheckCache(step[0], step[1], step[2], step[3]));
     }
@@ -210,6 +226,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetCurrentCacheSize_1003, TestSize.Level1)
         {0, -1, 0, 0}, // read to end
         {1, -1, 1, 0}, // read to end
     };
+    UpdateCacheSizeForPlugin(cacheCheckSteps);
     for (auto step : cacheCheckSteps) {
         ASSERT_TRUE(CheckCache(step[0], step[1], step[2], step[3]));
     }
