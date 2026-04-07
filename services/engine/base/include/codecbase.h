@@ -165,6 +165,23 @@ public:
         (void) isLpp;
         return AVCODEC_ERROR_EXTEND_START;
     }
+
+    virtual void SetBufferMapping(std::shared_ptr<AVBuffer> avBuffer, sptr<SurfaceBuffer> surfaceBuffer)
+    {
+        (void)avBuffer;
+        (void)surfaceBuffer;
+    }
+    
+    virtual sptr<SurfaceBuffer> GetSurfaceBufferMapping(std::shared_ptr<AVBuffer> avBuffer)
+    {
+        (void)avBuffer;
+        return nullptr;
+    }
+
+    virtual void RemoveBufferMapping(std::shared_ptr<AVBuffer> avBuffer)
+    {
+        (void)avBuffer;
+    }
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -2090,6 +2090,40 @@ typedef enum OH_TemporalGopReferenceMode {
     UNIFORMLY_SCALED_REFERENCE = 2,
 } OH_TemporalGopReferenceMode;
 
+/**
+ * @brief The video decoding frame retention mode.
+ *
+ * @since 26.0.0
+ */
+typedef enum OH_FRAME_RETENTION_MODE {
+    /**
+     * Full frame retention mode. The decoder operates in a transparent passthrough state,
+     * retaining 100% of the input frames and effectively disabling the frame dropping feature.
+     * All underlying visual perception algorithms are completely bypassed, resulting in
+     * zero algorithmic overhead.
+     *
+     * @since 26.0.0
+     */
+    FRMAE_RETENTION_MODE_FULL = 0,
+    /** 
+     * Adaptive frame retention mode. The decoder dynamically analyzes video characteristics to drop frames with the
+     * least perceptual impact, preserving visual smoothness with minimal degradation to the playback experience.
+     * For optimal algorithmic accuracy, it is highly recommended to explicitly configure
+     * the current playback speed via {@link OH_MD_KEY_VIDEO_DECODER_SPEED}.
+     * 
+     * @since 26.0.0
+     */
+    FRAME_RETENTION_MODE_ADAPTIVE,
+    /** 
+     * Uniform frame retention mode. Retains frames evenly according to a user-configured retention ratio
+     * (configured via {@link OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_RATIO}).
+     * If the retention ratio is not explicitly configured, the decoder limits the output to a maximum of 30 fps.
+     *
+     * @since 26.0.0
+     */
+    FRAME_RETENTION_MODE_UNIFORM
+} OH_FRAME_RETENTION_MODE;
+
 #ifdef __cplusplus
 }
 #endif

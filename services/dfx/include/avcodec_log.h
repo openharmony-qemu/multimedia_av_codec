@@ -27,6 +27,8 @@ namespace MediaAVCodec {
 #define LOG_DOMAIN_AUDIO         0xD002B31
 #undef  LOG_DOMAIN_HCODEC
 #define LOG_DOMAIN_HCODEC        0xD002B32
+#undef  LOG_DOMAIN_SFD
+#define LOG_DOMAIN_SFD           0xD002B33
 #undef  LOG_DOMAIN_TEST
 #define LOG_DOMAIN_TEST          0xD002B36
 #undef  LOG_DOMAIN_DEMUXER

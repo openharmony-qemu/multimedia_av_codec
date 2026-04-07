@@ -105,6 +105,10 @@ config("av_codec_service_config") {
   if (target_cpu == "arm") {
     cflags += [ "-DBINDER_IPC_32BIT" ]
   }
+
+  if (av_codec_support_smart_fluency_decoding) {
+    defines += [ "SFD_ENABLED" ]
+  }
 }
 
 ohos_shared_library("av_codec_service") {
@@ -159,6 +163,15 @@ ohos_shared_library("av_codec_service") {
   if (av_codec_support_codeclist) {
     deps += [
       "$av_codec_root_dir/services/engine/codeclist:av_codec_engine_codeclist",
+    ]
+  }
+
+  if (av_codec_support_smart_fluency_decoding) {
+    deps += [
+      "./codec/server/video/features/smart_fluency_decoding:smart_fluency_decoding"
+    ]
+    public_configs = [
+      "./codec/server/video/features/smart_fluency_decoding:smart_fluency_decoding_public_config"
     ]
   }
 
