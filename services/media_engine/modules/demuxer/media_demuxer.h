@@ -433,6 +433,7 @@ private:
     bool GetTrackSeekNeedDrop(int32_t trackId);
     void SetTrackSeekNeedDrop(int32_t trackId, bool needDrop);
     Status HandleSelectSubtitle(int64_t seekTime, Plugins::SeekMode mode, int32_t trackId);
+    Status HandleSelectSubtitleStream(int64_t seekTime, Plugins::SeekMode mode, int32_t streamId);
     void ResetAfterSeek(Status ret);
     void OnEventStream(const Plugins::PluginEvent &event);
     int64_t GetCurrentTimeMs();
