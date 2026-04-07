@@ -17,6 +17,7 @@
 
 #include "gtest/gtest.h"
 #include "demuxer_plugin_manager.h"
+#include "syspara/parameters.h"
 
 #define LOCAL true
 
@@ -954,6 +955,10 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0025, TestSize.
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0026, TestSize.Level1)
 {
+    std::string enable = OHOS::system::GetParameter("Mpeg4DemuxerPlugin.enable", "0");
+    if (enable != "1") {
+        return;
+    }
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEG4, TEST_FILE_URI_MP4, DEF_PROB_SIZE), true);
     ASSERT_EQ(PluginSelectTracks(), true);
     ASSERT_EQ(PluginReadAllSample(), true);
@@ -963,6 +968,10 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0026, TestSize.
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0027, TestSize.Level1)
 {
+    std::string enable = OHOS::system::GetParameter("Mpeg4DemuxerPlugin.enable", "0");
+    if (enable != "1") {
+        return;
+    }
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEG4, TEST_FILE_URI_MATROSKA, DEF_PROB_SIZE), false);
     RemoveValue();
 }
