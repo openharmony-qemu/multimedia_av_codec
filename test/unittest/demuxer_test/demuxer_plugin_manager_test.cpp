@@ -52,6 +52,7 @@ static const std::string DEMUXER_PLUGIN_NAME_RM = "avdemux_rm";
 static const std::string DEMUXER_PLUGIN_NAME_AC3 = "avdemux_ac3";
 static const std::string DEMUXER_PLUGIN_NAME_ERR = "avdemux_err";
 static const std::string DEMUXER_PLUGIN_NAME_ASF = "avdemux_asf";
+static const std::string DEMUXER_PLUGIN_NAME_MPEG4 = "avdemux_mpeg4";
 
 static const string TEST_FILE_PATH = "/data/test/media/";
 static const string TEST_FILE_URI_AAC = TEST_FILE_PATH + "audio/aac_44100_1.aac";
@@ -948,6 +949,21 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0025, TestSize.
 {
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AAC, TEST_FILE_URI_AAC, DEF_PROB_SIZE), true);
     ASSERT_EQ(demuxerPlugin_->SetDataSourceWithProbSize(dataSourceImpl_, DEF_PROB_SIZE), Status::ERROR_WRONG_STATE);
+    RemoveValue();
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0026, TestSize.Level1)
+{
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEG4, TEST_FILE_URI_MP4, DEF_PROB_SIZE), true);
+    ASSERT_EQ(PluginSelectTracks(), true);
+    ASSERT_EQ(PluginReadAllSample(), true);
+    ASSERT_EQ(ResultAssert(1875, 0, 1875, 0), true);
+    RemoveValue();
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0027, TestSize.Level1)
+{
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEG4, TEST_FILE_URI_MATROSKA, DEF_PROB_SIZE), false);
     RemoveValue();
 }
 
