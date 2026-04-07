@@ -360,18 +360,18 @@ HWTEST_F(SampleQueueUnitTest, SetLargerQueueSize_002, TestSize.Level1)
     sampleQueueConfig.isFlvLiveStream_ = true;
     sampleQueueConfig.isSupportBitrateSwitch_ = true;
     sampleQueueConfig.queueId_ = NUM_TEST1;
-    sampleQueueConfig.queueSize_ = SampleQueue::MAX_SAMPLE_QUEUE_SIZE;
+    sampleQueueConfig.queueSize_ = SampleQueue::DEFAULT_SAMPLE_QUEUE_SIZE;
     Status status = sampleQueue_->Init(sampleQueueConfig);
     EXPECT_EQ(status, Status::OK);
 
     Status ret = sampleQueue_->SetLargerQueueSize(SampleQueue::MAX_SAMPLE_QUEUE_SIZE_ON_MUTE + NUM_TEST1);
     EXPECT_NE(ret, Status::OK);
-    EXPECT_EQ(sampleQueue_->config_.queueSize_, SampleQueue::MAX_SAMPLE_QUEUE_SIZE);
+    EXPECT_EQ(sampleQueue_->config_.queueSize_, SampleQueue::DEFAULT_SAMPLE_QUEUE_SIZE);
 
-    sampleQueue_->config_.queueSize_ = SampleQueue::MAX_SAMPLE_QUEUE_SIZE;
-    ret = sampleQueue_->SetLargerQueueSize(SampleQueue::MAX_SAMPLE_QUEUE_SIZE);
+    sampleQueue_->config_.queueSize_ = SampleQueue::DEFAULT_SAMPLE_QUEUE_SIZE;
+    ret = sampleQueue_->SetLargerQueueSize(SampleQueue::DEFAULT_SAMPLE_QUEUE_SIZE);
     EXPECT_EQ(ret, Status::OK);
-    EXPECT_EQ(sampleQueue_->config_.queueSize_, SampleQueue::MAX_SAMPLE_QUEUE_SIZE);
+    EXPECT_EQ(sampleQueue_->config_.queueSize_, SampleQueue::DEFAULT_SAMPLE_QUEUE_SIZE);
 }
 
 /**
