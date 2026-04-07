@@ -341,6 +341,8 @@ int ConvertFlagsToFFmpeg(AVStream *avStream, int64_t ffTime, SeekMode mode, int6
         if (streamDuration > 0  && (streamDuration < buffering || ffTime >= streamDuration - buffering)) {
             return AVSEEK_FLAG_BACKWARD;
         }
+        FALSE_RETURN_V_MSG_E(g_seekModeToFFmpegSeekFlags.count(mode) != 0, AVSEEK_FLAG_BACKWARD,
+            "Seek mode is invalid");
         return g_seekModeToFFmpegSeekFlags.at(mode);
     }
     if (!FFmpegFormatHelper::IsVideoType(*avStream) || seekTime == 0) {
