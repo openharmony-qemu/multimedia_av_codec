@@ -27,6 +27,11 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "SFDBuilder"};
+constexpr double DEFAULT_PLAYBACK_SPEED = 1.0;
+constexpr double MIN_RETENTION_RATE = 0.01;
+constexpr double MAX_RETENTION_RATE = 1.0;
+constexpr int32_t MIN_CSD_SIZE = 4;
+constexpr int32_t DEFAULT_CSD_COPY_SIZE = 256;
 }
 
 namespace OHOS {
@@ -71,7 +76,6 @@ SFDCodecType SmartFluencyDecodingBuilder::ParseCodecType(const std::string& mime
     return SFDCodecType::INVALID;
 }
 
-
 SmartFluencyDecodingBuilder& SmartFluencyDecodingBuilder::UpdatePlaybackSpeed(double speed)
 {
     playbackSpeed_ = speed;
@@ -83,7 +87,6 @@ bool SmartFluencyDecodingBuilder::IsCodecSupported(const std::string& codecMime,
     if (codecType != MediaAVCodec::AVCODEC_TYPE_VIDEO_DECODER) {
         return false;
     }
-
     if (codecMime != MediaAVCodec::AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_AVC &&
         codecMime != MediaAVCodec::AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_HEVC &&
         codecMime != MediaAVCodec::AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_VVC) {
@@ -109,13 +112,12 @@ SmartFluencyDecodingBuilder& SmartFluencyDecodingBuilder::SetFromFormat(const Fo
     }
     int32_t extMode = -1;
     bool hasMode = format.GetIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, extMode);
-
     double ratio = 0.0;
-    bool hasRatio = format.GetDoubleValue(Tag::VIDEO_DECODER_FRAME_RETENTION_RATIO, ratio) && IsRetentionRateValid(ratio);
+    bool hasRatio = format.GetDoubleValue(Tag::VIDEO_DECODER_FRAME_RETENTION_RATIO, ratio) &&
+        IsRetentionRateValid(ratio);
     if (hasRatio) {
         params_.retentionRatio = ratio;
     }
-
     if (!hasMode) {
         params_.initMode = hasRatio ? FrameDropMode::UNIFORM_CUSTOM : FrameDropMode::INVALID;
     } else {
@@ -134,15 +136,13 @@ SmartFluencyDecodingBuilder& SmartFluencyDecodingBuilder::SetFromFormat(const Fo
                 break;
         }
     }
-
     if (hasRatio && (params_.initMode == FrameDropMode::ADAPTIVE || params_.initMode == FrameDropMode::FULL)) {
         AVCODEC_LOGW("Adaptive or Full mode with retentionRate will be ignored");
     }
-    double speed = 1.0;
+    double speed = DEFAULT_PLAYBACK_SPEED;
     if (format.GetDoubleValue(Tag::VIDEO_DECODER_SPEED, speed)) {
         UpdatePlaybackSpeed(speed);
     }
-
     return *this;
 }
 
@@ -151,34 +151,26 @@ std::unique_ptr<SmartFluencyDecoding> SmartFluencyDecodingBuilder::Build()
     if (!ValidateParams()) {
         return nullptr;
     }
-
     if (params_.initMode == FrameDropMode::INVALID) {
         return nullptr;
     }
-
     auto instance = std::make_unique<SmartFluencyDecoding>();
     if (!instance) {
         AVCODEC_LOGE("Build failed: Failed to create SmartFluencyDecoding instance");
         return nullptr;
     }
-
     int32_t ret = instance->Initialize(params_);
-
     if (ret != AVCS_ERR_OK) {
         AVCODEC_LOGE("Build failed: Failed to initialize SmartFluencyDecoding, ret=%{public}d", ret);
         return nullptr;
     }
-
     if (playbackSpeed_.has_value()) {
         instance->UpdatePlaybackSpeed(playbackSpeed_.value());
     }
-
     AVCODEC_LOGI("SmartFluencyDecoding built successfully: %{public}dx%{public}d, mode=%{public}d",
                  params_.width, params_.height, static_cast<int32_t>(params_.initMode));
-    
     return instance;
 }
-
 
 bool SmartFluencyDecodingBuilder::ValidateParams()
 {
@@ -199,63 +191,61 @@ bool SmartFluencyDecodingBuilder::ValidateParams()
 
 bool SmartFluencyDecodingBuilder::IsRetentionRateValid(double rate)
 {
-    if (rate < 0.01) {
-        AVCODEC_LOGW("retentionRate invalid: value=%{public}.2f (must be >= 0.01)", rate);
+    if (rate < MIN_RETENTION_RATE) {
+        AVCODEC_LOGW("retentionRate invalid: value=%{public}.2f (must be >= %{public}.2f)", rate, MIN_RETENTION_RATE);
         return false;
     }
-    if (rate > 1.0) {
-        AVCODEC_LOGW("retentionRate invalid: value=%{public}.2f (must be <= 1.0)", rate);
+    if (rate > MAX_RETENTION_RATE) {
+        AVCODEC_LOGW("retentionRate invalid: value=%{public}.2f (must be <= %{public}.2f)", rate, MAX_RETENTION_RATE);
         return false;
     }
     return true;
 }
 
-
 std::vector<uint8_t> SmartFluencyDecodingBuilder::ExtractCsdData(const std::shared_ptr<Media::AVBuffer>& buffer)
 {
     std::vector<uint8_t> csdData;
-    if (!buffer || !buffer->memory_) return csdData;
-    
+    if (!buffer || !buffer->memory_) {
+        return csdData;
+    }
     uint8_t* data = buffer->memory_->GetAddr();
     int32_t size = buffer->memory_->GetCapacity();
-    if (!data || size <= 4) return csdData;
-
-    // Scenario A: Pure CODEC_DATA Buffer, full copy
+    if (!data || size <= MIN_CSD_SIZE) {
+        return csdData;
+    }
     if (buffer->flag_ == AVCODEC_BUFFER_FLAG_CODEC_DATA) {
         csdData.assign(data, data + size);
         return csdData;
     }
-
-    // Scenario B: Mixed CODEC_DATA or SYNC_FRAME, copy first 256 bytes
     if (buffer->flag_ & (AVCODEC_BUFFER_FLAG_CODEC_DATA | AVCODEC_BUFFER_FLAG_SYNC_FRAME)) {
-        int32_t copySize = std::min(size, 256);
+        int32_t copySize = std::min(size, DEFAULT_CSD_COPY_SIZE);
         csdData.assign(data, data + copySize);
-        AVCODEC_LOGI("Fast extracted %{public}d bytes as CSD from buffer with flags %{public}u", copySize, buffer->flag_);
+        AVCODEC_LOGI("Fast extracted %{public}d bytes as CSD with flags %{public}u", copySize, buffer->flag_);
     }
-    
     return csdData;
 }
 
 void SmartFluencyDecodingBuilder::ReplayCsdData(SmartFluencyDecoding* sfd, const std::vector<uint8_t>& csdData)
 {
-    if (!sfd || csdData.empty()) return;
-
-    std::shared_ptr<Media::AVAllocator> allocator = Media::AVAllocatorFactory::CreateSharedAllocator(Media::MEMORY_READ_WRITE);
-    if (!allocator) {
-        AVCODEC_LOGE("Failed to create shared allocator for replay FakeBuffer");
+    if (!sfd || csdData.empty()) {
         return;
     }
-    
-    auto fakeBuffer = Media::AVBuffer::CreateAVBuffer(allocator, static_cast<int32_t>(csdData.size()));
-    if (fakeBuffer && fakeBuffer->memory_) {
+    std::shared_ptr<Media::AVAllocator> allocator =
+        Media::AVAllocatorFactory::CreateSharedAllocator(Media::MEMORY_READ_WRITE);
+    if (!allocator) {
+        AVCODEC_LOGE("Failed to create shared allocator for replay tmpBuffer");
+        return;
+    }
+    auto tmpBuffer = Media::AVBuffer::CreateAVBuffer(allocator, static_cast<int32_t>(csdData.size()));
+    if (tmpBuffer && tmpBuffer->memory_) {
         // 直接执行内存拷贝
-        int32_t capacity = fakeBuffer->memory_->GetCapacity();
+        int32_t capacity = tmpBuffer->memory_->GetCapacity();
         if (capacity >= static_cast<int32_t>(csdData.size())) {
-            memcpy(fakeBuffer->memory_->GetAddr(), csdData.data(), csdData.size());
-            fakeBuffer->flag_ = AVCODEC_BUFFER_FLAG_CODEC_DATA;
-            
-            // 提交给已初始化的 SFD 进行前置探测（仅作用于底层解码器解析属性）
-            sfd->InitializeWithCsd(fakeBuffer);
+            if (memcpy_s(tmpBuffer->memory_->GetAddr(), csdData.size(), csdData.data(), csdData.size()) != EOK) {
+                AVCODEC_LOGE("Failed to copy CSD data");
+                return;
+            }
+            sfd->InitializeWithCsd(tmpBuffer);
             AVCODEC_LOGI("SFD Mid-stream enabled: Replayed 256-bytes deep-copied CSD data successfully.");
         }
     }

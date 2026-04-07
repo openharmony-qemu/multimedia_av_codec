@@ -30,22 +30,15 @@ public:
     ~FixedRatioRetentionStrategy() override = default;
 
     bool MakeRetentionDecision(const FrameRetentionContext& ctx) override;
-
-    void UpdatePlaybackSpeed(double speed) override 
-    {
-        (void)speed;
-    }
-
+    void UpdatePlaybackSpeed(double speed) override;
     void Reset() override;
-
     FrameRetentionMode GetMode() const override;
-
     double GetCurrentRetentionRatio() const override;
 
 private:
-    double accumulator_{0.0}; // 误差累积器
+    double accumulator_{0.0};
     double retentionRatio_{1.0};
-    bool isFirstFrame_{true};  
+    bool isFirstFrame_{true};
     uint32_t cnt_{0};
     uint32_t dropCnt_{0};
 };
@@ -53,5 +46,4 @@ private:
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS
-
 #endif

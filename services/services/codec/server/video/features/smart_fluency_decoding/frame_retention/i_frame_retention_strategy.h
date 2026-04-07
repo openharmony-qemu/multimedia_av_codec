@@ -24,9 +24,9 @@ namespace MediaAVCodec {
 namespace SFD {
 
 struct FrameRetentionContext {
-    int64_t ptsMs;            // 当前帧的媒体时间戳
-    int64_t sysTimeMs;        // 当前系统的物理时间 (用于防突发)
-    uint32_t frameCount;      // 累计帧序号
+    int64_t ptsMs;               // 当前帧的媒体时间戳
+    int64_t sysTimeMs;           // 当前系统的物理时间 (用于防突发)
+    uint32_t frameCount;         // 累计帧序号
     int32_t preDroppedCount = 0; // 前置丢帧计数
     const SFDMVStats* mvStats = nullptr;
 };

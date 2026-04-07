@@ -16,15 +16,15 @@
 #ifndef SMART_FLUENCY_DECODING_TYPES_H
 #define SMART_FLUENCY_DECODING_TYPES_H
 
-#include <stdint.h>
+#include <cstdint>
 
-typedef struct {    
+typedef struct {
     uint32_t directSpatialMvPredFlag;
     uint32_t direct8x8InferenceFlag;
     uint32_t mbAdaptiveFrameFieldFlag;
     uint32_t ctuSize;
     uint8_t  frameMbsOnlyFlag;
-    uint8_t  reserved[3]; // 填充 4 字节对齐
+    uint8_t  reserved[3]; // 字节对齐
 } StreamAuxInfo;
 
 #if defined(__cplusplus) && !defined(NALU_ANALYZER_PLUGIN_COMPILE)
@@ -55,10 +55,7 @@ enum class SFDCodecType : int32_t {
     VVC = 2     // H.266
 };
 
-// ==========================================
-// MV 解析器产出的感知特征统计结果 (DTO)
-// 归并到公共类型定义，实现决策层与解析层的解耦
-// ==========================================
+// MV 解析器产出的感知特征统计结果
 struct SFDMVStats {
     uint32_t totalBlocks{0};
     uint32_t validBlocks{0};
@@ -84,5 +81,4 @@ struct SFDConfig {
 } // namespace OHOS
 
 #endif /* defined(__cplusplus) && !defined(NALU_ANALYZER_PLUGIN_COMPILE) */
-
 #endif // SMART_FLUENCY_DECODING_TYPES_H

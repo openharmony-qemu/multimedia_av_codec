@@ -40,14 +40,14 @@ public:
     double GetCurrentRetentionRatio() const override;
 
 private:
-    enum State { 
-        PROFILING, 
+    enum State {
+        PROFILING,
         STABLE
     };
     State currentState_{PROFILING};
     std::unique_ptr<FixedRatioRetentionStrategy> stableDropper_{nullptr};
     double currentSpeed_{-1.0};
-    double sourceFps_{30.0}; 
+    double sourceFps_{30.0};
 
     int32_t decodedFrameCount_{0};
     int64_t firstPts_{-1};
@@ -57,5 +57,4 @@ private:
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS
-
-#endif 
+#endif

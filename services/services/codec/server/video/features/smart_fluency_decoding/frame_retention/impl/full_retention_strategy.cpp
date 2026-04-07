@@ -21,18 +21,17 @@ namespace SFD {
 
 bool FullRetentionStrategy::MakeRetentionDecision(const FrameRetentionContext& ctx)
 {
-    // 透传模式：不丢弃任何帧（包括非参考帧）
+    (void)ctx;
     return true;
 }
 
 void FullRetentionStrategy::Reset()
 {
-    // 无状态
 }
 
 void FullRetentionStrategy::UpdatePlaybackSpeed(double speed)
 {
-    // 不关心播放速度，因为永远返回 true
+    (void)speed;
 }
 
 FrameRetentionMode FullRetentionStrategy::GetMode() const

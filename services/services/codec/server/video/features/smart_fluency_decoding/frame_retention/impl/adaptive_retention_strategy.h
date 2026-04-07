@@ -29,13 +29,9 @@ public:
     ~AdaptiveRetentionStrategy() override = default;
 
     bool MakeRetentionDecision(const FrameRetentionContext& ctx) override;
-
     void UpdatePlaybackSpeed(double speed) override;
-
     void Reset() override;
-
     FrameRetentionMode GetMode() const override;
-
     double GetCurrentRetentionRatio() const override;
 
 private:
@@ -47,5 +43,4 @@ private:
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS
-
 #endif

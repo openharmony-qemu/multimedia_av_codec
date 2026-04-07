@@ -37,5 +37,4 @@ public:
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS
-
 #endif // PASSTHROUGH_DROPPER_H

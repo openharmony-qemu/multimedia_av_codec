@@ -38,15 +38,11 @@ bool AdaptiveRetentionStrategy::MakeRetentionDecision(const FrameRetentionContex
     if (ctx.mvStats && ctx.mvStats->validBlocks > 0) {
         double consistency = ctx.mvStats->motionConsistency;
         double magnitude = ctx.mvStats->perceptualMagnitude;
-        
-        // 规则 1：极高的一致性 (如全局平移) -> 严厉禁止丢帧
         if (consistency > HIGH_CONSISTENCY_THRESHOLD) {
             dropCount_ = 0;
             currentTargetRatio_ = 0.0;
-            return true; 
+            return true;
         }
-
-        // 规则 2：高幅度且极低致性 (如混乱爆炸场景) -> 激进丢帧 (人眼难以追踪)
         if (magnitude > MAGNITUDE_THRESHOLD && consistency < LOW_CONSISTENCY_THRESHOLD) {
             dropCount_++;
             uint32_t maxDrops = static_cast<uint32_t>((currentSpeed_ - 1.0) * MAX_DROPS_MULTIPLIER_HIGH);
@@ -58,21 +54,17 @@ bool AdaptiveRetentionStrategy::MakeRetentionDecision(const FrameRetentionContex
                 return true;
             }
         }
-        
-        // 规则 3：默认回退逻辑 (根据平均参考距离，处理中度运动)
         if (ctx.mvStats->avgRefDist > REF_DIST_MULTIPLIER * currentSpeed_) {
             dropCount_++;
             uint32_t maxDrops = static_cast<uint32_t>((currentSpeed_ - 1.0) * MAX_DROPS_MULTIPLIER_LOW);
             currentTargetRatio_ = static_cast<double>(maxDrops) / (maxDrops + 1.0);
             if (dropCount_ <= maxDrops) {
-                return false; 
+                return false;
             }
         }
-        
-        dropCount_ = 0; 
+        dropCount_ = 0;
         currentTargetRatio_ = 0.0;
     }
-    
     return true;
 }
 
