@@ -287,7 +287,7 @@ void M3U8::PrepareDecrptionKeys(std::shared_ptr<Tag>& tag)
     } else {
         KeyInfo keyInfo;
         std::copy(std::begin(iv_), std::end(iv_), std::begin(keyInfo.iv_));
-        keyAllDownload_.fetch_add(1, std::memory_order_relaxed);
+        keyAllDownload_.fetch_add(1);
         {
             std::unique_lock<std::shared_mutex> lock(keyMutex_);
             keyIndex_++;
@@ -648,7 +648,7 @@ uint32_t M3U8::SaveData(uint8_t *data, uint32_t len, bool notBlock, uint64_t key
                 NZERO_RETURN_V(memcpy_s(keyInfos_[keyIndex].key_, MAX_LOOP, data, len), 0);
                 keyInfos_[keyIndex].keyLen_ = keyLen_;
             }
-            keyAllDownload_.fetch_sub(1, std::memory_order_relaxed);
+            keyAllDownload_.fetch_sub(1);
         }
         MEDIA_LOG_I("DownloadKey hlsSourceKey end, index:" PUBLIC_LOG_U64, keyIndex);
         return len;
