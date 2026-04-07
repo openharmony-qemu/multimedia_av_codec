@@ -21,10 +21,8 @@
 typedef struct {
     uint32_t directSpatialMvPredFlag;
     uint32_t direct8x8InferenceFlag;
-    uint32_t mbAdaptiveFrameFieldFlag;
+    uint32_t frameMbsOnlyFlag;
     uint32_t ctuSize;
-    uint8_t  frameMbsOnlyFlag;
-    uint8_t  reserved[3]; // 字节对齐
 } StreamAuxInfo;
 
 #if defined(__cplusplus) && !defined(NALU_ANALYZER_PLUGIN_COMPILE)
