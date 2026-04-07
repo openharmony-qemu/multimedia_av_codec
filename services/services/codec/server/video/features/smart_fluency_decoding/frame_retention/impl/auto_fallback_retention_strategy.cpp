@@ -17,16 +17,17 @@
 #include <cstdio>
 #include "avcodec_log.h"
 
-namespace {
-// constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "UniformFallbackDropper"};
-// 固定 30fps 输出限制
-// static constexpr int32_t TARGET_FPS = 30;
-// static constexpr int64_t FRAME_INTERVAL_US = 1000000 / TARGET_FPS;  // 33.33ms
-}
-
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
+
+namespace {
+constexpr double TARGET_FPS = 30.0;
+constexpr double MS_TO_S = 1000.0;
+constexpr double PROFILING_DURATION_MIN_SEC = 0.1;
+constexpr int32_t PROFILING_MIN_FRAMES = 30;
+constexpr int64_t FALLBACK_FRAME_INTERVAL_MS = 33;
+}
 
 AutoFallbackRetentionStrategy::AutoFallbackRetentionStrategy()
 {
@@ -39,7 +40,7 @@ void AutoFallbackRetentionStrategy::UpdatePlaybackSpeed(double speed)
     
     // 动态适配：如果在稳态期切了倍速，立即重新计算比例并重置嵌套的 Dropper
     if (currentState_ == STABLE && sourceFps_ > 0) {
-        double newRatio = 30.0 / (sourceFps_ * currentSpeed_);
+        double newRatio = TARGET_FPS / (sourceFps_ * currentSpeed_);
         stableDropper_ = std::make_unique<FixedRatioRetentionStrategy>(newRatio);
     }
 }
@@ -57,13 +58,13 @@ bool AutoFallbackRetentionStrategy::MakeRetentionDecision(const FrameRetentionCo
     decodedFrameCount_ += (1 + ctx.preDroppedCount);
 
     // 探针：是否满足切换到稳态的条件 (统计 30 帧且耗时大于 100ms)
-    if (currentSpeed_ > 0.0 && decodedFrameCount_ >= 30) {
-        double durationSec = (ctx.ptsMs - firstPts_) / 1000.0;
+    if (currentSpeed_ > 0.0 && decodedFrameCount_ >= PROFILING_MIN_FRAMES) {
+        double durationSec = (ctx.ptsMs - firstPts_) / MS_TO_S;
         
         // 增加最小时长阈值 (0.1s) 防御，防止 PTS 抖动导致 FPS 估算爆炸
-        if (durationSec > 0.1) {
+        if (durationSec > PROFILING_DURATION_MIN_SEC) {
             sourceFps_ = decodedFrameCount_ / durationSec;
-            double calculatedRatio = 30.0 / (sourceFps_ * currentSpeed_);
+            double calculatedRatio = TARGET_FPS / (sourceFps_ * currentSpeed_);
             
             // 状态切换并实例化嵌套 Dropper
             stableDropper_ = std::make_unique<FixedRatioRetentionStrategy>(calculatedRatio);
@@ -74,7 +75,7 @@ bool AutoFallbackRetentionStrategy::MakeRetentionDecision(const FrameRetentionCo
     }
 
     // 物理时间防突发截断 (按 30fps 约 33ms 间隔控制)
-    if (lastSysTime_ == 0 || (ctx.sysTimeMs - lastSysTime_) >= 33) {
+    if (lastSysTime_ == 0 || (ctx.sysTimeMs - lastSysTime_) >= FALLBACK_FRAME_INTERVAL_MS) {
         lastSysTime_ = ctx.sysTimeMs;
         return true;
     }

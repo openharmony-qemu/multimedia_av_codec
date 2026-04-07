@@ -22,6 +22,9 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "FixedRatioRetention"};
+constexpr double MIN_RETENTION_RATIO = 0.01;
+constexpr double MAX_RETENTION_RATIO = 1.0;
+constexpr double ACCUMULATOR_THRESHOLD = 1.0;
 }
 
 namespace OHOS {
@@ -30,7 +33,7 @@ namespace SFD {
 
 FixedRatioRetentionStrategy::FixedRatioRetentionStrategy(double ratio)
 {
-    retentionRatio_ = std::max(0.01, std::min(ratio, 1.0));
+    retentionRatio_ = std::max(MIN_RETENTION_RATIO, std::min(ratio, MAX_RETENTION_RATIO));
     AVCODEC_LOGI("Uniform Ratio Construct in, retention ratio is %{public}.2f", ratio);
 }
 
@@ -44,8 +47,8 @@ bool FixedRatioRetentionStrategy::MakeRetentionDecision(const FrameRetentionCont
 
     bool isRetain = false;
     accumulator_ += retentionRatio_ + (ctx.preDroppedCount * retentionRatio_);
-    if (accumulator_ >= 1.0) {
-        accumulator_ -= 1.0;
+    if (accumulator_ >= ACCUMULATOR_THRESHOLD) {
+        accumulator_ -= ACCUMULATOR_THRESHOLD;
         isRetain = true;
     } else {
         dropCnt_++;

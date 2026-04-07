@@ -23,26 +23,18 @@ namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
 
-// ==========================================
-// 1. 极其优雅的上下文结构体 (Parameter Object)
-// ==========================================
 struct FrameRetentionContext {
     int64_t ptsMs;            // 当前帧的媒体时间戳
     int64_t sysTimeMs;        // 当前系统的物理时间 (用于防突发)
     uint32_t frameCount;      // 累计帧序号
     int32_t preDroppedCount = 0; // 前置丢帧计数
-    
-    // 把之前 makeDecision 里的重度参数都包进来，按需取用
     const SFDMVStats* mvStats = nullptr;
 };
 
-// ==========================================
-// 2. 丢帧器标准基类接口
-// ==========================================
 class IFrameRetentionStrategy {
 public:
     virtual ~IFrameRetentionStrategy() = default;
-    // 核心决策接口：入参永远只有一个 Context
+    // 核心决策接口
     virtual bool MakeRetentionDecision(const FrameRetentionContext& ctx) = 0;
 
     // 动态倍速下发接口

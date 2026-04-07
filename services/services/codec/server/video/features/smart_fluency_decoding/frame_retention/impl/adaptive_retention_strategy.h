@@ -28,67 +28,15 @@ public:
     AdaptiveRetentionStrategy() = default;
     ~AdaptiveRetentionStrategy() override = default;
 
-    bool MakeRetentionDecision(const FrameRetentionContext& ctx) override {
-        if (currentSpeed_ <= 1.2) {
-            return true;
-        }
+    bool MakeRetentionDecision(const FrameRetentionContext& ctx) override;
 
-        if (ctx.mvStats && ctx.mvStats->validBlocks > 0) {
-            double consistency = ctx.mvStats->motionConsistency;
-            double magnitude = ctx.mvStats->perceptualMagnitude;
-            
-            // 规则 1：极高的一致性 (如全局平移) -> 严厉禁止丢帧
-            if (consistency > 0.8) {
-                dropCount_ = 0;
-                currentTargetRatio_ = 0.0;
-                return true; 
-            }
+    void UpdatePlaybackSpeed(double speed) override;
 
-            // 规则 2：高幅度且极低致性 (如混乱爆炸场景) -> 激进丢帧 (人眼难以追踪)
-            if (magnitude > 30.0 && consistency < 0.3) {
-                dropCount_++;
-                uint32_t maxDrops = static_cast<uint32_t>((currentSpeed_ - 1.0) * 30.0);
-                currentTargetRatio_ = static_cast<double>(maxDrops) / (maxDrops + 1.0);
-                if (dropCount_ <= maxDrops) {
-                    return false;
-                } else {
-                    dropCount_ = 0;
-                    return true;
-                }
-            }
-            
-            // 规则 3：默认回退逻辑 (根据平均参考距离，处理中度运动)
-            if (ctx.mvStats->avgRefDist > 5.0 * currentSpeed_) {
-                dropCount_++;
-                uint32_t maxDrops = static_cast<uint32_t>((currentSpeed_ - 1.0) * 15.0);
-                currentTargetRatio_ = static_cast<double>(maxDrops) / (maxDrops + 1.0);
-                if (dropCount_ <= maxDrops) {
-                    return false; 
-                }
-            }
-            
-            dropCount_ = 0; 
-            currentTargetRatio_ = 0.0;
-        }
-        
-        return true;
-    }
+    void Reset() override;
 
-    void UpdatePlaybackSpeed(double speed) override {
-        currentSpeed_ = speed > 0.0 ? speed : 1.0;
-    }
+    FrameRetentionMode GetMode() const override;
 
-    void Reset() override {
-        dropCount_ = 0;
-    }
-
-    FrameRetentionMode GetMode() const override {
-        return FrameRetentionMode::ADAPTIVE;
-    }
-
-    double GetCurrentRetentionRatio() const override {
-        return 1.0 - currentTargetRatio_;
-    }
+    double GetCurrentRetentionRatio() const override;
 
 private:
     double currentSpeed_{1.0};

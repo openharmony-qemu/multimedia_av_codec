@@ -906,15 +906,6 @@ void CodecServer::InitFramerateCalculator(Meta &callerInfo)
     );
     if (framerateCalculator_) {
         framerateCalculator_->SetTag(CreateVideoLogTag(callerInfo));
-#ifdef SFD_ENABLED
-        std::weak_ptr<CodecServer> weakThis = weak_from_this();
-        framerateCalculator_->SetSpeedAndFpsCallback([weakThis](double speed, double decFps) {
-            auto sharedThis = weakThis.lock();
-            if (sharedThis && sharedThis->smartFluencyDecoding_) {
-                sharedThis->smartFluencyDecoding_->OnDecodingPerformanceUpdate(speed, decFps);
-            }
-        });
-#endif
     }
 }
 
@@ -1772,16 +1763,6 @@ std::shared_ptr<AVBuffer> CodecServer::DecodedBufferInfo::CreateAVBuffer()
 void CodecServer::HandleOutputBufferAvailability(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     CHECK_AND_RETURN_LOG(buffer != nullptr, "HandleOutputBufferAvailability AVBuffer is null");
-#ifdef SFD_ENABLED
-    if (smartFluencyDecoding_ && (buffer->flag_ & AVCODEC_BUFFER_FLAG_EOS) == 0) {
-        // TODO: 确认正式的传递方式
-        sptr<SurfaceBuffer> surfaceBuffer = codecBase_->GetSurfaceBufferMapping(buffer);
-        codecBase_->RemoveBufferMapping(buffer);
-        if (!smartFluencyDecoding_->MakePostDecodeDecision(index, buffer->pts_, surfaceBuffer)) {
-            return;
-        }
-    }
-#endif
     if (isLocalReleaseMode_) {
         std::unique_lock<std::mutex> lockBuffer(releaseBufferMutex_);
         indexs_.push_back(std::make_pair(index, buffer));

@@ -1283,6 +1283,49 @@ extern const char *OH_MD_KEY_AUDIO_SOUNDBED_BITRATE;
 extern const char *OH_MD_KEY_AUDIO_OBJECT_BITRATE;
 
 /**
+ * @brief Key for setting the video decoding frame retention mode. The value type is int32_t.
+ *
+ * The value represents a frame retention mode defined in {@link OH_FRAME_RETENTION_MODE}.
+ * Please refer to the enumeration definition for detailed descriptions of each mode
+ * and their behaviors.This key can be configured via the {@link OH_VideoDecoder_Configure} and
+ * {@link OH_VideoDecoder_SetParameter} interfaces.
+ *
+ * @since 26.0.0
+ */
+extern const char *OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_MODE;
+
+/**
+ * @brief Key for setting the video decoding frame retention ratio. The value type is double.
+ *
+ * This parameter takes effect when {@link OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_MODE} is set to
+ * {@link OH_FRAME_RETENTION_MODE#OH_FRAME_RETENTION_MODE_UNIFORM}, or when the retention mode is not
+ * configured (implicitly defaulting to uniform behavior). This configuration is ignored ONLY when
+ * the retention mode is explicitly set to {@link OH_FRAME_RETENTION_MODE#OH_FRAME_RETENTION_MODE_ADAPTIVE}
+ * or {@link OH_FRAME_RETENTION_MODE#OH_FRAME_RETENTION_MODE_FULL}.
+ * The valid range is [0.01, 1.0] (where 1.0 means all frames retained and 0.01 is the minimum limit);
+ * any value outside this range is considered invalid and will be ignored. This key can be configured
+ * via the {@link OH_VideoDecoder_Configure} and {@link OH_VideoDecoder_SetParameter} interfaces.
+ *
+ * @since 26.0.0
+ */
+extern const char *OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_RATIO;
+
+/**
+ * @brief Key for configuring the video decoder playback speed. The value type is double.
+ *
+ * This key specifies the target playback speed of the video. It is primarily recommended
+ * for use in conjunction with {@link OH_FRAME_RETENTION_MODE#OH_FRAME_RETENTION_MODE_ADAPTIVE}
+ * to assist the adaptive algorithm in accurately evaluating the perceptual impact of frame
+ * drops. The value must be strictly greater than 0.0, with recommended standard values
+ * including 0.5, 0.75, 1.0 (normal speed), 1.25, 1.5, 2.0, and 3.0; any value less than
+ * or equal to 0.0 is considered invalid. This key can be configured via the
+ * {@link OH_VideoDecoder_Configure} and {@link OH_VideoDecoder_SetParameter} interfaces.
+ *
+ * @since 26.0.0
+ */
+extern const char *OH_MD_KEY_VIDEO_DECODER_SPEED;
+
+/**
  * @brief Media type.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
@@ -2101,27 +2144,24 @@ typedef enum OH_FRAME_RETENTION_MODE {
      * retaining 100% of the input frames and effectively disabling the frame dropping feature.
      * All underlying visual perception algorithms are completely bypassed, resulting in
      * zero algorithmic overhead.
-     *
      * @since 26.0.0
      */
-    FRMAE_RETENTION_MODE_FULL = 0,
-    /** 
+    OH_FRAME_RETENTION_MODE_FULL = 0,
+    /**
      * Adaptive frame retention mode. The decoder dynamically analyzes video characteristics to drop frames with the
      * least perceptual impact, preserving visual smoothness with minimal degradation to the playback experience.
      * For optimal algorithmic accuracy, it is highly recommended to explicitly configure
      * the current playback speed via {@link OH_MD_KEY_VIDEO_DECODER_SPEED}.
-     * 
      * @since 26.0.0
      */
-    FRAME_RETENTION_MODE_ADAPTIVE,
-    /** 
+    OH_FRAME_RETENTION_MODE_ADAPTIVE,
+    /**
      * Uniform frame retention mode. Retains frames evenly according to a user-configured retention ratio
      * (configured via {@link OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_RATIO}).
      * If the retention ratio is not explicitly configured, the decoder limits the output to a maximum of 30 fps.
-     *
      * @since 26.0.0
      */
-    FRAME_RETENTION_MODE_UNIFORM
+    OH_FRAME_RETENTION_MODE_UNIFORM
 } OH_FRAME_RETENTION_MODE;
 
 #ifdef __cplusplus

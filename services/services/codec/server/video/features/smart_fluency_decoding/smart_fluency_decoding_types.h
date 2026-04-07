@@ -18,9 +18,6 @@
 
 #include <stdint.h>
 
-/* ========================================================
- * 纯 C 数据模型区 (跨仓插件可安全 include，归属上层定义)
- * ======================================================== */
 typedef struct {    
     uint32_t directSpatialMvPredFlag;
     uint32_t direct8x8InferenceFlag;
@@ -30,9 +27,6 @@ typedef struct {
     uint8_t  reserved[3]; // 填充 4 字节对齐
 } StreamAuxInfo;
 
-/* ========================================================
- * C++ 运行时机制区 (仅限内部引擎及上层调用方可见)
- * ======================================================== */
 #if defined(__cplusplus) && !defined(NALU_ANALYZER_PLUGIN_COMPILE)
 #include <functional>
 #include "buffer/avbuffer.h"

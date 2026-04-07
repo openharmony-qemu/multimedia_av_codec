@@ -45,7 +45,6 @@ private:
         STABLE
     };
     State currentState_{PROFILING};
-    // 嵌套持有一个纯比例丢帧器，实现代码零冗余
     std::unique_ptr<FixedRatioRetentionStrategy> stableDropper_{nullptr};
     double currentSpeed_{-1.0};
     double sourceFps_{30.0}; 
