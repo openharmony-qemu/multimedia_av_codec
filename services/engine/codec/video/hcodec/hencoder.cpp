@@ -1458,8 +1458,7 @@ void HEncoder::DealWithResolutionChange(uint32_t newWidth, uint32_t newHeight)
 void HEncoder::OnFrameSubmitted(int64_t pts)
 {
     if (unfinishedFrames_.size() >= MAX_LIST_SIZE) {
-        HLOGW("unfinishedFrames_ size %zu exceeds limit, clearing to prevent memory leak", 
-            unfinishedFrames_.size());
+        HLOGW("unfinishedFrames_ size %zu exceeds limit, clearing to prevent memory leak", unfinishedFrames_.size());
         unfinishedFrames_.clear();
     }
     unfinishedFrames_.insert(pts);
