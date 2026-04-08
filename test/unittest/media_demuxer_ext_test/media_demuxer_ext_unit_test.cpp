@@ -6537,6 +6537,129 @@ HWTEST_F(MediaDemuxerExtUnitTest, SetTrackSelectionFilter_020, TestSize.Level1)
 }
 
 /**
+ * @tc.name  : SetTrackSelectionFilter_021
+ * @tc.number: SetTrackSelectionFilter_021
+ * @tc.desc  : Test subtitle switch triggers HandleSelectSubtitleStream when isHls_ is true
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, SetTrackSelectionFilter_021, TestSize.Level1)
+{
+    TrackSelectionFilter filter;
+    filter.preferredVideoMimeTypes = {FILTER_MIME_VIDEO_AVC};
+    filter.preferredSubtitleLanguages = {FILTER_LANG_CHI};
+    std::vector<StreamInfo> streams = {
+        MakeTrackSelectionFilterStream(FILTER_VIDEO_STREAM_ID_1, VIDEO, UNUM_1000, FILTER_MIME_VIDEO_AVC, ""),
+        MakeTrackSelectionFilterStream(FILTER_SUBTITLE_STREAM_ID_1, SUBTITLE, UNUM_0, "", FILTER_LANG_FRA),
+        MakeTrackSelectionFilterStream(FILTER_SUBTITLE_STREAM_ID_2, SUBTITLE, UNUM_0, "", FILTER_LANG_CHI)
+    };
+    PrepareTrackSelectionFilter(mediaDemuxer_, FILTER_PLAY_TYPE_DASH, streams);
+    mediaDemuxer_->currentPlayType_ = "hls";
+    mediaDemuxer_->defaultVideoStreamId_ = FILTER_VIDEO_STREAM_ID_1;
+    mediaDemuxer_->defaultSubtitleStreamId_ = FILTER_SUBTITLE_STREAM_ID_1;
+    mediaDemuxer_->isHls_ = true;
+    auto mockMediaSyncManager = std::make_shared<MediaSyncManager>();
+    EXPECT_CALL(*(mockMediaSyncManager), GetMediaTimeNow()).WillRepeatedly(Return(NUM_0));
+    mediaDemuxer_->syncCenter_ = mockMediaSyncManager;
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), CanDoChangeStream()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(FILTER_SUBTITLE_STREAM_ID_2)).WillOnce(Return(Status::OK));
+
+    mediaDemuxer_->SetTrackSelectionFilter(filter);
+    EXPECT_EQ(mediaDemuxer_->defaultSubtitleStreamId_, FILTER_SUBTITLE_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : SetTrackSelectionFilter_022
+ * @tc.number: SetTrackSelectionFilter_022
+ * @tc.desc  : Test subtitle switch triggers HandleSelectSubtitleStream when isHls_ is false
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, SetTrackSelectionFilter_022, TestSize.Level1)
+{
+    TrackSelectionFilter filter;
+    filter.preferredVideoMimeTypes = {FILTER_MIME_VIDEO_AVC};
+    filter.preferredSubtitleLanguages = {FILTER_LANG_CHI};
+    std::vector<StreamInfo> streams = {
+        MakeTrackSelectionFilterStream(FILTER_VIDEO_STREAM_ID_1, VIDEO, UNUM_1000, FILTER_MIME_VIDEO_AVC, ""),
+        MakeTrackSelectionFilterStream(FILTER_SUBTITLE_STREAM_ID_1, SUBTITLE, UNUM_0, "", FILTER_LANG_FRA),
+        MakeTrackSelectionFilterStream(FILTER_SUBTITLE_STREAM_ID_2, SUBTITLE, UNUM_0, "", FILTER_LANG_CHI)
+    };
+    PrepareTrackSelectionFilter(mediaDemuxer_, FILTER_PLAY_TYPE_DASH, streams);
+    mediaDemuxer_->currentPlayType_ = "hls";
+    mediaDemuxer_->defaultVideoStreamId_ = FILTER_VIDEO_STREAM_ID_1;
+    mediaDemuxer_->defaultSubtitleStreamId_ = FILTER_SUBTITLE_STREAM_ID_1;
+    mediaDemuxer_->isHls_ = false;
+    auto mockMediaSyncManager = std::make_shared<MediaSyncManager>();
+    EXPECT_CALL(*(mockMediaSyncManager), GetMediaTimeNow()).WillRepeatedly(Return(NUM_0));
+    mediaDemuxer_->syncCenter_ = mockMediaSyncManager;
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), CanDoChangeStream()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(FILTER_SUBTITLE_STREAM_ID_2)).WillOnce(Return(Status::OK));
+
+    mediaDemuxer_->SetTrackSelectionFilter(filter);
+    EXPECT_EQ(mediaDemuxer_->defaultSubtitleStreamId_, FILTER_SUBTITLE_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : SetTrackSelectionFilter_023
+ * @tc.number: SetTrackSelectionFilter_023
+ * @tc.desc  : Test subtitle switch triggers HandleSelectSubtitleStream when isHls_ is true
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, SetTrackSelectionFilter_023, TestSize.Level1)
+{
+    TrackSelectionFilter filter;
+    filter.preferredVideoMimeTypes = {FILTER_MIME_VIDEO_AVC};
+    filter.preferredSubtitleLanguages = {FILTER_LANG_CHI};
+    std::vector<StreamInfo> streams = {
+        MakeTrackSelectionFilterStream(FILTER_VIDEO_STREAM_ID_1, VIDEO, UNUM_1000, FILTER_MIME_VIDEO_AVC, ""),
+        MakeTrackSelectionFilterStream(FILTER_SUBTITLE_STREAM_ID_1, SUBTITLE, UNUM_0, "", FILTER_LANG_FRA),
+        MakeTrackSelectionFilterStream(FILTER_SUBTITLE_STREAM_ID_2, SUBTITLE, UNUM_0, "", FILTER_LANG_CHI)
+    };
+    PrepareTrackSelectionFilter(mediaDemuxer_, FILTER_PLAY_TYPE_DASH, streams);
+    mediaDemuxer_->currentPlayType_ = "hls";
+    mediaDemuxer_->defaultVideoStreamId_ = FILTER_VIDEO_STREAM_ID_1;
+    mediaDemuxer_->defaultSubtitleStreamId_ = FILTER_SUBTITLE_STREAM_ID_1;
+    mediaDemuxer_->isHls_ = true;
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), CanDoChangeStream()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(FILTER_SUBTITLE_STREAM_ID_2)).WillOnce(Return(Status::OK));
+
+    mediaDemuxer_->SetTrackSelectionFilter(filter);
+    EXPECT_EQ(mediaDemuxer_->defaultSubtitleStreamId_, FILTER_SUBTITLE_STREAM_ID_2);
+}
+
+/**
+ * @tc.name  : SetTrackSelectionFilter_024
+ * @tc.number: SetTrackSelectionFilter_024
+ * @tc.desc  : Test subtitle switch triggers HandleSelectSubtitleStream when isHls_ is true
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, SetTrackSelectionFilter_024, TestSize.Level1)
+{
+    TrackSelectionFilter filter;
+    filter.preferredVideoMimeTypes = {FILTER_MIME_VIDEO_AVC};
+    filter.preferredSubtitleLanguages = {FILTER_LANG_CHI};
+    std::vector<StreamInfo> streams = {
+        MakeTrackSelectionFilterStream(FILTER_VIDEO_STREAM_ID_1, VIDEO, UNUM_1000, FILTER_MIME_VIDEO_AVC, ""),
+        MakeTrackSelectionFilterStream(FILTER_SUBTITLE_STREAM_ID_1, SUBTITLE, UNUM_0, "", FILTER_LANG_FRA),
+        MakeTrackSelectionFilterStream(FILTER_SUBTITLE_STREAM_ID_2, SUBTITLE, UNUM_0, "", FILTER_LANG_CHI)
+    };
+    PrepareTrackSelectionFilter(mediaDemuxer_, FILTER_PLAY_TYPE_DASH, streams);
+    mediaDemuxer_->currentPlayType_ = "hls";
+    mediaDemuxer_->defaultVideoStreamId_ = FILTER_VIDEO_STREAM_ID_1;
+    mediaDemuxer_->defaultSubtitleStreamId_ = FILTER_SUBTITLE_STREAM_ID_1;
+    mediaDemuxer_->isHls_ = true;
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), CanDoChangeStream()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(FILTER_SUBTITLE_STREAM_ID_2))
+        .WillOnce(Return(Status::ERROR_UNKNOWN));
+
+    mediaDemuxer_->SetTrackSelectionFilter(filter);
+    EXPECT_EQ(mediaDemuxer_->defaultSubtitleStreamId_, FILTER_SUBTITLE_STREAM_ID_2);
+}
+
+/**
  * @tc.name  : SelectAudioDefaultId_001
  * @tc.number: SelectAudioDefaultId_001
  * @tc.desc  : Test SelectAudioDefaultId returns -1 for hls when all streams selected
