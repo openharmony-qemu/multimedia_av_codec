@@ -287,13 +287,13 @@ void M3U8::PrepareDecrptionKeys(std::shared_ptr<Tag>& tag)
     } else {
         KeyInfo keyInfo;
         std::copy(std::begin(iv_), std::end(iv_), std::begin(keyInfo.iv_));
+        keyAllDownload_.fetch_add(1);
         {
             std::unique_lock<std::shared_mutex> lock(keyMutex_);
             keyIndex_++;
             keyInfo.index_ = keyIndex_ + totalKeyIndex_;
             keyInfos_[keyInfo.index_] = keyInfo;
         }
-        keyAllDownload_.fetch_add(1, std::memory_order_relaxed);
         DownloadKey(true);
     }
 }
@@ -642,13 +642,13 @@ uint32_t M3U8::SaveData(uint8_t *data, uint32_t len, bool notBlock, uint64_t key
         keyLen_ = len;
         isDecryptKeyReady_ = true;
         if (!isSessionKey_) {
-            keyAllDownload_.fetch_sub(1, std::memory_order_relaxed);
             {
                 std::unique_lock<std::shared_mutex> lock(keyMutex_);
                 FALSE_RETURN_V_MSG(keyInfos_.find(keyIndex) != keyInfos_.end(), len, "keyIndex out of bounds");
-                std::copy(std::begin(key_), std::end(key_), std::begin(keyInfos_[keyIndex].key_));
+                NZERO_RETURN_V(memcpy_s(keyInfos_[keyIndex].key_, MAX_LOOP, data, len), 0);
                 keyInfos_[keyIndex].keyLen_ = keyLen_;
             }
+            keyAllDownload_.fetch_sub(1);
         }
         MEDIA_LOG_I("DownloadKey hlsSourceKey end, index:" PUBLIC_LOG_U64, keyIndex);
         return len;
@@ -757,6 +757,7 @@ void M3U8::WaitKeyDownload()
     while (keyAllDownload_.load() > 0 && !isInterruptNeeded_) {
         Task::SleepInTask(5); // sleep 5ms
         if ((times++) >= RETRY_TIMES) {
+            keyAllDownload_.store(0);
             MEDIA_LOG_E("Download decrypkey failed.");
             break;
         }
