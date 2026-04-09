@@ -44,6 +44,7 @@ config("ffmpeg_adapter_muxer_config") {
     "$av_codec_root_dir/services/media_engine/plugins/common",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/muxer",
+    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/muxer/flv_muxer",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common",
   ]
 }
@@ -64,6 +65,8 @@ ohos_shared_library("media_plugin_FFmpegMuxer") {
     "common/ffmpeg_utils.cpp",
     "common/stream_parser_manager.cpp",
     "muxer/ffmpeg_muxer_plugin.cpp",
+    "muxer/ffmpeg_muxer_register.cpp",
+    "muxer/flv_muxer/ffmpeg_flv_muxer_plugin.cpp",
   ]
 
   external_deps = [

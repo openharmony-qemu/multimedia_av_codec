@@ -57,6 +57,8 @@ const std::unordered_map<OutputFormat, std::set<std::string>> MUX_FORMAT_INFO = 
     {OutputFormat::FLAC, {MimeType::AUDIO_FLAC, MimeType::IMAGE_JPG,
                           MimeType::IMAGE_PNG, MimeType::IMAGE_BMP}},
     {OutputFormat::OGG, {MimeType::AUDIO_OPUS, MimeType::AUDIO_VORBIS}},
+    {OutputFormat::FLV, {MimeType::AUDIO_AAC,
+                         MimeType::VIDEO_AVC, MimeType::VIDEO_HEVC}},
 };
 
 const std::map<std::string, std::set<std::string>> MUX_MIME_INFO = {
@@ -460,6 +462,7 @@ std::shared_ptr<Plugins::MuxerPlugin> MediaMuxer::CreatePlugin(Plugins::OutputFo
         {Plugins::OutputFormat::AAC, MimeType::MEDIA_AAC},
         {Plugins::OutputFormat::FLAC, MimeType::MEDIA_FLAC},
         {Plugins::OutputFormat::OGG, MimeType::MEDIA_OGG},
+        {Plugins::OutputFormat::FLV, MimeType::MEDIA_FLV},
     };
     FALSE_RETURN_V_MSG_E(table.find(format) != table.end(), nullptr,
         "The output format %{public}d is not supported!", format);
