@@ -45,6 +45,63 @@ void SampleQueueControllerUnitTest::TearDown()
 {}
 
 /**
+ * @tc.name  : TEST_CheckWaterLineStopProduce_01
+ * @tc.number: 001
+ * @tc.desc  : Test function CheckWaterLineStopProduce
+ */
+HWTEST_F(SampleQueueControllerUnitTest, TEST_CheckWaterLineStopProduce_01, TestSize.Level1)
+{
+    int32_t trackId = 1;
+    std::shared_ptr<SampleQueue> sampleQueue = nullptr;
+    EXPECT_FALSE(sampleQueueController_->CheckWaterLineStopProduce(trackId, sampleQueue));
+
+    sampleQueue = std::make_shared<SampleQueue>();
+    sampleQueue->UpdateLastOutSamplePts(100);
+    sampleQueue->UpdateLastEnterSamplePts(10 * S_TO_US + 100);
+    EXPECT_FALSE(sampleQueueController_->CheckWaterLineStopProduce(trackId, sampleQueue));
+
+    sampleQueue->UpdateLastEnterSamplePts(10 * S_TO_US + 101);
+    EXPECT_TRUE(sampleQueueController_->CheckWaterLineStopProduce(trackId, sampleQueue));
+}
+
+/**
+ * @tc.name  : TEST_CheckWaterLineStartConsume_01
+ * @tc.number: 001
+ * @tc.desc  : Test function CheckWaterLineStartConsume
+ */
+HWTEST_F(SampleQueueControllerUnitTest, TEST_CheckWaterLineStartConsume_01, TestSize.Level1)
+{
+    int32_t trackId = 1;
+    std::shared_ptr<SampleQueue> sampleQueue = nullptr;
+    EXPECT_TRUE(sampleQueueController_->CheckWaterLineStartConsume(trackId, sampleQueue));
+
+    sampleQueue = std::make_shared<SampleQueue>();
+    sampleQueue->UpdateLastOutSamplePts(100);
+    sampleQueue->UpdateLastEnterSamplePts(START_CONSUME_WATER_LOOP + 100);
+    EXPECT_FALSE(sampleQueueController_->CheckWaterLineStartConsume(trackId, sampleQueue));
+
+    sampleQueue->UpdateLastEnterSamplePts(START_CONSUME_WATER_LOOP + 99);
+    EXPECT_TRUE(sampleQueueController_->CheckWaterLineStartConsume(trackId, sampleQueue));
+}
+
+/**
+ * @tc.name  : TEST_GetCacheDuration_01
+ * @tc.number: 001
+ * @tc.desc  : Test function GetCacheDuration
+ */
+HWTEST_F(SampleQueueControllerUnitTest, TEST_GetCacheDuration_01, TestSize.Level1)
+{
+    EXPECT_EQ(sampleQueueController_->GetCacheDuration(nullptr), 0u);
+
+    std::shared_ptr<SampleQueue> sampleQueue = std::make_shared<SampleQueue>();
+    EXPECT_EQ(sampleQueueController_->GetCacheDuration(sampleQueue), 0u);
+
+    sampleQueue->UpdateLastOutSamplePts(100);
+    sampleQueue->UpdateLastEnterSamplePts(2100);
+    EXPECT_EQ(sampleQueueController_->GetCacheDuration(sampleQueue), 2000u);
+}
+
+/**
  * @tc.name  : TEST_BUFFERING_DURATION
  * @tc.number: 001
  * @tc.desc  : Test bufferingDuration_ firstBufferingDuration_
@@ -269,6 +326,7 @@ HWTEST_F(SampleQueueControllerUnitTest, TEST_ShouldStopConsume_05, TestSize.Leve
     sampleQueue->UpdateLastOutSamplePts(200);
     std::unique_ptr<Task> task = std::make_unique<Task>("wz");;
     bool ret = true;
+    sampleQueueController_->stopConsumeStartTime_[trackId] = SteadyClock::GetCurrentTimeMs() - 101;
     ret = sampleQueueController_->ShouldStopConsume(trackId, sampleQueue, task);
     EXPECT_EQ(true, ret);
 }

@@ -308,12 +308,8 @@ private:
     Status GenerateDfxBufferQueue(int32_t trackId);
     void InitEnableDfxBufferQueue();
     void CopyBufferToDfxBufferQueue(std::shared_ptr<AVBuffer> buffer, bool dropable);
-    int32_t GetPreferredVideoBitrate();
-    int32_t GetPreferredAudioStreamId();
-    int32_t GetPreferredSubtitleStreamId();
     void ChooseDefaultStreams();
     void UpdateDefaultStreamIds(bool isVideoNoFiltered, bool isAudioNoFiltered, bool isSubtitleNoFiltered);
-    void PrintAutoSelectStreamInfo(int32_t desBitRate);
 
     bool IsLangMatch(const std::string& lang, OHOS::Media::MediaType mediaType);
     void AutoSelectTrackByBitrate(int32_t trackId);

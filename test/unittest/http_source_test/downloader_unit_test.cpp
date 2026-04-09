@@ -28,6 +28,98 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
+class TestMediaDownloaderForMonitor : public MediaDownloader {
+public:
+    void Init() override {}
+    void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr) override
+    {
+        (void)rpInfoPtr;
+    }
+    bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override
+    {
+        (void)url;
+        (void)httpHeader;
+        return true;
+    }
+    void Close(bool isAsync) override
+    {
+        (void)isAsync;
+    }
+    void Pause() override {}
+    void Resume() override {}
+    Status Read(unsigned char* buff, ReadDataInfo& readDataInfo) override
+    {
+        (void)buff;
+        (void)readDataInfo;
+        return Status::OK;
+    }
+    uint64_t GetBufferSize() const override
+    {
+        return 0;
+    }
+    bool GetBufferingTimeOut() override
+    {
+        return false;
+    }
+    size_t GetContentLength() const override
+    {
+        return 0;
+    }
+    int64_t GetDuration() const override
+    {
+        return 0;
+    }
+    Seekable GetSeekable() const override
+    {
+        return Seekable::UNSEEKABLE;
+    }
+    void SetCallback(const std::shared_ptr<Callback>& cb) override
+    {
+        (void)cb;
+    }
+    void SetStatusCallback(StatusCallbackFunc cb) override
+    {
+        (void)cb;
+    }
+    bool GetStartedStatus() override
+    {
+        return false;
+    }
+    void SetInterruptState(bool isInterruptNeeded) override
+    {
+        (void)isInterruptNeeded;
+    }
+    void SetAppUid(int32_t appUid) override
+    {
+        (void)appUid;
+    }
+
+    Status GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate = false) override
+    {
+        (void)streams;
+        getStreamInfoCalled_ = true;
+        getStreamInfoIsUpdate_ = isUpdate;
+        return getStreamInfoReturn_;
+    }
+
+    void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) override
+    {
+        setDefaultStreamIdCalled_ = true;
+        lastVideoId_ = videoStreamId;
+        lastAudioId_ = audioStreamId;
+        lastSubtitleId_ = subTitleStreamId;
+    }
+
+    bool getStreamInfoCalled_ {false};
+    bool getStreamInfoIsUpdate_ {false};
+    Status getStreamInfoReturn_ {Status::OK};
+
+    bool setDefaultStreamIdCalled_ {false};
+    int32_t lastVideoId_ {-1};
+    int32_t lastAudioId_ {-1};
+    int32_t lastSubtitleId_ {-1};
+};
+
 class DownloaderUnitTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
@@ -62,6 +154,35 @@ void DownloaderUnitTest::SetUp(void)
 void DownloaderUnitTest::TearDown(void)
 {
     downloader.reset();
+}
+
+HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_GetStreamInfo, TestSize.Level1)
+{
+    auto innerDownloader = std::make_shared<TestMediaDownloaderForMonitor>();
+    std::shared_ptr<DownloadMonitor> monitor = std::make_shared<DownloadMonitor>(innerDownloader);
+
+    std::vector<StreamInfo> streams;
+    auto ret = monitor->GetStreamInfo(streams, true);
+
+    EXPECT_EQ(Status::OK, ret);
+    EXPECT_TRUE(innerDownloader->getStreamInfoCalled_);
+    EXPECT_TRUE(innerDownloader->getStreamInfoIsUpdate_);
+}
+
+HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_SetDefaultStreamId, TestSize.Level1)
+{
+    auto innerDownloader = std::make_shared<TestMediaDownloaderForMonitor>();
+    std::shared_ptr<DownloadMonitor> monitor = std::make_shared<DownloadMonitor>(innerDownloader);
+
+    int32_t videoId = 10;
+    int32_t audioId = 20;
+    int32_t subtitleId = 30;
+    monitor->SetDefaultStreamId(videoId, audioId, subtitleId);
+
+    EXPECT_TRUE(innerDownloader->setDefaultStreamIdCalled_);
+    EXPECT_EQ(videoId, innerDownloader->lastVideoId_);
+    EXPECT_EQ(audioId, innerDownloader->lastAudioId_);
+    EXPECT_EQ(subtitleId, innerDownloader->lastSubtitleId_);
 }
 
 HWTEST_F(DownloaderUnitTest, ClearMiddleReadFragment, TestSize.Level0)
