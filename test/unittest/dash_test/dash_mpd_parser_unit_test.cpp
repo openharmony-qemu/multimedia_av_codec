@@ -26,6 +26,8 @@
 #include "xml/xml_parser.h"
 #include "dash_content_comp_node.h"
 #include "dash_period_node.h"
+#include "mpd_parser/dash_seg_list_node.h"
+#include "mpd_parser/dash_seg_template_node.h"
 
 namespace OHOS {
 namespace Media {
@@ -850,6 +852,139 @@ HWTEST_F(DashMpdParserUnitTest, Test_DashPeriodNode_GetAttr_001, TestSize.Level1
     std::string attrVal = "test_value";
     periodNode->GetAttr("unknown_attribute", attrVal);
     EXPECT_EQ(attrVal, "test_value");
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashSegListNode_ParseNode_001 TestSize.Level1)
+{
+    std::shared_ptr<DashSegListNode> segListNode = std::make_shared<DashSegListNode>();
+    auto xmlParser = std::make_shared<XmlParser>();
+    std::string xml = "<SegmentList media=\"test.m4s\"/>";
+    xmlParser->ParseFromBuffer(xml.c_str(), xml.length());
+    auto rootElement = xmlParser->GetRootElement();
+    segListNode->ParseNode(xmlParser, rootElement);
+    std::string attrVal;
+    segListNode->GetAttr("media", attrVal);
+    EXPECT_EQ(attrVal, "test.m4s");
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashSegListNode_GetAttrString_001, TestSize.Level1)
+{
+    std::shared_ptr<DashSegListNode> segListNode = std::make_shared<DashSegListNode>();
+    std::string attrVal = "test_value";
+    segListNode->GetAttr("unknown_attribute", attrVal);
+    EXPECT_EQ(attrVal, "test_value");
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashSegListNode_GetAttrUint32_001, TestSize.Level1)
+{
+    std::shared_ptr<DashSegListNode> segListNode = std::make_shared<DashSegListNode>();
+    uint32_t attrVal = 123;
+    segListNode->GetAttr("unknown_attribute", attrVal);
+    EXPECT_EQ(attrVal, 123);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashSegListNode_GetAttrInt32_001, TestSize.Level1)
+{
+    std::shared_ptr<DashSegListNode> segListNode = std::make_shared<DashSegListNode>();
+    int32_t attrVal = 456;
+    segListNode->GetAttr("unknown_attribute", attrVal);
+    EXPECT_EQ(attrVal, 456);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashSegListNode_GetAttrUint64_001, TestSize.Level1)
+{
+    std::shared_ptr<DashSegListNode> segListNode = std::make_shared<DashSegListNode>();
+    uint64_t attrVal = 789;
+    segListNode->GetAttr("unknown_attribute", attrVal);
+    EXPECT_EQ(attrVal, 789);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashSegListNode_GetAttrDouble_001, TestSize.Level1)
+{
+    std::shared_ptr<DashSegListNode> segListNode = std::make_shared<DashSegListNode>();
+    double attrVal = 3.14;
+    segListNode->GetAttr("unknown_attribute", attrVal);
+    EXPECT_EQ(attrVal, 3.14);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashSegListNode_Destructor_001, TestSize.Level1)
+{
+    std::shared_ptr<DashSegListNode> segListNode = std::make_shared<DashSegListNode>();
+    segListNode.reset();
+    EXPECT_EQ(segListNode, nullptr);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashSegListNode_ParseNode__002, TestSize.Level1)
+{
+    std::shared_ptr<DashSegListNode> segListNode = std::make_shared<DashSegListNode>();
+    auto xmlParser = std::make_shared<XmlParser>();
+    std::string xml = "<SegmentList/>";
+    xmlParser->ParseFromBuffer(xml.c_str(), xml.length());
+    auto rootElement = xmlParser->GetRootElement();
+    segListNode->ParseNode(xmlParser, rootElement);
+    std::string attrVal;
+    segListNode->GetAttr("media", attrVal);
+    EXPECT_EQ(attrVal, "");
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashSegTemplateNode_ParseNode_001, TestSize.Level1)
+{
+    std::shared_ptr<DashSegTemplateNode> segTemplateNode = std::make_shared<DashSegTemplateNode>();
+    auto xmlParser = std::make_shared<XmlParser>();
+    std::string xml = "<SegmentTemplate media=\"test.m4s\"/>";
+    xmlParser->ParseFromBuffer(xml.c_str(), xml.length());
+    auto rootElement = xmlParser->GetRootElement();
+    segTemplateNode->ParseNode(xmlParser, rootElement);
+    std::string attrVal;
+    segTemplateNode->GetAttr("media", attrVal);
+    EXPECT_EQ(attrVal, "test.m4s");
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashSegTemplateNode_GetAttrString_001, TestSize.Level1)
+{
+    std::shared_ptr<DashSegTemplateNode> segTemplateNode = std::make_shared<DashSegTemplateNode>();
+    std::string attrVal = "test_value";
+    segTemplateNode->GetAttr("unknown_attribute", attrVal);
+    EXPECT_EQ(attrVal, "test_value");
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashSegTemplateNode_GetAttrUint32_001, TestSize.Level1)
+{
+    std::shared_ptr<DashSegTemplateNode> segTemplateNode = std::make_shared<DashSegTemplateNode>();
+    uint32_t attrVal = 123;
+    segTemplateNode->GetAttr("unknown_attribute", attrVal);
+    EXPECT_EQ(attrVal, 123);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashSegTemplateNode_GetAttrInt32_001, TestSize.Level1)
+{
+    std::shared_ptr<DashSegTemplateNode> segTemplateNode = std::make_shared<DashSegTemplateNode>();
+    int32_t attrVal = 456;
+    segTemplateNode->GetAttr("unknown_attribute", attrVal);
+    EXPECT_EQ(attrVal, 456);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashSegTemplateNode_GetAttrUint64_001, TestSize.Level1)
+{
+    std::shared_ptr<DashSegTemplateNode> segTemplateNode = std::make_shared<DashSegTemplateNode>();
+    uint64_t attrVal = 789;
+    segTemplateNode->GetAttr("unknown_attribute", attrVal);
+    EXPECT_EQ(attrVal, 789);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashSegTemplateNode_GetAttrDouble_001, TestSize.Level1)
+{
+    std::shared_ptr<DashSegTemplateNode> segTemplateNode = std::make_shared<DashSegTemplateNode>();
+    double attrVal = 3.14;
+    segTemplateNode->GetAttr("unknown_attribute", attrVal);
+    EXPECT_EQ(attrVal, 3.14);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashSegTemplateNode_Destructor_001, TestSize.Level1)
+{
+    std::shared_ptr<DashSegTemplateNode> segTemplateNode = std::make_shared<DashSegTemplateNode>();
+    segTemplateNode.reset();
+    EXPECT_EQ(segTemplateNode, nullptr);
 }
 }
 }
