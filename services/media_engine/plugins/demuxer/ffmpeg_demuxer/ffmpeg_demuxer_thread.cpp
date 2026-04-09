@@ -144,7 +144,8 @@ int FFmpegDemuxerPlugin::HandleNonReadAgain(IOContext* ioContext, int& tryCount)
                 return AV_READ_PACKET_READ_AGAIN;
             case AVReadPacketStopState::UNSET:
                 ioContext->retry = true;
-                ioContext->initErrorAgain = (invokerType == InvokerType::INIT) ? true : static_cast<bool>(ioContext->initErrorAgain);
+                ioContext->initErrorAgain = (invokerType == InvokerType::INIT) ?
+                                            true : static_cast<bool>(ioContext->initErrorAgain);
                 return RetryNonReadAgainBounded(tryCount, AV_READ_PACKET_NON_READ_SLEEP_TIME,
                     "Read again and retry, UNSET state", ioContext->offset);
             default:

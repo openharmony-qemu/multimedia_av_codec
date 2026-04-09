@@ -2553,7 +2553,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_SetAVReadPacketStopState_TimeoutSuccess_
 }
 
 void TestSetReadTimeoutForInitSeek(const std::string& pluginName, const std::string& filePath,
-                                    int64_t timeoutMs, bool expectSuccess)
+                                   int64_t timeoutMs, bool expectSuccess)
 {
     struct stat fileStatus {};
     ASSERT_EQ(stat(filePath.c_str(), &fileStatus), 0);
