@@ -854,7 +854,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_DashPeriodNode_GetAttr_001, TestSize.Level1
     EXPECT_EQ(attrVal, "test_value");
 }
 
-HWTEST_F(DashMpdParserUnitTest, Test_DashSegListNode_ParseNode_001 TestSize.Level1)
+HWTEST_F(DashMpdParserUnitTest, Test_DashSegListNode_ParseNode_001, TestSize.Level1)
 {
     std::shared_ptr<DashSegListNode> segListNode = std::make_shared<DashSegListNode>();
     auto xmlParser = std::make_shared<XmlParser>();
