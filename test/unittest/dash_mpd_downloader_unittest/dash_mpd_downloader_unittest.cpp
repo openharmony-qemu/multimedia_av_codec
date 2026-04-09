@@ -31,6 +31,8 @@ const static int32_t NUM_TEST = 0;
 const static int32_t NUM7_TEST = 7;
 const static int32_t NUM10_TEST = 10;
 const static int32_t NUM2_TEST = 2;
+const static uint32_t FPS_24 = 24;
+const static uint32_t FPS_30 = 30;
 const static int32_t NUM1000000_TEST = 1000000;
 const static int32_t NUM100_TEST = 100;
 const static int32_t NUM1000_TEST = 1000;
@@ -1201,6 +1203,237 @@ HWTEST_F(DashMpdDownloaderUnittest, GetStreamInfo_001, TestSize.Level0)
 }
 
 /**
+ * @tc.name  : Test ParseFrameRateToUint32
+ * @tc.number: ParseFrameRateToUint32_001
+ * @tc.desc  : Test str.empty()
+ */
+HWTEST_F(DashMpdDownloaderUnittest, ParseFrameRateToUint32_001, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    uint32_t value = FPS_24;
+
+    auto ret = mpdDownloader_->ParseFrameRateToUint32("", value);
+    EXPECT_EQ(ret, false);
+    EXPECT_EQ(value, FPS_24);
+}
+
+/**
+ * @tc.name  : Test ParseFrameRateToUint32
+ * @tc.number: ParseFrameRateToUint32_002
+ * @tc.desc  : Test numStr.empty()
+ */
+HWTEST_F(DashMpdDownloaderUnittest, ParseFrameRateToUint32_002, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    uint32_t value = NUM_TEST;
+
+    auto ret = mpdDownloader_->ParseFrameRateToUint32("/2", value);
+    EXPECT_EQ(ret, false);
+}
+
+/**
+ * @tc.name  : Test ParseFrameRateToUint32
+ * @tc.number: ParseFrameRateToUint32_003
+ * @tc.desc  : Test denStr.empty()
+ */
+HWTEST_F(DashMpdDownloaderUnittest, ParseFrameRateToUint32_003, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    uint32_t value = NUM_TEST;
+
+    auto ret = mpdDownloader_->ParseFrameRateToUint32("24/", value);
+    EXPECT_EQ(ret, false);
+}
+
+/**
+ * @tc.name  : Test ParseFrameRateToUint32
+ * @tc.number: ParseFrameRateToUint32_004
+ * @tc.desc  : Test pos < numStr.length()
+ */
+HWTEST_F(DashMpdDownloaderUnittest, ParseFrameRateToUint32_004, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    uint32_t value = NUM_TEST;
+
+    auto ret = mpdDownloader_->ParseFrameRateToUint32("24x/2", value);
+    EXPECT_EQ(ret, false);
+}
+
+/**
+ * @tc.name  : Test ParseFrameRateToUint32
+ * @tc.number: ParseFrameRateToUint32_005
+ * @tc.desc  : Test pos < denStr.length()
+ */
+HWTEST_F(DashMpdDownloaderUnittest, ParseFrameRateToUint32_005, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    uint32_t value = NUM_TEST;
+
+    auto ret = mpdDownloader_->ParseFrameRateToUint32("24/2x", value);
+    EXPECT_EQ(ret, false);
+}
+
+/**
+ * @tc.name  : Test ParseFrameRateToUint32
+ * @tc.number: ParseFrameRateToUint32_006
+ * @tc.desc  : Test den < 0.0
+ */
+HWTEST_F(DashMpdDownloaderUnittest, ParseFrameRateToUint32_006, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    uint32_t value = NUM_TEST;
+
+    auto ret = mpdDownloader_->ParseFrameRateToUint32("24/-2", value);
+    EXPECT_EQ(ret, false);
+}
+
+/**
+ * @tc.name  : Test ParseFrameRateToUint32
+ * @tc.number: ParseFrameRateToUint32_007
+ * @tc.desc  : Test std::abs(den) < TOLERANCE
+ */
+HWTEST_F(DashMpdDownloaderUnittest, ParseFrameRateToUint32_007, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    uint32_t value = NUM_TEST;
+
+    auto ret = mpdDownloader_->ParseFrameRateToUint32("24/0", value);
+    EXPECT_EQ(ret, false);
+}
+
+/**
+ * @tc.name  : Test ParseFrameRateToUint32
+ * @tc.number: ParseFrameRateToUint32_008
+ * @tc.desc  : Test fps < 0.0 in ratio branch
+ */
+HWTEST_F(DashMpdDownloaderUnittest, ParseFrameRateToUint32_008, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    uint32_t value = NUM_TEST;
+
+    auto ret = mpdDownloader_->ParseFrameRateToUint32("-24/2", value);
+    EXPECT_EQ(ret, false);
+}
+
+/**
+ * @tc.name  : Test ParseFrameRateToUint32
+ * @tc.number: ParseFrameRateToUint32_009
+ * @tc.desc  : Test ratio branch success with integer frame rate
+ */
+HWTEST_F(DashMpdDownloaderUnittest, ParseFrameRateToUint32_009, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    uint32_t value = NUM_TEST;
+
+    auto ret = mpdDownloader_->ParseFrameRateToUint32("24/1", value);
+    EXPECT_EQ(ret, true);
+    EXPECT_EQ(value, FPS_24);
+}
+
+/**
+ * @tc.name  : Test ParseFrameRateToUint32
+ * @tc.number: ParseFrameRateToUint32_010
+ * @tc.desc  : Test ratio branch success with ceil result
+ */
+HWTEST_F(DashMpdDownloaderUnittest, ParseFrameRateToUint32_010, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    uint32_t value = NUM_TEST;
+
+    auto ret = mpdDownloader_->ParseFrameRateToUint32("30000/1001", value);
+    EXPECT_EQ(ret, true);
+    EXPECT_EQ(value, FPS_30);
+}
+
+/**
+ * @tc.name  : Test ParseFrameRateToUint32
+ * @tc.number: ParseFrameRateToUint32_011
+ * @tc.desc  : Test ratio branch success when fps is zero
+ */
+HWTEST_F(DashMpdDownloaderUnittest, ParseFrameRateToUint32_011, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    uint32_t value = FPS_24;
+
+    auto ret = mpdDownloader_->ParseFrameRateToUint32("0/2", value);
+    EXPECT_EQ(ret, true);
+    EXPECT_EQ(value, static_cast<uint32_t>(NUM_TEST));
+}
+
+/**
+ * @tc.name  : Test ParseFrameRateToUint32
+ * @tc.number: ParseFrameRateToUint32_012
+ * @tc.desc  : Test pos < frameRateStr.length()
+ */
+HWTEST_F(DashMpdDownloaderUnittest, ParseFrameRateToUint32_012, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    uint32_t value = NUM_TEST;
+
+    auto ret = mpdDownloader_->ParseFrameRateToUint32("29.97fps", value);
+    EXPECT_EQ(ret, false);
+}
+
+/**
+ * @tc.name  : Test ParseFrameRateToUint32
+ * @tc.number: ParseFrameRateToUint32_013
+ * @tc.desc  : Test fps < 0.0 in plain branch
+ */
+HWTEST_F(DashMpdDownloaderUnittest, ParseFrameRateToUint32_013, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    uint32_t value = NUM_TEST;
+
+    auto ret = mpdDownloader_->ParseFrameRateToUint32("-29.97", value);
+    EXPECT_EQ(ret, false);
+}
+
+/**
+ * @tc.name  : Test ParseFrameRateToUint32
+ * @tc.number: ParseFrameRateToUint32_014
+ * @tc.desc  : Test plain branch success with integer frame rate
+ */
+HWTEST_F(DashMpdDownloaderUnittest, ParseFrameRateToUint32_014, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    uint32_t value = NUM_TEST;
+
+    auto ret = mpdDownloader_->ParseFrameRateToUint32("24", value);
+    EXPECT_EQ(ret, true);
+    EXPECT_EQ(value, FPS_24);
+}
+
+/**
+ * @tc.name  : Test ParseFrameRateToUint32
+ * @tc.number: ParseFrameRateToUint32_015
+ * @tc.desc  : Test plain branch success with ceil result
+ */
+HWTEST_F(DashMpdDownloaderUnittest, ParseFrameRateToUint32_015, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    uint32_t value = NUM_TEST;
+
+    auto ret = mpdDownloader_->ParseFrameRateToUint32("29.01", value);
+    EXPECT_EQ(ret, true);
+    EXPECT_EQ(value, FPS_30);
+}
+
+/**
+ * @tc.name  : Test ParseFrameRateToUint32
+ * @tc.number: ParseFrameRateToUint32_016
+ * @tc.desc  : Test plain branch success when fps is zero
+ */
+HWTEST_F(DashMpdDownloaderUnittest, ParseFrameRateToUint32_016, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    uint32_t value = FPS_24;
+
+    auto ret = mpdDownloader_->ParseFrameRateToUint32("0", value);
+    EXPECT_EQ(ret, true);
+    EXPECT_EQ(value, static_cast<uint32_t>(NUM_TEST));
+}
+
+/**
  * @tc.name  : Test GetDuration
  * @tc.number: GetDuration_001
  * @tc.desc  : Test mpdInfo_ != nullptr && mpdInfo_->type_ == DashType::DASH_TYPE_DYNAMIC
@@ -1711,6 +1944,63 @@ HWTEST_F(DashMpdDownloaderUnittest, UpdateSeekRanges_015, TestSize.Level0)
     EXPECT_EQ(mpdDownloader_->seekRanges_.size(), 1);
     EXPECT_EQ(mpdDownloader_->seekRanges_[0].start, 0);
     EXPECT_EQ(mpdDownloader_->seekRanges_[0].end, NUM500_TEST * MS_2_NS);
+}
+
+/**
+ * @tc.name  : Test FillStreamDescription
+ * @tc.number: FillStreamDescription_001
+ * @tc.desc  : Test FillStreamDescription updates stream fields from representation info
+ */
+HWTEST_F(DashMpdDownloaderUnittest, FillStreamDescription_001, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    DashStreamDescription streamDesc;
+    DashRepresentationInfo repInfo;
+    repInfo.bandwidth_ = NUM1000_TEST;
+    repInfo.commonAttrsAndElements_.width_ = NUM1000_TEST;
+    repInfo.commonAttrsAndElements_.height_ = NUM500_TEST;
+    repInfo.commonAttrsAndElements_.codecs_ = "avc1.64001f";
+    repInfo.commonAttrsAndElements_.frameRate_ = "24";
+    repInfo.commonAttrsAndElements_.channels_ = NUM2_TEST;
+
+    mpdDownloader_->FillStreamDescription(streamDesc, &repInfo, ID_TEST, DASH_VIDEO_TYPE_HDR_10);
+
+    EXPECT_EQ(streamDesc.representationIndex_, static_cast<unsigned int>(ID_TEST));
+    EXPECT_EQ(streamDesc.bandwidth_, static_cast<unsigned int>(NUM1000_TEST));
+    EXPECT_EQ(streamDesc.width_, static_cast<unsigned int>(NUM1000_TEST));
+    EXPECT_EQ(streamDesc.height_, static_cast<unsigned int>(NUM500_TEST));
+    EXPECT_EQ(streamDesc.codecs_, "avc1.64001f");
+    EXPECT_EQ(streamDesc.frameRate_, "24");
+    EXPECT_EQ(streamDesc.channels_, NUM2_TEST);
+    EXPECT_EQ(streamDesc.videoType_, DASH_VIDEO_TYPE_HDR_10);
+}
+
+/**
+ * @tc.name  : Test GetMimeType
+ * @tc.number: GetMimeType_001
+ * @tc.desc  : Test GetMimeType returns normalized video mime type
+ */
+HWTEST_F(DashMpdDownloaderUnittest, GetMimeType_001, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+
+    auto ret = mpdDownloader_->GetMimeType("video/avc1.64001f", VIDEO);
+
+    EXPECT_EQ(ret, "video/avc1");
+}
+
+/**
+ * @tc.name  : Test ContainsNonDigit
+ * @tc.number: ContainsNonDigit_001
+ * @tc.desc  : Test ContainsNonDigit returns true when input contains non-digit characters
+ */
+HWTEST_F(DashMpdDownloaderUnittest, ContainsNonDigit_001, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+
+    auto ret = mpdDownloader_->ContainsNonDigit("24fps");
+
+    EXPECT_EQ(ret, true);
 }
 }
 }

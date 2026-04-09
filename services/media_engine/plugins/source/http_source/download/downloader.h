@@ -223,6 +223,7 @@ public:
     std::string GetContentType();
     void ReStart();
     void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
+    std::string GetCertIssuerNames();
 
 private:
     bool BeginDownload();
@@ -230,7 +231,7 @@ private:
     void RequestData();
     void HandlePlayingFinish();
     void HandleRetOK();
-    void HandleResponseCb(int32_t clientCode, int32_t serverCode, Status& ret);
+    void HandleResponseCb(int32_t clientCode, int32_t serverCode, const std::string &cb, Status& ret);
     static size_t RxBodyData(void* buffer, size_t size, size_t nitems, void* userParam);
     static size_t RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam);
     static bool HandleContentRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
@@ -292,6 +293,7 @@ private:
     int64_t lastDownloadTime_ {0};
     int64_t startDownTime_ {0};
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
+    std::string ca_;
 };
 }
 }

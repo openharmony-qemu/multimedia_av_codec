@@ -78,7 +78,7 @@ Status SampleQueue::Init(const Config& config)
     sampleBufferQueue_ = AVBufferQueue::Create(config_.queueSize_, MemoryType::VIRTUAL_MEMORY, config_.queueName_);
     FALSE_RETURN_V_MSG_E(sampleBufferQueue_ != nullptr, Status::ERROR_NO_MEMORY, "AVBufferQueue::Create failed");
     if (config_.isFlvLiveStream_) {
-        config_.queueSize_ = MAX_SAMPLE_QUEUE_SIZE;
+        config_.queueSize_ = DEFAULT_SAMPLE_QUEUE_SIZE;
         sampleBufferQueue_->SetLargerQueueSize(config_.queueSize_);
     }
     

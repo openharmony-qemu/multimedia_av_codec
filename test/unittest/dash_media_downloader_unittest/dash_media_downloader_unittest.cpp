@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -75,14 +75,14 @@ HWTEST_F(DashMediaDownloaderUnittest, GetContentType_001, TestSize.Level0)
 /**
  * @tc.name  : Test Read
  * @tc.number: Read_001
- * @tc.desc  : Test segmentDownloaders_.empty()
+ * @tc.desc  : Test segmentDownloaders_.Empty()
  */
 HWTEST_F(DashMediaDownloaderUnittest, Read_001, TestSize.Level0)
 {
     ASSERT_NE(mediaDownloader_, nullptr);
     unsigned char buff = 'a';
     ReadDataInfo readDataInfo;
-    mediaDownloader_->segmentDownloaders_.clear();
+    mediaDownloader_->segmentDownloaders_.Clear();
     auto ret = mediaDownloader_->Read(&buff, readDataInfo);
     EXPECT_EQ(ret, Status::END_OF_STREAM);
 }
@@ -99,8 +99,8 @@ HWTEST_F(DashMediaDownloaderUnittest, Read_002, TestSize.Level0)
     ReadDataInfo readDataInfo;
     std::shared_ptr<DashSegmentDownloader> segmentDownloader = std::make_shared<DashSegmentDownloader>(nullptr,
             1, MediaAVCodec::MediaType::MEDIA_TYPE_VID, NUM_10, nullptr);
-    mediaDownloader_->segmentDownloaders_.push_back(segmentDownloader);
-    EXPECT_FALSE(mediaDownloader_->segmentDownloaders_.empty());
+    mediaDownloader_->segmentDownloaders_.PushBack(segmentDownloader);
+    EXPECT_FALSE(mediaDownloader_->segmentDownloaders_.Empty());
     mediaDownloader_->downloadErrorState_ = true;
     auto callback = std::make_shared<TestCallback>();
     mediaDownloader_->callback_ = callback;
@@ -333,23 +333,23 @@ HWTEST_F(DashMediaDownloaderUnittest, PostBufferingEvent_009, TestSize.Level0)
     EXPECT_NE(streamDesc, nullptr);
     std::shared_ptr<DashSegmentDownloader> segmentDownloader = std::make_shared<DashSegmentDownloader>(nullptr,
             1, MediaAVCodec::MediaType::MEDIA_TYPE_VID, NUM_10, nullptr);
-    mediaDownloader_->segmentDownloaders_.clear();
+    mediaDownloader_->segmentDownloaders_.Clear();
     mediaDownloader_->PostBufferingEvent(streamId, BufferingInfoType::BUFFERING_PERCENT);
     EXPECT_FALSE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
-    EXPECT_EQ(mediaDownloader_->segmentDownloaders_.size(), 0);
+    EXPECT_EQ(mediaDownloader_->segmentDownloaders_.Size(), 0);
 
-    mediaDownloader_->segmentDownloaders_.push_back(segmentDownloader);
+    mediaDownloader_->segmentDownloaders_.PushBack(segmentDownloader);
     mediaDownloader_->PostBufferingEvent(streamId, BufferingInfoType::BUFFERING_PERCENT);
     EXPECT_FALSE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
-    EXPECT_EQ(mediaDownloader_->segmentDownloaders_.size(), 1);
+    EXPECT_EQ(mediaDownloader_->segmentDownloaders_.Size(), 1);
 
     segmentDownloader = std::make_shared<DashSegmentDownloader>(nullptr,
             1, MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE, NUM_10, nullptr);
-    mediaDownloader_->segmentDownloaders_.clear();
-    mediaDownloader_->segmentDownloaders_.push_back(segmentDownloader);
+    mediaDownloader_->segmentDownloaders_.Clear();
+    mediaDownloader_->segmentDownloaders_.PushBack(segmentDownloader);
     mediaDownloader_->PostBufferingEvent(streamId, BufferingInfoType::BUFFERING_PERCENT);
     EXPECT_FALSE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
-    EXPECT_EQ(mediaDownloader_->segmentDownloaders_.size(), 1);
+    EXPECT_EQ(mediaDownloader_->segmentDownloaders_.Size(), 1);
 }
 
 /**
@@ -379,8 +379,8 @@ HWTEST_F(DashMediaDownloaderUnittest, BufferConditionCase_010, TestSize.Level0) 
     downloader->buffer_ = std::make_shared<RingBuffer>(NUM_10);
     downloader->buffer_->tail_ = NUM_20;
     downloader->buffer_->head_ = 0;
-    mediaDownloader_->segmentDownloaders_.clear();
-    mediaDownloader_->segmentDownloaders_.push_back(downloader);
+    mediaDownloader_->segmentDownloaders_.Clear();
+    mediaDownloader_->segmentDownloaders_.PushBack(downloader);
     mediaDownloader_->PostBufferingEvent(streamId, BufferingInfoType::BUFFERING_PERCENT);
     EXPECT_EQ(mediaDownloader_->lastBufferingPercent_, NUM_80);
 }
@@ -414,7 +414,7 @@ HWTEST_F(DashMediaDownloaderUnittest, BufferConditionCase_011, TestSize.Level0)
     downloader->buffer_->tail_ = NUM_10;
     downloader->buffer_->head_ = 0;
     
-    mediaDownloader_->segmentDownloaders_.push_back(downloader);
+    mediaDownloader_->segmentDownloaders_.PushBack(downloader);
     mediaDownloader_->PostBufferingEvent(ID_TEST, BufferingInfoType::BUFFERING_PERCENT);
 
     EXPECT_EQ(callback->eventTriggered, false);
@@ -449,7 +449,7 @@ HWTEST_F(DashMediaDownloaderUnittest, BufferConditionCase_012, TestSize.Level0)
     downloader->buffer_->tail_ = 5;
     downloader->buffer_->head_ = 0;
     
-    mediaDownloader_->segmentDownloaders_.push_back(downloader);
+    mediaDownloader_->segmentDownloaders_.PushBack(downloader);
     mediaDownloader_->PostBufferingEvent(ID_TEST, BufferingInfoType::BUFFERING_PERCENT);
 
     EXPECT_EQ(callback->eventTriggered, false);
@@ -482,7 +482,7 @@ HWTEST_F(DashMediaDownloaderUnittest, BufferConditionCase_013, TestSize.Level0)
     downloader->waterLineAbove_ = 0;
     downloader->buffer_ = std::make_shared<RingBuffer>(NUM_10);
     
-    mediaDownloader_->segmentDownloaders_.push_back(downloader);
+    mediaDownloader_->segmentDownloaders_.PushBack(downloader);
     mediaDownloader_->PostBufferingEvent(ID_TEST, BufferingInfoType::BUFFERING_PERCENT);
     
     EXPECT_EQ(callback->eventTriggered, false);
@@ -549,7 +549,7 @@ HWTEST_F(DashMediaDownloaderUnittest, AutoSelectBitrateInternal_003, TestSize.Le
 HWTEST_F(DashMediaDownloaderUnittest, GetPlayable_001, TestSize.Level0)
 {
     ASSERT_NE(mediaDownloader_, nullptr);
-    mediaDownloader_->segmentDownloaders_.clear();
+    mediaDownloader_->segmentDownloaders_.Clear();
     auto ret = mediaDownloader_->GetPlayable();
     EXPECT_EQ(mediaDownloader_->GetSegmentDownloaderByType(MediaAVCodec::MediaType::MEDIA_TYPE_VID), nullptr);
     EXPECT_EQ(ret, false);
@@ -565,7 +565,7 @@ HWTEST_F(DashMediaDownloaderUnittest, GetPlayable_002, TestSize.Level0)
     ASSERT_NE(mediaDownloader_, nullptr);
     auto downloader = std::make_shared<DashSegmentDownloader>(nullptr, 1,
         MediaAVCodec::MediaType::MEDIA_TYPE_VID, NUM_10, nullptr);
-    mediaDownloader_->segmentDownloaders_.push_back(downloader);
+    mediaDownloader_->segmentDownloaders_.PushBack(downloader);
     auto ret = mediaDownloader_->GetPlayable();
     EXPECT_NE(mediaDownloader_->GetSegmentDownloaderByType(MediaAVCodec::MediaType::MEDIA_TYPE_VID), nullptr);
     EXPECT_EQ(ret, true);
@@ -579,10 +579,10 @@ HWTEST_F(DashMediaDownloaderUnittest, GetPlayable_002, TestSize.Level0)
 HWTEST_F(DashMediaDownloaderUnittest, GetPlayable_003, TestSize.Level0)
 {
     ASSERT_NE(mediaDownloader_, nullptr);
-    mediaDownloader_->segmentDownloaders_.clear();
+    mediaDownloader_->segmentDownloaders_.Clear();
     auto downloader = std::make_shared<DashSegmentDownloader>(nullptr, 1,
         MediaAVCodec::MediaType::MEDIA_TYPE_AUD, NUM_10, nullptr);
-    mediaDownloader_->segmentDownloaders_.push_back(downloader);
+    mediaDownloader_->segmentDownloaders_.PushBack(downloader);
     auto ret = mediaDownloader_->GetPlayable();
     EXPECT_NE(mediaDownloader_->GetSegmentDownloaderByType(MediaAVCodec::MediaType::MEDIA_TYPE_AUD), nullptr);
     EXPECT_EQ(ret, true);
@@ -596,13 +596,13 @@ HWTEST_F(DashMediaDownloaderUnittest, GetPlayable_003, TestSize.Level0)
 HWTEST_F(DashMediaDownloaderUnittest, GetPlayable_004, TestSize.Level0)
 {
     ASSERT_NE(mediaDownloader_, nullptr);
-    mediaDownloader_->segmentDownloaders_.clear();
+    mediaDownloader_->segmentDownloaders_.Clear();
     auto downloader1 = std::make_shared<DashSegmentDownloader>(nullptr, 1,
         MediaAVCodec::MediaType::MEDIA_TYPE_AUD, NUM_10, nullptr);
     auto downloader2 = std::make_shared<DashSegmentDownloader>(nullptr, 1,
         MediaAVCodec::MediaType::MEDIA_TYPE_VID, NUM_10, nullptr);
-    mediaDownloader_->segmentDownloaders_.push_back(downloader1);
-    mediaDownloader_->segmentDownloaders_.push_back(downloader2);
+    mediaDownloader_->segmentDownloaders_.PushBack(downloader1);
+    mediaDownloader_->segmentDownloaders_.PushBack(downloader2);
     auto ret = mediaDownloader_->GetPlayable();
     EXPECT_NE(mediaDownloader_->GetSegmentDownloaderByType(MediaAVCodec::MediaType::MEDIA_TYPE_AUD), nullptr);
     EXPECT_NE(mediaDownloader_->GetSegmentDownloaderByType(MediaAVCodec::MediaType::MEDIA_TYPE_VID), nullptr);
@@ -629,7 +629,7 @@ HWTEST_F(DashMediaDownloaderUnittest, GetBufferingTimeOut_001, TestSize.Level0)
 HWTEST_F(DashMediaDownloaderUnittest, GetBufferSize_001, TestSize.Level0)
 {
     ASSERT_NE(mediaDownloader_, nullptr);
-    mediaDownloader_->segmentDownloaders_.clear();
+    mediaDownloader_->segmentDownloaders_.Clear();
     auto ret = mediaDownloader_->GetBufferSize();
     EXPECT_EQ(ret, 0);
 }
@@ -642,13 +642,13 @@ HWTEST_F(DashMediaDownloaderUnittest, GetBufferSize_001, TestSize.Level0)
 HWTEST_F(DashMediaDownloaderUnittest, GetBufferSize_002, TestSize.Level0)
 {
     ASSERT_NE(mediaDownloader_, nullptr);
-    mediaDownloader_->segmentDownloaders_.clear();
+    mediaDownloader_->segmentDownloaders_.Clear();
     auto downloader = std::make_shared<DashSegmentDownloader>(nullptr, 1,
         MediaAVCodec::MediaType::MEDIA_TYPE_VID, NUM_10, nullptr);
     downloader->buffer_ = std::make_shared<RingBuffer>(NUM_10);
     downloader->buffer_->tail_ = NUM_10;
     downloader->buffer_->head_ = 0;
-    mediaDownloader_->segmentDownloaders_.push_back(downloader);
+    mediaDownloader_->segmentDownloaders_.PushBack(downloader);
     auto ret = mediaDownloader_->GetBufferSize();
     EXPECT_EQ(ret, NUM_10);
 }
@@ -660,8 +660,8 @@ HWTEST_F(DashMediaDownloaderUnittest, GetBufferSize_002, TestSize.Level0)
  */
 HWTEST_F(DashMediaDownloaderUnittest, GetMemorySize_001, TestSize.Level0)
 {
-    mediaDownloader_->segmentDownloaders_.clear();
-    mediaDownloader_->segmentDownloaders_.push_back(nullptr);
+    mediaDownloader_->segmentDownloaders_.Clear();
+    mediaDownloader_->segmentDownloaders_.PushBack(nullptr);
     uint64_t memorySize = mediaDownloader_->GetMemorySize();
     EXPECT_EQ(memorySize, 0);
 }
@@ -673,10 +673,10 @@ HWTEST_F(DashMediaDownloaderUnittest, GetMemorySize_001, TestSize.Level0)
  */
 HWTEST_F(DashMediaDownloaderUnittest, GetMemorySize_002, TestSize.Level0)
 {
-    mediaDownloader_->segmentDownloaders_.clear();
+    mediaDownloader_->segmentDownloaders_.Clear();
     auto downloader = std::make_shared<DashSegmentDownloader>(nullptr, 1,
         MediaAVCodec::MediaType::MEDIA_TYPE_VID, NUM_10, nullptr);
-    mediaDownloader_->segmentDownloaders_.push_back(downloader);
+    mediaDownloader_->segmentDownloaders_.PushBack(downloader);
     uint64_t memorySize = mediaDownloader_->GetMemorySize();
     EXPECT_EQ(memorySize, 4 * 1024 * 1024); // 4 * 1024 * 1024
 }
@@ -684,22 +684,68 @@ HWTEST_F(DashMediaDownloaderUnittest, GetMemorySize_002, TestSize.Level0)
 /**
  * @tc.name  : Test GetPlaybackInfo
  * @tc.number: GetPlaybackInfo_001
- * @tc.desc  : Test segmentDownloaders_.empty()
+ * @tc.desc  : Test segmentDownloaders_.Empty()
  */
 HWTEST_F(DashMediaDownloaderUnittest, GetPlaybackInfo_001, TestSize.Level0)
 {
     ASSERT_NE(mediaDownloader_, nullptr);
-    mediaDownloader_->segmentDownloaders_.clear();
-    EXPECT_TRUE(mediaDownloader_->segmentDownloaders_.empty());
+    mediaDownloader_->segmentDownloaders_.Clear();
+    EXPECT_TRUE(mediaDownloader_->segmentDownloaders_.Empty());
     PlaybackInfo playbackInfo;
     mediaDownloader_->GetPlaybackInfo(playbackInfo);
     
     auto downloader = std::make_shared<DashSegmentDownloader>(nullptr, 1,
         MediaAVCodec::MediaType::MEDIA_TYPE_VID, NUM_10, nullptr);
     downloader->downloadSpeed_ = 1000;
-    mediaDownloader_->segmentDownloaders_.push_back(downloader);
+    mediaDownloader_->segmentDownloaders_.PushBack(downloader);
     mediaDownloader_->GetPlaybackInfo(playbackInfo);
     EXPECT_EQ(playbackInfo.averageDownloadRate, 1000);
+}
+
+/**
+ * @tc.name  : Test StopBufferring
+ * @tc.number: StopBufferring
+ * @tc.desc  : Test segmentDownloaders_.Empty()
+ */
+HWTEST_F(DashMediaDownloaderUnittest, STOP_BUFFERING, TestSize.Level1)
+{
+    std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
+    mediaDownloader->Init();
+    EXPECT_EQ(mediaDownloader->StopBufferring(false), Status::OK);
+
+    mediaDownloader->preparedAction_.seekPosition_ = 0;
+    PlaybackInfo info;
+    info.isDownloading = false;
+    mediaDownloader->GetPlaybackInfo(info);
+    mediaDownloader->SeekToTs(0);
+    EXPECT_FALSE(info.isDownloading);
+    
+    std::shared_ptr<Callback> callback = nullptr;
+    std::shared_ptr<DashSegmentDownloader> downloader = std::make_shared<DashSegmentDownloader>(
+        callback, 0, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 0, nullptr);
+    downloader->Init();
+    auto bufferingCallback = [] (int streamId, BufferingInfoType type) {
+        (void)streamId;
+        (void)type;
+    };
+    downloader->SetSegmentBufferingCallback(bufferingCallback);
+    mediaDownloader->segmentDownloaders_.PushBack(downloader);
+    mediaDownloader->segmentDownloaders_.PushBack(nullptr);
+    mediaDownloader->NotifyInitSuccess();
+    mediaDownloader->SetAppUid(0);
+    mediaDownloader->GetPlaybackInfo(info);
+    mediaDownloader->SetInterruptState(true);
+    mediaDownloader->SeekInternal(0);
+
+    DashMpdInfo mpdInfo;
+    mediaDownloader->mpdDownloader_->mpdInfo_ = &mpdInfo;
+    mediaDownloader->mpdDownloader_->notifyOpenOk_ = true;
+    EXPECT_EQ(mediaDownloader->GetSeekable(), Seekable::INVALID);
+    mediaDownloader->Pause();
+    mediaDownloader->Resume();
+    mediaDownloader->Close(false);
+    
+    EXPECT_EQ(mediaDownloader->StopBufferring(false), Status::ERROR_NULL_POINTER);
 }
 }
 }

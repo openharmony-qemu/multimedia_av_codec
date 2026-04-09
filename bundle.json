@@ -55,7 +55,8 @@
         "av_codec_support_av1_decoder",
         "av_codec_enable_demuxer_dtshd",
         "av_codec_enable_demuxer_truehd",
-        "av_codec_enable_player_startup_optimization"
+        "av_codec_enable_player_startup_optimization",
+        "av_codec_support_smart_fluency_decoding"
       ],
       "adapted_system_type": [ "standard" ],
       "rom": "10000KB",
@@ -263,6 +264,16 @@
               "header_files": [
               ],
               "header_base": "//foundation/multimedia/av_codec/interfaces/kits/c"
+            }
+          },
+          {
+            "type": "so",
+            "name": "//foundation/multimedia/av_codec/services/services:av_codec_service",
+            "header": {
+              "header_files": [
+                "nalu_analyzer_api.h"
+              ],
+              "header_base": "//foundation/multimedia/av_codec/services/services/codec/server/video/features/smart_fluency_decoding/nalu_analyzer"
             }
           },
           {

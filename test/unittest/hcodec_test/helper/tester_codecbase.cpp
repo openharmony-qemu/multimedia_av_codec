@@ -196,6 +196,9 @@ bool TesterCodecBase::ConfigureEncoder()
     if (opt_.maxBitrate.has_value()) {
         fmt.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, opt_.maxBitrate.value());
     }
+    if (opt_.maxInputBufferCount.has_value()) {
+        fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, opt_.maxInputBufferCount.value());
+    }
     if (opt_.targetQp.has_value()) {
         fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TARGET_QP, opt_.targetQp.value());
     }

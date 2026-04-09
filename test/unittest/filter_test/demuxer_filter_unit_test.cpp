@@ -32,6 +32,8 @@ static const std::string MEDIA_ROOT = "file:///data/test/media/";
 static const std::string VIDEO_FILE1 = MEDIA_ROOT + "camera_info_parser.mp4";
 static const std::string VIDEO_FILE2 = MEDIA_ROOT + "test_265_B_Gop25_4sec.mp4";
 static const std::string MIME_IMAGE = "image";
+static const int32_t TEST_VIDEO_WIDTH = 1920;
+static const int32_t TEST_VIDEO_HEIGHT = 1080;
 }  // namespace
 
 namespace OHOS {
@@ -838,6 +840,90 @@ HWTEST_F(DemuxerFilterUnitTest, NotifyResumeUnMute_0100, TestSize.Level1)
     demuxerFilter->demuxer_ = demuxer;
     Status ret = demuxerFilter->NotifyResumeUnMute();
     ASSERT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name: SetPlayStrategy_0100
+ * @tc.desc: Test DemuxerFilter::SetPlayStrategy
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerFilterUnitTest, SetPlayStrategy_0100, TestSize.Level1)
+{
+    demuxerFilter_->demuxer_ = nullptr;
+    Status ret = demuxerFilter_->SetPlayStrategy(nullptr);
+    EXPECT_NE(ret, Status::OK);
+    auto demuxer = std::make_shared<MediaDemuxerMock>();
+    demuxerFilter_->demuxer_ = demuxer;
+    ret = demuxerFilter_->SetPlayStrategy(nullptr);
+    EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
+    auto playStrategy = std::make_shared<PlayStrategy>();
+    playStrategy->width = TEST_VIDEO_WIDTH;
+    playStrategy->height = TEST_VIDEO_HEIGHT;
+    playStrategy->audioLanguage = "eng";
+    playStrategy->subtitleLanguage = "zh_CN";
+    ret = demuxerFilter_->SetPlayStrategy(playStrategy);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name: SelectTrack_0100
+ * @tc.desc: Test DemuxerFilter::SelectTrack
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerFilterUnitTest, SelectTrack_0100, TestSize.Level1)
+{
+    demuxerFilter_->demuxer_ = nullptr;
+    Status ret = demuxerFilter_->SelectTrack(0);
+    EXPECT_NE(ret, Status::OK);
+    auto demuxer = std::make_shared<MediaDemuxerMock>();
+    demuxerFilter_->demuxer_ = demuxer;
+    ret = demuxerFilter_->SelectTrack(0);
+    EXPECT_NE(ret, Status::ERROR_NULL_POINTER);
+}
+
+/**
+ * @tc.name: SetTrackSelectionFilter_0100
+ * @tc.desc: Test DemuxerFilter::SetTrackSelectionFilter
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerFilterUnitTest, SetTrackSelectionFilter_0100, TestSize.Level1)
+{
+    TrackSelectionFilter filter;
+    filter.maxVideoBitrate = 8000000;
+    filter.minVideoBitrate = 1000000;
+    filter.maxVideoFrameRate = 60;
+    filter.minVideoFrameRate = 24;
+    filter.maxVideoResolution = std::make_pair(TEST_VIDEO_WIDTH, TEST_VIDEO_HEIGHT);
+    filter.minVideoResolution = std::make_pair(1280, 720);
+    filter.preferredVideoMimeTypes = std::vector<std::string>{"video/avc"};
+    filter.maxAudioBitrate = 320000;
+    filter.minAudioBitrate = 64000;
+    filter.maxAudioChannels = 2;
+    filter.preferredAudioMimeTypes = std::vector<std::string>{"audio/mp4a-latm"};
+    filter.preferredAudioLanguages = std::vector<std::string>{"eng"};
+    filter.preferredSubtitleLanguages = std::vector<std::string>{"zh"};
+
+    auto demuxer = std::make_shared<MediaDemuxerMock>();
+    demuxerFilter_->demuxer_ = demuxer;
+    demuxerFilter_->SetTrackSelectionFilter(filter);
+
+    EXPECT_EQ(demuxer->trackSelectionFilter_.maxVideoBitrate, filter.maxVideoBitrate);
+    EXPECT_EQ(demuxer->trackSelectionFilter_.minVideoBitrate, filter.minVideoBitrate);
+    EXPECT_EQ(demuxer->trackSelectionFilter_.maxVideoFrameRate, filter.maxVideoFrameRate);
+    EXPECT_EQ(demuxer->trackSelectionFilter_.minVideoFrameRate, filter.minVideoFrameRate);
+    EXPECT_EQ(demuxer->trackSelectionFilter_.maxVideoResolution, filter.maxVideoResolution);
+    EXPECT_EQ(demuxer->trackSelectionFilter_.minVideoResolution, filter.minVideoResolution);
+    EXPECT_EQ(demuxer->trackSelectionFilter_.preferredVideoMimeTypes, filter.preferredVideoMimeTypes);
+    EXPECT_EQ(demuxer->trackSelectionFilter_.maxAudioBitrate, filter.maxAudioBitrate);
+    EXPECT_EQ(demuxer->trackSelectionFilter_.minAudioBitrate, filter.minAudioBitrate);
+    EXPECT_EQ(demuxer->trackSelectionFilter_.maxAudioChannels, filter.maxAudioChannels);
+    EXPECT_EQ(demuxer->trackSelectionFilter_.preferredAudioMimeTypes, filter.preferredAudioMimeTypes);
+    EXPECT_EQ(demuxer->trackSelectionFilter_.preferredAudioLanguages, filter.preferredAudioLanguages);
+    EXPECT_EQ(demuxer->trackSelectionFilter_.preferredSubtitleLanguages, filter.preferredSubtitleLanguages);
+
+    demuxerFilter_->demuxer_ = nullptr;
+    demuxerFilter_->SetTrackSelectionFilter(filter);
+    SUCCEED();
 }
 }  // namespace Pipeline
 }  // namespace Media

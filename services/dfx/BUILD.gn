@@ -76,6 +76,8 @@ ohos_shared_library("av_codec_service_dfx") {
     "hicollie:libhicollie",
     "hisysevent:libhisysevent",
     "init:libbegetutil",
+    "openssl:libcrypto_shared",
+    "openssl:libssl_shared",
   ]
 
   subsystem_name = "multimedia"

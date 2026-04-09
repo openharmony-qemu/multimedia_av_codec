@@ -34,6 +34,8 @@ constexpr float LATITUDE_MAX = 90.0f;
 constexpr float LONGITUDE_MIN = -180.0f;
 constexpr float LONGITUDE_MAX = 180.0f;
 uint8_t g_flag[BOX_FLAG_LEN] = {0, 0, 0};
+constexpr uint32_t MOV_TKHD_FLAG_ENABLED = 0x0001;
+constexpr uint32_t MOV_TKHD_FLAG_IN_MOVIE = 0x0002;
 }
 
 using namespace OHOS::MediaAVCodec;
@@ -430,12 +432,21 @@ std::shared_ptr<BasicBox> BoxParser::TrakBoxGenerate(std::shared_ptr<BasicTrack>
 
 std::shared_ptr<BasicBox> BoxParser::TkhdBoxGenerate(std::shared_ptr<BasicTrack> track)
 {
-    std::shared_ptr<TkhdBox> tkhdBox = std::make_shared<TkhdBox>(0, "tkhd");
+    uint32_t flags = MOV_TKHD_FLAG_IN_MOVIE;
+    auto mediaType = track->GetMediaType();
+    if (mediaType == MediaType::VIDEO && isFirstVideoTrack_) {
+        flags |= MOV_TKHD_FLAG_ENABLED;
+        isFirstVideoTrack_ = false;
+    } else if (mediaType == MediaType::AUDIO && isFirstAudioTrack_) {
+        flags |= MOV_TKHD_FLAG_ENABLED;
+        isFirstAudioTrack_ = false;
+    }
+
+    std::shared_ptr<TkhdBox> tkhdBox = std::make_shared<TkhdBox>(0, "tkhd", 0, flags);
     tkhdBox->creationTime_ = 0;
     tkhdBox->modificationTime_ = 0;
     tkhdBox->trackIndex_ = static_cast<uint32_t>(track->GetTrackId());
     tkhdBox->duration_ = 0;
-    auto mediaType = track->GetMediaType();
     if (mediaType == MediaType::AUDIO) {
         tkhdBox->volume_ = 0x0100;
     } else if (mediaType == MediaType::VIDEO) { // 视频的旋转角度，后边刷新

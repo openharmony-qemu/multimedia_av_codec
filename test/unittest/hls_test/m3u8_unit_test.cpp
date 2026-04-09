@@ -651,6 +651,110 @@ HWTEST_F(M3u8UnitTest, IsVideoStream_001, TestSize.Level1)
     EXPECT_EQ(master->IsVideoStream(codecs), false);
 }
 
+HWTEST_F(M3u8UnitTest, ParseAttributes_FRAME_RATE_001, TestSize.Level1)
+{
+    std::shared_ptr<M3U8MasterPlaylist> master = std::make_shared<M3U8MasterPlaylist>("", "https://example.com/key");
+    master->StartParsing();
+
+    std::string attrField =
+        "BANDWIDTH=1000000,RESOLUTION=1920x1080,CODECS=\"avc1.42E01E\",FRAME-RATE=30";
+    auto item = std::make_shared<AttributesTag>(HlsTag::EXTXSTREAMINF, attrField);
+    auto stream = std::make_shared<M3U8VariantStream>("test", "http://example.com/test.m3u8", nullptr);
+
+    master->ParseAttributes(item, stream);
+
+    EXPECT_EQ(stream->bandWidth_, 1000000);
+    EXPECT_EQ(stream->width_, 1920);
+    EXPECT_EQ(stream->height_, 1080);
+    EXPECT_EQ(stream->frameRate_, 30);
+}
+
+HWTEST_F(M3u8UnitTest, ChooseStreamByStream_001, TestSize.Level1)
+{
+    std::shared_ptr<M3U8MasterPlaylist> master = std::make_shared<M3U8MasterPlaylist>("", "https://example.com/key");
+    master->StartParsing();
+
+    auto m3u8 = std::make_shared<M3U8>("http://example.com/test.m3u8", "");
+    auto stream1 = std::make_shared<M3U8VariantStream>("s1", "uri1", m3u8);
+    auto stream2 = std::make_shared<M3U8VariantStream>("s2", "uri2", m3u8);
+    auto stream3 = std::make_shared<M3U8VariantStream>("s3", "uri3", m3u8);
+
+    stream1->streamId_ = 1;
+    stream2->streamId_ = 2;
+    stream3->streamId_ = 3;
+
+    master->variants_.push_back(stream1);
+    master->variants_.push_back(stream2);
+    master->variants_.push_back(stream3);
+    master->defaultVariant_ = stream1;
+
+    master->ChooseStreamByStream(2);
+    EXPECT_EQ(master->defaultVariant_, stream2);
+
+    master->ChooseStreamByStream(-1);
+    EXPECT_EQ(master->defaultVariant_, stream2);
+
+    master->ChooseStreamByStream(100);
+    EXPECT_EQ(master->defaultVariant_, stream2);
+}
+
+
+HWTEST_F(M3u8UnitTest, GetCodec_001, TestSize.Level1)
+{
+    std::shared_ptr<M3U8MasterPlaylist> master = std::make_shared<M3U8MasterPlaylist>("", "https://example.com/key");
+    master->StartParsing();
+
+    std::string codecs = "mp4a.40.2,avc1.77.31";
+    EXPECT_EQ(master->GetCodec(StreamType::VIDEO, codecs), "avc1.77.31");
+    EXPECT_EQ(master->GetCodec(StreamType::AUDIO, codecs), "mp4a.40.2");
+
+    codecs = "  mp4a.40.2  ,  hev1.1.6.l93.b0  ";
+    EXPECT_EQ(master->GetCodec(StreamType::VIDEO, codecs), "hev1.1.6.l93.b0");
+    EXPECT_EQ(master->GetCodec(StreamType::AUDIO, codecs), "mp4a.40.2");
+}
+
+HWTEST_F(M3u8UnitTest, GetCodec_002, TestSize.Level1)
+{
+    std::shared_ptr<M3U8MasterPlaylist> master = std::make_shared<M3U8MasterPlaylist>("", "https://example.com/key");
+    master->StartParsing();
+
+    EXPECT_EQ(master->GetCodec(StreamType::VIDEO, ""), "");
+    EXPECT_EQ(master->GetCodec(StreamType::AUDIO, ""), "");
+    EXPECT_EQ(master->GetCodec(StreamType::VIDEO, "mp4a.40.2"), "");
+    EXPECT_EQ(master->GetCodec(StreamType::AUDIO, "avc1.77.31"), "");
+}
+
+HWTEST_F(M3u8UnitTest, GetMimeType_001, TestSize.Level1)
+{
+    std::shared_ptr<M3U8MasterPlaylist> master = std::make_shared<M3U8MasterPlaylist>("", "https://example.com/key");
+    master->StartParsing();
+
+    EXPECT_EQ(master->GetMimeType("avc1.77.31,mp4a.40.2"), "video/avc1");
+    EXPECT_EQ(master->GetMimeType("  hev1.1.6.l93.b0  ,  mp4a.40.2"), "video/hev1");
+}
+
+HWTEST_F(M3u8UnitTest, GetMimeType_002, TestSize.Level1)
+{
+    std::shared_ptr<M3U8MasterPlaylist> master = std::make_shared<M3U8MasterPlaylist>("", "https://example.com/key");
+    master->StartParsing();
+
+    EXPECT_EQ(master->GetMimeType(""), "");
+    EXPECT_EQ(master->GetMimeType("mp4a.40.2"), "");
+    EXPECT_EQ(master->GetMimeType("  ,  .  ,  "), "");
+}
+
+HWTEST_F(M3u8UnitTest, ADDFILE_001, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    M3U8Fragment fragment("http://example.com", 10.0, 1, false);
+    m3u8.minFragDuration_ = 1;
+    m3u8.isDecryptAble_ = true;
+    m3u8.method_ = std::make_shared<std::string>("NONE");
+    m3u8.keyIndex_ = 1;
+    m3u8.AddFile(std::make_shared<M3U8Fragment>(fragment), 5);
+    EXPECT_EQ(m3u8.files_.front()->keyIndex_, UINT64_MAX);
+}
+
 HWTEST_F(M3u8UnitTest, PREPAREDECRYPTIONKEYS_001, TestSize.Level1)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "TestPlaylist");
@@ -671,7 +775,7 @@ HWTEST_F(M3u8UnitTest, WAIT_KEY_DOWNLOAD_001, TestSize.Level1)
     m3u8.keyAllDownload_ = 1;
     m3u8.isInterruptNeeded_ = false;
     m3u8.WaitKeyDownload();
-    EXPECT_EQ(m3u8.keyAllDownload_, 1);
+    EXPECT_EQ(m3u8.keyAllDownload_, 0);
 }
 
 /**

@@ -94,6 +94,22 @@ const char* PLUGIN_NAME_AAC = "aac";
 const char* PLUGIN_NAME_MPEGPS = "mpeg";
 const int32_t MPEGPS_START_CODE_SIZE = 4;
 const uint8_t MPEGPS_START_CODE[] = {0x00, 0x00, 0x01, 0xBA};
+
+const char* g_heifBrands[] = {"heic", "avif", "heif", "mif1", "msf1", "miaf", "heix", "heim", "heis"};
+
+bool IsHeifFormat(const char* majorBrand)
+{
+    if (majorBrand == nullptr) {
+        return false;
+    }
+    for (const auto& brand : g_heifBrands) {
+        if (StartWith(majorBrand, brand)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 const uint32_t SETTIMER_TIMEOUT = 5; // second
 constexpr int64_t LOG_INTERVAL_MS = 2000; // 2s
 constexpr uint32_t LOG_MAX_COUNT = 10; // 10 times
@@ -325,6 +341,8 @@ int ConvertFlagsToFFmpeg(AVStream *avStream, int64_t ffTime, SeekMode mode, int6
         if (streamDuration > 0  && (streamDuration < buffering || ffTime >= streamDuration - buffering)) {
             return AVSEEK_FLAG_BACKWARD;
         }
+        FALSE_RETURN_V_MSG_E(g_seekModeToFFmpegSeekFlags.count(mode) != 0, AVSEEK_FLAG_BACKWARD,
+            "Seek mode is invalid");
         return g_seekModeToFFmpegSeekFlags.at(mode);
     }
     if (!FFmpegFormatHelper::IsVideoType(*avStream) || seekTime == 0) {
@@ -1475,6 +1493,13 @@ int32_t ParseHeader(AVFormatContext* formatContext, std::shared_ptr<AVInputForma
         MEDIA_LOG_E("Call avformat_open_input failed by " PUBLIC_LOG_S ", err:" PUBLIC_LOG_S,
             pluginImpl->name, AVStrError(ret).c_str());
         return ret;
+    }
+
+    const AVDictionaryEntry *type = av_dict_get(formatContext->metadata, "major_brand", NULL, 0);
+    if (IsHeifFormat(type != nullptr ? type->value : nullptr)) {
+        FreeContext(formatContext, avioContext);
+        MEDIA_LOG_E("HEIF format is not supported");
+        return -1;
     }
 
     auto open = std::chrono::steady_clock::now();

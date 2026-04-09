@@ -32,6 +32,11 @@
 #include "instance_info.h"
 #include "adaptive_framerate_controller.h"
 
+#ifdef SFD_ENABLED
+#include "features/smart_fluency_decoding/smart_fluency_decoding_builder.h"
+#include "features/smart_fluency_decoding/smart_fluency_decoding.h"
+#endif
+
 namespace OHOS {
 namespace MediaAVCodec {
 class CodecServer : public std::enable_shared_from_this<CodecServer>,
@@ -219,6 +224,16 @@ private:
     Format outputFormatChanged_;
     std::shared_ptr<MediaCodecCallback> codecBaseCb_ = nullptr;
     std::shared_ptr<FramerateCalculator> framerateCalculator_ = nullptr;
+#ifdef SFD_ENABLED
+    void InitializeSFD(const Media::Format &format);
+    void CacheCsdData(uint32_t index);
+    void ClearCsdCache();
+    std::unique_ptr<SFD::SmartFluencyDecoding> smartFluencyDecoding_ = nullptr;
+    std::vector<uint8_t> cachedCsdData_;
+    bool isCsdCached_ = false;
+    std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> tempCsdBufferMap_;
+    std::mutex tempCsdMutex_;
+#endif
 };
 
 class CodecBaseCallback : public MediaCodecCallback, public NoCopyable {
