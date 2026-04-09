@@ -208,6 +208,11 @@ public:
         (void)windowMs;
         return mapStatus_[name_];
     }
+    Status SetReadTimeoutForInitSeek(int64_t timeoutMs) override
+    {
+        (void)timeoutMs;
+        return mapStatus_[name_];
+    }
     Status SeekToFrameByDts(int32_t trackId, int64_t seekTime,
         SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs) override
     {

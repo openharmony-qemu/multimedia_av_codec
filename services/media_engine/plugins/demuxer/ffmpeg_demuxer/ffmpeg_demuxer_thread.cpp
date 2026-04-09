@@ -127,8 +127,13 @@ int FFmpegDemuxerPlugin::HandleNonReadAgain(IOContext* ioContext, int& tryCount)
             static_cast<int32_t>(invokerType), ioContext->offset);
         return AV_READ_PACKET_READ_ERROR;
     }
+    if (IsReadTimeoutExpired(ioContext)) {
+        MEDIA_LOG_E("HandleNonReadAgain read timeout, invokerType:" PUBLIC_LOG_D32,
+            static_cast<int32_t>(invokerType));
+        return AV_READ_PACKET_READ_ERROR;
+    }
     auto stopState = ioContext->avReadPacketStopState.load();
-    if (invokerType == InvokerType::INIT) {
+    if (invokerType == InvokerType::INIT || invokerType == InvokerType::SEEK) {
         switch (stopState) {
             case AVReadPacketStopState::TRUE:
                 MEDIA_LOG_I("AVReadPacket stopped");
@@ -139,7 +144,7 @@ int FFmpegDemuxerPlugin::HandleNonReadAgain(IOContext* ioContext, int& tryCount)
                 return AV_READ_PACKET_READ_AGAIN;
             case AVReadPacketStopState::UNSET:
                 ioContext->retry = true;
-                ioContext->initErrorAgain = true;
+                ioContext->initErrorAgain = (invokerType == InvokerType::INIT) ? true : static_cast<bool>(ioContext->initErrorAgain);
                 return RetryNonReadAgainBounded(tryCount, AV_READ_PACKET_NON_READ_SLEEP_TIME,
                     "Read again and retry, UNSET state", ioContext->offset);
             default:
@@ -688,6 +693,34 @@ void FFmpegDemuxerPlugin::UpdateAsyncReadThreadPriority()
 Status FFmpegDemuxerPlugin::SetAVReadPacketStopState(bool state)
 {
     ioContext_.avReadPacketStopState.store(state ? AVReadPacketStopState::TRUE : AVReadPacketStopState::FALSE);
+    return Status::OK;
+}
+
+bool FFmpegDemuxerPlugin::IsReadTimeoutExpired(IOContext* ioContext)
+{
+    if (ioContext->readTimeoutMs <= 0) {
+        return false;
+    }
+    if (ioContext->readStartTimeMs <= 0) {
+        ioContext->readStartTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+        return false;
+    }
+    int64_t currentTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count();
+    if (currentTimeMs - ioContext->readStartTimeMs > ioContext->readTimeoutMs) {
+        MEDIA_LOG_E("Read timeout, elapsed: " PUBLIC_LOG_D64 "ms, limit: " PUBLIC_LOG_D64 "ms",
+            currentTimeMs - ioContext->readStartTimeMs, ioContext->readTimeoutMs);
+        return true;
+    }
+    return false;
+}
+
+Status FFmpegDemuxerPlugin::SetReadTimeoutForInitSeek(int64_t timeoutMs)
+{
+    MEDIA_LOG_I("Set read timeout for init/seek: " PUBLIC_LOG_D64 " ms", timeoutMs);
+    ioContext_.readTimeoutMs = timeoutMs;
+    ioContext_.readStartTimeMs = 0;
     return Status::OK;
 }
 

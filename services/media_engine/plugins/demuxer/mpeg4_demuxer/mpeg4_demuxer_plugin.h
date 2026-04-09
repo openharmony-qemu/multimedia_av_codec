@@ -90,6 +90,7 @@ public:
         const int32_t probSize) override;
     Status BoostReadThreadPriority() override { return Status::ERROR_UNKNOWN; }
     Status SetAVReadPacketStopState(bool state) override { return Status::ERROR_UNKNOWN; }
+    Status SetReadTimeoutForInitSeek(int64_t timeoutMs) override { return Status::OK; }
     Status ReadSampleZeroCopy(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout) override
         { return Status::ERROR_UNKNOWN; };
     Status GetCurrentCacheFrameCount(uint32_t trackId, uint32_t& frameCount) override;
