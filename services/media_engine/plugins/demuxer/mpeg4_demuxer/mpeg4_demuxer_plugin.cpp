@@ -1572,6 +1572,8 @@ int32_t GetConfidence(std::shared_ptr<DemuxerDataReader> dataReader)
 
 int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> source)
 {
+    std::string debug = OHOS::system::GetParameter("Mpeg4DemuxerPlugin.debug", "0");
+    FALSE_RETURN_V_MSG_W(debug == "0", 0, "Skip Mpeg4Demuxer, debug");
     std::string enable = OHOS::system::GetParameter("Mpeg4DemuxerPlugin.enable", "0");
     FALSE_RETURN_V_MSG_W(enable == "1", 0, "Skip Mpeg4Demuxer");
     FALSE_RETURN_V_MSG_E(!pluginName.empty(), 0, "Plugin name is empty");
