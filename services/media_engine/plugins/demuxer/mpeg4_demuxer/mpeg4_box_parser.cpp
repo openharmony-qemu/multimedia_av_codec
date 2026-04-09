@@ -44,6 +44,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace MPEG4 {
+constexpr uint64_t MIN_FLOAT_SIZE = 4;
 constexpr uint32_t ALAC_SPECIFIC_SIZE = 36;
 constexpr int32_t BYTE_TO_BITS = 8;
 constexpr int32_t CREATION_TIME_OFFSET = 4;
@@ -3421,10 +3422,7 @@ bool MPEG4AtomParser::SetMetadataValue(const std::string& key, const std::string
 
 Status MPEG4AtomParser::ReadMetadataString(std::string& key, int64_t offset, uint64_t size, uint32_t dataType)
 {
-    if (size == 0) {
-        return Status::OK;
-    }
-    
+    FALSE_RETURN_V_NOLOG(size > 0, Status::OK);
     auto buffer = std::make_unique<uint8_t[]>(size + 1);
     FALSE_RETURN_V_MSG_E(buffer != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate metadata buffer");
     Status ret = dataReader_->ReadUintData(offset, buffer.get(), size);
@@ -3434,43 +3432,36 @@ Status MPEG4AtomParser::ReadMetadataString(std::string& key, int64_t offset, uin
     if (SetMetadataValue(key, std::string(reinterpret_cast<char*>(buffer.get()), size))) {
         return Status::OK;
     }
-    constexpr uint64_t minFloatSize = 4;
+    FALSE_RETURN_V_NOLOG(userFormat_ != nullptr, Status::ERROR_NO_MEMORY);
     switch (dataType) {
         case 0x00: { // reserved buffer
-            if (userFormat_) {
-                std::vector<uint8_t> bufferValue(buffer.get(), buffer.get() + size);
-                userFormat_->SetData(key, bufferValue);
-            }
+            std::vector<uint8_t> bufferValue(buffer.get(), buffer.get() + size);
+            userFormat_->SetData(key, bufferValue);
             break;
         }
         case 0x15:
         case 0x43: { // BE signed integer
-            int32_t intValue = ParseSignedInteger(buffer.get(), size);
-            if (userFormat_) {
-                userFormat_->SetData(key, intValue);
-            }
+            userFormat_->SetData(key, ParseSignedInteger(buffer.get(), size));
             break;
         }
         case 0x17: { // BE float32
-            if (size >= minFloatSize) {
+            if (size >= MIN_FLOAT_SIZE) {
                 uint32_t uintValue = GetU32Value(buffer.get());
                 float floatValue = *reinterpret_cast<float*>(&uintValue);
-                if (userFormat_) {
-                    userFormat_->SetData(key, floatValue);
-                }
+                userFormat_->SetData(key, floatValue);
             }
             break;
         }
         case 0x03: { // MAC encoded
             std::string macStringValue = DecodeMacString(buffer.get(), size);
-            if (!macStringValue.empty() && userFormat_ != nullptr) {
+            if (!macStringValue.empty()) {
                 userFormat_->SetData(key, macStringValue);
             }
             break;
         }
         default: { // UTF-8 string
             std::string stringValue = std::string(reinterpret_cast<char*>(buffer.get()), size);
-            if (!stringValue.empty() && userFormat_ != nullptr) {
+            if (!stringValue.empty()) {
                 userFormat_->SetData(key, stringValue);
             }
             break;
