@@ -183,9 +183,8 @@ private:
     // 元数据解析辅助函数
     std::string ConvertLanguageCode(uint16_t langcode);
     std::string GetMetadataKey(uint32_t atomType, ParseContext* parseCtx);
-    void SetMetadataValue(const std::string& key, const std::string& value);
+    bool SetMetadataValue(const std::string& key, const std::string& value);
     void ParseLocationString(const std::string& locationStr);
-    void SetUserDataByValueType(const std::string& key, const std::string& value);
     // 音频属性相关辅助函数
     bool ParseDecoderConfigDescriptor(const uint8_t* data, uint64_t dataSize, uint64_t& offset);
     bool ParseAACConfig(const uint8_t* data, uint32_t size, uint32_t& sampleRate, uint32_t& channels,
@@ -211,9 +210,9 @@ private:
     Status ParseContainerAtom(const MPEG4Atom& containerAtom, int32_t depth, ParseContext* ctx);
     Status ParseAudioAttributes(MPEG4Atom currentAtom, ParseContext* parseCtx);
     Status ParseCover(MPEG4Atom currentAtom, uint32_t dataType, uint64_t stringSize, ParseContext* parseCtx);
-    Status ParseItunesMetadata(MPEG4Atom currentAtom, std::string& key, std::string& value, ParseContext* parseCtx);
-    Status ParseTraditionalMetadata(MPEG4Atom currentAtom, std::string& value, ParseContext* parseCtx);
-    Status ReadMetadataString(int64_t offset, uint64_t size, uint32_t dataType, std::string& value);
+    Status ParseItunesMetadata(MPEG4Atom currentAtom, std::string& key, ParseContext* parseCtx);
+    Status ParseTraditionalMetadata(MPEG4Atom currentAtom, std::string& key, ParseContext* parseCtx);
+    Status ReadMetadataString(std::string& key, int64_t offset, uint64_t size, uint32_t dataType);
     Status ParseAlacEntry(ParseContext& ctx);
     Status ParseIccProfile(int64_t offset, uint64_t dataSize);
     Status ParseColorParams(int64_t offset, uint64_t dataSize, const std::string& colorType, ParseContext* parseCtx);

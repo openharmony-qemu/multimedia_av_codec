@@ -27,6 +27,7 @@
 #include <regex>
 #include <arpa/inet.h>
 #include "avcodec_trace.h"
+#include "converter.h"
 #include "securec.h"
 #include "mpeg4_box_parser.h"
 #include "mpeg4_utils.h"
@@ -63,7 +64,6 @@ constexpr int32_t MAX_DEPTH = 10;
 constexpr uint64_t MAX_TITLE_SIZE = 24;
 constexpr uint64_t MAX_EXTRA_DATA_SIZE = 1024 * 1024;
 constexpr uint64_t MAX_DATA_SIZE = 256;
-constexpr uint64_t MAX_METADATA_SIZE = 16 * 1024;
 constexpr uint64_t MIN_COLOR_SIZE = 4;
 constexpr uint64_t MIN_COLOR_PARAM_SIZE = 6;
 constexpr uint64_t MIN_MVHD_SIZE = 32;
@@ -3233,15 +3233,11 @@ Status MPEG4AtomParser::ParseUserDataString(MPEG4Atom currentAtom, int32_t depth
     std::string value;
     Status ret = Status::OK;
     if (ctx->founditunesMetadata && currentAtom.dataSize > DEFAULT_HEAD_SIZE) {
-        ret = ParseItunesMetadata(currentAtom, key, value, ctx);
+        ret = ParseItunesMetadata(currentAtom, key, ctx);
     } else {
-        ret = ParseTraditionalMetadata(currentAtom, value, ctx);
+        ret = ParseTraditionalMetadata(currentAtom, key, ctx);
     }
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse metadata string failed");
-
-    if (!value.empty()) {
-        SetMetadataValue(key, value);
-    }
     return ret;
 }
 
@@ -3286,8 +3282,7 @@ std::string MPEG4AtomParser::GetMetadataKey(uint32_t atomType, ParseContext* ctx
     return (it != keyMap.end()) ? it->second : "";
 }
 
-Status MPEG4AtomParser::ParseItunesMetadata(MPEG4Atom currentAtom, std::string& key, std::string& value,
-    ParseContext* ctx)
+Status MPEG4AtomParser::ParseItunesMetadata(MPEG4Atom currentAtom, std::string& key, ParseContext* ctx)
 {
     uint8_t dataHeader[8];
     Status ret = dataReader_->ReadUintData(ctx->dataOffset, dataHeader, sizeof(dataHeader));
@@ -3306,7 +3301,7 @@ Status MPEG4AtomParser::ParseItunesMetadata(MPEG4Atom currentAtom, std::string& 
         if (currentAtom.type == FourccType("covr") || (!key.empty() && key == "com.apple.quicktime.artwork")) {
             return ParseCover(currentAtom, dataType, stringSize, ctx);
         }
-        ret = ReadMetadataString(ctx->dataOffset + headerSize, stringSize, dataType, value);
+        ret = ReadMetadataString(key, ctx->dataOffset + headerSize, stringSize, dataType);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read iTunes metadata string failed");
     } else {
         MEDIA_LOG_W("Invalid iTunes metadata format: dataTag=" PUBLIC_LOG_U32, dataTag);
@@ -3315,7 +3310,7 @@ Status MPEG4AtomParser::ParseItunesMetadata(MPEG4Atom currentAtom, std::string& 
     return Status::OK;
 }
 
-Status MPEG4AtomParser::ParseTraditionalMetadata(MPEG4Atom currentAtom, std::string& value, ParseContext* ctx)
+Status MPEG4AtomParser::ParseTraditionalMetadata(MPEG4Atom currentAtom, std::string& key, ParseContext* ctx)
 {
     FALSE_RETURN_V_MSG_E(currentAtom.dataSize >= MIN_TRADITIONAL_METADATA_SIZE, Status::ERROR_INVALID_DATA,
         "Invalid traditional metadata size");
@@ -3327,19 +3322,19 @@ Status MPEG4AtomParser::ParseTraditionalMetadata(MPEG4Atom currentAtom, std::str
     constexpr uint16_t defaultSkipSize = 4;
     if (stringLength > currentAtom.dataSize - defaultSkipSize) {
         // 作为原始数据处理
-        ret = ReadMetadataString(ctx->dataOffset, currentAtom.dataSize, 0, value);
+        ret = ReadMetadataString(key, ctx->dataOffset, currentAtom.dataSize, 0);
     } else {
         // 跳过语言代码
-        ret = ReadMetadataString(ctx->dataOffset + defaultSkipSize, stringLength, 0, value);
+        ret = ReadMetadataString(key, ctx->dataOffset + defaultSkipSize, stringLength, 0);
     }
     
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read traditional metadata string failed");
     return Status::OK;
 }
 
-std::string ParseSignedInteger(uint8_t* data, uint64_t size)
+int32_t ParseSignedInteger(uint8_t* data, uint64_t size)
 {
-    FALSE_RETURN_V_MSG_E(data != nullptr, "", "ParseSignedInteger: data is null");
+    FALSE_RETURN_V_MSG_E(data != nullptr, 0, "ParseSignedInteger: data is null");
     int32_t value = 0;
     switch (size) {
         case 0x01:
@@ -3361,32 +3356,7 @@ std::string ParseSignedInteger(uint8_t* data, uint64_t size)
             value = 0;
             break;
     }
-    return std::to_string(value);
-}
-
-std::string ParseUnsignedInteger(uint8_t* data, uint64_t size)
-{
-    FALSE_RETURN_V_MSG_E(data != nullptr, "", "ParseSignedInteger: data is null");
-    uint32_t value = 0;
-    constexpr uint32_t BYTE_SHIFT_8 = 8;
-    switch (size) {
-        case 0x01:
-            value = data[0];
-            break;
-        case 0x02:
-            value = GetU16Value(data);
-            break;
-        case 0x03:
-            value = (GetU32Value(data) >> BYTE_SHIFT_8) & 0xFFFFFF;
-            break;
-        case 0x04:
-            value = GetU32Value(data);
-            break;
-        default:
-            value = 0;
-            break;
-    }
-    return std::to_string(value);
+    return value;
 }
 
 std::string DecodeMacString(const uint8_t* data, size_t size)
@@ -3413,42 +3383,7 @@ std::string DecodeMacString(const uint8_t* data, size_t size)
     return result;
 }
 
-void MPEG4AtomParser::SetUserDataByValueType(const std::string& key, const std::string& value)
-{
-    if (value.empty()) {
-        userFormat_->SetData(key, value);
-        return;
-    }
-
-    size_t start = (value[0] == '-' || value[0] == '+') ? 1 : 0;
-    std::string_view numPart(value.data() + start, value.length() - start);
-    bool isInt = !numPart.empty() && std::all_of(numPart.begin(), numPart.end(), [](char c) {
-                    return std::isdigit(static_cast<uint8_t>(c));
-                });
-
-    constexpr size_t maxValueLength = 10;
-    if (isInt && value.length() <= maxValueLength) {
-        int32_t intVal = std::atoi(value.c_str());
-        userFormat_->SetData(key, intVal);
-        return;
-    }
-
-    if (auto dotPos = value.find('.'); dotPos != std::string::npos) {
-        // 检查只有一个小数点，且其他都是数字
-        bool isFloat = std::count(value.begin(), value.end(), '.') == 1 &&
-                       std::all_of(value.begin() + start, value.end(), [](char c) {
-                           return std::isdigit(static_cast<uint8_t>(c)) || c == '.';
-                    });
-        if (isFloat) {
-            float floatVal = std::stof(value);
-            userFormat_->SetData(key, floatVal);
-            return;
-        }
-    }
-    userFormat_->SetData(key, value);
-}
-
-void MPEG4AtomParser::SetMetadataValue(const std::string& key, const std::string& value)
+bool MPEG4AtomParser::SetMetadataValue(const std::string& key, const std::string& value)
 {
     static const std::map<std::string, TagType> keyToTagMap = {
         {"title",         Tag::MEDIA_TITLE},
@@ -3464,27 +3399,29 @@ void MPEG4AtomParser::SetMetadataValue(const std::string& key, const std::string
         {"lyrics",        Tag::MEDIA_LYRICS},
         {"author",        Tag::MEDIA_AUTHOR},
         {"composer",      Tag::MEDIA_COMPOSER},
-        {"creation_time", Tag::MEDIA_CREATION_TIME}
+        {"creation_time", Tag::MEDIA_CREATION_TIME},
+        {"aigc",          Tag::MEDIA_AIGC},
     };
 
-    auto it = keyToTagMap.find(key);
+    auto it = keyToTagMap.find(Converter::ToLower(key));
     if (it != keyToTagMap.end()) {
-        mediaInfo_.general.SetData(it->second, value);
+        std::string resultStr = "";
+        if (!Converter::IsUTF8(value.c_str()) && Converter::IsGBK(value.c_str())) {
+            resultStr = Converter::ConvertGBKToUTF8(value);
+        }
+        resultStr = resultStr.length() > 0 ? resultStr : value;
+        mediaInfo_.general.SetData(it->second, resultStr);
+        return true;
     } else if (key == "location") {
         ParseLocationString(value);
-    } else {
-        if (userFormat_) {
-            SetUserDataByValueType(key, value);
-        } else {
-            MEDIA_LOG_E("userFormat_ is null, cannot set custom metadata: " PUBLIC_LOG_S, key.c_str());
-        }
-        MEDIA_LOG_D("Custom metadata: " PUBLIC_LOG_S " = " PUBLIC_LOG_S, key.c_str(), value.c_str());
+        return true;
     }
+    return false;
 }
 
-Status MPEG4AtomParser::ReadMetadataString(int64_t offset, uint64_t size, uint32_t dataType, std::string& value)
+Status MPEG4AtomParser::ReadMetadataString(std::string& key, int64_t offset, uint64_t size, uint32_t dataType)
 {
-    if (size == 0 || size > MAX_METADATA_SIZE) {
+    if (size == 0) {
         return Status::OK;
     }
     
@@ -3494,28 +3431,50 @@ Status MPEG4AtomParser::ReadMetadataString(int64_t offset, uint64_t size, uint32
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read metadata string data failed");
     
     buffer[size] = '\0';
+    if (SetMetadataValue(key, std::string(reinterpret_cast<char*>(buffer.get()), size))) {
+        return Status::OK;
+    }
     constexpr uint64_t minFloatSize = 4;
     switch (dataType) {
-        case 0x15: // BE signed integer
-            value = ParseSignedInteger(buffer.get(), size);
-            break;
-        case 0x16: // BE unsigned integer
-        case 0x43: // BE unsigned integer (Apple specific)
-            value = ParseUnsignedInteger(buffer.get(), size);
-            break;
-        case 0x17: // BE float32
-            if (size >= minFloatSize) {
-                uint32_t intValue = GetU32Value(buffer.get());
-                float floatValue = *reinterpret_cast<float*>(&intValue);
-                value = std::to_string(floatValue);
+        case 0x00: { // reserved buffer
+            if (userFormat_) {
+                std::vector<uint8_t> bufferValue(buffer.get(), buffer.get() + size);
+                userFormat_->SetData(key, bufferValue);
             }
             break;
-        case 0x03: // MAC encoded
-            value = DecodeMacString(buffer.get(), size);
+        }
+        case 0x15:
+        case 0x43: { // BE signed integer
+            int32_t intValue = ParseSignedInteger(buffer.get(), size);
+            if (userFormat_) {
+                userFormat_->SetData(key, intValue);
+            }
             break;
-        default:  // UTF-8 string
-            value = std::string(reinterpret_cast<char*>(buffer.get()), size);
+        }
+        case 0x17: { // BE float32
+            if (size >= minFloatSize) {
+                uint32_t uintValue = GetU32Value(buffer.get());
+                float floatValue = *reinterpret_cast<float*>(&uintValue);
+                if (userFormat_) {
+                    userFormat_->SetData(key, floatValue);
+                }
+            }
             break;
+        }
+        case 0x03: { // MAC encoded
+            std::string macStringValue = DecodeMacString(buffer.get(), size);
+            if (!macStringValue.empty() && userFormat_ != nullptr) {
+                userFormat_->SetData(key, macStringValue);
+            }
+            break;
+        }
+        default: { // UTF-8 string
+            std::string stringValue = std::string(reinterpret_cast<char*>(buffer.get()), size);
+            if (!stringValue.empty() && userFormat_ != nullptr) {
+                userFormat_->SetData(key, stringValue);
+            }
+            break;
+        }
     }
     
     return Status::OK;

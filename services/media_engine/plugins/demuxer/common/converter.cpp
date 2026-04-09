@@ -17,6 +17,7 @@
 
 #include <vector>
 #include <algorithm>
+#include <iconv.h>
 #include "avcodec_log.h"
 #include "common/log.h"
 #include "converter.h"
@@ -26,6 +27,12 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_DEMUXER, "Co
 namespace OHOS {
 namespace Media {
 namespace Plugins {
+const unsigned char MASK_80 = 0x80;
+const unsigned char MASK_C0 = 0xC0;
+const int32_t MIN_BYTES = 2;
+const int32_t MAX_BYTES = 6;
+const uint32_t DOUBLE_BYTES = 2;
+
 // ffmpeg channel layout to histreamer channel layout
 const std::vector<std::pair<AudioChannelLayout, uint64_t>> g_toFFMPEGChannelLayout = {
     {AudioChannelLayout::MONO, AV_CH_LAYOUT_MONO},
@@ -466,6 +473,116 @@ void Converter::ParseHdrTypeInfo(HdrBoxInfo hdrInfo, Meta &format, HevcParseForm
     } else if (colorTrans == TransferCharacteristic::PQ) {
         format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HDR_10);
     }
+}
+
+std::string Converter::ToLower(const std::string& str)
+{
+    std::string res = str;
+    std::transform(res.begin(), res.end(), res.begin(), [](unsigned char c) {
+        return (c == '_') ? c : std::tolower(c);
+    });
+    MEDIA_LOG_D("[" PUBLIC_LOG_S "] -> [" PUBLIC_LOG_S "]", str.c_str(), res.c_str());
+    return res;
+}
+
+bool IsUTF8Char(unsigned char chr, int32_t &nBytes)
+{
+    if (nBytes == 0) {
+        if ((chr & MASK_80) == 0) {
+            return true;
+        }
+        while ((chr & MASK_80) == MASK_80) {
+            chr <<= 1;
+            nBytes++;
+        }
+
+        if (nBytes < MIN_BYTES || nBytes > MAX_BYTES) {
+            return false;
+        }
+        nBytes--;
+    } else {
+        if ((chr & MASK_C0) != MASK_80) {
+            return false;
+        }
+        nBytes--;
+    }
+    return true;
+}
+
+bool Converter::IsUTF8(const std::string &data)
+{
+    int32_t nBytes = 0;
+    for (size_t i = 0; i < data.size(); ++i) {
+        if (!IsUTF8Char(data[i], nBytes)) {
+            MEDIA_LOG_D("Detect char not in uft8");
+            return false;
+        }
+    }
+    return true;
+}
+
+std::string Converter::ConvertGBKToUTF8(const std::string &strGbk)
+{
+    if (strGbk.length() == 0) {
+        return "";
+    }
+
+    const std::string fromCharset = "gb18030";
+    const std::string toCharset = "utf-8";
+    iconv_t cd = iconv_open(toCharset.c_str(), fromCharset.c_str());
+    if (cd == reinterpret_cast<iconv_t>(-1)) { // iconv_t is a void* type
+        MEDIA_LOG_D("Call iconv_open failed");
+        return "";
+    }
+    size_t inLen = strGbk.length();
+    size_t outLen = inLen * 4; // max for chinese character
+    char* inBuf = const_cast<char*>(strGbk.c_str());
+    if (inBuf == nullptr) {
+        MEDIA_LOG_D("Get in buffer failed");
+        iconv_close(cd);
+        return "";
+    }
+    char* outBuf = new char[outLen];
+    if (outBuf == nullptr) {
+        MEDIA_LOG_D("Get out buffer failed");
+        iconv_close(cd);
+        return "";
+    }
+    char* outBufBack = outBuf;
+    if (iconv(cd, &inBuf, &inLen, &outBuf, &outLen) == static_cast<size_t>(-1)) { // iconv return SIZE_MAX when failed
+        MEDIA_LOG_D("Call iconv failed");
+        delete[] outBufBack;
+        outBufBack = nullptr;
+        iconv_close(cd);
+        return "";
+    }
+    std::string strOut(outBufBack, outBuf - outBufBack);
+    delete[] outBufBack;
+    outBufBack = nullptr;
+    iconv_close(cd);
+    return strOut;
+}
+
+bool Converter::IsGBK(const char* data)
+{
+    int len = static_cast<int>(strlen(data));
+    int i = 0;
+    while (i < len) {
+        if (static_cast<unsigned char>(data[i]) <= 0x7f) { // one byte encoding or ASCII
+            i++;
+            continue;
+        } else { // double bytes encoding
+            if (i + 1  < len &&
+                static_cast<unsigned char>(data[i]) >= 0x81 && static_cast<unsigned char>(data[i]) <= 0xfe &&
+                static_cast<unsigned char>(data[i + 1]) >= 0x40 && static_cast<unsigned char>(data[i + 1]) <= 0xfe) {
+                i += DOUBLE_BYTES; // double bytes
+                continue;
+            } else {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 } // namespace Plugins
 } // namespace Media
