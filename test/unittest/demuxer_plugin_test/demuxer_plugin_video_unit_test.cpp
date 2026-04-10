@@ -2551,3 +2551,156 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_SetAVReadPacketStopState_TimeoutSuccess_
 {
     TestAVReadPacketStopState("avdemux_mov,mp4,m4a,3gp,3g2,mj2", g_mp4Path1, 1000, true);
 }
+
+void TestSetReadTimeoutForInit(const std::string& pluginName, const std::string& filePath,
+                               int64_t timeoutMs, bool expectSuccess)
+{
+    struct stat fileStatus {};
+    ASSERT_EQ(stat(filePath.c_str(), &fileStatus), 0);
+    int64_t fileSize = static_cast<int64_t>(fileStatus.st_size);
+    int fd = open(filePath.c_str(), O_RDONLY);
+    ASSERT_GE(fd, 0);
+    auto uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+
+    auto demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
+    auto cb = std::make_shared<SourceCallback>(demuxerPluginManager);
+    auto source = std::make_shared<Source>();
+    source->SetCallback(cb);
+    EXPECT_EQ(source->SetSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::vector<StreamInfo> streams;
+    source->GetStreamInfo(streams);
+    demuxerPluginManager->InitDefaultPlay(streams);
+
+    auto streamDemuxer = std::make_shared<StreamDemuxerPullDataFailMock>(0, 20);
+    streamDemuxer->SetInterruptState(false);
+    streamDemuxer->SetSource(source);
+    streamDemuxer->Init("");
+    streamDemuxer->SetDemuxerState(0, DemuxerState::DEMUXER_STATE_PARSE_FRAME);
+
+    auto dataSource = std::make_shared<DataSourceImpl>(streamDemuxer, 0);
+    auto basePlugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(pluginName);
+    auto demuxerPlugin = std::reinterpret_pointer_cast<OHOS::Media::Plugins::Ffmpeg::FFmpegDemuxerPlugin>(basePlugin);
+
+    Status setDataSourceStatus = Status::ERROR_UNKNOWN;
+    demuxerPlugin->SetReadTimeoutForInitSeek(timeoutMs);
+    std::thread t([&]() {
+        setDataSourceStatus = demuxerPlugin->SetDataSource(dataSource);
+    });
+    t.join();
+    if (expectSuccess) {
+        ASSERT_EQ(setDataSourceStatus, Status::OK);
+    } else {
+        ASSERT_NE(setDataSourceStatus, Status::OK);
+    }
+    close(fd);
+}
+
+/**
+ * @tc.name: Demuxer_SetReadTimeoutForInit_TimeoutFail_0001
+ * @tc.desc: 100ms timeout, expect fail
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_SetReadTimeoutForInit_TimeoutFail_0001, TestSize.Level1)
+{
+    TestSetReadTimeoutForInit("avdemux_mov,mp4,m4a,3gp,3g2,mj2", g_mp4Path1, 100, false);
+}
+
+/**
+ * @tc.name: Demuxer_SetReadTimeoutForInit_TimeoutSuccess_0002
+ * @tc.desc: 0 means no timeout, expect success
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_SetReadTimeoutForInit_TimeoutSuccess_0002, TestSize.Level1)
+{
+    TestSetReadTimeoutForInit("avdemux_mov,mp4,m4a,3gp,3g2,mj2", g_mp4Path1, 0, true);
+}
+
+void TestSetReadTimeoutForSeek(const std::string& pluginName, const std::string& filePath,
+                               int64_t timeoutMs, bool expectSuccess)
+{
+    struct stat fileStatus {};
+    ASSERT_EQ(stat(filePath.c_str(), &fileStatus), 0);
+    int64_t fileSize = static_cast<int64_t>(fileStatus.st_size);
+    int fd = open(filePath.c_str(), O_RDONLY);
+    ASSERT_GE(fd, 0);
+    auto uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+
+    auto demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
+    auto cb = std::make_shared<SourceCallback>(demuxerPluginManager);
+    auto source = std::make_shared<Source>();
+    source->SetCallback(cb);
+    EXPECT_EQ(source->SetSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::vector<StreamInfo> streams;
+    source->GetStreamInfo(streams);
+    demuxerPluginManager->InitDefaultPlay(streams);
+
+    auto streamDemuxer = std::make_shared<StreamDemuxerSeekFailMock>(std::numeric_limits<size_t>::max(), 0);
+    streamDemuxer->SetInterruptState(false);
+    streamDemuxer->SetSource(source);
+    streamDemuxer->Init("");
+    streamDemuxer->SetDemuxerState(0, DemuxerState::DEMUXER_STATE_PARSE_FRAME);
+
+    auto dataSource = std::make_shared<DataSourceImpl>(streamDemuxer, 0);
+    auto basePlugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(pluginName);
+    auto demuxerPlugin = std::reinterpret_pointer_cast<OHOS::Media::Plugins::Ffmpeg::FFmpegDemuxerPlugin>(basePlugin);
+
+    demuxerPlugin->SetReadTimeoutForInitSeek(0);
+    Status setDataSourceStatus = demuxerPlugin->SetDataSource(dataSource);
+    if (setDataSourceStatus != Status::OK) {
+        close(fd);
+        return;
+    }
+
+    MediaInfo mediaInfo;
+    demuxerPlugin->GetMediaInfo(mediaInfo);
+    for (uint32_t idx = 0; idx < mediaInfo.tracks.size(); ++idx) {
+        ASSERT_EQ(demuxerPlugin->SelectTrack(idx), Status::OK);
+    }
+
+    streamDemuxer->ResetFailState();
+    streamDemuxer->SetFailParams(0, 20); // set 20 fail count
+
+    demuxerPlugin->SetReadTimeoutForInitSeek(timeoutMs);
+    int64_t realSeekTime = 0;
+    Status seekStatus = Status::ERROR_UNKNOWN;
+    std::thread t([&]() {
+        seekStatus = demuxerPlugin->SeekTo(-1, 1000, SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime); // 1000 is seekTime
+    });
+    t.join();
+    if (expectSuccess) {
+        ASSERT_EQ(seekStatus, Status::OK);
+    } else {
+        ASSERT_NE(seekStatus, Status::OK);
+    }
+    close(fd);
+}
+
+/**
+ * @tc.name: Demuxer_SetReadTimeoutForSeek_TimeoutFail_0001
+ * @tc.desc: Seek with 100ms timeout, expect fail due to dataSource returning ERROR_AGAIN
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_SetReadTimeoutForSeek_TimeoutFail_0001, TestSize.Level1)
+{
+    TestSetReadTimeoutForSeek("avdemux_mpegts", g_mpegTsPath3, 100, false);
+}
+
+/**
+ * @tc.name: Demuxer_SetReadTimeoutForSeek_TimeoutSuccess_0001
+ * @tc.desc: Seek with 0ms timeout (no limit), expect success
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_SetReadTimeoutForSeek_TimeoutSuccess_0001, TestSize.Level1)
+{
+    TestSetReadTimeoutForSeek("avdemux_mpegts", g_mpegTsPath3, 0, true);
+}
+
+/**
+ * @tc.name: Demuxer_SetReadTimeoutForSeek_TimeoutSuccess_0002
+ * @tc.desc: Seek with 2000ms timeout, expect success
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_SetReadTimeoutForSeek_TimeoutSuccess_0002, TestSize.Level1)
+{
+    TestSetReadTimeoutForSeek("avdemux_mpegts", g_mpegTsPath3, 2000, true);
+}

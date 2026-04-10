@@ -220,6 +220,11 @@ public:
         (void)windowMs;
         return mapStatus_[name_];
     }
+    Status SetReadTimeoutForInitSeek(int64_t timeoutMs) override
+    {
+        (void)timeoutMs;
+        return mapStatus_[name_];
+    }
     Status GetCurrentCacheFrameCount(uint32_t trackId, uint32_t& frameCount) override
     {
         (void)trackId;

@@ -309,6 +309,17 @@ struct DemuxerPlugin : public PluginBase {
      */
     virtual Status SetTrackCacheLimit(uint32_t trackId, uint32_t limitBytes, uint32_t windowMs = 500) = 0;
 
+    /**
+     * @brief Set read timeout for init/seek operations.
+     *
+     * If dataSource keeps returning ERROR_AGAIN beyond the timeout during init or seek,
+     * the operation will report an error and exit.
+     *
+     * @param timeoutMs Timeout value in milliseconds. 0 means no timeout.
+     * @return Execution Status
+     */
+    virtual Status SetReadTimeoutForInitSeek(int64_t timeoutMs) = 0;
+
     virtual bool GetProbeSize(int32_t &offset, int32_t &size) { return false; };
     virtual Status SetDataSourceWithProbSize(const std::shared_ptr<DataSource>& source,
         const int32_t probSize) = 0;

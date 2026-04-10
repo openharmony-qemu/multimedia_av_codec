@@ -141,6 +141,8 @@ public:
     // cache pressure control
     Status SetCachePressureCallback(CachePressureCallback cb) override;
     Status SetTrackCacheLimit(uint32_t trackId, uint32_t limitBytes, uint32_t windowMs = 500) override;
+    // set read timeout for init/seek, if dataSource keeps returning ERROR_AGAIN beyond timeout, will report error
+    Status SetReadTimeoutForInitSeek(int64_t timeoutMs) override;
 private:
     enum ThreadState : unsigned int {
         NOT_STARTED,
@@ -192,7 +194,11 @@ private:
         std::atomic<InvokerType> invokerType {INVOKER_NONE};
         std::atomic<bool> readCbReady {false};
         std::atomic<AVReadPacketStopState> avReadPacketStopState {UNSET};
+        int64_t readStartTimeMs {0};
+        int64_t readTimeoutMs {0};
     };
+
+    static bool IsReadTimeoutExpired(IOContext* ioContext);
 
     // Snapshot of the AVStream fields needed at runtime, built in SetDataSource so
     // other threads can read stream metadata without touching FFmpeg structs directly.

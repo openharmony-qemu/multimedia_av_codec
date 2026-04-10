@@ -1206,6 +1206,7 @@ void FFmpegDemuxerPlugin::ResetContext()
         formatContext_->pb->error = 0;
     }
     ioContext_.retry = false;
+    ioContext_.readStartTimeMs = 0;
 }
 
 bool FFmpegDemuxerPlugin::SelectedVideo()
@@ -2809,9 +2810,6 @@ void FFmpegDemuxerPlugin::SyncSeekThread()
 {
     ioContext_.retry = false;
     ioContext_.avReadPacketStopState.store(AVReadPacketStopState::FALSE);
-    if (readThread_ == nullptr) {
-        return;
-    }
     if (ioContext_.invokerType != InvokerType::SEEK) {
         std::lock_guard<std::mutex> seekLock(ioContext_.invokerTypeMutex);
         ioContext_.invokerType = InvokerType::SEEK;

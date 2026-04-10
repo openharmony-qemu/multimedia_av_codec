@@ -189,6 +189,11 @@ public:
         return Status::OK;
     }
 
+    Status SetReadTimeoutForInitSeek(int64_t) override
+    {
+        return Status::OK;
+    }
+
     Status SeekToFrameByDts(int32_t, int64_t, SeekMode, int64_t&, uint32_t) override
     {
         ++seekToFrameByDtsCallCount_;
