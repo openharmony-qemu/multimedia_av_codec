@@ -125,6 +125,37 @@ private:
     size_t failCount_ = 0;
     int num = 0;
 };
+
+class StreamDemuxerSeekFailMock : public StreamDemuxer {
+public:
+    StreamDemuxerSeekFailMock(size_t failOffset, size_t maxFailCount)
+        : StreamDemuxer(), failOffset_(failOffset), maxFailCount_(maxFailCount) {}
+    void ResetFailState()
+    {
+        failCount_ = 0;
+        num = 0;
+    }
+    void SetFailParams(size_t failOffset, size_t maxFailCount)
+    {
+        failOffset_ = failOffset;
+        maxFailCount_ = maxFailCount;
+    }
+private:
+    Status CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
+        size_t expectedLen) override
+    {
+        num += expectedLen;
+        if (num > failOffset_ && failCount_ < maxFailCount_) {
+            failCount_++;
+            return Status::ERROR_AGAIN;
+        }
+        return StreamDemuxer::CallbackReadAt(streamID, offset, buffer, expectedLen);
+    }
+    size_t failOffset_ = 0;
+    size_t maxFailCount_ = 0;
+    size_t failCount_ = 0;
+    int num = 0;
+};
 } // namespace Media
 } // namespace OHOS
 #endif // DEMUXER_PLUGIN_UNIT_TEST_H
