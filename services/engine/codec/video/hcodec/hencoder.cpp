@@ -1466,7 +1466,7 @@ void HEncoder::OnFrameSubmitted(int64_t pts)
 
 void HEncoder::OnGetInputFormat(Format& format)
 {
-    format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, unfinishedFrames_.size());
+    //format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, unfinishedFrames_.size());
 }
 
 void HEncoder::BeforeCbOutToUser(BufferInfo &info)
