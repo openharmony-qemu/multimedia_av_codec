@@ -1545,6 +1545,9 @@ std::shared_ptr<AVFormatContext> FFmpegDemuxerPlugin::InitAVFormatContext(IOCont
     if (ioContext_.dataSource->IsDash()) {
         av_dict_set(&options, "use_tfdt", "true", 0);
     }
+    if (demuxerMode_ == Plugins::DemuxerMode::FAST_INIT) {
+        av_dict_set_int(&formatContext->metadata, "fast_init", 1, 0);
+    }
     int ret = ParseHeader(formatContext, pluginImpl_, &options);
     av_dict_free(&options);
     FALSE_RETURN_V_MSG_E(ret >= 0, nullptr, "ParseHeader failed");
@@ -1597,6 +1600,21 @@ void FFmpegDemuxerPlugin::PrepareSetDataSourceContext()
         std::lock_guard<std::mutex> initLock(ioContext_.invokerTypeMutex);
         ioContext_.invokerType = InvokerType::INIT;
     }
+}
+
+Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& source,
+    const std::shared_ptr<Media::Meta>& configs)
+{
+    std::unique_lock<std::shared_mutex> lock(sharedMutex_);
+    FALSE_RETURN_V_MSG_E(formatContext_ == nullptr, Status::ERROR_WRONG_STATE,
+        "AVFormatContext has been initialized");
+    FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "DataSource is nullptr");
+    FALSE_RETURN_V_MSG_E(configs != nullptr, Status::ERROR_INVALID_PARAMETER, "Configs is nullptr");
+    if (configs->GetData(Tag::MEDIA_DEMUXER_MODE, demuxerMode_)) {
+        MEDIA_LOG_I("DemuxerMode: " PUBLIC_LOG_U32, static_cast<uint32_t>(demuxerMode_));
+    }
+    lock.unlock();
+    return SetDataSource(source);
 }
 
 Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& source)

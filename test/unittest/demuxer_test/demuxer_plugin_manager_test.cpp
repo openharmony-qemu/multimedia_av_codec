@@ -579,6 +579,27 @@ bool DemuxerPluginManagerUnitTest::CreateDemuxerPluginByName(
     return true;
 }
 
+bool DemuxerPluginManagerUnitTest::CreateDemuxerPluginWithConfigs(const std::string& typeName,
+    const std::string& filePath, std::shared_ptr<Media::Meta>& configs)
+{
+    if (!CreateDataSource(filePath)) {
+        printf("CreateDataSource failed for file: %s\n", filePath.c_str());
+        return false;
+    }
+    pluginBase_ = Plugins::PluginManagerV2::Instance().CreatePluginByName(typeName);
+    if (pluginBase_ == nullptr) {
+        printf("CreatePluginByName failed for type: %s\n", typeName.c_str());
+        return false;
+    }
+    demuxerPlugin_ = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    if (demuxerPlugin_->SetDataSource(dataSourceImpl_, configs) != Status::OK) {
+        printf("SetDataSource failed for type: %s\n", typeName.c_str());
+        return false;
+    }
+
+    return true;
+}
+
 bool DemuxerPluginManagerUnitTest::PluginSelectTracks()
 {
     MediaInfo mediaInfo;
@@ -1238,6 +1259,85 @@ HWTEST_F(DemuxerPluginManagerUnitTest, SeekToKeyFrame_0011, TestSize.Level1)
             expStatuses[i]);
     }
     RemoveValue();
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, FastInit_0001, TestSize.Level1)
+{
+    std::vector<Plugins::DemuxerMode> modes = {Plugins::DemuxerMode::FULL_PARSE, Plugins::DemuxerMode::FAST_INIT};
+    std::vector<std::string> metas;
+    for (auto mode : modes) {
+        std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
+        configs->SetData(Tag::MEDIA_DEMUXER_MODE, mode);
+        ASSERT_EQ(CreateDemuxerPluginWithConfigs(DEMUXER_PLUGIN_NAME_MP3, TEST_FILE_URI_MP3, configs), true);
+        
+        MediaInfo mediaInfo;
+        OHOS::Media::Format format;
+        demuxerPlugin_->GetMediaInfo(mediaInfo);
+        std::shared_ptr<Meta> gMeta = std::make_shared<Meta>(mediaInfo.general);
+        format.SetMeta(gMeta);
+        string gMetaInfo = format.Stringify();
+        metas.push_back(gMetaInfo);
+        printf("cur mode %u gMetaInfo: %s\n", static_cast<uint32_t>(mode), gMetaInfo.c_str());
+        ASSERT_EQ(PluginSelectTracks(), true);
+        ASSERT_EQ(PluginReadAllSample(), true);
+        ASSERT_EQ(ResultAssert(1251, 0, 1251, 0), true);
+        RemoveValue();
+    }
+    ASSERT_NE(metas[0], metas[1]);
+    ASSERT_EQ(metas[0].size() >= metas[1].size(), true);
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, FastInit_0002, TestSize.Level1)
+{
+    std::vector<Plugins::DemuxerMode> modes = {Plugins::DemuxerMode::FULL_PARSE, Plugins::DemuxerMode::FAST_INIT};
+    std::vector<std::string> metas;
+    for (auto mode : modes) {
+        std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
+        configs->SetData(Tag::MEDIA_DEMUXER_MODE, mode);
+        ASSERT_EQ(CreateDemuxerPluginWithConfigs(DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_URI_WAV, configs), true);
+
+        MediaInfo mediaInfo;
+        OHOS::Media::Format format;
+        demuxerPlugin_->GetMediaInfo(mediaInfo);
+        std::shared_ptr<Meta> gMeta = std::make_shared<Meta>(mediaInfo.general);
+        format.SetMeta(gMeta);
+        string gMetaInfo = format.Stringify();
+        metas.push_back(gMetaInfo);
+        printf("cur mode %u gMetaInfo: %s\n", static_cast<uint32_t>(mode), gMetaInfo.c_str());
+
+        ASSERT_EQ(PluginSelectTracks(), true);
+        ASSERT_EQ(PluginReadAllSample(), true);
+        ASSERT_EQ(ResultAssert(704, 0, 704, 0), true);
+        RemoveValue();
+    }
+    ASSERT_NE(metas[0], metas[1]);
+    ASSERT_EQ(metas[0].size() >= metas[1].size(), true);
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, FastInit_0003, TestSize.Level1)
+{
+    std::vector<Plugins::DemuxerMode> modes = {Plugins::DemuxerMode::FULL_PARSE, Plugins::DemuxerMode::FAST_INIT};
+    std::vector<std::string> metas;
+    for (auto mode : modes) {
+        std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
+        configs->SetData(Tag::MEDIA_DEMUXER_MODE, mode);
+        ASSERT_EQ(CreateDemuxerPluginWithConfigs(DEMUXER_PLUGIN_NAME_FLAC, TEST_FILE_URI_FLAC, configs), true);
+
+        MediaInfo mediaInfo;
+        OHOS::Media::Format format;
+        demuxerPlugin_->GetMediaInfo(mediaInfo);
+        std::shared_ptr<Meta> gMeta = std::make_shared<Meta>(mediaInfo.general);
+        format.SetMeta(gMeta);
+        string gMetaInfo = format.Stringify();
+        metas.push_back(gMetaInfo);
+        printf("cur mode %u gMetaInfo: %s\n", static_cast<uint32_t>(mode), gMetaInfo.c_str());
+
+        ASSERT_EQ(PluginSelectTracks(), true);
+        ASSERT_EQ(PluginReadAllSample(), true);
+        ASSERT_EQ(ResultAssert(313, 0, 313, 0), true);
+        RemoveValue();
+    }
+    ASSERT_EQ(metas[0], metas[1]);
 }
 }
 }
