@@ -1466,7 +1466,7 @@ void HEncoder::OnFrameSubmitted(int64_t pts)
 
 void HEncoder::OnGetInputFormat(Format& format)
 {
-
+    HLOGW("test");
 }
 
 void HEncoder::BeforeCbOutToUser(BufferInfo &info)
