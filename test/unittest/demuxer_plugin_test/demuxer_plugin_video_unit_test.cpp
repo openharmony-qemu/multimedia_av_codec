@@ -2695,3 +2695,13 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_SetReadTimeoutForSeek_TimeoutSuccess_000
 {
     TestSetReadTimeoutForSeek("avdemux_mpegts", g_mpegTsPath3, 0, true);
 }
+
+/**
+ * @tc.name: Demuxer_SetReadTimeoutForSeek_TimeoutSuccess_0002
+ * @tc.desc: Seek with 2000ms timeout, expect success
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_SetReadTimeoutForSeek_TimeoutSuccess_0002, TestSize.Level1)
+{
+    TestSetReadTimeoutForSeek("avdemux_mpegts", g_mpegTsPath3, 2000, true);
+}
