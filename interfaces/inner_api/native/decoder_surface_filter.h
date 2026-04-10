@@ -172,6 +172,10 @@ private:
 #endif
     Status CheckBufferDecodedCorrectly(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
     std::string GetMime();
+    Status CheckAndInitDecoder(bool &useHwDecoder, std::string &decoderName);
+    bool CheckDecoderCapability(bool isHWDecoder, int32_t width, int32_t height, std::string &decoderName);
+    Status InitDecoder();
+    Status ConfigureDecoderSettings();
 
     std::string name_;
     FilterType filterType_;
