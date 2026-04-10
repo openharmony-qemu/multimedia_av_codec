@@ -230,9 +230,9 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_0001, TestSize.Level1)
     string isWaterMark = "0";
     EXPECT_TRUE(format_->GetStringValue("com.openharmony.isWaterMark", isWaterMark));
     EXPECT_EQ(isWaterMark, "false"); // test user string data watermark
-    int flag = 0;
-    EXPECT_TRUE(format_->GetIntValue("com.openharmony.deferredVideoEnhanceFlag", flag));
-    EXPECT_EQ(flag, 0); // test user int flag
+    string flag = "";
+    EXPECT_TRUE(format_->GetStringValue("com.openharmony.deferredVideoEnhanceFlag", flag));
+    EXPECT_EQ(flag, "0"); // test user int flag
 
     string timeStamp = "0";
     EXPECT_TRUE(format_->GetStringValue("com.openharmony.recorder.timestamp", timeStamp));

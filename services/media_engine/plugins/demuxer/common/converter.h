@@ -58,6 +58,10 @@ public:
     static AudioChannelLayout ConvertAudioVividToOHAudioChannelLayout(uint64_t ffChannelLayout, int channels);
     static void ParseColorBoxInfo(HevcParseFormat parse, Meta &format);
     static void ParseHdrTypeInfo(HdrBoxInfo hdrInfo, Meta &format, HevcParseFormat parse);
+    static std::string ToLower(const std::string& str);
+    static bool IsUTF8(const std::string &data);
+    static std::string ConvertGBKToUTF8(const std::string &strGbk);
+    static bool IsGBK(const char* data);
 
 private:
     Converter() = delete;
