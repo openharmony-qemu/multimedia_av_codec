@@ -263,24 +263,6 @@ static const uint32_t AAC_SAMPLE_RATE_TABLE[] = {
     24000, 22050, 16000, 12000, 11025, 8000, 7350
 };
 
-const std::vector<MPEG4AtomParser::FrameRate> MPEG4AtomParser::standardRates_ = {
-    {23.976, "23.976"}, {24.0, "24"}, {25.0, "25"}, {29.97, "29.97"},
-    {30.0, "30"}, {48.0, "48"}, {50.0, "50"}, {59.94, "59.94"},
-    {60.0, "60"}, {72.0, "72"}, {90.0, "90"}, {100.0, "100"},
-    {120.0, "120"}, {144.0, "144"}, {240.0, "240"}, {12.0, "12"},
-    {15.0, "15"}, {20.0, "20"}, {75.0, "75"},
-};
-
-const std::vector<MPEG4AtomParser::FrameRateRange> MPEG4AtomParser::ranges_ = {
-    {23.5, 24.5, 24.0, "24fps"},
-    {24.5, 25.5, 25.0, "25fps"},
-    {27.0, 32.0, 30.0, "30fps"},
-    {29.5, 30.5, 30.0, "30fps"},
-    {47.0, 51.0, 50.0, "50fps"},
-    {59.0, 61.0, 60.0, "60fps"},
-    {119.0, 121.0, 120.0, "120fps"}
-};
-
 enum class FieldOrder {
     FIELD_ORDER_UNKNOWN,
     FIELD_ORDER_PROGRESSIVE,
@@ -885,11 +867,10 @@ void MPEG4AtomParser::CalculateVideoFrameRate(std::shared_ptr<Track> track)
     // 计算原始帧率
     if (duration > 0) {
         double rawFrameRate = static_cast<double>(timeScale) * totalSamples / duration;
-        double finalFrameRate = GetStandardFrameRate(rawFrameRate);
-        mediaInfo_.tracks[track->trackIndex].SetData(Tag::VIDEO_FRAME_RATE, finalFrameRate);
+        mediaInfo_.tracks[track->trackIndex].SetData(Tag::VIDEO_FRAME_RATE, rawFrameRate);
         MEDIA_LOG_D("Track:" PUBLIC_LOG_U32 ", totalSamples=" PUBLIC_LOG_D64 ", duration=" PUBLIC_LOG_D64
             ", timeScale=" PUBLIC_LOG_D32 ", frameRate=" PUBLIC_LOG_F " fps", track->trackIndex, totalSamples,
-            duration, timeScale, finalFrameRate);
+            duration, timeScale, rawFrameRate);
     }
 }
 void MPEG4AtomParser::SetCodecConfig(std::shared_ptr<Track> track)
@@ -3655,7 +3636,7 @@ static const char* GetID3v1GenreString(uint8_t genreNumber)
     return (genreNumber < id3v1_genre_table.size()) ? id3v1_genre_table[genreNumber] : nullptr;
 }
 
-Status MPEG4AtomParser::ParseGenre(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
+Status MPEG4AtomParser::ParseUdtaGenre(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {
     ctx->offset += currentAtom.size;
     // gnre atom应该至少有2字节数据
@@ -3679,6 +3660,27 @@ Status MPEG4AtomParser::ParseGenre(MPEG4Atom currentAtom, int32_t depth, ParseCo
     } else {
         MEDIA_LOG_W("gnre atom too small: " PUBLIC_LOG_U64 " bytes", currentAtom.dataSize);
     }
+    return Status::OK;
+}
+
+Status MPEG4AtomParser::ParseMoovGenre(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
+{
+    if (currentAtom.size == 0) {
+        return Status::OK;
+    }
+    ctx->offset += currentAtom.size;
+    auto genre = std::make_unique<uint8_t[]>(currentAtom.size + 1);
+    FALSE_RETURN_V_MSG_E(genre != nullptr, Status::ERROR_NO_MEMORY, "Read moov genre failed");
+    Status ret = dataReader_->ReadUintData(ctx->dataOffset, genre.get(), currentAtom.size);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read data failed");
+
+    int32_t start = 0;
+    for (start = 0; start < currentAtom.size; ++start) {
+        if (genre[start] != 0) {
+            break;
+        }
+    }
+    SetMetadataValue("genre", std::string(reinterpret_cast<char*>(genre.get() + start)));
     return Status::OK;
 }
 
@@ -3848,7 +3850,7 @@ void MPEG4AtomParser::InitParseTable()
         {FourccType("wave"), &MPEG4AtomParser::ParseWave}, {FourccType("frma"), &MPEG4AtomParser::ParseFrma},
         {FourccType("schi"), &MPEG4AtomParser::ParseSchi}, {FourccType("schm"), &MPEG4AtomParser::ParseSchm},
         {FourccType("kind"), &MPEG4AtomParser::ParseKind}, {FourccType("chan"), &MPEG4AtomParser::ParseChan},
-        {FourccType("chap"), &MPEG4AtomParser::ParseChap},
+        {FourccType("chap"), &MPEG4AtomParser::ParseChap}, {FourccType("gnre"), &MPEG4AtomParser::ParseMoovGenre},
     };
 }
 
@@ -3942,7 +3944,7 @@ auto MPEG4AtomParser::FindAtomParser(const MPEG4Atom& atom, ParseContext* ctx) -
         uint32_t parentType = ctx->path[ctx->path.size() - DIRECT_META_PATH_SIZE];
         if (parentType == FourccType("udta") || parentType == FourccType("ilst")) {
             if (atom.type == FourccType("gnre")) {
-                return &MPEG4AtomParser::ParseGenre;
+                return &MPEG4AtomParser::ParseUdtaGenre;
             } else {
                 return &MPEG4AtomParser::ParseUserDataString;
             }
@@ -4177,45 +4179,6 @@ void MPEG4AtomParser::SetHEVCDefaultValue()
             }
         }
     }
-}
-
-double MPEG4AtomParser::MapToStandardRate(double rawRate, double maxErrorPercent)
-{
-    double bestRate = rawRate;
-    double minError = std::numeric_limits<double>::max();
-    
-    for (const auto& rate : standardRates_) {
-        double error = std::abs(rawRate - rate.value) / rate.value * 100.0;
-        if (error < minError && error <= maxErrorPercent) {
-            minError = error;
-            bestRate = rate.value;
-        }
-    }
-
-    return bestRate;
-}
-
-double MPEG4AtomParser::GetStandardFrameRate(double rawRate)
-{
-    constexpr double precisionMultiplier = 1000.0;  // 保留3位小数的乘数
-    constexpr double precisePercent = 100.0;
-    constexpr double tolerancePercent = 5.0;        // 误差容忍度百分比
-
-    // 首先尝试范围映射
-    for (const auto& range : ranges_) {
-        if (rawRate >= range.min && rawRate <= range.max) {
-            return range.target;
-        }
-    }
-    // 如果范围映射失败，使用精确匹配（误差容忍度5%)
-    double mappedRate = MapToStandardRate(rawRate, tolerancePercent);
-    if (rawRate != 0) {
-        if (std::abs(mappedRate - rawRate) / rawRate * precisePercent <= tolerancePercent) {
-            return mappedRate;
-        }
-    }
-    // 都失败则返回原始值（四舍五入到小数点后3位）
-    return std::round(rawRate * precisionMultiplier) / precisionMultiplier;
 }
 
 MediaInfo MPEG4AtomParser::GetMediaInfo() const
