@@ -1291,6 +1291,7 @@ extern const char *OH_MD_KEY_AUDIO_OBJECT_BITRATE;
  */
 extern const char *OH_MD_KEY_SCREEN_CAPTURE_WINDOW_RECT;
 
+/**
  * @brief Key for setting the video decoding frame retention mode. The value type is int32_t.
  *
  * The value represents a frame retention mode defined in {@link OH_FRAME_RETENTION_MODE}.
