@@ -420,7 +420,7 @@ std::vector<pid_t> AVCodecServerManager::GetActiveSecureDecoderPids()
     for (auto iter = codecStubMap_.begin(); iter != codecStubMap_.end(); iter++) {
         auto codecName = iter->second.second.codecName;
         if (codecName.find(SECURE_SUFFIX) != std::string::npos) {
-            securePidsSet.insert(iter->first);
+            securePidsSet.insert(iter->second.second.GetActualCallerPid());
         }
     }
     return std::vector<pid_t>(securePidsSet.begin(), securePidsSet.end());
