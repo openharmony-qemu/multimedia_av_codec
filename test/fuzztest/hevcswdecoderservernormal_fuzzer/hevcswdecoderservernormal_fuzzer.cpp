@@ -24,6 +24,14 @@ using namespace OHOS::MediaAVCodec;
 const size_t EXPECT_SIZE = 26;
 
 namespace OHOS {
+enum class FileMode {
+    FILE_MODE_720_1280,
+    FILE_MODE_720_1280_HDR,
+    FILE_MODE_HDR_HLG_METADATA_RES
+};
+
+static int currentFileMode = 0;
+
 bool SwdecoderServerNormalFuzzTest(const uint8_t *data, size_t size)
 {
     if (size < EXPECT_SIZE) {
@@ -40,11 +48,19 @@ bool SwdecoderServerNormalFuzzTest(const uint8_t *data, size_t size)
     std::vector<uint32_t> pixelFormats = {1, 2, 3, 4, 5};
     size_t pfIndex = fdp.ConsumeIntegralInRange<uint32_t>(0, pixelFormats.size() - 1);
     vDecSample->defaultPixelFormat = pixelFormats[pfIndex];
-    bool needRotation = fdp.ConsumeBool();
-    if (needRotation) {
-        vDecSample->inpDir = "/data/test/media/720_1280_25_avcc.h265";
-    } else {
-        vDecSample->inpDir = "/data/test/media/720_1280_25_avcc.hdr.h265";
+    FileMode fileModeEnum = static_cast<FileMode>(currentFileMode);
+    currentFileMode = (currentFileMode + 1) % 3;
+    switch (fileModeEnum)
+    {
+        case FileMode::FILE_MODE_720_1280:
+            vDecSample->inpDir = "/data/test/media/720_1280_25_avcc.h265";
+            break;
+        case FileMode::FILE_MODE_720_1280_HDR:
+            vDecSample->inpDir = "/data/test/media/720_1280_25_avcc.hdr.h265";
+            break;
+        case FileMode::FILE_MODE_HDR_HLG_METADATA_RES:
+            vDecSample->inpDir = "/data/test/media/hdr_hlg_metadata_res.h265";
+            break;
     }
     vDecSample->isSurfMode = fdp.ConsumeBool();
     auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
