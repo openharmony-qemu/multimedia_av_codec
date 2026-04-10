@@ -2553,7 +2553,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_SetAVReadPacketStopState_TimeoutSuccess_
 }
 
 void TestSetReadTimeoutForInit(const std::string& pluginName, const std::string& filePath,
-                                   int64_t timeoutMs, bool expectSuccess)
+                               int64_t timeoutMs, bool expectSuccess)
 {
     struct stat fileStatus {};
     ASSERT_EQ(stat(filePath.c_str(), &fileStatus), 0);
@@ -2658,14 +2658,13 @@ void TestSetReadTimeoutForSeek(const std::string& pluginName, const std::string&
     }
 
     streamDemuxer->ResetFailState();
-    streamDemuxer->SetFailParams(0, 20);
+    streamDemuxer->SetFailParams(0, 20); // set 20 fail count
 
     demuxerPlugin->SetReadTimeoutForInitSeek(timeoutMs);
-    int64_t seekTime = 1000;
     int64_t realSeekTime = 0;
     Status seekStatus = Status::ERROR_UNKNOWN;
     std::thread t([&]() {
-        seekStatus = demuxerPlugin->SeekTo(-1, seekTime, SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime);
+        seekStatus = demuxerPlugin->SeekTo(-1, 1000, SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime); // 1000 is seekTime
     });
     t.join();
     if (expectSuccess) {
