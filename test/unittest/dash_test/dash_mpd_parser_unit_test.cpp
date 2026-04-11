@@ -854,7 +854,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_DashBreakDurationNode_001, TestSize.Level1)
     node->GetAttr("duration", iVal);
     EXPECT_EQ(iVal, 0);
     node->GetAttr("duration", ullVal);
-    EXPECT_EQ(ullVal, 0ull);
+    EXPECT_EQ(ullVal, 0);
     node->GetAttr("duration", dVal);
     EXPECT_EQ(dVal, 0.0);
 }
@@ -878,7 +878,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_DashBreakDurationNode_002, TestSize.Level1)
     node->GetAttr("duration", iVal);
     EXPECT_EQ(iVal, 100);
     node->GetAttr("duration", ullVal);
-    EXPECT_EQ(ullVal, 100ull);
+    EXPECT_EQ(ullVal, 100);
     node->GetAttr("duration", dVal);
     EXPECT_EQ(dVal, 100.0);
 }
@@ -905,7 +905,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_DashEventNode_001, TestSize.Level1)
     node->GetAttr("id", iVal);
     EXPECT_EQ(iVal, 0);
     node->GetAttr("id", ullVal);
-    EXPECT_EQ(ullVal, 0ull);
+    EXPECT_EQ(ullVal, 0);
     node->GetAttr("id", dVal);
     EXPECT_EQ(dVal, 0.0);
 }
@@ -929,7 +929,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_DashEventNode_002, TestSize.Level1)
     node->GetAttr("id", iVal);
     EXPECT_EQ(iVal, 100);
     node->GetAttr("id", ullVal);
-    EXPECT_EQ(ullVal, 100ull);
+    EXPECT_EQ(ullVal, 100);
     node->GetAttr("id", dVal);
     EXPECT_EQ(dVal, 100.0);
 }
@@ -956,7 +956,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_DashEventStreamNode_001, TestSize.Level1)
     node->GetAttr("timescale", iVal);
     EXPECT_EQ(iVal, 0);
     node->GetAttr("timescale", ullVal);
-    EXPECT_EQ(ullVal, 0ull);
+    EXPECT_EQ(ullVal, 0);
     node->GetAttr("timescale", dVal);
     EXPECT_EQ(dVal, 0.0);
 }
@@ -980,7 +980,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_DashEventStreamNode_002, TestSize.Level1)
     node->GetAttr("timescale", iVal);
     EXPECT_EQ(iVal, 1000);
     node->GetAttr("timescale", ullVal);
-    EXPECT_EQ(ullVal, 1000ull);
+    EXPECT_EQ(ullVal, 1000);
     node->GetAttr("timescale", dVal);
     EXPECT_EQ(dVal, 1000.0);
 }
@@ -1007,7 +1007,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_DashSpliceInfoSectionNode_001, TestSize.Lev
     node->GetAttr("xmln", iVal);
     EXPECT_EQ(iVal, 0);
     node->GetAttr("xmln", ullVal);
-    EXPECT_EQ(ullVal, 0ull);
+    EXPECT_EQ(ullVal, 0);
     node->GetAttr("xmln", dVal);
     EXPECT_EQ(dVal, 0.0);
 }
@@ -1031,7 +1031,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_DashSpliceInfoSectionNode_002, TestSize.Lev
     node->GetAttr("xmln", iVal);
     EXPECT_EQ(iVal, 100);
     node->GetAttr("xmln", ullVal);
-    EXPECT_EQ(ullVal, 100ull);
+    EXPECT_EQ(ullVal, 100);
     node->GetAttr("xmln", dVal);
     EXPECT_EQ(dVal, 100.0);
 }
@@ -1058,7 +1058,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_DashSpliceInsertNode_001, TestSize.Level1)
     node->GetAttr("outOfNetworkIndicator", iVal);
     EXPECT_EQ(iVal, 0);
     node->GetAttr("outOfNetworkIndicator", ullVal);
-    EXPECT_EQ(ullVal, 0ull);
+    EXPECT_EQ(ullVal, 0);
     node->GetAttr("outOfNetworkIndicator", dVal);
     EXPECT_EQ(dVal, 0.0);
 }
@@ -1082,7 +1082,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_DashSpliceInsertNode_002, TestSize.Level1)
     node->GetAttr("outOfNetworkIndicator", iVal);
     EXPECT_EQ(iVal, 100);
     node->GetAttr("outOfNetworkIndicator", ullVal);
-    EXPECT_EQ(ullVal, 100ull);
+    EXPECT_EQ(ullVal, 100);
     node->GetAttr("outOfNetworkIndicator", dVal);
     EXPECT_EQ(dVal, 100.0);
 }

@@ -3971,7 +3971,7 @@ void MediaDemuxer::HandleEvent(const Plugins::PluginEvent &event)
 }
 
 void MediaDemuxer::DispatchPluginEvent(const Plugins::PluginEvent &event,
- 	const std::shared_ptr<Pipeline::EventReceiver> &eventReceiver)
+    const std::shared_ptr<Pipeline::EventReceiver> &eventReceiver)
 {
     switch (event.type) {
         case PluginEventType::SOURCE_DRM_INFO_UPDATE: {
