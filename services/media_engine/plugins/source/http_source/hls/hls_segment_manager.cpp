@@ -280,6 +280,7 @@ void HlsSegmentManager::SetDownloaderRequestCb(
 void HlsSegmentManager::PutRequestIntoDownloader(const PlayInfo& playInfo)
 {
     if (fragmentDownloadStart[playInfo.url_]) {
+        MEDIA_LOG_I("PutRequestIntoDownloader playinfo is repeat");
         writeTsIndex_ > 0 ? writeTsIndex_-- : 0;
         return;
     }
