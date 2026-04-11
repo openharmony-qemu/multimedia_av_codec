@@ -85,9 +85,9 @@ void AutoFallbackRetentionStrategy::Reset()
     lastSysTime_ = 0;
 }
 
-FrameRetentionMode AutoFallbackRetentionStrategy::GetMode() const
+RetentionStrategyType AutoFallbackRetentionStrategy::GetMode() const
 {
-    return FrameRetentionMode::AUTO_RATIO;
+    return RetentionStrategyType::AUTO_RATIO;
 }
 
 double AutoFallbackRetentionStrategy::GetCurrentRetentionRatio() const

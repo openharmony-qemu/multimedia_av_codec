@@ -25,19 +25,30 @@ typedef struct {
     uint32_t ctuSize;
 } StreamAuxInfo;
 
+// MV 解析器产出的感知特征统计结果
+typedef struct {
+    uint32_t totalBlocks;
+    uint32_t validBlocks;
+    uint32_t skipBlocks;
+    uint32_t zeroMotionBlocks;
+    double avgRefDist;
+    double perceptualMagnitude;
+    double motionConsistency;
+    double zeroMotionRatio;
+} MVStats;
+
 #if defined(__cplusplus) && !defined(NALU_ANALYZER_PLUGIN_COMPILE)
 #include <functional>
-#include "buffer/avbuffer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
 
-using AVBuffer = OHOS::Media::AVBuffer;
+// using AVBuffer = OHOS::Media::AVBuffer;
 using OnStreamAuxInfoParsed = std::function<void(const StreamAuxInfo& info)>;
 
 // 保留决策模式枚举
-enum class FrameRetentionMode : int32_t {
+enum class RetentionStrategyType : int32_t {
     INVALID = -1,
     FULL = 0,             // 对应 FullRetentionStrategy (全量透传)
     ADAPTIVE = 1,         // 对应 AdaptiveRetentionStrategy (自适应)
@@ -53,24 +64,11 @@ enum class SFDCodecType : int32_t {
     VVC = 2     // H.266
 };
 
-// MV 解析器产出的感知特征统计结果
-struct SFDMVStats {
-    uint32_t totalBlocks{0};
-    uint32_t validBlocks{0};
-    uint32_t skipBlocks{0};
-    uint32_t zeroMotionBlocks{0};
-
-    double avgRefDist{0.0};
-    double perceptualMagnitude{0.0};
-    double motionConsistency{0.0};
-    double zeroMotionRatio{0.0};
-};
-
 struct SFDConfig {
     int32_t width{0};
     int32_t height{0};
     SFDCodecType codecType{SFDCodecType::INVALID};
-    FrameRetentionMode initMode{FrameRetentionMode::INVALID};
+    RetentionStrategyType initMode{RetentionStrategyType::INVALID};
     std::optional<double> retentionRatio{std::nullopt};
 };
 

@@ -18,7 +18,7 @@
 
 #include <memory>
 #include <optional>
-#include "i_frame_retention_strategy.h"
+#include "retention_strategy.h"
 #include "smart_fluency_decoding_types.h"
 
 namespace OHOS {
@@ -27,8 +27,8 @@ namespace SFD {
 
 class RetentionStrategyFactory {
 public:
-    static std::unique_ptr<IFrameRetentionStrategy> CreateStrategy(
-        FrameRetentionMode mode,
+    static std::unique_ptr<IRetentionStrategy> CreateStrategy(
+        RetentionStrategyType mode,
         const std::optional<double>& retentionRate);
 };
 

@@ -78,9 +78,9 @@ void AdaptiveRetentionStrategy::Reset()
     dropCount_ = 0;
 }
 
-FrameRetentionMode AdaptiveRetentionStrategy::GetMode() const
+RetentionStrategyType AdaptiveRetentionStrategy::GetMode() const
 {
-    return FrameRetentionMode::ADAPTIVE;
+    return RetentionStrategyType::ADAPTIVE;
 }
 
 double AdaptiveRetentionStrategy::GetCurrentRetentionRatio() const

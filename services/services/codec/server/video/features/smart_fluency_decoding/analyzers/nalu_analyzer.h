@@ -13,28 +13,33 @@
  * limitations under the License.
  */
 
-#ifndef FULL_RETENTION_STRATEGY_H
-#define FULL_RETENTION_STRATEGY_H
+#ifndef NALU_ANALYZER_H
+#define NALU_ANALYZER_H
 
-#include "i_frame_retention_strategy.h"
+#include "buffer/avbuffer.h"
+#include "smart_fluency_decoding_types.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
 
-class FullRetentionStrategy : public IFrameRetentionStrategy {
-public:
-    FullRetentionStrategy() = default;
-    ~FullRetentionStrategy() override = default;
+using AVBuffer = OHOS::Media::AVBuffer;
 
-    bool MakeRetentionDecision(const FrameRetentionContext& ctx) override;
-    void Reset() override;
-    void UpdatePlaybackSpeed(double speed) override;
-    FrameRetentionMode GetMode() const override;
-    double GetCurrentRetentionRatio() const override;
+class INaluAnalyzer {
+public:
+    virtual ~INaluAnalyzer() = default;
+
+    virtual void SetAuxInfoCallback(OnStreamAuxInfoParsed callback) = 0;
+    virtual bool IsNonReferenceFrame(const std::shared_ptr<AVBuffer>& inputBuffer) = 0;
+};
+
+class NaluAnalyzerFactory {
+public:
+    static std::unique_ptr<INaluAnalyzer> CreateNaluAnalyzer(SFDCodecType codecType);
 };
 
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // PASSTHROUGH_DROPPER_H
+
+#endif // NALU_ANALYZER_H

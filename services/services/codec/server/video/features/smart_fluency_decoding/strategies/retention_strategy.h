@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef I_FRAME_RETENTION_STRATEGY_H
-#define I_FRAME_RETENTION_STRATEGY_H
+#ifndef RETENTION_STRATEGY_H
+#define RETENTION_STRATEGY_H
 
 #include <memory>
 #include "smart_fluency_decoding_types.h"
@@ -28,12 +28,12 @@ struct FrameRetentionContext {
     int64_t sysTimeMs;           // 当前系统的物理时间 (用于防突发)
     uint32_t frameCount;         // 累计帧序号
     int32_t preDroppedCount = 0; // 前置丢帧计数
-    const SFDMVStats* mvStats = nullptr;
+    const MVStats* mvStats = nullptr;
 };
 
-class IFrameRetentionStrategy {
+class IRetentionStrategy {
 public:
-    virtual ~IFrameRetentionStrategy() = default;
+    virtual ~IRetentionStrategy() = default;
     // 核心决策接口
     virtual bool MakeRetentionDecision(const FrameRetentionContext& ctx) = 0;
 
@@ -44,7 +44,7 @@ public:
     virtual void Reset() = 0;
 
     // 获取当前策略模式
-    virtual FrameRetentionMode GetMode() const = 0;
+    virtual RetentionStrategyType GetMode() const = 0;
 
     // 定期上报解码倍速和帧率供自适应算法参考
     virtual void OnDecodingPerformanceUpdate(double /*speed*/, double /*decFps*/) {};
@@ -57,4 +57,4 @@ public:
 } // namespace MediaAVCodec
 } // namespace OHOS
 
-#endif
+#endif // RETENTION_STRATEGY_H

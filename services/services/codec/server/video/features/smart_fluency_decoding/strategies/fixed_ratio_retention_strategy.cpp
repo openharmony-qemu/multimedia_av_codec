@@ -70,9 +70,9 @@ void FixedRatioRetentionStrategy::UpdatePlaybackSpeed(double speed)
     (void)speed;
 }
 
-FrameRetentionMode FixedRatioRetentionStrategy::GetMode() const
+RetentionStrategyType FixedRatioRetentionStrategy::GetMode() const
 {
-    return FrameRetentionMode::FIXED_RATIO;
+    return RetentionStrategyType::FIXED_RATIO;
 }
 
 double FixedRatioRetentionStrategy::GetCurrentRetentionRatio() const

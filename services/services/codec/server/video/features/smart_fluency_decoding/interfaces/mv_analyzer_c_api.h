@@ -4,7 +4,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,29 +13,34 @@
  * limitations under the License.
  */
 
-#ifndef NALU_ANALYZER_API_H
-#define NALU_ANALYZER_API_H
+#ifndef MV_ANALYZER_C_API_H
+#define MV_ANALYZER_C_API_H
 
+#include <stddef.h>
 #include "smart_fluency_decoding_types.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef void* NaluAnalyzerHandle;
+typedef void* MvAnalyzerHandle;
 
-typedef void (*NaluStreamAuxInfoCallback)(const StreamAuxInfo* info, void* userData);
+MvAnalyzerHandle CreateMvAnalyzer(int32_t codecType);
 
-NaluAnalyzerHandle CreateNaluAnalyzer(int32_t codecType);
+void DestroyMvAnalyzer(MvAnalyzerHandle parser);
 
-void DestroyNaluAnalyzer(NaluAnalyzerHandle analyzer);
+void SetStreamAuxInfo(MvAnalyzerHandle parser, const StreamAuxInfo* info);
 
-void SetNaluAnalyzerCallback(NaluAnalyzerHandle analyzer, NaluStreamAuxInfoCallback cb, void* userData);
+void SetVideoInfo(MvAnalyzerHandle parser, uint32_t width, uint32_t height);
 
-bool IsNonReferenceFrame(NaluAnalyzerHandle analyzer, const uint8_t* bufferAddr, uint32_t bufferSize);
+void ParseMvData(MvAnalyzerHandle parser, const uint8_t* buffer, size_t bufferSize, MVStats* outStats);
+
+void ResetMvAnalyzer(MvAnalyzerHandle parser);
+
+size_t GetTargetMvDataSize(MvAnalyzerHandle parser);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // NALU_ANALYZER_API_H
+#endif // MV_ANALYZER_C_API_H

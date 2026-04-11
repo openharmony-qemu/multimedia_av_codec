@@ -18,13 +18,13 @@
 
 #include <memory>
 #include <optional>
-#include "i_frame_retention_strategy.h"
+#include "retention_strategy.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
 
-class FixedRatioRetentionStrategy : public IFrameRetentionStrategy {
+class FixedRatioRetentionStrategy : public IRetentionStrategy {
 public:
     explicit FixedRatioRetentionStrategy(double ratio);
     ~FixedRatioRetentionStrategy() override = default;
@@ -32,7 +32,7 @@ public:
     bool MakeRetentionDecision(const FrameRetentionContext& ctx) override;
     void UpdatePlaybackSpeed(double speed) override;
     void Reset() override;
-    FrameRetentionMode GetMode() const override;
+    RetentionStrategyType GetMode() const override;
     double GetCurrentRetentionRatio() const override;
 
 private:

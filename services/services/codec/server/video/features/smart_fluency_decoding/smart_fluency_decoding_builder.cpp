@@ -119,24 +119,24 @@ SmartFluencyDecodingBuilder& SmartFluencyDecodingBuilder::SetFromFormat(const Fo
         params_.retentionRatio = ratio;
     }
     if (!hasMode) {
-        params_.initMode = hasRatio ? FrameDropMode::UNIFORM_CUSTOM : FrameDropMode::INVALID;
+        params_.initMode = hasRatio ? RetentionStrategyType::FIXED_RATIO : RetentionStrategyType::INVALID;
     } else {
         switch (extMode) {
             case static_cast<int32_t>(Media::Plugins::FrameRetentionMode::FULL):
-                params_.initMode = FrameDropMode::FULL;
+                params_.initMode = RetentionStrategyType::FULL;
                 break;
             case static_cast<int32_t>(Media::Plugins::FrameRetentionMode::ADAPTIVE):
-                params_.initMode = FrameDropMode::ADAPTIVE;
+                params_.initMode = RetentionStrategyType::ADAPTIVE;
                 break;
             case static_cast<int32_t>(Media::Plugins::FrameRetentionMode::UNIFORM):
-                params_.initMode = hasRatio ? FrameDropMode::UNIFORM_CUSTOM : FrameDropMode::UNIFORM_DEFAULT;
+                params_.initMode = hasRatio ? RetentionStrategyType::FIXED_RATIO : RetentionStrategyType::AUTO_RATIO;
                 break;
             default:
-                params_.initMode = FrameDropMode::INVALID;
+                params_.initMode = RetentionStrategyType::INVALID;
                 break;
         }
     }
-    if (hasRatio && (params_.initMode == FrameDropMode::ADAPTIVE || params_.initMode == FrameDropMode::FULL)) {
+    if (hasRatio && (params_.initMode == RetentionStrategyType::ADAPTIVE || params_.initMode == RetentionStrategyType::FULL)) {
         AVCODEC_LOGW("Adaptive or Full mode with retentionRate will be ignored");
     }
     double speed = DEFAULT_PLAYBACK_SPEED;
@@ -151,7 +151,7 @@ std::unique_ptr<SmartFluencyDecoding> SmartFluencyDecodingBuilder::Build()
     if (!ValidateParams()) {
         return nullptr;
     }
-    if (params_.initMode == FrameDropMode::INVALID) {
+    if (params_.initMode == RetentionStrategyType::INVALID) {
         return nullptr;
     }
     auto instance = std::make_unique<SmartFluencyDecoding>();
@@ -202,7 +202,7 @@ bool SmartFluencyDecodingBuilder::IsRetentionRateValid(double rate)
     return true;
 }
 
-std::vector<uint8_t> SmartFluencyDecodingBuilder::ExtractCsdData(const std::shared_ptr<Media::AVBuffer>& buffer)
+std::vector<uint8_t> SmartFluencyDecodingBuilder::ExtractCsdData(const std::shared_ptr<AVBuffer>& buffer)
 {
     std::vector<uint8_t> csdData;
     if (!buffer || !buffer->memory_) {
@@ -238,7 +238,6 @@ void SmartFluencyDecodingBuilder::ReplayCsdData(SmartFluencyDecoding* sfd, const
     }
     auto tmpBuffer = Media::AVBuffer::CreateAVBuffer(allocator, static_cast<int32_t>(csdData.size()));
     if (tmpBuffer && tmpBuffer->memory_) {
-        // 直接执行内存拷贝
         int32_t capacity = tmpBuffer->memory_->GetCapacity();
         if (capacity >= static_cast<int32_t>(csdData.size())) {
             if (memcpy_s(tmpBuffer->memory_->GetAddr(), csdData.size(), csdData.data(), csdData.size()) != EOK) {
