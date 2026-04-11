@@ -4011,6 +4011,7 @@ void MediaDemuxer::DispatchPluginEvent(const Plugins::PluginEvent &event,
             break;
     }
 }
+
 void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
 {
     MEDIA_LOG_D("In");

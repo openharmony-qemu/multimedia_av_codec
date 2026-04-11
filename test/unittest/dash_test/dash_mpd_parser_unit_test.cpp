@@ -832,6 +832,472 @@ HWTEST_F(DashMpdParserUnitTest, Test_DashComAttrsElements_GetAttrDouble_003, Tes
     EXPECT_EQ(val, 1.5);
 }
 
+HWTEST_F(DashMpdParserUnitTest, Test_DashBreakDurationNode_001, TestSize.Level1)
+{
+    auto node = std::make_shared<DashBreakDurationNode>();
+    node->ParseNode(nullptr, nullptr);
+    std::string sVal;
+    uint32_t uVal = 0;
+    int32_t iVal = 0;
+    uint64_t ullVal = 0;
+    double dVal = 0.0;
+    node->GetAttr("unknown", sVal);
+    EXPECT_EQ(sVal, "");
+    node->GetAttr("unknown", uVal);
+    node->GetAttr("unknown", iVal);
+    node->GetAttr("unknown", ullVal);
+    node->GetAttr("unknown", dVal);
+    node->GetAttr("duration", sVal);
+    EXPECT_EQ(sVal, "");
+    node->GetAttr("duration", uVal);
+    EXPECT_EQ(uVal, 0u);
+    node->GetAttr("duration", iVal);
+    EXPECT_EQ(iVal, 0);
+    node->GetAttr("duration", ullVal);
+    EXPECT_EQ(ullVal, 0ull);
+    node->GetAttr("duration", dVal);
+    EXPECT_EQ(dVal, 0.0);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashBreakDurationNode_002, TestSize.Level1)
+{
+    auto node = std::make_shared<DashBreakDurationNode>();
+    auto xmlParser = std::make_shared<XmlParser>();
+    std::string xml = "<root duration=\"100\" autoReturn=\"true\"/>";
+    xmlParser->ParseFromBuffer(xml.c_str(), xml.length());
+    node->ParseNode(xmlParser, xmlParser->GetRootElement());
+    std::string sVal;
+    uint32_t uVal;
+    int32_t iVal;
+    uint64_t ullVal;
+    double dVal;
+    node->GetAttr("duration", sVal);
+    EXPECT_EQ(sVal, "100");
+    node->GetAttr("duration", uVal);
+    EXPECT_EQ(uVal, 100u);
+    node->GetAttr("duration", iVal);
+    EXPECT_EQ(iVal, 100);
+    node->GetAttr("duration", ullVal);
+    EXPECT_EQ(ullVal, 100ull);
+    node->GetAttr("duration", dVal);
+    EXPECT_EQ(dVal, 100.0);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashEventNode_001, TestSize.Level1)
+{
+    auto node = std::make_shared<DashEventNode>();
+    node->ParseNode(nullptr, nullptr);
+    std::string sVal;
+    uint32_t uVal = 0;
+    int32_t iVal = 0;
+    uint64_t ullVal = 0;
+    double dVal = 0.0;
+    node->GetAttr("unknown", sVal);
+    EXPECT_EQ(sVal, "");
+    node->GetAttr("unknown", uVal);
+    node->GetAttr("unknown", iVal);
+    node->GetAttr("unknown", ullVal);
+    node->GetAttr("unknown", dVal);
+    node->GetAttr("id", sVal);
+    EXPECT_EQ(sVal, "");
+    node->GetAttr("id", uVal);
+    EXPECT_EQ(uVal, 0u);
+    node->GetAttr("id", iVal);
+    EXPECT_EQ(iVal, 0);
+    node->GetAttr("id", ullVal);
+    EXPECT_EQ(ullVal, 0ull);
+    node->GetAttr("id", dVal);
+    EXPECT_EQ(dVal, 0.0);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashEventNode_002, TestSize.Level1)
+{
+    auto node = std::make_shared<DashEventNode>();
+    auto xmlParser = std::make_shared<XmlParser>();
+    std::string xml = "<root id=\"100\"/>";
+    xmlParser->ParseFromBuffer(xml.c_str(), xml.length());
+    node->ParseNode(xmlParser, xmlParser->GetRootElement());
+    std::string sVal;
+    uint32_t uVal;
+    int32_t iVal;
+    uint64_t ullVal;
+    double dVal;
+    node->GetAttr("id", sVal);
+    EXPECT_EQ(sVal, "100");
+    node->GetAttr("id", uVal);
+    EXPECT_EQ(uVal, 100u);
+    node->GetAttr("id", iVal);
+    EXPECT_EQ(iVal, 100);
+    node->GetAttr("id", ullVal);
+    EXPECT_EQ(ullVal, 100ull);
+    node->GetAttr("id", dVal);
+    EXPECT_EQ(dVal, 100.0);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashEventStreamNode_001, TestSize.Level1)
+{
+    auto node = std::make_shared<DashEventStreamNode>();
+    node->ParseNode(nullptr, nullptr);
+    std::string sVal;
+    uint32_t uVal = 0;
+    int32_t iVal = 0;
+    uint64_t ullVal = 0;
+    double dVal = 0.0;
+    node->GetAttr("unknown", sVal);
+    EXPECT_EQ(sVal, "");
+    node->GetAttr("unknown", uVal);
+    node->GetAttr("unknown", iVal);
+    node->GetAttr("unknown", ullVal);
+    node->GetAttr("unknown", dVal);
+    node->GetAttr("timescale", sVal);
+    EXPECT_EQ(sVal, "");
+    node->GetAttr("timescale", uVal);
+    EXPECT_EQ(uVal, 0u);
+    node->GetAttr("timescale", iVal);
+    EXPECT_EQ(iVal, 0);
+    node->GetAttr("timescale", ullVal);
+    EXPECT_EQ(ullVal, 0ull);
+    node->GetAttr("timescale", dVal);
+    EXPECT_EQ(dVal, 0.0);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashEventStreamNode_002, TestSize.Level1)
+{
+    auto node = std::make_shared<DashEventStreamNode>();
+    auto xmlParser = std::make_shared<XmlParser>();
+    std::string xml = "<root timescale=\"1000\"/>";
+    xmlParser->ParseFromBuffer(xml.c_str(), xml.length());
+    node->ParseNode(xmlParser, xmlParser->GetRootElement());
+    std::string sVal;
+    uint32_t uVal;
+    int32_t iVal;
+    uint64_t ullVal;
+    double dVal;
+    node->GetAttr("timescale", sVal);
+    EXPECT_EQ(sVal, "1000");
+    node->GetAttr("timescale", uVal);
+    EXPECT_EQ(uVal, 1000u);
+    node->GetAttr("timescale", iVal);
+    EXPECT_EQ(iVal, 1000);
+    node->GetAttr("timescale", ullVal);
+    EXPECT_EQ(ullVal, 1000ull);
+    node->GetAttr("timescale", dVal);
+    EXPECT_EQ(dVal, 1000.0);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashSpliceInfoSectionNode_001, TestSize.Level1)
+{
+    auto node = std::make_shared<DashSpliceInfoSectionNode>();
+    node->ParseNode(nullptr, nullptr);
+    std::string sVal;
+    uint32_t uVal = 0;
+    int32_t iVal = 0;
+    uint64_t ullVal = 0;
+    double dVal = 0.0;
+    node->GetAttr("unknown", sVal);
+    EXPECT_EQ(sVal, "");
+    node->GetAttr("unknown", uVal);
+    node->GetAttr("unknown", iVal);
+    node->GetAttr("unknown", ullVal);
+    node->GetAttr("unknown", dVal);
+    node->GetAttr("xmln", sVal);
+    EXPECT_EQ(sVal, "");
+    node->GetAttr("xmln", uVal);
+    EXPECT_EQ(uVal, 0u);
+    node->GetAttr("xmln", iVal);
+    EXPECT_EQ(iVal, 0);
+    node->GetAttr("xmln", ullVal);
+    EXPECT_EQ(ullVal, 0ull);
+    node->GetAttr("xmln", dVal);
+    EXPECT_EQ(dVal, 0.0);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashSpliceInfoSectionNode_002, TestSize.Level1)
+{
+    auto node = std::make_shared<DashSpliceInfoSectionNode>();
+    auto xmlParser = std::make_shared<XmlParser>();
+    std::string xml = "<root xmln=\"100\"/>";
+    xmlParser->ParseFromBuffer(xml.c_str(), xml.length());
+    node->ParseNode(xmlParser, xmlParser->GetRootElement());
+    std::string sVal;
+    uint32_t uVal;
+    int32_t iVal;
+    uint64_t ullVal;
+    double dVal;
+    node->GetAttr("xmln", sVal);
+    EXPECT_EQ(sVal, "100");
+    node->GetAttr("xmln", uVal);
+    EXPECT_EQ(uVal, 100u);
+    node->GetAttr("xmln", iVal);
+    EXPECT_EQ(iVal, 100);
+    node->GetAttr("xmln", ullVal);
+    EXPECT_EQ(ullVal, 100ull);
+    node->GetAttr("xmln", dVal);
+    EXPECT_EQ(dVal, 100.0);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashSpliceInsertNode_001, TestSize.Level1)
+{
+    auto node = std::make_shared<DashSpliceInsertNode>();
+    node->ParseNode(nullptr, nullptr);
+    std::string sVal;
+    uint32_t uVal = 0;
+    int32_t iVal = 0;
+    uint64_t ullVal = 0;
+    double dVal = 0.0;
+    node->GetAttr("unknown", sVal);
+    EXPECT_EQ(sVal, "");
+    node->GetAttr("unknown", uVal);
+    node->GetAttr("unknown", iVal);
+    node->GetAttr("unknown", ullVal);
+    node->GetAttr("unknown", dVal);
+    node->GetAttr("outOfNetworkIndicator", sVal);
+    EXPECT_EQ(sVal, "");
+    node->GetAttr("outOfNetworkIndicator", uVal);
+    EXPECT_EQ(uVal, 0u);
+    node->GetAttr("outOfNetworkIndicator", iVal);
+    EXPECT_EQ(iVal, 0);
+    node->GetAttr("outOfNetworkIndicator", ullVal);
+    EXPECT_EQ(ullVal, 0ull);
+    node->GetAttr("outOfNetworkIndicator", dVal);
+    EXPECT_EQ(dVal, 0.0);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_DashSpliceInsertNode_002, TestSize.Level1)
+{
+    auto node = std::make_shared<DashSpliceInsertNode>();
+    auto xmlParser = std::make_shared<XmlParser>();
+    std::string xml = "<root outOfNetworkIndicator=\"100\"/>";
+    xmlParser->ParseFromBuffer(xml.c_str(), xml.length());
+    node->ParseNode(xmlParser, xmlParser->GetRootElement());
+    std::string sVal;
+    uint32_t uVal;
+    int32_t iVal;
+    uint64_t ullVal;
+    double dVal;
+    node->GetAttr("outOfNetworkIndicator", sVal);
+    EXPECT_EQ(sVal, "100");
+    node->GetAttr("outOfNetworkIndicator", uVal);
+    EXPECT_EQ(uVal, 100u);
+    node->GetAttr("outOfNetworkIndicator", iVal);
+    EXPECT_EQ(iVal, 100);
+    node->GetAttr("outOfNetworkIndicator", ullVal);
+    EXPECT_EQ(ullVal, 100ull);
+    node->GetAttr("outOfNetworkIndicator", dVal);
+    EXPECT_EQ(dVal, 100.0);
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_ParseEventStream_001, TestSize.Level1)
+{
+    std::string mpd = "<?xml version=\"1.0\" ?>\n"
+        "<MPD xmlns=\"urn:mpeg:dash:schema:mpd:2011\" type=\"static\">\n"
+        "  <Period>\n"
+        "    <EventStream schemeIdUri=\"urn:test:event\" value=\"test\" "
+        "timescale=\"1000\" presentationTimeOffset=\"0\">\n"
+        "      <Event id=\"1\" duration=\"5000\" presentationTime=\"1000\" value=\"event1\"/>\n"
+        "      <Event id=\"2\" duration=\"10000\" presentationTime=\"2000\" value=\"event2\"/>\n"
+        "    </EventStream>\n"
+        "  </Period>\n"
+        "</MPD>";
+    auto mpdParser = std::make_shared<DashMpdParser>();
+    mpdParser->ParseMPD(mpd.c_str(), mpd.length());
+    DashMpdInfo *mpdInfo{nullptr};
+    mpdParser->GetMPD(mpdInfo);
+    ASSERT_NE(mpdInfo, nullptr);
+    ASSERT_FALSE(mpdInfo->periodInfoList_.empty());
+    auto periodInfo = mpdInfo->periodInfoList_.front();
+    ASSERT_NE(periodInfo, nullptr);
+    ASSERT_FALSE(periodInfo->eventStreamList_.empty());
+    auto eventStreamInfo = periodInfo->eventStreamList_.front();
+    ASSERT_NE(eventStreamInfo, nullptr);
+    EXPECT_EQ(eventStreamInfo->schemeIdUri_, "urn:test:event");
+    EXPECT_EQ(eventStreamInfo->value_, "test");
+    EXPECT_EQ(eventStreamInfo->timescale_, 1000u);
+    EXPECT_EQ(eventStreamInfo->presentationTimeOffset_, 0u);
+    ASSERT_FALSE(eventStreamInfo->eventList_.empty());
+    auto eventInfo = eventStreamInfo->eventList_.front();
+    ASSERT_NE(eventInfo, nullptr);
+    EXPECT_EQ(eventInfo->id_, "1");
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_ParseEventStream_002, TestSize.Level1)
+{
+    std::string mpd = "<?xml version=\"1.0\" ?>\n"
+        "<MPD xmlns=\"urn:mpeg:dash:schema:mpd:2011\" type=\"static\">\n"
+        "  <Period>\n"
+        "    <EventStream schemeIdUri=\"urn:test:event\" timescale=\"1000\">\n"
+        "      <BaseURL>http://test.com/base</BaseURL>\n"
+        "      <Event id=\"1\" presentationTime=\"0\"/>\n"
+        "    </EventStream>\n"
+        "  </Period>\n"
+        "</MPD>";
+    auto mpdParser = std::make_shared<DashMpdParser>();
+    mpdParser->ParseMPD(mpd.c_str(), mpd.length());
+    DashMpdInfo *mpdInfo{nullptr};
+    mpdParser->GetMPD(mpdInfo);
+    ASSERT_NE(mpdInfo, nullptr);
+    auto periodInfo = mpdInfo->periodInfoList_.front();
+    ASSERT_NE(periodInfo, nullptr);
+    auto eventStreamInfo = periodInfo->eventStreamList_.front();
+    ASSERT_NE(eventStreamInfo, nullptr);
+    ASSERT_FALSE(eventStreamInfo->baseUrl_.empty());
+    EXPECT_EQ(eventStreamInfo->baseUrl_.front(), "http://test.com/base");
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_ParseSpliceInfoSection_001, TestSize.Level1)
+{
+    std::string mpd = "<?xml version=\"1.0\" ?>\n"
+        "<MPD xmlns=\"urn:mpeg:dash:schema:mpd:2011\" type=\"static\">\n"
+        "  <Period>\n"
+        "    <EventStream schemeIdUri=\"urn:scte:scte35:2013\" timescale=\"1000\">\n"
+        "      <Event id=\"1\" presentationTime=\"1000\">\n"
+        "        <scte35:SpliceInfoSection xmln=\"urn:scte:scte35:2013\">\n"
+        "          <scte35:SpliceInsert outOfNetworkIndicator=\"true\" spliceImmediateFlag=\"true\">\n"
+        "            <scte35:BreakDuration duration=\"1000\" autoReturn=\"false\"/>\n"
+        "          </scte35:SpliceInsert>\n"
+        "        </scte35:SpliceInfoSection>\n"
+        "      </Event>\n"
+        "    </EventStream>\n"
+        "  </Period>\n"
+        "</MPD>";
+    auto mpdParser = std::make_shared<DashMpdParser>();
+    mpdParser->ParseMPD(mpd.c_str(), mpd.length());
+    DashMpdInfo *mpdInfo{nullptr};
+    mpdParser->GetMPD(mpdInfo);
+    ASSERT_NE(mpdInfo, nullptr);
+    auto periodInfo = mpdInfo->periodInfoList_.front();
+    ASSERT_NE(periodInfo, nullptr);
+    auto eventStreamInfo = periodInfo->eventStreamList_.front();
+    ASSERT_NE(eventStreamInfo, nullptr);
+    auto eventInfo = eventStreamInfo->eventList_.front();
+    ASSERT_NE(eventInfo, nullptr);
+    ASSERT_FALSE(eventInfo->contents_.empty());
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_ParseSpliceInsert_001, TestSize.Level1)
+{
+    std::string mpd = "<?xml version=\"1.0\" ?>\n"
+        "<MPD xmlns=\"urn:mpeg:dash:schema:mpd:2011\" type=\"static\">\n"
+        "  <Period>\n"
+        "    <EventStream schemeIdUri=\"urn:scte:scte35:2013\" timescale=\"1000\">\n"
+        "      <Event id=\"1\">\n"
+        "        <SpliceInfoSection xmln=\"urn:scte\">\n"
+        "          <SpliceInsert outOfNetworkIndicator=\"1\" spliceImmediateFlag=\"false\">\n"
+        "            <BreakDuration duration=\"5000\" autoReturn=\"true\"/>\n"
+        "          </SpliceInsert>\n"
+        "        </SpliceInfoSection>\n"
+        "      </Event>\n"
+        "    </EventStream>\n"
+        "  </Period>\n"
+        "</MPD>";
+    auto mpdParser = std::make_shared<DashMpdParser>();
+    mpdParser->ParseMPD(mpd.c_str(), mpd.length());
+    DashMpdInfo *mpdInfo{nullptr};
+    mpdParser->GetMPD(mpdInfo);
+    ASSERT_NE(mpdInfo, nullptr);
+    auto periodInfo = mpdInfo->periodInfoList_.front();
+    auto eventStreamInfo = periodInfo->eventStreamList_.front();
+    auto eventInfo = eventStreamInfo->eventList_.front();
+    ASSERT_NE(eventInfo, nullptr);
+    EXPECT_TRUE(eventInfo->contents_.find("SpliceInsert") != eventInfo->contents_.end() ||
+                eventInfo->contents_.find("SpliceInfoSection") != eventInfo->contents_.end());
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_ParseBreakDuration_001, TestSize.Level1)
+{
+    std::string mpd = "<?xml version=\"1.0\" ?>\n"
+        "<MPD xmlns=\"urn:mpeg:dash:schema:mpd:2011\" type=\"static\">\n"
+        "  <Period>\n"
+        "    <EventStream schemeIdUri=\"urn:scte:scte35:2013\" timescale=\"1000\">\n"
+        "      <Event id=\"1\">\n"
+        "        <SpliceInfoSection>\n"
+        "          <SpliceInsert>\n"
+        "            <BreakDuration duration=\"10000\" autoReturn=\"false\"/>\n"
+        "          </SpliceInsert>\n"
+        "        </SpliceInfoSection>\n"
+        "      </Event>\n"
+        "    </EventStream>\n"
+        "  </Period>\n"
+        "</MPD>";
+    auto mpdParser = std::make_shared<DashMpdParser>();
+    mpdParser->ParseMPD(mpd.c_str(), mpd.length());
+    DashMpdInfo *mpdInfo{nullptr};
+    mpdParser->GetMPD(mpdInfo);
+    ASSERT_NE(mpdInfo, nullptr);
+    auto periodInfo = mpdInfo->periodInfoList_.front();
+    auto eventStreamInfo = periodInfo->eventStreamList_.front();
+    auto eventInfo = eventStreamInfo->eventList_.front();
+    ASSERT_NE(eventInfo, nullptr);
+    EXPECT_TRUE(eventInfo->contents_.find("BreakDuration") != eventInfo->contents_.end());
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_ParseEvent_001, TestSize.Level1)
+{
+    std::string mpd = "<?xml version=\"1.0\" ?>\n"
+        "<MPD xmlns=\"urn:mpeg:dash:schema:mpd:2011\" type=\"static\">\n"
+        "  <Period>\n"
+        "    <EventStream schemeIdUri=\"urn:test:event\" timescale=\"100\" presentationTimeOffset=\"10\">\n"
+        "      <Event id=\"evt1\" duration=\"1000\" presentationTime=\"100\" value=\"data\"/>\n"
+        "    </EventStream>\n"
+        "  </Period>\n"
+        "</MPD>";
+    auto mpdParser = std::make_shared<DashMpdParser>();
+    mpdParser->ParseMPD(mpd.c_str(), mpd.length());
+    DashMpdInfo *mpdInfo{nullptr};
+    mpdParser->GetMPD(mpdInfo);
+    ASSERT_NE(mpdInfo, nullptr);
+    auto periodInfo = mpdInfo->periodInfoList_.front();
+    auto eventStreamInfo = periodInfo->eventStreamList_.front();
+    auto eventInfo = eventStreamInfo->eventList_.front();
+    ASSERT_NE(eventInfo, nullptr);
+    EXPECT_EQ(eventInfo->id_, "evt1");
+    EXPECT_EQ(eventInfo->value_, "data");
+    EXPECT_EQ(eventInfo->classify_, "urn:test:event");
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_ParseEventStream_EmptyEventStream_001, TestSize.Level1)
+{
+    std::string mpd = "<?xml version=\"1.0\" ?>\n"
+        "<MPD xmlns=\"urn:mpeg:dash:schema:mpd:2011\" type=\"static\">\n"
+        "  <Period>\n"
+        "    <EventStream schemeIdUri=\"urn:test:event\"/>\n"
+        "  </Period>\n"
+        "</MPD>";
+    auto mpdParser = std::make_shared<DashMpdParser>();
+    mpdParser->ParseMPD(mpd.c_str(), mpd.length());
+    DashMpdInfo *mpdInfo{nullptr};
+    mpdParser->GetMPD(mpdInfo);
+    ASSERT_NE(mpdInfo, nullptr);
+    auto periodInfo = mpdInfo->periodInfoList_.front();
+    ASSERT_NE(periodInfo, nullptr);
+    ASSERT_FALSE(periodInfo->eventStreamList_.empty());
+    auto eventStreamInfo = periodInfo->eventStreamList_.front();
+    ASSERT_NE(eventStreamInfo, nullptr);
+    EXPECT_TRUE(eventStreamInfo->eventList_.empty());
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_ParseEventStream_MultipleEvents_001, TestSize.Level1)
+{
+    std::string mpd = "<?xml version=\"1.0\" ?>\n"
+        "<MPD xmlns=\"urn:mpeg:dash:schema:mpd:2011\" type=\"static\">\n"
+        "  <Period>\n"
+        "    <EventStream schemeIdUri=\"urn:test\" timescale=\"1000\">\n"
+        "      <Event id=\"1\" presentationTime=\"100\"/>\n"
+        "      <Event id=\"2\" presentationTime=\"200\"/>\n"
+        "      <Event id=\"3\" presentationTime=\"300\"/>\n"
+        "    </EventStream>\n"
+        "  </Period>\n"
+        "</MPD>";
+    auto mpdParser = std::make_shared<DashMpdParser>();
+    mpdParser->ParseMPD(mpd.c_str(), mpd.length());
+    DashMpdInfo *mpdInfo{nullptr};
+    mpdParser->GetMPD(mpdInfo);
+    ASSERT_NE(mpdInfo, nullptr);
+    auto periodInfo = mpdInfo->periodInfoList_.front();
+    auto eventStreamInfo = periodInfo->eventStreamList_.front();
+    ASSERT_EQ(eventStreamInfo->eventList_.size(), 3u);
+}
+
 HWTEST_F(DashMpdParserUnitTest, Test_DashContentCompNode_ParseNode_001, TestSize.Level1)
 {
     std::shared_ptr<DashContentCompNode> contentCompNode = std::make_shared<DashContentCompNode>();
