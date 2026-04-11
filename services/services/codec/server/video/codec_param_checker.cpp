@@ -404,6 +404,42 @@ bool CheckSqrMode(CapabilityData &capData, Format &format)
     return false;
 }
 
+/*
+return
+false: CBRHQ is not set successfully.
+true: not CBRHQ or turned into CBR or CBRHQ is set successfully.
+*/
+bool CheckCBRHQMode(CapabilityData &capData, Format &format)
+{
+    int64_t maxBitrate;
+    int32_t quality;
+    int32_t sqrFactor;
+    int32_t bitrateMode;
+    bool maxBitrateExist = format.GetLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, maxBitrate);
+    bool qualityExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality);
+    bool sqrFactorExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, sqrFactor);
+    bool bitrateModeExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
+    if (!bitrateModeExist || bitrateMode != VideoEncodeBitrateMode::CBR_HIGH_QUALITY) {
+        return true;
+    }
+
+    if (IsSupported(capData.bitrateMode, static_cast<int32_t>(VideoEncodeBitrateMode::CBR_HIGH_QUALITY))) {
+        if (sqrFactorExist) {
+            AVCODEC_LOGE("Param invalid, in CBRHQ mode but set SQR factor!");
+        } else if (qualityExist) {
+            AVCODEC_LOGE("Param invalid, in CBRHQ mode but set quality!");
+        } else if (maxBitrateExist) {
+            AVCODEC_LOGW("Param invalid, in CBRHQ mode but set maxBitrate!");
+            format.RemoveKey(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE);
+            return true;
+        }
+    }
+    format.RemoveKey(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, VideoEncodeBitrateMode::CBR);
+    AVCODEC_LOGW("Param invalid, convert the mode to CBR!");
+    return true;
+}
+
 bool CheckBitrateModeSupport(CapabilityData &capData, Format &format)
 {
     int32_t bitrateMode;
@@ -439,6 +475,11 @@ int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format, [[mayb
     /* CHECK: set SQR */
     if (CheckSqrMode(capData, format)) {
         return AVCS_ERR_OK;
+    }
+
+    /* CHECK: set CBRHQ */
+    if (!CheckCBRHQMode(capData, format)) {
+        return AVCS_ERR_CODEC_PARAM_INCORRECT;
     }
 
     /* CHECK: set VBR\CBR\CQ   or   set no mode */
