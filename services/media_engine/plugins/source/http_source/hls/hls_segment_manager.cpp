@@ -301,9 +301,8 @@ void HlsSegmentManager::PutRequestIntoDownloader(const PlayInfo& playInfo)
         MEDIA_LOG_I("HLS PutRequestIntoDownloader init readOffset." PUBLIC_LOG_U64 ", type: %{public}d", readOffset_,
             type_);
         readTsIndex_ = writeTsIndex_;
-        uint32_t readTsIndexTempValue = readTsIndex_.load();
         MEDIA_LOG_I("readTsIndex_, PutRequestIntoDownloader init readTsIndex_." PUBLIC_LOG_U32 ", type: %{public}d",
-            readTsIndexTempValue, type_);
+            readTsIndex_.load(), type_);
     }
     writeOffset_ = SpliceOffset(writeTsIndex_, 0);
     MEDIA_LOG_I("HLS PutRequestIntoDownloader update writeOffset_: " PUBLIC_LOG_U64 " writeTsIndex_: " PUBLIC_LOG_U32
