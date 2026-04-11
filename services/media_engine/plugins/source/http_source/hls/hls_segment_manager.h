@@ -390,6 +390,7 @@ private:
     std::shared_mutex aesDecryptorMutex_;
     bool isSeekedFlag_ {false};
     mutable std::mutex seekCandidatesMutex_;
+    int64_t currentSequence_;
 };
 }
 }

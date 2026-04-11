@@ -290,6 +290,7 @@ void HlsSegmentManager::PutRequestIntoDownloader(const PlayInfo& playInfo)
     requestInfo.url = playInfo.rangeUrl_.empty() ? playInfo.url_ : playInfo.rangeUrl_;
     requestInfo.httpHeader = httpHeader_;
     bool isRequestWholeFile = playInfo.rangeUrl_.empty() ? true : playInfo.length_ <= 0;
+    currentSequence_ = playInfo.sequence_;
     SetDownloadRequest(std::make_shared<DownloadRequest>(playInfo.duration_, dataSave_,
                                                          realStatusCallback, requestInfo, isRequestWholeFile));
     fragmentDownloadStart[playInfo.url_] = true;
@@ -1041,9 +1042,9 @@ void HlsSegmentManager::HandlePlayListChanged(const std::vector<PlayInfo>& playL
         }
         auto fragment = playList[i];
         PlaylistBackup(fragment);
-        if (isSelectingBitrate_.load() && (GetSeekable() == Seekable::SEEKABLE)) {
+        if (isSelectingBitrate_.load()) {
             fragmentDownloadStart[fragment.url_] = true;
-            if (i == writeTsIndex_) {
+            if (currentSequence_ == fragment.sequence_) {
                 MEDIA_LOG_I("HLS Switch bitrate, type: %{public}d", type_);
                 isSelectingBitrate_.store(false);
             } else {
