@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -29,6 +29,11 @@
 #include "dash_seg_tmline_node.h"
 #include "dash_descriptor_node.h"
 #include "dash_seg_url_node.h"
+#include "dash_event_stream_node.h"
+#include "dash_event_node.h"
+#include "dash_splice_info_section_node.h"
+#include "dash_splice_insert_node.h"
+#include "dash_break_duration_node.h"
 
 namespace {
     using namespace OHOS::Media::Plugins::HttpPlugin;
@@ -51,6 +56,11 @@ namespace {
         {"EssentialProperty", []() { return new DashDescriptorNode(); }},
         {"AudioChannelConfiguration", []() { return new DashDescriptorNode(); }},
         {"SegmentURL", []() { return new DashSegUrlNode(); }},
+        {"EventStream", []() {return new DashEventStreamNode(); }},
+        {"Event", []() {return new DashEventNode(); }},
+        {"SpliceInfoSection", []() {return new DashSpliceInfoSectionNode(); }},
+        {"SpliceInsert", []() {return new DashSpliceInsertNode(); }},
+        {"BreakDuration", []() {return new DashBreakDurationNode(); }},
     };
 }
 

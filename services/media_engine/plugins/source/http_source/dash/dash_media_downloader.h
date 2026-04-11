@@ -16,6 +16,7 @@
 #ifndef HISTREAMER_DASH_MEDIA_DOWNLOADER_H
 #define HISTREAMER_DASH_MEDIA_DOWNLOADER_H
 
+#include "avcodec_common.h"
 #include "media_downloader.h"
 #include "dash_mpd_downloader.h"
 #include "dash_segment_downloader.h"
@@ -71,6 +72,7 @@ public:
 
     void OnMpdInfoUpdate(DashMpdEvent mpdEvent) override;
     void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) override;
+    void OnTimedMetaDataChanged(const std::shared_ptr<MediaAVCodec::AVTimedMetaData> &metadata) override;
     void UpdateDownloadFinished(int streamId);
     void SetInterruptState(bool isInterruptNeeded) override;
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
@@ -111,6 +113,7 @@ private:
     bool DoPreparedSwitchAction(bool switchBitrateOk, bool switchAudioOk, bool switchSubtitleOk, int &streamId);
     bool DoPreparedAction(int &streamId);
     void UpdateSegmentIndexAfterSidxParseOk();
+    void ReportEventStreamMetadata();
     void ResetBitrateParam();
     void ResetTrackParam();
     std::shared_ptr<DashSegmentDownloader> GetSegmentDownloader(int32_t streamId);

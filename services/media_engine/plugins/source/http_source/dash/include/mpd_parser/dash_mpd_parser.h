@@ -50,33 +50,50 @@ public:
 private:
     void ParsePeriod(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement);
     void ParseAdaptationSet(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
-                            DashPeriodInfo *periodInfo);
+        DashPeriodInfo *periodInfo);
     void ParseRepresentation(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
-                             const DashPeriodInfo *periodInfo,
-                             DashAdptSetInfo *adptSetInfo);
+        const DashPeriodInfo *periodInfo, DashAdptSetInfo *adptSetInfo);
     void ParseSegmentBase(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
-                          DashSegBaseInfo **segBaseInfo);
+        DashSegBaseInfo **segBaseInfo);
     void ParseSegmentList(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
-                          DashSegListInfo **segListInfo);
+        DashSegListInfo **segListInfo);
     void ParseSegmentListElement(std::shared_ptr<XmlParser> &xmlParser, DashSegListInfo *segList,
-                                 std::shared_ptr<XmlElement> &childElement);
+        std::shared_ptr<XmlElement> &childElement);
     void ParseSegmentTemplate(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
-                              DashSegTmpltInfo **segTmpltInfo);
+        DashSegTmpltInfo **segTmpltInfo);
     void ParseSegmentTimeline(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
-                              DashList<DashSegTimeline *> &segTmlineList);
+        DashList<DashSegTimeline *> &segTmlineList);
     void ParseUrlType(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
-                      const std::string urlTypeName,
-                      DashUrlType **urlTypeInfo);
+        const std::string urlTypeName, DashUrlType **urlTypeInfo);
     void ParseContentProtection(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
-                                DashList<DashDescriptor *> &contentProtectionList);
+        DashList<DashDescriptor *> &contentProtectionList);
     void ParseEssentialProperty(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
-                                DashList<DashDescriptor *> &essentialPropertyList);
+        DashList<DashDescriptor *> &essentialPropertyList);
     void ParseAudioChannelConfiguration(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
-                                        DashList<DashDescriptor *> &propertyList, uint32_t &channels);
+        DashList<DashDescriptor *> &propertyList, uint32_t &channels);
     void ParseSegmentUrl(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
-                         DashList<DashSegUrl *> &segUrlList);
+        DashList<DashSegUrl *> &segUrlList);
     void ParseContentComponent(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
-                               DashList<DashContentCompInfo *> &contentCompInfoList);
+        DashList<DashContentCompInfo *> &contentCompInfoList);
+    void ParseEventStream(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+        DashList<DashEventStreamInfo *> &eventStreamList);
+    void ParseEvent(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+        DashList<DashEventInfo *> &eventList, const DashEventStreamInfo *eventStreamInfo);
+    void ParseEventChildren(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+        DashEventInfo *eventInfo);
+    void FillEventMetadata(DashEventInfo *eventInfo, uint64_t duration,
+        const DashEventStreamInfo *eventStreamInfo);
+    void LogEventInfo(const DashEventInfo *eventInfo);
+    bool ParseSpliceInfoSection(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+        DashEventInfo *eventInfo);
+    bool ParseSpliceInfoSectionChildren(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+        DashEventInfo *eventInfo);
+    bool ParseSpliceInsert(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+        DashEventInfo *eventInfo);
+    bool ParseSpliceInsertChildren(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+        DashEventInfo *eventInfo);
+    bool ParseBreakDuration(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+        DashEventInfo *eventInfo);
     void ParseProgramInfo(std::list<std::string> &programStrList) const;
     void ParseBaseUrl(std::list<std::string> &baseUrlStrList) const;
     void ParseLocation(std::list<std::string> &locationStrlist) const;
@@ -92,43 +109,42 @@ private:
     void ClearMultSegBase(DashMultSegBaseInfo *multSegBaseInfo);
     void ClearCommonAttrsAndElements(DashCommonAttrsAndElements *commonAttrsAndElements);
     void ClearRoleList(DashList<DashDescriptor *> &roleList);
+    void ClearEventStream(DashList<DashEventStreamInfo *> &eventStreamList);
 
     void GetMpdAttr(IDashMpdNode *mpdNode);
     void GetMpdElement(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement);
     void ProcessMpdElement(const std::shared_ptr<XmlParser> &xmlParser,
-                           DashList <std::shared_ptr<XmlElement>> &periodElementList,
-                           std::shared_ptr<XmlElement> &childElement);
+        DashList <std::shared_ptr<XmlElement>> &periodElementList, std::shared_ptr<XmlElement> &childElement);
     void GetAdaptationSetAttr(IDashMpdNode *adptSetNode, DashAdptSetInfo *adptSetInfo);
     void GetAdaptationSetElement(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
-                                 const DashPeriodInfo *periodInfo,
-                                 DashAdptSetInfo *adptSetInfo);
+        const DashPeriodInfo *periodInfo, DashAdptSetInfo *adptSetInfo);
     void ProcessAdpSetElement(std::shared_ptr<XmlParser> &xmlParser, DashAdptSetInfo *adptSetInfo,
-                              DashList<std::shared_ptr<XmlElement>> &representationElementList,
-                              std::shared_ptr<XmlElement> &childElement, DashElementList &dashElementList);
+        DashList<std::shared_ptr<XmlElement>> &representationElementList,
+        std::shared_ptr<XmlElement> &childElement, DashElementList &dashElementList);
     void GetPeriodAttr(IDashMpdNode *periodNode, DashPeriodInfo *periodInfo);
     void GetPeriodElement(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
-                          DashPeriodInfo *periodInfo);
+        DashPeriodInfo *periodInfo);
     void ProcessPeriodElement(const std::shared_ptr<XmlParser> &xmlParser, DashPeriodInfo *periodInfo,
-                              DashList <std::shared_ptr<XmlElement>> &adptSetElementList,
-                              std::shared_ptr<XmlElement> &childElement, DashElementList &dashElementList);
+        DashList <std::shared_ptr<XmlElement>> &adptSetElementList,
+        std::shared_ptr<XmlElement> &childElement, DashElementList &dashElementList);
     void GetRepresentationAttr(IDashMpdNode *representationNode, DashRepresentationInfo *representationInfo);
     void GetRepresentationElement(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
-                                  const DashPeriodInfo *periodInfo,
-                                  const DashAdptSetInfo *adptSetInfo, DashRepresentationInfo *representationInfo);
+        const DashPeriodInfo *periodInfo,
+        const DashAdptSetInfo *adptSetInfo, DashRepresentationInfo *representationInfo);
     void ProcessRepresentationElement(std::shared_ptr<XmlParser> &xmlParser, DashRepresentationInfo *representationInfo,
-                                      std::shared_ptr<XmlElement> &childElement, DashElementList &dashElementList);
+        std::shared_ptr<XmlElement> &childElement, DashElementList &dashElementList);
 
     void InheritMultSegBase(DashMultSegBaseInfo *lowerMultSegBaseInfo,
-                            const DashMultSegBaseInfo *higherMultSegBaseInfo);
+        const DashMultSegBaseInfo *higherMultSegBaseInfo);
     void InheritSegBase(DashSegBaseInfo *lowerSegBaseInfo, const DashSegBaseInfo *higherSegBaseInfo) const;
     void ParseElement(std::shared_ptr<XmlParser> &xmlParser, DashSegTmpltInfo *segTmplt,
-                      std::shared_ptr<XmlElement> &childElement);
+        std::shared_ptr<XmlElement> &childElement);
     void ParsePeriodElement(std::shared_ptr<XmlParser> &xmlParser,
-                            DashList<std::shared_ptr<XmlElement>> &periodElementList);
+        DashList<std::shared_ptr<XmlElement>> &periodElementList);
     void GetContentProtection(const std::shared_ptr<XmlParser> &xmlParser, DashDescriptor *contentProtection,
-                              std::shared_ptr<XmlElement> &childElement) const;
+        std::shared_ptr<XmlElement> &childElement) const;
     void ParseElementUrlType(std::shared_ptr<XmlParser> &xmlParser, DashSegBaseInfo *segBase,
-                             std::shared_ptr<XmlElement> &childElement);
+        std::shared_ptr<XmlElement> &childElement);
     void GetAdptSetCommonAttr(IDashMpdNode *adptSetNode, DashAdptSetInfo *adptSetInfo) const;
 
 private:
@@ -150,11 +166,16 @@ private:
     static constexpr const char *MPD_LABEL_CONTENT_PROTECTION = "ContentProtection";
     static constexpr const char *MPD_LABEL_ESSENTIAL_PROPERTY = "EssentialProperty";
     static constexpr const char *MPD_LABEL_AUDIO_CHANNEL_CONFIGURATION = "AudioChannelConfiguration";
+    static constexpr const char *MPD_LABEL_EVENT_STREAM = "EventStream";
+    static constexpr const char *MPD_LABEL_EVENT = "Event";
+    static constexpr const char *MPD_LABEL_SPLICE_INFO_SECTION = "SpliceInfoSection";
+    static constexpr const char *MPD_LABEL_SPLICE_INSERT = "SpliceInsert";
+    static constexpr const char *MPD_LABEL_BREAK_DURATION = "BreakDuration";
 
     DashMpdInfo dashMpdInfo_;
     int32_t stopFlag_{0};
 };
-} // namespace HttpPluginLite
+} // namespace HttpPlugin
 } // namespace Plugin
 } // namespace Media
 } // namespace OHOS

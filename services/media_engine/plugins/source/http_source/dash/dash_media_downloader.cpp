@@ -494,6 +494,9 @@ void DashMediaDownloader::ReceiveMpdStreamInitEvent()
             OpenInitSegment(streamDesc, seg);
         }
     }
+
+    // Report EventStream metadata from current Period
+    ReportEventStreamMetadata();
 }
 
 void DashMediaDownloader::OpenInitSegment(
@@ -1202,6 +1205,43 @@ void DashMediaDownloader::OnDrmInfoChanged(const std::multimap<std::string, std:
     auto callback = callback_.lock();
     if (callback) {
         callback->OnEvent({PluginEventType::SOURCE_DRM_INFO_UPDATE, {drmInfos}, "drm_info_update"});
+    }
+}
+
+void DashMediaDownloader::OnTimedMetaDataChanged(const std::shared_ptr<MediaAVCodec::AVTimedMetaData> &metadata)
+{
+    FALSE_RETURN_MSG(metadata != nullptr, "OnTimedMetaDataChanged: metadata is nullptr, ignore");
+    auto callback = callback_.lock();
+    FALSE_RETURN_MSG(callback != nullptr, "OnTimedMetaDataChanged: callback is nullptr, ignore");
+    callback->OnEvent({PluginEventType::SOURCE_TIMED_METADATA, {metadata}, "timed_meta_data"});
+}
+
+void DashMediaDownloader::ReportEventStreamMetadata()
+{
+    FALSE_RETURN_MSG(mpdDownloader_ != nullptr, "ReportEventStreamMetadata: mpdDownloader is nullptr, ignore");
+    DashList<DashEventStreamInfo *> eventStreamList = mpdDownloader_->GetCurrentPeriodEventStreams();
+    FALSE_RETURN_MSG(eventStreamList.size() > 0, "ReportEventStreamMetadata: no event streams in current period");
+    for (auto *eventStream : eventStreamList) {
+        if (eventStream == nullptr) {
+            continue;
+        }
+        for (auto *event : eventStream->eventList_) {
+            if (event == nullptr) {
+                continue;
+            }
+            auto metaData = std::make_shared<MediaAVCodec::AVTimedMetaData>();
+            metaData->id = event->id_;
+            metaData->classify = event->classify_;
+            metaData->start = event->start_;
+            metaData->duration = event->duration_;
+            metaData->contents = event->contents_;
+
+            MEDIA_LOG_I("ReportEventStreamMetadata: id=" PUBLIC_LOG_S ", schemeIdUri=" PUBLIC_LOG_S
+                ", start=" PUBLIC_LOG_D64 ", duration=" PUBLIC_LOG_D64,
+                metaData->id.c_str(), metaData->classify.c_str(), metaData->start, metaData->duration);
+
+            OnTimedMetaDataChanged(metaData);
+        }
     }
 }
 

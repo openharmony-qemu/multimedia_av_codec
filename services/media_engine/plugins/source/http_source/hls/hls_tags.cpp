@@ -55,6 +55,7 @@ struct {
     {"ext-x-i-frame-stream-inf",     HlsTag::EXTXIFRAMESTREAMINF},
     {"ext-x-session-key",            HlsTag::EXTXSESSIONKEY},
     {"ext-x-skip",                   HlsTag::EXTXSKIP},
+    {"ext-x-daterange",              HlsTag::EXTXDATERANGE},
     {"extinf",                       HlsTag::EXTINF},
     {"",                             HlsTag::URI}
 };
@@ -229,6 +230,11 @@ void AttributesTag::AddAttribute(std::shared_ptr<Attribute>& attr)
     attributes.push_back(attr);
 }
 
+const std::list<std::shared_ptr<Attribute>>& AttributesTag::GetAllAttributes() const
+{
+    return attributes;
+}
+
 void AttributesTag::ParseAttributes(const std::string& field)
 {
     std::istringstream iss(field);
@@ -345,6 +351,7 @@ std::shared_ptr<Tag> TagFactory::CreateTagByName(const std::string& name, const 
             case HlsTag::EXTXSTREAMINF:
             case HlsTag::EXTXIFRAMESTREAMINF:
             case HlsTag::EXTXSKIP:
+            case HlsTag::EXTXDATERANGE:
                 return std::make_shared<AttributesTag>(g_exttagmapping[i].type, value);
             default:
                 return nullptr;

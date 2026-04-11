@@ -34,6 +34,7 @@ public:
     void SetMpdInfo(DashMpdInfo *mpdInfo, const std::string &mpdUrl);
     DashMpdInfo *GetMpdInfo();
     DashPeriodInfo *GetFirstPeriod();
+    DashPeriodInfo *GetCurrentPeriod();
     DashPeriodInfo *GetNextPeriod(const DashPeriodInfo *periodInfo);
     TimeBase &GetTimeBase();
 
@@ -50,8 +51,8 @@ private:
     DashMpdInfo *mpdInfo_{nullptr};
     std::string mpdUrl_;
 };
-} // namespace HttpPluginLite
-} // namespace Plugin
+} // namespace HttpPlugin
+} // namespace Plugins
 } // namespace Media
 } // namespace OHOS
 #endif // DASH_MPD_MANAGER_H

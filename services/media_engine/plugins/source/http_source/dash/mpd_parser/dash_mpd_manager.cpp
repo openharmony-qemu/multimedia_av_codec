@@ -55,6 +55,11 @@ DashPeriodInfo *DashMpdManager::GetFirstPeriod()
     return *(this->mpdInfo_->periodInfoList_.begin());
 }
 
+DashPeriodInfo *DashMpdManager::GetCurrentPeriod()
+{
+    return GetFirstPeriod();
+}
+
 DashPeriodInfo *DashMpdManager::GetNextPeriod(const DashPeriodInfo *period)
 {
     if (this->mpdInfo_ == nullptr || this->mpdInfo_->periodInfoList_.size() == 0) {

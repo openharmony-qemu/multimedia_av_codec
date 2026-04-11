@@ -29,6 +29,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
+constexpr int32_t S_TO_MS = 1000;
 
 DashMpdParser::~DashMpdParser()
 {
@@ -122,10 +123,11 @@ void DashMpdParser::GetPeriodElement(std::shared_ptr<XmlParser> xmlParser, std::
 }
 
 void DashMpdParser::ProcessPeriodElement(const std::shared_ptr<XmlParser> &xmlParser, DashPeriodInfo *periodInfo,
-                                         DashList<std::shared_ptr<XmlElement>> &adptSetElementList,
-                                         std::shared_ptr<XmlElement> &childElement, DashElementList &dashElementList)
+    DashList<std::shared_ptr<XmlElement>> &adptSetElementList,
+    std::shared_ptr<XmlElement> &childElement, DashElementList &dashElementList)
 {
     std::string elementNameStr = childElement->GetName();
+    MEDIA_LOG_I("elementNameStr: " PUBLIC_LOG_S, elementNameStr.c_str());
     if (!elementNameStr.empty()) {
         xmlParser->SkipElementNameSpace(elementNameStr);
 
@@ -144,6 +146,9 @@ void DashMpdParser::ProcessPeriodElement(const std::shared_ptr<XmlParser> &xmlPa
         } else if (elementNameStr == MPD_LABEL_ADAPTATIONSET) {
             // parse element AdaptationSet
             adptSetElementList.push_back(childElement);
+        } else if (elementNameStr == MPD_LABEL_EVENT_STREAM) {
+            // parse element EventStream
+            ParseEventStream(xmlParser, childElement, periodInfo->eventStreamList_);
         }
     }
 }
@@ -366,7 +371,7 @@ void DashMpdParser::ParseSegmentUrl(std::shared_ptr<XmlParser> xmlParser, std::s
 }
 
 void DashMpdParser::ParseContentComponent(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
-                                          DashList<DashContentCompInfo *> &contentCompInfoList)
+    DashList<DashContentCompInfo *> &contentCompInfoList)
 {
     DashContentCompInfo *contentCompInfo = new (std::nothrow) DashContentCompInfo;
     if (contentCompInfo == nullptr) {
@@ -389,8 +394,274 @@ void DashMpdParser::ParseContentComponent(std::shared_ptr<XmlParser> xmlParser, 
     }
 }
 
+void DashMpdParser::ParseEventStream(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+    DashList<DashEventStreamInfo *> &eventStreamList)
+{
+    DashEventStreamInfo *eventStreamInfo = new (std::nothrow) DashEventStreamInfo;
+    if (eventStreamInfo == nullptr) {
+        return;
+    }
+    IDashMpdNode *eventStreamNode = IDashMpdNode::CreateNode(MPD_LABEL_EVENT_STREAM);
+    if (eventStreamNode == nullptr) {
+        MEDIA_LOG_E("ParseEventStream eventStreamNode == nullptr");
+        delete eventStreamInfo;
+        return;
+    }
+
+    eventStreamNode->ParseNode(xmlParser, rootElement);
+    eventStreamNode->GetAttr("schemeIdUri", eventStreamInfo->schemeIdUri_);
+    eventStreamNode->GetAttr("value", eventStreamInfo->value_);
+    eventStreamNode->GetAttr("timescale", eventStreamInfo->timescale_);
+    eventStreamNode->GetAttr("presentationTimeOffset", eventStreamInfo->presentationTimeOffset_);
+    
+    MEDIA_LOG_I("dash event: schemeIdUri: " PUBLIC_LOG_S ", timescale: " PUBLIC_LOG_U32,
+        eventStreamInfo->schemeIdUri_.c_str(), eventStreamInfo->timescale_);
+
+    std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
+    while (childElement != nullptr) {
+        if (this->stopFlag_) {
+            break;
+        }
+
+        std::string elementNameStr = childElement->GetName();
+        if (elementNameStr.empty()) {
+            childElement = childElement->GetSiblingNext();
+            continue;
+        }
+        xmlParser->SkipElementNameSpace(elementNameStr);
+        if (elementNameStr == MPD_LABEL_BASE_URL) {
+            std::string strValue = childElement->GetText();
+            if (!strValue.empty()) {
+                eventStreamInfo->baseUrl_.push_back(strValue);
+            }
+        } else if (elementNameStr == MPD_LABEL_EVENT) {
+            ParseEvent(xmlParser, childElement, eventStreamInfo->eventList_, eventStreamInfo);
+        }
+
+        childElement = childElement->GetSiblingNext();
+    }
+    eventStreamList.push_back(eventStreamInfo);
+    IDashMpdNode::DestroyNode(eventStreamNode);
+}
+
+void DashMpdParser::ParseEvent(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+    DashList<DashEventInfo *> &eventList, const DashEventStreamInfo *eventStreamInfo)
+{
+    DashEventInfo *eventInfo = new (std::nothrow) DashEventInfo;
+    if (eventInfo == nullptr) {
+        return;
+    }
+
+    IDashMpdNode *eventNode = IDashMpdNode::CreateNode(MPD_LABEL_EVENT);
+    if (eventNode == nullptr) {
+        MEDIA_LOG_E("ParseEvent eventNode == nullptr");
+        delete eventInfo;
+        return;
+    }
+
+    eventNode->ParseNode(xmlParser, rootElement);
+    eventNode->GetAttr("id", eventInfo->id_);
+    uint64_t duration;
+    eventNode->GetAttr("duration", duration);
+    eventNode->GetAttr("presentationTime", eventInfo->presentationTime_);
+    eventNode->GetAttr("value", eventInfo->value_);
+    
+    ParseEventChildren(xmlParser, rootElement, eventInfo);
+    FillEventMetadata(eventInfo, duration, eventStreamInfo);
+    LogEventInfo(eventInfo);
+
+    eventList.push_back(eventInfo);
+    IDashMpdNode::DestroyNode(eventNode);
+}
+
+void DashMpdParser::ParseEventChildren(std::shared_ptr<XmlParser> xmlParser,
+    std::shared_ptr<XmlElement> rootElement, DashEventInfo *eventInfo)
+{
+    std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
+    while (childElement != nullptr) {
+        if (this->stopFlag_) {
+            break;
+        }
+        
+        std::string elementNameStr = childElement->GetName();
+        if (elementNameStr.empty()) {
+            childElement = childElement->GetSiblingNext();
+            continue;
+        }
+        
+        xmlParser->SkipElementNameSpace(elementNameStr);
+        if (elementNameStr == MPD_LABEL_SPLICE_INFO_SECTION) {
+            ParseSpliceInfoSection(xmlParser, childElement, eventInfo);
+        }
+        
+        childElement = childElement->GetSiblingNext();
+    }
+}
+
+void DashMpdParser::FillEventMetadata(DashEventInfo *eventInfo, uint64_t duration,
+    const DashEventStreamInfo *eventStreamInfo)
+{
+    if (eventStreamInfo == nullptr) {
+        return;
+    }
+    
+    uint32_t timescale = eventStreamInfo->timescale_;
+    if (timescale > 0) {
+        int64_t timeDiff = eventInfo->presentationTime_ - eventStreamInfo->presentationTimeOffset_;
+        eventInfo->start_ = static_cast<int64_t>(timeDiff) / static_cast<int64_t>(timescale) * S_TO_MS;
+        eventInfo->duration_ = static_cast<int64_t>(duration) / static_cast<int64_t>(timescale) * S_TO_MS;
+    }
+    eventInfo->classify_ = eventStreamInfo->schemeIdUri_ + eventStreamInfo->value_;
+}
+
+void DashMpdParser::LogEventInfo(const DashEventInfo *eventInfo)
+{
+    MEDIA_LOG_I("ParseEvent id: " PUBLIC_LOG_S ", duration: " PUBLIC_LOG_D64 ", classify: " PUBLIC_LOG_S ", start: "
+        PUBLIC_LOG_D64, eventInfo->id_.c_str(), eventInfo->duration_, eventInfo->classify_.c_str(), eventInfo->start_);
+}
+
+bool DashMpdParser::ParseSpliceInfoSection(std::shared_ptr<XmlParser> xmlParser,
+    std::shared_ptr<XmlElement> rootElement, DashEventInfo *eventInfo)
+{
+    IDashMpdNode *spliceInfoSectionNode = IDashMpdNode::CreateNode(MPD_LABEL_SPLICE_INFO_SECTION);
+    if (spliceInfoSectionNode == nullptr) {
+        MEDIA_LOG_E("ParseSpliceInfoSection spliceInfoSectionNode == nullptr");
+        return false;
+    }
+
+    spliceInfoSectionNode->ParseNode(xmlParser, rootElement);
+    
+    std::string xmlnsAttr;
+    spliceInfoSectionNode->GetAttr("xmln", xmlnsAttr);
+    MEDIA_LOG_I("xmlns: " PUBLIC_LOG_S, xmlnsAttr.c_str());
+    
+    if (!ParseSpliceInfoSectionChildren(xmlParser, rootElement, eventInfo)) {
+        IDashMpdNode::DestroyNode(spliceInfoSectionNode);
+        return false;
+    }
+    
+    eventInfo->contents_[rootElement->GetName()] = std::string("xmln") + "=" + xmlnsAttr;
+
+    IDashMpdNode::DestroyNode(spliceInfoSectionNode);
+    return true;
+}
+
+bool DashMpdParser::ParseSpliceInfoSectionChildren(std::shared_ptr<XmlParser> xmlParser,
+    std::shared_ptr<XmlElement> rootElement, DashEventInfo *eventInfo)
+{
+    std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
+    while (childElement != nullptr) {
+        if (this->stopFlag_) {
+            break;
+        }
+        
+        std::string elementNameStr = childElement->GetName();
+        if (elementNameStr.empty()) {
+            childElement = childElement->GetSiblingNext();
+            continue;
+        }
+        
+        xmlParser->SkipElementNameSpace(elementNameStr);
+        if (elementNameStr != MPD_LABEL_SPLICE_INSERT) {
+            childElement = childElement->GetSiblingNext();
+            continue;
+        }
+        
+        if (!ParseSpliceInsert(xmlParser, childElement, eventInfo)) {
+            return false;
+        }
+        
+        childElement = childElement->GetSiblingNext();
+    }
+    return true;
+}
+
+bool DashMpdParser::ParseSpliceInsert(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+    DashEventInfo *eventInfo)
+{
+    IDashMpdNode *spliceInsertNode = IDashMpdNode::CreateNode(MPD_LABEL_SPLICE_INSERT);
+    if (spliceInsertNode == nullptr) {
+        MEDIA_LOG_E("ParseSpliceInsert spliceInsertNode == nullptr");
+        return false;
+    }
+
+    spliceInsertNode->ParseNode(xmlParser, rootElement);
+    
+    std::string outOfNetworkIndicatorAttr;
+    spliceInsertNode->GetAttr("outOfNetworkIndicator", outOfNetworkIndicatorAttr);
+    MEDIA_LOG_I("outOfNetworkIndicatorAttr: " PUBLIC_LOG_S, outOfNetworkIndicatorAttr.c_str());
+    
+    std::string spliceImmediateFlagAttr;
+    spliceInsertNode->GetAttr("spliceImmediateFlag", spliceImmediateFlagAttr);
+    MEDIA_LOG_I("spliceImmediateFlagAttr: " PUBLIC_LOG_S, spliceImmediateFlagAttr.c_str());
+    
+    if (!ParseSpliceInsertChildren(xmlParser, rootElement, eventInfo)) {
+        IDashMpdNode::DestroyNode(spliceInsertNode);
+        return false;
+    }
+    
+    eventInfo->contents_[rootElement->GetName()] = std::string("outOfNetworkIndicator") + "=" +
+        outOfNetworkIndicatorAttr + "," + std::string("spliceImmediateFlag") + "=" + spliceImmediateFlagAttr;
+
+    IDashMpdNode::DestroyNode(spliceInsertNode);
+    return true;
+}
+
+bool DashMpdParser::ParseSpliceInsertChildren(std::shared_ptr<XmlParser> xmlParser,
+    std::shared_ptr<XmlElement> rootElement, DashEventInfo *eventInfo)
+{
+    std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
+    while (childElement != nullptr) {
+        if (this->stopFlag_) {
+            break;
+        }
+        
+        std::string elementNameStr = childElement->GetName();
+        if (elementNameStr.empty()) {
+            childElement = childElement->GetSiblingNext();
+            continue;
+        }
+        
+        xmlParser->SkipElementNameSpace(elementNameStr);
+        if (elementNameStr != MPD_LABEL_BREAK_DURATION) {
+            childElement = childElement->GetSiblingNext();
+            continue;
+        }
+        
+        if (!ParseBreakDuration(xmlParser, childElement, eventInfo)) {
+            return false;
+        }
+        
+        childElement = childElement->GetSiblingNext();
+    }
+    return true;
+}
+
+bool DashMpdParser::ParseBreakDuration(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+    DashEventInfo *eventInfo)
+{
+    IDashMpdNode *breakDurationNode = IDashMpdNode::CreateNode(MPD_LABEL_BREAK_DURATION);
+    if (breakDurationNode == nullptr) {
+        MEDIA_LOG_E("ParseBreakDuration breakDurationNode == nullptr");
+        return false;
+    }
+
+    breakDurationNode->ParseNode(xmlParser, rootElement);
+    uint64_t durationAttr;
+    breakDurationNode->GetAttr("duration", durationAttr);
+    MEDIA_LOG_I("durationAttr: " PUBLIC_LOG_U64, durationAttr);
+    std::string autoReturnAttr;
+    breakDurationNode->GetAttr("autoReturn", autoReturnAttr);
+    MEDIA_LOG_I("autoReturnAttr: " PUBLIC_LOG_S, autoReturnAttr.c_str());
+    std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
+    eventInfo->contents_[rootElement->GetName()] = std::string("duration") + "=" +
+        std::to_string(durationAttr) + "," + std::string("autoReturn") + "=" + autoReturnAttr;
+    IDashMpdNode::DestroyNode(breakDurationNode);
+    return true;
+}
+
 void DashMpdParser::ParseSegmentBase(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
-                                     DashSegBaseInfo **segBaseInfo)
+    DashSegBaseInfo **segBaseInfo)
 {
     if (segBaseInfo == nullptr) {
         MEDIA_LOG_E("ParseSegmentBase segBaseInfo == nullptr");
@@ -1090,6 +1361,7 @@ void DashMpdParser::Clear()
         DashPeriodInfo *periodInfo = dashMpdInfo_.periodInfoList_.front();
         if (periodInfo != nullptr) {
             ClearAdaptationSet(periodInfo->adptSetList_);
+            ClearEventStream(periodInfo->eventStreamList_);
             FreeSegmentBase(periodInfo->periodSegBase_);
             FreeSegmentList(periodInfo->periodSegList_);
             FreeSegmentTemplate(periodInfo->periodSegTmplt_);
@@ -1282,7 +1554,25 @@ void DashMpdParser::ClearRoleList(DashList<DashDescriptor *> &roleList)
         roleList.pop_front();
     }
 }
-} // namespace HttpPluginLite
-} // namespace Plugin
+
+void DashMpdParser::ClearEventStream(DashList<DashEventStreamInfo *> &eventStreamList)
+{
+    while (!eventStreamList.empty()) {
+        DashEventStreamInfo *eventStreamInfo = eventStreamList.front();
+        eventStreamList.pop_front();
+        if (eventStreamInfo == nullptr) {
+            continue;
+        }
+
+        while (!eventStreamInfo->eventList_.empty()) {
+            DashEventInfo *eventInfo = eventStreamInfo->eventList_.front();
+            eventStreamInfo->eventList_.pop_front();
+            delete eventInfo;
+        }
+        delete eventStreamInfo;
+    }
+}
+} // namespace HttpPlugin
+} // namespace Plugins
 } // namespace Media
 } // namespace OHOS

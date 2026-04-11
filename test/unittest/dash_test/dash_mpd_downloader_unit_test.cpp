@@ -115,6 +115,11 @@ public:
         drmEventCount_++;
     }
 
+    void OnTimedMetaDataChanged(const std::shared_ptr<MediaAVCodec::AVTimedMetaData> &metadata) override
+    {
+        (void)metadata;
+    }
+
     DashMpdEvent lastEvent_ {DASH_MPD_EVENT_OPEN_OK};
     uint32_t eventCount_ {0};
     uint32_t drmEventCount_ {0};

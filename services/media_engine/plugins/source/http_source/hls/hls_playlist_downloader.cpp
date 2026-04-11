@@ -448,12 +448,8 @@ std::shared_ptr<AesDecryptor> HlsPlayListDownloader::GetAesDecryptor(uint64_t ke
 void HlsPlayListDownloader::NotifyListChange()
 {
     auto callback = callbackWeak_.lock();
-    if (currentVariant_ == nullptr || callback == nullptr) {
-        return;
-    }
-    if (currentVariant_->m3u8_ == nullptr) {
-        return;
-    }
+    FALSE_RETURN_MSG(callback != nullptr, "callback is nullptr");
+    FALSE_RETURN_MSG(currentVariant_ != nullptr && currentVariant_->m3u8_ != nullptr, "m3u8_ is invalid");
     std::list<std::shared_ptr<M3U8Fragment>> files;
     auto sessionKeyIndex = KeyChange(files);
     auto playList = std::vector<PlayInfo>();
@@ -471,6 +467,21 @@ void HlsPlayListDownloader::NotifyListChange()
     if (!currentVariant_->m3u8_->localDrmInfos_.empty()) {
         callback->OnDrmInfoChanged(currentVariant_->m3u8_->localDrmInfos_);
     }
+    for (const auto &dateRange : currentVariant_->m3u8_->dateRanges_) {
+        if (dateRange == nullptr) {
+            continue;
+        }
+        auto metaData = std::make_shared<MediaAVCodec::AVTimedMetaData>();
+        metaData->id = dateRange->id;
+        metaData->classify = dateRange->classify;
+        metaData->duration = dateRange->duration;
+        metaData->start = dateRange->start;
+        metaData->contents = dateRange->contents;
+        callback->OnTimedMetaDataChanged(metaData);
+        MEDIA_LOG_I("NotifyListChange: report DateRange id=" PUBLIC_LOG_S ", classify=" PUBLIC_LOG_S
+            ", duration=" PUBLIC_LOG_D64, metaData->id.c_str(), metaData->classify.c_str(), metaData->duration);
+    }
+    currentVariant_->m3u8_->dateRanges_.clear();
     if (playList.size() > MAX_LIVE_TS_NUM && isParseFinished_ && master_->bLive_) {
         playList.erase(playList.begin(), playList.end() - MAX_LIVE_TS_NUM);
     }

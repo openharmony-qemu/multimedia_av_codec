@@ -622,6 +622,20 @@ std::string DashMpdDownloader::GetUrl() const
     return url_;
 }
 
+DashList<DashEventStreamInfo *> DashMpdDownloader::GetCurrentPeriodEventStreams() const
+{
+    if (mpdInfo_ == nullptr || mpdManager_ == nullptr) {
+        return DashList<DashEventStreamInfo *>();
+    }
+
+    DashPeriodInfo *currentPeriod = mpdManager_->GetCurrentPeriod();
+    if (currentPeriod == nullptr) {
+        return DashList<DashEventStreamInfo *>();
+    }
+
+    return currentPeriod->eventStreamList_;
+}
+
 void DashMpdDownloader::ParseManifest()
 {
     if (downloadContent_.length() == 0) {

@@ -50,6 +50,11 @@ dash_test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_element.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_parser.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/string_utils.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_event_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_event_stream_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_splice_info_section_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_splice_insert_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_break_duration_node.cpp",
 ]
 config("dash_unittest_cfg") {
   defines = [

@@ -81,6 +81,7 @@ enum struct HlsTag : uint32_t {
     EXTXIFRAMESTREAMINF,
     EXTXSESSIONKEY,
     EXTXSKIP,
+    EXTXDATERANGE,
 
     EXTINF = SECTION_VALUES_LIST_START,
 };
@@ -109,6 +110,7 @@ public:
     ~AttributesTag() override = default;
     std::shared_ptr<Attribute> GetAttributeByName(const char* name) const;
     void AddAttribute(std::shared_ptr<Attribute>& attr);
+    const std::list<std::shared_ptr<Attribute>>& GetAllAttributes() const;
 protected:
     virtual void ParseAttributes(const std::string& field);
     std::list<std::shared_ptr<Attribute>> attributes;

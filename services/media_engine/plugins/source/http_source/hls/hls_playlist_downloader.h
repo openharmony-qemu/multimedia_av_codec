@@ -18,6 +18,7 @@
 
 #include <set>
 #include <utility>
+#include "avcodec_common.h"
 #include "playlist_downloader.h"
 #include "m3u8.h"
 #include "utils/aes_decryptor.h"

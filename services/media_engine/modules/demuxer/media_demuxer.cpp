@@ -3970,22 +3970,12 @@ void MediaDemuxer::HandleEvent(const Plugins::PluginEvent &event)
     }
 }
 
-void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
+void MediaDemuxer::DispatchPluginEvent(const Plugins::PluginEvent &event,
+ 	const std::shared_ptr<Pipeline::EventReceiver> &eventReceiver)
 {
-    MEDIA_LOG_D("In");
-    HandleEvent(event);
-    std::weak_ptr<Pipeline::EventReceiver> weakEventReceiver = eventReceiver_;
-    auto eventReceiver = weakEventReceiver.lock();
-    if (eventReceiver == nullptr && event.type != PluginEventType::SOURCE_DRM_INFO_UPDATE) {
-        MEDIA_LOG_D("EventReceiver is nullptr");
-        return;
-    }
     switch (event.type) {
         case PluginEventType::SOURCE_DRM_INFO_UPDATE: {
-            MEDIA_LOG_D("OnEvent source drmInfo update");
-            if (Any::IsSameTypeWith<std::multimap<std::string, std::vector<uint8_t>>>(event.param)) {
-                HandleSourceDrmInfoEvent(AnyCast<std::multimap<std::string, std::vector<uint8_t>>>(event.param));
-            }
+            HandleDrmInfoUpdate(event);
             break;
         }
         case PluginEventType::CLIENT_ERROR: {
@@ -4012,11 +4002,36 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
             eventReceiver->OnEvent({"demuxer_filter", EventType::EVENT_FLV_AUTO_SELECT_BITRATE, event.param});
             break;
         }
+        case PluginEventType::SOURCE_TIMED_METADATA: {
+            MEDIA_LOG_D("OnEvent source timed metadata on");
+            eventReceiver->OnEvent({"demuxer_filter", EventType::EVENT_TIMED_METADATA, event.param});
+            break;
+        }
         default:
             break;
     }
+}
+void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
+{
+    MEDIA_LOG_D("In");
+    HandleEvent(event);
+    std::weak_ptr<Pipeline::EventReceiver> weakEventReceiver = eventReceiver_;
+    auto eventReceiver = weakEventReceiver.lock();
+    if (eventReceiver == nullptr && event.type != PluginEventType::SOURCE_DRM_INFO_UPDATE) {
+        MEDIA_LOG_E("EventReceiver is nullptr");
+        return;
+    }
+    DispatchPluginEvent(event, eventReceiver);
     OnEventStream(event);
     OnEventBuffer(event, eventReceiver);
+}
+
+void MediaDemuxer::HandleDrmInfoUpdate(const Plugins::PluginEvent &event)
+{
+    MEDIA_LOG_D("OnEvent source drmInfo update");
+    if (Any::IsSameTypeWith<std::multimap<std::string, std::vector<uint8_t>>>(event.param)) {
+        HandleSourceDrmInfoEvent(AnyCast<std::multimap<std::string, std::vector<uint8_t>>>(event.param));
+    }
 }
 
 void MediaDemuxer::OnEventStream(const Plugins::PluginEvent &event)

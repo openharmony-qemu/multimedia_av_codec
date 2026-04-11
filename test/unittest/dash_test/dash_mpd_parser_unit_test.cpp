@@ -26,6 +26,13 @@
 #include "xml/xml_parser.h"
 #include "dash_content_comp_node.h"
 #include "dash_period_node.h"
+#include "dash_content_comp_node.h"
+#include "dash_period_node.h"
+#include "dash_break_duration_node.h"
+#include "dash_event_node.h"
+#include "dash_event_stream_node.h"
+#include "dash_splice_info_section_node.h"
+#include "dash_splice_insert_node.h"
 
 namespace OHOS {
 namespace Media {
