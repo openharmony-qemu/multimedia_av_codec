@@ -1459,8 +1459,23 @@ void HEncoder::DealWithResolutionChange(uint32_t newWidth, uint32_t newHeight)
     }
 }
 
+void HEncoder::OnFrameSubmitted(int64_t pts)
+{
+    if (unfinishedFrames_.size() >= MAX_LIST_SIZE) {
+        HLOGW("unfinishedFrames_ size %zu exceeds limit, clearing to prevent memory leak", unfinishedFrames_.size());
+        unfinishedFrames_.clear();
+    }
+    unfinishedFrames_.insert(pts);
+}
+
+void HEncoder::OnGetInputFormat(Format& format)
+{
+    format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, unfinishedFrames_.size());
+}
+
 void HEncoder::BeforeCbOutToUser(BufferInfo &info)
 {
+    unfinishedFrames_.erase(info.omxBuffer->pts);
     std::shared_ptr<Media::Meta> meta = info.avBuffer->meta_;
     meta->Clear();
     BinaryReader reader(static_cast<uint8_t*>(info.omxBuffer->alongParam.data()), info.omxBuffer->alongParam.size());
@@ -1886,6 +1901,7 @@ void HEncoder::OnEnterUninitializedState()
     repeatUs_ = 0;
     repeatMaxCnt_ = 10;  // default repeat 10 times. <0 means repeat forever. =0 means nothing.
     currGeneration_ = 0;
+    unfinishedFrames_.clear();
 }
 
 HEncoder::BufferItem::~BufferItem()
