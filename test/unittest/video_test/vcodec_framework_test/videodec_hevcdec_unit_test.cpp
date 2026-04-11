@@ -212,6 +212,134 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_outputOrder_002, TestSiz
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
+/**.
+ * @tc.name: VideoDecoder_hevcdecoder_hdrColorMeta_001
+ * @tc.desc: 1. test hdr color space info;
+ *           2. release not in callback;
+ */
+HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_hdrColorMeta_001, TestSize.Level1, VideoDecSample::threadNum_)
+{
+    auto vdec = make_shared<VideoDecSample>();
+    auto signal = make_shared<VCodecSignal>(vdec);
+    vdec->frameCount_ = 46; // 46: input frame num
+    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
+    vdec->inPath_ = "720_1280_25_avcc.hdr.h265";
+    vdec->sampleWidth_ = 720;
+    vdec->sampleHeight_ = 1080;
+    vdec->releaseOtherBuffer_ = true;
+    vdec->hdrColorInfo_ = true;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataHandle;
+    cb.onNeedOutputData = OutDataHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
+}
+
+/**.
+ * @tc.name: VideoDecoder_hevcdecoder_hdrColorMeta_002
+ * @tc.desc: 1. test hdr static meta;
+ *           2. release not in callback;
+ */
+HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_hdrColorMeta_002, TestSize.Level1, VideoDecSample::threadNum_)
+{
+    auto vdec = make_shared<VideoDecSample>();
+    auto signal = make_shared<VCodecSignal>(vdec);
+    vdec->frameCount_ = 46; // 46: input frame num
+    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
+    vdec->inPath_ = "720_1280_25_avcc.hdr.h265";
+    vdec->sampleWidth_ = 720;
+    vdec->sampleHeight_ = 1080;
+    vdec->releaseOtherBuffer_ = true;
+    vdec->hdrStaticMeta_ = true;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataHandle;
+    cb.onNeedOutputData = OutDataHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
+}
+
+/**.
+ * @tc.name: VideoDecoder_hevcdecoder_hdrColorMeta_003
+ * @tc.desc: 1. test hdr color space info static meta;
+ *           2. release not in callback;
+ */
+HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_hdrColorMeta_003, TestSize.Level1, VideoDecSample::threadNum_)
+{
+    auto vdec = make_shared<VideoDecSample>();
+    auto signal = make_shared<VCodecSignal>(vdec);
+    vdec->frameCount_ = 46; // 46: input frame num
+    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
+    vdec->inPath_ = "720_1280_25_avcc.hdr.h265";
+    vdec->sampleWidth_ = 720;
+    vdec->sampleHeight_ = 1080;
+    vdec->releaseOtherBuffer_ = true;
+    vdec->hdrColorInfo_ = true;
+    vdec->hdrStaticMeta_ = true;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataHandle;
+    cb.onNeedOutputData = OutDataHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
+}
+
+/**.
+ * @tc.name: VideoDecoder_hevcdecoder_hdrColorMeta_004
+ * @tc.desc: 1. test hdr color space info static meta; surfacebuffer
+ *           2. release not in callback;
+ */
+HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_hdrColorMeta_004, TestSize.Level1, VideoDecSample::threadNum_)
+{
+    auto vdec = make_shared<VideoDecSample>();
+    auto signal = make_shared<VCodecSignal>(vdec);
+    vdec->frameCount_ = 46; // 46: input frame num
+    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
+    vdec->inPath_ = "720_1280_25_avcc.hdr.h265";
+    vdec->sampleWidth_ = 720;
+    vdec->sampleHeight_ = 1080;
+    vdec->releaseOtherBuffer_ = true;
+    vdec->setSurfaceParam_ = true;
+    vdec->hdrColorInfo_ = true;
+    vdec->hdrStaticMeta_ = true;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataHandle;
+    cb.onNeedOutputData = OutDataHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
+}
+
 /**
  * @tc.name: VideoDecoder_hevcdecoder_Release_AVBuffer_001
  * @tc.desc: 1. push/free buffer in callback;

@@ -94,6 +94,8 @@ public:
     bool maxInputBufferCount_ = false;
     bool scaleMode_ = false;
     bool lowLatency_ = false;
+    bool hdrColorInfo_ = false;
+    bool hdrStaticMeta_ = false;
     bool setSurfaceParam_ = false;
     bool releaseOtherBuffer_ = false;
     bool setPixelFormat_ = true;
@@ -130,6 +132,7 @@ private:
 #endif
     int32_t CreateMpeg1Reader();
     int32_t CreateCinepakReader();
+    bool DoSubHdrConfigure(OH_AVFormat* format, bool setFormatRet);
     OH_AVCodec *codec_ = nullptr;
     std::shared_ptr<VCodecSignal> signal_ = nullptr;
 
