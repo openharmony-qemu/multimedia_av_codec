@@ -295,7 +295,6 @@ void HlsSegmentManager::PutRequestIntoDownloader(const PlayInfo& playInfo)
     SetDownloadRequest(std::make_shared<DownloadRequest>(playInfo.duration_, dataSave_,
                                                          realStatusCallback, requestInfo, isRequestWholeFile));
     fragmentDownloadStart[playInfo.url_] = true;
-    int64_t startTimePos = playInfo.startTimePos_;
     curUrl_ = playInfo.rangeUrl_.empty() ? playInfo.url_ : playInfo.rangeUrl_;
     if (writeTsIndex_ == 0) {
         readOffset_ = SpliceOffset(writeTsIndex_, 0);
@@ -325,7 +324,7 @@ void HlsSegmentManager::PutRequestIntoDownloader(const PlayInfo& playInfo)
     UpdateAesDecryptor(playInfo);
     downloadRequest->SetRequestProtocolType(RequestProtocolType::HLS);
     downloadRequest->SetDownloadDoneCb(downloadDoneCallback);
-    downloadRequest->SetStartTimePos(startTimePos);
+    downloadRequest->SetStartTimePos(playInfo.startTimePos_);
     downloader_->Download(downloadRequest, -1); // -1
     downloader_->Start();
 }
