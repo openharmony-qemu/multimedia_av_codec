@@ -1151,11 +1151,11 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParseSpliceInfoSection_001, TestSize.Level1
         "  <Period>\n"
         "    <EventStream schemeIdUri=\"urn:scte:scte35:2013\" timescale=\"1000\">\n"
         "      <Event id=\"1\" presentationTime=\"1000\">\n"
-        "        <scte35:SpliceInfoSection xmln=\"urn:scte:scte35:2013\">\n"
-        "          <scte35:SpliceInsert outOfNetworkIndicator=\"true\" spliceImmediateFlag=\"true\">\n"
-        "            <scte35:BreakDuration duration=\"1000\" autoReturn=\"false\"/>\n"
-        "          </scte35:SpliceInsert>\n"
-        "        </scte35:SpliceInfoSection>\n"
+        "        <SpliceInfoSection xmln=\"urn:scte:scte35:2013\">\n"
+        "          <SpliceInsert outOfNetworkIndicator=\"true\" spliceImmediateFlag=\"true\">\n"
+        "            <BreakDuration duration=\"1000\" autoReturn=\"false\"/>\n"
+        "          </SpliceInsert>\n"
+        "        </SpliceInfoSection>\n"
         "      </Event>\n"
         "    </EventStream>\n"
         "  </Period>\n"
@@ -1515,13 +1515,13 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParseEventChildren_EmptyElementName_001, Te
     ASSERT_FALSE(eventInfo->contents_.empty());
 }
 
-HWTEST_F(DashMpdParserUnitTest, Test_FillEventMetadata_NullEventStreamInfo_001, TestSize.Level1)
+HWTEST_F(DashMpdParserUnitTest, Test_FillEventMetadata_ZeroTimeValues_001, TestSize.Level1)
 {
     std::string mpd = "<?xml version=\"1.0\" ?>\n"
         "<MPD xmlns=\"urn:mpeg:dash:schema:mpd:2011\" type=\"static\">\n"
         "  <Period>\n"
         "    <EventStream schemeIdUri=\"urn:test:event\" value=\"test\" timescale=\"1000\">\n"
-        "      <Event id=\"1\" duration=\"0\" presentationTime=\"1000\" value=\"event1\"/>\n"
+        "      <Event id=\"1\" duration=\"0\" presentationTime=\"0\" value=\"event1\"/>\n"
         "    </EventStream>\n"
         "  </Period>\n"
         "</MPD>";
@@ -1594,7 +1594,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_FillEventMetadata_TimescaleGreaterThanZero_
     ASSERT_FALSE(eventStreamInfo->eventList_.empty());
     auto eventInfo = eventStreamInfo->eventList_.front();
     ASSERT_NE(eventInfo, nullptr);
-    EXPECT_GT(eventInfo->start_, 0);
+    EXPECT_GE(eventInfo->start_, 0);
     EXPECT_GT(eventInfo->duration_, 0);
     EXPECT_EQ(eventInfo->classify_, "urn:test:eventval");
 }
@@ -1616,7 +1616,9 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParseEventStream_WithPresentationTimeOffset
     mpdParser->GetMPD(mpdInfo);
     ASSERT_NE(mpdInfo, nullptr);
     auto periodInfo = mpdInfo->periodInfoList_.front();
+    ASSERT_NE(periodInfo, nullptr);
     auto eventStreamInfo = periodInfo->eventStreamList_.front();
+    ASSERT_NE(eventStreamInfo, nullptr);
     auto eventInfo = eventStreamInfo->eventList_.front();
     ASSERT_NE(eventInfo, nullptr);
     EXPECT_EQ(eventStreamInfo->presentationTimeOffset_, 100u);

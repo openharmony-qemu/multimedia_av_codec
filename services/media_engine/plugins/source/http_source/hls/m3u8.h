@@ -61,7 +61,7 @@ struct M3U8Fragment {
 struct DateRange {
     std::string id;
     std::string classify;
-    int64_t start;
+    int64_t start = 0;
     int64_t duration = 0;
     std::string assetList;
     std::map<std::string, std::string> contents;

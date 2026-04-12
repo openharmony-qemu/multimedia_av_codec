@@ -45,8 +45,8 @@ private:
 
     NodeAttr spliceInsertAttr_[DASH_SPLICE_INSERT_ATTR_NUM];
 };
-} // namespace HttpPluginLite
-} // namespace Plugin
+} // namespace HttpPlugin
+} // namespace Plugins
 } // namespace Media
 } // namespace OHOS
 #endif // DASH_SPLICE_INSERT_NODE_H
