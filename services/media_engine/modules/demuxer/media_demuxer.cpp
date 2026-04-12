@@ -1553,6 +1553,7 @@ Status MediaDemuxer::DoSelectTrack(int32_t trackId, int32_t curTrackId)
                 sampleQueueMap_[trackId]->UpdateQueueId(trackId);
             }
         }
+        UpdateSegmentOffset(curTrackId, trackId);
         return InnerSelectTrack(trackId);
     }
     return Status::ERROR_UNKNOWN;
@@ -1695,6 +1696,7 @@ Status MediaDemuxer::HandleSegmentChange(int32_t trackId)
     MEDIA_LOG_D("TrackType " PUBLIC_LOG_D32 " TrackId " PUBLIC_LOG_D32, static_cast<int32_t>(trackType), trackId);
     FALSE_RETURN_V_MSG_E(trackType != TRACK_INVALID, Status::ERROR_INVALID_PARAMETER, "TrackType is invalid");
     bool isRebooted = true;
+    UpdateSegmentOffset(trackId);
     Status ret = demuxerPluginManager_->RebootPlugin(streamID, trackType, streamDemuxer_, isRebooted);
     if (ret != Status::OK) {
         FALSE_RETURN_V_MSG_E(streamDemuxer_ != nullptr, Status::ERROR_NULL_POINTER, "Stream is nullptr");
@@ -1770,6 +1772,7 @@ Status MediaDemuxer::HandleHlsRebootPlugin(int32_t trackId)
             return HandleSeekChangeStream(streamID, seekReadyInfo.first, trackId);
         }
         bool isRebooted = true;
+        UpdateSegmentOffset(trackId);
         ret = demuxerPluginManager_->RebootPlugin(streamID, trackType, streamDemuxer_, isRebooted);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Reboot demuxer plugin failed");
         ret = InnerSelectTrack(trackId);
@@ -2866,6 +2869,8 @@ bool MediaDemuxer::HandleSelectTrackChangeStream(int32_t trackId, int32_t newStr
         return false;
     }
     MEDIA_LOG_I("In");
+    UpdateSegmentOffset(trackId);
+
     // stop plugin
     demuxerPluginManager_->StopPlugin(currentStreamID, streamDemuxer_);
 
@@ -2913,6 +2918,7 @@ bool MediaDemuxer::HandleSelectTrackChangeStream(int32_t trackId, int32_t newStr
         FALSE_RETURN_V_MSG_E(hasSampleQueue == true, false, "sampleQueueMap_ in newTrackId is null");
         sampleQueueMap_[newTrackId]->UpdateQueueId(newTrackId);
     }
+    UpdateSegmentOffset(currentTrackId, newTrackId);
     MEDIA_LOG_I("Out");
     return true;
 }
@@ -2977,6 +2983,7 @@ bool MediaDemuxer::SelectBitRateChangeStream(int32_t trackId)
     int32_t newStreamID = streamDemuxer_->GetNewVideoStreamID();
     if (newStreamID >= 0 && currentStreamID != newStreamID) {
         MEDIA_LOG_I("In");
+        UpdateSegmentOffset(videoTrackId_);
         demuxerPluginManager_->StopPlugin(currentStreamID, streamDemuxer_);
 
         Status ret = demuxerPluginManager_->StartPlugin(newStreamID, streamDemuxer_);
@@ -3153,7 +3160,7 @@ Status MediaDemuxer::HandleReadSample(int32_t trackId)
         if (bufferMap_[trackId]->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS)) {
             return HandleTrackEos(trackId);
         }
-        if (isAutoMaintainPts_ && trackId != subtitleTrackId_) {
+        if (isAutoMaintainPts_.load() && trackId != subtitleTrackId_) {
             HandleAutoMaintainPts(trackId, bufferMap_[trackId]);
         }
         lastVideoPts_ = trackId == videoTrackId_ ? bufferMap_[trackId]->pts_ : lastVideoPts_;
