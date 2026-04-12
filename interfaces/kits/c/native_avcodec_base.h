@@ -1678,6 +1678,11 @@ typedef enum OH_AVOutputFormat {
      * @since 23
      */
     AV_OUTPUT_FORMAT_OGG = 13,
+    /**
+     * The muxer output flv file format.
+     * @since 26.0.0
+     */
+    AV_OUTPUT_FORMAT_FLV = 14,
 } OH_AVOutputFormat;
 
 /**
