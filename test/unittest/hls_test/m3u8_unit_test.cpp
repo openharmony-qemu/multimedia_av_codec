@@ -117,8 +117,6 @@ HWTEST_F(M3u8UnitTest, TEST_CONSTRUCTOR_WITH_NULL_KEY_AND_IV, TestSize.Level1)
     EXPECT_EQ(fragment.duration_, 10.0);
     EXPECT_EQ(fragment.sequence_, 1);
     EXPECT_EQ(fragment.discont_, false);
-    //
-    
     for (int i = 0; i < static_cast<int>(MAX_LOOP); i++) {
         EXPECT_NE(fragment.iv_[i], -1);
         EXPECT_NE(fragment.key_[i], -1);
