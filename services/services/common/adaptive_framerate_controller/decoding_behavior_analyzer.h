@@ -55,6 +55,8 @@ public:
     void OnFrameConsumed(int64_t pts);
     void OnStopped(bool isDecEnd);
     void OnChecked(double decFps);
+    using SpeedAndFpsCallback = std::function<void(double speed, double decFps)>;
+    void SetCallback(SpeedAndFpsCallback cb);
 
 private:
     static constexpr size_t stdSpeedLevels = 8;
@@ -70,6 +72,7 @@ private:
     std::deque<size_t> speedWindow_;
     std::array<size_t, stdSpeedLevels> speedCount_ = {};
     std::vector<DecodingBehaviorSnapshot> history_;
+    SpeedAndFpsCallback speedAndFpsCallback_ = nullptr;
 
     size_t MatchAndUpdateSpeedStats(double decSpeed);
     DecodingBehaviorType DetermineDecodingBehaviorType();

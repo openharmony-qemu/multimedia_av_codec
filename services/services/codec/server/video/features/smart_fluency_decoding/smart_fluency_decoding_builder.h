@@ -54,7 +54,7 @@ public:
 
     static bool IsCodecSupported(const std::string& codecMime, int32_t codecType);
     static SFDCodecType ParseCodecType(const std::string& mime);
-    static void EnableMVOutput(Format& format);
+    static void EnableMVOutput(const std::string& codecMime, bool isConfiged, Format& format);
     static std::vector<uint8_t> ExtractCsdData(const std::shared_ptr<AVBuffer>& buffer);
     static void ReplayCsdData(SmartFluencyDecoding* sfd, const std::vector<uint8_t>& csdData);
 

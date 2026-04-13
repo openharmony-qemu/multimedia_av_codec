@@ -43,14 +43,11 @@ public:
     ~SmartFluencyDecoding();
 
     int32_t Initialize(const SFDConfig& config);
-    // 动态倍速调节（支持播放中途无缝切换）
     void UpdatePlaybackSpeed(double speed);
-    // 新增：动态修改参数模式
     int32_t UpdateDynamicConfig(const Media::Format& format);
-    // 输入buffer和index缓存
     void SetInputBuffer(uint32_t index, const std::shared_ptr<AVBuffer>& buffer);
-    // 新增：向 SFD 反馈回调的解码相关统计数据
     void OnDecodingPerformanceUpdate(double speed, double decFps);
+
     using AsyncDropInputCallback = std::function<void(uint32_t index, std::shared_ptr<AVBuffer> buffer)>;
     using AsyncDropOutputCallback = std::function<void(uint32_t index)>;
     void SetCallbacks(AsyncDropInputCallback inCb, AsyncDropOutputCallback outCb);

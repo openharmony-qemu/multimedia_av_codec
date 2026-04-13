@@ -233,6 +233,7 @@ private:
     bool isCsdCached_ = false;
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> tempCsdBufferMap_;
     std::mutex tempCsdMutex_;
+    std::unordered_map<int64_t, sptr<SurfaceBuffer>> surfaceBufMap_;
 #endif
 };
 

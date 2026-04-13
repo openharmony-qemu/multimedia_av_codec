@@ -52,7 +52,7 @@ private:
     using DestroyFunc = void (*)(MvAnalyzerHandle);
     using SetAuxInfoFunc = void (*)(MvAnalyzerHandle, const StreamAuxInfo*);
     using SetVideoInfoFunc = void (*)(MvAnalyzerHandle, uint32_t, uint32_t);
-    using ParseFunc = void (*)(MvAnalyzerHandle, const uint8_t*, size_t, MVStats*);
+    using ParseFunc = MVStats (*)(MvAnalyzerHandle, const uint8_t*, size_t);
     using ResetFunc = void (*)(MvAnalyzerHandle);
     using GetSizeFunc = size_t (*)(MvAnalyzerHandle);
 

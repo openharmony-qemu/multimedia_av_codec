@@ -35,7 +35,6 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "SmartFluencyDecoding"};
 constexpr double DEFAULT_PLAYBACK_SPEED = 1.0;
 constexpr double RETENTION_RATIO_MIN_DIFF = 0.001;
-constexpr uint32_t DEFAULT_CTU_SIZE = 64;
 }
 
 namespace OHOS {
@@ -276,11 +275,10 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
         double targetRetentionRatio = dropSyncCoordinator_->GetTargetRetentionRatio();
         double targetDropRatio = 1.0 - targetRetentionRatio;
 
-        // 统计发现目前的实际丢帧率已经达到或超过预期，则克制不再丢帧，强制保留。
         if (currentEma >= targetDropRatio && targetDropRatio > RETENTION_RATIO_MIN_DIFF) {
             shouldDrop = false; 
         } else {
-            shouldDrop = true; // 反之，刚好遇到非参考帧，可以安全丢弃。
+            shouldDrop = true;
         }
     }
 
@@ -482,14 +480,6 @@ void SmartFluencyDecoding::EnsureMvAnalyzer()
     
     // Pass video resolution to the parser
     mvAnalyzer_->SetVideoInfo(config_.width, config_.height);
-    
-    // TODO：快速验证用，后续需要删除（复原之前的初始化块）
-    StreamAuxInfo info;
-    info.ctuSize = DEFAULT_CTU_SIZE;
-    info.direct8x8InferenceFlag = 1;
-    info.directSpatialMvPredFlag = 1;
-    info.frameMbsOnlyFlag = true;
-    mvAnalyzer_->SetStreamAuxInfo(info);
 }
 
 } // namespace SFD

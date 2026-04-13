@@ -95,9 +95,13 @@ bool SmartFluencyDecodingBuilder::IsCodecSupported(const std::string& codecMime,
     return true;
 }
 
-void SmartFluencyDecodingBuilder::EnableMVOutput(Format& format)
+void SmartFluencyDecodingBuilder::EnableMVOutput(const std::string& codecMime, bool isConfiged, Format& format)
 {
-    format.PutIntValue(Tag::VIDEO_DECODER_ENABLE_MV_UPLOAD, 1);
+    if (isConfiged ||
+        codecMime == MediaAVCodec::AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_HEVC ||
+        codecMime == MediaAVCodec::AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_VVC) {
+        format.PutIntValue(Tag::VIDEO_DECODER_ENABLE_MV_UPLOAD, 1);
+    }
 }
 
 SmartFluencyDecodingBuilder& SmartFluencyDecodingBuilder::SetFromFormat(const Format& format)

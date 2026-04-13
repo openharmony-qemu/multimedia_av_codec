@@ -106,21 +106,7 @@ MVStats MvAnalyzerSoLoader::parse(const uint8_t *buffer, size_t bufferSize)
     if (!soParser_ || !parseFunc_) {
         return latestStats_;
     }
-    
-    // 用基础结构体接收底层的统计数据
-    MVStats rawStats{};
-    parseFunc_(soParser_, buffer, bufferSize, &rawStats);
-    
-    // 安全地将基础数据赋值给 C++ 的最新统计对象
-    latestStats_.totalBlocks = rawStats.totalBlocks;
-    latestStats_.validBlocks = rawStats.validBlocks;
-    latestStats_.skipBlocks = rawStats.skipBlocks;
-    latestStats_.zeroMotionBlocks = rawStats.zeroMotionBlocks;
-    latestStats_.avgRefDist = rawStats.avgRefDist;
-    latestStats_.perceptualMagnitude = rawStats.perceptualMagnitude;
-    latestStats_.motionConsistency = rawStats.motionConsistency;
-    latestStats_.zeroMotionRatio = rawStats.zeroMotionRatio;
-
+    latestStats_ = parseFunc_(soParser_, buffer, bufferSize);
     return latestStats_;
 }
 
@@ -157,13 +143,11 @@ std::unique_ptr<IMvAnalyzer> MvAnalyzerFactory::CreateMvAnalyzer(SFDCodecType co
     if (!IsCodecSupported(codecType)) {
         return nullptr;
     }
-    // 全局只通过 SoLoader 来隔离调用底层实现
     return std::make_unique<MvAnalyzerSoLoader>(codecType);
 }
 
 bool MvAnalyzerFactory::IsCodecSupported(SFDCodecType codecType)
 {
-    // 在主模块层做基础拦截
     return codecType == SFDCodecType::AVC || 
            codecType == SFDCodecType::HEVC || 
            codecType == SFDCodecType::VVC;

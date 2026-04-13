@@ -259,8 +259,8 @@ int32_t CodecServer::Configure(const Format &format)
     }
 
 #ifdef SFD_ENABLED
-    SFD::SmartFluencyDecodingBuilder::EnableMVOutput(config);
     InitializeSFD(config);
+    SFD::SmartFluencyDecodingBuilder::EnableMVOutput(codecMime_, smartFluencyDecoding_ != nullptr, config);
 #endif
     int32_t ret = codecBase_->Configure(config);
     if (ret != AVCS_ERR_OK) {
@@ -906,6 +906,15 @@ void CodecServer::InitFramerateCalculator(Meta &callerInfo)
     );
     if (framerateCalculator_) {
         framerateCalculator_->SetTag(CreateVideoLogTag(callerInfo));
+#ifdef SFD_ENABLED
+        std::weak_ptr<CodecServer> weakThis = weak_from_this();
+        framerateCalculator_->SetSpeedAndFpsCallback([weakThis](double speed, double decFps) {
+            auto sharedThis = weakThis.lock();
+            if (sharedThis && sharedThis->smartFluencyDecoding_) {
+                sharedThis->smartFluencyDecoding_->OnDecodingPerformanceUpdate(speed, decFps);
+            }
+        });
+#endif
     }
 }
 
@@ -1763,6 +1772,23 @@ std::shared_ptr<AVBuffer> CodecServer::DecodedBufferInfo::CreateAVBuffer()
 void CodecServer::HandleOutputBufferAvailability(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     CHECK_AND_RETURN_LOG(buffer != nullptr, "HandleOutputBufferAvailability AVBuffer is null");
+#ifdef SFD_ENABLED
+    if (buffer->memory_ != nullptr) {
+        surfaceBufMap_[buffer->GetUniqueId()] = buffer->memory_->GetSurfaceBuffer();
+        buffer->memory_ = nullptr;
+    }
+    
+    if (smartFluencyDecoding_ && (buffer->flag_ & AVCODEC_BUFFER_FLAG_EOS) == 0) {
+        sptr<SurfaceBuffer> surfaceBuffer = nullptr;
+        auto it = surfaceBufMap_.find(buffer->GetUniqueId());
+        if (it != surfaceBufMap_.end()) {
+            surfaceBuffer = it->second;
+        }
+        if (!smartFluencyDecoding_->MakePostDecodeDecision(index, buffer->pts_, surfaceBuffer)) {
+            return;
+        }
+    }
+#endif
     if (isLocalReleaseMode_) {
         std::unique_lock<std::mutex> lockBuffer(releaseBufferMutex_);
         indexs_.push_back(std::make_pair(index, buffer));
