@@ -27,7 +27,7 @@ struct FrameRetentionContext {
     int64_t ptsMs;
     int64_t sysTimeMs;
     uint32_t frameCount;
-    int32_t preDroppedCount = 0;
+    uint32_t preDroppedCount = 0;
     const MVStats* mvStats = nullptr;
 };
 

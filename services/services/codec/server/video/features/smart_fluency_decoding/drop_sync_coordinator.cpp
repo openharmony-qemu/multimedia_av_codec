@@ -31,9 +31,9 @@ bool DropSyncCoordinator::RecordPreDroppedFrame(int64_t droppedPts)
     return true;
 }
 
-int32_t DropSyncCoordinator::GetAndConsumePreDroppedCount(int64_t currentPts)
+uint32_t DropSyncCoordinator::GetAndConsumePreDroppedCount(int64_t currentPts)
 {
-    int32_t count = 0;
+    uint32_t count = 0;
     size_t currentRead = readIndex_.load(std::memory_order_relaxed);
     size_t currentWrite = writeIndex_.load(std::memory_order_acquire);
     while (currentRead < currentWrite) {
@@ -71,13 +71,13 @@ double DropSyncCoordinator::GetTargetRetentionRatio() const
     return targetRetentionRatio_;
 }
 
-void DropSyncCoordinator::UpdateFeedback(int32_t preDroppedCount, bool currentDropped,
+void DropSyncCoordinator::UpdateFeedback(uint32_t preDroppedCount, bool currentDropped,
                                          double targetRetentionRatio, double currentSpeed)
 {
     double baseAlpha = 0.15;
     double alpha = std::min(1.0, baseAlpha * currentSpeed);
     std::lock_guard<std::mutex> lock(feedbackMutex_);
-    for (int32_t i = 0; i < preDroppedCount; ++i) {
+    for (uint32_t i = 0; i < preDroppedCount; ++i) {
         currentEmaDropRatio_ = alpha * 1.0 + (1.0 - alpha) * currentEmaDropRatio_;
     }
     double currentVal = currentDropped ? 1.0 : 0.0;

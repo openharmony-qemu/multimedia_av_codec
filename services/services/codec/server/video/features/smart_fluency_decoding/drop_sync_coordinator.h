@@ -30,11 +30,11 @@ public:
     ~DropSyncCoordinator() = default;
 
     bool RecordPreDroppedFrame(int64_t droppedPts);
-    int32_t GetAndConsumePreDroppedCount(int64_t currentPts);
+    uint32_t GetAndConsumePreDroppedCount(int64_t currentPts);
     void Reset();
     double GetCurrentEma() const;
     double GetTargetRetentionRatio() const;
-    void UpdateFeedback(int32_t preDroppedCount, bool currentDropped, double targetRetentionRatio, double currentSpeed);
+    void UpdateFeedback(uint32_t preDroppedCount, bool currentDropped, double targetRetentionRatio, double currentSpeed);
 
 private:
     static constexpr size_t queueCapacity = 128;

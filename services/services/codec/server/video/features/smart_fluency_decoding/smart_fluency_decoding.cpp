@@ -311,7 +311,7 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
         return true;
     }
     int64_t currentPts = pts;
-    int32_t preDroppedCount = dropSyncCoordinator_->GetAndConsumePreDroppedCount(currentPts);
+    uint32_t preDroppedCount = dropSyncCoordinator_->GetAndConsumePreDroppedCount(currentPts);
     MVStats currentMvStats;
     ParseMVData(surfaceBuffer, currentMvStats);
     FrameRetentionContext ctx;

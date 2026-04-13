@@ -53,7 +53,7 @@ bool AutoFallbackRetentionStrategy::MakeRetentionDecision(const FrameRetentionCo
     if (firstPts_ == -1) {
         firstPts_ = ctx.ptsMs;
     }
-    decodedFrameCount_ += (1 + ctx.preDroppedCount);
+    decodedFrameCount_ += static_cast<int32_t>(1 + ctx.preDroppedCount);
     if (currentSpeed_ > 0.0 && decodedFrameCount_ >= PROFILING_MIN_FRAMES) {
         double durationSec = (ctx.ptsMs - firstPts_) / MS_TO_S;
         if (durationSec > PROFILING_DURATION_MIN_SEC) {
