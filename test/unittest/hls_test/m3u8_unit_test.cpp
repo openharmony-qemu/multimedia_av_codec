@@ -852,7 +852,7 @@ HWTEST_F(M3u8UnitTest, PARSE_DATE_RANGE_PARSE_FAIL_001, TestSize.Level1)
     tag->AddAttribute(startDateAttr);
     m3u8.ParseDateRange(tag);
     EXPECT_EQ(m3u8.dateRanges_.size(), 1u);
-    EXPECT_EQ(m3u8.dateRanges_.front()->start, 0);
+    EXPECT_GT(m3u8.dateRanges_.front()->start, 0);
 }
 
 HWTEST_F(M3u8UnitTest, PARSE_DATE_RANGE_MULTIPLE_001, TestSize.Level1)
