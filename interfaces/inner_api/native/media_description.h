@@ -314,6 +314,49 @@ public:
      * key for AIGC info, the value type is string
      */
     static constexpr std::string_view MD_KEY_AIGC = "aigc";
+
+    /**
+     * Key for video encoder preproc crop left, value type is int32_t
+     */
+    static constexpr std::string_view OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT =
+        "video_encoder_preproc_crop_left";
+
+    /**
+     * Key for video encoder preproc crop right, value type is int32_t
+     */
+    static constexpr std::string_view OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_RIGHT =
+        "video_encoder_preproc_crop_right";
+
+    /**
+     * Key for video encoder preproc crop top, value type is int32_t
+     */
+    static constexpr std::string_view OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_TOP =
+        "video_encoder_preproc_crop_top";
+
+    /**
+     * Key for video encoder preproc crop bottom, value type is int32_t
+     */
+    static constexpr std::string_view OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM =
+        "video_encoder_preproc_crop_bottom";
+
+    /**
+     * Key for video encoder preproc downsampling width, value type is int32_t
+     */
+    static constexpr std::string_view OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH =
+        "video_encoder_preproc_downsampling_width";
+
+    /**
+     * Key for video encoder preproc downsampling height, value type is int32_t
+     */
+    static constexpr std::string_view OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT =
+        "video_encoder_preproc_downsampling_height";
+
+    /**
+     * Key for video encoder preproc drop to frame rate, value type is int32_t
+     */
+    static constexpr std::string_view OH_MD_KEY_VIDEO_ENCODER_PREPROC_DROP_TO_FRAME_RATE =
+        "video_encoder_preproc_drop_to_frame_rate";
+
 private:
     MediaDescriptionKey() = delete;
     ~MediaDescriptionKey() = delete;

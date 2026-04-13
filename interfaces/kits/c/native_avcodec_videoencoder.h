@@ -537,6 +537,31 @@ OH_AVFormat *OH_VideoEncoder_GetInputDescription(OH_AVCodec *codec);
 OH_AVErrCode OH_VideoEncoder_IsValid(OH_AVCodec *codec, bool *isValid);
 
 /**
+ * @brief Creates a video encoder instance with preproc support (one input, two outputs).
+ * This is recommended for scenarios requiring two encoded outputs from a single input.
+ * @syscap SystemCapability.Multimedia.Media.VideoEncoder
+ * @param mime mime type description string, only "video/hevc" or "video/avc" are supported
+ * @param codec Output parameter, returns the created encoder instance
+ * @return Returns AV_ERR_OK if the execution is successful,
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
+ * @since 26.0.0
+ */
+OH_AVErrCode OH_VideoEncoder_CreatePrimaryWithPreproc(const char *mime, OH_AVCodec **codec);
+
+/**
+ * @brief Creates a secondary video encoder from the primary encoder.
+ * The secondary encoder shares the same input surface with the primary encoder.
+ * Both encoders must use the same codec format (HEVC or AVC).
+ * @syscap SystemCapability.Multimedia.Media.VideoEncoder
+ * @param primary Pointer to the primary OH_AVCodec instance
+ * @param secondary Output parameter, returns the created secondary encoder instance
+ * @return Returns AV_ERR_OK if the execution is successful,
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
+ * @since 26.0.0
+ */
+OH_AVErrCode OH_VideoEncoder_CreateSecondaryFromPrimary(OH_AVCodec *primary, OH_AVCodec **codec);
+
+/**
  * @brief The bitrate mode of video encoder.
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @since 9

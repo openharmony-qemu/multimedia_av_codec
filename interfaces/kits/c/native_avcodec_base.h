@@ -1334,6 +1334,14 @@ extern const char *OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_RATIO;
  */
 extern const char *OH_MD_KEY_VIDEO_DECODER_SPEED;
 
+extern const char *OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT;
+extern const char *OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_RIGHT;
+extern const char *OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_TOP;
+extern const char *OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM;
+extern const char *OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH;
+extern const char *OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT;
+extern const char *OH_MD_KEY_VIDEO_ENCODER_PREPROC_DROP_TO_FRAME_RATE;
+
 /**
  * @brief Key for HDR type, value type is int32_t, refer to {@link OH_HDRType}.
  *
