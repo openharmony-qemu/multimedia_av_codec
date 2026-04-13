@@ -1617,8 +1617,8 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     PrepareSetDataSourceContext();
     auto id = HiviewDFX::XCollie::GetInstance().SetTimer("av_codec::demuxer_setdatasource", SETTIMER_TIMEOUT,
         nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
-        {
-        InitIoContextInDemuxer(source);
+    InitIoContextInDemuxer(source);
+    {
         std::lock_guard<std::mutex> glock(g_mtx);
         auto inputFormat = av_find_input_format(ProcessPluginName(pluginName_).c_str());
         pluginImpl_ = std::shared_ptr<AVInputFormat>(const_cast<AVInputFormat*>(inputFormat), [](void*) {});
