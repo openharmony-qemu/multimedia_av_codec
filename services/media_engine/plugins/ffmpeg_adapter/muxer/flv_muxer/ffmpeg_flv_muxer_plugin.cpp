@@ -473,6 +473,9 @@ Status FFmpegFlvMuxerPlugin::Start()
         av_dict_set(&formatContext_->metadata, "creation_time", "now", 0);
     }
     AVDictionary* options = nullptr;
+    av_dict_set(&options, "avoid_negative_ts", "make_zero", 0); // 时间戳修正
+    av_dict_set_int(&options, "max_interleave_delta", 500000, 0); // 500000us缓冲
+    av_dict_set(&options, "flvflags", "add_keyframe_index+no_duration_filesize", 0);
     int ret = avformat_write_header(formatContext_.get(), &options);
     if (ret < 0) {
         MEDIA_LOG_E("write header failed, %{public}s", AVStrError(ret).c_str());
@@ -485,7 +488,7 @@ Status FFmpegFlvMuxerPlugin::Start()
 Status FFmpegFlvMuxerPlugin::Stop()
 {
     FALSE_RETURN_V_MSG_E(isWriteHeader_, Status::ERROR_WRONG_STATE, "Stop failed! Did not write header!");
-    int ret = av_write_frame(formatContext_.get(), nullptr);
+    int ret = av_interleaved_write_frame(formatContext_.get(), nullptr);
     if (ret < 0) {
         MEDIA_LOG_E("write frame failed, %{public}s", AVStrError(ret).c_str());
     }
@@ -507,7 +510,7 @@ Status FFmpegFlvMuxerPlugin::WriteSample(uint32_t trackIndex, const std::shared_
 {
     FALSE_RETURN_V_MSG_E(isWriteHeader_, Status::ERROR_WRONG_STATE, "WriteSample failed! Did not write header!");
     FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_ != nullptr, Status::ERROR_NULL_POINTER,
-        "av_write_frame sample is null!");
+        "sample is null!");
     FALSE_RETURN_V_MSG_E(trackIndex < formatContext_->nb_streams, Status::ERROR_INVALID_PARAMETER,
         "track index is invalid!");
     MEDIA_LOG_D("WriteSample track:" PUBLIC_LOG_U32 ", pts:" PUBLIC_LOG_D64 ", size:" PUBLIC_LOG_D32
@@ -567,7 +570,7 @@ Status FFmpegFlvMuxerPlugin::WriteNormal(
         cachePacket_->flags |= AV_PKT_FLAG_DISPOSABLE_EXT;
     }
 
-    auto ret = av_write_frame(formatContext_.get(), cachePacket_.get());
+    auto ret = av_interleaved_write_frame(formatContext_.get(), cachePacket_.get());
     av_packet_unref(cachePacket_.get());
     if (ret < 0) {
         MEDIA_LOG_E("write sample buffer failed, " PUBLIC_LOG_S ". track id: " PUBLIC_LOG_U32
