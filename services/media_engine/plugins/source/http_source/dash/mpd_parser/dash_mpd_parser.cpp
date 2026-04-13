@@ -532,7 +532,7 @@ bool DashMpdParser::ParseSpliceInfoSection(std::shared_ptr<XmlParser> xmlParser,
     spliceInfoSectionNode->ParseNode(xmlParser, rootElement);
     
     std::string xmlnsAttr;
-    spliceInfoSectionNode->GetAttr("xmln", xmlnsAttr);
+    spliceInfoSectionNode->GetAttr("xmlns", xmlnsAttr);
     MEDIA_LOG_I("xmlns: " PUBLIC_LOG_S, xmlnsAttr.c_str());
     
     if (!ParseSpliceInfoSectionChildren(xmlParser, rootElement, eventInfo)) {
@@ -540,7 +540,7 @@ bool DashMpdParser::ParseSpliceInfoSection(std::shared_ptr<XmlParser> xmlParser,
         return false;
     }
     
-    eventInfo->contents_[rootElement->GetName()] = std::string("xmln") + "=" + xmlnsAttr;
+    eventInfo->contents_[rootElement->GetName()] = std::string("xmlns") + "=" + xmlnsAttr;
 
     IDashMpdNode::DestroyNode(spliceInfoSectionNode);
     return true;

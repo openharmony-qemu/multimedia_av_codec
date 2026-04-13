@@ -38,7 +38,7 @@ public:
 
 private:
     static constexpr int32_t DASH_SPLICE_INFO_ATTR_NUM = 1;
-    static constexpr const char *spliceInfoAttrs_[DASH_SPLICE_INFO_ATTR_NUM] = {"xmln"};
+    static constexpr const char *spliceInfoAttrs_[DASH_SPLICE_INFO_ATTR_NUM] = {"xmlns"};
 
     NodeAttr spliceInfoAttr_[DASH_SPLICE_INFO_ATTR_NUM];
 };

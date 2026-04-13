@@ -985,57 +985,6 @@ HWTEST_F(DashMpdParserUnitTest, Test_DashEventStreamNode_002, TestSize.Level1)
     EXPECT_EQ(dVal, 1000.0);
 }
 
-HWTEST_F(DashMpdParserUnitTest, Test_DashSpliceInfoSectionNode_001, TestSize.Level1)
-{
-    auto node = std::make_shared<DashSpliceInfoSectionNode>();
-    node->ParseNode(nullptr, nullptr);
-    std::string sVal;
-    uint32_t uVal = 0;
-    int32_t iVal = 0;
-    uint64_t ullVal = 0;
-    double dVal = 0.0;
-    node->GetAttr("unknown", sVal);
-    EXPECT_EQ(sVal, "");
-    node->GetAttr("unknown", uVal);
-    node->GetAttr("unknown", iVal);
-    node->GetAttr("unknown", ullVal);
-    node->GetAttr("unknown", dVal);
-    node->GetAttr("xmln", sVal);
-    EXPECT_EQ(sVal, "");
-    node->GetAttr("xmln", uVal);
-    EXPECT_EQ(uVal, 0u);
-    node->GetAttr("xmln", iVal);
-    EXPECT_EQ(iVal, 0);
-    node->GetAttr("xmln", ullVal);
-    EXPECT_EQ(ullVal, 0);
-    node->GetAttr("xmln", dVal);
-    EXPECT_EQ(dVal, 0.0);
-}
-
-HWTEST_F(DashMpdParserUnitTest, Test_DashSpliceInfoSectionNode_002, TestSize.Level1)
-{
-    auto node = std::make_shared<DashSpliceInfoSectionNode>();
-    auto xmlParser = std::make_shared<XmlParser>();
-    std::string xml = "<root xmln=\"100\"/>";
-    xmlParser->ParseFromBuffer(xml.c_str(), xml.length());
-    node->ParseNode(xmlParser, xmlParser->GetRootElement());
-    std::string sVal;
-    uint32_t uVal;
-    int32_t iVal;
-    uint64_t ullVal;
-    double dVal;
-    node->GetAttr("xmln", sVal);
-    EXPECT_EQ(sVal, "100");
-    node->GetAttr("xmln", uVal);
-    EXPECT_EQ(uVal, 100u);
-    node->GetAttr("xmln", iVal);
-    EXPECT_EQ(iVal, 100);
-    node->GetAttr("xmln", ullVal);
-    EXPECT_EQ(ullVal, 100);
-    node->GetAttr("xmln", dVal);
-    EXPECT_EQ(dVal, 100.0);
-}
-
 HWTEST_F(DashMpdParserUnitTest, Test_DashSpliceInsertNode_001, TestSize.Level1)
 {
     auto node = std::make_shared<DashSpliceInsertNode>();
@@ -1151,7 +1100,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParseSpliceInfoSection_001, TestSize.Level1
         "  <Period>\n"
         "    <EventStream schemeIdUri=\"urn:scte:scte35:2013\" timescale=\"1000\">\n"
         "      <Event id=\"1\" presentationTime=\"1000\">\n"
-        "        <SpliceInfoSection xmln=\"urn:scte:scte35:2013\">\n"
+        "        <SpliceInfoSection xmlns=\"urn:scte:scte35:2013\">\n"
         "          <SpliceInsert outOfNetworkIndicator=\"true\" spliceImmediateFlag=\"true\">\n"
         "            <BreakDuration duration=\"1000\" autoReturn=\"false\"/>\n"
         "          </SpliceInsert>\n"
@@ -1181,7 +1130,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParseSpliceInsert_001, TestSize.Level1)
         "  <Period>\n"
         "    <EventStream schemeIdUri=\"urn:scte:scte35:2013\" timescale=\"1000\">\n"
         "      <Event id=\"1\">\n"
-        "        <SpliceInfoSection xmln=\"urn:scte\">\n"
+        "        <SpliceInfoSection xmlns=\"urn:scte\">\n"
         "          <SpliceInsert outOfNetworkIndicator=\"1\" spliceImmediateFlag=\"false\">\n"
         "            <BreakDuration duration=\"5000\" autoReturn=\"true\"/>\n"
         "          </SpliceInsert>\n"
@@ -1355,7 +1304,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParseEventStream_NullEventStreamInfo_001, T
         "  <Period>\n"
         "    <EventStream schemeIdUri=\"urn:test:event\" value=\"test\" timescale=\"1000\">\n"
         "      <Event id=\"1\" duration=\"5000\" presentationTime=\"1000\" value=\"event1\">\n"
-        "        <SpliceInfoSection xmln=\"test\">\n"
+        "        <SpliceInfoSection xmlns=\"test\">\n"
         "          <SpliceInsert/>\n"
         "        </SpliceInfoSection>\n"
         "      </Event>\n"
@@ -1411,7 +1360,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParseSpliceInfoSectionChildren_NoSpliceInse
         "  <Period>\n"
         "    <EventStream schemeIdUri=\"urn:scte:scte35:2013\" timescale=\"1000\">\n"
         "      <Event id=\"1\" presentationTime=\"1000\">\n"
-        "        <SpliceInfoSection xmln=\"urn:scte\">\n"
+        "        <SpliceInfoSection xmlns=\"urn:scte\">\n"
         "          <OtherElement/>\n"
         "        </SpliceInfoSection>\n"
         "      </Event>\n"
@@ -1437,7 +1386,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParseSpliceInsertChildren_NoBreakDuration_0
         "  <Period>\n"
         "    <EventStream schemeIdUri=\"urn:scte:scte35:2013\" timescale=\"1000\">\n"
         "      <Event id=\"1\" presentationTime=\"1000\">\n"
-        "        <SpliceInfoSection xmln=\"urn:scte\">\n"
+        "        <SpliceInfoSection xmlns=\"urn:scte\">\n"
         "          <SpliceInsert outOfNetworkIndicator=\"true\" spliceImmediateFlag=\"false\">\n"
         "            <OtherElement/>\n"
         "          </SpliceInsert>\n"
@@ -1465,7 +1414,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParseBreakDuration_DurationAndAutoReturn_00
         "  <Period>\n"
         "    <EventStream schemeIdUri=\"urn:scte:scte35:2013\" timescale=\"1000\">\n"
         "      <Event id=\"1\">\n"
-        "        <SpliceInfoSection xmln=\"urn:scte\">\n"
+        "        <SpliceInfoSection xmlns=\"urn:scte\">\n"
         "          <SpliceInsert outOfNetworkIndicator=\"1\">\n"
         "            <BreakDuration duration=\"9999\" autoReturn=\"true\"/>\n"
         "          </SpliceInsert>\n"
@@ -1496,7 +1445,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParseEventChildren_EmptyElementName_001, Te
         "  <Period>\n"
         "    <EventStream schemeIdUri=\"urn:scte:scte35:2013\" timescale=\"1000\">\n"
         "      <Event id=\"1\" presentationTime=\"1000\">\n"
-        "        <SpliceInfoSection xmln=\"test\">\n"
+        "        <SpliceInfoSection xmlns=\"test\">\n"
         "          <SpliceInsert/>\n"
         "        </SpliceInfoSection>\n"
         "      </Event>\n"
@@ -1656,7 +1605,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParseSpliceInfoSection_WithEmptyChildren_00
         "  <Period>\n"
         "    <EventStream schemeIdUri=\"urn:scte:scte35:2013\" timescale=\"1000\">\n"
         "      <Event id=\"1\" presentationTime=\"1000\">\n"
-        "        <SpliceInfoSection xmln=\"urn:scte\">\n"
+        "        <SpliceInfoSection xmlns=\"urn:scte\">\n"
         "        </SpliceInfoSection>\n"
         "      </Event>\n"
         "    </EventStream>\n"
@@ -1681,7 +1630,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParseSpliceInsert_OutOfNetworkIndicator_001
         "  <Period>\n"
         "    <EventStream schemeIdUri=\"urn:scte:scte35:2013\" timescale=\"1000\">\n"
         "      <Event id=\"1\">\n"
-        "        <SpliceInfoSection xmln=\"urn:scte\">\n"
+        "        <SpliceInfoSection xmlns=\"urn:scte\">\n"
         "          <SpliceInsert outOfNetworkIndicator=\"false\" spliceImmediateFlag=\"true\">\n"
         "            <BreakDuration duration=\"3000\" autoReturn=\"true\"/>\n"
         "          </SpliceInsert>\n"
@@ -1712,7 +1661,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParseBreakDuration_EmptyChildElement_001, T
         "  <Period>\n"
         "    <EventStream schemeIdUri=\"urn:scte:scte35:2013\" timescale=\"1000\">\n"
         "      <Event id=\"1\">\n"
-        "        <SpliceInfoSection xmln=\"urn:scte\">\n"
+        "        <SpliceInfoSection xmlns=\"urn:scte\">\n"
         "          <SpliceInsert outOfNetworkIndicator=\"1\">\n"
         "            <BreakDuration duration=\"0\" autoReturn=\"false\">\n"
         "              <ChildElement/>\n"

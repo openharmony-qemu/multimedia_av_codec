@@ -353,7 +353,7 @@ int64_t M3U8::CalculateDateTimeOffset(const std::string& programDateTime, const 
 
         std::tm timeinfo = {};
         std::istringstream ss(datetimeStr);
-        ss >> std::get_time(&timeinfo, "%Y-%m-%d-T%H:%M:%S");
+        ss >> std::get_time(&timeinfo, "%Y-%m-%dT%H:%M:%S");
         if (ss.fail()) {
             return 0.0;
         }
