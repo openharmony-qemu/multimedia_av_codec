@@ -125,14 +125,6 @@ std::string XmlElement::GetAttribute(const std::string &attrName)
         return "";
     }
 
-    bool isXmlns = (attrName.compare(0, 6, "xmlns:") == 0 || attrName == "xmlns");
-    if (isXmlns) {
-        std::string result = GetXmlNsFromNsDef(xmlNodePtr_->nsDef, attrName);
-        if (!result.empty()) {
-            return result;
-        }
-    }
-
     if (xmlHasProp(xmlNodePtr_, BAD_CAST attrName.c_str())) {
         xmlChar *attr = xmlGetProp(xmlNodePtr_, BAD_CAST attrName.c_str());
         if (attr != nullptr) {
@@ -140,6 +132,12 @@ std::string XmlElement::GetAttribute(const std::string &attrName)
             xmlFree(attr);
             return attrValue;
         }
+    }
+
+    bool isXmlns = (attrName.compare(0, 6, "xmlns:") == 0 || attrName == "xmlns");
+    if (isXmlns) {
+        std::string result = GetXmlNsFromNsDef(xmlNodePtr_->nsDef, attrName);
+        return result;
     }
     return "";
 }
