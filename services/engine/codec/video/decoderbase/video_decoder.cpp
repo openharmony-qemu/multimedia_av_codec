@@ -203,16 +203,33 @@ void VideoDecoder::ConfigureHdrMetadata(const Format &format)
     AVCODEC_LOGI("Decoder does not support HDR metadata configuration.");
 }
 
+void VideoDecoder::ConfigureFormatHdr(const Format &format)
+{
+    if (format.ContainKey(MediaDescriptionKey::MD_KEY_VIDEO_HDR_METADATA)) {
+        ConfigureHdrMetadata(format);
+    }
+
+    if (format.ContainKey(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS)) {
+        ConfigureHdrColorSpaceIno(format);
+    }
+
+    if (format.ContainKey(OHOS::Media::Tag::VIDEO_STATIC_METADATA_SMPT2086)) {
+        ConfigureHdrStaticMetadata(format);
+    }
+}
+
 int32_t VideoDecoder::Configure(const Format &format)
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG((state_ == State::INITIALIZED), AVCS_ERR_INVALID_STATE,
                              "Configure codec failed:  not in Initialized state");
+
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_VIDEO_WIDTH);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_VIDEO_HEIGHT);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, DEFAULT_OUT_BUFFER_CNT);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT, DEFAULT_IN_BUFFER_CNT);
     isInputSizeAssigned_.store(false);
+    isValidHdrSttMd_.store(false);
     int32_t val32;
     for (auto &it : format.GetFormatMap()) {
         if (it.first == MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT) {
@@ -234,8 +251,6 @@ int32_t VideoDecoder::Configure(const Format &format)
                    it.first == MediaDescriptionKey::MD_KEY_SCALE_TYPE ||
                    it.first == OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE) {
             continue;
-        } else if (it.first == MediaDescriptionKey::MD_KEY_VIDEO_HDR_METADATA) {
-            ConfigureHdrMetadata(format);
         } else if (it.first == OHOS::Media::Tag::VIDEO_ENABLE_LOW_LATENCY) {
             CHECK_AND_CONTINUE_LOG(format.GetIntValue(it.first, val32),
                 "not find valid int value for key %{public}s", it.first.data());
@@ -246,6 +261,7 @@ int32_t VideoDecoder::Configure(const Format &format)
         }
     }
     GetSurfaceCfgFromFmt(format);
+    ConfigureFormatHdr(format);
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width_);
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height_);
 

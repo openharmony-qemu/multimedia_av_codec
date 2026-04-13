@@ -414,6 +414,86 @@ int32_t HevcDecoder::DecodeFrameOnce()
     return ret;
 }
 
+void HevcDecoder::ConfigureHdrColorSpaceIno(const Format &format)
+{
+    int32_t tmpValue = 0;
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, tmpValue)) {
+        AVCODEC_LOGE("format_ get MD_KEY_RANGE_FLAG failed!");
+        return;
+    }
+    colorSpaceInfo_.fullRangeFlag = static_cast<UINT32>(tmpValue);
+
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES, tmpValue)) {
+        AVCODEC_LOGE("format_ get MD_KEY_COLOR_PRIMARIES failed!");
+        return;
+    }
+    colorSpaceInfo_.colorPrimaries = static_cast<UINT32>(tmpValue);
+
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS, tmpValue)) {
+        AVCODEC_LOGE("format_ get MD_KEY_TRANSFER_CHARACTERISTICS failed!");
+        return;
+    }
+    colorSpaceInfo_.transferCharacteristic = static_cast<UINT32>(tmpValue);
+
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, tmpValue)) {
+        AVCODEC_LOGE("format_ get MD_KEY_MATRIX_COEFFICIENTS failed!");
+        return;
+    }
+    colorSpaceInfo_.matrixCoeffs = static_cast<UINT32>(tmpValue);
+
+    colorSpaceInfo_.colorDescriptionPresentFlag = 1;
+    AVCODEC_LOGD("Config hdr color space infor suc: range %{public}d prm %{public}d chrct %{public}d coeff %{public}d",
+        colorSpaceInfo_.fullRangeFlag, colorSpaceInfo_.colorPrimaries, colorSpaceInfo_.transferCharacteristic,
+        colorSpaceInfo_.matrixCoeffs);
+}
+
+void HevcDecoder::ConfigureHdrStaticMetadata(const Format &format)
+{
+    if (isValidHdrSttMd_.load()) {
+        return;
+    }
+
+    using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
+    hdrSttMetadata_ = std::make_shared<HdrStaticMetadata>();
+    CHECK_AND_RETURN_LOG(hdrSttMetadata_ != nullptr, "Memory allocation failed!!");
+    (void)memset_s(hdrSttMetadata_.get(), sizeof(HdrStaticMetadata), 0, sizeof(HdrStaticMetadata));
+
+    size_t extraSize = 0;
+    uint8_t *extraData = nullptr;
+    format.GetBuffer(OHOS::Media::Tag::VIDEO_STATIC_METADATA_SMPT2086, &extraData, extraSize);
+    const OHOS::Media::Plugins::Smpte2086 *smpte = (OHOS::Media::Plugins::Smpte2086 *)extraData;
+    if (smpte != nullptr && extraSize == sizeof(OHOS::Media::Plugins::Smpte2086)) {
+        hdrSttMetadata_->smpte2086.displayPrimaryRed.x = smpte->displayPrimaryRedX;
+        hdrSttMetadata_->smpte2086.displayPrimaryRed.y  = smpte->displayPrimaryRedY;
+        hdrSttMetadata_->smpte2086.displayPrimaryGreen.x   = smpte->displayPrimaryGreenX;
+        hdrSttMetadata_->smpte2086.displayPrimaryGreen.y = smpte->displayPrimaryGreenY;
+        hdrSttMetadata_->smpte2086.displayPrimaryBlue.x  = smpte->displayPrimaryBlueX;
+        hdrSttMetadata_->smpte2086.displayPrimaryBlue.y   = smpte->displayPrimaryBlueY;
+
+        hdrSttMetadata_->smpte2086.whitePoint.x = smpte->whitePointX;
+        hdrSttMetadata_->smpte2086.whitePoint.y = smpte->whitePointY;
+
+        hdrSttMetadata_->smpte2086.maxLuminance = smpte->maxLuminance;
+        hdrSttMetadata_->smpte2086.minLuminance = smpte->minLuminance;
+    } else {
+        AVCODEC_LOGE("Get HDR smpt2086 from format failed");
+        return;
+    }
+
+    extraData = nullptr;
+    format.GetBuffer(OHOS::Media::Tag::VIDEO_STATIC_METADATA_CTA861, &extraData, extraSize);
+    const OHOS::Media::Plugins::Cta861  *cta = (OHOS::Media::Plugins::Cta861 *)extraData;
+    if (cta != nullptr && extraSize == sizeof(OHOS::Media::Plugins::Cta861)) {
+        hdrSttMetadata_->cta861.maxContentLightLevel       = cta->maxContentLightLevel;
+        hdrSttMetadata_->cta861.maxFrameAverageLightLevel  = cta->maxFrameAverageLightLevel;
+    } else {
+        AVCODEC_LOGW("Get HDR cta861 from format warning");
+    }
+
+    isValidHdrSttMd_.store(true);
+    AVCODEC_LOGD("Config hdr static metadate successful");
+}
+
 void HevcDecoder::UpdateColorAspects(const HEVC_COLOR_SPACE_INFO &colorInfo)
 {
     if (colorSpaceInfo_.fullRangeFlag != colorInfo.fullRangeFlag ||
@@ -445,7 +525,7 @@ int32_t HevcDecoder::ConvertHdrStaticMetadata(const HEVC_HDR_METADATA &hevcHdrMe
         "wrong staticMetadataVec.size : %{public}d", static_cast<int32_t>(staticMetadataVec.size()));
     HdrStaticMetadata* hdrStaticMetadata = reinterpret_cast<HdrStaticMetadata*>(staticMetadataVec.data());
     CHECK_AND_RETURN_RET_LOG(hdrStaticMetadata != nullptr, AVCS_ERR_INVALID_VAL,
-        "vector convert to CM_HDR_Metadata_Type error");
+        "vector convert to HdrStaticMetadata error");
 
     hdrStaticMetadata->smpte2086.displayPrimaryGreen.x = hevcHdrMetadata.displayPrimariesX[0] * PRIMARY_SCALE; // 0: Y
     hdrStaticMetadata->smpte2086.displayPrimaryBlue.x  = hevcHdrMetadata.displayPrimariesX[1] * PRIMARY_SCALE; // 1: U
@@ -466,6 +546,42 @@ int32_t HevcDecoder::ConvertHdrStaticMetadata(const HEVC_HDR_METADATA &hevcHdrMe
     hdrStaticMetadata->cta861.maxContentLightLevel = static_cast<float>(hevcHdrMetadata.maxContentLightLevel);
     hdrStaticMetadata->cta861.maxFrameAverageLightLevel = static_cast<float>(hevcHdrMetadata.maxPicAverageLightLevel);
     return AVCS_ERR_OK;
+}
+
+void HevcDecoder::FillHdrStaticInfo(sptr<SurfaceBuffer> surfaceBuffer)
+{
+    if (colorSpaceInfo_.colorDescriptionPresentFlag != 1) {
+        return;
+    }
+
+    using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
+    std::vector<uint8_t> colorSpaceInfoVec;
+    int32_t convertRet = ConvertParamsToColorSpaceInfo(colorSpaceInfo_.fullRangeFlag,
+                                                       colorSpaceInfo_.colorPrimaries,
+                                                       colorSpaceInfo_.transferCharacteristic,
+                                                       colorSpaceInfo_.matrixCoeffs,
+                                                       colorSpaceInfoVec);
+    CHECK_AND_RETURN_LOG(convertRet == AVCS_ERR_OK, "ConvertParamsToColorSpaceInfo failed");
+    GSError setRet = surfaceBuffer->SetMetadata(ATTRKEY_COLORSPACE_INFO, colorSpaceInfoVec);
+    CHECK_AND_RETURN_LOG(setRet == GSERROR_OK, "SetMetadata ATTRKEY_COLORSPACE_INFO failed");
+
+    if (isValidHdrSttMd_.load()) {
+        std::vector<uint8_t> staticMetadataVec(sizeof(HdrStaticMetadata));
+        HdrStaticMetadata* hdrStaticMetadata = reinterpret_cast<HdrStaticMetadata*>(staticMetadataVec.data());
+        CHECK_AND_RETURN_LOG(hdrStaticMetadata != nullptr, "vector convert to HdrStaticMetadata error");
+        *hdrStaticMetadata = *hdrSttMetadata_;
+        setRet = surfaceBuffer->SetMetadata(ATTRKEY_HDR_STATIC_METADATA, staticMetadataVec);
+        CHECK_AND_RETURN_LOG(setRet == GSERROR_OK, "SetMetadata ATTRKEY_HDR_STATIC_METADATA failed");
+    }
+
+    std::vector<uint8_t> metadataTypeVec(sizeof(CM_HDR_Metadata_Type));
+    CM_HDR_Metadata_Type* metadataType = reinterpret_cast<CM_HDR_Metadata_Type*>(metadataTypeVec.data());
+    CHECK_AND_RETURN_LOG(metadataType != nullptr, "vector convert to CM_HDR_Metadata_Type error");
+    *metadataType = static_cast<CM_HDR_Metadata_Type>(
+                GetMetaDataTypeByTransFunc(colorSpaceInfo_.transferCharacteristic));
+    setRet = surfaceBuffer->SetMetadata(ATTRKEY_HDR_METADATA_TYPE, metadataTypeVec);
+    CHECK_AND_RETURN_LOG(setRet == GSERROR_OK, "SetMetadata ATTRKEY_HDR_METADATA_TYPE failed");
+    AVCODEC_LOGD("surface buffer Fill hdr static info successful");
 }
 
 void HevcDecoder::FillHdrInfo(sptr<SurfaceBuffer> surfaceBuffer)
@@ -509,6 +625,8 @@ void HevcDecoder::FillHdrInfo(sptr<SurfaceBuffer> surfaceBuffer)
         CHECK_AND_RETURN_LOG(setRet == GSERROR_OK, "SetMetadata ATTRKEY_HDR_METADATA_TYPE failed");
         UpdateColorAspects(outColorInfo);
         AVCODEC_LOGD("surface buffer Fill hdr info successful");
+    } else {
+        FillHdrStaticInfo(surfaceBuffer);
     }
 }
 

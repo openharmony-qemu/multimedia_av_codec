@@ -20,6 +20,10 @@
 #include "HevcDec_Typedef.h"
 #include "avcodec_info.h"
 
+namespace OHOS::HDI::Display::Graphic::Common::V1_0  {
+    struct HdrStaticMetadata;
+}
+
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {
@@ -44,6 +48,8 @@ protected:
     void ReleaseHandle();
     void InitParams() override;
     void InitHdrParams();
+    void ConfigureHdrColorSpaceIno(const Format &format) override;
+    void ConfigureHdrStaticMetadata(const Format &format) override;
 
     int32_t Initialize() override;
     void SendFrame()override;
@@ -56,6 +62,7 @@ private:
     void UpdateColorAspects(const HEVC_COLOR_SPACE_INFO &colorInfo);
     int32_t ConvertHdrStaticMetadata(const HEVC_HDR_METADATA &hevcHdrMetadata,
                                      std::vector<uint8_t> &staticMetadataVec);
+    void FillHdrStaticInfo(sptr<SurfaceBuffer> surfaceBuffer);
 private:
     void* handle_ = nullptr;
     HEVC_DEC_INIT_PARAM initParams_;
@@ -74,6 +81,7 @@ private:
     DeleteFuncType hevcDecoderDeleteFunc_ = nullptr;
     
     HEVC_COLOR_SPACE_INFO colorSpaceInfo_;
+    std::shared_ptr<OHOS::HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata> hdrSttMetadata_ = nullptr;
 };
 
 void HevcDecLog(UINT32 channelId, IHW265VIDEO_ALG_LOG_LEVEL eLevel, INT8 *pMsg, ...);

@@ -113,9 +113,12 @@ public:
 
 protected:
     virtual void ConfigureOutPutOrder(bool isDisplay) {};
+    virtual void ConfigureHdrColorSpaceIno(const Format &format) {};
+    virtual void ConfigureHdrStaticMetadata(const Format &format) {};
     void CallCallBack(AVCodecErrorType errType, AVCodecServiceErrCode serEcode) override;
     std::atomic<bool> isInputSizeAssigned_ = false;
     int32_t inputBufferSize_ = 0;
+    std::atomic<bool> isValidHdrSttMd_ = false;
 
 private:
     virtual int32_t Initialize() = 0;
@@ -138,6 +141,7 @@ private:
     void SetCallerToBuffer(sptr<SurfaceBuffer> surfaceBuffer);
     void SetBufferCropMetadata(sptr<SurfaceBuffer> surfaceBuffer);
     void GetSurfaceCfgFromFmt(const Format &format);
+    void ConfigureFormatHdr(const Format &format);
 
     int32_t inputBufferCnt_ = 0;
     uint8_t *scaleData_[AV_NUM_DATA_POINTERS] = {nullptr};

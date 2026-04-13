@@ -571,7 +571,7 @@ int32_t VideoDecSample::SetOutputSurface(const bool isNew)
     if (isUnregConListener_ && consumerSurface != nullptr) {
         OHOS::GSError ret = consumerSurface->UnregisterConsumerListener();
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == OHOS::GSError::GSERROR_OK, AV_ERR_UNKNOWN,
-            "Unregister old consumer listerner fail, gserror %d", ret);
+            "Unregister old consumer listener fail, gserror %d", ret);
 
         sleep(1); // 1 wait second
         int32_t retOH = OH_VideoDecoder_SetSurface(codec_, surafaceObj_->GetNativeWindow(isNew));
@@ -598,6 +598,46 @@ int32_t VideoDecSample::SetOutputSurface(OHNativeWindow *window)
         return OH_VideoDecoder_SetSurface(codec_, window);
     }
     return AV_ERR_UNKNOWN;
+}
+
+bool VideoDecSample::DoSubHdrConfigure(OH_AVFormat* format, bool setFormatRet)
+{
+    bool ret = true;
+    if (hdrColorInfo_) {
+        ret = OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_RANGE_FLAG.data(), 0);
+        setFormatRet = setFormatRet && ret;
+        ret = OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES.data(), 9); // 9
+        setFormatRet = setFormatRet && ret;
+        ret = OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS.data(), 18); // 18
+        setFormatRet = setFormatRet && ret;
+        ret = OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS.data(), 9); // 9
+        setFormatRet = setFormatRet && ret;
+    }
+    if (hdrStaticMeta_) {
+        using namespace OHOS::Media::Plugins;
+        Smpte2086 smpte;
+        smpte.displayPrimaryRedX = 0.265; // 0.265 = 13250 * 0.00002
+        smpte.displayPrimaryRedY = 0.69;  // 0.69 = 34500 * 0.00002
+        smpte.displayPrimaryGreenX = 0.15; // 0.15 = 7500 * 0.00002
+        smpte.displayPrimaryGreenY = 0.06; // 0.06 = 3000 * 0.00002
+        smpte.displayPrimaryBlueX = 0.68; // 0.68 = 34000 * 0.00002
+        smpte.displayPrimaryBlueY = 0.32; // 0.32 = 16000 * 0.00002
+        smpte.whitePointX = 0.3127;     // 0.3127 = 15635 * 0.00002
+        smpte.whitePointY = 0.329;      // 0.329 = 16450 * 0.00002
+        smpte.minLuminance = 0.0005;    // 0.0005 = 50 * 0.00001
+        smpte.maxLuminance = 100;       // 100 = 10000000 * 0.00001
+        ret = OH_AVFormat_SetBuffer(format, OHOS::Media::Tag::VIDEO_STATIC_METADATA_SMPT2086, (uint8_t*)&smpte,
+            sizeof(Smpte2086));
+        setFormatRet = setFormatRet && ret;
+
+        Cta861 cta;
+        cta.maxContentLightLevel = 0;
+        cta.maxFrameAverageLightLevel = 0;
+        ret = OH_AVFormat_SetBuffer(format, OHOS::Media::Tag::VIDEO_STATIC_METADATA_CTA861, (uint8_t*)&cta,
+            sizeof(Cta861));
+        setFormatRet = setFormatRet && ret;
+    }
+    return setFormatRet;
 }
 
 bool VideoDecSample::DoConfigure(OH_AVFormat* format)
@@ -650,6 +690,8 @@ bool VideoDecSample::DoConfigure(OH_AVFormat* format)
         setFormatRet = setFormatRet && OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENABLE_LOW_LATENCY, 1);
         setFormatRet = setFormatRet && OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 1000000); // 1000000
     }
+    DoSubHdrConfigure(format, setFormatRet);
+
     if (setRawVideoPixFmt_) {
         OH_AVFormat_SetIntValue(format, "rawvideo_input_pix_fmt", rawvideoPixFmt_);
     }
