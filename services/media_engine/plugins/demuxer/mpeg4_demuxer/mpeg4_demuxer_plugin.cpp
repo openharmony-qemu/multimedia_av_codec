@@ -196,8 +196,10 @@ Status MPEG4DemuxerPlugin::Flush()
     return ret;
 }
 
-Status MPEG4DemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& source)
+Status MPEG4DemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& source,
+    const std::shared_ptr<Media::Meta>& configs)
 {
+    (void)configs;
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MEDIA_LOG_I("In");
     FALSE_RETURN_V_MSG_E(!inited_, Status::ERROR_WRONG_STATE, "Plugin has been initialized");

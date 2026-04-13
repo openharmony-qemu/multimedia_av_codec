@@ -49,10 +49,12 @@ struct DemuxerPlugin : public PluginBase {
      * The function is valid only in the CREATED state.
      *
      * @param source Data source where data read from.
+     * @param configs Configuration information, optional parameter, refer to Plugin::DemuxerMode.
      * @return  Execution Status return
      *  @retval OK: Plugin SetDataSource succeeded.
      */
-    virtual Status SetDataSource(const std::shared_ptr<DataSource>& source) = 0;
+    virtual Status SetDataSource(const std::shared_ptr<DataSource>& source,
+        const std::shared_ptr<Media::Meta>& configs = nullptr) = 0;
 
     /**
      * @brief Get the attributes of a media file.
@@ -357,15 +359,6 @@ struct DemuxerPlugin : public PluginBase {
      */
     virtual Status SeekToFrameByDts(int32_t trackId, int64_t seekTime,
         SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs) = 0;
-    /**
-     * @brief Sets the data source and configuration for the demuxer.
-     *
-     * @param source  Data source where data read from.
-     * @param configs Configuration information, refer to Plugin::DemuxerMode
-     * @return Execution status
-     */
-    virtual Status SetDataSource(const std::shared_ptr<DataSource>& source,
-        const std::shared_ptr<Media::Meta>& configs) { return Status::ERROR_UNKNOWN; }
 };
 
 /// Demuxer plugin api major number.

@@ -74,9 +74,8 @@ public:
     Status Start() override;
     Status Stop() override;
     Status Flush() override;
-    Status SetDataSource(const std::shared_ptr<DataSource>& source) override;
     Status SetDataSource(const std::shared_ptr<DataSource>& source,
-        const std::shared_ptr<Media::Meta>& configs) override;
+        const std::shared_ptr<Media::Meta>& configs = nullptr) override;
     /**
      * Judgment for VIDEO_HDR_TYPE:
      * 1. Only applicable to H.265 streams. This attribute is not included in non-H.265 streams.
