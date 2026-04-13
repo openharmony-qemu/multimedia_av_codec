@@ -34,7 +34,8 @@ public:
     void Reset();
     double GetCurrentEma() const;
     double GetTargetRetentionRatio() const;
-    void UpdateFeedback(uint32_t preDroppedCount, bool currentDropped, double targetRetentionRatio, double currentSpeed);
+    void UpdateFeedback(
+        uint32_t preDroppedCount, bool currentDropped, double targetRetentionRatio, double currentSpeed);
 
 private:
     static constexpr size_t queueCapacity = 128;

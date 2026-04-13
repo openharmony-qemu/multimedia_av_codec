@@ -145,11 +145,11 @@ void SmartFluencyDecodingDumper::RecordPostDecode(const PostDecodeRecordCtx& ctx
 std::string SmartFluencyDecodingDumper::GetTimestampString()
 {
     auto now = std::chrono::system_clock::now();
-    auto time_t_val = std::chrono::system_clock::to_time_t(now);
-    struct tm tm_info = {0};
-    localtime_r(&time_t_val, &tm_info);
+    auto timeVal = std::chrono::system_clock::to_time_t(now);
+    struct tm tmInfo = {0};
+    localtime_r(&timeVal, &tmInfo);
     std::stringstream ss;
-    ss << std::put_time(&tm_info, "%Y%m%d_%H%M%S");
+    ss << std::put_time(&tmInfo, "%Y%m%d_%H%M%S");
     return ss.str();
 }
 
