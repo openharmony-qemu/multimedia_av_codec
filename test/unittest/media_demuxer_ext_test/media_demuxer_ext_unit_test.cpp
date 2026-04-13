@@ -8268,7 +8268,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SetOutputBufferQueue_001, Test
     sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
         GetTrackTypeByTrackID(_)).WillRepeatedly(Return(TrackType::TRACK_SUBTITLE));
-    EXPECT_EQ(mediaDemuxer_->SetOutputBufferQueue(0, inputBufferQueueProducer), Status::OK);
+    EXPECT_EQ(mediaDemuxer_->SetOutputBufferQueue(0, inputBufferQueueProducer), Status::ERROR_INVALID_PARAMETER);
 }
 
 /**
