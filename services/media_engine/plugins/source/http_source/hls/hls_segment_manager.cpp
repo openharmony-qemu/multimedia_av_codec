@@ -1041,11 +1041,10 @@ void HlsSegmentManager::HandlePlayListChanged(const std::vector<PlayInfo>& playL
         }
         auto fragment = playList[i];
         PlaylistBackup(fragment);
+        if (isSelectingBitrate_.load() && fragment.sequence_ > currentSequence_) {
+            isSelectingBitrate_.store(false);
+        }
         if (isSelectingBitrate_.load()) {
-            if (currentSequence_ < fragment.sequence_) {
-                isSelectingBitrate_.store(false);
-                MEDIA_LOG_I("HLS Switch bitrate sequence gt currentsequence, type: %{public}d", type_);
-            }
             fragmentDownloadStart[fragment.url_] = true;
             if (currentSequence_ == fragment.sequence_) {
                 MEDIA_LOG_I("HLS Switch bitrate, type: %{public}d", type_);
