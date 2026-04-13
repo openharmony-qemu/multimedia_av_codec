@@ -491,8 +491,8 @@ HWTEST(TestSubtitleSink, RemoveHtmlTags_009, TestSize.Level1)
 HWTEST(TestSubtitleSink, RemoveHtmlTags_010, TestSize.Level1)
 {
     auto sink = SubtitleSinkCreate();
-    std::string test10 = "<font>al7<font color=\"#ff0000\">English:When I was lying there in the VA hospital ...</font></font>";
-    EXPECT_EQ(sink->removeHtmlTags(test10), "al7English:When I was lying there in the VA hospital ...");
+    std::string test10 = "<font>al7<font color=\"#ff0000\">English:When</font></font>";
+    EXPECT_EQ(sink->removeHtmlTags(test10), "al7English:When");
 }
 
 HWTEST(TestSubtitleSink, RemoveHtmlTags_011, TestSize.Level1)
