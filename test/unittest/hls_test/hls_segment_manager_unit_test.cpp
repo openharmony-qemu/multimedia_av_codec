@@ -1915,7 +1915,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, ON_PLAYLIST_CHANGED_001, TestSize.Level1)
     PlayInfo palyInfo;
     playList.push_back(palyInfo);
     downloader->isSelectingBitrate_ = true;
-    downloader->writeTsIndex_ = 10;
+    downloader->currentSequence_ = 10;
     downloader->OnPlayListChanged(playList);
     EXPECT_EQ(downloader->isSelectingBitrate_, true);
 
