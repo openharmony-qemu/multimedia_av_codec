@@ -530,11 +530,11 @@ HWTEST(TestSubtitleSink, removeTextTags_015, TestSize.Level1)
     EXPECT_EQ(sink->removeTextTags(test15), "a<>a");
 }
 
-HWTEST(TestSubtitleSink, removeTextTags_015, TestSize.Level1)
+HWTEST(TestSubtitleSink, removeTextTags_016, TestSize.Level1)
 {
     auto sink = SubtitleSinkCreate();
-    std::string test15 = "";
-    EXPECT_EQ(sink->removeTextTags(test15), "");
+    std::string test16 = "";
+    EXPECT_EQ(sink->removeTextTags(test16), "");
 }
 }  // namespace Test
 }  // namespace Media
