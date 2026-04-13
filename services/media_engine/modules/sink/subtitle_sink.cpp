@@ -423,7 +423,7 @@ int64_t SubtitleSink::GetMediaTime()
     return syncCenter->GetMediaTimeNow();
 }
 
-std::pair<std::string, bool> SubtitleSink::parseTag(const std::string& tagContent)
+std::pair<std::string, bool> SubtitleSink::ParseTag(const std::string& tagContent)
 {
     std::string tag = tagContent;
     bool isClosing = false;
@@ -441,7 +441,7 @@ std::pair<std::string, bool> SubtitleSink::parseTag(const std::string& tagConten
     return {tag, isClosing};
 }
 
-bool SubtitleSink::findAndRemoveMatchingTag(std::stack<std::pair<std::string,
+bool SubtitleSink::FindAndRemoveMatchingTag(std::stack<std::pair<std::string,
     size_t>>& openTags, const std::string& tag)
 {
     bool found = false;
@@ -465,7 +465,7 @@ bool SubtitleSink::findAndRemoveMatchingTag(std::stack<std::pair<std::string,
     return found;
 }
 
-void SubtitleSink::restoreUnsupportedTags(std::string& result, std::stack<std::pair<std::string, size_t>>& openTags)
+void SubtitleSink::RestoreUnsupportedTags(std::string& result, std::stack<std::pair<std::string, size_t>>& openTags)
 {
     while (!openTags.empty()) {
         auto tagInfo = openTags.top();
@@ -480,7 +480,7 @@ void SubtitleSink::restoreUnsupportedTags(std::string& result, std::stack<std::p
     }
 }
 
-std::string SubtitleSink::removeTextTags(const std::string& text)
+std::string SubtitleSink::RemoveTextTags(const std::string& text)
 {
     std::string result;
     std::stack<std::pair<std::string, size_t>> openTags;
