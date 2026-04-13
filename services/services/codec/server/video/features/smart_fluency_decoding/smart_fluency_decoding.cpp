@@ -377,7 +377,7 @@ void SmartFluencyDecoding::parseMVData(const sptr<SurfaceBuffer> surfaceBuffer, 
         AVCODEC_LOGD("memcpy_s failed");
         return;
     }
-    uint8_t* input = (uint8_t*)(data.vaddr + data.offset);
+    uint8_t* input = reinterpret_cast<uint8_t*>(static_cast<uintptr_t>(data.vaddr + data.offset));
     size_t size = mvAnalyzer_->GetMvDataSize();
     if (size > 0) {
         mvStats = mvAnalyzer_->parse(input, size);
