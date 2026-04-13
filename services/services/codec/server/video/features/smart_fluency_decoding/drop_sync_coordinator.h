@@ -37,11 +37,12 @@ public:
     void UpdateFeedback(int32_t preDroppedCount, bool currentDropped, double targetRetentionRatio, double currentSpeed);
 
 private:
-    static constexpr size_t QUEUE_CAPACITY = 128; 
-    static constexpr size_t QUEUE_MASK = QUEUE_CAPACITY - 1;
-    int64_t ptsRingBuffer_[QUEUE_CAPACITY]{0};
-    alignas(64) std::atomic<size_t> writeIndex_{0};
-    alignas(64) std::atomic<size_t> readIndex_{0};
+    static constexpr size_t queueCapacity = 128; 
+    static constexpr size_t queueMask = queueCapacity - 1;
+    static constexpr size_t cacheLineSize = 64;
+    int64_t ptsRingBuffer_[queueCapacity]{0};
+    alignas(cacheLineSize) std::atomic<size_t> writeIndex_{0};
+    alignas(cacheLineSize) std::atomic<size_t> readIndex_{0};
     double currentEmaDropRatio_{0.0};
     double targetRetentionRatio_{0.0};
     mutable std::mutex feedbackMutex_;

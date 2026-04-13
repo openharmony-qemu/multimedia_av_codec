@@ -53,18 +53,15 @@ bool NaluAnalyzerSoLoader::LoadLibrary()
         AVCODEC_LOGW("Failed to load %{public}s: %{public}s", LIB_NAME, dlerror());
         return false;
     }
-
     createFunc_ = reinterpret_cast<CreateNaluAnalyzerFunc>(dlsym(handle_, "CreateNaluAnalyzer"));
     destroyFunc_ = reinterpret_cast<DestroyAnalyzerFunc>(dlsym(handle_, "DestroyNaluAnalyzer"));
     setCallbackFunc_ = reinterpret_cast<SetCallbackFunc>(dlsym(handle_, "SetNaluAnalyzerCallback"));
     isNonReferenceFunc_ = reinterpret_cast<IsNonReferenceFunc>(dlsym(handle_, "IsNonReferenceFrame"));
-
     if (!createFunc_ || !destroyFunc_ || !setCallbackFunc_ || !isNonReferenceFunc_) {
         AVCODEC_LOGE("Failed to find required symbols in %{public}s", LIB_NAME);
         UnloadLibrary();
         return false;
     }
-
     AVCODEC_LOGI("Successfully loaded %{public}s", LIB_NAME);
     return true;
 }
@@ -107,10 +104,8 @@ bool NaluAnalyzerSoLoader::IsNonReferenceFrame(const std::shared_ptr<AVBuffer>& 
     if (!soParser_ || !isNonReferenceFunc_ || !inputBuffer || !inputBuffer->memory_) {
         return false;
     }
-
     const uint8_t* bufferAddr = inputBuffer->memory_->GetAddr();
     uint32_t bufferSize = static_cast<uint32_t>(inputBuffer->memory_->GetSize());
-
     return isNonReferenceFunc_(soParser_, bufferAddr, bufferSize);
 }
 

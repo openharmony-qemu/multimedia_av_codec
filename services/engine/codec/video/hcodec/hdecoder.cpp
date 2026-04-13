@@ -98,9 +98,7 @@ int32_t HDecoder::OnConfigure(const Format &format)
     (void)SetProcessName();
     (void)SetFrameRateAdaptiveMode(format);
     (void)SetVrrEnable(format);
-#ifdef SFD_ENABLED
     (void)SetIsMvUpload(format);
-#endif
     return SetupPort(format);
 }
 
@@ -366,9 +364,7 @@ int32_t HDecoder::OnSetParameters(const Format &format)
         }
     }
     (void)SetVrrEnable(format);
-#ifdef SFD_ENABLED
     (void)SetIsMvUpload(format);
-#endif
     (void)SetLppTargetPts(format);
     return AVCS_ERR_OK;
 }
@@ -448,7 +444,6 @@ int32_t HDecoder::SetScaleMode()
     return AVCS_ERR_OK;
 }
 
-#ifdef SFD_ENABLED
 void HDecoder::SetIsMvUpload(const Format &format)
 {
     int32_t isMvUpload = 0;
@@ -466,7 +461,6 @@ void HDecoder::SetIsMvUpload(const Format &format)
     }
     HLOGI("SetIsMvUpload SetParameter success");
 }
-#endif
 
 // LCOV_EXCL_START
 int32_t HDecoder::SetVrrEnable(const Format &format)
@@ -919,11 +913,7 @@ int32_t HDecoder::AllocOutDynamicSurfaceBuf()
         }
         BufferInfo info(false, BufferOwner::OWNED_BY_US, record_);
         info.surfaceBuffer = nullptr;
-#ifdef SFD_ENABLED
-        info.avBuffer = (currSurface_.surface_ ? AVBuffer::CreateAVBuffer() : nullptr);
-#else
         info.avBuffer = nullptr;
-#endif
         info.omxBuffer = outBuffer;
         info.bufferId = outBuffer->bufferId;
         outputBufferPool_.push_back(info);
@@ -970,11 +960,7 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
         outBuffer->fenceFd = -1;
         BufferInfo info(false, BufferOwner::OWNED_BY_US, record_);
         info.surfaceBuffer = surfaceBuffer;
-#ifdef SFD_ENABLED
         info.avBuffer = AVBuffer::CreateAVBuffer(surfaceBuffer);
-#else
-        info.avBuffer = AVBuffer::CreateAVBuffer();
-#endif
         info.omxBuffer = outBuffer;
         info.bufferId = outBuffer->bufferId;
         info.attached = isLpp_ ? true : false;
@@ -1184,7 +1170,6 @@ void HDecoder::DynamicModeSubmitBufferToSlot(std::vector<BufferInfo>::iterator n
 
 void HDecoder::DynamicModeSubmitBufferToSlot(sptr<SurfaceBuffer>& buffer, std::vector<BufferInfo>::iterator nullSlot)
 {
-#ifdef SFD_ENABLED
     HLOGI("generation=%d, bufferId=%u, seq=%u", currGeneration_, nullSlot->bufferId, buffer->GetSeqNum());
     std::shared_ptr<AVBuffer> avBuffer = AVBuffer::CreateAVBuffer(buffer);
     IF_TRUE_RETURN_VOID_WITH_MSG(avBuffer == nullptr || avBuffer->memory_ == nullptr, "CreateAVBuffer failed");
@@ -1192,17 +1177,6 @@ void HDecoder::DynamicModeSubmitBufferToSlot(sptr<SurfaceBuffer>& buffer, std::v
     if (currSurface_.surface_ == nullptr) {
         nullSlot->needDealWithCache = (requestCfg_.usage & BUFFER_USAGE_MEM_MMZ_CACHE);
     }
-#else
-    if (currSurface_.surface_) {
-        HLOGD("generation=%d, bufferId=%u, seq=%u", currGeneration_, nullSlot->bufferId, buffer->GetSeqNum());
-    } else {
-        std::shared_ptr<AVBuffer> avBuffer = AVBuffer::CreateAVBuffer(buffer);
-        IF_TRUE_RETURN_VOID_WITH_MSG(avBuffer == nullptr || avBuffer->memory_ == nullptr, "CreateAVBuffer failed");
-        nullSlot->avBuffer = avBuffer;
-        nullSlot->needDealWithCache = (requestCfg_.usage & BUFFER_USAGE_MEM_MMZ_CACHE);
-        HLOGD("bufferId=%u, seq=%u", nullSlot->bufferId, buffer->GetSeqNum());
-    }
-#endif
     SetCallerToBuffer(buffer->GetFileDescriptor(),
                       static_cast<uint32_t>(buffer->GetWidth()),
                       static_cast<uint32_t>(buffer->GetHeight()));

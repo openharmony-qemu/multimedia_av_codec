@@ -60,7 +60,7 @@ int32_t SmartFluencyDecoding::Initialize(const SFDConfig& config)
         return AVCS_ERR_INVALID_VAL;
     }
     config_ = config;
-    int32_t ret = initializeInternal();
+    int32_t ret = InitializeInternal();
     if (ret != 0) {
         AVCODEC_LOGE("Failed to initialize internal components");
         return AVCS_ERR_UNKNOWN;
@@ -71,10 +71,10 @@ int32_t SmartFluencyDecoding::Initialize(const SFDConfig& config)
     return AVCS_ERR_OK;
 }
 
-int32_t SmartFluencyDecoding::initializeInternal()
+int32_t SmartFluencyDecoding::InitializeInternal()
 {
-    if (config_.initMode == RetentionStrategyType::AUTO_RATIO || 
-        config_.initMode == RetentionStrategyType::FIXED_RATIO || 
+    if (config_.initMode == RetentionStrategyType::AUTO_RATIO ||
+        config_.initMode == RetentionStrategyType::FIXED_RATIO ||
         config_.initMode == RetentionStrategyType::ADAPTIVE) {
         EnsureNaluAnalyzer();
     }
@@ -89,14 +89,14 @@ int32_t SmartFluencyDecoding::initializeInternal()
     dropSyncCoordinator_ = std::make_unique<DropSyncCoordinator>();
     asyncDispatcher_ = std::make_unique<AsyncDropDispatcher>();
 #ifdef BUILD_ENG_VERSION
-    dumper_ = std::make_unique<SmartFluencyDecodingDumper>();
-    dumper_->Init(config_.codecType, config_.width, config_.height, config_.initMode);
-    if (config_.retentionRatio.has_value()) {
+    dumper_ = SmartFluencyDecodingDumper::Create(
+        config_.codecType, config_.width, config_.height, config_.initMode);
+    if (dumper_ && config_.retentionRatio.has_value()) {
         dumper_->UpdateMode(config_.initMode, config_.retentionRatio.value());
     }
 #endif
     AVCODEC_LOGI("Internal init completed: %{public}dx%{public}d, codecType=%{public}d",
-           config_.width, config_.height, static_cast<int>(config_.codecType));
+                 config_.width, config_.height, static_cast<int>(config_.codecType));
     return AVCS_ERR_OK;
 }
 
@@ -153,8 +153,8 @@ int32_t SmartFluencyDecoding::UpdateDynamicConfig(const Media::Format& format)
     if (needUpdateStrategy) {
         auto newStrategy = RetentionStrategyFactory::CreateStrategy(newMode, newRatio);
         if (newStrategy) {
-            if (newMode == RetentionStrategyType::AUTO_RATIO || 
-                newMode == RetentionStrategyType::FIXED_RATIO || 
+            if (newMode == RetentionStrategyType::AUTO_RATIO ||
+                newMode == RetentionStrategyType::FIXED_RATIO ||
                 newMode == RetentionStrategyType::ADAPTIVE) {
                 EnsureNaluAnalyzer();
             }
@@ -231,6 +231,22 @@ bool SmartFluencyDecoding::InitializeWithCsd(const std::shared_ptr<Media::AVBuff
     return false;
 }
 
+void SmartFluencyDecoding::ExecutePreDrop(uint32_t index, std::shared_ptr<AVBuffer> buffer)
+{
+    dropSyncCoordinator_->RecordPreDroppedFrame(buffer->pts_);
+    droppedInputFrames_++;
+    AsyncDropInputCallback localCb = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(configMutex_);
+        localCb = asyncDropInputCb_;
+    }
+    if (localCb) {
+        asyncDispatcher_->SubmitTask([cb = localCb, idx = index, buf = std::move(buffer)]() {
+            cb(idx, buf);
+        });
+    }
+}
+
 bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
 {
     std::shared_ptr<AVBuffer> buffer = nullptr;
@@ -245,34 +261,19 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
     if (!isInitialized_ || !buffer || !dropSyncCoordinator_) {
         return true;
     }
-    bool shouldDrop = false;
+    bool shouldRetain = true;
     bool isNonRef = false;
     if (naluAnalyzer_ && naluAnalyzer_->IsNonReferenceFrame(buffer)) {
         isNonRef = true;
         double currentEma = dropSyncCoordinator_->GetCurrentEma();
         double targetRetentionRatio = dropSyncCoordinator_->GetTargetRetentionRatio();
         double targetDropRatio = 1.0 - targetRetentionRatio;
-        if (currentEma >= targetDropRatio && targetDropRatio > RETENTION_RATIO_MIN_DIFF) {
-            shouldDrop = false; 
-        } else {
-            shouldDrop = true;
-        }
+        shouldRetain = currentEma >= targetDropRatio && targetDropRatio > RETENTION_RATIO_MIN_DIFF;
     }
-    if (shouldDrop) {
-        dropSyncCoordinator_->RecordPreDroppedFrame(buffer->pts_);
-        droppedInputFrames_++;
-        AsyncDropInputCallback localCb = nullptr;
-        {
-            std::lock_guard<std::mutex> lock(configMutex_);
-            localCb = asyncDropInputCb_;
-        }
-        if (localCb) {
-            asyncDispatcher_->SubmitTask([cb = localCb, idx = index, buf = std::move(buffer)]() {
-                cb(idx, buf);
-            });
-        }
-    } else {
+    if (shouldRetain) {
         totalInputFrames_++;
+    } else {
+        ExecutePreDrop(index, buffer);
     }
 #ifdef BUILD_ENG_VERSION
     if (dumper_) {
@@ -281,12 +282,27 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
         dumperCtx.dts = buffer->dts_;
         dumperCtx.isNonRef = isNonRef;
         dumperCtx.flags = buffer->flag_;
-        dumperCtx.dropped = shouldDrop;
+        dumperCtx.dropped = !shouldRetain;
         dumperCtx.sysTimeMs = GetCurrentSysTimeMs();
         dumper_->RecordPreDecode(dumperCtx);
     }
 #endif
-    return !shouldDrop;
+    return shouldRetain;
+}
+
+void SmartFluencyDecoding::ExecutePostDrop(uint32_t index)
+{
+    droppedOutputFrames_++;
+    AsyncDropOutputCallback localCb = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(configMutex_);
+        localCb = asyncDropOutputCb_;
+    }
+    if (localCb) {
+        asyncDispatcher_->SubmitTask([cb = localCb, idx = index]() {
+            cb(idx);
+        });
+    }
 }
 
 bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, const sptr<SurfaceBuffer> surfaceBuffer)
@@ -300,10 +316,10 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
     parseMVData(surfaceBuffer, currentMvStats);
     FrameRetentionContext ctx;
     ctx.ptsMs = currentPts;
-    ctx.sysTimeMs = GetCurrentSysTimeMs(); 
+    ctx.sysTimeMs = GetCurrentSysTimeMs();
     ctx.preDroppedCount = preDroppedCount;
     ctx.mvStats = &currentMvStats;
-    bool shouldRetain = false;
+    bool shouldRetain = true;
     double currentRetentionRatio = 1.0;
     {
         std::lock_guard<std::mutex> lock(configMutex_);
@@ -317,17 +333,7 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
     }
     totalOutputFrames_++;
     if (!shouldRetain) {
-        droppedOutputFrames_++;
-        AsyncDropOutputCallback localCb = nullptr;
-        {
-            std::lock_guard<std::mutex> lock(configMutex_);
-            localCb = asyncDropOutputCb_;
-        }
-        if (localCb) {
-            asyncDispatcher_->SubmitTask([cb = localCb, idx = index]() {
-                cb(idx);
-            });
-        }
+        ExecutePostDrop(index);
     }
 #ifdef BUILD_ENG_VERSION
     if (dumper_) {
@@ -348,8 +354,7 @@ int64_t SmartFluencyDecoding::GetCurrentSysTimeMs()
     return std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
 }
 
-void SmartFluencyDecoding::parseMVData(const sptr<SurfaceBuffer> surfaceBuffer,
-                                         MVStats& mvStats)
+void SmartFluencyDecoding::parseMVData(const sptr<SurfaceBuffer> surfaceBuffer, MVStats& mvStats)
 {
     mvStats = MVStats();
     if (!mvAnalyzer_) {
@@ -363,7 +368,15 @@ void SmartFluencyDecoding::parseMVData(const sptr<SurfaceBuffer> surfaceBuffer,
     std::vector<uint8_t> vec;
     V2_0::BlobDataType data;
     int32_t ret = surfaceBuffer->GetMetadata(V2_0::ATTRKEY_VIDEO_DECODER_MV, vec);
+    if (ret != GSERROR_OK) {
+        AVCODEC_LOGD("getMetadata failed");
+        return;
+    }
     ret = memcpy_s(&data, sizeof(V2_0::BlobDataType), vec.data(), vec.size());
+    if (ret != EOK) {
+        AVCODEC_LOGD("memcpy_s failed");
+        return;
+    }
     uint8_t* input = (uint8_t*)(data.vaddr + data.offset);
     size_t size = mvAnalyzer_->GetMvDataSize();
     if (size > 0) {
@@ -371,8 +384,7 @@ void SmartFluencyDecoding::parseMVData(const sptr<SurfaceBuffer> surfaceBuffer,
     }
 }
 
-void SmartFluencyDecoding::GetStatistics(uint32_t& totalFrames,
-                                           uint32_t& droppedFrames) const
+void SmartFluencyDecoding::GetStatistics(uint32_t& totalFrames, uint32_t& droppedFrames) const
 {
     totalFrames = totalOutputFrames_.load();
     droppedFrames = droppedOutputFrames_.load();

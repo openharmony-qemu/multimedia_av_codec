@@ -59,13 +59,15 @@ public:
     void GetStatistics(uint32_t& totalFrames, uint32_t& droppedFrames) const;
 
 private:
-    int32_t initializeInternal();
+    int32_t InitializeInternal();
     int64_t GetCurrentSysTimeMs();
     void parseMVData(const sptr<SurfaceBuffer> surfaceBuffer, MVStats& mvStats);
     void ParseDynamicFormat(
         const Media::Format& format, RetentionStrategyType& outMode, std::optional<double>& outRatio) const;
     void EnsureNaluAnalyzer();
     void EnsureMvAnalyzer();
+    void ExecutePreDrop(uint32_t index, std::shared_ptr<AVBuffer> buffer);
+    void ExecutePostDrop(uint32_t index);
 
     mutable std::mutex configMutex_;
     std::unique_ptr<DropSyncCoordinator> dropSyncCoordinator_{nullptr};

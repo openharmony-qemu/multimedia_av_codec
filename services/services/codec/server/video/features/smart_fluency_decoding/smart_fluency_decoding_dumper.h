@@ -46,10 +46,10 @@ struct FrameDumpRecord {
 
 class SmartFluencyDecodingDumper {
 public:
-    SmartFluencyDecodingDumper();
+    static std::unique_ptr<SmartFluencyDecodingDumper> Create(
+        SFDCodecType codecType, int32_t width, int32_t height, RetentionStrategyType mode);
     ~SmartFluencyDecodingDumper();
 
-    void Init(SFDCodecType codecType, int32_t width, int32_t height, RetentionStrategyType mode);
     void UpdateMode(RetentionStrategyType mode, double retentionRate);
     void UpdateSpeed(double speed);
     void UpdateCtuSize(int32_t ctuSize);
@@ -75,6 +75,11 @@ public:
     void DumpToFile();
 
 private:
+    SmartFluencyDecodingDumper(SFDCodecType codecType, int32_t width, int32_t height, RetentionStrategyType mode);
+    static bool IsDirectoryExist(const std::string& path);
+    std::string GetTimestampString();
+    void DumpToFileInternal();
+
     std::mutex mutex_;
     std::vector<FrameDumpRecord> records_;
     SFDCodecType codecType_{SFDCodecType::INVALID};
@@ -84,12 +89,6 @@ private:
     double currentRetentionRate_{1.0};
     double currentSpeed_{1.0};
     int32_t currentCtuSize_{0};
-
-    bool isInitialized_{false};
-
-    void EnsureDirectory(const std::string& path);
-    std::string GetTimestampString();
-    void DumpToFileInternal();
 };
 } // namespace SFD
 } // namespace MediaAVCodec

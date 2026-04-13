@@ -1787,6 +1787,10 @@ void CodecServer::HandleOutputBufferAvailability(uint32_t index, std::shared_ptr
             return;
         }
     }
+#else
+    if (buffer->memory_ != nullptr) {
+        buffer->memory_ = nullptr;
+    }
 #endif
     if (isLocalReleaseMode_) {
         std::unique_lock<std::mutex> lockBuffer(releaseBufferMutex_);

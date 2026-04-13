@@ -23,10 +23,10 @@ bool DropSyncCoordinator::RecordPreDroppedFrame(int64_t droppedPts)
 {
     size_t currentWrite = writeIndex_.load(std::memory_order_relaxed);
     size_t nextWrite = currentWrite + 1;
-    if ((nextWrite - readIndex_.load(std::memory_order_acquire)) > QUEUE_CAPACITY) {
-        return false; 
+    if ((nextWrite - readIndex_.load(std::memory_order_acquire)) > queueCapacity) {
+        return false;
     }
-    ptsRingBuffer_[currentWrite & QUEUE_MASK] = droppedPts;
+    ptsRingBuffer_[currentWrite & queueMask] = droppedPts;
     writeIndex_.store(nextWrite, std::memory_order_release);
     return true;
 }
@@ -37,12 +37,12 @@ int32_t DropSyncCoordinator::GetAndConsumePreDroppedCount(int64_t currentPts)
     size_t currentRead = readIndex_.load(std::memory_order_relaxed);
     size_t currentWrite = writeIndex_.load(std::memory_order_acquire);
     while (currentRead < currentWrite) {
-        int64_t peekPts = ptsRingBuffer_[currentRead & QUEUE_MASK];
+        int64_t peekPts = ptsRingBuffer_[currentRead & queueMask];
         if (peekPts < currentPts) {
             count++;
             currentRead++;
         } else {
-            break; 
+            break;
         }
     }
     if (count > 0) {

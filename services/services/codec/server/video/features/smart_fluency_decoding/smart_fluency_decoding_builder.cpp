@@ -138,7 +138,8 @@ SmartFluencyDecodingBuilder& SmartFluencyDecodingBuilder::SetFromFormat(const Fo
                 break;
         }
     }
-    if (hasRatio && (params_.initMode == RetentionStrategyType::ADAPTIVE || params_.initMode == RetentionStrategyType::FULL)) {
+    if (hasRatio &&
+        (params_.initMode == RetentionStrategyType::ADAPTIVE || params_.initMode == RetentionStrategyType::FULL)) {
         AVCODEC_LOGW("Adaptive or Full mode with retentionRate will be ignored");
     }
     double speed = DEFAULT_PLAYBACK_SPEED;

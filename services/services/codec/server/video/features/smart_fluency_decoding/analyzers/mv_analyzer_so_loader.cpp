@@ -19,7 +19,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "MvAnalyzerSoLoader"};
-constexpr const char* LIB_NAME = "libvideo_mv_analyzer.z.so"; 
+constexpr const char* LIB_NAME = "libvideo_mv_analyzer.z.so";
 }
 
 namespace OHOS {
@@ -147,8 +147,8 @@ std::unique_ptr<IMvAnalyzer> MvAnalyzerFactory::CreateMvAnalyzer(SFDCodecType co
 
 bool MvAnalyzerFactory::IsCodecSupported(SFDCodecType codecType)
 {
-    return codecType == SFDCodecType::AVC || 
-           codecType == SFDCodecType::HEVC || 
+    return codecType == SFDCodecType::AVC ||
+           codecType == SFDCodecType::HEVC ||
            codecType == SFDCodecType::VVC;
 }
 } // namespace SFD

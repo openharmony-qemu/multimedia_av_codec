@@ -170,10 +170,10 @@ ohos_shared_library("av_codec_service") {
     deps += [
       "./codec/server/video/features/smart_fluency_decoding:smart_fluency_decoding"
     ]
-    public_configs = [
-      "./codec/server/video/features/smart_fluency_decoding:smart_fluency_decoding_public_config"
-    ]
   }
+  public_configs = [
+    "./codec/server/video/features/smart_fluency_decoding:smart_fluency_decoding_public_config"
+  ]
 
   external_deps = [
     "c_utils:utils",

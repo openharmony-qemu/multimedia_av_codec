@@ -26,13 +26,17 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "SmartFluencyDecodingDumper"};
 constexpr const char* DUMP_DIR = "/data/misc/sfddump/";
+constexpr size_t MAX_DUMP_RECORDS = 10000;
 }
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
-SmartFluencyDecodingDumper::SmartFluencyDecodingDumper()
+SmartFluencyDecodingDumper::SmartFluencyDecodingDumper(
+    SFDCodecType codecType, int32_t width, int32_t height, RetentionStrategyType mode)
+    : codecType_(codecType), width_(width), height_(height), currentMode_(mode)
 {
+    records_.reserve(MAX_DUMP_RECORDS);
 }
 
 SmartFluencyDecodingDumper::~SmartFluencyDecodingDumper()
@@ -40,17 +44,24 @@ SmartFluencyDecodingDumper::~SmartFluencyDecodingDumper()
     DumpToFile();
 }
 
-void SmartFluencyDecodingDumper::Init(SFDCodecType codecType, int32_t width, int32_t height, RetentionStrategyType mode)
+bool SmartFluencyDecodingDumper::IsDirectoryExist(const std::string& path)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    codecType_ = codecType;
-    width_ = width;
-    height_ = height;
-    currentMode_ = mode;
-    isInitialized_ = true;
-    records_.clear();
-    records_.reserve(10000);
-    EnsureDirectory(DUMP_DIR);
+    struct stat st = {0};
+    if (stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode)) {
+        return true;
+    }
+    return false;
+}
+
+std::unique_ptr<SmartFluencyDecodingDumper> SmartFluencyDecodingDumper::Create(
+    SFDCodecType codecType, int32_t width, int32_t height, RetentionStrategyType mode)
+{
+    if (!IsDirectoryExist(DUMP_DIR)) {
+        AVCODEC_LOGD("Dump directory %{public}s does not exist. SFD Dumper is disabled.", DUMP_DIR);
+        return nullptr;
+    }
+    return std::unique_ptr<SmartFluencyDecodingDumper>(
+            new SmartFluencyDecodingDumper(codecType, width, height, mode));
 }
 
 void SmartFluencyDecodingDumper::UpdateMode(RetentionStrategyType mode, double retentionRate)
@@ -75,14 +86,9 @@ void SmartFluencyDecodingDumper::UpdateCtuSize(int32_t ctuSize)
 void SmartFluencyDecodingDumper::RecordPreDecode(const PreDecodeRecordCtx& ctx)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (!isInitialized_) {
-        return;
-    }
-
     auto it = std::find_if(records_.rbegin(), records_.rend(), [ctx](const FrameDumpRecord& rec) {
         return rec.pts == ctx.pts;
     });
-
     if (it != records_.rend()) {
         it->dts = ctx.dts;
         it->isNonRef = ctx.isNonRef;
@@ -105,8 +111,7 @@ void SmartFluencyDecodingDumper::RecordPreDecode(const PreDecodeRecordCtx& ctx)
         rec.speed = currentSpeed_;
         records_.push_back(rec);
     }
-
-    if (records_.size() >= 10000) {
+    if (records_.size() >= MAX_DUMP_RECORDS) {
         DumpToFileInternal();
     }
 }
@@ -114,14 +119,9 @@ void SmartFluencyDecodingDumper::RecordPreDecode(const PreDecodeRecordCtx& ctx)
 void SmartFluencyDecodingDumper::RecordPostDecode(const PostDecodeRecordCtx& ctx)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (!isInitialized_) {
-        return;
-    }
-
     auto it = std::find_if(records_.rbegin(), records_.rend(), [ctx](const FrameDumpRecord& rec) {
         return rec.pts == ctx.pts;
     });
-
     if (it != records_.rend()) {
         it->isPostDropped = ctx.dropped;
         it->preDropCount = ctx.preDropCount;
@@ -137,28 +137,17 @@ void SmartFluencyDecodingDumper::RecordPostDecode(const PostDecodeRecordCtx& ctx
         rec.speed = currentSpeed_;
         records_.push_back(rec);
     }
-
-    if (records_.size() >= 10000) {
+    if (records_.size() >= MAX_DUMP_RECORDS) {
         DumpToFileInternal();
-    }
-}
-
-void SmartFluencyDecodingDumper::EnsureDirectory(const std::string& path)
-{
-    struct stat st = {0};
-    if (stat(path.c_str(), &st) == -1) {
-        if (mkdir(path.c_str(), 0755) != 0) {
-            AVCODEC_LOGW("Failed to create directory: %{public}s", path.c_str());
-        }
     }
 }
 
 std::string SmartFluencyDecodingDumper::GetTimestampString()
 {
     auto now = std::chrono::system_clock::now();
-    auto in_time_t = std::chrono::system_clock::to_time_t(now);
+    auto time = std::chrono::system_clock::to_time_t(now);
     std::stringstream ss;
-    ss << std::put_time(std::localtime(&in_time_t), "%Y%m%d_%H%M%S");
+    ss << std::put_time(std::localtime(&time), "%Y%m%d_%H%M%S");
     return ss.str();
 }
 
@@ -170,7 +159,7 @@ void SmartFluencyDecodingDumper::DumpToFile()
 
 void SmartFluencyDecodingDumper::DumpToFileInternal()
 {
-    if (!isInitialized_ || records_.empty()) {
+    if (records_.empty()) {
         return;
     }
     std::string timestamp = GetTimestampString();
@@ -186,7 +175,8 @@ void SmartFluencyDecodingDumper::DumpToFileInternal()
     ofs << "# Final Mode: " << static_cast<int>(currentMode_) << "\n";
     ofs << "# CtuSize: " << currentCtuSize_ << "\n";
     ofs << "# ----------------------------------------------------\n";
-    ofs << "PTS,DTS,Flags,IsNonRef,Mode,PreDropped,PostDropped,PreSysTimeMs,PostSysTimeMs,PreDropCount,RetentionRate,Speed\n";
+    ofs << "PTS,DTS,Flags,IsNonRef,Mode,PreDropped,PostDropped,"
+           "PreSysTimeMs,PostSysTimeMs,PreDropCount,RetentionRate,Speed\n";
     for (const auto& rec : records_) {
         ofs << rec.pts << ","
             << rec.dts << ","

@@ -132,9 +132,8 @@ private:
 
     // VRR
     int32_t SetVrrEnable(const Format &format);
-#ifdef SFD_ENABLED
     void SetIsMvUpload(const Format &format);
-#endif
+
     // swap dma buffer
     bool CanSwapOut(OMX_DIRTYPE portIndex, BufferInfo& info);
     int32_t SwapInBufferByPortIndex(OMX_DIRTYPE portIndex);
