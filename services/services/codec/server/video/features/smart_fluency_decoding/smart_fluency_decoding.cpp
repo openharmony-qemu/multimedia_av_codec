@@ -307,7 +307,7 @@ void SmartFluencyDecoding::ExecutePostDrop(uint32_t index)
 
 bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, const sptr<SurfaceBuffer> surfaceBuffer)
 {
-    if (!isInitialized_ || !strategy_ || !dropSyncCoordinator_) {
+    if (!isInitialized_ || !strategy_ || !dropSyncCoordinator_ || !surfaceBuffer) {
         return true;
     }
     int64_t currentPts = pts;
@@ -363,6 +363,7 @@ void SmartFluencyDecoding::ParseMVData(const sptr<SurfaceBuffer> surfaceBuffer, 
     }
     if (!surfaceBuffer) {
         AVCODEC_LOGE("parse MV Data failed! surfaceBuffer don't exist");
+        return;
     }
     using namespace HDI::Display::Graphic::Common;
     std::vector<uint8_t> vec;
