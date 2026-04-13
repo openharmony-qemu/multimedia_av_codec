@@ -425,116 +425,116 @@ HWTEST(TestSubtitleSink, createSink, TestSize.Level1)
     std::shared_ptr<EventReceiver> testEventReceiver = std::make_shared<TestEventReceiver>();
     EXPECT_EQ(sink->Init(meta, testEventReceiver), Status::OK);
 }
-HWTEST(TestSubtitleSink, RemoveHtmlTags_001, TestSize.Level1)
+HWTEST(TestSubtitleSink, removeTextTags_001, TestSize.Level1)
 {
     auto sink = SubtitleSinkCreate();
     std::string test1 = "<b>bold</b> text";
-    EXPECT_EQ(sink->removeHtmlTags(test1), "bold text");
+    EXPECT_EQ(sink->removeTextTags(test1), "bold text");
 }
 
-HWTEST(TestSubtitleSink, RemoveHtmlTags_002, TestSize.Level1)
+HWTEST(TestSubtitleSink, removeTextTags_002, TestSize.Level1)
 {
     auto sink = SubtitleSinkCreate();
     std::string test2 = "<i>italic</i> text";
-    EXPECT_EQ(sink->removeHtmlTags(test2), "italic text");
+    EXPECT_EQ(sink->removeTextTags(test2), "italic text");
 }
 
-HWTEST(TestSubtitleSink, RemoveHtmlTags_003, TestSize.Level1)
+HWTEST(TestSubtitleSink, removeTextTags_003, TestSize.Level1)
 {
     auto sink = SubtitleSinkCreate();
     std::string test3 = "<gggg>text</gggg>";
-    EXPECT_EQ(sink->removeHtmlTags(test3), "text");
+    EXPECT_EQ(sink->removeTextTags(test3), "text");
 }
 
-HWTEST(TestSubtitleSink, RemoveHtmlTags_004, TestSize.Level1)
+HWTEST(TestSubtitleSink, removeTextTags_004, TestSize.Level1)
 {
     auto sink = SubtitleSinkCreate();
     std::string test4 = "</i> closing without opening";
-    EXPECT_EQ(sink->removeHtmlTags(test4), "</i> closing without opening");
+    EXPECT_EQ(sink->removeTextTags(test4), "</i> closing without opening");
 }
 
-HWTEST(TestSubtitleSink, RemoveHtmlTags_005, TestSize.Level1)
+HWTEST(TestSubtitleSink, removeTextTags_005, TestSize.Level1)
 {
     auto sink = SubtitleSinkCreate();
     std::string test5 = "<b>unclosed bold";
-    EXPECT_EQ(sink->removeHtmlTags(test5), "unclosed bold");
+    EXPECT_EQ(sink->removeTextTags(test5), "unclosed bold");
 }
 
-HWTEST(TestSubtitleSink, RemoveHtmlTags_006, TestSize.Level1)
+HWTEST(TestSubtitleSink, removeTextTags_006, TestSize.Level1)
 {
     auto sink = SubtitleSinkCreate();
     std::string test6 = "<gggg>unclosed unsupported";
-    EXPECT_EQ(sink->removeHtmlTags(test6), "<gggg>unclosed unsupported");
+    EXPECT_EQ(sink->removeTextTags(test6), "<gggg>unclosed unsupported");
 }
 
-HWTEST(TestSubtitleSink, RemoveHtmlTags_007, TestSize.Level1)
+HWTEST(TestSubtitleSink, removeTextTags_007, TestSize.Level1)
 {
     auto sink = SubtitleSinkCreate();
     std::string test7 = "<b><i>bold italic</i></b>";
-    EXPECT_EQ(sink->removeHtmlTags(test7), "bold italic");
+    EXPECT_EQ(sink->removeTextTags(test7), "bold italic");
 }
 
-HWTEST(TestSubtitleSink, RemoveHtmlTags_008, TestSize.Level1)
+HWTEST(TestSubtitleSink, removeTextTags_008, TestSize.Level1)
 {
     auto sink = SubtitleSinkCreate();
     std::string test8 = "text <i>italic</i> more text";
-    EXPECT_EQ(sink->removeHtmlTags(test8), "text italic more text");
+    EXPECT_EQ(sink->removeTextTags(test8), "text italic more text");
 }
 
-HWTEST(TestSubtitleSink, RemoveHtmlTags_009, TestSize.Level1)
+HWTEST(TestSubtitleSink, removeTextTags_009, TestSize.Level1)
 {
     auto sink = SubtitleSinkCreate();
     std::string test9 = "<font color='red'>colored</font> text";
-    EXPECT_EQ(sink->removeHtmlTags(test9), "colored text");
+    EXPECT_EQ(sink->removeTextTags(test9), "colored text");
 }
 
-HWTEST(TestSubtitleSink, RemoveHtmlTags_010, TestSize.Level1)
+HWTEST(TestSubtitleSink, removeTextTags_010, TestSize.Level1)
 {
     auto sink = SubtitleSinkCreate();
     std::string test10 = "<font>al7<font color=\"#ff0000\">English:When</font></font>";
-    EXPECT_EQ(sink->removeHtmlTags(test10), "al7English:When");
+    EXPECT_EQ(sink->removeTextTags(test10), "al7English:When");
 }
 
-HWTEST(TestSubtitleSink, RemoveHtmlTags_011, TestSize.Level1)
+HWTEST(TestSubtitleSink, removeTextTags_011, TestSize.Level1)
 {
     auto sink = SubtitleSinkCreate();
     std::string test11 = "<font color='red'><i>colored</font></i> text";
-    EXPECT_EQ(sink->removeHtmlTags(test11), "colored text");
+    EXPECT_EQ(sink->removeTextTags(test11), "colored text");
 }
 
-HWTEST(TestSubtitleSink, RemoveHtmlTags_012, TestSize.Level1)
+HWTEST(TestSubtitleSink, removeTextTags_012, TestSize.Level1)
 {
     auto sink = SubtitleSinkCreate();
     std::string test12 = "<font color='red'><ggg>colored</font></ggg> text";
-    EXPECT_EQ(sink->removeHtmlTags(test12), "colored text");
+    EXPECT_EQ(sink->removeTextTags(test12), "colored text");
 }
 
-HWTEST(TestSubtitleSink, RemoveHtmlTags_013, TestSize.Level1)
+HWTEST(TestSubtitleSink, removeTextTags_013, TestSize.Level1)
 {
     auto sink = SubtitleSinkCreate();
     std::string test13 = "<font color='red'><ggg>colored</font> text";
-    EXPECT_EQ(sink->removeHtmlTags(test13), "<ggg>colored text");
+    EXPECT_EQ(sink->removeTextTags(test13), "<ggg>colored text");
 }
 
-HWTEST(TestSubtitleSink, RemoveHtmlTags_014, TestSize.Level1)
+HWTEST(TestSubtitleSink, removeTextTags_014, TestSize.Level1)
 {
     auto sink = SubtitleSinkCreate();
     std::string test14 = "<b><i></i>";
-    EXPECT_EQ(sink->removeHtmlTags(test14), "");
+    EXPECT_EQ(sink->removeTextTags(test14), "");
 }
 
-HWTEST(TestSubtitleSink, RemoveHtmlTags_015, TestSize.Level1)
+HWTEST(TestSubtitleSink, removeTextTags_015, TestSize.Level1)
 {
     auto sink = SubtitleSinkCreate();
     std::string test15 = "a<>a";
-    EXPECT_EQ(sink->removeHtmlTags(test15), "a<>a");
+    EXPECT_EQ(sink->removeTextTags(test15), "a<>a");
 }
 
-HWTEST(TestSubtitleSink, RemoveHtmlTags_015, TestSize.Level1)
+HWTEST(TestSubtitleSink, removeTextTags_015, TestSize.Level1)
 {
     auto sink = SubtitleSinkCreate();
     std::string test15 = "";
-    EXPECT_EQ(sink->removeHtmlTags(test15), "");
+    EXPECT_EQ(sink->removeTextTags(test15), "");
 }
 }  // namespace Test
 }  // namespace Media
