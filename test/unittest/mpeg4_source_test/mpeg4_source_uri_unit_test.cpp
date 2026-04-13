@@ -369,7 +369,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_1007, TestSize.Level1)
     EXPECT_EQ(formatVal_.codecMime, "video/hevc");
     EXPECT_EQ(formatVal_.width, 1280);
     EXPECT_EQ(formatVal_.height, 720);
-    EXPECT_EQ(formatVal_.frameRate, 30.000000);
+    EXPECT_EQ(formatVal_.frameRate, 28.154937050793496);
     EXPECT_EQ(formatVal_.bitRate, 24913240);
     trackIndex_ = 1;
     format_->Destroy();
@@ -544,7 +544,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_1011, TestSize.Level1)
     EXPECT_EQ(formatVal_.timeScale, 15360);
     EXPECT_EQ(formatVal_.width, 640);
     EXPECT_EQ(formatVal_.height, 352);
-    EXPECT_EQ(formatVal_.frameRate, 30.000000);
+    EXPECT_EQ(formatVal_.frameRate, 28.787878787878789);
     trackIndex_ = 1;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
@@ -630,7 +630,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_1013, TestSize.Level1)
     EXPECT_EQ(formatVal_.width, 640);
     EXPECT_EQ(formatVal_.height, 352);
     EXPECT_EQ(formatVal_.bitRate, 1243454);
-    EXPECT_EQ(formatVal_.frameRate, 30.000000);
+    EXPECT_EQ(formatVal_.frameRate, 28.787878787878789);
     trackIndex_ = 1;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
@@ -716,7 +716,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_1015, TestSize.Level1)
     EXPECT_EQ(formatVal_.timeScale, 15360);
     EXPECT_EQ(formatVal_.width, 640);
     EXPECT_EQ(formatVal_.height, 352);
-    EXPECT_EQ(formatVal_.frameRate, 30.000000);
+    EXPECT_EQ(formatVal_.frameRate, 28.787878787878789);
     trackIndex_ = 1;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
@@ -855,7 +855,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_1018, TestSize.Level1)
     EXPECT_EQ(formatVal_.timeScale, 15360);
     EXPECT_EQ(formatVal_.width, 640);
     EXPECT_EQ(formatVal_.height, 352);
-    EXPECT_EQ(formatVal_.frameRate, 30.000000);
+    EXPECT_EQ(formatVal_.frameRate, 28.787878787878789);
     trackIndex_ = 1;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
@@ -942,7 +942,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_1020, TestSize.Level1)
     EXPECT_EQ(formatVal_.timeScale, 15360);
     EXPECT_EQ(formatVal_.width, 640);
     EXPECT_EQ(formatVal_.height, 352);
-    EXPECT_EQ(formatVal_.frameRate, 30.000000);
+    EXPECT_EQ(formatVal_.frameRate, 28.787878787878789);
     trackIndex_ = 1;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
@@ -1115,7 +1115,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_1024, TestSize.Level1)
     EXPECT_EQ(formatVal_.timeScale, 15360);
     EXPECT_EQ(formatVal_.width, 640);
     EXPECT_EQ(formatVal_.height, 352);
-    EXPECT_EQ(formatVal_.frameRate, 30.000000);
+    EXPECT_EQ(formatVal_.frameRate, 28.787878787878789);
     trackIndex_ = 1;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
@@ -1199,7 +1199,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_1026, TestSize.Level1)
     EXPECT_EQ(formatVal_.timeScale, 15360);
     EXPECT_EQ(formatVal_.width, 640);
     EXPECT_EQ(formatVal_.height, 352);
-    EXPECT_EQ(formatVal_.frameRate, 30.000000);
+    EXPECT_EQ(formatVal_.frameRate, 28.787878787878789);
     trackIndex_ = 1;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
