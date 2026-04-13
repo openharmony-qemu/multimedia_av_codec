@@ -536,6 +536,20 @@ HWTEST(TestSubtitleSink, removeTextTags_016, TestSize.Level1)
     std::string test16 = "";
     EXPECT_EQ(sink->removeTextTags(test16), "");
 }
+
+HWTEST(TestSubtitleSink, removeTextTags_017, TestSize.Level1)
+{
+    auto sink = SubtitleSinkCreate();
+    std::string test17 = "<b>";
+    EXPECT_EQ(sink->removeTextTags(test16), "");
+}
+
+HWTEST(TestSubtitleSink, removeTextTags_018, TestSize.Level1)
+{
+    auto sink = SubtitleSinkCreate();
+    std::string test17 = "<a>";
+    EXPECT_EQ(sink->removeTextTags(test16), "<a>");
+}
 }  // namespace Test
 }  // namespace Media
 }  // namespace OHOS
