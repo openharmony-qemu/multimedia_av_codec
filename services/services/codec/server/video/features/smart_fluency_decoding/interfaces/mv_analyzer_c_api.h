@@ -33,11 +33,7 @@ void SetStreamAuxInfo(MvAnalyzerHandle parser, const StreamAuxInfo* info);
 
 void SetVideoInfo(MvAnalyzerHandle parser, uint32_t width, uint32_t height);
 
-MVStats ParseMvData(MvAnalyzerHandle parser, const uint8_t* buffer, size_t bufferSize);
-
-void ResetMvAnalyzer(MvAnalyzerHandle parser);
-
-size_t GetTargetMvDataSize(MvAnalyzerHandle parser);
+MVStats ParseMvData(MvAnalyzerHandle parser, const uint8_t* buffer);
 
 #ifdef __cplusplus
 }

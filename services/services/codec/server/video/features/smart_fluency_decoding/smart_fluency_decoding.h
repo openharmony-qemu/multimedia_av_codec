@@ -61,7 +61,7 @@ public:
 private:
     int32_t InitializeInternal();
     int64_t GetCurrentSysTimeMs();
-    void parseMVData(const sptr<SurfaceBuffer> surfaceBuffer, MVStats& mvStats);
+    void ParseMVData(const sptr<SurfaceBuffer> surfaceBuffer, MVStats& mvStats);
     void ParseDynamicFormat(
         const Media::Format& format, RetentionStrategyType& outMode, std::optional<double>& outRatio) const;
     void EnsureNaluAnalyzer();

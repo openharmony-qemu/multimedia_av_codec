@@ -23,7 +23,6 @@
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
-
 class NaluAnalyzerSoLoader : public INaluAnalyzer {
 public:
     explicit NaluAnalyzerSoLoader(SFDCodecType codecType);
@@ -33,6 +32,7 @@ public:
     bool IsNonReferenceFrame(const std::shared_ptr<AVBuffer>& inputBuffer) override;
 
 private:
+    static void StaticAuxInfoCallback(const StreamAuxInfo* info, void* userData);
     bool LoadLibrary();
     void UnloadLibrary();
 
@@ -46,17 +46,13 @@ private:
     using SetCallbackFunc = void (*)(NaluAnalyzerHandle analyzer, NaluStreamAuxInfoCallback cb, void* userData);
     using IsNonReferenceFunc = bool (*)(NaluAnalyzerHandle analyzer, const uint8_t* bufferAddr, uint32_t bufferSize);
 
-    NaluAnalyzerHandle soParser_{nullptr};
+    NaluAnalyzerHandle soAnalyzer_{nullptr};
     CreateNaluAnalyzerFunc createFunc_{nullptr};
     DestroyAnalyzerFunc destroyFunc_{nullptr};
     SetCallbackFunc setCallbackFunc_{nullptr};
     IsNonReferenceFunc isNonReferenceFunc_{nullptr};
-
-    static void StaticAuxInfoCallback(const StreamAuxInfo* info, void* userData);
 };
-
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS
-
 #endif // NALU_ANALYZER_SO_LOADER_H

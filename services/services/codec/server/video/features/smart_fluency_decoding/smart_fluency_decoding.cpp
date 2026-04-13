@@ -84,7 +84,7 @@ int32_t SmartFluencyDecoding::InitializeInternal()
     strategy_ = RetentionStrategyFactory::CreateStrategy(config_.initMode, config_.retentionRatio);
     if (!strategy_) {
         AVCODEC_LOGE("Failed to create strategy");
-        return -1;
+        return AVCS_ERR_UNKNOWN;
     }
     dropSyncCoordinator_ = std::make_unique<DropSyncCoordinator>();
     asyncDispatcher_ = std::make_unique<AsyncDropDispatcher>();
@@ -163,6 +163,8 @@ int32_t SmartFluencyDecoding::UpdateDynamicConfig(const Media::Format& format)
             }
             std::lock_guard<std::mutex> lock(configMutex_);
             strategy_ = std::move(newStrategy);
+            AVCODEC_LOGI("Dynamic SFD mode updated from %{public}d to %{public}d",
+                         static_cast<int32_t>(config_.initMode), static_cast<int32_t>(newMode));
             config_.initMode = newMode;
             config_.retentionRatio = newRatio;
 #ifdef BUILD_ENG_VERSION
@@ -170,8 +172,6 @@ int32_t SmartFluencyDecoding::UpdateDynamicConfig(const Media::Format& format)
                 dumper_->UpdateMode(newMode, newRatio.has_value() ? newRatio.value() : DEFAULT_PLAYBACK_SPEED);
             }
 #endif
-            AVCODEC_LOGI("Dynamic SFD mode updated from %{public}d to %{public}d",
-                         static_cast<int32_t>(config_.initMode), static_cast<int32_t>(newMode));
         } else {
             AVCODEC_LOGW("Failed to dynamically update SFD mode to %{public}d", static_cast<int32_t>(newMode));
         }
@@ -313,7 +313,7 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
     int64_t currentPts = pts;
     int32_t preDroppedCount = dropSyncCoordinator_->GetAndConsumePreDroppedCount(currentPts);
     MVStats currentMvStats;
-    parseMVData(surfaceBuffer, currentMvStats);
+    ParseMVData(surfaceBuffer, currentMvStats);
     FrameRetentionContext ctx;
     ctx.ptsMs = currentPts;
     ctx.sysTimeMs = GetCurrentSysTimeMs();
@@ -354,7 +354,7 @@ int64_t SmartFluencyDecoding::GetCurrentSysTimeMs()
     return std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
 }
 
-void SmartFluencyDecoding::parseMVData(const sptr<SurfaceBuffer> surfaceBuffer, MVStats& mvStats)
+void SmartFluencyDecoding::ParseMVData(const sptr<SurfaceBuffer> surfaceBuffer, MVStats& mvStats)
 {
     mvStats = MVStats();
     if (!mvAnalyzer_) {
@@ -368,7 +368,7 @@ void SmartFluencyDecoding::parseMVData(const sptr<SurfaceBuffer> surfaceBuffer, 
     std::vector<uint8_t> vec;
     V2_0::BlobDataType data;
     int32_t ret = surfaceBuffer->GetMetadata(V2_0::ATTRKEY_VIDEO_DECODER_MV, vec);
-    if (ret != GSERROR_OK) {
+    if (ret != GSERROR_OK || vec.size() != sizeof(V2_0::BlobDataType)) {
         AVCODEC_LOGD("getMetadata failed");
         return;
     }
@@ -378,10 +378,7 @@ void SmartFluencyDecoding::parseMVData(const sptr<SurfaceBuffer> surfaceBuffer, 
         return;
     }
     uint8_t* input = reinterpret_cast<uint8_t*>(static_cast<uintptr_t>(data.vaddr + data.offset));
-    size_t size = mvAnalyzer_->GetMvDataSize();
-    if (size > 0) {
-        mvStats = mvAnalyzer_->parse(input, size);
-    }
+    mvStats = mvAnalyzer_->Analyze(input);
 }
 
 void SmartFluencyDecoding::GetStatistics(uint32_t& totalFrames, uint32_t& droppedFrames) const

@@ -23,7 +23,6 @@
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
-
 class MvAnalyzerSoLoader : public IMvAnalyzer {
 public:
     explicit MvAnalyzerSoLoader(SFDCodecType codecType);
@@ -31,11 +30,8 @@ public:
 
     void SetStreamAuxInfo(const StreamAuxInfo& info) override;
     void SetVideoInfo(uint32_t width, uint32_t height) override;
-    MVStats parse(const uint8_t *buffer, size_t bufferSize) override;
+    MVStats Analyze(const uint8_t *buffer) override;
     SFDCodecType GetCodecType() const override;
-    const MVStats &GetStats() const override;
-    void Reset() override;
-    size_t GetMvDataSize() const override;
 
 private:
     bool LoadLibrary();
@@ -43,29 +39,22 @@ private:
 
     SFDCodecType codecType_;
     void* handle_{nullptr};
-    MvAnalyzerHandle soParser_{nullptr};
-    MVStats latestStats_;
+    MvAnalyzerHandle soAnalyzer_{nullptr};
     mutable std::mutex apiMutex_;
 
     using CreateFunc = MvAnalyzerHandle (*)(int32_t);
     using DestroyFunc = void (*)(MvAnalyzerHandle);
     using SetAuxInfoFunc = void (*)(MvAnalyzerHandle, const StreamAuxInfo*);
     using SetVideoInfoFunc = void (*)(MvAnalyzerHandle, uint32_t, uint32_t);
-    using ParseFunc = MVStats (*)(MvAnalyzerHandle, const uint8_t*, size_t);
-    using ResetFunc = void (*)(MvAnalyzerHandle);
-    using GetSizeFunc = size_t (*)(MvAnalyzerHandle);
+    using ParseFunc = MVStats (*)(MvAnalyzerHandle, const uint8_t*);
 
     CreateFunc createFunc_{nullptr};
     DestroyFunc destroyFunc_{nullptr};
     SetAuxInfoFunc setAuxInfoFunc_{nullptr};
     SetVideoInfoFunc setVideoInfoFunc_{nullptr};
     ParseFunc parseFunc_{nullptr};
-    ResetFunc resetFunc_{nullptr};
-    GetSizeFunc getSizeFunc_{nullptr};
 };
-
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS
-
 #endif // MV_ANALYZER_SO_LOADER_H

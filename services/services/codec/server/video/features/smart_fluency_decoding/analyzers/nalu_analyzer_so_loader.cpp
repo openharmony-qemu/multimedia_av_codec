@@ -31,7 +31,7 @@ NaluAnalyzerSoLoader::NaluAnalyzerSoLoader(SFDCodecType codecType)
 {
     if (LoadLibrary()) {
         if (createFunc_) {
-            soParser_ = createFunc_(static_cast<int32_t>(codecType_));
+            soAnalyzer_ = createFunc_(static_cast<int32_t>(codecType_));
         }
     }
 }
@@ -39,9 +39,9 @@ NaluAnalyzerSoLoader::NaluAnalyzerSoLoader(SFDCodecType codecType)
 NaluAnalyzerSoLoader::~NaluAnalyzerSoLoader()
 {
     std::lock_guard<std::mutex> lock(apiMutex_);
-    if (soParser_ && destroyFunc_) {
-        destroyFunc_(soParser_);
-        soParser_ = nullptr;
+    if (soAnalyzer_ && destroyFunc_) {
+        destroyFunc_(soAnalyzer_);
+        soAnalyzer_ = nullptr;
     }
     UnloadLibrary();
 }
@@ -93,20 +93,20 @@ void NaluAnalyzerSoLoader::SetAuxInfoCallback(OnStreamAuxInfoParsed callback)
 {
     std::lock_guard<std::mutex> lock(apiMutex_);
     callback_ = callback;
-    if (soParser_ && setCallbackFunc_) {
-        setCallbackFunc_(soParser_, StaticAuxInfoCallback, this);
+    if (soAnalyzer_ && setCallbackFunc_) {
+        setCallbackFunc_(soAnalyzer_, StaticAuxInfoCallback, this);
     }
 }
 
 bool NaluAnalyzerSoLoader::IsNonReferenceFrame(const std::shared_ptr<AVBuffer>& inputBuffer)
 {
     std::lock_guard<std::mutex> lock(apiMutex_);
-    if (!soParser_ || !isNonReferenceFunc_ || !inputBuffer || !inputBuffer->memory_) {
+    if (!soAnalyzer_ || !isNonReferenceFunc_ || !inputBuffer || !inputBuffer->memory_) {
         return false;
     }
     const uint8_t* bufferAddr = inputBuffer->memory_->GetAddr();
     uint32_t bufferSize = static_cast<uint32_t>(inputBuffer->memory_->GetSize());
-    return isNonReferenceFunc_(soParser_, bufferAddr, bufferSize);
+    return isNonReferenceFunc_(soAnalyzer_, bufferAddr, bufferSize);
 }
 
 std::unique_ptr<INaluAnalyzer> NaluAnalyzerFactory::CreateNaluAnalyzer(SFDCodecType codecType)

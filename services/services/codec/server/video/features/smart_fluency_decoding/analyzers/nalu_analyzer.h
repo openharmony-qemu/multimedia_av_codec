@@ -22,9 +22,7 @@
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
-
 using AVBuffer = OHOS::Media::AVBuffer;
-
 class INaluAnalyzer {
 public:
     virtual ~INaluAnalyzer() = default;
@@ -37,9 +35,7 @@ class NaluAnalyzerFactory {
 public:
     static std::unique_ptr<INaluAnalyzer> CreateNaluAnalyzer(SFDCodecType codecType);
 };
-
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS
-
 #endif // NALU_ANALYZER_H

@@ -29,16 +29,16 @@ MvAnalyzerSoLoader::MvAnalyzerSoLoader(SFDCodecType codecType)
     : codecType_(codecType)
 {
     if (LoadLibrary() && createFunc_) {
-        soParser_ = createFunc_(static_cast<int32_t>(codecType_));
+        soAnalyzer_ = createFunc_(static_cast<int32_t>(codecType_));
     }
 }
 
 MvAnalyzerSoLoader::~MvAnalyzerSoLoader()
 {
     std::lock_guard<std::mutex> lock(apiMutex_);
-    if (soParser_ && destroyFunc_) {
-        destroyFunc_(soParser_);
-        soParser_ = nullptr;
+    if (soAnalyzer_ && destroyFunc_) {
+        destroyFunc_(soAnalyzer_);
+        soAnalyzer_ = nullptr;
     }
     UnloadLibrary();
 }
@@ -56,10 +56,7 @@ bool MvAnalyzerSoLoader::LoadLibrary()
     setAuxInfoFunc_ = reinterpret_cast<SetAuxInfoFunc>(dlsym(handle_, "SetMvStreamAuxInfo"));
     setVideoInfoFunc_ = reinterpret_cast<SetVideoInfoFunc>(dlsym(handle_, "SetMvVideoInfo"));
     parseFunc_ = reinterpret_cast<ParseFunc>(dlsym(handle_, "ParseMvData"));
-    resetFunc_ = reinterpret_cast<ResetFunc>(dlsym(handle_, "ResetMvAnalyzerWrapper"));
-    getSizeFunc_ = reinterpret_cast<GetSizeFunc>(dlsym(handle_, "GetTargetMvDataSize"));
-
-    if (!createFunc_ || !destroyFunc_ || !parseFunc_) {
+    if (!createFunc_ || !destroyFunc_ || !setAuxInfoFunc_ || !setVideoInfoFunc_ || !parseFunc_) {
         AVCODEC_LOGE("Failed to find required symbols in %{public}s", LIB_NAME);
         UnloadLibrary();
         return false;
@@ -79,62 +76,37 @@ void MvAnalyzerSoLoader::UnloadLibrary()
     setAuxInfoFunc_ = nullptr;
     setVideoInfoFunc_ = nullptr;
     parseFunc_ = nullptr;
-    resetFunc_ = nullptr;
-    getSizeFunc_ = nullptr;
 }
 
 void MvAnalyzerSoLoader::SetStreamAuxInfo(const StreamAuxInfo& info)
 {
     std::lock_guard<std::mutex> lock(apiMutex_);
-    if (soParser_ && setAuxInfoFunc_) {
-        setAuxInfoFunc_(soParser_, &info);
+    if (soAnalyzer_ && setAuxInfoFunc_) {
+        setAuxInfoFunc_(soAnalyzer_, &info);
     }
 }
 
 void MvAnalyzerSoLoader::SetVideoInfo(uint32_t width, uint32_t height)
 {
     std::lock_guard<std::mutex> lock(apiMutex_);
-    if (soParser_ && setVideoInfoFunc_) {
-        setVideoInfoFunc_(soParser_, width, height);
+    if (soAnalyzer_ && setVideoInfoFunc_) {
+        setVideoInfoFunc_(soAnalyzer_, width, height);
     }
 }
 
-MVStats MvAnalyzerSoLoader::parse(const uint8_t *buffer, size_t bufferSize)
+MVStats MvAnalyzerSoLoader::Analyze(const uint8_t *buffer)
 {
     std::lock_guard<std::mutex> lock(apiMutex_);
-    if (!soParser_ || !parseFunc_) {
-        return latestStats_;
+    MVStats mvStats = MVStats();
+    if (soAnalyzer_ && parseFunc_) {
+        mvStats = parseFunc_(soAnalyzer_, buffer);
     }
-    latestStats_ = parseFunc_(soParser_, buffer, bufferSize);
-    return latestStats_;
+    return mvStats;
 }
 
 SFDCodecType MvAnalyzerSoLoader::GetCodecType() const
 {
     return codecType_;
-}
-
-const MVStats& MvAnalyzerSoLoader::GetStats() const
-{
-    return latestStats_;
-}
-
-void MvAnalyzerSoLoader::Reset()
-{
-    std::lock_guard<std::mutex> lock(apiMutex_);
-    if (soParser_ && resetFunc_) {
-        resetFunc_(soParser_);
-    }
-    latestStats_ = MVStats();
-}
-
-size_t MvAnalyzerSoLoader::GetMvDataSize() const
-{
-    std::lock_guard<std::mutex> lock(apiMutex_);
-    if (soParser_ && getSizeFunc_) {
-        return getSizeFunc_(soParser_);
-    }
-    return 0;
 }
 
 std::unique_ptr<IMvAnalyzer> MvAnalyzerFactory::CreateMvAnalyzer(SFDCodecType codecType)
