@@ -170,7 +170,7 @@ int32_t SmartFluencyDecoding::UpdateDynamicConfig(const Media::Format& format)
                 dumper_->UpdateMode(newMode, newRatio.has_value() ? newRatio.value() : DEFAULT_PLAYBACK_SPEED);
             }
 #endif
-            AVCODEC_LOGI("Dynamic SFD mode updated from %{public}d to %{public}d", 
+            AVCODEC_LOGI("Dynamic SFD mode updated from %{public}d to %{public}d",
                          static_cast<int32_t>(config_.initMode), static_cast<int32_t>(newMode));
         } else {
             AVCODEC_LOGW("Failed to dynamically update SFD mode to %{public}d", static_cast<int32_t>(newMode));

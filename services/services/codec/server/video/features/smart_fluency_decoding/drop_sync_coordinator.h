@@ -37,7 +37,7 @@ public:
     void UpdateFeedback(int32_t preDroppedCount, bool currentDropped, double targetRetentionRatio, double currentSpeed);
 
 private:
-    static constexpr size_t queueCapacity = 128; 
+    static constexpr size_t queueCapacity = 128;
     static constexpr size_t queueMask = queueCapacity - 1;
     static constexpr size_t cacheLineSize = 64;
     int64_t ptsRingBuffer_[queueCapacity]{0};
