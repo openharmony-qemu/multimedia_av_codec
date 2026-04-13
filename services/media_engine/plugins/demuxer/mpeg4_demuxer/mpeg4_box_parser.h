@@ -74,8 +74,6 @@ public:
     std::shared_ptr<Track> GetFirstTrack() const;
     std::shared_ptr<Meta> GetUserFormat() const;
     void GetFragmentEntry(std::vector<FragmentEntry>& entry);
-    static double MapToStandardRate(double rawRate, double maxErrorPercent);
-    double GetStandardFrameRate(double rawRate);
     void SetDataReader(const std::shared_ptr<DemuxerDataReader> dataReader);
     void SetSeekable(const Seekable seekable);
     bool GetHasSidx();
@@ -134,8 +132,6 @@ private:
         double target;
         const char* name;
     };
-    static const std::vector<FrameRate> standardRates_;
-    static const std::vector<FrameRateRange> ranges_;
 
     uint32_t trackCount_ = 0;
     int64_t moofOffset_ = 0;
@@ -270,7 +266,8 @@ private:
     Status ParseKeys(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseIlst(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseLoci(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
-    Status ParseGenre(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
+    Status ParseUdtaGenre(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
+    Status ParseMoovGenre(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseLabl(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseWave(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseFrma(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
