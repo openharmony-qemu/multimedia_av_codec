@@ -25,7 +25,6 @@
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
-
 struct FrameDumpRecord {
     int64_t pts;
     int64_t dts;
@@ -39,42 +38,40 @@ struct FrameDumpRecord {
     RetentionStrategyType mode;
     double retentionRate;
     double speed;
-    
+
     FrameDumpRecord() : pts(-1), dts(-1), flags(0), isNonRef(false), isPreDropped(false), isPostDropped(false),
                         preSysTimeMs(-1), postSysTimeMs(-1), preDropCount(0),
                         mode(RetentionStrategyType::FULL), retentionRate(1.0), speed(1.0) {}
 };
 
-class SfdDumper {
+class SmartFluencyDecodingDumper {
 public:
-    SfdDumper();
-    ~SfdDumper();
+    SmartFluencyDecodingDumper();
+    ~SmartFluencyDecodingDumper();
 
     void Init(SFDCodecType codecType, int32_t width, int32_t height, RetentionStrategyType mode);
-    
     void UpdateMode(RetentionStrategyType mode, double retentionRate);
     void UpdateSpeed(double speed);
     void UpdateCtuSize(int32_t ctuSize);
 
-struct PreDecodeRecordCtx {
-    int64_t pts{-1};
-    int64_t dts{-1};
-    uint32_t flags{0};
-    bool isNonRef{false};
-    bool dropped{false};
-    int64_t sysTimeMs{-1};
-};
+    struct PreDecodeRecordCtx {
+        int64_t pts{-1};
+        int64_t dts{-1};
+        uint32_t flags{0};
+        bool isNonRef{false};
+        bool dropped{false};
+        int64_t sysTimeMs{-1};
+    };
 
-struct PostDecodeRecordCtx {
-    int64_t pts{-1};
-    bool dropped{false};
-    int32_t preDropCount{0};
-    int64_t sysTimeMs{-1};
-};
+    struct PostDecodeRecordCtx {
+        int64_t pts{-1};
+        bool dropped{false};
+        int32_t preDropCount{0};
+        int64_t sysTimeMs{-1};
+    };
 
     void RecordPreDecode(const PreDecodeRecordCtx& ctx);
     void RecordPostDecode(const PostDecodeRecordCtx& ctx);
-    
     void DumpToFile();
 
 private:
@@ -87,16 +84,14 @@ private:
     double currentRetentionRate_{1.0};
     double currentSpeed_{1.0};
     int32_t currentCtuSize_{0};
-    
+
     bool isInitialized_{false};
 
     void EnsureDirectory(const std::string& path);
     std::string GetTimestampString();
     void DumpToFileInternal();
 };
-
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS
-
 #endif // SMART_FLUENCY_DECODING_DUMPER_H

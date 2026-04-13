@@ -41,7 +41,6 @@ namespace OHOS {
 namespace MediaAVCodec {
 using namespace Media;
 namespace SFD {
-
 SmartFluencyDecoding::SmartFluencyDecoding()
 {
 }
@@ -60,25 +59,20 @@ int32_t SmartFluencyDecoding::Initialize(const SFDConfig& config)
         AVCODEC_LOGE("Unsupported codec type");
         return AVCS_ERR_INVALID_VAL;
     }
-
     config_ = config;
-
     int32_t ret = initializeInternal();
     if (ret != 0) {
         AVCODEC_LOGE("Failed to initialize internal components");
         return AVCS_ERR_UNKNOWN;
     }
-
     isInitialized_ = true;
     AVCODEC_LOGI("SmartFluencyDecoding initialized: %{public}dx%{public}d, codecType=%{public}d, mode=%{public}d",
-                  config_.width, config_.height, static_cast<int32_t>(config_.codecType), static_cast<int32_t>(config_.initMode));
-    
+        config_.width, config_.height, static_cast<int32_t>(config_.codecType), static_cast<int32_t>(config_.initMode));
     return AVCS_ERR_OK;
 }
 
 int32_t SmartFluencyDecoding::initializeInternal()
 {
-    // Lazy Initialization
     if (config_.initMode == RetentionStrategyType::AUTO_RATIO || 
         config_.initMode == RetentionStrategyType::FIXED_RATIO || 
         config_.initMode == RetentionStrategyType::ADAPTIVE) {
@@ -87,21 +81,20 @@ int32_t SmartFluencyDecoding::initializeInternal()
     if (config_.initMode == RetentionStrategyType::ADAPTIVE) {
         EnsureMvAnalyzer();
     }
-    
     strategy_ = RetentionStrategyFactory::CreateStrategy(config_.initMode, config_.retentionRatio);
     if (!strategy_) {
         AVCODEC_LOGE("Failed to create strategy");
         return -1;
     }
-
     dropSyncCoordinator_ = std::make_unique<DropSyncCoordinator>();
     asyncDispatcher_ = std::make_unique<AsyncDropDispatcher>();
-    dumper_ = std::make_unique<SfdDumper>();
+#ifdef BUILD_ENG_VERSION
+    dumper_ = std::make_unique<SmartFluencyDecodingDumper>();
     dumper_->Init(config_.codecType, config_.width, config_.height, config_.initMode);
     if (config_.retentionRatio.has_value()) {
         dumper_->UpdateMode(config_.initMode, config_.retentionRatio.value());
     }
-    
+#endif
     AVCODEC_LOGI("Internal init completed: %{public}dx%{public}d, codecType=%{public}d",
            config_.width, config_.height, static_cast<int>(config_.codecType));
     return AVCS_ERR_OK;
@@ -113,14 +106,17 @@ void SmartFluencyDecoding::UpdatePlaybackSpeed(double speed)
     currentPlaybackSpeed_ = (speed > 0.0 ? speed : DEFAULT_PLAYBACK_SPEED);
     if (strategy_) {
         strategy_->UpdatePlaybackSpeed(speed);
+#ifdef BUILD_ENG_VERSION
         if (dumper_) {
             dumper_->UpdateSpeed(speed);
         }
+#endif
         AVCODEC_LOGI("SFD Playback speed dynamically updated to: %{public}.2f", speed);
     }
 }
 
-void SmartFluencyDecoding::ParseDynamicFormat(const Media::Format& format, RetentionStrategyType& outMode, std::optional<double>& outRatio) const
+void SmartFluencyDecoding::ParseDynamicFormat(
+    const Media::Format& format, RetentionStrategyType& outMode, std::optional<double>& outRatio) const
 {
     int32_t retentionModeInt = -1;
     if (format.GetIntValue(Media::Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, retentionModeInt)) {
@@ -132,7 +128,6 @@ void SmartFluencyDecoding::ParseDynamicFormat(const Media::Format& format, Reten
             outMode = outRatio.has_value() ? RetentionStrategyType::FIXED_RATIO : RetentionStrategyType::AUTO_RATIO;
         }
     }
-
     double ratio = 0.0;
     if (format.GetDoubleValue(Media::Tag::VIDEO_DECODER_FRAME_RETENTION_RATIO, ratio)) {
         outRatio = ratio;
@@ -147,23 +142,17 @@ int32_t SmartFluencyDecoding::UpdateDynamicConfig(const Media::Format& format)
     bool needUpdateStrategy = false;
     RetentionStrategyType newMode = config_.initMode;
     std::optional<double> newRatio = config_.retentionRatio;
-
     ParseDynamicFormat(format, newMode, newRatio);
-
     if (newMode != config_.initMode || newRatio != config_.retentionRatio) {
         needUpdateStrategy = true;
     }
-
     double speed = DEFAULT_PLAYBACK_SPEED;
     if (format.GetDoubleValue(Media::Tag::VIDEO_DECODER_SPEED, speed)) {
         UpdatePlaybackSpeed(speed);
     }
-
     if (needUpdateStrategy) {
         auto newStrategy = RetentionStrategyFactory::CreateStrategy(newMode, newRatio);
         if (newStrategy) {
-            // 按需挂载底层组件（如果发生模式切换，可能有组件尚未初始化）
-            // 注意：必须在获取 configMutex_ 之前调用，因为内部回放 CSD 会触发回调并尝试获取该锁
             if (newMode == RetentionStrategyType::AUTO_RATIO || 
                 newMode == RetentionStrategyType::FIXED_RATIO || 
                 newMode == RetentionStrategyType::ADAPTIVE) {
@@ -172,15 +161,15 @@ int32_t SmartFluencyDecoding::UpdateDynamicConfig(const Media::Format& format)
             if (newMode == RetentionStrategyType::ADAPTIVE) {
                 EnsureMvAnalyzer();
             }
-
             std::lock_guard<std::mutex> lock(configMutex_);
-            
             strategy_ = std::move(newStrategy);
             config_.initMode = newMode;
             config_.retentionRatio = newRatio;
+#ifdef BUILD_ENG_VERSION
             if (dumper_) {
                 dumper_->UpdateMode(newMode, newRatio.has_value() ? newRatio.value() : DEFAULT_PLAYBACK_SPEED);
             }
+#endif
             AVCODEC_LOGI("Dynamic SFD mode updated from %{public}d to %{public}d", 
                          static_cast<int32_t>(config_.initMode), static_cast<int32_t>(newMode));
         } else {
@@ -201,11 +190,11 @@ void SmartFluencyDecoding::Flush()
         strategy_->Reset();
     }
     inBufferMap_.clear();
-    
+#ifdef BUILD_ENG_VERSION
     if (dumper_) {
         dumper_->DumpToFile();
     }
-    
+#endif
     AVCODEC_LOGI("SFD flushed (counters and trackers reset)");
 }
 
@@ -229,23 +218,16 @@ bool SmartFluencyDecoding::InitializeWithCsd(const std::shared_ptr<Media::AVBuff
     if (!isInitialized_ || !csdBuffer) {
         return false;
     }
-
-    // 防御性编程：只处理带有 CODEC_DATA 标志的 Buffer
     if (!(csdBuffer->flag_ & AVCODEC_BUFFER_FLAG_CODEC_DATA)) {
         AVCODEC_LOGW("Buffer passed to InitializeWithCsd does not have CODEC_DATA flag.");
         return false;
     }
-
-    // 缓存 CSD，以便后续从 FULL 切换到其他模式时重新激活探针
     csdBuffer_ = csdBuffer;
-
     if (naluAnalyzer_) {
-        // 让底层探针去解析 CSD 并触发 AuxInfoCallback 更新 CTU Size 等信息。
         (void)naluAnalyzer_->IsNonReferenceFrame(csdBuffer);
         AVCODEC_LOGI("CSD data processed by NaluAnalyzer.");
         return true;
     }
-
     return false;
 }
 
@@ -260,28 +242,22 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
             inBufferMap_.erase(it);
         }
     }
-
     if (!isInitialized_ || !buffer || !dropSyncCoordinator_) {
         return true;
     }
-
     bool shouldDrop = false;
     bool isNonRef = false;
     if (naluAnalyzer_ && naluAnalyzer_->IsNonReferenceFrame(buffer)) {
         isNonRef = true;
-        
-        // 读取跨线程反馈面板
         double currentEma = dropSyncCoordinator_->GetCurrentEma();
         double targetRetentionRatio = dropSyncCoordinator_->GetTargetRetentionRatio();
         double targetDropRatio = 1.0 - targetRetentionRatio;
-
         if (currentEma >= targetDropRatio && targetDropRatio > RETENTION_RATIO_MIN_DIFF) {
             shouldDrop = false; 
         } else {
             shouldDrop = true;
         }
     }
-
     if (shouldDrop) {
         dropSyncCoordinator_->RecordPreDroppedFrame(buffer->pts_);
         droppedInputFrames_++;
@@ -298,9 +274,9 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
     } else {
         totalInputFrames_++;
     }
-
+#ifdef BUILD_ENG_VERSION
     if (dumper_) {
-        SfdDumper::PreDecodeRecordCtx dumperCtx;
+        SmartFluencyDecodingDumper::PreDecodeRecordCtx dumperCtx;
         dumperCtx.pts = buffer->pts_;
         dumperCtx.dts = buffer->dts_;
         dumperCtx.isNonRef = isNonRef;
@@ -309,8 +285,7 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
         dumperCtx.sysTimeMs = GetCurrentSysTimeMs();
         dumper_->RecordPreDecode(dumperCtx);
     }
-
-    // 后置修改点：返回是否保留。true 表示保留（放行），false 表示丢弃。
+#endif
     return !shouldDrop;
 }
 
@@ -319,20 +294,15 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
     if (!isInitialized_ || !strategy_ || !dropSyncCoordinator_) {
         return true;
     }
-
     int64_t currentPts = pts;
-
     int32_t preDroppedCount = dropSyncCoordinator_->GetAndConsumePreDroppedCount(currentPts);
-
     MVStats currentMvStats;
     parseMVData(surfaceBuffer, currentMvStats);
-
     FrameRetentionContext ctx;
     ctx.ptsMs = currentPts;
     ctx.sysTimeMs = GetCurrentSysTimeMs(); 
     ctx.preDroppedCount = preDroppedCount;
     ctx.mvStats = &currentMvStats;
-
     bool shouldRetain = false;
     double currentRetentionRatio = 1.0;
     {
@@ -340,13 +310,11 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
         shouldRetain = strategy_->MakeRetentionDecision(ctx);
         currentRetentionRatio = strategy_->GetCurrentRetentionRatio();
     }
-
-    // 更新 EMA 反馈状态
     {
         std::lock_guard<std::mutex> lock(configMutex_);
-        dropSyncCoordinator_->UpdateFeedback(preDroppedCount, !shouldRetain, currentRetentionRatio, currentPlaybackSpeed_);
+        dropSyncCoordinator_->UpdateFeedback(
+            preDroppedCount, !shouldRetain, currentRetentionRatio, currentPlaybackSpeed_);
     }
-
     totalOutputFrames_++;
     if (!shouldRetain) {
         droppedOutputFrames_++;
@@ -361,16 +329,16 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
             });
         }
     }
-
+#ifdef BUILD_ENG_VERSION
     if (dumper_) {
-        SfdDumper::PostDecodeRecordCtx dumperCtx;
+        SmartFluencyDecodingDumper::PostDecodeRecordCtx dumperCtx;
         dumperCtx.pts = currentPts;
         dumperCtx.dropped = !shouldRetain;
         dumperCtx.preDropCount = preDroppedCount;
         dumperCtx.sysTimeMs = GetCurrentSysTimeMs();
         dumper_->RecordPostDecode(dumperCtx);
     }
-
+#endif
     return shouldRetain;
 }
 
@@ -383,8 +351,7 @@ int64_t SmartFluencyDecoding::GetCurrentSysTimeMs()
 void SmartFluencyDecoding::parseMVData(const sptr<SurfaceBuffer> surfaceBuffer,
                                          MVStats& mvStats)
 {
-    mvStats = MVStats(); // 使用 DTO 进行重置
-
+    mvStats = MVStats();
     if (!mvAnalyzer_) {
         AVCODEC_LOGE("parse MV Data failed! mvParser don't exist");
         return;
@@ -392,14 +359,12 @@ void SmartFluencyDecoding::parseMVData(const sptr<SurfaceBuffer> surfaceBuffer,
     if (!surfaceBuffer) {
         AVCODEC_LOGE("parse MV Data failed! surfaceBuffer don't exist");
     }
-
     using namespace HDI::Display::Graphic::Common;
     std::vector<uint8_t> vec;
     V2_0::BlobDataType data;
     int32_t ret = surfaceBuffer->GetMetadata(V2_0::ATTRKEY_VIDEO_DECODER_MV, vec);
     ret = memcpy_s(&data, sizeof(V2_0::BlobDataType), vec.data(), vec.size());
     uint8_t* input = (uint8_t*)(data.vaddr + data.offset);
-
     size_t size = mvAnalyzer_->GetMvDataSize();
     if (size > 0) {
         mvStats = mvAnalyzer_->parse(input, size);
@@ -428,39 +393,33 @@ void SmartFluencyDecoding::EnsureNaluAnalyzer()
     if (naluAnalyzer_) {
         return;
     }
-
     auto analyzer = NaluAnalyzerFactory::CreateNaluAnalyzer(config_.codecType);
     if (!analyzer) {
         AVCODEC_LOGW("No NALU analyzer available for codecType %{public}d", static_cast<int32_t>(config_.codecType));
         return;
     }
-
     analyzer->SetAuxInfoCallback([this](const StreamAuxInfo& info) {
         std::lock_guard<std::mutex> cbLock(this->configMutex_);
         AVCODEC_LOGI("Received StreamAuxInfo: directSpatialMvPredFlag=%{public}u, direct8x8InferenceFlag=%{public}u, "
-                     "frameMbsOnlyFlag=%{public}d, ctuSize=%{public}u", 
-                     info.directSpatialMvPredFlag, info.direct8x8InferenceFlag, 
+                     "frameMbsOnlyFlag=%{public}d, ctuSize=%{public}u",
+                     info.directSpatialMvPredFlag, info.direct8x8InferenceFlag,
                      info.frameMbsOnlyFlag, info.ctuSize);
                      
         if (this->mvAnalyzer_) {
             this->mvAnalyzer_->SetStreamAuxInfo(info);
         }
+#ifdef BUILD_ENG_VERSION
         if (this->dumper_) {
             this->dumper_->UpdateCtuSize(info.ctuSize);
+#endif
         }
     });
-    
-    // 安全赋值，让其他线程可以看到完整的构造对象
     naluAnalyzer_ = std::move(analyzer);
-
-    // 如果是在中途（例如从 FULL 模式切换）才实例化的探针，尝试回放 CSD 头信息以激活它
     if (!csdBuffer_) {
         return;
     }
-
     AVCODEC_LOGI("Replaying cached CSD buffer to activate newly instantiated NaluAnalyzer");
     auto cachedCsd = csdBuffer_;
-    // 解锁以防止回调时发生死锁
     lock.unlock();
     (void)naluAnalyzer_->IsNonReferenceFrame(cachedCsd);
 }
@@ -471,17 +430,13 @@ void SmartFluencyDecoding::EnsureMvAnalyzer()
     if (mvAnalyzer_) {
         return;
     }
-
     mvAnalyzer_ = MvAnalyzerFactory::CreateMvAnalyzer(config_.codecType);
     if (!mvAnalyzer_) {
         AVCODEC_LOGE("Failed to create MV parser for codec type: %{public}d", static_cast<int>(config_.codecType));
         return;
     }
-    
-    // Pass video resolution to the parser
     mvAnalyzer_->SetVideoInfo(config_.width, config_.height);
 }
-
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS

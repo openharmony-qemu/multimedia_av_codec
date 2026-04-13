@@ -37,9 +37,7 @@ constexpr int32_t DEFAULT_CSD_COPY_SIZE = 256;
 namespace OHOS {
 namespace MediaAVCodec {
 using namespace Media;
-
 namespace SFD {
-
 SmartFluencyDecodingBuilder::SmartFluencyDecodingBuilder()
 {
 }
@@ -253,7 +251,6 @@ void SmartFluencyDecodingBuilder::ReplayCsdData(SmartFluencyDecoding* sfd, const
         }
     }
 }
-
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS

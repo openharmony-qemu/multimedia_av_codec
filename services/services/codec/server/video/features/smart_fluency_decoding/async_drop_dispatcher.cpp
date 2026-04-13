@@ -18,7 +18,6 @@
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
-
 AsyncDropDispatcher::AsyncDropDispatcher()
 {
     isWorking_.store(true);
@@ -82,7 +81,6 @@ void AsyncDropDispatcher::WorkerLoop()
         }
     }
 }
-
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -25,7 +25,6 @@ constexpr const char* LIB_NAME = "libvideo_mv_analyzer.z.so";
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
-
 MvAnalyzerSoLoader::MvAnalyzerSoLoader(SFDCodecType codecType)
     : codecType_(codecType)
 {

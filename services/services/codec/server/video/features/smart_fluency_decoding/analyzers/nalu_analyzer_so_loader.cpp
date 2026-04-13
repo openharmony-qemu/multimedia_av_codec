@@ -20,13 +20,12 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "NaluAnalyzerSoLoader"};
-constexpr const char* LIB_NAME = "libvideo_nalu_analyzer.z.so"; // Official plugin path
+constexpr const char* LIB_NAME = "libvideo_nalu_analyzer.z.so";
 }
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
-
 NaluAnalyzerSoLoader::NaluAnalyzerSoLoader(SFDCodecType codecType)
     : codecType_(codecType)
 {

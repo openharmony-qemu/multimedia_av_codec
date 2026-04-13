@@ -1777,7 +1777,6 @@ void CodecServer::HandleOutputBufferAvailability(uint32_t index, std::shared_ptr
         surfaceBufMap_[buffer->GetUniqueId()] = buffer->memory_->GetSurfaceBuffer();
         buffer->memory_ = nullptr;
     }
-    
     if (smartFluencyDecoding_ && (buffer->flag_ & AVCODEC_BUFFER_FLAG_EOS) == 0) {
         sptr<SurfaceBuffer> surfaceBuffer = nullptr;
         auto it = surfaceBufMap_.find(buffer->GetUniqueId());

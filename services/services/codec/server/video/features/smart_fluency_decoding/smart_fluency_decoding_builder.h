@@ -26,9 +26,7 @@
 namespace OHOS {
 namespace MediaAVCodec {
 using namespace Media;
-
 namespace SFD {
-
 using AVBuffer = OHOS::Media::AVBuffer;
 
 class SmartFluencyDecoding;
@@ -65,9 +63,7 @@ private:
     bool ValidateParams();
     bool IsRetentionRateValid(double rate);
 };
-
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS
-
 #endif // SMART_FLUENCY_DECODING_BUILDER_H

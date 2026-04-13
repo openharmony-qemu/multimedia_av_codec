@@ -30,13 +30,14 @@
 #include "meta/format.h"
 #include "analyzers/mv_analyzer.h"
 #include "analyzers/nalu_analyzer.h"
+#ifdef BUILD_ENG_VERSION
 #include "smart_fluency_decoding_dumper.h"
+#endif
 #include "smart_fluency_decoding_types.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
-
 class SmartFluencyDecoding {
 public:
     SmartFluencyDecoding();
@@ -61,8 +62,8 @@ private:
     int32_t initializeInternal();
     int64_t GetCurrentSysTimeMs();
     void parseMVData(const sptr<SurfaceBuffer> surfaceBuffer, MVStats& mvStats);
-    void ParseDynamicFormat(const Media::Format& format, RetentionStrategyType& outMode, std::optional<double>& outRatio) const;
-
+    void ParseDynamicFormat(
+        const Media::Format& format, RetentionStrategyType& outMode, std::optional<double>& outRatio) const;
     void EnsureNaluAnalyzer();
     void EnsureMvAnalyzer();
 
@@ -72,7 +73,9 @@ private:
     std::unique_ptr<IRetentionStrategy> strategy_{nullptr};
     std::unique_ptr<IMvAnalyzer> mvAnalyzer_{nullptr};
     std::unique_ptr<INaluAnalyzer> naluAnalyzer_{nullptr};
-    std::unique_ptr<SfdDumper> dumper_{nullptr};
+#ifdef BUILD_ENG_VERSION
+    std::unique_ptr<SmartFluencyDecodingDumper> dumper_{nullptr};
+#endif
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> inBufferMap_;
     std::shared_ptr<AVBuffer> csdBuffer_{nullptr};
     SFDConfig config_{};
@@ -85,9 +88,7 @@ private:
     AsyncDropInputCallback asyncDropInputCb_{nullptr};
     AsyncDropOutputCallback asyncDropOutputCb_{nullptr};
 };
-
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS
-
 #endif // SMART_FLUENCY_DECODING_H

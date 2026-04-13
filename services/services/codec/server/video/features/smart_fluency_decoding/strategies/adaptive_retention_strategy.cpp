@@ -15,10 +15,6 @@
 
 #include "adaptive_retention_strategy.h"
 
-namespace OHOS {
-namespace MediaAVCodec {
-namespace SFD {
-
 namespace {
 constexpr double MAX_SPEED_FOR_RETENTION = 1.2;
 constexpr double HIGH_CONSISTENCY_THRESHOLD = 0.8;
@@ -29,6 +25,9 @@ constexpr double REF_DIST_MULTIPLIER = 5.0;
 constexpr double MAX_DROPS_MULTIPLIER_LOW = 15.0;
 }
 
+namespace OHOS {
+namespace MediaAVCodec {
+namespace SFD {
 bool AdaptiveRetentionStrategy::MakeRetentionDecision(const FrameRetentionContext& ctx)
 {
     if (currentSpeed_ <= MAX_SPEED_FOR_RETENTION) {
@@ -87,7 +86,6 @@ double AdaptiveRetentionStrategy::GetCurrentRetentionRatio() const
 {
     return 1.0 - currentTargetRatio_;
 }
-
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS

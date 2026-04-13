@@ -31,17 +31,16 @@ constexpr const char* DUMP_DIR = "/data/misc/sfddump/";
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
-
-SfdDumper::SfdDumper()
+SmartFluencyDecodingDumper::SmartFluencyDecodingDumper()
 {
 }
 
-SfdDumper::~SfdDumper()
+SmartFluencyDecodingDumper::~SmartFluencyDecodingDumper()
 {
     DumpToFile();
 }
 
-void SfdDumper::Init(SFDCodecType codecType, int32_t width, int32_t height, RetentionStrategyType mode)
+void SmartFluencyDecodingDumper::Init(SFDCodecType codecType, int32_t width, int32_t height, RetentionStrategyType mode)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     codecType_ = codecType;
@@ -50,30 +49,30 @@ void SfdDumper::Init(SFDCodecType codecType, int32_t width, int32_t height, Rete
     currentMode_ = mode;
     isInitialized_ = true;
     records_.clear();
-    records_.reserve(10000); // Pre-allocate some capacity to avoid frequent reallocations
+    records_.reserve(10000);
     EnsureDirectory(DUMP_DIR);
 }
 
-void SfdDumper::UpdateMode(RetentionStrategyType mode, double retentionRate)
+void SmartFluencyDecodingDumper::UpdateMode(RetentionStrategyType mode, double retentionRate)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     currentMode_ = mode;
     currentRetentionRate_ = retentionRate;
 }
 
-void SfdDumper::UpdateSpeed(double speed)
+void SmartFluencyDecodingDumper::UpdateSpeed(double speed)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     currentSpeed_ = speed;
 }
 
-void SfdDumper::UpdateCtuSize(int32_t ctuSize)
+void SmartFluencyDecodingDumper::UpdateCtuSize(int32_t ctuSize)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     currentCtuSize_ = ctuSize;
 }
 
-void SfdDumper::RecordPreDecode(const PreDecodeRecordCtx& ctx)
+void SmartFluencyDecodingDumper::RecordPreDecode(const PreDecodeRecordCtx& ctx)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     if (!isInitialized_) {
@@ -112,7 +111,7 @@ void SfdDumper::RecordPreDecode(const PreDecodeRecordCtx& ctx)
     }
 }
 
-void SfdDumper::RecordPostDecode(const PostDecodeRecordCtx& ctx)
+void SmartFluencyDecodingDumper::RecordPostDecode(const PostDecodeRecordCtx& ctx)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     if (!isInitialized_) {
@@ -144,7 +143,7 @@ void SfdDumper::RecordPostDecode(const PostDecodeRecordCtx& ctx)
     }
 }
 
-void SfdDumper::EnsureDirectory(const std::string& path)
+void SmartFluencyDecodingDumper::EnsureDirectory(const std::string& path)
 {
     struct stat st = {0};
     if (stat(path.c_str(), &st) == -1) {
@@ -154,7 +153,7 @@ void SfdDumper::EnsureDirectory(const std::string& path)
     }
 }
 
-std::string SfdDumper::GetTimestampString()
+std::string SmartFluencyDecodingDumper::GetTimestampString()
 {
     auto now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
@@ -163,18 +162,17 @@ std::string SfdDumper::GetTimestampString()
     return ss.str();
 }
 
-void SfdDumper::DumpToFile()
+void SmartFluencyDecodingDumper::DumpToFile()
 {
     std::lock_guard<std::mutex> lock(mutex_);
     DumpToFileInternal();
 }
 
-void SfdDumper::DumpToFileInternal()
+void SmartFluencyDecodingDumper::DumpToFileInternal()
 {
     if (!isInitialized_ || records_.empty()) {
         return;
     }
-
     std::string timestamp = GetTimestampString();
     std::string filename = std::string(DUMP_DIR) + "SFD_" + timestamp + ".csv";
     std::ofstream ofs(filename);
@@ -182,8 +180,6 @@ void SfdDumper::DumpToFileInternal()
         AVCODEC_LOGE("Failed to open dump file: %{public}s", filename.c_str());
         return;
     }
-
-    // Write Header
     ofs << "# SFD Execution Report\n";
     ofs << "# Timestamp: " << timestamp << "\n";
     ofs << "# CodecType: " << static_cast<int>(codecType_) << ", Resolution: " << width_ << "x" << height_ << "\n";
@@ -191,7 +187,6 @@ void SfdDumper::DumpToFileInternal()
     ofs << "# CtuSize: " << currentCtuSize_ << "\n";
     ofs << "# ----------------------------------------------------\n";
     ofs << "PTS,DTS,Flags,IsNonRef,Mode,PreDropped,PostDropped,PreSysTimeMs,PostSysTimeMs,PreDropCount,RetentionRate,Speed\n";
-
     for (const auto& rec : records_) {
         ofs << rec.pts << ","
             << rec.dts << ","
@@ -206,12 +201,10 @@ void SfdDumper::DumpToFileInternal()
             << rec.retentionRate << ","
             << rec.speed << "\n";
     }
-
     ofs.close();
     AVCODEC_LOGI("Successfully dumped %{public}zu records to %{public}s", records_.size(), filename.c_str());
     records_.clear();
 }
-
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS

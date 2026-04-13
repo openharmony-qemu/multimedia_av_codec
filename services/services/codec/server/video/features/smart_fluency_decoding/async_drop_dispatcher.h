@@ -26,7 +26,6 @@
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
-
 class AsyncDropDispatcher {
 public:
     AsyncDropDispatcher();
@@ -44,9 +43,7 @@ private:
     std::thread workerThread_;
     std::atomic<bool> isWorking_{false};
 };
-
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS
-
 #endif // ASYNC_DROP_DISPATCHER_H

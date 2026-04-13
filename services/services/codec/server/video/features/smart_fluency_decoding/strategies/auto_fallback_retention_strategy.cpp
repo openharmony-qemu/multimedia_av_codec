@@ -39,7 +39,6 @@ void AutoFallbackRetentionStrategy::UpdatePlaybackSpeed(double speed)
         return;
     }
     currentSpeed_ = speed;
-    // 动态适配：如果在稳态期切了倍速，立即重新计算比例并重置嵌套的 Dropper
     if (currentState_ == STABLE && sourceFps_ > 0) {
         double newRatio = TARGET_FPS / (sourceFps_ * currentSpeed_);
         stableDropper_ = std::make_unique<FixedRatioRetentionStrategy>(newRatio);
@@ -55,20 +54,16 @@ bool AutoFallbackRetentionStrategy::MakeRetentionDecision(const FrameRetentionCo
         firstPts_ = ctx.ptsMs;
     }
     decodedFrameCount_ += (1 + ctx.preDroppedCount);
-    // 是否满足切换到稳态的条件 (统计 30 帧且耗时大于 100ms)
     if (currentSpeed_ > 0.0 && decodedFrameCount_ >= PROFILING_MIN_FRAMES) {
         double durationSec = (ctx.ptsMs - firstPts_) / MS_TO_S;
-        // 增加最小时长阈值 (0.1s) 防御，防止 PTS 抖动导致 FPS 估算爆炸
         if (durationSec > PROFILING_DURATION_MIN_SEC) {
             sourceFps_ = decodedFrameCount_ / durationSec;
             double calculatedRatio = TARGET_FPS / (sourceFps_ * currentSpeed_);
-            // 状态切换并实例化嵌套
             stableDropper_ = std::make_unique<FixedRatioRetentionStrategy>(calculatedRatio);
             currentState_ = STABLE;
             return stableDropper_->MakeRetentionDecision(ctx);
         }
     }
-    // 物理时间防突发截断 (按 30fps 约 33ms 间隔控制)
     if (lastSysTime_ == 0 || (ctx.sysTimeMs - lastSysTime_) >= FALLBACK_FRAME_INTERVAL_MS) {
         lastSysTime_ = ctx.sysTimeMs;
         return true;

@@ -47,7 +47,6 @@ private:
     MVStats latestStats_;
     mutable std::mutex apiMutex_;
 
-    // 函数指针类型定义
     using CreateFunc = MvAnalyzerHandle (*)(int32_t);
     using DestroyFunc = void (*)(MvAnalyzerHandle);
     using SetAuxInfoFunc = void (*)(MvAnalyzerHandle, const StreamAuxInfo*);
