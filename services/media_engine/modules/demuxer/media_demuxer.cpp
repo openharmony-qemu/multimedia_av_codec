@@ -4006,7 +4006,9 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
             break;
         }
         case PluginEventType::CACHED_DURATION: {
-            MEDIA_LOG_D("OnEvent cached duration, but ignore");
+            FALSE_BREAK_NOLOG(!GetEnableSampleQueueFlag() && IsNeedPreDownload());
+            MEDIA_LOG_D("OnEvent cached duration");
+            eventReceiver->OnEvent({"demuxer_filter", EventType::EVENT_CACHED_DURATION, event.param});
             break;
         }
         case PluginEventType::SOURCE_BITRATE_START: {
@@ -4057,15 +4059,21 @@ void MediaDemuxer::OnEventBuffer(const Plugins::PluginEvent &event,
 {
     switch (event.type) {
         case PluginEventType::BUFFERING_END: {
-            MEDIA_LOG_D("OnEvent pause, but ignore");
+            FALSE_BREAK_NOLOG(!GetEnableSampleQueueFlag() && IsNeedPreDownload()); // no sampleQueue and dataSrc
+            MEDIA_LOG_D("OnEvent pause");
+            eventReceiver->OnEvent({"demuxer_filter", EventType::BUFFERING_END, PAUSE});
             break;
         }
         case PluginEventType::BUFFERING_START: {
-            MEDIA_LOG_D("OnEvent start, but ignore");
+            FALSE_BREAK_NOLOG(!GetEnableSampleQueueFlag() && IsNeedPreDownload());
+            MEDIA_LOG_D("OnEvent start");
+            eventReceiver->OnEvent({"demuxer_filter", EventType::BUFFERING_START, START});
             break;
         }
         case PluginEventType::EVENT_BUFFER_PROGRESS: {
-            MEDIA_LOG_D("OnEvent percent update, but ignore");
+            FALSE_BREAK_NOLOG(!GetEnableSampleQueueFlag() && IsNeedPreDownload());
+            MEDIA_LOG_D("OnEvent percent update");
+            eventReceiver->OnEvent({"demuxer_filter", EventType::EVENT_BUFFER_PROGRESS, event.param});
             break;
         }
         default:
