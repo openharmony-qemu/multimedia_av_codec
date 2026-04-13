@@ -26,10 +26,10 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAY
 namespace OHOS {
 namespace Media {
 static const std::unordered_set<std::string> SUPPORTED_TAGS = {"b", "i", "u", "s", "font"};
-static const std::string SMALLER_NUMBER = '<';
-static const std::string BIGGER_NUMBER = '>';
-static const std::string SLASH = '/';
-static const std::string SPACE = ' ';
+static const char SMALLER_NUMBER = '<';
+static const char BIGGER_NUMBER = '>';
+static const char SLASH = '/';
+static const char SPACE = ' ';
 namespace {
 constexpr bool SUBTITME_LOOP_RUNNING = true;
 }
