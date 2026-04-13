@@ -807,13 +807,13 @@ HWTEST_F(M3u8UnitTest, PARSE_DATE_RANGE_NO_ATTRIBUTES_001, TestSize.Level1)
 HWTEST_F(M3u8UnitTest, PARSE_DATE_RANGE_ALL_ATTRIBUTES_001, TestSize.Level1)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "");
-    m3u8.currentProgramDateTime_ = "2024-01-01-T00:00:00";
+    m3u8.currentProgramDateTime_ = "2024-01-01T00:00:00";
     auto tag = std::make_shared<AttributesTag>(HlsTag::EXTXDATERANGE, "");
     auto idAttr = std::make_shared<Attribute>("ID", "\"test-id\"");
     tag->AddAttribute(idAttr);
     auto classAttr = std::make_shared<Attribute>("CLASS", "\"test-class\"");
     tag->AddAttribute(classAttr);
-    auto startDateAttr = std::make_shared<Attribute>("START-DATE", "\"2024-01-01-T00:01:00\"");
+    auto startDateAttr = std::make_shared<Attribute>("START-DATE", "\"2024-01-01T00:01:00\"");
     tag->AddAttribute(startDateAttr);
     auto durationAttr = std::make_shared<Attribute>("DURATION", "60.5");
     tag->AddAttribute(durationAttr);
@@ -875,8 +875,8 @@ HWTEST_F(M3u8UnitTest, CALCULATE_DATE_TIME_OFFSET_001, TestSize.Level1)
     M3U8 m3u8("http://example.com/test.m3u8", "");
     EXPECT_EQ(m3u8.CalculateDateTimeOffset("", ""), 0);
     EXPECT_EQ(m3u8.CalculateDateTimeOffset("invalid", "invalid"), 0);
-    EXPECT_EQ(m3u8.CalculateDateTimeOffset("2024-01-01-T00:00:00", "2024-01-01-T00:01:00"), 60000);
-    EXPECT_EQ(m3u8.CalculateDateTimeOffset("2024-01-01-T00:00:00", "2024-01-02-T00:00:00"), 86400000);
-    EXPECT_EQ(m3u8.CalculateDateTimeOffset("2024-01-01-T00:01:00", "2024-01-01-T00:00:00"), -60000);
+    EXPECT_EQ(m3u8.CalculateDateTimeOffset("2024-01-01T00:00:00", "2024-01-01T00:01:00"), 60000);
+    EXPECT_EQ(m3u8.CalculateDateTimeOffset("2024-01-01T00:00:00", "2024-01-02T00:00:00"), 86400000);
+    EXPECT_EQ(m3u8.CalculateDateTimeOffset("2024-01-01T00:01:00", "2024-01-01T00:00:00"), -60000);
 }
 }
