@@ -25,6 +25,11 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAY
 
 namespace OHOS {
 namespace Media {
+static const std::unordered_set<std::string> SUPPORTED_TAGS = {"b", "i", "u", "s", "font"};
+static const std::string SMALLER_NUMBER = '<';
+static const std::string BIGGER_NUMBER = '>';
+static const std::string SLASH = '/';
+static const std::string SPACE = ' ';
 namespace {
 constexpr bool SUBTITME_LOOP_RUNNING = true;
 }
@@ -269,7 +274,7 @@ void SubtitleSink::DrainOutputBuffer(bool flushed)
     }
     std::string subtitleText(reinterpret_cast<const char *>(filledOutputBuffer->memory_->GetAddr()),
                              filledOutputBuffer->memory_->GetSize());
-    SubtitleInfo subtitleInfo{ subtitleText, filledOutputBuffer->pts_, filledOutputBuffer->duration_,
+    SubtitleInfo subtitleInfo{ removeTextTags(subtitleText), filledOutputBuffer->pts_, filledOutputBuffer->duration_,
             filledOutputBuffer };
     {
         std::unique_lock<std::mutex> lock(mutex_);
@@ -416,6 +421,98 @@ int64_t SubtitleSink::GetMediaTime()
         return 0;
     }
     return syncCenter->GetMediaTimeNow();
+}
+
+std::pair<std::string, bool> SubtitleSink::parseTag(const std::string& tagContent)
+{
+    std::string tag = tagContent;
+    bool isClosing = false;
+
+    if (!tag.empty() && tag[0] == SLASH) {
+        isClosing = true;
+        tag = tag.substr(1);
+    }
+
+    size_t spacePos = tag.find(SPACE);
+    if (spacePos != std::string::npos) {
+        tag = tag.substr(0, spacePos);
+    }
+
+    return {tag, isClosing};
+}
+
+bool SubtitleSink::findAndRemoveMatchingTag(std::stack<std::pair<std::string,
+    size_t>>& openTags, const std::string& tag)
+{
+    bool found = false;
+    std::stack<std::pair<std::string, size_t>> tempStack;
+
+    while (!openTags.empty()) {
+        if (openTags.top().first == tag) {
+            openTags.pop();
+            found = true;
+            break;
+        }
+        tempStack.push(openTags.top());
+        openTags.pop();
+    }
+
+    while (!tempStack.empty()) {
+        openTags.push(tempStack.top());
+        tempStack.pop();
+    }
+
+    return found;
+}
+
+void SubtitleSink::restoreUnsupportedTags(std::string& result, std::stack<std::pair<std::string, size_t>>& openTags)
+{
+    while (!openTags.empty()) {
+        auto tagInfo = openTags.top();
+        openTags.pop();
+        std::string tag = tagInfo.first;
+        size_t startPos = tagInfo.second;
+
+        if (SUPPORTED_TAGS.find(tag) == SUPPORTED_TAGS.end()) {
+            std::string openTag = SMALLER_NUMBER + tag + BIGGER_NUMBER;
+            result.insert(startPos, openTag);
+        }
+    }
+}
+
+std::string SubtitleSink::removeTextTags(const std::string& text)
+{
+    std::string result;
+    std::stack<std::pair<std::string, size_t>> openTags;
+    size_t i = 0;
+
+    while (i < text.length()) {
+        if (text[i] != SMALLER_NUMBER) {
+            result += text[i];
+            i++;
+            continue;
+        }
+
+        size_t endPos = text.find(BIGGER_NUMBER, i);
+        if (endPos == std::string::npos) {
+            result += text.substr(i);
+            break;
+        }
+
+        auto parsedTag = parseTag(text.substr(i + 1, endPos - i - 1));
+        if (!parsedTag.second) {
+            openTags.push({parsedTag.first, result.length()});
+        } else {
+            bool found = findAndRemoveMatchingTag(openTags, parsedTag.first);
+            if (!found) {
+                result += text.substr(i, endPos - i + 1);
+            }
+        }
+        i = endPos + 1;
+    }
+
+    restoreUnsupportedTags(result, openTags);
+    return result;
 }
 }  // namespace MEDIA
 }  // namespace OHOS

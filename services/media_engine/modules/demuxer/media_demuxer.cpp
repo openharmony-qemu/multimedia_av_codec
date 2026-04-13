@@ -1240,10 +1240,6 @@ bool MediaDemuxer::IsSubtitleMime(const std::string& mime)
 Status MediaDemuxer::SetSubtitleSource(const std::shared_ptr<MediaSource> &subSource)
 {
     MEDIA_LOG_I("In");
-    if (IsValidTrackId(subtitleTrackId_)) {
-        MEDIA_LOG_W("Found subtitle track, not support ext");
-        return Status::OK;
-    }
     subtitleSource_->SetCallback(shared_from_this());
     subtitleSource_->SetSource(subSource);
     Status ret = subtitleSource_->GetSize(subMediaDataSize_);
@@ -1332,6 +1328,9 @@ Status MediaDemuxer::SetOutputBufferQueue(int32_t trackId, const sptr<AVBufferQu
     if (bufferQueueMap_.find(trackId) != bufferQueueMap_.end()) {
         MEDIA_LOG_W("Has been set already");
     }
+    if (IsSubtitleTrackId(trackId)) {
+        subtitleTrackId_ = trackId;
+    }
     Status ret = InnerSelectTrack(trackId);
     if (ret == Status::OK) {
         auto track = trackMap_.find(trackId);
@@ -1386,7 +1385,7 @@ Status MediaDemuxer::InnerSelectTrack(int32_t trackId)
 
     int32_t innerTrackID = trackId;
     std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = nullptr;
-    if (IsNeedMapToInnerTrackID()) {
+    if (IsNeedMapToInnerTrackID() || IsSubtitleTrackId(trackId)) {
         int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
         pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamID);
         FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER, "Demuxer plugin is nullptr");
@@ -5948,6 +5947,13 @@ bool MediaDemuxer::IsNeedPreDownload()
 {
     FALSE_RETURN_V_MSG_E(source_ != nullptr, false, "source_ is nullptr");
     return source_->IsNeedPreDownload();
+}
+ 
+bool MediaDemuxer::IsSubtitleTrackId(int32_t trackId)
+{
+    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, false, "demuxerPluginManger_ is nullptr");
+    TrackType trackType = demuxerPluginManager_->GetTrackTypeByTrackID(trackId);
+    return trackType == TrackType::TRACK_SUBTITLE;
 }
 } // namespace Media
 } // namespace OHOS
