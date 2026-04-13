@@ -55,7 +55,7 @@ constexpr uint32_t LOG_MAX_PRINTS_COUNT = 10; // 10 times
 
 void MediaDemuxer::HandleAutoMaintainPts(int32_t trackId, std::shared_ptr<AVBuffer> sample)
 {
-    if (!isAutoMaintainPts_) {
+    if (!isAutoMaintainPts_.load()) {
         return;
     }
     int64_t curPacketPts = sample->pts_;
@@ -73,7 +73,7 @@ void MediaDemuxer::HandleAutoMaintainPts(int32_t trackId, std::shared_ptr<AVBuff
     }
 
     if (baseInfo->segmentOffset == INVALID_PTS_DATA) {
-        int64_t offset = static_cast<int64_t>(source_->GetSegmentOffset());
+        int64_t offset = GetCurrentSegmentOffset(trackId, baseInfo->segmentOffset);
         if (baseInfo->segmentOffset != offset) {
             baseInfo->segmentOffset = offset;
             baseInfo->basePts = curPacketPts;
@@ -81,7 +81,7 @@ void MediaDemuxer::HandleAutoMaintainPts(int32_t trackId, std::shared_ptr<AVBuff
         sample->pts_ = baseInfo->segmentOffset + curPacketPts - baseInfo->basePts + mediaStartPts_;
     } else if (diff > MAX_PTS_DIFFER_THRESHOLD_US) {
         if (baseInfo->isLastPtsChange) {
-            int64_t offset = static_cast<int64_t>(source_->GetSegmentOffset());
+            int64_t offset = GetCurrentSegmentOffset(trackId, baseInfo->segmentOffset);
             if (baseInfo->segmentOffset != offset) {
                 baseInfo->segmentOffset = offset;
                 baseInfo->basePts = baseInfo->candidateBasePts;
@@ -112,7 +112,7 @@ void MediaDemuxer::InitPtsInfo()
         return;
     }
     MEDIA_LOG_I("Enable hls disContinuity auto maintain pts");
-    isAutoMaintainPts_ = true;
+    isAutoMaintainPts_.store(true);
     AutoLock lock(mapMutex_);
     for (auto it = bufferQueueMap_.begin(); it != bufferQueueMap_.end(); it++) {
         int32_t trackId = it->first;
@@ -123,6 +123,7 @@ void MediaDemuxer::InitPtsInfo()
         maintainBaseInfos_[trackId]->basePts = INVALID_PTS_DATA;
         maintainBaseInfos_[trackId]->isLastPtsChange = false;
         maintainBaseInfos_[trackId]->lastPtsModifyedMax = INVALID_PTS_DATA;
+        SetCurrentSegmentOffset(trackId, source_->GetSegmentOffset());
     }
 }
 
@@ -174,6 +175,45 @@ void MediaDemuxer::TranscoderInitMediaStartPts()
             break;
         }
     }
+}
+
+void MediaDemuxer::UpdateSegmentOffset(int32_t trackId)
+{
+    FALSE_RETURN_NOLOG(isAutoMaintainPts_.load());
+    FALSE_RETURN_NOLOG(source_ != nullptr);
+
+    auto offset = source_->GetSegmentOffset();
+    SetCurrentSegmentOffset(trackId, offset);
+    FALSE_GOON_NOEXEC(IsAVInOneStream() && trackId == videoTrackId_, SetCurrentSegmentOffset(audioTrackId_, offset));
+}
+
+void MediaDemuxer::UpdateSegmentOffset(int32_t oldTrackId, int32_t newTrackId)
+{
+    FALSE_RETURN_NOLOG(isAutoMaintainPts_.load());
+    FALSE_RETURN_NOLOG(source_ != nullptr);
+
+    auto offset = source_->GetSegmentOffset();
+    SetCurrentSegmentOffset(newTrackId, GetCurrentSegmentOffset(oldTrackId, offset));
+}
+
+void MediaDemuxer::SetCurrentSegmentOffset(int32_t trackId, size_t segmentOffset)
+{
+    FALSE_RETURN_NOLOG(IsValidTrackId(trackId));
+
+    // segmentOffset is derived from PTS. Clamp to int64_t range to avoid overflow.
+    std::lock_guard<std::mutex> lock(segmentOffsetMutex_);
+    int64_t max = std::numeric_limits<int64_t>::max();
+    currentSegmentOffsetMap_[trackId] =
+        (segmentOffset > static_cast<size_t>(max)) ? max : static_cast<int64_t>(segmentOffset);
+}
+
+int64_t MediaDemuxer::GetCurrentSegmentOffset(int32_t trackId, int64_t oldSegmentOffset)
+{
+    FALSE_RETURN_V_NOLOG(isAutoMaintainPts_.load(), oldSegmentOffset);
+    FALSE_RETURN_V_NOLOG(IsValidTrackId(trackId), oldSegmentOffset);
+    std::lock_guard<std::mutex> lock(segmentOffsetMutex_);
+    FALSE_RETURN_V_NOLOG(currentSegmentOffsetMap_.find(trackId) != currentSegmentOffsetMap_.end(), oldSegmentOffset);
+    return currentSegmentOffsetMap_[trackId];
 }
 } // namespace Media
 } // namespace OHOS

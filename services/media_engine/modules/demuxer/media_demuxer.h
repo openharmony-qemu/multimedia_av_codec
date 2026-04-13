@@ -436,6 +436,10 @@ private:
     int64_t GetCurrentTimeMs();
     void UpdateTrackMap();
     bool IsNeedPreDownload();
+    void UpdateSegmentOffset(int32_t trackId);
+    void UpdateSegmentOffset(int32_t oldTrackId, int32_t newTrackId);
+    void SetCurrentSegmentOffset(int32_t trackId, size_t segmentOffset);
+    int64_t GetCurrentSegmentOffset(int32_t trackId, int64_t oldSegmentOffset);
 
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
@@ -539,8 +543,10 @@ private:
     std::atomic<bool> isDemuxerLoopExecuting_ {false};
     std::atomic<bool> isFirstFrameAfterSeek_ {false};
     std::atomic<bool> isInterruptNeeded_ {false};
-    bool isAutoMaintainPts_ = false;
+    std::atomic<bool> isAutoMaintainPts_ {false};
     std::map<int32_t, std::shared_ptr<MaintainBaseInfo>> maintainBaseInfos_;
+    std::map<int32_t, int64_t> currentSegmentOffsetMap_;
+    std::mutex segmentOffsetMutex_;
     int64_t mediaStartPts_ {HST_TIME_NONE};
     int64_t transcoderStartPts_ {HST_TIME_NONE};
     bool isEnableReselectVideoTrack_ {false};

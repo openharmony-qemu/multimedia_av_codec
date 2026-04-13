@@ -2249,4 +2249,256 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_IsCloudFd_001, TestSize.Level1)
     EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
     EXPECT_FALSE(demuxer->IsCloudFd());
 }
+
+/**
+ * @tc.name: MediaDemuxer_SetCurrentSegmentOffset_001
+ * @tc.desc: test SetCurrentSegmentOffset (normal case with valid trackId and segmentOffset)
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SetCurrentSegmentOffset_001, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    int32_t trackId = 0;
+    size_t segmentOffset = 1024;
+
+    demuxer->SetCurrentSegmentOffset(trackId, segmentOffset);
+    EXPECT_EQ(demuxer->currentSegmentOffsetMap_[trackId], static_cast<int64_t>(segmentOffset));
+}
+
+/**
+ * @tc.name: MediaDemuxer_SetCurrentSegmentOffset_002
+ * @tc.desc: test SetCurrentSegmentOffset (invalid trackId should not update map)
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SetCurrentSegmentOffset_002, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    int32_t invalidTrackId = -1;
+    size_t segmentOffset = 1024;
+
+    demuxer->SetCurrentSegmentOffset(invalidTrackId, segmentOffset);
+    EXPECT_EQ(demuxer->currentSegmentOffsetMap_.find(invalidTrackId), demuxer->currentSegmentOffsetMap_.end());
+}
+
+/**
+ * @tc.name: MediaDemuxer_SetCurrentSegmentOffset_003
+ * @tc.desc: test SetCurrentSegmentOffset (segmentOffset overflow should be capped to int64_t max)
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SetCurrentSegmentOffset_003, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    int32_t trackId = 0;
+    size_t maxSegmentOffset = std::numeric_limits<size_t>::max();
+    int64_t expectedValue = std::numeric_limits<int64_t>::max();
+
+    demuxer->SetCurrentSegmentOffset(trackId, maxSegmentOffset);
+    EXPECT_EQ(demuxer->currentSegmentOffsetMap_[trackId], expectedValue);
+}
+
+/**
+ * @tc.name: MediaDemuxer_GetCurrentSegmentOffset_001
+ * @tc.desc: test GetCurrentSegmentOffset (normal case with valid trackId and autoMaintainPts enabled)
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetCurrentSegmentOffset_001, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    int32_t trackId = 0;
+    size_t segmentOffset = 2048;
+    int64_t oldSegmentOffset = 100;
+
+    demuxer->isAutoMaintainPts_.store(true);
+    demuxer->SetCurrentSegmentOffset(trackId, segmentOffset);
+    int64_t result = demuxer->GetCurrentSegmentOffset(trackId, oldSegmentOffset);
+    EXPECT_EQ(result, static_cast<int64_t>(segmentOffset));
+}
+
+/**
+ * @tc.name: MediaDemuxer_GetCurrentSegmentOffset_002
+ * @tc.desc: test GetCurrentSegmentOffset (autoMaintainPts disabled should return oldSegmentOffset)
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetCurrentSegmentOffset_002, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    int32_t trackId = 0;
+    int64_t oldSegmentOffset = 100;
+
+    demuxer->isAutoMaintainPts_.store(false);
+    int64_t result = demuxer->GetCurrentSegmentOffset(trackId, oldSegmentOffset);
+    EXPECT_EQ(result, oldSegmentOffset);
+}
+
+/**
+ * @tc.name: MediaDemuxer_GetCurrentSegmentOffset_003
+ * @tc.desc: test GetCurrentSegmentOffset (invalid trackId should return oldSegmentOffset)
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetCurrentSegmentOffset_003, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    int32_t invalidTrackId = -1;
+    int64_t oldSegmentOffset = 100;
+
+    demuxer->isAutoMaintainPts_.store(true);
+    int64_t result = demuxer->GetCurrentSegmentOffset(invalidTrackId, oldSegmentOffset);
+    EXPECT_EQ(result, oldSegmentOffset);
+}
+
+/**
+ * @tc.name: MediaDemuxer_GetCurrentSegmentOffset_004
+ * @tc.desc: test GetCurrentSegmentOffset (trackId not in map should return oldSegmentOffset)
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetCurrentSegmentOffset_004, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    int32_t trackId = 0;
+    int64_t oldSegmentOffset = 100;
+
+    demuxer->isAutoMaintainPts_.store(true);
+    int64_t result = demuxer->GetCurrentSegmentOffset(trackId, oldSegmentOffset);
+    EXPECT_EQ(result, oldSegmentOffset);
+}
+
+/**
+ * @tc.name: MediaDemuxer_UpdateSegmentOffset_001
+ * @tc.desc: test UpdateSegmentOffset (normal case with autoMaintainPts enabled and source available)
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_UpdateSegmentOffset_001, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    int32_t trackId = 0;
+
+    demuxer->isAutoMaintainPts_.store(true);
+    demuxer->source_ = std::make_shared<Source>();
+    demuxer->UpdateSegmentOffset(trackId);
+    EXPECT_NE(demuxer->currentSegmentOffsetMap_.find(trackId), demuxer->currentSegmentOffsetMap_.end());
+    EXPECT_EQ(demuxer->currentSegmentOffsetMap_[trackId], 0);
+}
+
+/**
+ * @tc.name: MediaDemuxer_UpdateSegmentOffset_002
+ * @tc.desc: test UpdateSegmentOffset (autoMaintainPts disabled should not update)
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_UpdateSegmentOffset_002, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    int32_t trackId = 0;
+
+    demuxer->isAutoMaintainPts_.store(false);
+    demuxer->UpdateSegmentOffset(trackId);
+    EXPECT_EQ(demuxer->currentSegmentOffsetMap_.find(trackId), demuxer->currentSegmentOffsetMap_.end());
+}
+
+/**
+ * @tc.name: MediaDemuxer_UpdateSegmentOffset_003
+ * @tc.desc: test UpdateSegmentOffset (source nullptr should not update)
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_UpdateSegmentOffset_003, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    int32_t trackId = 0;
+
+    demuxer->isAutoMaintainPts_.store(true);
+    demuxer->source_ = nullptr;
+    demuxer->UpdateSegmentOffset(trackId);
+    EXPECT_EQ(demuxer->currentSegmentOffsetMap_.find(trackId), demuxer->currentSegmentOffsetMap_.end());
+}
+
+/**
+ * @tc.name: MediaDemuxer_UpdateSegmentOffsetWithTwoTrackIds_001
+ * @tc.desc: test UpdateSegmentOffset with two trackIds (transfer offset from oldTrackId to newTrackId)
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_UpdateSegmentOffsetWithTwoTrackIds_001, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    int32_t oldTrackId = 0;
+    int32_t newTrackId = 1;
+    int64_t offsetValue = 2048;
+
+    demuxer->isAutoMaintainPts_.store(true);
+    demuxer->source_ = std::make_shared<Source>();
+    demuxer->currentSegmentOffsetMap_[oldTrackId] = offsetValue;
+    demuxer->UpdateSegmentOffset(oldTrackId, newTrackId);
+    EXPECT_NE(demuxer->currentSegmentOffsetMap_.find(newTrackId), demuxer->currentSegmentOffsetMap_.end());
+    EXPECT_EQ(demuxer->currentSegmentOffsetMap_[newTrackId], offsetValue);
+}
+
+/**
+ * @tc.name: MediaDemuxer_UpdateSegmentOffsetWithTwoTrackIds_002
+ * @tc.desc: test UpdateSegmentOffset with two trackIds (oldTrackId not in map, use source offset)
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_UpdateSegmentOffsetWithTwoTrackIds_002, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    int32_t oldTrackId = 0;
+    int32_t newTrackId = 1;
+
+    demuxer->isAutoMaintainPts_.store(true);
+    demuxer->source_ = std::make_shared<Source>();
+    demuxer->UpdateSegmentOffset(oldTrackId, newTrackId);
+    EXPECT_NE(demuxer->currentSegmentOffsetMap_.find(newTrackId), demuxer->currentSegmentOffsetMap_.end());
+    EXPECT_EQ(demuxer->currentSegmentOffsetMap_[newTrackId], 0);
+}
+
+/**
+ * @tc.name: MediaDemuxer_UpdateSegmentOffsetWithTwoTrackIds_003
+ * @tc.desc: test UpdateSegmentOffset with two trackIds (autoMaintainPts disabled)
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_UpdateSegmentOffsetWithTwoTrackIds_003, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    int32_t oldTrackId = 0;
+    int32_t newTrackId = 1;
+
+    demuxer->isAutoMaintainPts_.store(false);
+    demuxer->source_ = std::make_shared<Source>();
+    demuxer->currentSegmentOffsetMap_[oldTrackId] = 2048;
+    demuxer->UpdateSegmentOffset(oldTrackId, newTrackId);
+    EXPECT_EQ(demuxer->currentSegmentOffsetMap_.find(newTrackId), demuxer->currentSegmentOffsetMap_.end());
+}
+
+/**
+ * @tc.name: MediaDemuxer_UpdateSegmentOffsetWithTwoTrackIds_004
+ * @tc.desc: test UpdateSegmentOffset with two trackIds (source nullptr)
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_UpdateSegmentOffsetWithTwoTrackIds_004, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    int32_t oldTrackId = 0;
+    int32_t newTrackId = 1;
+
+    demuxer->isAutoMaintainPts_.store(true);
+    demuxer->source_ = nullptr;
+    demuxer->currentSegmentOffsetMap_[oldTrackId] = 2048;
+    demuxer->UpdateSegmentOffset(oldTrackId, newTrackId);
+    EXPECT_EQ(demuxer->currentSegmentOffsetMap_.find(newTrackId), demuxer->currentSegmentOffsetMap_.end());
+}
+
+/**
+ * @tc.name: MediaDemuxer_UpdateSegmentOffsetWithTwoTrackIds_005
+ * @tc.desc: test UpdateSegmentOffset with two trackIds (invalid newTrackId)
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_UpdateSegmentOffsetWithTwoTrackIds_005, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    int32_t oldTrackId = 0;
+    int32_t invalidNewTrackId = -1;
+
+    demuxer->isAutoMaintainPts_.store(true);
+    demuxer->source_ = std::make_shared<Source>();
+    demuxer->currentSegmentOffsetMap_[oldTrackId] = 2048;
+    demuxer->UpdateSegmentOffset(oldTrackId, invalidNewTrackId);
+    EXPECT_EQ(demuxer->currentSegmentOffsetMap_.find(invalidNewTrackId), demuxer->currentSegmentOffsetMap_.end());
+}
 }

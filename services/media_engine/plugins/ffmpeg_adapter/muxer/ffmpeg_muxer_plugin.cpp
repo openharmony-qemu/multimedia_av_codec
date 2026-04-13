@@ -16,6 +16,7 @@
 #define HST_LOG_TAG "FfmpegMuxerPlugin"
 
 #include "ffmpeg_muxer_plugin.h"
+#include "ffmpeg_muxer_register.h"
 
 #include <malloc.h>
 #include <set>
@@ -27,15 +28,12 @@
 #include "meta/mime_type.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_MUXER, "HiStreamer"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_MUXER, "FFmpegMuxerPlugin"};
 
 using namespace OHOS::Media;
 using namespace OHOS::Media::Plugins;
 using namespace Ffmpeg;
 
-std::map<std::string, std::shared_ptr<AVOutputFormat>> g_pluginOutputFmt;
-
-std::set<std::string> g_supportedMuxer = {"mp4", "ipod", "amr", "mp3", "wav", "adts", "flac", "ogg"};
 const std::set<std::string> SUPPORTED_TRACK_REF_TYPE = {"hint", "cdsc", "font", "hind", "vdep", "vplx",
     "subt", "thmb", "auxl", "cdtg", "shsc", "aest"};
 constexpr float LATITUDE_MIN = -90.0f;
@@ -63,200 +61,6 @@ static const std::vector<TagType> gltfTags = {
     Tag::MEDIA_GLTF_CONTENT_ENCODING,
     Tag::MEDIA_GLTF_ITEM_TYPE
 };
-
-bool IsMuxerSupported(const char *name)
-{
-    return g_supportedMuxer.count(name) == 1;
-}
-
-bool CodecId2Cap(AVCodecID codecId, bool encoder, Capability& cap)
-{
-    switch (codecId) {
-        case AV_CODEC_ID_MP3:
-            cap.SetMime(MimeType::AUDIO_MPEG).AppendFixedKey<uint32_t>(Tag::AUDIO_MPEG_VERSION, 1);
-            return true;
-        case AV_CODEC_ID_AAC:
-            cap.SetMime(MimeType::AUDIO_AAC);
-            return true;
-        case AV_CODEC_ID_MPEG4:
-            cap.SetMime(MimeType::VIDEO_MPEG4);
-            return true;
-        case AV_CODEC_ID_H264:
-            cap.SetMime(MimeType::VIDEO_AVC);
-            return true;
-        case AV_CODEC_ID_HEVC:
-            cap.SetMime(MimeType::VIDEO_HEVC);
-            return true;
-        case AV_CODEC_ID_AMR_NB:
-            cap.SetMime(MimeType::AUDIO_AMR_NB);
-            return true;
-        case AV_CODEC_ID_AMR_WB:
-            cap.SetMime(MimeType::AUDIO_AMR_WB);
-            return true;
-        case AV_CODEC_ID_PCM_S16LE:
-            cap.SetMime(MimeType::AUDIO_RAW);
-            return true;
-        case AV_CODEC_ID_FLAC:
-            cap.SetMime(MimeType::AUDIO_FLAC);
-            return true;
-        case AV_CODEC_ID_OPUS:
-            cap.SetMime(MimeType::AUDIO_OPUS);
-            return true;
-        case AV_CODEC_ID_VORBIS:
-            cap.SetMime(MimeType::AUDIO_VORBIS);
-            return true;
-        default:
-            break;
-    }
-    return false;
-}
-
-bool FormatName2OutCapability(const std::string& fmtName, MuxerPluginDef& pluginDef)
-{
-    if (fmtName == "mp4") {
-        auto cap = Capability(MimeType::MEDIA_MP4);
-        pluginDef.AddOutCaps(cap);
-        return true;
-    } else if (fmtName == "ipod") {
-        auto cap = Capability(MimeType::MEDIA_M4A);
-        pluginDef.AddOutCaps(cap);
-        return true;
-    } else if (fmtName == "amr") {
-        auto cap = Capability(MimeType::MEDIA_AMR);
-        pluginDef.AddOutCaps(cap);
-        return true;
-    } else if (fmtName == "mp3") {
-        auto cap = Capability(MimeType::MEDIA_MP3);
-        pluginDef.AddOutCaps(cap);
-        return true;
-    } else if (fmtName == "wav") {
-        auto cap = Capability(MimeType::MEDIA_WAV);
-        pluginDef.AddOutCaps(cap);
-        return true;
-    } else if (fmtName == "adts") {
-        auto cap = Capability(MimeType::MEDIA_AAC);
-        pluginDef.AddOutCaps(cap);
-        return true;
-    } else if (fmtName == "flac") {
-        auto cap = Capability(MimeType::MEDIA_FLAC);
-        pluginDef.AddOutCaps(cap);
-        return true;
-    } else if (fmtName == "ogg") {
-        auto cap = Capability(MimeType::MEDIA_OGG);
-        pluginDef.AddOutCaps(cap);
-        return true;
-    }
-    return false;
-}
-
-bool UpdatePluginInCapability(AVCodecID codecId, MuxerPluginDef& pluginDef)
-{
-    if (codecId != AV_CODEC_ID_NONE) {
-        Capability cap;
-        if (!CodecId2Cap(codecId, true, cap)) {
-            return false;
-        } else {
-            pluginDef.AddInCaps(cap);
-        }
-    }
-    return true;
-}
-
-bool UpdatePluginCapability(const AVOutputFormat* oFmt, MuxerPluginDef& pluginDef)
-{
-    if (!FormatName2OutCapability(oFmt->name, pluginDef)) {
-        MEDIA_LOG_D(PUBLIC_LOG_S " is not supported now", oFmt->name);
-        return false;
-    }
-    UpdatePluginInCapability(oFmt->audio_codec, pluginDef);
-    UpdatePluginInCapability(oFmt->video_codec, pluginDef);
-    UpdatePluginInCapability(oFmt->subtitle_codec, pluginDef);
-    return true;
-}
-
-Status RegisterMuxerPlugins(const std::shared_ptr<Register>& reg)
-{
-    const AVOutputFormat *outputFormat = nullptr;
-    void *ite = nullptr;
-    while ((outputFormat = av_muxer_iterate(&ite))) {
-        if (!IsMuxerSupported(outputFormat->name)) {
-            continue;
-        }
-        if (outputFormat->long_name != nullptr && strncmp(outputFormat->name, "flac ", 4)) {  // 4 not flac
-            if (!strncmp(outputFormat->long_name, "raw ", 4)) { // 4
-                continue;
-            }
-        }
-        std::string pluginName = "ffmpegMux_" + std::string(outputFormat->name);
-        ReplaceDelimiter(".,|-<> ", '_', pluginName);
-        MuxerPluginDef def;
-        if (!UpdatePluginCapability(outputFormat, def)) {
-            continue;
-        }
-        def.name = pluginName;
-        def.description = "ffmpeg muxer";
-        def.rank = 60; // 60
-        def.SetCreator([](const std::string& name) -> std::shared_ptr<MuxerPlugin> {
-            return std::make_shared<FFmpegMuxerPlugin>(name);
-        });
-        if (reg->AddPlugin(def) != Status::OK) {
-            MEDIA_LOG_W("fail to add plugin " PUBLIC_LOG_S, pluginName.c_str());
-            continue;
-        }
-        g_pluginOutputFmt[pluginName] = std::shared_ptr<AVOutputFormat>(
-            const_cast<AVOutputFormat*>(outputFormat), [](AVOutputFormat *ptr) {}); // do not delete
-    }
-    return Status::OK;
-}
-
-void FfmpegLogPrintWithLevel(void* avcl, int level, const char* fmt, va_list vl)
-{
-    (void)avcl;
-    char buf[500] = {0}; // 500
-    int ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf), fmt, vl);
-    if (ret < 0) {
-        return;
-    }
-    switch (level) {
-        case AV_LOG_WARNING:
-            MEDIA_LOG_W("[FFmpeg Log " PUBLIC_LOG_D32 " WARN] " PUBLIC_LOG_S, level, buf);
-            break;
-        case AV_LOG_ERROR:
-            MEDIA_LOG_E("[FFmpeg Log " PUBLIC_LOG_D32 " ERROR] " PUBLIC_LOG_S, level, buf);
-            break;
-        case AV_LOG_FATAL:
-            MEDIA_LOG_F("[FFmpeg Log " PUBLIC_LOG_D32 " FATAL] " PUBLIC_LOG_S, level, buf);
-            break;
-        case AV_LOG_INFO:
-            MEDIA_LOG_I("[FFmpeg Log " PUBLIC_LOG_D32 " INFO] " PUBLIC_LOG_S, level, buf);
-            break;
-        case AV_LOG_DEBUG:
-            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 " DEBUG] " PUBLIC_LOG_S, level, buf);
-            break;
-        default:
-            break;
-    }
-}
-
-PLUGIN_DEFINITION(FFmpegMuxer, LicenseType::LGPL, RegisterMuxerPlugins, [] {g_pluginOutputFmt.clear();})
-
-void ResetCodecParameter(AVCodecParameters *par)
-{
-    av_freep(&par->extradata);
-    (void)memset_s(par, sizeof(*par), 0, sizeof(*par));
-    par->codec_type = AVMEDIA_TYPE_UNKNOWN;
-    par->codec_id = AV_CODEC_ID_NONE;
-    par->format = -1;
-    par->profile = FF_PROFILE_UNKNOWN;
-    par->level = FF_LEVEL_UNKNOWN;
-    par->field_order = AV_FIELD_UNKNOWN;
-    par->color_range = AVCOL_RANGE_UNSPECIFIED;
-    par->color_primaries = AVCOL_PRI_UNSPECIFIED;
-    par->color_trc = AVCOL_TRC_UNSPECIFIED;
-    par->color_space = AVCOL_SPC_UNSPECIFIED;
-    par->chroma_location = AVCHROMA_LOC_UNSPECIFIED;
-    par->sample_aspect_ratio = AVRational {0, 1};
-}
 }
 
 namespace OHOS {
@@ -271,23 +75,23 @@ FFmpegMuxerPlugin::FFmpegMuxerPlugin(std::string name)
     mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
 #endif
-    av_log_set_callback(FfmpegLogPrintWithLevel);
+    av_log_set_callback(FFmpegMuxerRegister::FfmpegLogPrintWithLevel);
     auto pkt = av_packet_alloc();
     cachePacket_ = std::shared_ptr<AVPacket> (pkt, [] (AVPacket *packet) {av_packet_free(&packet);});
-    outputFormat_ = g_pluginOutputFmt[pluginName_];
+    outputFormat_ = FFmpegMuxerRegister::GetAVOutputFormat(pluginName_);
     auto fmt = avformat_alloc_context();
     if (fmt) {
         fmt->pb = nullptr;
         fmt->oformat = outputFormat_.get();
         fmt->flags = static_cast<uint32_t>(fmt->flags) | static_cast<uint32_t>(AVFMT_FLAG_CUSTOM_IO);
-        fmt->io_open = IoOpen;
-        fmt->io_close2 = IoClose;
+        fmt->io_open = FFmpegMuxerRegister::IoOpen;
+        fmt->io_close2 = FFmpegMuxerRegister::IoClose;
     } else {
         MEDIA_LOG_E("Failed to allocate AVFormatContext, fmt is null.");
     }
     formatContext_ = std::shared_ptr<AVFormatContext>(fmt, [](AVFormatContext *ptr) {
         if (ptr) {
-            DeInitAvIoCtx(ptr->pb);
+            FFmpegMuxerRegister::DeInitAvIoCtx(ptr->pb);
             avformat_free_context(ptr);
         }
     });
@@ -311,8 +115,8 @@ FFmpegMuxerPlugin::~FFmpegMuxerPlugin()
 Status FFmpegMuxerPlugin::SetDataSink(const std::shared_ptr<DataSink> &dataSink)
 {
     FALSE_RETURN_V_MSG_E(dataSink != nullptr, Status::ERROR_INVALID_PARAMETER, "data sink is null");
-    DeInitAvIoCtx(formatContext_->pb);
-    formatContext_->pb = InitAvIoCtx(dataSink, 1);
+    FFmpegMuxerRegister::DeInitAvIoCtx(formatContext_->pb);
+    formatContext_->pb = FFmpegMuxerRegister::InitAvIoCtx(dataSink, 1);
     FALSE_RETURN_V_MSG_E(formatContext_->pb != nullptr, Status::ERROR_INVALID_OPERATION, "failed to create io");
     canReadFile_ = dataSink->CanRead();
     return Status::NO_ERROR;
@@ -939,7 +743,7 @@ Status FFmpegMuxerPlugin::AddAudioTrack(int32_t &trackIndex, const std::shared_p
 
     auto st = avformat_new_stream(formatContext_.get(), nullptr);
     FALSE_RETURN_V_MSG_E(st != nullptr, Status::ERROR_NO_MEMORY, "avformat_new_stream failed!");
-    ResetCodecParameter(st->codecpar);
+    FFmpegMuxerRegister::ResetCodecParameter(st->codecpar);
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id = codeID;
     st->codecpar->sample_rate = sampleRate;
@@ -983,7 +787,7 @@ Status FFmpegMuxerPlugin::AddVideoTrack(int32_t &trackIndex, const std::shared_p
 
     auto st = avformat_new_stream(formatContext_.get(), nullptr);
     FALSE_RETURN_V_MSG_E(st != nullptr, Status::ERROR_NO_MEMORY, "avformat_new_stream failed!");
-    ResetCodecParameter(st->codecpar);
+    FFmpegMuxerRegister::ResetCodecParameter(st->codecpar);
     st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codecpar->codec_id = codeID;
     st->codecpar->codec_tag = codeID == AV_CODEC_ID_HEVC ? MKTAG('h', 'v', 'c', '1') : 0;
@@ -1029,7 +833,7 @@ Status FFmpegMuxerPlugin::AddTimedMetaTrack(
 
     auto st = avformat_new_stream(formatContext_.get(), nullptr);
     FALSE_RETURN_V_MSG_E(st != nullptr, Status::ERROR_NO_MEMORY, "avformat_new_stream failed!");
-    ResetCodecParameter(st->codecpar);
+    FFmpegMuxerRegister::ResetCodecParameter(st->codecpar);
     st->codecpar->codec_type = AVMEDIA_TYPE_TIMEDMETA;
     st->codecpar->codec_id = codeID;
     st->codecpar->codec_tag = MKTAG('c', 'd', 's', 'c');
@@ -1070,7 +874,7 @@ Status FFmpegMuxerPlugin::AddAudioAuxiliaryTrack(
 
     auto st = avformat_new_stream(formatContext_.get(), nullptr);
     FALSE_RETURN_V_MSG_E(st != nullptr, Status::ERROR_NO_MEMORY, "avformat_new_stream failed!");
-    ResetCodecParameter(st->codecpar);
+    FFmpegMuxerRegister::ResetCodecParameter(st->codecpar);
     st->codecpar->codec_type = AVMEDIA_TYPE_AUXILIARY;
     st->codecpar->codec_id = codeID;
     st->codecpar->sample_rate = sampleRate;
@@ -1117,7 +921,7 @@ Status FFmpegMuxerPlugin::AddVideoAuxiliaryTrack(
 
     auto st = avformat_new_stream(formatContext_.get(), nullptr);
     FALSE_RETURN_V_MSG_E(st != nullptr, Status::ERROR_NO_MEMORY, "avformat_new_stream failed!");
-    ResetCodecParameter(st->codecpar);
+    FFmpegMuxerRegister::ResetCodecParameter(st->codecpar);
     st->codecpar->codec_type = AVMEDIA_TYPE_AUXILIARY;
     st->codecpar->codec_id = codeID;
     st->codecpar->codec_tag = codeID == AV_CODEC_ID_HEVC ? MKTAG('h', 'v', 'c', '1') : 0;
@@ -1603,126 +1407,6 @@ Status FFmpegMuxerPlugin::SetNalSizeLen(AVStream *stream, const std::vector<uint
         return Status::ERROR_INVALID_DATA;
     }
     return Status::NO_ERROR;
-}
-
-AVIOContext* FFmpegMuxerPlugin::InitAvIoCtx(const std::shared_ptr<DataSink>& dataSink, int writeFlags)
-{
-    if (dataSink == nullptr) {
-        return nullptr;
-    }
-    IOContext *ioContext = new IOContext();
-    ioContext->dataSink_ = dataSink;
-    ioContext->pos_ = 0;
-    ioContext->end_ = dataSink->Seek(0ll, SEEK_END);
-
-    constexpr int bufferSize = 4 * 1024; // 4096
-    auto buffer = static_cast<unsigned char*>(av_malloc(bufferSize));
-    AVIOContext *avioContext = avio_alloc_context(buffer, bufferSize, writeFlags, static_cast<void*>(ioContext),
-                                                  IoRead, IoWrite, IoSeek);
-    if (avioContext == nullptr) {
-        delete ioContext;
-        av_free(buffer);
-        return nullptr;
-    }
-    avioContext->seekable = AVIO_SEEKABLE_NORMAL;
-    return avioContext;
-}
-
-void FFmpegMuxerPlugin::DeInitAvIoCtx(AVIOContext *ptr)
-{
-    if (ptr != nullptr) {
-        delete static_cast<IOContext*>(ptr->opaque);
-        ptr->opaque = nullptr;
-        av_freep(&ptr->buffer);
-        av_opt_free(ptr);
-        avio_context_free(&ptr);
-    }
-}
-
-int32_t FFmpegMuxerPlugin::IoRead(void *opaque, uint8_t *buf, int bufSize)
-{
-    auto ioCtx = static_cast<IOContext*>(opaque);
-    if (ioCtx != nullptr && ioCtx->dataSink_ != nullptr) {
-        if (ioCtx->pos_ >= ioCtx->end_) {
-            return AVERROR_EOF;
-        }
-        int64_t ret = ioCtx->dataSink_->Seek(ioCtx->pos_, SEEK_SET);
-        if (ret != -1) {
-            int32_t size = ioCtx->dataSink_->Read(buf, bufSize);
-            if (size == 0) {
-                return AVERROR_EOF;
-            }
-            ioCtx->pos_ += size;
-            return size;
-        }
-        return 0;
-    }
-    return -1;
-}
-
-int32_t FFmpegMuxerPlugin::IoWrite(void *opaque, const uint8_t *buf, int bufSize)
-{
-    auto ioCtx = static_cast<IOContext*>(opaque);
-    if (ioCtx != nullptr && ioCtx->dataSink_ != nullptr) {
-        int64_t ret = ioCtx->dataSink_->Seek(ioCtx->pos_, SEEK_SET);
-        if (ret != -1) {
-            int32_t size = ioCtx->dataSink_->Write(buf, bufSize);
-            if (size < 0) {
-                return -1;
-            }
-            ioCtx->pos_ += size;
-            if (ioCtx->pos_ > ioCtx->end_) {
-                ioCtx->end_ = ioCtx->pos_;
-            }
-            return size;
-        }
-        return 0;
-    }
-    return -1;
-}
-
-int64_t FFmpegMuxerPlugin::IoSeek(void *opaque, int64_t offset, int whence)
-{
-    auto ioContext = static_cast<IOContext*>(opaque);
-    int64_t newPos = 0;
-    switch (whence) {
-        case SEEK_SET:
-            newPos = offset;
-            ioContext->pos_ = newPos;
-            break;
-        case SEEK_CUR:
-            newPos = ioContext->pos_ + offset;
-            break;
-        case SEEK_END:
-        case AVSEEK_SIZE:
-            newPos = ioContext->end_ + offset;
-            break;
-        default:
-            break;
-    }
-    if (whence != AVSEEK_SIZE) {
-        ioContext->pos_ = newPos;
-    }
-    return newPos;
-}
-
-int32_t FFmpegMuxerPlugin::IoOpen(AVFormatContext *s, AVIOContext **pb,
-                                  const char *url, int flags, AVDictionary **options)
-{
-    MEDIA_LOG_D("IoOpen flags %{public}d", flags);
-    *pb = InitAvIoCtx(static_cast<IOContext*>(s->pb->opaque)->dataSink_, 0);
-    if (*pb == nullptr) {
-        MEDIA_LOG_E("IoOpen failed");
-        return -1;
-    }
-    return 0;
-}
-
-int FFmpegMuxerPlugin::IoClose(AVFormatContext *s, AVIOContext *pb)
-{
-    avio_flush(pb);
-    DeInitAvIoCtx(pb);
-    return 0;
 }
 } // namespace Ffmpeg
 } // namespace Plugin
