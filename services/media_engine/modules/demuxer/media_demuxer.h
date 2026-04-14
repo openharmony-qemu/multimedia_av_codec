@@ -440,6 +440,7 @@ private:
     void UpdateSegmentOffset(int32_t oldTrackId, int32_t newTrackId);
     void SetCurrentSegmentOffset(int32_t trackId, size_t segmentOffset);
     int64_t GetCurrentSegmentOffset(int32_t trackId, int64_t oldSegmentOffset);
+    bool IsSubtitleTrackId(int32_t trackId);
 
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;

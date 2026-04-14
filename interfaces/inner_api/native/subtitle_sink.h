@@ -24,6 +24,8 @@
 #include "buffer/avbuffer_queue.h"
 #include "buffer/avbuffer_queue_define.h"
 #include "filter/filter.h"
+#include <unordered_set>
+#include <stack>
 
 namespace OHOS {
 namespace Media {
@@ -90,6 +92,10 @@ private:
     Status PrepareInputBufferQueue();
     int64_t getDurationUsPlayedAtSampleRate(uint32_t numFrames);
     int64_t GetMediaTime();
+    std::string RemoveTextTags(const std::string& text);
+    std::pair<std::string, bool> ParseTag(const std::string& tagContent);
+    bool FindAndRemoveMatchingTag(std::stack<std::pair<std::string, size_t>>& openTags, const std::string& tag);
+    void RestoreUnsupportedTags(std::string& result, std::stack<std::pair<std::string, size_t>>& openTags);
     std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
     int32_t appUid_{0};
     int32_t appPid_{0};

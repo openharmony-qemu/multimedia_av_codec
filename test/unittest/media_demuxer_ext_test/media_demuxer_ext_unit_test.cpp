@@ -8244,4 +8244,112 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_IsNeedPreDownload_001, TestSiz
     EXPECT_CALL(*source, IsNeedPreDownload()).WillOnce(Return(true));
     EXPECT_TRUE(mediaDemuxer_->IsNeedPreDownload());
 }
+
+/**
+ * @tc.name  : MediaDemuxerExt_SetOutputBufferQueue_001
+ * @tc.number: MediaDemuxerExt_SetOutputBufferQueue_001
+ * @tc.desc  : test set output track is subtitle
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SetOutputBufferQueue_001, TestSize.Level1)
+{
+    std::string audioMimeType = "audio/mp3";
+    int64_t startTime = NUM_1000;
+    std::shared_ptr<Meta> trackMeta1 = std::make_shared<Meta>();
+    std::shared_ptr<Meta> trackMeta2 = std::make_shared<Meta>();
+    trackMeta1->SetData(Tag::MIME_TYPE, audioMimeType);
+    trackMeta2->SetData(Tag::MEDIA_START_TIME, startTime);
+    mediaDemuxer_->mediaMetaData_.trackMetas.push_back(trackMeta1);
+    mediaDemuxer_->mediaMetaData_.trackMetas.push_back(trackMeta2);
+    mediaDemuxer_->OnInterrupted(false);
+    mediaDemuxer_->SetBundleName("test");
+
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+    AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
+        GetTrackTypeByTrackID(_)).WillRepeatedly(Return(TrackType::TRACK_SUBTITLE));
+    EXPECT_EQ(mediaDemuxer_->SetOutputBufferQueue(0, inputBufferQueueProducer), Status::ERROR_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_InnerSelectTrack_001
+ * @tc.number: MediaDemuxerExt_InnerSelectTrack_001
+ * @tc.desc  : test IsNeedMapToInnerTrackID = true &&  IsSubtitleTrackId = true
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_InnerSelectTrack_001, TestSize.Level1)
+{
+    mediaDemuxer_->isFlvLiveStream_ = true;
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
+        GetTrackTypeByTrackID(_)).WillRepeatedly(Return(TrackType::TRACK_SUBTITLE));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_))
+        .WillRepeatedly(Return(0));
+    auto plugin = std::make_shared<DemuxerPlugin>("MockPlugin");
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetPluginByStreamID(_)).WillRepeatedly(Return(plugin));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpInnerTrackIDByTrackID(_))
+        .WillRepeatedly(Return(0));
+    EXPECT_CALL(*plugin, SelectTrack(_)).WillOnce(Return(Status::OK));
+    EXPECT_EQ(mediaDemuxer_->InnerSelectTrack(NUM_1), Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_InnerSelectTrack_002
+ * @tc.number: MediaDemuxerExt_InnerSelectTrack_002
+ * @tc.desc  : test IsNeedMapToInnerTrackID = true &&  IsSubtitleTrackId = false
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_InnerSelectTrack_002, TestSize.Level1)
+{
+    mediaDemuxer_->isFlvLiveStream_ = true;
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
+        GetTrackTypeByTrackID(_)).WillRepeatedly(Return(TrackType::TRACK_AUDIO));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_))
+        .WillRepeatedly(Return(0));
+    auto plugin = std::make_shared<DemuxerPlugin>("MockPlugin");
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetPluginByStreamID(_)).WillRepeatedly(Return(plugin));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpInnerTrackIDByTrackID(_))
+        .WillRepeatedly(Return(0));
+    EXPECT_CALL(*plugin, SelectTrack(_)).WillOnce(Return(Status::OK));
+    EXPECT_EQ(mediaDemuxer_->InnerSelectTrack(NUM_1), Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_InnerSelectTrack_003
+ * @tc.number: MediaDemuxerExt_InnerSelectTrack_003
+ * @tc.desc  : test IsNeedMapToInnerTrackID = false &&  IsSubtitleTrackId = true
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_InnerSelectTrack_003, TestSize.Level1)
+{
+    mediaDemuxer_->isFlvLiveStream_ = false;
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
+        GetTrackTypeByTrackID(_)).WillRepeatedly(Return(TrackType::TRACK_SUBTITLE));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_))
+        .WillOnce(Return(-1)).WillOnce(Return(1));
+    auto plugin = std::make_shared<DemuxerPlugin>("MockPlugin");
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetPluginByStreamID(_)).WillRepeatedly(Return(plugin));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpInnerTrackIDByTrackID(_))
+        .WillOnce(Return(0));
+    EXPECT_CALL(*plugin, SelectTrack(_)).WillOnce(Return(Status::OK));
+    EXPECT_EQ(mediaDemuxer_->InnerSelectTrack(NUM_1), Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_InnerSelectTrack_004
+ * @tc.number: MediaDemuxerExt_InnerSelectTrack_004
+ * @tc.desc  : test IsNeedMapToInnerTrackID = false &&  IsSubtitleTrackId = false
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_InnerSelectTrack_004, TestSize.Level1)
+{
+    mediaDemuxer_->isFlvLiveStream_ = false;
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
+        GetTrackTypeByTrackID(_)).WillRepeatedly(Return(TrackType::TRACK_AUDIO));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_))
+        .WillRepeatedly(Return(-1));
+    auto plugin = std::make_shared<DemuxerPlugin>("MockPlugin");
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetStreamIDByTrackID(_))
+        .WillRepeatedly(Return(0));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetPluginByStreamID(_)).WillRepeatedly(Return(plugin));
+    EXPECT_CALL(*plugin, SelectTrack(_)).WillOnce(Return(Status::OK));
+    EXPECT_EQ(mediaDemuxer_->InnerSelectTrack(NUM_1), Status::OK);
+}
 }  // namespace OHOS::Media
