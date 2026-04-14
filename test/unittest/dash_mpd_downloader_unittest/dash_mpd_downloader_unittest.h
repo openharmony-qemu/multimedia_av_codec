@@ -46,7 +46,8 @@ class MockDashMpdCallback : public DashMpdCallback {
 public:
     ~MockDashMpdCallback() override = default;
     void OnMpdInfoUpdate(DashMpdEvent mpdEvent) override {}
-    void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) {}
+    void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) override {}
+    void OnTimedMetaDataChanged(const std::shared_ptr<MediaAVCodec::AVTimedMetaData> &metadata) override {}
 };
 }
 }

@@ -172,6 +172,26 @@ struct DashAdptSetInfo {
     DashCommonAttrsAndElements commonAttrsAndElements_;
 };
 
+struct DashEventInfo {
+    std::string id_;
+    uint64_t duration_{0};
+    uint64_t presentationTime_{0};
+    uint64_t start_{0};
+    std::string value_;
+    std::string messageData_;
+    std::string classify_;
+    std::map<std::string, std::string> contents_;
+};
+
+struct DashEventStreamInfo {
+    std::string schemeIdUri_;
+    std::string value_;
+    uint32_t timescale_{0};
+    uint64_t presentationTimeOffset_{0};
+    std::list<std::string> baseUrl_;
+    DashList<DashEventInfo *> eventList_;
+};
+
 // Period Element Infomation. <href> <actuate> <subset> are not support
 struct DashPeriodInfo {
     uint32_t start_{0};
@@ -184,6 +204,7 @@ struct DashPeriodInfo {
     DashSegListInfo *periodSegList_{nullptr};
     DashSegTmpltInfo *periodSegTmplt_{nullptr};
     DashList<DashAdptSetInfo *> adptSetList_;
+    DashList<DashEventStreamInfo *> eventStreamList_;
 };
 
 // MPD Element Infomation. ProgramInfomation Location Metrics are not support
@@ -205,7 +226,7 @@ struct DashMpdInfo {
     std::list<std::string> baseUrl_;
     DashList<DashPeriodInfo *> periodInfoList_;
 };
-} // namespace HttpPluginLite
+} // namespace HttpPlugin
 } // namespace Plugin
 } // namespace Media
 } // namespace OHOS

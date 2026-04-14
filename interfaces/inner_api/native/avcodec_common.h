@@ -15,6 +15,7 @@
 #ifndef MEDIA_AVCODEC_COMMOM_H
 #define MEDIA_AVCODEC_COMMOM_H
 
+#include <memory>
 #include <string>
 #include <vector>
 #include <map>
@@ -138,6 +139,20 @@ public:
      */
     virtual void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
                                          std::shared_ptr<AVSharedMemory> buffer) = 0;
+};
+
+/**
+ * @brief Timed metadata structure for interstitial event reporting.
+ * Carries parsed interstitial event data from HLS #EXT-X-DATERANGE or DASH EventStream/Event.
+ * @since 7.0
+ * @version 1.0
+ */
+struct AVTimedMetaData {
+    std::string id;               // Unique event identifier (d.ts: id?)
+    std::string classify;         // Classification label (d.ts: classify?)
+    int64_t start{0};             // Start time in ms (d.ts: start)
+    int64_t duration{0};          // Duration in ms (d.ts: duration)
+    std::map<std::string, std::string> contents;  // Key-value pairs (d.ts: contents)
 };
 
 class AVDemuxerCallback {

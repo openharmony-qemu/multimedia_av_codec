@@ -61,6 +61,7 @@ struct HlsSegEvent {
     uint64_t cachedDuration;
     int percent;
     Format seekReadyInfo {};
+    std::shared_ptr<MediaAVCodec::AVTimedMetaData> timedMetaData;
     std::string str;
 };
 
@@ -102,6 +103,7 @@ public:
     std::vector<uint32_t> GetBitRates();
     bool SelectBitRate(uint32_t bitRate);
     void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) override;
+    void OnTimedMetaDataChanged(const std::shared_ptr<MediaAVCodec::AVTimedMetaData> &metadata) override;
     void SetIsTriggerAutoMode(bool isAuto);
     void SetReadBlockingFlag(bool isReadBlockingAllowed);
     void SeekToTs(uint64_t seekTime, SeekMode mode);

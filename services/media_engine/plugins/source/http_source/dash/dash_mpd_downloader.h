@@ -18,6 +18,7 @@
 
 #include <shared_mutex>
 #include <mutex>
+#include "avcodec_common.h"
 #include "dash_common.h"
 #include "dash_mpd_def.h"
 #include "dash_mpd_parser.h"
@@ -111,6 +112,7 @@ struct DashMpdCallback {
     virtual ~DashMpdCallback() = default;
     virtual void OnMpdInfoUpdate(DashMpdEvent mpdEvent) = 0;
     virtual void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) = 0;
+    virtual void OnTimedMetaDataChanged(const std::shared_ptr<MediaAVCodec::AVTimedMetaData> &metadata) = 0;
 };
 
 class DashMpdDownloader : public std::enable_shared_from_this<DashMpdDownloader> {
@@ -151,6 +153,7 @@ public:
     void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
     void SetCallback(const std::shared_ptr<Callback>& cb);
     void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId);
+    DashList<DashEventStreamInfo *> GetCurrentPeriodEventStreams() const;
 
 private:
     void ParseManifest();

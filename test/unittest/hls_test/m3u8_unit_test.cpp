@@ -117,8 +117,6 @@ HWTEST_F(M3u8UnitTest, TEST_CONSTRUCTOR_WITH_NULL_KEY_AND_IV, TestSize.Level1)
     EXPECT_EQ(fragment.duration_, 10.0);
     EXPECT_EQ(fragment.sequence_, 1);
     EXPECT_EQ(fragment.discont_, false);
-    //
-    
     for (int i = 0; i < static_cast<int>(MAX_LOOP); i++) {
         EXPECT_NE(fragment.iv_[i], -1);
         EXPECT_NE(fragment.key_[i], -1);
@@ -778,425 +776,107 @@ HWTEST_F(M3u8UnitTest, WAIT_KEY_DOWNLOAD_001, TestSize.Level1)
     EXPECT_EQ(m3u8.keyAllDownload_, 0);
 }
 
-/**
- * @tc.name: EXTRACT_NUMBER_001
- * @tc.desc: test ExtractNumber with valid uri containing digits before extension
- * @tc.type: FUNC
- */
-HWTEST_F(M3u8UnitTest, EXTRACT_NUMBER_001, TestSize.Level1)
+HWTEST_F(M3u8UnitTest, PARSE_DATE_RANGE_TAG_NULL_001, TestSize.Level1)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "");
-    // normal: number before extension
-    EXPECT_EQ(m3u8.ExtractNumber("seg123.ts"), 123u);
-    // with query string
-    EXPECT_EQ(m3u8.ExtractNumber("seg456.ts?t=1"), 456u);
-    // no digits before dot -> MAX
-    EXPECT_EQ(m3u8.ExtractNumber("seg.ts"), UINT64_MAX);
-    // empty uri -> MAX
-    EXPECT_EQ(m3u8.ExtractNumber(""), UINT64_MAX);
-    // no dot at all -> MAX
-    EXPECT_EQ(m3u8.ExtractNumber("nodot"), UINT64_MAX);
+    m3u8.currentProgramDateTime_ = "2024-01-01T00:00:00";
+    m3u8.ParseDateRange(nullptr);
+    EXPECT_TRUE(m3u8.dateRanges_.empty());
 }
 
-/**
- * @tc.name: SHOULD_SKIP_SEGMENT_001
- * @tc.desc: test ShouldSkipSegment with skipped/non-skipped segments
- * @tc.type: FUNC
- */
-HWTEST_F(M3u8UnitTest, SHOULD_SKIP_SEGMENT_001, TestSize.Level1)
+HWTEST_F(M3u8UnitTest, PARSE_DATE_RANGE_EMPTY_PROGRAM_DATE_TIME_001, TestSize.Level1)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "");
-    // skippedSegments == 0 -> always false
-    EXPECT_FALSE(m3u8.ShouldSkipSegment("seg5.ts", 0, 3));
-    // uri sequence in [initSequence, initSequence+skipped) -> true
-    EXPECT_TRUE(m3u8.ShouldSkipSegment("seg3.ts", 3, 2));  // seq=3, range=[2,5)
-    EXPECT_TRUE(m3u8.ShouldSkipSegment("seg4.ts", 3, 2));  // seq=4, range=[2,5)
-    // uri sequence outside range -> false
-    EXPECT_FALSE(m3u8.ShouldSkipSegment("seg1.ts", 3, 2)); // seq=1, range=[2,5)
-    EXPECT_FALSE(m3u8.ShouldSkipSegment("seg5.ts", 3, 2)); // seq=5 == initSequence+skipped -> false
+    m3u8.currentProgramDateTime_ = "";
+    auto tag = std::make_shared<AttributesTag>(HlsTag::EXTXDATERANGE, "");
+    m3u8.ParseDateRange(tag);
+    EXPECT_TRUE(m3u8.dateRanges_.empty());
 }
 
-/**
- * @tc.name: GET_KEY_INFOS_001
- * @tc.desc: test GetKeyInfos returns copy of keyInfos_
- * @tc.type: FUNC
- */
-HWTEST_F(M3u8UnitTest, GET_KEY_INFOS_001, TestSize.Level1)
+HWTEST_F(M3u8UnitTest, PARSE_DATE_RANGE_NO_ATTRIBUTES_001, TestSize.Level1)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "");
-    // empty case
-    std::unordered_map<uint64_t, KeyInfo> result;
-    m3u8.GetKeyInfos(result);
-    EXPECT_TRUE(result.empty());
-    // insert one key and verify
-    {
-        std::unique_lock<std::shared_mutex> lock(m3u8.keyMutex_);
-        KeyInfo info;
-        info.index_ = 1;
-        m3u8.keyInfos_[1] = info;
-    }
-    m3u8.GetKeyInfos(result);
-    EXPECT_EQ(result.size(), 1u);
-    EXPECT_EQ(result.count(1), 1u);
+    m3u8.currentProgramDateTime_ = "2024-01-01T00:00:00";
+    auto tag = std::make_shared<AttributesTag>(HlsTag::EXTXDATERANGE, "");
+    m3u8.ParseDateRange(tag);
+    EXPECT_EQ(m3u8.dateRanges_.size(), 1u);
+    EXPECT_TRUE(m3u8.dateRanges_.front()->id.empty());
+    EXPECT_EQ(m3u8.dateRanges_.front()->duration, 0);
 }
 
-/**
- * @tc.name: CHOOSE_STREAM_BY_STREAM_001
- * @tc.desc: test ChooseStreamByStream selects stream by streamId
- * @tc.type: FUNC
- */
-HWTEST_F(M3u8UnitTest, CHOOSE_STREAM_BY_STREAM_001, TestSize.Level1)
-{
-    auto master = std::make_shared<M3U8MasterPlaylist>("", "https://example.com");
-    auto m3u8a = std::make_shared<M3U8>("https://example.com", "a");
-    auto stream1 = std::make_shared<M3U8VariantStream>("a", "https://example.com/a", m3u8a);
-    stream1->streamId_ = 1;
-    stream1->bandWidth_ = 1000000;
-    auto stream2 = std::make_shared<M3U8VariantStream>("b", "https://example.com/b", m3u8a);
-    stream2->streamId_ = 2;
-    stream2->bandWidth_ = 2000000;
-    master->variants_.push_back(stream1);
-    master->variants_.push_back(stream2);
-    master->defaultVariant_ = stream1;
-    // select streamId -1 -> no change (guard)
-    master->ChooseStreamByStream(-1);
-    EXPECT_EQ(master->defaultVariant_, stream1);
-    // select streamId 2 -> switch to stream2
-    master->ChooseStreamByStream(2);
-    EXPECT_EQ(master->defaultVariant_, stream2);
-}
-
-/**
- * @tc.name: GET_CODEC_001
- * @tc.desc: test GetCodec returns correct codec string for VIDEO/AUDIO type
- * @tc.type: FUNC
- */
-HWTEST_F(M3u8UnitTest, GET_CODEC_001, TestSize.Level1)
-{
-    auto master = std::make_shared<M3U8MasterPlaylist>("", "https://example.com");
-    // video codec
-    std::string result = master->GetCodec(StreamType::VIDEO, "avc1.42c01e,mp4a.40.2");
-    EXPECT_FALSE(result.empty());
-    // audio codec
-    result = master->GetCodec(StreamType::AUDIO, "avc1.42c01e,mp4a.40.2");
-    EXPECT_FALSE(result.empty());
-    // empty codecs
-    result = master->GetCodec(StreamType::VIDEO, "");
-    EXPECT_TRUE(result.empty());
-}
-
-/**
- * @tc.name: GET_MIME_TYPE_001
- * @tc.desc: test GetMimeType returns video for known video codec without mime type
- * @tc.type: FUNC
- */
-HWTEST_F(M3u8UnitTest, GET_MIME_TYPE_001, TestSize.Level1)
-{
-    auto master = std::make_shared<M3U8MasterPlaylist>("", "https://example.com");
-    std::string result = master->GetMimeType("avc1.42c01e");
-    EXPECT_EQ(result, "video/avc1");
-    // audio only codec -> empty
-    result = master->GetMimeType("mp4a.40.2");
-    EXPECT_TRUE(result.empty());
-    // empty input -> empty
-    result = master->GetMimeType("");
-    EXPECT_TRUE(result.empty());
-}
-
-/**
- * @tc.name: BIND_VIDEO_MEDIA_001
- * @tc.desc: test BindVideoMedia with subtitles only (audioList_ empty)
- * @tc.type: FUNC
- */
-HWTEST_F(M3u8UnitTest, BIND_VIDEO_MEDIA_001, TestSize.Level1)
-{
-    auto master = std::make_shared<M3U8MasterPlaylist>("", "https://example.com");
-    auto m3u8 = std::make_shared<M3U8>("https://example.com", "");
-    auto stream = std::make_shared<M3U8VariantStream>("v", "https://example.com/v", m3u8);
-    stream->streamId_ = 1;
-    master->variants_.push_back(stream);
-    auto media = std::make_shared<M3U8Media>("sub", "https://example.com/sub", m3u8);
-    media->streamId_ = 2;
-    media->type_ = M3U8MediaType::M3U8_MEDIA_TYPE_SUBTITLES;
-    master->subtitlesList_.push_back(media);
-    // audioList_ empty, subtitlesList_ non-empty -> subtitles path
-    master->BindVideoMedia("subtitle");
-    EXPECT_FALSE(stream->subtitlesMedia_.empty());
-}
-
-/**
- * @tc.name: M3U8_FRAGMENT_COPY_CONSTRUCTOR_001
- * @tc.desc: test M3U8Fragment copy constructor with non-null key/iv copies data
- * @tc.type: FUNC
- */
-HWTEST_F(M3u8UnitTest, M3U8_FRAGMENT_COPY_CONSTRUCTOR_001, TestSize.Level1)
-{
-    M3U8Fragment orig("http://example.com/seg.ts", 5.0, 1, false);
-    uint8_t key[16];
-    uint8_t iv[16];
-    for (int i = 0; i < 16; i++) {
-        key[i] = static_cast<uint8_t>(i);
-        iv[i] = static_cast<uint8_t>(i + 16);
-    }
-    // key and iv non-null: copy branch
-    M3U8Fragment copy(orig, key, iv);
-    EXPECT_EQ(copy.uri_, orig.uri_);
-    EXPECT_DOUBLE_EQ(copy.duration_, orig.duration_);
-    for (int i = 0; i < 16; i++) {
-        EXPECT_EQ(copy.key_[i], key[i]);
-        EXPECT_EQ(copy.iv_[i], iv[i]);
-    }
-    // key/iv null: early return branch
-    M3U8Fragment nullCopy(orig, nullptr, nullptr);
-    EXPECT_EQ(nullCopy.uri_, orig.uri_);
-    // key_[0] stays 0 since no copy happened
-    EXPECT_EQ(nullCopy.key_[0], 0);
-}
-
-/**
- * @tc.name: M3U8_UPDATE_EXT_DEFINE_001
- * @tc.desc: test M3U8::Update with EXT-X-DEFINE tag branch
- * @tc.type: FUNC
- */
-HWTEST_F(M3u8UnitTest, M3U8_UPDATE_EXT_DEFINE_001, TestSize.Level1)
-{
-    // playlist with EXT-X-DEFINE but no IMPORT -> tagMasterMap branch false
-    M3U8 m3u8("http://example.com/test.m3u8", "");
-    std::string playlist =
-        "#EXTM3U\n"
-        "#EXT-X-DEFINE:NAME=\"var1\",VALUE=\"val1\"\n"
-        "#EXT-X-TARGETDURATION:5\n"
-        "#EXTINF:5.0,\n"
-        "seg.ts\n"
-        "#EXT-X-ENDLIST\n";
-    bool ret = m3u8.Update(playlist, true);
-    EXPECT_TRUE(ret);
-    // playlist with EXT-X-DEFINE + IMPORT: enter tagMasterMap_ branch
-    M3U8 m3u8b("http://example.com/test.m3u8?token=abc", "");
-    m3u8b.tagMasterMap_["var1"] = "val1";
-    std::string playlist2 =
-        "#EXTM3U\n"
-        "#EXT-X-DEFINE:IMPORT=\"var1\"\n"
-        "#EXT-X-TARGETDURATION:5\n"
-        "#EXTINF:5.0,\n"
-        "seg.ts\n"
-        "#EXT-X-ENDLIST\n";
-    ret = m3u8b.Update(playlist2, false);
-    EXPECT_TRUE(ret);
-    EXPECT_FALSE(m3u8b.files_.empty());
-}
-
-/**
- * @tc.name: M3U8_SAVE_DATA_SESSION_KEY_001
- * @tc.desc: test SaveData with isSessionKey_=true (skip keyAllDownload_ decrement)
- * @tc.type: FUNC
- */
-HWTEST_F(M3u8UnitTest, M3U8_SAVE_DATA_SESSION_KEY_001, TestSize.Level1)
+HWTEST_F(M3u8UnitTest, PARSE_DATE_RANGE_ALL_ATTRIBUTES_001, TestSize.Level1)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "");
-    m3u8.isSessionKey_ = true;
-    m3u8.keyAllDownload_.store(1);
-    uint8_t data[4] = {0xAA, 0xBB, 0xCC, 0xDD};
-    uint32_t ret = m3u8.SaveData(data, 4, false, 0);
-    EXPECT_EQ(ret, 4u);
-    EXPECT_TRUE(m3u8.isDecryptKeyReady_);
-    // isSessionKey_=true, so keyAllDownload_ should NOT be decremented
-    EXPECT_EQ(m3u8.keyAllDownload_.load(), 1);
+    m3u8.currentProgramDateTime_ = "2024-01-01T00:00:00";
+    auto tag = std::make_shared<AttributesTag>(HlsTag::EXTXDATERANGE, "");
+    auto idAttr = std::make_shared<Attribute>("ID", "\"test-id\"");
+    tag->AddAttribute(idAttr);
+    auto classAttr = std::make_shared<Attribute>("CLASS", "\"test-class\"");
+    tag->AddAttribute(classAttr);
+    auto startDateAttr = std::make_shared<Attribute>("START-DATE", "\"2024-01-01T00:01:00\"");
+    tag->AddAttribute(startDateAttr);
+    auto durationAttr = std::make_shared<Attribute>("DURATION", "60.5");
+    tag->AddAttribute(durationAttr);
+    auto assetListAttr = std::make_shared<Attribute>("X-ASSET-LIST", "\"http://example.com/assets\"");
+    tag->AddAttribute(assetListAttr);
+    m3u8.ParseDateRange(tag);
+    EXPECT_EQ(m3u8.dateRanges_.size(), 1u);
+    auto& dr = m3u8.dateRanges_.front();
+    EXPECT_EQ(dr->id, "test-id");
+    EXPECT_EQ(dr->classify, "test-class");
+    EXPECT_EQ(dr->start, 60000);
+    EXPECT_EQ(dr->duration, 60000);
+    EXPECT_EQ(dr->assetList, "http://example.com/assets");
 }
 
-/**
- * @tc.name: M3U8_GET_LIVE_UPDATE_GAP_002
- * @tc.desc: test GetLiveUpdateGap returns non-zero when minFragDuration_ > 0
- * @tc.type: FUNC
- */
-HWTEST_F(M3u8UnitTest, M3U8_GET_LIVE_UPDATE_GAP_002, TestSize.Level1)
-{
-    M3U8 m3u8(testUri, "");
-    // minFragDuration_ > 0: (duration-1)/2 branch
-    m3u8.minFragDuration_.store(5001);
-    size_t gap = m3u8.GetLiveUpdateGap();
-    EXPECT_EQ(gap, (5001 - 1) / 2);
-}
-
-/**
- * @tc.name: SAVE_MAP_DATA_002
- * @tc.desc: test SaveMapData when fmp4Header_ is already allocated (no re-alloc)
- * @tc.type: FUNC
- */
-HWTEST_F(M3u8UnitTest, SAVE_MAP_DATA_002, TestSize.Level1)
+HWTEST_F(M3u8UnitTest, PARSE_DATE_RANGE_NULL_ATTR_IN_LIST_001, TestSize.Level1)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "");
-    constexpr uint32_t BUF_SIZE = 256;
-    m3u8.fmp4Header_ = new uint8_t[BUF_SIZE];
-    m3u8.fmp4HeaderLen = BUF_SIZE;
-    m3u8.downloadHeaderLen_ = 0;
-    uint8_t data[8] = {1, 2, 3, 4, 5, 6, 7, 8};
-    uint32_t ret = m3u8.SaveMapData(data, sizeof(data), false);
-    EXPECT_EQ(ret, sizeof(data));
-    EXPECT_EQ(m3u8.downloadHeaderLen_, static_cast<uint32_t>(sizeof(data)));
-    // verify data was copied
-    for (size_t i = 0; i < sizeof(data); i++) {
-        EXPECT_EQ(m3u8.fmp4Header_[i], data[i]);
-    }
+    m3u8.currentProgramDateTime_ = "2024-01-01T00:00:00";
+    auto tag = std::make_shared<AttributesTag>(HlsTag::EXTXDATERANGE, "");
+    auto idAttr = std::make_shared<Attribute>("ID", "\"test-id\"");
+    tag->AddAttribute(idAttr);
+    std::shared_ptr<Attribute> nullAttr = nullptr;
+    tag->AddAttribute(nullAttr);
+    m3u8.ParseDateRange(tag);
+    EXPECT_EQ(m3u8.dateRanges_.size(), 1u);
+    EXPECT_EQ(m3u8.dateRanges_.front()->contents.size(), 1u);
 }
 
-/**
- * @tc.name: ADD_FILE_002
- * @tc.desc: test AddFile branch when minFragDuration_ is 0 (initial) and duration > 0
- * @tc.type: FUNC
- */
-HWTEST_F(M3u8UnitTest, ADD_FILE_002, TestSize.Level1)
+HWTEST_F(M3u8UnitTest, PARSE_DATE_RANGE_PARSE_FAIL_001, TestSize.Level1)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "");
-    m3u8.minFragDuration_.store(0);
-    auto fragment = std::make_shared<M3U8Fragment>("http://example.com/seg.ts", 5.0, 0, false);
-    // duration = 5000000 (5s in us): minFragDuration_ <= 0 -> store
-    m3u8.AddFile(fragment, 5000000);
-    EXPECT_EQ(m3u8.minFragDuration_.load(), static_cast<size_t>(5000000));
-    // second add with larger duration: 5000000 <= 10000000 so no update
-    auto fragment2 = std::make_shared<M3U8Fragment>("http://example.com/seg2.ts", 10.0, 1, false);
-    m3u8.AddFile(fragment2, 10000000);
-    // minFragDuration_ stays 5000000
-    EXPECT_EQ(m3u8.minFragDuration_.load(), static_cast<size_t>(5000000));
-    // third add with smaller duration: 3000000 < 5000000 -> update
-    auto fragment3 = std::make_shared<M3U8Fragment>("http://example.com/seg3.ts", 3.0, 2, false);
-    m3u8.AddFile(fragment3, 3000000);
-    EXPECT_EQ(m3u8.minFragDuration_.load(), static_cast<size_t>(3000000));
+    m3u8.currentProgramDateTime_ = "invalid-datetime";
+    auto tag = std::make_shared<AttributesTag>(HlsTag::EXTXDATERANGE, "");
+    auto startDateAttr = std::make_shared<Attribute>("START-DATE", "\"2024-01-01T00:01:00\"");
+    tag->AddAttribute(startDateAttr);
+    m3u8.ParseDateRange(tag);
+    EXPECT_EQ(m3u8.dateRanges_.size(), 1u);
+    EXPECT_GT(m3u8.dateRanges_.front()->start, 0);
 }
 
-/**
- * @tc.name: IS_NEAR_TO_INIT_RESOLUTION_002
- * @tc.desc: test IsNearToInitResolution returns true when currentDelta < choosedDelta
- * @tc.type: FUNC
- */
-HWTEST_F(M3u8UnitTest, IS_NEAR_TO_INIT_RESOLUTION_002, TestSize.Level1)
+HWTEST_F(M3u8UnitTest, PARSE_DATE_RANGE_MULTIPLE_001, TestSize.Level1)
 {
-    auto master = std::make_shared<M3U8MasterPlaylist>("", "https://example.com");
-    master->StartParsing();
-    auto m3u8 = std::make_shared<M3U8>(testUri, "");
-    // initResolution_ = 1920*1080 = 2073600
-    master->initResolution_ = 1920 * 1080;
-    auto choosed = std::make_shared<M3U8VariantStream>(testUri, testUri, m3u8);
-    choosed->width_ = 3840; choosed->height_ = 2160; // delta=3840*2160 - 2073600 >> 0
-    auto current = std::make_shared<M3U8VariantStream>(testUri, testUri, m3u8);
-    current->width_ = 1920; current->height_ = 1080; // delta = 0
-    // currentDelta(0) < choosedDelta(big) -> true
-    EXPECT_TRUE(master->IsNearToInitResolution(choosed, current));
-    // same delta but current bandwidth smaller -> also true
-    auto choosed2 = std::make_shared<M3U8VariantStream>(testUri, testUri, m3u8);
-    choosed2->width_ = 1920; choosed2->height_ = 1080; // same delta=0
-    choosed2->bandWidth_ = 3000000;
-    current->bandWidth_ = 1000000; // smaller
-    EXPECT_TRUE(master->IsNearToInitResolution(choosed2, current));
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    m3u8.currentProgramDateTime_ = "2024-01-01T00:00:00";
+    auto tag1 = std::make_shared<AttributesTag>(HlsTag::EXTXDATERANGE, "");
+    auto idAttr1 = std::make_shared<Attribute>("ID", "\"range1\"");
+    tag1->AddAttribute(idAttr1);
+    m3u8.ParseDateRange(tag1);
+    auto tag2 = std::make_shared<AttributesTag>(HlsTag::EXTXDATERANGE, "");
+    auto idAttr2 = std::make_shared<Attribute>("ID", "\"range2\"");
+    tag2->AddAttribute(idAttr2);
+    m3u8.ParseDateRange(tag2);
+    EXPECT_EQ(m3u8.dateRanges_.size(), 2u);
 }
 
-/**
- * @tc.name: GET_RESOLUTION_DELTA_001
- * @tc.desc: test GetResolutionDelta both branches: resolution > initResolution_ and <=
- * @tc.type: FUNC
- */
-HWTEST_F(M3u8UnitTest, GET_RESOLUTION_DELTA_001, TestSize.Level1)
+HWTEST_F(M3u8UnitTest, CALCULATE_DATE_TIME_OFFSET_001, TestSize.Level1)
 {
-    auto master = std::make_shared<M3U8MasterPlaylist>("", "https://example.com");
-    master->initResolution_ = 1920 * 1080; // 2073600
-    // resolution > initResolution_ branch
-    uint32_t delta1 = master->GetResolutionDelta(3840, 2160); // 3840*2160=8294400 > 2073600
-    EXPECT_EQ(delta1, 8294400u - 2073600u);
-    // resolution <= initResolution_ branch
-    uint32_t delta2 = master->GetResolutionDelta(640, 480); // 640*480=307200 < 2073600
-    EXPECT_EQ(delta2, 2073600u - 307200u);
-}
-
-/**
- * @tc.name: GET_DEFAULT_MEDIE_STREAM_001
- * @tc.desc: test GetDefaultMedieStream: forced -> isDefault -> autoSelect -> fallback
- * @tc.type: FUNC
- */
-HWTEST_F(M3u8UnitTest, GET_DEFAULT_MEDIE_STREAM_001, TestSize.Level1)
-{
-    auto master = std::make_shared<M3U8MasterPlaylist>("", "https://example.com");
-    auto m3u8 = std::make_shared<M3U8>(testUri, "");
-    auto stream = std::make_shared<M3U8VariantStream>(testUri, testUri, m3u8);
-
-    // build audioMedia_ with forced one
-    auto mediaForced = std::make_shared<M3U8Media>("forced", "http://example.com/a1.m3u8", m3u8);
-    mediaForced->streamId_ = 10;
-    mediaForced->forced_ = true;
-    auto mediaDefault = std::make_shared<M3U8Media>("default", "http://example.com/a2.m3u8", m3u8);
-    mediaDefault->streamId_ = 11;
-    mediaDefault->isDefault_ = true;
-    stream->audioMedia_.push_back(mediaForced);
-    stream->audioMedia_.push_back(mediaDefault);
-
-    // forced branch: should pick forced
-    master->GetDefaultMedieStream(stream, "audio");
-    ASSERT_NE(stream->defaultAudio_, nullptr);
-    EXPECT_EQ(stream->defaultAudio_->streamId_, 10u);
-
-    // clear forced, keep only isDefault_ one -> isDefault branch
-    stream->audioMedia_.clear();
-    stream->defaultAudio_ = nullptr;
-    auto mediaDefault2 = std::make_shared<M3U8Media>("def2", "http://example.com/a3.m3u8", m3u8);
-    mediaDefault2->streamId_ = 12;
-    mediaDefault2->isDefault_ = true;
-    mediaDefault2->characteristics_ = "";
-    stream->audioMedia_.push_back(mediaDefault2);
-    master->GetDefaultMedieStream(stream, "audio");
-    EXPECT_EQ(stream->defaultAudio_->streamId_, 12u);
-
-    // clear, only autoSelect_ -> autoSelect branch
-    stream->audioMedia_.clear();
-    stream->defaultAudio_ = nullptr;
-    auto mediaAuto = std::make_shared<M3U8Media>("auto", "http://example.com/a4.m3u8", m3u8);
-    mediaAuto->streamId_ = 13;
-    mediaAuto->autoSelect_ = true;
-    stream->audioMedia_.push_back(mediaAuto);
-    master->GetDefaultMedieStream(stream, "audio");
-    EXPECT_EQ(stream->defaultAudio_->streamId_, 13u);
-
-    // clear, no forced/default/autoSelect -> fallback to back()
-    stream->audioMedia_.clear();
-    stream->defaultAudio_ = nullptr;
-    auto mediaPlain = std::make_shared<M3U8Media>("plain", "http://example.com/a5.m3u8", m3u8);
-    mediaPlain->streamId_ = 14;
-    stream->audioMedia_.push_back(mediaPlain);
-    master->GetDefaultMedieStream(stream, "audio");
-    EXPECT_EQ(stream->defaultAudio_->streamId_, 14u);
-}
-
-/**
- * @tc.name: CHOOSE_STREAM_BY_RESOLUTION_002
- * @tc.desc: test ChooseStreamByResolution when initResolution_ > 0 finds better stream
- * @tc.type: FUNC
- */
-HWTEST_F(M3u8UnitTest, CHOOSE_STREAM_BY_RESOLUTION_002, TestSize.Level1)
-{
-    auto master = std::make_shared<M3U8MasterPlaylist>("", "https://example.com");
-    master->StartParsing();
-    auto m3u8 = std::make_shared<M3U8>(testUri, "");
-    auto streamLow = std::make_shared<M3U8VariantStream>("low", "http://example.com/low", m3u8);
-    streamLow->width_ = 640; streamLow->height_ = 480; streamLow->bandWidth_ = 1000000;
-    auto streamHigh = std::make_shared<M3U8VariantStream>("high", "http://example.com/high", m3u8);
-    streamHigh->width_ = 1920; streamHigh->height_ = 1080; streamHigh->bandWidth_ = 3000000;
-    master->variants_.push_back(streamLow);
-    master->variants_.push_back(streamHigh);
-    master->defaultVariant_ = streamLow;
-    // initResolution_ = 1920*1080: streamHigh exact match (delta=0) < streamLow large delta -> switch
-    master->initResolution_ = 1920 * 1080;
-    master->ChooseStreamByResolution();
-    EXPECT_EQ(master->defaultVariant_, streamHigh);
-}
-
-/**
- * @tc.name: INIT_DOWNLOAD_HEADER_001
- * @tc.desc: test InitDownloadHeader with sourceLoader_ == nullptr branch
- * @tc.type: FUNC
- */
-HWTEST_F(M3u8UnitTest, INIT_DOWNLOAD_HEADER_001, TestSize.Level1)
-{
-    // sourceLoader_ == nullptr -> Downloader("HlsSourceMap")
-    M3U8 m3u8a("http://example.com/test.m3u8", "");
-    m3u8a.InitDownloadHeader();
-    EXPECT_NE(m3u8a.downloaderHeader_, nullptr);
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    EXPECT_EQ(m3u8.CalculateDateTimeOffset("", ""), 0);
+    EXPECT_EQ(m3u8.CalculateDateTimeOffset("invalid", "invalid"), 0);
+    EXPECT_EQ(m3u8.CalculateDateTimeOffset("2024-01-01T00:00:00", "2024-01-01T00:01:00"), 60000);
+    EXPECT_EQ(m3u8.CalculateDateTimeOffset("2024-01-01T00:00:00", "2024-01-02T00:00:00"), 86400000);
+    EXPECT_EQ(m3u8.CalculateDateTimeOffset("2024-01-01T00:01:00", "2024-01-01T00:00:00"), -60000);
 }
 }

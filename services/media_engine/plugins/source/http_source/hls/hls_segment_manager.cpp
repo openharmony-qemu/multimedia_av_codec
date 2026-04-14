@@ -1398,6 +1398,18 @@ void HlsSegmentManager::OnDrmInfoChanged(const std::multimap<std::string, std::v
     }
 }
 
+void HlsSegmentManager::OnTimedMetaDataChanged(const std::shared_ptr<MediaAVCodec::AVTimedMetaData> &metadata)
+{
+    FALSE_RETURN_MSG_W(metadata != nullptr, "OnTimedMetaDataChanged: metadata is nullptr, ignore");
+    MEDIA_LOG_I("OnTimedMetaDataChanged: id=" PUBLIC_LOG_S ", start=" PUBLIC_LOG_D64
+        ", duration=" PUBLIC_LOG_D64, metadata->id.c_str(), metadata->start, metadata->duration);
+    if (segEventCb_) {
+        HlsSegEvent event {.segType = type_, .type = PluginEventType::SOURCE_TIMED_METADATA,
+            .timedMetaData = metadata, .str = "timed_meta_data"};
+        segEventCb_(event);
+    }
+}
+
 void HlsSegmentManager::SetStatusCallback(StatusCallbackFunc cb)
 {
     FALSE_RETURN(playlistDownloader_ != nullptr);

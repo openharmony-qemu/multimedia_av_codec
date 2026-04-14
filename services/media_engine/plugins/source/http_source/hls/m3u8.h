@@ -58,6 +58,15 @@ struct M3U8Fragment {
     uint64_t keyIndex_ {0};
 };
 
+struct DateRange {
+    std::string id;
+    std::string classify;
+    int64_t start = 0;
+    int64_t duration = 0;
+    std::string assetList;
+    std::map<std::string, std::string> contents;
+};
+
 struct M3U8Info {
     std::string uri;
     double duration = 0;
@@ -119,6 +128,8 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     void InitDownloadHeader();
     void WaitKeyDownload();
     void GetKeyInfos(std::unordered_map<uint64_t, KeyInfo>& keyInfos);
+    void ParseDateRange(const std::shared_ptr<AttributesTag>& tag);
+    int64_t CalculateDateTimeOffset(const std::string& programDateTime, const std::string& startDate);
 
     std::shared_ptr<std::string> method_;
     std::shared_ptr<std::string> keyUri_;
@@ -163,6 +174,8 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     std::atomic<int> keyAllDownload_ {0};
     bool isSessionKey_ {false};
     uint64_t totalKeyIndex_ {0};
+    std::list<std::shared_ptr<DateRange>> dateRanges_;
+    std::string currentProgramDateTime_;
 };
 
 struct M3U8Media {

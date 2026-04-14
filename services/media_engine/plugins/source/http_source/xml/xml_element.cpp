@@ -109,17 +109,35 @@ std::string XmlElement::GetText()
     return "";
 }
 
+static std::string GetXmlNsFromNsDef(const xmlNsPtr nsDef, const std::string &attrName)
+{
+    for (xmlNsPtr ns = nsDef; ns != nullptr; ns = ns->next) {
+        if (ns->prefix == nullptr && attrName == "xmlns" && ns->href != nullptr) {
+            return reinterpret_cast<const char *>(ns->href);
+        }
+    }
+    return "";
+}
+
 std::string XmlElement::GetAttribute(const std::string &attrName)
 {
-    if (xmlNodePtr_ != nullptr && !attrName.empty()) {
-        if (xmlHasProp(xmlNodePtr_, BAD_CAST attrName.c_str())) {
-            xmlChar *attr = xmlGetProp(xmlNodePtr_, BAD_CAST attrName.c_str());
-            if (attr != nullptr) {
-                std::string attrValue(reinterpret_cast<char *>(attr));
-                xmlFree(attr);
-                return attrValue;
-            }
+    if (xmlNodePtr_ == nullptr || attrName.empty()) {
+        return "";
+    }
+
+    if (xmlHasProp(xmlNodePtr_, BAD_CAST attrName.c_str())) {
+        xmlChar *attr = xmlGetProp(xmlNodePtr_, BAD_CAST attrName.c_str());
+        if (attr != nullptr) {
+            std::string attrValue(reinterpret_cast<char *>(attr));
+            xmlFree(attr);
+            return attrValue;
         }
+    }
+
+    bool isXmlns = (attrName.compare(0, 6, "xmlns:") == 0 || attrName == "xmlns");
+    if (isXmlns) {
+        std::string result = GetXmlNsFromNsDef(xmlNodePtr_->nsDef, attrName);
+        return result;
     }
     return "";
 }

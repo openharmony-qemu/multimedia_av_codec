@@ -274,7 +274,9 @@ private:
     void SetTrackNotifyFlag(int32_t trackId, bool isNotifyNeeded);
     void AccelerateSampleConsumerTask(int32_t trackId);
     void ResetInner();
-
+    void HandleDrmInfoUpdate(const Plugins::PluginEvent &event);
+    void DispatchPluginEvent(const Plugins::PluginEvent &event,
+ 	         const std::shared_ptr<Pipeline::EventReceiver> &eventReceiver);
     bool GetDrmInfosUpdated(const std::multimap<std::string, std::vector<uint8_t>> &newInfos,
         std::multimap<std::string, std::vector<uint8_t>> &result);
     bool BuildNetworkLoadedRange(Plugins::SeekRange &range);

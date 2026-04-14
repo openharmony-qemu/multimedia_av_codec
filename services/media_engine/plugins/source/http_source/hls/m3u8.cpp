@@ -21,6 +21,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <cstdint>
+#include <ctime>
 #include "m3u8.h"
 #include "base64_utils.h"
 
@@ -34,6 +35,7 @@ constexpr uint32_t DRM_UUID_OFFSET = 12;
 constexpr uint32_t DRM_PSSH_TITLE_LEN = 16;
 constexpr uint32_t WAIT_KEY_SLEEP_TIME = 10;
 constexpr uint32_t MAX_DOWNLOAD_TIME = 500;
+constexpr int32_t S_TO_MS = 1000;
 constexpr uint64_t BAND_WIDTH_LIMIT = 3 * 1024 * 1024;
 constexpr uint32_t DEFAULT_HEADER_SIZE = 1 * 1024 * 1024;
 constexpr uint32_t DEFAULT_MAX_SIZE = 100 * 1024 * 1024;
@@ -268,6 +270,17 @@ void M3U8::InitTagUpdatersMap()
         }
         isStart_ = true;
     };
+    tagUpdatersMap_[HlsTag::EXTXPROGRAMDATETIME] = [this](const std::shared_ptr<Tag> &tag, const M3U8Info &info) {
+        FALSE_RETURN(tag != nullptr);
+        std::ignore = info;
+        currentProgramDateTime_ = std::static_pointer_cast<SingleValueTag>(tag)->GetValue().QuotedString();
+        MEDIA_LOG_I("currentProgramDateTime_: " PUBLIC_LOG_S, currentProgramDateTime_.c_str());
+    };
+    tagUpdatersMap_[HlsTag::EXTXDATERANGE] = [this](const std::shared_ptr<Tag> &tag, const M3U8Info &info) {
+        FALSE_RETURN(tag != nullptr);
+        std::ignore = info;
+        ParseDateRange(std::static_pointer_cast<AttributesTag>(tag));
+    };
 }
 
 void M3U8::PrepareDecrptionKeys(std::shared_ptr<Tag>& tag)
@@ -330,6 +343,77 @@ void M3U8::ParseMap(const std::shared_ptr<AttributesTag>& tag)
     });
     MEDIA_LOG_I("x-map download %{public}u, is ready: %{public}d", downloadHeaderLen_, isHeaderReady_.load());
 }
+
+int64_t M3U8::CalculateDateTimeOffset(const std::string& programDateTime, const std::string& startDate)
+{
+    auto parseDateTime = [](const std::string& datetimeStr) -> double {
+        if (datetimeStr.empty()) {
+            return 0.0;
+        }
+
+        std::tm timeinfo = {};
+        std::istringstream ss(datetimeStr);
+        ss >> std::get_time(&timeinfo, "%Y-%m-%dT%H:%M:%S");
+        if (ss.fail()) {
+            return 0.0;
+        }
+        #if defined(_WIN32) || defined(_MSC_VER)
+            time_t timestamp = _mkgmtime(&timeinfo);
+        #else
+            time_t timestamp = timegm(&timeinfo);
+        #endif
+        return static_cast<double>(timestamp);
+    };
+    double programTime = parseDateTime(programDateTime);
+    double startTime = parseDateTime(startDate);
+    MEDIA_LOG_I("programTime: " PUBLIC_LOG_D32 " startTime: " PUBLIC_LOG_D32,
+        static_cast<int32_t>(programTime), static_cast<int32_t>(startTime));
+    return static_cast<int64_t>((startTime - programTime) * S_TO_MS);
+}
+
+void M3U8::ParseDateRange(const std::shared_ptr<AttributesTag>& tag)
+{
+    FALSE_RETURN(tag != nullptr);
+    if (currentProgramDateTime_.empty()) {
+        return;
+    }
+    auto dateRange = std::make_shared<DateRange>();
+    auto idAttr = tag->GetAttributeByName("ID");
+    if (idAttr) {
+        dateRange->id = idAttr->QuotedString();
+    }
+    
+    auto classAttr = tag->GetAttributeByName("CLASS");
+    if (classAttr) {
+        dateRange->classify = classAttr->QuotedString();
+    }
+    
+    auto startDateAttr = tag->GetAttributeByName("START-DATE");
+    if (startDateAttr && !currentProgramDateTime_.empty()) {
+        std::string startDateStr = startDateAttr->QuotedString();
+        dateRange->start = CalculateDateTimeOffset(currentProgramDateTime_, startDateStr);
+    }
+    
+    auto durationAttr = tag->GetAttributeByName("DURATION");
+    if (durationAttr) {
+        dateRange->duration = static_cast<int64_t>(durationAttr->Decimal()) * S_TO_MS;
+    }
+    
+    auto assetListAttr = tag->GetAttributeByName("X-ASSET-LIST");
+    if (assetListAttr) {
+        dateRange->assetList = assetListAttr->QuotedString();
+    }
+ 
+    for (const auto& attr : tag->GetAllAttributes()) {
+        if (attr) {
+            dateRange->contents[attr->GetName()] = attr->QuotedString();
+        }
+    }
+    dateRanges_.emplace_back(dateRange);
+    MEDIA_LOG_I("Parsed DateRange: ID=%{public}s, CLASS=%{public}s, assetList=%{public}s",
+        dateRange->id.c_str(), dateRange->classify.c_str(), dateRange->assetList.c_str());
+}
+
 void M3U8::InitDownloadHeader()
 {
     if (sourceLoader_ != nullptr) {

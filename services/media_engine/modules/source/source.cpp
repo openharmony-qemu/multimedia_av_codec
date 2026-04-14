@@ -387,6 +387,9 @@ void Source::OnMediaDemuxerEvent(const Plugins::PluginEvent& event)
     } else if (event.type == PluginEventType::STREAM_UPDATE || event.type == PluginEventType::NETWORK_BITRATE_CHANGED) {
         MEDIA_LOG_D("Onevent stream update or network bitrate change.");
         mediaDemuxerCallback_->OnEvent(event);
+    } else if (event.type == PluginEventType::SOURCE_TIMED_METADATA) {
+        MEDIA_LOG_D("Onevent timed meta data upload.");
+        mediaDemuxerCallback_->OnEvent(event);
     } else {
         MEDIA_LOG_I("on event type undefined.");
     }

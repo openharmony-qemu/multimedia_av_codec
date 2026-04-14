@@ -19,6 +19,7 @@
 #include <vector>
 #include <map>
 #include <utility>
+#include "avcodec_common.h"
 #include "avcodec_sysevent.h"
 #include "download/downloader.h"
 #include "plugin/plugin_base.h"
@@ -53,6 +54,7 @@ struct PlayListChangeCallback {
     virtual void OnMasterReady(bool needAudioManager, bool needSubtitlesManager) = 0;
     virtual void OnPlayListChanged(const std::vector<PlayInfo>& playList) = 0;
     virtual void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) = 0;
+    virtual void OnTimedMetaDataChanged(const std::shared_ptr<MediaAVCodec::AVTimedMetaData> &metadata) = 0;
 };
 enum class HlsSegmentType : int {
     SEG_VIDEO = 0,

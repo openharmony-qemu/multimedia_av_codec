@@ -67,6 +67,11 @@ test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/http_media_utils.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/storage_usage_util.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/string_utils.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_event_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_event_stream_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_splice_info_section_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_splice_insert_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_break_duration_node.cpp",
 ]
 
 config("fuzz_cfg") {

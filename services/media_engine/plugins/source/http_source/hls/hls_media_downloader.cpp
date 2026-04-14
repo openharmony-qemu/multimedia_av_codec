@@ -633,6 +633,9 @@ void HlsMediaDownloader::PostAllEvent(HlsSegEvent event)
         case PluginEventType::SOURCE_DRM_INFO_UPDATE:
             callback->OnEvent({event.type, event.drmInfos, event.str});
             break;
+        case PluginEventType::SOURCE_TIMED_METADATA:
+            callback->OnEvent({event.type, event.timedMetaData, event.str});
+            break;
         case PluginEventType::VIDEO_SIZE_CHANGE:
             callback->OnEvent({event.type, event.videoSize, event.str});
             break;
