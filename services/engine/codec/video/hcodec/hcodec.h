@@ -261,6 +261,7 @@ protected:
     int32_t SetFrameRateAdaptiveMode(const Format &format);
     int32_t SetProcessName();
     int32_t SetLowLatency(const Format &format);
+    int32_t SetColorAspects(const Format &format);
 
     virtual void OnSetOutputSurface(const MsgInfo &msg, BufferOperationMode mode);
     virtual int32_t OnSetParameters(const Format &format) { return AVCS_ERR_OK; }
@@ -318,7 +319,7 @@ protected:
     virtual void OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode);
     virtual void BeforeCbOutToUser(BufferInfo &info) {}
     virtual void OnFrameSubmitted(int64_t pts) {}
-    virtual void OnGetInputFormat(Format& format) {};
+    virtual void OnGetInputFormat(Format& format) {}
     virtual void ProcSurfaceBufferToUser(const sptr<SurfaceBuffer>& buffer) {}
     virtual void ProcAVBufferToUser(std::shared_ptr<AVBuffer> avBuffer,
         std::shared_ptr<CodecHDI::OmxCodecBuffer> omxBuffer) {}
