@@ -182,7 +182,7 @@ private:
     void CheckResetXPSSendStatus(uint32_t trackIndex, std::shared_ptr<Sample> sample);
 
     Status CheckCacheDataLimit(uint32_t trackId);
-    void ParseHEVCMetadataInfo(uint32_t trackIndex, Meta &format);
+    void ParseHEVCMetadataInfo(const MPEG4AtomParser::Track& track, Meta &format);
     void ConvertCsdToAnnexb(const MPEG4AtomParser::Track& track, Meta& format, uint32_t trackIndex);
 };
 } // namespace MPEG4

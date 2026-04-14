@@ -50,6 +50,7 @@ struct PacketConvertToBufferInfo {
 struct HevcParseFormat {
     bool isHdrVivid = false;
     bool isHdr10Plus = false;
+    bool isHdr = false;
     int32_t colorRange = 0;
     uint8_t colorPrimaries = 0x02;
     uint8_t colorTransfer = 0x02;
@@ -75,6 +76,7 @@ public:
     virtual void ResetXPSSendStatus();
     virtual bool IsHdrVivid() = 0;
     virtual bool IsHdr10Plus() = 0;
+    virtual bool IsHdr() = 0;
     virtual bool IsSyncFrame(const uint8_t *sample, int32_t size) = 0;
     virtual bool GetColorRange() = 0;
     virtual uint8_t GetColorPrimaries() = 0;
