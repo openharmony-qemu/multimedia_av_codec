@@ -189,6 +189,7 @@ const char *OH_MD_KEY_AUDIO_VIVID_SIGNAL_FORMAT = "audio_vivid_signal_format";
 const char *OH_MD_KEY_AUDIO_SOUNDBED_LAYOUT = "audio_soundbed_layout";
 const char *OH_MD_KEY_AUDIO_SOUNDBED_BITRATE = "audio_soundbed_bitrate";
 const char *OH_MD_KEY_AUDIO_OBJECT_BITRATE = "audio_object_bitrate";
+const char *OH_MD_KEY_SCREEN_CAPTURE_WINDOW_RECT = "screen_capture_window_rect";
 #ifdef __cplusplus
 }
 #endif
