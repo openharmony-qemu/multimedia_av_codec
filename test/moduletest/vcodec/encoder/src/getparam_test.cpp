@@ -183,7 +183,7 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_ENCODE_MSE_QP_0400, TestSize.Level0)
  */
 HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_001, TestSize.Level1)
 {
-    bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(g_capHevc, BITRATE_MODE_CBR);
+    bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(cap_hevc, BITRATE_MODE_CBR);
     if (!isSupported) {
         return;
     }
@@ -212,7 +212,7 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_001, TestSize.Level1)
  */
 HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_002, TestSize.Level1)
 {
-    bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(g_capHevc, BITRATE_MODE_VBR);
+    bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(cap_hevc, BITRATE_MODE_VBR);
     if (!isSupported) {
         return;
     }
@@ -239,7 +239,7 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_002, TestSize.Level1)
  */
 HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_003, TestSize.Level1)
 {
-    bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(g_capHevc, BITRATE_MODE_CBR);
+    bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(cap_hevc, BITRATE_MODE_CBR);
     if (!isSupported) {
         return;
     }
@@ -265,7 +265,7 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_003, TestSize.Level1)
  */
 HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_004, TestSize.Level1)
 {
-    bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(g_capHevc, BITRATE_MODE_SQR);
+    bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(cap_hevc, BITRATE_MODE_SQR);
     if (!isSupported) {
         return;
     }
@@ -292,7 +292,7 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_004, TestSize.Level1)
  */
 HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_005, TestSize.Level1)
 {
-    bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(g_capHevc, BITRATE_MODE_SQR);
+    bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(cap_hevc, BITRATE_MODE_SQR);
     if (!isSupported) {
         return;
     }
@@ -319,7 +319,7 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_005, TestSize.Level1)
  */
 HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_006, TestSize.Level1)
 {
-    bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(g_capHevc, BITRATE_MODE_CBR);
+    bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(cap_hevc, BITRATE_MODE_CBR);
     if (!isSupported) {
         return;
     }
@@ -348,7 +348,7 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_006, TestSize.Level1)
  */
 HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_007, TestSize.Level1)
 {
-    bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(g_capHevc, BITRATE_MODE_VBR);
+    bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(cap_hevc, BITRATE_MODE_VBR);
     if (!isSupported) {
         return;
     }
@@ -375,7 +375,7 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_007, TestSize.Level1)
  */
 HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_008, TestSize.Level1)
 {
-    bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(g_capHevc, BITRATE_MODE_CBR);
+    bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(cap_hevc, BITRATE_MODE_CBR);
     if (!isSupported) {
         return;
     }
@@ -402,7 +402,7 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_008, TestSize.Level1)
  */
 HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_009, TestSize.Level1)
 {
-    bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(g_capHevc, BITRATE_MODE_SQR);
+    bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(cap_hevc, BITRATE_MODE_SQR);
     if (!isSupported) {
         return;
     }
@@ -430,7 +430,7 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_009, TestSize.Level1)
  */
 HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_010, TestSize.Level1)
 {
-    bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(g_capHevc, BITRATE_MODE_SQR);
+    bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(cap_hevc, BITRATE_MODE_SQR);
     if (!isSupported) {
         return;
     }
