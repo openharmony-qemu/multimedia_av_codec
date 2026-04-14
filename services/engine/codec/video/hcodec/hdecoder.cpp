@@ -93,6 +93,11 @@ int32_t HDecoder::OnConfigure(const Format &format)
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
+
+    SetColorAspects(format);
+    SetMasteringDisplayColourVolumeFromContainer(format);
+    SetContentLightLevelFromContainer(format);
+
     SaveTransform(format);
     SaveScaleMode(format);
     (void)SetProcessName();
@@ -1724,6 +1729,63 @@ void HDecoder::AppendProcessTimeOfUs(const shared_ptr<AVBuffer>& avBuffer, int64
     ptsToProcessTimesMap_.erase(it);
     HLOGD("append decoding end stage: pts is %ld, stalling stage is %d, end time is %ld",
         pts, stallStage, decodeCompTime);
+}
+
+int32_t HDecoder::SetMasteringDisplayColourVolumeFromContainer(const Format &format)
+{
+    uint8_t* buffer;
+    size_t bufferSize;
+    if (!format.GetBuffer(OHOS::Media::Tag::VIDEO_STATIC_METADATA_SMPT2086, &buffer, bufferSize)) {
+        return AVCS_ERR_OK;
+    }
+    if (buffer == nullptr) {
+        HLOGE("null colourVolume buffer pointer");
+        return AVCS_ERR_INVALID_VAL;
+    }
+    if (bufferSize != sizeof(OmxSmpte2086)) {
+        HLOGE("invalid buffer size: bufferSize=%zu (expected %zu)", bufferSize, sizeof(OmxSmpte2086));
+        return AVCS_ERR_INVALID_VAL;
+    }
+    auto *colourVolumeInfo = reinterpret_cast<OmxSmpte2086 *>(buffer);
+
+    HdrColourVolumeFromContainer param;
+    InitOMXParamExt(param);
+    param.portIndex = OMX_DirOutput;
+    param.colourVolume = *colourVolumeInfo;
+    if (!SetParameter(OMX_IndexParamMasteringDisplayColourVolume, param, false)) {
+        HLOGE("failed to set HdrColourVolumeFromContainer to OMX");
+        return AVCS_ERR_UNKNOWN;
+    }
+
+    return AVCS_ERR_OK;
+}
+
+int32_t HDecoder::SetContentLightLevelFromContainer(const Format &format)
+{
+    uint8_t* buffer;
+    size_t bufferSize;
+    if (!format.GetBuffer(OHOS::Media::Tag::VIDEO_STATIC_METADATA_CTA861, &buffer, bufferSize)) {
+        return AVCS_ERR_OK;
+    }
+    if (buffer == nullptr) {
+        HLOGE("null contentLightLevel buffer pointer");
+        return AVCS_ERR_INVALID_VAL;
+    }
+    if (bufferSize != sizeof(OmxCta861)) {
+        HLOGE("invalid buffer size: bufferSize=%zu (expected %zu)", bufferSize, sizeof(OmxCta861));
+        return AVCS_ERR_INVALID_VAL;
+    }
+    auto *contentLightLevelInfo = reinterpret_cast<OmxCta861 *>(buffer);
+
+    HdrContentLightLevelFromContainer param;
+    InitOMXParamExt(param);
+    param.portIndex = OMX_DirOutput;
+    param.contentLightLevel = *contentLightLevelInfo;
+    if (!SetParameter(OMX_IndexParamContentLightLevel, param, false)) {
+        HLOGE("failed to set HdrContentLightLevelFromContainer to OMX");
+        return AVCS_ERR_UNKNOWN;
+    }
+    return AVCS_ERR_OK;
 }
 // LCOV_EXCL_STOP
 } // namespace OHOS::MediaAVCodec

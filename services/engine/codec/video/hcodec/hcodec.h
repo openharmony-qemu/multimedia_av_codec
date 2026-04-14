@@ -261,6 +261,7 @@ protected:
     int32_t SetFrameRateAdaptiveMode(const Format &format);
     int32_t SetProcessName();
     int32_t SetLowLatency(const Format &format);
+    int32_t SetColorAspects(const Format &format);
 
     virtual void OnSetOutputSurface(const MsgInfo &msg, BufferOperationMode mode);
     virtual int32_t OnSetParameters(const Format &format) { return AVCS_ERR_OK; }

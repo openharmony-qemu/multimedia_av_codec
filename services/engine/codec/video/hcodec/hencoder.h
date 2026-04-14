@@ -85,7 +85,6 @@ private:
     int32_t SetupAVCEncoderParameters(const Format &format, std::optional<double> frameRate);
     void SetAvcFields(OMX_VIDEO_PARAM_AVCTYPE& avcType, int32_t iFrameInterval, double frameRate);
     int32_t SetupHEVCEncoderParameters(const Format &format, std::optional<double> frameRate);
-    int32_t SetColorAspects(const Format &format);
     int32_t OnSetParameters(const Format &format) override;
     sptr<Surface> OnCreateInputSurface() override;
     int32_t OnSetInputSurface(sptr<Surface> &inputSurface) override;
