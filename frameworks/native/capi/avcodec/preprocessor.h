@@ -17,16 +17,19 @@
 #define PREPROCESSOR_H
 
 #include <memory>
+#include <string>
+#include <string_view>
 #include "format.h"
 #include "surface.h"
+#include "avcodec_info.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 
 class Preprocessor {
 public:
-    Preprocessor();
-    ~Preprocessor();
+    explicit Preprocessor(const std::string& mime) : mime_(mime) {}
+    ~Preprocessor() = default;
 
     int32_t Configure(const Media::Format& format);
     int32_t SetParameter(const Media::Format& format);
@@ -42,6 +45,13 @@ private:
         NOT_SET,
         DISABLED,
         ENABLED
+    };
+
+    struct EncoderConfig {
+        int32_t width{0};
+        int32_t height{0};
+        GraphicPixelFormat pixelFormat{GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT};
+        double frameRate{0.0};
     };
 
     struct CropParams {
@@ -70,9 +80,12 @@ private:
         int32_t bottom{0};
         bool enabled{false};
         CropConfig() = default;
-        explicit CropConfig(const CropParams& params)
-            : left(params.left), right(params.right), top(params.top), bottom(params.bottom),
-              enabled(params.result == ConfigResult::ENABLED) {}
+        explicit CropConfig(const CropParams& params) :
+            left(params.left),
+            right(params.right),
+            top(params.top),
+            bottom(params.bottom),
+            enabled(params.result == ConfigResult::ENABLED) {}
     };
 
     struct DownsamplingConfig {
@@ -80,16 +93,18 @@ private:
         int32_t height{0};
         bool enabled{false};
         DownsamplingConfig() = default;
-        explicit DownsamplingConfig(const DownsamplingParams& params)
-            : width(params.width), height(params.height), enabled(params.result == ConfigResult::ENABLED) {}
+        explicit DownsamplingConfig(const DownsamplingParams& params) :
+            width(params.width), height(params.height),
+            enabled(params.result == ConfigResult::ENABLED) {}
     };
 
     struct DropFrameConfig {
         int32_t targetFrameRate{0};
         bool enabled{false};
         DropFrameConfig() = default;
-        explicit DropFrameConfig(const DropFrameParams& params)
-            : targetFrameRate(params.targetFrameRate), enabled(params.result == ConfigResult::ENABLED) {}
+        explicit DropFrameConfig(const DropFrameParams& params) :
+            targetFrameRate(params.targetFrameRate),
+            enabled(params.result == ConfigResult::ENABLED) {}
     };
 
     int32_t ValidateCrop(const Media::Format& format, CropParams& params);
@@ -102,17 +117,21 @@ private:
     void Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output);
     void Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output);
 
+    bool IsHevc10BitData(HEVCProfile profile);
+    GraphicPixelFormat ConvertVideoPixelFormat2GraphicPixelFormat(VideoPixelFormat pixelFormat, int32_t profile);
+    void UpdateConfiguredValues(const Media::Format& format, EncoderConfig& config);
+    bool GetEncoderRange(const Media::Format& format, Range& encWidth, Range& encHeight);
+
     CropConfig cropConfig_;
     DownsamplingConfig downsamplingConfig_;
     DropFrameConfig dropFrameConfig_;
     int64_t lastFramePts_{0};
-    int32_t configuredWidth_{0};
-    int32_t configuredHeight_{0};
-    double configuredFramerate_{0};
+    EncoderConfig encoderConfig_;
     int32_t dAlgoWidthMin_{0};
     int32_t dAlgoHeightMin_{0};
     int32_t dAlgoWidthMax_{0};
     int32_t dAlgoHeightMax_{0};
+    std::string_view mime_{nullptr};
 };
 
 } // namespace MediaAVCodec

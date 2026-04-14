@@ -124,7 +124,7 @@ OH_AVErrCode PreprocessorEncoder::InitAsPrimary(const char* mime)
 
     preprocMgr_->CreateSharedSurface();
 
-    auto preprocessor = std::make_shared<Preprocessor>();
+    auto preprocessor = std::make_shared<Preprocessor>(mime);
     CHECK_AND_RETURN_RET_LOG(preprocessor != nullptr, AV_ERR_NO_MEMORY, "Preprocessor create failed!");
     preprocessors_[encoderId_] = preprocessor;
 
@@ -151,7 +151,7 @@ OH_AVErrCode PreprocessorEncoder::InitAsSecondary(PreprocessorEncoder* primary)
 
     preprocMgr_ = primary->preprocMgr_;
 
-    auto preprocessor = std::make_shared<Preprocessor>();
+    auto preprocessor = std::make_shared<Preprocessor>(mime_);
     CHECK_AND_RETURN_RET_LOG(preprocessor != nullptr, AV_ERR_NO_MEMORY, "Preprocessor create failed!");
     preprocessors_[encoderId_] = preprocessor;
 
