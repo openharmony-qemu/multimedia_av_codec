@@ -315,7 +315,7 @@ struct DemuxerPlugin : public PluginBase {
      * If dataSource keeps returning ERROR_AGAIN beyond the timeout during init or seek,
      * the operation will report an error and exit.
      *
-     * @param timeoutMs Timeout value in milliseconds. 0 means no timeout.
+     * @param timeoutMs Timeout value in milliseconds. 0 means no timeout. Must be non-negative.
      * @return Execution Status
      */
     virtual Status SetReadTimeoutForInitSeek(int64_t timeoutMs) = 0;
