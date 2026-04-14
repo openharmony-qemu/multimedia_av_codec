@@ -426,13 +426,17 @@ bool CheckCBRHQMode(CapabilityData &capData, Format &format)
     if (IsSupported(capData.bitrateMode, static_cast<int32_t>(VideoEncodeBitrateMode::CBR_HIGH_QUALITY))) {
         if (sqrFactorExist) {
             AVCODEC_LOGE("Param invalid, in CBRHQ mode but set SQR factor!");
+            return false;
         } else if (qualityExist) {
             AVCODEC_LOGE("Param invalid, in CBRHQ mode but set quality!");
+            return false;
         } else if (maxBitrateExist) {
             AVCODEC_LOGW("Param invalid, in CBRHQ mode but set maxBitrate!");
             format.RemoveKey(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE);
             return true;
         }
+        AVCODEC_LOGI("Param valid, set CBRHQ mode successfully!");
+        return true;
     }
     format.RemoveKey(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, VideoEncodeBitrateMode::CBR);
