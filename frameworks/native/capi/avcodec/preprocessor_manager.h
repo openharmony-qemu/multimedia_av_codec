@@ -49,6 +49,7 @@ public:
     void Stop();
 
     sptr<Surface> GetSharedSurface();
+    void NotifyNewBufferAvailable();
 
 private:
     void MainThreadLoop();
@@ -83,6 +84,7 @@ private:
     std::condition_variable cv_;
     std::set<uint32_t> releasedBuffers_{};
     bool isRunning_{false};
+    bool newBufferAvailable_{false};
 };
 
 } // namespace MediaAVCodec

@@ -21,7 +21,20 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "PreprocessorManager"};
 constexpr int32_t DEFAULT_BUFFER_COUNT = 8;
-// constexpr int64_t REQUEST_BUFFER_TIMEOUT = 5000000; // 5ms
+
+class ConsumerListener : public OHOS::IBufferConsumerListener {
+public:
+    ConsumerListener(std::weak_ptr<OHOS::MediaAVCodec::PreprocessorManager> mgr) : mgr_(mgr) {}
+    void OnBufferAvailable() override
+    {
+        auto mgr = mgr_.lock();
+        if (mgr) {
+            mgr->NotifyNewBufferAvailable();
+        }
+    }
+private:
+    std::weak_ptr<OHOS::MediaAVCodec::PreprocessorManager> mgr_;
+};
 }
 
 namespace OHOS {
@@ -142,6 +155,9 @@ void PreprocessorManager::CreateSharedSurface()
     sharedConsumerSurface_ = sharedSurfMgr->GetConsumerSurface();
     sharedProducerSurface_ = sharedSurfMgr->GetProducerSurface();
     
+    sptr<IBufferConsumerListener> listener = sptr<ConsumerListener>::MakeSptr(shared_from_this());
+    sharedProducerSurface_->RegisterConsumerListener(listener);
+    
     isRunning_ = true;
     mainThread_ = std::thread(&PreprocessorManager::MainThreadLoop, this);
     
@@ -184,6 +200,18 @@ void PreprocessorManager::MainThreadLoop()
     AVCODEC_LOGI("MainThreadLoop started");
     
     while (isRunning_) {
+        {
+            std::unique_lock<std::mutex> lock(mutex_);
+            cv_.wait(lock, [this]() {
+                return newBufferAvailable_ || !isRunning_;
+            });
+            
+            if (!isRunning_) {
+                break;
+            }
+            newBufferAvailable_ = false;
+        }
+        
         sptr<SurfaceBuffer> buffer;
         int32_t fence;
         int64_t timestamp;
@@ -191,9 +219,6 @@ void PreprocessorManager::MainThreadLoop()
         
         GSError ret = sharedConsumerSurface_->AcquireBuffer(buffer, fence, timestamp, damage);
         if (ret != GSERROR_OK) {
-            if (isRunning_) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            }
             continue;
         }
         
@@ -311,6 +336,13 @@ void PreprocessorManager::EncoderThreadLoop(std::string_view encoderId)
 
 void PreprocessorManager::NotifyEncoders()
 {
+    cv_.notify_all();
+}
+
+void PreprocessorManager::NotifyNewBufferAvailable()
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    newBufferAvailable_ = true;
     cv_.notify_all();
 }
 
