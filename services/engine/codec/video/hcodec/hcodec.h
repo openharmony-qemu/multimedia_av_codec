@@ -319,7 +319,7 @@ protected:
     virtual void OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode);
     virtual void BeforeCbOutToUser(BufferInfo &info) {}
     virtual void OnFrameSubmitted(int64_t pts) {}
-    virtual void OnGetInputFormat(Format& format) {};
+    virtual void OnGetInputFormat(Format& format) {}
     virtual void ProcSurfaceBufferToUser(const sptr<SurfaceBuffer>& buffer) {}
     virtual void ProcAVBufferToUser(std::shared_ptr<AVBuffer> avBuffer,
         std::shared_ptr<CodecHDI::OmxCodecBuffer> omxBuffer) {}
