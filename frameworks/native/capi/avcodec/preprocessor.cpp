@@ -15,12 +15,51 @@
 
 #include "preprocessor.h"
 #include <algorithm>
+#include <meta_key.h>
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
 #include "native_avcodec_base.h"
+#include "avcodeclist_impl.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "Preprocessor"};
+
+using namespace OHOS;
+using namespace OHOS::Media;
+using namespace OHOS::MediaAVCodec;
+
+void UpdateConfiguredValues(const Format& format, int32_t& width, int32_t& height, double& frameRate)
+{
+    int32_t configuredWidth = 0;
+    int32_t configuredHeight = 0;
+    double configuredFramerate = 0;
+    if (format.GetIntValue(Tag::VIDEO_WIDTH, configuredWidth) &&
+        format.GetIntValue(Tag::VIDEO_HEIGHT, configuredHeight)) {
+        width = configuredWidth;
+        height = configuredHeight;
+    }
+    if (format.GetDoubleValue(Tag::VIDEO_FRAME_RATE, configuredFramerate)) {
+        frameRate = configuredFramerate;
+    }
+}
+
+bool GetEncoderRange(const Format& format, Range& encWidth, Range& encHeight)
+{
+    std::string mime;
+    if (!format.GetStringValue(Tag::MIME_TYPE, mime)) {
+        AVCODEC_LOGE("Failed to get codec mime from format");
+        return false;
+    }
+    AVCodecListImpl codecList;
+    (void)codecList.Init();
+    CapabilityData* cap = codecList.GetCapability(mime, true, AVCodecCategory::AVCODEC_NONE);
+    if (cap == nullptr) {
+        return false;
+    }
+    encWidth = cap->width;
+    encHeight = cap->height;
+    return true;
+}
 }
 
 namespace OHOS {
@@ -38,61 +77,37 @@ Preprocessor::~Preprocessor()
 
 int32_t Preprocessor::Configure(const Media::Format& format)
 {
+    UpdateConfiguredValues(format, configuredWidth_, configuredHeight_, configuredFramerate_);
     CropParams cropParams;
-    int32_t ret = ValidateCrop(format, cropParams);
-    if (ret != AVCS_ERR_OK) {
-        return ret;
-    }
-
     DownsamplingParams dsParams;
-    ret = ValidateDownsampling(format, dsParams);
-    if (ret != AVCS_ERR_OK) {
-        return ret;
-    }
-
     DropFrameParams dropParams;
-    ret = ValidateDropFrame(format, dropParams);
+    int32_t ret = ValidateCrop(format, cropParams);
+    ret = (ret == AVCS_ERR_OK) ? ValidateDownsampling(format, dsParams) : ret;
+    ret = (ret == AVCS_ERR_OK) ? ValidateDropFrame(format, dropParams) : ret;
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
-
     if (cropParams.result == ConfigResult::ENABLED && dsParams.result == ConfigResult::ENABLED) {
         AVCODEC_LOGE("Crop and downsampling cannot be enabled simultaneously");
         return AVCS_ERR_INVALID_VAL;
     }
-
-    if (cropParams.result == ConfigResult::ENABLED) {
-        cropConfig_.left = cropParams.left;
-        cropConfig_.right = cropParams.right;
-        cropConfig_.top = cropParams.top;
-        cropConfig_.bottom = cropParams.bottom;
-        cropConfig_.enabled = true;
-    } else if (cropParams.result == ConfigResult::DISABLED) {
-        cropConfig_.enabled = false;
+    if (cropParams.result != ConfigResult::NOT_SET) {
+        cropConfig_ = CropConfig(cropParams);
     }
-
-    if (dsParams.result == ConfigResult::ENABLED) {
-        downsamplingConfig_.width = dsParams.width;
-        downsamplingConfig_.height = dsParams.height;
-        downsamplingConfig_.enabled = true;
-    } else if (dsParams.result == ConfigResult::DISABLED) {
-        downsamplingConfig_.enabled = false;
+    if (dsParams.result != ConfigResult::NOT_SET) {
+        downsamplingConfig_ = DownsamplingConfig(dsParams);
     }
-
-    if (dropParams.result == ConfigResult::ENABLED) {
-        dropFrameConfig_.targetFrameRate = dropParams.targetFrameRate;
-        dropFrameConfig_.enabled = true;
-    } else if (dropParams.result == ConfigResult::DISABLED) {
-        dropFrameConfig_.enabled = false;
+    if (dropParams.result != ConfigResult::NOT_SET) {
+        dropFrameConfig_ = DropFrameConfig(dropParams);
     }
-
-    AVCODEC_LOGI("Preprocessor configured: crop=%{public}d, ds=%{public}d, drop=%{public}d",
+    AVCODEC_LOGI("PreProcessor configured: crop=%{public}d, ds=%{public}d, drop=%{public}d",
         cropConfig_.enabled, downsamplingConfig_.enabled, dropFrameConfig_.enabled);
     return AVCS_ERR_OK;
 }
 
 int32_t Preprocessor::ValidateCrop(const Media::Format& format, CropParams& params)
 {
+    params.result = ConfigResult::NOT_SET;
     int32_t left{0};
     int32_t right{0};
     int32_t top{0};
@@ -101,86 +116,96 @@ int32_t Preprocessor::ValidateCrop(const Media::Format& format, CropParams& para
     bool hasRight = format.GetIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_RIGHT, right);
     bool hasTop = format.GetIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_TOP, top);
     bool hasBottom = format.GetIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM, bottom);
-
-    bool hasAnyCrop = hasLeft || hasRight || hasTop || hasBottom;
-    bool hasAllCrop = hasLeft && hasRight && hasTop && hasBottom;
-
-    if (hasAnyCrop && !hasAllCrop) {
-        AVCODEC_LOGE("Crop parameters must be all configured or all not configured");
+    if (!(hasLeft && hasRight && hasTop && hasBottom)) {
+        return AVCS_ERR_OK;
+    }
+    Range encWidth;
+    Range encHeight;
+    if (!GetEncoderRange(format, encWidth, encHeight)) {
+        AVCODEC_LOGE("Failed to get encoder capability for crop");
         return AVCS_ERR_INVALID_VAL;
     }
-
-    if (hasAllCrop) {
-        if (left == 0 && right == 0 && top == 0 && bottom == 0) {
-            params.result = ConfigResult::DISABLED;
-        } else {
-            if (!(0 <= left && left < right && 0 <= top && top < bottom)) {
-                AVCODEC_LOGE("Invalid crop parameters: left=%{public}d, right=%{public}d, top=%{public}d, bottom=%{public}d",
-                    left, right, top, bottom);
-                return AVCS_ERR_INVALID_VAL;
-            }
-            params.left = left;
-            params.right = right;
-            params.top = top;
-            params.bottom = bottom;
-            params.result = ConfigResult::ENABLED;
-        }
-    } else {
-        params.result = ConfigResult::NOT_SET;
+    if (left == 0 && top == 0 && right == configuredWidth_ && bottom == configuredHeight_) {
+        params.result = ConfigResult::DISABLED;
+        return AVCS_ERR_OK;
     }
-
+    int32_t cropWidth = right - left + 1;
+    int32_t cropHeight = bottom - top + 1;
+    if (!(0 <= left && left < right && right <= configuredWidth_ && 0 <= top && top < bottom &&
+        bottom <= configuredHeight_ && encWidth.InRange(cropWidth) && encHeight.InRange(cropHeight))) {
+        AVCODEC_LOGE("Invalid crop parameters: left=%{public}d, right=%{public}d, top=%{public}d, "
+            "bottom=%{public}d",
+            left, right, top, bottom);
+        return AVCS_ERR_INVALID_VAL;
+    }
+    params.left = left;
+    params.right = right;
+    params.top = top;
+    params.bottom = bottom;
+    params.result = ConfigResult::ENABLED;
     return AVCS_ERR_OK;
 }
 
 int32_t Preprocessor::ValidateDownsampling(const Media::Format& format, DownsamplingParams& params)
 {
+    params.result = ConfigResult::NOT_SET;
     int32_t width{0};
     int32_t height{0};
     bool hasWidth = format.GetIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH, width);
     bool hasHeight = format.GetIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT, height);
-
-    if (hasWidth != hasHeight) {
-        AVCODEC_LOGE("Downsampling parameters must be both configured or both not configured");
+    if (!(hasWidth && hasHeight)) {
+        return AVCS_ERR_OK;
+    }
+    if (width == 0 && height == 0) {
+        params.result = ConfigResult::DISABLED;
+        return AVCS_ERR_OK;
+    }
+    Range encWidth;
+    Range encHeight;
+    if (!GetEncoderRange(format, encWidth, encHeight)) {
+        AVCODEC_LOGE("Failed to get encoder capability for downsampling");
         return AVCS_ERR_INVALID_VAL;
     }
-
-    if (hasWidth && hasHeight) {
-        if (width == 0 && height == 0) {
-            params.result = ConfigResult::DISABLED;
-        } else {
-            if (!(width > 0 && height > 0)) {
-                AVCODEC_LOGE("Invalid downsampling parameters: width=%{public}d, height=%{public}d", width, height);
-                return AVCS_ERR_INVALID_VAL;
-            }
-            params.width = width;
-            params.height = height;
-            params.result = ConfigResult::ENABLED;
-        }
-    } else {
-        params.result = ConfigResult::NOT_SET;
+    int32_t minWidth = std::max((dAlgoWidthMin_ > 0) ? dAlgoWidthMin_ : encWidth.minVal, encWidth.minVal);
+    int32_t maxWidth = (dAlgoWidthMax_ > 0) ? std::min(dAlgoWidthMax_, encWidth.maxVal) : encWidth.maxVal;
+    int32_t minHeight = std::max((dAlgoHeightMin_ > 0) ? dAlgoHeightMin_ : encHeight.minVal, encHeight.minVal);
+    int32_t maxHeight = (dAlgoHeightMax_ > 0) ? std::min(dAlgoHeightMax_, encHeight.maxVal) : encHeight.maxVal;
+    if (!(minWidth > 0 && minHeight > 0 && minWidth <= width && width <= configuredWidth_ &&
+        configuredWidth_ <= maxWidth && minHeight <= height && height <= configuredHeight_ &&
+        configuredHeight_ <= maxHeight)) {
+        AVCODEC_LOGE("Invalid downsampling parameters: width=%{public}d, height=%{public}d", width, height);
+        return AVCS_ERR_INVALID_VAL;
     }
-
+    params.width = width;
+    params.height = height;
+    params.result = ConfigResult::ENABLED;
     return AVCS_ERR_OK;
 }
 
 int32_t Preprocessor::ValidateDropFrame(const Media::Format& format, DropFrameParams& params)
 {
-    int32_t targetFrameRate{0};
+    params.result = ConfigResult::NOT_SET;
+    int32_t targetFrameRate = 0;
     if (format.GetIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DROP_TO_FRAME_RATE, targetFrameRate)) {
-        if (targetFrameRate == 0) {
-            params.result = ConfigResult::DISABLED;
-        } else if (targetFrameRate > 0) {
-            params.targetFrameRate = targetFrameRate;
-            params.result = ConfigResult::ENABLED;
-        } else {
-            AVCODEC_LOGE("Invalid drop to frame rate: %{public}d", targetFrameRate);
-            return AVCS_ERR_INVALID_VAL;
-        }
-    } else {
-        params.result = ConfigResult::NOT_SET;
+        return AVCS_ERR_OK;
     }
-
-    return AVCS_ERR_OK;
+    if (targetFrameRate < 0 && configuredFramerate_ <= 0) {
+        AVCODEC_LOGE("Invalid drop frame rate: %{public}d, configured=%{public}.2f",
+            targetFrameRate, configuredFramerate_);
+        return AVCS_ERR_INVALID_VAL;
+    }
+    if (targetFrameRate == 0) {
+        params.result = ConfigResult::DISABLED;
+        return AVCS_ERR_OK;
+    }
+    if (targetFrameRate < configuredFramerate_) {
+        params.targetFrameRate = static_cast<int32_t>(targetFrameRate);
+        params.result = ConfigResult::ENABLED;
+        return AVCS_ERR_OK;
+    }
+    AVCODEC_LOGE("Invalid drop frame rate: %{public}d, configured=%{public}.2f",
+        targetFrameRate, configuredFramerate_);
+    return AVCS_ERR_INVALID_VAL;
 }
 
 int32_t Preprocessor::SetParameter(const Media::Format& format)

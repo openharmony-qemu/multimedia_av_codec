@@ -37,29 +37,11 @@ public:
     bool IsCropEnabled() const;
     bool IsDownsamplingEnabled() const;
 
+private:
     enum class ConfigResult {
         NOT_SET,
         DISABLED,
         ENABLED
-    };
-
-    struct CropConfig {
-        int32_t left{0};
-        int32_t right{0};
-        int32_t top{0};
-        int32_t bottom{0};
-        bool enabled{false};
-    };
-
-    struct DownsamplingConfig {
-        int32_t width{0};
-        int32_t height{0};
-        bool enabled{false};
-    };
-
-    struct DropFrameConfig {
-        int32_t targetFrameRate{0};
-        bool enabled{false};
     };
 
     struct CropParams {
@@ -81,14 +63,41 @@ public:
         int32_t targetFrameRate{0};
     };
 
-    const CropConfig& GetCropConfig() const;
-    const DownsamplingConfig& GetDownsamplingConfig() const;
-    const DropFrameConfig& GetDropFrameConfig() const;
+    struct CropConfig {
+        int32_t left{0};
+        int32_t right{0};
+        int32_t top{0};
+        int32_t bottom{0};
+        bool enabled{false};
+        CropConfig() = default;
+        explicit CropConfig(const CropParams& params)
+            : left(params.left), right(params.right), top(params.top), bottom(params.bottom),
+              enabled(params.result == ConfigResult::ENABLED) {}
+    };
 
-private:
+    struct DownsamplingConfig {
+        int32_t width{0};
+        int32_t height{0};
+        bool enabled{false};
+        DownsamplingConfig() = default;
+        explicit DownsamplingConfig(const DownsamplingParams& params)
+            : width(params.width), height(params.height), enabled(params.result == ConfigResult::ENABLED) {}
+    };
+
+    struct DropFrameConfig {
+        int32_t targetFrameRate{0};
+        bool enabled{false};
+        DropFrameConfig() = default;
+        explicit DropFrameConfig(const DropFrameParams& params)
+            : targetFrameRate(params.targetFrameRate), enabled(params.result == ConfigResult::ENABLED) {}
+    };
+
     int32_t ValidateCrop(const Media::Format& format, CropParams& params);
     int32_t ValidateDownsampling(const Media::Format& format, DownsamplingParams& params);
     int32_t ValidateDropFrame(const Media::Format& format, DropFrameParams& params);
+    const CropConfig& GetCropConfig() const;
+    const DownsamplingConfig& GetDownsamplingConfig() const;
+    const DropFrameConfig& GetDropFrameConfig() const;
     void Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output);
     void Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output);
     void Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output);
@@ -97,6 +106,13 @@ private:
     DownsamplingConfig downsamplingConfig_;
     DropFrameConfig dropFrameConfig_;
     int64_t lastFramePts_{0};
+    int32_t configuredWidth_{0};
+    int32_t configuredHeight_{0};
+    double configuredFramerate_{0};
+    int32_t dAlgoWidthMin_{0};
+    int32_t dAlgoHeightMin_{0};
+    int32_t dAlgoWidthMax_{0};
+    int32_t dAlgoHeightMax_{0};
 };
 
 } // namespace MediaAVCodec
