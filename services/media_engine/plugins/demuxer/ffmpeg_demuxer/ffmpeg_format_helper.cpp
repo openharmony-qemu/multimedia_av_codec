@@ -625,13 +625,18 @@ void FFmpegFormatHelper::ParseLocationInfo(const AVFormatContext& avFormatContex
     std::regex pattern(R"([\+\-]\d+\.\d+)");
     std::sregex_iterator numbers(locationStr.cbegin(), locationStr.cend(), pattern);
     std::sregex_iterator end;
+
+    uint32_t cnt = static_cast<uint32_t>(std::distance(numbers, end));
     // at least contain latitude and longitude
-    if (static_cast<uint32_t>(std::distance(numbers, end)) < VALID_LOCATION_LEN) {
+    if (cnt < VALID_LOCATION_LEN) {
         MEDIA_LOG_D("Info format error");
         return;
     }
     SetToFormatIfConvertSuccess(format, Tag::MEDIA_LATITUDE, numbers->str(), ValueType::FLOAT);
     SetToFormatIfConvertSuccess(format, Tag::MEDIA_LONGITUDE, (++numbers)->str(), ValueType::FLOAT);
+    if (cnt > VALID_LOCATION_LEN) {
+        SetToFormatIfConvertSuccess(format, Tag::MEDIA_ALTITUDE, (++numbers)->str(), ValueType::FLOAT);
+    }
 }
 
 void FFmpegFormatHelper::ParseUserMeta(const AVFormatContext& avFormatContext, std::shared_ptr<Meta> format)

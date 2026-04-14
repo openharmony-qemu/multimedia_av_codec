@@ -3934,4 +3934,160 @@ HWTEST_F(Mpeg4MuxerUnitTest, Muxer_AddTrackNodata_003, TestSize.Level0)
     EXPECT_EQ(OH_AVFormat_GetIntValue(sourceFromat, OH_MD_KEY_TRACK_COUNT, &trackCount), true);
     EXPECT_EQ(trackCount, 3);  // 3
 }
+
+/**
+ * @tc.name: Muxer_Location_Altitude_001
+ * @tc.desc: Muxer set location with latitude, longitude and altitude
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4MuxerUnitTest, Muxer_Location_Altitude_001, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_Location_Altitude_001.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> metaData = FormatMockFactory::CreateFormat();
+    metaData->PutFloatValue(OH_MD_KEY_LATITUDE, 39.9042f);
+    metaData->PutFloatValue(OH_MD_KEY_LONGITUDE, 116.4074f);
+    metaData->PutFloatValue(OH_MD_KEY_ALTITUDE, 100.5f);
+    int32_t ret = avmuxer_->SetFormat(metaData);
+    EXPECT_EQ(ret, 0);
+
+    ASSERT_EQ(avmuxer_->Start(), 0);
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+    close(fd_);
+
+    fd_ = open(outputFile.c_str(), O_RDONLY, S_IRUSR | S_IWUSR);
+    struct stat fileStatus {};
+    ASSERT_EQ(stat(outputFile.c_str(), &fileStatus), 0);
+    int64_t fileSize = static_cast<int64_t>(fileStatus.st_size);
+    OH_AVSource *source = OH_AVSource_CreateWithFD(fd_, 0, fileSize);
+    OH_AVFormat* sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+
+    float latitude = 0.0f;
+    float longitude = 0.0f;
+    float altitude = 0.0f;
+    bool hasLatitude = OH_AVFormat_GetFloatValue(sourceFormat, OH_MD_KEY_LATITUDE, &latitude);
+    bool hasLongitude = OH_AVFormat_GetFloatValue(sourceFormat, OH_MD_KEY_LONGITUDE, &longitude);
+    bool hasAltitude = OH_AVFormat_GetFloatValue(sourceFormat, OH_MD_KEY_ALTITUDE, &altitude);
+
+    EXPECT_TRUE(hasLatitude);
+    EXPECT_TRUE(hasLongitude);
+    EXPECT_TRUE(hasAltitude);
+    if (hasLatitude) {
+        EXPECT_FLOAT_EQ(latitude, 39.9042f);
+    }
+    if (hasLongitude) {
+        EXPECT_FLOAT_EQ(longitude, 116.4074f);
+    }
+    if (hasAltitude) {
+        EXPECT_FLOAT_EQ(altitude, 100.5f);
+    }
+}
+
+/**
+ * @tc.name: Muxer_Location_Altitude_002
+ * @tc.desc: Muxer set location with negative altitude
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4MuxerUnitTest, Muxer_Location_Altitude_002, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_Location_Altitude_002.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> metaData = FormatMockFactory::CreateFormat();
+    metaData->PutFloatValue(OH_MD_KEY_LATITUDE, -22.67f);
+    metaData->PutFloatValue(OH_MD_KEY_LONGITUDE, -114.06f);
+    metaData->PutFloatValue(OH_MD_KEY_ALTITUDE, -50.0f);
+    int32_t ret = avmuxer_->SetFormat(metaData);
+    EXPECT_EQ(ret, 0);
+
+    ASSERT_EQ(avmuxer_->Start(), 0);
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+    close(fd_);
+
+    fd_ = open(outputFile.c_str(), O_RDONLY, S_IRUSR | S_IWUSR);
+    struct stat fileStatus {};
+    ASSERT_EQ(stat(outputFile.c_str(), &fileStatus), 0);
+    int64_t fileSize = static_cast<int64_t>(fileStatus.st_size);
+    OH_AVSource *source = OH_AVSource_CreateWithFD(fd_, 0, fileSize);
+    OH_AVFormat* sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+
+    float latitude = 0.0f;
+    float longitude = 0.0f;
+    float altitude = 0.0f;
+    bool hasLatitude = OH_AVFormat_GetFloatValue(sourceFormat, OH_MD_KEY_LATITUDE, &latitude);
+    bool hasLongitude = OH_AVFormat_GetFloatValue(sourceFormat, OH_MD_KEY_LONGITUDE, &longitude);
+    bool hasAltitude = OH_AVFormat_GetFloatValue(sourceFormat, OH_MD_KEY_ALTITUDE, &altitude);
+
+    EXPECT_TRUE(hasLatitude);
+    EXPECT_TRUE(hasLongitude);
+    EXPECT_TRUE(hasAltitude);
+    if (hasLatitude) {
+        EXPECT_FLOAT_EQ(latitude, -22.67f);
+    }
+    if (hasLongitude) {
+        EXPECT_FLOAT_EQ(longitude, -114.06f);
+    }
+    if (hasAltitude) {
+        EXPECT_FLOAT_EQ(altitude, -50.0f);
+    }
+}
+
+/**
+ * @tc.name: Muxer_Location_Altitude_003
+ * @tc.desc: Muxer set location with zero altitude
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4MuxerUnitTest, Muxer_Location_Altitude_003, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_Location_Altitude_003.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> metaData = FormatMockFactory::CreateFormat();
+    metaData->PutFloatValue(OH_MD_KEY_LATITUDE, 0.0f);
+    metaData->PutFloatValue(OH_MD_KEY_LONGITUDE, 0.0f);
+    metaData->PutFloatValue(OH_MD_KEY_ALTITUDE, 0.0f);
+    int32_t ret = avmuxer_->SetFormat(metaData);
+    EXPECT_EQ(ret, 0);
+    ASSERT_EQ(avmuxer_->Start(), 0);
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+    close(fd_);
+    fd_ = open(outputFile.c_str(), O_RDONLY, S_IRUSR | S_IWUSR);
+    struct stat fileStatus {};
+    ASSERT_EQ(stat(outputFile.c_str(), &fileStatus), 0);
+    int64_t fileSize = static_cast<int64_t>(fileStatus.st_size);
+    OH_AVSource *source = OH_AVSource_CreateWithFD(fd_, 0, fileSize);
+    OH_AVFormat* sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+
+    float latitude = 0.0f;
+    float longitude = 0.0f;
+    float altitude = 0.0f;
+    bool hasLatitude = OH_AVFormat_GetFloatValue(sourceFormat, OH_MD_KEY_LATITUDE, &latitude);
+    bool hasLongitude = OH_AVFormat_GetFloatValue(sourceFormat, OH_MD_KEY_LONGITUDE, &longitude);
+    bool hasAltitude = OH_AVFormat_GetFloatValue(sourceFormat, OH_MD_KEY_ALTITUDE, &altitude);
+
+    EXPECT_TRUE(hasLatitude);
+    EXPECT_TRUE(hasLongitude);
+    // ffmpeg not output altitude when altitude is zero.
+    EXPECT_FALSE(hasAltitude);
+
+    if (hasLongitude) {
+        EXPECT_FLOAT_EQ(longitude, 0.0f);
+    }
+    if (hasAltitude) {
+        EXPECT_FLOAT_EQ(altitude, 0.0f);
+    }
+}
 }

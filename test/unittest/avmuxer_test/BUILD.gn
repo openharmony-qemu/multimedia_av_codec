@@ -275,24 +275,7 @@ ohos_unittest("avmuxer_mpeg4_plugin_unit_test") {
   cflags = avmuxer_unittest_cflags
 
   if (av_codec_support_muxer) {
-    mpeg4_sources = [
-      "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/track/audio_track.cpp",
-      "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/track/basic_track.cpp",
-      "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/track/cover_track.cpp",
-      "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/track/video_track.cpp",
-      "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/track/timed_meta_track.cpp",
-      "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/avc_parser.cpp",
-      "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/avio_stream.cpp",
-      "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/basic_box.cpp",
-      "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/box_parser.cpp",
-      "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/hevc_parser.cpp",
-      "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/mpeg4_muxer_plugin.cpp",
-      "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/mpeg4_utils.cpp",
-      "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer/video_parser.cpp",
-      "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/stream_parser_manager.cpp",
-    ]
-
-    sources = mpeg4_sources + [
+    sources = [
       "./mpeg4_plugin/avmuxer_mpeg4_plugin_mock_factory.cpp",
       "./mpeg4_plugin/avmuxer_mpeg4_plugin_mock.cpp",
       "./demuxer_capi/demuxer_mock.cpp",
@@ -325,6 +308,7 @@ ohos_unittest("avmuxer_mpeg4_plugin_unit_test") {
     "c_utils:utils",
     "hilog:libhilog",
     "graphic_surface:surface",
+    "media_foundation:media_foundation",
     "media_foundation:native_media_core",
   ]
 
