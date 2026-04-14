@@ -74,6 +74,7 @@ public:
     ~VEncAPI11Sample();
     const char *INP_DIR = "/data/test/media/1280_720_nv.yuv";
     const char *OUT_DIR = "/data/test/media/VEncTest.h264";
+    const char *roiInfo = "0,0-128,64=-4;100,200-300,400=3";
     uint32_t DEFAULT_WIDTH = 1280;
     uint32_t DEFAULT_HEIGHT = 720;
     uint32_t DEFAULT_BITRATE = 5000000;
