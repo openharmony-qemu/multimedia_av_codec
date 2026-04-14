@@ -54,7 +54,7 @@ bool FixedRatioRetentionStrategy::MakeRetentionDecision(const FrameRetentionCont
         dropCnt_++;
     }
     
-    AVCODEC_LOGI("cnt %{public}d, dropCnt_ %{public}d, accumulator_ %{public}.2f, preDroppedCount %{public}d",
+    AVCODEC_LOGI("cnt %{public}d, dropCnt_ %{public}d, accumulator_ %{public}.2f, preDroppedCount %{public}u",
         cnt_, dropCnt_, accumulator_, ctx.preDroppedCount);
     return isRetain;
 }
@@ -70,9 +70,9 @@ void FixedRatioRetentionStrategy::UpdatePlaybackSpeed(double speed)
     (void)speed;
 }
 
-FrameRetentionMode FixedRatioRetentionStrategy::GetMode() const
+RetentionStrategyType FixedRatioRetentionStrategy::GetMode() const
 {
-    return FrameRetentionMode::FIXED_RATIO;
+    return RetentionStrategyType::FIXED_RATIO;
 }
 
 double FixedRatioRetentionStrategy::GetCurrentRetentionRatio() const

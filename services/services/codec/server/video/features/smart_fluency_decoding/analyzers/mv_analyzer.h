@@ -4,7 +4,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,28 +13,32 @@
  * limitations under the License.
  */
 
-#ifndef FULL_RETENTION_STRATEGY_H
-#define FULL_RETENTION_STRATEGY_H
+#ifndef MV_ANALYZER_H
+#define MV_ANALYZER_H
 
-#include "i_frame_retention_strategy.h"
+#include "smart_fluency_decoding_types.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
 
-class FullRetentionStrategy : public IFrameRetentionStrategy {
+class IMvAnalyzer {
 public:
-    FullRetentionStrategy() = default;
-    ~FullRetentionStrategy() override = default;
+    virtual ~IMvAnalyzer() = default;
+    virtual void SetStreamAuxInfo(const StreamAuxInfo& info) = 0;
+    virtual void SetVideoInfo(uint32_t width, uint32_t height) = 0;
+    virtual MVStats Analyze(const uint8_t *buffer) = 0;
+    virtual SFDCodecType GetCodecType() const = 0;
+};
 
-    bool MakeRetentionDecision(const FrameRetentionContext& ctx) override;
-    void Reset() override;
-    void UpdatePlaybackSpeed(double speed) override;
-    FrameRetentionMode GetMode() const override;
-    double GetCurrentRetentionRatio() const override;
+class MvAnalyzerFactory {
+public:
+    static std::unique_ptr<IMvAnalyzer> CreateMvAnalyzer(SFDCodecType codecType);
+    static bool IsCodecSupported(SFDCodecType codecType);
 };
 
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // PASSTHROUGH_DROPPER_H
+
+#endif // MV_ANALYZER_INTERFACE_H

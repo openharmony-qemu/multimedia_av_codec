@@ -150,6 +150,13 @@ bool FramerateCalculator::SetFramerate2ConfiguredFramerate()
     return true;
 }
 
+void FramerateCalculator::SetSpeedAndFpsCallback(SpeedAndFpsCallback cb)
+{
+    if (behaviorAnalyzer_) {
+        behaviorAnalyzer_->SetCallback(std::move(cb));
+    }
+}
+
 void FramerateCalculator::Register2AFC()
 {
     auto &afc = AdaptiveFramerateController::GetInstance();

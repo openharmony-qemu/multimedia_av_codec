@@ -271,9 +271,11 @@
             "name": "//foundation/multimedia/av_codec/services/services:av_codec_service",
             "header": {
               "header_files": [
-                "nalu_analyzer_api.h"
+                "nalu_analyzer_c_api.h",
+                "mv_analyzer_c_api.h",
+                "smart_fluency_decoding_types.h"
               ],
-              "header_base": "//foundation/multimedia/av_codec/services/services/codec/server/video/features/smart_fluency_decoding/nalu_analyzer"
+              "header_base": "//foundation/multimedia/av_codec/services/services/codec/server/video/features/smart_fluency_decoding/interfaces"
             }
           },
           {

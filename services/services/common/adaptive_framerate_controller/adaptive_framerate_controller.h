@@ -38,6 +38,8 @@ public:
     bool CheckAndResetFramerate();
     void SetConfiguredFramerate(double framerate);
     bool SetFramerate2ConfiguredFramerate();
+    using SpeedAndFpsCallback = std::function<void(double speed, double decFps)>;
+    void SetSpeedAndFpsCallback(SpeedAndFpsCallback cb);
 
 private:
     enum class Status {

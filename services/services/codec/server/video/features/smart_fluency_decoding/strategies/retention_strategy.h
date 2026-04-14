@@ -13,34 +13,38 @@
  * limitations under the License.
  */
 
-#ifndef ADAPTIVE_RETENTION_STRATEGY_H
-#define ADAPTIVE_RETENTION_STRATEGY_H
+#ifndef RETENTION_STRATEGY_H
+#define RETENTION_STRATEGY_H
 
-#include "i_frame_retention_strategy.h"
 #include <memory>
+#include "smart_fluency_decoding_types.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
 
-class AdaptiveRetentionStrategy : public IFrameRetentionStrategy {
+struct FrameRetentionContext {
+    int64_t ptsMs;
+    int64_t sysTimeMs;
+    uint32_t frameCount;
+    uint32_t preDroppedCount = 0;
+    const MVStats* mvStats = nullptr;
+};
+
+class IRetentionStrategy {
 public:
-    AdaptiveRetentionStrategy() = default;
-    ~AdaptiveRetentionStrategy() override = default;
+    virtual ~IRetentionStrategy() = default;
 
-    bool MakeRetentionDecision(const FrameRetentionContext& ctx) override;
-    void UpdatePlaybackSpeed(double speed) override;
-    void Reset() override;
-    FrameRetentionMode GetMode() const override;
-    double GetCurrentRetentionRatio() const override;
-
-private:
-    double currentSpeed_{1.0};
-    uint32_t dropCount_{0};
-    double currentTargetRatio_{0.0};
+    virtual bool MakeRetentionDecision(const FrameRetentionContext& ctx) = 0;
+    virtual void UpdatePlaybackSpeed(double speed) = 0;
+    virtual void Reset() = 0;
+    virtual RetentionStrategyType GetMode() const = 0;
+    virtual void OnDecodingPerformanceUpdate(double /*speed*/, double /*decFps*/) {};
+    virtual double GetCurrentRetentionRatio() const = 0;
 };
 
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif
+
+#endif // RETENTION_STRATEGY_H

@@ -225,14 +225,17 @@ private:
     std::shared_ptr<MediaCodecCallback> codecBaseCb_ = nullptr;
     std::shared_ptr<FramerateCalculator> framerateCalculator_ = nullptr;
 #ifdef SFD_ENABLED
-    void InitializeSFD(const Media::Format &format);
+    void InitializeSfd(const Media::Format &format);
     void CacheCsdData(uint32_t index);
-    void ClearCsdCache();
+    bool ProcessSfdOutputBuffer(uint32_t index, const std::shared_ptr<AVBuffer>& buffer);
+    void CleanSfdResources();
     std::unique_ptr<SFD::SmartFluencyDecoding> smartFluencyDecoding_ = nullptr;
     std::vector<uint8_t> cachedCsdData_;
     bool isCsdCached_ = false;
-    std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> tempCsdBufferMap_;
     std::mutex tempCsdMutex_;
+    std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> tempCsdBufferMap_;
+    std::mutex surfaceBufMutex_;
+    std::unordered_map<int64_t, sptr<SurfaceBuffer>> surfaceBufMap_;
 #endif
 };
 

@@ -132,6 +132,7 @@ private:
 
     // VRR
     int32_t SetVrrEnable(const Format &format);
+    void SetIsMvUpload(const Format &format);
 
     // swap dma buffer
     bool CanSwapOut(OMX_DIRTYPE portIndex, BufferInfo& info);

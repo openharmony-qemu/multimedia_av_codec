@@ -810,9 +810,7 @@ void HCodec::OutputPortChangedState::HandleOutputPortDisabled()
 
     if (ret == AVCS_ERR_OK) {
         SLOGI("enable out port");
-        if (codec_->isLpp_) {
-            codec_->callback_->OnOutputBufferUnbinded();
-        }
+        codec_->callback_->OnOutputBufferUnbinded();
         int32_t err = codec_->compNode_->SendCommand(CODEC_COMMAND_PORT_ENABLE, OMX_DirOutput, {});
         if (err == HDF_SUCCESS) {
             ret = codec_->AllocateBuffersOnPort(OMX_DirOutput);

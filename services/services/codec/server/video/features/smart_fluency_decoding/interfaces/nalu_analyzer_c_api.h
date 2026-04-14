@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef NALU_ANALYZER_API_H
-#define NALU_ANALYZER_API_H
+#ifndef NALU_ANALYZER_C_API_H
+#define NALU_ANALYZER_C_API_H
 
 #include "smart_fluency_decoding_types.h"
 
@@ -38,4 +38,4 @@ bool IsNonReferenceFrame(NaluAnalyzerHandle analyzer, const uint8_t* bufferAddr,
 }
 #endif
 
-#endif // NALU_ANALYZER_API_H
+#endif // NALU_ANALYZER_C_API_H

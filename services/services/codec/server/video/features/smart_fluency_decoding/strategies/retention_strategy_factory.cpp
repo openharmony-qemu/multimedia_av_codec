@@ -15,11 +15,11 @@
 
 #include "retention_strategy_factory.h"
 #include "avcodec_log.h"
-#include "i_frame_retention_strategy.h"
-#include "impl/adaptive_retention_strategy.h"
-#include "impl/full_retention_strategy.h"
-#include "impl/auto_fallback_retention_strategy.h"
-#include "impl/fixed_ratio_retention_strategy.h"
+#include "retention_strategy.h"
+#include "adaptive_retention_strategy.h"
+#include "full_retention_strategy.h"
+#include "auto_fallback_retention_strategy.h"
+#include "fixed_ratio_retention_strategy.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "StrategyFactory"};
@@ -29,18 +29,18 @@ namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
 
-std::unique_ptr<IFrameRetentionStrategy> RetentionStrategyFactory::CreateStrategy(
-    FrameRetentionMode mode,
+std::unique_ptr<IRetentionStrategy> RetentionStrategyFactory::CreateStrategy(
+    RetentionStrategyType mode,
     const std::optional<double>& retentionRate)
 {
     switch (mode) {
-        case FrameRetentionMode::FULL:
+        case RetentionStrategyType::FULL:
             return std::make_unique<FullRetentionStrategy>();
-        case FrameRetentionMode::ADAPTIVE:
+        case RetentionStrategyType::ADAPTIVE:
             return std::make_unique<AdaptiveRetentionStrategy>();
-        case FrameRetentionMode::AUTO_RATIO:
+        case RetentionStrategyType::AUTO_RATIO:
             return std::make_unique<AutoFallbackRetentionStrategy>();
-        case FrameRetentionMode::FIXED_RATIO:
+        case RetentionStrategyType::FIXED_RATIO:
             if (retentionRate.has_value()) {
                 return std::make_unique<FixedRatioRetentionStrategy>(retentionRate.value());
             }

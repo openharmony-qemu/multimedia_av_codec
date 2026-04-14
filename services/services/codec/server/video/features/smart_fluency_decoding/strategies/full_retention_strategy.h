@@ -13,37 +13,28 @@
  * limitations under the License.
  */
 
-#include "full_retention_strategy.h"
+#ifndef FULL_RETENTION_STRATEGY_H
+#define FULL_RETENTION_STRATEGY_H
+
+#include "retention_strategy.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
 
-bool FullRetentionStrategy::MakeRetentionDecision(const FrameRetentionContext& ctx)
-{
-    (void)ctx;
-    return true;
-}
+class FullRetentionStrategy : public IRetentionStrategy {
+public:
+    FullRetentionStrategy() = default;
+    ~FullRetentionStrategy() override = default;
 
-void FullRetentionStrategy::Reset()
-{
-}
-
-void FullRetentionStrategy::UpdatePlaybackSpeed(double speed)
-{
-    (void)speed;
-}
-
-FrameRetentionMode FullRetentionStrategy::GetMode() const
-{
-    return FrameRetentionMode::FULL;
-}
-
-double FullRetentionStrategy::GetCurrentRetentionRatio() const
-{
-    return 1.0;
-}
+    bool MakeRetentionDecision(const FrameRetentionContext& ctx) override;
+    void Reset() override;
+    void UpdatePlaybackSpeed(double speed) override;
+    RetentionStrategyType GetMode() const override;
+    double GetCurrentRetentionRatio() const override;
+};
 
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS
+#endif // PASSTHROUGH_DROPPER_H

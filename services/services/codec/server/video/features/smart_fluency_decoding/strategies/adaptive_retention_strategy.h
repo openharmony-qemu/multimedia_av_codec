@@ -13,45 +13,31 @@
  * limitations under the License.
  */
 
-#ifndef AUTO_FALLBACK_RETENTION_STRATEGY_H
-#define AUTO_FALLBACK_RETENTION_STRATEGY_H
+#ifndef ADAPTIVE_RETENTION_STRATEGY_H
+#define ADAPTIVE_RETENTION_STRATEGY_H
 
+#include "retention_strategy.h"
 #include <memory>
-#include "i_frame_retention_strategy.h"
-#include "fixed_ratio_retention_strategy.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
 
-class AutoFallbackRetentionStrategy : public IFrameRetentionStrategy {
+class AdaptiveRetentionStrategy : public IRetentionStrategy {
 public:
-    AutoFallbackRetentionStrategy();
-    ~AutoFallbackRetentionStrategy() override = default;
+    AdaptiveRetentionStrategy() = default;
+    ~AdaptiveRetentionStrategy() override = default;
 
     bool MakeRetentionDecision(const FrameRetentionContext& ctx) override;
-
     void UpdatePlaybackSpeed(double speed) override;
-
     void Reset() override;
-
-    FrameRetentionMode GetMode() const override;
-
+    RetentionStrategyType GetMode() const override;
     double GetCurrentRetentionRatio() const override;
 
 private:
-    enum State {
-        PROFILING,
-        STABLE
-    };
-    State currentState_{PROFILING};
-    std::unique_ptr<FixedRatioRetentionStrategy> stableDropper_{nullptr};
-    double currentSpeed_{-1.0};
-    double sourceFps_{30.0};
-
-    int32_t decodedFrameCount_{0};
-    int64_t firstPts_{-1};
-    int64_t lastSysTime_{0};
+    double currentSpeed_{1.0};
+    uint32_t dropCount_{0};
+    double currentTargetRatio_{0.0};
 };
 
 } // namespace SFD
