@@ -223,9 +223,9 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_hdrColorMeta_001, TestSi
     auto signal = make_shared<VCodecSignal>(vdec);
     vdec->frameCount_ = 46; // 46: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
-    vdec->inPath_ = "720_1280_25_avcc.hdr.h265";
-    vdec->sampleWidth_ = 720;
-    vdec->sampleHeight_ = 1080;
+    vdec->inPath_ = "test_ibpbp_avcc.h265";
+    vdec->sampleWidth_ = 320;
+    vdec->sampleHeight_ = 240;
     vdec->releaseOtherBuffer_ = true;
     vdec->hdrColorInfo_ = true;
     EXPECT_EQ(vdec->Create(), true);
@@ -317,9 +317,9 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_hdrColorMeta_004, TestSi
     auto signal = make_shared<VCodecSignal>(vdec);
     vdec->frameCount_ = 46; // 46: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
-    vdec->inPath_ = "720_1280_25_avcc.hdr.h265";
-    vdec->sampleWidth_ = 720;
-    vdec->sampleHeight_ = 1080;
+    vdec->inPath_ = "test_ibpbp_avcc.h265";
+    vdec->sampleWidth_ = 320;
+    vdec->sampleHeight_ = 240;
     vdec->releaseOtherBuffer_ = true;
     vdec->setSurfaceParam_ = true;
     vdec->hdrColorInfo_ = true;

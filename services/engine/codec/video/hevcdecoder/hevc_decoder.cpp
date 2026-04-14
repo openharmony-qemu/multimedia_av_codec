@@ -113,6 +113,7 @@ HevcDecoder::HevcDecoder(const std::string &name) : VideoDecoder(name)
     initParams_.uiDecodeMode = IHW265_DECODE_VIDEO;
     initParams_.eOutPutOrder = 1; // 1 default: display order
     InitParams();
+    (void)memset_s(&colorSpaceInfo_, sizeof(HEVC_COLOR_SPACE_INFO), 0, sizeof(HEVC_COLOR_SPACE_INFO));
 }
 
 void HevcDecoder::HevcFuncMatch()
@@ -210,11 +211,6 @@ void HevcDecoder::InitHdrParams()
         hevcDecoderOutpusArgs_.uiHdrMetadata.displayPrimariesX[i] = 0;
         hevcDecoderOutpusArgs_.uiHdrMetadata.displayPrimariesY[i] = 0;
     }
-    colorSpaceInfo_.fullRangeFlag = 0;
-    colorSpaceInfo_.colorDescriptionPresentFlag = 0;
-    colorSpaceInfo_.colorPrimaries = 0;
-    colorSpaceInfo_.transferCharacteristic = 0;
-    colorSpaceInfo_.matrixCoeffs = 0;
 }
 
 void HevcDecoder::ConfigurelWidthAndHeight(const Format &format, const std::string_view &formatKey, bool isWidth)
