@@ -20,7 +20,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "PreprocessorManager"};
-constexpr int32_t DEFAULT_BUFFER_COUNT = 8;
+constexpr int32_t BUFFER_REQUEST_STRIDE_ALIGNMENT = 32;
 
 class ConsumerListener : public OHOS::IBufferConsumerListener {
 public:
@@ -146,7 +146,7 @@ void PreprocessorManager::CreateSharedSurface()
     }
     
     auto sharedSurfMgr = std::make_shared<SharedSurfaceManager>();
-    int32_t ret = sharedSurfMgr->Create(0, 0, DEFAULT_BUFFER_COUNT);
+    int32_t ret = sharedSurfMgr->Create();
     if (ret != AVCS_ERR_OK) {
         AVCODEC_LOGE("Failed to create shared surface, ret=%{public}d", ret);
         return;
@@ -156,7 +156,7 @@ void PreprocessorManager::CreateSharedSurface()
     sharedProducerSurface_ = sharedSurfMgr->GetProducerSurface();
     
     sptr<IBufferConsumerListener> listener = sptr<ConsumerListener>::MakeSptr(shared_from_this());
-    sharedProducerSurface_->RegisterConsumerListener(listener);
+    sharedConsumerSurface_->RegisterConsumerListener(listener);
     
     isRunning_ = true;
     mainThread_ = std::thread(&PreprocessorManager::MainThreadLoop, this);
@@ -241,8 +241,6 @@ void PreprocessorManager::MainThreadLoop()
                 }
                 return it->second.pendingEncoders.empty();
             });
-            
-            releasedBuffers_.insert(bufferId);
         }
         
         sharedConsumerSurface_->ReleaseBuffer(buffer, -1);
@@ -250,7 +248,6 @@ void PreprocessorManager::MainThreadLoop()
         {
             std::lock_guard<std::mutex> lock(mutex_);
             bufferPending_.erase(bufferId);
-            releasedBuffers_.erase(bufferId);
         }
     }
     
@@ -307,12 +304,10 @@ void PreprocessorManager::EncoderThreadLoop(std::string_view encoderId)
         // TODO: implement RequestBuffer
         int32_t fence;
         BufferRequestConfig requestConfig;
-        requestConfig.width = bufferToProcess->GetWidth();
-        requestConfig.height = bufferToProcess->GetHeight();
-        requestConfig.format = GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
-        requestConfig.usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE |
-                              BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE;
-        requestConfig.strideAlignment = 8;
+        requestConfig.width = encIt->second.preprocessor->GetConfiguredWidth();
+        requestConfig.height = encIt->second.preprocessor->GetConfiguredHeight();
+        requestConfig.format = encIt->second.preprocessor->GetConfiguredPixelFormat();
+        requestConfig.strideAlignment = BUFFER_REQUEST_STRIDE_ALIGNMENT;
         requestConfig.timeout = 0;
         GSError ret = encIt->second.encoderSurface->RequestBuffer(prodBuffer, fence, requestConfig);
         if (ret != GSERROR_OK || prodBuffer == nullptr) {

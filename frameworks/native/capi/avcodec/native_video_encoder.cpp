@@ -37,8 +37,8 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "NativeVideoEncoder"};
-static constexpr size_t MAX_LENGTH = 255;
-static bool IsValidVideoEncoderMagic(AVMagic magic)
+constexpr size_t MAX_LENGTH = 255;
+bool IsValidVideoEncoderMagic(AVMagic magic)
 {
     return magic == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER ||
                     OHOS::MediaAVCodec::PreprocessorEncoder::IsPreprocEncoderMagic(magic);

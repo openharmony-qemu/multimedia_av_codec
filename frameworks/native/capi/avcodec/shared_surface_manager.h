@@ -29,7 +29,7 @@ public:
     SharedSurfaceManager();
     ~SharedSurfaceManager();
 
-    int32_t Create(int32_t width, int32_t height, int32_t bufferCount);
+    int32_t Create();
     sptr<Surface> GetProducerSurface();
     sptr<Surface> GetConsumerSurface();
 

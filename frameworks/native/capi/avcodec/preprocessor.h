@@ -40,6 +40,9 @@ public:
     bool IsCropEnabled() const;
     bool IsDownsamplingEnabled() const;
 
+    int32_t GetConfiguredWidth() const;
+    int32_t GetConfiguredHeight() const;
+    GraphicPixelFormat GetConfiguredPixelFormat() const;
 private:
     enum class ConfigResult {
         NOT_SET,

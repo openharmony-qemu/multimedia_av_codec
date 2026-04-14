@@ -82,7 +82,6 @@ private:
     std::thread mainThread_;
     std::mutex mutex_;
     std::condition_variable cv_;
-    std::set<uint32_t> releasedBuffers_{};
     bool isRunning_{false};
     bool newBufferAvailable_{false};
 };

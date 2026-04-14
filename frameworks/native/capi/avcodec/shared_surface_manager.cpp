@@ -34,18 +34,12 @@ SharedSurfaceManager::~SharedSurfaceManager()
     AVCODEC_LOGI("SharedSurfaceManager destroyed");
 }
 
-int32_t SharedSurfaceManager::Create(int32_t width, int32_t height, int32_t bufferCount)
+int32_t SharedSurfaceManager::Create()
 {
     consumerSurface_ = Surface::CreateSurfaceAsConsumer("SharedEncoderSurface");
     if (consumerSurface_ == nullptr) {
         AVCODEC_LOGE("Failed to create consumer surface");
         return AVCS_ERR_NO_MEMORY;
-    }
-
-    GSError err = consumerSurface_->SetQueueSize(bufferCount);
-    if (err != GSERROR_OK) {
-        AVCODEC_LOGE("Failed to set queue size, err=%{public}d", err);
-        return AVCS_ERR_UNKNOWN;
     }
 
     producer_ = consumerSurface_->GetProducer();
@@ -60,8 +54,7 @@ int32_t SharedSurfaceManager::Create(int32_t width, int32_t height, int32_t buff
         return AVCS_ERR_NO_MEMORY;
     }
 
-    AVCODEC_LOGI("SharedSurfaceManager created: width=%{public}d, height=%{public}d, bufferCount=%{public}d",
-        width, height, bufferCount);
+    AVCODEC_LOGI("SharedSurfaceManager created");
     return AVCS_ERR_OK;
 }
 

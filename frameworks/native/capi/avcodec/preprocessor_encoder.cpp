@@ -20,7 +20,8 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "PreprocessorEncoder"};
-static constexpr size_t MAX_LENGTH = 255;
+constexpr size_t MAX_LENGTH = 255;
+// constexpr int32_t BUFFER_REQUEST_STRIDE_ALIGNMENT = 32;
 }
 
 namespace OHOS {
@@ -57,11 +58,6 @@ std::string PreprocessorEncoder::GenerateEncoderId(const std::string& prefix)
     return prefix + "_" + std::to_string(id);
 }
 
-std::shared_ptr<PreprocessorEncoder> PreprocessorEncoder::SharedFromThis()
-{
-    return std::shared_ptr<PreprocessorEncoder>(this, [](PreprocessorEncoder*) {});
-}
-
 PreprocessorEncoder::PreprocessorEncoder(AVMagic magic) : OH_AVCodec(magic)
 {
     AVCODEC_LOGI("PreprocessorEncoder created");
@@ -94,7 +90,7 @@ OH_AVErrCode PreprocessorEncoder::CreateSecondary(OH_AVCodec* primary, OH_AVCode
     CHECK_AND_RETURN_RET_LOG(primaryEnc->magic_ == AVMagic::AVCODEC_MAGIC_PRIMARY_VIDEO_ENCODER,
                              AV_ERR_INVALID_VAL, "Primary magic error!");
 
-    CHECK_AND_RETURN_RET_LOG(primaryEnc->secondary_.lock() == nullptr, AV_ERR_OPERATE_NOT_PERMIT,
+    CHECK_AND_RETURN_RET_LOG(primaryEnc->secondary_ == nullptr, AV_ERR_OPERATE_NOT_PERMIT,
                              "Secondary encoder already exists!");
 
     auto encoder = std::make_unique<PreprocessorEncoder>(AVMagic::AVCODEC_MAGIC_SECONDARY_VIDEO_ENCODER);
@@ -137,11 +133,8 @@ OH_AVErrCode PreprocessorEncoder::InitAsSecondary(PreprocessorEncoder* primary)
     mime_ = primary->mime_;
     encoderId_ = GenerateEncoderId("secondary");
 
-    {
-        auto p = primary->SharedFromThis();
-        primary_ = p;
-        p->secondary_ = p;
-    }
+    primary_ = primary;
+    primary_->secondary_ = this;
 
     auto videoEncoder = VideoEncoderFactory::CreateByMime(mime_);
     CHECK_AND_RETURN_RET_LOG(videoEncoder != nullptr, AV_ERR_NO_MEMORY, "VideoEncoder create failed!");
@@ -216,8 +209,8 @@ OH_AVErrCode PreprocessorEncoder::Configure(const Media::Format &format)
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Configure preprocessor failed!");
 
-    encoderSurface_ = CreateEncoderSurface();
-    CHECK_AND_RETURN_RET_LOG(encoderSurface_ != nullptr, AV_ERR_OPERATE_NOT_PERMIT, "Create internal surface failed!");
+    ret = CreateEncoderSurface();
+    CHECK_AND_RETURN_RET_LOG(ret != AVCS_ERR_OK, AV_ERR_OPERATE_NOT_PERMIT, "Create internal surface failed!");
 
     RegisterEncoderToManager();
 
@@ -247,12 +240,41 @@ int32_t PreprocessorEncoder::ConfigurePreprocessor(const Media::Format& format)
     return AVCS_ERR_OK;
 }
 
-sptr<Surface> PreprocessorEncoder::CreateEncoderSurface()
+int32_t PreprocessorEncoder::CreateEncoderSurface()
 {
     if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
-        return videoEncoderObject_->videoEncoder_->CreateInputSurface();
+        auto surface = videoEncoderObject_->videoEncoder_->CreateInputSurface();
+        if (surface == nullptr) {
+            return AVCS_ERR_NO_MEMORY;
+        }
+
+        // auto preprocessor = GetPreprocessor();
+        // if (preprocessor)
+        // {
+        //     int32_t queueSize = surface->GetQueueSize();
+        //     for (int32_t i = 0; i < queueSize; i++)
+        //     {
+        //         sptr<BufferRequestConfig> config = new BufferRequestConfig();
+        //         config->width = preprocessor->GetConfiguredWidth();
+        //         config->height = preprocessor->GetConfiguredHeight();
+        //         config->strideAlignment = BUFFER_REQUEST_STRIDE_ALIGNMENT;
+        //         config->format = static_cast<int32_t>(preprocessor->GetConfiguredPixelFormat());
+        //         config->timeout = 0;
+
+        //         sptr<SurfaceBuffer> buffer{nullptr};
+        //         int32_t fence;
+        //         GSError ret = surface->RequestBuffer(buffer, fence, config);
+        //         if (ret == GSERROR_OK && buffer != nullptr)
+        //         {
+        //             writableBufferQueue_.push(buffer);
+        //         }
+        //     }
+        // }
+
+        encoderSurface_ = surface;
     }
-    return nullptr;
+
+    return AVCS_ERR_OK;
 }
 
 std::shared_ptr<Preprocessor> PreprocessorEncoder::GetPreprocessor()

@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <memory>
 #include <mutex>
+#include <queue>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -44,7 +45,6 @@ public:
     static bool IsSecondaryEncoderMagic(AVMagic magic);
     static bool IsPreprocEncoderMagic(AVMagic magic);
     static bool IsValidPreprocEncoderMime(const char* mime);
-
     
     OH_AVErrCode RegisterCallback(struct OH_AVCodecCallback callback, void* userData);
     OH_AVErrCode Configure(const Media::Format& format);
@@ -55,9 +55,8 @@ public:
     OH_AVErrCode NotifyEos();
     OH_AVErrCode Reset();
     OH_AVErrCode ReleaseOutputBuffer(uint32_t index);
-
-    std::shared_ptr<PreprocessorEncoder> SharedFromThis();
-
+    
+    std::shared_ptr<Preprocessor> GetPreprocessor();
 private:
     static std::string GenerateEncoderId(const std::string& prefix);
     OH_AVErrCode InitAsPrimary(const char* mime);
@@ -65,14 +64,13 @@ private:
 
     int32_t ConfigureVideoEncoder(const Media::Format& format);
     int32_t ConfigurePreprocessor(const Media::Format& format);
-    sptr<Surface> CreateEncoderSurface();
+    int32_t CreateEncoderSurface();
 
     void CreateSharedSurface();
     sptr<Surface> GetSharedSurface();
     void RegisterEncoderToManager();
     void UnregisterEncoderFromManager();
 
-    std::shared_ptr<Preprocessor> GetPreprocessor();
 
     std::shared_ptr<VideoEncoderObject> videoEncoderObject_{nullptr};
 
@@ -81,13 +79,14 @@ private:
     std::string encoderId_;
 
     std::mutex mutex_;
-    std::weak_ptr<PreprocessorEncoder> secondary_;
-    std::weak_ptr<PreprocessorEncoder> primary_;
+    PreprocessorEncoder* primary_{nullptr};
+    PreprocessorEncoder* secondary_{nullptr};
 
     std::shared_ptr<PreprocessorManager> preprocMgr_{nullptr};
     std::unordered_map<std::string_view, std::shared_ptr<Preprocessor>> preprocessors_{};
 
     OHOS::sptr<OHOS::Surface> encoderSurface_{nullptr};
+    std::queue<sptr<SurfaceBuffer>> writableBufferQueue_{}; // queue of surface buffers for writing preprocessing result
 };
 
 } // namespace MediaAVCodec

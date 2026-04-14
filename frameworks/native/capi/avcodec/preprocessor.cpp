@@ -325,5 +325,20 @@ bool Preprocessor::GetEncoderRange(const Media::Format& format, Range& encWidth,
     return true;
 }
 
+int32_t Preprocessor::GetConfiguredWidth() const
+{
+    return encoderConfig_.width;
+}
+
+int32_t Preprocessor::GetConfiguredHeight() const
+{
+    return encoderConfig_.height;
+}
+
+GraphicPixelFormat Preprocessor::GetConfiguredPixelFormat() const
+{
+    return encoderConfig_.pixelFormat;
+}
+
 } // namespace MediaAVCodec
 } // namespace OHOS
