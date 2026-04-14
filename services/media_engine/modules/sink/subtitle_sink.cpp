@@ -274,7 +274,7 @@ void SubtitleSink::DrainOutputBuffer(bool flushed)
     }
     std::string subtitleText(reinterpret_cast<const char *>(filledOutputBuffer->memory_->GetAddr()),
                              filledOutputBuffer->memory_->GetSize());
-    SubtitleInfo subtitleInfo{ removeTextTags(subtitleText), filledOutputBuffer->pts_, filledOutputBuffer->duration_,
+    SubtitleInfo subtitleInfo{ RemoveTextTags(subtitleText), filledOutputBuffer->pts_, filledOutputBuffer->duration_,
             filledOutputBuffer };
     {
         std::unique_lock<std::mutex> lock(mutex_);
