@@ -33,7 +33,8 @@ public:
     {
     }
 
-    Status SetDataSource(const std::shared_ptr<DataSource>&) override
+    Status SetDataSource(const std::shared_ptr<DataSource>&,
+        const std::shared_ptr<Media::Meta>& = nullptr) override
     {
         return Status::OK;
     }

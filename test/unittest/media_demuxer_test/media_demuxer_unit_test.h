@@ -69,7 +69,8 @@ public:
     {
         return mapStatus_[name_];
     }
-    Status SetDataSource(const std::shared_ptr<DataSource>& source) override
+    Status SetDataSource(const std::shared_ptr<DataSource>& source,
+        const std::shared_ptr<Media::Meta>& configs = nullptr) override
     {
         return mapStatus_[name_];
     }
@@ -250,7 +251,8 @@ public:
     ~DemuxerPluginSetDataSourceFailMock()
     {
     }
-    Status SetDataSource(const std::shared_ptr<DataSource>& source) override
+    Status SetDataSource(const std::shared_ptr<DataSource>& source,
+        const std::shared_ptr<Media::Meta>& configs = nullptr) override
     {
         if (failCount_ < MaxFailCount) {
             failCount_++;

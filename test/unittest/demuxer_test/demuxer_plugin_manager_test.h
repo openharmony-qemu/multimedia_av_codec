@@ -51,6 +51,8 @@ private:
     bool ResultAssert(uint32_t frames0, uint32_t frames1, uint32_t keyFrames0, uint32_t keyFrames1);
     bool ResultAssert(std::vector<uint32_t> &framesExpect, std::vector<uint32_t> &keyFramesExpect);
     bool PluginReadAllSample();
+    bool CreateDemuxerPluginWithConfigs(const std::string& typeName,
+        const std::string& filePath, std::shared_ptr<Media::Meta>& configs);
 
     int streamId_ = 0;
     std::map<uint32_t, uint32_t> frames_;

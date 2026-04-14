@@ -74,7 +74,8 @@ public:
     Status Start() override;
     Status Stop() override;
     Status Flush() override;
-    Status SetDataSource(const std::shared_ptr<DataSource>& source) override;
+    Status SetDataSource(const std::shared_ptr<DataSource>& source,
+        const std::shared_ptr<Media::Meta>& configs = nullptr) override;
     /**
      * Judgment for VIDEO_HDR_TYPE:
      * 1. Only applicable to H.265 streams. This attribute is not included in non-H.265 streams.
@@ -582,6 +583,7 @@ private:
     Status ReadRmUntilPos(AVPacket *pkt, int64_t pos);
 
     std::unordered_map<int32_t, int32_t> mp4FirstKeyFrameIdx_; // key: track index, value: first key frame index
+    Plugins::DemuxerMode demuxerMode_ {Plugins::DemuxerMode::FULL_PARSE};
 };
 
 typedef struct DtsFinder {
