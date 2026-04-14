@@ -170,9 +170,6 @@ static void onEncInputParam(OH_AVCodec *codec, uint32_t index, OH_AVFormat *para
         return;
     }
     OH_AVFormat_SetStringValue(parameter, OH_MD_KEY_VIDEO_ENCODER_ROI_PARAMS, enc_sample->roiInfo);
-    if (!parameter || !userData) {
-        return;
-    }
     enc_sample->frameCount++;
     OH_VideoEncoder_PushInputParameter(codec, index);
 }
