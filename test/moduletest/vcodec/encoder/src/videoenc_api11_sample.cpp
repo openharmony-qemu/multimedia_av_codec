@@ -360,17 +360,17 @@ int32_t VEncAPI11Sample::SetVideoEncoderCallback()
         cout << "Failed to new VEncAPI11Signal" << endl;
         return AV_ERR_UNKNOWN;
     }
- if (SURF_INPUT) {
-    int32_t ret;
-    if (enableRoi) {
-        ret = OH_VideoEncoder_RegisterParameterCallback(venc_, onEncInputParamRoi, static_cast<void *>(this));
-    } else {
-        ret = OH_VideoEncoder_RegisterParameterCallback(venc_, onEncInputParam, static_cast<void *>(this));
+    if (SURF_INPUT) {
+        int32_t ret;
+        if (enableRoi) {
+            ret = OH_VideoEncoder_RegisterParameterCallback(venc_, onEncInputParamRoi, static_cast<void *>(this));
+        } else {
+            ret = OH_VideoEncoder_RegisterParameterCallback(venc_, onEncInputParam, static_cast<void *>(this));
+        }
+        if (ret != AV_ERR_OK) {
+            return ret;
+        }
     }
-    if (ret != AV_ERR_OK) {
-        return ret;
-    }
-}
     cb_.onError = VencError;
     cb_.onStreamChanged = VencFormatChanged;
     cb_.onNeedInputBuffer = onEncInputBufferAvailable;
