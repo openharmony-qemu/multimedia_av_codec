@@ -499,11 +499,11 @@ std::string SubtitleSink::RemoveTextTags(const std::string& text)
             break;
         }
 
-        auto parsedTag = parseTag(text.substr(i + 1, endPos - i - 1));
+        auto parsedTag = ParseTag(text.substr(i + 1, endPos - i - 1));
         if (!parsedTag.second) {
             openTags.push({parsedTag.first, result.length()});
         } else {
-            bool found = findAndRemoveMatchingTag(openTags, parsedTag.first);
+            bool found = FindAndRemoveMatchingTag(openTags, parsedTag.first);
             if (!found) {
                 result += text.substr(i, endPos - i + 1);
             }
@@ -511,7 +511,7 @@ std::string SubtitleSink::RemoveTextTags(const std::string& text)
         i = endPos + 1;
     }
 
-    restoreUnsupportedTags(result, openTags);
+    RestoreUnsupportedTags(result, openTags);
     return result;
 }
 }  // namespace MEDIA
