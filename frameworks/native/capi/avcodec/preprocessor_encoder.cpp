@@ -210,7 +210,7 @@ OH_AVErrCode PreprocessorEncoder::Configure(const Media::Format &format)
                              "Configure preprocessor failed!");
 
     ret = CreateEncoderSurface();
-    CHECK_AND_RETURN_RET_LOG(ret != AVCS_ERR_OK, AV_ERR_OPERATE_NOT_PERMIT, "Create internal surface failed!");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AV_ERR_OPERATE_NOT_PERMIT, "Create internal surface failed!");
 
     RegisterEncoderToManager();
 
