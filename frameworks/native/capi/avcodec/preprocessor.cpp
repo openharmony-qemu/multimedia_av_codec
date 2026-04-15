@@ -171,7 +171,7 @@ int32_t Preprocessor::ValidateDropFrame(const Media::Format &format, DropFramePa
         params.result = ConfigResult::ENABLED;
         return AVCS_ERR_OK;
     }
-    AVCODEC_LOGE("Invalid drop frame rate: %{public}d, configured=%{public}.2f", targetFrameRate,
+    AVCODEC_LOGE("Invalid drop frame rate: %{public}.2f, configured=%{public}.2f", targetFrameRate,
                  encoderConfig_.frameRate);
     return AVCS_ERR_INVALID_VAL;
 }
