@@ -280,6 +280,7 @@ void HlsSegmentManager::SetDownloaderRequestCb(
 void HlsSegmentManager::PutRequestIntoDownloader(const PlayInfo& playInfo)
 {
     if (fragmentDownloadStart[playInfo.url_]) {
+        MEDIA_LOG_I("PutRequestIntoDownloader playinfo is repeat");
         writeTsIndex_ > 0 ? writeTsIndex_-- : 0;
         return;
     }
@@ -290,6 +291,7 @@ void HlsSegmentManager::PutRequestIntoDownloader(const PlayInfo& playInfo)
     requestInfo.url = playInfo.rangeUrl_.empty() ? playInfo.url_ : playInfo.rangeUrl_;
     requestInfo.httpHeader = httpHeader_;
     bool isRequestWholeFile = playInfo.rangeUrl_.empty() ? true : playInfo.length_ <= 0;
+    currentSequence_ = playInfo.sequence_;
     SetDownloadRequest(std::make_shared<DownloadRequest>(playInfo.duration_, dataSave_,
                                                          realStatusCallback, requestInfo, isRequestWholeFile));
     fragmentDownloadStart[playInfo.url_] = true;
@@ -297,12 +299,10 @@ void HlsSegmentManager::PutRequestIntoDownloader(const PlayInfo& playInfo)
     curUrl_ = playInfo.rangeUrl_.empty() ? playInfo.url_ : playInfo.rangeUrl_;
     if (writeTsIndex_ == 0) {
         readOffset_ = SpliceOffset(writeTsIndex_, 0);
-        MEDIA_LOG_I("HLS PutRequestIntoDownloader init readOffset." PUBLIC_LOG_U64 ", type: %{public}d", readOffset_,
-            type_);
+        MEDIA_LOG_I("HLS PutRequest init readOffset." PUBLIC_LOG_U64 ", type: %{public}d", readOffset_, type_);
         readTsIndex_ = writeTsIndex_;
-        uint32_t readTsIndexTempValue = readTsIndex_.load();
         MEDIA_LOG_I("readTsIndex_, PutRequestIntoDownloader init readTsIndex_." PUBLIC_LOG_U32 ", type: %{public}d",
-            readTsIndexTempValue, type_);
+            readTsIndex_.load(), type_);
     }
     writeOffset_ = SpliceOffset(writeTsIndex_, 0);
     MEDIA_LOG_I("HLS PutRequestIntoDownloader update writeOffset_: " PUBLIC_LOG_U64 " writeTsIndex_: " PUBLIC_LOG_U32
@@ -1041,9 +1041,12 @@ void HlsSegmentManager::HandlePlayListChanged(const std::vector<PlayInfo>& playL
         }
         auto fragment = playList[i];
         PlaylistBackup(fragment);
-        if (isSelectingBitrate_.load() && (GetSeekable() == Seekable::SEEKABLE)) {
+        if (isSelectingBitrate_.load() && fragment.sequence_ > currentSequence_) {
+            isSelectingBitrate_.store(false);
+        }
+        if (isSelectingBitrate_.load()) {
             fragmentDownloadStart[fragment.url_] = true;
-            if (i == writeTsIndex_) {
+            if (currentSequence_ == fragment.sequence_) {
                 MEDIA_LOG_I("HLS Switch bitrate, type: %{public}d", type_);
                 isSelectingBitrate_.store(false);
             } else {

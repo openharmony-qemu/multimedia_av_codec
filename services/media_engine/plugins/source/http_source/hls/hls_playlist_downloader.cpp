@@ -503,6 +503,7 @@ void HlsPlayListDownloader::CopyFragmentInfo(PlayInfo& playInfo, std::shared_ptr
     playInfo.duration_ = file->duration_;
     playInfo.offset_ = file->offset_;
     playInfo.length_ = file->length_;
+    playInfo.sequence_ = file->sequence_;
     if (master_ && currentVariant_ && (master_->isFmp4_.load() || master_->isPureByteRange_.load())) {
         playInfo.url_ = std::to_string(playInfo.offset_) + "_" + std::to_string(playInfo.length_) + "_"
                         + "_" + file->uri_;

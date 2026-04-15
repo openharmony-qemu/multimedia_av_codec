@@ -42,6 +42,7 @@ struct PlayInfo {
     uint32_t streamId_ {0};
     uint64_t sumDuration_ {0};
     uint64_t keyIndex_ {0};
+    int64_t sequence_ {0};
 };
 struct KeyInfo {
     uint8_t iv_[16] {0};
