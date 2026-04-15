@@ -99,6 +99,8 @@ ohos_unittest("video_codec_server_coverage_unit_test") {
     defines += [ "AV_CODEC_AUDIO_SPECIAL_CAPACITY" ]
   }
 
+  defines += [ "SFD_ENABLED" ]
+
   sources = [
     "$av_codec_root_dir/frameworks/native/common/avcodec_errors.cpp",
     "$av_codec_root_dir/services/dfx/avcodec_dfx_component.cpp",

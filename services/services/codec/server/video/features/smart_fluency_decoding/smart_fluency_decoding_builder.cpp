@@ -158,15 +158,11 @@ std::unique_ptr<SmartFluencyDecoding> SmartFluencyDecodingBuilder::Build()
         return nullptr;
     }
     auto instance = std::make_unique<SmartFluencyDecoding>();
-    if (!instance) {
-        AVCODEC_LOGE("Build failed: Failed to create SmartFluencyDecoding instance");
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(instance != nullptr, nullptr,
+        "Build failed: Failed to create SmartFluencyDecoding instance");
     int32_t ret = instance->Initialize(params_);
-    if (ret != AVCS_ERR_OK) {
-        AVCODEC_LOGE("Build failed: Failed to initialize SmartFluencyDecoding, ret=%{public}d", ret);
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr,
+        "Build failed: Failed to initialize SmartFluencyDecoding, ret=%{public}d", ret);
     if (playbackSpeed_.has_value()) {
         instance->UpdatePlaybackSpeed(playbackSpeed_.value());
     }
@@ -177,18 +173,10 @@ std::unique_ptr<SmartFluencyDecoding> SmartFluencyDecodingBuilder::Build()
 
 bool SmartFluencyDecodingBuilder::ValidateParams()
 {
-    if (params_.width <= 0) {
-        AVCODEC_LOGE("Build failed: Invalid or missing video width");
-        return false;
-    }
-    if (params_.height <= 0) {
-        AVCODEC_LOGE("Build failed: Invalid or missing video height");
-        return false;
-    }
-    if (params_.codecType == SFDCodecType::INVALID) {
-        AVCODEC_LOGE("Build failed: Invalid or missing codec type");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(params_.width > 0, false, "Build failed: Invalid or missing video width");
+    CHECK_AND_RETURN_RET_LOG(params_.height > 0, false, "Build failed: Invalid or missing video height");
+    CHECK_AND_RETURN_RET_LOG(params_.codecType != SFDCodecType::INVALID, false,
+        "Build failed: Invalid or missing codec type");
     return true;
 }
 
@@ -209,47 +197,55 @@ std::vector<uint8_t> SmartFluencyDecodingBuilder::ExtractCsdData(const std::shar
 {
     std::vector<uint8_t> csdData;
     if (!buffer || !buffer->memory_) {
+        AVCODEC_LOGD("CSD_DEBUG: ExtractCsdData failed, buffer or memory is null");
         return csdData;
     }
     uint8_t* data = buffer->memory_->GetAddr();
     int32_t size = buffer->memory_->GetCapacity();
     if (!data || size <= MIN_CSD_SIZE) {
+        AVCODEC_LOGD("CSD_DEBUG: ExtractCsdData failed, data is null or size (=%{public}d) <= MIN (%{public}d)", size, MIN_CSD_SIZE);
         return csdData;
     }
     if (buffer->flag_ == AVCODEC_BUFFER_FLAG_CODEC_DATA) {
         csdData.assign(data, data + size);
+        AVCODEC_LOGI("CSD_DEBUG: Extracted %{public}d bytes full pure CODEC_DATA buffer", size);
         return csdData;
     }
     if (buffer->flag_ & (AVCODEC_BUFFER_FLAG_CODEC_DATA | AVCODEC_BUFFER_FLAG_SYNC_FRAME)) {
         int32_t copySize = std::min(size, DEFAULT_CSD_COPY_SIZE);
         csdData.assign(data, data + copySize);
-        AVCODEC_LOGI("Fast extracted %{public}d bytes as CSD with flags %{public}u", copySize, buffer->flag_);
+        AVCODEC_LOGI("CSD_DEBUG: Fast extracted %{public}d bytes as CSD with flags %{public}u", copySize, buffer->flag_);
+        return csdData;
     }
+    AVCODEC_LOGD("CSD_DEBUG: ExtractCsdData didn't match flags, buffer->flag_=%{public}u", buffer->flag_);
     return csdData;
 }
 
 void SmartFluencyDecodingBuilder::ReplayCsdData(SmartFluencyDecoding* sfd, const std::vector<uint8_t>& csdData)
 {
     if (!sfd || csdData.empty()) {
+        AVCODEC_LOGW("CSD_DEBUG: ReplayCsdData failed, sfd is null or csdData is empty");
         return;
     }
     std::shared_ptr<Media::AVAllocator> allocator =
         Media::AVAllocatorFactory::CreateSharedAllocator(Media::MEMORY_READ_WRITE);
-    if (!allocator) {
-        AVCODEC_LOGE("Failed to create shared allocator for replay tmpBuffer");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(allocator != nullptr, "Failed to create shared allocator for replay tmpBuffer");
     auto tmpBuffer = Media::AVBuffer::CreateAVBuffer(allocator, static_cast<int32_t>(csdData.size()));
     if (tmpBuffer && tmpBuffer->memory_) {
         int32_t capacity = tmpBuffer->memory_->GetCapacity();
         if (capacity >= static_cast<int32_t>(csdData.size())) {
             if (memcpy_s(tmpBuffer->memory_->GetAddr(), csdData.size(), csdData.data(), csdData.size()) != EOK) {
-                AVCODEC_LOGE("Failed to copy CSD data");
+                AVCODEC_LOGE("CSD_DEBUG: Failed to copy CSD data");
                 return;
             }
+            tmpBuffer->flag_ = AVCODEC_BUFFER_FLAG_CODEC_DATA;
             sfd->InitializeWithCsd(tmpBuffer);
-            AVCODEC_LOGI("SFD Mid-stream enabled: Replayed 256-bytes deep-copied CSD data successfully.");
+            AVCODEC_LOGI("CSD_DEBUG: SFD Mid-stream enabled: Replayed deep-copied CSD data successfully, size=%{public}zu", csdData.size());
+        } else {
+            AVCODEC_LOGE("CSD_DEBUG: Created buffer capacity (=%{public}d) is smaller than required (=%{public}zu)", capacity, csdData.size());
         }
+    } else {
+        AVCODEC_LOGE("CSD_DEBUG: Failed to create AVBuffer or memory is null");
     }
 }
 } // namespace SFD

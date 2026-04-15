@@ -46,15 +46,13 @@ MvAnalyzerSoLoader::~MvAnalyzerSoLoader()
 bool MvAnalyzerSoLoader::LoadLibrary()
 {
     handle_ = dlopen(LIB_NAME, RTLD_LAZY);
-    if (!handle_) {
-        AVCODEC_LOGW("Failed to load %{public}s: %{public}s", LIB_NAME, dlerror());
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOGW(handle_ != nullptr, false,
+        "Failed to load %{public}s: %{public}s", LIB_NAME, dlerror());
 
-    createFunc_ = reinterpret_cast<CreateFunc>(dlsym(handle_, "CreateMvAnalyzerWrapper"));
-    destroyFunc_ = reinterpret_cast<DestroyFunc>(dlsym(handle_, "DestroyMvAnalyzerWrapper"));
-    setAuxInfoFunc_ = reinterpret_cast<SetAuxInfoFunc>(dlsym(handle_, "SetMvStreamAuxInfo"));
-    setVideoInfoFunc_ = reinterpret_cast<SetVideoInfoFunc>(dlsym(handle_, "SetMvVideoInfo"));
+    createFunc_ = reinterpret_cast<CreateFunc>(dlsym(handle_, "CreateMvAnalyzer"));
+    destroyFunc_ = reinterpret_cast<DestroyFunc>(dlsym(handle_, "DestroyMvAnalyzer"));
+    setAuxInfoFunc_ = reinterpret_cast<SetAuxInfoFunc>(dlsym(handle_, "SetStreamAuxInfo"));
+    setVideoInfoFunc_ = reinterpret_cast<SetVideoInfoFunc>(dlsym(handle_, "SetVideoInfo"));
     parseFunc_ = reinterpret_cast<ParseFunc>(dlsym(handle_, "ParseMvData"));
     if (!createFunc_ || !destroyFunc_ || !setAuxInfoFunc_ || !setVideoInfoFunc_ || !parseFunc_) {
         AVCODEC_LOGE("Failed to find required symbols in %{public}s", LIB_NAME);

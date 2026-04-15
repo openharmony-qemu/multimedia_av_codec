@@ -39,6 +39,10 @@
 #include "imedia_key_session_service.h"
 #endif
 #include "event_manager.h"
+#ifdef SFD_DEBUG
+#include "syspara/parameters.h"
+#include <cstdlib>
+#endif
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServer"};
@@ -258,6 +262,28 @@ int32_t CodecServer::Configure(const Format &format)
         }
     }
 
+#ifdef SFD_DEBUG
+    configRetentionMode_ = std::strtol(OHOS::system::GetParameter("sfd.debug.mode", "-1").c_str(), nullptr, 10);
+    configRetentionRatio_ = std::strtod(OHOS::system::GetParameter("sfd.debug.ratio", "-1.0").c_str(), nullptr);
+    configDecSpeed_ = std::strtod(OHOS::system::GetParameter("sfd.debug.speed", "-1.0").c_str(), nullptr);
+    if (configRetentionMode_ >= 0) {
+        config.PutIntValue(Media::Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, configRetentionMode_);
+    }
+    if (configRetentionRatio_ >= 0.0) {
+        config.PutDoubleValue(Media::Tag::VIDEO_DECODER_FRAME_RETENTION_RATIO, configRetentionRatio_);
+    }
+    if (configDecSpeed_ >= 0.0) {
+        config.PutDoubleValue(Media::Tag::VIDEO_DECODER_SPEED, configDecSpeed_);
+    }
+    triggerFrameCnt_ = std::strtol(OHOS::system::GetParameter("sfd.debug.trigger_frame", "-1").c_str(), nullptr, 10);
+    newRetentionMode_ = std::strtol(OHOS::system::GetParameter("sfd.debug.new_mode", "-1").c_str(), nullptr, 10);
+    newRetentionRatio_ = std::strtod(OHOS::system::GetParameter("sfd.debug.new_ratio", "-1.0").c_str(), nullptr);
+    newDecSpeed_ = std::strtod(OHOS::system::GetParameter("sfd.debug.new_speed", "-1.0").c_str(), nullptr);
+    inputFrameCount_ = 0;
+    AVCODEC_LOGI_WITH_TAG("SFD Debug: Configure: %{public}d, %{public}.2f, %{public}.2f ; trigger=%{public}d :"
+        "%{public}d, %{public}.2f, %{public}.2f", configRetentionMode_, configRetentionRatio_, configDecSpeed_,
+        triggerFrameCnt_, newRetentionMode_, newRetentionRatio_, newDecSpeed_);
+#endif
 #ifdef SFD_ENABLED
     InitializeSfd(config);
     SFD::SmartFluencyDecodingBuilder::EnableMVOutput(codecMime_, smartFluencyDecoding_ != nullptr, config);
@@ -688,6 +714,27 @@ int32_t CodecServer::QueueInputBufferIn(uint32_t index)
     if (temporalScalability_ != nullptr) {
         temporalScalability_->ConfigureLTR(index);
     }
+#ifdef SFD_DEBUG
+    inputFrameCount_++;
+    if (triggerFrameCnt_ > 0 && inputFrameCount_ == static_cast<uint32_t>(triggerFrameCnt_)) {
+        Format newFormat;
+        if (newRetentionMode_ >= 0) {
+            newFormat.PutIntValue(Media::Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, newRetentionMode_);
+        }
+        if (newRetentionRatio_ >= 0.0) {
+            newFormat.PutDoubleValue(Media::Tag::VIDEO_DECODER_FRAME_RETENTION_RATIO, newRetentionRatio_);
+        };
+        if (newDecSpeed_ >= 0.0) {
+            newFormat.PutDoubleValue(Media::Tag::VIDEO_DECODER_SPEED, newDecSpeed_);
+        };
+        AVCODEC_LOGI_WITH_TAG("SFD Debug: Triggered at frame %{public}u."
+            "New mode=%{public}d, ratio=%{public}.2f, speed=%{public}.2f",
+            inputFrameCount_, newRetentionMode_, newRetentionRatio_, newDecSpeed_);
+        if (smartFluencyDecoding_) {
+            smartFluencyDecoding_->UpdateDynamicConfig(newFormat);
+        }
+    }
+#endif
 #ifdef SFD_ENABLED
     CacheCsdData(index);
     if (smartFluencyDecoding_ && !smartFluencyDecoding_->MakePreDecodeDecision(index)) {

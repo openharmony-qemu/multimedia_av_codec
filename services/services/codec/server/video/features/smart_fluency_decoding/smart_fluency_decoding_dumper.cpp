@@ -167,10 +167,7 @@ void SmartFluencyDecodingDumper::DumpToFileInternal()
     std::string timestamp = GetTimestampString();
     std::string filename = std::string(DUMP_DIR) + "SFD_" + timestamp + ".csv";
     std::ofstream ofs(filename);
-    if (!ofs.is_open()) {
-        AVCODEC_LOGE("Failed to open dump file: %{public}s", filename.c_str());
-        return;
-    }
+    CHECK_AND_RETURN_LOG(ofs.is_open(), "Failed to open dump file: %{public}s", filename.c_str());
     ofs << "# SFD Execution Report\n";
     ofs << "# Timestamp: " << timestamp << "\n";
     ofs << "# CodecType: " << static_cast<int>(codecType_) << ", Resolution: " << width_ << "x" << height_ << "\n";

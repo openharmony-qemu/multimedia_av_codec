@@ -49,13 +49,11 @@ NaluAnalyzerSoLoader::~NaluAnalyzerSoLoader()
 bool NaluAnalyzerSoLoader::LoadLibrary()
 {
     handle_ = dlopen(LIB_NAME, RTLD_LAZY);
-    if (!handle_) {
-        AVCODEC_LOGW("Failed to load %{public}s: %{public}s", LIB_NAME, dlerror());
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOGW(handle_ != nullptr, false,
+        "Failed to load %{public}s: %{public}s", LIB_NAME, dlerror());
     createFunc_ = reinterpret_cast<CreateNaluAnalyzerFunc>(dlsym(handle_, "CreateNaluAnalyzer"));
     destroyFunc_ = reinterpret_cast<DestroyAnalyzerFunc>(dlsym(handle_, "DestroyNaluAnalyzer"));
-    setCallbackFunc_ = reinterpret_cast<SetCallbackFunc>(dlsym(handle_, "SetNaluAnalyzerCallback"));
+    setCallbackFunc_ = reinterpret_cast<SetCallbackFunc>(dlsym(handle_, "SetCallback"));
     isNonReferenceFunc_ = reinterpret_cast<IsNonReferenceFunc>(dlsym(handle_, "IsNonReferenceFrame"));
     if (!createFunc_ || !destroyFunc_ || !setCallbackFunc_ || !isNonReferenceFunc_) {
         AVCODEC_LOGE("Failed to find required symbols in %{public}s", LIB_NAME);

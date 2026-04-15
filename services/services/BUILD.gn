@@ -107,7 +107,7 @@ config("av_codec_service_config") {
   }
 
   if (av_codec_support_smart_fluency_decoding) {
-    defines += [ "SFD_ENABLED" ]
+    defines += [ "SFD_ENABLED", "SFD_DEBUG" ]
   }
 }
 

@@ -36,6 +36,9 @@
 #include "features/smart_fluency_decoding/smart_fluency_decoding_builder.h"
 #include "features/smart_fluency_decoding/smart_fluency_decoding.h"
 #endif
+#ifdef SFD_DEBUG
+#include <limits>
+#endif
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -236,6 +239,16 @@ private:
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> tempCsdBufferMap_;
     std::mutex surfaceBufMutex_;
     std::unordered_map<int64_t, sptr<SurfaceBuffer>> surfaceBufMap_;
+#endif
+#ifdef SFD_DEBUG
+    int32_t configRetentionMode_ = -1;
+    double configRetentionRatio_ = -1.0;
+    double configDecSpeed_ = -1.0;
+    int32_t triggerFrameCnt_ = -1;
+    int32_t newRetentionMode_ = -1;
+    double newRetentionRatio_ = -1.0;
+    double newDecSpeed_ = -1.0;
+    uint32_t inputFrameCount_ = 0;
 #endif
 };
 

@@ -51,20 +51,13 @@ SmartFluencyDecoding::~SmartFluencyDecoding()
 
 int32_t SmartFluencyDecoding::Initialize(const SFDConfig& config)
 {
-    if (config.width <= 0 || config.height <= 0) {
-        AVCODEC_LOGE("Invalid video dimensions: %{public}dx%{public}d", config.width, config.height);
-        return AVCS_ERR_INVALID_VAL;
-    }
-    if (config.codecType == SFDCodecType::INVALID) {
-        AVCODEC_LOGE("Unsupported codec type");
-        return AVCS_ERR_INVALID_VAL;
-    }
+    CHECK_AND_RETURN_RET_LOG(config.width > 0 && config.height > 0, AVCS_ERR_INVALID_VAL,
+        "Invalid video dimensions: %{public}dx%{public}d", config.width, config.height);
+    CHECK_AND_RETURN_RET_LOG(config.codecType != SFDCodecType::INVALID, AVCS_ERR_INVALID_VAL,
+        "Unsupported codec type");
     config_ = config;
     int32_t ret = InitializeInternal();
-    if (ret != 0) {
-        AVCODEC_LOGE("Failed to initialize internal components");
-        return AVCS_ERR_UNKNOWN;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == 0, AVCS_ERR_UNKNOWN, "Failed to initialize internal components");
     isInitialized_ = true;
     AVCODEC_LOGI("SmartFluencyDecoding initialized: %{public}dx%{public}d, codecType=%{public}d, mode=%{public}d",
         config_.width, config_.height, static_cast<int32_t>(config_.codecType), static_cast<int32_t>(config_.initMode));
@@ -82,10 +75,7 @@ int32_t SmartFluencyDecoding::InitializeInternal()
         EnsureMvAnalyzer();
     }
     strategy_ = RetentionStrategyFactory::CreateStrategy(config_.initMode, config_.retentionRatio);
-    if (!strategy_) {
-        AVCODEC_LOGE("Failed to create strategy");
-        return AVCS_ERR_UNKNOWN;
-    }
+    CHECK_AND_RETURN_RET_LOG(strategy_ != nullptr, AVCS_ERR_UNKNOWN, "Failed to create strategy");
     dropSyncCoordinator_ = std::make_unique<DropSyncCoordinator>();
     asyncDispatcher_ = std::make_unique<AsyncDropDispatcher>();
 #ifdef BUILD_ENG_VERSION
@@ -216,18 +206,20 @@ void SmartFluencyDecoding::SetCallbacks(AsyncDropInputCallback inCb, AsyncDropOu
 bool SmartFluencyDecoding::InitializeWithCsd(const std::shared_ptr<Media::AVBuffer>& csdBuffer)
 {
     if (!isInitialized_ || !csdBuffer) {
+        AVCODEC_LOGD("CSD_DEBUG: InitializeWithCsd skipped, !isInitialized_ or !csdBuffer");
         return false;
     }
     if (!(csdBuffer->flag_ & AVCODEC_BUFFER_FLAG_CODEC_DATA)) {
-        AVCODEC_LOGW("Buffer passed to InitializeWithCsd does not have CODEC_DATA flag.");
+        AVCODEC_LOGW("CSD_DEBUG: Buffer passed to InitializeWithCsd does not have CODEC_DATA flag.");
         return false;
     }
     csdBuffer_ = csdBuffer;
     if (naluAnalyzer_) {
         (void)naluAnalyzer_->IsNonReferenceFrame(csdBuffer);
-        AVCODEC_LOGI("CSD data processed by NaluAnalyzer.");
+        AVCODEC_LOGI("CSD_DEBUG: CSD data processed by NaluAnalyzer.");
         return true;
     }
+    AVCODEC_LOGD("CSD_DEBUG: naluAnalyzer_ not instantiated yet, caching CSD buffer.");
     return false;
 }
 
@@ -357,14 +349,8 @@ int64_t SmartFluencyDecoding::GetCurrentSysTimeMs()
 void SmartFluencyDecoding::ParseMVData(const sptr<SurfaceBuffer> surfaceBuffer, MVStats& mvStats)
 {
     mvStats = MVStats();
-    if (!mvAnalyzer_) {
-        AVCODEC_LOGE("parse MV Data failed! mvParser don't exist");
-        return;
-    }
-    if (!surfaceBuffer) {
-        AVCODEC_LOGE("parse MV Data failed! surfaceBuffer don't exist");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(mvAnalyzer_ != nullptr, "parse MV Data failed! mvParser don't exist");
+    CHECK_AND_RETURN_LOG(surfaceBuffer != nullptr, "parse MV Data failed! surfaceBuffer don't exist");
     using namespace HDI::Display::Graphic::Common;
     std::vector<uint8_t> vec;
     V2_0::BlobDataType data;
@@ -428,7 +414,7 @@ void SmartFluencyDecoding::EnsureNaluAnalyzer()
     if (!csdBuffer_) {
         return;
     }
-    AVCODEC_LOGI("Replaying cached CSD buffer to activate newly instantiated NaluAnalyzer");
+    AVCODEC_LOGI("CSD_DEBUG: Replaying cached CSD buffer to activate newly instantiated NaluAnalyzer");
     auto cachedCsd = csdBuffer_;
     lock.unlock();
     (void)naluAnalyzer_->IsNonReferenceFrame(cachedCsd);
@@ -441,10 +427,8 @@ void SmartFluencyDecoding::EnsureMvAnalyzer()
         return;
     }
     mvAnalyzer_ = MvAnalyzerFactory::CreateMvAnalyzer(config_.codecType);
-    if (!mvAnalyzer_) {
-        AVCODEC_LOGE("Failed to create MV parser for codec type: %{public}d", static_cast<int>(config_.codecType));
-        return;
-    }
+    CHECK_AND_RETURN_LOG(mvAnalyzer_ != nullptr,
+        "Failed to create MV parser for codec type: %{public}d", static_cast<int>(config_.codecType));
     mvAnalyzer_->SetVideoInfo(config_.width, config_.height);
 }
 } // namespace SFD
