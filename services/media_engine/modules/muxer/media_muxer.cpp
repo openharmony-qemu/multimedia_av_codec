@@ -57,7 +57,7 @@ const std::unordered_map<OutputFormat, std::set<std::string>> MUX_FORMAT_INFO = 
     {OutputFormat::FLAC, {MimeType::AUDIO_FLAC, MimeType::IMAGE_JPG,
                           MimeType::IMAGE_PNG, MimeType::IMAGE_BMP}},
     {OutputFormat::OGG, {MimeType::AUDIO_OPUS, MimeType::AUDIO_VORBIS}},
-    {OutputFormat::FLV, {MimeType::AUDIO_AAC,
+    {OutputFormat::FLV, {MimeType::AUDIO_AAC, MimeType::AUDIO_AVS3DA,
                          MimeType::VIDEO_AVC, MimeType::VIDEO_HEVC}},
 };
 
@@ -69,6 +69,7 @@ const std::map<std::string, std::set<std::string>> MUX_MIME_INFO = {
     {MimeType::AUDIO_FLAC, {Tag::AUDIO_SAMPLE_RATE, Tag::AUDIO_CHANNEL_COUNT}},
     {MimeType::AUDIO_OPUS, {Tag::AUDIO_SAMPLE_RATE, Tag::AUDIO_CHANNEL_COUNT, Tag::MEDIA_CODEC_CONFIG}},
     {MimeType::AUDIO_VORBIS, {Tag::AUDIO_SAMPLE_RATE, Tag::AUDIO_CHANNEL_COUNT, Tag::MEDIA_CODEC_CONFIG}},
+    {MimeType::AUDIO_AVS3DA, {Tag::AUDIO_SAMPLE_RATE, Tag::AUDIO_CHANNEL_COUNT}},
     {MimeType::VIDEO_AVC, {Tag::VIDEO_WIDTH, Tag::VIDEO_HEIGHT}},
     {MimeType::VIDEO_MPEG4, {Tag::VIDEO_WIDTH, Tag::VIDEO_HEIGHT}},
     {MimeType::VIDEO_HEVC, {Tag::VIDEO_WIDTH, Tag::VIDEO_HEIGHT}},
