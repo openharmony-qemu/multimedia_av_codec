@@ -45,7 +45,7 @@ public:
     static bool IsSecondaryEncoderMagic(AVMagic magic);
     static bool IsPreprocEncoderMagic(AVMagic magic);
     static bool IsValidPreprocEncoderMime(const char* mime);
-    
+
     OH_AVErrCode RegisterCallback(struct OH_AVCodecCallback callback, void* userData);
     OH_AVErrCode Configure(const Media::Format& format);
     sptr<Surface> GetSurface();
@@ -55,7 +55,7 @@ public:
     OH_AVErrCode NotifyEos();
     OH_AVErrCode Reset();
     OH_AVErrCode ReleaseOutputBuffer(uint32_t index);
-    
+
     std::shared_ptr<Preprocessor> GetPreprocessor();
 private:
     static std::string GenerateEncoderId(const std::string& prefix);

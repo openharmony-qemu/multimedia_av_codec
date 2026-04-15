@@ -230,7 +230,7 @@ const Preprocessor::DropFrameConfig& Preprocessor::GetDropFrameConfig() const
 
 void Preprocessor::Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output)
 {
-    
+
 }
 
 void Preprocessor::Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output)
@@ -338,6 +338,18 @@ int32_t Preprocessor::GetConfiguredHeight() const
 GraphicPixelFormat Preprocessor::GetConfiguredPixelFormat() const
 {
     return encoderConfig_.pixelFormat;
+}
+
+int32_t Preprocessor::GetOutputWidth() const
+{
+    // TODO
+    return 0;
+}
+
+int32_t Preprocessor::GetOutputHeight() const
+{
+    // TODO
+    return 0;
 }
 
 } // namespace MediaAVCodec

@@ -21,6 +21,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <queue>
 #include <set>
 #include <string>
 #include <string_view>
@@ -40,50 +41,65 @@ public:
     void RegisterEncoder(std::string_view encoderId, std::shared_ptr<Preprocessor> preprocessor,
                          sptr<Surface> producerSurface);
     void UnregisterEncoder(std::string_view encoderId);
-
     void SetEncoderRunning(std::string_view encoderId, bool isRunning);
-    void OnEncoderFrameDone(std::string_view encoderId, sptr<SurfaceBuffer> buffer);
-
     void CreateSharedSurface();
-    int32_t Start();
-    void Stop();
-
     sptr<Surface> GetSharedSurface();
+
     void NotifyNewBufferAvailable();
 
 private:
-    void MainThreadLoop();
-    void EncoderThreadLoop(std::string_view encoderId);
-    void NotifyEncoders();
-    void MarkAsSkipped(std::string_view encoderId);
-    bool ShouldRelease(uint32_t bufferId);
-    void CheckAndRelease(uint32_t bufferId);
+    struct SurfaceBufferWrapper {
+        enum SurfaceType {
+            PRODUCER,
+            CONSUMER,
+        } surfaceType;
 
-    struct EncoderInfo {
-        std::shared_ptr<Preprocessor> preprocessor{nullptr};
-        sptr<Surface> encoderSurface{nullptr};
-        bool isRunning{false};
-        std::set<uint32_t> processedBuffers{};
+        sptr<SyncFence> fence{nullptr};
+        sptr<SurfaceBuffer> buffer{nullptr};
+        wptr<Surface> surface{nullptr};
+        int64_t timestamp{0};
+        BufferFlushConfig flushConfig{};
+        bool isProcessed{false};
+
+        SurfaceBufferWrapper(wptr<Surface> argSurface, sptr<SurfaceBuffer> buf,
+                             sptr<SyncFence> argFence, SurfaceType type)
+            : surface(argSurface), buffer(buf), fence(argFence), surfaceType(type) {};
+        ~SurfaceBufferWrapper();
+    };
+
+    class EncoderInfo : std::enable_shared_from_this {
+    public:
+        explicit EncoderInfo(std::string_view encoderId) : encoderId_(encoderId) {}
+        ~EncoderInfo();
+        void Init(std::shared_ptr<Preprocessor> preprocessor, sptr<Surface> surface);
+        int32_t Start();
+        void Stop();
+
+        int32_t CheckAndAllocateSurfaceBufferFromEncSurface();
+        void OnNewPendingBufferAvailable(std::shared_ptr<SurfaceBufferWrapper> buffer);
+        void OnNewEncoderSurfaceBufferAvailable(uint32_t seq, const sptr<SyncFence>& fence);
+
+    private:
+        void SetBufferFlushConfig(std::shared_ptr<SurfaceBufferWrapper> &inputBuffer,
+                                  std::shared_ptr<SurfaceBufferWrapper> &outputBuffer);
+        void EncoderThreadLoop();
+
+        std::queue<std::shared_ptr<SurfaceBufferWrapper>> pendingBuffers_{};
+        std::map<uint32_t, sptr<SurfaceBuffer>> encoderSurfaceBufferPool;
+        std::queue<std::shared_ptr<SurfaceBufferWrapper>> availableInputBuffers_{};
+        std::shared_ptr<Preprocessor> preprocessor_{nullptr};
+        sptr<Surface> encoderSurface_{nullptr};
+        std::thread processThread_;
+        bool isRunning_{false};
+        std::mutex bufferQueueMutex_;
+        std::condition_variable bufferQueueCv_;
+        std::string_view encoderId_;
     };
 
     sptr<Surface> sharedConsumerSurface_{nullptr};
     sptr<Surface> sharedProducerSurface_{nullptr};
     std::map<std::string_view, EncoderInfo> encoders_{};
-    std::map<std::string_view, std::thread> encoderThreads_{};
-    std::set<std::string_view> runningEncoders_{};
-
-    struct BufferPending {
-        sptr<SurfaceBuffer> buffer{nullptr};
-        std::set<std::string_view> pendingEncoders{};
-        std::set<std::string_view> processedEncoders{};
-    };
-    std::map<uint32_t, BufferPending> bufferPending_{};
-
-    std::thread mainThread_;
     std::mutex mutex_;
-    std::condition_variable cv_;
-    bool isRunning_{false};
-    bool newBufferAvailable_{false};
 };
 
 } // namespace MediaAVCodec

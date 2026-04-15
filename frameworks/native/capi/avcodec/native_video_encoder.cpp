@@ -195,12 +195,12 @@ OH_AVErrCode OH_VideoEncoder_Start(struct OH_AVCodec *codec)
 
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, AV_ERR_INVALID_VAL, "Video encoder is nullptr!");
-    
+
     int32_t ret = videoEncObj->videoEncoder_->Start();
     apiInvokeRecorder.SetErrorCode(AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)));
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                             "Video encoder start failed!");
-    
+
     return AV_ERR_OK;
 }
 
@@ -662,7 +662,7 @@ OH_AVErrCode OH_VideoEncoder_CreateSecondaryFromPrimary(OH_AVCodec *primary, OH_
         "The pointer stored in codec is not nullptr! It must be nullptr!");
     CHECK_AND_RETURN_RET_LOG(PreprocessorEncoder::IsPrimaryEncoderMagic(primary->magic_), AV_ERR_INVALID_VAL,
         "Primary magic error!");
-    
+
     auto ret = PreprocessorEncoder::CreateSecondary(primary, codec);
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Create secondary codec failed!");
     return AV_ERR_OK;
@@ -671,6 +671,6 @@ OH_AVErrCode OH_VideoEncoder_CreateSecondaryFromPrimary(OH_AVCodec *primary, OH_
 #ifdef __cplusplus
 }
 #endif
-    
+
 } // namespace MediaAVCodec
 } // namespace OHOS

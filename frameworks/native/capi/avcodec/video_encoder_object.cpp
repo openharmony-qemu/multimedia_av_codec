@@ -24,7 +24,7 @@ namespace MediaAVCodec {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "VideoEncoderObject"};
 constexpr size_t MAX_TEMPNUM = 64;
 
-VideoEncoderObject::VideoEncoderObject(const std::shared_ptr<AVCodecVideoEncoder>& encoder) 
+VideoEncoderObject::VideoEncoderObject(const std::shared_ptr<AVCodecVideoEncoder>& encoder)
     : OH_AVCodec(AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER), videoEncoder_(encoder)
 {
 }

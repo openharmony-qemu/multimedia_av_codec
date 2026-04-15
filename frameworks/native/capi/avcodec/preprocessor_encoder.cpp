@@ -295,10 +295,6 @@ OH_AVErrCode PreprocessorEncoder::Start()
     }
 
     if (preprocMgr_) {
-        int32_t ret = preprocMgr_->Start();
-        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                                 "PreprocessorManager start failed!");
-
         preprocMgr_->SetEncoderRunning(encoderId_, true);
     }
 

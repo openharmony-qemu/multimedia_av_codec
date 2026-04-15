@@ -47,147 +47,72 @@ PreprocessorManager::PreprocessorManager()
 
 PreprocessorManager::~PreprocessorManager()
 {
-    Stop();
+    std::lock_guard<std::mutex> lock(mutex_);
+    for (auto &[encoderId, info] : encoders_) {
+        info.Stop();
+    }
     AVCODEC_LOGI("PreprocessorManager destroyed");
 }
 
 void PreprocessorManager::RegisterEncoder(std::string_view encoderId, std::shared_ptr<Preprocessor> preprocessor,
                                           sptr<Surface> encoderSurface)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    
     EncoderInfo info;
-    info.preprocessor = preprocessor;
-    info.encoderSurface = encoderSurface;
-    info.isRunning = false;
-    encoders_.emplace(encoderId, info);
+    info.Init(preprocessor, encoderSurface);
     
+    std::lock_guard<std::mutex> lock(mutex_);
+    encoders_.emplace(encoderId, info);
     AVCODEC_LOGI("Encoder registered: %{public}s", std::string(encoderId).c_str());
 }
 
 void PreprocessorManager::UnregisterEncoder(std::string_view encoderId)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    
-    runningEncoders_.erase(encoderId);
-
-    auto it = encoderThreads_.find(encoderId);
-    if (it != encoderThreads_.end()) {
-        it->second.join();
-        encoderThreads_.erase(it);
-    }
-    
+    encoders_.erase(encoderId);
     AVCODEC_LOGI("Encoder unregistered: %{public}s", std::string(encoderId).c_str());
 }
 
 void PreprocessorManager::SetEncoderRunning(std::string_view encoderId, bool isRunning)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    
+
     if (encoders_.find(encoderId) == encoders_.end()) {
         AVCODEC_LOGE("Encoder not found: %{public}s", std::string(encoderId).c_str());
         return;
     }
-    
+
     if (isRunning) {
-        if (!encoderThreads_[encoderId].joinable()) {
-            encoderThreads_[encoderId] = std::thread(&PreprocessorManager::EncoderThreadLoop, this, encoderId);
-        }
-        encoders_[encoderId].isRunning = true;
-        runningEncoders_.insert(encoderId);
+        encoders_[encoderId].Start();
         AVCODEC_LOGI("Encoder running: %{public}s", std::string(encoderId).c_str());
     } else {
-        encoders_[encoderId].isRunning = false;
-        runningEncoders_.erase(encoderId);    
-        MarkAsSkipped(encoderId);
+        encoders_[encoderId].Stop();
         AVCODEC_LOGI("Encoder stopped: %{public}s", std::string(encoderId).c_str());
     }
-    
-    cv_.notify_all();
-}
-
-void PreprocessorManager::OnEncoderFrameDone(std::string_view encoderId, sptr<SurfaceBuffer> buffer)
-{
-    uint32_t bufferId = buffer->GetSeqNum();
-    
-    std::lock_guard<std::mutex> lock(mutex_);
-    
-    auto it = bufferPending_.find(bufferId);
-    if (it == bufferPending_.end()) {
-        return;
-    }
-    
-    it->second.processedEncoders.insert(encoderId);
-    it->second.pendingEncoders.erase(encoderId);
-    
-    CheckAndRelease(bufferId);
-}
-
-int32_t PreprocessorManager::Start()
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    
-    if (isRunning_) {
-        AVCODEC_LOGW("PreprocessorManager already running");
-        return AVCS_ERR_OK;
-    }
-    
-    AVCODEC_LOGI("PreprocessorManager started");
-    return AVCS_ERR_OK;
 }
 
 void PreprocessorManager::CreateSharedSurface()
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    
-    if (isRunning_) {
-        AVCODEC_LOGW("PreprocessorManager already running");
+
+    if (sharedConsumerSurface_ != nullptr) {
+        AVCODEC_LOGW("Shared surface is already created");
         return;
     }
-    
+
     auto sharedSurfMgr = std::make_shared<SharedSurfaceManager>();
     int32_t ret = sharedSurfMgr->Create();
     if (ret != AVCS_ERR_OK) {
         AVCODEC_LOGE("Failed to create shared surface, ret=%{public}d", ret);
         return;
     }
-    
+
     sharedConsumerSurface_ = sharedSurfMgr->GetConsumerSurface();
     sharedProducerSurface_ = sharedSurfMgr->GetProducerSurface();
-    
+
     sptr<IBufferConsumerListener> listener = sptr<ConsumerListener>::MakeSptr(shared_from_this());
     sharedConsumerSurface_->RegisterConsumerListener(listener);
-    
-    isRunning_ = true;
-    mainThread_ = std::thread(&PreprocessorManager::MainThreadLoop, this);
-    
-    AVCODEC_LOGI("PreprocessorManager SharedSurface created");
-}
 
-void PreprocessorManager::Stop()
-{
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (!isRunning_) {
-            return;
-        }
-        isRunning_ = false;
-        cv_.notify_all();
-    }
-    
-    if (mainThread_.joinable()) {
-        mainThread_.join();
-    }
-    
-    for (auto& [encoderId, info] : encoders_) {
-        if (encoderThreads_[encoderId].joinable()) {
-            encoderThreads_[encoderId].join();
-        }
-    }
-    
-    bufferPending_.clear();
-    
-    AVCODEC_LOGI("PreprocessorManager stopped");
+    AVCODEC_LOGI("PreprocessorManager SharedSurface created");
 }
 
 sptr<Surface> PreprocessorManager::GetSharedSurface()
@@ -195,179 +120,223 @@ sptr<Surface> PreprocessorManager::GetSharedSurface()
     return sharedProducerSurface_;
 }
 
-void PreprocessorManager::MainThreadLoop()
-{
-    AVCODEC_LOGI("MainThreadLoop started");
-    
-    while (isRunning_) {
-        {
-            std::unique_lock<std::mutex> lock(mutex_);
-            cv_.wait(lock, [this]() {
-                return newBufferAvailable_ || !isRunning_;
-            });
-            
-            if (!isRunning_) {
-                break;
-            }
-            newBufferAvailable_ = false;
-        }
-        
-        sptr<SurfaceBuffer> buffer;
-        int32_t fence;
-        int64_t timestamp;
-        Rect damage;
-        
-        GSError ret = sharedConsumerSurface_->AcquireBuffer(buffer, fence, timestamp, damage);
-        if (ret != GSERROR_OK) {
-            continue;
-        }
-        
-        uint32_t bufferId = buffer->GetSeqNum();
-        
-        {
-            std::unique_lock<std::mutex> lock(mutex_);
-            
-            BufferPending pending;
-            pending.buffer = buffer;
-            pending.pendingEncoders = runningEncoders_;
-            bufferPending_[bufferId] = pending;
-            
-            NotifyEncoders();
-            
-            cv_.wait(lock, [this, bufferId]() {
-                auto it = bufferPending_.find(bufferId);
-                if (it == bufferPending_.end()) {
-                    return true;
-                }
-                return it->second.pendingEncoders.empty();
-            });
-        }
-        
-        sharedConsumerSurface_->ReleaseBuffer(buffer, -1);
-        
-        {
-            std::lock_guard<std::mutex> lock(mutex_);
-            bufferPending_.erase(bufferId);
-        }
-    }
-    
-    AVCODEC_LOGI("MainThreadLoop exited");
-}
-
-void PreprocessorManager::EncoderThreadLoop(std::string_view encoderId)
-{
-    AVCODEC_LOGI("EncoderThreadLoop started: %{public}s", std::string(encoderId).c_str());
-    
-    while (isRunning_) {
-        sptr<SurfaceBuffer> bufferToProcess;
-        
-        {
-            std::unique_lock<std::mutex> lock(mutex_);
-            cv_.wait(lock, [this, encoderId]() {
-                if (!isRunning_) {
-                    return true;
-                }
-                auto encIt = encoders_.find(encoderId);
-                if (encIt == encoders_.end()) {
-                    return false;
-                }
-                return encIt->second.isRunning;
-            });
-            
-            if (!isRunning_) {
-                break;
-            }
-            
-            auto encIt = encoders_.find(encoderId);
-            if (encIt == encoders_.end() || !encIt->second.isRunning) {
-                continue;
-            }
-            
-            for (auto& [bufferId, pending] : bufferPending_) {
-                if (pending.pendingEncoders.count(encoderId) > 0) {
-                    bufferToProcess = pending.buffer;
-                    break;
-                }
-            }
-            
-            if (bufferToProcess == nullptr) {
-                continue;
-            }
-        }
-        
-        auto encIt = encoders_.find(encoderId);
-        if (encIt == encoders_.end()) {
-            continue;
-        }
-        
-        sptr<SurfaceBuffer> prodBuffer;
-        // TODO: implement RequestBuffer
-        int32_t fence;
-        BufferRequestConfig requestConfig;
-        requestConfig.width = encIt->second.preprocessor->GetConfiguredWidth();
-        requestConfig.height = encIt->second.preprocessor->GetConfiguredHeight();
-        requestConfig.format = encIt->second.preprocessor->GetConfiguredPixelFormat();
-        requestConfig.strideAlignment = BUFFER_REQUEST_STRIDE_ALIGNMENT;
-        requestConfig.timeout = 0;
-        GSError ret = encIt->second.encoderSurface->RequestBuffer(prodBuffer, fence, requestConfig);
-        if (ret != GSERROR_OK || prodBuffer == nullptr) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            continue;
-        }
-        
-        encIt->second.preprocessor->Process(bufferToProcess, prodBuffer);
-        // TODO::flush buffer config
-        BufferFlushConfig flushConfig;
-        flushConfig.damage = {0, 0, prodBuffer->GetWidth(), prodBuffer->GetHeight()};
-        flushConfig.timestamp = 0;
-        flushConfig.desiredPresentTimestamp = 0;
-        encIt->second.encoderSurface->FlushBuffer(prodBuffer, -1, flushConfig);
-        
-        OnEncoderFrameDone(encoderId, bufferToProcess);
-    }
-    
-    AVCODEC_LOGI("EncoderThreadLoop exited: %{public}s", std::string(encoderId).c_str());
-}
-
-void PreprocessorManager::NotifyEncoders()
-{
-    cv_.notify_all();
-}
-
 void PreprocessorManager::NotifyNewBufferAvailable()
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    newBufferAvailable_ = true;
-    cv_.notify_all();
+    auto bufferWrapper = std::make_shared<SurfaceBufferWrapper>();
+    Rect damage;
+
+    auto ret = sharedConsumerSurface_->AcquireBuffer(buffer->buffer, buffer->fence, buffer->timestamp, damage);
+    if (ret != GSERROR_OK) {
+        AVCODEC_LOGE("Failed to acquire buffer from shared surface, ret: %{public}d", ret);
+    }
+    bufferWrapper->surfaceType = SurfaceBufferWrapper::SurfaceType::CONSUMER;
+    for (auto &[_, encoderInfo] : encoders_) {
+        encoderInfo.OnNewPendingBufferAvailable(bufferWrapper);
+    }
 }
 
-void PreprocessorManager::MarkAsSkipped(std::string_view encoderId)
+PreprocessorManager::SurfaceBufferWrapper::~SurfaceBufferWrapper()
 {
-    for (auto& [bufferId, pending] : bufferPending_) {
-        if (pending.pendingEncoders.count(encoderId) > 0) {
-            pending.pendingEncoders.erase(encoderId);
-            pending.processedEncoders.insert(encoderId);
-            CheckAndRelease(bufferId);
+    auto surface = surface.promote();
+    if (!buffer || !surface) {
+        return;
+    }
+    if (!isProcessed) {
+        surface->CancelBuffer(buffer);
+        AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGW, 5000, 5,    // 5 times in 5 seconds
+            "Buffer not processed before wrapper destruction, bufferId=%{public}u",
+            buffer->GetSeqNum());
+        return;
+    }
+
+    auto ret = surfaceType == SurfaceType::PRODUCER ?
+        surface->FlushBuffer(buffer, fence, flushConfig) :
+        surface->ReleaseBuffer(buffer, fence);
+    if (ret != GSERROR_OK) {
+        AVCODEC_LOGE("Failed to %{public}s buffer, ret=%{public}d",
+            surfaceType == SurfaceType::PRODUCER ? "flush" : "release", ret);
+    }
+}
+
+PreprocessorManager::EncoderInfo::~EncoderInfo()
+{
+    Stop();
+    if (encoderSurface_) {
+        encoderSurface_->UnRegisterReleaseListener();
+    }
+    AVCODEC_LOGI("EncoderInfo destroyed: %{public}s", encoderId_.data());
+}
+
+void PreprocessorManager::EncoderInfo::Init(std::shared_ptr<Preprocessor> preprocessor, sptr<Surface> surface)
+{
+    if (!preprocessor || !surface) {
+        AVCODEC_LOGE("Get a nullptr, %s %s", preprocessor ? "" : "preprocessor", surface ? "" : "surface");
+    }
+    preprocessor_ = preprocessor;
+
+    std::weak_ptr<EncoderInfo> weakThis = shared_from_this();
+    encoderSurface_ = surface;
+    encoderSurface_->RegisterReleaseListener([weakThis](uint32_t seq, const sptr<SyncFence>& fence) {
+        std::shared_ptr<EncoderInfo> encoderInfo = weakThis.lock();
+        if (encoderInfo == nullptr) {
+            return GSERROR_OK;
         }
-    }
+
+        encoderInfo->OnNewEncoderSurfaceBufferAvailable(seq, fence);
+        return GSERROR_OK;
+    });
 }
 
-bool PreprocessorManager::ShouldRelease(uint32_t bufferId)
+int32_t PreprocessorManager::EncoderInfo::Start()
 {
-    auto it = bufferPending_.find(bufferId);
-    if (it == bufferPending_.end()) {
-        return false;
+    std::unique_lock<std::mutex> lock(bufferQueueMutex_);
+    if (isRunning_) {
+        AVCODEC_LOGW("Encoder already running: %{public}s", encoderId_.data());
+        return AVCS_ERR_OK;
     }
-    
-    return it->second.pendingEncoders.empty();
+    if (!encoderSurface_ || !preprocessor_) {
+        AVCODEC_LOGE("EncoderSurface or Preprocessor not initialized for encoder: %{public}s", encoderId_.data());
+        return AVCS_ERR_UNKNOWN;
+    }
+    CheckAndAllocateSurfaceBufferFromEncSurface();
+    isRunning_ = true;
+    processThread_ = std::thread(&EncoderInfo::EncoderThreadLoop, this);
+    if (!processThread_.joinable()) {
+        AVCODEC_LOGE("Failed to start encoder thread: %{public}s", encoderId_.data());
+        return AVCS_ERR_UNKNOWN;
+    }
+    return AVCS_ERR_OK;
 }
 
-void PreprocessorManager::CheckAndRelease(uint32_t bufferId)
+void PreprocessorManager::EncoderInfo::Stop()
 {
-    if (ShouldRelease(bufferId)) {
-        cv_.notify_all();
+    std::unique_lock<std::mutex> lock(bufferQueueMutex_);
+    isRunning_ = false;
+    bufferQueueCv_.notify_all();
+    if (processThread_.joinable()) {
+        processThread_.join();
     }
 }
 
+int32_t PreprocessorManager::EncoderInfo::CheckAndAllocateSurfaceBufferFromEncSurface()
+{
+    auto allocTimes = encoderSurface_->GetQueueSize() - encoderSurfaceBufferPool.size();
+    if (allocTimes == 0) {
+        return AV_ERR_OK;
+    }
+
+    BufferRequestConfig requestConfig = {
+        .width = preprocessor_->GetConfiguredWidth(),
+        .height = preprocessor_->GetOutputHeight(),
+        .format = preprocessor_->GetConfiguredPixelFormat(),
+        .strideAlignment = BUFFER_REQUEST_STRIDE_ALIGNMENT,
+        .usage = encoderSurface_->GetDefaultUsage(),
+    };
+
+    for (uint32_t idx = 0; idx < allocTimes; idx++) {
+        auto surfaceBuffer = SurfaceBuffer::Create();
+        if (!surfaceBuffer) {
+            AVCODEC_LOGE("Create surface buffer failed");
+            return AV_ERR_NO_MEMORY;
+        }
+
+        auto ret = surfaceBuffer->Alloc(requestConfig);
+        if (ret != GSERROR_OK) {
+            AVCODEC_LOGE("Alloc surfacebuffer %u failed, GSError: %{public}d", idx, ret);
+            return ret == GSERROR_NO_MEM ? AVCS_ERR_NO_MEMORY : AVCS_ERR_UNKNOWN;
+        }
+
+        ret = encoderSurface_->AttachBufferToQueue(surfaceBuffer);
+        if (ret != GSERROR_OK) {
+            AVCODEC_LOGE("Attach surfacebuffer %u to queue failed, GSError: %{public}d", idx, ret);
+            return AVCS_ERR_UNKNOWN;
+        }
+
+        encoderSurfaceBufferPool.emplace(surfaceBuffer->GetSeqNum(), surfaceBuffer);
+        auto bufferWrapper = std::make_shared<SurfaceBufferWrapper>(
+            encoderSurface_, surfaceBuffer, nullptr, SurfaceBufferWrapper::SurfaceType::PRODUCER);
+        availableInputBuffers_.push(bufferWrapper);
+    }
+    AVCODEC_LOGI("Alloc %{public}u surface buffers, %{public}dx%{public}d, format: %{public}d",
+        allocTimes, requestConfig.width, requestConfig.height, requestConfig.format);
+    return AV_ERR_OK;
+}
+
+void PreprocessorManager::EncoderInfo::OnNewPendingBufferAvailable(std::shared_ptr<SurfaceBufferWrapper> buffer)
+{
+    std::lock_guard<std::mutex> lock(bufferQueueMutex_);
+    pendingBuffers_.push(buffer);
+    bufferQueueCv_.notify_all();
+}
+
+void PreprocessorManager::EncoderInfo::OnNewEncoderSurfaceBufferAvailable(uint32_t seq, const sptr<SyncFence> &fence)
+{
+    std::lock_guard<std::mutex> lock(bufferQueueMutex_);
+    auto surfaceBuffer = encoderSurfaceBufferPool.find(seq);
+    if (surfaceBuffer == encoderSurfaceBufferPool.end()) {
+        AVCODEC_LOGW("Seqnum=%{public}u don't belong to this encoder: %{public}s, ignore", encoderId_.data());
+        return;
+    }
+    auto bufferWrapper = std::make_shared<SurfaceBufferWrapper>(
+        encoderSurface_, *surfaceBuffer, fence, SurfaceBufferWrapper::SurfaceType::PRODUCER);
+}
+
+void PreprocessorManager::EncoderInfo::SetBufferFlushConfig(std::shared_ptr<SurfaceBufferWrapper> &inputBuffer,
+                                                            std::shared_ptr<SurfaceBufferWrapper> &outputBuffer)
+{
+    if (!(inputBuffer && inputBuffer->buffer) || !outputBuffer || !preprocessor_) {
+        return;
+    }
+    outputBuffer->flushConfig.damage = {0, 0, preprocessor_->GetOutputWidth(), preprocessor_->GetOutputHeight()};
+    outputBuffer->flushConfig.timestamp = inputBuffer->timestamp;
+}
+
+void PreprocessorManager::EncoderInfo::EncoderThreadLoop()
+{
+    AVCODEC_LOGI("EncoderThreadLoop started: %{public}s", encoderId_.data());
+
+    while (isRunning_) {
+        std::shared_ptr<SurfaceBufferWrapper> inputBuffer;
+        std::shared_ptr<SurfaceBufferWrapper> outputBuffer;
+
+        {
+            std::unique_lock<std::mutex> lock(bufferQueueMutex_);
+            bufferQueueCv_.wait(lock, [this]() {
+                if (!isRunning_ || (!pendingBuffers_.empty() && !availableInputBuffers_.empty())) {
+                    return true;
+                }
+            });
+            if (!isRunning_) {
+                break;
+            }
+            if (pendingBuffers_.empty() || availableInputBuffers_.empty()) {
+                continue;
+            }
+            inputBuffer = pendingBuffers_.front();
+            pendingBuffers_.pop();
+            if (!(inputBuffer && inputBuffer->buffer)) {
+                AVCODEC_LOGE("Invalid input buffer in encoder thread: %{public}s", encoderId_.data());
+                continue;
+            }
+            outputBuffer = availableInputBuffers_.front();
+            availableInputBuffers_.pop();
+            if (!(outputBuffer && outputBuffer->buffer)) {
+                AVCODEC_LOGE("Invalid output buffer in encoder thread: %{public}s", encoderId_.data());
+                continue;
+            }
+        }
+
+        auto ret = preprocessor_->Process(inputBuffer.buffer, outputBuffer.buffer);
+        if (ret != AV_ERR_OK) {
+            AVCODEC_LOGW("Preprocess faided, skip ..");
+            continue;
+        }
+        inputBuffer->isProcessed = outputBuffer->isProcessed = true;
+        SetBufferFlushConfig(inputBuffer, outputBuffer);
+    }
+
+    AVCODEC_LOGI("EncoderThreadLoop exited: %{public}s", encoderId_.data());
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

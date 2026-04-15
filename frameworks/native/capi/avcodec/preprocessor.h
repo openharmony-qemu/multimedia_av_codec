@@ -43,6 +43,8 @@ public:
     int32_t GetConfiguredWidth() const;
     int32_t GetConfiguredHeight() const;
     GraphicPixelFormat GetConfiguredPixelFormat() const;
+    int32_t GetOutputWidth() const;
+    int32_t GetOutputHeight() const;
 private:
     enum class ConfigResult {
         NOT_SET,
