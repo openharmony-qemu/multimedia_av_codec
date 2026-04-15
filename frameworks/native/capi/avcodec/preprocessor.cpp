@@ -359,13 +359,13 @@ GraphicPixelFormat Preprocessor::GetConfiguredPixelFormat() const
 int32_t Preprocessor::GetOutputWidth() const
 {
     // TODO
-    return 0;
+    return encoderConfig_.width;
 }
 
 int32_t Preprocessor::GetOutputHeight() const
 {
     // TODO
-    return 0;
+    return encoderConfig_.height;
 }
 
 } // namespace MediaAVCodec

@@ -156,7 +156,7 @@ PreprocessorManager::SurfaceBufferWrapper::~SurfaceBufferWrapper()
     }
 
     auto ret = surfaceType == SurfaceType::PRODUCER ?
-        surfacePtr->FlushBuffer(buffer, fence, flushConfig) :
+        surfacePtr->FlushBuffer(buffer, -1, flushConfig) :
         surfacePtr->ReleaseBuffer(buffer, fence);
     if (ret != GSERROR_OK) {
         AVCODEC_LOGE("Failed to %{public}s buffer, ret=%{public}d",
@@ -226,14 +226,14 @@ void PreprocessorManager::EncoderInfo::Stop()
 
 int32_t PreprocessorManager::EncoderInfo::CheckAndAllocateSurfaceBufferFromEncSurface()
 {
-    auto allocTimes = encoderSurface_->GetQueueSize() - encoderSurfaceBufferPool.size();
+    uint32_t allocTimes = encoderSurface_->GetQueueSize() - encoderSurfaceBufferPool.size();
     if (allocTimes == 0) {
         return AV_ERR_OK;
     }
 
     BufferRequestConfig requestConfig = {
         .width = preprocessor_->GetConfiguredWidth(),
-        .height = preprocessor_->GetOutputHeight(),
+        .height = preprocessor_->GetConfiguredHeight(),
         .format = preprocessor_->GetConfiguredPixelFormat(),
     };
     requestConfig.strideAlignment = BUFFER_REQUEST_STRIDE_ALIGNMENT;
@@ -248,13 +248,15 @@ int32_t PreprocessorManager::EncoderInfo::CheckAndAllocateSurfaceBufferFromEncSu
 
         auto ret = surfaceBuffer->Alloc(requestConfig);
         if (ret != GSERROR_OK) {
-            AVCODEC_LOGE("Alloc surfacebuffer %u failed, GSError: %{public}d", idx, ret);
+            AVCODEC_LOGE("Alloc surfacebuffer %{public}u failed, GSError: %{public}d, "
+                "%{public}dx%{public}d, format: %{public}d, usage: %{public}" PRId64,
+                idx, ret, requestConfig.width, requestConfig.height, requestConfig.format, requestConfig.usage);
             return ret == GSERROR_NO_MEM ? AVCS_ERR_NO_MEMORY : AVCS_ERR_UNKNOWN;
         }
 
         ret = encoderSurface_->AttachBufferToQueue(surfaceBuffer);
         if (ret != GSERROR_OK) {
-            AVCODEC_LOGE("Attach surfacebuffer %u to queue failed, GSError: %{public}d", idx, ret);
+            AVCODEC_LOGE("Attach surfacebuffer %{public}u to queue failed, GSError: %{public}d", idx, ret);
             return AVCS_ERR_UNKNOWN;
         }
 
