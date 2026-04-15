@@ -2556,20 +2556,21 @@ Status MPEG4AtomParser::ParseColorParams(int64_t offset, uint64_t dataSize, cons
 
     constexpr uint8_t colorRangeOffset = 6;
     if (colorType == "nclx" && dataSize >= 0x07) { // nclx类型有额外的color range信息
-        colorRange = (colorParams[colorRangeOffset] >> 0x07) & 1;  // 取最高位
-        if (colorRange == 0) {
-            colorRange = ColorRange::JPEG;
-        } else {
-            colorRange = ColorRange::MPEG;
+        uint8_t nclxColorRange = (colorParams[colorRangeOffset] >> 0x07) & 1;  // 取最高位
+        if (nclxColorRange) {
+            colorRange = 1
         }
     }
     std::string mimeType;
     mediaInfo_.tracks[lastTrack_->trackIndex].GetData(Tag::MIME_TYPE, mimeType);
     if (mimeType == MimeType::VIDEO_HEVC) {
-        mediaInfo_.tracks[lastTrack_->trackIndex].SetData(Tag::VIDEO_COLOR_RANGE, static_cast<bool>(colorRange));
-        mediaInfo_.tracks[lastTrack_->trackIndex].SetData(Tag::VIDEO_COLOR_PRIMARIES, colorPrimaries);
-        mediaInfo_.tracks[lastTrack_->trackIndex].SetData(Tag::VIDEO_COLOR_TRC, colorTrc);
-        mediaInfo_.tracks[lastTrack_->trackIndex].SetData(Tag::VIDEO_COLOR_MATRIX_COEFF, colorMatrix);
+        mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::VIDEO_COLOR_RANGE>(static_cast<bool>(colorRange));
+        mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::VIDEO_COLOR_PRIMARIES>(
+            static_cast<ColorPrimary>(colorPrimaries));
+        mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::VIDEO_COLOR_TRC>(
+            static_cast<TransferCharacteristic>(colorTrc));
+        mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::VIDEO_COLOR_MATRIX_COEFF>(
+            static_cast<MatrixCoefficient>(colorMatrix));
     }
     return Status::OK;
 }
@@ -2621,10 +2622,10 @@ Status MPEG4AtomParser::ParseAclr(MPEG4Atom currentAtom, int32_t depth, ParseCon
     uint8_t colorRange = aclrData[12]; // 第13字节是colorRange
     switch (colorRange) {
         case 0x01:
-            colorRange = ColorRange::MPEG; // MPEG range (16-235)
+            colorRange = 0; // MPEG range (16-235)
             break;
         case 0x02:
-            colorRange = ColorRange::JPEG; // JPEG/PC range (0-255)
+            colorRange = 1; // JPEG/PC range (0-255)
             break;
         default:
             break;
@@ -4231,9 +4232,9 @@ void MPEG4AtomParser::SetStartTime()
 
 void MPEG4AtomParser::SetHEVCDefaultValue()
 {
-    uint16_t colorPrimaries = 0;
-    uint16_t colorTrc = 0;
-    uint16_t colorMatrix = 0;
+    ColorPrimary colorPrimaries = ColorPrimary::UNSPECIFIED;
+    TransferCharacteristic colorTrc = TransferCharacteristic::UNSPECIFIED;
+    MatrixCoefficient colorMatrix = MatrixCoefficient::UNSPECIFIED;
     bool colorRange = false;
     std::string mime;
     for (auto track = firstTrack_; track; track = track->next) {
