@@ -30,6 +30,7 @@ public:
 
     void SetAuxInfoCallback(OnStreamAuxInfoParsed callback) override;
     bool IsNonReferenceFrame(const std::shared_ptr<AVBuffer>& inputBuffer) override;
+    bool IsValid() const;
 
 private:
     static void StaticAuxInfoCallback(const StreamAuxInfo* info, void* userData);

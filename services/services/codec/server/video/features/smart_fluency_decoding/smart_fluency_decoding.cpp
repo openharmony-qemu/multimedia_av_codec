@@ -279,6 +279,7 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
         dumper_->RecordPreDecode(dumperCtx);
     }
 #endif
+    (void)isNonRef;
     return shouldRetain;
 }
 
@@ -374,7 +375,6 @@ void SmartFluencyDecoding::GetStatistics(uint32_t& totalFrames, uint32_t& droppe
     droppedFrames = droppedOutputFrames_.load();
 }
 
-
 void SmartFluencyDecoding::OnDecodingPerformanceUpdate(double speed, double decFps)
 {
     std::lock_guard<std::mutex> lock(configMutex_);
@@ -407,8 +407,8 @@ void SmartFluencyDecoding::EnsureNaluAnalyzer()
 #ifdef BUILD_ENG_VERSION
         if (this->dumper_) {
             this->dumper_->UpdateCtuSize(info.ctuSize);
-#endif
         }
+#endif
     });
     naluAnalyzer_ = std::move(analyzer);
     if (!csdBuffer_) {

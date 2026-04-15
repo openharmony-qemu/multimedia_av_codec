@@ -64,18 +64,18 @@ ohos_unittest("smart_fluency_decoding_unit_test") {
   ]
 
   sources = [
-    "analyzers/nalu_analyzer_so_loader.cpp",
-    "analyzers/mv_analyzer_so_loader.cpp",
-    "strategies/retention_strategy_factory.cpp",
-    "strategies/adaptive_retention_strategy.cpp",
-    "strategies/auto_fallback_retention_strategy.cpp",
-    "strategies/fixed_ratio_retention_strategy.cpp",
-    "strategies/full_retention_strategy.cpp",
-    "async_drop_dispatcher.cpp",
-    "drop_sync_coordinator.cpp",
-    "smart_fluency_decoding.cpp",
-    "smart_fluency_decoding_builder.cpp",
-    "smart_fluency_decoding_dumper.cpp",
+    "$sfd_root_dir/drop_sync_coordinator.cpp",
+    "$sfd_root_dir/smart_fluency_decoding.cpp",
+    "$sfd_root_dir/smart_fluency_decoding_builder.cpp",
+    "$sfd_root_dir/smart_fluency_decoding_dumper.cpp",
+    "$sfd_root_dir/async_drop_dispatcher.cpp",
+    "$sfd_root_dir/strategies/retention_strategy_factory.cpp",
+    "$sfd_root_dir/strategies/auto_fallback_retention_strategy.cpp",
+    "$sfd_root_dir/strategies/fixed_ratio_retention_strategy.cpp",
+    "$sfd_root_dir/strategies/adaptive_retention_strategy.cpp",
+    "$sfd_root_dir/strategies/full_retention_strategy.cpp",
+    "$sfd_root_dir/analyzers/mv_analyzer_so_loader.cpp",
+    "$sfd_root_dir/analyzers/nalu_analyzer_so_loader.cpp",
 
     "async_drop_dispatcher_test.cpp",
     "drop_sync_coordinator_test.cpp",
@@ -90,11 +90,12 @@ ohos_unittest("smart_fluency_decoding_unit_test") {
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
-    "//third_party/googletest:gtest_main",
   ]
 
   external_deps = [
     "c_utils:utils",
+    "drivers_interface_display:libdisplay_commontype_proxy_2.2",
+    "googletest:gmock_main",
     "graphic_surface:surface",
     "hilog:libhilog",
     "media_foundation:media_foundation",

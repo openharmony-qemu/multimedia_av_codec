@@ -5,6 +5,7 @@
 #include "drop_sync_coordinator.h"
 
 using namespace testing::ext;
+using namespace OHOS::MediaAVCodec::SFD;
 
 class DropSyncCoordinatorTest : public testing::Test {
 protected:

@@ -107,9 +107,18 @@ bool NaluAnalyzerSoLoader::IsNonReferenceFrame(const std::shared_ptr<AVBuffer>& 
     return isNonReferenceFunc_(soAnalyzer_, bufferAddr, bufferSize);
 }
 
+bool NaluAnalyzerSoLoader::IsValid() const
+{
+    return soAnalyzer_ != nullptr;
+}
+
 std::unique_ptr<INaluAnalyzer> NaluAnalyzerFactory::CreateNaluAnalyzer(SFDCodecType codecType)
 {
-    return std::make_unique<NaluAnalyzerSoLoader>(codecType);
+    auto loader = std::make_unique<NaluAnalyzerSoLoader>(codecType);
+    if (!loader->IsValid()) {
+        return nullptr;
+    }
+    return loader;
 }
 
 } // namespace SFD

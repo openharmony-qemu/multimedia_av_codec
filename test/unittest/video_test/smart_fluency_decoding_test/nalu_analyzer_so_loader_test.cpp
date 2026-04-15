@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <memory>
-#include "nalu_analyzer/nalu_analyzer.h"
-#include "nalu_analyzer/nalu_analyzer_so_loader.h"
+#include "nalu_analyzer.h"
+#include "nalu_analyzer_so_loader.h"
 
 using namespace OHOS::MediaAVCodec::SFD;
 using namespace testing::ext;
@@ -19,7 +19,7 @@ protected:
  */
 HWTEST_F(NaluAnalyzerSoLoaderTest, FactoryCreate_AVC_001, TestSize.Level1)
 {
-    auto analyzer = NaluAnalyzerFactory::CreateAnalyzer(SFDCodecType::AVC);
+    auto analyzer = NaluAnalyzerFactory::CreateNaluAnalyzer(SFDCodecType::AVC);
     EXPECT_NE(analyzer, nullptr);
 }
 
@@ -30,7 +30,7 @@ HWTEST_F(NaluAnalyzerSoLoaderTest, FactoryCreate_AVC_001, TestSize.Level1)
  */
 HWTEST_F(NaluAnalyzerSoLoaderTest, FactoryCreate_HEVC_002, TestSize.Level1)
 {
-    auto analyzer = NaluAnalyzerFactory::CreateAnalyzer(SFDCodecType::HEVC);
+    auto analyzer = NaluAnalyzerFactory::CreateNaluAnalyzer(SFDCodecType::HEVC);
     EXPECT_NE(analyzer, nullptr);
 }
 
@@ -41,7 +41,7 @@ HWTEST_F(NaluAnalyzerSoLoaderTest, FactoryCreate_HEVC_002, TestSize.Level1)
  */
 HWTEST_F(NaluAnalyzerSoLoaderTest, FactoryCreate_VVC_003, TestSize.Level1)
 {
-    auto analyzer = NaluAnalyzerFactory::CreateAnalyzer(SFDCodecType::VVC);
+    auto analyzer = NaluAnalyzerFactory::CreateNaluAnalyzer(SFDCodecType::VVC);
     EXPECT_NE(analyzer, nullptr);
 }
 
@@ -52,7 +52,7 @@ HWTEST_F(NaluAnalyzerSoLoaderTest, FactoryCreate_VVC_003, TestSize.Level1)
  */
 HWTEST_F(NaluAnalyzerSoLoaderTest, FactoryCreate_Invalid_004, TestSize.Level1)
 {
-    auto analyzer = NaluAnalyzerFactory::CreateAnalyzer(SFDCodecType::INVALID);
+    auto analyzer = NaluAnalyzerFactory::CreateNaluAnalyzer(SFDCodecType::INVALID);
     EXPECT_NE(analyzer, nullptr);
 }
 
@@ -63,7 +63,7 @@ HWTEST_F(NaluAnalyzerSoLoaderTest, FactoryCreate_Invalid_004, TestSize.Level1)
  */
 HWTEST_F(NaluAnalyzerSoLoaderTest, IsNonRef_WithNullBuffer_005, TestSize.Level1)
 {
-    auto analyzer = NaluAnalyzerFactory::CreateAnalyzer(SFDCodecType::AVC);
+    auto analyzer = NaluAnalyzerFactory::CreateNaluAnalyzer(SFDCodecType::AVC);
     if (analyzer) {
         EXPECT_FALSE(analyzer->IsNonReferenceFrame(nullptr));
     }

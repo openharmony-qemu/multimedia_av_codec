@@ -46,7 +46,7 @@ SmartFluencyDecodingDumper::~SmartFluencyDecodingDumper()
 
 bool SmartFluencyDecodingDumper::IsDirectoryExist(const std::string& path)
 {
-    struct stat st = {0};
+    struct stat st = {};
     if (stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode)) {
         return true;
     }
@@ -146,7 +146,7 @@ std::string SmartFluencyDecodingDumper::GetTimestampString()
 {
     auto now = std::chrono::system_clock::now();
     auto timeVal = std::chrono::system_clock::to_time_t(now);
-    struct tm tmInfo = {0};
+    struct tm tmInfo = {};
     localtime_r(&timeVal, &tmInfo);
     std::stringstream ss;
     ss << std::put_time(&tmInfo, "%Y%m%d_%H%M%S");

@@ -61,6 +61,7 @@ codec_server_coverage_include_dirs = [
   "$av_codec_root_dir/services/engine/common/include/",
   "$av_codec_root_dir/services/include",
   "$av_codec_root_dir/services/services/codec/server/video",
+  "$av_codec_root_dir/services/services/codec/server/video/features/smart_fluency_decoding/interfaces",
   "$av_codec_root_dir/services/services/common",
   "$av_codec_root_dir/services/services/common/event_manager/",
   "$av_codec_root_dir/services/services/codec/server/video/post_processing",
@@ -98,8 +99,7 @@ ohos_unittest("video_codec_server_coverage_unit_test") {
   if (av_codec_enable_special_codec) {
     defines += [ "AV_CODEC_AUDIO_SPECIAL_CAPACITY" ]
   }
-
-  defines += [ "SFD_ENABLED" ]
+  defines += [ "SFD_ENABLED", "SFD_DEBUG" ]
 
   sources = [
     "$av_codec_root_dir/frameworks/native/common/avcodec_errors.cpp",
@@ -136,6 +136,7 @@ ohos_unittest("video_codec_server_coverage_unit_test") {
     ":av_codec_engine_codeclist_mock",  # av_codec_engine_codeclist_mock
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/services/services/codec/server/video/features/smart_fluency_decoding:smart_fluency_decoding",
     "$av_codec_root_dir/services/services/common/adaptive_framerate_controller:adaptive_framerate_controller",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
   ]

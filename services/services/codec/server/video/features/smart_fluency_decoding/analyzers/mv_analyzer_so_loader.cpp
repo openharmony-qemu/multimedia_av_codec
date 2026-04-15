@@ -107,12 +107,21 @@ SFDCodecType MvAnalyzerSoLoader::GetCodecType() const
     return codecType_;
 }
 
+bool MvAnalyzerSoLoader::IsValid() const
+{
+    return soAnalyzer_ != nullptr;
+}
+
 std::unique_ptr<IMvAnalyzer> MvAnalyzerFactory::CreateMvAnalyzer(SFDCodecType codecType)
 {
     if (!IsCodecSupported(codecType)) {
         return nullptr;
     }
-    return std::make_unique<MvAnalyzerSoLoader>(codecType);
+    auto loader = std::make_unique<MvAnalyzerSoLoader>(codecType);
+    if (!loader->IsValid()) {
+        return nullptr;
+    }
+    return loader;
 }
 
 bool MvAnalyzerFactory::IsCodecSupported(SFDCodecType codecType)

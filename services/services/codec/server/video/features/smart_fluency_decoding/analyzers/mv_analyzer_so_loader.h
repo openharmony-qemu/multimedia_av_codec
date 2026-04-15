@@ -32,6 +32,7 @@ public:
     void SetVideoInfo(uint32_t width, uint32_t height) override;
     MVStats Analyze(const uint8_t *buffer) override;
     SFDCodecType GetCodecType() const override;
+    bool IsValid() const;
 
 private:
     bool LoadLibrary();

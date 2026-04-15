@@ -125,7 +125,7 @@ HWTEST_F(SFDBuilderTest, SetFromFormat_Comprehensive_006, TestSize.Level1)
 HWTEST_F(SFDBuilderTest, EnableMVOutput_FormatTag_007, TestSize.Level1)
 {
     Format format;
-    SmartFluencyDecodingBuilder::EnableMVOutput(format);
+    SmartFluencyDecodingBuilder::EnableMVOutput("video/avc", true, format);
     int32_t mvUpload = 0;
     EXPECT_TRUE(format.GetIntValue(Tag::VIDEO_DECODER_ENABLE_MV_UPLOAD, mvUpload));
     EXPECT_EQ(mvUpload, 1);

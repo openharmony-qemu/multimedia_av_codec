@@ -1,11 +1,16 @@
 #include <gtest/gtest.h>
 #include <memory>
 #include <optional>
-#include "strategies/fixed_ratio_retention_strategy.h"
-#include "strategies/auto_fallback_retention_strategy.h"
-#include "strategies/adaptive_retention_strategy.h"
-#include "strategies/full_retention_strategy.h"
-#include "strategies/retention_strategy_factory.h"
+// #include "strategies/fixed_ratio_retention_strategy.h"
+// #include "strategies/auto_fallback_retention_strategy.h"
+// #include "strategies/adaptive_retention_strategy.h"
+// #include "strategies/full_retention_strategy.h"
+// #include "strategies/retention_strategy_factory.h"
+#include "fixed_ratio_retention_strategy.h"
+#include "auto_fallback_retention_strategy.h"
+#include "adaptive_retention_strategy.h"
+#include "full_retention_strategy.h"
+#include "retention_strategy_factory.h"
 
 using namespace OHOS::MediaAVCodec::SFD;
 using namespace testing::ext;
