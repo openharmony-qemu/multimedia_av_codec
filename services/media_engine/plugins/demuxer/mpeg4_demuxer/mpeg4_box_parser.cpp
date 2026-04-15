@@ -2558,7 +2558,7 @@ Status MPEG4AtomParser::ParseColorParams(int64_t offset, uint64_t dataSize, cons
     if (colorType == "nclx" && dataSize >= 0x07) { // nclx类型有额外的color range信息
         uint8_t nclxColorRange = (colorParams[colorRangeOffset] >> 0x07) & 1;  // 取最高位
         if (nclxColorRange) {
-            colorRange = 1
+            colorRange = 1;
         }
     }
     std::string mimeType;
