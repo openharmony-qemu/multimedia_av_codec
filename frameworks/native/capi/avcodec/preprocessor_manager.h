@@ -24,11 +24,11 @@
 #include <queue>
 #include <set>
 #include <string>
-#include <string_view>
 #include <thread>
 #include <vector>
 #include "preprocessor.h"
 #include "surface.h"
+#include "sync_fence.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -52,24 +52,26 @@ private:
         enum SurfaceType {
             PRODUCER,
             CONSUMER,
-        } surfaceType;
+        };
 
-        sptr<SyncFence> fence{nullptr};
-        sptr<SurfaceBuffer> buffer{nullptr};
         wptr<Surface> surface{nullptr};
+        sptr<SurfaceBuffer> buffer{nullptr};
+        sptr<SyncFence> fence{nullptr};
+        SurfaceType surfaceType;
         int64_t timestamp{0};
         BufferFlushConfig flushConfig{};
         bool isProcessed{false};
 
+        SurfaceBufferWrapper() = default;
         SurfaceBufferWrapper(wptr<Surface> argSurface, sptr<SurfaceBuffer> buf,
                              sptr<SyncFence> argFence, SurfaceType type)
-            : surface(argSurface), buffer(buf), fence(argFence), surfaceType(type) {};
+            : surface(argSurface), buffer(buf), fence(argFence), surfaceType(type) {}
         ~SurfaceBufferWrapper();
     };
 
-    class EncoderInfo : std::enable_shared_from_this {
+    class EncoderInfo : public std::enable_shared_from_this<EncoderInfo> {
     public:
-        explicit EncoderInfo(std::string_view encoderId) : encoderId_(encoderId) {}
+        explicit EncoderInfo(std::string encoderId) : encoderId_(std::move(encoderId)) {}
         ~EncoderInfo();
         void Init(std::shared_ptr<Preprocessor> preprocessor, sptr<Surface> surface);
         int32_t Start();
@@ -93,12 +95,12 @@ private:
         bool isRunning_{false};
         std::mutex bufferQueueMutex_;
         std::condition_variable bufferQueueCv_;
-        std::string_view encoderId_;
+        std::string encoderId_;
     };
 
     sptr<Surface> sharedConsumerSurface_{nullptr};
     sptr<Surface> sharedProducerSurface_{nullptr};
-    std::map<std::string_view, EncoderInfo> encoders_{};
+    std::map<std::string, std::shared_ptr<EncoderInfo>> encoders_{};
     std::mutex mutex_;
 };
 

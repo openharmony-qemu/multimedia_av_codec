@@ -66,9 +66,6 @@ PreprocessorEncoder::PreprocessorEncoder(AVMagic magic) : OH_AVCodec(magic)
 PreprocessorEncoder::~PreprocessorEncoder()
 {
     UnregisterEncoderFromManager();
-    if (preprocMgr_) {
-        preprocMgr_->Stop();
-    }
     AVCODEC_LOGI("PreprocessorEncoder destroyed");
 }
 
