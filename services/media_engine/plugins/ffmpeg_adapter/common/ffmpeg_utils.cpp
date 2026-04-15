@@ -51,6 +51,7 @@ bool Mime2CodecId(const std::string &mime, AVCodecID &codecId)
         {MimeType::AUDIO_FLAC, AV_CODEC_ID_FLAC},
         {MimeType::AUDIO_OPUS, AV_CODEC_ID_OPUS},
         {MimeType::AUDIO_VORBIS, AV_CODEC_ID_VORBIS},
+        {MimeType::AUDIO_AVS3DA, AV_CODEC_ID_AVS3DA},
         {MimeType::VIDEO_MPEG4, AV_CODEC_ID_MPEG4},
         {MimeType::VIDEO_AVC, AV_CODEC_ID_H264},
         {MimeType::VIDEO_HEVC, AV_CODEC_ID_HEVC},
