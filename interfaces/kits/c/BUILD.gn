@@ -368,7 +368,17 @@ ohos_shared_library("native_media_venc") {
   public_configs = [ ":av_codec_capi_header_config" ]
   configs = [ ":av_codec_capi_compile_config" ]
 
+  include_dirs = [
+    "$av_codec_root_dir/frameworks/native/avcodec/pre_processing",
+    "$av_codec_root_dir/frameworks/native/avcodec/pre_processing/fast_kits_interface",
+    "$av_codec_root_dir/frameworks/native/avcodec/pre_processing/frame_drop",
+    "$av_codec_root_dir/services/dfx/include",
+    "$av_codec_root_dir/interfaces/inner_api/native",
+  ]
+
   deps = [
+    "$av_codec_root_dir/frameworks/native/avcodec/pre_processing/fast_kits_interface:fast_image_loader",
+    "$av_codec_root_dir/frameworks/native/avcodec/pre_processing/frame_drop:frame_drop",
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
     "$av_codec_root_dir/interfaces/kits/c:native_media_codecbase",
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
@@ -378,6 +388,7 @@ ohos_shared_library("native_media_venc") {
   external_deps = [
     "c_utils:utils",
     "graphic_surface:surface",
+    "graphic_surface:sync_fence",
     "hilog:libhilog",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
