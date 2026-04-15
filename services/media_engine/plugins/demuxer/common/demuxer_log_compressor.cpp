@@ -69,6 +69,7 @@ static std::unordered_map<TagType, std::string> g_formatToIndex = {
     {Tag::MEDIA_HAS_VIDEO,                "hasVid"},
     {Tag::MEDIA_LANGUAGE,                 "lang"},
     {Tag::MEDIA_LATITUDE,                 "latitude"},
+    {Tag::MEDIA_ALTITUDE,                 "altitude"},
     {Tag::MEDIA_LEVEL,                    "level"},
     {Tag::MEDIA_LONGITUDE,                "longitude"},
     {Tag::MEDIA_LYRICS,                   "lyrics"},
@@ -188,6 +189,9 @@ void DemuxerLogCompressor::StringifyMeta(Meta meta, int32_t trackIndex)
     }
     if (meta.Find(std::string(Tag::MEDIA_LONGITUDE)) != meta.end()) {
         meta.SetData(std::string(Tag::MEDIA_LONGITUDE), "*");
+    }
+    if (meta.Find(std::string(Tag::MEDIA_ALTITUDE)) != meta.end()) {
+        meta.SetData(std::string(Tag::MEDIA_ALTITUDE), "*");
     }
     if (meta.Find(std::string(Tag::TIMED_METADATA_KEY)) != meta.end()) {
         meta.SetData(std::string(Tag::TIMED_METADATA_KEY), "*");

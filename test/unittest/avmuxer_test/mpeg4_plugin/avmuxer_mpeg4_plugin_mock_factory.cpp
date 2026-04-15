@@ -15,6 +15,7 @@
 
 #include "avmuxer_mock.h"
 #include "avmuxer_mpeg4_plugin_mock.h"
+#include "plugin/plugin_manager_v2.h"
 #include "mpeg4_muxer_plugin.h"
 #include "data_sink_fd.h"
 
@@ -33,8 +34,9 @@ std::shared_ptr<AVMuxerMock> AVMuxerMockFactory::CreateMuxer(int32_t fd, const O
     if (table.find(format) != table.end()) {
         name = table.at(format);
     }
+    auto muxer = PluginManagerV2::Instance().CreatePluginByName(name);
     return std::make_shared<AVMuxerMpeg4PluginMock>(std::make_shared<DataSinkFd>(fd),
-        std::make_shared<Mpeg4::Mpeg4MuxerPlugin>(name));
+        std::reinterpret_pointer_cast<MuxerPlugin>(muxer));
 }
 }  // namespace MediaAVCodec
 }  // namespace OHOS
