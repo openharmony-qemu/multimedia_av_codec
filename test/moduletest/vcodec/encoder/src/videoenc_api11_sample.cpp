@@ -127,23 +127,14 @@ static void onEncOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVB
     signal->outCond_.notify_all();
 }
 
-static void onEncInputParamRoi(OH_AVCodec *codec, uint32_t index, OH_AVFormat *parameter, void *userData)
+static void onEncInputParam(OH_AVCodec *codec, uint32_t index, OH_AVFormat *parameter, void *userData)
 {
+    static bool useLtrOnce = false;
     if (enc_sample == nullptr || enc_sample->roiInfo == nullptr) {
         cout << "enc_sample or roiInfo is null" << endl;
         return;
     }
     OH_AVFormat_SetStringValue(parameter, OH_MD_KEY_VIDEO_ENCODER_ROI_PARAMS, enc_sample->roiInfo);
-    if (!parameter || !userData) {
-        return;
-    }
-    OH_VideoEncoder_PushInputParameter(codec, index);
-}
-
-
-static void onEncInputParam(OH_AVCodec *codec, uint32_t index, OH_AVFormat *parameter, void *userData)
-{
-    static bool useLtrOnce = false;
     if (!parameter || !userData) {
         return;
     }
@@ -362,11 +353,7 @@ int32_t VEncAPI11Sample::SetVideoEncoderCallback()
     }
     if (SURF_INPUT) {
         int32_t ret;
-        if (enableRoi) {
-            ret = OH_VideoEncoder_RegisterParameterCallback(venc_, onEncInputParamRoi, static_cast<void *>(this));
-        } else {
-            ret = OH_VideoEncoder_RegisterParameterCallback(venc_, onEncInputParam, static_cast<void *>(this));
-        }
+        ret = OH_VideoEncoder_RegisterParameterCallback(venc_, onEncInputParam, static_cast<void *>(this));
         if (ret != AV_ERR_OK) {
             return ret;
         }

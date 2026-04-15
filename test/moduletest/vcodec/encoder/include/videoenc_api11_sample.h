@@ -213,7 +213,6 @@ public:
     bool enableRepeat = false;
     bool enableSeekEos = false;
     bool setMaxCount = false;
-    bool enableRoi = false;
     int32_t DEFAULT_FRAME_AFTER = 1;
     int32_t DEFAULT_MAX_COUNT = 1;
     uint32_t inCount = 0;
