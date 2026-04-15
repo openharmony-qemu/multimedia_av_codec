@@ -352,8 +352,7 @@ int32_t VEncAPI11Sample::SetVideoEncoderCallback()
         return AV_ERR_UNKNOWN;
     }
     if (SURF_INPUT) {
-        int32_t ret;
-        ret = OH_VideoEncoder_RegisterParameterCallback(venc_, onEncInputParam, static_cast<void *>(this));
+        int32_t ret = OH_VideoEncoder_RegisterParameterCallback(venc_, onEncInputParam, static_cast<void *>(this));
         if (ret != AV_ERR_OK) {
             return ret;
         }
