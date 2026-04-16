@@ -15,6 +15,11 @@
 
 #include "drop_sync_coordinator.h"
 #include <algorithm>
+#include "avcodec_log_ex.h"
+
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "SfdSync"};
+}
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -24,10 +29,12 @@ bool DropSyncCoordinator::RecordPreDroppedFrame(int64_t droppedPts)
     size_t currentWrite = writeIndex_.load(std::memory_order_relaxed);
     size_t nextWrite = currentWrite + 1;
     if ((nextWrite - readIndex_.load(std::memory_order_acquire)) > queueCapacity) {
+        AVCODEC_LOGW("SfdSync: RecordPreDroppedFrame queue overflow at PTS %{public}" PRId64, droppedPts);
         return false;
     }
     ptsRingBuffer_[currentWrite & queueMask] = droppedPts;
     writeIndex_.store(nextWrite, std::memory_order_release);
+    AVCODEC_LOGD("SfdSync: Recorded pre-dropped PTS %{public}" PRId64, droppedPts);
     return true;
 }
 
@@ -47,6 +54,7 @@ uint32_t DropSyncCoordinator::GetAndConsumePreDroppedCount(int64_t currentPts)
     }
     if (count > 0) {
         readIndex_.store(currentRead, std::memory_order_release);
+        AVCODEC_LOGD("SfdSync: Consumed %{public}u pre-dropped frames before PTS %{public}" PRId64, count, currentPts);
     }
     return count;
 }
@@ -57,6 +65,7 @@ void DropSyncCoordinator::Reset()
     readIndex_.store(0, std::memory_order_relaxed);
     std::lock_guard<std::mutex> lock(feedbackMutex_);
     currentEmaDropRatio_ = 0.0;
+    AVCODEC_LOGI("SfdSync: Reset DropSyncCoordinator");
 }
 
 double DropSyncCoordinator::GetCurrentEma() const
@@ -83,6 +92,8 @@ void DropSyncCoordinator::UpdateFeedback(uint32_t preDroppedCount, bool currentD
     double currentVal = currentDropped ? 1.0 : 0.0;
     currentEmaDropRatio_ = alpha * currentVal + (1.0 - alpha) * currentEmaDropRatio_;
     targetRetentionRatio_ = targetRetentionRatio;
+    AVCODEC_LOGD("SfdSync: UpdateFeedback: preCnt=%{public}u, currDrop=%{public}d, targetRat=%{public}.2f, "
+                 "currEma=%{public}.4f", preDroppedCount, currentDropped, targetRetentionRatio, currentEmaDropRatio_);
 }
 } // namespace SFD
 } // namespace MediaAVCodec

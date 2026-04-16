@@ -243,6 +243,7 @@ void SmartFluencyDecoding::InitializeWithCsd(const std::vector<uint8_t>& csdData
                 AVCODEC_LOGE("CSD_DEBUG: Failed to copy CSD data");
                 return;
             }
+            tmpBuffer->memory_->SetSize(csdData.size());
             tmpBuffer->flag_ = AVCODEC_BUFFER_FLAG_CODEC_DATA;
             // TODO: remove
             std::string hexStr;
@@ -397,7 +398,9 @@ int64_t SmartFluencyDecoding::GetCurrentSysTimeMs()
 void SmartFluencyDecoding::ParseMVData(const sptr<SurfaceBuffer> surfaceBuffer, MVStats& mvStats)
 {
     mvStats = MVStats();
-    CHECK_AND_RETURN_LOG(mvAnalyzer_ != nullptr, "parse MV Data failed! mvParser don't exist");
+    if (mvAnalyzer_ == nullptr) {
+        return;
+    }
     CHECK_AND_RETURN_LOG(surfaceBuffer != nullptr, "parse MV Data failed! surfaceBuffer don't exist");
     using namespace HDI::Display::Graphic::Common;
     std::vector<uint8_t> vec;

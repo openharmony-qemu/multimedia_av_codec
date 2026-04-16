@@ -53,7 +53,7 @@ public:
 private:
     void CacheCsdData(uint32_t index);
     bool IsCodecSupported(const std::string& codecMime, AVCodecType codecType);
-    std::vector<uint8_t> ExtractCsdData(const std::shared_ptr<AVBuffer>& buffer);
+    void ExtractCsdData(const std::shared_ptr<AVBuffer>& buffer);
 #ifdef SFD_DEBUG
     void ApplyDebugConfig(Media::Format& format);
     void CheckAndTriggerDebugConfig();

@@ -145,6 +145,40 @@ bool SmartFluencyDecodingManager::MakePostDecodeDecision(uint32_t index, const s
     return true;
 }
 
+void SmartFluencyDecodingManager::ExtractCsdData(const std::shared_ptr<AVBuffer>& buffer)
+{
+    if (!buffer || !buffer->memory_) {
+        AVCODEC_LOGD_WITH_TAG("CSD_DEBUG: ExtractCsdData failed, buffer or memory is null");
+        return;
+    }
+    uint8_t* data = buffer->memory_->GetAddr();
+    int32_t size = buffer->memory_->GetSize();
+    if (!data || size <= MIN_CSD_SIZE) {
+        AVCODEC_LOGD_WITH_TAG("CSD_DEBUG: ExtractCsdData failed, data is null or size (=%{public}d) <= MIN (%{public}d)",
+                              size, MIN_CSD_SIZE);
+        return;
+    }
+    int32_t currentSize = static_cast<int32_t>(cachedCsdData_.size());
+    if (currentSize >= DEFAULT_CSD_COPY_SIZE) {
+        return;
+    }
+    int32_t needed = DEFAULT_CSD_COPY_SIZE - currentSize;
+    int32_t copySize = std::min(size, needed);
+    if (buffer->flag_ == AVCODEC_BUFFER_FLAG_CODEC_DATA) {
+        cachedCsdData_.insert(cachedCsdData_.end(), data, data + copySize);
+        AVCODEC_LOGI_WITH_TAG("CSD_DEBUG: Appended %{public}d bytes CODEC_DATA. Total CSD size: %{public}zu",
+                              copySize, cachedCsdData_.size());
+        return;
+    }
+    if (buffer->flag_ & (AVCODEC_BUFFER_FLAG_CODEC_DATA | AVCODEC_BUFFER_FLAG_SYNC_FRAME)) {
+        cachedCsdData_.insert(cachedCsdData_.end(), data, data + copySize);
+        AVCODEC_LOGI_WITH_TAG("CSD_DEBUG: Fast appended %{public}d bytes with flags %{public}u. Total CSD size: %{public}zu",
+                              copySize, buffer->flag_, cachedCsdData_.size());
+        return;
+    }
+    AVCODEC_LOGD_WITH_TAG("CSD_DEBUG: ExtractCsdData didn't match flags, buffer->flag_=%{public}u", buffer->flag_);
+}
+
 void SmartFluencyDecodingManager::CacheCsdData(uint32_t index)
 {
     if (codecType_ != AVCODEC_TYPE_VIDEO_DECODER || isCsdCached_) {
@@ -160,10 +194,13 @@ void SmartFluencyDecodingManager::CacheCsdData(uint32_t index)
         }
     }
     if (csdAttemptBuffer) {
-        cachedCsdData_ = ExtractCsdData(csdAttemptBuffer);
-        if (!cachedCsdData_.empty()) {
+        ExtractCsdData(csdAttemptBuffer);
+        bool isEnoughSize = (cachedCsdData_.size() >= DEFAULT_CSD_COPY_SIZE);
+        bool isSyncFrame = ((csdAttemptBuffer->flag_ & AVCODEC_BUFFER_FLAG_SYNC_FRAME) != 0);
+
+        if (!cachedCsdData_.empty() && (isEnoughSize || isSyncFrame)) {
             isCsdCached_ = true;
-            // TODO: remove
+            // ´òÓ¡Ç° 16 ×Ö½Ú
             std::string hexStr;
             char buf[8] = {0};
             size_t printSize = std::min(cachedCsdData_.size(), static_cast<size_t>(16));
@@ -171,7 +208,7 @@ void SmartFluencyDecodingManager::CacheCsdData(uint32_t index)
                 snprintf(buf, sizeof(buf), "%02X ", cachedCsdData_[i]);
                 hexStr += buf;
             }
-            AVCODEC_LOGI_WITH_TAG("CSD_DEBUG: Cached CSD (Size: %{public}zu), First %{public}zu bytes: [%{public}s]",
+            AVCODEC_LOGI_WITH_TAG("CSD_DEBUG: *** CSD Finalized *** (Size: %{public}zu), First %{public}zu bytes: [%{public}s]",
                                   cachedCsdData_.size(), printSize, hexStr.c_str());
             std::lock_guard<std::mutex> csdLock(tempCsdMutex_);
             tempCsdBufferMap_.clear();
@@ -224,36 +261,6 @@ bool SmartFluencyDecodingManager::IsCodecSupported(const std::string& codecMime,
         return false;
     }
     return true;
-}
-
-std::vector<uint8_t> SmartFluencyDecodingManager::ExtractCsdData(const std::shared_ptr<AVBuffer>& buffer)
-{
-    std::vector<uint8_t> csdData;
-    if (!buffer || !buffer->memory_) {
-        AVCODEC_LOGD_WITH_TAG("CSD_DEBUG: ExtractCsdData failed, buffer or memory is null");
-        return csdData;
-    }
-    uint8_t* data = buffer->memory_->GetAddr();
-    int32_t size = buffer->memory_->GetSize();
-    if (!data || size <= MIN_CSD_SIZE) {
-        AVCODEC_LOGD_WITH_TAG("CSD_DEBUG: ExtractCsdData failed, data is null or size (=%{public}d) <= MIN (%{public}d)",
-                              size, MIN_CSD_SIZE);
-        return csdData;
-    }
-    if (buffer->flag_ == AVCODEC_BUFFER_FLAG_CODEC_DATA) {
-        csdData.assign(data, data + size);
-        AVCODEC_LOGI_WITH_TAG("CSD_DEBUG: Extracted %{public}d bytes full pure CODEC_DATA buffer", size);
-        return csdData;
-    }
-    if (buffer->flag_ & (AVCODEC_BUFFER_FLAG_CODEC_DATA | AVCODEC_BUFFER_FLAG_SYNC_FRAME)) {
-        int32_t copySize = std::min(size, DEFAULT_CSD_COPY_SIZE);
-        csdData.assign(data, data + copySize);
-        AVCODEC_LOGI_WITH_TAG("CSD_DEBUG: Fast extracted %{public}d bytes as CSD with flags %{public}u",
-                              copySize, buffer->flag_);
-        return csdData;
-    }
-    AVCODEC_LOGD_WITH_TAG("CSD_DEBUG: ExtractCsdData didn't match flags, buffer->flag_=%{public}u", buffer->flag_);
-    return csdData;
 }
 
 void SmartFluencyDecodingManager::CleanResources()
