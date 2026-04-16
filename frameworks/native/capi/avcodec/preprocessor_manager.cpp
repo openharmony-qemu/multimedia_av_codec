@@ -240,7 +240,8 @@ int32_t PreprocessorManager::EncoderInfo::CheckAndAllocateSurfaceBufferFromEncSu
         .format = preprocessor_->GetConfiguredPixelFormat(),
     };
     requestConfig.strideAlignment = BUFFER_REQUEST_STRIDE_ALIGNMENT;
-    requestConfig.usage = encoderSurface_->GetDefaultUsage();
+    requestConfig.usage = encoderSurface_->GetDefaultUsage() |
+        BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_MMZ_CACHE;
 
     for (uint32_t idx = 0; idx < allocTimes; idx++) {
         auto surfaceBuffer = SurfaceBuffer::Create();
