@@ -1481,7 +1481,8 @@ void HlsSegmentManager::SeekToTs(uint64_t seekTime, SeekMode mode)
     isDownloadStarted_ = false;
     playList_->Clear();
     int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
-    for (const auto &item : SeekListHelper(playlistDownloader_->IsLive())) {
+    seekPlayList_ = SeekListHelper(playlistDownloader_->IsLive());
+    for (const auto &item : seekPlayList_) {
         if (CheckLoopTimeout(loopStartTime)) {
             break;
         }
@@ -1522,11 +1523,7 @@ int64_t HlsSegmentManager::RequestNewTs(uint64_t seekTime, SeekMode mode, double
         if (static_cast<uint64_t>(lastTotalDuration) <= seekTime) {
             startTimePos = static_cast<int64_t>(seekTime) - static_cast<int64_t>(lastTotalDuration);
             seekStartTimePos_ = lastTotalDuration;
-            auto* playlistptr = &backPlayList_;
-            if (playlistDownloader_ != nullptr && playlistDownloader_->IsLive()) {
-                playlistptr = &seekCandidates_;
-            }
-            if (startTimePos > (int64_t)(hstTime / HALF_DIVIDE) && (&item != &(playlistptr->back()))) { // 2
+            if (startTimePos > (int64_t)(hstTime / HALF_DIVIDE) && (&item != &(seekPlayList_.back()))) { // 2
                 writeTsIndex_++;
                 seekStartTimePos_ = totalDuration;
                 MEDIA_LOG_I("writeTsIndex, RequestNewTs update writeTsIndex " PUBLIC_LOG_U32 ", type: %{public}d",
