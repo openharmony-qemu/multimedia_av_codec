@@ -34,20 +34,19 @@ public:
     ~FrameDropFilter() = default;
 
     int32_t Configure(double dropToFps, double frameRate);
-    bool ShouldDropFrame(int64_t pts);
-    int32_t Reset();
+    bool ShouldDropFrame(uint64_t pts);
+    void FlushTimeStamp();
 
 private:
     double dropToFps_ = 0.0;
     double frameRate_ = 0.0;
 
     bool strategyDecided_ = false;
-    int64_t firstPts_ = -1;
+    bool hasFirstPts_ = false;
+    uint64_t firstPts_ = 0;
 
     std::unique_ptr<IDropStrategy> activeStrategy_;
 
-    uint64_t totalFrames_ = 0;
-    uint64_t droppedFrames_ = 0;
     std::mutex mutex_;
 };
 

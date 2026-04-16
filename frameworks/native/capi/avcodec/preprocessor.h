@@ -30,20 +30,15 @@ namespace MediaAVCodec {
 
 class Preprocessor {
 public:
-    explicit Preprocessor(const std::string &mime) : mime_(mime)
-    {
-        fastKitsInterface_.Retain();
-    }
-    ~Preprocessor()
-    {
-        fastKitsInterface_.Release();
-    }
+    explicit Preprocessor(const std::string &mime);
+    ~Preprocessor();
 
     int32_t Configure(const Media::Format &format);
     int32_t SetParameter(const Media::Format &format);
 
     int32_t Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output);
-    bool ShouldDropFrame(int64_t pts);
+    bool ShouldDropFrame(uint64_t pts);
+    void FlushTimeStamp();
 
     bool IsCropEnabled() const;
     bool IsDownsamplingEnabled() const;
@@ -53,6 +48,7 @@ public:
     GraphicPixelFormat GetConfiguredPixelFormat() const;
     int32_t GetOutputWidth() const;
     int32_t GetOutputHeight() const;
+
 private:
     enum class ConfigResult { NOT_SET, DISABLED, ENABLED };
 

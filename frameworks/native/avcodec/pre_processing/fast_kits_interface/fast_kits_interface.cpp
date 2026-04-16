@@ -30,6 +30,15 @@ FastKitsInterface &FastKitsInterface::GetInstance()
     return instance;
 }
 
+FastKitsInterface::~FastKitsInterface()
+{
+    if (handle_ != nullptr) {
+        ClearSymbols();
+        dlclose(handle_);
+        handle_ = nullptr;
+    }
+}
+
 void FastKitsInterface::Retain()
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -132,8 +141,8 @@ bool FastKitsInterface::ReadSymbols()
     return LoadSymbol(handle_, initFunc_, "Fast_Scale_Init") &&
            LoadSymbol(handle_, downSampleFunc_, "Fast_Scale_DownSample") &&
            LoadSymbol(handle_, cropFunc_, "Fast_Scale_Crop") &&
-           LoadSymbol(handle_, createRectFunc_, "createCropRect") &&
-           LoadSymbol(handle_, destroyRectFunc_, "destroyCropRect");
+           LoadSymbol(handle_, createRectFunc_, "CreateCropRect") &&
+           LoadSymbol(handle_, destroyRectFunc_, "DestroyCropRect");
 }
 
 void FastKitsInterface::ClearSymbols()

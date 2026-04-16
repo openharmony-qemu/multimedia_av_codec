@@ -28,14 +28,16 @@ enum class DropStrategyType { RATIO, TIMESTAMP };
 class IDropStrategy {
 public:
     virtual ~IDropStrategy() = default;
-    virtual bool ShouldDropFrame(int64_t pts, uint64_t frameIndex) = 0;
+    virtual bool ShouldDropFrame(uint64_t pts) = 0;
+    virtual void FlushTimeStamp() = 0;
     virtual DropStrategyType GetType() const = 0;
 };
 
 class RatioDropStrategy : public IDropStrategy {
 public:
     RatioDropStrategy(double srcFrameRate, double targetFrameRate);
-    bool ShouldDropFrame(int64_t pts, uint64_t frameIndex) override;
+    bool ShouldDropFrame(uint64_t pts) override;
+    void FlushTimeStamp() override;
     DropStrategyType GetType() const override;
 
 private:
@@ -48,12 +50,14 @@ private:
 class TimestampDropStrategy : public IDropStrategy {
 public:
     explicit TimestampDropStrategy(double targetFrameRate);
-    bool ShouldDropFrame(int64_t pts, uint64_t frameIndex) override;
+    bool ShouldDropFrame(uint64_t pts) override;
+    void FlushTimeStamp() override;
     DropStrategyType GetType() const override;
 
 private:
-    int64_t lastKeptPts_{-1};
-    int64_t frameIntervalUs_;
+    uint64_t basePts_{0};
+    bool hasBase_{false};
+    uint64_t frameIntervalUs_{0};
 };
 
 } // namespace PreProcessing

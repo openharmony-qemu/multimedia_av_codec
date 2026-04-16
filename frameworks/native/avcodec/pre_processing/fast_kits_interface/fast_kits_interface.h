@@ -69,7 +69,7 @@ public:
 
 private:
     FastKitsInterface() = default;
-    ~FastKitsInterface() = default;
+    ~FastKitsInterface();
     FastKitsInterface(const FastKitsInterface &) = delete;
     FastKitsInterface &operator=(const FastKitsInterface &) = delete;
 

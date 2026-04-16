@@ -14,15 +14,15 @@
  */
 
 #include "preprocessor_encoder.h"
-#include "avcodec_log.h"
 #include "avcodec_errors.h"
+#include "avcodec_log.h"
 #include "media_core.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "PreprocessorEncoder"};
 constexpr size_t MAX_LENGTH = 255;
 // constexpr int32_t BUFFER_REQUEST_STRIDE_ALIGNMENT = 32;
-}
+} // namespace
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -42,7 +42,7 @@ bool PreprocessorEncoder::IsPreprocEncoderMagic(AVMagic magic)
     return IsPrimaryEncoderMagic(magic) || IsSecondaryEncoderMagic(magic);
 }
 
-bool PreprocessorEncoder::IsValidPreprocEncoderMime(const char* mime)
+bool PreprocessorEncoder::IsValidPreprocEncoderMime(const char *mime)
 {
     CHECK_AND_RETURN_RET_LOG(mime != nullptr, false, "Mime is nullptr!");
     size_t len = strnlen(mime, MAX_LENGTH);
@@ -51,7 +51,7 @@ bool PreprocessorEncoder::IsValidPreprocEncoderMime(const char* mime)
     return mimeStr == OH_AVCODEC_MIMETYPE_VIDEO_HEVC || mimeStr == OH_AVCODEC_MIMETYPE_VIDEO_AVC;
 }
 
-std::string PreprocessorEncoder::GenerateEncoderId(const std::string& prefix)
+std::string PreprocessorEncoder::GenerateEncoderId(const std::string &prefix)
 {
     static std::atomic<uint64_t> counter{0};
     uint64_t id = counter.fetch_add(1);
@@ -69,7 +69,7 @@ PreprocessorEncoder::~PreprocessorEncoder()
     AVCODEC_LOGI("PreprocessorEncoder destroyed");
 }
 
-OH_AVErrCode PreprocessorEncoder::CreatePrimary(const char* mime, OH_AVCodec** codec)
+OH_AVErrCode PreprocessorEncoder::CreatePrimary(const char *mime, OH_AVCodec **codec)
 {
     auto encoder = std::make_unique<PreprocessorEncoder>(AVMagic::AVCODEC_MAGIC_PRIMARY_VIDEO_ENCODER);
     CHECK_AND_RETURN_RET_LOG(encoder != nullptr, AV_ERR_NO_MEMORY, "PreprocessorEncoder create failed!");
@@ -81,11 +81,11 @@ OH_AVErrCode PreprocessorEncoder::CreatePrimary(const char* mime, OH_AVCodec** c
     return AV_ERR_OK;
 }
 
-OH_AVErrCode PreprocessorEncoder::CreateSecondary(OH_AVCodec* primary, OH_AVCodec** secondary)
+OH_AVErrCode PreprocessorEncoder::CreateSecondary(OH_AVCodec *primary, OH_AVCodec **secondary)
 {
-    auto* primaryEnc = reinterpret_cast<PreprocessorEncoder*>(primary);
-    CHECK_AND_RETURN_RET_LOG(primaryEnc->magic_ == AVMagic::AVCODEC_MAGIC_PRIMARY_VIDEO_ENCODER,
-                             AV_ERR_INVALID_VAL, "Primary magic error!");
+    auto *primaryEnc = reinterpret_cast<PreprocessorEncoder *>(primary);
+    CHECK_AND_RETURN_RET_LOG(primaryEnc->magic_ == AVMagic::AVCODEC_MAGIC_PRIMARY_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
+                             "Primary magic error!");
 
     CHECK_AND_RETURN_RET_LOG(primaryEnc->secondary_ == nullptr, AV_ERR_OPERATE_NOT_PERMIT,
                              "Secondary encoder already exists!");
@@ -100,7 +100,7 @@ OH_AVErrCode PreprocessorEncoder::CreateSecondary(OH_AVCodec* primary, OH_AVCode
     return AV_ERR_OK;
 }
 
-OH_AVErrCode PreprocessorEncoder::InitAsPrimary(const char* mime)
+OH_AVErrCode PreprocessorEncoder::InitAsPrimary(const char *mime)
 {
     isPrimary_ = true;
     mime_ = mime;
@@ -124,7 +124,7 @@ OH_AVErrCode PreprocessorEncoder::InitAsPrimary(const char* mime)
     return AV_ERR_OK;
 }
 
-OH_AVErrCode PreprocessorEncoder::InitAsSecondary(PreprocessorEncoder* primary)
+OH_AVErrCode PreprocessorEncoder::InitAsSecondary(PreprocessorEncoder *primary)
 {
     isPrimary_ = false;
     mime_ = primary->mime_;
@@ -178,15 +178,14 @@ void PreprocessorEncoder::UnregisterEncoderFromManager()
     }
 }
 
-OH_AVErrCode PreprocessorEncoder::RegisterCallback(struct OH_AVCodecCallback callback, void* userData)
+OH_AVErrCode PreprocessorEncoder::RegisterCallback(struct OH_AVCodecCallback callback, void *userData)
 {
     if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
         if (videoEncoderObject_->callback_ != nullptr) {
             videoEncoderObject_->callback_->UpdateCallback(callback, userData);
         } else {
-            videoEncoderObject_->callback_ = std::make_shared<NativeVideoEncoderCallback>(videoEncoderObject_.get(),
-                                                                                          callback,
-                                                                                          userData);
+            videoEncoderObject_->callback_ =
+                std::make_shared<NativeVideoEncoderCallback>(videoEncoderObject_.get(), callback, userData);
         }
         int32_t ret = videoEncoderObject_->videoEncoder_->SetCallback(
             std::static_pointer_cast<MediaCodecCallback>(videoEncoderObject_->callback_));
@@ -219,7 +218,7 @@ sptr<Surface> PreprocessorEncoder::GetSurface()
     return GetSharedSurface();
 }
 
-int32_t PreprocessorEncoder::ConfigureVideoEncoder(const Media::Format& format)
+int32_t PreprocessorEncoder::ConfigureVideoEncoder(const Media::Format &format)
 {
     if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
         int32_t ret = videoEncoderObject_->videoEncoder_->Configure(format);
@@ -228,7 +227,7 @@ int32_t PreprocessorEncoder::ConfigureVideoEncoder(const Media::Format& format)
     return AVCS_ERR_OK;
 }
 
-int32_t PreprocessorEncoder::ConfigurePreprocessor(const Media::Format& format)
+int32_t PreprocessorEncoder::ConfigurePreprocessor(const Media::Format &format)
 {
     auto preprocessor = GetPreprocessor();
     if (preprocessor) {
@@ -290,7 +289,10 @@ OH_AVErrCode PreprocessorEncoder::Start()
         CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                                  "Video encoder start failed!");
     }
-
+    auto preprocessor = GetPreprocessor();
+    if (preprocessor) {
+        preprocessor->FlushTimeStamp();
+    }
     if (preprocMgr_) {
         preprocMgr_->SetEncoderRunning(encoderId_, true);
     }

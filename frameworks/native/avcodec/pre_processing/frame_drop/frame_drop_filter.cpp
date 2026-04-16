@@ -27,73 +27,51 @@ namespace PreProcessing {
 int32_t FrameDropFilter::Configure(double dropToFps, double frameRate)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-
-    if (dropToFps <= 0.0) {
+    if (!std::isfinite(dropToFps) || dropToFps <= 0.0) {
         AVCODEC_LOGI("Drop filter not configured, disabled");
         return AVCS_ERR_OK;
     }
     dropToFps_ = dropToFps;
     frameRate_ = frameRate;
     strategyDecided_ = false;
-    firstPts_ = -1;
-    totalFrames_ = 0;
-    droppedFrames_ = 0;
+    hasFirstPts_ = false;
     AVCODEC_LOGI("Configured: dropToFps=%{public}.2f, frameRate=%{public}.2f", dropToFps_, frameRate_);
     return AVCS_ERR_OK;
 }
 
-bool FrameDropFilter::ShouldDropFrame(int64_t pts)
+bool FrameDropFilter::ShouldDropFrame(uint64_t pts)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    totalFrames_++;
-
     if (!strategyDecided_) {
-        if (firstPts_ < 0) {
+        if (!hasFirstPts_) {
+            hasFirstPts_ = true;
             firstPts_ = pts;
-            AVCODEC_LOGI("First frame kept, pts=%{public}" PRId64, pts);
+            AVCODEC_LOGI("First frame kept, pts=%{public}" PRIu64, pts);
             return false;
         }
-
         strategyDecided_ = true;
-        if (pts == firstPts_) {
+        if (pts <= firstPts_) {
             AVCODEC_LOGI("Timestamp unchanged, using ratio strategy (frameRate=%{public}.2f)", frameRate_);
             activeStrategy_ = std::make_unique<RatioDropStrategy>(frameRate_, dropToFps_);
         } else {
             AVCODEC_LOGI("Timestamp changed, using timestamp strategy (targetFps=%{public}.2f)", dropToFps_);
             activeStrategy_ = std::make_unique<TimestampDropStrategy>(dropToFps_);
         }
-
-        bool shouldDrop = activeStrategy_->ShouldDropFrame(pts, totalFrames_);
-        if (shouldDrop) {
-            droppedFrames_++;
-        }
-        return shouldDrop;
+        // Retroactively feed first frame to let strategy initialize its internal state
+        (void)activeStrategy_->ShouldDropFrame(firstPts_);
     }
+    CHECK_AND_RETURN_RET_LOG(activeStrategy_ != nullptr, false, "activeStrategy_ is null");
 
-    if (activeStrategy_ == nullptr) {
-        AVCODEC_LOGE("Strategy decided but activeStrategy_ is null, keeping frame");
-        return false;
-    }
-
-    bool shouldDrop = activeStrategy_->ShouldDropFrame(pts, totalFrames_);
-    if (shouldDrop) {
-        droppedFrames_++;
-        AVCODEC_LOGD("Drop frame: index=%{public}" PRIu64 ", pts=%{public}" PRId64, totalFrames_, pts);
-    }
-
-    return shouldDrop;
+    return activeStrategy_->ShouldDropFrame(pts);
 }
 
-int32_t FrameDropFilter::Reset()
+void FrameDropFilter::FlushTimeStamp()
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    activeStrategy_.reset();
-    strategyDecided_ = false;
-    firstPts_ = -1;
-    totalFrames_ = 0;
-    droppedFrames_ = 0;
-    AVCODEC_LOGI("Filter reset");
-    return AVCS_ERR_OK;
+    if (activeStrategy_ != nullptr) {
+        activeStrategy_->FlushTimeStamp();
+    }
+    hasFirstPts_ = false;
 }
 } // namespace PreProcessing
 } // namespace MediaAVCodec

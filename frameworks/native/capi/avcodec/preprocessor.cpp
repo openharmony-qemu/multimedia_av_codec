@@ -33,6 +33,15 @@ double RoundToTwoDecimals(double value)
 
 namespace OHOS {
 namespace MediaAVCodec {
+Preprocessor::Preprocessor(const std::string &mime) : mime_(mime)
+{
+    fastKitsInterface_.Retain();
+}
+
+Preprocessor::~Preprocessor()
+{
+    fastKitsInterface_.Release();
+}
 
 int32_t Preprocessor::Configure(const Media::Format &format)
 {
@@ -201,12 +210,20 @@ int32_t Preprocessor::Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> out
     return AVCS_ERR_OK;
 }
 
-bool Preprocessor::ShouldDropFrame(int64_t pts)
+bool Preprocessor::ShouldDropFrame(uint64_t pts)
 {
     if (!dropFrameConfig_.enabled) {
         return false;
     }
     return dropFilter_.ShouldDropFrame(pts);
+}
+
+void Preprocessor::FlushTimeStamp()
+{
+    if (!dropFrameConfig_.enabled) {
+        return;
+    }
+    return dropFilter_.FlushTimeStamp();
 }
 
 bool Preprocessor::IsCropEnabled() const

@@ -26,15 +26,20 @@ RatioDropStrategy::RatioDropStrategy(double srcFrameRate, double targetFrameRate
 {
 }
 
-bool RatioDropStrategy::ShouldDropFrame(int64_t pts, uint64_t frameIndex)
+bool RatioDropStrategy::ShouldDropFrame(uint64_t pts)
 {
     (void)pts;
-    if (targetFrameRate_ <= 0.0 || srcFrameRate_ <= 0.0) {
+    if (!std::isfinite(targetFrameRate_) || !std::isfinite(srcFrameRate_) || targetFrameRate_ <= 0.0 ||
+        srcFrameRate_ <= 0.0) {
         return false;
     }
     totalFrames_++;
     double keepRatio = targetFrameRate_ / srcFrameRate_;
-    if (keptFrames_ < static_cast<uint64_t>(std::ceil(totalFrames_ * keepRatio))) {
+    double targetCount = totalFrames_ * keepRatio;
+    if (!std::isfinite(targetCount) || targetCount < 0.0) {
+        return false;
+    }
+    if (keptFrames_ < static_cast<uint64_t>(std::ceil(targetCount))) {
         keptFrames_++;
         return false;
     }
@@ -46,20 +51,35 @@ DropStrategyType RatioDropStrategy::GetType() const
     return DropStrategyType::RATIO;
 }
 
-TimestampDropStrategy::TimestampDropStrategy(double targetFrameRate)
-    : frameIntervalUs_(static_cast<int64_t>(1000000.0 / targetFrameRate))
+void RatioDropStrategy::FlushTimeStamp() {}
+
+TimestampDropStrategy::TimestampDropStrategy(double targetFrameRate) : frameIntervalUs_(0)
 {
+    if (std::isfinite(targetFrameRate) && targetFrameRate > 0.0) {
+        double interval = 1000000.0 / targetFrameRate;
+        if (std::isfinite(interval) && interval <= static_cast<double>(UINT64_MAX)) {
+            frameIntervalUs_ = static_cast<uint64_t>(interval);
+        }
+    }
 }
 
-bool TimestampDropStrategy::ShouldDropFrame(int64_t pts, uint64_t frameIndex)
+bool TimestampDropStrategy::ShouldDropFrame(uint64_t pts)
 {
-    (void)frameIndex;
-    if (lastKeptPts_ < 0) {
-        lastKeptPts_ = pts;
+    if (frameIntervalUs_ == 0) {
         return false;
     }
-    if (pts - lastKeptPts_ >= frameIntervalUs_) {
-        lastKeptPts_ = pts;
+    if (!hasBase_ || pts < basePts_) {
+        basePts_ = pts;
+        hasBase_ = true;
+        return false;
+    }
+    uint64_t elapsed = pts - basePts_;
+    if (elapsed >= frameIntervalUs_) {
+        if (basePts_ <= UINT64_MAX - frameIntervalUs_) {
+            basePts_ += frameIntervalUs_;
+        } else {
+            basePts_ = pts;
+        }
         return false;
     }
     return true;
@@ -68,6 +88,11 @@ bool TimestampDropStrategy::ShouldDropFrame(int64_t pts, uint64_t frameIndex)
 DropStrategyType TimestampDropStrategy::GetType() const
 {
     return DropStrategyType::TIMESTAMP;
+}
+
+void TimestampDropStrategy::FlushTimeStamp()
+{
+    hasBase_ = false;
 }
 
 } // namespace PreProcessing
