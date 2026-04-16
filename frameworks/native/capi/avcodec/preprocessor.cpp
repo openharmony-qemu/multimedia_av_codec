@@ -16,23 +16,107 @@
 #include "preprocessor.h"
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "avcodeclist_impl.h"
 #include "meta/meta_key.h"
 #include "native_avcodec_base.h"
 
+namespace OHOS {
+namespace MediaAVCodec {
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "Preprocessor"};
+
+struct PlaneCopyInfo {
+    uint32_t planeCount{0};
+    uint32_t rowBytes[3] = {0};
+    uint32_t rowCounts[3] = {0};
+};
 
 double RoundToTwoDecimals(double value)
 {
     return std::round(value * 100.0) / 100.0;
 }
-} // namespace
 
-namespace OHOS {
-namespace MediaAVCodec {
+bool GetPlaneCopyInfo(GraphicPixelFormat format, uint32_t width, uint32_t height, PlaneCopyInfo &copyInfo)
+{
+    switch (format) {
+        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888:
+        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_1010102: {
+            copyInfo.planeCount = 1;
+            copyInfo.rowBytes[0] = width * 4; // RGBA8888/RGBA1010102 both occupy 4 bytes per pixel.
+            copyInfo.rowCounts[0] = height;
+            return true;
+        }
+        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP:
+        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP: {
+            copyInfo.planeCount = 2;
+            copyInfo.rowBytes[0] = width;
+            copyInfo.rowCounts[0] = height;
+            copyInfo.rowBytes[1] = width;
+            copyInfo.rowCounts[1] = (height + 1) / 2;
+            return true;
+        }
+        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010:
+        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010: {
+            copyInfo.planeCount = 2;
+            copyInfo.rowBytes[0] = width * 2; // 10-bit samples are stored in 16-bit containers.
+            copyInfo.rowCounts[0] = height;
+            copyInfo.rowBytes[1] = width * 2;
+            copyInfo.rowCounts[1] = (height + 1) / 2;
+            return true;
+        }
+        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_P: {
+            copyInfo.planeCount = 3;
+            copyInfo.rowBytes[0] = width;
+            copyInfo.rowCounts[0] = height;
+            copyInfo.rowBytes[1] = (width + 1) / 2;
+            copyInfo.rowCounts[1] = (height + 1) / 2;
+            copyInfo.rowBytes[2] = copyInfo.rowBytes[1];
+            copyInfo.rowCounts[2] = copyInfo.rowCounts[1];
+            return true;
+        }
+        default:
+            return false;
+    }
+}
+
+bool CopyByPlanes(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output, uint8_t *src, uint8_t *dst)
+{
+    OH_NativeBuffer_Planes *srcPlanes = nullptr;
+    OH_NativeBuffer_Planes *dstPlanes = nullptr;
+    GSError srcErr = input->GetPlanesInfo(reinterpret_cast<void **>(&srcPlanes));
+    GSError dstErr = output->GetPlanesInfo(reinterpret_cast<void **>(&dstPlanes));
+    if (srcErr != GSERROR_OK || dstErr != GSERROR_OK || srcPlanes == nullptr || dstPlanes == nullptr) {
+        return false;
+    }
+
+    uint32_t width = static_cast<uint32_t>(std::min(input->GetWidth(), output->GetWidth()));
+    uint32_t height = static_cast<uint32_t>(std::min(input->GetHeight(), output->GetHeight()));
+    PlaneCopyInfo copyInfo;
+    if (!GetPlaneCopyInfo(static_cast<GraphicPixelFormat>(input->GetFormat()), width, height, copyInfo)) {
+        return false;
+    }
+    if (srcPlanes->planeCount < copyInfo.planeCount || dstPlanes->planeCount < copyInfo.planeCount) {
+        return false;
+    }
+
+    for (uint32_t plane = 0; plane < copyInfo.planeCount; ++plane) {
+        uint32_t srcRowStride = srcPlanes->planes[plane].rowStride;
+        uint32_t dstRowStride = dstPlanes->planes[plane].rowStride;
+        uint32_t rowBytes = std::min({copyInfo.rowBytes[plane], srcRowStride, dstRowStride});
+        CHECK_AND_RETURN_RET_LOG(rowBytes > 0, false, "Invalid row bytes for plane %{public}u", plane);
+
+        auto *srcPlaneAddr = src + srcPlanes->planes[plane].offset;
+        auto *dstPlaneAddr = dst + dstPlanes->planes[plane].offset;
+        for (uint32_t row = 0; row < copyInfo.rowCounts[plane]; ++row) {
+            std::memcpy(dstPlaneAddr + row * dstRowStride, srcPlaneAddr + row * srcRowStride, rowBytes);
+        }
+    }
+    return true;
+}
+} // namespace
 Preprocessor::Preprocessor(const std::string &mime) : mime_(mime)
 {
     fastKitsInterface_.Retain();
@@ -270,16 +354,39 @@ void Preprocessor::Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> o
 
 void Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output)
 {
-    auto *src = reinterpret_cast<uint8_t *>(input->GetVirAddr());
-    auto *dst = reinterpret_cast<uint8_t *>(output->GetVirAddr());
-    size_t srcSize = input->GetSize();
-    size_t dstSize = output->GetSize();
-    if (src == nullptr || dst == nullptr || srcSize == 0) {
-        AVCODEC_LOGE("Copy: invalid buffer state");
+    auto *src = static_cast<uint8_t *>(input->GetVirAddr());
+    auto *dst = static_cast<uint8_t *>(output->GetVirAddr());
+    CHECK_AND_RETURN_LOG(src != nullptr && dst != nullptr,
+                         "Invalid vir addr: input=%{public}p, output=%{public}p", src, dst);
+    EXPECT_AND_LOGW(input->GetFormat() != output->GetFormat(),
+                    "SurfaceBuffer format mismatch, input=%{public}d, output=%{public}d",
+                    input->GetFormat(), output->GetFormat());
+
+    if (CopyByPlanes(input, output, src, dst)) {
         return;
     }
-    size_t copySize = std::min(srcSize, dstSize);
-    std::copy(src, src + copySize, dst);
+
+    int32_t inputStride = input->GetStride();
+    int32_t outputStride = output->GetStride();
+    CHECK_AND_RETURN_LOG(inputStride > 0 && outputStride > 0, "Invalid stride: input=%{public}d, output=%{public}d",
+                         inputStride, outputStride);
+
+    uint32_t inputSize = input->GetSize();
+    uint32_t outputSize = output->GetSize();
+    uint32_t copySize = std::min(inputSize, outputSize);
+    if (inputStride == outputStride) {
+        std::memcpy(dst, src, copySize);
+        return;
+    }
+
+    uint32_t rowBytes = std::min(static_cast<uint32_t>(std::min(inputStride, outputStride)), copySize);
+    CHECK_AND_RETURN_LOG(rowBytes > 0, "Invalid row bytes, inputSize=%{public}u, outputSize=%{public}u",
+                         inputSize, outputSize);
+    uint32_t rowCount = std::min(inputSize / static_cast<uint32_t>(inputStride),
+                                 outputSize / static_cast<uint32_t>(outputStride));
+    for (uint32_t row = 0; row < rowCount; ++row) {
+        std::memcpy(dst + row * outputStride, src + row * inputStride, rowBytes);
+    }
 }
 
 bool Preprocessor::IsHevc10BitData(HEVCProfile profile)
