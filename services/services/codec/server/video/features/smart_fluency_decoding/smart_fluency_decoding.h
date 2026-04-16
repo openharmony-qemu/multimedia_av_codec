@@ -53,6 +53,7 @@ public:
     using AsyncDropOutputCallback = std::function<void(uint32_t index)>;
     void SetCallbacks(AsyncDropInputCallback inCb, AsyncDropOutputCallback outCb);
     bool InitializeWithCsd(const std::shared_ptr<AVBuffer>& csdBuffer);
+    void InitializeWithCsd(const std::vector<uint8_t>& csdData);
     bool MakePreDecodeDecision(uint32_t index);
     bool MakePostDecodeDecision(uint32_t index, int64_t pts, const sptr<SurfaceBuffer> surfaceBuffer);
     void Flush();

@@ -54,7 +54,6 @@ private:
     void CacheCsdData(uint32_t index);
     bool IsCodecSupported(const std::string& codecMime, AVCodecType codecType);
     std::vector<uint8_t> ExtractCsdData(const std::shared_ptr<AVBuffer>& buffer);
-    void ReplayCsdData(SmartFluencyDecoding* sfd, const std::vector<uint8_t>& csdData);
 #ifdef SFD_DEBUG
     void ApplyDebugConfig(Media::Format& format);
     void CheckAndTriggerDebugConfig();

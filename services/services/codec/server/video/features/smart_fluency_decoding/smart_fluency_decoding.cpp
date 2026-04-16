@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
+#include "securec.h"
 #include "avcodec_common.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
@@ -221,6 +222,49 @@ bool SmartFluencyDecoding::InitializeWithCsd(const std::shared_ptr<Media::AVBuff
     }
     AVCODEC_LOGD("CSD_DEBUG: naluAnalyzer_ not instantiated yet, caching CSD buffer.");
     return false;
+}
+
+void SmartFluencyDecoding::InitializeWithCsd(const std::vector<uint8_t>& csdData)
+{
+    if (csdData.empty()) {
+        AVCODEC_LOGW("CSD_DEBUG: InitializeWithCsd failed, csdData is empty");
+        return;
+    }
+
+    std::shared_ptr<Media::AVAllocator> allocator =
+        Media::AVAllocatorFactory::CreateSharedAllocator(Media::MEMORY_READ_WRITE);
+    CHECK_AND_RETURN_LOG(allocator != nullptr, "CSD_DEBUG: Failed to create shared allocator for replay tmpBuffer");
+
+    auto tmpBuffer = Media::AVBuffer::CreateAVBuffer(allocator, static_cast<int32_t>(csdData.size()));
+    if (tmpBuffer && tmpBuffer->memory_) {
+        int32_t capacity = tmpBuffer->memory_->GetCapacity();
+        if (capacity >= static_cast<int32_t>(csdData.size())) {
+            if (memcpy_s(tmpBuffer->memory_->GetAddr(), csdData.size(), csdData.data(), csdData.size()) != EOK) {
+                AVCODEC_LOGE("CSD_DEBUG: Failed to copy CSD data");
+                return;
+            }
+            tmpBuffer->flag_ = AVCODEC_BUFFER_FLAG_CODEC_DATA;
+            // TODO: remove
+            std::string hexStr;
+            char buf[8] = {0};
+            uint8_t *dstPtr = tmpBuffer->memory_->GetAddr();
+            size_t printSize = std::min(csdData.size(), static_cast<size_t>(16));
+            for (size_t i = 0; i < printSize; ++i) {
+                snprintf(buf, sizeof(buf), "%02X ", dstPtr[i]);
+                hexStr += buf;
+            }
+            AVCODEC_LOGI("CSD_DEBUG: Cached CSD (Size: %{public}zu), First %{public}zu bytes: [%{public}s]",
+                         csdData.size(), printSize, hexStr.c_str());
+            (void)InitializeWithCsd(tmpBuffer);
+            AVCODEC_LOGI("CSD_DEBUG: SFD Mid-stream enabled: Replayed CSD data successfully, size=%{public}zu",
+                         csdData.size());
+        } else {
+            AVCODEC_LOGE("CSD_DEBUG: Created buffer capacity (=%{public}d) is smaller than required (=%{public}zu)",
+                          capacity, csdData.size());
+        }
+    } else {
+        AVCODEC_LOGE("CSD_DEBUG: Failed to create AVBuffer or memory is null");
+    }
 }
 
 void SmartFluencyDecoding::ExecutePreDrop(uint32_t index, std::shared_ptr<AVBuffer> buffer)

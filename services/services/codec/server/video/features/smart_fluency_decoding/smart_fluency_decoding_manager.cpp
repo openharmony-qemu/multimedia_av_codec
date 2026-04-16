@@ -71,9 +71,10 @@ void SmartFluencyDecodingManager::Configure(const Media::Format& format)
     }
     builder_->SetFromFormat(sfdFormat);
     auto sfd = builder_->Build();
+
     if (sfd) {
         if (isCsdCached_ && !cachedCsdData_.empty()) {
-            ReplayCsdData(sfd.get(), cachedCsdData_);
+            sfd->InitializeWithCsd(cachedCsdData_);
         }
         sfd_ = std::move(sfd);
         if (inputCb_ && outputCb_) {
@@ -162,6 +163,16 @@ void SmartFluencyDecodingManager::CacheCsdData(uint32_t index)
         cachedCsdData_ = ExtractCsdData(csdAttemptBuffer);
         if (!cachedCsdData_.empty()) {
             isCsdCached_ = true;
+            // TODO: remove
+            std::string hexStr;
+            char buf[8] = {0};
+            size_t printSize = std::min(cachedCsdData_.size(), static_cast<size_t>(16));
+            for (size_t i = 0; i < printSize; ++i) {
+                snprintf(buf, sizeof(buf), "%02X ", cachedCsdData_[i]);
+                hexStr += buf;
+            }
+            AVCODEC_LOGI_WITH_TAG("CSD_DEBUG: Cached CSD (Size: %{public}zu), First %{public}zu bytes: [%{public}s]",
+                                  cachedCsdData_.size(), printSize, hexStr.c_str());
             std::lock_guard<std::mutex> csdLock(tempCsdMutex_);
             tempCsdBufferMap_.clear();
         }
@@ -243,36 +254,6 @@ std::vector<uint8_t> SmartFluencyDecodingManager::ExtractCsdData(const std::shar
     }
     AVCODEC_LOGD_WITH_TAG("CSD_DEBUG: ExtractCsdData didn't match flags, buffer->flag_=%{public}u", buffer->flag_);
     return csdData;
-}
-
-void SmartFluencyDecodingManager::ReplayCsdData(SmartFluencyDecoding* sfd, const std::vector<uint8_t>& csdData)
-{
-    if (!sfd || csdData.empty()) {
-        AVCODEC_LOGW_WITH_TAG("CSD_DEBUG: ReplayCsdData failed, sfd is null or csdData is empty");
-        return;
-    }
-    std::shared_ptr<Media::AVAllocator> allocator =
-        Media::AVAllocatorFactory::CreateSharedAllocator(Media::MEMORY_READ_WRITE);
-    CHECK_AND_RETURN_LOG(allocator != nullptr, "CSD_DEBUG: Failed to create shared allocator for replay tmpBuffer");
-    auto tmpBuffer = Media::AVBuffer::CreateAVBuffer(allocator, static_cast<int32_t>(csdData.size()));
-    if (tmpBuffer && tmpBuffer->memory_) {
-        int32_t capacity = tmpBuffer->memory_->GetCapacity();
-        if (capacity >= static_cast<int32_t>(csdData.size())) {
-            if (memcpy_s(tmpBuffer->memory_->GetAddr(), csdData.size(), csdData.data(), csdData.size()) != EOK) {
-                AVCODEC_LOGE_WITH_TAG("CSD_DEBUG: Failed to copy CSD data");
-                return;
-            }
-            tmpBuffer->flag_ = AVCODEC_BUFFER_FLAG_CODEC_DATA;
-            sfd->InitializeWithCsd(tmpBuffer);
-            AVCODEC_LOGI_WITH_TAG("CSD_DEBUG: SFD Mid-stream enabled: Replayed CSD data successfully, size=%{public}zu",
-                                  csdData.size());
-        } else {
-            AVCODEC_LOGE_WITH_TAG("CSD_DEBUG: Created buffer capacity (=%{public}d) is smaller than required (=%{public}zu)",
-                                  capacity, csdData.size());
-        }
-    } else {
-        AVCODEC_LOGE_WITH_TAG("CSD_DEBUG: Failed to create AVBuffer or memory is null");
-    }
 }
 
 void SmartFluencyDecodingManager::CleanResources()
