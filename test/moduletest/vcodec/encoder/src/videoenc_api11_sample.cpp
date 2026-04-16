@@ -169,7 +169,7 @@ static void onEncInputParam(OH_AVCodec *codec, uint32_t index, OH_AVFormat *para
         }
     } else if (enc_sample->frameCount == useLtrIndex && enc_sample->frameCount > 0) {
         int32_t sampleInterval = enc_sample->ltrParam.ltrInterval;
-        OH_AVFormat_SetIntValue(parameter, OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_USE_LTR,      - sampleInterval);
+        OH_AVFormat_SetIntValue(parameter, OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_USE_LTR, useLtrIndex - sampleInterval);
     }
     enc_sample->frameCount++;
     OH_VideoEncoder_PushInputParameter(codec, index);
