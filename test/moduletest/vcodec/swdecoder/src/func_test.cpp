@@ -52,6 +52,12 @@ protected:
     const string CODEC_NAME = "video_decoder.avc";
     const char *INP_DIR_720_30 = "/data/test/media/1280_720_30_10Mb.h264";
     const char *INP_DIR_1080_30 = "/data/test/media/1920_1080_10_30Mb.h264";
+    const char *INP_DIR_1920_4148_30 = "/data/test/media/1920_4148_50M_8bit.h264";
+    const char *INP_DIR_5120_5120_30 = "/data/test/media/5120_5120_100M_8bit.h264";
+    const char *INP_DIR_2880_5120_30 = "/data/test/media/2880_5120_80M_8bit.h264";
+    const char *INP_DIR_4148_1920_30 = "/data/test/media/4148_1920_50M_8bit.h264";
+    const char *INP_DIR_5120_2880_30 = "/data/test/media/5120_2880_80M_8bit.h264";
+    const char *INP_DIR_resolutionChange4K = "/data/test/media/resolutionChange4K.h264";
 };
 } // namespace Media
 } // namespace OHOS
@@ -1224,6 +1230,347 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_ANOTHER_0010, TestSize.Level2)
         ASSERT_EQ(AV_ERR_OK, vDecSample->Release());
         vDecSample2->WaitForEOS();
         ASSERT_EQ(AV_ERR_OK, vDecSample2->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_4K_0010
+ * @tc.name      : h264解码，同步NV12，1920*4148
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_4K_0010, TestSize.Level0)
+{
+    if (cap_avc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1920_4148_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 4148;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enbleSyncMode = 1;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->outputYuvFlag = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAvc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartSyncVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_4K_0020
+ * @tc.name      : h264解码，同步NV21，5120*5120
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_4K_0020, TestSize.Level0)
+{
+    if (cap_avc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_5120_5120_30;
+        vDecSample->DEFAULT_WIDTH = 5120;
+        vDecSample->DEFAULT_HEIGHT = 5120;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enbleSyncMode = 1;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->outputYuvFlag = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAvc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartSyncVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_4K_0030
+ * @tc.name      : h264解码，同步I420，5120*2880
+ * @tc.desc      : function testw
+ */
+HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_4K_0030, TestSize.Level0)
+{
+    if (cap_avc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_5120_2880_30;
+        vDecSample->DEFAULT_WIDTH = 5120;
+        vDecSample->DEFAULT_HEIGHT = 2880;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enbleSyncMode = 1;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_YUVI420;
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->outputYuvFlag = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAvc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartSyncVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_4K_0040
+ * @tc.name      : h264解码，异步NV12，4148*1920
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_4K_0040, TestSize.Level1)
+{
+    if (cap_avc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_4148_1920_30;
+        vDecSample->DEFAULT_WIDTH = 4148;
+        vDecSample->DEFAULT_HEIGHT = 1920;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enbleSyncMode = 0;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->outputYuvFlag = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameAvc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_4K_0050
+ * @tc.name      : h264解码，异步NV21，5120*5120
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_4K_0050, TestSize.Level2)
+{
+    if (cap_avc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_5120_5120_30;
+        vDecSample->DEFAULT_WIDTH = 5120;
+        vDecSample->DEFAULT_HEIGHT = 5120;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enbleSyncMode = 0;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->outputYuvFlag = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameAvc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_4K_0060
+ * @tc.name      : h264解码，异步I420，2880*5120
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_4K_0060, TestSize.Level2)
+{
+    if (cap_avc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_2880_5120_30;
+        vDecSample->DEFAULT_WIDTH = 2880;
+        vDecSample->DEFAULT_HEIGHT = 5120;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enbleSyncMode = 0;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_YUVI420;
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->outputYuvFlag = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameAvc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_4K_0070
+ * @tc.name      : h264解码，同步surface，5120*2880
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_4K_0070, TestSize.Level2)
+{
+    if (cap_avc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_5120_2880_30;
+        vDecSample->DEFAULT_WIDTH = 5120;
+        vDecSample->DEFAULT_HEIGHT = 2880;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enbleSyncMode = 1;
+        vDecSample->SF_OUTPUT = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAvc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->DecodeSetSurface());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartSyncVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_4K_0080
+ * @tc.name      : h264解码，异步surface，1920*4148
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_4K_0080, TestSize.Level2)
+{
+    if (cap_avc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1920_4148_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 4148;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enbleSyncMode = 0;
+        vDecSample->SF_OUTPUT = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameAvc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_4K_0090
+ * @tc.name      : h264解码，异步surface，2880*5120
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_4K_0090, TestSize.Level2)
+{
+    if (cap_avc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_2880_5120_30;
+        vDecSample->DEFAULT_WIDTH = 2880;
+        vDecSample->DEFAULT_HEIGHT = 5120;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enbleSyncMode = 0;
+        vDecSample->SF_OUTPUT = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameAvc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_4K_0100
+ * @tc.name      : h264解码，同步buffer，变分辨率
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_4K_0100, TestSize.Level2)
+{
+    if (cap_avc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_resolutionChange4K;
+        vDecSample->DEFAULT_WIDTH = 1104;
+        vDecSample->DEFAULT_HEIGHT = 624;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enbleSyncMode = 1;
+        vDecSample->SF_OUTPUT = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAvc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartSyncVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_4K_0110
+ * @tc.name      : h264解码，异步surface，变分辨率
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_4K_0110, TestSize.Level2)
+{
+    if (cap_avc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_resolutionChange4K;
+        vDecSample->DEFAULT_WIDTH = 1104;
+        vDecSample->DEFAULT_HEIGHT = 624;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enbleSyncMode = 0;
+        vDecSample->SF_OUTPUT = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameAvc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_4K_0120
+ * @tc.name      : h264解码，异步surface，config transform
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_4K_0120, TestSize.Level2)
+{
+    if (cap_avc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_5120_2880_30;
+        vDecSample->DEFAULT_WIDTH = 5120;
+        vDecSample->DEFAULT_HEIGHT = 2880;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAvc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->CreateSurface();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetConfigTransform());
+        ASSERT_EQ(0, vDecSample->GetSurfaceTransform(0));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Reset());
+        vDecSample->setTransform = true;
+        vDecSample->DEFAULT_TRANSFORM = -1;
+        ASSERT_EQ(AV_ERR_INVALID_VAL, vDecSample->SetConfigTransform());
+        ASSERT_EQ(0, vDecSample->GetSurfaceTransform(0));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Reset());
+        for (const auto& transformtype : transfromTypes) {
+            vDecSample->DEFAULT_TRANSFORM = transformtype;
+            ASSERT_EQ(AV_ERR_OK, vDecSample->SetConfigTransform());
+            ASSERT_EQ(vDecSample->DEFAULT_TRANSFORM, vDecSample->GetSurfaceTransform(0));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->Reset());
+        }
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetSurface());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        ASSERT_EQ(vDecSample->DEFAULT_TRANSFORM, vDecSample->GetSurfaceTransform(0));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_4K_0130
+ * @tc.name      : h264解码，异步surface，config OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_4K_0130, TestSize.Level2)
+{
+    if (cap_avc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_5120_2880_30;
+        vDecSample->DEFAULT_WIDTH = 5120;
+        vDecSample->DEFAULT_HEIGHT = 2880;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enbleBlankFrame = 1;
+        vDecSample->SURFACE_OUTPUT = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAvc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->DecodeSetSurface());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_4K_0140
+ * @tc.name      : h264解码，异步surface切换
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_4K_0140, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_5120_2880_30;
+        vDecSample->DEFAULT_WIDTH = 5120;
+        vDecSample->DEFAULT_HEIGHT = 2880;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = true;
+        vDecSample->autoSwitchSurface = true;
+        vDecSample->sleepOnFPS = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameAvc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SwitchSurface());
+        vDecSample->WaitForEOS();
     }
 }
 } // namespace
