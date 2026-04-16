@@ -645,6 +645,7 @@ Status DecoderSurfaceFilter::DoRelease()
     videoDecoder_->Release();
     if (postProcessor_) {
         postProcessor_->Release();
+        postProcessor_ = nullptr;
     }
     isDecoderReleasedForMute_ = true;
     return Status::OK;
@@ -1759,6 +1760,12 @@ Status DecoderSurfaceFilter::DoReInitAndStart()
         return ret;
     }
     if (isDecoderReleasedForMute_) {
+        if (postProcessor_ == nullptr && CreatePostProcessor() == nullptr) {
+            if (postProcessorType_ == VideoPostProcessorType::SUPER_RESOLUTION && eventReceiver_ != nullptr) {
+                eventReceiver_->OnEvent({"SuperResolutionPostProcessor", EventType::EVENT_SUPER_RESOLUTION_CHANGED,
+                    false});
+            }
+        }
         ret = DoInitAfterLink();
         FALSE_RETURN_V_MSG(ret == Status::OK, ret, "DoInitAfterLink fail");
     }
