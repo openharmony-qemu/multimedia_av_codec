@@ -182,6 +182,7 @@ void PreprocessorManager::EncoderInfo::Init(std::shared_ptr<Preprocessor> prepro
 
     std::weak_ptr<EncoderInfo> weakThis = shared_from_this();
     encoderSurface_ = surface;
+    encoderSurface_->Connect();
     encoderSurface_->RegisterReleaseListener([weakThis](uint32_t seq, const sptr<SyncFence>& fence) {
         std::shared_ptr<EncoderInfo> encoderInfo = weakThis.lock();
         if (encoderInfo == nullptr) {
@@ -216,8 +217,10 @@ int32_t PreprocessorManager::EncoderInfo::Start()
 
 void PreprocessorManager::EncoderInfo::Stop()
 {
-    std::unique_lock<std::mutex> lock(bufferQueueMutex_);
-    isRunning_ = false;
+    {
+        std::unique_lock<std::mutex> lock(bufferQueueMutex_);
+        isRunning_ = false;
+    }
     bufferQueueCv_.notify_all();
     if (processThread_.joinable()) {
         processThread_.join();
