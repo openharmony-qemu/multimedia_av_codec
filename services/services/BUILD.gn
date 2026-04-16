@@ -106,8 +106,6 @@ config("av_codec_service_config") {
   if (target_cpu == "arm") {
     cflags += [ "-DBINDER_IPC_32BIT" ]
   }
-
-  defines += [ "SFD_DEBUG" ]
 }
 
 ohos_shared_library("av_codec_service") {

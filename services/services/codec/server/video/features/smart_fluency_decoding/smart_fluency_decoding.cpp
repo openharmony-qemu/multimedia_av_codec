@@ -78,7 +78,7 @@ int32_t SmartFluencyDecoding::InitializeInternal()
     CHECK_AND_RETURN_RET_LOG(strategy_ != nullptr, AVCS_ERR_UNKNOWN, "Failed to create strategy");
     dropSyncCoordinator_ = std::make_unique<DropSyncCoordinator>();
     asyncDispatcher_ = std::make_unique<AsyncDropDispatcher>();
-#ifdef BUILD_ENG_VERSION
+#ifdef SFD_DEBUG
     dumper_ = SmartFluencyDecodingDumper::Create(
         config_.codecType, config_.width, config_.height, config_.initMode);
     if (dumper_ && config_.retentionRatio.has_value()) {
@@ -96,7 +96,7 @@ void SmartFluencyDecoding::UpdatePlaybackSpeed(double speed)
     currentPlaybackSpeed_ = (speed > 0.0 ? speed : DEFAULT_PLAYBACK_SPEED);
     if (strategy_) {
         strategy_->UpdatePlaybackSpeed(speed);
-#ifdef BUILD_ENG_VERSION
+#ifdef SFD_DEBUG
         if (dumper_) {
             dumper_->UpdateSpeed(speed);
         }
@@ -157,7 +157,7 @@ int32_t SmartFluencyDecoding::UpdateDynamicConfig(const Media::Format& format)
                          static_cast<int32_t>(config_.initMode), static_cast<int32_t>(newMode));
             config_.initMode = newMode;
             config_.retentionRatio = newRatio;
-#ifdef BUILD_ENG_VERSION
+#ifdef SFD_DEBUG
             if (dumper_) {
                 dumper_->UpdateMode(newMode, newRatio.has_value() ? newRatio.value() : DEFAULT_PLAYBACK_SPEED);
             }
@@ -180,7 +180,7 @@ void SmartFluencyDecoding::Flush()
         strategy_->Reset();
     }
     inBufferMap_.clear();
-#ifdef BUILD_ENG_VERSION
+#ifdef SFD_DEBUG
     if (dumper_) {
         dumper_->DumpToFile();
     }
@@ -269,7 +269,7 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
     } else {
         ExecutePreDrop(index, buffer);
     }
-#ifdef BUILD_ENG_VERSION
+#ifdef SFD_DEBUG
     if (dumper_) {
         SmartFluencyDecodingDumper::PreDecodeRecordCtx dumperCtx;
         dumperCtx.pts = buffer->pts_;
@@ -331,7 +331,7 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
     if (!shouldRetain) {
         ExecutePostDrop(index);
     }
-#ifdef BUILD_ENG_VERSION
+#ifdef SFD_DEBUG
     if (dumper_) {
         SmartFluencyDecodingDumper::PostDecodeRecordCtx dumperCtx;
         dumperCtx.pts = currentPts;
@@ -407,7 +407,7 @@ void SmartFluencyDecoding::EnsureNaluAnalyzer()
         if (this->mvAnalyzer_) {
             this->mvAnalyzer_->SetStreamAuxInfo(info);
         }
-#ifdef BUILD_ENG_VERSION
+#ifdef SFD_DEBUG
         if (this->dumper_) {
             this->dumper_->UpdateCtuSize(info.ctuSize);
         }

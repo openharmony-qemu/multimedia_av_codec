@@ -51,7 +51,17 @@ void SmartFluencyDecodingManager::SetCallbacks(std::function<void(uint32_t, std:
 void SmartFluencyDecodingManager::Configure(const Media::Format& format)
 {
     if (!IsCodecSupported(codecMime_, codecType_)) {
-        AVCODEC_LOGI_WITH_TAG("Skip SFD initialization (not supported)");
+        AVCODEC_LOGI_WITH_TAG("Skip SFD configuration (not supported)");
+        return;
+    }
+    Media::Format sfdFormat = format;
+#ifdef SFD_DEBUG
+    ApplyDebugConfig(sfdFormat);
+#endif
+    if (sfd_ != nullptr) {
+        builder_->SetFromFormat(sfdFormat);
+        sfd_->UpdateDynamicConfig(sfdFormat);
+        AVCODEC_LOGI_WITH_TAG("SFD dynamically updated via Configure.");
         return;
     }
     if (builder_ == nullptr) {
@@ -59,10 +69,6 @@ void SmartFluencyDecodingManager::Configure(const Media::Format& format)
         builder_->SetCodecMime(codecMime_);
         AVCODEC_LOGE_WITH_TAG("CSD_DEBUG: Builder created for mime=%{public}s", codecMime_.c_str());
     }
-    Media::Format sfdFormat = format; 
-#ifdef SFD_DEBUG
-    ApplyDebugConfig(sfdFormat);
-#endif
     builder_->SetFromFormat(sfdFormat);
     auto sfd = builder_->Build();
     if (sfd) {
@@ -73,12 +79,16 @@ void SmartFluencyDecodingManager::Configure(const Media::Format& format)
         if (inputCb_ && outputCb_) {
             sfd_->SetCallbacks(inputCb_, outputCb_);
         }
-        AVCODEC_LOGE_WITH_TAG("CSD_DEBUG: SFD initialized/updated successfully");
+        AVCODEC_LOGE_WITH_TAG("CSD_DEBUG: SFD initialized successfully");
     }
 }
 
 void SmartFluencyDecodingManager::OnInputBufferAvailable(uint32_t index, const std::shared_ptr<AVBuffer>& buffer)
 {
+    if (buffer == nullptr) {
+        AVCODEC_LOGW_WITH_TAG("OnInputBufferAvailable: buffer is null for index %{public}u", index);
+        return;
+    }
     if (codecType_ == AVCODEC_TYPE_VIDEO_DECODER && !isCsdCached_) {
         std::lock_guard<std::mutex> csdLock(tempCsdMutex_);
         tempCsdBufferMap_[index] = buffer;
@@ -106,6 +116,10 @@ bool SmartFluencyDecodingManager::MakePreDecodeDecision(uint32_t index)
 
 bool SmartFluencyDecodingManager::MakePostDecodeDecision(uint32_t index, const std::shared_ptr<AVBuffer>& buffer, bool isSurfaceMode)
 {
+    if (buffer == nullptr) {
+        AVCODEC_LOGE_WITH_TAG("MakePostDecodeDecision: buffer is null for index %{public}u", index);
+        return true;
+    }
     uint64_t uniqueId = buffer->GetUniqueId();
     if (isSurfaceMode && codecType_ == AVCODEC_TYPE_VIDEO_DECODER && buffer->memory_ != nullptr) {
         std::lock_guard<std::mutex> lock(surfaceBufMutex_);
@@ -286,19 +300,22 @@ void SmartFluencyDecodingManager::CleanResources()
 void SmartFluencyDecodingManager::ApplyDebugConfig(Media::Format& format)
 {
     if (!isDebugConfigInitialized_) {
-        configRetentionMode_ = std::strtol(OHOS::system::GetParameter("sfd.debug.mode", "-1").c_str(), nullptr, 10);
-        configRetentionRatio_ = std::strtod(OHOS::system::GetParameter("sfd.debug.ratio", "-1.0").c_str(), nullptr);
+        configRetentionMode_ =
+            std::strtol(OHOS::system::GetParameter("sfd.debug.mode", "-1").c_str(), nullptr, 10);
+        configRetentionRatio_ =
+            std::strtod(OHOS::system::GetParameter("sfd.debug.ratio", "-1.0").c_str(), nullptr);
         configDecSpeed_ = std::strtod(OHOS::system::GetParameter("sfd.debug.speed", "-1.0").c_str(), nullptr);
-        
-        triggerFrameCnt_ = std::strtol(OHOS::system::GetParameter("sfd.debug.trigger_frame", "-1").c_str(), nullptr, 10);
-        newRetentionMode_ = std::strtol(OHOS::system::GetParameter("sfd.debug.new_mode", "-1").c_str(), nullptr, 10);
-        newRetentionRatio_ = std::strtod(OHOS::system::GetParameter("sfd.debug.new_ratio", "-1.0").c_str(), nullptr);
+
+        triggerFrameCnt_ =
+            std::strtol(OHOS::system::GetParameter("sfd.debug.trigger_frame", "-1").c_str(), nullptr, 10);
+        newRetentionMode_ =
+            std::strtol(OHOS::system::GetParameter("sfd.debug.new_mode", "-1").c_str(), nullptr, 10);
+        newRetentionRatio_ =
+            std::strtod(OHOS::system::GetParameter("sfd.debug.new_ratio", "-1.0").c_str(), nullptr);
         newDecSpeed_ = std::strtod(OHOS::system::GetParameter("sfd.debug.new_speed", "-1.0").c_str(), nullptr);
-        
         inputFrameCount_ = 0;
         isDebugConfigInitialized_ = true;
-        
-        AVCODEC_LOGI_WITH_TAG("SFD Debug: Configure: %{public}d, %{public}.2f, %{public}.2f ; trigger=%{public}d :"
+        AVCODEC_LOGI_WITH_TAG("SFD Debug: Conf: %{public}d, %{public}.2f, %{public}.2f; Trg:%{public}d -> "
             "%{public}d, %{public}.2f, %{public}.2f", configRetentionMode_, configRetentionRatio_, configDecSpeed_,
             triggerFrameCnt_, newRetentionMode_, newRetentionRatio_, newDecSpeed_);
     }
@@ -318,23 +335,19 @@ void SmartFluencyDecodingManager::CheckAndTriggerDebugConfig()
 {
     inputFrameCount_++;
     if (triggerFrameCnt_ > 0 && inputFrameCount_ == static_cast<uint32_t>(triggerFrameCnt_)) {
-        Media::Format newFormat;
         if (newRetentionMode_ >= 0) {
-            newFormat.PutIntValue(Media::Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, newRetentionMode_);
+            configRetentionMode_ = newRetentionMode_;
         }
         if (newRetentionRatio_ >= 0.0) {
-            newFormat.PutDoubleValue(Media::Tag::VIDEO_DECODER_FRAME_RETENTION_RATIO, newRetentionRatio_);
+            configRetentionRatio_ = newRetentionRatio_;
         };
         if (newDecSpeed_ >= 0.0) {
-            newFormat.PutDoubleValue(Media::Tag::VIDEO_DECODER_SPEED, newDecSpeed_);
+            configDecSpeed_ = newDecSpeed_;
         }
-        AVCODEC_LOGI_WITH_TAG("SFD Debug: Triggered at frame %{public}u. New mode=%{public}d, ratio=%{public}.2f, speed=%{public}.2f",
+        AVCODEC_LOGI_WITH_TAG("SFD Debug: Trg at %{public}u. M:%{public}d, R:%{public}.2f, S:%{public}.2f",
             inputFrameCount_, newRetentionMode_, newRetentionRatio_, newDecSpeed_);
-        if (sfd_) {
-            sfd_->UpdateDynamicConfig(newFormat);
-        } else {
-            Configure(newFormat);
-        }
+        Media::Format emptyFormat;
+        Configure(emptyFormat);
     }
 }
 #endif

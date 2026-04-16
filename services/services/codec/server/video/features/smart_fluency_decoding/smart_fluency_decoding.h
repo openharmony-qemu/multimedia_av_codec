@@ -30,7 +30,7 @@
 #include "meta/format.h"
 #include "analyzers/mv_analyzer.h"
 #include "analyzers/nalu_analyzer.h"
-#ifdef BUILD_ENG_VERSION
+#ifdef SFD_DEBUG
 #include "smart_fluency_decoding_dumper.h"
 #endif
 #include "smart_fluency_decoding_types.h"
@@ -75,7 +75,7 @@ private:
     std::unique_ptr<IRetentionStrategy> strategy_{nullptr};
     std::unique_ptr<IMvAnalyzer> mvAnalyzer_{nullptr};
     std::unique_ptr<INaluAnalyzer> naluAnalyzer_{nullptr};
-#ifdef BUILD_ENG_VERSION
+#ifdef SFD_DEBUG
     std::unique_ptr<SmartFluencyDecodingDumper> dumper_{nullptr};
 #endif
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> inBufferMap_;
