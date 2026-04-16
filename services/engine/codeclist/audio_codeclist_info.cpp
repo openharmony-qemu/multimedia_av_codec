@@ -103,6 +103,7 @@ constexpr int MAX_BIT_RATE_DTS = 1536000;
 
 #ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
 const std::vector<int32_t> AUDIO_VIVID_SAMPLE_RATE = {32000, 44100, 48000, 96000, 192000};
+const std::vector<int32_t> AUDIO_VIVID_ENCODER_SAMPLE_RATE = {32000, 44100, 48000};
 constexpr int MIN_BIT_RATE_VIVID_DECODER = 16000;
 constexpr int MAX_BIT_RATE_VIVID_DECODER = 3075000;
 constexpr int32_t MIN_BIT_RATE_VIVID_ENCODER = 32000;
@@ -537,8 +538,8 @@ CapabilityData AudioCodeclistInfo::GetVividEncoderCapability()
     audioVividCapability.isVendor = false;
     audioVividCapability.bitrate = Range(MIN_BIT_RATE_VIVID_ENCODER, MAX_BIT_RATE_VIVID_ENCODER);
     audioVividCapability.channels = Range(1, MAX_CHANNEL_COUNT_VIVID);
-    audioVividCapability.sampleRate = AUDIO_VIVID_SAMPLE_RATE;
-    audioVividCapability.sampleRateRanges = convertVectorToRange(AUDIO_VIVID_SAMPLE_RATE);
+    audioVividCapability.sampleRate = AUDIO_VIVID_ENCODER_SAMPLE_RATE;
+    audioVividCapability.sampleRateRanges = convertVectorToRange(AUDIO_VIVID_ENCODER_SAMPLE_RATE);
     audioVividCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioVividCapability;
 }
