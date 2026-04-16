@@ -22,7 +22,6 @@
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
-
 class AdaptiveRetentionStrategy : public IRetentionStrategy {
 public:
     AdaptiveRetentionStrategy() = default;

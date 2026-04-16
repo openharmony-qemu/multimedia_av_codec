@@ -99,7 +99,6 @@ ohos_unittest("video_codec_server_coverage_unit_test") {
   if (av_codec_enable_special_codec) {
     defines += [ "AV_CODEC_AUDIO_SPECIAL_CAPACITY" ]
   }
-  defines += [ "SFD_ENABLED", "SFD_DEBUG" ]
 
   sources = [
     "$av_codec_root_dir/frameworks/native/common/avcodec_errors.cpp",

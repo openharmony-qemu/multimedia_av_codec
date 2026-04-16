@@ -46,8 +46,6 @@ ohos_unittest("smart_fluency_decoding_unit_test") {
   module_out_path = module_output_path
   cflags = av_codec_unittest_cflags
   cflags_cc = cflags
-  defines = [ "SFD_ENABLED" ]
-  defines += [ "SFD_DEBUG" ]
 
   include_dirs = [
     "./",
@@ -61,12 +59,14 @@ ohos_unittest("smart_fluency_decoding_unit_test") {
     "$av_codec_root_dir/services/include",
     "$av_codec_root_dir/services/services/codec/server/video",
     "$av_codec_root_dir/services/services/common",
+    "$av_codec_root_dir/services/services/common/event_manager",
   ]
 
   sources = [
     "$sfd_root_dir/drop_sync_coordinator.cpp",
     "$sfd_root_dir/smart_fluency_decoding.cpp",
     "$sfd_root_dir/smart_fluency_decoding_builder.cpp",
+    "$sfd_root_dir/smart_fluency_decoding_manager.cpp",
     "$sfd_root_dir/smart_fluency_decoding_dumper.cpp",
     "$sfd_root_dir/async_drop_dispatcher.cpp",
     "$sfd_root_dir/strategies/retention_strategy_factory.cpp",
@@ -76,6 +76,7 @@ ohos_unittest("smart_fluency_decoding_unit_test") {
     "$sfd_root_dir/strategies/full_retention_strategy.cpp",
     "$sfd_root_dir/analyzers/mv_analyzer_so_loader.cpp",
     "$sfd_root_dir/analyzers/nalu_analyzer_so_loader.cpp",
+    "$av_codec_root_dir/services/dfx/avcodec_dfx_component.cpp",
 
     "async_drop_dispatcher_test.cpp",
     "drop_sync_coordinator_test.cpp",
@@ -83,6 +84,7 @@ ohos_unittest("smart_fluency_decoding_unit_test") {
     "nalu_analyzer_so_loader_test.cpp",
     "retention_strategies_test.cpp",
     "smart_fluency_decoding_builder_test.cpp",
+    "smart_fluency_decoding_manager_test.cpp",
     "smart_fluency_decoding_dumper_test.cpp",
     "smart_fluency_decoding_test.cpp",
   ]
@@ -95,7 +97,7 @@ ohos_unittest("smart_fluency_decoding_unit_test") {
   external_deps = [
     "c_utils:utils",
     "drivers_interface_display:libdisplay_commontype_proxy_2.2",
-    "googletest:gmock_main",
+    "googletest:gtest_main",
     "graphic_surface:surface",
     "hilog:libhilog",
     "media_foundation:media_foundation",

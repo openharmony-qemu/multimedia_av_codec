@@ -1,0 +1,343 @@
+/*
+ * Copyright (C) 2026 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "smart_fluency_decoding_manager.h"
+#include "avcodec_common.h"
+#include "avcodec_log_ex.h"
+#include "avcodec_mime_type.h"
+#include "buffer/avallocator.h"
+#include "media_description.h"
+#include "meta/meta_key.h"
+#include "meta/video_types.h"
+#include "securec.h"
+#ifdef SFD_DEBUG
+#include "syspara/parameters.h"
+#include <cstdlib>
+#endif
+
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "SFDManager"};
+constexpr int32_t MIN_CSD_SIZE = 4;
+constexpr int32_t DEFAULT_CSD_COPY_SIZE = 256;
+}
+
+namespace OHOS {
+namespace MediaAVCodec {
+namespace SFD {
+SmartFluencyDecodingManager::SmartFluencyDecodingManager(const std::string& codecMime, AVCodecType codecType)
+    : codecMime_(codecMime), codecType_(codecType)
+{
+}
+
+void SmartFluencyDecodingManager::SetCallbacks(std::function<void(uint32_t, std::shared_ptr<AVBuffer>)> inputCb,
+                                               std::function<void(uint32_t)> outputCb)
+{
+    inputCb_ = std::move(inputCb);
+    outputCb_ = std::move(outputCb);
+}
+
+void SmartFluencyDecodingManager::Configure(const Media::Format& format)
+{
+    if (!IsCodecSupported(codecMime_, codecType_)) {
+        AVCODEC_LOGI_WITH_TAG("Skip SFD initialization (not supported)");
+        return;
+    }
+    if (builder_ == nullptr) {
+        builder_ = std::make_unique<SmartFluencyDecodingBuilder>();
+        builder_->SetCodecMime(codecMime_);
+        AVCODEC_LOGE_WITH_TAG("CSD_DEBUG: Builder created for mime=%{public}s", codecMime_.c_str());
+    }
+    Media::Format sfdFormat = format; 
+#ifdef SFD_DEBUG
+    ApplyDebugConfig(sfdFormat);
+#endif
+    builder_->SetFromFormat(sfdFormat);
+    auto sfd = builder_->Build();
+    if (sfd) {
+        if (isCsdCached_ && !cachedCsdData_.empty()) {
+            ReplayCsdData(sfd.get(), cachedCsdData_);
+        }
+        sfd_ = std::move(sfd);
+        if (inputCb_ && outputCb_) {
+            sfd_->SetCallbacks(inputCb_, outputCb_);
+        }
+        AVCODEC_LOGE_WITH_TAG("CSD_DEBUG: SFD initialized/updated successfully");
+    }
+}
+
+void SmartFluencyDecodingManager::OnInputBufferAvailable(uint32_t index, const std::shared_ptr<AVBuffer>& buffer)
+{
+    if (codecType_ == AVCODEC_TYPE_VIDEO_DECODER && !isCsdCached_) {
+        std::lock_guard<std::mutex> csdLock(tempCsdMutex_);
+        tempCsdBufferMap_[index] = buffer;
+    }
+    if (sfd_) {
+        sfd_->SetInputBuffer(index, buffer);
+    }
+}
+
+bool SmartFluencyDecodingManager::MakePreDecodeDecision(uint32_t index)
+{
+#ifdef SFD_DEBUG
+    CheckAndTriggerDebugConfig();
+#endif
+    CacheCsdData(index);
+    if (sfd_) {
+        bool decision = sfd_->MakePreDecodeDecision(index);
+        if (!decision) {
+            AVCODEC_LOGE_WITH_TAG("CSD_DEBUG: Pre-decode drop decision for index %{public}u", index);
+        }
+        return decision;
+    }
+    return true;
+}
+
+bool SmartFluencyDecodingManager::MakePostDecodeDecision(uint32_t index, const std::shared_ptr<AVBuffer>& buffer, bool isSurfaceMode)
+{
+    uint64_t uniqueId = buffer->GetUniqueId();
+    if (isSurfaceMode && codecType_ == AVCODEC_TYPE_VIDEO_DECODER && buffer->memory_ != nullptr) {
+        std::lock_guard<std::mutex> lock(surfaceBufMutex_);
+        surfaceBufMap_[uniqueId] = buffer->memory_->GetSurfaceBuffer();
+        buffer->memory_ = nullptr;
+    }
+    if (sfd_ && (buffer->flag_ & AVCODEC_BUFFER_FLAG_EOS) == 0) {
+        sptr<SurfaceBuffer> surfaceBuffer = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(surfaceBufMutex_);
+            auto it = surfaceBufMap_.find(uniqueId);
+            if (it != surfaceBufMap_.end()) {
+                surfaceBuffer = it->second;
+            }
+        }
+        if (!sfd_->MakePostDecodeDecision(index, buffer->pts_, surfaceBuffer)) {
+            AVCODEC_LOGE_WITH_TAG("CSD_DEBUG: Post-decode drop decision for index %{public}u, pts %{public}" PRId64,
+                                 index, buffer->pts_);
+            return false;
+        }
+    }
+    return true;
+}
+
+void SmartFluencyDecodingManager::CacheCsdData(uint32_t index)
+{
+    if (codecType_ != AVCODEC_TYPE_VIDEO_DECODER || isCsdCached_) {
+        return;
+    }
+    std::shared_ptr<AVBuffer> csdAttemptBuffer = nullptr;
+    {
+        std::lock_guard<std::mutex> csdLock(tempCsdMutex_);
+        auto it = tempCsdBufferMap_.find(index);
+        if (it != tempCsdBufferMap_.end()) {
+            csdAttemptBuffer = it->second;
+            tempCsdBufferMap_.erase(it);
+        }
+    }
+    if (csdAttemptBuffer) {
+        cachedCsdData_ = ExtractCsdData(csdAttemptBuffer);
+        if (!cachedCsdData_.empty()) {
+            isCsdCached_ = true;
+            std::lock_guard<std::mutex> csdLock(tempCsdMutex_);
+            tempCsdBufferMap_.clear();
+        }
+    }
+}
+
+void SmartFluencyDecodingManager::OnOutputBufferUnbinded()
+{
+    std::lock_guard<std::mutex> lock(surfaceBufMutex_);
+    surfaceBufMap_.clear();
+}
+
+void SmartFluencyDecodingManager::OnDecodingPerformanceUpdate(double speed, double decFps)
+{
+    if (sfd_) {
+        sfd_->OnDecodingPerformanceUpdate(speed, decFps);
+    }
+}
+
+void SmartFluencyDecodingManager::Flush()
+{
+    if (sfd_) {
+        sfd_->Flush();
+    }
+}
+
+bool SmartFluencyDecodingManager::IsSfdActive() const
+{
+    return sfd_ != nullptr;
+}
+
+void SmartFluencyDecodingManager::EnableMVOutput(Media::Format& format)
+{
+    if (sfd_ != nullptr ||
+        codecMime_ == MediaAVCodec::AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_HEVC ||
+        codecMime_ == MediaAVCodec::AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_VVC) {
+        format.PutIntValue(Media::Tag::VIDEO_DECODER_ENABLE_MV_UPLOAD, 1);
+    }
+}
+
+bool SmartFluencyDecodingManager::IsCodecSupported(const std::string& codecMime, AVCodecType codecType)
+{
+    if (codecType != MediaAVCodec::AVCODEC_TYPE_VIDEO_DECODER) {
+        return false;
+    }
+    if (codecMime != MediaAVCodec::AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_AVC &&
+        codecMime != MediaAVCodec::AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_HEVC &&
+        codecMime != MediaAVCodec::AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_VVC) {
+        return false;
+    }
+    return true;
+}
+
+std::vector<uint8_t> SmartFluencyDecodingManager::ExtractCsdData(const std::shared_ptr<AVBuffer>& buffer)
+{
+    std::vector<uint8_t> csdData;
+    if (!buffer || !buffer->memory_) {
+        AVCODEC_LOGD_WITH_TAG("CSD_DEBUG: ExtractCsdData failed, buffer or memory is null");
+        return csdData;
+    }
+    uint8_t* data = buffer->memory_->GetAddr();
+    int32_t size = buffer->memory_->GetSize();
+    if (!data || size <= MIN_CSD_SIZE) {
+        AVCODEC_LOGD_WITH_TAG("CSD_DEBUG: ExtractCsdData failed, data is null or size (=%{public}d) <= MIN (%{public}d)",
+                              size, MIN_CSD_SIZE);
+        return csdData;
+    }
+    if (buffer->flag_ == AVCODEC_BUFFER_FLAG_CODEC_DATA) {
+        csdData.assign(data, data + size);
+        AVCODEC_LOGI_WITH_TAG("CSD_DEBUG: Extracted %{public}d bytes full pure CODEC_DATA buffer", size);
+        return csdData;
+    }
+    if (buffer->flag_ & (AVCODEC_BUFFER_FLAG_CODEC_DATA | AVCODEC_BUFFER_FLAG_SYNC_FRAME)) {
+        int32_t copySize = std::min(size, DEFAULT_CSD_COPY_SIZE);
+        csdData.assign(data, data + copySize);
+        AVCODEC_LOGI_WITH_TAG("CSD_DEBUG: Fast extracted %{public}d bytes as CSD with flags %{public}u",
+                              copySize, buffer->flag_);
+        return csdData;
+    }
+    AVCODEC_LOGD_WITH_TAG("CSD_DEBUG: ExtractCsdData didn't match flags, buffer->flag_=%{public}u", buffer->flag_);
+    return csdData;
+}
+
+void SmartFluencyDecodingManager::ReplayCsdData(SmartFluencyDecoding* sfd, const std::vector<uint8_t>& csdData)
+{
+    if (!sfd || csdData.empty()) {
+        AVCODEC_LOGW_WITH_TAG("CSD_DEBUG: ReplayCsdData failed, sfd is null or csdData is empty");
+        return;
+    }
+    std::shared_ptr<Media::AVAllocator> allocator =
+        Media::AVAllocatorFactory::CreateSharedAllocator(Media::MEMORY_READ_WRITE);
+    CHECK_AND_RETURN_LOG(allocator != nullptr, "CSD_DEBUG: Failed to create shared allocator for replay tmpBuffer");
+    auto tmpBuffer = Media::AVBuffer::CreateAVBuffer(allocator, static_cast<int32_t>(csdData.size()));
+    if (tmpBuffer && tmpBuffer->memory_) {
+        int32_t capacity = tmpBuffer->memory_->GetCapacity();
+        if (capacity >= static_cast<int32_t>(csdData.size())) {
+            if (memcpy_s(tmpBuffer->memory_->GetAddr(), csdData.size(), csdData.data(), csdData.size()) != EOK) {
+                AVCODEC_LOGE_WITH_TAG("CSD_DEBUG: Failed to copy CSD data");
+                return;
+            }
+            tmpBuffer->flag_ = AVCODEC_BUFFER_FLAG_CODEC_DATA;
+            sfd->InitializeWithCsd(tmpBuffer);
+            AVCODEC_LOGI_WITH_TAG("CSD_DEBUG: SFD Mid-stream enabled: Replayed CSD data successfully, size=%{public}zu",
+                                  csdData.size());
+        } else {
+            AVCODEC_LOGE_WITH_TAG("CSD_DEBUG: Created buffer capacity (=%{public}d) is smaller than required (=%{public}zu)",
+                                  capacity, csdData.size());
+        }
+    } else {
+        AVCODEC_LOGE_WITH_TAG("CSD_DEBUG: Failed to create AVBuffer or memory is null");
+    }
+}
+
+void SmartFluencyDecodingManager::CleanResources()
+{
+    isCsdCached_ = false;
+    cachedCsdData_.clear();
+    {
+        std::lock_guard<std::mutex> csdLock(tempCsdMutex_);
+        tempCsdBufferMap_.clear();
+    }
+    {
+        std::lock_guard<std::mutex> lock(surfaceBufMutex_);
+        surfaceBufMap_.clear();
+    }
+    if (sfd_) {
+        sfd_ = nullptr;
+    }
+#ifdef SFD_DEBUG
+    inputFrameCount_ = 0;
+    isDebugConfigInitialized_ = false;
+#endif
+}
+
+#ifdef SFD_DEBUG
+void SmartFluencyDecodingManager::ApplyDebugConfig(Media::Format& format)
+{
+    if (!isDebugConfigInitialized_) {
+        configRetentionMode_ = std::strtol(OHOS::system::GetParameter("sfd.debug.mode", "-1").c_str(), nullptr, 10);
+        configRetentionRatio_ = std::strtod(OHOS::system::GetParameter("sfd.debug.ratio", "-1.0").c_str(), nullptr);
+        configDecSpeed_ = std::strtod(OHOS::system::GetParameter("sfd.debug.speed", "-1.0").c_str(), nullptr);
+        
+        triggerFrameCnt_ = std::strtol(OHOS::system::GetParameter("sfd.debug.trigger_frame", "-1").c_str(), nullptr, 10);
+        newRetentionMode_ = std::strtol(OHOS::system::GetParameter("sfd.debug.new_mode", "-1").c_str(), nullptr, 10);
+        newRetentionRatio_ = std::strtod(OHOS::system::GetParameter("sfd.debug.new_ratio", "-1.0").c_str(), nullptr);
+        newDecSpeed_ = std::strtod(OHOS::system::GetParameter("sfd.debug.new_speed", "-1.0").c_str(), nullptr);
+        
+        inputFrameCount_ = 0;
+        isDebugConfigInitialized_ = true;
+        
+        AVCODEC_LOGI_WITH_TAG("SFD Debug: Configure: %{public}d, %{public}.2f, %{public}.2f ; trigger=%{public}d :"
+            "%{public}d, %{public}.2f, %{public}.2f", configRetentionMode_, configRetentionRatio_, configDecSpeed_,
+            triggerFrameCnt_, newRetentionMode_, newRetentionRatio_, newDecSpeed_);
+    }
+
+    if (configRetentionMode_ >= 0) {
+        format.PutIntValue(Media::Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, configRetentionMode_);
+    }
+    if (configRetentionRatio_ >= 0.0) {
+        format.PutDoubleValue(Media::Tag::VIDEO_DECODER_FRAME_RETENTION_RATIO, configRetentionRatio_);
+    }
+    if (configDecSpeed_ >= 0.0) {
+        format.PutDoubleValue(Media::Tag::VIDEO_DECODER_SPEED, configDecSpeed_);
+    }
+}
+
+void SmartFluencyDecodingManager::CheckAndTriggerDebugConfig()
+{
+    inputFrameCount_++;
+    if (triggerFrameCnt_ > 0 && inputFrameCount_ == static_cast<uint32_t>(triggerFrameCnt_)) {
+        Media::Format newFormat;
+        if (newRetentionMode_ >= 0) {
+            newFormat.PutIntValue(Media::Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, newRetentionMode_);
+        }
+        if (newRetentionRatio_ >= 0.0) {
+            newFormat.PutDoubleValue(Media::Tag::VIDEO_DECODER_FRAME_RETENTION_RATIO, newRetentionRatio_);
+        };
+        if (newDecSpeed_ >= 0.0) {
+            newFormat.PutDoubleValue(Media::Tag::VIDEO_DECODER_SPEED, newDecSpeed_);
+        }
+        AVCODEC_LOGI_WITH_TAG("SFD Debug: Triggered at frame %{public}u. New mode=%{public}d, ratio=%{public}.2f, speed=%{public}.2f",
+            inputFrameCount_, newRetentionMode_, newRetentionRatio_, newDecSpeed_);
+        if (sfd_) {
+            sfd_->UpdateDynamicConfig(newFormat);
+        } else {
+            Configure(newFormat);
+        }
+    }
+}
+#endif
+} // namespace SFD
+} // namespace MediaAVCodec
+} // namespace OHOS

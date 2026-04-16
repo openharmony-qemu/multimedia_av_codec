@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) 2026 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <gtest/gtest.h>
 #include <memory>
 #include "mv_analyzer.h"
@@ -5,13 +20,11 @@
 
 using namespace OHOS::MediaAVCodec::SFD;
 using namespace testing::ext;
-
 class MvAnalyzerSoLoaderTest : public testing::Test {
 protected:
     void SetUp() override {}
     void TearDown() override {}
 };
-
 /**
  * @tc.name: CreateMvAnalyzer_AVC_001
  * @tc.desc: Factory properly initializes and returns an AVC MV analyzer instance.
@@ -86,13 +99,13 @@ HWTEST_F(MvAnalyzerSoLoaderTest, Loader_InterfaceCall_NoCrash_006, TestSize.Leve
 {
     // Directly use the loader to test its internal safety guards
     auto loader = std::make_unique<MvAnalyzerSoLoader>(SFDCodecType::AVC);
-    
+
     // These should work safely even if LoadLibrary() failed (handle_ is null)
     loader->SetVideoInfo(1920, 1080);
-    
+
     StreamAuxInfo auxInfo{};
     loader->SetStreamAuxInfo(auxInfo);
-    
+
     MVStats stats = loader->Analyze(nullptr);
     // If SO is missing, it returns default zeroed stats
     EXPECT_EQ(stats.totalBlocks, 0);

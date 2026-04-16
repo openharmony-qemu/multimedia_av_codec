@@ -59,7 +59,7 @@ int32_t SmartFluencyDecoding::Initialize(const SFDConfig& config)
     int32_t ret = InitializeInternal();
     CHECK_AND_RETURN_RET_LOG(ret == 0, AVCS_ERR_UNKNOWN, "Failed to initialize internal components");
     isInitialized_ = true;
-    AVCODEC_LOGI("SmartFluencyDecoding initialized: %{public}dx%{public}d, codecType=%{public}d, mode=%{public}d",
+    AVCODEC_LOGE("CSD_DEBUG: SmartFluencyDecoding initialized: %{public}dx%{public}d, codecType=%{public}d, mode=%{public}d",
         config_.width, config_.height, static_cast<int32_t>(config_.codecType), static_cast<int32_t>(config_.initMode));
     return AVCS_ERR_OK;
 }
@@ -153,7 +153,7 @@ int32_t SmartFluencyDecoding::UpdateDynamicConfig(const Media::Format& format)
             }
             std::lock_guard<std::mutex> lock(configMutex_);
             strategy_ = std::move(newStrategy);
-            AVCODEC_LOGI("Dynamic SFD mode updated from %{public}d to %{public}d",
+            AVCODEC_LOGE("CSD_DEBUG: SFD mode updated from %{public}d to %{public}d",
                          static_cast<int32_t>(config_.initMode), static_cast<int32_t>(newMode));
             config_.initMode = newMode;
             config_.retentionRatio = newRatio;
@@ -163,7 +163,7 @@ int32_t SmartFluencyDecoding::UpdateDynamicConfig(const Media::Format& format)
             }
 #endif
         } else {
-            AVCODEC_LOGW("Failed to dynamically update SFD mode to %{public}d", static_cast<int32_t>(newMode));
+            AVCODEC_LOGE("CSD_DEBUG: Failed to dynamically update SFD mode to %{public}d", static_cast<int32_t>(newMode));
         }
     }
 
@@ -225,6 +225,8 @@ bool SmartFluencyDecoding::InitializeWithCsd(const std::shared_ptr<Media::AVBuff
 
 void SmartFluencyDecoding::ExecutePreDrop(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
+    AVCODEC_LOGE("CSD_DEBUG: [Pre-Drop] Executing drop for index %{public}u, pts %{public}" PRId64,
+                         index, buffer->pts_);
     dropSyncCoordinator_->RecordPreDroppedFrame(buffer->pts_);
     droppedInputFrames_++;
     AsyncDropInputCallback localCb = nullptr;
@@ -285,6 +287,7 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
 
 void SmartFluencyDecoding::ExecutePostDrop(uint32_t index)
 {
+    AVCODEC_LOGE("CSD_DEBUG: [Post-Drop] Executing drop for index %{public}u", index);
     droppedOutputFrames_++;
     AsyncDropOutputCallback localCb = nullptr;
     {
@@ -400,7 +403,7 @@ void SmartFluencyDecoding::EnsureNaluAnalyzer()
                      "frameMbsOnlyFlag=%{public}d, ctuSize=%{public}u",
                      info.directSpatialMvPredFlag, info.direct8x8InferenceFlag,
                      info.frameMbsOnlyFlag, info.ctuSize);
-                     
+
         if (this->mvAnalyzer_) {
             this->mvAnalyzer_->SetStreamAuxInfo(info);
         }
@@ -434,4 +437,3 @@ void SmartFluencyDecoding::EnsureMvAnalyzer()
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS
-

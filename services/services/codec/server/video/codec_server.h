@@ -31,14 +31,7 @@
 #include "post_processing.h"
 #include "instance_info.h"
 #include "adaptive_framerate_controller.h"
-
-#ifdef SFD_ENABLED
-#include "features/smart_fluency_decoding/smart_fluency_decoding_builder.h"
-#include "features/smart_fluency_decoding/smart_fluency_decoding.h"
-#endif
-#ifdef SFD_DEBUG
-#include <limits>
-#endif
+#include "smart_fluency_decoding_manager.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -227,29 +220,10 @@ private:
     Format outputFormatChanged_;
     std::shared_ptr<MediaCodecCallback> codecBaseCb_ = nullptr;
     std::shared_ptr<FramerateCalculator> framerateCalculator_ = nullptr;
-#ifdef SFD_ENABLED
-    void InitializeSfd(const Media::Format &format);
-    void CacheCsdData(uint32_t index);
-    bool ProcessSfdOutputBuffer(uint32_t index, const std::shared_ptr<AVBuffer>& buffer);
-    void CleanSfdResources();
-    std::unique_ptr<SFD::SmartFluencyDecoding> smartFluencyDecoding_ = nullptr;
-    std::vector<uint8_t> cachedCsdData_;
-    bool isCsdCached_ = false;
-    std::mutex tempCsdMutex_;
-    std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> tempCsdBufferMap_;
-    std::mutex surfaceBufMutex_;
-    std::unordered_map<int64_t, sptr<SurfaceBuffer>> surfaceBufMap_;
-#endif
-#ifdef SFD_DEBUG
-    int32_t configRetentionMode_ = -1;
-    double configRetentionRatio_ = -1.0;
-    double configDecSpeed_ = -1.0;
-    int32_t triggerFrameCnt_ = -1;
-    int32_t newRetentionMode_ = -1;
-    double newRetentionRatio_ = -1.0;
-    double newDecSpeed_ = -1.0;
-    uint32_t inputFrameCount_ = 0;
-#endif
+
+    // smart flency decoding, video decoder only
+    void InitSfdManager();
+    std::unique_ptr<SFD::SmartFluencyDecodingManager> sfdManager_ = nullptr;
 };
 
 class CodecBaseCallback : public MediaCodecCallback, public NoCopyable {

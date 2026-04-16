@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) 2026 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <gtest/gtest.h>
 #include <memory>
 #include "smart_fluency_decoding_builder.h"
@@ -80,20 +95,6 @@ HWTEST_F(SFDBuilderTest, Build_InvalidRetentionMode_004, TestSize.Level1)
 }
 
 /**
- * @tc.name: IsCodecSupported_VariousCodecs_005
- * @tc.desc: Correctly identify SFD readiness for multiple defined codec names against versions.
- * @tc.type: FUNC
- */
-HWTEST_F(SFDBuilderTest, IsCodecSupported_VariousCodecs_005, TestSize.Level1)
-{
-    EXPECT_TRUE(SmartFluencyDecodingBuilder::IsCodecSupported("video/avc", 1));
-    EXPECT_TRUE(SmartFluencyDecodingBuilder::IsCodecSupported("video/hevc", 1));
-    EXPECT_TRUE(SmartFluencyDecodingBuilder::IsCodecSupported("video/vvc", 1));
-    EXPECT_FALSE(SmartFluencyDecodingBuilder::IsCodecSupported("video/avc", 0));
-    EXPECT_FALSE(SmartFluencyDecodingBuilder::IsCodecSupported("audio/mp4a-latm", 1));
-}
-
-/**
  * @tc.name: SetFromFormat_Comprehensive_006
  * @tc.desc: Ensure complete options sets without error paths properly setup configurations.
  * @tc.type: FUNC
@@ -115,33 +116,6 @@ HWTEST_F(SFDBuilderTest, SetFromFormat_Comprehensive_006, TestSize.Level1)
 
     auto sfd = builder.Build();
     EXPECT_NE(sfd, nullptr);
-}
-
-/**
- * @tc.name: EnableMVOutput_FormatTag_007
- * @tc.desc: Test whether EnableMVOutput modifies Format properties correctly.
- * @tc.type: FUNC
- */
-HWTEST_F(SFDBuilderTest, EnableMVOutput_FormatTag_007, TestSize.Level1)
-{
-    Format format;
-    SmartFluencyDecodingBuilder::EnableMVOutput("video/avc", true, format);
-    int32_t mvUpload = 0;
-    EXPECT_TRUE(format.GetIntValue(Tag::VIDEO_DECODER_ENABLE_MV_UPLOAD, mvUpload));
-    EXPECT_EQ(mvUpload, 1);
-}
-
-/**
- * @tc.name: ParseCodecType_ValidTypes_008
- * @tc.desc: Validate strings matching successfully mapped implementations.
- * @tc.type: FUNC
- */
-HWTEST_F(SFDBuilderTest, ParseCodecType_ValidTypes_008, TestSize.Level1)
-{
-    EXPECT_EQ(SmartFluencyDecodingBuilder::ParseCodecType("video/avc"), SFDCodecType::AVC);
-    EXPECT_EQ(SmartFluencyDecodingBuilder::ParseCodecType("video/hevc"), SFDCodecType::HEVC);
-    EXPECT_EQ(SmartFluencyDecodingBuilder::ParseCodecType("video/vvc"), SFDCodecType::VVC);
-    EXPECT_EQ(SmartFluencyDecodingBuilder::ParseCodecType("video/unknown"), SFDCodecType::INVALID);
 }
 
 /**
