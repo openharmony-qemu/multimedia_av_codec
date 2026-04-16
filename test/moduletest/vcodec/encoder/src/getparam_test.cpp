@@ -320,7 +320,7 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_005, TestSize.Level1)
 HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_006, TestSize.Level1)
 {
     bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(cap_hevc, BITRATE_MODE_CBR);
-    if (!isSupported && access("/system/lib64/media/", 0)) {
+    if (!isSupported) {
         return;
     }
     auto vEncSample = make_unique<VEncAPI11Sample>();
@@ -331,6 +331,9 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_006, TestSize.Level1)
                         "700,710-80,1000=-4";
     vEncSample->OUT_DIR = OUT_DIR;
     vEncSample->SURF_INPUT = true;
+    vEncSample->enableSeekEos = true;
+    vEncSample->enableRepeat = true;
+    vEncSample->setMaxCount = true;
     vEncSample->DEFAULT_BITRATE_MODE = CBR;
     vEncSample->INP_DIR = INP_DIR_1080_30;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
@@ -349,7 +352,7 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_006, TestSize.Level1)
 HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_007, TestSize.Level1)
 {
     bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(cap_hevc, BITRATE_MODE_VBR);
-    if (!isSupported && access("/system/lib64/media/", 0)) {
+    if (!isSupported) {
         return;
     }
     auto vEncSample = make_unique<VEncAPI11Sample>();
@@ -358,6 +361,9 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_007, TestSize.Level1)
     vEncSample->roiInfo = "400,1272-1080,1920=-51";
     vEncSample->OUT_DIR = OUT_DIR;
     vEncSample->SURF_INPUT = true;
+    vEncSample->enableSeekEos = true;
+    vEncSample->enableRepeat = true;
+    vEncSample->setMaxCount = true;
     vEncSample->DEFAULT_BITRATE_MODE = VBR;
     vEncSample->INP_DIR = INP_DIR_1080_30;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
@@ -376,7 +382,7 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_007, TestSize.Level1)
 HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_008, TestSize.Level1)
 {
     bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(cap_hevc, BITRATE_MODE_CBR);
-    if (!isSupported && access("/system/lib64/media/", 0)) {
+    if (!isSupported) {
         return;
     }
     auto vEncSample = make_unique<VEncAPI11Sample>();
@@ -385,6 +391,9 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_008, TestSize.Level1)
     vEncSample->roiInfo = "10,10-100,100=-4;100,100-200,200=-4;350,300-400,430=-4;540,510-690,650=51";
     vEncSample->OUT_DIR = OUT_DIR;
     vEncSample->SURF_INPUT = true;
+    vEncSample->enableSeekEos = true;
+    vEncSample->enableRepeat = true;
+    vEncSample->setMaxCount = true;
     vEncSample->DEFAULT_BITRATE_MODE = CBR;
     vEncSample->INP_DIR = INP_DIR_1080_30;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
@@ -403,7 +412,7 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_008, TestSize.Level1)
 HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_009, TestSize.Level1)
 {
     bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(cap_hevc, BITRATE_MODE_SQR);
-    if (!isSupported && access("/system/lib64/media/", 0)) {
+    if (!isSupported) {
         return;
     }
     auto vEncSample = make_unique<VEncAPI11Sample>();
@@ -412,6 +421,9 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_009, TestSize.Level1)
     vEncSample->roiInfo = "0,0-500,500;500,500-600,600;600,500-700,600";
     vEncSample->OUT_DIR = OUT_DIR;
     vEncSample->SURF_INPUT = true;
+    vEncSample->enableSeekEos = true;
+    vEncSample->enableRepeat = true;
+    vEncSample->setMaxCount = true;
     vEncSample->DEFAULT_BITRATE_MODE = SQR;
     vEncSample->DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV12;
     vEncSample->INP_DIR = INP_DIR_1080_30;
@@ -431,7 +443,7 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_009, TestSize.Level1)
 HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_010, TestSize.Level1)
 {
     bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(cap_hevc, BITRATE_MODE_SQR);
-    if (!isSupported && access("/system/lib64/media/", 0)) {
+    if (!isSupported) {
         return;
     }
     auto vEncSample = make_unique<VEncAPI11Sample>();
@@ -440,6 +452,9 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_010, TestSize.Level1)
     vEncSample->roiInfo = "123456789123,123456789123-123456789-12345678912=-8";
     vEncSample->OUT_DIR = OUT_DIR;
     vEncSample->SURF_INPUT = true;
+    vEncSample->enableSeekEos = true;
+    vEncSample->enableRepeat = true;
+    vEncSample->setMaxCount = true;
     vEncSample->DEFAULT_BITRATE_MODE = SQR;
     vEncSample->DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV12;
     vEncSample->INP_DIR = INP_DIR_1080_30;
