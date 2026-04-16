@@ -25,9 +25,9 @@
 #include <chrono>
 #include <limits>
 #include <regex>
+#include <set>
 #include <arpa/inet.h>
 #include "avcodec_trace.h"
-#include "converter.h"
 #include "securec.h"
 #include "mpeg4_box_parser.h"
 #include "mpeg4_utils.h"
@@ -80,6 +80,8 @@ constexpr uint64_t MIN_SIDX_SIZE = 12;
 constexpr uint64_t MIN_TIMED_METADATA_SAMPLE_ENTRY_SIZE = 16;
 constexpr uint64_t MIN_TRADITIONAL_METADATA_SIZE = 4;
 constexpr uint64_t MIN_LOCI_SIZE = 20;
+constexpr uint64_t MIN_CLLI_SIZE = 12;
+constexpr uint64_t MIN_MDCV_SIZE = 32;
 constexpr int32_t MPEG4_ROOT_DEPTH = 0;  // Root level atom, ftyp, moov, mdat etc.
 constexpr int32_t MPEG4_DEPTH_ONE = 1;  // moov's children atom, mvhd, trak, mvex etc.
 constexpr int32_t MPEG4_DEPTH_TWO = 2;  // trak's direct children atom, tkhd, mdia, edts etc.
@@ -108,6 +110,8 @@ constexpr uint8_t AAC_ER_ELD = 39;
 constexpr uint8_t MPEG4_ES_DESCR_TAG = 0x03;
 constexpr uint8_t MPEG4_DEC_CONFIG_DESCR_TAG = 0x04;
 constexpr uint8_t MPEG4_DEC_SPECIFIC_DESCR_TAG = 0x05;
+constexpr float LUMI_SCALE = 0.0001;
+constexpr float PRIMARY_SCALE = 0.00002;
 
 constexpr std::array<size_t, 4> MATRIX_2X2_INDICES = {0, 1, 3, 4}; // [0][0], [0][1], [1][0], [1][1]
 constexpr std::array<size_t, 3> MATRIX_DIAGONAL_INDICES = {0, 4, 8}; // [0][0], [1][1], [2][2]
@@ -2552,20 +2556,21 @@ Status MPEG4AtomParser::ParseColorParams(int64_t offset, uint64_t dataSize, cons
 
     constexpr uint8_t colorRangeOffset = 6;
     if (colorType == "nclx" && dataSize >= 0x07) { // nclx类型有额外的color range信息
-        colorRange = (colorParams[colorRangeOffset] >> 0x07) & 1;  // 取最高位
-        if (colorRange == 0) {
-            colorRange = ColorRange::JPEG;
-        } else {
-            colorRange = ColorRange::MPEG;
+        uint8_t nclxColorRange = (colorParams[colorRangeOffset] >> 0x07) & 1;  // 取最高位
+        if (nclxColorRange) {
+            colorRange = 1;
         }
     }
     std::string mimeType;
     mediaInfo_.tracks[lastTrack_->trackIndex].GetData(Tag::MIME_TYPE, mimeType);
     if (mimeType == MimeType::VIDEO_HEVC) {
-        mediaInfo_.tracks[lastTrack_->trackIndex].SetData(Tag::VIDEO_COLOR_RANGE, static_cast<bool>(colorRange));
-        mediaInfo_.tracks[lastTrack_->trackIndex].SetData(Tag::VIDEO_COLOR_PRIMARIES, colorPrimaries);
-        mediaInfo_.tracks[lastTrack_->trackIndex].SetData(Tag::VIDEO_COLOR_TRC, colorTrc);
-        mediaInfo_.tracks[lastTrack_->trackIndex].SetData(Tag::VIDEO_COLOR_MATRIX_COEFF, colorMatrix);
+        mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::VIDEO_COLOR_RANGE>(static_cast<bool>(colorRange));
+        mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::VIDEO_COLOR_PRIMARIES>(
+            static_cast<ColorPrimary>(colorPrimaries));
+        mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::VIDEO_COLOR_TRC>(
+            static_cast<TransferCharacteristic>(colorTrc));
+        mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::VIDEO_COLOR_MATRIX_COEFF>(
+            static_cast<MatrixCoefficient>(colorMatrix));
     }
     return Status::OK;
 }
@@ -2617,10 +2622,10 @@ Status MPEG4AtomParser::ParseAclr(MPEG4Atom currentAtom, int32_t depth, ParseCon
     uint8_t colorRange = aclrData[12]; // 第13字节是colorRange
     switch (colorRange) {
         case 0x01:
-            colorRange = ColorRange::MPEG; // MPEG range (16-235)
+            colorRange = 0; // MPEG range (16-235)
             break;
         case 0x02:
-            colorRange = ColorRange::JPEG; // JPEG/PC range (0-255)
+            colorRange = 1; // JPEG/PC range (0-255)
             break;
         default:
             break;
@@ -3817,6 +3822,61 @@ Status MPEG4AtomParser::MPEG4ParseHeader(const std::shared_ptr<DataSource>& sour
     return ret;
 }
 
+Status MPEG4AtomParser::ParseClli(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
+{
+    ctx->offset += currentAtom.size;
+    FALSE_RETURN_V_MSG_D(currentAtom.size >= MIN_CLLI_SIZE, Status::OK, "Clli: Empty");
+    uint8_t info[4];
+    Status ret = dataReader_->ReadUintData(ctx->dataOffset, info, sizeof(info));
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read chan data failed");
+    float maxCLL = static_cast<float>(GetU16Value(&info[0]));
+    float maxFALL = static_cast<float>(GetU16Value(&info[2]));
+    Cta861 cta861;
+    cta861.maxContentLightLevel = maxCLL;
+    cta861.maxFrameAverageLightLevel = maxFALL;
+    std::vector<uint8_t> cta861Vec(sizeof(cta861));
+    cta861Vec.assign(reinterpret_cast<uint8_t*>(&cta861), reinterpret_cast<uint8_t*>(&cta861) + sizeof(cta861));
+    mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::VIDEO_STATIC_METADATA_CTA861>(cta861Vec);
+    lastTrack_->codecParms.hdrBoxInfo.isHdr = true;
+    return Status::OK;
+}
+
+Status MPEG4AtomParser::ParseMdcv(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
+{
+    ctx->offset += currentAtom.size;
+    FALSE_RETURN_V_MSG_D(currentAtom.size >= MIN_MDCV_SIZE, Status::OK, "Mdcv: Empty");
+    uint8_t info[24];
+    Status ret = dataReader_->ReadUintData(ctx->dataOffset, info, sizeof(info));
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read chan data failed");
+    float displayPrimaryRedX = static_cast<float>(GetU16Value(&info[0]));
+    float displayPrimaryRedY = static_cast<float>(GetU16Value(&info[2]));
+    float displayPrimaryGreenX = static_cast<float>(GetU16Value(&info[4]));
+    float displayPrimaryGreenY = static_cast<float>(GetU16Value(&info[6]));
+    float displayPrimaryBlueX = static_cast<float>(GetU16Value(&info[8]));
+    float displayPrimaryBlueY = static_cast<float>(GetU16Value(&info[10]));
+    float whitePointX = static_cast<float>(GetU16Value(&info[12]));
+    float whitePointY = static_cast<float>(GetU16Value(&info[14]));
+    float maxLuminance = static_cast<float>(GetU32Value(&info[16]));
+    float minLuminance = static_cast<float>(GetU32Value(&info[20]));
+    Smpte2086 smpte2086;
+    smpte2086.displayPrimaryRedX = displayPrimaryRedX * PRIMARY_SCALE;
+    smpte2086.displayPrimaryRedY = displayPrimaryRedY * PRIMARY_SCALE;
+    smpte2086.displayPrimaryGreenX = displayPrimaryGreenX * PRIMARY_SCALE;
+    smpte2086.displayPrimaryGreenY = displayPrimaryGreenY * PRIMARY_SCALE;
+    smpte2086.displayPrimaryBlueX = displayPrimaryBlueX * PRIMARY_SCALE;
+    smpte2086.displayPrimaryBlueY = displayPrimaryBlueY * PRIMARY_SCALE;
+    smpte2086.whitePointX = whitePointX * PRIMARY_SCALE;
+    smpte2086.whitePointY = whitePointY * PRIMARY_SCALE;
+    smpte2086.maxLuminance = maxLuminance * LUMI_SCALE;
+    smpte2086.minLuminance = minLuminance * LUMI_SCALE;
+    std::vector<uint8_t> smpte2086Vec(sizeof(smpte2086));
+    smpte2086Vec.assign(
+        reinterpret_cast<uint8_t*>(&smpte2086), reinterpret_cast<uint8_t*>(&smpte2086) + sizeof(smpte2086));
+    mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::VIDEO_STATIC_METADATA_SMPT2086>(smpte2086Vec);
+    lastTrack_->codecParms.hdrBoxInfo.isHdr = true;
+    return Status::OK;
+}
+
 void MPEG4AtomParser::InitParseTable()
 {
     // 填充解析函数表
@@ -3851,6 +3911,7 @@ void MPEG4AtomParser::InitParseTable()
         {FourccType("schi"), &MPEG4AtomParser::ParseSchi}, {FourccType("schm"), &MPEG4AtomParser::ParseSchm},
         {FourccType("kind"), &MPEG4AtomParser::ParseKind}, {FourccType("chan"), &MPEG4AtomParser::ParseChan},
         {FourccType("chap"), &MPEG4AtomParser::ParseChap}, {FourccType("gnre"), &MPEG4AtomParser::ParseMoovGenre},
+        {FourccType("clli"), &MPEG4AtomParser::ParseClli}, {FourccType("mdcv"), &MPEG4AtomParser::ParseMdcv},
     };
 }
 
@@ -3894,6 +3955,22 @@ Status MPEG4AtomParser::ParseAtomHeader(MPEG4Atom& atom, std::string& typeStr, i
     return Status::OK;
 }
 
+void MPEG4AtomParser::SetHdrTypeInfo(MPEG4Atom currentAtom)
+{
+    FALSE_RETURN_NOLOG(lastTrack_ != nullptr);
+    std::set<int32_t> hdrVividBox = {
+        FourccType("cuvv")
+    };
+    std::set<int32_t> dbBox = {
+        FourccType("dvcC"), FourccType("dvvC"), FourccType("dvwC"), FourccType("dvh1")
+    };
+    if (hdrVividBox.count(currentAtom.type)) {
+        lastTrack_->codecParms.hdrBoxInfo.haveHdrVividBox = true;
+    } else if (dbBox.count(currentAtom.type)) {
+        lastTrack_->codecParms.hdrBoxInfo.haveHdrDoblyVisionBox = true;
+    }
+}
+
 Status MPEG4AtomParser::MPEG4ParseAtom(int32_t depth, ParseContext* ctx)
 {
     FALSE_RETURN_V_MSG_E(dataReader_ != nullptr && ctx != nullptr, Status::ERROR_INVALID_PARAMETER,
@@ -3926,6 +4003,7 @@ Status MPEG4AtomParser::MPEG4ParseAtom(int32_t depth, ParseContext* ctx)
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse atom failed for type: " PUBLIC_LOG_S, atomTypeStr.c_str());
     } else {
         // 无法识别的atom类型，跳过
+        SetHdrTypeInfo(atom);
         ctx->offset += atom.size;
     }
     return ret;
@@ -4154,9 +4232,9 @@ void MPEG4AtomParser::SetStartTime()
 
 void MPEG4AtomParser::SetHEVCDefaultValue()
 {
-    uint16_t colorPrimaries = 0;
-    uint16_t colorTrc = 0;
-    uint16_t colorMatrix = 0;
+    ColorPrimary colorPrimaries = ColorPrimary::UNSPECIFIED;
+    TransferCharacteristic colorTrc = TransferCharacteristic::UNSPECIFIED;
+    MatrixCoefficient colorMatrix = MatrixCoefficient::UNSPECIFIED;
     bool colorRange = false;
     std::string mime;
     for (auto track = firstTrack_; track; track = track->next) {

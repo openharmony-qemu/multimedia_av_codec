@@ -99,6 +99,7 @@ const char *OH_MD_KEY_RANGE_FLAG = "range_flag";
 const char *OH_MD_KEY_COLOR_PRIMARIES = "color_primaries";
 const char *OH_MD_KEY_TRANSFER_CHARACTERISTICS = "transfer_characteristics";
 const char *OH_MD_KEY_MATRIX_COEFFICIENTS = "matrix_coefficients";
+const char *OH_MD_KEY_HDR_TYPE = "video_hdr_type";
 const char *OH_MD_KEY_QUALITY = "quality";
 const char *OH_MD_KEY_SQR_FACTOR = "sqr_factor";
 const char *OH_MD_KEY_CHANNEL_LAYOUT = "channel_layout";

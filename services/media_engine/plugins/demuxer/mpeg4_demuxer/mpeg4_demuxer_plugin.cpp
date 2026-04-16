@@ -432,7 +432,7 @@ void MPEG4DemuxerPlugin::GetSingleTrackInfo(const MPEG4AtomParser::Track& track,
             // Parser only sends xps info when first call ConvertPacketToAnnexb
             // readSample will call ConvertPacketToAnnexb again, so rest here
             streamParsers_->ResetXPSSendStatus(trackIndex);
-            ParseHEVCMetadataInfo(trackIndex, meta);
+            ParseHEVCMetadataInfo(track, meta);
         } else {
             MEDIA_LOG_W("Parse hevc info failed");
         }
@@ -496,9 +496,10 @@ void MPEG4DemuxerPlugin::ConvertCsdToAnnexb(const MPEG4AtomParser::Track& track,
     }
 }
 
-void MPEG4DemuxerPlugin::ParseHEVCMetadataInfo(uint32_t trackIndex, Meta& format)
+void MPEG4DemuxerPlugin::ParseHEVCMetadataInfo(const MPEG4AtomParser::Track& track, Meta& format)
 {
     HevcParseFormat parse;
+    uint32_t trackIndex = track.trackIndex;
     MultiStreamParserManager::ParseMetadataInfo(trackIndex, streamParsers_, parse);
     if (parse.isHdrVivid) {
         format.Set<Tag::VIDEO_IS_HDR_VIVID>(true);
@@ -518,8 +519,7 @@ void MPEG4DemuxerPlugin::ParseHEVCMetadataInfo(uint32_t trackIndex, Meta& format
     } else {
         MEDIA_LOG_D("Parse hevc level failed: " PUBLIC_LOG_D32, level);
     }
-    HdrBoxInfo hdrInfo {false, false};
-    Converter::ParseHdrTypeInfo(hdrInfo, format, parse);
+    Converter::ParseHdrTypeInfo(track.codecParms.hdrBoxInfo, format, parse);
 }
 
 bool MPEG4DemuxerPlugin::TrackIsSelected(const uint32_t trackId)

@@ -3089,7 +3089,9 @@ Status FFmpegDemuxerPlugin::SeekToKeyFrame(int32_t trackId, int64_t seekTime,
     if (timeRangeManager_.IsInTimeRanges(ffTime, timeRange)) {
         ffTime = timeRange.end_ts;
     }
-
+    MEDIA_LOG_I("Time [" PUBLIC_LOG_U64 "/" PUBLIC_LOG_U64 "] flag ["
+                PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "]",
+                seekTime, ffTime, static_cast<int32_t>(mode), AVSEEK_FLAG_FRAME);
     int ffRet = AVSeekFrameLock(trackId, ffTime, AVSEEK_FLAG_FRAME);
     FALSE_RETURN_V_MSG_E(ffRet >= 0, Status::ERROR_UNKNOWN,
         "Call av_seek_frame failed, err: " PUBLIC_LOG_S, AVStrError(ffRet).c_str());
