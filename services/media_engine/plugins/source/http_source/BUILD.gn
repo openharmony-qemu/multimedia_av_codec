@@ -142,9 +142,6 @@ ohos_static_library("media_plugin_HttpSource_static") {
     "bundle_framework:appexecfwk_base",
     "bundle_framework:appexecfwk_core",
     "samgr:samgr_proxy",
-  ]
-
-  public_external_deps = [
     "c_utils:utils",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
