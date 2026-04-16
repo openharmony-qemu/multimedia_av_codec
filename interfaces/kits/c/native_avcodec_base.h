@@ -1335,15 +1335,15 @@ extern const char *OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_RATIO;
 extern const char *OH_MD_KEY_VIDEO_DECODER_SPEED;
 
 /**
- * @brief Key for HDR type. value type is int32_t, refer to {@link OH_HDRType}.
- * 
+ * @brief Key for HDR type, value type is int32_t, refer to {@link OH_HDRType}.
+ *
  * @since 26.0.0
 */
 extern const char *OH_MD_KEY_HDR_TYPE;
 
 /**
  * @brief HDR type.
- * 
+ *
  * @since 26.0.0
 */
 typedef enum OH_HDRType {
@@ -1360,7 +1360,7 @@ typedef enum OH_HDRType {
      * @since 26.0.0
      */
     OH_HDR_TYPE_HDR10 = 1,
-    /** 
+    /**
      * HDR Vivid
      * @since 26.0.0
      */

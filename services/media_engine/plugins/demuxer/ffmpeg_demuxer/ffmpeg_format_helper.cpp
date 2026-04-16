@@ -1232,7 +1232,7 @@ void FFmpegFormatHelper::ParseHevcInfo(
         if (type != nullptr && type->value != nullptr) {
             if (StartWith(type->value, "1")) {
                 hdrBoxInfo.isHdr = true;
-            } 
+            }
         }
         Converter::ParseHdrTypeInfo(hdrBoxInfo, format, parse);
     }
