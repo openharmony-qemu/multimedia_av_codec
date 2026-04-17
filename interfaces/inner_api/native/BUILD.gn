@@ -324,6 +324,7 @@ ohos_shared_library("av_codec_client") {
     "media_foundation:media_foundation",
     "qos_manager:qos",
     "samgr:samgr_proxy",
+    "api_metrics:histogrammanager",
   ]
 
   if (av_codec_support_drm) {

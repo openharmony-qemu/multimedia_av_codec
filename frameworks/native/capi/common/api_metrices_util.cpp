@@ -1,0 +1,44 @@
+/*
+ * Copyright (C) 2026 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <chrono>
+#include "histogram_plugin_macros.h"
+
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodec_api_metrices"};
+}
+namespace OHOS {
+namespace MediaAVCodec {
+ApiMetricesReporter::ApiMetricesReporter(std::string apiName, MetricesType metricesType, int32_t sample) :
+    apiName_(std::move(apiName)), metricesType_(metricesType), sample_(sample),
+    beginTime_(std::chrono::steady_clock()::now()) {}
+
+ApiMetricesReporter::~ApiMetricesReporter()
+{
+    switch (metricesType_)
+    {
+        case ENUMERATION:
+            HISTOGRAM_ENUMERATION(apiName_, sample_, 5410009);
+            break;
+        case TIMES:
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock()::now() -
+                beginTime_).count();
+            HISTOGRAM_TIMES(apiName_, duration);
+            break;
+        default:
+            break;
+    }
+}
+}

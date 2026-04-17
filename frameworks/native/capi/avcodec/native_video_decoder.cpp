@@ -30,6 +30,7 @@
 #include "native_avmagic.h"
 #include "native_window.h"
 #include "hiappevent_util.h"
+#include "api_metrices_util.h"
 
 #ifdef SUPPORT_DRM
 #include "native_drm_object.h"
@@ -424,7 +425,7 @@ OH_AVErrCode OH_VideoDecoder_Start(struct OH_AVCodec *codec)
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, AV_ERR_INVALID_VAL,
                              "Codec magic error!");
-
+    ApiMetricesReporter("AVCodecKit.OH_VideoDecoder_Start.Time", TIMES);    
     static AppEventReporter appEventReporter = AppEventReporter();
     ApiInvokeRecorder apiInvokeRecorder("OH_VideoDecoder_Start", appEventReporter);
 
@@ -433,9 +434,9 @@ OH_AVErrCode OH_VideoDecoder_Start(struct OH_AVCodec *codec)
 
     int32_t ret = videoDecObj->videoDecoder_->Start();
     apiInvokeRecorder.SetErrorCode(AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)));
+    ApiMetricesReporter("AVCodecKit.OH_VideoDecoder_Start.ErrorCode", ENUMERATION, ret);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video decoder start failed!");
-
     return AV_ERR_OK;
 }
 
