@@ -36,6 +36,13 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "SmartFluencyDecoding"};
 constexpr double DEFAULT_PLAYBACK_SPEED = 1.0;
 constexpr double RETENTION_RATIO_MIN_DIFF = 0.001;
+
+#ifdef SFD_DEBUG
+inline int64_t GetCurrentSysTimeUs() {
+    auto now = std::chrono::steady_clock::now();
+    return std::chrono::duration_cast<std::chrono::microseconds>(now.time_since_epoch()).count();
+}
+#endif
 }
 
 namespace OHOS {
@@ -270,8 +277,10 @@ void SmartFluencyDecoding::InitializeWithCsd(const std::vector<uint8_t>& csdData
 
 void SmartFluencyDecoding::ExecutePreDrop(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    AVCODEC_LOGE("CSD_DEBUG: [Pre-Drop] Executing drop for index %{public}u, pts %{public}" PRId64,
-                         index, buffer->pts_);
+    CHECK_AND_RETURN_LOG(buffer != nullptr, "ExecutePreDrop: buffer is null for index %{public}u", index);
+    AVCODEC_LOGE("CSD_DEBUG: [Pre-Drop] Executing drop for index %{public}u, pts %{public}" PRId64
+        ", flag %{public}u", index, buffer->pts_, buffer->flag_);
+    CHECK_AND_RETURN_LOG(buffer->flag_ != AVCODEC_BUFFER_FLAG_CODEC_DATA, "ExecutePreDrop: skip CODEC_DATA buffer");
     dropSyncCoordinator_->RecordPreDroppedFrame(buffer->pts_);
     droppedInputFrames_++;
     AsyncDropInputCallback localCb = nullptr;
@@ -288,6 +297,10 @@ void SmartFluencyDecoding::ExecutePreDrop(uint32_t index, std::shared_ptr<AVBuff
 
 bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
 {
+#ifdef SFD_DEBUG
+    int64_t startUs = GetCurrentSysTimeUs(); // 开始计时
+#endif
+
     std::shared_ptr<AVBuffer> buffer = nullptr;
     {
         std::lock_guard<std::mutex> lock(configMutex_);
@@ -315,6 +328,10 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
         ExecutePreDrop(index, buffer);
     }
 #ifdef SFD_DEBUG
+    int64_t endUs = GetCurrentSysTimeUs(); // 结束计时
+#endif
+
+#ifdef SFD_DEBUG
     if (dumper_) {
         SmartFluencyDecodingDumper::PreDecodeRecordCtx dumperCtx;
         dumperCtx.pts = buffer->pts_;
@@ -323,6 +340,12 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
         dumperCtx.flags = buffer->flag_;
         dumperCtx.dropped = !shouldRetain;
         dumperCtx.sysTimeMs = GetCurrentSysTimeMs();
+        
+        // --- 填入新增的观测字段 ---
+        dumperCtx.preDecCostUs = endUs - startUs;
+        dumperCtx.writeIndex = dropSyncCoordinator_->GetWriteIndex();
+        dumperCtx.currentEmaDropRatio = dropSyncCoordinator_->GetCurrentEma();
+        
         dumper_->RecordPreDecode(dumperCtx);
     }
 #endif
@@ -348,6 +371,10 @@ void SmartFluencyDecoding::ExecutePostDrop(uint32_t index)
 
 bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, const sptr<SurfaceBuffer> surfaceBuffer)
 {
+#ifdef SFD_DEBUG
+    int64_t startUs = GetCurrentSysTimeUs(); // 开始计时
+#endif
+
     if (!isInitialized_ || !strategy_ || !dropSyncCoordinator_ || !surfaceBuffer) {
         return true;
     }
@@ -376,6 +403,11 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
     if (!shouldRetain) {
         ExecutePostDrop(index);
     }
+    
+#ifdef SFD_DEBUG
+    int64_t endUs = GetCurrentSysTimeUs(); // 结束计时
+#endif
+
 #ifdef SFD_DEBUG
     if (dumper_) {
         SmartFluencyDecodingDumper::PostDecodeRecordCtx dumperCtx;
@@ -383,6 +415,13 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
         dumperCtx.dropped = !shouldRetain;
         dumperCtx.preDropCount = preDroppedCount;
         dumperCtx.sysTimeMs = GetCurrentSysTimeMs();
+        
+        // --- 填入新增的观测字段 ---
+        dumperCtx.postDecCostUs = endUs - startUs;
+        dumperCtx.readIndex = dropSyncCoordinator_->GetReadIndex();
+        dumperCtx.currentEmaDropRatio = dropSyncCoordinator_->GetCurrentEma(); // 记录反馈更新后的最新 Ema
+        dumperCtx.mvStats = currentMvStats;
+        
         dumper_->RecordPostDecode(dumperCtx);
     }
 #endif

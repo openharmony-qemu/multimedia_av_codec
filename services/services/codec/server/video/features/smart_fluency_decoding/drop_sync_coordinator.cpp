@@ -34,7 +34,8 @@ bool DropSyncCoordinator::RecordPreDroppedFrame(int64_t droppedPts)
     }
     ptsRingBuffer_[currentWrite & queueMask] = droppedPts;
     writeIndex_.store(nextWrite, std::memory_order_release);
-    AVCODEC_LOGD("SfdSync: Recorded pre-dropped PTS %{public}" PRId64, droppedPts);
+    AVCODEC_LOGD("SfdSync: Recorded pre-dropped PTS %{public}"
+        PRId64 ", writeIndex: %{public}zu", droppedPts, nextWrite);
     return true;
 }
 

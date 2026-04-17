@@ -98,6 +98,10 @@ void SmartFluencyDecodingDumper::RecordPreDecode(const PreDecodeRecordCtx& ctx)
         it->mode = currentMode_;
         it->retentionRate = currentRetentionRate_;
         it->speed = currentSpeed_;
+        // 新增字段赋值
+        it->preDecCostUs = ctx.preDecCostUs;
+        it->writeIndex = ctx.writeIndex;
+        it->currentEmaDropRatio = ctx.currentEmaDropRatio;
     } else {
         FrameDumpRecord rec;
         rec.pts = ctx.pts;
@@ -109,6 +113,10 @@ void SmartFluencyDecodingDumper::RecordPreDecode(const PreDecodeRecordCtx& ctx)
         rec.mode = currentMode_;
         rec.retentionRate = currentRetentionRate_;
         rec.speed = currentSpeed_;
+        // 新增字段赋值
+        rec.preDecCostUs = ctx.preDecCostUs;
+        rec.writeIndex = ctx.writeIndex;
+        rec.currentEmaDropRatio = ctx.currentEmaDropRatio;
         records_.push_back(rec);
     }
     if (records_.size() >= MAX_DUMP_RECORDS) {
@@ -126,6 +134,14 @@ void SmartFluencyDecodingDumper::RecordPostDecode(const PostDecodeRecordCtx& ctx
         it->isPostDropped = ctx.dropped;
         it->preDropCount = ctx.preDropCount;
         it->postSysTimeMs = ctx.sysTimeMs;
+        // 新增字段赋值
+        it->postDecCostUs = ctx.postDecCostUs;
+        it->readIndex = ctx.readIndex;
+        it->currentEmaDropRatio = ctx.currentEmaDropRatio;
+        it->validBlocks = ctx.mvStats.validBlocks;
+        it->perceptualMagnitude = ctx.mvStats.perceptualMagnitude;
+        it->motionConsistency = ctx.mvStats.motionConsistency;
+        it->zeroMotionRatio = ctx.mvStats.zeroMotionRatio;
     } else {
         FrameDumpRecord rec;
         rec.pts = ctx.pts;
@@ -135,6 +151,14 @@ void SmartFluencyDecodingDumper::RecordPostDecode(const PostDecodeRecordCtx& ctx
         rec.mode = currentMode_;
         rec.retentionRate = currentRetentionRate_;
         rec.speed = currentSpeed_;
+        // 新增字段赋值
+        rec.postDecCostUs = ctx.postDecCostUs;
+        rec.readIndex = ctx.readIndex;
+        rec.currentEmaDropRatio = ctx.currentEmaDropRatio;
+        rec.validBlocks = ctx.mvStats.validBlocks;
+        rec.perceptualMagnitude = ctx.mvStats.perceptualMagnitude;
+        rec.motionConsistency = ctx.mvStats.motionConsistency;
+        rec.zeroMotionRatio = ctx.mvStats.zeroMotionRatio;
         records_.push_back(rec);
     }
     if (records_.size() >= MAX_DUMP_RECORDS) {
@@ -164,6 +188,9 @@ void SmartFluencyDecodingDumper::DumpToFileInternal()
     if (records_.empty()) {
         return;
     }
+    std::sort(records_.begin(), records_.end(), [](const FrameDumpRecord& a, const FrameDumpRecord& b) {
+        return a.pts < b.pts;
+    });
     std::string timestamp = GetTimestampString();
     std::string filename = std::string(DUMP_DIR) + "SFD_" + timestamp + ".csv";
     std::ofstream ofs(filename);
@@ -174,8 +201,12 @@ void SmartFluencyDecodingDumper::DumpToFileInternal()
     ofs << "# Final Mode: " << static_cast<int>(currentMode_) << "\n";
     ofs << "# CtuSize: " << currentCtuSize_ << "\n";
     ofs << "# ----------------------------------------------------\n";
+    // 扩展表头
     ofs << "PTS,DTS,Flags,IsNonRef,Mode,PreDropped,PostDropped,"
-           "PreSysTimeMs,PostSysTimeMs,PreDropCount,RetentionRate,Speed\n";
+           "PreSysTimeMs,PostSysTimeMs,PreDropCount,RetentionRate,Speed,"
+           "PreCostUs,PostCostUs,WriteIdx,ReadIdx,EmaDropRatio,"
+           "MvValidBlks,MvPerceptMag,MvMotionConsist,MvZeroRatio\n";
+           
     for (const auto& rec : records_) {
         ofs << rec.pts << ","
             << rec.dts << ","
@@ -188,7 +219,17 @@ void SmartFluencyDecodingDumper::DumpToFileInternal()
             << rec.postSysTimeMs << ","
             << rec.preDropCount << ","
             << rec.retentionRate << ","
-            << rec.speed << "\n";
+            << rec.speed << ","
+            // 写入新增的字段数据
+            << rec.preDecCostUs << ","
+            << rec.postDecCostUs << ","
+            << rec.writeIndex << ","
+            << rec.readIndex << ","
+            << rec.currentEmaDropRatio << ","
+            << rec.validBlocks << ","
+            << rec.perceptualMagnitude << ","
+            << rec.motionConsistency << ","
+            << rec.zeroMotionRatio << "\n";
     }
     ofs.close();
     AVCODEC_LOGI("Successfully dumped %{public}zu records to %{public}s", records_.size(), filename.c_str());

@@ -36,6 +36,8 @@ public:
     double GetTargetRetentionRatio() const;
     void UpdateFeedback(
         uint32_t preDroppedCount, bool currentDropped, double targetRetentionRatio, double currentSpeed);
+    size_t GetWriteIndex() const { return writeIndex_.load(std::memory_order_relaxed); }
+    size_t GetReadIndex() const { return readIndex_.load(std::memory_order_relaxed); }
 
 private:
     static constexpr size_t queueCapacity = 128;

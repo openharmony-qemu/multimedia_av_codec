@@ -39,9 +39,23 @@ struct FrameDumpRecord {
     double retentionRate;
     double speed;
 
+    // --- 新增的 Dump 字段 ---
+    int64_t preDecCostUs;         // PreDecode 接口耗时 (微秒)
+    int64_t postDecCostUs;        // PostDecode 接口耗时 (微秒)
+    size_t writeIndex;            // 同步队列的写入位置
+    size_t readIndex;             // 同步队列的读取位置
+    double currentEmaDropRatio;   // 当前平滑丢帧率
+    uint32_t validBlocks;         // MV有效宏块数
+    double perceptualMagnitude;   // MV感知运动幅度
+    double motionConsistency;     // MV运动一致性
+    double zeroMotionRatio;       // 零运动宏块比例
+
     FrameDumpRecord() : pts(-1), dts(-1), flags(0), isNonRef(false), isPreDropped(false), isPostDropped(false),
                         preSysTimeMs(-1), postSysTimeMs(-1), preDropCount(0),
-                        mode(RetentionStrategyType::FULL), retentionRate(1.0), speed(1.0) {}
+                        mode(RetentionStrategyType::FULL), retentionRate(1.0), speed(1.0),
+                        preDecCostUs(-1), postDecCostUs(-1), writeIndex(0), readIndex(0),
+                        currentEmaDropRatio(0.0), validBlocks(0), perceptualMagnitude(0.0),
+                        motionConsistency(0.0), zeroMotionRatio(0.0) {}
 };
 
 class SmartFluencyDecodingDumper {
@@ -61,6 +75,10 @@ public:
         bool isNonRef{false};
         bool dropped{false};
         int64_t sysTimeMs{-1};
+        // --- 新增 ---
+        int64_t preDecCostUs{-1};
+        size_t writeIndex{0};
+        double currentEmaDropRatio{0.0};
     };
 
     struct PostDecodeRecordCtx {
@@ -68,6 +86,11 @@ public:
         bool dropped{false};
         int32_t preDropCount{0};
         int64_t sysTimeMs{-1};
+        // --- 新增 ---
+        int64_t postDecCostUs{-1};
+        size_t readIndex{0};
+        double currentEmaDropRatio{0.0};
+        MVStats mvStats;
     };
 
     void RecordPreDecode(const PreDecodeRecordCtx& ctx);
