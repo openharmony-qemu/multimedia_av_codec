@@ -13,32 +13,35 @@
  * limitations under the License.
  */
 
-#include <chrono>
+#include "api_metrics_util.h"
+#include "avcodec_log.h"
+#include "avcodec_errors.h"
 #include "histogram_plugin_macros.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodec_api_metrices"};
 }
+
 namespace OHOS {
 namespace MediaAVCodec {
-ApiMetricesReporter::ApiMetricesReporter(std::string apiName, MetricesType metricesType, int32_t sample) :
+ApiMetricsReporter::ApiMetricsReporter(std::string apiName, MetricesType metricesType, int32_t sample) :
     apiName_(std::move(apiName)), metricesType_(metricesType), sample_(sample),
-    beginTime_(std::chrono::steady_clock()::now()) {}
+    beginTime_(std::chrono::steady_clock::now()) {}
 
-ApiMetricesReporter::~ApiMetricesReporter()
+ApiMetricsReporter::~ApiMetricsReporter()
 {
     switch (metricesType_)
     {
         case ENUMERATION:
-            HISTOGRAM_ENUMERATION(apiName_, sample_, 5410009);
+            HISTOGRAM_ENUMERATION(apiName_.c_str(), sample_, 5410009);
             break;
         case TIMES:
-            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock()::now() -
-                beginTime_).count();
-            HISTOGRAM_TIMES(apiName_, duration);
+            HISTOGRAM_TIMES(apiName_.c_str(), std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - beginTime_).count());
             break;
         default:
             break;
     }
 }
-}
+} // namespace MediaAVCodec
+} // namespace OHOS

@@ -13,10 +13,11 @@
  * limitations under the License.
  */
 
-#ifndef API_METRICES_UTIL_H
-#define API_METRICES_UTIL_H
+#ifndef API_METRICS_UTIL_H
+#define API_METRICS_UTIL_H
 
 #include <string>
+#include <chrono>
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -28,18 +29,17 @@ enum MetricesType : int32_t {
     PERCENTAGE,
 };
 
-class ApiMetricesReporter {
+class ApiMetricsReporter {
 public:
-    explicit ApiMetricesReporter(std::string apiName, MetricesType metricesType, int32_t sample = 0);
-    ~ApiMetricesReporter();
+    explicit ApiMetricsReporter(std::string apiName, MetricesType metricesType, int32_t sample = 0);
+    ~ApiMetricsReporter();
 
 private:
-    MetricesType metricesType_;
     std::string apiName_;
+    MetricesType metricesType_;
     int32_t sample_;
-    int32_t errorCode_{0};
     int64_t beginTime_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // API_METRICES_UTIL_H
+#endif // API_METRICS_UTIL_H

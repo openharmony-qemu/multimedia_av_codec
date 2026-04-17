@@ -108,7 +108,7 @@
           "json",
           "resource_schedule_service",
           "certificate_manager",
-          "api_metrices"
+          "api_metrics"
         ],
         "third_party": []
       },
