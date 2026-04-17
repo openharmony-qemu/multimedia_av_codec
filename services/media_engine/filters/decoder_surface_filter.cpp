@@ -1760,7 +1760,7 @@ Status DecoderSurfaceFilter::DoReInitAndStart()
         return ret;
     }
     if (isDecoderReleasedForMute_) {
-        if (postProcessor_ == nullptr && CreatePostProcessor() == nullptr) {
+        if (postProcessor_ == nullptr && IsPostProcessorSupported() && CreatePostProcessor() == nullptr) {
             if (postProcessorType_ == VideoPostProcessorType::SUPER_RESOLUTION && eventReceiver_ != nullptr) {
                 eventReceiver_->OnEvent({"SuperResolutionPostProcessor", EventType::EVENT_SUPER_RESOLUTION_CHANGED,
                     false});
