@@ -249,7 +249,7 @@ Status MPEG4DemuxerPlugin::ConvertElstTimescaleToMs()
         return Status::OK;
     }
     int32_t fileTimeScale;
-    if (!mediaInfo_.general.GetData(Tag::MEDIA_TIME_SCALE, fileTimeScale)) {
+    if (!mediaInfo_.general.Get<Tag::MEDIA_TIME_SCALE>(fileTimeScale)) {
         MEDIA_LOG_E("Get mvhd timescale failed");
         return Status::ERROR_INVALID_DATA;
     }
@@ -260,7 +260,7 @@ Status MPEG4DemuxerPlugin::ConvertElstTimescaleToMs()
             track = track->next;
             continue;
         }
-        if (mediaInfo_.tracks[trackIndex].GetData(Tag::MEDIA_TIME_SCALE, trackTimeScale)) {
+        if (mediaInfo_.tracks[trackIndex].Get<Tag::MEDIA_TIME_SCALE>(trackTimeScale)) {
             int64_t tempEmptyEdit = 0;
             FALSE_RETURN_V_MSG_E(
                 ConvertTimeScale(track->elstInitEmptyEdit, 1000LL, fileTimeScale, &tempEmptyEdit) == Status::OK,
@@ -282,7 +282,7 @@ Status MPEG4DemuxerPlugin::HasCodecParameters()
     auto track = firstTrack_;
     Status ret = ConvertElstTimescaleToMs();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ConvertElstTimescaleToMs is failed");
-    FALSE_RETURN_V_MSG_E(mediaInfo_.general.GetData(Tag::MEDIA_TRACK_COUNT, trackCount), Status::ERROR_INVALID_DATA,
+    FALSE_RETURN_V_MSG_E(mediaInfo_.general.Get<Tag::MEDIA_TRACK_COUNT>(trackCount), Status::ERROR_INVALID_DATA,
         "GetData is failed");
     FALSE_RETURN_V_MSG_E(trackCount == static_cast<int32_t>(mediaInfo_.tracks.size()), Status::ERROR_INVALID_DATA,
         "mediaInfo is error");
@@ -291,19 +291,19 @@ Status MPEG4DemuxerPlugin::HasCodecParameters()
         FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_NULL_POINTER, "track is nullptr");
         Meta &format = mediaInfo_.tracks[trackIndex];
         std::string mime;
-        FALSE_RETURN_V_MSG_E(format.GetData(Tag::MIME_TYPE, mime), Status::ERROR_INVALID_DATA, "Get mime type failed");
+        FALSE_RETURN_V_MSG_E(format.Get<Tag::MIME_TYPE>(mime), Status::ERROR_INVALID_DATA, "Get mime type failed");
         bool flag = !HaveValidParser(mime) || (HaveValidParser(mime) && streamParsers_ != nullptr);
         switch (track->codecParms.trackType) {
             case AUDIO_TYPE:
-                FALSE_RETURN_V_MSG_E(format.GetData(Tag::AUDIO_CHANNEL_COUNT, param), Status::ERROR_INVALID_DATA,
+                FALSE_RETURN_V_MSG_E(format.Get<Tag::AUDIO_CHANNEL_COUNT>(param), Status::ERROR_INVALID_DATA,
                     "unspecified channel_count");
-                FALSE_RETURN_V_MSG_E(format.GetData(Tag::AUDIO_SAMPLE_RATE, param), Status::ERROR_INVALID_DATA,
+                FALSE_RETURN_V_MSG_E(format.Get<Tag::AUDIO_SAMPLE_RATE>(param), Status::ERROR_INVALID_DATA,
                     "unspecified sample_rate");
                 break;
             case VIDEO_TYPE:
-                FALSE_RETURN_V_MSG_E(flag && format.GetData(Tag::VIDEO_WIDTH, param), Status::ERROR_INVALID_DATA,
+                FALSE_RETURN_V_MSG_E(flag && format.Get<Tag::VIDEO_WIDTH>(param), Status::ERROR_INVALID_DATA,
                     "unspecified width");
-                FALSE_RETURN_V_MSG_E(flag && format.GetData(Tag::VIDEO_HEIGHT, param), Status::ERROR_INVALID_DATA,
+                FALSE_RETURN_V_MSG_E(flag && format.Get<Tag::VIDEO_HEIGHT>(param), Status::ERROR_INVALID_DATA,
                     "unspecified height");
                 break;
             default:
@@ -321,7 +321,7 @@ void MPEG4DemuxerPlugin::InitParser()
     streamParsers_ = std::make_shared<MultiStreamParserManager>();
     for (uint32_t trackIndex = 0; track != nullptr; ++trackIndex) {
         std::string mime;
-        mediaInfo_.tracks[trackIndex].GetData(Tag::MIME_TYPE, mime);
+        mediaInfo_.tracks[trackIndex].Get<Tag::MIME_TYPE>(mime);
         if (HaveValidParser(mime) && streamParsers_ != nullptr) {
             Status ret = streamParsers_->Create(trackIndex, g_streamParserMap.at(mime));
             if (ret != Status::OK) {
@@ -355,7 +355,7 @@ void MPEG4DemuxerPlugin::GetAVTrackIds()
 Status MPEG4DemuxerPlugin::ParseAVFirstFrames()
 {
     int32_t trackCount;
-    FALSE_RETURN_V_MSG_E(mediaInfo_.general.GetData(Tag::MEDIA_TRACK_COUNT, trackCount), Status::ERROR_INVALID_DATA,
+    FALSE_RETURN_V_MSG_E(mediaInfo_.general.Get<Tag::MEDIA_TRACK_COUNT>(trackCount), Status::ERROR_INVALID_DATA,
         "Get track count failed");
     GetAVTrackIds();
     for (const auto& avTrackId : avTrackIds_) {
@@ -420,7 +420,7 @@ void MPEG4DemuxerPlugin::GetSingleTrackInfo(const MPEG4AtomParser::Track& track,
 {
     Meta meta = mediaInfo_.tracks[trackIndex];
     std::string mime;
-    mediaInfo_.tracks[trackIndex].GetData(Tag::MIME_TYPE, mime);
+    mediaInfo_.tracks[trackIndex].Get<Tag::MIME_TYPE>(mime);
     if (mime == "video/hevc") {
         if (streamParsers_ != nullptr && streamParsers_->ParserIsInited(trackIndex) &&
             FirstFrameValid(trackIndex)) {
@@ -449,7 +449,7 @@ Status MPEG4DemuxerPlugin::GetMediaInfo()
     MEDIA_LOG_D("In");
     MediaAVCodec::AVCodecTrace trace("MPEG4DemuxerPlugin::GetMediaInfo");
     int32_t trackCount = CountTracks();
-    mediaInfo_.general.SetData(Tag::MEDIA_TRACK_COUNT, trackCount);
+    mediaInfo_.general.Set<Tag::MEDIA_TRACK_COUNT>(trackCount);
     Status ret = ParseAVFirstFrames();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse first frames failed");
     DemuxerLogCompressor::StringifyMeta(mediaInfo_.general, -1);
@@ -483,7 +483,7 @@ void MPEG4DemuxerPlugin::ConvertCsdToAnnexb(const MPEG4AtomParser::Track& track,
     uint8_t *extradata = track.codecParms.data.get();
     int32_t extradataSize = track.codecParms.extradataSize;
     std::string mime;
-    mediaInfo_.tracks[trackIndex].GetData(Tag::MIME_TYPE, mime);
+    mediaInfo_.tracks[trackIndex].Get<Tag::MIME_TYPE>(mime);
     if (HaveValidParser(mime) && streamParsers_ != nullptr &&
         streamParsers_->ParserIsInited(trackIndex)) {
         PacketConvertInfo convertInfo {nullptr, 0, true};
@@ -542,7 +542,7 @@ Status MPEG4DemuxerPlugin::SelectTrack(uint32_t trackId)
     MEDIA_LOG_I("Select " PUBLIC_LOG_D32, trackId);
     FALSE_RETURN_V_MSG_E(inited_, Status::ERROR_NULL_POINTER, "Plugin has not been initialized");
     int32_t trackCount;
-    FALSE_RETURN_V_MSG_E(mediaInfo_.general.GetData(Tag::MEDIA_TRACK_COUNT, trackCount),
+    FALSE_RETURN_V_MSG_E(mediaInfo_.general.Get<Tag::MEDIA_TRACK_COUNT>(trackCount),
         Status::ERROR_INVALID_DATA, "GetData is failed");
     if (trackId >= static_cast<uint32_t>(trackCount)) {
         MEDIA_LOG_E("Track is Invalid, just have " PUBLIC_LOG_D32 "tracks in file", trackCount);
@@ -572,7 +572,7 @@ Status MPEG4DemuxerPlugin::UnselectTrack(uint32_t trackId)
     MEDIA_LOG_I("Unselect " PUBLIC_LOG_D32, trackId);
     FALSE_RETURN_V_MSG_E(inited_, Status::ERROR_NULL_POINTER, "Plugin has not been initialized");
     int32_t trackCount;
-    FALSE_RETURN_V_MSG_E(mediaInfo_.general.GetData(Tag::MEDIA_TRACK_COUNT, trackCount),
+    FALSE_RETURN_V_MSG_E(mediaInfo_.general.Get<Tag::MEDIA_TRACK_COUNT>(trackCount),
         Status::ERROR_INVALID_DATA, "GetData is failed");
     if (trackId >= static_cast<uint32_t>(trackCount)) {
         MEDIA_LOG_E("Track is Invalid, just have " PUBLIC_LOG_D32 "tracks in file", trackCount);
@@ -601,7 +601,7 @@ Status MPEG4DemuxerPlugin::DynamicBaseTrackSelect(int64_t seekTime, int64_t &max
         FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");
         FALSE_RETURN_V_MSG_E(track->sampleHelper != nullptr, Status::ERROR_NULL_POINTER, "sampleHelper is nullptr");
         int32_t trackTimeBase;
-        if (!mediaInfo_.tracks[track->trackIndex].GetData(Tag::MEDIA_TIME_SCALE, trackTimeBase)) {
+        if (!mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_TIME_SCALE>(trackTimeBase)) {
             return Status::ERROR_INVALID_PARAMETER;
         }
         int64_t timeDelay = track->elstInitEmptyEdit - minElstInitEmptyEdit_;
@@ -715,7 +715,7 @@ Status MPEG4DemuxerPlugin::FindFragmentAtTime(int64_t fragmentSeekTime, SeekMode
         FALSE_RETURN_V_MSG_E(ParseMoof(moofOffset) == Status::OK, Status::ERROR_INVALID_PARAMETER, "ParseMoof failed");
     }
     bool hasVideoTrack = false;
-    mediaInfo_.general.GetData(Tag::MEDIA_HAS_VIDEO, hasVideoTrack);
+    mediaInfo_.general.Get<Tag::MEDIA_HAS_VIDEO>(hasVideoTrack);
     if (hasVideoTrack && FindFragmentSyncSample(fragmentIndex, track) == Status::OK) {
         findFragmentSync = true;
     }
@@ -740,7 +740,7 @@ Status MPEG4DemuxerPlugin::DoSeekInternal(int32_t trackIndex, int64_t seekTime, 
     auto& entry = track->sampleHelper->sampleIndexEntry_;
     int64_t relativeSeekTime = seekTime - (track->elstInitEmptyEdit - minElstInitEmptyEdit_);
     int32_t baseTrackTimeScale;
-    if (!mediaInfo_.tracks[trackIndex].GetData(Tag::MEDIA_TIME_SCALE, baseTrackTimeScale)) {
+    if (!mediaInfo_.tracks[trackIndex].Get<Tag::MEDIA_TIME_SCALE>(baseTrackTimeScale)) {
         return Status::ERROR_INVALID_PARAMETER;
     }
     int64_t startTime = 0;
@@ -805,7 +805,7 @@ Status MPEG4DemuxerPlugin::MultiTrackSync(int32_t trackIndex, bool isBaseTrack, 
         uint32_t otherSampleIndex = 0;
         adjustSeekTime = syncSeekTime - otherTrack->elstInitEmptyEdit;
         int32_t otherTrackTimeScale;
-        if (!mediaInfo_.tracks[currentTrackId].GetData(Tag::MEDIA_TIME_SCALE, otherTrackTimeScale)) {
+        if (!mediaInfo_.tracks[currentTrackId].Get<Tag::MEDIA_TIME_SCALE>(otherTrackTimeScale)) {
             return Status::ERROR_INVALID_PARAMETER;
         }
 
@@ -977,7 +977,7 @@ Status MPEG4DemuxerPlugin::WriteSampleAttr(uint32_t trackId, std::shared_ptr<Sam
     int64_t samplePts = 0;
     int64_t sampleDts = 0;
     int32_t trackTimeScale;
-    if (!mediaInfo_.tracks[trackId].GetData(Tag::MEDIA_TIME_SCALE, trackTimeScale)) {
+    if (!mediaInfo_.tracks[trackId].Get<Tag::MEDIA_TIME_SCALE>(trackTimeScale)) {
         return Status::ERROR_INVALID_PARAMETER;
     }
     FALSE_RETURN_V_MSG_E(
@@ -1088,7 +1088,7 @@ Status MPEG4DemuxerPlugin::ConvertSampleToAnnexb(std::shared_ptr<MPEG4Sample> ds
         return ret;
     }
     std::string mime;
-    mediaInfo_.tracks[trackIndex].GetData(Tag::MIME_TYPE, mime);
+    mediaInfo_.tracks[trackIndex].Get<Tag::MIME_TYPE>(mime);
     if (HaveValidParser(mime) && streamParsers_ != nullptr &&
         streamParsers_->ParserIsInited(trackIndex)) {
         auto srcSample = dstMpeg4Sample->sample;
@@ -1187,9 +1187,9 @@ Status MPEG4DemuxerPlugin::WriteBuffer(uint32_t trackIndex, std::shared_ptr<AVBu
     // copy parameters
     outBuffer->pts_ = mpeg4Sample->sample->pts;
     outBuffer->dts_ = mpeg4Sample->sample->dts;
-    outBuffer->meta_->SetData(Tag::BUFFER_DECODING_TIMESTAMP, mpeg4Sample->sample->dts);
+    outBuffer->meta_->Set<Tag::BUFFER_DECODING_TIMESTAMP>(mpeg4Sample->sample->dts);
     outBuffer->duration_ = mpeg4Sample->sample->duration;
-    outBuffer->meta_->SetData(Tag::BUFFER_DURATION, mpeg4Sample->sample->duration);
+    outBuffer->meta_->Set<Tag::BUFFER_DURATION>(mpeg4Sample->sample->duration);
     MEDIA_LOG_D("CurrentBuffer: [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "], track: "
         PUBLIC_LOG_U32, outBuffer->pts_, outBuffer->dts_, outBuffer->duration_, trackIndex);
     
