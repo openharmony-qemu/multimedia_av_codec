@@ -50,12 +50,21 @@ struct FrameDumpRecord {
     double motionConsistency;     // MV运动一致性
     double zeroMotionRatio;       // 零运动宏块比例
 
+    // --- 新增 NALU 耗时字段 ---
+    int64_t naluCostUs;
+
+    // --- 新增 MV 细分耗时 ---
+    int64_t copyMvCostUs;
+    int64_t analyzeMvCostUs;
+    int64_t updateDumperCostUs;
+
     FrameDumpRecord() : pts(-1), dts(-1), flags(0), isNonRef(false), isPreDropped(false), isPostDropped(false),
                         preSysTimeMs(-1), postSysTimeMs(-1), preDropCount(0),
                         mode(RetentionStrategyType::FULL), retentionRate(1.0), speed(1.0),
                         preDecCostUs(-1), postDecCostUs(-1), writeIndex(0), readIndex(0),
                         currentEmaDropRatio(0.0), validBlocks(0), perceptualMagnitude(0.0),
-                        motionConsistency(0.0), zeroMotionRatio(0.0) {}
+                        motionConsistency(0.0), zeroMotionRatio(0.0), naluCostUs(-1),
+                        copyMvCostUs(-1), analyzeMvCostUs(-1), updateDumperCostUs(-1) {}
 };
 
 class SmartFluencyDecodingDumper {
@@ -75,10 +84,11 @@ public:
         bool isNonRef{false};
         bool dropped{false};
         int64_t sysTimeMs{-1};
-        // --- 新增 ---
         int64_t preDecCostUs{-1};
         size_t writeIndex{0};
         double currentEmaDropRatio{0.0};
+        // --- 新增 ---
+        int64_t naluCostUs{-1};
     };
 
     struct PostDecodeRecordCtx {
@@ -86,11 +96,14 @@ public:
         bool dropped{false};
         int32_t preDropCount{0};
         int64_t sysTimeMs{-1};
-        // --- 新增 ---
         int64_t postDecCostUs{-1};
         size_t readIndex{0};
         double currentEmaDropRatio{0.0};
         MVStats mvStats;
+        // --- 新增细分耗时 ---
+        int64_t copyMvCostUs{-1};
+        int64_t analyzeMvCostUs{-1};
+        int64_t updateDumperCostUs{-1};
     };
 
     void RecordPreDecode(const PreDecodeRecordCtx& ctx);

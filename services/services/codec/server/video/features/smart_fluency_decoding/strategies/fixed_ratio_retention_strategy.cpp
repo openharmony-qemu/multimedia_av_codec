@@ -34,7 +34,7 @@ namespace SFD {
 FixedRatioRetentionStrategy::FixedRatioRetentionStrategy(double ratio)
 {
     retentionRatio_ = std::max(MIN_RETENTION_RATIO, std::min(ratio, MAX_RETENTION_RATIO));
-    AVCODEC_LOGI("Uniform Ratio Construct in, retention ratio is %{public}.2f", ratio);
+    AVCODEC_LOGD("FixedRatioRetentionStrategy created, target ratio: %{public}.2f", ratio);
 }
 
 bool FixedRatioRetentionStrategy::MakeRetentionDecision(const FrameRetentionContext& ctx)
@@ -42,6 +42,7 @@ bool FixedRatioRetentionStrategy::MakeRetentionDecision(const FrameRetentionCont
     cnt_ += ctx.preDroppedCount + 1;
     if (isFirstFrame_) {
         isFirstFrame_ = false;
+        AVCODEC_LOGD("FixedRatioRetentionStrategy decision: true (first frame)");
         return true;
     }
 
@@ -54,8 +55,8 @@ bool FixedRatioRetentionStrategy::MakeRetentionDecision(const FrameRetentionCont
         dropCnt_++;
     }
     
-    AVCODEC_LOGI("cnt %{public}d, dropCnt_ %{public}d, accumulator_ %{public}.2f, preDroppedCount %{public}u",
-        cnt_, dropCnt_, accumulator_, ctx.preDroppedCount);
+    AVCODEC_LOGD("FixedRatioRetentionStrategy decision: %{public}d (cnt:%{public}d, drop:%{public}d, accum:%{public}.2f)",
+                 isRetain, cnt_, dropCnt_, accumulator_);
     return isRetain;
 }
 

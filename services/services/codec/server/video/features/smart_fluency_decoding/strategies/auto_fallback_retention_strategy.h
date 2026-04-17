@@ -26,7 +26,7 @@ namespace SFD {
 
 class AutoFallbackRetentionStrategy : public IRetentionStrategy {
 public:
-    AutoFallbackRetentionStrategy();
+    AutoFallbackRetentionStrategy() noexcept;
     ~AutoFallbackRetentionStrategy() override = default;
 
     bool MakeRetentionDecision(const FrameRetentionContext& ctx) override;

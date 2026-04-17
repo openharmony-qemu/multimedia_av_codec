@@ -14,14 +14,25 @@
  */
 
 #include "full_retention_strategy.h"
+#include "avcodec_log.h"
+
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "FullStrategy"};
+}
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
 
+FullRetentionStrategy::FullRetentionStrategy() noexcept
+{
+    AVCODEC_LOGD("FullRetentionStrategy created");
+}
+
 bool FullRetentionStrategy::MakeRetentionDecision(const FrameRetentionContext& ctx)
 {
     (void)ctx;
+    AVCODEC_LOGD("FullRetentionStrategy decision: true (always retain)");
     return true;
 }
 

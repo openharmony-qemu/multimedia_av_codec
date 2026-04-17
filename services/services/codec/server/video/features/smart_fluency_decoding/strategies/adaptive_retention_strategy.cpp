@@ -14,8 +14,10 @@
  */
 
 #include "adaptive_retention_strategy.h"
+#include "avcodec_log.h"
 
 namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "AdaptiveStrategy"};
 constexpr double MAX_SPEED_FOR_RETENTION = 1.2;
 constexpr double MAX_DROPS_MULTIPLIER_HIGH = 30.0;
 
@@ -70,30 +72,40 @@ public:
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
+
+AdaptiveRetentionStrategy::AdaptiveRetentionStrategy() noexcept
+{
+    AVCODEC_LOGD("AdaptiveRetentionStrategy created");
+}
+
 bool AdaptiveRetentionStrategy::MakeRetentionDecision(const FrameRetentionContext& ctx)
 {
+    bool isRetain = true;
     if (currentSpeed_ <= MAX_SPEED_FOR_RETENTION) {
-        return true;
-    }
-    if (ctx.mvStats && ctx.mvStats->validBlocks > 0) {
+        isRetain = true;
+    } else if (ctx.mvStats && ctx.mvStats->validBlocks > 0) {
         double consistency = ctx.mvStats->motionConsistency;
         double magnitude = ctx.mvStats->perceptualMagnitude * currentSpeed_;
-        bool dropFlag = SmartFluencyModel::Predict(magnitude, consistency);
-        if (dropFlag) {
+        bool retentionFlag = SmartFluencyModel::Predict(magnitude, consistency);
+        if (!retentionFlag) {
             dropCount_++;
             uint32_t maxDrops = static_cast<uint32_t>((currentSpeed_ - 1.0) * MAX_DROPS_MULTIPLIER_HIGH);
             currentTargetRatio_ = static_cast<double>(maxDrops) / (maxDrops + 1.0);
             if (dropCount_ <= maxDrops) {
-                return false;
+                isRetain = false;
             } else {
                 dropCount_ = 0;
-                return true;
+                isRetain = true;
             }
+        } else {
+            dropCount_ = 0;
+            currentTargetRatio_ = 0.0;
+            isRetain = true;
         }
-        dropCount_ = 0;
-        currentTargetRatio_ = 0.0;
     }
-    return true;
+    AVCODEC_LOGD("AdaptiveRetentionStrategy decision: %{public}d (speed:%{public}.2f, ratio:%{public}.2f)", 
+                 isRetain, currentSpeed_, currentTargetRatio_);
+    return isRetain;
 }
 
 void AdaptiveRetentionStrategy::UpdatePlaybackSpeed(double speed)

@@ -112,6 +112,7 @@ bool SmartFluencyDecodingManager::MakePreDecodeDecision(uint32_t index)
         }
         return decision;
     }
+    AVCODEC_LOGD_WITH_TAG("MakePreDecodeDecision: SFD is not active, skipping decision for index %{public}u", index);
     return true;
 }
 
@@ -160,6 +161,7 @@ void SmartFluencyDecodingManager::ExtractCsdData(const std::shared_ptr<AVBuffer>
     }
     int32_t currentSize = static_cast<int32_t>(cachedCsdData_.size());
     if (currentSize >= DEFAULT_CSD_COPY_SIZE) {
+        AVCODEC_LOGD_WITH_TAG("ExtractCsdData: CSD cache is already full (%{public}d bytes)", currentSize);
         return;
     }
     int32_t needed = DEFAULT_CSD_COPY_SIZE - currentSize;
@@ -200,7 +202,7 @@ void SmartFluencyDecodingManager::CacheCsdData(uint32_t index)
 
         if (!cachedCsdData_.empty() && (isEnoughSize || isSyncFrame)) {
             isCsdCached_ = true;
-            // ´òÓ¡Ç° 16 ×Ö½Ú
+            // ??? 16 ??
             std::string hexStr;
             char buf[8] = {0};
             size_t printSize = std::min(cachedCsdData_.size(), static_cast<size_t>(16));

@@ -28,13 +28,16 @@ namespace SFD {
 MvAnalyzerSoLoader::MvAnalyzerSoLoader(SFDCodecType codecType)
     : codecType_(codecType)
 {
+    AVCODEC_LOGD("MvAnalyzerSoLoader ctor, codecType: %{public}d", static_cast<int32_t>(codecType_));
     if (LoadLibrary() && createFunc_) {
         soAnalyzer_ = createFunc_(static_cast<int32_t>(codecType_));
+        AVCODEC_LOGI("soAnalyzer_ created: %{public}p", soAnalyzer_);
     }
 }
 
 MvAnalyzerSoLoader::~MvAnalyzerSoLoader()
 {
+    AVCODEC_LOGD("MvAnalyzerSoLoader dtor");
     std::lock_guard<std::mutex> lock(apiMutex_);
     if (soAnalyzer_ && destroyFunc_) {
         destroyFunc_(soAnalyzer_);
@@ -55,11 +58,14 @@ bool MvAnalyzerSoLoader::LoadLibrary()
     setVideoInfoFunc_ = reinterpret_cast<SetVideoInfoFunc>(dlsym(handle_, "SetVideoInfo"));
     parseFunc_ = reinterpret_cast<ParseFunc>(dlsym(handle_, "ParseMvData"));
     if (!createFunc_ || !destroyFunc_ || !setAuxInfoFunc_ || !setVideoInfoFunc_ || !parseFunc_) {
-        AVCODEC_LOGE("Failed to find required symbols in %{public}s", LIB_NAME);
+        AVCODEC_LOGE("Failed to find required symbols in %{public}s (create:%{public}d, destroy:%{public}d, "
+                     "setAux:%{public}d, setVideo:%{public}d, parse:%{public}d)", 
+                     LIB_NAME, (createFunc_ != nullptr), (destroyFunc_ != nullptr), 
+                     (setAuxInfoFunc_ != nullptr), (setVideoInfoFunc_ != nullptr), (parseFunc_ != nullptr));
         UnloadLibrary();
         return false;
     }
-    AVCODEC_LOGI("Successfully loaded %{public}s", LIB_NAME);
+    AVCODEC_LOGI("Successfully loaded %{public}s and resolved all symbols", LIB_NAME);
     return true;
 }
 
@@ -68,6 +74,7 @@ void MvAnalyzerSoLoader::UnloadLibrary()
     if (handle_) {
         dlclose(handle_);
         handle_ = nullptr;
+        AVCODEC_LOGI("Library %{public}s closed", LIB_NAME);
     }
     createFunc_ = nullptr;
     destroyFunc_ = nullptr;
@@ -80,6 +87,8 @@ void MvAnalyzerSoLoader::SetStreamAuxInfo(const StreamAuxInfo& info)
 {
     std::lock_guard<std::mutex> lock(apiMutex_);
     if (soAnalyzer_ && setAuxInfoFunc_) {
+        AVCODEC_LOGD("SetStreamAuxInfo executed: ctuSize %{public}u, directSpatial %{public}u", 
+                     info.ctuSize, info.directSpatialMvPredFlag);
         setAuxInfoFunc_(soAnalyzer_, &info);
     }
 }
@@ -88,6 +97,7 @@ void MvAnalyzerSoLoader::SetVideoInfo(uint32_t width, uint32_t height)
 {
     std::lock_guard<std::mutex> lock(apiMutex_);
     if (soAnalyzer_ && setVideoInfoFunc_) {
+        AVCODEC_LOGD("SetVideoInfo executed: %{public}ux%{public}u", width, height);
         setVideoInfoFunc_(soAnalyzer_, width, height);
     }
 }
@@ -115,10 +125,13 @@ bool MvAnalyzerSoLoader::IsValid() const
 std::unique_ptr<IMvAnalyzer> MvAnalyzerFactory::CreateMvAnalyzer(SFDCodecType codecType)
 {
     if (!IsCodecSupported(codecType)) {
+        AVCODEC_LOGW("CreateMvAnalyzer failed: codecType %{public}d not supported", static_cast<int32_t>(codecType));
         return nullptr;
     }
     auto loader = std::make_unique<MvAnalyzerSoLoader>(codecType);
     if (!loader->IsValid()) {
+        AVCODEC_LOGW("CreateMvAnalyzer failed: MvAnalyzerSoLoader is invalid for codecType %{public}d", 
+                     static_cast<int32_t>(codecType));
         return nullptr;
     }
     return loader;

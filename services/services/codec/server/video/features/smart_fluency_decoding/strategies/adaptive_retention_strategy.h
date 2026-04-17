@@ -24,7 +24,7 @@ namespace MediaAVCodec {
 namespace SFD {
 class AdaptiveRetentionStrategy : public IRetentionStrategy {
 public:
-    AdaptiveRetentionStrategy() = default;
+    AdaptiveRetentionStrategy() noexcept;
     ~AdaptiveRetentionStrategy() override = default;
 
     bool MakeRetentionDecision(const FrameRetentionContext& ctx) override;

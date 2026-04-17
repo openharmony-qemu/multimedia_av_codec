@@ -1833,11 +1833,13 @@ void CodecServer::InitSfdManager()
     sfdManager_->SetCallbacks(
         [weakThis](uint32_t idx, std::shared_ptr<AVBuffer> buf) {
             if (auto pThis = weakThis.lock()) {
+                AVCODEC_LOGD("SfdCallback: OnInputBufferAvailable, index: %{public}u", idx);
                 pThis->OnInputBufferAvailable(idx, buf);
             }
         },
         [weakThis](uint32_t idx) {
             if (auto pThis = weakThis.lock()) {
+                AVCODEC_LOGD("SfdCallback: ReleaseOutputBuffer, index: %{public}u", idx);
                 pThis->ReleaseOutputBuffer(idx, false);
             }
         }

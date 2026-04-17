@@ -24,7 +24,7 @@ namespace SFD {
 
 class FullRetentionStrategy : public IRetentionStrategy {
 public:
-    FullRetentionStrategy() = default;
+    FullRetentionStrategy() noexcept;
     ~FullRetentionStrategy() override = default;
 
     bool MakeRetentionDecision(const FrameRetentionContext& ctx) override;
