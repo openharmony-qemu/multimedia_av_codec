@@ -1178,7 +1178,7 @@ uint32_t HlsSegmentManager::SaveData(uint8_t* data, uint32_t len, bool notBlock)
         return 0;
     }
     int64_t start = loopInterruptClock_.ElapsedSeconds();
-    while (isSelectingBitrate_.load()) {
+    while (isSourceLoaderSeeking_.load()) {
         int64_t now = loopInterruptClock_.ElapsedSeconds();
         int64_t duration = now - std::min(start, now);
         if (duration > SEEK_WAIT_TIME) {
