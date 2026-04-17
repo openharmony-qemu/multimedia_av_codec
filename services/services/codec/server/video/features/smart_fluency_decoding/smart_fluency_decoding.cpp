@@ -287,7 +287,7 @@ void SmartFluencyDecoding::ExecutePreDrop(uint32_t index, std::shared_ptr<AVBuff
     AVCODEC_LOGE("CSD_DEBUG: [Pre-Drop] Executing drop for index %{public}u, pts %{public}" PRId64
         ", flag %{public}u", index, buffer->pts_, buffer->flag_);
     CHECK_AND_RETURN_LOG(buffer->flag_ != AVCODEC_BUFFER_FLAG_CODEC_DATA, "ExecutePreDrop: skip CODEC_DATA buffer");
-    dropSyncCoordinator_->RecordPreDroppedFrame(buffer->pts_);
+    dropSyncCoordinator_->RecordPreDroppedFrame(buffer->pts_, currentPlaybackSpeed_);
     droppedInputFrames_++;
     AsyncDropInputCallback localCb = nullptr;
     {
@@ -356,7 +356,7 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
         dumperCtx.dts = buffer->dts_;
         dumperCtx.isNonRef = isNonRef;
         dumperCtx.flags = buffer->flag_;
-        dumperCtx.dropped = !shouldRetain;
+        dumperCtx.isRetained = shouldRetain;
         dumperCtx.sysTimeMs = GetCurrentSysTimeMs();
         dumperCtx.preDecCostUs = endUs - startUs;
         dumperCtx.naluCostUs = naluCostUs;
@@ -420,7 +420,7 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
     {
         std::lock_guard<std::mutex> lock(configMutex_);
         dropSyncCoordinator_->UpdateFeedback(
-            preDroppedCount, !shouldRetain, currentRetentionRatio, currentPlaybackSpeed_);
+            !shouldRetain, currentRetentionRatio, currentPlaybackSpeed_);
     }
     AVCODEC_LOGD("Strategy decision: shouldRetain %{public}d, ratio %{public}.2f (index:%{public}u, pts:%{public}" PRId64 ")",
                  shouldRetain, currentRetentionRatio, index, currentPts);
@@ -438,7 +438,7 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
         int64_t dumperStart = GetCurrentSysTimeUs();
         SmartFluencyDecodingDumper::PostDecodeRecordCtx dumperCtx;
         dumperCtx.pts = currentPts;
-        dumperCtx.dropped = !shouldRetain;
+        dumperCtx.isRetained = shouldRetain;
         dumperCtx.preDropCount = preDroppedCount;
         dumperCtx.sysTimeMs = GetCurrentSysTimeMs();
         dumperCtx.postDecCostUs = endUs - startUs;
@@ -446,7 +446,7 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
         dumperCtx.currentEmaDropRatio = dropSyncCoordinator_->GetCurrentEma();
         dumperCtx.mvStats = currentMvStats;
         
-        // --- ×¢ÈëÏ¸·ÖºÄÊ± ---
+        // --- ?????? ---
         dumperCtx.copyMvCostUs = copyMvCostUs;
         dumperCtx.analyzeMvCostUs = analyzeMvCostUs;
         static int64_t lastDumperOverhead = 0;

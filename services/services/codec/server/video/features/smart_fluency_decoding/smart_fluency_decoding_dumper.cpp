@@ -93,32 +93,38 @@ void SmartFluencyDecodingDumper::RecordPreDecode(const PreDecodeRecordCtx& ctx)
         it->dts = ctx.dts;
         it->isNonRef = ctx.isNonRef;
         it->flags = ctx.flags;
-        it->isPreDropped = ctx.dropped;
+        it->isPreRetained = ctx.isRetained ? 1 : 0;
+        if (!ctx.isRetained) {
+            it->isPostRetained = -1; // ?????,??????
+        }
         it->preSysTimeMs = ctx.sysTimeMs;
         it->mode = currentMode_;
         it->retentionRate = currentRetentionRate_;
         it->speed = currentSpeed_;
-        // 新增字段赋值
+        // ??????
         it->preDecCostUs = ctx.preDecCostUs;
         it->writeIndex = ctx.writeIndex;
         it->currentEmaDropRatio = ctx.currentEmaDropRatio;
-        it->naluCostUs = ctx.naluCostUs; // --- 新增赋值 ---
+        it->naluCostUs = ctx.naluCostUs; // --- ???? ---
     } else {
         FrameDumpRecord rec;
         rec.pts = ctx.pts;
         rec.dts = ctx.dts;
         rec.isNonRef = ctx.isNonRef;
         rec.flags = ctx.flags;
-        rec.isPreDropped = ctx.dropped;
+        rec.isPreRetained = ctx.isRetained ? 1 : 0;
+        if (!ctx.isRetained) {
+            rec.isPostRetained = -1; // ?????,??????
+        }
         rec.preSysTimeMs = ctx.sysTimeMs;
         rec.mode = currentMode_;
         rec.retentionRate = currentRetentionRate_;
         rec.speed = currentSpeed_;
-        // 新增字段赋值
+        // ??????
         rec.preDecCostUs = ctx.preDecCostUs;
         rec.writeIndex = ctx.writeIndex;
         rec.currentEmaDropRatio = ctx.currentEmaDropRatio;
-        rec.naluCostUs = ctx.naluCostUs; // --- 新增赋值 ---
+        rec.naluCostUs = ctx.naluCostUs; // --- ???? ---
         records_.push_back(rec);
     }
     if (records_.size() >= MAX_DUMP_RECORDS) {
@@ -133,10 +139,10 @@ void SmartFluencyDecodingDumper::RecordPostDecode(const PostDecodeRecordCtx& ctx
         return rec.pts == ctx.pts;
     });
     if (it != records_.rend()) {
-        it->isPostDropped = ctx.dropped;
+        it->isPostRetained = ctx.isRetained ? 1 : 0;
         it->preDropCount = ctx.preDropCount;
         it->postSysTimeMs = ctx.sysTimeMs;
-        // 新增字段赋值
+        // ??????
         it->postDecCostUs = ctx.postDecCostUs;
         it->readIndex = ctx.readIndex;
         it->currentEmaDropRatio = ctx.currentEmaDropRatio;
@@ -144,20 +150,20 @@ void SmartFluencyDecodingDumper::RecordPostDecode(const PostDecodeRecordCtx& ctx
         it->perceptualMagnitude = ctx.mvStats.perceptualMagnitude;
         it->motionConsistency = ctx.mvStats.motionConsistency;
         it->zeroMotionRatio = ctx.mvStats.zeroMotionRatio;
-        // 新增细分耗时赋值
+        // ????????
         it->copyMvCostUs = ctx.copyMvCostUs;
         it->analyzeMvCostUs = ctx.analyzeMvCostUs;
         it->updateDumperCostUs = ctx.updateDumperCostUs;
     } else {
         FrameDumpRecord rec;
         rec.pts = ctx.pts;
-        rec.isPostDropped = ctx.dropped;
+        rec.isPostRetained = ctx.isRetained ? 1 : 0;
         rec.preDropCount = ctx.preDropCount;
         rec.postSysTimeMs = ctx.sysTimeMs;
         rec.mode = currentMode_;
         rec.retentionRate = currentRetentionRate_;
         rec.speed = currentSpeed_;
-        // 新增字段赋值
+        // ??????
         rec.postDecCostUs = ctx.postDecCostUs;
         rec.readIndex = ctx.readIndex;
         rec.currentEmaDropRatio = ctx.currentEmaDropRatio;
@@ -165,7 +171,7 @@ void SmartFluencyDecodingDumper::RecordPostDecode(const PostDecodeRecordCtx& ctx
         rec.perceptualMagnitude = ctx.mvStats.perceptualMagnitude;
         rec.motionConsistency = ctx.mvStats.motionConsistency;
         rec.zeroMotionRatio = ctx.mvStats.zeroMotionRatio;
-        // 新增细分耗时赋值
+        // ????????
         rec.copyMvCostUs = ctx.copyMvCostUs;
         rec.analyzeMvCostUs = ctx.analyzeMvCostUs;
         rec.updateDumperCostUs = ctx.updateDumperCostUs;
@@ -211,8 +217,8 @@ void SmartFluencyDecodingDumper::DumpToFileInternal()
     ofs << "# Final Mode: " << static_cast<int>(currentMode_) << "\n";
     ofs << "# CtuSize: " << currentCtuSize_ << "\n";
     ofs << "# ----------------------------------------------------\n";
-    // 扩展表头，加上 NaluCostUs
-    ofs << "PTS,DTS,Flags,IsNonRef,Mode,PreDropped,PostDropped,"
+    // ????,?? NaluCostUs,?? Dropped ?? Retained
+    ofs << "PTS,DTS,Flags,IsNonRef,Mode,PreRetained,PostRetained,"
            "PreSysTimeMs,PostSysTimeMs,PreDropCount,RetentionRate,Speed,"
            "PreCostUs,NaluCostUs,PostCostUs,CopyMvUs,AnalyzeMvUs,UpdateDumperUs,"
            "WriteIdx,ReadIdx,EmaDropRatio,"
@@ -224,16 +230,16 @@ void SmartFluencyDecodingDumper::DumpToFileInternal()
             << rec.flags << ","
             << (rec.isNonRef ? 1 : 0) << ","
             << static_cast<int>(rec.mode) << ","
-            << (rec.isPreDropped ? 1 : 0) << ","
-            << (rec.isPostDropped ? 1 : 0) << ","
+            << rec.isPreRetained << ","
+            << rec.isPostRetained << ","
             << rec.preSysTimeMs << ","
             << rec.postSysTimeMs << ","
             << rec.preDropCount << ","
             << rec.retentionRate << ","
             << rec.speed << ","
-            // 写入新增的字段数据
+            // ?????????
             << rec.preDecCostUs << ","
-            << rec.naluCostUs << "," // --- 输出 Nalu 耗时 ---
+            << rec.naluCostUs << "," // --- ?? Nalu ?? ---
             << rec.postDecCostUs << ","
             << rec.copyMvCostUs << ","
             << rec.analyzeMvCostUs << ","

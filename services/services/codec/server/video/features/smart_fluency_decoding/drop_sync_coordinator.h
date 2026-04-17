@@ -29,23 +29,31 @@ public:
     DropSyncCoordinator() = default;
     ~DropSyncCoordinator() = default;
 
-    bool RecordPreDroppedFrame(int64_t droppedPts);
+    bool RecordPreDroppedFrame(int64_t pts, double speed);
     uint32_t GetAndConsumePreDroppedCount(int64_t currentPts);
     void Reset();
+    
     double GetCurrentEma() const;
     double GetTargetRetentionRatio() const;
-    void UpdateFeedback(
-        uint32_t preDroppedCount, bool currentDropped, double targetRetentionRatio, double currentSpeed);
+    void UpdateFeedback(bool isDropped, double targetRetentionRatio, double speed);
+
     size_t GetWriteIndex() const { return writeIndex_.load(std::memory_order_relaxed); }
     size_t GetReadIndex() const { return readIndex_.load(std::memory_order_relaxed); }
 
 private:
+    // 内部方法：要求调用方持有 feedbackMutex_ 锁
+    void UpdateEmaDropRatio(bool isDropped, double speed);
+
     static constexpr size_t queueCapacity = 128;
     static constexpr size_t queueMask = queueCapacity - 1;
     static constexpr size_t cacheLineSize = 64;
+    
     int64_t ptsRingBuffer_[queueCapacity]{0};
+    bool isConsumed_[queueCapacity]{false}; // 用于解决解码序和显示序导致的乱序消费问题
+    
     alignas(cacheLineSize) std::atomic<size_t> writeIndex_{0};
     alignas(cacheLineSize) std::atomic<size_t> readIndex_{0};
+    
     double currentEmaDropRatio_{0.0};
     double targetRetentionRatio_{0.0};
     mutable std::mutex feedbackMutex_;
@@ -53,4 +61,4 @@ private:
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // ASYNC_DROP_DISPATCHER_H
+#endif // DROP_SYNC_COORDINATOR_H

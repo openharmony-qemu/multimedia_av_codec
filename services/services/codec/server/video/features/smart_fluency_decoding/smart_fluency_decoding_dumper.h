@@ -30,8 +30,8 @@ struct FrameDumpRecord {
     int64_t dts;
     uint32_t flags;
     bool isNonRef;
-    bool isPreDropped;
-    bool isPostDropped;
+    int32_t isPreRetained;
+    int32_t isPostRetained;
     int64_t preSysTimeMs;
     int64_t postSysTimeMs;
     int32_t preDropCount;
@@ -39,26 +39,26 @@ struct FrameDumpRecord {
     double retentionRate;
     double speed;
 
-    // --- ĞÂÔöµÄ Dump ×Ö¶Î ---
-    int64_t preDecCostUs;         // PreDecode ½Ó¿ÚºÄÊ± (Î¢Ãë)
-    int64_t postDecCostUs;        // PostDecode ½Ó¿ÚºÄÊ± (Î¢Ãë)
-    size_t writeIndex;            // Í¬²½¶ÓÁĞµÄĞ´ÈëÎ»ÖÃ
-    size_t readIndex;             // Í¬²½¶ÓÁĞµÄ¶ÁÈ¡Î»ÖÃ
-    double currentEmaDropRatio;   // µ±Ç°Æ½»¬¶ªÖ¡ÂÊ
-    uint32_t validBlocks;         // MVÓĞĞ§ºê¿éÊı
-    double perceptualMagnitude;   // MV¸ĞÖªÔË¶¯·ù¶È
-    double motionConsistency;     // MVÔË¶¯Ò»ÖÂĞÔ
-    double zeroMotionRatio;       // ÁãÔË¶¯ºê¿é±ÈÀı
+    // --- æ–°å¢çš„ Dump å­—æ®µ ---
+    int64_t preDecCostUs;         // PreDecode æ¥å£è€—æ—¶ (å¾®ç§’)
+    int64_t postDecCostUs;        // PostDecode æ¥å£è€—æ—¶ (å¾®ç§’)
+    size_t writeIndex;            // åŒæ­¥é˜Ÿåˆ—çš„å†™å…¥ä½ç½®
+    size_t readIndex;             // åŒæ­¥é˜Ÿåˆ—çš„è¯»å–ä½ç½®
+    double currentEmaDropRatio;   // å½“å‰å¹³æ»‘ä¸¢å¸§ç‡
+    uint32_t validBlocks;         // MVæœ‰æ•ˆå®å—æ•°
+    double perceptualMagnitude;   // MVæ„ŸçŸ¥è¿åŠ¨å¹…åº¦
+    double motionConsistency;     // MVè¿åŠ¨ä¸€è‡´æ€§
+    double zeroMotionRatio;       // é›¶è¿åŠ¨å®å—æ¯”ä¾‹
 
-    // --- ĞÂÔö NALU ºÄÊ±×Ö¶Î ---
+    // --- æ–°å¢ NALU è€—æ—¶å­—æ®µ ---
     int64_t naluCostUs;
 
-    // --- ĞÂÔö MV Ï¸·ÖºÄÊ± ---
+    // --- æ–°å¢ MV ç»†åˆ†è€—æ—¶ ---
     int64_t copyMvCostUs;
     int64_t analyzeMvCostUs;
     int64_t updateDumperCostUs;
 
-    FrameDumpRecord() : pts(-1), dts(-1), flags(0), isNonRef(false), isPreDropped(false), isPostDropped(false),
+    FrameDumpRecord() : pts(-1), dts(-1), flags(0), isNonRef(false), isPreRetained(1), isPostRetained(1),
                         preSysTimeMs(-1), postSysTimeMs(-1), preDropCount(0),
                         mode(RetentionStrategyType::FULL), retentionRate(1.0), speed(1.0),
                         preDecCostUs(-1), postDecCostUs(-1), writeIndex(0), readIndex(0),
@@ -82,25 +82,25 @@ public:
         int64_t dts{-1};
         uint32_t flags{0};
         bool isNonRef{false};
-        bool dropped{false};
+        bool isRetained{true};
         int64_t sysTimeMs{-1};
         int64_t preDecCostUs{-1};
         size_t writeIndex{0};
         double currentEmaDropRatio{0.0};
-        // --- ĞÂÔö ---
+        // --- æ–°å¢ ---
         int64_t naluCostUs{-1};
     };
 
     struct PostDecodeRecordCtx {
         int64_t pts{-1};
-        bool dropped{false};
+        bool isRetained{true};
         int32_t preDropCount{0};
         int64_t sysTimeMs{-1};
         int64_t postDecCostUs{-1};
         size_t readIndex{0};
         double currentEmaDropRatio{0.0};
         MVStats mvStats;
-        // --- ĞÂÔöÏ¸·ÖºÄÊ± ---
+        // --- æ–°å¢ç»†åˆ†è€—æ—¶ ---
         int64_t copyMvCostUs{-1};
         int64_t analyzeMvCostUs{-1};
         int64_t updateDumperCostUs{-1};
