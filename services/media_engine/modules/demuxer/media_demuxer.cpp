@@ -114,6 +114,7 @@ constexpr int64_t READSAMPLE_AUIDO_WARNING_MS = 50;
 constexpr int64_t READSAMPLE_WARNING_MS = 100;
 constexpr int32_t CONVERT_PACKET_ERROR_MAX_COUNT = 30;
 constexpr int32_t DURATION_CHANGE_AMOUNT_MILLIONSECOND = 500;
+constexpr int64_t MAX_PRECENT = 100;
 const std::unordered_map<PluginDfxEventType, std::pair<std::string, DfxEventType>> DFX_EVENT_MAP = {
     { PluginDfxEventType::PERF_SOURCE, { "SRC", DfxEventType::DFX_INFO_PERF_REPORT } }
 };
@@ -3589,8 +3590,15 @@ void MediaDemuxer::BufferingStatus()
         return;
     }
     if (GetTrackIsBuffering(mainTrackId)) {
-        int64_t percent = static_cast<int64_t>((sampleQueueMap_[mainTrackId]->NewGetCacheDuration() * 100) /
-            sampleQueueController_->GetPlayBufferingDuration());
+        int64_t percent = 0;
+        uint64_t temDuration = sampleQueueController_->GetPlayBufferingDuration();
+        if (temDuration > 0) {
+            percent = static_cast<int64_t>((sampleQueueMap_[mainTrackId]->NewGetCacheDuration() * 100) / 
+            temDuration);
+        } else {
+            percent = MAX_PRECENT;
+        }
+            
         AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGI, LOG_INTERVAL_MS, LOG_MAX_COUNT,
             "BUFFERING_PERCENT: %{public}lld", percent);
         if (eventReceiver_) {
