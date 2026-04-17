@@ -120,6 +120,7 @@ ohos_unittest("http_media_downloader_unit_test") {
 
   external_deps = [
     "c_utils:utils",
+    "certificate_manager:cert_manager_sdk",
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
@@ -149,6 +150,7 @@ ohos_unittest("downloader_unit_test") {
 
   external_deps = [
     "c_utils:utils",
+    "certificate_manager:cert_manager_sdk",
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
@@ -178,6 +180,7 @@ ohos_unittest("http_source_plugin_unit_test") {
 
   external_deps = [
     "c_utils:utils",
+    "certificate_manager:cert_manager_sdk",
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
@@ -207,6 +210,7 @@ ohos_unittest("xml_parser_unittest") {
 
   external_deps = [
     "c_utils:utils",
+    "certificate_manager:cert_manager_sdk",
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
@@ -236,6 +240,7 @@ ohos_unittest("xml_element_unittest") {
 
   external_deps = [
     "c_utils:utils",
+    "certificate_manager:cert_manager_sdk",
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
@@ -265,6 +270,7 @@ ohos_unittest("http_source_plugin_unittest") {
 
   external_deps = [
     "c_utils:utils",
+    "certificate_manager:cert_manager_sdk",
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
