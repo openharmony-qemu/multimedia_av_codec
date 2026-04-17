@@ -38,6 +38,7 @@ public:
     RetentionStrategyType GetMode() const override;
 
     double GetCurrentRetentionRatio() const override;
+    SfdDecisionReason GetLastDecisionReason() const override;
 
 private:
     enum State {

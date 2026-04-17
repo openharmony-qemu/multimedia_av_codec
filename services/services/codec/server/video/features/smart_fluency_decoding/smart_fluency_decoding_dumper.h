@@ -38,6 +38,8 @@ struct FrameDumpRecord {
     RetentionStrategyType mode;
     double retentionRate;
     double speed;
+    SfdDecisionReason preReason{SfdDecisionReason::UNSPECIFIED};
+    SfdDecisionReason postReason{SfdDecisionReason::POST_BYPASSED};
 
     // --- 新增的 Dump 字段 ---
     int64_t preDecCostUs;         // PreDecode 接口耗时 (微秒)
@@ -89,6 +91,7 @@ public:
         double currentEmaDropRatio{0.0};
         // --- 新增 ---
         int64_t naluCostUs{-1};
+        SfdDecisionReason reason{SfdDecisionReason::UNSPECIFIED};
     };
 
     struct PostDecodeRecordCtx {
@@ -104,6 +107,7 @@ public:
         int64_t copyMvCostUs{-1};
         int64_t analyzeMvCostUs{-1};
         int64_t updateDumperCostUs{-1};
+        SfdDecisionReason reason{SfdDecisionReason::UNSPECIFIED};
     };
 
     void RecordPreDecode(const PreDecodeRecordCtx& ctx);
@@ -125,6 +129,10 @@ private:
     double currentRetentionRate_{1.0};
     double currentSpeed_{1.0};
     int32_t currentCtuSize_{0};
+
+    // --- 新增分段追加控制变量 ---
+    std::string currentFilename_;
+    bool isHeaderWritten_{false};
 };
 } // namespace SFD
 } // namespace MediaAVCodec

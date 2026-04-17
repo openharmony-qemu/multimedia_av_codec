@@ -308,23 +308,28 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
     int64_t naluCostUs = -1;
 #endif
     std::shared_ptr<AVBuffer> buffer = nullptr;
+    double currentTargetRatio = 1.0;
+
     {
         std::lock_guard<std::mutex> lock(configMutex_);
         auto it = inBufferMap_.find(index);
         if (it != inBufferMap_.end()) {
             buffer = it->second;
             inBufferMap_.erase(it);
-        } else {
-            AVCODEC_LOGW("MakePreDecodeDecision: buffer for index %{public}u not found in map!", index);
+        }
+        if (strategy_) {
+            currentTargetRatio = strategy_->GetCurrentRetentionRatio();
         }
     }
+
     if (!isInitialized_ || !buffer || !dropSyncCoordinator_) {
-        AVCODEC_LOGW("MakePreDecodeDecision: Early exit - init:%d, buffer:%d, coordinator:%d", 
-                     isInitialized_, (buffer != nullptr), (dropSyncCoordinator_ != nullptr));
         return true;
     }
+
     bool shouldRetain = true;
     bool isNonRef = false;
+    SfdDecisionReason preReason = SfdDecisionReason::PRE_RETAIN_REFERENCE;
+
     if (naluAnalyzer_) {
 #ifdef SFD_DEBUG
         int64_t naluStartUs = GetCurrentSysTimeUs();
@@ -333,16 +338,25 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
 #ifdef SFD_DEBUG
         naluCostUs = GetCurrentSysTimeUs() - naluStartUs;
 #endif
+
         if (isNonRefFrame) {
             isNonRef = true;
             double currentEma = dropSyncCoordinator_->GetCurrentEma();
-            double targetRetentionRatio = dropSyncCoordinator_->GetTargetRetentionRatio();
-            double targetDropRatio = 1.0 - targetRetentionRatio;
-            shouldRetain = currentEma >= targetDropRatio && targetDropRatio > RETENTION_RATIO_MIN_DIFF;
+            double targetDropRatio = 1.0 - currentTargetRatio;
+
+            if (targetDropRatio <= RETENTION_RATIO_MIN_DIFF) {
+                preReason = SfdDecisionReason::PRE_RETAIN_TARGET_FULL;
+            } else if (currentEma >= targetDropRatio) {
+                preReason = SfdDecisionReason::PRE_RETAIN_EMA_SATISFIED;
+            } else {
+                shouldRetain = false;
+                preReason = SfdDecisionReason::PRE_DROP_EMA_UNSATISFIED;
+            }
             AVCODEC_LOGD("Pre-decode decision for non-ref: shouldRetain %{public}d (ema:%{public}.4f, targetDrop:%{public}.4f)", 
                          shouldRetain, currentEma, targetDropRatio);
         }
     }
+
     if (shouldRetain) {
         totalInputFrames_++;
     } else {
@@ -362,6 +376,7 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
         dumperCtx.naluCostUs = naluCostUs;
         dumperCtx.writeIndex = dropSyncCoordinator_->GetWriteIndex();
         dumperCtx.currentEmaDropRatio = dropSyncCoordinator_->GetCurrentEma();
+        dumperCtx.reason = preReason;
         dumper_->RecordPreDecode(dumperCtx);
     }
 #endif
@@ -412,10 +427,12 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
     ctx.mvStats = &currentMvStats;
     bool shouldRetain = true;
     double currentRetentionRatio = 1.0;
+    SfdDecisionReason postReason = SfdDecisionReason::UNSPECIFIED;
     {
         std::lock_guard<std::mutex> lock(configMutex_);
         shouldRetain = strategy_->MakeRetentionDecision(ctx);
         currentRetentionRatio = strategy_->GetCurrentRetentionRatio();
+        postReason = strategy_->GetLastDecisionReason();
     }
     {
         std::lock_guard<std::mutex> lock(configMutex_);
@@ -444,9 +461,10 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
         dumperCtx.postDecCostUs = endUs - startUs;
         dumperCtx.readIndex = dropSyncCoordinator_->GetReadIndex();
         dumperCtx.currentEmaDropRatio = dropSyncCoordinator_->GetCurrentEma();
+        dumperCtx.reason = postReason;
         dumperCtx.mvStats = currentMvStats;
         
-        // --- ?????? ---
+        // --- ×¢ÈëÏ¸·ÖºÄÊ± ---
         dumperCtx.copyMvCostUs = copyMvCostUs;
         dumperCtx.analyzeMvCostUs = analyzeMvCostUs;
         static int64_t lastDumperOverhead = 0;

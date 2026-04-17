@@ -41,6 +41,7 @@ public:
     virtual RetentionStrategyType GetMode() const = 0;
     virtual void OnDecodingPerformanceUpdate(double /*speed*/, double /*decFps*/) {};
     virtual double GetCurrentRetentionRatio() const = 0;
+    virtual SfdDecisionReason GetLastDecisionReason() const { return SfdDecisionReason::UNSPECIFIED; }
 };
 
 } // namespace SFD

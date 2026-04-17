@@ -34,6 +34,7 @@ public:
     void Reset() override;
     RetentionStrategyType GetMode() const override;
     double GetCurrentRetentionRatio() const override;
+    SfdDecisionReason GetLastDecisionReason() const override { return lastReason_; }
 
 private:
     double accumulator_{0.0};
@@ -41,6 +42,7 @@ private:
     bool isFirstFrame_{true};
     uint32_t cnt_{0};
     uint32_t dropCnt_{0};
+    SfdDecisionReason lastReason_{SfdDecisionReason::UNSPECIFIED};
 };
 
 } // namespace SFD

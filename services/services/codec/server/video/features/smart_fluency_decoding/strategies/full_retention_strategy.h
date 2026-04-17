@@ -32,6 +32,7 @@ public:
     void UpdatePlaybackSpeed(double speed) override;
     RetentionStrategyType GetMode() const override;
     double GetCurrentRetentionRatio() const override;
+    SfdDecisionReason GetLastDecisionReason() const override { return SfdDecisionReason::POST_RETAIN_FULL; }
 };
 
 } // namespace SFD

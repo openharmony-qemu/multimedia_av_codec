@@ -42,6 +42,7 @@ bool FixedRatioRetentionStrategy::MakeRetentionDecision(const FrameRetentionCont
     cnt_ += ctx.preDroppedCount + 1;
     if (isFirstFrame_) {
         isFirstFrame_ = false;
+        lastReason_ = SfdDecisionReason::POST_RETAIN_FIXED_ACC;
         AVCODEC_LOGD("FixedRatioRetentionStrategy decision: true (first frame)");
         return true;
     }
@@ -51,8 +52,10 @@ bool FixedRatioRetentionStrategy::MakeRetentionDecision(const FrameRetentionCont
     if (accumulator_ >= ACCUMULATOR_THRESHOLD) {
         accumulator_ -= ACCUMULATOR_THRESHOLD;
         isRetain = true;
+        lastReason_ = SfdDecisionReason::POST_RETAIN_FIXED_ACC;
     } else {
         dropCnt_++;
+        lastReason_ = SfdDecisionReason::POST_DROP_FIXED_ACC;
     }
     
     AVCODEC_LOGD("FixedRatioRetentionStrategy decision: %{public}d (cnt:%{public}d, drop:%{public}d, accum:%{public}.2f)",

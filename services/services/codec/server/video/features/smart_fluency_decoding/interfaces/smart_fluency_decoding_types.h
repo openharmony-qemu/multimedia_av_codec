@@ -43,6 +43,27 @@ namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
 
+enum class SfdDecisionReason : int32_t {
+    UNSPECIFIED = 0,
+    
+    // --- Pre-Decode 决策原因 ---
+    PRE_RETAIN_REFERENCE = 1,        // 保留：当前帧是参考帧
+    PRE_RETAIN_TARGET_FULL = 2,      // 保留：目标丢帧率极低 (如 FULL 模式)
+    PRE_RETAIN_EMA_SATISFIED = 3,    // 保留：当前 EMA 丢帧率已达标
+    PRE_DROP_EMA_UNSATISFIED = 4,    // 丢弃：当前 EMA 不足，需丢弃以补偿丢帧率
+
+    // --- Post-Decode 决策原因 ---
+    POST_BYPASSED = 10,              // 跳过：该帧在解码前(Pre-Decode)已被丢弃
+    POST_RETAIN_FULL = 11,           // 保留：FULL 全量保留策略
+    POST_RETAIN_FIXED_ACC = 12,      // 保留：FixedRatio 策略，累加器达到阈值
+    POST_DROP_FIXED_ACC = 13,        // 丢弃：FixedRatio 策略，累加器未达阈值
+    POST_RETAIN_ADAPTIVE_SPEED = 14, // 保留：Adaptive 策略，当前播放倍速较低无需降帧
+    POST_RETAIN_ADAPTIVE_DT = 15,    // 保留：Adaptive 策略，决策树(DT)评估为无需丢弃
+    POST_RETAIN_ADAPTIVE_MAX_DROP = 16, // 保留：Adaptive 策略，触发最大连续丢帧限制强制放行
+    POST_DROP_ADAPTIVE_DT = 17,      // 丢弃：Adaptive 策略，决策树评估可丢且未达限制
+    POST_RETAIN_AUTO_FALLBACK = 18   // 保留：AutoFallback 策略，处于探测期或保底间隔期
+};
+
 using OnStreamAuxInfoParsed = std::function<void(const StreamAuxInfo& info)>;
 
 enum class RetentionStrategyType : int32_t {

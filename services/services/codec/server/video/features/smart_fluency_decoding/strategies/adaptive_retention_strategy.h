@@ -32,11 +32,13 @@ public:
     void Reset() override;
     RetentionStrategyType GetMode() const override;
     double GetCurrentRetentionRatio() const override;
+    SfdDecisionReason GetLastDecisionReason() const override { return lastReason_; }
 
 private:
     double currentSpeed_{1.0};
     uint32_t dropCount_{0};
     double currentTargetRatio_{0.0};
+    SfdDecisionReason lastReason_{SfdDecisionReason::UNSPECIFIED};
 };
 
 } // namespace SFD

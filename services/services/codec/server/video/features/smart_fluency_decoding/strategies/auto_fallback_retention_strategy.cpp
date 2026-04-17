@@ -105,6 +105,14 @@ double AutoFallbackRetentionStrategy::GetCurrentRetentionRatio() const
     return 1.0;
 }
 
+SfdDecisionReason AutoFallbackRetentionStrategy::GetLastDecisionReason() const
+{
+    if (currentState_ == STABLE && stableDropper_) {
+        return stableDropper_->GetLastDecisionReason();
+    }
+    return SfdDecisionReason::POST_RETAIN_AUTO_FALLBACK;
+}
+
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS
