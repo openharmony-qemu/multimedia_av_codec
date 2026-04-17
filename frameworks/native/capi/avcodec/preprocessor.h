@@ -20,9 +20,9 @@
 #include <string>
 #include <string_view>
 #include "avcodec_info.h"
-#include "fast_kits_interface/fast_kits_interface.h"
+#include "fast_kits_interface.h"
 #include "format.h"
-#include "frame_drop/frame_drop_filter.h"
+#include "frame_drop_filter.h"
 #include "surface.h"
 
 namespace OHOS {
