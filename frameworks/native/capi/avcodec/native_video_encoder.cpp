@@ -164,6 +164,9 @@ OH_AVErrCode OH_VideoEncoder_Prepare(struct OH_AVCodec *codec)
     CHECK_AND_RETURN_RET_LOG(IsValidVideoEncoderMagic(codec->magic_), AV_ERR_INVALID_VAL, "Codec magic error!");
 
     if (PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_)) {
+        auto* preprocEnc = reinterpret_cast<PreprocessorEncoder*>(codec);
+        CHECK_AND_RETURN_RET_LOG(preprocEnc != nullptr && preprocEnc->GetPreprocessor() != nullptr, AV_ERR_OK,
+                                 "PreprocessorEncoder prepare skipped: no preprocessor!");
         return AV_ERR_OK;
     }
 
@@ -277,9 +280,9 @@ OH_AVErrCode OH_VideoEncoder_Reset(struct OH_AVCodec *codec)
 OH_AVErrCode OH_VideoEncoder_GetSurface(OH_AVCodec *codec, OHNativeWindow **window)
 {
     CHECK_AND_RETURN_RET_LOG(codec != nullptr && window != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER ||
-                             PreprocessorEncoder::IsPrimaryEncoderMagic(codec->magic_), AV_ERR_INVALID_VAL,
-                             "Codec magic error!");
+    CHECK_AND_RETURN_RET_LOG(IsValidVideoEncoderMagic(codec->magic_), AV_ERR_INVALID_VAL, "Codec magic error!");
+    CHECK_AND_RETURN_RET_LOG(!PreprocessorEncoder::IsSecondaryEncoderMagic(codec->magic_), AV_ERR_OPERATE_NOT_PERMIT,
+                             "Secondary encoder is not permitted to call GetSurface! Use primary encoder instead.");
 
     if (PreprocessorEncoder::IsPrimaryEncoderMagic(codec->magic_)) {
         auto* preprocEnc = reinterpret_cast<PreprocessorEncoder*>(codec);
@@ -308,6 +311,11 @@ OH_AVFormat *OH_VideoEncoder_GetOutputDescription(struct OH_AVCodec *codec)
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, nullptr, "Codec is nullptr!");
     CHECK_AND_RETURN_RET_LOG(IsValidVideoEncoderMagic(codec->magic_), nullptr, "Codec magic error!");
 
+    if (PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_)) {
+        auto* preprocEnc = reinterpret_cast<PreprocessorEncoder*>(codec);
+        return preprocEnc->GetOutputDescription();
+    }
+
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, nullptr, "Video encoder is nullptr!");
 
@@ -325,6 +333,8 @@ OH_AVFormat *OH_VideoEncoder_GetOutputDescription(struct OH_AVCodec *codec)
 OH_AVErrCode OH_VideoEncoder_FreeOutputData(struct OH_AVCodec *codec, uint32_t index)
 {
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(!PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_), AV_ERR_OPERATE_NOT_PERMIT,
+                             "RegisterParameterCallback is not supported for preprocessor encoders!");
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
                              "Codec magic error!");
 
@@ -393,6 +403,9 @@ OH_AVErrCode OH_VideoEncoder_SetParameter(struct OH_AVCodec *codec, struct OH_AV
     CHECK_AND_RETURN_RET_LOG(format->magic_ == MFMagic::MFMAGIC_FORMAT, AV_ERR_INVALID_VAL, "Format magic error!");
 
     if (PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_)) {
+        auto* preprocEnc = reinterpret_cast<PreprocessorEncoder*>(codec);
+        CHECK_AND_RETURN_RET_LOG(preprocEnc != nullptr && preprocEnc->GetPreprocessor() != nullptr, AV_ERR_OK,
+                                 "PreprocessorEncoder prepare skipped: no preprocessor!");
         return AV_ERR_OK;
     }
 
@@ -410,6 +423,8 @@ OH_AVErrCode OH_VideoEncoder_SetCallback(struct OH_AVCodec *codec, struct OH_AVC
                                          void *userData)
 {
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(!PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_), AV_ERR_OPERATE_NOT_PERMIT,
+                             "RegisterParameterCallback is not supported for preprocessor encoders!");
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
                              "Codec magic error!");
 
@@ -464,6 +479,8 @@ OH_AVErrCode OH_VideoEncoder_RegisterParameterCallback(OH_AVCodec *codec,
                                                        void *userData)
 {
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(!PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_), AV_ERR_OPERATE_NOT_PERMIT,
+                             "RegisterParameterCallback is not supported for preprocessor encoders!");
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
                              "Codec magic error!");
     CHECK_AND_RETURN_RET_LOG(onInputParameter != nullptr, AV_ERR_INVALID_VAL, "Callback onInputParameter is nullptr");
@@ -486,6 +503,8 @@ OH_AVErrCode OH_VideoEncoder_RegisterParameterCallback(OH_AVCodec *codec,
 OH_AVErrCode OH_VideoEncoder_PushInputData(struct OH_AVCodec *codec, uint32_t index, OH_AVCodecBufferAttr attr)
 {
     CHECK_AND_RETURN_RET_LOGD(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOGD(!PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_), AV_ERR_OPERATE_NOT_PERMIT,
+        "Buffer mode is not supported for preprocessor encoders!");
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
         "Codec magic error!");
     CHECK_AND_RETURN_RET_LOGD(attr.size >= 0, AV_ERR_INVALID_VAL, "Invalid buffer size!");
@@ -510,6 +529,8 @@ OH_AVErrCode OH_VideoEncoder_PushInputData(struct OH_AVCodec *codec, uint32_t in
 OH_AVErrCode OH_VideoEncoder_PushInputBuffer(struct OH_AVCodec *codec, uint32_t index)
 {
     CHECK_AND_RETURN_RET_LOGD(codec != nullptr, AV_ERR_INVALID_VAL, "Input codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOGD(!PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_), AV_ERR_OPERATE_NOT_PERMIT,
+        "Buffer mode is not supported for preprocessor encoders!");
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
         "magic error!");
 
@@ -526,6 +547,8 @@ OH_AVErrCode OH_VideoEncoder_PushInputBuffer(struct OH_AVCodec *codec, uint32_t 
 OH_AVErrCode OH_VideoEncoder_PushInputParameter(OH_AVCodec *codec, uint32_t index)
 {
     CHECK_AND_RETURN_RET_LOGD(codec != nullptr, AV_ERR_INVALID_VAL, "Input codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOGD(!PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_), AV_ERR_OPERATE_NOT_PERMIT,
+        "Buffer mode is not supported for preprocessor encoders!");
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
         "magic error!");
 
@@ -544,7 +567,8 @@ OH_AVFormat *OH_VideoEncoder_GetInputDescription(OH_AVCodec *codec)
     CHECK_AND_RETURN_RET_LOG(IsValidVideoEncoderMagic(codec->magic_), nullptr, "Codec magic error!");
 
     if (PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_)) {
-        return nullptr;
+        auto* preprocEnc = reinterpret_cast<PreprocessorEncoder*>(codec);
+        return preprocEnc->GetInputDescription();
     }
 
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
@@ -564,6 +588,8 @@ OH_AVFormat *OH_VideoEncoder_GetInputDescription(OH_AVCodec *codec)
 OH_AVErrCode OH_VideoEncoder_QueryInputBuffer(struct OH_AVCodec *codec, uint32_t *index, int64_t timeoutUs)
 {
     CHECK_AND_RETURN_RET_LOGD(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOGD(!PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_), AV_ERR_OPERATE_NOT_PERMIT,
+        "Synchronous mode is not supported for preprocessor encoders!");
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
         "Codec magic error!");
 
@@ -584,6 +610,8 @@ OH_AVErrCode OH_VideoEncoder_QueryInputBuffer(struct OH_AVCodec *codec, uint32_t
 OH_AVErrCode OH_VideoEncoder_QueryOutputBuffer(struct OH_AVCodec *codec, uint32_t *index, int64_t timeoutUs)
 {
     CHECK_AND_RETURN_RET_LOGD(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOGD(!PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_), AV_ERR_OPERATE_NOT_PERMIT,
+        "Synchronous mode is not supported for preprocessor encoders!");
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
         "Codec magic error!");
 
@@ -606,6 +634,8 @@ OH_AVErrCode OH_VideoEncoder_QueryOutputBuffer(struct OH_AVCodec *codec, uint32_
 OH_AVBuffer *OH_VideoEncoder_GetInputBuffer(struct OH_AVCodec *codec, uint32_t index)
 {
     CHECK_AND_RETURN_RET_LOGD(codec != nullptr, nullptr, "Codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOGD(!PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_), nullptr,
+        "Synchronous mode is not supported for preprocessor encoders!");
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, nullptr, "Codec magic error!");
 
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
@@ -620,6 +650,8 @@ OH_AVBuffer *OH_VideoEncoder_GetInputBuffer(struct OH_AVCodec *codec, uint32_t i
 OH_AVBuffer *OH_VideoEncoder_GetOutputBuffer(struct OH_AVCodec *codec, uint32_t index)
 {
     CHECK_AND_RETURN_RET_LOGD(codec != nullptr, nullptr, "Codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOGD(!PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_), nullptr,
+        "Synchronous mode is not supported for preprocessor encoders!");
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, nullptr, "Codec magic error!");
 
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);

@@ -48,6 +48,7 @@ public:
 
     OH_AVErrCode RegisterCallback(struct OH_AVCodecCallback callback, void* userData);
     OH_AVErrCode Configure(const Media::Format& format);
+    OH_AVErrCode SetParameter(const Media::Format& format);
     sptr<Surface> GetSurface();
     OH_AVErrCode Start();
     OH_AVErrCode Stop();
@@ -57,6 +58,8 @@ public:
     OH_AVErrCode ReleaseOutputBuffer(uint32_t index);
 
     std::shared_ptr<Preprocessor> GetPreprocessor();
+    OH_AVFormat* GetOutputDescription();
+    OH_AVFormat* GetInputDescription();
 private:
     static std::string GenerateEncoderId(const std::string& prefix);
     OH_AVErrCode InitAsPrimary(const char* mime);

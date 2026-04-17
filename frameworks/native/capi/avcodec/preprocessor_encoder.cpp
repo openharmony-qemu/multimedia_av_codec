@@ -213,6 +213,16 @@ OH_AVErrCode PreprocessorEncoder::Configure(const Media::Format &format)
     return AV_ERR_OK;
 }
 
+OH_AVErrCode PreprocessorEncoder::SetParameter(const Media::Format &format)
+{
+    if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
+        int32_t ret = videoEncoderObject_->videoEncoder_->SetParameter(format);
+        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
+                                 "PreprocessorEncoder set parameter failed!");
+    }
+    return AV_ERR_OK;
+}
+
 sptr<Surface> PreprocessorEncoder::GetSurface()
 {
     return GetSharedSurface();
@@ -368,6 +378,38 @@ OH_AVErrCode PreprocessorEncoder::ReleaseOutputBuffer(uint32_t index)
                                  "Preprocessor release output buffer failed!");
     }
     return AV_ERR_OK;
+}
+
+OH_AVFormat* PreprocessorEncoder::GetOutputDescription()
+{
+    if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
+        Format format;
+        int32_t ret = videoEncoderObject_->videoEncoder_->GetOutputFormat(format);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr,
+                                 "PreprocessorEncoder get output description failed!");
+
+        OH_AVFormat* avFormat = OH_AVFormat_Create();
+        CHECK_AND_RETURN_RET_LOG(avFormat != nullptr, nullptr, "PreprocessorEncoder create output format failed!");
+        avFormat->format_ = format;
+        return avFormat;
+    }
+    return nullptr;
+}
+
+OH_AVFormat* PreprocessorEncoder::GetInputDescription()
+{
+    if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
+        Format format;
+        int32_t ret = videoEncoderObject_->videoEncoder_->GetInputFormat(format);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr,
+                                 "PreprocessorEncoder get input description failed!");
+
+        OH_AVFormat* avFormat = OH_AVFormat_Create();
+        CHECK_AND_RETURN_RET_LOG(avFormat != nullptr, nullptr, "PreprocessorEncoder create input format failed!");
+        avFormat->format_ = format;
+        return avFormat;
+    }
+    return nullptr;
 }
 
 } // namespace MediaAVCodec

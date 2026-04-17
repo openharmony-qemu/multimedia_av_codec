@@ -129,6 +129,11 @@ Preprocessor::~Preprocessor()
 
 int32_t Preprocessor::Configure(const Media::Format &format)
 {
+    int32_t enableSyncMode = false;
+    if (format.GetIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, enableSyncMode) && enableSyncMode) {
+        AVCODEC_LOGE("Synchronous mode is not supported for primary/secondary encoder!");
+        return AVCS_ERR_INVALID_VAL;
+    }
     UpdateConfiguredValues(format, encoderConfig_);
     CropParams cropParams;
     DownsamplingParams dsParams;
