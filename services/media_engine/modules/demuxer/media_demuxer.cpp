@@ -3118,7 +3118,8 @@ void MediaDemuxer::HandleVideoTrack(int32_t trackId)
                 hasSetLargeSize_ = true;
             }
         }
-        if (bufferMap_[trackId]->pts_ <= sampleQueueMap_[audioTrackId_]->GetLastOutSamplePts()) {
+        if (IsValidTrackId(audioTrackId_) &&
+            bufferMap_[trackId]->pts_ <= sampleQueueMap_[audioTrackId_]->GetLastOutSamplePts()) {
             sampleQueueMap_[trackId]->Clear();
             sampleQueueMap_[trackId]->UpdateLastOutSamplePts(bufferMap_[trackId]->pts_);
         }
