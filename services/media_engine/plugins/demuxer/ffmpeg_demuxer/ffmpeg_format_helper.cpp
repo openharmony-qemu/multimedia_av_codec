@@ -727,11 +727,10 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
     }
 
     if (avStream.start_time != AV_NOPTS_VALUE) {
-        format.SetData(Tag::MEDIA_START_TIME,
-            AvTime2Us(ConvertTimeFromFFmpeg(avStream.start_time, avStream.time_base)));
+        format.Set<Tag::MEDIA_START_TIME>(AvTime2Us(ConvertTimeFromFFmpeg(avStream.start_time, avStream.time_base)));
     } else {
         if (mediaType == AVMEDIA_TYPE_AUDIO || mediaType == AVMEDIA_TYPE_AUXILIARY) {
-            format.SetData(Tag::MEDIA_START_TIME, GetDefaultTrackStartTime(avFormatContext));
+            format.Set<Tag::MEDIA_START_TIME>(GetDefaultTrackStartTime(avFormatContext));
         }
         MEDIA_LOG_W("Parse track start time failed");
     }
@@ -799,7 +798,7 @@ void FFmpegFormatHelper::ParseAVTrackInfo(const AVStream& avStream, Meta &format
     AVDictionaryEntry *valPtr = nullptr;
     valPtr = av_dict_get(avStream.metadata, "language", nullptr, AV_DICT_MATCH_CASE);
     if (valPtr != nullptr) {
-        format.SetData(Tag::MEDIA_LANGUAGE, std::string(valPtr->value));
+        format.Set<Tag::MEDIA_LANGUAGE>(std::string(valPtr->value));
     } else {
         MEDIA_LOG_D("Parse track language failed");
     }
