@@ -359,11 +359,11 @@ std::string DecoderSurfaceFilter::GetMime()
     return mime;
 }
 
-bool DecoderSurfaceFilter::CheckDecoderCapability(bool isHWDecoder, int32_t width, int32_t height,
+bool DecoderSurfaceFilter::CheckDecoderCapability(bool isHwDecoder, int32_t width, int32_t height,
     std::string &decoderName)
 {
     OH_AVCapability *capability = nullptr;
-    if (isHWDecoder) {
+    if (isHwDecoder) {
         capability = OH_AVCodec_GetCapabilityByCategory(codecMimeType_.c_str(), false, HARDWARE);
     } else {
         capability = OH_AVCodec_GetCapabilityByCategory(codecMimeType_.c_str(), false, SOFTWARE);
@@ -374,7 +374,7 @@ bool DecoderSurfaceFilter::CheckDecoderCapability(bool isHWDecoder, int32_t widt
     if (!OH_AVCapability_IsVideoSizeSupported(capability, width, height)) {
         return false;
     }
-    if (isHWDecoder) {
+    if (isHwDecoder) {
         decoderName = codecMimeType_;
     } else {
         const char *name = OH_AVCapability_GetName(capability);
