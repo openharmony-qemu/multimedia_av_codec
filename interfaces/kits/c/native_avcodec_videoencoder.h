@@ -86,6 +86,73 @@ OH_AVCodec *OH_VideoEncoder_CreateByMime(const char *mime);
 OH_AVCodec *OH_VideoEncoder_CreateByName(const char *name);
 
 /**
+ * @brief Creates a primary video encoder with preprocessor.
+ *
+ * Creates a primary video encoder instance that supports:
+ * 1. Preprocessing features (downsampling, cropping, drop frame)
+ * 2. Creating a secondary encoder for one-input-dual-output encoding
+ *
+ * @param mime Mime type description string, refer to {@link AVCODEC_MIME_TYPE}.
+ *             Cannot be NULL, must be a supported MIME type
+ *             (e.g., {@link OH_AVCODEC_MIMETYPE_VIDEO_AVC}, {@link OH_AVCODEC_MIMETYPE_VIDEO_HEVC}).
+ * @param codec Double pointer to an OH_AVCodec instance, used to receive the created encoder.
+ *              Cannot be NULL. If creation is successful, the encoder needs to be released
+ *              by calling {@link OH_VideoEncoder_Destroy}.
+ *
+ * @return Returns {@link AV_ERR_OK} if the execution is successful.
+ *         For other error codes, refer to {@link OH_AVErrCode}.
+ *         Returns {@link AV_ERR_INVALID_VAL} if:
+ *         - mime is NULL.
+ *         - codec is NULL.
+ *         - mime type is not supported.
+ *         Returns {@link AV_ERR_NO_MEMORY} if memory allocation fails.
+ *
+ * @since 26.0.0
+ */
+OH_AVErrCode OH_VideoEncoder_CreatePrimaryWithPreproc(const char *mime, OH_AVCodec **codec);
+
+/**
+ * @brief Creates a secondary video encoder from a primary video encoder.
+ *
+ * Creates a secondary video encoder instance from a primary encoder created by
+ * {@link OH_VideoEncoder_CreatePrimaryWithPreproc}. The secondary encoder:
+ * 1. Shares the input source with the primary encoder
+ * 2. Can be configured with independent encoding parameters
+ * 3. Can use different preprocessing parameters
+ * 4. Can be started/stopped independently from the primary encoder
+ * 5. The lifecycle of primary encoder must be longer than secondary encoder
+ * 6. One primary encoder can only have one secondary encoder at the same time
+ *
+ * @param primary Pointer to a primary OH_AVCodec instance created by
+ *                {@link OH_VideoEncoder_CreatePrimaryWithPreproc}. Cannot be NULL.
+ * @param codec Double pointer to an OH_AVCodec instance, used to receive the created encoder.
+ *              Cannot be NULL. If creation is successful, the encoder needs to be released
+ *              by calling {@link OH_VideoEncoder_Destroy}.
+ *
+ * @return Returns {@link AV_ERR_OK} if the execution is successful.
+ *         For other error codes, refer to {@link OH_AVErrCode}.
+ *         Returns {@link AV_ERR_INVALID_VAL} if:
+ *         - primary is NULL.
+ *         - codec is NULL.
+ *         - primary is not a valid primary encoder.
+ *         Returns {@link AV_ERR_OPERATE_NOT_PERMIT} if primary encoder already has an existing secondary encoder.
+ *         Returns {@link AV_ERR_NO_MEMORY} if memory allocation fails.
+ *
+ * @note Lifecycle management:
+ *       - The lifecycle of primary encoder must be longer than secondary encoder.
+ *       - Recommended destruction order: destroy secondary encoder first, then primary encoder.
+ *       - If primary encoder is destroyed before secondary encoder, the system will automatically
+ *         destroy the secondary encoder before releasing the primary encoder.
+ *       - Both encoders must be destroyed by calling {@link OH_VideoEncoder_Destroy}.
+ *       - One primary encoder can only have one secondary encoder at the same time.
+ *         After the secondary encoder is destroyed, a new secondary encoder can be created
+ *         from the same primary encoder again.
+ *
+ * @since 26.0.0
+ */
+OH_AVErrCode OH_VideoEncoder_CreateSecondaryFromPrimary(OH_AVCodec *primary, OH_AVCodec **codec);
+
+/**
  * @brief Clear the internal resources of the encoder and destroy the encoder instance.
  * Can not be destroyed repeatedly.
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
@@ -535,31 +602,6 @@ OH_AVFormat *OH_VideoEncoder_GetInputDescription(OH_AVCodec *codec);
  * @since 10
  */
 OH_AVErrCode OH_VideoEncoder_IsValid(OH_AVCodec *codec, bool *isValid);
-
-/**
- * @brief Creates a video encoder instance with preproc support (one input, two outputs).
- * This is recommended for scenarios requiring two encoded outputs from a single input.
- * @syscap SystemCapability.Multimedia.Media.VideoEncoder
- * @param mime mime type description string, only "video/hevc" or "video/avc" are supported
- * @param codec Output parameter, returns the created encoder instance
- * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
- * @since 26.0.0
- */
-OH_AVErrCode OH_VideoEncoder_CreatePrimaryWithPreproc(const char *mime, OH_AVCodec **codec);
-
-/**
- * @brief Creates a secondary video encoder from the primary encoder.
- * The secondary encoder shares the same input surface with the primary encoder.
- * Both encoders must use the same codec format (HEVC or AVC).
- * @syscap SystemCapability.Multimedia.Media.VideoEncoder
- * @param primary Pointer to the primary OH_AVCodec instance
- * @param secondary Output parameter, returns the created secondary encoder instance
- * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
- * @since 26.0.0
- */
-OH_AVErrCode OH_VideoEncoder_CreateSecondaryFromPrimary(OH_AVCodec *primary, OH_AVCodec **codec);
 
 /**
  * @brief The bitrate mode of video encoder.
