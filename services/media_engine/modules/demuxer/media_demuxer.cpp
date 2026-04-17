@@ -115,6 +115,7 @@ constexpr int64_t READSAMPLE_WARNING_MS = 100;
 constexpr int32_t CONVERT_PACKET_ERROR_MAX_COUNT = 30;
 constexpr int32_t DURATION_CHANGE_AMOUNT_MILLIONSECOND = 500;
 constexpr int64_t MAX_PRECENT = 100;
+constexpr int64_t TEMP_PRECENT = 100;
 const std::unordered_map<PluginDfxEventType, std::pair<std::string, DfxEventType>> DFX_EVENT_MAP = {
     { PluginDfxEventType::PERF_SOURCE, { "SRC", DfxEventType::DFX_INFO_PERF_REPORT } }
 };
@@ -3593,7 +3594,7 @@ void MediaDemuxer::BufferingStatus()
         int64_t percent = 0;
         uint64_t temDuration = sampleQueueController_->GetPlayBufferingDuration();
         if (temDuration > 0) {
-            percent = static_cast<int64_t>((sampleQueueMap_[mainTrackId]->NewGetCacheDuration() * 100) / 
+            percent = static_cast<int64_t>((sampleQueueMap_[mainTrackId]->NewGetCacheDuration() * TEMP_PRECENT) /
             temDuration);
         } else {
             percent = MAX_PRECENT;
