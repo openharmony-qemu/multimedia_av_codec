@@ -372,13 +372,9 @@ ohos_shared_library("native_media_venc") {
     "$av_codec_root_dir/frameworks/native/avcodec/pre_processing",
     "$av_codec_root_dir/frameworks/native/avcodec/pre_processing/fast_kits_interface",
     "$av_codec_root_dir/frameworks/native/avcodec/pre_processing/frame_drop",
-    "$av_codec_root_dir/services/dfx/include",
-    "$av_codec_root_dir/interfaces/inner_api/native",
   ]
 
   deps = [
-    "$av_codec_root_dir/frameworks/native/avcodec/pre_processing/fast_kits_interface:fast_image_loader",
-    "$av_codec_root_dir/frameworks/native/avcodec/pre_processing/frame_drop:frame_drop",
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
     "$av_codec_root_dir/interfaces/kits/c:native_media_codecbase",
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
@@ -395,7 +391,6 @@ ohos_shared_library("native_media_venc") {
     "media_foundation:native_media_core",
   ]
   output_extension = "so"
-  sanitize = av_codec_sanitize
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }
