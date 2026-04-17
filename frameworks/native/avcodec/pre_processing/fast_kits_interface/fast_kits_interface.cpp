@@ -75,22 +75,6 @@ int32_t FastKitsInterface::ConvertErrorCode(int32_t fastErr)
     }
 }
 
-const char *FastKitsInterface::ErrorCodeToString(int32_t fastErr)
-{
-    switch (fastErr) {
-        case FAST_ERR_SUCCESS:
-            return "SUCCESS";
-        case FAST_ERR_SUCCESS_PARTIAL:
-            return "SUCCESS_PARTIAL";
-        case FAST_ERR_ILLEGAL_INPUT:
-            return "ILLEGAL_INPUT";
-        case FAST_ERR_INVALID_PTR:
-            return "INVALID_PTR";
-        default:
-            return "UNKNOWN";
-    }
-}
-
 template <typename FuncPtr>
 bool FastKitsInterface::LoadSymbol(void *handle, FuncPtr &func, const char *name)
 {
@@ -120,8 +104,8 @@ int32_t FastKitsInterface::Init(uint32_t format, FastResizeAlgoType algo)
     CHECK_AND_RETURN_RET_LOG(initFunc_ != nullptr, AVCS_ERR_INVALID_VAL, "Init function not loaded");
     int32_t ret = initFunc_(format, static_cast<int32_t>(algo));
     int32_t err = ConvertErrorCode(ret);
-    CHECK_AND_RETURN_RET_LOG(err == AVCS_ERR_OK, err, "Init failed: %{public}s (%{public}d)", ErrorCodeToString(ret),
-                             ret);
+    CHECK_AND_RETURN_RET_LOG(err == AVCS_ERR_OK, err, "Init %{public}d, fmt %{public}u algo %{public}d",
+                             ret, format, static_cast<int32_t>(algo));
     AVCODEC_LOGI("fastkit lib loaded and initialized successfully");
     return err;
 }
@@ -138,9 +122,9 @@ bool FastKitsInterface::OpenLibrary()
 
 bool FastKitsInterface::ReadSymbols()
 {
-    return LoadSymbol(handle_, initFunc_, "Fast_Scale_Init") &&
-           LoadSymbol(handle_, downSampleFunc_, "Fast_Scale_DownSample") &&
-           LoadSymbol(handle_, cropFunc_, "Fast_Scale_Crop") &&
+    return LoadSymbol(handle_, initFunc_, "FastScaleInit") &&
+           LoadSymbol(handle_, downSampleFunc_, "FastScaleDownSample") &&
+           LoadSymbol(handle_, cropFunc_, "FastScaleCrop") &&
            LoadSymbol(handle_, createRectFunc_, "CreateCropRect") &&
            LoadSymbol(handle_, destroyRectFunc_, "DestroyCropRect");
 }
@@ -175,8 +159,11 @@ int32_t FastKitsInterface::Crop(const sptr<SurfaceBuffer> &input, const sptr<Sur
     int32_t ret = cropFunc_(input.GetRefPtr(), output.GetRefPtr(), cropRect);
     destroyRectFunc_(cropRect);
     int32_t err = ConvertErrorCode(ret);
-    CHECK_AND_RETURN_RET_LOG(err == AVCS_ERR_OK, err, "Crop failed: %{public}s (%{public}d)", ErrorCodeToString(ret),
-                             ret);
+    CHECK_AND_RETURN_RET_LOG(err == AVCS_ERR_OK, err,
+                             "Crop %{public}d, in %{public}dx%{public}d:%{public}d out %{public}dx%{public}d:%{public}d "
+                             "rect [%{public}d,%{public}d,%{public}d,%{public}d]",
+                             ret, input->GetWidth(), input->GetHeight(), input->GetFormat(), output->GetWidth(),
+                             output->GetHeight(), output->GetFormat(), rect.top, rect.left, rect.bottom, rect.right);
     return err;
 }
 
@@ -190,8 +177,10 @@ int32_t FastKitsInterface::DownSample(const sptr<SurfaceBuffer> &input, const sp
 
     int32_t ret = downSampleFunc_(input.GetRefPtr(), output.GetRefPtr(), static_cast<int32_t>(algo));
     int32_t err = ConvertErrorCode(ret);
-    CHECK_AND_RETURN_RET_LOG(err == AVCS_ERR_OK, err, "DownSample failed: %{public}s (%{public}d)",
-                             ErrorCodeToString(ret), ret);
+    CHECK_AND_RETURN_RET_LOG(err == AVCS_ERR_OK, err,
+                             "DownSample %{public}d, in %{public}dx%{public}d:%{public}d out %{public}dx%{public}d:%{public}d",
+                             ret, input->GetWidth(), input->GetHeight(), input->GetFormat(), output->GetWidth(),
+                             output->GetHeight(), output->GetFormat());
     return err;
 }
 

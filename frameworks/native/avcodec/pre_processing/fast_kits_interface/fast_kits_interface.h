@@ -48,10 +48,10 @@ enum class FastResizeAlgoType {
 };
 
 struct CropRect {
-    int32_t left{0};
     int32_t top{0};
-    int32_t right{0};
+    int32_t left{0};
     int32_t bottom{0};
+    int32_t right{0};
 };
 
 class FastKitsInterface {
@@ -81,7 +81,6 @@ private:
     bool LoadSymbol(void *handle, FuncPtr &func, const char *name);
 
     static int32_t ConvertErrorCode(int32_t fastErr);
-    static const char *ErrorCodeToString(int32_t fastErr);
 
     mutable std::mutex mutex_;
     int32_t refCount_{0};

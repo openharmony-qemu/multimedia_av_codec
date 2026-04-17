@@ -395,6 +395,7 @@ ohos_shared_library("native_media_venc") {
     "media_foundation:native_media_core",
   ]
   output_extension = "so"
+  sanitize = av_codec_sanitize
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }

@@ -337,7 +337,7 @@ const Preprocessor::DropFrameConfig &Preprocessor::GetDropFrameConfig() const
 
 void Preprocessor::Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output)
 {
-    PreProcessing::CropRect rect{cropConfig_.left, cropConfig_.top, cropConfig_.right, cropConfig_.bottom};
+    PreProcessing::CropRect rect{cropConfig_.top, cropConfig_.left, cropConfig_.bottom, cropConfig_.right};
     int32_t ret = fastKitsInterface_.Crop(input, output, rect);
     if (ret != AVCS_ERR_OK) {
         AVCODEC_LOGE("Crop failed: %{public}d", ret);
