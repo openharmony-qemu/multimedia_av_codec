@@ -226,6 +226,8 @@ int32_t AppClient::RespondData(int64_t uuid, int64_t offset, const std::shared_p
     dataInFlight_ -= receiveDataSize;
  
     if (len_ > 0 && dataInFlight_ <= 0) {
+        MEDIA_LOG_I("0x%{public}06" PRIXPTR " AppClient respondData complete, uuid: " PUBLIC_LOG_D64,
+            FAKE_POINTER(this), uuid);
         NotifyResponseDataEnd(LoadingRequestError::LOADING_ERROR_SUCCESS);
     }
     MEDIA_LOG_D("0x%{public}06" PRIXPTR " AppClient RespondData, uuid " PUBLIC_LOG_D64 " offset " PUBLIC_LOG_D64

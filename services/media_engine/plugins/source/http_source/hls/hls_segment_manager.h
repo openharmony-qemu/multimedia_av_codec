@@ -328,6 +328,7 @@ private:
     bool isInterrupt_ {false};
     bool isFirstFrameArrived_ {false};
     std::atomic<bool> isSeekingFlag {false};
+    std::atomic<bool> isSourceLoaderSeeking_ {false};
     Mutex switchMutex_ {};
     uint32_t lastRealLen_ {0};
 
