@@ -300,89 +300,141 @@ void SmartFluencyDecoding::ExecutePreDrop(uint32_t index, std::shared_ptr<AVBuff
         });
     }
 }
+std::shared_ptr<AVBuffer> SmartFluencyDecoding::FetchInputBufferAndCapabilities(
+    uint32_t index, StrategyCaps& caps)
+{
+    std::lock_guard<std::mutex> lock(configMutex_);
+    std::shared_ptr<AVBuffer> buffer = nullptr;
+    auto it = inBufferMap_.find(index);
+    if (it != inBufferMap_.end()) {
+        buffer = it->second;
+        inBufferMap_.erase(it);
+    }
+    if (strategy_) {
+        caps.targetRatio = strategy_->GetCurrentRetentionRatio();
+        caps.isPassthrough = strategy_->IsPassthrough();
+        caps.requiresNalu = strategy_->RequiresNaluAnalysis();
+        caps.requiresMv = strategy_->RequiresMvAnalysis();
+    }
+    return buffer;
+}
+
+SmartFluencyDecoding::PreDecResult SmartFluencyDecoding::EvaluatePreDecode(
+    const std::shared_ptr<AVBuffer>& buffer, const StrategyCaps& caps)
+{
+    PreDecResult res;
+    res.reason = SfdDecisionReason::PRE_RETAIN_REFERENCE;
+
+    if (naluAnalyzer_ && caps.requiresNalu) {
+#ifdef SFD_DEBUG
+        int64_t naluStartUs = GetCurrentSysTimeUs();
+#endif
+        res.isNonRef = naluAnalyzer_->IsNonReferenceFrame(buffer);
+#ifdef SFD_DEBUG
+        res.naluCostUs = GetCurrentSysTimeUs() - naluStartUs;
+#endif
+        if (res.isNonRef) {
+            double currentEma = dropSyncCoordinator_->GetCurrentEma();
+            double targetDropRatio = 1.0 - caps.targetRatio;
+            if (targetDropRatio <= RETENTION_RATIO_MIN_DIFF) {
+                res.reason = SfdDecisionReason::PRE_RETAIN_TARGET_FULL;
+            } else if (currentEma >= targetDropRatio) {
+                res.reason = SfdDecisionReason::PRE_RETAIN_EMA_SATISFIED;
+            } else {
+                res.shouldRetain = false;
+                res.reason = SfdDecisionReason::PRE_DROP_EMA_UNSATISFIED;
+            }
+        }
+    } else if (caps.isPassthrough) {
+        res.reason = SfdDecisionReason::PRE_RETAIN_TARGET_FULL;
+    }
+    return res;
+}
+
+void SmartFluencyDecoding::RecordPreDecodeDump(
+    const std::shared_ptr<AVBuffer>& buffer, const PreDecResult& res, int64_t startUs)
+{
+#ifdef SFD_DEBUG
+    if (!dumper_) return;
+    SmartFluencyDecodingDumper::PreDecodeRecordCtx dumperCtx;
+    dumperCtx.pts = buffer->pts_;
+    dumperCtx.dts = buffer->dts_;
+    dumperCtx.isNonRef = res.isNonRef;
+    dumperCtx.flags = buffer->flag_;
+    dumperCtx.isRetained = res.shouldRetain;
+    dumperCtx.sysTimeMs = GetCurrentSysTimeMs();
+    dumperCtx.preDecCostUs = GetCurrentSysTimeUs() - startUs;
+    dumperCtx.naluCostUs = res.naluCostUs;
+    dumperCtx.writeIndex = dropSyncCoordinator_->GetWriteIndex();
+    dumperCtx.currentEmaDropRatio = dropSyncCoordinator_->GetCurrentEma();
+    dumperCtx.reason = res.reason;
+    dumper_->RecordPreDecode(dumperCtx);
+#endif
+}
+
+SmartFluencyDecoding::PostDecResult SmartFluencyDecoding::EvaluatePostDecode(FrameRetentionContext& ctx)
+{
+    PostDecResult res;
+    std::lock_guard<std::mutex> lock(configMutex_);
+    res.shouldRetain = strategy_->MakeRetentionDecision(ctx);
+    res.retentionRatio = strategy_->GetCurrentRetentionRatio();
+    res.reason = strategy_->GetLastDecisionReason();
+    return res;
+}
+
+void SmartFluencyDecoding::RecordPostDecodeDump(
+    int64_t pts, uint32_t preDropCount, const PostDecResult& res, 
+    const MVStats& mvStats, const PostDecCost& cost)
+{
+#ifdef SFD_DEBUG
+    if (!dumper_) return;
+    int64_t dumperStart = GetCurrentSysTimeUs();
+    SmartFluencyDecodingDumper::PostDecodeRecordCtx dumperCtx;
+    dumperCtx.pts = pts;
+    dumperCtx.isRetained = res.shouldRetain;
+    dumperCtx.preDropCount = preDropCount;
+    dumperCtx.sysTimeMs = GetCurrentSysTimeMs();
+    dumperCtx.postDecCostUs = dumperStart - cost.startUs;
+    dumperCtx.readIndex = dropSyncCoordinator_->GetReadIndex();
+    dumperCtx.currentEmaDropRatio = dropSyncCoordinator_->GetCurrentEma();
+    dumperCtx.reason = res.reason;
+    dumperCtx.mvStats = mvStats;
+    dumperCtx.copyMvCostUs = cost.copyMvCostUs;
+    dumperCtx.analyzeMvCostUs = cost.analyzeMvCostUs;
+
+    static int64_t lastDumperOverhead = 0;
+    dumperCtx.updateDumperCostUs = lastDumperOverhead;
+
+    dumper_->RecordPostDecode(dumperCtx);
+    lastDumperOverhead = GetCurrentSysTimeUs() - dumperStart;
+#endif
+}
 
 bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
 {
 #ifdef SFD_DEBUG
     int64_t startUs = GetCurrentSysTimeUs();
-    int64_t naluCostUs = -1;
 #endif
-    std::shared_ptr<AVBuffer> buffer = nullptr;
-    double currentTargetRatio = 1.0;
-
-    {
-        std::lock_guard<std::mutex> lock(configMutex_);
-        auto it = inBufferMap_.find(index);
-        if (it != inBufferMap_.end()) {
-            buffer = it->second;
-            inBufferMap_.erase(it);
-        }
-        if (strategy_) {
-            currentTargetRatio = strategy_->GetCurrentRetentionRatio();
-        }
-    }
-
+    StrategyCaps caps;
+    auto buffer = FetchInputBufferAndCapabilities(index, caps);
     if (!isInitialized_ || !buffer || !dropSyncCoordinator_) {
         return true;
     }
 
-    bool shouldRetain = true;
-    bool isNonRef = false;
-    SfdDecisionReason preReason = SfdDecisionReason::PRE_RETAIN_REFERENCE;
+    PreDecResult res = EvaluatePreDecode(buffer, caps);
 
-    if (naluAnalyzer_) {
-#ifdef SFD_DEBUG
-        int64_t naluStartUs = GetCurrentSysTimeUs();
-#endif
-        bool isNonRefFrame = naluAnalyzer_->IsNonReferenceFrame(buffer);
-#ifdef SFD_DEBUG
-        naluCostUs = GetCurrentSysTimeUs() - naluStartUs;
-#endif
-
-        if (isNonRefFrame) {
-            isNonRef = true;
-            double currentEma = dropSyncCoordinator_->GetCurrentEma();
-            double targetDropRatio = 1.0 - currentTargetRatio;
-
-            if (targetDropRatio <= RETENTION_RATIO_MIN_DIFF) {
-                preReason = SfdDecisionReason::PRE_RETAIN_TARGET_FULL;
-            } else if (currentEma >= targetDropRatio) {
-                preReason = SfdDecisionReason::PRE_RETAIN_EMA_SATISFIED;
-            } else {
-                shouldRetain = false;
-                preReason = SfdDecisionReason::PRE_DROP_EMA_UNSATISFIED;
-            }
-            AVCODEC_LOGD("Pre-decode decision for non-ref: shouldRetain %{public}d (ema:%{public}.4f, targetDrop:%{public}.4f)", 
-                         shouldRetain, currentEma, targetDropRatio);
-        }
-    }
-
-    if (shouldRetain) {
+    if (res.shouldRetain) {
         totalInputFrames_++;
     } else {
         ExecutePreDrop(index, buffer);
     }
+
 #ifdef SFD_DEBUG
-    int64_t endUs = GetCurrentSysTimeUs();
-    if (dumper_) {
-        SmartFluencyDecodingDumper::PreDecodeRecordCtx dumperCtx;
-        dumperCtx.pts = buffer->pts_;
-        dumperCtx.dts = buffer->dts_;
-        dumperCtx.isNonRef = isNonRef;
-        dumperCtx.flags = buffer->flag_;
-        dumperCtx.isRetained = shouldRetain;
-        dumperCtx.sysTimeMs = GetCurrentSysTimeMs();
-        dumperCtx.preDecCostUs = endUs - startUs;
-        dumperCtx.naluCostUs = naluCostUs;
-        dumperCtx.writeIndex = dropSyncCoordinator_->GetWriteIndex();
-        dumperCtx.currentEmaDropRatio = dropSyncCoordinator_->GetCurrentEma();
-        dumperCtx.reason = preReason;
-        dumper_->RecordPreDecode(dumperCtx);
-    }
+    RecordPreDecodeDump(buffer, res, startUs);
 #endif
     AVCODEC_LOGD("MakePreDecodeDecision: index %{public}u, pts %{public}" PRId64 ", isNonRef %{public}d, shouldRetain %{public}d",
-                 index, buffer->pts_, isNonRef, shouldRetain);
-    return shouldRetain;
+                 index, buffer->pts_, res.isNonRef, res.shouldRetain);
+    return res.shouldRetain;
 }
 
 void SmartFluencyDecoding::ExecutePostDrop(uint32_t index)
@@ -403,80 +455,61 @@ void SmartFluencyDecoding::ExecutePostDrop(uint32_t index)
 
 bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, const sptr<SurfaceBuffer> surfaceBuffer)
 {
+    PostDecCost cost;
 #ifdef SFD_DEBUG
-    int64_t startUs = GetCurrentSysTimeUs();
-    int64_t copyMvCostUs = -1;
-    int64_t analyzeMvCostUs = -1;
+    cost.startUs = GetCurrentSysTimeUs();
 #endif
+
     if (!isInitialized_ || !strategy_ || !dropSyncCoordinator_ || !surfaceBuffer) {
-        AVCODEC_LOGW("MakePostDecodeDecision: Early exit - init:%d, strategy:%d, coordinator:%d, buffer:%d", 
-                     isInitialized_, (strategy_ != nullptr), (dropSyncCoordinator_ != nullptr), (surfaceBuffer != nullptr));
         return true;
     }
-    int64_t currentPts = pts;
-    uint32_t preDroppedCount = dropSyncCoordinator_->GetAndConsumePreDroppedCount(currentPts);
-    if (preDroppedCount > 0) {
-        AVCODEC_LOGD("Post-decode: Consumed %{public}u pre-dropped count for pts %{public}" PRId64, preDroppedCount, currentPts);
-    }
-    MVStats currentMvStats;
-    ParseMVData(surfaceBuffer, currentMvStats, copyMvCostUs, analyzeMvCostUs);
-    FrameRetentionContext ctx;
-    ctx.ptsMs = currentPts;
-    ctx.sysTimeMs = GetCurrentSysTimeMs();
-    ctx.preDroppedCount = preDroppedCount;
-    ctx.mvStats = &currentMvStats;
-    bool shouldRetain = true;
-    double currentRetentionRatio = 1.0;
-    SfdDecisionReason postReason = SfdDecisionReason::UNSPECIFIED;
+
+    uint32_t preDropCount = dropSyncCoordinator_->GetAndConsumePreDroppedCount(pts);
+    StrategyCaps caps;
     {
         std::lock_guard<std::mutex> lock(configMutex_);
-        shouldRetain = strategy_->MakeRetentionDecision(ctx);
-        currentRetentionRatio = strategy_->GetCurrentRetentionRatio();
-        postReason = strategy_->GetLastDecisionReason();
+        caps.isPassthrough = strategy_->IsPassthrough();
+        caps.requiresMv = strategy_->RequiresMvAnalysis();
     }
+
+    // Fast-Path: ????
+    if (caps.isPassthrough) {
+        {
+            std::lock_guard<std::mutex> lock(configMutex_);
+            dropSyncCoordinator_->UpdateFeedback(false, 1.0, currentPlaybackSpeed_);
+        }
+        totalOutputFrames_++;
+#ifdef SFD_DEBUG
+        PostDecResult fastRes {true, 1.0, SfdDecisionReason::POST_RETAIN_FULL};
+        RecordPostDecodeDump(pts, preDropCount, fastRes, MVStats(), cost);
+#endif
+        return true;
+    }
+
+    MVStats mvStats;
+    if (caps.requiresMv) {
+        ParseMVData(surfaceBuffer, mvStats, cost.copyMvCostUs, cost.analyzeMvCostUs);
+    }
+
+    FrameRetentionContext ctx { pts, GetCurrentSysTimeMs(), 0, preDropCount, caps.requiresMv ? &mvStats : nullptr };
+    PostDecResult res = EvaluatePostDecode(ctx);
+    
     {
         std::lock_guard<std::mutex> lock(configMutex_);
-        dropSyncCoordinator_->UpdateFeedback(
-            !shouldRetain, currentRetentionRatio, currentPlaybackSpeed_);
+        dropSyncCoordinator_->UpdateFeedback(!res.shouldRetain, res.retentionRatio, currentPlaybackSpeed_);
     }
     AVCODEC_LOGD("Strategy decision: shouldRetain %{public}d, ratio %{public}.2f (index:%{public}u, pts:%{public}" PRId64 ")",
-                 shouldRetain, currentRetentionRatio, index, currentPts);
+                 res.shouldRetain, res.retentionRatio, index, pts);
     totalOutputFrames_++;
-    if (!shouldRetain) {
+    
+    if (!res.shouldRetain) {
         ExecutePostDrop(index);
     }
-    
-#ifdef SFD_DEBUG
-    int64_t endUs = GetCurrentSysTimeUs();
-#endif
 
 #ifdef SFD_DEBUG
-    if (dumper_) {
-        int64_t dumperStart = GetCurrentSysTimeUs();
-        SmartFluencyDecodingDumper::PostDecodeRecordCtx dumperCtx;
-        dumperCtx.pts = currentPts;
-        dumperCtx.isRetained = shouldRetain;
-        dumperCtx.preDropCount = preDroppedCount;
-        dumperCtx.sysTimeMs = GetCurrentSysTimeMs();
-        dumperCtx.postDecCostUs = endUs - startUs;
-        dumperCtx.readIndex = dropSyncCoordinator_->GetReadIndex();
-        dumperCtx.currentEmaDropRatio = dropSyncCoordinator_->GetCurrentEma();
-        dumperCtx.reason = postReason;
-        dumperCtx.mvStats = currentMvStats;
-        
-        // --- ×¢ÈëÏ¸·ÖºÄÊ± ---
-        dumperCtx.copyMvCostUs = copyMvCostUs;
-        dumperCtx.analyzeMvCostUs = analyzeMvCostUs;
-        static int64_t lastDumperOverhead = 0;
-        dumperCtx.updateDumperCostUs = lastDumperOverhead;
-
-        dumper_->RecordPostDecode(dumperCtx);
-        lastDumperOverhead = GetCurrentSysTimeUs() - dumperStart;
-    }
+    RecordPostDecodeDump(pts, preDropCount, res, mvStats, cost);
 #endif
-    AVCODEC_LOGD("MakePostDecodeDecision: index %{public}u, pts %{public}" PRId64 ", preDropped %{public}u, shouldRetain %{public}d",
-                 index, currentPts, preDroppedCount, shouldRetain);
-    return shouldRetain;
+    return res.shouldRetain;
 }
 
 int64_t SmartFluencyDecoding::GetCurrentSysTimeMs()

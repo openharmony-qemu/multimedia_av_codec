@@ -19,7 +19,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "SfdSync"};
-constexpr double BASE_ALPHA = 0.15; // 抽离魔法数字
+constexpr double BASE_ALPHA = 0.15; // ??????
 }
 
 namespace OHOS {
@@ -36,7 +36,7 @@ bool DropSyncCoordinator::RecordPreDroppedFrame(int64_t pts, double speed)
     }
     size_t index = currentWrite & queueMask;
     ptsRingBuffer_[index] = pts;
-    isConsumed_[index] = false; // 覆盖旧数据时重置消费标记
+    isConsumed_[index] = false; // ????????????
     writeIndex_.store(nextWrite, std::memory_order_release);
     {
         std::lock_guard<std::mutex> lock(feedbackMutex_);

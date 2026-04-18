@@ -33,6 +33,10 @@ public:
     RetentionStrategyType GetMode() const override;
     double GetCurrentRetentionRatio() const override;
     SfdDecisionReason GetLastDecisionReason() const override { return SfdDecisionReason::POST_RETAIN_FULL; }
+
+    bool IsPassthrough() const override { return true; }
+    bool RequiresNaluAnalysis() const override { return false; }
+    bool RequiresMvAnalysis() const override { return false; }
 };
 
 } // namespace SFD

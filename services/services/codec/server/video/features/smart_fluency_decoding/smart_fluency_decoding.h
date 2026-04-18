@@ -60,6 +60,38 @@ public:
     void GetStatistics(uint32_t& totalFrames, uint32_t& droppedFrames) const;
 
 private:
+    struct StrategyCaps {
+        bool isPassthrough{false};
+        bool requiresNalu{true};
+        bool requiresMv{false};
+        double targetRatio{1.0};
+    };
+
+    struct PreDecResult {
+        bool shouldRetain{true};
+        bool isNonRef{false};
+        SfdDecisionReason reason{SfdDecisionReason::UNSPECIFIED};
+        int64_t naluCostUs{-1};
+    };
+
+    struct PostDecResult {
+        bool shouldRetain{true};
+        double retentionRatio{1.0};
+        SfdDecisionReason reason{SfdDecisionReason::UNSPECIFIED};
+    };
+
+    struct PostDecCost {
+        int64_t startUs{-1};
+        int64_t copyMvCostUs{-1};
+        int64_t analyzeMvCostUs{-1};
+    };
+
+    std::shared_ptr<AVBuffer> FetchInputBufferAndCapabilities(uint32_t index, StrategyCaps& caps);
+    PreDecResult EvaluatePreDecode(const std::shared_ptr<AVBuffer>& buffer, const StrategyCaps& caps);
+    void RecordPreDecodeDump(const std::shared_ptr<AVBuffer>& buffer, const PreDecResult& res, int64_t startUs);
+    PostDecResult EvaluatePostDecode(FrameRetentionContext& ctx);
+    void RecordPostDecodeDump(int64_t pts, uint32_t preDropCount, const PostDecResult& res, 
+                              const MVStats& mvStats, const PostDecCost& cost);
     int32_t InitializeInternal();
     int64_t GetCurrentSysTimeMs();
     void ParseMVData(const sptr<SurfaceBuffer> surfaceBuffer, MVStats& mvStats, 

@@ -41,7 +41,7 @@ public:
     size_t GetReadIndex() const { return readIndex_.load(std::memory_order_relaxed); }
 
 private:
-    // 内部方法：要求调用方持有 feedbackMutex_ 锁
+    // ????:??????? feedbackMutex_ ?
     void UpdateEmaDropRatio(bool isDropped, double speed);
 
     static constexpr size_t queueCapacity = 128;
@@ -49,7 +49,7 @@ private:
     static constexpr size_t cacheLineSize = 64;
     
     int64_t ptsRingBuffer_[queueCapacity]{0};
-    bool isConsumed_[queueCapacity]{false}; // 用于解决解码序和显示序导致的乱序消费问题
+    bool isConsumed_[queueCapacity]{false}; // ????????????????????
     
     alignas(cacheLineSize) std::atomic<size_t> writeIndex_{0};
     alignas(cacheLineSize) std::atomic<size_t> readIndex_{0};

@@ -34,6 +34,8 @@ public:
     double GetCurrentRetentionRatio() const override;
     SfdDecisionReason GetLastDecisionReason() const override { return lastReason_; }
 
+    bool RequiresMvAnalysis() const override { return true; }
+
 private:
     double currentSpeed_{1.0};
     uint32_t dropCount_{0};
