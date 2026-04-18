@@ -481,7 +481,7 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
     
-    return Status::ERROR_UNSUPPORTED_FORMAT;
+    return ConfigureDecoderSettings();
 }
 
 Status DecoderSurfaceFilter::DoPrepare()
