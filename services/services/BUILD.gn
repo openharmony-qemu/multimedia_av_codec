@@ -103,6 +103,10 @@ config("av_codec_service_config") {
     defines += [ "EMULATOR_ENABLED" ]
   }
 
+  if (build_variant != "user") {
+    defines += [ "SFD_DEBUG" ]
+  }
+
   if (target_cpu == "arm") {
     cflags += [ "-DBINDER_IPC_32BIT" ]
   }

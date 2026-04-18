@@ -111,28 +111,54 @@ void SmartFluencyDecoding::UpdatePlaybackSpeed(double speed)
     }
 }
 
-void SmartFluencyDecoding::ParseDynamicFormat(
-    const Media::Format& format, RetentionStrategyType& outMode, std::optional<double>& outRatio) const
+// 【新增】一统天下的解析与推演器
+void SmartFluencyDecoding::ParseRetentionConfig(
+    const Media::Format& format, RetentionStrategyType& mode, std::optional<double>& ratio)
 {
-    int32_t mode = -1;
-    if (format.GetIntValue(Media::Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, mode)) {
-        if (mode == static_cast<int32_t>(Media::Plugins::FrameRetentionMode::FULL)) {
-            outMode = RetentionStrategyType::FULL;
-        } else if (mode == static_cast<int32_t>(Media::Plugins::FrameRetentionMode::ADAPTIVE)) {
-            outMode = RetentionStrategyType::ADAPTIVE;
-        } else if (mode == static_cast<int32_t>(Media::Plugins::FrameRetentionMode::UNIFORM)) {
-            outMode = outRatio.has_value() ? RetentionStrategyType::FIXED_RATIO : RetentionStrategyType::AUTO_RATIO;
+    bool hasNewRatio = false;
+    double parsedRatio = 0.0;
+    
+    // 1. 提取并校验 Ratio
+    if (format.GetDoubleValue(Media::Tag::VIDEO_DECODER_FRAME_RETENTION_RATIO, parsedRatio)) {
+        if (IsRetentionRatioValid(parsedRatio)) {
+            ratio = parsedRatio;
+            hasNewRatio = true;
+            AVCODEC_LOGD("ParseRetentionConfig: Extracted valid ratio %{public}.3f", parsedRatio);
         }
-        AVCODEC_LOGD("ParseDynamicFormat: Extracted mode %{public}d -> internal %{public}d",
-                     mode, static_cast<int>(outMode));
     }
-    double ratio = 0.0;
-    if (format.GetDoubleValue(Media::Tag::VIDEO_DECODER_FRAME_RETENTION_RATIO, ratio)) {
-        outRatio = ratio;
-        AVCODEC_LOGD("ParseDynamicFormat: Extracted ratio %{public}.3f", ratio);
-        if (outMode == RetentionStrategyType::AUTO_RATIO || outMode == RetentionStrategyType::FIXED_RATIO) {
-            outMode = RetentionStrategyType::FIXED_RATIO;
+
+    int32_t extMode = -1;
+    // 2. 提取 Mode，并处理与 Ratio 的关联
+    if (format.GetIntValue(Media::Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, extMode)) {
+        switch (extMode) {
+            case static_cast<int32_t>(Media::Plugins::FrameRetentionMode::FULL):
+                mode = RetentionStrategyType::FULL;
+                break;
+            case static_cast<int32_t>(Media::Plugins::FrameRetentionMode::ADAPTIVE):
+                mode = RetentionStrategyType::ADAPTIVE;
+                break;
+            case static_cast<int32_t>(Media::Plugins::FrameRetentionMode::UNIFORM):
+                // 【规则统一】：UNIFORM 模式下，有合法 Ratio 就定频，没有就动态保底
+                mode = ratio.has_value() ? RetentionStrategyType::FIXED_RATIO : RetentionStrategyType::AUTO_RATIO;
+                break;
+            default:
+                mode = RetentionStrategyType::INVALID;
+                break;
         }
+        AVCODEC_LOGD("ParseRetentionConfig: Extracted mode %{public}d -> internal %{public}d",
+                     extMode, static_cast<int>(mode));
+    } else if (hasNewRatio) {
+        // 【推演逻辑】：上层只单发了 Ratio 而没带 Mode
+        // - 对于 Builder(初始为 INVALID) 或 Dynamic(当前为 AUTO_RATIO)，自动升级为 FIXED_RATIO
+        if (mode == RetentionStrategyType::INVALID || mode == RetentionStrategyType::AUTO_RATIO) {
+            mode = RetentionStrategyType::FIXED_RATIO;
+        }
+    }
+
+    // 3. 冲突告警
+    if (ratio.has_value() && 
+        (mode == RetentionStrategyType::ADAPTIVE || mode == RetentionStrategyType::FULL)) {
+        AVCODEC_LOGW("ParseRetentionConfig: Adaptive or Full mode with retentionRate will be ignored");
     }
 }
 
@@ -140,9 +166,14 @@ int32_t SmartFluencyDecoding::UpdateDynamicConfig(const Media::Format& format)
 {
     AVCODEC_LOGD("UpdateDynamicConfig: entry");
     bool needUpdateStrategy = false;
+    
+    // 将当前状态作为底本传入
     RetentionStrategyType newMode = config_.initMode;
     std::optional<double> newRatio = config_.retentionRatio;
-    ParseDynamicFormat(format, newMode, newRatio);
+    
+    // 调用推演机，获取下一时刻的新状态
+    ParseRetentionConfig(format, newMode, newRatio);
+    
     if (newMode != config_.initMode || newRatio != config_.retentionRatio) {
         needUpdateStrategy = true;
     }
@@ -160,6 +191,7 @@ int32_t SmartFluencyDecoding::UpdateDynamicConfig(const Media::Format& format)
             if (newStrategy->RequiresMvAnalysis()) {
                 EnsureMvAnalyzer();
             }
+
             std::lock_guard<std::mutex> lock(configMutex_);
             strategy_ = std::move(newStrategy);
             AVCODEC_LOGI("SFD mode updated from %{public}d to %{public}d, ratio: %{public}.3f",
@@ -330,13 +362,19 @@ SmartFluencyDecoding::PreDecResult SmartFluencyDecoding::EvaluatePreDecode(
         res.naluCostUs = GetCurrentSysTimeUs() - naluStartUs;
 #endif
         if (res.isNonRef) {
-            double currentEma = dropSyncCoordinator_->GetCurrentEma();
-            double targetDropRatio = 1.0 - caps.targetRatio;
-            if (targetDropRatio <= RETENTION_RATIO_MIN_DIFF) {
+            double currentEmaRet = dropSyncCoordinator_->GetCurrentEmaRetentionRatio();
+            
+            // 如果目标保留率接近 100% (FULL模式)，无脑保留
+            if (caps.targetRatio >= 1.0 - RETENTION_RATIO_MIN_DIFF) {
                 res.reason = SfdDecisionReason::PRE_RETAIN_TARGET_FULL;
-            } else if (currentEma >= targetDropRatio) {
-                res.reason = SfdDecisionReason::PRE_RETAIN_EMA_SATISFIED;
-            } else {
+            } 
+            // 如果实际保留率过低（低于等于目标），说明丢得太多了，这帧必须保留
+            else if (currentEmaRet <= caps.targetRatio) {
+                res.shouldRetain = true;
+                res.reason = SfdDecisionReason::PRE_RETAIN_EMA_SATISFIED; 
+            } 
+            // 如果实际保留率还很高，那就放心丢掉这个非参考帧
+            else {
                 res.shouldRetain = false;
                 res.reason = SfdDecisionReason::PRE_DROP_EMA_UNSATISFIED;
             }
@@ -362,7 +400,7 @@ void SmartFluencyDecoding::RecordPreDecodeDump(
     dumperCtx.preDecCostUs = GetCurrentSysTimeUs() - startUs;
     dumperCtx.naluCostUs = res.naluCostUs;
     dumperCtx.writeIndex = dropSyncCoordinator_->GetWriteIndex();
-    dumperCtx.currentEmaDropRatio = dropSyncCoordinator_->GetCurrentEma();
+    dumperCtx.currentEmaRetentionRatio = dropSyncCoordinator_->GetCurrentEmaRetentionRatio();
     dumperCtx.reason = res.reason;
     dumper_->RecordPreDecode(dumperCtx);
 #endif
@@ -392,7 +430,7 @@ void SmartFluencyDecoding::RecordPostDecodeDump(
     dumperCtx.sysTimeMs = GetCurrentSysTimeMs();
     dumperCtx.postDecCostUs = dumperStart - cost.startUs;
     dumperCtx.readIndex = dropSyncCoordinator_->GetReadIndex();
-    dumperCtx.currentEmaDropRatio = dropSyncCoordinator_->GetCurrentEma();
+    dumperCtx.currentEmaRetentionRatio = dropSyncCoordinator_->GetCurrentEmaRetentionRatio();
     dumperCtx.reason = res.reason;
     dumperCtx.mvStats = mvStats;
     dumperCtx.copyMvCostUs = cost.copyMvCostUs;
@@ -468,11 +506,11 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
         caps.requiresMv = strategy_->RequiresMvAnalysis();
     }
 
-    // Fast-Path: ????
+    // Fast-Path: 直通模式
     if (caps.isPassthrough) {
         {
             std::lock_guard<std::mutex> lock(configMutex_);
-            dropSyncCoordinator_->UpdateFeedback(false, 1.0, currentPlaybackSpeed_);
+            dropSyncCoordinator_->UpdateFeedback(true, 1.0, currentPlaybackSpeed_);
         }
         totalOutputFrames_++;
 #ifdef SFD_DEBUG
@@ -492,7 +530,7 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
     
     {
         std::lock_guard<std::mutex> lock(configMutex_);
-        dropSyncCoordinator_->UpdateFeedback(!res.shouldRetain, res.retentionRatio, currentPlaybackSpeed_);
+        dropSyncCoordinator_->UpdateFeedback(res.shouldRetain, res.retentionRatio, currentPlaybackSpeed_);
     }
     AVCODEC_LOGD("Strategy decision: shouldRetain %{public}d, ratio %{public}.2f (index:%{public}u, pts:%{public}" PRId64 ")",
                  res.shouldRetain, res.retentionRatio, index, pts);
@@ -622,6 +660,22 @@ void SmartFluencyDecoding::EnsureMvAnalyzer()
         "Failed to create MV parser for codec type: %{public}d", static_cast<int>(config_.codecType));
     mvAnalyzer_->SetVideoInfo(config_.width, config_.height);
 }
+
+bool SmartFluencyDecoding::IsRetentionRatioValid(double ratio)
+{
+    if (ratio < MIN_RETENTION_RATIO) {
+        AVCODEC_LOGW("Retention ratio invalid: value=%{public}.2f (must be >= %{public}.2f)", 
+                     ratio, MIN_RETENTION_RATIO);
+        return false;
+    }
+    if (ratio > MAX_RETENTION_RATIO) {
+        AVCODEC_LOGW("Retention ratio invalid: value=%{public}.2f (must be <= %{public}.2f)", 
+                     ratio, MAX_RETENTION_RATIO);
+        return false;
+    }
+    return true;
+}
+
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS

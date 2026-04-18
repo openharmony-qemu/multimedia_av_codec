@@ -108,8 +108,8 @@ void SmartFluencyDecodingDumper::RecordPreDecode(const PreDecodeRecordCtx& ctx)
         // 新增字段赋值
         it->preDecCostUs = ctx.preDecCostUs;
         it->writeIndex = ctx.writeIndex;
-        it->currentEmaDropRatio = ctx.currentEmaDropRatio;
-        it->naluCostUs = ctx.naluCostUs; // --- 新增赋值 ---
+        it->currentEmaRetentionRatio = ctx.currentEmaRetentionRatio;
+        it->naluCostUs = ctx.naluCostUs; // --- ???? ---
         it->preReason = ctx.reason;
     } else {
         FrameDumpRecord rec;
@@ -129,8 +129,8 @@ void SmartFluencyDecodingDumper::RecordPreDecode(const PreDecodeRecordCtx& ctx)
         // 新增字段赋值
         rec.preDecCostUs = ctx.preDecCostUs;
         rec.writeIndex = ctx.writeIndex;
-        rec.currentEmaDropRatio = ctx.currentEmaDropRatio;
-        rec.naluCostUs = ctx.naluCostUs; // --- 新增赋值 ---
+        rec.currentEmaRetentionRatio = ctx.currentEmaRetentionRatio;
+        rec.naluCostUs = ctx.naluCostUs; // --- ???? ---
         rec.preReason = ctx.reason;
         records_.push_back(rec);
     }
@@ -152,7 +152,7 @@ void SmartFluencyDecodingDumper::RecordPostDecode(const PostDecodeRecordCtx& ctx
         // 新增字段赋值
         it->postDecCostUs = ctx.postDecCostUs;
         it->readIndex = ctx.readIndex;
-        it->currentEmaDropRatio = ctx.currentEmaDropRatio;
+        it->currentEmaRetentionRatio = ctx.currentEmaRetentionRatio;
         it->validBlocks = ctx.mvStats.validBlocks;
         it->perceptualMagnitude = ctx.mvStats.perceptualMagnitude;
         it->motionConsistency = ctx.mvStats.motionConsistency;
@@ -174,7 +174,7 @@ void SmartFluencyDecodingDumper::RecordPostDecode(const PostDecodeRecordCtx& ctx
         // 新增字段赋值
         rec.postDecCostUs = ctx.postDecCostUs;
         rec.readIndex = ctx.readIndex;
-        rec.currentEmaDropRatio = ctx.currentEmaDropRatio;
+        rec.currentEmaRetentionRatio = ctx.currentEmaRetentionRatio;
         rec.validBlocks = ctx.mvStats.validBlocks;
         rec.perceptualMagnitude = ctx.mvStats.perceptualMagnitude;
         rec.motionConsistency = ctx.mvStats.motionConsistency;
@@ -236,7 +236,7 @@ void SmartFluencyDecodingDumper::DumpToFileInternal()
                "PreReason,PostReason,"
                "PreSysTimeMs,PostSysTimeMs,PreDropCount,RetentionRate,Speed,"
                "PreCostUs,NaluCostUs,PostCostUs,CopyMvUs,AnalyzeMvUs,UpdateDumperUs,"
-               "WriteIdx,ReadIdx,EmaDropRatio,"
+               "WriteIdx,ReadIdx,EmaRetentionRatio,"
                "MvValidBlks,MvPerceptMag,MvMotionConsist,MvZeroRatio\n";
         isHeaderWritten_ = true;
     }
@@ -264,7 +264,7 @@ void SmartFluencyDecodingDumper::DumpToFileInternal()
             << rec.updateDumperCostUs << ","
             << rec.writeIndex << ","
             << rec.readIndex << ","
-            << rec.currentEmaDropRatio << ","
+            << rec.currentEmaRetentionRatio << ","
             << rec.validBlocks << ","
             << rec.perceptualMagnitude << ","
             << rec.motionConsistency << ","

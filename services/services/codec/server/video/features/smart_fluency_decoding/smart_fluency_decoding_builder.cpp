@@ -28,8 +28,6 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "SFDBuilder"};
 constexpr double DEFAULT_PLAYBACK_SPEED = 1.0;
-constexpr double MIN_RETENTION_RATE = 0.01;
-constexpr double MAX_RETENTION_RATE = 1.0;
 }
 
 namespace OHOS {
@@ -62,11 +60,11 @@ SmartFluencyDecodingBuilder& SmartFluencyDecodingBuilder::SetCodecMime(const std
 
 SFDCodecType SmartFluencyDecodingBuilder::ParseCodecType(const std::string& mime)
 {
-    if (mime == AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_AVC || mime == "video/h264") {
+    if (mime == AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_AVC) {
         return SFDCodecType::AVC;
-    } else if (mime == AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_HEVC || mime == "video/h265") {
+    } else if (mime == AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_HEVC) {
         return SFDCodecType::HEVC;
-    } else if (mime == AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_VVC || mime == "video/h266") {
+    } else if (mime == AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_VVC) {
         return SFDCodecType::VVC;
     }
     return SFDCodecType::INVALID;
@@ -88,36 +86,12 @@ SmartFluencyDecodingBuilder& SmartFluencyDecodingBuilder::SetFromFormat(const Fo
     if (format.GetIntValue(Tag::VIDEO_HEIGHT, height) && height > 0) {
         SetVideoHeight(height);
     }
-    int32_t extMode = -1;
-    bool hasMode = format.GetIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, extMode);
-    double ratio = 0.0;
-    bool hasRatio = format.GetDoubleValue(Tag::VIDEO_DECODER_FRAME_RETENTION_RATIO, ratio) &&
-        IsRetentionRateValid(ratio);
-    if (hasRatio) {
-        config_.retentionRatio = ratio;
-    }
-    if (!hasMode) {
-        config_.initMode = hasRatio ? RetentionStrategyType::FIXED_RATIO : RetentionStrategyType::INVALID;
-    } else {
-        switch (extMode) {
-            case static_cast<int32_t>(Media::Plugins::FrameRetentionMode::FULL):
-                config_.initMode = RetentionStrategyType::FULL;
-                break;
-            case static_cast<int32_t>(Media::Plugins::FrameRetentionMode::ADAPTIVE):
-                config_.initMode = RetentionStrategyType::ADAPTIVE;
-                break;
-            case static_cast<int32_t>(Media::Plugins::FrameRetentionMode::UNIFORM):
-                config_.initMode = hasRatio ? RetentionStrategyType::FIXED_RATIO : RetentionStrategyType::AUTO_RATIO;
-                break;
-            default:
-                config_.initMode = RetentionStrategyType::INVALID;
-                break;
-        }
-    }
-    if (hasRatio &&
-        (config_.initMode == RetentionStrategyType::ADAPTIVE || config_.initMode == RetentionStrategyType::FULL)) {
-        AVCODEC_LOGW("Adaptive or Full mode with retentionRate will be ignored");
-    }
+    RetentionStrategyType parsedMode = RetentionStrategyType::INVALID;
+    std::optional<double> parsedRatio = std::nullopt;
+    SmartFluencyDecoding::ParseRetentionConfig(format, parsedMode, parsedRatio);
+    
+    config_.initMode = parsedMode;
+    config_.retentionRatio = parsedRatio;
     double speed = DEFAULT_PLAYBACK_SPEED;
     if (format.GetDoubleValue(Tag::VIDEO_DECODER_SPEED, speed)) {
         UpdatePlaybackSpeed(speed);
@@ -153,19 +127,6 @@ bool SmartFluencyDecodingBuilder::ValidateParams()
     CHECK_AND_RETURN_RET_LOG(config_.height > 0, false, "Build failed: Invalid or missing video height");
     CHECK_AND_RETURN_RET_LOG(config_.codecType != SFDCodecType::INVALID, false,
         "Build failed: Invalid or missing codec type");
-    return true;
-}
-
-bool SmartFluencyDecodingBuilder::IsRetentionRateValid(double rate)
-{
-    if (rate < MIN_RETENTION_RATE) {
-        AVCODEC_LOGW("retentionRate invalid: value=%{public}.2f (must be >= %{public}.2f)", rate, MIN_RETENTION_RATE);
-        return false;
-    }
-    if (rate > MAX_RETENTION_RATE) {
-        AVCODEC_LOGW("retentionRate invalid: value=%{public}.2f (must be <= %{public}.2f)", rate, MAX_RETENTION_RATE);
-        return false;
-    }
     return true;
 }
 } // namespace SFD

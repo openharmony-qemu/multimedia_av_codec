@@ -46,7 +46,6 @@ public:
 private:
     static SFDCodecType ParseCodecType(const std::string& mime);
     bool ValidateParams();
-    bool IsRetentionRateValid(double rate);
     SFDConfig config_{};
     std::optional<double> playbackSpeed_{std::nullopt};
 };

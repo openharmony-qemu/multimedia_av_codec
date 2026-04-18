@@ -46,7 +46,7 @@ struct FrameDumpRecord {
     int64_t postDecCostUs;        // PostDecode 接口耗时 (微秒)
     size_t writeIndex;            // 同步队列的写入位置
     size_t readIndex;             // 同步队列的读取位置
-    double currentEmaDropRatio;   // 当前平滑丢帧率
+    double currentEmaRetentionRatio;   // 当前平滑保留率
     uint32_t validBlocks;         // MV有效宏块数
     double perceptualMagnitude;   // MV感知运动幅度
     double motionConsistency;     // MV运动一致性
@@ -64,7 +64,7 @@ struct FrameDumpRecord {
                         preSysTimeMs(-1), postSysTimeMs(-1), preDropCount(0),
                         mode(RetentionStrategyType::FULL), retentionRate(1.0), speed(1.0),
                         preDecCostUs(-1), postDecCostUs(-1), writeIndex(0), readIndex(0),
-                        currentEmaDropRatio(0.0), validBlocks(0), perceptualMagnitude(0.0),
+                        currentEmaRetentionRatio(1.0), validBlocks(0), perceptualMagnitude(0.0),
                         motionConsistency(0.0), zeroMotionRatio(0.0), naluCostUs(-1),
                         copyMvCostUs(-1), analyzeMvCostUs(-1), updateDumperCostUs(-1) {}
 };
@@ -88,7 +88,7 @@ public:
         int64_t sysTimeMs{-1};
         int64_t preDecCostUs{-1};
         size_t writeIndex{0};
-        double currentEmaDropRatio{0.0};
+        double currentEmaRetentionRatio{1.0};
         // --- 新增 ---
         int64_t naluCostUs{-1};
         SfdDecisionReason reason{SfdDecisionReason::UNSPECIFIED};
@@ -101,7 +101,7 @@ public:
         int64_t sysTimeMs{-1};
         int64_t postDecCostUs{-1};
         size_t readIndex{0};
-        double currentEmaDropRatio{0.0};
+        double currentEmaRetentionRatio{1.0};
         MVStats mvStats;
         // --- 新增细分耗时 ---
         int64_t copyMvCostUs{-1};

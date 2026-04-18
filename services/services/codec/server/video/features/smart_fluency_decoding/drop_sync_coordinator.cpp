@@ -40,7 +40,8 @@ bool DropSyncCoordinator::RecordPreDroppedFrame(int64_t pts, double speed)
     writeIndex_.store(nextWrite, std::memory_order_release);
     {
         std::lock_guard<std::mutex> lock(feedbackMutex_);
-        UpdateEmaDropRatio(true, speed);
+        // 改为调用新的保留率统计：丢帧代表本帧 isRetained = false
+        UpdateEmaRetentionRatio(false, speed);
     }
     AVCODEC_LOGD("SfdSync: Recorded pre-dropped PTS %{public}" PRId64 ", writeIndex: %{public}zu", pts, nextWrite);
     return true;
@@ -73,20 +74,21 @@ uint32_t DropSyncCoordinator::GetAndConsumePreDroppedCount(int64_t currentPts)
     return count;
 }
 
-void DropSyncCoordinator::UpdateFeedback(bool isDropped, double targetRetentionRatio, double speed)
+void DropSyncCoordinator::UpdateFeedback(bool isRetained, double targetRetentionRatio, double speed)
 {
     std::lock_guard<std::mutex> lock(feedbackMutex_);
-    UpdateEmaDropRatio(isDropped, speed);
+    UpdateEmaRetentionRatio(isRetained, speed);
     targetRetentionRatio_ = targetRetentionRatio;
-    AVCODEC_LOGD("SfdSync: UpdateFeedback: isDropped=%{public}d, targetRat=%{public}.2f, currEma=%{public}.4f",
-                 isDropped, targetRetentionRatio_, currentEmaDropRatio_);
+    AVCODEC_LOGD("SfdSync: UpdateFeedback: isRetained=%{public}d, targetRat=%{public}.2f, currEmaRet=%{public}.4f",
+                 isRetained, targetRetentionRatio_, currentEmaRetentionRatio_);
 }
 
-void DropSyncCoordinator::UpdateEmaDropRatio(bool isDropped, double speed)
+void DropSyncCoordinator::UpdateEmaRetentionRatio(bool isRetained, double speed)
 {
     double alpha = std::min(1.0, BASE_ALPHA * speed);
-    double currentVal = isDropped ? 1.0 : 0.0;
-    currentEmaDropRatio_ = alpha * currentVal + (1.0 - alpha) * currentEmaDropRatio_;
+    // 保留率为 1.0 (保留) 或 0.0 (丢弃)
+    double currentVal = isRetained ? 1.0 : 0.0;
+    currentEmaRetentionRatio_ = alpha * currentVal + (1.0 - alpha) * currentEmaRetentionRatio_;
 }
 
 void DropSyncCoordinator::Reset()
@@ -97,15 +99,16 @@ void DropSyncCoordinator::Reset()
         isConsumed_[i] = false;
     }
     std::lock_guard<std::mutex> lock(feedbackMutex_);
-    currentEmaDropRatio_ = 0.0;
-    targetRetentionRatio_ = 0.0;
+    // 重置为 100% 保留
+    currentEmaRetentionRatio_ = 1.0;
+    targetRetentionRatio_ = 1.0;
     AVCODEC_LOGI("SfdSync: Reset DropSyncCoordinator");
 }
 
-double DropSyncCoordinator::GetCurrentEma() const
+double DropSyncCoordinator::GetCurrentEmaRetentionRatio() const
 {
     std::lock_guard<std::mutex> lock(feedbackMutex_);
-    return currentEmaDropRatio_;
+    return currentEmaRetentionRatio_;
 }
 
 double DropSyncCoordinator::GetTargetRetentionRatio() const

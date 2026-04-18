@@ -40,6 +40,15 @@ namespace MediaAVCodec {
 namespace SFD {
 class SmartFluencyDecoding {
 public:
+    // --- 提炼的静态工具常量与方法 ---
+    static constexpr double MIN_RETENTION_RATIO = 0.01;
+    static constexpr double MAX_RETENTION_RATIO = 1.0;
+    static bool IsRetentionRatioValid(double ratio);
+    
+    // 【新增】统一的 Format 提取与状态推演工具
+    static void ParseRetentionConfig(
+        const Media::Format& format, RetentionStrategyType& mode, std::optional<double>& ratio);
+
     SmartFluencyDecoding();
     ~SmartFluencyDecoding();
 
@@ -96,8 +105,6 @@ private:
     int64_t GetCurrentSysTimeMs();
     void ParseMVData(const sptr<SurfaceBuffer> surfaceBuffer, MVStats& mvStats, 
                      int64_t& copyCostUs, int64_t& analyzeCostUs);
-    void ParseDynamicFormat(
-        const Media::Format& format, RetentionStrategyType& outMode, std::optional<double>& outRatio) const;
     void EnsureNaluAnalyzer();
     void EnsureMvAnalyzer();
     void ExecutePreDrop(uint32_t index, std::shared_ptr<AVBuffer> buffer);
