@@ -164,9 +164,6 @@ OH_AVErrCode OH_VideoEncoder_Prepare(struct OH_AVCodec *codec)
     CHECK_AND_RETURN_RET_LOG(IsValidVideoEncoderMagic(codec->magic_), AV_ERR_INVALID_VAL, "Codec magic error!");
 
     if (PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_)) {
-        auto* preprocEnc = reinterpret_cast<PreprocessorEncoder*>(codec);
-        CHECK_AND_RETURN_RET_LOG(preprocEnc != nullptr && preprocEnc->GetPreprocessor() != nullptr, AV_ERR_OK,
-                                 "PreprocessorEncoder prepare skipped: no preprocessor!");
         return AV_ERR_OK;
     }
 
