@@ -74,16 +74,14 @@ int32_t SmartFluencyDecoding::Initialize(const SFDConfig& config)
 
 int32_t SmartFluencyDecoding::InitializeInternal()
 {
-    if (config_.initMode == RetentionStrategyType::AUTO_RATIO ||
-        config_.initMode == RetentionStrategyType::FIXED_RATIO ||
-        config_.initMode == RetentionStrategyType::ADAPTIVE) {
-        EnsureNaluAnalyzer();
-    }
-    if (config_.initMode == RetentionStrategyType::ADAPTIVE) {
-        EnsureMvAnalyzer();
-    }
     strategy_ = RetentionStrategyFactory::CreateStrategy(config_.initMode, config_.retentionRatio);
     CHECK_AND_RETURN_RET_LOG(strategy_ != nullptr, AVCS_ERR_UNKNOWN, "Failed to create strategy");
+    if (strategy_->RequiresNaluAnalysis()) {
+        EnsureNaluAnalyzer();
+    }
+    if (strategy_->RequiresMvAnalysis()) {
+        EnsureMvAnalyzer();
+    }
     dropSyncCoordinator_ = std::make_unique<DropSyncCoordinator>();
     asyncDispatcher_ = std::make_unique<AsyncDropDispatcher>();
 #ifdef SFD_DEBUG
@@ -156,12 +154,10 @@ int32_t SmartFluencyDecoding::UpdateDynamicConfig(const Media::Format& format)
     if (needUpdateStrategy) {
         auto newStrategy = RetentionStrategyFactory::CreateStrategy(newMode, newRatio);
         if (newStrategy) {
-            if (newMode == RetentionStrategyType::AUTO_RATIO ||
-                newMode == RetentionStrategyType::FIXED_RATIO ||
-                newMode == RetentionStrategyType::ADAPTIVE) {
+            if (newStrategy->RequiresNaluAnalysis()) {
                 EnsureNaluAnalyzer();
             }
-            if (newMode == RetentionStrategyType::ADAPTIVE) {
+            if (newStrategy->RequiresMvAnalysis()) {
                 EnsureMvAnalyzer();
             }
             std::lock_guard<std::mutex> lock(configMutex_);
