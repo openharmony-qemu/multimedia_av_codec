@@ -359,64 +359,17 @@ std::string DecoderSurfaceFilter::GetMime()
     return mime;
 }
 
-bool DecoderSurfaceFilter::CheckDecoderCapability(bool isHwDecoder, int32_t width, int32_t height,
-    std::string &decoderName)
-{
-    OH_AVCapability *capability = nullptr;
-    if (isHwDecoder) {
-        capability = OH_AVCodec_GetCapabilityByCategory(codecMimeType_.c_str(), false, HARDWARE);
-    } else {
-        capability = OH_AVCodec_GetCapabilityByCategory(codecMimeType_.c_str(), false, SOFTWARE);
-    }
-    if (capability == nullptr) {
-        return false;
-    }
-    if (!OH_AVCapability_IsVideoSizeSupported(capability, width, height)) {
-        return false;
-    }
-    if (isHwDecoder) {
-        decoderName = codecMimeType_;
-    } else {
-        const char *name = OH_AVCapability_GetName(capability);
-        decoderName = std::string(name);
-    }
-    return true;
-}
-
-Status DecoderSurfaceFilter::CheckAndInitDecoder(bool &useHwDecoder, std::string &decoderName)
-{
-    int32_t videoWidth = 0;
-    int32_t videoHeight = 0;
-    bool getWidth = meta_->GetData(Tag::VIDEO_WIDTH, videoWidth);
-    bool getHeight = meta_->GetData(Tag::VIDEO_HEIGHT, videoHeight);
-
-    if (!getWidth || !getHeight || videoWidth <= 0 || videoHeight <= 0) {
-        MEDIA_LOG_W("Failed to get valid video size, try hw decoder first");
-        useHwDecoder = true;
-        decoderName = codecMimeType_;
-        return Status::OK;
-    }
-
-    if (CheckDecoderCapability(true, videoWidth, videoHeight, decoderName)) {
-        MEDIA_LOG_I("Video size %{public}dx%{public}d supported by hw decoder", videoWidth, videoHeight);
-        useHwDecoder = true;
-        return Status::OK;
-    }
-
-    if (CheckDecoderCapability(false, videoWidth, videoHeight, decoderName)) {
-        MEDIA_LOG_I("Video size %{public}dx%{public}d supported by sw decoder %{public}s",
-            videoWidth, videoHeight, decoderName.c_str());
-        useHwDecoder = false;
-        return Status::OK;
-    }
-
-    MEDIA_LOG_I("Video size %{public}dx%{public}d not supported by both hw and sw decoder", videoWidth, videoHeight);
-    return Status::ERROR_UNSUPPORTED_FORMAT;
-}
-
-Status DecoderSurfaceFilter::InitDecoder()
+Status DecoderSurfaceFilter::DoInitAfterLink()
 {
     Status ret;
+    // create secure decoder for drm.
+    MEDIA_LOG_I("DoInit enter the codecMimeType_ is %{public}s", codecMimeType_.c_str());
+    if (videoDecoder_ != nullptr) {
+        videoDecoder_->SetCallingInfo(appUid_, appPid_, bundleName_, instanceId_);
+    } else {
+        return Status::ERROR_UNKNOWN;
+    }
+    videoDecoder_->SetCallingInfo(appUid_, appPid_, bundleName_, instanceId_);
     if (isDrmProtected_ && svpFlag_) {
         std::string baseName = GetCodecName(codecMimeType_);
         FALSE_RETURN_V_MSG(!baseName.empty(), Status::ERROR_INVALID_PARAMETER, "get name by mime failed.");
@@ -430,21 +383,17 @@ Status DecoderSurfaceFilter::InitDecoder()
         std::string swDecoder(name);
         ret = videoDecoder_->Init(MediaAVCodec::AVCodecType::AVCODEC_TYPE_VIDEO_DECODER, false, swDecoder);
     } else {
-        bool useHwDecoder = true;
-        std::string decoderName;
-        ret = CheckAndInitDecoder(useHwDecoder, decoderName);
-        if (ret == Status::OK) {
-            ScopedTimer timer("VideoDecoder Init", OVERTIME_WARNING_MS);
-            ret = videoDecoder_->Init(MediaAVCodec::AVCodecType::AVCODEC_TYPE_VIDEO_DECODER,
-                useHwDecoder, decoderName);
-        }
+        ScopedTimer timer("VideoDecoder Init", OVERTIME_WARNING_MS);
+        ret = videoDecoder_->Init(MediaAVCodec::AVCodecType::AVCODEC_TYPE_VIDEO_DECODER, true, codecMimeType_);
     }
-    return ret;
-}
 
-Status DecoderSurfaceFilter::ConfigureDecoderSettings()
-{
-    Status ret = Configure(meta_);
+    if (ret != Status::OK && eventReceiver_ != nullptr) {
+        MEDIA_LOG_E("Init decoder fail ret = %{public}d", ret);
+        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_DEC_TYPE, GetMime()});
+        return Status::ERROR_UNSUPPORTED_FORMAT;
+    }
+
+    ret = Configure(meta_);
     if (ret != Status::OK && eventReceiver_ != nullptr) {
         eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_SRC_TYPE, GetMime()});
         return Status::ERROR_UNSUPPORTED_FORMAT;
@@ -464,24 +413,6 @@ Status DecoderSurfaceFilter::ConfigureDecoderSettings()
     eosTask_ = std::make_unique<Task>("OS_EOSv", groupId_, TaskType::VIDEO, TaskPriority::HIGH, false);
     isDecoderReleasedForMute_ = false;
     return Status::OK;
-}
-
-Status DecoderSurfaceFilter::DoInitAfterLink()
-{
-    MEDIA_LOG_I("DoInit enter the codecMimeType_ is %{public}s", codecMimeType_.c_str());
-    if (videoDecoder_ == nullptr) {
-        return Status::ERROR_UNKNOWN;
-    }
-    videoDecoder_->SetCallingInfo(appUid_, appPid_, bundleName_, instanceId_);
-    
-    Status ret = InitDecoder();
-    if (ret != Status::OK && eventReceiver_ != nullptr) {
-        MEDIA_LOG_E("Init decoder fail ret = %{public}d", ret);
-        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_DEC_TYPE, GetMime()});
-        return Status::ERROR_UNSUPPORTED_FORMAT;
-    }
-    
-    return Status::ERROR_UNSUPPORTED_FORMAT;
 }
 
 Status DecoderSurfaceFilter::DoPrepare()
