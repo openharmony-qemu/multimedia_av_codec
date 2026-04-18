@@ -221,8 +221,7 @@ OH_AVErrCode PreprocessorEncoder::RegisterCallback(struct OH_AVCodecCallback cal
         if (videoEncoderObject_->callback_ != nullptr) {
             videoEncoderObject_->callback_->UpdateCallback(callback, userData);
         } else {
-            videoEncoderObject_->callback_ =
-                std::make_shared<NativeVideoEncoderCallback>(videoEncoderObject_.get(), callback, userData);
+            videoEncoderObject_->callback_ = std::make_shared<NativeVideoEncoderCallback>(this, callback, userData);
         }
         int32_t ret = videoEncoderObject_->videoEncoder_->SetCallback(
             std::static_pointer_cast<MediaCodecCallback>(videoEncoderObject_->callback_));
@@ -275,6 +274,21 @@ sptr<Surface> PreprocessorEncoder::GetSurface()
 int32_t PreprocessorEncoder::ConfigureVideoEncoder(const Media::Format &format)
 {
     if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
+        int32_t bitrateMode = -1;
+        bool bitrateModeExist = format.GetIntValue(OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
+        if (bitrateModeExist && bitrateMode == SQR) {
+            int64_t bitrate;
+            int64_t maxBitrate;
+            bool bitrateExist = format.GetLongValue(OH_MD_KEY_BITRATE, bitrate);
+            bool maxBitrateExist = format.GetLongValue(OH_MD_KEY_MAX_BITRATE, maxBitrate);
+            if (bitrateExist && !maxBitrateExist) {
+                AVCODEC_LOGW("In SQR bitrate mode, param %{public}s is not set, param %{public}s will be used instead",
+                             OH_MD_KEY_MAX_BITRATE, OH_MD_KEY_BITRATE);
+                Media::Format formatTemp = format;
+                formatTemp.PutLongValue(OH_MD_KEY_MAX_BITRATE, bitrate);
+                return videoEncoderObject_->videoEncoder_->Configure(formatTemp);
+            }
+        }
         int32_t ret = videoEncoderObject_->videoEncoder_->Configure(format);
         return ret;
     }
@@ -297,29 +311,6 @@ int32_t PreprocessorEncoder::CreateEncoderSurface()
         if (surface == nullptr) {
             return AVCS_ERR_NO_MEMORY;
         }
-
-        // auto preprocessor = GetPreprocessor();
-        // if (preprocessor)
-        // {
-        //     int32_t queueSize = surface->GetQueueSize();
-        //     for (int32_t i = 0; i < queueSize; i++)
-        //     {
-        //         sptr<BufferRequestConfig> config = new BufferRequestConfig();
-        //         config->width = preprocessor->GetConfiguredWidth();
-        //         config->height = preprocessor->GetConfiguredHeight();
-        //         config->strideAlignment = BUFFER_REQUEST_STRIDE_ALIGNMENT;
-        //         config->format = static_cast<int32_t>(preprocessor->GetConfiguredPixelFormat());
-        //         config->timeout = 0;
-
-        //         sptr<SurfaceBuffer> buffer{nullptr};
-        //         int32_t fence;
-        //         GSError ret = surface->RequestBuffer(buffer, fence, config);
-        //         if (ret == GSERROR_OK && buffer != nullptr)
-        //         {
-        //             writableBufferQueue_.push(buffer);
-        //         }
-        //     }
-        // }
 
         encoderSurface_ = surface;
     }

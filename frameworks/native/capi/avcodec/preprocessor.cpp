@@ -279,12 +279,12 @@ int32_t Preprocessor::SetParameter(const Media::Format &format)
     return Configure(format);
 }
 
-int32_t Preprocessor::Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output)
+int32_t Preprocessor::Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output, uint64_t pts)
 {
     CHECK_AND_RETURN_RET_LOG(input && output, AVCS_ERR_INVALID_VAL,
                              "Invalid buffer: input=%{public}p, output=%{public}p", input.GetRefPtr(),
                              output.GetRefPtr());
-    if (ShouldDropFrame(0)) {
+    if (ShouldDropFrame(pts)) {
         return AVCS_ERR_OK;
     }
 
@@ -487,13 +487,23 @@ GraphicPixelFormat Preprocessor::GetConfiguredPixelFormat() const
 
 int32_t Preprocessor::GetOutputWidth() const
 {
-    // TODO
+    if (IsCropEnabled()) {
+        return cropConfig_.width;
+    }
+    if (IsDownsamplingEnabled()) {
+        return downsamplingConfig_.width;
+    }
     return encoderConfig_.width;
 }
 
 int32_t Preprocessor::GetOutputHeight() const
 {
-    // TODO
+    if (IsCropEnabled()) {
+        return cropConfig_.height;
+    }
+    if (IsDownsamplingEnabled()) {
+        return downsamplingConfig_.height;
+    }
     return encoderConfig_.height;
 }
 

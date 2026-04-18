@@ -36,7 +36,7 @@ public:
     int32_t Configure(const Media::Format &format);
     int32_t SetParameter(const Media::Format &format);
 
-    int32_t Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output);
+    int32_t Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output, uint64_t pts);
     bool ShouldDropFrame(uint64_t pts);
     void FlushTimeStamp();
 
@@ -91,6 +91,8 @@ private:
         int32_t right{0};
         int32_t top{0};
         int32_t bottom{0};
+        int32_t width{0};
+        int32_t height{0};
         bool enabled{false};
         CropConfig() = default;
         explicit CropConfig(const CropParams &params)
@@ -98,6 +100,8 @@ private:
               right(params.right),
               top(params.top),
               bottom(params.bottom),
+              width(params.right - params.left + 1),
+              height(params.bottom - params.top + 1),
               enabled(params.result == ConfigResult::ENABLED)
         {
         }

@@ -343,7 +343,7 @@ void PreprocessorManager::EncoderInfo::EncoderThreadLoop()
             }
         }
 
-        auto ret = preprocessor_->Process(inputBuffer->buffer, outputBuffer->buffer);
+        auto ret = preprocessor_->Process(inputBuffer->buffer, outputBuffer->buffer, inputBuffer->timestamp);
         if (ret != AV_ERR_OK) {
             AVCODEC_LOGW("Preprocess faided, skip ..");
             continue;
