@@ -64,7 +64,6 @@ ohos_shared_library("media_plugin_RawAudioDecoder") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_surface:surface",
     "hilog:libhilog",
     "media_foundation:media_foundation",
   ]

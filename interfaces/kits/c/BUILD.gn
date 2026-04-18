@@ -282,7 +282,6 @@ ohos_shared_library("native_media_adec") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
-    "graphic_surface:surface",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
@@ -310,7 +309,6 @@ ohos_shared_library("native_media_aenc") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
-    "graphic_surface:surface",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
