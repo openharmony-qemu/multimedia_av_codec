@@ -39,6 +39,7 @@ using FastScaleDownSampleFunc = int32_t (*)(SurfaceBuffer *input, SurfaceBuffer 
 using FastScaleCropFunc = int32_t (*)(SurfaceBuffer *input, SurfaceBuffer *output, void *rect);
 using CreateCropRectFunc = void *(*)(int32_t top, int32_t left, int32_t bottom, int32_t right);
 using DestroyCropRectFunc = void (*)(void *rect);
+using FastScaleClearGPUFunc = void (*)();
 
 enum class FastResizeAlgoType {
     HARDWARE,
@@ -90,6 +91,7 @@ private:
     FastScaleCropFunc cropFunc_ = nullptr;
     CreateCropRectFunc createRectFunc_ = nullptr;
     DestroyCropRectFunc destroyRectFunc_ = nullptr;
+    FastScaleClearGPUFunc fastScaleClearGPUFunc_ = nullptr;
 };
 
 } // namespace PreProcessing

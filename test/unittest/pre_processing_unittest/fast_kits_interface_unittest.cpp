@@ -786,7 +786,7 @@ HWTEST_F(FastKitsConcurrentTest, ConcurrentDownsample, TestSize.Level1)
 
 /**
  * @tc.name: FastKitsInterface_ConcurrentCrop_001
- * @tc.desc: 多线程并发Crop不同区域
+ * @tc.desc: 多线程并发Crop不同格式+相同格式同时并发
  * @tc.type: FUNC
  */
 HWTEST_F(FastKitsConcurrentTest, ConcurrentCrop, TestSize.Level1)

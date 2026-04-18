@@ -54,6 +54,11 @@ void FastKitsInterface::Release()
     }
     AVCODEC_LOGI("Release refCount=%{public}d", refCount_);
     if (refCount_ == 0 && handle_ != nullptr) {
+        if (fastScaleClearGPUFunc_ != nullptr) {
+            fastScaleClearGPUFunc_();
+        } else {
+            AVCODEC_LOGW("fastScaleClearGPU is nullptr");
+        }
         ClearSymbols();
         dlclose(handle_);
         handle_ = nullptr;
@@ -126,7 +131,8 @@ bool FastKitsInterface::ReadSymbols()
            LoadSymbol(handle_, downSampleFunc_, "FastScaleDownSample") &&
            LoadSymbol(handle_, cropFunc_, "FastScaleCrop") &&
            LoadSymbol(handle_, createRectFunc_, "CreateCropRect") &&
-           LoadSymbol(handle_, destroyRectFunc_, "DestroyCropRect");
+           LoadSymbol(handle_, destroyRectFunc_, "DestroyCropRect") &&
+           LoadSymbol(handle_, fastScaleClearGPUFunc_, "FastScaleClearGPU");
 }
 
 void FastKitsInterface::ClearSymbols()
@@ -136,6 +142,7 @@ void FastKitsInterface::ClearSymbols()
     cropFunc_ = nullptr;
     createRectFunc_ = nullptr;
     destroyRectFunc_ = nullptr;
+    fastScaleClearGPUFunc_ = nullptr;
 }
 
 bool FastKitsInterface::IsLoaded() const
