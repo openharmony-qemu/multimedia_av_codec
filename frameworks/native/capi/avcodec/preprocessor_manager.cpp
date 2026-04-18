@@ -354,5 +354,36 @@ void PreprocessorManager::EncoderInfo::EncoderThreadLoop()
 
     AVCODEC_LOGI("EncoderThreadLoop exited: %{public}s", encoderId_.data());
 }
+
+// === PreprocessorManager: Buffer data query for GetInputDescription ===
+
+bool PreprocessorManager::PeekPendingBufferData(std::string_view encoderId, BufferDataInfo& outInfo) const
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto iter = encoders_.find(std::string(encoderId));
+    if (iter == encoders_.end() || !iter->second) {
+        return false;
+    }
+    return iter->second->PeekPendingBufferData(outInfo);
+}
+
+// === EncoderInfo: Peek buffer data from pendingBuffers_ front directly ===
+
+bool PreprocessorManager::EncoderInfo::PeekPendingBufferData(BufferDataInfo& outInfo) const
+{
+    std::lock_guard<std::mutex> lock(bufferQueueMutex_);
+    if (pendingBuffers_.empty()) {
+        return false;
+    }
+    const auto& wrapper = pendingBuffers_.front();
+    if (!wrapper || !wrapper->buffer) {
+        return false;
+    }
+    outInfo.width = wrapper->buffer->GetWidth();
+    outInfo.height = wrapper->buffer->GetHeight();
+    outInfo.format = wrapper->buffer->GetFormat();
+    outInfo.stride = wrapper->buffer->GetStride();
+    return true;
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

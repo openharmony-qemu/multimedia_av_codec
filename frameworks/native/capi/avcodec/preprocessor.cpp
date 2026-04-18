@@ -497,5 +497,35 @@ int32_t Preprocessor::GetOutputHeight() const
     return encoderConfig_.height;
 }
 
+int32_t Preprocessor::GetCropLeft() const
+{
+    return cropConfig_.left;
+}
+
+int32_t Preprocessor::GetCropRight() const
+{
+    return cropConfig_.right;
+}
+
+int32_t Preprocessor::GetCropTop() const
+{
+    return cropConfig_.top;
+}
+
+int32_t Preprocessor::GetCropBottom() const
+{
+    return cropConfig_.bottom;
+}
+
+int32_t Preprocessor::GetDownsamplingWidth() const
+{
+    return downsamplingConfig_.width;
+}
+
+int32_t Preprocessor::GetDownsamplingHeight() const
+{
+    return downsamplingConfig_.height;
+}
+
 } // namespace MediaAVCodec
 } // namespace OHOS

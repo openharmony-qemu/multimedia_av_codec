@@ -49,6 +49,14 @@ public:
     int32_t GetOutputWidth() const;
     int32_t GetOutputHeight() const;
 
+    // Field-level config getters for metadata query
+    int32_t GetCropLeft() const;
+    int32_t GetCropRight() const;
+    int32_t GetCropTop() const;
+    int32_t GetCropBottom() const;
+    int32_t GetDownsamplingWidth() const;
+    int32_t GetDownsamplingHeight() const;
+
 private:
     enum class ConfigResult { NOT_SET, DISABLED, ENABLED };
 

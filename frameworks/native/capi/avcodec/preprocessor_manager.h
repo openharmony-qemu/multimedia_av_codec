@@ -47,6 +47,15 @@ public:
 
     void NotifyNewBufferAvailable();
 
+    // === Buffer data query for GetInputDescription (reads from pendingBuffers_ directly) ===
+    struct BufferDataInfo {
+        int32_t width{0};
+        int32_t height{0};
+        int32_t format{0};   // GraphicPixelFormat from SurfaceBuffer::GetFormat()
+        int32_t stride{0};
+    };
+    bool PeekPendingBufferData(std::string_view encoderId, BufferDataInfo& outInfo) const;
+
 private:
     struct SurfaceBufferWrapper {
         enum SurfaceType {
@@ -81,6 +90,9 @@ private:
         void OnNewPendingBufferAvailable(std::shared_ptr<SurfaceBufferWrapper> buffer);
         void OnNewEncoderSurfaceBufferAvailable(uint32_t seq, const sptr<SyncFence>& fence);
 
+        // === Buffer data query for GetInputDescription (reads from pendingBuffers_ directly) ===
+        bool PeekPendingBufferData(BufferDataInfo& outInfo) const;
+
     private:
         void SetBufferFlushConfig(std::shared_ptr<SurfaceBufferWrapper> &inputBuffer,
                                   std::shared_ptr<SurfaceBufferWrapper> &outputBuffer);
@@ -93,7 +105,7 @@ private:
         sptr<Surface> encoderSurface_{nullptr};
         std::thread processThread_;
         bool isRunning_{false};
-        std::mutex bufferQueueMutex_;
+        mutable std::mutex bufferQueueMutex_;
         std::condition_variable bufferQueueCv_;
         std::string encoderId_;
     };
@@ -101,7 +113,7 @@ private:
     sptr<Surface> sharedConsumerSurface_{nullptr};
     sptr<Surface> sharedProducerSurface_{nullptr};
     std::map<std::string, std::shared_ptr<EncoderInfo>> encoders_{};
-    std::mutex mutex_;
+    mutable std::mutex mutex_;
 };
 
 } // namespace MediaAVCodec
