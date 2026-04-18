@@ -33,12 +33,12 @@ public:
     void UpdatePlaybackSpeed(double speed) override;
     void Reset() override;
     RetentionStrategyType GetMode() const override;
-    double GetCurrentRetentionRatio() const override;
-    SfdDecisionReason GetLastDecisionReason() const override { return lastReason_; }
+    double GetRatio() const override;
+    SfdDecisionReason GetLastDecisionReason() const override;
 
 private:
     double accumulator_{0.0};
-    double retentionRatio_{1.0};
+    double targetRatio_{1.0};
     bool isFirstFrame_{true};
     uint32_t cnt_{0};
     uint32_t dropCnt_{0};

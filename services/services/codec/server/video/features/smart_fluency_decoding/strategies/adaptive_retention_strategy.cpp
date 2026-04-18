@@ -91,7 +91,7 @@ bool AdaptiveRetentionStrategy::MakeRetentionDecision(const FrameRetentionContex
         if (!retentionFlag) {
             dropCount_++;
             uint32_t maxDrops = static_cast<uint32_t>((currentSpeed_ - 1.0) * MAX_DROPS_MULTIPLIER_HIGH);
-            currentTargetRatio_ = static_cast<double>(maxDrops) / (maxDrops + 1.0);
+            targetRatio_ = 1.0 / (maxDrops + 1.0);
             if (dropCount_ <= maxDrops) {
                 isRetain = false;
                 lastReason_ = SfdDecisionReason::POST_DROP_ADAPTIVE_DT;
@@ -102,15 +102,15 @@ bool AdaptiveRetentionStrategy::MakeRetentionDecision(const FrameRetentionContex
             }
         } else {
             dropCount_ = 0;
-            currentTargetRatio_ = 0.0;
+            targetRatio_ = 1.0;
             isRetain = true;
             lastReason_ = SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT;
         }
     } else {
         lastReason_ = SfdDecisionReason::UNSPECIFIED;
     }
-    AVCODEC_LOGD("AdaptiveRetentionStrategy decision: %{public}d (speed:%{public}.2f, ratio:%{public}.2f)", 
-                 isRetain, currentSpeed_, currentTargetRatio_);
+    AVCODEC_LOGD("AdaptiveRetentionStrategy decision: %{public}d (speed:%{public}.2f, ratio:%{public}.2f)",
+                 isRetain, currentSpeed_, targetRatio_);
     return isRetain;
 }
 
@@ -129,9 +129,19 @@ RetentionStrategyType AdaptiveRetentionStrategy::GetMode() const
     return RetentionStrategyType::ADAPTIVE;
 }
 
-double AdaptiveRetentionStrategy::GetCurrentRetentionRatio() const
+double AdaptiveRetentionStrategy::GetRatio() const
 {
-    return 1.0 - currentTargetRatio_;
+    return targetRatio_;
+}
+
+SfdDecisionReason AdaptiveRetentionStrategy::GetLastDecisionReason() const
+{
+    return lastReason_;
+}
+
+bool AdaptiveRetentionStrategy::RequiresMvAnalysis() const
+{
+    return true;
 }
 } // namespace SFD
 } // namespace MediaAVCodec

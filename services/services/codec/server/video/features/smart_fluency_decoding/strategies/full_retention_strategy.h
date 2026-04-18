@@ -31,12 +31,11 @@ public:
     void Reset() override;
     void UpdatePlaybackSpeed(double speed) override;
     RetentionStrategyType GetMode() const override;
-    double GetCurrentRetentionRatio() const override;
-    SfdDecisionReason GetLastDecisionReason() const override { return SfdDecisionReason::POST_RETAIN_FULL; }
-
-    bool IsPassthrough() const override { return true; }
-    bool RequiresNaluAnalysis() const override { return false; }
-    bool RequiresMvAnalysis() const override { return false; }
+    double GetRatio() const override;
+    SfdDecisionReason GetLastDecisionReason() const override;
+    bool IsPassthrough() const override;
+    bool RequiresNaluAnalysis() const override;
+    bool RequiresMvAnalysis() const override;
 };
 
 } // namespace SFD

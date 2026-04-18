@@ -50,9 +50,29 @@ RetentionStrategyType FullRetentionStrategy::GetMode() const
     return RetentionStrategyType::FULL;
 }
 
-double FullRetentionStrategy::GetCurrentRetentionRatio() const
+double FullRetentionStrategy::GetRatio() const
 {
     return 1.0;
+}
+
+SfdDecisionReason FullRetentionStrategy::GetLastDecisionReason() const
+{
+    return SfdDecisionReason::POST_RETAIN_FULL;
+}
+
+bool FullRetentionStrategy::IsPassthrough() const
+{
+    return true;
+}
+
+bool FullRetentionStrategy::RequiresNaluAnalysis() const
+{
+    return false;
+}
+
+bool FullRetentionStrategy::RequiresMvAnalysis() const
+{
+    return false;
 }
 
 } // namespace SFD

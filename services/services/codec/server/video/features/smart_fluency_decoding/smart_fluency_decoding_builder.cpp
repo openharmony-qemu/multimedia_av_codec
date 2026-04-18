@@ -89,7 +89,6 @@ SmartFluencyDecodingBuilder& SmartFluencyDecodingBuilder::SetFromFormat(const Fo
     RetentionStrategyType parsedMode = RetentionStrategyType::INVALID;
     std::optional<double> parsedRatio = std::nullopt;
     SmartFluencyDecoding::ParseRetentionConfig(format, parsedMode, parsedRatio);
-    
     config_.initMode = parsedMode;
     config_.retentionRatio = parsedRatio;
     double speed = DEFAULT_PLAYBACK_SPEED;
@@ -108,25 +107,24 @@ std::unique_ptr<SmartFluencyDecoding> SmartFluencyDecodingBuilder::Build()
         return nullptr;
     }
     auto instance = std::make_unique<SmartFluencyDecoding>();
-    CHECK_AND_RETURN_RET_LOG(instance != nullptr, nullptr,
-        "Build failed: Failed to create SmartFluencyDecoding instance");
+    CHECK_AND_RETURN_RET_LOG(instance != nullptr, nullptr, "Failed to create SmartFluencyDecoding instance");
     int32_t ret = instance->Initialize(config_);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr,
-        "Build failed: Failed to initialize SmartFluencyDecoding, ret=%{public}d", ret);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Failed to initialize SmartFluencyDecoding"
+        ",ret=%{public}d", ret);
     if (playbackSpeed_.has_value()) {
         instance->UpdatePlaybackSpeed(playbackSpeed_.value());
     }
     AVCODEC_LOGI("SmartFluencyDecoding built successfully: %{public}dx%{public}d, mode=%{public}d",
-                 config_.width, config_.height, static_cast<int32_t>(config_.initMode));
+        config_.width, config_.height, static_cast<int32_t>(config_.initMode));
     return instance;
 }
 
 bool SmartFluencyDecodingBuilder::ValidateParams()
 {
-    CHECK_AND_RETURN_RET_LOG(config_.width > 0, false, "Build failed: Invalid or missing video width");
-    CHECK_AND_RETURN_RET_LOG(config_.height > 0, false, "Build failed: Invalid or missing video height");
+    CHECK_AND_RETURN_RET_LOG(config_.width > 0, false, "Invalid or missing video width");
+    CHECK_AND_RETURN_RET_LOG(config_.height > 0, false, "Invalid or missing video height");
     CHECK_AND_RETURN_RET_LOG(config_.codecType != SFDCodecType::INVALID, false,
-        "Build failed: Invalid or missing codec type");
+        "Invalid or missing codec type");
     return true;
 }
 } // namespace SFD

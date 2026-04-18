@@ -22,8 +22,6 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "FixedRatioRetention"};
-constexpr double MIN_RETENTION_RATIO = 0.01;
-constexpr double MAX_RETENTION_RATIO = 1.0;
 constexpr double ACCUMULATOR_THRESHOLD = 1.0;
 }
 
@@ -33,8 +31,14 @@ namespace SFD {
 
 FixedRatioRetentionStrategy::FixedRatioRetentionStrategy(double ratio)
 {
-    retentionRatio_ = std::max(MIN_RETENTION_RATIO, std::min(ratio, MAX_RETENTION_RATIO));
-    AVCODEC_LOGD("FixedRatioRetentionStrategy created, target ratio: %{public}.2f", ratio);
+    targetRatio_ = std::max(MIN_RETENTION_RATIO, std::min(ratio, MAX_RETENTION_RATIO));
+
+    if (std::abs(targetRatio_ - ratio) > 1e-9) {
+        AVCODEC_LOGW("FixedRatioRetentionStrategy: Provided ratio %{public}.3f is out of bounds! "
+                     "Clamped to safe ratio: %{public}.3f", ratio, targetRatio_);
+    } else {
+        AVCODEC_LOGD("FixedRatioRetentionStrategy created, target ratio: %{public}.2f", targetRatio_);
+    }
 }
 
 bool FixedRatioRetentionStrategy::MakeRetentionDecision(const FrameRetentionContext& ctx)
@@ -48,7 +52,7 @@ bool FixedRatioRetentionStrategy::MakeRetentionDecision(const FrameRetentionCont
     }
 
     bool isRetain = false;
-    accumulator_ += retentionRatio_ + (ctx.preDroppedCount * retentionRatio_);
+    accumulator_ += targetRatio_ + (ctx.preDroppedCount * targetRatio_);
     if (accumulator_ >= ACCUMULATOR_THRESHOLD) {
         accumulator_ -= ACCUMULATOR_THRESHOLD;
         isRetain = true;
@@ -57,8 +61,9 @@ bool FixedRatioRetentionStrategy::MakeRetentionDecision(const FrameRetentionCont
         dropCnt_++;
         lastReason_ = SfdDecisionReason::POST_DROP_FIXED_ACC;
     }
-    
-    AVCODEC_LOGD("FixedRatioRetentionStrategy decision: %{public}d (cnt:%{public}d, drop:%{public}d, accum:%{public}.2f)",
+
+    AVCODEC_LOGD("FixedRatioRetentionStrategy decision: %{public}d "
+                 "(cnt:%{public}d, drop:%{public}d, accum:%{public}.2f)",
                  isRetain, cnt_, dropCnt_, accumulator_);
     return isRetain;
 }
@@ -79,9 +84,14 @@ RetentionStrategyType FixedRatioRetentionStrategy::GetMode() const
     return RetentionStrategyType::FIXED_RATIO;
 }
 
-double FixedRatioRetentionStrategy::GetCurrentRetentionRatio() const
+double FixedRatioRetentionStrategy::GetRatio() const
 {
-    return retentionRatio_;
+    return targetRatio_;
+}
+
+SfdDecisionReason FixedRatioRetentionStrategy::GetLastDecisionReason() const
+{
+    return lastReason_;
 }
 
 } // namespace SFD

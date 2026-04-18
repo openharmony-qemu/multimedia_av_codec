@@ -59,8 +59,8 @@ bool MvAnalyzerSoLoader::LoadLibrary()
     parseFunc_ = reinterpret_cast<ParseFunc>(dlsym(handle_, "ParseMvData"));
     if (!createFunc_ || !destroyFunc_ || !setAuxInfoFunc_ || !setVideoInfoFunc_ || !parseFunc_) {
         AVCODEC_LOGE("Failed to find required symbols in %{public}s (create:%{public}d, destroy:%{public}d, "
-                     "setAux:%{public}d, setVideo:%{public}d, parse:%{public}d)", 
-                     LIB_NAME, (createFunc_ != nullptr), (destroyFunc_ != nullptr), 
+                     "setAux:%{public}d, setVideo:%{public}d, parse:%{public}d)",
+                     LIB_NAME, (createFunc_ != nullptr), (destroyFunc_ != nullptr),
                      (setAuxInfoFunc_ != nullptr), (setVideoInfoFunc_ != nullptr), (parseFunc_ != nullptr));
         UnloadLibrary();
         return false;
@@ -87,7 +87,7 @@ void MvAnalyzerSoLoader::SetStreamAuxInfo(const StreamAuxInfo& info)
 {
     std::lock_guard<std::mutex> lock(apiMutex_);
     if (soAnalyzer_ && setAuxInfoFunc_) {
-        AVCODEC_LOGD("SetStreamAuxInfo executed: ctuSize %{public}u, directSpatial %{public}u", 
+        AVCODEC_LOGD("SetStreamAuxInfo executed: ctuSize %{public}u, directSpatial %{public}u",
                      info.ctuSize, info.directSpatialMvPredFlag);
         setAuxInfoFunc_(soAnalyzer_, &info);
     }
@@ -130,7 +130,7 @@ std::unique_ptr<IMvAnalyzer> MvAnalyzerFactory::CreateMvAnalyzer(SFDCodecType co
     }
     auto loader = std::make_unique<MvAnalyzerSoLoader>(codecType);
     if (!loader->IsValid()) {
-        AVCODEC_LOGW("CreateMvAnalyzer failed: MvAnalyzerSoLoader is invalid for codecType %{public}d", 
+        AVCODEC_LOGW("CreateMvAnalyzer failed: MvAnalyzerSoLoader is invalid for codecType %{public}d",
                      static_cast<int32_t>(codecType));
         return nullptr;
     }

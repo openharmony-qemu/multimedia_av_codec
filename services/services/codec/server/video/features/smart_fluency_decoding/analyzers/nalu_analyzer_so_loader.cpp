@@ -58,8 +58,8 @@ bool NaluAnalyzerSoLoader::LoadLibrary()
     isNonReferenceFunc_ = reinterpret_cast<IsNonReferenceFunc>(dlsym(handle_, "IsNonReferenceFrame"));
     if (!createFunc_ || !destroyFunc_ || !setCallbackFunc_ || !isNonReferenceFunc_) {
         AVCODEC_LOGE("Failed to find required symbols in %{public}s (create:%{public}d, destroy:%{public}d, "
-                     "setCb:%{public}d, isNonRef:%{public}d)", 
-                     LIB_NAME, (createFunc_ != nullptr), (destroyFunc_ != nullptr), 
+                     "setCb:%{public}d, isNonRef:%{public}d)",
+                     LIB_NAME, (createFunc_ != nullptr), (destroyFunc_ != nullptr),
                      (setCallbackFunc_ != nullptr), (isNonReferenceFunc_ != nullptr));
         UnloadLibrary();
         return false;
@@ -97,7 +97,6 @@ void NaluAnalyzerSoLoader::SetAuxInfoCallback(OnStreamAuxInfoParsed callback)
     std::lock_guard<std::mutex> lock(apiMutex_);
     callback_ = callback;
     if (soAnalyzer_ && setCallbackFunc_) {
-        AVCODEC_LOGD("SetAuxInfoCallback executed");
         setCallbackFunc_(soAnalyzer_, StaticAuxInfoCallback, this);
     }
 }
@@ -126,7 +125,7 @@ std::unique_ptr<INaluAnalyzer> NaluAnalyzerFactory::CreateNaluAnalyzer(SFDCodecT
 {
     auto loader = std::make_unique<NaluAnalyzerSoLoader>(codecType);
     if (!loader->IsValid()) {
-        AVCODEC_LOGW("CreateNaluAnalyzer failed: NaluAnalyzerSoLoader is invalid for codecType %{public}d", 
+        AVCODEC_LOGW("CreateNaluAnalyzer failed: NaluAnalyzerSoLoader is invalid for codecType %{public}d",
                      static_cast<int32_t>(codecType));
         return nullptr;
     }

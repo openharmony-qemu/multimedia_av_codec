@@ -36,32 +36,36 @@ typedef struct {
     double zeroMotionRatio;
 } MVStats;
 
-#if defined(__cplusplus) && !defined(NALU_ANALYZER_PLUGIN_COMPILE)
+#if defined(__cplusplus) && !defined(SFD_PLUGIN_COMPILE)
 #include <functional>
+#include <optional>
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
 
+constexpr double MIN_RETENTION_RATIO = 0.01;
+constexpr double MAX_RETENTION_RATIO = 1.0;
+
 enum class SfdDecisionReason : int32_t {
     UNSPECIFIED = 0,
-    
-    // --- Pre-Decode 决策原因 ---
-    PRE_RETAIN_REFERENCE = 1,        // 保留：当前帧是参考帧
-    PRE_RETAIN_TARGET_FULL = 2,      // 保留：目标丢帧率极低 (如 FULL 模式)
-    PRE_RETAIN_EMA_SATISFIED = 3,    // 保留：当前 EMA 丢帧率已达标
-    PRE_DROP_EMA_UNSATISFIED = 4,    // 丢弃：当前 EMA 不足，需丢弃以补偿丢帧率
 
-    // --- Post-Decode 决策原因 ---
-    POST_BYPASSED = 10,              // 跳过：该帧在解码前(Pre-Decode)已被丢弃
-    POST_RETAIN_FULL = 11,           // 保留：FULL 全量保留策略
-    POST_RETAIN_FIXED_ACC = 12,      // 保留：FixedRatio 策略，累加器达到阈值
-    POST_DROP_FIXED_ACC = 13,        // 丢弃：FixedRatio 策略，累加器未达阈值
-    POST_RETAIN_ADAPTIVE_SPEED = 14, // 保留：Adaptive 策略，当前播放倍速较低无需降帧
-    POST_RETAIN_ADAPTIVE_DT = 15,    // 保留：Adaptive 策略，决策树(DT)评估为无需丢弃
-    POST_RETAIN_ADAPTIVE_MAX_DROP = 16, // 保留：Adaptive 策略，触发最大连续丢帧限制强制放行
-    POST_DROP_ADAPTIVE_DT = 17,      // 丢弃：Adaptive 策略，决策树评估可丢且未达限制
-    POST_RETAIN_AUTO_FALLBACK = 18   // 保留：AutoFallback 策略，处于探测期或保底间隔期
+    // --- Pre-Decode Decision Reasons ---
+    PRE_RETAIN_REFERENCE = 1,               // Retain: Frame is a reference frame
+    PRE_RETAIN_TARGET_FULL = 2,             // Retain: Target retention ratio is ~100% (FULL mode)
+    PRE_RETAIN_EMA_SATISFIED = 3,           // Retain: Current EMA retention ratio is within target
+    PRE_DROP_EMA_UNSATISFIED = 4,           // Drop: Current EMA is too high, need to drop to compensate
+
+    // --- Post-Decode Decision Reasons ---
+    POST_BYPASSED = 10,                     // Bypassed: Frame was already dropped in Pre-Decode phase
+    POST_RETAIN_FULL = 11,                  // Retain: Passthrough (FULL) strategy
+    POST_RETAIN_FIXED_ACC = 12,             // Retain: FixedRatio strategy, accumulator reached threshold
+    POST_DROP_FIXED_ACC = 13,               // Drop: FixedRatio strategy, accumulator below threshold
+    POST_RETAIN_ADAPTIVE_SPEED = 14,        // Retain: Adaptive strategy, playback speed is low
+    POST_RETAIN_ADAPTIVE_DT = 15,           // Retain: Adaptive strategy, Decision Tree (DT) allows retention
+    POST_RETAIN_ADAPTIVE_MAX_DROP = 16,     // Retain: Adaptive strategy, forced release due to max consecutive drops+
+    POST_DROP_ADAPTIVE_DT = 17,             // Drop: Adaptive strategy, DT recommends dropping
+    POST_RETAIN_AUTO_FALLBACK = 18,         // Retain: AutoFallback strategy, releasing at safe time interval
 };
 
 using OnStreamAuxInfoParsed = std::function<void(const StreamAuxInfo& info)>;
@@ -93,5 +97,5 @@ struct SFDConfig {
 } // namespace MediaAVCodec
 } // namespace OHOS
 
-#endif /* defined(__cplusplus) && !defined(NALU_ANALYZER_PLUGIN_COMPILE) */
+#endif /* defined(__cplusplus) && !defined(SFD_PLUGIN_COMPILE) */
 #endif // SMART_FLUENCY_DECODING_TYPES_H

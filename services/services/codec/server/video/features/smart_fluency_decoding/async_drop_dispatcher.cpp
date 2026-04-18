@@ -25,20 +25,19 @@ namespace MediaAVCodec {
 namespace SFD {
 AsyncDropDispatcher::AsyncDropDispatcher()
 {
-    AVCODEC_LOGD("AsyncDropDispatcher constructor entry");
+    AVCODEC_LOGI("AsyncDropDispatcher ctor entered");
     isWorking_.store(true);
     workerThread_ = std::thread(&AsyncDropDispatcher::WorkerLoop, this);
 }
 
 AsyncDropDispatcher::~AsyncDropDispatcher()
 {
-    AVCODEC_LOGD("AsyncDropDispatcher destructor entry");
+    AVCODEC_LOGD("AsyncDropDispatcher dtor entered");
     StopWorker();
 }
 
 void AsyncDropDispatcher::StopWorker()
 {
-    AVCODEC_LOGD("StopWorker called");
     {
         std::lock_guard<std::mutex> lock(taskMutex_);
         if (!isWorking_.load()) {
@@ -50,7 +49,7 @@ void AsyncDropDispatcher::StopWorker()
     if (workerThread_.joinable()) {
         workerThread_.join();
     }
-    AVCODEC_LOGD("StopWorker completed, thread joined");
+    AVCODEC_LOGI("StopWorker completed, thread joined");
 }
 
 void AsyncDropDispatcher::SubmitTask(std::function<void()> task)
@@ -65,14 +64,12 @@ void AsyncDropDispatcher::SubmitTask(std::function<void()> task)
             return;
         }
         taskQueue_.push(std::move(task));
-        AVCODEC_LOGD("Task submitted, current queue size: %{public}zu", taskQueue_.size());
     }
     taskCv_.notify_one();
 }
 
 void AsyncDropDispatcher::WorkerLoop()
 {
-    AVCODEC_LOGD("WorkerLoop started");
     while (true) {
         std::function<void()> task;
         {

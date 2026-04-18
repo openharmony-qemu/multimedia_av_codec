@@ -40,22 +40,16 @@ struct FrameDumpRecord {
     double speed;
     SfdDecisionReason preReason{SfdDecisionReason::UNSPECIFIED};
     SfdDecisionReason postReason{SfdDecisionReason::POST_BYPASSED};
-
-    // --- 新增的 Dump 字段 ---
-    int64_t preDecCostUs;         // PreDecode 接口耗时 (微秒)
-    int64_t postDecCostUs;        // PostDecode 接口耗时 (微秒)
-    size_t writeIndex;            // 同步队列的写入位置
-    size_t readIndex;             // 同步队列的读取位置
-    double currentEmaRetentionRatio;   // 当前平滑保留率
-    uint32_t validBlocks;         // MV有效宏块数
-    double perceptualMagnitude;   // MV感知运动幅度
-    double motionConsistency;     // MV运动一致性
-    double zeroMotionRatio;       // 零运动宏块比例
-
-    // --- 新增 NALU 耗时字段 ---
+    int64_t preDecCostUs;         // PreDecode latency (us)
+    int64_t postDecCostUs;        // PostDecode latency (us)
+    size_t writeIndex;            // Write index in sync queue
+    size_t readIndex;             // Read index from sync queue
+    double emaRatio;   // Current smoothed retention ratio
+    uint32_t validBlocks;         // Count of valid MV macroblocks
+    double perceptualMagnitude;   // Perceptual motion magnitude
+    double motionConsistency;     // Motion consistency metric
+    double zeroMotionRatio;       // Ratio of zero-motion macroblocks
     int64_t naluCostUs;
-
-    // --- 新增 MV 细分耗时 ---
     int64_t copyMvCostUs;
     int64_t analyzeMvCostUs;
     int64_t updateDumperCostUs;
@@ -64,7 +58,7 @@ struct FrameDumpRecord {
                         preSysTimeMs(-1), postSysTimeMs(-1), preDropCount(0),
                         mode(RetentionStrategyType::FULL), retentionRate(1.0), speed(1.0),
                         preDecCostUs(-1), postDecCostUs(-1), writeIndex(0), readIndex(0),
-                        currentEmaRetentionRatio(1.0), validBlocks(0), perceptualMagnitude(0.0),
+                        emaRatio(1.0), validBlocks(0), perceptualMagnitude(0.0),
                         motionConsistency(0.0), zeroMotionRatio(0.0), naluCostUs(-1),
                         copyMvCostUs(-1), analyzeMvCostUs(-1), updateDumperCostUs(-1) {}
 };
@@ -88,8 +82,7 @@ public:
         int64_t sysTimeMs{-1};
         int64_t preDecCostUs{-1};
         size_t writeIndex{0};
-        double currentEmaRetentionRatio{1.0};
-        // --- 新增 ---
+        double emaRatio{1.0};
         int64_t naluCostUs{-1};
         SfdDecisionReason reason{SfdDecisionReason::UNSPECIFIED};
     };
@@ -101,9 +94,8 @@ public:
         int64_t sysTimeMs{-1};
         int64_t postDecCostUs{-1};
         size_t readIndex{0};
-        double currentEmaRetentionRatio{1.0};
+        double emaRatio{1.0};
         MVStats mvStats;
-        // --- 新增细分耗时 ---
         int64_t copyMvCostUs{-1};
         int64_t analyzeMvCostUs{-1};
         int64_t updateDumperCostUs{-1};
@@ -119,6 +111,12 @@ private:
     static bool IsDirectoryExist(const std::string& path);
     std::string GetTimestampString();
     void DumpToFileInternal();
+    void WriteHeaderIfNeeded(std::ofstream& ofs);
+    void WriteRecordsToStream(std::ofstream& ofs, const std::vector<FrameDumpRecord>& records);
+    void UpdateExistingPreRecord(const PreDecodeRecordCtx& ctx);
+    void CreateNewPreRecord(const PreDecodeRecordCtx& ctx);
+    void UpdateExistingPostRecord(const PostDecodeRecordCtx& ctx);
+    void CreateNewPostRecord(const PostDecodeRecordCtx& ctx);
 
     std::mutex mutex_;
     std::vector<FrameDumpRecord> records_;
@@ -129,8 +127,6 @@ private:
     double currentRetentionRate_{1.0};
     double currentSpeed_{1.0};
     int32_t currentCtuSize_{0};
-
-    // --- 新增分段追加控制变量 ---
     std::string currentFilename_;
     bool isHeaderWritten_{false};
 };

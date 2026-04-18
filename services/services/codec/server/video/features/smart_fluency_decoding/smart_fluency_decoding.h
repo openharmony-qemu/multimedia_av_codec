@@ -16,6 +16,7 @@
 #ifndef SMART_FLUENCY_DECODING_H
 #define SMART_FLUENCY_DECODING_H
 
+#include "avcodec_dfx_component.h"
 #include <atomic>
 #include <cstdint>
 #include <functional>
@@ -38,14 +39,11 @@
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
-class SmartFluencyDecoding {
+class SmartFluencyDecoding : public AVCodecDfxComponent {
 public:
-    // --- 提炼的静态工具常量与方法 ---
-    static constexpr double MIN_RETENTION_RATIO = 0.01;
-    static constexpr double MAX_RETENTION_RATIO = 1.0;
-    static bool IsRetentionRatioValid(double ratio);
-    
-    // 【新增】统一的 Format 提取与状态推演工具
+    // --- Refined static utility methods ---
+    static bool IsRatioValid(double ratio);
+
     static void ParseRetentionConfig(
         const Media::Format& format, RetentionStrategyType& mode, std::optional<double>& ratio);
 
@@ -66,7 +64,6 @@ public:
     bool MakePreDecodeDecision(uint32_t index);
     bool MakePostDecodeDecision(uint32_t index, int64_t pts, const sptr<SurfaceBuffer> surfaceBuffer);
     void Flush();
-    void GetStatistics(uint32_t& totalFrames, uint32_t& droppedFrames) const;
 
 private:
     struct StrategyCaps {
@@ -85,7 +82,7 @@ private:
 
     struct PostDecResult {
         bool shouldRetain{true};
-        double retentionRatio{1.0};
+        double ratio{1.0};
         SfdDecisionReason reason{SfdDecisionReason::UNSPECIFIED};
     };
 
@@ -98,17 +95,20 @@ private:
     std::shared_ptr<AVBuffer> FetchInputBufferAndCapabilities(uint32_t index, StrategyCaps& caps);
     PreDecResult EvaluatePreDecode(const std::shared_ptr<AVBuffer>& buffer, const StrategyCaps& caps);
     void RecordPreDecodeDump(const std::shared_ptr<AVBuffer>& buffer, const PreDecResult& res, int64_t startUs);
-    PostDecResult EvaluatePostDecode(FrameRetentionContext& ctx);
-    void RecordPostDecodeDump(int64_t pts, uint32_t preDropCount, const PostDecResult& res, 
+    PostDecResult EvaluatePostDecode(const FrameRetentionContext& ctx);
+    void RecordPostDecodeDump(int64_t pts, uint32_t preDropCount, const PostDecResult& res,
                               const MVStats& mvStats, const PostDecCost& cost);
     int32_t InitializeInternal();
     int64_t GetCurrentSysTimeMs();
-    void ParseMVData(const sptr<SurfaceBuffer> surfaceBuffer, MVStats& mvStats, 
+    void ParseMVData(const sptr<SurfaceBuffer> surfaceBuffer, MVStats& mvStats,
                      int64_t& copyCostUs, int64_t& analyzeCostUs);
     void EnsureNaluAnalyzer();
     void EnsureMvAnalyzer();
     void ExecutePreDrop(uint32_t index, std::shared_ptr<AVBuffer> buffer);
     void ExecutePostDrop(uint32_t index);
+    bool HandlePostDecodePassthrough(int64_t pts, uint32_t preDropCount, const PostDecCost& cost);
+    void UpdateRetentionFeedback(bool shouldRetain, double ratio, double speed);
+    void ApplyNewStrategy(RetentionStrategyType newMode, const std::optional<double>& newRatio);
 
     mutable std::mutex configMutex_;
     std::unique_ptr<DropSyncCoordinator> dropSyncCoordinator_{nullptr};
@@ -123,10 +123,6 @@ private:
     std::shared_ptr<AVBuffer> csdBuffer_{nullptr};
     SFDConfig config_{};
     bool isInitialized_{false};
-    std::atomic<uint32_t> totalInputFrames_{0};
-    std::atomic<uint32_t> droppedInputFrames_{0};
-    std::atomic<uint32_t> totalOutputFrames_{0};
-    std::atomic<uint32_t> droppedOutputFrames_{0};
     double currentPlaybackSpeed_{1.0};
     AsyncDropInputCallback asyncDropInputCb_{nullptr};
     AsyncDropOutputCallback asyncDropOutputCb_{nullptr};
