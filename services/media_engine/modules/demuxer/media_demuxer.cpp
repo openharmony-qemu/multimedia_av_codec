@@ -2041,7 +2041,7 @@ Status MediaDemuxer::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode,
     Status ret;
     isSeekError_.store(false);
     if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
-        MEDIA_LOG_I("Source seek time: %{public}lld", seekTime);
+        MEDIA_LOG_I("Source seek time: %{public}" PRId64, seekTime);
         if (mode == SeekMode::SEEK_CLOSEST_INNER) {
             ScopedTimer timer("seek closest online", SEEKCLOSEST_ONLINE_WARNING_MS);
             ret = source_->SeekToTime(seekTime, SeekMode::SEEK_PREVIOUS_SYNC);
@@ -3609,14 +3609,14 @@ void MediaDemuxer::BufferingStatus()
         }
             
         AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGI, LOG_INTERVAL_MS, LOG_MAX_COUNT,
-            "BUFFERING_PERCENT: %{public}lld", percent);
+            "BUFFERING_PERCENT: %{public}" PRId64, percent);
         if (eventReceiver_) {
             eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_BUFFER_PROGRESS, percent});
         }
     }
     auto cachedDuration = static_cast<int64_t>(sampleQueueMap_[mainTrackId]->NewGetCacheDuration() / US_TO_MS);
     if (std::abs(cachedDuration - lastCacheDuration_) > DURATION_CHANGE_AMOUNT_MILLIONSECOND) {
-        MEDIA_LOG_I("CACHED_DURATION: %{public}lld", cachedDuration);
+        MEDIA_LOG_I("CACHED_DURATION: %{public}" PRId64, cachedDuration);
         if (eventReceiver_) {
             eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_CACHED_DURATION, cachedDuration});
         }
@@ -4679,7 +4679,7 @@ Status MediaDemuxer::CopyAndPushBufferBySlices(int32_t trackId, std::shared_ptr<
 {
     auto srcBufferSize = sliceSize == 0 ? srcBuffer->memory_->GetSize() : sliceSize;
     int32_t copySize = std::min(dstBuffer->memory_->GetCapacity(), srcBufferSize);
-    MEDIA_LOG_D("prepare to copy: %{public}d, dest cap: %{public}d, src buf id: %{public}llu",
+    MEDIA_LOG_D("prepare to copy: %{public}d, dest cap: %{public}d, src buf id: %{public}" PRIu64,
         copySize, dstBuffer->memory_->GetCapacity(), srcBuffer->GetUniqueId());
     auto status = sampleQueueMap_[trackId]->CopyBufferSlice(srcBuffer, dstBuffer, copySize);
     FALSE_RETURN_V_MSG_E(status == Status::OK, status, "CopyPartBuffer failed, errCode: %{public}d", status);
@@ -4691,7 +4691,7 @@ Status MediaDemuxer::CopyAndPushBufferBySlices(int32_t trackId, std::shared_ptr<
 
 Status MediaDemuxer::ReleaseSrcBuffer(std::shared_ptr<AVBuffer> &srcBuffer, int32_t trackId)
 {
-    MEDIA_LOG_D("release src buff id: %{public}lld", srcBuffer->GetUniqueId());
+    MEDIA_LOG_D("release src buff id: %{public}" PRId64, srcBuffer->GetUniqueId());
     auto status = sampleQueueMap_[trackId]->ReleaseBuffer(srcBuffer);
     return status;
 }
