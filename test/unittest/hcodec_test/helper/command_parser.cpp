@@ -69,6 +69,7 @@ enum ShortOption {
     OPT_GOP_B_MODE,
     OPT_ENABLE_ROI_BY_NB,
     OPT_MAX_INPUT_BUFFER_COUNT,
+    OPT_INSERT_XPS_BEFORE_IDR,
     // decoder only
     OPT_DEC_THEN_ENC,
     OPT_ROTATION,
@@ -121,6 +122,7 @@ static struct option g_longOptions[] = {
     {"gopBMode",        required_argument,  nullptr, OPT_GOP_B_MODE},
     {"enableROIByNb",   required_argument,  nullptr, OPT_ENABLE_ROI_BY_NB},
     {"maxInputBufferCount", required_argument, nullptr, OPT_MAX_INPUT_BUFFER_COUNT},
+    {"insertXpsBeforeIdr", required_argument,  nullptr, OPT_INSERT_XPS_BEFORE_IDR},
     // decoder only
     {"rotation",        required_argument,  nullptr, OPT_ROTATION},
     {"decThenEnc",      required_argument,  nullptr, OPT_DEC_THEN_ENC},
@@ -175,6 +177,7 @@ void ShowUsage()
     std::cout << " --waterMark          eg. /data/test/a.rgba,1280,720,2:16,16,1280,720" << std::endl;
     std::cout << " --gopBMode           gop mode for b frame. 1(adaptive-b mode), 2(h3b mode)" << std::endl;
     std::cout << " --maxInputBufferCount max input buffer count for encoder" << std::endl;
+    std::cout << " --insertXpsBeforeIdr insert XPS before IDR frame. 0(disable), 1(enable)" << std::endl;
     std::cout << " [decoder only]" << std::endl;
     std::cout << " --rotation           rotation angle after decode, eg. 0/90/180/270" << std::endl;
     std::cout << " --paramsFeedback     0 means don't feedback, 1 means feedback" << std::endl;
@@ -317,6 +320,9 @@ CommandOpt Parse(int argc, char *argv[])
                 break;
             case OPT_MAX_INPUT_BUFFER_COUNT:
                 opt.maxInputBufferCount = stol(optarg);
+                break;
+            case OPT_INSERT_XPS_BEFORE_IDR:
+                opt.insertXpsBeforeIdr = stol(optarg);
                 break;
             // decoder only
             case OPT_DEC_THEN_ENC:
@@ -518,6 +524,9 @@ void CommandOpt::Print() const
 
     if (gopBMode.has_value()) {
         TLOGI("gopBMode : %d", gopBMode.value());
+    }
+    if (insertXpsBeforeIdr.has_value()) {
+        TLOGI("insertXpsBeforeIdr : %d", insertXpsBeforeIdr.value());
     }
     if (mockFrameCnt.has_value()) {
         TLOGI("mockFrameCnt %u", mockFrameCnt.value());

@@ -61,6 +61,7 @@ int32_t HEncoder::OnConfigure(const Format &format)
     (void)SetColorAspects(format);
     (void)SetProcessName();
     (void)SetFrameRateAdaptiveMode(format);
+    (void)SetIdrAppendXpsParam(format);
     CheckIfEnableCb(format);
     ret = SetTemperalLayer(format);
     if (ret != AVCS_ERR_OK) {
@@ -1869,4 +1870,21 @@ HEncoder::BufferItem::~BufferItem()
     }
 }
 
+int32_t HEncoder::SetIdrAppendXpsParam(const Format &format)
+{
+    int32_t enableIdrAppendXps;
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES, enableIdrAppendXps)) {
+        return AVCS_ERR_OK;
+    }
+ 
+    OMX_CONFIG_BOOLEANTYPE param {};
+    InitOMXParam(param);
+    param.bEnabled = enableIdrAppendXps ? OMX_TRUE : OMX_FALSE;
+    if (!SetParameter(OMX_IndexParamIdrAppendXps, param)) {
+        HLOGW("set idr append xps failed");
+        return AVCS_ERR_UNKNOWN;
+    }
+    HLOGI("set idr append xps %s", enableIdrAppendXps ? "enable" : "disable");
+    return AVCS_ERR_OK;
+}
 } // namespace OHOS::MediaAVCodec

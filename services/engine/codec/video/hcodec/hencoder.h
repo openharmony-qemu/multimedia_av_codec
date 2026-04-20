@@ -102,6 +102,7 @@ private:
     int32_t ConfigBEncodeMode(const Format &format);
     int32_t SetCRFMode(int32_t targetQp);
     void EnableVariableFrameRate(const Format &format);
+    int32_t SetIdrAppendXpsParam(const Format &format);
 
     // start
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;
