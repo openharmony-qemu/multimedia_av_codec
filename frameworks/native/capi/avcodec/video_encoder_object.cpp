@@ -237,7 +237,7 @@ void NativeVideoEncoderCallback::OnOutputFormatChanged(const Media::Format& form
     CHECK_AND_RETURN_LOG(codec_ != nullptr, "Codec is nullptr");
     CHECK_AND_RETURN_LOG(codec_->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, "Codec magic error!");
     CHECK_AND_RETURN_LOG(asyncCallback_.onStreamChanged != nullptr || callback_.onStreamChanged != nullptr,
-                            "Callback is nullptr");
+        "Callback is nullptr");
     OHOS::sptr<OH_AVFormat> object = new (std::nothrow) OH_AVFormat(format);
     CHECK_AND_RETURN_LOG(object != nullptr, "OH_AVFormat create failed");
     // The object lifecycle is controlled by the current function stack

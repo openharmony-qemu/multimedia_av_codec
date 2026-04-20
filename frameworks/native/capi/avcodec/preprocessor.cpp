@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include "securec.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "avcodeclist_impl.h"
@@ -36,7 +37,7 @@ struct PlaneCopyInfo {
 
 double RoundToTwoDecimals(double value)
 {
-    return std::round(value * 100.0) / 100.0;
+    return std::round(value * 100.0) / 100.0; // 100.0: Round to 2 decimal places using round half up
 }
 
 bool GetPlaneCopyInfo(GraphicPixelFormat format, uint32_t width, uint32_t height, PlaneCopyInfo &copyInfo)
@@ -51,30 +52,30 @@ bool GetPlaneCopyInfo(GraphicPixelFormat format, uint32_t width, uint32_t height
         }
         case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP:
         case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP: {
-            copyInfo.planeCount = 2;
+            copyInfo.planeCount = 2; // 2: Y plane + interleaved UV plane
             copyInfo.rowBytes[0] = width;
             copyInfo.rowCounts[0] = height;
             copyInfo.rowBytes[1] = width;
-            copyInfo.rowCounts[1] = (height + 1) / 2;
+            copyInfo.rowCounts[1] = (height + 1) / 2; // 2: UV height = Y height / 2
             return true;
         }
         case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010:
         case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010: {
-            copyInfo.planeCount = 2;
-            copyInfo.rowBytes[0] = width * 2; // 10-bit samples are stored in 16-bit containers.
+            copyInfo.planeCount = 2; // 2: Y plane + interleaved UV plane
+            copyInfo.rowBytes[0] = width * 2; // 2: 10-bit samples are stored in 16-bit containers.
             copyInfo.rowCounts[0] = height;
-            copyInfo.rowBytes[1] = width * 2;
-            copyInfo.rowCounts[1] = (height + 1) / 2;
+            copyInfo.rowBytes[1] = width * 2; // 2: 10-bit samples are stored in 16-bit containers.
+            copyInfo.rowCounts[1] = (height + 1) / 2; // 2: UV height = Y height / 2
             return true;
         }
         case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_P: {
-            copyInfo.planeCount = 3;
+            copyInfo.planeCount = 3; // 3: Y plane + U plane + V plane
             copyInfo.rowBytes[0] = width;
             copyInfo.rowCounts[0] = height;
-            copyInfo.rowBytes[1] = (width + 1) / 2;
-            copyInfo.rowCounts[1] = (height + 1) / 2;
-            copyInfo.rowBytes[2] = copyInfo.rowBytes[1];
-            copyInfo.rowCounts[2] = copyInfo.rowCounts[1];
+            copyInfo.rowBytes[1] = (width + 1) / 2; // 2: UV width = Y width / 2
+            copyInfo.rowCounts[1] = (height + 1) / 2; // 2: UV height = Y height / 2
+            copyInfo.rowBytes[2] = copyInfo.rowBytes[1]; // 2: index
+            copyInfo.rowCounts[2] = copyInfo.rowCounts[1]; // 2: index
             return true;
         }
         default:
@@ -111,7 +112,7 @@ bool CopyByPlanes(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &o
         auto *srcPlaneAddr = src + srcPlanes->planes[plane].offset;
         auto *dstPlaneAddr = dst + dstPlanes->planes[plane].offset;
         for (uint32_t row = 0; row < copyInfo.rowCounts[plane]; ++row) {
-            std::memcpy(dstPlaneAddr + row * dstRowStride, srcPlaneAddr + row * srcRowStride, rowBytes);
+            memcpy_s(dstPlaneAddr + row * dstRowStride, rowBytes, srcPlaneAddr + row * srcRowStride, rowBytes);
         }
     }
     return true;
@@ -380,7 +381,7 @@ void Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output)
     uint32_t outputSize = output->GetSize();
     uint32_t copySize = std::min(inputSize, outputSize);
     if (inputStride == outputStride) {
-        std::memcpy(dst, src, copySize);
+        memcpy_s(dst, copySize, src, copySize);
         return;
     }
 
@@ -390,7 +391,7 @@ void Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output)
     uint32_t rowCount = std::min(inputSize / static_cast<uint32_t>(inputStride),
                                  outputSize / static_cast<uint32_t>(outputStride));
     for (uint32_t row = 0; row < rowCount; ++row) {
-        std::memcpy(dst + row * outputStride, src + row * inputStride, rowBytes);
+        memcpy_s(dst + row * outputStride, rowBytes, src + row * inputStride, rowBytes);
     }
 }
 

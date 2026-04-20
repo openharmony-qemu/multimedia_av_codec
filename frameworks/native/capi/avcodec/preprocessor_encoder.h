@@ -32,10 +32,9 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-
 class PreprocessorEncoder : public OH_AVCodec {
 public:
-    PreprocessorEncoder(AVMagic magic);
+    explicit PreprocessorEncoder(AVMagic magic);
     ~PreprocessorEncoder();
 
     static OH_AVErrCode CreatePrimary(const char* mime, OH_AVCodec** codec);
@@ -73,7 +72,6 @@ private:
     sptr<Surface> GetSharedSurface();
     void RegisterEncoderToManager();
     void UnregisterEncoderFromManager();
-
 
     std::shared_ptr<VideoEncoderObject> videoEncoderObject_{nullptr};
 

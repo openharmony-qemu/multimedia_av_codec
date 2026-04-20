@@ -21,7 +21,6 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "PreprocessorEncoder"};
 constexpr size_t MAX_LENGTH = 255;
-// constexpr int32_t BUFFER_REQUEST_STRIDE_ALIGNMENT = 32;
 } // namespace
 
 namespace OHOS {
@@ -433,104 +432,48 @@ OH_AVFormat* PreprocessorEncoder::GetOutputDescription()
 
 OH_AVFormat* PreprocessorEncoder::GetInputDescription()
 {
-    // Pre-check: Preprocessor must exist (core component of Facade layer)
     auto preprocessor = GetPreprocessor();
-    CHECK_AND_RETURN_RET_LOG(preprocessor != nullptr, nullptr,
-        "Preprocessor not found for GetInputDescription!");
+    CHECK_AND_RETURN_RET_LOG(preprocessor != nullptr, nullptr, "Preprocessor not found for GetInputDescription!");
 
     Format format;
-
-    // ========== Step 1: Obtain underlying encoder InputDescription as base ==========
-    // Encoder returns post-preprocessing complete spec (width, height, pixel_format, stride, etc.)
+    // Step 1: Obtain underlying encoder InputDescription (width, height, pixel_format, stride, etc.)
     if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
         Format encoderFormat;
         int32_t ret = videoEncoderObject_->videoEncoder_->GetInputFormat(encoderFormat);
         if (ret == AVCS_ERR_OK) {
             format = encoderFormat;  // Copy entire encoder format as base
         }
-        AVCODEC_LOGI("Step1 - encoder base format obtained");
     }
-
-    // ========== Step 2: Override input data fields from PreprocessorManager buffer ==========
-    // Override reason: encoder returns post-preprocessing spec (e.g. crop+ds -> 1920x1080 + NV12)
-    //                 but App needs pre-preprocessing real input spec (e.g. original 3840x2160)
-    //
-    // 5 override fields (all from SurfaceBuffer native interfaces, peeked from pendingBuffers_ front):
-    //   MD_KEY_WIDTH / MD_KEY_HEIGHT          -- resolution (varies with buffer)
-    //   VIDEO_GRAPHIC_PIXEL_FORMAT            -- Surface graphic pixel format
-    //   MD_KEY_PIXEL_FORMAT                   -- codec internal pixel format (needs mapping!)
-    //   VIDEO_STRIDE                          -- stride (from buffer->GetStride(), with HW alignment)
-    //
-    // Non-overridden fields (encoder intrinsic attributes, keep base value):
-    //   MD_KEY_CODEC_NAME / IS_VENDOR         -- encoder identity
-    //   BITRATE_MODE                          -- encoder parameter config
-    //   NUMBER_OF_PENDING_FRAMES              -- runtime state
+    // Step 2: Override input data fields from PreprocessorManager buffer (width, height, pixel_format, stride)
     if (preprocMgr_) {
         PreprocessorManager::BufferDataInfo bufInfo;
         if (preprocMgr_->PeekPendingBufferData(encoderId_, bufInfo)) {
-            // --- Override resolution ---
             format.PutIntValue(Media::Tag::VIDEO_WIDTH, bufInfo.width);
             format.PutIntValue(Media::Tag::VIDEO_HEIGHT, bufInfo.height);
-
-            // --- Override pixel formats (two different enum types!) ---
-            // VIDEO_GRAPHIC_PIXEL_FORMAT: use buffer->GetFormat() raw value (GraphicPixelFormat enum)
             format.PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, bufInfo.format);
-
-            // MD_KEY_PIXEL_FORMAT: map GraphicPixelFormat -> VideoPixelFormat (reverse mapping)
             VideoPixelFormat mappedFmt;
             if (GraphicPixelFmtToVideoPixelFmt(static_cast<GraphicPixelFormat>(bufInfo.format), mappedFmt)) {
-                format.PutIntValue(Media::Tag::VIDEO_PIXEL_FORMAT,
-                    static_cast<int32_t>(mappedFmt));
+                format.PutIntValue(Media::Tag::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(mappedFmt));
             }
-            // If mapping fails (unknown format), keep Step1 encoder base PIXEL_FORMAT unchanged
-
-            // --- Override stride (use buffer real stride value) ---
-            // SurfaceBuffer::GetStride() returns GPU/ION allocator calculated real stride
-            // including hardware-specific alignment requirements (64/128 byte alignment)
             if (bufInfo.stride > 0) {
                 format.PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, bufInfo.stride);
             }
-
-            AVCODEC_LOGI("Step2 - buffer data override: %{public}dx%{public}d graphicFmt=%{public}d "
-                         "innerFmt=%{public}d stride=%{public}d",
-                bufInfo.width, bufInfo.height, bufInfo.format,
-                static_cast<int32_t>(mappedFmt), bufInfo.stride);
         }
     }
-    // Note: without pending buffer, keep Step1 encoder base values unchanged
-
-    // ========== Step 3: Append preprocessing metadata (always) ==========
-    // Append as independent PREPROCESS_* prefix fields, do not overwrite existing standard fields
-
-    // --- Preprocessing output spec (actual size received by encoder) ---
-    format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH,
-        preprocessor->GetOutputWidth());
-    format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT,
-        preprocessor->GetOutputHeight());
-
-    // --- Crop preprocessing info (via public field-level getters) ---
-    format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT,
-        preprocessor->IsCropEnabled() ? 1 : 0);
+    // Step 3: Append preprocessing metadata (always)
     if (preprocessor->IsCropEnabled()) {
         format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT, preprocessor->GetCropLeft());
         format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_RIGHT, preprocessor->GetCropRight());
         format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_TOP, preprocessor->GetCropTop());
         format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM, preprocessor->GetCropBottom());
     }
-
-    // --- Downsampling preprocessing info (via public field-level getters) ---
-    format.PutIntValue("video_encoder_preproc_downsampling_enabled",
-        preprocessor->IsDownsamplingEnabled() ? 1 : 0);
     if (preprocessor->IsDownsamplingEnabled()) {
         format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH, preprocessor->GetDownsamplingWidth());
         format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT, preprocessor->GetDownsamplingHeight());
     }
 
-    AVCODEC_LOGI("Step3 - preprocess metadata appended");
-
     OH_AVFormat* avFormat = OH_AVFormat_Create();
-    CHECK_AND_RETURN_RET_LOG(avFormat != nullptr, nullptr,
-        "PreprocessorEncoder create input format failed!");
+    CHECK_AND_RETURN_RET_LOG(avFormat != nullptr, nullptr, "PreprocessorEncoder create input format failed!");
     avFormat->format_ = format;
     return avFormat;
 }
