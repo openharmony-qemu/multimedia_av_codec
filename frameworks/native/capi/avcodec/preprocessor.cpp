@@ -112,7 +112,7 @@ bool CopyByPlanes(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &o
         auto *srcPlaneAddr = src + srcPlanes->planes[plane].offset;
         auto *dstPlaneAddr = dst + dstPlanes->planes[plane].offset;
         for (uint32_t row = 0; row < copyInfo.rowCounts[plane]; ++row) {
-            memcpy_s(dstPlaneAddr + row * dstRowStride, rowBytes, srcPlaneAddr + row * srcRowStride, rowBytes);
+            (void)memcpy_s(dstPlaneAddr + row * dstRowStride, rowBytes, srcPlaneAddr + row * srcRowStride, rowBytes);
         }
     }
     return true;
@@ -381,7 +381,7 @@ void Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output)
     uint32_t outputSize = output->GetSize();
     uint32_t copySize = std::min(inputSize, outputSize);
     if (inputStride == outputStride) {
-        memcpy_s(dst, copySize, src, copySize);
+        (void)memcpy_s(dst, copySize, src, copySize);
         return;
     }
 
@@ -391,7 +391,7 @@ void Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output)
     uint32_t rowCount = std::min(inputSize / static_cast<uint32_t>(inputStride),
                                  outputSize / static_cast<uint32_t>(outputStride));
     for (uint32_t row = 0; row < rowCount; ++row) {
-        memcpy_s(dst + row * outputStride, rowBytes, src + row * inputStride, rowBytes);
+        (void)memcpy_s(dst + row * outputStride, rowBytes, src + row * inputStride, rowBytes);
     }
 }
 
