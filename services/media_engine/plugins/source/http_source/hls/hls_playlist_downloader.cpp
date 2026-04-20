@@ -22,6 +22,7 @@
 #include "plugin/plugin_time.h"
 #include "hls_playlist_downloader.h"
 #include "common/media_source.h"
+#include "utils/string_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -1028,6 +1029,9 @@ void HlsPlayListDownloader::GetMediaStreams(StreamType streamType, std::vector<S
         streamInfo.lang = media->lang_;
         if (streamType == StreamType::AUDIO) {
             streamInfo.originCodecs = master_->GetCodec(StreamType::AUDIO, media->originCodec_);
+            int32_t tempChannel = 0;
+            StringUtil::SafeStoInt32(media->channels_, tempChannel);
+            streamInfo.channels = tempChannel > 0 ? static_cast<uint32_t>(tempChannel) : 0;
         }
         bool isDefault = false;
         if (streamType == StreamType::AUDIO && audioStreamId_.load() != -1) {
