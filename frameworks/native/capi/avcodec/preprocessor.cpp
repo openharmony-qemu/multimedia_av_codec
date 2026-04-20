@@ -37,7 +37,7 @@ struct PlaneCopyInfo {
 
 double RoundToTwoDecimals(double value)
 {
-    return std::round(value * 100.0) / 100.0; // 100.0: Round to 2 decimal places using round half up
+    return std::round(value * 100.0) / 100.0; // 100.0: Round to 2 decimal digits using round half up
 }
 
 bool GetPlaneCopyInfo(GraphicPixelFormat format, uint32_t width, uint32_t height, PlaneCopyInfo &copyInfo)

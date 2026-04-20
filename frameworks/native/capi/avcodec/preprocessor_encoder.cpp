@@ -282,7 +282,7 @@ OH_AVErrCode PreprocessorEncoder::Configure(const Media::Format &format)
             GraphicPixelFormat priFmt = primaryPreprocessor->GetConfiguredPixelFormat();
             if (secFmt != priFmt && priFmt != GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT) {
                 AVCODEC_LOGE("PixelFormat mismatch: primary=%{public}d, secondary=%{public}d",
-                                static_cast<int32_t>(priFmt), static_cast<int32_t>(secFmt));
+                    static_cast<int32_t>(priFmt), static_cast<int32_t>(secFmt));
                 return AVCSErrorToOHAVErrCode(AVCS_ERR_INVALID_VAL);
             }
         }
