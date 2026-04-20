@@ -432,13 +432,10 @@ OH_AVFormat* PreprocessorEncoder::GetOutputDescription()
 
 OH_AVFormat* PreprocessorEncoder::GetInputDescription()
 {
-    // Pre-check: Preprocessor must exist (core component of Facade layer)
     auto preprocessor = GetPreprocessor();
-    CHECK_AND_RETURN_RET_LOG(preprocessor != nullptr, nullptr,
-        "Preprocessor not found for GetInputDescription!");
+    CHECK_AND_RETURN_RET_LOG(preprocessor != nullptr, nullptr, "Preprocessor not found for GetInputDescription!");
 
     Format format;
-
     // Step 1: Obtain underlying encoder InputDescription (width, height, pixel_format, stride, etc.)
     if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
         Format encoderFormat;
@@ -446,63 +443,40 @@ OH_AVFormat* PreprocessorEncoder::GetInputDescription()
         if (ret == AVCS_ERR_OK) {
             format = encoderFormat;  // Copy entire encoder format as base
         }
-        AVCODEC_LOGI("Step1 - encoder base format obtained");
     }
-
     // Step 2: Override input data fields from PreprocessorManager buffer (width, height, pixel_format, stride)
     if (preprocMgr_) {
         PreprocessorManager::BufferDataInfo bufInfo;
         if (preprocMgr_->PeekPendingBufferData(encoderId_, bufInfo)) {
-            // --- Override resolution ---
             format.PutIntValue(Media::Tag::VIDEO_WIDTH, bufInfo.width);
             format.PutIntValue(Media::Tag::VIDEO_HEIGHT, bufInfo.height);
-
-            // --- Override pixel formats (two different enum types!) ---
-            // VIDEO_GRAPHIC_PIXEL_FORMAT: use buffer->GetFormat() raw value (GraphicPixelFormat enum)
             format.PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, bufInfo.format);
-
-            // MD_KEY_PIXEL_FORMAT: map GraphicPixelFormat -> VideoPixelFormat (reverse mapping)
             VideoPixelFormat mappedFmt;
             if (GraphicPixelFmtToVideoPixelFmt(static_cast<GraphicPixelFormat>(bufInfo.format), mappedFmt)) {
-                format.PutIntValue(Media::Tag::VIDEO_PIXEL_FORMAT,
-                    static_cast<int32_t>(mappedFmt));
+                format.PutIntValue(Media::Tag::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(mappedFmt));
             }
-            // --- Override stride (use buffer real stride value) ---
             if (bufInfo.stride > 0) {
                 format.PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, bufInfo.stride);
             }
-
-            AVCODEC_LOGI("Step2 - buffer data override: %{public}dx%{public}d graphicFmt=%{public}d "
-                         "innerFmt=%{public}d stride=%{public}d",
-                bufInfo.width, bufInfo.height, bufInfo.format,
-                static_cast<int32_t>(mappedFmt), bufInfo.stride);
         }
     }
     // Step 3: Append preprocessing metadata (always)
-    format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH,
-        preprocessor->GetOutputWidth());
-    format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT,
-        preprocessor->GetOutputHeight());
-    format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT,
-        preprocessor->IsCropEnabled() ? 1 : 0);
+    format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH, preprocessor->GetOutputWidth());
+    format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT, preprocessor->GetOutputHeight());
+    format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT, preprocessor->IsCropEnabled() ? 1 : 0);
     if (preprocessor->IsCropEnabled()) {
         format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT, preprocessor->GetCropLeft());
         format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_RIGHT, preprocessor->GetCropRight());
         format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_TOP, preprocessor->GetCropTop());
         format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM, preprocessor->GetCropBottom());
     }
-    format.PutIntValue("video_encoder_preproc_downsampling_enabled",
-        preprocessor->IsDownsamplingEnabled() ? 1 : 0);
+    format.PutIntValue("video_encoder_preproc_downsampling_enabled", preprocessor->IsDownsamplingEnabled() ? 1 : 0);
     if (preprocessor->IsDownsamplingEnabled()) {
         format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH, preprocessor->GetDownsamplingWidth());
         format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT, preprocessor->GetDownsamplingHeight());
     }
-
-    AVCODEC_LOGI("Step3 - preprocess metadata appended");
-
     OH_AVFormat* avFormat = OH_AVFormat_Create();
-    CHECK_AND_RETURN_RET_LOG(avFormat != nullptr, nullptr,
-        "PreprocessorEncoder create input format failed!");
+    CHECK_AND_RETURN_RET_LOG(avFormat != nullptr, nullptr, "PreprocessorEncoder create input format failed!");
     avFormat->format_ = format;
     return avFormat;
 }
