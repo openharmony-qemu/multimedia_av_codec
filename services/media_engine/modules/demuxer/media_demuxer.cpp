@@ -1906,14 +1906,19 @@ void MediaDemuxer::HandleSeekToTime(int64_t seekTime)
 Status MediaDemuxer::HandleSelectSubtitle(int64_t seekTime, Plugins::SeekMode mode, int32_t trackId)
 {
     int32_t targetStreamID = demuxerPluginManager_->GetStreamIDByTrackID(trackId);
-    FALSE_RETURN_V_MSG_E(targetStreamID != INVALID_STREAM_OR_TRACK_ID, Status::ERROR_INVALID_PARAMETER,
+    return HandleSelectSubtitleStream(seekTime, mode, targetStreamID);
+}
+
+Status MediaDemuxer::HandleSelectSubtitleStream(int64_t seekTime, Plugins::SeekMode mode, int32_t streamId)
+{
+    FALSE_RETURN_V_MSG_E(streamId != INVALID_STREAM_OR_TRACK_ID, Status::ERROR_INVALID_PARAMETER,
         "Invalid streamId");
     FALSE_RETURN_V_MSG_E(source_ != nullptr && source_->IsSeekToTimeSupported(), Status::ERROR_INVALID_PARAMETER,
         "Source is null or seek operation not supported");
-    auto ret = source_->MediaSeekTimeByStreamId(seekTime, SeekMode::SEEK_PREVIOUS_SYNC, targetStreamID);
+    auto ret = source_->MediaSeekTimeByStreamId(seekTime, SeekMode::SEEK_PREVIOUS_SYNC, streamId);
     FALSE_RETURN_V_MSG_E(streamDemuxer_ != nullptr && ret == Status::OK, Status::ERROR_UNKNOWN,
         "Source SeekToSubtitle fail");
-    streamDemuxer_->SetNewSubtitleStreamID(targetStreamID);
+    streamDemuxer_->SetNewSubtitleStreamID(streamId);
     FALSE_RETURN_V_MSG_E(HandleDashChangeStream(subtitleTrackId_), Status::ERROR_UNKNOWN,
         "HandleDashChangeStream fail");
     return Status::OK;
@@ -5592,6 +5597,10 @@ void MediaDemuxer::SetTrackSelectionFilter(const TrackSelectionFilter &filter)
     if (needChange && stream != nullptr) {
         Status states = SelectStreamId(defaultSubtitleStreamId_);
         PrintStreamInfo("SetTrackSelectionFilter ", stream, currentPlayType_, states);
+        if (states == Status::OK && isHls_ && syncCenter_ != nullptr) {
+            HandleSelectSubtitleStream(
+                syncCenter_->GetMediaTimeNow(), SeekMode::SEEK_PREVIOUS_SYNC, defaultSubtitleStreamId_);
+        }
     } else {
         defaultSubtitleStreamId_ = lastSubtitleStreamId;
         MEDIA_LOG_I("subtitle stream does not need to be switched");
