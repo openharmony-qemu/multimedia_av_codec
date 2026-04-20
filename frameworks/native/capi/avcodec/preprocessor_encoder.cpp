@@ -461,20 +461,17 @@ OH_AVFormat* PreprocessorEncoder::GetInputDescription()
         }
     }
     // Step 3: Append preprocessing metadata (always)
-    format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH, preprocessor->GetOutputWidth());
-    format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT, preprocessor->GetOutputHeight());
-    format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT, preprocessor->IsCropEnabled() ? 1 : 0);
     if (preprocessor->IsCropEnabled()) {
         format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT, preprocessor->GetCropLeft());
         format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_RIGHT, preprocessor->GetCropRight());
         format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_TOP, preprocessor->GetCropTop());
         format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM, preprocessor->GetCropBottom());
     }
-    format.PutIntValue("video_encoder_preproc_downsampling_enabled", preprocessor->IsDownsamplingEnabled() ? 1 : 0);
     if (preprocessor->IsDownsamplingEnabled()) {
         format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH, preprocessor->GetDownsamplingWidth());
         format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT, preprocessor->GetDownsamplingHeight());
     }
+
     OH_AVFormat* avFormat = OH_AVFormat_Create();
     CHECK_AND_RETURN_RET_LOG(avFormat != nullptr, nullptr, "PreprocessorEncoder create input format failed!");
     avFormat->format_ = format;
