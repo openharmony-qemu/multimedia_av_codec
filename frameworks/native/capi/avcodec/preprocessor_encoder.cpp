@@ -438,14 +438,21 @@ OH_AVErrCode PreprocessorEncoder::Release()
 
 OH_AVErrCode PreprocessorEncoder::NotifyEos()
 {
-    if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
-        int32_t ret = videoEncoderObject_->videoEncoder_->NotifyEos();
-        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                                 "Preprocessor notify eos failed!");
-    }
-
     if (preprocMgr_) {
-        preprocMgr_->SetEncoderRunning(encoderId_, false);
+        std::shared_ptr<VideoEncoderObject> videoEncoderObject = videoEncoderObject_;
+        std::string encoderId = encoderId_;
+        bool requestRet = preprocMgr_->RequestNotifyEos(encoderId_, [videoEncoderObject, encoderId]() {
+            if (!(videoEncoderObject && videoEncoderObject->videoEncoder_)) {
+                AVCODEC_LOGE("Video encoder is nullptr when async notify eos: %{public}s", encoderId.c_str());
+                return;
+            }
+            int32_t ret = videoEncoderObject->videoEncoder_->NotifyEos();
+            if (ret != AV_ERR_OK) {
+                AVCODEC_LOGE("Async notify eos failed for %{public}s, ret=%{public}d", encoderId.c_str(), ret);
+            }
+        });
+        CHECK_AND_RETURN_RET_LOG(requestRet, AV_ERR_INVALID_STATE, "Request async notify eos failed!");
+        return AV_ERR_OK;
     }
 
     return AV_ERR_OK;
