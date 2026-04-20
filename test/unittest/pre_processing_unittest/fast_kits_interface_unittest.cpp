@@ -86,7 +86,7 @@ void ExpectROIMetadata(const sptr<SurfaceBuffer> &output, const std::string &exp
 
 std::string TransformROI(const std::string &roiStr, double scaleX, double scaleY, int32_t offTop, int32_t offLeft)
 {
-    std::regex pattern(R"((-?\d+),(-?\d+)-(-?\d+),(-?\d+)(?:=([^;]*))?(?:;|$))");
+    std::regex pattern(R"((?:^|;)(-?\d+),(-?\d+)-(-?\d+),(-?\d+)(?:=([^;]*))?;)");
     std::smatch match;
     std::string temp = roiStr;
     std::string result;
