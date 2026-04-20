@@ -4024,6 +4024,7 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
 {
     MEDIA_LOG_D("In");
     HandleEvent(event);
+    OnEventStream(event);
     std::weak_ptr<Pipeline::EventReceiver> weakEventReceiver = eventReceiver_;
     auto eventReceiver = weakEventReceiver.lock();
     if (eventReceiver == nullptr && event.type != PluginEventType::SOURCE_DRM_INFO_UPDATE) {
@@ -4031,7 +4032,6 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
         return;
     }
     DispatchPluginEvent(event, eventReceiver);
-    OnEventStream(event);
     OnEventBuffer(event, eventReceiver);
 }
 
