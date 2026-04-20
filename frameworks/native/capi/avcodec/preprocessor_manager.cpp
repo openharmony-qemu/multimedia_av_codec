@@ -24,7 +24,7 @@ constexpr int32_t BUFFER_REQUEST_STRIDE_ALIGNMENT = 32;
 
 class ConsumerListener : public OHOS::IBufferConsumerListener {
 public:
-    ConsumerListener(std::weak_ptr<OHOS::MediaAVCodec::PreprocessorManager> mgr) : mgr_(mgr) {}
+    explicit ConsumerListener(std::weak_ptr<OHOS::MediaAVCodec::PreprocessorManager> mgr) : mgr_(mgr) {}
     void OnBufferAvailable() override
     {
         auto mgr = mgr_.lock();
@@ -149,7 +149,7 @@ PreprocessorManager::SurfaceBufferWrapper::~SurfaceBufferWrapper()
     }
     if (!isProcessed) {
         surfacePtr->CancelBuffer(buffer);
-        AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGW, 5000, 5,    // 5 times in 5 seconds
+        AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGW, 5000, 5,    // 5 times in 5000 milliseconds
             "Buffer not processed before wrapper destruction, bufferId=%{public}u",
             buffer->GetSeqNum());
         return;

@@ -167,7 +167,8 @@ int32_t FastKitsInterface::Crop(const sptr<SurfaceBuffer> &input, const sptr<Sur
     destroyRectFunc_(cropRect);
     int32_t err = ConvertErrorCode(ret);
     CHECK_AND_RETURN_RET_LOG(err == AVCS_ERR_OK, err,
-                             "Crop %{public}d, in %{public}dx%{public}d:%{public}d out %{public}dx%{public}d:%{public}d "
+                             "Crop %{public}d, in %{public}dx%{public}d:%{public}d "
+                             "out %{public}dx%{public}d:%{public}d "
                              "rect [%{public}d,%{public}d,%{public}d,%{public}d]",
                              ret, input->GetWidth(), input->GetHeight(), input->GetFormat(), output->GetWidth(),
                              output->GetHeight(), output->GetFormat(), rect.top, rect.left, rect.bottom, rect.right);
@@ -185,7 +186,8 @@ int32_t FastKitsInterface::DownSample(const sptr<SurfaceBuffer> &input, const sp
     int32_t ret = downSampleFunc_(input.GetRefPtr(), output.GetRefPtr(), static_cast<int32_t>(algo));
     int32_t err = ConvertErrorCode(ret);
     CHECK_AND_RETURN_RET_LOG(err == AVCS_ERR_OK, err,
-                             "DownSample %{public}d, in %{public}dx%{public}d:%{public}d out %{public}dx%{public}d:%{public}d",
+                             "DownSample %{public}d, in %{public}dx%{public}d:%{public}d "
+                             "out %{public}dx%{public}d:%{public}d",
                              ret, input->GetWidth(), input->GetHeight(), input->GetFormat(), output->GetWidth(),
                              output->GetHeight(), output->GetFormat());
     return err;

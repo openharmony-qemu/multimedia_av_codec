@@ -14,7 +14,7 @@
  */
 
 #include "frame_drop_filter.h"
-#include <inttypes.h>
+#include <cinttypes>
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "FDFilt"};
