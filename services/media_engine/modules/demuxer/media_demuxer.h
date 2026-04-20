@@ -113,7 +113,7 @@ public:
     Status ReadSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample); // Interface for AVDemuxer
     Status GetBitRates(std::vector<uint32_t> &bitRates);
     Status SelectStreamId(int32_t streamId);
-    Status SelectBitRate(uint32_t bitRate, bool isAutoSelect = false);
+    Status SelectBitRate(uint32_t bitRate, bool isAutoSelect = false, bool isForceSelect = false);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
     Status GetPlaybackInfo(PlaybackInfo& playbackInfo);
     Status GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos);
