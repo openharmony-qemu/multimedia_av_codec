@@ -71,17 +71,17 @@ void ExpectHDRMetadataEqual(const sptr<SurfaceBuffer> &input, const sptr<Surface
 void SetTestROIMetadata(const sptr<SurfaceBuffer> &buf, const std::string &roiStr)
 {
     std::vector<uint8_t> data(roiStr.begin(), roiStr.end());
+    data.push_back('\0');
     (void)buf->SetMetadata(V2_2::ATTRKEY_ROI_METADATA, data);
 }
 
-void ExpectROIMetadata(const sptr<SurfaceBuffer> &output, const std::string &expected)
+void ExpectROIMetadata(const sptr<SurfaceBuffer> &output, const std::string &expected, const std::string &context)
 {
     std::vector<uint8_t> outVal;
     ASSERT_EQ(output->GetMetadata(V2_2::ATTRKEY_ROI_METADATA, outVal), GSERROR_OK) << "Get ROI metadata failed";
-    ASSERT_GE(outVal.size(), expected.size())
-        << "ROI metadata too short, expected " << expected.size() << " bytes, got " << outVal.size();
-    std::string actual(outVal.begin(), outVal.begin() + expected.size());
-    EXPECT_EQ(actual, expected) << "ROI mismatch, expected: " << expected << ", actual: " << actual;
+    auto nullPos = std::find(outVal.begin(), outVal.end(), '\0');
+    std::string actual(outVal.begin(), nullPos);
+    EXPECT_EQ(actual, expected) << context << "\n  expected: " << expected << "\n  actual:   " << actual;
 }
 
 std::string TransformROI(const std::string &roiStr, double scaleX, double scaleY, int32_t offTop, int32_t offLeft)
@@ -662,6 +662,8 @@ HWTEST_P(FastKitsRoiFormatTest, Downsample_PreservesRoi, TestSize.Level1)
     auto roiInput = GetParam().input;
     constexpr int32_t outW = 636;
     constexpr int32_t outH = 360;
+    double scaleX = 636.0 / INPUT_WIDTH;
+    double scaleY = 360.0 / INPUT_HEIGHT;
 
     sptr<SurfaceBuffer> output = AllocBuffer(outW, outH, GRAPHIC_PIXEL_FMT_RGBA_8888);
     ASSERT_NE(output, nullptr);
@@ -672,7 +674,10 @@ HWTEST_P(FastKitsRoiFormatTest, Downsample_PreservesRoi, TestSize.Level1)
     int32_t ret = inst.DownSample(inputBuffer_, output, FastResizeAlgoType::BICUBIC);
     ASSERT_EQ(ret, AVCS_ERR_OK);
 
-    ExpectROIMetadata(output, TransformROI(roiInput, 636.0 / INPUT_WIDTH, 360.0 / INPUT_HEIGHT, 0, 0));
+    auto expected = TransformROI(roiInput, scaleX, scaleY, 0, 0);
+    std::string ctx = "DownSample " + std::to_string(INPUT_WIDTH) + "x" + std::to_string(INPUT_HEIGHT) + "->" +
+                      std::to_string(outW) + "x" + std::to_string(outH) + ", inputROI: " + roiInput;
+    ExpectROIMetadata(output, expected, ctx);
 }
 
 HWTEST_P(FastKitsRoiFormatTest, Crop_PreservesRoi, TestSize.Level1)
@@ -694,7 +699,10 @@ HWTEST_P(FastKitsRoiFormatTest, Crop_PreservesRoi, TestSize.Level1)
     int32_t ret = inst.Crop(inputBuffer_, output, CropRect{top, left, bottom, right});
     ASSERT_EQ(ret, AVCS_ERR_OK);
 
-    ExpectROIMetadata(output, TransformROI(roiInput, 1.0, 1.0, top, left));
+    auto expected = TransformROI(roiInput, 1.0, 1.0, top, left);
+    std::string ctx = "Crop rect[" + std::to_string(top) + "," + std::to_string(left) + "-" + std::to_string(bottom) +
+                      "," + std::to_string(right) + "], inputROI: " + roiInput;
+    ExpectROIMetadata(output, expected, ctx);
 }
 
 // ========== 格式不匹配测试 ==========
