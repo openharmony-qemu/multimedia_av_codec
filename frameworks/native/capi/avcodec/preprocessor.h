@@ -152,7 +152,7 @@ private:
     int32_t dAlgoHeightMin_{0};
     int32_t dAlgoWidthMax_{0};
     int32_t dAlgoHeightMax_{0};
-    std::string_view mime_{nullptr};
+    std::string mime_;
     PreProcessing::FastKitsInterface &fastKitsInterface_ = PreProcessing::FastKitsInterface::GetInstance();
     PreProcessing::FrameDropFilter dropFilter_;
 };
