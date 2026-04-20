@@ -71,25 +71,22 @@ void ExpectHDRMetadataEqual(const sptr<SurfaceBuffer> &input, const sptr<Surface
 void SetTestROIMetadata(const sptr<SurfaceBuffer> &buf, const std::string &roiStr)
 {
     std::vector<uint8_t> data(roiStr.begin(), roiStr.end());
+    data.push_back('\0');
     (void)buf->SetMetadata(V2_2::ATTRKEY_ROI_METADATA, data);
 }
 
-void ExpectROIMetadata(const sptr<SurfaceBuffer> &output, const std::string &expected)
+void ExpectROIMetadata(const sptr<SurfaceBuffer> &output, const std::string &expected, const std::string &context)
 {
-    (void)output;
-    (void)expected;
-    // std::vector<uint8_t> outVal;
-    // ASSERT_EQ(output->GetMetadata(V2_2::ATTRKEY_ROI_METADATA, outVal), GSERROR_OK) << "Get ROI metadata failed";
-    // ASSERT_GE(outVal.size(), expected.size())
-    //     << "ROI metadata too short, expected " << expected.size() << " bytes, got " << outVal.size();
-    // std::string actual(outVal.begin(), outVal.begin() + expected.size());
-    // EXPECT_EQ(actual, expected) << "ROI mismatch, expected: " << expected << ", actual: " << actual;
+    std::vector<uint8_t> outVal;
+    ASSERT_EQ(output->GetMetadata(V2_2::ATTRKEY_ROI_METADATA, outVal), GSERROR_OK) << "Get ROI metadata failed";
+    auto nullPos = std::find(outVal.begin(), outVal.end(), '\0');
+    std::string actual(outVal.begin(), nullPos);
+    EXPECT_EQ(actual, expected) << context << "\n  expected: " << expected << "\n  actual:   " << actual;
 }
 
-// ROI transform: scale then offset
 std::string TransformROI(const std::string &roiStr, double scaleX, double scaleY, int32_t offTop, int32_t offLeft)
 {
-    std::regex pattern(R"((-?\d+),(-?\d+)-(-?\d+),(-?\d+)(?:=(-?\d+))?(?:;|$))");
+    std::regex pattern(R"((?:^|;)(-?\d+),(-?\d+)-(-?\d+),(-?\d+)(?:=([^;]*))?;)");
     std::smatch match;
     std::string temp = roiStr;
     std::string result;
@@ -98,7 +95,6 @@ std::string TransformROI(const std::string &roiStr, double scaleX, double scaleY
         int32_t left = std::stoi(match[2].str());
         int32_t bottom = std::stoi(match[3].str());
         int32_t right = std::stoi(match[4].str());
-        int32_t qp = match[5].matched ? std::stoi(match[5].str()) : 0;
         int32_t newTop = static_cast<int32_t>(std::round(top * scaleY)) - offTop;
         int32_t newLeft = static_cast<int32_t>(std::round(left * scaleX)) - offLeft;
         int32_t newBottom = static_cast<int32_t>(std::round(bottom * scaleY)) - offTop;
@@ -107,7 +103,10 @@ std::string TransformROI(const std::string &roiStr, double scaleX, double scaleY
             result += ";";
         }
         result += std::to_string(newTop) + "," + std::to_string(newLeft) + "-" + std::to_string(newBottom) + "," +
-                  std::to_string(newRight) + "=" + std::to_string(qp);
+                  std::to_string(newRight);
+        if (match[5].matched) {
+            result += "=" + match[5].str();
+        }
         temp = match.suffix().str();
     }
     if (!result.empty()) {
@@ -145,7 +144,7 @@ std::vector<std::tuple<int32_t, int32_t>> FormatMismatchPairs()
 
 void EnsureDir(const std::string &dir)
 {
-    mkdir(dir.c_str(), 0755);
+    mkdir(dir.c_str(), 0755); // 0755: rwxr-xr-x directory permission
 }
 
 sptr<SurfaceBuffer> AllocBuffer(int32_t w, int32_t h, int32_t format)
@@ -158,7 +157,7 @@ sptr<SurfaceBuffer> AllocBuffer(int32_t w, int32_t h, int32_t format)
     BufferRequestConfig config = {
         .width = w,
         .height = h,
-        .strideAlignment = 0x40,
+        .strideAlignment = 0x40, // 0x40: 64-byte stride alignment
         .format = format,
         .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
         .timeout = 0,
@@ -180,19 +179,46 @@ bool GetPlaneRowInfo(int32_t format, int32_t width, int32_t height, std::vector<
     switch (format) {
         case GRAPHIC_PIXEL_FMT_RGBA_8888:
         case GRAPHIC_PIXEL_FMT_RGBA_1010102:
-            planes = {{width * 4, height}};
+            planes = {{width * 4, height}}; // 4: bytes per pixel for RGBA formats
             return true;
         case GRAPHIC_PIXEL_FMT_YCBCR_420_SP:
         case GRAPHIC_PIXEL_FMT_YCRCB_420_SP:
-            planes = {{width, height}, {width, (height + 1) / 2}};
+            planes = {{width, height}, {width, (height + 1) / 2}}; // 2: UV plane height is half of Y plane height
             return true;
         case GRAPHIC_PIXEL_FMT_YCBCR_P010:
         case GRAPHIC_PIXEL_FMT_YCRCB_P010:
-            planes = {{width * 2, height}, {width * 2, (height + 1) / 2}};
+            planes = {{width * 2, height},
+                      {width * 2, (height + 1) / 2}}; // 2: 10-bit samples stored in 16-bit containers
             return true;
         default:
             return false;
     }
+}
+
+bool ReadPlanesFromFile(std::ifstream &ifs, uint8_t *addr, int32_t stride, const std::vector<PlaneRowInfo> &dstPlanes,
+                        const std::vector<PlaneRowInfo> &srcPlanes)
+{
+    int32_t planeOffset = 0;
+    for (size_t i = 0; i < dstPlanes.size(); ++i) {
+        int32_t dstRowBytes = dstPlanes[i].fileRowBytes;
+        int32_t srcRowBytes = srcPlanes[i].fileRowBytes;
+        int32_t rowCount = dstPlanes[i].rowCount;
+        int32_t skipBytes = srcRowBytes - dstRowBytes;
+        printf("[ReadFile] plane%zu: dstRowBytes=%d srcRowBytes=%d rows=%d skip=%d planeOffset=%d\n", i, dstRowBytes,
+               srcRowBytes, rowCount, skipBytes, planeOffset);
+        for (int32_t row = 0; row < rowCount; ++row) {
+            ifs.read(reinterpret_cast<char *>(addr + planeOffset + row * stride), dstRowBytes);
+            if (skipBytes > 0) {
+                ifs.seekg(skipBytes, std::ios::cur);
+            }
+            if (!ifs.good() && !ifs.eof()) {
+                printf("[ReadFile] FAIL at plane%zu row %d\n", i, row);
+                return false;
+            }
+        }
+        planeOffset += rowCount * stride;
+    }
+    return true;
 }
 
 bool ReadFileToBuffer(const std::string &path, const sptr<SurfaceBuffer> &buffer, int32_t srcWidth = 0)
@@ -228,25 +254,8 @@ bool ReadFileToBuffer(const std::string &path, const sptr<SurfaceBuffer> &buffer
         printf("[ReadFile] unknown format, bulk read %d bytes\n", bufSize);
         return ifs.good() || ifs.eof();
     }
-    int32_t planeOffset = 0;
-    for (size_t i = 0; i < dstPlanes.size(); ++i) {
-        int32_t dstRowBytes = dstPlanes[i].fileRowBytes;
-        int32_t srcRowBytes = srcPlanes[i].fileRowBytes;
-        int32_t rowCount = dstPlanes[i].rowCount;
-        int32_t skipBytes = srcRowBytes - dstRowBytes;
-        printf("[ReadFile] plane%zu: dstRowBytes=%d srcRowBytes=%d rows=%d skip=%d planeOffset=%d\n", i, dstRowBytes,
-               srcRowBytes, rowCount, skipBytes, planeOffset);
-        for (int32_t row = 0; row < rowCount; ++row) {
-            ifs.read(reinterpret_cast<char *>(addr + planeOffset + row * stride), dstRowBytes);
-            if (skipBytes > 0) {
-                ifs.seekg(skipBytes, std::ios::cur);
-            }
-            if (!ifs.good() && !ifs.eof()) {
-                printf("[ReadFile] FAIL at plane%zu row %d\n", i, row);
-                return false;
-            }
-        }
-        planeOffset += rowCount * stride;
+    if (!ReadPlanesFromFile(ifs, addr, stride, dstPlanes, srcPlanes)) {
+        return false;
     }
     printf("[ReadFile] OK, total read %lld bytes\n", static_cast<long long>(ifs.tellg()));
     return true;
@@ -452,15 +461,14 @@ INSTANTIATE_TEST_SUITE_P(FastKits, FastKitsDsTest, testing::ValuesIn(DS_FORMAT_P
 HWTEST_P(FastKitsDsTest, Downsample_636x360, TestSize.Level1)
 {
     auto param = GetParam();
-    constexpr int32_t outW = 636;
-    constexpr int32_t outH = 360;
+    constexpr int32_t outW = 636; // 636: downsample target width
+    constexpr int32_t outH = 360; // 360: downsample target height
 
     sptr<SurfaceBuffer> output = AllocBuffer(outW, outH, param.pixelFormat);
     ASSERT_NE(output, nullptr);
     EXPECT_EQ(inputBuffer_->GetFormat(), output->GetFormat());
 
     SetTestHDRMetadata(inputBuffer_);
-    SetTestROIMetadata(inputBuffer_, "100,200-300,400=5;");
 
     EXPECT_NO_FATAL_FAILURE({
         auto &inst = FastKitsInterface::GetInstance();
@@ -469,7 +477,6 @@ HWTEST_P(FastKitsDsTest, Downsample_636x360, TestSize.Level1)
     });
 
     ExpectHDRMetadataEqual(inputBuffer_, output);
-    ExpectROIMetadata(output, TransformROI("100,200-300,400=5;", 636.0 / INPUT_WIDTH, 360.0 / INPUT_HEIGHT, 0, 0));
 
     EXPECT_TRUE(SaveOutput("ds_", output, param.name));
 }
@@ -482,8 +489,8 @@ HWTEST_P(FastKitsDsTest, Downsample_636x360, TestSize.Level1)
 HWTEST_P(FastKitsDsTest, Downsample_OutputNotAllZero, TestSize.Level1)
 {
     auto param = GetParam();
-    constexpr int32_t outW = 316;
-    constexpr int32_t outH = 180;
+    constexpr int32_t outW = 316; // 316: downsample target width
+    constexpr int32_t outH = 180; // 180: downsample target height
 
     sptr<SurfaceBuffer> output = AllocBuffer(outW, outH, param.pixelFormat);
     ASSERT_NE(output, nullptr);
@@ -528,7 +535,6 @@ HWTEST_P(FastKitsDsTest, Downsample_SameDimensions, TestSize.Level1)
     EXPECT_EQ(inputBuffer_->GetFormat(), output->GetFormat());
 
     SetTestHDRMetadata(inputBuffer_);
-    SetTestROIMetadata(inputBuffer_, "100,200-300,400=5;");
 
     EXPECT_NO_FATAL_FAILURE({
         auto &inst = FastKitsInterface::GetInstance();
@@ -537,7 +543,6 @@ HWTEST_P(FastKitsDsTest, Downsample_SameDimensions, TestSize.Level1)
     });
 
     ExpectHDRMetadataEqual(inputBuffer_, output);
-    ExpectROIMetadata(output, TransformROI("100,200-300,400=5;", 1.0, 1.0, 0, 0));
 
     EXPECT_TRUE(SaveOutput("ds_same_", output, param.name));
 }
@@ -554,10 +559,10 @@ INSTANTIATE_TEST_SUITE_P(FastKits, FastKitsCropTest, testing::ValuesIn(DS_FORMAT
 HWTEST_P(FastKitsCropTest, Crop_80_40_979_659, TestSize.Level1)
 {
     auto param = GetParam();
-    constexpr int32_t left = 80;
-    constexpr int32_t top = 40;
-    constexpr int32_t right = 979;
-    constexpr int32_t bottom = 659;
+    constexpr int32_t left = 80;    // 80: crop left boundary
+    constexpr int32_t top = 40;     // 40: crop top boundary
+    constexpr int32_t right = 979;  // 979: crop right boundary
+    constexpr int32_t bottom = 659; // 659: crop bottom boundary
     constexpr int32_t outW = right - left + 1;
     constexpr int32_t outH = bottom - top + 1;
 
@@ -566,7 +571,6 @@ HWTEST_P(FastKitsCropTest, Crop_80_40_979_659, TestSize.Level1)
     EXPECT_EQ(inputBuffer_->GetFormat(), output->GetFormat());
 
     SetTestHDRMetadata(inputBuffer_);
-    SetTestROIMetadata(inputBuffer_, "100,200-300,400=5;");
 
     CropRect cropRect{top, left, bottom, right};
     EXPECT_NO_FATAL_FAILURE({
@@ -576,7 +580,6 @@ HWTEST_P(FastKitsCropTest, Crop_80_40_979_659, TestSize.Level1)
     });
 
     ExpectHDRMetadataEqual(inputBuffer_, output);
-    ExpectROIMetadata(output, TransformROI("100,200-300,400=5;", 1.0, 1.0, top, left));
 
     EXPECT_TRUE(SaveOutput("crop_", output, param.name));
 }
@@ -598,7 +601,6 @@ HWTEST_P(FastKitsCropTest, Crop_SameDimensions, TestSize.Level1)
     EXPECT_EQ(inputBuffer_->GetFormat(), output->GetFormat());
 
     SetTestHDRMetadata(inputBuffer_);
-    SetTestROIMetadata(inputBuffer_, "100,200-300,400=5;");
 
     EXPECT_NO_FATAL_FAILURE({
         auto &inst = FastKitsInterface::GetInstance();
@@ -607,9 +609,100 @@ HWTEST_P(FastKitsCropTest, Crop_SameDimensions, TestSize.Level1)
     });
 
     ExpectHDRMetadataEqual(inputBuffer_, output);
-    ExpectROIMetadata(output, TransformROI("100,200-300,400=5;", 1.0, 1.0, 0, 0));
 
     EXPECT_TRUE(SaveOutput("crop_full_", output, param.name));
+}
+
+// ========== ROI 格式专项测试 ==========
+
+struct RoiTestCase {
+    const char *name;
+    const char *input;
+};
+
+const RoiTestCase ROI_TEST_CASES[] = {
+    {"LegacyDqp", "100,200-300,400=5;"},
+    {"KeyValueDqp", "100,200-300,400=dqp:-6;"},
+    {"KeyValueDqpSlb", "100,200-300,400=dqp:-3,slb:1;"},
+    {"KeyValueSlbOnly", "100,200-300,400=slb:2;"},
+    {"NoParams", "100,200-300,400;"},
+    {"MultiRoi", "50,100-200,300=dqp:-6,slb:1;400,500-600,700=slb:3;"},
+    {"MultiRoiMixed", "50,100-200,300=5;400,500-600,700=dqp:-3,slb:1;80,90-150,160;"},
+};
+
+class FastKitsRoiFormatTest : public testing::TestWithParam<RoiTestCase> {
+public:
+    void SetUp() override
+    {
+        auto &inst = FastKitsInterface::GetInstance();
+        inst.Retain();
+        if (inst.Init(GRAPHIC_PIXEL_FMT_RGBA_8888, FastResizeAlgoType::BICUBIC) != AVCS_ERR_OK) {
+            inst.Release();
+            GTEST_SKIP() << "libfast_image.so not available, skipping";
+        }
+        inputBuffer_ = AllocBuffer(INPUT_WIDTH, INPUT_HEIGHT, GRAPHIC_PIXEL_FMT_RGBA_8888);
+        ASSERT_NE(inputBuffer_, nullptr);
+        EnsureDir(MEDIA_DIR);
+    }
+
+    void TearDown() override
+    {
+        FastKitsInterface::GetInstance().Release();
+    }
+
+protected:
+    sptr<SurfaceBuffer> inputBuffer_;
+};
+
+INSTANTIATE_TEST_SUITE_P(FastKits, FastKitsRoiFormatTest, testing::ValuesIn(ROI_TEST_CASES),
+                         [](const testing::TestParamInfo<RoiTestCase> &info) { return info.param.name; });
+
+HWTEST_P(FastKitsRoiFormatTest, Downsample_PreservesRoi, TestSize.Level1)
+{
+    auto roiInput = GetParam().input;
+    constexpr int32_t outW = 636;
+    constexpr int32_t outH = 360;
+    double scaleX = 636.0 / INPUT_WIDTH;
+    double scaleY = 360.0 / INPUT_HEIGHT;
+
+    sptr<SurfaceBuffer> output = AllocBuffer(outW, outH, GRAPHIC_PIXEL_FMT_RGBA_8888);
+    ASSERT_NE(output, nullptr);
+
+    SetTestROIMetadata(inputBuffer_, roiInput);
+
+    auto &inst = FastKitsInterface::GetInstance();
+    int32_t ret = inst.DownSample(inputBuffer_, output, FastResizeAlgoType::BICUBIC);
+    ASSERT_EQ(ret, AVCS_ERR_OK);
+
+    auto expected = TransformROI(roiInput, scaleX, scaleY, 0, 0);
+    std::string ctx = "DownSample " + std::to_string(INPUT_WIDTH) + "x" + std::to_string(INPUT_HEIGHT) + "->" +
+                      std::to_string(outW) + "x" + std::to_string(outH) + ", inputROI: " + roiInput;
+    ExpectROIMetadata(output, expected, ctx);
+}
+
+HWTEST_P(FastKitsRoiFormatTest, Crop_PreservesRoi, TestSize.Level1)
+{
+    auto roiInput = GetParam().input;
+    constexpr int32_t left = 80;
+    constexpr int32_t top = 40;
+    constexpr int32_t right = 979;
+    constexpr int32_t bottom = 659;
+    constexpr int32_t outW = 900;
+    constexpr int32_t outH = 620;
+
+    sptr<SurfaceBuffer> output = AllocBuffer(outW, outH, GRAPHIC_PIXEL_FMT_RGBA_8888);
+    ASSERT_NE(output, nullptr);
+
+    SetTestROIMetadata(inputBuffer_, roiInput);
+
+    auto &inst = FastKitsInterface::GetInstance();
+    int32_t ret = inst.Crop(inputBuffer_, output, CropRect{top, left, bottom, right});
+    ASSERT_EQ(ret, AVCS_ERR_OK);
+
+    auto expected = TransformROI(roiInput, 1.0, 1.0, top, left);
+    std::string ctx = "Crop rect[" + std::to_string(top) + "," + std::to_string(left) + "-" + std::to_string(bottom) +
+                      "," + std::to_string(right) + "], inputROI: " + roiInput;
+    ExpectROIMetadata(output, expected, ctx);
 }
 
 // ========== 格式不匹配测试 ==========
@@ -623,11 +716,10 @@ public:
         auto &inst = FastKitsInterface::GetInstance();
         inst.Retain();
         for (const auto &fmt : DS_FORMAT_PARAMS) {
-            (void)inst.Init(fmt.pixelFormat, FastResizeAlgoType::BICUBIC);
-        }
-        if (!inst.IsLoaded()) {
-            inst.Release();
-            GTEST_SKIP() << "libfast_image.so not available, skipping";
+            if (inst.Init(fmt.pixelFormat, FastResizeAlgoType::BICUBIC) != AVCS_ERR_OK) {
+                inst.Release();
+                GTEST_SKIP() << "libfast_image.so not available, skipping";
+            }
         }
         inputBuffer_ = AllocBuffer(INPUT_WIDTH, INPUT_HEIGHT, inputFmt.pixelFormat);
         if (inputBuffer_ == nullptr) {
@@ -647,12 +739,11 @@ protected:
     sptr<SurfaceBuffer> inputBuffer_;
 };
 
-INSTANTIATE_TEST_SUITE_P(
-    FastKits, FastKitsFormatMismatchTest, testing::ValuesIn(FormatMismatchPairs()),
-    [](const testing::TestParamInfo<std::tuple<int32_t, int32_t>> &info) {
-        return std::string(DS_FORMAT_PARAMS[std::get<0>(info.param)].name) + "_to_" +
-               DS_FORMAT_PARAMS[std::get<1>(info.param)].name;
-    });
+INSTANTIATE_TEST_SUITE_P(FastKits, FastKitsFormatMismatchTest, testing::ValuesIn(FormatMismatchPairs()),
+                         [](const testing::TestParamInfo<std::tuple<int32_t, int32_t>> &info) {
+                             return std::string(DS_FORMAT_PARAMS[std::get<0>(info.param)].name) + "_to_" +
+                                    DS_FORMAT_PARAMS[std::get<1>(info.param)].name;
+                         });
 
 /**
  * @tc.name: FastKitsInterface_FormatMismatch_ReturnError_001
@@ -664,8 +755,8 @@ HWTEST_P(FastKitsFormatMismatchTest, FormatMismatch_ReturnError, TestSize.Level1
     auto [inputIdx, outputIdx] = GetParam();
     auto &outputFmt = DS_FORMAT_PARAMS[outputIdx];
     auto &inst = FastKitsInterface::GetInstance();
-    constexpr int32_t outW = 636;
-    constexpr int32_t outH = 360;
+    constexpr int32_t outW = 636; // 636: downsample target width
+    constexpr int32_t outH = 360; // 360: downsample target height
 
     // DownSample with mismatched format
     {
@@ -760,8 +851,8 @@ HWTEST_F(FastKitsConcurrentTest, ConcurrentDownsample, TestSize.Level1)
     };
 
     const ConcurrentTask tasks[] = {
-        {DS_FORMAT_PARAMS[0], 636, 360, "ds_", "rgba", dsOp},
-        {DS_FORMAT_PARAMS[1], 316, 180, "ds_", "1010102", dsOp},
+        {DS_FORMAT_PARAMS[0], 636, 360, "ds_", "rgba", dsOp},    // 636: ds width, 360: ds height
+        {DS_FORMAT_PARAMS[1], 316, 180, "ds_", "1010102", dsOp}, // 316: ds width, 180: ds height
         {DS_FORMAT_PARAMS[2], 636, 360, "ds_", "nv21", dsOp},
         {DS_FORMAT_PARAMS[3], 636, 360, "ds_", "nv12", dsOp},
         {DS_FORMAT_PARAMS[4], 636, 360, "ds_", "nv21_p010", dsOp},
@@ -793,18 +884,19 @@ HWTEST_F(FastKitsConcurrentTest, ConcurrentCrop, TestSize.Level1)
 {
     auto cropOp = [](FastKitsInterface &inst, const sptr<SurfaceBuffer> &in,
                      const sptr<SurfaceBuffer> &out) -> int32_t {
-        return inst.Crop(in, out, CropRect{40, 80, 659, 979});
+        return inst.Crop(in, out,
+                         CropRect{40, 80, 659, 979}); // 40: top, 80: left, 659: bottom, 979: right crop boundary
     };
 
     const ConcurrentTask tasks[] = {
-        {DS_FORMAT_PARAMS[0], 900, 620, "crop_", "rgba", cropOp},
+        {DS_FORMAT_PARAMS[0], 900, 620, "crop_", "rgba", cropOp}, // 900: crop output width, 620: crop output height
         {DS_FORMAT_PARAMS[1], 900, 620, "crop_", "1010102", cropOp},
         {DS_FORMAT_PARAMS[2], 900, 620, "crop_", "nv21", cropOp},
         {DS_FORMAT_PARAMS[3], 900, 620, "crop_", "nv12", cropOp},
         {DS_FORMAT_PARAMS[4], 900, 620, "crop_", "nv21_p010", cropOp},
         {DS_FORMAT_PARAMS[5], 900, 620, "crop_", "nv12_p010", cropOp},
-        {DS_FORMAT_PARAMS[2], 316, 180, "crop_", "nv21_dup", cropOp},
-        {DS_FORMAT_PARAMS[5], 316, 180, "crop_", "nv12_p010_dup", cropOp},
+        {DS_FORMAT_PARAMS[2], 900, 620, "crop_", "nv21_dup", cropOp},
+        {DS_FORMAT_PARAMS[5], 900, 620, "crop_", "nv12_p010_dup", cropOp},
     };
     constexpr int32_t threadCount = sizeof(tasks) / sizeof(tasks[0]);
     std::atomic<int32_t> successCount{0};
@@ -891,7 +983,7 @@ HWTEST_F(FastKitsLifecycleTest, MultipleCycles_NoCrash, TestSize.Level1)
     }
     auto &inst = FastKitsInterface::GetInstance();
 
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 5; i++) { // 5: number of retain/init/release cycles
         inst.Retain();
         EXPECT_EQ(inst.Init(GRAPHIC_PIXEL_FMT_RGBA_8888), AVCS_ERR_OK) << "Cycle " << i << ": Init failed";
         EXPECT_TRUE(inst.IsLoaded()) << "Cycle " << i << ": not loaded";

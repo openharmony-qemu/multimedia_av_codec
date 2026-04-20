@@ -82,7 +82,7 @@ private:
 
     struct DropFrameParams {
         ConfigResult result{ConfigResult::NOT_SET};
-        int32_t targetFrameRate{0};
+        double targetFrameRate{0};
     };
 
     struct CropConfig {

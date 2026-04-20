@@ -159,6 +159,9 @@ int32_t FastKitsInterface::Crop(const sptr<SurfaceBuffer> &input, const sptr<Sur
                              AVCS_ERR_INVALID_VAL, "Crop functions not loaded");
     CHECK_AND_RETURN_RET_LOG(input.GetRefPtr() != nullptr && output.GetRefPtr() != nullptr, AVCS_ERR_INVALID_VAL,
                              "Crop: input or output buffer is null");
+    CHECK_AND_RETURN_RET_LOG(input->GetFormat() == output->GetFormat(), AVCS_ERR_INVALID_VAL,
+                             "Crop: format mismatch, input %{public}d vs output %{public}d", input->GetFormat(),
+                             output->GetFormat());
 
     void *cropRect = createRectFunc_(rect.top, rect.left, rect.bottom, rect.right);
     CHECK_AND_RETURN_RET_LOG(cropRect != nullptr, AVCS_ERR_UNKNOWN, "createCropRect failed");
@@ -182,6 +185,9 @@ int32_t FastKitsInterface::DownSample(const sptr<SurfaceBuffer> &input, const sp
     CHECK_AND_RETURN_RET_LOG(downSampleFunc_ != nullptr, AVCS_ERR_INVALID_VAL, "DownSample function not loaded");
     CHECK_AND_RETURN_RET_LOG(input.GetRefPtr() != nullptr && output.GetRefPtr() != nullptr, AVCS_ERR_INVALID_VAL,
                              "DownSample: input or output buffer is null");
+    CHECK_AND_RETURN_RET_LOG(input->GetFormat() == output->GetFormat(), AVCS_ERR_INVALID_VAL,
+                             "DownSample: format mismatch, input %{public}d vs output %{public}d", input->GetFormat(),
+                             output->GetFormat());
 
     int32_t ret = downSampleFunc_(input.GetRefPtr(), output.GetRefPtr(), static_cast<int32_t>(algo));
     int32_t err = ConvertErrorCode(ret);

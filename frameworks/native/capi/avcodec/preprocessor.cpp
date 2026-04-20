@@ -462,7 +462,7 @@ bool Preprocessor::GetEncoderRange(const Media::Format &format, Range &encWidth,
 {
     AVCodecListImpl codecList;
     (void)codecList.Init();
-    CapabilityData *cap = codecList.GetCapability(std::string(mime_.data()), true, AVCodecCategory::AVCODEC_NONE);
+    CapabilityData *cap = codecList.GetCapability(std::string(mime_.c_str()), true, AVCodecCategory::AVCODEC_NONE);
     if (cap == nullptr) {
         return false;
     }

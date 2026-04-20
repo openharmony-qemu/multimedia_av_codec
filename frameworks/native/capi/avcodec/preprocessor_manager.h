@@ -16,8 +16,8 @@
 #ifndef PREPROCESSOR_MANAGER_H
 #define PREPROCESSOR_MANAGER_H
 
-#include <atomic>
 #include <condition_variable>
+#include <functional>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -44,6 +44,7 @@ public:
     void SetEncoderRunning(std::string_view encoderId, bool isRunning);
     void CreateSharedSurface();
     sptr<Surface> GetSharedSurface();
+    bool RequestNotifyEos(std::string_view encoderId, std::function<void()> notifyEosTask);
 
     void NotifyNewBufferAvailable();
 
@@ -89,6 +90,7 @@ private:
         int32_t CheckAndAllocateSurfaceBufferFromEncSurface();
         void OnNewPendingBufferAvailable(std::shared_ptr<SurfaceBufferWrapper> buffer);
         void OnNewEncoderSurfaceBufferAvailable(uint32_t seq, const sptr<SyncFence>& fence);
+        bool RequestNotifyEos(std::function<void()> notifyEosTask);
 
         // === Buffer data query for GetInputDescription (reads from pendingBuffers_ directly) ===
         bool PeekPendingBufferData(BufferDataInfo& outInfo) const;
@@ -105,6 +107,8 @@ private:
         sptr<Surface> encoderSurface_{nullptr};
         std::thread processThread_;
         bool isRunning_{false};
+        bool eosRequested_{false};
+        std::function<void()> notifyEosTask_{};
         mutable std::mutex bufferQueueMutex_;
         std::condition_variable bufferQueueCv_;
         std::string encoderId_;
