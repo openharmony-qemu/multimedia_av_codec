@@ -240,6 +240,19 @@ OH_AVErrCode PreprocessorEncoder::Configure(const Media::Format &format)
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Configure preprocessor failed!");
 
+    if (!isPrimary_ && primary_ != nullptr) {
+        auto secondaryPreprocessor = GetPreprocessor();
+        auto primaryPreprocessor = primary_->GetPreprocessor();
+        if (secondaryPreprocessor && primaryPreprocessor) {
+            GraphicPixelFormat secFmt = secondaryPreprocessor->GetConfiguredPixelFormat();
+            GraphicPixelFormat priFmt = primaryPreprocessor->GetConfiguredPixelFormat();
+            if (secFmt != priFmt && priFmt != GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT) {
+                AVCODEC_LOGE("PixelFormat mismatch: primary=%{public}d, secondary=%{public}d",
+                                static_cast<int32_t>(priFmt), static_cast<int32_t>(secFmt));
+                return AVCSErrorToOHAVErrCode(AVCS_ERR_INVALID_VAL);
+            }
+        }
+    }
     ret = CreateEncoderSurface();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AV_ERR_OPERATE_NOT_PERMIT, "Create internal surface failed!");
 
