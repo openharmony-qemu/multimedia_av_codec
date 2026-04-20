@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025-2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2025-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -49,10 +49,12 @@ void AesDecryptor::Init()
 
 void AesDecryptor::OnSourceKeyChange(const uint8_t* key, size_t keyLen, const uint8_t* iv)
 {
-    keyLen_ = keyLen;
-    if (keyLen <= 0) {
+    if (keyLen == 0 || !key || !iv) {
+        keyLen_ = 0;
+        MEDIA_LOG_W("invalid key or iv.");
         return;
     }
+    keyLen_ = keyLen;
     NZERO_LOG(memcpy_s(iv_, BLOCK_LEN, iv, BLOCK_LEN));
     NZERO_LOG(memcpy_s(initIv_, BLOCK_LEN, iv, BLOCK_LEN));
     NZERO_LOG(memcpy_s(key_, BLOCK_LEN, key, keyLen > BLOCK_LEN ? BLOCK_LEN : keyLen));
@@ -62,6 +64,9 @@ void AesDecryptor::OnSourceKeyChange(const uint8_t* key, size_t keyLen, const ui
 void AesDecryptor::Decrypt(uint8_t *in, uint8_t *out, uint32_t len)
 {
     if (!in || !out || !len) {
+        return;
+    }
+    if (keyLen_ == 0) {
         return;
     }
     AES_cbc_encrypt(in, out, len, &aesKey_, iv_, AES_DECRYPT);
