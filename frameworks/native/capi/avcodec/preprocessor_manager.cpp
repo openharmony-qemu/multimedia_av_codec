@@ -227,6 +227,7 @@ int32_t PreprocessorManager::EncoderInfo::Start()
     isRunning_ = true;
     processThread_ = std::thread(&EncoderInfo::EncoderThreadLoop, this);
     if (!processThread_.joinable()) {
+        isRunning_ = false;
         AVCODEC_LOGE("Failed to start encoder thread: %{public}s", encoderId_.data());
         return AVCS_ERR_UNKNOWN;
     }

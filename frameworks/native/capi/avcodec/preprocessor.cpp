@@ -112,7 +112,7 @@ bool CopyByPlanes(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &o
         auto *srcPlaneAddr = src + srcPlanes->planes[plane].offset;
         auto *dstPlaneAddr = dst + dstPlanes->planes[plane].offset;
         for (uint32_t row = 0; row < copyInfo.rowCounts[plane]; ++row) {
-            memcpy_s(dstPlaneAddr + row * dstRowStride, rowBytes, srcPlaneAddr + row * srcRowStride, rowBytes);
+            (void)memcpy_s(dstPlaneAddr + row * dstRowStride, rowBytes, srcPlaneAddr + row * srcRowStride, rowBytes);
         }
     }
     return true;
@@ -256,7 +256,7 @@ int32_t Preprocessor::ValidateDropFrame(const Media::Format &format, DropFramePa
         return AVCS_ERR_OK;
     }
     targetFrameRate = RoundToTwoDecimals(targetFrameRate);
-    if (targetFrameRate < 0 && encoderConfig_.frameRate <= 0) {
+    if (targetFrameRate < 0 || encoderConfig_.frameRate <= 0) {
         AVCODEC_LOGE("Invalid drop frame rate: %{public}.2f, configured=%{public}.2f", targetFrameRate,
                      encoderConfig_.frameRate);
         return AVCS_ERR_INVALID_VAL;
@@ -381,7 +381,7 @@ void Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output)
     uint32_t outputSize = output->GetSize();
     uint32_t copySize = std::min(inputSize, outputSize);
     if (inputStride == outputStride) {
-        memcpy_s(dst, copySize, src, copySize);
+        (void)memcpy_s(dst, copySize, src, copySize);
         return;
     }
 
@@ -391,7 +391,7 @@ void Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output)
     uint32_t rowCount = std::min(inputSize / static_cast<uint32_t>(inputStride),
                                  outputSize / static_cast<uint32_t>(outputStride));
     for (uint32_t row = 0; row < rowCount; ++row) {
-        memcpy_s(dst + row * outputStride, rowBytes, src + row * inputStride, rowBytes);
+        (void)memcpy_s(dst + row * outputStride, rowBytes, src + row * inputStride, rowBytes);
     }
 }
 

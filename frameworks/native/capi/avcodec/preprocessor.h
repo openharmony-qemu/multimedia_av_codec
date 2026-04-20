@@ -18,7 +18,6 @@
 
 #include <memory>
 #include <string>
-#include <string_view>
 #include "avcodec_info.h"
 #include "fast_kits_interface.h"
 #include "format.h"

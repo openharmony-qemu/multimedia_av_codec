@@ -212,7 +212,7 @@ OH_AVErrCode OH_VideoEncoder_Start(struct OH_AVCodec *codec)
     int32_t ret = videoEncObj->videoEncoder_->Start();
     apiInvokeRecorder.SetErrorCode(AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)));
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                            "Video encoder start failed!");
+        "Video encoder start failed!");
     return AV_ERR_OK;
 }
 
