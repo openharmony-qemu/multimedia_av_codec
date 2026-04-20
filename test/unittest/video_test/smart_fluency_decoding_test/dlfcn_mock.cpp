@@ -36,7 +36,18 @@ extern "C" {
     void FakeSetCallback(void* analyzer, void* cb, void* userData) {}
     bool FakeIsNonReferenceFrame(void* analyzer, const uint8_t* bufferAddr, uint32_t bufferSize)
     {
-        return true;
+        (void)analyzer;
+        if (bufferAddr == nullptr || bufferSize < 5) { // 5: Start code (4) + NALU Header (1)
+            return false;
+        }
+        // Start Code: 00 00 00 01
+        if (bufferAddr[0] == 0x00 && bufferAddr[1] == 0x00 &&
+            bufferAddr[2] == 0x00 && bufferAddr[3] == 0x01) {
+            uint8_t naluHeader = bufferAddr[4];
+            uint8_t nalRefIdc = (naluHeader >> 5) & 0x03;
+            return nalRefIdc == 0;
+        }
+        return false;
     }
 
     void* FakeCreateMvAnalyzer(int32_t codecType)
@@ -66,7 +77,7 @@ extern "C" {
         (void)parser;
         (void)buffer;
         MVStats stats{};
-        stats.validBlocks = 100;
+        stats.validBlocks = 100; // 100: for check
         return stats;
     }
 

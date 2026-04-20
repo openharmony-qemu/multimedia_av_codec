@@ -84,6 +84,16 @@ void SmartFluencyDecodingDumper::UpdateCtuSize(int32_t ctuSize)
     currentCtuSize_ = ctuSize;
 }
 
+int64_t SmartFluencyDecodingDumper::GetLastOverhead() const
+{
+    return lastDumperOverhead_.load(std::memory_order_relaxed);
+}
+
+void SmartFluencyDecodingDumper::SetLastOverhead(int64_t overhead)
+{
+    lastDumperOverhead_.store(overhead, std::memory_order_relaxed);
+}
+
 void SmartFluencyDecodingDumper::UpdateExistingPreRecord(const PreDecodeRecordCtx& ctx)
 {
     auto it = std::find_if(records_.rbegin(), records_.rend(), [ctx](const FrameDumpRecord& rec) {
@@ -274,21 +284,21 @@ void SmartFluencyDecodingDumper::WriteHeaderIfNeeded(std::ofstream& ofs)
 
 void SmartFluencyDecodingDumper::WriteRecordsToStream(std::ofstream& ofs, const std::vector<FrameDumpRecord>& records)
 {
-    char buf[1024];
     for (const auto& rec : records) {
-        int len = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1,
-            "%" PRId64 ",%" PRId64 ",%u,%d,%d,%d,%d,%d,%d,%" PRId64 ",%" PRId64 ",%d,%.4f,%.4f,%" PRId64 ",%" PRId64 ","
-            "%" PRId64 ",%" PRId64 ",%" PRId64 ",%" PRId64 ",%zu,%zu,%.4f,%u,%.4f,%.4f,%.4f\n",
-            rec.pts, rec.dts, rec.flags, (rec.isNonRef ? 1 : 0), static_cast<int>(rec.mode),
-            rec.isPreRetained, rec.isPostRetained, static_cast<int>(rec.preReason), static_cast<int>(rec.postReason),
-            rec.preSysTimeMs, rec.postSysTimeMs, rec.preDropCount, rec.retentionRate, rec.speed,
-            rec.preDecCostUs, rec.naluCostUs, rec.postDecCostUs, rec.copyMvCostUs, rec.analyzeMvCostUs,
-            rec.updateDumperCostUs, rec.writeIndex, rec.readIndex, rec.emaRatio,
-            rec.validBlocks, rec.perceptualMagnitude, rec.motionConsistency, rec.zeroMotionRatio);
-        if (len > 0) {
-            ofs.write(buf, len);
-        }
+        ofs << rec.pts << "," << rec.dts << "," << rec.flags << "," << (rec.isNonRef ? 1 : 0) << ","
+            << static_cast<int>(rec.mode) << "," << rec.isPreRetained << "," << rec.isPostRetained << ","
+            << static_cast<int>(rec.preReason) << "," << static_cast<int>(rec.postReason) << ","
+            << rec.preSysTimeMs << "," << rec.postSysTimeMs << "," << rec.preDropCount << ",";
+            
+        ofs << std::fixed << std::setprecision(4) << rec.retentionRate << "," << rec.speed << ",";
+        
+        ofs << rec.preDecCostUs << "," << rec.naluCostUs << "," << rec.postDecCostUs << ","
+            << rec.copyMvCostUs << "," << rec.analyzeMvCostUs << "," << rec.updateDumperCostUs << ","
+            << rec.writeIndex << "," << rec.readIndex << "," << rec.emaRatio << ","
+            << rec.validBlocks << "," << rec.perceptualMagnitude << "," << rec.motionConsistency << ","
+            << rec.zeroMotionRatio << "\n";
     }
+    ofs.flush();
 }
 } // namespace SFD
 } // namespace MediaAVCodec

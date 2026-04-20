@@ -31,13 +31,13 @@ namespace SFD {
 
 FixedRatioRetentionStrategy::FixedRatioRetentionStrategy(double ratio)
 {
-    targetRatio_ = std::max(MIN_RETENTION_RATIO, std::min(ratio, MAX_RETENTION_RATIO));
-    if (std::abs(targetRatio_ - ratio) > 1e-9) {
-        AVCODEC_LOGW("FixedRatioRetentionStrategy: Provided ratio %{public}.3f is out of bounds! "
-                     "Clamped to safe ratio: %{public}.3f", ratio, targetRatio_);
+    if (std::isnan(ratio)) {
+        AVCODEC_LOGE("Invalid retention ratio: NaN detected. Fallback to safe default 1.0 (Full Retention)");
+        targetRatio_ = 1.0;
     } else {
-        AVCODEC_LOGD("FixedRatioRetentionStrategy created, target ratio: %{public}.2f", targetRatio_);
+        targetRatio_ = std::clamp(ratio, MIN_RETENTION_RATIO, MAX_RETENTION_RATIO);
     }
+    AVCODEC_LOGD("FixedRatioRetentionStrategy created with targetRatio: %{public}.2f", targetRatio_);
 }
 
 bool FixedRatioRetentionStrategy::MakeRetentionDecision(const FrameRetentionContext& ctx)

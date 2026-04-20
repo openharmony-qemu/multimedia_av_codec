@@ -155,8 +155,11 @@ void SmartFluencyDecoding::ParseRetentionConfig(
 void SmartFluencyDecoding::ApplyNewStrategy(RetentionStrategyType newMode, const std::optional<double>& newRatio)
 {
     auto newStrategy = RetentionStrategyFactory::CreateStrategy(newMode, newRatio);
-    CHECK_AND_RETURN_LOG_WITH_TAG(newStrategy != nullptr,
-        "Failed to dynamically update SFD mode to %{public}d", static_cast<int32_t>(newMode));
+    if (newStrategy == nullptr) {
+        AVCODEC_LOGE_WITH_TAG("Failed to create new retention strategy (mode: %{public}d). Aborting update.",
+            static_cast<int32_t>(newMode));
+        return;
+    }
     if (newStrategy->RequiresNaluAnalysis()) {
         EnsureNaluAnalyzer();
     }
@@ -234,6 +237,8 @@ bool SmartFluencyDecoding::InitializeWithCsd(const std::vector<uint8_t>& csdData
 {
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(isInitialized_, false, "InitializeWithCsd skipped, not initialized");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(!csdData.empty(), false, "InitializeWithCsd failed, csdData is empty");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(csdData.size() <= static_cast<size_t>(INT32_MAX), false,
+        "InitializeWithCsd failed, csdData size (=%{public}zu) exceeds INT32_MAX", csdData.size());
     std::shared_ptr<Media::AVAllocator> allocator =
         Media::AVAllocatorFactory::CreateSharedAllocator(Media::MEMORY_READ_WRITE);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(allocator != nullptr, false, "Failed to create shared allocator for replay");
@@ -382,10 +387,9 @@ void SmartFluencyDecoding::RecordPostDecodeDump(
     dumperCtx.mvStats = mvStats;
     dumperCtx.copyMvCostUs = cost.copyMvCostUs;
     dumperCtx.analyzeMvCostUs = cost.analyzeMvCostUs;
-    static int64_t lastDumperOverhead = 0;
-    dumperCtx.updateDumperCostUs = lastDumperOverhead;
+    dumperCtx.updateDumperCostUs = dumper_->GetLastOverhead();
     dumper_->RecordPostDecode(dumperCtx);
-    lastDumperOverhead = GetCurrentSysTimeUs() - dumperStart;
+    dumper_->SetLastOverhead(GetCurrentSysTimeUs() - dumperStart);
 #endif
 }
 

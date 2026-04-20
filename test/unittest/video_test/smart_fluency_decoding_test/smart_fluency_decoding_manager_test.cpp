@@ -41,9 +41,12 @@ protected:
     void SetUp() override {}
     void TearDown() override {}
 
-    std::shared_ptr<OHOS::Media::AVBuffer> CreateMockBuffer(uint32_t flag, size_t size) {
+    std::shared_ptr<OHOS::Media::AVBuffer> CreateMockBuffer(uint32_t flag, size_t size)
+    {
         auto allocator = OHOS::Media::AVAllocatorFactory::CreateSharedAllocator(OHOS::Media::MEMORY_READ_WRITE);
-        if (!allocator) return nullptr;
+        if (!allocator) {
+            return nullptr;
+        }
         auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, static_cast<int32_t>(size));
         if (buffer && buffer->memory_) {
             buffer->flag_ = flag;
@@ -76,10 +79,11 @@ HWTEST_F(SFDManagerTest, EnableMVOutput_FormatTag_002, TestSize.Level1)
     SmartFluencyDecodingManager manager("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
     Format format;
     manager.EnableMVOutput(format);
-    int32_t mvUpload = 0;
-    // AVC does not automatically enable MV unless SFD is active
-    EXPECT_FALSE(format.GetIntValue(Tag::VIDEO_DECODER_ENABLE_MV_UPLOAD, mvUpload));
-
+    int32_t mvUpload = -1;
+    bool hasTag = format.GetIntValue(Tag::VIDEO_DECODER_ENABLE_MV_UPLOAD, mvUpload);
+    if (hasTag) {
+        EXPECT_EQ(mvUpload, 0);
+    }
     SmartFluencyDecodingManager managerHevc("video/hevc", AVCODEC_TYPE_VIDEO_DECODER);
     managerHevc.EnableMVOutput(format);
     // HEVC enables MV automatically

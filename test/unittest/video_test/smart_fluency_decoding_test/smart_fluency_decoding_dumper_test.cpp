@@ -32,9 +32,8 @@ protected:
 
     void SetUp() override
     {
-        // Bypass Create() directory check by directly invoking the constructor which is public due to -Dprivate=public
-        dumper_ = std::unique_ptr<SmartFluencyDecodingDumper>(
-            new SmartFluencyDecodingDumper(SFDCodecType::AVC, WIDTH_1080P, HEIGHT_1080P, RetentionStrategyType::ADAPTIVE));
+        dumper_ = std::unique_ptr<SmartFluencyDecodingDumper>(new SmartFluencyDecodingDumper(
+            SFDCodecType::AVC, WIDTH_1080P, HEIGHT_1080P, RetentionStrategyType::ADAPTIVE));
     }
 
     void TearDown() override
@@ -98,13 +97,24 @@ HWTEST_F(SFDDumperTest, RecordPostDecode_UpdatesExisting_003, TestSize.Level1)
     postCtx.isRetained = false;
     postCtx.preDropCount = 2; // 2: pre-drop count
     postCtx.sysTimeMs = 67890; // 67890: dummy sys time
+    postCtx.reason = SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT;
 
     dumper_->RecordPostDecode(postCtx);
 
-    ASSERT_EQ(dumper_->records_.size(), 1u); // Should update existing, not create new
-    EXPECT_FALSE(dumper_->records_[0].isPostRetained);
+    // 1. Verify total number of records (ensures update instead of append)
+    ASSERT_EQ(dumper_->records_.size(), 1u);
+
+    // 2. Verify primary key (ensures correct record was targeted)
+    EXPECT_EQ(dumper_->records_[0].pts, 5000);
+
+    // 3. Verify updated fields (ensures delta is applied)
+    EXPECT_EQ(dumper_->records_[0].isPostRetained, 0); // 0: false
+    EXPECT_EQ(dumper_->records_[0].postReason, SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT);
     EXPECT_EQ(dumper_->records_[0].preDropCount, 2);
     EXPECT_EQ(dumper_->records_[0].postSysTimeMs, 67890);
+
+    // 4. Verify existing data from RecordPreDecode is preserved
+    EXPECT_EQ(dumper_->records_[0].dts, 4900);
 }
 
 /**

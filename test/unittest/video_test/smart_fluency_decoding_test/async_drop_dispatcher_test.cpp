@@ -14,15 +14,12 @@
  */
 
 #include <gtest/gtest.h>
-#include <atomic>
-#include <chrono>
-#include <thread>
+#include <future>
 #include "async_drop_dispatcher.h"
 
 namespace {
 constexpr int32_t NUM_TASKS_STRESS = 50;
 constexpr int32_t NUM_TASKS_FIFO = 20;
-constexpr int32_t NUM_TASKS_DRAIN = 10;
 }
 
 using namespace OHOS::MediaAVCodec::SFD;
@@ -42,18 +39,16 @@ protected:
 HWTEST_F(AsyncDropDispatcherTest, SubmitTask_Basic_001, TestSize.Level1)
 {
     AsyncDropDispatcher dispatcher;
-    std::atomic<bool> executed{false};
+    std::promise<void> taskDone;
+    auto future = taskDone.get_future();
 
-    dispatcher.SubmitTask([&executed]() {
-        executed = true;
+    dispatcher.SubmitTask([&taskDone]() {
+        taskDone.set_value();
     });
 
-    // Wait for async execution
-    auto start = std::chrono::steady_clock::now();
-    while (!executed && (std::chrono::steady_clock::now() - start) < std::chrono::seconds(2)) { // 2: seconds timeout
-        std::this_thread::sleep_for(std::chrono::milliseconds(10)); // 10: ms sleep
-    }
-    EXPECT_TRUE(executed.load());
+    // Wait for async execution with 1s timeout to avoid deadlocks
+    auto status = future.wait_for(std::chrono::seconds(1));
+    EXPECT_EQ(status, std::future_status::ready);
 }
 
 /**
@@ -65,18 +60,21 @@ HWTEST_F(AsyncDropDispatcherTest, SubmitTask_Multiple_002, TestSize.Level1)
 {
     AsyncDropDispatcher dispatcher;
     std::atomic<int> counter{0};
-
+    std::mutex mtx;
+    std::condition_variable cv;
     for (int i = 0; i < NUM_TASKS_STRESS; ++i) {
-        dispatcher.SubmitTask([&counter]() {
+        dispatcher.SubmitTask([&counter, &cv]() {
             counter++;
+            if (counter == NUM_TASKS_STRESS) {
+                cv.notify_one();
+            }
         });
     }
-
-    auto start = std::chrono::steady_clock::now();
-    while (counter < NUM_TASKS_STRESS &&
-           (std::chrono::steady_clock::now() - start) < std::chrono::seconds(5)) { // 5: seconds timeout
-        std::this_thread::sleep_for(std::chrono::milliseconds(10)); // 10: ms sleep
-    }
+    std::unique_lock<std::mutex> lock(mtx);
+    bool success = cv.wait_for(lock, std::chrono::seconds(2), [&counter]() {
+        return counter == NUM_TASKS_STRESS;
+    });
+    EXPECT_TRUE(success);
     EXPECT_EQ(counter.load(), NUM_TASKS_STRESS);
 }
 
@@ -88,17 +86,26 @@ HWTEST_F(AsyncDropDispatcherTest, SubmitTask_Multiple_002, TestSize.Level1)
 HWTEST_F(AsyncDropDispatcherTest, Destructor_DrainsTasks_003, TestSize.Level1)
 {
     std::atomic<int> counter{0};
+    std::promise<void> startPromise;
+    std::future<void> startFuture = startPromise.get_future();
     {
         AsyncDropDispatcher dispatcher;
-        for (int i = 0; i < NUM_TASKS_DRAIN; ++i) {
+        // Submit a "barrier" task that blocks the worker thread
+        dispatcher.SubmitTask([&startFuture, &counter]() {
+            startFuture.wait(); // Wait until startPromise is set
+            counter++;
+        });
+        // Submit 9 more tasks - they will be queued since the worker is blocked
+        for (int i = 0; i < 9; ++i) {
             dispatcher.SubmitTask([&counter]() {
-                std::this_thread::sleep_for(std::chrono::milliseconds(5)); // 5: ms sleep
                 counter++;
             });
         }
-        // Destructor should wait for all tasks to finish
-    }
-    EXPECT_EQ(counter.load(), NUM_TASKS_DRAIN);
+        // Release the barrier and immediately let dispatcher go out of scope
+        startPromise.set_value();
+    } // Destructor triggers here and MUST join the worker thread after draining all 10 tasks
+    // Destructor should have blocked until all tasks finished
+    EXPECT_EQ(counter.load(), 10);
 }
 
 /**
@@ -111,30 +118,25 @@ HWTEST_F(AsyncDropDispatcherTest, SubmitTask_TaskOrdering_004, TestSize.Level1)
     AsyncDropDispatcher dispatcher;
     std::vector<int> results;
     std::mutex mtx;
-
+    std::condition_variable cv;
     for (int i = 0; i < NUM_TASKS_FIFO; ++i) {
-        dispatcher.SubmitTask([&mtx, &results, i]() {
+        dispatcher.SubmitTask([&mtx, &results, &cv, i]() {
             std::lock_guard<std::mutex> lock(mtx);
             results.push_back(i);
+            if (static_cast<int>(results.size()) == NUM_TASKS_FIFO) {
+                cv.notify_one();
+            }
         });
     }
 
     // Wait for completion
-    auto start = std::chrono::steady_clock::now();
-    while (true) {
-        {
-            std::lock_guard<std::mutex> lock(mtx);
-            if (static_cast<int>(results.size()) >= NUM_TASKS_FIFO) {
-                break;
-            }
-        }
-        if ((std::chrono::steady_clock::now() - start) > std::chrono::seconds(5)) { // 5: seconds timeout
-            break;
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(10)); // 10: ms sleep
-    }
-
-    std::lock_guard<std::mutex> lock(mtx);
+    std::unique_lock<std::mutex> lock(mtx);
+    bool success = cv.wait_for(lock, std::chrono::seconds(5), [&results]() {
+        return static_cast<int>(results.size()) == NUM_TASKS_FIFO;
+    });
+    EXPECT_TRUE(success);
+    
+    std::lock_guard<std::mutex> verifyLock(mtx);
     EXPECT_EQ(static_cast<int>(results.size()), NUM_TASKS_FIFO);
     // Verify FIFO order
     for (int i = 0; i < static_cast<int>(results.size()); ++i) {

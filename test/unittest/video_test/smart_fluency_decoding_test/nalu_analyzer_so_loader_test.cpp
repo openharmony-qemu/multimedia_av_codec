@@ -18,6 +18,7 @@
 #include "nalu_analyzer.h"
 #include "nalu_analyzer_so_loader.h"
 #include "buffer/avallocator.h"
+#include "securec.h"
 
 using namespace OHOS::MediaAVCodec::SFD;
 using namespace testing::ext;
@@ -74,7 +75,7 @@ HWTEST_F(NaluAnalyzerSoLoaderTest, FactoryCreate_Invalid_004, TestSize.Level1)
 
 /**
  * @tc.name: IsNonRef_WithValidBuffer_005
- * @tc.desc: Validate NALU parsing logic using mocked dlopen/dlsym.
+ * @tc.desc: Ensure IsNonReferenceFrame returns true when provided with a valid non-reference AVC NALU.
  * @tc.type: FUNC
  */
 HWTEST_F(NaluAnalyzerSoLoaderTest, IsNonRef_WithValidBuffer_005, TestSize.Level1)
@@ -83,8 +84,31 @@ HWTEST_F(NaluAnalyzerSoLoaderTest, IsNonRef_WithValidBuffer_005, TestSize.Level1
     ASSERT_NE(analyzer, nullptr);
 
     auto allocator = OHOS::Media::AVAllocatorFactory::CreateSharedAllocator(OHOS::Media::MEMORY_READ_WRITE);
-    auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, 100); // 100: mock buffer size
-
-    // FakeIsNonReferenceFrame in dlfcn_mock.cpp always returns true
+    // [00 00 00 01] Start code, [0x01] nal_ref_idc=0, nal_unit_type=1 (Non-IDR)
+    std::vector<uint8_t> nonRefData = {0x00, 0x00, 0x00, 0x01, 0x01, 0xFF, 0xFF};
+    auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, static_cast<int32_t>(nonRefData.size()));
+    ASSERT_NE(buffer, nullptr);
+    ASSERT_NE(buffer->memory_, nullptr);
+    memcpy_s(buffer->memory_->GetAddr(), buffer->memory_->GetSize(), nonRefData.data(), nonRefData.size());
     EXPECT_TRUE(analyzer->IsNonReferenceFrame(buffer));
+}
+
+/**
+ * @tc.name: IsNonRef_WithReferenceBuffer_006
+ * @tc.desc: Ensure IsNonReferenceFrame returns false when provided with a reference AVC NALU (e.g., IDR).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NaluAnalyzerSoLoaderTest, IsNonRef_WithReferenceBuffer_006, TestSize.Level1)
+{
+    auto analyzer = NaluAnalyzerFactory::CreateNaluAnalyzer(SFDCodecType::AVC);
+    ASSERT_NE(analyzer, nullptr);
+
+    auto allocator = OHOS::Media::AVAllocatorFactory::CreateSharedAllocator(OHOS::Media::MEMORY_READ_WRITE);
+    // [00 00 00 01] Start code, [0x65] nal_ref_idc=3, nal_unit_type=5 (IDR)
+    std::vector<uint8_t> refData = {0x00, 0x00, 0x00, 0x01, 0x65, 0x88, 0x99};
+    auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, static_cast<int32_t>(refData.size()));
+    ASSERT_NE(buffer, nullptr);
+    ASSERT_NE(buffer->memory_, nullptr);
+    memcpy_s(buffer->memory_->GetAddr(), buffer->memory_->GetSize(), refData.data(), refData.size());
+    EXPECT_FALSE(analyzer->IsNonReferenceFrame(buffer));
 }

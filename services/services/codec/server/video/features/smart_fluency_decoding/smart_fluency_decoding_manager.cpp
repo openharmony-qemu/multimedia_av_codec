@@ -25,6 +25,7 @@
 #ifdef SFD_DEBUG
 #include "syspara/parameters.h"
 #include <cstdlib>
+#include <limits>
 #endif
 
 namespace {
@@ -42,14 +43,32 @@ constexpr const char* DEBUG_PARAM_NEW_RATIO = "sfd.debug.new_ratio";
 constexpr const char* DEBUG_PARAM_NEW_SPEED = "sfd.debug.new_speed";
 constexpr int32_t BASE_DECIMAL = 10;
 
-inline int32_t GetSysParamInt(const char* key, int32_t defValue) {
+inline int32_t GetSysParamInt(const char* key, int32_t defValue)
+{
     std::string valStr = OHOS::system::GetParameter(key, std::to_string(defValue));
-    return static_cast<int32_t>(std::strtol(valStr.c_str(), nullptr, BASE_DECIMAL));
+    char* end = nullptr;
+    int64_t val = std::strtoll(valStr.c_str(), &end, BASE_DECIMAL);
+    if (end == valStr.c_str() || *end != '\0') {
+        AVCODEC_LOGW("Invalid debug param format for %{public}s, fallback to default", key);
+        return defValue;
+    }
+    if (val < std::numeric_limits<int32_t>::min() || val > std::numeric_limits<int32_t>::max()) {
+        AVCODEC_LOGW("Debug param %{public}s out of int32_t range, fallback to default", key);
+        return defValue;
+    }
+    return static_cast<int32_t>(val);
 }
 
-inline double GetSysParamDouble(const char* key, double defValue) {
+inline double GetSysParamDouble(const char* key, double defValue)
+{
     std::string valStr = OHOS::system::GetParameter(key, std::to_string(defValue));
-    return std::strtod(valStr.c_str(), nullptr);
+    char* end = nullptr;
+    double val = std::strtod(valStr.c_str(), &end);
+    if (end == valStr.c_str() || *end != '\0') {
+        AVCODEC_LOGW("Invalid debug param format for %{public}s, fallback to default", key);
+        return defValue;
+    }
+    return val;
 }
 #endif
 }
@@ -169,8 +188,8 @@ void SmartFluencyDecodingManager::ExtractCsdData(const std::shared_ptr<AVBuffer>
         "ExtractCsdData failed, buffer or memory is null");
     uint8_t* data = buffer->memory_->GetAddr();
     int32_t size = buffer->memory_->GetSize();
-    CHECK_AND_RETURN_LOG_WITH_TAG(data != nullptr && size > MIN_CSD_SIZE,
-        "ExtractCsdData failed, data is null or size (=%{public}d) <= MIN (%{public}d)", size, MIN_CSD_SIZE);
+    CHECK_AND_RETURN_LOG_WITH_TAG(data != nullptr && size >= MIN_CSD_SIZE,
+        "ExtractCsdData failed, data is null or size (=%{public}d) < MIN (%{public}d)", size, MIN_CSD_SIZE);
     int32_t currentSize = static_cast<int32_t>(cachedCsdData_.size());
     CHECK_AND_RETURN_LOG_WITH_TAG(currentSize < DEFAULT_CSD_COPY_SIZE,
         "CSD cache is already full (%{public}d bytes)", currentSize);

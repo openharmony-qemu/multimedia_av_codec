@@ -16,6 +16,7 @@
 #ifndef SMART_FLUENCY_DECODING_DUMPER_H
 #define SMART_FLUENCY_DECODING_DUMPER_H
 
+#include <atomic>
 #include <cstdint>
 #include <mutex>
 #include <string>
@@ -72,6 +73,8 @@ public:
     void UpdateMode(RetentionStrategyType mode, double retentionRate);
     void UpdateSpeed(double speed);
     void UpdateCtuSize(int32_t ctuSize);
+    int64_t GetLastOverhead() const;
+    void SetLastOverhead(int64_t overhead);
 
     struct PreDecodeRecordCtx {
         int64_t pts{-1};
@@ -128,6 +131,7 @@ private:
     int32_t currentCtuSize_{0};
     std::string currentFilename_;
     bool isHeaderWritten_{false};
+    std::atomic<int64_t> lastDumperOverhead_{0};
 };
 } // namespace SFD
 } // namespace MediaAVCodec
