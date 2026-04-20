@@ -101,6 +101,7 @@ PreprocessorEncoder::PreprocessorEncoder(AVMagic magic) : OH_AVCodec(magic)
 
 PreprocessorEncoder::~PreprocessorEncoder()
 {
+    DetachPeerEncoder();
     UnregisterEncoderFromManager();
     AVCODEC_LOGI("PreprocessorEncoder destroyed");
 }
@@ -166,9 +167,6 @@ OH_AVErrCode PreprocessorEncoder::InitAsSecondary(PreprocessorEncoder *primary)
     mime_ = primary->mime_;
     encoderId_ = GenerateEncoderId("secondary");
 
-    primary_ = primary;
-    primary_->secondary_ = this;
-
     auto videoEncoder = VideoEncoderFactory::CreateByMime(mime_);
     CHECK_AND_RETURN_RET_LOG(videoEncoder != nullptr, AV_ERR_NO_MEMORY, "VideoEncoder create failed!");
 
@@ -180,6 +178,9 @@ OH_AVErrCode PreprocessorEncoder::InitAsSecondary(PreprocessorEncoder *primary)
     auto preprocessor = std::make_shared<Preprocessor>(mime_);
     CHECK_AND_RETURN_RET_LOG(preprocessor != nullptr, AV_ERR_NO_MEMORY, "Preprocessor create failed!");
     preprocessors_[encoderId_] = preprocessor;
+
+    primary_ = primary;
+    primary_->secondary_ = this;
 
     return AV_ERR_OK;
 }
@@ -211,6 +212,39 @@ void PreprocessorEncoder::UnregisterEncoderFromManager()
 {
     if (preprocMgr_) {
         preprocMgr_->UnregisterEncoder(encoderId_);
+    }
+}
+
+void PreprocessorEncoder::DetachPeerEncoder()
+{
+    if (isPrimary_) {
+        auto *secondary = secondary_;
+        secondary_ = nullptr;
+        if (secondary != nullptr && secondary->primary_ == this) {
+            secondary->primary_ = nullptr;
+        }
+        return;
+    }
+
+    DetachFromPrimaryEncoder();
+}
+
+PreprocessorEncoder* PreprocessorEncoder::DetachSecondaryEncoder()
+{
+    auto *secondary = secondary_;
+    secondary_ = nullptr;
+    if (secondary != nullptr && secondary->primary_ == this) {
+        secondary->primary_ = nullptr;
+    }
+    return secondary;
+}
+
+void PreprocessorEncoder::DetachFromPrimaryEncoder()
+{
+    auto *primary = primary_;
+    primary_ = nullptr;
+    if (primary != nullptr && primary->secondary_ == this) {
+        primary->secondary_ = nullptr;
     }
 }
 
@@ -384,6 +418,19 @@ OH_AVErrCode PreprocessorEncoder::Reset()
 
     if (preprocMgr_) {
         preprocMgr_->SetEncoderRunning(encoderId_, false);
+    }
+
+    return AV_ERR_OK;
+}
+
+OH_AVErrCode PreprocessorEncoder::Release()
+{
+    if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
+        int32_t ret = videoEncoderObject_->videoEncoder_->Release();
+        videoEncoderObject_->StopCallback();
+        videoEncoderObject_->ClearBufferList();
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
+                                 "PreprocessorEncoder release failed!");
     }
 
     return AV_ERR_OK;

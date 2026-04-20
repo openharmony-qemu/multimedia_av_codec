@@ -55,10 +55,13 @@ public:
     OH_AVErrCode NotifyEos();
     OH_AVErrCode Reset();
     OH_AVErrCode ReleaseOutputBuffer(uint32_t index);
+    OH_AVErrCode Release();
 
     std::shared_ptr<Preprocessor> GetPreprocessor();
     OH_AVFormat* GetOutputDescription();
     OH_AVFormat* GetInputDescription();
+    PreprocessorEncoder* DetachSecondaryEncoder();
+    void DetachFromPrimaryEncoder();
 private:
     static std::string GenerateEncoderId(const std::string& prefix);
     OH_AVErrCode InitAsPrimary(const char* mime);
@@ -72,6 +75,7 @@ private:
     sptr<Surface> GetSharedSurface();
     void RegisterEncoderToManager();
     void UnregisterEncoderFromManager();
+    void DetachPeerEncoder();
 
     std::shared_ptr<VideoEncoderObject> videoEncoderObject_{nullptr};
 
