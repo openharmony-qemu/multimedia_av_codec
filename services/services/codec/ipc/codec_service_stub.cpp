@@ -170,11 +170,13 @@ int32_t CodecServiceStub::DestroyStub()
     return AVCS_ERR_OK;
 }
 
-int32_t CodecServiceStub::Dump(int32_t fd, [[maybe_unused]] const std::vector<std::u16string> &args)
+void CodecServiceStub::GetHiDumperInfo(std::string &statusStr, std::string &lastErrorStr,
+                                       std::string &codecBaseHiDumperInfo)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
-    return std::static_pointer_cast<CodecServer>(codecServer_)->DumpInfo(fd);
+    CHECK_AND_RETURN_LOG_WITH_TAG(codecServer_ != nullptr, "Codecbase is nullptr");
+    std::static_pointer_cast<CodecServer>(codecServer_)->GetHiDumperInfo(statusStr, lastErrorStr,
+                                                                         codecBaseHiDumperInfo);
 }
 
 int CodecServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option)

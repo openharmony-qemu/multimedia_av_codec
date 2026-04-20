@@ -52,6 +52,7 @@ struct InstanceInfo {
     AVCodecType codecType;
     uint32_t memoryUsage = 0;
     std::string codecName = "";
+    std::time_t codecCreateTime = 0;
     VideoCodecType videoCodecType = VideoCodecType::UNKNOWN;
 
     void Print()

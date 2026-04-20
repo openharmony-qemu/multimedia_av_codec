@@ -94,8 +94,8 @@ public:
         const bool svpFlag) override;
 #endif
     int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer) override;
-    int32_t DumpInfo(int32_t fd);
     void SetInstanceInfo(AVCodecType type, bool isMimeType, const std::string &name, Meta &callerInfo);
+    void GetHiDumperInfo(std::string &statusStr, std::string &lastErrorStr, std::string &codecBaseHiDumperInfo);
     std::shared_ptr<Media::Meta> GetCallerInfo();
 
     void OnError(int32_t errorType, int32_t errorCode);

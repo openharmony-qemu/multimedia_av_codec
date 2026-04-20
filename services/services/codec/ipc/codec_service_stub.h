@@ -65,7 +65,7 @@ public:
     int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag) override;
 #endif
-    int32_t Dump(int32_t fd, const std::vector<std::u16string>& args) override;
+    void GetHiDumperInfo(std::string &statusStr, std::string &lastErrorStr, std::string &codecBaseHiDumperInfo);
     int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer) override;
     int32_t NotifyMemoryExchange(const bool exchangeFlag) override;
     int32_t NotifyFreeze();

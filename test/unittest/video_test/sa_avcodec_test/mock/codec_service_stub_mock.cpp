@@ -74,13 +74,23 @@ int32_t CodecServiceStub::DestroyStub()
     return mock->DestroyStub();
 }
 
-int32_t CodecServiceStub::Dump(int32_t fd, const std::vector<std::u16string>& args)
+int32_t CodecServiceStub::GetOutputFormat(Format &format)
 {
     std::lock_guard<std::mutex> lock(g_mutex);
-    UNITTEST_INFO_LOG("fd:%d", fd);
+    UNITTEST_INFO_LOG("");
     auto mock = g_mockObject.lock();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
-    return mock->Dump(fd, args);
+    return mock->GetOutputFormat(format);
+}
+
+void CodecServiceStub::GetHiDumperInfo(std::string &statusStr, std::string &lastErrorStr,
+    std::string &codecBaseHiDumperInfo)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    UNITTEST_INFO_LOG("");
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_LOG(mock != nullptr, "mock object is nullptr");
+    mock->GetHiDumperInfo(statusStr, lastErrorStr, codecBaseHiDumperInfo);
 }
 
 void CodecServiceStub::NotifyMemoryRecycle()
