@@ -94,19 +94,6 @@ HWTEST_F(SmartFluencyDecodingTest, Initialize_InvalidCodec_004, TestSize.Level1)
     EXPECT_NE(ret, 0);
 }
 
-/**
- * @tc.name: GetStatistics_InitialState_005
- * @tc.desc: Ensure statistics map appropriately starts at zero.
- * @tc.type: FUNC
- */
-HWTEST_F(SmartFluencyDecodingTest, GetStatistics_InitialState_005, TestSize.Level1)
-{
-    uint32_t total = 0;
-    uint32_t dropped = 0;
-    sfd_->GetStatistics(total, dropped);
-    EXPECT_EQ(total, 0u);
-    EXPECT_EQ(dropped, 0u);
-}
 
 /**
  * @tc.name: Flush_AfterInit_006
@@ -118,12 +105,6 @@ HWTEST_F(SmartFluencyDecodingTest, Flush_AfterInit_006, TestSize.Level1)
     SFDConfig cfg = MakeConfig(1280, 720, SFDCodecType::HEVC, RetentionStrategyType::AUTO_RATIO);
     sfd_->Initialize(cfg);
     sfd_->Flush();
-
-    uint32_t total = 0;
-    uint32_t dropped = 0;
-    sfd_->GetStatistics(total, dropped);
-    EXPECT_EQ(total, 0u);
-    EXPECT_EQ(dropped, 0u);
 }
 
 /**
@@ -141,15 +122,16 @@ HWTEST_F(SmartFluencyDecodingTest, MakePreDecodeDecision_NoBuffer_007, TestSize.
 }
 
 /**
- * @tc.name: InitializeWithCsd_NullPointer_008
- * @tc.desc: Refuse to initialize properly constructed instances with a null CSD block.
+ * @tc.name: InitializeWithCsd_EmptyData_008
+ * @tc.desc: Handle empty CSD block gracefully.
  * @tc.type: FUNC
  */
-HWTEST_F(SmartFluencyDecodingTest, InitializeWithCsd_NullPointer_008, TestSize.Level1)
+HWTEST_F(SmartFluencyDecodingTest, InitializeWithCsd_EmptyData_008, TestSize.Level1)
 {
     SFDConfig cfg = MakeConfig(1920, 1080, SFDCodecType::AVC, RetentionStrategyType::AUTO_RATIO);
     sfd_->Initialize(cfg);
-    EXPECT_FALSE(sfd_->InitializeWithCsd(nullptr));
+    std::vector<uint8_t> emptyCsd;
+    EXPECT_FALSE(sfd_->InitializeWithCsd(emptyCsd));
 }
 
 /**

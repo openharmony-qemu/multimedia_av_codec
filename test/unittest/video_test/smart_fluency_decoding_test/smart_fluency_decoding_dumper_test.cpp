@@ -64,7 +64,7 @@ HWTEST_F(SFDDumperTest, RecordPreDecode_NewRecord_002, TestSize.Level1)
     ctx.dts = 900;
     ctx.flags = 1;
     ctx.isNonRef = true;
-    ctx.dropped = false;
+    ctx.isRetained = true;
     ctx.sysTimeMs = 12345;
 
     dumper_->RecordPreDecode(ctx);
@@ -89,14 +89,14 @@ HWTEST_F(SFDDumperTest, RecordPostDecode_UpdatesExisting_003, TestSize.Level1)
 
     SmartFluencyDecodingDumper::PostDecodeRecordCtx postCtx;
     postCtx.pts = 5000;
-    postCtx.dropped = true;
+    postCtx.isRetained = false;
     postCtx.preDropCount = 2;
     postCtx.sysTimeMs = 67890;
 
     dumper_->RecordPostDecode(postCtx);
 
     ASSERT_EQ(dumper_->records_.size(), 1u); // Should update existing, not create new
-    EXPECT_TRUE(dumper_->records_[0].isPostDropped);
+    EXPECT_FALSE(dumper_->records_[0].isPostRetained);
     EXPECT_EQ(dumper_->records_[0].preDropCount, 2);
     EXPECT_EQ(dumper_->records_[0].postSysTimeMs, 67890);
 }
@@ -110,13 +110,13 @@ HWTEST_F(SFDDumperTest, RecordPostDecode_NewRecord_004, TestSize.Level1)
 {
     SmartFluencyDecodingDumper::PostDecodeRecordCtx postCtx;
     postCtx.pts = 8000;
-    postCtx.dropped = true;
+    postCtx.isRetained = false;
 
     dumper_->RecordPostDecode(postCtx);
 
     ASSERT_EQ(dumper_->records_.size(), 1u);
     EXPECT_EQ(dumper_->records_[0].pts, 8000);
-    EXPECT_TRUE(dumper_->records_[0].isPostDropped);
+    EXPECT_FALSE(dumper_->records_[0].isPostRetained);
 }
 
 /**

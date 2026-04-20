@@ -35,24 +35,17 @@ AutoFallbackRetentionStrategy::AutoFallbackRetentionStrategy() noexcept
 
 bool AutoFallbackRetentionStrategy::MakeRetentionDecision(const FrameRetentionContext& ctx)
 {
-    if (fallbackDropper_) {
-        return fallbackDropper_->MakeRetentionDecision(ctx);
-    }
-    return true;
+    return fallbackDropper_->MakeRetentionDecision(ctx);
 }
 
 void AutoFallbackRetentionStrategy::UpdatePlaybackSpeed(double speed)
 {
-    if (fallbackDropper_) {
-        fallbackDropper_->UpdatePlaybackSpeed(speed);
-    }
+    fallbackDropper_->UpdatePlaybackSpeed(speed);
 }
 
 void AutoFallbackRetentionStrategy::Reset()
 {
-    if (fallbackDropper_) {
-        fallbackDropper_->Reset();
-    }
+    fallbackDropper_->Reset();
 }
 
 RetentionStrategyType AutoFallbackRetentionStrategy::GetMode() const
@@ -62,22 +55,16 @@ RetentionStrategyType AutoFallbackRetentionStrategy::GetMode() const
 
 double AutoFallbackRetentionStrategy::GetRatio() const
 {
-    if (fallbackDropper_) {
-        return fallbackDropper_->GetRatio();
-    }
-    return 1.0;
+    return fallbackDropper_->GetRatio();
 }
 
 SfdDecisionReason AutoFallbackRetentionStrategy::GetLastDecisionReason() const
 {
-    if (fallbackDropper_) {
-        SfdDecisionReason internalReason = fallbackDropper_->GetLastDecisionReason();
-        if (internalReason == SfdDecisionReason::POST_RETAIN_FIXED_ACC) {
-            return SfdDecisionReason::POST_RETAIN_AUTO_FALLBACK;
-        }
-        return internalReason;
+    SfdDecisionReason internalReason = fallbackDropper_->GetLastDecisionReason();
+    if (internalReason == SfdDecisionReason::POST_RETAIN_FIXED_ACC) {
+        return SfdDecisionReason::POST_RETAIN_AUTO_FALLBACK;
     }
-    return SfdDecisionReason::POST_RETAIN_AUTO_FALLBACK;
+    return internalReason;
 }
 
 } // namespace SFD

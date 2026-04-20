@@ -62,6 +62,12 @@ ohos_unittest("smart_fluency_decoding_unit_test") {
     "$av_codec_root_dir/services/services/common/event_manager",
   ]
 
+  ldflags = [
+    "-Wl,--wrap=dlopen",
+    "-Wl,--wrap=dlsym",
+    "-Wl,--wrap=dlclose",
+  ]
+
   sources = [
     "$sfd_root_dir/drop_sync_coordinator.cpp",
     "$sfd_root_dir/smart_fluency_decoding.cpp",
@@ -78,6 +84,7 @@ ohos_unittest("smart_fluency_decoding_unit_test") {
     "$sfd_root_dir/analyzers/nalu_analyzer_so_loader.cpp",
     "$av_codec_root_dir/services/dfx/avcodec_dfx_component.cpp",
 
+    "dlfcn_mock.cpp",
     "async_drop_dispatcher_test.cpp",
     "drop_sync_coordinator_test.cpp",
     "mv_analyzer_so_loader_test.cpp",

@@ -103,13 +103,13 @@ HWTEST_F(FixedRatioRetentionStrategyTest, MakeDecision_1PercentRatio_004, TestSi
 
 /**
  * @tc.name: GetCurrentRetentionRatio_ReturnsInitializationValue_005
- * @tc.desc: Ensure GetCurrentRetentionRatio returns the ratio provided at construction.
+ * @tc.desc: Ensure GetRatio returns the ratio provided at construction.
  * @tc.type: FUNC
  */
 HWTEST_F(FixedRatioRetentionStrategyTest, GetCurrentRetentionRatio_ReturnsInitializationValue_005, TestSize.Level1)
 {
     auto strategy = std::make_unique<FixedRatioRetentionStrategy>(0.7);
-    EXPECT_NEAR(strategy->GetCurrentRetentionRatio(), 0.7, 0.01);
+    EXPECT_NEAR(strategy->GetRatio(), 0.7, 0.01);
 }
 
 /**
@@ -159,83 +159,69 @@ protected:
 };
 
 /**
- * @tc.name: MakeDecision_BasicInitialState_001
- * @tc.desc: Verify the basic functionality at time 0.
+ * @tc.name: Init_BasicState_001
+ * @tc.desc: Validate initial ratio is set to 0.8 default.
  * @tc.type: FUNC
  */
-HWTEST_F(AutoFallbackRetentionStrategyTest, MakeDecision_BasicInitialState_001, TestSize.Level1)
-{
-    auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
-    FrameRetentionContext ctx{};
-    ctx.sysTimeMs = 0;
-    ctx.ptsMs = 0;
-    EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
-}
-
-/**
- * @tc.name: GetMode_ReturnsAutoRatio_002
- * @tc.desc: Validate GetMode returns correctly.
- * @tc.type: FUNC
- */
-HWTEST_F(AutoFallbackRetentionStrategyTest, GetMode_ReturnsAutoRatio_002, TestSize.Level1)
+HWTEST_F(AutoFallbackRetentionStrategyTest, Init_BasicState_001, TestSize.Level1)
 {
     auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
     EXPECT_EQ(strategy->GetMode(), RetentionStrategyType::AUTO_RATIO);
+    // Verify it indeed degenerates to a 0.8 fixed ratio
+    EXPECT_NEAR(strategy->GetRatio(), 0.8, 0.001); 
 }
 
 /**
- * @tc.name: ProfilingToStable_Transition_003
- * @tc.desc: Verify the transition from profiling to stable states.
+ * @tc.name: MakeDecision_DelegatesToFixedRatio_002
+ * @tc.desc: Verify it drops exactly 20% of frames (retains 8 out of 10) acting as a delegator.
  * @tc.type: FUNC
  */
-HWTEST_F(AutoFallbackRetentionStrategyTest, ProfilingToStable_Transition_003, TestSize.Level1)
+HWTEST_F(AutoFallbackRetentionStrategyTest, MakeDecision_DelegatesToFixedRatio_002, TestSize.Level1)
 {
     auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
-    strategy->UpdatePlaybackSpeed(2.0);
+    int retainedCount = 0;
     FrameRetentionContext ctx{};
-    for (int i = 0; i < 35; ++i) {
-        ctx.ptsMs = i * 33;
-        ctx.sysTimeMs = i * 33;
-        strategy->MakeRetentionDecision(ctx);
+    
+    // Submit 10 frames
+    for (int i = 0; i < 10; ++i) {
+        if (strategy->MakeRetentionDecision(ctx)) {
+            retainedCount++;
+        }
     }
-    double ratio = strategy->GetCurrentRetentionRatio();
-    EXPECT_GT(ratio, 0.0);
-    EXPECT_LT(ratio, 1.0);
+    // Since the ratio is 0.8, it should strictly retain 8 frames
+    EXPECT_EQ(retainedCount, 8); 
 }
 
 /**
- * @tc.name: UpdatePlaybackSpeed_VariousSpeeds_004
- * @tc.desc: Basic operations for playback speed modifications.
+ * @tc.name: LastReason_Mapping_003
+ * @tc.desc: Validate internal FixedRatio reasons are successfully mapped to AUTO_FALLBACK.
  * @tc.type: FUNC
  */
-HWTEST_F(AutoFallbackRetentionStrategyTest, UpdatePlaybackSpeed_VariousSpeeds_004, TestSize.Level1)
+HWTEST_F(AutoFallbackRetentionStrategyTest, LastReason_Mapping_003, TestSize.Level1)
 {
     auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
-    strategy->UpdatePlaybackSpeed(1.0);
-    strategy->UpdatePlaybackSpeed(2.0);
-    strategy->UpdatePlaybackSpeed(0.5);
-    strategy->UpdatePlaybackSpeed(-1.0);
-    EXPECT_NE(strategy, nullptr);
-}
-
-/**
- * @tc.name: Reset_RestartsToProfiling_005
- * @tc.desc: Verify that Reset correctly clears state and goes back to profiling mode.
- * @tc.type: FUNC
- */
-HWTEST_F(AutoFallbackRetentionStrategyTest, Reset_RestartsToProfiling_005, TestSize.Level1)
-{
-    auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
-    strategy->UpdatePlaybackSpeed(2.0);
     FrameRetentionContext ctx{};
-    for (int i = 0; i < 35; ++i) {
-        ctx.ptsMs = i * 33;
-        ctx.sysTimeMs = i * 33;
-        strategy->MakeRetentionDecision(ctx);
-    }
-    strategy->Reset();
-    EXPECT_NEAR(strategy->GetCurrentRetentionRatio(), 1.0, 0.001);
+    strategy->MakeRetentionDecision(ctx);
+    
+    // Assert that the underlying FixedAcc reason is successfully disguised as AUTO_FALLBACK to prevent Dumper record confusion
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_AUTO_FALLBACK);
 }
+
+/**
+ * @tc.name: UpdatePlaybackSpeed_DelegateIgnoresSpeed_004
+ * @tc.desc: Validate that since it delegates to FixedRatio, speed changes do not crash but ignore updates.
+ * @tc.type: FUNC
+ */
+HWTEST_F(AutoFallbackRetentionStrategyTest, UpdatePlaybackSpeed_DelegateIgnoresSpeed_004, TestSize.Level1)
+{
+    auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
+    EXPECT_NEAR(strategy->GetRatio(), 0.8, 0.001); 
+    
+    strategy->UpdatePlaybackSpeed(2.0);
+    // Playback speed changes have no effect on fixed-ratio delegation mode; it remains 0.8
+    EXPECT_NEAR(strategy->GetRatio(), 0.8, 0.001); 
+}
+
 
 // --- AdaptiveRetentionStrategy ---
 
@@ -269,15 +255,24 @@ HWTEST_F(AdaptiveRetentionStrategyTest, MakeDecision_BasicRetains_002, TestSize.
 }
 
 /**
- * @tc.name: UpdatePlaybackSpeed_NoCrash_003
- * @tc.desc: Set playback speed.
+ * @tc.name: UpdatePlaybackSpeed_Behavior_003
+ * @tc.desc: Verify that playback speed changes correctly trigger fast-path retention or decision tree logic.
  * @tc.type: FUNC
  */
-HWTEST_F(AdaptiveRetentionStrategyTest, UpdatePlaybackSpeed_NoCrash_003, TestSize.Level1)
+HWTEST_F(AdaptiveRetentionStrategyTest, UpdatePlaybackSpeed_Behavior_003, TestSize.Level1)
 {
     auto strategy = std::make_unique<AdaptiveRetentionStrategy>();
+    FrameRetentionContext ctx{};
+    
+    // 1. At low speed (<= 1.2), force full retention (Fast-path)
+    strategy->UpdatePlaybackSpeed(1.0);
+    EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_SPEED);
+
+    // 2. At high speed (> 1.2), enter model inference (fallback to UNSPECIFIED since ctx lacks MV data)
     strategy->UpdatePlaybackSpeed(2.0);
-    EXPECT_NE(strategy, nullptr);
+    strategy->MakeRetentionDecision(ctx);
+    EXPECT_NE(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_SPEED);
 }
 
 /**

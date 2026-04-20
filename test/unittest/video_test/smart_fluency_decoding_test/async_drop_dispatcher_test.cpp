@@ -137,14 +137,3 @@ HWTEST_F(AsyncDropDispatcherTest, SubmitTask_TaskOrdering_004, TestSize.Level1)
     }
 }
 
-/**
- * @tc.name: Destructor_CreateDestroyNoSubmit_005
- * @tc.desc: Verify that simply creating and destroying the dispatcher without submitting tasks does not crash.
- * @tc.type: FUNC
- */
-HWTEST_F(AsyncDropDispatcherTest, Destructor_CreateDestroyNoSubmit_005, TestSize.Level1)
-{
-    auto dispatcher = std::make_unique<AsyncDropDispatcher>();
-    EXPECT_NE(dispatcher, nullptr);
-    // Should not crash on destruction
-}

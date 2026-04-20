@@ -71,7 +71,9 @@ void SmartFluencyDecodingManager::Configure(const Media::Format& format)
     auto sfd = builder_->Build();
     if (sfd) {
         if (isCsdCached_ && !cachedCsdData_.empty()) {
-            sfd->InitializeWithCsd(cachedCsdData_);
+            if (!sfd->InitializeWithCsd(cachedCsdData_)) {
+                AVCODEC_LOGW_WITH_TAG("CSD data injected to SFD, pending NaluAnalyzer instantiation");
+            }
         }
         sfd->SetTag(this->GetTag());
         sfd_ = std::move(sfd);
