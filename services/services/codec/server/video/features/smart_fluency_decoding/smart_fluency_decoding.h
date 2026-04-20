@@ -52,7 +52,6 @@ public:
     void UpdatePlaybackSpeed(double speed);
     int32_t UpdateDynamicConfig(const Media::Format& format);
     void SetInputBuffer(uint32_t index, const std::shared_ptr<AVBuffer>& buffer);
-    void OnDecodingPerformanceUpdate(double speed, double decFps);
 
     using AsyncDropInputCallback = std::function<void(uint32_t index, std::shared_ptr<AVBuffer> buffer)>;
     using AsyncDropOutputCallback = std::function<void(uint32_t index)>;

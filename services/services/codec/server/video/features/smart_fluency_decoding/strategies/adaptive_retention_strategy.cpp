@@ -21,50 +21,51 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "Adapti
 constexpr double MAX_SPEED_FOR_RETENTION = 1.2;
 constexpr double MAX_DROPS_MULTIPLIER_HIGH = 30.0;
 
-struct TreeNode {
-    int32_t feature_index;
+struct DecisionNode {
     double threshold;
-    int32_t left;
-    int32_t right;
-    int32_t class_id;
-    bool is_leaf;
+    int8_t featureIndex;
+    int8_t left;
+    int8_t right;
+    int8_t classId;
+    bool isLeaf;
 };
 
 constexpr int NUM_NODES = 15;
-constexpr TreeNode TREE_NODES[NUM_NODES] = {
-    { 0, 21.0108261108, 1, 8, -1, false },  // node 0
-    { 0, 6.5326397419, 2, 5, -1, false },   // node 1
-    { 1, 0.6923948228, 3, 4, -1, false },   // node 2
-    { -2, -2.0000000000, -1, -1, 0, true }, // node 3
-    { -2, -2.0000000000, -1, -1, 0, true }, // node 4
-    { 1, 0.4727701843, 6, 7, -1, false },   // node 5
-    { -2, -2.0000000000, -1, -1, 1, true }, // node 6
-    { -2, -2.0000000000, -1, -1, 1, true }, // node 7
-    { 1, 0.5533757210, 9, 12, -1, false },  // node 8
-    { 1, 0.3526516557, 10, 11, -1, false }, // node 9
-    { -2, -2.0000000000, -1, -1, 1, true }, // node 10
-    { -2, -2.0000000000, -1, -1, 1, true }, // node 11
-    { 1, 0.9898027778, 13, 14, -1, false }, // node 12
-    { -2, -2.0000000000, -1, -1, 1, true }, // node 13
-    { -2, -2.0000000000, -1, -1, 0, true }, // node 14
+
+constexpr DecisionNode TREE_NODES[NUM_NODES] = {
+    { 21.0108261108,  0,  1,  8, -1, false }, // node 0
+    {  6.5326397419,  0,  2,  5, -1, false }, // node 1
+    {  0.6923948228,  1,  3,  4, -1, false }, // node 2
+    { -2.0000000000, -1, -1, -1,  0, true  }, // node 3
+    { -2.0000000000, -1, -1, -1,  0, true  }, // node 4
+    {  0.4727701843,  1,  6,  7, -1, false }, // node 5
+    { -2.0000000000, -1, -1, -1,  1, true  }, // node 6
+    { -2.0000000000, -1, -1, -1,  1, true  }, // node 7
+    {  0.5533757210,  1,  9, 12, -1, false }, // node 8
+    {  0.3526516557,  1, 10, 11, -1, false }, // node 9
+    { -2.0000000000, -1, -1, -1,  1, true  }, // node 10
+    { -2.0000000000, -1, -1, -1,  1, true  }, // node 11
+    {  0.9898027778,  1, 13, 14, -1, false }, // node 12
+    { -2.0000000000, -1, -1, -1,  1, true  }, // node 13
+    { -2.0000000000, -1, -1, -1,  0, true  }, // node 14
 };
 
-class SmartFluencyModel {
+class FluencyDecisionTree {
 public:
     static bool Predict(double perceptualMagnitude, double motionConsistency)
     {
         double features[2] = {perceptualMagnitude, motionConsistency};
-        int32_t node_id = 0;
-        while (!TREE_NODES[node_id].is_leaf) {
-            int32_t feat_idx = TREE_NODES[node_id].feature_index;
-            double thresh = TREE_NODES[node_id].threshold;
-            if (features[feat_idx] <= thresh) {
-                node_id = TREE_NODES[node_id].left;
+        int8_t nodeId = 0;
+        while (!TREE_NODES[nodeId].isLeaf) {
+            int8_t featIdx = TREE_NODES[nodeId].featureIndex;
+            double thresh = TREE_NODES[nodeId].threshold;
+            if (features[featIdx] <= thresh) {
+                nodeId = TREE_NODES[nodeId].left;
             } else {
-                node_id = TREE_NODES[node_id].right;
+                nodeId = TREE_NODES[nodeId].right;
             }
         }
-        return TREE_NODES[node_id].class_id != 0;
+        return TREE_NODES[nodeId].classId != 0;
     }
 };
 } // namespace
@@ -87,7 +88,7 @@ bool AdaptiveRetentionStrategy::MakeRetentionDecision(const FrameRetentionContex
     } else if (ctx.mvStats && ctx.mvStats->validBlocks > 0) {
         double consistency = ctx.mvStats->motionConsistency;
         double magnitude = ctx.mvStats->perceptualMagnitude * currentSpeed_;
-        bool retentionFlag = SmartFluencyModel::Predict(magnitude, consistency);
+        bool retentionFlag = FluencyDecisionTree::Predict(magnitude, consistency);
         if (!retentionFlag) {
             dropCount_++;
             uint32_t maxDrops = static_cast<uint32_t>((currentSpeed_ - 1.0) * MAX_DROPS_MULTIPLIER_HIGH);

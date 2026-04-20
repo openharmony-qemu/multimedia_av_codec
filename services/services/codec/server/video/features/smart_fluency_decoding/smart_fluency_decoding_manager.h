@@ -48,7 +48,6 @@ public:
     bool MakePreDecodeDecision(uint32_t index);
     bool MakePostDecodeDecision(uint32_t index, const std::shared_ptr<AVBuffer>& buffer, bool isSurfaceMode);
     void OnOutputBufferUnbinded();
-    void OnDecodingPerformanceUpdate(double speed, double decFps);
 
 private:
     void CacheCsdData(uint32_t index);

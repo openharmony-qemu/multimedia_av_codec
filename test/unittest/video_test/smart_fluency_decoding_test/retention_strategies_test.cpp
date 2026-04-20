@@ -22,6 +22,12 @@
 #include "full_retention_strategy.h"
 #include "retention_strategy_factory.h"
 
+namespace {
+constexpr int32_t DEFAULT_TOTAL_FRAMES = 100;
+constexpr double DEFAULT_RETENTION_RATIO = 0.8;
+constexpr double DEFAULT_TOLERANCE = 0.001;
+}
+
 using namespace OHOS::MediaAVCodec::SFD;
 using namespace testing::ext;
 
@@ -40,14 +46,13 @@ protected:
  */
 HWTEST_F(FixedRatioRetentionStrategyTest, MakeDecision_50PercentRatio_001, TestSize.Level1)
 {
-    auto strategy = std::make_unique<FixedRatioRetentionStrategy>(0.5);
+    auto strategy = std::make_unique<FixedRatioRetentionStrategy>(0.5); // 0.5: ratio
     int retainedCount = 0;
-    int totalFrames = 100;
     FrameRetentionContext ctx{};
-    for (int i = 0; i < totalFrames; ++i) {
+    for (int i = 0; i < DEFAULT_TOTAL_FRAMES; ++i) {
         if (strategy->MakeRetentionDecision(ctx)) retainedCount++;
     }
-    EXPECT_EQ(retainedCount, 50);
+    EXPECT_EQ(retainedCount, 50); // 50: expected count for 0.5 ratio
 }
 
 /**
@@ -57,14 +62,13 @@ HWTEST_F(FixedRatioRetentionStrategyTest, MakeDecision_50PercentRatio_001, TestS
  */
 HWTEST_F(FixedRatioRetentionStrategyTest, MakeDecision_33PercentRatio_002, TestSize.Level1)
 {
-    auto strategy = std::make_unique<FixedRatioRetentionStrategy>(0.33);
+    auto strategy = std::make_unique<FixedRatioRetentionStrategy>(0.33); // 0.33: ratio
     int retainedCount = 0;
-    int totalFrames = 100;
     FrameRetentionContext ctx{};
-    for (int i = 0; i < totalFrames; ++i) {
+    for (int i = 0; i < DEFAULT_TOTAL_FRAMES; ++i) {
         if (strategy->MakeRetentionDecision(ctx)) retainedCount++;
     }
-    EXPECT_NEAR(retainedCount, 33, 1);
+    EXPECT_NEAR(retainedCount, 33, 1); // 33: expected count
 }
 
 /**
@@ -74,11 +78,10 @@ HWTEST_F(FixedRatioRetentionStrategyTest, MakeDecision_33PercentRatio_002, TestS
  */
 HWTEST_F(FixedRatioRetentionStrategyTest, MakeDecision_100PercentRatio_003, TestSize.Level1)
 {
-    auto strategy = std::make_unique<FixedRatioRetentionStrategy>(1.0);
+    auto strategy = std::make_unique<FixedRatioRetentionStrategy>(1.0); // 1.0: ratio
     int retainedCount = 0;
-    int totalFrames = 100;
     FrameRetentionContext ctx{};
-    for (int i = 0; i < totalFrames; ++i) {
+    for (int i = 0; i < DEFAULT_TOTAL_FRAMES; ++i) {
         if (strategy->MakeRetentionDecision(ctx)) retainedCount++;
     }
     EXPECT_EQ(retainedCount, 100);
@@ -91,14 +94,16 @@ HWTEST_F(FixedRatioRetentionStrategyTest, MakeDecision_100PercentRatio_003, Test
  */
 HWTEST_F(FixedRatioRetentionStrategyTest, MakeDecision_1PercentRatio_004, TestSize.Level1)
 {
-    auto strategy = std::make_unique<FixedRatioRetentionStrategy>(0.01);
+    auto strategy = std::make_unique<FixedRatioRetentionStrategy>(0.01); // 0.01: ratio
     int retainedCount = 0;
-    int totalFrames = 1000;
+    int totalFrames = 1000; // 1000: large frame count
     FrameRetentionContext ctx{};
     for (int i = 0; i < totalFrames; ++i) {
-        if (strategy->MakeRetentionDecision(ctx)) retainedCount++;
+        if (strategy->MakeRetentionDecision(ctx)) {
+            retainedCount++;
+        }
     }
-    EXPECT_NEAR(retainedCount, 11, 2);
+    EXPECT_NEAR(retainedCount, 11, 2); // 11: expected count with tolerance
 }
 
 /**
@@ -108,7 +113,7 @@ HWTEST_F(FixedRatioRetentionStrategyTest, MakeDecision_1PercentRatio_004, TestSi
  */
 HWTEST_F(FixedRatioRetentionStrategyTest, GetCurrentRetentionRatio_ReturnsInitializationValue_005, TestSize.Level1)
 {
-    auto strategy = std::make_unique<FixedRatioRetentionStrategy>(0.7);
+    auto strategy = std::make_unique<FixedRatioRetentionStrategy>(0.7); // 0.7: ratio
     EXPECT_NEAR(strategy->GetRatio(), 0.7, 0.01);
 }
 
@@ -119,7 +124,7 @@ HWTEST_F(FixedRatioRetentionStrategyTest, GetCurrentRetentionRatio_ReturnsInitia
  */
 HWTEST_F(FixedRatioRetentionStrategyTest, GetMode_ReturnsFixedRatio_006, TestSize.Level1)
 {
-    auto strategy = std::make_unique<FixedRatioRetentionStrategy>(0.5);
+    auto strategy = std::make_unique<FixedRatioRetentionStrategy>(0.5); // 0.5: ratio
     EXPECT_EQ(strategy->GetMode(), RetentionStrategyType::FIXED_RATIO);
 }
 
@@ -130,7 +135,7 @@ HWTEST_F(FixedRatioRetentionStrategyTest, GetMode_ReturnsFixedRatio_006, TestSiz
  */
 HWTEST_F(FixedRatioRetentionStrategyTest, Reset_RestartsInternalState_007, TestSize.Level1)
 {
-    auto strategy = std::make_unique<FixedRatioRetentionStrategy>(0.1);
+    auto strategy = std::make_unique<FixedRatioRetentionStrategy>(0.1); // 0.1: ratio
     FrameRetentionContext ctx{};
     strategy->MakeRetentionDecision(ctx);
     strategy->Reset();
@@ -144,9 +149,9 @@ HWTEST_F(FixedRatioRetentionStrategyTest, Reset_RestartsInternalState_007, TestS
  */
 HWTEST_F(FixedRatioRetentionStrategyTest, MakeDecision_WithPreDroppedFrames_008, TestSize.Level1)
 {
-    auto strategy = std::make_unique<FixedRatioRetentionStrategy>(0.5);
+    auto strategy = std::make_unique<FixedRatioRetentionStrategy>(0.5); // 0.5: ratio
     FrameRetentionContext ctx{};
-    ctx.preDroppedCount = 2; 
+    ctx.preDroppedCount = 2; // 2: pre-dropped count
     EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
 }
 
@@ -168,7 +173,7 @@ HWTEST_F(AutoFallbackRetentionStrategyTest, Init_BasicState_001, TestSize.Level1
     auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
     EXPECT_EQ(strategy->GetMode(), RetentionStrategyType::AUTO_RATIO);
     // Verify it indeed degenerates to a 0.8 fixed ratio
-    EXPECT_NEAR(strategy->GetRatio(), 0.8, 0.001); 
+    EXPECT_NEAR(strategy->GetRatio(), DEFAULT_RETENTION_RATIO, DEFAULT_TOLERANCE);
 }
 
 /**
@@ -181,15 +186,14 @@ HWTEST_F(AutoFallbackRetentionStrategyTest, MakeDecision_DelegatesToFixedRatio_0
     auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
     int retainedCount = 0;
     FrameRetentionContext ctx{};
-    
     // Submit 10 frames
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < 10; ++i) { // 10: small frame count
         if (strategy->MakeRetentionDecision(ctx)) {
             retainedCount++;
         }
     }
     // Since the ratio is 0.8, it should strictly retain 8 frames
-    EXPECT_EQ(retainedCount, 8); 
+    EXPECT_EQ(retainedCount, 8); // 8: expected count
 }
 
 /**
@@ -202,8 +206,6 @@ HWTEST_F(AutoFallbackRetentionStrategyTest, LastReason_Mapping_003, TestSize.Lev
     auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
     FrameRetentionContext ctx{};
     strategy->MakeRetentionDecision(ctx);
-    
-    // Assert that the underlying FixedAcc reason is successfully disguised as AUTO_FALLBACK to prevent Dumper record confusion
     EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_AUTO_FALLBACK);
 }
 
@@ -215,11 +217,11 @@ HWTEST_F(AutoFallbackRetentionStrategyTest, LastReason_Mapping_003, TestSize.Lev
 HWTEST_F(AutoFallbackRetentionStrategyTest, UpdatePlaybackSpeed_DelegateIgnoresSpeed_004, TestSize.Level1)
 {
     auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
-    EXPECT_NEAR(strategy->GetRatio(), 0.8, 0.001); 
-    
-    strategy->UpdatePlaybackSpeed(2.0);
+    EXPECT_NEAR(strategy->GetRatio(), DEFAULT_RETENTION_RATIO, DEFAULT_TOLERANCE);
+
+    strategy->UpdatePlaybackSpeed(2.0); // 2.0: high speed
     // Playback speed changes have no effect on fixed-ratio delegation mode; it remains 0.8
-    EXPECT_NEAR(strategy->GetRatio(), 0.8, 0.001); 
+    EXPECT_NEAR(strategy->GetRatio(), DEFAULT_RETENTION_RATIO, DEFAULT_TOLERANCE);
 }
 
 
@@ -263,14 +265,14 @@ HWTEST_F(AdaptiveRetentionStrategyTest, UpdatePlaybackSpeed_Behavior_003, TestSi
 {
     auto strategy = std::make_unique<AdaptiveRetentionStrategy>();
     FrameRetentionContext ctx{};
-    
+
     // 1. At low speed (<= 1.2), force full retention (Fast-path)
     strategy->UpdatePlaybackSpeed(1.0);
     EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
     EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_SPEED);
 
     // 2. At high speed (> 1.2), enter model inference (fallback to UNSPECIFIED since ctx lacks MV data)
-    strategy->UpdatePlaybackSpeed(2.0);
+    strategy->UpdatePlaybackSpeed(2.0); // 2.0: high speed
     strategy->MakeRetentionDecision(ctx);
     EXPECT_NE(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_SPEED);
 }
@@ -315,7 +317,7 @@ HWTEST_F(FullRetentionStrategyTest, MakeDecision_AlwaysRetains_002, TestSize.Lev
 {
     auto strategy = std::make_unique<FullRetentionStrategy>();
     FrameRetentionContext ctx{};
-    for (int i = 0; i < 50; i++) {
+    for (int i = 0; i < 50; i++) { // 50: iteration count
         EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
     }
 }
@@ -371,7 +373,7 @@ HWTEST_F(RetentionStrategyFactoryTest, CreateStrategy_AutoRatio_003, TestSize.Le
  */
 HWTEST_F(RetentionStrategyFactoryTest, CreateStrategy_FixedRatioWithValidRatio_004, TestSize.Level1)
 {
-    auto strategy = RetentionStrategyFactory::CreateStrategy(RetentionStrategyType::FIXED_RATIO, 0.5);
+    auto strategy = RetentionStrategyFactory::CreateStrategy(RetentionStrategyType::FIXED_RATIO, 0.5); // 0.5: ratio
     ASSERT_NE(strategy, nullptr);
     EXPECT_EQ(strategy->GetMode(), RetentionStrategyType::FIXED_RATIO);
 }

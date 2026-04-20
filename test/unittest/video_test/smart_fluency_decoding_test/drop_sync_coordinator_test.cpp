@@ -19,6 +19,11 @@
 #include <atomic>
 #include "drop_sync_coordinator.h"
 
+namespace {
+constexpr int32_t COORDINATOR_CAPACITY = 1024;
+constexpr double DEFAULT_TOLERANCE = 0.001;
+}
+
 using namespace testing::ext;
 using namespace OHOS::MediaAVCodec::SFD;
 
@@ -44,12 +49,12 @@ protected:
  */
 HWTEST_F(DropSyncCoordinatorTest, RecordPreDroppedFrame_BasicInOrder_001, TestSize.Level1)
 {
-    EXPECT_TRUE(tracker_.RecordPreDroppedFrame(10, 1.0));
-    EXPECT_TRUE(tracker_.RecordPreDroppedFrame(20, 1.0));
-    EXPECT_TRUE(tracker_.RecordPreDroppedFrame(30, 1.0));
+    EXPECT_TRUE(tracker_.RecordPreDroppedFrame(10, 1.0)); // 10: pts
+    EXPECT_TRUE(tracker_.RecordPreDroppedFrame(20, 1.0)); // 20: pts
+    EXPECT_TRUE(tracker_.RecordPreDroppedFrame(30, 1.0)); // 30: pts
 
-    EXPECT_EQ(tracker_.GetAndConsumePreDroppedCount(25), 2);
-    EXPECT_EQ(tracker_.GetAndConsumePreDroppedCount(35), 1);
+    EXPECT_EQ(tracker_.GetAndConsumePreDroppedCount(25), 2); // 25: query pts
+    EXPECT_EQ(tracker_.GetAndConsumePreDroppedCount(35), 1); // 35: query pts
     EXPECT_EQ(tracker_.GetAndConsumePreDroppedCount(40), 0);
 }
 
@@ -60,12 +65,12 @@ HWTEST_F(DropSyncCoordinatorTest, RecordPreDroppedFrame_BasicInOrder_001, TestSi
  */
 HWTEST_F(DropSyncCoordinatorTest, RecordPreDroppedFrame_ComplexGOPSequence_002, TestSize.Level1)
 {
-    EXPECT_TRUE(tracker_.RecordPreDroppedFrame(2, 1.0));
-    EXPECT_TRUE(tracker_.RecordPreDroppedFrame(3, 1.0));
+    EXPECT_TRUE(tracker_.RecordPreDroppedFrame(2, 1.0)); // 2: pts
+    EXPECT_TRUE(tracker_.RecordPreDroppedFrame(3, 1.0)); // 3: pts
     EXPECT_EQ(tracker_.GetAndConsumePreDroppedCount(4), 2);
 
-    EXPECT_TRUE(tracker_.RecordPreDroppedFrame(5, 1.0));
-    EXPECT_TRUE(tracker_.RecordPreDroppedFrame(6, 1.0));
+    EXPECT_TRUE(tracker_.RecordPreDroppedFrame(5, 1.0)); // 5: pts
+    EXPECT_TRUE(tracker_.RecordPreDroppedFrame(6, 1.0)); // 6: pts
     EXPECT_EQ(tracker_.GetAndConsumePreDroppedCount(7), 2);
 }
 
@@ -76,14 +81,20 @@ HWTEST_F(DropSyncCoordinatorTest, RecordPreDroppedFrame_ComplexGOPSequence_002, 
  */
 HWTEST_F(DropSyncCoordinatorTest, RecordPreDroppedFrame_QueueOverflowProtection_003, TestSize.Level1)
 {
-    for (int i = 0; i < 128; ++i) {
+    // 1. Fill the queue up to its true capacity (1024)
+    for (int i = 0; i < COORDINATOR_CAPACITY; ++i) {
         EXPECT_TRUE(tracker_.RecordPreDroppedFrame(i, 1.0));
     }
-    EXPECT_FALSE(tracker_.RecordPreDroppedFrame(129, 1.0));
 
-    EXPECT_EQ(tracker_.GetAndConsumePreDroppedCount(64), 64);
-    EXPECT_TRUE(tracker_.RecordPreDroppedFrame(130, 1.0));
-    EXPECT_TRUE(tracker_.RecordPreDroppedFrame(131, 1.0));
+    // 2. Queue is full; the 1025th frame (index 1024) must be rejected
+    EXPECT_FALSE(tracker_.RecordPreDroppedFrame(1024, 1.0)); // 1024: overflow index
+
+    // 3. Consume half of the data (512 frames) to free space
+    EXPECT_EQ(tracker_.GetAndConsumePreDroppedCount(512), 512); // 512: half capacity
+
+    // 4. Confirm new data can be written again after freeing space
+    EXPECT_TRUE(tracker_.RecordPreDroppedFrame(1025, 1.0)); // 1025: recovery index
+    EXPECT_TRUE(tracker_.RecordPreDroppedFrame(1026, 1.0)); // 1026: recovery index
 }
 
 /**
@@ -93,23 +104,23 @@ HWTEST_F(DropSyncCoordinatorTest, RecordPreDroppedFrame_QueueOverflowProtection_
  */
 HWTEST_F(DropSyncCoordinatorTest, GetAndConsume_StressTest_004, TestSize.Level1)
 {
-    constexpr int TOTAL_FRAMES = 100000;
-    std::atomic<int> total_consumed{0};
+    constexpr int totalFrames = 100000; // 100000: total stress frames
+    std::atomic<int> totalConsumed{0};
 
-    std::thread producer([&]() {
-        for (int i = 0; i < TOTAL_FRAMES; ++i) {
+    std::thread producer([this]() {
+        for (int i = 0; i < totalFrames; ++i) {
             while (!tracker_.RecordPreDroppedFrame(i, 1.0)) {
                 std::this_thread::yield();
             }
         }
     });
 
-    std::thread consumer([&]() {
-        int current_query_pts = 0;
-        while (total_consumed < TOTAL_FRAMES) {
-            current_query_pts += 10;
-            int count = tracker_.GetAndConsumePreDroppedCount(current_query_pts);
-            total_consumed += count;
+    std::thread consumer([this, &totalConsumed]() {
+        int currentQueryPts = 0;
+        while (totalConsumed < totalFrames) {
+            currentQueryPts += 10; // 10: query step
+            int count = tracker_.GetAndConsumePreDroppedCount(currentQueryPts);
+            totalConsumed += count;
             if (count == 0) {
                 std::this_thread::yield();
             }
@@ -119,7 +130,7 @@ HWTEST_F(DropSyncCoordinatorTest, GetAndConsume_StressTest_004, TestSize.Level1)
     producer.join();
     consumer.join();
 
-    EXPECT_EQ(total_consumed.load(), TOTAL_FRAMES);
+    EXPECT_EQ(totalConsumed.load(), totalFrames);
 }
 
 // ==========================================
@@ -133,37 +144,37 @@ HWTEST_F(DropSyncCoordinatorTest, GetAndConsume_StressTest_004, TestSize.Level1)
  */
 HWTEST_F(DropSyncCoordinatorTest, UpdateFeedback_TargetRatio_005, TestSize.Level1)
 {
-    tracker_.UpdateFeedback(false, 0.3, 1.0);
-    EXPECT_NEAR(tracker_.GetTargetRatio(), 0.3, 0.001);
+    tracker_.UpdateFeedback(false, 0.3, 1.0); // 0.3: target ratio
+    EXPECT_NEAR(tracker_.GetTargetRatio(), 0.3, DEFAULT_TOLERANCE);
 
-    tracker_.UpdateFeedback(false, 0.7, 1.0);
-    EXPECT_NEAR(tracker_.GetTargetRatio(), 0.7, 0.001);
+    tracker_.UpdateFeedback(false, 0.7, 1.0); // 0.7: target ratio
+    EXPECT_NEAR(tracker_.GetTargetRatio(), 0.7, DEFAULT_TOLERANCE);
 }
 
 HWTEST_F(DropSyncCoordinatorTest, UpdateFeedback_EmaIncrease_006, TestSize.Level1)
 {
-    EXPECT_NEAR(tracker_.GetEmaRatio(), 1.0, 0.001);
+    EXPECT_NEAR(tracker_.GetEmaRatio(), 1.0, DEFAULT_TOLERANCE);
 
-    for (int i = 0; i < 10; ++i) {
-        tracker_.UpdateFeedback(true, 0.5, 1.0);
+    for (int i = 0; i < 10; ++i) { // 10: iterations
+        tracker_.UpdateFeedback(true, 0.5, 1.0); // 0.5: target ratio
     }
 
-    EXPECT_NEAR(tracker_.GetEmaRatio(), 1.0, 0.001);
+    EXPECT_NEAR(tracker_.GetEmaRatio(), 1.0, DEFAULT_TOLERANCE);
 }
 
 HWTEST_F(DropSyncCoordinatorTest, UpdateFeedback_PreDroppedCount_007, TestSize.Level1)
 {
-    tracker_.RecordPreDroppedFrame(100, 1.0);
+    tracker_.RecordPreDroppedFrame(100, 1.0); // 100: pts
     EXPECT_LT(tracker_.GetEmaRatio(), 1.0);
 }
 
 HWTEST_F(DropSyncCoordinatorTest, Reset_ClearsEma_008, TestSize.Level1)
 {
-    tracker_.UpdateFeedback(false, 0.5, 1.0);
+    tracker_.UpdateFeedback(false, 0.5, 1.0); // 0.5: target ratio
     EXPECT_LT(tracker_.GetEmaRatio(), 1.0);
 
     tracker_.Reset();
-    EXPECT_NEAR(tracker_.GetEmaRatio(), 1.0, 0.001);
+    EXPECT_NEAR(tracker_.GetEmaRatio(), 1.0, DEFAULT_TOLERANCE);
 }
 
 HWTEST_F(DropSyncCoordinatorTest, UpdateFeedback_SpeedAffectsAlpha_009, TestSize.Level1)
@@ -171,9 +182,9 @@ HWTEST_F(DropSyncCoordinatorTest, UpdateFeedback_SpeedAffectsAlpha_009, TestSize
     DropSyncCoordinator fast;
     DropSyncCoordinator slow;
 
-    for (int i = 0; i < 5; ++i) {
-        fast.UpdateFeedback(false, 0.5, 3.0);
-        slow.UpdateFeedback(false, 0.5, 0.5);
+    for (int i = 0; i < 5; ++i) { // 5: iterations
+        fast.UpdateFeedback(false, 0.5, 3.0); // 3.0: high speed
+        slow.UpdateFeedback(false, 0.5, 0.5); // 0.5: low speed
     }
 
     EXPECT_LT(fast.GetEmaRatio(), slow.GetEmaRatio());
@@ -186,5 +197,5 @@ HWTEST_F(DropSyncCoordinatorTest, UpdateFeedback_SpeedAffectsAlpha_009, TestSize
  */
 HWTEST_F(DropSyncCoordinatorTest, GetAndConsume_EmptyQueueReturnsZero_010, TestSize.Level1)
 {
-    EXPECT_EQ(tracker_.GetAndConsumePreDroppedCount(100), 0);
+    EXPECT_EQ(tracker_.GetAndConsumePreDroppedCount(100), 0); // 100: query pts
 }

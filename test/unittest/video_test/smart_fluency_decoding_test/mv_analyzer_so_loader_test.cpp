@@ -18,6 +18,11 @@
 #include "mv_analyzer.h"
 #include "mv_analyzer_so_loader.h"
 
+namespace {
+constexpr int32_t WIDTH_1080P = 1920;
+constexpr int32_t HEIGHT_1080P = 1080;
+}
+
 using namespace OHOS::MediaAVCodec::SFD;
 using namespace testing::ext;
 
@@ -84,13 +89,13 @@ HWTEST_F(MvAnalyzerSoLoaderTest, Loader_InterfaceCall_MockData_006, TestSize.Lev
     auto analyzer = MvAnalyzerFactory::CreateMvAnalyzer(SFDCodecType::AVC);
     ASSERT_NE(analyzer, nullptr);
 
-    analyzer->SetVideoInfo(1920, 1080);
+    analyzer->SetVideoInfo(WIDTH_1080P, HEIGHT_1080P);
     StreamAuxInfo auxInfo{};
     analyzer->SetStreamAuxInfo(auxInfo);
 
     // Test calling the mocked FakeParseMvData from dlfcn_mock.cpp
     MVStats stats = analyzer->Analyze(nullptr);
-    
+
     // Expect 100 as hardcoded in our Mock
-    EXPECT_EQ(stats.validBlocks, 100); 
+    EXPECT_EQ(stats.validBlocks, 100); // 100: mock valid blocks
 }

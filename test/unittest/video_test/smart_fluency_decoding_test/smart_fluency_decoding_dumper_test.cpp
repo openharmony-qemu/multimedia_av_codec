@@ -17,6 +17,12 @@
 #include <memory>
 #include "smart_fluency_decoding_dumper.h"
 
+namespace {
+constexpr int32_t WIDTH_1080P = 1920;
+constexpr int32_t HEIGHT_1080P = 1080;
+constexpr double DEFAULT_TOLERANCE = 0.001;
+}
+
 using namespace OHOS::MediaAVCodec::SFD;
 using namespace testing::ext;
 
@@ -28,7 +34,7 @@ protected:
     {
         // Bypass Create() directory check by directly invoking the constructor which is public due to -Dprivate=public
         dumper_ = std::unique_ptr<SmartFluencyDecodingDumper>(
-            new SmartFluencyDecodingDumper(SFDCodecType::AVC, 1920, 1080, RetentionStrategyType::ADAPTIVE));
+            new SmartFluencyDecodingDumper(SFDCodecType::AVC, WIDTH_1080P, HEIGHT_1080P, RetentionStrategyType::ADAPTIVE));
     }
 
     void TearDown() override
@@ -60,12 +66,12 @@ HWTEST_F(SFDDumperTest, Init_BasicValidation_001, TestSize.Level1)
 HWTEST_F(SFDDumperTest, RecordPreDecode_NewRecord_002, TestSize.Level1)
 {
     SmartFluencyDecodingDumper::PreDecodeRecordCtx ctx;
-    ctx.pts = 1000;
-    ctx.dts = 900;
-    ctx.flags = 1;
+    ctx.pts = 1000; // 1000: pts
+    ctx.dts = 900; // 900: dts
+    ctx.flags = 1; // 1: dummy flag
     ctx.isNonRef = true;
     ctx.isRetained = true;
-    ctx.sysTimeMs = 12345;
+    ctx.sysTimeMs = 12345; // 12345: dummy sys time
 
     dumper_->RecordPreDecode(ctx);
 
@@ -83,15 +89,15 @@ HWTEST_F(SFDDumperTest, RecordPreDecode_NewRecord_002, TestSize.Level1)
 HWTEST_F(SFDDumperTest, RecordPostDecode_UpdatesExisting_003, TestSize.Level1)
 {
     SmartFluencyDecodingDumper::PreDecodeRecordCtx preCtx;
-    preCtx.pts = 5000;
-    preCtx.dts = 4900;
+    preCtx.pts = 5000; // 5000: pts
+    preCtx.dts = 4900; // 4900: dts
     dumper_->RecordPreDecode(preCtx);
 
     SmartFluencyDecodingDumper::PostDecodeRecordCtx postCtx;
     postCtx.pts = 5000;
     postCtx.isRetained = false;
-    postCtx.preDropCount = 2;
-    postCtx.sysTimeMs = 67890;
+    postCtx.preDropCount = 2; // 2: pre-drop count
+    postCtx.sysTimeMs = 67890; // 67890: dummy sys time
 
     dumper_->RecordPostDecode(postCtx);
 
@@ -109,7 +115,7 @@ HWTEST_F(SFDDumperTest, RecordPostDecode_UpdatesExisting_003, TestSize.Level1)
 HWTEST_F(SFDDumperTest, RecordPostDecode_NewRecord_004, TestSize.Level1)
 {
     SmartFluencyDecodingDumper::PostDecodeRecordCtx postCtx;
-    postCtx.pts = 8000;
+    postCtx.pts = 8000; // 8000: pts
     postCtx.isRetained = false;
 
     dumper_->RecordPostDecode(postCtx);
@@ -126,12 +132,12 @@ HWTEST_F(SFDDumperTest, RecordPostDecode_NewRecord_004, TestSize.Level1)
  */
 HWTEST_F(SFDDumperTest, UpdateSettings_StateChanged_005, TestSize.Level1)
 {
-    dumper_->UpdateMode(RetentionStrategyType::FIXED_RATIO, 0.7);
-    dumper_->UpdateSpeed(2.5);
-    dumper_->UpdateCtuSize(64);
+    dumper_->UpdateMode(RetentionStrategyType::FIXED_RATIO, 0.7); // 0.7: ratio
+    dumper_->UpdateSpeed(2.5); // 2.5: speed
+    dumper_->UpdateCtuSize(64); // 64: mock ctu size
 
     EXPECT_EQ(dumper_->currentMode_, RetentionStrategyType::FIXED_RATIO);
-    EXPECT_NEAR(dumper_->currentRetentionRate_, 0.7, 0.001);
-    EXPECT_NEAR(dumper_->currentSpeed_, 2.5, 0.001);
+    EXPECT_NEAR(dumper_->currentRetentionRate_, 0.7, DEFAULT_TOLERANCE);
+    EXPECT_NEAR(dumper_->currentSpeed_, 2.5, DEFAULT_TOLERANCE);
     EXPECT_EQ(dumper_->currentCtuSize_, 64);
 }

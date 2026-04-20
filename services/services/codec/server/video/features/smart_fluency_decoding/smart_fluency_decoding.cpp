@@ -38,7 +38,8 @@ constexpr double DEFAULT_PLAYBACK_SPEED = 1.0;
 constexpr double RETENTION_RATIO_MIN_DIFF = 0.001;
 
 #ifdef SFD_DEBUG
-inline int64_t GetCurrentSysTimeUs() {
+inline int64_t GetCurrentSysTimeUs()
+{
     auto now = std::chrono::steady_clock::now();
     return std::chrono::duration_cast<std::chrono::microseconds>(now.time_since_epoch()).count();
 }
@@ -494,7 +495,7 @@ int64_t SmartFluencyDecoding::GetCurrentSysTimeMs()
 }
 
 void SmartFluencyDecoding::ParseMVData(const sptr<SurfaceBuffer> surfaceBuffer, MVStats& mvStats,
-                                      int64_t& copyCostUs, int64_t& analyzeCostUs)
+    int64_t& copyCostUs, int64_t& analyzeCostUs)
 {
     CHECK_AND_RETURN_LOG_WITH_TAG(mvAnalyzer_ != nullptr, "mvAnalyzer_ is null, skipping MV analysis");
     CHECK_AND_RETURN_LOG_WITH_TAG(surfaceBuffer != nullptr, "surfaceBuffer is null");
@@ -519,15 +520,6 @@ void SmartFluencyDecoding::ParseMVData(const sptr<SurfaceBuffer> surfaceBuffer, 
 #ifdef SFD_DEBUG
     analyzeCostUs = GetCurrentSysTimeUs() - analyzeStart;
 #endif
-}
-
-void SmartFluencyDecoding::OnDecodingPerformanceUpdate(double speed, double decFps)
-{
-    AVCODEC_LOGD_WITH_TAG("OnDecodingPerformanceUpdate: speed %{public}.2f, fps %{public}.2f", speed, decFps);
-    std::lock_guard<std::mutex> lock(configMutex_);
-    if (strategy_) {
-        strategy_->OnDecodingPerformanceUpdate(speed, decFps);
-    }
 }
 
 void SmartFluencyDecoding::EnsureNaluAnalyzer()

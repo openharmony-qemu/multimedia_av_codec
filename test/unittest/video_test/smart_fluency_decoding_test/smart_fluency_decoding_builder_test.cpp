@@ -19,6 +19,13 @@
 #include "smart_fluency_decoding.h"
 #include "meta/video_types.h"
 
+namespace {
+constexpr int32_t WIDTH_1080P = 1920;
+constexpr int32_t HEIGHT_1080P = 1080;
+constexpr int32_t WIDTH_720P = 1280;
+constexpr int32_t HEIGHT_720P = 720;
+}
+
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec::SFD;
 using namespace testing::ext;
@@ -50,14 +57,14 @@ HWTEST_F(SFDBuilderTest, Build_WithFormat_002, TestSize.Level1)
 {
     SmartFluencyDecodingBuilder builder;
     Format format;
-    format.PutIntValue(Tag::VIDEO_WIDTH, 1920);
-    format.PutIntValue(Tag::VIDEO_HEIGHT, 1080);
+    format.PutIntValue(Tag::VIDEO_WIDTH, WIDTH_1080P);
+    format.PutIntValue(Tag::VIDEO_HEIGHT, HEIGHT_1080P);
     format.PutStringValue(Tag::MIME_TYPE, "video/avc");
     format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE,
         static_cast<int32_t>(Plugins::FrameRetentionMode::UNIFORM));
-    format.PutDoubleValue(Tag::VIDEO_DECODER_FRAME_RETENTION_RATIO, 0.8);
+    format.PutDoubleValue(Tag::VIDEO_DECODER_FRAME_RETENTION_RATIO, 0.8); // 0.8: retention ratio
 
-    builder.SetFromFormat(format);
+    builder.SetCodecMime("video/avc").SetFromFormat(format);
     auto sfd = builder.Build();
     EXPECT_NE(sfd, nullptr);
 }
@@ -84,12 +91,12 @@ HWTEST_F(SFDBuilderTest, Build_InvalidRetentionMode_004, TestSize.Level1)
 {
     SmartFluencyDecodingBuilder builder;
     Format format;
-    format.PutIntValue(Tag::VIDEO_WIDTH, 1920);
-    format.PutIntValue(Tag::VIDEO_HEIGHT, 1080);
+    format.PutIntValue(Tag::VIDEO_WIDTH, WIDTH_1080P);
+    format.PutIntValue(Tag::VIDEO_HEIGHT, HEIGHT_1080P);
     format.PutStringValue(Tag::MIME_TYPE, "video/hevc");
-    format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, -99);
+    format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, -99); // -99: invalid mode
 
-    builder.SetFromFormat(format);
+    builder.SetCodecMime("video/hevc").SetFromFormat(format);
     auto sfd = builder.Build();
     EXPECT_EQ(sfd, nullptr);
 }
@@ -103,15 +110,15 @@ HWTEST_F(SFDBuilderTest, SetFromFormat_Comprehensive_006, TestSize.Level1)
 {
     SmartFluencyDecodingBuilder builder;
     Format format;
-    format.PutIntValue(Tag::VIDEO_WIDTH, 1280);
-    format.PutIntValue(Tag::VIDEO_HEIGHT, 720);
+    format.PutIntValue(Tag::VIDEO_WIDTH, WIDTH_720P);
+    format.PutIntValue(Tag::VIDEO_HEIGHT, HEIGHT_720P);
     format.PutStringValue(Tag::MIME_TYPE, "video/avc");
     format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE,
         static_cast<int32_t>(Plugins::FrameRetentionMode::UNIFORM));
-    format.PutDoubleValue(Tag::VIDEO_DECODER_FRAME_RETENTION_RATIO, 0.75);
-    format.PutDoubleValue(Tag::VIDEO_DECODER_SPEED, 1.5);
+    format.PutDoubleValue(Tag::VIDEO_DECODER_FRAME_RETENTION_RATIO, 0.75); // 0.75: retention ratio
+    format.PutDoubleValue(Tag::VIDEO_DECODER_SPEED, 1.5); // 1.5: playback speed
 
-    auto& ref = builder.SetFromFormat(format);
+    auto& ref = builder.SetCodecMime("video/avc").SetFromFormat(format);
     EXPECT_EQ(&ref, &builder);
 
     auto sfd = builder.Build();
@@ -127,13 +134,13 @@ HWTEST_F(SFDBuilderTest, Build_FullMode_009, TestSize.Level1)
 {
     SmartFluencyDecodingBuilder builder;
     Format format;
-    format.PutIntValue(Tag::VIDEO_WIDTH, 1920);
-    format.PutIntValue(Tag::VIDEO_HEIGHT, 1080);
+    format.PutIntValue(Tag::VIDEO_WIDTH, WIDTH_1080P);
+    format.PutIntValue(Tag::VIDEO_HEIGHT, HEIGHT_1080P);
     format.PutStringValue(Tag::MIME_TYPE, "video/hevc");
     format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE,
         static_cast<int32_t>(Plugins::FrameRetentionMode::FULL));
 
-    builder.SetFromFormat(format);
+    builder.SetCodecMime("video/hevc").SetFromFormat(format);
     auto sfd = builder.Build();
     EXPECT_NE(sfd, nullptr);
 }
@@ -147,13 +154,13 @@ HWTEST_F(SFDBuilderTest, Build_AdaptiveMode_010, TestSize.Level1)
 {
     SmartFluencyDecodingBuilder builder;
     Format format;
-    format.PutIntValue(Tag::VIDEO_WIDTH, 1920);
-    format.PutIntValue(Tag::VIDEO_HEIGHT, 1080);
+    format.PutIntValue(Tag::VIDEO_WIDTH, WIDTH_1080P);
+    format.PutIntValue(Tag::VIDEO_HEIGHT, HEIGHT_1080P);
     format.PutStringValue(Tag::MIME_TYPE, "video/avc");
     format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE,
         static_cast<int32_t>(Plugins::FrameRetentionMode::ADAPTIVE));
 
-    builder.SetFromFormat(format);
+    builder.SetCodecMime("video/avc").SetFromFormat(format);
     auto sfd = builder.Build();
     EXPECT_NE(sfd, nullptr);
 }
@@ -167,14 +174,14 @@ HWTEST_F(SFDBuilderTest, Build_InvalidRetentionRatio_011, TestSize.Level1)
 {
     SmartFluencyDecodingBuilder builder;
     Format format;
-    format.PutIntValue(Tag::VIDEO_WIDTH, 1920);
-    format.PutIntValue(Tag::VIDEO_HEIGHT, 1080);
+    format.PutIntValue(Tag::VIDEO_WIDTH, WIDTH_1080P);
+    format.PutIntValue(Tag::VIDEO_HEIGHT, HEIGHT_1080P);
     format.PutStringValue(Tag::MIME_TYPE, "video/avc");
     format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE,
         static_cast<int32_t>(Plugins::FrameRetentionMode::UNIFORM));
-    format.PutDoubleValue(Tag::VIDEO_DECODER_FRAME_RETENTION_RATIO, -0.5);
+    format.PutDoubleValue(Tag::VIDEO_DECODER_FRAME_RETENTION_RATIO, -0.5); // -0.5: invalid ratio
 
-    builder.SetFromFormat(format);
+    builder.SetCodecMime("video/avc").SetFromFormat(format);
     auto sfd = builder.Build();
     // Negative ratio is invalid, should fallback to UNIFORM_DEFAULT
     EXPECT_NE(sfd, nullptr);
@@ -188,6 +195,6 @@ HWTEST_F(SFDBuilderTest, Build_InvalidRetentionRatio_011, TestSize.Level1)
 HWTEST_F(SFDBuilderTest, SetMethods_FluentApiChaining_012, TestSize.Level1)
 {
     SmartFluencyDecodingBuilder builder;
-    auto& ref = builder.SetVideoWidth(1920).SetVideoHeight(1080).SetCodecMime("video/avc");
+    auto& ref = builder.SetVideoWidth(WIDTH_1080P).SetVideoHeight(HEIGHT_1080P).SetCodecMime("video/avc");
     EXPECT_EQ(&ref, &builder);
 }

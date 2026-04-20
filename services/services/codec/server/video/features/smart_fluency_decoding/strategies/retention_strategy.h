@@ -36,7 +36,6 @@ public:
     virtual void UpdatePlaybackSpeed(double speed) = 0;
     virtual void Reset() = 0;
     virtual RetentionStrategyType GetMode() const = 0;
-    virtual void OnDecodingPerformanceUpdate(double /*speed*/, double /*decFps*/) {};
     virtual double GetRatio() const = 0;
     virtual SfdDecisionReason GetLastDecisionReason() const { return SfdDecisionReason::UNSPECIFIED; }
 

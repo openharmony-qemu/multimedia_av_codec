@@ -196,9 +196,6 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
     frameCnt_ = 0;
 
     double decSpeed = decFps / srcFps;
-    if (speedAndFpsCallback_) {
-        speedAndFpsCallback_(decSpeed, decFps);
-    }
     size_t newSpeedIdx = MatchAndUpdateSpeedStats(decSpeed);
     size_t lastDecSpeedIdx = maxPossibleDecSpeedIdx_;
     DecodingBehaviorType newType = DetermineDecodingBehaviorType();
@@ -213,10 +210,5 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
     lastCheckTime_ = std::chrono::steady_clock::now();
 }
 
-void DecodingBehaviorAnalyzer::SetCallback(SpeedAndFpsCallback cb)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    speedAndFpsCallback_ = std::move(cb);
-}
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -17,36 +17,52 @@
 #include <cstdint>
 #include "smart_fluency_decoding_types.h"
 
-#define NALU_MOCK_HANDLE ((void*)0x9999)
-#define MV_MOCK_HANDLE   ((void*)0x8888)
+#define NALU_MOCK_HANDLE (reinterpret_cast<void*>(0x9999))
+#define MV_MOCK_HANDLE   (reinterpret_cast<void*>(0x8888))
 
 extern "C" {
-    void* __real_dlopen(const char* filename, int flags);
-    void* __real_dlsym(void* handle, const char* symbol);
-    int __real_dlclose(void* handle);
+    void* __real_dlopen(const char* filename, int flags); // NOLINT: C-style function
+    void* __real_dlsym(void* handle, const char* symbol); // NOLINT: C-style function
+    int __real_dlclose(void* handle); // NOLINT: C-style function
 
-    void* FakeCreateNaluAnalyzer(int32_t codecType) { return NALU_MOCK_HANDLE; }
+    void* FakeCreateNaluAnalyzer(int32_t codecType)
+    {
+        if (codecType == static_cast<int32_t>(OHOS::MediaAVCodec::SFD::SFDCodecType::INVALID)) {
+            return nullptr;
+        }
+        return NALU_MOCK_HANDLE;
+    }
     void FakeDestroyNaluAnalyzer(void* analyzer) {}
     void FakeSetCallback(void* analyzer, void* cb, void* userData) {}
-    bool FakeIsNonReferenceFrame(void* analyzer, const uint8_t* bufferAddr, uint32_t bufferSize) { 
+    bool FakeIsNonReferenceFrame(void* analyzer, const uint8_t* bufferAddr, uint32_t bufferSize)
+    {
         return true;
     }
 
-    void* FakeCreateMvAnalyzer(int32_t codecType) { return MV_MOCK_HANDLE; }
+    void* FakeCreateMvAnalyzer(int32_t codecType)
+    {
+        if (codecType == static_cast<int32_t>(OHOS::MediaAVCodec::SFD::SFDCodecType::INVALID)) {
+            return nullptr;
+        }
+        return MV_MOCK_HANDLE;
+    }
     void FakeDestroyMvAnalyzer(void* parser) {}
-    
-    void FakeSetStreamAuxInfo(void* parser, const StreamAuxInfo* info) {
+
+    void FakeSetStreamAuxInfo(void* parser, const StreamAuxInfo* info)
+    {
         (void)parser;
         (void)info;
     }
-    
-    void FakeSetVideoInfo(void* parser, uint32_t width, uint32_t height) {
+
+    void FakeSetVideoInfo(void* parser, uint32_t width, uint32_t height)
+    {
         (void)parser;
         (void)width;
         (void)height;
     }
-    
-    MVStats FakeParseMvData(void* parser, const uint8_t* buffer) {
+
+    MVStats FakeParseMvData(void* parser, const uint8_t* buffer)
+    {
         (void)parser;
         (void)buffer;
         MVStats stats{};
@@ -54,7 +70,8 @@ extern "C" {
         return stats;
     }
 
-    void* __wrap_dlopen(const char* filename, int flags) {
+    void* __wrap_dlopen(const char* filename, int flags) // NOLINT: C-style function
+    {
         if (filename != nullptr) {
             std::string fname(filename);
             if (fname.find("libvideo_nalu_analyzer.z.so") != std::string::npos) {
@@ -67,24 +84,44 @@ extern "C" {
         return __real_dlopen(filename, flags);
     }
 
-    void* __wrap_dlsym(void* handle, const char* symbol) {
+    void* __wrap_dlsym(void* handle, const char* symbol) // NOLINT: C-style function
+    {
         std::string sym(symbol);
         if (handle == NALU_MOCK_HANDLE) {
-            if (sym == "CreateNaluAnalyzer") return (void*)FakeCreateNaluAnalyzer;
-            if (sym == "DestroyNaluAnalyzer") return (void*)FakeDestroyNaluAnalyzer;
-            if (sym == "SetCallback") return (void*)FakeSetCallback;
-            if (sym == "IsNonReferenceFrame") return (void*)FakeIsNonReferenceFrame;
+            if (sym == "CreateNaluAnalyzer") {
+                return reinterpret_cast<void*>(FakeCreateNaluAnalyzer);
+            }
+            if (sym == "DestroyNaluAnalyzer") {
+                return reinterpret_cast<void*>(FakeDestroyNaluAnalyzer);
+            }
+            if (sym == "SetCallback") {
+                return reinterpret_cast<void*>(FakeSetCallback);
+            }
+            if (sym == "IsNonReferenceFrame") {
+                return reinterpret_cast<void*>(FakeIsNonReferenceFrame);
+            }
         } else if (handle == MV_MOCK_HANDLE) {
-            if (sym == "CreateMvAnalyzer") return (void*)FakeCreateMvAnalyzer;
-            if (sym == "DestroyMvAnalyzer") return (void*)FakeDestroyMvAnalyzer;
-            if (sym == "SetStreamAuxInfo") return (void*)FakeSetStreamAuxInfo;
-            if (sym == "SetVideoInfo") return (void*)FakeSetVideoInfo;
-            if (sym == "ParseMvData") return (void*)FakeParseMvData;
+            if (sym == "CreateMvAnalyzer") {
+                return reinterpret_cast<void*>(FakeCreateMvAnalyzer);
+            }
+            if (sym == "DestroyMvAnalyzer") {
+                return reinterpret_cast<void*>(FakeDestroyMvAnalyzer);
+            }
+            if (sym == "SetStreamAuxInfo") {
+                return reinterpret_cast<void*>(FakeSetStreamAuxInfo);
+            }
+            if (sym == "SetVideoInfo") {
+                return reinterpret_cast<void*>(FakeSetVideoInfo);
+            }
+            if (sym == "ParseMvData") {
+                return reinterpret_cast<void*>(FakeParseMvData);
+            }
         }
         return __real_dlsym(handle, symbol);
     }
-    
-    int __wrap_dlclose(void* handle) {
+
+    int __wrap_dlclose(void* handle) // NOLINT: C-style function
+    {
         if (handle == NALU_MOCK_HANDLE || handle == MV_MOCK_HANDLE) {
             return 0;
         }

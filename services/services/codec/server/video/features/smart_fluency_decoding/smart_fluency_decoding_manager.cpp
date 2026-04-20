@@ -31,6 +31,27 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "SFDManager"};
 constexpr int32_t MIN_CSD_SIZE = 4;
 constexpr int32_t DEFAULT_CSD_COPY_SIZE = 256;
+
+#ifdef SFD_DEBUG
+constexpr const char* DEBUG_PARAM_MODE = "sfd.debug.mode";
+constexpr const char* DEBUG_PARAM_RATIO = "sfd.debug.ratio";
+constexpr const char* DEBUG_PARAM_SPEED = "sfd.debug.speed";
+constexpr const char* DEBUG_PARAM_TRIGGER_FRAME = "sfd.debug.trigger_frame";
+constexpr const char* DEBUG_PARAM_NEW_MODE = "sfd.debug.new_mode";
+constexpr const char* DEBUG_PARAM_NEW_RATIO = "sfd.debug.new_ratio";
+constexpr const char* DEBUG_PARAM_NEW_SPEED = "sfd.debug.new_speed";
+constexpr int32_t BASE_DECIMAL = 10;
+
+inline int32_t GetSysParamInt(const char* key, int32_t defValue) {
+    std::string valStr = OHOS::system::GetParameter(key, std::to_string(defValue));
+    return static_cast<int32_t>(std::strtol(valStr.c_str(), nullptr, BASE_DECIMAL));
+}
+
+inline double GetSysParamDouble(const char* key, double defValue) {
+    std::string valStr = OHOS::system::GetParameter(key, std::to_string(defValue));
+    return std::strtod(valStr.c_str(), nullptr);
+}
+#endif
 }
 
 namespace OHOS {
@@ -202,13 +223,6 @@ void SmartFluencyDecodingManager::OnOutputBufferUnbinded()
     surfaceBufMap_.clear();
 }
 
-void SmartFluencyDecodingManager::OnDecodingPerformanceUpdate(double speed, double decFps)
-{
-    if (sfd_) {
-        sfd_->OnDecodingPerformanceUpdate(speed, decFps);
-    }
-}
-
 void SmartFluencyDecodingManager::Flush()
 {
     if (sfd_) {
@@ -269,18 +283,13 @@ void SmartFluencyDecodingManager::CleanResources()
 void SmartFluencyDecodingManager::ApplyDebugConfig(Media::Format& format)
 {
     if (!isDebugConfigInitialized_) {
-        configMode_ =
-            std::strtol(OHOS::system::GetParameter("sfd.debug.mode", "-1").c_str(), nullptr, 10);
-        configRatio_ =
-            std::strtod(OHOS::system::GetParameter("sfd.debug.ratio", "-1.0").c_str(), nullptr);
-        configDecSpeed_ = std::strtod(OHOS::system::GetParameter("sfd.debug.speed", "-1.0").c_str(), nullptr);
-        triggerFrameCnt_ =
-            std::strtol(OHOS::system::GetParameter("sfd.debug.trigger_frame", "-1").c_str(), nullptr, 10);
-        newMode_ =
-            std::strtol(OHOS::system::GetParameter("sfd.debug.new_mode", "-1").c_str(), nullptr, 10);
-        newRatio_ =
-            std::strtod(OHOS::system::GetParameter("sfd.debug.new_ratio", "-1.0").c_str(), nullptr);
-        newDecSpeed_ = std::strtod(OHOS::system::GetParameter("sfd.debug.new_speed", "-1.0").c_str(), nullptr);
+        configMode_ = GetSysParamInt(DEBUG_PARAM_MODE, -1);
+        configRatio_ = GetSysParamDouble(DEBUG_PARAM_RATIO, -1.0);
+        configDecSpeed_ = GetSysParamDouble(DEBUG_PARAM_SPEED, -1.0);
+        triggerFrameCnt_ = GetSysParamInt(DEBUG_PARAM_TRIGGER_FRAME, -1);
+        newMode_ = GetSysParamInt(DEBUG_PARAM_NEW_MODE, -1);
+        newRatio_ = GetSysParamDouble(DEBUG_PARAM_NEW_RATIO, -1.0);
+        newDecSpeed_ = GetSysParamDouble(DEBUG_PARAM_NEW_SPEED, -1.0);
         inputFrameCount_ = 0;
         isDebugConfigInitialized_ = true;
         AVCODEC_LOGI_WITH_TAG("SFD Debug: Conf: %{public}d, %{public}.2f, %{public}.2f; Trg:%{public}d -> "

@@ -32,7 +32,6 @@ namespace SFD {
 FixedRatioRetentionStrategy::FixedRatioRetentionStrategy(double ratio)
 {
     targetRatio_ = std::max(MIN_RETENTION_RATIO, std::min(ratio, MAX_RETENTION_RATIO));
-
     if (std::abs(targetRatio_ - ratio) > 1e-9) {
         AVCODEC_LOGW("FixedRatioRetentionStrategy: Provided ratio %{public}.3f is out of bounds! "
                      "Clamped to safe ratio: %{public}.3f", ratio, targetRatio_);

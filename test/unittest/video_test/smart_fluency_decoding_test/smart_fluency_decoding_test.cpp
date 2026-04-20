@@ -17,6 +17,13 @@
 #include <memory>
 #include "smart_fluency_decoding.h"
 
+namespace {
+constexpr int32_t WIDTH_1080P = 1920;
+constexpr int32_t HEIGHT_1080P = 1080;
+constexpr int32_t WIDTH_720P = 1280;
+constexpr int32_t HEIGHT_720P = 720;
+}
+
 using namespace OHOS::MediaAVCodec::SFD;
 using namespace testing::ext;
 
@@ -52,8 +59,8 @@ protected:
  */
 HWTEST_F(SmartFluencyDecodingTest, Initialize_Success_001, TestSize.Level1)
 {
-    SFDConfig cfg = MakeConfig(1920, 1080, SFDCodecType::AVC, RetentionStrategyType::ADAPTIVE);
-    cfg.retentionRatio = 0.5;
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::ADAPTIVE);
+    cfg.retentionRatio = 0.5; // 0.5: ratio
     int32_t ret = sfd_->Initialize(cfg);
     EXPECT_EQ(ret, 0);
 }
@@ -65,7 +72,7 @@ HWTEST_F(SmartFluencyDecodingTest, Initialize_Success_001, TestSize.Level1)
  */
 HWTEST_F(SmartFluencyDecodingTest, Initialize_AutoRatio_002, TestSize.Level1)
 {
-    SFDConfig cfg = MakeConfig(1920, 1080, SFDCodecType::HEVC, RetentionStrategyType::AUTO_RATIO);
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::HEVC, RetentionStrategyType::AUTO_RATIO);
     int32_t ret = sfd_->Initialize(cfg);
     EXPECT_EQ(ret, 0);
 }
@@ -89,7 +96,7 @@ HWTEST_F(SmartFluencyDecodingTest, Initialize_InvalidDimension_003, TestSize.Lev
  */
 HWTEST_F(SmartFluencyDecodingTest, Initialize_InvalidCodec_004, TestSize.Level1)
 {
-    SFDConfig cfg = MakeConfig(1920, 1080, SFDCodecType::INVALID, RetentionStrategyType::ADAPTIVE);
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::INVALID, RetentionStrategyType::ADAPTIVE);
     int32_t ret = sfd_->Initialize(cfg);
     EXPECT_NE(ret, 0);
 }
@@ -102,7 +109,7 @@ HWTEST_F(SmartFluencyDecodingTest, Initialize_InvalidCodec_004, TestSize.Level1)
  */
 HWTEST_F(SmartFluencyDecodingTest, Flush_AfterInit_006, TestSize.Level1)
 {
-    SFDConfig cfg = MakeConfig(1280, 720, SFDCodecType::HEVC, RetentionStrategyType::AUTO_RATIO);
+    SFDConfig cfg = MakeConfig(WIDTH_720P, HEIGHT_720P, SFDCodecType::HEVC, RetentionStrategyType::AUTO_RATIO);
     sfd_->Initialize(cfg);
     sfd_->Flush();
 }
@@ -114,7 +121,7 @@ HWTEST_F(SmartFluencyDecodingTest, Flush_AfterInit_006, TestSize.Level1)
  */
 HWTEST_F(SmartFluencyDecodingTest, MakePreDecodeDecision_NoBuffer_007, TestSize.Level1)
 {
-    SFDConfig cfg = MakeConfig(1920, 1080, SFDCodecType::AVC, RetentionStrategyType::AUTO_RATIO);
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::AUTO_RATIO);
     sfd_->Initialize(cfg);
     // No buffer set for index 0
     bool result = sfd_->MakePreDecodeDecision(0);
@@ -128,7 +135,7 @@ HWTEST_F(SmartFluencyDecodingTest, MakePreDecodeDecision_NoBuffer_007, TestSize.
  */
 HWTEST_F(SmartFluencyDecodingTest, InitializeWithCsd_EmptyData_008, TestSize.Level1)
 {
-    SFDConfig cfg = MakeConfig(1920, 1080, SFDCodecType::AVC, RetentionStrategyType::AUTO_RATIO);
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::AUTO_RATIO);
     sfd_->Initialize(cfg);
     std::vector<uint8_t> emptyCsd;
     EXPECT_FALSE(sfd_->InitializeWithCsd(emptyCsd));
@@ -141,7 +148,7 @@ HWTEST_F(SmartFluencyDecodingTest, InitializeWithCsd_EmptyData_008, TestSize.Lev
  */
 HWTEST_F(SmartFluencyDecodingTest, Initialize_FullMode_009, TestSize.Level1)
 {
-    SFDConfig cfg = MakeConfig(1920, 1080, SFDCodecType::AVC, RetentionStrategyType::FULL);
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::FULL);
     int32_t ret = sfd_->Initialize(cfg);
     EXPECT_EQ(ret, 0);
 }

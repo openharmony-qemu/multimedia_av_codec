@@ -895,13 +895,6 @@ void CodecServer::InitFramerateCalculator(Meta &callerInfo)
     );
     if (framerateCalculator_) {
         framerateCalculator_->SetTag(CreateVideoLogTag(callerInfo));
-        std::weak_ptr<CodecServer> weakThis = weak_from_this();
-        framerateCalculator_->SetSpeedAndFpsCallback([weakThis](double speed, double decFps) {
-            auto sharedThis = weakThis.lock();
-            if (sharedThis && sharedThis->sfdManager_) {
-                sharedThis->sfdManager_->OnDecodingPerformanceUpdate(speed, decFps);
-            }
-        });
     }
 }
 
@@ -1830,20 +1823,19 @@ void CodecServer::InitSfdManager()
     sfdManager_ = std::make_unique<SFD::SmartFluencyDecodingManager>(codecMime_, codecType_);
     sfdManager_->SetTag(this->GetTag());
     std::weak_ptr<CodecServer> weakThis = weak_from_this();
-    sfdManager_->SetCallbacks(
-        [weakThis](uint32_t idx, std::shared_ptr<AVBuffer> buf) {
-            if (auto pThis = weakThis.lock()) {
-                AVCODEC_LOGD("SfdCallback: OnInputBufferAvailable, index: %{public}u", idx);
-                pThis->OnInputBufferAvailable(idx, buf);
-            }
-        },
-        [weakThis](uint32_t idx) {
-            if (auto pThis = weakThis.lock()) {
-                AVCODEC_LOGD("SfdCallback: ReleaseOutputBuffer, index: %{public}u", idx);
-                pThis->ReleaseOutputBuffer(idx, false);
-            }
+    auto inputCb = [weakThis](uint32_t idx, std::shared_ptr<AVBuffer> buf) {
+        if (auto pThis = weakThis.lock()) {
+            AVCODEC_LOGD("SfdCallback: OnInputBufferAvailable, index: %{public}u", idx);
+            pThis->OnInputBufferAvailable(idx, buf);
         }
-    );
+    };
+    auto outputCb = [weakThis](uint32_t idx) {
+        if (auto pThis = weakThis.lock()) {
+            AVCODEC_LOGD("SfdCallback: ReleaseOutputBuffer, index: %{public}u", idx);
+            pThis->ReleaseOutputBuffer(idx, false);
+        }
+    };
+    sfdManager_->SetCallbacks(inputCb, outputCb);
     AVCODEC_LOGI_WITH_TAG("SfdManager created and callbacks bound.");
 }
 } // namespace MediaAVCodec

@@ -110,7 +110,6 @@ private:
     SmartFluencyDecodingDumper(SFDCodecType codecType, int32_t width, int32_t height, RetentionStrategyType mode);
     static bool IsDirectoryExist(const std::string& path);
     std::string GetTimestampString();
-    void DumpToFileInternal();
     void WriteHeaderIfNeeded(std::ofstream& ofs);
     void WriteRecordsToStream(std::ofstream& ofs, const std::vector<FrameDumpRecord>& records);
     void UpdateExistingPreRecord(const PreDecodeRecordCtx& ctx);

@@ -152,7 +152,7 @@ void SmartFluencyDecodingDumper::RecordPreDecode(const PreDecodeRecordCtx& ctx)
         }
     }
     if (needDump) {
-        DumpToFileInternal();
+        DumpToFile();
     }
 }
 
@@ -221,7 +221,7 @@ void SmartFluencyDecodingDumper::RecordPostDecode(const PostDecodeRecordCtx& ctx
         }
     }
     if (needDump) {
-        DumpToFileInternal();
+        DumpToFile();
     }
 }
 
@@ -238,8 +238,23 @@ std::string SmartFluencyDecodingDumper::GetTimestampString()
 
 void SmartFluencyDecodingDumper::DumpToFile()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    DumpToFileInternal();
+    std::vector<FrameDumpRecord> chunk;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (records_.empty()) {
+            return;
+        }
+        chunk.swap(records_);
+    }
+    std::sort(chunk.begin(), chunk.end(), [](const FrameDumpRecord& a, const FrameDumpRecord& b) {
+        return a.pts < b.pts;
+    });
+    std::ofstream ofs(currentFilename_, std::ios::app);
+    CHECK_AND_RETURN_LOG(ofs.is_open(), "Failed to open dump file: %{public}s", currentFilename_.c_str());
+    WriteHeaderIfNeeded(ofs);
+    WriteRecordsToStream(ofs, chunk);
+    ofs.close();
+    AVCODEC_LOGI("Successfully appended %{public}zu records to %{public}s", chunk.size(), currentFilename_.c_str());
 }
 
 void SmartFluencyDecodingDumper::WriteHeaderIfNeeded(std::ofstream& ofs)
@@ -274,27 +289,6 @@ void SmartFluencyDecodingDumper::WriteRecordsToStream(std::ofstream& ofs, const 
             ofs.write(buf, len);
         }
     }
-}
-
-void SmartFluencyDecodingDumper::DumpToFileInternal()
-{
-    std::vector<FrameDumpRecord> chunk;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (records_.empty()) {
-            return;
-        }
-        chunk.swap(records_);
-    }
-    std::sort(chunk.begin(), chunk.end(), [](const FrameDumpRecord& a, const FrameDumpRecord& b) {
-        return a.pts < b.pts;
-    });
-    std::ofstream ofs(currentFilename_, std::ios::app);
-    CHECK_AND_RETURN_LOG(ofs.is_open(), "Failed to open dump file: %{public}s", currentFilename_.c_str());
-    WriteHeaderIfNeeded(ofs);
-    WriteRecordsToStream(ofs, chunk);
-    ofs.close();
-    AVCODEC_LOGI("Successfully appended %{public}zu records to %{public}s", chunk.size(), currentFilename_.c_str());
 }
 } // namespace SFD
 } // namespace MediaAVCodec

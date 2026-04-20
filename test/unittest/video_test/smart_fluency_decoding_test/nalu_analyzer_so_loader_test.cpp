@@ -81,10 +81,10 @@ HWTEST_F(NaluAnalyzerSoLoaderTest, IsNonRef_WithValidBuffer_005, TestSize.Level1
 {
     auto analyzer = NaluAnalyzerFactory::CreateNaluAnalyzer(SFDCodecType::AVC);
     ASSERT_NE(analyzer, nullptr);
-    
+
     auto allocator = OHOS::Media::AVAllocatorFactory::CreateSharedAllocator(OHOS::Media::MEMORY_READ_WRITE);
-    auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, 100);
-    
+    auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, 100); // 100: mock buffer size
+
     // FakeIsNonReferenceFrame in dlfcn_mock.cpp always returns true
     EXPECT_TRUE(analyzer->IsNonReferenceFrame(buffer));
 }
