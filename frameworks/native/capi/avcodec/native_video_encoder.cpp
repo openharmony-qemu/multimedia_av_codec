@@ -92,22 +92,20 @@ OH_AVErrCode OH_VideoEncoder_Destroy(struct OH_AVCodec *codec)
     CHECK_AND_RETURN_RET_LOG(IsValidVideoEncoderMagic(codec->magic_), AV_ERR_INVALID_VAL, "Codec magic error!");
 
     if (PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_)) {
-        auto *preprocEnc = reinterpret_cast<PreprocessorEncoder *>(codec);
-        OH_AVErrCode ret = preprocEnc->Release();
-        if (PreprocessorEncoder::IsPrimaryEncoderMagic(codec->magic_)) {
-            auto *secondaryEnc = preprocEnc->DetachSecondaryEncoder();
-            if (secondaryEnc != nullptr) {
-                OH_AVErrCode secondaryRet = secondaryEnc->Release();
-                if (ret == AV_ERR_OK && secondaryRet != AV_ERR_OK) {
-                    ret = secondaryRet;
-                }
-                delete secondaryEnc;
-            }
-        } else {
+        auto *preprocEnc = reinterpret_cast<OHOS::MediaAVCodec::PreprocessorEncoder *>(codec);
+        (void)preprocEnc->Release();
+        if (!OHOS::MediaAVCodec::PreprocessorEncoder::IsPrimaryEncoderMagic(codec->magic_)) {
             preprocEnc->DetachFromPrimaryEncoder();
+            delete preprocEnc;
+            return AV_ERR_OK;
+        }
+
+        auto secondaryEnc = preprocEnc->DetachSecondaryEncoder();
+        if (secondaryEnc) {
+            delete secondaryEnc;
         }
         delete preprocEnc;
-        return ret;
+        return AV_ERR_OK;
     }
 
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER,
