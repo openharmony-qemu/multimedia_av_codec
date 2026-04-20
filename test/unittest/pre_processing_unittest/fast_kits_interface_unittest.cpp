@@ -803,8 +803,8 @@ HWTEST_F(FastKitsConcurrentTest, ConcurrentCrop, TestSize.Level1)
         {DS_FORMAT_PARAMS[3], 900, 620, "crop_", "nv12", cropOp},
         {DS_FORMAT_PARAMS[4], 900, 620, "crop_", "nv21_p010", cropOp},
         {DS_FORMAT_PARAMS[5], 900, 620, "crop_", "nv12_p010", cropOp},
-        {DS_FORMAT_PARAMS[2], 316, 180, "crop_", "nv21_dup", cropOp},
-        {DS_FORMAT_PARAMS[5], 316, 180, "crop_", "nv12_p010_dup", cropOp},
+        {DS_FORMAT_PARAMS[2], 900, 620, "crop_", "nv21_dup", cropOp},
+        {DS_FORMAT_PARAMS[5], 900, 620, "crop_", "nv12_p010_dup", cropOp},
     };
     constexpr int32_t threadCount = sizeof(tasks) / sizeof(tasks[0]);
     std::atomic<int32_t> successCount{0};
