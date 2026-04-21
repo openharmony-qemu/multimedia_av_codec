@@ -339,6 +339,12 @@ OH_AVErrCode PreprocessorEncoder::Configure(const Media::Format &format)
 OH_AVErrCode PreprocessorEncoder::SetParameter(const Media::Format &format)
 {
     std::scoped_lock lock(instanceMutex_);
+    if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
+        int32_t ret = videoEncoderObject_->videoEncoder_->SetParameter(format);
+        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
+                                 "PreprocessorEncoder set parameter failed!");
+    }
+
     auto preprocessor = GetPreprocessor();
     if (preprocessor) {
         int32_t ret = preprocessor->Configure(format);
@@ -346,11 +352,6 @@ OH_AVErrCode PreprocessorEncoder::SetParameter(const Media::Format &format)
                                  "PreprocessorEncoder set preprocessor parameter failed!");
     }
 
-    if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
-        int32_t ret = videoEncoderObject_->videoEncoder_->SetParameter(format);
-        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                                 "PreprocessorEncoder set parameter failed!");
-    }
     return AV_ERR_OK;
 }
 
