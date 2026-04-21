@@ -38,7 +38,7 @@ private:
     std::string apiName_;
     MetricesType metricesType_;
     int32_t sample_;
-    int64_t beginTime_;
+    std::chrono::time_point<std::chrono::steady_clock> beginTime_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
