@@ -14,6 +14,7 @@
  */
 
 #include "preprocessor_encoder.h"
+#include <mutex>
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "media_core.h"
@@ -21,6 +22,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "PreprocessorEncoder"};
 constexpr size_t MAX_LENGTH = 255;
+static std::mutex interfaceMutex;
 } // namespace
 
 namespace OHOS {
@@ -108,24 +110,38 @@ PreprocessorEncoder::~PreprocessorEncoder()
 
 OH_AVErrCode PreprocessorEncoder::CreatePrimary(const char *mime, OH_AVCodec **codec)
 {
+    CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr! It must not be nullptr!");
+    CHECK_AND_RETURN_RET_LOG(*codec == nullptr, AV_ERR_INVALID_VAL,
+        "The pointer stored in codec is not nullptr! It must be nullptr!");
+    CHECK_AND_RETURN_RET_LOG(IsValidPreprocEncoderMime(mime), AV_ERR_INVALID_VAL,
+        "Invalid mime, only hevc or avc encoder is supported!");
     auto encoder = std::make_unique<PreprocessorEncoder>(AVMagic::AVCODEC_MAGIC_PRIMARY_VIDEO_ENCODER);
     CHECK_AND_RETURN_RET_LOG(encoder != nullptr, AV_ERR_NO_MEMORY, "PreprocessorEncoder create failed!");
 
     OH_AVErrCode ret = encoder->InitAsPrimary(mime);
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "InitAsPrimary failed!");
 
+    std::scoped_lock interfaceLock(interfaceMutex);
+    CHECK_AND_RETURN_RET_LOG(*codec == nullptr, AV_ERR_INVALID_VAL,
+        "The pointer stored in codec is not nullptr! It must be nullptr!");
     *codec = encoder.release();
     return AV_ERR_OK;
 }
 
 OH_AVErrCode PreprocessorEncoder::CreateSecondary(OH_AVCodec *primary, OH_AVCodec **secondary)
 {
-    auto *primaryEnc = reinterpret_cast<PreprocessorEncoder *>(primary);
-    CHECK_AND_RETURN_RET_LOG(primaryEnc->magic_ == AVMagic::AVCODEC_MAGIC_PRIMARY_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
-                             "Primary magic error!");
+    std::scoped_lock interfaceLock(interfaceMutex);
+    CHECK_AND_RETURN_RET_LOG(primary != nullptr, AV_ERR_INVALID_VAL, "Primary is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(secondary != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr! It must not be nullptr!");
+    CHECK_AND_RETURN_RET_LOG(*secondary == nullptr, AV_ERR_INVALID_VAL,
+        "The pointer stored in codec is not nullptr! It must be nullptr!");
 
+    CHECK_AND_RETURN_RET_LOG(IsPrimaryEncoderMagic(primary->magic_), AV_ERR_INVALID_VAL, "Primary magic error!");
+    auto *primaryEnc = reinterpret_cast<PreprocessorEncoder *>(primary);
+
+    std::scoped_lock primaryLock(primaryEnc->instanceMutex_);
     CHECK_AND_RETURN_RET_LOG(primaryEnc->secondary_ == nullptr, AV_ERR_OPERATE_NOT_PERMIT,
-                             "Secondary encoder already exists!");
+        "Secondary encoder already exists!");
 
     auto encoder = std::make_unique<PreprocessorEncoder>(AVMagic::AVCODEC_MAGIC_SECONDARY_VIDEO_ENCODER);
     CHECK_AND_RETURN_RET_LOG(encoder != nullptr, AV_ERR_NO_MEMORY, "PreprocessorEncoder create failed!");
@@ -135,6 +151,35 @@ OH_AVErrCode PreprocessorEncoder::CreateSecondary(OH_AVCodec *primary, OH_AVCode
 
     *secondary = encoder.release();
     return AV_ERR_OK;
+}
+
+bool PreprocessorEncoder::Destroy(OH_AVCodec* codec)
+{
+    std::scoped_lock interfaceLock(interfaceMutex);
+    if (codec == nullptr) {
+        return true;
+    }
+
+    if (!IsPreprocEncoderMagic(codec->magic_)) {
+        return false;
+    }
+
+    auto* preprocEnc = reinterpret_cast<PreprocessorEncoder*>(codec);
+    (void)preprocEnc->Release();
+    if (!IsPrimaryEncoderMagic(codec->magic_)) {
+        preprocEnc->DetachFromPrimaryEncoder();
+        delete preprocEnc;
+        return true;
+    }
+
+    auto secondaryEnc = preprocEnc->DetachSecondaryEncoder();
+    if (secondaryEnc) {
+        secondaryEnc->Release();
+        delete secondaryEnc;
+    }
+    delete preprocEnc;
+
+    return true;
 }
 
 OH_AVErrCode PreprocessorEncoder::InitAsPrimary(const char *mime)
@@ -173,12 +218,11 @@ OH_AVErrCode PreprocessorEncoder::InitAsSecondary(PreprocessorEncoder *primary)
     videoEncoderObject_ = std::make_shared<VideoEncoderObject>(videoEncoder);
     CHECK_AND_RETURN_RET_LOG(videoEncoderObject_ != nullptr, AV_ERR_NO_MEMORY, "VideoEncoderObject create failed!");
 
-    preprocMgr_ = primary->preprocMgr_;
-
     auto preprocessor = std::make_shared<Preprocessor>(mime_);
     CHECK_AND_RETURN_RET_LOG(preprocessor != nullptr, AV_ERR_NO_MEMORY, "Preprocessor create failed!");
     preprocessors_[encoderId_] = preprocessor;
 
+    preprocMgr_ = primary->preprocMgr_;
     primary_ = primary;
     primary_->secondary_ = this;
 
@@ -250,6 +294,7 @@ void PreprocessorEncoder::DetachFromPrimaryEncoder()
 
 OH_AVErrCode PreprocessorEncoder::RegisterCallback(struct OH_AVCodecCallback callback, void *userData)
 {
+    std::scoped_lock lock(instanceMutex_);
     if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
         if (videoEncoderObject_->callback_ != nullptr) {
             videoEncoderObject_->callback_->UpdateCallback(callback, userData);
@@ -266,6 +311,7 @@ OH_AVErrCode PreprocessorEncoder::RegisterCallback(struct OH_AVCodecCallback cal
 
 OH_AVErrCode PreprocessorEncoder::Configure(const Media::Format &format)
 {
+    std::scoped_lock lock(instanceMutex_);
     int32_t ret = ConfigureVideoEncoder(format);
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Configure video encoder failed!");
@@ -297,6 +343,7 @@ OH_AVErrCode PreprocessorEncoder::Configure(const Media::Format &format)
 
 OH_AVErrCode PreprocessorEncoder::SetParameter(const Media::Format &format)
 {
+    std::scoped_lock lock(instanceMutex_);
     auto preprocessor = GetPreprocessor();
     if (preprocessor) {
         int32_t ret = preprocessor->Configure(format);
@@ -314,6 +361,7 @@ OH_AVErrCode PreprocessorEncoder::SetParameter(const Media::Format &format)
 
 sptr<Surface> PreprocessorEncoder::GetSurface()
 {
+    std::scoped_lock lock(instanceMutex_);
     return GetSharedSurface();
 }
 
@@ -352,6 +400,7 @@ int32_t PreprocessorEncoder::ConfigurePreprocessor(const Media::Format &format)
 
 int32_t PreprocessorEncoder::CreateEncoderSurface()
 {
+    std::scoped_lock lock(instanceMutex_);
     if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
         auto surface = videoEncoderObject_->videoEncoder_->CreateInputSurface();
         if (surface == nullptr) {
@@ -375,6 +424,7 @@ std::shared_ptr<Preprocessor> PreprocessorEncoder::GetPreprocessor()
 
 OH_AVErrCode PreprocessorEncoder::Start()
 {
+    std::scoped_lock lock(instanceMutex_);
     if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
         int32_t ret = videoEncoderObject_->videoEncoder_->Start();
         CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
@@ -393,6 +443,7 @@ OH_AVErrCode PreprocessorEncoder::Start()
 
 OH_AVErrCode PreprocessorEncoder::Stop()
 {
+    std::scoped_lock lock(instanceMutex_);
     if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
         int32_t ret = videoEncoderObject_->videoEncoder_->Stop();
         CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
@@ -408,6 +459,7 @@ OH_AVErrCode PreprocessorEncoder::Stop()
 
 OH_AVErrCode PreprocessorEncoder::Flush()
 {
+    std::scoped_lock lock(instanceMutex_);
     if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
         int32_t ret = videoEncoderObject_->videoEncoder_->Flush();
         CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
@@ -423,10 +475,12 @@ OH_AVErrCode PreprocessorEncoder::Flush()
 
 OH_AVErrCode PreprocessorEncoder::Reset()
 {
+    std::scoped_lock lock(instanceMutex_);
     if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
         int32_t ret = videoEncoderObject_->videoEncoder_->Reset();
         CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                                  "Video encoder reset failed!");
+        videoEncoderObject_.reset();
     }
 
     if (preprocMgr_) {
@@ -438,12 +492,18 @@ OH_AVErrCode PreprocessorEncoder::Reset()
 
 OH_AVErrCode PreprocessorEncoder::Release()
 {
+    std::scoped_lock lock(instanceMutex_);
     if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
+        (void)videoEncoderObject_->videoEncoder_->Reset();
+        if (preprocMgr_) {
+            preprocMgr_->SetEncoderRunning(encoderId_, false);
+        }
         int32_t ret = videoEncoderObject_->videoEncoder_->Release();
         videoEncoderObject_->StopCallback();
         videoEncoderObject_->ClearBufferList();
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                                  "PreprocessorEncoder release failed!");
+        videoEncoderObject_.reset();
     }
 
     return AV_ERR_OK;
@@ -451,6 +511,7 @@ OH_AVErrCode PreprocessorEncoder::Release()
 
 OH_AVErrCode PreprocessorEncoder::NotifyEos()
 {
+    std::scoped_lock lock(instanceMutex_);
     if (preprocMgr_) {
         std::shared_ptr<VideoEncoderObject> videoEncoderObject = videoEncoderObject_;
         std::string encoderId = encoderId_;
@@ -473,6 +534,7 @@ OH_AVErrCode PreprocessorEncoder::NotifyEos()
 
 OH_AVErrCode PreprocessorEncoder::ReleaseOutputBuffer(uint32_t index)
 {
+    std::scoped_lock lock(instanceMutex_);
     if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
         int32_t ret = videoEncoderObject_->videoEncoder_->ReleaseOutputBuffer(index);
         CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
@@ -483,6 +545,7 @@ OH_AVErrCode PreprocessorEncoder::ReleaseOutputBuffer(uint32_t index)
 
 OH_AVFormat* PreprocessorEncoder::GetOutputDescription()
 {
+    std::scoped_lock lock(instanceMutex_);
     if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
         Format format;
         int32_t ret = videoEncoderObject_->videoEncoder_->GetOutputFormat(format);
@@ -499,6 +562,7 @@ OH_AVFormat* PreprocessorEncoder::GetOutputDescription()
 
 OH_AVFormat* PreprocessorEncoder::GetInputDescription()
 {
+    std::scoped_lock lock(instanceMutex_);
     auto preprocessor = GetPreprocessor();
     CHECK_AND_RETURN_RET_LOG(preprocessor != nullptr, nullptr, "Preprocessor not found for GetInputDescription!");
 
