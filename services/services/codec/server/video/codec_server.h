@@ -250,6 +250,7 @@ public:
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
     void OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &bufferMap) override;
     void OnOutputBufferUnbinded() override;
+    void OnXperfEvent(int eventType, const std::string& msg) override;
 
 private:
     std::weak_ptr<CodecServer> weakCodec_;

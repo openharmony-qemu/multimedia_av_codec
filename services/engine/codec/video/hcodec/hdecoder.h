@@ -23,7 +23,7 @@
 #endif
 #include "xperf_service_action_type.h"
 #include "xperf_service_client.h"
-#include "video_jank_callback_stub.h"
+#include "video_state_callback_stub.h"
 
 namespace OHOS::MediaAVCodec {
 class HDecoder : public HCodec {
@@ -31,10 +31,14 @@ public:
     HDecoder(CodecHDI::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType);
     ~HDecoder() override;
 
-    class XperfConnector : public OHOS::HiviewDFX::VideoJankCallbackStub {
+    class XperfConnector : public OHOS::HiviewDFX::VideoStateCallbackStub {
     public:
-        ErrCode OnVideoJankEvent(const std::string& msg) override;
         static std::shared_ptr<MsgToken> FindSuitableDecoder(uint64_t surfaceId, const std::string& bundleName);
+        static std::shared_ptr<MsgToken> FindSuitableDecoder(const std::string& msg);
+ 
+        ErrCode OnVideoJankEvent(const std::string& msg) override;
+        ErrCode OnVideoResumed(const std::string& msg) override;
+        ErrCode OnVideoPaused(const std::string& msg) override;
     };
 
     struct DecoderInst {
@@ -167,7 +171,10 @@ private:
     int32_t DecreaseFreq() override;
     int32_t RecoverFreq() override;
 
-    void ReportRenderFirstFrame();
+    void PerfMeasure(int64_t lastFlushTime);
+    void CheckFrameInterval() override;
+    void OnStartJankDetect() override;
+    void OnStopJankDetect() override;
 
     // process stall time
     void RecordProcessTimeOfUpstream(const std::shared_ptr<AVBuffer>& avBuffer) override;
@@ -186,6 +193,11 @@ private:
         void Release(bool cleanAll = false);
         sptr<Surface> surface_;
         bool firstFrameRendered_ = false;
+        uint64_t flushCnt_ = 0;
+        int64_t lastFlushTime_ = 0;
+        int64_t jankCnt_ = 0;
+        int64_t totalJankDur_ = 0;
+        int64_t beginTime_ = 0;
     private:
         std::optional<GraphicTransformType> originalTransform_;
         std::string compUniqueStr_;
@@ -200,6 +212,9 @@ private:
     GraphicTransformType transform_ = GRAPHIC_ROTATE_NONE;
     std::optional<ScalingMode> scaleMode_;
     OHOS::HDI::Display::Graphic::Common::V1_0::BufferHandleMetaRegion crop_{0};
+
+    bool timer = false;
+    bool detect = false;
 };
 } // namespace OHOS::MediaAVCodec
 #endif // HCODEC_HDECODER_H
