@@ -22,7 +22,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "PreprocessorEncoder"};
 constexpr size_t MAX_LENGTH = 255;
-static std::mutex interfaceMutex;
+static std::mutex g_interfaceMutex;
 } // namespace
 
 namespace OHOS {
@@ -121,7 +121,7 @@ OH_AVErrCode PreprocessorEncoder::CreatePrimary(const char *mime, OH_AVCodec **c
     OH_AVErrCode ret = encoder->InitAsPrimary(mime);
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "InitAsPrimary failed!");
 
-    std::scoped_lock interfaceLock(interfaceMutex);
+    std::scoped_lock interfaceLock(g_interfaceMutex);
     CHECK_AND_RETURN_RET_LOG(*codec == nullptr, AV_ERR_INVALID_VAL,
         "The pointer stored in codec is not nullptr! It must be nullptr!");
     *codec = encoder.release();
@@ -130,7 +130,7 @@ OH_AVErrCode PreprocessorEncoder::CreatePrimary(const char *mime, OH_AVCodec **c
 
 OH_AVErrCode PreprocessorEncoder::CreateSecondary(OH_AVCodec *primary, OH_AVCodec **secondary)
 {
-    std::scoped_lock interfaceLock(interfaceMutex);
+    std::scoped_lock interfaceLock(g_interfaceMutex);
     CHECK_AND_RETURN_RET_LOG(primary != nullptr, AV_ERR_INVALID_VAL, "Primary is nullptr!");
     CHECK_AND_RETURN_RET_LOG(secondary != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr! It must not be nullptr!");
     CHECK_AND_RETURN_RET_LOG(*secondary == nullptr, AV_ERR_INVALID_VAL,
@@ -155,7 +155,7 @@ OH_AVErrCode PreprocessorEncoder::CreateSecondary(OH_AVCodec *primary, OH_AVCode
 
 void PreprocessorEncoder::Destroy(OH_AVCodec* codec)
 {
-    std::scoped_lock interfaceLock(interfaceMutex);
+    std::scoped_lock interfaceLock(g_interfaceMutex);
     auto* preprocEnc = reinterpret_cast<PreprocessorEncoder*>(codec);
     if (preprocEnc == nullptr) {
         return;
