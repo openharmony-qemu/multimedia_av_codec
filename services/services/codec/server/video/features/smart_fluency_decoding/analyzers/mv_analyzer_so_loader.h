@@ -30,7 +30,7 @@ public:
 
     void SetStreamAuxInfo(const StreamAuxInfo& info) override;
     void SetVideoInfo(uint32_t width, uint32_t height) override;
-    MVStats Analyze(const uint8_t *buffer) override;
+    MVStats Analyze(const uint8_t *buffer, uint32_t length) override;
     SFDCodecType GetCodecType() const override;
     bool IsValid() const;
 
@@ -47,7 +47,7 @@ private:
     using DestroyFunc = void (*)(MvAnalyzerHandle);
     using SetAuxInfoFunc = void (*)(MvAnalyzerHandle, const StreamAuxInfo*);
     using SetVideoInfoFunc = void (*)(MvAnalyzerHandle, uint32_t, uint32_t);
-    using ParseFunc = MVStats (*)(MvAnalyzerHandle, const uint8_t*);
+    using ParseFunc = MVStats (*)(MvAnalyzerHandle, const uint8_t*, uint32_t);
 
     CreateFunc createFunc_{nullptr};
     DestroyFunc destroyFunc_{nullptr};

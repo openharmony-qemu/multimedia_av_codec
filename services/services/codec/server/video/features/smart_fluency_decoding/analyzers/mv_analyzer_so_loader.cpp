@@ -102,12 +102,12 @@ void MvAnalyzerSoLoader::SetVideoInfo(uint32_t width, uint32_t height)
     }
 }
 
-MVStats MvAnalyzerSoLoader::Analyze(const uint8_t *buffer)
+MVStats MvAnalyzerSoLoader::Analyze(const uint8_t *buffer, uint32_t length)
 {
     std::lock_guard<std::mutex> lock(apiMutex_);
     MVStats mvStats = MVStats();
     if (soAnalyzer_ && parseFunc_) {
-        mvStats = parseFunc_(soAnalyzer_, buffer);
+        mvStats = parseFunc_(soAnalyzer_, buffer, length);
     }
     return mvStats;
 }

@@ -27,7 +27,7 @@ public:
     virtual ~IMvAnalyzer() = default;
     virtual void SetStreamAuxInfo(const StreamAuxInfo& info) = 0;
     virtual void SetVideoInfo(uint32_t width, uint32_t height) = 0;
-    virtual MVStats Analyze(const uint8_t *buffer) = 0;
+    virtual MVStats Analyze(const uint8_t *buffer, uint32_t length) = 0;
     virtual SFDCodecType GetCodecType() const = 0;
 };
 

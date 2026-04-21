@@ -506,7 +506,7 @@ void SmartFluencyDecoding::ParseMVData(const sptr<SurfaceBuffer> surfaceBuffer, 
     int64_t analyzeStart = copyEnd;
 #endif
     uint8_t* input = reinterpret_cast<uint8_t*>(static_cast<uintptr_t>(data.vaddr + data.offset));
-    mvStats = mvAnalyzer_->Analyze(input);
+    mvStats = mvAnalyzer_->Analyze(input, data.length);
 #ifdef SFD_DEBUG
     analyzeCostUs = GetCurrentSysTimeUs() - analyzeStart;
 #endif

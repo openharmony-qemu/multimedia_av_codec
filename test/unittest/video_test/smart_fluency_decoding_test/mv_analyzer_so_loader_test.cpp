@@ -94,7 +94,7 @@ HWTEST_F(MvAnalyzerSoLoaderTest, Loader_InterfaceCall_MockData_006, TestSize.Lev
     analyzer->SetStreamAuxInfo(auxInfo);
 
     // Test calling the mocked FakeParseMvData from dlfcn_mock.cpp
-    MVStats stats = analyzer->Analyze(nullptr);
+    MVStats stats = analyzer->Analyze(nullptr, 0);
 
     // Expect 100 as hardcoded in our Mock
     EXPECT_EQ(stats.validBlocks, 100); // 100: mock valid blocks

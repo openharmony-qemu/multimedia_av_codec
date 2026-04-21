@@ -78,10 +78,11 @@ extern "C" {
         (void)height;
     }
 
-    MVStats FakeParseMvData(void* parser, const uint8_t* buffer)
+    MVStats FakeParseMvData(void* parser, const uint8_t* buffer, uint32_t length)
     {
         (void)parser;
         (void)buffer;
+        (void)length;
         MVStats stats{};
         stats.validBlocks = 100; // 100: for check
         return stats;
