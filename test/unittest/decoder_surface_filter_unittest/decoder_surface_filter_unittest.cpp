@@ -34,6 +34,7 @@ namespace Pipeline {
 const static int32_t INVALID_NUM = -1;
 const static int32_t NUM_TEST = 0;
 const static int32_t WIDTH_TEST = 10;
+const static int32_t HEIGHT_TEST = 10;
 const static int32_t RENDER_TIME = 1000;
 class AVCodecList {
 public:
