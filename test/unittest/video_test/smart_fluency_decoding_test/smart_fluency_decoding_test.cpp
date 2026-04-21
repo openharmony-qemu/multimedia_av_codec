@@ -239,7 +239,7 @@ HWTEST_F(SmartFluencyDecodingTest, EvaluatePreDecode_EMA_Unsatisfied_014, TestSi
     // Inject non-ideal EMA ratio (0.7 > 0.5)
     sfd_->dropSyncCoordinator_->emaRatio_ = 0.7;
     auto allocator = OHOS::Media::AVAllocatorFactory::CreateSharedAllocator(OHOS::Media::MEMORY_READ_WRITE);
-    auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, 100); // 100£ºcapacity
+    auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, 100); // 100: capacity
     // FakeIsNonReferenceFrame will return true if we set correct data (from dlfcn_mock)
     uint8_t* addr = buffer->memory_->GetAddr();
     addr[0] = 0x00; // 0: start code
