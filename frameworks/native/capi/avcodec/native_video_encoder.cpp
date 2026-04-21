@@ -91,7 +91,8 @@ OH_AVErrCode OH_VideoEncoder_Destroy(struct OH_AVCodec *codec)
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
     CHECK_AND_RETURN_RET_LOG(IsValidVideoEncoderMagic(codec->magic_), AV_ERR_INVALID_VAL, "Codec magic error!");
 
-    if (PreprocessorEncoder::Destroy(codec)) {
+    if (PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_)) {
+        PreprocessorEncoder::Destroy(codec);
         return AV_ERR_OK;
     }
 
@@ -126,9 +127,8 @@ OH_AVErrCode OH_VideoEncoder_Configure(struct OH_AVCodec *codec, struct OH_AVFor
 
     if (PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_)) {
         auto* preprocEnc = reinterpret_cast<PreprocessorEncoder*>(codec);
-        int32_t ret = preprocEnc->Configure(format->format_);
-        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                                 "PreprocessorEncoder configure failed!");
+        OH_AVErrCode ret = preprocEnc->Configure(format->format_);
+        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "PreprocessorEncoder configure failed!");
         return AV_ERR_OK;
     }
 

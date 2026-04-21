@@ -39,7 +39,7 @@ public:
 
     static OH_AVErrCode CreatePrimary(const char* mime, OH_AVCodec** codec);
     static OH_AVErrCode CreateSecondary(OH_AVCodec* primary, OH_AVCodec** secondary);
-    static bool Destroy(OH_AVCodec* codec);
+    static void Destroy(OH_AVCodec* codec);
 
     static bool IsPrimaryEncoderMagic(AVMagic magic);
     static bool IsSecondaryEncoderMagic(AVMagic magic);

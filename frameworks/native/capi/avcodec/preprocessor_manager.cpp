@@ -352,15 +352,11 @@ void PreprocessorManager::EncoderInfo::EncoderThreadLoop()
     while (isRunning_) {
         std::shared_ptr<SurfaceBufferWrapper> inputBuffer;
         std::shared_ptr<SurfaceBufferWrapper> outputBuffer;
-        std::function<void()> notifyEosTask;
-
+        std::function<void()> notifyEosTask{nullptr};
         {
             std::unique_lock<std::mutex> lock(bufferQueueMutex_);
             bufferQueueCv_.wait(lock, [this]() {
-                if (!isRunning_) {
-                    return true;
-                }
-                if (eosRequested_ && pendingBuffers_.empty()) {
+                if (!isRunning_ || (eosRequested_ && pendingBuffers_.empty())) {
                     return true;
                 }
                 return !(pendingBuffers_.empty() || availableInputBuffers_.empty());
@@ -369,14 +365,12 @@ void PreprocessorManager::EncoderInfo::EncoderThreadLoop()
                 break;
             }
             if (eosRequested_ && pendingBuffers_.empty()) {
-                notifyEosTask = std::move(notifyEosTask_);
-                notifyEosTask_ = nullptr;
+                std::swap(notifyEosTask, notifyEosTask_);
                 eosRequested_ = false;
                 isRunning_ = false;
                 AVCODEC_LOGI("Pending buffers drained, notify eos asynchronously: %{public}s", encoderId_.data());
             }
-            if (notifyEosTask) {
-                // eos is sent after all pending buffers are consumed, without blocking caller thread
+            if (notifyEosTask) { // eos is sent after all pending buffers are consumed, without blocking caller thread
                 lock.unlock();
                 notifyEosTask();
                 break;
@@ -386,27 +380,19 @@ void PreprocessorManager::EncoderInfo::EncoderThreadLoop()
             }
             inputBuffer = pendingBuffers_.front();
             pendingBuffers_.pop();
-            if (!(inputBuffer && inputBuffer->buffer)) {
-                AVCODEC_LOGE("Invalid input buffer in encoder thread: %{public}s", encoderId_.data());
-                continue;
-            }
+            CHECK_AND_CONTINUE_LOG(inputBuffer && inputBuffer->buffer,
+                                   "Invalid input buffer in encoder thread: %{public}s", encoderId_.data());
             outputBuffer = availableInputBuffers_.front();
             availableInputBuffers_.pop();
-            if (!(outputBuffer && outputBuffer->buffer)) {
-                AVCODEC_LOGE("Invalid output buffer in encoder thread: %{public}s", encoderId_.data());
-                continue;
-            }
+            CHECK_AND_CONTINUE_LOG(outputBuffer && outputBuffer->buffer,
+                                   "Invalid output buffer in encoder thread: %{public}s", encoderId_.data());
         }
-
-        auto ret = preprocessor_->Process(inputBuffer->buffer, outputBuffer->buffer, inputBuffer->timestamp);
-        if (ret != AV_ERR_OK) {
-            AVCODEC_LOGW("Preprocess faided, skip ..");
-        } else {
-            inputBuffer->isProcessed = outputBuffer->isProcessed = true;
+        if (preprocessor_->Process(inputBuffer->buffer, outputBuffer->buffer, inputBuffer->timestamp) == AV_ERR_OK) {
+            inputBuffer->isProcessed = true;
+            outputBuffer->isProcessed = true;
             SetBufferFlushConfig(inputBuffer, outputBuffer);
         }
     }
-
     AVCODEC_LOGI("EncoderThreadLoop exited: %{public}s", encoderId_.data());
 }
 
