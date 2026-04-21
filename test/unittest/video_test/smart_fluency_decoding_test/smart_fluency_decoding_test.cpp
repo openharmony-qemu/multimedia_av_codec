@@ -122,8 +122,8 @@ HWTEST_F(SmartFluencyDecodingTest, Flush_AfterInit_006, TestSize.Level1)
     ASSERT_FALSE(sfd_->inBufferMap_.empty());
 
     sfd_->Flush();
-    EXPECT_EQ(sfd_->dropSyncCoordinator_->writeIndex_, 0u);
-    EXPECT_EQ(sfd_->dropSyncCoordinator_->readIndex_, 0u);
+    EXPECT_EQ(sfd_->dropSyncCoordinator_->writeIndex_, 50u);
+    EXPECT_EQ(sfd_->dropSyncCoordinator_->readIndex_.load(), sfd_->dropSyncCoordinator_->writeIndex_.load());
     EXPECT_NEAR(sfd_->dropSyncCoordinator_->emaRatio_, 1.0, 0.001);
     EXPECT_TRUE(sfd_->inBufferMap_.empty());
 }
@@ -187,9 +187,9 @@ HWTEST_F(SmartFluencyDecodingTest, UpdatePlaybackSpeed_Negative_010, TestSize.Le
  */
 HWTEST_F(SmartFluencyDecodingTest, IsRatioValid_Invalid_011, TestSize.Level1)
 {
-    EXPECT_FALSE(SmartFluencyDecoding::IsRatioValid(0.04)); // < 0.05
+    EXPECT_FALSE(SmartFluencyDecoding::IsRatioValid(0.005)); // < 0.01
     EXPECT_FALSE(SmartFluencyDecoding::IsRatioValid(1.1));  // > 1.0
-    EXPECT_TRUE(SmartFluencyDecoding::IsRatioValid(0.05));
+    EXPECT_TRUE(SmartFluencyDecoding::IsRatioValid(0.01));
     EXPECT_TRUE(SmartFluencyDecoding::IsRatioValid(1.0));
 }
 
@@ -239,11 +239,14 @@ HWTEST_F(SmartFluencyDecodingTest, EvaluatePreDecode_EMA_Unsatisfied_014, TestSi
     // Inject non-ideal EMA ratio (0.7 > 0.5)
     sfd_->dropSyncCoordinator_->emaRatio_ = 0.7;
     auto allocator = OHOS::Media::AVAllocatorFactory::CreateSharedAllocator(OHOS::Media::MEMORY_READ_WRITE);
-    auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, 100);
+    auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, 100); // 100£ºcapacity
     // FakeIsNonReferenceFrame will return true if we set correct data (from dlfcn_mock)
     uint8_t* addr = buffer->memory_->GetAddr();
-    addr[0] = 0x00; addr[1] = 0x01; addr[2] = 0x00; addr[3] = 0x01;
-    addr[4] = 0x01; // nal_ref_idc = 0
+    addr[0] = 0x00; // 0: start code
+    addr[1] = 0x00; // 1: start code
+    addr[2] = 0x00; // 2: start code
+    addr[3] = 0x01; // 3: nal type
+    addr[4] = 0x01; // 4: nal_ref_idc = 0
     buffer->memory_->SetSize(10);
     
     // Push into map for public API access

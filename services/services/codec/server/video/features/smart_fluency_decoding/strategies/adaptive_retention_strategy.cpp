@@ -41,21 +41,21 @@ struct DecisionNode {
 };
 constexpr int NUM_RULES = 15;
 constexpr DecisionNode RETENTION_DECISION_RULES[NUM_RULES] = {
-    DecisionNode(21.0108261108, 0, 1, 8), // rule 0
-    DecisionNode(6.5326397419, 0, 2, 5),  // rule 1
-    DecisionNode(0.6923948228, 1, 3, 4),  // rule 2
-    DecisionNode(0),                      // rule 3: leaf
-    DecisionNode(0),                      // rule 4: leaf
-    DecisionNode(0.4727701843, 1, 6, 7),  // rule 5
-    DecisionNode(1),                      // rule 6: leaf
-    DecisionNode(1),                      // rule 7: leaf
-    DecisionNode(0.5533757210, 1, 9, 12), // rule 8
-    DecisionNode(0.3526516557, 1, 10, 11),// rule 9
-    DecisionNode(1),                      // rule 10: leaf
-    DecisionNode(1),                      // rule 11: leaf
-    DecisionNode(0.9898027778, 1, 13, 14),// rule 12
-    DecisionNode(1),                      // rule 13: leaf
-    DecisionNode(0),                      // rule 14: leaf
+    DecisionNode(21.0108261108, 0, 1, 8),  // rule 0
+    DecisionNode(6.5326397419, 0, 2, 5),   // rule 1
+    DecisionNode(0.6923948228, 1, 3, 4),   // rule 2
+    DecisionNode(0),                       // rule 3: leaf
+    DecisionNode(0),                       // rule 4: leaf
+    DecisionNode(0.4727701843, 1, 6, 7),   // rule 5
+    DecisionNode(1),                       // rule 6: leaf
+    DecisionNode(1),                       // rule 7: leaf
+    DecisionNode(0.5533757210, 1, 9, 12),  // rule 8
+    DecisionNode(0.3526516557, 1, 10, 11), // rule 9
+    DecisionNode(1),                       // rule 10: leaf
+    DecisionNode(1),                       // rule 11: leaf
+    DecisionNode(0.9898027778, 1, 13, 14), // rule 12
+    DecisionNode(1),                       // rule 13: leaf
+    DecisionNode(0),                       // rule 14: leaf
 };
 
 class FluencyEvaluator {

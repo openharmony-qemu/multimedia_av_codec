@@ -50,7 +50,9 @@ HWTEST_F(FixedRatioRetentionStrategyTest, MakeDecision_50PercentRatio_001, TestS
     int retainedCount = 0;
     FrameRetentionContext ctx{};
     for (int i = 0; i < DEFAULT_TOTAL_FRAMES; ++i) {
-        if (strategy->MakeRetentionDecision(ctx)) retainedCount++;
+        if (strategy->MakeRetentionDecision(ctx)) {
+            retainedCount++;
+        }
     }
     EXPECT_EQ(retainedCount, 50); // 50: expected count for 0.5 ratio
 }

@@ -89,7 +89,8 @@ HWTEST_F(NaluAnalyzerSoLoaderTest, IsNonRef_WithValidBuffer_005, TestSize.Level1
     auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, static_cast<int32_t>(nonRefData.size()));
     ASSERT_NE(buffer, nullptr);
     ASSERT_NE(buffer->memory_, nullptr);
-    memcpy_s(buffer->memory_->GetAddr(), buffer->memory_->GetSize(), nonRefData.data(), nonRefData.size());
+    memcpy_s(buffer->memory_->GetAddr(), buffer->memory_->GetCapacity(), nonRefData.data(), nonRefData.size());
+    buffer->memory_->SetSize(nonRefData.size());
     EXPECT_TRUE(analyzer->IsNonReferenceFrame(buffer));
 }
 
@@ -109,6 +110,7 @@ HWTEST_F(NaluAnalyzerSoLoaderTest, IsNonRef_WithReferenceBuffer_006, TestSize.Le
     auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, static_cast<int32_t>(refData.size()));
     ASSERT_NE(buffer, nullptr);
     ASSERT_NE(buffer->memory_, nullptr);
-    memcpy_s(buffer->memory_->GetAddr(), buffer->memory_->GetSize(), refData.data(), refData.size());
+    memcpy_s(buffer->memory_->GetAddr(), buffer->memory_->GetCapacity(), refData.data(), refData.size());
+    buffer->memory_->SetSize(refData.size());
     EXPECT_FALSE(analyzer->IsNonReferenceFrame(buffer));
 }
