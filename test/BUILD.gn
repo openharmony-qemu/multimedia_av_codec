@@ -157,6 +157,7 @@ group("av_codec_unit_test") {
         "unittest/mpeg4_source_test:mpeg4_source_inner_unit_test",
         "unittest/plugins_source_test:plugins_source_unit_test",
         "unittest/post_processor_test:post_processor_unit_test",
+        "unittest/pre_processing_unittest:pre_processing_unittest",
         "unittest/pts_and_index_conversion_test:pts_and_index_conversion_unit_test",
         "unittest/pts_and_index_conversion_unittest:pts_and_index_conversion_unittest",
         "unittest/reference_parser_test:reference_parser_inner_unit_test",
