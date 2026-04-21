@@ -501,8 +501,8 @@ private:
     Status WaitForLoop(const uint32_t trackId, const uint32_t timeout);
     bool ShouldWaitForRead(uint32_t trackId);
     void FFmpegReadLoop();
-    bool NeedWaitForRead();
-    void HandleReadWait();
+    bool NeedWaitForRead(uint32_t trackId);
+    void HandleReadWait(uint32_t trackId);
     bool EnsurePacketAllocated(AVPacketWrapperPtr& pktWrapper);
     bool ReadAndProcessFrame(AVPacketWrapperPtr& pktWrapper);
     bool HandleAVPacketNormal(AVPacketWrapperPtr& pktWrapper);
