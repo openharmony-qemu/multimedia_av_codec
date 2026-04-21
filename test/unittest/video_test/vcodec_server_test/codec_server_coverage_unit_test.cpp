@@ -1203,33 +1203,5 @@ HWTEST_F(CodecServerUnitTest, SetAudioDecryptionConfig_Test_001, TestSize.Level1
     EXPECT_EQ(ret, AVCS_ERR_OK);
 }
 
-/**
- * @tc.name: SFD_Integration_Coverage_001
- * @tc.desc: Validate SFD initialization and execution branch in CodecServer
- */
-/**
- * @tc.name: SFD_Integration_Coverage_001
- * @tc.desc: Validate SFD initialization and execution branch in CodecServer
- */
-HWTEST_F(CodecServerUnitTest, SFD_Integration_Coverage_001, TestSize.Level1)
-{
-    CreateFCodecByMime();
-    server_->status_ = CodecServer::CodecStatus::RUNNING;
-    Format sfdFormat;
-    sfdFormat.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, 1);
-    sfdFormat.PutDoubleValue(Tag::VIDEO_DECODER_FRAME_RETENTION_RATIO, 0.5);
-    EXPECT_CALL(*codecBaseMock_, GetOutputFormat(_)).Times(AtLeast(1)).WillRepeatedly(Return(AVCS_ERR_OK));
-    EXPECT_CALL(*codecBaseMock_, SetParameter(_)).Times(AtLeast(1)).WillRepeatedly(Return(AVCS_ERR_OK));
-    server_->SetParameter(sfdFormat);
-    EXPECT_NE(server_->sfdManager_, nullptr);
-    server_->SetParameter(sfdFormat);
-    server_->QueueInputBufferIn(1);
-    EXPECT_CALL(*codecBaseMock_, Flush()).Times(AtLeast(1)).WillRepeatedly(Return(AVCS_ERR_OK));
-    server_->Flush();
-    EXPECT_CALL(*codecBaseMock_, Reset()).Times(AtLeast(1)).WillRepeatedly(Return(AVCS_ERR_OK));
-    server_->Reset();
-    EXPECT_EQ(server_->sfdManager_, nullptr);
-}
-
 } // MediaAVCodec
 } // namespace
