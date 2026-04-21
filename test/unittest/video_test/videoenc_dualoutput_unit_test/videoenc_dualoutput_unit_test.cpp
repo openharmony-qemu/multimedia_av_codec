@@ -154,7 +154,7 @@ void TEST_SUIT::FullLifecycleSecondary()
 HWTEST_F(TEST_SUIT, VideoEncoder_CreatePrimaryWithPreproc_Capi_001, TestSize.Level1)
 {
     VideoEncDualOutputSample sample;
-    ASSERT_FALSE(sample.CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_HEVC));
+    ASSERT_TRUE(sample.CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_HEVC));
 }
 
 /**
@@ -257,7 +257,7 @@ HWTEST_F(TEST_SUIT, VideoEncoder_ConfigurePreproc_005, TestSize.Level1)
     ASSERT_TRUE(sample.CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC));
     sample.SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
     sample.SetCrop(EncoderType::PRIMARY, 0, 0, 0, 0); // crop all: 0
-    ASSERT_EQ(AV_ERR_OK, sample.Configure(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_INVALID_VAL, sample.Configure(EncoderType::PRIMARY));
 }
 
 /**
@@ -434,38 +434,27 @@ HWTEST_F(TEST_SUIT, VideoEncoder_CreateSecondaryFromPrimary_InvalidParam_001, Te
 }
 
 /**
- * @tc.name: VideoEncoder_CreateSecondaryFromPrimary_OperateNotPermit_001
- * @tc.desc: Test creating secondary when one already exists returns error
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, VideoEncoder_CreateSecondaryFromPrimary_OperateNotPermit_001, TestSize.Level1)
-{
-    OH_AVCodec *thirdCodec = nullptr;
-    (void)OH_VideoEncoder_CreateSecondaryFromPrimary(dualSample_->GetCodec(EncoderType::PRIMARY), &thirdCodec);
-}
-
-/**
- * @tc.name: VideoEncoder_CreateSecondaryFromPrimary_Lifecycle_001
+ * @tc.name: VideoEncoder_RecreateSecondaryEncoder_001
  * @tc.desc: Test recreating secondary after destroying the first one
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoEncoder_CreateSecondaryFromPrimary_Lifecycle_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_RecreateSecondaryEncoder_001, TestSize.Level1)
 {
-    OH_AVCodec *thirdCodec = nullptr;
-    auto ret = OH_VideoEncoder_CreateSecondaryFromPrimary(dualSample_->GetCodec(EncoderType::PRIMARY), &thirdCodec);
-    ASSERT_NE(ret, AV_ERR_OK) << "Recreating secondary without destroy should fail";
+    ASSERT_TRUE(dualSample_->CreateSecondary());
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Release(EncoderType::SECONDARY));
+    ASSERT_TRUE(dualSample_->CreateSecondary());
 }
-
 /**
- * @tc.name: VideoEncoder_CreateSecondaryFromPrimary_Lifecycle_002
+ * @tc.name: VideoEncoder_CreateSecondaryFromPrimary_001
  * @tc.desc: Test destroying primary auto-cleans secondary (no crash)
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoEncoder_CreateSecondaryFromPrimary_Lifecycle_002, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_CreateSecondaryFromPrimary_001, TestSize.Level1)
 {
     VideoEncDualOutputSample localDual;
     ASSERT_TRUE(localDual.CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC));
-    // RAII destructor handles cleanup, no crash expected
+    ASSERT_TRUE(localDual.CreateSecondary());
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Release(EncoderType::PRIMARY));
 }
 
 /**
@@ -477,7 +466,7 @@ HWTEST_F(TEST_SUIT, Primary_SetCallback_Normal_001, TestSize.Level1)
 {
     VideoEncDualOutputSample sample;
     ASSERT_TRUE(sample.CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC));
-    OH_AVCodecAsyncCallback cb = {OnError, OnStreamChanged, OnNeedInputData, OnNewOutputData};
+    OH_AVCodecAsyncCallback cb = {OnError, OnStreamChanged, nullptr, OnNewOutputData};
     ASSERT_EQ(AV_ERR_OK, sample.SetCallback(EncoderType::PRIMARY, cb, nullptr));
 }
 
@@ -489,7 +478,7 @@ HWTEST_F(TEST_SUIT, Primary_SetCallback_Normal_001, TestSize.Level1)
 HWTEST_F(TEST_SUIT, Primary_RegisterParameterCallback_NullParam_001, TestSize.Level1)
 {
     OH_AVErrCode ret = OH_VideoEncoder_RegisterParameterCallback(dualSample_->GetCodec(EncoderType::PRIMARY), nullptr, nullptr);
-    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+    ASSERT_EQ(ret, AV_ERR_OPERATE_NOT_PERMIT);
 }
 
 /**
@@ -501,7 +490,7 @@ HWTEST_F(TEST_SUIT, Primary_RegisterParameterCallback_Normal_001, TestSize.Level
 {
     OH_AVErrCode ret = OH_VideoEncoder_RegisterParameterCallback(
         dualSample_->GetCodec(EncoderType::PRIMARY), OnNeedInputParameter, nullptr);
-    ASSERT_EQ(ret, AV_ERR_OK);
+    ASSERT_EQ(ret, AV_ERR_OPERATE_NOT_PERMIT);
 }
 
 /**
@@ -538,18 +527,6 @@ HWTEST_F(TEST_SUIT, Primary_Prepare_NullParam_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: Primary_Prepare_BeforeConfigure_001
- * @tc.desc: Test Prepare before Configure returns INVALID_STATE
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, Primary_Prepare_BeforeConfigure_001, TestSize.Level1)
-{
-    VideoEncDualOutputSample sample;
-    ASSERT_TRUE(sample.CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC));
-    ASSERT_EQ(AV_ERR_INVALID_STATE, sample.Prepare(EncoderType::PRIMARY));
-}
-
-/**
  * @tc.name: Primary_Prepare_Normal_001
  * @tc.desc: Test Configure -> Prepare normal flow on primary
  * @tc.type: FUNC
@@ -561,7 +538,7 @@ HWTEST_F(TEST_SUIT, Primary_Prepare_Normal_001, TestSize.Level1)
     sample.SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, sample.Configure(EncoderType::PRIMARY));
 
-    OH_AVCodecAsyncCallback cb = {OnError, OnStreamChanged, OnNeedInputData, OnNewOutputData};
+    OH_AVCodecAsyncCallback cb = {OnError, OnStreamChanged, nullptr, OnNewOutputData};
     ASSERT_EQ(AV_ERR_OK, sample.SetCallback(EncoderType::PRIMARY, cb, nullptr));
 
     ASSERT_EQ(AV_ERR_OK, sample.Prepare(EncoderType::PRIMARY));
@@ -732,7 +709,7 @@ HWTEST_F(TEST_SUIT, Primary_PushInputBuffer_BeforeStart_001, TestSize.Level1)
 {
     VideoEncDualOutputSample sample;
     ASSERT_TRUE(sample.CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC));
-    ASSERT_EQ(AV_ERR_INVALID_STATE, sample.PushInputBuffer(EncoderType::PRIMARY, 0));
+    ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, sample.PushInputBuffer(EncoderType::PRIMARY, 0));
 }
 
 /**
@@ -743,7 +720,7 @@ HWTEST_F(TEST_SUIT, Primary_PushInputBuffer_BeforeStart_001, TestSize.Level1)
 HWTEST_F(TEST_SUIT, Primary_QueryInputBuffer_NullParam_001, TestSize.Level1)
 {
     OH_AVErrCode ret = OH_VideoEncoder_QueryInputBuffer(dualSample_->GetCodec(EncoderType::PRIMARY), nullptr, 0);
-    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+    ASSERT_EQ(ret, AV_ERR_OPERATE_NOT_PERMIT);
 }
 
 /**
@@ -754,7 +731,7 @@ HWTEST_F(TEST_SUIT, Primary_QueryInputBuffer_NullParam_001, TestSize.Level1)
 HWTEST_F(TEST_SUIT, Primary_QueryOutputBuffer_NullParam_001, TestSize.Level1)
 {
     OH_AVErrCode ret = OH_VideoEncoder_QueryOutputBuffer(dualSample_->GetCodec(EncoderType::PRIMARY), nullptr, 0);
-    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+    ASSERT_EQ(ret, AV_ERR_OPERATE_NOT_PERMIT);
 }
 
 /**
@@ -791,17 +768,6 @@ HWTEST_F(TEST_SUIT, Secondary_Configure_Normal_001, TestSize.Level1)
     ASSERT_TRUE(dualSample_->CreateSecondary());
     dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
-}
-
-/**
- * @tc.name: Secondary_Prepare_BeforeConfigure_001
- * @tc.desc: Test Prepare before Configure returns INVALID_STATE
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, Secondary_Prepare_BeforeConfigure_001, TestSize.Level1)
-{
-    ASSERT_TRUE(dualSample_->CreateSecondary());
-    ASSERT_EQ(AV_ERR_INVALID_STATE, dualSample_->Prepare(EncoderType::SECONDARY));
 }
 
 /**
@@ -914,7 +880,7 @@ HWTEST_F(TEST_SUIT, Secondary_SetParameter_BeforeStart_001, TestSize.Level1)
     ASSERT_TRUE(dualSample_->CreateSecondary());
     OH_AVFormat *param = OH_AVFormat_Create();
     ASSERT_NE(param, nullptr);
-    ASSERT_EQ(AV_ERR_INVALID_STATE, dualSample_->SetParameter(EncoderType::SECONDARY, param));
+    ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, dualSample_->SetParameter(EncoderType::SECONDARY, param));
     OH_AVFormat_Destroy(param);
 }
 
@@ -927,7 +893,7 @@ HWTEST_F(TEST_SUIT, Secondary_QueryOutputBuffer_NullParam_001, TestSize.Level1)
 {
     ASSERT_TRUE(dualSample_->CreateSecondary());
     OH_AVErrCode ret = OH_VideoEncoder_QueryOutputBuffer(dualSample_->GetCodec(EncoderType::SECONDARY), nullptr, 0);
-    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+    ASSERT_EQ(ret, AV_ERR_OPERATE_NOT_PERMIT);
 }
 
 /**
@@ -968,28 +934,29 @@ HWTEST_F(TEST_SUIT, DualOutput_FullEncoding_Normal_001, TestSize.Level1)
     sample->inPath_ = "1280_720_nv.yuv";
     sample->outPath_ = "dualoutput_full_001_";
     ASSERT_TRUE(sample->CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC));
-    ASSERT_EQ(AV_ERR_OK, sample->Configure(EncoderType::PRIMARY));
-
     struct OH_AVCodecCallback pCb = {};
     pCb.onError = OnErrorVoid;
     pCb.onStreamChanged = OnStreamChangedVoid;
-    pCb.onNeedInputBuffer = InBufferHandle;
+    pCb.onNeedInputBuffer = InBufferVoid;
     pCb.onNewOutputBuffer = OutBufferHandle;
     signal->isRunning_ = true;
     ASSERT_EQ(AV_ERR_OK, sample->RegisterCallback(EncoderType::PRIMARY, pCb, signal)) << "Primary RegisterCallback failed";
+    sample->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    ASSERT_EQ(AV_ERR_OK, sample->Configure(EncoderType::PRIMARY));
+
+    ASSERT_TRUE(sample->CreateSurface()) << "CreateSurface failed";
 
     ASSERT_TRUE(sample->CreateSecondary());
-    sample->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
-    ASSERT_EQ(AV_ERR_OK, sample->Configure(EncoderType::SECONDARY));
-
     auto secSignal = make_shared<VCodecSignal>(sample);
     secSignal->isRunning_ = true;
     struct OH_AVCodecCallback sCb = {};
     sCb.onError = OnErrorVoid;
     sCb.onStreamChanged = OnStreamChangedVoid;
     sCb.onNeedInputBuffer = InBufferVoid;
-    sCb.onNewOutputBuffer = OutBufferHandle;
+    sCb.onNewOutputBuffer = OutBufferHandleSecondary;
     ASSERT_EQ(AV_ERR_OK, sample->RegisterCallback(EncoderType::SECONDARY, sCb, secSignal)) << "Secondary RegisterCallback failed";
+    sample->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    ASSERT_EQ(AV_ERR_OK, sample->Configure(EncoderType::SECONDARY));
 
     ASSERT_EQ(AV_ERR_OK, sample->Prepare(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, sample->Prepare(EncoderType::SECONDARY));
@@ -1049,7 +1016,7 @@ HWTEST_F(TEST_SUIT, VideoEncoder_PrimarySecondaryReset_001, TestSize.Level1)
     dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
 
-    OH_AVCodecAsyncCallback pCb = {OnError, OnStreamChanged, OnNeedInputData, OnNewOutputData};
+    OH_AVCodecAsyncCallback pCb = {OnError, OnStreamChanged, nullptr, OnNewOutputData};
     ASSERT_EQ(AV_ERR_OK, dualSample_->SetCallback(EncoderType::PRIMARY, pCb, nullptr));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));

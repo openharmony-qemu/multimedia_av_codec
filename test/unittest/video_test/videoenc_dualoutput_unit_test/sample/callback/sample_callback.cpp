@@ -17,6 +17,7 @@
 #include "codec_buffer_info.h"
 #include "meta/any.h"
 #include "vcodec_signal.h"
+#include "venc_dualoutput_sample.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -49,6 +50,16 @@ void OutBufferHandle(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, voi
     auto signal = reinterpret_cast<VCodecSignal *>(userData);
     auto codecSample = signal->codecSample_.lock();
     codecSample->HandleOutputFrame(std::make_shared<CodecBufferInfo>(index, Any(buffer)));
+}
+
+void OutBufferHandleSecondary(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
+{
+    (void)codec;
+    auto signal = reinterpret_cast<VCodecSignal *>(userData);
+    auto codecSample = signal->codecSample_.lock();
+    auto dualSample = std::static_pointer_cast<VideoEncDualOutputSample>(codecSample);
+    dualSample->HandleOutputFrameByEncoderType(EncoderType::SECONDARY,
+        std::make_shared<CodecBufferInfo>(index, Any(buffer)));
 }
 
 void InBufferVoid(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)

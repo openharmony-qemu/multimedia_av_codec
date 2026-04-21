@@ -26,6 +26,8 @@
 #include "native_avcodec_videoencoder.h"
 #include "native_averrors.h"
 #include "native_buffer_inner.h"
+#include "native_window.h"
+#include "window.h"
 #include "sample_callback.h"
 #include "vcodec_signal.h"
 
@@ -75,6 +77,9 @@ public:
     int32_t QueryOutputBuffer(EncoderType type, uint32_t *index, int64_t timeoutUs);
     int32_t PushInputBuffer(EncoderType type, uint32_t index);
     int32_t FreeOutputBuffer(EncoderType type, uint32_t index);
+
+    bool CreateSurface();
+    void StopSurfaceInput();
 
     int32_t HandleOutputFrameByEncoderType(EncoderType type, std::shared_ptr<CodecBufferInfo> bufferInfo);
 
@@ -128,6 +133,12 @@ private:
     int32_t ReleaseOutputDataSecondary(EncoderContext &encoderContext, std::shared_ptr<CodecBufferInfo> bufferInfo);
 
     bool InitFile(EncoderType type);
+
+    // Surface input
+    OHNativeWindow *nativeWindow_ = nullptr;
+    std::unique_ptr<std::thread> inputLoop_;
+    void InputFuncSurface();
+    int32_t FlushSurface(OHNativeWindowBuffer *ohNativeWindowBuffer, OH_NativeBuffer *nativeBuffer);
 };
 
 } // namespace MediaAVCodec

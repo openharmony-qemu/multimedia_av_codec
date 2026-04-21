@@ -130,6 +130,7 @@ VideoEncDualOutputSample::VideoEncDualOutputSample()
 VideoEncDualOutputSample::~VideoEncDualOutputSample()
 {
     TITLE_LOG;
+    StopSurfaceInput();
     if (secondaryEncoder_.codec != nullptr) {
         int32_t ret = OH_VideoEncoder_Destroy(secondaryEncoder_.codec);
         UNITTEST_CHECK_AND_INFO_LOG(ret == AV_ERR_OK, "OH_VideoEncoder_Destroy secondary failed");
@@ -138,6 +139,10 @@ VideoEncDualOutputSample::~VideoEncDualOutputSample()
     if (primaryEncoder_.codec != nullptr) {
         int32_t ret = OH_VideoEncoder_Destroy(primaryEncoder_.codec);
         UNITTEST_CHECK_AND_INFO_LOG(ret == AV_ERR_OK, "OH_VideoEncoder_Destroy primary failed");
+    }
+    if (nativeWindow_ != nullptr) {
+        DestoryNativeWindow(nativeWindow_);
+        nativeWindow_ = nullptr;
     }
 }
 
@@ -329,7 +334,11 @@ int32_t VideoEncDualOutputSample::Start(EncoderType type)
         encoderContext.isFirstFrame = true;
     }
     UNITTEST_CHECK_AND_RETURN_RET_LOG(encoderContext.codec != nullptr, AV_ERR_INVALID_VAL, "codec is nullptr");
-    return OH_VideoEncoder_Start(encoderContext.codec);
+    int32_t ret = OH_VideoEncoder_Start(encoderContext.codec);
+    if (ret == AV_ERR_OK && type == EncoderType::PRIMARY && nativeWindow_ != nullptr) {
+        inputLoop_ = make_unique<std::thread>(&VideoEncDualOutputSample::InputFuncSurface, this);
+    }
+    return ret;
 }
 
 int32_t VideoEncDualOutputSample::Stop(EncoderType type)
@@ -679,6 +688,123 @@ int32_t VideoEncDualOutputSample::ReleaseOutputDataSecondary(EncoderContext &enc
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoEncoder_FreeOutputBuffer failed for secondary");
     encoderContext.frameOutputCount_++;
     return AV_ERR_OK;
+}
+
+bool VideoEncDualOutputSample::CreateSurface()
+{
+    TITLE_LOG;
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(primaryEncoder_.codec != nullptr, false, "primary codec is nullptr");
+    int32_t ret = OH_VideoEncoder_GetSurface(primaryEncoder_.codec, &nativeWindow_);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, false, "OH_VideoEncoder_GetSurface failed");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(primaryEncoder_.signal != nullptr && primaryEncoder_.signal->inFile_ != nullptr,
+                                      false, "primary signal or inFile_ is nullptr");
+
+    ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_FORMAT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, false, "NativeWindowHandleOpt SET_FORMAT failed, Error:%d", ret);
+
+    ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_BUFFER_GEOMETRY, sampleWidth_, sampleHeight_);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, false, "NativeWindowHandleOpt SET_BUFFER_GEOMETRY failed, Error:%d", ret);
+
+    ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_USAGE,
+                                                BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, false, "NativeWindowHandleOpt SET_USAGE failed, Error:%d", ret);
+
+    return true;
+}
+
+void VideoEncDualOutputSample::InputFuncSurface()
+{
+    UNITTEST_INFO_LOG("InputFuncSurface started, frameCount_: %d", frameCount_);
+    while (primaryEncoder_.signal->isRunning_.load()) {
+        OHNativeWindowBuffer *ohNativeWindowBuffer = nullptr;
+        int fenceFd = -1;
+        UNITTEST_CHECK_AND_BREAK_LOG(nativeWindow_ != nullptr, "nativeWindow_ == nullptr");
+
+        int32_t err = OH_NativeWindow_NativeWindowRequestBuffer(nativeWindow_, &ohNativeWindowBuffer, &fenceFd);
+        UNITTEST_CHECK_AND_CONTINUE_LOG(err == 0, "RequestBuffer failed, GSError=%d", err);
+        if (fenceFd > 0) {
+            close(fenceFd);
+        }
+        OH_NativeBuffer *nativeBuffer = OH_NativeBufferFromNativeWindowBuffer(ohNativeWindowBuffer);
+        void *virAddr = nullptr;
+        err = OH_NativeBuffer_Map(nativeBuffer, &virAddr);
+        if (err != 0) {
+            UNITTEST_INFO_LOG("OH_NativeBuffer_Map failed, GSError=%d", err);
+            primaryEncoder_.signal->isRunning_.store(false);
+            break;
+        }
+        char *dst = static_cast<char *>(virAddr);
+        const SurfaceBuffer *sbuffer = SurfaceBuffer::NativeBufferToSurfaceBuffer(nativeBuffer);
+        int32_t stride = sbuffer->GetStride();
+        if (dst == nullptr || stride < sampleWidth_) {
+            UNITTEST_INFO_LOG("invalid va or stride=%d", stride);
+            err = NativeWindowCancelBuffer(nativeWindow_, ohNativeWindowBuffer);
+            UNITTEST_CHECK_AND_INFO_LOG(err == 0, "NativeWindowCancelBuffer failed");
+            primaryEncoder_.signal->isRunning_.store(false);
+            break;
+        }
+        if (primaryEncoder_.signal->inFile_->eof()) {
+            (void)primaryEncoder_.signal->inFile_->seekg(0);
+        }
+        int32_t bufferSize = stride * sampleHeight_ * 3 / 2; // 3: nom, 2: denom
+        for (int32_t i = 0; i < bufferSize; i += stride) {
+            (void)primaryEncoder_.signal->inFile_->read(dst + i, sampleWidth_);
+        }
+        if (primaryEncoder_.frameInputCount_ >= static_cast<int32_t>(frameCount_)) {
+            err = OH_NativeBuffer_Unmap(nativeBuffer);
+            (void)err;
+            err = NativeWindowCancelBuffer(nativeWindow_, ohNativeWindowBuffer);
+            (void)err;
+            // Notify EOS for both primary and secondary
+            err = OH_VideoEncoder_NotifyEndOfStream(primaryEncoder_.codec);
+            UNITTEST_CHECK_AND_INFO_LOG(err == AV_ERR_OK, "Primary NotifyEos failed, ret=%d", err);
+            if (secondaryEncoder_.codec != nullptr) {
+                err = OH_VideoEncoder_NotifyEndOfStream(secondaryEncoder_.codec);
+                UNITTEST_CHECK_AND_INFO_LOG(err == AV_ERR_OK, "Secondary NotifyEos failed, ret=%d", err);
+            }
+            break;
+        }
+        err = FlushSurface(ohNativeWindowBuffer, nativeBuffer);
+        UNITTEST_CHECK_AND_BREAK_LOG(err == 0, "FlushSurface failed, GSError=%d", err);
+        primaryEncoder_.frameInputCount_++;
+        usleep(DEFAULT_TIME_INTERVAL);
+    }
+    UNITTEST_INFO_LOG("InputFuncSurface exited, frameInputCount_: %d", primaryEncoder_.frameInputCount_.load());
+}
+
+int32_t VideoEncDualOutputSample::FlushSurface(OHNativeWindowBuffer *ohNativeWindowBuffer,
+                                                OH_NativeBuffer *nativeBuffer)
+{
+    struct Region region;
+    struct Region::Rect *rect = new Region::Rect();
+    rect->x = 0;
+    rect->y = 0;
+    rect->w = sampleWidth_;
+    rect->h = sampleHeight_;
+    region.rects = rect;
+
+    int64_t systemTimeUs = GetTimeUs();
+    OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_UI_TIMESTAMP, systemTimeUs);
+    int32_t ret = OH_NativeBuffer_Unmap(nativeBuffer);
+    if (ret != 0) {
+        UNITTEST_INFO_LOG("OH_NativeBuffer_Unmap failed");
+        delete rect;
+        return ret;
+    }
+    ret = OH_NativeWindow_NativeWindowFlushBuffer(nativeWindow_, ohNativeWindowBuffer, -1, region);
+    delete rect;
+    return ret;
+}
+
+void VideoEncDualOutputSample::StopSurfaceInput()
+{
+    if (primaryEncoder_.signal != nullptr) {
+        primaryEncoder_.signal->isRunning_.store(false);
+    }
+    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
+        inputLoop_->join();
+        inputLoop_.reset();
+    }
 }
 
 } // namespace MediaAVCodec

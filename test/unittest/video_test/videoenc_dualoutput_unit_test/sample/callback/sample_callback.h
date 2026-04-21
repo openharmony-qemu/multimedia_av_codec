@@ -28,6 +28,7 @@ void OnErrorVoid(OH_AVCodec *codec, int32_t errorCode, void *userData);
 void OnStreamChangedVoid(OH_AVCodec *codec, OH_AVFormat *format, void *userData);
 void InBufferHandle(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);
 void OutBufferHandle(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);
+void OutBufferHandleSecondary(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);
 void InBufferVoid(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);
 
 } // namespace MediaAVCodec
