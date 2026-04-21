@@ -15,7 +15,6 @@
 
 #include "api_metrics_util.h"
 #include "avcodec_log.h"
-#include "avcodec_errors.h"
 #include "histogram_plugin_macros.h"
 
 namespace {

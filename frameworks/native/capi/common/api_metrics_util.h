@@ -31,7 +31,8 @@ enum MetricesType : int32_t {
 
 class ApiMetricsReporter {
 public:
-    explicit ApiMetricsReporter(std::string apiName, MetricesType metricesType, int32_t sample = 0);
+    explicit ApiMetricsReporter(std::string apiName, Metri
+        cesType metricesType, int32_t sample = 0);
     ~ApiMetricsReporter();
 
 private:
