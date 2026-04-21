@@ -109,11 +109,7 @@ bool NaluAnalyzerSoLoader::IsNonReferenceFrame(const std::shared_ptr<AVBuffer>& 
     }
     const uint8_t* bufferAddr = inputBuffer->memory_->GetAddr();
     uint32_t bufferSize = static_cast<uint32_t>(inputBuffer->memory_->GetSize());
-    bool isNonRef = isNonReferenceFunc_(soAnalyzer_, bufferAddr, bufferSize);
-    if (isNonRef) {
-        AVCODEC_LOGD("NaluAnalyzer identified non-reference frame (size=%{public}u)", bufferSize);
-    }
-    return isNonRef;
+    return isNonReferenceFunc_(soAnalyzer_, bufferAddr, bufferSize);
 }
 
 bool NaluAnalyzerSoLoader::IsValid() const

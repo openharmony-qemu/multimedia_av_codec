@@ -24,12 +24,10 @@ namespace SFD {
 
 class FullRetentionStrategy : public IRetentionStrategy {
 public:
-    FullRetentionStrategy() noexcept;
+    FullRetentionStrategy();
     ~FullRetentionStrategy() override = default;
 
     bool MakeRetentionDecision(const FrameRetentionContext& ctx) override;
-    void Reset() override;
-    void UpdatePlaybackSpeed(double speed) override;
     RetentionStrategyType GetMode() const override;
     double GetRatio() const override;
     SfdDecisionReason GetLastDecisionReason() const override;

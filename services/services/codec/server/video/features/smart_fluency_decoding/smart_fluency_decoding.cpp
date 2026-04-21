@@ -50,13 +50,6 @@ namespace OHOS {
 namespace MediaAVCodec {
 using namespace Media;
 namespace SFD {
-SmartFluencyDecoding::SmartFluencyDecoding()
-{
-}
-
-SmartFluencyDecoding::~SmartFluencyDecoding()
-{
-}
 
 int32_t SmartFluencyDecoding::Initialize(const SFDConfig& config)
 {
@@ -303,36 +296,6 @@ std::shared_ptr<AVBuffer> SmartFluencyDecoding::FetchInputBufferAndCapabilities(
     return buffer;
 }
 
-SmartFluencyDecoding::PreDecResult SmartFluencyDecoding::EvaluatePreDecode(
-    const std::shared_ptr<AVBuffer>& buffer, const StrategyCaps& caps)
-{
-    PreDecResult res;
-    res.reason = SfdDecisionReason::PRE_RETAIN_REFERENCE;
-    if (naluAnalyzer_ && caps.requiresNalu) {
-#ifdef SFD_DEBUG
-        int64_t naluStartUs = GetCurrentSysTimeUs();
-#endif
-        res.isNonRef = naluAnalyzer_->IsNonReferenceFrame(buffer);
-#ifdef SFD_DEBUG
-        res.naluCostUs = GetCurrentSysTimeUs() - naluStartUs;
-#endif
-        if (res.isNonRef) {
-            double currentEmaRet = dropSyncCoordinator_->GetEmaRatio();
-            if (caps.targetRatio >= 1.0 - RETENTION_RATIO_MIN_DIFF) {
-                res.reason = SfdDecisionReason::PRE_RETAIN_TARGET_FULL;
-            } else if (currentEmaRet <= caps.targetRatio) {
-                res.shouldRetain = true;
-                res.reason = SfdDecisionReason::PRE_RETAIN_EMA_SATISFIED;
-            } else {
-                res.shouldRetain = false;
-                res.reason = SfdDecisionReason::PRE_DROP_EMA_UNSATISFIED;
-            }
-        }
-    } else if (caps.isPassthrough) {
-        res.reason = SfdDecisionReason::PRE_RETAIN_TARGET_FULL;
-    }
-    return res;
-}
 
 void SmartFluencyDecoding::RecordPreDecodeDump(
     const std::shared_ptr<AVBuffer>& buffer, const PreDecResult& res, int64_t startUs)
@@ -355,18 +318,6 @@ void SmartFluencyDecoding::RecordPreDecodeDump(
 #endif
 }
 
-SmartFluencyDecoding::PostDecResult SmartFluencyDecoding::EvaluatePostDecode(const FrameRetentionContext& ctx)
-{
-    PostDecResult res;
-    std::lock_guard<std::mutex> lock(configMutex_);
-    if (!strategy_) {
-        return {true, 1.0, SfdDecisionReason::UNSPECIFIED};
-    }
-    res.shouldRetain = strategy_->MakeRetentionDecision(ctx);
-    res.ratio = strategy_->GetRatio();
-    res.reason = strategy_->GetLastDecisionReason();
-    return res;
-}
 
 void SmartFluencyDecoding::RecordPostDecodeDump(
     int64_t pts, uint32_t preDropCount, const PostDecResult& res,
@@ -403,7 +354,31 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
     if (!isInitialized_ || !buffer || !dropSyncCoordinator_) {
         return true;
     }
-    PreDecResult res = EvaluatePreDecode(buffer, caps);
+
+    PreDecResult res;
+    if (naluAnalyzer_ && caps.requiresNalu) {
+#ifdef SFD_DEBUG
+        int64_t naluStartUs = GetCurrentSysTimeUs();
+#endif
+        res.isNonRef = naluAnalyzer_->IsNonReferenceFrame(buffer);
+#ifdef SFD_DEBUG
+        res.naluCostUs = GetCurrentSysTimeUs() - naluStartUs;
+#endif
+        if (res.isNonRef) {
+            double currentEmaRet = dropSyncCoordinator_->GetEmaRatio();
+            if (caps.targetRatio >= 1.0 - RETENTION_RATIO_MIN_DIFF) {
+                res.reason = SfdDecisionReason::PRE_RETAIN_TARGET_FULL;
+            } else if (currentEmaRet <= caps.targetRatio) {
+                res.reason = SfdDecisionReason::PRE_RETAIN_EMA_SATISFIED;
+            } else {
+                res.shouldRetain = false;
+                res.reason = SfdDecisionReason::PRE_DROP_EMA_UNSATISFIED;
+            }
+        }
+    } else if (caps.isPassthrough) {
+        res.reason = SfdDecisionReason::PRE_RETAIN_TARGET_FULL;
+    }
+
     if (!res.shouldRetain) {
         ExecutePreDrop(index, buffer);
     }
@@ -437,7 +412,7 @@ bool SmartFluencyDecoding::HandlePostDecodePassthrough(int64_t pts, uint32_t pre
         std::lock_guard<std::mutex> lock(configMutex_);
         localSpeed = currentPlaybackSpeed_;
     }
-    UpdateRetentionFeedback(true, 1.0, localSpeed);
+    UpdateRetentionFeedback(true, localSpeed);
 #ifdef SFD_DEBUG
     PostDecResult fastRes {true, 1.0, SfdDecisionReason::POST_RETAIN_FULL};
     RecordPostDecodeDump(pts, preDropCount, fastRes, MVStats(), cost);
@@ -445,11 +420,11 @@ bool SmartFluencyDecoding::HandlePostDecodePassthrough(int64_t pts, uint32_t pre
     return true;
 }
 
-void SmartFluencyDecoding::UpdateRetentionFeedback(bool shouldRetain, double ratio, double speed)
+void SmartFluencyDecoding::UpdateRetentionFeedback(bool shouldRetain, double speed)
 {
     std::lock_guard<std::mutex> lock(configMutex_);
     if (dropSyncCoordinator_) {
-        dropSyncCoordinator_->UpdateFeedback(shouldRetain, ratio, speed);
+        dropSyncCoordinator_->UpdateFeedback(shouldRetain, speed);
     }
 }
 
@@ -459,7 +434,7 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
 #ifdef SFD_DEBUG
     cost.startUs = GetCurrentSysTimeUs();
 #endif
-    if (!isInitialized_ || !strategy_ || !dropSyncCoordinator_ || !surfaceBuffer) {
+    if (!isInitialized_ || !dropSyncCoordinator_ || !surfaceBuffer) {
         return true;
     }
     uint32_t preDropCount = dropSyncCoordinator_->GetAndConsumePreDroppedCount(pts);
@@ -467,6 +442,9 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
     double localSpeed = DEFAULT_PLAYBACK_SPEED;
     {
         std::lock_guard<std::mutex> lock(configMutex_);
+        if (!strategy_) {
+            return true;
+        }
         caps.isPassthrough = strategy_->IsPassthrough();
         caps.requiresMv = strategy_->RequiresMvAnalysis();
         localSpeed = currentPlaybackSpeed_;
@@ -478,9 +456,17 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
     if (caps.requiresMv) {
         ParseMVData(surfaceBuffer, mvStats, cost.copyMvCostUs, cost.analyzeMvCostUs);
     }
+    PostDecResult res;
     FrameRetentionContext ctx { preDropCount, caps.requiresMv ? &mvStats : nullptr };
-    PostDecResult res = EvaluatePostDecode(ctx);
-    UpdateRetentionFeedback(res.shouldRetain, res.ratio, localSpeed);
+    {
+        std::lock_guard<std::mutex> lock(configMutex_);
+        if (strategy_) {
+            res.shouldRetain = strategy_->MakeRetentionDecision(ctx);
+            res.ratio = strategy_->GetRatio();
+            res.reason = strategy_->GetLastDecisionReason();
+        }
+    }
+    UpdateRetentionFeedback(res.shouldRetain, localSpeed);
     AVCODEC_LOGD_WITH_TAG("Strategy decision: shouldRetain %{public}d, ratio %{public}.2f "
         "(index:%{public}u, pts:%{public}" PRId64 ")", res.shouldRetain, res.ratio, index, pts);
     if (!res.shouldRetain) {

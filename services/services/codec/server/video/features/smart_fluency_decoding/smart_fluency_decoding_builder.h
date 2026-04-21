@@ -21,26 +21,23 @@
 #include <string>
 #include "meta/format.h"
 #include "smart_fluency_decoding_types.h"
-#include "buffer/avbuffer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-using namespace Media;
 namespace SFD {
-using AVBuffer = OHOS::Media::AVBuffer;
 
 class SmartFluencyDecoding;
 
 class SmartFluencyDecodingBuilder {
 public:
-    SmartFluencyDecodingBuilder();
-    ~SmartFluencyDecodingBuilder();
+    SmartFluencyDecodingBuilder() = default;
+    ~SmartFluencyDecodingBuilder() = default;
 
     SmartFluencyDecodingBuilder& SetVideoWidth(int32_t width);
     SmartFluencyDecodingBuilder& SetVideoHeight(int32_t height);
     SmartFluencyDecodingBuilder& SetCodecMime(const std::string& mime);
     SmartFluencyDecodingBuilder& UpdatePlaybackSpeed(double speed);
-    SmartFluencyDecodingBuilder& SetFromFormat(const Format& format);
+    SmartFluencyDecodingBuilder& SetFromFormat(const Media::Format& format);
     std::unique_ptr<SmartFluencyDecoding> Build();
 
 private:

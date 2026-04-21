@@ -43,7 +43,7 @@ constexpr const char* DEBUG_PARAM_NEW_RATIO = "sfd.debug.new_ratio";
 constexpr const char* DEBUG_PARAM_NEW_SPEED = "sfd.debug.new_speed";
 constexpr int32_t BASE_DECIMAL = 10;
 
-inline int32_t GetSysParamInt(const char* key, int32_t defValue)
+int32_t GetSysParamInt(const char* key, int32_t defValue)
 {
     std::string valStr = OHOS::system::GetParameter(key, std::to_string(defValue));
     char* end = nullptr;
@@ -59,7 +59,7 @@ inline int32_t GetSysParamInt(const char* key, int32_t defValue)
     return static_cast<int32_t>(val);
 }
 
-inline double GetSysParamDouble(const char* key, double defValue)
+double GetSysParamDouble(const char* key, double defValue)
 {
     std::string valStr = OHOS::system::GetParameter(key, std::to_string(defValue));
     char* end = nullptr;
@@ -81,11 +81,15 @@ SmartFluencyDecodingManager::SmartFluencyDecodingManager(const std::string& code
 {
 }
 
-void SmartFluencyDecodingManager::SetCallbacks(std::function<void(uint32_t, std::shared_ptr<AVBuffer>)> inputCb,
-                                               std::function<void(uint32_t)> outputCb)
+void SmartFluencyDecodingManager::SetCallbacks(SmartFluencyDecoding::AsyncDropInputCallback inputCb,
+                                               SmartFluencyDecoding::AsyncDropOutputCallback outputCb)
 {
     inputCb_ = std::move(inputCb);
     outputCb_ = std::move(outputCb);
+    if (sfd_ != nullptr) {
+        sfd_->SetCallbacks(inputCb_, outputCb_);
+        AVCODEC_LOGD_WITH_TAG("Callbacks dynamically synced to SFD instance");
+    }
 }
 
 void SmartFluencyDecodingManager::Configure(const Media::Format& format)
@@ -116,6 +120,7 @@ void SmartFluencyDecodingManager::Configure(const Media::Format& format)
             }
         }
         sfd->SetTag(this->GetTag());
+        sfd->SetCallbacks(inputCb_, outputCb_);
         sfd_ = std::move(sfd);
         AVCODEC_LOGI_WITH_TAG("SFD initialized successfully");
     }

@@ -24,7 +24,7 @@ namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
 
-FullRetentionStrategy::FullRetentionStrategy() noexcept
+FullRetentionStrategy::FullRetentionStrategy()
 {
     AVCODEC_LOGD("FullRetentionStrategy created");
 }
@@ -34,15 +34,6 @@ bool FullRetentionStrategy::MakeRetentionDecision(const FrameRetentionContext& c
     (void)ctx;
     AVCODEC_LOGD("FullRetentionStrategy decision: true (always retain)");
     return true;
-}
-
-void FullRetentionStrategy::Reset()
-{
-}
-
-void FullRetentionStrategy::UpdatePlaybackSpeed(double speed)
-{
-    (void)speed;
 }
 
 RetentionStrategyType FullRetentionStrategy::GetMode() const

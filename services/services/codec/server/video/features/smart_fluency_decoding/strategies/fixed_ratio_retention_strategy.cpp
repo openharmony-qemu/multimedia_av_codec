@@ -73,11 +73,6 @@ void FixedRatioRetentionStrategy::Reset()
     isFirstFrame_ = true;
 }
 
-void FixedRatioRetentionStrategy::UpdatePlaybackSpeed(double speed)
-{
-    (void)speed;
-}
-
 RetentionStrategyType FixedRatioRetentionStrategy::GetMode() const
 {
     return RetentionStrategyType::FIXED_RATIO;

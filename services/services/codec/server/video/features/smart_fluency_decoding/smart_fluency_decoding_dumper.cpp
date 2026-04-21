@@ -29,6 +29,8 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "SmartF
 constexpr const char* DUMP_DIR = "/data/misc/sfddump/";
 // Reduce segment threshold: Flush to file every 100 frames (approx. 3-5 seconds of video)
 constexpr size_t MAX_DUMP_RECORDS = 100;
+// Precision for floating point numbers in dump file
+constexpr int DUMP_FLOAT_PRECISION = 4;
 }
 
 namespace OHOS {
@@ -289,9 +291,9 @@ void SmartFluencyDecodingDumper::WriteRecordsToStream(std::ofstream& ofs, const 
             << static_cast<int>(rec.mode) << "," << rec.isPreRetained << "," << rec.isPostRetained << ","
             << static_cast<int>(rec.preReason) << "," << static_cast<int>(rec.postReason) << ","
             << rec.preSysTimeMs << "," << rec.postSysTimeMs << "," << rec.preDropCount << ",";
-            
-        ofs << std::fixed << std::setprecision(4) << rec.retentionRate << "," << rec.speed << ",";
-        
+
+        ofs << std::fixed << std::setprecision(DUMP_FLOAT_PRECISION) << rec.retentionRate << "," << rec.speed << ",";
+
         ofs << rec.preDecCostUs << "," << rec.naluCostUs << "," << rec.postDecCostUs << ","
             << rec.copyMvCostUs << "," << rec.analyzeMvCostUs << "," << rec.updateDumperCostUs << ","
             << rec.writeIndex << "," << rec.readIndex << "," << rec.emaRatio << ","

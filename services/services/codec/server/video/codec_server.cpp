@@ -259,8 +259,10 @@ int32_t CodecServer::Configure(const Format &format)
     }
 
     InitSfdManager();
-    sfdManager_->Configure(config);
-    sfdManager_->EnableMVOutput(config);
+    if (sfdManager_) {
+        sfdManager_->Configure(config);
+        sfdManager_->EnableMVOutput(config);
+    }
     int32_t ret = codecBase_->Configure(config);
     if (ret != AVCS_ERR_OK) {
         StatusChanged(ERROR);
@@ -1818,6 +1820,9 @@ void CodecServer::ReleaseBuffer()
 void CodecServer::InitSfdManager()
 {
     if (sfdManager_ != nullptr) {
+        return;
+    }
+    if (!SFD::SmartFluencyDecodingManager::IsCodecSupported(codecMime_, codecType_)) {
         return;
     }
     sfdManager_ = std::make_unique<SFD::SmartFluencyDecodingManager>(codecMime_, codecType_);

@@ -32,8 +32,8 @@ protected:
 
     void SetUp() override
     {
-        dumper_ = std::unique_ptr<SmartFluencyDecodingDumper>(new SmartFluencyDecodingDumper(
-            SFDCodecType::AVC, WIDTH_1080P, HEIGHT_1080P, RetentionStrategyType::ADAPTIVE));
+        dumper_ = std::make_unique<SmartFluencyDecodingDumper>(
+            SFDCodecType::AVC, WIDTH_1080P, HEIGHT_1080P, RetentionStrategyType::ADAPTIVE);
     }
 
     void TearDown() override

@@ -66,7 +66,9 @@ HWTEST_F(FixedRatioRetentionStrategyTest, MakeDecision_33PercentRatio_002, TestS
     int retainedCount = 0;
     FrameRetentionContext ctx{};
     for (int i = 0; i < DEFAULT_TOTAL_FRAMES; ++i) {
-        if (strategy->MakeRetentionDecision(ctx)) retainedCount++;
+        if (strategy->MakeRetentionDecision(ctx)) {
+            retainedCount++;
+        }
     }
     EXPECT_NEAR(retainedCount, 33, 1); // 33: expected count
 }

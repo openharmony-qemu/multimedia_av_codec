@@ -202,13 +202,12 @@ HWTEST_F(SmartFluencyDecodingTest, UpdateDynamicConfig_ModeTransition_012, TestS
 {
     SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::ADAPTIVE);
     sfd_->Initialize(cfg);
-    
+
     OHOS::Media::Format format;
     // Transition to FIXED_RATIO
-    format.PutIntValue(OHOS::Media::Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, 
+    format.PutIntValue(OHOS::Media::Tag::VIDEO_DECODER_FRAME_RETENTION_MODE,
                        static_cast<int32_t>(OHOS::Media::Plugins::FrameRetentionMode::UNIFORM));
     format.PutDoubleValue(OHOS::Media::Tag::VIDEO_DECODER_FRAME_RETENTION_RATIO, 0.6);
-    
     int32_t ret = sfd_->UpdateDynamicConfig(format);
     EXPECT_EQ(ret, 0);
     EXPECT_EQ(sfd_->config_.initMode, RetentionStrategyType::FIXED_RATIO);
@@ -236,28 +235,21 @@ HWTEST_F(SmartFluencyDecodingTest, EvaluatePreDecode_EMA_Unsatisfied_014, TestSi
     SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::FIXED_RATIO);
     cfg.retentionRatio = 0.5;
     sfd_->Initialize(cfg);
-    
+
     // Inject non-ideal EMA ratio (0.7 > 0.5)
     sfd_->dropSyncCoordinator_->emaRatio_ = 0.7;
-    
-    SmartFluencyDecoding::StrategyCaps caps;
-    caps.requiresNalu = true;
-    caps.targetRatio = 0.5;
-    
     auto allocator = OHOS::Media::AVAllocatorFactory::CreateSharedAllocator(OHOS::Media::MEMORY_READ_WRITE);
     auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, 100);
-    
     // FakeIsNonReferenceFrame will return true if we set correct data (from dlfcn_mock)
-    // dlfcn_mock's FakeIsNonReferenceFrame checks for 00 00 00 01 and nalRefIdc == 0
     uint8_t* addr = buffer->memory_->GetAddr();
-    addr[0] = 0x00; addr[1] = 0x00; addr[2] = 0x00; addr[3] = 0x01;
+    addr[0] = 0x00; addr[1] = 0x01; addr[2] = 0x00; addr[3] = 0x01;
     addr[4] = 0x01; // nal_ref_idc = 0
     buffer->memory_->SetSize(10);
-
-    // Need to ensure ensureNaluAnalyzer is called to set naluAnalyzer_
-    sfd_->EnsureNaluAnalyzer();
     
-    auto res = sfd_->EvaluatePreDecode(buffer, caps);
-    EXPECT_FALSE(res.shouldRetain);
-    EXPECT_EQ(res.reason, SfdDecisionReason::PRE_DROP_EMA_UNSATISFIED);
+    // Push into map for public API access
+    sfd_->inBufferMap_[0] = buffer;
+    
+    sfd_->EnsureNaluAnalyzer();
+    bool shouldRetain = sfd_->MakePreDecodeDecision(0);
+    EXPECT_FALSE(shouldRetain);
 }

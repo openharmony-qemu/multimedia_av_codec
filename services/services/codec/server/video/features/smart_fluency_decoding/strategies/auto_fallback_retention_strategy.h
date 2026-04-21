@@ -26,11 +26,10 @@ namespace SFD {
 
 class AutoFallbackRetentionStrategy : public IRetentionStrategy {
 public:
-    AutoFallbackRetentionStrategy() noexcept;
+    AutoFallbackRetentionStrategy();
     ~AutoFallbackRetentionStrategy() override = default;
 
     bool MakeRetentionDecision(const FrameRetentionContext& ctx) override;
-    void UpdatePlaybackSpeed(double speed) override;
     void Reset() override;
     RetentionStrategyType GetMode() const override;
     double GetRatio() const override;

@@ -33,8 +33,8 @@ public:
     virtual ~IRetentionStrategy() = default;
 
     virtual bool MakeRetentionDecision(const FrameRetentionContext& ctx) = 0;
-    virtual void UpdatePlaybackSpeed(double speed) = 0;
-    virtual void Reset() = 0;
+    virtual void UpdatePlaybackSpeed(double /* speed */) {}
+    virtual void Reset() {}
     virtual RetentionStrategyType GetMode() const = 0;
     virtual double GetRatio() const = 0;
     virtual SfdDecisionReason GetLastDecisionReason() const { return SfdDecisionReason::UNSPECIFIED; }

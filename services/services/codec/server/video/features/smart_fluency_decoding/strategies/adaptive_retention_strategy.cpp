@@ -18,63 +18,72 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "AdaptiveStrategy"};
-constexpr double MAX_SPEED_FOR_RETENTION = 1.2;
+constexpr double MAX_SPEED_FOR_RETENTION = 1.0;
 constexpr double MAX_DROPS_MULTIPLIER_HIGH = 30.0;
 
 struct DecisionNode {
-    double threshold;
-    int8_t featureIndex;
-    int8_t left;
-    int8_t right;
-    int8_t classId;
     bool isLeaf;
+    union {
+        struct {
+            double threshold;
+            int8_t featureIndex;
+            int8_t left;
+            int8_t right;
+        } internal;
+        struct {
+            int8_t classId;
+        } leaf;
+    };
+    constexpr DecisionNode(double th, int8_t fIdx, int8_t l, int8_t r)
+        : isLeaf(false), internal{th, fIdx, l, r} {}
+    constexpr explicit DecisionNode(int classId)
+        : isLeaf(true), leaf{static_cast<int8_t>(classId)} {}
+};
+constexpr int NUM_RULES = 15;
+constexpr DecisionNode RETENTION_DECISION_RULES[NUM_RULES] = {
+    DecisionNode(21.0108261108, 0, 1, 8), // rule 0
+    DecisionNode(6.5326397419, 0, 2, 5),  // rule 1
+    DecisionNode(0.6923948228, 1, 3, 4),  // rule 2
+    DecisionNode(0),                      // rule 3: leaf
+    DecisionNode(0),                      // rule 4: leaf
+    DecisionNode(0.4727701843, 1, 6, 7),  // rule 5
+    DecisionNode(1),                      // rule 6: leaf
+    DecisionNode(1),                      // rule 7: leaf
+    DecisionNode(0.5533757210, 1, 9, 12), // rule 8
+    DecisionNode(0.3526516557, 1, 10, 11),// rule 9
+    DecisionNode(1),                      // rule 10: leaf
+    DecisionNode(1),                      // rule 11: leaf
+    DecisionNode(0.9898027778, 1, 13, 14),// rule 12
+    DecisionNode(1),                      // rule 13: leaf
+    DecisionNode(0),                      // rule 14: leaf
 };
 
-constexpr int NUM_NODES = 15;
-
-constexpr DecisionNode TREE_NODES[NUM_NODES] = {
-    { 21.0108261108,  0,  1,  8, -1, false }, // node 0
-    {  6.5326397419,  0,  2,  5, -1, false }, // node 1
-    {  0.6923948228,  1,  3,  4, -1, false }, // node 2
-    { -2.0000000000, -1, -1, -1,  0, true  }, // node 3
-    { -2.0000000000, -1, -1, -1,  0, true  }, // node 4
-    {  0.4727701843,  1,  6,  7, -1, false }, // node 5
-    { -2.0000000000, -1, -1, -1,  1, true  }, // node 6
-    { -2.0000000000, -1, -1, -1,  1, true  }, // node 7
-    {  0.5533757210,  1,  9, 12, -1, false }, // node 8
-    {  0.3526516557,  1, 10, 11, -1, false }, // node 9
-    { -2.0000000000, -1, -1, -1,  1, true  }, // node 10
-    { -2.0000000000, -1, -1, -1,  1, true  }, // node 11
-    {  0.9898027778,  1, 13, 14, -1, false }, // node 12
-    { -2.0000000000, -1, -1, -1,  1, true  }, // node 13
-    { -2.0000000000, -1, -1, -1,  0, true  }, // node 14
-};
-
-class FluencyDecisionTree {
+class FluencyEvaluator {
 public:
-    static bool Predict(double perceptualMagnitude, double motionConsistency)
+    static bool ShouldRetainFrame(double perceptualMagnitude, double motionConsistency)
     {
-        double features[2] = {perceptualMagnitude, motionConsistency};
-        int8_t nodeId = 0;
-        while (!TREE_NODES[nodeId].isLeaf) {
-            int8_t featIdx = TREE_NODES[nodeId].featureIndex;
-            double thresh = TREE_NODES[nodeId].threshold;
-            if (features[featIdx] <= thresh) {
-                nodeId = TREE_NODES[nodeId].left;
+        double features[2] = {perceptualMagnitude, motionConsistency}; // 2: feature count
+        int8_t ruleId = 0;
+
+        while (!RETENTION_DECISION_RULES[ruleId].isLeaf) {
+            const auto& rule = RETENTION_DECISION_RULES[ruleId].internal;
+            if (features[rule.featureIndex] <= rule.threshold) {
+                ruleId = rule.left;
             } else {
-                nodeId = TREE_NODES[nodeId].right;
+                ruleId = rule.right;
             }
         }
-        return TREE_NODES[nodeId].classId != 0;
+        return RETENTION_DECISION_RULES[ruleId].leaf.classId != 0;
     }
 };
+
 } // namespace
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
 
-AdaptiveRetentionStrategy::AdaptiveRetentionStrategy() noexcept
+AdaptiveRetentionStrategy::AdaptiveRetentionStrategy()
 {
     AVCODEC_LOGD("AdaptiveRetentionStrategy created");
 }
@@ -88,8 +97,8 @@ bool AdaptiveRetentionStrategy::MakeRetentionDecision(const FrameRetentionContex
     } else if (ctx.mvStats && ctx.mvStats->validBlocks > 0) {
         double consistency = ctx.mvStats->motionConsistency;
         double magnitude = ctx.mvStats->perceptualMagnitude * currentSpeed_;
-        bool retentionFlag = FluencyDecisionTree::Predict(magnitude, consistency);
-        if (!retentionFlag) {
+        bool shouldRetain = FluencyEvaluator::ShouldRetainFrame(magnitude, consistency);
+        if (!shouldRetain) {
             dropCount_++;
             uint32_t maxDrops = static_cast<uint32_t>((currentSpeed_ - 1.0) * MAX_DROPS_MULTIPLIER_HIGH);
             targetRatio_ = 1.0 / (maxDrops + 1.0);

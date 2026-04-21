@@ -4,7 +4,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,7 +26,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "AutoFa
 constexpr double DEFAULT_FALLBACK_RATIO = 0.8;
 }
 
-AutoFallbackRetentionStrategy::AutoFallbackRetentionStrategy() noexcept
+AutoFallbackRetentionStrategy::AutoFallbackRetentionStrategy()
 {
     fallbackDropper_ = std::make_unique<FixedRatioRetentionStrategy>(DEFAULT_FALLBACK_RATIO);
     AVCODEC_LOGD("AutoFallbackRetentionStrategy created (Delegating to FixedRatio: %{public}.2f)",
@@ -36,11 +36,6 @@ AutoFallbackRetentionStrategy::AutoFallbackRetentionStrategy() noexcept
 bool AutoFallbackRetentionStrategy::MakeRetentionDecision(const FrameRetentionContext& ctx)
 {
     return fallbackDropper_->MakeRetentionDecision(ctx);
-}
-
-void AutoFallbackRetentionStrategy::UpdatePlaybackSpeed(double speed)
-{
-    fallbackDropper_->UpdatePlaybackSpeed(speed);
 }
 
 void AutoFallbackRetentionStrategy::Reset()

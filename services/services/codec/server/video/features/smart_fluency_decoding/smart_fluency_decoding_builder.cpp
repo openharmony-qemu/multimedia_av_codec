@@ -34,11 +34,6 @@ namespace OHOS {
 namespace MediaAVCodec {
 using namespace Media;
 namespace SFD {
-SmartFluencyDecodingBuilder::SmartFluencyDecodingBuilder()
-{
-}
-
-SmartFluencyDecodingBuilder::~SmartFluencyDecodingBuilder() = default;
 
 SmartFluencyDecodingBuilder& SmartFluencyDecodingBuilder::SetVideoWidth(int32_t width)
 {

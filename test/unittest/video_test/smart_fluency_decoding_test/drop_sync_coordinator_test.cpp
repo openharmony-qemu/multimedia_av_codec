@@ -137,26 +137,13 @@ HWTEST_F(DropSyncCoordinatorTest, GetAndConsume_StressTest_004, TestSize.Level1)
 // EMA Feedback Tests
 // ==========================================
 
-/**
- * @tc.name: UpdateFeedback_TargetRatio_005
- * @tc.desc: Validate that UpdateFeedback correctly updates and stores the target ratio.
- * @tc.type: FUNC
- */
-HWTEST_F(DropSyncCoordinatorTest, UpdateFeedback_TargetRatio_005, TestSize.Level1)
-{
-    tracker_.UpdateFeedback(false, 0.3, 1.0); // 0.3: target ratio
-    EXPECT_NEAR(tracker_.GetTargetRatio(), 0.3, DEFAULT_TOLERANCE);
-
-    tracker_.UpdateFeedback(false, 0.7, 1.0); // 0.7: target ratio
-    EXPECT_NEAR(tracker_.GetTargetRatio(), 0.7, DEFAULT_TOLERANCE);
-}
 
 HWTEST_F(DropSyncCoordinatorTest, UpdateFeedback_EmaIncrease_006, TestSize.Level1)
 {
     EXPECT_NEAR(tracker_.GetEmaRatio(), 1.0, DEFAULT_TOLERANCE);
 
     for (int i = 0; i < 10; ++i) { // 10: iterations
-        tracker_.UpdateFeedback(true, 0.5, 1.0); // 0.5: target ratio
+        tracker_.UpdateFeedback(true, 1.0);
     }
 
     EXPECT_NEAR(tracker_.GetEmaRatio(), 1.0, DEFAULT_TOLERANCE);
@@ -170,7 +157,7 @@ HWTEST_F(DropSyncCoordinatorTest, UpdateFeedback_PreDroppedCount_007, TestSize.L
 
 HWTEST_F(DropSyncCoordinatorTest, Reset_ClearsEma_008, TestSize.Level1)
 {
-    tracker_.UpdateFeedback(false, 0.5, 1.0); // 0.5: target ratio
+    tracker_.UpdateFeedback(false, 1.0);
     EXPECT_LT(tracker_.GetEmaRatio(), 1.0);
 
     tracker_.Reset();
@@ -183,8 +170,8 @@ HWTEST_F(DropSyncCoordinatorTest, UpdateFeedback_SpeedAffectsAlpha_009, TestSize
     DropSyncCoordinator slow;
 
     for (int i = 0; i < 5; ++i) { // 5: iterations
-        fast.UpdateFeedback(false, 0.5, 3.0); // 3.0: high speed
-        slow.UpdateFeedback(false, 0.5, 0.5); // 0.5: low speed
+        fast.UpdateFeedback(false, 3.0); // 3.0: high speed
+        slow.UpdateFeedback(false, 0.5); // 0.5: low speed
     }
 
     EXPECT_LT(fast.GetEmaRatio(), slow.GetEmaRatio());

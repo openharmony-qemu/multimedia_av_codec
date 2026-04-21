@@ -121,24 +121,22 @@ HWTEST_F(AsyncDropDispatcherTest, SubmitTask_TaskOrdering_004, TestSize.Level1)
     std::condition_variable cv;
     for (int i = 0; i < NUM_TASKS_FIFO; ++i) {
         dispatcher.SubmitTask([&mtx, &results, &cv, i]() {
-            std::lock_guard<std::mutex> lock(mtx);
-            results.push_back(i);
-            if (static_cast<int>(results.size()) == NUM_TASKS_FIFO) {
-                cv.notify_one();
+            {
+                std::lock_guard<std::mutex> lock(mtx);
+                results.push_back(i);
             }
+            cv.notify_one();
         });
     }
-
-    // Wait for completion
-    std::unique_lock<std::mutex> lock(mtx);
-    bool success = cv.wait_for(lock, std::chrono::seconds(5), [&results]() {
-        return static_cast<int>(results.size()) == NUM_TASKS_FIFO;
-    });
-    EXPECT_TRUE(success);
-    
+    {
+        std::unique_lock<std::mutex> lock(mtx);
+        bool success = cv.wait_for(lock, std::chrono::seconds(5), [&results]() {
+            return static_cast<int>(results.size()) == NUM_TASKS_FIFO;
+        });
+        EXPECT_TRUE(success);
+    }
     std::lock_guard<std::mutex> verifyLock(mtx);
-    EXPECT_EQ(static_cast<int>(results.size()), NUM_TASKS_FIFO);
-    // Verify FIFO order
+    ASSERT_EQ(static_cast<int>(results.size()), NUM_TASKS_FIFO);
     for (int i = 0; i < static_cast<int>(results.size()); ++i) {
         EXPECT_EQ(results[i], i);
     }

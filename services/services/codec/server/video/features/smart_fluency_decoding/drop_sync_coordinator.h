@@ -33,8 +33,7 @@ public:
     uint32_t GetAndConsumePreDroppedCount(int64_t currentPts);
     void Reset();
     double GetEmaRatio() const;
-    double GetTargetRatio() const;
-    void UpdateFeedback(bool isRetained, double targetRatio, double speed);
+    void UpdateFeedback(bool isRetained, double speed);
     size_t GetWriteIndex() const;
     size_t GetReadIndex() const;
 
@@ -47,7 +46,6 @@ private:
     alignas(cacheLineSize) std::atomic<size_t> writeIndex_{0};
     alignas(cacheLineSize) std::atomic<size_t> readIndex_{0};
     double emaRatio_{1.0};
-    double targetRatio_{1.0};
     mutable std::mutex feedbackMutex_;
 };
 } // namespace SFD

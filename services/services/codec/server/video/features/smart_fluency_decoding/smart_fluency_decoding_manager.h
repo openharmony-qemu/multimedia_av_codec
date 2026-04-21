@@ -35,11 +35,10 @@ namespace SFD {
 class SmartFluencyDecodingManager : public AVCodecDfxComponent {
 public:
     SmartFluencyDecodingManager(const std::string& codecMime, AVCodecType codecType);
-    ~SmartFluencyDecodingManager() = default;
-
+    static bool IsCodecSupported(const std::string& codecMime, AVCodecType codecType);
     void Configure(const Media::Format& format);
-    void SetCallbacks(std::function<void(uint32_t, std::shared_ptr<AVBuffer>)> inputCb,
-                      std::function<void(uint32_t)> outputCb);
+    void SetCallbacks(SmartFluencyDecoding::AsyncDropInputCallback inputCb,
+                      SmartFluencyDecoding::AsyncDropOutputCallback outputCb);
     void CleanResources();
     void Flush();
     bool IsSfdActive() const;
@@ -51,7 +50,6 @@ public:
 
 private:
     void CacheCsdData(uint32_t index);
-    bool IsCodecSupported(const std::string& codecMime, AVCodecType codecType);
     void ExtractCsdData(const std::shared_ptr<AVBuffer>& buffer);
 #ifdef SFD_DEBUG
     void ApplyDebugConfig(Media::Format& format);
@@ -62,8 +60,8 @@ private:
     AVCodecType codecType_;
     std::unique_ptr<SmartFluencyDecodingBuilder> builder_{nullptr};
     std::unique_ptr<SmartFluencyDecoding> sfd_{nullptr};
-    std::function<void(uint32_t, std::shared_ptr<AVBuffer>)> inputCb_;
-    std::function<void(uint32_t)> outputCb_;
+    SmartFluencyDecoding::AsyncDropInputCallback inputCb_;
+    SmartFluencyDecoding::AsyncDropOutputCallback outputCb_;
     std::vector<uint8_t> cachedCsdData_;
     bool isCsdCached_ = false;
     std::mutex tempCsdMutex_;

@@ -15,7 +15,14 @@
 
 #include <string>
 #include <cstdint>
+#include <cstring>
 #include "smart_fluency_decoding_types.h"
+
+namespace {
+constexpr uint8_t ANNEXB_START_CODE[] = {0x00, 0x00, 0x00, 0x01};
+constexpr size_t START_CODE_LEN = sizeof(ANNEXB_START_CODE);
+constexpr size_t MIN_VALID_NALU_SIZE = START_CODE_LEN + 1;
+}
 
 #define NALU_MOCK_HANDLE (reinterpret_cast<void*>(0x9999))
 #define MV_MOCK_HANDLE   (reinterpret_cast<void*>(0x8888))
@@ -37,13 +44,12 @@ extern "C" {
     bool FakeIsNonReferenceFrame(void* analyzer, const uint8_t* bufferAddr, uint32_t bufferSize)
     {
         (void)analyzer;
-        if (bufferAddr == nullptr || bufferSize < 5) { // 5: Start code (4) + NALU Header (1)
+        if (bufferAddr == nullptr || bufferSize < MIN_VALID_NALU_SIZE) {
             return false;
         }
-        // Start Code: 00 00 00 01
-        if (bufferAddr[0] == 0x00 && bufferAddr[1] == 0x00 &&
-            bufferAddr[2] == 0x00 && bufferAddr[3] == 0x01) {
-            uint8_t naluHeader = bufferAddr[4];
+
+        if (std::memcmp(bufferAddr, ANNEXB_START_CODE, START_CODE_LEN) == 0) {
+            uint8_t naluHeader = bufferAddr[START_CODE_LEN];
             uint8_t nalRefIdc = (naluHeader >> 5) & 0x03;
             return nalRefIdc == 0;
         }

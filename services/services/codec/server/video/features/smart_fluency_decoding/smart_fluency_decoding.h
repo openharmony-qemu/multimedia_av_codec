@@ -45,8 +45,8 @@ public:
     static void ParseRetentionConfig(
         const Media::Format& format, RetentionStrategyType& mode, std::optional<double>& ratio);
 
-    SmartFluencyDecoding();
-    ~SmartFluencyDecoding();
+    SmartFluencyDecoding() = default;
+    ~SmartFluencyDecoding() = default;
 
     int32_t Initialize(const SFDConfig& config);
     void UpdatePlaybackSpeed(double speed);
@@ -89,9 +89,7 @@ private:
     };
 
     std::shared_ptr<AVBuffer> FetchInputBufferAndCapabilities(uint32_t index, StrategyCaps& caps);
-    PreDecResult EvaluatePreDecode(const std::shared_ptr<AVBuffer>& buffer, const StrategyCaps& caps);
     void RecordPreDecodeDump(const std::shared_ptr<AVBuffer>& buffer, const PreDecResult& res, int64_t startUs);
-    PostDecResult EvaluatePostDecode(const FrameRetentionContext& ctx);
     void RecordPostDecodeDump(int64_t pts, uint32_t preDropCount, const PostDecResult& res,
                               const MVStats& mvStats, const PostDecCost& cost);
     int32_t InitializeInternal();
@@ -103,7 +101,7 @@ private:
     void ExecutePreDrop(uint32_t index, std::shared_ptr<AVBuffer> buffer);
     void ExecutePostDrop(uint32_t index);
     bool HandlePostDecodePassthrough(int64_t pts, uint32_t preDropCount, const PostDecCost& cost);
-    void UpdateRetentionFeedback(bool shouldRetain, double ratio, double speed);
+    void UpdateRetentionFeedback(bool shouldRetain, double speed);
     void ApplyNewStrategy(RetentionStrategyType newMode, const std::optional<double>& newRatio);
 
     mutable std::mutex configMutex_;

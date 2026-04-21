@@ -36,11 +36,7 @@ bool DropSyncCoordinator::RecordPreDroppedFrame(int64_t pts, double speed)
     ptsRingBuffer_[index] = pts;
     isConsumed_[index].store(false, std::memory_order_release);
     writeIndex_.store(nextWrite, std::memory_order_release);
-    {
-        std::lock_guard<std::mutex> lock(feedbackMutex_);
-        double alpha = std::min(1.0, BASE_ALPHA * speed);
-        emaRatio_ = (1.0 - alpha) * emaRatio_;
-    }
+    UpdateFeedback(false, speed);
     AVCODEC_LOGD("Recorded pre-dropped PTS %{public}" PRId64 ", writeIndex: %{public}zu", pts, nextWrite);
     return true;
 }
@@ -71,15 +67,14 @@ uint32_t DropSyncCoordinator::GetAndConsumePreDroppedCount(int64_t currentPts)
     return count;
 }
 
-void DropSyncCoordinator::UpdateFeedback(bool isRetained, double targetRatio, double speed)
+void DropSyncCoordinator::UpdateFeedback(bool isRetained, double speed)
 {
     std::lock_guard<std::mutex> lock(feedbackMutex_);
     double alpha = std::min(1.0, BASE_ALPHA * speed);
     double currentVal = isRetained ? 1.0 : 0.0;
     emaRatio_ = alpha * currentVal + (1.0 - alpha) * emaRatio_;
-    targetRatio_ = targetRatio;
-    AVCODEC_LOGD("isRetained=%{public}d, targetRatio=%{public}.2f, emaRatio=%{public}.4f",
-        isRetained, targetRatio_, emaRatio_);
+    AVCODEC_LOGD("isRetained=%{public}d, emaRatio=%{public}.4f",
+        isRetained, emaRatio_);
 }
 
 void DropSyncCoordinator::Reset()
@@ -95,7 +90,6 @@ void DropSyncCoordinator::Reset()
     }
     std::lock_guard<std::mutex> lock(feedbackMutex_);
     emaRatio_ = 1.0;
-    targetRatio_ = 1.0;
     AVCODEC_LOGI("Reset DropSyncCoordinator");
 }
 
@@ -103,12 +97,6 @@ double DropSyncCoordinator::GetEmaRatio() const
 {
     std::lock_guard<std::mutex> lock(feedbackMutex_);
     return emaRatio_;
-}
-
-double DropSyncCoordinator::GetTargetRatio() const
-{
-    std::lock_guard<std::mutex> lock(feedbackMutex_);
-    return targetRatio_;
 }
 
 size_t DropSyncCoordinator::GetWriteIndex() const
