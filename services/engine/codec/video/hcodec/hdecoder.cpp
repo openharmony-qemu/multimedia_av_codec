@@ -42,6 +42,8 @@ using namespace CodecHDI;
 
 constexpr int JANK_FAULT_THRESHOLD = 300 * 1000; //300ms
 constexpr int JANK_THRESHOLD = 100 * 1000; //100ms
+const int FIRST = 1;
+const int SECOND = 2;
 
 std::shared_mutex g_xperfMtx;
 sptr<HDecoder::XperfConnector> g_xperfConnector = nullptr;
@@ -1578,7 +1580,7 @@ int32_t HDecoder::VrrPrediction(BufferInfo &info)
 void HDecoder::PerfMeasure(int64_t lastFlushTime)
 {
     currSurface_.flushCnt_++;
-    if (currSurface_.flushCnt_ == 1) { //第一帧
+    if (currSurface_.flushCnt_ == FIRST) { //第一帧
         currSurface_.lastFlushTime_ = lastFlushTime;
  
         std::stringstream ss;
@@ -1598,7 +1600,7 @@ void HDecoder::PerfMeasure(int64_t lastFlushTime)
         SendAsyncMsg(MsgWhat::CHECK_FRAME_INTERVAL, nullptr, JANK_FAULT_THRESHOLD);
         timer = true;
     }
-    if (currSurface_.flushCnt_ == 2) {
+    if (currSurface_.flushCnt_ == SECOND) {
         detect = true;
         currSurface_.beginTime_ = lastFlushTime;
         currSurface_.lastFlushTime_ = lastFlushTime;
