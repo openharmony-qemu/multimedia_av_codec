@@ -253,7 +253,7 @@ void SetDropTag(const AVPacket& pkt, std::shared_ptr<AVBuffer> sample, AVCodecID
         canDrop = CanDropAvcPkt(pkt);
     }
     if (canDrop) {
-        sample->meta_->SetData(Media::Tag::VIDEO_BUFFER_CAN_DROP, true);
+        sample->meta_->Set<Media::Tag::VIDEO_BUFFER_CAN_DROP>(true);
     }
 }
 

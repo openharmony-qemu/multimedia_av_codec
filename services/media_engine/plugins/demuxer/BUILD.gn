@@ -97,6 +97,7 @@ if (av_codec_support_demuxer) {
     external_deps = [
       "c_utils:utils",
       "ffmpeg:libohosffmpeg",
+      "graphic_surface:surface",
       "hicollie:libhicollie",
       "hilog:libhilog",
       "hisysevent:libhisysevent",
@@ -154,6 +155,7 @@ if (av_codec_support_demuxer) {
     external_deps = [
       "c_utils:utils",
       "ffmpeg:libohosffmpeg",
+      "graphic_surface:surface",
       "hicollie:libhicollie",
       "hilog:libhilog",
       "hisysevent:libhisysevent",

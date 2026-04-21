@@ -13,10 +13,12 @@
  * limitations under the License.
  */
 
+#include <cstdint>
 #include <list>
 #include <mutex>
 #include <queue>
 #include <shared_mutex>
+#include <string>
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "avcodec_trace.h"
@@ -31,390 +33,26 @@
 #include "native_window.h"
 #include "hiappevent_util.h"
 #include "api_metrics_util.h"
+#include "preprocessor_encoder.h"
+#include "video_encoder_object.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "NativeVideoEncoder"};
-constexpr size_t MAX_TEMPNUM = 64;
-constexpr uint32_t MAX_LENGTH = 255;
-
-using namespace OHOS::MediaAVCodec;
-using namespace OHOS::Media;
-class NativeVideoEncoderCallback;
-
-struct VideoEncoderObject : public OH_AVCodec {
-    explicit VideoEncoderObject(const std::shared_ptr<AVCodecVideoEncoder> &encoder)
-        : OH_AVCodec(AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER), videoEncoder_(encoder)
-    {
-    }
-    ~VideoEncoderObject() = default;
-
-    void ClearBufferList();
-    void StopCallback();
-    void FormatToTempFunc(std::unordered_map<uint32_t, OHOS::sptr<OH_AVFormat>> &tempMap);
-    void BufferToTempFunc(std::unordered_map<uint32_t, OHOS::sptr<OH_AVBuffer>> &tempMap);
-    void MemoryToTempFunc(std::unordered_map<uint32_t, OHOS::sptr<OH_AVMemory>> &tempMap);
-    OH_AVBuffer *GetTransData(const uint32_t &index, std::shared_ptr<AVBuffer> &buffer, bool isOutput);
-    OH_AVMemory *GetTransData(const uint32_t &index, std::shared_ptr<AVSharedMemory> &memory, bool isOutput);
-    OH_AVFormat *GetTransData(const uint32_t &index, std::shared_ptr<Format> &format);
-
-    const std::shared_ptr<AVCodecVideoEncoder> videoEncoder_;
-    std::queue<OHOS::sptr<MFObjectMagic>> tempList_;
-    std::unordered_map<uint32_t, OHOS::sptr<OH_AVFormat>> inputFormatMap_;
-    std::unordered_map<uint32_t, OHOS::sptr<OH_AVMemory>> outputMemoryMap_;
-    std::unordered_map<uint32_t, OHOS::sptr<OH_AVMemory>> inputMemoryMap_;
-    std::unordered_map<uint32_t, OHOS::sptr<OH_AVBuffer>> outputBufferMap_;
-    std::unordered_map<uint32_t, OHOS::sptr<OH_AVBuffer>> inputBufferMap_;
-    std::shared_ptr<NativeVideoEncoderCallback> callback_ = nullptr;
-    bool isSetMemoryCallback_ = false;
-    bool isInputSurfaceMode_ = false;
-    std::shared_mutex objListMutex_;
-};
-
-class NativeVideoEncoderCallback : public AVCodecCallback,
-                                   public MediaCodecCallback,
-                                   public MediaCodecParameterCallback {
-public:
-    NativeVideoEncoderCallback(OH_AVCodec *codec, struct OH_AVCodecAsyncCallback cb, void *userData)
-        : codec_(codec), asyncCallback_(cb), userData_(userData)
-    {
-    }
-
-    NativeVideoEncoderCallback(OH_AVCodec *codec, OH_VideoEncoder_OnNeedInputParameter onInputParameter, void *userData)
-        : codec_(codec), onInputParameter_(onInputParameter), paramUserData_(userData)
-    {
-    }
-
-    NativeVideoEncoderCallback(OH_AVCodec *codec, struct OH_AVCodecCallback cb, void *userData)
-        : codec_(codec), callback_(cb), userData_(userData)
-    {
-    }
-    virtual ~NativeVideoEncoderCallback() = default;
-
-    void OnError(AVCodecErrorType errorType, int32_t errorCode) override
-    {
-        std::shared_lock<std::shared_mutex> lock(mutex_);
-        (void)errorType;
-
-        CHECK_AND_RETURN_LOG(codec_ != nullptr, "Codec is nullptr");
-        CHECK_AND_RETURN_LOG(codec_->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, "Codec magic error!");
-        CHECK_AND_RETURN_LOG(asyncCallback_.onError != nullptr || callback_.onError != nullptr, "Callback is nullptr");
-        int32_t extErr = AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(errorCode));
-        if (asyncCallback_.onError != nullptr) {
-            asyncCallback_.onError(codec_, extErr, userData_);
-        } else if (callback_.onError != nullptr) {
-            callback_.onError(codec_, extErr, userData_);
-        }
-    }
-
-    void OnOutputFormatChanged(const Format &format) override
-    {
-        std::shared_lock<std::shared_mutex> lock(mutex_);
-
-        CHECK_AND_RETURN_LOG(codec_ != nullptr, "Codec is nullptr");
-        CHECK_AND_RETURN_LOG(codec_->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, "Codec magic error!");
-        CHECK_AND_RETURN_LOG(asyncCallback_.onStreamChanged != nullptr || callback_.onStreamChanged != nullptr,
-                             "Callback is nullptr");
-        OHOS::sptr<OH_AVFormat> object = new (std::nothrow) OH_AVFormat(format);
-        CHECK_AND_RETURN_LOG(object != nullptr, "OH_AVFormat create failed");
-        // The object lifecycle is controlled by the current function stack
-        if (asyncCallback_.onStreamChanged != nullptr) {
-            asyncCallback_.onStreamChanged(codec_, reinterpret_cast<OH_AVFormat *>(object.GetRefPtr()), userData_);
-        } else if (callback_.onStreamChanged != nullptr) {
-            callback_.onStreamChanged(codec_, reinterpret_cast<OH_AVFormat *>(object.GetRefPtr()), userData_);
-        }
-    }
-
-    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override
-    {
-        std::shared_lock<std::shared_mutex> lock(mutex_);
-
-        CHECK_AND_RETURN_LOG(codec_ != nullptr, "Codec is nullptr");
-        CHECK_AND_RETURN_LOG(codec_->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, "Codec magic error!");
-        CHECK_AND_RETURN_LOG(asyncCallback_.onNeedInputData != nullptr, "Callback is nullptr");
-
-        struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec_);
-        CHECK_AND_RETURN_LOG(videoEncObj->videoEncoder_ != nullptr, "Context video encoder is nullptr!");
-
-        if (videoEncObj->isInputSurfaceMode_) {
-            AVCODEC_LOGD("At surface mode, no buffer available");
-            return;
-        }
-        OH_AVMemory *data = videoEncObj->GetTransData(index, buffer, false);
-        asyncCallback_.onNeedInputData(codec_, index, data, userData_);
-    }
-
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
-                                 std::shared_ptr<AVSharedMemory> buffer) override
-    {
-        std::shared_lock<std::shared_mutex> lock(mutex_);
-
-        CHECK_AND_RETURN_LOG(codec_ != nullptr, "Codec is nullptr");
-        CHECK_AND_RETURN_LOG(codec_->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, "Codec magic error!");
-        CHECK_AND_RETURN_LOG(asyncCallback_.onNeedOutputData != nullptr, "Callback is nullptr");
-
-        struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec_);
-        CHECK_AND_RETURN_LOG(videoEncObj->videoEncoder_ != nullptr, "Context video encoder is nullptr!");
-
-        struct OH_AVCodecBufferAttr bufferAttr {
-            info.presentationTimeUs, info.size, info.offset, flag
-        };
-        // The bufferInfo lifecycle is controlled by the current function stack
-        OH_AVMemory *data = videoEncObj->GetTransData(index, buffer, true);
-
-        asyncCallback_.onNeedOutputData(codec_, index, data, &bufferAttr, userData_);
-    }
-
-    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override
-    {
-        std::shared_lock<std::shared_mutex> lock(mutex_);
-
-        CHECK_AND_RETURN_LOG(codec_ != nullptr, "Codec is nullptr");
-        CHECK_AND_RETURN_LOG(codec_->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, "Codec magic error!");
-        CHECK_AND_RETURN_LOG(callback_.onNeedInputBuffer != nullptr, "Callback is nullptr");
-
-        struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec_);
-        CHECK_AND_RETURN_LOG(videoEncObj->videoEncoder_ != nullptr, "Context video encoder is nullptr!");
-
-        OH_AVBuffer *data = videoEncObj->GetTransData(index, buffer, false);
-        callback_.onNeedInputBuffer(codec_, index, data, userData_);
-    }
-
-    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override
-    {
-        std::shared_lock<std::shared_mutex> lock(mutex_);
-        CHECK_AND_RETURN_LOG(codec_ != nullptr, "Codec is nullptr");
-        CHECK_AND_RETURN_LOG(codec_->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, "Codec magic error!");
-        CHECK_AND_RETURN_LOG(callback_.onNewOutputBuffer != nullptr, "Callback is nullptr");
-
-        struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec_);
-        CHECK_AND_RETURN_LOG(videoEncObj->videoEncoder_ != nullptr, "Video encoder is nullptr!");
-
-        OH_AVBuffer *data = videoEncObj->GetTransData(index, buffer, true);
-
-        callback_.onNewOutputBuffer(codec_, index, data, userData_);
-    }
-
-    void OnInputParameterAvailable(uint32_t index, std::shared_ptr<Format> parameter) override
-    {
-        std::shared_lock<std::shared_mutex> lock(mutex_);
-        CHECK_AND_RETURN_LOG(codec_ != nullptr, "Codec is nullptr!");
-        CHECK_AND_RETURN_LOG(codec_->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, "Codec magic error!");
-        CHECK_AND_RETURN_LOG(onInputParameter_ != nullptr, "Callback is nullptr");
-
-        struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec_);
-        CHECK_AND_RETURN_LOG(videoEncObj->videoEncoder_ != nullptr, "Video encoder is nullptr!");
-
-        OH_AVFormat *data = videoEncObj->GetTransData(index, parameter);
-        onInputParameter_(codec_, index, data, paramUserData_);
-    }
-
-    void StopCallback()
-    {
-        std::lock_guard<std::shared_mutex> lock(mutex_);
-        codec_ = nullptr;
-    }
-
-    void UpdateCallback(const struct OH_AVCodecAsyncCallback &cb, void *userData)
-    {
-        std::lock_guard<std::shared_mutex> lock(mutex_);
-        userData_ = userData;
-        asyncCallback_ = cb;
-    }
-
-    void UpdateCallback(const OH_VideoEncoder_OnNeedInputParameter &onInputParameter, void *userData)
-    {
-        std::lock_guard<std::shared_mutex> lock(mutex_);
-        paramUserData_ = userData;
-        onInputParameter_ = onInputParameter;
-    }
-
-    void UpdateCallback(const struct OH_AVCodecCallback &cb, void *userData)
-    {
-        std::lock_guard<std::shared_mutex> lock(mutex_);
-        userData_ = userData;
-        callback_ = cb;
-    }
-
-private:
-    struct OH_AVCodec *codec_ = nullptr;
-    struct OH_AVCodecAsyncCallback asyncCallback_ = {nullptr, nullptr, nullptr, nullptr};
-    struct OH_AVCodecCallback callback_ = {nullptr, nullptr, nullptr, nullptr};
-    OH_VideoEncoder_OnNeedInputParameter onInputParameter_ = nullptr;
-    void *userData_ = nullptr;
-    void *paramUserData_ = nullptr;
-    std::shared_mutex mutex_;
-};
-
-OH_AVMemory *VideoEncoderObject::GetTransData(const uint32_t &index, std::shared_ptr<AVSharedMemory> &memory,
-                                              bool isOutput)
+constexpr size_t MAX_LENGTH = 255;
+bool IsValidVideoEncoderMagic(AVMagic magic)
 {
-    auto &memoryMap = isOutput ? this->outputMemoryMap_ : this->inputMemoryMap_;
-    {
-        std::shared_lock<std::shared_mutex> lock(this->objListMutex_);
-        auto iter = memoryMap.find(index);
-        if (iter != memoryMap.end() && iter->second->IsEqualMemory(memory)) {
-            return reinterpret_cast<OH_AVMemory *>(iter->second.GetRefPtr());
-        }
-    }
-    OHOS::sptr<OH_AVMemory> object = new (std::nothrow) OH_AVMemory(memory);
-    CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "AV memory create failed");
-
-    std::lock_guard<std::shared_mutex> lock(this->objListMutex_);
-    auto iterAndRet = memoryMap.emplace(index, object);
-    if (!iterAndRet.second) {
-        auto &temp = iterAndRet.first->second;
-        temp->magic_ = MFMagic::MFMAGIC_UNKNOWN;
-        temp->memory_ = nullptr;
-        this->tempList_.push(std::move(temp));
-        iterAndRet.first->second = object;
-        if (this->tempList_.size() > MAX_TEMPNUM) {
-            this->tempList_.pop();
-        }
-    }
-    return reinterpret_cast<OH_AVMemory *>(object.GetRefPtr());
+    return magic == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER ||
+                    OHOS::MediaAVCodec::PreprocessorEncoder::IsPreprocEncoderMagic(magic);
 }
-
-OH_AVBuffer *VideoEncoderObject::GetTransData(const uint32_t &index, std::shared_ptr<AVBuffer> &buffer, bool isOutput)
-{
-    auto &bufferMap = isOutput ? this->outputBufferMap_ : this->inputBufferMap_;
-    {
-        std::shared_lock<std::shared_mutex> lock(this->objListMutex_);
-        auto iter = bufferMap.find(index);
-        if (iter != bufferMap.end() && iter->second->IsEqualBuffer(buffer)) {
-            return reinterpret_cast<OH_AVBuffer *>(iter->second.GetRefPtr());
-        }
-    }
-    OHOS::sptr<OH_AVBuffer> object = new (std::nothrow) OH_AVBuffer(buffer);
-    CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "failed to new OH_AVBuffer");
-
-    std::lock_guard<std::shared_mutex> lock(this->objListMutex_);
-    auto iterAndRet = bufferMap.emplace(index, object);
-    if (!iterAndRet.second) {
-        auto &temp = iterAndRet.first->second;
-        temp->magic_ = MFMagic::MFMAGIC_UNKNOWN;
-        temp->buffer_ = nullptr;
-        this->tempList_.push(std::move(temp));
-        iterAndRet.first->second = object;
-        if (this->tempList_.size() > MAX_TEMPNUM) {
-            this->tempList_.pop();
-        }
-    }
-    return reinterpret_cast<OH_AVBuffer *>(object.GetRefPtr());
 }
-
-OH_AVFormat *VideoEncoderObject::GetTransData(const uint32_t &index, std::shared_ptr<Format> &format)
-{
-    {
-        std::shared_lock<std::shared_mutex> lock(this->objListMutex_);
-        auto iter = this->inputFormatMap_.find(index);
-        if (iter != this->inputFormatMap_.end() && iter->second->format_.GetMeta() == format->GetMeta()) {
-            return reinterpret_cast<OH_AVFormat *>(iter->second.GetRefPtr());
-        }
-    }
-    OHOS::sptr<OH_AVFormat> object = new (std::nothrow) OH_AVFormat();
-    CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "failed to new OH_AVFormat");
-    object->format_.SetMetaPtr(format->GetMeta());
-
-    std::lock_guard<std::shared_mutex> lock(this->objListMutex_);
-    auto iterAndRet = this->inputFormatMap_.emplace(index, object);
-    if (!iterAndRet.second) {
-        auto &temp = iterAndRet.first->second;
-        temp->magic_ = MFMagic::MFMAGIC_UNKNOWN;
-        if (temp->outString_ != nullptr) {
-            free(temp->outString_);
-            temp->outString_ = nullptr;
-        }
-        if (temp->dumpInfo_ != nullptr) {
-            free(temp->dumpInfo_);
-            temp->dumpInfo_ = nullptr;
-        }
-        temp->format_ = Format();
-        this->tempList_.push(std::move(temp));
-        iterAndRet.first->second = object;
-        if (this->tempList_.size() > MAX_TEMPNUM) {
-            this->tempList_.pop();
-        }
-    }
-    return reinterpret_cast<OH_AVFormat *>(object.GetRefPtr());
-}
-
-void VideoEncoderObject::ClearBufferList()
-{
-    std::lock_guard<std::shared_mutex> lock(objListMutex_);
-    if (inputBufferMap_.size() > 0) {
-        BufferToTempFunc(inputBufferMap_);
-        inputBufferMap_.clear();
-    }
-    if (outputBufferMap_.size() > 0) {
-        BufferToTempFunc(outputBufferMap_);
-        outputBufferMap_.clear();
-    }
-    if (inputMemoryMap_.size() > 0) {
-        MemoryToTempFunc(inputMemoryMap_);
-        inputMemoryMap_.clear();
-    }
-    if (outputMemoryMap_.size() > 0) {
-        MemoryToTempFunc(outputMemoryMap_);
-        outputMemoryMap_.clear();
-    }
-    if (inputFormatMap_.size() > 0) {
-        FormatToTempFunc(inputFormatMap_);
-        inputFormatMap_.clear();
-    }
-    while (tempList_.size() > MAX_TEMPNUM) {
-        tempList_.pop();
-    }
-}
-
-void VideoEncoderObject::StopCallback()
-{
-    if (callback_ == nullptr) {
-        return;
-    }
-    callback_->StopCallback();
-}
-
-void VideoEncoderObject::FormatToTempFunc(std::unordered_map<uint32_t, OHOS::sptr<OH_AVFormat>> &tempMap)
-{
-    for (auto &val : tempMap) {
-        val.second->magic_ = MFMagic::MFMAGIC_UNKNOWN;
-        if (val.second->outString_ != nullptr) {
-            free(val.second->outString_);
-            val.second->outString_ = nullptr;
-        }
-        if (val.second->dumpInfo_ != nullptr) {
-            free(val.second->dumpInfo_);
-            val.second->dumpInfo_ = nullptr;
-        }
-        val.second->format_ = Format();
-        tempList_.push(std::move(val.second));
-    }
-}
-
-void VideoEncoderObject::BufferToTempFunc(std::unordered_map<uint32_t, OHOS::sptr<OH_AVBuffer>> &tempMap)
-{
-    for (auto &val : tempMap) {
-        val.second->magic_ = MFMagic::MFMAGIC_UNKNOWN;
-        val.second->buffer_ = nullptr;
-        tempList_.push(std::move(val.second));
-    }
-}
-
-void VideoEncoderObject::MemoryToTempFunc(std::unordered_map<uint32_t, OHOS::sptr<OH_AVMemory>> &tempMap)
-{
-    for (auto &val : tempMap) {
-        val.second->magic_ = MFMagic::MFMAGIC_UNKNOWN;
-        val.second->memory_ = nullptr;
-        tempList_.push(std::move(val.second));
-    }
-}
-} // namespace
 
 namespace OHOS {
 namespace MediaAVCodec {
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 struct OH_AVCodec *OH_VideoEncoder_CreateByMime(const char *mime)
 {
     CHECK_AND_RETURN_RET_LOG(mime != nullptr, nullptr, "Mime is nullptr!");
@@ -455,7 +93,28 @@ OH_AVErrCode OH_VideoEncoder_Destroy(struct OH_AVCodec *codec)
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
                              "Codec magic error!");
+    CHECK_AND_RETURN_RET_LOG(IsValidVideoEncoderMagic(codec->magic_), AV_ERR_INVALID_VAL, "Codec magic error!");
     ApiMetricsReporter("AVCodecKit.OH_VideoEncoder_Destroy.Time", TIMES);
+    if (PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_)) {
+        auto *preprocEnc = reinterpret_cast<OHOS::MediaAVCodec::PreprocessorEncoder *>(codec);
+        (void)preprocEnc->Release();
+        if (!OHOS::MediaAVCodec::PreprocessorEncoder::IsPrimaryEncoderMagic(codec->magic_)) {
+            preprocEnc->DetachFromPrimaryEncoder();
+            delete preprocEnc;
+            return AV_ERR_OK;
+        }
+
+        auto secondaryEnc = preprocEnc->DetachSecondaryEncoder();
+        if (secondaryEnc) {
+            delete secondaryEnc;
+        }
+        delete preprocEnc;
+        return AV_ERR_OK;
+    }
+
+    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER,
+                             AV_ERR_INVALID_VAL, "Codec magic error!");
+
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
 
     if (videoEncObj != nullptr && videoEncObj->videoEncoder_ != nullptr) {
@@ -478,12 +137,18 @@ OH_AVErrCode OH_VideoEncoder_Destroy(struct OH_AVCodec *codec)
 OH_AVErrCode OH_VideoEncoder_Configure(struct OH_AVCodec *codec, struct OH_AVFormat *format)
 {
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
-                             "Codec magic error!");
+    CHECK_AND_RETURN_RET_LOG(IsValidVideoEncoderMagic(codec->magic_), AV_ERR_INVALID_VAL, "Codec magic error!");
     CHECK_AND_RETURN_RET_LOG(format != nullptr, AV_ERR_INVALID_VAL, "Format is nullptr!");
     CHECK_AND_RETURN_RET_LOG(format->magic_ == MFMagic::MFMAGIC_FORMAT, AV_ERR_INVALID_VAL, "Format magic error!");
 
     ApiMetricsReporter("AVCodecKit.OH_VideoEncoder_Configure.Time", TIMES);
+    if (PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_)) {
+        auto* preprocEnc = reinterpret_cast<PreprocessorEncoder*>(codec);
+        int32_t ret = preprocEnc->Configure(format->format_);
+        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
+                                 "PreprocessorEncoder configure failed!");
+        return AV_ERR_OK;
+    }
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, AV_ERR_INVALID_VAL, "Video encoder is nullptr!");
 
@@ -511,8 +176,11 @@ OH_AVErrCode OH_VideoEncoder_Configure(struct OH_AVCodec *codec, struct OH_AVFor
 OH_AVErrCode OH_VideoEncoder_Prepare(struct OH_AVCodec *codec)
 {
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
-                             "Codec magic error!");
+    CHECK_AND_RETURN_RET_LOG(IsValidVideoEncoderMagic(codec->magic_), AV_ERR_INVALID_VAL, "Codec magic error!");
+
+    if (PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_)) {
+        return AV_ERR_OK;
+    }
 
     ApiMetricsReporter("AVCodecKit.OH_VideoEncoder_Prepare.Time", TIMES);
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
@@ -528,28 +196,41 @@ OH_AVErrCode OH_VideoEncoder_Prepare(struct OH_AVCodec *codec)
 OH_AVErrCode OH_VideoEncoder_Start(struct OH_AVCodec *codec)
 {
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
-                             "Codec magic error!");
+    CHECK_AND_RETURN_RET_LOG(IsValidVideoEncoderMagic(codec->magic_), AV_ERR_INVALID_VAL, "Codec magic error!");
 
     ApiMetricsReporter("AVCodecKit.OH_VideoEncoder_Start.Time", TIMES);
     static AppEventReporter appEventReporter = AppEventReporter();
     ApiInvokeRecorder apiInvokeRecorder("OH_VideoEncoder_Start", appEventReporter);
 
+    if (PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_)) {
+        auto* preprocEnc = reinterpret_cast<PreprocessorEncoder*>(codec);
+        auto ret = preprocEnc->Start();
+        apiInvokeRecorder.SetErrorCode(ret);
+        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "PreprocessorEncoder start failed!");
+        return AV_ERR_OK;
+    }
+
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, AV_ERR_INVALID_VAL, "Video encoder is nullptr!");
+
     int32_t ret = videoEncObj->videoEncoder_->Start();
     apiInvokeRecorder.SetErrorCode(AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)));
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                             "Video encoder start failed!");
-
+        "Video encoder start failed!");
     return AV_ERR_OK;
 }
 
 OH_AVErrCode OH_VideoEncoder_Stop(struct OH_AVCodec *codec)
 {
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
-                             "Codec magic error!");
+    CHECK_AND_RETURN_RET_LOG(IsValidVideoEncoderMagic(codec->magic_), AV_ERR_INVALID_VAL, "Codec magic error!");
+
+    if (PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_)) {
+        auto* preprocEnc = reinterpret_cast<PreprocessorEncoder*>(codec);
+        auto ret = preprocEnc->Stop();
+        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "PreprocessorEncoder stop failed!");
+        return AV_ERR_OK;
+    }
 
     ApiMetricsReporter("AVCodecKit.OH_VideoEncoder_Stop.Time", TIMES);
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
@@ -567,8 +248,14 @@ OH_AVErrCode OH_VideoEncoder_Stop(struct OH_AVCodec *codec)
 OH_AVErrCode OH_VideoEncoder_Flush(struct OH_AVCodec *codec)
 {
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
-                             "Codec magic error!");
+    CHECK_AND_RETURN_RET_LOG(IsValidVideoEncoderMagic(codec->magic_), AV_ERR_INVALID_VAL, "Codec magic error!");
+
+    if (PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_)) {
+        auto* preprocEnc = reinterpret_cast<PreprocessorEncoder*>(codec);
+        auto ret = preprocEnc->Flush();
+        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "PreprocessorEncoder flush failed!");
+        return AV_ERR_OK;
+    }
 
     ApiMetricsReporter("AVCodecKit.OH_VideoEncoder_Flush.Time", TIMES);
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
@@ -584,8 +271,14 @@ OH_AVErrCode OH_VideoEncoder_Flush(struct OH_AVCodec *codec)
 OH_AVErrCode OH_VideoEncoder_Reset(struct OH_AVCodec *codec)
 {
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
-                             "Codec magic error!");
+    CHECK_AND_RETURN_RET_LOG(IsValidVideoEncoderMagic(codec->magic_), AV_ERR_INVALID_VAL, "Codec magic error!");
+
+    if (PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_)) {
+        auto* preprocEnc = reinterpret_cast<PreprocessorEncoder*>(codec);
+        auto ret = preprocEnc->Reset();
+        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "PreprocessorEncoder reset failed!");
+        return AV_ERR_OK;
+    }
 
     ApiMetricsReporter("AVCodecKit.OH_VideoEncoder_Reset.Time", TIMES);
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
@@ -603,10 +296,21 @@ OH_AVErrCode OH_VideoEncoder_Reset(struct OH_AVCodec *codec)
 OH_AVErrCode OH_VideoEncoder_GetSurface(OH_AVCodec *codec, OHNativeWindow **window)
 {
     CHECK_AND_RETURN_RET_LOG(codec != nullptr && window != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
-                             "Codec magic error!");
+    CHECK_AND_RETURN_RET_LOG(IsValidVideoEncoderMagic(codec->magic_), AV_ERR_INVALID_VAL, "Codec magic error!");
+    CHECK_AND_RETURN_RET_LOG(!PreprocessorEncoder::IsSecondaryEncoderMagic(codec->magic_), AV_ERR_OPERATE_NOT_PERMIT,
+                             "Secondary encoder is not permitted to call GetSurface! Use primary encoder instead.");
 
     ApiMetricsReporter("AVCodecKit.OH_VideoEncoder_GetSurface.Time", TIMES);
+    if (PreprocessorEncoder::IsPrimaryEncoderMagic(codec->magic_)) {
+        auto* preprocEnc = reinterpret_cast<PreprocessorEncoder*>(codec);
+        auto surface = preprocEnc->GetSurface();
+        CHECK_AND_RETURN_RET_LOG(surface != nullptr, AV_ERR_OPERATE_NOT_PERMIT,
+                                 "PreprocessorEncoder get surface failed!");
+        *window = CreateNativeWindowFromSurface(&surface);
+        CHECK_AND_RETURN_RET_LOG(*window != nullptr, AV_ERR_INVALID_VAL, "Video encoder get surface failed!");
+        return AV_ERR_OK;
+    }
+
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, AV_ERR_INVALID_VAL, "Video encoder is nullptr!");
 
@@ -623,7 +327,12 @@ OH_AVErrCode OH_VideoEncoder_GetSurface(OH_AVCodec *codec, OHNativeWindow **wind
 OH_AVFormat *OH_VideoEncoder_GetOutputDescription(struct OH_AVCodec *codec)
 {
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, nullptr, "Codec is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, nullptr, "Codec magic error!");
+    CHECK_AND_RETURN_RET_LOG(IsValidVideoEncoderMagic(codec->magic_), nullptr, "Codec magic error!");
+
+    if (PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_)) {
+        auto* preprocEnc = reinterpret_cast<PreprocessorEncoder*>(codec);
+        return preprocEnc->GetOutputDescription();
+    }
 
     ApiMetricsReporter("AVCodecKit.OH_VideoEncoder_GetOutputDescription.Time", TIMES);
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
@@ -643,6 +352,8 @@ OH_AVFormat *OH_VideoEncoder_GetOutputDescription(struct OH_AVCodec *codec)
 OH_AVErrCode OH_VideoEncoder_FreeOutputData(struct OH_AVCodec *codec, uint32_t index)
 {
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(!PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_), AV_ERR_OPERATE_NOT_PERMIT,
+                             "RegisterParameterCallback is not supported for preprocessor encoders!");
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
                              "Codec magic error!");
 
@@ -661,8 +372,14 @@ OH_AVErrCode OH_VideoEncoder_FreeOutputData(struct OH_AVCodec *codec, uint32_t i
 OH_AVErrCode OH_VideoEncoder_FreeOutputBuffer(struct OH_AVCodec *codec, uint32_t index)
 {
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
-                             "Codec magic error!");
+    CHECK_AND_RETURN_RET_LOG(IsValidVideoEncoderMagic(codec->magic_), AV_ERR_INVALID_VAL, "Codec magic error!");
+
+    if (PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_)) {
+        auto* preprocEnc = reinterpret_cast<PreprocessorEncoder*>(codec);
+        auto ret = preprocEnc->ReleaseOutputBuffer(index);
+        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "PreprocessorEncoder free output buffer failed!");
+        return AV_ERR_OK;
+    }
 
     ApiMetricsReporter("AVCodecKit.OH_VideoEncoder_FreeOutputBuffer.Time", TIMES);
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
@@ -680,8 +397,14 @@ OH_AVErrCode OH_VideoEncoder_FreeOutputBuffer(struct OH_AVCodec *codec, uint32_t
 OH_AVErrCode OH_VideoEncoder_NotifyEndOfStream(OH_AVCodec *codec)
 {
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
-                             "Codec magic error!");
+    CHECK_AND_RETURN_RET_LOG(IsValidVideoEncoderMagic(codec->magic_), AV_ERR_INVALID_VAL, "Codec magic error!");
+
+    if (PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_)) {
+        auto* preprocEnc = reinterpret_cast<PreprocessorEncoder*>(codec);
+        auto ret = preprocEnc->NotifyEos();
+        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "PreprocessorEncoder notify eos failed!");
+        return AV_ERR_OK;
+    }
 
     ApiMetricsReporter("AVCodecKit.OH_VideoEncoder_NotifyEndOfStream.Time", TIMES);
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
@@ -696,12 +419,18 @@ OH_AVErrCode OH_VideoEncoder_NotifyEndOfStream(OH_AVCodec *codec)
 OH_AVErrCode OH_VideoEncoder_SetParameter(struct OH_AVCodec *codec, struct OH_AVFormat *format)
 {
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
-                             "Codec magic error!");
+    CHECK_AND_RETURN_RET_LOG(IsValidVideoEncoderMagic(codec->magic_), AV_ERR_INVALID_VAL, "Codec magic error!");
     CHECK_AND_RETURN_RET_LOG(format != nullptr, AV_ERR_INVALID_VAL, "Format is nullptr!");
     CHECK_AND_RETURN_RET_LOG(format->magic_ == MFMagic::MFMAGIC_FORMAT, AV_ERR_INVALID_VAL, "Format magic error!");
 
     ApiMetricsReporter("AVCodecKit.OH_VideoEncoder_SetParameter.Time", TIMES);
+    if (PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_)) {
+        auto* preprocEnc = reinterpret_cast<PreprocessorEncoder*>(codec);
+        CHECK_AND_RETURN_RET_LOG(preprocEnc != nullptr && preprocEnc->GetPreprocessor() != nullptr, AV_ERR_OK,
+                                 "PreprocessorEncoder prepare skipped: no preprocessor!");
+        return AV_ERR_OK;
+    }
+
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, AV_ERR_INVALID_VAL, "Video encoder is nullptr!");
 
@@ -716,6 +445,8 @@ OH_AVErrCode OH_VideoEncoder_SetCallback(struct OH_AVCodec *codec, struct OH_AVC
                                          void *userData)
 {
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(!PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_), AV_ERR_OPERATE_NOT_PERMIT,
+                             "RegisterParameterCallback is not supported for preprocessor encoders!");
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
                              "Codec magic error!");
 
@@ -739,12 +470,18 @@ OH_AVErrCode OH_VideoEncoder_RegisterCallback(struct OH_AVCodec *codec, struct O
                                               void *userData)
 {
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
-                             "Codec magic error!");
+    CHECK_AND_RETURN_RET_LOG(IsValidVideoEncoderMagic(codec->magic_), AV_ERR_INVALID_VAL, "Codec magic error!");
     CHECK_AND_RETURN_RET_LOG(callback.onNewOutputBuffer != nullptr, AV_ERR_INVALID_VAL,
                              "Callback onNewOutputBuffer is nullptr");
 
     ApiMetricsReporter("AVCodecKit.OH_VideoEncoder_RegisterCallback.Time", TIMES);
+    if (PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_)) {
+        auto* preprocEnc = reinterpret_cast<PreprocessorEncoder*>(codec);
+        auto ret = preprocEnc->RegisterCallback(callback, userData);
+        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "PreprocessorEncoder reset failed!");
+        return AV_ERR_OK;
+    }
+
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, AV_ERR_INVALID_VAL, "Video encoder is nullptr!");
 
@@ -765,6 +502,8 @@ OH_AVErrCode OH_VideoEncoder_RegisterParameterCallback(OH_AVCodec *codec,
                                                        void *userData)
 {
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(!PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_), AV_ERR_OPERATE_NOT_PERMIT,
+                             "RegisterParameterCallback is not supported for preprocessor encoders!");
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
                              "Codec magic error!");
     CHECK_AND_RETURN_RET_LOG(onInputParameter != nullptr, AV_ERR_INVALID_VAL, "Callback onInputParameter is nullptr");
@@ -788,6 +527,8 @@ OH_AVErrCode OH_VideoEncoder_RegisterParameterCallback(OH_AVCodec *codec,
 OH_AVErrCode OH_VideoEncoder_PushInputData(struct OH_AVCodec *codec, uint32_t index, OH_AVCodecBufferAttr attr)
 {
     CHECK_AND_RETURN_RET_LOGD(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOGD(!PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_), AV_ERR_OPERATE_NOT_PERMIT,
+        "Buffer mode is not supported for preprocessor encoders!");
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
         "Codec magic error!");
     CHECK_AND_RETURN_RET_LOGD(attr.size >= 0, AV_ERR_INVALID_VAL, "Invalid buffer size!");
@@ -812,6 +553,8 @@ OH_AVErrCode OH_VideoEncoder_PushInputData(struct OH_AVCodec *codec, uint32_t in
 OH_AVErrCode OH_VideoEncoder_PushInputBuffer(struct OH_AVCodec *codec, uint32_t index)
 {
     CHECK_AND_RETURN_RET_LOGD(codec != nullptr, AV_ERR_INVALID_VAL, "Input codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOGD(!PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_), AV_ERR_OPERATE_NOT_PERMIT,
+        "Buffer mode is not supported for preprocessor encoders!");
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
         "magic error!");
 
@@ -829,6 +572,8 @@ OH_AVErrCode OH_VideoEncoder_PushInputBuffer(struct OH_AVCodec *codec, uint32_t 
 OH_AVErrCode OH_VideoEncoder_PushInputParameter(OH_AVCodec *codec, uint32_t index)
 {
     CHECK_AND_RETURN_RET_LOGD(codec != nullptr, AV_ERR_INVALID_VAL, "Input codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOGD(!PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_), AV_ERR_OPERATE_NOT_PERMIT,
+        "Buffer mode is not supported for preprocessor encoders!");
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
         "magic error!");
 
@@ -845,7 +590,12 @@ OH_AVErrCode OH_VideoEncoder_PushInputParameter(OH_AVCodec *codec, uint32_t inde
 OH_AVFormat *OH_VideoEncoder_GetInputDescription(OH_AVCodec *codec)
 {
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, nullptr, "Codec is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, nullptr, "Codec magic error!");
+    CHECK_AND_RETURN_RET_LOG(IsValidVideoEncoderMagic(codec->magic_), nullptr, "Codec magic error!");
+
+    if (PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_)) {
+        auto* preprocEnc = reinterpret_cast<PreprocessorEncoder*>(codec);
+        return preprocEnc->GetInputDescription();
+    }
 
     ApiMetricsReporter("AVCodecKit.OH_VideoEncoder_GetInputDescription.Time", TIMES);
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
@@ -865,6 +615,8 @@ OH_AVFormat *OH_VideoEncoder_GetInputDescription(OH_AVCodec *codec)
 OH_AVErrCode OH_VideoEncoder_QueryInputBuffer(struct OH_AVCodec *codec, uint32_t *index, int64_t timeoutUs)
 {
     CHECK_AND_RETURN_RET_LOGD(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOGD(!PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_), AV_ERR_OPERATE_NOT_PERMIT,
+        "Synchronous mode is not supported for preprocessor encoders!");
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
         "Codec magic error!");
 
@@ -886,6 +638,8 @@ OH_AVErrCode OH_VideoEncoder_QueryInputBuffer(struct OH_AVCodec *codec, uint32_t
 OH_AVErrCode OH_VideoEncoder_QueryOutputBuffer(struct OH_AVCodec *codec, uint32_t *index, int64_t timeoutUs)
 {
     CHECK_AND_RETURN_RET_LOGD(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOGD(!PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_), AV_ERR_OPERATE_NOT_PERMIT,
+        "Synchronous mode is not supported for preprocessor encoders!");
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
         "Codec magic error!");
 
@@ -908,6 +662,8 @@ OH_AVErrCode OH_VideoEncoder_QueryOutputBuffer(struct OH_AVCodec *codec, uint32_
 OH_AVBuffer *OH_VideoEncoder_GetInputBuffer(struct OH_AVCodec *codec, uint32_t index)
 {
     CHECK_AND_RETURN_RET_LOGD(codec != nullptr, nullptr, "Codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOGD(!PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_), nullptr,
+        "Synchronous mode is not supported for preprocessor encoders!");
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, nullptr, "Codec magic error!");
 
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
@@ -922,6 +678,8 @@ OH_AVBuffer *OH_VideoEncoder_GetInputBuffer(struct OH_AVCodec *codec, uint32_t i
 OH_AVBuffer *OH_VideoEncoder_GetOutputBuffer(struct OH_AVCodec *codec, uint32_t index)
 {
     CHECK_AND_RETURN_RET_LOGD(codec != nullptr, nullptr, "Codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOGD(!PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_), nullptr,
+        "Synchronous mode is not supported for preprocessor encoders!");
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, nullptr, "Codec magic error!");
 
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
@@ -936,12 +694,43 @@ OH_AVBuffer *OH_VideoEncoder_GetOutputBuffer(struct OH_AVCodec *codec, uint32_t 
 OH_AVErrCode OH_VideoEncoder_IsValid(OH_AVCodec *codec, bool *isValid)
 {
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
-                             "Codec magic error!");
+    CHECK_AND_RETURN_RET_LOG(IsValidVideoEncoderMagic(codec->magic_), AV_ERR_INVALID_VAL, "Codec magic error!");
     CHECK_AND_RETURN_RET_LOG(isValid != nullptr, AV_ERR_INVALID_VAL, "Input isValid is nullptr!");
     *isValid = true;
     return AV_ERR_OK;
 }
+
+OH_AVErrCode OH_VideoEncoder_CreatePrimaryWithPreproc(const char *mime, OH_AVCodec **codec)
+{
+    CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr! It must not be nullptr!");
+    CHECK_AND_RETURN_RET_LOG(*codec == nullptr, AV_ERR_INVALID_VAL,
+        "The pointer stored in codec is not nullptr! It must be nullptr!");
+    CHECK_AND_RETURN_RET_LOG(PreprocessorEncoder::IsValidPreprocEncoderMime(mime), AV_ERR_INVALID_VAL,
+        "Invalid mime, only OH_AVCODEC_MIMETYPE_VIDEO_HEVC and OH_AVCODEC_MIMETYPE_VIDEO_AVC are supported!");
+
+    auto ret = PreprocessorEncoder::CreatePrimary(mime, codec);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Create primary codec failed!");
+    return AV_ERR_OK;
 }
+
+OH_AVErrCode OH_VideoEncoder_CreateSecondaryFromPrimary(OH_AVCodec *primary, OH_AVCodec **codec)
+{
+    CHECK_AND_RETURN_RET_LOG(primary != nullptr, AV_ERR_INVALID_VAL, "Primary is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL,
+        "Codec is nullptr! It must not be nullptr!");
+    CHECK_AND_RETURN_RET_LOG(*codec == nullptr, AV_ERR_INVALID_VAL,
+        "The pointer stored in codec is not nullptr! It must be nullptr!");
+    CHECK_AND_RETURN_RET_LOG(PreprocessorEncoder::IsPrimaryEncoderMagic(primary->magic_), AV_ERR_INVALID_VAL,
+        "Primary magic error!");
+
+    auto ret = PreprocessorEncoder::CreateSecondary(primary, codec);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Create secondary codec failed!");
+    return AV_ERR_OK;
+}
+
+#ifdef __cplusplus
+}
+#endif
+
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -48,12 +48,8 @@ int32_t AVCodecDumpControler::AddInfo(const uint32_t dumpIdx, const std::string 
     return AVCS_ERR_OK;
 }
 
-int32_t AVCodecDumpControler::AddInfoFromFormat(const uint32_t dumpIdx, const Format &format,
-                                                const std::string_view &key, const std::string &name)
+bool AVCodecDumpControler::GetValueFromFormat(const Format &format, const std::string_view &key, std::string &value)
 {
-    CHECK_AND_RETURN_RET_LOG(!key.empty(), AVCS_ERR_INVALID_VAL, "Add dump info failed, get a empty key.");
-
-    std::string value;
     bool ret = false;
     switch (format.GetValueType(key)) {
         case FORMAT_TYPE_INT32: {
@@ -87,8 +83,18 @@ int32_t AVCodecDumpControler::AddInfoFromFormat(const uint32_t dumpIdx, const Fo
         case FORMAT_TYPE_ADDR:
             break;
         default:
-            AVCODEC_LOGD("Add info from format failed. Key: %{public}s", key.data());
+            AVCODEC_LOGD("Get value from format failed. Key: %{public}s", key.data());
     }
+    return ret;
+}
+
+int32_t AVCodecDumpControler::AddInfoFromFormat(const uint32_t dumpIdx, const Format &format,
+                                                const std::string_view &key, const std::string &name)
+{
+    CHECK_AND_RETURN_RET_LOG(!key.empty(), AVCS_ERR_INVALID_VAL, "Add dump info failed, get a empty key.");
+
+    std::string value;
+    bool ret = AVCodecDumpControler::GetValueFromFormat(format, key, value);
     if (ret != true) {
         return AVCS_ERR_INVALID_VAL;
     }

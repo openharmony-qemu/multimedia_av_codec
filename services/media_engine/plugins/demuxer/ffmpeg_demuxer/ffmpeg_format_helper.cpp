@@ -727,11 +727,10 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
     }
 
     if (avStream.start_time != AV_NOPTS_VALUE) {
-        format.SetData(Tag::MEDIA_START_TIME,
-            AvTime2Us(ConvertTimeFromFFmpeg(avStream.start_time, avStream.time_base)));
+        format.Set<Tag::MEDIA_START_TIME>(AvTime2Us(ConvertTimeFromFFmpeg(avStream.start_time, avStream.time_base)));
     } else {
         if (mediaType == AVMEDIA_TYPE_AUDIO || mediaType == AVMEDIA_TYPE_AUXILIARY) {
-            format.SetData(Tag::MEDIA_START_TIME, GetDefaultTrackStartTime(avFormatContext));
+            format.Set<Tag::MEDIA_START_TIME>(GetDefaultTrackStartTime(avFormatContext));
         }
         MEDIA_LOG_W("Parse track start time failed");
     }
@@ -799,7 +798,7 @@ void FFmpegFormatHelper::ParseAVTrackInfo(const AVStream& avStream, Meta &format
     AVDictionaryEntry *valPtr = nullptr;
     valPtr = av_dict_get(avStream.metadata, "language", nullptr, AV_DICT_MATCH_CASE);
     if (valPtr != nullptr) {
-        format.SetData(Tag::MEDIA_LANGUAGE, std::string(valPtr->value));
+        format.Set<Tag::MEDIA_LANGUAGE>(std::string(valPtr->value));
     } else {
         MEDIA_LOG_D("Parse track language failed");
     }
@@ -1223,16 +1222,23 @@ void FFmpegFormatHelper::ParseHevcInfo(
         format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(parse.picHetInLumaSamples));
     }
     if (IsMpeg4File(fileType)) {
-        HdrBoxInfo hdrInfo {false, false};
+        HdrBoxInfo hdrBoxInfo {false, false, false};
         const AVDictionaryEntry *type = av_dict_get(avStream.metadata, "hdr_type", NULL, 0);
         if (type != nullptr && type->value != nullptr) {
             if (StartWith(type->value, "dolbyVision")) {
-                hdrInfo.hasHdrDoblyVisionBox = true;
+                hdrBoxInfo.haveHdrDoblyVisionBox = true;
             } else if (StartWith(type->value, "hdrVivid")) {
-                hdrInfo.hasHdrVividBox = true;
+                hdrBoxInfo.haveHdrVividBox = true;
             }
         }
-        Converter::ParseHdrTypeInfo(hdrInfo, format, parse);
+
+        type = av_dict_get(avStream.metadata, "is_hdr", NULL, 0);
+        if (type != nullptr && type->value != nullptr) {
+            if (StartWith(type->value, "1")) {
+                hdrBoxInfo.isHdr = true;
+            }
+        }
+        Converter::ParseHdrTypeInfo(hdrBoxInfo, format, parse);
     }
 }
 

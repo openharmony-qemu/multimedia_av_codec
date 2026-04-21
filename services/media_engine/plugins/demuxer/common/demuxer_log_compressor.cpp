@@ -109,6 +109,9 @@ static std::unordered_map<TagType, std::string> g_formatToIndex = {
     {Tag::VIDEO_HDR_TYPE,                 "hdrType"},
     {Tag::VIDEO_RAWVIDEO_INPUT_PIXEL_FORMAT, "rawvideoInputPixFmt"},
     {Tag::MEDIA_ENCODER,                  "encoder"},
+    {Tag::VIDEO_HDR_COMPATIBILITY,         "hdrComp"},
+    {Tag::VIDEO_STATIC_METADATA_CTA861,    "cta861"},
+    {Tag::VIDEO_STATIC_METADATA_SMPT2086,  "smpt2086"},
 };
 
 std::vector<TagType> g_supportSourceFormat = {

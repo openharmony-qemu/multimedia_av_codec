@@ -300,6 +300,8 @@ ohos_shared_library("av_codec_client") {
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules",
+    "$av_codec_root_dir/frameworks/native/avcodec/pre_processing/fast_kits_interface:fast_image_loader",
+    "$av_codec_root_dir/frameworks/native/avcodec/pre_processing/frame_drop:frame_drop",
   ]
 
   if (av_codec_client_support_codec) {

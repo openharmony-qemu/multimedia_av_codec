@@ -195,8 +195,8 @@ private:
         std::atomic<InvokerType> invokerType {INVOKER_NONE};
         std::atomic<bool> readCbReady {false};
         std::atomic<AVReadPacketStopState> avReadPacketStopState {UNSET};
-        int64_t readStartTimeMs {0};
-        int64_t readTimeoutMs {0};
+        std::atomic<int64_t> readStartTimeMs {0};
+        std::atomic<int64_t> readTimeoutMs {0};
     };
 
     static bool IsReadTimeoutExpired(IOContext* ioContext);

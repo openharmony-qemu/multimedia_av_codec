@@ -46,6 +46,7 @@ ohos_source_set("sa_manager") {
     "ipc/avcodec_service_stub.cpp",
     "server/avcodec_server.cpp",
     "server/avcodec_server_manager.cpp",
+    "server/avcodec_server_dump.cpp",
   ]
 
   external_deps = [

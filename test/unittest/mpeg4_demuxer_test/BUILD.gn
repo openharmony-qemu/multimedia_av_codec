@@ -90,13 +90,12 @@ ohos_unittest("mpeg4_demuxer_capi_unit_test") {
     "MPEG4_DEMUXER_CAPI_UNIT_TEST",
   ]
   defines += av_codec_defines
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
   deps = [
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
     "$av_codec_root_dir/services/engine/base:av_codec_codec_base",
     "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test"
   ]
   external_deps = [
     "c_utils:utils",
@@ -158,10 +157,9 @@ ohos_unittest("mpeg4_demuxer_inner_unit_test") {
     av_codec_path = "\"/system/lib\""
   }
   defines = [ "AV_CODEC_PATH=${av_codec_path}" ]
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
   deps = [
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test"
   ]
   external_deps = [
     "c_utils:utils",
@@ -220,11 +218,10 @@ ohos_unittest("mpeg4_demuxer_capi_buffer_unit_test") {
     "MPEG4_DEMUXER_CAPI_UNIT_TEST",
     "MPEG4_DEMUXER_CAPI_BUFFER_UNIT_TEST",
   ]
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
   deps = [
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test"
   ]
   external_deps = [
     "c_utils:utils",
@@ -279,10 +276,9 @@ ohos_unittest("mpeg4_demuxer_inner_buffer_unit_test") {
     av_codec_path = "\"/system/lib\""
   }
   defines = [ "AV_CODEC_PATH=${av_codec_path}" ]
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
   deps = [
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test"
   ]
   external_deps = [
     "c_utils:utils",

@@ -172,8 +172,8 @@ Status MPEG4AudioParser::ParseMpegAudio(MediaInfo& mediaInfo)
             sampleFormat = AudioSampleFormat::SAMPLE_F32P;
             break;
     }
-    mediaInfo.tracks[index_].SetData(Tag::AUDIO_SAMPLE_PER_FRAME, samplesPerFrame);
-    mediaInfo.tracks[index_].SetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFormat);
+    mediaInfo.tracks[index_].Set<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame);
+    mediaInfo.tracks[index_].Set<Tag::AUDIO_SAMPLE_FORMAT>(sampleFormat);
     return Status::OK;
 }
 
@@ -191,7 +191,7 @@ Status MPEG4AudioParser::ParseDtsAudio(MediaInfo& mediaInfo)
         return Status::ERROR_INVALID_DATA;
     }
     AudioChannelLayout layout = g_dtsAudioMode2DtsChannelLayout[mode];
-    mediaInfo.tracks[index_].SetData(Tag::AUDIO_CHANNEL_LAYOUT, layout);
+    mediaInfo.tracks[index_].Set<Tag::AUDIO_CHANNEL_LAYOUT>(layout);
     return Status::OK;
 }
 } // namespace MPEG4

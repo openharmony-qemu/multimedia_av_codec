@@ -99,6 +99,7 @@ const char *OH_MD_KEY_RANGE_FLAG = "range_flag";
 const char *OH_MD_KEY_COLOR_PRIMARIES = "color_primaries";
 const char *OH_MD_KEY_TRANSFER_CHARACTERISTICS = "transfer_characteristics";
 const char *OH_MD_KEY_MATRIX_COEFFICIENTS = "matrix_coefficients";
+const char *OH_MD_KEY_HDR_TYPE = "video_hdr_type";
 const char *OH_MD_KEY_QUALITY = "quality";
 const char *OH_MD_KEY_SQR_FACTOR = "sqr_factor";
 const char *OH_MD_KEY_CHANNEL_LAYOUT = "channel_layout";
@@ -189,6 +190,13 @@ const char *OH_MD_KEY_AUDIO_VIVID_SIGNAL_FORMAT = "audio_vivid_signal_format";
 const char *OH_MD_KEY_AUDIO_SOUNDBED_LAYOUT = "audio_soundbed_layout";
 const char *OH_MD_KEY_AUDIO_SOUNDBED_BITRATE = "audio_soundbed_bitrate";
 const char *OH_MD_KEY_AUDIO_OBJECT_BITRATE = "audio_object_bitrate";
+const char *OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT = "video_encoder_preproc_crop_left";
+const char *OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_RIGHT = "video_encoder_preproc_crop_right";
+const char *OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_TOP = "video_encoder_preproc_crop_top";
+const char *OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM = "video_encoder_preproc_crop_bottom";
+const char *OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH = "video_encoder_preproc_downsampling_width";
+const char *OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT = "video_encoder_preproc_downsampling_height";
+const char *OH_MD_KEY_VIDEO_ENCODER_PREPROC_DROP_TO_FRAME_RATE = "video_encoder_preproc_drop_to_frame_rate";
 const char *OH_MD_KEY_SCREEN_CAPTURE_WINDOW_RECT = "screen_capture_window_rect";
 #ifdef __cplusplus
 }

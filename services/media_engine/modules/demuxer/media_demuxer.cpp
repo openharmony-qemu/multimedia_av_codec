@@ -114,6 +114,8 @@ constexpr int64_t READSAMPLE_AUIDO_WARNING_MS = 50;
 constexpr int64_t READSAMPLE_WARNING_MS = 100;
 constexpr int32_t CONVERT_PACKET_ERROR_MAX_COUNT = 30;
 constexpr int32_t DURATION_CHANGE_AMOUNT_MILLIONSECOND = 500;
+constexpr int64_t MAX_PRECENT = 100;
+constexpr int64_t TEMP_PRECENT = 100;
 const std::unordered_map<PluginDfxEventType, std::pair<std::string, DfxEventType>> DFX_EVENT_MAP = {
     { PluginDfxEventType::PERF_SOURCE, { "SRC", DfxEventType::DFX_INFO_PERF_REPORT } }
 };
@@ -1904,14 +1906,19 @@ void MediaDemuxer::HandleSeekToTime(int64_t seekTime)
 Status MediaDemuxer::HandleSelectSubtitle(int64_t seekTime, Plugins::SeekMode mode, int32_t trackId)
 {
     int32_t targetStreamID = demuxerPluginManager_->GetStreamIDByTrackID(trackId);
-    FALSE_RETURN_V_MSG_E(targetStreamID != INVALID_STREAM_OR_TRACK_ID, Status::ERROR_INVALID_PARAMETER,
+    return HandleSelectSubtitleStream(seekTime, mode, targetStreamID);
+}
+
+Status MediaDemuxer::HandleSelectSubtitleStream(int64_t seekTime, Plugins::SeekMode mode, int32_t streamId)
+{
+    FALSE_RETURN_V_MSG_E(streamId != INVALID_STREAM_OR_TRACK_ID, Status::ERROR_INVALID_PARAMETER,
         "Invalid streamId");
     FALSE_RETURN_V_MSG_E(source_ != nullptr && source_->IsSeekToTimeSupported(), Status::ERROR_INVALID_PARAMETER,
         "Source is null or seek operation not supported");
-    auto ret = source_->MediaSeekTimeByStreamId(seekTime, SeekMode::SEEK_PREVIOUS_SYNC, targetStreamID);
+    auto ret = source_->MediaSeekTimeByStreamId(seekTime, SeekMode::SEEK_PREVIOUS_SYNC, streamId);
     FALSE_RETURN_V_MSG_E(streamDemuxer_ != nullptr && ret == Status::OK, Status::ERROR_UNKNOWN,
         "Source SeekToSubtitle fail");
-    streamDemuxer_->SetNewSubtitleStreamID(targetStreamID);
+    streamDemuxer_->SetNewSubtitleStreamID(streamId);
     FALSE_RETURN_V_MSG_E(HandleDashChangeStream(subtitleTrackId_), Status::ERROR_UNKNOWN,
         "HandleDashChangeStream fail");
     return Status::OK;
@@ -2034,7 +2041,7 @@ Status MediaDemuxer::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode,
     Status ret;
     isSeekError_.store(false);
     if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
-        MEDIA_LOG_I("Source seek time: %{public}lld", seekTime);
+        MEDIA_LOG_I("Source seek time: %{public}" PRId64, seekTime);
         if (mode == SeekMode::SEEK_CLOSEST_INNER) {
             ScopedTimer timer("seek closest online", SEEKCLOSEST_ONLINE_WARNING_MS);
             ret = source_->SeekToTime(seekTime, SeekMode::SEEK_PREVIOUS_SYNC);
@@ -2098,13 +2105,13 @@ Status MediaDemuxer::SelectStreamId(int32_t streamId)
     return Status::OK;
 }
 
-Status MediaDemuxer::SelectBitRate(uint32_t bitRate, bool isAutoSelect)
+Status MediaDemuxer::SelectBitRate(uint32_t bitRate, bool isAutoSelect, bool isForceSelect)
 {
     FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_INVALID_PARAMETER, "Source is nullptr");
     MEDIA_LOG_I("In");
 
     if (isFlvLiveStream_ && IsRightMediaTrack(videoTrackId_, DemuxerTrackType::VIDEO)) {
-        FALSE_RETURN_V_NOLOG(!isManualBitRateSetting_.load() || !isAutoSelect, Status::ERROR_UNKNOWN);
+        FALSE_RETURN_V_NOLOG(!isManualBitRateSetting_.load() || !isAutoSelect || isForceSelect, Status::ERROR_UNKNOWN);
         if (!isManualBitRateSetting_.load() && !isAutoSelect) {
             isManualBitRateSetting_.store(true);
         }
@@ -3118,7 +3125,8 @@ void MediaDemuxer::HandleVideoTrack(int32_t trackId)
                 hasSetLargeSize_ = true;
             }
         }
-        if (bufferMap_[trackId]->pts_ <= sampleQueueMap_[audioTrackId_]->GetLastOutSamplePts()) {
+        if (IsValidTrackId(audioTrackId_) && sampleQueueMap_[audioTrackId_] != nullptr &&
+            bufferMap_[trackId]->pts_ <= sampleQueueMap_[audioTrackId_]->GetLastOutSamplePts()) {
             sampleQueueMap_[trackId]->Clear();
             sampleQueueMap_[trackId]->UpdateLastOutSamplePts(bufferMap_[trackId]->pts_);
         }
@@ -3440,21 +3448,23 @@ void PrintStreamInfo(const std::string &logTag, StreamInfo *streamInfo, const st
 {
     FALSE_RETURN(streamInfo != nullptr);
     if (streamInfo->type == StreamType::VIDEO || streamInfo->type == StreamType::MIXED) {
-        MEDIA_LOG_I(PUBLIC_LOG_S "desStreamInfo Video bitrate: " PUBLIC_LOG_D32 " videoHeight: " PUBLIC_LOG_D32
-            " videoWidth: " PUBLIC_LOG_D32 " framerate: " PUBLIC_LOG_D32 " mimeType: " PUBLIC_LOG_S " codec:"
-            PUBLIC_LOG_S " curDownloadBitrate: " PUBLIC_LOG_D32 " success change stream: " PUBLIC_LOG_S, logTag.c_str(),
-            streamInfo->bitRate, streamInfo->videoHeight, streamInfo->videoWidth, streamInfo->frameRate,
+        MEDIA_LOG_I(PUBLIC_LOG_S "desStreamInfo Video streamId: " PUBLIC_LOG_D32 " bitrate: " PUBLIC_LOG_D32
+            " videoHeight: " PUBLIC_LOG_D32 " videoWidth: " PUBLIC_LOG_D32 " framerate: " PUBLIC_LOG_D32 " mimeType: "
+            PUBLIC_LOG_S " codec:" PUBLIC_LOG_S " curDownloadBitrate: " PUBLIC_LOG_D32 " change stream state: "
+            PUBLIC_LOG_D32, logTag.c_str(), streamInfo->streamId, streamInfo->bitRate, streamInfo->videoHeight,
+            streamInfo->videoWidth, streamInfo->frameRate,
             currentPlayType == "dash" ? streamInfo->mimeType.c_str() : "", streamInfo->originCodecs.c_str(),
-            currentBitRate, status == Status::OK ? "true" : "false");
+            currentBitRate, status);
     } else if (streamInfo->type == StreamType::AUDIO) {
-        MEDIA_LOG_I(PUBLIC_LOG_S "desStreamInfo Audio channels: " PUBLIC_LOG_D32
+        MEDIA_LOG_I(PUBLIC_LOG_S "desStreamInfo Audio streamId: " PUBLIC_LOG_D32 " channels: " PUBLIC_LOG_D32
             " bitRate: " PUBLIC_LOG_D32 " mimeType: " PUBLIC_LOG_S  " codec:" PUBLIC_LOG_S " lang: " PUBLIC_LOG_S
-            " success change stream: " PUBLIC_LOG_S, logTag.c_str(), streamInfo->channels, streamInfo->bitRate,
-            currentPlayType == "dash" ? streamInfo->mimeType.c_str() : "", streamInfo->originCodecs.c_str(),
-            streamInfo->lang.c_str(), status == Status::OK ? "true" : "false");
+            " change stream state: " PUBLIC_LOG_D32, logTag.c_str(), streamInfo->streamId, streamInfo->channels,
+            streamInfo->bitRate, currentPlayType == "dash" ? streamInfo->mimeType.c_str() : "",
+            streamInfo->originCodecs.c_str(), streamInfo->lang.c_str(), status);
     } else if (streamInfo->type == StreamType::SUBTITLE) {
-        MEDIA_LOG_I(PUBLIC_LOG_S "desStreamInfo Subtitle lang: " PUBLIC_LOG_S " success change stream: " PUBLIC_LOG_S,
-            logTag.c_str(), streamInfo->lang.c_str(), status == Status::OK ? "true" : "false");
+        MEDIA_LOG_I(PUBLIC_LOG_S "desStreamInfo Subtitle streamId: " PUBLIC_LOG_D32 " lang: " PUBLIC_LOG_S
+            " change stream state: " PUBLIC_LOG_D32, logTag.c_str(), streamInfo->streamId, streamInfo->lang.c_str(),
+            status);
     }
 }
 
@@ -3589,17 +3599,24 @@ void MediaDemuxer::BufferingStatus()
         return;
     }
     if (GetTrackIsBuffering(mainTrackId)) {
-        int64_t percent = static_cast<int64_t>((sampleQueueMap_[mainTrackId]->NewGetCacheDuration() * 100) /
-            sampleQueueController_->GetPlayBufferingDuration());
+        int64_t percent = 0;
+        uint64_t temDuration = sampleQueueController_->GetPlayBufferingDuration();
+        if (temDuration > 0) {
+            percent = static_cast<int64_t>((sampleQueueMap_[mainTrackId]->NewGetCacheDuration() * TEMP_PRECENT) /
+            temDuration);
+        } else {
+            percent = MAX_PRECENT;
+        }
+            
         AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGI, LOG_INTERVAL_MS, LOG_MAX_COUNT,
-            "BUFFERING_PERCENT: %{public}lld", percent);
+            "BUFFERING_PERCENT: %{public}" PRId64, percent);
         if (eventReceiver_) {
             eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_BUFFER_PROGRESS, percent});
         }
     }
     auto cachedDuration = static_cast<int64_t>(sampleQueueMap_[mainTrackId]->NewGetCacheDuration() / US_TO_MS);
     if (std::abs(cachedDuration - lastCacheDuration_) > DURATION_CHANGE_AMOUNT_MILLIONSECOND) {
-        MEDIA_LOG_I("CACHED_DURATION: %{public}lld", cachedDuration);
+        MEDIA_LOG_I("CACHED_DURATION: %{public}" PRId64, cachedDuration);
         if (eventReceiver_) {
             eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_CACHED_DURATION, cachedDuration});
         }
@@ -4662,7 +4679,7 @@ Status MediaDemuxer::CopyAndPushBufferBySlices(int32_t trackId, std::shared_ptr<
 {
     auto srcBufferSize = sliceSize == 0 ? srcBuffer->memory_->GetSize() : sliceSize;
     int32_t copySize = std::min(dstBuffer->memory_->GetCapacity(), srcBufferSize);
-    MEDIA_LOG_D("prepare to copy: %{public}d, dest cap: %{public}d, src buf id: %{public}llu",
+    MEDIA_LOG_D("prepare to copy: %{public}d, dest cap: %{public}d, src buf id: %{public}" PRIu64,
         copySize, dstBuffer->memory_->GetCapacity(), srcBuffer->GetUniqueId());
     auto status = sampleQueueMap_[trackId]->CopyBufferSlice(srcBuffer, dstBuffer, copySize);
     FALSE_RETURN_V_MSG_E(status == Status::OK, status, "CopyPartBuffer failed, errCode: %{public}d", status);
@@ -4674,7 +4691,7 @@ Status MediaDemuxer::CopyAndPushBufferBySlices(int32_t trackId, std::shared_ptr<
 
 Status MediaDemuxer::ReleaseSrcBuffer(std::shared_ptr<AVBuffer> &srcBuffer, int32_t trackId)
 {
-    MEDIA_LOG_D("release src buff id: %{public}lld", srcBuffer->GetUniqueId());
+    MEDIA_LOG_D("release src buff id: %{public}" PRId64, srcBuffer->GetUniqueId());
     auto status = sampleQueueMap_[trackId]->ReleaseBuffer(srcBuffer);
     return status;
 }
@@ -5543,7 +5560,6 @@ void MediaDemuxer::SetTrackSelectionFilter(const TrackSelectionFilter &filter)
     FALSE_RETURN_MSG_W(isPrepared_.load(), "not prepared, cannot auto select bitrate");
     FALSE_RETURN_MSG_W(!IsCloudFd() && !IsNeedPreDownload(),
         "cloud fd or need pre-download, cannot auto select bitrate");
-    MEDIA_LOG_I("In");
     auto lastVideoStreamId = defaultVideoStreamId_;
     auto lastAudioStreamId = defaultAudioStreamId_;
     auto lastSubtitleStreamId = defaultSubtitleStreamId_;
@@ -5552,13 +5568,13 @@ void MediaDemuxer::SetTrackSelectionFilter(const TrackSelectionFilter &filter)
     bool needChange = true;
     stream = FindStreamForFiledStream(filteredStreamMap_[VIDEO], lastVideoStreamId, defaultVideoStreamId_, needChange);
     if (needChange && stream != nullptr) {
-        Status states = SelectBitRate(stream->bitRate);
+        Status states = SelectBitRate(stream->bitRate, true, true);
         if (states == Status::OK) {
             lastAutoSelectBitRate_ = stream->bitRate;
-            defaultVideoStreamId_ = stream->streamId;
         }
         PrintStreamInfo("SetTrackSelectionFilter ", stream, currentPlayType_, states, curDownloadBitRate_.load());
     } else {
+        defaultVideoStreamId_ = lastVideoStreamId;
         MEDIA_LOG_I("video stream does not need to be switched");
     }
 
@@ -5570,6 +5586,7 @@ void MediaDemuxer::SetTrackSelectionFilter(const TrackSelectionFilter &filter)
         Status states = SelectStreamId(defaultAudioStreamId_);
         PrintStreamInfo("SetTrackSelectionFilter ", stream, currentPlayType_, states);
     } else {
+        defaultAudioStreamId_ = lastAudioStreamId;
         MEDIA_LOG_I("audio stream does not need to be switched");
     }
 
@@ -5580,7 +5597,12 @@ void MediaDemuxer::SetTrackSelectionFilter(const TrackSelectionFilter &filter)
     if (needChange && stream != nullptr) {
         Status states = SelectStreamId(defaultSubtitleStreamId_);
         PrintStreamInfo("SetTrackSelectionFilter ", stream, currentPlayType_, states);
+        if (states == Status::OK && isHls_ && syncCenter_ != nullptr) {
+            HandleSelectSubtitleStream(
+                syncCenter_->GetMediaTimeNow(), SeekMode::SEEK_PREVIOUS_SYNC, defaultSubtitleStreamId_);
+        }
     } else {
+        defaultSubtitleStreamId_ = lastSubtitleStreamId;
         MEDIA_LOG_I("subtitle stream does not need to be switched");
     }
 }
@@ -5872,9 +5894,12 @@ void MediaDemuxer::ChooseDefaultStreams()
     std::map<StreamType, bool> needFilterMap;
     GetNeedFilterMap(filteredStreamPredicates, trackSelectionFilter_, currentPlayType_, needFilterMap);
     ScanStreamsAndBuildMap(streams, filteredStreamPredicates, needFilterMap, filteredStreamMap, allStreamMap);
-    bool isVideoNoFiltered = filteredStreamMap[VIDEO].empty();
-    bool isAudioNoFiltered = filteredStreamMap[AUDIO].empty();
-    bool isSubtitleNoFiltered = filteredStreamMap[SUBTITLE].empty();
+    bool isVideoNoFiltered =
+        filteredStreamMap[VIDEO].empty() || filteredStreamMap[VIDEO].size() == allStreamMap[VIDEO].size();
+    bool isAudioNoFiltered =
+        filteredStreamMap[AUDIO].empty() || filteredStreamMap[AUDIO].size() == allStreamMap[AUDIO].size();
+    bool isSubtitleNoFiltered =
+        filteredStreamMap[SUBTITLE].empty() || filteredStreamMap[SUBTITLE].size() == allStreamMap[SUBTITLE].size();
     MEDIA_LOG_I("ChooseDefaultStreams hasFilteredVideo: " PUBLIC_LOG_D32 " hasFilteredAudio: " PUBLIC_LOG_D32
         " hasFilteredSubtitle: " PUBLIC_LOG_D32, !isVideoNoFiltered, !isAudioNoFiltered, !isSubtitleNoFiltered);
     {

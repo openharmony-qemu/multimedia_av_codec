@@ -168,6 +168,12 @@ bool MultiStreamParserManager::IsHdr10Plus(uint32_t trackId)
     return streamMap_[trackId].parser->IsHdr10Plus();
 }
 
+bool MultiStreamParserManager::IsHdr(uint32_t trackId)
+{
+    FALSE_RETURN_V_MSG_E(ParserIsInited(trackId), false, "Stream parser is invalid");
+    return streamMap_[trackId].parser->IsHdr();
+}
+
 bool MultiStreamParserManager::IsSyncFrame(uint32_t trackId, const uint8_t *sample, int32_t size)
 {
     FALSE_RETURN_V_MSG_E(sample != nullptr && size >= 0 && size < INT32_MAX, false, "Sample is nullptr");
@@ -281,6 +287,7 @@ void MultiStreamParserManager::ParseMetadataInfo(uint32_t trackIndex,
     parse.chromaLocation = streamParsers->GetChromaLocation(trackIndex);
     parse.picWidInLumaSamples = streamParsers->GetPicWidInLumaSamples(trackIndex);
     parse.picHetInLumaSamples = streamParsers->GetPicHetInLumaSamples(trackIndex);
+    parse.isHdr = streamParsers->IsHdr(trackIndex);
 }
 } // namespace Plugins
 } // namespace Media

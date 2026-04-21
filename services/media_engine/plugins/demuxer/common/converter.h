@@ -39,8 +39,9 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 struct HdrBoxInfo {
-    bool hasHdrDoblyVisionBox = false;
-    bool hasHdrVividBox = false;
+    bool haveHdrDoblyVisionBox = false;
+    bool haveHdrVividBox = false;
+    bool isHdr = false; // have static metadata or dynamic metadata
 };
 
 class Converter {
@@ -57,7 +58,7 @@ public:
     static AudioChannelLayout ConvertFFToOHAudioChannelLayoutV2(uint64_t ffChannelLayout, int channels);
     static AudioChannelLayout ConvertAudioVividToOHAudioChannelLayout(uint64_t ffChannelLayout, int channels);
     static void ParseColorBoxInfo(HevcParseFormat parse, Meta &format);
-    static void ParseHdrTypeInfo(HdrBoxInfo hdrInfo, Meta &format, HevcParseFormat parse);
+    static void ParseHdrTypeInfo(HdrBoxInfo hdrBoxInfo, Meta &format, HevcParseFormat parse);
     static std::string ToLower(const std::string& str);
     static bool IsUTF8(const std::string &data);
     static std::string ConvertGBKToUTF8(const std::string &strGbk);

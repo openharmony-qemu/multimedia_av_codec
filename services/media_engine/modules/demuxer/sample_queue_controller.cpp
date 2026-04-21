@@ -209,6 +209,10 @@ void SampleQueueController::SetBufferingDuration(std::shared_ptr<Plugins::PlaySt
         MEDIA_LOG_W("SetBufferingDuration strategy nullptr!");
         return;
     }
+    if (strategy->duration < 0 || strategy->bufferDurationForPlaying < 0) {
+        MEDIA_LOG_W("duration or bufferDurationForPlaying < 0 !");
+        return;
+    }
     if (strategy->duration != 0 && strategy->bufferDurationForPlaying != 0 &&
         strategy->duration < strategy->bufferDurationForPlaying) {
         MEDIA_LOG_E("Buffer duration for playing must be less than total playback duration.");

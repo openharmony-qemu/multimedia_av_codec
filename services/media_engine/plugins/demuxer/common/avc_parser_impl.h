@@ -53,6 +53,7 @@ public:
     std::vector<uint8_t> GetLogInfo() override { return {}; };;
     uint32_t GetMaxReorderPic() override { return 0; };;
     bool IsHdr10Plus() override  { return false; };
+    bool IsHdr() override  { return false; };
     int32_t GetFirstFillerDataNalSize(const uint8_t *sample, int32_t size) override { return 0; };
 
     enum AvcNalType : uint8_t {

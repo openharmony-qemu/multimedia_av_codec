@@ -20,6 +20,7 @@
 #include <set>
 #include <map>
 #include <string>
+#include "converter.h"
 #include "mpeg4_audio_parser.h"
 #include "mpeg4_sample_helper.h"
 #include "plugin/plugin_definition.h"
@@ -40,7 +41,7 @@ public:
         std::unique_ptr<uint8_t[]> data = nullptr;
         int64_t extradataSize = 0;
         TrackType trackType = INVALID_TYPE;
-        
+        HdrBoxInfo hdrBoxInfo {false, false, false};
         CodecParams() = default;
     };
 
@@ -196,6 +197,7 @@ private:
     int64_t GetChannelLayoutByBitmap(uint32_t tag, uint32_t bitmap);
     Status SetVorbisAudioAttribute();
     Status SetAudioAttribute();
+    void SetHdrTypeInfo(MPEG4Atom currentAtom);
 
     Status ParseAtomHeader(MPEG4Atom& atom, std::string& typeStr, int32_t depth, bool &isZeroSizeAtom,
         ParseContext* ctx);
@@ -276,6 +278,8 @@ private:
     Status ParseKind(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseChan(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseChap(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
+    Status ParseClli(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
+    Status ParseMdcv(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
 };
 } // namespace MPEG4
 } // namespace Plugins

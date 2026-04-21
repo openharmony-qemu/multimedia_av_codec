@@ -33,6 +33,7 @@ public:
                                          std::map<int32_t, const std::string> mapping);
     int32_t GetDumpString(std::string &dumpString);
     uint32_t GetSpaceLength(const uint32_t dumpIdx);
+    static bool GetValueFromFormat(const Media::Format &format, const std::string_view &key, std::string &value);
 
 private:
     uint32_t GetLevel(const uint32_t dumpIdx);

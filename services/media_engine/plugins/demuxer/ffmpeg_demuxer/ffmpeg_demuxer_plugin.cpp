@@ -834,12 +834,12 @@ void FFmpegDemuxerPlugin::WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std:
     if (firstPkt->duration != AV_NOPTS_VALUE) {
         int64_t duration = AvTime2Us(ConvertTimeFromFFmpeg(firstPkt->duration, timeBase));
         sample->duration_ = duration;
-        sample->meta_->SetData(Media::Tag::BUFFER_DURATION, duration);
+        sample->meta_->Set<Media::Tag::BUFFER_DURATION>(duration);
     }
     if (firstPkt->dts != AV_NOPTS_VALUE) {
         int64_t dts = AvTime2Us(ConvertTimeFromFFmpeg(firstPkt->dts, timeBase));
         sample->dts_ = dts;
-        sample->meta_->SetData(Media::Tag::BUFFER_DECODING_TIMESTAMP, dts);
+        sample->meta_->Set<Media::Tag::BUFFER_DECODING_TIMESTAMP>(dts);
     }
 
     (void)SupplementAudioTimestampIfNeeded(sample, *firstPkt, *snapshot, trackIndex);
@@ -865,7 +865,7 @@ void FFmpegDemuxerPlugin::WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std:
         if (skipInfoData != nullptr && skipInfoDataSize > 0) {
             std::vector<uint8_t> skipInfo(skipInfoDataSize);
             skipInfo.assign(skipInfoData, skipInfoData + skipInfoDataSize);
-            sample->meta_->SetData(Tag::BUFFER_SKIP_SAMPLES_INFO, skipInfo);
+            sample->meta_->Set<Tag::BUFFER_SKIP_SAMPLES_INFO>(skipInfo);
         }
     }
 }
@@ -948,7 +948,7 @@ bool FFmpegDemuxerPlugin::SupplementAudioDurationIfNeeded(std::shared_ptr<AVBuff
         "Invalid durationUs=" PUBLIC_LOG_D64 ", frameSamples=" PUBLIC_LOG_D32 " sampleRate=" PUBLIC_LOG_D32,
         durationUs, frameSamples, snapshot.sampleRate);
     sample->duration_ = durationUs;
-    sample->meta_->SetData(Media::Tag::BUFFER_DURATION, durationUs);
+    sample->meta_->Set<Media::Tag::BUFFER_DURATION>(durationUs);
     return true;
 }
 
@@ -964,7 +964,7 @@ bool FFmpegDemuxerPlugin::SupplementAudioPtsDtsIfNeeded(std::shared_ptr<AVBuffer
 
     if (hasInvalidDts && !hasInvalidPts) {
         sample->dts_ = sample->pts_;
-        sample->meta_->SetData(Media::Tag::BUFFER_DECODING_TIMESTAMP, sample->pts_);
+        sample->meta_->Set<Media::Tag::BUFFER_DECODING_TIMESTAMP>(sample->pts_);
         return true;
     }
     if (hasInvalidPts && !hasInvalidDts) {
@@ -992,7 +992,7 @@ bool FFmpegDemuxerPlugin::SupplementAudioPtsDtsIfNeeded(std::shared_ptr<AVBuffer
 
     sample->pts_ = nextPtsUs;
     sample->dts_ = nextPtsUs;
-    sample->meta_->SetData(Media::Tag::BUFFER_DECODING_TIMESTAMP, nextPtsUs);
+    sample->meta_->Set<Media::Tag::BUFFER_DECODING_TIMESTAMP>(nextPtsUs);
     return true;
 }
 
@@ -1612,7 +1612,7 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
         "AVFormatContext has been initialized");
     FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "DataSource is nullptr");
     if (configs != nullptr) {
-        if (configs->GetData(Tag::MEDIA_DEMUXER_MODE, demuxerMode_)) {
+        if (configs->Get<Tag::MEDIA_DEMUXER_MODE>(demuxerMode_)) {
             MEDIA_LOG_I("DemuxerMode: " PUBLIC_LOG_U32, static_cast<uint32_t>(demuxerMode_));
         }
     }
@@ -1754,12 +1754,12 @@ bool FFmpegDemuxerPlugin::HasCodecParameters()
         bool flag = !HaveValidParser(avStream->codecpar->codec_id) ||
             (HaveValidParser(avStream->codecpar->codec_id) && streamParsers_ != nullptr);
         if (FFmpegFormatHelper::IsAudioType(*avStream)) {
-            FALSE_RETURN_V_MSG_E(format.GetData(Tag::AUDIO_CHANNEL_COUNT, param), false,
+            FALSE_RETURN_V_MSG_E(format.Get<Tag::AUDIO_CHANNEL_COUNT>(param), false,
                 "unspecified channel_count");
-            FALSE_RETURN_V_MSG_E(format.GetData(Tag::AUDIO_SAMPLE_RATE, param), false, "unspecified sample_rate");
+            FALSE_RETURN_V_MSG_E(format.Get<Tag::AUDIO_SAMPLE_RATE>(param), false, "unspecified sample_rate");
         } else if (FFmpegFormatHelper::IsVideoType(*avStream)) {
-            FALSE_RETURN_V_MSG_E(flag && format.GetData(Tag::VIDEO_WIDTH, param), false, "unspecified width");
-            FALSE_RETURN_V_MSG_E(flag && format.GetData(Tag::VIDEO_HEIGHT, param), false, "unspecified height");
+            FALSE_RETURN_V_MSG_E(flag && format.Get<Tag::VIDEO_WIDTH>(param), false, "unspecified width");
+            FALSE_RETURN_V_MSG_E(flag && format.Get<Tag::VIDEO_HEIGHT>(param), false, "unspecified height");
         }
     }
     return true;
@@ -1851,8 +1851,8 @@ Status FFmpegDemuxerPlugin::SetAVReadFrameLimit()
         int width = 0;
         int height = 0;
         Meta &format = mediaInfo_.tracks[trackIndex];
-        format.GetData(Tag::VIDEO_WIDTH, width);
-        format.GetData(Tag::VIDEO_HEIGHT, height);
+        format.Get<Tag::VIDEO_WIDTH>(width);
+        format.Get<Tag::VIDEO_HEIGHT>(height);
         auto limitSize = CheckedProductForInt32(width, height, DEFAULT_CHANNEL_CNT, READ_SIZE_LIMIT_FACTOR);
         if (!limitSize || *limitSize < 0) {
             MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " limit size is overflow or < 0", trackIndex);
@@ -1926,7 +1926,7 @@ void FFmpegDemuxerPlugin::SetStreamInitialParams(uint32_t trackId, Meta &format)
 {
     FALSE_RETURN_MSG_W(streamInitialParam_.count(trackId) > 0, "TrackId is invalid");
     int64_t bitRate = 0;
-    bool ret = streamInitialParam_[trackId].GetData(Tag::MEDIA_BITRATE, bitRate);
+    bool ret = streamInitialParam_[trackId].Get<Tag::MEDIA_BITRATE>(bitRate);
     if (!ret || bitRate <= 0) {
         MEDIA_LOG_W("Track " PUBLIC_LOG_D32 " has no bitrate", trackId);
     } else {
@@ -3089,7 +3089,9 @@ Status FFmpegDemuxerPlugin::SeekToKeyFrame(int32_t trackId, int64_t seekTime,
     if (timeRangeManager_.IsInTimeRanges(ffTime, timeRange)) {
         ffTime = timeRange.end_ts;
     }
-
+    MEDIA_LOG_I("Time [" PUBLIC_LOG_U64 "/" PUBLIC_LOG_U64 "] flag ["
+                PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "]",
+                seekTime, ffTime, static_cast<int32_t>(mode), AVSEEK_FLAG_FRAME);
     int ffRet = AVSeekFrameLock(trackId, ffTime, AVSEEK_FLAG_FRAME);
     FALSE_RETURN_V_MSG_E(ffRet >= 0, Status::ERROR_UNKNOWN,
         "Call av_seek_frame failed, err: " PUBLIC_LOG_S, AVStrError(ffRet).c_str());

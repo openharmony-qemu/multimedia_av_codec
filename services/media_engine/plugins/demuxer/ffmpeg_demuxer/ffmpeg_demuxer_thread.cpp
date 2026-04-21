@@ -711,7 +711,7 @@ bool FFmpegDemuxerPlugin::IsReadTimeoutExpired(IOContext* ioContext)
         std::chrono::system_clock::now().time_since_epoch()).count();
     if (currentTimeMs - ioContext->readStartTimeMs > ioContext->readTimeoutMs) {
         MEDIA_LOG_E("Read timeout, elapsed: " PUBLIC_LOG_D64 "ms, limit: " PUBLIC_LOG_D64 "ms",
-            currentTimeMs - ioContext->readStartTimeMs, ioContext->readTimeoutMs);
+            currentTimeMs - ioContext->readStartTimeMs, ioContext->readTimeoutMs.load());
         return true;
     }
     return false;
@@ -719,6 +719,10 @@ bool FFmpegDemuxerPlugin::IsReadTimeoutExpired(IOContext* ioContext)
 
 Status FFmpegDemuxerPlugin::SetReadTimeoutForInitSeek(int64_t timeoutMs)
 {
+    if (timeoutMs < 0) {
+        MEDIA_LOG_E("SetReadTimeoutForInitSeek: timeoutMs must be non-negative, got " PUBLIC_LOG_D64, timeoutMs);
+        return Status::ERROR_INVALID_PARAMETER;
+    }
     MEDIA_LOG_I("Set read timeout for init/seek: " PUBLIC_LOG_D64 " ms", timeoutMs);
     ioContext_.readTimeoutMs = timeoutMs;
     ioContext_.readStartTimeMs = 0;

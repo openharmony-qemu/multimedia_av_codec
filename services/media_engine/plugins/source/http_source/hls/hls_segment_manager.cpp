@@ -868,6 +868,7 @@ void HlsSegmentManager::PrepareToSeek()
     MEDIA_LOG_I("HLS Seek, reset cache media buffer, ret: %{public}d, size: %{public}zu, type: %{public}d",
         initRet, totalBufferSize_, type_);
     canWrite_ = true;
+    isNeedResume_.store(false);
 
     AutoLock lock(tsStorageInfoMutex_);
     tsStorageInfo_.clear();
@@ -913,6 +914,9 @@ bool HlsSegmentManager::SeekToTime(int64_t seekTime, SeekMode mode)
         if (playlistDownloader_->IsHlsFmp4()) {
             isNeedReadHeader_.store(true);
         }
+
+        // while in source loader downloading, set seek flag to wait seeking operator done
+        isSourceLoaderSeeking_.store(sourceLoader_ != nullptr);
         SeekToTs(seekTime, mode);
     } else {
         readTsIndex_ = !backPlayList_.empty() ? backPlayList_.size() - 1 : 0; // 0
@@ -923,6 +927,7 @@ bool HlsSegmentManager::SeekToTime(int64_t seekTime, SeekMode mode)
     isSeekingFlag = false;
     isSeekedFlag_ = true;
     notNeedReadBack_.store(false);
+    isSourceLoaderSeeking_.store(false);
     return true;
 }
 
@@ -1082,7 +1087,7 @@ uint32_t HlsSegmentManager::SaveCacheBufferDataNotblock(uint8_t* data, uint32_t 
     uint64_t freeSize = cacheMediaBuffer_->GetFreeSize();
     uint64_t throttleThreshold = GetDownloadThrottleThreshold();
     uint64_t totalSize = GetMemorySize();
-    if (len + throttleThreshold >= freeSize && len + throttleThreshold <= totalSize) {
+    if (len + throttleThreshold >= freeSize && len + throttleThreshold <= totalSize - CHUNK_SIZE) {
         if (!isNeedResume_.load()) {
             isNeedResume_.store(true);
             MEDIA_LOG_I("HLS stop write, freeSize: " PUBLIC_LOG_U64 " len: " PUBLIC_LOG_U32
@@ -1174,6 +1179,14 @@ uint32_t HlsSegmentManager::SaveData(uint8_t* data, uint32_t len, bool notBlock)
 {
     if (cacheMediaBuffer_ == nullptr || data == nullptr) {
         return 0;
+    }
+    int64_t start = loopInterruptClock_.ElapsedSeconds();
+    while (isSourceLoaderSeeking_.load()) {
+        int64_t now = loopInterruptClock_.ElapsedSeconds();
+        int64_t duration = now - std::min(start, now);
+        if (duration > SEEK_WAIT_TIME) {
+            break;
+        }
     }
     OnWriteCacheBuffer(len);
     if (isSeekingFlag.load()) {
@@ -1481,7 +1494,8 @@ void HlsSegmentManager::SeekToTs(uint64_t seekTime, SeekMode mode)
     isDownloadStarted_ = false;
     playList_->Clear();
     int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
-    for (const auto &item : SeekListHelper(playlistDownloader_->IsLive())) {
+    seekPlayList_ = SeekListHelper(playlistDownloader_->IsLive());
+    for (const auto &item : seekPlayList_) {
         if (CheckLoopTimeout(loopStartTime)) {
             break;
         }
@@ -1522,11 +1536,7 @@ int64_t HlsSegmentManager::RequestNewTs(uint64_t seekTime, SeekMode mode, double
         if (static_cast<uint64_t>(lastTotalDuration) <= seekTime) {
             startTimePos = static_cast<int64_t>(seekTime) - static_cast<int64_t>(lastTotalDuration);
             seekStartTimePos_ = lastTotalDuration;
-            auto* playlistptr = &backPlayList_;
-            if (playlistDownloader_ != nullptr && playlistDownloader_->IsLive()) {
-                playlistptr = &seekCandidates_;
-            }
-            if (startTimePos > (int64_t)(hstTime / HALF_DIVIDE) && (&item != &(playlistptr->back()))) { // 2
+            if (startTimePos > (int64_t)(hstTime / HALF_DIVIDE) && (&item != &(seekPlayList_.back()))) { // 2
                 writeTsIndex_++;
                 seekStartTimePos_ = totalDuration;
                 MEDIA_LOG_I("writeTsIndex, RequestNewTs update writeTsIndex " PUBLIC_LOG_U32 ", type: %{public}d",

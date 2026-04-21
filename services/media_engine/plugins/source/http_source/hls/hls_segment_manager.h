@@ -260,6 +260,7 @@ private:
     std::map<std::string, bool> fragmentPushed;
     std::deque<PlayInfo> backPlayList_;
     std::deque<PlayInfo> seekCandidates_;
+    std::vector<PlayInfo> seekPlayList_;    // used in SeekToTs and RequestNewTs
     std::atomic<bool> isSelectingBitrate_ {false};
     bool isDownloadStarted_ {false};
     std::atomic<bool> lastPlaychanged_ {false};
@@ -327,6 +328,7 @@ private:
     bool isInterrupt_ {false};
     bool isFirstFrameArrived_ {false};
     std::atomic<bool> isSeekingFlag {false};
+    std::atomic<bool> isSourceLoaderSeeking_ {false};
     Mutex switchMutex_ {};
     uint32_t lastRealLen_ {0};
 
