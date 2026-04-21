@@ -138,7 +138,7 @@ struct OH_AVDemuxer *OH_AVDemuxer_CreateWithSource(OH_AVSource *source)
     CHECK_AND_RETURN_RET_LOG(source != nullptr, nullptr, "Input source is nullptr");
     CHECK_AND_RETURN_RET_LOG(source->magic_ == AVMagic::AVCODEC_MAGIC_AVSOURCE, nullptr, "Magic error");
 
-    ApiMetricsReporter("AVCodecKit.OH_AVDemuxer_CreateWithSource.Time", TIMES);
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVDemuxer_CreateWithSource.Time", TIMES);
     static AppEventReporter appEventReporter = AppEventReporter();
     ApiInvokeRecorder apiInvokeRecorder("OH_AVDemuxer_CreateWithSource", appEventReporter);
 
@@ -158,7 +158,7 @@ OH_AVErrCode OH_AVDemuxer_Destroy(OH_AVDemuxer *demuxer)
 {
     CHECK_AND_RETURN_RET_LOG(demuxer != nullptr, AV_ERR_INVALID_VAL, "Input demuxer is nullptr");
     CHECK_AND_RETURN_RET_LOG(demuxer->magic_ == AVMagic::AVCODEC_MAGIC_AVDEMUXER, AV_ERR_INVALID_VAL, "Magic error");
-    ApiMetricsReporter("AVCodecKit.OH_AVDemuxer_Destroy.Time", TIMES);
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVDemuxer_Destroy.Time", TIMES);
     delete demuxer;
     return AV_ERR_OK;
 }
@@ -168,7 +168,7 @@ OH_AVErrCode OH_AVDemuxer_SelectTrackByID(OH_AVDemuxer *demuxer, uint32_t trackI
     CHECK_AND_RETURN_RET_LOG(demuxer != nullptr, AV_ERR_INVALID_VAL, "Input demuxer is nullptr");
     CHECK_AND_RETURN_RET_LOG(demuxer->magic_ == AVMagic::AVCODEC_MAGIC_AVDEMUXER, AV_ERR_INVALID_VAL, "Magic error");
 
-    ApiMetricsReporter("AVCodecKit.OH_AVDemuxer_SelectTrackByID.Time", TIMES);
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVDemuxer_SelectTrackByID.Time", TIMES);
     struct DemuxerObject *demuxerObj = reinterpret_cast<DemuxerObject *>(demuxer);
     CHECK_AND_RETURN_RET_LOG(demuxerObj != nullptr, AV_ERR_INVALID_VAL, "Get demuxerObject failed");
     CHECK_AND_RETURN_RET_LOG(demuxerObj->demuxer_ != nullptr, AV_ERR_INVALID_VAL, "Get demuxerObject failed");
@@ -185,7 +185,7 @@ OH_AVErrCode OH_AVDemuxer_UnselectTrackByID(OH_AVDemuxer *demuxer, uint32_t trac
     CHECK_AND_RETURN_RET_LOG(demuxer != nullptr, AV_ERR_INVALID_VAL, "Input demuxer is nullptr");
     CHECK_AND_RETURN_RET_LOG(demuxer->magic_ == AVMagic::AVCODEC_MAGIC_AVDEMUXER, AV_ERR_INVALID_VAL, "Magic error");
 
-    ApiMetricsReporter("AVCodecKit.OH_AVDemuxer_SelectTrackByID.Time", TIMES);
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVDemuxer_UnselectTrackByID.Time", TIMES);
     struct DemuxerObject *demuxerObj = reinterpret_cast<DemuxerObject *>(demuxer);
     CHECK_AND_RETURN_RET_LOG(demuxerObj != nullptr, AV_ERR_INVALID_VAL, "Get demuxerObject failed");
     CHECK_AND_RETURN_RET_LOG(demuxerObj->demuxer_ != nullptr, AV_ERR_INVALID_VAL, "Get demuxerObject failed");
@@ -234,7 +234,7 @@ OH_AVErrCode OH_AVDemuxer_ReadSampleBuffer(OH_AVDemuxer *demuxer, uint32_t track
     CHECK_AND_RETURN_RET_LOG(sample != nullptr && sample->buffer_ != nullptr, AV_ERR_INVALID_VAL, "Sample is nullptr");
     CHECK_AND_RETURN_RET_LOG(sample->magic_ == MFMagic::MFMAGIC_AVBUFFER, AV_ERR_INVALID_VAL, "Magic error");
 
-    ApiMetricsReporter("AVCodecKit.OH_AVDemuxer_ReadSampleBuffer.Time", TIMES);
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVDemuxer_ReadSampleBuffer.Time", TIMES);
     struct DemuxerObject *demuxerObj = reinterpret_cast<DemuxerObject *>(demuxer);
     CHECK_AND_RETURN_RET_LOG(demuxerObj != nullptr, AV_ERR_INVALID_VAL, "Get demuxerObject failed");
     CHECK_AND_RETURN_RET_LOG(demuxerObj->demuxer_ != nullptr, AV_ERR_INVALID_VAL, "Get demuxerObject failed");
@@ -254,7 +254,7 @@ OH_AVErrCode OH_AVDemuxer_SeekToTime(OH_AVDemuxer *demuxer, int64_t millisecond,
 
     CHECK_AND_RETURN_RET_LOG(millisecond >= 0, AV_ERR_INVALID_VAL, "Millisecond is negative");
 
-    ApiMetricsReporter("AVCodecKit.OH_AVDemuxer_SeekToTime.Time", TIMES);
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVDemuxer_SeekToTime.Time", TIMES);
     static AppEventReporter appEventReporter = AppEventReporter();
     ApiInvokeRecorder apiInvokeRecorder("OH_AVDemuxer_SeekToTime", appEventReporter);
 
@@ -276,7 +276,7 @@ OH_AVErrCode OH_AVDemuxer_SetMediaKeySystemInfoCallback(OH_AVDemuxer *demuxer,
     CHECK_AND_RETURN_RET_LOG(demuxer != nullptr, AV_ERR_INVALID_VAL, "Input demuxer is nullptr");
     CHECK_AND_RETURN_RET_LOG(demuxer->magic_ == AVMagic::AVCODEC_MAGIC_AVDEMUXER, AV_ERR_INVALID_VAL, "Magic error");
 
-    ApiMetricsReporter("AVCodecKit.OH_AVDemuxer_SetMediaKeySystemInfoCallback.Time", TIMES);
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVDemuxer_SetMediaKeySystemInfoCallback.Time", TIMES);
     struct DemuxerObject *demuxerObj = reinterpret_cast<DemuxerObject *>(demuxer);
     CHECK_AND_RETURN_RET_LOG(demuxerObj != nullptr, AV_ERR_INVALID_VAL, "Get demuxerObject failed");
     CHECK_AND_RETURN_RET_LOG(demuxerObj->demuxer_ != nullptr, AV_ERR_INVALID_VAL, "Get demuxerObject failed");
@@ -294,7 +294,7 @@ OH_AVErrCode OH_AVDemuxer_SetDemuxerMediaKeySystemInfoCallback(OH_AVDemuxer *dem
     CHECK_AND_RETURN_RET_LOG(demuxer != nullptr, AV_ERR_INVALID_VAL, "Input demuxer is nullptr");
     CHECK_AND_RETURN_RET_LOG(demuxer->magic_ == AVMagic::AVCODEC_MAGIC_AVDEMUXER, AV_ERR_INVALID_VAL, "Magic error");
 
-    ApiMetricsReporter("AVCodecKit.OH_AVDemuxer_SetDemuxerMediaKeySystemInfoCallback.Time", TIMES);
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVDemuxer_SetDemuxerMediaKeySystemInfoCallback.Time", TIMES);
     struct DemuxerObject *demuxerObj = reinterpret_cast<DemuxerObject *>(demuxer);
     CHECK_AND_RETURN_RET_LOG(demuxerObj != nullptr, AV_ERR_INVALID_VAL, "Get demuxerObject failed");
     CHECK_AND_RETURN_RET_LOG(demuxerObj->demuxer_ != nullptr, AV_ERR_INVALID_VAL, "Get demuxerObject failed");
@@ -311,7 +311,7 @@ OH_AVErrCode OH_AVDemuxer_GetMediaKeySystemInfo(OH_AVDemuxer *demuxer, DRM_Media
     CHECK_AND_RETURN_RET_LOG(demuxer != nullptr, AV_ERR_INVALID_VAL, "Input demuxer is nullptr");
     CHECK_AND_RETURN_RET_LOG(demuxer->magic_ == AVMagic::AVCODEC_MAGIC_AVDEMUXER, AV_ERR_INVALID_VAL, "Magic error");
 
-    ApiMetricsReporter("AVCodecKit.OH_AVDemuxer_GetMediaKeySystemInfo.Time", TIMES);
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVDemuxer_GetMediaKeySystemInfo.Time", TIMES);
     struct DemuxerObject *demuxerObj = reinterpret_cast<DemuxerObject *>(demuxer);
     CHECK_AND_RETURN_RET_LOG(demuxerObj != nullptr, AV_ERR_INVALID_VAL, "Get demuxerObject failed");
     CHECK_AND_RETURN_RET_LOG(demuxerObj->demuxer_ != nullptr, AV_ERR_INVALID_VAL, "Get demuxerObject failed");
