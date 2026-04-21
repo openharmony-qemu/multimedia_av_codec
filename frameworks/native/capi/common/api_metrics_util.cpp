@@ -17,10 +17,6 @@
 #include "avcodec_log.h"
 #include "histogram_plugin_macros.h"
 
-namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodec_api_metrices"};
-}
-
 namespace OHOS {
 namespace MediaAVCodec {
 ApiMetricsReporter::ApiMetricsReporter(std::string apiName, MetricesType metricesType, int32_t sample) :
