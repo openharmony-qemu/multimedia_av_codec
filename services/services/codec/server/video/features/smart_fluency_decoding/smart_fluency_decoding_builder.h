@@ -21,47 +21,30 @@
 #include <string>
 #include "meta/format.h"
 #include "smart_fluency_decoding_types.h"
-#include "buffer/avbuffer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-using namespace Media;
 namespace SFD {
-using AVBuffer = OHOS::Media::AVBuffer;
 
 class SmartFluencyDecoding;
 
 class SmartFluencyDecodingBuilder {
 public:
-    SmartFluencyDecodingBuilder();
-    ~SmartFluencyDecodingBuilder();
-
-    SmartFluencyDecodingBuilder(const SmartFluencyDecodingBuilder&) = delete;
-    SmartFluencyDecodingBuilder& operator=(const SmartFluencyDecodingBuilder&) = delete;
-
-    SmartFluencyDecodingBuilder(SmartFluencyDecodingBuilder&&) = default;
-    SmartFluencyDecodingBuilder& operator=(SmartFluencyDecodingBuilder&&) = default;
+    SmartFluencyDecodingBuilder() = default;
+    ~SmartFluencyDecodingBuilder() = default;
 
     SmartFluencyDecodingBuilder& SetVideoWidth(int32_t width);
     SmartFluencyDecodingBuilder& SetVideoHeight(int32_t height);
     SmartFluencyDecodingBuilder& SetCodecMime(const std::string& mime);
     SmartFluencyDecodingBuilder& UpdatePlaybackSpeed(double speed);
-    SmartFluencyDecodingBuilder& SetFromFormat(const Format& format);
-
+    SmartFluencyDecodingBuilder& SetFromFormat(const Media::Format& format);
     std::unique_ptr<SmartFluencyDecoding> Build();
 
-    static bool IsCodecSupported(const std::string& codecMime, int32_t codecType);
-    static SFDCodecType ParseCodecType(const std::string& mime);
-    static void EnableMVOutput(const std::string& codecMime, bool isConfiged, Format& format);
-    static std::vector<uint8_t> ExtractCsdData(const std::shared_ptr<AVBuffer>& buffer);
-    static void ReplayCsdData(SmartFluencyDecoding* sfd, const std::vector<uint8_t>& csdData);
-
 private:
-    SFDConfig params_{};
-    std::optional<double> playbackSpeed_{std::nullopt};
-
+    static SFDCodecType ParseCodecType(const std::string& mime);
     bool ValidateParams();
-    bool IsRetentionRateValid(double rate);
+    SFDConfig config_{};
+    std::optional<double> playbackSpeed_{std::nullopt};
 };
 } // namespace SFD
 } // namespace MediaAVCodec

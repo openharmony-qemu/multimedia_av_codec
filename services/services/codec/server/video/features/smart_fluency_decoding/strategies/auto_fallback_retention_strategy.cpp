@@ -14,7 +14,6 @@
  */
 
 #include "auto_fallback_retention_strategy.h"
-#include <cstdio>
 #include "avcodec_log.h"
 
 namespace OHOS {
@@ -22,62 +21,26 @@ namespace MediaAVCodec {
 namespace SFD {
 
 namespace {
-constexpr double TARGET_FPS = 30.0;
-constexpr double MS_TO_S = 1000.0;
-constexpr double PROFILING_DURATION_MIN_SEC = 0.1;
-constexpr int32_t PROFILING_MIN_FRAMES = 30;
-constexpr int64_t FALLBACK_FRAME_INTERVAL_MS = 33;
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "AutoFallbackStrategy"};
+// In the absence of a better PPS-based scheme, 0.8 is the safe fallback ratio.
+constexpr double DEFAULT_FALLBACK_RATIO = 0.8;
 }
 
 AutoFallbackRetentionStrategy::AutoFallbackRetentionStrategy()
 {
-}
-
-void AutoFallbackRetentionStrategy::UpdatePlaybackSpeed(double speed)
-{
-    if (speed <= 0.0) {
-        return;
-    }
-    currentSpeed_ = speed;
-    if (currentState_ == STABLE && sourceFps_ > 0) {
-        double newRatio = TARGET_FPS / (sourceFps_ * currentSpeed_);
-        stableDropper_ = std::make_unique<FixedRatioRetentionStrategy>(newRatio);
-    }
+    fallbackDropper_ = std::make_unique<FixedRatioRetentionStrategy>(DEFAULT_FALLBACK_RATIO);
+    AVCODEC_LOGD("AutoFallbackRetentionStrategy created (Delegating to FixedRatio: %{public}.2f)",
+                 DEFAULT_FALLBACK_RATIO);
 }
 
 bool AutoFallbackRetentionStrategy::MakeRetentionDecision(const FrameRetentionContext& ctx)
 {
-    if (currentState_ == STABLE && stableDropper_) {
-        return stableDropper_->MakeRetentionDecision(ctx);
-    }
-    if (firstPts_ == -1) {
-        firstPts_ = ctx.ptsMs;
-    }
-    decodedFrameCount_ += static_cast<int32_t>(1 + ctx.preDroppedCount);
-    if (currentSpeed_ > 0.0 && decodedFrameCount_ >= PROFILING_MIN_FRAMES) {
-        double durationSec = (ctx.ptsMs - firstPts_) / MS_TO_S;
-        if (durationSec > PROFILING_DURATION_MIN_SEC) {
-            sourceFps_ = decodedFrameCount_ / durationSec;
-            double calculatedRatio = TARGET_FPS / (sourceFps_ * currentSpeed_);
-            stableDropper_ = std::make_unique<FixedRatioRetentionStrategy>(calculatedRatio);
-            currentState_ = STABLE;
-            return stableDropper_->MakeRetentionDecision(ctx);
-        }
-    }
-    if (lastSysTime_ == 0 || (ctx.sysTimeMs - lastSysTime_) >= FALLBACK_FRAME_INTERVAL_MS) {
-        lastSysTime_ = ctx.sysTimeMs;
-        return true;
-    }
-    return false;
+    return fallbackDropper_->MakeRetentionDecision(ctx);
 }
 
 void AutoFallbackRetentionStrategy::Reset()
 {
-    currentState_ = PROFILING;
-    stableDropper_.reset();
-    decodedFrameCount_ = 0;
-    firstPts_ = -1;
-    lastSysTime_ = 0;
+    fallbackDropper_->Reset();
 }
 
 RetentionStrategyType AutoFallbackRetentionStrategy::GetMode() const
@@ -85,12 +48,18 @@ RetentionStrategyType AutoFallbackRetentionStrategy::GetMode() const
     return RetentionStrategyType::AUTO_RATIO;
 }
 
-double AutoFallbackRetentionStrategy::GetCurrentRetentionRatio() const
+double AutoFallbackRetentionStrategy::GetRatio() const
 {
-    if (currentState_ == STABLE && stableDropper_) {
-        return stableDropper_->GetCurrentRetentionRatio();
+    return fallbackDropper_->GetRatio();
+}
+
+SfdDecisionReason AutoFallbackRetentionStrategy::GetLastDecisionReason() const
+{
+    SfdDecisionReason internalReason = fallbackDropper_->GetLastDecisionReason();
+    if (internalReason == SfdDecisionReason::POST_RETAIN_FIXED_ACC) {
+        return SfdDecisionReason::POST_RETAIN_AUTO_FALLBACK;
     }
-    return 1.0;
+    return internalReason;
 }
 
 } // namespace SFD

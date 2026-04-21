@@ -24,14 +24,16 @@ namespace SFD {
 
 class FullRetentionStrategy : public IRetentionStrategy {
 public:
-    FullRetentionStrategy() = default;
+    FullRetentionStrategy();
     ~FullRetentionStrategy() override = default;
 
     bool MakeRetentionDecision(const FrameRetentionContext& ctx) override;
-    void Reset() override;
-    void UpdatePlaybackSpeed(double speed) override;
     RetentionStrategyType GetMode() const override;
-    double GetCurrentRetentionRatio() const override;
+    double GetRatio() const override;
+    SfdDecisionReason GetLastDecisionReason() const override;
+    bool IsPassthrough() const override;
+    bool RequiresNaluAnalysis() const override;
+    bool RequiresMvAnalysis() const override;
 };
 
 } // namespace SFD

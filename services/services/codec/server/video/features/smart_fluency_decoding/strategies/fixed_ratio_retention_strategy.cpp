@@ -22,8 +22,6 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "FixedRatioRetention"};
-constexpr double MIN_RETENTION_RATIO = 0.01;
-constexpr double MAX_RETENTION_RATIO = 1.0;
 constexpr double ACCUMULATOR_THRESHOLD = 1.0;
 }
 
@@ -33,8 +31,13 @@ namespace SFD {
 
 FixedRatioRetentionStrategy::FixedRatioRetentionStrategy(double ratio)
 {
-    retentionRatio_ = std::max(MIN_RETENTION_RATIO, std::min(ratio, MAX_RETENTION_RATIO));
-    AVCODEC_LOGI("Uniform Ratio Construct in, retention ratio is %{public}.2f", ratio);
+    if (std::isnan(ratio)) {
+        AVCODEC_LOGE("Invalid retention ratio: NaN detected. Fallback to safe default 1.0 (Full Retention)");
+        targetRatio_ = 1.0;
+    } else {
+        targetRatio_ = std::clamp(ratio, MIN_RETENTION_RATIO, MAX_RETENTION_RATIO);
+    }
+    AVCODEC_LOGD("FixedRatioRetentionStrategy created with targetRatio: %{public}.2f", targetRatio_);
 }
 
 bool FixedRatioRetentionStrategy::MakeRetentionDecision(const FrameRetentionContext& ctx)
@@ -42,20 +45,25 @@ bool FixedRatioRetentionStrategy::MakeRetentionDecision(const FrameRetentionCont
     cnt_ += ctx.preDroppedCount + 1;
     if (isFirstFrame_) {
         isFirstFrame_ = false;
+        lastReason_ = SfdDecisionReason::POST_RETAIN_FIXED_ACC;
+        AVCODEC_LOGD("FixedRatioRetentionStrategy decision: true (first frame)");
         return true;
     }
 
     bool isRetain = false;
-    accumulator_ += retentionRatio_ + (ctx.preDroppedCount * retentionRatio_);
+    accumulator_ += targetRatio_ + (ctx.preDroppedCount * targetRatio_);
     if (accumulator_ >= ACCUMULATOR_THRESHOLD) {
         accumulator_ -= ACCUMULATOR_THRESHOLD;
         isRetain = true;
+        lastReason_ = SfdDecisionReason::POST_RETAIN_FIXED_ACC;
     } else {
         dropCnt_++;
+        lastReason_ = SfdDecisionReason::POST_DROP_FIXED_ACC;
     }
-    
-    AVCODEC_LOGI("cnt %{public}d, dropCnt_ %{public}d, accumulator_ %{public}.2f, preDroppedCount %{public}u",
-        cnt_, dropCnt_, accumulator_, ctx.preDroppedCount);
+
+    AVCODEC_LOGD("FixedRatioRetentionStrategy decision: %{public}d "
+                 "(cnt:%{public}d, drop:%{public}d, accum:%{public}.2f)",
+                 isRetain, cnt_, dropCnt_, accumulator_);
     return isRetain;
 }
 
@@ -65,19 +73,19 @@ void FixedRatioRetentionStrategy::Reset()
     isFirstFrame_ = true;
 }
 
-void FixedRatioRetentionStrategy::UpdatePlaybackSpeed(double speed)
-{
-    (void)speed;
-}
-
 RetentionStrategyType FixedRatioRetentionStrategy::GetMode() const
 {
     return RetentionStrategyType::FIXED_RATIO;
 }
 
-double FixedRatioRetentionStrategy::GetCurrentRetentionRatio() const
+double FixedRatioRetentionStrategy::GetRatio() const
 {
-    return retentionRatio_;
+    return targetRatio_;
+}
+
+SfdDecisionReason FixedRatioRetentionStrategy::GetLastDecisionReason() const
+{
+    return lastReason_;
 }
 
 } // namespace SFD

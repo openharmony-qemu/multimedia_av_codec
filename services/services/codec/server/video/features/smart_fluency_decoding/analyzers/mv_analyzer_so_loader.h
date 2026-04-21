@@ -4,7 +4,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -30,8 +30,9 @@ public:
 
     void SetStreamAuxInfo(const StreamAuxInfo& info) override;
     void SetVideoInfo(uint32_t width, uint32_t height) override;
-    MVStats Analyze(const uint8_t *buffer) override;
+    MVStats Analyze(const uint8_t *buffer, uint32_t length) override;
     SFDCodecType GetCodecType() const override;
+    bool IsValid() const;
 
 private:
     bool LoadLibrary();
@@ -46,7 +47,7 @@ private:
     using DestroyFunc = void (*)(MvAnalyzerHandle);
     using SetAuxInfoFunc = void (*)(MvAnalyzerHandle, const StreamAuxInfo*);
     using SetVideoInfoFunc = void (*)(MvAnalyzerHandle, uint32_t, uint32_t);
-    using ParseFunc = MVStats (*)(MvAnalyzerHandle, const uint8_t*);
+    using ParseFunc = MVStats (*)(MvAnalyzerHandle, const uint8_t*, uint32_t);
 
     CreateFunc createFunc_{nullptr};
     DestroyFunc destroyFunc_{nullptr};

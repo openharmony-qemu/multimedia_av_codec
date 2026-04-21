@@ -36,12 +36,37 @@ typedef struct {
     double zeroMotionRatio;
 } MVStats;
 
-#if defined(__cplusplus) && !defined(NALU_ANALYZER_PLUGIN_COMPILE)
+#if defined(__cplusplus) && !defined(SFD_PLUGIN_COMPILE)
 #include <functional>
+#include <optional>
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
+
+constexpr double MIN_RETENTION_RATIO = 0.01;
+constexpr double MAX_RETENTION_RATIO = 1.0;
+
+enum class SfdDecisionReason : int32_t {
+    UNSPECIFIED = 0,
+
+    // --- Pre-Decode Decision Reasons ---
+    PRE_RETAIN_REFERENCE = 1,               // Retain: Frame is a reference frame
+    PRE_RETAIN_TARGET_FULL = 2,             // Retain: Target retention ratio is ~100% (FULL mode)
+    PRE_RETAIN_EMA_SATISFIED = 3,           // Retain: Current EMA retention ratio is within target
+    PRE_DROP_EMA_UNSATISFIED = 4,           // Drop: Current EMA is too high, need to drop to compensate
+
+    // --- Post-Decode Decision Reasons ---
+    POST_BYPASSED = 10,                     // Bypassed: Frame was already dropped in Pre-Decode phase
+    POST_RETAIN_FULL = 11,                  // Retain: Passthrough (FULL) strategy
+    POST_RETAIN_FIXED_ACC = 12,             // Retain: FixedRatio strategy, accumulator reached threshold
+    POST_DROP_FIXED_ACC = 13,               // Drop: FixedRatio strategy, accumulator below threshold
+    POST_RETAIN_ADAPTIVE_SPEED = 14,        // Retain: Adaptive strategy, playback speed is low
+    POST_RETAIN_ADAPTIVE_DT = 15,           // Retain: Adaptive strategy, Decision Tree (DT) allows retention
+    POST_RETAIN_ADAPTIVE_MAX_DROP = 16,     // Retain: Adaptive strategy, forced release due to max consecutive drops+
+    POST_DROP_ADAPTIVE_DT = 17,             // Drop: Adaptive strategy, DT recommends dropping
+    POST_RETAIN_AUTO_FALLBACK = 18,         // Retain: AutoFallback strategy, releasing at safe time interval
+};
 
 using OnStreamAuxInfoParsed = std::function<void(const StreamAuxInfo& info)>;
 
@@ -72,5 +97,5 @@ struct SFDConfig {
 } // namespace MediaAVCodec
 } // namespace OHOS
 
-#endif /* defined(__cplusplus) && !defined(NALU_ANALYZER_PLUGIN_COMPILE) */
+#endif /* defined(__cplusplus) && !defined(SFD_PLUGIN_COMPILE) */
 #endif // SMART_FLUENCY_DECODING_TYPES_H

@@ -15,19 +15,29 @@
 
 #include "drop_sync_coordinator.h"
 #include <algorithm>
+#include "avcodec_log_ex.h"
+
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "SfdSync"};
+constexpr double BASE_ALPHA = 0.15;
+}
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
-bool DropSyncCoordinator::RecordPreDroppedFrame(int64_t droppedPts)
+
+bool DropSyncCoordinator::RecordPreDroppedFrame(int64_t pts, double speed)
 {
     size_t currentWrite = writeIndex_.load(std::memory_order_relaxed);
     size_t nextWrite = currentWrite + 1;
-    if ((nextWrite - readIndex_.load(std::memory_order_acquire)) > queueCapacity) {
-        return false;
-    }
-    ptsRingBuffer_[currentWrite & queueMask] = droppedPts;
+    CHECK_AND_RETURN_RET_LOG((nextWrite - readIndex_.load(std::memory_order_acquire)) <= queueCapacity,
+        false, "RecordPreDroppedFrame queue overflow at PTS %{public}" PRId64, pts);
+    size_t index = currentWrite & queueMask;
+    ptsRingBuffer_[index] = pts;
+    isConsumed_[index].store(false, std::memory_order_release);
     writeIndex_.store(nextWrite, std::memory_order_release);
+    UpdateFeedback(false, speed);
+    AVCODEC_LOGD("Recorded pre-dropped PTS %{public}" PRId64 ", writeIndex: %{public}zu", pts, nextWrite);
     return true;
 }
 
@@ -36,54 +46,69 @@ uint32_t DropSyncCoordinator::GetAndConsumePreDroppedCount(int64_t currentPts)
     uint32_t count = 0;
     size_t currentRead = readIndex_.load(std::memory_order_relaxed);
     size_t currentWrite = writeIndex_.load(std::memory_order_acquire);
-    while (currentRead < currentWrite) {
-        int64_t peekPts = ptsRingBuffer_[currentRead & queueMask];
-        if (peekPts < currentPts) {
-            count++;
-            currentRead++;
-        } else {
-            break;
+    size_t scanIndex = currentRead;
+    while (scanIndex < currentWrite) {
+        size_t index = scanIndex & queueMask;
+        if (!isConsumed_[index].load(std::memory_order_acquire)) {
+            if (ptsRingBuffer_[index] < currentPts) {
+                count++;
+                isConsumed_[index].store(true, std::memory_order_release);
+            }
         }
+        scanIndex++;
+    }
+    while (currentRead < currentWrite && isConsumed_[currentRead & queueMask].load(std::memory_order_acquire)) {
+        currentRead++;
     }
     if (count > 0) {
         readIndex_.store(currentRead, std::memory_order_release);
+        AVCODEC_LOGD("Consumed %{public}u pre-dropped frames before PTS %{public}" PRId64, count, currentPts);
     }
     return count;
 }
 
+void DropSyncCoordinator::UpdateFeedback(bool isRetained, double speed)
+{
+    std::lock_guard<std::mutex> lock(feedbackMutex_);
+    double alpha = std::min(1.0, BASE_ALPHA * speed);
+    double currentVal = isRetained ? 1.0 : 0.0;
+    emaRatio_ = alpha * currentVal + (1.0 - alpha) * emaRatio_;
+    AVCODEC_LOGD("isRetained=%{public}d, emaRatio=%{public}.4f",
+        isRetained, emaRatio_);
+}
+
 void DropSyncCoordinator::Reset()
 {
-    writeIndex_.store(0, std::memory_order_relaxed);
-    readIndex_.store(0, std::memory_order_relaxed);
-    std::lock_guard<std::mutex> lock(feedbackMutex_);
-    currentEmaDropRatio_ = 0.0;
-}
-
-double DropSyncCoordinator::GetCurrentEma() const
-{
-    std::lock_guard<std::mutex> lock(feedbackMutex_);
-    return currentEmaDropRatio_;
-}
-
-double DropSyncCoordinator::GetTargetRetentionRatio() const
-{
-    std::lock_guard<std::mutex> lock(feedbackMutex_);
-    return targetRetentionRatio_;
-}
-
-void DropSyncCoordinator::UpdateFeedback(uint32_t preDroppedCount, bool currentDropped,
-                                         double targetRetentionRatio, double currentSpeed)
-{
-    double baseAlpha = 0.15;
-    double alpha = std::min(1.0, baseAlpha * currentSpeed);
-    std::lock_guard<std::mutex> lock(feedbackMutex_);
-    for (uint32_t i = 0; i < preDroppedCount; ++i) {
-        currentEmaDropRatio_ = alpha * 1.0 + (1.0 - alpha) * currentEmaDropRatio_;
+    {
+        size_t currentWrite = writeIndex_.load(std::memory_order_relaxed);
+        size_t currentRead = readIndex_.load(std::memory_order_relaxed);
+        while (currentRead < currentWrite) {
+            isConsumed_[currentRead & queueMask].store(true, std::memory_order_relaxed);
+            currentRead++;
+        }
+        readIndex_.store(currentWrite, std::memory_order_relaxed);
     }
-    double currentVal = currentDropped ? 1.0 : 0.0;
-    currentEmaDropRatio_ = alpha * currentVal + (1.0 - alpha) * currentEmaDropRatio_;
-    targetRetentionRatio_ = targetRetentionRatio;
+    std::lock_guard<std::mutex> lock(feedbackMutex_);
+    emaRatio_ = 1.0;
+    AVCODEC_LOGI("Reset DropSyncCoordinator");
 }
+
+double DropSyncCoordinator::GetEmaRatio() const
+{
+    std::lock_guard<std::mutex> lock(feedbackMutex_);
+    return emaRatio_;
+}
+
+size_t DropSyncCoordinator::GetWriteIndex() const
+{
+    return writeIndex_.load(std::memory_order_relaxed);
+}
+
+size_t DropSyncCoordinator::GetReadIndex() const
+{
+    return readIndex_.load(std::memory_order_relaxed);
+}
+
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS

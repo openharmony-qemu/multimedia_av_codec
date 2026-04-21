@@ -14,18 +14,25 @@
  */
 
 #include "async_drop_dispatcher.h"
+#include "avcodec_log.h"
+
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "AsyncDropDispatcher"};
+}
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
 AsyncDropDispatcher::AsyncDropDispatcher()
 {
+    AVCODEC_LOGI("AsyncDropDispatcher ctor entered");
     isWorking_.store(true);
     workerThread_ = std::thread(&AsyncDropDispatcher::WorkerLoop, this);
 }
 
 AsyncDropDispatcher::~AsyncDropDispatcher()
 {
+    AVCODEC_LOGD("AsyncDropDispatcher dtor entered");
     StopWorker();
 }
 
@@ -42,6 +49,7 @@ void AsyncDropDispatcher::StopWorker()
     if (workerThread_.joinable()) {
         workerThread_.join();
     }
+    AVCODEC_LOGI("StopWorker completed, thread joined");
 }
 
 void AsyncDropDispatcher::SubmitTask(std::function<void()> task)
@@ -52,6 +60,7 @@ void AsyncDropDispatcher::SubmitTask(std::function<void()> task)
     {
         std::lock_guard<std::mutex> lock(taskMutex_);
         if (!isWorking_.load()) {
+            AVCODEC_LOGW("SubmitTask failed, dispatcher not working");
             return;
         }
         taskQueue_.push(std::move(task));
@@ -72,6 +81,7 @@ void AsyncDropDispatcher::WorkerLoop()
                 break;
             }
             if (!taskQueue_.empty()) {
+                AVCODEC_LOGD("Executing task, remaining queue size (before pop): %{public}zu", taskQueue_.size());
                 task = std::move(taskQueue_.front());
                 taskQueue_.pop();
             }
@@ -80,6 +90,7 @@ void AsyncDropDispatcher::WorkerLoop()
             task();
         }
     }
+    AVCODEC_LOGD("WorkerLoop exited");
 }
 } // namespace SFD
 } // namespace MediaAVCodec

@@ -24,9 +24,6 @@ namespace MediaAVCodec {
 namespace SFD {
 
 struct FrameRetentionContext {
-    int64_t ptsMs;
-    int64_t sysTimeMs;
-    uint32_t frameCount;
     uint32_t preDroppedCount = 0;
     const MVStats* mvStats = nullptr;
 };
@@ -36,11 +33,15 @@ public:
     virtual ~IRetentionStrategy() = default;
 
     virtual bool MakeRetentionDecision(const FrameRetentionContext& ctx) = 0;
-    virtual void UpdatePlaybackSpeed(double speed) = 0;
-    virtual void Reset() = 0;
+    virtual void UpdatePlaybackSpeed(double /* speed */) {}
+    virtual void Reset() {}
     virtual RetentionStrategyType GetMode() const = 0;
-    virtual void OnDecodingPerformanceUpdate(double /*speed*/, double /*decFps*/) {};
-    virtual double GetCurrentRetentionRatio() const = 0;
+    virtual double GetRatio() const = 0;
+    virtual SfdDecisionReason GetLastDecisionReason() const { return SfdDecisionReason::UNSPECIFIED; }
+
+    virtual bool IsPassthrough() const { return false; }
+    virtual bool RequiresMvAnalysis() const { return false; }
+    virtual bool RequiresNaluAnalysis() const { return true; }
 };
 
 } // namespace SFD

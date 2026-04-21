@@ -16,6 +16,7 @@
 #ifndef SMART_FLUENCY_DECODING_H
 #define SMART_FLUENCY_DECODING_H
 
+#include "avcodec_dfx_component.h"
 #include <atomic>
 #include <cstdint>
 #include <functional>
@@ -30,7 +31,7 @@
 #include "meta/format.h"
 #include "analyzers/mv_analyzer.h"
 #include "analyzers/nalu_analyzer.h"
-#ifdef BUILD_ENG_VERSION
+#ifdef SFD_DEBUG
 #include "smart_fluency_decoding_dumper.h"
 #endif
 #include "smart_fluency_decoding_types.h"
@@ -38,36 +39,70 @@
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
-class SmartFluencyDecoding {
+class SmartFluencyDecoding : public AVCodecDfxComponent {
 public:
-    SmartFluencyDecoding();
-    ~SmartFluencyDecoding();
+    static bool IsRatioValid(double ratio);
+    static void ParseRetentionConfig(
+        const Media::Format& format, RetentionStrategyType& mode, std::optional<double>& ratio);
+
+    SmartFluencyDecoding() = default;
+    ~SmartFluencyDecoding() = default;
 
     int32_t Initialize(const SFDConfig& config);
     void UpdatePlaybackSpeed(double speed);
     int32_t UpdateDynamicConfig(const Media::Format& format);
     void SetInputBuffer(uint32_t index, const std::shared_ptr<AVBuffer>& buffer);
-    void OnDecodingPerformanceUpdate(double speed, double decFps);
 
     using AsyncDropInputCallback = std::function<void(uint32_t index, std::shared_ptr<AVBuffer> buffer)>;
     using AsyncDropOutputCallback = std::function<void(uint32_t index)>;
     void SetCallbacks(AsyncDropInputCallback inCb, AsyncDropOutputCallback outCb);
-    bool InitializeWithCsd(const std::shared_ptr<AVBuffer>& csdBuffer);
+    bool InitializeWithCsd(const std::vector<uint8_t>& csdData);
     bool MakePreDecodeDecision(uint32_t index);
     bool MakePostDecodeDecision(uint32_t index, int64_t pts, const sptr<SurfaceBuffer> surfaceBuffer);
     void Flush();
-    void GetStatistics(uint32_t& totalFrames, uint32_t& droppedFrames) const;
-
+    
 private:
+    struct StrategyCaps {
+        bool isPassthrough{false};
+        bool requiresNalu{true};
+        bool requiresMv{false};
+        double targetRatio{1.0};
+    };
+
+    struct PreDecResult {
+        bool shouldRetain{true};
+        bool isNonRef{false};
+        SfdDecisionReason reason{SfdDecisionReason::UNSPECIFIED};
+        int64_t naluCostUs{-1};
+    };
+
+    struct PostDecResult {
+        bool shouldRetain{true};
+        double ratio{1.0};
+        SfdDecisionReason reason{SfdDecisionReason::UNSPECIFIED};
+    };
+
+    struct PostDecCost {
+        int64_t startUs{-1};
+        int64_t copyMvCostUs{-1};
+        int64_t analyzeMvCostUs{-1};
+    };
+
+    std::shared_ptr<AVBuffer> FetchInputBufferAndCapabilities(uint32_t index, StrategyCaps& caps);
+    void RecordPreDecodeDump(const std::shared_ptr<AVBuffer>& buffer, const PreDecResult& res, int64_t startUs);
+    void RecordPostDecodeDump(int64_t pts, uint32_t preDropCount, const PostDecResult& res,
+                              const MVStats& mvStats, const PostDecCost& cost);
     int32_t InitializeInternal();
     int64_t GetCurrentSysTimeMs();
-    void ParseMVData(const sptr<SurfaceBuffer> surfaceBuffer, MVStats& mvStats);
-    void ParseDynamicFormat(
-        const Media::Format& format, RetentionStrategyType& outMode, std::optional<double>& outRatio) const;
+    void ParseMVData(const sptr<SurfaceBuffer> surfaceBuffer, MVStats& mvStats,
+                     int64_t& copyCostUs, int64_t& analyzeCostUs);
     void EnsureNaluAnalyzer();
     void EnsureMvAnalyzer();
     void ExecutePreDrop(uint32_t index, std::shared_ptr<AVBuffer> buffer);
     void ExecutePostDrop(uint32_t index);
+    bool HandlePostDecodePassthrough(int64_t pts, uint32_t preDropCount, const PostDecCost& cost);
+    void UpdateRetentionFeedback(bool shouldRetain, double speed);
+    void ApplyNewStrategy(RetentionStrategyType newMode, const std::optional<double>& newRatio);
 
     mutable std::mutex configMutex_;
     std::unique_ptr<DropSyncCoordinator> dropSyncCoordinator_{nullptr};
@@ -75,17 +110,13 @@ private:
     std::unique_ptr<IRetentionStrategy> strategy_{nullptr};
     std::unique_ptr<IMvAnalyzer> mvAnalyzer_{nullptr};
     std::unique_ptr<INaluAnalyzer> naluAnalyzer_{nullptr};
-#ifdef BUILD_ENG_VERSION
+#ifdef SFD_DEBUG
     std::unique_ptr<SmartFluencyDecodingDumper> dumper_{nullptr};
 #endif
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> inBufferMap_;
     std::shared_ptr<AVBuffer> csdBuffer_{nullptr};
     SFDConfig config_{};
     bool isInitialized_{false};
-    std::atomic<uint32_t> totalInputFrames_{0};
-    std::atomic<uint32_t> droppedInputFrames_{0};
-    std::atomic<uint32_t> totalOutputFrames_{0};
-    std::atomic<uint32_t> droppedOutputFrames_{0};
     double currentPlaybackSpeed_{1.0};
     AsyncDropInputCallback asyncDropInputCb_{nullptr};
     AsyncDropOutputCallback asyncDropOutputCb_{nullptr};

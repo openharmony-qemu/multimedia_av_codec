@@ -224,10 +224,11 @@ int32_t CodecServer::Configure(const Format &format)
         }
     }
 
-#ifdef SFD_ENABLED
-    InitializeSfd(config);
-    SFD::SmartFluencyDecodingBuilder::EnableMVOutput(codecMime_, smartFluencyDecoding_ != nullptr, config);
-#endif
+    InitSfdManager();
+    if (sfdManager_) {
+        sfdManager_->Configure(config);
+        sfdManager_->EnableMVOutput(config);
+    }
     int32_t ret = codecBase_->Configure(config);
     if (ret != AVCS_ERR_OK) {
         StatusChanged(ERROR);
@@ -401,11 +402,9 @@ int32_t CodecServer::Flush()
     }
     int32_t retPostProcessing = FlushPostProcessing();
     int32_t retCodec = codecBase_->Flush();
-#ifdef SFD_ENABLED
-    if (smartFluencyDecoding_) {
-        smartFluencyDecoding_->Flush();
+    if (sfdManager_) {
+        sfdManager_->Flush();
     }
-#endif
     CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     if (retPostProcessing + retCodec != AVCS_ERR_OK) {
         StatusChanged(ERROR);
@@ -448,12 +447,9 @@ int32_t CodecServer::Reset()
         temporalScalability_ = nullptr;
     }
     int32_t ret = codecBase_->Reset();
-#ifdef SFD_ENABLED
-    if (smartFluencyDecoding_) {
-        smartFluencyDecoding_ = nullptr;
+    if (sfdManager_) {
+        sfdManager_->CleanResources();
     }
-    CleanSfdResources();
-#endif
     CodecStatus newStatus = (ret == AVCS_ERR_OK ? INITIALIZED : ERROR);
     StatusChanged(newStatus);
     ret = ReleasePostProcessing();
@@ -490,12 +486,9 @@ int32_t CodecServer::Release()
         temporalScalability_ = nullptr;
     }
     int32_t ret = codecBase_->Release();
-#ifdef SFD_ENABLED
-    if (smartFluencyDecoding_) {
-        smartFluencyDecoding_ = nullptr;
+    if (sfdManager_) {
+        sfdManager_->CleanResources();
     }
-    CleanSfdResources();
-#endif
     if (isSurfaceMode_ && codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
         SurfaceTools::GetInstance().ReleaseSurface(instanceId_,
             SurfaceUtils::GetInstance()->GetSurface(surfaceId_), pushBlankBufferOnShutdown_, true);
@@ -654,12 +647,10 @@ int32_t CodecServer::QueueInputBufferIn(uint32_t index)
     if (temporalScalability_ != nullptr) {
         temporalScalability_->ConfigureLTR(index);
     }
-#ifdef SFD_ENABLED
-    CacheCsdData(index);
-    if (smartFluencyDecoding_ && !smartFluencyDecoding_->MakePreDecodeDecision(index)) {
+
+    if (sfdManager_ && !sfdManager_->MakePreDecodeDecision(index)) {
         return ret;
     }
-#endif
     if (videoCb_ != nullptr) {
         ret = DrmVideoCencDecrypt(index);
         CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, AVCS_ERR_DECRYPT_FAILED, "CodecServer decrypt failed");
@@ -872,15 +863,6 @@ void CodecServer::InitFramerateCalculator(Meta &callerInfo)
     );
     if (framerateCalculator_) {
         framerateCalculator_->SetTag(CreateVideoLogTag(callerInfo));
-#ifdef SFD_ENABLED
-        std::weak_ptr<CodecServer> weakThis = weak_from_this();
-        framerateCalculator_->SetSpeedAndFpsCallback([weakThis](double speed, double decFps) {
-            auto sharedThis = weakThis.lock();
-            if (sharedThis && sharedThis->smartFluencyDecoding_) {
-                sharedThis->smartFluencyDecoding_->OnDecodingPerformanceUpdate(speed, decFps);
-            }
-        });
-#endif
     }
 }
 
@@ -911,13 +893,9 @@ int32_t CodecServer::SetParameter(const Format &format)
         }
     }
 
-#ifdef SFD_ENABLED
-    if (smartFluencyDecoding_) {
-        smartFluencyDecoding_->UpdateDynamicConfig(format);
-    } else {
-        InitializeSfd(format);
+    if (sfdManager_) {
+        sfdManager_->Configure(format);
     }
-#endif
     return codecBase_->SetParameter(format);
 }
 
@@ -1087,15 +1065,9 @@ void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffe
     if (videoCb_ == nullptr || (isCreateSurface_ && !isSetParameterCb_)) {
         return;
     }
-#ifdef SFD_ENABLED
-    if (codecType_ == AVCODEC_TYPE_VIDEO_DECODER && !isCsdCached_) {
-        std::lock_guard<std::mutex> csdLock(tempCsdMutex_);
-        tempCsdBufferMap_[index] = buffer;
+    if (sfdManager_) {
+        sfdManager_->OnInputBufferAvailable(index, buffer);
     }
-    if (smartFluencyDecoding_) {
-        smartFluencyDecoding_->SetInputBuffer(index, buffer);
-    }
-#endif
     if (drmDecryptor_ != nullptr) {
         if (decryptVideoBufs_.find(index) != decryptVideoBufs_.end()) {
             videoCb_->OnInputBufferAvailable(index, decryptVideoBufs_[index].inBuf);
@@ -1132,12 +1104,9 @@ void CodecServer::OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &
 void CodecServer::OnOutputBufferUnbinded()
 {
     CHECK_AND_RETURN_LOG(videoCb_ != nullptr, "videoCb_ is nullptr!");
-#ifdef SFD_ENABLED
-    {
-        std::lock_guard<std::mutex> lock(surfaceBufMutex_);
-        surfaceBufMap_.clear();
+    if (sfdManager_) {
+        sfdManager_->OnOutputBufferUnbinded();
     }
-#endif
     videoCb_->OnOutputBufferUnbinded();
 }
 
@@ -1712,15 +1681,15 @@ std::shared_ptr<AVBuffer> CodecServer::DecodedBufferInfo::CreateAVBuffer()
 void CodecServer::HandleOutputBufferAvailability(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     CHECK_AND_RETURN_LOG(buffer != nullptr, "HandleOutputBufferAvailability AVBuffer is null");
-#ifdef SFD_ENABLED
-    if (!ProcessSfdOutputBuffer(index, buffer)) {
-        return;
+    if (sfdManager_) {
+        if (!sfdManager_->MakePostDecodeDecision(index, buffer, isSurfaceMode_)) {
+            return;
+        }
+    } else {
+        if (isSurfaceMode_ && codecType_ == AVCODEC_TYPE_VIDEO_DECODER && buffer->memory_ != nullptr) {
+            buffer->memory_ = nullptr;
+        }
     }
-#else
-    if (isSurfaceMode_ && codecType_ == AVCODEC_TYPE_VIDEO_DECODER && buffer->memory_ != nullptr) {
-        buffer->memory_ = nullptr;
-    }
-#endif
     if (isLocalReleaseMode_) {
         std::unique_lock<std::mutex> lockBuffer(releaseBufferMutex_);
         indexs_.push_back(std::make_pair(index, buffer));
@@ -1782,101 +1751,31 @@ void CodecServer::ReleaseBuffer()
     AVCODEC_LOGI_WITH_TAG("CodecServer::ReleaseBuffer end");
 }
 
-#ifdef SFD_ENABLED
-void CodecServer::InitializeSfd(const Media::Format &format)
+void CodecServer::InitSfdManager()
 {
-    if (!SFD::SmartFluencyDecodingBuilder::IsCodecSupported(codecMime_, codecType_)) {
-        AVCODEC_LOGI_WITH_TAG("Skip SFD initialization (not supported)");
+    if (sfdManager_ != nullptr) {
         return;
     }
-    auto sfd = SFD::SmartFluencyDecodingBuilder()
-        .SetCodecMime(codecMime_)
-        .SetFromFormat(format)
-        .Build();
-    if (sfd) {
-        if (isCsdCached_ && !cachedCsdData_.empty()) {
-            SFD::SmartFluencyDecodingBuilder::ReplayCsdData(sfd.get(), cachedCsdData_);
-        }
-        smartFluencyDecoding_ = std::move(sfd);
-        std::weak_ptr<CodecServer> weakThis = weak_from_this();
-        auto inputCb = [weakThis](uint32_t index, std::shared_ptr<AVBuffer> buffer) {
-            auto sharedThis = weakThis.lock();
-            if (sharedThis) {
-                sharedThis->OnInputBufferAvailable(index, buffer);
-            }
-        };
-        auto outputCb = [weakThis](uint32_t index) {
-            auto sharedThis = weakThis.lock();
-            if (sharedThis) {
-                sharedThis->ReleaseOutputBuffer(index, false);
-            }
-        };
-        smartFluencyDecoding_->SetCallbacks(inputCb, outputCb);
-        AVCODEC_LOGI_WITH_TAG("SFD initialized successfully");
-    }
-}
-
-void CodecServer::CacheCsdData(uint32_t index)
-{
-    if (codecType_ != AVCODEC_TYPE_VIDEO_DECODER || isCsdCached_) {
+    if (!SFD::SmartFluencyDecodingManager::IsCodecSupported(codecMime_, codecType_)) {
         return;
     }
-    std::shared_ptr<AVBuffer> csdAttemptBuffer = nullptr;
-    {
-        std::lock_guard<std::mutex> csdLock(tempCsdMutex_);
-        auto it = tempCsdBufferMap_.find(index);
-        if (it != tempCsdBufferMap_.end()) {
-            csdAttemptBuffer = it->second;
-            tempCsdBufferMap_.erase(it);
+    sfdManager_ = std::make_unique<SFD::SmartFluencyDecodingManager>(codecMime_, codecType_);
+    sfdManager_->SetTag(this->GetTag());
+    std::weak_ptr<CodecServer> weakThis = weak_from_this();
+    auto inputCb = [weakThis](uint32_t idx, std::shared_ptr<AVBuffer> buf) {
+        if (auto pThis = weakThis.lock()) {
+            AVCODEC_LOGD("SfdCallback: OnInputBufferAvailable, index: %{public}u", idx);
+            pThis->OnInputBufferAvailable(idx, buf);
         }
-    }
-    if (csdAttemptBuffer) {
-        cachedCsdData_ = SFD::SmartFluencyDecodingBuilder::ExtractCsdData(csdAttemptBuffer);
-        if (!cachedCsdData_.empty()) {
-            isCsdCached_ = true;
-            std::lock_guard<std::mutex> csdLock(tempCsdMutex_);
-            tempCsdBufferMap_.clear();
+    };
+    auto outputCb = [weakThis](uint32_t idx) {
+        if (auto pThis = weakThis.lock()) {
+            AVCODEC_LOGD("SfdCallback: ReleaseOutputBuffer, index: %{public}u", idx);
+            pThis->ReleaseOutputBuffer(idx, false);
         }
-    }
+    };
+    sfdManager_->SetCallbacks(inputCb, outputCb);
+    AVCODEC_LOGI_WITH_TAG("SfdManager created and callbacks bound.");
 }
-
-bool CodecServer::ProcessSfdOutputBuffer(uint32_t index, const std::shared_ptr<AVBuffer>& buffer)
-{
-    if (isSurfaceMode_ && codecType_ == AVCODEC_TYPE_VIDEO_DECODER && buffer->memory_ != nullptr) {
-        std::lock_guard<std::mutex> lock(surfaceBufMutex_);
-        surfaceBufMap_[buffer->GetUniqueId()] = buffer->memory_->GetSurfaceBuffer();
-        buffer->memory_ = nullptr;
-    }
-    if (smartFluencyDecoding_ && (buffer->flag_ & AVCODEC_BUFFER_FLAG_EOS) == 0) {
-        sptr<SurfaceBuffer> surfaceBuffer = nullptr;
-        {
-            std::lock_guard<std::mutex> lock(surfaceBufMutex_);
-            auto it = surfaceBufMap_.find(buffer->GetUniqueId());
-            if (it != surfaceBufMap_.end()) {
-                surfaceBuffer = it->second;
-            }
-        }
-        if (!smartFluencyDecoding_->MakePostDecodeDecision(index, buffer->pts_, surfaceBuffer)) {
-            return false;
-        }
-    }
-    return true;
-}
-
-void CodecServer::CleanSfdResources()
-{
-    isCsdCached_ = false;
-    cachedCsdData_.clear();
-    {
-        std::lock_guard<std::mutex> csdLock(tempCsdMutex_);
-        tempCsdBufferMap_.clear();
-    }
-    {
-        std::lock_guard<std::mutex> lock(surfaceBufMutex_);
-        surfaceBufMap_.clear();
-    }
-}
-#endif
-
 } // namespace MediaAVCodec
 } // namespace OHOS

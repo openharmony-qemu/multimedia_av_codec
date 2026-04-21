@@ -1,0 +1,148 @@
+/*
+ * Copyright (c) 2026 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <string>
+#include <cstdint>
+#include <cstring>
+#include "smart_fluency_decoding_types.h"
+
+namespace {
+constexpr uint8_t ANNEXB_START_CODE[] = {0x00, 0x00, 0x00, 0x01};
+constexpr size_t START_CODE_LEN = sizeof(ANNEXB_START_CODE);
+constexpr size_t MIN_VALID_NALU_SIZE = START_CODE_LEN + 1;
+}
+
+#define NALU_MOCK_HANDLE (reinterpret_cast<void*>(0x9999))
+#define MV_MOCK_HANDLE   (reinterpret_cast<void*>(0x8888))
+
+extern "C" {
+    void* __real_dlopen(const char* filename, int flags); // NOLINT: C-style function
+    void* __real_dlsym(void* handle, const char* symbol); // NOLINT: C-style function
+    int __real_dlclose(void* handle); // NOLINT: C-style function
+
+    void* FakeCreateNaluAnalyzer(int32_t codecType)
+    {
+        if (codecType == static_cast<int32_t>(OHOS::MediaAVCodec::SFD::SFDCodecType::INVALID)) {
+            return nullptr;
+        }
+        return NALU_MOCK_HANDLE;
+    }
+    void FakeDestroyNaluAnalyzer(void* analyzer) {}
+    void FakeSetCallback(void* analyzer, void* cb, void* userData) {}
+    bool FakeIsNonReferenceFrame(void* analyzer, const uint8_t* bufferAddr, uint32_t bufferSize)
+    {
+        (void)analyzer;
+        if (bufferAddr == nullptr || bufferSize < MIN_VALID_NALU_SIZE) {
+            return false;
+        }
+
+        if (std::memcmp(bufferAddr, ANNEXB_START_CODE, START_CODE_LEN) == 0) {
+            uint8_t naluHeader = bufferAddr[START_CODE_LEN];
+            uint8_t nalRefIdc = (naluHeader >> 5) & 0x03;
+            return nalRefIdc == 0;
+        }
+        return false;
+    }
+
+    void* FakeCreateMvAnalyzer(int32_t codecType)
+    {
+        if (codecType == static_cast<int32_t>(OHOS::MediaAVCodec::SFD::SFDCodecType::INVALID)) {
+            return nullptr;
+        }
+        return MV_MOCK_HANDLE;
+    }
+    void FakeDestroyMvAnalyzer(void* parser) {}
+
+    void FakeSetStreamAuxInfo(void* parser, const StreamAuxInfo* info)
+    {
+        (void)parser;
+        (void)info;
+    }
+
+    void FakeSetVideoInfo(void* parser, uint32_t width, uint32_t height)
+    {
+        (void)parser;
+        (void)width;
+        (void)height;
+    }
+
+    MVStats FakeParseMvData(void* parser, const uint8_t* buffer, uint32_t length)
+    {
+        (void)parser;
+        (void)buffer;
+        (void)length;
+        MVStats stats{};
+        stats.validBlocks = 100; // 100: for check
+        return stats;
+    }
+
+    void* __wrap_dlopen(const char* filename, int flags) // NOLINT: C-style function
+    {
+        if (filename != nullptr) {
+            std::string fname(filename);
+            if (fname.find("libvideo_nalu_analyzer.z.so") != std::string::npos) {
+                return NALU_MOCK_HANDLE;
+            }
+            if (fname.find("libvideo_mv_analyzer.z.so") != std::string::npos) {
+                return MV_MOCK_HANDLE;
+            }
+        }
+        return __real_dlopen(filename, flags);
+    }
+
+    void* __wrap_dlsym(void* handle, const char* symbol) // NOLINT: C-style function
+    {
+        std::string sym(symbol);
+        if (handle == NALU_MOCK_HANDLE) {
+            if (sym == "CreateNaluAnalyzer") {
+                return reinterpret_cast<void*>(FakeCreateNaluAnalyzer);
+            }
+            if (sym == "DestroyNaluAnalyzer") {
+                return reinterpret_cast<void*>(FakeDestroyNaluAnalyzer);
+            }
+            if (sym == "SetCallback") {
+                return reinterpret_cast<void*>(FakeSetCallback);
+            }
+            if (sym == "IsNonReferenceFrame") {
+                return reinterpret_cast<void*>(FakeIsNonReferenceFrame);
+            }
+        } else if (handle == MV_MOCK_HANDLE) {
+            if (sym == "CreateMvAnalyzer") {
+                return reinterpret_cast<void*>(FakeCreateMvAnalyzer);
+            }
+            if (sym == "DestroyMvAnalyzer") {
+                return reinterpret_cast<void*>(FakeDestroyMvAnalyzer);
+            }
+            if (sym == "SetStreamAuxInfo") {
+                return reinterpret_cast<void*>(FakeSetStreamAuxInfo);
+            }
+            if (sym == "SetVideoInfo") {
+                return reinterpret_cast<void*>(FakeSetVideoInfo);
+            }
+            if (sym == "ParseMvData") {
+                return reinterpret_cast<void*>(FakeParseMvData);
+            }
+        }
+        return __real_dlsym(handle, symbol);
+    }
+
+    int __wrap_dlclose(void* handle) // NOLINT: C-style function
+    {
+        if (handle == NALU_MOCK_HANDLE || handle == MV_MOCK_HANDLE) {
+            return 0;
+        }
+        return __real_dlclose(handle);
+    }
+}
