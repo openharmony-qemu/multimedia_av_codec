@@ -19,7 +19,7 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-ApiMetricsReporter::ApiMetricsReporter(std::string apiName, MetricesType metricesType, int32_t sample) :
+ApiMetricsReporter::ApiMetricsReporter(std::string apiName, MetricesType, int32_t sample) :
     apiName_(std::move(apiName)), metricesType_(metricesType), sample_(sample),
     beginTime_(std::chrono::steady_clock::now()) {}
 
