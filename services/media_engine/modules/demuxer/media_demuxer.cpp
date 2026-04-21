@@ -3370,7 +3370,9 @@ bool MediaDemuxer::HandleDashChangeStream(int32_t trackId, bool isNeedAllEos)
         if (ret) {
             MEDIA_LOG_I("targetBitrate: " PUBLIC_LOG_U32 " currentBitrate: " PUBLIC_LOG_U32, targetBitRate_,
                 demuxerPluginManager_->GetCurrentBitRate());
-            targetBitRate_ = demuxerPluginManager_->GetCurrentBitRate();
+            if (type == TrackType::TRACK_VIDEO) {
+                targetBitRate_ = demuxerPluginManager_->GetCurrentBitRate();
+            }
             streamDemuxer_->SetChangeFlag(true);
         }
         isSelectTrack_.store(false);
@@ -3505,9 +3507,12 @@ void MediaDemuxer::AutoSelectTrackByBitrate(int32_t trackId)
     std::lock_guard<std::recursive_mutex> lock(streamMapMutex_);
     StreamInfo *preferredStreamInfo = GetPreferredVideoStream(curDownloadBitRate_.load());
     FALSE_RETURN(preferredStreamInfo != nullptr);
-    MEDIA_LOG_D("Check can auto select, trackId: " PUBLIC_LOG_D32 " preferredBitrate: " PUBLIC_LOG_D32
-        "isSelectBitRate_" PUBLIC_LOG_D32 "isSelectTrack_" PUBLIC_LOG_D32 "targetBitRate_: " PUBLIC_LOG_D32
-        "demuxerPluginManager_->GetCurrentBitRate(): " PUBLIC_LOG_D32, trackId, preferredStreamInfo->bitRate,
+    MEDIA_LOG_D("Check can auto select, defaultVideoStreamId_: " PUBLIC_LOG_D32 " preferredStreamInfo->streamId: "
+        PUBLIC_LOG_D32 " lastAutoSelectBitRate_: " PUBLIC_LOG_D32
+        " trackId: " PUBLIC_LOG_D32 " preferredBitrate: " PUBLIC_LOG_U32 " isSelectBitRate_: " PUBLIC_LOG_D32
+        " isSelectTrack_: " PUBLIC_LOG_D32 " targetBitRate_: " PUBLIC_LOG_U32
+        " demuxerPluginManager_->GetCurrentBitRate(): " PUBLIC_LOG_U32, defaultVideoStreamId_,
+        preferredStreamInfo->streamId, lastAutoSelectBitRate_, trackId, preferredStreamInfo->bitRate,
         isSelectBitRate_.load(), isSelectTrack_.load(), targetBitRate_, demuxerPluginManager_->GetCurrentBitRate());
     if (defaultVideoStreamId_ != preferredStreamInfo->streamId &&
         lastAutoSelectBitRate_ != static_cast<int32_t>(preferredStreamInfo->bitRate) && CanAutoSelectBitRate()) {
