@@ -34,7 +34,7 @@ namespace Pipeline {
 const static int32_t INVALID_NUM = -1;
 const static int32_t NUM_TEST = 0;
 const static int32_t WIDTH_TEST = 10;
-const static int32_t HEIGHT_TEST = 10;
+const static int32_t HEIGHT_TEST = 20;
 const static int32_t RENDER_TIME = 1000;
 class AVCodecList {
 public:
@@ -242,6 +242,9 @@ HWTEST_F(DecoderSurfaceFilterUnittest, DoInitAfterLink_001, TestSize.Level0)
     EXPECT_CALL(*(decoderSurfaceFilter_->videoSink_), ResetSyncInfo()).WillRepeatedly(Return());
     decoderSurfaceFilter_->isDrmProtected_ = false;
     decoderSurfaceFilter_->postProcessor_ = nullptr;
+    decoderSurfaceFilter_->meta_ = std::make_shared<Meta>();
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_WIDTH, WIDTH_TEST);
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_HEIGHT, HEIGHT_TEST);
     auto mockEventReceiver = std::make_shared<MockEventReceiver>();
     decoderSurfaceFilter_->eventReceiver_ = mockEventReceiver;
     auto ret = decoderSurfaceFilter_->DoInitAfterLink();
