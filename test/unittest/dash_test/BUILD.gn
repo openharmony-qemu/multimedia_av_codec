@@ -102,6 +102,7 @@ ohos_unittest("dash_xml_unit_test") {
 
   external_deps = [
     "c_utils:utils",
+    "certificate_manager:cert_manager_sdk",
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
@@ -128,6 +129,7 @@ ohos_unittest("dash_mpd_parser_unit_test") {
 
   external_deps = [
     "c_utils:utils",
+    "certificate_manager:cert_manager_sdk",
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
@@ -154,6 +156,7 @@ ohos_unittest("dash_media_downloader_unit_test") {
 
   external_deps = [
     "c_utils:utils",
+    "certificate_manager:cert_manager_sdk",
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
@@ -183,6 +186,7 @@ ohos_unittest("dash_mpd_downloader_unit_test") {
 
   external_deps = [
     "c_utils:utils",
+    "certificate_manager:cert_manager_sdk",
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
@@ -212,6 +216,7 @@ ohos_unittest("dash_segment_downloader_unit_test") {
 
   external_deps = [
     "c_utils:utils",
+    "certificate_manager:cert_manager_sdk",
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
@@ -241,6 +246,7 @@ ohos_unittest("dash_adpt_set_manager_unit_test") {
 
   external_deps = [
     "c_utils:utils",
+    "certificate_manager:cert_manager_sdk",
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
@@ -275,6 +281,7 @@ ohos_unittest("histream_dash_mpd_parser_unittest") {
 
   external_deps = [
     "c_utils:utils",
+    "certificate_manager:cert_manager_sdk",
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
