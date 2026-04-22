@@ -109,7 +109,7 @@ int32_t DashSubstituteTmpltStr(std::string &segTmpltStr, const std::string &segT
     while (pos != std::string::npos && (pos + identifierLength) < segTmpltStr.length()) {
         std::string str = segTmpltStr.substr(pos + identifierLength);
         // contain format %0[width]d
-        if (str[0] == '%' && str[1] == '0') {
+        if (str.length() > 1 && str[0] == '%' && str[1] == '0') {
             std::string::size_type posEnd = str.find("$");
             // not find end '$', drop the representation
             if (posEnd == std::string::npos) {
@@ -117,13 +117,13 @@ int32_t DashSubstituteTmpltStr(std::string &segTmpltStr, const std::string &segT
             }
 
             GetSubstitutionStr(substitutionStr, str);
-            segTmpltStr =
-                    ReplaceSubStr(segTmpltStr, (uint32_t) pos, (uint32_t) (posEnd + identifierLength + 1),
-                                  substitutionStr);
+            segTmpltStr = ReplaceSubStr(segTmpltStr, (uint32_t) pos, (uint32_t) (posEnd + identifierLength + 1),
+                substitutionStr);
         } else if (str[0] == '$') {
             segTmpltStr = ReplaceSubStr(segTmpltStr, (uint32_t) pos, identifierLength + 1, substitutionStr);
         } else {
             // error format, should drop the representation
+            MEDIA_LOG_E("Error format, should drop the representation");
             return -1;
         }
         
