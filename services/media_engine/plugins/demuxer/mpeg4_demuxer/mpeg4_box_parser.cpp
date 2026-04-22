@@ -1695,9 +1695,7 @@ Status MPEG4AtomParser::ParseAudioAttributes(MPEG4Atom currentAtom, ParseContext
     }
 
     if (currentAtom.type == FourccType("alac")) {
-        if (ParseAlacEntry(*ctx) != Status::OK) {
-            MEDIA_LOG_W( "Parse ALAC entry failed");
-        }
+        FALSE_LOG_MSG_W(ParseAlacEntry(*ctx) == Status::OK, "Parse ALAC entry failed");
     }
 
     return ret;
