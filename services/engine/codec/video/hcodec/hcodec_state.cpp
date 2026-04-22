@@ -598,9 +598,6 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
             OnResume(info);
             return;
         }
-        case MsgWhat::CHECK_FRAME_INTERVAL:
-            codec_->CheckFrameInterval();
-            break;
         default:
             BaseState::OnMsgReceived(info);
             break;
