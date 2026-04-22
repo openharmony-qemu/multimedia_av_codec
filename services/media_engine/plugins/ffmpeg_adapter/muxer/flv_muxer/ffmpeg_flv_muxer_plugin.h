@@ -75,6 +75,8 @@ private:
     bool isColorSet_ = {false};
     bool canReadFile_ = {false};
     bool isFirstFrameVideo_ {true};
+    bool hasAudioTrack_ {false};
+    bool hasVideoTrack_ {false};
     std::shared_ptr<StreamParserManager> hevcParser_ {nullptr};
     std::mutex mutex_;
 };
