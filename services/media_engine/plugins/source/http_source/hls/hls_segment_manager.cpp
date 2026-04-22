@@ -758,7 +758,7 @@ void HlsSegmentManager::RemoveFmp4PaddingData(unsigned char* buff, ReadDataInfo&
         size_t endValue = buff[readDataInfo.realReadLength_ - 1];
         size_t paddingStart = readDataInfo.realReadLength_ > endValue ? readDataInfo.realReadLength_ - endValue : 0;
         // PKCS#7 standard: if n bytes of padding are required, the value of each padding byte is n.
-        if (paddingStart >= readDataInfo.wantedReadLength_) {
+        if (paddingStart >= readDataInfo.wantReadLength_) {
             MEDIA_LOG_W("HLS buffer out-of-bounds read");
             return;
         }
