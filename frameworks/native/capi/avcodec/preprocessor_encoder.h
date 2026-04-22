@@ -21,6 +21,7 @@
 #include <memory>
 #include <mutex>
 #include <queue>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -59,7 +60,7 @@ public:
     OH_AVErrCode ReleaseOutputBuffer(uint32_t index);
     OH_AVErrCode Release();
 
-    OH_AVBuffer* GetTransData(const uint32_t& index, std::shared_ptr<AVBuffer>& buffer, bool isOutput);
+    std::optional<OH_AVBuffer*> GetTransData(const uint32_t& index, std::shared_ptr<AVBuffer>& buffer, bool isOutput);
     std::shared_ptr<Preprocessor> GetPreprocessor();
     OH_AVFormat* GetOutputDescription();
     OH_AVFormat* GetInputDescription();

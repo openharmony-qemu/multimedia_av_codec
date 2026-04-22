@@ -324,7 +324,11 @@ void NativeVideoEncoderCallback::OnOutputBufferAvailable(uint32_t index, std::sh
     OH_AVBuffer *data = nullptr;
     if (PreprocessorEncoder::IsPreprocEncoderMagic(codec_->magic_)) {
         auto *preprocEnc = reinterpret_cast<PreprocessorEncoder *>(codec_);
-        data = preprocEnc->GetTransData(index, buffer, true);
+        auto result = preprocEnc->GetTransData(index, buffer, true);
+        if (!result) {
+            return;
+        }
+        data = *result;
     } else {
         struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec_);
         CHECK_AND_RETURN_LOG(videoEncObj->videoEncoder_ != nullptr, "Context video encoder is nullptr!");
