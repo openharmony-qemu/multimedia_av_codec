@@ -168,11 +168,11 @@ static std::string GetMimeType(int32_t atomtype)
         { FourccType("Opus"), MimeType::AUDIO_OPUS },
         { FourccType("samr"), MimeType::AUDIO_AMR_NB },
         { FourccType("sawb"), MimeType::AUDIO_AMR_WB },
-        { FourccType("alac"), "audio/alac"},
-        { FourccType("dtsc"), "audio/dts" },
-        { FourccType("dtsh"), "audio/dts" },
-        { FourccType("dtsl"), "audio/dts" },
-        { FourccType("dtse"), "audio/dts" },
+        { FourccType("alac"), MimeType::AUDIO_ALAC},
+        { FourccType("dtsc"), MimeType::AUDIO_DTS },
+        { FourccType("dtsh"), MimeType::AUDIO_DTS },
+        { FourccType("dtsl"), MimeType::AUDIO_DTS },
+        { FourccType("dtse"), MimeType::AUDIO_DTS },
         { FourccType("wvtt"), MimeType::TEXT_WEBVTT },
         { FourccType("mebx"), MimeType::TIMED_METADATA },
     };
@@ -1694,9 +1694,10 @@ Status MPEG4AtomParser::ParseAudioAttributes(MPEG4Atom currentAtom, ParseContext
             static_cast<int32_t>(samplePerFrame));
     }
 
-    if (isIsom_ && currentAtom.type == FourccType("alac")) {
-        ret = ParseAlacEntry(*ctx);
-        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse ALAC entry failed");
+    if (currentAtom.type == FourccType("alac")) {
+        if (ParseAlacEntry(*ctx) != Status::OK) {
+            MEDIA_LOG_W( "Parse ALAC entry failed");
+        }
     }
 
     return ret;
@@ -1767,7 +1768,7 @@ Status MPEG4AtomParser::SetAudioAttribute()
         SetMpegAudioAttribute();
     } else if (mime == MimeType::AUDIO_VORBIS) {
         ret = SetVorbisAudioAttribute();
-    } else if (mime == "audio/dts" || mime == MimeType::AUDIO_AAC) {
+    } else if (mime == MimeType::AUDIO_DTS || mime == MimeType::AUDIO_AAC) {
         mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_F32P);
     }
     return ret;
@@ -2000,7 +2001,7 @@ std::string GetMimeTypeFromObjectType(uint8_t objectTypeId)
         {0xC1, MimeType::AUDIO_FLAC},     // FLAC
         {0xDD, MimeType::AUDIO_VORBIS},   // Vorbis
         {0xAD, MimeType::AUDIO_OPUS},     // Opus
-        {0xA9, "audio/dts"}               // DTS
+        {0xA9, MimeType::AUDIO_DTS}       // DTS
     };
     auto it = objectTypeToMimeMap.find(objectTypeId);
     return (it != objectTypeToMimeMap.end()) ? it->second : "";
@@ -3131,12 +3132,17 @@ void MPEG4AtomParser::ParseLocationString(const std::string& locationStr)
     std::sregex_iterator end;
     
     const uint32_t minLocationNum = 2; // 至少需要两个数字：纬度和经度
-    if (static_cast<uint32_t>(std::distance(numbers, end)) >= minLocationNum) {
+    auto cnt = static_cast<uint32_t>(std::distance(numbers, end));
+    if (cnt >= minLocationNum) {
         float latitude = std::stof(numbers->str());
         float longitude = std::stof((++numbers)->str());
 
         mediaInfo_.general.Set<Tag::MEDIA_LATITUDE>(latitude);
         mediaInfo_.general.Set<Tag::MEDIA_LONGITUDE>(longitude);
+        if (cnt > minLocationNum) {
+            float altitude = std::stof(numbers->str());
+            mediaInfo_.general.Set<Tag::MEDIA_ALTITUDE>(altitude);
+        }
     } else {
         MEDIA_LOG_W("Invalid location format: " PUBLIC_LOG_S, locationStr.c_str());
     }
@@ -4036,10 +4042,24 @@ auto MPEG4AtomParser::FindAtomParser(const MPEG4Atom& atom, ParseContext* ctx) -
 void MPEG4AtomParser::CalculateMPEG4Attributes()
 {
     MEDIA_LOG_D("In");
+    mediaInfo_.general.Set<Tag::MEDIA_HAS_VIDEO>(false);
+    mediaInfo_.general.Set<Tag::MEDIA_HAS_AUDIO>(false);
+    mediaInfo_.general.Set<Tag::MEDIA_HAS_SUBTITLE>(false);
+    mediaInfo_.general.Set<Tag::MEDIA_HAS_TIMEDMETA>(false);
+    mediaInfo_.general.Set<Tag::MEDIA_HAS_AUXILIARY>(false);
     for (auto track = firstTrack_; track; track = track->next) {
         if (track->codecParms.trackType == VIDEO_TYPE) {
             CalculateVideoFrameRate(track);
             mediaInfo_.tracks[track->trackIndex].Set<Tag::VIDEO_DELAY>(0);
+        }
+        if (track->codecParms.trackType == AUDIO_TYPE) {
+            int32_t channelCount = 0;
+            AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
+            if (!mediaInfo_.tracks[lastTrack_->trackIndex].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout) &&
+                mediaInfo_.tracks[lastTrack_->trackIndex].Get<Tag::AUDIO_CHANNEL_COUNT>(channelCount)) {
+                layout = Converter::GetDefaultChannelLayout(channelCount);
+                mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_CHANNEL_LAYOUT>(layout);
+            }
         }
         if (track->codecParms.trackType != ATTACHMENT_TYPE) {
             CalculateTrackBitrates(track);

@@ -63,11 +63,11 @@ public:
     static bool IsUTF8(const std::string &data);
     static std::string ConvertGBKToUTF8(const std::string &strGbk);
     static bool IsGBK(const char* data);
+    static AudioChannelLayout GetDefaultChannelLayout(int channels);
 
 private:
     Converter() = delete;
     ~Converter() = delete;
-    static AudioChannelLayout GetDefaultChannelLayout(int channels);
     static std::string_view ConvertOHAudioChannelLayoutToString(AudioChannelLayout layout);
 };
 } // namespace Plugins
