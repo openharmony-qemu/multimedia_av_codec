@@ -1,0 +1,23 @@
+1.0 {
+  global:
+    StreamAuxInfo;
+    MVStats;
+    SfdDecisionReason;
+    OnStreamAuxInfoParsed;
+    RetentionStrategyType;
+    SFDCodecType;
+    SFDConfig;
+    MvAnalyzerHandle;
+    CreateMvAnalyzer;
+    DestroyMvAnalyzer;
+    SetStreamAuxInfo;
+    SetVideoInfo;
+    ParseMvData;
+    NaluAnalyzerHandle;
+    CreateNaluAnalyzer;
+    DestroyNaluAnalyzer;
+    SetCallback;
+    IsNonReferenceFrame;
+  local:
+    *;
+};
