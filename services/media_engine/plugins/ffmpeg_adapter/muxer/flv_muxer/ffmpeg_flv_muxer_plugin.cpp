@@ -34,6 +34,8 @@ constexpr float LATITUDE_MIN = -90.0f;
 constexpr float LATITUDE_MAX = 90.0f;
 constexpr float LONGITUDE_MIN = -180.0f;
 constexpr float LONGITUDE_MAX = 180.0f;
+constexpr float ALTITUDE_MIN = -32768.0f;
+constexpr float ALTITUDE_MAX = 32767.0f;
 constexpr int32_t MIN_HE_AAC_SAMPLE_RATE = 16000;
 constexpr int32_t MAX_USERMETA_STRING_LENGTH = 256;
 }
@@ -110,6 +112,7 @@ Status FFmpegFlvMuxerPlugin::SetLocation(std::shared_ptr<Meta> param)
 {
     float latitude = 0.0f;
     float longitude = 0.0f;
+    float altitude = 0.0f;
     if (param->Find(Tag::MEDIA_LATITUDE) == param->end() &&
         param->Find(Tag::MEDIA_LONGITUDE) == param->end()) {
         return Status::NO_ERROR;
@@ -125,9 +128,17 @@ Status FFmpegFlvMuxerPlugin::SetLocation(std::shared_ptr<Meta> param)
         Status::ERROR_INVALID_DATA, "latitude must be in [-90, 90]!");
     FALSE_RETURN_V_MSG_E(longitude >= LONGITUDE_MIN && longitude <= LONGITUDE_MAX,
         Status::ERROR_INVALID_DATA, "longitude must be in [-180, 180]!");
+    if (param->Find(Tag::MEDIA_ALTITUDE) != param->end()) {
+        param->Get<Tag::MEDIA_ALTITUDE>(altitude); // altitude
+        if (altitude >= ALTITUDE_MIN && altitude <= ALTITUDE_MAX) {
+            MEDIA_LOG_I("has altitude.");
+        } else {
+            MEDIA_LOG_W("The type of altitude is float, must be in [-32768.0, 32767.0]");
+        }
+    }
     std::string location = std::to_string(latitude) + " ";
     location += std::to_string(longitude) + " ";
-    location += std::to_string(0.0f);
+    location += std::to_string(altitude);
     av_dict_set(&formatContext_.get()->metadata, "location", location.c_str(), 0);
     return Status::NO_ERROR;
 }
@@ -225,12 +236,6 @@ Status FFmpegFlvMuxerPlugin::SetCodecParameterOfVideoTrack(AVStream* stream, con
     AVCodecParameters* par = stream->codecpar;
     if (trackDesc->Find(Tag::MEDIA_BITRATE) != trackDesc->end()) {
         trackDesc->Get<Tag::MEDIA_BITRATE>(par->bit_rate);
-    }
-
-    std::vector<uint8_t> codecConfig;
-    if (trackDesc->Find(Tag::MEDIA_CODEC_CONFIG) != trackDesc->end()) {
-        trackDesc->Get<Tag::MEDIA_CODEC_CONFIG>(codecConfig);
-        return SetCodecParameterExtra(stream, codecConfig.data(), codecConfig.size());
     }
     return Status::NO_ERROR;
 }
@@ -345,9 +350,13 @@ Status FFmpegFlvMuxerPlugin::AddAudioTrack(
     bool ret = trackDesc->Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate);
     FALSE_RETURN_V_MSG_E(ret && sampleRate > 0, Status::ERROR_MISMATCHED_TYPE,
         "get audio sample_rate failed! sampleRate:%{public}d", sampleRate);
-    ret = trackDesc->Get<Tag::AUDIO_CHANNEL_COUNT>(channels);
-    FALSE_RETURN_V_MSG_E(ret && channels > 0, Status::ERROR_MISMATCHED_TYPE,
-        "get audio channels failed! channels:%{public}d", channels);
+    if (codeID == AV_CODEC_ID_AVS3DA) {
+        channels = 2; // default 2 channels
+    } else {
+        ret = trackDesc->Get<Tag::AUDIO_CHANNEL_COUNT>(channels);
+        FALSE_RETURN_V_MSG_E(ret && channels > 0, Status::ERROR_MISMATCHED_TYPE,
+            "get audio channels failed! channels:%{public}d", channels);
+    }
 
     auto st = avformat_new_stream(formatContext_.get(), nullptr);
     FALSE_RETURN_V_MSG_E(st != nullptr, Status::ERROR_NO_MEMORY, "avformat_new_stream failed!");
@@ -362,7 +371,7 @@ Status FFmpegFlvMuxerPlugin::AddAudioTrack(
             "get audio sample per frame failed! audio sample per frame:%{public}d", frameSize);
         st->codecpar->frame_size = frameSize;
     }
-    if (trackDesc->Find(Tag::AUDIO_CHANNEL_LAYOUT) != trackDesc->end()) {
+    if (codeID != AV_CODEC_ID_AVS3DA && trackDesc->Find(Tag::AUDIO_CHANNEL_LAYOUT) != trackDesc->end()) {
         AudioChannelLayout channelLayout = UNKNOWN;
         trackDesc->Get<Tag::AUDIO_CHANNEL_LAYOUT>(channelLayout);
         auto ffChannelLayout = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(channelLayout);
@@ -475,7 +484,6 @@ Status FFmpegFlvMuxerPlugin::Start()
     AVDictionary* options = nullptr;
     av_dict_set(&options, "avoid_negative_ts", "make_zero", 0); // 时间戳修正
     av_dict_set_int(&options, "max_interleave_delta", 500000, 0); // 500000us缓冲
-    av_dict_set(&options, "flvflags", "add_keyframe_index+no_duration_filesize", 0);
     int ret = avformat_write_header(formatContext_.get(), &options);
     if (ret < 0) {
         MEDIA_LOG_E("write header failed, %{public}s", AVStrError(ret).c_str());
