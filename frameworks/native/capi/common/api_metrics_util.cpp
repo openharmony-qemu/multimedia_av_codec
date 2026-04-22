@@ -24,6 +24,10 @@ ApiMetricsReporter::ApiMetricsReporter(std::string apiName, MetricesType metrice
     : apiName_(std::move(apiName)), metricesType_(metricesType), sample_(sample),
     beginTime_(std::chrono::steady_clock::now())
 {
+    void(apiName_);
+    void(metricesType_);
+    void(sample_);
+    void(beginTime_);
 }
 
 ApiMetricsReporter::~ApiMetricsReporter()
