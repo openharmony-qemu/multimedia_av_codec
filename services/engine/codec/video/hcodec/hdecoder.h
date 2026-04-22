@@ -212,7 +212,7 @@ private:
     std::optional<ScalingMode> scaleMode_;
     OHOS::HDI::Display::Graphic::Common::V1_0::BufferHandleMetaRegion crop_{0};
 
-    bool detect = false;
+    bool detect_ = false;
 };
 } // namespace OHOS::MediaAVCodec
 #endif // HCODEC_HDECODER_H
