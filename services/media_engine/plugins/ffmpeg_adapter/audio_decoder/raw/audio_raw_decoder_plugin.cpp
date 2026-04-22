@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include "audio_raw_decoder_plugin.h"
+#include <bitset>
 #include "avcodec_log.h"
 #include "avcodec_codec_name.h"
 #include "avcodec_info.h"
@@ -702,6 +703,10 @@ Status AudioRawDecoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
             AVCODEC_LOGE("AudioRawDecoderPlugin no AUDIO_CHANNEL_LAYOUT");
             return Status::ERROR_INVALID_PARAMETER;
         }
+        // 64: uint64_t bit number
+        std::bitset<64> bits(layout_);
+        CHECK_AND_RETURN_RET_LOG(bits.count() == channels_, Status::ERROR_INVALID_PARAMETER,
+            "AudioRawDecoderPlugin channels:%d and layout:%" PRIu64 " do not match", channels_, layout_);
     }
     return Status::OK;
 }
