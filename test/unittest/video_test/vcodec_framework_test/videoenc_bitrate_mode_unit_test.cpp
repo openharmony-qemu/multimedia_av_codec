@@ -168,6 +168,7 @@ INSTANTIATE_TEST_SUITE_P(,
                                          BITRATE_MODE_VBR,
                                          BITRATE_MODE_CQ,
                                          BITRATE_MODE_SQR,
+                                         BITRATE_MODE_CBR_HIGH_QUALITY,
                                          BITRATE_MODE_MAX)
                         );
 
@@ -198,9 +199,15 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_002, TestSize.Level1)
     SetFormatWithBitrateMode(GetParam());
     PrepareSource();
     format_->PutIntValue(OH_MD_KEY_SQR_FACTOR, default_sqr_factor);
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    videoEnc_->WaitForEos();
+    int32_t bitrateMode = -1;
+    format_->GetIntValue(OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
+    if (bitrateMode == BITRATE_MODE_CBR_HIGH_QUALITY) {
+        EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+    } else {
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+        videoEnc_->WaitForEos();
+    }
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Release());
 }
 
@@ -216,9 +223,15 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_003, TestSize.Level1)
     PrepareSource();
     default_sqr_factor = -1;
     format_->PutIntValue(OH_MD_KEY_SQR_FACTOR, default_sqr_factor);
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    videoEnc_->WaitForEos();
+    int32_t bitrateMode = -1;
+    format_->GetIntValue(OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
+    if (bitrateMode == BITRATE_MODE_CBR_HIGH_QUALITY) {
+        EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+    } else {
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+        videoEnc_->WaitForEos();
+    }
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Release());
 }
 
@@ -259,7 +272,7 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_005, TestSize.Level1)
     format_->PutLongValue(OH_MD_KEY_BITRATE, default_bitrate);
     int32_t bitrateMode = -1;
     format_->GetIntValue(OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
-    if (bitrateMode <= BITRATE_MODE_CQ) {
+    if (bitrateMode <= BITRATE_MODE_CQ || bitrateMode ==BITRATE_MODE_CBR_HIGH_QUALITY) {
         EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
     } else {
         EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
@@ -317,7 +330,8 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_008, TestSize.Level1)
     format_->PutIntValue(OH_MD_KEY_QUALITY, default_quality);
     int32_t bitrateMode = -1;
     format_->GetIntValue(OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
-    if (bitrateMode >= BITRATE_MODE_CBR && bitrateMode <= BITRATE_MODE_VBR) {
+    if ((bitrateMode >= BITRATE_MODE_CBR && bitrateMode <= BITRATE_MODE_VBR)
+        || bitrateMode == BITRATE_MODE_CBR_HIGH_QUALITY) {
         EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
     } else {
         EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
@@ -341,7 +355,7 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_009, TestSize.Level1)
     format_->PutIntValue(OH_MD_KEY_QUALITY, default_quality);
     int32_t bitrateMode = -1;
     format_->GetIntValue(OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
-    if (bitrateMode <= BITRATE_MODE_CQ) {
+    if (bitrateMode <= BITRATE_MODE_CQ || bitrateMode == BITRATE_MODE_CBR_HIGH_QUALITY) {
         EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
     } else {
         EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
@@ -366,7 +380,7 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_010, TestSize.Level1)
     format_->PutIntValue(OH_MD_KEY_QUALITY, default_quality);
     int32_t bitrateMode = -1;
     format_->GetIntValue(OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
-    if (bitrateMode <= BITRATE_MODE_CQ) {
+    if (bitrateMode <= BITRATE_MODE_CQ || bitrateMode == BITRATE_MODE_CBR_HIGH_QUALITY) {
         EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
     } else {
         EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
@@ -391,7 +405,8 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_011, TestSize.Level1)
     format_->PutIntValue(OH_MD_KEY_QUALITY, default_quality);
     int32_t bitrateMode = -1;
     format_->GetIntValue(OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
-    if (bitrateMode >= BITRATE_MODE_CBR && bitrateMode <= BITRATE_MODE_VBR) {
+    if ((bitrateMode >= BITRATE_MODE_CBR && bitrateMode <= BITRATE_MODE_VBR)
+        || bitrateMode == BITRATE_MODE_CBR_HIGH_QUALITY) {
         EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
     } else {
         EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
@@ -416,7 +431,7 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_012, TestSize.Level1)
     format_->PutLongValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
     int32_t bitrateMode = -1;
     format_->GetIntValue(OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
-    if (bitrateMode == BITRATE_MODE_CQ) {
+    if (bitrateMode == BITRATE_MODE_CQ || bitrateMode == BITRATE_MODE_CBR_HIGH_QUALITY) {
         EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
     } else {
         EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
@@ -442,7 +457,7 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_013, TestSize.Level1)
     format_->PutLongValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
     int32_t bitrateMode = -1;
     format_->GetIntValue(OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
-    if (bitrateMode == BITRATE_MODE_CQ) {
+    if (bitrateMode == BITRATE_MODE_CQ || bitrateMode == BITRATE_MODE_CBR_HIGH_QUALITY) {
         EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
     } else {
         EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
@@ -467,7 +482,7 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_014, TestSize.Level1)
     format_->PutLongValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
     int32_t bitrateMode = -1;
     format_->GetIntValue(OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
-    if (bitrateMode == BITRATE_MODE_CQ) {
+    if (bitrateMode == BITRATE_MODE_CQ || bitrateMode == BITRATE_MODE_CBR_HIGH_QUALITY) {
         EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
     } else {
         EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
@@ -505,7 +520,7 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_015, TestSize.Level1)
     format_->PutLongValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
     int32_t bitrateMode = -1;
     format_->GetIntValue(OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
-    if (bitrateMode == BITRATE_MODE_CQ) {
+    if (bitrateMode == BITRATE_MODE_CQ || bitrateMode == BITRATE_MODE_CBR_HIGH_QUALITY) {
         EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
     } else {
         EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
@@ -543,7 +558,7 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_016, TestSize.Level1)
     format_->PutLongValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
     int32_t bitrateMode = -1;
     format_->GetIntValue(OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
-    if (bitrateMode == BITRATE_MODE_CQ) {
+    if (bitrateMode == BITRATE_MODE_CQ || bitrateMode == BITRATE_MODE_CBR_HIGH_QUALITY) {
         EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
     } else {
         EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
