@@ -30,28 +30,13 @@ public:
     ~AutoFallbackRetentionStrategy() override = default;
 
     bool MakeRetentionDecision(const FrameRetentionContext& ctx) override;
-
-    void UpdatePlaybackSpeed(double speed) override;
-
     void Reset() override;
-
     RetentionStrategyType GetMode() const override;
-
-    double GetCurrentRetentionRatio() const override;
+    double GetRatio() const override;
+    SfdDecisionReason GetLastDecisionReason() const override;
 
 private:
-    enum State {
-        PROFILING,
-        STABLE
-    };
-    State currentState_{PROFILING};
-    std::unique_ptr<FixedRatioRetentionStrategy> stableDropper_{nullptr};
-    double currentSpeed_{-1.0};
-    double sourceFps_{30.0};
-
-    int32_t decodedFrameCount_{0};
-    int64_t firstPts_{-1};
-    int64_t lastSysTime_{0};
+    std::unique_ptr<FixedRatioRetentionStrategy> fallbackDropper_{nullptr};
 };
 
 } // namespace SFD

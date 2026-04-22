@@ -37,6 +37,7 @@ enum class AVMagic {
     AVCODEC_MAGIC_AVCAPABILITY = AV_MAGIC('C', 'A', 'P', 'A'),
     AVCODEC_MAGIC_PRIMARY_VIDEO_ENCODER = AV_MAGIC('P', 'V', 'E', 'N'),
     AVCODEC_MAGIC_SECONDARY_VIDEO_ENCODER = AV_MAGIC('S', 'V', 'E', 'N'),
+    AVCODEC_MAGIC_INVALID_ENTITY = AV_MAGIC('I', 'N', 'V', 'E'),
 };
 
 struct AVObjectMagic : public OHOS::RefBase {

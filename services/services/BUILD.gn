@@ -62,6 +62,7 @@ config("av_codec_service_config") {
     "$av_codec_root_dir/services/include",
     "$av_codec_root_dir/services/services/codec/ipc",
     "$av_codec_root_dir/services/services/codec/server/video",
+    "$av_codec_root_dir/services/services/codec/server/video/features/smart_fluency_decoding",
     "$av_codec_root_dir/services/services/codec/server/video/post_processing",
     "$av_codec_root_dir/services/services/codeclist/ipc",
     "$av_codec_root_dir/services/services/codeclist/server",
@@ -102,18 +103,20 @@ config("av_codec_service_config") {
     defines += [ "EMULATOR_ENABLED" ]
   }
 
-  if (target_cpu == "arm") {
-    cflags += [ "-DBINDER_IPC_32BIT" ]
+  if (build_variant != "user") {
+    defines += [ "SFD_DEBUG" ]
   }
 
-  if (av_codec_support_smart_fluency_decoding) {
-    defines += [ "SFD_ENABLED" ]
+  if (target_cpu == "arm") {
+    cflags += [ "-DBINDER_IPC_32BIT" ]
   }
 }
 
 ohos_shared_library("av_codec_service") {
   branch_protector_ret = "pac_ret"
   install_enable = true
+
+  version_script = "libav_codec_service.versionscript"
 
   sanitize = av_codec_sanitize
 
@@ -154,6 +157,7 @@ ohos_shared_library("av_codec_service") {
     "$av_codec_root_dir/services/engine:av_codec_engine_package",
     "$av_codec_root_dir/services/engine/base:av_codec_codec_base",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
+    "./codec/server/video/features/smart_fluency_decoding:smart_fluency_decoding",
     "./common/adaptive_framerate_controller:adaptive_framerate_controller",
     "./common/event_manager:event_manager",
     "./common/event_manager/event_handler/background_event_handler:background_event_handler",
@@ -166,11 +170,6 @@ ohos_shared_library("av_codec_service") {
     ]
   }
 
-  if (av_codec_support_smart_fluency_decoding) {
-    deps += [
-      "./codec/server/video/features/smart_fluency_decoding:smart_fluency_decoding"
-    ]
-  }
   public_configs = [
     "./codec/server/video/features/smart_fluency_decoding:smart_fluency_decoding_public_config"
   ]

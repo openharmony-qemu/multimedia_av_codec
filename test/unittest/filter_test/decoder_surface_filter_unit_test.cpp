@@ -271,6 +271,9 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_DoInitAfterLink_0100
 {
     auto videoDecoderMock = std::make_shared<VideoDecoderAdapterMock>();
     decoderSurfaceFilter_->videoDecoder_ = videoDecoderMock;
+    decoderSurfaceFilter_->meta_ = std::make_shared<Meta>();
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_WIDTH, 10);
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_HEIGHT, 10);
     auto res = decoderSurfaceFilter_->DoInitAfterLink();
     std::cout << "DoInitAfterLink " << static_cast<int32_t>(res) << std::endl;
     EXPECT_NE(res, Status::OK);
@@ -871,6 +874,8 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DoInitAfterLink_001, TestSize.Level1)
     auto videoDecoderMock = std::make_shared<VideoDecoderAdapterMock>();
     decoderSurfaceFilter_->videoDecoder_ = videoDecoderMock;
     decoderSurfaceFilter_->meta_ = std::make_shared<Meta>();
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_WIDTH, 10);
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_HEIGHT, 10);
     decoderSurfaceFilter_->configureParameter_ = std::make_shared<Meta>();
     decoderSurfaceFilter_->videoSink_ = std::make_shared<VideoSink>();
     EXPECT_NE(decoderSurfaceFilter_->eventReceiver_, nullptr);
@@ -1148,6 +1153,7 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DoReInitAndStart_001, TestSize.Level1)
 
     decoderSurfaceFilter_->hasReceivedReleaseEvent_ = false;
     decoderSurfaceFilter_->eventReceiver_ = nullptr;
+    decoderSurfaceFilter_->meta_ = std::make_shared<Meta>();
     ret = decoderSurfaceFilter_->DoReInitAndStart();
     EXPECT_EQ(ret, Status::OK);
 

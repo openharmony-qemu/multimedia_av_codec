@@ -4,7 +4,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -33,7 +33,7 @@ void SetStreamAuxInfo(MvAnalyzerHandle parser, const StreamAuxInfo* info);
 
 void SetVideoInfo(MvAnalyzerHandle parser, uint32_t width, uint32_t height);
 
-MVStats ParseMvData(MvAnalyzerHandle parser, const uint8_t* buffer);
+MVStats ParseMvData(MvAnalyzerHandle parser, const uint8_t* buffer, uint32_t length);
 
 #ifdef __cplusplus
 }

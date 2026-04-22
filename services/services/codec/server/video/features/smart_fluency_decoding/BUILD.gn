@@ -22,6 +22,7 @@ config("smart_fluency_decoding_config") {
     "./strategies",
     "$av_codec_root_dir/interfaces/inner_api/native",
     "$av_codec_root_dir/interfaces/kits/c",
+    "$av_codec_root_dir/services/dfx/include",
   ]
 }
 
@@ -76,12 +77,8 @@ ohos_source_set("smart_fluency_decoding") {
     "drop_sync_coordinator.cpp",
     "smart_fluency_decoding.cpp",
     "smart_fluency_decoding_builder.cpp",
+    "smart_fluency_decoding_manager.cpp",
   ]
-
-  if (build_variant != "user") {
-    defines = [ "BUILD_ENG_VERSION" ]
-    sources += [ "smart_fluency_decoding_dumper.cpp" ]
-  }
 
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
@@ -94,6 +91,12 @@ ohos_source_set("smart_fluency_decoding") {
     "hilog:libhilog",
     "media_foundation:media_foundation",
   ]
+
+  if (build_variant != "user") {
+    defines = [ "SFD_DEBUG" ]
+    sources += [ "smart_fluency_decoding_dumper.cpp" ]
+    external_deps += [ "init:libbegetutil" ]
+  }
 
   subsystem_name = "multimedia"
   part_name = "av_codec"

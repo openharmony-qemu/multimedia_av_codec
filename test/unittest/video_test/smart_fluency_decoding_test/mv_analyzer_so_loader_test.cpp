@@ -1,0 +1,101 @@
+/*
+ * Copyright (c) 2026 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <gtest/gtest.h>
+#include <memory>
+#include "mv_analyzer.h"
+#include "mv_analyzer_so_loader.h"
+
+namespace {
+constexpr int32_t WIDTH_1080P = 1920;
+constexpr int32_t HEIGHT_1080P = 1080;
+}
+
+using namespace OHOS::MediaAVCodec::SFD;
+using namespace testing::ext;
+
+class MvAnalyzerSoLoaderTest : public testing::Test {
+protected:
+    void SetUp() override {}
+    void TearDown() override {}
+};
+
+/**
+ * @tc.name: CreateMvAnalyzer_AVC_001
+ * @tc.desc: Factory properly initializes and returns an AVC MV analyzer instance via Mock.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MvAnalyzerSoLoaderTest, CreateMvAnalyzer_AVC_001, TestSize.Level1)
+{
+    auto analyzer = MvAnalyzerFactory::CreateMvAnalyzer(SFDCodecType::AVC);
+    ASSERT_NE(analyzer, nullptr);
+    EXPECT_EQ(analyzer->GetCodecType(), SFDCodecType::AVC);
+}
+
+/**
+ * @tc.name: CreateMvAnalyzer_HEVC_002
+ * @tc.desc: Factory properly initializes and returns an HEVC MV analyzer instance via Mock.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MvAnalyzerSoLoaderTest, CreateMvAnalyzer_HEVC_002, TestSize.Level1)
+{
+    auto analyzer = MvAnalyzerFactory::CreateMvAnalyzer(SFDCodecType::HEVC);
+    ASSERT_NE(analyzer, nullptr);
+    EXPECT_EQ(analyzer->GetCodecType(), SFDCodecType::HEVC);
+}
+
+/**
+ * @tc.name: CreateMvAnalyzer_VVC_003
+ * @tc.desc: Factory properly initializes and returns a VVC MV analyzer instance via Mock.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MvAnalyzerSoLoaderTest, CreateMvAnalyzer_VVC_003, TestSize.Level1)
+{
+    auto analyzer = MvAnalyzerFactory::CreateMvAnalyzer(SFDCodecType::VVC);
+    ASSERT_NE(analyzer, nullptr);
+    EXPECT_EQ(analyzer->GetCodecType(), SFDCodecType::VVC);
+}
+
+/**
+ * @tc.name: CreateMvAnalyzer_InvalidType_004
+ * @tc.desc: Verify the factory returns nullptr for an invalid codec type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MvAnalyzerSoLoaderTest, CreateMvAnalyzer_InvalidType_004, TestSize.Level1)
+{
+    auto analyzer = MvAnalyzerFactory::CreateMvAnalyzer(SFDCodecType::INVALID);
+    EXPECT_EQ(analyzer, nullptr);
+}
+
+/**
+ * @tc.name: Loader_InterfaceCall_MockData_006
+ * @tc.desc: Ensure that calling interface methods through the loader works correctly with mocks.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MvAnalyzerSoLoaderTest, Loader_InterfaceCall_MockData_006, TestSize.Level1)
+{
+    auto analyzer = MvAnalyzerFactory::CreateMvAnalyzer(SFDCodecType::AVC);
+    ASSERT_NE(analyzer, nullptr);
+
+    analyzer->SetVideoInfo(WIDTH_1080P, HEIGHT_1080P);
+    StreamAuxInfo auxInfo{};
+    analyzer->SetStreamAuxInfo(auxInfo);
+
+    // Test calling the mocked FakeParseMvData from dlfcn_mock.cpp
+    MVStats stats = analyzer->Analyze(nullptr, 0);
+
+    // Expect 100 as hardcoded in our Mock
+    EXPECT_EQ(stats.validBlocks, 100); // 100: mock valid blocks
+}

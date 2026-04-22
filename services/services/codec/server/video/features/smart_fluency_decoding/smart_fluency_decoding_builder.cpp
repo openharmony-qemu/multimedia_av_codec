@@ -28,47 +28,38 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "SFDBuilder"};
 constexpr double DEFAULT_PLAYBACK_SPEED = 1.0;
-constexpr double MIN_RETENTION_RATE = 0.01;
-constexpr double MAX_RETENTION_RATE = 1.0;
-constexpr int32_t MIN_CSD_SIZE = 4;
-constexpr int32_t DEFAULT_CSD_COPY_SIZE = 256;
 }
 
 namespace OHOS {
 namespace MediaAVCodec {
 using namespace Media;
 namespace SFD {
-SmartFluencyDecodingBuilder::SmartFluencyDecodingBuilder()
-{
-}
-
-SmartFluencyDecodingBuilder::~SmartFluencyDecodingBuilder() = default;
 
 SmartFluencyDecodingBuilder& SmartFluencyDecodingBuilder::SetVideoWidth(int32_t width)
 {
-    params_.width = width;
+    config_.width = width;
     return *this;
 }
 
 SmartFluencyDecodingBuilder& SmartFluencyDecodingBuilder::SetVideoHeight(int32_t height)
 {
-    params_.height = height;
+    config_.height = height;
     return *this;
 }
 
 SmartFluencyDecodingBuilder& SmartFluencyDecodingBuilder::SetCodecMime(const std::string& mime)
 {
-    params_.codecType = ParseCodecType(mime);
+    config_.codecType = ParseCodecType(mime);
     return *this;
 }
 
 SFDCodecType SmartFluencyDecodingBuilder::ParseCodecType(const std::string& mime)
 {
-    if (mime == AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_AVC || mime == "video/h264") {
+    if (mime == AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_AVC) {
         return SFDCodecType::AVC;
-    } else if (mime == AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_HEVC || mime == "video/h265") {
+    } else if (mime == AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_HEVC) {
         return SFDCodecType::HEVC;
-    } else if (mime == AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_VVC || mime == "video/h266") {
+    } else if (mime == AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_VVC) {
         return SFDCodecType::VVC;
     }
     return SFDCodecType::INVALID;
@@ -78,28 +69,6 @@ SmartFluencyDecodingBuilder& SmartFluencyDecodingBuilder::UpdatePlaybackSpeed(do
 {
     playbackSpeed_ = speed;
     return *this;
-}
-
-bool SmartFluencyDecodingBuilder::IsCodecSupported(const std::string& codecMime, int32_t codecType)
-{
-    if (codecType != MediaAVCodec::AVCODEC_TYPE_VIDEO_DECODER) {
-        return false;
-    }
-    if (codecMime != MediaAVCodec::AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_AVC &&
-        codecMime != MediaAVCodec::AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_HEVC &&
-        codecMime != MediaAVCodec::AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_VVC) {
-        return false;
-    }
-    return true;
-}
-
-void SmartFluencyDecodingBuilder::EnableMVOutput(const std::string& codecMime, bool isConfiged, Format& format)
-{
-    if (isConfiged ||
-        codecMime == MediaAVCodec::AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_HEVC ||
-        codecMime == MediaAVCodec::AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_VVC) {
-        format.PutIntValue(Tag::VIDEO_DECODER_ENABLE_MV_UPLOAD, 1);
-    }
 }
 
 SmartFluencyDecodingBuilder& SmartFluencyDecodingBuilder::SetFromFormat(const Format& format)
@@ -112,36 +81,11 @@ SmartFluencyDecodingBuilder& SmartFluencyDecodingBuilder::SetFromFormat(const Fo
     if (format.GetIntValue(Tag::VIDEO_HEIGHT, height) && height > 0) {
         SetVideoHeight(height);
     }
-    int32_t extMode = -1;
-    bool hasMode = format.GetIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, extMode);
-    double ratio = 0.0;
-    bool hasRatio = format.GetDoubleValue(Tag::VIDEO_DECODER_FRAME_RETENTION_RATIO, ratio) &&
-        IsRetentionRateValid(ratio);
-    if (hasRatio) {
-        params_.retentionRatio = ratio;
-    }
-    if (!hasMode) {
-        params_.initMode = hasRatio ? RetentionStrategyType::FIXED_RATIO : RetentionStrategyType::INVALID;
-    } else {
-        switch (extMode) {
-            case static_cast<int32_t>(Media::Plugins::FrameRetentionMode::FULL):
-                params_.initMode = RetentionStrategyType::FULL;
-                break;
-            case static_cast<int32_t>(Media::Plugins::FrameRetentionMode::ADAPTIVE):
-                params_.initMode = RetentionStrategyType::ADAPTIVE;
-                break;
-            case static_cast<int32_t>(Media::Plugins::FrameRetentionMode::UNIFORM):
-                params_.initMode = hasRatio ? RetentionStrategyType::FIXED_RATIO : RetentionStrategyType::AUTO_RATIO;
-                break;
-            default:
-                params_.initMode = RetentionStrategyType::INVALID;
-                break;
-        }
-    }
-    if (hasRatio &&
-        (params_.initMode == RetentionStrategyType::ADAPTIVE || params_.initMode == RetentionStrategyType::FULL)) {
-        AVCODEC_LOGW("Adaptive or Full mode with retentionRate will be ignored");
-    }
+    RetentionStrategyType parsedMode = RetentionStrategyType::INVALID;
+    std::optional<double> parsedRatio = std::nullopt;
+    SmartFluencyDecoding::ParseRetentionConfig(format, parsedMode, parsedRatio);
+    config_.initMode = parsedMode;
+    config_.retentionRatio = parsedRatio;
     double speed = DEFAULT_PLAYBACK_SPEED;
     if (format.GetDoubleValue(Tag::VIDEO_DECODER_SPEED, speed)) {
         UpdatePlaybackSpeed(speed);
@@ -154,103 +98,29 @@ std::unique_ptr<SmartFluencyDecoding> SmartFluencyDecodingBuilder::Build()
     if (!ValidateParams()) {
         return nullptr;
     }
-    if (params_.initMode == RetentionStrategyType::INVALID) {
+    if (config_.initMode == RetentionStrategyType::INVALID) {
         return nullptr;
     }
     auto instance = std::make_unique<SmartFluencyDecoding>();
-    if (!instance) {
-        AVCODEC_LOGE("Build failed: Failed to create SmartFluencyDecoding instance");
-        return nullptr;
-    }
-    int32_t ret = instance->Initialize(params_);
-    if (ret != AVCS_ERR_OK) {
-        AVCODEC_LOGE("Build failed: Failed to initialize SmartFluencyDecoding, ret=%{public}d", ret);
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(instance != nullptr, nullptr, "Failed to create SmartFluencyDecoding instance");
+    int32_t ret = instance->Initialize(config_);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Failed to initialize SmartFluencyDecoding"
+        ",ret=%{public}d", ret);
     if (playbackSpeed_.has_value()) {
         instance->UpdatePlaybackSpeed(playbackSpeed_.value());
     }
     AVCODEC_LOGI("SmartFluencyDecoding built successfully: %{public}dx%{public}d, mode=%{public}d",
-                 params_.width, params_.height, static_cast<int32_t>(params_.initMode));
+        config_.width, config_.height, static_cast<int32_t>(config_.initMode));
     return instance;
 }
 
 bool SmartFluencyDecodingBuilder::ValidateParams()
 {
-    if (params_.width <= 0) {
-        AVCODEC_LOGE("Build failed: Invalid or missing video width");
-        return false;
-    }
-    if (params_.height <= 0) {
-        AVCODEC_LOGE("Build failed: Invalid or missing video height");
-        return false;
-    }
-    if (params_.codecType == SFDCodecType::INVALID) {
-        AVCODEC_LOGE("Build failed: Invalid or missing codec type");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(config_.width > 0, false, "Invalid or missing video width");
+    CHECK_AND_RETURN_RET_LOG(config_.height > 0, false, "Invalid or missing video height");
+    CHECK_AND_RETURN_RET_LOG(config_.codecType != SFDCodecType::INVALID, false,
+        "Invalid or missing codec type");
     return true;
-}
-
-bool SmartFluencyDecodingBuilder::IsRetentionRateValid(double rate)
-{
-    if (rate < MIN_RETENTION_RATE) {
-        AVCODEC_LOGW("retentionRate invalid: value=%{public}.2f (must be >= %{public}.2f)", rate, MIN_RETENTION_RATE);
-        return false;
-    }
-    if (rate > MAX_RETENTION_RATE) {
-        AVCODEC_LOGW("retentionRate invalid: value=%{public}.2f (must be <= %{public}.2f)", rate, MAX_RETENTION_RATE);
-        return false;
-    }
-    return true;
-}
-
-std::vector<uint8_t> SmartFluencyDecodingBuilder::ExtractCsdData(const std::shared_ptr<AVBuffer>& buffer)
-{
-    std::vector<uint8_t> csdData;
-    if (!buffer || !buffer->memory_) {
-        return csdData;
-    }
-    uint8_t* data = buffer->memory_->GetAddr();
-    int32_t size = buffer->memory_->GetCapacity();
-    if (!data || size <= MIN_CSD_SIZE) {
-        return csdData;
-    }
-    if (buffer->flag_ == AVCODEC_BUFFER_FLAG_CODEC_DATA) {
-        csdData.assign(data, data + size);
-        return csdData;
-    }
-    if (buffer->flag_ & (AVCODEC_BUFFER_FLAG_CODEC_DATA | AVCODEC_BUFFER_FLAG_SYNC_FRAME)) {
-        int32_t copySize = std::min(size, DEFAULT_CSD_COPY_SIZE);
-        csdData.assign(data, data + copySize);
-        AVCODEC_LOGI("Fast extracted %{public}d bytes as CSD with flags %{public}u", copySize, buffer->flag_);
-    }
-    return csdData;
-}
-
-void SmartFluencyDecodingBuilder::ReplayCsdData(SmartFluencyDecoding* sfd, const std::vector<uint8_t>& csdData)
-{
-    if (!sfd || csdData.empty()) {
-        return;
-    }
-    std::shared_ptr<Media::AVAllocator> allocator =
-        Media::AVAllocatorFactory::CreateSharedAllocator(Media::MEMORY_READ_WRITE);
-    if (!allocator) {
-        AVCODEC_LOGE("Failed to create shared allocator for replay tmpBuffer");
-        return;
-    }
-    auto tmpBuffer = Media::AVBuffer::CreateAVBuffer(allocator, static_cast<int32_t>(csdData.size()));
-    if (tmpBuffer && tmpBuffer->memory_) {
-        int32_t capacity = tmpBuffer->memory_->GetCapacity();
-        if (capacity >= static_cast<int32_t>(csdData.size())) {
-            if (memcpy_s(tmpBuffer->memory_->GetAddr(), csdData.size(), csdData.data(), csdData.size()) != EOK) {
-                AVCODEC_LOGE("Failed to copy CSD data");
-                return;
-            }
-            sfd->InitializeWithCsd(tmpBuffer);
-            AVCODEC_LOGI("SFD Mid-stream enabled: Replayed 256-bytes deep-copied CSD data successfully.");
-        }
-    }
 }
 } // namespace SFD
 } // namespace MediaAVCodec

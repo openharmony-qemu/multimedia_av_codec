@@ -14,24 +14,26 @@
  */
 
 #include "full_retention_strategy.h"
+#include "avcodec_log.h"
+
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "FullStrategy"};
+}
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
 
+FullRetentionStrategy::FullRetentionStrategy()
+{
+    AVCODEC_LOGD("FullRetentionStrategy created");
+}
+
 bool FullRetentionStrategy::MakeRetentionDecision(const FrameRetentionContext& ctx)
 {
     (void)ctx;
+    AVCODEC_LOGD("FullRetentionStrategy decision: true (always retain)");
     return true;
-}
-
-void FullRetentionStrategy::Reset()
-{
-}
-
-void FullRetentionStrategy::UpdatePlaybackSpeed(double speed)
-{
-    (void)speed;
 }
 
 RetentionStrategyType FullRetentionStrategy::GetMode() const
@@ -39,9 +41,29 @@ RetentionStrategyType FullRetentionStrategy::GetMode() const
     return RetentionStrategyType::FULL;
 }
 
-double FullRetentionStrategy::GetCurrentRetentionRatio() const
+double FullRetentionStrategy::GetRatio() const
 {
     return 1.0;
+}
+
+SfdDecisionReason FullRetentionStrategy::GetLastDecisionReason() const
+{
+    return SfdDecisionReason::POST_RETAIN_FULL;
+}
+
+bool FullRetentionStrategy::IsPassthrough() const
+{
+    return true;
+}
+
+bool FullRetentionStrategy::RequiresNaluAnalysis() const
+{
+    return false;
+}
+
+bool FullRetentionStrategy::RequiresMvAnalysis() const
+{
+    return false;
 }
 
 } // namespace SFD
