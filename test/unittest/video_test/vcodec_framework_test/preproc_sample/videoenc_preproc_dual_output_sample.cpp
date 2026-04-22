@@ -93,22 +93,24 @@ void VideoEncPreprocDualOutputSample::OnStreamChanged(OH_AVCodec *codec, OH_AVFo
     (void)userData;
 }
 
-void VideoEncPreprocDualOutputSample::OnNeedOutputData(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data,
-                                                       OH_AVCodecBufferAttr *attr, void *userData)
+void VideoEncPreprocDualOutputSample::OnNeedOutputData(OH_AVCodec *codec, uint32_t index,
+                                                       OH_AVBuffer *buffer, void *userData)
 {
-    auto *state = reinterpret_cast<EncoderState *>(userData);
-    if (state != nullptr && attr != nullptr && (attr->flags & AVCODEC_BUFFER_FLAGS_EOS) == 0) {
-        state->dataCount.fetch_add(1);
+    if (!codec || !buffer || !userData) {
+        return;
     }
-    if (state != nullptr && attr != nullptr && (attr->flags & AVCODEC_BUFFER_FLAGS_EOS) != 0) {
+    auto *state = reinterpret_cast<EncoderState *>(userData);
+    OH_AVCodecBufferAttr attr;
+    OH_AVBuffer_GetBufferAttr(buffer, &attr);
+    if ((attr.flags & AVCODEC_BUFFER_FLAGS_EOS) == 0) {
+        state->dataCount.fetch_add(1);
+    } else {
         state->gotEos.store(true);
+        state->eosCv->notify_all();
+        return;
     }
     if (codec != nullptr) {
         (void)OH_VideoEncoder_FreeOutputData(codec, index);
-    }
-    (void)data;
-    if (state != nullptr && state->eosCv != nullptr) {
-        state->eosCv->notify_all();
     }
 }
 
@@ -117,14 +119,14 @@ int32_t VideoEncPreprocDualOutputSample::RegisterCallback(OH_AVCodec *codec, Enc
     if (codec == nullptr) {
         return AV_ERR_INVALID_VAL;
     }
-    OH_AVCodecAsyncCallback callback {};
+    OH_AVCodecCallback callback {};
     callback.onError = OnError;
     callback.onStreamChanged = OnStreamChanged;
-    callback.onNeedInputData = nullptr;
-    callback.onNeedOutputData = OnNeedOutputData;
+    callback.onNeedInputBuffer = nullptr;
+    callback.onNewOutputBuffer = OnNeedOutputData;
     state.codec = codec;
     state.eosCv = &eosCv_;
-    return OH_VideoEncoder_SetCallback(codec, callback, &state);
+    return OH_VideoEncoder_RegisterCallback(codec, callback, &state);
 }
 
 bool VideoEncPreprocDualOutputSample::ApplyPreprocConfig(OH_AVFormat *format, const PreprocDualOutput::PreprocConfig &config)
@@ -376,7 +378,8 @@ int32_t VideoEncPreprocDualOutputSample::SendPrimaryFrames(uint32_t frameCount)
         }
         usleep(1000);
     }
-    return OH_VideoEncoder_NotifyEndOfStream(primary_);
+    auto ret = OH_VideoEncoder_NotifyEndOfStream(primary_);
+    return (ret == AV_ERR_OK && secondary_ != nullptr) ? OH_VideoEncoder_NotifyEndOfStream(secondary_) : ret;
 }
 
 bool VideoEncPreprocDualOutputSample::WaitForDualEos(uint32_t timeoutSeconds)

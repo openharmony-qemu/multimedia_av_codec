@@ -74,8 +74,7 @@ private:
 
     static void OnError(OH_AVCodec *codec, int32_t errorCode, void *userData);
     static void OnStreamChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData);
-    static void OnNeedOutputData(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data,
-                                 OH_AVCodecBufferAttr *attr, void *userData);
+    static void OnNeedOutputData(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);
 
     int32_t RegisterCallback(OH_AVCodec *codec, EncoderState &state);
     int32_t BuildAndConfigure(OH_AVCodec *codec, const PreprocDualOutput::PreprocConfig &config);
