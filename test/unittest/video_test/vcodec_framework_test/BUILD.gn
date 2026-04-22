@@ -233,6 +233,7 @@ group("vcodec_framework_test") {
         ":videoenc_capi_async_unit_test",
         ":videoenc_capi_sync_unit_test",
         ":videoenc_format_capi_unit_test",
+        ":videoenc_preproc_dual_output_unit_test",
         ":videoenc_inner_async_unit_test",
         ":videoenc_inner_sync_unit_test",
         ":videoenc_repeat_previous_frame_unit_test",
@@ -1453,6 +1454,31 @@ ohos_unittest("videoenc_stable_unit_test") {
   include_dirs = []
   sources = [ "./videoenc_stable_unit_test.cpp" ]
   public_deps = [ "./stable_sample:video_sample" ]
+  resource_config_file = resource_configuration_file
+}
+
+ohos_unittest("videoenc_preproc_dual_output_unit_test") {
+  sanitize = av_codec_test_sanitize
+  module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test_config",
+  ]
+  include_dirs = [
+    "./",
+    "./preproc_sample",
+    "$av_codec_root_dir/services/include",
+    "$av_codec_root_dir/frameworks/native/capi/common",
+  ]
+
+  cflags = vcodec_unittest_cflags
+
+  sources = [
+    "./preproc_sample/videoenc_preproc_dual_output_sample.cpp",
+    "./videoenc_preproc_dual_output_unit_test.cpp",
+  ]
+  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  external_deps = av_codec_capi_external_deps
+
   resource_config_file = resource_configuration_file
 }
 
