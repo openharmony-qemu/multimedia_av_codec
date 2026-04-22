@@ -104,6 +104,8 @@ protected:
         CHECK_IF_STUCK,
         FORCE_SHUTDOWN,
         QUERY_JANK_REASON,
+        XPERF_RESUME_EVENT,
+        XPERF_PAUSE_EVENT,
     };
 
     enum BufferOperationMode {
@@ -346,6 +348,11 @@ protected:
     virtual void RecordProcessTimeOfUpstream(const std::shared_ptr<AVBuffer>& avBuffer) {}
     virtual void AppendProcessTimeOfUs(const std::shared_ptr<AVBuffer>& avBuffer, int64_t pts, const TimePoint& now) {}
 
+    //dfx
+    virtual void CheckFrameInterval() {}
+    virtual void OnStartJankDetect() {}
+    virtual void OnStopJankDetect() {}
+    
     // template
     template <typename T>
     static inline void InitOMXParam(T& param)

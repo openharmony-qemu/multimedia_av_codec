@@ -38,6 +38,12 @@ void HCodec::BaseState::OnMsgReceived(const MsgInfo &info)
         case MsgWhat::QUERY_JANK_REASON:
             codec_->OnQueryJankReason();
             return;
+        case MsgWhat::XPERF_RESUME_EVENT:
+            codec_->OnStartJankDetect();
+            return;
+        case MsgWhat::XPERF_PAUSE_EVENT:
+            codec_->OnStopJankDetect();
+            return;
         case MsgWhat::CODEC_EVENT: {
             OnCodecEvent(info);
             return;
@@ -990,6 +996,8 @@ void HCodec::FlushingState::OnShutDown(const MsgInfo &info)
 /**************************** StoppingState Start ********************************/
 void HCodec::StoppingState::OnStateEntered()
 {
+    codec_->SendAsyncMsg(MsgWhat::XPERF_PAUSE_EVENT, nullptr);
+    
     omxNodeInIdleState_ = false;
     omxNodeIsChangingToLoadedState_ = false;
     codec_->ReclaimBuffer(OMX_DirInput, BufferOwner::OWNED_BY_USER);

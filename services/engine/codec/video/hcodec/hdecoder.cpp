@@ -1254,9 +1254,53 @@ int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
               currSurface_.surface_->GetUniqueId(), info.surfaceBuffer->GetSeqNum(), err);
         return AVCS_ERR_UNKNOWN;
     }
-    ReportRenderFirstFrame();
+
+    PerfMeasure(info.lastFlushTime);
+
     ChangeOwner(info, BufferOwner::OWNED_BY_SURFACE);
     return AVCS_ERR_OK;
+}
+ 
+void HDecoder::OnStartJankDetect()
+{
+    if (detect_) {
+        return;
+    }
+    detect_ = true;
+    currSurface_.beginTime_ = GetNowUs();
+}
+ 
+void HDecoder::OnStopJankDetect()
+{
+    if (!detect_) {
+        return;
+    }
+    detect_ = false;
+    int64_t endTime = GetNowUs();
+    if (endTime - currSurface_.lastFlushTime_ > 1000000) { //1000000: 大于1s
+        std::stringstream ss;
+        ss << "#UNIQUEID:" << currSurface_.surface_->GetUniqueId() <<
+           "#SURFACE_NAME:" << currSurface_.surface_->GetName() <<
+           "#LAST_FLUSH_TIME:" << currSurface_.lastFlushTime_;
+ 
+        callback_->OnXperfEvent(OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_JANK, ss.str()); //上报卡顿事件
+    }
+
+    std::stringstream ss;
+    ss << "#UNIQUEID:" << currSurface_.surface_->GetUniqueId() <<
+      "#PID:" << caller_.app.pid <<
+      "#BUNDLE_NAME:" << caller_.app.processName <<
+      "#SURFACE_NAME:" << currSurface_.surface_->GetName() <<
+      "#BEGIN_TIME:" << currSurface_.beginTime_ <<
+      "#END_TIME:" << endTime <<
+      "#TIMES:" << currSurface_.jankCnt_ <<
+      "#TOTAL_DUR:" << currSurface_.totalJankDur_;
+ 
+    callback_->OnXperfEvent(OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_FRAME_STATS, ss.str());
+ 
+    currSurface_.jankCnt_ = 0;
+    currSurface_.totalJankDur_ = 0;
+    currSurface_.beginTime_ = 0;
 }
 
 void HDecoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
@@ -1519,21 +1563,45 @@ int32_t HDecoder::VrrPrediction(BufferInfo &info)
 }
 #endif
 
-void HDecoder::ReportRenderFirstFrame()
+void HDecoder::PerfMeasure(int64_t lastFlushTime)
 {
-    if (!currSurface_.firstFrameRendered_) {
-        currSurface_.firstFrameRendered_ = true;
-        std::stringstream s;
-        s << "#UNIQUEID:" << currSurface_.surface_->GetUniqueId() <<
-             "#PID:" << caller_.app.pid <<
-             "#BUNDLE_NAME:" << caller_.app.processName <<
-             "#SURFACE_NAME:" << currSurface_.surface_->GetName() <<
-             "#FPS:" << codecRate_ <<
-             "#REPORT_INTERVAL:" << 300;  // 300ms
-        string str = s.str();
-        OHOS::HiviewDFX::XperfServiceClient::GetInstance().NotifyToXperf(
-            OHOS::HiviewDFX::DomainId::AVCODEC, OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_FIRST_FRAME_START, str);
+    currSurface_.flushCnt_++;
+    if (currSurface_.flushCnt_ == 1) { //1: 首帧
+        std::stringstream ss;
+        ss << "#UNIQUEID:" << currSurface_.surface_->GetUniqueId() <<
+          "#PID:" << caller_.app.pid <<
+          "#BUNDLE_NAME:" << caller_.app.processName <<
+          "#SURFACE_NAME:" << currSurface_.surface_->GetName() <<
+          "#FPS:" << codecRate_ <<
+          "#REPORT_INTERVAL:" << 300;  // 300ms
+        callback_->OnXperfEvent(OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_FIRST_FRAME_START, ss.str()); //上报首帧事件
+    } else if (currSurface_.flushCnt_ == 2) { //2: 第二帧
+        detect_ = true;
+        currSurface_.beginTime_ = lastFlushTime;
+
+        std::stringstream ss;
+        ss << "#UNIQUEID:" << currSurface_.surface_->GetUniqueId() <<
+          "#PID:" << caller_.app.pid <<
+          "#BUNDLE_NAME:" << caller_.app.processName <<
+          "#SURFACE_NAME:" << currSurface_.surface_->GetName() <<
+          "#FPS:" << codecRate_ <<
+          "#REPORT_INTERVAL:" << 300;  // 300ms
+        callback_->OnXperfEvent(OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_SECOND_FRAME, ss.str()); //上报第二帧事件
+    } else if (detect_) {
+        int64_t span = lastFlushTime - currSurface_.lastFlushTime_;
+        if (span > 100000) { //100000: 大于100ms
+            currSurface_.jankCnt_++;
+            currSurface_.totalJankDur_ += span;
+        }
+        if (span > 300000) { //300000: 大于300ms
+            std::stringstream ss;
+            ss << "#UNIQUEID:" << currSurface_.surface_->GetUniqueId() <<
+               "#SURFACE_NAME:" << currSurface_.surface_->GetName() <<
+               "#LAST_FLUSH_TIME:" << currSurface_.lastFlushTime_;
+            callback_->OnXperfEvent(OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_JANK, ss.str()); //上报卡顿事件
+        }
     }
+    currSurface_.lastFlushTime_ = lastFlushTime;
 }
 
 void HDecoder::OnEnterRunningState()
@@ -1541,7 +1609,7 @@ void HDecoder::OnEnterRunningState()
     std::unique_lock<std::shared_mutex> lk(g_xperfMtx);
     if (g_xperfConnector == nullptr) {
         g_xperfConnector = sptr<XperfConnector>::MakeSptr();
-        int regret = OHOS::HiviewDFX::XperfServiceClient::GetInstance().RegisterVideoJank("avcodec", g_xperfConnector);
+        int regret = OHOS::HiviewDFX::XperfServiceClient::GetInstance().RegisterVideoState("avcodec", g_xperfConnector);
         if (regret != 0) {
             g_xperfConnector = nullptr;
         }
@@ -1629,6 +1697,47 @@ ErrCode HDecoder::XperfConnector::OnVideoJankEvent(const std::string& msg)
     string str = s.str();
     OHOS::HiviewDFX::XperfServiceClient::GetInstance().NotifyToXperf(
         OHOS::HiviewDFX::DomainId::AVCODEC, OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_JANK_REPORT, str);
+    return 0;
+}
+
+std::shared_ptr<HDecoder::MsgToken> HDecoder::XperfConnector::FindSuitableDecoder(const std::string& msg)
+{
+    std::string sub = "#UNIQUEID:";
+    auto pos = msg.find(sub);
+    if (pos == std::string::npos) {
+        LOGD("cannot find #UNIQUEID:");
+        return nullptr;
+    }
+    uint64_t surfaceId = strtoull(msg.substr(pos + sub.length()).c_str(), nullptr, 10);
+    sub = "#BUNDLE_NAME:";
+    pos = msg.find(sub);
+    if (pos == std::string::npos) {
+        LOGD("cannot find #BUNDLE_NAME:");
+        return nullptr;
+    }
+    string bundleName = msg.substr(pos + sub.length());
+    return FindSuitableDecoder(surfaceId, bundleName);
+}
+ 
+ErrCode HDecoder::XperfConnector::OnVideoResumed(const std::string& msg)
+{
+    std::shared_ptr<MsgToken> codec = FindSuitableDecoder(msg);
+    if (codec == nullptr) {
+        LOGD("cannot find decoder");
+        return 0;
+    }
+    codec->SendAsyncMsg(MsgWhat::XPERF_RESUME_EVENT, nullptr);
+    return 0;
+}
+ 
+ErrCode HDecoder::XperfConnector::OnVideoPaused(const std::string& msg)
+{
+    std::shared_ptr<MsgToken> codec = FindSuitableDecoder(msg);
+    if (codec == nullptr) {
+        LOGD("cannot find decoder");
+        return 0;
+    }
+    codec->SendAsyncMsg(MsgWhat::XPERF_PAUSE_EVENT, nullptr);
     return 0;
 }
 

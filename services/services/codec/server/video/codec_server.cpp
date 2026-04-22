@@ -39,6 +39,8 @@
 #include "imedia_key_session_service.h"
 #endif
 #include "event_manager.h"
+#include "xperf_service_action_type.h"
+#include "xperf_service_client.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServer"};
@@ -99,6 +101,10 @@ void PostProcessingCallbackOnOutputFormatChanged(const OHOS::Media::Format& form
 namespace OHOS {
 namespace MediaAVCodec {
 using namespace Media;
+using OHOS::HiviewDFX::XperfServiceClient;
+using OHOS::HiviewDFX::DomainId;
+using OHOS::HiviewDFX::AvcodecEventCode;
+
 std::shared_ptr<ICodecService> CodecServer::Create(int32_t instanceId)
 {
     std::shared_ptr<CodecServer> server = std::make_shared<CodecServer>();
@@ -151,6 +157,9 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
     StatusChanged(INITIALIZED, false);
     InitFramerateCalculator(callerInfo);
     SetInstanceInfo(type, isMimeType, name, callerInfo);
+
+    XperfServiceClient::GetInstance().NotifyToXperf(DomainId::AVCODEC, AvcodecEventCode::AVCODEC_INIT, "Init");
+
     return ret;
 }
 
@@ -505,6 +514,9 @@ int32_t CodecServer::Release()
     if (framerateCalculator_) {
         framerateCalculator_->OnStopped();
     }
+
+    XperfServiceClient::GetInstance().NotifyToXperf(DomainId::AVCODEC, AvcodecEventCode::AVCODEC_RELEASE, "Release");
+
     return ret;
 }
 
@@ -1188,6 +1200,12 @@ void CodecBaseCallback::OnOutputBufferUnbinded()
     std::shared_ptr<CodecServer> codec = weakCodec_.lock();
     CHECK_AND_RETURN_LOG(codec != nullptr, "codec is nullptr!");
     codec->OnOutputBufferUnbinded();
+}
+
+void CodecBaseCallback::OnXperfEvent(int eventType, const std::string& msg)
+{
+    AVCODEC_LOGD("type:%{public}d msg:%{public}s", eventType, msg.c_str());
+    XperfServiceClient::GetInstance().NotifyToXperf(DomainId::AVCODEC, eventType, msg);
 }
 
 int32_t CodecServer::GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo)

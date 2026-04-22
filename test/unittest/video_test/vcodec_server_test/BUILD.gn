@@ -161,6 +161,7 @@ ohos_unittest("video_codec_server_coverage_unit_test") {
     "resource_schedule_service:ressched_client",
     "samgr:samgr_proxy",
     "window_manager:libwm",
+    "hiview:xperfservice_client",
   ]
 
   if (av_codec_support_drm) {
