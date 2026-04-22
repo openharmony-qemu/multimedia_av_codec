@@ -100,8 +100,8 @@ private:
     EncoderState secondaryState_ {};
     std::mutex eosMutex_;
     std::condition_variable eosCv_;
-    std::mutex outputFileMutex_;
-    std::ofstream outputFile_;
+    std::ofstream primaryOutputFile_;
+    std::ofstream secondaryOutputFile_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

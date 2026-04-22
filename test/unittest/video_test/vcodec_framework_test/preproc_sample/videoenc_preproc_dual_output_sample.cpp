@@ -55,6 +55,16 @@ static bool EnsureOutputDir(const std::string &path)
     }
     return false;
 }
+
+static std::string MakeSecondaryOutputPath(const std::string &primaryPath)
+{
+    size_t dirPos = primaryPath.find_last_of("/\\");
+    size_t dotPos = primaryPath.find_last_of('.');
+    if (dotPos == std::string::npos || (dirPos != std::string::npos && dotPos < dirPos)) {
+        return primaryPath + "_secondary";
+    }
+    return primaryPath.substr(0, dotPos) + "_secondary" + primaryPath.substr(dotPos);
+}
 } // namespace
 
 namespace OHOS {
@@ -75,8 +85,11 @@ VideoEncPreprocDualOutputSample::~VideoEncPreprocDualOutputSample()
         primary_ = nullptr;
     }
     ReleaseWindow();
-    if (outputFile_.is_open()) {
-        outputFile_.close();
+    if (primaryOutputFile_.is_open()) {
+        primaryOutputFile_.close();
+    }
+    if (secondaryOutputFile_.is_open()) {
+        secondaryOutputFile_.close();
     }
 }
 
@@ -175,20 +188,32 @@ int32_t VideoEncPreprocDualOutputSample::RegisterCallback(OH_AVCodec *codec, Enc
     callback.onNewOutputBuffer = OnNeedOutputData;
     state.codec = codec;
     state.eosCv = &eosCv_;
-    state.outputFile = &outputFile_;
+    if (&state == &primaryState_) {
+        state.outputFile = &primaryOutputFile_;
+    } else {
+        state.outputFile = &secondaryOutputFile_;
+    }
     return OH_VideoEncoder_RegisterCallback(codec, callback, &state);
 }
 
 bool VideoEncPreprocDualOutputSample::SetOutputFilePath(const std::string &path)
 {
-    if (outputFile_.is_open()) {
-        outputFile_.close();
+    if (primaryOutputFile_.is_open()) {
+        primaryOutputFile_.close();
+    }
+    if (secondaryOutputFile_.is_open()) {
+        secondaryOutputFile_.close();
     }
     if (!EnsureOutputDir(path)) {
         return false;
     }
-    outputFile_.open(path, std::ios::out | std::ios::binary | std::ios::trunc);
-    return outputFile_.is_open();
+    std::string secondaryPath = MakeSecondaryOutputPath(path);
+    if (!EnsureOutputDir(secondaryPath)) {
+        return false;
+    }
+    primaryOutputFile_.open(path, std::ios::out | std::ios::binary | std::ios::trunc);
+    secondaryOutputFile_.open(secondaryPath, std::ios::out | std::ios::binary | std::ios::trunc);
+    return primaryOutputFile_.is_open() && secondaryOutputFile_.is_open();
 }
 
 bool VideoEncPreprocDualOutputSample::ApplyPreprocConfig(OH_AVFormat *format, const PreprocDualOutput::PreprocConfig &config)
