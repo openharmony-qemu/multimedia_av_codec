@@ -40,10 +40,11 @@ namespace OHOS::MediaAVCodec {
 using namespace std;
 using namespace CodecHDI;
 
-constexpr int JANK_FAULT_THRESHOLD = 300 * 1000; //300ms
 constexpr int JANK_THRESHOLD = 100 * 1000; //100ms
-const int FIRST = 1;
-const int SECOND = 2;
+constexpr int JANK_FAULT_THRESHOLD = 300 * 1000; //300ms
+constexpr int LAST_FRAME_THRESHOLD = 1000 * 1000; //1s
+const int COUNT_ONE = 1;
+const int COUNT_TWO = 2;
 
 std::shared_mutex g_xperfMtx;
 sptr<HDecoder::XperfConnector> g_xperfConnector = nullptr;
@@ -1265,22 +1266,6 @@ int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
     ChangeOwner(info, BufferOwner::OWNED_BY_SURFACE);
     return AVCS_ERR_OK;
 }
-
-void HDecoder::CheckFrameInterval()
-{
-    int64_t dur = GetNowUs() - currSurface_.lastFlushTime_;
-    if (dur < JANK_FAULT_THRESHOLD) { //帧间隔小于300ms
-        SendAsyncMsg(MsgWhat::CHECK_FRAME_INTERVAL, nullptr, JANK_FAULT_THRESHOLD - dur); //启动下一次检测
-    } else {
-        std::stringstream ss;
-        ss << "#UNIQUEID:" << currSurface_.surface_->GetUniqueId() <<
-        "#SURFACE_NAME:" << currSurface_.surface_->GetName() <<
-        "#LAST_FLUSH_TIME:" << currSurface_.lastFlushTime_;
- 
-        callback_->OnXperfEvent(OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_JANK, ss.str()); //上报卡顿事件
-        timer = false;
-    }
-}
  
 void HDecoder::OnStartJankDetect()
 {
@@ -1300,6 +1285,15 @@ void HDecoder::OnStopJankDetect()
  
     int64_t endTime = GetNowUs();
  
+     if (endTime - currSurface_.lastFlushTime_ > LAST_FRAME_THRESHOLD) { //大于1s
+        std::stringstream ss;
+        ss << "#UNIQUEID:" << currSurface_.surface_->GetUniqueId() <<
+           "#SURFACE_NAME:" << currSurface_.surface_->GetName() <<
+           "#LAST_FLUSH_TIME:" << currSurface_.lastFlushTime_;
+ 
+        callback_->OnXperfEvent(OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_JANK, ss.str()); //上报卡顿事件
+    }
+
     std::stringstream ss;
     ss << "#UNIQUEID:" << currSurface_.surface_->GetUniqueId() <<
       "#PID:" << caller_.app.pid <<
@@ -1580,9 +1574,7 @@ int32_t HDecoder::VrrPrediction(BufferInfo &info)
 void HDecoder::PerfMeasure(int64_t lastFlushTime)
 {
     currSurface_.flushCnt_++;
-    if (currSurface_.flushCnt_ == FIRST) { //第一帧
-        currSurface_.lastFlushTime_ = lastFlushTime;
- 
+    if (currSurface_.flushCnt_ == COUNT_ONE) { //首帧
         std::stringstream ss;
         ss << "#UNIQUEID:" << currSurface_.surface_->GetUniqueId() <<
           "#PID:" << caller_.app.pid <<
@@ -1590,22 +1582,11 @@ void HDecoder::PerfMeasure(int64_t lastFlushTime)
           "#SURFACE_NAME:" << currSurface_.surface_->GetName() <<
           "#FPS:" << codecRate_ <<
           "#REPORT_INTERVAL:" << 300;  // 300ms
- 
         callback_->OnXperfEvent(OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_FIRST_FRAME_START, ss.str()); //上报首帧事件
- 
-        return;
-    }
- 
-    if (!timer) {
-        SendAsyncMsg(MsgWhat::CHECK_FRAME_INTERVAL, nullptr, JANK_FAULT_THRESHOLD);
-        timer = true;
-    }
-    if (currSurface_.flushCnt_ == SECOND) {
+    } else if (currSurface_.flushCnt_ == COUNT_TWO) { //第二帧
         detect = true;
         currSurface_.beginTime_ = lastFlushTime;
-        currSurface_.lastFlushTime_ = lastFlushTime;
- 
-        //上报第二帧
+
         std::stringstream ss;
         ss << "#UNIQUEID:" << currSurface_.surface_->GetUniqueId() <<
           "#PID:" << caller_.app.pid <<
@@ -1613,16 +1594,19 @@ void HDecoder::PerfMeasure(int64_t lastFlushTime)
           "#SURFACE_NAME:" << currSurface_.surface_->GetName() <<
           "#FPS:" << codecRate_ <<
           "#REPORT_INTERVAL:" << 300;  // 300ms
- 
         callback_->OnXperfEvent(OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_SECOND_FRAME, ss.str()); //上报第二帧事件
-        return;
-    }
- 
-    if (detect) {
+    } else if (detect) {
         int64_t span = lastFlushTime - currSurface_.lastFlushTime_;
-        if (span > JANK_THRESHOLD) {
+        if (span > JANK_THRESHOLD) { //大于100ms
             currSurface_.jankCnt_++;
             currSurface_.totalJankDur_ += span;
+        }
+        if (span > JANK_FAULT_THRESHOLD) { //大于300ms
+            std::stringstream ss;
+            ss << "#UNIQUEID:" << currSurface_.surface_->GetUniqueId() <<
+               "#SURFACE_NAME:" << currSurface_.surface_->GetName() <<
+               "#LAST_FLUSH_TIME:" << currSurface_.lastFlushTime_;
+            callback_->OnXperfEvent(OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_JANK, ss.str()); //上报卡顿事件
         }
     }
     currSurface_.lastFlushTime_ = lastFlushTime;
