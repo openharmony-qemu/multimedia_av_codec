@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <limits>
 #include "securec.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
@@ -182,9 +183,19 @@ int32_t Preprocessor::ValidateCrop(const Media::Format &format, CropParams &para
     bool hasRight = format.GetIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_RIGHT, right);
     bool hasTop = format.GetIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_TOP, top);
     bool hasBottom = format.GetIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM, bottom);
-    if (!(hasLeft && hasRight && hasTop && hasBottom)) {
-        return AVCS_ERR_OK;
+
+    bool hasAny = hasLeft || hasRight || hasTop || hasBottom;
+    bool hasAll = hasLeft && hasRight && hasTop && hasBottom;
+
+    if (!hasAny) {              // If none of the 4 values (left, right, top and bottom) is configured,
+        return AVCS_ERR_OK;     // keep current status.
     }
+
+    if (hasAny && !hasAll) {            // At least one of the 4 values is not configured,
+        return AVCS_ERR_INVALID_VAL;    // it is not allowed.
+    }
+
+    // left, right, top and bottom are all configured
     Range encWidth;
     Range encHeight;
     if (!GetEncoderRange(format, encWidth, encHeight)) {
@@ -219,7 +230,10 @@ int32_t Preprocessor::ValidateDownsampling(const Media::Format &format, Downsamp
     int32_t height{0};
     bool hasWidth = format.GetIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH, width);
     bool hasHeight = format.GetIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT, height);
-    if (!(hasWidth && hasHeight)) {
+    if (hasWidth != hasHeight) {
+        return AVCS_ERR_INVALID_VAL;
+    }
+    if (!hasWidth && !hasHeight) {
         return AVCS_ERR_OK;
     }
     if (width == 0 && height == 0) {
@@ -256,16 +270,17 @@ int32_t Preprocessor::ValidateDropFrame(const Media::Format &format, DropFramePa
         return AVCS_ERR_OK;
     }
     targetFrameRate = RoundToTwoDecimals(targetFrameRate);
-    if (targetFrameRate < 0 || encoderConfig_.frameRate <= 0) {
+    if (targetFrameRate < -std::numeric_limits<double>::epsilon() ||
+        encoderConfig_.frameRate < -std::numeric_limits<double>::epsilon()) {
         AVCODEC_LOGE("Invalid drop frame rate: %{public}.2f, configured=%{public}.2f", targetFrameRate,
                      encoderConfig_.frameRate);
         return AVCS_ERR_INVALID_VAL;
     }
-    if (targetFrameRate == 0) {
+    if (std::fabs(targetFrameRate) < std::numeric_limits<double>::epsilon()) {
         params.result = ConfigResult::DISABLED;
         return AVCS_ERR_OK;
     }
-    if (targetFrameRate < encoderConfig_.frameRate) {
+    if ((targetFrameRate - encoderConfig_.frameRate) < -std::numeric_limits<double>::epsilon()) {
         params.targetFrameRate = targetFrameRate;
         params.result = ConfigResult::ENABLED;
         return AVCS_ERR_OK;

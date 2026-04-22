@@ -92,19 +92,7 @@ OH_AVErrCode OH_VideoEncoder_Destroy(struct OH_AVCodec *codec)
     CHECK_AND_RETURN_RET_LOG(IsValidVideoEncoderMagic(codec->magic_), AV_ERR_INVALID_VAL, "Codec magic error!");
 
     if (PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_)) {
-        auto *preprocEnc = reinterpret_cast<OHOS::MediaAVCodec::PreprocessorEncoder *>(codec);
-        (void)preprocEnc->Release();
-        if (!OHOS::MediaAVCodec::PreprocessorEncoder::IsPrimaryEncoderMagic(codec->magic_)) {
-            preprocEnc->DetachFromPrimaryEncoder();
-            delete preprocEnc;
-            return AV_ERR_OK;
-        }
-
-        auto secondaryEnc = preprocEnc->DetachSecondaryEncoder();
-        if (secondaryEnc) {
-            delete secondaryEnc;
-        }
-        delete preprocEnc;
+        PreprocessorEncoder::Destroy(codec);
         return AV_ERR_OK;
     }
 
@@ -139,9 +127,8 @@ OH_AVErrCode OH_VideoEncoder_Configure(struct OH_AVCodec *codec, struct OH_AVFor
 
     if (PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_)) {
         auto* preprocEnc = reinterpret_cast<PreprocessorEncoder*>(codec);
-        int32_t ret = preprocEnc->Configure(format->format_);
-        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                                 "PreprocessorEncoder configure failed!");
+        OH_AVErrCode ret = preprocEnc->Configure(format->format_);
+        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "PreprocessorEncoder configure failed!");
         return AV_ERR_OK;
     }
 
@@ -681,12 +668,6 @@ OH_AVErrCode OH_VideoEncoder_IsValid(OH_AVCodec *codec, bool *isValid)
 
 OH_AVErrCode OH_VideoEncoder_CreatePrimaryWithPreproc(const char *mime, OH_AVCodec **codec)
 {
-    CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr! It must not be nullptr!");
-    CHECK_AND_RETURN_RET_LOG(*codec == nullptr, AV_ERR_INVALID_VAL,
-        "The pointer stored in codec is not nullptr! It must be nullptr!");
-    CHECK_AND_RETURN_RET_LOG(PreprocessorEncoder::IsValidPreprocEncoderMime(mime), AV_ERR_INVALID_VAL,
-        "Invalid mime, only OH_AVCODEC_MIMETYPE_VIDEO_HEVC and OH_AVCODEC_MIMETYPE_VIDEO_AVC are supported!");
-
     auto ret = PreprocessorEncoder::CreatePrimary(mime, codec);
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Create primary codec failed!");
     return AV_ERR_OK;
@@ -694,14 +675,6 @@ OH_AVErrCode OH_VideoEncoder_CreatePrimaryWithPreproc(const char *mime, OH_AVCod
 
 OH_AVErrCode OH_VideoEncoder_CreateSecondaryFromPrimary(OH_AVCodec *primary, OH_AVCodec **codec)
 {
-    CHECK_AND_RETURN_RET_LOG(primary != nullptr, AV_ERR_INVALID_VAL, "Primary is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL,
-        "Codec is nullptr! It must not be nullptr!");
-    CHECK_AND_RETURN_RET_LOG(*codec == nullptr, AV_ERR_INVALID_VAL,
-        "The pointer stored in codec is not nullptr! It must be nullptr!");
-    CHECK_AND_RETURN_RET_LOG(PreprocessorEncoder::IsPrimaryEncoderMagic(primary->magic_), AV_ERR_INVALID_VAL,
-        "Primary magic error!");
-
     auto ret = PreprocessorEncoder::CreateSecondary(primary, codec);
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Create secondary codec failed!");
     return AV_ERR_OK;

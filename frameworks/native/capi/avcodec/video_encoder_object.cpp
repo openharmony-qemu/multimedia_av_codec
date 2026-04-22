@@ -19,6 +19,15 @@
 #include "media_core.h"
 #include "native_window.h"
 
+namespace {
+bool IsValidVideoEncoderMagic(AVMagic magic)
+{
+    return magic == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER ||
+           magic == AVMagic::AVCODEC_MAGIC_PRIMARY_VIDEO_ENCODER ||
+           magic == AVMagic::AVCODEC_MAGIC_SECONDARY_VIDEO_ENCODER;
+}
+}
+
 namespace OHOS {
 namespace MediaAVCodec {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "VideoEncoderObject"};
@@ -220,7 +229,7 @@ void NativeVideoEncoderCallback::OnError(AVCodecErrorType errorType, int32_t err
     (void)errorType;
 
     CHECK_AND_RETURN_LOG(codec_ != nullptr, "Codec is nullptr");
-    CHECK_AND_RETURN_LOG(codec_->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, "Codec magic error!");
+    CHECK_AND_RETURN_LOG(IsValidVideoEncoderMagic(codec_->magic_), "Codec magic error!");
     CHECK_AND_RETURN_LOG(asyncCallback_.onError != nullptr || callback_.onError != nullptr, "Callback is nullptr");
     int32_t extErr = AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(errorCode));
     if (asyncCallback_.onError != nullptr) {
@@ -235,7 +244,7 @@ void NativeVideoEncoderCallback::OnOutputFormatChanged(const Media::Format& form
     std::shared_lock<std::shared_mutex> lock(mutex_);
 
     CHECK_AND_RETURN_LOG(codec_ != nullptr, "Codec is nullptr");
-    CHECK_AND_RETURN_LOG(codec_->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, "Codec magic error!");
+    CHECK_AND_RETURN_LOG(IsValidVideoEncoderMagic(codec_->magic_), "Codec magic error!");
     CHECK_AND_RETURN_LOG(asyncCallback_.onStreamChanged != nullptr || callback_.onStreamChanged != nullptr,
         "Callback is nullptr");
     OHOS::sptr<OH_AVFormat> object = new (std::nothrow) OH_AVFormat(format);
@@ -308,7 +317,7 @@ void NativeVideoEncoderCallback::OnOutputBufferAvailable(uint32_t index, std::sh
 {
     std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_LOG(codec_ != nullptr, "Codec is nullptr");
-    CHECK_AND_RETURN_LOG(codec_->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, "Codec magic error!");
+    CHECK_AND_RETURN_LOG(IsValidVideoEncoderMagic(codec_->magic_), "Codec magic error!");
     CHECK_AND_RETURN_LOG(callback_.onNewOutputBuffer != nullptr, "Callback is nullptr");
 
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec_);

@@ -39,6 +39,7 @@ public:
 
     static OH_AVErrCode CreatePrimary(const char* mime, OH_AVCodec** codec);
     static OH_AVErrCode CreateSecondary(OH_AVCodec* primary, OH_AVCodec** secondary);
+    static void Destroy(OH_AVCodec* codec);
 
     static bool IsPrimaryEncoderMagic(AVMagic magic);
     static bool IsSecondaryEncoderMagic(AVMagic magic);
@@ -83,7 +84,7 @@ private:
     std::string mime_;
     std::string encoderId_;
 
-    std::mutex mutex_;
+    std::mutex instanceMutex_;
     PreprocessorEncoder* primary_{nullptr};
     PreprocessorEncoder* secondary_{nullptr};
 
