@@ -21,14 +21,15 @@
 namespace OHOS {
 namespace MediaAVCodec {
 ApiMetricsReporter::ApiMetricsReporter(std::string apiName, MetricesType metricesType, int32_t sample) :
-    apiName_(std::move(apiName)), metricesType_(metricesType), sample_(sample),
+    apiName_(std::move(apiName)),
+    metricesType_(metricesType),
+    sample_(sample),
     beginTime_(std::chrono::steady_clock::now()) {}
 
 ApiMetricsReporter::~ApiMetricsReporter()
 {
 #ifdef HISTOGRAMMANAGER_ENABLE
-    switch (metricesType_)
-    {
+    switch (metricesType_) {
         case ENUMERATION:
             if (sample_ == 201) { // drm err 201->21
                 sample_ = 21;

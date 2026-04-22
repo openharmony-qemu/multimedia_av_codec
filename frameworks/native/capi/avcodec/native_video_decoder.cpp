@@ -667,7 +667,8 @@ OH_AVErrCode OH_VideoDecoder_RenderOutputBufferAtTime(OH_AVCodec *codec, uint32_
         "Not support the callback of OH_AVMemory!");
 
     int32_t ret = videoDecObj->videoDecoder_->RenderOutputBufferAtTime(index, renderTimestampNs);
-    ApiMetricsReporter apiErrReporter("AVCodecKit.OH_VideoDecoder_RenderOutputBufferAtTime.ErrorCode", ENUMERATION, ret);
+    ApiMetricsReporter apiErrReporter("AVCodecKit.OH_VideoDecoder_RenderOutputBufferAtTime.ErrorCode",
+        ENUMERATION, ret);
     CHECK_AND_RETURN_RET_LOGD(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
         "Video decoder render output buffer at time failed!");
     return AV_ERR_OK;
