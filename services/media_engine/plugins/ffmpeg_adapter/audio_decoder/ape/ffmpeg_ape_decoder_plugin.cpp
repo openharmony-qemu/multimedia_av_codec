@@ -153,7 +153,7 @@ Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
     AudioSampleFormat sampleFmt = SAMPLE_S16LE;
     parameter->GetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFmt);
     parameter->GetData(Tag::AUDIO_BITS_PER_CODED_SAMPLE, codecCtx->bits_per_coded_sample);
-    if (codecCtx->bits_per_coded_sample == 0) {
+    if (codecCtx->bits_per_coded_sample <= 0 || codecCtx->bits_per_coded_sample > BITS_S32) {
         codecCtx->bits_per_coded_sample = SetBitsDepth(sampleFmt);
     }
     depth_ = codecCtx->bits_per_coded_sample;
@@ -253,8 +253,9 @@ void FFmpegAPEDecoderPlugin::CalcBufferSize(const std::shared_ptr<Meta> &paramet
     depth_ = depth_ / BITS_TO_BYTES; // divide by 8
     
     parameter->GetData(Tag::AUDIO_SAMPLE_PER_FRAME, samplePreFrame);
-    if (samplePreFrame != 0) {
-        sampleSizePerFrame_ = channels_ * samplePreFrame * depth_;
+    int64_t tmp = static_cast<int64_t>(samplePreFrame) * channels_ * depth_;
+    if (tmp > 0 && tmp < INT32_MAX) {
+        sampleSizePerFrame_ = static_cast<int32_t>(tmp);
         sampleSizePerOutBuffer_ = sampleSizePerFrame_ / REDUNDANCY_SET;
         AVCODEC_LOGI("APE sampleSize inbuffer: %{public}d outbuffer: %{public}d",
                      sampleSizePerFrame_, sampleSizePerOutBuffer_);
