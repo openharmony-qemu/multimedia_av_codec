@@ -104,7 +104,6 @@ protected:
         CHECK_IF_STUCK,
         FORCE_SHUTDOWN,
         QUERY_JANK_REASON,
-        CHECK_FRAME_INTERVAL,
         XPERF_RESUME_EVENT,
         XPERF_PAUSE_EVENT,
     };
