@@ -15,16 +15,18 @@
 
 #include "api_metrics_util.h"
 #include "avcodec_log.h"
+#ifdef HISTOGRAMMANAGER_ENABLE
 #include "histogram_plugin_macros.h"
-
+#endif
 namespace OHOS {
 namespace MediaAVCodec {
-ApiMetricsReporter::ApiMetricsReporter(std::string apiName, MetricesType, int32_t sample) :
+ApiMetricsReporter::ApiMetricsReporter(std::string apiName, MetricesType metricesType, int32_t sample) :
     apiName_(std::move(apiName)), metricesType_(metricesType), sample_(sample),
     beginTime_(std::chrono::steady_clock::now()) {}
 
 ApiMetricsReporter::~ApiMetricsReporter()
 {
+#ifdef HISTOGRAMMANAGER_ENABLE
     switch (metricesType_)
     {
         case ENUMERATION:
@@ -37,6 +39,7 @@ ApiMetricsReporter::~ApiMetricsReporter()
         default:
             break;
     }
+#endif
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

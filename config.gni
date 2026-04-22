@@ -68,6 +68,11 @@ declare_args() {
   av_codec_enable_player_startup_optimization = false
   av_codec_enable_only_for_flagship_chip = false
   av_codec_support_smart_fluency_decoding = false
+
+  av_codec_enable_api_metrics = false
+  if (defined(global_parts_info) && defined(global_parts_info.api_metrics)) {
+      av_codec_enable_api_metrics = true
+  }
 }
 av_codec_sanitize = {
   boundary_sanitize = true
