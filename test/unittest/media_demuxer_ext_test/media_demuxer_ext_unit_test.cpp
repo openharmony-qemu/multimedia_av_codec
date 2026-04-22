@@ -45,6 +45,7 @@ static const int32_t NUM_10 = 100;
 static const int32_t NUM_100 = 100;
 static const int32_t NUM_200 = 200;
 static const int32_t NUM_500 = 500;
+static const int32_t NUM_800 = 800;
 static const int64_t NUM_1000 = 1000;
 static const int64_t NUM_2000 = 2000;
 static const int64_t NUM_3000 = 3000;
@@ -5360,6 +5361,162 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_GetSeekableRanges_009, TestSize.L
 }
 
 /**
+ * @tc.name  : MediaDemuxer_GetSeekableRanges_010
+ * @tc.number: MediaDemuxer_GetSeekableRanges_010
+ * @tc.desc  : test SetMediaDuration called when globalMeta not null and durationMs > 0
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_GetSeekableRanges_010, TestSize.Level1)
+{
+    mediaDemuxer_->mediaMetaData_.globalMeta = std::make_shared<Meta>();
+    int64_t durationMs = NUM_1000;
+    mediaDemuxer_->mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(durationMs);
+    
+    EXPECT_CALL(*(mediaDemuxer_->source_), SetMediaDuration(durationMs)).Times(1);
+    EXPECT_CALL(*(mediaDemuxer_->source_), GetSeekableRanges()).WillRepeatedly(
+        Return(std::vector<Plugins::SeekRange>()));
+    EXPECT_CALL(*(mediaDemuxer_->source_), GetSeekable()).WillRepeatedly(Return(Plugins::Seekable::UNSEEKABLE));
+    
+    auto res = mediaDemuxer_->GetSeekableRanges();
+    EXPECT_EQ(res.size(), 0);
+}
+
+/**
+ * @tc.name  : MediaDemuxer_GetSeekableRanges_011
+ * @tc.number: MediaDemuxer_GetSeekableRanges_011
+ * @tc.desc  : test seekable = SEEKABLE and GetLocalLoadedRange succeeds, return full range
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_GetSeekableRanges_011, TestSize.Level1)
+{
+    mediaDemuxer_->mediaMetaData_.globalMeta = std::make_shared<Meta>();
+    int64_t durationMs = NUM_1000;
+    mediaDemuxer_->mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(durationMs);
+    
+    std::vector<Plugins::SeekRange> emptyRanges;
+    EXPECT_CALL(*(mediaDemuxer_->source_), GetSeekableRanges()).WillRepeatedly(Return(emptyRanges));
+    EXPECT_CALL(*(mediaDemuxer_->source_), GetSeekable()).WillRepeatedly(Return(Plugins::Seekable::SEEKABLE));
+    
+    auto res = mediaDemuxer_->GetSeekableRanges();
+    EXPECT_EQ(res.size(), 1);
+    EXPECT_EQ(res[0].start, 0);
+    EXPECT_GT(res[0].end, 0);
+}
+
+/**
+ * @tc.name  : MediaDemuxer_GetSeekableRanges_012
+ * @tc.number: MediaDemuxer_GetSeekableRanges_012
+ * @tc.desc  : test globalMeta is nullptr, skip SetMediaDuration
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_GetSeekableRanges_012, TestSize.Level1)
+{
+    mediaDemuxer_->mediaMetaData_.globalMeta = nullptr;
+    
+    EXPECT_CALL(*(mediaDemuxer_->source_), SetMediaDuration(_)).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->source_), GetSeekableRanges()).WillRepeatedly(
+        Return(std::vector<Plugins::SeekRange>()));
+    EXPECT_CALL(*(mediaDemuxer_->source_), GetSeekable()).WillRepeatedly(Return(Plugins::Seekable::SEEKABLE));
+    auto res = mediaDemuxer_->GetSeekableRanges();
+    EXPECT_EQ(res.size(), 0);
+}
+
+/**
+ * @tc.name  : MediaDemuxer_GetSeekableRanges_013
+ * @tc.number: MediaDemuxer_GetSeekableRanges_013
+ * @tc.desc  : test globalMeta not null but durationMs <= 0, skip SetMediaDuration
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_GetSeekableRanges_013, TestSize.Level1)
+{
+    mediaDemuxer_->mediaMetaData_.globalMeta = std::make_shared<Meta>();
+    int64_t durationMs = NUM_0;
+    mediaDemuxer_->mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(durationMs);
+    
+    EXPECT_CALL(*(mediaDemuxer_->source_), SetMediaDuration(_)).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->source_), GetSeekableRanges()).WillRepeatedly(
+        Return(std::vector<Plugins::SeekRange>()));
+    EXPECT_CALL(*(mediaDemuxer_->source_), GetSeekable()).WillRepeatedly(Return(Plugins::Seekable::SEEKABLE));
+    
+    auto res = mediaDemuxer_->GetSeekableRanges();
+    EXPECT_EQ(res.size(), 0);
+}
+
+/**
+ * @tc.name : MediaDemuxer_GetSeekableRanges_010
+ * @tc.number: MediaDemuxer_GetSeekableRanges_010
+ * @tc.desc : test SetMediaDuration called when globalMeta not null and durationMs > 0
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_GetSeekableRanges_014, TestSize.Level1)
+{
+    mediaDemuxer_->mediaMetaData_.globalMeta = std::make_shared<Meta>();
+    int64_t durationMs = NUM_1000;
+    mediaDemuxer_->mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(durationMs);
+
+    EXPECT_CALL(*(mediaDemuxer_->source_), SetMediaDuration(durationMs)).Times(1);
+    EXPECT_CALL(*(mediaDemuxer_->source_), GetSeekableRanges())
+        .WillRepeatedly(Return(std::vector<Plugins::SeekRange>()));
+    EXPECT_CALL(*(mediaDemuxer_->source_), GetSeekable()).WillRepeatedly(Return(Plugins::Seekable::UNSEEKABLE));
+
+    auto res = mediaDemuxer_->GetSeekableRanges();
+    EXPECT_EQ(res.size(), 0);
+}
+
+/**
+ * @tc.name  : MediaDemuxer_GetSeekableRanges_011
+ * @tc.number: MediaDemuxer_GetSeekableRanges_011
+ * @tc.desc  : test seekable - SEEKABLE and GetLocalLoadedRange succeeds, return full range
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_GetSeekableRanges_015, TestSize.Level1)
+{
+    mediaDemuxer_->mediaMetaData_.globalMeta = std::make_shared<Meta>();
+    int64_t durationMs = NUM_1000;
+    mediaDemuxer_->mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(durationMs);
+
+    std::vector<Plugins::SeekRange> emptyRanges;
+    EXPECT_CALL(*(mediaDemuxer_->source_), GetSeekableRanges()).WillRepeatedly(Return(emptyRanges));
+    EXPECT_CALL(*(mediaDemuxer_->source_), GetSeekable()).WillRepeatedly(Return(Plugins::Seekable::SEEKABLE));
+
+    auto res = mediaDemuxer_->GetSeekableRanges();
+    EXPECT_EQ(res.size(), 1);
+    EXPECT_EQ(res[0].start, 0);
+    EXPECT_GT(res[0].end, 0);
+}
+
+/**
+ * @tc.name : MediaDemuxer_GetSeekableRanges_012
+ * @tc.number: MediaDemuxer_GetSeekableRanges_012
+ * @tc.desc : test globalMeta is nullptr, skip SetMediaDuration
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_GetSeekableRanges_016, TestSize.Level1)
+{
+    mediaDemuxer_->mediaMetaData_.globalMeta = nullptr;
+
+    EXPECT_CALL(*(mediaDemuxer_->source_), SetMediaDuration(_)).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->source_), GetSeekableRanges())
+        .WillRepeatedly(Return(std::vector<Plugins::SeekRange>()));
+    EXPECT_CALL(*(mediaDemuxer_->source_), GetSeekable()).WillRepeatedly(Return(Plugins::Seekable::SEEKABLE));
+    auto res = mediaDemuxer_->GetSeekableRanges();
+    EXPECT_EQ(res.size(), 0);
+}
+
+/**
+ * @tc.name : MediaDemuxer_GetSeekableRanges_013
+ * @tc.number: MediaDemuxer_GetSeekableRanges_013
+ * @tc.desc : test globalMeta not null but durationMs <- 0, skip SetMediaDuration
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_GetSeekableRanges_017, TestSize.Level1)
+{
+    mediaDemuxer_->mediaMetaData_.globalMeta = std::make_shared<Meta>();
+    int64_t durationMs = NUM_0;
+    mediaDemuxer_->mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(durationMs);
+
+    EXPECT_CALL(*(mediaDemuxer_->source_), SetMediaDuration(_)).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->source_), GetSeekableRanges())
+        .WillRepeatedly(Return(std::vector<Plugins::SeekRange>()));
+    EXPECT_CALL(*(mediaDemuxer_->source_), GetSeekable()).WillRepeatedly(Return(Plugins::Seekable::SEEKABLE));
+
+    auto res = mediaDemuxer_->GetSeekableRanges();
+    EXPECT_EQ(res.size(), 0);
+}
+
+/**
  * @tc.name  : MediaDemuxer_GetLoadedRanges_001
  * @tc.number: MediaDemuxer_GetLoadedRanges_001
  * @tc.desc  : test IsLocalFd true and GetLocalLoadedRange true
@@ -5691,6 +5848,42 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_BuildNetworkLoadedRange_012, Test
     EXPECT_CALL(*(sampleQueue), GetLastOutSamplePts())
         .WillRepeatedly(Return(NUM_500));
     mediaDemuxer_->sampleQueueMap_[trackId] = sampleQueue;
+    Plugins::SeekRange range;
+    auto res = mediaDemuxer_->BuildNetworkLoadedRange(range);
+    EXPECT_EQ(res, true);
+    EXPECT_GT(range.end, range.start);
+}
+
+/**
+ * @tc.name  : MediaDemuxer_BuildNetworkLoadedRange_013
+ * @tc.number: MediaDemuxer_BuildNetworkLoadedRange_013
+ * @tc.desc  : test multiple sample queues, take min of lastEnter and lastOut pts
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_BuildNetworkLoadedRange_013, TestSize.Level1)
+{
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsLocalFd())
+        .WillRepeatedly(Return(false));
+    mediaDemuxer_->enableSampleQueue_ = true;
+    mediaDemuxer_->isAudioDemuxDecodeAsync_ = true;
+    mediaDemuxer_->isTranscoderMode_ = false;
+    auto mockMediaSyncManager = std::make_shared<MediaSyncManager>();
+    EXPECT_CALL(*(mockMediaSyncManager), GetMediaTimeNow())
+        .WillRepeatedly(Return(NUM_0));
+    mediaDemuxer_->syncCenter_ = mockMediaSyncManager;
+    int32_t trackId1 = NUM_1;
+    int32_t trackId2 = NUM_2;
+    auto sampleQueue1 = std::make_shared<SampleQueue>();
+    auto sampleQueue2 = std::make_shared<SampleQueue>();
+    EXPECT_CALL(*(sampleQueue1), GetLastEnterSamplePts())
+        .WillRepeatedly(Return(NUM_1000));
+    EXPECT_CALL(*(sampleQueue1), GetLastOutSamplePts())
+        .WillRepeatedly(Return(NUM_500));
+    EXPECT_CALL(*(sampleQueue2), GetLastEnterSamplePts())
+        .WillRepeatedly(Return(NUM_2000));
+    EXPECT_CALL(*(sampleQueue2), GetLastOutSamplePts())
+        .WillRepeatedly(Return(NUM_800));
+    mediaDemuxer_->sampleQueueMap_[trackId1] = sampleQueue1;
+    mediaDemuxer_->sampleQueueMap_[trackId2] = sampleQueue2;
     Plugins::SeekRange range;
     auto res = mediaDemuxer_->BuildNetworkLoadedRange(range);
     EXPECT_EQ(res, true);

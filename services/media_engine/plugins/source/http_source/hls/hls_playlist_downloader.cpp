@@ -256,9 +256,7 @@ bool HlsPlayListDownloader::IsFragmentInCurrentPlayList(const std::string& url, 
 
 int64_t HlsPlayListDownloader::GetDuration() const
 {
-    if (!master_) {
-        return 0;
-    }
+    FALSE_RETURN_V(master_ != nullptr, 0);
     if (master_->bLive_) {
         // For live stream, HiPlayerImpl needs a negative duration to indicate it's live.
         // But source needs a playwindow duration for obtaining seekable range.

@@ -2002,6 +2002,18 @@ HWTEST_F(DashMpdDownloaderUnittest, ContainsNonDigit_001, TestSize.Level0)
 
     EXPECT_EQ(ret, true);
 }
+
+/**
+ * @tc.name  : Test GetSeekableRanges
+ * @tc.number: GetSeekableRanges_001
+ * @tc.desc  : Test GetSeekableRanges
+ */
+HWTEST_F(DashMpdDownloaderUnittest, GetSeekableRanges_001, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    auto ret = mpdDownloader_->GetSeekableRanges();
+    EXPECT_EQ(ret.size(), 0);
+}
 }
 }
 }

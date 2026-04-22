@@ -33,6 +33,7 @@ namespace Plugins {
 namespace FileFdSource {
 const std::string MEDIA_ROOT = "file:///data/test/media/";
 const std::string VIDEO_FILE1 = MEDIA_ROOT + "camera_info_parser.mp4";
+const int64_t DURATION = 1000000; // 1s
 void OHOS::Media::Plugins::FileFdSource::FileFdSourceUnitTest::SetUpTestCase(void)
 {
 }
@@ -773,6 +774,16 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_GetSeekableRanges_0400, TestSize.Lev
     ASSERT_EQ(ranges.size(), 1);
     ASSERT_EQ(ranges[0].start, 0);
     ASSERT_GT(ranges[0].end, 0);
+}
+
+/**
+ * @tc.name: FileFdSource_SetMediaDuration_0100
+ * @tc.desc: Test SetMediaDuration success case
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_SetMediaDuration_0100, TestSize.Level1)
+{
+    ASSERT_EQ(Status::OK, fileFdSourcePlugin_->SetMediaDuration(DURATION));
 }
 } // namespace FileSource
 } // namespace Plugins

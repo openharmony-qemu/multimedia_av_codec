@@ -31,6 +31,7 @@ const std::string MEDIA_ROOT = "file:///data/test/media/";
 const std::string VIDEO_FILE1 = MEDIA_ROOT + "camera_info_parser.mp4";
 const std::string BUNDLE_NAME_FIRST = "com";
 const std::string BUNDLE_NAME_SECOND = "wei.hmos.photos";
+const int64_t DURATION = 1000000; // 1s
 void SourceUnitTest::SetUpTestCase(void)
 {
 }
@@ -328,6 +329,19 @@ HWTEST_F(SourceUnitTest, Source_IsCloudFd_0100, TestSize.Level1)
     source->SetSource(mediaSource);
     // source plugin is file_source_plugin, it is for cloud fd
     EXPECT_FALSE(source->IsCloudFd());
+}
+
+/**
+ * @tc.name: Source_SetMediaDuration_0100
+ * @tc.desc: Source_SetMediaDuration_0100
+ * @tc.type: FUNC
+ */
+
+HWTEST_F(SourceUnitTest, Source_SetMediaDuration_0100, TestSize.Level1)
+{
+    std::shared_ptr<Source> source = std::make_shared<Source>();
+    auto ret = source->SetMediaDuration(DURATION);
+    EXPECT_EQ(ret, Status::ERROR_INVALID_OPERATION);
 }
 } // namespace Media
 } // namespace OHOS

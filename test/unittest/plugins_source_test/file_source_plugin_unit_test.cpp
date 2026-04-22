@@ -31,6 +31,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace FileSource {
+const int64_t DURATION = 1000000; // 1s
 void OHOS::Media::Plugins::FileSource::FileSourceUnitTest::SetUpTestCase(void)
 {
 }
@@ -210,6 +211,16 @@ HWTEST_F(FileSourceUnitTest, FileSource_GetSeekableRanges_0400, TestSize.Level1)
     ASSERT_EQ(ranges.size(), 1);
     ASSERT_EQ(ranges[0].start, 0);
     ASSERT_GT(ranges[0].end, 0);
+}
+
+/**
+ * @tc.name: FileSource_SetMediaDuration_0100
+ * @tc.desc: Test SetMediaDuration when seekable_ is not SEEKABLE
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileSourceUnitTest, FileSource_SetMediaDuration_0100, TestSize.Level1)
+{
+    ASSERT_EQ(Status::OK, fileSourcePlugin_->SetMediaDuration(DURATION));
 }
 } // namespace FileSource
 } // namespace Plugins

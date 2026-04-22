@@ -36,6 +36,17 @@ public:
 private:
     void SetDefaultStreamId(std::shared_ptr<HlsPlayListDownloader> downloader);
 };
+class MockPlayListCallback : public PlayListChangeCallback {
+public:
+    void OnMasterReady(bool needAudioManager, bool needSubtitlesManager) override {}
+    void OnPlayListChanged(const std::vector<PlayInfo>& playList) override
+    {
+        this->savedPlayList = playList;
+    }
+    void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) override {}
+    void OnTimedMetaDataChanged(const std::shared_ptr<MediaAVCodec::AVTimedMetaData> &metadata) override {}
+    std::vector<PlayInfo> savedPlayList;
+};
 }
 }
 }
