@@ -21,9 +21,11 @@
 #include <memory>
 #include <mutex>
 #include <queue>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include "native_avbuffer.h"
 #include "native_avcodec_base.h"
 #include "native_avmagic.h"
 #include "native_avcodec_videoencoder.h"
@@ -58,6 +60,7 @@ public:
     OH_AVErrCode ReleaseOutputBuffer(uint32_t index);
     OH_AVErrCode Release();
 
+    std::optional<OH_AVBuffer*> GetTransData(const uint32_t& index, std::shared_ptr<AVBuffer>& buffer, bool isOutput);
     std::shared_ptr<Preprocessor> GetPreprocessor();
     OH_AVFormat* GetOutputDescription();
     OH_AVFormat* GetInputDescription();

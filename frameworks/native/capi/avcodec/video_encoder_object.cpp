@@ -18,6 +18,7 @@
 #include "avcodec_errors.h"
 #include "media_core.h"
 #include "native_window.h"
+#include "preprocessor_encoder.h"
 
 namespace {
 bool IsValidVideoEncoderMagic(AVMagic magic)
@@ -320,10 +321,19 @@ void NativeVideoEncoderCallback::OnOutputBufferAvailable(uint32_t index, std::sh
     CHECK_AND_RETURN_LOG(IsValidVideoEncoderMagic(codec_->magic_), "Codec magic error!");
     CHECK_AND_RETURN_LOG(callback_.onNewOutputBuffer != nullptr, "Callback is nullptr");
 
-    struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec_);
-    CHECK_AND_RETURN_LOG(videoEncObj->videoEncoder_ != nullptr, "Video encoder is nullptr!");
-
-    OH_AVBuffer *data = videoEncObj->GetTransData(index, buffer, true);
+    OH_AVBuffer *data = nullptr;
+    if (PreprocessorEncoder::IsPreprocEncoderMagic(codec_->magic_)) {
+        auto *preprocEnc = reinterpret_cast<PreprocessorEncoder *>(codec_);
+        auto result = preprocEnc->GetTransData(index, buffer, true);
+        if (!result) {
+            return;
+        }
+        data = *result;
+    } else {
+        struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec_);
+        CHECK_AND_RETURN_LOG(videoEncObj->videoEncoder_ != nullptr, "Context video encoder is nullptr!");
+        data = videoEncObj->GetTransData(index, buffer, true);
+    }
 
     callback_.onNewOutputBuffer(codec_, index, data, userData_);
 }

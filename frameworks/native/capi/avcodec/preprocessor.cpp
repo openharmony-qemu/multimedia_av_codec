@@ -202,16 +202,17 @@ int32_t Preprocessor::ValidateCrop(const Media::Format &format, CropParams &para
         AVCODEC_LOGE("Failed to get encoder capability for crop");
         return AVCS_ERR_INVALID_VAL;
     }
-    if (left == 0 && top == 0 && right == encoderConfig_.width && bottom == encoderConfig_.height) {
+    if (left == 0 && top == 0 && right == 0 && bottom == 0) {
         params.result = ConfigResult::DISABLED;
         return AVCS_ERR_OK;
     }
     int32_t cropWidth = right - left + 1;
     int32_t cropHeight = bottom - top + 1;
-    if (!(0 <= left && left < right && right <= encoderConfig_.width && 0 <= top && top < bottom &&
-          bottom <= encoderConfig_.height && encWidth.InRange(cropWidth) && encHeight.InRange(cropHeight))) {
-        AVCODEC_LOGE("Invalid crop parameters: left=%{public}d, right=%{public}d, top=%{public}d, "
-                     "bottom=%{public}d",
+    bool rangeValid = (0 <= left && left < right && right < encoderConfig_.width) &&
+                      (0 <= top && top < bottom && bottom < encoderConfig_.height) &&
+                      (encWidth.InRange(cropWidth) && encHeight.InRange(cropHeight));
+    if (!rangeValid) {
+        AVCODEC_LOGE("Invalid crop parameters: left=%{public}d, right=%{public}d, top=%{public}d, bottom=%{public}d",
                      left, right, top, bottom);
         return AVCS_ERR_INVALID_VAL;
     }
@@ -375,6 +376,10 @@ void Preprocessor::Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> o
 
 void Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output)
 {
+    PreProcessing::CropRect rect{ 0, 0, encoderConfig_.width - 1, encoderConfig_.height - 1 };
+    if (fastKitsInterface_.Crop(input, output, rect) == AVCS_ERR_OK) {
+        return;
+    }
     auto *src = static_cast<uint8_t *>(input->GetVirAddr());
     auto *dst = static_cast<uint8_t *>(output->GetVirAddr());
     CHECK_AND_RETURN_LOG(src != nullptr && dst != nullptr,
