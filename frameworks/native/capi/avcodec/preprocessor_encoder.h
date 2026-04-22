@@ -24,6 +24,7 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include "native_avbuffer.h"
 #include "native_avcodec_base.h"
 #include "native_avmagic.h"
 #include "native_avcodec_videoencoder.h"
