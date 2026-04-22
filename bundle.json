@@ -55,8 +55,7 @@
         "av_codec_support_av1_decoder",
         "av_codec_enable_demuxer_dtshd",
         "av_codec_enable_demuxer_truehd",
-        "av_codec_enable_player_startup_optimization",
-        "av_codec_support_smart_fluency_decoding"
+        "av_codec_enable_player_startup_optimization"
       ],
       "adapted_system_type": [ "standard" ],
       "rom": "10000KB",

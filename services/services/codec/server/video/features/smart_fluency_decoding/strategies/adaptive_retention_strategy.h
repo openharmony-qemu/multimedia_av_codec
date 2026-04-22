@@ -22,22 +22,24 @@
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
-
 class AdaptiveRetentionStrategy : public IRetentionStrategy {
 public:
-    AdaptiveRetentionStrategy() = default;
+    AdaptiveRetentionStrategy();
     ~AdaptiveRetentionStrategy() override = default;
 
     bool MakeRetentionDecision(const FrameRetentionContext& ctx) override;
     void UpdatePlaybackSpeed(double speed) override;
     void Reset() override;
     RetentionStrategyType GetMode() const override;
-    double GetCurrentRetentionRatio() const override;
+    double GetRatio() const override;
+    SfdDecisionReason GetLastDecisionReason() const override;
+    bool RequiresMvAnalysis() const override;
 
 private:
     double currentSpeed_{1.0};
     uint32_t dropCount_{0};
-    double currentTargetRatio_{0.0};
+    double targetRatio_{0.0};
+    SfdDecisionReason lastReason_{SfdDecisionReason::UNSPECIFIED};
 };
 
 } // namespace SFD

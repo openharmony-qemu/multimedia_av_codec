@@ -16,6 +16,7 @@
 #ifndef SMART_FLUENCY_DECODING_DUMPER_H
 #define SMART_FLUENCY_DECODING_DUMPER_H
 
+#include <atomic>
 #include <cstdint>
 #include <mutex>
 #include <string>
@@ -30,18 +31,37 @@ struct FrameDumpRecord {
     int64_t dts;
     uint32_t flags;
     bool isNonRef;
-    bool isPreDropped;
-    bool isPostDropped;
+    int32_t isPreRetained;
+    int32_t isPostRetained;
     int64_t preSysTimeMs;
     int64_t postSysTimeMs;
     int32_t preDropCount;
     RetentionStrategyType mode;
     double retentionRate;
     double speed;
+    SfdDecisionReason preReason{SfdDecisionReason::UNSPECIFIED};
+    SfdDecisionReason postReason{SfdDecisionReason::POST_BYPASSED};
+    int64_t preDecCostUs;         // PreDecode latency (us)
+    int64_t postDecCostUs;        // PostDecode latency (us)
+    size_t writeIndex;            // Write index in sync queue
+    size_t readIndex;             // Read index from sync queue
+    double emaRatio;   // Current smoothed retention ratio
+    uint32_t validBlocks;         // Count of valid MV macroblocks
+    double perceptualMagnitude;   // Perceptual motion magnitude
+    double motionConsistency;     // Motion consistency metric
+    double zeroMotionRatio;       // Ratio of zero-motion macroblocks
+    int64_t naluCostUs;
+    int64_t copyMvCostUs;
+    int64_t analyzeMvCostUs;
+    int64_t updateDumperCostUs;
 
-    FrameDumpRecord() : pts(-1), dts(-1), flags(0), isNonRef(false), isPreDropped(false), isPostDropped(false),
+    FrameDumpRecord() : pts(-1), dts(-1), flags(0), isNonRef(false), isPreRetained(1), isPostRetained(1),
                         preSysTimeMs(-1), postSysTimeMs(-1), preDropCount(0),
-                        mode(RetentionStrategyType::FULL), retentionRate(1.0), speed(1.0) {}
+                        mode(RetentionStrategyType::FULL), retentionRate(1.0), speed(1.0),
+                        preDecCostUs(-1), postDecCostUs(-1), writeIndex(0), readIndex(0),
+                        emaRatio(1.0), validBlocks(0), perceptualMagnitude(0.0),
+                        motionConsistency(0.0), zeroMotionRatio(0.0), naluCostUs(-1),
+                        copyMvCostUs(-1), analyzeMvCostUs(-1), updateDumperCostUs(-1) {}
 };
 
 class SmartFluencyDecodingDumper {
@@ -53,21 +73,36 @@ public:
     void UpdateMode(RetentionStrategyType mode, double retentionRate);
     void UpdateSpeed(double speed);
     void UpdateCtuSize(int32_t ctuSize);
+    int64_t GetLastOverhead() const;
+    void SetLastOverhead(int64_t overhead);
 
     struct PreDecodeRecordCtx {
         int64_t pts{-1};
         int64_t dts{-1};
         uint32_t flags{0};
         bool isNonRef{false};
-        bool dropped{false};
+        bool isRetained{true};
         int64_t sysTimeMs{-1};
+        int64_t preDecCostUs{-1};
+        size_t writeIndex{0};
+        double emaRatio{1.0};
+        int64_t naluCostUs{-1};
+        SfdDecisionReason reason{SfdDecisionReason::UNSPECIFIED};
     };
 
     struct PostDecodeRecordCtx {
         int64_t pts{-1};
-        bool dropped{false};
+        bool isRetained{true};
         int32_t preDropCount{0};
         int64_t sysTimeMs{-1};
+        int64_t postDecCostUs{-1};
+        size_t readIndex{0};
+        double emaRatio{1.0};
+        MVStats mvStats;
+        int64_t copyMvCostUs{-1};
+        int64_t analyzeMvCostUs{-1};
+        int64_t updateDumperCostUs{-1};
+        SfdDecisionReason reason{SfdDecisionReason::UNSPECIFIED};
     };
 
     void RecordPreDecode(const PreDecodeRecordCtx& ctx);
@@ -78,7 +113,12 @@ private:
     SmartFluencyDecodingDumper(SFDCodecType codecType, int32_t width, int32_t height, RetentionStrategyType mode);
     static bool IsDirectoryExist(const std::string& path);
     std::string GetTimestampString();
-    void DumpToFileInternal();
+    void WriteHeaderIfNeeded(std::ofstream& ofs);
+    void WriteRecordsToStream(std::ofstream& ofs, const std::vector<FrameDumpRecord>& records);
+    void UpdateExistingPreRecord(const PreDecodeRecordCtx& ctx);
+    void CreateNewPreRecord(const PreDecodeRecordCtx& ctx);
+    void UpdateExistingPostRecord(const PostDecodeRecordCtx& ctx);
+    void CreateNewPostRecord(const PostDecodeRecordCtx& ctx);
 
     std::mutex mutex_;
     std::vector<FrameDumpRecord> records_;
@@ -89,6 +129,9 @@ private:
     double currentRetentionRate_{1.0};
     double currentSpeed_{1.0};
     int32_t currentCtuSize_{0};
+    std::string currentFilename_;
+    bool isHeaderWritten_{false};
+    std::atomic<int64_t> lastDumperOverhead_{0};
 };
 } // namespace SFD
 } // namespace MediaAVCodec

@@ -29,26 +29,26 @@ public:
     DropSyncCoordinator() = default;
     ~DropSyncCoordinator() = default;
 
-    bool RecordPreDroppedFrame(int64_t droppedPts);
+    bool RecordPreDroppedFrame(int64_t pts, double speed);
     uint32_t GetAndConsumePreDroppedCount(int64_t currentPts);
     void Reset();
-    double GetCurrentEma() const;
-    double GetTargetRetentionRatio() const;
-    void UpdateFeedback(
-        uint32_t preDroppedCount, bool currentDropped, double targetRetentionRatio, double currentSpeed);
+    double GetEmaRatio() const;
+    void UpdateFeedback(bool isRetained, double speed);
+    size_t GetWriteIndex() const;
+    size_t GetReadIndex() const;
 
 private:
-    static constexpr size_t queueCapacity = 128;
+    static constexpr size_t queueCapacity = 1024;
     static constexpr size_t queueMask = queueCapacity - 1;
     static constexpr size_t cacheLineSize = 64;
     int64_t ptsRingBuffer_[queueCapacity]{0};
+    std::atomic<bool> isConsumed_[queueCapacity]{};
     alignas(cacheLineSize) std::atomic<size_t> writeIndex_{0};
     alignas(cacheLineSize) std::atomic<size_t> readIndex_{0};
-    double currentEmaDropRatio_{0.0};
-    double targetRetentionRatio_{0.0};
+    double emaRatio_{1.0};
     mutable std::mutex feedbackMutex_;
 };
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // ASYNC_DROP_DISPATCHER_H
+#endif // DROP_SYNC_COORDINATOR_H

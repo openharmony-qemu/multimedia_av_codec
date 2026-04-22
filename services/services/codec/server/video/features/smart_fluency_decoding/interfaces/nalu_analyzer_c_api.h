@@ -30,7 +30,7 @@ NaluAnalyzerHandle CreateNaluAnalyzer(int32_t codecType);
 
 void DestroyNaluAnalyzer(NaluAnalyzerHandle analyzer);
 
-void SetNaluAnalyzerCallback(NaluAnalyzerHandle analyzer, NaluStreamAuxInfoCallback cb, void* userData);
+void SetCallback(NaluAnalyzerHandle analyzer, NaluStreamAuxInfoCallback cb, void* userData);
 
 bool IsNonReferenceFrame(NaluAnalyzerHandle analyzer, const uint8_t* bufferAddr, uint32_t bufferSize);
 
