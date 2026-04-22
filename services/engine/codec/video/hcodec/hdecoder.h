@@ -172,7 +172,6 @@ private:
     int32_t RecoverFreq() override;
 
     void PerfMeasure(int64_t lastFlushTime);
-    void CheckFrameInterval() override;
     void OnStartJankDetect() override;
     void OnStopJankDetect() override;
 
@@ -213,7 +212,6 @@ private:
     std::optional<ScalingMode> scaleMode_;
     OHOS::HDI::Display::Graphic::Common::V1_0::BufferHandleMetaRegion crop_{0};
 
-    bool timer = false;
     bool detect = false;
 };
 } // namespace OHOS::MediaAVCodec
