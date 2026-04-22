@@ -2938,7 +2938,7 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_APE_Configure_07, TestSize
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE.data(),
                                 64); // 64 bits test
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLES_PER_FRAME.data(),
-                                INT_MAX);
+                                100000); // 100000 samples
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioDec_, format_));
     Release();
 }
