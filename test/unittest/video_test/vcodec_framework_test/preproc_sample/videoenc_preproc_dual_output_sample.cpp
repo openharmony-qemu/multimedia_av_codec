@@ -15,14 +15,18 @@
 
 #include "videoenc_preproc_dual_output_sample.h"
 
+#include <cerrno>
 #include <chrono>
 #include <cstring>
 #include <iostream>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 
 #include "native_buffer.h"
 #include "native_buffer_inner.h"
+#include "native_avbuffer.h"
 #include "securec.h"
 #include "surface_buffer.h"
 
@@ -34,6 +38,22 @@ static int64_t GetTimeUs()
     struct timespec now {};
     (void)clock_gettime(CLOCK_BOOTTIME, &now);
     return static_cast<int64_t>(now.tv_sec) * 1000000 + static_cast<int64_t>(now.tv_nsec / 1000);
+}
+
+static bool EnsureOutputDir(const std::string &path)
+{
+    size_t pos = path.find_last_of("/\\");
+    if (pos == std::string::npos) {
+        return true;
+    }
+    std::string dir = path.substr(0, pos);
+    if (dir.empty()) {
+        return true;
+    }
+    if (mkdir(dir.c_str(), S_IRWXU | S_IRWXG | S_IRWXO) == 0 || errno == EEXIST) {
+        return true;
+    }
+    return false;
 }
 } // namespace
 
@@ -55,6 +75,9 @@ VideoEncPreprocDualOutputSample::~VideoEncPreprocDualOutputSample()
         primary_ = nullptr;
     }
     ReleaseWindow();
+    if (outputFile_.is_open()) {
+        outputFile_.close();
+    }
 }
 
 void VideoEncPreprocDualOutputSample::ResetStates()
@@ -82,7 +105,15 @@ void VideoEncPreprocDualOutputSample::OnError(OH_AVCodec *codec, int32_t errorCo
     (void)codec;
     auto *state = reinterpret_cast<EncoderState *>(userData);
     if (state != nullptr) {
-        state->errorCode.store(errorCode);
+        if (state->eosMutex != nullptr) {
+            std::lock_guard<std::mutex> lock(*state->eosMutex);
+            state->errorCode.store(errorCode);
+        } else {
+            state->errorCode.store(errorCode);
+        }
+        if (state->eosCv != nullptr) {
+            state->eosCv->notify_all();
+        }
     }
 }
 
@@ -104,6 +135,7 @@ void VideoEncPreprocDualOutputSample::OnNeedOutputData(OH_AVCodec *codec, uint32
     OH_AVBuffer_GetBufferAttr(buffer, &attr);
     if ((attr.flags & AVCODEC_BUFFER_FLAGS_EOS) == 0) {
         state->dataCount.fetch_add(1);
+        DumpOutputBuffer(buffer, attr, *state);
     } else {
         state->gotEos.store(true);
         state->eosCv->notify_all();
@@ -111,6 +143,23 @@ void VideoEncPreprocDualOutputSample::OnNeedOutputData(OH_AVCodec *codec, uint32
     }
     if (codec != nullptr) {
         (void)OH_VideoEncoder_FreeOutputBuffer(codec, index);
+    }
+}
+
+void VideoEncPreprocDualOutputSample::DumpOutputBuffer(OH_AVBuffer *buffer, const OH_AVCodecBufferAttr &attr,
+                                                       EncoderState &state)
+{
+    if (buffer == nullptr || attr.size <= 0 || state.outputFile == nullptr || state.outputFileMutex == nullptr) {
+        return;
+    }
+    uint8_t *addr = OH_AVBuffer_GetAddr(buffer);
+    if (addr == nullptr) {
+        return;
+    }
+    std::lock_guard<std::mutex> lock(*state.outputFileMutex);
+    if (state.outputFile->is_open()) {
+        state.outputFile->write(reinterpret_cast<const char *>(addr + attr.offset), attr.size);
+        state.outputFile->flush();
     }
 }
 
@@ -126,7 +175,20 @@ int32_t VideoEncPreprocDualOutputSample::RegisterCallback(OH_AVCodec *codec, Enc
     callback.onNewOutputBuffer = OnNeedOutputData;
     state.codec = codec;
     state.eosCv = &eosCv_;
+    state.outputFile = &outputFile_;
     return OH_VideoEncoder_RegisterCallback(codec, callback, &state);
+}
+
+bool VideoEncPreprocDualOutputSample::SetOutputFilePath(const std::string &path)
+{
+    if (outputFile_.is_open()) {
+        outputFile_.close();
+    }
+    if (!EnsureOutputDir(path)) {
+        return false;
+    }
+    outputFile_.open(path, std::ios::out | std::ios::binary | std::ios::trunc);
+    return outputFile_.is_open();
 }
 
 bool VideoEncPreprocDualOutputSample::ApplyPreprocConfig(OH_AVFormat *format, const PreprocDualOutput::PreprocConfig &config)
@@ -385,9 +447,11 @@ int32_t VideoEncPreprocDualOutputSample::SendPrimaryFrames(uint32_t frameCount)
 bool VideoEncPreprocDualOutputSample::WaitForDualEos(uint32_t timeoutSeconds)
 {
     unique_lock<mutex> lock(eosMutex_);
-    return eosCv_.wait_for(lock, chrono::seconds(timeoutSeconds), [this]() {
-        return primaryState_.gotEos.load() && secondaryState_.gotEos.load();
+    (void)eosCv_.wait_for(lock, chrono::seconds(timeoutSeconds), [this]() {
+        return (primaryState_.gotEos.load() && secondaryState_.gotEos.load()) ||
+               primaryState_.errorCode.load() != 0 || secondaryState_.errorCode.load() != 0;
     });
+    return primaryState_.gotEos.load() && secondaryState_.gotEos.load();
 }
 
 bool VideoEncPreprocDualOutputSample::PrimaryHasData() const

@@ -16,6 +16,9 @@
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
 
+#include <algorithm>
+#include <string>
+
 #include "native_avcapability.h"
 #include "native_avcodec_base.h"
 #include "videoenc_preproc_dual_output_sample.h"
@@ -37,6 +40,15 @@ bool IsHardwareAvcAvailable()
     auto *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
     return capability != nullptr;
 }
+
+std::string GetOutputFilePath()
+{
+    const testing::TestInfo *testInfo = testing::UnitTest::GetInstance()->current_test_info();
+    std::string testName = testInfo == nullptr ? "unknown" : testInfo->name();
+    auto isPathSeparator = [](char value) { return value == '/' || value == '\\'; };
+    testName.erase(std::remove_if(testName.begin(), testName.end(), isPathSeparator), testName.end());
+    return "./1in2out_out/" + testName + ".bin";
+}
 } // namespace
 
 INSTANTIATE_TEST_SUITE_P(, VideoEncPreprocDualOutputTest, testing::ValuesIn(kDualOutputScenarios));
@@ -44,6 +56,7 @@ INSTANTIATE_TEST_SUITE_P(, VideoEncPreprocDualOutputTest, testing::ValuesIn(kDua
 static void RunNoPreprocLikeScenario(const ScenarioCase &scenario)
 {
     VideoEncPreprocDualOutputSample sample;
+    ASSERT_TRUE(sample.SetOutputFilePath(GetOutputFilePath())) << scenario.name;
     ASSERT_TRUE(sample.CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC)) << scenario.name;
     ASSERT_EQ(sample.ConfigurePrimary(scenario), AV_ERR_OK) << scenario.name;
     ASSERT_EQ(sample.GetPrimarySurface(), AV_ERR_OK) << scenario.name;

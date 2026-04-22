@@ -19,6 +19,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <cstdint>
+#include <fstream>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -41,6 +42,7 @@ public:
     VideoEncPreprocDualOutputSample(const VideoEncPreprocDualOutputSample &) = delete;
     VideoEncPreprocDualOutputSample &operator=(const VideoEncPreprocDualOutputSample &) = delete;
 
+    bool SetOutputFilePath(const std::string &path);
     bool CreatePrimary(const std::string &mime);
     int32_t ConfigurePrimary(const PreprocDualOutput::ScenarioCase &scenario);
     int32_t GetPrimarySurface();
@@ -69,12 +71,16 @@ private:
         std::atomic<int32_t> dataCount {0};
         std::atomic<bool> gotEos {false};
         std::atomic<int32_t> errorCode {0};
+        std::mutex *eosMutex = nullptr;
         std::condition_variable *eosCv = nullptr;
+        std::mutex *outputFileMutex = nullptr;
+        std::ofstream *outputFile = nullptr;
     };
 
     static void OnError(OH_AVCodec *codec, int32_t errorCode, void *userData);
     static void OnStreamChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData);
     static void OnNeedOutputData(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);
+    static void DumpOutputBuffer(OH_AVBuffer *buffer, const OH_AVCodecBufferAttr &attr, EncoderState &state);
 
     int32_t RegisterCallback(OH_AVCodec *codec, EncoderState &state);
     int32_t BuildAndConfigure(OH_AVCodec *codec, const PreprocDualOutput::PreprocConfig &config);
@@ -94,6 +100,8 @@ private:
     EncoderState secondaryState_ {};
     std::mutex eosMutex_;
     std::condition_variable eosCv_;
+    std::mutex outputFileMutex_;
+    std::ofstream outputFile_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
