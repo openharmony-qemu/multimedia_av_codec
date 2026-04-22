@@ -408,6 +408,14 @@ int32_t PreprocessorEncoder::CreateEncoderSurface()
     return AVCS_ERR_OK;
 }
 
+OH_AVBuffer* PreprocessorEncoder::GetTransData(const uint32_t& index, std::shared_ptr<AVBuffer>& buffer, bool isOutput)
+{
+    CHECK_AND_RETURN_RET_LOG(videoEncoderObject_ && videoEncoderObject_->videoEncoder_, nullptr,
+                             "Context video encoder is nullptr!");
+    return videoEncoderObject_->GetTransData(index, buffer, isOutput);
+}
+
+
 std::shared_ptr<Preprocessor> PreprocessorEncoder::GetPreprocessor()
 {
     auto it = preprocessors_.find(encoderId_);
