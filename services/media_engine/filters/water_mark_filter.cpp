@@ -12,22 +12,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #include "water_mark_filter.h"
 #include "filter/filter_factory.h"
 #include "common/media_core.h"
 #include "avcodec_log.h"
 #include "external_window.h"
 #include "native_window.h"
- 
+
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "WaterMarkFilter" };
 }
- 
+
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
- 
+
 const uint32_t MAX_WATERMARK_NUMBER = 5;
 const uint64_t MAX_WATERMARK_SIZE = 20 * 1024 * 1024;
 /**
@@ -36,18 +36,18 @@ const uint64_t MAX_WATERMARK_SIZE = 20 * 1024 * 1024;
 std::string vertexShader = R"delimiter(
 attribute vec3 position;
 attribute vec2 texCoord;
- 
+
 varying vec2 vTexCoord;
- 
+
 uniform mat4 matTransform;
- 
+
 void main()
 {
     gl_Position = vec4(position, 1.0);
     vTexCoord = texCoord;
 }
 )delimiter";
- 
+
 /**
  * @brief 片段着色器：将视频帧与合并后的水印纹理进行Alpha混合叠加
  * 视频已通过glViewport缩放到目标尺寸，水印已在目标画布上合并，直接叠加即可
@@ -55,52 +55,52 @@ void main()
 std::string fragmentShader = R"delimiter(
 #extension GL_OES_EGL_image_external : require
 precision highp float;
- 
+
 varying vec2 vTexCoord;
- 
+
 uniform samplerExternalOES texture;
 uniform sampler2D textTexture;
- 
+
 void main()
 {
     // 翻转纹理坐标以匹配视频数据方向
     vec2 flippedTexCoord = vec2(1.0 - vTexCoord.x, 1.0 - vTexCoord.y);
- 
+
     // 直接采样视频和水印纹理（视频已缩放到目标尺寸，水印已在目标画布上合并）
     vec4 videoColor = texture2D(texture, flippedTexCoord);
     vec4 watermarkColor = texture2D(textTexture, flippedTexCoord);
- 
+
     // Alpha混合：水印与视频融合
     float r = watermarkColor.r * watermarkColor.a + videoColor.r * (1.0 - watermarkColor.a);
     float g = watermarkColor.g * watermarkColor.a + videoColor.g * (1.0 - watermarkColor.a);
     float b = watermarkColor.b * watermarkColor.a + videoColor.b * (1.0 - watermarkColor.a);
- 
+
     gl_FragColor = vec4(r, g, b, 1.0);
 }
 )delimiter";
- 
+
 std::string fragmentShader11 = R"delimiter(
 #extension GL_OES_EGL_image_external : require
 precision highp float;
- 
+
 varying vec2 vTexCoord;
- 
+
 // 仅保留外部视频纹理
 uniform samplerExternalOES texture;
- 
+
 void main()
 {
     // 保留你原来的纹理坐标翻转逻辑
     vec2 flippedTexCoord = vec2(1.0 - vTexCoord.x, 1.0 - vTexCoord.y);
- 
+
     // 仅采样视频纹理
     vec4 videoColor = texture2D(texture, flippedTexCoord);
- 
+
     // 直接输出视频颜色
     gl_FragColor = vec4(videoColor.rgb, 1.0);
 }
 )delimiter";
- 
+
 // 顶点数据：位置坐标(x, y, z) + 纹理坐标(u, v)
 GLfloat vertices[] = {
     -1.0f, 1.0f,  0.0f,    1.0f, 1.0f,  // 左上角
@@ -108,44 +108,43 @@ GLfloat vertices[] = {
     1.0f,  -1.0f, 0.0f,    0.0f, 0.0f,  // 右下角
     1.0f,  1.0f,  0.0f,    0.0f, 1.0f,  // 右上角
 };
- 
+
 // 索引数据：定义两个三角形组成四边形
 GLuint indices[] = {
     0, 1, 2,  // 第一个三角形
     0, 2, 3   // 第二个三角形
 };
- 
- 
+
+
 static AutoRegisterFilter<WaterMarkFilter> g_registerWaterMarkFilter("builtin.transcoder.watermark",
     FilterType::WATERMARK,
     [](const std::string& name, const FilterType type) {
         return std::make_shared<WaterMarkFilter>(name, FilterType::WATERMARK);
     });
- 
+
 class WaterMarkFilterLinkCallback : public FilterLinkCallback {
 public:
     explicit WaterMarkFilterLinkCallback(std::shared_ptr<WaterMarkFilter> WaterMarkFilter)
-
         : waterMarkFilter_(std::move(WaterMarkFilter))
     {
     }
- 
+
     ~WaterMarkFilterLinkCallback() = default;
- 
+
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) override
     {
         auto filter = waterMarkFilter_.lock();
         FALSE_RETURN_MSG(filter != nullptr, "filter is nullptr");
         filter->OnLinkedResult(queue, meta);
     }
- 
+
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta) override
     {
         auto filter = waterMarkFilter_.lock();
         FALSE_RETURN_MSG(filter != nullptr, "filter is nullptr");
         filter->OnUnlinkedResult(meta);
     }
- 
+
     void OnUpdatedResult(std::shared_ptr<Meta> &meta) override
     {
         auto filter = waterMarkFilter_.lock();
@@ -155,7 +154,7 @@ public:
 private:
     std::weak_ptr<WaterMarkFilter> waterMarkFilter_;
 };
- 
+
 /**
  * @brief 创建Native Image对象
  * @return true：创建成功；false：创建失败
@@ -169,22 +168,20 @@ bool WaterMarkFilter::CreateNativeImage()
     int ret = 0;
     nativeImageFrameAvailableListener_.context = this;
     nativeImageFrameAvailableListener_.onFrameAvailable = &WaterMarkFilter::OnNativeImageFrameAvailable;
-
     ret = OH_NativeImage_SetOnFrameAvailableListener(nativeImage_, nativeImageFrameAvailableListener_);
     FALSE_RETURN_V_MSG(ret == 0, false, "Failed to set frame available listener: %{public}d", ret);
     return true;
 }
- 
+
 void WaterMarkFilter::UpdateNativeWindow(void *window, uint64_t width, uint64_t height)
 {
     auto nativeWindow = reinterpret_cast<OHNativeWindow *>(window);
     nativeWindow_ = nativeWindow;
     FALSE_RETURN_MSG(nativeWindow_ != nullptr, "nativeWindow_ is nullptr");
-
     OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_BUFFER_GEOMETRY, static_cast<int>(width),
         static_cast<int>(height));
 }
- 
+
 void WaterMarkFilter::ThreadMainLoop()
 {
     MEDIA_LOG_I("WaterMarkFilter::ThreadMainLoop()");
@@ -196,30 +193,30 @@ void WaterMarkFilter::ThreadMainLoop()
     CreateVideoTexture();
     FALSE_RETURN_MSG(CreateWatermarkTextureAndCopy(), "Failed to create watermark texture and copy");
     FALSE_RETURN_MSG(SetupShaderUniforms(), "Failed to setup shader uniforms");
- 
+
     // 将Native Image与OpenGL纹理关联
     OH_NativeImage_AttachContext(nativeImage_, nativeImageTexId_);
     RenderLoop();
 }
- 
+
 bool WaterMarkFilter::InitializeEGLContext()
 {
     // 创建EGL渲染上下文
     renderContext_ = std::make_unique<EglRenderContext>();
     FALSE_RETURN_V_MSG(renderContext_ != nullptr, false, "Failed to create EGL render context");
- 
+
     // 初始化EGL：初始化显示、配置EGL、创建上下文
     FALSE_RETURN_V_MSG(renderContext_->Init(), false, "Failed to initialize EGL render context");
- 
+
     // 创建EGL表面，将OpenGL渲染输出关联到Native Window
     eglSurface_ = renderContext_->CreateEglSurface(static_cast<EGLNativeWindowType>(nativeWindow_));
     FALSE_RETURN_V_MSG(eglSurface_ != EGL_NO_SURFACE, false, "Failed to create EGL surface");
- 
+
     // 将EGL上下文和表面绑定到当前线程
     renderContext_->MakeCurrent(eglSurface_);
     return true;
 }
- 
+
 void WaterMarkFilter::DrawImage(const int64_t pts)
 {
     MEDIA_LOG_I("WaterMarkFilter::DrawImage");
@@ -238,7 +235,7 @@ void WaterMarkFilter::DrawImage(const int64_t pts)
     OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_UI_TIMESTAMP, pts);
     renderContext_->SwapBuffers(eglSurface_);
 }
- 
+
 /**
  * @brief 为每个水印创建OpenGL纹理
  * @return true：创建成功；false：创建失败
@@ -246,69 +243,68 @@ void WaterMarkFilter::DrawImage(const int64_t pts)
 bool WaterMarkFilter::CreateWatermarkTextures()
 {
     FALSE_RETURN_V_MSG(!watermarkList_.empty(), false, "watermarkList is empty, skip CreateWatermarkTextures");
- 
+
     watermarkTexIds_.resize(watermarkList_.size());
     glGenTextures(watermarkList_.size(), watermarkTexIds_.data());
 
- 
     for (size_t i = 0; i < watermarkList_.size(); i++) {
         const auto& config = watermarkList_[i];
- 
+
         FALSE_RETURN_V_MSG(config.buffer != nullptr, false, "Watermark config buffer is nullptr");
- 
+
         glBindTexture(GL_TEXTURE_2D, watermarkTexIds_[i]);
- 
+
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
- 
+
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, config.rawWidth, config.rawHeight,
                      0, GL_RGBA, GL_UNSIGNED_BYTE, config.buffer);
- 
+
         GLenum error = glGetError();
         FALSE_RETURN_V_MSG(error == GL_NO_ERROR, false, "Failed to create watermark texture");
     }
- 
+
     glBindTexture(GL_TEXTURE_2D, 0);
     MEDIA_LOG_I("CreateWatermarkTextures success, created %{public}zu textures", watermarkList_.size());
     return true;
 }
- 
+
 bool WaterMarkFilter::CreateVideoTexture()
 {
     glGenTextures(1, &nativeImageTexId_);
     GLenum error = glGetError();
     FALSE_RETURN_V_MSG(error == GL_NO_ERROR, false, "glGenTextures failed with GL error: %{public}d", error);
- 
+
     glBindTexture(GL_TEXTURE_EXTERNAL_OES, nativeImageTexId_);
     error = glGetError();
     FALSE_RETURN_V_MSG(error == GL_NO_ERROR, false, "glBindTexture failed with GL error: %{public}d", error);
- 
+
     glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
- 
+
     error = glGetError();
     FALSE_RETURN_V_MSG(error == GL_NO_ERROR, false, 
         "Failed to create native image texture, GL error: %{public}d", error);
     return true;
 }
- 
+
 bool WaterMarkFilter::CreateWatermarkTextureAndCopy()
 {
     // 水印已经在MergeWaterMarksWithOpenGL()中直接在目标尺寸画布上合并
     textTexId_ = mergedWatermarkTexId_;
- 
+
     GLenum error = glGetError();
     FALSE_RETURN_V_MSG(error == GL_NO_ERROR, false, "Failed to create text texture, GL error: %{public}d", error);
- 
+
     MEDIA_LOG_I("CreateWatermarkTextureAndCopy success, target: %{public}dx%{public}d", targetWidth_, targetHeight_);
- 
+
     return true;
 }
- 
+
 bool WaterMarkFilter::SetupShaderUniforms()
 {
     // 设置着色器Uniform变量 - 视频纹理
@@ -316,19 +312,19 @@ bool WaterMarkFilter::SetupShaderUniforms()
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_EXTERNAL_OES, nativeImageTexId_);
     shaderProgram_->SetInt("texture", 0);
- 
+
     // 设置着色器Uniform变量 - 水印纹理
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, textTexId_);
     shaderProgram_->SetMatrix4v("matTransform", matrix_, 16, false);
     shaderProgram_->SetInt("textTexture", 1);
- 
+
     MEDIA_LOG_I("SetupShaderUniforms video: %{public}dx%{public}d -> target: %{public}dx%{public}d",
         videoWidth_.load(), videoHeight_.load(), targetWidth_, targetHeight_);
- 
+
     return true;
 }
- 
+
 void WaterMarkFilter::RenderLoop()
 {
     while (running_) {
@@ -343,10 +339,9 @@ void WaterMarkFilter::RenderLoop()
                 flag = true;
             }
         }
- 
+
         if (flag) {
             FALSE_RETURN_MSG(renderContext_ != nullptr, "renderContext_ is null");
-
             // 确保EGL上下文和表面在当前线程生效
             renderContext_->MakeCurrent(eglSurface_);
             OH_NativeImage_UpdateSurfaceImage(nativeImage_);
@@ -354,7 +349,7 @@ void WaterMarkFilter::RenderLoop()
             // 执行渲染操作
             DrawImage(lastPts_.load());
         }
- 
+
         if (eosPts_.load() == lastPts_.load()) {
             MEDIA_LOG_I("RenderLoop pts %{public}ld %{public}ld", lastPts_.load(), eosPts_.load());
             NotifyNextFilterEos();
@@ -362,53 +357,53 @@ void WaterMarkFilter::RenderLoop()
         }
     }
 }
- 
+
 bool WaterMarkFilter::CreateWatermarkFBO(int32_t width, int32_t height)
 {
     glGenFramebuffers(1, &watermarkFBO_);
     GLenum error = glGetError();
     FALSE_RETURN_V_MSG(error == GL_NO_ERROR, false, "glGenFramebuffers failed with GL error: %{public}d", error);
- 
+
     glGenTextures(1, &mergedWatermarkTexId_);
     error = glGetError();
     FALSE_RETURN_V_MSG(error == GL_NO_ERROR, false, "glGenTextures failed with GL error: %{public}d", error);
- 
+
     glBindTexture(GL_TEXTURE_2D, mergedWatermarkTexId_);
     error = glGetError();
     FALSE_RETURN_V_MSG(error == GL_NO_ERROR, false, "glBindTexture failed with GL error: %{public}d", error);
- 
+
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height,
                  0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
     error = glGetError();
     FALSE_RETURN_V_MSG(error == GL_NO_ERROR, false, "glTexImage2D failed with GL error: %{public}d", error);
- 
+
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
- 
+
     glBindFramebuffer(GL_FRAMEBUFFER, watermarkFBO_);
     error = glGetError();
     FALSE_RETURN_V_MSG(error == GL_NO_ERROR, false, "glBindFramebuffer failed with GL error: %{public}d", error);
- 
+
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mergedWatermarkTexId_, 0);
     error = glGetError();
     FALSE_RETURN_V_MSG(error == GL_NO_ERROR, false, "glFramebufferTexture2D failed with GL error: %{public}d", error);
- 
+
     FALSE_RETURN_V_MSG(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE, false,
                        "Framebuffer is not complete");
- 
+
     glViewport(0, 0, width, height);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
- 
+
     error = glGetError();
     FALSE_RETURN_V_MSG(error == GL_NO_ERROR, false,
                        "CreateWatermarkFBO failed with GL error: %{public}d", error);
- 
+
     return true;
 }
- 
+
 bool WaterMarkFilter::CreateWatermarkMergeShader()
 {
     // 创建水印合并专用的顶点着色器
@@ -422,7 +417,7 @@ void main()
     vTexCoord = texCoord;
 }
 )delimiter";
- 
+
     // 片段着色器：直接输出纹理颜色（不做混合，混合在GPU端通过GL_BLEND实现）
     std::string watermarkFragmentShader = R"delimiter(
 precision highp float;
@@ -434,154 +429,152 @@ void main()
     gl_FragColor = color;
 }
 )delimiter";
- 
+
     // 创建着色器程序
     watermarkMergeShaderProgram_ = std::make_unique<ShaderProgram>(watermarkVertexShader, watermarkFragmentShader);
     FALSE_RETURN_V_MSG(watermarkMergeShaderProgram_->Valid(), false,
                        "Failed to create watermark merge shader program");
- 
+
     // 创建VAO和VBO用于水印渲染
     glGenVertexArrays(1, &watermarkVAO_);
-
     GLenum error = glGetError();
     FALSE_RETURN_V_MSG(error == GL_NO_ERROR, false, "glGenVertexArrays failed with GL error: %{public}d", error);
- 
-    glGenBuffers(1, &watermarkVBO_);
 
+    glGenBuffers(1, &watermarkVBO_);
     error = glGetError();
     FALSE_RETURN_V_MSG(error == GL_NO_ERROR, false, "glGenBuffers failed with GL error: %{public}d", error);
- 
+
     glBindVertexArray(watermarkVAO_);
     error = glGetError();
     FALSE_RETURN_V_MSG(error == GL_NO_ERROR, false, "glBindVertexArray failed with GL error: %{public}d", error);
- 
+
     glBindBuffer(GL_ARRAY_BUFFER, watermarkVBO_);
     error = glGetError();
     FALSE_RETURN_V_MSG(error == GL_NO_ERROR, false, "glBindBuffer failed with GL error: %{public}d", error);
- 
+
     error = glGetError();
     FALSE_RETURN_V_MSG(error == GL_NO_ERROR, false,
                        "CreateWatermarkMergeShader failed with GL error: %{public}d", error);
- 
+
     return true;
 }
- 
+
 bool WaterMarkFilter::RenderWatermarksToFBO(int32_t width, int32_t height)
 {
     // 安全检查：防止除零
     FALSE_RETURN_V_MSG(width > 0 && height > 0, false,
                        "Invalid FBO dimensions: %{public}dx%{public}d", width, height);
- 
+
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
- 
+
     watermarkMergeShaderProgram_->Use();
     glActiveTexture(GL_TEXTURE0);
- 
+
     // 在目标画布上逐个渲染水印，保持相对位置，超出部分裁除
     for (size_t i = 0; i < watermarkList_.size(); i++) {
         const auto& config = watermarkList_[i];
- 
+
         float x = static_cast<float>(config.left) * 2.0f / width - 1.0f;
         float y = -1.0f + static_cast<float>(config.top) * 2.0f / height;
         float w = static_cast<float>(config.watermarkWidth) * 2.0f / width;
         float h = static_cast<float>(config.watermarkHeight) * 2.0f / height;
- 
+
         float wmVertices[] = {
             x, y + h,     0.0f, 1.0f,
             x, y,         0.0f, 0.0f,
             x + w, y,     1.0f, 0.0f,
             x + w, y + h, 1.0f, 1.0f 
         };
- 
+
         glBufferData(GL_ARRAY_BUFFER, sizeof(wmVertices), wmVertices, GL_DYNAMIC_DRAW);
- 
+
         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2 * sizeof(float)));
         glEnableVertexAttribArray(1);
- 
+
         glBindTexture(GL_TEXTURE_2D, watermarkTexIds_[i]);
         watermarkMergeShaderProgram_->SetInt("watermarkTexture", 0);
- 
+
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     }
- 
+
     // 恢复OpenGL状态
     glDisable(GL_BLEND);
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
- 
+
     GLenum error = glGetError();
     FALSE_RETURN_V_MSG(error == GL_NO_ERROR, false,
                        "RenderWatermarksToFBO failed with GL error: %{public}d", error);
- 
+
     return true;
 }
- 
+
 bool WaterMarkFilter::MergeWaterMarksWithOpenGL()
 {
     FALSE_RETURN_V_MSG(!watermarkList_.empty(), false, "watermarkList is empty, skip MergeWaterMarksWithOpenGL");
- 
+
     // 计算目标尺寸
     int32_t mergedWidth = std::max(targetWidth_, 1);
     int32_t mergedHeight = std::max(targetHeight_, 1);
- 
+
     FALSE_RETURN_V_MSG(CreateWatermarkFBO(mergedWidth, mergedHeight), false,
                        "Failed to create watermark FBO");
- 
+
     FALSE_RETURN_V_MSG(CreateWatermarkMergeShader(), false,
                        "Failed to create watermark merge shader");
- 
+
     FALSE_RETURN_V_MSG(RenderWatermarksToFBO(mergedWidth, mergedHeight), false,
                        "Failed to render watermarks to FBO");
- 
+
     MEDIA_LOG_I("MergeWaterMarksWithOpenGL success, %{public}zu watermarks on target canvas: %{public}dx%{public}d",
         watermarkList_.size(), mergedWidth, mergedHeight);
     return true;
 }
- 
+
 bool WaterMarkFilter::CreateGLResources()
 {
     // 创建着色器程序
     shaderProgram_ = std::make_unique<ShaderProgram>(vertexShader, fragmentShader);
     FALSE_RETURN_V_MSG(shaderProgram_->Valid(), false, "shaderProgram_->Valid()");
- 
+
     glGenVertexArrays(1, &vertexArrayObject_);
     GLenum error = glGetError();
     FALSE_RETURN_V_MSG(error == GL_NO_ERROR, false, "glGenVertexArrays failed with GL error: %{public}d", error);
- 
+
     glGenBuffers(1, &vertexBufferObject_);
     error = glGetError();
     FALSE_RETURN_V_MSG(error == GL_NO_ERROR, false, "glGenBuffers failed with GL error: %{public}d", error);
- 
+
     glBindVertexArray(vertexArrayObject_);
     error = glGetError();
     FALSE_RETURN_V_MSG(error == GL_NO_ERROR, false, "glBindVertexArray failed with GL error: %{public}d", error);
- 
+
     glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject_);
     error = glGetError();
     FALSE_RETURN_V_MSG(error == GL_NO_ERROR, false, "glBindBuffer failed with GL error: %{public}d", error);
- 
+
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
     error = glGetError();
     FALSE_RETURN_V_MSG(error == GL_NO_ERROR, false, "glBufferData failed with GL error: %{public}d", error);
- 
+
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
- 
+
     // 启用纹理坐标属性
     glEnableVertexAttribArray(1);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
- 
+
     error = glGetError();
     FALSE_RETURN_V_MSG(error == GL_NO_ERROR, false, "CreateGLResources failed with GL error: %{public}d", error);
     return true;
 }
- 
+
 void WaterMarkFilter::OnNativeImageFrameAvailable(void *data)
 {
     MEDIA_LOG_I("OnNativeImageFrameAvailable");
@@ -591,9 +584,10 @@ void WaterMarkFilter::OnNativeImageFrameAvailable(void *data)
     renderThread->availableFrameCnt_.fetch_add(1, std::memory_order_relaxed);
     renderThread->wakeUpCond_.notify_one();
 }
- 
+
 Status WaterMarkFilter::SetWatermark(std::shared_ptr<AVBuffer> &waterMarkBuffer, int32_t width, int32_t height)
 {
+    std::unique_lock<std::mutex> lock(releaseMutex_);
     FALSE_RETURN_V_MSG(watermarkList_.size() < MAX_WATERMARK_NUMBER, 
         Status::ERROR_INVALID_OPERATION, "watermarkList_ has out");
     InitOpenGl();
@@ -634,7 +628,7 @@ Status WaterMarkFilter::SetWatermark(std::shared_ptr<AVBuffer> &waterMarkBuffer,
     watermarkList_.emplace_back(config);
     return Status::OK;
 }
- 
+
 Status WaterMarkFilter::SetVideoResize(int32_t width, int32_t height)
 {
     FALSE_RETURN_V_MSG(width > 0 && height > 0, Status::ERROR_INVALID_PARAMETER, "Invalid resize dimensions");
@@ -646,32 +640,31 @@ Status WaterMarkFilter::SetVideoResize(int32_t width, int32_t height)
         videoWidth_.load(), videoHeight_.load());
     return Status::OK;
 }
- 
+
 void WaterMarkFilter::InitOpenGl()
 {
     FALSE_RETURN_MSG(nativeImage_ == nullptr, "CreateNativeImage success");
-
     FALSE_RETURN_MSG(CreateNativeImage(), "Failed to create native image");
 }
- 
+
 WaterMarkFilter::WaterMarkFilter(std::string name, FilterType type): Filter(name, type)
 {
     filterType_ = type;
     MEDIA_LOG_I("water mark filter create");
 }
- 
+
 WaterMarkFilter::~WaterMarkFilter()
 {
     MEDIA_LOG_I("water mark filter destroy");
     DoRelease();
 }
- 
+
 Status WaterMarkFilter::SetCodecFormat(const std::shared_ptr<Meta> &format)
 {
     MEDIA_LOG_I("SetCodecFormat");
     return Status::OK;
 }
- 
+
 void WaterMarkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     const std::shared_ptr<FilterCallback> &callback)
 {
@@ -679,30 +672,29 @@ void WaterMarkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     eventReceiver_ = receiver;
     filterCallback_ = callback;
 }
- 
+
 Status WaterMarkFilter::Configure(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("Configure");
     configureParameter_ = parameter;
     return Status::OK;
 }
- 
+
 sptr<Surface> WaterMarkFilter::GetInputSurface()
 {
     MEDIA_LOG_I("GetInputSurface");
     FALSE_RETURN_V_MSG(nativeImageWindow_ != nullptr, nullptr, "nativeImageWindow_ is nullptr");
     return nativeImageWindow_->surface;
 }
- 
+
 Status WaterMarkFilter::SetOutputSurface(sptr<Surface> surface, int32_t width, int32_t height)
 {
     MEDIA_LOG_I("WaterMarkFilter SetOutputSurface %{public}d, %{public}d", width, height);
     targetWidth_ = width;
     targetHeight_ = height;
     auto window = CreateNativeWindowFromSurface(&surface);
-
     UpdateNativeWindow(window, width, height);
- 
+
     // 只在第一次调用时创建线程，避免重复创建
     FALSE_RETURN_V_MSG(!thread_.joinable(), Status::OK, "thread_ is run");
     thread_ = std::thread([this]() {
@@ -710,7 +702,7 @@ Status WaterMarkFilter::SetOutputSurface(sptr<Surface> surface, int32_t width, i
     });
     return Status::OK;
 }
- 
+
 Status WaterMarkFilter::DoPrepare()
 {
     MEDIA_LOG_I("Prepare");
@@ -725,36 +717,36 @@ Status WaterMarkFilter::DoPrepare()
     }
     return Status::OK;
 }
- 
+
 Status WaterMarkFilter::DoStart()
 {
     MEDIA_LOG_I("Start");
     return Status::OK;
 }
- 
+
 Status WaterMarkFilter::DoPause()
 {
     MEDIA_LOG_I("Pause");
     return Status::OK;
 }
- 
+
 Status WaterMarkFilter::DoResume()
 {
     MEDIA_LOG_I("Resume");
     return Status::OK;
 }
- 
+
 Status WaterMarkFilter::DoStop()
 {
     MEDIA_LOG_I("Stop");
     return Status::OK;
 }
- 
+
 Status WaterMarkFilter::DoFlush()
 {
     return Status::OK;
 }
- 
+
 Status WaterMarkFilter::DoRelease()
 {
     MEDIA_LOG_I("DoRelease enter");
@@ -765,105 +757,102 @@ Status WaterMarkFilter::DoRelease()
         return Status::OK;
     }
     hasReleased_ = true;
- 
+
     // 停止渲染线程
     {
-        std::lock_guard<std::mutex> lock(wakeUpMutex_);
         running_ = false;
     }
     wakeUpCond_.notify_all();
- 
+
     if (thread_.joinable()) {
         thread_.join();
     }
     ReleaseCpuResources();
- 
+
     // 释放Native Image
     if (nativeImage_ != nullptr) {
         OH_NativeImage_Destroy(&nativeImage_);
         nativeImage_ = nullptr;
     }
     nativeImageWindow_ = nullptr;
- 
+
     // 释放GPU侧资源
     ReleaseGpuResources();
- 
+
     shaderProgram_.reset();
     watermarkMergeShaderProgram_.reset();
     ReleaseEGLResources();
     nativeWindow_ = nullptr;
- 
+
     MEDIA_LOG_I("DoRelease success");
     return Status::OK;
 }
- 
+
 void WaterMarkFilter::ReleaseCpuResources()
 {
     // 释放水印列表中每个配置的buffer内存
     for (auto& config : watermarkList_) {
-
         if (config.buffer != nullptr) {
             delete[] config.buffer;
             config.buffer = nullptr;
         }
     }
- 
+
     watermarkList_.clear();
 }
- 
+
 void WaterMarkFilter::ReleaseGpuResources()
 {
     FALSE_RETURN_MSG(renderContext_ != nullptr && eglSurface_ != EGL_NO_SURFACE, "renderContext_ is null");
 
- 
     renderContext_->MakeCurrent(eglSurface_);
- 
+
     if (vertexArrayObject_ != 0) {
         glDeleteVertexArrays(1, &vertexArrayObject_);
         vertexArrayObject_ = 0;
     }
- 
+
     if (vertexBufferObject_ != 0) {
         glDeleteBuffers(1, &vertexBufferObject_);
         vertexBufferObject_ = 0;
     }
- 
+
     if (nativeImageTexId_ != 0 && nativeImageTexId_ != DEFINED_VALUE) {
         glDeleteTextures(1, &nativeImageTexId_);
         nativeImageTexId_ = 0;
     }
- 
+
     if (textTexId_ != 0 && textTexId_ != DEFINED_VALUE) {
         glDeleteTextures(1, &textTexId_);
         textTexId_ = 0;
     }
- 
+
     if (mergedWatermarkTexId_ != 0) {
         glDeleteTextures(1, &mergedWatermarkTexId_);
         mergedWatermarkTexId_ = 0;
     }
- 
+
     if (!watermarkTexIds_.empty()) {
         glDeleteTextures(watermarkTexIds_.size(), watermarkTexIds_.data());
         watermarkTexIds_.clear();
     }
- 
+
     if (watermarkFBO_ != 0) {
         glDeleteFramebuffers(1, &watermarkFBO_);
         watermarkFBO_ = 0;
     }
- 
+
     if (watermarkVAO_ != 0) {
         glDeleteVertexArrays(1, &watermarkVAO_);
         watermarkVAO_ = 0;
     }
- 
+
     if (watermarkVBO_ != 0) {
         glDeleteBuffers(1, &watermarkVBO_);
         watermarkVBO_ = 0;
     }
 }
- 
+
 void WaterMarkFilter::ReleaseEGLResources()
 {
     if (renderContext_ != nullptr && eglSurface_ != EGL_NO_SURFACE) {
@@ -872,7 +861,7 @@ void WaterMarkFilter::ReleaseEGLResources()
     }
     renderContext_.reset();
 }
- 
+
 Status WaterMarkFilter::NotifyNextFilterEos()
 {
     MEDIA_LOG_I("NotifyNextFilterEos");
@@ -886,13 +875,12 @@ Status WaterMarkFilter::NotifyNextFilterEos()
     }
     return Status::OK;
 }
- 
+
 void WaterMarkFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("SetParameter");
     std::lock_guard<std::mutex> lock(wakeUpMutex_);
     FALSE_RETURN_MSG(parameter != nullptr, "parameter is nullptr");
-
     int64_t pts = 0;
     parameter->Get<Tag::USER_FRAME_PTS>(pts);
     eosPts_.store(pts);    
@@ -900,12 +888,12 @@ void WaterMarkFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
     MEDIA_LOG_I("lastBuffer PTS: " PUBLIC_LOG_D64 " frameNum: " PUBLIC_LOG_D64, eosPts_.load(), frameNum_);
     wakeUpCond_.notify_one();
 }
- 
+
 void WaterMarkFilter::GetParameter(std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("GetParameter");
 }
- 
+
 Status WaterMarkFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
 {
     nextFilter_ = nextFilter;
@@ -918,19 +906,19 @@ Status WaterMarkFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stre
     }
     return ret;
 }
- 
+
 Status WaterMarkFilter::UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
 {
     MEDIA_LOG_I("UpdateNext");
     return Status::OK;
 }
- 
+
 Status WaterMarkFilter::UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
 {
     MEDIA_LOG_I("UnLinkNext");
     return Status::OK;
 }
- 
+
 Status WaterMarkFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
     const std::shared_ptr<FilterLinkCallback> &callback)
 {
@@ -938,20 +926,20 @@ Status WaterMarkFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> 
     onLinkedResultCallback_ = callback;
     return Status::OK;
 }
- 
+
 Status WaterMarkFilter::OnUpdated(StreamType inType, const std::shared_ptr<Meta> &meta,
     const std::shared_ptr<FilterLinkCallback> &callback)
 {
     MEDIA_LOG_I("OnUpdated");
     return Status::OK;
 }
- 
+
 Status WaterMarkFilter::OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback)
 {
     MEDIA_LOG_I("OnUnLinked");
     return Status::OK;
 }
- 
+
 void WaterMarkFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue,
     std::shared_ptr<Meta> &meta)
 {
@@ -960,34 +948,34 @@ void WaterMarkFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBu
         onLinkedResultCallback_->OnLinkedResult(nullptr, meta);
     }
 }
- 
+
 void WaterMarkFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("OnUpdatedResult");
     (void) meta;
 }
- 
+
 void WaterMarkFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("OnUnlinkedResult");
     (void) meta;
 }
- 
+
 void WaterMarkFilter::OnOutputBufferAvailable(uint32_t index, uint32_t flag)
 {
     MEDIA_LOG_D("OnOutputBufferAvailable enter. index: " PUBLIC_LOG_U32, index);
 }
- 
+
 void WaterMarkFilter::SetFaultEvent(const std::string &errMsg, int32_t ret)
 {
     MEDIA_LOG_I("SetFaultEvent");
 }
- 
+
 void WaterMarkFilter::SetFaultEvent(const std::string &errMsg)
 {
     MEDIA_LOG_I("SetFaultEvent");
 }
- 
+
 void WaterMarkFilter::SetCallingInfo(int32_t appUid, int32_t appPid,
     const std::string &bundleName, uint64_t instanceId)
 {
@@ -996,7 +984,7 @@ void WaterMarkFilter::SetCallingInfo(int32_t appUid, int32_t appPid,
     bundleName_ = bundleName;
     instanceId_ = instanceId;   
 }
- 
+
 FilterType WaterMarkFilter::GetFilterType()
 {
     MEDIA_LOG_I("GetFilterType");
