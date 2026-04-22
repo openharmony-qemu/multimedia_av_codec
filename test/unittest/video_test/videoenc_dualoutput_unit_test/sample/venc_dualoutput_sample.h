@@ -33,7 +33,7 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-std::string DOWNSAMPLING_PATH = "/system/lib64/libfast_image.so";
+inline std::string DOWNSAMPLING_PATH = "/system/lib64/libfast_image.so";
 enum class EncoderType { PRIMARY, SECONDARY };
 
 class VideoEncDualOutputSample : public NoCopyable, public VCodecSampleBase {
