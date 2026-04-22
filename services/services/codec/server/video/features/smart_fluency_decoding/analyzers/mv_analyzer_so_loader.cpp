@@ -31,7 +31,7 @@ MvAnalyzerSoLoader::MvAnalyzerSoLoader(SFDCodecType codecType)
     AVCODEC_LOGD("MvAnalyzerSoLoader ctor, codecType: %{public}d", static_cast<int32_t>(codecType_));
     if (LoadLibrary() && createFunc_) {
         soAnalyzer_ = createFunc_(static_cast<int32_t>(codecType_));
-        AVCODEC_LOGI("soAnalyzer_ created: %{public}p", soAnalyzer_);
+        AVCODEC_LOGI("soAnalyzer_ created");
     }
 }
 
