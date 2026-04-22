@@ -18,6 +18,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include "double_utils.h"
 #include "avcodec_log.h"
 
 namespace {
@@ -52,7 +53,7 @@ bool FixedRatioRetentionStrategy::MakeRetentionDecision(const FrameRetentionCont
 
     bool isRetain = false;
     accumulator_ += targetRatio_ + (ctx.preDroppedCount * targetRatio_);
-    if (accumulator_ >= ACCUMULATOR_THRESHOLD) {
+    if (DoubleUtils::IsGreaterOrEqual(accumulator_, ACCUMULATOR_THRESHOLD)) {
         accumulator_ -= ACCUMULATOR_THRESHOLD;
         isRetain = true;
         lastReason_ = SfdDecisionReason::POST_RETAIN_FIXED_ACC;

@@ -25,6 +25,7 @@
 #include "avcodec_log_ex.h"
 #include "buffer/avbuffer.h"
 #include "buffer_extra_data_impl.h"
+#include "double_utils.h"
 #include "strategies/retention_strategy_factory.h"
 #include "media_description.h"
 #include "meta/meta_key.h"
@@ -35,8 +36,6 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "SmartFluencyDecoding"};
 constexpr double DEFAULT_PLAYBACK_SPEED = 1.0;
-constexpr double RETENTION_RATIO_MIN_DIFF = 0.001;
-constexpr double EPSILON = 1e-6;
 
 #ifdef SFD_DEBUG
 inline int64_t GetCurrentSysTimeUs()
@@ -94,7 +93,7 @@ int32_t SmartFluencyDecoding::InitializeInternal()
 void SmartFluencyDecoding::UpdatePlaybackSpeed(double speed)
 {
     std::lock_guard<std::mutex> lock(configMutex_);
-    currentPlaybackSpeed_ = (speed > 0.0 ? speed : DEFAULT_PLAYBACK_SPEED);
+    currentPlaybackSpeed_ = (DoubleUtils::IsGreater(speed, 0.0) ? speed : DEFAULT_PLAYBACK_SPEED);
     if (strategy_) {
         strategy_->UpdatePlaybackSpeed(speed);
 #ifdef SFD_DEBUG
@@ -184,7 +183,7 @@ int32_t SmartFluencyDecoding::UpdateDynamicConfig(const Media::Format& format)
         AVCODEC_LOGD_WITH_TAG("UpdateDynamicConfig: Speed update detected: %{public}.3f", speed);
         UpdatePlaybackSpeed(speed);
     }
-    if (newMode != config_.initMode || newRatio != config_.retentionRatio) {
+    if (newMode != config_.initMode || DoubleUtils::IsNotEqual(newRatio, config_.retentionRatio)) {
         ApplyNewStrategy(newMode, newRatio);
     }
     return AVCS_ERR_OK;
@@ -325,7 +324,9 @@ void SmartFluencyDecoding::RecordPostDecodeDump(
     const MVStats& mvStats, const PostDecCost& cost)
 {
 #ifdef SFD_DEBUG
-    if (!dumper_) return;
+    if (!dumper_) {
+        return;
+    }
     int64_t dumperStart = GetCurrentSysTimeUs();
     SmartFluencyDecodingDumper::PostDecodeRecordCtx dumperCtx;
     dumperCtx.pts = pts;
@@ -367,9 +368,9 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
 #endif
         if (res.isNonRef) {
             double currentEmaRet = dropSyncCoordinator_->GetEmaRatio();
-            if (caps.targetRatio >= 1.0 - RETENTION_RATIO_MIN_DIFF) {
+            if (DoubleUtils::IsGreaterOrEqual(caps.targetRatio, 1.0)) {
                 res.reason = SfdDecisionReason::PRE_RETAIN_TARGET_FULL;
-            } else if (currentEmaRet <= caps.targetRatio) {
+            } else if (DoubleUtils::IsLessOrEqual(currentEmaRet, caps.targetRatio)) {
                 res.reason = SfdDecisionReason::PRE_RETAIN_EMA_SATISFIED;
             } else {
                 res.shouldRetain = false;
@@ -565,9 +566,9 @@ void SmartFluencyDecoding::EnsureMvAnalyzer()
 
 bool SmartFluencyDecoding::IsRatioValid(double ratio)
 {
-    CHECK_AND_RETURN_RET_LOG(ratio >= (MIN_RETENTION_RATIO - EPSILON), false,
+    CHECK_AND_RETURN_RET_LOG(DoubleUtils::IsGreaterOrEqual(ratio, MIN_RETENTION_RATIO), false,
         "Retention ratio invalid: value=%{public}.3f (must be >= %{public}.3f)", ratio, MIN_RETENTION_RATIO);
-    CHECK_AND_RETURN_RET_LOG(ratio <= (MAX_RETENTION_RATIO + EPSILON), false,
+    CHECK_AND_RETURN_RET_LOG(DoubleUtils::IsLessOrEqual(ratio, MAX_RETENTION_RATIO), false,
         "Retention ratio invalid: value=%{public}.3f (must be <= %{public}.3f)", ratio, MAX_RETENTION_RATIO);
     return true;
 }

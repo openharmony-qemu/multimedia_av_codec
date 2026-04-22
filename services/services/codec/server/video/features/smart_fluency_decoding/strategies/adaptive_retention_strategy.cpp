@@ -14,6 +14,7 @@
  */
 
 #include "adaptive_retention_strategy.h"
+#include "double_utils.h"
 #include "avcodec_log.h"
 
 namespace {
@@ -67,7 +68,7 @@ public:
 
         while (!RETENTION_DECISION_RULES[ruleId].isLeaf) {
             const auto& rule = RETENTION_DECISION_RULES[ruleId].internal;
-            if (features[rule.featureIndex] <= rule.threshold) {
+            if (DoubleUtils::IsLessOrEqual(features[rule.featureIndex], rule.threshold)) {
                 ruleId = rule.left;
             } else {
                 ruleId = rule.right;
@@ -91,7 +92,7 @@ AdaptiveRetentionStrategy::AdaptiveRetentionStrategy()
 bool AdaptiveRetentionStrategy::MakeRetentionDecision(const FrameRetentionContext& ctx)
 {
     bool isRetain = true;
-    if (currentSpeed_ <= MAX_SPEED_FOR_RETENTION) {
+    if (DoubleUtils::IsLessOrEqual(currentSpeed_, MAX_SPEED_FOR_RETENTION)) {
         isRetain = true;
         lastReason_ = SfdDecisionReason::POST_RETAIN_ADAPTIVE_SPEED;
     } else if (ctx.mvStats && ctx.mvStats->validBlocks > 0) {
@@ -126,7 +127,7 @@ bool AdaptiveRetentionStrategy::MakeRetentionDecision(const FrameRetentionContex
 
 void AdaptiveRetentionStrategy::UpdatePlaybackSpeed(double speed)
 {
-    currentSpeed_ = speed > 0.0 ? speed : 1.0;
+    currentSpeed_ = DoubleUtils::IsGreater(speed, 0.0) ? speed : 1.0;
 }
 
 void AdaptiveRetentionStrategy::Reset()
