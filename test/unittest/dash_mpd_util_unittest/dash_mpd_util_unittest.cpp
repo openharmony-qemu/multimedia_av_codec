@@ -318,6 +318,20 @@ HWTEST_F(DashMpdUtilUnitTest, DashSubstituteTmpltStr_015, TestSize.Level0)
 }
 
 /**
+ * @tc.name  : Test DashSubstituteTmpltStr with GetSubstitutionStr
+ * @tc.number: DashSubstituteTmpltStr_016
+ * @tc.desc  : Test GetSubstitutionStr with identifier at the beginning
+ */
+HWTEST_F(DashMpdUtilUnitTest, DashSubstituteTmpltStr_016, TestSize.Level0)
+{
+    std::string segTmpltStr = "$Number%15d$_segment.m4s";
+    std::string segTmpltIdentifier = "$Number";
+    std::string substitutionStr = "5";
+    int32_t ret = DashSubstituteTmpltStr(segTmpltStr, segTmpltIdentifier, substitutionStr);
+    EXPECT_EQ(ret, -1);
+}
+
+/**
  * @tc.name  : Test DashStrToDuration
  * @tc.number: DashStrToDuration_001
  * @tc.desc  : Test case 'D'
