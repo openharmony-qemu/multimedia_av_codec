@@ -240,7 +240,7 @@ Status HdiCodec::FillThisBuffer(std::shared_ptr<AVBuffer> &buffer)
     condition_.wait_for(lock, std::chrono::milliseconds(TIMEOUT_MS), [this] { return outputOmxBuffer_ != nullptr; });
     CHECK_AND_RETURN_RET_LOG(outputOmxBuffer_ != nullptr, Status::ERROR_INVALID_PARAMETER, "FillThisBuffer timeout!");
 
-    errno_t rc = memcpy_s(buffer->memory_->GetAddr(), outputOmxBuffer_->filledLen,
+    errno_t rc = memcpy_s(buffer->memory_->GetAddr(), buffer->memory_->GetCapacity(),
                           omxOutBufferInfo_->avBuffer->memory_->GetAddr(), outputOmxBuffer_->filledLen);
     CHECK_AND_RETURN_RET_LOG(rc == EOK, Status::ERROR_INVALID_DATA, "memory copy failed!");
 
