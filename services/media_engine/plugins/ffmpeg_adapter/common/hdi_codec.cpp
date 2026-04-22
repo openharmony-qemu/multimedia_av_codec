@@ -217,7 +217,8 @@ Status HdiCodec::EmptyThisBuffer(const std::shared_ptr<AVBuffer> &buffer)
     omxInBufferInfo_->omxBuffer->pts = buffer->pts_;
     omxInBufferInfo_->omxBuffer->flag = buffer->flag_;
 
-    errno_t rc = memcpy_s(omxInBufferInfo_->avBuffer->memory_->GetAddr(), omxInBufferInfo_->omxBuffer->filledLen,
+    errno_t rc = memcpy_s(omxInBufferInfo_->avBuffer->memory_->GetAddr(),
+                          omxInBufferInfo_->avBuffer->memory_->GetCapacity(),
                           buffer->memory_->GetAddr(), omxInBufferInfo_->omxBuffer->filledLen);
     CHECK_AND_RETURN_RET_LOG(rc == EOK, Status::ERROR_INVALID_DATA, "memory copy failed!");
 
