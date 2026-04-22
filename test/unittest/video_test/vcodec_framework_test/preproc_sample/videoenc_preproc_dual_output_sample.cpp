@@ -162,14 +162,13 @@ void VideoEncPreprocDualOutputSample::OnNeedOutputData(OH_AVCodec *codec, uint32
 void VideoEncPreprocDualOutputSample::DumpOutputBuffer(OH_AVBuffer *buffer, const OH_AVCodecBufferAttr &attr,
                                                        EncoderState &state)
 {
-    if (buffer == nullptr || attr.size <= 0 || state.outputFile == nullptr || state.outputFileMutex == nullptr) {
+    if (buffer == nullptr || attr.size <= 0 || state.outputFile == nullptr) {
         return;
     }
     uint8_t *addr = OH_AVBuffer_GetAddr(buffer);
     if (addr == nullptr) {
         return;
     }
-    std::lock_guard<std::mutex> lock(*state.outputFileMutex);
     if (state.outputFile->is_open()) {
         state.outputFile->write(reinterpret_cast<const char *>(addr + attr.offset), attr.size);
         state.outputFile->flush();

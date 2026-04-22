@@ -114,7 +114,7 @@ constexpr ScenarioCase kMixedPreprocScenario {
     FlowType::MIXED_PREPROC,
     InvalidParameterType::DOWNSAMPLING_PAIR,
     MakeDownsampling(640, 360, 15.0),
-    MakeCrop(0, 0, 1279, 719, 10.0),
+    MakeCrop(0, 0, 1023, 575, 10.0),
     AV_ERR_OK,
     true,
     true,
