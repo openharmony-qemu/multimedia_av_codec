@@ -110,7 +110,7 @@ void VideoEncPreprocDualOutputSample::OnNeedOutputData(OH_AVCodec *codec, uint32
         return;
     }
     if (codec != nullptr) {
-        (void)OH_VideoEncoder_FreeOutputData(codec, index);
+        (void)OH_VideoEncoder_FreeOutputBuffer(codec, index);
     }
 }
 
