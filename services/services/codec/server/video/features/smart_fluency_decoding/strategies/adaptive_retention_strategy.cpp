@@ -68,7 +68,7 @@ public:
 
         while (!RETENTION_DECISION_RULES[ruleId].isLeaf) {
             const auto& rule = RETENTION_DECISION_RULES[ruleId].internal;
-            if (DoubleUtils::IsLessOrEqual(features[rule.featureIndex], rule.threshold)) {
+            if (OHOS::MediaAVCodec::SFD::DoubleUtils::IsLessOrEqual(features[rule.featureIndex], rule.threshold)) {
                 ruleId = rule.left;
             } else {
                 ruleId = rule.right;
