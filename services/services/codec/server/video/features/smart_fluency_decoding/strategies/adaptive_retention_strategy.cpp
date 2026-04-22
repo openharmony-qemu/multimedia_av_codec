@@ -19,7 +19,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "AdaptiveStrategy"};
 constexpr double MAX_SPEED_FOR_RETENTION = 1.0;
-constexpr double MAX_DROPS_MULTIPLIER_HIGH = 30.0;
+constexpr double MAX_DROPS_MULTIPLIER_HIGH = 5.0;
 
 struct DecisionNode {
     bool isLeaf;
@@ -119,7 +119,7 @@ bool AdaptiveRetentionStrategy::MakeRetentionDecision(const FrameRetentionContex
     } else {
         lastReason_ = SfdDecisionReason::UNSPECIFIED;
     }
-    AVCODEC_LOGD("AdaptiveRetentionStrategy decision: %{public}d (speed:%{public}.2f, ratio:%{public}.2f)",
+    AVCODEC_LOGD("AdaptiveRetentionStrategy decision: %{public}d (speed:%{public}.3f, ratio:%{public}.3f)",
                  isRetain, currentSpeed_, targetRatio_);
     return isRetain;
 }

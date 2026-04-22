@@ -316,8 +316,8 @@ void SmartFluencyDecodingManager::ApplyDebugConfig(Media::Format& format)
         newDecSpeed_ = GetSysParamDouble(DEBUG_PARAM_NEW_SPEED, -1.0);
         inputFrameCount_ = 0;
         isDebugConfigInitialized_ = true;
-        AVCODEC_LOGI_WITH_TAG("SFD Debug: Conf: %{public}d, %{public}.2f, %{public}.2f; Trg:%{public}d -> "
-            "%{public}d, %{public}.2f, %{public}.2f", configMode_, configRatio_, configDecSpeed_,
+        AVCODEC_LOGI_WITH_TAG("SFD Debug: Conf: %{public}d, %{public}.3f, %{public}.3f; Trg:%{public}d -> "
+            "%{public}d, %{public}.3f, %{public}.3f", configMode_, configRatio_, configDecSpeed_,
             triggerFrameCnt_, newMode_, newRatio_, newDecSpeed_);
     }
     if (configMode_ >= 0) {
@@ -344,7 +344,7 @@ void SmartFluencyDecodingManager::CheckAndTriggerDebugConfig()
         if (newDecSpeed_ >= 0.0) {
             configDecSpeed_ = newDecSpeed_;
         }
-        AVCODEC_LOGI_WITH_TAG("SFD Debug: Trg at %{public}u. M:%{public}d, R:%{public}.2f, S:%{public}.2f",
+        AVCODEC_LOGI_WITH_TAG("SFD Debug: Trg at %{public}u. M:%{public}d, R:%{public}.3f, S:%{public}.3f",
             inputFrameCount_, newMode_, newRatio_, newDecSpeed_);
         Media::Format emptyFormat;
         Configure(emptyFormat);

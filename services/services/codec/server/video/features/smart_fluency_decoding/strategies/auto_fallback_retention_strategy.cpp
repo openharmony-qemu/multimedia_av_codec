@@ -29,7 +29,7 @@ constexpr double DEFAULT_FALLBACK_RATIO = 0.8;
 AutoFallbackRetentionStrategy::AutoFallbackRetentionStrategy()
 {
     fallbackDropper_ = std::make_unique<FixedRatioRetentionStrategy>(DEFAULT_FALLBACK_RATIO);
-    AVCODEC_LOGD("AutoFallbackRetentionStrategy created (Delegating to FixedRatio: %{public}.2f)",
+    AVCODEC_LOGD("AutoFallbackRetentionStrategy created (Delegating to FixedRatio: %{public}.3f)",
                  DEFAULT_FALLBACK_RATIO);
 }
 

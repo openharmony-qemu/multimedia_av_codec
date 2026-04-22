@@ -37,7 +37,7 @@ FixedRatioRetentionStrategy::FixedRatioRetentionStrategy(double ratio)
     } else {
         targetRatio_ = std::clamp(ratio, MIN_RETENTION_RATIO, MAX_RETENTION_RATIO);
     }
-    AVCODEC_LOGD("FixedRatioRetentionStrategy created with targetRatio: %{public}.2f", targetRatio_);
+    AVCODEC_LOGD("FixedRatioRetentionStrategy created with targetRatio: %{public}.3f", targetRatio_);
 }
 
 bool FixedRatioRetentionStrategy::MakeRetentionDecision(const FrameRetentionContext& ctx)
@@ -62,7 +62,7 @@ bool FixedRatioRetentionStrategy::MakeRetentionDecision(const FrameRetentionCont
     }
 
     AVCODEC_LOGD("FixedRatioRetentionStrategy decision: %{public}d "
-                 "(cnt:%{public}d, drop:%{public}d, accum:%{public}.2f)",
+                 "(cnt:%{public}d, drop:%{public}d, accum:%{public}.3f)",
                  isRetain, cnt_, dropCnt_, accumulator_);
     return isRetain;
 }

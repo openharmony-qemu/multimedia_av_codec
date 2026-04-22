@@ -36,6 +36,7 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "SmartFluencyDecoding"};
 constexpr double DEFAULT_PLAYBACK_SPEED = 1.0;
 constexpr double RETENTION_RATIO_MIN_DIFF = 0.001;
+constexpr double EPSILON = 1e-6;
 
 #ifdef SFD_DEBUG
 inline int64_t GetCurrentSysTimeUs()
@@ -101,7 +102,7 @@ void SmartFluencyDecoding::UpdatePlaybackSpeed(double speed)
             dumper_->UpdateSpeed(speed);
         }
 #endif
-        AVCODEC_LOGI_WITH_TAG("SFD Playback speed dynamically updated to: %{public}.2f", speed);
+        AVCODEC_LOGI_WITH_TAG("SFD Playback speed dynamically updated to: %{public}.3f", speed);
     }
 }
 
@@ -180,7 +181,7 @@ int32_t SmartFluencyDecoding::UpdateDynamicConfig(const Media::Format& format)
     ParseRetentionConfig(format, newMode, newRatio);
     double speed = DEFAULT_PLAYBACK_SPEED;
     if (format.GetDoubleValue(Media::Tag::VIDEO_DECODER_SPEED, speed)) {
-        AVCODEC_LOGD_WITH_TAG("UpdateDynamicConfig: Speed update detected: %{public}.2f", speed);
+        AVCODEC_LOGD_WITH_TAG("UpdateDynamicConfig: Speed update detected: %{public}.3f", speed);
         UpdatePlaybackSpeed(speed);
     }
     if (newMode != config_.initMode || newRatio != config_.retentionRatio) {
@@ -467,7 +468,7 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
         }
     }
     UpdateRetentionFeedback(res.shouldRetain, localSpeed);
-    AVCODEC_LOGD_WITH_TAG("Strategy decision: shouldRetain %{public}d, ratio %{public}.2f "
+    AVCODEC_LOGD_WITH_TAG("Strategy decision: shouldRetain %{public}d, ratio %{public}.3f "
         "(index:%{public}u, pts:%{public}" PRId64 ")", res.shouldRetain, res.ratio, index, pts);
     if (!res.shouldRetain) {
         ExecutePostDrop(index);
@@ -564,10 +565,10 @@ void SmartFluencyDecoding::EnsureMvAnalyzer()
 
 bool SmartFluencyDecoding::IsRatioValid(double ratio)
 {
-    CHECK_AND_RETURN_RET_LOG(ratio >= MIN_RETENTION_RATIO, false,
-        "Retention ratio invalid: value=%{public}.2f (must be >= %{public}.2f)", ratio, MIN_RETENTION_RATIO);
-    CHECK_AND_RETURN_RET_LOG(ratio <= MAX_RETENTION_RATIO, false,
-        "Retention ratio invalid: value=%{public}.2f (must be <= %{public}.2f)", ratio, MAX_RETENTION_RATIO);
+    CHECK_AND_RETURN_RET_LOG(ratio >= (MIN_RETENTION_RATIO - EPSILON), false,
+        "Retention ratio invalid: value=%{public}.3f (must be >= %{public}.3f)", ratio, MIN_RETENTION_RATIO);
+    CHECK_AND_RETURN_RET_LOG(ratio <= (MAX_RETENTION_RATIO + EPSILON), false,
+        "Retention ratio invalid: value=%{public}.3f (must be <= %{public}.3f)", ratio, MAX_RETENTION_RATIO);
     return true;
 }
 
