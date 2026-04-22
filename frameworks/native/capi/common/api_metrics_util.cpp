@@ -30,7 +30,12 @@ ApiMetricsReporter::~ApiMetricsReporter()
     switch (metricesType_)
     {
         case ENUMERATION:
-            HISTOGRAM_ENUMERATION(apiName_.c_str(), sample_, 5410009);
+            if (sample_ == 201) { // drm err 201->21
+                sample_ == 21;
+            } else if (sample_ == 301) { // csc err 301->31
+                sample_ == 31;
+            }
+            HISTOGRAM_ENUMERATION(apiName_.c_str(), sample_, 50); // 50：boundary
             break;
         case TIMES:
             HISTOGRAM_TIMES(apiName_.c_str(), std::chrono::duration_cast<std::chrono::milliseconds>(
