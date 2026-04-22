@@ -40,12 +40,6 @@ namespace OHOS::MediaAVCodec {
 using namespace std;
 using namespace CodecHDI;
 
-constexpr int JANK_THRESHOLD = 100 * 1000; //100ms
-constexpr int JANK_FAULT_THRESHOLD = 300 * 1000; //300ms
-constexpr int LAST_FRAME_THRESHOLD = 1000 * 1000; //1s
-const int COUNT_ONE = 1;
-const int COUNT_TWO = 2;
-
 std::shared_mutex g_xperfMtx;
 sptr<HDecoder::XperfConnector> g_xperfConnector = nullptr;
 std::unordered_map<HDecoder*, HDecoder::DecoderInst> g_insts;
@@ -1269,23 +1263,21 @@ int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
  
 void HDecoder::OnStartJankDetect()
 {
-    if (detect) {
+    if (detect_) {
         return;
     }
-    detect = true;
+    detect_ = true;
     currSurface_.beginTime_ = GetNowUs();
 }
  
 void HDecoder::OnStopJankDetect()
 {
-    if (!detect) {
+    if (!detect_) {
         return;
     }
-    detect = false;
- 
+    detect_ = false;
     int64_t endTime = GetNowUs();
- 
-     if (endTime - currSurface_.lastFlushTime_ > LAST_FRAME_THRESHOLD) { //大于1s
+    if (endTime - currSurface_.lastFlushTime_ > 1000000) { //1000000: 大于1s
         std::stringstream ss;
         ss << "#UNIQUEID:" << currSurface_.surface_->GetUniqueId() <<
            "#SURFACE_NAME:" << currSurface_.surface_->GetName() <<
@@ -1574,7 +1566,7 @@ int32_t HDecoder::VrrPrediction(BufferInfo &info)
 void HDecoder::PerfMeasure(int64_t lastFlushTime)
 {
     currSurface_.flushCnt_++;
-    if (currSurface_.flushCnt_ == COUNT_ONE) { //首帧
+    if (currSurface_.flushCnt_ == 1) { //1: 首帧
         std::stringstream ss;
         ss << "#UNIQUEID:" << currSurface_.surface_->GetUniqueId() <<
           "#PID:" << caller_.app.pid <<
@@ -1583,8 +1575,8 @@ void HDecoder::PerfMeasure(int64_t lastFlushTime)
           "#FPS:" << codecRate_ <<
           "#REPORT_INTERVAL:" << 300;  // 300ms
         callback_->OnXperfEvent(OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_FIRST_FRAME_START, ss.str()); //上报首帧事件
-    } else if (currSurface_.flushCnt_ == COUNT_TWO) { //第二帧
-        detect = true;
+    } else if (currSurface_.flushCnt_ == 2) { //2: 第二帧
+        detect_ = true;
         currSurface_.beginTime_ = lastFlushTime;
 
         std::stringstream ss;
@@ -1595,13 +1587,13 @@ void HDecoder::PerfMeasure(int64_t lastFlushTime)
           "#FPS:" << codecRate_ <<
           "#REPORT_INTERVAL:" << 300;  // 300ms
         callback_->OnXperfEvent(OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_SECOND_FRAME, ss.str()); //上报第二帧事件
-    } else if (detect) {
+    } else if (detect_) {
         int64_t span = lastFlushTime - currSurface_.lastFlushTime_;
-        if (span > JANK_THRESHOLD) { //大于100ms
+        if (span > 100000) { //100000: 大于100ms
             currSurface_.jankCnt_++;
             currSurface_.totalJankDur_ += span;
         }
-        if (span > JANK_FAULT_THRESHOLD) { //大于300ms
+        if (span > 300000) { //300000: 大于300ms
             std::stringstream ss;
             ss << "#UNIQUEID:" << currSurface_.surface_->GetUniqueId() <<
                "#SURFACE_NAME:" << currSurface_.surface_->GetName() <<
