@@ -169,11 +169,17 @@ std::string TypeFinder::SniffMediaType()
     int32_t tryCnt = 0;
     Status ret = Status::OK;
     size_t getDataSize = 0;
+    uint64_t totalSize = 0;
+    size_t expectSize = DEFAULT_SNIFF_SIZE;
+    if (dataSource->GetSize(totalSize) == Status::OK && totalSize > 0 &&
+        totalSize < static_cast<uint64_t>(DEFAULT_SNIFF_SIZE)) {
+        expectSize = static_cast<size_t>(totalSize);
+    }
     while (tryCnt < MAX_SNIFF_TRY_TIMES) {
         buffer->GetMemory()->Reset();
-        ret = dataSource->ReadAt(0, buffer, DEFAULT_SNIFF_SIZE);
+        ret = dataSource->ReadAt(0, buffer, expectSize);
         getDataSize = buffer->GetMemory()->GetSize();
-        if (ret == Status::OK && getDataSize == DEFAULT_SNIFF_SIZE) {
+        if (ret == Status::OK && getDataSize == expectSize) {
             MEDIA_LOG_D("SniffMediaType ReadAt ok");
             break;
         }
