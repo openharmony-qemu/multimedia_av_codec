@@ -517,6 +517,7 @@ OH_AVErrCode PreprocessorEncoder::Release()
 OH_AVErrCode PreprocessorEncoder::NotifyEos()
 {
     std::scoped_lock lock(instanceMutex_);
+    CHECK_AND_RETURN_RET_LOG(preprocMgr_, AV_ERR_OPERATE_NOT_PERMIT, "PreprocessorManager is not found");
     if (preprocMgr_) {
         std::shared_ptr<VideoEncoderObject> videoEncoderObject = videoEncoderObject_;
         std::string encoderId = encoderId_;
@@ -531,7 +532,6 @@ OH_AVErrCode PreprocessorEncoder::NotifyEos()
             }
         });
         CHECK_AND_RETURN_RET_LOG(requestRet, AV_ERR_INVALID_STATE, "Request async notify eos failed!");
-        return AV_ERR_OK;
     }
 
     return AV_ERR_OK;

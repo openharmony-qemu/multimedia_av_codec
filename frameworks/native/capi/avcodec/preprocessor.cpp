@@ -379,7 +379,7 @@ void Preprocessor::Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> o
 
 void Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output)
 {
-    PreProcessing::CropRect rect{ 0, 0, encoderConfig_.width - 1, encoderConfig_.height - 1 };
+    PreProcessing::CropRect rect{ 0, 0, encoderConfig_.height - 1, encoderConfig_.width - 1 };
     if (fastKitsInterface_.Crop(input, output, rect) == AVCS_ERR_OK) {
         return;
     }

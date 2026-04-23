@@ -398,8 +398,8 @@ OH_AVErrCode OH_VideoEncoder_SetParameter(struct OH_AVCodec *codec, struct OH_AV
 
     if (PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_)) {
         auto* preprocEnc = reinterpret_cast<PreprocessorEncoder*>(codec);
-        CHECK_AND_RETURN_RET_LOG(preprocEnc != nullptr && preprocEnc->GetPreprocessor() != nullptr, AV_ERR_OK,
-                                 "PreprocessorEncoder prepare skipped: no preprocessor!");
+        auto ret = preprocEnc->SetParameter(format->format_);
+        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "PreprocessorEncoder set parameter failed!");
         return AV_ERR_OK;
     }
 
