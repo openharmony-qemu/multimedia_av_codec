@@ -90,6 +90,7 @@ ohos_shared_library("avcodec_api_metrics") {
 
   external_deps = [
     "c_utils:utils",
+    "hilog:libhilog",
   ]
 
   defines = []
