@@ -582,10 +582,10 @@ HWTEST_F(TEST_SUIT, Primary_Start_BeforePrepare_001, TestSize.Level1)
  */
 HWTEST_F(TEST_SUIT, Primary_Start_Normal_001, TestSize.Level1)
 {
-    VideoEncDualOutputSample sample;
+    auto sample = make_shared<VideoEncDualOutputSample>();
     auto signal = make_shared<VCodecSignal>(sample);
-    ASSERT_TRUE(sample.CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC));
-    sample.SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    ASSERT_TRUE(sample->CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC));
+    sample->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
     struct OH_AVCodecCallback cb = {};
     cb.onError = OnErrorVoid;
     cb.onStreamChanged = OnStreamChangedVoid;
@@ -593,9 +593,9 @@ HWTEST_F(TEST_SUIT, Primary_Start_Normal_001, TestSize.Level1)
     cb.onNewOutputBuffer = OutBufferHandle;
     signal->isRunning_ = true;
     ASSERT_EQ(AV_ERR_OK, sample->RegisterCallback(EncoderType::PRIMARY, cb, signal)) << "Primary RegisterCallback failed";
-    ASSERT_EQ(AV_ERR_OK, sample.Configure(EncoderType::PRIMARY));
-    ASSERT_EQ(AV_ERR_OK, sample.Prepare(EncoderType::PRIMARY));
-    ASSERT_EQ(AV_ERR_OK, sample.Start(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, sample->Configure(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, sample->Prepare(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, sample->Start(EncoderType::PRIMARY));
 }
 
 /**
@@ -1046,7 +1046,7 @@ HWTEST_F(TEST_SUIT, VideoEncoder_PrimarySecondaryCombined_Capi_001, TestSize.Lev
  */
 HWTEST_F(TEST_SUIT, VideoEncoder_PrimarySecondaryReset_001, TestSize.Level1)
 {
-    auto signal = make_shared<VCodecSignal>(sample);
+    auto signal = make_shared<VCodecSignal>(dualSample_);
     dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
     struct OH_AVCodecCallback cb = {};
     cb.onError = OnErrorVoid;
@@ -1054,7 +1054,7 @@ HWTEST_F(TEST_SUIT, VideoEncoder_PrimarySecondaryReset_001, TestSize.Level1)
     cb.onNeedInputBuffer = InBufferVoid;
     cb.onNewOutputBuffer = OutBufferHandle;
     signal->isRunning_ = true;
-    ASSERT_EQ(AV_ERR_OK, sample->RegisterCallback(EncoderType::PRIMARY, cb, signal)) << "Primary RegisterCallback failed";
+    ASSERT_EQ(AV_ERR_OK, dualSample_->RegisterCallback(EncoderType::PRIMARY, cb, signal)) << "Primary RegisterCallback failed";
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
