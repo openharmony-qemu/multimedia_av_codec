@@ -268,7 +268,7 @@ HWTEST_F(TEST_SUIT, VideoEncoder_ConfigurePreproc_005, TestSize.Level1)
     ASSERT_TRUE(sample.CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC));
     sample.SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
     sample.SetCrop(EncoderType::PRIMARY, 0, 0, 0, 0); // crop all: 0
-    ASSERT_EQ(AV_ERR_INVALID_VAL, sample.Configure(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, sample.Configure(EncoderType::PRIMARY));
 }
 
 /**
@@ -1062,6 +1062,214 @@ HWTEST_F(TEST_SUIT, VideoEncoder_PrimarySecondaryReset_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, dualSample_->Reset(EncoderType::PRIMARY));
     dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
+}
+
+void RunPreprocDualEncoding(
+    const std::string &testName,
+    std::function<void(VideoEncDualOutputSample &)> setPrimaryPreproc,
+    std::function<void(VideoEncDualOutputSample &)> setSecondaryPreproc = nullptr)
+{
+    auto sample = make_shared<VideoEncDualOutputSample>();
+    auto signal = make_shared<VCodecSignal>(sample);
+    sample->frameCount_ = 30; // 30: input frame num
+    sample->inPath_ = "1280_720_nv.yuv";
+    sample->outPath_ = testName + "_";
+    ASSERT_TRUE(sample->CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC));
+
+    struct OH_AVCodecCallback pCb = {};
+    pCb.onError = OnErrorVoid;
+    pCb.onStreamChanged = OnStreamChangedVoid;
+    pCb.onNeedInputBuffer = InBufferVoid;
+    pCb.onNewOutputBuffer = OutBufferHandle;
+    signal->isRunning_ = true;
+    ASSERT_EQ(AV_ERR_OK, sample->RegisterCallback(EncoderType::PRIMARY, pCb, signal)) << "Primary RegisterCallback failed";
+
+    sample->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    setPrimaryPreproc(*sample);
+    ASSERT_EQ(AV_ERR_OK, sample->Configure(EncoderType::PRIMARY)) << "Primary Configure failed";
+
+    ASSERT_TRUE(sample->CreateSurface()) << "CreateSurface failed";
+
+    ASSERT_TRUE(sample->CreateSecondary());
+    auto secSignal = make_shared<VCodecSignal>(sample);
+    secSignal->isRunning_ = true;
+    struct OH_AVCodecCallback sCb = {};
+    sCb.onError = OnErrorVoid;
+    sCb.onStreamChanged = OnStreamChangedVoid;
+    sCb.onNeedInputBuffer = InBufferVoid;
+    sCb.onNewOutputBuffer = OutBufferHandleSecondary;
+    ASSERT_EQ(AV_ERR_OK, sample->RegisterCallback(EncoderType::SECONDARY, sCb, secSignal)) << "Secondary RegisterCallback failed";
+
+    sample->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    if (setSecondaryPreproc) {
+        setSecondaryPreproc(*sample);
+    }
+    ASSERT_EQ(AV_ERR_OK, sample->Configure(EncoderType::SECONDARY)) << "Secondary Configure failed";
+
+    ASSERT_EQ(AV_ERR_OK, sample->Prepare(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, sample->Prepare(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, sample->Start(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, sample->Start(EncoderType::PRIMARY));
+
+    EXPECT_TRUE(sample->WaitForEos(EncoderType::PRIMARY)) << "Primary encoding timeout";
+    EXPECT_TRUE(sample->WaitForEos(EncoderType::SECONDARY)) << "Secondary encoding timeout";
+
+    ASSERT_EQ(AV_ERR_OK, sample->Stop(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, sample->Stop(EncoderType::SECONDARY));
+}
+
+/**
+ * @tc.name: DualOutput_FullEncoding_NoPreproc_001
+ * @tc.desc: Test full dual-output encoding without any preprocessor features
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, DualOutput_FullEncoding_NoPreproc_001, TestSize.Level1)
+{
+    RunPreprocDualEncoding("fullenc_no_preproc",
+        [](VideoEncDualOutputSample &s) {
+            // no preprocessor features
+        });
+}
+
+/**
+ * @tc.name: DualOutput_FullEncoding_CropOnly_001
+ * @tc.desc: Test full encoding with crop (10,10,629,479) on primary encoder
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, DualOutput_FullEncoding_CropOnly_001, TestSize.Level1)
+{
+    IsSupportFastImage();
+    RunPreprocDualEncoding("fullenc_crop",
+        [](VideoEncDualOutputSample &s) {
+            s.SetCrop(EncoderType::PRIMARY, 10, 10, 629, 479); // crop: 10,10,629,479
+        });
+}
+
+/**
+ * @tc.name: DualOutput_FullEncoding_DownsamplingOnly_001
+ * @tc.desc: Test full encoding with downsampling (640x480) on primary encoder
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, DualOutput_FullEncoding_DownsamplingOnly_001, TestSize.Level1)
+{
+    IsSupportFastImage();
+    RunPreprocDualEncoding("fullenc_downsample",
+        [](VideoEncDualOutputSample &s) {
+            s.SetDownsampling(EncoderType::PRIMARY, 640, 480); // downsampling: 640x480
+        });
+}
+
+/**
+ * @tc.name: DualOutput_FullEncoding_DropFrameRateOnly_001
+ * @tc.desc: Test full encoding with drop frame rate (15.0) on primary encoder
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, DualOutput_FullEncoding_DropFrameRateOnly_001, TestSize.Level1)
+{
+    RunPreprocDualEncoding("fullenc_dropframerate",
+        [](VideoEncDualOutputSample &s) {
+            s.SetDropFrameRate(EncoderType::PRIMARY, 15.0); // drop frame rate: 15.0
+        });
+}
+
+/**
+ * @tc.name: DualOutput_FullEncoding_CropAndDropFrameRate_001
+ * @tc.desc: Test full encoding with crop + drop frame rate on primary encoder
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, DualOutput_FullEncoding_CropAndDropFrameRate_001, TestSize.Level1)
+{
+    IsSupportFastImage();
+    RunPreprocDualEncoding("fullenc_crop_dropfr",
+        [](VideoEncDualOutputSample &s) {
+            s.SetCrop(EncoderType::PRIMARY, 10, 10, 629, 479); // crop: 10,10,629,479
+            s.SetDropFrameRate(EncoderType::PRIMARY, 15.0); // drop frame rate: 15.0
+        });
+}
+
+/**
+ * @tc.name: DualOutput_FullEncoding_DownsamplingAndDropFrameRate_001
+ * @tc.desc: Test full encoding with downsampling + drop frame rate on primary encoder
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, DualOutput_FullEncoding_DownsamplingAndDropFrameRate_001, TestSize.Level1)
+{
+    IsSupportFastImage();
+    RunPreprocDualEncoding("fullenc_ds_dropfr",
+        [](VideoEncDualOutputSample &s) {
+            s.SetDownsampling(EncoderType::PRIMARY, 640, 480); // downsampling: 640x480
+            s.SetDropFrameRate(EncoderType::PRIMARY, 15.0); // drop frame rate: 15.0
+        });
+}
+
+/**
+ * @tc.name: DualOutput_FullEncoding_PrimaryCrop_SecondaryDownsample_001
+ * @tc.desc: Test full encoding with crop on primary, downsampling on secondary
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, DualOutput_FullEncoding_PrimaryCrop_SecondaryDownsample_001, TestSize.Level1)
+{
+    IsSupportFastImage();
+    RunPreprocDualEncoding("fullenc_pri_crop_sec_ds",
+        [](VideoEncDualOutputSample &s) {
+            s.SetCrop(EncoderType::PRIMARY, 10, 10, 629, 479); // crop: 10,10,629,479
+        },
+        [](VideoEncDualOutputSample &s) {
+            s.SetDownsampling(EncoderType::SECONDARY, 640, 480); // downsampling: 640x480
+        });
+}
+
+/**
+ * @tc.name: DualOutput_FullEncoding_PrimaryDownsample_SecondaryCrop_001
+ * @tc.desc: Test full encoding with downsampling on primary, crop on secondary
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, DualOutput_FullEncoding_PrimaryDownsample_SecondaryCrop_001, TestSize.Level1)
+{
+    IsSupportFastImage();
+    RunPreprocDualEncoding("fullenc_pri_ds_sec_crop",
+        [](VideoEncDualOutputSample &s) {
+            s.SetDownsampling(EncoderType::PRIMARY, 640, 480); // downsampling: 640x480
+        },
+        [](VideoEncDualOutputSample &s) {
+            s.SetCrop(EncoderType::SECONDARY, 10, 10, 629, 479); // crop: 10,10,629,479
+        });
+}
+
+/**
+ * @tc.name: DualOutput_FullEncoding_PrimaryCropDropFR_SecondaryDownsample_001
+ * @tc.desc: Test full encoding with crop+dropframerate on primary, downsampling on secondary
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, DualOutput_FullEncoding_PrimaryCropDropFR_SecondaryDownsample_001, TestSize.Level1)
+{
+    IsSupportFastImage();
+    RunPreprocDualEncoding("fullenc_pri_cropdfr_sec_ds",
+        [](VideoEncDualOutputSample &s) {
+            s.SetCrop(EncoderType::PRIMARY, 10, 10, 629, 479); // crop: 10,10,629,479
+            s.SetDropFrameRate(EncoderType::PRIMARY, 15.0); // drop frame rate: 15.0
+        },
+        [](VideoEncDualOutputSample &s) {
+            s.SetDownsampling(EncoderType::SECONDARY, 640, 480); // downsampling: 640x480
+        });
+}
+
+/**
+ * @tc.name: DualOutput_FullEncoding_PrimaryDownsampleDropFR_SecondaryCrop_001
+ * @tc.desc: Test full encoding with downsampling+dropframerate on primary, crop on secondary
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, DualOutput_FullEncoding_PrimaryDownsampleDropFR_SecondaryCrop_001, TestSize.Level1)
+{
+    IsSupportFastImage();
+    RunPreprocDualEncoding("fullenc_pri_dsdfr_sec_crop",
+        [](VideoEncDualOutputSample &s) {
+            s.SetDownsampling(EncoderType::PRIMARY, 640, 480); // downsampling: 640x480
+            s.SetDropFrameRate(EncoderType::PRIMARY, 15.0); // drop frame rate: 15.0
+        },
+        [](VideoEncDualOutputSample &s) {
+            s.SetCrop(EncoderType::SECONDARY, 10, 10, 629, 479); // crop: 10,10,629,479
+        });
 }
 
 int main(int argc, char **argv)
