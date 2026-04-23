@@ -389,14 +389,14 @@ void FFmpegDemuxerPlugin::FFmpegReadLoop()
         uint32_t trackId = trackId_.load();
         if ((!NeedCombineFrame(trackId) || cacheQueue_.GetCacheSize(trackId) != 1)
             && NeedWaitForRead(trackId)) {
-            HandleReadWait(trackId);
+            HandleReadWait();
         }
         {
             std::lock_guard<std::mutex> readLock(readSampleMutex_);
             readCacheCv_.notify_one();
         }
         if (ioContext_.invokerType == InvokerType::DESTORY) {
-            MEDIA_LOG_I("DESTORY trackId=" PUBLIC_LOG_D32, trackId);
+            MEDIA_LOG_I("DESTORY trackId=" PUBLIC_LOG_D32, trackId_.load());
             break;
         }
         if (!EnsurePacketAllocated(pktWrapper)) {
@@ -425,7 +425,7 @@ bool FFmpegDemuxerPlugin::NeedWaitForRead(uint32_t trackId)
         ioContext_.invokerType != InvokerType::DESTORY;
 }
 
-void FFmpegDemuxerPlugin::HandleReadWait(uint32_t trackId)
+void FFmpegDemuxerPlugin::HandleReadWait()
 {
     std::unique_lock<std::mutex> readLock(ioContext_.invokerTypeMutex);
     {
@@ -433,7 +433,8 @@ void FFmpegDemuxerPlugin::HandleReadWait(uint32_t trackId)
         threadState_ = WAITING;
         seekWaitCv_.notify_one();
     }
-    readLoopCv_.wait(readLock, [this, trackId]() {
+    readLoopCv_.wait(readLock, [this]() {
+        auto trackId = trackId_.load();
         return (threadReady_) || (ioContext_.invokerType == InvokerType::DESTORY) ||
                (!cacheQueue_.HasCache(trackId) && !isPauseReadPacket_) ||
                (isWaitingForReadThread_.load() && cacheQueue_.GetCacheSize(trackId) <= 1);
@@ -492,7 +493,6 @@ bool FFmpegDemuxerPlugin::HandleAVPacketNormal(AVPacketWrapperPtr& pktWrapper)
     AVPacket *pkt = (pktWrapper != nullptr) ? pktWrapper->GetAVPacket() : nullptr;
     FALSE_RETURN_V_MSG_E(pkt != nullptr, false, "Pkt is nullptr");
     auto trackId = pkt->stream_index;
-    uint32_t requestedTrackId = trackId_.load();
     if (!TrackIsSelected(trackId)) {
         av_packet_unref(pkt);
         return true;
@@ -519,7 +519,7 @@ bool FFmpegDemuxerPlugin::HandleAVPacketNormal(AVPacketWrapperPtr& pktWrapper)
             return false;
         }
     }
-    if (!NeedCombineFrame(requestedTrackId) || cacheQueue_.GetCacheSize(requestedTrackId) != 1) {
+    if (!NeedCombineFrame(trackId) || cacheQueue_.GetCacheSize(trackId) != 1) {
         std::lock_guard<std::mutex> readLock(readSampleMutex_);
         readCacheCv_.notify_one();
     }
