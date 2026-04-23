@@ -15,9 +15,9 @@
 
 #include "videoenc_preproc_dual_output_sample.h"
 
+#include <array>
 #include <cerrno>
 #include <chrono>
-#include <cstring>
 #include <iostream>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -27,7 +27,6 @@
 #include "native_buffer.h"
 #include "native_buffer_inner.h"
 #include "native_avbuffer.h"
-#include "securec.h"
 #include "surface_buffer.h"
 
 using namespace std;
@@ -72,6 +71,170 @@ namespace MediaAVCodec {
 namespace {
 constexpr uint32_t kSurfaceUsage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA;
 constexpr uint8_t kFramePatternBase = 0x20;
+constexpr int32_t kColorBlockSize = 64;
+
+struct RgbColor {
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+};
+
+struct YuvColor {
+    uint8_t y;
+    uint8_t u;
+    uint8_t v;
+};
+
+constexpr std::array<RgbColor, 7> SPECTRUM_COLORS = {{
+    {255, 0, 0},     // Red
+    {255, 127, 0},   // Orange
+    {255, 255, 0},   // Yellow
+    {0, 255, 0},     // Green
+    {0, 255, 255},   // Cyan
+    {0, 0, 255},     // Blue
+    {139, 0, 255},   // Violet
+}};
+
+uint8_t ClampToByte(int32_t value)
+{
+    if (value < 0) {
+        return 0;
+    }
+    if (value > 255) {
+        return 255;
+    }
+    return static_cast<uint8_t>(value);
+}
+
+YuvColor RgbToYuv(const RgbColor &color)
+{
+    YuvColor yuv {};
+    yuv.y = ClampToByte(((66 * color.r + 129 * color.g + 25 * color.b + 128) >> 8) + 16);
+    yuv.u = ClampToByte(((-38 * color.r - 74 * color.g + 112 * color.b + 128) >> 8) + 128);
+    yuv.v = ClampToByte(((112 * color.r - 94 * color.g - 18 * color.b + 128) >> 8) + 128);
+    return yuv;
+}
+
+const RgbColor &GetSpectrumColor(int32_t x, int32_t y, int32_t width, uint8_t pattern)
+{
+    int32_t blocksPerRow = (width + kColorBlockSize - 1) / kColorBlockSize;
+    size_t blockIndex = static_cast<size_t>((y / kColorBlockSize) * blocksPerRow + (x / kColorBlockSize) + pattern);
+    return SPECTRUM_COLORS[blockIndex % SPECTRUM_COLORS.size()];
+}
+
+bool FillYuv420Sp(uint8_t *base, int32_t width, int32_t height, int32_t stride, int32_t sliceHeight,
+                  uint8_t pattern, bool cbFirst)
+{
+    if (base == nullptr || width <= 0 || height <= 0 || stride < width || sliceHeight < height) {
+        return false;
+    }
+
+    for (int32_t y = 0; y < height; ++y) {
+        uint8_t *row = base + static_cast<size_t>(y) * stride;
+        for (int32_t x = 0; x < width; ++x) {
+            row[x] = RgbToYuv(GetSpectrumColor(x, y, width, pattern)).y;
+        }
+    }
+
+    uint8_t *uvPlane = base + static_cast<size_t>(stride) * sliceHeight;
+    for (int32_t y = 0; y < height; y += 2) {
+        uint8_t *row = uvPlane + static_cast<size_t>(y / 2) * stride;
+        for (int32_t x = 0; x < width; x += 2) {
+            YuvColor yuv = RgbToYuv(GetSpectrumColor(x, y, width, pattern));
+            row[x] = cbFirst ? yuv.u : yuv.v;
+            if (x + 1 < stride) {
+                row[x + 1] = cbFirst ? yuv.v : yuv.u;
+            }
+        }
+    }
+    return true;
+}
+
+bool FillRgb888(uint8_t *base, int32_t width, int32_t height, int32_t stride, uint8_t pattern, bool redFirst)
+{
+    constexpr int32_t bytesPerPixel = 3;
+    if (base == nullptr || width <= 0 || height <= 0 || stride < width * bytesPerPixel) {
+        return false;
+    }
+
+    for (int32_t y = 0; y < height; ++y) {
+        uint8_t *row = base + static_cast<size_t>(y) * stride;
+        for (int32_t x = 0; x < width; ++x) {
+            const RgbColor &color = GetSpectrumColor(x, y, width, pattern);
+            uint8_t *pixel = row + static_cast<size_t>(x) * bytesPerPixel;
+            pixel[0] = redFirst ? color.r : color.b;
+            pixel[1] = color.g;
+            pixel[2] = redFirst ? color.b : color.r;
+        }
+    }
+    return true;
+}
+
+bool FillRgb565(uint8_t *base, int32_t width, int32_t height, int32_t stride, uint8_t pattern)
+{
+    constexpr int32_t bytesPerPixel = 2;
+    if (base == nullptr || width <= 0 || height <= 0 || stride < width * bytesPerPixel) {
+        return false;
+    }
+
+    for (int32_t y = 0; y < height; ++y) {
+        uint8_t *row = base + static_cast<size_t>(y) * stride;
+        for (int32_t x = 0; x < width; ++x) {
+            const RgbColor &color = GetSpectrumColor(x, y, width, pattern);
+            uint16_t packed = static_cast<uint16_t>(((color.r >> 3) << 11) | ((color.g >> 2) << 5) |
+                                                    (color.b >> 3));
+            uint8_t *pixel = row + static_cast<size_t>(x) * bytesPerPixel;
+            pixel[0] = static_cast<uint8_t>(packed & 0xFF);
+            pixel[1] = static_cast<uint8_t>((packed >> 8) & 0xFF);
+        }
+    }
+    return true;
+}
+
+bool FillRgba8888(uint8_t *base, int32_t width, int32_t height, int32_t stride, uint8_t pattern, bool redFirst)
+{
+    constexpr int32_t bytesPerPixel = 4;
+    if (base == nullptr || width <= 0 || height <= 0 || stride < width * bytesPerPixel) {
+        return false;
+    }
+
+    for (int32_t y = 0; y < height; ++y) {
+        uint8_t *row = base + static_cast<size_t>(y) * stride;
+        for (int32_t x = 0; x < width; ++x) {
+            const RgbColor &color = GetSpectrumColor(x, y, width, pattern);
+            uint8_t *pixel = row + static_cast<size_t>(x) * bytesPerPixel;
+            pixel[0] = redFirst ? color.r : color.b;
+            pixel[1] = color.g;
+            pixel[2] = redFirst ? color.b : color.r;
+            pixel[3] = 0xFF;
+        }
+    }
+    return true;
+}
+
+bool FillSpectrumBlocks(void *addr, int32_t width, int32_t height, int32_t stride, int32_t sliceHeight,
+                        int32_t format, uint8_t pattern)
+{
+    uint8_t *base = static_cast<uint8_t *>(addr);
+    switch (format) {
+        case GRAPHIC_PIXEL_FMT_YCBCR_420_SP:
+            return FillYuv420Sp(base, width, height, stride, sliceHeight, pattern, true);
+        case GRAPHIC_PIXEL_FMT_YCRCB_420_SP:
+            return FillYuv420Sp(base, width, height, stride, sliceHeight, pattern, false);
+        case GRAPHIC_PIXEL_FMT_RGBA_8888:
+        case GRAPHIC_PIXEL_FMT_RGBX_8888:
+            return FillRgba8888(base, width, height, stride, pattern, true);
+        case GRAPHIC_PIXEL_FMT_BGRA_8888:
+        case GRAPHIC_PIXEL_FMT_BGRX_8888:
+            return FillRgba8888(base, width, height, stride, pattern, false);
+        case GRAPHIC_PIXEL_FMT_RGB_888:
+            return FillRgb888(base, width, height, stride, pattern, true);
+        case GRAPHIC_PIXEL_FMT_RGB_565:
+            return FillRgb565(base, width, height, stride, pattern);
+        default:
+            return false;
+    }
+}
 } // namespace
 
 VideoEncPreprocDualOutputSample::~VideoEncPreprocDualOutputSample()
@@ -419,7 +582,14 @@ bool VideoEncPreprocDualOutputSample::RequestAndFlushFrame(int32_t width, int32_
         return false;
     }
 
-    const int32_t stride = surfaceBuffer->GetStride();
+    int32_t format = surfaceBuffer->GetFormat();
+    (void)OH_NativeWindow_NativeWindowHandleOpt(window_, GET_FORMAT, &format);
+
+    int32_t stride = surfaceBuffer->GetStride();
+    int32_t windowStride = 0;
+    if (OH_NativeWindow_NativeWindowHandleOpt(window_, GET_STRIDE, &windowStride) == 0 && windowStride > 0) {
+        stride = windowStride;
+    }
     const int32_t sliceHeight = surfaceBuffer->GetHeight();
     if (stride <= 0 || sliceHeight <= 0) {
         (void)OH_NativeBuffer_Unmap(nativeBuffer);
@@ -427,8 +597,7 @@ bool VideoEncPreprocDualOutputSample::RequestAndFlushFrame(int32_t width, int32_
         return false;
     }
 
-    const size_t fillSize = static_cast<size_t>(stride) * static_cast<size_t>(sliceHeight) * 3 / 2;
-    if (memset_s(virAddr, fillSize, pattern, fillSize) != EOK) {
+    if (!FillSpectrumBlocks(virAddr, width, height, stride, sliceHeight, format, pattern)) {
         (void)OH_NativeBuffer_Unmap(nativeBuffer);
         (void)NativeWindowCancelBuffer(window_, nativeWindowBuffer);
         return false;
