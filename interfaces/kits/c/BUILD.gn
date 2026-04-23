@@ -92,6 +92,8 @@ ohos_shared_library("avcodec_api_metrics") {
     "c_utils:utils",
     "hilog:libhilog",
   ]
+
+  defines = []
   if (av_codec_enable_api_metrics) {
     external_deps += [
       "api_metrics:histogrammanager",
