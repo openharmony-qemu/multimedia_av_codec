@@ -72,8 +72,7 @@ int64_t VDecServerSample::GetSystemTimeUs()
 
 void VDecServerSample::CallBack::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
-    tester->Flush();
-    tester->Reset();
+    cout << "---- OnError errorType: " << errorType << " errorCode:" << errorCode << "----" << endl;
 }
 
 
@@ -107,12 +106,24 @@ void VDecServerSample::CallBack::OnOutputBufferAvailable(uint32_t index, std::sh
 
 VDecServerSample::~VDecServerSample()
 {
+    Stop();
+    for (size_t i = 0; i < cs_vector.size(); i++) {
+        if (cs_vector[i]) {
+            cs_vector[i]->UnregisterConsumerListener();
+            cs_vector[i] = nullptr;
+        }
+    }
+    cs_vector.clear();
+    ps_vector.clear();
     if (codec_ != nullptr) {
         codec_->Stop();
         codec_->Release();
         HevcDecoder *codec = static_cast<HevcDecoder*>(codec_.get());
         codec->DecStrongRef(codec);
     }
+    signal_ = nullptr;
+    codec_ = nullptr;
+    inputLoop_ = nullptr;
 }
 
 int32_t VDecServerSample::ConfigServerDecoder()
@@ -311,6 +322,12 @@ void VDecServerSample::Stop()
         isRunning_.store(false);
         signal_->inCond_.notify_all();
         signal_->endCond_.notify_all();
+    }
+    while (!signal_->indexQueue_.empty()) {
+        signal_->indexQueue_.pop();
+    }
+    while (!signal_->inBufferQueue_.empty()) {
+        signal_->inBufferQueue_.pop();
     }
 }
 
