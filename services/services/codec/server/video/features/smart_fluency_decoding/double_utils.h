@@ -23,39 +23,50 @@ namespace MediaAVCodec {
 namespace SFD {
 namespace DoubleUtils {
 
-constexpr double defaultEpsilon = 1e-6;
+constexpr double DEFAULT_EPSILON = 1e-6;
 
-inline bool IsEqual(double a, double b, double epsilon = defaultEpsilon)
+inline bool IsEqual(double a, double b, double epsilon = DEFAULT_EPSILON)
 {
     return std::abs(a - b) <= epsilon;
 }
 
-inline bool IsNotEqual(double a, double b, double epsilon = defaultEpsilon)
+inline bool IsNotEqual(double a, double b, double epsilon = DEFAULT_EPSILON)
 {
     return std::abs(a - b) > epsilon;
 }
 
-inline bool IsGreaterOrEqual(double a, double b, double epsilon = defaultEpsilon)
+inline bool IsNotEqual(const std::optional<double> &a, const std::optional<double> &b, double epsilon = DEFAULT_EPSILON)
+{
+    if (a.has_value() != b.has_value()) {
+        return true;
+    }
+    if (!a.has_value()) {
+        return false;
+    }
+    return IsNotEqual(a.value(), b.value(), epsilon);
+}
+
+inline bool IsGreaterOrEqual(double a, double b, double epsilon = DEFAULT_EPSILON)
 {
     return a >= (b - epsilon);
 }
 
-inline bool IsLessOrEqual(double a, double b, double epsilon = defaultEpsilon)
+inline bool IsLessOrEqual(double a, double b, double epsilon = DEFAULT_EPSILON)
 {
     return a <= (b + epsilon);
 }
 
-inline bool IsGreater(double a, double b, double epsilon = defaultEpsilon)
+inline bool IsGreater(double a, double b, double epsilon = DEFAULT_EPSILON)
 {
     return a > (b + epsilon);
 }
 
-inline bool IsLess(double a, double b, double epsilon = defaultEpsilon)
+inline bool IsLess(double a, double b, double epsilon = DEFAULT_EPSILON)
 {
     return a < (b - epsilon);
 }
 } // namespace DoubleUtils
 } // namespace SFD
-} // namespace Media
+} // namespace MediaAVCodec
 } // namespace OHOS
 #endif // DOUBLE_UTILS_H
