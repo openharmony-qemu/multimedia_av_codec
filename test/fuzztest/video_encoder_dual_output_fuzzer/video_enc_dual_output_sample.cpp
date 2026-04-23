@@ -83,10 +83,10 @@ OH_AVFormat *VideoEncDualOutputSample::CreateEncFormat(int32_t width, int32_t he
     OH_AVFormat *fmt = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_WIDTH, width);
     OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_HEIGHT, height);
-    OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_PIXEL_FORMAT, PIXEL_FORMAT_NV12);
-    OH_AVFormat_SetDoubleValue(fmt, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+    OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_PIXEL_FORMAT, 2);     // 2: NV12
+    OH_AVFormat_SetDoubleValue(fmt, OH_MD_KEY_FRAME_RATE, 30.0); // 30.0: 30fps
     OH_AVFormat_SetLongValue(fmt, OH_MD_KEY_BITRATE, bitrate);
-    OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, BITRATE_MODE_CBR);
+    OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, 0); // 0: CBR
     return fmt;
 }
 
@@ -131,9 +131,9 @@ OH_AVFormat *VideoEncDualOutputSample::BuildFuzzParamFormat(FuzzedDataProvider &
     if (format == nullptr) {
         return nullptr;
     }
-    int32_t count = fdp.ConsumeIntegralInRange<int32_t>(1, FUZZ_PARAM_COUNT_MAX);
+    int32_t count = fdp.ConsumeIntegralInRange<int32_t>(1, 6); // 6: max param count
     for (int32_t i = 0; i < count; i++) {
-        std::string key = fdp.ConsumeRandomLengthString(FUZZ_KEY_LEN_MAX);
+        std::string key = fdp.ConsumeRandomLengthString(64); // 64: max key length
         if (fdp.ConsumeBool()) {
             OH_AVFormat_SetIntValue(format, key.c_str(), fdp.ConsumeIntegral<int32_t>());
         } else {
@@ -147,10 +147,10 @@ OH_AVFormat *VideoEncDualOutputSample::BuildFuzzParamFormat(FuzzedDataProvider &
 
 OH_AVCodec *VideoEncDualOutputSample::GetTarget(int32_t target)
 {
-    if (target == TARGET_PRIMARY) {
+    if (target == 0) { // 0: primary
         return primary_;
     }
-    if (target == TARGET_SECONDARY) {
+    if (target == 1) { // 1: secondary
         return secondary_;
     }
     return nullptr;
@@ -158,10 +158,10 @@ OH_AVCodec *VideoEncDualOutputSample::GetTarget(int32_t target)
 
 std::unique_lock<std::mutex> VideoEncDualOutputSample::LockTarget(int32_t target)
 {
-    if (target == TARGET_PRIMARY) {
+    if (target == 0) { // 0: primary
         return std::unique_lock<std::mutex>(primaryMutex_);
     }
-    if (target == TARGET_SECONDARY) {
+    if (target == 1) { // 1: secondary
         return std::unique_lock<std::mutex>(secondaryMutex_);
     }
     return std::unique_lock<std::mutex>();
@@ -192,7 +192,7 @@ void VideoEncDualOutputSample::StopInloop()
 void VideoEncDualOutputSample::InputFuncSurface()
 {
     int32_t frameCount = 0;
-    while (isRunning_.load() && frameCount < MAX_INPUT_FRAMES) {
+    while (isRunning_.load() && frameCount < 30) { // 30: max input frames
         if (nativeWindow_ == nullptr || defaultWidth <= 0 || defaultHeight <= 0) {
             break;
         }
@@ -211,15 +211,15 @@ void VideoEncDualOutputSample::InputFuncSurface()
         if (err != 0 || virAddr == nullptr) {
             break;
         }
-        uint32_t size = static_cast<uint32_t>(defaultWidth * defaultHeight * YUV420_BPP_NUM / YUV420_BPP_DEN);
-        (void)memset_s(virAddr, size, YUV_FILL_VALUE, size);
+        uint32_t size = static_cast<uint32_t>(defaultWidth * defaultHeight * 3 / 2); // 3/2: YUV420 bpp
+        (void)memset_s(virAddr, size, 0x80, size);                                   // 0x80: YUV fill
         OH_NativeBuffer_Unmap(nativeBuffer);
         Region::Rect rect = {0, 0, static_cast<uint32_t>(defaultWidth), static_cast<uint32_t>(defaultHeight)};
         Region region = {&rect, 1};
         OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_UI_TIMESTAMP, GetSystemTimeUs());
         OH_NativeWindow_NativeWindowFlushBuffer(nativeWindow_, buf, -1, region);
         frameCount++;
-        usleep(FPS_INTERVAL_US);
+        usleep(33000); // 33000: ~30fps interval (us)
     }
 }
 
@@ -227,7 +227,7 @@ int64_t VideoEncDualOutputSample::GetSystemTimeUs()
 {
     struct timespec ts;
     clock_gettime(CLOCK_BOOTTIME, &ts);
-    return static_cast<int64_t>(ts.tv_sec) * SEC_TO_US + ts.tv_nsec / NS_TO_US;
+    return static_cast<int64_t>(ts.tv_sec) * 1000000L + ts.tv_nsec / 1000L; // sec→us + nsec→us
 }
 
 // ======================== Do* Operations ========================
@@ -286,18 +286,18 @@ void VideoEncDualOutputSample::DoConfigure(int32_t target, OH_AVCodec *codec, Fu
     if (fdp.ConsumeBool()) {
         fmt = BuildFuzzFormat(fdp);
     } else {
-        int32_t w = fdp.ConsumeIntegralInRange<int32_t>(MIN_WIDTH, MAX_WIDTH);
-        int32_t h = fdp.ConsumeIntegralInRange<int32_t>(MIN_HEIGHT, MAX_HEIGHT);
-        fmt = CreateEncFormat(w, h, DEFAULT_BITRATE);
+        int32_t w = fdp.ConsumeIntegralInRange<int32_t>(320, 1920); // 320~1920: valid width range
+        int32_t h = fdp.ConsumeIntegralInRange<int32_t>(240, 1080); // 240~1080: valid height range
+        fmt = CreateEncFormat(w, h, 5000000);                       // 5000000: 5Mbps bitrate
     }
     if (fmt != nullptr) {
         OH_AVFormat_GetIntValue(fmt, OH_MD_KEY_WIDTH, &defaultWidth);
         OH_AVFormat_GetIntValue(fmt, OH_MD_KEY_HEIGHT, &defaultHeight);
         if (defaultWidth <= 0) {
-            defaultWidth = DEFAULT_WIDTH;
+            defaultWidth = 320; // 320: fallback width
         }
         if (defaultHeight <= 0) {
-            defaultHeight = DEFAULT_HEIGHT;
+            defaultHeight = 240; // 240: fallback height
         }
         OH_VideoEncoder_Configure(codec, fmt);
         OH_AVFormat_Destroy(fmt);
@@ -307,7 +307,7 @@ void VideoEncDualOutputSample::DoConfigure(int32_t target, OH_AVCodec *codec, Fu
 void VideoEncDualOutputSample::DoGetSurface(int32_t target, OH_AVCodec *codec, FuzzedDataProvider &fdp)
 {
     auto lk = LockTarget(target);
-    if (target == TARGET_PRIMARY) {
+    if (target == 0) { // 0: primary
         StopInloop();
     }
     OHNativeWindow *window = nullptr;
@@ -317,9 +317,9 @@ void VideoEncDualOutputSample::DoGetSurface(int32_t target, OH_AVCodec *codec, F
             OH_NativeWindow_DestroyNativeWindow(nativeWindow_);
         }
         nativeWindow_ = window;
-        int32_t w = std::max(defaultWidth, SURFACE_ALIGN);
-        int32_t h = std::max(defaultHeight, SURFACE_ALIGN);
-        OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_FORMAT, PIXEL_FORMAT_SURFACE);
+        int32_t w = std::max(defaultWidth, 16);                               // 16: alignment
+        int32_t h = std::max(defaultHeight, 16);                              // 16: alignment
+        OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_FORMAT, 24); // 24: surface pixel format
         OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_BUFFER_GEOMETRY, w, h);
     }
 }
@@ -327,11 +327,11 @@ void VideoEncDualOutputSample::DoGetSurface(int32_t target, OH_AVCodec *codec, F
 void VideoEncDualOutputSample::DoStart(int32_t target, OH_AVCodec *codec, FuzzedDataProvider &fdp)
 {
     auto lk = LockTarget(target);
-    if (target == TARGET_PRIMARY) {
+    if (target == 0) { // 0: primary
         StopInloop();
     }
     OH_VideoEncoder_Start(codec);
-    if (target == TARGET_PRIMARY && nativeWindow_ != nullptr && codec != nullptr) {
+    if (target == 0 && nativeWindow_ != nullptr && codec != nullptr) { // 0: primary
         StartInputLoop();
     }
 }
@@ -339,7 +339,7 @@ void VideoEncDualOutputSample::DoStart(int32_t target, OH_AVCodec *codec, Fuzzed
 void VideoEncDualOutputSample::DoStop(int32_t target, OH_AVCodec *codec, FuzzedDataProvider &fdp)
 {
     auto lk = LockTarget(target);
-    if (target == TARGET_PRIMARY) {
+    if (target == 0) { // 0: primary
         StopInloop();
     }
     OH_VideoEncoder_Stop(codec);
@@ -348,7 +348,7 @@ void VideoEncDualOutputSample::DoStop(int32_t target, OH_AVCodec *codec, FuzzedD
 void VideoEncDualOutputSample::DoFlush(int32_t target, OH_AVCodec *codec, FuzzedDataProvider &fdp)
 {
     auto lk = LockTarget(target);
-    if (target == TARGET_PRIMARY) {
+    if (target == 0) { // 0: primary
         StopInloop();
     }
     OH_VideoEncoder_Flush(codec);
@@ -357,7 +357,7 @@ void VideoEncDualOutputSample::DoFlush(int32_t target, OH_AVCodec *codec, Fuzzed
 void VideoEncDualOutputSample::DoReset(int32_t target, OH_AVCodec *codec, FuzzedDataProvider &fdp)
 {
     auto lk = LockTarget(target);
-    if (target == TARGET_PRIMARY) {
+    if (target == 0) { // 0: primary
         StopInloop();
     }
     OH_VideoEncoder_Reset(codec);
@@ -407,7 +407,7 @@ void VideoEncDualOutputSample::DoFreeOutputBuffer(int32_t target, OH_AVCodec *co
 
 void VideoEncDualOutputSample::DoDestroy(int32_t target, OH_AVCodec *codec, FuzzedDataProvider &fdp)
 {
-    if (target == TARGET_PRIMARY && primary_ != nullptr) {
+    if (target == 0 && primary_ != nullptr) { // 0: primary
         std::lock_guard<std::mutex> lk1(primaryMutex_);
         StopInloop();
         std::lock_guard<std::mutex> lk2(secondaryMutex_);
@@ -417,11 +417,11 @@ void VideoEncDualOutputSample::DoDestroy(int32_t target, OH_AVCodec *codec, Fuzz
         }
         OH_VideoEncoder_Destroy(primary_);
         primary_ = nullptr;
-    } else if (target == TARGET_SECONDARY && secondary_ != nullptr) {
+    } else if (target == 1 && secondary_ != nullptr) { // 1: secondary
         std::lock_guard<std::mutex> lk(secondaryMutex_);
         OH_VideoEncoder_Destroy(secondary_);
         secondary_ = nullptr;
-    } else if (target == TARGET_INVALID) {
+    } else if (target == 2) { // 2: invalid target
         OH_VideoEncoder_Destroy(nullptr);
     } else {
         auto lk = LockTarget(target);
@@ -496,7 +496,8 @@ void VideoEncDualOutputSample::DoFreeOutputData(int32_t target, OH_AVCodec *code
 
 // ======================== Dispatch & Cleanup ========================
 
-const VideoEncDualOutputSample::OpFunc VideoEncDualOutputSample::opDispatch[OP_MAX] = {
+const VideoEncDualOutputSample::OpFunc VideoEncDualOutputSample::opDispatch[24] = {
+    // 24: dispatch op count
     &VideoEncDualOutputSample::DoCreatePrimary,     // 0
     &VideoEncDualOutputSample::DoCreateSecondary,   // 1
     &VideoEncDualOutputSample::DoRegisterCallback,  // 2
@@ -528,8 +529,8 @@ void VideoEncDualOutputSample::ExecuteOp(FuzzedDataProvider &fdp)
     if (fdp.remaining_bytes() < sizeof(int32_t)) {
         return;
     }
-    int32_t op = fdp.ConsumeIntegralInRange<int32_t>(0, OP_MAX - 1);
-    int32_t target = fdp.ConsumeIntegralInRange<int32_t>(0, TARGET_MAX - 1);
+    int32_t op = fdp.ConsumeIntegralInRange<int32_t>(0, 24 - 1);    // 24: dispatch op count
+    int32_t target = fdp.ConsumeIntegralInRange<int32_t>(0, 3 - 1); // 3: target types (primary/secondary/invalid)
     OH_AVCodec *codec = GetTarget(target);
     (this->*VideoEncDualOutputSample::opDispatch[op])(target, codec, fdp);
 }
@@ -555,24 +556,24 @@ void VideoEncDualOutputSample::Cleanup()
 
 void VideoEncDualOutputSample::BootstrapEncoder(FuzzedDataProvider &fdp)
 {
-    DoCreatePrimary(TARGET_PRIMARY, nullptr, fdp);
+    DoCreatePrimary(0, nullptr, fdp); // 0: primary
     if (primary_ == nullptr) {
         return;
     }
-    DoRegisterCallback(TARGET_PRIMARY, primary_, fdp);
+    DoRegisterCallback(0, primary_, fdp); // 0: primary
 
-    int32_t w = fdp.ConsumeIntegralInRange<int32_t>(MIN_WIDTH, MAX_WIDTH);
-    int32_t h = fdp.ConsumeIntegralInRange<int32_t>(MIN_HEIGHT, MAX_HEIGHT);
-    OH_AVFormat *fmt = CreateEncFormat(w, h, DEFAULT_BITRATE);
+    int32_t w = fdp.ConsumeIntegralInRange<int32_t>(320, 1920); // 320~1920: valid width range
+    int32_t h = fdp.ConsumeIntegralInRange<int32_t>(240, 1080); // 240~1080: valid height range
+    OH_AVFormat *fmt = CreateEncFormat(w, h, 5000000);          // 5000000: 5Mbps bitrate
     if (fmt != nullptr) {
         defaultWidth = w;
         defaultHeight = h;
         OH_VideoEncoder_Configure(primary_, fmt);
         OH_AVFormat_Destroy(fmt);
     }
-    DoGetSurface(TARGET_PRIMARY, primary_, fdp);
-    DoPrepare(TARGET_PRIMARY, primary_, fdp);
-    DoStart(TARGET_PRIMARY, primary_, fdp);
+    DoGetSurface(0, primary_, fdp); // 0: primary
+    DoPrepare(0, primary_, fdp);    // 0: primary
+    DoStart(0, primary_, fdp);      // 0: primary
 }
 
 void VideoEncDualOutputSample::RunFuzzLoop(FuzzedDataProvider &fdp)
@@ -581,14 +582,18 @@ void VideoEncDualOutputSample::RunFuzzLoop(FuzzedDataProvider &fdp)
     std::condition_variable queueCv;
     std::queue<TaskItem> taskQueue;
     std::atomic<bool> producerDone{false};
-    auto worker = [&]() {
-        while (true) {
+    auto worker = [&queueMutex, &queueCv, &taskQueue, &producerDone, this]() {
+        bool running = true;
+        while (running) {
             TaskItem task;
             {
                 std::unique_lock<std::mutex> lk(queueMutex);
-                queueCv.wait(lk, [&] { return !taskQueue.empty() || producerDone.load(); });
+                queueCv.wait(lk, [&taskQueue, &producerDone] {
+                    return !taskQueue.empty() || producerDone.load();
+                });
                 if (taskQueue.empty() && producerDone.load()) {
-                    return;
+                    running = false;
+                    continue;
                 }
                 task = std::move(taskQueue.front());
                 taskQueue.pop();
@@ -600,8 +605,8 @@ void VideoEncDualOutputSample::RunFuzzLoop(FuzzedDataProvider &fdp)
         }
     };
     std::thread workerThread(worker);
-    int32_t maxOps = fdp.ConsumeIntegralInRange<int32_t>(1, LIFECYCLE_MAX_OPS);
-    for (int32_t i = 0; i < maxOps && fdp.remaining_bytes() >= sizeof(int32_t) * 2; i++) {
+    int32_t maxOps = fdp.ConsumeIntegralInRange<int32_t>(1, 30); // 30: max fuzz ops
+    for (int32_t i = 0; i < maxOps && fdp.remaining_bytes() >= sizeof(int32_t) * 2; i++) { // 2: op + target
         DispatchOneOp(fdp, queueMutex, queueCv, taskQueue);
     }
     producerDone.store(true);
@@ -611,14 +616,14 @@ void VideoEncDualOutputSample::RunFuzzLoop(FuzzedDataProvider &fdp)
     }
 }
 
-void VideoEncDualOutputSample::DispatchOneOp(FuzzedDataProvider &fdp, std::mutex &mtx,
-                                             std::condition_variable &cv, std::queue<TaskItem> &queue)
+void VideoEncDualOutputSample::DispatchOneOp(FuzzedDataProvider &fdp, std::mutex &mtx, std::condition_variable &cv,
+                                             std::queue<TaskItem> &queue)
 {
-    int32_t op = fdp.ConsumeIntegralInRange<int32_t>(0, OP_MAX - 1);
-    int32_t target = fdp.ConsumeIntegralInRange<int32_t>(0, TARGET_MAX - 1);
-    int32_t threadMode = fdp.ConsumeIntegralInRange<int32_t>(0, THREAD_MODE_MAX - 1);
-    if (threadMode == THREAD_WORKER && fdp.remaining_bytes() > sizeof(int32_t)) {
-        size_t cap = std::min(fdp.remaining_bytes(), FUZZ_TASK_BYTES_MAX);
+    int32_t op = fdp.ConsumeIntegralInRange<int32_t>(0, 24 - 1);        // 24: dispatch op count
+    int32_t target = fdp.ConsumeIntegralInRange<int32_t>(0, 3 - 1);     // 3: target types (primary/secondary/invalid)
+    int32_t threadMode = fdp.ConsumeIntegralInRange<int32_t>(0, 2 - 1); // 2: thread mode count
+    if (threadMode == 1 && fdp.remaining_bytes() > sizeof(int32_t)) {   // 1: worker thread
+        size_t cap = std::min(fdp.remaining_bytes(), static_cast<size_t>(64)); // max task data bytes
         size_t taskBytes = fdp.ConsumeIntegralInRange<size_t>(sizeof(int32_t), cap);
         auto data = fdp.ConsumeBytes<uint8_t>(taskBytes);
         {

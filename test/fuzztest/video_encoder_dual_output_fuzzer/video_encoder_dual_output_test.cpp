@@ -21,8 +21,6 @@
 using namespace OHOS::MediaAVCodec;
 #define FUZZ_PROJECT_NAME "video_encoder_dual_output_test"
 
-constexpr int32_t CATEGORY_MAX = 2;
-
 // ======================== Helpers ========================
 
 const char *PickMime(FuzzedDataProvider &fdp)
@@ -70,7 +68,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
         return 0;
     }
     FuzzedDataProvider fdp(data, size);
-    int32_t category = fdp.ConsumeIntegral<int32_t>() % CATEGORY_MAX;
+    int32_t category = fdp.ConsumeIntegral<int32_t>() % 2; // 0=lifecycle, 1=create-param
     if (category == 0) {
         LifecycleFuzzEntry(&fdp);
     } else {

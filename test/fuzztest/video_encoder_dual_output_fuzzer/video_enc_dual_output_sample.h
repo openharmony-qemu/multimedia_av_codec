@@ -33,54 +33,6 @@
 
 namespace OHOS::MediaAVCodec {
 
-// ======================== Dispatch ========================
-
-constexpr int32_t OP_MAX = 24;
-constexpr int32_t TARGET_PRIMARY = 0;
-constexpr int32_t TARGET_SECONDARY = 1;
-constexpr int32_t TARGET_INVALID = 2;
-constexpr int32_t TARGET_MAX = 3;
-
-// ======================== Encoder Params ========================
-
-constexpr int32_t PIXEL_FORMAT_NV12 = 2;
-constexpr int32_t PIXEL_FORMAT_SURFACE = 24;
-constexpr int32_t BITRATE_MODE_CBR = 0;
-constexpr int32_t DEFAULT_WIDTH = 320;
-constexpr int32_t DEFAULT_HEIGHT = 240;
-constexpr int32_t DEFAULT_BITRATE = 5000000;
-constexpr int32_t SECONDARY_BITRATE = 3000000;
-constexpr double DEFAULT_FRAME_RATE = 30.0;
-constexpr int32_t MIN_WIDTH = 320;
-constexpr int32_t MAX_WIDTH = 1920;
-constexpr int32_t MIN_HEIGHT = 240;
-constexpr int32_t MAX_HEIGHT = 1080;
-
-// ======================== Surface Input ========================
-
-constexpr int32_t SURFACE_ALIGN = 16;
-constexpr int32_t MAX_INPUT_FRAMES = 30;
-constexpr int32_t FPS_INTERVAL_US = 33000;
-constexpr uint8_t YUV_FILL_VALUE = 0x80;
-constexpr int32_t YUV420_BPP_NUM = 3;
-constexpr int32_t YUV420_BPP_DEN = 2;
-constexpr int32_t ENCODE_WAIT_US = 100000;
-
-// ======================== Fuzz Params ========================
-
-constexpr int32_t FUZZ_PARAM_COUNT_MAX = 6;
-constexpr int32_t FUZZ_KEY_LEN_MAX = 64;
-
-// ======================== Lifecycle Fuzz ========================
-
-constexpr int32_t THREAD_MAIN = 0;
-constexpr int32_t THREAD_WORKER = 1;
-constexpr int32_t THREAD_MODE_MAX = 2;
-constexpr int32_t LIFECYCLE_MAX_OPS = 30;
-constexpr size_t FUZZ_TASK_BYTES_MAX = 64;
-constexpr int64_t SEC_TO_US = 1000000L;
-constexpr int64_t NS_TO_US = 1000L;
-
 class VideoEncDualOutputSample : public NoCopyable {
 public:
     int32_t defaultWidth = 0;
@@ -100,7 +52,7 @@ public:
     static OH_AVFormat *CreateEncFormat(int32_t width, int32_t height, int64_t bitrate);
 
     using OpFunc = void (VideoEncDualOutputSample::*)(int32_t target, OH_AVCodec *codec, FuzzedDataProvider &fdp);
-    static const OpFunc opDispatch[OP_MAX];
+    static const OpFunc opDispatch[24];
     void ExecuteOp(FuzzedDataProvider &fdp);
     void Cleanup();
     void LifecycleFuzz(FuzzedDataProvider &fdp);
