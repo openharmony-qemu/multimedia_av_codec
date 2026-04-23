@@ -14,7 +14,6 @@
  */
 
 #include "api_metrics_util.h"
-#include "avcodec_log.h"
 #ifdef HISTOGRAMMANAGER_ENABLE
 #include "histogram_plugin_macros.h"
 #endif
