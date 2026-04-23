@@ -96,7 +96,7 @@ ohos_shared_library("avcodec_api_metrics") {
     external_deps += [
       "api_metrics:histogrammanager",
     ]
-    defines += [HISTOGRAMMANAGER_ENABLE]
+    defines += [ "HISTOGRAMMANAGER_ENABLE" ]
   }
   output_extension = "so"
   subsystem_name = "multimedia"
