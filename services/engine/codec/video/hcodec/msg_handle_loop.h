@@ -46,6 +46,7 @@ protected:
     static constexpr MsgId ASYNC_MSG_ID = 0;
     using TimeUs = int64_t;
     static TimeUs GetNowUs();
+    static TimeUs GetCurrUs();
 
     struct MsgToken {
         std::mutex m_mtx;
