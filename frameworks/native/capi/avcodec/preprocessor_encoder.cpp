@@ -398,11 +398,13 @@ int32_t PreprocessorEncoder::CreateEncoderSurface()
 {
     if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
         auto surface = videoEncoderObject_->videoEncoder_->CreateInputSurface();
-        if (surface == nullptr) {
+        if (surface == nullptr && encoderSurface_ == nullptr) {
             return AVCS_ERR_NO_MEMORY;
         }
 
-        encoderSurface_ = surface;
+        if (surface != nullptr) {
+            encoderSurface_ = surface;
+        }
     }
 
     return AVCS_ERR_OK;
@@ -485,6 +487,7 @@ OH_AVErrCode PreprocessorEncoder::Reset()
         int32_t ret = videoEncoderObject_->videoEncoder_->Reset();
         CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                                  "Video encoder reset failed!");
+        videoEncoderObject_->ClearBufferList();
     }
 
     if (preprocMgr_) {
