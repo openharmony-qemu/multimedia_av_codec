@@ -14,12 +14,13 @@
  */
 
 #include "adaptive_retention_strategy.h"
+#include "double_utils.h"
 #include "avcodec_log.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "AdaptiveStrategy"};
 constexpr double MAX_SPEED_FOR_RETENTION = 1.0;
-constexpr double MAX_DROPS_MULTIPLIER_HIGH = 30.0;
+constexpr double MAX_DROPS_MULTIPLIER_HIGH = 5.0;
 
 struct DecisionNode {
     bool isLeaf;
@@ -67,7 +68,7 @@ public:
 
         while (!RETENTION_DECISION_RULES[ruleId].isLeaf) {
             const auto& rule = RETENTION_DECISION_RULES[ruleId].internal;
-            if (features[rule.featureIndex] <= rule.threshold) {
+            if (OHOS::MediaAVCodec::SFD::DoubleUtils::IsLessOrEqual(features[rule.featureIndex], rule.threshold)) {
                 ruleId = rule.left;
             } else {
                 ruleId = rule.right;
@@ -91,7 +92,7 @@ AdaptiveRetentionStrategy::AdaptiveRetentionStrategy()
 bool AdaptiveRetentionStrategy::MakeRetentionDecision(const FrameRetentionContext& ctx)
 {
     bool isRetain = true;
-    if (currentSpeed_ <= MAX_SPEED_FOR_RETENTION) {
+    if (DoubleUtils::IsLessOrEqual(currentSpeed_, MAX_SPEED_FOR_RETENTION)) {
         isRetain = true;
         lastReason_ = SfdDecisionReason::POST_RETAIN_ADAPTIVE_SPEED;
     } else if (ctx.mvStats && ctx.mvStats->validBlocks > 0) {
@@ -119,14 +120,14 @@ bool AdaptiveRetentionStrategy::MakeRetentionDecision(const FrameRetentionContex
     } else {
         lastReason_ = SfdDecisionReason::UNSPECIFIED;
     }
-    AVCODEC_LOGD("AdaptiveRetentionStrategy decision: %{public}d (speed:%{public}.2f, ratio:%{public}.2f)",
+    AVCODEC_LOGD("AdaptiveRetentionStrategy decision: %{public}d (speed:%{public}.3f, ratio:%{public}.3f)",
                  isRetain, currentSpeed_, targetRatio_);
     return isRetain;
 }
 
 void AdaptiveRetentionStrategy::UpdatePlaybackSpeed(double speed)
 {
-    currentSpeed_ = speed > 0.0 ? speed : 1.0;
+    currentSpeed_ = DoubleUtils::IsGreater(speed, 0.0) ? speed : 1.0;
 }
 
 void AdaptiveRetentionStrategy::Reset()
