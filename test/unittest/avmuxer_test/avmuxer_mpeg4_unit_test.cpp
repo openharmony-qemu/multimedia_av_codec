@@ -3935,9 +3935,7 @@ HWTEST_F(Mpeg4MuxerUnitTest, Muxer_AddTrackNodata_003, TestSize.Level0)
     EXPECT_EQ(trackCount, 3);  // 3
 }
 
-#ifdef FFMPEG_MUXER_TEST
-#undef FFMPEG_MUXER_TEST
-#endif
+#ifndef FFMPEG_MUXER_TEST
 
 /**
  * @tc.name: Muxer_Location_Altitude_001
@@ -4095,6 +4093,6 @@ HWTEST_F(Mpeg4MuxerUnitTest, Muxer_Location_Altitude_003, TestSize.Level0)
     }
 }
 
-#define FFMPEG_MUXER_TEST
+#endif
 
 }
