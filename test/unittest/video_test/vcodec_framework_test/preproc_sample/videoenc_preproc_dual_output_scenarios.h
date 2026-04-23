@@ -18,8 +18,11 @@
 
 #include <array>
 #include <cstdint>
+#include <string>
 
+#include "buffer_common.h"
 #include "native_avcodec_base.h"
+#include "native_avcapability.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -31,6 +34,27 @@ enum class FlowType {
     INVALID_PARAMETER,
     INVALID_LIFECYCLE,
     DUPLICATE_SECONDARY,
+};
+
+enum class EncoderEnableMode {
+    PRIMARY_ONLY = 0,
+    PRIMARY_SECONDARY,
+    PRIMARY_SECONDARY_SEND_PRIMARY_ONLY,
+    PRIMARY_SECONDARY_SEND_SECONDARY_ONLY,
+};
+
+enum class PreprocEnableMode {
+    DISABLED = 0,
+    PRIMARY_ONLY,
+    SECONDARY_ONLY,
+    BOTH_SAME,
+    BOTH_DIFFERENT,
+};
+
+enum class RuntimeOperation {
+    NONE = 0,
+    SET_PREPROC_PARAMETER,
+    CHANGE_BUFFER_GEOMETRY,
 };
 
 enum class InvalidParameterType {
@@ -54,11 +78,25 @@ struct PreprocConfig {
 };
 
 struct ScenarioCase {
-    const char *name = "";
+    std::string name;
+    std::string codecLabel;
+    const char *mime = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
+    OH_AVCodecCategory category = HARDWARE;
+    int32_t width = 1280;
+    int32_t height = 720;
+    int32_t runtimeWidth = 1280;
+    int32_t runtimeHeight = 720;
+    OH_NativeBuffer_Format nativeFormat = NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP;
+    int32_t codecPixelFormat = AV_PIXEL_FORMAT_NV12;
+    EncoderEnableMode encoderMode = EncoderEnableMode::PRIMARY_SECONDARY;
+    PreprocEnableMode preprocMode = PreprocEnableMode::DISABLED;
+    RuntimeOperation runtimeOperation = RuntimeOperation::NONE;
     FlowType flow = FlowType::NO_PREPROC;
     InvalidParameterType invalidParameterType = InvalidParameterType::DOWNSAMPLING_PAIR;
     PreprocConfig primary;
     PreprocConfig secondary;
+    PreprocConfig runtimePrimary;
+    PreprocConfig runtimeSecondary;
     int32_t expectedResult = AV_ERR_OK;
     bool expectExactResult = true;
     bool needsFrameRotation = false;
@@ -87,87 +125,199 @@ constexpr PreprocConfig MakeCrop(int32_t left, int32_t top, int32_t right, int32
                          frameRate};
 }
 
-constexpr ScenarioCase kNoPreprocScenario {
+inline const ScenarioCase kNoPreprocScenario {
     "no_preproc",
+    "hardware_avc",
+    OH_AVCODEC_MIMETYPE_VIDEO_AVC,
+    HARDWARE,
+    1280,
+    720,
+    1280,
+    720,
+    NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP,
+    AV_PIXEL_FORMAT_NV12,
+    EncoderEnableMode::PRIMARY_SECONDARY,
+    PreprocEnableMode::DISABLED,
+    RuntimeOperation::NONE,
     FlowType::NO_PREPROC,
     InvalidParameterType::DOWNSAMPLING_PAIR,
     MakeNoPreproc(),
     MakeNoPreproc(),
+    MakeNoPreproc(),
+    MakeNoPreproc(),
     AV_ERR_OK,
     true,
     true,
 };
 
-constexpr ScenarioCase kPrimaryPreprocScenario {
+inline const ScenarioCase kPrimaryPreprocScenario {
     "primary_preproc",
+    "hardware_avc",
+    OH_AVCODEC_MIMETYPE_VIDEO_AVC,
+    HARDWARE,
+    1280,
+    720,
+    1280,
+    720,
+    NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP,
+    AV_PIXEL_FORMAT_NV12,
+    EncoderEnableMode::PRIMARY_SECONDARY,
+    PreprocEnableMode::PRIMARY_ONLY,
+    RuntimeOperation::NONE,
     FlowType::PRIMARY_PREPROC,
     InvalidParameterType::DOWNSAMPLING_PAIR,
     MakeDropRate(15.0),
     MakeNoPreproc(),
+    MakeNoPreproc(),
+    MakeNoPreproc(),
     AV_ERR_OK,
     true,
     true,
 };
 
-constexpr ScenarioCase kMixedPreprocScenario {
+inline const ScenarioCase kMixedPreprocScenario {
     "mixed_preproc",
+    "hardware_avc",
+    OH_AVCODEC_MIMETYPE_VIDEO_AVC,
+    HARDWARE,
+    1280,
+    720,
+    1280,
+    720,
+    NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP,
+    AV_PIXEL_FORMAT_NV12,
+    EncoderEnableMode::PRIMARY_SECONDARY,
+    PreprocEnableMode::BOTH_DIFFERENT,
+    RuntimeOperation::NONE,
     FlowType::MIXED_PREPROC,
     InvalidParameterType::DOWNSAMPLING_PAIR,
     MakeDownsampling(640, 360, 15.0),
     MakeCrop(0, 0, 1023, 575, 10.0),
+    MakeNoPreproc(),
+    MakeNoPreproc(),
     AV_ERR_OK,
     true,
     true,
 };
 
-constexpr ScenarioCase kInvalidDownsamplingScenario {
+inline const ScenarioCase kInvalidDownsamplingScenario {
     "invalid_downsampling_pair",
+    "hardware_avc",
+    OH_AVCODEC_MIMETYPE_VIDEO_AVC,
+    HARDWARE,
+    1280,
+    720,
+    1280,
+    720,
+    NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP,
+    AV_PIXEL_FORMAT_NV12,
+    EncoderEnableMode::PRIMARY_SECONDARY,
+    PreprocEnableMode::PRIMARY_ONLY,
+    RuntimeOperation::NONE,
     FlowType::INVALID_PARAMETER,
     InvalidParameterType::DOWNSAMPLING_PAIR,
     PreprocConfig{true, 640, 0, false, 0, 0, 0, 0, false, 0.0, 30.0},
     MakeNoPreproc(),
+    MakeNoPreproc(),
+    MakeNoPreproc(),
     AV_ERR_INVALID_VAL,
     true,
     false,
 };
 
-constexpr ScenarioCase kInvalidCropAndDownsamplingScenario {
+inline const ScenarioCase kInvalidCropAndDownsamplingScenario {
     "invalid_crop_and_downsampling",
+    "hardware_avc",
+    OH_AVCODEC_MIMETYPE_VIDEO_AVC,
+    HARDWARE,
+    1280,
+    720,
+    1280,
+    720,
+    NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP,
+    AV_PIXEL_FORMAT_NV12,
+    EncoderEnableMode::PRIMARY_SECONDARY,
+    PreprocEnableMode::PRIMARY_ONLY,
+    RuntimeOperation::NONE,
     FlowType::INVALID_PARAMETER,
     InvalidParameterType::CROP_AND_DOWNSAMPLING,
     PreprocConfig{true, 640, 360, true, 80, 40, 1120, 680, false, 0.0, 30.0},
     MakeNoPreproc(),
+    MakeNoPreproc(),
+    MakeNoPreproc(),
     AV_ERR_INVALID_VAL,
     true,
     false,
 };
 
-constexpr ScenarioCase kInvalidDropRateScenario {
+inline const ScenarioCase kInvalidDropRateScenario {
     "invalid_drop_rate",
+    "hardware_avc",
+    OH_AVCODEC_MIMETYPE_VIDEO_AVC,
+    HARDWARE,
+    1280,
+    720,
+    1280,
+    720,
+    NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP,
+    AV_PIXEL_FORMAT_NV12,
+    EncoderEnableMode::PRIMARY_SECONDARY,
+    PreprocEnableMode::PRIMARY_ONLY,
+    RuntimeOperation::NONE,
     FlowType::INVALID_PARAMETER,
     InvalidParameterType::INVALID_DROP_RATE,
     PreprocConfig{false, 0, 0, false, 0, 0, 0, 0, true, 30.0, 30.0},
     MakeNoPreproc(),
+    MakeNoPreproc(),
+    MakeNoPreproc(),
     AV_ERR_INVALID_VAL,
     true,
     false,
 };
 
-constexpr ScenarioCase kInvalidLifecycleScenario {
+inline const ScenarioCase kInvalidLifecycleScenario {
     "invalid_lifecycle",
+    "hardware_avc",
+    OH_AVCODEC_MIMETYPE_VIDEO_AVC,
+    HARDWARE,
+    1280,
+    720,
+    1280,
+    720,
+    NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP,
+    AV_PIXEL_FORMAT_NV12,
+    EncoderEnableMode::PRIMARY_SECONDARY,
+    PreprocEnableMode::DISABLED,
+    RuntimeOperation::NONE,
     FlowType::INVALID_LIFECYCLE,
     InvalidParameterType::DOWNSAMPLING_PAIR,
     MakeNoPreproc(),
     MakeNoPreproc(),
+    MakeNoPreproc(),
+    MakeNoPreproc(),
     AV_ERR_INVALID_VAL,
     true,
     false,
 };
 
-constexpr ScenarioCase kDuplicateSecondaryScenario {
+inline const ScenarioCase kDuplicateSecondaryScenario {
     "duplicate_secondary",
+    "hardware_avc",
+    OH_AVCODEC_MIMETYPE_VIDEO_AVC,
+    HARDWARE,
+    1280,
+    720,
+    1280,
+    720,
+    NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP,
+    AV_PIXEL_FORMAT_NV12,
+    EncoderEnableMode::PRIMARY_SECONDARY,
+    PreprocEnableMode::DISABLED,
+    RuntimeOperation::NONE,
     FlowType::DUPLICATE_SECONDARY,
     InvalidParameterType::DOWNSAMPLING_PAIR,
+    MakeNoPreproc(),
+    MakeNoPreproc(),
     MakeNoPreproc(),
     MakeNoPreproc(),
     AV_ERR_OPERATE_NOT_PERMIT,
@@ -175,7 +325,7 @@ constexpr ScenarioCase kDuplicateSecondaryScenario {
     false,
 };
 
-constexpr std::array<ScenarioCase, 8> kDualOutputScenarios = {
+inline const std::array<ScenarioCase, 8> kDualOutputScenarios = {
     kNoPreprocScenario,
     kPrimaryPreprocScenario,
     kMixedPreprocScenario,

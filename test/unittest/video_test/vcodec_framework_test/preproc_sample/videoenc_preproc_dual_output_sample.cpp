@@ -398,6 +398,7 @@ int32_t VideoEncPreprocDualOutputSample::RegisterCallback(OH_AVCodec *codec, Enc
     callback.onNeedInputBuffer = nullptr;
     callback.onNewOutputBuffer = OnNeedOutputData;
     state.codec = codec;
+    state.eosMutex = &eosMutex_;
     state.eosCv = &eosCv_;
     if (&state == &primaryState_) {
         state.outputFile = &primaryOutputFile_;
@@ -427,12 +428,10 @@ bool VideoEncPreprocDualOutputSample::SetOutputFilePath(const std::string &path)
     return primaryOutputFile_.is_open() && secondaryOutputFile_.is_open();
 }
 
-bool VideoEncPreprocDualOutputSample::ApplyPreprocConfig(OH_AVFormat *format, const PreprocDualOutput::PreprocConfig &config)
+bool VideoEncPreprocDualOutputSample::ApplyPreprocKeys(OH_AVFormat *format,
+                                                       const PreprocDualOutput::PreprocConfig &config)
 {
     if (format == nullptr) {
-        return false;
-    }
-    if (!OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, config.frameRate)) {
         return false;
     }
     if (config.useDownsampling) {
@@ -457,13 +456,30 @@ bool VideoEncPreprocDualOutputSample::ApplyPreprocConfig(OH_AVFormat *format, co
             return false;
         }
     }
-    return OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, kWidth_) &&
-           OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, kHeight_) &&
-           OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+    return true;
+}
+
+bool VideoEncPreprocDualOutputSample::ApplyPreprocConfig(OH_AVFormat *format,
+                                                         const PreprocDualOutput::PreprocConfig &config,
+                                                         const PreprocDualOutput::ScenarioCase &scenario)
+{
+    if (format == nullptr) {
+        return false;
+    }
+    if (!OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, config.frameRate)) {
+        return false;
+    }
+    if (!ApplyPreprocKeys(format, config)) {
+        return false;
+    }
+    return OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, scenario.width) &&
+           OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, scenario.height) &&
+           OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, scenario.codecPixelFormat);
 }
 
 int32_t VideoEncPreprocDualOutputSample::BuildAndConfigure(OH_AVCodec *codec,
-                                                           const PreprocDualOutput::PreprocConfig &config)
+                                                           const PreprocDualOutput::PreprocConfig &config,
+                                                           const PreprocDualOutput::ScenarioCase &scenario)
 {
     if (codec == nullptr) {
         return AV_ERR_INVALID_VAL;
@@ -473,10 +489,30 @@ int32_t VideoEncPreprocDualOutputSample::BuildAndConfigure(OH_AVCodec *codec,
         return AV_ERR_NO_MEMORY;
     }
     int32_t ret = AV_ERR_OK;
-    if (!ApplyPreprocConfig(format, config)) {
+    if (!ApplyPreprocConfig(format, config, scenario)) {
         ret = AV_ERR_UNKNOWN;
     } else {
         ret = OH_VideoEncoder_Configure(codec, format);
+    }
+    OH_AVFormat_Destroy(format);
+    return ret;
+}
+
+int32_t VideoEncPreprocDualOutputSample::SetPreprocParameter(OH_AVCodec *codec,
+                                                            const PreprocDualOutput::PreprocConfig &config)
+{
+    if (codec == nullptr) {
+        return AV_ERR_INVALID_VAL;
+    }
+    OH_AVFormat *format = OH_AVFormat_Create();
+    if (format == nullptr) {
+        return AV_ERR_NO_MEMORY;
+    }
+    int32_t ret = AV_ERR_OK;
+    if (!ApplyPreprocKeys(format, config)) {
+        ret = AV_ERR_UNKNOWN;
+    } else {
+        ret = OH_VideoEncoder_SetParameter(codec, format);
     }
     OH_AVFormat_Destroy(format);
     return ret;
@@ -493,10 +529,10 @@ bool VideoEncPreprocDualOutputSample::CreatePrimary(const std::string &mime)
 
 int32_t VideoEncPreprocDualOutputSample::ConfigurePrimary(const PreprocDualOutput::ScenarioCase &scenario)
 {
-    return BuildAndConfigure(primary_, scenario.primary);
+    return BuildAndConfigure(primary_, scenario.primary, scenario);
 }
 
-int32_t VideoEncPreprocDualOutputSample::GetPrimarySurface()
+int32_t VideoEncPreprocDualOutputSample::GetPrimarySurface(const PreprocDualOutput::ScenarioCase &scenario)
 {
     if (primary_ == nullptr) {
         return AV_ERR_INVALID_VAL;
@@ -505,11 +541,11 @@ int32_t VideoEncPreprocDualOutputSample::GetPrimarySurface()
     if (ret != AV_ERR_OK || window_ == nullptr) {
         return ret;
     }
-    ret = OH_NativeWindow_NativeWindowHandleOpt(window_, SET_FORMAT, NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP);
+    ret = OH_NativeWindow_NativeWindowHandleOpt(window_, SET_FORMAT, scenario.nativeFormat);
     if (ret != 0) {
         return AV_ERR_UNKNOWN;
     }
-    ret = OH_NativeWindow_NativeWindowHandleOpt(window_, SET_BUFFER_GEOMETRY, kWidth_, kHeight_);
+    ret = OH_NativeWindow_NativeWindowHandleOpt(window_, SET_BUFFER_GEOMETRY, scenario.width, scenario.height);
     if (ret != 0) {
         return AV_ERR_UNKNOWN;
     }
@@ -542,7 +578,7 @@ int32_t VideoEncPreprocDualOutputSample::CreateSecondary()
 
 int32_t VideoEncPreprocDualOutputSample::ConfigureSecondary(const PreprocDualOutput::ScenarioCase &scenario)
 {
-    return BuildAndConfigure(secondary_, scenario.secondary);
+    return BuildAndConfigure(secondary_, scenario.secondary, scenario);
 }
 
 int32_t VideoEncPreprocDualOutputSample::StartSecondary()
@@ -551,6 +587,22 @@ int32_t VideoEncPreprocDualOutputSample::StartSecondary()
         return AV_ERR_INVALID_VAL;
     }
     return OH_VideoEncoder_Start(secondary_);
+}
+
+int32_t VideoEncPreprocDualOutputSample::NotifyPrimaryEos()
+{
+    if (primary_ == nullptr) {
+        return AV_ERR_INVALID_VAL;
+    }
+    return OH_VideoEncoder_NotifyEndOfStream(primary_);
+}
+
+int32_t VideoEncPreprocDualOutputSample::NotifySecondaryEos()
+{
+    if (secondary_ == nullptr) {
+        return AV_ERR_INVALID_VAL;
+    }
+    return OH_VideoEncoder_NotifyEndOfStream(secondary_);
 }
 
 int32_t VideoEncPreprocDualOutputSample::DuplicateSecondary()
@@ -669,19 +721,90 @@ bool VideoEncPreprocDualOutputSample::RequestAndFlushFrame(int32_t width, int32_
     return ret == 0;
 }
 
-int32_t VideoEncPreprocDualOutputSample::SendPrimaryFrames(uint32_t frameCount)
+int32_t VideoEncPreprocDualOutputSample::ApplyRuntimeOperation(const PreprocDualOutput::ScenarioCase &scenario,
+                                                              uint32_t frameIndex, uint32_t frameCount,
+                                                              int32_t &frameWidth, int32_t &frameHeight)
+{
+    if (frameIndex != frameCount / 2) {
+        return AV_ERR_OK;
+    }
+    if (scenario.runtimeOperation == PreprocDualOutput::RuntimeOperation::SET_PREPROC_PARAMETER) {
+        int32_t ret = AV_ERR_OK;
+        if (primary_ != nullptr) {
+            ret = SetPreprocParameter(primary_, scenario.runtimePrimary);
+            if (ret != AV_ERR_OK) {
+                return ret;
+            }
+        }
+        if (secondary_ != nullptr) {
+            ret = SetPreprocParameter(secondary_, scenario.runtimeSecondary);
+            if (ret != AV_ERR_OK) {
+                return ret;
+            }
+        }
+    } else if (scenario.runtimeOperation == PreprocDualOutput::RuntimeOperation::CHANGE_BUFFER_GEOMETRY) {
+        if (window_ == nullptr) {
+            return AV_ERR_INVALID_VAL;
+        }
+        int32_t ret = OH_NativeWindow_NativeWindowHandleOpt(window_, SET_BUFFER_GEOMETRY, scenario.runtimeWidth,
+                                                           scenario.runtimeHeight);
+        if (ret != 0) {
+            return AV_ERR_UNKNOWN;
+        }
+        frameWidth = scenario.runtimeWidth;
+        frameHeight = scenario.runtimeHeight;
+    }
+    return AV_ERR_OK;
+}
+
+int32_t VideoEncPreprocDualOutputSample::SendFrames(const PreprocDualOutput::ScenarioCase &scenario,
+                                                   uint32_t frameCount)
 {
     if (window_ == nullptr) {
         return AV_ERR_INVALID_VAL;
     }
+    bool notifyPrimary = primary_ != nullptr;
+    bool notifySecondary = secondary_ != nullptr;
+    if (scenario.encoderMode == PreprocDualOutput::EncoderEnableMode::PRIMARY_SECONDARY_SEND_PRIMARY_ONLY) {
+        notifySecondary = false;
+    } else if (scenario.encoderMode == PreprocDualOutput::EncoderEnableMode::PRIMARY_SECONDARY_SEND_SECONDARY_ONLY) {
+        notifyPrimary = false;
+    }
+
+    bool geometryUpdated = false;
     for (uint32_t i = 0; i < frameCount; ++i) {
-        if (!RequestAndFlushFrame(kWidth_, kHeight_, static_cast<uint8_t>(kFramePatternBase + i), GetTimeUs())) {
+        int32_t frameWidth = scenario.width;
+        int32_t frameHeight = scenario.height;
+        if (geometryUpdated) {
+            frameWidth = scenario.runtimeWidth;
+            frameHeight = scenario.runtimeHeight;
+        }
+        int32_t ret = ApplyRuntimeOperation(scenario, i, frameCount, frameWidth, frameHeight);
+        if (ret != AV_ERR_OK) {
+            return ret;
+        }
+        if (scenario.runtimeOperation == PreprocDualOutput::RuntimeOperation::CHANGE_BUFFER_GEOMETRY &&
+            i >= frameCount / 2) {
+            geometryUpdated = true;
+        }
+        if (!RequestAndFlushFrame(frameWidth, frameHeight, static_cast<uint8_t>(kFramePatternBase + i), GetTimeUs())) {
             return AV_ERR_UNKNOWN;
         }
         usleep(1000);
     }
-    auto ret = OH_VideoEncoder_NotifyEndOfStream(primary_);
-    return (ret == AV_ERR_OK && secondary_ != nullptr) ? OH_VideoEncoder_NotifyEndOfStream(secondary_) : ret;
+    if (notifyPrimary) {
+        int32_t ret = NotifyPrimaryEos();
+        if (ret != AV_ERR_OK) {
+            return ret;
+        }
+    }
+    if (notifySecondary) {
+        int32_t ret = NotifySecondaryEos();
+        if (ret != AV_ERR_OK) {
+            return ret;
+        }
+    }
+    return AV_ERR_OK;
 }
 
 bool VideoEncPreprocDualOutputSample::WaitForDualEos(uint32_t timeoutSeconds)
@@ -692,6 +815,24 @@ bool VideoEncPreprocDualOutputSample::WaitForDualEos(uint32_t timeoutSeconds)
                primaryState_.errorCode.load() != 0 || secondaryState_.errorCode.load() != 0;
     });
     return primaryState_.gotEos.load() && secondaryState_.gotEos.load();
+}
+
+bool VideoEncPreprocDualOutputSample::WaitForPrimaryEos(uint32_t timeoutSeconds)
+{
+    unique_lock<mutex> lock(eosMutex_);
+    (void)eosCv_.wait_for(lock, chrono::seconds(timeoutSeconds), [this]() {
+        return primaryState_.gotEos.load() || primaryState_.errorCode.load() != 0;
+    });
+    return primaryState_.gotEos.load();
+}
+
+bool VideoEncPreprocDualOutputSample::WaitForSecondaryEos(uint32_t timeoutSeconds)
+{
+    unique_lock<mutex> lock(eosMutex_);
+    (void)eosCv_.wait_for(lock, chrono::seconds(timeoutSeconds), [this]() {
+        return secondaryState_.gotEos.load() || secondaryState_.errorCode.load() != 0;
+    });
+    return secondaryState_.gotEos.load();
 }
 
 bool VideoEncPreprocDualOutputSample::PrimaryHasData() const

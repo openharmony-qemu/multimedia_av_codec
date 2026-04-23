@@ -45,14 +45,18 @@ public:
     bool SetOutputFilePath(const std::string &path);
     bool CreatePrimary(const std::string &mime);
     int32_t ConfigurePrimary(const PreprocDualOutput::ScenarioCase &scenario);
-    int32_t GetPrimarySurface();
+    int32_t GetPrimarySurface(const PreprocDualOutput::ScenarioCase &scenario);
     int32_t StartPrimary();
-    int32_t SendPrimaryFrames(uint32_t frameCount);
+    int32_t SendFrames(const PreprocDualOutput::ScenarioCase &scenario, uint32_t frameCount);
     bool WaitForDualEos(uint32_t timeoutSeconds = 20);
+    bool WaitForPrimaryEos(uint32_t timeoutSeconds = 20);
+    bool WaitForSecondaryEos(uint32_t timeoutSeconds = 20);
 
     int32_t CreateSecondary();
     int32_t ConfigureSecondary(const PreprocDualOutput::ScenarioCase &scenario);
     int32_t StartSecondary();
+    int32_t NotifyPrimaryEos();
+    int32_t NotifySecondaryEos();
     int32_t DuplicateSecondary();
     int32_t DestroyPrimary();
     int32_t DestroySecondary();
@@ -83,15 +87,18 @@ private:
     static void DumpOutputBuffer(OH_AVBuffer *buffer, const OH_AVCodecBufferAttr &attr, EncoderState &state);
 
     int32_t RegisterCallback(OH_AVCodec *codec, EncoderState &state);
-    int32_t BuildAndConfigure(OH_AVCodec *codec, const PreprocDualOutput::PreprocConfig &config);
-    static bool ApplyPreprocConfig(OH_AVFormat *format, const PreprocDualOutput::PreprocConfig &config);
+    int32_t BuildAndConfigure(OH_AVCodec *codec, const PreprocDualOutput::PreprocConfig &config,
+                              const PreprocDualOutput::ScenarioCase &scenario);
+    int32_t SetPreprocParameter(OH_AVCodec *codec, const PreprocDualOutput::PreprocConfig &config);
+    static bool ApplyPreprocConfig(OH_AVFormat *format, const PreprocDualOutput::PreprocConfig &config,
+                                   const PreprocDualOutput::ScenarioCase &scenario);
+    static bool ApplyPreprocKeys(OH_AVFormat *format, const PreprocDualOutput::PreprocConfig &config);
     bool RequestAndFlushFrame(int32_t width, int32_t height, uint8_t pattern, int64_t timestampUs);
+    int32_t ApplyRuntimeOperation(const PreprocDualOutput::ScenarioCase &scenario, uint32_t frameIndex,
+                                  uint32_t frameCount, int32_t &frameWidth, int32_t &frameHeight);
 
     void ReleaseWindow();
     void ResetStates();
-
-    static constexpr int32_t kWidth_ = 1280;
-    static constexpr int32_t kHeight_ = 720;
 
     OH_AVCodec *primary_ = nullptr;
     OH_AVCodec *secondary_ = nullptr;
