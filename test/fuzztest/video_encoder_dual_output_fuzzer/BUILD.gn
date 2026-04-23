@@ -36,6 +36,7 @@ ohos_fuzztest("VideoEncoderDualOutputFuzzTest") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_static",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
     "window_manager:libwm",
