@@ -585,11 +585,9 @@ bool VideoEncPreprocDualOutputSample::RequestAndFlushFrame(int32_t width, int32_
     int32_t format = surfaceBuffer->GetFormat();
     (void)OH_NativeWindow_NativeWindowHandleOpt(window_, GET_FORMAT, &format);
 
-    int32_t stride = surfaceBuffer->GetStride();
-    int32_t windowStride = 0;
-    if (OH_NativeWindow_NativeWindowHandleOpt(window_, GET_STRIDE, &windowStride) == 0 && windowStride > 0) {
-        stride = windowStride;
-    }
+    OH_NativeBuffer_Config config;
+    OH_NativeBuffer_GetConfig(nativeBuffer, &config);
+    int32_t stride = config.stride;
     const int32_t sliceHeight = surfaceBuffer->GetHeight();
     if (stride <= 0 || sliceHeight <= 0) {
         (void)OH_NativeBuffer_Unmap(nativeBuffer);
