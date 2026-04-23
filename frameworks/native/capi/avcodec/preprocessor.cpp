@@ -301,6 +301,9 @@ int32_t Preprocessor::Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> out
     CHECK_AND_RETURN_RET_LOG(input && output, AVCS_ERR_INVALID_VAL,
                              "Invalid buffer: input=%{public}p, output=%{public}p", input.GetRefPtr(),
                              output.GetRefPtr());
+    CHECK_AND_RETURN_RET_LOG(input->GetFormat() == output->GetFormat(), AVCS_ERR_INVALID_VAL,
+                             "Format mismatch: input=%{public}d, output=%{public}d", input->GetFormat(),
+                             output->GetFormat());
     if (ShouldDropFrame(pts)) {
         return AVCS_ERR_OK;
     }
@@ -359,19 +362,19 @@ const Preprocessor::DropFrameConfig &Preprocessor::GetDropFrameConfig() const
 
 void Preprocessor::Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output)
 {
+    output->SetSurfaceBufferWidth(cropConfig_.width);
+    output->SetSurfaceBufferHeight(cropConfig_.height);
     PreProcessing::CropRect rect{cropConfig_.top, cropConfig_.left, cropConfig_.bottom, cropConfig_.right};
     int32_t ret = fastKitsInterface_.Crop(input, output, rect);
-    if (ret != AVCS_ERR_OK) {
-        AVCODEC_LOGE("Crop failed: %{public}d", ret);
-    }
+    CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Crop failed: %{public}d", ret);
 }
 
 void Preprocessor::Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output)
 {
+    output->SetSurfaceBufferWidth(downsamplingConfig_.width);
+    output->SetSurfaceBufferHeight(downsamplingConfig_.height);
     int32_t ret = fastKitsInterface_.DownSample(input, output);
-    if (ret != AVCS_ERR_OK) {
-        AVCODEC_LOGE("Downsampling failed: %{public}d", ret);
-    }
+    CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Downsampling failed: %{public}d", ret);
 }
 
 void Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output)
