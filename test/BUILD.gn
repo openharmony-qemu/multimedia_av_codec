@@ -424,6 +424,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/encoderapi11h265bframe8bit_fuzzer:EncoderAPI11H265BFrame8BitFuzzTest",
       "fuzztest/encoderconfigure_fuzzer:EncoderConfigureFuzzTest",
       "fuzztest/encoderinner_fuzzer:EncoderInnerFuzzTest",
+      "fuzztest/video_encoder_dual_output_fuzzer:VideoEncoderDualOutputFuzzTest",
       "fuzztest/encodersetparameter_fuzzer:EncoderSetParameterFuzzTest",
       "fuzztest/fcodecsurfaceconfigure_fuzzer:FCodecSurfaceConfigureFuzzTest",
       "fuzztest/h263swdecoderconfigure_fuzzer:H263SwdecoderConfigureFuzzTest",

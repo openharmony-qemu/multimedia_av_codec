@@ -216,8 +216,8 @@ int32_t Preprocessor::SetParameter(const Media::Format &format)
 int32_t Preprocessor::Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output, uint64_t pts)
 {
     CHECK_AND_RETURN_RET_LOG(input && output, AVCS_ERR_INVALID_VAL,
-                             "Invalid buffer: input=%{public}p, output=%{public}p", input.GetRefPtr(),
-                             output.GetRefPtr());
+                             "Invalid buffer: input is %{public}s, output is %{public}s", input ? "valid" : "nullptr",
+                             output ? "valid" : "nullptr");
     CHECK_AND_RETURN_RET_LOG(input->GetFormat() == output->GetFormat(), AVCS_ERR_INVALID_VAL,
                              "Format mismatch: input=%{public}d, output=%{public}d", input->GetFormat(),
                              output->GetFormat());
