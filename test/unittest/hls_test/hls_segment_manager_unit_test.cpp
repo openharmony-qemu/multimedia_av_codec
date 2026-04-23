@@ -2932,6 +2932,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, REMOVE_FMP4_PADDING_DATA_002, TestSize.Level
     readDataInfo.streamId_ = 1;
     readDataInfo.wantReadLength_ = 16;
     readDataInfo.realReadLength_ = 16;
+    downloader->aesDecryptor_ = std::make_shared<AesDecryptor>();
     downloader->RemoveFmp4PaddingData(buffer, readDataInfo);
     EXPECT_EQ(readDataInfo.realReadLength_, 16);
 }
