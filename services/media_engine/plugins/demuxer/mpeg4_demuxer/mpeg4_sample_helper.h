@@ -55,6 +55,8 @@ public:
         int64_t &duration);
     Status BuildSampleIndexEntries();
     Status GetSampleDuration(uint32_t index, uint32_t &delta);
+    void SetTimeOffset(int64_t timeOffset);
+    void CalculateDtsShift();
 
     struct SampleIndexEntry {
         int64_t dts;
@@ -139,6 +141,8 @@ private:
     uint32_t numMoovSamples_ = 0;
     bool hasTfhd_ = false;
     bool hasDefaultStszSize_ = false;
+    int64_t dtsShift_ = 0;
+    int64_t timeOffset_ = 0;
 
     void ProcessHalfByteSampleSizes(const uint8_t* data, uint32_t& entryIndex, uint32_t numSampleSizes);
     Status ExpandCttsEntry(uint32_t sttsNum);
