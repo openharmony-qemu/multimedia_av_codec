@@ -42,8 +42,9 @@ ApiMetricsReporter::~ApiMetricsReporter()
             HISTOGRAM_ENUMERATION(apiName_.c_str(), sample_, 50); // 50：boundary
             break;
         case TIMES:
-            HISTOGRAM_TIMES(apiName_.c_str(), std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::steady_clock::now() - beginTime_).count());
+            HISTOGRAM_TIMES(apiName_.c_str(), static_cast<int32_t>(
+                std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - beginTime_).count()));
             break;
         default:
             break;
