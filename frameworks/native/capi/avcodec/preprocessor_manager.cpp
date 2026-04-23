@@ -209,6 +209,10 @@ void PreprocessorManager::EncoderInfo::Init(std::shared_ptr<Preprocessor> prepro
 
     preprocessor_ = preprocessor;
     preprocessor_->SetOnBufferReallocCallback([this](sptr<SurfaceBuffer> oldBuf, sptr<SurfaceBuffer> newBuf) {
+        if (!oldBuf || !newBuf) {
+            AVCODEC_LOGE("Buffer is nullptr");
+            return;
+        }
         auto ret = encoderSurface_->DetachBufferFromQueue(oldBuf);
         if (ret != GSERROR_OK) {
             AVCODEC_LOGE("Dettach surfacebuffer from queue failed, GSError: %{public}d", ret);
