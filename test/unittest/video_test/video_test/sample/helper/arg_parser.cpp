@@ -164,7 +164,7 @@ Video codec demo help:
     --pixel_format                      1: YUVI420          2: NV12     3: NV21
                                         4: SURFACE_FORMAT   5: RGBA
     --bitrate                           encoder bitrate (bps)
-    --bitrate_mode                      encoder bitrate mode (0: CBR; 1: VBR; 2: CQ; 3: SQR)
+    --bitrate_mode                      encoder bitrate mode (0: CBR; 1: VBR; 2: CQ; 3: SQR; 4: CBR_HIGH_QUALITY)
     --video_profile                     AVC profile (0: baseline; 4: high; 8: main)
                                         HEVC profile (0: main; 1: main10)
     --codec_run_mode                    0: Surface origin      1: Buffer SharedMemory

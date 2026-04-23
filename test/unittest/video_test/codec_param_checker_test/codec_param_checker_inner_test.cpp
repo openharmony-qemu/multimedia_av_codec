@@ -911,6 +911,184 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1574,
 }
 
 /**
+ * @tc.name: ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1575
+ * @tc.desc: codec video configure sqr_factor and bitrate mode is CBR_HIGH_QUALITY
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1575, TestSize.Level3)
+{
+    SetFormatBasicParam(formatInner_);
+    if (IsEncoderBitrateModeSupported(capabilityDataHevc_, CBR_HIGH_QUALITY)) {
+        formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR_HIGH_QUALITY);
+        formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, DEFAULT_SQR_FACTOR);
+        ASSERT_EQ(AVCS_ERR_CODEC_PARAM_INCORRECT, videoEncHevcInner_->Configure(formatInner_));
+    }
+}
+
+/**
+ * @tc.name: ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1576
+ * @tc.desc: codec video configure quality and bitrate mode is CBR_HIGH_QUALITY
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1576, TestSize.Level3)
+{
+    SetFormatBasicParam(formatInner_);
+    if (IsEncoderBitrateModeSupported(capabilityDataHevc_, CBR_HIGH_QUALITY)) {
+        formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR_HIGH_QUALITY);
+        formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, DEFAULT_QUALITY);
+        ASSERT_EQ(AVCS_ERR_CODEC_PARAM_INCORRECT, videoEncHevcInner_->Configure(formatInner_));
+    }
+}
+
+/**
+ * @tc.name: ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1577
+ * @tc.desc: codec video configure maxBitrate and bitrate mode is CBR_HIGH_QUALITY
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1577, TestSize.Level3)
+{
+    SetFormatBasicParam(formatInner_);
+    if (IsEncoderBitrateModeSupported(capabilityDataHevc_, CBR_HIGH_QUALITY)) {
+        formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR_HIGH_QUALITY);
+        formatInner_.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, DEFAULT_BITRATE);
+        ASSERT_EQ(AV_ERR_OK, videoEncHevcInner_->Configure(formatInner_));
+    }
+}
+
+/**
+ * @tc.name: ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1578
+ * @tc.desc: codec video configure bitrate and bitrate mode is CBR_HIGH_QUALITY
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1578, TestSize.Level3)
+{
+    SetFormatBasicParam(formatInner_);
+    if (IsEncoderBitrateModeSupported(capabilityDataHevc_, CBR_HIGH_QUALITY)) {
+        formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR_HIGH_QUALITY);
+        formatInner_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE);
+        ASSERT_EQ(AV_ERR_OK, videoEncHevcInner_->Configure(formatInner_));
+    }
+}
+
+/**
+ * @tc.name: ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1579
+ * @tc.desc: codec video configure bitrate not in range and bitrate mode is CBR_HIGH_QUALITY
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1579, TestSize.Level3)
+{
+    SetFormatBasicParam(formatInner_);
+    if (IsEncoderBitrateModeSupported(capabilityDataHevc_, CBR_HIGH_QUALITY)) {
+        formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR_HIGH_QUALITY);
+        formatInner_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, INT64_MAX);
+        ASSERT_EQ(AVCS_ERR_CODEC_PARAM_INCORRECT, videoEncHevcInner_->Configure(formatInner_));
+    }
+}
+
+/**
+ * @tc.name: ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1580
+ * @tc.desc: codec video configure bitrate mode is CBR_HIGH_QUALITY
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1580, TestSize.Level3)
+{
+    SetFormatBasicParam(formatInner_);
+    if (IsEncoderBitrateModeSupported(capabilityDataHevc_, CBR_HIGH_QUALITY)) {
+        formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR_HIGH_QUALITY);
+        ASSERT_EQ(AV_ERR_OK, videoEncHevcInner_->Configure(formatInner_));
+    }
+}
+
+/**
+ * @tc.name: ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1581
+ * @tc.desc: bitrate mode CBR_HIGH_QUALITY is not supported
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1581, TestSize.Level3)
+{
+    SetFormatBasicParam(formatInner_);
+    if (!IsEncoderBitrateModeSupported(capabilityDataHevc_, CBR_HIGH_QUALITY)) {
+        formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR_HIGH_QUALITY);
+        ASSERT_EQ(AV_ERR_OK, videoEncHevcInner_->Configure(formatInner_));
+    }
+}
+
+/**
+ * @tc.name: ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1582
+ * @tc.desc: bitrate mode CBR_HIGH_QUALITY is not supported
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1582, TestSize.Level3)
+{
+    SetFormatBasicParam(formatInner_);
+    if (!IsEncoderBitrateModeSupported(capabilityDataHevc_, CBR_HIGH_QUALITY)) {
+        formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR_HIGH_QUALITY);
+        formatInner_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE);
+        ASSERT_EQ(AV_ERR_OK, videoEncHevcInner_->Configure(formatInner_));
+    }
+}
+
+/**
+ * @tc.name: ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1583
+ * @tc.desc: bitrate mode CBR_HIGH_QUALITY is not supported
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1583, TestSize.Level3)
+{
+    SetFormatBasicParam(formatInner_);
+    if (!IsEncoderBitrateModeSupported(capabilityDataHevc_, CBR_HIGH_QUALITY)) {
+        formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR_HIGH_QUALITY);
+        formatInner_.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, DEFAULT_MAX_BITRATE);
+        ASSERT_EQ(AV_ERR_OK, videoEncHevcInner_->Configure(formatInner_));
+    }
+}
+
+/**
+ * @tc.name: ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1584
+ * @tc.desc: bitrate mode CBR_HIGH_QUALITY is not supported
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1584, TestSize.Level3)
+{
+    SetFormatBasicParam(formatInner_);
+    if (!IsEncoderBitrateModeSupported(capabilityDataHevc_, CBR_HIGH_QUALITY)) {
+        formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR_HIGH_QUALITY);
+        formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, DEFAULT_QUALITY);
+        ASSERT_EQ(AVCS_ERR_CODEC_PARAM_INCORRECT, videoEncHevcInner_->Configure(formatInner_));
+    }
+}
+
+/**
+ * @tc.name: ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1585
+ * @tc.desc: bitrate mode CBR_HIGH_QUALITY is not supported
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1585, TestSize.Level3)
+{
+    SetFormatBasicParam(formatInner_);
+    if (!IsEncoderBitrateModeSupported(capabilityDataHevc_, CBR_HIGH_QUALITY)) {
+        formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR_HIGH_QUALITY);
+        formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, DEFAULT_SQR_FACTOR);
+        ASSERT_EQ(AVCS_ERR_CODEC_PARAM_INCORRECT, videoEncHevcInner_->Configure(formatInner_));
+    }
+}
+
+/**
+ * @tc.name: ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1586
+ * @tc.desc: bitrate mode CBR_HIGH_QUALITY is not supported
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1586, TestSize.Level3)
+{
+    SetFormatBasicParam(formatInner_);
+    if (!IsEncoderBitrateModeSupported(capabilityDataHevc_, CBR_HIGH_QUALITY)) {
+        formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR_HIGH_QUALITY);
+        formatInner_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, INT64_MAX);
+        ASSERT_EQ(AVCS_ERR_CODEC_PARAM_INCORRECT, videoEncHevcInner_->Configure(formatInner_));
+    }
+}
+
+/**
  * @tc.name: VIDEO_CODEC_SCENARIO_TEST_001
  * @tc.desc: codec video scenario checkout
  * @tc.type: FUNC
