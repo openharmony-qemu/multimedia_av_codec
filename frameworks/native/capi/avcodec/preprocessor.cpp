@@ -296,7 +296,7 @@ int32_t Preprocessor::SetParameter(const Media::Format &format)
     return Configure(format);
 }
 
-int32_t Preprocessor::Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output, uint64_t pts)
+int32_t Preprocessor::Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output, uint64_t pts)
 {
     CHECK_AND_RETURN_RET_LOG(input && output, AVCS_ERR_INVALID_VAL,
                              "Invalid buffer: input=%{public}p, output=%{public}p", input.GetRefPtr(),
@@ -335,6 +335,11 @@ void Preprocessor::FlushTimeStamp()
     return dropFilter_.FlushTimeStamp();
 }
 
+void Preprocessor::SetOnBufferReallocCallback(std::function<void(sptr<SurfaceBuffer>, sptr<SurfaceBuffer>)> callback)
+{
+    onOutSurfaceBufferReallocCb_ = callback;
+}
+
 bool Preprocessor::IsCropEnabled() const
 {
     return cropConfig_.enabled;
@@ -360,7 +365,7 @@ const Preprocessor::DropFrameConfig &Preprocessor::GetDropFrameConfig() const
     return dropFrameConfig_;
 }
 
-void Preprocessor::Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output)
+void Preprocessor::Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
 {
     if (!CheckOrReallocOutSurfaceBuffer(cropConfig_.width, cropConfig_.height, output)) {
         AVCODEC_LOGE("Realloc buffer failed, buffer seq: %{public}d", output->GetSeqNum());
@@ -371,7 +376,7 @@ void Preprocessor::Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output)
     CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Crop failed: %{public}d", ret);
 }
 
-void Preprocessor::Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output)
+void Preprocessor::Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
 {
     if (!CheckOrReallocOutSurfaceBuffer(downsamplingConfig_.width, downsamplingConfig_.height, output)) {
         AVCODEC_LOGE("Realloc buffer failed, buffer seq: %{public}d", output->GetSeqNum());
@@ -381,7 +386,7 @@ void Preprocessor::Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> o
     CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Downsampling failed: %{public}d", ret);
 }
 
-void Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output)
+void Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
 {
     if (!CheckOrReallocOutSurfaceBuffer(encoderConfig_.width, encoderConfig_.height, output)) {
         AVCODEC_LOGE("Realloc buffer failed, buffer seq: %{public}d", output->GetSeqNum());
@@ -506,7 +511,7 @@ bool Preprocessor::CheckOrReallocOutSurfaceBuffer(int32_t targetWidth, int32_t t
                                                   sptr<SurfaceBuffer> &output)
 {
     if (output->GetWidth() != targetWidth || output->GetHeight() != targetHeight) {
-        sptr<SurfaceBuffer> newBuffer;
+        sptr<SurfaceBuffer> newBuffer = SurfaceBuffer::Create();
         BufferRequestConfig config = {
             .width = targetWidth,
             .height = targetHeight,
@@ -519,6 +524,8 @@ bool Preprocessor::CheckOrReallocOutSurfaceBuffer(int32_t targetWidth, int32_t t
         if (ret != GSERROR_OK) {
             return false;
         }
+        onOutSurfaceBufferReallocCb_(output, newBuffer);
+        output = newBuffer;
     }
     return true;
 }

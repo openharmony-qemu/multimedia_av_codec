@@ -101,7 +101,7 @@ private:
         void EncoderThreadLoop();
 
         std::queue<std::shared_ptr<SurfaceBufferWrapper>> pendingBuffers_{};
-        std::map<uint32_t, sptr<SurfaceBuffer>> encoderSurfaceBufferPool;
+        std::map<uint32_t, sptr<SurfaceBuffer>> encoderSurfaceBufferPool_;
         std::queue<std::shared_ptr<SurfaceBufferWrapper>> availableInputBuffers_{};
         std::shared_ptr<Preprocessor> preprocessor_{nullptr};
         sptr<Surface> encoderSurface_{nullptr};

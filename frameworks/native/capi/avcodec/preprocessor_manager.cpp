@@ -194,8 +194,6 @@ void PreprocessorManager::EncoderInfo::Init(std::shared_ptr<Preprocessor> prepro
     if (!preprocessor || !surface) {
         AVCODEC_LOGE("Get a nullptr, %s %s", preprocessor ? "" : "preprocessor", surface ? "" : "surface");
     }
-    preprocessor_ = preprocessor;
-
     std::weak_ptr<EncoderInfo> weakThis = shared_from_this();
     encoderSurface_ = surface;
     encoderSurface_->Connect();
@@ -207,6 +205,21 @@ void PreprocessorManager::EncoderInfo::Init(std::shared_ptr<Preprocessor> prepro
 
         encoderInfo->OnNewEncoderSurfaceBufferAvailable(seq, fence);
         return GSERROR_OK;
+    });
+
+    preprocessor_ = preprocessor;
+    preprocessor_->SetOnBufferReallocCallback([this](sptr<SurfaceBuffer> oldBuf, sptr<SurfaceBuffer> newBuf) {
+        auto ret = encoderSurface_->DetachBufferFromQueue(oldBuf);
+        if (ret != GSERROR_OK) {
+            AVCODEC_LOGE("Dettach surfacebuffer from queue failed, GSError: %{public}d", ret);
+            return;
+        }
+        ret = encoderSurface_->AttachBufferToQueue(newBuf);
+        if (ret != GSERROR_OK) {
+            AVCODEC_LOGE("Attach surfacebuffer to queue failed, GSError: %{public}d", ret);
+            return;
+        }
+        encoderSurfaceBufferPool_.erase(oldBuf->GetSeqNum());
     });
 }
 
@@ -250,7 +263,7 @@ void PreprocessorManager::EncoderInfo::Stop()
 
 int32_t PreprocessorManager::EncoderInfo::CheckAndAllocateSurfaceBufferFromEncSurface()
 {
-    uint32_t allocTimes = encoderSurface_->GetQueueSize() - encoderSurfaceBufferPool.size();
+    uint32_t allocTimes = encoderSurface_->GetQueueSize() - encoderSurfaceBufferPool_.size();
     if (allocTimes == 0) {
         return AV_ERR_OK;
     }
@@ -285,7 +298,7 @@ int32_t PreprocessorManager::EncoderInfo::CheckAndAllocateSurfaceBufferFromEncSu
             return AVCS_ERR_UNKNOWN;
         }
 
-        encoderSurfaceBufferPool.emplace(surfaceBuffer->GetSeqNum(), surfaceBuffer);
+        encoderSurfaceBufferPool_.emplace(surfaceBuffer->GetSeqNum(), surfaceBuffer);
         auto bufferWrapper = std::make_shared<SurfaceBufferWrapper>(
             encoderSurface_, surfaceBuffer, nullptr, SurfaceBufferWrapper::SurfaceType::PRODUCER);
         availableInputBuffers_.push(bufferWrapper);
@@ -309,8 +322,8 @@ void PreprocessorManager::EncoderInfo::OnNewPendingBufferAvailable(std::shared_p
 void PreprocessorManager::EncoderInfo::OnNewEncoderSurfaceBufferAvailable(uint32_t seq, const sptr<SyncFence> &fence)
 {
     std::lock_guard<std::mutex> lock(bufferQueueMutex_);
-    auto surfaceBuffer = encoderSurfaceBufferPool.find(seq);
-    if (surfaceBuffer == encoderSurfaceBufferPool.end()) {
+    auto surfaceBuffer = encoderSurfaceBufferPool_.find(seq);
+    if (surfaceBuffer == encoderSurfaceBufferPool_.end()) {
         AVCODEC_LOGW("Seqnum=%{public}u don't belong to this encoder: %{public}s, ignore", seq, encoderId_.data());
         return;
     }
