@@ -28,10 +28,13 @@ namespace MediaAVCodec {
 namespace PreProcessing {
 
 // libfast_image.so 返回的错误码
-constexpr int32_t FAST_ERR_SUCCESS = 0;
-constexpr int32_t FAST_ERR_SUCCESS_PARTIAL = 1;
-constexpr int32_t FAST_ERR_ILLEGAL_INPUT = 2;
-constexpr int32_t FAST_ERR_INVALID_PTR = 3;
+enum FastErrCode {
+    FAST_ERR_SUCCESS = 0,
+    FAST_ERR_SUCCESS_PARTIAL = 1,
+    FAST_ERR_ILLEGAL_INPUT = 2,
+    FAST_ERR_INVALID_PTR = 3,
+    FAST_ERR_UNSURPPORTED = 4,
+};
 
 // libfast_image.so 导出符号的函数指针类型
 using FastScaleInitFunc = int32_t (*)(uint32_t format, int32_t algo);

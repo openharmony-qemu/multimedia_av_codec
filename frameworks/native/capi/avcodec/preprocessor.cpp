@@ -18,12 +18,19 @@
 #include <cmath>
 #include <cstring>
 #include <limits>
-#include "securec.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "avcodeclist_impl.h"
 #include "meta/meta_key.h"
 #include "native_avcodec_base.h"
+#include "securec.h"
+
+#ifdef BUILD_ENG_VERSION
+#include <fstream>
+#include <sys/stat.h>
+#include "parameter.h"
+#include "parameters.h"
+#endif
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "Preprocessor"};
@@ -32,6 +39,20 @@ double RoundToTwoDecimals(double value)
 {
     return std::round(value * 100.0) / 100.0; // 100.0: Round to 2 decimal digits using round half up
 }
+
+#ifdef BUILD_ENG_VERSION
+constexpr char DUMP_PATH[] = "/data/misc/preprocessordump";
+
+bool IsDumpEnabled()
+{
+    return OHOS::system::GetBoolParameter("preprocessor.dump", false);
+}
+
+void EnsureDumpDir()
+{
+    (void)mkdir(DUMP_PATH, S_IRWXU | S_IRWXG | S_IRWXO);
+}
+#endif
 } // namespace
 
 namespace OHOS {
@@ -104,12 +125,12 @@ int32_t Preprocessor::ValidateCrop(const Media::Format &format, CropParams &para
     bool hasAny = hasLeft || hasRight || hasTop || hasBottom;
     bool hasAll = hasLeft && hasRight && hasTop && hasBottom;
 
-    if (!hasAny) {              // If none of the 4 values (left, right, top and bottom) is configured,
-        return AVCS_ERR_OK;     // keep current status.
+    if (!hasAny) {          // If none of the 4 values (left, right, top and bottom) is configured,
+        return AVCS_ERR_OK; // keep current status.
     }
 
-    if (hasAny && !hasAll) {            // At least one of the 4 values is not configured,
-        return AVCS_ERR_INVALID_VAL;    // it is not allowed.
+    if (hasAny && !hasAll) {         // At least one of the 4 values is not configured,
+        return AVCS_ERR_INVALID_VAL; // it is not allowed.
     }
 
     // left, right, top and bottom are all configured
@@ -171,7 +192,11 @@ int32_t Preprocessor::ValidateDownsampling(const Media::Format &format, Downsamp
     if (!(minWidth > 0 && minHeight > 0 && minWidth <= width && width <= encoderConfig_.width &&
           encoderConfig_.width <= maxWidth && minHeight <= height && height <= encoderConfig_.height &&
           encoderConfig_.height <= maxHeight)) {
-        AVCODEC_LOGE("Invalid downsampling parameters: width=%{public}d, height=%{public}d", width, height);
+        AVCODEC_LOGE("Invalid downsampling parameters: width=%{public}d, height=%{public}d, "
+                     "valid range: width [%{public}d, %{public}d], height [%{public}d, %{public}d], "
+                     "encoder configured: %{public}dx%{public}d",
+                     width, height, minWidth, maxWidth, minHeight, maxHeight, encoderConfig_.width,
+                     encoderConfig_.height);
         return AVCS_ERR_INVALID_VAL;
     }
     params.width = width;
@@ -228,6 +253,13 @@ int32_t Preprocessor::Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &ou
     } else {
         Copy(input, output);
     }
+
+#ifdef BUILD_ENG_VERSION
+    if (IsDumpEnabled()) {
+        DumpSurfaceBuffer(input, "input", pts);
+        DumpSurfaceBuffer(output, "output", pts);
+    }
+#endif
 
     return AVCS_ERR_OK;
 }
@@ -308,11 +340,11 @@ void Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
     }
     auto *src = static_cast<uint8_t *>(input->GetVirAddr());
     auto *dst = static_cast<uint8_t *>(output->GetVirAddr());
-    CHECK_AND_RETURN_LOG(src != nullptr && dst != nullptr,
-                         "Invalid vir addr: input=%{public}p, output=%{public}p", src, dst);
+    CHECK_AND_RETURN_LOG(src != nullptr && dst != nullptr, "Invalid vir addr: input=%{public}p, output=%{public}p", src,
+                         dst);
     EXPECT_AND_LOGW(input->GetFormat() != output->GetFormat(),
-                    "SurfaceBuffer format mismatch, input=%{public}d, output=%{public}d",
-                    input->GetFormat(), output->GetFormat());
+                    "SurfaceBuffer format mismatch, input=%{public}d, output=%{public}d", input->GetFormat(),
+                    output->GetFormat());
 
     (void)memcpy_s(dst, input->GetSize(), src, output->GetSize());
 }
@@ -485,5 +517,30 @@ int32_t Preprocessor::GetDownsamplingHeight() const
     return downsamplingConfig_.height;
 }
 
+#ifdef BUILD_ENG_VERSION
+void Preprocessor::DumpSurfaceBuffer(const sptr<SurfaceBuffer> &buffer, const std::string &prefix, uint64_t pts) const
+{
+    if (buffer == nullptr) {
+        return;
+    }
+    auto *va = static_cast<const char *>(buffer->GetVirAddr());
+    if (va == nullptr || buffer->GetSize() == 0) {
+        return;
+    }
+    EnsureDumpDir();
+    int32_t w = buffer->GetWidth();
+    int32_t h = buffer->GetHeight();
+    int32_t fmt = buffer->GetFormat();
+    char name[256];
+    int ret = sprintf_s(name, sizeof(name), "%s/%s_%dx%d_fmt%d_pts%" PRIu64 ".bin", DUMP_PATH, prefix.c_str(), w, h,
+                        fmt, pts);
+    if (ret > 0) {
+        std::ofstream ofs(name, std::ios::binary | std::ios::app);
+        if (ofs.is_open()) {
+            ofs.write(va, buffer->GetSize());
+        }
+    }
+}
+#endif
 } // namespace MediaAVCodec
 } // namespace OHOS
