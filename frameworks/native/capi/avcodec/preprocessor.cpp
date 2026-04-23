@@ -362,8 +362,10 @@ const Preprocessor::DropFrameConfig &Preprocessor::GetDropFrameConfig() const
 
 void Preprocessor::Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output)
 {
-    output->SetSurfaceBufferWidth(cropConfig_.width);
-    output->SetSurfaceBufferHeight(cropConfig_.height);
+    if (!CheckOrReallocOutSurfaceBuffer(cropConfig_.width, cropConfig_.height, output)) {
+        AVCODEC_LOGE("Realloc buffer failed, buffer seq: %{public}d", output->GetSeqNum());
+        return;
+    }
     PreProcessing::CropRect rect{cropConfig_.top, cropConfig_.left, cropConfig_.bottom, cropConfig_.right};
     int32_t ret = fastKitsInterface_.Crop(input, output, rect);
     CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Crop failed: %{public}d", ret);
@@ -371,14 +373,20 @@ void Preprocessor::Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output)
 
 void Preprocessor::Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output)
 {
-    output->SetSurfaceBufferWidth(downsamplingConfig_.width);
-    output->SetSurfaceBufferHeight(downsamplingConfig_.height);
+    if (!CheckOrReallocOutSurfaceBuffer(downsamplingConfig_.width, downsamplingConfig_.height, output)) {
+        AVCODEC_LOGE("Realloc buffer failed, buffer seq: %{public}d", output->GetSeqNum());
+        return;
+    }
     int32_t ret = fastKitsInterface_.DownSample(input, output);
     CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Downsampling failed: %{public}d", ret);
 }
 
 void Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output)
 {
+    if (!CheckOrReallocOutSurfaceBuffer(encoderConfig_.width, encoderConfig_.height, output)) {
+        AVCODEC_LOGE("Realloc buffer failed, buffer seq: %{public}d", output->GetSeqNum());
+        return;
+    }
     PreProcessing::CropRect rect{ 0, 0, encoderConfig_.height - 1, encoderConfig_.width - 1 };
     if (fastKitsInterface_.Crop(input, output, rect) == AVCS_ERR_OK) {
         return;
@@ -491,6 +499,27 @@ bool Preprocessor::GetEncoderRange(const Media::Format &format, Range &encWidth,
     }
     encWidth = cap->width;
     encHeight = cap->height;
+    return true;
+}
+
+bool Preprocessor::CheckOrReallocOutSurfaceBuffer(int32_t targetWidth, int32_t targetHeight,
+                                                  sptr<SurfaceBuffer> &output)
+{
+    if (output->GetWidth() != targetWidth || output->GetHeight() != targetHeight) {
+        sptr<SurfaceBuffer> newBuffer;
+        BufferRequestConfig config = {
+            .width = targetWidth,
+            .height = targetHeight,
+            .strideAlignment = output->GetStride(),
+            .format = output->GetFormat(),
+            .usage = output->GetUsage(),
+            .timeout = 0,
+        };
+        auto ret = newBuffer->Alloc(config, output);
+        if (ret != GSERROR_OK) {
+            return false;
+        }
+    }
     return true;
 }
 

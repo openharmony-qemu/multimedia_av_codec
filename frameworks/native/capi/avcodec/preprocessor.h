@@ -142,6 +142,7 @@ private:
     GraphicPixelFormat ConvertVideoPixelFormat2GraphicPixelFormat(VideoPixelFormat pixelFormat, int32_t profile);
     void UpdateConfiguredValues(const Media::Format &format, EncoderConfig &config);
     bool GetEncoderRange(const Media::Format &format, Range &encWidth, Range &encHeight);
+    bool CheckOrReallocOutSurfaceBuffer(int32_t targetWidth, int32_t targetHeight, sptr<SurfaceBuffer> &output);
 
     CropConfig cropConfig_;
     DownsamplingConfig downsamplingConfig_;
