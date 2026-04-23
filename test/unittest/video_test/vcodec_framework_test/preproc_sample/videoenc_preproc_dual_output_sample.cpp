@@ -150,42 +150,34 @@ bool FillYuv420Sp(uint8_t *base, int32_t width, int32_t height, int32_t stride, 
     return true;
 }
 
-bool FillRgb888(uint8_t *base, int32_t width, int32_t height, int32_t stride, uint8_t pattern, bool redFirst)
+bool FillYuv420P(uint8_t *base, int32_t width, int32_t height, int32_t stride, int32_t sliceHeight,
+                 uint8_t pattern)
 {
-    constexpr int32_t bytesPerPixel = 3;
-    if (base == nullptr || width <= 0 || height <= 0 || stride < width * bytesPerPixel) {
+    int32_t chromaWidth = (width + 1) / 2;
+    int32_t chromaStride = stride / 2;
+    int32_t chromaSliceHeight = (sliceHeight + 1) / 2;
+    if (base == nullptr || width <= 0 || height <= 0 || stride < width || chromaStride < chromaWidth ||
+        sliceHeight < height) {
         return false;
     }
 
     for (int32_t y = 0; y < height; ++y) {
         uint8_t *row = base + static_cast<size_t>(y) * stride;
         for (int32_t x = 0; x < width; ++x) {
-            const RgbColor &color = GetSpectrumColor(x, y, width, pattern);
-            uint8_t *pixel = row + static_cast<size_t>(x) * bytesPerPixel;
-            pixel[0] = redFirst ? color.r : color.b;
-            pixel[1] = color.g;
-            pixel[2] = redFirst ? color.b : color.r;
+            row[x] = RgbToYuv(GetSpectrumColor(x, y, width, pattern)).y;
         }
     }
-    return true;
-}
 
-bool FillRgb565(uint8_t *base, int32_t width, int32_t height, int32_t stride, uint8_t pattern)
-{
-    constexpr int32_t bytesPerPixel = 2;
-    if (base == nullptr || width <= 0 || height <= 0 || stride < width * bytesPerPixel) {
-        return false;
-    }
-
-    for (int32_t y = 0; y < height; ++y) {
-        uint8_t *row = base + static_cast<size_t>(y) * stride;
-        for (int32_t x = 0; x < width; ++x) {
-            const RgbColor &color = GetSpectrumColor(x, y, width, pattern);
-            uint16_t packed = static_cast<uint16_t>(((color.r >> 3) << 11) | ((color.g >> 2) << 5) |
-                                                    (color.b >> 3));
-            uint8_t *pixel = row + static_cast<size_t>(x) * bytesPerPixel;
-            pixel[0] = static_cast<uint8_t>(packed & 0xFF);
-            pixel[1] = static_cast<uint8_t>((packed >> 8) & 0xFF);
+    uint8_t *uPlane = base + static_cast<size_t>(stride) * sliceHeight;
+    uint8_t *vPlane = uPlane + static_cast<size_t>(chromaStride) * chromaSliceHeight;
+    for (int32_t y = 0; y < height; y += 2) {
+        uint8_t *uRow = uPlane + static_cast<size_t>(y / 2) * chromaStride;
+        uint8_t *vRow = vPlane + static_cast<size_t>(y / 2) * chromaStride;
+        for (int32_t x = 0; x < width; x += 2) {
+            YuvColor yuv = RgbToYuv(GetSpectrumColor(x, y, width, pattern));
+            int32_t chromaX = x / 2;
+            uRow[chromaX] = yuv.u;
+            vRow[chromaX] = yuv.v;
         }
     }
     return true;
@@ -212,25 +204,82 @@ bool FillRgba8888(uint8_t *base, int32_t width, int32_t height, int32_t stride, 
     return true;
 }
 
+uint16_t ToP010Sample(uint8_t value)
+{
+    return static_cast<uint16_t>(value) << 8;
+}
+
+bool FillYuvP010(uint8_t *base, int32_t width, int32_t height, int32_t stride, int32_t sliceHeight,
+                 uint8_t pattern, bool cbFirst)
+{
+    constexpr int32_t bytesPerSample = 2;
+    int32_t samplesPerRow = stride / bytesPerSample;
+    if (base == nullptr || width <= 0 || height <= 0 || stride < width * bytesPerSample ||
+        sliceHeight < height) {
+        return false;
+    }
+
+    for (int32_t y = 0; y < height; ++y) {
+        uint16_t *row = reinterpret_cast<uint16_t *>(base + static_cast<size_t>(y) * stride);
+        for (int32_t x = 0; x < width; ++x) {
+            row[x] = ToP010Sample(RgbToYuv(GetSpectrumColor(x, y, width, pattern)).y);
+        }
+    }
+
+    uint8_t *uvPlane = base + static_cast<size_t>(stride) * sliceHeight;
+    for (int32_t y = 0; y < height; y += 2) {
+        uint16_t *row = reinterpret_cast<uint16_t *>(uvPlane + static_cast<size_t>(y / 2) * stride);
+        for (int32_t x = 0; x < width; x += 2) {
+            YuvColor yuv = RgbToYuv(GetSpectrumColor(x, y, width, pattern));
+            row[x] = ToP010Sample(cbFirst ? yuv.u : yuv.v);
+            if (x + 1 < samplesPerRow) {
+                row[x + 1] = ToP010Sample(cbFirst ? yuv.v : yuv.u);
+            }
+        }
+    }
+    return true;
+}
+
+bool FillRgba1010102(uint8_t *base, int32_t width, int32_t height, int32_t stride, uint8_t pattern)
+{
+    constexpr int32_t bytesPerPixel = 4;
+    constexpr uint32_t alpha = 0x3;
+    if (base == nullptr || width <= 0 || height <= 0 || stride < width * bytesPerPixel) {
+        return false;
+    }
+
+    for (int32_t y = 0; y < height; ++y) {
+        uint32_t *row = reinterpret_cast<uint32_t *>(base + static_cast<size_t>(y) * stride);
+        for (int32_t x = 0; x < width; ++x) {
+            const RgbColor &color = GetSpectrumColor(x, y, width, pattern);
+            uint32_t r = static_cast<uint32_t>(color.r) << 2;
+            uint32_t g = static_cast<uint32_t>(color.g) << 2;
+            uint32_t b = static_cast<uint32_t>(color.b) << 2;
+            row[x] = r | (g << 10) | (b << 20) | (alpha << 30);
+        }
+    }
+    return true;
+}
+
 bool FillSpectrumBlocks(void *addr, int32_t width, int32_t height, int32_t stride, int32_t sliceHeight,
                         int32_t format, uint8_t pattern)
 {
     uint8_t *base = static_cast<uint8_t *>(addr);
     switch (format) {
-        case GRAPHIC_PIXEL_FMT_YCBCR_420_SP:
+        case NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP:
             return FillYuv420Sp(base, width, height, stride, sliceHeight, pattern, true);
-        case GRAPHIC_PIXEL_FMT_YCRCB_420_SP:
+        case NATIVEBUFFER_PIXEL_FMT_YCRCB_420_SP:
             return FillYuv420Sp(base, width, height, stride, sliceHeight, pattern, false);
-        case GRAPHIC_PIXEL_FMT_RGBA_8888:
-        case GRAPHIC_PIXEL_FMT_RGBX_8888:
+        case NATIVEBUFFER_PIXEL_FMT_YCBCR_420_P:
+            return FillYuv420P(base, width, height, stride, sliceHeight, pattern);
+        case NATIVEBUFFER_PIXEL_FMT_RGBA_8888:
             return FillRgba8888(base, width, height, stride, pattern, true);
-        case GRAPHIC_PIXEL_FMT_BGRA_8888:
-        case GRAPHIC_PIXEL_FMT_BGRX_8888:
-            return FillRgba8888(base, width, height, stride, pattern, false);
-        case GRAPHIC_PIXEL_FMT_RGB_888:
-            return FillRgb888(base, width, height, stride, pattern, true);
-        case GRAPHIC_PIXEL_FMT_RGB_565:
-            return FillRgb565(base, width, height, stride, pattern);
+        case NATIVEBUFFER_PIXEL_FMT_RGBA_1010102:
+            return FillRgba1010102(base, width, height, stride, pattern);
+        case NATIVEBUFFER_PIXEL_FMT_YCBCR_P010:
+            return FillYuvP010(base, width, height, stride, sliceHeight, pattern, true);
+        case NATIVEBUFFER_PIXEL_FMT_YCRCB_P010:
+            return FillYuvP010(base, width, height, stride, sliceHeight, pattern, false);
         default:
             return false;
     }
@@ -456,7 +505,7 @@ int32_t VideoEncPreprocDualOutputSample::GetPrimarySurface()
     if (ret != AV_ERR_OK || window_ == nullptr) {
         return ret;
     }
-    ret = OH_NativeWindow_NativeWindowHandleOpt(window_, SET_FORMAT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
+    ret = OH_NativeWindow_NativeWindowHandleOpt(window_, SET_FORMAT, NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP);
     if (ret != 0) {
         return AV_ERR_UNKNOWN;
     }
