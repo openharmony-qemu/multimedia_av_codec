@@ -171,7 +171,7 @@ private:
     int32_t DecreaseFreq() override;
     int32_t RecoverFreq() override;
 
-    void PerfMeasure(int64_t lastFlushTime);
+    void PerfMeasure();
     void OnStartJankDetect() override;
     void OnStopJankDetect() override;
 
