@@ -455,6 +455,7 @@ OH_AVErrCode PreprocessorEncoder::Stop()
         int32_t ret = videoEncoderObject_->videoEncoder_->Stop();
         CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                                  "Video encoder stop failed!");
+        videoEncoderObject_->ClearBufferList();
     }
 
     if (preprocMgr_) {
@@ -471,6 +472,7 @@ OH_AVErrCode PreprocessorEncoder::Flush()
         int32_t ret = videoEncoderObject_->videoEncoder_->Flush();
         CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                                  "Video encoder flush failed!");
+        videoEncoderObject_->ClearBufferList();
     }
 
     if (preprocMgr_) {
