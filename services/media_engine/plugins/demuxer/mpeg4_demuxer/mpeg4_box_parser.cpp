@@ -724,8 +724,8 @@ Status MPEG4AtomParser::ParseMvhd(MPEG4Atom currentAtom, int32_t depth, ParseCon
     if (creationTime) {
         creationTime -= QUICKTIME_EPOCH_OFFSET;
         creationTimeStr = FormatTimestamp(creationTime);
+        mediaInfo_.general.Set<Tag::MEDIA_CREATION_TIME>(creationTimeStr);
     }
-    mediaInfo_.general.Set<Tag::MEDIA_CREATION_TIME>(creationTimeStr);
     mediaInfo_.general.Set<Tag::MEDIA_TIME_SCALE>(static_cast<int32_t>(timeScale));
 
     int64_t durationUs = 0;
@@ -923,6 +923,7 @@ Status MPEG4AtomParser::ParseTrak(MPEG4Atom currentAtom, int32_t depth, ParseCon
     if (lastTrack_->codecParms.trackType == VIDEO_TYPE) {
         ParseOrientationFromMatrix(lastTrack_);
         ParseRotationTypeFromMatrix(lastTrack_);
+        CalculateSARFromTrackInfo(lastTrack_);
     }
 
     if (lastTrack_->sampleHelper) {
@@ -961,6 +962,38 @@ void MPEG4AtomParser::CalculateSampleAspectRatio(std::shared_ptr<Track> track, u
     } else {
         MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " SAR calculation skip", track->trackIndex);
     }
+}
+
+void MPEG4AtomParser::CalculateSARFromTrackInfo(std::shared_ptr<Track> track)
+{
+    FALSE_RETURN_MSG(track != nullptr, "CalculateSARFromTrackInfo: track is null");
+    FALSE_RETURN_MSG(IsValidTrackIndex(mediaInfo_, track->trackIndex), "Invalid track index");
+    
+    double sar = 0.0;
+    
+    if (track->hasPasp && track->hSpacing > 0 && track->vSpacing > 0) {
+        sar = static_cast<double>(track->hSpacing) / static_cast<double>(track->vSpacing);
+        MEDIA_LOG_D("SAR from pasp: hSpacing=%u, vSpacing=%u, sar=%f", 
+            track->hSpacing, track->vSpacing, sar);
+        mediaInfo_.tracks[track->trackIndex].Set<Tag::VIDEO_SAR>(sar);
+        return;
+    }
+    
+    if (track->stsdWidth > 0 && track->stsdHeight > 0 &&
+        track->tkhdWidth > 0 && track->tkhdHeight > 0 &&
+        (track->stsdWidth != track->tkhdWidth || track->stsdHeight != track->tkhdHeight)) {
+        uint64_t numerator = static_cast<uint64_t>(track->stsdHeight) * track->tkhdWidth;
+        uint64_t denominator = static_cast<uint64_t>(track->stsdWidth) * track->tkhdHeight;
+        if (denominator > 0) {
+            sar = static_cast<double>(numerator) / static_cast<double>(denominator);
+            MEDIA_LOG_D("SAR from width/height diff: stsdW=%u, stsdH=%u, tkhdW=%u, tkhdH=%u, sar=%f",
+                track->stsdWidth, track->stsdHeight, track->tkhdWidth, track->tkhdHeight, sar);
+            mediaInfo_.tracks[track->trackIndex].Set<Tag::VIDEO_SAR>(sar);
+            return;
+        }
+    }
+    
+    MEDIA_LOG_D("Track %u SAR: no pasp, no width/height diff", track->trackIndex);
 }
 
 void MPEG4AtomParser::SetTrackDisplayMatrix(std::shared_ptr<Track> track, const int32_t resultMatrix[3][3],
@@ -1017,6 +1050,8 @@ Status MPEG4AtomParser::ParseTkhd(MPEG4Atom currentAtom, int32_t depth, ParseCon
 
     uint32_t width = GetU32Value(&headerInfo[dynamicSize + 52]) >> 16;
     uint32_t height = GetU32Value(&headerInfo[dynamicSize + 56]) >> 16;
+    lastTrack_->tkhdWidth = width;
+    lastTrack_->tkhdHeight = height;
     // 解析track level display matrix
     int64_t matrixOffset = dynamicSize + 16; // track matrix在width/height之前
     if (currentAtom.dataSize >= static_cast<uint64_t>(matrixOffset + DISPLAY_MATRIX_SIZE)) {
@@ -1414,6 +1449,8 @@ Status MPEG4AtomParser::ParseVideoSampleEntry(MPEG4Atom currentAtom, int32_t dep
     MEDIA_LOG_D("width: " PUBLIC_LOG_U16 ", height: " PUBLIC_LOG_U16, width, height);
     mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::VIDEO_WIDTH>(static_cast<int32_t>(width));
     mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::VIDEO_HEIGHT>(static_cast<int32_t>(height));
+    lastTrack_->stsdWidth = width;
+    lastTrack_->stsdHeight = height;
 
     if (currentAtom.type != FourccType("encv")) {
         std::string mimeType = GetMimeType(currentAtom.type);
@@ -2316,12 +2353,13 @@ Status MPEG4AtomParser::ParsePasp(MPEG4Atom currentAtom, int32_t depth, ParseCon
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read pasp info failed");
     uint32_t hSpacing = GetU32Value(&paspInfo[0]);
     uint32_t vSpacing = GetU32Value(&paspInfo[4]);
-    // Check if hSpacing and vSpacing are valid
     if (vSpacing != 0) {
-        mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::VIDEO_SAR>(static_cast<double>(hSpacing / vSpacing));
-        MEDIA_LOG_D("Check pixel aspect ratio: " PUBLIC_LOG_F, static_cast<double>(hSpacing / vSpacing));
+        lastTrack_->hSpacing = hSpacing;
+        lastTrack_->vSpacing = vSpacing;
+        lastTrack_->hasPasp = true;
+        MEDIA_LOG_D("Parse pasp: hSpacing=%u, vSpacing=%u", hSpacing, vSpacing);
     } else {
-        MEDIA_LOG_E("Invalid hSpacing or vSpacing");
+        MEDIA_LOG_E("Invalid vSpacing=%u", vSpacing);
     }
     return ret;
 }
@@ -3396,7 +3434,9 @@ bool MPEG4AtomParser::SetMetadataValue(const std::string& key, const std::string
             resultStr = Converter::ConvertGBKToUTF8(value);
         }
         resultStr = resultStr.length() > 0 ? resultStr : value;
-        mediaInfo_.general.SetData(it->second, resultStr);
+        if (resultStr.length() > 0) {
+            mediaInfo_.general.SetData(it->second, resultStr);
+        }
         return true;
     } else if (key == "location") {
         ParseLocationString(value);

@@ -58,6 +58,13 @@ public:
         int64_t sidxDuration = 0; // sidx box的dts
         int64_t elstInitEmptyEdit = 0;
         int64_t elstShiftStartTime = 0;
+        uint32_t tkhdWidth = 0;
+        uint32_t tkhdHeight = 0;
+        uint32_t stsdWidth = 0;
+        uint32_t stsdHeight = 0;
+        uint32_t hSpacing = 0;
+        uint32_t vSpacing = 0;
+        bool hasPasp = false;
         CodecParams codecParms{};
 
         Track() = default;
@@ -158,6 +165,7 @@ private:
     
     // Display matrix 相关辅助函数
     void CalculateSampleAspectRatio(std::shared_ptr<Track> track, uint32_t width, uint32_t height);
+    void CalculateSARFromTrackInfo(std::shared_ptr<Track> track);
     void SetTrackDisplayMatrix(std::shared_ptr<Track> track, const int32_t resultMatrix[3][3],
         uint32_t width, uint32_t height);
     Status ParseDisplayMatrix(const uint8_t* data, int32_t matrix[3][3]);
