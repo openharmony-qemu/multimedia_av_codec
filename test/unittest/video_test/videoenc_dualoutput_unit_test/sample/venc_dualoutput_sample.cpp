@@ -239,14 +239,16 @@ bool VideoEncDualOutputSample::InitFile(EncoderType type)
         }
         if (encoderContext.signal->outFile_ == nullptr && needDump_) {
             encoderContext.signal->outFile_ = make_unique<ofstream>();
-            string outPath = "/data/test/media/" + outPath_ + to_string(encoderContext.sampleId) + ".h264";
+            const ::testing::TestInfo *testInfo = ::testing::UnitTest::GetInstance()->current_test_info();
+            string outPath = "/data/test/media/primary_" + string(testInfo->name()) + ".h264";
             encoderContext.signal->outFile_->open(outPath, ios::out | ios::binary);
             UNITTEST_CHECK_AND_RETURN_RET_LOG(encoderContext.signal->outFile_ != nullptr, false, "create outFile_ failed");
         }
     } else {
         if (encoderContext.signal->outFile_ == nullptr && needDump_) {
             encoderContext.signal->outFile_ = make_unique<ofstream>();
-            string outPath = "/data/test/media/secondary_" + to_string(encoderContext.sampleId) + ".h264";
+            const ::testing::TestInfo *testInfo = ::testing::UnitTest::GetInstance()->current_test_info();
+            string outPath = "/data/test/media/secondary_" + string(testInfo->name()) + ".h264";
             encoderContext.signal->outFile_->open(outPath, ios::out | ios::binary);
             UNITTEST_CHECK_AND_RETURN_RET_LOG(encoderContext.signal->outFile_ != nullptr, false, "create sec outFile_ failed");
         }

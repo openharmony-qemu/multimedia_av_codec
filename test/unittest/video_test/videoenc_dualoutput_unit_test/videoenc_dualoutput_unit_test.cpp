@@ -22,6 +22,7 @@
 #include "sample_callback.h"
 #include "vcodec_signal.h"
 #include "venc_dualoutput_sample.h"
+#include "unittest_utils.h"
 #define IsSupportFastImage() \
     if (access(FAST_IMAGE_PATH.data(), 0) != 0) { GTEST_SKIP() << "Unsupport fast image"; }
 using namespace std;
@@ -1454,7 +1455,7 @@ HWTEST_P(TEST_SUIT, SM_Secondary_StopThenStart_001, TestSize.Level1)
 
 /**
  * @tc.name: SM_Secondary_ReleaseThenOperate_001
- * @tc.desc: Test operations after Release on secondary return INVALID_STATE
+ * @tc.desc: Test operations after Release on secondary return AV_ERR_INVALID_VAL
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, SM_Secondary_ReleaseThenOperate_001, TestSize.Level1)
@@ -1856,6 +1857,7 @@ int main(int argc, char **argv)
     for (int i = 0; i < argc; ++i) {
         if (strcmp(argv[i], "--need_dump") == 0) {
             VideoEncDualOutputSample::needDump_ = true;
+            DecArgv(i, argc, argv);
         }
     }
     testing::InitGoogleTest(&argc, argv);
