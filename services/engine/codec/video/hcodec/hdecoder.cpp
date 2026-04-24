@@ -882,11 +882,21 @@ uint64_t HDecoder::GetModeUsage()
     if (GetParameter(OMX_IndexParamGetBufferHandleUsage, vendorUsage)) {
         HLOGI("vendor producer usage = 0x%" PRIx64 "", vendorUsage.usage);
         return vendorUsage.usage;
- 
- 
- 
     }
     return 0;
+}
+
+bool HDecoder::SetUsageToVendor(uint64_t usage)
+{
+    GetBufferHandleUsageParams param;
+    InitOMXParamExt(param);
+    param.portIndex = OMX_DirOutput;
+    param.usage = usage;
+    if (!SetParameter(OMX_IndexParamConsumerUsage, param)) {
+        HLOGE("set usage to vendor failed");
+        return false;
+    }
+    return true;
 }
 
 #ifdef USE_VIDEO_PROCESSING_ENGINE
@@ -1484,6 +1494,7 @@ void HDecoder::OnEnterUninitializedState()
     currSurface_.Release();
     currGenerationLayoutHasParsed_ = false;
     currLayout_.reset();
+    cfgedConsumerUsage_ = 0;
     currGeneration_ = 0;
     scaleMode_ = std::nullopt;
     transform_ = GRAPHIC_ROTATE_NONE;
