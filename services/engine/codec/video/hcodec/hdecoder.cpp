@@ -1285,9 +1285,6 @@ void HDecoder::DynamicModeSubmitBufferToSlot(sptr<SurfaceBuffer>& buffer, std::v
                       static_cast<uint32_t>(buffer->GetWidth()),
                       static_cast<uint32_t>(buffer->GetHeight()));
     WrapSurfaceBufferToSlot(*nullSlot, buffer, 0, 0);
-    if (nullSlot == outputBufferPool_.begin()) {
-        UpdateFmtFromSurfaceBuffer();
-    }
     NotifyOmxToFillThisOutBuffer(*nullSlot);
     nullSlot->omxBuffer->bufferhandle = nullptr;
 }
