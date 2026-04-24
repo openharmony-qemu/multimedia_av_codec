@@ -685,16 +685,18 @@ Status MPEG4AtomParser::ParseWide(MPEG4Atom currentAtom, int32_t depth, ParseCon
 
 std::string FormatTimestamp(uint64_t creationTime)
 {
-    time_t seconds = creationTime;
+    time_t seconds = creationTime / 1000000;
     struct tm* timeinfo = gmtime(&seconds);
     if (timeinfo == nullptr) {
         return "";
     }
     char buffer[64];
-    if (strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S UTC", timeinfo) == 0) {
+    if (strftime(buffer, sizeof(buffer), "%Y-%m-%dT%H:%M:%S", timeinfo) == 0) {
         MEDIA_LOG_W("Failed to format timestamp");
         return "";
     }
+    int len = strlen(buffer);
+    snprintf(buffer + len, sizeof(buffer) - len, ".%06dZ", static_cast<int>(creationTime % 1000000));
     return std::string(buffer);
 }
 
@@ -732,7 +734,8 @@ Status MPEG4AtomParser::ParseMvhd(MPEG4Atom currentAtom, int32_t depth, ParseCon
     std::string creationTimeStr;
     if (creationTime) {
         creationTime -= QUICKTIME_EPOCH_OFFSET;
-        creationTimeStr = FormatTimestamp(creationTime);
+        int64_t creationTimeUs = static_cast<int64_t>(creationTime) * 1000000;
+        creationTimeStr = FormatTimestamp(creationTimeUs);
         mediaInfo_.general.Set<Tag::MEDIA_CREATION_TIME>(creationTimeStr);
     }
     mediaInfo_.general.Set<Tag::MEDIA_TIME_SCALE>(static_cast<int32_t>(timeScale));
