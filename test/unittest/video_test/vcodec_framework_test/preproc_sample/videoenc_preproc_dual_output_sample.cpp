@@ -651,7 +651,16 @@ void VideoEncPreprocDualOutputSample::ForgetSecondaryHandle()
 bool VideoEncPreprocDualOutputSample::RequestAndFlushFrame(int32_t width, int32_t height, uint8_t pattern,
                                                            int64_t timestampUs)
 {
+    auto printFailure = [&](const char *step, int32_t err, int32_t format = 0, int32_t stride = 0,
+                            int32_t sliceHeight = 0) {
+        cout << "RequestAndFlushFrame failed, step=" << step << ", ret=" << err << ", width=" << width
+             << ", height=" << height << ", pattern=" << static_cast<int32_t>(pattern)
+             << ", timestampUs=" << timestampUs << ", format=" << format << ", stride=" << stride
+             << ", sliceHeight=" << sliceHeight << endl;
+    };
+
     if (window_ == nullptr) {
+        printFailure("window_null", AV_ERR_INVALID_VAL);
         return false;
     }
 
@@ -659,6 +668,7 @@ bool VideoEncPreprocDualOutputSample::RequestAndFlushFrame(int32_t width, int32_
     int fenceFd = -1;
     int32_t ret = OH_NativeWindow_NativeWindowRequestBuffer(window_, &nativeWindowBuffer, &fenceFd);
     if (ret != 0 || nativeWindowBuffer == nullptr) {
+        printFailure("request_buffer", ret);
         return false;
     }
     if (fenceFd > 0) {
@@ -667,6 +677,7 @@ bool VideoEncPreprocDualOutputSample::RequestAndFlushFrame(int32_t width, int32_
 
     OH_NativeBuffer *nativeBuffer = OH_NativeBufferFromNativeWindowBuffer(nativeWindowBuffer);
     if (nativeBuffer == nullptr) {
+        printFailure("native_buffer_from_window_buffer", AV_ERR_INVALID_VAL);
         (void)NativeWindowCancelBuffer(window_, nativeWindowBuffer);
         return false;
     }
@@ -674,39 +685,55 @@ bool VideoEncPreprocDualOutputSample::RequestAndFlushFrame(int32_t width, int32_
     void *virAddr = nullptr;
     ret = OH_NativeBuffer_Map(nativeBuffer, &virAddr);
     if (ret != 0 || virAddr == nullptr) {
+        printFailure("map_buffer", ret);
         (void)NativeWindowCancelBuffer(window_, nativeWindowBuffer);
         return false;
     }
 
     const SurfaceBuffer *surfaceBuffer = SurfaceBuffer::NativeBufferToSurfaceBuffer(nativeBuffer);
     if (surfaceBuffer == nullptr) {
+        printFailure("surface_buffer_from_native_buffer", AV_ERR_INVALID_VAL);
         (void)OH_NativeBuffer_Unmap(nativeBuffer);
         (void)NativeWindowCancelBuffer(window_, nativeWindowBuffer);
         return false;
     }
 
     int32_t format = surfaceBuffer->GetFormat();
-    (void)OH_NativeWindow_NativeWindowHandleOpt(window_, GET_FORMAT, &format);
+    ret = OH_NativeWindow_NativeWindowHandleOpt(window_, GET_FORMAT, &format);
+    if (ret != 0) {
+        cout << "RequestAndFlushFrame warning, step=get_format, ret=" << ret << ", fallbackFormat=" << format
+             << ", width=" << width << ", height=" << height << ", pattern=" << static_cast<int32_t>(pattern)
+             << ", timestampUs=" << timestampUs << endl;
+    }
 
     OH_NativeBuffer_Config config;
     OH_NativeBuffer_GetConfig(nativeBuffer, &config);
     int32_t stride = config.stride;
     const int32_t sliceHeight = surfaceBuffer->GetHeight();
     if (stride <= 0 || sliceHeight <= 0) {
+        printFailure("invalid_buffer_config", AV_ERR_INVALID_VAL, format, stride, sliceHeight);
         (void)OH_NativeBuffer_Unmap(nativeBuffer);
         (void)NativeWindowCancelBuffer(window_, nativeWindowBuffer);
         return false;
     }
 
     if (!FillSpectrumBlocks(virAddr, width, height, stride, sliceHeight, format, pattern)) {
+        printFailure("fill_spectrum_blocks", AV_ERR_INVALID_VAL, format, stride, sliceHeight);
         (void)OH_NativeBuffer_Unmap(nativeBuffer);
         (void)NativeWindowCancelBuffer(window_, nativeWindowBuffer);
         return false;
     }
 
-    (void)OH_NativeWindow_NativeWindowHandleOpt(window_, SET_UI_TIMESTAMP, timestampUs);
+    ret = OH_NativeWindow_NativeWindowHandleOpt(window_, SET_UI_TIMESTAMP, timestampUs);
+    if (ret != 0) {
+        cout << "RequestAndFlushFrame warning, step=set_ui_timestamp, ret=" << ret << ", width=" << width
+             << ", height=" << height << ", pattern=" << static_cast<int32_t>(pattern)
+             << ", timestampUs=" << timestampUs << ", format=" << format << ", stride=" << stride
+             << ", sliceHeight=" << sliceHeight << endl;
+    }
     ret = OH_NativeBuffer_Unmap(nativeBuffer);
     if (ret != 0) {
+        printFailure("unmap_buffer", ret, format, stride, sliceHeight);
         (void)NativeWindowCancelBuffer(window_, nativeWindowBuffer);
         return false;
     }
@@ -720,6 +747,9 @@ bool VideoEncPreprocDualOutputSample::RequestAndFlushFrame(int32_t width, int32_
     region.rects = &rect;
     region.rectNumber = 1;
     ret = OH_NativeWindow_NativeWindowFlushBuffer(window_, nativeWindowBuffer, -1, region);
+    if (ret != 0) {
+        printFailure("flush_buffer", ret, format, stride, sliceHeight);
+    }
     return ret == 0;
 }
 
