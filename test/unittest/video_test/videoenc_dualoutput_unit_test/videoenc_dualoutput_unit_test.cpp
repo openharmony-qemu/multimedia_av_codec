@@ -1468,10 +1468,10 @@ HWTEST_P(TEST_SUIT, SM_Secondary_ReleaseThenOperate_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Stop(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Release(EncoderType::SECONDARY));
-    ASSERT_EQ(AV_ERR_INVALID_STATE, dualSample_->Start(EncoderType::SECONDARY));
-    ASSERT_EQ(AV_ERR_INVALID_STATE, dualSample_->Stop(EncoderType::SECONDARY));
-    ASSERT_EQ(AV_ERR_INVALID_STATE, dualSample_->Flush(EncoderType::SECONDARY));
-    ASSERT_EQ(AV_ERR_INVALID_STATE, dualSample_->Reset(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample_->Start(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample_->Stop(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample_->Flush(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample_->Reset(EncoderType::SECONDARY));
 }
 
 /**
