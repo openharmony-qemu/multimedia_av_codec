@@ -102,13 +102,7 @@ void RunPreprocDualEncoding(
     sample->outPath_ = testName + "_";
     ASSERT_TRUE(sample->CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC));
 
-    struct OH_AVCodecCallback pCb = {};
-    pCb.onError = OnErrorVoid;
-    pCb.onStreamChanged = OnStreamChangedVoid;
-    pCb.onNeedInputBuffer = InBufferVoid;
-    pCb.onNewOutputBuffer = OutBufferHandle;
-    signal->isRunning_ = true;
-    ASSERT_EQ(AV_ERR_OK, sample->RegisterCallback(EncoderType::PRIMARY, pCb, signal)) << "Primary RegisterCallback failed";
+    RegisterCallbackWithSignal(sample, EncoderType::PRIMARY, signal);
 
     sample->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
     setPrimaryPreproc(*sample);
@@ -118,13 +112,7 @@ void RunPreprocDualEncoding(
 
     ASSERT_TRUE(sample->CreateSecondary());
     auto secSignal = make_shared<VCodecSignal>(sample);
-    secSignal->isRunning_ = true;
-    struct OH_AVCodecCallback sCb = {};
-    sCb.onError = OnErrorVoid;
-    sCb.onStreamChanged = OnStreamChangedVoid;
-    sCb.onNeedInputBuffer = InBufferVoid;
-    sCb.onNewOutputBuffer = OutBufferHandleSecondary;
-    ASSERT_EQ(AV_ERR_OK, sample->RegisterCallback(EncoderType::SECONDARY, sCb, secSignal)) << "Secondary RegisterCallback failed";
+    RegisterCallbackWithSignal(sample, EncoderType::SECONDARY, secSignal);
 
     sample->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
     if (setSecondaryPreproc) {
@@ -151,7 +139,7 @@ void RegisterCallbackWithSignal(shared_ptr<VideoEncDualOutputSample> &sample, En
     cb.onError = OnErrorVoid;
     cb.onStreamChanged = OnStreamChangedVoid;
     cb.onNeedInputBuffer = InBufferVoid;
-    cb.onNewOutputBuffer = OutBufferHandle;
+    cb.onNewOutputBuffer = (type == EncoderType::SECONDARY) ? OutBufferHandleSecondary : OutBufferHandle;
     signal->isRunning_ = true;
     ASSERT_EQ(AV_ERR_OK, sample->RegisterCallback(type, cb, signal)) << "RegisterCallback failed";
 }
@@ -189,13 +177,7 @@ void TEST_SUIT::FullLifecyclePrimary()
 {
     dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
     auto signal = make_shared<VCodecSignal>(dualSample_);
-    struct OH_AVCodecCallback cb = {};
-    cb.onError = OnErrorVoid;
-    cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputBuffer = InBufferVoid;
-    cb.onNewOutputBuffer = OutBufferHandle;
-    signal->isRunning_ = true;
-    ASSERT_EQ(AV_ERR_OK, dualSample_->RegisterCallback(EncoderType::PRIMARY, cb, signal)) << "Primary RegisterCallback failed";
+    RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
@@ -207,13 +189,7 @@ void TEST_SUIT::FullLifecycleSecondary()
     ASSERT_TRUE(dualSample_->CreateSecondary());
     dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
     auto signal = make_shared<VCodecSignal>(dualSample_);
-    struct OH_AVCodecCallback cb = {};
-    cb.onError = OnErrorVoid;
-    cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputBuffer = InBufferVoid;
-    cb.onNewOutputBuffer = OutBufferHandle;
-    signal->isRunning_ = true;
-    ASSERT_EQ(AV_ERR_OK, dualSample_->RegisterCallback(EncoderType::SECONDARY, cb, signal)) << "Primary RegisterCallback failed";
+    RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::SECONDARY));
@@ -615,16 +591,10 @@ HWTEST_F(TEST_SUIT, Primary_Prepare_NullParam_001, TestSize.Level1)
 HWTEST_F(TEST_SUIT, Primary_Prepare_Normal_001, TestSize.Level1)
 {
     auto sample = make_shared<VideoEncDualOutputSample>();
-    auto signal = make_shared<VCodecSignal>(sample);
     ASSERT_TRUE(sample->CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC));
     sample->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
-    struct OH_AVCodecCallback cb = {};
-    cb.onError = OnErrorVoid;
-    cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputBuffer = InBufferVoid;
-    cb.onNewOutputBuffer = OutBufferHandle;
-    signal->isRunning_ = true;
-    ASSERT_EQ(AV_ERR_OK, sample->RegisterCallback(EncoderType::PRIMARY, cb, signal)) << "Primary RegisterCallback failed";
+    auto signal = make_shared<VCodecSignal>(sample);
+    RegisterCallbackWithSignal(sample, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, sample->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, sample->Prepare(EncoderType::PRIMARY));
 }
@@ -637,16 +607,10 @@ HWTEST_F(TEST_SUIT, Primary_Prepare_Normal_001, TestSize.Level1)
 HWTEST_F(TEST_SUIT, Primary_Start_Normal_001, TestSize.Level1)
 {
     auto sample = make_shared<VideoEncDualOutputSample>();
-    auto signal = make_shared<VCodecSignal>(sample);
     ASSERT_TRUE(sample->CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC));
     sample->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
-    struct OH_AVCodecCallback cb = {};
-    cb.onError = OnErrorVoid;
-    cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputBuffer = InBufferVoid;
-    cb.onNewOutputBuffer = OutBufferHandle;
-    signal->isRunning_ = true;
-    ASSERT_EQ(AV_ERR_OK, sample->RegisterCallback(EncoderType::PRIMARY, cb, signal)) << "Primary RegisterCallback failed";
+    auto signal = make_shared<VCodecSignal>(sample);
+    RegisterCallbackWithSignal(sample, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, sample->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, sample->Prepare(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, sample->Start(EncoderType::PRIMARY));
@@ -671,16 +635,10 @@ HWTEST_F(TEST_SUIT, Primary_Reset_AfterStart_001, TestSize.Level1)
 HWTEST_F(TEST_SUIT, Primary_GetOutputDescription_Normal_001, TestSize.Level1)
 {
     auto sample = make_shared<VideoEncDualOutputSample>();
-    auto signal = make_shared<VCodecSignal>(sample);
     ASSERT_TRUE(sample->CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC));
     sample->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
-    struct OH_AVCodecCallback cb = {};
-    cb.onError = OnErrorVoid;
-    cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputBuffer = InBufferVoid;
-    cb.onNewOutputBuffer = OutBufferHandle;
-    signal->isRunning_ = true;
-    ASSERT_EQ(AV_ERR_OK, sample->RegisterCallback(EncoderType::PRIMARY, cb, signal)) << "Primary RegisterCallback failed";
+    auto signal = make_shared<VCodecSignal>(sample);
+    RegisterCallbackWithSignal(sample, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, sample->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, sample->Prepare(EncoderType::PRIMARY));
     auto desc = sample->GetOutputDescription(EncoderType::PRIMARY);
@@ -695,16 +653,10 @@ HWTEST_F(TEST_SUIT, Primary_GetOutputDescription_Normal_001, TestSize.Level1)
 HWTEST_F(TEST_SUIT, Primary_GetInputDescription_Normal_001, TestSize.Level1)
 {
     auto sample = make_shared<VideoEncDualOutputSample>();
-    auto signal = make_shared<VCodecSignal>(sample);
     ASSERT_TRUE(sample->CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC));
     sample->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
-    struct OH_AVCodecCallback cb = {};
-    cb.onError = OnErrorVoid;
-    cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputBuffer = InBufferVoid;
-    cb.onNewOutputBuffer = OutBufferHandle;
-    signal->isRunning_ = true;
-    ASSERT_EQ(AV_ERR_OK, sample->RegisterCallback(EncoderType::PRIMARY, cb, signal)) << "Primary RegisterCallback failed";
+    auto signal = make_shared<VCodecSignal>(sample);
+    RegisterCallbackWithSignal(sample, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, sample->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, sample->Prepare(EncoderType::PRIMARY));
     auto desc = sample->GetInputDescription(EncoderType::PRIMARY);
@@ -1151,13 +1103,7 @@ HWTEST_F(TEST_SUIT, VideoEncoder_PrimarySecondaryReset_001, TestSize.Level1)
 {
     auto signal = make_shared<VCodecSignal>(dualSample_);
     dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
-    struct OH_AVCodecCallback cb = {};
-    cb.onError = OnErrorVoid;
-    cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputBuffer = InBufferVoid;
-    cb.onNewOutputBuffer = OutBufferHandle;
-    signal->isRunning_ = true;
-    ASSERT_EQ(AV_ERR_OK, dualSample_->RegisterCallback(EncoderType::PRIMARY, cb, signal)) << "Primary RegisterCallback failed";
+    RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
@@ -1577,13 +1523,7 @@ HWTEST_F(TEST_SUIT, SM_Dual_StartSecondaryBeforePrimary_001, TestSize.Level1)
 
     ASSERT_TRUE(dualSample_->CreateSecondary());
     auto secSignal = make_shared<VCodecSignal>(dualSample_);
-    secSignal->isRunning_ = true;
-    struct OH_AVCodecCallback sCb = {};
-    sCb.onError = OnErrorVoid;
-    sCb.onStreamChanged = OnStreamChangedVoid;
-    sCb.onNeedInputBuffer = InBufferVoid;
-    sCb.onNewOutputBuffer = OutBufferHandle;
-    ASSERT_EQ(AV_ERR_OK, dualSample_->RegisterCallback(EncoderType::SECONDARY, sCb, secSignal));
+    RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
     dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
@@ -1610,13 +1550,7 @@ HWTEST_F(TEST_SUIT, SM_Dual_StopPrimaryWhileSecondaryRunning_001, TestSize.Level
 
     ASSERT_TRUE(dualSample_->CreateSecondary());
     auto secSignal = make_shared<VCodecSignal>(dualSample_);
-    secSignal->isRunning_ = true;
-    struct OH_AVCodecCallback sCb = {};
-    sCb.onError = OnErrorVoid;
-    sCb.onStreamChanged = OnStreamChangedVoid;
-    sCb.onNeedInputBuffer = InBufferVoid;
-    sCb.onNewOutputBuffer = OutBufferHandle;
-    ASSERT_EQ(AV_ERR_OK, dualSample_->RegisterCallback(EncoderType::SECONDARY, sCb, secSignal));
+    RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
     dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
@@ -1643,13 +1577,7 @@ HWTEST_F(TEST_SUIT, SM_Dual_StopSecondaryWhilePrimaryRunning_001, TestSize.Level
 
     ASSERT_TRUE(dualSample_->CreateSecondary());
     auto secSignal = make_shared<VCodecSignal>(dualSample_);
-    secSignal->isRunning_ = true;
-    struct OH_AVCodecCallback sCb = {};
-    sCb.onError = OnErrorVoid;
-    sCb.onStreamChanged = OnStreamChangedVoid;
-    sCb.onNeedInputBuffer = InBufferVoid;
-    sCb.onNewOutputBuffer = OutBufferHandle;
-    ASSERT_EQ(AV_ERR_OK, dualSample_->RegisterCallback(EncoderType::SECONDARY, sCb, secSignal));
+    RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
     dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
@@ -1676,13 +1604,7 @@ HWTEST_F(TEST_SUIT, SM_Dual_ResetPrimaryWhileSecondaryRunning_001, TestSize.Leve
 
     ASSERT_TRUE(dualSample_->CreateSecondary());
     auto secSignal = make_shared<VCodecSignal>(dualSample_);
-    secSignal->isRunning_ = true;
-    struct OH_AVCodecCallback sCb = {};
-    sCb.onError = OnErrorVoid;
-    sCb.onStreamChanged = OnStreamChangedVoid;
-    sCb.onNeedInputBuffer = InBufferVoid;
-    sCb.onNewOutputBuffer = OutBufferHandle;
-    ASSERT_EQ(AV_ERR_OK, dualSample_->RegisterCallback(EncoderType::SECONDARY, sCb, secSignal));
+    RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
     dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
@@ -1713,13 +1635,7 @@ HWTEST_F(TEST_SUIT, SM_Dual_ResetSecondaryWhilePrimaryRunning_001, TestSize.Leve
 
     ASSERT_TRUE(dualSample_->CreateSecondary());
     auto secSignal = make_shared<VCodecSignal>(dualSample_);
-    secSignal->isRunning_ = true;
-    struct OH_AVCodecCallback sCb = {};
-    sCb.onError = OnErrorVoid;
-    sCb.onStreamChanged = OnStreamChangedVoid;
-    sCb.onNeedInputBuffer = InBufferVoid;
-    sCb.onNewOutputBuffer = OutBufferHandle;
-    ASSERT_EQ(AV_ERR_OK, dualSample_->RegisterCallback(EncoderType::SECONDARY, sCb, secSignal));
+    RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
     dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
@@ -1729,12 +1645,7 @@ HWTEST_F(TEST_SUIT, SM_Dual_ResetSecondaryWhilePrimaryRunning_001, TestSize.Leve
     ASSERT_EQ(AV_ERR_OK, dualSample_->Reset(EncoderType::SECONDARY));
     auto secSignal2 = make_shared<VCodecSignal>(dualSample_);
     dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
-    struct OH_AVCodecCallback sCb2 = {};
-    sCb2.onError = OnErrorVoid;
-    sCb2.onStreamChanged = OnStreamChangedVoid;
-    sCb2.onNeedInputBuffer = InBufferVoid;
-    sCb2.onNewOutputBuffer = OutBufferHandle;
-    ASSERT_EQ(AV_ERR_OK, dualSample_->RegisterCallback(EncoderType::SECONDARY, sCb2, secSignal2));
+    RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal2);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Stop(EncoderType::PRIMARY));
 }
@@ -1756,13 +1667,7 @@ HWTEST_F(TEST_SUIT, SM_Dual_FlushPrimaryWhileSecondaryRunning_001, TestSize.Leve
 
     ASSERT_TRUE(dualSample_->CreateSecondary());
     auto secSignal = make_shared<VCodecSignal>(dualSample_);
-    secSignal->isRunning_ = true;
-    struct OH_AVCodecCallback sCb = {};
-    sCb.onError = OnErrorVoid;
-    sCb.onStreamChanged = OnStreamChangedVoid;
-    sCb.onNeedInputBuffer = InBufferVoid;
-    sCb.onNewOutputBuffer = OutBufferHandle;
-    ASSERT_EQ(AV_ERR_OK, dualSample_->RegisterCallback(EncoderType::SECONDARY, sCb, secSignal));
+    RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
     dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
@@ -1792,13 +1697,7 @@ HWTEST_F(TEST_SUIT, SM_Dual_FlushSecondaryWhilePrimaryRunning_001, TestSize.Leve
 
     ASSERT_TRUE(dualSample_->CreateSecondary());
     auto secSignal = make_shared<VCodecSignal>(dualSample_);
-    secSignal->isRunning_ = true;
-    struct OH_AVCodecCallback sCb = {};
-    sCb.onError = OnErrorVoid;
-    sCb.onStreamChanged = OnStreamChangedVoid;
-    sCb.onNeedInputBuffer = InBufferVoid;
-    sCb.onNewOutputBuffer = OutBufferHandle;
-    ASSERT_EQ(AV_ERR_OK, dualSample_->RegisterCallback(EncoderType::SECONDARY, sCb, secSignal));
+    RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
     dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
@@ -1846,12 +1745,7 @@ HWTEST_F(TEST_SUIT, SM_Dual_ReleaseSecondary_ThenRecreate_001, TestSize.Level1)
 
     ASSERT_TRUE(dualSample_->CreateSecondary());
     auto secSignal = make_shared<VCodecSignal>(dualSample_);
-    struct OH_AVCodecCallback sCb = {};
-    sCb.onError = OnErrorVoid;
-    sCb.onStreamChanged = OnStreamChangedVoid;
-    sCb.onNeedInputBuffer = InBufferVoid;
-    sCb.onNewOutputBuffer = OutBufferHandle;
-    ASSERT_EQ(AV_ERR_OK, dualSample_->RegisterCallback(EncoderType::SECONDARY, sCb, secSignal));
+    RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
     dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
 }
@@ -1872,13 +1766,7 @@ HWTEST_F(TEST_SUIT, SM_Dual_BothStart_BothStop_001, TestSize.Level1)
     ASSERT_TRUE(dualSample_->CreateSurface());
     ASSERT_TRUE(dualSample_->CreateSecondary());
     auto secSignal = make_shared<VCodecSignal>(dualSample_);
-    secSignal->isRunning_ = true;
-    struct OH_AVCodecCallback sCb = {};
-    sCb.onError = OnErrorVoid;
-    sCb.onStreamChanged = OnStreamChangedVoid;
-    sCb.onNeedInputBuffer = InBufferVoid;
-    sCb.onNewOutputBuffer = OutBufferHandle;
-    ASSERT_EQ(AV_ERR_OK, dualSample_->RegisterCallback(EncoderType::SECONDARY, sCb, secSignal));
+    RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
     dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
@@ -1905,13 +1793,7 @@ HWTEST_F(TEST_SUIT, SM_Dual_PrimaryStartStop_ThenSecondaryStartStop_001, TestSiz
     ASSERT_TRUE(dualSample_->CreateSurface());
     ASSERT_TRUE(dualSample_->CreateSecondary());
     auto secSignal = make_shared<VCodecSignal>(dualSample_);
-    secSignal->isRunning_ = true;
-    struct OH_AVCodecCallback sCb = {};
-    sCb.onError = OnErrorVoid;
-    sCb.onStreamChanged = OnStreamChangedVoid;
-    sCb.onNeedInputBuffer = InBufferVoid;
-    sCb.onNewOutputBuffer = OutBufferHandle;
-    ASSERT_EQ(AV_ERR_OK, dualSample_->RegisterCallback(EncoderType::SECONDARY, sCb, secSignal));
+    RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
     dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
@@ -1939,13 +1821,7 @@ HWTEST_F(TEST_SUIT, SM_Dual_BothReset_ThenReconfigure_001, TestSize.Level1)
     ASSERT_TRUE(dualSample_->CreateSurface());
     ASSERT_TRUE(dualSample_->CreateSecondary());
     auto secSignal = make_shared<VCodecSignal>(dualSample_);
-    secSignal->isRunning_ = true;
-    struct OH_AVCodecCallback sCb = {};
-    sCb.onError = OnErrorVoid;
-    sCb.onStreamChanged = OnStreamChangedVoid;
-    sCb.onNeedInputBuffer = InBufferVoid;
-    sCb.onNewOutputBuffer = OutBufferHandle;
-    ASSERT_EQ(AV_ERR_OK, dualSample_->RegisterCallback(EncoderType::SECONDARY, sCb, secSignal));
+    RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
     dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
@@ -1964,13 +1840,8 @@ HWTEST_F(TEST_SUIT, SM_Dual_BothReset_ThenReconfigure_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
 
     auto secSignal2 = make_shared<VCodecSignal>(dualSample_);
-    struct OH_AVCodecCallback sCb2 = {};
-    sCb2.onError = OnErrorVoid;
-    sCb2.onStreamChanged = OnStreamChangedVoid;
-    sCb2.onNeedInputBuffer = InBufferVoid;
-    sCb2.onNewOutputBuffer = OutBufferHandle;
-    ASSERT_EQ(AV_ERR_OK, dualSample_->RegisterCallback(EncoderType::SECONDARY, sCb2, secSignal2));
     dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal2);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
 }
 
