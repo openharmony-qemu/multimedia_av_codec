@@ -36,6 +36,13 @@ struct PixelFmt {
     GraphicPixelFormat graphicFmt;
     VideoPixelFormat innerFmt;
     std::string strFmt;
+
+    friend bool operator==(const PixelFmt& fmt1, const PixelFmt& fmt2)
+    {
+        return fmt1.graphicFmt  == fmt2.graphicFmt &&
+               fmt1.innerFmt    == fmt2.innerFmt &&
+               fmt1.strFmt      == fmt2.strFmt;
+    }
 };
 
 class TypeConverter {
