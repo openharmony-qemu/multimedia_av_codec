@@ -1853,6 +1853,11 @@ HWTEST_P(TEST_SUIT, SM_Dual_StartOnlyPrimary_001, TestSize.Level1)
 int main(int argc, char **argv)
 {
     testing::GTEST_FLAG(output) = "xml:./";
+    for (int i = 0; i < argc; ++i) {
+        if (strcmp(argv[i], "--need_dump") == 0) {
+            VideoEncDualOutputSample::needDump_ = true;
+        }
+    }
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
