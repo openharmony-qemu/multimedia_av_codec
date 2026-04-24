@@ -136,6 +136,7 @@ Status FFmpegFlvMuxerPlugin::SetLocation(std::shared_ptr<Meta> param)
             MEDIA_LOG_I("has altitude.");
         } else {
             MEDIA_LOG_W("The type of altitude is float, must be in [-32768.0, 32767.0]");
+            altitude = 0.0f;
         }
     }
     std::string location = std::to_string(latitude) + " ";
