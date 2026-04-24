@@ -25,188 +25,17 @@
 #include "meta/meta_key.h"
 #include "native_avcodec_base.h"
 
-namespace OHOS {
-namespace MediaAVCodec {
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "Preprocessor"};
-
-struct PlaneCopyInfo {
-    uint32_t planeCount{0};
-    uint32_t rowBytes[3] = {0};
-    uint32_t rowCounts[3] = {0};
-};
-
-struct PlaneLayout {
-    uint32_t planeCount{0};
-    uint32_t offsets[3] = {0};
-    uint32_t rowStrides[3] = {0};
-    uint32_t rowBytes[3] = {0};
-    uint32_t rowCounts[3] = {0};
-};
-
-constexpr uint32_t PLANE_LAYOUT_SCALE_NUMERATOR = 2;
-constexpr uint32_t PLANE_LAYOUT_SCALE_DENOMINATOR = 3;
-
-uint32_t CeilDiv(uint32_t value, uint32_t divisor)
-{
-    return divisor == 0 ? 0 : (value + divisor - 1) / divisor;
-}
 
 double RoundToTwoDecimals(double value)
 {
     return std::round(value * 100.0) / 100.0; // 100.0: Round to 2 decimal digits using round half up
 }
-
-bool GetPlaneCopyInfo(GraphicPixelFormat format, uint32_t width, uint32_t height, PlaneCopyInfo &copyInfo)
-{
-    switch (format) {
-        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888:
-        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_1010102: {
-            copyInfo.planeCount = 1;
-            copyInfo.rowBytes[0] = width * 4; // RGBA8888/RGBA1010102 both occupy 4 bytes per pixel.
-            copyInfo.rowCounts[0] = height;
-            return true;
-        }
-        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP:
-        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP: {
-            copyInfo.planeCount = 2; // 2: Y plane + interleaved UV plane
-            copyInfo.rowBytes[0] = width;
-            copyInfo.rowCounts[0] = height;
-            copyInfo.rowBytes[1] = width;
-            copyInfo.rowCounts[1] = (height + 1) / 2; // 2: UV height = Y height / 2
-            return true;
-        }
-        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010:
-        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010: {
-            copyInfo.planeCount = 2; // 2: Y plane + interleaved UV plane
-            copyInfo.rowBytes[0] = width * 2; // 2: 10-bit samples are stored in 16-bit containers.
-            copyInfo.rowCounts[0] = height;
-            copyInfo.rowBytes[1] = width * 2; // 2: 10-bit samples are stored in 16-bit containers.
-            copyInfo.rowCounts[1] = (height + 1) / 2; // 2: UV height = Y height / 2
-            return true;
-        }
-        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_P: {
-            copyInfo.planeCount = 3; // 3: Y plane + U plane + V plane
-            copyInfo.rowBytes[0] = width;
-            copyInfo.rowCounts[0] = height;
-            copyInfo.rowBytes[1] = (width + 1) / 2; // 2: UV width = Y width / 2
-            copyInfo.rowCounts[1] = (height + 1) / 2; // 2: UV height = Y height / 2
-            copyInfo.rowBytes[2] = copyInfo.rowBytes[1]; // 2: index
-            copyInfo.rowCounts[2] = copyInfo.rowCounts[1]; // 2: index
-            return true;
-        }
-        default:
-            return false;
-    }
-}
-
-bool CopyByPlanes(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output, uint8_t *src, uint8_t *dst)
-{
-    OH_NativeBuffer_Planes *srcPlanes = nullptr;
-    OH_NativeBuffer_Planes *dstPlanes = nullptr;
-    GSError srcErr = input->GetPlanesInfo(reinterpret_cast<void **>(&srcPlanes));
-    GSError dstErr = output->GetPlanesInfo(reinterpret_cast<void **>(&dstPlanes));
-    if (srcErr != GSERROR_OK || dstErr != GSERROR_OK || srcPlanes == nullptr || dstPlanes == nullptr) {
-        return false;
-    }
-
-    uint32_t width = static_cast<uint32_t>(std::min(input->GetWidth(), output->GetWidth()));
-    uint32_t height = static_cast<uint32_t>(std::min(input->GetHeight(), output->GetHeight()));
-    PlaneCopyInfo copyInfo;
-    if (!GetPlaneCopyInfo(static_cast<GraphicPixelFormat>(input->GetFormat()), width, height, copyInfo)) {
-        return false;
-    }
-    if (srcPlanes->planeCount < copyInfo.planeCount || dstPlanes->planeCount < copyInfo.planeCount) {
-        return false;
-    }
-
-    for (uint32_t plane = 0; plane < copyInfo.planeCount; ++plane) {
-        uint32_t srcRowStride = srcPlanes->planes[plane].rowStride;
-        uint32_t dstRowStride = dstPlanes->planes[plane].rowStride;
-        uint32_t rowBytes = std::min({copyInfo.rowBytes[plane], srcRowStride, dstRowStride});
-        CHECK_AND_RETURN_RET_LOG(rowBytes > 0, false, "Invalid row bytes for plane %{public}u", plane);
-
-        auto *srcPlaneAddr = src + srcPlanes->planes[plane].offset;
-        auto *dstPlaneAddr = dst + dstPlanes->planes[plane].offset;
-        for (uint32_t row = 0; row < copyInfo.rowCounts[plane]; ++row) {
-            (void)memcpy_s(dstPlaneAddr + row * dstRowStride, rowBytes, srcPlaneAddr + row * srcRowStride, rowBytes);
-        }
-    }
-    return true;
-}
-
-bool GetFallbackPlaneLayout(const sptr<SurfaceBuffer> &buffer, uint32_t width, uint32_t height, PlaneLayout &layout)
-{
-    GraphicPixelFormat format = static_cast<GraphicPixelFormat>(buffer->GetFormat());
-    PlaneCopyInfo copyInfo;
-    if (!GetPlaneCopyInfo(format, width, height, copyInfo)) {
-        return false;
-    }
-
-    uint32_t stride = static_cast<uint32_t>(buffer->GetStride());
-    uint32_t size = buffer->GetSize();
-    CHECK_AND_RETURN_RET_LOG(stride > 0 && size > 0, false, "Invalid buffer stride/size, stride=%{public}u, "
-                             "size=%{public}u", stride, size);
-
-    layout.planeCount = copyInfo.planeCount;
-    std::copy(std::begin(copyInfo.rowBytes), std::end(copyInfo.rowBytes), std::begin(layout.rowBytes));
-    std::copy(std::begin(copyInfo.rowCounts), std::end(copyInfo.rowCounts), std::begin(layout.rowCounts));
-    layout.rowStrides[0] = stride;
-
-    if (copyInfo.planeCount == 1) {
-        return size >= static_cast<uint64_t>(stride) * copyInfo.rowCounts[0];
-    }
-
-    uint32_t sliceHeight = std::max(height, static_cast<uint32_t>(
-        (static_cast<uint64_t>(size) * PLANE_LAYOUT_SCALE_NUMERATOR) /
-        (static_cast<uint64_t>(stride) * PLANE_LAYOUT_SCALE_DENOMINATOR)));
-    if (copyInfo.planeCount == 2) {
-        layout.offsets[1] = stride * sliceHeight;
-        layout.rowStrides[1] = stride;
-        uint64_t requiredSize = static_cast<uint64_t>(layout.offsets[1]) +
-            static_cast<uint64_t>(layout.rowStrides[1]) * layout.rowCounts[1];
-        return requiredSize <= size;
-    }
-
-    uint32_t chromaStride = std::max(CeilDiv(stride, 2), layout.rowBytes[1]);
-    uint32_t chromaSliceHeight = CeilDiv(sliceHeight, 2);
-    layout.offsets[1] = stride * sliceHeight;
-    layout.offsets[2] = layout.offsets[1] + chromaStride * chromaSliceHeight;
-    layout.rowStrides[1] = chromaStride;
-    layout.rowStrides[2] = chromaStride;
-    uint64_t requiredSize = static_cast<uint64_t>(layout.offsets[2]) +
-        static_cast<uint64_t>(layout.rowStrides[2]) * layout.rowCounts[2];
-    return requiredSize <= size;
-}
-
-bool CopyByFallbackLayout(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output,
-                          uint8_t *src, uint8_t *dst)
-{
-    uint32_t width = static_cast<uint32_t>(std::min(input->GetWidth(), output->GetWidth()));
-    uint32_t height = static_cast<uint32_t>(std::min(input->GetHeight(), output->GetHeight()));
-    PlaneLayout srcLayout;
-    PlaneLayout dstLayout;
-    if (!GetFallbackPlaneLayout(input, width, height, srcLayout) ||
-        !GetFallbackPlaneLayout(output, width, height, dstLayout)) {
-        return false;
-    }
-    if (srcLayout.planeCount != dstLayout.planeCount) {
-        return false;
-    }
-
-    for (uint32_t plane = 0; plane < srcLayout.planeCount; ++plane) {
-        uint32_t rowBytes = std::min({srcLayout.rowBytes[plane], dstLayout.rowBytes[plane],
-                                      srcLayout.rowStrides[plane], dstLayout.rowStrides[plane]});
-        CHECK_AND_RETURN_RET_LOG(rowBytes > 0, false, "Invalid fallback row bytes for plane %{public}u", plane);
-        uint32_t rowCount = std::min(srcLayout.rowCounts[plane], dstLayout.rowCounts[plane]);
-        for (uint32_t row = 0; row < rowCount; ++row) {
-            (void)memcpy_s(dst + dstLayout.offsets[plane] + row * dstLayout.rowStrides[plane], rowBytes,
-                           src + srcLayout.offsets[plane] + row * srcLayout.rowStrides[plane], rowBytes);
-        }
-    }
-    return true;
-}
 } // namespace
+
+namespace OHOS {
+namespace MediaAVCodec {
 Preprocessor::Preprocessor(const std::string &mime) : mime_(mime)
 {
     fastKitsInterface_.Retain();
@@ -451,7 +280,7 @@ const Preprocessor::DropFrameConfig &Preprocessor::GetDropFrameConfig() const
 
 void Preprocessor::Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
 {
-    if (!CheckOrReallocOutSurfaceBuffer(cropConfig_.width, cropConfig_.height, output)) {
+    if (!CheckOrReallocOutSurfaceBuffer(cropConfig_.width, cropConfig_.height, input->GetStride(), output)) {
         AVCODEC_LOGE("Realloc buffer failed, buffer seq: %{public}d", output->GetSeqNum());
         return;
     }
@@ -462,7 +291,8 @@ void Preprocessor::Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
 
 void Preprocessor::Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
 {
-    if (!CheckOrReallocOutSurfaceBuffer(downsamplingConfig_.width, downsamplingConfig_.height, output)) {
+    if (!CheckOrReallocOutSurfaceBuffer(downsamplingConfig_.width, downsamplingConfig_.height,
+                                        input->GetStride(), output)) {
         AVCODEC_LOGE("Realloc buffer failed, buffer seq: %{public}d", output->GetSeqNum());
         return;
     }
@@ -472,7 +302,7 @@ void Preprocessor::Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &
 
 void Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
 {
-    if (!CheckOrReallocOutSurfaceBuffer(encoderConfig_.width, encoderConfig_.height, output)) {
+    if (!CheckOrReallocOutSurfaceBuffer(encoderConfig_.width, encoderConfig_.height, input->GetStride(), output)) {
         AVCODEC_LOGE("Realloc buffer failed, buffer seq: %{public}d", output->GetSeqNum());
         return;
     }
@@ -484,34 +314,7 @@ void Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
                     "SurfaceBuffer format mismatch, input=%{public}d, output=%{public}d",
                     input->GetFormat(), output->GetFormat());
 
-    if (CopyByPlanes(input, output, src, dst)) {
-        return;
-    }
-    if (CopyByFallbackLayout(input, output, src, dst)) {
-        return;
-    }
-
-    int32_t inputStride = input->GetStride();
-    int32_t outputStride = output->GetStride();
-    CHECK_AND_RETURN_LOG(inputStride > 0 && outputStride > 0, "Invalid stride: input=%{public}d, output=%{public}d",
-                         inputStride, outputStride);
-
-    uint32_t inputSize = input->GetSize();
-    uint32_t outputSize = output->GetSize();
-    uint32_t copySize = std::min(inputSize, outputSize);
-    if (inputStride == outputStride) {
-        (void)memcpy_s(dst, copySize, src, copySize);
-        return;
-    }
-
-    uint32_t rowBytes = std::min(static_cast<uint32_t>(std::min(inputStride, outputStride)), copySize);
-    CHECK_AND_RETURN_LOG(rowBytes > 0, "Invalid row bytes, inputSize=%{public}u, outputSize=%{public}u",
-                         inputSize, outputSize);
-    uint32_t rowCount = std::min(inputSize / static_cast<uint32_t>(inputStride),
-                                 outputSize / static_cast<uint32_t>(outputStride));
-    for (uint32_t row = 0; row < rowCount; ++row) {
-        (void)memcpy_s(dst + row * outputStride, rowBytes, src + row * inputStride, rowBytes);
-    }
+    (void)memcpy_s(dst, input->GetSize(), src, output->GetSize());
 }
 
 bool Preprocessor::IsHevc10BitData(HEVCProfile profile)
@@ -591,15 +394,16 @@ bool Preprocessor::GetEncoderRange(const Media::Format &format, Range &encWidth,
 }
 
 bool Preprocessor::CheckOrReallocOutSurfaceBuffer(int32_t targetWidth, int32_t targetHeight,
-                                                  sptr<SurfaceBuffer> &output)
+                                                  int32_t targetStride, sptr<SurfaceBuffer> &output)
 {
     if (output->GetWidth() != targetWidth || output->GetHeight() != targetHeight ||
-        output->GetFormat() != static_cast<int32_t>(encoderConfig_.pixelFormat)) {
+        output->GetFormat() != static_cast<int32_t>(encoderConfig_.pixelFormat ||
+        output->GetStride() != targetStride)) {
         sptr<SurfaceBuffer> newBuffer = SurfaceBuffer::Create();
         BufferRequestConfig config = {
             .width = targetWidth,
             .height = targetHeight,
-            .strideAlignment = output->GetStride(),
+            .strideAlignment = targetStride,
             .format = static_cast<int32_t>(encoderConfig_.pixelFormat),
             .usage = output->GetUsage(),
             .timeout = 0,
