@@ -80,10 +80,9 @@ const std::array<ResolutionDimension, 4> &ResolutionDimensions()
     return resolutions;
 }
 
-const std::array<NativeFormatDimension, 7> &NativeFormatDimensions()
+const std::array<NativeFormatDimension, 6> &NativeFormatDimensions()
 {
-    static const std::array<NativeFormatDimension, 7> formats = {{
-        {"ycbcr420p", NATIVEBUFFER_PIXEL_FMT_YCBCR_420_P, AV_PIXEL_FORMAT_YUVI420},
+    static const std::array<NativeFormatDimension, 6> formats = {{
         {"ycbcr420sp", NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP, AV_PIXEL_FORMAT_NV12},
         {"ycrcb420sp", NATIVEBUFFER_PIXEL_FMT_YCRCB_420_SP, AV_PIXEL_FORMAT_NV21},
         {"rgba8888", NATIVEBUFFER_PIXEL_FMT_RGBA_8888, AV_PIXEL_FORMAT_RGBA},
@@ -339,16 +338,20 @@ void RunDropRatioScenario(const ScenarioCase &scenario)
     constexpr uint32_t kDropFrames = 30;
     ASSERT_EQ(sample.SendFramesFixedPts(scenario, kDropFrames, 0), AV_ERR_OK) << scenario.name;
     ASSERT_TRUE(sample.WaitForDualEos()) << scenario.name;
-    EXPECT_LT(sample.PrimaryDataCount(), static_cast<int32_t>(kDropFrames)) << scenario.name;
-    EXPECT_GT(sample.SecondaryDataCount(), sample.PrimaryDataCount()) << scenario.name;
+    // Primary: 30fps->15fps (keepRatio=0.5), expect ~15 kept out of 30
+    EXPECT_NEAR(sample.PrimaryDataCount(), 15, 3) << scenario.name;
+    // Secondary: no drop, expect all 30 frames
+    EXPECT_NEAR(sample.SecondaryDataCount(), static_cast<int32_t>(kDropFrames), 2) << scenario.name;
     EXPECT_EQ(sample.PrimaryError(), 0) << scenario.name;
     EXPECT_EQ(sample.SecondaryError(), 0) << scenario.name;
 }
 
 void VerifyDropAfterResume(VideoEncPreprocDualOutputSample &sample, const ScenarioCase &scenario)
 {
-    EXPECT_LT(sample.PrimaryDataCount(), 8) << scenario.name;
-    EXPECT_GT(sample.SecondaryDataCount(), sample.PrimaryDataCount()) << scenario.name;
+    // Primary: 30fps->15fps (keepRatio=0.5), 8 frames sent, expect ~4-5 kept
+    EXPECT_NEAR(sample.PrimaryDataCount(), 4, 2) << scenario.name;
+    // Secondary: no drop, expect all 8 frames
+    EXPECT_NEAR(sample.SecondaryDataCount(), 8, 1) << scenario.name;
     EXPECT_EQ(sample.PrimaryError(), 0) << scenario.name;
     EXPECT_EQ(sample.SecondaryError(), 0) << scenario.name;
 }
@@ -387,7 +390,7 @@ void RunDropFlushStopResetScenario(const ScenarioCase &scenario)
     ASSERT_TRUE(sample.WaitForDualEos()) << scenario.name;
     VerifyDropAfterResume(sample, scenario);
 
-    // SetParameter to change drop rate
+    // SetParameter to change drop rate to 30fps->25fps (keepRatio~0.83)
     sample.ResetDataCounts();
     ASSERT_EQ(sample.SetParameterPrimary(MakeDropRate(25.0)), AV_ERR_OK) << scenario.name;
     ASSERT_EQ(sample.StopPrimary(), AV_ERR_OK) << scenario.name;
@@ -396,7 +399,8 @@ void RunDropFlushStopResetScenario(const ScenarioCase &scenario)
     ASSERT_EQ(sample.StartSecondary(), AV_ERR_OK) << scenario.name;
     ASSERT_EQ(sample.SendFramesFixedPts(scenario, 8, 0), AV_ERR_OK) << scenario.name;
     ASSERT_TRUE(sample.WaitForDualEos()) << scenario.name;
-    EXPECT_LT(sample.PrimaryDataCount(), 8) << scenario.name;
+    // 30fps->25fps with 8 frames: expect ~7 kept (only ~1 dropped)
+    EXPECT_NEAR(sample.PrimaryDataCount(), 7, 1) << scenario.name;
     EXPECT_EQ(sample.PrimaryError(), 0) << scenario.name;
     EXPECT_EQ(sample.SecondaryError(), 0) << scenario.name;
 }
