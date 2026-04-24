@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <array>
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -30,6 +31,18 @@ using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS::MediaAVCodec::PreprocDualOutput;
 using namespace testing::ext;
+
+namespace OHOS {
+namespace MediaAVCodec {
+namespace PreprocDualOutput {
+void PrintTo(const ScenarioCase &scenario, std::ostream *os)
+{
+    (void)scenario;
+    (void)os;
+}
+} // namespace PreprocDualOutput
+} // namespace MediaAVCodec
+} // namespace OHOS
 
 namespace {
 constexpr uint32_t kFrameCount = 8;
@@ -57,6 +70,8 @@ public:
     static void SetUpTestCase(void) {}
     static void TearDownTestCase(void) {}
 };
+
+class VideoEncPreprocDualOutputInfoTest : public testing::TestWithParam<ScenarioCase> {};
 
 const std::array<CodecDimension, 5> &CodecDimensions()
 {
@@ -729,6 +744,21 @@ INSTANTIATE_TEST_SUITE_P(Dynamic, VideoEncPreprocDualOutputTest, testing::Values
                          [](const testing::TestParamInfo<ScenarioCase> &info) {
                              return SanitizeName(info.param.name);
                          });
+
+INSTANTIATE_TEST_SUITE_P(Query, VideoEncPreprocDualOutputInfoTest, testing::ValuesIn(GetSupportedScenarios()),
+                         [](const testing::TestParamInfo<ScenarioCase> &info) {
+                             return SanitizeName(info.param.name);
+                         });
+
+/**
+ * @tc.name: VideoEncoder_Preproc_Dual_Output_PrintScenarioInfo
+ * @tc.desc: print preproc dual-output scenario information by scenario name on demand.
+ * @tc.type: FUNC
+ */
+HWTEST_P(VideoEncPreprocDualOutputInfoTest, DISABLED_PrintScenarioInfo, TestSize.Level0)
+{
+    std::cout << DescribeScenario(GetParam()) << std::endl;
+}
 
 /**
  * @tc.name: VideoEncoder_Preproc_Dual_Output_001
