@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <array>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -179,6 +180,207 @@ std::string ToString(RuntimeOperation operation)
     }
 }
 
+std::string ToString(FlowType flow)
+{
+    switch (flow) {
+        case FlowType::NO_PREPROC:
+            return "no_preproc";
+        case FlowType::PRIMARY_PREPROC:
+            return "primary_preproc";
+        case FlowType::MIXED_PREPROC:
+            return "mixed_preproc";
+        case FlowType::INVALID_PARAMETER:
+            return "invalid_parameter";
+        case FlowType::INVALID_LIFECYCLE:
+            return "invalid_lifecycle";
+        case FlowType::DUPLICATE_SECONDARY:
+            return "duplicate_secondary";
+        case FlowType::DROP_RATIO:
+            return "drop_ratio";
+        case FlowType::DROP_FLUSH_STOP_RESET:
+            return "drop_flush_stop_reset";
+        default:
+            return "unknown_flow";
+    }
+}
+
+std::string ToString(InvalidParameterType type)
+{
+    switch (type) {
+        case InvalidParameterType::DOWNSAMPLING_PAIR:
+            return "downsampling_pair";
+        case InvalidParameterType::CROP_AND_DOWNSAMPLING:
+            return "crop_and_downsampling";
+        case InvalidParameterType::INVALID_DROP_RATE:
+            return "invalid_drop_rate";
+        default:
+            return "unknown_invalid_parameter";
+    }
+}
+
+std::string ToString(OH_AVCodecCategory category)
+{
+    switch (category) {
+        case HARDWARE:
+            return "hardware";
+        case SOFTWARE:
+            return "software";
+        default:
+            return "unknown_category";
+    }
+}
+
+std::string NativeFormatToString(OH_NativeBuffer_Format format)
+{
+    switch (format) {
+        case NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP:
+            return "NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP";
+        case NATIVEBUFFER_PIXEL_FMT_YCRCB_420_SP:
+            return "NATIVEBUFFER_PIXEL_FMT_YCRCB_420_SP";
+        case NATIVEBUFFER_PIXEL_FMT_YCBCR_420_P:
+            return "NATIVEBUFFER_PIXEL_FMT_YCBCR_420_P";
+        case NATIVEBUFFER_PIXEL_FMT_RGBA_8888:
+            return "NATIVEBUFFER_PIXEL_FMT_RGBA_8888";
+        case NATIVEBUFFER_PIXEL_FMT_RGBA_1010102:
+            return "NATIVEBUFFER_PIXEL_FMT_RGBA_1010102";
+        case NATIVEBUFFER_PIXEL_FMT_YCBCR_P010:
+            return "NATIVEBUFFER_PIXEL_FMT_YCBCR_P010";
+        case NATIVEBUFFER_PIXEL_FMT_YCRCB_P010:
+            return "NATIVEBUFFER_PIXEL_FMT_YCRCB_P010";
+        default:
+            return "unknown_native_format";
+    }
+}
+
+std::string CodecPixelFormatToString(int32_t format)
+{
+    switch (format) {
+        case AV_PIXEL_FORMAT_NV12:
+            return "AV_PIXEL_FORMAT_NV12";
+        case AV_PIXEL_FORMAT_NV21:
+            return "AV_PIXEL_FORMAT_NV21";
+        case AV_PIXEL_FORMAT_RGBA:
+            return "AV_PIXEL_FORMAT_RGBA";
+        case AV_PIXEL_FORMAT_RGBA1010102:
+            return "AV_PIXEL_FORMAT_RGBA1010102";
+        default:
+            return "unknown_codec_pixel_format";
+    }
+}
+
+const char *BoolToString(bool value)
+{
+    return value ? "true" : "false";
+}
+
+std::string DescribePreprocConfig(const PreprocConfig &config)
+{
+    std::ostringstream oss;
+    oss << "{frameRate=" << config.frameRate;
+    if (config.useDownsampling) {
+        oss << ", downsampling=" << config.downsamplingWidth << "x" << config.downsamplingHeight;
+    }
+    if (config.useCrop) {
+        oss << ", crop=[" << config.cropLeft << "," << config.cropTop << "," << config.cropRight << ","
+            << config.cropBottom << "]";
+    }
+    if (config.useDropToFrameRate) {
+        oss << ", dropToFrameRate=" << config.dropToFrameRate;
+    }
+    if (!config.useDownsampling && !config.useCrop && !config.useDropToFrameRate) {
+        oss << ", preproc=none";
+    }
+    oss << "}";
+    return oss.str();
+}
+
+std::string DescribeScenario(const ScenarioCase &scenario)
+{
+    std::ostringstream oss;
+    oss << "scenario\n"
+        << "  name: " << scenario.name << "\n"
+        << "  flow: " << ToString(scenario.flow) << "\n"
+        << "  codec: " << scenario.codecLabel << ", mime=" << scenario.mime << ", category="
+        << ToString(scenario.category) << "\n"
+        << "  size: " << scenario.width << "x" << scenario.height << ", runtimeSize=" << scenario.runtimeWidth
+        << "x" << scenario.runtimeHeight << "\n"
+        << "  formats: native=" << NativeFormatToString(scenario.nativeFormat) << "(" << scenario.nativeFormat
+        << "), codecPixel=" << CodecPixelFormatToString(scenario.codecPixelFormat) << "("
+        << scenario.codecPixelFormat << ")\n"
+        << "  modes: encoder=" << ToString(scenario.encoderMode) << ", preproc="
+        << ToString(scenario.preprocMode) << ", runtime=" << ToString(scenario.runtimeOperation) << "\n"
+        << "  invalidParameterType: " << ToString(scenario.invalidParameterType) << "\n"
+        << "  primaryPreproc: " << DescribePreprocConfig(scenario.primary) << "\n"
+        << "  secondaryPreproc: " << DescribePreprocConfig(scenario.secondary) << "\n"
+        << "  runtimePrimaryPreproc: " << DescribePreprocConfig(scenario.runtimePrimary) << "\n"
+        << "  runtimeSecondaryPreproc: " << DescribePreprocConfig(scenario.runtimeSecondary) << "\n"
+        << "  expectation: result=" << scenario.expectedResult << ", exact="
+        << BoolToString(scenario.expectExactResult) << ", needsFrameRotation="
+        << BoolToString(scenario.needsFrameRotation) << ", frameCount=" << scenario.frameCount;
+    return oss.str();
+}
+
+std::string DescribeStep(const char *step)
+{
+    std::ostringstream oss;
+    oss << "step: " << step;
+    return oss.str();
+}
+
+std::string DescribeSampleState(const VideoEncPreprocDualOutputSample &sample)
+{
+    std::ostringstream oss;
+    oss << "\nsample_state {primaryData=" << sample.PrimaryDataCount()
+        << ", secondaryData=" << sample.SecondaryDataCount()
+        << ", primaryError=" << sample.PrimaryError()
+        << ", secondaryError=" << sample.SecondaryError()
+        << ", primaryEos=" << BoolToString(sample.PrimaryGotEos())
+        << ", secondaryEos=" << BoolToString(sample.SecondaryGotEos()) << "}";
+    return oss.str();
+}
+
+#define ASSERT_TRUE_SAMPLE_STEP(condition, sample, step) \
+    do {                                                 \
+        SCOPED_TRACE(DescribeStep(step));                \
+        ASSERT_TRUE(condition) << DescribeSampleState(sample); \
+    } while (false)
+
+#define ASSERT_EQ_SAMPLE_STEP(actual, expected, sample, step)  \
+    do {                                                       \
+        SCOPED_TRACE(DescribeStep(step));                      \
+        ASSERT_EQ((actual), (expected)) << DescribeSampleState(sample); \
+    } while (false)
+
+#define EXPECT_TRUE_SAMPLE_STEP(condition, sample, step)       \
+    do {                                                       \
+        SCOPED_TRACE(DescribeStep(step));                      \
+        EXPECT_TRUE(condition) << DescribeSampleState(sample);  \
+    } while (false)
+
+#define EXPECT_EQ_SAMPLE_STEP(actual, expected, sample, step)  \
+    do {                                                       \
+        SCOPED_TRACE(DescribeStep(step));                      \
+        EXPECT_EQ((actual), (expected)) << DescribeSampleState(sample); \
+    } while (false)
+
+#define EXPECT_NEAR_SAMPLE_STEP(actual, expected, absError, sample, step) \
+    do {                                                                 \
+        SCOPED_TRACE(DescribeStep(step));                                \
+        EXPECT_NEAR((actual), (expected), (absError)) << DescribeSampleState(sample); \
+    } while (false)
+
+#define EXPECT_LT_SAMPLE_STEP(actual, expected, sample, step)   \
+    do {                                                        \
+        SCOPED_TRACE(DescribeStep(step));                       \
+        EXPECT_LT((actual), (expected)) << DescribeSampleState(sample); \
+    } while (false)
+
+#define EXPECT_GT_SAMPLE_STEP(actual, expected, sample, step)   \
+    do {                                                        \
+        SCOPED_TRACE(DescribeStep(step));                       \
+        EXPECT_GT((actual), (expected)) << DescribeSampleState(sample); \
+    } while (false)
+
 bool IsNativeFormatSupported(OH_AVCapability *capability, OH_NativeBuffer_Format nativeFormat)
 {
     const OH_NativeBuffer_Format *formats = nullptr;
@@ -327,143 +529,190 @@ std::string GetOutputFilePath()
 void RunDropRatioScenario(const ScenarioCase &scenario)
 {
     VideoEncPreprocDualOutputSample sample;
-    ASSERT_TRUE(sample.SetOutputFilePath(GetOutputFilePath())) << scenario.name;
-    ASSERT_TRUE(sample.CreatePrimary(scenario.mime)) << scenario.name;
-    ASSERT_EQ(sample.ConfigurePrimary(scenario), AV_ERR_OK) << scenario.name;
-    ASSERT_EQ(sample.GetPrimarySurface(scenario), AV_ERR_OK) << scenario.name;
-    ASSERT_EQ(sample.CreateSecondary(), AV_ERR_OK) << scenario.name;
-    ASSERT_EQ(sample.ConfigureSecondary(scenario), AV_ERR_OK) << scenario.name;
-    ASSERT_EQ(sample.StartPrimary(), AV_ERR_OK) << scenario.name;
-    ASSERT_EQ(sample.StartSecondary(), AV_ERR_OK) << scenario.name;
+    ASSERT_TRUE_SAMPLE_STEP(sample.SetOutputFilePath(GetOutputFilePath()), sample,
+                            "RunDropRatioScenario.SetOutputFilePath");
+    ASSERT_TRUE_SAMPLE_STEP(sample.CreatePrimary(scenario.mime), sample, "RunDropRatioScenario.CreatePrimary");
+    ASSERT_EQ_SAMPLE_STEP(sample.ConfigurePrimary(scenario), AV_ERR_OK, sample,
+                          "RunDropRatioScenario.ConfigurePrimary");
+    ASSERT_EQ_SAMPLE_STEP(sample.GetPrimarySurface(scenario), AV_ERR_OK, sample,
+                          "RunDropRatioScenario.GetPrimarySurface");
+    ASSERT_EQ_SAMPLE_STEP(sample.CreateSecondary(), AV_ERR_OK, sample, "RunDropRatioScenario.CreateSecondary");
+    ASSERT_EQ_SAMPLE_STEP(sample.ConfigureSecondary(scenario), AV_ERR_OK, sample,
+                          "RunDropRatioScenario.ConfigureSecondary");
+    ASSERT_EQ_SAMPLE_STEP(sample.StartPrimary(), AV_ERR_OK, sample, "RunDropRatioScenario.StartPrimary");
+    ASSERT_EQ_SAMPLE_STEP(sample.StartSecondary(), AV_ERR_OK, sample, "RunDropRatioScenario.StartSecondary");
     constexpr uint32_t kDropFrames = 30;
-    ASSERT_EQ(sample.SendFramesFixedPts(scenario, kDropFrames, 0), AV_ERR_OK) << scenario.name;
-    ASSERT_TRUE(sample.WaitForDualEos()) << scenario.name;
+    ASSERT_EQ_SAMPLE_STEP(sample.SendFramesFixedPts(scenario, kDropFrames, 0), AV_ERR_OK, sample,
+                          "RunDropRatioScenario.SendFramesFixedPts");
+    ASSERT_TRUE_SAMPLE_STEP(sample.WaitForDualEos(), sample, "RunDropRatioScenario.WaitForDualEos");
     // Primary: 30fps->15fps (keepRatio=0.5), expect ~15 kept out of 30
-    EXPECT_NEAR(sample.PrimaryDataCount(), 15, 3) << scenario.name;
+    EXPECT_NEAR_SAMPLE_STEP(sample.PrimaryDataCount(), 15, 3, sample, "RunDropRatioScenario.PrimaryDataCount");
     // Secondary: no drop, expect all 30 frames
-    EXPECT_NEAR(sample.SecondaryDataCount(), static_cast<int32_t>(kDropFrames), 2) << scenario.name;
-    EXPECT_EQ(sample.PrimaryError(), 0) << scenario.name;
-    EXPECT_EQ(sample.SecondaryError(), 0) << scenario.name;
+    EXPECT_NEAR_SAMPLE_STEP(sample.SecondaryDataCount(), static_cast<int32_t>(kDropFrames), 2, sample,
+                            "RunDropRatioScenario.SecondaryDataCount");
+    EXPECT_EQ_SAMPLE_STEP(sample.PrimaryError(), 0, sample, "RunDropRatioScenario.PrimaryError");
+    EXPECT_EQ_SAMPLE_STEP(sample.SecondaryError(), 0, sample, "RunDropRatioScenario.SecondaryError");
 }
 
 void VerifyDropAfterResume(VideoEncPreprocDualOutputSample &sample, const ScenarioCase &scenario)
 {
+    (void)scenario;
     // Primary: 30fps->15fps (keepRatio=0.5), 8 frames sent, expect ~4-5 kept
-    EXPECT_NEAR(sample.PrimaryDataCount(), 4, 2) << scenario.name;
+    EXPECT_NEAR_SAMPLE_STEP(sample.PrimaryDataCount(), 4, 2, sample, "VerifyDropAfterResume.PrimaryDataCount");
     // Secondary: no drop, expect all 8 frames
-    EXPECT_NEAR(sample.SecondaryDataCount(), 8, 1) << scenario.name;
-    EXPECT_EQ(sample.PrimaryError(), 0) << scenario.name;
-    EXPECT_EQ(sample.SecondaryError(), 0) << scenario.name;
+    EXPECT_NEAR_SAMPLE_STEP(sample.SecondaryDataCount(), 8, 1, sample,
+                            "VerifyDropAfterResume.SecondaryDataCount");
+    EXPECT_EQ_SAMPLE_STEP(sample.PrimaryError(), 0, sample, "VerifyDropAfterResume.PrimaryError");
+    EXPECT_EQ_SAMPLE_STEP(sample.SecondaryError(), 0, sample, "VerifyDropAfterResume.SecondaryError");
 }
 
 void RunDropFlushStopResetScenario(const ScenarioCase &scenario)
 {
     VideoEncPreprocDualOutputSample sample;
-    ASSERT_TRUE(sample.SetOutputFilePath(GetOutputFilePath())) << scenario.name;
-    ASSERT_TRUE(sample.CreatePrimary(scenario.mime)) << scenario.name;
-    ASSERT_EQ(sample.ConfigurePrimary(scenario), AV_ERR_OK) << scenario.name;
-    ASSERT_EQ(sample.GetPrimarySurface(scenario), AV_ERR_OK) << scenario.name;
-    ASSERT_EQ(sample.CreateSecondary(), AV_ERR_OK) << scenario.name;
-    ASSERT_EQ(sample.ConfigureSecondary(scenario), AV_ERR_OK) << scenario.name;
+    ASSERT_TRUE_SAMPLE_STEP(sample.SetOutputFilePath(GetOutputFilePath()), sample,
+                            "RunDropFlushStopResetScenario.SetOutputFilePath");
+    ASSERT_TRUE_SAMPLE_STEP(sample.CreatePrimary(scenario.mime), sample,
+                            "RunDropFlushStopResetScenario.CreatePrimary");
+    ASSERT_EQ_SAMPLE_STEP(sample.ConfigurePrimary(scenario), AV_ERR_OK, sample,
+                          "RunDropFlushStopResetScenario.ConfigurePrimary");
+    ASSERT_EQ_SAMPLE_STEP(sample.GetPrimarySurface(scenario), AV_ERR_OK, sample,
+                          "RunDropFlushStopResetScenario.GetPrimarySurface");
+    ASSERT_EQ_SAMPLE_STEP(sample.CreateSecondary(), AV_ERR_OK, sample,
+                          "RunDropFlushStopResetScenario.CreateSecondary");
+    ASSERT_EQ_SAMPLE_STEP(sample.ConfigureSecondary(scenario), AV_ERR_OK, sample,
+                          "RunDropFlushStopResetScenario.ConfigureSecondary");
 
     // Flush + resume
-    ASSERT_EQ(sample.StartPrimary(), AV_ERR_OK) << scenario.name;
-    ASSERT_EQ(sample.StartSecondary(), AV_ERR_OK) << scenario.name;
-    ASSERT_EQ(sample.SendFramesFixedPts(scenario, 8, 0), AV_ERR_OK) << scenario.name;
-    ASSERT_TRUE(sample.WaitForDualEos()) << scenario.name;
-    ASSERT_EQ(sample.FlushPrimary(), AV_ERR_OK) << scenario.name;
-    ASSERT_EQ(sample.FlushSecondary(), AV_ERR_OK) << scenario.name;
+    ASSERT_EQ_SAMPLE_STEP(sample.StartPrimary(), AV_ERR_OK, sample,
+                          "RunDropFlushStopResetScenario.FlushResume.StartPrimary");
+    ASSERT_EQ_SAMPLE_STEP(sample.StartSecondary(), AV_ERR_OK, sample,
+                          "RunDropFlushStopResetScenario.FlushResume.StartSecondary");
+    ASSERT_EQ_SAMPLE_STEP(sample.SendFramesFixedPts(scenario, 8, 0), AV_ERR_OK, sample,
+                          "RunDropFlushStopResetScenario.FlushResume.SendFramesFixedPts");
+    ASSERT_TRUE_SAMPLE_STEP(sample.WaitForDualEos(), sample,
+                            "RunDropFlushStopResetScenario.FlushResume.WaitForDualEos");
+    ASSERT_EQ_SAMPLE_STEP(sample.FlushPrimary(), AV_ERR_OK, sample,
+                          "RunDropFlushStopResetScenario.FlushResume.FlushPrimary");
+    ASSERT_EQ_SAMPLE_STEP(sample.FlushSecondary(), AV_ERR_OK, sample,
+                          "RunDropFlushStopResetScenario.FlushResume.FlushSecondary");
     sample.ResetDataCounts();
-    ASSERT_EQ(sample.StartPrimary(), AV_ERR_OK) << scenario.name;
-    ASSERT_EQ(sample.StartSecondary(), AV_ERR_OK) << scenario.name;
-    ASSERT_EQ(sample.SendFramesFixedPts(scenario, 8, 0), AV_ERR_OK) << scenario.name;
-    ASSERT_TRUE(sample.WaitForDualEos()) << scenario.name;
+    ASSERT_EQ_SAMPLE_STEP(sample.StartPrimary(), AV_ERR_OK, sample,
+                          "RunDropFlushStopResetScenario.AfterFlush.StartPrimary");
+    ASSERT_EQ_SAMPLE_STEP(sample.StartSecondary(), AV_ERR_OK, sample,
+                          "RunDropFlushStopResetScenario.AfterFlush.StartSecondary");
+    ASSERT_EQ_SAMPLE_STEP(sample.SendFramesFixedPts(scenario, 8, 0), AV_ERR_OK, sample,
+                          "RunDropFlushStopResetScenario.AfterFlush.SendFramesFixedPts");
+    ASSERT_TRUE_SAMPLE_STEP(sample.WaitForDualEos(), sample,
+                            "RunDropFlushStopResetScenario.AfterFlush.WaitForDualEos");
     VerifyDropAfterResume(sample, scenario);
 
     // Stop + resume
-    ASSERT_EQ(sample.StopPrimary(), AV_ERR_OK) << scenario.name;
-    ASSERT_EQ(sample.StopSecondary(), AV_ERR_OK) << scenario.name;
+    ASSERT_EQ_SAMPLE_STEP(sample.StopPrimary(), AV_ERR_OK, sample,
+                          "RunDropFlushStopResetScenario.StopResume.StopPrimary");
+    ASSERT_EQ_SAMPLE_STEP(sample.StopSecondary(), AV_ERR_OK, sample,
+                          "RunDropFlushStopResetScenario.StopResume.StopSecondary");
     sample.ResetDataCounts();
-    ASSERT_EQ(sample.StartPrimary(), AV_ERR_OK) << scenario.name;
-    ASSERT_EQ(sample.StartSecondary(), AV_ERR_OK) << scenario.name;
-    ASSERT_EQ(sample.SendFramesFixedPts(scenario, 8, 0), AV_ERR_OK) << scenario.name;
-    ASSERT_TRUE(sample.WaitForDualEos()) << scenario.name;
+    ASSERT_EQ_SAMPLE_STEP(sample.StartPrimary(), AV_ERR_OK, sample,
+                          "RunDropFlushStopResetScenario.AfterStop.StartPrimary");
+    ASSERT_EQ_SAMPLE_STEP(sample.StartSecondary(), AV_ERR_OK, sample,
+                          "RunDropFlushStopResetScenario.AfterStop.StartSecondary");
+    ASSERT_EQ_SAMPLE_STEP(sample.SendFramesFixedPts(scenario, 8, 0), AV_ERR_OK, sample,
+                          "RunDropFlushStopResetScenario.AfterStop.SendFramesFixedPts");
+    ASSERT_TRUE_SAMPLE_STEP(sample.WaitForDualEos(), sample,
+                            "RunDropFlushStopResetScenario.AfterStop.WaitForDualEos");
     VerifyDropAfterResume(sample, scenario);
 
     // SetParameter to change drop rate to 30fps->25fps (keepRatio~0.83)
     sample.ResetDataCounts();
-    ASSERT_EQ(sample.SetParameterPrimary(MakeDropRate(25.0)), AV_ERR_OK) << scenario.name;
-    ASSERT_EQ(sample.StopPrimary(), AV_ERR_OK) << scenario.name;
-    ASSERT_EQ(sample.StopSecondary(), AV_ERR_OK) << scenario.name;
-    ASSERT_EQ(sample.StartPrimary(), AV_ERR_OK) << scenario.name;
-    ASSERT_EQ(sample.StartSecondary(), AV_ERR_OK) << scenario.name;
-    ASSERT_EQ(sample.SendFramesFixedPts(scenario, 8, 0), AV_ERR_OK) << scenario.name;
-    ASSERT_TRUE(sample.WaitForDualEos()) << scenario.name;
+    ASSERT_EQ_SAMPLE_STEP(sample.SetParameterPrimary(MakeDropRate(25.0)), AV_ERR_OK, sample,
+                          "RunDropFlushStopResetScenario.SetParameter.SetParameterPrimary");
+    ASSERT_EQ_SAMPLE_STEP(sample.StopPrimary(), AV_ERR_OK, sample,
+                          "RunDropFlushStopResetScenario.SetParameter.StopPrimary");
+    ASSERT_EQ_SAMPLE_STEP(sample.StopSecondary(), AV_ERR_OK, sample,
+                          "RunDropFlushStopResetScenario.SetParameter.StopSecondary");
+    ASSERT_EQ_SAMPLE_STEP(sample.StartPrimary(), AV_ERR_OK, sample,
+                          "RunDropFlushStopResetScenario.SetParameter.StartPrimary");
+    ASSERT_EQ_SAMPLE_STEP(sample.StartSecondary(), AV_ERR_OK, sample,
+                          "RunDropFlushStopResetScenario.SetParameter.StartSecondary");
+    ASSERT_EQ_SAMPLE_STEP(sample.SendFramesFixedPts(scenario, 8, 0), AV_ERR_OK, sample,
+                          "RunDropFlushStopResetScenario.SetParameter.SendFramesFixedPts");
+    ASSERT_TRUE_SAMPLE_STEP(sample.WaitForDualEos(), sample,
+                            "RunDropFlushStopResetScenario.SetParameter.WaitForDualEos");
     // 30fps->25fps with 8 frames: expect ~7 kept (only ~1 dropped)
-    EXPECT_NEAR(sample.PrimaryDataCount(), 7, 1) << scenario.name;
-    EXPECT_EQ(sample.PrimaryError(), 0) << scenario.name;
-    EXPECT_EQ(sample.SecondaryError(), 0) << scenario.name;
+    EXPECT_NEAR_SAMPLE_STEP(sample.PrimaryDataCount(), 7, 1, sample,
+                            "RunDropFlushStopResetScenario.SetParameter.PrimaryDataCount");
+    EXPECT_EQ_SAMPLE_STEP(sample.PrimaryError(), 0, sample,
+                          "RunDropFlushStopResetScenario.SetParameter.PrimaryError");
+    EXPECT_EQ_SAMPLE_STEP(sample.SecondaryError(), 0, sample,
+                          "RunDropFlushStopResetScenario.SetParameter.SecondaryError");
 }
 
 void RunInvalidParameterScenario(const ScenarioCase &scenario)
 {
     VideoEncPreprocDualOutputSample sample;
-    ASSERT_TRUE(sample.SetOutputFilePath(GetOutputFilePath())) << scenario.name;
-    ASSERT_TRUE(sample.CreatePrimary(scenario.mime)) << scenario.name;
-    ASSERT_EQ(sample.ConfigurePrimary(scenario), scenario.expectedResult) << scenario.name;
+    ASSERT_TRUE_SAMPLE_STEP(sample.SetOutputFilePath(GetOutputFilePath()), sample,
+                            "RunInvalidParameterScenario.SetOutputFilePath");
+    ASSERT_TRUE_SAMPLE_STEP(sample.CreatePrimary(scenario.mime), sample,
+                            "RunInvalidParameterScenario.CreatePrimary");
+    ASSERT_EQ_SAMPLE_STEP(sample.ConfigurePrimary(scenario), scenario.expectedResult, sample,
+                          "RunInvalidParameterScenario.ConfigurePrimary");
 }
 
 void RunScenario(const ScenarioCase &scenario)
 {
     VideoEncPreprocDualOutputSample sample;
-    ASSERT_TRUE(sample.SetOutputFilePath(GetOutputFilePath())) << scenario.name;
-    ASSERT_TRUE(sample.CreatePrimary(scenario.mime)) << scenario.name;
-    ASSERT_EQ(sample.ConfigurePrimary(scenario), scenario.expectedResult) << scenario.name;
+    ASSERT_TRUE_SAMPLE_STEP(sample.SetOutputFilePath(GetOutputFilePath()), sample, "RunScenario.SetOutputFilePath");
+    ASSERT_TRUE_SAMPLE_STEP(sample.CreatePrimary(scenario.mime), sample, "RunScenario.CreatePrimary");
+    ASSERT_EQ_SAMPLE_STEP(sample.ConfigurePrimary(scenario), scenario.expectedResult, sample,
+                          "RunScenario.ConfigurePrimary");
     if (scenario.expectedResult != AV_ERR_OK) {
         return;
     }
-    ASSERT_EQ(sample.GetPrimarySurface(scenario), AV_ERR_OK) << scenario.name;
+    ASSERT_EQ_SAMPLE_STEP(sample.GetPrimarySurface(scenario), AV_ERR_OK, sample, "RunScenario.GetPrimarySurface");
 
     if (NeedsSecondary(scenario.encoderMode)) {
-        ASSERT_EQ(sample.CreateSecondary(), AV_ERR_OK) << scenario.name;
-        ASSERT_EQ(sample.ConfigureSecondary(scenario), AV_ERR_OK) << scenario.name;
+        ASSERT_EQ_SAMPLE_STEP(sample.CreateSecondary(), AV_ERR_OK, sample, "RunScenario.CreateSecondary");
+        ASSERT_EQ_SAMPLE_STEP(sample.ConfigureSecondary(scenario), AV_ERR_OK, sample,
+                              "RunScenario.ConfigureSecondary");
     }
 
-    ASSERT_EQ(sample.StartPrimary(), AV_ERR_OK) << scenario.name;
+    ASSERT_EQ_SAMPLE_STEP(sample.StartPrimary(), AV_ERR_OK, sample, "RunScenario.StartPrimary");
     if (NeedsSecondary(scenario.encoderMode)) {
-        ASSERT_EQ(sample.StartSecondary(), AV_ERR_OK) << scenario.name;
+        ASSERT_EQ_SAMPLE_STEP(sample.StartSecondary(), AV_ERR_OK, sample, "RunScenario.StartSecondary");
     }
 
-    ASSERT_EQ(sample.SendFrames(scenario, kFrameCount), AV_ERR_OK) << scenario.name;
+    ASSERT_EQ_SAMPLE_STEP(sample.SendFrames(scenario, kFrameCount), AV_ERR_OK, sample, "RunScenario.SendFrames");
 
     switch (scenario.encoderMode) {
         case EncoderEnableMode::PRIMARY_ONLY:
         case EncoderEnableMode::PRIMARY_SECONDARY_SEND_PRIMARY_ONLY:
-            ASSERT_TRUE(sample.WaitForPrimaryEos()) << scenario.name;
-            EXPECT_TRUE(sample.PrimaryHasData()) << scenario.name;
+            ASSERT_TRUE_SAMPLE_STEP(sample.WaitForPrimaryEos(), sample, "RunScenario.WaitForPrimaryEos");
+            EXPECT_TRUE_SAMPLE_STEP(sample.PrimaryHasData(), sample, "RunScenario.PrimaryHasData");
             break;
         case EncoderEnableMode::PRIMARY_SECONDARY_SEND_SECONDARY_ONLY:
-            ASSERT_TRUE(sample.WaitForSecondaryEos()) << scenario.name;
-            EXPECT_TRUE(sample.SecondaryHasData()) << scenario.name;
+            ASSERT_TRUE_SAMPLE_STEP(sample.WaitForSecondaryEos(), sample, "RunScenario.WaitForSecondaryEos");
+            EXPECT_TRUE_SAMPLE_STEP(sample.SecondaryHasData(), sample, "RunScenario.SecondaryHasData");
             break;
         case EncoderEnableMode::PRIMARY_SECONDARY:
-            ASSERT_TRUE(sample.WaitForDualEos()) << scenario.name;
-            EXPECT_TRUE(sample.PrimaryHasData()) << scenario.name;
-            EXPECT_TRUE(sample.SecondaryHasData()) << scenario.name;
+            ASSERT_TRUE_SAMPLE_STEP(sample.WaitForDualEos(), sample, "RunScenario.WaitForDualEos");
+            EXPECT_TRUE_SAMPLE_STEP(sample.PrimaryHasData(), sample, "RunScenario.PrimaryHasData");
+            EXPECT_TRUE_SAMPLE_STEP(sample.SecondaryHasData(), sample, "RunScenario.SecondaryHasData");
             break;
         default:
-            GTEST_FAIL() << "unexpected encoder mode";
+            GTEST_FAIL() << "unexpected encoder mode\n" << DescribeSampleState(sample);
             break;
     }
     if (scenario.primary.useDropToFrameRate) {
-        EXPECT_LT(sample.PrimaryDataCount(), static_cast<int32_t>(kFrameCount)) << scenario.name;
+        EXPECT_LT_SAMPLE_STEP(sample.PrimaryDataCount(), static_cast<int32_t>(kFrameCount), sample,
+                              "RunScenario.PrimaryDropDataCount");
         if (!scenario.secondary.useDropToFrameRate) {
-            EXPECT_GT(sample.SecondaryDataCount(), sample.PrimaryDataCount()) << scenario.name;
+            EXPECT_GT_SAMPLE_STEP(sample.SecondaryDataCount(), sample.PrimaryDataCount(), sample,
+                                  "RunScenario.SecondaryDataCountGreaterThanPrimary");
         }
     }
 
-    EXPECT_EQ(sample.PrimaryError(), 0) << scenario.name;
-    EXPECT_EQ(sample.SecondaryError(), 0) << scenario.name;
+    EXPECT_EQ_SAMPLE_STEP(sample.PrimaryError(), 0, sample, "RunScenario.PrimaryError");
+    EXPECT_EQ_SAMPLE_STEP(sample.SecondaryError(), 0, sample, "RunScenario.SecondaryError");
 
     if (NeedsSecondary(scenario.encoderMode) && !sample.SecondaryGotEos()) {
         (void)sample.NotifySecondaryEos();
@@ -489,6 +738,7 @@ INSTANTIATE_TEST_SUITE_P(Dynamic, VideoEncPreprocDualOutputTest, testing::Values
 HWTEST_P(VideoEncPreprocDualOutputTest, VideoEncoder_Preproc_Dual_Output_001, TestSize.Level1)
 {
     const auto &scenario = GetParam();
+    SCOPED_TRACE(DescribeScenario(scenario));
     switch (scenario.flow) {
         case FlowType::DROP_RATIO:
             RunDropRatioScenario(scenario);
