@@ -36,11 +36,6 @@ constexpr double DEFAULT_FRAME_RATE = 30.0;
 
 enum CodecType : int32_t { AVC = 0, HEVC = 1 };
 
-const char *GetMimeType(int32_t codecType)
-{
-    return (codecType == HEVC) ? OH_AVCODEC_MIMETYPE_VIDEO_HEVC : GetCurMimeType();
-}
-
 static void OnError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
     (void)codec;
@@ -95,6 +90,11 @@ static void OnNeedInputParameter(OH_AVCodec *codec, uint32_t index, OH_AVFormat 
     (void)index;
     (void)parameter;
     (void)userData;
+}
+
+const char *GetMimeType(int32_t codecType)
+{
+    return (codecType == HEVC) ? OH_AVCODEC_MIMETYPE_VIDEO_HEVC : OH_AVCODEC_MIMETYPE_VIDEO_AVC;
 }
 
 void RegisterCallbackWithSignal(shared_ptr<VideoEncDualOutputSample> &sample, EncoderType type,
@@ -161,7 +161,7 @@ public:
     void TearDown(void);
     void FullLifecyclePrimary();
     void FullLifecycleSecondary();
-    const char *GetCurMimeType() const { return GetMimeType(GetParam()); }
+    const char *GetCurMimeType() { return GetMimeType(GetParam()); }
 
 protected:
     std::shared_ptr<VideoEncDualOutputSample> dualSample_;
@@ -876,7 +876,7 @@ HWTEST_P(TEST_SUIT, Secondary_IsValid_Normal_001, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_NoPreproc_001, TestSize.Level1)
 {
-    RunPreprocDualEncoding("fullenc_no_preproc",
+    RunPreprocDualEncoding(GetParam(), "fullenc_no_preproc",
         [](VideoEncDualOutputSample &s) {
             // no preprocessor features
         });
@@ -890,7 +890,7 @@ HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_NoPreproc_001, TestSize.Level1)
 HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_CropOnly_001, TestSize.Level1)
 {
     IsSupportFastImage();
-    RunPreprocDualEncoding("fullenc_crop",
+    RunPreprocDualEncoding(GetParam(), "fullenc_crop",
         [](VideoEncDualOutputSample &s) {
             s.SetCrop(EncoderType::PRIMARY, 10, 10, 629, 479); // crop: 10,10,629,479
         });
@@ -904,7 +904,7 @@ HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_CropOnly_001, TestSize.Level1)
 HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_DownsamplingOnly_001, TestSize.Level1)
 {
     IsSupportFastImage();
-    RunPreprocDualEncoding("fullenc_downsample",
+    RunPreprocDualEncoding(GetParam(), "fullenc_downsample",
         [](VideoEncDualOutputSample &s) {
             s.SetDownsampling(EncoderType::PRIMARY, 640, 480); // downsampling: 640x480
         });
@@ -917,7 +917,7 @@ HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_DownsamplingOnly_001, TestSize.Level
  */
 HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_DropFrameRateOnly_001, TestSize.Level1)
 {
-    RunPreprocDualEncoding("fullenc_dropframerate",
+    RunPreprocDualEncoding(GetParam(), "fullenc_dropframerate",
         [](VideoEncDualOutputSample &s) {
             s.SetDropFrameRate(EncoderType::PRIMARY, 15.0); // drop frame rate: 15.0
         });
@@ -931,7 +931,7 @@ HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_DropFrameRateOnly_001, TestSize.Leve
 HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_CropAndDropFrameRate_001, TestSize.Level1)
 {
     IsSupportFastImage();
-    RunPreprocDualEncoding("fullenc_crop_dropfr",
+    RunPreprocDualEncoding(GetParam(), "fullenc_crop_dropfr",
         [](VideoEncDualOutputSample &s) {
             s.SetCrop(EncoderType::PRIMARY, 10, 10, 629, 479); // crop: 10,10,629,479
             s.SetDropFrameRate(EncoderType::PRIMARY, 15.0); // drop frame rate: 15.0
@@ -946,7 +946,7 @@ HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_CropAndDropFrameRate_001, TestSize.L
 HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_DownsamplingAndDropFrameRate_001, TestSize.Level1)
 {
     IsSupportFastImage();
-    RunPreprocDualEncoding("fullenc_ds_dropfr",
+    RunPreprocDualEncoding(GetParam(), "fullenc_ds_dropfr",
         [](VideoEncDualOutputSample &s) {
             s.SetDownsampling(EncoderType::PRIMARY, 640, 480); // downsampling: 640x480
             s.SetDropFrameRate(EncoderType::PRIMARY, 15.0); // drop frame rate: 15.0
@@ -961,7 +961,7 @@ HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_DownsamplingAndDropFrameRate_001, Te
 HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_PrimaryCrop_SecondaryDownsample_001, TestSize.Level1)
 {
     IsSupportFastImage();
-    RunPreprocDualEncoding("fullenc_pri_crop_sec_ds",
+    RunPreprocDualEncoding(GetParam(), "fullenc_pri_crop_sec_ds",
         [](VideoEncDualOutputSample &s) {
             s.SetCrop(EncoderType::PRIMARY, 10, 10, 629, 479); // crop: 10,10,629,479
         },
@@ -978,7 +978,7 @@ HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_PrimaryCrop_SecondaryDownsample_001,
 HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_PrimaryDownsample_SecondaryCrop_001, TestSize.Level1)
 {
     IsSupportFastImage();
-    RunPreprocDualEncoding("fullenc_pri_ds_sec_crop",
+    RunPreprocDualEncoding(GetParam(), "fullenc_pri_ds_sec_crop",
         [](VideoEncDualOutputSample &s) {
             s.SetDownsampling(EncoderType::PRIMARY, 640, 480); // downsampling: 640x480
         },
@@ -995,7 +995,7 @@ HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_PrimaryDownsample_SecondaryCrop_001,
 HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_PrimaryCropDropFR_SecondaryDownsample_001, TestSize.Level1)
 {
     IsSupportFastImage();
-    RunPreprocDualEncoding("fullenc_pri_cropdfr_sec_ds",
+    RunPreprocDualEncoding(GetParam(), "fullenc_pri_cropdfr_sec_ds",
         [](VideoEncDualOutputSample &s) {
             s.SetCrop(EncoderType::PRIMARY, 10, 10, 629, 479); // crop: 10,10,629,479
             s.SetDropFrameRate(EncoderType::PRIMARY, 15.0); // drop frame rate: 15.0
@@ -1013,7 +1013,7 @@ HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_PrimaryCropDropFR_SecondaryDownsampl
 HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_PrimaryDownsampleDropFR_SecondaryCrop_001, TestSize.Level1)
 {
     IsSupportFastImage();
-    RunPreprocDualEncoding("fullenc_pri_dsdfr_sec_crop",
+    RunPreprocDualEncoding(GetParam(), "fullenc_pri_dsdfr_sec_crop",
         [](VideoEncDualOutputSample &s) {
             s.SetDownsampling(EncoderType::PRIMARY, 640, 480); // downsampling: 640x480
             s.SetDropFrameRate(EncoderType::PRIMARY, 15.0); // drop frame rate: 15.0
