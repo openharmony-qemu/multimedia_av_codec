@@ -1276,6 +1276,12 @@ void HDecoder::OnStopJankDetect()
         return;
     }
     detect_ = false;
+    if (currSurface_.surface_ == nullptr) {
+        currSurface_.jankCnt_ = 0;
+        currSurface_.totalJankDur_ = 0;
+        currSurface_.beginTime_ = 0;
+        return;
+    }
     int64_t endTime = GetCurrUs();
     int64_t duration = endTime - currSurface_.lastFlushTime_;
     if (duration > 1000000) { //1000000: 大于1s
