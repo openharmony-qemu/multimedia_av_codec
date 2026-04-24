@@ -372,47 +372,69 @@ void PreprocessorManager::EncoderInfo::EncoderThreadLoop()
         std::shared_ptr<SurfaceBufferWrapper> inputBuffer;
         std::shared_ptr<SurfaceBufferWrapper> outputBuffer;
         std::function<void()> notifyEosTask{nullptr};
-        {
-            std::unique_lock<std::mutex> lock(bufferQueueMutex_);
-            bufferQueueCv_.wait(lock, [this]() {
-                if (!isRunning_ || (eosRequested_ && pendingBuffers_.empty())) {
-                    return true;
-                }
-                return !(pendingBuffers_.empty() || availableInputBuffers_.empty());
-            });
-            if (!isRunning_) {
-                break;
-            }
-            if (eosRequested_ && pendingBuffers_.empty()) {
-                std::swap(notifyEosTask, notifyEosTask_);
-                eosRequested_ = false;
-                isRunning_ = false;
-                AVCODEC_LOGI("Pending buffers drained, notify eos asynchronously: %{public}s", encoderId_.data());
-            }
-            if (notifyEosTask) { // eos is sent after all pending buffers are consumed, without blocking caller thread
-                lock.unlock();
+        if (!DequeueBuffers(inputBuffer, outputBuffer, notifyEosTask)) {
+            if (notifyEosTask) {
                 notifyEosTask();
-                break;
             }
-            if (pendingBuffers_.empty() || availableInputBuffers_.empty()) {
-                continue;
+            break;
+        }
+        if (!inputBuffer || !inputBuffer->buffer || !outputBuffer || !outputBuffer->buffer) {
+            AVCODEC_LOGW("Invalid buffer in encoder thread: %{public}s", encoderId_.data());
+            if (outputBuffer) {
+                std::lock_guard<std::mutex> poolLock(bufferQueueMutex_);
+                availableInputBuffers_.push(outputBuffer);
             }
-            inputBuffer = pendingBuffers_.front();
-            pendingBuffers_.pop();
-            CHECK_AND_CONTINUE_LOG(inputBuffer && inputBuffer->buffer,
-                                   "Invalid input buffer in encoder thread: %{public}s", encoderId_.data());
-            outputBuffer = availableInputBuffers_.front();
-            availableInputBuffers_.pop();
-            CHECK_AND_CONTINUE_LOG(outputBuffer && outputBuffer->buffer,
-                                   "Invalid output buffer in encoder thread: %{public}s", encoderId_.data());
+            continue;
         }
-        if (preprocessor_->Process(inputBuffer->buffer, outputBuffer->buffer, inputBuffer->timestamp) == AV_ERR_OK) {
-            inputBuffer->isProcessed = true;
-            outputBuffer->isProcessed = true;
-            SetBufferFlushConfig(inputBuffer, outputBuffer);
-        }
+        ProcessFrame(inputBuffer, outputBuffer);
     }
     AVCODEC_LOGI("EncoderThreadLoop exited: %{public}s", encoderId_.data());
+}
+
+bool PreprocessorManager::EncoderInfo::DequeueBuffers(std::shared_ptr<SurfaceBufferWrapper> &inputBuffer,
+                                                      std::shared_ptr<SurfaceBufferWrapper> &outputBuffer,
+                                                      std::function<void()> &notifyEosTask)
+{
+    std::unique_lock<std::mutex> lock(bufferQueueMutex_);
+    bufferQueueCv_.wait(lock, [this]() {
+        if (!isRunning_ || (eosRequested_ && pendingBuffers_.empty())) {
+            return true;
+        }
+        return !(pendingBuffers_.empty() || availableInputBuffers_.empty());
+    });
+    if (!isRunning_) {
+        return false;
+    }
+    if (eosRequested_ && pendingBuffers_.empty()) {
+        std::swap(notifyEosTask, notifyEosTask_);
+        eosRequested_ = false;
+        isRunning_ = false;
+        AVCODEC_LOGI("Pending buffers drained, notify eos asynchronously: %{public}s", encoderId_.data());
+        return false;
+    }
+    inputBuffer = pendingBuffers_.front();
+    pendingBuffers_.pop();
+    outputBuffer = availableInputBuffers_.front();
+    availableInputBuffers_.pop();
+    return true;
+}
+
+void PreprocessorManager::EncoderInfo::ProcessFrame(std::shared_ptr<SurfaceBufferWrapper> &inputBuffer,
+                                                    std::shared_ptr<SurfaceBufferWrapper> &outputBuffer)
+{
+    if (preprocessor_->ShouldDropFrame(inputBuffer->timestamp)) {
+        AVCODEC_LOGD("venc_%{public}s Frame dropped: pts=%{public}" PRId64, encoderId_.data(),
+                     inputBuffer->timestamp);
+        inputBuffer->isProcessed = true;
+        std::lock_guard<std::mutex> poolLock(bufferQueueMutex_);
+        availableInputBuffers_.push(outputBuffer);
+        return;
+    }
+    if (preprocessor_->Process(inputBuffer->buffer, outputBuffer->buffer, inputBuffer->timestamp) == AV_ERR_OK) {
+        inputBuffer->isProcessed = true;
+        outputBuffer->isProcessed = true;
+        SetBufferFlushConfig(inputBuffer, outputBuffer);
+    }
 }
 
 // === PreprocessorManager: Buffer data query for GetInputDescription ===

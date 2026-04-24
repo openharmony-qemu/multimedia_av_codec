@@ -392,10 +392,6 @@ int32_t Preprocessor::Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &ou
     CHECK_AND_RETURN_RET_LOG(input->GetFormat() == output->GetFormat(), AVCS_ERR_INVALID_VAL,
                              "Format mismatch: input=%{public}d, output=%{public}d", input->GetFormat(),
                              output->GetFormat());
-    if (ShouldDropFrame(pts)) {
-        return AVCS_ERR_OK;
-    }
-
     if (IsCropEnabled()) {
         Crop(input, output);
     } else if (IsDownsamplingEnabled()) {

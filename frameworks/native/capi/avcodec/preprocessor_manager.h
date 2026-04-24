@@ -98,6 +98,11 @@ private:
     private:
         void SetBufferFlushConfig(std::shared_ptr<SurfaceBufferWrapper> &inputBuffer,
                                   std::shared_ptr<SurfaceBufferWrapper> &outputBuffer);
+        bool DequeueBuffers(std::shared_ptr<SurfaceBufferWrapper> &inputBuffer,
+                            std::shared_ptr<SurfaceBufferWrapper> &outputBuffer,
+                            std::function<void()> &notifyEosTask);
+        void ProcessFrame(std::shared_ptr<SurfaceBufferWrapper> &inputBuffer,
+                          std::shared_ptr<SurfaceBufferWrapper> &outputBuffer);
         void EncoderThreadLoop();
 
         std::queue<std::shared_ptr<SurfaceBufferWrapper>> pendingBuffers_{};
