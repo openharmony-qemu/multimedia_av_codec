@@ -2357,7 +2357,7 @@ Status MPEG4AtomParser::ParsePasp(MPEG4Atom currentAtom, int32_t depth, ParseCon
         lastTrack_->hSpacing = hSpacing;
         lastTrack_->vSpacing = vSpacing;
         lastTrack_->hasPasp = true;
-        MEDIA_LOG_D("Parse pasp: hSpacing=%u, vSpacing=%u", hSpacing, vSpacing);
+        MEDIA_LOG_D("Parse pasp: hSpacing=%{public}u, vSpacing=%{public}u", hSpacing, vSpacing);
     } else {
         MEDIA_LOG_E("Invalid vSpacing=%{public}u", vSpacing);
     }
