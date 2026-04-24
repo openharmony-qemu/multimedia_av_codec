@@ -392,10 +392,6 @@ void Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
         AVCODEC_LOGE("Realloc buffer failed, buffer seq: %{public}d", output->GetSeqNum());
         return;
     }
-    PreProcessing::CropRect rect{ 0, 0, encoderConfig_.height - 1, encoderConfig_.width - 1 };
-    if (fastKitsInterface_.Crop(input, output, rect) == AVCS_ERR_OK) {
-        return;
-    }
     auto *src = static_cast<uint8_t *>(input->GetVirAddr());
     auto *dst = static_cast<uint8_t *>(output->GetVirAddr());
     CHECK_AND_RETURN_LOG(src != nullptr && dst != nullptr,
@@ -520,7 +516,7 @@ bool Preprocessor::CheckOrReallocOutSurfaceBuffer(int32_t targetWidth, int32_t t
             .usage = output->GetUsage(),
             .timeout = 0,
         };
-        auto ret = newBuffer->Alloc(config, output);
+        auto ret = newBuffer->Alloc(config);
         if (ret != GSERROR_OK) {
             return false;
         }

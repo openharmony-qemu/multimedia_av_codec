@@ -213,6 +213,7 @@ void PreprocessorManager::EncoderInfo::Init(std::shared_ptr<Preprocessor> prepro
             AVCODEC_LOGE("Buffer is nullptr");
             return;
         }
+        std::unique_lock<std::mutex> lock(bufferQueueMutex_);
         auto ret = encoderSurface_->DetachBufferFromQueue(oldBuf);
         if (ret != GSERROR_OK) {
             AVCODEC_LOGE("Dettach surfacebuffer from queue failed, GSError: %{public}d", ret);
@@ -224,6 +225,7 @@ void PreprocessorManager::EncoderInfo::Init(std::shared_ptr<Preprocessor> prepro
             return;
         }
         encoderSurfaceBufferPool_.erase(oldBuf->GetSeqNum());
+        encoderSurfaceBufferPool_.emplace(newBuf->GetSeqNum(), newBuf);
     });
 }
 
