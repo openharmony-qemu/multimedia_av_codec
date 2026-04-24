@@ -973,7 +973,7 @@ void MPEG4AtomParser::CalculateSARFromTrackInfo(std::shared_ptr<Track> track)
     
     if (track->hasPasp && track->hSpacing > 0 && track->vSpacing > 0) {
         sar = static_cast<double>(track->hSpacing) / static_cast<double>(track->vSpacing);
-        MEDIA_LOG_D("SAR from pasp: hSpacing=%u, vSpacing=%u, sar=%f", 
+        MEDIA_LOG_D("SAR from pasp: hSpacing=%{public}u, vSpacing=%{public}u, sar=%{public}f", 
             track->hSpacing, track->vSpacing, sar);
         mediaInfo_.tracks[track->trackIndex].Set<Tag::VIDEO_SAR>(sar);
         return;
@@ -986,14 +986,14 @@ void MPEG4AtomParser::CalculateSARFromTrackInfo(std::shared_ptr<Track> track)
         uint64_t denominator = static_cast<uint64_t>(track->stsdWidth) * track->tkhdHeight;
         if (denominator > 0) {
             sar = static_cast<double>(numerator) / static_cast<double>(denominator);
-            MEDIA_LOG_D("SAR from width/height diff: stsdW=%u, stsdH=%u, tkhdW=%u, tkhdH=%u, sar=%f",
+            MEDIA_LOG_D("SAR from width/height diff: [%{public}u/%{public}u/%{public}u/%{public}u], sar=%{public}f",
                 track->stsdWidth, track->stsdHeight, track->tkhdWidth, track->tkhdHeight, sar);
             mediaInfo_.tracks[track->trackIndex].Set<Tag::VIDEO_SAR>(sar);
             return;
         }
     }
     
-    MEDIA_LOG_D("Track %u SAR: no pasp, no width/height diff", track->trackIndex);
+    MEDIA_LOG_D("Track %{public}u SAR: no pasp, no width/height diff", track->trackIndex);
 }
 
 void MPEG4AtomParser::SetTrackDisplayMatrix(std::shared_ptr<Track> track, const int32_t resultMatrix[3][3],
