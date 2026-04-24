@@ -34,6 +34,8 @@ enum class FlowType {
     INVALID_PARAMETER,
     INVALID_LIFECYCLE,
     DUPLICATE_SECONDARY,
+    DROP_RATIO,
+    DROP_FLUSH_STOP_RESET,
 };
 
 enum class EncoderEnableMode {
@@ -100,6 +102,7 @@ struct ScenarioCase {
     int32_t expectedResult = AV_ERR_OK;
     bool expectExactResult = true;
     bool needsFrameRotation = false;
+    uint32_t frameCount = 8;
 };
 
 constexpr PreprocConfig MakeNoPreproc(double frameRate = 30.0)
@@ -148,6 +151,7 @@ inline const ScenarioCase kNoPreprocScenario {
     AV_ERR_OK,
     true,
     true,
+    8,
 };
 
 inline const ScenarioCase kPrimaryPreprocScenario {
@@ -173,6 +177,7 @@ inline const ScenarioCase kPrimaryPreprocScenario {
     AV_ERR_OK,
     true,
     true,
+    30,
 };
 
 inline const ScenarioCase kMixedPreprocScenario {
@@ -198,6 +203,7 @@ inline const ScenarioCase kMixedPreprocScenario {
     AV_ERR_OK,
     true,
     true,
+    30,
 };
 
 inline const ScenarioCase kInvalidDownsamplingScenario {
@@ -223,6 +229,7 @@ inline const ScenarioCase kInvalidDownsamplingScenario {
     AV_ERR_INVALID_VAL,
     true,
     false,
+    8,
 };
 
 inline const ScenarioCase kInvalidCropAndDownsamplingScenario {
@@ -248,6 +255,7 @@ inline const ScenarioCase kInvalidCropAndDownsamplingScenario {
     AV_ERR_INVALID_VAL,
     true,
     false,
+    8,
 };
 
 inline const ScenarioCase kInvalidDropRateScenario {
@@ -273,6 +281,7 @@ inline const ScenarioCase kInvalidDropRateScenario {
     AV_ERR_INVALID_VAL,
     true,
     false,
+    8,
 };
 
 inline const ScenarioCase kInvalidLifecycleScenario {
@@ -298,6 +307,7 @@ inline const ScenarioCase kInvalidLifecycleScenario {
     AV_ERR_INVALID_VAL,
     true,
     false,
+    8,
 };
 
 inline const ScenarioCase kDuplicateSecondaryScenario {
@@ -323,9 +333,61 @@ inline const ScenarioCase kDuplicateSecondaryScenario {
     AV_ERR_OPERATE_NOT_PERMIT,
     true,
     false,
+    8,
 };
 
-inline const std::array<ScenarioCase, 8> kDualOutputScenarios = {
+inline const ScenarioCase kDropRatioScenario {
+    "drop_ratio",
+    "hardware_avc",
+    OH_AVCODEC_MIMETYPE_VIDEO_AVC,
+    HARDWARE,
+    1280,
+    720,
+    1280,
+    720,
+    NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP,
+    AV_PIXEL_FORMAT_NV12,
+    EncoderEnableMode::PRIMARY_SECONDARY,
+    PreprocEnableMode::PRIMARY_ONLY,
+    RuntimeOperation::NONE,
+    FlowType::DROP_RATIO,
+    InvalidParameterType::DOWNSAMPLING_PAIR,
+    MakeDropRate(15.0),
+    MakeNoPreproc(),
+    MakeNoPreproc(),
+    MakeNoPreproc(),
+    AV_ERR_OK,
+    true,
+    false,
+    30,
+};
+
+inline const ScenarioCase kDropFlushStopResetScenario {
+    "drop_flush_stop_reset",
+    "hardware_avc",
+    OH_AVCODEC_MIMETYPE_VIDEO_AVC,
+    HARDWARE,
+    1280,
+    720,
+    1280,
+    720,
+    NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP,
+    AV_PIXEL_FORMAT_NV12,
+    EncoderEnableMode::PRIMARY_SECONDARY,
+    PreprocEnableMode::PRIMARY_ONLY,
+    RuntimeOperation::NONE,
+    FlowType::DROP_FLUSH_STOP_RESET,
+    InvalidParameterType::DOWNSAMPLING_PAIR,
+    MakeDropRate(15.0),
+    MakeNoPreproc(),
+    MakeNoPreproc(),
+    MakeNoPreproc(),
+    AV_ERR_OK,
+    true,
+    false,
+};
+
+inline const std::array<ScenarioCase, 10> kDualOutputScenarios = {
     kNoPreprocScenario,
     kPrimaryPreprocScenario,
     kMixedPreprocScenario,
@@ -334,6 +396,8 @@ inline const std::array<ScenarioCase, 8> kDualOutputScenarios = {
     kInvalidDropRateScenario,
     kInvalidLifecycleScenario,
     kDuplicateSecondaryScenario,
+    kDropRatioScenario,
+    kDropFlushStopResetScenario,
 };
 
 } // namespace PreprocDualOutput

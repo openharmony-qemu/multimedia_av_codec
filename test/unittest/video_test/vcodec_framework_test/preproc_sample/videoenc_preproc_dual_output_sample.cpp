@@ -835,6 +835,110 @@ bool VideoEncPreprocDualOutputSample::WaitForSecondaryEos(uint32_t timeoutSecond
     return secondaryState_.gotEos.load();
 }
 
+int32_t VideoEncPreprocDualOutputSample::StopPrimary()
+{
+    if (primary_ == nullptr) {
+        return AV_ERR_INVALID_VAL;
+    }
+    return OH_VideoEncoder_Stop(primary_);
+}
+
+int32_t VideoEncPreprocDualOutputSample::StopSecondary()
+{
+    if (secondary_ == nullptr) {
+        return AV_ERR_INVALID_VAL;
+    }
+    return OH_VideoEncoder_Stop(secondary_);
+}
+
+int32_t VideoEncPreprocDualOutputSample::FlushPrimary()
+{
+    if (primary_ == nullptr) {
+        return AV_ERR_INVALID_VAL;
+    }
+    return OH_VideoEncoder_Flush(primary_);
+}
+
+int32_t VideoEncPreprocDualOutputSample::FlushSecondary()
+{
+    if (secondary_ == nullptr) {
+        return AV_ERR_INVALID_VAL;
+    }
+    return OH_VideoEncoder_Flush(secondary_);
+}
+
+int32_t VideoEncPreprocDualOutputSample::ResetPrimary()
+{
+    if (primary_ == nullptr) {
+        return AV_ERR_INVALID_VAL;
+    }
+    return OH_VideoEncoder_Reset(primary_);
+}
+
+int32_t VideoEncPreprocDualOutputSample::ResetSecondary()
+{
+    if (secondary_ == nullptr) {
+        return AV_ERR_INVALID_VAL;
+    }
+    return OH_VideoEncoder_Reset(secondary_);
+}
+
+int32_t VideoEncPreprocDualOutputSample::SetParameterPrimary(const PreprocDualOutput::PreprocConfig &config)
+{
+    return SetPreprocParameter(primary_, config);
+}
+
+int32_t VideoEncPreprocDualOutputSample::SetParameterSecondary(const PreprocDualOutput::PreprocConfig &config)
+{
+    return SetPreprocParameter(secondary_, config);
+}
+
+int32_t VideoEncPreprocDualOutputSample::NotifyEndOfStream()
+{
+    auto ret = OH_VideoEncoder_NotifyEndOfStream(primary_);
+    if (ret != AV_ERR_OK) {
+        return ret;
+    }
+    if (secondary_ != nullptr) {
+        ret = OH_VideoEncoder_NotifyEndOfStream(secondary_);
+    }
+    return ret;
+}
+
+int32_t VideoEncPreprocDualOutputSample::SendFramesFixedPts(const PreprocDualOutput::ScenarioCase &scenario,
+                                                             uint32_t frameCount, int64_t ptsUs)
+{
+    if (window_ == nullptr) {
+        return AV_ERR_INVALID_VAL;
+    }
+    for (uint32_t i = 0; i < frameCount; ++i) {
+        if (!RequestAndFlushFrame(scenario.width, scenario.height, static_cast<uint8_t>(kFramePatternBase + i),
+                                  ptsUs)) {
+            return AV_ERR_UNKNOWN;
+        }
+        usleep(1000);
+    }
+    auto ret = NotifyPrimaryEos();
+    if (ret != AV_ERR_OK) {
+        return ret;
+    }
+    if (secondary_ != nullptr) {
+        ret = NotifySecondaryEos();
+    }
+    return ret;
+}
+
+void VideoEncPreprocDualOutputSample::ResetDataCounts()
+{
+    primaryState_.dataCount.store(0);
+    primaryState_.gotEos.store(false);
+    primaryState_.errorCode.store(0);
+    secondaryState_.dataCount.store(0);
+    secondaryState_.gotEos.store(false);
+    secondaryState_.errorCode.store(0);
+
+}
+
 bool VideoEncPreprocDualOutputSample::PrimaryHasData() const
 {
     return primaryState_.dataCount.load() > 0;
@@ -863,6 +967,16 @@ int32_t VideoEncPreprocDualOutputSample::PrimaryError() const
 int32_t VideoEncPreprocDualOutputSample::SecondaryError() const
 {
     return secondaryState_.errorCode.load();
+}
+
+int32_t VideoEncPreprocDualOutputSample::PrimaryDataCount() const
+{
+    return primaryState_.dataCount.load();
+}
+
+int32_t VideoEncPreprocDualOutputSample::SecondaryDataCount() const
+{
+    return secondaryState_.dataCount.load();
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

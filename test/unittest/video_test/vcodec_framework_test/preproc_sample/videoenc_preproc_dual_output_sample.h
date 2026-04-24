@@ -62,12 +62,27 @@ public:
     int32_t DestroySecondary();
     void ForgetSecondaryHandle();
 
+    int32_t StopPrimary();
+    int32_t StopSecondary();
+    int32_t FlushPrimary();
+    int32_t FlushSecondary();
+    int32_t ResetPrimary();
+    int32_t ResetSecondary();
+    int32_t SetParameterPrimary(const PreprocDualOutput::PreprocConfig &config);
+    int32_t SetParameterSecondary(const PreprocDualOutput::PreprocConfig &config);
+    int32_t NotifyEndOfStream();
+    int32_t SendFramesFixedPts(const PreprocDualOutput::ScenarioCase &scenario, uint32_t frameCount,
+                                int64_t ptsUs);
+    void ResetDataCounts();
+
     bool PrimaryHasData() const;
     bool SecondaryHasData() const;
     bool PrimaryGotEos() const;
     bool SecondaryGotEos() const;
     int32_t PrimaryError() const;
     int32_t SecondaryError() const;
+    int32_t PrimaryDataCount() const;
+    int32_t SecondaryDataCount() const;
 
 private:
     struct EncoderState {

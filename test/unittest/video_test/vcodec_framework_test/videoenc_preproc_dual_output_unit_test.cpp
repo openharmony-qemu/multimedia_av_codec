@@ -290,7 +290,14 @@ std::vector<ScenarioCase> BuildSupportedScenarios()
 
 const std::vector<ScenarioCase> &GetSupportedScenarios()
 {
-    static const std::vector<ScenarioCase> scenarios = BuildSupportedScenarios();
+    static std::vector<ScenarioCase> scenarios = BuildSupportedScenarios();
+    static bool once = false;
+    if (!once) {
+        once = true;
+        for (const auto &s : kDualOutputScenarios) {
+            scenarios.push_back(s);
+        }
+    }
     return scenarios;
 }
 
@@ -318,12 +325,99 @@ std::string GetOutputFilePath()
     return "./1in2out_out/" + testName + ".bin";
 }
 
-void RunScenario(const ScenarioCase &scenario)
+void RunDropRatioScenario(const ScenarioCase &scenario)
 {
     VideoEncPreprocDualOutputSample sample;
     ASSERT_TRUE(sample.SetOutputFilePath(GetOutputFilePath())) << scenario.name;
     ASSERT_TRUE(sample.CreatePrimary(scenario.mime)) << scenario.name;
     ASSERT_EQ(sample.ConfigurePrimary(scenario), AV_ERR_OK) << scenario.name;
+    ASSERT_EQ(sample.GetPrimarySurface(scenario), AV_ERR_OK) << scenario.name;
+    ASSERT_EQ(sample.CreateSecondary(), AV_ERR_OK) << scenario.name;
+    ASSERT_EQ(sample.ConfigureSecondary(scenario), AV_ERR_OK) << scenario.name;
+    ASSERT_EQ(sample.StartPrimary(), AV_ERR_OK) << scenario.name;
+    ASSERT_EQ(sample.StartSecondary(), AV_ERR_OK) << scenario.name;
+    constexpr uint32_t kDropFrames = 30;
+    ASSERT_EQ(sample.SendFramesFixedPts(scenario, kDropFrames, 0), AV_ERR_OK) << scenario.name;
+    ASSERT_TRUE(sample.WaitForDualEos()) << scenario.name;
+    EXPECT_LT(sample.PrimaryDataCount(), static_cast<int32_t>(kDropFrames)) << scenario.name;
+    EXPECT_GT(sample.SecondaryDataCount(), sample.PrimaryDataCount()) << scenario.name;
+    EXPECT_EQ(sample.PrimaryError(), 0) << scenario.name;
+    EXPECT_EQ(sample.SecondaryError(), 0) << scenario.name;
+}
+
+void VerifyDropAfterResume(VideoEncPreprocDualOutputSample &sample, const ScenarioCase &scenario)
+{
+    EXPECT_LT(sample.PrimaryDataCount(), 8) << scenario.name;
+    EXPECT_GT(sample.SecondaryDataCount(), sample.PrimaryDataCount()) << scenario.name;
+    EXPECT_EQ(sample.PrimaryError(), 0) << scenario.name;
+    EXPECT_EQ(sample.SecondaryError(), 0) << scenario.name;
+}
+
+void RunDropFlushStopResetScenario(const ScenarioCase &scenario)
+{
+    VideoEncPreprocDualOutputSample sample;
+    ASSERT_TRUE(sample.SetOutputFilePath(GetOutputFilePath())) << scenario.name;
+    ASSERT_TRUE(sample.CreatePrimary(scenario.mime)) << scenario.name;
+    ASSERT_EQ(sample.ConfigurePrimary(scenario), AV_ERR_OK) << scenario.name;
+    ASSERT_EQ(sample.GetPrimarySurface(scenario), AV_ERR_OK) << scenario.name;
+    ASSERT_EQ(sample.CreateSecondary(), AV_ERR_OK) << scenario.name;
+    ASSERT_EQ(sample.ConfigureSecondary(scenario), AV_ERR_OK) << scenario.name;
+
+    // Flush + resume
+    ASSERT_EQ(sample.StartPrimary(), AV_ERR_OK) << scenario.name;
+    ASSERT_EQ(sample.StartSecondary(), AV_ERR_OK) << scenario.name;
+    ASSERT_EQ(sample.SendFramesFixedPts(scenario, 8, 0), AV_ERR_OK) << scenario.name;
+    ASSERT_TRUE(sample.WaitForDualEos()) << scenario.name;
+    ASSERT_EQ(sample.FlushPrimary(), AV_ERR_OK) << scenario.name;
+    ASSERT_EQ(sample.FlushSecondary(), AV_ERR_OK) << scenario.name;
+    sample.ResetDataCounts();
+    ASSERT_EQ(sample.StartPrimary(), AV_ERR_OK) << scenario.name;
+    ASSERT_EQ(sample.StartSecondary(), AV_ERR_OK) << scenario.name;
+    ASSERT_EQ(sample.SendFramesFixedPts(scenario, 8, 0), AV_ERR_OK) << scenario.name;
+    ASSERT_TRUE(sample.WaitForDualEos()) << scenario.name;
+    VerifyDropAfterResume(sample, scenario);
+
+    // Stop + resume
+    ASSERT_EQ(sample.StopPrimary(), AV_ERR_OK) << scenario.name;
+    ASSERT_EQ(sample.StopSecondary(), AV_ERR_OK) << scenario.name;
+    sample.ResetDataCounts();
+    ASSERT_EQ(sample.StartPrimary(), AV_ERR_OK) << scenario.name;
+    ASSERT_EQ(sample.StartSecondary(), AV_ERR_OK) << scenario.name;
+    ASSERT_EQ(sample.SendFramesFixedPts(scenario, 8, 0), AV_ERR_OK) << scenario.name;
+    ASSERT_TRUE(sample.WaitForDualEos()) << scenario.name;
+    VerifyDropAfterResume(sample, scenario);
+
+    // SetParameter to change drop rate
+    sample.ResetDataCounts();
+    ASSERT_EQ(sample.SetParameterPrimary(MakeDropRate(25.0)), AV_ERR_OK) << scenario.name;
+    ASSERT_EQ(sample.StopPrimary(), AV_ERR_OK) << scenario.name;
+    ASSERT_EQ(sample.StopSecondary(), AV_ERR_OK) << scenario.name;
+    ASSERT_EQ(sample.StartPrimary(), AV_ERR_OK) << scenario.name;
+    ASSERT_EQ(sample.StartSecondary(), AV_ERR_OK) << scenario.name;
+    ASSERT_EQ(sample.SendFramesFixedPts(scenario, 8, 0), AV_ERR_OK) << scenario.name;
+    ASSERT_TRUE(sample.WaitForDualEos()) << scenario.name;
+    EXPECT_LT(sample.PrimaryDataCount(), 8) << scenario.name;
+    EXPECT_EQ(sample.PrimaryError(), 0) << scenario.name;
+    EXPECT_EQ(sample.SecondaryError(), 0) << scenario.name;
+}
+
+void RunInvalidParameterScenario(const ScenarioCase &scenario)
+{
+    VideoEncPreprocDualOutputSample sample;
+    ASSERT_TRUE(sample.SetOutputFilePath(GetOutputFilePath())) << scenario.name;
+    ASSERT_TRUE(sample.CreatePrimary(scenario.mime)) << scenario.name;
+    ASSERT_EQ(sample.ConfigurePrimary(scenario), scenario.expectedResult) << scenario.name;
+}
+
+void RunScenario(const ScenarioCase &scenario)
+{
+    VideoEncPreprocDualOutputSample sample;
+    ASSERT_TRUE(sample.SetOutputFilePath(GetOutputFilePath())) << scenario.name;
+    ASSERT_TRUE(sample.CreatePrimary(scenario.mime)) << scenario.name;
+    ASSERT_EQ(sample.ConfigurePrimary(scenario), scenario.expectedResult) << scenario.name;
+    if (scenario.expectedResult != AV_ERR_OK) {
+        return;
+    }
     ASSERT_EQ(sample.GetPrimarySurface(scenario), AV_ERR_OK) << scenario.name;
 
     if (NeedsSecondary(scenario.encoderMode)) {
@@ -357,6 +451,12 @@ void RunScenario(const ScenarioCase &scenario)
             GTEST_FAIL() << "unexpected encoder mode";
             break;
     }
+    if (scenario.primary.useDropToFrameRate) {
+        EXPECT_LT(sample.PrimaryDataCount(), static_cast<int32_t>(kFrameCount)) << scenario.name;
+        if (!scenario.secondary.useDropToFrameRate) {
+            EXPECT_GT(sample.SecondaryDataCount(), sample.PrimaryDataCount()) << scenario.name;
+        }
+    }
 
     EXPECT_EQ(sample.PrimaryError(), 0) << scenario.name;
     EXPECT_EQ(sample.SecondaryError(), 0) << scenario.name;
@@ -385,5 +485,18 @@ INSTANTIATE_TEST_SUITE_P(Dynamic, VideoEncPreprocDualOutputTest, testing::Values
 HWTEST_P(VideoEncPreprocDualOutputTest, VideoEncoder_Preproc_Dual_Output_001, TestSize.Level1)
 {
     const auto &scenario = GetParam();
-    RunScenario(scenario);
+    switch (scenario.flow) {
+        case FlowType::DROP_RATIO:
+            RunDropRatioScenario(scenario);
+            break;
+        case FlowType::DROP_FLUSH_STOP_RESET:
+            RunDropFlushStopResetScenario(scenario);
+            break;
+        case FlowType::INVALID_PARAMETER:
+            RunInvalidParameterScenario(scenario);
+            break;
+        default:
+            RunScenario(scenario);
+            break;
+    }
 }
