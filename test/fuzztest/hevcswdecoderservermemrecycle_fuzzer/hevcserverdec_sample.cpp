@@ -323,8 +323,8 @@ void VDecServerSample::Stop()
         signal_->inCond_.notify_all();
         signal_->endCond_.notify_all();
     }
-    while (!signal_->indexQueue_.empty()) {
-        signal_->indexQueue_.pop();
+    while (!signal_->inIdxQueue_.empty()) {
+        signal_->inIdxQueue_.pop();
     }
     while (!signal_->inBufferQueue_.empty()) {
         signal_->inBufferQueue_.pop();
