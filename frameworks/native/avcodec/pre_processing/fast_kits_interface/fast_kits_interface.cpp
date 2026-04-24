@@ -41,23 +41,27 @@ FastKitsInterface::~FastKitsInterface()
 
 void FastKitsInterface::Retain()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    refCount_++;
-    AVCODEC_LOGI("Retain refCount=%{public}d", refCount_);
+    std::unique_lock<std::shared_mutex> lock(mutex_);
+    if (handle_ == nullptr) {
+        if (OpenLibrary() && ReadSymbols()) {
+            AVCODEC_LOGI("fastkit lib loaded");
+        } else {
+            if (handle_ != nullptr) {
+                ClearSymbols();
+                dlclose(handle_);
+                handle_ = nullptr;
+            }
+            AVCODEC_LOGW("fastkit lib not available");
+        }
+    }
 }
 
 void FastKitsInterface::Release()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (refCount_ > 0) {
-        refCount_--;
-    }
-    AVCODEC_LOGI("Release refCount=%{public}d", refCount_);
-    if (refCount_ == 0 && handle_ != nullptr) {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
+    if (handle_ != nullptr) {
         if (fastScaleClearGPUFunc_ != nullptr) {
             fastScaleClearGPUFunc_();
-        } else {
-            AVCODEC_LOGW("fastScaleClearGPU is nullptr");
         }
         ClearSymbols();
         dlclose(handle_);
@@ -93,25 +97,13 @@ bool FastKitsInterface::LoadSymbol(void *handle, FuncPtr &func, const char *name
 
 int32_t FastKitsInterface::Init(uint32_t format, FastResizeAlgoType algo)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (handle_ != nullptr) {
-        return AVCS_ERR_OK;
-    }
-    if (!OpenLibrary()) {
-        return AVCS_ERR_UNKNOWN;
-    }
-    if (!ReadSymbols()) {
-        ClearSymbols();
-        dlclose(handle_);
-        handle_ = nullptr;
-        return AVCS_ERR_UNKNOWN;
-    }
+    std::unique_lock<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(handle_ != nullptr, AVCS_ERR_UNKNOWN, "Library not loaded, call Retain first");
     CHECK_AND_RETURN_RET_LOG(initFunc_ != nullptr, AVCS_ERR_INVALID_VAL, "Init function not loaded");
     int32_t ret = initFunc_(format, static_cast<int32_t>(algo));
     int32_t err = ConvertErrorCode(ret);
     CHECK_AND_RETURN_RET_LOG(err == AVCS_ERR_OK, err, "Init %{public}d, fmt %{public}u algo %{public}d",
                              ret, format, static_cast<int32_t>(algo));
-    AVCODEC_LOGI("fastkit lib loaded and initialized successfully");
     return err;
 }
 
@@ -147,21 +139,16 @@ void FastKitsInterface::ClearSymbols()
 
 bool FastKitsInterface::IsLoaded() const
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     return handle_ != nullptr;
 }
 
 int32_t FastKitsInterface::Crop(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output,
                                 const CropRect &rect)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(cropFunc_ != nullptr && createRectFunc_ != nullptr && destroyRectFunc_ != nullptr,
                              AVCS_ERR_INVALID_VAL, "Crop functions not loaded");
-    CHECK_AND_RETURN_RET_LOG(input.GetRefPtr() != nullptr && output.GetRefPtr() != nullptr, AVCS_ERR_INVALID_VAL,
-                             "Crop: input or output buffer is null");
-    CHECK_AND_RETURN_RET_LOG(input->GetFormat() == output->GetFormat(), AVCS_ERR_INVALID_VAL,
-                             "Crop: format mismatch, input %{public}d vs output %{public}d", input->GetFormat(),
-                             output->GetFormat());
 
     void *cropRect = createRectFunc_(rect.top, rect.left, rect.bottom, rect.right);
     CHECK_AND_RETURN_RET_LOG(cropRect != nullptr, AVCS_ERR_UNKNOWN, "createCropRect failed");
@@ -181,13 +168,8 @@ int32_t FastKitsInterface::Crop(const sptr<SurfaceBuffer> &input, const sptr<Sur
 int32_t FastKitsInterface::DownSample(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output,
                                       FastResizeAlgoType algo)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(downSampleFunc_ != nullptr, AVCS_ERR_INVALID_VAL, "DownSample function not loaded");
-    CHECK_AND_RETURN_RET_LOG(input.GetRefPtr() != nullptr && output.GetRefPtr() != nullptr, AVCS_ERR_INVALID_VAL,
-                             "DownSample: input or output buffer is null");
-    CHECK_AND_RETURN_RET_LOG(input->GetFormat() == output->GetFormat(), AVCS_ERR_INVALID_VAL,
-                             "DownSample: format mismatch, input %{public}d vs output %{public}d", input->GetFormat(),
-                             output->GetFormat());
 
     int32_t ret = downSampleFunc_(input.GetRefPtr(), output.GetRefPtr(), static_cast<int32_t>(algo));
     int32_t err = ConvertErrorCode(ret);

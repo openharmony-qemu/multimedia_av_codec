@@ -17,7 +17,7 @@
 #define MEDIA_AVCODEC_FAST_KITS_INTERFACE_H
 
 #include <dlfcn.h>
-#include <mutex>
+#include <shared_mutex>
 
 #include "avcodec_errors.h"
 #include "avcodec_log_ex.h"
@@ -83,8 +83,7 @@ private:
 
     static int32_t ConvertErrorCode(int32_t fastErr);
 
-    mutable std::mutex mutex_;
-    int32_t refCount_{0};
+    mutable std::shared_mutex mutex_;
     void *handle_ = nullptr;
     FastScaleInitFunc initFunc_ = nullptr;
     FastScaleDownSampleFunc downSampleFunc_ = nullptr;

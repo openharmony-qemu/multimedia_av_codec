@@ -130,18 +130,6 @@ const DsFormatParam DS_FORMAT_PARAMS[] = {
     {"NV12_P010", "/data/test/media/1280_720_nv12_10bit.yuv", GRAPHIC_PIXEL_FMT_YCBCR_P010},
 };
 
-std::vector<std::tuple<int32_t, int32_t>> FormatMismatchPairs()
-{
-    std::vector<std::tuple<int32_t, int32_t>> pairs;
-    constexpr int32_t n = sizeof(DS_FORMAT_PARAMS) / sizeof(DS_FORMAT_PARAMS[0]);
-    for (int32_t i = 0; i < n; ++i) {
-        for (int32_t j = i + 1; j < n; ++j) {
-            pairs.emplace_back(i, j);
-        }
-    }
-    return pairs;
-}
-
 void EnsureDir(const std::string &dir)
 {
     mkdir(dir.c_str(), 0755); // 0755: rwxr-xr-x directory permission
@@ -705,83 +693,6 @@ HWTEST_P(FastKitsRoiFormatTest, Crop_PreservesRoi, TestSize.Level1)
     ExpectROIMetadata(output, expected, ctx);
 }
 
-// ========== 格式不匹配测试 ==========
-
-class FastKitsFormatMismatchTest : public testing::TestWithParam<std::tuple<int32_t, int32_t>> {
-public:
-    void SetUp() override
-    {
-        auto [idx, _] = GetParam();
-        auto &inputFmt = DS_FORMAT_PARAMS[idx];
-        auto &inst = FastKitsInterface::GetInstance();
-        inst.Retain();
-        for (const auto &fmt : DS_FORMAT_PARAMS) {
-            if (inst.Init(fmt.pixelFormat, FastResizeAlgoType::BICUBIC) != AVCS_ERR_OK) {
-                inst.Release();
-                GTEST_SKIP() << "libfast_image.so not available, skipping";
-            }
-        }
-        inputBuffer_ = AllocBuffer(INPUT_WIDTH, INPUT_HEIGHT, inputFmt.pixelFormat);
-        if (inputBuffer_ == nullptr) {
-            inst.Release();
-            GTEST_SKIP() << "Format not supported on device";
-        }
-        EnsureDir(MEDIA_DIR);
-        (void)ReadFileToBuffer(inputFmt.inputFile, inputBuffer_, SRC_FILE_WIDTH);
-    }
-
-    void TearDown() override
-    {
-        FastKitsInterface::GetInstance().Release();
-    }
-
-protected:
-    sptr<SurfaceBuffer> inputBuffer_;
-};
-
-INSTANTIATE_TEST_SUITE_P(FastKits, FastKitsFormatMismatchTest, testing::ValuesIn(FormatMismatchPairs()),
-                         [](const testing::TestParamInfo<std::tuple<int32_t, int32_t>> &info) {
-                             return std::string(DS_FORMAT_PARAMS[std::get<0>(info.param)].name) + "_to_" +
-                                    DS_FORMAT_PARAMS[std::get<1>(info.param)].name;
-                         });
-
-/**
- * @tc.name: FastKitsInterface_FormatMismatch_ReturnError_001
- * @tc.desc: 输入输出像素格式不一致时Crop和DownSample均应报错
- * @tc.type: FUNC
- */
-HWTEST_P(FastKitsFormatMismatchTest, FormatMismatch_ReturnError, TestSize.Level1)
-{
-    auto [inputIdx, outputIdx] = GetParam();
-    auto &outputFmt = DS_FORMAT_PARAMS[outputIdx];
-    auto &inst = FastKitsInterface::GetInstance();
-    constexpr int32_t outW = 636; // 636: downsample target width
-    constexpr int32_t outH = 360; // 360: downsample target height
-
-    // DownSample with mismatched format
-    {
-        sptr<SurfaceBuffer> output = AllocBuffer(outW, outH, outputFmt.pixelFormat);
-        ASSERT_NE(output, nullptr);
-        EXPECT_NE(inputBuffer_->GetFormat(), output->GetFormat());
-        EXPECT_NO_FATAL_FAILURE({
-            int32_t ret = inst.DownSample(inputBuffer_, output, FastResizeAlgoType::BICUBIC);
-            EXPECT_NE(ret, AVCS_ERR_OK) << "DownSample should fail with format mismatch";
-        });
-    }
-
-    // Crop with mismatched format
-    {
-        sptr<SurfaceBuffer> output = AllocBuffer(outW, outH, outputFmt.pixelFormat);
-        ASSERT_NE(output, nullptr);
-        EXPECT_NE(inputBuffer_->GetFormat(), output->GetFormat());
-        CropRect rect{0, 0, outH - 1, outW - 1};
-        EXPECT_NO_FATAL_FAILURE({
-            int32_t ret = inst.Crop(inputBuffer_, output, rect);
-            EXPECT_NE(ret, AVCS_ERR_OK) << "Crop should fail with format mismatch";
-        });
-    }
-}
-
 // ========== 并发测试 ==========
 
 class FastKitsConcurrentTest : public testing::Test {
@@ -990,31 +901,6 @@ HWTEST_F(FastKitsLifecycleTest, MultipleCycles_NoCrash, TestSize.Level1)
         inst.Release();
         EXPECT_FALSE(inst.IsLoaded()) << "Cycle " << i << ": still loaded after Release";
     }
-}
-
-/**
- * @tc.name: FastKitsLifecycle_MultiRetain_OnlyLastReleaseUnloads_001
- * @tc.desc: 多次Retain共享SO，只有最后一次Release才卸载
- * @tc.type: FUNC
- */
-HWTEST_F(FastKitsLifecycleTest, MultiRetain_OnlyLastReleaseUnloads, TestSize.Level1)
-{
-    if (!IsSoAvailable()) {
-        GTEST_SKIP() << "libfast_image.so not available, skipping";
-    }
-    auto &inst = FastKitsInterface::GetInstance();
-
-    inst.Retain();
-    EXPECT_EQ(inst.Init(GRAPHIC_PIXEL_FMT_RGBA_8888), AVCS_ERR_OK);
-    EXPECT_TRUE(inst.IsLoaded());
-
-    inst.Retain();
-    EXPECT_TRUE(inst.IsLoaded());
-    inst.Release();
-    EXPECT_TRUE(inst.IsLoaded()) << "Library should still be loaded with one Retain alive";
-
-    inst.Release();
-    EXPECT_FALSE(inst.IsLoaded()) << "Library should be unloaded after all Release";
 }
 
 } // namespace PreProcessing

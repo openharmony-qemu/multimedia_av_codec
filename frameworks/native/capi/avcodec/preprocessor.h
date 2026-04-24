@@ -35,9 +35,10 @@ public:
     int32_t Configure(const Media::Format &format);
     int32_t SetParameter(const Media::Format &format);
 
-    int32_t Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output, uint64_t pts);
+    int32_t Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output, uint64_t pts);
     bool ShouldDropFrame(uint64_t pts);
     void FlushTimeStamp();
+    void SetOnBufferReallocCallback(std::function<void(sptr<SurfaceBuffer>, sptr<SurfaceBuffer>)> callback);
 
     bool IsCropEnabled() const;
     bool IsDownsamplingEnabled() const;
@@ -134,14 +135,15 @@ private:
     const CropConfig &GetCropConfig() const;
     const DownsamplingConfig &GetDownsamplingConfig() const;
     const DropFrameConfig &GetDropFrameConfig() const;
-    void Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output);
-    void Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output);
-    void Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output);
+    void Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output);
+    void Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output);
+    void Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output);
 
     bool IsHevc10BitData(HEVCProfile profile);
     GraphicPixelFormat ConvertVideoPixelFormat2GraphicPixelFormat(VideoPixelFormat pixelFormat, int32_t profile);
     void UpdateConfiguredValues(const Media::Format &format, EncoderConfig &config);
     bool GetEncoderRange(const Media::Format &format, Range &encWidth, Range &encHeight);
+    bool CheckOrReallocOutSurfaceBuffer(int32_t targetWidth, int32_t targetHeight, sptr<SurfaceBuffer> &output);
 
     CropConfig cropConfig_;
     DownsamplingConfig downsamplingConfig_;
@@ -154,6 +156,7 @@ private:
     std::string mime_;
     PreProcessing::FastKitsInterface &fastKitsInterface_ = PreProcessing::FastKitsInterface::GetInstance();
     PreProcessing::FrameDropFilter dropFilter_;
+    std::function<void(sptr<SurfaceBuffer>, sptr<SurfaceBuffer>)> onOutSurfaceBufferReallocCb_{};
 };
 
 } // namespace MediaAVCodec

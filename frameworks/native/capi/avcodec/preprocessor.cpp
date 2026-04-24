@@ -296,11 +296,14 @@ int32_t Preprocessor::SetParameter(const Media::Format &format)
     return Configure(format);
 }
 
-int32_t Preprocessor::Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output, uint64_t pts)
+int32_t Preprocessor::Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output, uint64_t pts)
 {
     CHECK_AND_RETURN_RET_LOG(input && output, AVCS_ERR_INVALID_VAL,
                              "Invalid buffer: input=%{public}p, output=%{public}p", input.GetRefPtr(),
                              output.GetRefPtr());
+    CHECK_AND_RETURN_RET_LOG(input->GetFormat() == output->GetFormat(), AVCS_ERR_INVALID_VAL,
+                             "Format mismatch: input=%{public}d, output=%{public}d", input->GetFormat(),
+                             output->GetFormat());
     if (ShouldDropFrame(pts)) {
         return AVCS_ERR_OK;
     }
@@ -332,6 +335,11 @@ void Preprocessor::FlushTimeStamp()
     return dropFilter_.FlushTimeStamp();
 }
 
+void Preprocessor::SetOnBufferReallocCallback(std::function<void(sptr<SurfaceBuffer>, sptr<SurfaceBuffer>)> callback)
+{
+    onOutSurfaceBufferReallocCb_ = callback;
+}
+
 bool Preprocessor::IsCropEnabled() const
 {
     return cropConfig_.enabled;
@@ -357,27 +365,31 @@ const Preprocessor::DropFrameConfig &Preprocessor::GetDropFrameConfig() const
     return dropFrameConfig_;
 }
 
-void Preprocessor::Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output)
+void Preprocessor::Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
 {
+    if (!CheckOrReallocOutSurfaceBuffer(cropConfig_.width, cropConfig_.height, output)) {
+        AVCODEC_LOGE("Realloc buffer failed, buffer seq: %{public}d", output->GetSeqNum());
+        return;
+    }
     PreProcessing::CropRect rect{cropConfig_.top, cropConfig_.left, cropConfig_.bottom, cropConfig_.right};
     int32_t ret = fastKitsInterface_.Crop(input, output, rect);
-    if (ret != AVCS_ERR_OK) {
-        AVCODEC_LOGE("Crop failed: %{public}d", ret);
-    }
+    CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Crop failed: %{public}d", ret);
 }
 
-void Preprocessor::Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output)
+void Preprocessor::Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
 {
+    if (!CheckOrReallocOutSurfaceBuffer(downsamplingConfig_.width, downsamplingConfig_.height, output)) {
+        AVCODEC_LOGE("Realloc buffer failed, buffer seq: %{public}d", output->GetSeqNum());
+        return;
+    }
     int32_t ret = fastKitsInterface_.DownSample(input, output);
-    if (ret != AVCS_ERR_OK) {
-        AVCODEC_LOGE("Downsampling failed: %{public}d", ret);
-    }
+    CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Downsampling failed: %{public}d", ret);
 }
 
-void Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> output)
+void Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
 {
-    PreProcessing::CropRect rect{ 0, 0, encoderConfig_.width - 1, encoderConfig_.height - 1 };
-    if (fastKitsInterface_.Crop(input, output, rect) == AVCS_ERR_OK) {
+    if (!CheckOrReallocOutSurfaceBuffer(encoderConfig_.width, encoderConfig_.height, output)) {
+        AVCODEC_LOGE("Realloc buffer failed, buffer seq: %{public}d", output->GetSeqNum());
         return;
     }
     auto *src = static_cast<uint8_t *>(input->GetVirAddr());
@@ -488,6 +500,29 @@ bool Preprocessor::GetEncoderRange(const Media::Format &format, Range &encWidth,
     }
     encWidth = cap->width;
     encHeight = cap->height;
+    return true;
+}
+
+bool Preprocessor::CheckOrReallocOutSurfaceBuffer(int32_t targetWidth, int32_t targetHeight,
+                                                  sptr<SurfaceBuffer> &output)
+{
+    if (output->GetWidth() != targetWidth || output->GetHeight() != targetHeight) {
+        sptr<SurfaceBuffer> newBuffer = SurfaceBuffer::Create();
+        BufferRequestConfig config = {
+            .width = targetWidth,
+            .height = targetHeight,
+            .strideAlignment = output->GetStride(),
+            .format = output->GetFormat(),
+            .usage = output->GetUsage(),
+            .timeout = 0,
+        };
+        auto ret = newBuffer->Alloc(config);
+        if (ret != GSERROR_OK) {
+            return false;
+        }
+        onOutSurfaceBufferReallocCb_(output, newBuffer);
+        output = newBuffer;
+    }
     return true;
 }
 

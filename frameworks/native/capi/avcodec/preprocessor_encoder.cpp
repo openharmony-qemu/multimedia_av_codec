@@ -398,11 +398,13 @@ int32_t PreprocessorEncoder::CreateEncoderSurface()
 {
     if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
         auto surface = videoEncoderObject_->videoEncoder_->CreateInputSurface();
-        if (surface == nullptr) {
+        if (surface == nullptr && encoderSurface_ == nullptr) {
             return AVCS_ERR_NO_MEMORY;
         }
 
-        encoderSurface_ = surface;
+        if (surface != nullptr) {
+            encoderSurface_ = surface;
+        }
     }
 
     return AVCS_ERR_OK;
@@ -453,6 +455,7 @@ OH_AVErrCode PreprocessorEncoder::Stop()
         int32_t ret = videoEncoderObject_->videoEncoder_->Stop();
         CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                                  "Video encoder stop failed!");
+        videoEncoderObject_->ClearBufferList();
     }
 
     if (preprocMgr_) {
@@ -469,6 +472,7 @@ OH_AVErrCode PreprocessorEncoder::Flush()
         int32_t ret = videoEncoderObject_->videoEncoder_->Flush();
         CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                                  "Video encoder flush failed!");
+        videoEncoderObject_->ClearBufferList();
     }
 
     if (preprocMgr_) {
@@ -485,6 +489,7 @@ OH_AVErrCode PreprocessorEncoder::Reset()
         int32_t ret = videoEncoderObject_->videoEncoder_->Reset();
         CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                                  "Video encoder reset failed!");
+        videoEncoderObject_->ClearBufferList();
     }
 
     if (preprocMgr_) {
@@ -517,6 +522,7 @@ OH_AVErrCode PreprocessorEncoder::Release()
 OH_AVErrCode PreprocessorEncoder::NotifyEos()
 {
     std::scoped_lock lock(instanceMutex_);
+    CHECK_AND_RETURN_RET_LOG(preprocMgr_, AV_ERR_OPERATE_NOT_PERMIT, "PreprocessorManager is not found");
     if (preprocMgr_) {
         std::shared_ptr<VideoEncoderObject> videoEncoderObject = videoEncoderObject_;
         std::string encoderId = encoderId_;
@@ -531,7 +537,6 @@ OH_AVErrCode PreprocessorEncoder::NotifyEos()
             }
         });
         CHECK_AND_RETURN_RET_LOG(requestRet, AV_ERR_INVALID_STATE, "Request async notify eos failed!");
-        return AV_ERR_OK;
     }
 
     return AV_ERR_OK;
