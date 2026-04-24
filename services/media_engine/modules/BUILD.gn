@@ -89,6 +89,7 @@ ohos_shared_library("av_codec_media_engine_modules") {
     "muxer/data_sink_file.cpp",
     "muxer/media_muxer.cpp",
     "post_processor/video_post_processor_factory.cpp",
+    "post_processor/side_output_surface_processor.cpp",
     "pts_index_conversion/pts_and_index_conversion.cpp",
     "sink/audio_sampleformat.cpp",
     "sink/audio_sink.cpp",

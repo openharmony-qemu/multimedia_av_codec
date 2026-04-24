@@ -41,6 +41,7 @@ enum VideoPostProcessorType {
     SUPER_RESOLUTION,
     CAMERA_INSERT_FRAME,
     CAMERA_MP_PWP,
+    SIDE_OUTPUT,
 };
 
 class BaseVideoPostProcessor {
@@ -104,6 +105,14 @@ public:
     {
         (void)speed;
         return Status::OK;
+    }
+    virtual void SetVideoOutput(sptr<Surface> surface)
+    {
+        (void)surface;
+    }
+    virtual void GetVideoSample(int32_t &outputResult)
+    {
+        (void)outputResult;
     }
 };
 
