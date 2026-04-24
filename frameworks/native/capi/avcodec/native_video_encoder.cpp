@@ -92,8 +92,6 @@ struct OH_AVCodec *OH_VideoEncoder_CreateByName(const char *name)
 OH_AVErrCode OH_VideoEncoder_Destroy(struct OH_AVCodec *codec)
 {
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
-                             "Codec magic error!");
     CHECK_AND_RETURN_RET_LOG(IsValidVideoEncoderMagic(codec->magic_), AV_ERR_INVALID_VAL, "Codec magic error!");
     ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_VideoEncoder_Destroy.Time", TIMES);
     if (PreprocessorEncoder::IsPreprocEncoderMagic(codec->magic_)) {
