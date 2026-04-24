@@ -359,7 +359,9 @@ void VideoEncPreprocDualOutputSample::OnNeedOutputData(OH_AVCodec *codec, uint32
     OH_AVCodecBufferAttr attr;
     OH_AVBuffer_GetBufferAttr(buffer, &attr);
     if ((attr.flags & AVCODEC_BUFFER_FLAGS_EOS) == 0) {
-        state->dataCount.fetch_add(1);
+        if (attr.flags != AVCODEC_BUFFER_FLAGS_CODEC_DATA) {
+            state->dataCount.fetch_add(1);
+        }
         DumpOutputBuffer(buffer, attr, *state);
     } else {
         state->gotEos.store(true);
