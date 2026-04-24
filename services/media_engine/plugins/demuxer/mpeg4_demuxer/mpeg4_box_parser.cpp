@@ -734,8 +734,7 @@ Status MPEG4AtomParser::ParseMvhd(MPEG4Atom currentAtom, int32_t depth, ParseCon
     std::string creationTimeStr;
     if (creationTime) {
         creationTime -= QUICKTIME_EPOCH_OFFSET;
-        int64_t creationTimeUs = static_cast<int64_t>(creationTime) * 1000000;
-        creationTimeStr = FormatTimestamp(creationTimeUs);
+        creationTimeStr = FormatTimestamp(creationTime * 1000000);
         mediaInfo_.general.Set<Tag::MEDIA_CREATION_TIME>(creationTimeStr);
     }
     mediaInfo_.general.Set<Tag::MEDIA_TIME_SCALE>(static_cast<int32_t>(timeScale));
