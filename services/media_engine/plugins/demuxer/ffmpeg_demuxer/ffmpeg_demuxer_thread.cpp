@@ -396,7 +396,7 @@ void FFmpegDemuxerPlugin::FFmpegReadLoop()
             readCacheCv_.notify_one();
         }
         if (ioContext_.invokerType == InvokerType::DESTORY) {
-            MEDIA_LOG_I("DESTORY trackId=" PUBLIC_LOG_D32, trackId_.load());
+            MEDIA_LOG_I("DESTORY trackId=" PUBLIC_LOG_U32, trackId_.load());
             break;
         }
         if (!EnsurePacketAllocated(pktWrapper)) {
