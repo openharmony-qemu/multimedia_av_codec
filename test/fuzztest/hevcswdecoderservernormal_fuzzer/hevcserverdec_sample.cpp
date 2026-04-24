@@ -410,7 +410,7 @@ void VDecServerSample::InputFunc()
         } else {
             if (ReadData(index, buffer) == 1) {
                 isFuzzMode = true;
-                break;
+                continue;
             }
         }
     }
