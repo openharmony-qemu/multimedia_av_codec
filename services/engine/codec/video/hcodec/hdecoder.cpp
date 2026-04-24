@@ -713,48 +713,6 @@ int32_t HDecoder::AllocateBuffersOnPort(OMX_DIRTYPE portIndex)
     return ret;
 }
 
-void HDecoder::UpdateFmtFromSurfaceBuffer()
-{
-    if (outputBufferPool_.empty()) {
-        return;
-    }
-    sptr<SurfaceBuffer> surfaceBuffer = outputBufferPool_.front().surfaceBuffer;
-    if (surfaceBuffer == nullptr) {
-        return;
-    }
-    int32_t stride = surfaceBuffer->GetStride();
-    if (stride <= 0) {
-        HLOGW("invalid stride %d", stride);
-        return;
-    }
-    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, stride);
-    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, stride); // deprecated
-
-    OH_NativeBuffer_Planes *planes = nullptr;
-    GSError err = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
-    if (err != GSERROR_OK || planes == nullptr) {
-        HLOGI("can not get plane info, ignore");
-        return;
-    }
-    for (uint32_t i = 0; i < planes->planeCount; i++) {
-        HLOGI("plane[%u]: offset=%" PRIu64 ", rowStride=%u, columnStride=%u",
-              i, planes->planes[i].offset, planes->planes[i].rowStride, planes->planes[i].columnStride);
-    }
-    int32_t sliceHeight = static_cast<int32_t>(static_cast<int64_t>(planes->planes[1].offset) / stride);
-    HLOGI("[%dx%d][%dx%d]", surfaceBuffer->GetWidth(), surfaceBuffer->GetHeight(), stride, sliceHeight);
-    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight);
-    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, sliceHeight);
-}
-
-static bool IsNotSame(const OHOS::HDI::Display::Graphic::Common::V1_0::BufferHandleMetaRegion& crop1,
-                      const OHOS::HDI::Display::Graphic::Common::V1_0::BufferHandleMetaRegion& crop2)
-{
-    return crop1.left != crop2.left ||
-           crop1.top != crop2.top ||
-           crop1.width != crop2.width ||
-           crop1.height != crop2.height;
-}
-
 void HDecoder::ProcSurfaceBufferToUser(const sptr<SurfaceBuffer>& buffer)
 {
     if (buffer == nullptr) {
