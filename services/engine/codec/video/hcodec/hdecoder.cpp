@@ -323,18 +323,6 @@ void HDecoder::GetCropFromOmx(uint32_t w, uint32_t h, OHOS::Rect& damage)
     damage.y = rect.nTop;
     damage.w = static_cast<int32_t>(rect.nWidth);
     damage.h = static_cast<int32_t>(rect.nHeight);
-    if (outputFormat_) {
-        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_LEFT, rect.nLeft);
-        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_TOP, rect.nTop);
-        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_RIGHT,
-            static_cast<int32_t>(rect.nLeft + rect.nWidth) - 1);
-        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_BOTTOM,
-            static_cast<int32_t>(rect.nTop + rect.nHeight) - 1);
-        crop_.left = static_cast<uint32_t>(rect.nLeft);
-        crop_.top = static_cast<uint32_t>(rect.nTop);
-        crop_.width = rect.nWidth;
-        crop_.height = rect.nHeight;
-    }
 }
 
 void HDecoder::OnSetOutputSurface(const MsgInfo &msg, BufferOperationMode mode)
