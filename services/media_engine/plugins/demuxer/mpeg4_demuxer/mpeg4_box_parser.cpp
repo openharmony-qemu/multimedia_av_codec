@@ -184,6 +184,15 @@ static std::string GetMimeType(int32_t atomtype)
     return MimeType::INVALID_TYPE;
 }
 
+static bool UserMetaToSource(std::string key)
+{
+    static std::vector<std::string> keys = {
+        "aigc"
+    };
+    auto it = std::find(keys.begin(), keys.end(), key);
+    return it != keys.end();
+}
+
 static bool StartWith(const char* name, const char* chars)
 {
     if (name == nullptr || chars == nullptr) {
@@ -3325,7 +3334,7 @@ Status MPEG4AtomParser::ParseItunesMetadata(MPEG4Atom currentAtom, std::string& 
         if (currentAtom.type == FourccType("covr") || (!key.empty() && key == "com.apple.quicktime.artwork")) {
             return ParseCover(currentAtom, dataType, stringSize, ctx);
         }
-        ret = ReadMetadataString(key, ctx->dataOffset + headerSize, stringSize, dataType, true);
+        ret = ReadMetadataString(key, ctx->dataOffset + headerSize, stringSize, dataType);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read iTunes metadata string failed");
     } else {
         MEDIA_LOG_W("Invalid iTunes metadata format: dataTag=" PUBLIC_LOG_U32, dataTag);
@@ -3445,8 +3454,7 @@ bool MPEG4AtomParser::SetMetadataValue(const std::string& key, const std::string
     return false;
 }
 
-Status MPEG4AtomParser::ReadMetadataString(
-    std::string& key, int64_t offset, uint64_t size, uint32_t dataType, bool isiTunes)
+Status MPEG4AtomParser::ReadMetadataString(std::string& key, int64_t offset, uint64_t size, uint32_t dataType)
 {
     FALSE_RETURN_V_NOLOG(size > 0, Status::OK);
     auto buffer = std::make_unique<uint8_t[]>(size + 1);
@@ -3455,7 +3463,8 @@ Status MPEG4AtomParser::ReadMetadataString(
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read metadata string data failed");
     
     buffer[size] = '\0';
-    if (SetMetadataValue(key, std::string(reinterpret_cast<char*>(buffer.get()), size)) && !isiTunes) {
+    if (SetMetadataValue(key, std::string(reinterpret_cast<char*>(buffer.get()), size)) &&
+        !UserMetaToSource(Converter::ToLower(key))) {
         return Status::OK;
     }
     FALSE_RETURN_V_NOLOG(userFormat_ != nullptr, Status::ERROR_NO_MEMORY);
