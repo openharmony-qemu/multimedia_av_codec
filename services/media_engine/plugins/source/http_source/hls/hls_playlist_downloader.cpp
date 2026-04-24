@@ -101,7 +101,7 @@ void HlsPlayListDownloader::Open(const std::string& url, const std::map<std::str
 {
     urlOrigin_ = url;
     url_ = url;
-    master_ = nullptr;
+    SetThreadSafeMaster(nullptr);
     SaveHttpHeader(httpHeader);
     if (mimeType_ == AVMimeTypes::APPLICATION_M3U8) {
         DoOpenNative(url_);
@@ -122,8 +122,9 @@ HlsPlayListDownloader::~HlsPlayListDownloader()
     aesDecryptorManager_ = nullptr;
     MEDIA_LOG_I("~HlsPlayListDownloader out");
     FALSE_RETURN_MSG(reportInfo_ != nullptr, "reportInfo_ is nullptr");
-    FALSE_RETURN_MSG(currentVariant_ != nullptr, "currentVariant_ is nullptr");
-    auto m3u8 = currentVariant_->m3u8_;
+    auto currentVariant = GetThreadSafeCurrentVariant();
+    FALSE_RETURN_MSG(currentVariant != nullptr, "currentVariant_ is nullptr");
+    auto m3u8 = currentVariant->m3u8_;
     FALSE_RETURN_MSG(m3u8 != nullptr, "m3u8 is nullptr");
     if (m3u8->IsLive()) {
         if (isFmp4_.load()) {
@@ -151,11 +152,12 @@ void HlsPlayListDownloader::SetSourceStatisticsDfx(
 
 void HlsPlayListDownloader::UpdateManifest()
 {
-    if (currentVariant_ && currentVariant_->m3u8_ && !currentVariant_->m3u8_->uri_.empty()) {
+    auto currentVariant = GetThreadSafeCurrentVariant();
+    if (currentVariant && currentVariant->m3u8_ && !currentVariant->m3u8_->uri_.empty()) {
         isNotifyPlayListFinished_ = false;
         UpdateStreamInfo();
         OnMasterReady(needAudioManager_, needSubtitlesManager_);
-        DoOpen(currentVariant_->m3u8_->uri_);
+        DoOpen(currentVariant->m3u8_->uri_);
     } else {
         MEDIA_LOG_E("UpdateManifest currentVariant_ not ready.");
     }
@@ -188,7 +190,7 @@ void HlsPlayListDownloader::Clone(std::shared_ptr<PlayListDownloader> ptr)
     mimeType_ = other->mimeType_;
     isParseFinished_.store(other->isParseFinished_.load());
     initResolution_ = other->initResolution_;
-    currentVariant_ = other->currentVariant_;
+    SetThreadSafeCurrentVariant(other->currentVariant_);
     playList_ = other->playList_;
     audioStreamId_.store(other->audioStreamId_.load());
     subtitleStreamId_.store(other->subtitleStreamId_.load());
@@ -200,10 +202,11 @@ void HlsPlayListDownloader::Clone(std::shared_ptr<PlayListDownloader> ptr)
 void HlsPlayListDownloader::OnMasterReady(bool needAudioManager, bool needSubtitlesManager)
 {
     auto callback = callbackWeak_.lock();
-    if (currentVariant_ == nullptr || callback == nullptr) {
+    auto currentVariant = GetThreadSafeCurrentVariant();
+    if (currentVariant == nullptr || callback == nullptr) {
         return;
     }
-    if (currentVariant_->m3u8_ == nullptr) {
+    if (currentVariant->m3u8_ == nullptr) {
         return;
     }
     callback->OnMasterReady(needAudioManager, needSubtitlesManager);
@@ -227,8 +230,9 @@ bool HlsPlayListDownloader::IsParseFinished()
 bool HlsPlayListDownloader::IsFragmentInCurrentPlayList(const std::string& url, const std::string& rangeUrl,
     uint32_t offset, uint32_t length)
 {
-    FALSE_RETURN_V(currentVariant_ != nullptr && currentVariant_->m3u8_ != nullptr, false);
-    auto m3u8 = currentVariant_->m3u8_;
+    auto currentVariant = GetThreadSafeCurrentVariant();
+    FALSE_RETURN_V(currentVariant != nullptr && currentVariant->m3u8_ != nullptr, false);
+    auto m3u8 = currentVariant->m3u8_;
     {
         std::lock_guard<std::mutex> lock(mediaMutex_);
         if (currentSubtitles_ && currentSubtitles_->m3u8_) {
@@ -254,39 +258,41 @@ bool HlsPlayListDownloader::IsFragmentInCurrentPlayList(const std::string& url, 
     return false;
 }
 
-int64_t HlsPlayListDownloader::GetDuration() const
+int64_t HlsPlayListDownloader::GetDuration()
 {
-    FALSE_RETURN_V(master_ != nullptr, 0);
-    if (master_->bLive_) {
+    auto master = GetThreadSafeMaster();
+    FALSE_RETURN_V(master != nullptr, 0);
+    if (master->bLive_) {
         // For live stream, HiPlayerImpl needs a negative duration to indicate it's live.
         // But source needs a playwindow duration for obtaining seekable range.
         // So here returns -1 * duration.
-        return IsLiveTimeShiftSeekable() ? -1 * ((int64_t)(master_->duration_ * HST_SECOND) / HST_NSECOND) : -1;
+        return IsLiveTimeShiftSeekable() ? -1 * ((int64_t)(master->duration_ * HST_SECOND) / HST_NSECOND) : -1;
     }
-    return ((int64_t)(master_->duration_ * HST_SECOND) / HST_NSECOND);
+    return ((int64_t)(master->duration_ * HST_SECOND) / HST_NSECOND);
 }
 
-std::pair<int64_t, bool> HlsPlayListDownloader::GetStartInfo() const
+std::pair<int64_t, bool> HlsPlayListDownloader::GetStartInfo()
 {
-    if (!master_) {
+    auto master = GetThreadSafeMaster();
+    if (!master) {
         return std::make_pair(0, false);
     }
     int64_t duration = GetDuration();
     std::pair<int64_t, bool> startInfo{0, false};
-    if (master_->isStart_) {
-        int64_t timeOffset = ((int64_t)(master_->timeOffset_ * HST_SECOND) / HST_MSECOND);
+    if (master->isStart_) {
+        int64_t timeOffset = ((int64_t)(master->timeOffset_ * HST_SECOND) / HST_MSECOND);
         if (duration != -1) {
             startInfo.first = timeOffset < 0 ? std::max(timeOffset + duration, static_cast<int64_t>(0)) :
                 (timeOffset > duration ? duration : timeOffset);
-            startInfo.second = master_->precise_;
+            startInfo.second = master->precise_;
         }
-    } else if (master_->defaultVariant_ && master_->defaultVariant_->m3u8_ &&
-            master_->defaultVariant_->m3u8_->isStart_) {
-        int64_t timeOffset = ((int64_t)(master_->defaultVariant_->m3u8_->timeOffset_ * HST_SECOND) / HST_MSECOND);
+    } else if (master->defaultVariant_ && master->defaultVariant_->m3u8_ &&
+            master->defaultVariant_->m3u8_->isStart_) {
+        int64_t timeOffset = ((int64_t)(master->defaultVariant_->m3u8_->timeOffset_ * HST_SECOND) / HST_MSECOND);
         if (duration != -1) {
             startInfo.first = timeOffset < 0 ? std::max(timeOffset + duration, static_cast<int64_t>(0)) :
                 (timeOffset > duration ? duration : timeOffset);
-            startInfo.second = master_->defaultVariant_->m3u8_->precise_;
+            startInfo.second = master->defaultVariant_->m3u8_->precise_;
         }
     } else {
         MEDIA_LOG_W("EXT-X-START does no exist.");
@@ -294,12 +300,13 @@ std::pair<int64_t, bool> HlsPlayListDownloader::GetStartInfo() const
     return startInfo;
 }
 
-Seekable HlsPlayListDownloader::GetSeekable() const
+Seekable HlsPlayListDownloader::GetSeekable()
 {
     // need wait master_ not null
     size_t times = 0;
+    auto master = GetThreadSafeMaster();
     while (times < RETRY_TIMES && !isInterruptNeeded_) {
-        if (master_ && master_->isSimple_ && isParseFinished_) {
+        if (master && master->isSimple_ && isParseFinished_) {
             break;
         }
         OSAL::SleepFor(SLEEP_TIME); // 1 ms
@@ -308,34 +315,37 @@ Seekable HlsPlayListDownloader::GetSeekable() const
     if (times >= RETRY_TIMES || isInterruptNeeded_) {
         return Seekable::INVALID;
     }
-    if (master_->bLive_) {
+    if (master->bLive_) {
         return IsLiveTimeShiftSeekable() ? Seekable::SEEKABLE : Seekable::UNSEEKABLE;
     }
     return Seekable::SEEKABLE;
 }
 
-std::vector<SeekRange> HlsPlayListDownloader::GetSeekableRanges() const
+std::vector<SeekRange> HlsPlayListDownloader::GetSeekableRanges()
 {
-    FALSE_RETURN_V(master_ != nullptr, {});
-    if (master_->bLive_ && !IsLiveTimeShiftSeekable()) {
+    auto master = GetThreadSafeMaster();
+    FALSE_RETURN_V(master != nullptr, {});
+    if (master->bLive_ && !IsLiveTimeShiftSeekable()) {
         return {};
     }
     std::lock_guard<std::mutex> lock(seekRangeMutex_);
     return seekRanges_;
 }
 
-bool HlsPlayListDownloader::IsLiveTimeShiftSeekable() const
+bool HlsPlayListDownloader::IsLiveTimeShiftSeekable()
 {
-    FALSE_RETURN_V(master_ != nullptr && master_->bLive_, false);
-    FALSE_RETURN_V(master_->isSimple_ && isParseFinished_, false);
-    FALSE_RETURN_V(master_->segmentOffsets_.size() >= MIN_PRE_PARSE_NUM, false);
-    return master_->duration_ > 0;
+    auto master = GetThreadSafeMaster();
+    FALSE_RETURN_V(master != nullptr && master->bLive_, false);
+    FALSE_RETURN_V(master->isSimple_ && isParseFinished_, false);
+    FALSE_RETURN_V(master->segmentOffsets_.size() >= MIN_PRE_PARSE_NUM, false);
+    return master->duration_ > 0;
 }
 
 void HlsPlayListDownloader::UpdateSeekRanges(const std::list<std::shared_ptr<M3U8Fragment>>& files)
 {
     std::lock_guard<std::mutex> lock(seekRangeMutex_);
-    if (master_ && master_->bLive_) {
+    auto master = GetThreadSafeMaster();
+    if (master && master->bLive_) {
         UpdateLiveBaseOffset(files);
     } else {
         liveBaseOffset_ = 0;
@@ -373,7 +383,7 @@ void HlsPlayListDownloader::UpdateSeekRanges(const std::list<std::shared_ptr<M3U
 
 void HlsPlayListDownloader::UpdateLiveBaseOffset(const std::list<std::shared_ptr<M3U8Fragment>>& files)
 {
-    FALSE_RETURN(master_ != nullptr && master_->bLive_ && !files.empty());
+    FALSE_RETURN(!files.empty());
     auto firstFile = files.front();
     FALSE_RETURN(firstFile != nullptr);
     int64_t firstSeq = firstFile->sequence_;
@@ -401,11 +411,12 @@ void HlsPlayListDownloader::UpdateLiveBaseOffset(const std::list<std::shared_ptr
 
 uint64_t HlsPlayListDownloader::KeyChange(std::list<std::shared_ptr<M3U8Fragment>>& files)
 {
-    files = currentVariant_->m3u8_->files_;
-    uint64_t sessionKeyIndex = currentVariant_->sessionKeyIndex_;
-    currentVariant_->m3u8_->WaitKeyDownload();
+    auto currentVariant = GetThreadSafeCurrentVariant();
+    files = currentVariant->m3u8_->files_;
+    uint64_t sessionKeyIndex = currentVariant->sessionKeyIndex_;
+    currentVariant->m3u8_->WaitKeyDownload();
     std::unordered_map<uint64_t, KeyInfo> keyInfos;
-    currentVariant_->m3u8_->GetKeyInfos(keyInfos);
+    currentVariant->m3u8_->GetKeyInfos(keyInfos);
     {
         std::lock_guard<std::mutex> lock(mediaMutex_);
         if (currentSubtitles_ && currentSubtitles_->m3u8_) {
@@ -424,12 +435,13 @@ uint64_t HlsPlayListDownloader::KeyChange(std::list<std::shared_ptr<M3U8Fragment
     if (aesDecryptorManager_ == nullptr) {
         aesDecryptorManager_ = std::make_shared<AesDecryptorManager>();
     }
-    if (sessionKeyIndex > 0 && master_ != nullptr) {
+    auto master = GetThreadSafeMaster();
+    if (sessionKeyIndex > 0 && master != nullptr) {
         KeyInfo sessionKeyInfo;
         sessionKeyInfo.index_ = UINT64_MAX;
-        std::copy(std::begin(master_->key_), std::end(master_->key_), std::begin(sessionKeyInfo.key_));
-        std::copy(std::begin(master_->iv_), std::end(master_->iv_), std::begin(sessionKeyInfo.iv_));
-        sessionKeyInfo.keyLen_ = master_->keyLen_;
+        std::copy(std::begin(master->key_), std::end(master->key_), std::begin(sessionKeyInfo.key_));
+        std::copy(std::begin(master->iv_), std::end(master->iv_), std::begin(sessionKeyInfo.iv_));
+        sessionKeyInfo.keyLen_ = master->keyLen_;
         aesDecryptorManager_->CreateOneAesDecryptor(sessionKeyInfo);
     }
     aesDecryptorManager_->CreateAesDecryptorByKeyInfos(keyInfos);
@@ -447,29 +459,41 @@ std::shared_ptr<AesDecryptor> HlsPlayListDownloader::GetAesDecryptor(uint64_t ke
 void HlsPlayListDownloader::NotifyListChange()
 {
     auto callback = callbackWeak_.lock();
-    FALSE_RETURN_MSG(callback != nullptr, "callback is nullptr");
-    FALSE_RETURN_MSG(currentVariant_ != nullptr && currentVariant_->m3u8_ != nullptr, "m3u8_ is invalid");
+    auto currentVariant = GetThreadSafeCurrentVariant();
+    FALSE_RETURN_MSG(callback && currentVariant && currentVariant->m3u8_, "invalid state");
     std::list<std::shared_ptr<M3U8Fragment>> files;
     auto sessionKeyIndex = KeyChange(files);
-    auto playList = std::vector<PlayInfo>();
-    FALSE_RETURN_MSG(!isInterruptNeeded_, "HLS Seek return, isInterruptNeeded_.");
+    std::vector<PlayInfo> playList;
     playList.reserve(files.size());
-    for (const auto &file: files) {
-        if (isInterruptNeeded_.load()) {
-            MEDIA_LOG_I("HLS OnPlayListChanged isInterruptNeeded.");
-            break;
-        }
-        PlayInfo palyInfo;
-        CopyFragmentInfo(palyInfo, file, sessionKeyIndex);
-        playList.push_back(palyInfo);
+    FALSE_RETURN_MSG(!isInterruptNeeded_, "HLS Seek return, isInterruptNeeded_.");
+    for (const auto &file : files) {
+        if (isInterruptNeeded_.load()) break;
+        PlayInfo playInfo;
+        CopyFragmentInfo(playInfo, file, sessionKeyIndex);
+        playList.push_back(playInfo);
     }
-    if (!currentVariant_->m3u8_->localDrmInfos_.empty()) {
-        callback->OnDrmInfoChanged(currentVariant_->m3u8_->localDrmInfos_);
+    if (!currentVariant->m3u8_->localDrmInfos_.empty()) {
+        callback->OnDrmInfoChanged(currentVariant->m3u8_->localDrmInfos_);
     }
-    for (const auto &dateRange : currentVariant_->m3u8_->dateRanges_) {
-        if (dateRange == nullptr) {
-            continue;
-        }
+    NotifyDateRanges(currentVariant->m3u8_->dateRanges_, callback);
+    currentVariant->m3u8_->dateRanges_.clear();
+    auto master = GetThreadSafeMaster();
+    if (playList.size() > MAX_LIVE_TS_NUM && isParseFinished_ && master && master->bLive_) {
+        playList.erase(playList.begin(), playList.end() - MAX_LIVE_TS_NUM);
+    }
+    callback->OnPlayListChanged(playList);
+    if (isParseFinished_) {
+        isNotifyPlayListFinished_ = true;
+        StartLiveUpdateIfNeeded(master);
+    }
+}
+
+void HlsPlayListDownloader::NotifyDateRanges(
+    const std::list<std::shared_ptr<DateRange>>& dateRanges,
+    const std::shared_ptr<PlayListChangeCallback>& callback)
+{
+    for (const auto &dateRange : dateRanges) {
+        if (dateRange == nullptr) continue;
         auto metaData = std::make_shared<MediaAVCodec::AVTimedMetaData>();
         metaData->id = dateRange->id;
         metaData->classify = dateRange->classify;
@@ -477,21 +501,17 @@ void HlsPlayListDownloader::NotifyListChange()
         metaData->start = dateRange->start;
         metaData->contents = dateRange->contents;
         callback->OnTimedMetaDataChanged(metaData);
-        MEDIA_LOG_I("NotifyListChange: report DateRange id=" PUBLIC_LOG_S ", classify=" PUBLIC_LOG_S
+        MEDIA_LOG_I("NotifyDateRanges: id=" PUBLIC_LOG_S ", classify=" PUBLIC_LOG_S
             ", duration=" PUBLIC_LOG_D64, metaData->id.c_str(), metaData->classify.c_str(), metaData->duration);
     }
-    currentVariant_->m3u8_->dateRanges_.clear();
-    if (playList.size() > MAX_LIVE_TS_NUM && isParseFinished_ && master_->bLive_) {
-        playList.erase(playList.begin(), playList.end() - MAX_LIVE_TS_NUM);
-    }
-    callback->OnPlayListChanged(playList);
-    if (isParseFinished_) {
-        isNotifyPlayListFinished_ = true;
-        if (master_->bLive_ && !updateTask_->IsTaskRunning() && !isLiveUpdateTaskStarted_) {
-            isLiveUpdateTaskStarted_ = true;
-            isPreParseFinished_.store(true);
-            updateTask_->Start();
-        }
+}
+
+void HlsPlayListDownloader::StartLiveUpdateIfNeeded(const std::shared_ptr<M3U8MasterPlaylist>& master)
+{
+    if (master && master->bLive_ && !updateTask_->IsTaskRunning() && !isLiveUpdateTaskStarted_) {
+        isLiveUpdateTaskStarted_ = true;
+        isPreParseFinished_.store(true);
+        updateTask_->Start();
     }
 }
 
@@ -503,7 +523,9 @@ void HlsPlayListDownloader::CopyFragmentInfo(PlayInfo& playInfo, std::shared_ptr
     playInfo.offset_ = file->offset_;
     playInfo.length_ = file->length_;
     playInfo.sequence_ = file->sequence_;
-    if (master_ && currentVariant_ && (master_->isFmp4_.load() || master_->isPureByteRange_.load())) {
+    auto master = GetThreadSafeMaster();
+    auto currentVariant = GetThreadSafeCurrentVariant();
+    if (master && currentVariant && (master->isFmp4_.load() || master->isPureByteRange_.load())) {
         playInfo.url_ = std::to_string(playInfo.offset_) + "_" + std::to_string(playInfo.length_) + "_"
                         + "_" + file->uri_;
         playInfo.rangeUrl_ = file->uri_;
@@ -527,16 +549,18 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPr
     if (!location.empty()) {
         url_ = location;
     }
-    if (!master_) {
+    auto beforeMaster = GetThreadSafeMaster();
+    if (!beforeMaster) {
         std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = GetSourceLoader();
-        master_ = std::make_shared<M3U8MasterPlaylist>(playList_, url_, initResolution_, httpHeader_,
-                                                       statusCallback_);
-        master_->SetSourceloader(sourceLoader);
-        FALSE_RETURN_NOLOG(master_ != nullptr);
+        SetThreadSafeMaster(std::make_shared<M3U8MasterPlaylist>(playList_, url_, initResolution_, httpHeader_,
+            statusCallback_));
+        auto master = GetThreadSafeMaster();
+        FALSE_RETURN_NOLOG(master != nullptr);
+        master->SetSourceloader(sourceLoader);
         if (downloadCallback_ != nullptr) {
-            master_->SetDownloadCallback(downloadCallback_);
+            master->SetDownloadCallback(downloadCallback_);
         }
-        master_->StartParsing();
+        master->StartParsing();
         isPreParse_ = isPreParse;
         auto callback = eventCallback_.lock();
         if (callback != nullptr && !isClone_.load()) {
@@ -549,7 +573,8 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPr
     } else {
         UpdateMasterAndNotifyList(isPreParse);
     }
-    if (!master_->isParseSuccess_) {
+    auto afterMaster = GetThreadSafeMaster();
+    if (!afterMaster->isParseSuccess_) {
         auto callback = eventCallback_.lock();
         if (callback) {
             MEDIA_LOG_E("ParseManifest parse failed.");
@@ -561,14 +586,16 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPr
 
 void HlsPlayListDownloader::UpdateManifestAndNotifyListChange(bool isPreParse)
 {
-    if (!master_) {
+    auto master = GetThreadSafeMaster();
+    if (!master) {
         return;
     }
-    currentVariant_ = master_->defaultVariant_;
-    if (currentVariant_ && currentVariant_->m3u8_) {
-        currentVariant_->m3u8_->httpHeader_ = httpHeader_;
+    SetThreadSafeCurrentVariant(master->defaultVariant_);
+    auto currentVariant = GetThreadSafeCurrentVariant();
+    if (currentVariant && currentVariant->m3u8_) {
+        currentVariant->m3u8_->httpHeader_ = httpHeader_;
     }
-    if (!master_->isSimple_) {
+    if (!master->isSimple_) {
         UpdateManifest();
     } else {
         // need notify , avoid delay 5s
@@ -581,35 +608,38 @@ void HlsPlayListDownloader::UpdateManifestAndNotifyListChange(bool isPreParse)
 void HlsPlayListDownloader::SetDefaultStreamId(
     int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId)
 {
-    if (!master_ || videoStreamId == -1) {
+    auto master = GetThreadSafeMaster();
+    if (!master || videoStreamId == -1) {
         return;
     }
     audioStreamId_.store(audioStreamId);
     subtitleStreamId_.store(subTitleStreamId);
-    master_->ChooseStreamByStream(videoStreamId);
+    master->ChooseStreamByStream(videoStreamId);
     UpdateManifestAndNotifyListChange(isPreParse_);
-    if (audioStreamId == -1 && currentVariant_ != nullptr && currentVariant_->defaultAudio_ != nullptr) {
-        audioStreamId = currentVariant_->defaultAudio_->streamId_;
+    auto currentVariant = GetThreadSafeCurrentVariant();
+    if (audioStreamId == -1 && currentVariant != nullptr && currentVariant->defaultAudio_ != nullptr) {
+        audioStreamId = currentVariant->defaultAudio_->streamId_;
     }
-    if (subTitleStreamId == -1 && currentVariant_ != nullptr && currentVariant_->defaultSubtitles_ != nullptr) {
-        subTitleStreamId = currentVariant_->defaultSubtitles_->streamId_;
+    if (subTitleStreamId == -1 && currentVariant != nullptr && currentVariant->defaultSubtitles_ != nullptr) {
+        subTitleStreamId = currentVariant->defaultSubtitles_->streamId_;
     }
     auto callback = eventCallback_.lock();
-    if (!master_->isParseSuccess_ && callback != nullptr) {
+    if (!master->isParseSuccess_ && callback != nullptr) {
         MEDIA_LOG_E("ParseManifest parse failed.");
-        callback->OnEvent({PluginEventType::CLIENT_ERROR,
-                                {NetworkClientErrorCode::ERROR_TIME_OUT}, "parse m3u8"});
+        callback->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "parse m3u8"});
     }
 }
 
 void HlsPlayListDownloader::UpdateMasterAndNotifyList(bool isPreParse)
 {
+    auto master = GetThreadSafeMaster();
     bool ret = false;
-    if (!master_->isSimple_) {
+    if (!master->isSimple_) {
         ret = UpdatePlaylists(false);
     }
-    if (currentVariant_ && currentVariant_->m3u8_) {
-        currentVariant_->m3u8_->httpHeader_ = httpHeader_;
+    auto currentVariant = GetThreadSafeCurrentVariant();
+    if (currentVariant && currentVariant->m3u8_) {
+        currentVariant->m3u8_->httpHeader_ = httpHeader_;
     }
     {
         std::lock_guard<std::mutex> lock(mediaMutex_);
@@ -620,13 +650,13 @@ void HlsPlayListDownloader::UpdateMasterAndNotifyList(bool isPreParse)
             currentAudio_->m3u8_->httpHeader_ = httpHeader_;
         }
     }
-    if (master_->isSimple_) {
+    if (master->isSimple_) {
         ret = UpdatePlaylists(true);
     }
     if (ret) {
         UpdateMasterInfo(isPreParse);
-        if (!master_->isSimple_) {
-            master_->isSimple_ = true;
+        if (!master->isSimple_) {
+            master->isSimple_ = true;
         }
         NotifyListChange();
     }
@@ -636,38 +666,40 @@ bool HlsPlayListDownloader::UpdatePlaylists(bool isSimple)
 {
     std::lock_guard<std::mutex> lock(mediaMutex_);
     bool ret = false;
+    auto master = GetThreadSafeMaster();
+    auto currentVariant = GetThreadSafeCurrentVariant();
     if (isSimple) {
         if (currentAudio_ && currentAudio_->m3u8_) {
-            ret = currentAudio_->m3u8_->Update(playList_, isParseFinished_, master_->totalKeyIndex_);
-            master_->isParseSuccess_ = ret;
-            master_->totalKeyIndex_ += currentAudio_->m3u8_->keyIndex_;
+            ret = currentAudio_->m3u8_->Update(playList_, isParseFinished_, master->totalKeyIndex_);
+            master->isParseSuccess_ = ret;
+            master->totalKeyIndex_ += currentAudio_->m3u8_->keyIndex_;
             currentAudio_->m3u8_->keyIndex_ = 0;
         } else if (currentSubtitles_ && currentSubtitles_->m3u8_) {
-            ret = currentSubtitles_->m3u8_->Update(playList_, isParseFinished_, master_->totalKeyIndex_);
-            master_->isParseSuccess_ = ret;
-            master_->totalKeyIndex_ += currentSubtitles_->m3u8_->keyIndex_;
+            ret = currentSubtitles_->m3u8_->Update(playList_, isParseFinished_, master->totalKeyIndex_);
+            master->isParseSuccess_ = ret;
+            master->totalKeyIndex_ += currentSubtitles_->m3u8_->keyIndex_;
             currentSubtitles_->m3u8_->keyIndex_ = 0;
-        } else if (currentVariant_ && currentVariant_->m3u8_) {
-            ret = currentVariant_->m3u8_->Update(playList_, isParseFinished_, master_->totalKeyIndex_);
-            master_->isParseSuccess_ = ret;
-            master_->totalKeyIndex_ += currentVariant_->m3u8_->keyIndex_;
-            currentVariant_->m3u8_->keyIndex_ = 0;
+        } else if (currentVariant && currentVariant->m3u8_) {
+            ret = currentVariant->m3u8_->Update(playList_, isParseFinished_, master->totalKeyIndex_);
+            master->isParseSuccess_ = ret;
+            master->totalKeyIndex_ += currentVariant->m3u8_->keyIndex_;
+            currentVariant->m3u8_->keyIndex_ = 0;
         } else {}
     } else {
         if (currentAudio_ && currentAudio_->m3u8_) {
-            ret = currentAudio_->m3u8_->Update(playList_, true, master_->totalKeyIndex_);
-            master_->totalKeyIndex_ += currentAudio_->m3u8_->keyIndex_;
+            ret = currentAudio_->m3u8_->Update(playList_, true, master->totalKeyIndex_);
+            master->totalKeyIndex_ += currentAudio_->m3u8_->keyIndex_;
             currentAudio_->m3u8_->keyIndex_ = 0;
         } else if (currentSubtitles_ && currentSubtitles_->m3u8_) {
-            ret = currentSubtitles_->m3u8_->Update(playList_, true, master_->totalKeyIndex_);
-            master_->totalKeyIndex_ += currentSubtitles_->m3u8_->keyIndex_;
+            ret = currentSubtitles_->m3u8_->Update(playList_, true, master->totalKeyIndex_);
+            master->totalKeyIndex_ += currentSubtitles_->m3u8_->keyIndex_;
             currentSubtitles_->m3u8_->keyIndex_ = 0;
         } else {
-            currentVariant_ = master_->defaultVariant_;
-            if (currentVariant_ && currentVariant_->m3u8_) {
-                ret = currentVariant_->m3u8_->Update(playList_, true, master_->totalKeyIndex_);
-                master_->totalKeyIndex_ += currentVariant_->m3u8_->keyIndex_;
-                currentVariant_->m3u8_->keyIndex_ = 0;
+            currentVariant = master->defaultVariant_;
+            if (currentVariant && currentVariant->m3u8_) {
+                ret = currentVariant->m3u8_->Update(playList_, true, master->totalKeyIndex_);
+                master->totalKeyIndex_ += currentVariant->m3u8_->keyIndex_;
+                currentVariant->m3u8_->keyIndex_ = 0;
             }
         }
     }
@@ -682,10 +714,11 @@ bool HlsPlayListDownloader::IsLiveEnd()
 void HlsPlayListDownloader::UpdateMasterInfo(bool isPreParse)
 {
     std::lock_guard<std::mutex> lock(mediaMutex_);
-    if (currentVariant_ == nullptr) {
+    auto currentVariant = GetThreadSafeCurrentVariant();
+    if (currentVariant == nullptr) {
         return;
     }
-    auto m3u8 = currentVariant_->m3u8_;
+    auto m3u8 = currentVariant->m3u8_;
     if (currentAudio_ && currentAudio_->m3u8_) {
         m3u8 = currentAudio_->m3u8_;
     }
@@ -693,27 +726,29 @@ void HlsPlayListDownloader::UpdateMasterInfo(bool isPreParse)
         m3u8 = currentSubtitles_->m3u8_;
     }
 
-    FALSE_RETURN_MSG(master_ != nullptr, "master_ is nullptr");
+    auto master = GetThreadSafeMaster();
+    FALSE_RETURN_MSG(master != nullptr, "master_ is nullptr");
     FALSE_RETURN_MSG(m3u8 != nullptr, "m3u8 is nullptr");
 
-    if (isPreParseFinished_.load() && master_->bLive_ && !m3u8->IsLive()) {
+    if (isPreParseFinished_.load() && master->bLive_ && !m3u8->IsLive()) {
         MEDIA_LOG_I("Live stream ended and transitioning to Vod");
         updateTask_->Stop();
         isLiveEnd_ = true;
     }
-    master_->bLive_ = m3u8->IsLive();
-    master_->isFmp4_ = m3u8->isHeaderReady_.load();
-    master_->duration_ = m3u8->GetDuration();
-    master_->segmentOffsets_ = m3u8->segmentOffsets_;
-    master_->hasDiscontinuity_ = m3u8->hasDiscontinuity_;
-    master_->isPureByteRange_.store(m3u8->isPureByteRange_.load());
+    master->bLive_ = m3u8->IsLive();
+    master->isFmp4_ = m3u8->isHeaderReady_.load();
+    master->duration_ = m3u8->GetDuration();
+    master->segmentOffsets_ = m3u8->segmentOffsets_;
+    master->hasDiscontinuity_ = m3u8->hasDiscontinuity_;
+    master->isPureByteRange_.store(m3u8->isPureByteRange_.load());
     UpdateSeekRanges(m3u8->files_);
     isParseFinished_ = isPreParse ? false : true;
 }
 
 void HlsPlayListDownloader::PreParseManifest(const std::string& location)
 {
-    if (master_ && master_->isSimple_) {
+    auto master = GetThreadSafeMaster();
+    if (master && master->isSimple_) {
         return;
     }
     if (playList_.find(M3U8_START_TAG) == std::string::npos ||
@@ -754,22 +789,24 @@ void HlsPlayListDownloader::SelectBitRate(uint32_t bitRate)
     if (newVariant_ == nullptr) {
         return;
     }
-    currentVariant_ = newVariant_;
-    MEDIA_LOG_I("SelectBitRate currentVariant_ " PUBLIC_LOG_U64, currentVariant_->bandWidth_);
+    SetThreadSafeCurrentVariant(newVariant_);
+    auto currentVariant = GetThreadSafeCurrentVariant();
+    MEDIA_LOG_I("SelectBitRate currentVariant_ " PUBLIC_LOG_U64, currentVariant->bandWidth_);
 }
 
 bool HlsPlayListDownloader::IsBitrateSame(uint32_t bitRate)
 {
-    FALSE_RETURN_V(master_ != nullptr, false);
+    auto master = GetThreadSafeMaster();
+    FALSE_RETURN_V(master != nullptr, false);
     uint32_t maxGap = 0;
     bool isFirstSelect = true;
-    for (const auto &item : master_->variants_) {
+    for (const auto &item : master->variants_) {
         if (item == nullptr) {
             continue;
         }
         uint32_t tempGap = (item->bandWidth_ > bitRate) ? (item->bandWidth_ - bitRate) : (bitRate - item->bandWidth_);
         if (isFirstSelect || (tempGap < maxGap)) {
-            if (master_->firstVideoStream_ == nullptr) {
+            if (master->firstVideoStream_ == nullptr) {
                 isFirstSelect = false;
                 maxGap = tempGap;
                 newVariant_ = item;
@@ -781,7 +818,8 @@ bool HlsPlayListDownloader::IsBitrateSame(uint32_t bitRate)
             }
         }
     }
-    if (currentVariant_ != nullptr && newVariant_->bandWidth_ == currentVariant_->bandWidth_) {
+    auto currentVariant = GetThreadSafeCurrentVariant();
+    if (currentVariant != nullptr && newVariant_->bandWidth_ == currentVariant->bandWidth_) {
         return true;
     }
     return false;
@@ -802,10 +840,11 @@ bool HlsPlayListDownloader::IsMediaSame(uint32_t streamId, HlsSegmentType mediaT
 
 std::vector<uint32_t> HlsPlayListDownloader::GetBitRates()
 {
+    auto master = GetThreadSafeMaster();
     std::vector<uint32_t> bitRates;
-    FALSE_RETURN_V(master_ != nullptr, bitRates);
+    FALSE_RETURN_V(master != nullptr, bitRates);
 
-    for (const auto &item : master_->variants_) {
+    for (const auto &item : master->variants_) {
         if (item) {
             bitRates.push_back(item->bandWidth_);
         }
@@ -815,46 +854,51 @@ std::vector<uint32_t> HlsPlayListDownloader::GetBitRates()
 
 uint32_t HlsPlayListDownloader::GetCurBitrate()
 {
-    if (currentVariant_ == nullptr) {
+    auto currentVariant = GetThreadSafeCurrentVariant();
+    if (currentVariant == nullptr) {
         return 0;
     }
-    return currentVariant_->bandWidth_;
+    return currentVariant->bandWidth_;
 }
 
 uint64_t HlsPlayListDownloader::GetCurrentBitRate()
 {
-    if (currentVariant_ == nullptr) {
+    auto currentVariant = GetThreadSafeCurrentVariant();
+    if (currentVariant == nullptr) {
         return 0;
     }
-    MEDIA_LOG_I("HlsPlayListDownloader currentBitrate: " PUBLIC_LOG_D64, currentVariant_->bandWidth_);
-    return currentVariant_->bandWidth_;
+    MEDIA_LOG_I("HlsPlayListDownloader currentBitrate: " PUBLIC_LOG_D64, currentVariant->bandWidth_);
+    return currentVariant->bandWidth_;
 }
 
 int HlsPlayListDownloader::GetVideoWidth()
 {
-    if (currentVariant_ == nullptr) {
+    auto currentVariant = GetThreadSafeCurrentVariant();
+    if (currentVariant == nullptr) {
         return 0;
     }
-    MEDIA_LOG_I("HlsPlayListDownloader currentWidth: " PUBLIC_LOG_D64, currentVariant_->bandWidth_);
-    return currentVariant_->width_;
+    MEDIA_LOG_I("HlsPlayListDownloader currentWidth: " PUBLIC_LOG_D64, currentVariant->bandWidth_);
+    return currentVariant->width_;
 }
 
 int HlsPlayListDownloader::GetVideoHeight()
 {
-    if (currentVariant_ == nullptr) {
+    auto currentVariant = GetThreadSafeCurrentVariant();
+    if (currentVariant == nullptr) {
         return 0;
     }
-    MEDIA_LOG_I("HlsPlayListDownloader currentHeight: " PUBLIC_LOG_D64, currentVariant_->bandWidth_);
-    return currentVariant_->height_;
+    MEDIA_LOG_I("HlsPlayListDownloader currentHeight: " PUBLIC_LOG_D64, currentVariant->bandWidth_);
+    return currentVariant->height_;
 }
 
-bool HlsPlayListDownloader::IsLive() const
+bool HlsPlayListDownloader::IsLive()
 {
     MEDIA_LOG_I("HlsPlayListDownloader IsLive enter.");
-    if (!master_) {
+    auto master = GetThreadSafeMaster();
+    if (!master) {
         return false;
     }
-    return master_->bLive_;
+    return master->bLive_;
 }
 
 std::string HlsPlayListDownloader::GetUrl()
@@ -864,12 +908,12 @@ std::string HlsPlayListDownloader::GetUrl()
 
 std::shared_ptr<M3U8MasterPlaylist> HlsPlayListDownloader::GetMaster()
 {
-    return master_;
+    return GetThreadSafeMaster();
 }
 
 std::shared_ptr<M3U8VariantStream> HlsPlayListDownloader::GetCurrentVariant()
 {
-    return currentVariant_;
+    return GetThreadSafeCurrentVariant();
 }
 
 std::shared_ptr<M3U8VariantStream> HlsPlayListDownloader::GetNewVariant()
@@ -884,16 +928,18 @@ void HlsPlayListDownloader::SetMimeType(const std::string& mimeType)
 
 size_t HlsPlayListDownloader::GetSegmentOffset(uint32_t tsIndex)
 {
-    if (master_ && master_->segmentOffsets_.size() > tsIndex) {
-        return master_->segmentOffsets_[tsIndex];
+    auto master = GetThreadSafeMaster();
+    if (master && master->segmentOffsets_.size() > tsIndex) {
+        return master->segmentOffsets_[tsIndex];
     }
     return 0;
 }
 
 bool HlsPlayListDownloader::GetHLSDiscontinuity()
 {
-    if (master_) {
-        return master_->hasDiscontinuity_;
+    auto master = GetThreadSafeMaster();
+    if (master) {
+        return master->hasDiscontinuity_;
     }
     return false;
 }
@@ -906,33 +952,37 @@ void HlsPlayListDownloader::SetInitResolution(uint32_t width, uint32_t height)
     }
 }
 
-size_t HlsPlayListDownloader::GetLiveUpdateGap() const
+size_t HlsPlayListDownloader::GetLiveUpdateGap()
 {
-    if (currentVariant_ && currentVariant_->m3u8_) {
-        return currentVariant_->m3u8_->GetLiveUpdateGap();
+    auto currentVariant = GetThreadSafeCurrentVariant();
+    if (currentVariant && currentVariant->m3u8_) {
+        return currentVariant->m3u8_->GetLiveUpdateGap();
     }
     return 0;
 }
 
 void HlsPlayListDownloader::InterruptM3U8Parse(bool isInterruptNeeded)
 {
-    if (master_) {
-        master_->SetInterruptState(isInterruptNeeded);
+    auto master = GetThreadSafeMaster();
+    if (master) {
+        master->SetInterruptState(isInterruptNeeded);
     }
-    if (currentVariant_ && currentVariant_->m3u8_) {
-        currentVariant_->m3u8_->isInterruptNeeded_.store(isInterruptNeeded);
+    auto currentVariant = GetThreadSafeCurrentVariant();
+    if (currentVariant && currentVariant->m3u8_) {
+        currentVariant->m3u8_->isInterruptNeeded_.store(isInterruptNeeded);
     }
 }
 
 bool HlsPlayListDownloader::ReadFmp4Header(uint8_t* buffer, uint32_t wantLen,
     uint32_t& readLen, uint32_t streamId)
 {
-    if (master_ == nullptr || buffer == nullptr) {
+    auto master = GetThreadSafeMaster();
+    if (master == nullptr || buffer == nullptr) {
         return false;
     }
-    return ReadMediaHeader(master_->subtitlesList_, buffer, wantLen, readLen, streamId) ||
-        ReadMediaHeader(master_->audioList_, buffer, wantLen, readLen, streamId) ||
-        ReadStreamHeader(master_->variants_, buffer, wantLen, readLen, streamId);
+    return ReadMediaHeader(master->subtitlesList_, buffer, wantLen, readLen, streamId) ||
+        ReadMediaHeader(master->audioList_, buffer, wantLen, readLen, streamId) ||
+        ReadStreamHeader(master->variants_, buffer, wantLen, readLen, streamId);
 }
 
 bool HlsPlayListDownloader::ReadMediaHeader(const std::list<std::shared_ptr<M3U8Media>>& mediaList,
@@ -976,12 +1026,14 @@ bool HlsPlayListDownloader::ReadStreamHeader(const std::list<std::shared_ptr<M3U
 
 void HlsPlayListDownloader::GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate)
 {
-    if ((!isUpdate && currentVariant_ == nullptr) || master_ == nullptr) {
+    auto master = GetThreadSafeMaster();
+    auto currentVariant = GetThreadSafeCurrentVariant();
+    if ((!isUpdate && currentVariant == nullptr) || master == nullptr) {
         return;
     }
     GetMediaStreams(StreamType::AUDIO, streams);
     GetMediaStreams(StreamType::SUBTITLE, streams);
-    for (const auto &stream : master_->variants_) {
+    for (const auto &stream : master->variants_) {
         if (stream == nullptr) {
             continue;
         }
@@ -990,13 +1042,13 @@ void HlsPlayListDownloader::GetStreamInfo(std::vector<StreamInfo>& streams, bool
         streamInfo.type = StreamType::VIDEO;
         streamInfo.bitRate = stream->bandWidth_;
         streamInfo.frameRate = stream->frameRate_;
-        streamInfo.mimeType = master_->GetMimeType(stream->codecs_);
-        streamInfo.codecs = master_->GetMimeType(stream->codecs_);
-        streamInfo.originCodecs = master_->GetCodec(StreamType::VIDEO, stream->codecs_);
+        streamInfo.mimeType = master->GetMimeType(stream->codecs_);
+        streamInfo.codecs = master->GetMimeType(stream->codecs_);
+        streamInfo.originCodecs = master->GetCodec(StreamType::VIDEO, stream->codecs_);
         streamInfo.isSimple = stream->isSimple_;
         streamInfo.videoWidth = stream->width_;
         streamInfo.videoHeight = stream->height_;
-        if (!isUpdate && stream->streamId_ == currentVariant_->streamId_) {
+        if (!isUpdate && stream->streamId_ == currentVariant->streamId_) {
             streams.insert(streams.begin(), streamInfo);
         } else {
             streams.push_back(streamInfo);
@@ -1017,7 +1069,10 @@ bool HlsPlayListDownloader::ContainsNonDigit(const std::string& str)
 void HlsPlayListDownloader::GetMediaStreams(StreamType streamType, std::vector<StreamInfo>& streams)
 {
     std::list<std::shared_ptr<M3U8Media>> mediaList;
-    mediaList = streamType == StreamType::AUDIO ? master_->audioList_ : master_->subtitlesList_;
+    auto master = GetThreadSafeMaster();
+    FALSE_RETURN_NOLOG(master != nullptr);
+    mediaList = streamType == StreamType::AUDIO ? master->audioList_ : master->subtitlesList_;
+    auto currentVariant = GetThreadSafeCurrentVariant();
     for (const auto& media : mediaList) {
         if (media == nullptr) continue;
         
@@ -1026,7 +1081,7 @@ void HlsPlayListDownloader::GetMediaStreams(StreamType streamType, std::vector<S
         streamInfo.type = streamType;
         streamInfo.lang = media->lang_;
         if (streamType == StreamType::AUDIO) {
-            streamInfo.originCodecs = master_->GetCodec(StreamType::AUDIO, media->originCodec_);
+            streamInfo.originCodecs = master->GetCodec(StreamType::AUDIO, media->originCodec_);
             int32_t tempChannel = 0;
             StringUtil::SafeStoInt32(media->channels_, tempChannel);
             streamInfo.channels = tempChannel > 0 ? static_cast<uint32_t>(tempChannel) : 0;
@@ -1034,16 +1089,16 @@ void HlsPlayListDownloader::GetMediaStreams(StreamType streamType, std::vector<S
         bool isDefault = false;
         if (streamType == StreamType::AUDIO && audioStreamId_.load() != -1) {
             isDefault = media->streamId_ == audioStreamId_.load();
-        } else if (streamType == StreamType::AUDIO && currentVariant_ != nullptr) {
-            isDefault = currentVariant_->defaultAudio_ != nullptr &&
-                media->streamId_ == currentVariant_->defaultAudio_->streamId_;
+        } else if (streamType == StreamType::AUDIO && currentVariant != nullptr) {
+            isDefault = currentVariant->defaultAudio_ != nullptr &&
+                media->streamId_ == currentVariant->defaultAudio_->streamId_;
         }
         if (streamType == StreamType::SUBTITLE && subtitleStreamId_.load() != -1) {
             isDefault = media->streamId_ == subtitleStreamId_.load();
             streamInfo.sniffSize = DEFAULT_SUBTITLE_SNIFFSIZE;
-        } else if (streamType == StreamType::SUBTITLE && currentVariant_ != nullptr) {
-            isDefault = currentVariant_->defaultSubtitles_ != nullptr &&
-                media->streamId_ == currentVariant_->defaultSubtitles_->streamId_;
+        } else if (streamType == StreamType::SUBTITLE && currentVariant != nullptr) {
+            isDefault = currentVariant->defaultSubtitles_ != nullptr &&
+                media->streamId_ == currentVariant->defaultSubtitles_->streamId_;
             streamInfo.sniffSize = DEFAULT_SUBTITLE_SNIFFSIZE;
         }
 
@@ -1057,7 +1112,8 @@ void HlsPlayListDownloader::GetMediaStreams(StreamType streamType, std::vector<S
 
 bool HlsPlayListDownloader::IsHlsFmp4()
 {
-    if (master_ && master_->isFmp4_) {
+    auto master = GetThreadSafeMaster();
+    if (master && master->isFmp4_) {
         return true;
     }
     return false;
@@ -1065,7 +1121,8 @@ bool HlsPlayListDownloader::IsHlsFmp4()
 
 bool HlsPlayListDownloader::IsPureByteRange()
 {
-    if (master_ && master_->isPureByteRange_.load()) {
+    auto master = GetThreadSafeMaster();
+    if (master && master->isPureByteRange_.load()) {
         return true;
     }
     return false;
@@ -1075,8 +1132,8 @@ void HlsPlayListDownloader::ReOpen(void)
 {
     // 关闭直播目录更新，清空一二级目录对象
     Pause(true);
-    master_ = nullptr;
-    currentVariant_ = nullptr;
+    SetThreadSafeMaster(nullptr);
+    SetThreadSafeCurrentVariant(nullptr);
     isLiveUpdateTaskStarted_ = false;
     retryStartTime_ = 0; // 重置重试时间
 
@@ -1091,10 +1148,12 @@ void HlsPlayListDownloader::ReOpen(void)
 
 std::shared_ptr<StreamInfo> HlsPlayListDownloader::GetStreamInfoById(int32_t streamId)
 {
-    if (currentVariant_ == nullptr || master_ == nullptr) {
+    auto master = GetThreadSafeMaster();
+    auto currentVariant = GetThreadSafeCurrentVariant();
+    if (currentVariant == nullptr || master == nullptr) {
         return nullptr;
     }
-    for (const auto &variant : master_->variants_) {
+    for (const auto &variant : master->variants_) {
         if (variant == nullptr || variant->streamId_ != static_cast<uint32_t>(streamId)) {
             continue;
         }
@@ -1111,7 +1170,9 @@ std::shared_ptr<StreamInfo> HlsPlayListDownloader::GetStreamInfoById(int32_t str
 
 int32_t HlsPlayListDownloader::GetDefaultMediaStreamId(HlsSegmentType mediaType)
 {
-    if (currentVariant_ == nullptr || master_ == nullptr) {
+    auto master = GetThreadSafeMaster();
+    auto currentVariant = GetThreadSafeCurrentVariant();
+    if (currentVariant == nullptr || master == nullptr) {
         return -1;
     }
     if (mediaType == HlsSegmentType::SEG_AUDIO && audioStreamId_.load() != -1) {
@@ -1121,10 +1182,10 @@ int32_t HlsPlayListDownloader::GetDefaultMediaStreamId(HlsSegmentType mediaType)
     } else {
         MEDIA_LOG_I("no default streamId.");
     }
-    if (mediaType == HlsSegmentType::SEG_AUDIO && currentVariant_->defaultAudio_ != nullptr) {
-        return currentVariant_->defaultAudio_->streamId_;
-    } else if (currentVariant_->defaultSubtitles_ != nullptr) {
-        return currentVariant_->defaultSubtitles_->streamId_;
+    if (mediaType == HlsSegmentType::SEG_AUDIO && currentVariant->defaultAudio_ != nullptr) {
+        return currentVariant->defaultAudio_->streamId_;
+    } else if (currentVariant->defaultSubtitles_ != nullptr) {
+        return currentVariant->defaultSubtitles_->streamId_;
     } else {
         MEDIA_LOG_I("no DefaultMediaStreamId.");
     }
@@ -1133,14 +1194,15 @@ int32_t HlsPlayListDownloader::GetDefaultMediaStreamId(HlsSegmentType mediaType)
 
 void HlsPlayListDownloader::SetDefaultMedia(HlsSegmentType mediaType)
 {
-    if (master_ == nullptr || master_->defaultVariant_ == nullptr) {
+    auto master = GetThreadSafeMaster();
+    if (master == nullptr || master->defaultVariant_ == nullptr) {
         return;
     }
     std::shared_ptr<M3U8Media> defaultMediaType;
-    if (mediaType == HlsSegmentType::SEG_AUDIO && master_->defaultVariant_->defaultAudio_ != nullptr) {
-        defaultMediaType = master_->defaultVariant_->defaultAudio_;
-    } else if (master_->defaultVariant_->defaultSubtitles_ != nullptr) {
-        defaultMediaType = master_->defaultVariant_->defaultSubtitles_;
+    if (mediaType == HlsSegmentType::SEG_AUDIO && master->defaultVariant_->defaultAudio_ != nullptr) {
+        defaultMediaType = master->defaultVariant_->defaultAudio_;
+    } else if (master->defaultVariant_->defaultSubtitles_ != nullptr) {
+        defaultMediaType = master->defaultVariant_->defaultSubtitles_;
     } else {
         return;
     }
@@ -1154,15 +1216,16 @@ void HlsPlayListDownloader::SetDefaultMedia(HlsSegmentType mediaType)
 
 void HlsPlayListDownloader::SelectMedia(int32_t streamId, HlsSegmentType mediaType)
 {
-    if (currentVariant_ == nullptr) {
+    auto currentVariant = GetThreadSafeCurrentVariant();
+    if (currentVariant == nullptr) {
         MEDIA_LOG_W("SelectMedia currentVariant_ null");
         return;
     }
     std::list<std::shared_ptr<M3U8Media>> videoStreamMedia;
-    if (mediaType == HlsSegmentType::SEG_AUDIO && !currentVariant_->audioMedia_.empty()) {
-        videoStreamMedia = currentVariant_->audioMedia_;
-    } else if (!currentVariant_->subtitlesMedia_.empty()) {
-        videoStreamMedia = currentVariant_->subtitlesMedia_;
+    if (mediaType == HlsSegmentType::SEG_AUDIO && !currentVariant->audioMedia_.empty()) {
+        videoStreamMedia = currentVariant->audioMedia_;
+    } else if (!currentVariant->subtitlesMedia_.empty()) {
+        videoStreamMedia = currentVariant->subtitlesMedia_;
     } else {
         MEDIA_LOG_W("SelectMedia media_ null");
         return;
@@ -1191,7 +1254,8 @@ void HlsPlayListDownloader::UpdateMedia(HlsSegmentType mediaType)
     std::string nextUrl = "";
     {
         std::lock_guard<std::mutex> lock(mediaMutex_);
-        if (currentVariant_ && currentVariant_->m3u8_) {
+        auto currentVariant = GetThreadSafeCurrentVariant();
+        if (currentVariant && currentVariant->m3u8_) {
             if (mediaType == HlsSegmentType::SEG_AUDIO && currentAudio_ != nullptr) {
                 nextUrl = currentAudio_->uri_;
             } else if (currentSubtitles_ != nullptr) {
@@ -1209,11 +1273,13 @@ void HlsPlayListDownloader::UpdateMedia(HlsSegmentType mediaType)
 
 void HlsPlayListDownloader::UpdateStreamInfo()
 {
-    std::lock_guard<std::mutex> lock(streamIdMutex);
+    std::lock_guard<std::mutex> lock(streamIdMutex_);
     videoStreamIds_.clear();
     audioStreamIds_.clear();
     subtitlesStreamIds_.clear();
-    for (const auto &stream: master_->variants_) {
+    auto master = GetThreadSafeMaster();
+    FALSE_RETURN_NOLOG(master != nullptr);
+    for (const auto &stream: master->variants_) {
         if (stream == nullptr) {
             continue;
         }
@@ -1241,7 +1307,7 @@ void HlsPlayListDownloader::UpdateStreamInfo()
 
 HlsSegmentType HlsPlayListDownloader::GetSegType(uint32_t streamId)
 {
-    std::lock_guard<std::mutex> lock(streamIdMutex);
+    std::lock_guard<std::mutex> lock(streamIdMutex_);
     if (audioStreamIds_.find(streamId) != audioStreamIds_.end()) {
         return HlsSegmentType::SEG_AUDIO;
     }
@@ -1253,7 +1319,8 @@ HlsSegmentType HlsPlayListDownloader::GetSegType(uint32_t streamId)
 
 uint32_t HlsPlayListDownloader::GetCurStreamId()
 {
-    FALSE_RETURN_V_MSG(currentVariant_ != nullptr, 0, "GetCurStreamId no currentVariant found!");
+    auto currentVariant = GetThreadSafeCurrentVariant();
+    FALSE_RETURN_V_MSG(currentVariant != nullptr, 0, "GetCurStreamId no currentVariant found!");
     std::lock_guard<std::mutex> lock(mediaMutex_);
     if (currentAudio_ != nullptr) {
         return currentAudio_->streamId_;
@@ -1261,7 +1328,43 @@ uint32_t HlsPlayListDownloader::GetCurStreamId()
     if (currentSubtitles_ != nullptr) {
         return currentSubtitles_->streamId_;
     }
-    return currentVariant_->streamId_;
+    return currentVariant->streamId_;
+}
+
+/**
+ * master_变量写函数
+ */
+void HlsPlayListDownloader::SetThreadSafeMaster(std::shared_ptr<M3U8MasterPlaylist> master)
+{
+    std::unique_lock<std::shared_mutex> lock(masterMutex_);
+    master_ = std::move(master);
+}
+
+/**
+ * master_变量读函数
+ */
+std::shared_ptr<M3U8MasterPlaylist> HlsPlayListDownloader::GetThreadSafeMaster()
+{
+    std::shared_lock<std::shared_mutex> lock(masterMutex_);
+    return master_;
+}
+
+/**
+ * currentVariant_变量写函数
+ */
+void HlsPlayListDownloader::SetThreadSafeCurrentVariant(std::shared_ptr<M3U8VariantStream> currentVariant)
+{
+    std::unique_lock<std::shared_mutex> lock(currentVariantMutex_);
+    currentVariant_ = std::move(currentVariant);
+}
+
+/**
+ * currentVariant_变量读函数
+ */
+std::shared_ptr<M3U8VariantStream> HlsPlayListDownloader::GetThreadSafeCurrentVariant()
+{
+    std::shared_lock<std::shared_mutex> lock(currentVariantMutex_);
+    return currentVariant_;
 }
 }
 }
