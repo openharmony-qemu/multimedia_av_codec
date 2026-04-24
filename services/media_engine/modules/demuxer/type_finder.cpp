@@ -176,9 +176,13 @@ std::string TypeFinder::SniffMediaType()
         expectSize = static_cast<size_t>(totalSize);
     }
     while (tryCnt < MAX_SNIFF_TRY_TIMES) {
-        buffer->GetMemory()->Reset();
+        auto memory = buffer->GetMemory();
+        FALSE_RETURN_V_MSG_E(memory != nullptr, "", "GetMemory failed");
+        memory->Reset();
         ret = dataSource->ReadAt(0, buffer, expectSize);
-        getDataSize = buffer->GetMemory()->GetSize();
+        memory = buffer->GetMemory();
+        FALSE_RETURN_V_MSG_E(memory != nullptr, "", "GetMemory failed after ReadAt");
+        getDataSize = memory->GetSize();
         if (ret == Status::OK && getDataSize == expectSize) {
             MEDIA_LOG_D("SniffMediaType ReadAt ok");
             break;
