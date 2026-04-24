@@ -218,7 +218,8 @@ private:
     Status ParseCover(MPEG4Atom currentAtom, uint32_t dataType, uint64_t stringSize, ParseContext* parseCtx);
     Status ParseItunesMetadata(MPEG4Atom currentAtom, std::string& key, ParseContext* parseCtx);
     Status ParseTraditionalMetadata(MPEG4Atom currentAtom, std::string& key, ParseContext* parseCtx);
-    Status ReadMetadataString(std::string& key, int64_t offset, uint64_t size, uint32_t dataType);
+    Status ReadMetadataString(
+        std::string& key, int64_t offset, uint64_t size, uint32_t dataType, bool isiTunes = false);
     Status ParseAlacEntry(ParseContext& ctx);
     Status ParseIccProfile(int64_t offset, uint64_t dataSize);
     Status ParseColorParams(int64_t offset, uint64_t dataSize, const std::string& colorType, ParseContext* parseCtx);
