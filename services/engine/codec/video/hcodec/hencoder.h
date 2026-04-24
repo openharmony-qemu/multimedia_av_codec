@@ -105,7 +105,7 @@ private:
 
     // start
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;
-    void UpdateFmtFromSurfaceBuffer() override;
+    void UpdateFmtFromSurfaceBuffer();
     int32_t AllocInBufsForDynamicSurfaceBuf();
     int32_t SubmitAllBuffersOwnedByUs() override;
     int32_t SubmitOutBufToOmx() override;
