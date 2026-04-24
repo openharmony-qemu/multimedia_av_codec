@@ -260,7 +260,7 @@ AVIOContext* FFmpegMuxerRegister::InitAvIoCtx(const std::shared_ptr<DataSink> &d
     IOContext* ioContext = new IOContext();
     ioContext->dataSink_ = dataSink;
     ioContext->pos_ = 0;
-    ioContext->end_ = dataSink->Seek(0ll, SEEK_END);
+    ioContext->end_ = dataSink->Seek(0LL, SEEK_END);
 
     constexpr int bufferSize = 4 * 1024; // 4096
     auto buffer = static_cast<unsigned char*>(av_malloc(bufferSize));
