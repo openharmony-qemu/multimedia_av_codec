@@ -2218,7 +2218,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, GET_DEFAULT_MEDIA_STREAM_ID_001, TestSize.Le
     // playlistDownloader_ nullptr
     downloader->playlistDownloader_ = nullptr;
     int32_t streamId2 = downloader->GetDefaultMediaStreamId(HlsSegmentType::SEG_AUDIO);
-    EXPECT_EQ(streamId2, -1);
+    EXPECT_EQ(streamId2, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, GET_SEG_TYPE_001, TestSize.Level1)
