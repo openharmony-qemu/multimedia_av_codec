@@ -112,8 +112,8 @@ int32_t HDecoder::OnConfigure(const Format &format)
 {
     configFormat_ = make_shared<Format>(format);
 
-   (void)SetProcessName();
-   (void)SetVrrEnable(format);
+    (void)SetProcessName();
+    (void)SetVrrEnable(format);
  
     if (!DecideOutputBufMode()) {
         HLOGE("set output buffer type failed");
@@ -739,7 +739,8 @@ void HDecoder::ProcSurfaceBufferToUser(const sptr<SurfaceBuffer>& buffer)
                 HLOGI("plane[%u]: offset=%" PRIu64 ", rowStride=%u, columnStride=%u",
                     i, planes->planes[i].offset, planes->planes[i].rowStride, planes->planes[i].columnStride);
             }
-            layout.alignedHeight = static_cast<int32_t>(static_cast<int64_t>(planes->planes[1].offset) / layout.byteStride);
+            layout.alignedHeight = static_cast<int32_t>(static_cast<int64_t>(planes->planes[1].offset) / 
+                layout.byteStride);
         }
         currGenerationLayoutHasParsed_ = true;
     } else {
@@ -786,7 +787,6 @@ void HDecoder::ProcSurfaceBufferToUser(const sptr<SurfaceBuffer>& buffer)
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_PIC_HEIGHT, layout.cropH);
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_LEFT, layout.cropLeft);
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_TOP, layout.cropTop);
-
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_RIGHT,
         static_cast<int32_t>(layout.cropLeft + layout.cropW) - 1);
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_BOTTOM,
@@ -872,7 +872,6 @@ void HDecoder::OnClearBufferPool(OMX_DIRTYPE portIndex)
 uint64_t HDecoder::GetModeUsage()
 {
     return currSurface_.surface_ ? SURFACE_MODE_PRODUCER_USAGE : BUFFER_MODE_REQUEST_USAGE;
-    
 }
  uint64_t HDecoder::GetVendorProducerUsage()
 {
