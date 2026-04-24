@@ -5997,7 +5997,7 @@ bool MediaDemuxer::IsCloudFd()
     return source_->IsCloudFd();
 }
 
-bool MediaDemuxer::IsNeedPreDownload()
+bool MediaDemuxer::IsNeedPreDownload() const
 {
     FALSE_RETURN_V_MSG_E(source_ != nullptr, false, "source_ is nullptr");
     return source_->IsNeedPreDownload();
