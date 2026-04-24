@@ -31,6 +31,12 @@ constexpr uint8_t HEVC_NAL_TYPE_SHIFT = 1;   // Right shift to get NAL type
 constexpr uint8_t HEVC_NAL_TYPE_VPS = 32;    // Video Parameter Set
 constexpr uint8_t HEVC_NAL_TYPE_SPS = 33;    // Sequence Parameter Set
 constexpr uint8_t HEVC_NAL_TYPE_PPS = 34;    // Picture Parameter Set
+constexpr uint8_t HEVC_NAL_TYPE_EXTRACT_MASK = 0x3F; // Mask to extract NAL unit type after shift
+constexpr uint8_t HEVC_NAL_TYPE_TRAIL_N = 0; // Trailing picture, non-reference
+constexpr uint8_t HEVC_NAL_TYPE_TSA_N = 2;   // Temporal sub-layer access, non-reference
+constexpr uint8_t HEVC_NAL_TYPE_STSA_N = 4;  // Step-wise temporal sub-layer access, non-reference
+constexpr uint8_t HEVC_NAL_TYPE_RADL_N = 6;  // Random access decodable leading, non-reference
+constexpr uint8_t HEVC_NAL_TYPE_RASL_N = 8;  // Random access skippable leading, non-reference
 }
 
 #define AV_CODEC_TIME_BASE (static_cast<int64_t>(1))
@@ -414,15 +420,38 @@ bool CanDropAvcPkt(const AVPacket& pkt)
 bool CanDropHevcPkt(const AVPacket& pkt)
 {
     const uint8_t *data = pkt.data;
-    int size = pkt.size;
-    int naluPos = FindNaluSpliter(size, data);
-    if (naluPos < 0) {
-        MEDIA_LOG_D("pkt->data starts with error start code!");
+    if (data == nullptr) {
+        MEDIA_LOG_D("pkt->data is null!");
         return false;
     }
-    int nalUnitType = (data[naluPos] >> 1) & 0x3f; // get H.265 nal_unit_type
-    return nalUnitType == 0 || nalUnitType == 2 || nalUnitType == 4 || // 0: TRAIL_N, 2: TSA_N, 4: STSA_N
-        nalUnitType == 6 || nalUnitType == 8; // 6: RADL_N, 8: RASL_N
+    int size = pkt.size;
+    if (IsBeginAsAnnexb(data, size)) {
+        // Annex B format: find start code then check NAL unit type
+        int naluPos = FindNaluSpliter(size, data);
+        if (naluPos < 0) {
+            MEDIA_LOG_D("pkt->data starts with error start code!");
+            return false;
+        }
+        int nalUnitType = (data[naluPos] >> HEVC_NAL_TYPE_SHIFT) & HEVC_NAL_TYPE_EXTRACT_MASK;
+        return nalUnitType == HEVC_NAL_TYPE_TRAIL_N || nalUnitType == HEVC_NAL_TYPE_TSA_N ||
+            nalUnitType == HEVC_NAL_TYPE_STSA_N || nalUnitType == HEVC_NAL_TYPE_RADL_N ||
+            nalUnitType == HEVC_NAL_TYPE_RASL_N;
+    } else {
+        // hvcC format: 4-byte length prefix, check NAL unit type after length
+        if (size < NAL_START_CODE_SIZE) {
+            MEDIA_LOG_D("pkt size too small for hvcC");
+            return false;
+        }
+        int32_t naluSize = GetNaluSize(data);
+        if (naluSize <= 0 || naluSize + NAL_START_CODE_SIZE > size) {
+            MEDIA_LOG_D("Invalid hvcC naluSize=" PUBLIC_LOG_D32, naluSize);
+            return false;
+        }
+        uint8_t nalUnitType = (data[NAL_START_CODE_SIZE] >> HEVC_NAL_TYPE_SHIFT) & HEVC_NAL_TYPE_EXTRACT_MASK;
+        return nalUnitType == HEVC_NAL_TYPE_TRAIL_N || nalUnitType == HEVC_NAL_TYPE_TSA_N ||
+            nalUnitType == HEVC_NAL_TYPE_STSA_N || nalUnitType == HEVC_NAL_TYPE_RADL_N ||
+            nalUnitType == HEVC_NAL_TYPE_RASL_N;
+    }
 }
 
 void SetDropTag(const AVPacket& pkt, std::shared_ptr<AVBuffer> sample, AVCodecID codecId)
