@@ -20,7 +20,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "SideOutputSurfaceProcessor" };
 constexpr uint32_t WAIT_FOR_EVER = std::numeric_limits<uint32_t>::max();
-constexpr uint32_t BUFFER_QUEUE_SIZE = 5;
+constexpr uint32_t BUFFER_QUEUE_SIZE = 9;
 constexpr int32_t STRIDE_ALIGNMENT = 32;
 constexpr int32_t WAIT_TRIGGER_TIMEOUT = 200;
 constexpr int32_t GET_VIDEO_SAMPLE_TIMEOUT = 1000;
@@ -175,6 +175,7 @@ Status SideOutputSurfaceProcessor::Release()
         }
         if (producerSurface_ != nullptr) {
             producerSurface_->UnRegisterReleaseListener();
+            producerSurface_->Disconnect();
             producerSurface_->CleanCache(true);
             producerSurface_ = nullptr;
         }
