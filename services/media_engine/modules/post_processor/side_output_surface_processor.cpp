@@ -376,7 +376,7 @@ GSError SideOutputSurfaceProcessor::OnProducerBufferReleased()
 
     sptr<Surface> producerSurface;
     {
-        std::lock(bufferLock_, lock_);
+        std::lock(lock_, bufferLock_);
         std::lock_guard<std::mutex> bufferGuard(bufferLock_, std::adopt_lock);
         std::lock_guard<std::mutex> lockGuard(lock_, std::adopt_lock);
         
