@@ -20,6 +20,7 @@
 #include <string>
 #include "avcodec_info.h"
 #include "cpu_image_processor.h"
+#include "fast_kits_interface.h"
 #include "format.h"
 #include "frame_drop_filter.h"
 #include "surface.h"
@@ -155,6 +156,7 @@ private:
     int32_t dAlgoWidthMax_{0};
     int32_t dAlgoHeightMax_{0};
     std::string mime_;
+    PreProcessing::FastKitsInterface &fastKitsInterface_ = PreProcessing::FastKitsInterface::GetInstance();
     PreProcessing::FrameDropFilter dropFilter_;
     std::function<void(sptr<SurfaceBuffer>, sptr<SurfaceBuffer>)> onOutSurfaceBufferReallocCb_{};
 };

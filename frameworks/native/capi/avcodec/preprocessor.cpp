@@ -24,12 +24,14 @@
 #include "avcodeclist_impl.h"
 #include "meta/meta_key.h"
 #include "native_avcodec_base.h"
+#include "syspara/parameters.h"
 
 namespace {
 using namespace OHOS;
 
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "Preprocessor"};
 constexpr int32_t BUFFER_REQUEST_STRIDE_ALIGNMENT = 32;
+auto fastKitEnable = OHOS::system::GetBoolParameter("persist.OHOS.MediaAVCodec.FastKit.Enable", false);
 
 double RoundToTwoDecimals(double value)
 {
@@ -77,10 +79,16 @@ namespace OHOS {
 namespace MediaAVCodec {
 Preprocessor::Preprocessor(const std::string &mime) : mime_(mime)
 {
+    if (fastKitEnable) {
+        fastKitsInterface_.Retain();
+    }
 }
 
 Preprocessor::~Preprocessor()
 {
+    if (fastKitEnable) {
+        fastKitsInterface_.Release();
+    }
 }
 
 int32_t Preprocessor::Configure(const Media::Format &format)
@@ -112,6 +120,11 @@ int32_t Preprocessor::Configure(const Media::Format &format)
     }
     if (dropParams.result != ConfigResult::NOT_SET) {
         dropFrameConfig_ = DropFrameConfig(dropParams);
+    }
+    if (fastKitEnable && (cropConfig_.enabled || downsamplingConfig_.enabled)) {
+        int32_t initRet = fastKitsInterface_.Init(static_cast<uint32_t>(encoderConfig_.pixelFormat));
+        CHECK_AND_RETURN_RET_LOG(initRet == AVCS_ERR_OK, initRet, "Failed to init FastKitsInterface: %{public}d",
+                                 initRet);
     }
     if (dropFrameConfig_.enabled) {
         dropFilter_.Configure(dropFrameConfig_.targetFrameRate, encoderConfig_.frameRate);
@@ -329,6 +342,12 @@ int32_t Preprocessor::Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &outpu
         AVCODEC_LOGE("Realloc buffer failed");
         return AVCS_ERR_NO_MEMORY;
     }
+    if (fastKitEnable) {
+        PreProcessing::CropRect rect{cropConfig_.top, cropConfig_.left, cropConfig_.bottom, cropConfig_.right};
+        int32_t ret = fastKitsInterface_.Crop(input, output, rect);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "FastKit crop failed: %{public}d", ret);
+        return AVCS_ERR_OK;
+    }
     PreProcessing::CpuImageProcessRequest request;
     request.input = input;
     request.output = output;
@@ -345,6 +364,11 @@ int32_t Preprocessor::Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer
                                         input->GetFormat(), output)) {
         AVCODEC_LOGE("Realloc buffer failed");
         return AVCS_ERR_NO_MEMORY;
+    }
+    if (fastKitEnable) {
+        int32_t ret = fastKitsInterface_.DownSample(input, output);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "FastKit downsampling failed: %{public}d", ret);
+        return AVCS_ERR_OK;
     }
     PreProcessing::CpuImageProcessRequest request;
     request.input = input;
