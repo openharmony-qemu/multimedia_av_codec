@@ -307,8 +307,8 @@ ohos_shared_library("native_media_adec") {
 
   external_deps = [
     "c_utils:utils",
-    "hilog:libhilog",
     "graphic_surface:surface",
+    "hilog:libhilog",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
@@ -335,8 +335,8 @@ ohos_shared_library("native_media_aenc") {
 
   external_deps = [
     "c_utils:utils",
-    "hilog:libhilog",
     "graphic_surface:surface",
+    "hilog:libhilog",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
@@ -396,6 +396,7 @@ ohos_shared_library("native_media_venc") {
   configs = [ ":av_codec_capi_compile_config" ]
 
   include_dirs = [
+    "$av_codec_root_dir/frameworks/native/avcodec/pre_processing/cpu_image_processor",
     "$av_codec_root_dir/frameworks/native/avcodec/pre_processing/fast_kits_interface",
     "$av_codec_root_dir/frameworks/native/avcodec/pre_processing/frame_drop",
   ]
@@ -415,6 +416,7 @@ ohos_shared_library("native_media_venc") {
 
   external_deps = [
     "c_utils:utils",
+    "drivers_interface_display:libdisplay_commontype_proxy_2.2",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
