@@ -29,7 +29,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-constexpr int32_t S_TO_MS = 1000;
+constexpr uint64_t S_TO_MS = 1000;
 
 DashMpdParser::~DashMpdParser()
 {
@@ -507,17 +507,18 @@ void DashMpdParser::FillEventMetadata(DashEventInfo *eventInfo, uint64_t duratio
     
     uint32_t timescale = eventStreamInfo->timescale_;
     if (timescale > 0) {
-        int64_t timeDiff = eventInfo->presentationTime_ - eventStreamInfo->presentationTimeOffset_;
-        eventInfo->start_ = static_cast<int64_t>(timeDiff) / static_cast<int64_t>(timescale) * S_TO_MS;
-        eventInfo->duration_ = static_cast<int64_t>(duration) / static_cast<int64_t>(timescale) * S_TO_MS;
+        uint64_t timeDiff = (eventInfo->presentationTime_ >= eventStreamInfo->presentationTimeOffset_)
+            ? (eventInfo->presentationTime_ - eventStreamInfo->presentationTimeOffset_) : 0;
+        eventInfo->start_    = timeDiff / timescale * S_TO_MS;
+        eventInfo->duration_ = duration / timescale * S_TO_MS;
     }
     eventInfo->classify_ = eventStreamInfo->schemeIdUri_ + eventStreamInfo->value_;
 }
 
 void DashMpdParser::LogEventInfo(const DashEventInfo *eventInfo)
 {
-    MEDIA_LOG_I("ParseEvent id: " PUBLIC_LOG_S ", duration: " PUBLIC_LOG_D64 ", classify: " PUBLIC_LOG_S ", start: "
-        PUBLIC_LOG_D64, eventInfo->id_.c_str(), eventInfo->duration_, eventInfo->classify_.c_str(), eventInfo->start_);
+    MEDIA_LOG_I("ParseEvent id: " PUBLIC_LOG_S ", duration: " PUBLIC_LOG_U64 ", classify: " PUBLIC_LOG_S ", start: "
+        PUBLIC_LOG_U64, eventInfo->id_.c_str(), eventInfo->duration_, eventInfo->classify_.c_str(), eventInfo->start_);
 }
 
 bool DashMpdParser::ParseSpliceInfoSection(std::shared_ptr<XmlParser> xmlParser,
