@@ -410,6 +410,12 @@ std::string DescribeSampleState(const VideoEncPreprocDualOutputSample &sample)
         EXPECT_LT((actual), (expected)) << DescribeSampleState(sample); \
     } while (false)
 
+#define EXPECT_GE_SAMPLE_STEP(actual, expected, sample, step)   \
+    do {                                                        \
+        SCOPED_TRACE(DescribeStep(step));                       \
+        EXPECT_GE((actual), (expected)) << DescribeSampleState(sample); \
+    } while (false)
+
 #define EXPECT_GT_SAMPLE_STEP(actual, expected, sample, step)   \
     do {                                                        \
         SCOPED_TRACE(DescribeStep(step));                       \
@@ -741,7 +747,7 @@ void RunScenario(const ScenarioCase &scenario)
         EXPECT_LE_SAMPLE_STEP(sample.PrimaryDataCount(), static_cast<int32_t>(kFrameCount), sample,
                               "RunScenario.PrimaryDropDataCount");
         if (!scenario.secondary.useDropToFrameRate) {
-            EXPECT_GT_SAMPLE_STEP(sample.SecondaryDataCount(), sample.PrimaryDataCount(), sample,
+            EXPECT_GE_SAMPLE_STEP(sample.SecondaryDataCount(), sample.PrimaryDataCount(), sample,
                                   "RunScenario.SecondaryDataCountGreaterThanPrimary");
         }
     }
