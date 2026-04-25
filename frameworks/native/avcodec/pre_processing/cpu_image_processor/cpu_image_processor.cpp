@@ -67,11 +67,17 @@ bool AddPlane(BufferView &view, int32_t width, int32_t height, int32_t rowBytes,
 {
     if (view.planeCount >= view.planes.size() || width <= 0 || height <= 0 || rowBytes <= 0 ||
         stride < rowBytes || offset > view.size) {
+        AVCODEC_LOGE("Invalid plane metadata: planeCount=%{public}zu width=%{public}d height=%{public}d "
+                     "rowBytes=%{public}d stride=%{public}d offset=%{public}zu size=%{public}zu",
+                     view.planeCount, width, height, rowBytes, stride, offset, view.size);
         return false;
     }
     size_t lastRowOffset = static_cast<size_t>(height - 1) * static_cast<size_t>(stride);
     size_t end = offset + lastRowOffset + static_cast<size_t>(rowBytes);
     if (end > view.size) {
+        AVCODEC_LOGE("Plane exceeds buffer size: end=%{public}zu size=%{public}zu "
+                     "height=%{public}d rowBytes=%{public}d stride=%{public}d",
+                     end, view.size, height, rowBytes, stride);
         return false;
     }
     view.planes[view.planeCount++] = {offset, width, height, rowBytes, stride, bytesPerPixel, xSubsample, ySubsample};
@@ -83,6 +89,11 @@ bool BuildView(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer, BufferView &view)
 {
     if (!buffer || buffer->GetVirAddr() == nullptr || buffer->GetWidth() <= 0 || buffer->GetHeight() <= 0 ||
         buffer->GetStride() <= 0 || buffer->GetSize() <= 0) {
+        AVCODEC_LOGE("Invalid buffer: buffer=%{public}p, addr=%{public}p, width=%{public}d, "
+                     "height=%{public}d, stride=%{public}d, size=%{public}d",
+                     buffer.GetRefPtr(), buffer ? buffer->GetVirAddr() : nullptr,
+                     buffer ? buffer->GetWidth() : -1, buffer ? buffer->GetHeight() : -1,
+                     buffer ? buffer->GetStride() : -1, buffer ? buffer->GetSize() : -1);
         return false;
     }
     view.addr = static_cast<uint8_t *>(buffer->GetVirAddr());
@@ -95,6 +106,8 @@ bool BuildView(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer, BufferView &view)
     view.planeCount = 0;
 
     if (view.isYuv420 && (!IsEven(view.width) || !IsEven(view.height))) {
+        AVCODEC_LOGE("YUV420 buffer geometry is not even: width=%{public}d height=%{public}d format=%{public}d",
+                     view.width, view.height, view.format);
         return false;
     }
 
@@ -124,6 +137,7 @@ bool BuildView(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer, BufferView &view)
             return AddPlane(view, view.width, view.height, view.width * RGBA_BYTES_PER_PIXEL, view.stride,
                             RGBA_BYTES_PER_PIXEL, 1, 1, offset);
         default:
+            AVCODEC_LOGE("Unsupported buffer format: %{public}d", view.format);
             return false;
     }
 }
@@ -134,10 +148,17 @@ bool ValidateCropRect(const BufferView &input, const OHOS::MediaAVCodec::PreProc
     if (crop.left < 0 || crop.top < 0 || crop.width <= 0 || crop.height <= 0 ||
         crop.left > input.width - crop.width || crop.top > input.height - crop.height ||
         output.width != crop.width || output.height != crop.height) {
+        AVCODEC_LOGE("Invalid crop rect: left=%{public}d top=%{public}d width=%{public}d height=%{public}d, "
+                     "input=%{public}dx%{public}d output=%{public}dx%{public}d",
+                     crop.left, crop.top, crop.width, crop.height, input.width, input.height, output.width,
+                     output.height);
         return false;
     }
     if (input.isYuv420 &&
         (!IsEven(crop.left) || !IsEven(crop.top) || !IsEven(crop.width) || !IsEven(crop.height))) {
+        AVCODEC_LOGE("YUV420 crop rect is not even-aligned: left=%{public}d top=%{public}d "
+                     "width=%{public}d height=%{public}d format=%{public}d",
+                     crop.left, crop.top, crop.width, crop.height, input.format);
         return false;
     }
     return true;
@@ -167,6 +188,9 @@ int32_t CopyPlaneRows(const BufferView &input, const BufferView &output, int32_t
         int32_t planeHeight = height / srcPlane.ySubsample;
         int32_t bytesToCopy = planeWidth * srcPlane.bytesPerPixel;
         if (bytesToCopy > dstPlane.rowBytes || planeHeight > dstPlane.height) {
+            AVCODEC_LOGE("Crop plane copy exceeds output plane: plane=%{public}zu, bytesToCopy=%{public}d, "
+                         "dstRowBytes=%{public}d, planeHeight=%{public}d, dstHeight=%{public}d",
+                         i, bytesToCopy, dstPlane.rowBytes, planeHeight, dstPlane.height);
             return OHOS::MediaAVCodec::AVCS_ERR_INVALID_VAL;
         }
         const uint8_t *src = input.addr + srcPlane.offset + static_cast<size_t>(srcTop) * srcPlane.stride +
@@ -245,12 +269,16 @@ int32_t CpuImageProcessor::Process(const CpuImageProcessRequest &request)
         return AVCS_ERR_INVALID_VAL;
     }
     if (input.planeCount != output.planeCount) {
+        AVCODEC_LOGE("Plane count mismatch: input=%{public}zu output=%{public}zu",
+                     input.planeCount, output.planeCount);
         return AVCS_ERR_INVALID_VAL;
     }
 
     switch (request.operation) {
         case CpuImageOperation::COPY:
             if (input.width != output.width || input.height != output.height) {
+                AVCODEC_LOGE("Copy size mismatch: input=%{public}dx%{public}d output=%{public}dx%{public}d",
+                             input.width, input.height, output.width, output.height);
                 return AVCS_ERR_INVALID_VAL;
             }
             return CopyPlaneRows(input, output, 0, 0, input.width, input.height);

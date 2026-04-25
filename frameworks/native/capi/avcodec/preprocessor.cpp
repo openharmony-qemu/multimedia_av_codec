@@ -141,19 +141,24 @@ int32_t Preprocessor::ValidateCrop(const Media::Format &format, CropParams &para
     }
 
     if (hasAny && !hasAll) {            // At least one of the 4 values is not configured,
+        AVCODEC_LOGE("Incomplete crop parameters: hasLeft=%{public}d, hasRight=%{public}d, "
+                     "hasTop=%{public}d, hasBottom=%{public}d",
+                     hasLeft, hasRight, hasTop, hasBottom);
         return AVCS_ERR_INVALID_VAL;    // it is not allowed.
     }
 
     // left, right, top and bottom are all configured
+    if (left == 0 && top == 0 && right == 0 && bottom == 0) {
+        params.result = ConfigResult::DISABLED;
+        AVCODEC_LOGI("Crop disabled by zero crop parameters");
+        return AVCS_ERR_OK;
+    }
+
     Range encWidth;
     Range encHeight;
     if (!GetEncoderRange(format, encWidth, encHeight)) {
         AVCODEC_LOGE("Failed to get encoder capability for crop");
         return AVCS_ERR_INVALID_VAL;
-    }
-    if (left == 0 && top == 0 && right == 0 && bottom == 0) {
-        params.result = ConfigResult::DISABLED;
-        return AVCS_ERR_OK;
     }
     int32_t cropWidth = right - left + 1;
     int32_t cropHeight = bottom - top + 1;
