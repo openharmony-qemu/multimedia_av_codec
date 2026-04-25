@@ -57,8 +57,43 @@ private:
         int32_t generation = 0;
     };
 
+        struct SurfaceBufferLayout {
+        PixelFmt fmt;
+        int32_t handleW = 0;
+        int32_t handleH = 0;
+        int32_t byteStride = 0;
+        int32_t alignedHeight = 0;
+        int32_t cropLeft = 0;
+        int32_t cropTop = 0;
+        int32_t cropW = 0;
+        int32_t cropH = 0;
+ 
+        friend bool operator==(const SurfaceBufferLayout& layout1, const SurfaceBufferLayout& layout2)
+        {
+            return layout1.fmt           == layout2.fmt &&
+                   layout1.handleW       == layout2.handleW &&
+                   layout1.handleH       == layout2.handleH &&
+                   layout1.byteStride    == layout2.byteStride &&
+                   layout1.alignedHeight == layout2.alignedHeight &&
+                   layout1.cropLeft      == layout2.cropLeft &&
+                   layout1.cropTop       == layout2.cropTop &&
+                   layout1.cropW         == layout2.cropW &&
+                   layout1.cropH         == layout2.cropH;
+        }
+ 
+        std::string ToString() const
+        {
+            std::string s;
+            s.reserve(64); //64Bytes
+            (void)sprintf_s(s.data(), s.capacity(), "(%s, [%dx%d][%dx%d], %u/%u/%u/%u)",
+                fmt.strFmt.c_str(), handleW, handleH, byteStride, alignedHeight, cropLeft, cropTop, cropW, cropH);
+            return s;
+        }
+    };
+
 private:
     // configure
+    bool DecideOutputBufMode();
     int32_t OnConfigure(const Format &format) override;
     int32_t SetupPort(const Format &format);
     int32_t UpdateInPortFormat() override;
@@ -70,8 +105,10 @@ private:
     int32_t OnSetOutputSurfaceWhenCfg(const sptr<Surface> &surface);
     int32_t OnSetParameters(const Format &format) override;
     bool UpdateConfiguredFmt(OMX_COLOR_FORMATTYPE portFmt);
-    uint64_t GetProducerUsage();
-    void CombineConsumerUsage();
+    uint64_t GetModeUsage();
+    uint64_t GetVendorProducerUsage();
+    uint64_t GetSurfaceConsumerUsage();
+    bool SetUsageToVendor(uint64_t usage);
     int32_t SaveTransform(const Format &format, bool set = false);
     int32_t SetTransform();
     int32_t SaveScaleMode(const Format &format, bool set = false);
@@ -82,9 +119,9 @@ private:
     void OnExitRunningState() override;
     bool UseHandleOnOutputPort(bool isDynamic);
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;
-    void UpdateFmtFromSurfaceBuffer() override;
     int32_t AllocOutDynamicSurfaceBuf();
     int32_t AllocateOutputBuffersFromSurface();
+    int32_t AllocateOutputBuffersFromOmx();
     int32_t ClearSurfaceAndSetQueueSize(const sptr<Surface> &surface, uint32_t targetSize);
     int32_t SubmitAllBuffersOwnedByUs() override;
     int32_t SubmitOutBufToOmx() override;
@@ -184,7 +221,7 @@ private:
     static constexpr uint64_t SURFACE_MODE_PRODUCER_USAGE = BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_DECODER;
     static constexpr uint64_t BUFFER_MODE_REQUEST_USAGE =
         SURFACE_MODE_PRODUCER_USAGE | BUFFER_USAGE_CPU_READ | BUFFER_USAGE_MEM_MMZ_CACHE;
-    uint64_t cfgedConsumerUsage = 0;
+    uint64_t cfgedConsumerUsage_ = 0;
 
     struct SurfaceItem {
         SurfaceItem() = default;
@@ -205,12 +242,14 @@ private:
 
     std::list<SurfaceBufferItem> freeList_;
     int32_t currGeneration_ = 0;
+    bool currGenerationLayoutHasParsed_ = false;
+    std::shared_ptr<SurfaceBufferLayout> currLayout_;
+    bool isAlloc_ = false;
     bool isDynamic_ = false;
     bool isReleaseWithSeq_ = true;  // true: dont need to request, false: need to do request
     uint32_t outBufferCnt_ = 0;
     GraphicTransformType transform_ = GRAPHIC_ROTATE_NONE;
     std::optional<ScalingMode> scaleMode_;
-    OHOS::HDI::Display::Graphic::Common::V1_0::BufferHandleMetaRegion crop_{0};
 
     bool detect_ = false;
 };

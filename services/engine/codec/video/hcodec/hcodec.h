@@ -277,7 +277,6 @@ protected:
     virtual bool ReadyToStart() = 0;
     virtual int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) = 0;
     void SetCallerToBuffer(int fd, uint32_t w, uint32_t h);
-    virtual void UpdateFmtFromSurfaceBuffer() = 0;
     int32_t GetPortDefinition(OMX_DIRTYPE portIndex, OMX_PARAM_PORTDEFINITIONTYPE& def);
     int32_t AllocateAvSurfaceBuffers(OMX_DIRTYPE portIndex);
     int32_t AllocateAvLinearBuffers(OMX_DIRTYPE portIndex);
