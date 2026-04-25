@@ -87,6 +87,7 @@ private:
     static int32_t ConvertErrorCode(int32_t fastErr);
 
     mutable std::shared_mutex mutex_;
+    int32_t refCount_ = 0;
     void *handle_ = nullptr;
     FastScaleInitFunc initFunc_ = nullptr;
     FastScaleDownSampleFunc downSampleFunc_ = nullptr;

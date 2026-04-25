@@ -44,7 +44,8 @@ FastKitsInterface::~FastKitsInterface()
 void FastKitsInterface::Retain()
 {
     std::unique_lock<std::shared_mutex> lock(mutex_);
-    if (handle_ == nullptr) {
+    refCount_++;
+    if (refCount_ == 1 && handle_ == nullptr) {
         if (OpenLibrary() && ReadSymbols()) {
             AVCODEC_LOGI("fastkit lib loaded");
         } else {
@@ -61,7 +62,10 @@ void FastKitsInterface::Retain()
 void FastKitsInterface::Release()
 {
     std::unique_lock<std::shared_mutex> lock(mutex_);
-    if (handle_ != nullptr) {
+    if (refCount_ > 0) {
+        refCount_--;
+    }
+    if (refCount_ == 0 && handle_ != nullptr) {
         if (fastScaleClearGPUFunc_ != nullptr) {
             fastScaleClearGPUFunc_();
         }
