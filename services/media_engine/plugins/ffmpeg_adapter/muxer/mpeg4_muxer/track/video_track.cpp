@@ -177,9 +177,6 @@ Status VideoTrack::Init(const std::shared_ptr<Meta> &trackDesc)
         MEDIA_LOG_I("video track codec config len:%{public}zu", codecConfig_.size());
     }
     timeScale_ = videoTimeScale;
-    if (frameRate_ >= 1) {
-        lastDuration_ = ConvertTime(1, static_cast<int32_t>(frameRate_), timeScale_);
-    }
     Plugins::MediaType mediaType = Plugins::MediaType::UNKNOWN;
     trackDesc->GetData(Tag::MEDIA_TYPE, mediaType);
     if (mediaType == Plugins::MediaType::AUXILIARY) {
