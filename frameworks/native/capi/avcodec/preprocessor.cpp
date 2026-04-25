@@ -51,6 +51,11 @@ constexpr int32_t DISABLE_DOWNSAMPLING_WIDTH = 0;
 constexpr int32_t DISABLE_DOWNSAMPLING_HEIGHT = 0;
 constexpr int32_t DEFAULT_METADATA_OFFSET = 0;
 constexpr double IDENTITY_METADATA_SCALE = 1.0;
+constexpr size_t ROI_MATCH_TOP_INDEX = 1;
+constexpr size_t ROI_MATCH_LEFT_INDEX = 2;
+constexpr size_t ROI_MATCH_BOTTOM_INDEX = 3;
+constexpr size_t ROI_MATCH_RIGHT_INDEX = 4;
+constexpr size_t ROI_MATCH_PARAM_INDEX = 5;
 auto fastKitEnable = OHOS::system::GetBoolParameter("persist.OHOS.MediaAVCodec.FastKit.Enable", false);
 
 double RoundToTwoDecimals(double value)
@@ -102,10 +107,10 @@ std::string TransformRoiMetadata(const std::string &roi, double scaleX, double s
     std::string temp = roi;
     std::string result;
     while (std::regex_search(temp, match, roiPattern)) {
-        int32_t top = std::stoi(match[1].str());
-        int32_t left = std::stoi(match[2].str());
-        int32_t bottom = std::stoi(match[3].str());
-        int32_t right = std::stoi(match[4].str());
+        int32_t top = std::stoi(match[ROI_MATCH_TOP_INDEX].str());
+        int32_t left = std::stoi(match[ROI_MATCH_LEFT_INDEX].str());
+        int32_t bottom = std::stoi(match[ROI_MATCH_BOTTOM_INDEX].str());
+        int32_t right = std::stoi(match[ROI_MATCH_RIGHT_INDEX].str());
         int32_t newTop = static_cast<int32_t>(std::round(top * scaleY)) - offsetTop;
         int32_t newLeft = static_cast<int32_t>(std::round(left * scaleX)) - offsetLeft;
         int32_t newBottom = static_cast<int32_t>(std::round(bottom * scaleY)) - offsetTop;
@@ -115,8 +120,8 @@ std::string TransformRoiMetadata(const std::string &roi, double scaleX, double s
         }
         result += std::to_string(newTop) + "," + std::to_string(newLeft) + "-" +
                   std::to_string(newBottom) + "," + std::to_string(newRight);
-        if (match[5].matched) {
-            result += "=" + match[5].str();
+        if (match[ROI_MATCH_PARAM_INDEX].matched) {
+            result += "=" + match[ROI_MATCH_PARAM_INDEX].str();
         }
         temp = match.suffix().str();
     }

@@ -244,8 +244,12 @@ int32_t CopyPlaneRows(const BufferView &input, const BufferView &output, const C
                              static_cast<size_t>(srcLeft) * srcPlane.bytesPerPixel;
         uint8_t *dst = output.addr + dstPlane.offset;
         for (int32_t row = 0; row < planeHeight; ++row) {
-            (void)memcpy_s(dst + static_cast<size_t>(row) * dstPlane.stride, static_cast<size_t>(bytesToCopy),
-                           src + static_cast<size_t>(row) * srcPlane.stride, static_cast<size_t>(bytesToCopy));
+            auto ret = memcpy_s(dst + static_cast<size_t>(row) * dstPlane.stride, static_cast<size_t>(bytesToCopy),
+                                src + static_cast<size_t>(row) * srcPlane.stride, static_cast<size_t>(bytesToCopy));
+            if (ret != EOK) {
+                AVCODEC_LOGE("Copy plane row failed: plane=%{public}zu, row=%{public}d, ret=%{public}d", i, row, ret);
+                return OHOS::MediaAVCodec::AVCS_ERR_INVALID_VAL;
+            }
         }
     }
     return OHOS::MediaAVCodec::AVCS_ERR_OK;
@@ -274,8 +278,13 @@ int32_t DownsamplePlanes(const BufferView &input, const BufferView &output)
                                      static_cast<size_t>(srcX) * srcPlane.bytesPerPixel;
                 uint8_t *dst = output.addr + dstPlane.offset + static_cast<size_t>(dstY) * dstPlane.stride +
                                static_cast<size_t>(dstX) * dstPlane.bytesPerPixel;
-                (void)memcpy_s(dst, static_cast<size_t>(dstPlane.bytesPerPixel),
-                               src, static_cast<size_t>(dstPlane.bytesPerPixel));
+                auto ret = memcpy_s(dst, static_cast<size_t>(dstPlane.bytesPerPixel),
+                                    src, static_cast<size_t>(dstPlane.bytesPerPixel));
+                if (ret != EOK) {
+                    AVCODEC_LOGE("Downsample pixel copy failed: plane=%{public}zu, x=%{public}d, y=%{public}d, "
+                                 "ret=%{public}d", i, dstX, dstY, ret);
+                    return OHOS::MediaAVCodec::AVCS_ERR_INVALID_VAL;
+                }
             }
         }
     }
