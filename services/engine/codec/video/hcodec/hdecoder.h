@@ -88,7 +88,7 @@ private:
             int ret = sprintf_s(s.data(), s.capacity(), "(%s, [%dx%d][%dx%d], %u/%u/%u/%u)",
                 fmt.strFmt.c_str(), handleW, handleH, byteStride, alignedHeight, cropLeft, cropTop, cropW, cropH);
             if (ret <= 0) {
-                LOGW("sprintf_s failed");
+                HLOGW("sprintf_s failed");
                 return;
             }
             return s;
