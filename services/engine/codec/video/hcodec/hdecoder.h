@@ -85,12 +85,8 @@ private:
         {
             std::string s;
             s.reserve(64); //64Bytes
-            int ret = sprintf_s(s.data(), s.capacity(), "(%s, [%dx%d][%dx%d], %u/%u/%u/%u)",
+            (void)sprintf_s(s.data(), s.capacity(), "(%s, [%dx%d][%dx%d], %u/%u/%u/%u)",
                 fmt.strFmt.c_str(), handleW, handleH, byteStride, alignedHeight, cropLeft, cropTop, cropW, cropH);
-            if (ret <= 0) {
-                HLOGW("sprintf_s failed");
-                return;
-            }
             return s;
         }
     };
