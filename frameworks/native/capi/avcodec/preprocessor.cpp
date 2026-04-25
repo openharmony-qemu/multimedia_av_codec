@@ -311,33 +311,33 @@ int32_t Preprocessor::Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &ou
     if (IsCropEnabled()) {
         int32_t ret = Crop(input, output);
         if (ret == AVCS_ERR_OK) {
-            UpdateRoiMetadata(input, output, 1.0, 1.0, cropConfig_.top, cropConfig_.left);
+            UpdateOutputMetadata(input, output, 1.0, 1.0, cropConfig_.top, cropConfig_.left);
             return ret;
         }
         AVCODEC_LOGW("Crop failed: %{public}d, fallback to copy", ret);
         ret = Copy(input, output);
         if (ret == AVCS_ERR_OK) {
-            UpdateRoiMetadata(input, output, 1.0, 1.0, 0, 0);
+            UpdateOutputMetadata(input, output, 1.0, 1.0, 0, 0);
         }
         return ret;
     }
     if (IsDownsamplingEnabled()) {
         int32_t ret = Downsampling(input, output);
         if (ret == AVCS_ERR_OK) {
-            UpdateRoiMetadata(input, output, static_cast<double>(output->GetWidth()) / input->GetWidth(),
-                              static_cast<double>(output->GetHeight()) / input->GetHeight(), 0, 0);
+            UpdateOutputMetadata(input, output, static_cast<double>(output->GetWidth()) / input->GetWidth(),
+                                 static_cast<double>(output->GetHeight()) / input->GetHeight(), 0, 0);
             return ret;
         }
         AVCODEC_LOGW("Downsampling failed: %{public}d, fallback to copy", ret);
         ret = Copy(input, output);
         if (ret == AVCS_ERR_OK) {
-            UpdateRoiMetadata(input, output, 1.0, 1.0, 0, 0);
+            UpdateOutputMetadata(input, output, 1.0, 1.0, 0, 0);
         }
         return ret;
     }
     int32_t ret = Copy(input, output);
     if (ret == AVCS_ERR_OK) {
-        UpdateRoiMetadata(input, output, 1.0, 1.0, 0, 0);
+        UpdateOutputMetadata(input, output, 1.0, 1.0, 0, 0);
     }
     return ret;
 }
@@ -444,6 +444,40 @@ int32_t Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &outpu
     int32_t ret = PreProcessing::CpuImageProcessor::Process(request);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Copy failed: %{public}d", ret);
     return AVCS_ERR_OK;
+}
+
+void Preprocessor::UpdateOutputMetadata(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output,
+                                        double scaleX, double scaleY, int32_t offsetTop, int32_t offsetLeft)
+{
+    CopyInputMetadata(input, output);
+    UpdateRoiMetadata(input, output, scaleX, scaleY, offsetTop, offsetLeft);
+}
+
+void Preprocessor::CopyInputMetadata(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output)
+{
+    CHECK_AND_RETURN_LOG(input != nullptr && output != nullptr,
+                         "Invalid buffer for metadata copy: input=%{public}p, output=%{public}p",
+                         input.GetRefPtr(), output.GetRefPtr());
+
+    std::vector<uint32_t> keys;
+    GSError ret = input->ListMetadataKeys(keys);
+    CHECK_AND_RETURN_LOG(ret == GSERROR_OK, "List input metadata failed: %{public}d", ret);
+
+    for (uint32_t key : keys) {
+        if (key == V2_2::ATTRKEY_ROI_METADATA) {
+            continue;
+        }
+        std::vector<uint8_t> value;
+        ret = input->GetMetadata(key, value);
+        if (ret != GSERROR_OK) {
+            AVCODEC_LOGW("Get metadata failed: key=%{public}u, ret=%{public}d", key, ret);
+            continue;
+        }
+        ret = output->SetMetadata(key, value);
+        if (ret != GSERROR_OK) {
+            AVCODEC_LOGW("Set metadata failed: key=%{public}u, ret=%{public}d", key, ret);
+        }
+    }
 }
 
 void Preprocessor::UpdateRoiMetadata(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output,
