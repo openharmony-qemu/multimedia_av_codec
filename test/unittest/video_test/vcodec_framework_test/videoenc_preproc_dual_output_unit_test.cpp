@@ -147,6 +147,18 @@ bool NeedsSecondary(EncoderEnableMode mode)
     return mode != EncoderEnableMode::PRIMARY_ONLY;
 }
 
+bool ExpectsPrimaryOutput(EncoderEnableMode mode)
+{
+    return mode == EncoderEnableMode::PRIMARY_ONLY || mode == EncoderEnableMode::PRIMARY_SECONDARY ||
+           mode == EncoderEnableMode::PRIMARY_SECONDARY_SEND_PRIMARY_ONLY;
+}
+
+bool ExpectsSecondaryOutput(EncoderEnableMode mode)
+{
+    return mode == EncoderEnableMode::PRIMARY_SECONDARY ||
+           mode == EncoderEnableMode::PRIMARY_SECONDARY_SEND_SECONDARY_ONLY;
+}
+
 std::string ToString(EncoderEnableMode mode)
 {
     switch (mode) {
@@ -743,17 +755,19 @@ void RunScenario(const ScenarioCase &scenario)
             GTEST_FAIL() << "unexpected encoder mode\n" << DescribeSampleState(sample);
             break;
     }
-    if (scenario.primary.useDropToFrameRate) {
+    if (ExpectsPrimaryOutput(scenario.encoderMode) && scenario.primary.useDropToFrameRate) {
         EXPECT_LE_SAMPLE_STEP(sample.PrimaryDataCount(), static_cast<int32_t>(kFrameCount), sample,
                               "RunScenario.PrimaryDropDataCount");
-        if (!scenario.secondary.useDropToFrameRate) {
+        if (ExpectsSecondaryOutput(scenario.encoderMode) && !scenario.secondary.useDropToFrameRate) {
             EXPECT_GE_SAMPLE_STEP(sample.SecondaryDataCount(), sample.PrimaryDataCount(), sample,
                                   "RunScenario.SecondaryDataCountGreaterThanPrimary");
         }
     }
 
     EXPECT_EQ_SAMPLE_STEP(sample.PrimaryError(), 0, sample, "RunScenario.PrimaryError");
-    EXPECT_EQ_SAMPLE_STEP(sample.SecondaryError(), 0, sample, "RunScenario.SecondaryError");
+    if (NeedsSecondary(scenario.encoderMode)) {
+        EXPECT_EQ_SAMPLE_STEP(sample.SecondaryError(), 0, sample, "RunScenario.SecondaryError");
+    }
 
     if (NeedsSecondary(scenario.encoderMode) && !sample.SecondaryGotEos()) {
         (void)sample.NotifySecondaryEos();
