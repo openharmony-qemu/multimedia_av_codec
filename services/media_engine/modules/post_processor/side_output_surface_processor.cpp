@@ -196,7 +196,11 @@ sptr<Surface> SideOutputSurfaceProcessor::GetInputSurface()
     sptr<IBufferProducer> producer = consumerSurface_->GetProducer();
     FALSE_RETURN_V_MSG_I(producer != nullptr, nullptr, "Get surface producer fail");
     producerSurface_ = Surface::CreateSurfaceAsProducer(producer);
-    FALSE_RETURN_V_MSG_I(producerSurface_ != nullptr, nullptr, "CreateSurfaceAsProducer fail");
+    if (producerSurface_ == nullptr) {
+        MEDIA_LOG_E("CreateSurfaceAsProducer fail");
+        consumerSurface_ = nullptr;
+        return nullptr;
+    }
 
     producerSurface_->SetDefaultUsage(BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE |
         BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE | BUFFER_USAGE_HW_COMPOSER);
@@ -390,6 +394,9 @@ GSError SideOutputSurfaceProcessor::OnProducerBufferReleased()
         err = producerSurface->RequestBuffer(bufferInfo.buffer, bufferInfo.fence, requestCfg_);
         if (err != GSERROR_OK || bufferInfo.buffer == nullptr) {
             MEDIA_LOG_W("Failed to RequestBuffer, ret: %{public}d", err);
+            if (bufferInfo.buffer != nullptr && producerSurface != nullptr) {
+                producerSurface->CancelBuffer(bufferInfo.buffer);
+            }
             return err;
         }
         producerBufferQueue_.push(bufferInfo);
@@ -477,6 +484,9 @@ void SideOutputSurfaceProcessor::CopyToSideSurface(SurfaceBufferInfo& srcBufferI
     err = sideSurface_->RequestBuffer(sideBufferInfo.buffer, sideBufferInfo.fence, requestCfg_);
     if (err != GSERROR_OK || sideBufferInfo.buffer == nullptr) {
         MEDIA_LOG_E("CopyToSideSurface: RequestBuffer failed ret=%{public}d", err);
+        if (sideBufferInfo.buffer != nullptr && sideSurface_ != nullptr) {
+            sideSurface_->CancelBuffer(sideBufferInfo.buffer);
+        }
         return;
     }
 
@@ -485,6 +495,9 @@ void SideOutputSurfaceProcessor::CopyToSideSurface(SurfaceBufferInfo& srcBufferI
     
     if (srcAddr == nullptr || sideAddr == nullptr) {
         MEDIA_LOG_E("CopyToSideSurface: virAddr is null");
+        if (sideSurface_ != nullptr) {
+            sideSurface_->CancelBuffer(sideBufferInfo.buffer);
+        }
         return;
     }
 
