@@ -826,6 +826,22 @@ Status MPEG4DemuxerPlugin::MultiTrackSync(int32_t trackIndex, bool isBaseTrack, 
     return ret;
 }
 
+int MPEG4DemuxerPlugin::SelectSeekTrack()
+{
+    int trackIndex = static_cast<int>(selectedTrackIds_[0]);
+    for (size_t i = 1; i < selectedTrackIds_.size(); i++) {
+        int idx = static_cast<int>(selectedTrackIds_[i]);
+        auto track = FindTrackById(idx);
+        if (track == nullptr) {
+            continue;
+        }
+        if (track->codecParms.trackType == TrackType::VIDEO_TYPE) {
+            return idx;
+        }
+    }
+    return trackIndex;
+}
+
 Status MPEG4DemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode, int64_t &realSeekTime)
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
@@ -835,7 +851,7 @@ Status MPEG4DemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode mo
     FALSE_RETURN_V_MSG_E(seekTime >= 0 && seekTime <= INT64_MAX / MS_TO_NS, Status::ERROR_INVALID_PARAMETER,
         "Seek time " PUBLIC_LOG_D64 " is not supported", seekTime);
 
-    trackId = selectedTrackIds_[0];
+    trackId = SelectSeekTrack();
     Status ret = FindBaseTrackAndCalcDelay(seekTime, mode, trackId); // find base track
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Find basetrack failed");
     return DoSeekInternal(trackId, seekTime, mode, realSeekTime);
@@ -990,10 +1006,14 @@ Status MPEG4DemuxerPlugin::WriteSampleAttr(uint32_t trackId, std::shared_ptr<Sam
     sample->dts = sampleDts; // us
     sample->flag = currentSample.flag;
     sample->size = currentSample.size;
-    uint32_t duration = 0;
-    Status ret = track->sampleHelper->GetSampleDuration(index, duration);
+    uint32_t durationTimescale = 0;
+    Status ret = track->sampleHelper->GetSampleDuration(index, durationTimescale);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "GetSampleDuration failed");
-    sample->duration = duration;
+    int64_t sampleDuration = 0;
+    FALSE_RETURN_V_MSG_E(ConvertTimeScale(
+        static_cast<int64_t>(durationTimescale), static_cast<int64_t>(S_TO_US), trackTimeScale, &sampleDuration)
+        == Status::OK, Status::ERROR_INVALID_PARAMETER, "mul overflow");
+    sample->duration = sampleDuration;
     // When the sample is copied in the seekable case, add it up again
     if (seekable_ == Seekable::UNSEEKABLE) {
         ++track->currentSampleIndex;
@@ -1291,6 +1311,15 @@ Status MPEG4DemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t &sampleSi
     FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");
     uint32_t currentSampleIndex = track->currentSampleIndex;
     sampleSize = track->sampleHelper->sampleIndexEntry_[currentSampleIndex].size;
+
+    std::string mime;
+    std::vector<uint8_t> extradata {};
+    if (mediaInfo_.tracks[trackId].Get<Tag::MIME_TYPE>(mime) && HaveValidParser(mime) &&
+        mediaInfo_.tracks[trackId].Get<Tag::MEDIA_CODEC_CONFIG>(extradata)) {
+        if (track->sampleHelper->sampleIndexEntry_[currentSampleIndex].flag & Sample::SampleFlag::SYNC_FRAME) {
+            sampleSize += extradata.size();
+        }
+    }
     return Status::OK;
 }
 

@@ -68,7 +68,9 @@ MPEG4SampleHelper::MPEG4SampleHelper()
       sampleSizes_(),
       chunkOffsets_(),
       trex_(),
-      tfhd_()
+      tfhd_(),
+      dtsShift_(0),
+      timeOffset_(0)
 {
 }
 
@@ -816,8 +818,8 @@ Status MPEG4SampleHelper::SetTrackFragmentRunParams(int64_t dataOffset, int64_t 
         duration += sampleInfo.duration;
         currentDts += sampleInfo.duration;
         offset += sampleInfo.size;
-        FALSE_RETURN_V_MSG_E(duration >= 0 && currentDts >= 0 && offset >= 0, Status::ERROR_INVALID_DATA,
-            "Sample DTS or Offset is negative");
+        FALSE_RETURN_V_MSG_E(duration >= 0 && offset >= 0, Status::ERROR_INVALID_DATA,
+            "Duration DTS or Offset is negative");
     }
     totalTrunDuration_ = currentDts;
     baseFragmentDts_ = currentDts;
@@ -867,6 +869,7 @@ Status MPEG4SampleHelper::PreBuildProcessAndCheck()
         // cttsEntry展开
         Status ret = ExpandCttsEntry(sttsNum);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ExpandCttsEntry failed");
+        CalculateDtsShift();
     }
 
     if (!hasDefaultStszSize_) {
@@ -928,7 +931,7 @@ Status MPEG4SampleHelper::BuildSampleIndexEntries()
     uint32_t stscIndex = 0;
     uint32_t sampleIndex = 0;
     uint32_t syncIndex = 0;
-    int64_t currentDts = 0;
+    int64_t currentDts = -timeOffset_ - dtsShift_;
     uint32_t sampleInChunk = 0;
     uint32_t samplesPerFrame = 1;
     int64_t remainSamples = static_cast<int64_t>(stscEntry_[stscIndex].count);
@@ -936,9 +939,10 @@ Status MPEG4SampleHelper::BuildSampleIndexEntries()
     for (const auto& sttsEntry : sttsEntry_) {  // 遍历sttsEntry
         uint32_t sampleInSttsEntry = 0;
         while (sampleInSttsEntry < sttsEntry.count) {  // 根据sttsEntry.count进行循环
+            int64_t ctsOffset = cttsEntry_.empty() ? 0 : cttsEntry_[sampleIndex].delta;
             sampleIndexEntry_.emplace_back(SampleIndexEntry {
                 .dts = currentDts,
-                .pts = cttsEntry_.empty() ? currentDts : (currentDts + cttsEntry_[sampleIndex].delta),
+                .pts = currentDts + dtsShift_ + ctsOffset,
                 .pos = currentOffset,
                 .flag = Sample::NONE,
                 .size = 0
@@ -950,8 +954,7 @@ Status MPEG4SampleHelper::BuildSampleIndexEntries()
             lastPTS_ = std::max(lastPTS_, sampleIndexEntry_.back().pts);
             currentDts += sttsEntry.delta * samplesPerFrame;
             currentOffset += sampleIndexEntry_.back().size;
-            FALSE_RETURN_V_MSG_E(currentDts >= 0 && currentOffset >= 0, Status::ERROR_INVALID_DATA,
-                "Sample DTS or Offset is negative");
+            FALSE_RETURN_V_MSG_E(currentOffset >= 0, Status::ERROR_INVALID_DATA, "Sample Offset is negative");
             ++sampleIndex;
             sampleInSttsEntry += samplesPerFrame;
             sampleInChunk += samplesPerFrame;
@@ -966,7 +969,10 @@ Status MPEG4SampleHelper::BuildSampleIndexEntries()
         }
     }
 
-    totalDuration_ = currentDts;
+    totalDuration_ = 0;
+    for (const auto& sttsEntry : sttsEntry_) {
+        totalDuration_ += static_cast<int64_t>(sttsEntry.count) * static_cast<int64_t>(sttsEntry.delta);
+    }
     return Status::OK;
 }
 
@@ -993,15 +999,30 @@ Status MPEG4SampleHelper::GetSampleDuration(uint32_t index, uint32_t &duration)
 
     int64_t temp = index;
     uint32_t sttsIndex = 0;
-    while (temp > 0 && sttsIndex < sttsEntry_.size()) {
+    while (sttsIndex < sttsEntry_.size() - 1 && temp >= static_cast<int64_t>(sttsEntry_[sttsIndex].count)) {
         temp -= sttsEntry_[sttsIndex].count;
         ++sttsIndex;
     }
-    if (temp > 0) {
+    if (sttsIndex >= sttsEntry_.size()) {
         return Status::ERROR_INVALID_PARAMETER;
     }
     duration = sttsEntry_[sttsIndex].delta;
     return Status::OK;
+}
+
+void MPEG4SampleHelper::SetTimeOffset(int64_t timeOffset)
+{
+    timeOffset_ = timeOffset;
+}
+
+void MPEG4SampleHelper::CalculateDtsShift()
+{
+    dtsShift_ = 0;
+    for (const auto& entry : cttsEntry_) {
+        if (entry.delta < 0) {
+            dtsShift_ = std::max(dtsShift_, static_cast<int64_t>(-entry.delta));
+        }
+    }
 }
 } // namespace MPEG4
 } // namespace Plugins

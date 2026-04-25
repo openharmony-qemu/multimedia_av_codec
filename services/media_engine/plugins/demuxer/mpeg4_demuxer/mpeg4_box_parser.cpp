@@ -1207,24 +1207,28 @@ Status MPEG4AtomParser::ParseMdhd(MPEG4Atom currentAtom, int32_t depth, ParseCon
         duration = GetU32Value(&headerInfo[durationOffset]);
     }
     lastTrack_->duration = duration;
-    if (!IsValidTrackIndex(mediaInfo_, lastTrack_->trackIndex)) {
-        MEDIA_LOG_E("Track index out of bounds: " PUBLIC_LOG_U32, lastTrack_->trackIndex);
-        return Status::ERROR_INVALID_DATA;
-    }
+    FALSE_RETURN_V_MSG_E(IsValidTrackIndex(mediaInfo_, lastTrack_->trackIndex), Status::ERROR_INVALID_DATA,
+        "Track index out of bounds: " PUBLIC_LOG_U32, lastTrack_->trackIndex);
     mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::MEDIA_TIME_SCALE>(static_cast<int32_t>(timeScale));
     //duration  4 bytes or 8 bytes
-    uint16_t languageValue;
     constexpr int32_t languageOffsetVersionOne = 32;
     constexpr int32_t languageOffsetVersionZero = 20;
-    if (version == 1) {
-        languageValue = GetU16Value(&headerInfo[languageOffsetVersionOne]);
-    } else {
-        languageValue = GetU16Value(&headerInfo[languageOffsetVersionZero]);
-    }
-
+    uint16_t languageValue = (version == 1) ? GetU16Value(&headerInfo[languageOffsetVersionOne])
+                                            : GetU16Value(&headerInfo[languageOffsetVersionZero]);
     std::string langString = ConvertLanguageCode(languageValue);
-    MEDIA_LOG_D("Language code: " PUBLIC_LOG_S, langString.c_str());
     mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::MEDIA_LANGUAGE>(langString);
+
+    int32_t fileTimeScale = 0;
+    if (mediaInfo_.general.GetData(Tag::MEDIA_TIME_SCALE, fileTimeScale) && fileTimeScale > 0 &&
+        lastTrack_->sampleHelper != nullptr) {
+        int64_t emptyDurationTrackTs = 0;
+        if (lastTrack_->elstInitEmptyEdit > 0) {
+            emptyDurationTrackTs = (lastTrack_->elstInitEmptyEdit * timeScale + fileTimeScale - 1) / fileTimeScale;
+        }
+        int64_t timeOffset = lastTrack_->elstShiftStartTime - emptyDurationTrackTs;
+        lastTrack_->sampleHelper->SetTimeOffset(timeOffset);
+        MEDIA_LOG_D("Set timeOffset: " PUBLIC_LOG_D64 " for track " PUBLIC_LOG_U32, timeOffset, lastTrack_->trackIndex);
+    }
     return ret;
 }
 

@@ -184,6 +184,7 @@ private:
     Status CheckCacheDataLimit(uint32_t trackId);
     void ParseHEVCMetadataInfo(const MPEG4AtomParser::Track& track, Meta &format);
     void ConvertCsdToAnnexb(const MPEG4AtomParser::Track& track, Meta& format, uint32_t trackIndex);
+    int SelectSeekTrack();
 };
 } // namespace MPEG4
 } // namespace Plugins
