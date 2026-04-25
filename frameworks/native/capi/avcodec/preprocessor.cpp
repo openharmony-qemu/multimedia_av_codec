@@ -18,6 +18,9 @@
 #include <cmath>
 #include <cstring>
 #include <limits>
+#include <regex>
+#include <string>
+#include <vector>
 #include "securec.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
@@ -25,9 +28,11 @@
 #include "meta/meta_key.h"
 #include "native_avcodec_base.h"
 #include "syspara/parameters.h"
+#include "v2_2/buffer_handle_meta_key_type.h"
 
 namespace {
 using namespace OHOS;
+namespace V2_2 = OHOS::HDI::Display::Graphic::Common::V2_2;
 
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "Preprocessor"};
 constexpr int32_t BUFFER_REQUEST_STRIDE_ALIGNMENT = 32;
@@ -72,6 +77,38 @@ bool IsGeometrySupported(OHOS::GraphicPixelFormat format, int32_t width, int32_t
         return false;
     }
     return !IsYuv420Format(format) || (width % 2 == 0 && height % 2 == 0);
+}
+
+std::string TransformRoiMetadata(const std::string &roi, double scaleX, double scaleY,
+                                 int32_t offsetTop, int32_t offsetLeft)
+{
+    static const std::regex ROI_PATTERN(R"((?:^|;)(-?\d+),(-?\d+)-(-?\d+),(-?\d+)(?:=([^;]*))?;)");
+    std::smatch match;
+    std::string temp = roi;
+    std::string result;
+    while (std::regex_search(temp, match, ROI_PATTERN)) {
+        int32_t top = std::stoi(match[1].str());
+        int32_t left = std::stoi(match[2].str());
+        int32_t bottom = std::stoi(match[3].str());
+        int32_t right = std::stoi(match[4].str());
+        int32_t newTop = static_cast<int32_t>(std::round(top * scaleY)) - offsetTop;
+        int32_t newLeft = static_cast<int32_t>(std::round(left * scaleX)) - offsetLeft;
+        int32_t newBottom = static_cast<int32_t>(std::round(bottom * scaleY)) - offsetTop;
+        int32_t newRight = static_cast<int32_t>(std::round(right * scaleX)) - offsetLeft;
+        if (!result.empty()) {
+            result += ";";
+        }
+        result += std::to_string(newTop) + "," + std::to_string(newLeft) + "-" +
+                  std::to_string(newBottom) + "," + std::to_string(newRight);
+        if (match[5].matched) {
+            result += "=" + match[5].str();
+        }
+        temp = match.suffix().str();
+    }
+    if (!result.empty()) {
+        result += ";";
+    }
+    return result;
 }
 } // namespace
 
@@ -274,20 +311,35 @@ int32_t Preprocessor::Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &ou
     if (IsCropEnabled()) {
         int32_t ret = Crop(input, output);
         if (ret == AVCS_ERR_OK) {
+            UpdateRoiMetadata(input, output, 1.0, 1.0, cropConfig_.top, cropConfig_.left);
             return ret;
         }
         AVCODEC_LOGW("Crop failed: %{public}d, fallback to copy", ret);
-        return Copy(input, output);
+        ret = Copy(input, output);
+        if (ret == AVCS_ERR_OK) {
+            UpdateRoiMetadata(input, output, 1.0, 1.0, 0, 0);
+        }
+        return ret;
     }
     if (IsDownsamplingEnabled()) {
         int32_t ret = Downsampling(input, output);
         if (ret == AVCS_ERR_OK) {
+            UpdateRoiMetadata(input, output, static_cast<double>(output->GetWidth()) / input->GetWidth(),
+                              static_cast<double>(output->GetHeight()) / input->GetHeight(), 0, 0);
             return ret;
         }
         AVCODEC_LOGW("Downsampling failed: %{public}d, fallback to copy", ret);
-        return Copy(input, output);
+        ret = Copy(input, output);
+        if (ret == AVCS_ERR_OK) {
+            UpdateRoiMetadata(input, output, 1.0, 1.0, 0, 0);
+        }
+        return ret;
     }
-    return Copy(input, output);
+    int32_t ret = Copy(input, output);
+    if (ret == AVCS_ERR_OK) {
+        UpdateRoiMetadata(input, output, 1.0, 1.0, 0, 0);
+    }
+    return ret;
 }
 
 bool Preprocessor::ShouldDropFrame(uint64_t pts)
@@ -392,6 +444,26 @@ int32_t Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &outpu
     int32_t ret = PreProcessing::CpuImageProcessor::Process(request);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Copy failed: %{public}d", ret);
     return AVCS_ERR_OK;
+}
+
+void Preprocessor::UpdateRoiMetadata(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output,
+                                     double scaleX, double scaleY, int32_t offsetTop, int32_t offsetLeft)
+{
+    CHECK_AND_RETURN_LOG(input != nullptr && output != nullptr,
+                         "Invalid buffer for roi metadata: input=%{public}p, output=%{public}p",
+                         input.GetRefPtr(), output.GetRefPtr());
+
+    std::vector<uint8_t> roiData;
+    if (input->GetMetadata(V2_2::ATTRKEY_ROI_METADATA, roiData) != GSERROR_OK || roiData.empty()) {
+        return;
+    }
+    auto nullPos = std::find(roiData.begin(), roiData.end(), '\0');
+    std::string roi(roiData.begin(), nullPos);
+    std::string transformed = TransformRoiMetadata(roi, scaleX, scaleY, offsetTop, offsetLeft);
+    std::vector<uint8_t> outputRoi(transformed.begin(), transformed.end());
+    outputRoi.push_back('\0');
+    GSError ret = output->SetMetadata(V2_2::ATTRKEY_ROI_METADATA, outputRoi);
+    CHECK_AND_RETURN_LOG(ret == GSERROR_OK, "Set roi metadata failed: %{public}d", ret);
 }
 
 bool Preprocessor::IsHevc10BitData(HEVCProfile profile)

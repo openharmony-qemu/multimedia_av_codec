@@ -382,6 +382,7 @@ ohos_shared_library("native_media_venc") {
 
   external_deps = [
     "c_utils:utils",
+    "drivers_interface_display:libdisplay_commontype_proxy_2.2",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
