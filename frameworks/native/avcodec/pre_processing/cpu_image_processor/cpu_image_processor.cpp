@@ -304,6 +304,8 @@ uint8_t *GetPixelAddress(BufferView &view, const Plane &plane, int32_t x, int32_
 
 int32_t CopyDownsamplePixel(const DownsamplePlaneInfo &info, int32_t dstX, int32_t dstY)
 {
+    CHECK_AND_RETURN_RET_LOG(info.dstVisibleWidth != 0, OHOS::MediaAVCodec::AVCS_ERR_INVALID_VAL,
+        "dstVisibleWidth is 0");
     int32_t srcX = MapDownsampleCoordinate(dstX, info.srcVisibleWidth, info.dstVisibleWidth);
     int32_t srcY = MapDownsampleCoordinate(dstY, info.srcVisibleHeight, info.dstVisibleHeight);
     const uint8_t *src = GetPixelAddress(*info.input, *info.srcPlane, srcX, srcY);
