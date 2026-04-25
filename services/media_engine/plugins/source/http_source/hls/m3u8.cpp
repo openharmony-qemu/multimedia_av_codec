@@ -1381,8 +1381,8 @@ void M3U8MasterPlaylist::ChooseStreamByStream(int32_t streamId)
         if (variant == nullptr) {
             continue;
         }
-        if (streamId == variant->streamId_) {
-            MEDIA_LOG_I("ChooseStreamToPlay type:" PUBLIC_LOG_D32 " type: 1 mimeType:  frameRate: " PUBLIC_LOG_U64
+        if (static_cast<uint32_t>(streamId) == variant->streamId_) {
+            MEDIA_LOG_I("ChooseStreamToPlay type:" PUBLIC_LOG_U32 " type: 1 mimeType:  frameRate: " PUBLIC_LOG_U64
                 " bitRate: " PUBLIC_LOG_U64 " hight: " PUBLIC_LOG_D32 " width:" PUBLIC_LOG_D32, variant->streamId_,
                 variant->frameRate_, variant->bandWidth_, variant->height_, variant->width_);
             defaultVariant_ = variant;

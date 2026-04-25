@@ -723,8 +723,8 @@ void HlsSegmentManager::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readD
         tsStorageInfo_[readTsIndex_].second == true) {
         uint64_t tsEndOffset = SpliceOffset(readTsIndex_, tsStorageInfo_[readTsIndex_].first);
         if (readOffset_ >= tsEndOffset) {
-            MEDIA_LOG_I("HLS read reach splice end, current: %{public}u, type: %{public}d",
-                readDataInfo.streamId_, type_);
+            MEDIA_LOG_I("HLS read reach splice end, current: %{public}u, type: %{public}d, readTsIndex_: %{public}u",
+                readDataInfo.streamId_, type_, readTsIndex_.load());
             isTsEnd_.store(true);
             notNeedReadBack_.store(true);
             if (playlistDownloader_->IsHlsFmp4()) {
@@ -1041,13 +1041,6 @@ void HlsSegmentManager::HandlePlayListChanged(const std::vector<PlayInfo>& playL
             MEDIA_LOG_I("HLS OnPlayListChanged isInterruptNeeded, type: %{public}d", type_);
             break;
         }
-        PlayInfo playerTmp = playList[i];
-        if (InfoIndexMap_.urlMap.find(playList[i].url_) == InfoIndexMap_.urlMap.end()) {
-            playerTmp.sumDuration_ = InfoIndexMap_.lastPlay.sumDuration_ +
-                static_cast<uint64_t>(playerTmp.duration_) * ONE_USSECONDS;
-            InfoIndexMap_.urlMap[playList[i].url_] = playerTmp;
-            InfoIndexMap_.lastPlay = playerTmp;
-        }
         auto fragment = playList[i];
         PlaylistBackup(fragment);
         if (isSelectingBitrate_.load() && fragment.sequence_ > currentSequence_) {
@@ -1061,6 +1054,13 @@ void HlsSegmentManager::HandlePlayListChanged(const std::vector<PlayInfo>& playL
             } else {
                 continue;
             }
+        }
+        PlayInfo playerTmp = playList[i];
+        if (InfoIndexMap_.urlMap.find(playList[i].url_) == InfoIndexMap_.urlMap.end()) {
+            playerTmp.sumDuration_ = InfoIndexMap_.lastPlay.sumDuration_ +
+                static_cast<uint64_t>(playerTmp.duration_) * ONE_USSECONDS;
+            InfoIndexMap_.urlMap[playList[i].url_] = playerTmp;
+            InfoIndexMap_.lastPlay = playerTmp;
         }
         if (!fragmentDownloadStart[fragment.url_] && !fragmentPushed[fragment.url_]) {
             playList_->Push(fragment);
@@ -1481,7 +1481,7 @@ bool HlsSegmentManager::SelectBitRate(uint32_t bitRate)
         std::lock_guard<std::mutex> seekCandidatesLock(seekCandidatesMutex_);
         seekCandidates_.clear();
     }
-    
+    MEDIA_LOG_D("SelectBitRate, writeTsIndex_: " PUBLIC_LOG_U32, writeTsIndex_);
     // switch to des bitrate
     playlistDownloader_->SelectBitRate(bitRate);
     playlistDownloader_->Start();
