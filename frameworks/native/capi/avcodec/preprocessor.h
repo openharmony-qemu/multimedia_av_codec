@@ -19,7 +19,7 @@
 #include <memory>
 #include <string>
 #include "avcodec_info.h"
-#include "fast_kits_interface.h"
+#include "cpu_image_processor.h"
 #include "format.h"
 #include "frame_drop_filter.h"
 #include "surface.h"
@@ -135,16 +135,15 @@ private:
     const CropConfig &GetCropConfig() const;
     const DownsamplingConfig &GetDownsamplingConfig() const;
     const DropFrameConfig &GetDropFrameConfig() const;
-    void Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output);
-    void Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output);
-    void Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output);
+    int32_t Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output);
+    int32_t Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output);
+    int32_t Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output);
 
     bool IsHevc10BitData(HEVCProfile profile);
     GraphicPixelFormat ConvertVideoPixelFormat2GraphicPixelFormat(VideoPixelFormat pixelFormat, int32_t profile);
     void UpdateConfiguredValues(const Media::Format &format, EncoderConfig &config);
     bool GetEncoderRange(const Media::Format &format, Range &encWidth, Range &encHeight);
-    bool CheckOrReallocOutSurfaceBuffer(int32_t targetWidth, int32_t targetHeight,
-                                        int32_t targetStride, sptr<SurfaceBuffer> &output);
+    bool CheckOrReallocOutSurfaceBuffer(int32_t targetWidth, int32_t targetHeight, sptr<SurfaceBuffer> &output);
 
     CropConfig cropConfig_;
     DownsamplingConfig downsamplingConfig_;
@@ -155,7 +154,6 @@ private:
     int32_t dAlgoWidthMax_{0};
     int32_t dAlgoHeightMax_{0};
     std::string mime_;
-    PreProcessing::FastKitsInterface &fastKitsInterface_ = PreProcessing::FastKitsInterface::GetInstance();
     PreProcessing::FrameDropFilter dropFilter_;
     std::function<void(sptr<SurfaceBuffer>, sptr<SurfaceBuffer>)> onOutSurfaceBufferReallocCb_{};
 };

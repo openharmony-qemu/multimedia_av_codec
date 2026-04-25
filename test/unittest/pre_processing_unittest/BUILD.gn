@@ -19,6 +19,7 @@ module_output_path = "av_codec/AVCodec_Video/unittest"
 group("pre_processing_unittest") {
   testonly = true
   deps = [
+    ":cpu_image_processor_unittest",
     ":fast_kits_interface_unittest",
     ":frame_drop_unittest",
   ]
@@ -28,6 +29,7 @@ config("pre_processing_unittest_config") {
   include_dirs = [
     "./",
     "$av_codec_root_dir/frameworks/native/avcodec/pre_processing",
+    "$av_codec_root_dir/frameworks/native/avcodec/pre_processing/cpu_image_processor",
     "$av_codec_root_dir/frameworks/native/avcodec/pre_processing/fast_kits_interface",
     "$av_codec_root_dir/frameworks/native/avcodec/pre_processing/frame_drop",
     "$av_codec_root_dir/services/dfx/include",
@@ -44,6 +46,36 @@ config("pre_processing_unittest_config") {
   ]
   cflags_cc = cflags
   defines = av_codec_defines
+}
+
+ohos_unittest("cpu_image_processor_unittest") {
+  sanitize = av_codec_test_sanitize
+  testonly = true
+  module_out_path = module_output_path
+
+  configs = [ ":pre_processing_unittest_config" ]
+
+  sources = [ "cpu_image_processor_unittest.cpp" ]
+
+  deps = [
+    "$av_codec_root_dir/frameworks/native/avcodec/pre_processing/cpu_image_processor:cpu_image_processor",
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gmock_main",
+    "graphic_surface:surface",
+    "hilog:libhilog",
+    "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
+  ]
+
+  resource_config_file =
+      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
+
+  subsystem_name = "multimedia"
+  part_name = "av_codec"
 }
 
 ohos_unittest("frame_drop_unittest") {

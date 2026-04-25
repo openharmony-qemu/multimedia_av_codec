@@ -26,11 +26,50 @@
 #include "native_avcodec_base.h"
 
 namespace {
+using namespace OHOS;
+
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "Preprocessor"};
+constexpr int32_t BUFFER_REQUEST_STRIDE_ALIGNMENT = 32;
 
 double RoundToTwoDecimals(double value)
 {
     return std::round(value * 100.0) / 100.0; // 100.0: Round to 2 decimal digits using round half up
+}
+
+bool IsYuv420Format(OHOS::GraphicPixelFormat format)
+{
+    return format == GRAPHIC_PIXEL_FMT_YCBCR_420_SP || format == GRAPHIC_PIXEL_FMT_YCRCB_420_SP ||
+           format == GRAPHIC_PIXEL_FMT_YCBCR_P010 || format == GRAPHIC_PIXEL_FMT_YCRCB_P010 ||
+           format == GRAPHIC_PIXEL_FMT_YCBCR_420_P;
+}
+
+int32_t GetMinRowBytes(OHOS::GraphicPixelFormat format, int32_t width)
+{
+    switch (format) {
+        case GRAPHIC_PIXEL_FMT_RGBA_8888:
+        case GRAPHIC_PIXEL_FMT_RGBA_1010102:
+            return width * 4; // 4: bytes per packed RGBA pixel
+        case GRAPHIC_PIXEL_FMT_YCBCR_P010:
+        case GRAPHIC_PIXEL_FMT_YCRCB_P010:
+            return width * 2; // 2: 10-bit samples stored in 16-bit containers
+        case GRAPHIC_PIXEL_FMT_YCBCR_420_SP:
+        case GRAPHIC_PIXEL_FMT_YCRCB_420_SP:
+        case GRAPHIC_PIXEL_FMT_YCBCR_420_P:
+            return width;
+        default:
+            return -1;
+    }
+}
+
+bool IsGeometrySupported(OHOS::GraphicPixelFormat format, int32_t width, int32_t height)
+{
+    if (width <= 0 || height <= 0) {
+        return false;
+    }
+    if (!OHOS::MediaAVCodec::PreProcessing::CpuImageProcessor::IsFormatSupported(static_cast<int32_t>(format))) {
+        return false;
+    }
+    return !IsYuv420Format(format) || (width % 2 == 0 && height % 2 == 0);
 }
 } // namespace
 
@@ -38,12 +77,10 @@ namespace OHOS {
 namespace MediaAVCodec {
 Preprocessor::Preprocessor(const std::string &mime) : mime_(mime)
 {
-    fastKitsInterface_.Retain();
 }
 
 Preprocessor::~Preprocessor()
 {
-    fastKitsInterface_.Release();
 }
 
 int32_t Preprocessor::Configure(const Media::Format &format)
@@ -75,11 +112,6 @@ int32_t Preprocessor::Configure(const Media::Format &format)
     }
     if (dropParams.result != ConfigResult::NOT_SET) {
         dropFrameConfig_ = DropFrameConfig(dropParams);
-    }
-    if (cropConfig_.enabled || downsamplingConfig_.enabled) {
-        int32_t initRet = fastKitsInterface_.Init(static_cast<uint32_t>(encoderConfig_.pixelFormat));
-        CHECK_AND_RETURN_RET_LOG(initRet == AVCS_ERR_OK, initRet, "Failed to init FastKitsInterface: %{public}d",
-                                 initRet);
     }
     if (dropFrameConfig_.enabled) {
         dropFilter_.Configure(dropFrameConfig_.targetFrameRate, encoderConfig_.frameRate);
@@ -215,21 +247,19 @@ int32_t Preprocessor::SetParameter(const Media::Format &format)
 
 int32_t Preprocessor::Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output, uint64_t pts)
 {
-    CHECK_AND_RETURN_RET_LOG(input && output, AVCS_ERR_INVALID_VAL,
+    CHECK_AND_RETURN_RET_LOG(input, AVCS_ERR_INVALID_VAL,
                              "Invalid buffer: input=%{public}p, output=%{public}p", input.GetRefPtr(),
                              output.GetRefPtr());
-    CHECK_AND_RETURN_RET_LOG(input->GetFormat() == output->GetFormat(), AVCS_ERR_INVALID_VAL,
+    CHECK_AND_RETURN_RET_LOG(!output || input->GetFormat() == output->GetFormat(), AVCS_ERR_INVALID_VAL,
                              "Format mismatch: input=%{public}d, output=%{public}d", input->GetFormat(),
-                             output->GetFormat());
+                             output ? output->GetFormat() : -1);
     if (IsCropEnabled()) {
-        Crop(input, output);
-    } else if (IsDownsamplingEnabled()) {
-        Downsampling(input, output);
-    } else {
-        Copy(input, output);
+        return Crop(input, output);
     }
-
-    return AVCS_ERR_OK;
+    if (IsDownsamplingEnabled()) {
+        return Downsampling(input, output);
+    }
+    return Copy(input, output);
 }
 
 bool Preprocessor::ShouldDropFrame(uint64_t pts)
@@ -278,43 +308,50 @@ const Preprocessor::DropFrameConfig &Preprocessor::GetDropFrameConfig() const
     return dropFrameConfig_;
 }
 
-void Preprocessor::Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
+int32_t Preprocessor::Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
 {
-    if (!CheckOrReallocOutSurfaceBuffer(cropConfig_.width, cropConfig_.height, input->GetStride(), output)) {
-        AVCODEC_LOGE("Realloc buffer failed, buffer seq: %{public}d", output->GetSeqNum());
-        return;
+    if (!CheckOrReallocOutSurfaceBuffer(cropConfig_.width, cropConfig_.height, output)) {
+        AVCODEC_LOGE("Realloc buffer failed");
+        return AVCS_ERR_NO_MEMORY;
     }
-    PreProcessing::CropRect rect{cropConfig_.top, cropConfig_.left, cropConfig_.bottom, cropConfig_.right};
-    int32_t ret = fastKitsInterface_.Crop(input, output, rect);
-    CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Crop failed: %{public}d", ret);
+    PreProcessing::CpuImageProcessRequest request;
+    request.input = input;
+    request.output = output;
+    request.operation = PreProcessing::CpuImageOperation::CROP;
+    request.crop = {cropConfig_.left, cropConfig_.top, cropConfig_.width, cropConfig_.height};
+    int32_t ret = PreProcessing::CpuImageProcessor::Process(request);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Crop failed: %{public}d", ret);
+    return AVCS_ERR_OK;
 }
 
-void Preprocessor::Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
+int32_t Preprocessor::Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
 {
-    if (!CheckOrReallocOutSurfaceBuffer(downsamplingConfig_.width, downsamplingConfig_.height,
-                                        input->GetStride(), output)) {
-        AVCODEC_LOGE("Realloc buffer failed, buffer seq: %{public}d", output->GetSeqNum());
-        return;
+    if (!CheckOrReallocOutSurfaceBuffer(downsamplingConfig_.width, downsamplingConfig_.height, output)) {
+        AVCODEC_LOGE("Realloc buffer failed");
+        return AVCS_ERR_NO_MEMORY;
     }
-    int32_t ret = fastKitsInterface_.DownSample(input, output);
-    CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Downsampling failed: %{public}d", ret);
+    PreProcessing::CpuImageProcessRequest request;
+    request.input = input;
+    request.output = output;
+    request.operation = PreProcessing::CpuImageOperation::DOWNSAMPLE;
+    int32_t ret = PreProcessing::CpuImageProcessor::Process(request);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Downsampling failed: %{public}d", ret);
+    return AVCS_ERR_OK;
 }
 
-void Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
+int32_t Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
 {
-    if (!CheckOrReallocOutSurfaceBuffer(encoderConfig_.width, encoderConfig_.height, input->GetStride(), output)) {
-        AVCODEC_LOGE("Realloc buffer failed, buffer seq: %{public}d", output->GetSeqNum());
-        return;
+    if (!CheckOrReallocOutSurfaceBuffer(encoderConfig_.width, encoderConfig_.height, output)) {
+        AVCODEC_LOGE("Realloc buffer failed");
+        return AVCS_ERR_NO_MEMORY;
     }
-    auto *src = static_cast<uint8_t *>(input->GetVirAddr());
-    auto *dst = static_cast<uint8_t *>(output->GetVirAddr());
-    CHECK_AND_RETURN_LOG(src != nullptr && dst != nullptr,
-                         "Invalid vir addr: input=%{public}p, output=%{public}p", src, dst);
-    EXPECT_AND_LOGW(input->GetFormat() != output->GetFormat(),
-                    "SurfaceBuffer format mismatch, input=%{public}d, output=%{public}d",
-                    input->GetFormat(), output->GetFormat());
-
-    (void)memcpy_s(dst, input->GetSize(), src, output->GetSize());
+    PreProcessing::CpuImageProcessRequest request;
+    request.input = input;
+    request.output = output;
+    request.operation = PreProcessing::CpuImageOperation::COPY;
+    int32_t ret = PreProcessing::CpuImageProcessor::Process(request);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Copy failed: %{public}d", ret);
+    return AVCS_ERR_OK;
 }
 
 bool Preprocessor::IsHevc10BitData(HEVCProfile profile)
@@ -393,26 +430,41 @@ bool Preprocessor::GetEncoderRange(const Media::Format &format, Range &encWidth,
     return true;
 }
 
-bool Preprocessor::CheckOrReallocOutSurfaceBuffer(int32_t targetWidth, int32_t targetHeight,
-                                                  int32_t targetStride, sptr<SurfaceBuffer> &output)
+bool Preprocessor::CheckOrReallocOutSurfaceBuffer(int32_t targetWidth, int32_t targetHeight, sptr<SurfaceBuffer> &output)
 {
-    if (output->GetWidth() != targetWidth || output->GetHeight() != targetHeight ||
-        output->GetFormat() != static_cast<int32_t>(encoderConfig_.pixelFormat ||
-        output->GetStride() != targetStride)) {
+    if (!IsGeometrySupported(encoderConfig_.pixelFormat, targetWidth, targetHeight)) {
+        AVCODEC_LOGE("Unsupported target geometry: %{public}dx%{public}d format=%{public}d",
+                     targetWidth, targetHeight, encoderConfig_.pixelFormat);
+        return false;
+    }
+    int32_t minStride = GetMinRowBytes(encoderConfig_.pixelFormat, targetWidth);
+    if (minStride <= 0) {
+        return false;
+    }
+    bool needRealloc = !output || output->GetWidth() != targetWidth || output->GetHeight() != targetHeight ||
+                       output->GetFormat() != static_cast<int32_t>(encoderConfig_.pixelFormat) ||
+                       output->GetVirAddr() == nullptr || output->GetStride() < minStride;
+    if (needRealloc) {
         sptr<SurfaceBuffer> newBuffer = SurfaceBuffer::Create();
+        if (!newBuffer) {
+            return false;
+        }
         BufferRequestConfig config = {
             .width = targetWidth,
             .height = targetHeight,
-            .strideAlignment = targetStride,
+            .strideAlignment = BUFFER_REQUEST_STRIDE_ALIGNMENT,
             .format = static_cast<int32_t>(encoderConfig_.pixelFormat),
-            .usage = output->GetUsage(),
+            .usage = output ? output->GetUsage() : (BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE),
             .timeout = 0,
         };
         auto ret = newBuffer->Alloc(config);
         if (ret != GSERROR_OK) {
+            AVCODEC_LOGE("Alloc output buffer failed: %{public}d", ret);
             return false;
         }
-        onOutSurfaceBufferReallocCb_(output, newBuffer);
+        if (output && onOutSurfaceBufferReallocCb_) {
+            onOutSurfaceBufferReallocCb_(output, newBuffer);
+        }
         output = newBuffer;
     }
     return true;
