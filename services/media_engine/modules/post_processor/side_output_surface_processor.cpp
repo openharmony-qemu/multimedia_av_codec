@@ -329,9 +329,6 @@ void SideOutputSurfaceProcessor::OnConsumerBufferAvailable()
     if (bufferInfo.fence != nullptr) {
         bufferInfo.fence->Wait(WAIT_FOR_EVER);
     }
-    MEDIA_LOG_I("consumerSurface->AcquireBuffer id: %{public}u fd: %{public}d %{public}dx%{public}d",
-        bufferInfo.buffer->GetSeqNum(), bufferInfo.buffer->GetFileDescriptor(),
-        bufferInfo.buffer->GetWidth(), bufferInfo.buffer->GetHeight());
 
     PushBufferToConsumer(bufferInfo);
 }
