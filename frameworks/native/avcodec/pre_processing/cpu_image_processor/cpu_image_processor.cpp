@@ -74,6 +74,18 @@ struct CopyRegion {
     int32_t height{0};
 };
 
+struct DownsamplePlaneInfo {
+    const BufferView *input{nullptr};
+    BufferView *output{nullptr};
+    const Plane *srcPlane{nullptr};
+    const Plane *dstPlane{nullptr};
+    size_t planeIndex{0};
+    int32_t srcVisibleWidth{0};
+    int32_t srcVisibleHeight{0};
+    int32_t dstVisibleWidth{0};
+    int32_t dstVisibleHeight{0};
+};
+
 bool IsYuv420(int32_t format)
 {
     return format == GRAPHIC_PIXEL_FMT_YCBCR_420_SP || format == GRAPHIC_PIXEL_FMT_YCRCB_420_SP ||
@@ -255,37 +267,89 @@ int32_t CopyPlaneRows(const BufferView &input, const BufferView &output, const C
     return OHOS::MediaAVCodec::AVCS_ERR_OK;
 }
 
-int32_t DownsamplePlanes(const BufferView &input, const BufferView &output)
+bool InitDownsamplePlaneInfo(const BufferView &input, BufferView &output, size_t planeIndex,
+                             DownsamplePlaneInfo &info)
+{
+    const Plane &srcPlane = input.planes[planeIndex];
+    const Plane &dstPlane = output.planes[planeIndex];
+    info = {&input, &output, &srcPlane, &dstPlane, planeIndex,
+            input.width / srcPlane.xSubsample, input.height / srcPlane.ySubsample,
+            output.width / dstPlane.xSubsample, output.height / dstPlane.ySubsample};
+    if (info.dstVisibleWidth <= 0 || info.dstVisibleHeight <= 0 || info.dstVisibleWidth > dstPlane.width ||
+        info.dstVisibleHeight > dstPlane.height) {
+        AVCODEC_LOGE("Invalid downsample plane size: plane=%{public}zu, dstVisible=%{public}dx%{public}d, "
+                     "dstPlane=%{public}dx%{public}d",
+                     planeIndex, info.dstVisibleWidth, info.dstVisibleHeight, dstPlane.width, dstPlane.height);
+        return false;
+    }
+    return true;
+}
+
+int32_t MapDownsampleCoordinate(int32_t dst, int32_t srcVisible, int32_t dstVisible)
+{
+    return static_cast<int32_t>((static_cast<int64_t>(dst) * static_cast<int64_t>(srcVisible)) / dstVisible);
+}
+
+const uint8_t *GetPixelAddress(const BufferView &view, const Plane &plane, int32_t x, int32_t y)
+{
+    return view.addr + plane.offset + static_cast<size_t>(y) * plane.stride +
+           static_cast<size_t>(x) * plane.bytesPerPixel;
+}
+
+uint8_t *GetPixelAddress(BufferView &view, const Plane &plane, int32_t x, int32_t y)
+{
+    return view.addr + plane.offset + static_cast<size_t>(y) * plane.stride +
+           static_cast<size_t>(x) * plane.bytesPerPixel;
+}
+
+int32_t CopyDownsamplePixel(const DownsamplePlaneInfo &info, int32_t dstX, int32_t dstY)
+{
+    int32_t srcX = MapDownsampleCoordinate(dstX, info.srcVisibleWidth, info.dstVisibleWidth);
+    int32_t srcY = MapDownsampleCoordinate(dstY, info.srcVisibleHeight, info.dstVisibleHeight);
+    const uint8_t *src = GetPixelAddress(*info.input, *info.srcPlane, srcX, srcY);
+    uint8_t *dst = GetPixelAddress(*info.output, *info.dstPlane, dstX, dstY);
+    auto ret = memcpy_s(dst, static_cast<size_t>(info.dstPlane->bytesPerPixel),
+                        src, static_cast<size_t>(info.dstPlane->bytesPerPixel));
+    if (ret != EOK) {
+        AVCODEC_LOGE("Downsample pixel copy failed: plane=%{public}zu, x=%{public}d, y=%{public}d, ret=%{public}d",
+                     info.planeIndex, dstX, dstY, ret);
+        return OHOS::MediaAVCodec::AVCS_ERR_INVALID_VAL;
+    }
+    return OHOS::MediaAVCodec::AVCS_ERR_OK;
+}
+
+int32_t DownsamplePlaneRow(const DownsamplePlaneInfo &info, int32_t dstY)
+{
+    for (int32_t dstX = 0; dstX < info.dstVisibleWidth; ++dstX) {
+        int32_t ret = CopyDownsamplePixel(info, dstX, dstY);
+        if (ret != OHOS::MediaAVCodec::AVCS_ERR_OK) {
+            return ret;
+        }
+    }
+    return OHOS::MediaAVCodec::AVCS_ERR_OK;
+}
+
+int32_t DownsamplePlane(const DownsamplePlaneInfo &info)
+{
+    for (int32_t dstY = 0; dstY < info.dstVisibleHeight; ++dstY) {
+        int32_t ret = DownsamplePlaneRow(info, dstY);
+        if (ret != OHOS::MediaAVCodec::AVCS_ERR_OK) {
+            return ret;
+        }
+    }
+    return OHOS::MediaAVCodec::AVCS_ERR_OK;
+}
+
+int32_t DownsamplePlanes(const BufferView &input, BufferView &output)
 {
     for (size_t i = 0; i < input.planeCount; ++i) {
-        const Plane &srcPlane = input.planes[i];
-        const Plane &dstPlane = output.planes[i];
-        int32_t srcVisibleWidth = input.width / srcPlane.xSubsample;
-        int32_t srcVisibleHeight = input.height / srcPlane.ySubsample;
-        int32_t dstVisibleWidth = output.width / dstPlane.xSubsample;
-        int32_t dstVisibleHeight = output.height / dstPlane.ySubsample;
-        if (dstVisibleWidth <= 0 || dstVisibleHeight <= 0 || dstVisibleWidth > dstPlane.width ||
-            dstVisibleHeight > dstPlane.height) {
+        DownsamplePlaneInfo info;
+        if (!InitDownsamplePlaneInfo(input, output, i, info)) {
             return OHOS::MediaAVCodec::AVCS_ERR_INVALID_VAL;
         }
-        for (int32_t dstY = 0; dstY < dstVisibleHeight; ++dstY) {
-            int32_t srcY = static_cast<int32_t>(
-                (static_cast<int64_t>(dstY) * static_cast<int64_t>(srcVisibleHeight)) / dstVisibleHeight);
-            for (int32_t dstX = 0; dstX < dstVisibleWidth; ++dstX) {
-                int32_t srcX = static_cast<int32_t>(
-                    (static_cast<int64_t>(dstX) * static_cast<int64_t>(srcVisibleWidth)) / dstVisibleWidth);
-                const uint8_t *src = input.addr + srcPlane.offset + static_cast<size_t>(srcY) * srcPlane.stride +
-                                     static_cast<size_t>(srcX) * srcPlane.bytesPerPixel;
-                uint8_t *dst = output.addr + dstPlane.offset + static_cast<size_t>(dstY) * dstPlane.stride +
-                               static_cast<size_t>(dstX) * dstPlane.bytesPerPixel;
-                auto ret = memcpy_s(dst, static_cast<size_t>(dstPlane.bytesPerPixel),
-                                    src, static_cast<size_t>(dstPlane.bytesPerPixel));
-                if (ret != EOK) {
-                    AVCODEC_LOGE("Downsample pixel copy failed: plane=%{public}zu, x=%{public}d, y=%{public}d, "
-                                 "ret=%{public}d", i, dstX, dstY, ret);
-                    return OHOS::MediaAVCodec::AVCS_ERR_INVALID_VAL;
-                }
-            }
+        int32_t ret = DownsamplePlane(info);
+        if (ret != OHOS::MediaAVCodec::AVCS_ERR_OK) {
+            return ret;
         }
     }
     return OHOS::MediaAVCodec::AVCS_ERR_OK;
