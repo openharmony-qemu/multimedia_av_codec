@@ -64,7 +64,7 @@ public:
 
     void Retain();
     void Release();
-    int32_t Init(uint32_t format, FastResizeAlgoType algo = FastResizeAlgoType::HARDWARE);
+    int32_t Init(uint32_t format, FastResizeAlgoType algo = FastResizeAlgoType::BICUBIC);
     bool IsLoaded() const;
 
     int32_t Crop(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output, const CropRect &rect);

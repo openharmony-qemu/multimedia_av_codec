@@ -139,10 +139,6 @@ private:
     void Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output);
     void Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output);
 
-#ifdef BUILD_ENG_VERSION
-    void DumpSurfaceBuffer(const sptr<SurfaceBuffer> &buffer, const std::string &prefix, uint64_t pts) const;
-#endif
-
     bool IsHevc10BitData(HEVCProfile profile);
     GraphicPixelFormat ConvertVideoPixelFormat2GraphicPixelFormat(VideoPixelFormat pixelFormat, int32_t profile);
     void UpdateConfiguredValues(const Media::Format &format, EncoderConfig &config);

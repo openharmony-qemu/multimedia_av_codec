@@ -17,6 +17,13 @@
 #include "shared_surface_manager.h"
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
+#ifdef BUILD_ENG_VERSION
+#include <fstream>
+#include <sys/stat.h>
+#include "parameter.h"
+#include "parameters.h"
+#include "securec.h"
+#endif
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "PreprocessorManager"};
@@ -35,8 +42,58 @@ public:
 private:
     std::weak_ptr<OHOS::MediaAVCodec::PreprocessorManager> mgr_;
 };
+
+#ifdef BUILD_ENG_VERSION
+constexpr char DUMP_PATH[] = "/data/misc/preprocessordump";
+
+bool IsDumpEnabled()
+{
+    return OHOS::system::GetBoolParameter("preprocessor.dump", false);
 }
 
+void EnsureDumpDir()
+{
+    (void)mkdir(DUMP_PATH, S_IRWXU | S_IRWXG | S_IRWXO);
+}
+
+void DumpSurfaceBuffer(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer, const std::string &encoderId,
+                       const std::string &prefix, uint64_t pts)
+{
+    if (buffer == nullptr) {
+        return;
+    }
+    auto *va = static_cast<const char *>(buffer->GetVirAddr());
+    if (va == nullptr || buffer->GetSize() == 0) {
+        return;
+    }
+    EnsureDumpDir();
+    int32_t w = buffer->GetWidth();
+    int32_t h = buffer->GetHeight();
+    int32_t fmt = buffer->GetFormat();
+    char name[256];
+    int ret = sprintf_s(name, sizeof(name), "%s/%s_%s_%dx%d_fmt%d_pts%" PRIu64 ".bin",
+                        DUMP_PATH, encoderId.c_str(), prefix.c_str(), w, h, fmt, pts);
+    if (ret > 0) {
+        std::ofstream ofs(name, std::ios::binary | std::ios::app);
+        if (ofs.is_open()) {
+            ofs.write(va, buffer->GetSize());
+        }
+    }
+}
+
+void DumpBuffers(const OHOS::sptr<OHOS::SurfaceBuffer> &input, const OHOS::sptr<OHOS::SurfaceBuffer> &output,
+                 const std::string &encoderId, uint64_t pts)
+{
+    if (IsDumpEnabled()) {
+        DumpSurfaceBuffer(input, encoderId, "input", pts);
+        DumpSurfaceBuffer(output, encoderId, "output", pts);
+    }
+}
+#else
+void DumpBuffers(const OHOS::sptr<OHOS::SurfaceBuffer> &, const OHOS::sptr<OHOS::SurfaceBuffer> &,
+                 const std::string &, uint64_t) {}
+#endif
+}
 namespace OHOS {
 namespace MediaAVCodec {
 
@@ -367,7 +424,6 @@ void PreprocessorManager::EncoderInfo::EncoderThreadLoop()
     std::string threadName = std::string("OS_Preproc_") + encoderId_ + "_Loop";
     pthread_setname_np(pthread_self(), threadName.c_str());
     AVCODEC_LOGI("EncoderThreadLoop started: %{public}s", encoderId_.data());
-
     while (isRunning_) {
         std::shared_ptr<SurfaceBufferWrapper> inputBuffer;
         std::shared_ptr<SurfaceBufferWrapper> outputBuffer;
@@ -386,7 +442,7 @@ void PreprocessorManager::EncoderInfo::EncoderThreadLoop()
             }
             continue;
         }
-        ProcessFrame(inputBuffer, outputBuffer);
+        DumpBuffers(inputBuffer->buffer, outputBuffer->buffer, encoderId_, inputBuffer->timestamp);
     }
     AVCODEC_LOGI("EncoderThreadLoop exited: %{public}s", encoderId_.data());
 }

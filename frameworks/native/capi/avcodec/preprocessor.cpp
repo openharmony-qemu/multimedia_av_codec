@@ -25,13 +25,8 @@
 #include "native_avcodec_base.h"
 #include "securec.h"
 
-#ifdef BUILD_ENG_VERSION
-#include <fstream>
-#include <sys/stat.h>
-#include "parameter.h"
-#include "parameters.h"
-#endif
-
+namespace OHOS {
+namespace MediaAVCodec {
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "Preprocessor"};
 
@@ -40,23 +35,8 @@ double RoundToTwoDecimals(double value)
     return std::round(value * 100.0) / 100.0; // 100.0: Round to 2 decimal digits using round half up
 }
 
-#ifdef BUILD_ENG_VERSION
-constexpr char DUMP_PATH[] = "/data/misc/preprocessordump";
-
-bool IsDumpEnabled()
-{
-    return OHOS::system::GetBoolParameter("preprocessor.dump", false);
-}
-
-void EnsureDumpDir()
-{
-    (void)mkdir(DUMP_PATH, S_IRWXU | S_IRWXG | S_IRWXO);
-}
-#endif
 } // namespace
 
-namespace OHOS {
-namespace MediaAVCodec {
 Preprocessor::Preprocessor(const std::string &mime) : mime_(mime)
 {
     fastKitsInterface_.Retain();
@@ -253,13 +233,6 @@ int32_t Preprocessor::Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &ou
     } else {
         Copy(input, output);
     }
-
-#ifdef BUILD_ENG_VERSION
-    if (IsDumpEnabled()) {
-        DumpSurfaceBuffer(input, "input", pts);
-        DumpSurfaceBuffer(output, "output", pts);
-    }
-#endif
 
     return AVCS_ERR_OK;
 }
@@ -517,30 +490,5 @@ int32_t Preprocessor::GetDownsamplingHeight() const
     return downsamplingConfig_.height;
 }
 
-#ifdef BUILD_ENG_VERSION
-void Preprocessor::DumpSurfaceBuffer(const sptr<SurfaceBuffer> &buffer, const std::string &prefix, uint64_t pts) const
-{
-    if (buffer == nullptr) {
-        return;
-    }
-    auto *va = static_cast<const char *>(buffer->GetVirAddr());
-    if (va == nullptr || buffer->GetSize() == 0) {
-        return;
-    }
-    EnsureDumpDir();
-    int32_t w = buffer->GetWidth();
-    int32_t h = buffer->GetHeight();
-    int32_t fmt = buffer->GetFormat();
-    char name[256];
-    int ret = sprintf_s(name, sizeof(name), "%s/%s_%dx%d_fmt%d_pts%" PRIu64 ".bin", DUMP_PATH, prefix.c_str(), w, h,
-                        fmt, pts);
-    if (ret > 0) {
-        std::ofstream ofs(name, std::ios::binary | std::ios::app);
-        if (ofs.is_open()) {
-            ofs.write(va, buffer->GetSize());
-        }
-    }
-}
-#endif
 } // namespace MediaAVCodec
 } // namespace OHOS
