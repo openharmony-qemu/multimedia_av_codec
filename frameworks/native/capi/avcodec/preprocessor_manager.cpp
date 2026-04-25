@@ -442,6 +442,7 @@ void PreprocessorManager::EncoderInfo::EncoderThreadLoop()
             }
             continue;
         }
+        ProcessFrame(inputBuffer, outputBuffer);
         DumpBuffers(inputBuffer->buffer, outputBuffer->buffer, encoderId_, inputBuffer->timestamp);
     }
     AVCODEC_LOGI("EncoderThreadLoop exited: %{public}s", encoderId_.data());
