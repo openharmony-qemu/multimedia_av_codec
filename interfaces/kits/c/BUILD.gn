@@ -400,6 +400,11 @@ ohos_shared_library("native_media_venc") {
     "$av_codec_root_dir/frameworks/native/avcodec/pre_processing/frame_drop",
   ]
 
+  defines = []
+  if (build_variant != "user") {
+    defines += [ "BUILD_ENG_VERSION" ]
+  }
+
   deps = [
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
     "$av_codec_root_dir/interfaces/kits/c:avcodec_hiappevent",
@@ -413,6 +418,8 @@ ohos_shared_library("native_media_venc") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
+    "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",

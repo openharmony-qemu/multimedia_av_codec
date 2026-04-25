@@ -18,13 +18,15 @@
 #include <cmath>
 #include <cstring>
 #include <limits>
-#include "securec.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "avcodeclist_impl.h"
 #include "meta/meta_key.h"
 #include "native_avcodec_base.h"
+#include "securec.h"
 
+namespace OHOS {
+namespace MediaAVCodec {
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "Preprocessor"};
 
@@ -32,10 +34,9 @@ double RoundToTwoDecimals(double value)
 {
     return std::round(value * 100.0) / 100.0; // 100.0: Round to 2 decimal digits using round half up
 }
+
 } // namespace
 
-namespace OHOS {
-namespace MediaAVCodec {
 Preprocessor::Preprocessor(const std::string &mime) : mime_(mime)
 {
     fastKitsInterface_.Retain();
@@ -104,12 +105,12 @@ int32_t Preprocessor::ValidateCrop(const Media::Format &format, CropParams &para
     bool hasAny = hasLeft || hasRight || hasTop || hasBottom;
     bool hasAll = hasLeft && hasRight && hasTop && hasBottom;
 
-    if (!hasAny) {              // If none of the 4 values (left, right, top and bottom) is configured,
-        return AVCS_ERR_OK;     // keep current status.
+    if (!hasAny) {          // If none of the 4 values (left, right, top and bottom) is configured,
+        return AVCS_ERR_OK; // keep current status.
     }
 
-    if (hasAny && !hasAll) {            // At least one of the 4 values is not configured,
-        return AVCS_ERR_INVALID_VAL;    // it is not allowed.
+    if (hasAny && !hasAll) {         // At least one of the 4 values is not configured,
+        return AVCS_ERR_INVALID_VAL; // it is not allowed.
     }
 
     // left, right, top and bottom are all configured
@@ -171,7 +172,11 @@ int32_t Preprocessor::ValidateDownsampling(const Media::Format &format, Downsamp
     if (!(minWidth > 0 && minHeight > 0 && minWidth <= width && width <= encoderConfig_.width &&
           encoderConfig_.width <= maxWidth && minHeight <= height && height <= encoderConfig_.height &&
           encoderConfig_.height <= maxHeight)) {
-        AVCODEC_LOGE("Invalid downsampling parameters: width=%{public}d, height=%{public}d", width, height);
+        AVCODEC_LOGE("Invalid downsampling parameters: width=%{public}d, height=%{public}d, "
+                     "valid range: width [%{public}d, %{public}d], height [%{public}d, %{public}d], "
+                     "encoder configured: %{public}dx%{public}d",
+                     width, height, minWidth, maxWidth, minHeight, maxHeight, encoderConfig_.width,
+                     encoderConfig_.height);
         return AVCS_ERR_INVALID_VAL;
     }
     params.width = width;
@@ -216,8 +221,8 @@ int32_t Preprocessor::SetParameter(const Media::Format &format)
 int32_t Preprocessor::Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output, uint64_t pts)
 {
     CHECK_AND_RETURN_RET_LOG(input && output, AVCS_ERR_INVALID_VAL,
-                             "Invalid buffer: input=%{public}p, output=%{public}p", input.GetRefPtr(),
-                             output.GetRefPtr());
+                             "Invalid buffer: input is %{public}s, output is %{public}s", input ? "valid" : "nullptr",
+                             output ? "valid" : "nullptr");
     CHECK_AND_RETURN_RET_LOG(input->GetFormat() == output->GetFormat(), AVCS_ERR_INVALID_VAL,
                              "Format mismatch: input=%{public}d, output=%{public}d", input->GetFormat(),
                              output->GetFormat());
@@ -308,11 +313,11 @@ void Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
     }
     auto *src = static_cast<uint8_t *>(input->GetVirAddr());
     auto *dst = static_cast<uint8_t *>(output->GetVirAddr());
-    CHECK_AND_RETURN_LOG(src != nullptr && dst != nullptr,
-                         "Invalid vir addr: input=%{public}p, output=%{public}p", src, dst);
+    CHECK_AND_RETURN_LOG(src != nullptr && dst != nullptr, "Invalid vir addr: input=%{public}p, output=%{public}p", src,
+                         dst);
     EXPECT_AND_LOGW(input->GetFormat() != output->GetFormat(),
-                    "SurfaceBuffer format mismatch, input=%{public}d, output=%{public}d",
-                    input->GetFormat(), output->GetFormat());
+                    "SurfaceBuffer format mismatch, input=%{public}d, output=%{public}d", input->GetFormat(),
+                    output->GetFormat());
 
     (void)memcpy_s(dst, input->GetSize(), src, output->GetSize());
 }
