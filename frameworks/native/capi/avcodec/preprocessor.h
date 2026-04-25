@@ -132,6 +132,13 @@ private:
         }
     };
 
+    struct RoiTransform {
+        double scaleX;
+        double scaleY;
+        int32_t offsetTop;
+        int32_t offsetLeft;
+    };
+
     int32_t ValidateCrop(const Media::Format &format, CropParams &params);
     int32_t ValidateDownsampling(const Media::Format &format, DownsamplingParams &params);
     int32_t ValidateDropFrame(const Media::Format &format, DropFrameParams &params);
@@ -142,10 +149,10 @@ private:
     int32_t Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output);
     int32_t Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output);
     void UpdateOutputMetadata(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output,
-                              double scaleX, double scaleY, int32_t offsetTop, int32_t offsetLeft);
+                              const RoiTransform &roiTransform);
     void CopyInputMetadata(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output);
     void UpdateRoiMetadata(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output,
-                           double scaleX, double scaleY, int32_t offsetTop, int32_t offsetLeft);
+                           const RoiTransform &roiTransform);
 
     bool IsHevc10BitData(HEVCProfile profile);
     GraphicPixelFormat ConvertVideoPixelFormat2GraphicPixelFormat(VideoPixelFormat pixelFormat, int32_t profile);

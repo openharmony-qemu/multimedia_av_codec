@@ -97,11 +97,11 @@ bool IsGeometrySupported(OHOS::GraphicPixelFormat format, int32_t width, int32_t
 std::string TransformRoiMetadata(const std::string &roi, double scaleX, double scaleY,
                                  int32_t offsetTop, int32_t offsetLeft)
 {
-    static const std::regex ROI_PATTERN(R"((?:^|;)(-?\d+),(-?\d+)-(-?\d+),(-?\d+)(?:=([^;]*))?;)");
+    static const std::regex roiPattern(R"((?:^|;)(-?\d+),(-?\d+)-(-?\d+),(-?\d+)(?:=([^;]*))?;)");
     std::smatch match;
     std::string temp = roi;
     std::string result;
-    while (std::regex_search(temp, match, ROI_PATTERN)) {
+    while (std::regex_search(temp, match, roiPattern)) {
         int32_t top = std::stoi(match[1].str());
         int32_t left = std::stoi(match[2].str());
         int32_t bottom = std::stoi(match[3].str());
@@ -232,11 +232,9 @@ int32_t Preprocessor::ValidateCrop(const Media::Format &format, CropParams &para
     bool rangeValid = (0 <= left && left < right && right < encoderConfig_.width) &&
                       (0 <= top && top < bottom && bottom < encoderConfig_.height) &&
                       (encWidth.InRange(cropWidth) && encHeight.InRange(cropHeight));
-    if (!rangeValid) {
-        AVCODEC_LOGE("Invalid crop parameters: left=%{public}d, right=%{public}d, top=%{public}d, bottom=%{public}d",
-                     left, right, top, bottom);
-        return AVCS_ERR_INVALID_VAL;
-    }
+    CHECK_AND_RETURN_RET_LOG(rangeValid, AVCS_ERR_INVALID_VAL,
+        "Invalid crop parameters: left=%{public}d, right=%{public}d, top=%{public}d, bottom=%{public}d",
+        left, right, top, bottom);
     params.left = left;
     params.right = right;
     params.top = top;
@@ -328,38 +326,43 @@ int32_t Preprocessor::Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &ou
     if (IsCropEnabled()) {
         int32_t ret = Crop(input, output);
         if (ret == AVCS_ERR_OK) {
-            UpdateOutputMetadata(input, output, IDENTITY_METADATA_SCALE, IDENTITY_METADATA_SCALE,
-                                 cropConfig_.top, cropConfig_.left);
+            UpdateOutputMetadata(input, output,
+                                 {IDENTITY_METADATA_SCALE, IDENTITY_METADATA_SCALE, cropConfig_.top,
+                                  cropConfig_.left});
             return ret;
         }
         AVCODEC_LOGW("Crop failed: %{public}d, fallback to copy", ret);
         ret = Copy(input, output);
         if (ret == AVCS_ERR_OK) {
-            UpdateOutputMetadata(input, output, IDENTITY_METADATA_SCALE, IDENTITY_METADATA_SCALE,
-                                 DEFAULT_METADATA_OFFSET, DEFAULT_METADATA_OFFSET);
+            UpdateOutputMetadata(input, output,
+                                 {IDENTITY_METADATA_SCALE, IDENTITY_METADATA_SCALE, DEFAULT_METADATA_OFFSET,
+                                  DEFAULT_METADATA_OFFSET});
         }
         return ret;
     }
     if (IsDownsamplingEnabled()) {
         int32_t ret = Downsampling(input, output);
         if (ret == AVCS_ERR_OK) {
-            UpdateOutputMetadata(input, output, static_cast<double>(output->GetWidth()) / input->GetWidth(),
-                                 static_cast<double>(output->GetHeight()) / input->GetHeight(),
-                                 DEFAULT_METADATA_OFFSET, DEFAULT_METADATA_OFFSET);
+            UpdateOutputMetadata(input, output,
+                                 {static_cast<double>(output->GetWidth()) / input->GetWidth(),
+                                  static_cast<double>(output->GetHeight()) / input->GetHeight(),
+                                  DEFAULT_METADATA_OFFSET, DEFAULT_METADATA_OFFSET});
             return ret;
         }
         AVCODEC_LOGW("Downsampling failed: %{public}d, fallback to copy", ret);
         ret = Copy(input, output);
         if (ret == AVCS_ERR_OK) {
-            UpdateOutputMetadata(input, output, IDENTITY_METADATA_SCALE, IDENTITY_METADATA_SCALE,
-                                 DEFAULT_METADATA_OFFSET, DEFAULT_METADATA_OFFSET);
+            UpdateOutputMetadata(input, output,
+                                 {IDENTITY_METADATA_SCALE, IDENTITY_METADATA_SCALE, DEFAULT_METADATA_OFFSET,
+                                  DEFAULT_METADATA_OFFSET});
         }
         return ret;
     }
     int32_t ret = Copy(input, output);
     if (ret == AVCS_ERR_OK) {
-        UpdateOutputMetadata(input, output, IDENTITY_METADATA_SCALE, IDENTITY_METADATA_SCALE,
-                             DEFAULT_METADATA_OFFSET, DEFAULT_METADATA_OFFSET);
+        UpdateOutputMetadata(input, output,
+                             {IDENTITY_METADATA_SCALE, IDENTITY_METADATA_SCALE, DEFAULT_METADATA_OFFSET,
+                              DEFAULT_METADATA_OFFSET});
     }
     return ret;
 }
@@ -469,10 +472,10 @@ int32_t Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &outpu
 }
 
 void Preprocessor::UpdateOutputMetadata(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output,
-                                        double scaleX, double scaleY, int32_t offsetTop, int32_t offsetLeft)
+                                        const RoiTransform &roiTransform)
 {
     CopyInputMetadata(input, output);
-    UpdateRoiMetadata(input, output, scaleX, scaleY, offsetTop, offsetLeft);
+    UpdateRoiMetadata(input, output, roiTransform);
 }
 
 void Preprocessor::CopyInputMetadata(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output)
@@ -503,7 +506,7 @@ void Preprocessor::CopyInputMetadata(const sptr<SurfaceBuffer> &input, const spt
 }
 
 void Preprocessor::UpdateRoiMetadata(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output,
-                                     double scaleX, double scaleY, int32_t offsetTop, int32_t offsetLeft)
+                                     const RoiTransform &roiTransform)
 {
     CHECK_AND_RETURN_LOG(input != nullptr && output != nullptr,
                          "Invalid buffer for roi metadata: input=%{public}p, output=%{public}p",
@@ -515,7 +518,8 @@ void Preprocessor::UpdateRoiMetadata(const sptr<SurfaceBuffer> &input, const spt
     }
     auto nullPos = std::find(roiData.begin(), roiData.end(), '\0');
     std::string roi(roiData.begin(), nullPos);
-    std::string transformed = TransformRoiMetadata(roi, scaleX, scaleY, offsetTop, offsetLeft);
+    std::string transformed = TransformRoiMetadata(roi, roiTransform.scaleX, roiTransform.scaleY,
+                                                   roiTransform.offsetTop, roiTransform.offsetLeft);
     std::vector<uint8_t> outputRoi(transformed.begin(), transformed.end());
     outputRoi.push_back('\0');
     GSError ret = output->SetMetadata(V2_2::ATTRKEY_ROI_METADATA, outputRoi);

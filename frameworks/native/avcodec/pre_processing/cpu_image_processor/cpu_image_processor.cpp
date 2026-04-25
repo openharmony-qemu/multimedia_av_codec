@@ -19,6 +19,7 @@
 #include <cstring>
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
+#include "securec.h"
 
 namespace {
 using namespace OHOS;
@@ -56,6 +57,23 @@ struct BufferView {
     bool isYuv420{false};
 };
 
+struct PlaneInfo {
+    int32_t width{0};
+    int32_t height{0};
+    int32_t rowBytes{0};
+    int32_t stride{0};
+    int32_t bytesPerPixel{DEFAULT_PLANE_BYTES_PER_PIXEL};
+    int32_t xSubsample{NO_SUBSAMPLE};
+    int32_t ySubsample{NO_SUBSAMPLE};
+};
+
+struct CopyRegion {
+    int32_t left{0};
+    int32_t top{0};
+    int32_t width{0};
+    int32_t height{0};
+};
+
 bool IsYuv420(int32_t format)
 {
     return format == GRAPHIC_PIXEL_FMT_YCBCR_420_SP || format == GRAPHIC_PIXEL_FMT_YCRCB_420_SP ||
@@ -68,30 +86,31 @@ bool IsEven(int32_t value)
     return (value % YUV_SUBSAMPLE) == 0;
 }
 
-bool AddPlane(BufferView &view, int32_t width, int32_t height, int32_t rowBytes, int32_t stride,
-              int32_t bytesPerPixel, int32_t xSubsample, int32_t ySubsample, size_t &offset)
+bool AddPlane(BufferView &view, const PlaneInfo &planeInfo, size_t &offset)
 {
-    if (view.planeCount >= view.planes.size() || width <= 0 || height <= 0 || rowBytes <= 0 ||
-        stride < rowBytes || offset > view.size) {
+    if (view.planeCount >= view.planes.size() || planeInfo.width <= 0 || planeInfo.height <= 0 ||
+        planeInfo.rowBytes <= 0 || planeInfo.stride < planeInfo.rowBytes || offset > view.size) {
         AVCODEC_LOGE("Invalid plane metadata: planeCount=%{public}zu width=%{public}d height=%{public}d "
                      "rowBytes=%{public}d stride=%{public}d offset=%{public}zu size=%{public}zu",
-                     view.planeCount, width, height, rowBytes, stride, offset, view.size);
+                     view.planeCount, planeInfo.width, planeInfo.height, planeInfo.rowBytes, planeInfo.stride,
+                     offset, view.size);
         return false;
     }
-    size_t lastRowOffset = static_cast<size_t>(height - 1) * static_cast<size_t>(stride);
-    size_t end = offset + lastRowOffset + static_cast<size_t>(rowBytes);
+    size_t lastRowOffset = static_cast<size_t>(planeInfo.height - 1) * static_cast<size_t>(planeInfo.stride);
+    size_t end = offset + lastRowOffset + static_cast<size_t>(planeInfo.rowBytes);
     if (end > view.size) {
         AVCODEC_LOGE("Plane exceeds buffer size: end=%{public}zu size=%{public}zu "
                      "height=%{public}d rowBytes=%{public}d stride=%{public}d",
-                     end, view.size, height, rowBytes, stride);
+                     end, view.size, planeInfo.height, planeInfo.rowBytes, planeInfo.stride);
         return false;
     }
-    view.planes[view.planeCount++] = {offset, width, height, rowBytes, stride, bytesPerPixel, xSubsample, ySubsample};
-    offset += static_cast<size_t>(height) * static_cast<size_t>(stride);
+    view.planes[view.planeCount++] = {offset, planeInfo.width, planeInfo.height, planeInfo.rowBytes, planeInfo.stride,
+                                      planeInfo.bytesPerPixel, planeInfo.xSubsample, planeInfo.ySubsample};
+    offset += static_cast<size_t>(planeInfo.height) * static_cast<size_t>(planeInfo.stride);
     return true;
 }
 
-bool BuildView(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer, BufferView &view)
+bool IsValidBuffer(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer)
 {
     if (!buffer || buffer->GetVirAddr() == nullptr || buffer->GetWidth() <= 0 || buffer->GetHeight() <= 0 ||
         buffer->GetStride() <= 0 || buffer->GetSize() <= 0) {
@@ -104,6 +123,11 @@ bool BuildView(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer, BufferView &view)
                      buffer ? buffer->GetSize() : INVALID_BUFFER_VALUE);
         return false;
     }
+    return true;
+}
+
+void InitBufferView(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer, BufferView &view)
+{
     view.addr = static_cast<uint8_t *>(buffer->GetVirAddr());
     view.format = buffer->GetFormat();
     view.width = buffer->GetWidth();
@@ -112,7 +136,10 @@ bool BuildView(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer, BufferView &view)
     view.size = static_cast<size_t>(buffer->GetSize());
     view.isYuv420 = IsYuv420(view.format);
     view.planeCount = 0;
+}
 
+bool BuildPlaneLayout(BufferView &view)
+{
     if (view.isYuv420 && (!IsEven(view.width) || !IsEven(view.height))) {
         AVCODEC_LOGE("YUV420 buffer geometry is not even: width=%{public}d height=%{public}d format=%{public}d",
                      view.width, view.height, view.format);
@@ -123,37 +150,44 @@ bool BuildView(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer, BufferView &view)
     switch (view.format) {
         case GRAPHIC_PIXEL_FMT_YCBCR_420_SP:
         case GRAPHIC_PIXEL_FMT_YCRCB_420_SP:
-            return AddPlane(view, view.width, view.height, view.width, view.stride, DEFAULT_PLANE_BYTES_PER_PIXEL,
-                            NO_SUBSAMPLE, NO_SUBSAMPLE, offset) &&
-                   AddPlane(view, view.width / YUV_SUBSAMPLE, view.height / YUV_SUBSAMPLE, view.width, view.stride,
-                            YUV_SUBSAMPLE, YUV_SUBSAMPLE, YUV_SUBSAMPLE, offset);
+            return AddPlane(view, {view.width, view.height, view.width, view.stride}, offset) &&
+                   AddPlane(view, {view.width / YUV_SUBSAMPLE, view.height / YUV_SUBSAMPLE, view.width, view.stride,
+                                   YUV_SUBSAMPLE, YUV_SUBSAMPLE, YUV_SUBSAMPLE}, offset);
         case GRAPHIC_PIXEL_FMT_YCBCR_P010:
         case GRAPHIC_PIXEL_FMT_YCRCB_P010:
-            return AddPlane(view, view.width, view.height, view.width * P010_LUMA_BYTES_PER_PIXEL, view.stride,
-                            P010_LUMA_BYTES_PER_PIXEL, NO_SUBSAMPLE, NO_SUBSAMPLE, offset) &&
-                   AddPlane(view, view.width / YUV_SUBSAMPLE, view.height / YUV_SUBSAMPLE,
-                            view.width * P010_LUMA_BYTES_PER_PIXEL, view.stride, P010_CHROMA_BYTES_PER_PIXEL,
-                            YUV_SUBSAMPLE, YUV_SUBSAMPLE, offset);
+            return AddPlane(view, {view.width, view.height, view.width * P010_LUMA_BYTES_PER_PIXEL, view.stride,
+                                   P010_LUMA_BYTES_PER_PIXEL}, offset) &&
+                   AddPlane(view, {view.width / YUV_SUBSAMPLE, view.height / YUV_SUBSAMPLE,
+                                   view.width * P010_LUMA_BYTES_PER_PIXEL, view.stride,
+                                   P010_CHROMA_BYTES_PER_PIXEL, YUV_SUBSAMPLE, YUV_SUBSAMPLE}, offset);
         case GRAPHIC_PIXEL_FMT_YCBCR_420_P: {
             int32_t chromaStride = view.stride / YUV_SUBSAMPLE;
             return IsEven(view.stride) &&
-                   AddPlane(view, view.width, view.height, view.width, view.stride, DEFAULT_PLANE_BYTES_PER_PIXEL,
-                            NO_SUBSAMPLE, NO_SUBSAMPLE, offset) &&
-                   AddPlane(view, view.width / YUV_SUBSAMPLE, view.height / YUV_SUBSAMPLE,
-                            view.width / YUV_SUBSAMPLE, chromaStride, DEFAULT_PLANE_BYTES_PER_PIXEL, YUV_SUBSAMPLE,
-                            YUV_SUBSAMPLE, offset) &&
-                   AddPlane(view, view.width / YUV_SUBSAMPLE, view.height / YUV_SUBSAMPLE,
-                            view.width / YUV_SUBSAMPLE, chromaStride, DEFAULT_PLANE_BYTES_PER_PIXEL, YUV_SUBSAMPLE,
-                            YUV_SUBSAMPLE, offset);
+                   AddPlane(view, {view.width, view.height, view.width, view.stride}, offset) &&
+                   AddPlane(view, {view.width / YUV_SUBSAMPLE, view.height / YUV_SUBSAMPLE,
+                                   view.width / YUV_SUBSAMPLE, chromaStride, DEFAULT_PLANE_BYTES_PER_PIXEL,
+                                   YUV_SUBSAMPLE, YUV_SUBSAMPLE}, offset) &&
+                   AddPlane(view, {view.width / YUV_SUBSAMPLE, view.height / YUV_SUBSAMPLE,
+                                   view.width / YUV_SUBSAMPLE, chromaStride, DEFAULT_PLANE_BYTES_PER_PIXEL,
+                                   YUV_SUBSAMPLE, YUV_SUBSAMPLE}, offset);
         }
         case GRAPHIC_PIXEL_FMT_RGBA_8888:
         case GRAPHIC_PIXEL_FMT_RGBA_1010102:
-            return AddPlane(view, view.width, view.height, view.width * RGBA_BYTES_PER_PIXEL, view.stride,
-                            RGBA_BYTES_PER_PIXEL, NO_SUBSAMPLE, NO_SUBSAMPLE, offset);
+            return AddPlane(view, {view.width, view.height, view.width * RGBA_BYTES_PER_PIXEL, view.stride,
+                                   RGBA_BYTES_PER_PIXEL}, offset);
         default:
             AVCODEC_LOGE("Unsupported buffer format: %{public}d", view.format);
             return false;
     }
+}
+
+bool BuildView(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer, BufferView &view)
+{
+    if (!IsValidBuffer(buffer)) {
+        return false;
+    }
+    InitBufferView(buffer, view);
+    return BuildPlaneLayout(view);
 }
 
 bool ValidateCropRect(const BufferView &input, const OHOS::MediaAVCodec::PreProcessing::CpuImageCropRect &crop,
@@ -190,16 +224,15 @@ bool ValidateDownsample(const BufferView &input, const BufferView &output)
     return true;
 }
 
-int32_t CopyPlaneRows(const BufferView &input, const BufferView &output, int32_t left, int32_t top,
-                      int32_t width, int32_t height)
+int32_t CopyPlaneRows(const BufferView &input, const BufferView &output, const CopyRegion &region)
 {
     for (size_t i = 0; i < input.planeCount; ++i) {
         const Plane &srcPlane = input.planes[i];
         const Plane &dstPlane = output.planes[i];
-        int32_t srcLeft = left / srcPlane.xSubsample;
-        int32_t srcTop = top / srcPlane.ySubsample;
-        int32_t planeWidth = width / srcPlane.xSubsample;
-        int32_t planeHeight = height / srcPlane.ySubsample;
+        int32_t srcLeft = region.left / srcPlane.xSubsample;
+        int32_t srcTop = region.top / srcPlane.ySubsample;
+        int32_t planeWidth = region.width / srcPlane.xSubsample;
+        int32_t planeHeight = region.height / srcPlane.ySubsample;
         int32_t bytesToCopy = planeWidth * srcPlane.bytesPerPixel;
         if (bytesToCopy > dstPlane.rowBytes || planeHeight > dstPlane.height) {
             AVCODEC_LOGE("Crop plane copy exceeds output plane: plane=%{public}zu, bytesToCopy=%{public}d, "
@@ -211,8 +244,8 @@ int32_t CopyPlaneRows(const BufferView &input, const BufferView &output, int32_t
                              static_cast<size_t>(srcLeft) * srcPlane.bytesPerPixel;
         uint8_t *dst = output.addr + dstPlane.offset;
         for (int32_t row = 0; row < planeHeight; ++row) {
-            std::memcpy(dst + static_cast<size_t>(row) * dstPlane.stride,
-                        src + static_cast<size_t>(row) * srcPlane.stride, static_cast<size_t>(bytesToCopy));
+            (void)memcpy_s(dst + static_cast<size_t>(row) * dstPlane.stride, static_cast<size_t>(bytesToCopy),
+                           src + static_cast<size_t>(row) * srcPlane.stride, static_cast<size_t>(bytesToCopy));
         }
     }
     return OHOS::MediaAVCodec::AVCS_ERR_OK;
@@ -241,7 +274,8 @@ int32_t DownsamplePlanes(const BufferView &input, const BufferView &output)
                                      static_cast<size_t>(srcX) * srcPlane.bytesPerPixel;
                 uint8_t *dst = output.addr + dstPlane.offset + static_cast<size_t>(dstY) * dstPlane.stride +
                                static_cast<size_t>(dstX) * dstPlane.bytesPerPixel;
-                std::memcpy(dst, src, static_cast<size_t>(dstPlane.bytesPerPixel));
+                (void)memcpy_s(dst, static_cast<size_t>(dstPlane.bytesPerPixel),
+                               src, static_cast<size_t>(dstPlane.bytesPerPixel));
             }
         }
     }
@@ -295,13 +329,13 @@ int32_t CpuImageProcessor::Process(const CpuImageProcessRequest &request)
                              input.width, input.height, output.width, output.height);
                 return AVCS_ERR_INVALID_VAL;
             }
-            return CopyPlaneRows(input, output, 0, 0, input.width, input.height);
+            return CopyPlaneRows(input, output, {0, 0, input.width, input.height});
         case CpuImageOperation::CROP:
             if (!ValidateCropRect(input, request.crop, output)) {
                 return AVCS_ERR_INVALID_VAL;
             }
-            return CopyPlaneRows(input, output, request.crop.left, request.crop.top, request.crop.width,
-                                 request.crop.height);
+            return CopyPlaneRows(input, output,
+                                 {request.crop.left, request.crop.top, request.crop.width, request.crop.height});
         case CpuImageOperation::DOWNSAMPLE:
             if (!ValidateDownsample(input, output)) {
                 return AVCS_ERR_INVALID_VAL;

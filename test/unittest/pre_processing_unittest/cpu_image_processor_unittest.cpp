@@ -36,6 +36,25 @@ constexpr int32_t CROP_WIDTH = 4;
 constexpr int32_t CROP_HEIGHT = 2;
 constexpr int32_t DS_WIDTH = 4;
 constexpr int32_t DS_HEIGHT = 4;
+constexpr int32_t BUFFER_STRIDE_ALIGNMENT = 64;
+constexpr int32_t BUFFER_REQUEST_TIMEOUT = 0;
+constexpr int32_t DEFAULT_PLANE_BYTES_PER_PIXEL = 1;
+constexpr int32_t NO_SUBSAMPLE = 1;
+constexpr int32_t YUV_SUBSAMPLE = 2;
+constexpr int32_t P010_LUMA_BYTES_PER_PIXEL = 2;
+constexpr int32_t P010_CHROMA_BYTES_PER_PIXEL = 4;
+constexpr int32_t RGBA_BYTES_PER_PIXEL = 4;
+constexpr size_t PATTERN_PLANE_FACTOR = 53;
+constexpr int32_t PATTERN_ROW_FACTOR = 17;
+constexpr uint8_t BYTE_MASK = 0xFF;
+constexpr int32_t NON_YUV_ODD_SRC_WIDTH = 5;
+constexpr int32_t NON_YUV_ODD_SRC_HEIGHT = 3;
+constexpr int32_t ODD_OUTPUT_WIDTH = 3;
+constexpr int32_t ODD_OUTPUT_HEIGHT = 3;
+constexpr int32_t ODD_CROP_LEFT = 1;
+constexpr int32_t ODD_CROP_TOP = 1;
+constexpr int32_t ODD_CROP_WIDTH = 3;
+constexpr int32_t ODD_CROP_HEIGHT = 3;
 
 struct FormatParam {
     const char *name;
@@ -73,10 +92,10 @@ sptr<SurfaceBuffer> AllocBuffer(int32_t width, int32_t height, int32_t format)
     BufferRequestConfig config = {
         .width = width,
         .height = height,
-        .strideAlignment = 64,
+        .strideAlignment = BUFFER_STRIDE_ALIGNMENT,
         .format = format,
         .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
-        .timeout = 0,
+        .timeout = BUFFER_REQUEST_TIMEOUT,
     };
     if (buffer->Alloc(config) != GSERROR_OK) {
         return nullptr;
@@ -107,19 +126,25 @@ bool BuildPlanes(const sptr<SurfaceBuffer> &buffer, std::vector<Plane> &planes)
     switch (buffer->GetFormat()) {
         case GRAPHIC_PIXEL_FMT_YCBCR_420_SP:
         case GRAPHIC_PIXEL_FMT_YCRCB_420_SP:
-            return add(width, height, width, stride, 1, 1, 1) &&
-                   add(width / 2, height / 2, width, stride, 2, 2, 2);
+            return add(width, height, width, stride, DEFAULT_PLANE_BYTES_PER_PIXEL, NO_SUBSAMPLE, NO_SUBSAMPLE) &&
+                   add(width / YUV_SUBSAMPLE, height / YUV_SUBSAMPLE, width, stride, YUV_SUBSAMPLE, YUV_SUBSAMPLE,
+                       YUV_SUBSAMPLE);
         case GRAPHIC_PIXEL_FMT_YCBCR_P010:
         case GRAPHIC_PIXEL_FMT_YCRCB_P010:
-            return add(width, height, width * 2, stride, 2, 1, 1) &&
-                   add(width / 2, height / 2, width * 2, stride, 4, 2, 2);
+            return add(width, height, width * P010_LUMA_BYTES_PER_PIXEL, stride, P010_LUMA_BYTES_PER_PIXEL,
+                       NO_SUBSAMPLE, NO_SUBSAMPLE) &&
+                   add(width / YUV_SUBSAMPLE, height / YUV_SUBSAMPLE, width * P010_LUMA_BYTES_PER_PIXEL, stride,
+                       P010_CHROMA_BYTES_PER_PIXEL, YUV_SUBSAMPLE, YUV_SUBSAMPLE);
         case GRAPHIC_PIXEL_FMT_YCBCR_420_P:
-            return add(width, height, width, stride, 1, 1, 1) &&
-                   add(width / 2, height / 2, width / 2, stride / 2, 1, 2, 2) &&
-                   add(width / 2, height / 2, width / 2, stride / 2, 1, 2, 2);
+            return add(width, height, width, stride, DEFAULT_PLANE_BYTES_PER_PIXEL, NO_SUBSAMPLE, NO_SUBSAMPLE) &&
+                   add(width / YUV_SUBSAMPLE, height / YUV_SUBSAMPLE, width / YUV_SUBSAMPLE,
+                       stride / YUV_SUBSAMPLE, DEFAULT_PLANE_BYTES_PER_PIXEL, YUV_SUBSAMPLE, YUV_SUBSAMPLE) &&
+                   add(width / YUV_SUBSAMPLE, height / YUV_SUBSAMPLE, width / YUV_SUBSAMPLE,
+                       stride / YUV_SUBSAMPLE, DEFAULT_PLANE_BYTES_PER_PIXEL, YUV_SUBSAMPLE, YUV_SUBSAMPLE);
         case GRAPHIC_PIXEL_FMT_RGBA_8888:
         case GRAPHIC_PIXEL_FMT_RGBA_1010102:
-            return add(width, height, width * 4, stride, 4, 1, 1);
+            return add(width, height, width * RGBA_BYTES_PER_PIXEL, stride, RGBA_BYTES_PER_PIXEL, NO_SUBSAMPLE,
+                       NO_SUBSAMPLE);
         default:
             return false;
     }
@@ -137,7 +162,8 @@ void FillVisiblePattern(const sptr<SurfaceBuffer> &buffer)
         for (int32_t y = 0; y < plane.height; ++y) {
             for (int32_t x = 0; x < plane.rowBytes; ++x) {
                 base[plane.offset + static_cast<size_t>(y) * plane.stride + x] =
-                    static_cast<uint8_t>((planeIndex * 53 + y * 17 + x) & 0xFF);
+                    static_cast<uint8_t>((planeIndex * PATTERN_PLANE_FACTOR + y * PATTERN_ROW_FACTOR + x) &
+                                         BYTE_MASK);
             }
         }
     }
@@ -313,8 +339,9 @@ HWTEST_P(CpuImageProcessorTest, FormatMismatchFails, TestSize.Level1)
 HWTEST_P(CpuImageProcessorTest, OddGeometryPolicy, TestSize.Level1)
 {
     const auto param = GetParam();
-    auto input = AllocBuffer(param.yuv420 ? SRC_WIDTH : 5, param.yuv420 ? SRC_HEIGHT : 3, param.format);
-    auto output = AllocBuffer(3, 3, param.format);
+    auto input = AllocBuffer(param.yuv420 ? SRC_WIDTH : NON_YUV_ODD_SRC_WIDTH,
+                             param.yuv420 ? SRC_HEIGHT : NON_YUV_ODD_SRC_HEIGHT, param.format);
+    auto output = AllocBuffer(ODD_OUTPUT_WIDTH, ODD_OUTPUT_HEIGHT, param.format);
     ASSERT_NE(input, nullptr);
     ASSERT_NE(output, nullptr);
     FillVisiblePattern(input);
@@ -324,7 +351,7 @@ HWTEST_P(CpuImageProcessorTest, OddGeometryPolicy, TestSize.Level1)
     request.input = input;
     request.output = output;
     request.operation = CpuImageOperation::CROP;
-    request.crop = {1, 1, 3, 3};
+    request.crop = {ODD_CROP_LEFT, ODD_CROP_TOP, ODD_CROP_WIDTH, ODD_CROP_HEIGHT};
 
     int32_t ret = CpuImageProcessor::Process(request);
     if (param.yuv420) {
