@@ -504,12 +504,12 @@ void DashMpdParser::FillEventMetadata(DashEventInfo *eventInfo, uint64_t duratio
     if (eventStreamInfo == nullptr) {
         return;
     }
-    
+
     uint32_t timescale = eventStreamInfo->timescale_;
     if (timescale > 0) {
         uint64_t timeDiff = (eventInfo->presentationTime_ >= eventStreamInfo->presentationTimeOffset_)
             ? (eventInfo->presentationTime_ - eventStreamInfo->presentationTimeOffset_) : 0;
-        eventInfo->start_    = timeDiff / timescale * S_TO_MS;
+        eventInfo->start_ = timeDiff / timescale * S_TO_MS;
         eventInfo->duration_ = duration / timescale * S_TO_MS;
     }
     eventInfo->classify_ = eventStreamInfo->schemeIdUri_ + eventStreamInfo->value_;
