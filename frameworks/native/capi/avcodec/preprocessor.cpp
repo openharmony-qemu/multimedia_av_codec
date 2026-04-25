@@ -259,10 +259,20 @@ int32_t Preprocessor::Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &ou
                              "Format mismatch: input=%{public}d, output=%{public}d", input->GetFormat(),
                              output ? output->GetFormat() : -1);
     if (IsCropEnabled()) {
-        return Crop(input, output);
+        int32_t ret = Crop(input, output);
+        if (ret == AVCS_ERR_OK) {
+            return ret;
+        }
+        AVCODEC_LOGW("Crop failed: %{public}d, fallback to copy", ret);
+        return Copy(input, output);
     }
     if (IsDownsamplingEnabled()) {
-        return Downsampling(input, output);
+        int32_t ret = Downsampling(input, output);
+        if (ret == AVCS_ERR_OK) {
+            return ret;
+        }
+        AVCODEC_LOGW("Downsampling failed: %{public}d, fallback to copy", ret);
+        return Copy(input, output);
     }
     return Copy(input, output);
 }
