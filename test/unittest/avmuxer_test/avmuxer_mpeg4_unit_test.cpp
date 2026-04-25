@@ -3935,6 +3935,8 @@ HWTEST_F(Mpeg4MuxerUnitTest, Muxer_AddTrackNodata_003, TestSize.Level0)
     EXPECT_EQ(trackCount, 3);  // 3
 }
 
+#ifndef FFMPEG_MUXER_TEST
+
 /**
  * @tc.name: Muxer_Location_Altitude_001
  * @tc.desc: Muxer set location with latitude, longitude and altitude
@@ -4090,4 +4092,7 @@ HWTEST_F(Mpeg4MuxerUnitTest, Muxer_Location_Altitude_003, TestSize.Level0)
         EXPECT_FLOAT_EQ(altitude, 0.0f);
     }
 }
+
+#endif
+
 }

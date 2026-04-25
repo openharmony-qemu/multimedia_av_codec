@@ -14,6 +14,7 @@
  */
 
 #include "smart_fluency_decoding_manager.h"
+#include "double_utils.h"
 #include "avcodec_common.h"
 #include "avcodec_log_ex.h"
 #include "avcodec_mime_type.h"
@@ -316,17 +317,17 @@ void SmartFluencyDecodingManager::ApplyDebugConfig(Media::Format& format)
         newDecSpeed_ = GetSysParamDouble(DEBUG_PARAM_NEW_SPEED, -1.0);
         inputFrameCount_ = 0;
         isDebugConfigInitialized_ = true;
-        AVCODEC_LOGI_WITH_TAG("SFD Debug: Conf: %{public}d, %{public}.2f, %{public}.2f; Trg:%{public}d -> "
-            "%{public}d, %{public}.2f, %{public}.2f", configMode_, configRatio_, configDecSpeed_,
+        AVCODEC_LOGI_WITH_TAG("SFD Debug: Conf: %{public}d, %{public}.3f, %{public}.3f; Trg:%{public}d -> "
+            "%{public}d, %{public}.3f, %{public}.3f", configMode_, configRatio_, configDecSpeed_,
             triggerFrameCnt_, newMode_, newRatio_, newDecSpeed_);
     }
     if (configMode_ >= 0) {
         format.PutIntValue(Media::Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, configMode_);
     }
-    if (configRatio_ >= 0.0) {
+    if (DoubleUtils::IsGreaterOrEqual(configRatio_, 0.0)) {
         format.PutDoubleValue(Media::Tag::VIDEO_DECODER_FRAME_RETENTION_RATIO, configRatio_);
     }
-    if (configDecSpeed_ >= 0.0) {
+    if (DoubleUtils::IsGreaterOrEqual(configDecSpeed_, 0.0)) {
         format.PutDoubleValue(Media::Tag::VIDEO_DECODER_SPEED, configDecSpeed_);
     }
 }
@@ -338,13 +339,13 @@ void SmartFluencyDecodingManager::CheckAndTriggerDebugConfig()
         if (newMode_ >= 0) {
             configMode_ = newMode_;
         }
-        if (newRatio_ >= 0.0) {
+        if (DoubleUtils::IsGreaterOrEqual(newRatio_, 0.0)) {
             configRatio_ = newRatio_;
         };
-        if (newDecSpeed_ >= 0.0) {
+        if (DoubleUtils::IsGreaterOrEqual(newDecSpeed_, 0.0)) {
             configDecSpeed_ = newDecSpeed_;
         }
-        AVCODEC_LOGI_WITH_TAG("SFD Debug: Trg at %{public}u. M:%{public}d, R:%{public}.2f, S:%{public}.2f",
+        AVCODEC_LOGI_WITH_TAG("SFD Debug: Trg at %{public}u. M:%{public}d, R:%{public}.3f, S:%{public}.3f",
             inputFrameCount_, newMode_, newRatio_, newDecSpeed_);
         Media::Format emptyFormat;
         Configure(emptyFormat);

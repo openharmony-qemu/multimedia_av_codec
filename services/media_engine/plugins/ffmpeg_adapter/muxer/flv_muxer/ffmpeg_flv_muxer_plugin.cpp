@@ -100,6 +100,8 @@ Status FFmpegFlvMuxerPlugin::SetDataSink(const std::shared_ptr<DataSink> &dataSi
 
 Status FFmpegFlvMuxerPlugin::SetParameter(const std::shared_ptr<Meta> &param)
 {
+    FALSE_RETURN_V_MSG_E(param->Find(Tag::VIDEO_ROTATION) == param->end(),
+        Status::ERROR_UNIMPLEMENTED, "FLV format does not support SetRotation!");
     Status ret = Status::NO_ERROR;
     ret = SetLocation(param);
     FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "SetParameter failed");
@@ -134,6 +136,7 @@ Status FFmpegFlvMuxerPlugin::SetLocation(std::shared_ptr<Meta> param)
             MEDIA_LOG_I("has altitude.");
         } else {
             MEDIA_LOG_W("The type of altitude is float, must be in [-32768.0, 32767.0]");
+            altitude = 0.0f;
         }
     }
     std::string location = std::to_string(latitude) + " ";
@@ -459,11 +462,17 @@ Status FFmpegFlvMuxerPlugin::AddTrack(int32_t &trackIndex, const std::shared_ptr
         trackDesc->Get<Tag::MEDIA_TYPE>(mediaType);
     }
     if (!mimeType.compare(0, mimeTypeLen, "audio")) {
+        FALSE_RETURN_V_MSG_E(!hasAudioTrack_, Status::ERROR_INVALID_OPERATION,
+            "FLV format only supports one audio track!");
         ret = AddAudioTrack(trackIndex, trackDesc, codeID);
         FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "AddAudioTrack failed!");
+        hasAudioTrack_ = true;
     } else if (!mimeType.compare(0, mimeTypeLen, "video")) {
+        FALSE_RETURN_V_MSG_E(!hasVideoTrack_, Status::ERROR_INVALID_OPERATION,
+            "FLV format only supports one video track!");
         ret = AddVideoTrack(trackIndex, trackDesc, codeID);
         FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "AddVideoTrack failed!");
+        hasVideoTrack_ = true;
     } else {
         MEDIA_LOG_D("mimeType %{public}s is unsupported for FLV", mimeType.c_str());
         return Status::ERROR_UNSUPPORTED_FORMAT;

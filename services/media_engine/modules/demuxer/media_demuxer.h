@@ -387,7 +387,8 @@ private:
     void InitEnableSampleQueueFlag();
     inline bool GetEnableSampleQueueFlag() const
     {
-        return enableSampleQueue_ && isAudioDemuxDecodeAsync_ && !isTranscoderMode_;
+        // Do not enable sampleQueue for pure audio in dataSrc scenarios.
+        return enableSampleQueue_ && (!IsNeedPreDownload() || isAudioDemuxDecodeAsync_) && !isTranscoderMode_;
     }
     Status StartTaskWithSampleQueue(int32_t trackId);
     Status PushBufferToQueue(int32_t trackId, std::shared_ptr<AVBuffer>& buffer, bool available);
@@ -436,7 +437,7 @@ private:
     void OnEventStream(const Plugins::PluginEvent &event);
     int64_t GetCurrentTimeMs();
     void UpdateTrackMap();
-    bool IsNeedPreDownload();
+    bool IsNeedPreDownload() const;
     void UpdateSegmentOffset(int32_t trackId);
     void UpdateSegmentOffset(int32_t oldTrackId, int32_t newTrackId);
     void SetCurrentSegmentOffset(int32_t trackId, size_t segmentOffset);

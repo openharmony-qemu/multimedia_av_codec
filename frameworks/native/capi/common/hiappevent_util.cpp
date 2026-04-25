@@ -23,7 +23,7 @@
 #include "app_event_processor_mgr.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVcodec_hiappevent"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodec_hiappevent"};
 }
 
 namespace OHOS {

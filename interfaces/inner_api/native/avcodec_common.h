@@ -215,6 +215,12 @@ public:
     virtual void OnOutputBufferUnbinded()
     {
     }
+     
+    virtual void OnXperfEvent(int eventType, const std::string& msg)
+    {
+        (void) eventType;
+        (void) msg;
+    }
 };
 
 class MediaCodecParameterCallback {

@@ -30,6 +30,7 @@
 #include "native_avmagic.h"
 #include "native_window.h"
 #include "hiappevent_util.h"
+#include "api_metrics_util.h"
 
 #ifdef SUPPORT_DRM
 #include "native_drm_object.h"
@@ -331,6 +332,7 @@ struct OH_AVCodec *OH_VideoDecoder_CreateByMime(const char *mime)
     CHECK_AND_RETURN_RET_LOG(mime != nullptr, nullptr, "Mime is nullptr!");
     CHECK_AND_RETURN_RET_LOG(strlen(mime) < MAX_LENGTH, nullptr, "Mime is too long!");
 
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_VideoDecoder_CreateByMime.Time", TIMES);
     static AppEventReporter appEventReporter = AppEventReporter();
     ApiInvokeRecorder apiInvokeRecorder("OH_VideoDecoder_CreateByMime", appEventReporter);
 
@@ -348,6 +350,7 @@ struct OH_AVCodec *OH_VideoDecoder_CreateByName(const char *name)
     CHECK_AND_RETURN_RET_LOG(name != nullptr, nullptr, "Name is nullptr!");
     CHECK_AND_RETURN_RET_LOG(strlen(name) < MAX_LENGTH, nullptr, "Name is too long!");
 
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_VideoDecoder_CreateByName.Time", TIMES);
     static AppEventReporter appEventReporter = AppEventReporter();
     ApiInvokeRecorder apiInvokeRecorder("OH_VideoDecoder_CreateByName", appEventReporter);
 
@@ -366,12 +369,14 @@ OH_AVErrCode OH_VideoDecoder_Destroy(struct OH_AVCodec *codec)
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, AV_ERR_INVALID_VAL,
                              "Codec magic error!");
 
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_VideoDecoder_Destroy.Time", TIMES);
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
 
     if (videoDecObj != nullptr && videoDecObj->videoDecoder_ != nullptr) {
         int32_t ret = videoDecObj->videoDecoder_->Release();
         videoDecObj->StopCallback();
         videoDecObj->ClearBufferList();
+        ApiMetricsReporter apiErrReporter("AVCodecKit.OH_VideoDecoder_Destroy.ErrorCode", ENUMERATION, ret);
         if (ret != AVCS_ERR_OK) {
             AVCODEC_LOGE("Video decoder destroy failed!");
             delete codec;
@@ -393,10 +398,12 @@ OH_AVErrCode OH_VideoDecoder_Configure(struct OH_AVCodec *codec, struct OH_AVFor
     CHECK_AND_RETURN_RET_LOG(format != nullptr, AV_ERR_INVALID_VAL, "Format is nullptr!");
     CHECK_AND_RETURN_RET_LOG(format->magic_ == MFMagic::MFMAGIC_FORMAT, AV_ERR_INVALID_VAL, "Format magic error!");
 
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_VideoDecoder_Configure.Time", TIMES);
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
 
     int32_t ret = videoDecObj->videoDecoder_->Configure(format->format_);
+    ApiMetricsReporter apiErrReporter("AVCodecKit.OH_VideoDecoder_Configure.ErrorCode", ENUMERATION, ret);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video decoder configure failed!");
 
@@ -409,10 +416,12 @@ OH_AVErrCode OH_VideoDecoder_Prepare(struct OH_AVCodec *codec)
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, AV_ERR_INVALID_VAL,
                              "Codec magic error!");
 
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_VideoDecoder_Prepare.Time", TIMES);
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
 
     int32_t ret = videoDecObj->videoDecoder_->Prepare();
+    ApiMetricsReporter apiErrReporter("AVCodecKit.OH_VideoDecoder_Prepare.ErrorCode", ENUMERATION, ret);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video decoder prepare failed!");
 
@@ -424,7 +433,7 @@ OH_AVErrCode OH_VideoDecoder_Start(struct OH_AVCodec *codec)
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, AV_ERR_INVALID_VAL,
                              "Codec magic error!");
-
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_VideoDecoder_Start.Time", TIMES);
     static AppEventReporter appEventReporter = AppEventReporter();
     ApiInvokeRecorder apiInvokeRecorder("OH_VideoDecoder_Start", appEventReporter);
 
@@ -433,9 +442,9 @@ OH_AVErrCode OH_VideoDecoder_Start(struct OH_AVCodec *codec)
 
     int32_t ret = videoDecObj->videoDecoder_->Start();
     apiInvokeRecorder.SetErrorCode(AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)));
+    ApiMetricsReporter apiErrReporter("AVCodecKit.OH_VideoDecoder_Start.ErrorCode", ENUMERATION, ret);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video decoder start failed!");
-
     return AV_ERR_OK;
 }
 
@@ -445,10 +454,12 @@ OH_AVErrCode OH_VideoDecoder_Stop(struct OH_AVCodec *codec)
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, AV_ERR_INVALID_VAL,
                              "Codec magic error!");
 
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_VideoDecoder_Stop.Time", TIMES);
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
 
     int32_t ret = videoDecObj->videoDecoder_->Stop();
+    ApiMetricsReporter apiErrReporter("AVCodecKit.OH_VideoDecoder_Stop.ErrorCode", ENUMERATION, ret);
     if (ret != AVCS_ERR_OK) {
         AVCODEC_LOGE("Video decoder stop failed");
         return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
@@ -463,10 +474,12 @@ OH_AVErrCode OH_VideoDecoder_Flush(struct OH_AVCodec *codec)
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, AV_ERR_INVALID_VAL,
                              "Codec magic error!");
 
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_VideoDecoder_Flush.Time", TIMES);
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
 
     int32_t ret = videoDecObj->videoDecoder_->Flush();
+    ApiMetricsReporter apiErrReporter("AVCodecKit.OH_VideoDecoder_Flush.ErrorCode", ENUMERATION, ret);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video decoder flush failed!");
     videoDecObj->ClearBufferList();
@@ -479,10 +492,12 @@ OH_AVErrCode OH_VideoDecoder_Reset(struct OH_AVCodec *codec)
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, AV_ERR_INVALID_VAL,
                              "Codec magic error!");
 
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_VideoDecoder_Reset.Time", TIMES);
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
 
     int32_t ret = videoDecObj->videoDecoder_->Reset();
+    ApiMetricsReporter apiErrReporter("AVCodecKit.OH_VideoDecoder_Reset.ErrorCode", ENUMERATION, ret);
     if (ret != AVCS_ERR_OK) {
         AVCODEC_LOGE("Video decoder reset failed!");
         return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
@@ -500,6 +515,7 @@ OH_AVErrCode OH_VideoDecoder_SetSurface(OH_AVCodec *codec, OHNativeWindow *windo
     CHECK_AND_RETURN_RET_LOG(window != nullptr, AV_ERR_INVALID_VAL, "Window is nullptr!");
     CHECK_AND_RETURN_RET_LOG(window->surface != nullptr, AV_ERR_INVALID_VAL, "Input window surface is nullptr!");
 
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_VideoDecoder_SetSurface.Time", TIMES);
     GSError gsRet = window->surface->Disconnect();
     EXPECT_AND_LOGI(gsRet == GSERROR_OK, "Disconnect success");
 
@@ -507,6 +523,7 @@ OH_AVErrCode OH_VideoDecoder_SetSurface(OH_AVCodec *codec, OHNativeWindow *windo
     CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
 
     int32_t ret = videoDecObj->videoDecoder_->SetOutputSurface(window->surface);
+    ApiMetricsReporter apiErrReporter("AVCodecKit.OH_VideoDecoder_SetSurface.ErrorCode", ENUMERATION, ret);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video decoder set output surface failed!");
     videoDecObj->isOutputSurfaceMode_ = true;
@@ -533,6 +550,7 @@ OH_AVErrCode OH_VideoDecoder_PushInputData(struct OH_AVCodec *codec, uint32_t in
     enum AVCodecBufferFlag bufferFlag = static_cast<enum AVCodecBufferFlag>(attr.flags);
 
     int32_t ret = videoDecObj->videoDecoder_->QueueInputBuffer(index, bufferInfo, bufferFlag);
+    ApiMetricsReporter apiErrReporter("AVCodecKit.OH_VideoDecoder_PushInputData.ErrorCode", ENUMERATION, ret);
     CHECK_AND_RETURN_RET_LOGD(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
         "Video decoder push input data failed!");
     return AV_ERR_OK;
@@ -544,12 +562,14 @@ OH_AVErrCode OH_VideoDecoder_PushInputBuffer(struct OH_AVCodec *codec, uint32_t 
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, AV_ERR_INVALID_VAL,
         "magic error!");
 
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_VideoDecoder_PushInputBuffer.Time", TIMES);
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOGD(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "video decoder is nullptr!");
     CHECK_AND_RETURN_RET_LOGD(!videoDecObj->isSetMemoryCallback_, AV_ERR_INVALID_STATE,
         "Not support the callback of OH_AVMemory!");
 
     int32_t ret = videoDecObj->videoDecoder_->QueueInputBuffer(index);
+    ApiMetricsReporter apiErrReporter("AVCodecKit.OH_VideoDecoder_PushInputBuffer.ErrorCode", ENUMERATION, ret);
     CHECK_AND_RETURN_RET_LOGD(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
         "videoDecoder QueueInputBuffer failed!");
     return AV_ERR_OK;
@@ -560,11 +580,13 @@ OH_AVFormat *OH_VideoDecoder_GetOutputDescription(struct OH_AVCodec *codec)
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, nullptr, "Codec is nullptr!");
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, nullptr, "Codec magic error!");
 
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_VideoDecoder_GetOutputDescription.Time", TIMES);
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, nullptr, "Video decoder is nullptr!");
 
     Format format;
     int32_t ret = videoDecObj->videoDecoder_->GetOutputFormat(format);
+    ApiMetricsReporter apiErrReporter("AVCodecKit.OH_VideoDecoder_GetOutputDescription.ErrorCode", ENUMERATION, ret);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Video decoder get output description failed!");
 
     OH_AVFormat *avFormat = OH_AVFormat_Create();
@@ -586,6 +608,7 @@ OH_AVErrCode OH_VideoDecoder_RenderOutputData(struct OH_AVCodec *codec, uint32_t
         "The callback of OH_AVMemory is nullptr!");
 
     int32_t ret = videoDecObj->videoDecoder_->ReleaseOutputBuffer(index, true);
+    ApiMetricsReporter apiErrReporter("AVCodecKit.OH_VideoDecoder_RenderOutputData.ErrorCode", ENUMERATION, ret);
     CHECK_AND_RETURN_RET_LOGD(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
         "Video decoder render output data failed!");
 
@@ -604,6 +627,7 @@ OH_AVErrCode OH_VideoDecoder_FreeOutputData(struct OH_AVCodec *codec, uint32_t i
         "The callback of OH_AVMemory is nullptr!");
 
     int32_t ret = videoDecObj->videoDecoder_->ReleaseOutputBuffer(index, false);
+    ApiMetricsReporter apiErrReporter("AVCodecKit.OH_VideoDecoder_FreeOutputData.ErrorCode", ENUMERATION, ret);
     CHECK_AND_RETURN_RET_LOGD(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
         "Video decoder free output data failed!");
 
@@ -615,12 +639,15 @@ OH_AVErrCode OH_VideoDecoder_RenderOutputBuffer(struct OH_AVCodec *codec, uint32
     CHECK_AND_RETURN_RET_LOGD(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, AV_ERR_INVALID_VAL,
         "Codec magic error!");
+
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_VideoDecoder_RenderOutputBuffer.Time", TIMES);
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOGD(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
     CHECK_AND_RETURN_RET_LOGD(!videoDecObj->isSetMemoryCallback_, AV_ERR_INVALID_STATE,
         "Not support the callback of OH_AVMemory!");
 
     int32_t ret = videoDecObj->videoDecoder_->ReleaseOutputBuffer(index, true);
+    ApiMetricsReporter apiErrReporter("AVCodecKit.OH_VideoDecoder_RenderOutputBuffer.ErrorCode", ENUMERATION, ret);
     CHECK_AND_RETURN_RET_LOGD(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
         "Video decoder render output data failed!");
 
@@ -632,12 +659,16 @@ OH_AVErrCode OH_VideoDecoder_RenderOutputBufferAtTime(OH_AVCodec *codec, uint32_
     CHECK_AND_RETURN_RET_LOGD(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, AV_ERR_INVALID_VAL,
         "Codec magic error!");
+    
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_VideoDecoder_RenderOutputBufferAtTime.Time", TIMES);
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOGD(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
     CHECK_AND_RETURN_RET_LOGD(!videoDecObj->isSetMemoryCallback_, AV_ERR_INVALID_STATE,
         "Not support the callback of OH_AVMemory!");
 
     int32_t ret = videoDecObj->videoDecoder_->RenderOutputBufferAtTime(index, renderTimestampNs);
+    ApiMetricsReporter apiErrReporter("AVCodecKit.OH_VideoDecoder_RenderOutputBufferAtTime.ErrorCode",
+        ENUMERATION, ret);
     CHECK_AND_RETURN_RET_LOGD(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
         "Video decoder render output buffer at time failed!");
     return AV_ERR_OK;
@@ -649,12 +680,14 @@ OH_AVErrCode OH_VideoDecoder_FreeOutputBuffer(struct OH_AVCodec *codec, uint32_t
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, AV_ERR_INVALID_VAL,
         "Codec magic error!");
 
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_VideoDecoder_FreeOutputBuffer.Time", TIMES);
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOGD(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
     CHECK_AND_RETURN_RET_LOGD(!videoDecObj->isSetMemoryCallback_, AV_ERR_INVALID_STATE,
         "Not support the callback of OH_AVMemory!");
 
     int32_t ret = videoDecObj->videoDecoder_->ReleaseOutputBuffer(index, false);
+    ApiMetricsReporter apiErrReporter("AVCodecKit.OH_VideoDecoder_FreeOutputBuffer.ErrorCode", ENUMERATION, ret);
     CHECK_AND_RETURN_RET_LOGD(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
         "Video decoder free output data failed!");
 
@@ -670,6 +703,7 @@ OH_AVErrCode OH_VideoDecoder_QueryInputBuffer(struct OH_AVCodec *codec, uint32_t
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOGD(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
     int32_t ret = videoDecObj->videoDecoder_->QueryInputBuffer(*index, timeoutUs);
+    ApiMetricsReporter apiErrReporter("AVCodecKit.OH_VideoDecoder_QueryInputBuffer.ErrorCode", ENUMERATION, ret);
     switch (ret) {
         case AVCS_ERR_OK:
             return AV_ERR_OK;
@@ -691,6 +725,7 @@ OH_AVErrCode OH_VideoDecoder_QueryOutputBuffer(struct OH_AVCodec *codec, uint32_
     CHECK_AND_RETURN_RET_LOGD(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
 
     int32_t ret = videoDecObj->videoDecoder_->QueryOutputBuffer(*index, timeoutUs);
+    ApiMetricsReporter apiErrReporter("AVCodecKit.OH_VideoDecoder_QueryOutputBuffer.ErrorCode", ENUMERATION, ret);
     switch (ret) {
         case AVCS_ERR_OK:
             return AV_ERR_OK;
@@ -740,10 +775,12 @@ OH_AVErrCode OH_VideoDecoder_SetParameter(struct OH_AVCodec *codec, struct OH_AV
     CHECK_AND_RETURN_RET_LOG(format != nullptr, AV_ERR_INVALID_VAL, "Format is nullptr!");
     CHECK_AND_RETURN_RET_LOG(format->magic_ == MFMagic::MFMAGIC_FORMAT, AV_ERR_INVALID_VAL, "Format magic error!");
 
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_VideoDecoder_SetParameter.Time", TIMES);
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
 
     int32_t ret = videoDecObj->videoDecoder_->SetParameter(format->format_);
+    ApiMetricsReporter apiErrReporter("AVCodecKit.OH_VideoDecoder_SetParameter.ErrorCode", ENUMERATION, ret);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video decoder set parameter failed!");
 
@@ -768,6 +805,7 @@ OH_AVErrCode OH_VideoDecoder_SetCallback(struct OH_AVCodec *codec, struct OH_AVC
     }
     int32_t ret =
         videoDecObj->videoDecoder_->SetCallback(std::static_pointer_cast<AVCodecCallback>(videoDecObj->callback_));
+    ApiMetricsReporter apiErrReporter("AVCodecKit.OH_VideoDecoder_SetCallback.ErrorCode", ENUMERATION, ret);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video decoder set callback failed!");
     videoDecObj->isSetMemoryCallback_ = true;
@@ -785,6 +823,7 @@ OH_AVErrCode OH_VideoDecoder_RegisterCallback(struct OH_AVCodec *codec, struct O
     CHECK_AND_RETURN_RET_LOG(callback.onNewOutputBuffer != nullptr, AV_ERR_INVALID_VAL,
                              "Callback onNewOutputBuffer is nullptr");
 
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_VideoDecoder_RegisterCallback.Time", TIMES);
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
 
@@ -796,6 +835,7 @@ OH_AVErrCode OH_VideoDecoder_RegisterCallback(struct OH_AVCodec *codec, struct O
     }
     int32_t ret =
         videoDecObj->videoDecoder_->SetCallback(std::static_pointer_cast<MediaCodecCallback>(videoDecObj->callback_));
+    ApiMetricsReporter apiErrReporter("AVCodecKit.OH_VideoDecoder_RegisterCallback.ErrorCode", ENUMERATION, ret);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video decoder register callback failed!");
     return AV_ERR_OK;

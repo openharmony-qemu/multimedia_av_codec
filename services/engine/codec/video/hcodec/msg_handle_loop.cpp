@@ -151,3 +151,8 @@ MsgHandleLoop::TimeUs MsgHandleLoop::GetNowUs()
     return chrono::duration_cast<chrono::microseconds>(now.time_since_epoch()).count();
 }
 
+MsgHandleLoop::TimeUs MsgHandleLoop::GetCurrUs()
+{
+    auto now = chrono::system_clock::now();
+    return chrono::duration_cast<chrono::microseconds>(now.time_since_epoch()).count();
+}

@@ -104,6 +104,8 @@ protected:
         CHECK_IF_STUCK,
         FORCE_SHUTDOWN,
         QUERY_JANK_REASON,
+        XPERF_RESUME_EVENT,
+        XPERF_PAUSE_EVENT,
     };
 
     enum BufferOperationMode {
@@ -275,7 +277,6 @@ protected:
     virtual bool ReadyToStart() = 0;
     virtual int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) = 0;
     void SetCallerToBuffer(int fd, uint32_t w, uint32_t h);
-    virtual void UpdateFmtFromSurfaceBuffer() = 0;
     int32_t GetPortDefinition(OMX_DIRTYPE portIndex, OMX_PARAM_PORTDEFINITIONTYPE& def);
     int32_t AllocateAvSurfaceBuffers(OMX_DIRTYPE portIndex);
     int32_t AllocateAvLinearBuffers(OMX_DIRTYPE portIndex);
@@ -346,6 +347,11 @@ protected:
     virtual void RecordProcessTimeOfUpstream(const std::shared_ptr<AVBuffer>& avBuffer) {}
     virtual void AppendProcessTimeOfUs(const std::shared_ptr<AVBuffer>& avBuffer, int64_t pts, const TimePoint& now) {}
 
+    //dfx
+    virtual void CheckFrameInterval() {}
+    virtual void OnStartJankDetect() {}
+    virtual void OnStopJankDetect() {}
+    
     // template
     template <typename T>
     static inline void InitOMXParam(T& param)

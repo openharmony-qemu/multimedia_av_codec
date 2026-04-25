@@ -895,6 +895,94 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0532,
 }
 
 /**
+ * @tc.name: ENCODE_KEY_BITRATE_QUALLITY_VALID_TEST_0533
+ * @tc.desc: codec video configure bitrate mode is CBR_HIGH_QUALITY
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_VALID_TEST_0533, TestSize.Level3)
+{
+    SetFormatBasicParam(false);
+    OH_AVCapability *capability = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true);
+    if (OH_AVCapability_IsEncoderBitrateModeSupported(capability, BITRATE_MODE_CBR_HIGH_QUALITY)) {
+        ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR_HIGH_QUALITY));
+        OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEncHevc, g_format);
+        ASSERT_EQ(ret, AV_ERR_OK);
+    }
+}
+
+/**
+ * @tc.name: ENCODE_KEY_BITRATE_QUALLITY_VALID_TEST_0534
+ * @tc.desc: codec video configure bitrate mode is CBR_HIGH_QUALITY and bitrate in range
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_VALID_TEST_0534, TestSize.Level3)
+{
+    SetFormatBasicParam(false);
+    ASSERT_EQ(true, OH_AVFormat_SetLongValue(g_format, OH_MD_KEY_BITRATE, DEFAULT_BITRATE));
+
+    OH_AVCapability *capability = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true);
+    if (OH_AVCapability_IsEncoderBitrateModeSupported(capability, BITRATE_MODE_CBR_HIGH_QUALITY)) {
+        ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR_HIGH_QUALITY));
+        OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEncHevc, g_format);
+        ASSERT_EQ(ret, AV_ERR_OK);
+    }
+}
+
+/**
+ * @tc.name: ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0535
+ * @tc.desc: codec video configure bitrate mode is CBR_HIGH_QUALITY and bitrate not in range
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0535, TestSize.Level3)
+{
+    SetFormatBasicParam(false);
+    ASSERT_EQ(true, OH_AVFormat_SetLongValue(g_format, OH_MD_KEY_BITRATE, INT64_MAX));
+    
+    OH_AVCapability *capability = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true);
+    if (OH_AVCapability_IsEncoderBitrateModeSupported(capability, BITRATE_MODE_CBR_HIGH_QUALITY)) {
+        ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR_HIGH_QUALITY));
+        OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEncHevc, g_format);
+        ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+    }
+}
+
+/**
+ * @tc.name: ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0536
+ * @tc.desc: codec video configure bitrate mode is CBR_HIGH_QUALITY and sqr factor
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0536, TestSize.Level3)
+{
+    SetFormatBasicParam(false);
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_SQR_FACTOR, DEFAULT_SQR_FACTOR));
+    
+    OH_AVCapability *capability = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true);
+    if (OH_AVCapability_IsEncoderBitrateModeSupported(capability, BITRATE_MODE_CBR_HIGH_QUALITY)) {
+        ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR_HIGH_QUALITY));
+        OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEncHevc, g_format);
+        ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+    }
+}
+
+/**
+ * @tc.name: ENCODE_KEY_BITRATE_QUALLITY_VALID_TEST_0537
+ * @tc.desc: codec video configure bitrate mode is CBR_HIGH_QUALITY and max bitrate
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_VALID_TEST_0537, TestSize.Level3)
+{
+    SetFormatBasicParam(false);
+    ASSERT_EQ(true, OH_AVFormat_SetLongValue(g_format, OH_MD_KEY_MAX_BITRATE, DEFAULT_MAX_BITRATE));
+    
+    OH_AVCapability *capability = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true);
+    if (OH_AVCapability_IsEncoderBitrateModeSupported(capability, BITRATE_MODE_CBR_HIGH_QUALITY)) {
+        ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR_HIGH_QUALITY));
+        OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEncHevc, g_format);
+        ASSERT_EQ(ret, AV_ERR_OK);
+    }
+}
+
+/**
  * @tc.name: ENCODE_KEY_PROFILE_VALID_TEST_0601
  * @tc.desc: codec video configure profile support
  * @tc.type: FUNC

@@ -185,6 +185,7 @@ ohos_shared_library("av_codec_service") {
     "media_foundation:media_foundation",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
+    "hiview:xperfservice_client",
     "qos_manager:qos"
   ]
 

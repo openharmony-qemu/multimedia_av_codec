@@ -29,7 +29,10 @@
 #include "native_avcodec_base.h"
 #include "syspara/parameters.h"
 #include "v2_2/buffer_handle_meta_key_type.h"
+#include "securec.h"
 
+namespace OHOS {
+namespace MediaAVCodec {
 namespace {
 using namespace OHOS;
 namespace V2_2 = OHOS::HDI::Display::Graphic::Common::V2_2;
@@ -130,10 +133,9 @@ std::string TransformRoiMetadata(const std::string &roi, double scaleX, double s
     }
     return result;
 }
+
 } // namespace
 
-namespace OHOS {
-namespace MediaAVCodec {
 Preprocessor::Preprocessor(const std::string &mime) : mime_(mime)
 {
     if (fastKitEnable) {
@@ -278,7 +280,11 @@ int32_t Preprocessor::ValidateDownsampling(const Media::Format &format, Downsamp
     if (!(minWidth > 0 && minHeight > 0 && minWidth <= width && width <= encoderConfig_.width &&
           encoderConfig_.width <= maxWidth && minHeight <= height && height <= encoderConfig_.height &&
           encoderConfig_.height <= maxHeight)) {
-        AVCODEC_LOGE("Invalid downsampling parameters: width=%{public}d, height=%{public}d", width, height);
+        AVCODEC_LOGE("Invalid downsampling parameters: width=%{public}d, height=%{public}d, "
+                     "valid range: width [%{public}d, %{public}d], height [%{public}d, %{public}d], "
+                     "encoder configured: %{public}dx%{public}d",
+                     width, height, minWidth, maxWidth, minHeight, maxHeight, encoderConfig_.width,
+                     encoderConfig_.height);
         return AVCS_ERR_INVALID_VAL;
     }
     params.width = width;
@@ -322,10 +328,10 @@ int32_t Preprocessor::SetParameter(const Media::Format &format)
 
 int32_t Preprocessor::Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output, uint64_t pts)
 {
-    CHECK_AND_RETURN_RET_LOG(input, AVCS_ERR_INVALID_VAL,
-                             "Invalid buffer: input=%{public}p, output=%{public}p", input.GetRefPtr(),
-                             output.GetRefPtr());
-    CHECK_AND_RETURN_RET_LOG(!output || input->GetFormat() == output->GetFormat(), AVCS_ERR_INVALID_VAL,
+    CHECK_AND_RETURN_RET_LOG(input && output, AVCS_ERR_INVALID_VAL,
+                             "Invalid buffer: input is %{public}s, output is %{public}s", input ? "valid" : "nullptr",
+                             output ? "valid" : "nullptr");
+    CHECK_AND_RETURN_RET_LOG(input->GetFormat() == output->GetFormat(), AVCS_ERR_INVALID_VAL,
                              "Format mismatch: input=%{public}d, output=%{public}d", input->GetFormat(),
                              output ? output->GetFormat() : INVALID_OUTPUT_FORMAT);
     if (IsCropEnabled()) {

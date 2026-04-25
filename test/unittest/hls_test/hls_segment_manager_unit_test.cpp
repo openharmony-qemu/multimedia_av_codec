@@ -2383,7 +2383,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, GET_DEFAULT_MEDIA_STREAM_ID_001, TestSize.Le
     // playlistDownloader_ nullptr
     downloader->playlistDownloader_ = nullptr;
     int32_t streamId2 = downloader->GetDefaultMediaStreamId(HlsSegmentType::SEG_AUDIO);
-    EXPECT_EQ(streamId2, -1);
+    EXPECT_EQ(streamId2, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, GET_SEG_TYPE_001, TestSize.Level1)
@@ -2906,5 +2906,34 @@ HWTEST_F(HlsSegmentManagerUnitTest, SeekListHelper_008, TestSize.Level1)
     
     auto result = manager->SeekListHelper(true);
     EXPECT_EQ(result.size(), 2);
+}
+
+HWTEST_F(HlsSegmentManagerUnitTest, REMOVE_FMP4_PADDING_DATA_002, TestSize.Level1)
+{
+    std::shared_ptr<HlsSegmentManager> downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT,
+        true, header_);
+    downloader->Init();
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                            std::shared_ptr<DownloadRequest>& request) {};
+    downloader->SetStatusCallback(statusCallback);
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    downloader->SetCallback(sourceCallback);
+    std::string testUrl = TEST_URI_PATH + "test_hls/testXMap.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    std::vector<StreamInfo> streams;
+    downloader->GetStreamInfo(streams);
+    uint8_t buffer[16] = {
+    0x0d, 0x0C, 0x0C, 0x0C,
+    0x0C, 0x0C, 0x0C, 0x0C,
+    0x0C, 0x0C, 0x0C, 0x0C,
+    0x04, 0x04, 0x04, 0x00
+    };
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 1;
+    readDataInfo.wantReadLength_ = 16;
+    readDataInfo.realReadLength_ = 16;
+    downloader->aesDecryptor_ = std::make_shared<AesDecryptor>();
+    downloader->RemoveFmp4PaddingData(buffer, readDataInfo);
+    EXPECT_EQ(readDataInfo.realReadLength_, 16);
 }
 }

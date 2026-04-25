@@ -106,7 +106,8 @@
           "config_policy",
           "json",
           "resource_schedule_service",
-          "certificate_manager"
+          "certificate_manager",
+          "api_metrics"
         ],
         "third_party": []
       },

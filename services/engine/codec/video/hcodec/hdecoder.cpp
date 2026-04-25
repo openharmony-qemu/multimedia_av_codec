@@ -70,23 +70,53 @@ HDecoder::~HDecoder()
 #endif
 }
 
+bool HDecoder::DecideOutputBufMode()
+{
+    isAlloc_ = false;
+    isDynamic_ = false;
+ 
+    SupportBufferTypeV2 typeV2;
+    InitOMXParamExt(typeV2);
+    typeV2.portIndex = OMX_DirOutput;
+    if (GetParameter(OMX_IndexParamSupportBufferTypeV2, typeV2)) {
+        if (typeV2.supportedAllocBufTypes & CODEC_BUFFER_TYPE_HANDLE) {
+            isAlloc_ = true;
+            isDynamic_ = false;
+        } else if (typeV2.supportedUseBufTypes & CODEC_BUFFER_TYPE_DYNAMIC_HANDLE) {
+            isAlloc_ = false;
+            isDynamic_ = true;
+        }
+    } else {
+        SupportBufferType type;
+        InitOMXParamExt(type);
+        type.portIndex = OMX_DirOutput;
+        if (GetParameter(OMX_IndexParamSupportBufferType, type)) {
+            if (type.bufferTypes & CODEC_BUFFER_TYPE_DYNAMIC_HANDLE) {
+                isAlloc_ = false;
+                isDynamic_ = true;
+            }
+        }
+    }
+    HLOGI("%s %s", isAlloc_ ? "alloc" : "use", isDynamic_ ? "dynamic" : "preset");
+    if (isAlloc_) {
+        AllocBufferType param;
+        InitOMXParamExt(param);
+        param.portIndex = OMX_DirOutput;
+        param.bufferType = CODEC_BUFFER_TYPE_HANDLE;
+        return SetParameter(OMX_IndexParamAllocBufferType, param);
+    }
+    return UseHandleOnOutputPort(isDynamic_);
+}
+
 int32_t HDecoder::OnConfigure(const Format &format)
 {
     configFormat_ = make_shared<Format>(format);
 
-    SupportBufferType type;
-    InitOMXParamExt(type);
-    type.portIndex = OMX_DirOutput;
-    if (GetParameter(OMX_IndexParamSupportBufferType, type) &&
-        (type.bufferTypes & CODEC_BUFFER_TYPE_DYNAMIC_HANDLE) &&
-        UseHandleOnOutputPort(true)) {
-        HLOGI("dynamic mode");
-        isDynamic_ = true;
-    } else if (UseHandleOnOutputPort(false)) {
-        HLOGI("normal mode");
-        isDynamic_ = false;
-    } else {
-        HLOGE("invalid output buffer type");
+    (void)SetProcessName();
+    (void)SetVrrEnable(format);
+ 
+    if (!DecideOutputBufMode()) {
+        HLOGE("set output buffer type failed");
         return AVCS_ERR_UNKNOWN;
     }
     int32_t ret = SetLowLatency(format);
@@ -99,10 +129,8 @@ int32_t HDecoder::OnConfigure(const Format &format)
     SetContentLightLevelFromContainer(format);
 
     SaveTransform(format);
-    SaveScaleMode(format);
     (void)SetProcessName();
     (void)SetFrameRateAdaptiveMode(format);
-    (void)SetVrrEnable(format);
     (void)SetIsMvUpload(format);
     return SetupPort(format);
 }
@@ -187,7 +215,6 @@ bool HDecoder::UpdateConfiguredFmt(OMX_COLOR_FORMATTYPE portFmt)
         HLOGI("GraphicPixelFormat need update: configured(%s) -> portdefinition(%s)",
             configuredFmt_.strFmt.c_str(), fmt->strFmt.c_str());
         configuredFmt_ = fmt.value();
-        outputFormat_->PutStringValue("pixel_format_string", configuredFmt_.strFmt.c_str());
     }
     return true;
 }
@@ -221,11 +248,13 @@ int32_t HDecoder::UpdateOutPortFormat()
     requestCfg_.height = isNeedUseDecResolution ? static_cast<int32_t>(def.format.video.nFrameHeight) : damage.h;
     requestCfg_.strideAlignment = STRIDE_ALIGNMENT;
     requestCfg_.format = configuredFmt_.graphicFmt;
-    requestCfg_.usage = GetProducerUsage();
 
     // save into format
     if (outputFormat_ == nullptr) {
         outputFormat_ = make_shared<Format>();
+    }
+    if (currGeneration_ != 0) {
+        return AVCS_ERR_OK;
     }
     if (!outputFormat_->ContainKey(MediaDescriptionKey::MD_KEY_WIDTH)) {
         outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, w); // deprecated
@@ -294,18 +323,6 @@ void HDecoder::GetCropFromOmx(uint32_t w, uint32_t h, OHOS::Rect& damage)
     damage.y = rect.nTop;
     damage.w = static_cast<int32_t>(rect.nWidth);
     damage.h = static_cast<int32_t>(rect.nHeight);
-    if (outputFormat_) {
-        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_LEFT, rect.nLeft);
-        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_TOP, rect.nTop);
-        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_RIGHT,
-            static_cast<int32_t>(rect.nLeft + rect.nWidth) - 1);
-        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_BOTTOM,
-            static_cast<int32_t>(rect.nTop + rect.nHeight) - 1);
-        crop_.left = static_cast<uint32_t>(rect.nLeft);
-        crop_.top = static_cast<uint32_t>(rect.nTop);
-        crop_.width = rect.nWidth;
-        crop_.height = rect.nHeight;
-    }
 }
 
 void HDecoder::OnSetOutputSurface(const MsgInfo &msg, BufferOperationMode mode)
@@ -630,12 +647,20 @@ bool HDecoder::ReadyToStart()
     }
     if (currSurface_.surface_) {
         HLOGI("surface mode");
-        requestCfg_.usage = GetProducerUsage();
-        cfgedConsumerUsage = currSurface_.surface_->GetDefaultUsage();
+        cfgedConsumerUsage_ = currSurface_.surface_->GetDefaultUsage();
         SetTransform();
         SetScaleMode();
     } else {
         HLOGI("buffer mode");
+    }
+    uint64_t mode = GetModeUsage();
+    uint64_t consumer = GetSurfaceConsumerUsage();
+    if (isAlloc_) {
+        uint64_t usageToVendor = mode | cfgedConsumerUsage_ | consumer;
+        HLOGI("usage to vendor(0x%" PRIx64 ") = mode(0x%" PRIx64 ") | "
+            "cfged(0x%" PRIx64 ") | consumer(0x%" PRIx64 ")",
+            usageToVendor, mode, cfgedConsumerUsage_, consumer);
+        (void)SetUsageToVendor(usageToVendor);
     }
     return true;
 }
@@ -645,58 +670,47 @@ int32_t HDecoder::AllocateBuffersOnPort(OMX_DIRTYPE portIndex)
     if (portIndex == OMX_DirInput) {
         return AllocateAvLinearBuffers(portIndex);
     }
-    int32_t ret;
-    if (isDynamic_) {
-        ret = AllocOutDynamicSurfaceBuf();
-    } else {
-        ret = (currSurface_.surface_ ? AllocateOutputBuffersFromSurface() : AllocateAvSurfaceBuffers(portIndex));
+    currGeneration_++;
+    currGenerationLayoutHasParsed_ = false;
+    outputBufferPool_.clear();
+    OMX_PARAM_PORTDEFINITIONTYPE def;
+    int32_t ret = GetPortDefinition(portIndex, def);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
     }
-    if (ret == AVCS_ERR_OK) {
-        UpdateFmtFromSurfaceBuffer();
+    outBufferCnt_ = def.nBufferCountActual;
+    if (currSurface_.surface_) {
+        ret = ClearSurfaceAndSetQueueSize(currSurface_.surface_, outBufferCnt_);
+        if (ret != AVCS_ERR_OK) {
+            return ret;
+        }
+    }
+    uint64_t mode = GetModeUsage();
+    uint64_t consumer = GetSurfaceConsumerUsage();
+ 
+    if (isAlloc_) { // alloc by omx
+        uint64_t usageToVendor = mode | cfgedConsumerUsage_ | consumer;
+        HLOGI("usage to vendor(0x%" PRIx64 ") = mode(0x%" PRIx64 ") | "
+            "cfged(0x%" PRIx64 ") | consumer(0x%" PRIx64 ")",
+            usageToVendor, mode, cfgedConsumerUsage_, consumer);
+        if (!SetUsageToVendor(usageToVendor)) {
+            return AVCS_ERR_INVALID_VAL;
+        }
+        ret = AllocateOutputBuffersFromOmx();
+    } else { // alloc by us and use to omx
+        uint64_t vendor = GetVendorProducerUsage();
+        requestCfg_.usage = vendor | mode | cfgedConsumerUsage_ | consumer;
+        HLOGI("final usage(0x%" PRIx64 ") = vendor(0x%" PRIx64 ") | mode(0x%" PRIx64 ") | "
+            "cfged(0x%" PRIx64 ") | consumer(0x%" PRIx64 ")",
+            requestCfg_.usage, vendor, mode, cfgedConsumerUsage_, consumer);
+ 
+        if (isDynamic_) {  // use dynamic
+            ret = AllocOutDynamicSurfaceBuf();
+        } else {  // use preset
+            ret = (currSurface_.surface_ ? AllocateOutputBuffersFromSurface() : AllocateAvSurfaceBuffers(portIndex));
+        }
     }
     return ret;
-}
-
-void HDecoder::UpdateFmtFromSurfaceBuffer()
-{
-    if (outputBufferPool_.empty()) {
-        return;
-    }
-    sptr<SurfaceBuffer> surfaceBuffer = outputBufferPool_.front().surfaceBuffer;
-    if (surfaceBuffer == nullptr) {
-        return;
-    }
-    int32_t stride = surfaceBuffer->GetStride();
-    if (stride <= 0) {
-        HLOGW("invalid stride %d", stride);
-        return;
-    }
-    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, stride);
-    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, stride); // deprecated
-
-    OH_NativeBuffer_Planes *planes = nullptr;
-    GSError err = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
-    if (err != GSERROR_OK || planes == nullptr) {
-        HLOGI("can not get plane info, ignore");
-        return;
-    }
-    for (uint32_t i = 0; i < planes->planeCount; i++) {
-        HLOGI("plane[%u]: offset=%" PRIu64 ", rowStride=%u, columnStride=%u",
-              i, planes->planes[i].offset, planes->planes[i].rowStride, planes->planes[i].columnStride);
-    }
-    int32_t sliceHeight = static_cast<int32_t>(static_cast<int64_t>(planes->planes[1].offset) / stride);
-    HLOGI("[%dx%d][%dx%d]", surfaceBuffer->GetWidth(), surfaceBuffer->GetHeight(), stride, sliceHeight);
-    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight);
-    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, sliceHeight);
-}
-
-static bool IsNotSame(const OHOS::HDI::Display::Graphic::Common::V1_0::BufferHandleMetaRegion& crop1,
-                      const OHOS::HDI::Display::Graphic::Common::V1_0::BufferHandleMetaRegion& crop2)
-{
-    return crop1.left != crop2.left ||
-           crop1.top != crop2.top ||
-           crop1.width != crop2.width ||
-           crop1.height != crop2.height;
 }
 
 void HDecoder::ProcSurfaceBufferToUser(const sptr<SurfaceBuffer>& buffer)
@@ -704,30 +718,79 @@ void HDecoder::ProcSurfaceBufferToUser(const sptr<SurfaceBuffer>& buffer)
     if (buffer == nullptr) {
         return;
     }
+    SurfaceBufferLayout layout{};
+    if (!currGenerationLayoutHasParsed_) {
+        std::optional<PixelFmt> fmt = TypeConverter::GraphicFmtToFmt(
+            static_cast<GraphicPixelFormat>(buffer->GetFormat()));
+        if (!fmt.has_value()) {
+            return;
+        }
+        layout.fmt = fmt.value();
+        layout.handleW = buffer->GetWidth();
+        layout.handleH = buffer->GetHeight();
+        layout.byteStride = buffer->GetStride();
+        OH_NativeBuffer_Planes *planes = nullptr;
+        GSError err = buffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+        if (err != GSERROR_OK || planes == nullptr) {
+            HLOGI("can not get plane info, ignore");
+            layout.alignedHeight = layout.handleH;
+        } else {
+            for (uint32_t i = 0; i < planes->planeCount; i++) {
+                HLOGI("plane[%u]: offset=%" PRIu64 ", rowStride=%u, columnStride=%u",
+                    i, planes->planes[i].offset, planes->planes[i].rowStride, planes->planes[i].columnStride);
+            }
+            layout.alignedHeight = static_cast<int32_t>(static_cast<int64_t>(planes->planes[1].offset) /
+                layout.byteStride);
+        }
+        currGenerationLayoutHasParsed_ = true;
+    } else {
+        layout.fmt = currLayout_->fmt;
+        layout.handleW = currLayout_->handleW;
+        layout.handleH = currLayout_->handleH;
+        layout.byteStride = currLayout_->byteStride;
+        layout.alignedHeight = currLayout_->alignedHeight;
+    }
     using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
     vector<uint8_t> vec;
     GSError err = buffer->GetMetadata(ATTRKEY_CROP_REGION, vec);
-    if (err != GSERROR_OK || vec.size() != sizeof(BufferHandleMetaRegion)) {
-        return;
+    if (err == GSERROR_OK && vec.size() == sizeof(BufferHandleMetaRegion)) {
+        auto* crop = reinterpret_cast<BufferHandleMetaRegion*>(vec.data());
+        layout.cropLeft = static_cast<int32_t>(crop->left);
+        layout.cropTop = static_cast<int32_t>(crop->top);
+        layout.cropW = static_cast<int32_t>(crop->width);
+        layout.cropH = static_cast<int32_t>(crop->height);
+    } else {
+        layout.cropLeft = 0;
+        layout.cropTop = 0;
+        layout.cropW = layout.handleW;
+        layout.cropH = layout.handleH;
     }
-    auto* newCrop = reinterpret_cast<BufferHandleMetaRegion*>(vec.data());
-    if (!IsNotSame(crop_, *newCrop)) {
-        return;
+    if (currLayout_ == nullptr) {
+        currLayout_ = std::make_shared<SurfaceBufferLayout>(layout);
+        HLOGI("buffer layout update: %s", layout.ToString().c_str());
+    } else {
+        if (*currLayout_ == layout) {
+            return;
+        }
+        HLOGI("buffer layout update: %s -> %s", currLayout_->ToString().c_str(), layout.ToString().c_str());
+        *currLayout_ = layout;
     }
-    HLOGI("crop update: left/top/width/height, %u/%u/%u/%u -> %u/%u/%u/%u",
-        crop_.left, crop_.top, crop_.width, crop_.height,
-        newCrop->left, newCrop->top, newCrop->width, newCrop->height);
-    crop_ = *newCrop;
-    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_WIDTH, newCrop->width);
-    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_HEIGHT, newCrop->height);
-    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_PIC_WIDTH, newCrop->width);
-    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_PIC_HEIGHT, newCrop->height);
-    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_LEFT, newCrop->left);
-    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_TOP, newCrop->top);
+    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(layout.fmt.innerFmt));
+    outputFormat_->PutStringValue("pixel_format_string", layout.fmt.strFmt);
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, layout.byteStride);
+    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, layout.byteStride);
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_SLICE_HEIGHT, layout.alignedHeight);
+    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, layout.alignedHeight);
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_WIDTH, layout.cropW);
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_HEIGHT, layout.cropH);
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_PIC_WIDTH, layout.cropW);
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_PIC_HEIGHT, layout.cropH);
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_LEFT, layout.cropLeft);
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_TOP, layout.cropTop);
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_RIGHT,
-        static_cast<int32_t>(newCrop->left + newCrop->width) - 1);
+        static_cast<int32_t>(layout.cropLeft + layout.cropW) - 1);
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_BOTTOM,
-        static_cast<int32_t>(newCrop->top + newCrop->height) - 1);
+        static_cast<int32_t>(layout.cropTop + layout.cropH) - 1);
     HLOGI("output format changed: %s", outputFormat_->Stringify().c_str());
     callback_->OnOutputFormatChanged(*(outputFormat_.get()));
 }
@@ -806,22 +869,33 @@ void HDecoder::OnClearBufferPool(OMX_DIRTYPE portIndex)
     }
 }
 
-uint64_t HDecoder::GetProducerUsage()
+uint64_t HDecoder::GetModeUsage()
 {
-    uint64_t producerUsage = currSurface_.surface_ ? SURFACE_MODE_PRODUCER_USAGE : BUFFER_MODE_REQUEST_USAGE;
-
+    return currSurface_.surface_ ? SURFACE_MODE_PRODUCER_USAGE : BUFFER_MODE_REQUEST_USAGE;
+}
+ uint64_t HDecoder::GetVendorProducerUsage()
+{
     GetBufferHandleUsageParams vendorUsage;
     InitOMXParamExt(vendorUsage);
     vendorUsage.portIndex = static_cast<uint32_t>(OMX_DirOutput);
     if (GetParameter(OMX_IndexParamGetBufferHandleUsage, vendorUsage)) {
         HLOGI("vendor producer usage = 0x%" PRIx64 "", vendorUsage.usage);
-        producerUsage |= vendorUsage.usage;
-    } else {
-        HLOGW("get vendor producer usage failed, add CPU_READ");
-        producerUsage |= BUFFER_USAGE_CPU_READ;
+        return vendorUsage.usage;
     }
-    HLOGI("decoder producer usage = 0x%" PRIx64 "", producerUsage);
-    return producerUsage;
+    return 0;
+}
+
+bool HDecoder::SetUsageToVendor(uint64_t usage)
+{
+    GetBufferHandleUsageParams param;
+    InitOMXParamExt(param);
+    param.portIndex = OMX_DirOutput;
+    param.usage = usage;
+    if (!SetParameter(OMX_IndexParamConsumerUsage, param)) {
+        HLOGE("set usage to vendor failed");
+        return false;
+    }
+    return true;
 }
 
 #ifdef USE_VIDEO_PROCESSING_ENGINE
@@ -863,8 +937,11 @@ void HDecoder::CombineConsumerUsageByVpe(uint64_t& consumerUsage)
 }
 #endif
 
-void HDecoder::CombineConsumerUsage()
+uint64_t HDecoder::GetSurfaceConsumerUsage()
 {
+    if (currSurface_.surface_ == nullptr) {
+        return 0;
+    }
     uint64_t consumerUsage = currSurface_.surface_->GetDefaultUsage();
     if (currSurface_.surface_->GetName().find("SurfaceImage") != string::npos) {
         consumerUsage |= BUFFER_USAGE_HW_COMPOSER;
@@ -872,10 +949,7 @@ void HDecoder::CombineConsumerUsage()
         CombineConsumerUsageByVpe(consumerUsage);
 #endif
     }
-    uint64_t finalUsage = requestCfg_.usage | consumerUsage | cfgedConsumerUsage;
-    HLOGI("producer 0x%" PRIx64 " | consumer 0x%" PRIx64 " | cfg 0x%" PRIx64 " -> 0x%" PRIx64 "",
-        requestCfg_.usage, consumerUsage, cfgedConsumerUsage, finalUsage);
-    requestCfg_.usage = finalUsage;
+    return consumerUsage;
 }
 
 int32_t HDecoder::ClearSurfaceAndSetQueueSize(const sptr<Surface> &surface, uint32_t targetSize)
@@ -898,16 +972,6 @@ int32_t HDecoder::ClearSurfaceAndSetQueueSize(const sptr<Surface> &surface, uint
 int32_t HDecoder::AllocOutDynamicSurfaceBuf()
 {
     SCOPED_TRACE();
-    if (currSurface_.surface_) {
-        int32_t ret = ClearSurfaceAndSetQueueSize(currSurface_.surface_, outBufferCnt_);
-        if (ret != AVCS_ERR_OK) {
-            return ret;
-        }
-        currGeneration_++;
-        CombineConsumerUsage();
-    }
-    outputBufferPool_.clear();
-
     for (uint32_t i = 0; i < outBufferCnt_; ++i) {
         shared_ptr<OmxCodecBuffer> omxBuffer = DynamicSurfaceBufferToOmxBuffer();
         shared_ptr<OmxCodecBuffer> outBuffer = make_shared<OmxCodecBuffer>();
@@ -931,13 +995,6 @@ int32_t HDecoder::AllocOutDynamicSurfaceBuf()
 int32_t HDecoder::AllocateOutputBuffersFromSurface()
 {
     SCOPED_TRACE();
-    int32_t ret = ClearSurfaceAndSetQueueSize(currSurface_.surface_, outBufferCnt_);
-    if (ret != AVCS_ERR_OK) {
-        return ret;
-    }
-    currGeneration_++;
-    outputBufferPool_.clear();
-    CombineConsumerUsage();
     std::map<uint32_t, sptr<SurfaceBuffer>> bufferMap;
     for (uint32_t i = 0; i < outBufferCnt_; ++i) {
         sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
@@ -975,6 +1032,57 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
     }
     if (callback_ != nullptr && isLpp_) {
         callback_->OnOutputBufferBinded(bufferMap);
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t HDecoder::AllocateOutputBuffersFromOmx()
+{
+    for (uint32_t i = 0; i < outBufferCnt_; ++i) {
+        std::shared_ptr<OmxCodecBuffer> omxBuffer = std::make_shared<OmxCodecBuffer>();
+        omxBuffer->size = sizeof(OmxCodecBuffer);
+        omxBuffer->version.version.majorVersion = 1;
+        omxBuffer->bufferType = CODEC_BUFFER_TYPE_HANDLE;
+        omxBuffer->fd = -1;
+        omxBuffer->allocLen = 0;
+        omxBuffer->fenceFd = -1;
+        shared_ptr<OmxCodecBuffer> outBuffer = make_shared<OmxCodecBuffer>();
+        int32_t ret = compNode_->AllocateBuffer(OMX_DirOutput, *omxBuffer, *outBuffer);
+        if (ret != HDF_SUCCESS || outBuffer->bufferhandle == nullptr) {
+            HLOGE("Failed to AllocateBuffer on output port");
+            return AVCS_ERR_INVALID_VAL;
+        }
+        BufferHandle* handle = outBuffer->bufferhandle->Move();
+        if (handle == nullptr) {
+            HLOGE("null BufferHandle");
+            return AVCS_ERR_INVALID_VAL;
+        }
+        sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+        surfaceBuffer->SetBufferHandle(handle);
+        requestCfg_.width = surfaceBuffer->GetWidth();
+        requestCfg_.height = surfaceBuffer->GetHeight();
+        requestCfg_.format = surfaceBuffer->GetFormat();
+        requestCfg_.usage = surfaceBuffer->GetUsage();
+        surfaceBuffer->SetBufferRequestConfig(requestCfg_);
+        if (currSurface_.surface_) {
+            GSError err = currSurface_.surface_->AttachBufferToQueue(surfaceBuffer);
+            IF_TRUE_RETURN_VAL_WITH_MSG(err != GSERROR_OK, AVCS_ERR_UNKNOWN,
+                                        "AttachBufferToQueue %u failed, GSError=%d", i, err);
+        }
+        SetCallerToBuffer(surfaceBuffer->GetFileDescriptor(),
+                          static_cast<uint32_t>(surfaceBuffer->GetWidth()),
+                          static_cast<uint32_t>(surfaceBuffer->GetHeight()));
+        outBuffer->bufferhandle = nullptr;
+        outBuffer->fd = -1;
+        outBuffer->fenceFd = -1;
+        BufferInfo info(false, BufferOwner::OWNED_BY_US, record_);
+        info.surfaceBuffer = surfaceBuffer;
+        info.avBuffer = (currSurface_.surface_ ? AVBuffer::CreateAVBuffer() : AVBuffer::CreateAVBuffer(surfaceBuffer));
+        info.omxBuffer = outBuffer;
+        info.bufferId = outBuffer->bufferId;
+        info.attached = true;
+        outputBufferPool_.push_back(info);
+        HLOGI("generation=%d, bufferId=%u, seq=%u", currGeneration_, info.bufferId, surfaceBuffer->GetSeqNum());
     }
     return AVCS_ERR_OK;
 }
@@ -1186,9 +1294,6 @@ void HDecoder::DynamicModeSubmitBufferToSlot(sptr<SurfaceBuffer>& buffer, std::v
                       static_cast<uint32_t>(buffer->GetWidth()),
                       static_cast<uint32_t>(buffer->GetHeight()));
     WrapSurfaceBufferToSlot(*nullSlot, buffer, 0, 0);
-    if (nullSlot == outputBufferPool_.begin()) {
-        UpdateFmtFromSurfaceBuffer();
-    }
     NotifyOmxToFillThisOutBuffer(*nullSlot);
     nullSlot->omxBuffer->bufferhandle = nullptr;
 }
@@ -1254,9 +1359,61 @@ int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
               currSurface_.surface_->GetUniqueId(), info.surfaceBuffer->GetSeqNum(), err);
         return AVCS_ERR_UNKNOWN;
     }
-    ReportRenderFirstFrame();
+
+    PerfMeasure();
+
     ChangeOwner(info, BufferOwner::OWNED_BY_SURFACE);
     return AVCS_ERR_OK;
+}
+ 
+void HDecoder::OnStartJankDetect()
+{
+    if (detect_) {
+        return;
+    }
+    detect_ = true;
+    currSurface_.beginTime_ = GetCurrUs();
+}
+ 
+void HDecoder::OnStopJankDetect()
+{
+    if (!detect_) {
+        return;
+    }
+    detect_ = false;
+    if (currSurface_.surface_ == nullptr) {
+        currSurface_.jankCnt_ = 0;
+        currSurface_.totalJankDur_ = 0;
+        currSurface_.beginTime_ = 0;
+        return;
+    }
+    int64_t endTime = GetCurrUs();
+    int64_t duration = endTime - currSurface_.lastFlushTime_;
+    if (duration > 1000000) { //1000000: 大于1s
+        std::stringstream ss;
+        ss << "#UNIQUEID:" << currSurface_.surface_->GetUniqueId() <<
+           "#SURFACE_NAME:" << currSurface_.surface_->GetName() <<
+           "#LAST_FLUSH_TIME:" << currSurface_.lastFlushTime_ <<
+           "#DURATION:" << duration;
+ 
+        callback_->OnXperfEvent(OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_JANK, ss.str()); //上报卡顿事件
+    }
+
+    std::stringstream ss;
+    ss << "#UNIQUEID:" << currSurface_.surface_->GetUniqueId() <<
+      "#PID:" << caller_.app.pid <<
+      "#BUNDLE_NAME:" << caller_.app.processName <<
+      "#SURFACE_NAME:" << currSurface_.surface_->GetName() <<
+      "#BEGIN_TIME:" << currSurface_.beginTime_ <<
+      "#END_TIME:" << endTime <<
+      "#TIMES:" << currSurface_.jankCnt_ <<
+      "#TOTAL_DUR:" << currSurface_.totalJankDur_;
+ 
+    callback_->OnXperfEvent(OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_FRAME_STATS, ss.str());
+ 
+    currSurface_.jankCnt_ = 0;
+    currSurface_.totalJankDur_ = 0;
+    currSurface_.beginTime_ = 0;
 }
 
 void HDecoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
@@ -1340,8 +1497,9 @@ void HDecoder::OnEnterUninitializedState()
 {
     freeList_.clear();
     currSurface_.Release();
-    crop_ = {0};
-    cfgedConsumerUsage = 0;
+    currGenerationLayoutHasParsed_ = false;
+    currLayout_.reset();
+    cfgedConsumerUsage_ = 0;
     currGeneration_ = 0;
     scaleMode_ = std::nullopt;
     transform_ = GRAPHIC_ROTATE_NONE;
@@ -1473,7 +1631,6 @@ void HDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface,
     currSurface_ = SurfaceItem(newSurface, compUniqueStr_, instanceId_);
     SetTransform();
     SetScaleMode();
-    CombineConsumerUsage();
     // if owned by old surface, we need to transfer them to new surface
     for (auto [flushTime, i] : ownedBySurfaceFlushTime2BufferIndex) {
         ChangeOwner(outputBufferPool_[i], BufferOwner::OWNED_BY_US);
@@ -1519,21 +1676,47 @@ int32_t HDecoder::VrrPrediction(BufferInfo &info)
 }
 #endif
 
-void HDecoder::ReportRenderFirstFrame()
+void HDecoder::PerfMeasure()
 {
-    if (!currSurface_.firstFrameRendered_) {
-        currSurface_.firstFrameRendered_ = true;
-        std::stringstream s;
-        s << "#UNIQUEID:" << currSurface_.surface_->GetUniqueId() <<
-             "#PID:" << caller_.app.pid <<
-             "#BUNDLE_NAME:" << caller_.app.processName <<
-             "#SURFACE_NAME:" << currSurface_.surface_->GetName() <<
-             "#FPS:" << codecRate_ <<
-             "#REPORT_INTERVAL:" << 300;  // 300ms
-        string str = s.str();
-        OHOS::HiviewDFX::XperfServiceClient::GetInstance().NotifyToXperf(
-            OHOS::HiviewDFX::DomainId::AVCODEC, OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_FIRST_FRAME_START, str);
+    int64_t currTime = GetCurrUs();
+    currSurface_.flushCnt_++;
+    if (currSurface_.flushCnt_ == 1) { //1: 首帧
+        std::stringstream ss;
+        ss << "#UNIQUEID:" << currSurface_.surface_->GetUniqueId() <<
+          "#PID:" << caller_.app.pid <<
+          "#BUNDLE_NAME:" << caller_.app.processName <<
+          "#SURFACE_NAME:" << currSurface_.surface_->GetName() <<
+          "#FPS:" << codecRate_ <<
+          "#REPORT_INTERVAL:" << 300;  // 300ms
+        callback_->OnXperfEvent(OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_FIRST_FRAME_START, ss.str()); //上报首帧事件
+    } else if (currSurface_.flushCnt_ == 2) { //2: 第二帧
+        detect_ = true;
+        currSurface_.beginTime_ = currTime;
+
+        std::stringstream ss;
+        ss << "#UNIQUEID:" << currSurface_.surface_->GetUniqueId() <<
+          "#PID:" << caller_.app.pid <<
+          "#BUNDLE_NAME:" << caller_.app.processName <<
+          "#SURFACE_NAME:" << currSurface_.surface_->GetName() <<
+          "#FPS:" << codecRate_ <<
+          "#REPORT_INTERVAL:" << 300;  // 300ms
+        callback_->OnXperfEvent(OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_SECOND_FRAME, ss.str()); //上报第二帧事件
+    } else if (detect_) {
+        int64_t span = currTime - currSurface_.lastFlushTime_;
+        if (span > 100000) { //100000: 大于100ms
+            currSurface_.jankCnt_++;
+            currSurface_.totalJankDur_ += span;
+        }
+        if (span > 300000) { //300000: 大于300ms
+            std::stringstream ss;
+            ss << "#UNIQUEID:" << currSurface_.surface_->GetUniqueId() <<
+               "#SURFACE_NAME:" << currSurface_.surface_->GetName() <<
+               "#LAST_FLUSH_TIME:" << currSurface_.lastFlushTime_ <<
+               "#DURATION:" << span;
+            callback_->OnXperfEvent(OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_JANK, ss.str()); //上报卡顿事件
+        }
     }
+    currSurface_.lastFlushTime_ = currTime;
 }
 
 void HDecoder::OnEnterRunningState()
@@ -1541,7 +1724,7 @@ void HDecoder::OnEnterRunningState()
     std::unique_lock<std::shared_mutex> lk(g_xperfMtx);
     if (g_xperfConnector == nullptr) {
         g_xperfConnector = sptr<XperfConnector>::MakeSptr();
-        int regret = OHOS::HiviewDFX::XperfServiceClient::GetInstance().RegisterVideoJank("avcodec", g_xperfConnector);
+        int regret = OHOS::HiviewDFX::XperfServiceClient::GetInstance().RegisterVideoState("avcodec", g_xperfConnector);
         if (regret != 0) {
             g_xperfConnector = nullptr;
         }
@@ -1629,6 +1812,47 @@ ErrCode HDecoder::XperfConnector::OnVideoJankEvent(const std::string& msg)
     string str = s.str();
     OHOS::HiviewDFX::XperfServiceClient::GetInstance().NotifyToXperf(
         OHOS::HiviewDFX::DomainId::AVCODEC, OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_JANK_REPORT, str);
+    return 0;
+}
+
+std::shared_ptr<HDecoder::MsgToken> HDecoder::XperfConnector::FindSuitableDecoder(const std::string& msg)
+{
+    std::string sub = "#UNIQUEID:";
+    auto pos = msg.find(sub);
+    if (pos == std::string::npos) {
+        LOGD("cannot find #UNIQUEID:");
+        return nullptr;
+    }
+    uint64_t surfaceId = strtoull(msg.substr(pos + sub.length()).c_str(), nullptr, 10);
+    sub = "#BUNDLE_NAME:";
+    pos = msg.find(sub);
+    if (pos == std::string::npos) {
+        LOGD("cannot find #BUNDLE_NAME:");
+        return nullptr;
+    }
+    string bundleName = msg.substr(pos + sub.length());
+    return FindSuitableDecoder(surfaceId, bundleName);
+}
+ 
+ErrCode HDecoder::XperfConnector::OnVideoResumed(const std::string& msg)
+{
+    std::shared_ptr<MsgToken> codec = FindSuitableDecoder(msg);
+    if (codec == nullptr) {
+        LOGD("cannot find decoder");
+        return 0;
+    }
+    codec->SendAsyncMsg(MsgWhat::XPERF_RESUME_EVENT, nullptr);
+    return 0;
+}
+ 
+ErrCode HDecoder::XperfConnector::OnVideoPaused(const std::string& msg)
+{
+    std::shared_ptr<MsgToken> codec = FindSuitableDecoder(msg);
+    if (codec == nullptr) {
+        LOGD("cannot find decoder");
+        return 0;
+    }
+    codec->SendAsyncMsg(MsgWhat::XPERF_PAUSE_EVENT, nullptr);
     return 0;
 }
 

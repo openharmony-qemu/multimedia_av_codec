@@ -18,6 +18,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include "double_utils.h"
 #include "avcodec_log.h"
 
 namespace {
@@ -37,7 +38,7 @@ FixedRatioRetentionStrategy::FixedRatioRetentionStrategy(double ratio)
     } else {
         targetRatio_ = std::clamp(ratio, MIN_RETENTION_RATIO, MAX_RETENTION_RATIO);
     }
-    AVCODEC_LOGD("FixedRatioRetentionStrategy created with targetRatio: %{public}.2f", targetRatio_);
+    AVCODEC_LOGD("FixedRatioRetentionStrategy created with targetRatio: %{public}.3f", targetRatio_);
 }
 
 bool FixedRatioRetentionStrategy::MakeRetentionDecision(const FrameRetentionContext& ctx)
@@ -52,7 +53,7 @@ bool FixedRatioRetentionStrategy::MakeRetentionDecision(const FrameRetentionCont
 
     bool isRetain = false;
     accumulator_ += targetRatio_ + (ctx.preDroppedCount * targetRatio_);
-    if (accumulator_ >= ACCUMULATOR_THRESHOLD) {
+    if (DoubleUtils::IsGreaterOrEqual(accumulator_, ACCUMULATOR_THRESHOLD)) {
         accumulator_ -= ACCUMULATOR_THRESHOLD;
         isRetain = true;
         lastReason_ = SfdDecisionReason::POST_RETAIN_FIXED_ACC;
@@ -62,7 +63,7 @@ bool FixedRatioRetentionStrategy::MakeRetentionDecision(const FrameRetentionCont
     }
 
     AVCODEC_LOGD("FixedRatioRetentionStrategy decision: %{public}d "
-                 "(cnt:%{public}d, drop:%{public}d, accum:%{public}.2f)",
+                 "(cnt:%{public}d, drop:%{public}d, accum:%{public}.3f)",
                  isRetain, cnt_, dropCnt_, accumulator_);
     return isRetain;
 }
