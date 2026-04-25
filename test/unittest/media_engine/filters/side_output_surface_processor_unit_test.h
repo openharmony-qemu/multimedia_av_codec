@@ -16,7 +16,7 @@
 #define SIDE_OUTPUT_SURFACE_PROCESSOR_UNIT_TEST_H
 
 #include "gtest/gtest.h"
-#include "side_output_surface_processor.cpp"
+#include "side_output_surface_processor.h"
 
 namespace OHOS {
 namespace Media {
