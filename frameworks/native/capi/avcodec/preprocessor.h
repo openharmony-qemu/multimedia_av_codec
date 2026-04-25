@@ -59,6 +59,8 @@ public:
     int32_t GetDownsamplingHeight() const;
 
 private:
+    static constexpr int32_t CROP_RECT_INCLUSIVE_OFFSET = 1;
+
     enum class ConfigResult { NOT_SET, DISABLED, ENABLED };
 
     struct EncoderConfig {
@@ -101,8 +103,8 @@ private:
               right(params.right),
               top(params.top),
               bottom(params.bottom),
-              width(params.right - params.left + 1),
-              height(params.bottom - params.top + 1),
+              width(params.right - params.left + CROP_RECT_INCLUSIVE_OFFSET),
+              height(params.bottom - params.top + CROP_RECT_INCLUSIVE_OFFSET),
               enabled(params.result == ConfigResult::ENABLED)
         {
         }

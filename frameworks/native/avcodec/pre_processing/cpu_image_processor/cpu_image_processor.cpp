@@ -25,7 +25,13 @@ using namespace OHOS;
 
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CpuImageProcessor"};
 constexpr int32_t RGBA_BYTES_PER_PIXEL = 4;
+constexpr int32_t P010_LUMA_BYTES_PER_PIXEL = 2;
+constexpr int32_t P010_CHROMA_BYTES_PER_PIXEL = 4;
 constexpr int32_t YUV_SUBSAMPLE = 2;
+constexpr int32_t DEFAULT_PLANE_BYTES_PER_PIXEL = 1;
+constexpr int32_t NO_SUBSAMPLE = 1;
+constexpr int32_t INVALID_BUFFER_VALUE = -1;
+constexpr size_t MAX_PLANE_COUNT = 3;
 
 struct Plane {
     size_t offset{0};
@@ -33,9 +39,9 @@ struct Plane {
     int32_t height{0};
     int32_t rowBytes{0};
     int32_t stride{0};
-    int32_t bytesPerPixel{1};
-    int32_t xSubsample{1};
-    int32_t ySubsample{1};
+    int32_t bytesPerPixel{DEFAULT_PLANE_BYTES_PER_PIXEL};
+    int32_t xSubsample{NO_SUBSAMPLE};
+    int32_t ySubsample{NO_SUBSAMPLE};
 };
 
 struct BufferView {
@@ -45,7 +51,7 @@ struct BufferView {
     int32_t height{0};
     int32_t stride{0};
     size_t size{0};
-    std::array<Plane, 3> planes{};
+    std::array<Plane, MAX_PLANE_COUNT> planes{};
     size_t planeCount{0};
     bool isYuv420{false};
 };
@@ -92,8 +98,10 @@ bool BuildView(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer, BufferView &view)
         AVCODEC_LOGE("Invalid buffer: buffer=%{public}p, addr=%{public}p, width=%{public}d, "
                      "height=%{public}d, stride=%{public}d, size=%{public}d",
                      buffer.GetRefPtr(), buffer ? buffer->GetVirAddr() : nullptr,
-                     buffer ? buffer->GetWidth() : -1, buffer ? buffer->GetHeight() : -1,
-                     buffer ? buffer->GetStride() : -1, buffer ? buffer->GetSize() : -1);
+                     buffer ? buffer->GetWidth() : INVALID_BUFFER_VALUE,
+                     buffer ? buffer->GetHeight() : INVALID_BUFFER_VALUE,
+                     buffer ? buffer->GetStride() : INVALID_BUFFER_VALUE,
+                     buffer ? buffer->GetSize() : INVALID_BUFFER_VALUE);
         return false;
     }
     view.addr = static_cast<uint8_t *>(buffer->GetVirAddr());
@@ -115,27 +123,33 @@ bool BuildView(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer, BufferView &view)
     switch (view.format) {
         case GRAPHIC_PIXEL_FMT_YCBCR_420_SP:
         case GRAPHIC_PIXEL_FMT_YCRCB_420_SP:
-            return AddPlane(view, view.width, view.height, view.width, view.stride, 1, 1, 1, offset) &&
+            return AddPlane(view, view.width, view.height, view.width, view.stride, DEFAULT_PLANE_BYTES_PER_PIXEL,
+                            NO_SUBSAMPLE, NO_SUBSAMPLE, offset) &&
                    AddPlane(view, view.width / YUV_SUBSAMPLE, view.height / YUV_SUBSAMPLE, view.width, view.stride,
                             YUV_SUBSAMPLE, YUV_SUBSAMPLE, YUV_SUBSAMPLE, offset);
         case GRAPHIC_PIXEL_FMT_YCBCR_P010:
         case GRAPHIC_PIXEL_FMT_YCRCB_P010:
-            return AddPlane(view, view.width, view.height, view.width * 2, view.stride, 2, 1, 1, offset) &&
-                   AddPlane(view, view.width / YUV_SUBSAMPLE, view.height / YUV_SUBSAMPLE, view.width * 2,
-                            view.stride, 4, YUV_SUBSAMPLE, YUV_SUBSAMPLE, offset);
+            return AddPlane(view, view.width, view.height, view.width * P010_LUMA_BYTES_PER_PIXEL, view.stride,
+                            P010_LUMA_BYTES_PER_PIXEL, NO_SUBSAMPLE, NO_SUBSAMPLE, offset) &&
+                   AddPlane(view, view.width / YUV_SUBSAMPLE, view.height / YUV_SUBSAMPLE,
+                            view.width * P010_LUMA_BYTES_PER_PIXEL, view.stride, P010_CHROMA_BYTES_PER_PIXEL,
+                            YUV_SUBSAMPLE, YUV_SUBSAMPLE, offset);
         case GRAPHIC_PIXEL_FMT_YCBCR_420_P: {
             int32_t chromaStride = view.stride / YUV_SUBSAMPLE;
             return IsEven(view.stride) &&
-                   AddPlane(view, view.width, view.height, view.width, view.stride, 1, 1, 1, offset) &&
+                   AddPlane(view, view.width, view.height, view.width, view.stride, DEFAULT_PLANE_BYTES_PER_PIXEL,
+                            NO_SUBSAMPLE, NO_SUBSAMPLE, offset) &&
                    AddPlane(view, view.width / YUV_SUBSAMPLE, view.height / YUV_SUBSAMPLE,
-                            view.width / YUV_SUBSAMPLE, chromaStride, 1, YUV_SUBSAMPLE, YUV_SUBSAMPLE, offset) &&
+                            view.width / YUV_SUBSAMPLE, chromaStride, DEFAULT_PLANE_BYTES_PER_PIXEL, YUV_SUBSAMPLE,
+                            YUV_SUBSAMPLE, offset) &&
                    AddPlane(view, view.width / YUV_SUBSAMPLE, view.height / YUV_SUBSAMPLE,
-                            view.width / YUV_SUBSAMPLE, chromaStride, 1, YUV_SUBSAMPLE, YUV_SUBSAMPLE, offset);
+                            view.width / YUV_SUBSAMPLE, chromaStride, DEFAULT_PLANE_BYTES_PER_PIXEL, YUV_SUBSAMPLE,
+                            YUV_SUBSAMPLE, offset);
         }
         case GRAPHIC_PIXEL_FMT_RGBA_8888:
         case GRAPHIC_PIXEL_FMT_RGBA_1010102:
             return AddPlane(view, view.width, view.height, view.width * RGBA_BYTES_PER_PIXEL, view.stride,
-                            RGBA_BYTES_PER_PIXEL, 1, 1, offset);
+                            RGBA_BYTES_PER_PIXEL, NO_SUBSAMPLE, NO_SUBSAMPLE, offset);
         default:
             AVCODEC_LOGE("Unsupported buffer format: %{public}d", view.format);
             return false;

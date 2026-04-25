@@ -36,11 +36,26 @@ namespace V2_2 = OHOS::HDI::Display::Graphic::Common::V2_2;
 
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "Preprocessor"};
 constexpr int32_t BUFFER_REQUEST_STRIDE_ALIGNMENT = 32;
+constexpr double ROUND_TO_TWO_DECIMALS_FACTOR = 100.0;
+constexpr int32_t RGBA_BYTES_PER_PIXEL = 4;
+constexpr int32_t P010_BYTES_PER_SAMPLE = 2;
+constexpr int32_t YUV_SUBSAMPLE = 2;
+constexpr int32_t INVALID_ROW_BYTES = -1;
+constexpr int32_t UNSET_PROFILE = -1;
+constexpr int32_t INVALID_OUTPUT_FORMAT = -1;
+constexpr int32_t DISABLE_CROP_LEFT = 0;
+constexpr int32_t DISABLE_CROP_TOP = 0;
+constexpr int32_t DISABLE_CROP_RIGHT = 0;
+constexpr int32_t DISABLE_CROP_BOTTOM = 0;
+constexpr int32_t DISABLE_DOWNSAMPLING_WIDTH = 0;
+constexpr int32_t DISABLE_DOWNSAMPLING_HEIGHT = 0;
+constexpr int32_t DEFAULT_METADATA_OFFSET = 0;
+constexpr double IDENTITY_METADATA_SCALE = 1.0;
 auto fastKitEnable = OHOS::system::GetBoolParameter("persist.OHOS.MediaAVCodec.FastKit.Enable", false);
 
 double RoundToTwoDecimals(double value)
 {
-    return std::round(value * 100.0) / 100.0; // 100.0: Round to 2 decimal digits using round half up
+    return std::round(value * ROUND_TO_TWO_DECIMALS_FACTOR) / ROUND_TO_TWO_DECIMALS_FACTOR;
 }
 
 bool IsYuv420Format(OHOS::GraphicPixelFormat format)
@@ -55,16 +70,16 @@ int32_t GetMinRowBytes(OHOS::GraphicPixelFormat format, int32_t width)
     switch (format) {
         case GRAPHIC_PIXEL_FMT_RGBA_8888:
         case GRAPHIC_PIXEL_FMT_RGBA_1010102:
-            return width * 4; // 4: bytes per packed RGBA pixel
+            return width * RGBA_BYTES_PER_PIXEL;
         case GRAPHIC_PIXEL_FMT_YCBCR_P010:
         case GRAPHIC_PIXEL_FMT_YCRCB_P010:
-            return width * 2; // 2: 10-bit samples stored in 16-bit containers
+            return width * P010_BYTES_PER_SAMPLE;
         case GRAPHIC_PIXEL_FMT_YCBCR_420_SP:
         case GRAPHIC_PIXEL_FMT_YCRCB_420_SP:
         case GRAPHIC_PIXEL_FMT_YCBCR_420_P:
             return width;
         default:
-            return -1;
+            return INVALID_ROW_BYTES;
     }
 }
 
@@ -76,7 +91,7 @@ bool IsGeometrySupported(OHOS::GraphicPixelFormat format, int32_t width, int32_t
     if (!OHOS::MediaAVCodec::PreProcessing::CpuImageProcessor::IsFormatSupported(static_cast<int32_t>(format))) {
         return false;
     }
-    return !IsYuv420Format(format) || (width % 2 == 0 && height % 2 == 0);
+    return !IsYuv420Format(format) || (width % YUV_SUBSAMPLE == 0 && height % YUV_SUBSAMPLE == 0);
 }
 
 std::string TransformRoiMetadata(const std::string &roi, double scaleX, double scaleY,
@@ -186,11 +201,11 @@ int32_t Preprocessor::ValidateCrop(const Media::Format &format, CropParams &para
     bool hasAny = hasLeft || hasRight || hasTop || hasBottom;
     bool hasAll = hasLeft && hasRight && hasTop && hasBottom;
 
-    if (!hasAny) {              // If none of the 4 values (left, right, top and bottom) is configured,
+    if (!hasAny) {              // If none of the crop values (left, right, top and bottom) is configured,
         return AVCS_ERR_OK;     // keep current status.
     }
 
-    if (hasAny && !hasAll) {            // At least one of the 4 values is not configured,
+    if (hasAny && !hasAll) {            // At least one crop value is not configured,
         AVCODEC_LOGE("Incomplete crop parameters: hasLeft=%{public}d, hasRight=%{public}d, "
                      "hasTop=%{public}d, hasBottom=%{public}d",
                      hasLeft, hasRight, hasTop, hasBottom);
@@ -198,7 +213,8 @@ int32_t Preprocessor::ValidateCrop(const Media::Format &format, CropParams &para
     }
 
     // left, right, top and bottom are all configured
-    if (left == 0 && top == 0 && right == 0 && bottom == 0) {
+    if (left == DISABLE_CROP_LEFT && top == DISABLE_CROP_TOP &&
+        right == DISABLE_CROP_RIGHT && bottom == DISABLE_CROP_BOTTOM) {
         params.result = ConfigResult::DISABLED;
         AVCODEC_LOGI("Crop disabled by zero crop parameters");
         return AVCS_ERR_OK;
@@ -210,8 +226,9 @@ int32_t Preprocessor::ValidateCrop(const Media::Format &format, CropParams &para
         AVCODEC_LOGE("Failed to get encoder capability for crop");
         return AVCS_ERR_INVALID_VAL;
     }
-    int32_t cropWidth = right - left + 1;
-    int32_t cropHeight = bottom - top + 1;
+    constexpr int32_t cropRectInclusiveOffset = 1;
+    int32_t cropWidth = right - left + cropRectInclusiveOffset;
+    int32_t cropHeight = bottom - top + cropRectInclusiveOffset;
     bool rangeValid = (0 <= left && left < right && right < encoderConfig_.width) &&
                       (0 <= top && top < bottom && bottom < encoderConfig_.height) &&
                       (encWidth.InRange(cropWidth) && encHeight.InRange(cropHeight));
@@ -241,7 +258,7 @@ int32_t Preprocessor::ValidateDownsampling(const Media::Format &format, Downsamp
     if (!hasWidth && !hasHeight) {
         return AVCS_ERR_OK;
     }
-    if (width == 0 && height == 0) {
+    if (width == DISABLE_DOWNSAMPLING_WIDTH && height == DISABLE_DOWNSAMPLING_HEIGHT) {
         params.result = ConfigResult::DISABLED;
         return AVCS_ERR_OK;
     }
@@ -307,17 +324,19 @@ int32_t Preprocessor::Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &ou
                              output.GetRefPtr());
     CHECK_AND_RETURN_RET_LOG(!output || input->GetFormat() == output->GetFormat(), AVCS_ERR_INVALID_VAL,
                              "Format mismatch: input=%{public}d, output=%{public}d", input->GetFormat(),
-                             output ? output->GetFormat() : -1);
+                             output ? output->GetFormat() : INVALID_OUTPUT_FORMAT);
     if (IsCropEnabled()) {
         int32_t ret = Crop(input, output);
         if (ret == AVCS_ERR_OK) {
-            UpdateOutputMetadata(input, output, 1.0, 1.0, cropConfig_.top, cropConfig_.left);
+            UpdateOutputMetadata(input, output, IDENTITY_METADATA_SCALE, IDENTITY_METADATA_SCALE,
+                                 cropConfig_.top, cropConfig_.left);
             return ret;
         }
         AVCODEC_LOGW("Crop failed: %{public}d, fallback to copy", ret);
         ret = Copy(input, output);
         if (ret == AVCS_ERR_OK) {
-            UpdateOutputMetadata(input, output, 1.0, 1.0, 0, 0);
+            UpdateOutputMetadata(input, output, IDENTITY_METADATA_SCALE, IDENTITY_METADATA_SCALE,
+                                 DEFAULT_METADATA_OFFSET, DEFAULT_METADATA_OFFSET);
         }
         return ret;
     }
@@ -325,19 +344,22 @@ int32_t Preprocessor::Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &ou
         int32_t ret = Downsampling(input, output);
         if (ret == AVCS_ERR_OK) {
             UpdateOutputMetadata(input, output, static_cast<double>(output->GetWidth()) / input->GetWidth(),
-                                 static_cast<double>(output->GetHeight()) / input->GetHeight(), 0, 0);
+                                 static_cast<double>(output->GetHeight()) / input->GetHeight(),
+                                 DEFAULT_METADATA_OFFSET, DEFAULT_METADATA_OFFSET);
             return ret;
         }
         AVCODEC_LOGW("Downsampling failed: %{public}d, fallback to copy", ret);
         ret = Copy(input, output);
         if (ret == AVCS_ERR_OK) {
-            UpdateOutputMetadata(input, output, 1.0, 1.0, 0, 0);
+            UpdateOutputMetadata(input, output, IDENTITY_METADATA_SCALE, IDENTITY_METADATA_SCALE,
+                                 DEFAULT_METADATA_OFFSET, DEFAULT_METADATA_OFFSET);
         }
         return ret;
     }
     int32_t ret = Copy(input, output);
     if (ret == AVCS_ERR_OK) {
-        UpdateOutputMetadata(input, output, 1.0, 1.0, 0, 0);
+        UpdateOutputMetadata(input, output, IDENTITY_METADATA_SCALE, IDENTITY_METADATA_SCALE,
+                             DEFAULT_METADATA_OFFSET, DEFAULT_METADATA_OFFSET);
     }
     return ret;
 }
@@ -553,7 +575,7 @@ void Preprocessor::UpdateConfiguredValues(const Media::Format &format, EncoderCo
         config.pixelFormat = static_cast<GraphicPixelFormat>(configuredPixelFormat);
     } else {
         if (format.GetIntValue(Media::Tag::VIDEO_PIXEL_FORMAT, configuredPixelFormat)) {
-            int32_t profile = -1;
+            int32_t profile = UNSET_PROFILE;
             (void)format.GetIntValue(Media::Tag::MEDIA_PROFILE, profile);
             config.pixelFormat = ConvertVideoPixelFormat2GraphicPixelFormat(
                 static_cast<VideoPixelFormat>(configuredPixelFormat), profile);
