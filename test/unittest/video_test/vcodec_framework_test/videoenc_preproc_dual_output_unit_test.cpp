@@ -45,7 +45,7 @@ void PrintTo(const ScenarioCase &scenario, std::ostream *os)
 } // namespace OHOS
 
 namespace {
-constexpr uint32_t kFrameCount = 8;
+constexpr uint32_t kFrameCount = 30;
 
 struct CodecDimension {
     const char *label;
@@ -288,6 +288,19 @@ const char *BoolToString(bool value)
     return value ? "true" : "false";
 }
 
+std::string DescribeRuntimeDelivery(const ScenarioCase &scenario)
+{
+    if (scenario.runtimeOperation == RuntimeOperation::NONE) {
+        return "not scheduled";
+    }
+
+    uint32_t triggerFrameIndex = kFrameCount / 2;
+    std::ostringstream oss;
+    oss << "frameNumber=" << (triggerFrameIndex + 1) << ", frameIndex=" << triggerFrameIndex
+        << ", sendFrameCount=" << kFrameCount;
+    return oss.str();
+}
+
 std::string DescribePreprocConfig(const PreprocConfig &config)
 {
     std::ostringstream oss;
@@ -327,6 +340,7 @@ std::string DescribeScenario(const ScenarioCase &scenario)
         << "  invalidParameterType: " << ToString(scenario.invalidParameterType) << "\n"
         << "  primaryPreproc: " << DescribePreprocConfig(scenario.primary) << "\n"
         << "  secondaryPreproc: " << DescribePreprocConfig(scenario.secondary) << "\n"
+        << "  runtimeDelivery: " << DescribeRuntimeDelivery(scenario) << "\n"
         << "  runtimePrimaryPreproc: " << DescribePreprocConfig(scenario.runtimePrimary) << "\n"
         << "  runtimeSecondaryPreproc: " << DescribePreprocConfig(scenario.runtimeSecondary) << "\n"
         << "  expectation: result=" << scenario.expectedResult << ", exact="
