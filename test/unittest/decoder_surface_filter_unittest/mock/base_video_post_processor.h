@@ -35,7 +35,8 @@ public:
     virtual void OnError(int32_t errorCode) = 0;
     virtual void OnOutputFormatChanged(const Format &format) = 0;
     virtual void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) = 0;
-    virtual void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) = 0;
+    virtual void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer,
+        bool isInSeekContinous = false) = 0;
 };
 
 enum VideoPostProcessorType {
