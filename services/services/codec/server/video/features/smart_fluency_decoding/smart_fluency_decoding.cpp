@@ -261,7 +261,7 @@ bool SmartFluencyDecoding::InitializeWithCsd(const std::vector<uint8_t>& csdData
 void SmartFluencyDecoding::ExecutePreDrop(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     CHECK_AND_RETURN_LOG_WITH_TAG(buffer != nullptr, "ExecutePreDrop: buffer is null for index %{public}u", index);
-    AVCODEC_LOGE_WITH_TAG("[Pre-Drop] Executing drop for index %{public}u, pts %{public}" PRId64
+    AVCODEC_LOGI_WITH_TAG("[Pre-Drop] Executing drop for index %{public}u, pts %{public}" PRId64
         ", flag %{public}u", index, buffer->pts_, buffer->flag_);
     CHECK_AND_RETURN_LOG_WITH_TAG(buffer->flag_ != AVCODEC_BUFFER_FLAG_CODEC_DATA,
         "ExecutePreDrop: skip CODEC_DATA buffer");
@@ -356,7 +356,10 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
     if (!isInitialized_ || !buffer || !dropSyncCoordinator_) {
         return true;
     }
-
+    if (buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
+        AVCODEC_LOGI_WITH_TAG("ignore eos frame");
+        return true;
+    }
     PreDecResult res;
     if (naluAnalyzer_ && caps.requiresNalu) {
 #ifdef SFD_DEBUG
