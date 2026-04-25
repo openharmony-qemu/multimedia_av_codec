@@ -325,7 +325,7 @@ const Preprocessor::DropFrameConfig &Preprocessor::GetDropFrameConfig() const
 
 int32_t Preprocessor::Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
 {
-    if (!CheckOrReallocOutSurfaceBuffer(cropConfig_.width, cropConfig_.height, output)) {
+    if (!CheckOrReallocOutSurfaceBuffer(cropConfig_.width, cropConfig_.height, input->GetFormat(), output)) {
         AVCODEC_LOGE("Realloc buffer failed");
         return AVCS_ERR_NO_MEMORY;
     }
@@ -341,7 +341,8 @@ int32_t Preprocessor::Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &outpu
 
 int32_t Preprocessor::Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
 {
-    if (!CheckOrReallocOutSurfaceBuffer(downsamplingConfig_.width, downsamplingConfig_.height, output)) {
+    if (!CheckOrReallocOutSurfaceBuffer(downsamplingConfig_.width, downsamplingConfig_.height,
+                                        input->GetFormat(), output)) {
         AVCODEC_LOGE("Realloc buffer failed");
         return AVCS_ERR_NO_MEMORY;
     }
@@ -356,7 +357,7 @@ int32_t Preprocessor::Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer
 
 int32_t Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
 {
-    if (!CheckOrReallocOutSurfaceBuffer(encoderConfig_.width, encoderConfig_.height, output)) {
+    if (!CheckOrReallocOutSurfaceBuffer(input->GetWidth(), input->GetHeight(), input->GetFormat(), output)) {
         AVCODEC_LOGE("Realloc buffer failed");
         return AVCS_ERR_NO_MEMORY;
     }
@@ -445,7 +446,8 @@ bool Preprocessor::GetEncoderRange(const Media::Format &format, Range &encWidth,
     return true;
 }
 
-bool Preprocessor::CheckOrReallocOutSurfaceBuffer(int32_t targetWidth, int32_t targetHeight, sptr<SurfaceBuffer> &output)
+bool Preprocessor::CheckOrReallocOutSurfaceBuffer(int32_t targetWidth, int32_t targetHeight,
+                                                  int32_t targetFormat, sptr<SurfaceBuffer> &output)
 {
     if (!IsGeometrySupported(encoderConfig_.pixelFormat, targetWidth, targetHeight)) {
         AVCODEC_LOGE("Unsupported target geometry: %{public}dx%{public}d format=%{public}d",
@@ -457,19 +459,21 @@ bool Preprocessor::CheckOrReallocOutSurfaceBuffer(int32_t targetWidth, int32_t t
         return false;
     }
     bool needRealloc = !output || output->GetWidth() != targetWidth || output->GetHeight() != targetHeight ||
-                       output->GetFormat() != static_cast<int32_t>(encoderConfig_.pixelFormat) ||
-                       output->GetVirAddr() == nullptr || output->GetStride() < minStride;
+                       output->GetFormat() != targetFormat ||
+                       output->GetVirAddr() == nullptr ||
+                       output->GetStride() < minStride;
     if (needRealloc) {
         sptr<SurfaceBuffer> newBuffer = SurfaceBuffer::Create();
         if (!newBuffer) {
             return false;
         }
+        constexpr auto DEFAULT_USAGE = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_MMZ_CACHE;
         BufferRequestConfig config = {
             .width = targetWidth,
             .height = targetHeight,
             .strideAlignment = BUFFER_REQUEST_STRIDE_ALIGNMENT,
-            .format = static_cast<int32_t>(encoderConfig_.pixelFormat),
-            .usage = output ? output->GetUsage() : (BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE),
+            .format = targetFormat,
+            .usage = output ? output->GetUsage() | DEFAULT_USAGE : DEFAULT_USAGE,
             .timeout = 0,
         };
         auto ret = newBuffer->Alloc(config);
