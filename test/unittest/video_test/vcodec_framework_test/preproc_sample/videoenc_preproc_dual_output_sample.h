@@ -108,7 +108,8 @@ private:
     static bool ApplyPreprocConfig(OH_AVFormat *format, const PreprocDualOutput::PreprocConfig &config,
                                    const PreprocDualOutput::ScenarioCase &scenario);
     static bool ApplyPreprocKeys(OH_AVFormat *format, const PreprocDualOutput::PreprocConfig &config);
-    bool RequestAndFlushFrame(int32_t width, int32_t height, uint8_t pattern, int64_t timestampUs);
+    bool RequestAndFlushFrame(int32_t width, int32_t height, uint8_t pattern, int64_t timestampUs,
+                              uint32_t frameNumber);
     int32_t ApplyRuntimeOperation(const PreprocDualOutput::ScenarioCase &scenario, uint32_t frameIndex,
                                   uint32_t frameCount, int32_t &frameWidth, int32_t &frameHeight);
 

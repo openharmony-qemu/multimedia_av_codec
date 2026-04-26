@@ -19,6 +19,7 @@
 #include <cerrno>
 #include <chrono>
 #include <iostream>
+#include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <time.h>
@@ -72,6 +73,16 @@ namespace {
 constexpr uint32_t kSurfaceUsage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA;
 constexpr uint8_t kFramePatternBase = 0x20;
 constexpr int32_t kColorBlockSize = 64;
+constexpr int32_t kFrameLabelX = 8;
+constexpr int32_t kFrameLabelY = 8;
+constexpr int32_t kFrameLabelScale = 4;
+constexpr int32_t kFrameLabelGlyphWidth = 5;
+constexpr int32_t kFrameLabelGlyphHeight = 7;
+constexpr int32_t kFrameLabelGlyphSpacing = 1;
+constexpr int32_t kFrameLabelPadding = 4;
+constexpr uint8_t kTextWhiteY = 235;
+constexpr uint8_t kTextBlackY = 16;
+constexpr uint8_t kTextNeutralUv = 128;
 
 struct RgbColor {
     uint8_t r;
@@ -209,6 +220,203 @@ uint16_t ToP010Sample(uint8_t value)
     return static_cast<uint16_t>(value) << 8;
 }
 
+std::string GetFrameLabel(uint32_t frameNumber)
+{
+    return "F" + std::to_string(frameNumber);
+}
+
+std::array<uint8_t, kFrameLabelGlyphHeight> GetGlyphRows(char value)
+{
+    switch (value) {
+        case 'F':
+            return {0x1F, 0x10, 0x10, 0x1E, 0x10, 0x10, 0x10};
+        case '0':
+            return {0x0E, 0x11, 0x13, 0x15, 0x19, 0x11, 0x0E};
+        case '1':
+            return {0x04, 0x0C, 0x04, 0x04, 0x04, 0x04, 0x0E};
+        case '2':
+            return {0x0E, 0x11, 0x01, 0x02, 0x04, 0x08, 0x1F};
+        case '3':
+            return {0x1E, 0x01, 0x01, 0x0E, 0x01, 0x01, 0x1E};
+        case '4':
+            return {0x02, 0x06, 0x0A, 0x12, 0x1F, 0x02, 0x02};
+        case '5':
+            return {0x1F, 0x10, 0x10, 0x1E, 0x01, 0x01, 0x1E};
+        case '6':
+            return {0x0E, 0x10, 0x10, 0x1E, 0x11, 0x11, 0x0E};
+        case '7':
+            return {0x1F, 0x01, 0x02, 0x04, 0x08, 0x08, 0x08};
+        case '8':
+            return {0x0E, 0x11, 0x11, 0x0E, 0x11, 0x11, 0x0E};
+        case '9':
+            return {0x0E, 0x11, 0x11, 0x0F, 0x01, 0x01, 0x0E};
+        default:
+            return {0, 0, 0, 0, 0, 0, 0};
+    }
+}
+
+void DrawYuv420SpPixel(uint8_t *base, int32_t width, int32_t height, int32_t stride, int32_t sliceHeight,
+                       int32_t x, int32_t y, bool foreground, bool cbFirst)
+{
+    if (base == nullptr || x < 0 || y < 0 || x >= width || y >= height || stride <= 0 || sliceHeight <= 0) {
+        return;
+    }
+    base[static_cast<size_t>(y) * stride + x] = foreground ? kTextWhiteY : kTextBlackY;
+
+    uint8_t *uvPlane = base + static_cast<size_t>(stride) * sliceHeight;
+    uint8_t *uvRow = uvPlane + static_cast<size_t>(y / 2) * stride;
+    int32_t uvX = (x / 2) * 2;
+    if (uvX + 1 >= stride) {
+        return;
+    }
+    uvRow[uvX] = kTextNeutralUv;
+    uvRow[uvX + 1] = kTextNeutralUv;
+    (void)cbFirst;
+}
+
+void DrawYuv420PPixel(uint8_t *base, int32_t width, int32_t height, int32_t stride, int32_t sliceHeight,
+                      int32_t x, int32_t y, bool foreground)
+{
+    if (base == nullptr || x < 0 || y < 0 || x >= width || y >= height || stride <= 0 || sliceHeight <= 0) {
+        return;
+    }
+    base[static_cast<size_t>(y) * stride + x] = foreground ? kTextWhiteY : kTextBlackY;
+
+    int32_t chromaStride = stride / 2;
+    int32_t chromaSliceHeight = (sliceHeight + 1) / 2;
+    int32_t chromaX = x / 2;
+    int32_t chromaY = y / 2;
+    if (chromaStride <= 0 || chromaX >= chromaStride || chromaY >= chromaSliceHeight) {
+        return;
+    }
+    uint8_t *uPlane = base + static_cast<size_t>(stride) * sliceHeight;
+    uint8_t *vPlane = uPlane + static_cast<size_t>(chromaStride) * chromaSliceHeight;
+    uPlane[static_cast<size_t>(chromaY) * chromaStride + chromaX] = kTextNeutralUv;
+    vPlane[static_cast<size_t>(chromaY) * chromaStride + chromaX] = kTextNeutralUv;
+}
+
+void DrawYuvP010Pixel(uint8_t *base, int32_t width, int32_t height, int32_t stride, int32_t sliceHeight,
+                      int32_t x, int32_t y, bool foreground, bool cbFirst)
+{
+    constexpr int32_t bytesPerSample = 2;
+    int32_t samplesPerRow = stride / bytesPerSample;
+    if (base == nullptr || x < 0 || y < 0 || x >= width || y >= height || x >= samplesPerRow ||
+        stride <= 0 || sliceHeight <= 0) {
+        return;
+    }
+    uint16_t *row = reinterpret_cast<uint16_t *>(base + static_cast<size_t>(y) * stride);
+    row[x] = ToP010Sample(foreground ? kTextWhiteY : kTextBlackY);
+
+    uint8_t *uvPlane = base + static_cast<size_t>(stride) * sliceHeight;
+    uint16_t *uvRow = reinterpret_cast<uint16_t *>(uvPlane + static_cast<size_t>(y / 2) * stride);
+    int32_t uvX = (x / 2) * 2;
+    if (uvX + 1 >= samplesPerRow) {
+        return;
+    }
+    uvRow[uvX] = ToP010Sample(kTextNeutralUv);
+    uvRow[uvX + 1] = ToP010Sample(kTextNeutralUv);
+    (void)cbFirst;
+}
+
+void DrawRgba8888Pixel(uint8_t *base, int32_t width, int32_t height, int32_t stride, int32_t x, int32_t y,
+                       bool foreground)
+{
+    constexpr int32_t bytesPerPixel = 4;
+    if (base == nullptr || x < 0 || y < 0 || x >= width || y >= height || stride < width * bytesPerPixel) {
+        return;
+    }
+    uint8_t value = foreground ? 0xFF : 0x00;
+    uint8_t *pixel = base + static_cast<size_t>(y) * stride + static_cast<size_t>(x) * bytesPerPixel;
+    pixel[0] = value;
+    pixel[1] = value;
+    pixel[2] = value;
+    pixel[3] = 0xFF;
+}
+
+void DrawRgba1010102Pixel(uint8_t *base, int32_t width, int32_t height, int32_t stride, int32_t x, int32_t y,
+                          bool foreground)
+{
+    constexpr int32_t bytesPerPixel = 4;
+    constexpr uint32_t alpha = 0x3;
+    if (base == nullptr || x < 0 || y < 0 || x >= width || y >= height || stride < width * bytesPerPixel) {
+        return;
+    }
+    uint32_t value = foreground ? 0x3FC : 0x000;
+    uint32_t *row = reinterpret_cast<uint32_t *>(base + static_cast<size_t>(y) * stride);
+    row[x] = value | (value << 10) | (value << 20) | (alpha << 30);
+}
+
+void DrawFrameLabelPixel(uint8_t *base, int32_t width, int32_t height, int32_t stride, int32_t sliceHeight,
+                         int32_t format, int32_t x, int32_t y, bool foreground)
+{
+    switch (format) {
+        case NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP:
+            DrawYuv420SpPixel(base, width, height, stride, sliceHeight, x, y, foreground, true);
+            break;
+        case NATIVEBUFFER_PIXEL_FMT_YCRCB_420_SP:
+            DrawYuv420SpPixel(base, width, height, stride, sliceHeight, x, y, foreground, false);
+            break;
+        case NATIVEBUFFER_PIXEL_FMT_YCBCR_420_P:
+            DrawYuv420PPixel(base, width, height, stride, sliceHeight, x, y, foreground);
+            break;
+        case NATIVEBUFFER_PIXEL_FMT_YCBCR_P010:
+            DrawYuvP010Pixel(base, width, height, stride, sliceHeight, x, y, foreground, true);
+            break;
+        case NATIVEBUFFER_PIXEL_FMT_YCRCB_P010:
+            DrawYuvP010Pixel(base, width, height, stride, sliceHeight, x, y, foreground, false);
+            break;
+        case NATIVEBUFFER_PIXEL_FMT_RGBA_8888:
+            DrawRgba8888Pixel(base, width, height, stride, x, y, foreground);
+            break;
+        case NATIVEBUFFER_PIXEL_FMT_RGBA_1010102:
+            DrawRgba1010102Pixel(base, width, height, stride, x, y, foreground);
+            break;
+        default:
+            break;
+    }
+}
+
+void DrawSolidRect(uint8_t *base, int32_t width, int32_t height, int32_t stride, int32_t sliceHeight,
+                   int32_t format, int32_t left, int32_t top, int32_t rectWidth, int32_t rectHeight,
+                   bool foreground)
+{
+    for (int32_t y = top; y < top + rectHeight; ++y) {
+        for (int32_t x = left; x < left + rectWidth; ++x) {
+            DrawFrameLabelPixel(base, width, height, stride, sliceHeight, format, x, y, foreground);
+        }
+    }
+}
+
+void DrawFrameNumber(uint8_t *base, int32_t width, int32_t height, int32_t stride, int32_t sliceHeight,
+                     int32_t format, uint32_t frameNumber)
+{
+    std::string label = GetFrameLabel(frameNumber);
+    int32_t glyphAdvance = (kFrameLabelGlyphWidth + kFrameLabelGlyphSpacing) * kFrameLabelScale;
+    int32_t backgroundWidth = static_cast<int32_t>(label.size()) * glyphAdvance + kFrameLabelPadding * 2;
+    int32_t backgroundHeight = kFrameLabelGlyphHeight * kFrameLabelScale + kFrameLabelPadding * 2;
+    DrawSolidRect(base, width, height, stride, sliceHeight, format, kFrameLabelX, kFrameLabelY, backgroundWidth,
+                  backgroundHeight, false);
+
+    int32_t cursorX = kFrameLabelX + kFrameLabelPadding;
+    int32_t cursorY = kFrameLabelY + kFrameLabelPadding;
+    for (char value : label) {
+        auto rows = GetGlyphRows(value);
+        for (int32_t rowIndex = 0; rowIndex < kFrameLabelGlyphHeight; ++rowIndex) {
+            for (int32_t colIndex = 0; colIndex < kFrameLabelGlyphWidth; ++colIndex) {
+                bool isSet = (rows[rowIndex] & (1 << (kFrameLabelGlyphWidth - 1 - colIndex))) != 0;
+                if (!isSet) {
+                    continue;
+                }
+                int32_t dotX = cursorX + colIndex * kFrameLabelScale;
+                int32_t dotY = cursorY + rowIndex * kFrameLabelScale;
+                DrawSolidRect(base, width, height, stride, sliceHeight, format, dotX, dotY, kFrameLabelScale,
+                              kFrameLabelScale, true);
+            }
+        }
+        cursorX += glyphAdvance;
+    }
+}
+
 bool FillYuvP010(uint8_t *base, int32_t width, int32_t height, int32_t stride, int32_t sliceHeight,
                  uint8_t pattern, bool cbFirst)
 {
@@ -262,27 +470,40 @@ bool FillRgba1010102(uint8_t *base, int32_t width, int32_t height, int32_t strid
 }
 
 bool FillSpectrumBlocks(void *addr, int32_t width, int32_t height, int32_t stride, int32_t sliceHeight,
-                        int32_t format, uint8_t pattern)
+                        int32_t format, uint8_t pattern, uint32_t frameNumber)
 {
     uint8_t *base = static_cast<uint8_t *>(addr);
+    bool filled = false;
     switch (format) {
         case NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP:
-            return FillYuv420Sp(base, width, height, stride, sliceHeight, pattern, true);
+            filled = FillYuv420Sp(base, width, height, stride, sliceHeight, pattern, true);
+            break;
         case NATIVEBUFFER_PIXEL_FMT_YCRCB_420_SP:
-            return FillYuv420Sp(base, width, height, stride, sliceHeight, pattern, false);
+            filled = FillYuv420Sp(base, width, height, stride, sliceHeight, pattern, false);
+            break;
         case NATIVEBUFFER_PIXEL_FMT_YCBCR_420_P:
-            return FillYuv420P(base, width, height, stride, sliceHeight, pattern);
+            filled = FillYuv420P(base, width, height, stride, sliceHeight, pattern);
+            break;
         case NATIVEBUFFER_PIXEL_FMT_RGBA_8888:
-            return FillRgba8888(base, width, height, stride, pattern, true);
+            filled = FillRgba8888(base, width, height, stride, pattern, true);
+            break;
         case NATIVEBUFFER_PIXEL_FMT_RGBA_1010102:
-            return FillRgba1010102(base, width, height, stride, pattern);
+            filled = FillRgba1010102(base, width, height, stride, pattern);
+            break;
         case NATIVEBUFFER_PIXEL_FMT_YCBCR_P010:
-            return FillYuvP010(base, width, height, stride, sliceHeight, pattern, true);
+            filled = FillYuvP010(base, width, height, stride, sliceHeight, pattern, true);
+            break;
         case NATIVEBUFFER_PIXEL_FMT_YCRCB_P010:
-            return FillYuvP010(base, width, height, stride, sliceHeight, pattern, false);
+            filled = FillYuvP010(base, width, height, stride, sliceHeight, pattern, false);
+            break;
         default:
             return false;
     }
+    if (!filled) {
+        return false;
+    }
+    DrawFrameNumber(base, width, height, stride, sliceHeight, format, frameNumber);
+    return true;
 }
 } // namespace
 
@@ -649,14 +870,14 @@ void VideoEncPreprocDualOutputSample::ForgetSecondaryHandle()
 }
 
 bool VideoEncPreprocDualOutputSample::RequestAndFlushFrame(int32_t width, int32_t height, uint8_t pattern,
-                                                           int64_t timestampUs)
+                                                           int64_t timestampUs, uint32_t frameNumber)
 {
     auto printFailure = [&](const char *step, int32_t err, int32_t format = 0, int32_t stride = 0,
                             int32_t sliceHeight = 0) {
         cout << "RequestAndFlushFrame failed, step=" << step << ", ret=" << err << ", width=" << width
              << ", height=" << height << ", pattern=" << static_cast<int32_t>(pattern)
-             << ", timestampUs=" << timestampUs << ", format=" << format << ", stride=" << stride
-             << ", sliceHeight=" << sliceHeight << endl;
+             << ", frameNumber=" << frameNumber << ", timestampUs=" << timestampUs << ", format=" << format
+             << ", stride=" << stride << ", sliceHeight=" << sliceHeight << endl;
     };
 
     if (window_ == nullptr) {
@@ -703,7 +924,7 @@ bool VideoEncPreprocDualOutputSample::RequestAndFlushFrame(int32_t width, int32_
     if (ret != 0) {
         cout << "RequestAndFlushFrame warning, step=get_format, ret=" << ret << ", fallbackFormat=" << format
              << ", width=" << width << ", height=" << height << ", pattern=" << static_cast<int32_t>(pattern)
-             << ", timestampUs=" << timestampUs << endl;
+             << ", frameNumber=" << frameNumber << ", timestampUs=" << timestampUs << endl;
     }
 
     OH_NativeBuffer_Config config;
@@ -717,7 +938,7 @@ bool VideoEncPreprocDualOutputSample::RequestAndFlushFrame(int32_t width, int32_
         return false;
     }
 
-    if (!FillSpectrumBlocks(virAddr, width, height, stride, sliceHeight, format, pattern)) {
+    if (!FillSpectrumBlocks(virAddr, width, height, stride, sliceHeight, format, pattern, frameNumber)) {
         printFailure("fill_spectrum_blocks", AV_ERR_INVALID_VAL, format, stride, sliceHeight);
         (void)OH_NativeBuffer_Unmap(nativeBuffer);
         (void)NativeWindowCancelBuffer(window_, nativeWindowBuffer);
@@ -728,8 +949,8 @@ bool VideoEncPreprocDualOutputSample::RequestAndFlushFrame(int32_t width, int32_
     if (ret != 0) {
         cout << "RequestAndFlushFrame warning, step=set_ui_timestamp, ret=" << ret << ", width=" << width
              << ", height=" << height << ", pattern=" << static_cast<int32_t>(pattern)
-             << ", timestampUs=" << timestampUs << ", format=" << format << ", stride=" << stride
-             << ", sliceHeight=" << sliceHeight << endl;
+             << ", frameNumber=" << frameNumber << ", timestampUs=" << timestampUs << ", format=" << format
+             << ", stride=" << stride << ", sliceHeight=" << sliceHeight << endl;
     }
     ret = OH_NativeBuffer_Unmap(nativeBuffer);
     if (ret != 0) {
@@ -819,7 +1040,8 @@ int32_t VideoEncPreprocDualOutputSample::SendFrames(const PreprocDualOutput::Sce
             i >= frameCount / 2) {
             geometryUpdated = true;
         }
-        if (!RequestAndFlushFrame(frameWidth, frameHeight, static_cast<uint8_t>(kFramePatternBase + i), GetTimeUs())) {
+        if (!RequestAndFlushFrame(frameWidth, frameHeight, static_cast<uint8_t>(kFramePatternBase + i), GetTimeUs(),
+                                  i + 1)) {
             return AV_ERR_UNKNOWN;
         }
         usleep(1000);
@@ -945,7 +1167,7 @@ int32_t VideoEncPreprocDualOutputSample::SendFramesFixedPts(const PreprocDualOut
     }
     for (uint32_t i = 0; i < frameCount; ++i) {
         if (!RequestAndFlushFrame(scenario.width, scenario.height, static_cast<uint8_t>(kFramePatternBase + i),
-                                  ptsUs)) {
+                                  ptsUs, i + 1)) {
             return AV_ERR_UNKNOWN;
         }
         usleep(1000);
