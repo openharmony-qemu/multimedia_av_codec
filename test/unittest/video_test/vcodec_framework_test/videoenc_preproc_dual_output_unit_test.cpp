@@ -214,6 +214,8 @@ std::string ToString(FlowType flow)
             return "no_preproc";
         case FlowType::PRIMARY_PREPROC:
             return "primary_preproc";
+        case FlowType::SECONDARY_PREPROC:
+            return "secondary_preproc";
         case FlowType::MIXED_PREPROC:
             return "mixed_preproc";
         case FlowType::INVALID_PARAMETER:
@@ -458,6 +460,23 @@ PreprocConfig MakeRuntimeConfig(int32_t width, int32_t height, uint32_t seed)
     return MakeDownsampling(width / 2, height / 2, 12.0);
 }
 
+FlowType MakeFlowType(PreprocEnableMode preprocMode)
+{
+    switch (preprocMode) {
+        case PreprocEnableMode::DISABLED:
+            return FlowType::NO_PREPROC;
+        case PreprocEnableMode::PRIMARY_ONLY:
+            return FlowType::PRIMARY_PREPROC;
+        case PreprocEnableMode::SECONDARY_ONLY:
+            return FlowType::SECONDARY_PREPROC;
+        case PreprocEnableMode::BOTH_SAME:
+        case PreprocEnableMode::BOTH_DIFFERENT:
+            return FlowType::MIXED_PREPROC;
+        default:
+            return FlowType::NO_PREPROC;
+    }
+}
+
 void ApplyPreprocMode(ScenarioCase &scenario)
 {
     scenario.primary = MakeNoPreproc();
@@ -502,7 +521,7 @@ ScenarioCase MakeScenario(const CodecDimension &codec, const ResolutionDimension
     scenario.encoderMode = encoderMode;
     scenario.preprocMode = preprocMode;
     scenario.runtimeOperation = runtimeOperation;
-    scenario.flow = FlowType::NO_PREPROC;
+    scenario.flow = MakeFlowType(preprocMode);
     scenario.expectedResult = AV_ERR_OK;
     scenario.expectExactResult = true;
     scenario.needsFrameRotation = true;

@@ -30,6 +30,7 @@ namespace PreprocDualOutput {
 enum class FlowType {
     NO_PREPROC = 0,
     PRIMARY_PREPROC,
+    SECONDARY_PREPROC,
     MIXED_PREPROC,
     INVALID_PARAMETER,
     INVALID_LIFECYCLE,
