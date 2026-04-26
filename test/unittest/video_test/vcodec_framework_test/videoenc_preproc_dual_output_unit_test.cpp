@@ -65,7 +65,19 @@ struct NativeFormatDimension {
     int32_t codecPixelFormat;
 };
 
-class VideoEncPreprocDualOutputTest : public testing::TestWithParam<ScenarioCase> {
+class VideoEncPreprocDualOutputLevel0Test : public testing::TestWithParam<ScenarioCase> {
+public:
+    static void SetUpTestCase(void) {}
+    static void TearDownTestCase(void) {}
+};
+
+class VideoEncPreprocDualOutputLevel1Test : public testing::TestWithParam<ScenarioCase> {
+public:
+    static void SetUpTestCase(void) {}
+    static void TearDownTestCase(void) {}
+};
+
+class VideoEncPreprocDualOutputLevel2Test : public testing::TestWithParam<ScenarioCase> {
 public:
     static void SetUpTestCase(void) {}
     static void TearDownTestCase(void) {}
@@ -574,6 +586,171 @@ const std::vector<ScenarioCase> &GetSupportedScenarios()
     return scenarios;
 }
 
+bool ContainsScenarioName(const std::vector<ScenarioCase> &scenarios, const std::string &name)
+{
+    for (const auto &scenario : scenarios) {
+        if (scenario.name == name) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void AddScenarioIfMissing(std::vector<ScenarioCase> &scenarios, const ScenarioCase &scenario)
+{
+    if (!ContainsScenarioName(scenarios, scenario.name)) {
+        scenarios.push_back(scenario);
+    }
+}
+
+template<typename Predicate>
+bool AddFirstScenarioMatching(std::vector<ScenarioCase> &scenarios, Predicate predicate,
+                              const std::vector<ScenarioCase> *excluded = nullptr)
+{
+    for (const auto &scenario : GetSupportedScenarios()) {
+        if (!predicate(scenario)) {
+            continue;
+        }
+        if (excluded != nullptr && ContainsScenarioName(*excluded, scenario.name)) {
+            continue;
+        }
+        AddScenarioIfMissing(scenarios, scenario);
+        return true;
+    }
+    return false;
+}
+
+bool IsBaseCodecResolutionFormat(const ScenarioCase &scenario)
+{
+    return scenario.codecLabel == "hw_h264" && scenario.width == 1280 && scenario.height == 720 &&
+           scenario.nativeFormat == NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP;
+}
+
+bool IsDualRuntimeNone(const ScenarioCase &scenario)
+{
+    return scenario.encoderMode == EncoderEnableMode::PRIMARY_SECONDARY &&
+           scenario.runtimeOperation == RuntimeOperation::NONE;
+}
+
+std::vector<ScenarioCase> BuildLevel0Scenarios()
+{
+    std::vector<ScenarioCase> scenarios;
+    const std::array<FlowType, 4> smokeFlows = {{
+        FlowType::NO_PREPROC,
+        FlowType::PRIMARY_PREPROC,
+        FlowType::SECONDARY_PREPROC,
+        FlowType::MIXED_PREPROC,
+    }};
+
+    for (auto flow : smokeFlows) {
+        bool added = AddFirstScenarioMatching(scenarios, [flow](const ScenarioCase &scenario) {
+            return scenario.flow == flow && IsBaseCodecResolutionFormat(scenario) && IsDualRuntimeNone(scenario);
+        });
+        if (!added) {
+            (void)AddFirstScenarioMatching(scenarios, [flow](const ScenarioCase &scenario) {
+                return scenario.flow == flow && IsDualRuntimeNone(scenario);
+            });
+        }
+    }
+    return scenarios;
+}
+
+const std::vector<ScenarioCase> &GetLevel0Scenarios()
+{
+    static const std::vector<ScenarioCase> scenarios = BuildLevel0Scenarios();
+    return scenarios;
+}
+
+std::vector<ScenarioCase> BuildLevel1Scenarios()
+{
+    std::vector<ScenarioCase> scenarios;
+    const auto &level0 = GetLevel0Scenarios();
+
+    for (const auto &scenario : GetSupportedScenarios()) {
+        if (ContainsScenarioName(level0, scenario.name)) {
+            continue;
+        }
+        if (IsBaseCodecResolutionFormat(scenario)) {
+            AddScenarioIfMissing(scenarios, scenario);
+        }
+    }
+
+    for (const auto &codec : CodecDimensions()) {
+        bool added = AddFirstScenarioMatching(scenarios, [&codec](const ScenarioCase &scenario) {
+            return scenario.codecLabel == codec.label && scenario.flow == FlowType::MIXED_PREPROC &&
+                   IsDualRuntimeNone(scenario);
+        }, &level0);
+        if (!added) {
+            (void)AddFirstScenarioMatching(scenarios, [&codec](const ScenarioCase &scenario) {
+                return scenario.codecLabel == codec.label && IsDualRuntimeNone(scenario);
+            }, &level0);
+        }
+    }
+
+    for (const auto &format : NativeFormatDimensions()) {
+        bool added = AddFirstScenarioMatching(scenarios, [&format](const ScenarioCase &scenario) {
+            return scenario.nativeFormat == format.nativeFormat && scenario.flow == FlowType::MIXED_PREPROC &&
+                   IsDualRuntimeNone(scenario);
+        }, &level0);
+        if (!added) {
+            (void)AddFirstScenarioMatching(scenarios, [&format](const ScenarioCase &scenario) {
+                return scenario.nativeFormat == format.nativeFormat && IsDualRuntimeNone(scenario);
+            }, &level0);
+        }
+    }
+
+    for (const auto &resolution : ResolutionDimensions()) {
+        bool added = AddFirstScenarioMatching(scenarios, [&resolution](const ScenarioCase &scenario) {
+            return scenario.width == resolution.width && scenario.height == resolution.height &&
+                   scenario.flow == FlowType::MIXED_PREPROC && IsDualRuntimeNone(scenario);
+        }, &level0);
+        if (!added) {
+            (void)AddFirstScenarioMatching(scenarios, [&resolution](const ScenarioCase &scenario) {
+                return scenario.width == resolution.width && scenario.height == resolution.height &&
+                       IsDualRuntimeNone(scenario);
+            }, &level0);
+        }
+    }
+
+    for (const auto &scenario : GetSupportedScenarios()) {
+        if (ContainsScenarioName(level0, scenario.name)) {
+            continue;
+        }
+        if (scenario.flow == FlowType::INVALID_PARAMETER || scenario.flow == FlowType::INVALID_LIFECYCLE ||
+            scenario.flow == FlowType::DUPLICATE_SECONDARY || scenario.flow == FlowType::DROP_RATIO ||
+            scenario.flow == FlowType::DROP_FLUSH_STOP_RESET) {
+            AddScenarioIfMissing(scenarios, scenario);
+        }
+    }
+    return scenarios;
+}
+
+const std::vector<ScenarioCase> &GetLevel1Scenarios()
+{
+    static const std::vector<ScenarioCase> scenarios = BuildLevel1Scenarios();
+    return scenarios;
+}
+
+std::vector<ScenarioCase> BuildLevel2Scenarios()
+{
+    std::vector<ScenarioCase> scenarios;
+    const auto &level0 = GetLevel0Scenarios();
+    const auto &level1 = GetLevel1Scenarios();
+    for (const auto &scenario : GetSupportedScenarios()) {
+        if (ContainsScenarioName(level0, scenario.name) || ContainsScenarioName(level1, scenario.name)) {
+            continue;
+        }
+        AddScenarioIfMissing(scenarios, scenario);
+    }
+    return scenarios;
+}
+
+const std::vector<ScenarioCase> &GetLevel2Scenarios()
+{
+    static const std::vector<ScenarioCase> scenarios = BuildLevel2Scenarios();
+    return scenarios;
+}
+
 std::string SanitizeName(std::string name)
 {
     for (char &value : name) {
@@ -797,9 +974,38 @@ void RunScenario(const ScenarioCase &scenario)
         (void)sample.WaitForPrimaryEos(2);
     }
 }
+
+void RunScenarioByFlow(const ScenarioCase &scenario)
+{
+    SCOPED_TRACE(DescribeScenario(scenario));
+    switch (scenario.flow) {
+        case FlowType::DROP_RATIO:
+            RunDropRatioScenario(scenario);
+            break;
+        case FlowType::DROP_FLUSH_STOP_RESET:
+            RunDropFlushStopResetScenario(scenario);
+            break;
+        case FlowType::INVALID_PARAMETER:
+            RunInvalidParameterScenario(scenario);
+            break;
+        default:
+            RunScenario(scenario);
+            break;
+    }
+}
 } // namespace
 
-INSTANTIATE_TEST_SUITE_P(Dynamic, VideoEncPreprocDualOutputTest, testing::ValuesIn(GetSupportedScenarios()),
+INSTANTIATE_TEST_SUITE_P(Level0, VideoEncPreprocDualOutputLevel0Test, testing::ValuesIn(GetLevel0Scenarios()),
+                         [](const testing::TestParamInfo<ScenarioCase> &info) {
+                             return SanitizeName(info.param.name);
+                         });
+
+INSTANTIATE_TEST_SUITE_P(Level1, VideoEncPreprocDualOutputLevel1Test, testing::ValuesIn(GetLevel1Scenarios()),
+                         [](const testing::TestParamInfo<ScenarioCase> &info) {
+                             return SanitizeName(info.param.name);
+                         });
+
+INSTANTIATE_TEST_SUITE_P(Level2, VideoEncPreprocDualOutputLevel2Test, testing::ValuesIn(GetLevel2Scenarios()),
                          [](const testing::TestParamInfo<ScenarioCase> &info) {
                              return SanitizeName(info.param.name);
                          });
@@ -820,26 +1026,31 @@ HWTEST_P(VideoEncPreprocDualOutputInfoTest, DISABLED_PrintScenarioInfo, TestSize
 }
 
 /**
- * @tc.name: VideoEncoder_Preproc_Dual_Output_001
- * @tc.desc: preproc dual-output dynamic dimension scenarios on primary surface input.
+ * @tc.name: VideoEncoder_Preproc_Dual_Output_Level0
+ * @tc.desc: preproc dual-output smoke scenarios on primary surface input.
  * @tc.type: FUNC
  */
-HWTEST_P(VideoEncPreprocDualOutputTest, VideoEncoder_Preproc_Dual_Output_001, TestSize.Level1)
+HWTEST_P(VideoEncPreprocDualOutputLevel0Test, VideoEncoder_Preproc_Dual_Output_Level0, TestSize.Level0)
 {
-    const auto &scenario = GetParam();
-    SCOPED_TRACE(DescribeScenario(scenario));
-    switch (scenario.flow) {
-        case FlowType::DROP_RATIO:
-            RunDropRatioScenario(scenario);
-            break;
-        case FlowType::DROP_FLUSH_STOP_RESET:
-            RunDropFlushStopResetScenario(scenario);
-            break;
-        case FlowType::INVALID_PARAMETER:
-            RunInvalidParameterScenario(scenario);
-            break;
-        default:
-            RunScenario(scenario);
-            break;
-    }
+    RunScenarioByFlow(GetParam());
+}
+
+/**
+ * @tc.name: VideoEncoder_Preproc_Dual_Output_Level1
+ * @tc.desc: preproc dual-output core matrix scenarios on primary surface input.
+ * @tc.type: FUNC
+ */
+HWTEST_P(VideoEncPreprocDualOutputLevel1Test, VideoEncoder_Preproc_Dual_Output_Level1, TestSize.Level1)
+{
+    RunScenarioByFlow(GetParam());
+}
+
+/**
+ * @tc.name: VideoEncoder_Preproc_Dual_Output_Level2
+ * @tc.desc: preproc dual-output extended scenarios on primary surface input.
+ * @tc.type: FUNC
+ */
+HWTEST_P(VideoEncPreprocDualOutputLevel2Test, VideoEncoder_Preproc_Dual_Output_Level2, TestSize.Level2)
+{
+    RunScenarioByFlow(GetParam());
 }
