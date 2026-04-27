@@ -760,6 +760,10 @@ Status DemuxerPluginManager::SingleStreamSeekTo(int64_t seekTime, Plugins::SeekM
     return ret;
 }
 
+Status DemuxerPluginManager::SetReadTimeoutForInitSeek(int64_t timeoutMs)
+{
+}
+
 Status DemuxerPluginManager::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
 {
     if (curAudioStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {

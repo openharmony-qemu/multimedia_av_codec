@@ -1168,6 +1168,9 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     bool isGotPlugin = demuxerPluginManager_->GetPluginName(snifferPluginName);
     source_->NotifyInitSuccess();
     ProcessDrmInfos();
+    if () {
+
+    }
     FALSE_RETURN_V_NOLOG(eventReceiver_ != nullptr, res);
     eventReceiver_->OnMemoryUsageEvent({"SOURCE",
         DfxEventType::DFX_INFO_MEMORY_USAGE, source_->GetMemorySize()});
