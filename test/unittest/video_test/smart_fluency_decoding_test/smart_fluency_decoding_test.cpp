@@ -436,15 +436,23 @@ HWTEST_F(SmartFluencyDecodingTest, MakePreDecodeDecision_TargetFull_023, TestSiz
  */
 HWTEST_F(SmartFluencyDecodingTest, InitializeWithCsd_Replay_024, TestSize.Level1)
 {
-    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::ADAPTIVE);
+    // 1. Initialize with FULL mode (which does NOT require NALU analysis)
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::FULL);
     sfd_->Initialize(cfg);
-
-    std::vector<uint8_t> csd = {0x00, 0x00, 0x00, 0x01, 0x67};
-    sfd_->InitializeWithCsd(csd);
-    ASSERT_NE(sfd_->csdBuffer_, nullptr);
     ASSERT_EQ(sfd_->naluAnalyzer_, nullptr);
 
-    // Creation should trigger replay
-    sfd_->EnsureNaluAnalyzer();
+    // 2. Call InitializeWithCsd. It should cache the buffer because analyzer is null.
+    std::vector<uint8_t> csd = {0x00, 0x00, 0x00, 0x01, 0x67};
+    bool immediateReplay = sfd_->InitializeWithCsd(csd);
+    EXPECT_FALSE(immediateReplay);
+    ASSERT_NE(sfd_->csdBuffer_, nullptr);
+
+    // 3. Switch to ADAPTIVE mode (which REQUIRES NALU analysis)
+    OHOS::Media::Format format;
+    format.PutIntValue(OHOS::Media::Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, 
+                       static_cast<int32_t>(OHOS::Media::Plugins::FrameRetentionMode::ADAPTIVE));
+    sfd_->UpdateDynamicConfig(format);
+
+    // 4. Switching mode should have triggered EnsureNaluAnalyzer, which replays the CSD.
     EXPECT_NE(sfd_->naluAnalyzer_, nullptr);
 }
