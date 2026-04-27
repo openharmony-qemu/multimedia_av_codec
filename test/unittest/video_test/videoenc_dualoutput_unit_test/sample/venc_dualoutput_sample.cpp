@@ -819,7 +819,8 @@ void VideoEncDualOutputSample::FillYuvData(char *dst, int32_t stride)
     }
 }
 
-void VideoEncDualOutputSample::NotifyEosForAll(OH_NativeBuffer *nativeBuffer, OHNativeWindowBuffer *ohNativeWindowBuffer)
+void VideoEncDualOutputSample::NotifyEosForAll(OH_NativeBuffer *nativeBuffer,
+                                               OHNativeWindowBuffer *ohNativeWindowBuffer)
 {
     (void)OH_NativeBuffer_Unmap(nativeBuffer);
     (void)NativeWindowCancelBuffer(nativeWindow_, ohNativeWindowBuffer);
