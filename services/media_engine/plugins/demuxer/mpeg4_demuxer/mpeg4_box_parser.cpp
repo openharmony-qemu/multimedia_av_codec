@@ -3270,7 +3270,6 @@ std::string MPEG4AtomParser::GetMetadataKey(uint32_t atomType, ParseContext* ctx
         { FourccType("\251lyr"), "lyrics" },
         { FourccType("\251xyz"), "location" },
         { FourccType("desc"),    "description" },
-        { FourccType("desc"),    "description" },
     };
     
     auto it = keyMap.find(atomType);
