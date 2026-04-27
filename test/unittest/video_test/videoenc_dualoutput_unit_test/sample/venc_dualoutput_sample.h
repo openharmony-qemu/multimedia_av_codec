@@ -104,8 +104,8 @@ private:
         OH_AVCodec *codec = nullptr;
         std::shared_ptr<OH_AVFormat> format = nullptr;
         std::shared_ptr<VCodecSignal> signal = nullptr;
-        std::atomic<uint32_t> frameInputCount_{0};
-        std::atomic<uint32_t> frameOutputCount_{0};
+        std::atomic<uint32_t> frameInputCount{0};
+        std::atomic<uint32_t> frameOutputCount{0};
         int64_t time = 0;
         bool isAVBufferMode = false;
         bool isFirstFrame = true;
@@ -139,6 +139,11 @@ private:
     std::unique_ptr<std::thread> inputLoop_;
     void InputFuncSurface();
     int32_t FlushSurface(OHNativeWindowBuffer *ohNativeWindowBuffer, OH_NativeBuffer *nativeBuffer);
+    void *MapNativeBuffer(OH_NativeBuffer *nativeBuffer);
+    bool ValidateMappedBuffer(char *dst, OH_NativeBuffer *nativeBuffer,
+        OHNativeWindowBuffer *ohNativeWindowBuffer, int32_t &stride);
+    void FillYuvData(char *dst, int32_t stride);
+    void NotifyEosForAll(OH_NativeBuffer *nativeBuffer, OHNativeWindowBuffer *ohNativeWindowBuffer);
 };
 
 } // namespace MediaAVCodec
