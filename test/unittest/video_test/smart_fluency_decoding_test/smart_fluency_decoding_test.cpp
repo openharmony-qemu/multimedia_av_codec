@@ -449,7 +449,7 @@ HWTEST_F(SmartFluencyDecodingTest, InitializeWithCsd_Replay_024, TestSize.Level1
 
     // 3. Switch to ADAPTIVE mode (which REQUIRES NALU analysis)
     OHOS::Media::Format format;
-    format.PutIntValue(OHOS::Media::Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, 
+    format.PutIntValue(OHOS::Media::Tag::VIDEO_DECODER_FRAME_RETENTION_MODE,
                        static_cast<int32_t>(OHOS::Media::Plugins::FrameRetentionMode::ADAPTIVE));
     sfd_->UpdateDynamicConfig(format);
 
