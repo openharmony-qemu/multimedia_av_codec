@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <array>
 #include <iostream>
+#include <map>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -835,7 +836,11 @@ std::string GetOutputFilePath()
     std::string testName = testInfo == nullptr ? "unknown" : testInfo->name();
     auto isPathSeparator = [](char value) { return value == '/' || value == '\\'; };
     testName.erase(std::remove_if(testName.begin(), testName.end(), isPathSeparator), testName.end());
-    return "./1in2out_out/" + testName + ".bin";
+
+    static std::map<std::string, uint32_t> outputPathCounts;
+    uint32_t repeatIndex = ++outputPathCounts[testName];
+    std::string repeatSuffix = repeatIndex > 1 ? "_repeat" + std::to_string(repeatIndex) : "";
+    return "./1in2out_out/" + testName + repeatSuffix + ".bin";
 }
 
 void RunDropRatioScenario(const ScenarioCase &scenario)
