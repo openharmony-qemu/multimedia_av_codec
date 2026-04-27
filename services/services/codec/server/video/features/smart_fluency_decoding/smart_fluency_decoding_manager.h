@@ -35,7 +35,7 @@ namespace SFD {
 class SmartFluencyDecodingManager : public AVCodecDfxComponent {
 public:
     SmartFluencyDecodingManager(const std::string& codecMime, AVCodecType codecType);
-    static bool IsCodecSupported(const std::string& codecMime, AVCodecType codecType);
+    static bool IsCodecSupported(const std::string& codecMime, AVCodecType codecType, bool isSecure = false);
     void Configure(const Media::Format& format);
     void SetCallbacks(SmartFluencyDecoding::AsyncDropInputCallback inputCb,
                       SmartFluencyDecoding::AsyncDropOutputCallback outputCb);

@@ -1774,6 +1774,9 @@ void CodecServer::InitSfdManager()
     if (sfdManager_ != nullptr) {
         return;
     }
+    std::string tmpName = codecName_;
+    transform(tmpName.begin(), tmpName.end(), tmpName.begin(), ::tolower);
+    bool isSecure = tmpName.find(".secure") != std::string::npos;
     if (!SFD::SmartFluencyDecodingManager::IsCodecSupported(codecMime_, codecType_)) {
         return;
     }
