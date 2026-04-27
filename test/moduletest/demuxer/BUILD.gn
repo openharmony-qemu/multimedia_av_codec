@@ -136,9 +136,6 @@ ohos_unittest("demuxer_native_module_test") {
     "window_manager:libwm",
   ]
 
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
-
   if (target_cpu == "arm64") {
     av_codec_path = "\"/system/lib64\""
   } else {
@@ -153,6 +150,7 @@ ohos_unittest("demuxer_native_module_test") {
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
     "$MEDIA_ROOT_DIR/services/media_engine/modules:av_codec_media_engine_modules",
     "$MEDIA_ROOT_DIR/services/services:av_codec_service",
+    "$MEDIA_ROOT_DIR/test/unittest/common:av_codec_inner_unit_test"
   ]
 
   resource_config_file =
