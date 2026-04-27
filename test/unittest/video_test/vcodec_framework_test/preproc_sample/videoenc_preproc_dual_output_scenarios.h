@@ -104,6 +104,7 @@ struct ScenarioCase {
     bool expectExactResult = true;
     bool needsFrameRotation = false;
     uint32_t frameCount = 8;
+    int32_t profile = -1;
 };
 
 constexpr PreprocConfig MakeNoPreproc(double frameRate = 30.0)

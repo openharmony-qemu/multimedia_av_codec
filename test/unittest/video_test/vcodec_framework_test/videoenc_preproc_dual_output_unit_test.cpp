@@ -309,6 +309,21 @@ std::string CodecPixelFormatToString(int32_t format)
     }
 }
 
+std::string ProfileToString(int32_t profile)
+{
+    if (profile < 0) {
+        return "unset";
+    }
+    switch (profile) {
+        case HEVC_PROFILE_MAIN:
+            return "HEVC_PROFILE_MAIN";
+        case HEVC_PROFILE_MAIN_10:
+            return "HEVC_PROFILE_MAIN_10";
+        default:
+            return std::to_string(profile);
+    }
+}
+
 const char *BoolToString(bool value)
 {
     return value ? "true" : "false";
@@ -360,7 +375,7 @@ std::string DescribeScenario(const ScenarioCase &scenario)
         << "x" << scenario.runtimeHeight << "\n"
         << "  formats: native=" << NativeFormatToString(scenario.nativeFormat) << "(" << scenario.nativeFormat
         << "), codecPixel=" << CodecPixelFormatToString(scenario.codecPixelFormat) << "("
-        << scenario.codecPixelFormat << ")\n"
+        << scenario.codecPixelFormat << "), profile=" << ProfileToString(scenario.profile) << "\n"
         << "  modes: encoder=" << ToString(scenario.encoderMode) << ", preproc="
         << ToString(scenario.preprocMode) << ", runtime=" << ToString(scenario.runtimeOperation) << "\n"
         << "  invalidParameterType: " << ToString(scenario.invalidParameterType) << "\n"
@@ -464,6 +479,46 @@ bool IsNativeFormatSupported(OH_AVCapability *capability, OH_NativeBuffer_Format
     return false;
 }
 
+bool IsTenBitNativeFormat(OH_NativeBuffer_Format nativeFormat)
+{
+    return nativeFormat == NATIVEBUFFER_PIXEL_FMT_RGBA_1010102 ||
+           nativeFormat == NATIVEBUFFER_PIXEL_FMT_YCBCR_P010 ||
+           nativeFormat == NATIVEBUFFER_PIXEL_FMT_YCRCB_P010;
+}
+
+bool IsProfileSupported(OH_AVCapability *capability, int32_t profile)
+{
+    const int32_t *profiles = nullptr;
+    uint32_t profileCount = 0;
+    if (OH_AVCapability_GetSupportedProfiles(capability, &profiles, &profileCount) != AV_ERR_OK ||
+        profiles == nullptr) {
+        return false;
+    }
+    for (uint32_t i = 0; i < profileCount; ++i) {
+        if (profiles[i] == profile) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool TryGetScenarioProfile(OH_AVCapability *capability, const CodecDimension &codec,
+                           const NativeFormatDimension &format, int32_t &profile)
+{
+    profile = -1;
+    if (!IsTenBitNativeFormat(format.nativeFormat)) {
+        return true;
+    }
+    if (std::string(codec.mime) != OH_AVCODEC_MIMETYPE_VIDEO_HEVC) {
+        return false;
+    }
+    if (!IsProfileSupported(capability, HEVC_PROFILE_MAIN_10)) {
+        return false;
+    }
+    profile = HEVC_PROFILE_MAIN_10;
+    return true;
+}
+
 PreprocConfig MakeRuntimeConfig(int32_t width, int32_t height, uint32_t seed)
 {
     if (seed % 2 == 0) {
@@ -559,11 +614,17 @@ std::vector<ScenarioCase> BuildSupportedScenarios()
                 if (!IsNativeFormatSupported(capability, format.nativeFormat)) {
                     continue;
                 }
+                int32_t profile = -1;
+                if (!TryGetScenarioProfile(capability, codec, format, profile)) {
+                    continue;
+                }
                 for (auto encoderMode : EncoderModeDimensions()) {
                     for (auto preprocMode : PreprocModeDimensions()) {
                         for (auto runtimeOperation : RuntimeOperationDimensions()) {
-                            scenarios.emplace_back(MakeScenario(codec, resolution, format, encoderMode, preprocMode,
-                                                                runtimeOperation));
+                            auto scenario = MakeScenario(codec, resolution, format, encoderMode, preprocMode,
+                                                         runtimeOperation);
+                            scenario.profile = profile;
+                            scenarios.emplace_back(scenario);
                         }
                     }
                 }
@@ -907,6 +968,36 @@ void RunInvalidParameterScenario(const ScenarioCase &scenario)
                           "RunInvalidParameterScenario.ConfigurePrimary");
 }
 
+void RunInvalidLifecycleScenario(const ScenarioCase &scenario)
+{
+    VideoEncPreprocDualOutputSample sample;
+    ASSERT_TRUE_SAMPLE_STEP(sample.SetOutputFilePath(GetOutputFilePath()), sample,
+                            "RunInvalidLifecycleScenario.SetOutputFilePath");
+    ASSERT_TRUE_SAMPLE_STEP(sample.CreatePrimary(scenario.mime), sample,
+                            "RunInvalidLifecycleScenario.CreatePrimary");
+    ASSERT_EQ_SAMPLE_STEP(sample.ConfigureSecondary(scenario), scenario.expectedResult, sample,
+                          "RunInvalidLifecycleScenario.ConfigureSecondaryBeforeCreateSecondary");
+}
+
+void RunDuplicateSecondaryScenario(const ScenarioCase &scenario)
+{
+    VideoEncPreprocDualOutputSample sample;
+    ASSERT_TRUE_SAMPLE_STEP(sample.SetOutputFilePath(GetOutputFilePath()), sample,
+                            "RunDuplicateSecondaryScenario.SetOutputFilePath");
+    ASSERT_TRUE_SAMPLE_STEP(sample.CreatePrimary(scenario.mime), sample,
+                            "RunDuplicateSecondaryScenario.CreatePrimary");
+    ASSERT_EQ_SAMPLE_STEP(sample.ConfigurePrimary(scenario), AV_ERR_OK, sample,
+                          "RunDuplicateSecondaryScenario.ConfigurePrimary");
+    ASSERT_EQ_SAMPLE_STEP(sample.GetPrimarySurface(scenario), AV_ERR_OK, sample,
+                          "RunDuplicateSecondaryScenario.GetPrimarySurface");
+    ASSERT_EQ_SAMPLE_STEP(sample.CreateSecondary(), AV_ERR_OK, sample,
+                          "RunDuplicateSecondaryScenario.CreateSecondary");
+    ASSERT_EQ_SAMPLE_STEP(sample.ConfigureSecondary(scenario), AV_ERR_OK, sample,
+                          "RunDuplicateSecondaryScenario.ConfigureSecondary");
+    ASSERT_EQ_SAMPLE_STEP(sample.DuplicateSecondary(), scenario.expectedResult, sample,
+                          "RunDuplicateSecondaryScenario.DuplicateSecondary");
+}
+
 void RunScenario(const ScenarioCase &scenario)
 {
     VideoEncPreprocDualOutputSample sample;
@@ -987,6 +1078,12 @@ void RunScenarioByFlow(const ScenarioCase &scenario)
             break;
         case FlowType::INVALID_PARAMETER:
             RunInvalidParameterScenario(scenario);
+            break;
+        case FlowType::INVALID_LIFECYCLE:
+            RunInvalidLifecycleScenario(scenario);
+            break;
+        case FlowType::DUPLICATE_SECONDARY:
+            RunDuplicateSecondaryScenario(scenario);
             break;
         default:
             RunScenario(scenario);

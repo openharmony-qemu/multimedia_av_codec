@@ -695,6 +695,9 @@ bool VideoEncPreprocDualOutputSample::ApplyPreprocConfig(OH_AVFormat *format,
     if (!ApplyPreprocKeys(format, config)) {
         return false;
     }
+    if (scenario.profile >= 0 && !OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, scenario.profile)) {
+        return false;
+    }
     return OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, scenario.width) &&
            OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, scenario.height) &&
            OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, scenario.codecPixelFormat);
