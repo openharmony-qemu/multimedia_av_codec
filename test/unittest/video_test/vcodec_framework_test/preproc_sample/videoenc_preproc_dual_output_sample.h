@@ -125,6 +125,7 @@ private:
     std::condition_variable eosCv_;
     std::ofstream primaryOutputFile_;
     std::ofstream secondaryOutputFile_;
+    std::string secondaryOutputPath_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

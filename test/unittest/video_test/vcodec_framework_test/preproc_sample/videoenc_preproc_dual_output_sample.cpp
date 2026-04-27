@@ -642,13 +642,9 @@ bool VideoEncPreprocDualOutputSample::SetOutputFilePath(const std::string &path)
     if (!EnsureOutputDir(path)) {
         return false;
     }
-    std::string secondaryPath = MakeSecondaryOutputPath(path);
-    if (!EnsureOutputDir(secondaryPath)) {
-        return false;
-    }
     primaryOutputFile_.open(path, std::ios::out | std::ios::binary | std::ios::trunc);
-    secondaryOutputFile_.open(secondaryPath, std::ios::out | std::ios::binary | std::ios::trunc);
-    return primaryOutputFile_.is_open() && secondaryOutputFile_.is_open();
+    secondaryOutputPath_ = MakeSecondaryOutputPath(path);
+    return primaryOutputFile_.is_open();
 }
 
 bool VideoEncPreprocDualOutputSample::ApplyPreprocKeys(OH_AVFormat *format,
@@ -798,6 +794,18 @@ int32_t VideoEncPreprocDualOutputSample::CreateSecondary()
     int32_t ret = OH_VideoEncoder_CreateSecondaryFromPrimary(primary_, &secondary_);
     if (ret != AV_ERR_OK || secondary_ == nullptr) {
         return ret;
+    }
+    if (secondaryOutputFile_.is_open()) {
+        secondaryOutputFile_.close();
+    }
+    if (!secondaryOutputPath_.empty()) {
+        if (!EnsureOutputDir(secondaryOutputPath_)) {
+            return AV_ERR_UNKNOWN;
+        }
+        secondaryOutputFile_.open(secondaryOutputPath_, std::ios::out | std::ios::binary | std::ios::trunc);
+        if (!secondaryOutputFile_.is_open()) {
+            return AV_ERR_UNKNOWN;
+        }
     }
     return RegisterCallback(secondary_, secondaryState_);
 }

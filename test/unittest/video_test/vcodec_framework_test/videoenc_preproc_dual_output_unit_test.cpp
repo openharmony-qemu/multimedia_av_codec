@@ -381,10 +381,12 @@ std::string DescribeScenario(const ScenarioCase &scenario)
         << "  invalidParameterType: " << ToString(scenario.invalidParameterType) << "\n"
         << "  primaryPreproc: " << DescribePreprocConfig(scenario.primary) << "\n"
         << "  secondaryPreproc: " << DescribePreprocConfig(scenario.secondary) << "\n"
-        << "  runtimeDelivery: " << DescribeRuntimeDelivery(scenario) << "\n"
-        << "  runtimePrimaryPreproc: " << DescribePreprocConfig(scenario.runtimePrimary) << "\n"
-        << "  runtimeSecondaryPreproc: " << DescribePreprocConfig(scenario.runtimeSecondary) << "\n"
-        << "  expectation: result=" << scenario.expectedResult << ", exact="
+        << "  runtimeDelivery: " << DescribeRuntimeDelivery(scenario) << "\n";
+    if (scenario.runtimeOperation != RuntimeOperation::NONE) {
+        oss << "  runtimePrimaryPreproc: " << DescribePreprocConfig(scenario.runtimePrimary) << "\n"
+            << "  runtimeSecondaryPreproc: " << DescribePreprocConfig(scenario.runtimeSecondary) << "\n";
+    }
+    oss << "  expectation: result=" << scenario.expectedResult << ", exact="
         << BoolToString(scenario.expectExactResult) << ", needsFrameRotation="
         << BoolToString(scenario.needsFrameRotation) << ", frameCount=" << scenario.frameCount;
     return oss.str();
