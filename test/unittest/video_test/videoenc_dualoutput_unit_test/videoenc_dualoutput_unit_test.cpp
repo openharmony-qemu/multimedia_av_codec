@@ -581,21 +581,6 @@ HWTEST_P(TEST_SUIT, Primary_Prepare_Normal_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: Primary_Start_Normal_001
- * @tc.desc: Test Configure -> Prepare -> Start normal flow on primary
- * @tc.type: FUNC
- */
-HWTEST_P(TEST_SUIT, Primary_Start_Normal_001, TestSize.Level1)
-{
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
-    auto signal = make_shared<VCodecSignal>(dualSample_);
-    RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
-}
-
-/**
  * @tc.name: Primary_Reset_AfterStart_001
  * @tc.desc: Test Reset after Start returns to created state
  * @tc.type: FUNC
@@ -649,6 +634,17 @@ HWTEST_P(TEST_SUIT, Primary_SetParameter_NullParam_001, TestSize.Level1)
 }
 
 /**
+ * @tc.name: Primary_PushInputBuffer_NullParam_001
+ * @tc.desc: Test PushInputBuffer with NULL codec
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, Primary_PushInputBuffer_NullParam_001, TestSize.Level1)
+{
+    OH_AVErrCode ret = OH_VideoEncoder_PushInputBuffer(nullptr, 0);
+    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+}
+
+/**
  * @tc.name: Primary_SetParameter_BeforeStart_001
  * @tc.desc: Test SetParameter before Start returns INVALID_STATE
  * @tc.type: FUNC
@@ -659,17 +655,6 @@ HWTEST_P(TEST_SUIT, Primary_SetParameter_BeforeStart_001, TestSize.Level1)
     ASSERT_NE(param, nullptr);
     ASSERT_EQ(AV_ERR_INVALID_STATE, dualSample_->SetParameter(EncoderType::PRIMARY, param));
     OH_AVFormat_Destroy(param);
-}
-
-/**
- * @tc.name: Primary_PushInputBuffer_NullParam_001
- * @tc.desc: Test PushInputBuffer with NULL codec
- * @tc.type: FUNC
- */
-HWTEST_P(TEST_SUIT, Primary_PushInputBuffer_NullParam_001, TestSize.Level1)
-{
-    OH_AVErrCode ret = OH_VideoEncoder_PushInputBuffer(nullptr, 0);
-    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
 }
 
 /**
@@ -755,17 +740,6 @@ HWTEST_P(TEST_SUIT, Secondary_Prepare_Normal_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, dualSample_->RegisterCallback(EncoderType::SECONDARY, cb, nullptr));
 
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
-}
-
-/**
- * @tc.name: Secondary_Start_BeforePrepare_001
- * @tc.desc: Test Start before Prepare returns INVALID_STATE
- * @tc.type: FUNC
- */
-HWTEST_P(TEST_SUIT, Secondary_Start_BeforePrepare_001, TestSize.Level1)
-{
-    ASSERT_TRUE(dualSample_->CreateSecondary());
-    ASSERT_EQ(AV_ERR_INVALID_STATE, dualSample_->Start(EncoderType::SECONDARY));
 }
 
 /**
@@ -1064,35 +1038,6 @@ HWTEST_P(TEST_SUIT, VideoEncoder_PrimarySecondaryCombined_Capi_001, TestSize.Lev
 }
 
 /**
- * @tc.name: VideoEncoder_PrimarySecondaryReset_001
- * @tc.desc: Test primary Reset then re-Configure, secondary continues
- * @tc.type: FUNC
- */
-HWTEST_P(TEST_SUIT, VideoEncoder_PrimarySecondaryReset_001, TestSize.Level1)
-{
-    auto signal = make_shared<VCodecSignal>(dualSample_);
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
-    RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Stop(EncoderType::PRIMARY));
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Reset(EncoderType::PRIMARY));
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
-}
-
-/**
- * @tc.name: State_Machine_Primary_Start_BeforeConfigure_001
- * @tc.desc: Test Start at created state returns INVALID_STATE
- * @tc.type: FUNC
- */
-HWTEST_P(TEST_SUIT, State_Machine_Primary_Start_BeforeConfigure_001, TestSize.Level1)
-{
-    ASSERT_EQ(AV_ERR_INVALID_STATE, dualSample_->Start(EncoderType::PRIMARY));
-}
-
-/**
  * @tc.name: State_Machine_Primary_Stop_BeforeConfigure_001
  * @tc.desc: Test Stop at created state returns INVALID_STATE
  * @tc.type: FUNC
@@ -1130,18 +1075,6 @@ HWTEST_P(TEST_SUIT, State_Machine_Primary_Prepare_BeforeConfigure_001, TestSize.
 HWTEST_P(TEST_SUIT, State_Machine_Primary_Reset_CreatedState_001, TestSize.Level1)
 {
     ASSERT_EQ(AV_ERR_OK, dualSample_->Reset(EncoderType::PRIMARY));
-}
-
-/**
- * @tc.name: State_Machine_Primary_Start_ConfiguredState_001
- * @tc.desc: Test Start after Configure but before Prepare returns INVALID_STATE
- * @tc.type: FUNC
- */
-HWTEST_P(TEST_SUIT, State_Machine_Primary_Start_ConfiguredState_001, TestSize.Level1)
-{
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
 }
 
 /**
@@ -1196,6 +1129,116 @@ HWTEST_P(TEST_SUIT, State_Machine_Primary_Flush_PreparedState_001, TestSize.Leve
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_INVALID_STATE, dualSample_->Flush(EncoderType::PRIMARY));
+}
+
+/**
+ * @tc.name: State_Machine_Dual_CreateSecondary_BeforePrimaryConfigure_001
+ * @tc.desc: Test creating secondary before primary Configure, then configure both
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, State_Machine_Dual_CreateSecondary_BeforePrimaryConfigure_001, TestSize.Level1)
+{
+    // Create secondary before primary is configured
+    ASSERT_TRUE(dualSample_->CreateSecondary());
+    // Now configure both
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
+}
+
+/**
+ * @tc.name: State_Machine_Secondary_Stop_PreparedState_001
+ * @tc.desc: Test Stop at prepared state on secondary returns INVALID_STATE
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, State_Machine_Secondary_Stop_PreparedState_001, TestSize.Level1)
+{
+    auto signal = make_shared<VCodecSignal>(dualSample_);
+    ASSERT_TRUE(dualSample_->CreateSecondary());
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, signal);
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Stop(EncoderType::SECONDARY));
+}
+
+/**
+ * @tc.name: State_Machine_Secondary_Prepare_BeforeConfigure_001
+ * @tc.desc: Test Prepare before Configure returns INVALID_STATE
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, State_Machine_Secondary_Prepare_BeforeConfigure_001, TestSize.Level1)
+{
+    ASSERT_TRUE(dualSample_->CreateSecondary());
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
+}
+#ifdef ONLY_FOR_FLAGSHIP_CHIP
+/**
+ * @tc.name: Primary_Start_Normal_001
+ * @tc.desc: Test Configure -> Prepare -> Start normal flow on primary
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, Primary_Start_Normal_001, TestSize.Level1)
+{
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    auto signal = make_shared<VCodecSignal>(dualSample_);
+    RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
+}
+
+/**
+ * @tc.name: Secondary_Start_BeforePrepare_001
+ * @tc.desc: Test Start before Prepare returns INVALID_STATE
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, Secondary_Start_BeforePrepare_001, TestSize.Level1)
+{
+    ASSERT_TRUE(dualSample_->CreateSecondary());
+    ASSERT_EQ(AV_ERR_INVALID_STATE, dualSample_->Start(EncoderType::SECONDARY));
+}
+
+/**
+ * @tc.name: VideoEncoder_PrimarySecondaryReset_001
+ * @tc.desc: Test primary Reset then re-Configure, secondary continues
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_PrimarySecondaryReset_001, TestSize.Level1)
+{
+    auto signal = make_shared<VCodecSignal>(dualSample_);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Stop(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Reset(EncoderType::PRIMARY));
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
+}
+
+/**
+ * @tc.name: State_Machine_Primary_Start_BeforeConfigure_001
+ * @tc.desc: Test Start at created state returns INVALID_STATE
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, State_Machine_Primary_Start_BeforeConfigure_001, TestSize.Level1)
+{
+    ASSERT_EQ(AV_ERR_INVALID_STATE, dualSample_->Start(EncoderType::PRIMARY));
+}
+
+/**
+ * @tc.name: State_Machine_Primary_Start_ConfiguredState_001
+ * @tc.desc: Test Start after Configure but before Prepare returns INVALID_STATE
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, State_Machine_Primary_Start_ConfiguredState_001, TestSize.Level1)
+{
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
 }
 
 /**
@@ -1317,17 +1360,6 @@ HWTEST_P(TEST_SUIT, State_Machine_Primary_ReleaseThenOperate_001, TestSize.Level
 }
 
 /**
- * @tc.name: State_Machine_Secondary_Prepare_BeforeConfigure_001
- * @tc.desc: Test Prepare before Configure returns INVALID_STATE
- * @tc.type: FUNC
- */
-HWTEST_P(TEST_SUIT, State_Machine_Secondary_Prepare_BeforeConfigure_001, TestSize.Level1)
-{
-    ASSERT_TRUE(dualSample_->CreateSecondary());
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
-}
-
-/**
  * @tc.name: State_Machine_Secondary_FullLifecycle_001
  * @tc.desc: Test secondary Configure->Prepare->Start->Stop normal flow
  * @tc.type: FUNC
@@ -1335,22 +1367,6 @@ HWTEST_P(TEST_SUIT, State_Machine_Secondary_Prepare_BeforeConfigure_001, TestSiz
 HWTEST_P(TEST_SUIT, State_Machine_Secondary_FullLifecycle_001, TestSize.Level1)
 {
     FullLifecycleSecondary();
-}
-
-/**
- * @tc.name: State_Machine_Secondary_Stop_PreparedState_001
- * @tc.desc: Test Stop at prepared state on secondary returns INVALID_STATE
- * @tc.type: FUNC
- */
-HWTEST_P(TEST_SUIT, State_Machine_Secondary_Stop_PreparedState_001, TestSize.Level1)
-{
-    auto signal = make_shared<VCodecSignal>(dualSample_);
-    ASSERT_TRUE(dualSample_->CreateSecondary());
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
-    RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, signal);
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Stop(EncoderType::SECONDARY));
 }
 
 /**
@@ -1815,22 +1831,6 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_BothReset_ThenReconfigure_001, TestSize.L
 }
 
 /**
- * @tc.name: State_Machine_Dual_CreateSecondary_BeforePrimaryConfigure_001
- * @tc.desc: Test creating secondary before primary Configure, then configure both
- * @tc.type: FUNC
- */
-HWTEST_P(TEST_SUIT, State_Machine_Dual_CreateSecondary_BeforePrimaryConfigure_001, TestSize.Level1)
-{
-    // Create secondary before primary is configured
-    ASSERT_TRUE(dualSample_->CreateSecondary());
-    // Now configure both
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
-}
-
-/**
  * @tc.name: State_Machine_Dual_StartOnlyPrimary_001
  * @tc.desc: Test starting only primary without starting secondary
  * @tc.type: FUNC
@@ -1851,7 +1851,7 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_StartOnlyPrimary_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Stop(EncoderType::PRIMARY));
 }
-
+#endif // ONLY_FOR_FLAGSHIP_CHIP
 int main(int argc, char **argv)
 {
     testing::GTEST_FLAG(output) = "xml:./";

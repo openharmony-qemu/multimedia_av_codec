@@ -78,6 +78,10 @@ ohos_unittest("videoenc_dualoutput_unit_test") {
 
   cflags = av_codec_unittest_cflags
 
+  if (av_codec_enable_only_for_flagship_chip) {
+    defines += [ "ONLY_FOR_FLAGSHIP_CHIP" ]
+  }
+
   sources = [
     "../vcodec_framework_test/common/utils/unittest_utils.cpp",
     "../vcodec_framework_test/common/codec_buffer_info/codec_buffer_info.cpp",
