@@ -697,7 +697,11 @@ std::string FormatTimestamp(uint64_t creationTime)
         return "";
     }
     int len = strlen(buffer);
-    sprintf_s(buffer + len, sizeof(buffer) - len, ".%06dZ", static_cast<int>(creationTime % CREATION_TIME_SCALE));
+    int ret = sprintf_s(
+        buffer + len, sizeof(buffer) - len, ".%06dZ", static_cast<int>(creationTime % CREATION_TIME_SCALE));
+    if (ret == 0) {
+        MEDIA_LOG_W("Failed to format timestamp");
+    }
     return std::string(buffer);
 }
 
