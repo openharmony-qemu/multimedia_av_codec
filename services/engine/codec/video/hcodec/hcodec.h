@@ -443,8 +443,8 @@ protected:
         std::string compUniqueStr;
     };
     static std::shared_mutex g_mtx;
-    static std::unordered_map<CallerInfo, std::vector<InstInfo>, CallerInfo, CallerInfo> g_decCallers;
-    uint32_t maxDecInst_ = 0;
+    static std::unordered_map<CallerInfo, std::vector<InstInfo>, CallerInfo, CallerInfo> g_callers[2]; // 0: decoder, 1: encoder
+    uint32_t maxCodecInst_ = 0;
     uint32_t totalWarnInstCnt_ = 0;
     uint32_t singleAppWarnInstCnt_ = 0;
 
