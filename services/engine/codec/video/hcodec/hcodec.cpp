@@ -128,10 +128,9 @@ size_t HCodec::CalculateTotalInstCnt()
 void HCodec::PrintAllCaller()
 {
     std::shared_lock<std::shared_mutex> lk(g_mtx);
-    static const char* typeNames[] = {"decoders", "encoders"};
     for (size_t i = 0; i < 2; i++) {
         for (const auto& [app, vec] : g_callers[i]) {
-            LOGI("[pid %d][%s] hold %zu %s", app.pid, app.processName.c_str(), vec.size(), typeNames[i]);
+            LOGI("[pid %d][%s] hold %zu %s", app.pid, app.processName.c_str(), vec.size(), coderNames[i]);
             for (const InstInfo& inst : vec) {
                 LOGI("createTime: %" PRId64 ", %s", inst.createTimeUs, inst.compUniqueStr.c_str());
             }
@@ -170,8 +169,8 @@ void HCodec::ReportToRss()
     for (const auto& [app, vec] : g_callers[isEncoder_]) {
         nlohmann::json js = {
             {"AppProcessName", app.processName},
-            {"AppHold" + std::string(isEncoder_ ? "Encoder" : "Decoder") + "Cnt", vec.size()},
-            {"MaxAllow" + std::string(isEncoder_ ? "Encoder" : "Decoder") + "Cnt", maxCodecInst_},
+            {"AppHold" + std::string(coderNames[isEncoder_]) + "Cnt", vec.size()},
+            {"MaxAllow" + std::string(coderNames[isEncoder_]) + "Cnt", maxCodecInst_},
         };
         string pidStr = to_string(app.pid);
         string jsStr = js.dump();

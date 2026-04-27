@@ -498,6 +498,7 @@ protected:
     static constexpr uint32_t STRIDE_ALIGNMENT = 32;
     static constexpr double FRAME_RATE_COEFFICIENT = 65536.0;
     static constexpr double BYTE_TO_MBIT = 8.0 / 1024.0 / 1024.0;
+    static constexpr char coderNames[][8] = {"Decoder", "Encoder"};
 
 private:
     struct BaseState : State {
