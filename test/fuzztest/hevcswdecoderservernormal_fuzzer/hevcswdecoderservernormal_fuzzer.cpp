@@ -49,7 +49,7 @@ bool SwdecoderServerNormalFuzzTest(const uint8_t *data, size_t size)
     std::vector<uint32_t> pixelFormats = {1, 2, 3, 4, 5};
     size_t pfIndex = fdp.ConsumeIntegralInRange<uint32_t>(0, pixelFormats.size() - 1);
     vDecSample->defaultPixelFormat = pixelFormats[pfIndex];
-    FileMode fileModeEnum = static_cast<FileMode>(g_currentFileMode );
+    FileMode fileModeEnum = static_cast<FileMode>(g_currentFileMode);
     g_currentFileMode  = (g_currentFileMode  + 1) % FILE_MODE_COUNT;
     switch (fileModeEnum) {
         case FileMode::FILE_MODE_720_1280:
