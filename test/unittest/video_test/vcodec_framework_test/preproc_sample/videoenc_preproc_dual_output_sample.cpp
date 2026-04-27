@@ -22,7 +22,6 @@
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <time.h>
 #include <unistd.h>
 
 #include "native_buffer.h"
@@ -33,12 +32,8 @@
 using namespace std;
 
 namespace {
-static int64_t GetTimeUs()
-{
-    struct timespec now {};
-    (void)clock_gettime(CLOCK_BOOTTIME, &now);
-    return static_cast<int64_t>(now.tv_sec) * 1000000 + static_cast<int64_t>(now.tv_nsec / 1000);
-}
+constexpr double kDefaultInputFrameRate = 30.0;
+constexpr int64_t kUsPerSecond = 1000000;
 
 static bool EnsureOutputDir(const std::string &path)
 {
@@ -64,6 +59,17 @@ static std::string MakeSecondaryOutputPath(const std::string &primaryPath)
         return primaryPath + "_secondary";
     }
     return primaryPath.substr(0, dotPos) + "_secondary" + primaryPath.substr(dotPos);
+}
+
+int64_t GetFrameIntervalUs(double frameRate)
+{
+    double validFrameRate = frameRate > 0.0 ? frameRate : kDefaultInputFrameRate;
+    return static_cast<int64_t>((static_cast<double>(kUsPerSecond) / validFrameRate) + 0.5);
+}
+
+int64_t GetFrameTimestampUs(uint32_t frameIndex, double frameRate)
+{
+    return static_cast<int64_t>(frameIndex) * GetFrameIntervalUs(frameRate);
 }
 } // namespace
 
@@ -896,9 +902,16 @@ bool VideoEncPreprocDualOutputSample::RequestAndFlushFrame(int32_t width, int32_
         return false;
     }
 
+    int32_t ret = OH_NativeWindow_NativeWindowHandleOpt(window_, SET_UI_TIMESTAMP, timestampUs);
+    if (ret != 0) {
+        cout << "RequestAndFlushFrame warning, step=set_ui_timestamp, ret=" << ret << ", width=" << width
+             << ", height=" << height << ", pattern=" << static_cast<int32_t>(pattern)
+             << ", frameNumber=" << frameNumber << ", timestampUs=" << timestampUs << endl;
+    }
+
     OHNativeWindowBuffer *nativeWindowBuffer = nullptr;
     int fenceFd = -1;
-    int32_t ret = OH_NativeWindow_NativeWindowRequestBuffer(window_, &nativeWindowBuffer, &fenceFd);
+    ret = OH_NativeWindow_NativeWindowRequestBuffer(window_, &nativeWindowBuffer, &fenceFd);
     if (ret != 0 || nativeWindowBuffer == nullptr) {
         printFailure("request_buffer", ret);
         return false;
@@ -956,13 +969,6 @@ bool VideoEncPreprocDualOutputSample::RequestAndFlushFrame(int32_t width, int32_
         return false;
     }
 
-    ret = OH_NativeWindow_NativeWindowHandleOpt(window_, SET_UI_TIMESTAMP, timestampUs);
-    if (ret != 0) {
-        cout << "RequestAndFlushFrame warning, step=set_ui_timestamp, ret=" << ret << ", width=" << width
-             << ", height=" << height << ", pattern=" << static_cast<int32_t>(pattern)
-             << ", frameNumber=" << frameNumber << ", timestampUs=" << timestampUs << ", format=" << format
-             << ", stride=" << stride << ", sliceHeight=" << sliceHeight << endl;
-    }
     ret = OH_NativeBuffer_Unmap(nativeBuffer);
     if (ret != 0) {
         printFailure("unmap_buffer", ret, format, stride, sliceHeight);
@@ -1051,7 +1057,8 @@ int32_t VideoEncPreprocDualOutputSample::SendFrames(const PreprocDualOutput::Sce
             i >= frameCount / 2) {
             geometryUpdated = true;
         }
-        if (!RequestAndFlushFrame(frameWidth, frameHeight, static_cast<uint8_t>(kFramePatternBase + i), GetTimeUs(),
+        int64_t timestampUs = GetFrameTimestampUs(i, scenario.primary.frameRate);
+        if (!RequestAndFlushFrame(frameWidth, frameHeight, static_cast<uint8_t>(kFramePatternBase + i), timestampUs,
                                   i + 1)) {
             return AV_ERR_UNKNOWN;
         }
@@ -1170,15 +1177,16 @@ int32_t VideoEncPreprocDualOutputSample::NotifyEndOfStream()
     return ret;
 }
 
-int32_t VideoEncPreprocDualOutputSample::SendFramesFixedPts(const PreprocDualOutput::ScenarioCase &scenario,
-                                                             uint32_t frameCount, int64_t ptsUs)
+int32_t VideoEncPreprocDualOutputSample::SendFramesWithConfiguredPts(const PreprocDualOutput::ScenarioCase &scenario,
+                                                                     uint32_t frameCount)
 {
     if (window_ == nullptr) {
         return AV_ERR_INVALID_VAL;
     }
     for (uint32_t i = 0; i < frameCount; ++i) {
+        int64_t timestampUs = GetFrameTimestampUs(i, scenario.primary.frameRate);
         if (!RequestAndFlushFrame(scenario.width, scenario.height, static_cast<uint8_t>(kFramePatternBase + i),
-                                  ptsUs, i + 1)) {
+                                  timestampUs, i + 1)) {
             return AV_ERR_UNKNOWN;
         }
         usleep(1000);

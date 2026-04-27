@@ -859,8 +859,8 @@ void RunDropRatioScenario(const ScenarioCase &scenario)
     ASSERT_EQ_SAMPLE_STEP(sample.StartPrimary(), AV_ERR_OK, sample, "RunDropRatioScenario.StartPrimary");
     ASSERT_EQ_SAMPLE_STEP(sample.StartSecondary(), AV_ERR_OK, sample, "RunDropRatioScenario.StartSecondary");
     constexpr uint32_t kDropFrames = 30;
-    ASSERT_EQ_SAMPLE_STEP(sample.SendFramesFixedPts(scenario, kDropFrames, 0), AV_ERR_OK, sample,
-                          "RunDropRatioScenario.SendFramesFixedPts");
+    ASSERT_EQ_SAMPLE_STEP(sample.SendFramesWithConfiguredPts(scenario, kDropFrames), AV_ERR_OK, sample,
+                          "RunDropRatioScenario.SendFramesWithConfiguredPts");
     ASSERT_TRUE_SAMPLE_STEP(sample.WaitForDualEos(), sample, "RunDropRatioScenario.WaitForDualEos");
     // Primary: 30fps->15fps (keepRatio=0.5), expect ~15 kept out of 30
     EXPECT_NEAR_SAMPLE_STEP(sample.PrimaryDataCount(), 15, 3, sample, "RunDropRatioScenario.PrimaryDataCount");
@@ -904,8 +904,8 @@ void RunDropFlushStopResetScenario(const ScenarioCase &scenario)
                           "RunDropFlushStopResetScenario.FlushResume.StartPrimary");
     ASSERT_EQ_SAMPLE_STEP(sample.StartSecondary(), AV_ERR_OK, sample,
                           "RunDropFlushStopResetScenario.FlushResume.StartSecondary");
-    ASSERT_EQ_SAMPLE_STEP(sample.SendFramesFixedPts(scenario, 8, 0), AV_ERR_OK, sample,
-                          "RunDropFlushStopResetScenario.FlushResume.SendFramesFixedPts");
+    ASSERT_EQ_SAMPLE_STEP(sample.SendFramesWithConfiguredPts(scenario, 8), AV_ERR_OK, sample,
+                          "RunDropFlushStopResetScenario.FlushResume.SendFramesWithConfiguredPts");
     ASSERT_TRUE_SAMPLE_STEP(sample.WaitForDualEos(), sample,
                             "RunDropFlushStopResetScenario.FlushResume.WaitForDualEos");
     ASSERT_EQ_SAMPLE_STEP(sample.FlushPrimary(), AV_ERR_OK, sample,
@@ -917,8 +917,8 @@ void RunDropFlushStopResetScenario(const ScenarioCase &scenario)
                           "RunDropFlushStopResetScenario.AfterFlush.StartPrimary");
     ASSERT_EQ_SAMPLE_STEP(sample.StartSecondary(), AV_ERR_OK, sample,
                           "RunDropFlushStopResetScenario.AfterFlush.StartSecondary");
-    ASSERT_EQ_SAMPLE_STEP(sample.SendFramesFixedPts(scenario, 8, 0), AV_ERR_OK, sample,
-                          "RunDropFlushStopResetScenario.AfterFlush.SendFramesFixedPts");
+    ASSERT_EQ_SAMPLE_STEP(sample.SendFramesWithConfiguredPts(scenario, 8), AV_ERR_OK, sample,
+                          "RunDropFlushStopResetScenario.AfterFlush.SendFramesWithConfiguredPts");
     ASSERT_TRUE_SAMPLE_STEP(sample.WaitForDualEos(), sample,
                             "RunDropFlushStopResetScenario.AfterFlush.WaitForDualEos");
     VerifyDropAfterResume(sample, scenario);
@@ -933,8 +933,8 @@ void RunDropFlushStopResetScenario(const ScenarioCase &scenario)
                           "RunDropFlushStopResetScenario.AfterStop.StartPrimary");
     ASSERT_EQ_SAMPLE_STEP(sample.StartSecondary(), AV_ERR_OK, sample,
                           "RunDropFlushStopResetScenario.AfterStop.StartSecondary");
-    ASSERT_EQ_SAMPLE_STEP(sample.SendFramesFixedPts(scenario, 8, 0), AV_ERR_OK, sample,
-                          "RunDropFlushStopResetScenario.AfterStop.SendFramesFixedPts");
+    ASSERT_EQ_SAMPLE_STEP(sample.SendFramesWithConfiguredPts(scenario, 8), AV_ERR_OK, sample,
+                          "RunDropFlushStopResetScenario.AfterStop.SendFramesWithConfiguredPts");
     ASSERT_TRUE_SAMPLE_STEP(sample.WaitForDualEos(), sample,
                             "RunDropFlushStopResetScenario.AfterStop.WaitForDualEos");
     VerifyDropAfterResume(sample, scenario);
@@ -951,8 +951,8 @@ void RunDropFlushStopResetScenario(const ScenarioCase &scenario)
                           "RunDropFlushStopResetScenario.SetParameter.StartPrimary");
     ASSERT_EQ_SAMPLE_STEP(sample.StartSecondary(), AV_ERR_OK, sample,
                           "RunDropFlushStopResetScenario.SetParameter.StartSecondary");
-    ASSERT_EQ_SAMPLE_STEP(sample.SendFramesFixedPts(scenario, 8, 0), AV_ERR_OK, sample,
-                          "RunDropFlushStopResetScenario.SetParameter.SendFramesFixedPts");
+    ASSERT_EQ_SAMPLE_STEP(sample.SendFramesWithConfiguredPts(scenario, 8), AV_ERR_OK, sample,
+                          "RunDropFlushStopResetScenario.SetParameter.SendFramesWithConfiguredPts");
     ASSERT_TRUE_SAMPLE_STEP(sample.WaitForDualEos(), sample,
                             "RunDropFlushStopResetScenario.SetParameter.WaitForDualEos");
     // 30fps->25fps with 8 frames: expect ~7 kept (only ~1 dropped)

@@ -71,8 +71,7 @@ public:
     int32_t SetParameterPrimary(const PreprocDualOutput::PreprocConfig &config);
     int32_t SetParameterSecondary(const PreprocDualOutput::PreprocConfig &config);
     int32_t NotifyEndOfStream();
-    int32_t SendFramesFixedPts(const PreprocDualOutput::ScenarioCase &scenario, uint32_t frameCount,
-                                int64_t ptsUs);
+    int32_t SendFramesWithConfiguredPts(const PreprocDualOutput::ScenarioCase &scenario, uint32_t frameCount);
     void ResetDataCounts();
 
     bool PrimaryHasData() const;
