@@ -3270,6 +3270,9 @@ std::string MPEG4AtomParser::GetMetadataKey(uint32_t atomType, ParseContext* ctx
         { FourccType("\251lyr"), "lyrics" },
         { FourccType("\251xyz"), "location" },
         { FourccType("desc"),    "description" },
+        { FourccType("\251too"), "encoder" },
+        { FourccType("\251enc"), "encoder" },
+        { FourccType("\251swr"), "encoder" },
     };
     
     auto it = keyMap.find(atomType);
@@ -3395,6 +3398,7 @@ bool MPEG4AtomParser::SetMetadataValue(const std::string& key, const std::string
         {"composer",      Tag::MEDIA_COMPOSER},
         {"creation_time", Tag::MEDIA_CREATION_TIME},
         {"aigc",          Tag::MEDIA_AIGC},
+        {"encoder",       Tag::MEDIA_ENCODER},
     };
 
     auto it = keyToTagMap.find(Converter::ToLower(key));
