@@ -41,6 +41,7 @@ static bool g_deviceCapsInited = false;
 static std::vector<CodecCompCapability> g_deviceCaps;
 static uint32_t g_maxDecInstCnt = 0;
 static uint32_t g_maxEncInstCnt = 0;
+
 class Listener : public ServStatListenerStub {
 public:
     void OnReceive(const ServiceStatus &status) override
