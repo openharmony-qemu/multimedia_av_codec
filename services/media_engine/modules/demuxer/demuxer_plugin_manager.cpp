@@ -762,6 +762,32 @@ Status DemuxerPluginManager::SingleStreamSeekTo(int64_t seekTime, Plugins::SeekM
 
 Status DemuxerPluginManager::SetReadTimeoutForInitSeek(int64_t timeoutMs)
 {
+    Status firstError = Status::OK;
+    if (curVideoStreamID_ != INVALID_STREAM_OR_TRACK_ID &&
+        streamInfoMap_.count(curVideoStreamID_) > 0 &&
+        streamInfoMap_[curVideoStreamID_].plugin != nullptr) {
+        Status ret = streamInfoMap_[curVideoStreamID_].plugin->SetReadTimeoutForInitSeek(timeoutMs);
+        if (ret != Status::OK && firstError == Status::OK) {
+            firstError = ret;
+        }
+    }
+    if (curAudioStreamID_ != INVALID_STREAM_OR_TRACK_ID &&
+        streamInfoMap_.count(curAudioStreamID_) > 0 &&
+        streamInfoMap_[curAudioStreamID_].plugin != nullptr) {
+        Status ret = streamInfoMap_[curAudioStreamID_].plugin->SetReadTimeoutForInitSeek(timeoutMs);
+        if (ret != Status::OK && firstError == Status::OK) {
+            firstError = ret;
+        }
+    }
+    if (curSubTitleStreamID_ != INVALID_STREAM_OR_TRACK_ID &&
+        streamInfoMap_.count(curSubTitleStreamID_) > 0 &&
+        streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
+        Status ret = streamInfoMap_[curSubTitleStreamID_].plugin->SetReadTimeoutForInitSeek(timeoutMs);
+        if (ret != Status::OK && firstError == Status::OK) {
+            firstError = ret;
+        }
+    }
+    return firstError;
 }
 
 Status DemuxerPluginManager::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
