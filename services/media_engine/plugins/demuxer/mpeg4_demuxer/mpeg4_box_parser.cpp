@@ -112,6 +112,7 @@ constexpr uint8_t MPEG4_DEC_CONFIG_DESCR_TAG = 0x04;
 constexpr uint8_t MPEG4_DEC_SPECIFIC_DESCR_TAG = 0x05;
 constexpr float LUMI_SCALE = 0.0001;
 constexpr float PRIMARY_SCALE = 0.00002;
+constexpr uint64_t CREATION_TIME_SCALE = 1000000;
 
 constexpr std::array<size_t, 4> MATRIX_2X2_INDICES = {0, 1, 3, 4}; // [0][0], [0][1], [1][0], [1][1]
 constexpr std::array<size_t, 3> MATRIX_DIAGONAL_INDICES = {0, 4, 8}; // [0][0], [1][1], [2][2]
@@ -685,7 +686,7 @@ Status MPEG4AtomParser::ParseWide(MPEG4Atom currentAtom, int32_t depth, ParseCon
 
 std::string FormatTimestamp(uint64_t creationTime)
 {
-    time_t seconds = creationTime / 1000000;
+    time_t seconds = creationTime / CREATION_TIME_SCALE;
     struct tm* timeinfo = gmtime(&seconds);
     if (timeinfo == nullptr) {
         return "";
@@ -696,7 +697,7 @@ std::string FormatTimestamp(uint64_t creationTime)
         return "";
     }
     int len = strlen(buffer);
-    snprintf(buffer + len, sizeof(buffer) - len, ".%06dZ", static_cast<int>(creationTime % 1000000));
+    sprintf_s(buffer + len, sizeof(buffer) - len, ".%06dZ", static_cast<int>(creationTime % CREATION_TIME_SCALE));
     return std::string(buffer);
 }
 
@@ -734,7 +735,7 @@ Status MPEG4AtomParser::ParseMvhd(MPEG4Atom currentAtom, int32_t depth, ParseCon
     std::string creationTimeStr;
     if (creationTime) {
         creationTime -= QUICKTIME_EPOCH_OFFSET;
-        creationTimeStr = FormatTimestamp(creationTime * 1000000);
+        creationTimeStr = FormatTimestamp(creationTime * CREATION_TIME_SCALE);
         mediaInfo_.general.Set<Tag::MEDIA_CREATION_TIME>(creationTimeStr);
     }
     mediaInfo_.general.Set<Tag::MEDIA_TIME_SCALE>(static_cast<int32_t>(timeScale));
@@ -984,7 +985,7 @@ void MPEG4AtomParser::CalculateSARFromTrackInfo(std::shared_ptr<Track> track)
     
     if (track->hasPasp && track->hSpacing > 0 && track->vSpacing > 0) {
         sar = static_cast<double>(track->hSpacing) / static_cast<double>(track->vSpacing);
-        MEDIA_LOG_D("SAR from pasp: hSpacing=%{public}u, vSpacing=%{public}u, sar=%{public}f", 
+        MEDIA_LOG_D("SAR from pasp: hSpacing=%{public}u, vSpacing=%{public}u, sar=%{public}f",
             track->hSpacing, track->vSpacing, sar);
         mediaInfo_.tracks[track->trackIndex].Set<Tag::VIDEO_SAR>(sar);
         return;
