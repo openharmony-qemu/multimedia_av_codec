@@ -83,17 +83,17 @@ ohos_unittest("videoenc_dualoutput_unit_test") {
   }
 
   sources = [
-    "../vcodec_framework_test/common/utils/unittest_utils.cpp",
     "../vcodec_framework_test/common/codec_buffer_info/codec_buffer_info.cpp",
     "../vcodec_framework_test/common/codec_buffer_queue/codec_buffer_queue.cpp",
+    "../vcodec_framework_test/common/utils/unittest_utils.cpp",
     "./sample/callback/sample_callback.cpp",
     "./sample/venc_dualoutput_sample.cpp",
     "./videoenc_dualoutput_unit_test.cpp",
   ]
 
   deps = [
-    "$av_codec_root_dir/interfaces/kits/c:capi_packages",
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
+    "$av_codec_root_dir/interfaces/kits/c:capi_packages",
     "$av_codec_root_dir/interfaces/kits/c:native_media_codecbase",
     "$av_codec_root_dir/interfaces/kits/c:native_media_venc",
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",

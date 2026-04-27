@@ -13,18 +13,20 @@
  * limitations under the License.
  */
 
+#include <avcodec_common.h>
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
 #include <memory>
-#include <avcodec_common.h>
-#include "native_avcodec_videoencoder.h"
 #include "native_avcodec_base.h"
+#include "native_avcodec_videoencoder.h"
 #include "sample_callback.h"
 #include "unittest_utils.h"
 #include "vcodec_signal.h"
 #include "venc_dualoutput_sample.h"
-#define IsSupportFastImage() \
-    if (access(FAST_IMAGE_PATH.data(), 0) != 0) { GTEST_SKIP() << "Unsupport fast image"; }
+#define IsSupportFastImage()                                                                                           \
+    if (access(FAST_IMAGE_PATH.data(), 0) != 0) {                                                                      \
+        GTEST_SKIP() << "Unsupport fast image";                                                                        \
+    }
 
 using namespace std;
 using namespace OHOS;
@@ -60,8 +62,8 @@ static void OnNeedInputData(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data
     (void)userData;
 }
 
-static void OnNewOutputData(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data,
-    OH_AVCodecBufferAttr *attr, void *userData)
+static void OnNewOutputData(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr,
+                            void *userData)
 {
     (void)codec;
     (void)index;
@@ -100,7 +102,7 @@ const char *GetMimeType(int32_t codecType)
 }
 
 void RegisterCallbackWithSignal(shared_ptr<VideoEncDualOutputSample> &sample, EncoderType type,
-    shared_ptr<VCodecSignal> &signal)
+                                shared_ptr<VCodecSignal> &signal)
 {
     struct OH_AVCodecCallback cb = {};
     cb.onError = OnErrorVoid;
@@ -111,11 +113,9 @@ void RegisterCallbackWithSignal(shared_ptr<VideoEncDualOutputSample> &sample, En
     ASSERT_EQ(AV_ERR_OK, sample->RegisterCallback(type, cb, signal)) << "RegisterCallback failed";
 }
 
-void RunPreprocDualEncoding(
-    int32_t codecType,
-    const std::string &testName,
-    std::function<void(VideoEncDualOutputSample &)> setPrimaryPreproc,
-    std::function<void(VideoEncDualOutputSample &)> setSecondaryPreproc = nullptr)
+void RunPreprocDualEncoding(int32_t codecType, const std::string &testName,
+                            std::function<void(VideoEncDualOutputSample &)> setPrimaryPreproc,
+                            std::function<void(VideoEncDualOutputSample &)> setSecondaryPreproc = nullptr)
 {
     auto sample = make_shared<VideoEncDualOutputSample>();
     auto signal = make_shared<VCodecSignal>(sample);
@@ -126,7 +126,8 @@ void RunPreprocDualEncoding(
 
     RegisterCallbackWithSignal(sample, EncoderType::PRIMARY, signal);
 
-    sample->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    sample->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                           DEFAULT_FRAME_RATE);
     setPrimaryPreproc(*sample);
     ASSERT_EQ(AV_ERR_OK, sample->Configure(EncoderType::PRIMARY)) << "Primary Configure failed";
 
@@ -136,7 +137,8 @@ void RunPreprocDualEncoding(
     auto secSignal = make_shared<VCodecSignal>(sample);
     RegisterCallbackWithSignal(sample, EncoderType::SECONDARY, secSignal);
 
-    sample->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    sample->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                           DEFAULT_FRAME_RATE);
     if (setSecondaryPreproc) {
         setSecondaryPreproc(*sample);
     }
@@ -188,7 +190,8 @@ void TEST_SUIT::TearDown(void)
 
 void TEST_SUIT::FullLifecyclePrimary()
 {
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     auto signal = make_shared<VCodecSignal>(dualSample_);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
@@ -200,7 +203,8 @@ void TEST_SUIT::FullLifecyclePrimary()
 void TEST_SUIT::FullLifecycleSecondary()
 {
     ASSERT_TRUE(dualSample_->CreateSecondary());
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     auto signal = make_shared<VCodecSignal>(dualSample_);
     RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
@@ -261,7 +265,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_CreatePrimaryWithPreproc_InvalidParam_001, Test
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_001, TestSize.Level1)
 {
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
 }
 
@@ -273,7 +278,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_001, TestSize.Level1)
 HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_002, TestSize.Level1)
 {
     IsSupportFastImage();
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     dualSample_->SetCrop(EncoderType::PRIMARY, 10, 10, 629, 479); // crop left: 10, top: 10, right: 629, bottom: 479
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
 }
@@ -285,7 +291,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_002, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_003, TestSize.Level1)
 {
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     dualSample_->SetDropFrameRate(EncoderType::PRIMARY, 15.0); // drop frame rate: 15.0
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
 }
@@ -298,7 +305,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_003, TestSize.Level1)
 HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_004, TestSize.Level1)
 {
     IsSupportFastImage();
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     dualSample_->SetDownsampling(EncoderType::PRIMARY, 0, 0); // downsampling width: 0, height: 0
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
 }
@@ -311,7 +319,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_004, TestSize.Level1)
 HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_005, TestSize.Level1)
 {
     IsSupportFastImage();
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     dualSample_->SetCrop(EncoderType::PRIMARY, 0, 0, 0, 0); // crop all: 0
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
 }
@@ -323,7 +332,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_005, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_006, TestSize.Level1)
 {
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     dualSample_->SetDropFrameRate(EncoderType::PRIMARY, 0.0); // drop frame rate: 0
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
 }
@@ -336,10 +346,13 @@ HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_006, TestSize.Level1)
 HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_007, TestSize.Level1)
 {
     IsSupportFastImage();
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     OH_AVFormat *fmt = dualSample_->GetFormat(EncoderType::PRIMARY);
-    ASSERT_EQ(true, OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH, 640)); // width only
-    ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample_->Configure(EncoderType::PRIMARY)) << "Downsampling width without height should fail";
+    ASSERT_EQ(true,
+              OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH, 640)); // width only
+    ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample_->Configure(EncoderType::PRIMARY))
+        << "Downsampling width without height should fail";
 }
 
 /**
@@ -349,10 +362,12 @@ HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_007, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_008, TestSize.Level1)
 {
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     OH_AVFormat *fmt = dualSample_->GetFormat(EncoderType::PRIMARY);
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT, 10)); // crop left only: 10
-    ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample_->Configure(EncoderType::PRIMARY)) << "Crop left without other values should fail";
+    ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample_->Configure(EncoderType::PRIMARY))
+        << "Crop left without other values should fail";
 }
 
 /**
@@ -363,10 +378,12 @@ HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_008, TestSize.Level1)
 HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_009, TestSize.Level1)
 {
     IsSupportFastImage();
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     dualSample_->SetDownsampling(EncoderType::PRIMARY, 640, 480); // downsampling: 640x480
     dualSample_->SetCrop(EncoderType::PRIMARY, 10, 10, 629, 479); // crop: 10,10,629,479
-    ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample_->Configure(EncoderType::PRIMARY)) << "Downsampling + Crop together should fail";
+    ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample_->Configure(EncoderType::PRIMARY))
+        << "Downsampling + Crop together should fail";
 }
 
 /**
@@ -376,7 +393,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_009, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_010, TestSize.Level1)
 {
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     dualSample_->SetDropFrameRate(EncoderType::PRIMARY, -1.0); // drop frame rate: -1.0
     ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample_->Configure(EncoderType::PRIMARY)) << "Negative drop frame should fail";
 }
@@ -388,9 +406,11 @@ HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_010, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_011, TestSize.Level1)
 {
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     dualSample_->SetDropFrameRate(EncoderType::PRIMARY, 30.0); // drop frame rate: 30 (>= original 30.0)
-    ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample_->Configure(EncoderType::PRIMARY)) << "Drop frame >= original rate should fail";
+    ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample_->Configure(EncoderType::PRIMARY))
+        << "Drop frame >= original rate should fail";
 }
 
 /**
@@ -406,7 +426,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_012, TestSize.Level1)
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12));
     // Intentionally not setting OH_MD_KEY_FRAME_RATE
     dualSample_->SetDropFrameRate(EncoderType::PRIMARY, 15.0); // drop frame rate: 15.0
-    ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample_->Configure(EncoderType::PRIMARY)) << "Drop frame without original rate should fail";
+    ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample_->Configure(EncoderType::PRIMARY))
+        << "Drop frame without original rate should fail";
 }
 
 /**
@@ -417,8 +438,9 @@ HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_012, TestSize.Level1)
 HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_013, TestSize.Level1)
 {
     IsSupportFastImage();
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
-    dualSample_->SetDropFrameRate(EncoderType::PRIMARY, 15.0); // drop frame rate: 15.0
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
+    dualSample_->SetDropFrameRate(EncoderType::PRIMARY, 15.0);    // drop frame rate: 15.0
     dualSample_->SetDownsampling(EncoderType::PRIMARY, 640, 480); // downsampling: 640x480
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
 }
@@ -431,8 +453,9 @@ HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_013, TestSize.Level1)
 HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_014, TestSize.Level1)
 {
     IsSupportFastImage();
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
-    dualSample_->SetDropFrameRate(EncoderType::PRIMARY, 15.0); // drop frame rate: 15.0
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
+    dualSample_->SetDropFrameRate(EncoderType::PRIMARY, 15.0);    // drop frame rate: 15.0
     dualSample_->SetCrop(EncoderType::PRIMARY, 10, 10, 629, 479); // crop: 10,10,629,479
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY)) << "Drop frame + crop should succeed";
 }
@@ -517,7 +540,8 @@ HWTEST_P(TEST_SUIT, Primary_SetCallback_Normal_001, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, Primary_RegisterParameterCallback_NullParam_001, TestSize.Level1)
 {
-    OH_AVErrCode ret = OH_VideoEncoder_RegisterParameterCallback(dualSample_->GetCodec(EncoderType::PRIMARY), nullptr, nullptr);
+    OH_AVErrCode ret =
+        OH_VideoEncoder_RegisterParameterCallback(dualSample_->GetCodec(EncoderType::PRIMARY), nullptr, nullptr);
     ASSERT_EQ(ret, AV_ERR_OPERATE_NOT_PERMIT);
 }
 
@@ -528,8 +552,8 @@ HWTEST_P(TEST_SUIT, Primary_RegisterParameterCallback_NullParam_001, TestSize.Le
  */
 HWTEST_P(TEST_SUIT, Primary_RegisterParameterCallback_Normal_001, TestSize.Level1)
 {
-    OH_AVErrCode ret = OH_VideoEncoder_RegisterParameterCallback(
-        dualSample_->GetCodec(EncoderType::PRIMARY), OnNeedInputParameter, nullptr);
+    OH_AVErrCode ret = OH_VideoEncoder_RegisterParameterCallback(dualSample_->GetCodec(EncoderType::PRIMARY),
+                                                                 OnNeedInputParameter, nullptr);
     ASSERT_EQ(ret, AV_ERR_OPERATE_NOT_PERMIT);
 }
 
@@ -573,7 +597,8 @@ HWTEST_P(TEST_SUIT, Primary_Prepare_NullParam_001, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, Primary_Prepare_Normal_001, TestSize.Level1)
 {
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     auto signal = make_shared<VCodecSignal>(dualSample_);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
@@ -598,7 +623,8 @@ HWTEST_P(TEST_SUIT, Primary_Reset_AfterStart_001, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, Primary_GetOutputDescription_Normal_001, TestSize.Level1)
 {
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     auto signal = make_shared<VCodecSignal>(dualSample_);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
@@ -614,7 +640,8 @@ HWTEST_P(TEST_SUIT, Primary_GetOutputDescription_Normal_001, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, Primary_GetInputDescription_Normal_001, TestSize.Level1)
 {
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     auto signal = make_shared<VCodecSignal>(dualSample_);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
@@ -721,7 +748,8 @@ HWTEST_P(TEST_SUIT, Secondary_RegisterCallback_Normal_001, TestSize.Level1)
 HWTEST_P(TEST_SUIT, Secondary_Configure_Normal_001, TestSize.Level1)
 {
     ASSERT_TRUE(dualSample_->CreateSecondary());
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
 }
 
@@ -733,7 +761,8 @@ HWTEST_P(TEST_SUIT, Secondary_Configure_Normal_001, TestSize.Level1)
 HWTEST_P(TEST_SUIT, Secondary_Prepare_Normal_001, TestSize.Level1)
 {
     ASSERT_TRUE(dualSample_->CreateSecondary());
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
 
     OH_AVCodecCallback cb = {OnError, OnStreamChanged, OnNeedInputBuffer, OnNewOutputBuffer};
@@ -783,7 +812,8 @@ HWTEST_P(TEST_SUIT, Secondary_Reset_CreatedState_001, TestSize.Level1)
 HWTEST_P(TEST_SUIT, Secondary_GetOutputDescription_Normal_001, TestSize.Level1)
 {
     ASSERT_TRUE(dualSample_->CreateSecondary());
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
 
     OH_AVCodecCallback cb = {OnError, OnStreamChanged, OnNeedInputBuffer, OnNewOutputBuffer};
@@ -852,10 +882,9 @@ HWTEST_P(TEST_SUIT, Secondary_IsValid_Normal_001, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_NoPreproc_001, TestSize.Level1)
 {
-    RunPreprocDualEncoding(GetParam(), "fullenc_no_preproc",
-        [](VideoEncDualOutputSample &s) {
-            // no preprocessor features
-        });
+    RunPreprocDualEncoding(GetParam(), "fullenc_no_preproc", [](VideoEncDualOutputSample &s) {
+        // no preprocessor features
+    });
 }
 
 /**
@@ -866,10 +895,9 @@ HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_NoPreproc_001, TestSize.Level1)
 HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_CropOnly_001, TestSize.Level1)
 {
     IsSupportFastImage();
-    RunPreprocDualEncoding(GetParam(), "fullenc_crop",
-        [](VideoEncDualOutputSample &s) {
-            s.SetCrop(EncoderType::PRIMARY, 10, 10, 629, 479); // crop: 10,10,629,479
-        });
+    RunPreprocDualEncoding(GetParam(), "fullenc_crop", [](VideoEncDualOutputSample &s) {
+        s.SetCrop(EncoderType::PRIMARY, 10, 10, 629, 479); // crop: 10,10,629,479
+    });
 }
 
 /**
@@ -880,10 +908,9 @@ HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_CropOnly_001, TestSize.Level1)
 HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_DownsamplingOnly_001, TestSize.Level1)
 {
     IsSupportFastImage();
-    RunPreprocDualEncoding(GetParam(), "fullenc_downsample",
-        [](VideoEncDualOutputSample &s) {
-            s.SetDownsampling(EncoderType::PRIMARY, 640, 480); // downsampling: 640x480
-        });
+    RunPreprocDualEncoding(GetParam(), "fullenc_downsample", [](VideoEncDualOutputSample &s) {
+        s.SetDownsampling(EncoderType::PRIMARY, 640, 480); // downsampling: 640x480
+    });
 }
 
 /**
@@ -893,10 +920,9 @@ HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_DownsamplingOnly_001, TestSize.Level
  */
 HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_DropFrameRateOnly_001, TestSize.Level1)
 {
-    RunPreprocDualEncoding(GetParam(), "fullenc_dropframerate",
-        [](VideoEncDualOutputSample &s) {
-            s.SetDropFrameRate(EncoderType::PRIMARY, 15.0); // drop frame rate: 15.0
-        });
+    RunPreprocDualEncoding(GetParam(), "fullenc_dropframerate", [](VideoEncDualOutputSample &s) {
+        s.SetDropFrameRate(EncoderType::PRIMARY, 15.0); // drop frame rate: 15.0
+    });
 }
 
 /**
@@ -907,11 +933,10 @@ HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_DropFrameRateOnly_001, TestSize.Leve
 HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_CropAndDropFrameRate_001, TestSize.Level1)
 {
     IsSupportFastImage();
-    RunPreprocDualEncoding(GetParam(), "fullenc_crop_dropfr",
-        [](VideoEncDualOutputSample &s) {
-            s.SetCrop(EncoderType::PRIMARY, 10, 10, 629, 479); // crop: 10,10,629,479
-            s.SetDropFrameRate(EncoderType::PRIMARY, 15.0); // drop frame rate: 15.0
-        });
+    RunPreprocDualEncoding(GetParam(), "fullenc_crop_dropfr", [](VideoEncDualOutputSample &s) {
+        s.SetCrop(EncoderType::PRIMARY, 10, 10, 629, 479); // crop: 10,10,629,479
+        s.SetDropFrameRate(EncoderType::PRIMARY, 15.0);    // drop frame rate: 15.0
+    });
 }
 
 /**
@@ -922,11 +947,10 @@ HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_CropAndDropFrameRate_001, TestSize.L
 HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_DownsamplingAndDropFrameRate_001, TestSize.Level1)
 {
     IsSupportFastImage();
-    RunPreprocDualEncoding(GetParam(), "fullenc_ds_dropfr",
-        [](VideoEncDualOutputSample &s) {
-            s.SetDownsampling(EncoderType::PRIMARY, 640, 480); // downsampling: 640x480
-            s.SetDropFrameRate(EncoderType::PRIMARY, 15.0); // drop frame rate: 15.0
-        });
+    RunPreprocDualEncoding(GetParam(), "fullenc_ds_dropfr", [](VideoEncDualOutputSample &s) {
+        s.SetDownsampling(EncoderType::PRIMARY, 640, 480); // downsampling: 640x480
+        s.SetDropFrameRate(EncoderType::PRIMARY, 15.0);    // drop frame rate: 15.0
+    });
 }
 
 /**
@@ -937,7 +961,8 @@ HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_DownsamplingAndDropFrameRate_001, Te
 HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_PrimaryCrop_SecondaryDownsample_001, TestSize.Level1)
 {
     IsSupportFastImage();
-    RunPreprocDualEncoding(GetParam(), "fullenc_pri_crop_sec_ds",
+    RunPreprocDualEncoding(
+        GetParam(), "fullenc_pri_crop_sec_ds",
         [](VideoEncDualOutputSample &s) {
             s.SetCrop(EncoderType::PRIMARY, 10, 10, 629, 479); // crop: 10,10,629,479
         },
@@ -954,7 +979,8 @@ HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_PrimaryCrop_SecondaryDownsample_001,
 HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_PrimaryDownsample_SecondaryCrop_001, TestSize.Level1)
 {
     IsSupportFastImage();
-    RunPreprocDualEncoding(GetParam(), "fullenc_pri_ds_sec_crop",
+    RunPreprocDualEncoding(
+        GetParam(), "fullenc_pri_ds_sec_crop",
         [](VideoEncDualOutputSample &s) {
             s.SetDownsampling(EncoderType::PRIMARY, 640, 480); // downsampling: 640x480
         },
@@ -971,10 +997,11 @@ HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_PrimaryDownsample_SecondaryCrop_001,
 HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_PrimaryCropDropFR_SecondaryDownsample_001, TestSize.Level1)
 {
     IsSupportFastImage();
-    RunPreprocDualEncoding(GetParam(), "fullenc_pri_cropdfr_sec_ds",
+    RunPreprocDualEncoding(
+        GetParam(), "fullenc_pri_cropdfr_sec_ds",
         [](VideoEncDualOutputSample &s) {
             s.SetCrop(EncoderType::PRIMARY, 10, 10, 629, 479); // crop: 10,10,629,479
-            s.SetDropFrameRate(EncoderType::PRIMARY, 15.0); // drop frame rate: 15.0
+            s.SetDropFrameRate(EncoderType::PRIMARY, 15.0);    // drop frame rate: 15.0
         },
         [](VideoEncDualOutputSample &s) {
             s.SetDownsampling(EncoderType::SECONDARY, 640, 480); // downsampling: 640x480
@@ -989,10 +1016,11 @@ HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_PrimaryCropDropFR_SecondaryDownsampl
 HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_PrimaryDownsampleDropFR_SecondaryCrop_001, TestSize.Level1)
 {
     IsSupportFastImage();
-    RunPreprocDualEncoding(GetParam(), "fullenc_pri_dsdfr_sec_crop",
+    RunPreprocDualEncoding(
+        GetParam(), "fullenc_pri_dsdfr_sec_crop",
         [](VideoEncDualOutputSample &s) {
             s.SetDownsampling(EncoderType::PRIMARY, 640, 480); // downsampling: 640x480
-            s.SetDropFrameRate(EncoderType::PRIMARY, 15.0); // drop frame rate: 15.0
+            s.SetDropFrameRate(EncoderType::PRIMARY, 15.0);    // drop frame rate: 15.0
         },
         [](VideoEncDualOutputSample &s) {
             s.SetCrop(EncoderType::SECONDARY, 10, 10, 629, 479); // crop: 10,10,629,479
@@ -1007,12 +1035,14 @@ HWTEST_P(TEST_SUIT, DualOutput_FullEncoding_PrimaryDownsampleDropFR_SecondaryCro
 HWTEST_P(TEST_SUIT, VideoEncoder_SecondaryIndependent_Capi_001, TestSize.Level1)
 {
     IsSupportFastImage();
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     dualSample_->SetDownsampling(EncoderType::PRIMARY, 640, 480); // downsampling: 640x480
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
 
     ASSERT_TRUE(dualSample_->CreateSecondary());
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     dualSample_->SetCrop(EncoderType::SECONDARY, 10, 10, 629, 479); // crop: 10,10,629,479
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
 }
@@ -1025,14 +1055,16 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SecondaryIndependent_Capi_001, TestSize.Level1)
 HWTEST_P(TEST_SUIT, VideoEncoder_PrimarySecondaryCombined_Capi_001, TestSize.Level1)
 {
     IsSupportFastImage();
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
-    dualSample_->SetDropFrameRate(EncoderType::PRIMARY, 15.0); // drop frame rate: 15.0
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
+    dualSample_->SetDropFrameRate(EncoderType::PRIMARY, 15.0);    // drop frame rate: 15.0
     dualSample_->SetDownsampling(EncoderType::PRIMARY, 640, 480); // downsampling: 640x480
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
 
     ASSERT_TRUE(dualSample_->CreateSecondary());
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
-    dualSample_->SetDropFrameRate(EncoderType::SECONDARY, 20.0); // drop frame rate: 20.0
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
+    dualSample_->SetDropFrameRate(EncoderType::SECONDARY, 20.0);    // drop frame rate: 20.0
     dualSample_->SetCrop(EncoderType::SECONDARY, 10, 10, 629, 479); // crop: 10,10,629,479
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
 }
@@ -1084,7 +1116,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Primary_Reset_CreatedState_001, TestSize.Level
  */
 HWTEST_P(TEST_SUIT, State_Machine_Primary_Stop_ConfiguredState_001, TestSize.Level1)
 {
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Stop(EncoderType::PRIMARY));
 }
@@ -1096,7 +1129,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Primary_Stop_ConfiguredState_001, TestSize.Lev
  */
 HWTEST_P(TEST_SUIT, State_Machine_Primary_Flush_ConfiguredState_001, TestSize.Level1)
 {
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_INVALID_STATE, dualSample_->Flush(EncoderType::PRIMARY));
 }
@@ -1109,7 +1143,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Primary_Flush_ConfiguredState_001, TestSize.Le
 HWTEST_P(TEST_SUIT, State_Machine_Primary_Stop_PreparedState_001, TestSize.Level1)
 {
     auto signal = make_shared<VCodecSignal>(dualSample_);
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
@@ -1124,7 +1159,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Primary_Stop_PreparedState_001, TestSize.Level
 HWTEST_P(TEST_SUIT, State_Machine_Primary_Flush_PreparedState_001, TestSize.Level1)
 {
     auto signal = make_shared<VCodecSignal>(dualSample_);
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
@@ -1141,9 +1177,11 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_CreateSecondary_BeforePrimaryConfigure_00
     // Create secondary before primary is configured
     ASSERT_TRUE(dualSample_->CreateSecondary());
     // Now configure both
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
 }
 
@@ -1156,7 +1194,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Secondary_Stop_PreparedState_001, TestSize.Lev
 {
     auto signal = make_shared<VCodecSignal>(dualSample_);
     ASSERT_TRUE(dualSample_->CreateSecondary());
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
@@ -1181,7 +1220,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Secondary_Prepare_BeforeConfigure_001, TestSiz
  */
 HWTEST_P(TEST_SUIT, Primary_Start_Normal_001, TestSize.Level1)
 {
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     auto signal = make_shared<VCodecSignal>(dualSample_);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
@@ -1208,14 +1248,16 @@ HWTEST_P(TEST_SUIT, Secondary_Start_BeforePrepare_001, TestSize.Level1)
 HWTEST_P(TEST_SUIT, VideoEncoder_PrimarySecondaryReset_001, TestSize.Level1)
 {
     auto signal = make_shared<VCodecSignal>(dualSample_);
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Stop(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Reset(EncoderType::PRIMARY));
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
 }
 
@@ -1236,7 +1278,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Primary_Start_BeforeConfigure_001, TestSize.Le
  */
 HWTEST_P(TEST_SUIT, State_Machine_Primary_Start_ConfiguredState_001, TestSize.Level1)
 {
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
 }
@@ -1260,7 +1303,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Primary_DoubleStop_001, TestSize.Level1)
 HWTEST_P(TEST_SUIT, State_Machine_Primary_Reset_AfterStart_001, TestSize.Level1)
 {
     auto signal = make_shared<VCodecSignal>(dualSample_);
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
@@ -1278,7 +1322,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Primary_Reset_Reconfigure_001, TestSize.Level1
     FullLifecyclePrimary();
     ASSERT_EQ(AV_ERR_OK, dualSample_->Reset(EncoderType::PRIMARY));
     auto signal = make_shared<VCodecSignal>(dualSample_);
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
@@ -1294,7 +1339,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Primary_Reset_Reconfigure_001, TestSize.Level1
 HWTEST_P(TEST_SUIT, State_Machine_Primary_Flush_AfterStart_001, TestSize.Level1)
 {
     auto signal = make_shared<VCodecSignal>(dualSample_);
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
@@ -1310,7 +1356,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Primary_Flush_AfterStart_001, TestSize.Level1)
 HWTEST_P(TEST_SUIT, State_Machine_Primary_FlushThenStart_001, TestSize.Level1)
 {
     auto signal = make_shared<VCodecSignal>(dualSample_);
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
@@ -1328,7 +1375,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Primary_FlushThenStart_001, TestSize.Level1)
 HWTEST_P(TEST_SUIT, State_Machine_Primary_StopThenStart_001, TestSize.Level1)
 {
     auto signal = make_shared<VCodecSignal>(dualSample_);
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
@@ -1345,7 +1393,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Primary_StopThenStart_001, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, State_Machine_Primary_ReleaseThenOperate_001, TestSize.Level1)
 {
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     auto signal = make_shared<VCodecSignal>(dualSample_);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
@@ -1389,7 +1438,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Secondary_Reset_AfterStart_001, TestSize.Level
 {
     auto signal = make_shared<VCodecSignal>(dualSample_);
     ASSERT_TRUE(dualSample_->CreateSecondary());
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
@@ -1407,7 +1457,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Secondary_Reset_Reconfigure_001, TestSize.Leve
     FullLifecycleSecondary();
     ASSERT_EQ(AV_ERR_OK, dualSample_->Reset(EncoderType::SECONDARY));
     auto signal = make_shared<VCodecSignal>(dualSample_);
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
@@ -1424,7 +1475,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Secondary_Flush_AfterStart_001, TestSize.Level
 {
     auto signal = make_shared<VCodecSignal>(dualSample_);
     ASSERT_TRUE(dualSample_->CreateSecondary());
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
@@ -1441,7 +1493,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Secondary_FlushThenStart_001, TestSize.Level1)
 {
     auto signal = make_shared<VCodecSignal>(dualSample_);
     ASSERT_TRUE(dualSample_->CreateSecondary());
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
@@ -1460,7 +1513,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Secondary_StopThenStart_001, TestSize.Level1)
 {
     auto signal = make_shared<VCodecSignal>(dualSample_);
     ASSERT_TRUE(dualSample_->CreateSecondary());
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
@@ -1479,7 +1533,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Secondary_ReleaseThenOperate_001, TestSize.Lev
 {
     auto signal = make_shared<VCodecSignal>(dualSample_);
     ASSERT_TRUE(dualSample_->CreateSecondary());
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
@@ -1500,7 +1555,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Secondary_ReleaseThenOperate_001, TestSize.Lev
 HWTEST_P(TEST_SUIT, State_Machine_Dual_StartSecondaryBeforePrimary_001, TestSize.Level1)
 {
     auto signal = make_shared<VCodecSignal>(dualSample_);
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
@@ -1509,7 +1565,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_StartSecondaryBeforePrimary_001, TestSize
     ASSERT_TRUE(dualSample_->CreateSecondary());
     auto secSignal = make_shared<VCodecSignal>(dualSample_);
     RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
 
@@ -1527,7 +1584,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_StartSecondaryBeforePrimary_001, TestSize
 HWTEST_P(TEST_SUIT, State_Machine_Dual_StopPrimaryWhileSecondaryRunning_001, TestSize.Level1)
 {
     auto signal = make_shared<VCodecSignal>(dualSample_);
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
@@ -1536,7 +1594,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_StopPrimaryWhileSecondaryRunning_001, Tes
     ASSERT_TRUE(dualSample_->CreateSecondary());
     auto secSignal = make_shared<VCodecSignal>(dualSample_);
     RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
 
@@ -1554,7 +1613,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_StopPrimaryWhileSecondaryRunning_001, Tes
 HWTEST_P(TEST_SUIT, State_Machine_Dual_StopSecondaryWhilePrimaryRunning_001, TestSize.Level1)
 {
     auto signal = make_shared<VCodecSignal>(dualSample_);
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
@@ -1563,7 +1623,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_StopSecondaryWhilePrimaryRunning_001, Tes
     ASSERT_TRUE(dualSample_->CreateSecondary());
     auto secSignal = make_shared<VCodecSignal>(dualSample_);
     RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
 
@@ -1581,7 +1642,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_StopSecondaryWhilePrimaryRunning_001, Tes
 HWTEST_P(TEST_SUIT, State_Machine_Dual_ResetPrimaryWhileSecondaryRunning_001, TestSize.Level1)
 {
     auto signal = make_shared<VCodecSignal>(dualSample_);
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
@@ -1590,14 +1652,16 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_ResetPrimaryWhileSecondaryRunning_001, Te
     ASSERT_TRUE(dualSample_->CreateSecondary());
     auto secSignal = make_shared<VCodecSignal>(dualSample_);
     RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
 
     ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Reset(EncoderType::PRIMARY));
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     auto priSignal = make_shared<VCodecSignal>(dualSample_);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, priSignal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
@@ -1612,7 +1676,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_ResetPrimaryWhileSecondaryRunning_001, Te
 HWTEST_P(TEST_SUIT, State_Machine_Dual_ResetSecondaryWhilePrimaryRunning_001, TestSize.Level1)
 {
     auto signal = make_shared<VCodecSignal>(dualSample_);
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
@@ -1621,7 +1686,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_ResetSecondaryWhilePrimaryRunning_001, Te
     ASSERT_TRUE(dualSample_->CreateSecondary());
     auto secSignal = make_shared<VCodecSignal>(dualSample_);
     RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
 
@@ -1629,7 +1695,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_ResetSecondaryWhilePrimaryRunning_001, Te
     ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Reset(EncoderType::SECONDARY));
     auto secSignal2 = make_shared<VCodecSignal>(dualSample_);
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal2);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Stop(EncoderType::PRIMARY));
@@ -1643,7 +1710,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_ResetSecondaryWhilePrimaryRunning_001, Te
 HWTEST_P(TEST_SUIT, State_Machine_Dual_FlushPrimaryWhileSecondaryRunning_001, TestSize.Level1)
 {
     auto signal = make_shared<VCodecSignal>(dualSample_);
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
@@ -1653,7 +1721,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_FlushPrimaryWhileSecondaryRunning_001, Te
     ASSERT_TRUE(dualSample_->CreateSecondary());
     auto secSignal = make_shared<VCodecSignal>(dualSample_);
     RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
 
@@ -1673,7 +1742,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_FlushPrimaryWhileSecondaryRunning_001, Te
 HWTEST_P(TEST_SUIT, State_Machine_Dual_FlushSecondaryWhilePrimaryRunning_001, TestSize.Level1)
 {
     auto signal = make_shared<VCodecSignal>(dualSample_);
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
@@ -1683,7 +1753,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_FlushSecondaryWhilePrimaryRunning_001, Te
     ASSERT_TRUE(dualSample_->CreateSecondary());
     auto secSignal = make_shared<VCodecSignal>(dualSample_);
     RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
 
@@ -1719,7 +1790,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_ReleasePrimary_DestroysSecondary_001, Tes
 HWTEST_P(TEST_SUIT, State_Machine_Dual_ReleaseSecondary_ThenRecreate_001, TestSize.Level1)
 {
     auto signal = make_shared<VCodecSignal>(dualSample_);
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
@@ -1731,7 +1803,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_ReleaseSecondary_ThenRecreate_001, TestSi
     ASSERT_TRUE(dualSample_->CreateSecondary());
     auto secSignal = make_shared<VCodecSignal>(dualSample_);
     RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
 }
 
@@ -1743,7 +1816,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_ReleaseSecondary_ThenRecreate_001, TestSi
 HWTEST_P(TEST_SUIT, State_Machine_Dual_BothStart_BothStop_001, TestSize.Level1)
 {
     auto signal = make_shared<VCodecSignal>(dualSample_);
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
@@ -1752,7 +1826,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_BothStart_BothStop_001, TestSize.Level1)
     ASSERT_TRUE(dualSample_->CreateSecondary());
     auto secSignal = make_shared<VCodecSignal>(dualSample_);
     RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
 
@@ -1770,7 +1845,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_BothStart_BothStop_001, TestSize.Level1)
 HWTEST_P(TEST_SUIT, State_Machine_Dual_PrimaryStartStop_ThenSecondaryStartStop_001, TestSize.Level1)
 {
     auto signal = make_shared<VCodecSignal>(dualSample_);
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
@@ -1779,7 +1855,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_PrimaryStartStop_ThenSecondaryStartStop_0
     ASSERT_TRUE(dualSample_->CreateSecondary());
     auto secSignal = make_shared<VCodecSignal>(dualSample_);
     RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
 
@@ -1798,7 +1875,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_PrimaryStartStop_ThenSecondaryStartStop_0
 HWTEST_P(TEST_SUIT, State_Machine_Dual_BothReset_ThenReconfigure_001, TestSize.Level1)
 {
     auto signal = make_shared<VCodecSignal>(dualSample_);
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
@@ -1807,7 +1885,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_BothReset_ThenReconfigure_001, TestSize.L
     ASSERT_TRUE(dualSample_->CreateSecondary());
     auto secSignal = make_shared<VCodecSignal>(dualSample_);
     RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
 
@@ -1820,12 +1899,14 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_BothReset_ThenReconfigure_001, TestSize.L
     ASSERT_EQ(AV_ERR_OK, dualSample_->Reset(EncoderType::SECONDARY));
 
     auto priSignal2 = make_shared<VCodecSignal>(dualSample_);
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, priSignal2);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
 
     auto secSignal2 = make_shared<VCodecSignal>(dualSample_);
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal2);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
 }
@@ -1838,14 +1919,16 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_BothReset_ThenReconfigure_001, TestSize.L
 HWTEST_P(TEST_SUIT, State_Machine_Dual_StartOnlyPrimary_001, TestSize.Level1)
 {
     auto signal = make_shared<VCodecSignal>(dualSample_);
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
 
     ASSERT_TRUE(dualSample_->CreateSurface());
     ASSERT_TRUE(dualSample_->CreateSecondary());
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12, DEFAULT_FRAME_RATE);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
 
     ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));

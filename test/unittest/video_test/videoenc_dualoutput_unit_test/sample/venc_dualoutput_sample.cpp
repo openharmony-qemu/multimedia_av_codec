@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
+#include "venc_dualoutput_sample.h"
 #include <gtest/gtest.h>
 #include "common/native_mfmagic.h"
 #include "meta/meta_key.h"
-#include "venc_dualoutput_sample.h"
 
 #define PRINT_HILOG
 #define TEST_ID primarySampleId_
@@ -102,6 +102,12 @@ ReadFrame GetReadOneFrame(int32_t pixelFormat)
 namespace {
 constexpr uint32_t DEFAULT_TIME_INTERVAL = 4166;
 constexpr uint32_t MAX_OUTPUT_FRAMENUM = 60;
+static inline std::string ModifyTestName(const char *name)
+{
+    std::string str(name);
+    replace(str.begin(), str.end(), '/', '_');
+    return str;
+}
 static inline int64_t GetTimeUs()
 {
     struct timespec now;
@@ -123,8 +129,10 @@ VideoEncDualOutputSample::VideoEncDualOutputSample()
     primaryEncoder_.sampleId = primarySampleId_;
     secondaryEncoder_.sampleId = ++sampleId;
     TITLE_LOG;
-    primaryEncoder_.format = std::shared_ptr<OH_AVFormat>(OH_AVFormat_Create(), [](OH_AVFormat *ptr) { OH_AVFormat_Destroy(ptr); });
-    secondaryEncoder_.format = std::shared_ptr<OH_AVFormat>(OH_AVFormat_Create(), [](OH_AVFormat *ptr) { OH_AVFormat_Destroy(ptr); });
+    primaryEncoder_.format =
+        std::shared_ptr<OH_AVFormat>(OH_AVFormat_Create(), [](OH_AVFormat *ptr) { OH_AVFormat_Destroy(ptr); });
+    secondaryEncoder_.format =
+        std::shared_ptr<OH_AVFormat>(OH_AVFormat_Create(), [](OH_AVFormat *ptr) { OH_AVFormat_Destroy(ptr); });
 }
 
 VideoEncDualOutputSample::~VideoEncDualOutputSample()
@@ -161,7 +169,7 @@ OH_AVFormat *VideoEncDualOutputSample::GetFormat(EncoderType type)
     return GetEncoderByEncoderType(type).format.get();
 }
 
-bool VideoEncDualOutputSample::CreatePrimary(const string &mime)
+bool VideoEncDualOutputSample::CreatePrimary(const std::string &mime)
 {
     TITLE_LOG;
     mime_ = mime;
@@ -179,8 +187,8 @@ bool VideoEncDualOutputSample::CreateSecondary()
     return true;
 }
 
-int32_t VideoEncDualOutputSample::SetBasicFormat(EncoderType type, int32_t width, int32_t height,
-                                                  int32_t pixelFormat, double frameRate)
+int32_t VideoEncDualOutputSample::SetBasicFormat(EncoderType type, int32_t width, int32_t height, int32_t pixelFormat,
+                                                 double frameRate)
 {
     TITLE_LOG;
     auto &encoderContext = GetEncoderByEncoderType(type);
@@ -198,8 +206,10 @@ int32_t VideoEncDualOutputSample::SetDownsampling(EncoderType type, int32_t down
     TITLE_LOG;
     auto &encoderContext = GetEncoderByEncoderType(type);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(encoderContext.format != nullptr, AV_ERR_UNKNOWN, "format is nullptr");
-    bool ret = OH_AVFormat_SetIntValue(encoderContext.format.get(), OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH, downWidth) &&
-               OH_AVFormat_SetIntValue(encoderContext.format.get(), OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT, downHeight);
+    bool ret = OH_AVFormat_SetIntValue(encoderContext.format.get(), OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH,
+                                       downWidth) &&
+               OH_AVFormat_SetIntValue(encoderContext.format.get(), OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT,
+                                       downHeight);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret, AV_ERR_UNKNOWN, "SetDownsampling failed");
     return AV_ERR_OK;
 }
@@ -209,10 +219,11 @@ int32_t VideoEncDualOutputSample::SetCrop(EncoderType type, int32_t left, int32_
     TITLE_LOG;
     auto &encoderContext = GetEncoderByEncoderType(type);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(encoderContext.format != nullptr, AV_ERR_UNKNOWN, "format is nullptr");
-    bool ret = OH_AVFormat_SetIntValue(encoderContext.format.get(), OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT, left) &&
-               OH_AVFormat_SetIntValue(encoderContext.format.get(), OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_TOP, top) &&
-               OH_AVFormat_SetIntValue(encoderContext.format.get(), OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_RIGHT, right) &&
-               OH_AVFormat_SetIntValue(encoderContext.format.get(), OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM, bottom);
+    bool ret =
+        OH_AVFormat_SetIntValue(encoderContext.format.get(), OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT, left) &&
+        OH_AVFormat_SetIntValue(encoderContext.format.get(), OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_TOP, top) &&
+        OH_AVFormat_SetIntValue(encoderContext.format.get(), OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_RIGHT, right) &&
+        OH_AVFormat_SetIntValue(encoderContext.format.get(), OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM, bottom);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret, AV_ERR_UNKNOWN, "SetCrop failed");
     return AV_ERR_OK;
 }
@@ -222,7 +233,8 @@ int32_t VideoEncDualOutputSample::SetDropFrameRate(EncoderType type, double fram
     TITLE_LOG;
     auto &encoderContext = GetEncoderByEncoderType(type);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(encoderContext.format != nullptr, AV_ERR_UNKNOWN, "format is nullptr");
-    bool ret = OH_AVFormat_SetDoubleValue(encoderContext.format.get(), OH_MD_KEY_VIDEO_ENCODER_PREPROC_DROP_TO_FRAME_RATE, frameRate);
+    bool ret = OH_AVFormat_SetDoubleValue(encoderContext.format.get(),
+                                          OH_MD_KEY_VIDEO_ENCODER_PREPROC_DROP_TO_FRAME_RATE, frameRate);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret, AV_ERR_UNKNOWN, "SetDropFrameRate failed");
     return AV_ERR_OK;
 }
@@ -230,36 +242,38 @@ int32_t VideoEncDualOutputSample::SetDropFrameRate(EncoderType type, double fram
 bool VideoEncDualOutputSample::InitFile(EncoderType type)
 {
     auto &encoderContext = GetEncoderByEncoderType(type);
-    string ext = (mime_.find("hevc") != string::npos) ? ".h265" : ".h264";
+    if (encoderContext.signal->inFile_ == nullptr) {
+        encoderContext.signal->inFile_ = make_unique<ifstream>();
+        std::string inPath = "/data/test/media/" + inPath_;
+        encoderContext.signal->inFile_->open(inPath, ios::in | ios::binary);
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(encoderContext.signal->inFile_ != nullptr, false, "create inFile_ failed");
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(encoderContext.signal->inFile_->is_open(), false, "can not open inFile_");
+    }
+    std::string ext = (mime_.find("hevc") != std::string::npos) ? ".h265" : ".h264";
     if (type == EncoderType::PRIMARY) {
-        if (encoderContext.signal->inFile_ == nullptr) {
-            encoderContext.signal->inFile_ = make_unique<ifstream>();
-            string inPath = "/data/test/media/" + inPath_;
-            encoderContext.signal->inFile_->open(inPath, ios::in | ios::binary);
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(encoderContext.signal->inFile_ != nullptr, false, "create inFile_ failed");
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(encoderContext.signal->inFile_->is_open(), false, "can not open inFile_");
-        }
         if (encoderContext.signal->outFile_ == nullptr && needDump_) {
             encoderContext.signal->outFile_ = make_unique<ofstream>();
             const ::testing::TestInfo *testInfo = ::testing::UnitTest::GetInstance()->current_test_info();
-            string outPath = "/data/test/media/primary_" + string(testInfo->name()) + ext;
+            std::string outPath = "/data/test/media/primary_" + ModifyTestName(testInfo->name()) + ext;
             encoderContext.signal->outFile_->open(outPath, ios::out | ios::binary);
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(encoderContext.signal->outFile_ != nullptr, false, "create outFile_ failed");
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(encoderContext.signal->outFile_ != nullptr, false,
+                                              "create outFile_ failed");
         }
     } else {
         if (encoderContext.signal->outFile_ == nullptr && needDump_) {
             encoderContext.signal->outFile_ = make_unique<ofstream>();
             const ::testing::TestInfo *testInfo = ::testing::UnitTest::GetInstance()->current_test_info();
-            string outPath = "/data/test/media/secondary_" + string(testInfo->name()) + ext;
+            std::string outPath = "/data/test/media/secondary_" + ModifyTestName(testInfo->name()) + ext;
             encoderContext.signal->outFile_->open(outPath, ios::out | ios::binary);
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(encoderContext.signal->outFile_ != nullptr, false, "create sec outFile_ failed");
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(encoderContext.signal->outFile_ != nullptr, false,
+                                              "create sec outFile_ failed");
         }
     }
     return true;
 }
 
 int32_t VideoEncDualOutputSample::SetCallback(EncoderType type, OH_AVCodecAsyncCallback callback,
-                                               shared_ptr<VCodecSignal> &signal)
+                                              shared_ptr<VCodecSignal> &signal)
 {
     TITLE_LOG;
     auto &encoderContext = GetEncoderByEncoderType(type);
@@ -268,7 +282,8 @@ int32_t VideoEncDualOutputSample::SetCallback(EncoderType type, OH_AVCodecAsyncC
         return AV_ERR_UNKNOWN;
     }
     encoderContext.asyncCallback = callback;
-    int32_t ret = OH_VideoEncoder_SetCallback(encoderContext.codec, callback, reinterpret_cast<void *>(encoderContext.signal.get()));
+    int32_t ret = OH_VideoEncoder_SetCallback(encoderContext.codec, callback,
+                                              reinterpret_cast<void *>(encoderContext.signal.get()));
     if (type == EncoderType::PRIMARY) {
         encoderContext.isAVBufferMode = ret != AV_ERR_OK;
     }
@@ -287,7 +302,7 @@ int32_t VideoEncDualOutputSample::SetCallback(EncoderType type, OH_AVCodecAsyncC
 }
 
 int32_t VideoEncDualOutputSample::RegisterCallback(EncoderType type, OH_AVCodecCallback callback,
-                                                    shared_ptr<VCodecSignal> &signal)
+                                                   shared_ptr<VCodecSignal> &signal)
 {
     TITLE_LOG;
     auto &encoderContext = GetEncoderByEncoderType(type);
@@ -296,7 +311,8 @@ int32_t VideoEncDualOutputSample::RegisterCallback(EncoderType type, OH_AVCodecC
         return AV_ERR_UNKNOWN;
     }
     encoderContext.callback = callback;
-    int32_t ret = OH_VideoEncoder_RegisterCallback(encoderContext.codec, callback, reinterpret_cast<void *>(encoderContext.signal.get()));
+    int32_t ret = OH_VideoEncoder_RegisterCallback(encoderContext.codec, callback,
+                                                   reinterpret_cast<void *>(encoderContext.signal.get()));
     if (type == EncoderType::PRIMARY) {
         encoderContext.isAVBufferMode = ret == AV_ERR_OK;
     }
@@ -438,7 +454,8 @@ bool VideoEncDualOutputSample::WaitForEos(EncoderType type)
     lock.unlock();
 
     if (type == EncoderType::PRIMARY) {
-        EXPECT_GE(encoderContext.frameOutputCount_, encoderContext.frameInputCount_ / 2); // 2: at least half of the input frame
+        EXPECT_GE(encoderContext.frameOutputCount_,
+                  encoderContext.frameInputCount_ / 2); // 2: at least half of the input frame
     }
 
     encoderContext.signal->isRunning_ = false;
@@ -518,7 +535,8 @@ int32_t VideoEncDualOutputSample::HandleOutputFrameByEncoderType(EncoderType typ
     if (!lock.owns_lock()) {
         return AV_ERR_OK;
     }
-    UNITTEST_INFO_LOG("%s output index:%d", type == EncoderType::PRIMARY ? "primary" : "secondary", bufferInfo->GetIndex());
+    UNITTEST_INFO_LOG("%s output index:%d", type == EncoderType::PRIMARY ? "primary" : "secondary",
+                      bufferInfo->GetIndex());
 
     uint8_t *addr = bufferInfo->GetAddr();
     OH_AVCodecBufferAttr attr = bufferInfo->GetAttr();
@@ -605,7 +623,8 @@ int32_t VideoEncDualOutputSample::PushInputData(EncoderContext &encoderContext, 
     return AV_ERR_OK;
 }
 
-int32_t VideoEncDualOutputSample::ReleaseOutputData(EncoderContext &encoderContext, shared_ptr<CodecBufferInfo> bufferInfo)
+int32_t VideoEncDualOutputSample::ReleaseOutputData(EncoderContext &encoderContext,
+                                                    shared_ptr<CodecBufferInfo> bufferInfo)
 {
     UNITTEST_INFO_LOG("index:%d", bufferInfo->GetIndex());
     int32_t ret;
@@ -659,7 +678,8 @@ int32_t VideoEncDualOutputSample::HandleOutputFrameInner(uint8_t *addr, OH_AVCod
     UNITTEST_CHECK_AND_RETURN_RET_LOG(addr != nullptr, AV_ERR_UNKNOWN, "out buffer is nullptr");
 
     if (attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
-        UNITTEST_INFO_LOG("out frame:%d, in frame:%d", primaryEncoder_.frameOutputCount_.load(), primaryEncoder_.frameInputCount_.load());
+        UNITTEST_INFO_LOG("out frame:%d, in frame:%d", primaryEncoder_.frameOutputCount_.load(),
+                          primaryEncoder_.frameInputCount_.load());
         primaryEncoder_.signal->isOutEos_ = true;
         primaryEncoder_.signal->eosCond_.notify_all();
         return AV_ERR_OK;
@@ -667,7 +687,6 @@ int32_t VideoEncDualOutputSample::HandleOutputFrameInner(uint8_t *addr, OH_AVCod
     if (needDump_ && primaryEncoder_.signal != nullptr && primaryEncoder_.signal->outFile_ != nullptr &&
         primaryEncoder_.signal->outFile_->is_open() && primaryEncoder_.frameOutputCount_ < MAX_OUTPUT_FRAMENUM) {
         (void)primaryEncoder_.signal->outFile_->write(reinterpret_cast<char *>(addr), attr.size);
-        (void)primaryEncoder_.signal->outFile_->flush();
     }
     uint64_t *addr64 = reinterpret_cast<uint64_t *>(addr);
     UNITTEST_INFO_LOG("attr.size: %d, attr.flags: %d, addr[0]:%" PRIX64, attr.size, (int32_t)(attr.flags), addr64[0]);
@@ -689,15 +708,15 @@ int32_t VideoEncDualOutputSample::HandleOutputFrameSecondaryInner(uint8_t *addr,
     if (needDump_ && secondaryEncoder_.signal != nullptr && secondaryEncoder_.signal->outFile_ != nullptr &&
         secondaryEncoder_.signal->outFile_->is_open() && secondaryEncoder_.frameOutputCount_ < MAX_OUTPUT_FRAMENUM) {
         (void)secondaryEncoder_.signal->outFile_->write(reinterpret_cast<char *>(addr), attr.size);
-        (void)secondaryEncoder_.signal->outFile_->flush();
     }
     uint64_t *addr64 = reinterpret_cast<uint64_t *>(addr);
-    UNITTEST_INFO_LOG("sec attr.size: %d, attr.flags: %d, addr[0]:%" PRIX64,
-                      attr.size, (int32_t)(attr.flags), addr64[0]);
+    UNITTEST_INFO_LOG("sec attr.size: %d, attr.flags: %d, addr[0]:%" PRIX64, attr.size, (int32_t)(attr.flags),
+                      addr64[0]);
     return AV_ERR_OK;
 }
 
-int32_t VideoEncDualOutputSample::ReleaseOutputDataSecondary(EncoderContext &encoderContext, shared_ptr<CodecBufferInfo> bufferInfo)
+int32_t VideoEncDualOutputSample::ReleaseOutputDataSecondary(EncoderContext &encoderContext,
+                                                             shared_ptr<CodecBufferInfo> bufferInfo)
 {
     UNITTEST_INFO_LOG("secondary free index:%d", bufferInfo->GetIndex());
     UNITTEST_CHECK_AND_RETURN_RET_LOG(encoderContext.codec != nullptr, AV_ERR_INVALID_VAL, "codec is nullptr");
@@ -720,7 +739,8 @@ bool VideoEncDualOutputSample::CreateSurface()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, false, "NativeWindowHandleOpt SET_FORMAT failed, Error:%d", ret);
 
     ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_BUFFER_GEOMETRY, sampleWidth_, sampleHeight_);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, false, "NativeWindowHandleOpt SET_BUFFER_GEOMETRY failed, Error:%d", ret);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, false, "NativeWindowHandleOpt SET_BUFFER_GEOMETRY failed, Error:%d",
+                                      ret);
 
     ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_USAGE,
                                                 BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA);
@@ -790,7 +810,7 @@ void VideoEncDualOutputSample::InputFuncSurface()
 }
 
 int32_t VideoEncDualOutputSample::FlushSurface(OHNativeWindowBuffer *ohNativeWindowBuffer,
-                                                OH_NativeBuffer *nativeBuffer)
+                                               OH_NativeBuffer *nativeBuffer)
 {
     struct Region region;
     struct Region::Rect *rect = new Region::Rect();

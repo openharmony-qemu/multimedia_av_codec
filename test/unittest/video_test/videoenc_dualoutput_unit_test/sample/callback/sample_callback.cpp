@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
+#include "sample_callback.h"
 #include "codec_buffer_info.h"
 #include "meta/any.h"
-#include "sample_callback.h"
 #include "vcodec_signal.h"
 #include "venc_dualoutput_sample.h"
 
@@ -59,7 +59,7 @@ void OutBufferHandleSecondary(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *bu
     auto codecSample = signal->codecSample_.lock();
     auto dualSample = std::static_pointer_cast<VideoEncDualOutputSample>(codecSample);
     dualSample->HandleOutputFrameByEncoderType(EncoderType::SECONDARY,
-        std::make_shared<CodecBufferInfo>(index, Any(buffer)));
+                                               std::make_shared<CodecBufferInfo>(index, Any(buffer)));
 }
 
 void InBufferVoid(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
