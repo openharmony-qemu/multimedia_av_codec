@@ -164,6 +164,7 @@ OH_AVFormat *VideoEncDualOutputSample::GetFormat(EncoderType type)
 bool VideoEncDualOutputSample::CreatePrimary(const string &mime)
 {
     TITLE_LOG;
+    mime_ = mime;
     OH_AVErrCode ret = OH_VideoEncoder_CreatePrimaryWithPreproc(mime.c_str(), &primaryEncoder_.codec);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, false, "OH_VideoEncoder_CreatePrimaryWithPreproc failed");
     return true;
@@ -229,6 +230,7 @@ int32_t VideoEncDualOutputSample::SetDropFrameRate(EncoderType type, double fram
 bool VideoEncDualOutputSample::InitFile(EncoderType type)
 {
     auto &encoderContext = GetEncoderByEncoderType(type);
+    string ext = (mime_.find("hevc") != string::npos) ? ".h265" : ".h264";
     if (type == EncoderType::PRIMARY) {
         if (encoderContext.signal->inFile_ == nullptr) {
             encoderContext.signal->inFile_ = make_unique<ifstream>();
@@ -240,7 +242,7 @@ bool VideoEncDualOutputSample::InitFile(EncoderType type)
         if (encoderContext.signal->outFile_ == nullptr && needDump_) {
             encoderContext.signal->outFile_ = make_unique<ofstream>();
             const ::testing::TestInfo *testInfo = ::testing::UnitTest::GetInstance()->current_test_info();
-            string outPath = "/data/test/media/primary_" + string(testInfo->name()) + ".h264";
+            string outPath = "/data/test/media/primary_" + string(testInfo->name()) + ext;
             encoderContext.signal->outFile_->open(outPath, ios::out | ios::binary);
             UNITTEST_CHECK_AND_RETURN_RET_LOG(encoderContext.signal->outFile_ != nullptr, false, "create outFile_ failed");
         }
@@ -248,7 +250,7 @@ bool VideoEncDualOutputSample::InitFile(EncoderType type)
         if (encoderContext.signal->outFile_ == nullptr && needDump_) {
             encoderContext.signal->outFile_ = make_unique<ofstream>();
             const ::testing::TestInfo *testInfo = ::testing::UnitTest::GetInstance()->current_test_info();
-            string outPath = "/data/test/media/secondary_" + string(testInfo->name()) + ".h264";
+            string outPath = "/data/test/media/secondary_" + string(testInfo->name()) + ext;
             encoderContext.signal->outFile_->open(outPath, ios::out | ios::binary);
             UNITTEST_CHECK_AND_RETURN_RET_LOG(encoderContext.signal->outFile_ != nullptr, false, "create sec outFile_ failed");
         }
@@ -662,8 +664,10 @@ int32_t VideoEncDualOutputSample::HandleOutputFrameInner(uint8_t *addr, OH_AVCod
         primaryEncoder_.signal->eosCond_.notify_all();
         return AV_ERR_OK;
     }
-    if (needDump_ && primaryEncoder_.frameOutputCount_ < MAX_OUTPUT_FRAMENUM) {
+    if (needDump_ && primaryEncoder_.signal != nullptr && primaryEncoder_.signal->outFile_ != nullptr &&
+        primaryEncoder_.signal->outFile_->is_open() && primaryEncoder_.frameOutputCount_ < MAX_OUTPUT_FRAMENUM) {
         (void)primaryEncoder_.signal->outFile_->write(reinterpret_cast<char *>(addr), attr.size);
+        (void)primaryEncoder_.signal->outFile_->flush();
     }
     uint64_t *addr64 = reinterpret_cast<uint64_t *>(addr);
     UNITTEST_INFO_LOG("attr.size: %d, attr.flags: %d, addr[0]:%" PRIX64, attr.size, (int32_t)(attr.flags), addr64[0]);
@@ -682,9 +686,10 @@ int32_t VideoEncDualOutputSample::HandleOutputFrameSecondaryInner(uint8_t *addr,
         }
         return AV_ERR_OK;
     }
-    if (secondaryEncoder_.signal != nullptr && secondaryEncoder_.signal->outFile_ != nullptr && secondaryEncoder_.signal->outFile_->is_open() &&
-        secondaryEncoder_.frameOutputCount_ < MAX_OUTPUT_FRAMENUM) {
+    if (needDump_ && secondaryEncoder_.signal != nullptr && secondaryEncoder_.signal->outFile_ != nullptr &&
+        secondaryEncoder_.signal->outFile_->is_open() && secondaryEncoder_.frameOutputCount_ < MAX_OUTPUT_FRAMENUM) {
         (void)secondaryEncoder_.signal->outFile_->write(reinterpret_cast<char *>(addr), attr.size);
+        (void)secondaryEncoder_.signal->outFile_->flush();
     }
     uint64_t *addr64 = reinterpret_cast<uint64_t *>(addr);
     UNITTEST_INFO_LOG("sec attr.size: %d, attr.flags: %d, addr[0]:%" PRIX64,
