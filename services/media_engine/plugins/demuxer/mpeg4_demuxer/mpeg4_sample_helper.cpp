@@ -735,18 +735,22 @@ void MPEG4SampleHelper::InitMoofParam()
     }
 }
 
-void MPEG4SampleHelper::UpdateSampleEntryInfo(SampleInfo sampleInfo, int64_t& offset, int64_t& currentDts)
+void MPEG4SampleHelper::UpdateSampleEntryInfo(SampleInfo sampleInfo, int64_t& offset, int64_t& currentDts, bool isOverlap)
 {
     SampleIndexEntry sample;
     sample.pos = offset;
     sample.size = sampleInfo.size;
     sample.pts = currentDts + sampleInfo.ctsDelta;
     sample.dts = currentDts;
+    sample.duration = sampleInfo.duration;
     if (trackType_ == AUDIO_TYPE) {
         sample.flag |= Sample::SampleFlag::SYNC_FRAME;
     } else {
         sample.flag |= (sampleInfo.flag & (0x00010000 | 0x01000000)) ?
             Sample::SampleFlag::NONE : Sample::SampleFlag::SYNC_FRAME;
+    }
+    if (isOverlap) {
+        sample.flag |= Sample::SampleFlag::DISCARD;
     }
 
     if (sampleIndexEntry_.empty()) {
@@ -811,11 +815,15 @@ Status MPEG4SampleHelper::SetTrackFragmentRunParams(int64_t dataOffset, int64_t 
     int64_t currentDts = (tfdtDts_ != -1) ? tfdtDts_ : (sidxDts != -1) ? sidxDts : baseFragmentDts_;
     moofDts = currentDts;
     InitMoofParam();
+    size_t existingSampleCount = sampleIndexEntry_.size();
+    int64_t prevDts = (existingSampleCount > 0) ? sampleIndexEntry_.back().dts : INT64_MIN;
     for (uint32_t i = 0; i < numSamples; ++i) {
         sampleInfo.index = i;
         UpdateSampleInfo(sampleInfo, bufferOffset, trunFlag, data.get(), firstSampleFlag);
-        UpdateSampleEntryInfo(sampleInfo, offset, currentDts);
+        bool isOverlap = (prevDts != INT64_MIN && prevDts >= currentDts);
+        UpdateSampleEntryInfo(sampleInfo, offset, currentDts, isOverlap);
         duration += sampleInfo.duration;
+        prevDts = currentDts;
         currentDts += sampleInfo.duration;
         offset += sampleInfo.size;
         FALSE_RETURN_V_MSG_E(duration >= 0 && offset >= 0, Status::ERROR_INVALID_DATA,
@@ -945,10 +953,12 @@ Status MPEG4SampleHelper::BuildSampleIndexEntries()
                 .pts = currentDts + dtsShift_ + ctsOffset,
                 .pos = currentOffset,
                 .flag = Sample::NONE,
-                .size = 0
+                .size = 0,
+                .duration = 0
             });
             FALSE_RETURN_V_MSG_E(GetSampleSize(sampleIndex, samplesPerFrame, sampleIndexEntry_.back(), remainSamples),
                 Status::ERROR_INVALID_DATA, "Sample size is too large");
+            sampleIndexEntry_.back().duration = static_cast<int64_t>(sttsEntry.delta) * samplesPerFrame;
             GetSampleFlag(sampleIndex, sampleIndexEntry_.back(), syncIndex);
 
             lastPTS_ = std::max(lastPTS_, sampleIndexEntry_.back().pts);

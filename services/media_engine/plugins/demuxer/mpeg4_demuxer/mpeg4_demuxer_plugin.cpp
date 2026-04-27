@@ -1006,12 +1006,9 @@ Status MPEG4DemuxerPlugin::WriteSampleAttr(uint32_t trackId, std::shared_ptr<Sam
     sample->dts = sampleDts; // us
     sample->flag = currentSample.flag;
     sample->size = currentSample.size;
-    uint32_t durationTimescale = 0;
-    Status ret = track->sampleHelper->GetSampleDuration(index, durationTimescale);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "GetSampleDuration failed");
     int64_t sampleDuration = 0;
     FALSE_RETURN_V_MSG_E(ConvertTimeScale(
-        static_cast<int64_t>(durationTimescale), static_cast<int64_t>(S_TO_US), trackTimeScale, &sampleDuration)
+        currentSample.duration, static_cast<int64_t>(S_TO_US), trackTimeScale, &sampleDuration)
         == Status::OK, Status::ERROR_INVALID_PARAMETER, "mul overflow");
     sample->duration = sampleDuration;
     // When the sample is copied in the seekable case, add it up again
