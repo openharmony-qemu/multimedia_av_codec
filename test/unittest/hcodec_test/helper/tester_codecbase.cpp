@@ -245,6 +245,10 @@ bool TesterCodecBase::ConfigureEncoder()
     if (opt_.gopBMode.has_value()) {
         fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, opt_.gopBMode.value());
     }
+    if (opt_.insertXpsBeforeIdr.has_value()) {
+        fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES,
+            opt_.insertXpsBeforeIdr.value());
+    }
     auto begin = std::chrono::steady_clock::now();
     int32_t err = codec_->Configure(fmt);
     if (err != AVCS_ERR_OK) {
