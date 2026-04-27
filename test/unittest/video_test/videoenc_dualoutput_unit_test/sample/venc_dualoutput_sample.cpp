@@ -338,6 +338,16 @@ int32_t VideoEncDualOutputSample::Start(EncoderType type)
     UNITTEST_CHECK_AND_RETURN_RET_LOG(encoderContext.codec != nullptr, AV_ERR_INVALID_VAL, "codec is nullptr");
     int32_t ret = OH_VideoEncoder_Start(encoderContext.codec);
     if (ret == AV_ERR_OK && type == EncoderType::PRIMARY && nativeWindow_ != nullptr) {
+        if (inputLoop_ != nullptr && inputLoop_->joinable()) {
+            if (primaryEncoder_.signal != nullptr) {
+                primaryEncoder_.signal->isRunning_.store(false);
+            }
+            inputLoop_->join();
+            inputLoop_.reset();
+        }
+        if (primaryEncoder_.signal != nullptr) {
+            primaryEncoder_.signal->isRunning_.store(true);
+        }
         inputLoop_ = make_unique<std::thread>(&VideoEncDualOutputSample::InputFuncSurface, this);
     }
     return ret;
