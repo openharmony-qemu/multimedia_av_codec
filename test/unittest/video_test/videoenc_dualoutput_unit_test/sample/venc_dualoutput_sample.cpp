@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-#include "venc_dualoutput_sample.h"
 #include <gtest/gtest.h>
 #include "common/native_mfmagic.h"
 #include "meta/meta_key.h"
+#include "venc_dualoutput_sample.h"
 
 #define PRINT_HILOG
 #define TEST_ID primarySampleId_
