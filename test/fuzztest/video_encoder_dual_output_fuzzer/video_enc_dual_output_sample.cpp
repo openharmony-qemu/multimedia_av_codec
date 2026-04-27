@@ -206,13 +206,19 @@ void VideoEncDualOutputSample::InputFuncSurface()
             close(fenceFd);
         }
         OH_NativeBuffer *nativeBuffer = OH_NativeBufferFromNativeWindowBuffer(buf);
+        OH_NativeBuffer_Config bufCfg;
+        OH_NativeBuffer_GetConfig(nativeBuffer, &bufCfg);
+        if (bufCfg.stride <= 0 || bufCfg.height <= 0) {
+            break;
+        }
         void *virAddr = nullptr;
         err = OH_NativeBuffer_Map(nativeBuffer, &virAddr);
         if (err != 0 || virAddr == nullptr) {
             break;
         }
-        uint32_t size = static_cast<uint32_t>(defaultWidth * defaultHeight * 3 / 2); // 3/2: YUV420 bpp
-        (void)memset_s(virAddr, size, 0x80, size);                                   // 0x80: YUV fill
+        int64_t totalSize = static_cast<int64_t>(bufCfg.stride) * bufCfg.height * 3 / 2; // 3/2: YUV420 bpp
+        uint32_t size = static_cast<uint32_t>(std::min(totalSize, static_cast<int64_t>(0x10000000))); // 256MB cap
+        (void)memset_s(virAddr, size, 0x80, size);                                           // 0x80: YUV fill
         OH_NativeBuffer_Unmap(nativeBuffer);
         Region::Rect rect = {0, 0, static_cast<uint32_t>(defaultWidth), static_cast<uint32_t>(defaultHeight)};
         Region region = {&rect, 1};
