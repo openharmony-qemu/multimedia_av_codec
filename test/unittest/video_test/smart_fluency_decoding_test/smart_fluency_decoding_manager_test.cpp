@@ -358,7 +358,7 @@ HWTEST_F(SFDManagerTest, MakePostDecodeDecision_Eos_017, TestSize.Level1)
 HWTEST_F(SFDManagerTest, IsCodecSupported_Cases_018, TestSize.Level1)
 {
     // These calls go to static method via internal logic in manager
-    EXPECT_FALSE(SmartFluencyDecodingManager::IsCodecSupported("video/avc", AVCODEC_TYPE_VIDEO_DECODER, true)); // Secure
+    EXPECT_FALSE(SmartFluencyDecodingManager::IsCodecSupported("video/avc", AVCODEC_TYPE_VIDEO_DECODER, true));
     EXPECT_FALSE(SmartFluencyDecodingManager::IsCodecSupported("audio/mp4a-latm", AVCODEC_TYPE_AUDIO_DECODER, false));
     EXPECT_TRUE(SmartFluencyDecodingManager::IsCodecSupported("video/avc", AVCODEC_TYPE_VIDEO_DECODER, false));
     EXPECT_TRUE(SmartFluencyDecodingManager::IsCodecSupported("video/hevc", AVCODEC_TYPE_VIDEO_DECODER, false));
