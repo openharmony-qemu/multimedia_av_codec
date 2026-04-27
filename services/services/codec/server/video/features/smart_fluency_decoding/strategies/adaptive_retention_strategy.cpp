@@ -95,6 +95,7 @@ bool AdaptiveRetentionStrategy::MakeRetentionDecision(const FrameRetentionContex
     if (DoubleUtils::IsLessOrEqual(currentSpeed_, MAX_SPEED_FOR_RETENTION)) {
         isRetain = true;
         lastReason_ = SfdDecisionReason::POST_RETAIN_ADAPTIVE_SPEED;
+        targetRatio_ = 1.0;
     } else if (ctx.mvStats && ctx.mvStats->validBlocks > 0) {
         double consistency = ctx.mvStats->motionConsistency;
         double magnitude = ctx.mvStats->perceptualMagnitude * currentSpeed_;

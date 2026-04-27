@@ -38,7 +38,7 @@ public:
 private:
     double currentSpeed_{1.0};
     uint32_t dropCount_{0};
-    double targetRatio_{0.0};
+    double targetRatio_{1.0};
     SfdDecisionReason lastReason_{SfdDecisionReason::UNSPECIFIED};
 };
 
