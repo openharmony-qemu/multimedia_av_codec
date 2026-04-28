@@ -932,7 +932,6 @@ void MPEG4SampleHelper::GetSampleFlag(uint32_t sampleIndex, SampleIndexEntry &en
 
 Status MPEG4SampleHelper::BuildSampleIndexEntries()
 {
-    MEDIA_LOG_D("Start");
     FALSE_RETURN_V_MSG_E(PreBuildProcessAndCheck() == Status::OK, Status::ERROR_INVALID_DATA, "PreCheck failed");
     int64_t currentOffset = chunkOffsets_[0];
     uint32_t chunkIndex = 0;

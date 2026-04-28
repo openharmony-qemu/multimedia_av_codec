@@ -1281,7 +1281,7 @@ Status MPEG4AtomParser::ParseMdhd(MPEG4Atom currentAtom, int32_t depth, ParseCon
     int32_t fileTimeScale = 0;
     if (mediaInfo_.general.GetData(Tag::MEDIA_TIME_SCALE, fileTimeScale) && fileTimeScale > 0 &&
         lastTrack_->sampleHelper != nullptr) {
-        int64_t emptyDurationTrackTs = lastTrack_->elstInitEmptyEdit > 0 ? 
+        int64_t emptyDurationTrackTs = lastTrack_->elstInitEmptyEdit > 0 ?
             ((lastTrack_->elstInitEmptyEdit * timeScale + fileTimeScale - 1) / fileTimeScale) : 0;
         lastTrack_->sampleHelper->SetTimeOffset(lastTrack_->elstShiftStartTime - emptyDurationTrackTs);
     }
