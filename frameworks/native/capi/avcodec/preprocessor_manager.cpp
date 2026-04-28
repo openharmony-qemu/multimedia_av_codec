@@ -214,6 +214,21 @@ bool PreprocessorManager::RequestNotifyEos(std::string_view encoderId, std::func
     return encoderInfo->RequestNotifyEos(std::move(notifyEosTask));
 }
 
+void PreprocessorManager::NotifyEosNowIfPending(std::string_view encoderId)
+{
+    std::shared_ptr<EncoderInfo> encoderInfo;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        auto iter = encoders_.find(std::string(encoderId));
+        if (iter == encoders_.end() || !iter->second) {
+            AVCODEC_LOGE("Encoder not found when notify eos now: %{public}s", std::string(encoderId).c_str());
+            return;
+        }
+        encoderInfo = iter->second;
+    }
+    encoderInfo->NotifyEosNowIfPending();
+}
+
 PreprocessorManager::SurfaceBufferWrapper::~SurfaceBufferWrapper()
 {
     auto surfacePtr = surface.promote();
@@ -407,6 +422,22 @@ bool PreprocessorManager::EncoderInfo::RequestNotifyEos(std::function<void()> no
     notifyEosTask_ = std::move(notifyEosTask);
     bufferQueueCv_.notify_all();
     return true;
+}
+
+void PreprocessorManager::EncoderInfo::NotifyEosNowIfPending()
+{
+    std::function<void()> notifyEosTask{nullptr};
+    {
+        std::lock_guard<std::mutex> lock(bufferQueueMutex_);
+        if (!isRunning_ || !eosRequested_ || !notifyEosTask_) {
+            return;
+        }
+        std::swap(notifyEosTask, notifyEosTask_);
+        eosRequested_ = false;
+    }
+    bufferQueueCv_.notify_all();
+    AVCODEC_LOGI("Notify pending eos immediately: %{public}s", encoderId_.data());
+    notifyEosTask();
 }
 
 void PreprocessorManager::EncoderInfo::SetBufferFlushConfig(std::shared_ptr<SurfaceBufferWrapper> &inputBuffer,

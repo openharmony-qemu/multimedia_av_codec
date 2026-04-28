@@ -451,6 +451,9 @@ OH_AVErrCode PreprocessorEncoder::Start()
 OH_AVErrCode PreprocessorEncoder::Stop()
 {
     std::scoped_lock lock(instanceMutex_);
+    if (preprocMgr_) {
+        preprocMgr_->NotifyEosNowIfPending(encoderId_);
+    }
     if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
         int32_t ret = videoEncoderObject_->videoEncoder_->Stop();
         CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
@@ -468,6 +471,9 @@ OH_AVErrCode PreprocessorEncoder::Stop()
 OH_AVErrCode PreprocessorEncoder::Flush()
 {
     std::scoped_lock lock(instanceMutex_);
+    if (preprocMgr_) {
+        preprocMgr_->NotifyEosNowIfPending(encoderId_);
+    }
     if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
         int32_t ret = videoEncoderObject_->videoEncoder_->Flush();
         CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
@@ -485,6 +491,9 @@ OH_AVErrCode PreprocessorEncoder::Flush()
 OH_AVErrCode PreprocessorEncoder::Reset()
 {
     std::scoped_lock lock(instanceMutex_);
+    if (preprocMgr_) {
+        preprocMgr_->NotifyEosNowIfPending(encoderId_);
+    }
     if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
         int32_t ret = videoEncoderObject_->videoEncoder_->Reset();
         CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
