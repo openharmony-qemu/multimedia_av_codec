@@ -2106,8 +2106,8 @@ void MediaDemuxer::ProcessTrackSelectionFilter()
         waitVideoBitrate_.store(0);
         if (pendingBitrate != demuxerPluginManager_->GetCurrentBitRate()) {
             SelectBitRate(pendingBitrate, true, true);
+            return;
         }
-        return;
     }
 
     // process pending audio or subtitle stream switch (mutually exclusive)
@@ -2116,8 +2116,8 @@ void MediaDemuxer::ProcessTrackSelectionFilter()
         waitAudioStreamId_.store(-1);
         if (defaultAudioStreamId_ == pendingAudio) {
             SelectStreamId(pendingAudio);
+            return;
         }
-        return;
     }
 
     int32_t pendingSubtitle = waitSubtitleStreamId_.load();
@@ -2125,8 +2125,8 @@ void MediaDemuxer::ProcessTrackSelectionFilter()
         waitSubtitleStreamId_.store(-1);
         if (defaultSubtitleStreamId_ == pendingSubtitle) {
             SelectStreamId(pendingSubtitle, false);
+            return;
         }
-        return;
     }
 
     MEDIA_LOG_W("No track selection filter to process");
