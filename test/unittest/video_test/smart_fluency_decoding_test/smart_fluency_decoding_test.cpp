@@ -456,3 +456,32 @@ HWTEST_F(SmartFluencyDecodingTest, InitializeWithCsd_Replay_024, TestSize.Level1
     // 4. Switching mode should have triggered EnsureNaluAnalyzer, which replays the CSD.
     EXPECT_NE(sfd_->naluAnalyzer_, nullptr);
 }
+/**
+ * @tc.name: MakePostDecodeDecision_NullSurface_ConsumePreDrop_025
+ * @tc.desc: Verify that pre-dropped count is consumed even when surfaceBuffer is null.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, MakePostDecodeDecision_NullSurface_ConsumePreDrop_025, TestSize.Level1)
+{
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::ADAPTIVE);
+    sfd_->Initialize(cfg);
+
+    // Mock dropped frames using RecordPreDroppedFrame
+    sfd_->dropSyncCoordinator_->RecordPreDroppedFrame(2500, 1.0); // Drop 1
+    sfd_->dropSyncCoordinator_->RecordPreDroppedFrame(2600, 1.0); // Drop 2
+
+    // Verify consumption logic
+    uint32_t preDrop = sfd_->dropSyncCoordinator_->GetAndConsumePreDroppedCount(3000);
+    EXPECT_EQ(preDrop, 2);
+
+    // Record another drop
+    sfd_->dropSyncCoordinator_->RecordPreDroppedFrame(3100, 1.0); // Drop 3
+
+    // Calling MakePostDecodeDecision with null should consume it internally
+    bool result = sfd_->MakePostDecodeDecision(0, 3500, nullptr);
+    EXPECT_TRUE(result);
+
+    // Verify it was consumed
+    uint32_t remaining = sfd_->dropSyncCoordinator_->GetAndConsumePreDroppedCount(4000);
+    EXPECT_EQ(remaining, 0);
+}
