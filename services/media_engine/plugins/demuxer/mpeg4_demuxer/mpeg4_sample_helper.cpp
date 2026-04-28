@@ -831,6 +831,9 @@ Status MPEG4SampleHelper::SetTrackFragmentRunParams(int64_t dataOffset, int64_t 
     }
     totalTrunDuration_ = currentDts;
     baseFragmentDts_ = currentDts;
+    if (totalDuration_ < baseFragmentDts_) {
+        totalDuration_ = baseFragmentDts_;
+    }
     return Status::OK;
 }
 
