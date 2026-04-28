@@ -19,10 +19,12 @@
 #include <atomic>
 #include <vector>
 #include <thread>
+#include <condition_variable>
 #include <map>
 #include <queue>
 #include <shared_mutex>
 #include <list>
+#include <unordered_map>
 #include <arpa/inet.h>
 #include "buffer/avbuffer.h"
 #include "plugin/demuxer_plugin.h"
@@ -60,13 +62,11 @@ public:
     Status UnselectTrack(uint32_t trackId) override;
     Status SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode, int64_t& realSeekTime) override;
     Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample) override;
-    Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout) override
-        { return Status::ERROR_UNKNOWN; }
+    Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout) override;
     Status GetNextSampleSize(uint32_t trackId, int32_t& size) override;
-    Status GetNextSampleSize(uint32_t trackId, int32_t& size, uint32_t timeout) override
-        { return Status::ERROR_UNKNOWN; }
-    Status Pause() override { return Status::ERROR_UNKNOWN; }
-    Status GetLastPTSByTrackId(uint32_t trackId, int64_t &lastPTS) override { return Status::ERROR_UNKNOWN; }
+    Status GetNextSampleSize(uint32_t trackId, int32_t& size, uint32_t timeout) override;
+    Status Pause() override;
+    Status GetLastPTSByTrackId(uint32_t trackId, int64_t &lastPTS) override;
     Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo) override;
     void ResetEosStatus() override {}
     bool IsRefParserSupported() override;
@@ -92,8 +92,7 @@ public:
     Status BoostReadThreadPriority() override { return Status::ERROR_UNKNOWN; }
     Status SetAVReadPacketStopState(bool state) override { return Status::ERROR_UNKNOWN; }
     Status SetReadTimeoutForInitSeek(int64_t timeoutMs) override { return Status::OK; }
-    Status ReadSampleZeroCopy(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout) override
-        { return Status::ERROR_UNKNOWN; };
+    Status ReadSampleZeroCopy(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout) override;
     Status GetCurrentCacheFrameCount(uint32_t trackId, uint32_t& frameCount) override;
     Status SeekToStart() override { return Status::ERROR_UNKNOWN; };
     Status SeekToKeyFrame(
@@ -173,11 +172,14 @@ private:
     Status AddSampleToCacheQueue(std::shared_ptr<Sample> sample, const uint32_t trackId);
     Status ConvertSampleToAnnexb(std::shared_ptr<MPEG4Sample> dstMpeg4Sample, const uint32_t trackId);
     Status SetEosSample(std::shared_ptr<AVBuffer> sample);
+    Status SetEosSample(std::shared_ptr<AVBuffer> sample, bool replaceMemory);
     Status GetSampleBySeekableStatus(const Seekable seekable, uint32_t trackId,
         std::shared_ptr<MPEG4Sample> &mpeg4Sample, std::shared_ptr<AVBuffer> outBuffer);
     uint32_t GetFlags(const std::shared_ptr<Sample> sample, bool memoryNotEnough);
     Status WriteSampleAttr(uint32_t trackId, std::shared_ptr<Sample> sample);
     Status WriteBuffer(
+        uint32_t trackIndex, std::shared_ptr<AVBuffer> outBuffer, std::shared_ptr<MPEG4Sample> mpeg4Sample);
+    Status WriteSampleMemory(
         uint32_t trackIndex, std::shared_ptr<AVBuffer> outBuffer, std::shared_ptr<MPEG4Sample> mpeg4Sample);
     void CheckResetXPSSendStatus(uint32_t trackIndex, std::shared_ptr<Sample> sample);
 
@@ -185,6 +187,48 @@ private:
     void ParseHEVCMetadataInfo(const MPEG4AtomParser::Track& track, Meta &format);
     void ConvertCsdToAnnexb(const MPEG4AtomParser::Track& track, Meta& format, uint32_t trackIndex);
     int SelectSeekTrack();
+    Status WaitForLoop(uint32_t trackId, uint32_t timeout);
+    bool ShouldWaitForRead(uint32_t trackId);
+    void MPEG4ReadLoop();
+    bool NeedWaitForRead(uint32_t trackId);
+    void HandleReadWait();
+    bool ReadAndCacheSample();
+    Status ReadSampleToCache(uint32_t trackId);
+    Status PushEosToCache(uint32_t trackId);
+    void ReleaseReadLoop();
+
+    enum class ThreadState : uint32_t {
+        NOT_STARTED,
+        WAITING,
+        READING,
+    };
+
+    enum class ReadMode : uint32_t {
+        NONE = 0,
+        SYNC = 1U << 0,
+        ASYNC = 1U << 1,
+    };
+
+    static constexpr uint32_t ReadModeToFlags(ReadMode mode)
+    {
+        return static_cast<uint32_t>(mode);
+    }
+
+    std::unique_ptr<std::thread> readThread_ {nullptr};
+    std::condition_variable readLoopCv_;
+    std::condition_variable readCacheCv_;
+    std::mutex readSampleMutex_ {};
+    std::mutex readThreadMutex_ {};
+    std::mutex seekWaitMutex_ {};
+    std::condition_variable seekWaitCv_;
+    std::atomic<uint32_t> trackId_ {0};
+    std::atomic<ThreadState> threadState_ {ThreadState::NOT_STARTED};
+    std::atomic<Status> readLoopStatus_ {Status::OK};
+    std::atomic<bool> isPauseReadPacket_ {false};
+    std::atomic<bool> threadReady_ {false};
+    std::atomic<bool> isWaitingForReadThread_ {false};
+    std::atomic<bool> stopReadThread_ {false};
+    std::atomic<uint32_t> readModeFlags_ {0};
 };
 } // namespace MPEG4
 } // namespace Plugins

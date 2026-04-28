@@ -68,6 +68,21 @@ bool HaveValidParser(const std::string mime)
     return g_streamParserMap.count(mime) != 0;
 }
 
+int32_t GetSampleSizeWithCodecConfig(const MediaInfo& mediaInfo,
+    const std::shared_ptr<Sample>& sample, uint32_t trackId)
+{
+    FALSE_RETURN_V_MSG_E(sample != nullptr, 0, "Sample is nullptr");
+    int32_t sampleSize = sample->size;
+    std::string mime;
+    std::vector<uint8_t> extradata {};
+    if (mediaInfo.tracks[trackId].Get<Tag::MIME_TYPE>(mime) && HaveValidParser(mime) &&
+        mediaInfo.tracks[trackId].Get<Tag::MEDIA_CODEC_CONFIG>(extradata) &&
+        (sample->flag & Sample::SampleFlag::SYNC_FRAME)) {
+        sampleSize += static_cast<int32_t>(extradata.size());
+    }
+    return sampleSize;
+}
+
 enum AtomLevel {
     LEVEL_0 = 0,
     LEVEL_1 = 1,
@@ -124,6 +139,7 @@ MPEG4DemuxerPlugin::~MPEG4DemuxerPlugin()
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MEDIA_LOG_D("In");
+    ReleaseReadLoop();
 
     streamParsers_ = nullptr;
     firstTrack_ = nullptr;
@@ -138,11 +154,13 @@ MPEG4DemuxerPlugin::~MPEG4DemuxerPlugin()
     cacheSamples_.clear();
     avTrackIds_.clear();
     inited_ = false;
+    readModeFlags_.store(0, std::memory_order_release);
     MEDIA_LOG_D("Out");
 }
 
 void MPEG4DemuxerPlugin::ResetParam()
 {
+    ReleaseReadLoop();
     for (const auto& selectedTrackId : selectedTrackIds_) {
         cacheQueue_.RemoveTrackQueue(selectedTrackId);
     }
@@ -162,6 +180,9 @@ void MPEG4DemuxerPlugin::ResetParam()
     selectedTrackIds_.clear();
     trackMtx_.clear();
     mediaInfo_ = MediaInfo();
+    readModeFlags_.store(0, std::memory_order_release);
+    readLoopStatus_.store(Status::OK, std::memory_order_release);
+    readToEnd_ = false;
 }
 
 Status MPEG4DemuxerPlugin::Reset()
@@ -189,10 +210,13 @@ Status MPEG4DemuxerPlugin::Flush()
     Status ret = Status::OK;
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MEDIA_LOG_I("In");
+    ReleaseReadLoop();
     for (const auto& selectedTrackId : selectedTrackIds_) {
         ret = cacheQueue_.RemoveTrackQueue(selectedTrackId);
         ret = cacheQueue_.AddTrackQueue(selectedTrackId);
     }
+    cacheSamples_.clear();
+    readToEnd_ = false;
     return ret;
 }
 
@@ -851,6 +875,14 @@ Status MPEG4DemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode mo
     FALSE_RETURN_V_MSG_E(seekTime >= 0 && seekTime <= INT64_MAX / MS_TO_NS, Status::ERROR_INVALID_PARAMETER,
         "Seek time " PUBLIC_LOG_D64 " is not supported", seekTime);
 
+    ReleaseReadLoop();
+    for (const auto& selectedTrackId : selectedTrackIds_) {
+        cacheQueue_.RemoveTrackQueue(selectedTrackId);
+        cacheQueue_.AddTrackQueue(selectedTrackId);
+    }
+    cacheSamples_.clear();
+    readToEnd_ = false;
+
     trackId = SelectSeekTrack();
     Status ret = FindBaseTrackAndCalcDelay(seekTime, mode, trackId); // find base track
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Find basetrack failed");
@@ -1145,10 +1177,10 @@ Status MPEG4DemuxerPlugin::GetSampleBySeekableStatus(const Seekable seekable, ui
     int64_t pos = 0;
     int32_t size = 0;
     uint32_t trackIndex = trackId;
-    if (seekable_ == Seekable::SEEKABLE) {
+    if (seekable == Seekable::SEEKABLE) {
         ret = GetSeekableSampleInfo(trackIndex, pos, size);
         if (ret == Status::END_OF_STREAM) {
-            return SetEosSample(outBuffer);
+            return outBuffer != nullptr ? SetEosSample(outBuffer) : Status::END_OF_STREAM;
         } else if (ret != Status::OK) {
             return ret;
         } else {
@@ -1157,12 +1189,12 @@ Status MPEG4DemuxerPlugin::GetSampleBySeekableStatus(const Seekable seekable, ui
             sLock.unlock();
             FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ReadSampleData failed");
         }
-    } else if (seekable_ == Seekable::UNSEEKABLE) {
+    } else if (seekable == Seekable::UNSEEKABLE) {
         while (!cacheQueue_.HasCache(trackId)) {
             ret = GetUnseekableSampleInfo(trackIndex, pos, size);
             if (ret == Status::END_OF_STREAM) {
                 readToEnd_ = true;
-                return SetEosSample(outBuffer);
+                return outBuffer != nullptr ? SetEosSample(outBuffer) : Status::END_OF_STREAM;
             } else if (ret != Status::OK) {
                 return ret;
             } else {
@@ -1274,6 +1306,9 @@ Status MPEG4DemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_PARAMETER, "Track has not been selected");
     FALSE_RETURN_V_MSG_E(outBuffer != nullptr && outBuffer->memory_ != nullptr, Status::ERROR_INVALID_PARAMETER,
         "AVBuffer or memory is nullptr");
+    FALSE_RETURN_V_MSG_E((readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::ASYNC)) == 0,
+        Status::ERROR_INVALID_OPERATION, "Cannot use sync and async Read together");
+    readModeFlags_.fetch_or(ReadModeToFlags(ReadMode::SYNC), std::memory_order_acq_rel);
     
     auto mpeg4Sample = std::make_shared<MPEG4Sample>();
     FALSE_RETURN_V_MSG_E(mpeg4Sample != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate mpeg4Sample");
@@ -1306,20 +1341,20 @@ Status MPEG4DemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t &sampleSi
     FALSE_RETURN_V_MSG_E(inited_, Status::ERROR_UNKNOWN, "Plugin has not been initialized");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_PARAMETER, "Track has not been selected");
+    FALSE_RETURN_V_MSG_E((readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::ASYNC)) == 0,
+        Status::ERROR_INVALID_OPERATION, "Cannot use sync and async Read together");
+    readModeFlags_.fetch_or(ReadModeToFlags(ReadMode::SYNC), std::memory_order_acq_rel);
 
     auto track = FindTrackById(trackId);
     FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");
     uint32_t currentSampleIndex = track->currentSampleIndex;
-    sampleSize = track->sampleHelper->sampleIndexEntry_[currentSampleIndex].size;
-
-    std::string mime;
-    std::vector<uint8_t> extradata {};
-    if (mediaInfo_.tracks[trackId].Get<Tag::MIME_TYPE>(mime) && HaveValidParser(mime) &&
-        mediaInfo_.tracks[trackId].Get<Tag::MEDIA_CODEC_CONFIG>(extradata)) {
-        if (track->sampleHelper->sampleIndexEntry_[currentSampleIndex].flag & Sample::SampleFlag::SYNC_FRAME) {
-            sampleSize += extradata.size();
-        }
-    }
+    FALSE_RETURN_V_MSG_E(currentSampleIndex < track->sampleHelper->sampleIndexEntry_.size(),
+        Status::END_OF_STREAM, "Sample index out of range");
+    auto sample = std::make_shared<Sample>();
+    FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate sample");
+    sample->size = track->sampleHelper->sampleIndexEntry_[currentSampleIndex].size;
+    sample->flag = track->sampleHelper->sampleIndexEntry_[currentSampleIndex].flag;
+    sampleSize = GetSampleSizeWithCodecConfig(mediaInfo_, sample, trackId);
     return Status::OK;
 }
 
