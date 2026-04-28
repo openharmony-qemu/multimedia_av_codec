@@ -95,8 +95,28 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
 
 Status RegisterMpeg4Plugin(const std::shared_ptr<Register>& reg);
 
+static const std::vector<TrackType> g_streamMediaTypeVec = {
+    AUDIO_TYPE,
+    VIDEO_TYPE,
+    SUBTITLE_TYPE,
+    TIMEDMETA_TYPE,
+    AUXILIARY_TYPE,
+};
+
+bool IsSupportedTrackType(const std::shared_ptr<MPEG4AtomParser::Track>& track)
+{
+    return (std::find(g_streamMediaTypeVec.cbegin(), g_streamMediaTypeVec.cend(),
+        track->codecParms.trackType) != g_streamMediaTypeVec.cend());
+}
+
+
 bool IsSupportedTrack(const std::shared_ptr<MPEG4AtomParser::Track>& track)
 {
+    FALSE_RETURN_V_MSG_E(track != nullptr, false, "track is nullptr");
+    if (!IsSupportedTrackType(track)) {
+        MEDIA_LOG_E("Unsupport track type: " PUBLIC_LOG_D32, track->codecParms.trackType);
+        return false;
+    }
     if (track->codecParms.trackType == ATTACHMENT_TYPE || track->sampleHelper->sampleIndexEntry_.size() <= 0) {
         MEDIA_LOG_E("Unsupport image track or empty SampleIndexEntry");
         return false;
