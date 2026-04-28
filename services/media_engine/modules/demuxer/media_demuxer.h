@@ -112,7 +112,7 @@ public:
     Status UnselectTrack(uint32_t trackIndex); // Interface for AVDemuxer
     Status ReadSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample); // Interface for AVDemuxer
     Status GetBitRates(std::vector<uint32_t> &bitRates);
-    Status SelectStreamId(int32_t streamId);
+    Status SelectStreamId(int32_t streamId, bool isAudioStream = true);
     Status SelectBitRate(uint32_t bitRate, bool isAutoSelect = false, bool isForceSelect = false);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
     Status GetPlaybackInfo(PlaybackInfo& playbackInfo);
