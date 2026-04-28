@@ -439,7 +439,7 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
 #ifdef SFD_DEBUG
     cost.startUs = GetCurrentSysTimeUs();
 #endif
-    if (!isInitialized_ || !dropSyncCoordinator_ || !surfaceBuffer) {
+    if (!isInitialized_ || !dropSyncCoordinator_) {
         return true;
     }
     uint32_t preDropCount = dropSyncCoordinator_->GetAndConsumePreDroppedCount(pts);
@@ -458,7 +458,7 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
         return HandlePostDecodePassthrough(pts, preDropCount, cost);
     }
     MVStats mvStats;
-    if (caps.requiresMv) {
+    if (caps.requiresMv && surfaceBuffer != nullptr) {
         ParseMVData(surfaceBuffer, mvStats, cost.copyMvCostUs, cost.analyzeMvCostUs);
     }
     PostDecResult res;

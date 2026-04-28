@@ -15,6 +15,7 @@
 
 #include <gtest/gtest.h>
 #include <memory>
+#include <sys/stat.h>
 #include "smart_fluency_decoding_dumper.h"
 
 namespace {
@@ -231,20 +232,28 @@ HWTEST_F(SFDDumperTest, DumpToFile_EmptyBypass_009, TestSize.Level1)
  */
 HWTEST_F(SFDDumperTest, WriteHeader_PersistentState_010, TestSize.Level1)
 {
+    struct stat st = {};
+    bool dirExists = (stat("/data/misc/sfddump/", &st) == 0 && S_ISDIR(st.st_mode));
+
     // Trigger first dump
     SmartFluencyDecodingDumper::PreDecodeRecordCtx ctx;
     ctx.pts = 100;
     dumper_->RecordPreDecode(ctx);
     
-    // isHeaderWritten_ is private, but testing the logic flow
     dumper_->DumpToFile();
-    EXPECT_TRUE(dumper_->isHeaderWritten_);
+    if (dirExists) {
+        EXPECT_TRUE(dumper_->isHeaderWritten_);
+    } else {
+        EXPECT_FALSE(dumper_->isHeaderWritten_);
+    }
     
-    // Second dump should skip header writing logic
+    // Second dump
     ctx.pts = 200;
     dumper_->RecordPreDecode(ctx);
     dumper_->DumpToFile();
-    EXPECT_TRUE(dumper_->isHeaderWritten_);
+    if (dirExists) {
+        EXPECT_TRUE(dumper_->isHeaderWritten_);
+    }
 }
 
 /**
