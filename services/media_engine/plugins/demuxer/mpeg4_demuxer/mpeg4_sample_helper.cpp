@@ -735,7 +735,8 @@ void MPEG4SampleHelper::InitMoofParam()
     }
 }
 
-void MPEG4SampleHelper::UpdateSampleEntryInfo(SampleInfo sampleInfo, int64_t& offset, int64_t& currentDts, bool isOverlap)
+void MPEG4SampleHelper::UpdateSampleEntryInfo(
+    SampleInfo sampleInfo, int64_t& offset, int64_t& currentDts, bool isOverlap)
 {
     SampleIndexEntry sample;
     sample.pos = offset;
@@ -815,8 +816,7 @@ Status MPEG4SampleHelper::SetTrackFragmentRunParams(int64_t dataOffset, int64_t 
     int64_t currentDts = (tfdtDts_ != -1) ? tfdtDts_ : (sidxDts != -1) ? sidxDts : baseFragmentDts_;
     moofDts = currentDts;
     InitMoofParam();
-    size_t existingSampleCount = sampleIndexEntry_.size();
-    int64_t prevDts = (existingSampleCount > 0) ? sampleIndexEntry_.back().dts : INT64_MIN;
+    int64_t prevDts = (sampleIndexEntry_.size() > 0) ? sampleIndexEntry_.back().dts : INT64_MIN;
     for (uint32_t i = 0; i < numSamples; ++i) {
         sampleInfo.index = i;
         UpdateSampleInfo(sampleInfo, bufferOffset, trunFlag, data.get(), firstSampleFlag);
@@ -831,9 +831,7 @@ Status MPEG4SampleHelper::SetTrackFragmentRunParams(int64_t dataOffset, int64_t 
     }
     totalTrunDuration_ = currentDts;
     baseFragmentDts_ = currentDts;
-    if (totalDuration_ < baseFragmentDts_) {
-        totalDuration_ = baseFragmentDts_;
-    }
+    totalDuration_ = (totalDuration_ < baseFragmentDts_) ? baseFragmentDts_ : totalDuration_;
     return Status::OK;
 }
 
@@ -935,8 +933,7 @@ void MPEG4SampleHelper::GetSampleFlag(uint32_t sampleIndex, SampleIndexEntry &en
 Status MPEG4SampleHelper::BuildSampleIndexEntries()
 {
     MEDIA_LOG_D("Start");
-    FALSE_RETURN_V_MSG_E(PreBuildProcessAndCheck() == Status::OK, Status::ERROR_INVALID_DATA,
-        "PreBuildProcessAndCheck failed");
+    FALSE_RETURN_V_MSG_E(PreBuildProcessAndCheck() == Status::OK, Status::ERROR_INVALID_DATA, "PreCheck failed");
     int64_t currentOffset = chunkOffsets_[0];
     uint32_t chunkIndex = 0;
     uint32_t stscIndex = 0;

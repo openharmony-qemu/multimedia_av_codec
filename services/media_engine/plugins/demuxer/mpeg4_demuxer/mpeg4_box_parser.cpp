@@ -1281,13 +1281,9 @@ Status MPEG4AtomParser::ParseMdhd(MPEG4Atom currentAtom, int32_t depth, ParseCon
     int32_t fileTimeScale = 0;
     if (mediaInfo_.general.GetData(Tag::MEDIA_TIME_SCALE, fileTimeScale) && fileTimeScale > 0 &&
         lastTrack_->sampleHelper != nullptr) {
-        int64_t emptyDurationTrackTs = 0;
-        if (lastTrack_->elstInitEmptyEdit > 0) {
-            emptyDurationTrackTs = (lastTrack_->elstInitEmptyEdit * timeScale + fileTimeScale - 1) / fileTimeScale;
-        }
-        int64_t timeOffset = lastTrack_->elstShiftStartTime - emptyDurationTrackTs;
-        lastTrack_->sampleHelper->SetTimeOffset(timeOffset);
-        MEDIA_LOG_D("Set timeOffset: " PUBLIC_LOG_D64 " for track " PUBLIC_LOG_U32, timeOffset, lastTrack_->trackIndex);
+        int64_t emptyDurationTrackTs = lastTrack_->elstInitEmptyEdit > 0 ? 
+            ((lastTrack_->elstInitEmptyEdit * timeScale + fileTimeScale - 1) / fileTimeScale) : 0;
+        lastTrack_->sampleHelper->SetTimeOffset(lastTrack_->elstShiftStartTime - emptyDurationTrackTs);
     }
     return ret;
 }
