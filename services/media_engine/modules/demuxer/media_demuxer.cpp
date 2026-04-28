@@ -2085,7 +2085,54 @@ Status MediaDemuxer::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode,
     return ret;
 }
 
-Status MediaDemuxer::SelectStreamId(int32_t streamId)
+void MediaDemuxer::WaitTrackSelectionFilter(uint32_t bitRate, int32_t streamId, DemuxerTrackType type)
+{
+    if (type == DemuxerTrackType::VIDEO) {
+        waitVideoBitrate_.store(bitRate);
+    } else if (type == DemuxerTrackType::AUDIO) {
+        waitAudioStreamId_.store(streamId);
+    } else if (type == DemuxerTrackType::SUBTITLE) {
+        waitSubtitleStreamId_.store(streamId);
+    } else {
+        MEDIA_LOG_W("Unsupported track type");
+    }
+}
+
+void MediaDemuxer::ProcessTrackSelectionFilter()
+{
+    // process pending video bitrate switch
+    uint32_t pendingBitrate = waitVideoBitrate_.load();
+    if (pendingBitrate != 0 && demuxerPluginManager_ != nullptr) {
+        waitVideoBitrate_.store(0);
+        if (pendingBitrate != demuxerPluginManager_->GetCurrentBitRate()) {
+            SelectBitRate(pendingBitrate, true, true);
+        }
+        return;
+    }
+
+    // process pending audio or subtitle stream switch (mutually exclusive)
+    int32_t pendingAudio = waitAudioStreamId_.load();
+    if (pendingAudio != -1) {
+        waitAudioStreamId_.store(-1);
+        if (defaultAudioStreamId_ == pendingAudio) {
+            SelectStreamId(pendingAudio);
+        }
+        return;
+    }
+
+    int32_t pendingSubtitle = waitSubtitleStreamId_.load();
+    if (pendingSubtitle != -1) {
+        waitSubtitleStreamId_.store(-1);
+        if (defaultSubtitleStreamId_ == pendingSubtitle) {
+            SelectStreamId(pendingSubtitle, false);
+        }
+        return;
+    }
+
+    MEDIA_LOG_W("No track selection filter to process");
+}
+
+Status MediaDemuxer::SelectStreamId(int32_t streamId, bool isAudioStream)
 {
     MEDIA_LOG_I("In");
 
@@ -2093,6 +2140,7 @@ Status MediaDemuxer::SelectStreamId(int32_t streamId)
     FALSE_RETURN_V(streamId >= 0, Status::ERROR_WRONG_STATE);
     if (demuxerPluginManager_->IsDash()) {
         if (streamDemuxer_->CanDoChangeStream() == false) {
+            WaitTrackSelectionFilter(0, streamId, isAudioStream ? DemuxerTrackType::AUDIO : DemuxerTrackType::SUBTITLE);
             MEDIA_LOG_W("Wrong state: selecting");
             return Status::ERROR_WRONG_STATE;
         }
@@ -2124,6 +2172,9 @@ Status MediaDemuxer::SelectBitRate(uint32_t bitRate, bool isAutoSelect, bool isF
     FALSE_RETURN_V(demuxerPluginManager_ != nullptr && streamDemuxer_ != nullptr, Status::ERROR_WRONG_STATE);
     if (demuxerPluginManager_->IsDash()) {
         if (streamDemuxer_->CanDoChangeStream() == false) {
+            if (isForceSelect) {
+                WaitTrackSelectionFilter(bitRate, -1, DemuxerTrackType::VIDEO);
+            }
             MEDIA_LOG_W("Wrong state: selecting");
             return Status::OK;
         }
@@ -3363,6 +3414,7 @@ bool MediaDemuxer::HandleDashChangeStream(int32_t trackId, bool isNeedAllEos)
             MEDIA_LOG_I("targetBitrate: " PUBLIC_LOG_U32 " currentBitrate: " PUBLIC_LOG_U32, targetBitRate_,
                 demuxerPluginManager_->GetCurrentBitRate());
             isSelectBitRate_.store(targetBitRate_ != demuxerPluginManager_->GetCurrentBitRate());
+            ProcessTrackSelectionFilter();
         }
     } else {
         isSelectTrack_.store(true);
@@ -3374,6 +3426,7 @@ bool MediaDemuxer::HandleDashChangeStream(int32_t trackId, bool isNeedAllEos)
                 targetBitRate_ = demuxerPluginManager_->GetCurrentBitRate();
             }
             streamDemuxer_->SetChangeFlag(true);
+            ProcessTrackSelectionFilter();
         }
         isSelectTrack_.store(false);
     }
@@ -5600,7 +5653,7 @@ void MediaDemuxer::SetTrackSelectionFilter(const TrackSelectionFilter &filter)
     stream = FindStreamForFiledStream(filteredStreamMap_[SUBTITLE], lastSubtitleStreamId,
         defaultSubtitleStreamId_, needChange);
     if (needChange && stream != nullptr) {
-        Status states = SelectStreamId(defaultSubtitleStreamId_);
+        Status states = SelectStreamId(defaultSubtitleStreamId_, false);
         PrintStreamInfo("SetTrackSelectionFilter ", stream, currentPlayType_, states);
         if (states == Status::OK && isHls_ && syncCenter_ != nullptr) {
             HandleSelectSubtitleStream(

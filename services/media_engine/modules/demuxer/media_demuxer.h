@@ -443,6 +443,8 @@ private:
     void SetCurrentSegmentOffset(int32_t trackId, size_t segmentOffset);
     int64_t GetCurrentSegmentOffset(int32_t trackId, int64_t oldSegmentOffset);
     bool IsSubtitleTrackId(int32_t trackId);
+    void WaitTrackSelectionFilter(uint32_t bitRate, int32_t streamId, DemuxerTrackType type);
+    void ProcessTrackSelectionFilter();
 
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
@@ -610,6 +612,9 @@ private:
     int32_t defaultVideoStreamId_ {-1};
     int32_t defaultAudioStreamId_ {-1};
     int32_t defaultSubtitleStreamId_ {-1};
+    std::atomic<uint32_t> waitVideoBitrate_ {0};
+    std::atomic<int32_t> waitAudioStreamId_ {-1};
+    std::atomic<int32_t> waitSubtitleStreamId_ {-1};
     TrackSelectionFilter trackSelectionFilter_;
     int64_t lastCheckAutoSelectTimeMs_ {0};
     int32_t lastAutoSelectBitRate_ {0};
