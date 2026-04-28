@@ -45,7 +45,6 @@ constexpr int32_t P010_BYTES_PER_SAMPLE = 2;
 constexpr int32_t YUV_SUBSAMPLE = 2;
 constexpr int32_t INVALID_ROW_BYTES = -1;
 constexpr int32_t UNSET_PROFILE = -1;
-constexpr int32_t INVALID_OUTPUT_FORMAT = -1;
 constexpr int32_t DISABLE_CROP_LEFT = 0;
 constexpr int32_t DISABLE_CROP_TOP = 0;
 constexpr int32_t DISABLE_CROP_RIGHT = 0;
@@ -331,9 +330,6 @@ int32_t Preprocessor::Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &ou
     CHECK_AND_RETURN_RET_LOG(input && output, AVCS_ERR_INVALID_VAL,
                              "Invalid buffer: input is %{public}s, output is %{public}s", input ? "valid" : "nullptr",
                              output ? "valid" : "nullptr");
-    CHECK_AND_RETURN_RET_LOG(input->GetFormat() == output->GetFormat(), AVCS_ERR_INVALID_VAL,
-                             "Format mismatch: input=%{public}d, output=%{public}d", input->GetFormat(),
-                             output ? output->GetFormat() : INVALID_OUTPUT_FORMAT);
     if (IsCropEnabled()) {
         int32_t ret = Crop(input, output);
         if (ret == AVCS_ERR_OK) {

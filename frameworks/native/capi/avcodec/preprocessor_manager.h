@@ -71,7 +71,7 @@ private:
         SurfaceType surfaceType;
         int64_t timestamp{0};
         BufferFlushConfig flushConfig{};
-        bool isProcessed{false};
+        std::atomic<bool> isProcessed{false};
 
         SurfaceBufferWrapper() = default;
         SurfaceBufferWrapper(wptr<Surface> argSurface, sptr<SurfaceBuffer> buf,

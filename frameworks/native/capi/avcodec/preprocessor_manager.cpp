@@ -17,6 +17,7 @@
 #include "shared_surface_manager.h"
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
+#include "avcodec_trace.h"
 #ifdef BUILD_ENG_VERSION
 #include <fstream>
 #include <sys/stat.h>
@@ -231,6 +232,8 @@ void PreprocessorManager::NotifyEosNowIfPending(std::string_view encoderId)
 
 PreprocessorManager::SurfaceBufferWrapper::~SurfaceBufferWrapper()
 {
+    AVCODEC_SYNC_CUSTOM_TRACE(HITRACE_LEVEL_INFO, "OnSurfaceBufferWrapperDestruct, %s", !isProcessed ? "Cancel" :
+        (surfaceType == SurfaceType::PRODUCER ? "Flush" : "Release"));
     auto surfacePtr = surface.promote();
     if (!buffer || !surfacePtr) {
         return;
@@ -332,6 +335,8 @@ void PreprocessorManager::EncoderInfo::Stop()
         isRunning_ = false;
         eosRequested_ = false;
         notifyEosTask_ = nullptr;
+        std::queue<std::shared_ptr<SurfaceBufferWrapper>> emptyQueue;
+        std::swap(pendingBuffers_, emptyQueue);
     }
     bufferQueueCv_.notify_all();
     if (processThread_.joinable()) {
@@ -389,8 +394,12 @@ int32_t PreprocessorManager::EncoderInfo::CheckAndAllocateSurfaceBufferFromEncSu
 void PreprocessorManager::EncoderInfo::OnNewPendingBufferAvailable(std::shared_ptr<SurfaceBufferWrapper> buffer)
 {
     std::lock_guard<std::mutex> lock(bufferQueueMutex_);
-    if (eosRequested_) {
-        AVCODEC_LOGW("Drop pending buffer after eos requested: %{public}s", encoderId_.data());
+    if (!isRunning_ || eosRequested_) {
+        if (buffer) {
+            buffer->isProcessed = true;
+        }
+        AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGW, 5000, 5,    // 5 times in 5000 milliseconds
+            "Drop pending buffer after stopped or eos requested: %{public}s", encoderId_.data());
         return;
     }
     pendingBuffers_.push(buffer);
@@ -452,7 +461,8 @@ void PreprocessorManager::EncoderInfo::SetBufferFlushConfig(std::shared_ptr<Surf
 
 void PreprocessorManager::EncoderInfo::EncoderThreadLoop()
 {
-    std::string threadName = std::string("OS_Preproc_") + encoderId_ + "_Loop";
+    std::string threadName = std::string("OS_Preproc_") +
+        (encoderId_.find("primary") != std::string::npos ? "P" : "S");
     pthread_setname_np(pthread_self(), threadName.c_str());
     AVCODEC_LOGI("EncoderThreadLoop started: %{public}s", encoderId_.data());
     while (isRunning_) {
@@ -510,6 +520,7 @@ bool PreprocessorManager::EncoderInfo::DequeueBuffers(std::shared_ptr<SurfaceBuf
 void PreprocessorManager::EncoderInfo::ProcessFrame(std::shared_ptr<SurfaceBufferWrapper> &inputBuffer,
                                                     std::shared_ptr<SurfaceBufferWrapper> &outputBuffer)
 {
+    AVCODEC_SYNC_TRACE;
     if (preprocessor_->ShouldDropFrame(inputBuffer->timestamp)) {
         AVCODEC_LOGD("venc_%{public}s Frame dropped: pts=%{public}" PRId64, encoderId_.data(),
                      inputBuffer->timestamp);
