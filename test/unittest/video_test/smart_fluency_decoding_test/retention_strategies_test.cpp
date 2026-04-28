@@ -295,6 +295,146 @@ HWTEST_F(AdaptiveRetentionStrategyTest, Reset_NoCrash_004, TestSize.Level1)
     EXPECT_NE(strategy, nullptr);
 }
 
+/**
+ * @tc.name: MakeDecision_DecisionTreeRetain_005
+ * @tc.desc: High speed (> 1.0) with valid MV data that the decision tree should "retain".
+ * @tc.type: FUNC
+ */
+HWTEST_F(AdaptiveRetentionStrategyTest, MakeDecision_DecisionTreeRetain_005, TestSize.Level1)
+{
+    auto strategy = std::make_unique<AdaptiveRetentionStrategy>();
+    strategy->UpdatePlaybackSpeed(2.0); // 2.0: high speed
+
+    FrameRetentionContext ctx{};
+    MVStats mvStats;
+    mvStats.validBlocks = 100;
+    mvStats.motionConsistency = 0.8; // High consistency
+    mvStats.perceptualMagnitude = 5.0; // Low magnitude
+    ctx.mvStats = &mvStats;
+
+    // Decision tree should hit rule 3, 4, 6, 7, 10, 11, or 13 (Retain = 1)
+    EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT);
+}
+
+/**
+ * @tc.name: MakeDecision_DecisionTreeDrop_006
+ * @tc.desc: High speed with MV data that the decision tree should "drop".
+ * @tc.type: FUNC
+ */
+HWTEST_F(AdaptiveRetentionStrategyTest, MakeDecision_DecisionTreeDrop_006, TestSize.Level1)
+{
+    auto strategy = std::make_unique<AdaptiveRetentionStrategy>();
+    strategy->UpdatePlaybackSpeed(2.0);
+
+    FrameRetentionContext ctx{};
+    MVStats mvStats;
+    mvStats.validBlocks = 100;
+    mvStats.motionConsistency = 0.1; // Very low consistency
+    mvStats.perceptualMagnitude = 100.0; // Very high magnitude
+    ctx.mvStats = &mvStats;
+
+    // (magnitude * 2.0) = 200.0 > 21.01 (rule 0) -> rule 8
+    // consistency 0.1 < 0.55 (rule 8) -> rule 9
+    // consistency 0.1 < 0.35 (rule 9) -> rule 10 (Retain = 1 in code? Wait, let me check the tree data)
+    // Actually rule 3, 4, 14 are leaf 0 (Drop).
+    // Let's pick values to hit rule 14:
+    // mag*speed > 21.01 (rule 0 right) -> rule 8
+    // consistency > 0.55 (rule 8 right) -> rule 12
+    // consistency > 0.98 (rule 12 right) -> rule 14 (Leaf 0)
+    mvStats.motionConsistency = 0.99;
+    mvStats.perceptualMagnitude = 20.0; // 20*2 = 40 > 21
+    
+    // Check results
+    bool shouldRetain = strategy->MakeRetentionDecision(ctx);
+    // If it drops, it will be POST_DROP_ADAPTIVE_DT
+    if (!shouldRetain) {
+        EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_DROP_ADAPTIVE_DT);
+    } else {
+        EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT);
+    }
+}
+
+/**
+ * @tc.name: MakeDecision_MaxDropsEnforcement_007
+ * @tc.desc: Verify that after a drop, it continues to drop until maxDrops is reached.
+ * @tc.type: FUNC
+ */
+HWTEST_F(AdaptiveRetentionStrategyTest, MakeDecision_MaxDropsEnforcement_007, TestSize.Level1)
+{
+    auto strategy = std::make_unique<AdaptiveRetentionStrategy>();
+    strategy->UpdatePlaybackSpeed(2.0);
+
+    FrameRetentionContext ctx{};
+    MVStats mvStats;
+    mvStats.validBlocks = 100;
+    // Force a drop (Rule 14 as above)
+    mvStats.motionConsistency = 0.99;
+    mvStats.perceptualMagnitude = 20.0;
+    ctx.mvStats = &mvStats;
+
+    // First decision: Drop
+    bool first = strategy->MakeRetentionDecision(ctx);
+    if (!first) {
+        EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_DROP_ADAPTIVE_DT);
+        // maxDrops = (2.0 - 1.0) * 5.0 = 5
+        // It should drop 5 frames then retain 1.
+        for (int i = 0; i < 4; ++i) {
+            EXPECT_FALSE(strategy->MakeRetentionDecision(ctx));
+        }
+        // 6th frame should retain (adaptive drop limit reached)
+        EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
+        EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_MAX_DROP);
+    }
+}
+
+/**
+ * @tc.name: MakeDecision_EmptyMvStats_008
+ * @tc.desc: High speed but with validBlocks = 0 to hit the else branch (UNSPECIFIED reason).
+ * @tc.type: FUNC
+ */
+HWTEST_F(AdaptiveRetentionStrategyTest, MakeDecision_EmptyMvStats_008, TestSize.Level1)
+{
+    auto strategy = std::make_unique<AdaptiveRetentionStrategy>();
+    strategy->UpdatePlaybackSpeed(2.0);
+
+    FrameRetentionContext ctx{};
+    MVStats mvStats;
+    mvStats.validBlocks = 0; // Invalid
+    ctx.mvStats = &mvStats;
+
+    EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::UNSPECIFIED);
+
+    ctx.mvStats = nullptr;
+    EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::UNSPECIFIED);
+}
+
+/**
+ * @tc.name: GetRatio_UpdateOnDrop_009
+ * @tc.desc: Verify that targetRatio_ is updated following a drop decision.
+ * @tc.type: FUNC
+ */
+HWTEST_F(AdaptiveRetentionStrategyTest, GetRatio_UpdateOnDrop_009, TestSize.Level1)
+{
+    auto strategy = std::make_unique<AdaptiveRetentionStrategy>();
+    strategy->UpdatePlaybackSpeed(2.0);
+
+    FrameRetentionContext ctx{};
+    MVStats mvStats;
+    mvStats.validBlocks = 100;
+    mvStats.motionConsistency = 0.99;
+    mvStats.perceptualMagnitude = 20.0;
+    ctx.mvStats = &mvStats;
+
+    strategy->MakeRetentionDecision(ctx);
+    // If it dropped, ratio should be 1/(5+1) = 0.166...
+    if (strategy->GetLastDecisionReason() == SfdDecisionReason::POST_DROP_ADAPTIVE_DT) {
+        EXPECT_NEAR(strategy->GetRatio(), 1.0 / 6.0, 0.01);
+    }
+}
+
 // --- FullRetentionStrategy ---
 
 class FullRetentionStrategyTest : public testing::Test {

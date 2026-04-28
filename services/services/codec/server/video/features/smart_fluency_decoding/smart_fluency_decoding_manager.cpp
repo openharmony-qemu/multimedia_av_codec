@@ -269,9 +269,9 @@ void SmartFluencyDecodingManager::EnableMVOutput(Media::Format& format)
     }
 }
 
-bool SmartFluencyDecodingManager::IsCodecSupported(const std::string& codecMime, AVCodecType codecType)
+bool SmartFluencyDecodingManager::IsCodecSupported(const std::string& codecMime, AVCodecType codecType, bool isSecure)
 {
-    if (codecType != MediaAVCodec::AVCODEC_TYPE_VIDEO_DECODER) {
+    if (codecType != MediaAVCodec::AVCODEC_TYPE_VIDEO_DECODER || isSecure) {
         return false;
     }
     if (codecMime != MediaAVCodec::AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_AVC &&

@@ -16,6 +16,10 @@
 #include <gtest/gtest.h>
 #include <memory>
 #include "smart_fluency_decoding.h"
+#include "avcodec_common.h"
+#include "buffer/avallocator.h"
+#include "buffer/avbuffer.h"
+#include "surface_buffer.h"
 
 namespace {
 constexpr int32_t WIDTH_1080P = 1920;
@@ -255,4 +259,200 @@ HWTEST_F(SmartFluencyDecodingTest, EvaluatePreDecode_EMA_Unsatisfied_014, TestSi
     sfd_->EnsureNaluAnalyzer();
     bool shouldRetain = sfd_->MakePreDecodeDecision(0);
     EXPECT_FALSE(shouldRetain);
+}
+
+/**
+ * @tc.name: ParseRetentionConfig_MixedConfig_015
+ * @tc.desc: Test UNIFORM mode parsing variations and FULL mode with ignored ratio.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, ParseRetentionConfig_MixedConfig_015, TestSize.Level1)
+{
+    RetentionStrategyType mode = RetentionStrategyType::INVALID;
+    std::optional<double> ratio;
+    OHOS::Media::Format format;
+
+    // Case 1: UNIFORM without ratio -> AUTO_RATIO
+    format.PutIntValue(OHOS::Media::Tag::VIDEO_DECODER_FRAME_RETENTION_MODE,
+                       static_cast<int32_t>(OHOS::Media::Plugins::FrameRetentionMode::UNIFORM));
+    sfd_->ParseRetentionConfig(format, mode, ratio);
+    EXPECT_EQ(mode, RetentionStrategyType::AUTO_RATIO);
+
+    // Case 2: FULL mode with ratio -> Ratio ignored (warning log)
+    format.PutIntValue(OHOS::Media::Tag::VIDEO_DECODER_FRAME_RETENTION_MODE,
+                       static_cast<int32_t>(OHOS::Media::Plugins::FrameRetentionMode::FULL));
+    format.PutDoubleValue(OHOS::Media::Tag::VIDEO_DECODER_FRAME_RETENTION_RATIO, 0.5);
+    sfd_->ParseRetentionConfig(format, mode, ratio);
+    EXPECT_EQ(mode, RetentionStrategyType::FULL);
+}
+
+/**
+ * @tc.name: UpdateDynamicConfig_SpeedOnly_016
+ * @tc.desc: Update only playback speed and verify strategy is not recreated unnecessarily.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, UpdateDynamicConfig_SpeedOnly_016, TestSize.Level1)
+{
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::ADAPTIVE);
+    sfd_->Initialize(cfg);
+    auto originalStrategy = sfd_->strategy_.get();
+
+    OHOS::Media::Format format;
+    format.PutDoubleValue(OHOS::Media::Tag::VIDEO_DECODER_SPEED, 2.0);
+    sfd_->UpdateDynamicConfig(format);
+
+    EXPECT_NEAR(sfd_->currentPlaybackSpeed_, 2.0, 0.001);
+    EXPECT_EQ(sfd_->strategy_.get(), originalStrategy); // Should not recreate
+}
+
+/**
+ * @tc.name: InitializeWithCsd_Success_017
+ * @tc.desc: Test successful CSD initialization and processing by naluAnalyzer_.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, InitializeWithCsd_Success_017, TestSize.Level1)
+{
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::ADAPTIVE);
+    sfd_->Initialize(cfg);
+    sfd_->EnsureNaluAnalyzer();
+
+    std::vector<uint8_t> csd = {0x00, 0x00, 0x00, 0x01, 0x67, 0x42, 0x00, 0x0a};
+    EXPECT_TRUE(sfd_->InitializeWithCsd(csd));
+    EXPECT_NE(sfd_->csdBuffer_, nullptr);
+}
+
+/**
+ * @tc.name: ExecutePreDrop_CodecData_018
+ * @tc.desc: Verify CODEC_DATA buffers are explicitly skipped during pre-drop execution.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, ExecutePreDrop_CodecData_018, TestSize.Level1)
+{
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::ADAPTIVE);
+    sfd_->Initialize(cfg);
+
+    auto allocator = OHOS::Media::AVAllocatorFactory::CreateSharedAllocator(OHOS::Media::MEMORY_READ_WRITE);
+    auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, 100);
+    buffer->flag_ = OHOS::MediaAVCodec::AVCODEC_BUFFER_FLAG_CODEC_DATA;
+
+    // Should return early and not call dropSyncCoordinator_ if flagged as CODEC_DATA
+    sfd_->ExecutePreDrop(0, buffer);
+    EXPECT_TRUE(true); // Success if no crash/assertion
+}
+
+/**
+ * @tc.name: MakePreDecodeDecision_Passthrough_019
+ * @tc.desc: Test FULL mode passthrough logic in MakePreDecodeDecision.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, MakePreDecodeDecision_Passthrough_019, TestSize.Level1)
+{
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::FULL);
+    sfd_->Initialize(cfg);
+
+    auto allocator = OHOS::Media::AVAllocatorFactory::CreateSharedAllocator(OHOS::Media::MEMORY_READ_WRITE);
+    auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, 100);
+    sfd_->inBufferMap_[0] = buffer;
+
+    bool result = sfd_->MakePreDecodeDecision(0);
+    EXPECT_TRUE(result);
+}
+
+/**
+ * @tc.name: MakePostDecodeDecision_InvalidSurface_020
+ * @tc.desc: Test error handling when surfaceBuffer is null in post-decode.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, MakePostDecodeDecision_InvalidSurface_020, TestSize.Level1)
+{
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::ADAPTIVE);
+    sfd_->Initialize(cfg);
+
+    bool result = sfd_->MakePostDecodeDecision(0, 0, nullptr);
+    EXPECT_TRUE(result);
+}
+
+/**
+ * @tc.name: EnsureNaluAnalyzer_MvSync_021
+ * @tc.desc: Verify that NaluAnalyzer creation correctly syncs stream info to an existing MvAnalyzer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, EnsureNaluAnalyzer_MvSync_021, TestSize.Level1)
+{
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::HEVC, RetentionStrategyType::ADAPTIVE);
+    sfd_->Initialize(cfg);
+    sfd_->EnsureMvAnalyzer();
+    ASSERT_NE(sfd_->mvAnalyzer_, nullptr);
+
+    // This will trigger creation and callback
+    sfd_->EnsureNaluAnalyzer();
+    EXPECT_NE(sfd_->naluAnalyzer_, nullptr);
+}
+
+/**
+ * @tc.name: UpdateDynamicConfig_InvalidMode_022
+ * @tc.desc: Test parsing of unknown/invalid retention modes.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, UpdateDynamicConfig_InvalidMode_022, TestSize.Level1)
+{
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::ADAPTIVE);
+    sfd_->Initialize(cfg);
+
+    OHOS::Media::Format format;
+    format.PutIntValue(OHOS::Media::Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, 999); // Invalid
+    sfd_->UpdateDynamicConfig(format);
+    // Should fallback to INVALID internally but keep existing strategy if update fails or logic dictates
+    EXPECT_EQ(sfd_->config_.initMode, RetentionStrategyType::ADAPTIVE);
+}
+
+/**
+ * @tc.name: MakePreDecodeDecision_TargetFull_023
+ * @tc.desc: Test IsGreaterOrEqual(caps.targetRatio, 1.0) branch in MakePreDecodeDecision.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, MakePreDecodeDecision_TargetFull_023, TestSize.Level1)
+{
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::FIXED_RATIO);
+    cfg.retentionRatio = 1.0;
+    sfd_->Initialize(cfg);
+
+    auto allocator = OHOS::Media::AVAllocatorFactory::CreateSharedAllocator(OHOS::Media::MEMORY_READ_WRITE);
+    auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, 100);
+    // Mock non-ref frame
+    uint8_t* addr = buffer->memory_->GetAddr();
+    addr[4] = 0x01; // nal_ref_idc = 0
+    sfd_->inBufferMap_[0] = buffer;
+    sfd_->EnsureNaluAnalyzer();
+
+    bool result = sfd_->MakePreDecodeDecision(0);
+    EXPECT_TRUE(result);
+}
+
+/**
+ * @tc.name: InitializeWithCsd_Replay_024
+ * @tc.desc: Test CSD replay logic when naluAnalyzer_ is created after CSD is cached.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, InitializeWithCsd_Replay_024, TestSize.Level1)
+{
+    // 1. Initialize with FULL mode (which does NOT require NALU analysis)
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::FULL);
+    sfd_->Initialize(cfg);
+    ASSERT_EQ(sfd_->naluAnalyzer_, nullptr);
+
+    // 2. Call InitializeWithCsd. It should cache the buffer because analyzer is null.
+    std::vector<uint8_t> csd = {0x00, 0x00, 0x00, 0x01, 0x67};
+    bool immediateReplay = sfd_->InitializeWithCsd(csd);
+    EXPECT_FALSE(immediateReplay);
+    ASSERT_NE(sfd_->csdBuffer_, nullptr);
+
+    // 3. Switch to ADAPTIVE mode (which REQUIRES NALU analysis)
+    OHOS::Media::Format format;
+    format.PutIntValue(OHOS::Media::Tag::VIDEO_DECODER_FRAME_RETENTION_MODE,
+                       static_cast<int32_t>(OHOS::Media::Plugins::FrameRetentionMode::ADAPTIVE));
+    sfd_->UpdateDynamicConfig(format);
+
+    // 4. Switching mode should have triggered EnsureNaluAnalyzer, which replays the CSD.
+    EXPECT_NE(sfd_->naluAnalyzer_, nullptr);
 }

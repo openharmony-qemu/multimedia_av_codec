@@ -1774,7 +1774,10 @@ void CodecServer::InitSfdManager()
     if (sfdManager_ != nullptr) {
         return;
     }
-    if (!SFD::SmartFluencyDecodingManager::IsCodecSupported(codecMime_, codecType_)) {
+    std::string tmpName = codecName_;
+    transform(tmpName.begin(), tmpName.end(), tmpName.begin(), ::tolower);
+    bool isSecure = tmpName.find(".secure") != std::string::npos;
+    if (!SFD::SmartFluencyDecodingManager::IsCodecSupported(codecMime_, codecType_, isSecure)) {
         return;
     }
     sfdManager_ = std::make_unique<SFD::SmartFluencyDecodingManager>(codecMime_, codecType_);
