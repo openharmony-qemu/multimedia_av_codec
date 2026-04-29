@@ -441,7 +441,6 @@ void PreprocessorManager::EncoderInfo::NotifyEosNowIfPending()
         }
     }
     bufferQueueCv_.notify_all();
-    AVCODEC_LOGI("Notify pending eos immediately: %{public}s", encoderId_.data());
     notifyEosTask();
 }
 

@@ -487,9 +487,7 @@ void Preprocessor::UpdateOutputMetadata(const sptr<SurfaceBuffer> &input, const 
 
 void Preprocessor::CopyInputMetadata(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output)
 {
-    CHECK_AND_RETURN_LOG(input != nullptr && output != nullptr,
-                         "Invalid buffer for metadata copy: input=%{public}p, output=%{public}p",
-                         input.GetRefPtr(), output.GetRefPtr());
+    CHECK_AND_RETURN_LOG(input != nullptr && output != nullptr, "Invalid buffer for metadata copy");
 
     std::vector<uint32_t> keys;
     GSError ret = input->ListMetadataKeys(keys);
