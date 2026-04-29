@@ -1408,7 +1408,7 @@ Status MPEG4DemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t &sampleSi
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_UNKNOWN, "Track has not been selected");
     bool isSyncFrame = false;
     if (cacheQueue_.HasCache(trackId)) {
-        std::shared_ptr<MPEG4Sample> mpeg4Sample = cacheQueue_.Front(trackId); 
+        std::shared_ptr<MPEG4Sample> mpeg4Sample = cacheQueue_.Front(trackId);
         sampleSize = mpeg4Sample->sample->size;
         isSyncFrame = mpeg4Sample->sample->flag & Sample::SampleFlag::SYNC_FRAME;
     } else {
