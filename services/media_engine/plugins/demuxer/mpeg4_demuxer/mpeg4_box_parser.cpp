@@ -793,14 +793,17 @@ int64_t MPEG4AtomParser::GetTrackDuration(std::shared_ptr<Track> track, bool cal
     }
     
     int64_t duration = 0;
-    if (track->sampleHelper && !track->sampleHelper->sampleIndexEntry_.empty() && !hasMoofBox_) {
-        // 如果是用于比特率计算，直接返回原始的 totalDuration_
+    if (track->sampleHelper && !track->sampleHelper->sampleIndexEntry_.empty()) {
         if (calculateBitrate) {
             duration = track->sampleHelper->totalDuration_;
             MEDIA_LOG_D("Using raw sample helper duration for bitrate: " PUBLIC_LOG_D64, duration);
             return duration;
         }
-        duration = std::min(track->duration, track->sampleHelper->totalDuration_);
+        if (hasMoofBox_) {
+            duration = track->sampleHelper->totalDuration_;
+        } else {
+            duration = std::min(track->duration, track->sampleHelper->totalDuration_);
+        }
         MEDIA_LOG_D("sample helper duration" PUBLIC_LOG_D64, track->sampleHelper->totalDuration_);
     }
     if (track->totalElstDuration) {
@@ -1254,8 +1257,14 @@ Status MPEG4AtomParser::ParseMdhd(MPEG4Atom currentAtom, int32_t depth, ParseCon
     uint32_t durationOffset = (version == 1) ? DURATION_OFFSET_V1 : DURATION_OFFSET_V0;
     if (version == 1) {
         duration = GetU64Value(&headerInfo[durationOffset]);
+        if (duration == UINT64_MAX) {
+            duration = 0;
+        }
     } else if (version == 0) {
         duration = GetU32Value(&headerInfo[durationOffset]);
+        if (duration == UINT32_MAX) {
+            duration = 0;
+        }
     }
     lastTrack_->duration = duration;
     FALSE_RETURN_V_MSG_E(IsValidTrackIndex(mediaInfo_, lastTrack_->trackIndex), Status::ERROR_INVALID_DATA,
@@ -1272,13 +1281,9 @@ Status MPEG4AtomParser::ParseMdhd(MPEG4Atom currentAtom, int32_t depth, ParseCon
     int32_t fileTimeScale = 0;
     if (mediaInfo_.general.GetData(Tag::MEDIA_TIME_SCALE, fileTimeScale) && fileTimeScale > 0 &&
         lastTrack_->sampleHelper != nullptr) {
-        int64_t emptyDurationTrackTs = 0;
-        if (lastTrack_->elstInitEmptyEdit > 0) {
-            emptyDurationTrackTs = (lastTrack_->elstInitEmptyEdit * timeScale + fileTimeScale - 1) / fileTimeScale;
-        }
-        int64_t timeOffset = lastTrack_->elstShiftStartTime - emptyDurationTrackTs;
-        lastTrack_->sampleHelper->SetTimeOffset(timeOffset);
-        MEDIA_LOG_D("Set timeOffset: " PUBLIC_LOG_D64 " for track " PUBLIC_LOG_U32, timeOffset, lastTrack_->trackIndex);
+        int64_t emptyDurationTrackTs = lastTrack_->elstInitEmptyEdit > 0 ?
+            ((lastTrack_->elstInitEmptyEdit * timeScale + fileTimeScale - 1) / fileTimeScale) : 0;
+        lastTrack_->sampleHelper->SetTimeOffset(lastTrack_->elstShiftStartTime - emptyDurationTrackTs);
     }
     return ret;
 }

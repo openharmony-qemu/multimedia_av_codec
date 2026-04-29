@@ -95,8 +95,28 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
 
 Status RegisterMpeg4Plugin(const std::shared_ptr<Register>& reg);
 
+static const std::vector<TrackType> g_streamMediaTypeVec = {
+    AUDIO_TYPE,
+    VIDEO_TYPE,
+    SUBTITLE_TYPE,
+    TIMEDMETA_TYPE,
+    AUXILIARY_TYPE,
+};
+
+bool IsSupportedTrackType(const std::shared_ptr<MPEG4AtomParser::Track>& track)
+{
+    return (std::find(g_streamMediaTypeVec.cbegin(), g_streamMediaTypeVec.cend(),
+        track->codecParms.trackType) != g_streamMediaTypeVec.cend());
+}
+
+
 bool IsSupportedTrack(const std::shared_ptr<MPEG4AtomParser::Track>& track)
 {
+    FALSE_RETURN_V_MSG_E(track != nullptr, false, "track is nullptr");
+    if (!IsSupportedTrackType(track)) {
+        MEDIA_LOG_E("Unsupport track type: " PUBLIC_LOG_D32, track->codecParms.trackType);
+        return false;
+    }
     if (track->codecParms.trackType == ATTACHMENT_TYPE || track->sampleHelper->sampleIndexEntry_.size() <= 0) {
         MEDIA_LOG_E("Unsupport image track or empty SampleIndexEntry");
         return false;
@@ -1006,12 +1026,9 @@ Status MPEG4DemuxerPlugin::WriteSampleAttr(uint32_t trackId, std::shared_ptr<Sam
     sample->dts = sampleDts; // us
     sample->flag = currentSample.flag;
     sample->size = currentSample.size;
-    uint32_t durationTimescale = 0;
-    Status ret = track->sampleHelper->GetSampleDuration(index, durationTimescale);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "GetSampleDuration failed");
     int64_t sampleDuration = 0;
     FALSE_RETURN_V_MSG_E(ConvertTimeScale(
-        static_cast<int64_t>(durationTimescale), static_cast<int64_t>(S_TO_US), trackTimeScale, &sampleDuration)
+        currentSample.duration, static_cast<int64_t>(S_TO_US), trackTimeScale, &sampleDuration)
         == Status::OK, Status::ERROR_INVALID_PARAMETER, "mul overflow");
     sample->duration = sampleDuration;
     // When the sample is copied in the seekable case, add it up again
