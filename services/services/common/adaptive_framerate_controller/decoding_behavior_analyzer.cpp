@@ -196,6 +196,9 @@ bool DecodingBehaviorAnalyzer::IsDecChanged(DecodingBehaviorType oldType, size_t
 void DecodingBehaviorAnalyzer::OnChecked(double decFps)
 {
     std::lock_guard<std::mutex> lock(mutex_);
+    if (frameCnt_ < SRC_FRAME_CNT_MIN || endPtsMs_ <= startPtsMs_) {
+        return;
+    }
     double srcFps = 0.0;
     double renderFps = 0.0;
     if (frameCnt_ > 1 && endPtsMs_ > startPtsMs_) {
@@ -205,8 +208,8 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
     if (frameCnt_ > 0) {
         renderFps = decFps * static_cast<double>(renderCnt_) / frameCnt_;
     }
-    AVCODEC_LOGD("Render: %{public}.2f fps, dec: %{public}.2f fps, src: %{public}.2f fps",
-                 renderFps, decFps, srcFps);
+    AVCODEC_LOGD("Render: %{public}.2f fps, dec: %{public}.2f fps, src: %{public}.2f fps, renderCnt %{public}u, "
+                ", frameCnt %{public}u", renderFps, decFps, srcFps, renderCnt_, frameCnt_);
     double reportDecFps = decFps > (MAX_REPORT_FPS + EPSILON) ? (MAX_REPORT_FPS + 1.0) : decFps;
     double reportRenderFps = renderFps > (MAX_REPORT_FPS + EPSILON) ? (MAX_REPORT_FPS + 1.0) : renderFps;
     if (lastReportedFps_ < 0.0 || lastReportedRenderFps_ < 0.0 ||
@@ -216,9 +219,6 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
                      reportRenderFps, reportDecFps, srcFps);
         lastReportedRenderFps_ = reportRenderFps;
         lastReportedFps_ = reportDecFps;
-    }
-    if (frameCnt_ < SRC_FRAME_CNT_MIN || endPtsMs_ <= startPtsMs_) {
-        return;
     }
     AVCODEC_LOGD("%{public}" PRId64 ", %{public}" PRId64 ", %{public}u", endPtsMs_, startPtsMs_, frameCnt_);
     startPtsMs_ = -1;
