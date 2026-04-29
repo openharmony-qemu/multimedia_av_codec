@@ -56,6 +56,8 @@ constexpr uint32_t READ_RETRY_SLEEP_TIME_US = 5000;
 constexpr int32_t READ_LEN = 8;
 constexpr int32_t MIN_ATOM_SIZE = 16;
 constexpr int64_t SNIFF_DATA_SIZE = 2048;
+constexpr int32_t BOX_HEADER_SIZE = 8;
+constexpr int32_t BOX_TYPE_OFFSET = 4;
 
 static const std::map<std::string, VideoStreamType> g_streamParserMap = {
     { "video/avc",  VideoStreamType::AVC },
@@ -1021,6 +1023,52 @@ Status MPEG4DemuxerPlugin::WriteSampleAttr(uint32_t trackId, std::shared_ptr<Sam
     return Status::OK;
 }
 
+Status MPEG4DemuxerPlugin::ProcessWebVTTSample(std::shared_ptr<MPEG4Sample> mpeg4Sample)
+{
+    FALSE_RETURN_V_MSG_E(mpeg4Sample != nullptr, Status::ERROR_NULL_POINTER, "Mpeg4Sample is nullptr");
+    std::shared_ptr<Sample> sample = mpeg4Sample->sample;
+    FALSE_RETURN_V_MSG_E(sample != nullptr && sample->data != nullptr, Status::ERROR_NULL_POINTER, "Sample is nullptr");
+    if (sample->size < BOX_HEADER_SIZE) {
+        return Status::OK;
+    }
+
+    uint8_t* data = sample->data.get();
+    uint32_t boxType = GetU32Value(data + BOX_TYPE_OFFSET);
+    // vtte box and other box
+    if (boxType != FourccType("vttc")) {
+        return Status::OK;
+    }
+    // vttc box
+    mpeg4Sample->isVttc = true;
+    int32_t payloadSize = sample->size - BOX_HEADER_SIZE;
+    uint8_t* payloadData = data + BOX_HEADER_SIZE;
+    while (payloadSize >= BOX_HEADER_SIZE) {
+        int32_t tempSize = GetU32Value(payloadData);
+        if (tempSize < BOX_HEADER_SIZE || tempSize > payloadSize) {
+            break;
+        }
+        uint32_t tempType = GetU32Value(payloadData + BOX_TYPE_OFFSET);
+        if (tempType == FourccType("payl")) {
+            payloadData += BOX_HEADER_SIZE;
+            payloadSize -= BOX_HEADER_SIZE;
+            if (payloadSize > 0) {
+                int32_t moveSize = (sample->size < payloadSize) ? sample->size : payloadSize;
+                errno_t res = memmove_s(data, moveSize, payloadData, moveSize);
+                FALSE_RETURN_V_MSG_E(res == EOK, Status::OK, "memmove data err");
+                sample->size = payloadSize;
+                data[sample->size] = '\0';
+            } else {
+                sample->size = 0;
+            }
+            break;
+        } else {
+            payloadData += tempSize;
+            payloadSize -= tempSize;
+        }
+    }
+    return Status::OK;
+}
+
 Status MPEG4DemuxerPlugin::ReadSampleData(std::shared_ptr<Sample> sample, uint64_t pos, int32_t size, uint32_t trackId)
 {
     MEDIA_LOG_D("In");
@@ -1135,7 +1183,49 @@ Status MPEG4DemuxerPlugin::SetEosSample(std::shared_ptr<AVBuffer> outBuffer)
     outBuffer->pts_ = 0;
     outBuffer->flag_ = static_cast<uint32_t>(AVBufferFlag::EOS);
     MEDIA_LOG_D("Read to end");
-    return Status::END_OF_STREAM;
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::GetSampleByMimeType(const Seekable seekable, uint32_t trackId,
+    std::shared_ptr<MPEG4Sample> &mpeg4Sample, std::shared_ptr<AVBuffer> outBuffer)
+{
+    auto track = FindTrackById(trackId);
+    if (track == nullptr || track->sampleHelper == nullptr || track->sampleHelper->mimeType_ != MimeType::TEXT_WEBVTT) {
+        return GetSampleBySeekableStatus(seekable, trackId, mpeg4Sample, outBuffer);
+    }
+
+    Status ret = Status::OK;
+    // get vttc+vtte
+    while (true) {
+        std::shared_ptr<MPEG4Sample> tempSample = std::make_shared<MPEG4Sample>();
+        ret = GetSampleBySeekableStatus(seekable, trackId, tempSample, outBuffer);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "GetSampleBySeekableStatus failed");
+        if (!(outBuffer->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS))) {
+            ret = ProcessWebVTTSample(tempSample);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ProcessWebVTTSample failed");
+            // push all vttc to cache
+            if (tempSample->isVttc) {
+                ret = AddSampleToCacheQueue(tempSample->sample, trackId);
+                FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add cache failed");
+                track->currentSampleIndex++;
+                continue;
+            }
+            // single vtte
+            if (!cacheQueue_.HasCache(trackId)) {
+                track->currentSampleIndex++;
+                continue;
+            }
+            // compute vttc duration by vtte
+            std::shared_ptr<MPEG4Sample> cacheSample  = cacheQueue_.Back(trackId);
+            if (tempSample->sample->pts > cacheSample->sample->pts) {
+                cacheSample->sample->duration = tempSample->sample->pts - cacheSample->sample->pts;
+            }
+        }
+        break;
+    }
+    mpeg4Sample = cacheQueue_.Front(trackId);
+    cacheQueue_.Pop(trackId);
+    return ret;
 }
 
 Status MPEG4DemuxerPlugin::GetSampleBySeekableStatus(const Seekable seekable, uint32_t trackId,
@@ -1275,19 +1365,29 @@ Status MPEG4DemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer
     FALSE_RETURN_V_MSG_E(outBuffer != nullptr && outBuffer->memory_ != nullptr, Status::ERROR_INVALID_PARAMETER,
         "AVBuffer or memory is nullptr");
     
-    auto mpeg4Sample = std::make_shared<MPEG4Sample>();
-    FALSE_RETURN_V_MSG_E(mpeg4Sample != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate mpeg4Sample");
-    Status ret = GetSampleBySeekableStatus(seekable_, trackId, mpeg4Sample, outBuffer);
-    if (ret != Status::OK) {
-        return ret;
+    std::shared_ptr<MPEG4Sample> mpeg4Sample = nullptr;
+    Status ret = Status::OK;
+    bool getFromCache = false;
+    if (cacheQueue_.HasCache(trackId)) {
+        mpeg4Sample = cacheQueue_.Front(trackId);
+        getFromCache = true;
+        FALSE_RETURN_V_MSG_E(mpeg4Sample != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate mpeg4Sample");
+    } else {
+        mpeg4Sample = std::make_shared<MPEG4Sample>();
+        FALSE_RETURN_V_MSG_E(mpeg4Sample != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate mpeg4Sample");
+        ret = GetSampleByMimeType(seekable_, trackId, mpeg4Sample, outBuffer);
+        if (ret != Status::OK) {
+            return ret;
+        }
     }
-
-    ret = WriteBuffer(trackId, outBuffer, mpeg4Sample);
+    if (mpeg4Sample != nullptr && mpeg4Sample->sample != nullptr) {
+        ret = WriteBuffer(trackId, outBuffer, mpeg4Sample);
+    }
     if (ret == Status::ERROR_NOT_ENOUGH_DATA) {
         return Status::OK;
     } else if (ret == Status::OK) {
         MEDIA_LOG_D("Sample has been copied");
-        if (seekable_ == Seekable::UNSEEKABLE) {
+        if (seekable_ == Seekable::UNSEEKABLE || getFromCache) {
             cacheQueue_.Pop(trackId);
         } else {
             auto track = FindTrackById(trackId);
@@ -1304,21 +1404,36 @@ Status MPEG4DemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t &sampleSi
     MediaAVCodec::AVCodecTrace trace("GetNextSampleSize");
     MEDIA_LOG_D("In, track " PUBLIC_LOG_D32, trackId);
     FALSE_RETURN_V_MSG_E(inited_, Status::ERROR_UNKNOWN, "Plugin has not been initialized");
-    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
-    FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_PARAMETER, "Track has not been selected");
-
-    auto track = FindTrackById(trackId);
-    FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");
-    uint32_t currentSampleIndex = track->currentSampleIndex;
-    sampleSize = track->sampleHelper->sampleIndexEntry_[currentSampleIndex].size;
+    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_UNKNOWN, "No track has been selected");
+    FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_UNKNOWN, "Track has not been selected");
+    bool isSyncFrame = false;
+    if (cacheQueue_.HasCache(trackId)) {
+        std::shared_ptr<MPEG4Sample> mpeg4Sample = cacheQueue_.Front(trackId); 
+        sampleSize = mpeg4Sample->sample->size;
+        isSyncFrame = mpeg4Sample->sample->flag & Sample::SampleFlag::SYNC_FRAME;
+    } else {
+        int64_t pos = 0;
+        Status ret = Status::OK;
+        if (seekable_ == Seekable::SEEKABLE) {
+            ret = GetSeekableSampleInfo(trackId, pos, sampleSize);
+        } else if (seekable_ == Seekable::UNSEEKABLE) {
+            ret = GetUnseekableSampleInfo(trackId, pos, sampleSize);
+        }
+        if (ret == Status::END_OF_STREAM) {
+            return ret;
+        }
+        auto track = FindTrackById(trackId);
+        FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_UNKNOWN, "Track is nullptr");
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Get next sample info failed");
+        uint32_t currentSampleIndex = track->currentSampleIndex;
+        isSyncFrame = track->sampleHelper->sampleIndexEntry_[currentSampleIndex].flag & Sample::SampleFlag::SYNC_FRAME;
+    }
 
     std::string mime;
     std::vector<uint8_t> extradata {};
     if (mediaInfo_.tracks[trackId].Get<Tag::MIME_TYPE>(mime) && HaveValidParser(mime) &&
-        mediaInfo_.tracks[trackId].Get<Tag::MEDIA_CODEC_CONFIG>(extradata)) {
-        if (track->sampleHelper->sampleIndexEntry_[currentSampleIndex].flag & Sample::SampleFlag::SYNC_FRAME) {
-            sampleSize += extradata.size();
-        }
+        mediaInfo_.tracks[trackId].Get<Tag::MEDIA_CODEC_CONFIG>(extradata) && isSyncFrame) {
+        sampleSize += extradata.size();
     }
     return Status::OK;
 }
