@@ -253,6 +253,7 @@ PreprocessorManager::EncoderInfo::~EncoderInfo()
     Stop();
     if (encoderSurface_) {
         encoderSurface_->UnRegisterReleaseListener();
+        encoderSurface_->CleanCache(true);
     }
     AVCODEC_LOGI("EncoderInfo destroyed: %{public}s", encoderId_.data());
 }
@@ -433,6 +434,11 @@ void PreprocessorManager::EncoderInfo::NotifyEosNowIfPending()
         }
         std::swap(notifyEosTask, notifyEosTask_);
         eosRequested_ = false;
+        isRunning_ = false;
+        if (!pendingBuffers_.empty()) {
+            AVCODEC_LOGI("Notify eos immediately, drop %{public}zu pending buffers: %{public}s",
+                pendingBuffers_.size(), encoderId_.data());
+        }
     }
     bufferQueueCv_.notify_all();
     AVCODEC_LOGI("Notify pending eos immediately: %{public}s", encoderId_.data());
