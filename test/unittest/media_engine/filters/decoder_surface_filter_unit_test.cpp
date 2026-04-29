@@ -537,6 +537,118 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_LoadCameraPostProces
     EXPECT_NE(decoderSurfaceFilter->postProcessor_, nullptr);
 }
 #endif
+
+/**
+ * @tc.name: DecoderSurfaceFilter_IsResolutionSupportSeekContinuous_CannotGetWidthHeight
+ * @tc.desc: 测试无法获取宽高数据场景
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecoderSurfaceFilterUnitTest,
+    DecoderSurfaceFilter_IsResolutionSupportSeekContinuous_CannotGetWidthHeight, TestSize.Level1)
+{
+    auto meta = std::make_shared<Meta>();
+    decoderSurfaceFilter_->meta_ = meta;
+ 
+    // meta 中没有设置宽高，应该返回 false
+    auto result = decoderSurfaceFilter_->IsResolutionSupportSeekContinuous();
+    EXPECT_FALSE(result);
+}
+
+/**
+ * @tc.name: DecoderSurfaceFilter_IsResolutionSupportSeekContinuous_InvalidSize
+ * @tc.desc: 测试宽高为0或负数场景
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecoderSurfaceFilterUnitTest,
+    DecoderSurfaceFilter_IsResolutionSupportSeekContinuous_InvalidSize, TestSize.Level1)
+{
+    auto meta = std::make_shared<Meta>();
+    decoderSurfaceFilter_->meta_ = meta;
+ 
+    // 测试负数宽度
+    meta->SetData(Tag::VIDEO_WIDTH, -1);
+    meta->SetData(Tag::VIDEO_HEIGHT, 1080);
+    auto result = decoderSurfaceFilter_->IsResolutionSupportSeekContinuous();
+    EXPECT_FALSE(result);
+ 
+    // 测试负数高度
+    meta->SetData(Tag::VIDEO_WIDTH, 1920);
+    meta->SetData(Tag::VIDEO_HEIGHT, -1);
+    result = decoderSurfaceFilter_->IsResolutionSupportSeekContinuous();
+    EXPECT_FALSE(result);
+ 
+    // 测试宽度为0
+    meta->SetData(Tag::VIDEO_WIDTH, 0);
+    meta->SetData(Tag::VIDEO_HEIGHT, 1080);
+    result = decoderSurfaceFilter_->IsResolutionSupportSeekContinuous();
+    EXPECT_FALSE(result);
+ 
+    // 测试高度为0
+    meta->SetData(Tag::VIDEO_WIDTH, 1920);
+    meta->SetData(Tag::VIDEO_HEIGHT, 0);
+    result = decoderSurfaceFilter_->IsResolutionSupportSeekContinuous();
+    EXPECT_FALSE(result);
+}
+
+/**
+ * @tc.name: DecoderSurfaceFilter_IsResolutionSupportSeekContinuous_Exceeds8K
+ * @tc.desc: 测试分辨率超过8K场景
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecoderSurfaceFilterUnitTest,
+    DecoderSurfaceFilter_IsResolutionSupportSeekContinuous_Exceeds8K, TestSize.Level1)
+{
+    auto meta = std::make_shared<Meta>();
+    decoderSurfaceFilter_->meta_ = meta;
+ 
+    // 测试刚好超过8K (7680 * 4320 = 33177600)
+    meta->SetData(Tag::VIDEO_WIDTH, 7681);
+    meta->SetData(Tag::VIDEO_HEIGHT, 4320);
+    auto result = decoderSurfaceFilter_->IsResolutionSupportSeekContinuous();
+    EXPECT_FALSE(result);
+ 
+    // 测试更大的分辨率
+    meta->SetData(Tag::VIDEO_WIDTH, 8000);
+    meta->SetData(Tag::VIDEO_HEIGHT, 5000);
+    result = decoderSurfaceFilter_->IsResolutionSupportSeekContinuous();
+    EXPECT_FALSE(result);
+}
+
+/**
+ * @tc.name: DecoderSurfaceFilter_IsResolutionSupportSeekContinuous_ValidResolution
+ * @tc.desc: 测试正常支持的分辨率场景
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecoderSurfaceFilterUnitTest,
+    DecoderSurfaceFilter_IsResolutionSupportSeekContinuous_ValidResolution, TestSize.Level1)
+{
+    auto meta = std::make_shared<Meta>();
+    decoderSurfaceFilter_->meta_ = meta;
+ 
+    // 测试1080P
+    meta->SetData(Tag::VIDEO_WIDTH, 1920);
+    meta->SetData(Tag::VIDEO_HEIGHT, 1080);
+    auto result = decoderSurfaceFilter_->IsResolutionSupportSeekContinuous();
+    EXPECT_TRUE(result);
+ 
+    // 测试4K
+    meta->SetData(Tag::VIDEO_WIDTH, 3840);
+    meta->SetData(Tag::VIDEO_HEIGHT, 2160);
+    result = decoderSurfaceFilter_->IsResolutionSupportSeekContinuous();
+    EXPECT_TRUE(result);
+ 
+    // 测试8K (刚好等于8K限制)
+    meta->SetData(Tag::VIDEO_WIDTH, 7680);
+    meta->SetData(Tag::VIDEO_HEIGHT, 4320);
+    result = decoderSurfaceFilter_->IsResolutionSupportSeekContinuous();
+    EXPECT_FALSE(result);
+ 
+    // 测试最小分辨率
+    meta->SetData(Tag::VIDEO_WIDTH, 1);
+    meta->SetData(Tag::VIDEO_HEIGHT, 1);
+    result = decoderSurfaceFilter_->IsResolutionSupportSeekContinuous();
+    EXPECT_TRUE(result);
+}
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS
