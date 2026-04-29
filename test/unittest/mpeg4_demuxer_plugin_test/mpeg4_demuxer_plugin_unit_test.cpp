@@ -400,7 +400,8 @@ bool Mpeg4DemuxerPluginUnitTest::ReadTrackSample(const std::shared_ptr<BaseDemux
     return true;
 }
 
-void Mpeg4DemuxerPluginUnitTest::CheckSeekSuccessDigest(const ReadDigest& actualDigest, const ReadDigest& expectedDigest)
+void Mpeg4DemuxerPluginUnitTest::CheckSeekSuccessDigest(const ReadDigest& actualDigest,
+    const ReadDigest& expectedDigest)
 {
     ASSERT_EQ(actualDigest.tracks.size(), expectedDigest.tracks.size());
     for (size_t index = 0; index < actualDigest.tracks.size(); ++index) {
