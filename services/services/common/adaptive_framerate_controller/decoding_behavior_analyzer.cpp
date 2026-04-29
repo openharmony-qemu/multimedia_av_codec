@@ -207,14 +207,12 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
     }
     AVCODEC_LOGD("Render: %{public}.2f fps, dec: %{public}.2f fps, src: %{public}.2f fps",
                  renderFps, decFps, srcFps);
-    // double reportDecFps = decFps > (MAX_REPORT_FPS + EPSILON) ? 0.0 : decFps;
-    // double reportRenderFps = renderFps > (MAX_REPORT_FPS + EPSILON) ? 0.0 : renderFps;
     double reportDecFps = decFps > MAX_REPORT_FPS ? 0.0 : decFps;
     double reportRenderFps = renderFps > MAX_REPORT_FPS ? 0.0 : renderFps;
     if (lastReportedFps_ < 0.0 || lastReportedRenderFps_ < 0.0 ||
         std::abs(reportRenderFps - lastReportedRenderFps_) > FPS_REPORT_DIFF_THRESHOLD ||
         std::abs(reportDecFps - lastReportedFps_) > FPS_REPORT_DIFF_THRESHOLD) {
-        AVCODEC_LOGI("Framerate changed: render: %{public}.2f fps, dec: %{public}.2f fps, src: %{public}.2f fps",
+        AVCODEC_LOGD("Framerate changed: render: %{public}.2f fps, dec: %{public}.2f fps, src: %{public}.2f fps",
                      reportRenderFps, reportDecFps, srcFps);
         lastReportedRenderFps_ = reportRenderFps;
         lastReportedFps_ = reportDecFps;
