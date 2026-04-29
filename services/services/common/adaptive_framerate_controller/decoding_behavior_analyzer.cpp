@@ -209,7 +209,7 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
         renderFps = decFps * static_cast<double>(renderCnt_) / frameCnt_;
     }
     AVCODEC_LOGD("Render: %{public}.2f fps, dec: %{public}.2f fps, src: %{public}.2f fps, renderCnt %{public}u, "
-                ", frameCnt %{public}u", renderFps, decFps, srcFps, renderCnt_, frameCnt_);
+                 ", frameCnt %{public}u", renderFps, decFps, srcFps, renderCnt_, frameCnt_);
     double reportDecFps = decFps > (MAX_REPORT_FPS + EPSILON) ? (MAX_REPORT_FPS + 1.0) : decFps;
     double reportRenderFps = renderFps > (MAX_REPORT_FPS + EPSILON) ? (MAX_REPORT_FPS + 1.0) : renderFps;
     if (lastReportedFps_ < 0.0 || lastReportedRenderFps_ < 0.0 ||
