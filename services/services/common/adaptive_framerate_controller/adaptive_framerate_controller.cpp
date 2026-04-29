@@ -47,7 +47,7 @@ FramerateCalculator::~FramerateCalculator()
     }
 }
 
-void FramerateCalculator::OnFrameConsumed(int64_t pts)
+void FramerateCalculator::OnFrameConsumed(int64_t pts, bool render)
 {
     if (!afcEnable) {
         return;
@@ -64,7 +64,7 @@ void FramerateCalculator::OnFrameConsumed(int64_t pts)
     }
 
     if (behaviorAnalyzer_) {
-        behaviorAnalyzer_->OnFrameConsumed(pts);
+        behaviorAnalyzer_->OnFrameConsumed(pts, render);
     }
     frameCount_++;
 }
