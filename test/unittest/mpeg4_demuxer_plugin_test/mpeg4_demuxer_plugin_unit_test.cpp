@@ -15,6 +15,7 @@
 
 #include "mpeg4_demuxer_plugin_unit_test.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <fcntl.h>
 #include <numeric>
@@ -124,8 +125,8 @@ void Mpeg4DemuxerPluginUnitTest::ResetPlugin(std::shared_ptr<BaseDemuxerPlugin>&
     }
 }
 
-void Mpeg4DemuxerPluginUnitTest::InitPlugin(const std::string& filePath, const std::shared_ptr<BaseDemuxerPlugin>& plugin,
-    int& fd, MediaInfo& mediaInfo)
+void Mpeg4DemuxerPluginUnitTest::InitPlugin(
+    const std::string& filePath, const std::shared_ptr<BaseDemuxerPlugin>& plugin, int& fd, MediaInfo& mediaInfo)
 {
     struct stat fileStatus {};
     ASSERT_EQ(stat(filePath.c_str(), &fileStatus), 0);
@@ -224,8 +225,8 @@ bool Mpeg4DemuxerPluginUnitTest::IsSyncFrame(const std::shared_ptr<MediaAVBuffer
     return buffer != nullptr && (buffer->flag_ & static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME)) != 0;
 }
 
-std::vector<uint32_t> Mpeg4DemuxerPluginUnitTest::SelectSupportedTracks(const std::shared_ptr<BaseDemuxerPlugin>& plugin,
-    const MediaInfo& mediaInfo)
+std::vector<uint32_t> Mpeg4DemuxerPluginUnitTest::SelectSupportedTracks(
+    const std::shared_ptr<BaseDemuxerPlugin>& plugin, const MediaInfo& mediaInfo)
 {
     std::vector<uint32_t> selectedTrackIds;
     for (uint32_t trackId = 0; trackId < mediaInfo.tracks.size(); ++trackId) {
@@ -242,7 +243,8 @@ std::vector<uint32_t> Mpeg4DemuxerPluginUnitTest::SelectSupportedTracks(const st
     return selectedTrackIds;
 }
 
-Status Mpeg4DemuxerPluginUnitTest::ReadSampleWithRetry(const std::shared_ptr<BaseDemuxerPlugin>& plugin, uint32_t trackId,
+Status Mpeg4DemuxerPluginUnitTest::ReadSampleWithRetry(
+    const std::shared_ptr<BaseDemuxerPlugin>& plugin, uint32_t trackId,
     const std::shared_ptr<MediaAVBuffer>& buffer, ReadMode readMode)
 {
     Status ret = Status::OK;
@@ -321,66 +323,70 @@ SampleDigest Mpeg4DemuxerPluginUnitTest::ReadFirstSample(const std::shared_ptr<B
 ReadDigest Mpeg4DemuxerPluginUnitTest::ReadAllSamples(const std::shared_ptr<BaseDemuxerPlugin>& plugin,
     const MediaInfo& mediaInfo, const std::vector<uint32_t>& selectedTrackIds, ReadMode readMode)
 {
-    ReadDigest digest;
-    std::map<uint32_t, bool> eosMap;
-    for (auto trackId : selectedTrackIds) {
-        TrackReadDigest trackDigest;
-        trackDigest.trackId = trackId;
-        mediaInfo.tracks[trackId].GetData(Tag::MIME_TYPE, trackDigest.mime);
-        digest.tracks.push_back(trackDigest);
-        eosMap[trackId] = false;
-    }
-
-    auto allEos = [&eosMap]() {
-        for (const auto& item : eosMap) {
-            if (!item.second) {
-                return false;
-            }
-        }
-        return true;
-    };
-
+    auto digest = CreateReadDigest(mediaInfo, selectedTrackIds);
+    std::vector<bool> eosFlags(selectedTrackIds.size(), false);
     std::unique_ptr<AVBufferWrapper> copyBuffer;
     if (readMode == ReadMode::COPY) {
         copyBuffer = std::make_unique<AVBufferWrapper>(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
     }
 
-    while (!allEos()) {
+    while (std::find(eosFlags.begin(), eosFlags.end(), false) != eosFlags.end()) {
         for (size_t index = 0; index < selectedTrackIds.size(); ++index) {
-            uint32_t trackId = selectedTrackIds[index];
-            if (eosMap[trackId]) {
+            if (eosFlags[index]) {
                 continue;
             }
-
-            std::shared_ptr<MediaAVBuffer> buffer = (readMode == ReadMode::ZERO_COPY) ?
-                MediaAVBuffer::CreateAVBuffer() : copyBuffer->mediaAVBuffer;
-            if (buffer == nullptr) {
-                ADD_FAILURE() << "Create AVBuffer failed";
+            bool eosReached = false;
+            if (!ReadTrackSample(plugin, selectedTrackIds[index], readMode, copyBuffer.get(), digest.tracks[index],
+                eosReached)) {
                 return digest;
             }
-            auto ret = ReadSampleWithRetry(plugin, trackId, buffer, readMode);
-            if (!(ret == Status::OK || ret == Status::END_OF_STREAM || ret == Status::NO_ERROR)) {
-                ADD_FAILURE() << "ReadSample failed, trackId=" << trackId << ", ret=" << static_cast<int32_t>(ret);
-                return digest;
-            }
-            if (ret == Status::END_OF_STREAM || IsEos(buffer)) {
-                eosMap[trackId] = true;
-                continue;
-            }
-
-            auto& trackDigest = digest.tracks[index];
-            if (trackDigest.frameCount == 0) {
-                trackDigest.firstPts = buffer->pts_;
-            }
-            trackDigest.lastPts = buffer->pts_;
-            if (IsSyncFrame(buffer)) {
-                trackDigest.keyFrameCount++;
-                trackDigest.keyFrameIndexes.push_back(static_cast<uint32_t>(trackDigest.frameCount));
-            }
-            trackDigest.frameCount++;
+            eosFlags[index] = eosReached;
         }
     }
     return digest;
+}
+
+ReadDigest Mpeg4DemuxerPluginUnitTest::CreateReadDigest(
+    const MediaInfo& mediaInfo, const std::vector<uint32_t>& selectedTrackIds) const
+{
+    ReadDigest digest;
+    for (auto trackId : selectedTrackIds) {
+        TrackReadDigest trackDigest;
+        trackDigest.trackId = trackId;
+        mediaInfo.tracks[trackId].GetData(Tag::MIME_TYPE, trackDigest.mime);
+        digest.tracks.push_back(trackDigest);
+    }
+    return digest;
+}
+
+bool Mpeg4DemuxerPluginUnitTest::ReadTrackSample(const std::shared_ptr<BaseDemuxerPlugin>& plugin, uint32_t trackId,
+    ReadMode readMode, AVBufferWrapper* copyBuffer, TrackReadDigest& trackDigest, bool& eosReached)
+{
+    std::shared_ptr<MediaAVBuffer> buffer =
+        (readMode == ReadMode::ZERO_COPY) ? MediaAVBuffer::CreateAVBuffer() : copyBuffer->mediaAVBuffer;
+    if (buffer == nullptr) {
+        ADD_FAILURE() << "Create AVBuffer failed";
+        return false;
+    }
+    auto ret = ReadSampleWithRetry(plugin, trackId, buffer, readMode);
+    if (!(ret == Status::OK || ret == Status::END_OF_STREAM || ret == Status::NO_ERROR)) {
+        ADD_FAILURE() << "ReadSample failed, trackId=" << trackId << ", ret=" << static_cast<int32_t>(ret);
+        return false;
+    }
+    eosReached = ret == Status::END_OF_STREAM || IsEos(buffer);
+    if (eosReached) {
+        return true;
+    }
+    if (trackDigest.frameCount == 0) {
+        trackDigest.firstPts = buffer->pts_;
+    }
+    trackDigest.lastPts = buffer->pts_;
+    if (IsSyncFrame(buffer)) {
+        trackDigest.keyFrameCount++;
+        trackDigest.keyFrameIndexes.push_back(static_cast<uint32_t>(trackDigest.frameCount));
+    }
+    trackDigest.frameCount++;
+    return true;
 }
 
 void Mpeg4DemuxerPluginUnitTest::CompareReadDigest(const ReadDigest& lhs, const ReadDigest& rhs)
@@ -448,7 +454,8 @@ void Mpeg4DemuxerPluginUnitTest::CompareSampleDigest(const SampleDigest& lhs, co
     EXPECT_EQ(lhs.flag, rhs.flag);
 }
 
-void Mpeg4DemuxerPluginUnitTest::CompareSeekReadResult(const std::string& filePath, const std::vector<int64_t>& seekTimes,
+void Mpeg4DemuxerPluginUnitTest::CompareSeekReadResult(
+    const std::string& filePath, const std::vector<int64_t>& seekTimes,
     const std::vector<SeekMode>& seekModes, bool useUri)
 {
     for (auto seekTimeTarget : seekTimes) {

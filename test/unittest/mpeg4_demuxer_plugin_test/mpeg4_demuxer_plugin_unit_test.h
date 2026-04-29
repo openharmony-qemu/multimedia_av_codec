@@ -138,6 +138,9 @@ protected:
         const std::shared_ptr<MediaAVBuffer>& buffer, ReadMode readMode);
     Status GetNextSampleSizeWithRetry(const std::shared_ptr<BaseDemuxerPlugin>& plugin, uint32_t trackId,
         int32_t& sampleSize);
+    ReadDigest CreateReadDigest(const MediaInfo& mediaInfo, const std::vector<uint32_t>& selectedTrackIds) const;
+    bool ReadTrackSample(const std::shared_ptr<BaseDemuxerPlugin>& plugin, uint32_t trackId, ReadMode readMode,
+        AVBufferWrapper* copyBuffer, TrackReadDigest& trackDigest, bool& eosReached);
 
 protected:
     int ffmpegFd_ = -1;
