@@ -45,6 +45,7 @@ public:
     void CreateSharedSurface();
     sptr<Surface> GetSharedSurface();
     bool RequestNotifyEos(std::string_view encoderId, std::function<void()> notifyEosTask);
+    void NotifyEosNowIfPending(std::string_view encoderId);
 
     void NotifyNewBufferAvailable();
 
@@ -70,7 +71,6 @@ private:
         SurfaceType surfaceType;
         int64_t timestamp{0};
         BufferFlushConfig flushConfig{};
-        bool isProcessed{false};
 
         SurfaceBufferWrapper() = default;
         SurfaceBufferWrapper(wptr<Surface> argSurface, sptr<SurfaceBuffer> buf,
@@ -91,6 +91,7 @@ private:
         void OnNewPendingBufferAvailable(std::shared_ptr<SurfaceBufferWrapper> buffer);
         void OnNewEncoderSurfaceBufferAvailable(uint32_t seq, const sptr<SyncFence>& fence);
         bool RequestNotifyEos(std::function<void()> notifyEosTask);
+        void NotifyEosNowIfPending();
 
         // === Buffer data query for GetInputDescription (reads from pendingBuffers_ directly) ===
         bool PeekPendingBufferData(BufferDataInfo& outInfo) const;
@@ -98,10 +99,7 @@ private:
     private:
         void SetBufferFlushConfig(std::shared_ptr<SurfaceBufferWrapper> &inputBuffer,
                                   std::shared_ptr<SurfaceBufferWrapper> &outputBuffer);
-        bool DequeueBuffers(std::shared_ptr<SurfaceBufferWrapper> &inputBuffer,
-                            std::shared_ptr<SurfaceBufferWrapper> &outputBuffer,
-                            std::function<void()> &notifyEosTask);
-        void ProcessFrame(std::shared_ptr<SurfaceBufferWrapper> &inputBuffer,
+        bool ProcessFrame(std::shared_ptr<SurfaceBufferWrapper> &inputBuffer,
                           std::shared_ptr<SurfaceBufferWrapper> &outputBuffer);
         void EncoderThreadLoop();
 
