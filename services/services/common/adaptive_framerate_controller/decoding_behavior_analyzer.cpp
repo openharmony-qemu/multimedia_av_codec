@@ -29,7 +29,7 @@ constexpr double DETECTION_THRESHOLD_RATIO = 0.5; // Stability threshold: domina
 constexpr uint32_t SRC_FRAME_CNT_MIN = 5;         // Minimum valid frame count
 constexpr double EPSILON = 1e-6;
 constexpr double FPS_REPORT_DIFF_THRESHOLD = 2.0 + EPSILON;
-constexpr double MAX_REPORT_FPS = 60.0 + EPSILON;
+constexpr double MAX_REPORT_FPS = 60.0;
 constexpr int64_t SEEK_DETECTION_THRESHOLD_MS = 500;
 const std::unordered_map<size_t, const std::string_view> SPEED_DEC_INFO_KEY_MAP = {
     {1, OHOS::MediaAVCodec::EventInfoExtentedKey::SPEED_DECODING_INFO_0_75X},
@@ -200,15 +200,15 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
     double renderFps = 0.0;
     if (frameCnt_ > 1 && endPtsMs_ > startPtsMs_) {
         double ptsIntvlMs = static_cast<double>(endPtsMs_ - startPtsMs_) / (frameCnt_ - 1);
-        srcFps = 1000.0 / ptsIntvlMs;
+        srcFps = 1000.0 / ptsIntvlMs; //1000.0: ms to s
     }
     if (frameCnt_ > 0) {
         renderFps = decFps * static_cast<double>(renderCnt_) / frameCnt_;
     }
     AVCODEC_LOGD("Render: %{public}.2f fps, dec: %{public}.2f fps, src: %{public}.2f fps",
                  renderFps, decFps, srcFps);
-    double reportDecFps = decFps > MAX_REPORT_FPS ? 0.0 : decFps;
-    double reportRenderFps = renderFps > MAX_REPORT_FPS ? 0.0 : renderFps;
+    double reportDecFps = decFps > (MAX_REPORT_FPS + EPSILON) ? (MAX_REPORT_FPS + 1.0) : decFps;
+    double reportRenderFps = renderFps > (MAX_REPORT_FPS + EPSILON) ? (MAX_REPORT_FPS + 1.0) : renderFps;
     if (lastReportedFps_ < 0.0 || lastReportedRenderFps_ < 0.0 ||
         std::abs(reportRenderFps - lastReportedRenderFps_) > FPS_REPORT_DIFF_THRESHOLD ||
         std::abs(reportDecFps - lastReportedFps_) > FPS_REPORT_DIFF_THRESHOLD) {
