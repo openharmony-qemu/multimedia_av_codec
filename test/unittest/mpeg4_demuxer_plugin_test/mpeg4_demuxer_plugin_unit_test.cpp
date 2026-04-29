@@ -272,6 +272,17 @@ Status Mpeg4DemuxerPluginUnitTest::GetNextSampleSizeWithRetry(const std::shared_
     return ret;
 }
 
+void Mpeg4DemuxerPluginUnitTest::InitPluginsForReadTest(const std::string& filePath, bool useUri)
+{
+    if (useUri) {
+        InitFfmpegPluginURI(filePath);
+        InitMpeg4PluginURI(filePath);
+        return;
+    }
+    InitFfmpegPlugin(filePath);
+    InitMpeg4Plugin(filePath);
+}
+
 SampleDigest Mpeg4DemuxerPluginUnitTest::ReadFirstSample(const std::shared_ptr<BaseDemuxerPlugin>& plugin,
     const MediaInfo& mediaInfo, ReadMode readMode)
 {
@@ -335,9 +346,10 @@ ReadDigest Mpeg4DemuxerPluginUnitTest::ReadAllSamples(const std::shared_ptr<Base
             if (eosFlags[index]) {
                 continue;
             }
+            std::shared_ptr<MediaAVBuffer> buffer =
+                (readMode == ReadMode::ZERO_COPY) ? MediaAVBuffer::CreateAVBuffer() : copyBuffer->mediaAVBuffer;
             bool eosReached = false;
-            if (!ReadTrackSample(plugin, selectedTrackIds[index], readMode, copyBuffer.get(), digest.tracks[index],
-                eosReached)) {
+            if (!ReadTrackSample(plugin, digest.tracks[index], buffer, readMode, eosReached)) {
                 return digest;
             }
             eosFlags[index] = eosReached;
@@ -359,18 +371,17 @@ ReadDigest Mpeg4DemuxerPluginUnitTest::CreateReadDigest(
     return digest;
 }
 
-bool Mpeg4DemuxerPluginUnitTest::ReadTrackSample(const std::shared_ptr<BaseDemuxerPlugin>& plugin, uint32_t trackId,
-    ReadMode readMode, AVBufferWrapper* copyBuffer, TrackReadDigest& trackDigest, bool& eosReached)
+bool Mpeg4DemuxerPluginUnitTest::ReadTrackSample(const std::shared_ptr<BaseDemuxerPlugin>& plugin,
+    TrackReadDigest& trackDigest, const std::shared_ptr<MediaAVBuffer>& buffer, ReadMode readMode, bool& eosReached)
 {
-    std::shared_ptr<MediaAVBuffer> buffer =
-        (readMode == ReadMode::ZERO_COPY) ? MediaAVBuffer::CreateAVBuffer() : copyBuffer->mediaAVBuffer;
     if (buffer == nullptr) {
         ADD_FAILURE() << "Create AVBuffer failed";
         return false;
     }
-    auto ret = ReadSampleWithRetry(plugin, trackId, buffer, readMode);
+    auto ret = ReadSampleWithRetry(plugin, trackDigest.trackId, buffer, readMode);
     if (!(ret == Status::OK || ret == Status::END_OF_STREAM || ret == Status::NO_ERROR)) {
-        ADD_FAILURE() << "ReadSample failed, trackId=" << trackId << ", ret=" << static_cast<int32_t>(ret);
+        ADD_FAILURE() << "ReadSample failed, trackId=" << trackDigest.trackId
+                      << ", ret=" << static_cast<int32_t>(ret);
         return false;
     }
     eosReached = ret == Status::END_OF_STREAM || IsEos(buffer);
@@ -387,6 +398,43 @@ bool Mpeg4DemuxerPluginUnitTest::ReadTrackSample(const std::shared_ptr<BaseDemux
     }
     trackDigest.frameCount++;
     return true;
+}
+
+void Mpeg4DemuxerPluginUnitTest::CheckSeekSuccessDigest(const ReadDigest& actualDigest, const ReadDigest& expectedDigest)
+{
+    ASSERT_EQ(actualDigest.tracks.size(), expectedDigest.tracks.size());
+    for (size_t index = 0; index < actualDigest.tracks.size(); ++index) {
+        EXPECT_EQ(actualDigest.tracks[index].mime, expectedDigest.tracks[index].mime);
+        EXPECT_GT(actualDigest.tracks[index].frameCount, 0);
+        EXPECT_LE(actualDigest.tracks[index].frameCount, expectedDigest.tracks[index].frameCount);
+    }
+}
+
+void Mpeg4DemuxerPluginUnitTest::CheckSeekSuccessDigestWithExpected(const ReadDigest& ffmpegDigest,
+    const ReadDigest& mpeg4Digest, const std::vector<int32_t>& expectedFrames)
+{
+    ASSERT_EQ(ffmpegDigest.tracks.size(), expectedFrames.size());
+    ASSERT_EQ(mpeg4Digest.tracks.size(), expectedFrames.size());
+    for (size_t index = 0; index < expectedFrames.size(); ++index) {
+        EXPECT_EQ(ffmpegDigest.tracks[index].frameCount, expectedFrames[index]);
+        EXPECT_EQ(mpeg4Digest.tracks[index].mime, ffmpegDigest.tracks[index].mime);
+        EXPECT_GT(mpeg4Digest.tracks[index].frameCount, 0);
+        EXPECT_LE(mpeg4Digest.tracks[index].frameCount, expectedFrames[index]);
+    }
+}
+
+void Mpeg4DemuxerPluginUnitTest::CheckSeekFallbackDigest(const ReadDigest& mpeg4Digest,
+    const std::vector<uint32_t>& selectedTrackIds, const std::vector<int32_t>& expectedFrames)
+{
+    if (expectedFrames.empty()) {
+        EXPECT_EQ(mpeg4Digest.tracks.size(), selectedTrackIds.size());
+        return;
+    }
+    ASSERT_EQ(mpeg4Digest.tracks.size(), expectedFrames.size());
+    for (size_t index = 0; index < expectedFrames.size(); ++index) {
+        EXPECT_GT(mpeg4Digest.tracks[index].frameCount, 0);
+        EXPECT_LE(mpeg4Digest.tracks[index].frameCount, expectedFrames[index]);
+    }
 }
 
 void Mpeg4DemuxerPluginUnitTest::CompareReadDigest(const ReadDigest& lhs, const ReadDigest& rhs)
@@ -460,13 +508,7 @@ void Mpeg4DemuxerPluginUnitTest::CompareSeekReadResult(
 {
     for (auto seekTimeTarget : seekTimes) {
         for (auto seekMode : seekModes) {
-            if (useUri) {
-                InitFfmpegPluginURI(filePath);
-                InitMpeg4PluginURI(filePath);
-            } else {
-                InitFfmpegPlugin(filePath);
-                InitMpeg4Plugin(filePath);
-            }
+            InitPluginsForReadTest(filePath, useUri);
 
             auto ffmpegSelectedTracks = SelectSupportedTracks(ffmpegPlugin_, ffmpegMediaInfo_);
             auto mpeg4SelectedTracks = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
@@ -477,16 +519,14 @@ void Mpeg4DemuxerPluginUnitTest::CompareSeekReadResult(
             auto ffmpegRet = ffmpegPlugin_->SeekTo(-1, seekTimeTarget, seekMode, ffmpegRealSeekTime);
             auto mpeg4Ret = mpeg4Plugin_->SeekTo(-1, seekTimeTarget, seekMode, mpeg4RealSeekTime);
             ASSERT_EQ(mpeg4Ret, ffmpegRet);
-            if (ffmpegRet == Status::OK) {
-                auto ffmpegDigest = ReadAllSamples(ffmpegPlugin_, ffmpegMediaInfo_, ffmpegSelectedTracks);
-                auto mpeg4Digest = ReadAllSamples(mpeg4Plugin_, mpeg4MediaInfo_, mpeg4SelectedTracks);
-                ASSERT_EQ(mpeg4Digest.tracks.size(), ffmpegDigest.tracks.size());
-                for (size_t index = 0; index < mpeg4Digest.tracks.size(); ++index) {
-                    EXPECT_EQ(mpeg4Digest.tracks[index].mime, ffmpegDigest.tracks[index].mime);
-                    EXPECT_GT(mpeg4Digest.tracks[index].frameCount, 0);
-                    EXPECT_LE(mpeg4Digest.tracks[index].frameCount, ffmpegDigest.tracks[index].frameCount);
-                }
+            if (ffmpegRet != Status::OK) {
+                ResetPlugin(ffmpegPlugin_, ffmpegFd_);
+                ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
+                continue;
             }
+            auto ffmpegDigest = ReadAllSamples(ffmpegPlugin_, ffmpegMediaInfo_, ffmpegSelectedTracks);
+            auto mpeg4Digest = ReadAllSamples(mpeg4Plugin_, mpeg4MediaInfo_, mpeg4SelectedTracks);
+            CheckSeekSuccessDigest(mpeg4Digest, ffmpegDigest);
 
             ResetPlugin(ffmpegPlugin_, ffmpegFd_);
             ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
@@ -498,13 +538,7 @@ void Mpeg4DemuxerPluginUnitTest::CheckSeekReadResultWithExpected(const std::stri
     const std::vector<SeekExpectedResult>& expectedResults, bool useUri)
 {
     for (const auto& expected : expectedResults) {
-        if (useUri) {
-            InitFfmpegPluginURI(filePath);
-            InitMpeg4PluginURI(filePath);
-        } else {
-            InitFfmpegPlugin(filePath);
-            InitMpeg4Plugin(filePath);
-        }
+        InitPluginsForReadTest(filePath, useUri);
 
         auto ffmpegSelectedTracks = SelectSupportedTracks(ffmpegPlugin_, ffmpegMediaInfo_);
         auto mpeg4SelectedTracks = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
@@ -520,28 +554,15 @@ void Mpeg4DemuxerPluginUnitTest::CheckSeekReadResultWithExpected(const std::stri
             ASSERT_EQ(mpeg4Ret, Status::OK);
             auto ffmpegDigest = ReadAllSamples(ffmpegPlugin_, ffmpegMediaInfo_, ffmpegSelectedTracks);
             auto mpeg4Digest = ReadAllSamples(mpeg4Plugin_, mpeg4MediaInfo_, mpeg4SelectedTracks);
-            ASSERT_EQ(ffmpegDigest.tracks.size(), expected.expectedFrames.size());
-            ASSERT_EQ(mpeg4Digest.tracks.size(), expected.expectedFrames.size());
-            for (size_t index = 0; index < expected.expectedFrames.size(); ++index) {
-                EXPECT_EQ(ffmpegDigest.tracks[index].frameCount, expected.expectedFrames[index]);
-                EXPECT_EQ(mpeg4Digest.tracks[index].mime, ffmpegDigest.tracks[index].mime);
-                EXPECT_GT(mpeg4Digest.tracks[index].frameCount, 0);
-                EXPECT_LE(mpeg4Digest.tracks[index].frameCount, expected.expectedFrames[index]);
-            }
-        } else {
-            EXPECT_NE(ffmpegRet, Status::OK);
-            if (mpeg4Ret == Status::OK) {
-                auto mpeg4Digest = ReadAllSamples(mpeg4Plugin_, mpeg4MediaInfo_, mpeg4SelectedTracks);
-                if (expected.expectedFrames.empty()) {
-                    EXPECT_EQ(mpeg4Digest.tracks.size(), mpeg4SelectedTracks.size());
-                } else {
-                    ASSERT_EQ(mpeg4Digest.tracks.size(), expected.expectedFrames.size());
-                    for (size_t index = 0; index < expected.expectedFrames.size(); ++index) {
-                        EXPECT_GT(mpeg4Digest.tracks[index].frameCount, 0);
-                        EXPECT_LE(mpeg4Digest.tracks[index].frameCount, expected.expectedFrames[index]);
-                    }
-                }
-            }
+            CheckSeekSuccessDigestWithExpected(ffmpegDigest, mpeg4Digest, expected.expectedFrames);
+            ResetPlugin(ffmpegPlugin_, ffmpegFd_);
+            ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
+            continue;
+        }
+        EXPECT_NE(ffmpegRet, Status::OK);
+        if (mpeg4Ret == Status::OK) {
+            auto mpeg4Digest = ReadAllSamples(mpeg4Plugin_, mpeg4MediaInfo_, mpeg4SelectedTracks);
+            CheckSeekFallbackDigest(mpeg4Digest, mpeg4SelectedTracks, expected.expectedFrames);
         }
 
         ResetPlugin(ffmpegPlugin_, ffmpegFd_);
@@ -687,7 +708,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSample_MP4_ExplicitF
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         GTEST_SKIP() << "hevc parser library not found";
     }
-    CheckReadResultWithExpected(TEST_MP4_PATH_HEVC_AUX, {16, 16, 16}, {1, 1, 1}, {0});
+    CheckReadResultWithExpected(TEST_MP4_PATH_HEVC_AUX, {16}, {1}, {0});
 }
 
 /**
@@ -702,7 +723,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSample_MP4_ExplicitF
     }
     std::vector<uint32_t> numbers(430);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckReadResultWithExpected(TEST_MP4_PATH_HEVC_AVC_AAC, {430, 601, 430, 601, 601}, {430, 3, 430, 3, 3}, numbers);
+    CheckReadResultWithExpected(TEST_MP4_PATH_HEVC_AVC_AAC, {430, 601}, {430, 3}, numbers);
 }
 
 /**
@@ -822,7 +843,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSample_URI_MP4_Expli
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         GTEST_SKIP() << "hevc parser library not found";
     }
-    CheckReadResultWithExpected(TEST_MP4_PATH_HEVC_AUX, {16, 16, 16}, {1, 1, 1}, {0}, true);
+    CheckReadResultWithExpected(TEST_MP4_PATH_HEVC_AUX, {16}, {1}, {0}, true);
 }
 
 /**
@@ -837,8 +858,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSample_URI_MP4_Expli
     }
     std::vector<uint32_t> numbers(430);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckReadResultWithExpected(TEST_MP4_PATH_HEVC_AVC_AAC, {430, 601, 430, 601, 601},
-        {430, 3, 430, 3, 3}, numbers, true);
+    CheckReadResultWithExpected(TEST_MP4_PATH_HEVC_AVC_AAC, {430, 601}, {430, 3}, numbers, true);
 }
 
 /**
