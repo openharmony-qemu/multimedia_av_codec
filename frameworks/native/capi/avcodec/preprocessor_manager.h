@@ -71,7 +71,6 @@ private:
         SurfaceType surfaceType;
         int64_t timestamp{0};
         BufferFlushConfig flushConfig{};
-        std::atomic<bool> isProcessed{false};
 
         SurfaceBufferWrapper() = default;
         SurfaceBufferWrapper(wptr<Surface> argSurface, sptr<SurfaceBuffer> buf,
@@ -100,10 +99,7 @@ private:
     private:
         void SetBufferFlushConfig(std::shared_ptr<SurfaceBufferWrapper> &inputBuffer,
                                   std::shared_ptr<SurfaceBufferWrapper> &outputBuffer);
-        bool DequeueBuffers(std::shared_ptr<SurfaceBufferWrapper> &inputBuffer,
-                            std::shared_ptr<SurfaceBufferWrapper> &outputBuffer,
-                            std::function<void()> &notifyEosTask);
-        void ProcessFrame(std::shared_ptr<SurfaceBufferWrapper> &inputBuffer,
+        bool ProcessFrame(std::shared_ptr<SurfaceBufferWrapper> &inputBuffer,
                           std::shared_ptr<SurfaceBufferWrapper> &outputBuffer);
         void EncoderThreadLoop();
 
