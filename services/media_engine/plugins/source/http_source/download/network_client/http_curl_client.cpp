@@ -24,7 +24,6 @@
 #include "http_curl_client.h"
 #include "osal/task/autolock.h"
 #include "net_conn_client.h"
-#include "cm_type.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOURCE, "HiStreamer" };
