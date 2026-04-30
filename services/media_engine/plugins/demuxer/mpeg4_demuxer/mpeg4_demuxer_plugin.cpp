@@ -139,6 +139,7 @@ MPEG4DemuxerPlugin::~MPEG4DemuxerPlugin()
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MEDIA_LOG_D("In");
+    avReadPacketStopState_.store(AVReadPacketStopState::TRUE, std::memory_order_release);
     ReleaseReadLoop();
 
     streamParsers_ = nullptr;
@@ -1057,6 +1058,8 @@ Status MPEG4DemuxerPlugin::ReadSampleData(std::shared_ptr<Sample> sample, uint64
 {
     MEDIA_LOG_D("In");
     FALSE_RETURN_V(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE);
+    FALSE_RETURN_V_MSG_E(avReadPacketStopState_.load(std::memory_order_acquire) != AVReadPacketStopState::TRUE,
+        Status::ERROR_WRONG_STATE, "AVReadPacket stopped");
     FALSE_RETURN_V_MSG_E(size > 0, Status::ERROR_INVALID_PARAMETER, "Invalid size");
 
     auto buffer = std::make_shared<Buffer>();
@@ -1069,6 +1072,11 @@ Status MPEG4DemuxerPlugin::ReadSampleData(std::shared_ptr<Sample> sample, uint64
     Status ret = Status::ERROR_AGAIN;
     uint32_t count = 0;
     while (ret == Status::ERROR_AGAIN && count < READ_RETRY_TIMES) {
+        if (avReadPacketStopState_.load(std::memory_order_acquire) == AVReadPacketStopState::TRUE) {
+            MEDIA_LOG_I("AVReadPacket stopped");
+            sample->data.reset();
+            return Status::ERROR_WRONG_STATE;
+        }
         ret = dataSource_->ReadAt(pos, buffer, static_cast<size_t>(size));
         if (buffer->GetMemory()->GetSize() == size) {
             break;

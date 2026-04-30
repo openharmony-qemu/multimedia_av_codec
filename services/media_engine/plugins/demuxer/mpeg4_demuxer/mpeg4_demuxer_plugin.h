@@ -90,7 +90,7 @@ public:
     Status SetDataSourceWithProbSize(const std::shared_ptr<DataSource>& source,
         const int32_t probSize) override;
     Status BoostReadThreadPriority() override;
-    Status SetAVReadPacketStopState(bool state) override { return Status::ERROR_UNKNOWN; }
+    Status SetAVReadPacketStopState(bool state) override;
     Status SetReadTimeoutForInitSeek(int64_t timeoutMs) override { return Status::OK; }
     Status ReadSampleZeroCopy(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout) override;
     Status GetCurrentCacheFrameCount(uint32_t trackId, uint32_t& frameCount) override;
@@ -210,6 +210,12 @@ private:
         ASYNC = 1U << 1,
     };
 
+    enum class AVReadPacketStopState : uint32_t {
+        UNSET = 0,
+        TRUE,
+        FALSE,
+    };
+
     static constexpr uint32_t ReadModeToFlags(ReadMode mode)
     {
         return static_cast<uint32_t>(mode);
@@ -231,6 +237,7 @@ private:
     std::atomic<bool> stopReadThread_ {false};
     std::atomic<uint32_t> readModeFlags_ {0};
     std::atomic<bool> isAsyncReadThreadPrioritySet_ {false};
+    std::atomic<AVReadPacketStopState> avReadPacketStopState_ {AVReadPacketStopState::UNSET};
 };
 } // namespace MPEG4
 } // namespace Plugins

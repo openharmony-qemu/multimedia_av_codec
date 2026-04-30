@@ -413,6 +413,13 @@ Status MPEG4DemuxerPlugin::BoostReadThreadPriority()
     return Status::OK;
 }
 
+Status MPEG4DemuxerPlugin::SetAVReadPacketStopState(bool state)
+{
+    avReadPacketStopState_.store(
+        state ? AVReadPacketStopState::TRUE : AVReadPacketStopState::FALSE, std::memory_order_release);
+    return Status::OK;
+}
+
 void MPEG4DemuxerPlugin::UpdateAsyncReadThreadPriority()
 {
     auto ret = SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
