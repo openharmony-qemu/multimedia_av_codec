@@ -890,6 +890,57 @@ Status MPEG4DemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode mo
     return DoSeekInternal(trackId, seekTime, mode, realSeekTime);
 }
 
+Status MPEG4DemuxerPlugin::SeekToStartInternal()
+{
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
+    FALSE_RETURN_V_MSG_E(inited_, Status::ERROR_NULL_POINTER, "Plugin has not been initialized");
+    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
+
+    ReleaseReadLoop();
+    bool needSeek = !cacheSamples_.empty();
+    for (const auto& selectedTrackId : selectedTrackIds_) {
+        auto track = FindTrackById(static_cast<int32_t>(selectedTrackId));
+        FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");
+        if (track->currentSampleIndex != 0 || cacheQueue_.HasCache(selectedTrackId)) {
+            needSeek = true;
+            break;
+        }
+    }
+    if (!needSeek) {
+        MEDIA_LOG_I("Already at start, do not seek");
+        return Status::OK;
+    }
+
+    for (const auto& selectedTrackId : selectedTrackIds_) {
+        auto track = FindTrackById(static_cast<int32_t>(selectedTrackId));
+        FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");
+        track->currentSampleIndex = 0;
+        cacheQueue_.RemoveTrackQueue(selectedTrackId);
+        cacheQueue_.AddTrackQueue(selectedTrackId);
+    }
+    currentFragment_ = 0;
+    minElstInitEmptyEdit_ = INT64_MAX;
+    relativeEndPts_ = 0;
+    cacheSamples_.clear();
+    readToEnd_ = false;
+    readLoopStatus_.store(Status::OK, std::memory_order_release);
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::SeekToStart()
+{
+    MEDIA_LOG_D("In");
+    MediaAVCodec::AVCodecTrace trace("SeekToStart");
+    auto ret = SeekToStartInternal();
+    if (ret != Status::OK) {
+        MEDIA_LOG_I("Use default seekto");
+        int64_t realSeekTime = 0;
+        ret = SeekTo(-1, 0, SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime);
+    }
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SeekToStart failed");
+    return Status::OK;
+}
+
 Status MPEG4DemuxerPlugin::ParseMoof(int64_t offset)
 {
     auto parser = std::make_shared<MPEG4AtomParser>();
@@ -1061,6 +1112,7 @@ Status MPEG4DemuxerPlugin::ReadSampleData(std::shared_ptr<Sample> sample, uint64
     FALSE_RETURN_V_MSG_E(avReadPacketStopState_.load(std::memory_order_acquire) != AVReadPacketStopState::TRUE,
         Status::ERROR_WRONG_STATE, "AVReadPacket stopped");
     FALSE_RETURN_V_MSG_E(size > 0, Status::ERROR_INVALID_PARAMETER, "Invalid size");
+    size_t bufferSize = static_cast<size_t>(size);
 
     auto buffer = std::make_shared<Buffer>();
     FALSE_RETURN_V_MSG_E(buffer != nullptr, Status::ERROR_NO_MEMORY, "Buffer allocation failed");
@@ -1077,8 +1129,8 @@ Status MPEG4DemuxerPlugin::ReadSampleData(std::shared_ptr<Sample> sample, uint64
             sample->data.reset();
             return Status::ERROR_WRONG_STATE;
         }
-        ret = dataSource_->ReadAt(pos, buffer, static_cast<size_t>(size));
-        if (buffer->GetMemory()->GetSize() == size) {
+        ret = dataSource_->ReadAt(pos, buffer, bufferSize);
+        if (buffer->GetMemory()->GetSize() == bufferSize) {
             break;
         }
         count++;

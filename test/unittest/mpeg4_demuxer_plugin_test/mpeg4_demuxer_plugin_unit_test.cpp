@@ -650,6 +650,37 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SeekTo_CompareWithFfmpeg
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_SeekToStart_CompareWithFfmpeg_001
+ * @tc.desc: Compare MPEG4 and FFmpeg demuxer SeekToStart results after reading a sample
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SeekToStart_CompareWithFfmpeg_001, TestSize.Level1)
+{
+    InitFfmpegPlugin(TEST_MP4_PATH_H264_B);
+    InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
+
+    auto ffmpegSelectedTracks = SelectSupportedTracks(ffmpegPlugin_, ffmpegMediaInfo_);
+    auto mpeg4SelectedTracks = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
+    ASSERT_EQ(ffmpegSelectedTracks.size(), mpeg4SelectedTracks.size());
+
+    AVBufferWrapper ffmpegBuffer(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
+    AVBufferWrapper mpeg4Buffer(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
+    ASSERT_NE(ffmpegBuffer.mediaAVBuffer, nullptr);
+    ASSERT_NE(mpeg4Buffer.mediaAVBuffer, nullptr);
+    ASSERT_EQ(ReadSampleWithRetry(ffmpegPlugin_, ffmpegSelectedTracks.front(), ffmpegBuffer.mediaAVBuffer,
+        ReadMode::COPY), Status::OK);
+    ASSERT_EQ(ReadSampleWithRetry(mpeg4Plugin_, mpeg4SelectedTracks.front(), mpeg4Buffer.mediaAVBuffer,
+        ReadMode::COPY), Status::OK);
+
+    ASSERT_EQ(ffmpegPlugin_->SeekToStart(), Status::OK);
+    ASSERT_EQ(mpeg4Plugin_->SeekToStart(), Status::OK);
+
+    auto ffmpegDigest = ReadAllSamples(ffmpegPlugin_, ffmpegMediaInfo_, ffmpegSelectedTracks);
+    auto mpeg4Digest = ReadAllSamples(mpeg4Plugin_, mpeg4MediaInfo_, mpeg4SelectedTracks);
+    CompareReadDigest(mpeg4Digest, ffmpegDigest);
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_AsyncTimeout_001
  * @tc.desc: Direct async read with zero timeout returns wait timeout when cache is empty
  * @tc.type: FUNC
