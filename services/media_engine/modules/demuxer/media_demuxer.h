@@ -179,6 +179,7 @@ public:
     Status PauseDemuxerReadLoop();
     Status SetTranscoderMode();
     Status SetPlayerMode();
+    Status SetMetadataMode();
     Status SetSkippingAudioDecAndEnc();
     void SetCacheLimit(uint32_t limitSize);
     void SetEnableOnlineFdCache(bool isEnableFdCache);
@@ -560,6 +561,7 @@ private:
     std::mutex syncFrameInfoMutex_ {};
     bool isTranscoderMode_ {false};
     bool isPlayerMode_ {false};
+    bool isMetadataMode_ {false};
     bool isSkippingAudioDecAndEnc_ {false};
     bool perfRecEnabled_ { false };
     PerfRecorder perfRecorder_ {};
@@ -569,6 +571,7 @@ private:
 
     bool isCreatedByFilter_ {false};
 
+    int64_t seekTimeoutMs_ {60000};
     int64_t videoSeekTime_ {0};
     bool isInSeekDropAudio_ {false};
     std::atomic<int32_t> convertErrorTime_ {0};

@@ -113,6 +113,7 @@ public:
     
     TrackType GetTrackTypeByTrackID(int32_t trackID);
 
+    Status SetReadTimeoutForInitSeek(int64_t timeoutMs);
     Status LoadCurrentAllPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, MediaInfo& mediaInfo);
     Status LoadCurrentSubtitlePlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer,
         Plugins::MediaInfo& mediaInfo);

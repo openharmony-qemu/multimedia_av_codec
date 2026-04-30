@@ -1168,6 +1168,9 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     bool isGotPlugin = demuxerPluginManager_->GetPluginName(snifferPluginName);
     source_->NotifyInitSuccess();
     ProcessDrmInfos();
+    if (isPlayerMode_ || isTranscoderMode_ || isMetadataMode_) {
+        demuxerPluginManager_->SetReadTimeoutForInitSeek(seekTimeoutMs_);
+    }
     FALSE_RETURN_V_NOLOG(eventReceiver_ != nullptr, res);
     eventReceiver_->OnMemoryUsageEvent({"SOURCE",
         DfxEventType::DFX_INFO_MEMORY_USAGE, source_->GetMemorySize()});
@@ -4512,6 +4515,12 @@ Status MediaDemuxer::SetTranscoderMode()
 Status MediaDemuxer::SetPlayerMode()
 {
     isPlayerMode_ = true;
+    return Status::OK;
+}
+
+Status MediaDemuxer::SetMetadataMode()
+{
+    isMetadataMode_ = true;
     return Status::OK;
 }
 
