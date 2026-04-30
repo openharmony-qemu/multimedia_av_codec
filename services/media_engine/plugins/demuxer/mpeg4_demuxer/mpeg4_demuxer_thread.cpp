@@ -24,69 +24,11 @@
 #include "meta/format.h"
 #include "meta/video_types.h"
 #include "mpeg4_demuxer_plugin.h"
+#include "mpeg4_sample_memory.h"
+#include "qos.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "MPEG4DemuxerThread" };
-
-class MPEG4SampleMemory : public OHOS::Media::AVMemory {
-public:
-    explicit MPEG4SampleMemory(std::shared_ptr<OHOS::Media::Plugins::MPEG4::Sample> sample, int32_t offset = 0)
-        : sample_(std::move(sample)), startOffset_(offset)
-    {
-        if (sample_ != nullptr && sample_->data != nullptr && sample_->size >= 0 &&
-            startOffset_ >= 0 && startOffset_ <= sample_->size) {
-            base_ = sample_->data.get() + startOffset_;
-            capacity_ = sample_->size - startOffset_;
-            size_ = sample_->size - startOffset_;
-            offset_ = 0;
-        } else {
-            base_ = nullptr;
-            capacity_ = 0;
-            size_ = 0;
-            offset_ = 0;
-        }
-    }
-
-    ~MPEG4SampleMemory() override = default;
-
-    OHOS::Media::MemoryType GetMemoryType() override
-    {
-        return OHOS::Media::MemoryType::CUSTOM_MEMORY;
-    }
-
-    uint8_t* GetAddr() override
-    {
-        return base_;
-    }
-
-    int32_t GetCapacity() override
-    {
-        return capacity_;
-    }
-
-    int32_t GetSize() override
-    {
-        return size_;
-    }
-
-    int32_t GetOffset() override
-    {
-        return offset_;
-    }
-
-    int32_t Write(const uint8_t *in, int32_t writeSize,
-        int32_t position = OHOS::Media::INVALID_POSITION) override
-    {
-        (void)in;
-        (void)writeSize;
-        (void)position;
-        return 0;
-    }
-
-private:
-    std::shared_ptr<OHOS::Media::Plugins::MPEG4::Sample> sample_ {nullptr};
-    int32_t startOffset_ {0};
-};
 } // namespace
 
 namespace OHOS {
@@ -423,6 +365,9 @@ Status MPEG4DemuxerPlugin::PushEosToCache(uint32_t trackId)
 void MPEG4DemuxerPlugin::MPEG4ReadLoop()
 {
     MEDIA_LOG_I("Read loop start");
+    if (isAsyncReadThreadPrioritySet_.load(std::memory_order_acquire)) {
+        UpdateAsyncReadThreadPriority();
+    }
     threadState_.store(ThreadState::READING, std::memory_order_release);
     while (!stopReadThread_.load(std::memory_order_acquire)) {
         uint32_t trackId = trackId_.load(std::memory_order_acquire);
@@ -450,6 +395,32 @@ void MPEG4DemuxerPlugin::MPEG4ReadLoop()
         seekWaitCv_.notify_all();
     }
     MEDIA_LOG_I("Read loop end");
+}
+
+Status MPEG4DemuxerPlugin::BoostReadThreadPriority()
+{
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
+    if (threadState_.load(std::memory_order_acquire) != ThreadState::NOT_STARTED && readThread_ != nullptr) {
+        MEDIA_LOG_W("Async read thread is running, cannot set priority now");
+        return Status::ERROR_WRONG_STATE;
+    }
+    if (isAsyncReadThreadPrioritySet_.load(std::memory_order_acquire)) {
+        MEDIA_LOG_W("Async read thread priority has been set, cannot set again");
+        return Status::ERROR_WRONG_STATE;
+    }
+    isAsyncReadThreadPrioritySet_.store(true, std::memory_order_release);
+    MEDIA_LOG_I("Boost read thread priority to user interactive");
+    return Status::OK;
+}
+
+void MPEG4DemuxerPlugin::UpdateAsyncReadThreadPriority()
+{
+    auto ret = SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
+    if (ret != 0) {
+        MEDIA_LOG_E("Set thread qos failed, ret = " PUBLIC_LOG_D32, ret);
+    } else {
+        MEDIA_LOG_I("Set thread qos success, level = " PUBLIC_LOG_U32, OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
+    }
 }
 
 void MPEG4DemuxerPlugin::ReleaseReadLoop()
