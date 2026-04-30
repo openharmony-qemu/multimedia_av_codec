@@ -33,7 +33,7 @@ class FramerateCalculator : public std::enable_shared_from_this<FramerateCalcula
 public:
     FramerateCalculator(int32_t instanceId, bool isEnc, std::function<void(double)> &&handler);
     ~FramerateCalculator();
-    void OnFrameConsumed(int64_t pts);
+    void OnFrameConsumed(int64_t pts, bool render);
     void OnStopped(bool isDecEnd = true);
     bool CheckAndResetFramerate();
     void SetConfiguredFramerate(double framerate);
