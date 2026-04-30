@@ -1035,7 +1035,7 @@ Status MPEG4DemuxerPlugin::ProcessWebVTTSample(std::shared_ptr<MPEG4Sample> mpeg
     uint8_t* data = sample->data.get();
     uint32_t boxType = GetU32Value(data + BOX_TYPE_OFFSET);
     // vtte box and other box
-    if (boxType != FourccType("vttc")) {
+    if (boxType != static_cast<uint32_t>(FourccType("vttc"))) {
         return Status::OK;
     }
     // vttc box
@@ -1043,12 +1043,12 @@ Status MPEG4DemuxerPlugin::ProcessWebVTTSample(std::shared_ptr<MPEG4Sample> mpeg
     int32_t payloadSize = sample->size - BOX_HEADER_SIZE;
     uint8_t* payloadData = data + BOX_HEADER_SIZE;
     while (payloadSize >= BOX_HEADER_SIZE) {
-        int32_t tempSize = GetU32Value(payloadData);
+        uint32_t tempSize = GetU32Value(payloadData);
         if (tempSize < BOX_HEADER_SIZE || tempSize > payloadSize) {
             break;
         }
         uint32_t tempType = GetU32Value(payloadData + BOX_TYPE_OFFSET);
-        if (tempType == FourccType("payl")) {
+        if (tempType == static_cast<uint32_t>(FourccType("payl"))) {
             payloadData += BOX_HEADER_SIZE;
             payloadSize -= BOX_HEADER_SIZE;
             if (payloadSize > 0) {
@@ -1063,7 +1063,9 @@ Status MPEG4DemuxerPlugin::ProcessWebVTTSample(std::shared_ptr<MPEG4Sample> mpeg
             break;
         } else {
             payloadData += tempSize;
-            payloadSize -= tempSize;
+            if (tempSize <= INT32_MAX && payloadSize >= INT32_MIN + static_cast<int32_t>(tempSize)) {
+                payloadSize -= tempSize;
+            }
         }
     }
     return Status::OK;
