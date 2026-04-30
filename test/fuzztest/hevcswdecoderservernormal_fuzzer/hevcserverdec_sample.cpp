@@ -38,7 +38,6 @@ namespace {
     constexpr uint8_t H265_NALU_TYPE = 0x1f;
     constexpr int64_t NANOS_IN_SECOND = 1000000000L;
     constexpr int64_t NANOS_IN_MICRO = 1000L;
-    constexpr int32_t SEND_MAX_FRAMES = 10;
     typedef enum OH_AVCodecBufferFlags {
         AVCODEC_BUFFER_FLAGS_NONE = 0,
         /* Indicates that the Buffer is an End-of-Stream frame */
@@ -72,8 +71,7 @@ int64_t VDecServerSample::GetSystemTimeUs()
 
 void VDecServerSample::CallBack::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
-    tester->Flush();
-    tester->Reset();
+    cout << "---- OnError errorType: " << errorType << " errorCode:" << errorCode << "----" << endl;
 }
 
 
@@ -320,12 +318,7 @@ int32_t VDecServerSample::ReadData(uint32_t index, std::shared_ptr<AVBuffer> buf
 {
     uint8_t ch[4] = {};
     (void)inFile_->read(reinterpret_cast<char *>(ch), START_CODE_SIZE);
-    if (repeatRun && inFile_->eof()) {
-        inFile_->clear();
-        inFile_->seekg(0, ios::beg);
-        cout << "repeat" << endl;
-        return 0;
-    } else if (inFile_->eof()) {
+    if (inFile_->eof()) {
         SetEOS(index, buffer);
         return 1;
     }
@@ -403,25 +396,23 @@ void VDecServerSample::InputFunc()
         signal_->inIdxQueue_.pop();
         signal_->inBufferQueue_.pop();
         lock.unlock();
-        if (sendFrameIndex == SEND_MAX_FRAMES) {
+        if (isFuzzMode) {
             int ret = SendFuzzData(index, buffer);
             if (ret == 1) {
                 break;
             }
-            sendFrameIndex++;
-            continue;
-        }
-        if (sendFrameIndex > SEND_MAX_FRAMES) {
-            SetEOS(index, buffer);
+            isFuzzMode = false;
             break;
         }
-        if (!inFile_->eof()) {
-            int ret = ReadData(index, buffer);
-            if (ret == 1) {
-                break;
+        if (inFile_->eof()) {
+            SetEOS(index, buffer);
+            break;
+        } else {
+            if (ReadData(index, buffer) == 1) {
+                isFuzzMode = true;
+                continue;
             }
         }
-        sendFrameIndex++;
     }
 }
 
