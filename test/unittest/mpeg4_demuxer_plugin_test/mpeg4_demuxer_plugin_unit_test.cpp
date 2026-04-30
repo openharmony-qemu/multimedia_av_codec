@@ -332,7 +332,8 @@ SampleDigest Mpeg4DemuxerPluginUnitTest::ReadFirstSample(const std::shared_ptr<B
 }
 
 ReadDigest Mpeg4DemuxerPluginUnitTest::ReadAllSamples(const std::shared_ptr<BaseDemuxerPlugin>& plugin,
-    const MediaInfo& mediaInfo, const std::vector<uint32_t>& selectedTrackIds, ReadMode readMode)
+    const MediaInfo& mediaInfo, const std::vector<uint32_t>& selectedTrackIds, ReadMode readMode,
+    const std::string& firstSampleLogPrefix)
 {
     auto digest = CreateReadDigest(mediaInfo, selectedTrackIds);
     std::vector<bool> eosFlags(selectedTrackIds.size(), false);
@@ -349,7 +350,7 @@ ReadDigest Mpeg4DemuxerPluginUnitTest::ReadAllSamples(const std::shared_ptr<Base
             std::shared_ptr<MediaAVBuffer> buffer =
                 (readMode == ReadMode::ZERO_COPY) ? MediaAVBuffer::CreateAVBuffer() : copyBuffer->mediaAVBuffer;
             bool eosReached = false;
-            if (!ReadTrackSample(plugin, digest.tracks[index], buffer, readMode, eosReached)) {
+            if (!ReadTrackSample(plugin, digest.tracks[index], buffer, readMode, eosReached, firstSampleLogPrefix)) {
                 return digest;
             }
             eosFlags[index] = eosReached;
@@ -372,7 +373,8 @@ ReadDigest Mpeg4DemuxerPluginUnitTest::CreateReadDigest(
 }
 
 bool Mpeg4DemuxerPluginUnitTest::ReadTrackSample(const std::shared_ptr<BaseDemuxerPlugin>& plugin,
-    TrackReadDigest& trackDigest, const std::shared_ptr<MediaAVBuffer>& buffer, ReadMode readMode, bool& eosReached)
+    TrackReadDigest& trackDigest, const std::shared_ptr<MediaAVBuffer>& buffer, ReadMode readMode, bool& eosReached,
+    const std::string& firstSampleLogPrefix)
 {
     if (buffer == nullptr) {
         ADD_FAILURE() << "Create AVBuffer failed";
@@ -390,6 +392,17 @@ bool Mpeg4DemuxerPluginUnitTest::ReadTrackSample(const std::shared_ptr<BaseDemux
     }
     if (trackDigest.frameCount == 0) {
         trackDigest.firstPts = buffer->pts_;
+        if (!firstSampleLogPrefix.empty()) {
+            int32_t memorySize = -1;
+            if (buffer->memory_ != nullptr) {
+                memorySize = static_cast<int32_t>(buffer->memory_->GetSize());
+            }
+            fprintf(stderr, "%s first sample: trackId=%u, mime=%s, pts=%lld, dts=%lld, duration=%lld, flag=0x%x, "
+                "memorySize=%d\n", firstSampleLogPrefix.c_str(), trackDigest.trackId, trackDigest.mime.c_str(),
+                static_cast<long long>(buffer->pts_), static_cast<long long>(buffer->dts_),
+                static_cast<long long>(buffer->duration_), buffer->flag_, memorySize);
+            fflush(stderr);
+        }
     }
     trackDigest.lastPts = buffer->pts_;
     if (IsSyncFrame(buffer)) {
@@ -663,20 +676,17 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SeekToStart_CompareWithF
     auto mpeg4SelectedTracks = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
     ASSERT_EQ(ffmpegSelectedTracks.size(), mpeg4SelectedTracks.size());
 
-    AVBufferWrapper ffmpegBuffer(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
-    AVBufferWrapper mpeg4Buffer(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
-    ASSERT_NE(ffmpegBuffer.mediaAVBuffer, nullptr);
-    ASSERT_NE(mpeg4Buffer.mediaAVBuffer, nullptr);
-    ASSERT_EQ(ReadSampleWithRetry(ffmpegPlugin_, ffmpegSelectedTracks.front(), ffmpegBuffer.mediaAVBuffer,
-        ReadMode::COPY), Status::OK);
-    ASSERT_EQ(ReadSampleWithRetry(mpeg4Plugin_, mpeg4SelectedTracks.front(), mpeg4Buffer.mediaAVBuffer,
-        ReadMode::COPY), Status::OK);
+    auto ffmpegPreSeekDigest = ReadAllSamples(ffmpegPlugin_, ffmpegMediaInfo_, ffmpegSelectedTracks);
+    auto mpeg4PreSeekDigest = ReadAllSamples(mpeg4Plugin_, mpeg4MediaInfo_, mpeg4SelectedTracks);
+    CompareReadDigest(mpeg4PreSeekDigest, ffmpegPreSeekDigest);
 
     ASSERT_EQ(ffmpegPlugin_->SeekToStart(), Status::OK);
     ASSERT_EQ(mpeg4Plugin_->SeekToStart(), Status::OK);
 
-    auto ffmpegDigest = ReadAllSamples(ffmpegPlugin_, ffmpegMediaInfo_, ffmpegSelectedTracks);
-    auto mpeg4Digest = ReadAllSamples(mpeg4Plugin_, mpeg4MediaInfo_, mpeg4SelectedTracks);
+    auto ffmpegDigest = ReadAllSamples(ffmpegPlugin_, ffmpegMediaInfo_, ffmpegSelectedTracks, ReadMode::COPY,
+        "FFmpeg SeekToStart");
+    auto mpeg4Digest = ReadAllSamples(mpeg4Plugin_, mpeg4MediaInfo_, mpeg4SelectedTracks, ReadMode::COPY,
+        "MPEG4 SeekToStart");
     CompareReadDigest(mpeg4Digest, ffmpegDigest);
 }
 

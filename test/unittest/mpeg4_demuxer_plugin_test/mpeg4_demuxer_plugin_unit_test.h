@@ -118,7 +118,8 @@ protected:
     SampleDigest ReadFirstSample(const std::shared_ptr<BaseDemuxerPlugin>& plugin, const MediaInfo& mediaInfo,
         ReadMode readMode);
     ReadDigest ReadAllSamples(const std::shared_ptr<BaseDemuxerPlugin>& plugin, const MediaInfo& mediaInfo,
-        const std::vector<uint32_t>& selectedTrackIds, ReadMode readMode = ReadMode::COPY);
+        const std::vector<uint32_t>& selectedTrackIds, ReadMode readMode = ReadMode::COPY,
+        const std::string& firstSampleLogPrefix = "");
     void CompareReadDigest(const ReadDigest& lhs, const ReadDigest& rhs);
     void CheckReadResultWithExpected(const std::string& filePath, const std::vector<int32_t>& expectedFrames,
         const std::vector<int32_t>& expectedKeyFrames, const std::vector<uint32_t>& expectedKeyFrameIndexes,
@@ -141,7 +142,8 @@ protected:
     void InitPluginsForReadTest(const std::string& filePath, bool useUri);
     ReadDigest CreateReadDigest(const MediaInfo& mediaInfo, const std::vector<uint32_t>& selectedTrackIds) const;
     bool ReadTrackSample(const std::shared_ptr<BaseDemuxerPlugin>& plugin, TrackReadDigest& trackDigest,
-        const std::shared_ptr<MediaAVBuffer>& buffer, ReadMode readMode, bool& eosReached);
+        const std::shared_ptr<MediaAVBuffer>& buffer, ReadMode readMode, bool& eosReached,
+        const std::string& firstSampleLogPrefix = "");
     void CheckSeekSuccessDigest(const ReadDigest& actualDigest, const ReadDigest& expectedDigest);
     void CheckSeekSuccessDigestWithExpected(const ReadDigest& ffmpegDigest, const ReadDigest& mpeg4Digest,
         const std::vector<int32_t>& expectedFrames);
