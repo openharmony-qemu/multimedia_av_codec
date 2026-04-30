@@ -105,7 +105,7 @@ bool IsGeometrySupported(OHOS::GraphicPixelFormat format, int32_t width, int32_t
 std::string TransformRoiMetadata(const std::string &roi, double scaleX, double scaleY,
                                  int32_t offsetTop, int32_t offsetLeft)
 {
-    static const std::regex roiPattern(R"((?:^|;)(-?\d+),(-?\d+)-(-?\d+),(-?\d+)(?:=([^;]*))?;)");
+    static const std::regex roiPattern(R"((?:^|;)(-?\d+),(-?\d+)-(-?\d+),(-?\d+)(?:=([^;]*))?(?=;|$))");
     std::smatch match;
     std::string temp = roi;
     std::string result;
@@ -509,7 +509,7 @@ void Preprocessor::CopyInputMetadata(const sptr<SurfaceBuffer> &input, const spt
             AVCODEC_LOGW("Get metadata failed: key=%{public}u, ret=%{public}d", key, ret);
             continue;
         }
-        ret = output->SetMetadata(key, value);
+        ret = output->SetMetadata(key, value, false);
         if (ret != GSERROR_OK) {
             AVCODEC_LOGW("Set metadata failed: key=%{public}u, ret=%{public}d", key, ret);
         }
@@ -533,7 +533,7 @@ void Preprocessor::UpdateRoiMetadata(const sptr<SurfaceBuffer> &input, const spt
                                                    roiTransform.offsetTop, roiTransform.offsetLeft);
     std::vector<uint8_t> outputRoi(transformed.begin(), transformed.end());
     outputRoi.push_back('\0');
-    GSError ret = output->SetMetadata(V2_2::ATTRKEY_ROI_METADATA, outputRoi);
+    GSError ret = output->SetMetadata(V2_2::ATTRKEY_ROI_METADATA, outputRoi, false);
     CHECK_AND_RETURN_LOG(ret == GSERROR_OK, "Set roi metadata failed: %{public}d", ret);
 }
 

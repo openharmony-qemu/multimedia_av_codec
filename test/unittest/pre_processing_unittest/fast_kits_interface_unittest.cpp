@@ -72,7 +72,7 @@ void SetTestROIMetadata(const sptr<SurfaceBuffer> &buf, const std::string &roiSt
 {
     std::vector<uint8_t> data(roiStr.begin(), roiStr.end());
     data.push_back('\0');
-    (void)buf->SetMetadata(V2_2::ATTRKEY_ROI_METADATA, data);
+    (void)buf->SetMetadata(V2_2::ATTRKEY_ROI_METADATA, data, false);
 }
 
 void ExpectROIMetadata(const sptr<SurfaceBuffer> &output, const std::string &expected, const std::string &context)
@@ -86,7 +86,7 @@ void ExpectROIMetadata(const sptr<SurfaceBuffer> &output, const std::string &exp
 
 std::string TransformROI(const std::string &roiStr, double scaleX, double scaleY, int32_t offTop, int32_t offLeft)
 {
-    std::regex pattern(R"((?:^|;)(-?\d+),(-?\d+)-(-?\d+),(-?\d+)(?:=([^;]*))?;)");
+    std::regex pattern(R"((?:^|;)(-?\d+),(-?\d+)-(-?\d+),(-?\d+)(?:=([^;]*))?(?=;|$))");
     std::smatch match;
     std::string temp = roiStr;
     std::string result;
@@ -616,6 +616,14 @@ const RoiTestCase ROI_TEST_CASES[] = {
     {"NoParams", "100,200-300,400;"},
     {"MultiRoi", "50,100-200,300=dqp:-6,slb:1;400,500-600,700=slb:3;"},
     {"MultiRoiMixed", "50,100-200,300=5;400,500-600,700=dqp:-3,slb:1;80,90-150,160;"},
+    // No trailing semicolon cases
+    {"NoTrailingSemicolon", "100,200-300,400=5"},
+    {"NoTrailingSemicolonNoParam", "100,200-300,400"},
+    {"NoTrailingSemicolonKeyValue", "100,200-300,400=dqp:-6,slb:1"},
+    {"MultiRoiNoTrailingSemicolon", "50,100-200,300=5;400,500-600,700=dqp:-3,slb:1"},
+    // Negative value after =
+    {"NegativeLegacyValue", "100,200-300,400=-5;"},
+    {"NegativeLegacyValueNoTrailing", "100,200-300,400=-5"},
 };
 
 class FastKitsRoiFormatTest : public testing::TestWithParam<RoiTestCase> {
