@@ -1427,7 +1427,8 @@ Status MPEG4DemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t &sampleSi
             return ret;
         }
         auto track = FindTrackById(trackId);
-        FALSE_RETURN_V_MSG_E(track != nullptr && track->sampleHelper != nullptr, Status::ERROR_UNKNOWN, "Track is nullptr");
+        FALSE_RETURN_V_MSG_E(track != nullptr && track->sampleHelper != nullptr,
+            Status::ERROR_UNKNOWN, "Track is nullptr");
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Get next sample info failed");
         uint32_t currentSampleIndex = track->currentSampleIndex;
         FALSE_RETURN_V_MSG_E(currentSampleIndex < track->sampleHelper->sampleIndexEntry_.size(),
