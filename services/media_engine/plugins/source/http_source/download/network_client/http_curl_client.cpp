@@ -337,7 +337,6 @@ Status HttpCurlClient::InitCurlEnvironment(const std::string& url, int32_t timeo
     curl_easy_setopt(easyHandle_, CURLOPT_CONNECTTIMEOUT, 5); // 5
     curl_easy_setopt(easyHandle_, CURLOPT_SSL_VERIFYPEER, 1L);
     curl_easy_setopt(easyHandle_, CURLOPT_SSL_VERIFYHOST, 2L);
-    curl_easy_setopt(easyHandle_, CURLOPT_CAPATH, CA_STORE_PATH_SYSTEM);
     curl_easy_setopt(easyHandle_, CURLOPT_HTTPGET, 1L);
     curl_easy_setopt(easyHandle_, CURLOPT_FORBID_REUSE, 0L);
     curl_easy_setopt(easyHandle_, CURLOPT_FOLLOWLOCATION, 1L);
