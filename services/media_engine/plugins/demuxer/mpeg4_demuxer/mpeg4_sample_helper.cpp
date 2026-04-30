@@ -37,7 +37,6 @@ constexpr uint32_t DEFAULT_FIELD_SIZE = 32;
 constexpr int64_t MAX_TRUN_SAMPLES = 1000000; //需要确定讨论
 constexpr int64_t NEXT_FRAME = 1;
 constexpr int64_t PREVIOUS_FRAME = 0;
-constexpr int64_t VTTE_SIZE = 8;
 constexpr int64_t MAX_SAMPLES_PER_FRAME = 1024;
 constexpr size_t MIN_DATA_SIZE = 8;
 constexpr int64_t MIN_DATA_OFFSET = 0;
@@ -921,11 +920,7 @@ void MPEG4SampleHelper::GetSampleFlag(uint32_t sampleIndex, SampleIndexEntry &en
         }
     } else if (trackType_ == SUBTITLE_TYPE) {
         if (mimeType_ == MimeType::TEXT_WEBVTT) {
-            if (entry.size == VTTE_SIZE) {
-                entry.flag |= Sample::SampleFlag::DISCARD;
-            } else {
-                entry.flag |= Sample::SampleFlag::SYNC_FRAME;
-            }
+            entry.flag |= Sample::SampleFlag::SYNC_FRAME;
         }
     }
 }
