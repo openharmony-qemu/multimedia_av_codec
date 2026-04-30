@@ -1217,6 +1217,8 @@ Status MPEG4DemuxerPlugin::GetSampleByMimeType(const Seekable seekable, uint32_t
             }
             // compute vttc duration by vtte
             std::shared_ptr<MPEG4Sample> cacheSample  = cacheQueue_.Back(trackId);
+            FALSE_RETURN_V_MSG_E(cacheSample != nullptr && cacheSample->sample != nullptr,
+                Status::ERROR_NULL_POINTER, "Cache sample is nullptr");
             if (tempSample->sample->pts > cacheSample->sample->pts) {
                 cacheSample->sample->duration = tempSample->sample->pts - cacheSample->sample->pts;
             }
@@ -1409,6 +1411,8 @@ Status MPEG4DemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t &sampleSi
     bool isSyncFrame = false;
     if (cacheQueue_.HasCache(trackId)) {
         std::shared_ptr<MPEG4Sample> mpeg4Sample = cacheQueue_.Front(trackId);
+        FALSE_RETURN_V_MSG_E(mpeg4Sample != nullptr && mpeg4Sample->sample != nullptr,
+            Status::ERROR_UNKNOWN, "Track has not been selected");
         sampleSize = mpeg4Sample->sample->size;
         isSyncFrame = mpeg4Sample->sample->flag & Sample::SampleFlag::SYNC_FRAME;
     } else {
@@ -1423,9 +1427,11 @@ Status MPEG4DemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t &sampleSi
             return ret;
         }
         auto track = FindTrackById(trackId);
-        FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_UNKNOWN, "Track is nullptr");
+        FALSE_RETURN_V_MSG_E(track != nullptr && track->sampleHelper != nullptr, Status::ERROR_UNKNOWN, "Track is nullptr");
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Get next sample info failed");
         uint32_t currentSampleIndex = track->currentSampleIndex;
+        FALSE_RETURN_V_MSG_E(currentSampleIndex < track->sampleHelper->sampleIndexEntry_.size(),
+            Status::ERROR_UNKNOWN, "Track is nullptr");
         isSyncFrame = track->sampleHelper->sampleIndexEntry_[currentSampleIndex].flag & Sample::SampleFlag::SYNC_FRAME;
     }
 
