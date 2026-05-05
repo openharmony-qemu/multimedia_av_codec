@@ -285,6 +285,11 @@ bool MPEG4DemuxerPlugin::ReadAndCacheSample()
     auto trackId = trackId_.load(std::memory_order_acquire);
     readLoopStatus_.store(Status::OK, std::memory_order_release);
     Status ret = ReadSampleToCache(trackId);
+    if (ret == Status::ERROR_AGAIN) {
+        MEDIA_LOG_D("Read sample again, keep async read thread alive");
+        readLoopStatus_.store(Status::OK, std::memory_order_release);
+        return true;
+    }
     if (ret == Status::END_OF_STREAM) {
         readToEnd_ = true;
         ret = PushEosToCache(trackId);

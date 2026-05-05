@@ -107,11 +107,16 @@ protected:
     void InitFfmpegPluginURI(const std::string& filePath);
     void InitMpeg4Plugin(const std::string& filePath);
     void InitMpeg4PluginURI(const std::string& filePath);
+    void InitWeakNetworkFfmpegPlugin(const std::string& filePath, int64_t failOffset, size_t maxFailCount);
+    void InitWeakNetworkMpeg4Plugin(const std::string& filePath, int64_t failOffset, size_t maxFailCount);
+    void InitDeferredWeakNetworkMpeg4Plugin(const std::string& filePath, int64_t failOffset, size_t maxFailCount);
     void ResetPlugin(std::shared_ptr<BaseDemuxerPlugin>& plugin, int& fd);
     void InitPlugin(const std::string& filePath, const std::shared_ptr<BaseDemuxerPlugin>& plugin, int& fd,
         MediaInfo& mediaInfo);
     void InitPluginURI(const std::string& filePath, const std::shared_ptr<BaseDemuxerPlugin>& plugin,
         MediaInfo& mediaInfo);
+    void InitWeakNetworkPlugin(const std::string& filePath, const std::shared_ptr<BaseDemuxerPlugin>& plugin, int& fd,
+        MediaInfo& mediaInfo, int64_t failOffset, size_t maxFailCount);
 
     std::vector<uint32_t> SelectSupportedTracks(const std::shared_ptr<BaseDemuxerPlugin>& plugin,
         const MediaInfo& mediaInfo);
@@ -131,6 +136,7 @@ protected:
         const std::vector<Plugins::SeekMode>& seekModes, bool useUri = false);
     void CheckSeekReadResultWithExpected(const std::string& filePath,
         const std::vector<SeekExpectedResult>& expectedResults, bool useUri = false);
+    void CompareWeakNetworkReadResult(const std::string& filePath, int64_t failOffset, size_t maxFailCount);
 
     bool IsSupportedTrack(const Meta& meta) const;
     bool IsEos(const std::shared_ptr<MediaAVBuffer>& buffer) const;
@@ -157,6 +163,59 @@ protected:
     MediaInfo mpeg4MediaInfo_ {};
     std::shared_ptr<BaseDemuxerPlugin> ffmpegPlugin_ {nullptr};
     std::shared_ptr<BaseDemuxerPlugin> mpeg4Plugin_ {nullptr};
+};
+
+class Mpeg4SourceCallback : public Plugins::Callback {
+public:
+    explicit Mpeg4SourceCallback(const std::shared_ptr<DemuxerPluginManager>& demuxerPluginManager)
+        : demuxerPluginManager_(demuxerPluginManager) {}
+
+    void OnEvent(const Plugins::PluginEvent &event) override
+    {
+        if (event.type == PluginEventType::INITIAL_BUFFER_SUCCESS && demuxerPluginManager_ != nullptr) {
+            demuxerPluginManager_->NotifyInitialBufferingEnd(true);
+        }
+    }
+
+private:
+    std::shared_ptr<DemuxerPluginManager> demuxerPluginManager_ {nullptr};
+};
+
+class Mpeg4StreamDemuxerPullDataFailMock : public StreamDemuxer {
+public:
+    Mpeg4StreamDemuxerPullDataFailMock(size_t failOffset, size_t maxFailCount)
+        : StreamDemuxer(), failOffset_(failOffset), maxFailCount_(maxFailCount) {}
+
+    void ResetFailState()
+    {
+        failCount_ = 0;
+        num_ = 0;
+    }
+
+    void SetFailParams(size_t failOffset, size_t maxFailCount)
+    {
+        failOffset_ = failOffset;
+        maxFailCount_ = maxFailCount;
+    }
+
+private:
+    Status CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
+        size_t expectedLen) override
+    {
+        (void)streamID;
+        (void)offset;
+        num_ += expectedLen;
+        if (num_ > failOffset_ && failCount_ < maxFailCount_) {
+            failCount_++;
+            return Status::ERROR_AGAIN;
+        }
+        return StreamDemuxer::CallbackReadAt(streamID, offset, buffer, expectedLen);
+    }
+
+    size_t failOffset_ = 0;
+    size_t maxFailCount_ = 0;
+    size_t failCount_ = 0;
+    size_t num_ = 0;
 };
 } // namespace Media
 } // namespace OHOS

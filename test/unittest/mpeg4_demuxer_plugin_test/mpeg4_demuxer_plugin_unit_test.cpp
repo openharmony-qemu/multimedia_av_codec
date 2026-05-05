@@ -47,6 +47,9 @@ const std::string TEST_RELATIVE_PATH = "/data/test/media/";
 const std::string FFMPEG_MP4_PLUGIN_NAME = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
 const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_hevc_parser.z.so";
 constexpr int32_t WAIT_RETRY_TIMES = 20;
+constexpr uint32_t WEAK_NETWORK_SHORT_TIMEOUT_MS = 10;
+constexpr int64_t WEAK_NETWORK_FIRST_READ_FAIL_OFFSET = 0;
+constexpr size_t WEAK_NETWORK_TIMEOUT_RECOVER_FAIL_COUNT = 20;
 std::unique_ptr<FileServerDemo> g_server = nullptr;
 
 std::vector<SeekExpectedResult> GetExplicitSeekExpectedResults()
@@ -169,6 +172,38 @@ void Mpeg4DemuxerPluginUnitTest::InitPluginURI(const std::string& filePath,
     ASSERT_EQ(plugin->GetMediaInfo(mediaInfo), Status::OK);
 }
 
+void Mpeg4DemuxerPluginUnitTest::InitWeakNetworkPlugin(
+    const std::string& filePath, const std::shared_ptr<BaseDemuxerPlugin>& plugin, int& fd, MediaInfo& mediaInfo,
+    int64_t failOffset, size_t maxFailCount)
+{
+    struct stat fileStatus {};
+    ASSERT_EQ(stat(filePath.c_str(), &fileStatus), 0);
+    fd = open(filePath.c_str(), O_RDONLY);
+    ASSERT_GE(fd, 0);
+
+    auto uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileStatus.st_size);
+    auto demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
+    auto cb = std::make_shared<Mpeg4SourceCallback>(demuxerPluginManager);
+    auto source = std::make_shared<Source>();
+    source->SetCallback(cb);
+    ASSERT_EQ(source->SetSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::vector<StreamInfo> streams;
+    source->GetStreamInfo(streams);
+    demuxerPluginManager->InitDefaultPlay(streams);
+
+    std::shared_ptr<BaseStreamDemuxer> streamDemuxer =
+        std::make_shared<Mpeg4StreamDemuxerPullDataFailMock>(failOffset, maxFailCount);
+    streamDemuxer->SetInterruptState(false);
+    streamDemuxer->SetSource(source);
+    ASSERT_EQ(streamDemuxer->Init(""), Status::OK);
+    streamDemuxer->SetDemuxerState(0, DemuxerState::DEMUXER_STATE_PARSE_FRAME);
+
+    auto dataSource = std::make_shared<DataSourceImpl>(streamDemuxer, 0);
+    ASSERT_NE(plugin, nullptr);
+    ASSERT_EQ(plugin->SetDataSource(dataSource), Status::OK);
+    ASSERT_EQ(plugin->GetMediaInfo(mediaInfo), Status::OK);
+}
+
 void Mpeg4DemuxerPluginUnitTest::InitFfmpegPlugin(const std::string& filePath)
 {
     auto basePlugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(FFMPEG_MP4_PLUGIN_NAME);
@@ -195,6 +230,54 @@ void Mpeg4DemuxerPluginUnitTest::InitMpeg4PluginURI(const std::string& filePath)
 {
     mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4"));
     InitPluginURI(filePath, mpeg4Plugin_, mpeg4MediaInfo_);
+}
+
+void Mpeg4DemuxerPluginUnitTest::InitWeakNetworkFfmpegPlugin(
+    const std::string& filePath, int64_t failOffset, size_t maxFailCount)
+{
+    auto basePlugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(FFMPEG_MP4_PLUGIN_NAME);
+    auto ffmpegPlugin = std::reinterpret_pointer_cast<FFmpegDemuxerPlugin>(basePlugin);
+    ffmpegPlugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(ffmpegPlugin);
+    InitWeakNetworkPlugin(filePath, ffmpegPlugin_, ffmpegFd_, ffmpegMediaInfo_, failOffset, maxFailCount);
+}
+
+void Mpeg4DemuxerPluginUnitTest::InitWeakNetworkMpeg4Plugin(
+    const std::string& filePath, int64_t failOffset, size_t maxFailCount)
+{
+    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4"));
+    InitWeakNetworkPlugin(filePath, mpeg4Plugin_, mpeg4Fd_, mpeg4MediaInfo_, failOffset, maxFailCount);
+}
+
+void Mpeg4DemuxerPluginUnitTest::InitDeferredWeakNetworkMpeg4Plugin(
+    const std::string& filePath, int64_t failOffset, size_t maxFailCount)
+{
+    struct stat fileStatus {};
+    ASSERT_EQ(stat(filePath.c_str(), &fileStatus), 0);
+    mpeg4Fd_ = open(filePath.c_str(), O_RDONLY);
+    ASSERT_GE(mpeg4Fd_, 0);
+
+    auto uri = "fd://" + std::to_string(mpeg4Fd_) + "?offset=0&size=" + std::to_string(fileStatus.st_size);
+    auto demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
+    auto cb = std::make_shared<Mpeg4SourceCallback>(demuxerPluginManager);
+    auto source = std::make_shared<Source>();
+    source->SetCallback(cb);
+    ASSERT_EQ(source->SetSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::vector<StreamInfo> streams;
+    source->GetStreamInfo(streams);
+    demuxerPluginManager->InitDefaultPlay(streams);
+
+    auto streamDemuxer = std::make_shared<Mpeg4StreamDemuxerPullDataFailMock>(0, 0);
+    streamDemuxer->SetInterruptState(false);
+    streamDemuxer->SetSource(source);
+    ASSERT_EQ(streamDemuxer->Init(""), Status::OK);
+    streamDemuxer->SetDemuxerState(0, DemuxerState::DEMUXER_STATE_PARSE_FRAME);
+
+    auto dataSource = std::make_shared<DataSourceImpl>(streamDemuxer, 0);
+    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4"));
+    ASSERT_EQ(mpeg4Plugin_->SetDataSource(dataSource), Status::OK);
+    ASSERT_EQ(mpeg4Plugin_->GetMediaInfo(mpeg4MediaInfo_), Status::OK);
+    streamDemuxer->ResetFailState();
+    streamDemuxer->SetFailParams(static_cast<size_t>(failOffset), maxFailCount);
 }
 
 bool Mpeg4DemuxerPluginUnitTest::IsSupportedTrack(const Meta& meta) const
@@ -548,6 +631,21 @@ void Mpeg4DemuxerPluginUnitTest::CompareSeekReadResult(
     }
 }
 
+void Mpeg4DemuxerPluginUnitTest::CompareWeakNetworkReadResult(
+    const std::string& filePath, int64_t failOffset, size_t maxFailCount)
+{
+    InitWeakNetworkFfmpegPlugin(filePath, failOffset, maxFailCount);
+    InitWeakNetworkMpeg4Plugin(filePath, failOffset, maxFailCount);
+
+    auto ffmpegSelectedTracks = SelectSupportedTracks(ffmpegPlugin_, ffmpegMediaInfo_);
+    auto mpeg4SelectedTracks = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
+    ASSERT_EQ(ffmpegSelectedTracks.size(), mpeg4SelectedTracks.size());
+
+    auto ffmpegDigest = ReadAllSamples(ffmpegPlugin_, ffmpegMediaInfo_, ffmpegSelectedTracks);
+    auto mpeg4Digest = ReadAllSamples(mpeg4Plugin_, mpeg4MediaInfo_, mpeg4SelectedTracks);
+    CompareReadDigest(mpeg4Digest, ffmpegDigest);
+}
+
 void Mpeg4DemuxerPluginUnitTest::CheckSeekReadResultWithExpected(const std::string& filePath,
     const std::vector<SeekExpectedResult>& expectedResults, bool useUri)
 {
@@ -704,6 +802,64 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AsyncTimeout_001, TestSi
     AVBufferWrapper buffer(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
     ASSERT_NE(buffer.mediaAVBuffer, nullptr);
     EXPECT_EQ(mpeg4Plugin_->ReadSample(selectedTrackIds.front(), buffer.mediaAVBuffer, 0), Status::ERROR_WAIT_TIMEOUT);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ReadSample_WeakNetwork_MP4_CompareWithFfmpeg_001
+ * @tc.desc: Compare MPEG4 and FFmpeg demuxer async read results on h264 mp4 under weak network
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest,
+    Mpeg4DemuxerPlugin_ReadSample_WeakNetwork_MP4_CompareWithFfmpeg_001, TestSize.Level1)
+{
+    CompareWeakNetworkReadResult(TEST_MP4_PATH_H264_B, 2560656, 3);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ReadSample_WeakNetwork_MP4_CompareWithFfmpeg_002
+ * @tc.desc: Compare MPEG4 and FFmpeg demuxer async read results on mpeg4 mp4 under weak network
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest,
+    Mpeg4DemuxerPlugin_ReadSample_WeakNetwork_MP4_CompareWithFfmpeg_002, TestSize.Level1)
+{
+    CompareWeakNetworkReadResult(TEST_MP4_PATH_MPEG4, 2560656, 3);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ReadSample_WeakNetwork_FMP4_CompareWithFfmpeg_001
+ * @tc.desc: Compare MPEG4 and FFmpeg demuxer async read results on h264 fmp4 under weak network
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest,
+    Mpeg4DemuxerPlugin_ReadSample_WeakNetwork_FMP4_CompareWithFfmpeg_001, TestSize.Level1)
+{
+    CompareWeakNetworkReadResult(TEST_FMP4_PATH_H264, 2560656, 3);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ReadSample_WeakNetwork_TimeoutThenRecover_001
+ * @tc.desc: Async read returns timeout under weak network and the next read can recover
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest,
+    Mpeg4DemuxerPlugin_ReadSample_WeakNetwork_TimeoutThenRecover_001, TestSize.Level1)
+{
+    InitDeferredWeakNetworkMpeg4Plugin(TEST_MP4_PATH_H264_B, WEAK_NETWORK_FIRST_READ_FAIL_OFFSET,
+        WEAK_NETWORK_TIMEOUT_RECOVER_FAIL_COUNT);
+    auto selectedTrackIds = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
+    ASSERT_FALSE(selectedTrackIds.empty());
+
+    AVBufferWrapper buffer(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
+    ASSERT_NE(buffer.mediaAVBuffer, nullptr);
+
+    auto trackId = selectedTrackIds.front();
+    EXPECT_EQ(mpeg4Plugin_->ReadSample(trackId, buffer.mediaAVBuffer, WEAK_NETWORK_SHORT_TIMEOUT_MS),
+        Status::ERROR_WAIT_TIMEOUT);
+
+    auto ret = ReadSampleWithRetry(mpeg4Plugin_, trackId, buffer.mediaAVBuffer, ReadMode::COPY);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_FALSE(IsEos(buffer.mediaAVBuffer));
 }
 
 /**
