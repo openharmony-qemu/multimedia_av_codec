@@ -51,6 +51,7 @@ constexpr uint32_t WEAK_NETWORK_SHORT_TIMEOUT_MS = 10;
 constexpr uint32_t WEAK_NETWORK_FAIL_DELAY_MS = 20;
 constexpr int64_t WEAK_NETWORK_FIRST_READ_FAIL_OFFSET = 0;
 constexpr size_t WEAK_NETWORK_TIMEOUT_RECOVER_FAIL_COUNT = 1;
+constexpr size_t WEAK_NETWORK_THREAD_RETRY_FAIL_COUNT = 20;
 std::unique_ptr<FileServerDemo> g_server = nullptr;
 
 std::vector<SeekExpectedResult> GetExplicitSeekExpectedResults()
@@ -87,6 +88,37 @@ std::vector<SeekExpectedResult> GetExplicitSeekExpectedResults()
         {4100, SeekMode::SEEK_PREVIOUS_SYNC, true, {3, 5}},
         {4100, SeekMode::SEEK_CLOSEST_SYNC, true, {3, 5}},
     };
+}
+
+std::shared_ptr<DataSourceImpl> CreateFileDataSource(const std::string& filePath, int& fd)
+{
+    struct stat fileStatus {};
+    if (stat(filePath.c_str(), &fileStatus) != 0) {
+        ADD_FAILURE() << "Failed to stat file: " << filePath;
+        return nullptr;
+    }
+    fd = open(filePath.c_str(), O_RDONLY);
+    if (fd < 0) {
+        ADD_FAILURE() << "Failed to open file: " << filePath;
+        return nullptr;
+    }
+
+    auto uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileStatus.st_size);
+    auto mediaSource = std::make_shared<MediaSource>(uri);
+    auto streamDemuxer = std::make_shared<StreamDemuxer>();
+    auto source = std::make_shared<Source>();
+    if (source->SetSource(mediaSource) != Status::OK) {
+        ADD_FAILURE() << "Set source failed";
+        return nullptr;
+    }
+    streamDemuxer->SetSource(source);
+    streamDemuxer->SetSourceType(mediaSource->GetSourceType());
+    if (streamDemuxer->Init(uri) != Status::OK) {
+        ADD_FAILURE() << "Init stream demuxer failed";
+        return nullptr;
+    }
+    streamDemuxer->SetDemuxerState(0, DemuxerState::DEMUXER_STATE_PARSE_FRAME);
+    return std::make_shared<DataSourceImpl>(streamDemuxer, 0);
 }
 }
 
@@ -700,6 +732,239 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_InitSelectTrack_001, Tes
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_LifecycleMetaAndStubInterfaces_001
+ * @tc.desc: Verify MPEG4 demuxer lifecycle, meta, probe, drm and reference-parser interfaces
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest,
+    Mpeg4DemuxerPlugin_LifecycleMetaAndStubInterfaces_001, TestSize.Level1)
+{
+    auto plugin = std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4");
+    ASSERT_NE(plugin, nullptr);
+
+    MediaInfo mediaInfo;
+    EXPECT_EQ(plugin->GetMediaInfo(mediaInfo), Status::ERROR_NULL_POINTER);
+    EXPECT_EQ(plugin->Start(), Status::OK);
+    EXPECT_EQ(plugin->Stop(), Status::OK);
+    EXPECT_EQ(plugin->Pause(), Status::OK);
+    EXPECT_EQ(plugin->Flush(), Status::OK);
+    EXPECT_EQ(plugin->Reset(), Status::OK);
+    plugin->ResetEosStatus();
+    plugin->SetCacheLimit(1024);
+    plugin->SetInterruptState(false);
+    EXPECT_EQ(plugin->SetReadTimeoutForInitSeek(10), Status::OK);
+    EXPECT_EQ(plugin->SetAVReadPacketStopState(false), Status::OK);
+    EXPECT_EQ(plugin->SetCachePressureCallback(nullptr), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(plugin->SetTrackCacheLimit(0, 1024), Status::ERROR_UNKNOWN);
+
+    int32_t offset = -1;
+    int32_t size = -1;
+    EXPECT_TRUE(plugin->GetProbeSize(offset, size));
+    EXPECT_EQ(offset, 0);
+    EXPECT_GT(size, 0);
+
+    std::multimap<std::string, std::vector<uint8_t>> drmInfo;
+    EXPECT_EQ(plugin->GetDrmInfo(drmInfo), Status::OK);
+    EXPECT_TRUE(plugin->IsRefParserSupported());
+    EXPECT_EQ(plugin->ParserRefUpdatePos(0), Status::OK);
+    EXPECT_EQ(plugin->ParserRefInfo(), Status::OK);
+
+    auto buffer = MediaAVBuffer::CreateAVBuffer();
+    FrameLayerInfo frameLayerInfo;
+    GopLayerInfo gopLayerInfo;
+    std::vector<uint32_t> iFramePos;
+    uint32_t frameId = 0;
+    uint32_t index = 0;
+    uint64_t relativePresentationTimeUs = 0;
+    int64_t seekMs = 0;
+    EXPECT_EQ(plugin->GetFrameLayerInfo(buffer, frameLayerInfo), Status::OK);
+    EXPECT_EQ(plugin->GetFrameLayerInfo(frameId, frameLayerInfo), Status::OK);
+    EXPECT_EQ(plugin->GetGopLayerInfo(0, gopLayerInfo), Status::OK);
+    EXPECT_EQ(plugin->GetIFramePos(iFramePos), Status::OK);
+    EXPECT_EQ(plugin->Dts2FrameId(0, frameId), Status::OK);
+    EXPECT_EQ(plugin->SeekMs2FrameId(0, frameId), Status::OK);
+    EXPECT_EQ(plugin->FrameId2SeekMs(frameId, seekMs), Status::OK);
+    EXPECT_EQ(plugin->GetIndexByRelativePresentationTimeUs(0, 0, index), Status::OK);
+    EXPECT_EQ(plugin->GetRelativePresentationTimeUsByIndex(0, index, relativePresentationTimeUs), Status::OK);
+
+    int64_t realSeekTime = 0;
+    EXPECT_EQ(plugin->SeekToKeyFrame(0, 0, SeekMode::SEEK_NEXT_SYNC, realSeekTime, 0),
+        Status::ERROR_INVALID_PARAMETER);
+    EXPECT_EQ(plugin->SeekToFrameByDts(0, 0, SeekMode::SEEK_NEXT_SYNC, realSeekTime, 0), Status::ERROR_UNKNOWN);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SetDataSourceWithProbSize_001
+ * @tc.desc: Verify SetDataSourceWithProbSize parameter checks and normal initialization path
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SetDataSourceWithProbSize_001, TestSize.Level1)
+{
+    int fd = -1;
+    auto dataSource = CreateFileDataSource(TEST_MP4_PATH_H264_B, fd);
+    ASSERT_NE(dataSource, nullptr);
+
+    auto plugin = std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4");
+    ASSERT_NE(plugin, nullptr);
+    EXPECT_EQ(plugin->SetDataSourceWithProbSize(nullptr, 0), Status::ERROR_INVALID_PARAMETER);
+    EXPECT_EQ(plugin->SetDataSourceWithProbSize(dataSource, -1), Status::ERROR_INVALID_PARAMETER);
+    auto setDataSourceWithProbeRet = plugin->SetDataSourceWithProbSize(dataSource, 1024);
+    if (setDataSourceWithProbeRet != Status::OK) {
+        EXPECT_EQ(setDataSourceWithProbeRet, Status::ERROR_INVALID_PARAMETER);
+        ASSERT_EQ(plugin->SetDataSource(dataSource), Status::OK);
+    }
+
+    MediaInfo mediaInfo;
+    EXPECT_EQ(plugin->GetMediaInfo(mediaInfo), Status::OK);
+    EXPECT_FALSE(mediaInfo.tracks.empty());
+    EXPECT_EQ(plugin->SetDataSourceWithProbSize(dataSource, 1024), Status::ERROR_WRONG_STATE);
+    EXPECT_EQ(plugin->Reset(), Status::OK);
+    if (fd >= 0) {
+        close(fd);
+    }
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_InvalidParameterAndTrackState_001
+ * @tc.desc: Verify invalid parameters and select/unselect state handling
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_InvalidParameterAndTrackState_001, TestSize.Level1)
+{
+    InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
+    auto selectedTrackIds = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
+    ASSERT_FALSE(selectedTrackIds.empty());
+    auto trackId = selectedTrackIds.front();
+    auto invalidTrackId = static_cast<uint32_t>(mpeg4MediaInfo_.tracks.size());
+
+    EXPECT_EQ(mpeg4Plugin_->SelectTrack(trackId), Status::OK);
+    EXPECT_EQ(mpeg4Plugin_->SelectTrack(invalidTrackId), Status::ERROR_INVALID_PARAMETER);
+    EXPECT_EQ(mpeg4Plugin_->UnselectTrack(invalidTrackId), Status::ERROR_INVALID_PARAMETER);
+
+    AVBufferWrapper buffer(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
+    int32_t sampleSize = 0;
+    EXPECT_EQ(mpeg4Plugin_->GetNextSampleSize(invalidTrackId, sampleSize, MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_TIMEOUT),
+        Status::ERROR_INVALID_PARAMETER);
+    EXPECT_EQ(mpeg4Plugin_->ReadSample(invalidTrackId, buffer.mediaAVBuffer, MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_TIMEOUT),
+        Status::ERROR_INVALID_PARAMETER);
+    EXPECT_EQ(mpeg4Plugin_->ReadSample(trackId, nullptr, MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_TIMEOUT),
+        Status::ERROR_INVALID_PARAMETER);
+    EXPECT_EQ(mpeg4Plugin_->ReadSampleZeroCopy(trackId, nullptr, MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_TIMEOUT),
+        Status::ERROR_INVALID_PARAMETER);
+
+    ASSERT_EQ(mpeg4Plugin_->UnselectTrack(trackId), Status::OK);
+    EXPECT_EQ(mpeg4Plugin_->ReadSample(trackId, buffer.mediaAVBuffer, MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_TIMEOUT),
+        Status::ERROR_INVALID_PARAMETER);
+    EXPECT_EQ(mpeg4Plugin_->UnselectTrack(trackId), Status::OK);
+    EXPECT_EQ(mpeg4Plugin_->SelectTrack(trackId), Status::OK);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SyncReadInterfaces_001
+ * @tc.desc: Verify synchronous GetNextSampleSize and ReadSample interfaces
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SyncReadInterfaces_001, TestSize.Level1)
+{
+    InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
+    auto selectedTrackIds = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
+    ASSERT_FALSE(selectedTrackIds.empty());
+    auto trackId = selectedTrackIds.front();
+
+    int32_t sampleSize = 0;
+    ASSERT_EQ(mpeg4Plugin_->GetNextSampleSize(trackId, sampleSize), Status::OK);
+    EXPECT_GT(sampleSize, 0);
+
+    AVBufferWrapper buffer(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
+    ASSERT_NE(buffer.mediaAVBuffer, nullptr);
+    ASSERT_EQ(mpeg4Plugin_->ReadSample(trackId, buffer.mediaAVBuffer), Status::OK);
+    EXPECT_FALSE(IsEos(buffer.mediaAVBuffer));
+    EXPECT_GT(buffer.mediaAVBuffer->memory_->GetSize(), 0U);
+
+    EXPECT_EQ(mpeg4Plugin_->GetNextSampleSize(trackId, sampleSize, MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_TIMEOUT),
+        Status::ERROR_INVALID_OPERATION);
+    EXPECT_EQ(mpeg4Plugin_->ReadSample(trackId, buffer.mediaAVBuffer, MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_TIMEOUT),
+        Status::ERROR_INVALID_OPERATION);
+    EXPECT_EQ(mpeg4Plugin_->ReadSampleZeroCopy(trackId, MediaAVBuffer::CreateAVBuffer(),
+        MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_TIMEOUT), Status::ERROR_INVALID_OPERATION);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AsyncCacheAndControlInterfaces_001
+ * @tc.desc: Verify async cache query, pause, flush and reset related interfaces
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AsyncCacheAndControlInterfaces_001, TestSize.Level1)
+{
+    InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
+    auto selectedTrackIds = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
+    ASSERT_FALSE(selectedTrackIds.empty());
+    auto trackId = selectedTrackIds.front();
+
+    uint32_t cacheSize = 0;
+    uint32_t frameCount = 0;
+    EXPECT_EQ(mpeg4Plugin_->GetCurrentCacheSize(trackId, cacheSize), Status::OK);
+    EXPECT_EQ(mpeg4Plugin_->GetCurrentCacheFrameCount(trackId, frameCount), Status::OK);
+    EXPECT_EQ(cacheSize, 0U);
+    EXPECT_EQ(frameCount, 0U);
+
+    mpeg4Plugin_->SetCacheLimit(1);
+    int32_t sampleSize = 0;
+    ASSERT_EQ(GetNextSampleSizeWithRetry(mpeg4Plugin_, trackId, sampleSize), Status::OK);
+    EXPECT_GT(sampleSize, 0);
+    EXPECT_EQ(mpeg4Plugin_->GetCurrentCacheSize(trackId, cacheSize), Status::OK);
+    EXPECT_EQ(mpeg4Plugin_->GetCurrentCacheFrameCount(trackId, frameCount), Status::OK);
+    EXPECT_GT(cacheSize, 0U);
+    EXPECT_GT(frameCount, 0U);
+
+    int64_t lastPts = 0;
+    EXPECT_EQ(mpeg4Plugin_->GetLastPTSByTrackId(trackId, lastPts), Status::OK);
+    EXPECT_NE(lastPts, INT64_MIN);
+    EXPECT_EQ(mpeg4Plugin_->Pause(), Status::OK);
+    EXPECT_EQ(mpeg4Plugin_->Flush(), Status::OK);
+    EXPECT_EQ(mpeg4Plugin_->GetCurrentCacheFrameCount(trackId, frameCount), Status::OK);
+    EXPECT_EQ(frameCount, 0U);
+
+    AVBufferWrapper buffer(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
+    ASSERT_EQ(ReadSampleWithRetry(mpeg4Plugin_, trackId, buffer.mediaAVBuffer, ReadMode::COPY), Status::OK);
+    EXPECT_FALSE(IsEos(buffer.mediaAVBuffer));
+    EXPECT_EQ(mpeg4Plugin_->Reset(), Status::OK);
+
+    MediaInfo mediaInfo;
+    EXPECT_EQ(mpeg4Plugin_->GetMediaInfo(mediaInfo), Status::OK);
+    EXPECT_TRUE(mediaInfo.tracks.empty());
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AsyncThreadControlInterfaces_001
+ * @tc.desc: Verify async read thread priority and stop-state interfaces
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AsyncThreadControlInterfaces_001, TestSize.Level1)
+{
+    InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
+    auto selectedTrackIds = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
+    ASSERT_FALSE(selectedTrackIds.empty());
+    auto trackId = selectedTrackIds.front();
+
+    EXPECT_EQ(mpeg4Plugin_->BoostReadThreadPriority(), Status::OK);
+    EXPECT_EQ(mpeg4Plugin_->BoostReadThreadPriority(), Status::ERROR_WRONG_STATE);
+
+    AVBufferWrapper buffer(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
+    ASSERT_EQ(ReadSampleWithRetry(mpeg4Plugin_, trackId, buffer.mediaAVBuffer, ReadMode::COPY), Status::OK);
+    EXPECT_FALSE(IsEos(buffer.mediaAVBuffer));
+
+    ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
+    InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
+    selectedTrackIds = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
+    ASSERT_FALSE(selectedTrackIds.empty());
+    trackId = selectedTrackIds.front();
+    EXPECT_EQ(mpeg4Plugin_->SetAVReadPacketStopState(true), Status::OK);
+    EXPECT_EQ(mpeg4Plugin_->ReadSample(trackId, buffer.mediaAVBuffer, MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_TIMEOUT),
+        Status::ERROR_WRONG_STATE);
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_ReadSample_MP4_CompareWithFfmpeg_001
  * @tc.desc: Compare MPEG4 and FFmpeg demuxer full-frame read results on h264 mp4
  * @tc.type: FUNC
@@ -839,6 +1104,17 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest,
     Mpeg4DemuxerPlugin_ReadSample_WeakNetwork_FMP4_CompareWithFfmpeg_001, TestSize.Level1)
 {
     CompareWeakNetworkReadResult(TEST_FMP4_PATH_H264, 2560656, 3);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ReadSample_WeakNetwork_ThreadRetryRecover_001
+ * @tc.desc: Verify async read thread keeps running when ReadSampleData returns ERROR_AGAIN
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest,
+    Mpeg4DemuxerPlugin_ReadSample_WeakNetwork_ThreadRetryRecover_001, TestSize.Level1)
+{
+    CompareWeakNetworkReadResult(TEST_MP4_PATH_H264_B, 2560656, WEAK_NETWORK_THREAD_RETRY_FAIL_COUNT);
 }
 
 /**

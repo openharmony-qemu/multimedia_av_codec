@@ -437,9 +437,12 @@ void MPEG4DemuxerPlugin::UpdateAsyncReadThreadPriority()
 
 void MPEG4DemuxerPlugin::ReleaseReadLoop()
 {
-    stopReadThread_.store(true, std::memory_order_release);
-    isPauseReadPacket_.store(false, std::memory_order_release);
-    threadReady_.store(true, std::memory_order_release);
+    {
+        std::lock_guard<std::mutex> readLock(readThreadMutex_);
+        stopReadThread_.store(true, std::memory_order_release);
+        isPauseReadPacket_.store(false, std::memory_order_release);
+        threadReady_.store(true, std::memory_order_release);
+    }
     readLoopCv_.notify_all();
     {
         std::lock_guard<std::mutex> readLock(readSampleMutex_);
