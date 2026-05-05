@@ -38,8 +38,7 @@ constexpr int32_t MAX_SEND_FRAMES = 10;
 
 void VDecServerSample::CallBack::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
-    tester->Flush();
-    tester->Reset();
+    cout << "---- OnError errorType: " << errorType << " errorCode:" << errorCode << "----" << endl;
 }
 
 void VDecServerSample::CallBack::OnOutputFormatChanged(const Format &format)

@@ -112,7 +112,7 @@ public:
     Status UnselectTrack(uint32_t trackIndex); // Interface for AVDemuxer
     Status ReadSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample); // Interface for AVDemuxer
     Status GetBitRates(std::vector<uint32_t> &bitRates);
-    Status SelectStreamId(int32_t streamId);
+    Status SelectStreamId(int32_t streamId, bool isAudioStream = true);
     Status SelectBitRate(uint32_t bitRate, bool isAutoSelect = false, bool isForceSelect = false);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
     Status GetPlaybackInfo(PlaybackInfo& playbackInfo);
@@ -179,6 +179,7 @@ public:
     Status PauseDemuxerReadLoop();
     Status SetTranscoderMode();
     Status SetPlayerMode();
+    Status SetMetadataMode();
     Status SetSkippingAudioDecAndEnc();
     void SetCacheLimit(uint32_t limitSize);
     void SetEnableOnlineFdCache(bool isEnableFdCache);
@@ -443,6 +444,8 @@ private:
     void SetCurrentSegmentOffset(int32_t trackId, size_t segmentOffset);
     int64_t GetCurrentSegmentOffset(int32_t trackId, int64_t oldSegmentOffset);
     bool IsSubtitleTrackId(int32_t trackId);
+    void WaitTrackSelectionFilter(uint32_t bitRate, int32_t streamId, DemuxerTrackType type);
+    void ProcessTrackSelectionFilter();
 
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
@@ -558,6 +561,7 @@ private:
     std::mutex syncFrameInfoMutex_ {};
     bool isTranscoderMode_ {false};
     bool isPlayerMode_ {false};
+    bool isMetadataMode_ {false};
     bool isSkippingAudioDecAndEnc_ {false};
     bool perfRecEnabled_ { false };
     PerfRecorder perfRecorder_ {};
@@ -567,6 +571,7 @@ private:
 
     bool isCreatedByFilter_ {false};
 
+    int64_t seekTimeoutMs_ {60000};
     int64_t videoSeekTime_ {0};
     bool isInSeekDropAudio_ {false};
     std::atomic<int32_t> convertErrorTime_ {0};
@@ -610,6 +615,9 @@ private:
     int32_t defaultVideoStreamId_ {-1};
     int32_t defaultAudioStreamId_ {-1};
     int32_t defaultSubtitleStreamId_ {-1};
+    std::atomic<uint32_t> waitVideoBitrate_ {0};
+    std::atomic<int32_t> waitAudioStreamId_ {-1};
+    std::atomic<int32_t> waitSubtitleStreamId_ {-1};
     TrackSelectionFilter trackSelectionFilter_;
     int64_t lastCheckAutoSelectTimeMs_ {0};
     int32_t lastAutoSelectBitRate_ {0};

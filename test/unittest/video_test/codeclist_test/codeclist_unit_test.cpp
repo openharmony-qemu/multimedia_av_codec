@@ -613,19 +613,29 @@ HWTEST_F(CodecListUnitTest, CodecList_GetVideoFrameRateRangeForSize_002, TestSiz
     capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_MIME, false, category);
     ASSERT_NE(nullptr, capability_) << "video decoder codeclist create fail!" << std::endl;
 
-    int32_t wmax = DEFAULT_WIDTH_RANGE.maxVal;
-    int32_t hmax = DEFAULT_HEIGHT_RANGE.maxVal;
+    Range widthRange = capability_->GetVideoWidthRange();
+    Range heightRange = capability_->GetVideoHeightRange();
+
+    int32_t wmax = widthRange.maxVal;
+    int32_t hmax = heightRange.maxVal;
     Range framerateRange = capability_->GetVideoFrameRateRangeForSize(0, 0);
     EXPECT_EQ(0, framerateRange.minVal);
     EXPECT_EQ(0, framerateRange.maxVal);
 
-    framerateRange = capability_->GetVideoFrameRateRangeForSize(wmax + 2, hmax + 2);
+    int32_t heightAlignment = capability_->GetVideoHeightAlignment();
+    framerateRange = capability_->GetVideoFrameRateRangeForSize(wmax, hmax + heightAlignment);
     EXPECT_EQ(0, framerateRange.minVal);
     EXPECT_EQ(0, framerateRange.maxVal);
 
-    framerateRange = capability_->GetVideoFrameRateRangeForSize(wmax - 1, hmax - 1);
-    EXPECT_EQ(0, framerateRange.minVal);
-    EXPECT_EQ(0, framerateRange.maxVal);
+    if (heightAlignment > 1) {
+        int32_t invalidAlignedHeight = hmax - 1;
+        if (invalidAlignedHeight % heightAlignment == 0) {
+            invalidAlignedHeight = hmax - 2;
+        }
+        framerateRange = capability_->GetVideoFrameRateRangeForSize(wmax, invalidAlignedHeight);
+        EXPECT_EQ(0, framerateRange.minVal);
+        EXPECT_EQ(0, framerateRange.maxVal);
+    }
 
     framerateRange = capability_->GetVideoFrameRateRangeForSize(-2, -2);
     EXPECT_EQ(0, framerateRange.minVal);

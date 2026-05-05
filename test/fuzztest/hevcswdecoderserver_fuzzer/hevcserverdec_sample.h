@@ -58,7 +58,7 @@ public:
     std::shared_ptr<VDecSignal> signal_;
     const uint8_t *fuzzData;
     size_t fuzzSize;
-    int32_t sendFrameIndex;
+    int32_t sendFrameIndex = 0;
     const char *outDIR = "/data/test/media/VDecTest.yuv";
 protected:
     std::shared_ptr<CodecBase> codec_;

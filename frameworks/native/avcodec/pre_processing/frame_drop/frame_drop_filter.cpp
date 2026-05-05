@@ -18,7 +18,7 @@
 #include "hitrace_meter.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "FDFilt"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "FrameDropFilter"};
 } // namespace
 
 namespace OHOS {
@@ -36,7 +36,7 @@ int32_t FrameDropFilter::Configure(double dropToFps, double frameRate)
     frameRate_ = frameRate;
     strategyDecided_ = false;
     hasFirstPts_ = false;
-    AVCODEC_LOGI("Drop %.2f->%.2f", frameRate_, dropToFps_);
+    AVCODEC_LOGI("Drop %{public}.2f->%{public}.2f", frameRate_, dropToFps_);
     return AVCS_ERR_OK;
 }
 
@@ -48,15 +48,15 @@ bool FrameDropFilter::ShouldDropFrame(uint64_t pts)
             hasFirstPts_ = true;
             firstPts_ = pts;
             AVCODEC_LOGI("First frame kept, pts=%{public}" PRIu64, pts);
-            HITRACE_METER_FMT(HITRACE_TAG_ZMEDIA, "Drop pts=%{public}" PRIu64 " keep", pts);
+            HITRACE_METER_FMT(HITRACE_TAG_ZMEDIA, "Drop pts=%" PRIu64 " keep", pts);
             return false;
         }
         strategyDecided_ = true;
         if (pts <= firstPts_) {
-            AVCODEC_LOGI("Drop strategy: ratio %.2f->%.2f", frameRate_, dropToFps_);
+            AVCODEC_LOGI("Drop strategy: ratio %{public}.2f->%{public}.2f", frameRate_, dropToFps_);
             activeStrategy_ = std::make_unique<RatioDropStrategy>(frameRate_, dropToFps_);
         } else {
-            AVCODEC_LOGI("Drop strategy: timestamp ->%.2f", dropToFps_);
+            AVCODEC_LOGI("Drop strategy: timestamp ->%{public}.2f", dropToFps_);
             activeStrategy_ = std::make_unique<TimestampDropStrategy>(dropToFps_);
         }
         // Retroactively feed first frame to let strategy initialize its internal state
@@ -65,7 +65,7 @@ bool FrameDropFilter::ShouldDropFrame(uint64_t pts)
     CHECK_AND_RETURN_RET_LOG(activeStrategy_ != nullptr, false, "activeStrategy_ is null");
 
     bool dropped = activeStrategy_->ShouldDropFrame(pts);
-    HITRACE_METER_FMT(HITRACE_TAG_ZMEDIA, "Drop pts=%{public}" PRIu64 " %{public}s", pts, dropped ? "drop" : "keep");
+    HITRACE_METER_FMT(HITRACE_TAG_ZMEDIA, "Drop pts=%" PRIu64 " %s", pts, dropped ? "drop" : "keep");
     return dropped;
 }
 

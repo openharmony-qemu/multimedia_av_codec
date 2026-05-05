@@ -28,7 +28,8 @@ public:
     void OnError(int32_t errorCode) override {}
     void OnOutputFormatChanged(const Format &format) override {}
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override {}
-    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override
+    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer,
+        bool isInSeekContinous = false) override
     {
         buffer_ = buffer;
     }

@@ -77,6 +77,7 @@ protected:
         void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
     private:
         VDecServerSample* tester;
+        int32_t nCount { 0 };
     };
 };
 

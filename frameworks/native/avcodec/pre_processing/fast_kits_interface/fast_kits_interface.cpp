@@ -18,7 +18,7 @@
 #include "hitrace_meter.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "FastKits"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "FastKitsInterface"};
 constexpr const char *FAST_IMAGE_SO_PATH = "libfast_image.so";
 } // namespace
 
@@ -102,6 +102,7 @@ bool FastKitsInterface::LoadSymbol(void *handle, FuncPtr &func, const char *name
 
 int32_t FastKitsInterface::Init(uint32_t format, FastResizeAlgoType algo)
 {
+    HITRACE_METER_FMT(HITRACE_TAG_ZMEDIA, "DS Init format=%u algo=%d", format, static_cast<int32_t>(algo));
     std::unique_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(handle_ != nullptr, AVCS_ERR_UNKNOWN, "Library not loaded, call Retain first");
     CHECK_AND_RETURN_RET_LOG(initFunc_ != nullptr, AVCS_ERR_INVALID_VAL, "Init function not loaded");
@@ -151,10 +152,8 @@ bool FastKitsInterface::IsLoaded() const
 int32_t FastKitsInterface::Crop(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output,
                                 const CropRect &rect)
 {
-    HITRACE_METER_FMT(HITRACE_TAG_ZMEDIA, "Crop %{public}dx%{public}d->%{public}dx%{public}d "
-                      "rect=[%{public}d,%{public}d,%{public}d,%{public}d]",
-                      input->GetWidth(), input->GetHeight(), output->GetWidth(), output->GetHeight(),
-                      rect.top, rect.left, rect.bottom, rect.right);
+    HITRACE_METER_FMT(HITRACE_TAG_ZMEDIA, "Crop %dx%d->%dx%d rect=[%d,%d,%d,%d]", input->GetWidth(), input->GetHeight(),
+                      output->GetWidth(), output->GetHeight(), rect.top, rect.left, rect.bottom, rect.right);
     std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(cropFunc_ != nullptr && createRectFunc_ != nullptr && destroyRectFunc_ != nullptr,
                              AVCS_ERR_INVALID_VAL, "Crop functions not loaded");
@@ -177,9 +176,8 @@ int32_t FastKitsInterface::Crop(const sptr<SurfaceBuffer> &input, const sptr<Sur
 int32_t FastKitsInterface::DownSample(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output,
                                       FastResizeAlgoType algo)
 {
-    HITRACE_METER_FMT(HITRACE_TAG_ZMEDIA, "DS %{public}dx%{public}d->%{public}dx%{public}d algo=%{public}d",
-                      input->GetWidth(), input->GetHeight(), output->GetWidth(), output->GetHeight(),
-                      static_cast<int32_t>(algo));
+    HITRACE_METER_FMT(HITRACE_TAG_ZMEDIA, "DS %dx%d->%dx%d algo=%d", input->GetWidth(), input->GetHeight(),
+                      output->GetWidth(), output->GetHeight(), static_cast<int32_t>(algo));
     std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(downSampleFunc_ != nullptr, AVCS_ERR_INVALID_VAL, "DownSample function not loaded");
 

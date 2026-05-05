@@ -33,7 +33,8 @@ public:
     virtual void OnError(int32_t errorCode) = 0;
     virtual void OnOutputFormatChanged(const Format &format) = 0;
     virtual void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) = 0;
-    virtual void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) = 0;
+    virtual void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer,
+        bool isInSeekContinous = false) = 0;
 };
 
 enum VideoPostProcessorType {
@@ -41,6 +42,7 @@ enum VideoPostProcessorType {
     SUPER_RESOLUTION,
     CAMERA_INSERT_FRAME,
     CAMERA_MP_PWP,
+    SIDE_OUTPUT,
 };
 
 class BaseVideoPostProcessor {
@@ -104,6 +106,14 @@ public:
     {
         (void)speed;
         return Status::OK;
+    }
+    virtual void SetVideoOutput(sptr<Surface> surface)
+    {
+        (void)surface;
+    }
+    virtual void GetVideoSample(int32_t &outputResult)
+    {
+        (void)outputResult;
     }
 };
 

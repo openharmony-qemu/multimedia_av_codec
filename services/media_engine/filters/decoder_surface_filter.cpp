@@ -136,7 +136,8 @@ public:
     {
     }
 
-    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override
+    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer,
+        bool isInSeekContinous = false) override
     {
         if (auto decoderSurfaceFilter = decoderSurfaceFilter_.lock()) {
             decoderSurfaceFilter->DrainOutputBuffer(index, buffer);
@@ -1703,6 +1704,9 @@ std::shared_ptr<BaseVideoPostProcessor> DecoderSurfaceFilter::CreatePostProcesso
         videoDecoder_->SetOutputSurface(decoderOutputSurface_);
         postProcessor_->SetOutputSurface(videoSurface_);
     }
+    if (postProcessorType_ == VideoPostProcessorType::SIDE_OUTPUT) {
+        SetVideoOutput(sideOutputSurface_);
+    }
     return postProcessor_;
 }
 
@@ -1855,6 +1859,19 @@ void DecoderSurfaceFilter::SetBuffering(bool isBuffering)
     FALSE_RETURN(!outputBuffers_.empty());
     std::pair<int, std::shared_ptr<AVBuffer>> nextTask = outputBuffers_.front();
     RenderNextOutput(nextTask.first, nextTask.second);
+}
+
+void DecoderSurfaceFilter::SetVideoOutput(sptr<Surface> videoSurface)
+{
+    sideOutputSurface_ = videoSurface;
+    FALSE_RETURN_MSG(postProcessor_ != nullptr, "postProcessor_ is nullptr");
+    postProcessor_->SetVideoOutput(sideOutputSurface_);
+}
+
+void DecoderSurfaceFilter::GetVideoSample(int32_t &outputResult)
+{
+    FALSE_RETURN_MSG(postProcessor_ != nullptr, "postProcessor_ is nullptr");
+    postProcessor_->GetVideoSample(outputResult);
 }
 } // namespace Pipeline
 } // namespace MEDIA

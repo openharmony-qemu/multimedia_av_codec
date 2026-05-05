@@ -518,6 +518,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/http_plugin_fuzztest/dashmpddownfinished_fuzzer:DashMpdDownFinishedFuzzTest",
       "fuzztest/hlstagsattronly_fuzzer:HlsTagsAttrOnlyFuzzTest",
       "fuzztest/http_plugin_fuzztest/dashmediadownloader2_fuzzer:DashMediaDownloader2FuzzTest",
+      "fuzztest/http_plugin_fuzztest/dashcomprehensive_fuzzer:DashComprehensiveFuzzTest",
       "fuzztest/http_plugin_fuzztest/mpdparserthird_fuzzer:MpdParserThirdFuzzTest",
       "fuzztest/http_plugin_fuzztest/mpdparserseven_fuzzer:MpdParserSevenFuzzTest",
       "fuzztest/http_plugin_fuzztest/mpddown_fuzzer:MpdDownFuzzTest",
@@ -621,6 +622,7 @@ group("video_codec_unit_test") {
         "unittest/video_test/smart_fluency_decoding_test:smart_fluency_decoding_test",
         "unittest/video_test/vcodec_framework_test:vcodec_framework_test",
         "unittest/video_test/vcodec_server_test:codec_server_test",
+        "unittest/video_test/videoenc_dualoutput_unit_test:videoenc_dualoutput_unit_test",
       ]
     }
   }

@@ -57,6 +57,7 @@ struct MPEG4Sample {
     int32_t offset = 0;
     std::shared_ptr<Sample> sample = nullptr;
     bool isAnnexb = false;
+    bool isVttc = false;
     uint32_t queueIndex = 0;
 };
 } // namespace MPEG4

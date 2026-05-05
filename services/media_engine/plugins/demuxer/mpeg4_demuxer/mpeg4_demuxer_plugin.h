@@ -176,8 +176,11 @@ private:
     Status SetEosSample(std::shared_ptr<AVBuffer> sample, bool replaceMemory);
     Status GetSampleBySeekableStatus(const Seekable seekable, uint32_t trackId,
         std::shared_ptr<MPEG4Sample> &mpeg4Sample, std::shared_ptr<AVBuffer> outBuffer);
+    Status GetSampleByMimeType(const Seekable seekable, uint32_t trackId,
+        std::shared_ptr<MPEG4Sample> &mpeg4Sample, std::shared_ptr<AVBuffer> outBuffer);
     uint32_t GetFlags(const std::shared_ptr<Sample> sample, bool memoryNotEnough);
     Status WriteSampleAttr(uint32_t trackId, std::shared_ptr<Sample> sample);
+    Status ProcessWebVTTSample(std::shared_ptr<MPEG4Sample> mpeg4Sample);
     Status WriteBuffer(
         uint32_t trackIndex, std::shared_ptr<AVBuffer> outBuffer, std::shared_ptr<MPEG4Sample> mpeg4Sample);
     Status WriteSampleMemory(

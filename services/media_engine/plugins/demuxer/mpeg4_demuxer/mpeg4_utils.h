@@ -37,6 +37,7 @@ enum TrackType : int32_t {
     SUBTITLE_TYPE = 2,
     ATTACHMENT_TYPE = 3,
     TIMEDMETA_TYPE = 5,
+    AUXILIARY_TYPE = 6,
     INVALID_TYPE = -1,
 };
 

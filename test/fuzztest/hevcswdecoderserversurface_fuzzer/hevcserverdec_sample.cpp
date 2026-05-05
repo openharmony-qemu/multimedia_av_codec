@@ -29,7 +29,7 @@ using namespace std;
 namespace {
 constexpr int32_t WIDTH = 1920;
 constexpr int32_t HIGHT = 1080;
-constexpr int32_t FORMAT = 2;
+constexpr int32_t FORMAT = 4;
 constexpr int32_t ANGLE = 0;
 constexpr int32_t FRAME_RATE = 30;
 constexpr int32_t TIME = 12345;
@@ -38,8 +38,7 @@ constexpr int32_t MAX_SEND_FRAMES = 10;
 
 void VDecServerSample::CallBack::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
-    tester->Flush();
-    tester->Reset();
+    cout << "---- OnError errorType: " << errorType << " errorCode:" << errorCode << "----" << endl;
 }
 
 void VDecServerSample::CallBack::OnOutputFormatChanged(const Format &format)
@@ -58,16 +57,28 @@ void VDecServerSample::CallBack::OnInputBufferAvailable(uint32_t index, std::sha
 void VDecServerSample::CallBack::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     tester->codec_->ReleaseOutputBuffer(index);
+    cout << "callback, decoded frame count: " << ++nCount << ", index: " << index << endl;
 }
 
 VDecServerSample::~VDecServerSample()
 {
+    for (size_t i = 0; i < cs_vector.size(); i++) {
+        if (cs_vector[i]) {
+            cs_vector[i]->UnregisterConsumerListener();
+            cs_vector[i] = nullptr;
+        }
+    }
+    cs_vector.clear();
+    ps_vector.clear();
     if (codec_ != nullptr) {
         codec_->Stop();
         codec_->Release();
         HevcDecoder *codec = static_cast<HevcDecoder*>(codec_.get());
         codec->DecStrongRef(codec);
     }
+        signal_ = nullptr;
+        codec_ = nullptr;
+        inputLoop_ = nullptr;
 }
 
 int32_t VDecServerSample::ConfigServerDecoder()
@@ -236,6 +247,12 @@ void VDecServerSample::WaitForEos()
 {
     if (inputLoop_ && inputLoop_->joinable()) {
         inputLoop_->join();
+    }
+    while (!signal_->inIdxQueue_.empty()) {
+        signal_->inIdxQueue_.pop();
+    }
+    while (!signal_->inBufferQueue_.empty()) {
+        signal_->inBufferQueue_.pop();
     }
 }
 

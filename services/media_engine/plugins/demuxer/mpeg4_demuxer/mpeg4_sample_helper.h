@@ -64,6 +64,7 @@ public:
         int64_t pos;
         uint32_t flag;
         int32_t size;
+        int64_t duration;
     };
     struct CttsEntry {
         uint32_t count;
@@ -160,7 +161,7 @@ private:
         uint8_t* data, uint32_t& firstSampleFlag);
     void UpdateSampleInfo(SampleInfo& sampleInfo, uint32_t& bufferOffset, uint16_t trunFlag,
         uint8_t* data, uint32_t firstSampleFlag);
-    void UpdateSampleEntryInfo(SampleInfo sampleInfo, int64_t& offset, int64_t& currentDts);
+    void UpdateSampleEntryInfo(SampleInfo sampleInfo, int64_t& offset, int64_t& currentDts, bool isOverlap = false);
 };
 } // namespace MPEG4
 } // namespace Plugins
