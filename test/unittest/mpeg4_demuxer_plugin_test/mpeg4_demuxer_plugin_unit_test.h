@@ -96,6 +96,20 @@ enum class ReadMode : uint32_t {
     ZERO_COPY,
 };
 
+struct WeakNetworkPluginContext {
+    const std::shared_ptr<BaseDemuxerPlugin>& plugin;
+    int& fd;
+    MediaInfo& mediaInfo;
+};
+
+struct TrackSampleReadContext {
+    const std::shared_ptr<BaseDemuxerPlugin>& plugin;
+    TrackReadDigest& trackDigest;
+    const std::shared_ptr<MediaAVBuffer>& buffer;
+    ReadMode readMode;
+    const std::string& firstSampleLogPrefix;
+};
+
 class Mpeg4DemuxerPluginUnitTest : public testing::Test {
 public:
     static void SetUpTestCase();
@@ -115,8 +129,8 @@ protected:
         MediaInfo& mediaInfo);
     void InitPluginURI(const std::string& filePath, const std::shared_ptr<BaseDemuxerPlugin>& plugin,
         MediaInfo& mediaInfo);
-    void InitWeakNetworkPlugin(const std::string& filePath, const std::shared_ptr<BaseDemuxerPlugin>& plugin, int& fd,
-        MediaInfo& mediaInfo, int64_t failOffset, size_t maxFailCount);
+    void InitWeakNetworkPlugin(const std::string& filePath, const WeakNetworkPluginContext& context,
+        int64_t failOffset, size_t maxFailCount);
 
     std::vector<uint32_t> SelectSupportedTracks(const std::shared_ptr<BaseDemuxerPlugin>& plugin,
         const MediaInfo& mediaInfo);
@@ -147,9 +161,7 @@ protected:
         int32_t& sampleSize);
     void InitPluginsForReadTest(const std::string& filePath, bool useUri);
     ReadDigest CreateReadDigest(const MediaInfo& mediaInfo, const std::vector<uint32_t>& selectedTrackIds) const;
-    bool ReadTrackSample(const std::shared_ptr<BaseDemuxerPlugin>& plugin, TrackReadDigest& trackDigest,
-        const std::shared_ptr<MediaAVBuffer>& buffer, ReadMode readMode, bool& eosReached,
-        const std::string& firstSampleLogPrefix = "");
+    bool ReadTrackSample(const TrackSampleReadContext& context, bool& eosReached);
     void CheckSeekSuccessDigest(const ReadDigest& actualDigest, const ReadDigest& expectedDigest);
     void CheckSeekSuccessDigestWithExpected(const ReadDigest& ffmpegDigest, const ReadDigest& mpeg4Digest,
         const std::vector<int32_t>& expectedFrames);

@@ -173,15 +173,14 @@ void Mpeg4DemuxerPluginUnitTest::InitPluginURI(const std::string& filePath,
 }
 
 void Mpeg4DemuxerPluginUnitTest::InitWeakNetworkPlugin(
-    const std::string& filePath, const std::shared_ptr<BaseDemuxerPlugin>& plugin, int& fd, MediaInfo& mediaInfo,
-    int64_t failOffset, size_t maxFailCount)
+    const std::string& filePath, const WeakNetworkPluginContext& context, int64_t failOffset, size_t maxFailCount)
 {
     struct stat fileStatus {};
     ASSERT_EQ(stat(filePath.c_str(), &fileStatus), 0);
-    fd = open(filePath.c_str(), O_RDONLY);
-    ASSERT_GE(fd, 0);
+    context.fd = open(filePath.c_str(), O_RDONLY);
+    ASSERT_GE(context.fd, 0);
 
-    auto uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileStatus.st_size);
+    auto uri = "fd://" + std::to_string(context.fd) + "?offset=0&size=" + std::to_string(fileStatus.st_size);
     auto demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
     auto cb = std::make_shared<Mpeg4SourceCallback>(demuxerPluginManager);
     auto source = std::make_shared<Source>();
@@ -199,9 +198,9 @@ void Mpeg4DemuxerPluginUnitTest::InitWeakNetworkPlugin(
     streamDemuxer->SetDemuxerState(0, DemuxerState::DEMUXER_STATE_PARSE_FRAME);
 
     auto dataSource = std::make_shared<DataSourceImpl>(streamDemuxer, 0);
-    ASSERT_NE(plugin, nullptr);
-    ASSERT_EQ(plugin->SetDataSource(dataSource), Status::OK);
-    ASSERT_EQ(plugin->GetMediaInfo(mediaInfo), Status::OK);
+    ASSERT_NE(context.plugin, nullptr);
+    ASSERT_EQ(context.plugin->SetDataSource(dataSource), Status::OK);
+    ASSERT_EQ(context.plugin->GetMediaInfo(context.mediaInfo), Status::OK);
 }
 
 void Mpeg4DemuxerPluginUnitTest::InitFfmpegPlugin(const std::string& filePath)
@@ -238,14 +237,16 @@ void Mpeg4DemuxerPluginUnitTest::InitWeakNetworkFfmpegPlugin(
     auto basePlugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(FFMPEG_MP4_PLUGIN_NAME);
     auto ffmpegPlugin = std::reinterpret_pointer_cast<FFmpegDemuxerPlugin>(basePlugin);
     ffmpegPlugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(ffmpegPlugin);
-    InitWeakNetworkPlugin(filePath, ffmpegPlugin_, ffmpegFd_, ffmpegMediaInfo_, failOffset, maxFailCount);
+    WeakNetworkPluginContext context {ffmpegPlugin_, ffmpegFd_, ffmpegMediaInfo_};
+    InitWeakNetworkPlugin(filePath, context, failOffset, maxFailCount);
 }
 
 void Mpeg4DemuxerPluginUnitTest::InitWeakNetworkMpeg4Plugin(
     const std::string& filePath, int64_t failOffset, size_t maxFailCount)
 {
     mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4"));
-    InitWeakNetworkPlugin(filePath, mpeg4Plugin_, mpeg4Fd_, mpeg4MediaInfo_, failOffset, maxFailCount);
+    WeakNetworkPluginContext context {mpeg4Plugin_, mpeg4Fd_, mpeg4MediaInfo_};
+    InitWeakNetworkPlugin(filePath, context, failOffset, maxFailCount);
 }
 
 void Mpeg4DemuxerPluginUnitTest::InitDeferredWeakNetworkMpeg4Plugin(
@@ -433,7 +434,8 @@ ReadDigest Mpeg4DemuxerPluginUnitTest::ReadAllSamples(const std::shared_ptr<Base
             std::shared_ptr<MediaAVBuffer> buffer =
                 (readMode == ReadMode::ZERO_COPY) ? MediaAVBuffer::CreateAVBuffer() : copyBuffer->mediaAVBuffer;
             bool eosReached = false;
-            if (!ReadTrackSample(plugin, digest.tracks[index], buffer, readMode, eosReached, firstSampleLogPrefix)) {
+            TrackSampleReadContext context {plugin, digest.tracks[index], buffer, readMode, firstSampleLogPrefix};
+            if (!ReadTrackSample(context, eosReached)) {
                 return digest;
             }
             eosFlags[index] = eosReached;
@@ -455,40 +457,40 @@ ReadDigest Mpeg4DemuxerPluginUnitTest::CreateReadDigest(
     return digest;
 }
 
-bool Mpeg4DemuxerPluginUnitTest::ReadTrackSample(const std::shared_ptr<BaseDemuxerPlugin>& plugin,
-    TrackReadDigest& trackDigest, const std::shared_ptr<MediaAVBuffer>& buffer, ReadMode readMode, bool& eosReached,
-    const std::string& firstSampleLogPrefix)
+bool Mpeg4DemuxerPluginUnitTest::ReadTrackSample(const TrackSampleReadContext& context, bool& eosReached)
 {
-    if (buffer == nullptr) {
+    if (context.buffer == nullptr) {
         ADD_FAILURE() << "Create AVBuffer failed";
         return false;
     }
-    auto ret = ReadSampleWithRetry(plugin, trackDigest.trackId, buffer, readMode);
+    auto& trackDigest = context.trackDigest;
+    auto ret = ReadSampleWithRetry(context.plugin, trackDigest.trackId, context.buffer, context.readMode);
     if (!(ret == Status::OK || ret == Status::END_OF_STREAM || ret == Status::NO_ERROR)) {
         ADD_FAILURE() << "ReadSample failed, trackId=" << trackDigest.trackId
                       << ", ret=" << static_cast<int32_t>(ret);
         return false;
     }
-    eosReached = ret == Status::END_OF_STREAM || IsEos(buffer);
+    eosReached = ret == Status::END_OF_STREAM || IsEos(context.buffer);
     if (eosReached) {
         return true;
     }
     if (trackDigest.frameCount == 0) {
-        trackDigest.firstPts = buffer->pts_;
-        if (!firstSampleLogPrefix.empty()) {
+        trackDigest.firstPts = context.buffer->pts_;
+        if (!context.firstSampleLogPrefix.empty()) {
             int32_t memorySize = -1;
-            if (buffer->memory_ != nullptr) {
-                memorySize = static_cast<int32_t>(buffer->memory_->GetSize());
+            if (context.buffer->memory_ != nullptr) {
+                memorySize = static_cast<int32_t>(context.buffer->memory_->GetSize());
             }
             fprintf(stderr, "%s first sample: trackId=%u, mime=%s, pts=%lld, dts=%lld, duration=%lld, flag=0x%x, "
-                "memorySize=%d\n", firstSampleLogPrefix.c_str(), trackDigest.trackId, trackDigest.mime.c_str(),
-                static_cast<long long>(buffer->pts_), static_cast<long long>(buffer->dts_),
-                static_cast<long long>(buffer->duration_), buffer->flag_, memorySize);
+                "memorySize=%d\n", context.firstSampleLogPrefix.c_str(), trackDigest.trackId,
+                trackDigest.mime.c_str(), static_cast<long long>(context.buffer->pts_),
+                static_cast<long long>(context.buffer->dts_), static_cast<long long>(context.buffer->duration_),
+                context.buffer->flag_, memorySize);
             fflush(stderr);
         }
     }
-    trackDigest.lastPts = buffer->pts_;
-    if (IsSyncFrame(buffer)) {
+    trackDigest.lastPts = context.buffer->pts_;
+    if (IsSyncFrame(context.buffer)) {
         trackDigest.keyFrameCount++;
         trackDigest.keyFrameIndexes.push_back(static_cast<uint32_t>(trackDigest.frameCount));
     }
