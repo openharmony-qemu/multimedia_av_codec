@@ -160,6 +160,7 @@ private:
     std::shared_ptr<Meta> userFormat_ = nullptr;
     void InitParseTable();
     void SetCodecConfig(std::shared_ptr<Track> track);
+    void AdapterFormat(std::shared_ptr<Track> track);
     bool IsValidTrackIndex(const MediaInfo& mediaInfo, uint32_t index);
     bool UnderMetaPath(const std::vector<uint32_t>& path, int32_t depth);
     
