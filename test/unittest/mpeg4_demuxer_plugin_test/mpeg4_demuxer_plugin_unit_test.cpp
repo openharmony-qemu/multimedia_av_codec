@@ -48,8 +48,9 @@ const std::string FFMPEG_MP4_PLUGIN_NAME = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
 const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_hevc_parser.z.so";
 constexpr int32_t WAIT_RETRY_TIMES = 20;
 constexpr uint32_t WEAK_NETWORK_SHORT_TIMEOUT_MS = 10;
+constexpr uint32_t WEAK_NETWORK_FAIL_DELAY_MS = 20;
 constexpr int64_t WEAK_NETWORK_FIRST_READ_FAIL_OFFSET = 0;
-constexpr size_t WEAK_NETWORK_TIMEOUT_RECOVER_FAIL_COUNT = 20;
+constexpr size_t WEAK_NETWORK_TIMEOUT_RECOVER_FAIL_COUNT = 1;
 std::unique_ptr<FileServerDemo> g_server = nullptr;
 
 std::vector<SeekExpectedResult> GetExplicitSeekExpectedResults()
@@ -250,7 +251,7 @@ void Mpeg4DemuxerPluginUnitTest::InitWeakNetworkMpeg4Plugin(
 }
 
 void Mpeg4DemuxerPluginUnitTest::InitDeferredWeakNetworkMpeg4Plugin(
-    const std::string& filePath, int64_t failOffset, size_t maxFailCount)
+    const std::string& filePath, int64_t failOffset, size_t maxFailCount, uint32_t failDelayMs)
 {
     struct stat fileStatus {};
     ASSERT_EQ(stat(filePath.c_str(), &fileStatus), 0);
@@ -278,6 +279,7 @@ void Mpeg4DemuxerPluginUnitTest::InitDeferredWeakNetworkMpeg4Plugin(
     ASSERT_EQ(mpeg4Plugin_->SetDataSource(dataSource), Status::OK);
     ASSERT_EQ(mpeg4Plugin_->GetMediaInfo(mpeg4MediaInfo_), Status::OK);
     streamDemuxer->ResetFailState();
+    streamDemuxer->SetFailDelay(failDelayMs);
     streamDemuxer->SetFailParams(static_cast<size_t>(failOffset), maxFailCount);
 }
 
@@ -848,7 +850,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest,
     Mpeg4DemuxerPlugin_ReadSample_WeakNetwork_TimeoutThenRecover_001, TestSize.Level1)
 {
     InitDeferredWeakNetworkMpeg4Plugin(TEST_MP4_PATH_H264_B, WEAK_NETWORK_FIRST_READ_FAIL_OFFSET,
-        WEAK_NETWORK_TIMEOUT_RECOVER_FAIL_COUNT);
+        WEAK_NETWORK_TIMEOUT_RECOVER_FAIL_COUNT, WEAK_NETWORK_FAIL_DELAY_MS);
     auto selectedTrackIds = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
     ASSERT_FALSE(selectedTrackIds.empty());
 

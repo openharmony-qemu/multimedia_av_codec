@@ -18,11 +18,13 @@
 
 #include <gtest/gtest.h>
 
+#include <chrono>
 #include <climits>
 #include <cstdint>
 #include <map>
 #include <memory>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "buffer/avbuffer.h"
@@ -123,7 +125,8 @@ protected:
     void InitMpeg4PluginURI(const std::string& filePath);
     void InitWeakNetworkFfmpegPlugin(const std::string& filePath, int64_t failOffset, size_t maxFailCount);
     void InitWeakNetworkMpeg4Plugin(const std::string& filePath, int64_t failOffset, size_t maxFailCount);
-    void InitDeferredWeakNetworkMpeg4Plugin(const std::string& filePath, int64_t failOffset, size_t maxFailCount);
+    void InitDeferredWeakNetworkMpeg4Plugin(const std::string& filePath, int64_t failOffset, size_t maxFailCount,
+        uint32_t failDelayMs = 0);
     void ResetPlugin(std::shared_ptr<BaseDemuxerPlugin>& plugin, int& fd);
     void InitPlugin(const std::string& filePath, const std::shared_ptr<BaseDemuxerPlugin>& plugin, int& fd,
         MediaInfo& mediaInfo);
@@ -210,6 +213,11 @@ public:
         maxFailCount_ = maxFailCount;
     }
 
+    void SetFailDelay(uint32_t failDelayMs)
+    {
+        failDelayMs_ = failDelayMs;
+    }
+
 private:
     Status CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
         size_t expectedLen) override
@@ -219,6 +227,9 @@ private:
         num_ += expectedLen;
         if (num_ > failOffset_ && failCount_ < maxFailCount_) {
             failCount_++;
+            if (failDelayMs_ > 0) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(failDelayMs_));
+            }
             return Status::ERROR_AGAIN;
         }
         return StreamDemuxer::CallbackReadAt(streamID, offset, buffer, expectedLen);
@@ -228,6 +239,7 @@ private:
     size_t maxFailCount_ = 0;
     size_t failCount_ = 0;
     size_t num_ = 0;
+    uint32_t failDelayMs_ = 0;
 };
 } // namespace Media
 } // namespace OHOS
