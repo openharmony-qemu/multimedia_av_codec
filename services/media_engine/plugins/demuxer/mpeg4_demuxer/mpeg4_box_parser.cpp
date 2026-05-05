@@ -191,15 +191,6 @@ static std::string GetMimeType(int32_t atomtype)
     return MimeType::INVALID_TYPE;
 }
 
-static bool UserMetaToSource(std::string key)
-{
-    static std::vector<std::string> keys = {
-        "aigc"
-    };
-    auto it = std::find(keys.begin(), keys.end(), key);
-    return it != keys.end();
-}
-
 static bool StartWith(const char* name, const char* chars)
 {
     if (name == nullptr || chars == nullptr) {
@@ -3312,6 +3303,7 @@ Status MPEG4AtomParser::ParseUserDataString(MPEG4Atom currentAtom, int32_t depth
     } else {
         ret = ParseTraditionalMetadata(currentAtom, key, ctx);
     }
+    ctx->isUserMeta = false;
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse metadata string failed");
     return ret;
 }
@@ -3325,6 +3317,7 @@ std::string MPEG4AtomParser::GetMetadataKey(uint32_t atomType, ParseContext* ctx
         if (index > 0 && index < ctx->metaKeysCount) {
             std::string key = ctx->metaKeys[index];
             if (!key.empty()) {
+                ctx->isUserMeta = true;
                 MEDIA_LOG_D("Found dynamic key[" PUBLIC_LOG_U32 "]: " PUBLIC_LOG_S, index, key.c_str());
                 return key;
             }
@@ -3376,7 +3369,7 @@ Status MPEG4AtomParser::ParseItunesMetadata(MPEG4Atom currentAtom, std::string& 
         if (currentAtom.type == FourccType("covr") || (!key.empty() && key == "com.apple.quicktime.artwork")) {
             return ParseCover(currentAtom, dataType, stringSize, ctx);
         }
-        ret = ReadMetadataString(key, ctx->dataOffset + headerSize, stringSize, dataType);
+        ret = ReadMetadataString(key, ctx->dataOffset + headerSize, stringSize, dataType, ctx->isUserMeta);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read iTunes metadata string failed");
     } else {
         MEDIA_LOG_W("Invalid iTunes metadata format: dataTag=" PUBLIC_LOG_U32, dataTag);
@@ -3397,10 +3390,10 @@ Status MPEG4AtomParser::ParseTraditionalMetadata(MPEG4Atom currentAtom, std::str
     constexpr uint16_t defaultSkipSize = 4;
     if (stringLength > currentAtom.dataSize - defaultSkipSize) {
         // 作为原始数据处理
-        ret = ReadMetadataString(key, ctx->dataOffset, currentAtom.dataSize, 0);
+        ret = ReadMetadataString(key, ctx->dataOffset, currentAtom.dataSize, 0, ctx->isUserMeta);
     } else {
         // 跳过语言代码
-        ret = ReadMetadataString(key, ctx->dataOffset + defaultSkipSize, stringLength, 0);
+        ret = ReadMetadataString(key, ctx->dataOffset + defaultSkipSize, stringLength, 0, ctx->isUserMeta);
     }
     
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read traditional metadata string failed");
@@ -3496,7 +3489,8 @@ bool MPEG4AtomParser::SetMetadataValue(const std::string& key, const std::string
     return false;
 }
 
-Status MPEG4AtomParser::ReadMetadataString(std::string& key, int64_t offset, uint64_t size, uint32_t dataType)
+Status MPEG4AtomParser::ReadMetadataString(
+    std::string& key, int64_t offset, uint64_t size, uint32_t dataType, bool isUserMeta)
 {
     FALSE_RETURN_V_NOLOG(size > 0, Status::OK);
     auto buffer = std::make_unique<uint8_t[]>(size + 1);
@@ -3505,8 +3499,7 @@ Status MPEG4AtomParser::ReadMetadataString(std::string& key, int64_t offset, uin
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read metadata string data failed");
     
     buffer[size] = '\0';
-    if (SetMetadataValue(key, std::string(reinterpret_cast<char*>(buffer.get()), size)) &&
-        !UserMetaToSource(Converter::ToLower(key))) {
+    if (SetMetadataValue(key, std::string(reinterpret_cast<char*>(buffer.get()), size)) && !isUserMeta) {
         return Status::OK;
     }
     FALSE_RETURN_V_NOLOG(userFormat_ != nullptr, Status::ERROR_NO_MEMORY);
