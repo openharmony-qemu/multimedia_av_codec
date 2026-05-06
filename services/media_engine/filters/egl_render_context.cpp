@@ -137,7 +137,6 @@ void EglRenderContext::MakeCurrent(EGLSurface surface) const
 {
     EGLSurface currSurface = surface;
     if (!eglMakeCurrent(eglDisplay_, currSurface, currSurface, eglContext_)) {
-
         EGLint surfaceId = -1;
         eglQuerySurface(eglDisplay_, surface, EGL_CONFIG_ID, &surfaceId);
 
