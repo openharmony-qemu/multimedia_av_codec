@@ -21,7 +21,7 @@
 #include <GLES3/gl3.h>
 #include <GLES2/gl2ext.h>
  
-namespace OHOS {//water_mark_filter
+namespace OHOS {
 namespace Media {
 class EglRenderContext {
 public:
