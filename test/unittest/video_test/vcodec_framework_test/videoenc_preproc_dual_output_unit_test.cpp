@@ -926,32 +926,32 @@ void RunDropRatioScenario(const ScenarioCase &scenario)
 {
     VideoEncPreprocDualOutputSample sample;
     ASSERT_TRUE(AssertTrueSampleStep(sample.SetOutputFilePath(GetOutputFilePath()), sample,
-                            "RunDropRatioScenario.SetOutputFilePath"));
+        "RunDropRatioScenario.SetOutputFilePath"));
     ASSERT_TRUE(AssertTrueSampleStep(sample.CreatePrimary(scenario.mime), sample,
-                                    "RunDropRatioScenario.CreatePrimary"));
+        "RunDropRatioScenario.CreatePrimary"));
     ASSERT_TRUE(AssertEqSampleStep(sample.ConfigurePrimary(scenario), AV_ERR_OK, sample,
-                          "RunDropRatioScenario.ConfigurePrimary"));
+        "RunDropRatioScenario.ConfigurePrimary"));
     ASSERT_TRUE(AssertEqSampleStep(sample.GetPrimarySurface(scenario), AV_ERR_OK, sample,
-                          "RunDropRatioScenario.GetPrimarySurface"));
+        "RunDropRatioScenario.GetPrimarySurface"));
     ASSERT_TRUE(AssertEqSampleStep(sample.CreateSecondary(), AV_ERR_OK, sample,
-                                  "RunDropRatioScenario.CreateSecondary"));
+        "RunDropRatioScenario.CreateSecondary"));
     ASSERT_TRUE(AssertEqSampleStep(sample.ConfigureSecondary(scenario), AV_ERR_OK, sample,
-                          "RunDropRatioScenario.ConfigureSecondary"));
+        "RunDropRatioScenario.ConfigureSecondary"));
     ASSERT_TRUE(AssertEqSampleStep(sample.StartPrimary(), AV_ERR_OK, sample, "RunDropRatioScenario.StartPrimary"));
     ASSERT_TRUE(AssertEqSampleStep(sample.StartSecondary(), AV_ERR_OK, sample, "RunDropRatioScenario.StartSecondary"));
-    constexpr uint32_t K_DROP_RATIO_FRAME_COUNT = K_FRAME_COUNT;
-    ASSERT_TRUE(AssertEqSampleStep(sample.SendFramesWithConfiguredPts(scenario, K_DROP_RATIO_FRAME_COUNT),
-                                  AV_ERR_OK, sample,
-                                  "RunDropRatioScenario.SendFramesWithConfiguredPts"));
+    constexpr uint32_t kDropRatioFrameCount = K_FRAME_COUNT;
+    ASSERT_TRUE(AssertEqSampleStep(sample.SendFramesWithConfiguredPts(scenario, kDropRatioFrameCount),
+        AV_ERR_OK, sample,
+        "RunDropRatioScenario.SendFramesWithConfiguredPts"));
     ASSERT_TRUE(AssertTrueSampleStep(sample.WaitForDualEos(), sample, "RunDropRatioScenario.WaitForDualEos"));
     // Primary: 30fps->15fps (keepRatio=0.5), expect ~15 kept out of 30
     EXPECT_TRUE(ExpectNearSampleStep(sample.PrimaryDataCount(), K_PRIMARY_DROP_FRAME_RATE,
-                                    K_NEAR_TOLERANCE_THREE, sample,
-                                    "RunDropRatioScenario.PrimaryDataCount"));
+        K_NEAR_TOLERANCE_THREE, sample,
+        "RunDropRatioScenario.PrimaryDataCount"));
     // Secondary: no drop, expect all 30 frames
-    EXPECT_TRUE(ExpectNearSampleStep(sample.SecondaryDataCount(), static_cast<int32_t>(K_DROP_RATIO_FRAME_COUNT),
-                                    K_NEAR_TOLERANCE_TWO, sample,
-                                    "RunDropRatioScenario.SecondaryDataCount"));
+    EXPECT_TRUE(ExpectNearSampleStep(sample.SecondaryDataCount(), static_cast<int32_t>(kDropRatioFrameCount),
+        K_NEAR_TOLERANCE_TWO, sample,
+        "RunDropRatioScenario.SecondaryDataCount"));
     EXPECT_TRUE(AssertEqSampleStep(sample.PrimaryError(), 0, sample, "RunDropRatioScenario.PrimaryError"));
     EXPECT_TRUE(AssertEqSampleStep(sample.SecondaryError(), 0, sample, "RunDropRatioScenario.SecondaryError"));
 }
@@ -961,12 +961,12 @@ void VerifyDropAfterResume(VideoEncPreprocDualOutputSample &sample, const Scenar
     (void)scenario;
     // Primary: 30fps->15fps (keepRatio=0.5), 8 frames sent, expect ~4-5 kept
     EXPECT_TRUE(ExpectNearSampleStep(sample.PrimaryDataCount(), K_EXPECTED_RESUME_PRIMARY_COUNT,
-                                    K_NEAR_TOLERANCE_TWO, sample,
-                                    "VerifyDropAfterResume.PrimaryDataCount"));
+        K_NEAR_TOLERANCE_TWO, sample,
+        "VerifyDropAfterResume.PrimaryDataCount"));
     // Secondary: no drop, expect all 8 frames
     EXPECT_TRUE(ExpectNearSampleStep(sample.SecondaryDataCount(), static_cast<int32_t>(K_RESUME_FRAME_COUNT),
-                                    K_NEAR_TOLERANCE_ONE, sample,
-                                    "VerifyDropAfterResume.SecondaryDataCount"));
+        K_NEAR_TOLERANCE_ONE, sample,
+        "VerifyDropAfterResume.SecondaryDataCount"));
     EXPECT_TRUE(AssertEqSampleStep(sample.PrimaryError(), 0, sample, "VerifyDropAfterResume.PrimaryError"));
     EXPECT_TRUE(AssertEqSampleStep(sample.SecondaryError(), 0, sample, "VerifyDropAfterResume.SecondaryError"));
 }
@@ -974,63 +974,63 @@ void VerifyDropAfterResume(VideoEncPreprocDualOutputSample &sample, const Scenar
 void PrepareDropFlushStopResetSample(VideoEncPreprocDualOutputSample &sample, const ScenarioCase &scenario)
 {
     ASSERT_TRUE(AssertTrueSampleStep(sample.SetOutputFilePath(GetOutputFilePath()), sample,
-                            "RunDropFlushStopResetScenario.SetOutputFilePath"));
+        "RunDropFlushStopResetScenario.SetOutputFilePath"));
     ASSERT_TRUE(AssertTrueSampleStep(sample.CreatePrimary(scenario.mime), sample,
-                            "RunDropFlushStopResetScenario.CreatePrimary"));
+        "RunDropFlushStopResetScenario.CreatePrimary"));
     ASSERT_TRUE(AssertEqSampleStep(sample.ConfigurePrimary(scenario), AV_ERR_OK, sample,
-                          "RunDropFlushStopResetScenario.ConfigurePrimary"));
+        "RunDropFlushStopResetScenario.ConfigurePrimary"));
     ASSERT_TRUE(AssertEqSampleStep(sample.GetPrimarySurface(scenario), AV_ERR_OK, sample,
-                          "RunDropFlushStopResetScenario.GetPrimarySurface"));
+        "RunDropFlushStopResetScenario.GetPrimarySurface"));
     ASSERT_TRUE(AssertEqSampleStep(sample.CreateSecondary(), AV_ERR_OK, sample,
-                          "RunDropFlushStopResetScenario.CreateSecondary"));
+        "RunDropFlushStopResetScenario.CreateSecondary"));
     ASSERT_TRUE(AssertEqSampleStep(sample.ConfigureSecondary(scenario), AV_ERR_OK, sample,
-                          "RunDropFlushStopResetScenario.ConfigureSecondary"));
+        "RunDropFlushStopResetScenario.ConfigureSecondary"));
 }
 
 void RunFlushResumePhase(VideoEncPreprocDualOutputSample &sample, const ScenarioCase &scenario)
 {
     ASSERT_TRUE(AssertEqSampleStep(sample.StartPrimary(), AV_ERR_OK, sample,
-                          "RunDropFlushStopResetScenario.FlushResume.StartPrimary"));
+        "RunDropFlushStopResetScenario.FlushResume.StartPrimary"));
     ASSERT_TRUE(AssertEqSampleStep(sample.StartSecondary(), AV_ERR_OK, sample,
-                          "RunDropFlushStopResetScenario.FlushResume.StartSecondary"));
+        "RunDropFlushStopResetScenario.FlushResume.StartSecondary"));
     ASSERT_TRUE(AssertEqSampleStep(sample.SendFramesWithConfiguredPts(scenario, K_RESUME_FRAME_COUNT),
-                                  AV_ERR_OK, sample,
-                          "RunDropFlushStopResetScenario.FlushResume.SendFramesWithConfiguredPts"));
+        AV_ERR_OK, sample,
+        "RunDropFlushStopResetScenario.FlushResume.SendFramesWithConfiguredPts"));
     ASSERT_TRUE(AssertTrueSampleStep(sample.WaitForDualEos(), sample,
-                            "RunDropFlushStopResetScenario.FlushResume.WaitForDualEos"));
+        "RunDropFlushStopResetScenario.FlushResume.WaitForDualEos"));
     ASSERT_TRUE(AssertEqSampleStep(sample.FlushPrimary(), AV_ERR_OK, sample,
-                          "RunDropFlushStopResetScenario.FlushResume.FlushPrimary"));
+        "RunDropFlushStopResetScenario.FlushResume.FlushPrimary"));
     ASSERT_TRUE(AssertEqSampleStep(sample.FlushSecondary(), AV_ERR_OK, sample,
-                          "RunDropFlushStopResetScenario.FlushResume.FlushSecondary"));
+        "RunDropFlushStopResetScenario.FlushResume.FlushSecondary"));
     sample.ResetDataCounts();
     ASSERT_TRUE(AssertEqSampleStep(sample.StartPrimary(), AV_ERR_OK, sample,
-                          "RunDropFlushStopResetScenario.AfterFlush.StartPrimary"));
+        "RunDropFlushStopResetScenario.AfterFlush.StartPrimary"));
     ASSERT_TRUE(AssertEqSampleStep(sample.StartSecondary(), AV_ERR_OK, sample,
-                          "RunDropFlushStopResetScenario.AfterFlush.StartSecondary"));
+        "RunDropFlushStopResetScenario.AfterFlush.StartSecondary"));
     ASSERT_TRUE(AssertEqSampleStep(sample.SendFramesWithConfiguredPts(scenario, K_RESUME_FRAME_COUNT),
-                                  AV_ERR_OK, sample,
-                          "RunDropFlushStopResetScenario.AfterFlush.SendFramesWithConfiguredPts"));
+        AV_ERR_OK, sample,
+        "RunDropFlushStopResetScenario.AfterFlush.SendFramesWithConfiguredPts"));
     ASSERT_TRUE(AssertTrueSampleStep(sample.WaitForDualEos(), sample,
-                            "RunDropFlushStopResetScenario.AfterFlush.WaitForDualEos"));
+        "RunDropFlushStopResetScenario.AfterFlush.WaitForDualEos"));
     VerifyDropAfterResume(sample, scenario);
 }
 
 void RunStopResumePhase(VideoEncPreprocDualOutputSample &sample, const ScenarioCase &scenario)
 {
     ASSERT_TRUE(AssertEqSampleStep(sample.StopPrimary(), AV_ERR_OK, sample,
-                          "RunDropFlushStopResetScenario.StopResume.StopPrimary"));
+        "RunDropFlushStopResetScenario.StopResume.StopPrimary"));
     ASSERT_TRUE(AssertEqSampleStep(sample.StopSecondary(), AV_ERR_OK, sample,
-                          "RunDropFlushStopResetScenario.StopResume.StopSecondary"));
+        "RunDropFlushStopResetScenario.StopResume.StopSecondary"));
     sample.ResetDataCounts();
     ASSERT_TRUE(AssertEqSampleStep(sample.StartPrimary(), AV_ERR_OK, sample,
-                          "RunDropFlushStopResetScenario.AfterStop.StartPrimary"));
+        "RunDropFlushStopResetScenario.AfterStop.StartPrimary"));
     ASSERT_TRUE(AssertEqSampleStep(sample.StartSecondary(), AV_ERR_OK, sample,
-                          "RunDropFlushStopResetScenario.AfterStop.StartSecondary"));
+        "RunDropFlushStopResetScenario.AfterStop.StartSecondary"));
     ASSERT_TRUE(AssertEqSampleStep(sample.SendFramesWithConfiguredPts(scenario, K_RESUME_FRAME_COUNT),
-                                  AV_ERR_OK, sample,
-                          "RunDropFlushStopResetScenario.AfterStop.SendFramesWithConfiguredPts"));
+        AV_ERR_OK, sample,
+        "RunDropFlushStopResetScenario.AfterStop.SendFramesWithConfiguredPts"));
     ASSERT_TRUE(AssertTrueSampleStep(sample.WaitForDualEos(), sample,
-                            "RunDropFlushStopResetScenario.AfterStop.WaitForDualEos"));
+        "RunDropFlushStopResetScenario.AfterStop.WaitForDualEos"));
     VerifyDropAfterResume(sample, scenario);
 }
 
@@ -1038,29 +1038,29 @@ void RunSetParameterPhase(VideoEncPreprocDualOutputSample &sample, const Scenari
 {
     sample.ResetDataCounts();
     ASSERT_TRUE(AssertEqSampleStep(sample.SetParameterPrimary(MakeDropRate(K_SET_PARAMETER_DROP_FRAME_RATE)),
-                                  AV_ERR_OK, sample,
-                          "RunDropFlushStopResetScenario.SetParameter.SetParameterPrimary"));
+        AV_ERR_OK, sample,
+        "RunDropFlushStopResetScenario.SetParameter.SetParameterPrimary"));
     ASSERT_TRUE(AssertEqSampleStep(sample.StopPrimary(), AV_ERR_OK, sample,
-                          "RunDropFlushStopResetScenario.SetParameter.StopPrimary"));
+        "RunDropFlushStopResetScenario.SetParameter.StopPrimary"));
     ASSERT_TRUE(AssertEqSampleStep(sample.StopSecondary(), AV_ERR_OK, sample,
-                          "RunDropFlushStopResetScenario.SetParameter.StopSecondary"));
+        "RunDropFlushStopResetScenario.SetParameter.StopSecondary"));
     ASSERT_TRUE(AssertEqSampleStep(sample.StartPrimary(), AV_ERR_OK, sample,
-                          "RunDropFlushStopResetScenario.SetParameter.StartPrimary"));
+        "RunDropFlushStopResetScenario.SetParameter.StartPrimary"));
     ASSERT_TRUE(AssertEqSampleStep(sample.StartSecondary(), AV_ERR_OK, sample,
-                          "RunDropFlushStopResetScenario.SetParameter.StartSecondary"));
+        "RunDropFlushStopResetScenario.SetParameter.StartSecondary"));
     ASSERT_TRUE(AssertEqSampleStep(sample.SendFramesWithConfiguredPts(scenario, K_RESUME_FRAME_COUNT),
-                                  AV_ERR_OK, sample,
-                          "RunDropFlushStopResetScenario.SetParameter.SendFramesWithConfiguredPts"));
+        AV_ERR_OK, sample,
+        "RunDropFlushStopResetScenario.SetParameter.SendFramesWithConfiguredPts"));
     ASSERT_TRUE(AssertTrueSampleStep(sample.WaitForDualEos(), sample,
-                            "RunDropFlushStopResetScenario.SetParameter.WaitForDualEos"));
+        "RunDropFlushStopResetScenario.SetParameter.WaitForDualEos"));
     // 30fps->25fps with 8 frames: expect ~7 kept (only ~1 dropped)
     EXPECT_TRUE(ExpectNearSampleStep(sample.PrimaryDataCount(), K_EXPECTED_SET_PARAMETER_PRIMARY_COUNT,
-                                    K_NEAR_TOLERANCE_ONE, sample,
-                                    "RunDropFlushStopResetScenario.SetParameter.PrimaryDataCount"));
+        K_NEAR_TOLERANCE_ONE, sample,
+        "RunDropFlushStopResetScenario.SetParameter.PrimaryDataCount"));
     EXPECT_TRUE(AssertEqSampleStep(sample.PrimaryError(), 0, sample,
-                          "RunDropFlushStopResetScenario.SetParameter.PrimaryError"));
+        "RunDropFlushStopResetScenario.SetParameter.PrimaryError"));
     EXPECT_TRUE(AssertEqSampleStep(sample.SecondaryError(), 0, sample,
-                          "RunDropFlushStopResetScenario.SetParameter.SecondaryError"));
+        "RunDropFlushStopResetScenario.SetParameter.SecondaryError"));
 }
 
 void RunDropFlushStopResetScenario(const ScenarioCase &scenario)
@@ -1076,60 +1076,60 @@ void RunInvalidParameterScenario(const ScenarioCase &scenario)
 {
     VideoEncPreprocDualOutputSample sample;
     ASSERT_TRUE(AssertTrueSampleStep(sample.SetOutputFilePath(GetOutputFilePath()), sample,
-                            "RunInvalidParameterScenario.SetOutputFilePath"));
+        "RunInvalidParameterScenario.SetOutputFilePath"));
     ASSERT_TRUE(AssertTrueSampleStep(sample.CreatePrimary(scenario.mime), sample,
-                            "RunInvalidParameterScenario.CreatePrimary"));
+        "RunInvalidParameterScenario.CreatePrimary"));
     ASSERT_TRUE(AssertEqSampleStep(sample.ConfigurePrimary(scenario), scenario.expectedResult, sample,
-                          "RunInvalidParameterScenario.ConfigurePrimary"));
+        "RunInvalidParameterScenario.ConfigurePrimary"));
 }
 
 void RunInvalidLifecycleScenario(const ScenarioCase &scenario)
 {
     VideoEncPreprocDualOutputSample sample;
     ASSERT_TRUE(AssertTrueSampleStep(sample.SetOutputFilePath(GetOutputFilePath()), sample,
-                            "RunInvalidLifecycleScenario.SetOutputFilePath"));
+        "RunInvalidLifecycleScenario.SetOutputFilePath"));
     ASSERT_TRUE(AssertTrueSampleStep(sample.CreatePrimary(scenario.mime), sample,
-                            "RunInvalidLifecycleScenario.CreatePrimary"));
+        "RunInvalidLifecycleScenario.CreatePrimary"));
     ASSERT_TRUE(AssertEqSampleStep(sample.ConfigureSecondary(scenario), scenario.expectedResult, sample,
-                          "RunInvalidLifecycleScenario.ConfigureSecondaryBeforeCreateSecondary"));
+        "RunInvalidLifecycleScenario.ConfigureSecondaryBeforeCreateSecondary"));
 }
 
 void RunDuplicateSecondaryScenario(const ScenarioCase &scenario)
 {
     VideoEncPreprocDualOutputSample sample;
     ASSERT_TRUE(AssertTrueSampleStep(sample.SetOutputFilePath(GetOutputFilePath()), sample,
-                            "RunDuplicateSecondaryScenario.SetOutputFilePath"));
+        "RunDuplicateSecondaryScenario.SetOutputFilePath"));
     ASSERT_TRUE(AssertTrueSampleStep(sample.CreatePrimary(scenario.mime), sample,
-                            "RunDuplicateSecondaryScenario.CreatePrimary"));
+        "RunDuplicateSecondaryScenario.CreatePrimary"));
     ASSERT_TRUE(AssertEqSampleStep(sample.ConfigurePrimary(scenario), AV_ERR_OK, sample,
-                          "RunDuplicateSecondaryScenario.ConfigurePrimary"));
+        "RunDuplicateSecondaryScenario.ConfigurePrimary"));
     ASSERT_TRUE(AssertEqSampleStep(sample.GetPrimarySurface(scenario), AV_ERR_OK, sample,
-                          "RunDuplicateSecondaryScenario.GetPrimarySurface"));
+        "RunDuplicateSecondaryScenario.GetPrimarySurface"));
     ASSERT_TRUE(AssertEqSampleStep(sample.CreateSecondary(), AV_ERR_OK, sample,
-                          "RunDuplicateSecondaryScenario.CreateSecondary"));
+        "RunDuplicateSecondaryScenario.CreateSecondary"));
     ASSERT_TRUE(AssertEqSampleStep(sample.ConfigureSecondary(scenario), AV_ERR_OK, sample,
-                          "RunDuplicateSecondaryScenario.ConfigureSecondary"));
+        "RunDuplicateSecondaryScenario.ConfigureSecondary"));
     ASSERT_TRUE(AssertEqSampleStep(sample.DuplicateSecondary(), scenario.expectedResult, sample,
-                          "RunDuplicateSecondaryScenario.DuplicateSecondary"));
+        "RunDuplicateSecondaryScenario.DuplicateSecondary"));
 }
 
 void PreparePrimaryScenario(VideoEncPreprocDualOutputSample &sample, const ScenarioCase &scenario)
 {
     ASSERT_TRUE(AssertTrueSampleStep(sample.SetOutputFilePath(GetOutputFilePath()), sample,
-                                    "RunScenario.SetOutputFilePath"));
+        "RunScenario.SetOutputFilePath"));
     ASSERT_TRUE(AssertTrueSampleStep(sample.CreatePrimary(scenario.mime), sample, "RunScenario.CreatePrimary"));
     ASSERT_TRUE(AssertEqSampleStep(sample.ConfigurePrimary(scenario), scenario.expectedResult, sample,
-                          "RunScenario.ConfigurePrimary"));
+        "RunScenario.ConfigurePrimary"));
 }
 
 void PrepareSecondaryAndStart(VideoEncPreprocDualOutputSample &sample, const ScenarioCase &scenario)
 {
     ASSERT_TRUE(AssertEqSampleStep(sample.GetPrimarySurface(scenario), AV_ERR_OK, sample,
-                                  "RunScenario.GetPrimarySurface"));
+        "RunScenario.GetPrimarySurface"));
     if (NeedsSecondary(scenario.encoderMode)) {
         ASSERT_TRUE(AssertEqSampleStep(sample.CreateSecondary(), AV_ERR_OK, sample, "RunScenario.CreateSecondary"));
         ASSERT_TRUE(AssertEqSampleStep(sample.ConfigureSecondary(scenario), AV_ERR_OK, sample,
-                              "RunScenario.ConfigureSecondary"));
+            "RunScenario.ConfigureSecondary"));
     }
     ASSERT_TRUE(AssertEqSampleStep(sample.StartPrimary(), AV_ERR_OK, sample, "RunScenario.StartPrimary"));
     if (NeedsSecondary(scenario.encoderMode)) {
@@ -1164,10 +1164,10 @@ void VerifyScenarioResult(VideoEncPreprocDualOutputSample &sample, const Scenari
 {
     if (ExpectsPrimaryOutput(scenario.encoderMode) && scenario.primary.useDropToFrameRate) {
         EXPECT_TRUE(ExpectLeSampleStep(sample.PrimaryDataCount(), static_cast<int32_t>(K_FRAME_COUNT), sample,
-                              "RunScenario.PrimaryDropDataCount"));
+            "RunScenario.PrimaryDropDataCount"));
         if (ExpectsSecondaryOutput(scenario.encoderMode) && !scenario.secondary.useDropToFrameRate) {
             EXPECT_TRUE(ExpectGeSampleStep(sample.SecondaryDataCount(), sample.PrimaryDataCount(), sample,
-                                  "RunScenario.SecondaryDataCountGreaterThanPrimary"));
+                "RunScenario.SecondaryDataCountGreaterThanPrimary"));
         }
     }
 
@@ -1198,7 +1198,7 @@ void RunScenario(const ScenarioCase &scenario)
     }
     ASSERT_NO_FATAL_FAILURE(PrepareSecondaryAndStart(sample, scenario));
     ASSERT_TRUE(AssertEqSampleStep(sample.SendFrames(scenario, K_FRAME_COUNT), AV_ERR_OK, sample,
-                                  "RunScenario.SendFrames"));
+        "RunScenario.SendFrames"));
     ASSERT_NO_FATAL_FAILURE(WaitForExpectedEos(sample, scenario.encoderMode));
     VerifyScenarioResult(sample, scenario);
     CleanupPendingEos(sample, scenario.encoderMode);

@@ -169,6 +169,12 @@ struct WindowBufferContext {
     int32_t sliceHeight = 0;
 };
 
+struct RequestFailureDetail {
+    int32_t format = 0;
+    int32_t stride = 0;
+    int32_t sliceHeight = 0;
+};
+
 constexpr std::array<RgbColor, 7> SPECTRUM_COLORS = {{
     {255, 0, 0},     // Red
     {255, 127, 0},   // Orange
@@ -578,13 +584,14 @@ bool FillSpectrumBlocks(const PixelTarget &target, uint8_t pattern, uint32_t fra
     return true;
 }
 
-void PrintRequestFailure(const FrameRequestInfo &info, const char *step, int32_t err, int32_t format = 0,
-                         int32_t stride = 0, int32_t sliceHeight = 0)
+void PrintRequestFailure(const FrameRequestInfo &info, const char *step, int32_t err,
+                         const RequestFailureDetail &detail = {})
 {
     cout << "RequestAndFlushFrame failed, step=" << step << ", ret=" << err << ", width=" << info.width
          << ", height=" << info.height << ", pattern=" << static_cast<int32_t>(info.pattern)
-         << ", frameNumber=" << info.frameNumber << ", timestampUs=" << info.timestampUs << ", format=" << format
-         << ", stride=" << stride << ", sliceHeight=" << sliceHeight << endl;
+         << ", frameNumber=" << info.frameNumber << ", timestampUs=" << info.timestampUs
+         << ", format=" << detail.format << ", stride=" << detail.stride
+         << ", sliceHeight=" << detail.sliceHeight << endl;
 }
 
 void PrintRequestWarning(const FrameRequestInfo &info, const char *step, int32_t err, int32_t format = 0)
@@ -649,8 +656,8 @@ bool MapAndDescribeBuffer(OHNativeWindow *window, const FrameRequestInfo &info, 
     if (context.stride > 0 && context.sliceHeight > 0) {
         return true;
     }
-    PrintRequestFailure(info, "invalid_buffer_config", AV_ERR_INVALID_VAL, context.format, context.stride,
-                        context.sliceHeight);
+    PrintRequestFailure(info, "invalid_buffer_config", AV_ERR_INVALID_VAL,
+                        {context.format, context.stride, context.sliceHeight});
     (void)OH_NativeBuffer_Unmap(context.nativeBuffer);
     (void)NativeWindowCancelBuffer(window, context.windowBuffer);
     return false;
@@ -661,8 +668,8 @@ bool FillAndUnmapBuffer(OHNativeWindow *window, const FrameRequestInfo &info, Wi
     ImageBuffer image {static_cast<uint8_t *>(context.virAddr), info.width, info.height, context.stride,
                        context.sliceHeight};
     if (!FillSpectrumBlocks(PixelTarget {image, context.format}, info.pattern, info.frameNumber)) {
-        PrintRequestFailure(info, "fill_spectrum_blocks", AV_ERR_INVALID_VAL, context.format, context.stride,
-                            context.sliceHeight);
+        PrintRequestFailure(info, "fill_spectrum_blocks", AV_ERR_INVALID_VAL,
+                            {context.format, context.stride, context.sliceHeight});
         (void)OH_NativeBuffer_Unmap(context.nativeBuffer);
         (void)NativeWindowCancelBuffer(window, context.windowBuffer);
         return false;
@@ -672,7 +679,7 @@ bool FillAndUnmapBuffer(OHNativeWindow *window, const FrameRequestInfo &info, Wi
     if (ret == 0) {
         return true;
     }
-    PrintRequestFailure(info, "unmap_buffer", ret, context.format, context.stride, context.sliceHeight);
+    PrintRequestFailure(info, "unmap_buffer", ret, {context.format, context.stride, context.sliceHeight});
     (void)NativeWindowCancelBuffer(window, context.windowBuffer);
     return false;
 }
@@ -689,7 +696,7 @@ bool FlushWindowBuffer(OHNativeWindow *window, const FrameRequestInfo &info, con
     region.rectNumber = 1;
     int32_t ret = OH_NativeWindow_NativeWindowFlushBuffer(window, context.windowBuffer, -1, region);
     if (ret != 0) {
-        PrintRequestFailure(info, "flush_buffer", ret, context.format, context.stride, context.sliceHeight);
+        PrintRequestFailure(info, "flush_buffer", ret, {context.format, context.stride, context.sliceHeight});
     }
     return ret == 0;
 }
@@ -909,7 +916,7 @@ int32_t VideoEncPreprocDualOutputSample::BuildAndConfigure(OH_AVCodec *codec,
 }
 
 int32_t VideoEncPreprocDualOutputSample::SetPreprocParameter(OH_AVCodec *codec,
-                                                            const PreprocDualOutput::PreprocConfig &config)
+                                                             const PreprocDualOutput::PreprocConfig &config)
 {
     if (codec == nullptr) {
         return AV_ERR_INVALID_VAL;
