@@ -86,9 +86,9 @@ bool EglRenderContext::Init()
     FALSE_RETURN_V_MSG(eglDisplay_ != EGL_NO_DISPLAY, false, "EglRenderContext::Init: failed to create eglDisplay");
     EGLint major;
     EGLint minor;
-    FALSE_RETURN_V_MSG(eglInitialize(eglDisplay_, &major, &minor) != EGL_FALSE, 
+    FALSE_RETURN_V_MSG(eglInitialize(eglDisplay_, &major, &minor) != EGL_FALSE,
         false, "eglInitialize failed to create");
-    FALSE_RETURN_V_MSG(eglBindAPI(EGL_OPENGL_ES_API) != EGL_FALSE, 
+    FALSE_RETURN_V_MSG(eglBindAPI(EGL_OPENGL_ES_API) != EGL_FALSE,
         false, "eglInitialize failed to create");
     EGLint count;
     EGLint count;
