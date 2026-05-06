@@ -33,9 +33,9 @@ constexpr uint8_t MAX_DECREASE_CHECK_TIMES = 2;
 namespace OHOS {
 namespace MediaAVCodec {
 FramerateCalculator::FramerateCalculator(int32_t instanceId, bool isEnc, std::function<void(double)> &&handler)
-    : instanceId_(instanceId), resetFramerateHandler_(std::move(handler))
+    : instanceId_(instanceId), isEnc_(isEnc),resetFramerateHandler_(std::move(handler))
 {
-    if (!isEnc) {
+    if (!isEnc_) {
         behaviorAnalyzer_ = std::make_unique<DecodingBehaviorAnalyzer>();
     }
 }
@@ -53,7 +53,7 @@ void FramerateCalculator::OnFrameConsumed(int64_t pts, bool render)
         return;
     }
 
-    if ((static_cast<int32_t>(lastFramerate_.load()) == MIN_FRAMERATE || status_ == Status::STOPPED) &&
+    if (isEnc_ && (static_cast<int32_t>(lastFramerate_.load()) == MIN_FRAMERATE || status_ == Status::STOPPED) &&
         configuredFramerate_ > MIN_FRAMERATE) {
         SetFramerate2ConfiguredFramerate();
     }
@@ -93,7 +93,9 @@ bool FramerateCalculator::CheckAndResetFramerate()
     if (behaviorAnalyzer_) {
         behaviorAnalyzer_->OnChecked(actualFramerate);
     }
-
+    if (!isEnc_) {
+        return false;
+    }
     if (!allowLowFps && actualFramerate < DEFAULT_FRAMERATE && actualFramerate < configuredFramerate_) {
         actualFramerate = std::min(DEFAULT_FRAMERATE, configuredFramerate_);
     }

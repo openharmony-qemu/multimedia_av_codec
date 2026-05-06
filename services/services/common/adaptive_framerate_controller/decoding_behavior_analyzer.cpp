@@ -122,8 +122,7 @@ void DecodingBehaviorAnalyzer::OnStopped(bool isDecEnd)
         SaveDecodingBehaviorAsSnapshot(type_, lastCheckTime_, maxPossibleDecSpeedIdx_);
     }
     ReportSpeedDecodingInfo();
-    frameCnt_ = 0;
-    renderCnt_ = 0;
+    ResetIntervalStats();
     lastReportedFps_ = -1.0;
     lastReportedRenderFps_ = -1.0;
     type_ = DecodingBehaviorType::UNKNOWN;
@@ -193,10 +192,22 @@ bool DecodingBehaviorAnalyzer::IsDecChanged(DecodingBehaviorType oldType, size_t
     }
 }
 
+void DecodingBehaviorAnalyzer::ResetIntervalStats()
+{
+    startPtsMs_ = -1;
+    endPtsMs_ = -1;
+    frameCnt_ = 0;
+    renderCnt_ = 0;
+}
+
 void DecodingBehaviorAnalyzer::OnChecked(double decFps)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (frameCnt_ < SRC_FRAME_CNT_MIN || endPtsMs_ <= startPtsMs_) {
+    if (frameCnt_ < SRC_FRAME_CNT_MIN) {
+        return;
+    }
+    if (endPtsMs_ <= startPtsMs_) {
+        ResetIntervalStats();
         return;
     }
     double srcFps = 0.0;
@@ -221,10 +232,7 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
         lastReportedFps_ = reportDecFps;
     }
     AVCODEC_LOGD("%{public}" PRId64 ", %{public}" PRId64 ", %{public}u", endPtsMs_, startPtsMs_, frameCnt_);
-    startPtsMs_ = -1;
-    endPtsMs_ = -1;
-    frameCnt_ = 0;
-    renderCnt_ = 0;
+    ResetIntervalStats();
 
     double decSpeed = decFps / srcFps;
     size_t newSpeedIdx = MatchAndUpdateSpeedStats(decSpeed);
