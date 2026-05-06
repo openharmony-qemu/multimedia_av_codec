@@ -484,7 +484,7 @@ bool WaterMarkFilter::RenderWatermarksToFBO(int32_t width, int32_t height)
             x, y + h,     0.0f, 1.0f,
             x, y,         0.0f, 0.0f,
             x + w, y,     1.0f, 0.0f,
-            x + w, y + h, 1.0f, 1.0f 
+            x + w, y + h, 1.0f, 1.0f
         };
 
         glBufferData(GL_ARRAY_BUFFER, sizeof(wmVertices), wmVertices, GL_DYNAMIC_DRAW);
@@ -636,7 +636,7 @@ Status WaterMarkFilter::SetVideoResize(int32_t width, int32_t height)
     videoHeight_.store(height);
     targetHeight_ = height;
     targetWidth_ = width;
-    MEDIA_LOG_I("WaterMarkFilter::SetVideoResize videoWidth_: %{public}d videoHeight_: %{public}d", 
+    MEDIA_LOG_I("WaterMarkFilter::SetVideoResize videoWidth_: %{public}d videoHeight_: %{public}d",
         videoWidth_.load(), videoHeight_.load());
     return Status::OK;
 }
@@ -883,7 +883,7 @@ void WaterMarkFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
     FALSE_RETURN_MSG(parameter != nullptr, "parameter is nullptr");
     int64_t pts = 0;
     parameter->Get<Tag::USER_FRAME_PTS>(pts);
-    eosPts_.store(pts);    
+    eosPts_.store(pts);
     parameter->Get<Tag::USER_PUSH_DATA_TIME>(frameNum_);
     MEDIA_LOG_I("lastBuffer PTS: " PUBLIC_LOG_D64 " frameNum: " PUBLIC_LOG_D64, eosPts_.load(), frameNum_);
     wakeUpCond_.notify_one();
