@@ -132,7 +132,7 @@ bool EglRenderContext::Init()
     MEDIA_LOG_I("EglRenderContext", "EglRenderContext::Init end.");
     return true;
 }
- 
+
 void EglRenderContext::MakeCurrent(EGLSurface surface) const
 {
     EGLSurface currSurface = surface;
@@ -146,7 +146,7 @@ void EglRenderContext::MakeCurrent(EGLSurface surface) const
             surfaceId, GetEglErrorString());
     }
 }
- 
+
 void EglRenderContext::SwapBuffers(EGLSurface surface) const
 {
     EGLBoolean ret = eglSwapBuffers(eglDisplay_, surface);
