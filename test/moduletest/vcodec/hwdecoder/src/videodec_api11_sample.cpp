@@ -1640,7 +1640,6 @@ void VDecAPI11Sample::GetFormatKey()
         return;
     }
     OH_AVFormat *format = OH_AVFormat_Create();
-    OH_VideoDecoder_Configure(vdec_, format);
     format = OH_VideoDecoder_GetOutputDescription(vdec_);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_NATIVE_BUFFER_FORMAT, &firstCallBackKey);
     OH_AVFormat_Destroy(format);
