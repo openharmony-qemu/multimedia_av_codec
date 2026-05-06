@@ -569,7 +569,8 @@ bool WaterMarkFilter::CreateGLResources()
 
     glVertexAttribPointer(0, POINTS_COUNT, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, ATTRIB_POINTER_COUNT, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
+    glVertexAttribPointer(1, ATTRIB_POINTER_COUNT, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
+        (void *)(3 * sizeof(float)));
 
     // 启用纹理坐标属性
     glEnableVertexAttribArray(1);
