@@ -80,6 +80,13 @@ struct PreprocConfig {
     double frameRate = 30.0;
 };
 
+struct CropRect {
+    int32_t left;
+    int32_t top;
+    int32_t right;
+    int32_t bottom;
+};
+
 struct ScenarioCase {
     std::string name;
     std::string codecLabel;
@@ -123,14 +130,18 @@ constexpr PreprocConfig MakeDownsampling(int32_t width, int32_t height, double d
     return PreprocConfig{true, width, height, false, 0, 0, 0, 0, dropToFrameRate > 0.0, dropToFrameRate, frameRate};
 }
 
-constexpr PreprocConfig MakeCrop(int32_t left, int32_t top, int32_t right, int32_t bottom,
-                                double dropToFrameRate = 0.0, double frameRate = 30.0)
+constexpr CropRect MakeCropRect(int32_t left, int32_t top, int32_t right, int32_t bottom)
 {
-    return PreprocConfig{false, 0, 0, true, left, top, right, bottom, dropToFrameRate > 0.0, dropToFrameRate,
-                         frameRate};
+    return CropRect {left, top, right, bottom};
 }
 
-inline const ScenarioCase kNoPreprocScenario {
+constexpr PreprocConfig MakeCrop(const CropRect &crop, double dropToFrameRate = 0.0, double frameRate = 30.0)
+{
+    return PreprocConfig{false, 0, 0, true, crop.left, crop.top, crop.right, crop.bottom,
+                         dropToFrameRate > 0.0, dropToFrameRate, frameRate};
+}
+
+inline const ScenarioCase K_NO_PREPROC_SCENARIO {
     "no_preproc",
     "hardware_avc",
     OH_AVCODEC_MIMETYPE_VIDEO_AVC,
@@ -156,7 +167,7 @@ inline const ScenarioCase kNoPreprocScenario {
     8,
 };
 
-inline const ScenarioCase kPrimaryPreprocScenario {
+inline const ScenarioCase K_PRIMARY_PREPROC_SCENARIO {
     "primary_preproc",
     "hardware_avc",
     OH_AVCODEC_MIMETYPE_VIDEO_AVC,
@@ -182,7 +193,7 @@ inline const ScenarioCase kPrimaryPreprocScenario {
     30,
 };
 
-inline const ScenarioCase kMixedPreprocScenario {
+inline const ScenarioCase K_MIXED_PREPROC_SCENARIO {
     "mixed_preproc",
     "hardware_avc",
     OH_AVCODEC_MIMETYPE_VIDEO_AVC,
@@ -199,7 +210,7 @@ inline const ScenarioCase kMixedPreprocScenario {
     FlowType::MIXED_PREPROC,
     InvalidParameterType::DOWNSAMPLING_PAIR,
     MakeDownsampling(640, 360, 15.0),
-    MakeCrop(0, 0, 1023, 575, 10.0),
+    MakeCrop(MakeCropRect(0, 0, 1023, 575), 10.0),
     MakeNoPreproc(),
     MakeNoPreproc(),
     AV_ERR_OK,
@@ -208,7 +219,7 @@ inline const ScenarioCase kMixedPreprocScenario {
     30,
 };
 
-inline const ScenarioCase kInvalidDownsamplingScenario {
+inline const ScenarioCase K_INVALID_DOWNSAMPLING_SCENARIO {
     "invalid_downsampling_pair",
     "hardware_avc",
     OH_AVCODEC_MIMETYPE_VIDEO_AVC,
@@ -234,7 +245,7 @@ inline const ScenarioCase kInvalidDownsamplingScenario {
     8,
 };
 
-inline const ScenarioCase kInvalidCropAndDownsamplingScenario {
+inline const ScenarioCase K_INVALID_CROP_AND_DOWNSAMPLING_SCENARIO {
     "invalid_crop_and_downsampling",
     "hardware_avc",
     OH_AVCODEC_MIMETYPE_VIDEO_AVC,
@@ -260,7 +271,7 @@ inline const ScenarioCase kInvalidCropAndDownsamplingScenario {
     8,
 };
 
-inline const ScenarioCase kInvalidDropRateScenario {
+inline const ScenarioCase K_INVALID_DROP_RATE_SCENARIO {
     "invalid_drop_rate",
     "hardware_avc",
     OH_AVCODEC_MIMETYPE_VIDEO_AVC,
@@ -286,7 +297,7 @@ inline const ScenarioCase kInvalidDropRateScenario {
     8,
 };
 
-inline const ScenarioCase kInvalidLifecycleScenario {
+inline const ScenarioCase K_INVALID_LIFECYCLE_SCENARIO {
     "invalid_lifecycle",
     "hardware_avc",
     OH_AVCODEC_MIMETYPE_VIDEO_AVC,
@@ -312,7 +323,7 @@ inline const ScenarioCase kInvalidLifecycleScenario {
     8,
 };
 
-inline const ScenarioCase kDuplicateSecondaryScenario {
+inline const ScenarioCase K_DUPLICATE_SECONDARY_SCENARIO {
     "duplicate_secondary",
     "hardware_avc",
     OH_AVCODEC_MIMETYPE_VIDEO_AVC,
@@ -338,7 +349,7 @@ inline const ScenarioCase kDuplicateSecondaryScenario {
     8,
 };
 
-inline const ScenarioCase kDropRatioScenario {
+inline const ScenarioCase K_DROP_RATIO_SCENARIO {
     "drop_ratio",
     "hardware_avc",
     OH_AVCODEC_MIMETYPE_VIDEO_AVC,
@@ -364,7 +375,7 @@ inline const ScenarioCase kDropRatioScenario {
     30,
 };
 
-inline const ScenarioCase kDropFlushStopResetScenario {
+inline const ScenarioCase K_DROP_FLUSH_STOP_RESET_SCENARIO {
     "drop_flush_stop_reset",
     "hardware_avc",
     OH_AVCODEC_MIMETYPE_VIDEO_AVC,
@@ -389,17 +400,17 @@ inline const ScenarioCase kDropFlushStopResetScenario {
     false,
 };
 
-inline const std::array<ScenarioCase, 10> kDualOutputScenarios = {
-    kNoPreprocScenario,
-    kPrimaryPreprocScenario,
-    kMixedPreprocScenario,
-    kInvalidDownsamplingScenario,
-    kInvalidCropAndDownsamplingScenario,
-    kInvalidDropRateScenario,
-    kInvalidLifecycleScenario,
-    kDuplicateSecondaryScenario,
-    kDropRatioScenario,
-    kDropFlushStopResetScenario,
+inline const std::array<ScenarioCase, 10> K_DUAL_OUTPUT_SCENARIOS = {
+    K_NO_PREPROC_SCENARIO,
+    K_PRIMARY_PREPROC_SCENARIO,
+    K_MIXED_PREPROC_SCENARIO,
+    K_INVALID_DOWNSAMPLING_SCENARIO,
+    K_INVALID_CROP_AND_DOWNSAMPLING_SCENARIO,
+    K_INVALID_DROP_RATE_SCENARIO,
+    K_INVALID_LIFECYCLE_SCENARIO,
+    K_DUPLICATE_SECONDARY_SCENARIO,
+    K_DROP_RATIO_SCENARIO,
+    K_DROP_FLUSH_STOP_RESET_SCENARIO,
 };
 
 } // namespace PreprocDualOutput

@@ -161,6 +161,7 @@ group("vcodec_framework_test") {
       ":videodec_cinepak_inner_async_unit_test",
       ":videodec_cinepak_inner_sync_unit_test",
       ":videodec_cinepak_stable_unit_test",
+      ":videoenc_preproc_dual_output_unit_test",
     ]
 
     if (av_codec_support_vp8_decoder) {
@@ -233,7 +234,6 @@ group("vcodec_framework_test") {
         ":videoenc_capi_async_unit_test",
         ":videoenc_capi_sync_unit_test",
         ":videoenc_format_capi_unit_test",
-        ":videoenc_preproc_dual_output_unit_test",
         ":videoenc_inner_async_unit_test",
         ":videoenc_inner_sync_unit_test",
         ":videoenc_repeat_previous_frame_unit_test",

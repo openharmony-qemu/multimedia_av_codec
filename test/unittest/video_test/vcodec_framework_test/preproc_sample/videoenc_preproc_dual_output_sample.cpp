@@ -32,8 +32,9 @@
 using namespace std;
 
 namespace {
-constexpr double kDefaultInputFrameRate = 30.0;
-constexpr int64_t kUsPerSecond = 1000000;
+constexpr double K_DEFAULT_INPUT_FRAME_RATE = 30.0;
+constexpr int64_t K_US_PER_SECOND = 1000000;
+constexpr double K_ROUND_HALF = 0.5;
 
 static bool EnsureOutputDir(const std::string &path)
 {
@@ -63,8 +64,8 @@ static std::string MakeSecondaryOutputPath(const std::string &primaryPath)
 
 int64_t GetFrameIntervalUs(double frameRate)
 {
-    double validFrameRate = frameRate > 0.0 ? frameRate : kDefaultInputFrameRate;
-    return static_cast<int64_t>((static_cast<double>(kUsPerSecond) / validFrameRate) + 0.5);
+    double validFrameRate = frameRate > 0.0 ? frameRate : K_DEFAULT_INPUT_FRAME_RATE;
+    return static_cast<int64_t>((static_cast<double>(K_US_PER_SECOND) / validFrameRate) + K_ROUND_HALF);
 }
 
 int64_t GetFrameTimestampUs(uint32_t frameIndex, double frameRate)
@@ -76,19 +77,48 @@ int64_t GetFrameTimestampUs(uint32_t frameIndex, double frameRate)
 namespace OHOS {
 namespace MediaAVCodec {
 namespace {
-constexpr uint32_t kSurfaceUsage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA;
-constexpr uint8_t kFramePatternBase = 0x20;
-constexpr int32_t kColorBlockSize = 64;
-constexpr int32_t kFrameLabelX = 8;
-constexpr int32_t kFrameLabelY = 8;
-constexpr int32_t kFrameLabelScale = 4;
-constexpr int32_t kFrameLabelGlyphWidth = 5;
-constexpr int32_t kFrameLabelGlyphHeight = 7;
-constexpr int32_t kFrameLabelGlyphSpacing = 1;
-constexpr int32_t kFrameLabelPadding = 4;
-constexpr uint8_t kTextWhiteY = 235;
-constexpr uint8_t kTextBlackY = 16;
-constexpr uint8_t kTextNeutralUv = 128;
+constexpr uint32_t K_SURFACE_USAGE = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA;
+constexpr uint8_t K_FRAME_PATTERN_BASE = 0x20;
+constexpr int32_t K_COLOR_BLOCK_SIZE = 64;
+constexpr int32_t K_FRAME_LABEL_X = 8;
+constexpr int32_t K_FRAME_LABEL_Y = 8;
+constexpr int32_t K_FRAME_LABEL_SCALE = 4;
+constexpr int32_t K_FRAME_LABEL_GLYPH_WIDTH = 5;
+constexpr int32_t K_FRAME_LABEL_GLYPH_HEIGHT = 7;
+constexpr int32_t K_FRAME_LABEL_GLYPH_SPACING = 1;
+constexpr int32_t K_FRAME_LABEL_PADDING = 4;
+constexpr uint8_t K_TEXT_WHITE_Y = 235;
+constexpr uint8_t K_TEXT_BLACK_Y = 16;
+constexpr uint8_t K_TEXT_NEUTRAL_UV = 128;
+constexpr uint8_t K_BYTE_MAX = 255;
+constexpr uint8_t K_FULL_ALPHA_8BIT = 0xFF;
+constexpr int32_t K_CHROMA_SAMPLE_STEP = 2;
+constexpr int32_t K_RGBA_BYTES_PER_PIXEL = 4;
+constexpr int32_t K_RGBA_BLUE_INDEX = 2;
+constexpr int32_t K_RGBA_ALPHA_INDEX = 3;
+constexpr int32_t K_P010_BYTES_PER_SAMPLE = 2;
+constexpr int32_t K_P010_SHIFT = 8;
+constexpr int32_t K_RGB10_SHIFT = 2;
+constexpr int32_t K_RGB10_GREEN_SHIFT = 10;
+constexpr int32_t K_RGB10_BLUE_SHIFT = 20;
+constexpr int32_t K_RGB10_ALPHA_SHIFT = 30;
+constexpr uint32_t K_RGB10_ALPHA = 0x3;
+constexpr uint32_t K_RGB10_TEXT_WHITE = 0x3FC;
+constexpr uint32_t K_RGB10_TEXT_BLACK = 0x000;
+constexpr useconds_t K_FRAME_INTERVAL_SLEEP_US = 1000;
+constexpr uint32_t K_RUNTIME_TRIGGER_DIVISOR = 2;
+constexpr int32_t K_YUV_COEFF_SHIFT = 8;
+constexpr int32_t K_YUV_OFFSET = 128;
+constexpr int32_t K_Y_COEFF_R = 66;
+constexpr int32_t K_Y_COEFF_G = 129;
+constexpr int32_t K_Y_COEFF_B = 25;
+constexpr int32_t K_Y_OFFSET = 16;
+constexpr int32_t K_U_COEFF_R = -38;
+constexpr int32_t K_U_COEFF_G = -74;
+constexpr int32_t K_U_COEFF_B = 112;
+constexpr int32_t K_V_COEFF_R = 112;
+constexpr int32_t K_V_COEFF_G = -94;
+constexpr int32_t K_V_COEFF_B = -18;
 
 struct RgbColor {
     uint8_t r;
@@ -100,6 +130,43 @@ struct YuvColor {
     uint8_t y;
     uint8_t u;
     uint8_t v;
+};
+
+struct ImageBuffer {
+    uint8_t *base;
+    int32_t width;
+    int32_t height;
+    int32_t stride;
+    int32_t sliceHeight;
+};
+
+struct PixelTarget {
+    ImageBuffer image;
+    int32_t format;
+};
+
+struct RectArea {
+    int32_t left;
+    int32_t top;
+    int32_t width;
+    int32_t height;
+};
+
+struct FrameRequestInfo {
+    int32_t width;
+    int32_t height;
+    uint8_t pattern;
+    int64_t timestampUs;
+    uint32_t frameNumber;
+};
+
+struct WindowBufferContext {
+    OHNativeWindowBuffer *windowBuffer = nullptr;
+    OH_NativeBuffer *nativeBuffer = nullptr;
+    void *virAddr = nullptr;
+    int32_t format = 0;
+    int32_t stride = 0;
+    int32_t sliceHeight = 0;
 };
 
 constexpr std::array<RgbColor, 7> SPECTRUM_COLORS = {{
@@ -117,8 +184,8 @@ uint8_t ClampToByte(int32_t value)
     if (value < 0) {
         return 0;
     }
-    if (value > 255) {
-        return 255;
+    if (value > K_BYTE_MAX) {
+        return K_BYTE_MAX;
     }
     return static_cast<uint8_t>(value);
 }
@@ -126,40 +193,44 @@ uint8_t ClampToByte(int32_t value)
 YuvColor RgbToYuv(const RgbColor &color)
 {
     YuvColor yuv {};
-    yuv.y = ClampToByte(((66 * color.r + 129 * color.g + 25 * color.b + 128) >> 8) + 16);
-    yuv.u = ClampToByte(((-38 * color.r - 74 * color.g + 112 * color.b + 128) >> 8) + 128);
-    yuv.v = ClampToByte(((112 * color.r - 94 * color.g - 18 * color.b + 128) >> 8) + 128);
+    yuv.y = ClampToByte(((K_Y_COEFF_R * color.r + K_Y_COEFF_G * color.g + K_Y_COEFF_B * color.b +
+        K_YUV_OFFSET) >> K_YUV_COEFF_SHIFT) + K_Y_OFFSET);
+    yuv.u = ClampToByte(((K_U_COEFF_R * color.r + K_U_COEFF_G * color.g + K_U_COEFF_B * color.b +
+        K_YUV_OFFSET) >> K_YUV_COEFF_SHIFT) + K_YUV_OFFSET);
+    yuv.v = ClampToByte(((K_V_COEFF_R * color.r + K_V_COEFF_G * color.g + K_V_COEFF_B * color.b +
+        K_YUV_OFFSET) >> K_YUV_COEFF_SHIFT) + K_YUV_OFFSET);
     return yuv;
 }
 
 const RgbColor &GetSpectrumColor(int32_t x, int32_t y, int32_t width, uint8_t pattern)
 {
-    int32_t blocksPerRow = (width + kColorBlockSize - 1) / kColorBlockSize;
-    size_t blockIndex = static_cast<size_t>((y / kColorBlockSize) * blocksPerRow + (x / kColorBlockSize) + pattern);
+    int32_t blocksPerRow = (width + K_COLOR_BLOCK_SIZE - 1) / K_COLOR_BLOCK_SIZE;
+    size_t blockIndex = static_cast<size_t>((y / K_COLOR_BLOCK_SIZE) * blocksPerRow +
+                                            (x / K_COLOR_BLOCK_SIZE) + pattern);
     return SPECTRUM_COLORS[blockIndex % SPECTRUM_COLORS.size()];
 }
 
-bool FillYuv420Sp(uint8_t *base, int32_t width, int32_t height, int32_t stride, int32_t sliceHeight,
-                  uint8_t pattern, bool cbFirst)
+bool FillYuv420Sp(const ImageBuffer &image, uint8_t pattern, bool cbFirst)
 {
-    if (base == nullptr || width <= 0 || height <= 0 || stride < width || sliceHeight < height) {
+    if (image.base == nullptr || image.width <= 0 || image.height <= 0 || image.stride < image.width ||
+        image.sliceHeight < image.height) {
         return false;
     }
 
-    for (int32_t y = 0; y < height; ++y) {
-        uint8_t *row = base + static_cast<size_t>(y) * stride;
-        for (int32_t x = 0; x < width; ++x) {
-            row[x] = RgbToYuv(GetSpectrumColor(x, y, width, pattern)).y;
+    for (int32_t y = 0; y < image.height; ++y) {
+        uint8_t *row = image.base + static_cast<size_t>(y) * image.stride;
+        for (int32_t x = 0; x < image.width; ++x) {
+            row[x] = RgbToYuv(GetSpectrumColor(x, y, image.width, pattern)).y;
         }
     }
 
-    uint8_t *uvPlane = base + static_cast<size_t>(stride) * sliceHeight;
-    for (int32_t y = 0; y < height; y += 2) {
-        uint8_t *row = uvPlane + static_cast<size_t>(y / 2) * stride;
-        for (int32_t x = 0; x < width; x += 2) {
-            YuvColor yuv = RgbToYuv(GetSpectrumColor(x, y, width, pattern));
+    uint8_t *uvPlane = image.base + static_cast<size_t>(image.stride) * image.sliceHeight;
+    for (int32_t y = 0; y < image.height; y += K_CHROMA_SAMPLE_STEP) {
+        uint8_t *row = uvPlane + static_cast<size_t>(y / K_CHROMA_SAMPLE_STEP) * image.stride;
+        for (int32_t x = 0; x < image.width; x += K_CHROMA_SAMPLE_STEP) {
+            YuvColor yuv = RgbToYuv(GetSpectrumColor(x, y, image.width, pattern));
             row[x] = cbFirst ? yuv.u : yuv.v;
-            if (x + 1 < stride) {
+            if (x + 1 < image.stride) {
                 row[x + 1] = cbFirst ? yuv.v : yuv.u;
             }
         }
@@ -167,32 +238,31 @@ bool FillYuv420Sp(uint8_t *base, int32_t width, int32_t height, int32_t stride, 
     return true;
 }
 
-bool FillYuv420P(uint8_t *base, int32_t width, int32_t height, int32_t stride, int32_t sliceHeight,
-                 uint8_t pattern)
+bool FillYuv420P(const ImageBuffer &image, uint8_t pattern)
 {
-    int32_t chromaWidth = (width + 1) / 2;
-    int32_t chromaStride = stride / 2;
-    int32_t chromaSliceHeight = (sliceHeight + 1) / 2;
-    if (base == nullptr || width <= 0 || height <= 0 || stride < width || chromaStride < chromaWidth ||
-        sliceHeight < height) {
+    int32_t chromaWidth = (image.width + 1) / K_CHROMA_SAMPLE_STEP;
+    int32_t chromaStride = image.stride / K_CHROMA_SAMPLE_STEP;
+    int32_t chromaSliceHeight = (image.sliceHeight + 1) / K_CHROMA_SAMPLE_STEP;
+    if (image.base == nullptr || image.width <= 0 || image.height <= 0 || image.stride < image.width ||
+        chromaStride < chromaWidth || image.sliceHeight < image.height) {
         return false;
     }
 
-    for (int32_t y = 0; y < height; ++y) {
-        uint8_t *row = base + static_cast<size_t>(y) * stride;
-        for (int32_t x = 0; x < width; ++x) {
-            row[x] = RgbToYuv(GetSpectrumColor(x, y, width, pattern)).y;
+    for (int32_t y = 0; y < image.height; ++y) {
+        uint8_t *row = image.base + static_cast<size_t>(y) * image.stride;
+        for (int32_t x = 0; x < image.width; ++x) {
+            row[x] = RgbToYuv(GetSpectrumColor(x, y, image.width, pattern)).y;
         }
     }
 
-    uint8_t *uPlane = base + static_cast<size_t>(stride) * sliceHeight;
+    uint8_t *uPlane = image.base + static_cast<size_t>(image.stride) * image.sliceHeight;
     uint8_t *vPlane = uPlane + static_cast<size_t>(chromaStride) * chromaSliceHeight;
-    for (int32_t y = 0; y < height; y += 2) {
-        uint8_t *uRow = uPlane + static_cast<size_t>(y / 2) * chromaStride;
-        uint8_t *vRow = vPlane + static_cast<size_t>(y / 2) * chromaStride;
-        for (int32_t x = 0; x < width; x += 2) {
-            YuvColor yuv = RgbToYuv(GetSpectrumColor(x, y, width, pattern));
-            int32_t chromaX = x / 2;
+    for (int32_t y = 0; y < image.height; y += K_CHROMA_SAMPLE_STEP) {
+        uint8_t *uRow = uPlane + static_cast<size_t>(y / K_CHROMA_SAMPLE_STEP) * chromaStride;
+        uint8_t *vRow = vPlane + static_cast<size_t>(y / K_CHROMA_SAMPLE_STEP) * chromaStride;
+        for (int32_t x = 0; x < image.width; x += K_CHROMA_SAMPLE_STEP) {
+            YuvColor yuv = RgbToYuv(GetSpectrumColor(x, y, image.width, pattern));
+            int32_t chromaX = x / K_CHROMA_SAMPLE_STEP;
             uRow[chromaX] = yuv.u;
             vRow[chromaX] = yuv.v;
         }
@@ -200,22 +270,22 @@ bool FillYuv420P(uint8_t *base, int32_t width, int32_t height, int32_t stride, i
     return true;
 }
 
-bool FillRgba8888(uint8_t *base, int32_t width, int32_t height, int32_t stride, uint8_t pattern, bool redFirst)
+bool FillRgba8888(const ImageBuffer &image, uint8_t pattern, bool redFirst)
 {
-    constexpr int32_t bytesPerPixel = 4;
-    if (base == nullptr || width <= 0 || height <= 0 || stride < width * bytesPerPixel) {
+    if (image.base == nullptr || image.width <= 0 || image.height <= 0 ||
+        image.stride < image.width * K_RGBA_BYTES_PER_PIXEL) {
         return false;
     }
 
-    for (int32_t y = 0; y < height; ++y) {
-        uint8_t *row = base + static_cast<size_t>(y) * stride;
-        for (int32_t x = 0; x < width; ++x) {
-            const RgbColor &color = GetSpectrumColor(x, y, width, pattern);
-            uint8_t *pixel = row + static_cast<size_t>(x) * bytesPerPixel;
+    for (int32_t y = 0; y < image.height; ++y) {
+        uint8_t *row = image.base + static_cast<size_t>(y) * image.stride;
+        for (int32_t x = 0; x < image.width; ++x) {
+            const RgbColor &color = GetSpectrumColor(x, y, image.width, pattern);
+            uint8_t *pixel = row + static_cast<size_t>(x) * K_RGBA_BYTES_PER_PIXEL;
             pixel[0] = redFirst ? color.r : color.b;
             pixel[1] = color.g;
-            pixel[2] = redFirst ? color.b : color.r;
-            pixel[3] = 0xFF;
+            pixel[K_RGBA_BLUE_INDEX] = redFirst ? color.b : color.r;
+            pixel[K_RGBA_ALPHA_INDEX] = K_FULL_ALPHA_8BIT;
         }
     }
     return true;
@@ -223,7 +293,7 @@ bool FillRgba8888(uint8_t *base, int32_t width, int32_t height, int32_t stride, 
 
 uint16_t ToP010Sample(uint8_t value)
 {
-    return static_cast<uint16_t>(value) << 8;
+    return static_cast<uint16_t>(value) << K_P010_SHIFT;
 }
 
 std::string GetFrameLabel(uint32_t frameNumber)
@@ -231,7 +301,7 @@ std::string GetFrameLabel(uint32_t frameNumber)
     return "F" + std::to_string(frameNumber);
 }
 
-std::array<uint8_t, kFrameLabelGlyphHeight> GetGlyphRows(char value)
+std::array<uint8_t, K_FRAME_LABEL_GLYPH_HEIGHT> GetGlyphRows(char value)
 {
     switch (value) {
         case 'F':
@@ -261,190 +331,188 @@ std::array<uint8_t, kFrameLabelGlyphHeight> GetGlyphRows(char value)
     }
 }
 
-void DrawYuv420SpPixel(uint8_t *base, int32_t width, int32_t height, int32_t stride, int32_t sliceHeight,
-                       int32_t x, int32_t y, bool foreground, bool cbFirst)
+void DrawYuv420SpPixel(const ImageBuffer &image, int32_t x, int32_t y, bool foreground, bool cbFirst)
 {
-    if (base == nullptr || x < 0 || y < 0 || x >= width || y >= height || stride <= 0 || sliceHeight <= 0) {
+    if (image.base == nullptr || x < 0 || y < 0 || x >= image.width || y >= image.height || image.stride <= 0 ||
+        image.sliceHeight <= 0) {
         return;
     }
-    base[static_cast<size_t>(y) * stride + x] = foreground ? kTextWhiteY : kTextBlackY;
+    image.base[static_cast<size_t>(y) * image.stride + x] = foreground ? K_TEXT_WHITE_Y : K_TEXT_BLACK_Y;
 
-    uint8_t *uvPlane = base + static_cast<size_t>(stride) * sliceHeight;
-    uint8_t *uvRow = uvPlane + static_cast<size_t>(y / 2) * stride;
-    int32_t uvX = (x / 2) * 2;
-    if (uvX + 1 >= stride) {
+    uint8_t *uvPlane = image.base + static_cast<size_t>(image.stride) * image.sliceHeight;
+    uint8_t *uvRow = uvPlane + static_cast<size_t>(y / K_CHROMA_SAMPLE_STEP) * image.stride;
+    int32_t uvX = (x / K_CHROMA_SAMPLE_STEP) * K_CHROMA_SAMPLE_STEP;
+    if (uvX + 1 >= image.stride) {
         return;
     }
-    uvRow[uvX] = kTextNeutralUv;
-    uvRow[uvX + 1] = kTextNeutralUv;
+    uvRow[uvX] = K_TEXT_NEUTRAL_UV;
+    uvRow[uvX + 1] = K_TEXT_NEUTRAL_UV;
     (void)cbFirst;
 }
 
-void DrawYuv420PPixel(uint8_t *base, int32_t width, int32_t height, int32_t stride, int32_t sliceHeight,
-                      int32_t x, int32_t y, bool foreground)
+void DrawYuv420PPixel(const ImageBuffer &image, int32_t x, int32_t y, bool foreground)
 {
-    if (base == nullptr || x < 0 || y < 0 || x >= width || y >= height || stride <= 0 || sliceHeight <= 0) {
+    if (image.base == nullptr || x < 0 || y < 0 || x >= image.width || y >= image.height || image.stride <= 0 ||
+        image.sliceHeight <= 0) {
         return;
     }
-    base[static_cast<size_t>(y) * stride + x] = foreground ? kTextWhiteY : kTextBlackY;
+    image.base[static_cast<size_t>(y) * image.stride + x] = foreground ? K_TEXT_WHITE_Y : K_TEXT_BLACK_Y;
 
-    int32_t chromaStride = stride / 2;
-    int32_t chromaSliceHeight = (sliceHeight + 1) / 2;
-    int32_t chromaX = x / 2;
-    int32_t chromaY = y / 2;
+    int32_t chromaStride = image.stride / K_CHROMA_SAMPLE_STEP;
+    int32_t chromaSliceHeight = (image.sliceHeight + 1) / K_CHROMA_SAMPLE_STEP;
+    int32_t chromaX = x / K_CHROMA_SAMPLE_STEP;
+    int32_t chromaY = y / K_CHROMA_SAMPLE_STEP;
     if (chromaStride <= 0 || chromaX >= chromaStride || chromaY >= chromaSliceHeight) {
         return;
     }
-    uint8_t *uPlane = base + static_cast<size_t>(stride) * sliceHeight;
+    uint8_t *uPlane = image.base + static_cast<size_t>(image.stride) * image.sliceHeight;
     uint8_t *vPlane = uPlane + static_cast<size_t>(chromaStride) * chromaSliceHeight;
-    uPlane[static_cast<size_t>(chromaY) * chromaStride + chromaX] = kTextNeutralUv;
-    vPlane[static_cast<size_t>(chromaY) * chromaStride + chromaX] = kTextNeutralUv;
+    uPlane[static_cast<size_t>(chromaY) * chromaStride + chromaX] = K_TEXT_NEUTRAL_UV;
+    vPlane[static_cast<size_t>(chromaY) * chromaStride + chromaX] = K_TEXT_NEUTRAL_UV;
 }
 
-void DrawYuvP010Pixel(uint8_t *base, int32_t width, int32_t height, int32_t stride, int32_t sliceHeight,
-                      int32_t x, int32_t y, bool foreground, bool cbFirst)
+void DrawYuvP010Pixel(const ImageBuffer &image, int32_t x, int32_t y, bool foreground, bool cbFirst)
 {
-    constexpr int32_t bytesPerSample = 2;
-    int32_t samplesPerRow = stride / bytesPerSample;
-    if (base == nullptr || x < 0 || y < 0 || x >= width || y >= height || x >= samplesPerRow ||
-        stride <= 0 || sliceHeight <= 0) {
+    int32_t samplesPerRow = image.stride / K_P010_BYTES_PER_SAMPLE;
+    if (image.base == nullptr || x < 0 || y < 0 || x >= image.width || y >= image.height ||
+        x >= samplesPerRow || image.stride <= 0 || image.sliceHeight <= 0) {
         return;
     }
-    uint16_t *row = reinterpret_cast<uint16_t *>(base + static_cast<size_t>(y) * stride);
-    row[x] = ToP010Sample(foreground ? kTextWhiteY : kTextBlackY);
+    uint16_t *row = reinterpret_cast<uint16_t *>(image.base + static_cast<size_t>(y) * image.stride);
+    row[x] = ToP010Sample(foreground ? K_TEXT_WHITE_Y : K_TEXT_BLACK_Y);
 
-    uint8_t *uvPlane = base + static_cast<size_t>(stride) * sliceHeight;
-    uint16_t *uvRow = reinterpret_cast<uint16_t *>(uvPlane + static_cast<size_t>(y / 2) * stride);
-    int32_t uvX = (x / 2) * 2;
+    uint8_t *uvPlane = image.base + static_cast<size_t>(image.stride) * image.sliceHeight;
+    uint16_t *uvRow = reinterpret_cast<uint16_t *>(uvPlane +
+        static_cast<size_t>(y / K_CHROMA_SAMPLE_STEP) * image.stride);
+    int32_t uvX = (x / K_CHROMA_SAMPLE_STEP) * K_CHROMA_SAMPLE_STEP;
     if (uvX + 1 >= samplesPerRow) {
         return;
     }
-    uvRow[uvX] = ToP010Sample(kTextNeutralUv);
-    uvRow[uvX + 1] = ToP010Sample(kTextNeutralUv);
+    uvRow[uvX] = ToP010Sample(K_TEXT_NEUTRAL_UV);
+    uvRow[uvX + 1] = ToP010Sample(K_TEXT_NEUTRAL_UV);
     (void)cbFirst;
 }
 
-void DrawRgba8888Pixel(uint8_t *base, int32_t width, int32_t height, int32_t stride, int32_t x, int32_t y,
-                       bool foreground)
+void DrawRgba8888Pixel(const ImageBuffer &image, int32_t x, int32_t y, bool foreground)
 {
-    constexpr int32_t bytesPerPixel = 4;
-    if (base == nullptr || x < 0 || y < 0 || x >= width || y >= height || stride < width * bytesPerPixel) {
+    if (image.base == nullptr || x < 0 || y < 0 || x >= image.width || y >= image.height ||
+        image.stride < image.width * K_RGBA_BYTES_PER_PIXEL) {
         return;
     }
-    uint8_t value = foreground ? 0xFF : 0x00;
-    uint8_t *pixel = base + static_cast<size_t>(y) * stride + static_cast<size_t>(x) * bytesPerPixel;
+    uint8_t value = foreground ? K_FULL_ALPHA_8BIT : 0x00;
+    uint8_t *pixel = image.base + static_cast<size_t>(y) * image.stride +
+        static_cast<size_t>(x) * K_RGBA_BYTES_PER_PIXEL;
     pixel[0] = value;
     pixel[1] = value;
-    pixel[2] = value;
-    pixel[3] = 0xFF;
+    pixel[K_RGBA_BLUE_INDEX] = value;
+    pixel[K_RGBA_ALPHA_INDEX] = K_FULL_ALPHA_8BIT;
 }
 
-void DrawRgba1010102Pixel(uint8_t *base, int32_t width, int32_t height, int32_t stride, int32_t x, int32_t y,
-                          bool foreground)
+void DrawRgba1010102Pixel(const ImageBuffer &image, int32_t x, int32_t y, bool foreground)
 {
-    constexpr int32_t bytesPerPixel = 4;
-    constexpr uint32_t alpha = 0x3;
-    if (base == nullptr || x < 0 || y < 0 || x >= width || y >= height || stride < width * bytesPerPixel) {
+    if (image.base == nullptr || x < 0 || y < 0 || x >= image.width || y >= image.height ||
+        image.stride < image.width * K_RGBA_BYTES_PER_PIXEL) {
         return;
     }
-    uint32_t value = foreground ? 0x3FC : 0x000;
-    uint32_t *row = reinterpret_cast<uint32_t *>(base + static_cast<size_t>(y) * stride);
-    row[x] = value | (value << 10) | (value << 20) | (alpha << 30);
+    uint32_t value = foreground ? K_RGB10_TEXT_WHITE : K_RGB10_TEXT_BLACK;
+    uint32_t *row = reinterpret_cast<uint32_t *>(image.base + static_cast<size_t>(y) * image.stride);
+    row[x] = value | (value << K_RGB10_GREEN_SHIFT) | (value << K_RGB10_BLUE_SHIFT) |
+        (K_RGB10_ALPHA << K_RGB10_ALPHA_SHIFT);
 }
 
-void DrawFrameLabelPixel(uint8_t *base, int32_t width, int32_t height, int32_t stride, int32_t sliceHeight,
-                         int32_t format, int32_t x, int32_t y, bool foreground)
+void DrawFrameLabelPixel(const PixelTarget &target, int32_t x, int32_t y, bool foreground)
 {
-    switch (format) {
+    switch (target.format) {
         case NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP:
-            DrawYuv420SpPixel(base, width, height, stride, sliceHeight, x, y, foreground, true);
+            DrawYuv420SpPixel(target.image, x, y, foreground, true);
             break;
         case NATIVEBUFFER_PIXEL_FMT_YCRCB_420_SP:
-            DrawYuv420SpPixel(base, width, height, stride, sliceHeight, x, y, foreground, false);
+            DrawYuv420SpPixel(target.image, x, y, foreground, false);
             break;
         case NATIVEBUFFER_PIXEL_FMT_YCBCR_420_P:
-            DrawYuv420PPixel(base, width, height, stride, sliceHeight, x, y, foreground);
+            DrawYuv420PPixel(target.image, x, y, foreground);
             break;
         case NATIVEBUFFER_PIXEL_FMT_YCBCR_P010:
-            DrawYuvP010Pixel(base, width, height, stride, sliceHeight, x, y, foreground, true);
+            DrawYuvP010Pixel(target.image, x, y, foreground, true);
             break;
         case NATIVEBUFFER_PIXEL_FMT_YCRCB_P010:
-            DrawYuvP010Pixel(base, width, height, stride, sliceHeight, x, y, foreground, false);
+            DrawYuvP010Pixel(target.image, x, y, foreground, false);
             break;
         case NATIVEBUFFER_PIXEL_FMT_RGBA_8888:
-            DrawRgba8888Pixel(base, width, height, stride, x, y, foreground);
+            DrawRgba8888Pixel(target.image, x, y, foreground);
             break;
         case NATIVEBUFFER_PIXEL_FMT_RGBA_1010102:
-            DrawRgba1010102Pixel(base, width, height, stride, x, y, foreground);
+            DrawRgba1010102Pixel(target.image, x, y, foreground);
             break;
         default:
             break;
     }
 }
 
-void DrawSolidRect(uint8_t *base, int32_t width, int32_t height, int32_t stride, int32_t sliceHeight,
-                   int32_t format, int32_t left, int32_t top, int32_t rectWidth, int32_t rectHeight,
-                   bool foreground)
+void DrawSolidRect(const PixelTarget &target, const RectArea &rect, bool foreground)
 {
-    for (int32_t y = top; y < top + rectHeight; ++y) {
-        for (int32_t x = left; x < left + rectWidth; ++x) {
-            DrawFrameLabelPixel(base, width, height, stride, sliceHeight, format, x, y, foreground);
+    for (int32_t y = rect.top; y < rect.top + rect.height; ++y) {
+        for (int32_t x = rect.left; x < rect.left + rect.width; ++x) {
+            DrawFrameLabelPixel(target, x, y, foreground);
         }
     }
 }
 
-void DrawFrameNumber(uint8_t *base, int32_t width, int32_t height, int32_t stride, int32_t sliceHeight,
-                     int32_t format, uint32_t frameNumber)
+void DrawFrameGlyph(const PixelTarget &target, const std::array<uint8_t, K_FRAME_LABEL_GLYPH_HEIGHT> &rows,
+                    int32_t cursorX, int32_t cursorY)
+{
+    for (int32_t rowIndex = 0; rowIndex < K_FRAME_LABEL_GLYPH_HEIGHT; ++rowIndex) {
+        for (int32_t colIndex = 0; colIndex < K_FRAME_LABEL_GLYPH_WIDTH; ++colIndex) {
+            bool isSet = (rows[rowIndex] & (1 << (K_FRAME_LABEL_GLYPH_WIDTH - 1 - colIndex))) != 0;
+            if (!isSet) {
+                continue;
+            }
+            int32_t dotX = cursorX + colIndex * K_FRAME_LABEL_SCALE;
+            int32_t dotY = cursorY + rowIndex * K_FRAME_LABEL_SCALE;
+            DrawSolidRect(target, RectArea {dotX, dotY, K_FRAME_LABEL_SCALE, K_FRAME_LABEL_SCALE}, true);
+        }
+    }
+}
+
+void DrawFrameNumber(const PixelTarget &target, uint32_t frameNumber)
 {
     std::string label = GetFrameLabel(frameNumber);
-    int32_t glyphAdvance = (kFrameLabelGlyphWidth + kFrameLabelGlyphSpacing) * kFrameLabelScale;
-    int32_t backgroundWidth = static_cast<int32_t>(label.size()) * glyphAdvance + kFrameLabelPadding * 2;
-    int32_t backgroundHeight = kFrameLabelGlyphHeight * kFrameLabelScale + kFrameLabelPadding * 2;
-    DrawSolidRect(base, width, height, stride, sliceHeight, format, kFrameLabelX, kFrameLabelY, backgroundWidth,
-                  backgroundHeight, false);
+    int32_t glyphAdvance = (K_FRAME_LABEL_GLYPH_WIDTH + K_FRAME_LABEL_GLYPH_SPACING) * K_FRAME_LABEL_SCALE;
+    int32_t backgroundWidth = static_cast<int32_t>(label.size()) * glyphAdvance +
+        K_FRAME_LABEL_PADDING * K_CHROMA_SAMPLE_STEP;
+    int32_t backgroundHeight = K_FRAME_LABEL_GLYPH_HEIGHT * K_FRAME_LABEL_SCALE +
+        K_FRAME_LABEL_PADDING * K_CHROMA_SAMPLE_STEP;
+    DrawSolidRect(target, RectArea {K_FRAME_LABEL_X, K_FRAME_LABEL_Y, backgroundWidth, backgroundHeight}, false);
 
-    int32_t cursorX = kFrameLabelX + kFrameLabelPadding;
-    int32_t cursorY = kFrameLabelY + kFrameLabelPadding;
+    int32_t cursorX = K_FRAME_LABEL_X + K_FRAME_LABEL_PADDING;
+    int32_t cursorY = K_FRAME_LABEL_Y + K_FRAME_LABEL_PADDING;
     for (char value : label) {
-        auto rows = GetGlyphRows(value);
-        for (int32_t rowIndex = 0; rowIndex < kFrameLabelGlyphHeight; ++rowIndex) {
-            for (int32_t colIndex = 0; colIndex < kFrameLabelGlyphWidth; ++colIndex) {
-                bool isSet = (rows[rowIndex] & (1 << (kFrameLabelGlyphWidth - 1 - colIndex))) != 0;
-                if (!isSet) {
-                    continue;
-                }
-                int32_t dotX = cursorX + colIndex * kFrameLabelScale;
-                int32_t dotY = cursorY + rowIndex * kFrameLabelScale;
-                DrawSolidRect(base, width, height, stride, sliceHeight, format, dotX, dotY, kFrameLabelScale,
-                              kFrameLabelScale, true);
-            }
-        }
+        DrawFrameGlyph(target, GetGlyphRows(value), cursorX, cursorY);
         cursorX += glyphAdvance;
     }
 }
 
-bool FillYuvP010(uint8_t *base, int32_t width, int32_t height, int32_t stride, int32_t sliceHeight,
-                 uint8_t pattern, bool cbFirst)
+bool FillYuvP010(const ImageBuffer &image, uint8_t pattern, bool cbFirst)
 {
-    constexpr int32_t bytesPerSample = 2;
-    int32_t samplesPerRow = stride / bytesPerSample;
-    if (base == nullptr || width <= 0 || height <= 0 || stride < width * bytesPerSample ||
-        sliceHeight < height) {
+    int32_t samplesPerRow = image.stride / K_P010_BYTES_PER_SAMPLE;
+    if (image.base == nullptr || image.width <= 0 || image.height <= 0 ||
+        image.stride < image.width * K_P010_BYTES_PER_SAMPLE || image.sliceHeight < image.height) {
         return false;
     }
 
-    for (int32_t y = 0; y < height; ++y) {
-        uint16_t *row = reinterpret_cast<uint16_t *>(base + static_cast<size_t>(y) * stride);
-        for (int32_t x = 0; x < width; ++x) {
-            row[x] = ToP010Sample(RgbToYuv(GetSpectrumColor(x, y, width, pattern)).y);
+    for (int32_t y = 0; y < image.height; ++y) {
+        uint16_t *row = reinterpret_cast<uint16_t *>(image.base + static_cast<size_t>(y) * image.stride);
+        for (int32_t x = 0; x < image.width; ++x) {
+            row[x] = ToP010Sample(RgbToYuv(GetSpectrumColor(x, y, image.width, pattern)).y);
         }
     }
 
-    uint8_t *uvPlane = base + static_cast<size_t>(stride) * sliceHeight;
-    for (int32_t y = 0; y < height; y += 2) {
-        uint16_t *row = reinterpret_cast<uint16_t *>(uvPlane + static_cast<size_t>(y / 2) * stride);
-        for (int32_t x = 0; x < width; x += 2) {
-            YuvColor yuv = RgbToYuv(GetSpectrumColor(x, y, width, pattern));
+    uint8_t *uvPlane = image.base + static_cast<size_t>(image.stride) * image.sliceHeight;
+    for (int32_t y = 0; y < image.height; y += K_CHROMA_SAMPLE_STEP) {
+        uint16_t *row = reinterpret_cast<uint16_t *>(uvPlane +
+            static_cast<size_t>(y / K_CHROMA_SAMPLE_STEP) * image.stride);
+        for (int32_t x = 0; x < image.width; x += K_CHROMA_SAMPLE_STEP) {
+            YuvColor yuv = RgbToYuv(GetSpectrumColor(x, y, image.width, pattern));
             row[x] = ToP010Sample(cbFirst ? yuv.u : yuv.v);
             if (x + 1 < samplesPerRow) {
                 row[x + 1] = ToP010Sample(cbFirst ? yuv.v : yuv.u);
@@ -454,53 +522,51 @@ bool FillYuvP010(uint8_t *base, int32_t width, int32_t height, int32_t stride, i
     return true;
 }
 
-bool FillRgba1010102(uint8_t *base, int32_t width, int32_t height, int32_t stride, uint8_t pattern)
+bool FillRgba1010102(const ImageBuffer &image, uint8_t pattern)
 {
-    constexpr int32_t bytesPerPixel = 4;
-    constexpr uint32_t alpha = 0x3;
-    if (base == nullptr || width <= 0 || height <= 0 || stride < width * bytesPerPixel) {
+    if (image.base == nullptr || image.width <= 0 || image.height <= 0 ||
+        image.stride < image.width * K_RGBA_BYTES_PER_PIXEL) {
         return false;
     }
 
-    for (int32_t y = 0; y < height; ++y) {
-        uint32_t *row = reinterpret_cast<uint32_t *>(base + static_cast<size_t>(y) * stride);
-        for (int32_t x = 0; x < width; ++x) {
-            const RgbColor &color = GetSpectrumColor(x, y, width, pattern);
-            uint32_t r = static_cast<uint32_t>(color.r) << 2;
-            uint32_t g = static_cast<uint32_t>(color.g) << 2;
-            uint32_t b = static_cast<uint32_t>(color.b) << 2;
-            row[x] = r | (g << 10) | (b << 20) | (alpha << 30);
+    for (int32_t y = 0; y < image.height; ++y) {
+        uint32_t *row = reinterpret_cast<uint32_t *>(image.base + static_cast<size_t>(y) * image.stride);
+        for (int32_t x = 0; x < image.width; ++x) {
+            const RgbColor &color = GetSpectrumColor(x, y, image.width, pattern);
+            uint32_t r = static_cast<uint32_t>(color.r) << K_RGB10_SHIFT;
+            uint32_t g = static_cast<uint32_t>(color.g) << K_RGB10_SHIFT;
+            uint32_t b = static_cast<uint32_t>(color.b) << K_RGB10_SHIFT;
+            row[x] = r | (g << K_RGB10_GREEN_SHIFT) | (b << K_RGB10_BLUE_SHIFT) |
+                (K_RGB10_ALPHA << K_RGB10_ALPHA_SHIFT);
         }
     }
     return true;
 }
 
-bool FillSpectrumBlocks(void *addr, int32_t width, int32_t height, int32_t stride, int32_t sliceHeight,
-                        int32_t format, uint8_t pattern, uint32_t frameNumber)
+bool FillSpectrumBlocks(const PixelTarget &target, uint8_t pattern, uint32_t frameNumber)
 {
-    uint8_t *base = static_cast<uint8_t *>(addr);
     bool filled = false;
-    switch (format) {
+    switch (target.format) {
         case NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP:
-            filled = FillYuv420Sp(base, width, height, stride, sliceHeight, pattern, true);
+            filled = FillYuv420Sp(target.image, pattern, true);
             break;
         case NATIVEBUFFER_PIXEL_FMT_YCRCB_420_SP:
-            filled = FillYuv420Sp(base, width, height, stride, sliceHeight, pattern, false);
+            filled = FillYuv420Sp(target.image, pattern, false);
             break;
         case NATIVEBUFFER_PIXEL_FMT_YCBCR_420_P:
-            filled = FillYuv420P(base, width, height, stride, sliceHeight, pattern);
+            filled = FillYuv420P(target.image, pattern);
             break;
         case NATIVEBUFFER_PIXEL_FMT_RGBA_8888:
-            filled = FillRgba8888(base, width, height, stride, pattern, true);
+            filled = FillRgba8888(target.image, pattern, true);
             break;
         case NATIVEBUFFER_PIXEL_FMT_RGBA_1010102:
-            filled = FillRgba1010102(base, width, height, stride, pattern);
+            filled = FillRgba1010102(target.image, pattern);
             break;
         case NATIVEBUFFER_PIXEL_FMT_YCBCR_P010:
-            filled = FillYuvP010(base, width, height, stride, sliceHeight, pattern, true);
+            filled = FillYuvP010(target.image, pattern, true);
             break;
         case NATIVEBUFFER_PIXEL_FMT_YCRCB_P010:
-            filled = FillYuvP010(base, width, height, stride, sliceHeight, pattern, false);
+            filled = FillYuvP010(target.image, pattern, false);
             break;
         default:
             return false;
@@ -508,8 +574,124 @@ bool FillSpectrumBlocks(void *addr, int32_t width, int32_t height, int32_t strid
     if (!filled) {
         return false;
     }
-    DrawFrameNumber(base, width, height, stride, sliceHeight, format, frameNumber);
+    DrawFrameNumber(target, frameNumber);
     return true;
+}
+
+void PrintRequestFailure(const FrameRequestInfo &info, const char *step, int32_t err, int32_t format = 0,
+                         int32_t stride = 0, int32_t sliceHeight = 0)
+{
+    cout << "RequestAndFlushFrame failed, step=" << step << ", ret=" << err << ", width=" << info.width
+         << ", height=" << info.height << ", pattern=" << static_cast<int32_t>(info.pattern)
+         << ", frameNumber=" << info.frameNumber << ", timestampUs=" << info.timestampUs << ", format=" << format
+         << ", stride=" << stride << ", sliceHeight=" << sliceHeight << endl;
+}
+
+void PrintRequestWarning(const FrameRequestInfo &info, const char *step, int32_t err, int32_t format = 0)
+{
+    cout << "RequestAndFlushFrame warning, step=" << step << ", ret=" << err;
+    if (format != 0) {
+        cout << ", fallbackFormat=" << format;
+    }
+    cout << ", width=" << info.width << ", height=" << info.height
+         << ", pattern=" << static_cast<int32_t>(info.pattern) << ", frameNumber=" << info.frameNumber
+         << ", timestampUs=" << info.timestampUs << endl;
+}
+
+bool RequestWindowBuffer(OHNativeWindow *window, const FrameRequestInfo &info, WindowBufferContext &context)
+{
+    int fenceFd = -1;
+    int32_t ret = OH_NativeWindow_NativeWindowRequestBuffer(window, &context.windowBuffer, &fenceFd);
+    if (ret != 0 || context.windowBuffer == nullptr) {
+        PrintRequestFailure(info, "request_buffer", ret);
+        return false;
+    }
+    if (fenceFd > 0) {
+        close(fenceFd);
+    }
+
+    context.nativeBuffer = OH_NativeBufferFromNativeWindowBuffer(context.windowBuffer);
+    if (context.nativeBuffer == nullptr) {
+        PrintRequestFailure(info, "native_buffer_from_window_buffer", AV_ERR_INVALID_VAL);
+        (void)NativeWindowCancelBuffer(window, context.windowBuffer);
+        return false;
+    }
+    return true;
+}
+
+bool MapAndDescribeBuffer(OHNativeWindow *window, const FrameRequestInfo &info, WindowBufferContext &context)
+{
+    int32_t ret = OH_NativeBuffer_Map(context.nativeBuffer, &context.virAddr);
+    if (ret != 0 || context.virAddr == nullptr) {
+        PrintRequestFailure(info, "map_buffer", ret);
+        (void)NativeWindowCancelBuffer(window, context.windowBuffer);
+        return false;
+    }
+
+    const SurfaceBuffer *surfaceBuffer = SurfaceBuffer::NativeBufferToSurfaceBuffer(context.nativeBuffer);
+    if (surfaceBuffer == nullptr) {
+        PrintRequestFailure(info, "surface_buffer_from_native_buffer", AV_ERR_INVALID_VAL);
+        (void)OH_NativeBuffer_Unmap(context.nativeBuffer);
+        (void)NativeWindowCancelBuffer(window, context.windowBuffer);
+        return false;
+    }
+
+    context.format = surfaceBuffer->GetFormat();
+    ret = OH_NativeWindow_NativeWindowHandleOpt(window, GET_FORMAT, &context.format);
+    if (ret != 0) {
+        PrintRequestWarning(info, "get_format", ret, context.format);
+    }
+
+    OH_NativeBuffer_Config config;
+    OH_NativeBuffer_GetConfig(context.nativeBuffer, &config);
+    context.stride = config.stride;
+    context.sliceHeight = surfaceBuffer->GetHeight();
+    if (context.stride > 0 && context.sliceHeight > 0) {
+        return true;
+    }
+    PrintRequestFailure(info, "invalid_buffer_config", AV_ERR_INVALID_VAL, context.format, context.stride,
+                        context.sliceHeight);
+    (void)OH_NativeBuffer_Unmap(context.nativeBuffer);
+    (void)NativeWindowCancelBuffer(window, context.windowBuffer);
+    return false;
+}
+
+bool FillAndUnmapBuffer(OHNativeWindow *window, const FrameRequestInfo &info, WindowBufferContext &context)
+{
+    ImageBuffer image {static_cast<uint8_t *>(context.virAddr), info.width, info.height, context.stride,
+                       context.sliceHeight};
+    if (!FillSpectrumBlocks(PixelTarget {image, context.format}, info.pattern, info.frameNumber)) {
+        PrintRequestFailure(info, "fill_spectrum_blocks", AV_ERR_INVALID_VAL, context.format, context.stride,
+                            context.sliceHeight);
+        (void)OH_NativeBuffer_Unmap(context.nativeBuffer);
+        (void)NativeWindowCancelBuffer(window, context.windowBuffer);
+        return false;
+    }
+
+    int32_t ret = OH_NativeBuffer_Unmap(context.nativeBuffer);
+    if (ret == 0) {
+        return true;
+    }
+    PrintRequestFailure(info, "unmap_buffer", ret, context.format, context.stride, context.sliceHeight);
+    (void)NativeWindowCancelBuffer(window, context.windowBuffer);
+    return false;
+}
+
+bool FlushWindowBuffer(OHNativeWindow *window, const FrameRequestInfo &info, const WindowBufferContext &context)
+{
+    Region region {};
+    Region::Rect rect {};
+    rect.x = 0;
+    rect.y = 0;
+    rect.w = info.width;
+    rect.h = info.height;
+    region.rects = &rect;
+    region.rectNumber = 1;
+    int32_t ret = OH_NativeWindow_NativeWindowFlushBuffer(window, context.windowBuffer, -1, region);
+    if (ret != 0) {
+        PrintRequestFailure(info, "flush_buffer", ret, context.format, context.stride, context.sliceHeight);
+    }
+    return ret == 0;
 }
 } // namespace
 
@@ -777,7 +959,7 @@ int32_t VideoEncPreprocDualOutputSample::GetPrimarySurface(const PreprocDualOutp
     if (ret != 0) {
         return AV_ERR_UNKNOWN;
     }
-    ret = OH_NativeWindow_NativeWindowHandleOpt(window_, SET_USAGE, kSurfaceUsage);
+    ret = OH_NativeWindow_NativeWindowHandleOpt(window_, SET_USAGE, K_SURFACE_USAGE);
     if (ret != 0) {
         return AV_ERR_UNKNOWN;
     }
@@ -889,113 +1071,35 @@ void VideoEncPreprocDualOutputSample::ForgetSecondaryHandle()
 bool VideoEncPreprocDualOutputSample::RequestAndFlushFrame(int32_t width, int32_t height, uint8_t pattern,
                                                            int64_t timestampUs, uint32_t frameNumber)
 {
-    auto printFailure = [&](const char *step, int32_t err, int32_t format = 0, int32_t stride = 0,
-                            int32_t sliceHeight = 0) {
-        cout << "RequestAndFlushFrame failed, step=" << step << ", ret=" << err << ", width=" << width
-             << ", height=" << height << ", pattern=" << static_cast<int32_t>(pattern)
-             << ", frameNumber=" << frameNumber << ", timestampUs=" << timestampUs << ", format=" << format
-             << ", stride=" << stride << ", sliceHeight=" << sliceHeight << endl;
-    };
-
+    FrameRequestInfo info {width, height, pattern, timestampUs, frameNumber};
     if (window_ == nullptr) {
-        printFailure("window_null", AV_ERR_INVALID_VAL);
+        PrintRequestFailure(info, "window_null", AV_ERR_INVALID_VAL);
         return false;
     }
 
     int32_t ret = OH_NativeWindow_NativeWindowHandleOpt(window_, SET_UI_TIMESTAMP, timestampUs);
     if (ret != 0) {
-        cout << "RequestAndFlushFrame warning, step=set_ui_timestamp, ret=" << ret << ", width=" << width
-             << ", height=" << height << ", pattern=" << static_cast<int32_t>(pattern)
-             << ", frameNumber=" << frameNumber << ", timestampUs=" << timestampUs << endl;
+        PrintRequestWarning(info, "set_ui_timestamp", ret);
     }
 
-    OHNativeWindowBuffer *nativeWindowBuffer = nullptr;
-    int fenceFd = -1;
-    ret = OH_NativeWindow_NativeWindowRequestBuffer(window_, &nativeWindowBuffer, &fenceFd);
-    if (ret != 0 || nativeWindowBuffer == nullptr) {
-        printFailure("request_buffer", ret);
+    WindowBufferContext context;
+    if (!RequestWindowBuffer(window_, info, context)) {
         return false;
     }
-    if (fenceFd > 0) {
-        close(fenceFd);
-    }
-
-    OH_NativeBuffer *nativeBuffer = OH_NativeBufferFromNativeWindowBuffer(nativeWindowBuffer);
-    if (nativeBuffer == nullptr) {
-        printFailure("native_buffer_from_window_buffer", AV_ERR_INVALID_VAL);
-        (void)NativeWindowCancelBuffer(window_, nativeWindowBuffer);
+    if (!MapAndDescribeBuffer(window_, info, context)) {
         return false;
     }
-
-    void *virAddr = nullptr;
-    ret = OH_NativeBuffer_Map(nativeBuffer, &virAddr);
-    if (ret != 0 || virAddr == nullptr) {
-        printFailure("map_buffer", ret);
-        (void)NativeWindowCancelBuffer(window_, nativeWindowBuffer);
+    if (!FillAndUnmapBuffer(window_, info, context)) {
         return false;
     }
-
-    const SurfaceBuffer *surfaceBuffer = SurfaceBuffer::NativeBufferToSurfaceBuffer(nativeBuffer);
-    if (surfaceBuffer == nullptr) {
-        printFailure("surface_buffer_from_native_buffer", AV_ERR_INVALID_VAL);
-        (void)OH_NativeBuffer_Unmap(nativeBuffer);
-        (void)NativeWindowCancelBuffer(window_, nativeWindowBuffer);
-        return false;
-    }
-
-    int32_t format = surfaceBuffer->GetFormat();
-    ret = OH_NativeWindow_NativeWindowHandleOpt(window_, GET_FORMAT, &format);
-    if (ret != 0) {
-        cout << "RequestAndFlushFrame warning, step=get_format, ret=" << ret << ", fallbackFormat=" << format
-             << ", width=" << width << ", height=" << height << ", pattern=" << static_cast<int32_t>(pattern)
-             << ", frameNumber=" << frameNumber << ", timestampUs=" << timestampUs << endl;
-    }
-
-    OH_NativeBuffer_Config config;
-    OH_NativeBuffer_GetConfig(nativeBuffer, &config);
-    int32_t stride = config.stride;
-    const int32_t sliceHeight = surfaceBuffer->GetHeight();
-    if (stride <= 0 || sliceHeight <= 0) {
-        printFailure("invalid_buffer_config", AV_ERR_INVALID_VAL, format, stride, sliceHeight);
-        (void)OH_NativeBuffer_Unmap(nativeBuffer);
-        (void)NativeWindowCancelBuffer(window_, nativeWindowBuffer);
-        return false;
-    }
-
-    if (!FillSpectrumBlocks(virAddr, width, height, stride, sliceHeight, format, pattern, frameNumber)) {
-        printFailure("fill_spectrum_blocks", AV_ERR_INVALID_VAL, format, stride, sliceHeight);
-        (void)OH_NativeBuffer_Unmap(nativeBuffer);
-        (void)NativeWindowCancelBuffer(window_, nativeWindowBuffer);
-        return false;
-    }
-
-    ret = OH_NativeBuffer_Unmap(nativeBuffer);
-    if (ret != 0) {
-        printFailure("unmap_buffer", ret, format, stride, sliceHeight);
-        (void)NativeWindowCancelBuffer(window_, nativeWindowBuffer);
-        return false;
-    }
-
-    Region region {};
-    Region::Rect rect {};
-    rect.x = 0;
-    rect.y = 0;
-    rect.w = width;
-    rect.h = height;
-    region.rects = &rect;
-    region.rectNumber = 1;
-    ret = OH_NativeWindow_NativeWindowFlushBuffer(window_, nativeWindowBuffer, -1, region);
-    if (ret != 0) {
-        printFailure("flush_buffer", ret, format, stride, sliceHeight);
-    }
-    return ret == 0;
+    return FlushWindowBuffer(window_, info, context);
 }
 
 int32_t VideoEncPreprocDualOutputSample::ApplyRuntimeOperation(const PreprocDualOutput::ScenarioCase &scenario,
-                                                              uint32_t frameIndex, uint32_t frameCount,
-                                                              int32_t &frameWidth, int32_t &frameHeight)
+                                                               uint32_t frameIndex, uint32_t frameCount,
+                                                               int32_t &frameWidth, int32_t &frameHeight)
 {
-    if (frameIndex != frameCount / 2) {
+    if (frameIndex != frameCount / K_RUNTIME_TRIGGER_DIVISOR) {
         return AV_ERR_OK;
     }
     if (scenario.runtimeOperation == PreprocDualOutput::RuntimeOperation::SET_PREPROC_PARAMETER) {
@@ -1017,7 +1121,7 @@ int32_t VideoEncPreprocDualOutputSample::ApplyRuntimeOperation(const PreprocDual
             return AV_ERR_INVALID_VAL;
         }
         int32_t ret = OH_NativeWindow_NativeWindowHandleOpt(window_, SET_BUFFER_GEOMETRY, scenario.runtimeWidth,
-                                                           scenario.runtimeHeight);
+                                                            scenario.runtimeHeight);
         if (ret != 0) {
             return AV_ERR_UNKNOWN;
         }
@@ -1028,7 +1132,7 @@ int32_t VideoEncPreprocDualOutputSample::ApplyRuntimeOperation(const PreprocDual
 }
 
 int32_t VideoEncPreprocDualOutputSample::SendFrames(const PreprocDualOutput::ScenarioCase &scenario,
-                                                   uint32_t frameCount)
+                                                    uint32_t frameCount)
 {
     if (window_ == nullptr) {
         return AV_ERR_INVALID_VAL;
@@ -1054,15 +1158,15 @@ int32_t VideoEncPreprocDualOutputSample::SendFrames(const PreprocDualOutput::Sce
             return ret;
         }
         if (scenario.runtimeOperation == PreprocDualOutput::RuntimeOperation::CHANGE_BUFFER_GEOMETRY &&
-            i >= frameCount / 2) {
+            i >= frameCount / K_RUNTIME_TRIGGER_DIVISOR) {
             geometryUpdated = true;
         }
         int64_t timestampUs = GetFrameTimestampUs(i, scenario.primary.frameRate);
-        if (!RequestAndFlushFrame(frameWidth, frameHeight, static_cast<uint8_t>(kFramePatternBase + i), timestampUs,
+        if (!RequestAndFlushFrame(frameWidth, frameHeight, static_cast<uint8_t>(K_FRAME_PATTERN_BASE + i), timestampUs,
                                   i + 1)) {
             return AV_ERR_UNKNOWN;
         }
-        usleep(1000);
+        usleep(K_FRAME_INTERVAL_SLEEP_US);
     }
     if (notifyPrimary) {
         int32_t ret = NotifyPrimaryEos();
@@ -1185,11 +1289,11 @@ int32_t VideoEncPreprocDualOutputSample::SendFramesWithConfiguredPts(const Prepr
     }
     for (uint32_t i = 0; i < frameCount; ++i) {
         int64_t timestampUs = GetFrameTimestampUs(i, scenario.primary.frameRate);
-        if (!RequestAndFlushFrame(scenario.width, scenario.height, static_cast<uint8_t>(kFramePatternBase + i),
+        if (!RequestAndFlushFrame(scenario.width, scenario.height, static_cast<uint8_t>(K_FRAME_PATTERN_BASE + i),
                                   timestampUs, i + 1)) {
             return AV_ERR_UNKNOWN;
         }
-        usleep(1000);
+        usleep(K_FRAME_INTERVAL_SLEEP_US);
     }
     auto ret = NotifyPrimaryEos();
     if (ret != AV_ERR_OK) {
@@ -1209,7 +1313,6 @@ void VideoEncPreprocDualOutputSample::ResetDataCounts()
     secondaryState_.dataCount.store(0);
     secondaryState_.gotEos.store(false);
     secondaryState_.errorCode.store(0);
-
 }
 
 bool VideoEncPreprocDualOutputSample::PrimaryHasData() const
