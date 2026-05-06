@@ -17,6 +17,7 @@
 #define HST_LOG_TAG "MPEG4DemuxerPlugin"
 #include <unistd.h>
 #include <algorithm>
+#include <cmath>
 #include <string>
 #include <sstream>
 #include <iomanip>
@@ -68,6 +69,36 @@ static const std::map<std::string, VideoStreamType> g_streamParserMap = {
 bool HaveValidParser(const std::string mime)
 {
     return g_streamParserMap.count(mime) != 0;
+}
+
+bool NeedFfmpegDurationFallback(const std::shared_ptr<MPEG4AtomParser::Track>& track)
+{
+    return track != nullptr && track->sampleHelper != nullptr &&
+        track->codecParms.trackType == VIDEO_TYPE && !track->sampleHelper->cttsEntry_.empty();
+}
+
+bool GetFfmpegFallbackDurationUs(
+    const MediaInfo& mediaInfo, uint32_t trackId, int32_t trackTimeScale, int64_t& durationUs)
+{
+    double frameRate = 0.0;
+    if (!mediaInfo.tracks[trackId].Get<Tag::VIDEO_FRAME_RATE>(frameRate) ||
+        !std::isfinite(frameRate) || frameRate <= 0 || trackTimeScale <= 0) {
+        return false;
+    }
+
+    // FFmpeg MOV leaves AVPacket.duration unset when CTTS exists. Then demux.c derives duration from
+    // r_frame_rate and rounds down in stream time_base. Mirror that behavior for frame attribute parity.
+    double durationTicks = static_cast<double>(trackTimeScale) / frameRate;
+    if (!std::isfinite(durationTicks) || durationTicks <= 0 ||
+        durationTicks > static_cast<double>(std::numeric_limits<int64_t>::max())) {
+        return false;
+    }
+    int64_t fallbackDurationTicks = static_cast<int64_t>(durationTicks);
+    if (fallbackDurationTicks <= 0) {
+        return false;
+    }
+    return ConvertTimeScale(fallbackDurationTicks, static_cast<int64_t>(S_TO_US), trackTimeScale, &durationUs) ==
+        Status::OK;
 }
 
 int32_t GetSampleSizeWithCodecConfig(const MediaInfo& mediaInfo,
@@ -1113,9 +1144,13 @@ Status MPEG4DemuxerPlugin::WriteSampleAttr(uint32_t trackId, std::shared_ptr<Sam
     sample->flag = currentSample.flag;
     sample->size = currentSample.size;
     int64_t sampleDuration = 0;
-    FALSE_RETURN_V_MSG_E(ConvertTimeScale(
-        currentSample.duration, static_cast<int64_t>(S_TO_US), trackTimeScale, &sampleDuration)
-        == Status::OK, Status::ERROR_INVALID_PARAMETER, "mul overflow");
+    bool useFfmpegDuration = NeedFfmpegDurationFallback(track) &&
+        GetFfmpegFallbackDurationUs(mediaInfo_, trackId, trackTimeScale, sampleDuration);
+    if (!useFfmpegDuration) {
+        FALSE_RETURN_V_MSG_E(ConvertTimeScale(
+            currentSample.duration, static_cast<int64_t>(S_TO_US), trackTimeScale, &sampleDuration)
+            == Status::OK, Status::ERROR_INVALID_PARAMETER, "mul overflow");
+    }
     sample->duration = sampleDuration;
     // When the sample is copied in the seekable case, add it up again
     if (seekable_ == Seekable::UNSEEKABLE) {
