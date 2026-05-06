@@ -110,7 +110,6 @@ HWTEST_F(WaterMarkFilterTest, SetWatermark_002, TestSize.Level1)
         ASSERT_TRUE(waterMarkBuffer->memory_ != nullptr);
  
         waterMarkFilter_->SetWatermark(waterMarkBuffer, 100, 100);
-
     }
  
     // Try to add one more watermark (should fail)
