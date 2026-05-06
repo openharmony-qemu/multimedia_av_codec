@@ -16,6 +16,8 @@
 #include "egl_render_context.h"
 #include <cstring>
 #include "common/log.h"
+#include "avcodec_log.h"
+
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "EglRenderContext" };
 }
@@ -78,30 +80,17 @@ EglRenderContext::~EglRenderContext() noexcept
  
 bool EglRenderContext::Init()
 {
-    if (IsEglContextReady()) {
-        return true;
-    }
+    FALSE_RETURN_V_MSG(!IsEglContextReady(), true, "IsEglContextReady is ok");
     MEDIA_LOG_I("EglRenderContext", "EglRenderContext::Init begin.");
     eglDisplay_ = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-    if (eglDisplay_ == EGL_NO_DISPLAY) {
-        MEDIA_LOG_E("EglRenderContext",
-            "EglRenderContext::Init: failed to create eglDisplay, error: %{public}s.", GetEglErrorString());
-        return false;
-    }
+    FALSE_RETURN_V_MSG(eglDisplay_ != EGL_NO_DISPLAY, false, "EglRenderContext::Init: failed to create eglDisplay");
     EGLint major;
     EGLint minor;
-    if (eglInitialize(eglDisplay_, &major, &minor) == EGL_FALSE) {
-        MEDIA_LOG_E("EglRenderContext",
-            "EglRenderContext::Init: Failed to initialize EGLDisplay, error: %{public}s.",
-            GetEglErrorString());
-        return false;
-    }
- 
-    if (eglBindAPI(EGL_OPENGL_ES_API) == EGL_FALSE) {
-        MEDIA_LOG_E("EglRenderContext",
-            "EglRenderContext::Init: Failed to bind OpenGL ES API, error: %{public}s.", GetEglErrorString());
-        return false;
-    }
+    FALSE_RETURN_V_MSG(eglInitialize(eglDisplay_, &major, &minor) != EGL_FALSE, 
+        false, "eglInitialize failed to create");
+    FALSE_RETURN_V_MSG(eglBindAPI(EGL_OPENGL_ES_API) != EGL_FALSE, 
+        false, "eglInitialize failed to create");
+    EGLint count;
     EGLint count;
     EGLint configAttribs[] = { EGL_SURFACE_TYPE,
                                EGL_WINDOW_BIT,
