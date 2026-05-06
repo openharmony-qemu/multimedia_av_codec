@@ -496,7 +496,8 @@ bool WaterMarkFilter::RenderWatermarksToFBO(int32_t width, int32_t height)
 
         glVertexAttribPointer(0, ATTRIB_POINTER_COUNT, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
         glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, ATTRIB_POINTER_COUNT, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2 * sizeof(float)));
+        glVertexAttribPointer(1, ATTRIB_POINTER_COUNT, GL_FLOAT, GL_FALSE,
+            4 * sizeof(float), (void *)(2 * sizeof(float)));
         glEnableVertexAttribArray(1);
 
         glBindTexture(GL_TEXTURE_2D, watermarkTexIds_[i]);
