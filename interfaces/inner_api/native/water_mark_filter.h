@@ -33,14 +33,14 @@ namespace Pipeline {
 using RenderTask = std::function<void(EglRenderContext &renderContext)>;
 const GLuint DEFINED_VALUE = 9999U;
 struct WaterMarkConfig {
-   int32_t top; // 水印左上角在视频行数
-   int32_t left;// 水印左上角在视频列数
-   int32_t watermarkWidth ;// 水印缩放后的宽度
-   int32_t watermarkHeight ;// 水印缩放后的高度
-   int32_t rawHeight ;// 水印缩原始的高度
-   int32_t rawWidth ;// 水印缩原始的宽度
-   int64_t size; // 水印原始的buffer的size
-   unsigned char *buffer;// 水印原始的buffer
+   int32_t top;
+   int32_t left;
+   int32_t watermarkWidth ;
+   int32_t watermarkHeight ;
+   int32_t rawHeight ;
+   int32_t rawWidth ;
+   int64_t size;
+   unsigned char *buffer;
 };
  
 class WaterMarkFilter : public Filter, public std::enable_shared_from_this<WaterMarkFilter> {
