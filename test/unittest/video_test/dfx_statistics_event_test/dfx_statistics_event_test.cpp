@@ -237,6 +237,12 @@ void DfxStatisticsEventTest::SetUp(void)
     const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
     std::string testCaseName = testInfo_->name();
     AVCODEC_LOGI("%{public}s", testCaseName.c_str());
+
+    // Pre-register "test" app name into APP_NAME_DICT for all test cases
+    Media::Meta preRegisterMeta;
+    preRegisterMeta.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "test");
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(
+        StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, preRegisterMeta);
 }
 
 void DfxStatisticsEventTest::TearDown(void)
