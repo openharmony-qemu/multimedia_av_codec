@@ -30,6 +30,11 @@ namespace Pipeline {
 
 const uint32_t MAX_WATERMARK_NUMBER = 5;
 const uint64_t MAX_WATERMARK_SIZE = 20 * 1024 * 1024;
+const uint32_t DRAW_COUNT = 4;
+const uint32_t ELEMENT_COUNT = 6;
+const uint32_t POINTS_COUNT = 3;
+const uint32_t MATRIX4V_COUNT = 16;
+const uint32_t ATTRIB_POINTER_COUNT = 2;
 /**
  * @brief 顶点着色器：处理顶点位置和纹理坐标
  */
@@ -226,7 +231,7 @@ void WaterMarkFilter::DrawImage(const int64_t pts)
     glClear(GL_COLOR_BUFFER_BIT);
     glBindVertexArray(vertexArrayObject_);
     glEnable(GL_DEPTH_TEST);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
+    glDrawElements(GL_TRIANGLES, ELEMENT_COUNT, GL_UNSIGNED_INT, indices);
     GLenum error = glGetError();
     if (error != GL_NO_ERROR) {
         MEDIA_LOG_E("DrawImage GL error: %{public}d", error);
@@ -316,7 +321,7 @@ bool WaterMarkFilter::SetupShaderUniforms()
     // 设置着色器Uniform变量 - 水印纹理
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, textTexId_);
-    shaderProgram_->SetMatrix4v("matTransform", matrix_, 16, false);
+    shaderProgram_->SetMatrix4v("matTransform", matrix_, MATRIX4V_COUNT, false);
     shaderProgram_->SetInt("textTexture", 1);
 
     MEDIA_LOG_I("SetupShaderUniforms video: %{public}dx%{public}d -> target: %{public}dx%{public}d",
@@ -489,15 +494,15 @@ bool WaterMarkFilter::RenderWatermarksToFBO(int32_t width, int32_t height)
 
         glBufferData(GL_ARRAY_BUFFER, sizeof(wmVertices), wmVertices, GL_DYNAMIC_DRAW);
 
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
+        glVertexAttribPointer(0, ATTRIB_POINTER_COUNT, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
         glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2 * sizeof(float)));
+        glVertexAttribPointer(1, ATTRIB_POINTER_COUNT, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2 * sizeof(float)));
         glEnableVertexAttribArray(1);
 
         glBindTexture(GL_TEXTURE_2D, watermarkTexIds_[i]);
         watermarkMergeShaderProgram_->SetInt("watermarkTexture", 0);
 
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, DRAW_COUNT);
     }
 
     // 恢复OpenGL状态
@@ -561,9 +566,9 @@ bool WaterMarkFilter::CreateGLResources()
     error = glGetError();
     FALSE_RETURN_V_MSG(error == GL_NO_ERROR, false, "glBufferData failed with GL error: %{public}d", error);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
+    glVertexAttribPointer(0, POINTS_COUNT, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
+    glVertexAttribPointer(1, ATTRIB_POINTER_COUNT, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
 
     // 启用纹理坐标属性
     glEnableVertexAttribArray(1);
