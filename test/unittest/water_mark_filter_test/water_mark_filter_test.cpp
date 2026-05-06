@@ -291,7 +291,8 @@ HWTEST_F(WaterMarkFilterTest, LinkNext_003, TestSize.Level1)
     auto parameterTest = std::make_shared<Meta>();
     ASSERT_TRUE(parameterTest != nullptr);
     waterMarkFilter_->OnLinked(StreamType::STREAMTYPE_ENCODED_VIDEO, parameterTest, onLinkedResultCallback_);
-    EXPECT_CALL(*(nextFilter_), OnLinked(testing::_, testing::_, testing::_)).WillOnce(testing::Return(Status::ERROR_UNKNOWN));
+    EXPECT_CALL(*(nextFilter_),
+        OnLinked(testing::_, testing::_, testing::_)).WillOnce(testing::Return(Status::ERROR_UNKNOWN));
     EXPECT_CALL(*(eventReceiver_), OnEvent(testing::_)).Times(TEST_TIMES_ONE);
  
     Status ret = waterMarkFilter_->LinkNext(nextFilterTest, StreamType::STREAMTYPE_ENCODED_VIDEO);
@@ -388,7 +389,6 @@ HWTEST_F(WaterMarkFilterTest, OnLinkedResult_001, TestSize.Level1)
     auto meta = std::make_shared<Meta>();
     ASSERT_TRUE(meta != nullptr);
     waterMarkFilter_->OnLinkedResult(outputBufferQueue, meta);
-
 }
  
 /**
