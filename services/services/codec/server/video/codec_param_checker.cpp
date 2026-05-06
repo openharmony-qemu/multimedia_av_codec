@@ -103,6 +103,7 @@ int32_t TransferCharacteristicsChecker(CapabilityData &capData, Format &format, 
 int32_t MatrixCoefficientsChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t LTRFrameCountChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t ScalingModeChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t OutputInDecodingOrderChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t PostProcessingChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t BFrameParamChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t TransformTypeChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
@@ -156,6 +157,7 @@ const ParamCheckerListType VIDEO_DECODER_CONFIGURE_CHECKER_LIST = {
     ScalingModeChecker,
     PostProcessingChecker,
     TransformTypeChecker,
+    OutputInDecodingOrderChecker,
 };
 
 const ParamCheckerListType VIDEO_ENCODER_PARAMETER_CHECKER_LIST = {
@@ -789,6 +791,25 @@ int32_t ScalingModeChecker(CapabilityData &capData, Format &format, CodecScenari
     if (scalingMode < static_cast<int32_t>(OHOS::ScalingMode::SCALING_MODE_SCALE_TO_WINDOW) ||
         scalingMode > static_cast<int32_t>(OHOS::ScalingMode::SCALING_MODE_SCALE_CROP)) {
         AVCODEC_LOGE("Param invalid, %{public}s: %{public}d", Tag::VIDEO_SCALE_TYPE, scalingMode);
+        return AVCS_ERR_INVALID_VAL;
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t OutputInDecodingOrderChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
+{
+    (void)scenario;
+
+    int32_t OutputInDecodingOrder = 0;
+    bool OutputInDecodingOrderExist = format.GetIntValue(Tag::VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER,
+        OutputInDecodingOrder);
+    if (!OutputInDecodingOrderExist || OutputInDecodingOrder == 0) {
+        return AVCS_ERR_OK;
+    }
+    auto cap =
+        capData.featuresMap.find(static_cast<int32_t>(AVCapabilityFeature::VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER));
+    if (cap == capData.featuresMap.end()) {
+        AVCODEC_LOGW("Not support AVCapabilityFeature::VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER");
         return AVCS_ERR_INVALID_VAL;
     }
     return AVCS_ERR_OK;
