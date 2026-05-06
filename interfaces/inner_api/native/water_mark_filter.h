@@ -33,14 +33,14 @@ namespace Pipeline {
 using RenderTask = std::function<void(EglRenderContext &renderContext)>;
 const GLuint DEFINED_VALUE = 9999U;
 struct WaterMarkConfig {
-   int32_t top;
-   int32_t left;
-   int32_t watermarkWidth ;
-   int32_t watermarkHeight ;
-   int32_t rawHeight ;
-   int32_t rawWidth ;
-   int64_t size;
-   unsigned char *buffer;
+    int32_t top;
+    int32_t left;
+    int32_t watermarkWidth ;
+    int32_t watermarkHeight ;
+    int32_t rawHeight ;
+    int32_t rawWidth ;
+    int64_t size;
+    unsigned char *buffer;
 };
  
 class WaterMarkFilter : public Filter, public std::enable_shared_from_this<WaterMarkFilter> {
