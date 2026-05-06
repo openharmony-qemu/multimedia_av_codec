@@ -75,7 +75,12 @@ const std::map<AVCodecServiceErrCode, std::string> AVCS_ERRCODE_INFOS = {
     {AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, "video unsupported color space conversion"},
     {AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION,        "unsuported codec specification"},
     {AVCS_ERR_ILLEGAL_PARAMETER_SETS,                 "illegal parameter sets"},
-    {AVCS_ERR_MINSSING_PARAMETER_SETS,                "missing parameter sets"}};
+    {AVCS_ERR_MINSSING_PARAMETER_SETS,                "missing parameter sets"},
+    {AVCS_ERR_PREPROCESS_FAILED,                      "preprocess execution failed"},
+    {AVCS_ERR_PREPROCESS_INVALID_PARAM,               "preprocess invalid parameter"},
+    {AVCS_ERR_PREPROCESS_NO_MEMORY,                   "preprocess no memory"},
+    {AVCS_ERR_PREPROCESS_UNSUPPORT,                   "preprocess unsupported operation"},
+    {AVCS_ERR_PREPROCESS_UNKNOWN,                     "preprocess unknown error"}};
 
 const std::map<AVCodecServiceErrCode, OH_AVErrCode> AVCSERRCODE_TO_OHAVCODECERRCODE = {
     {AVCS_ERR_OK,                                  AV_ERR_OK},
@@ -131,6 +136,12 @@ const std::map<AVCodecServiceErrCode, OH_AVErrCode> AVCSERRCODE_TO_OHAVCODECERRC
     {AVCS_ERR_STREAM_CHANGED,                      AV_ERR_STREAM_CHANGED},
     {AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION},
     {AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION, AV_ERR_UNKNOWN},
+    // Preprocessor errors
+    {AVCS_ERR_PREPROCESS_FAILED,                     (OH_AVErrCode)5413301},
+    {AVCS_ERR_PREPROCESS_INVALID_PARAM,              (OH_AVErrCode)5413302},
+    {AVCS_ERR_PREPROCESS_NO_MEMORY,                  (OH_AVErrCode)5413303},
+    {AVCS_ERR_PREPROCESS_UNSUPPORT,                  (OH_AVErrCode)5413304},
+    {AVCS_ERR_PREPROCESS_UNKNOWN,                    (OH_AVErrCode)5413305},
     };
 
 const std::map<OH_AVErrCode, std::string> OHAVCODECERRCODE_INFOS = {

@@ -18,6 +18,7 @@
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "media_core.h"
+#include "preprocessor_format_utils.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "PreprocessorEncoder"};
@@ -27,37 +28,6 @@ static std::mutex g_interfaceMutex;
 
 namespace OHOS {
 namespace MediaAVCodec {
-
-// Reverse mapping: GraphicPixelFormat (Surface/Buffer) → VideoPixelFormat (Codec internal)
-// Returns true on success, false if format is unknown.
-// Mapping table derived from Preprocessor::ConvertVideoPixelFormat2GraphicPixelFormat (preprocessor.cpp:406)
-static bool GraphicPixelFmtToVideoPixelFmt(GraphicPixelFormat graphicFmt, VideoPixelFormat& outVideoFmt)
-{
-    switch (graphicFmt) {
-        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_P:
-            outVideoFmt = VideoPixelFormat::YUVI420;
-            return true;
-        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888:
-            outVideoFmt = VideoPixelFormat::RGBA;
-            return true;
-        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP:
-            outVideoFmt = VideoPixelFormat::NV12;
-            return true;
-        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP:
-            outVideoFmt = VideoPixelFormat::NV21;
-            return true;
-        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_1010102:
-            outVideoFmt = VideoPixelFormat::RGBA1010102;
-            return true;
-        // 10-bit formats (HEVC Main10 profile)
-        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010:
-        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010:
-            outVideoFmt = VideoPixelFormat::NV12;  // P010 maps to NV12 in codec context
-            return true;
-        default:
-            return false;
-    }
-}
 
 } // namespace MediaAVCodec
 } // namespace OHOS
@@ -243,7 +213,13 @@ void PreprocessorEncoder::RegisterEncoderToManager()
 {
     if (preprocMgr_) {
         auto preprocessor = preprocessors_[encoderId_];
-        preprocMgr_->RegisterEncoder(encoderId_, preprocessor, encoderSurface_);
+        auto streamChangedCb = [this](const Media::Format& format) {
+            OnStreamChanged(format);
+        };
+        auto errorCb = [this](int32_t errorCode) {
+            OnPreprocessError(errorCode);
+        };
+        preprocMgr_->RegisterEncoder(encoderId_, preprocessor, encoderSurface_, streamChangedCb, errorCb);
     }
 }
 
@@ -290,6 +266,9 @@ void PreprocessorEncoder::DetachFromPrimaryEncoder()
 OH_AVErrCode PreprocessorEncoder::RegisterCallback(struct OH_AVCodecCallback callback, void *userData)
 {
     std::scoped_lock lock(instanceMutex_);
+    asyncCallback_.onStreamChanged = callback.onStreamChanged;
+    userData_ = userData;
+
     if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
         if (videoEncoderObject_->callback_ != nullptr) {
             videoEncoderObject_->callback_->UpdateCallback(callback, userData);
@@ -563,6 +542,31 @@ OH_AVErrCode PreprocessorEncoder::ReleaseOutputBuffer(uint32_t index)
     return AV_ERR_OK;
 }
 
+void PreprocessorEncoder::OnStreamChanged(const Media::Format& format)
+{
+    if (asyncCallback_.onStreamChanged == nullptr) {
+        return;
+    }
+
+    OHOS::sptr<OH_AVFormat> object = new (std::nothrow) OH_AVFormat(format);
+    if (object == nullptr) {
+        AVCODEC_LOGE("OH_AVFormat create failed in OnStreamChanged");
+        return;
+    }
+
+    asyncCallback_.onStreamChanged(this, reinterpret_cast<OH_AVFormat*>(object.GetRefPtr()), userData_);
+}
+
+void PreprocessorEncoder::OnPreprocessError(int32_t errorCode)
+{
+    if (asyncCallback_.onError == nullptr) {
+        return;
+    }
+
+    int32_t ohavErrCode = AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(errorCode));
+    asyncCallback_.onError(this, ohavErrCode, userData_);
+}
+
 OH_AVFormat* PreprocessorEncoder::GetOutputDescription()
 {
     if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
@@ -606,6 +610,9 @@ OH_AVFormat* PreprocessorEncoder::GetInputDescription()
             }
             if (bufInfo.stride > 0) {
                 format.PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, bufInfo.stride);
+            }
+            if (bufInfo.height > 0) {
+                format.PutIntValue(OHOS::Media::Tag::VIDEO_SLICE_HEIGHT, bufInfo.height);
             }
         }
     }
