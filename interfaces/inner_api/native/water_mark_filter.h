@@ -27,7 +27,7 @@
 #include "surface.h"
 #include "native_image.h"
  
-namespace OHOS {//water_mark_filter
+namespace OHOS {
 namespace Media {
 namespace Pipeline {
 using RenderTask = std::function<void(EglRenderContext &renderContext)>;
