@@ -287,7 +287,7 @@ bool WaterMarkFilter::CreateVideoTexture()
     glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     error = glGetError();
-    FALSE_RETURN_V_MSG(error == GL_NO_ERROR, false, 
+    FALSE_RETURN_V_MSG(error == GL_NO_ERROR, false,
         "Failed to create native image texture, GL error: %{public}d", error);
     return true;
 }
@@ -613,7 +613,7 @@ Status WaterMarkFilter::SetWatermark(std::shared_ptr<AVBuffer> &waterMarkBuffer,
         Status::ERROR_INVALID_OPERATION, "waterMarkBuffer or memory_ is null");
     auto dataBuffer = new uint8_t[bufferSize];
     waterMarkBuffer->memory_->Read(dataBuffer, bufferSize, 0);
-    MEDIA_LOG_I("WaterMarkFilter::SetWatermark hileft: %{public}d hitop:" 
+    MEDIA_LOG_I("WaterMarkFilter::SetWatermark hileft: %{public}d hitop:"
        "%{public}d hiwidth: %{public}d hiheight: %{public}d width: %{public}d height: %{public}d histride: %{public}d",
         hileft, hitop, hiwidth, hiheight, width, height, histride);
     WaterMarkConfig config;
