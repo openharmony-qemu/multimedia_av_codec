@@ -20,7 +20,7 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "WaterMarkFilter" };
 }
  
-namespace OHOS {//water_mark_filter
+namespace OHOS {
 namespace Media {
 const uint32_t LOG_LEN = 1024;
  
@@ -70,7 +70,7 @@ void ShaderProgram::CheckCompileErrors(GLuint shader, const std::string &shaderT
         if (!success) {
             glGetProgramInfoLog(shader, LOG_LEN, NULL, infoLog);
             MEDIA_LOG_I("ERROR::PROGRAM_LINKING_ERROR of type: %{public}s, infoLog is: %{public}s",
-                shaderType.c_str(),infoLog);
+                shaderType.c_str(), infoLog);
         }
     }
 }
