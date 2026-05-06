@@ -588,12 +588,12 @@ void WaterMarkFilter::OnNativeImageFrameAvailable(void *data)
 Status WaterMarkFilter::SetWatermark(std::shared_ptr<AVBuffer> &waterMarkBuffer, int32_t width, int32_t height)
 {
     std::unique_lock<std::mutex> lock(releaseMutex_);
-    FALSE_RETURN_V_MSG(watermarkList_.size() < MAX_WATERMARK_NUMBER, 
+    FALSE_RETURN_V_MSG(watermarkList_.size() < MAX_WATERMARK_NUMBER,
         Status::ERROR_INVALID_OPERATION, "watermarkList_ has out");
     InitOpenGl();
     int32_t hileft = 0;
     int32_t hitop = 0;
-    int32_t hiwidth = 0; 
+    int32_t hiwidth = 0;
     int32_t hiheight = 0;
     int32_t histride = 0;
     waterMarkBuffer->meta_->Get<Tag::VIDEO_COORDINATE_X>(hileft);
@@ -982,14 +982,14 @@ void WaterMarkFilter::SetCallingInfo(int32_t appUid, int32_t appPid,
     appUid_ = appUid;
     appPid_ = appPid;
     bundleName_ = bundleName;
-    instanceId_ = instanceId;   
+    instanceId_ = instanceId;
 }
 
 FilterType WaterMarkFilter::GetFilterType()
 {
     MEDIA_LOG_I("GetFilterType");
     return filterType_;
-}  
+}
 } // namespace Pipeline
 } // namespace MEDIA
 } // namespace OHOS
