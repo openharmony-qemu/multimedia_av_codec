@@ -954,16 +954,16 @@ Status MPEG4AtomParser::ParseTrak(MPEG4Atom currentAtom, int32_t depth, ParseCon
 
 void MPEG4AtomParser::AdapterFormat(std::shared_ptr<Track> track)
 {
-    if (!NeedParseMediaTrackInfo(lastTrack_->codecParms.trackType)) {
-        mediaInfo_.tracks[lastTrack_->trackIndex].Remove(Tag::MEDIA_LANGUAGE);
+    if (!NeedParseMediaTrackInfo(track->codecParms.trackType)) {
+        mediaInfo_.tracks[track->trackIndex].Remove(Tag::MEDIA_LANGUAGE);
     }
     int32_t channelCount = -1;
     if (mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_CHANNEL_COUNT>(channelCount)) {
         mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_OUTPUT_CHANNELS>(channelCount);
     }
     AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
-    if (mediaInfo_.tracks[lastTrack_->trackIndex].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout)) {
-        mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(layout);
+    if (mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout)) {
+        mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(layout);
     }
 }
 void MPEG4AtomParser::CalculateSampleAspectRatio(std::shared_ptr<Track> track, uint32_t width, uint32_t height)
