@@ -44,6 +44,9 @@ namespace Media {
 namespace Plugins {
 namespace MPEG4 {
 
+constexpr int32_t S_TO_US = 1000 * 1000;  // seconds to microseconds
+constexpr uint32_t REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT = 200000u;
+
 bool MPEG4DemuxerPlugin::IsRefParserSupported()
 {
     return true;
@@ -114,12 +117,25 @@ Status MPEG4DemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t t
     FALSE_RETURN_V_MSG_E(trackIndex < trackCount, Status::ERROR_INVALID_DATA, "Track is out of range");
     // >>>为什么不能等于
     FALSE_RETURN_V_MSG_E(index < UINT32_MAX, Status::ERROR_INVALID_DATA, "Index is out of range");
-    uint32_t sampleCount = GetSampleCount(trackIndex);
-    // >>>ffmpeg和自研中该上限不同
-    FALSE_RETURN_V_MSG_E(sampleCount <= 36000, Status::ERROR_INVALID_DATA, "Sample count exceeds limit");
-    GetPresentationTimeUsByMpeg4BoxParser(IndexAndPTSConversionMode::GET_FIRST_PTS, trackIndex,
-        static_cast<int64_t>(relativePresentationTimeUs), index);
 
+    uint32_t sampleCount = GetSampleCount(trackIndex);
+    FALSE_RETURN_V_MSG_E(sampleCount <= REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT,
+        Status::ERROR_INVALID_DATA, "Sample count exceeds limit");
+    // 此处替换原有index + 1 > indexToRelativePTSCount_
+    FALSE_RETURN_V_MSG_E(index + 1 <= sampleCount, Status::ERROR_INVALID_DATA, "Index is out of range");
+
+    // Obtain the absolute pts of the first sample
+    Status ret = GetPresentationTimeUsByMpeg4BoxParser(IndexAndPTSConversionMode::GET_FIRST_SAMPLE_PTS, trackIndex,
+        static_cast<int64_t>(relativePresentationTimeUs), index);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOW, "Failed to get the absolute pts of the first sample");
+
+    ret = GetPresentationTimeUsByMpeg4BoxParser(IndexAndPTSConversionMode::INDEX_TO_RELATIVEPTS, trackIndex,
+        static_cast<int64_t>(relativePresentationTimeUs), index);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOW, "Failed to get pts");
+    
+    int64_t relativePts = index2RelativePTSHeap_.top() - absolutePTSOfIndexZero_;
+    FALSE_RETURN_V_MSG_E(relativePts >= 0, Status::ERROR_INVALID_DATA, "Calculation results less than 0")
+    relativePresentationTimeUs = static_cast<uint64_t>(relativePts);
 
     return Status::OK;
 }
@@ -137,11 +153,6 @@ Status MPEG4DemuxerPlugin::GetPresentationTimeUsByMpeg4BoxParser(IndexAndPTSConv
     std::shared_ptr<MPEG4AtomParser::Track> track = FindTrackById(trackIndex);
     FALSE_RETURN_V_MSG_E(track && track->sampleHelper, Status::ERROR_INVALID_DATA, "firstTrack_ is nullptr");
 
-    int32_t timeScale = 0;
-    mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_TIME_SCALE>(timeScale);
-    // >>>时间基的校验是否只需要校验不等于0
-    FALSE_RETURN_V_MSG_E(timeScale >= 0, Status::ERROR_INVALID_DATA, "timescale is zero");
-
     uint32_t sttsEnrtyCount = track->sampleHelper->GetSttsEntryCount();
     FALSE_RETURN_V_MSG_E(sttsEnrtyCount != 0, Status::ERROR_INVALID_DATA, "sttsEnrtyCount is empty");
     uint32_t cttsEnrtyCount = track->sampleHelper->GetcttsEntryCount();
@@ -156,9 +167,41 @@ Status MPEG4DemuxerPlugin::ConvertPTSAndIndexOnlyByStts(const std::shared_ptr<MP
     MEDIA_LOG_I("ConvertPTSAndIndexOnlyByStts, mode is " PUBLIC_LOG_U32 ", absolutePTS is " PUBLIC_LOG_D64
         ", sampleIndex is " PUBLIC_LOG_U32, mode, absolutePTS, sampleIndex);
     FALSE_RETURN_V_MSG_E(track && track->sampleHelper, Status::ERROR_INVALID_DATA, "track or sampleHelper is nullptr");
+
+    int32_t timeScale = 0;
+    mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_TIME_SCALE>(timeScale);
+    // >>>时间基的校验是否只需要校验不等于0
+    FALSE_RETURN_V_MSG_E(timeScale >= 0, Status::ERROR_INVALID_DATA, "timescale is zero");
+    double timeScaleRate = static_cast<double>(S_TO_US) / static_cast<double>(timeScale);
+
     uint32_t sttsEntryIndex = 0;
     uint32_t sttsEntryCount = track->sampleHelper->GetSttsEntryCount();
     uint32_t sampleCountOfCurrentSttsEntry = track->sampleHelper->GetSampleCountOfSttsEntry(sttsEntryIndex);
+    int64_t pts = 0;
+    int64_t dts = 0;
+
+    while (sttsEntryIndex < sttsEntryCount) {
+        FALSE_RETURN_V_MSG_E(INT64_MAX / 1000 / 1000 >= dts / static_cast<int64_t>(timeScale),
+            Status::ERROR_INVALID_DATA, "dts overflow");
+        pts = static_cast<int64_t>(dts * timeScaleRate);
+        ProcessConversionByMode(mode, pts, absolutePTS, sampleIndex);
+
+        if (sampleCountOfCurrentSttsEntry == 0) {
+            break;
+        }
+        sampleCountOfCurrentSttsEntry--;
+        int64_t sampleDeltaOfCurrentSttsEntry =
+            static_cast<int64_t>(track->sampleHelper->GetSampleDeltaOfSttsEntry(sttsEntryIndex));
+        FALSE_RETURN_V_MSG_E(INT64_MAX - dts >= sampleDeltaOfCurrentSttsEntry, Status::ERROR_INVALID_DATA,
+            "dts overflow");
+
+        dts += sampleDeltaOfCurrentSttsEntry;
+        if (sampleCountOfCurrentSttsEntry == 0) {
+            sttsEntryIndex++;
+            sampleCountOfCurrentSttsEntry = sttsEntryIndex < sttsEntryCount ?
+                track->sampleHelper->GetSampleCountOfSttsEntry(sttsEntryIndex) : 0;
+        }
+    }
     return Status::OK;
 }
 
@@ -166,6 +209,36 @@ Status MPEG4DemuxerPlugin::ConvertPTSAndIndexBySttsAndCtts(const std::shared_ptr
     IndexAndPTSConversionMode mode, int64_t absolutePTS, uint32_t sampleIndex)
 {
     return Status::OK;
+}
+
+void MPEG4DemuxerPlugin::ProcessConversionByMode(IndexAndPTSConversionMode mode, int64_t pts, int64_t absolutePTS,
+    uint32_t sampleIndex)
+{
+    switch (mode) {
+        case IndexAndPTSConversionMode::GET_FIRST_SAMPLE_PTS:
+            absolutePTSOfIndexZero_ = pts < absolutePTSOfIndexZero_ ? pts : absolutePTSOfIndexZero_;
+            break;
+        case IndexAndPTSConversionMode::INDEX_TO_RELATIVEPTS:
+            ProcessIndex2RelativePTS(pts, index);
+            break;
+        case IndexAndPTSConversionMode::RELATIVEPTS_TO_INDEX:
+            ProcessRelativePTS2Index(pts, absolutePTS);
+            break;
+        default:
+            MEDIA_LOG_E("mode(" PUBLIC_LOG_U32 ") is invalid", mode);
+            break;
+    }
+}
+
+void MPEG4DemuxerPlugin::ProcessIndex2RelativePTS(int64_t pts, uint32_t index)
+{
+    if (index2RelativePTSHeap_.size() < index + 1) {
+        index2RelativePTSHeap_.push(pts);
+    } else if (pts < index2RelativePTSHeap_.top()) {
+        index2RelativePTSHeap_.pop();
+        index2RelativePTSHeap_.push(pts);
+    }
+    // >>>此处还有个index需要处理
 }
 } // namespace MPEG4
 } // namespace Plugins

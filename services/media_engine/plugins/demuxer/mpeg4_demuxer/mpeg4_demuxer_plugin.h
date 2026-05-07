@@ -107,7 +107,7 @@ public:
         { return Status::ERROR_UNKNOWN; };
 private:
     enum IndexAndPTSConversionMode : unsigned int {
-        GET_FIRST_PTS,
+        GET_FIRST_SAMPLE_PTS,
         INDEX_TO_RELATIVEPTS,
         RELATIVEPTS_TO_INDEX,
     };
@@ -146,6 +146,10 @@ private:
     std::vector<uint32_t> avTrackIds_ {};
     std::map<int32_t, std::shared_ptr<Sample>> firstFrameMap_ {};
     std::unordered_map<uint32_t, std::shared_ptr<MPEG4Sample>> cacheSamples_ {};
+
+    int64_t absolutePTSOfIndexZero_ = INT64_MAX;
+    std::priority_queue<int64_t> index2RelativePTSHeap_;
+
     int32_t CountTracks();
     void GetAVTrackIds();
     Status ParseAVFirstFrames();
@@ -202,6 +206,7 @@ private:
         IndexAndPTSConversionMode mode, int64_t absolutePTS, uint32_t sampleIndex);
     Status ConvertPTSAndIndexBySttsAndCtts(const std::shared_ptr<MPEG4AtomParser::Track>& track,
         IndexAndPTSConversionMode mode, int64_t absolutePTS, uint32_t sampleIndex);
+    void ProcessIndex2RelativePTS(int64_t pts, uint32_t index);
 };
 } // namespace MPEG4
 } // namespace Plugins
