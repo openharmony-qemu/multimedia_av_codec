@@ -146,7 +146,9 @@ if (av_codec_support_demuxer) {
       "mpeg4_demuxer/mpeg4_audio_parser.cpp",
       "mpeg4_demuxer/mpeg4_box_parser.cpp",
       "mpeg4_demuxer/mpeg4_demuxer_plugin.cpp",
+      "mpeg4_demuxer/mpeg4_demuxer_thread.cpp",
       "mpeg4_demuxer/mpeg4_reference_parser.cpp",
+      "mpeg4_demuxer/mpeg4_sample_memory.cpp",
       "mpeg4_demuxer/mpeg4_sample_helper.cpp",
     ]
 
@@ -161,6 +163,7 @@ if (av_codec_support_demuxer) {
       "hisysevent:libhisysevent",
       "init:libbegetutil",
       "media_foundation:media_foundation",
+      "qos_manager:qos",
     ]
 
     relative_install_dir = "media/media_plugins"

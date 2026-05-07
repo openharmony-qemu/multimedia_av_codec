@@ -56,7 +56,7 @@ Status MPEG4DemuxerPlugin::ParserRefUpdatePos(int64_t timeStampMs, bool isForwar
 
 Status MPEG4DemuxerPlugin::ParserRefInfo()
 {
-    return Status::ERROR_AGAIN;
+    return Status::OK;
 }
 
 Status MPEG4DemuxerPlugin::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo)

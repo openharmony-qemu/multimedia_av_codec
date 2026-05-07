@@ -118,6 +118,14 @@ constexpr std::array<size_t, 4> MATRIX_2X2_INDICES = {0, 1, 3, 4}; // [0][0], [0
 constexpr std::array<size_t, 3> MATRIX_DIAGONAL_INDICES = {0, 4, 8}; // [0][0], [1][1], [2][2]
 constexpr std::array<size_t, 6> MATRIX_OFF_DIAGONAL_INDICES = {1, 2, 3, 5, 6, 7}; // 非对角线元素
 
+static std::map<TrackType, MediaType> g_convertMpeg4TrackType = {
+    {VIDEO_TYPE, MediaType::VIDEO},
+    {AUDIO_TYPE, MediaType::AUDIO},
+    {SUBTITLE_TYPE, MediaType::SUBTITLE},
+    {TIMEDMETA_TYPE, MediaType::TIMEDMETA},
+    {AUXILIARY_TYPE, MediaType::AUXILIARY},
+};
+
 struct PathAdder {
     PathAdder(std::vector<uint32_t> *path, uint32_t atomType): path_(path)
     {
@@ -1326,6 +1334,15 @@ bool MPEG4AtomParser::UnderMetaPath(const std::vector<uint32_t>& path, int32_t d
     return false;
 }
 
+void MPEG4AtomParser::SetTrackMediaType(const std::shared_ptr<Track>& track)
+{
+    if (g_convertMpeg4TrackType.count(track->codecParms.trackType) > 0) {
+        mediaInfo_.tracks[track->trackIndex].Set<Tag::MEDIA_TYPE>(g_convertMpeg4TrackType[track->codecParms.trackType]);
+        return;
+    }
+    MEDIA_LOG_W("Parse track type failed: " PUBLIC_LOG_D32, static_cast<int32_t>(track->codecParms.trackType));
+}
+
 Status MPEG4AtomParser::ParseHdlr(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {
     FALSE_RETURN_V_MSG_E(currentAtom.dataSize >= MIN_HDLR_DATA_SIZE, Status::ERROR_INVALID_DATA, "Invalid size");
@@ -1369,8 +1386,7 @@ Status MPEG4AtomParser::ParseHdlr(MPEG4Atom currentAtom, int32_t depth, ParseCon
             break;
     }
     lastTrack_->sampleHelper->trackType_ = lastTrack_->codecParms.trackType;
-    MediaType mediaType = static_cast<MediaType>(lastTrack_->codecParms.trackType);
-    mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::MEDIA_TYPE>(mediaType);
+    SetTrackMediaType(lastTrack_);
     return ret;
 }
 

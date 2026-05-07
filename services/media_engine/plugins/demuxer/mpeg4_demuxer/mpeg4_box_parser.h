@@ -212,6 +212,7 @@ private:
     Status ParseAtomHeader(MPEG4Atom& atom, std::string& typeStr, int32_t depth, bool &isZeroSizeAtom,
         ParseContext* ctx);
     Status ProcessMetaHandler(MPEG4Atom currentAtom, ParseContext* parseCtx);
+    void SetTrackMediaType(const std::shared_ptr<Track>& track);
     Status ProcessTfhdAtom(const MPEG4Atom& atom);
     bool UpdataMoofInfo(MPEG4Atom& atom, Status& ret, int64_t& currentOffset, FragmentEntry& frag, int64_t sidxDts);
     // 解析函数
