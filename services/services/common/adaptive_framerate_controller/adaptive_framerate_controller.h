@@ -47,10 +47,8 @@ private:
     };
     void Register2AFC();
     void UnregisterFromAFC();
-    bool NeedAdjustFramerate(double actualFramerate, double &resetFramerate);
 
     int32_t instanceId_;
-    bool isEnc_{true};
     std::atomic<Status> status_ = Status::INITIALIZED;
     std::atomic<uint32_t> frameCount_{0};
     double configuredFramerate_{60.0};
