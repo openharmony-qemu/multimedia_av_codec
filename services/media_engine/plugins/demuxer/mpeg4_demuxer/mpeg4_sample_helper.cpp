@@ -1043,11 +1043,6 @@ uint32_t MPEG4SampleHelper::GetSttsEntryCount()
     return sttsEntry_.size();
 }
 
-uint32_t MPEG4SampleHelper::GetcttsEntryCount()
-{
-    return cttsEntry_.size();
-}
-
 uint32_t MPEG4SampleHelper::GetSampleCountOfSttsEntry(uint32_t sttsEntryIndex)
 {
     FALSE_RETURN_V_MSG_E(sttsEntryIndex >= 0 && sttsEntryIndex < sttsEntry_.size(), 0,
@@ -1060,6 +1055,35 @@ uint32_t MPEG4SampleHelper::GetSampleDeltaOfSttsEntry(uint32_t sttsEntryIndex)
     FALSE_RETURN_V_MSG_E(sttsEntryIndex >= 0 && sttsEntryIndex < sttsEntry_.size(), 0,
         "sttsEntryIndex(%{public}d) is invalid", sttsEntryIndex);
     return sttsEntry_[sttsEntryIndex].delta;
+}
+
+uint32_t MPEG4SampleHelper::GetCttsEntryCount()
+{
+    return cttsEntry_.size();
+}
+
+uint32_t MPEG4SampleHelper::GetSampleCountOfCttsEntry(uint32_t cttsEntryIndex)
+{
+    FALSE_RETURN_V_MSG_E(cttsEntryIndex >= 0 && cttsEntryIndex < cttsEntry_.size(), 0,
+        "cttsEntryIndex(%{public}d) is invalid", cttsEntryIndex);
+    return cttsEntry_[cttsEntryIndex].count;
+}
+
+uint32_t MPEG4SampleHelper::GetSampleOffsetOfCttsEntry(uint32_t cttsEntryIndex)
+{
+    FALSE_RETURN_V_MSG_E(cttsEntryIndex >= 0 && cttsEntryIndex < cttsEntry_.size(), 0,
+        "cttsEntryIndex(%{public}d) is invalid", cttsEntryIndex);
+    return cttsEntry_[cttsEntryIndex].delta;
+}
+
+int32_t MPEG4SampleHelper::GetMinOffsetOfCttsEntry()
+{
+    int32_t minSampleOffsetOfCttsEntry = INT32_MAX;
+    for (uint32_t i = 0; i < cttsEntry_.size(); ++i) {
+        minSampleOffsetOfCttsEntry = minSampleOffsetOfCttsEntry < cttsEntry_[i].delta ? minSampleOffsetOfCttsEntry :
+            cttsEntry_[i].delta;
+    }
+    return std::min(0, minSampleOffsetOfCttsEntry);
 }
 } // namespace MPEG4
 } // namespace Plugins

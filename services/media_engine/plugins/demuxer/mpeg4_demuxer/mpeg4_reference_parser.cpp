@@ -169,8 +169,7 @@ Status MPEG4DemuxerPlugin::ConvertPTSAndIndexOnlyByStts(const std::shared_ptr<MP
 
     int32_t timeScale = 0;
     mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_TIME_SCALE>(timeScale);
-    // >>>时间基的校验是否只需要校验不等于0
-    FALSE_RETURN_V_MSG_E(timeScale >= 0, Status::ERROR_INVALID_DATA, "timescale is zero");
+    FALSE_RETURN_V_MSG_E(timeScale > 0, Status::ERROR_INVALID_DATA, "timescale is zero");
     double timeScaleRate = static_cast<double>(S_TO_US) / static_cast<double>(timeScale);
 
     uint32_t sttsEntryIndex = 0;
@@ -207,6 +206,63 @@ Status MPEG4DemuxerPlugin::ConvertPTSAndIndexOnlyByStts(const std::shared_ptr<MP
 Status MPEG4DemuxerPlugin::ConvertPTSAndIndexBySttsAndCtts(const std::shared_ptr<MPEG4AtomParser::Track>& track,
     IndexAndPTSConversionMode mode, int64_t absolutePTS, uint32_t sampleIndex)
 {
+    MEDIA_LOG_I("ConvertPTSAndIndexBySttsAndCtts, mode is " PUBLIC_LOG_U32 ", absolutePTS is " PUBLIC_LOG_D64
+        ", sampleIndex is " PUBLIC_LOG_U32, mode, absolutePTS, sampleIndex);
+    FALSE_RETURN_V_MSG_E(track && track->sampleHelper, Status::ERROR_INVALID_DATA, "track or sampleHelper is nullptr");
+
+    int32_t timeScale = 0;
+    mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_TIME_SCALE>(timeScale);
+    FALSE_RETURN_V_MSG_E(timeScale > 0, Status::ERROR_INVALID_DATA, "timescale is zero");
+    double timeScaleRate = static_cast<double>(S_TO_US) / static_cast<double>(timeScale);
+
+    uint32_t sttsEntryIndex = 0;
+    uint32_t sttsEntryCount = track->sampleHelper->GetSttsEntryCount();
+    uint32_t sampleCountOfCurrentSttsEntry = track->sampleHelper->GetSampleCountOfSttsEntry(sttsEntryIndex);
+    uint32_t cttsEntryIndex = 0;
+    uint32_t cttsEntryCount = track->sampleHelper->GetCttsEntryCount();
+    uint32_t sampleCountOfCurrentCttsEntry = track->sampleHelper->GetSampleCountOfCttsEntry(cttsEntryIndex);
+    // >>>为了避免ctts中存在小于0的offset
+    int32_t minSampleOffsetOfCttsEntry = track->sampleHelper->GetMinOffsetOfCttsEntry();
+
+    int64_t pts = 0;
+    int64_t dts = 0;
+
+    while (sttsEntryIndex < sttsEntryCount && cttsEntryIndex < cttsEntryCount) {
+        if (sampleCountOfCurrentCttsEntry == 0) {
+            cttsEntryIndex++;
+            if (cttsEntryIndex >= cttsEntryCount) {
+                break;
+            }
+            sampleCountOfCurrentCttsEntry = track->sampleHelper->GetSampleCountOfCttsEntry(cttsEntryIndex);
+            if (sampleCountOfCurrentCttsEntry == 0) {
+                break;
+            }
+        }
+        sampleCountOfCurrentCttsEntry--;
+        
+        int64_t sampleOffsetOfCurrentCttsEntry =
+            static_cast<int64_t>(track->sampleHelper->GetSampleOffsetOfCttsEntry(cttsEntryIndex) -
+            minSampleOffsetOfCttsEntry)
+        FALSE_RETURN_V_MSG_E((INT64_MAX / 1000 / 1000) >=
+            ((dts + sampleOffsetOfCurrentCttsEntry) / static_cast<int64_t>(timeScale)), Status::ERROR_INVALID_DATA,
+            "dts overflow");
+        pts = static_cast<int64_t>((dts + sampleOffsetOfCurrentCttsEntry) * timeScaleRate);
+        ProcessConversionByMode(mode, pts, absolutePTS, sampleIndex);
+        if (sampleCountOfCurrentSttsEntry == 0) {
+            break;
+        }
+        sampleCountOfCurrentSttsEntry--;
+        int64_t sampleDeltaOfCurrentSttsEntry =
+            static_cast<int64_t>(track->sampleHelper->GetSampleDeltaOfSttsEntry(sttsEntryIndex));
+        FALSE_RETURN_V_MSG_E(INT64_MAX - dts >= sampleDeltaOfCurrentSttsEntry, Status::ERROR_INVALID_DATA,
+            "dts overflow");
+        dts += sampleDeltaOfCurrentSttsEntry;
+        if (sampleCountOfCurrentSttsEntry == 0) {
+            sttsEntryIndex++;
+            sampleCountOfCurrentSttsEntry = sttsEntryIndex < sttsEntryCount ?
+                track->sampleHelper->GetSampleCountOfSttsEntry(sttsEntryIndex) : 0;
+        }
+    }
     return Status::OK;
 }
 
@@ -218,7 +274,7 @@ void MPEG4DemuxerPlugin::ProcessConversionByMode(IndexAndPTSConversionMode mode,
             absolutePTSOfIndexZero_ = pts < absolutePTSOfIndexZero_ ? pts : absolutePTSOfIndexZero_;
             break;
         case IndexAndPTSConversionMode::INDEX_TO_RELATIVEPTS:
-            ProcessIndex2RelativePTS(pts, index);
+            ProcessIndex2RelativePTS(pts, sampleIndex);
             break;
         case IndexAndPTSConversionMode::RELATIVEPTS_TO_INDEX:
             ProcessRelativePTS2Index(pts, absolutePTS);

@@ -60,9 +60,12 @@ public:
 
     uint32_t CalculateSampleCount();
     uint32_t GetSttsEntryCount();
-    uint32_t GetcttsEntryCount();
     uint32_t GetSampleCountOfSttsEntry(uint32_t sttsEntryIndex);
     uint32_t GetSampleDeltaOfSttsEntry(uint32_t sttsEntryIndex);
+    uint32_t GetCttsEntryCount();
+    uint32_t GetSampleCountOfCttsEntry(uint32_t cttsEntryIndex);
+    uint32_t GetSampleOffsetOfCttsEntry(uint32_t cttsEntryIndex);
+    int32_t GetMinOffsetOfCttsEntry();
 
     struct SampleIndexEntry {
         int64_t dts;
