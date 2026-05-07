@@ -91,7 +91,6 @@ bool EglRenderContext::Init()
     FALSE_RETURN_V_MSG(eglBindAPI(EGL_OPENGL_ES_API) != EGL_FALSE,
         false, "eglInitialize failed to create");
     EGLint count;
-    EGLint count;
     EGLint configAttribs[] = { EGL_SURFACE_TYPE,
                                EGL_WINDOW_BIT,
                                EGL_RED_SIZE,
