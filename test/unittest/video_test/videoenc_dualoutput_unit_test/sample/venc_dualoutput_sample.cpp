@@ -763,6 +763,10 @@ void VideoEncDualOutputSample::InputFuncSurface()
             close(fenceFd);
         }
         OH_NativeBuffer *nativeBuffer = OH_NativeBufferFromNativeWindowBuffer(ohNativeWindowBuffer);
+        if (nativeBuffer == nullptr) {
+            UNITTEST_INFO_LOG("OH_NativeBufferFromNativeWindowBuffer failed, nativeBuffer is nullptr");
+            break;
+        }
         char *dst = static_cast<char *>(MapNativeBuffer(nativeBuffer));
         int32_t stride = 0;
         if (!ValidateMappedBuffer(dst, nativeBuffer, ohNativeWindowBuffer, stride)) {
