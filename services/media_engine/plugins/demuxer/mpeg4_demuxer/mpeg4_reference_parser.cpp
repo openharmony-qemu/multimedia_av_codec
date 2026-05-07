@@ -44,7 +44,6 @@ namespace Media {
 namespace Plugins {
 namespace MPEG4 {
 
-constexpr int32_t S_TO_US = 1000 * 1000;  // seconds to microseconds
 constexpr uint32_t REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT = 200000u;
 
 bool MPEG4DemuxerPlugin::IsRefParserSupported()
@@ -127,14 +126,14 @@ Status MPEG4DemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t t
     // Obtain the absolute pts of the first sample
     Status ret = GetPresentationTimeUsByMpeg4BoxParser(IndexAndPTSConversionMode::GET_FIRST_SAMPLE_PTS, trackIndex,
         static_cast<int64_t>(relativePresentationTimeUs), index);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOW, "Failed to get the absolute pts of the first sample");
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "Failed to get the absolute pts of the first sample");
 
     ret = GetPresentationTimeUsByMpeg4BoxParser(IndexAndPTSConversionMode::INDEX_TO_RELATIVEPTS, trackIndex,
         static_cast<int64_t>(relativePresentationTimeUs), index);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOW, "Failed to get pts");
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "Failed to get pts");
     
     int64_t relativePts = index2RelativePTSHeap_.top() - absolutePTSOfIndexZero_;
-    FALSE_RETURN_V_MSG_E(relativePts >= 0, Status::ERROR_INVALID_DATA, "Calculation results less than 0")
+    FALSE_RETURN_V_MSG_E(relativePts >= 0, Status::ERROR_INVALID_DATA, "Calculation results less than 0");
     relativePresentationTimeUs = static_cast<uint64_t>(relativePts);
 
     return Status::OK;
@@ -239,6 +238,11 @@ void MPEG4DemuxerPlugin::ProcessIndex2RelativePTS(int64_t pts, uint32_t index)
         index2RelativePTSHeap_.push(pts);
     }
     // >>>此处还有个index需要处理
+}
+
+void MPEG4DemuxerPlugin::ProcessRelativePTS2Index(int64_t pts, int64_t index)
+{
+    
 }
 } // namespace MPEG4
 } // namespace Plugins

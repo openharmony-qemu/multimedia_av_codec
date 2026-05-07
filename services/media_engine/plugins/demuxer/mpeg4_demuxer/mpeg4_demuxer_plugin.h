@@ -206,7 +206,10 @@ private:
         IndexAndPTSConversionMode mode, int64_t absolutePTS, uint32_t sampleIndex);
     Status ConvertPTSAndIndexBySttsAndCtts(const std::shared_ptr<MPEG4AtomParser::Track>& track,
         IndexAndPTSConversionMode mode, int64_t absolutePTS, uint32_t sampleIndex);
+    void ProcessConversionByMode(IndexAndPTSConversionMode mode, int64_t pts, int64_t absolutePTS,
+        uint32_t sampleIndex);
     void ProcessIndex2RelativePTS(int64_t pts, uint32_t index);
+    void ProcessRelativePTS2Index(int64_t pts, int64_t index);
 };
 } // namespace MPEG4
 } // namespace Plugins
