@@ -374,6 +374,9 @@ int32_t VideoEncDualOutputSample::Start(EncoderType type)
 int32_t VideoEncDualOutputSample::Stop(EncoderType type)
 {
     auto &encoderContext = GetEncoderByEncoderType(type);
+    if (type == EncoderType::PRIMARY) {
+        StopSurfaceInput();
+    }
     std::lock_guard<std::shared_mutex> lock(encoderContext.codecMutex);
     int32_t ret = OH_VideoEncoder_Stop(encoderContext.codec);
     if (encoderContext.signal != nullptr) {
@@ -386,6 +389,9 @@ int32_t VideoEncDualOutputSample::Stop(EncoderType type)
 int32_t VideoEncDualOutputSample::Flush(EncoderType type)
 {
     auto &encoderContext = GetEncoderByEncoderType(type);
+    if (type == EncoderType::PRIMARY) {
+        StopSurfaceInput();
+    }
     std::lock_guard<std::shared_mutex> lock(encoderContext.codecMutex);
     int32_t ret = OH_VideoEncoder_Flush(encoderContext.codec);
     if (encoderContext.signal != nullptr) {
@@ -398,6 +404,9 @@ int32_t VideoEncDualOutputSample::Flush(EncoderType type)
 int32_t VideoEncDualOutputSample::Reset(EncoderType type)
 {
     auto &encoderContext = GetEncoderByEncoderType(type);
+    if (type == EncoderType::PRIMARY) {
+        StopSurfaceInput();
+    }
     {
         std::lock_guard<std::shared_mutex> lock(encoderContext.codecMutex);
         int32_t ret = OH_VideoEncoder_Reset(encoderContext.codec);
@@ -412,6 +421,9 @@ int32_t VideoEncDualOutputSample::Reset(EncoderType type)
 int32_t VideoEncDualOutputSample::Release(EncoderType type)
 {
     auto &encoderContext = GetEncoderByEncoderType(type);
+    if (type == EncoderType::PRIMARY) {
+        StopSurfaceInput();
+    }
     std::lock_guard<std::shared_mutex> lock(encoderContext.codecMutex);
     int32_t ret = OH_VideoEncoder_Destroy(encoderContext.codec);
     if (encoderContext.signal != nullptr) {
