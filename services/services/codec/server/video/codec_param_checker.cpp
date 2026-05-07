@@ -800,10 +800,10 @@ int32_t OutputInDecodingOrderChecker(CapabilityData &capData, Format &format, Co
 {
     (void)scenario;
 
-    int32_t OutputInDecodingOrder = 0;
-    bool OutputInDecodingOrderExist = format.GetIntValue(Tag::VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER,
-        OutputInDecodingOrder);
-    if (!OutputInDecodingOrderExist || OutputInDecodingOrder == 0) {
+    int32_t outputInDecodingOrder = 0;
+    bool outputInDecodingOrderExist = format.GetIntValue(Tag::VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER,
+        outputInDecodingOrder);
+    if (!outputInDecodingOrderExist || outputInDecodingOrder == 0) {
         return AVCS_ERR_OK;
     }
     auto cap =
