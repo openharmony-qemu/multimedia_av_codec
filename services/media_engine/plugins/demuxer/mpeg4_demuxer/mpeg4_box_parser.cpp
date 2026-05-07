@@ -134,6 +134,12 @@ private:
     PathAdder& operator=(const PathAdder &);
 };
 
+bool NeedParseMediaTrackInfo(TrackType trackType)
+{
+    return trackType == TrackType::VIDEO_TYPE || trackType == TrackType::AUDIO_TYPE ||
+           trackType == TrackType::TIMEDMETA_TYPE || trackType == TrackType::AUXILIARY_TYPE;
+}
+
 static std::string GetMimeType(int32_t atomtype)
 {
     static std::map<int32_t, std::string> typeToMime = {
@@ -183,15 +189,6 @@ static std::string GetMimeType(int32_t atomtype)
         return it->second;
     }
     return MimeType::INVALID_TYPE;
-}
-
-static bool UserMetaToSource(std::string key)
-{
-    static std::vector<std::string> keys = {
-        "aigc"
-    };
-    auto it = std::find(keys.begin(), keys.end(), key);
-    return it != keys.end();
 }
 
 static bool StartWith(const char* name, const char* chars)
@@ -951,9 +948,24 @@ Status MPEG4AtomParser::ParseTrak(MPEG4Atom currentAtom, int32_t depth, ParseCon
         }
     }
     SetCodecConfig(lastTrack_);
+    AdapterFormat(lastTrack_);
     return Status::OK;
 }
 
+void MPEG4AtomParser::AdapterFormat(std::shared_ptr<Track> track)
+{
+    if (!NeedParseMediaTrackInfo(track->codecParms.trackType)) {
+        mediaInfo_.tracks[track->trackIndex].Remove(Tag::MEDIA_LANGUAGE);
+    }
+    int32_t channelCount = -1;
+    if (mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_CHANNEL_COUNT>(channelCount)) {
+        mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_OUTPUT_CHANNELS>(channelCount);
+    }
+    AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
+    if (mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout)) {
+        mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(layout);
+    }
+}
 void MPEG4AtomParser::CalculateSampleAspectRatio(std::shared_ptr<Track> track, uint32_t width, uint32_t height)
 {
     FALSE_RETURN_MSG(track != nullptr, "CalculateSampleAspectRatio: track is null");
@@ -1276,7 +1288,9 @@ Status MPEG4AtomParser::ParseMdhd(MPEG4Atom currentAtom, int32_t depth, ParseCon
     uint16_t languageValue = (version == 1) ? GetU16Value(&headerInfo[languageOffsetVersionOne])
                                             : GetU16Value(&headerInfo[languageOffsetVersionZero]);
     std::string langString = ConvertLanguageCode(languageValue);
-    mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::MEDIA_LANGUAGE>(langString);
+    if (langString.size() > 0) {
+        mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::MEDIA_LANGUAGE>(langString);
+    }
 
     int32_t fileTimeScale = 0;
     if (mediaInfo_.general.GetData(Tag::MEDIA_TIME_SCALE, fileTimeScale) && fileTimeScale > 0 &&
@@ -1320,7 +1334,6 @@ Status MPEG4AtomParser::ParseHdlr(MPEG4Atom currentAtom, int32_t depth, ParseCon
     uint8_t typeInfo[12];
     Status ret = dataReader_->ReadUintData(ctx->dataOffset, typeInfo, sizeof(typeInfo));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read hdlr type info failed");
-    uint32_t componentType = GetU32Value(&typeInfo[4]);
     uint32_t handlerType = GetU32Value(&typeInfo[8]);
     // If this is a metadata handler outside a valid track, mark it and return
     if (UnderMetaPath(ctx->path, depth)) {
@@ -1340,16 +1353,16 @@ Status MPEG4AtomParser::ParseHdlr(MPEG4Atom currentAtom, int32_t depth, ParseCon
         case FourccType("text"):
             lastTrack_->codecParms.trackType = SUBTITLE_TYPE;
             break;
+        case FourccType("auxv"):
+            lastTrack_->codecParms.trackType = AUXILIARY_TYPE;
+            break;
         case FourccType("meta"):
             ret = ProcessMetaHandler(currentAtom, ctx);
             FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Process meta handler failed");
             break;
         default:
-            if (componentType == FourccType("mhlr") && handlerType == FourccType("MPEG")) {
-                MEDIA_LOG_E("Unsupported MPEG handler type, it's MPEGPS in MOV ");
-                return Status::ERROR_UNSUPPORTED_FORMAT;
-            } else if (ctx->path.size() > DIRECT_META_PATH_SIZE &&
-                       ctx->path[ctx->path.size() - DIRECT_META_PATH_SIZE] != FourccType("mdia")) {
+            if (ctx->path.size() > DIRECT_META_PATH_SIZE &&
+                ctx->path[ctx->path.size() - DIRECT_META_PATH_SIZE] != FourccType("mdia")) {
                 return Status::OK;
             }
             lastTrack_->codecParms.trackType = INVALID_TYPE;
@@ -3290,6 +3303,7 @@ Status MPEG4AtomParser::ParseUserDataString(MPEG4Atom currentAtom, int32_t depth
     } else {
         ret = ParseTraditionalMetadata(currentAtom, key, ctx);
     }
+    ctx->isUserMeta = false;
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse metadata string failed");
     return ret;
 }
@@ -3303,6 +3317,7 @@ std::string MPEG4AtomParser::GetMetadataKey(uint32_t atomType, ParseContext* ctx
         if (index > 0 && index < ctx->metaKeysCount) {
             std::string key = ctx->metaKeys[index];
             if (!key.empty()) {
+                ctx->isUserMeta = true;
                 MEDIA_LOG_D("Found dynamic key[" PUBLIC_LOG_U32 "]: " PUBLIC_LOG_S, index, key.c_str());
                 return key;
             }
@@ -3354,7 +3369,7 @@ Status MPEG4AtomParser::ParseItunesMetadata(MPEG4Atom currentAtom, std::string& 
         if (currentAtom.type == FourccType("covr") || (!key.empty() && key == "com.apple.quicktime.artwork")) {
             return ParseCover(currentAtom, dataType, stringSize, ctx);
         }
-        ret = ReadMetadataString(key, ctx->dataOffset + headerSize, stringSize, dataType);
+        ret = ReadMetadataString(key, ctx->dataOffset + headerSize, stringSize, dataType, ctx->isUserMeta);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read iTunes metadata string failed");
     } else {
         MEDIA_LOG_W("Invalid iTunes metadata format: dataTag=" PUBLIC_LOG_U32, dataTag);
@@ -3375,10 +3390,10 @@ Status MPEG4AtomParser::ParseTraditionalMetadata(MPEG4Atom currentAtom, std::str
     constexpr uint16_t defaultSkipSize = 4;
     if (stringLength > currentAtom.dataSize - defaultSkipSize) {
         // 作为原始数据处理
-        ret = ReadMetadataString(key, ctx->dataOffset, currentAtom.dataSize, 0);
+        ret = ReadMetadataString(key, ctx->dataOffset, currentAtom.dataSize, 0, ctx->isUserMeta);
     } else {
         // 跳过语言代码
-        ret = ReadMetadataString(key, ctx->dataOffset + defaultSkipSize, stringLength, 0);
+        ret = ReadMetadataString(key, ctx->dataOffset + defaultSkipSize, stringLength, 0, ctx->isUserMeta);
     }
     
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read traditional metadata string failed");
@@ -3474,7 +3489,8 @@ bool MPEG4AtomParser::SetMetadataValue(const std::string& key, const std::string
     return false;
 }
 
-Status MPEG4AtomParser::ReadMetadataString(std::string& key, int64_t offset, uint64_t size, uint32_t dataType)
+Status MPEG4AtomParser::ReadMetadataString(
+    std::string& key, int64_t offset, uint64_t size, uint32_t dataType, bool isUserMeta)
 {
     FALSE_RETURN_V_NOLOG(size > 0, Status::OK);
     auto buffer = std::make_unique<uint8_t[]>(size + 1);
@@ -3483,8 +3499,7 @@ Status MPEG4AtomParser::ReadMetadataString(std::string& key, int64_t offset, uin
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read metadata string data failed");
     
     buffer[size] = '\0';
-    if (SetMetadataValue(key, std::string(reinterpret_cast<char*>(buffer.get()), size)) &&
-        !UserMetaToSource(Converter::ToLower(key))) {
+    if (SetMetadataValue(key, std::string(reinterpret_cast<char*>(buffer.get()), size)) && !isUserMeta) {
         return Status::OK;
     }
     FALSE_RETURN_V_NOLOG(userFormat_ != nullptr, Status::ERROR_NO_MEMORY);
@@ -3963,7 +3978,6 @@ void MPEG4AtomParser::InitParseTable()
         {FourccType("avcC"), &MPEG4AtomParser::ParseCodecConfig},
         {FourccType("hvcC"), &MPEG4AtomParser::ParseCodecConfig},
         {FourccType("vvcC"), &MPEG4AtomParser::ParseCodecConfig},
-        {FourccType("d263"), &MPEG4AtomParser::ParseCodecConfig},
         {FourccType("dfLa"), &MPEG4AtomParser::ParseDfla}, {FourccType("dOps"), &MPEG4AtomParser::ParseDops},
         {FourccType("pcmC"), &MPEG4AtomParser::ParsePcmc}, {FourccType("enda"), &MPEG4AtomParser::ParseEnda},
         {FourccType("colr"), &MPEG4AtomParser::ParseColr}, {FourccType("aclr"), &MPEG4AtomParser::ParseAclr},
@@ -4455,7 +4469,7 @@ std::string MPEG4AtomParser::ConvertLanguageCode(uint16_t langcode)
             return result;
         }
     }
-    return "und";
+    return "";
 }
 } // namespace MPEG4
 } // namespace Plugins
