@@ -196,7 +196,7 @@ Status MPEG4DemuxerPlugin::GetPresentationTimeUsByMpeg4BoxParser(IndexAndPTSConv
 
     uint32_t sttsEnrtyCount = track->sampleHelper->GetSttsEntryCount();
     FALSE_RETURN_V_MSG_E(sttsEnrtyCount != 0, Status::ERROR_INVALID_DATA, "sttsEnrtyCount is empty");
-    uint32_t cttsEnrtyCount = track->sampleHelper->GetcttsEntryCount();
+    uint32_t cttsEnrtyCount = track->sampleHelper->GetCttsEntryCount();
 
     return (cttsEnrtyCount == 0) ? ConvertPTSAndIndexOnlyByStts(track, mode, absolutePTS, sampleIndex) :
         ConvertPTSAndIndexBySttsAndCtts(track, mode, absolutePTS, sampleIndex);
@@ -283,7 +283,7 @@ Status MPEG4DemuxerPlugin::ConvertPTSAndIndexBySttsAndCtts(const std::shared_ptr
         sampleCountOfCurrentCttsEntry--;
         
         int64_t sampleOffsetOfCurrentCttsEntry = static_cast<int64_t>(
-            track->sampleHelper->GetSampleOffsetOfCttsEntry(cttsEntryIndex) - minSampleOffsetOfCttsEntry)
+            track->sampleHelper->GetSampleOffsetOfCttsEntry(cttsEntryIndex) - minSampleOffsetOfCttsEntry);
         FALSE_RETURN_V_MSG_E((INT64_MAX / THOUSAND / THOUSAND) >=
             ((dts + sampleOffsetOfCurrentCttsEntry) / static_cast<int64_t>(timeScale)), Status::ERROR_INVALID_DATA,
             "dts overflow");
