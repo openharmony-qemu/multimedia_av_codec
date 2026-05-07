@@ -239,7 +239,7 @@ if (av_codec_enable_demuxer_ass) {
 }
 
 if (av_codec_enable_memc) {
-    av_codec_defines += [ "SUPPORT_FPS_FOR_MEMC" ]
+  av_codec_defines += [ "SUPPORT_FPS_FOR_MEMC" ]
 }
 
 if (av_codec_enable_demuxer_eac3) {
