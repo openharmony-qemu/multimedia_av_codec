@@ -532,7 +532,7 @@ bool PreprocessorManager::EncoderInfo::ProcessFrame(std::shared_ptr<SurfaceBuffe
     if (preprocessor_->Process(inputBuffer->buffer, outputBuffer->buffer, inputBuffer->timestamp) == AV_ERR_OK) {
         SetBufferFlushConfig(inputBuffer, outputBuffer);
     } else {
-        ReportPreprocessError(AVCS_ERR_PREPROCESS_FAILED);
+        ReportPreprocessError(AVCS_ERR_UNKNOWN);
         return false;
     }
     return true;
@@ -652,40 +652,21 @@ bool PreprocessorManager::EncoderInfo::PeekPendingBufferData(BufferDataInfo& out
 
 void PreprocessorManager::EncoderInfo::ReportPreprocessError(int32_t errorCode)
 {
-    int32_t mappedError = AVCS_ERR_PREPROCESS_FAILED;
-    switch (errorCode) {
-        case AVCS_ERR_NO_MEMORY:
-            mappedError = AVCS_ERR_PREPROCESS_NO_MEMORY;
-            break;
-        case AVCS_ERR_INVALID_VAL:
-            mappedError = AVCS_ERR_PREPROCESS_INVALID_PARAM;
-            break;
-        case AVCS_ERR_UNSUPPORT:
-            mappedError = AVCS_ERR_PREPROCESS_UNSUPPORT;
-            break;
-        case AVCS_ERR_UNKNOWN:
-            mappedError = AVCS_ERR_PREPROCESS_UNKNOWN;
-            break;
-        default:
-            mappedError = AVCS_ERR_PREPROCESS_FAILED;
-            break;
-    }
-
     uint64_t frameDiff = frameCount_ - lastReportedErrorFrameCount_;
-    if (mappedError == lastReportedPreprocessError_ && frameDiff < ERROR_REPORT_INTERVAL_FRAMES) {
+    if (errorCode == lastReportedPreprocessError_ && frameDiff < ERROR_REPORT_INTERVAL_FRAMES) {
         AVCODEC_LOGW("Preprocess error suppressed: encoder=%{public}s, code=%{public}d, frame=%{public}" PRIu64,
-                     encoderId_.data(), mappedError, frameCount_);
+                     encoderId_.data(), errorCode, frameCount_);
         return;
     }
 
     AVCODEC_LOGE("Preprocess error reported: encoder=%{public}s, code=%{public}d, frame=%{public}" PRIu64,
-                 encoderId_.data(), mappedError, frameCount_);
+                 encoderId_.data(), errorCode, frameCount_);
 
-    lastReportedPreprocessError_ = mappedError;
+    lastReportedPreprocessError_ = errorCode;
     lastReportedErrorFrameCount_ = frameCount_;
 
     if (preprocessErrorCallback_) {
-        preprocessErrorCallback_(mappedError);
+        preprocessErrorCallback_(errorCode);
     }
 }
 } // namespace MediaAVCodec

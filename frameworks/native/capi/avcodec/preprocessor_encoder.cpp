@@ -563,8 +563,7 @@ void PreprocessorEncoder::OnPreprocessError(int32_t errorCode)
         return;
     }
 
-    int32_t ohavErrCode = AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(errorCode));
-    asyncCallback_.onError(this, ohavErrCode, userData_);
+    asyncCallback_.onError(this, errorCode, userData_);
 }
 
 OH_AVFormat* PreprocessorEncoder::GetOutputDescription()

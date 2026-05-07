@@ -97,13 +97,6 @@ typedef enum AVCodecServiceErrCode : ErrCode {
     AVCS_ERR_MINSSING_PARAMETER_SETS,                      // missing parameter sets
     AVCS_ERR_INSUFFICIENT_HARDWARE_RESOURCES,              // insufficient hardware resources
 
-    // Preprocessor layer errors
-    AVCS_ERR_PREPROCESS_FAILED,                            // preprocess execution failed
-    AVCS_ERR_PREPROCESS_INVALID_PARAM,                     // preprocess invalid parameter
-    AVCS_ERR_PREPROCESS_NO_MEMORY,                         // preprocess no memory
-    AVCS_ERR_PREPROCESS_UNSUPPORT,                         // preprocess unsupported operation
-    AVCS_ERR_PREPROCESS_UNKNOWN,                           // preprocess unknown error
-
     AVCS_ERR_EXTEND_START = AVCS_ERR_OFFSET + 0xF000,      // extend err start.
 } AVCodecServiceErrCode;
 
