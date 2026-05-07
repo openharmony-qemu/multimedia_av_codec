@@ -198,8 +198,10 @@ private:
     uint32_t GetSampleCount(uint32_t trackIndex);
     Status GetPresentationTimeUsByMpeg4BoxParser(IndexAndPTSConversionMode mode, uint32_t trackIndex,
         int64_t absolutePTS, uint32_t sampleIndex);
-    Status ConvertPTSAndIndexOnlyByStts(IndexAndPTSConversionMode mode, int64_t absolutePTS, uint32_t sampleIndex);
-    Status ConvertPTSAndIndexBySttsAndCtts(IndexAndPTSConversionMode mode, int64_t absolutePTS, uint32_t sampleIndex);
+    Status ConvertPTSAndIndexOnlyByStts(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+        IndexAndPTSConversionMode mode, int64_t absolutePTS, uint32_t sampleIndex);
+    Status ConvertPTSAndIndexBySttsAndCtts(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+        IndexAndPTSConversionMode mode, int64_t absolutePTS, uint32_t sampleIndex);
 };
 } // namespace MPEG4
 } // namespace Plugins
