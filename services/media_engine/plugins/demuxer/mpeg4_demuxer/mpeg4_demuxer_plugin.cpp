@@ -1223,7 +1223,8 @@ Status MPEG4DemuxerPlugin::ReadSampleData(std::shared_ptr<Sample> sample, uint64
     sample->data = std::make_unique<uint8_t[]>(size);
     FALSE_RETURN_V_MSG_E(sample->data != nullptr, Status::ERROR_NO_MEMORY, "Memory allocation failed");
     buffer->WrapMemory(sample->data.get(), size, size);
-    FALSE_RETURN_V_MSG_E(buffer->GetMemory() != nullptr, Status::ERROR_UNKNOWN, "Memory is nullptr");
+    auto memory = buffer->GetMemory();
+    FALSE_RETURN_V_MSG_E(memory != nullptr, Status::ERROR_UNKNOWN, "Memory is nullptr");
 
     Status ret = Status::ERROR_AGAIN;
     uint32_t count = 0;
@@ -1235,13 +1236,17 @@ Status MPEG4DemuxerPlugin::ReadSampleData(std::shared_ptr<Sample> sample, uint64
             return Status::ERROR_WRONG_STATE;
         }
         ret = dataSource_->ReadAt(pos, buffer, bufferSize);
-        if (buffer->GetMemory()->GetSize() == bufferSize) {
+        memory = buffer->GetMemory();
+        FALSE_RETURN_V_MSG_E(memory != nullptr, Status::ERROR_UNKNOWN, "Memory is nullptr");
+        if (memory->GetSize() == bufferSize) {
             break;
         }
         count++;
         usleep(READ_RETRY_SLEEP_TIME_US);
     }
-    int32_t dataSize = static_cast<int32_t>(buffer->GetMemory()->GetSize());
+    memory = buffer->GetMemory();
+    FALSE_RETURN_V_MSG_E(memory != nullptr, Status::ERROR_UNKNOWN, "Memory is nullptr");
+    int32_t dataSize = static_cast<int32_t>(memory->GetSize());
     MEDIA_LOG_D("Want:" PUBLIC_LOG_D32 ", Get:" PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64, size, dataSize, pos);
     FALSE_RETURN_V_MSG_E(dataSize > 0, Status::ERROR_AGAIN, "No enough data");
     
