@@ -187,6 +187,7 @@ public:
     bool repeatRun = false;
     bool showLog = false;
     bool enableLTR = false;
+    bool enableLowLatency = false;
     bool getInputBufferIndexRepeat = false;
     bool abnormalIndexValue = false;
     bool getOutputBufferIndexNoExisted = false;
