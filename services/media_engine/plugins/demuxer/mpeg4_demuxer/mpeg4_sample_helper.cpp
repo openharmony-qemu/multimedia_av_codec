@@ -1047,6 +1047,13 @@ uint32_t MPEG4SampleHelper::GetcttsEntryCount()
 {
     return cttsEntry_.size();
 }
+
+uint32_t MPEG4SampleHelper::GetSampleCountOfSttsEntry(uint32_t sttsEntryIndex)
+{
+    FALSE_RETURN_V_MSG_E(sttsEntryIndex >= 0 && sttsEntryIndex < sttsEntry_.size(), 0,
+        "sttsEntryIndex(%{public}d) is invalid", sttsEntryIndex);
+    return sttsEntry_[sttsEntryIndex].count;
+}
 } // namespace MPEG4
 } // namespace Plugins
 } // namespace Media

@@ -57,11 +57,11 @@ public:
     Status GetSampleDuration(uint32_t index, uint32_t &delta);
     void SetTimeOffset(int64_t timeOffset);
     void CalculateDtsShift();
-    
+
     uint32_t CalculateSampleCount();
     uint32_t GetSttsEntryCount();
     uint32_t GetcttsEntryCount();
-    uint32_t GetSampleCount
+    uint32_t GetSampleCountOfSttsEntry(uint32_t sttsEntryIndex);
 
     struct SampleIndexEntry {
         int64_t dts;
