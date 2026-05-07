@@ -75,6 +75,7 @@ private:
     double lastReportedRenderFps_ = -1.0;
     int64_t lastPtsMs_ = -1;
 
+    void ResetIntervalStats();
     size_t MatchAndUpdateSpeedStats(double decSpeed);
     DecodingBehaviorType DetermineDecodingBehaviorType();
     bool IsDecChanged(DecodingBehaviorType oldType, size_t oldSpeedIdx,

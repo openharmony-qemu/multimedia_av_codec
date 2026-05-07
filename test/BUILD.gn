@@ -155,6 +155,7 @@ group("av_codec_unit_test") {
         "unittest/mpeg4_demuxer_test:mpeg4_demuxer_capi_unit_test",
         "unittest/mpeg4_demuxer_test:mpeg4_demuxer_inner_buffer_unit_test",
         "unittest/mpeg4_demuxer_test:mpeg4_demuxer_inner_unit_test",
+        "unittest/mpeg4_demuxer_plugin_test:mpeg4_demuxer_plugin_unit_test",
         "unittest/mpeg4_source_test:mpeg4_source_capi_unit_test",
         "unittest/mpeg4_source_test:mpeg4_source_inner_unit_test",
         "unittest/plugins_source_test:plugins_source_unit_test",

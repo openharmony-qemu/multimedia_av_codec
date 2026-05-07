@@ -132,7 +132,7 @@ HWTEST_F(Mpeg4DemuxerUnitTest, mp4Demuxer_CreateDemuxer_1005, TestSize.Level1)
 HWTEST_F(Mpeg4DemuxerUnitTest, mp4Demuxer_CreateDemuxer_1006, TestSize.Level1)
 {
     source_ = Mpeg4SourceMockFactory::CreateSourceWithURI(const_cast<char*>(g_mp4MPEGPSUri.data()));
-    ASSERT_EQ(source_, nullptr);
+    ASSERT_NE(source_, nullptr);
 }
 
 /**

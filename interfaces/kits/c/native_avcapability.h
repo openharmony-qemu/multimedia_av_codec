@@ -119,6 +119,10 @@ typedef enum OH_AVCapabilityFeature {
     * @since 20
     */
     VIDEO_ENCODER_B_FRAME = 7,
+    /** Feature for codec supports outputting frames in decoding order. It is only used in video decoder.
+    * @since 26.0.0
+    */
+    VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER = 8,
 } OH_AVCapabilityFeature;
 
 /**

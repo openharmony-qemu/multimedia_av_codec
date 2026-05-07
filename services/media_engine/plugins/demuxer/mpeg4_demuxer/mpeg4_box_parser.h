@@ -120,6 +120,7 @@ private:
         bool hasMovieDisplayMatrix = false; // 是否有有效的movie显示矩阵
         bool foundHdlrMdta = false;
         bool founditunesMetadata = false;
+        bool isUserMeta = false;
     };
     ParseContext ctx_;
 
@@ -161,6 +162,7 @@ private:
     std::shared_ptr<Meta> userFormat_ = nullptr;
     void InitParseTable();
     void SetCodecConfig(std::shared_ptr<Track> track);
+    void AdapterFormat(std::shared_ptr<Track> track);
     bool IsValidTrackIndex(const MediaInfo& mediaInfo, uint32_t index);
     bool UnderMetaPath(const std::vector<uint32_t>& path, int32_t depth);
     
@@ -211,6 +213,7 @@ private:
     Status ParseAtomHeader(MPEG4Atom& atom, std::string& typeStr, int32_t depth, bool &isZeroSizeAtom,
         ParseContext* ctx);
     Status ProcessMetaHandler(MPEG4Atom currentAtom, ParseContext* parseCtx);
+    void SetTrackMediaType(const std::shared_ptr<Track>& track);
     Status ProcessTfhdAtom(const MPEG4Atom& atom);
     bool UpdataMoofInfo(MPEG4Atom& atom, Status& ret, int64_t& currentOffset, FragmentEntry& frag, int64_t sidxDts);
     // 解析函数
@@ -219,7 +222,7 @@ private:
     Status ParseCover(MPEG4Atom currentAtom, uint32_t dataType, uint64_t stringSize, ParseContext* parseCtx);
     Status ParseItunesMetadata(MPEG4Atom currentAtom, std::string& key, ParseContext* parseCtx);
     Status ParseTraditionalMetadata(MPEG4Atom currentAtom, std::string& key, ParseContext* parseCtx);
-    Status ReadMetadataString(std::string& key, int64_t offset, uint64_t size, uint32_t dataType);
+    Status ReadMetadataString(std::string& key, int64_t offset, uint64_t size, uint32_t dataType, bool isUserMeta);
     Status ParseAlacEntry(ParseContext& ctx);
     Status ParseIccProfile(int64_t offset, uint64_t dataSize);
     Status ParseColorParams(int64_t offset, uint64_t dataSize, const std::string& colorType, ParseContext* parseCtx);
