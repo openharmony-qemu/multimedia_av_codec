@@ -27,6 +27,7 @@
     if (access(FAST_IMAGE_PATH.data(), 0) != 0) {                                                                      \
         GTEST_SKIP() << "Unsupport fast image";                                                                        \
     }
+#define TEST_SUIT DualOutputUnitTest
 
 using namespace std;
 using namespace OHOS;
