@@ -33,7 +33,7 @@ constexpr uint8_t MAX_DECREASE_CHECK_TIMES = 2;
 namespace OHOS {
 namespace MediaAVCodec {
 FramerateCalculator::FramerateCalculator(int32_t instanceId, bool isEnc, std::function<void(double)> &&handler)
-    : instanceId_(instanceId), isEnc_(isEnc),resetFramerateHandler_(std::move(handler))
+    : instanceId_(instanceId), isEnc_(isEnc), resetFramerateHandler_(std::move(handler))
 {
     if (!isEnc_) {
         behaviorAnalyzer_ = std::make_unique<DecodingBehaviorAnalyzer>();
@@ -80,22 +80,8 @@ void FramerateCalculator::OnStopped(bool isDecEnd)
     }
 }
 
-bool FramerateCalculator::CheckAndResetFramerate()
+bool FramerateCalculator::NeedAdjustFramerate(double actualFramerate, double &resetFramerate)
 {
-    auto frameCount = frameCount_.exchange(0);
-    auto now = std::chrono::steady_clock::now();
-    auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastAdjustmentTime_).count();
-    lastAdjustmentTime_ = now;
-    CHECK_AND_RETURN_RET_LOGD_WITH_TAG(elapsedTime > CHECK_INTERVAL_FILTER, false,
-        "Elapsed time is invalid, cannot calculate framerate");
-
-    auto actualFramerate = static_cast<double>(frameCount) / elapsedTime * 1000;  // 1000: milliseconds to seconds
-    if (behaviorAnalyzer_) {
-        behaviorAnalyzer_->OnChecked(actualFramerate);
-    }
-    if (!isEnc_) {
-        return false;
-    }
     if (!allowLowFps && actualFramerate < DEFAULT_FRAMERATE && actualFramerate < configuredFramerate_) {
         actualFramerate = std::min(DEFAULT_FRAMERATE, configuredFramerate_);
     }
@@ -109,7 +95,7 @@ bool FramerateCalculator::CheckAndResetFramerate()
         }
         return false;
     }
-    auto resetFramerate = actualFramerate;
+    resetFramerate = actualFramerate;
     if (actualFramerate > lastFramerate_) {
         decreseCheckTimes_ = MAX_DECREASE_CHECK_TIMES;
         if (actualFramerate <= configuredFramerate_) {
@@ -127,6 +113,30 @@ bool FramerateCalculator::CheckAndResetFramerate()
     }
     if (resetFramerate < MIN_FRAMERATE) {
         resetFramerate = MIN_FRAMERATE;
+    }
+    return true;
+}
+
+bool FramerateCalculator::CheckAndResetFramerate()
+{
+    auto frameCount = frameCount_.exchange(0);
+    auto now = std::chrono::steady_clock::now();
+    auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastAdjustmentTime_).count();
+    lastAdjustmentTime_ = now;
+    CHECK_AND_RETURN_RET_LOGD_WITH_TAG(elapsedTime > CHECK_INTERVAL_FILTER, false,
+        "Elapsed time is invalid, cannot calculate framerate");
+
+    auto actualFramerate = static_cast<double>(frameCount) / elapsedTime * 1000;  // 1000: milliseconds to seconds
+    if (behaviorAnalyzer_) {
+        behaviorAnalyzer_->OnChecked(actualFramerate);
+    }
+    if (!isEnc_) {
+        return false;
+    }
+
+    double resetFramerate = 0.0;
+    if (!NeedAdjustFramerate(actualFramerate, resetFramerate)) {
+        return false;
     }
     resetFramerateHandler_(resetFramerate);
 

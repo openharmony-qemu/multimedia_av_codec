@@ -47,6 +47,7 @@ private:
     };
     void Register2AFC();
     void UnregisterFromAFC();
+    bool NeedAdjustFramerate(double actualFramerate, double &resetFramerate);
 
     int32_t instanceId_;
     bool isEnc_{true};
