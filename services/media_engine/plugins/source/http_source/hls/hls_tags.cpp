@@ -56,8 +56,8 @@ struct {
     {"ext-x-session-key",            HlsTag::EXTXSESSIONKEY},
     {"ext-x-skip",                   HlsTag::EXTXSKIP},
     {"ext-x-daterange",              HlsTag::EXTXDATERANGE},
-    {"ext-x-cue-out",                HlsTag::EXTCUEOUT},
-    {"ext-x-cue-in",                 HlsTag::EXTCUEIN},
+    {"ext-x-cue-out",                HlsTag::EXTXCUEOUT},
+    {"ext-x-cue-in",                 HlsTag::EXTXCUEIN},
     {"extinf",                       HlsTag::EXTINF},
     {"",                             HlsTag::URI}
 };

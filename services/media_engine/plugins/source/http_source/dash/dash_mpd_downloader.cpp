@@ -1127,7 +1127,7 @@ std::vector<uint32_t> DashMpdDownloader::GetBitRatesByHdr(bool isHdr) const
     return bitRates;
 }
 
-int64_t DashMpdDownloader::SeekToTs(int streamId, int64_t seekTime, std::shared_ptr<DashSegment> &seg) const
+int64_t DashMpdDownloader::SeekToTs(int streamId, int64_t seekTime, std::shared_ptr<DashSegment> &seg)
 {
     seg = nullptr;
 
@@ -2452,15 +2452,15 @@ Status DashMpdDownloader::GetStreamInfo(std::vector<StreamInfo> &streams)
 {
     MEDIA_LOG_I("GetStreamInfo");
     // only support one audio/subtitle Representation in one AdaptationSet
-    std::map<std::pair<unsigned int, uint32_t>, bool> audioAdpSetSeen;
-    std::map<std::pair<unsigned int, uint32_t>, bool> subtitleAdpSetSeen;
+    std::map<std::pair<unsigned int, uint32_t>, bool> audioAdptSetSeen;
+    std::map<std::pair<unsigned int, uint32_t>, bool> subtitleAdptSetSeen;
     for (unsigned int index = 0; index < streamDescriptions_.size(); index++) {
         if (streamDescriptions_[index] == nullptr) {
             continue;
         }
         if (streamDescriptions_[index]->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_AUD) {
-            auto key = std::make_pair(streamDescriptions[index]->adptSetIndex_,
-                                        streamDescriptions[index]->periodIndex_);
+            auto key = std::make_pair(streamDescriptions_[index]->adptSetIndex_,
+                                      streamDescriptions_[index]->periodIndex_);
             if (audioAdptSetSeen[key]) {
                 DfxAudioCntIncrease();
                 MEDIA_LOG_D("GetStreamInfo skip audio stream:" PUBLIC_LOG_D32 ",lang:" PUBLIC_LOG_S,
@@ -2469,15 +2469,15 @@ Status DashMpdDownloader::GetStreamInfo(std::vector<StreamInfo> &streams)
             }
             audioAdptSetSeen[key] = true;
         } else if (streamDescriptions_[index]->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE) {
-            auto key = std::make_pair(streamDescriptions[index]->adptSetIndex_,
-                                        streamDescriptions[index]->periodIndex_);
+            auto key = std::make_pair(streamDescriptions_[index]->adptSetIndex_,
+                                      streamDescriptions_[index]->periodIndex_);
             if (subtitleAdptSetSeen[key]) {
                 DfxSubtitleCntIncrease();
                 MEDIA_LOG_D("GetStreamInfo skip subtitle stream:" PUBLIC_LOG_D32 ",lang:" PUBLIC_LOG_S,
                     streamDescriptions_[index]->streamId_, streamDescriptions_[index]->lang_.c_str());
                 continue;
             }
-            subtitleAdptSetSeen[key] = ture;
+            subtitleAdptSetSeen[key] = true;
         }
 
         StreamInfo info = AssignStreamInfo(index);
@@ -2537,7 +2537,7 @@ std::shared_ptr<DashStreamDescription> DashMpdDownloader::GetStreamByPeriodIndex
         [&](const std::shared_ptr<DashStreamDescription> &stream) {
             return stream->periodIndex_ == periodIndex && stream->type_ == type;
         });
-    if (iter == streamDescrptions.end()) {
+    if (iter == streamDescrptions_.end()) {
         return nullptr;
     }
     return *iter;
@@ -2565,7 +2565,7 @@ uint32_t DashMpdDownloader::GetPeriodIndexBySeekTime(int64_t seekTime) const
     }
 
     uint32_t targetPeriodIndex = 0;
-    uint64_t periodStratTime = 0;
+    uint64_t periodStartTime = 0;
     for (const auto& streamDesc : streamDescriptions_) {
         if (streamDesc != nullptr && streamDesc->type_ == currentStream->type_ &&
             streamDesc->periodStartTime_ <= static_cast<uint64_t>(seekTime) &&

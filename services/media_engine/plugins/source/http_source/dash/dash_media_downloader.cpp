@@ -142,7 +142,7 @@ Status DashMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
     DashReadRet ret = segmentDownloader->Read(buff, readDataInfo, isInterruptNeeded_);
     MEDIA_LOG_D("Read:streamId " PUBLIC_LOG_D32 " readRet:" PUBLIC_LOG_D32, readDataInfo.streamId_, ret);
     if (ret == DASH_READ_END) {
-        MEDIA_LOG_I("Read:streamId " PUBLIC_LOG_D32 " segment all finished end, currentPeriodIndex ",
+        MEDIA_LOG_I("Read:streamId " PUBLIC_LOG_D32 " segment all finished end, currentPeriodIndex: " PUBLIC_LOG_U32,
             readDataInfo.streamId_, currentPeriodIndex_);
         auto mpdInfo = mpdDownloader_->GetMpdInfo();
         if (mpdInfo != nullptr) {
@@ -904,9 +904,9 @@ void DashMediaDownloader::SeekInternal(int64_t seekTimeMs)
     unsigned int tragetPeriodIndex = mpdDownloader_->GetPeriodIndexBySeekTime(seekTimeMs);
     bool needSwitchPeriod = (tragetPeriodIndex != currentPeriodIndex_);
     if (needSwitchPeriod) {
-        MEDIA_LOG_I("SeekInternal: seek from period " PUBLIC_LOG_U32 " to period " PUBLIC_LOG_u32,
+        MEDIA_LOG_I("SeekInternal: seek from period " PUBLIC_LOG_U32 " to period " PUBLIC_LOG_U32,
             currentPeriodIndex_, tragetPeriodIndex);
-            SwitchToPeriod(tragetPeriodIndex);
+        SwitchToPeriod(tragetPeriodIndex);
     }
     segmentDownloaders_.ForeachSnapshot([this, seekTimeMs, isSwitching](
         const std::shared_ptr<DashSegmentDownloader> &segDownloader) {
@@ -1436,8 +1436,8 @@ bool DashMediaDownloader::NeedRestartDecoder(
         return true;
     }
     if (oldStream->videoType_ != newStream->videoType_) {
-        MEDIA_LOG_I("NeedRestartDecoder: videoType changed from" PUBLIC_LOG_S " to " PUBLIC_LOG_S,
-            oldStream->videoType_.c_str(), newStream->videoType_.c_str());
+        MEDIA_LOG_I("NeedRestartDecoder: videoType changed from" PUBLIC_LOG_D32 " to " PUBLIC_LOG_D32,
+            oldStream->videoType_, newStream->videoType_);
         return true;
     }
     return false;
@@ -1479,7 +1479,7 @@ void DashMediaDownloader::SwitchToPeriod(uint32_t newPeriodIndex)
             trackParam_.isEnd_ = false;
             trackParam_.type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
             trackParam_.streamId_ = newVideoStream->streamId_;
-            trackParam_.postion_ = remainLastNumberSeq;
+            trackParam_.position_ = remainLastNumberSeq;
 
             DashMpdGetRet ret = mpdDownloader_->GetNextTrackStream(trackParam_);
             if (ret == DASH_MPD_GET_ERROR) {
@@ -1505,7 +1505,7 @@ void DashMediaDownloader::SwitchToPeriod(uint32_t newPeriodIndex)
             trackParam_.isEnd_ = false;
             trackParam_.type_ = MediaAVCodec::MediaType::MEDIA_TYPE_AUD;
             trackParam_.streamId_ = newAudioStream->streamId_;
-            trackParam_.postion_ = remainLastNumberSeq;
+            trackParam_.position_ = remainLastNumberSeq;
 
             DashMpdGetRet ret = mpdDownloader_->GetNextTrackStream(trackParam_);
             if (ret == DASH_MPD_GET_ERROR) {
