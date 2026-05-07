@@ -17,6 +17,7 @@
 #define VENC_DUALOUTPUT_SAMPLE_H
 
 #include <atomic>
+#include <condition_variable>
 #include <fstream>
 #include <memory>
 #include <mutex>
@@ -35,6 +36,7 @@ namespace OHOS {
 namespace MediaAVCodec {
 inline std::string FAST_IMAGE_PATH = "/system/lib64/ndk/libfast_image.so";
 enum class EncoderType { PRIMARY, SECONDARY };
+constexpr uint32_t SAMPLE_TIMEOUT = 20;
 
 class VideoEncDualOutputSample : public NoCopyable, public VCodecSampleBase {
 public:
@@ -137,6 +139,9 @@ private:
     // Surface input
     OHNativeWindow *nativeWindow_ = nullptr;
     std::unique_ptr<std::thread> inputLoop_;
+    std::mutex inputExitMutex_;
+    std::condition_variable inputExitCv_;
+    bool inputExited_ = false;
     void InputFuncSurface();
     int32_t FlushSurface(OHNativeWindowBuffer *ohNativeWindowBuffer, OH_NativeBuffer *nativeBuffer);
     void *MapNativeBuffer(OH_NativeBuffer *nativeBuffer);

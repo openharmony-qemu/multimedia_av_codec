@@ -374,9 +374,6 @@ int32_t VideoEncDualOutputSample::Start(EncoderType type)
 int32_t VideoEncDualOutputSample::Stop(EncoderType type)
 {
     auto &encoderContext = GetEncoderByEncoderType(type);
-    if (type == EncoderType::PRIMARY) {
-        StopSurfaceInput();
-    }
     std::lock_guard<std::shared_mutex> lock(encoderContext.codecMutex);
     int32_t ret = OH_VideoEncoder_Stop(encoderContext.codec);
     if (encoderContext.signal != nullptr) {
@@ -389,9 +386,6 @@ int32_t VideoEncDualOutputSample::Stop(EncoderType type)
 int32_t VideoEncDualOutputSample::Flush(EncoderType type)
 {
     auto &encoderContext = GetEncoderByEncoderType(type);
-    if (type == EncoderType::PRIMARY) {
-        StopSurfaceInput();
-    }
     std::lock_guard<std::shared_mutex> lock(encoderContext.codecMutex);
     int32_t ret = OH_VideoEncoder_Flush(encoderContext.codec);
     if (encoderContext.signal != nullptr) {
@@ -404,9 +398,6 @@ int32_t VideoEncDualOutputSample::Flush(EncoderType type)
 int32_t VideoEncDualOutputSample::Reset(EncoderType type)
 {
     auto &encoderContext = GetEncoderByEncoderType(type);
-    if (type == EncoderType::PRIMARY) {
-        StopSurfaceInput();
-    }
     {
         std::lock_guard<std::shared_mutex> lock(encoderContext.codecMutex);
         int32_t ret = OH_VideoEncoder_Reset(encoderContext.codec);
@@ -421,9 +412,6 @@ int32_t VideoEncDualOutputSample::Reset(EncoderType type)
 int32_t VideoEncDualOutputSample::Release(EncoderType type)
 {
     auto &encoderContext = GetEncoderByEncoderType(type);
-    if (type == EncoderType::PRIMARY) {
-        StopSurfaceInput();
-    }
     std::lock_guard<std::shared_mutex> lock(encoderContext.codecMutex);
     int32_t ret = OH_VideoEncoder_Destroy(encoderContext.codec);
     if (encoderContext.signal != nullptr) {
@@ -764,10 +752,6 @@ bool VideoEncDualOutputSample::CreateSurface()
 void VideoEncDualOutputSample::InputFuncSurface()
 {
     UNITTEST_INFO_LOG("InputFuncSurface started, frameCount_: %d", frameCount_);
-    if (primaryEncoder_.signal == nullptr) {
-        UNITTEST_INFO_LOG("InputFuncSurface failed, primaryEncoder_.signal is nullptr");
-        return;
-    }
     while (primaryEncoder_.signal->isRunning_.load()) {
         OHNativeWindowBuffer *ohNativeWindowBuffer = nullptr;
         int fenceFd = -1;
@@ -779,10 +763,6 @@ void VideoEncDualOutputSample::InputFuncSurface()
             close(fenceFd);
         }
         OH_NativeBuffer *nativeBuffer = OH_NativeBufferFromNativeWindowBuffer(ohNativeWindowBuffer);
-        if (nativeBuffer == nullptr) {
-            UNITTEST_INFO_LOG("OH_NativeBufferFromNativeWindowBuffer failed, nativeBuffer is nullptr");
-            break;
-        }
         char *dst = static_cast<char *>(MapNativeBuffer(nativeBuffer));
         int32_t stride = 0;
         if (!ValidateMappedBuffer(dst, nativeBuffer, ohNativeWindowBuffer, stride)) {
@@ -799,6 +779,11 @@ void VideoEncDualOutputSample::InputFuncSurface()
         usleep(DEFAULT_TIME_INTERVAL);
     }
     UNITTEST_INFO_LOG("InputFuncSurface exited, frameInputCount: %d", primaryEncoder_.frameInputCount.load());
+    {
+        std::lock_guard<std::mutex> lock(inputExitMutex_);
+        inputExited_ = true;
+    }
+    inputExitCv_.notify_all();
 }
 
 void *VideoEncDualOutputSample::MapNativeBuffer(OH_NativeBuffer *nativeBuffer)
@@ -807,9 +792,7 @@ void *VideoEncDualOutputSample::MapNativeBuffer(OH_NativeBuffer *nativeBuffer)
     int32_t err = OH_NativeBuffer_Map(nativeBuffer, &virAddr);
     if (err != 0) {
         UNITTEST_INFO_LOG("OH_NativeBuffer_Map failed, GSError=%d", err);
-        if (primaryEncoder_.signal != nullptr) {
-            primaryEncoder_.signal->isRunning_.store(false);
-        }
+        primaryEncoder_.signal->isRunning_.store(false);
         return nullptr;
     }
     return virAddr;
@@ -819,11 +802,6 @@ bool VideoEncDualOutputSample::ValidateMappedBuffer(char *dst, OH_NativeBuffer *
     OHNativeWindowBuffer *ohNativeWindowBuffer, int32_t &stride)
 {
     const SurfaceBuffer *sbuffer = SurfaceBuffer::NativeBufferToSurfaceBuffer(nativeBuffer);
-    if (sbuffer == nullptr) {
-        UNITTEST_INFO_LOG("NativeBufferToSurfaceBuffer failed, sbuffer is nullptr");
-        primaryEncoder_.signal->isRunning_.store(false);
-        return false;
-    }
     stride = sbuffer->GetStride();
     if (dst == nullptr || stride < sampleWidth_) {
         UNITTEST_INFO_LOG("invalid va or stride=%d", stride);
@@ -837,14 +815,6 @@ bool VideoEncDualOutputSample::ValidateMappedBuffer(char *dst, OH_NativeBuffer *
 
 void VideoEncDualOutputSample::FillYuvData(char *dst, int32_t stride)
 {
-    if (dst == nullptr) {
-        UNITTEST_INFO_LOG("FillYuvData failed, dst is nullptr");
-        return;
-    }
-    if (primaryEncoder_.signal == nullptr || primaryEncoder_.signal->inFile_ == nullptr) {
-        UNITTEST_INFO_LOG("FillYuvData failed, inFile is nullptr");
-        return;
-    }
     if (primaryEncoder_.signal->inFile_->eof()) {
         (void)primaryEncoder_.signal->inFile_->seekg(0);
     }
@@ -859,10 +829,6 @@ void VideoEncDualOutputSample::NotifyEosForAll(OH_NativeBuffer *nativeBuffer,
 {
     (void)OH_NativeBuffer_Unmap(nativeBuffer);
     (void)NativeWindowCancelBuffer(nativeWindow_, ohNativeWindowBuffer);
-    if (primaryEncoder_.codec == nullptr) {
-        UNITTEST_INFO_LOG("NotifyEosForAll failed, primary codec is nullptr");
-        return;
-    }
     int32_t err = OH_VideoEncoder_NotifyEndOfStream(primaryEncoder_.codec);
     UNITTEST_CHECK_AND_INFO_LOG(err == AV_ERR_OK, "Primary NotifyEos failed, ret=%d", err);
     if (secondaryEncoder_.codec != nullptr) {
@@ -899,6 +865,13 @@ void VideoEncDualOutputSample::StopSurfaceInput()
 {
     if (primaryEncoder_.signal != nullptr) {
         primaryEncoder_.signal->isRunning_.store(false);
+    }
+    {
+        std::unique_lock<std::mutex> lock(inputExitMutex_);
+        if (!inputExitCv_.wait_for(lock, std::chrono::seconds(SAMPLE_TIMEOUT),
+            [this]() { return inputExited_; })) {
+            UNITTEST_INFO_LOG("StopSurfaceInput timeout");
+        }
     }
     if (inputLoop_ != nullptr && inputLoop_->joinable()) {
         inputLoop_->join();
