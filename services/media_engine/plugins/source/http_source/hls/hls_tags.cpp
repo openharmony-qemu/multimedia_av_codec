@@ -56,6 +56,8 @@ struct {
     {"ext-x-session-key",            HlsTag::EXTXSESSIONKEY},
     {"ext-x-skip",                   HlsTag::EXTXSKIP},
     {"ext-x-daterange",              HlsTag::EXTXDATERANGE},
+    {"ext-x-cue-out",                HlsTag::EXTCUEOUT},
+    {"ext-x-cue-in",                 HlsTag::EXTCUEIN},
     {"extinf",                       HlsTag::EXTINF},
     {"",                             HlsTag::URI}
 };
@@ -331,6 +333,8 @@ std::shared_ptr<Tag> TagFactory::CreateTagByName(const std::string& name, const 
             case HlsTag::EXTXDISCONTINUITY:
             case HlsTag::EXTXENDLIST:
             case HlsTag::EXTXIFRAMESONLY:
+            case HlsTag::EXTXCUEOUT:
+            case HlsTag::EXTXCUEIN:
                 return std::make_shared<Tag>(g_exttagmapping[i].type);
             case HlsTag::URI:
             case HlsTag::EXTXVERSION:
