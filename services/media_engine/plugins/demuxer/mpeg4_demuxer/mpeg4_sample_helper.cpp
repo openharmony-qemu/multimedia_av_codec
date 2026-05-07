@@ -1028,6 +1028,25 @@ void MPEG4SampleHelper::CalculateDtsShift()
         }
     }
 }
+
+uint32_t MPEG4SampleHelper::CalculateSampleCount()
+{
+    uint32_t sampleCount = 0;
+    for (const auto& entry : sttsEntry_) {
+        sampleCount += entry.count;
+    }
+    return sampleCount;
+}
+
+uint32_t MPEG4SampleHelper::GetSttsEntryCount()
+{
+    return sttsEntry_.size();
+}
+
+uint32_t MPEG4SampleHelper::GetcttsEntryCount()
+{
+    return cttsEntry_.size();
+}
 } // namespace MPEG4
 } // namespace Plugins
 } // namespace Media

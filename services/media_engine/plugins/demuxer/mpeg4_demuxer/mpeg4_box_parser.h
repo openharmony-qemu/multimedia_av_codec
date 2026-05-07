@@ -88,6 +88,7 @@ public:
     bool GetHasMoof();
     Status MPEG4ParseHeader(const std::shared_ptr<DataSource>& source, Seekable seekable);
     Status ParseMoof(const std::shared_ptr<Track>& track, int64_t offset);
+    
 private:
     std::shared_ptr<Track> firstTrack_;
     std::shared_ptr<Track> lastTrack_;

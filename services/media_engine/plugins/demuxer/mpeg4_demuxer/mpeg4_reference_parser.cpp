@@ -97,15 +97,69 @@ Status MPEG4DemuxerPlugin::FrameId2SeekMs(uint32_t frameId, int64_t &seekMs)
 Status MPEG4DemuxerPlugin::GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
     const uint64_t relativePresentationTimeUs, uint32_t &index)
 {
+    MEDIA_LOG_I("GetIndexByRelativePresentationTimeUs, trackIndex is %{public}u, time is %{public}zu, "
+        "index is %{public}u", trackIndex, relativePresentationTimeUs, index)
+    std::shared_lock<std::shared_mutex> lock(sharedMutex_);
     return Status::OK;
 }
 
 Status MPEG4DemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
     const uint32_t index, uint64_t &relativePresentationTimeUs)
 {
+    MEDIA_LOG_I("GetRelativePresentationTimeUsByIndex, trackIndex is %{public}u, time is %{public}zu, "
+        "index is %{public}u", trackIndex, relativePresentationTimeUs, index)
+    std::shared_lock<std::shared_mutex> lock(sharedMutex_);
+    int32_t trackCount = CountTracks();
+    FALSE_RETURN_V_MSG_E(trackIndex < trackCount, Status::ERROR_INVALID_DATA, "Track is out of range");3
+    // >>>为什么不能等于
+    FALSE_RETURN_V_MSG_E(index < UINT32_MAX, Status::ERROR_INVALID_DATA, "Index is out of range");
+    uint32_t sampleCount = GetSampleCount(trackIndex);
+    // >>>ffmpeg和自研中该上限不同
+    FALSE_RETURN_V_MSG_E(sampleCount <= 36000, "Sample count exceeds limit");
+    GetPresentationTimeUsByMpeg4BoxParser(trackIndex);
+
+
     return Status::OK;
 }
 
+uint32_t MPEG4DemuxerPlugin::GetSampleCount(uint32_t trackIndex)
+{
+    FALSE_RETURN_V_MSG_E(trackIndex < trackCount, 0, "trackIndex is invalid");
+    std::shared_ptr<Track> track = FindTrackById(trackIndex);
+    FALSE_RETURN_V_MSG_E(track && track->sampleHelper, 0, "firstTrack_ is nullptr");
+    return track->sampleHelper->CalculateSampleCount();;
+}
+
+Status MPEG4DemuxerPlugin::GetPresentationTimeUsByMpeg4BoxParser(IndexAndPTSConversionMode mode, uint32_t trackIndex,
+    int64_t absolutePTS, uint32_t sampleIndex)
+{
+    int32_t timeScale = 0;
+    mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_TIME_SCALE>(timeScale);
+    // >>>时间基的校验是否只需要校验不等于0
+    FALSE_RETURN_V_MSG_E(timeScale >= 0, Status::ERROR_INVALID_DATA, "timescale is zero");
+
+    std::shared_ptr<Track> track = FindTrackById(trackIndex);
+    FALSE_RETURN_V_MSG_E(track && track->sampleHelper, 0, "firstTrack_ is nullptr");
+
+    uint32_t sttsEnrtyCount = track->sampleHelper->GetSttsEntryCount();
+    FALSE_RETURN_V_MSG_E(sttsEnrtyCount != 0, Status::ERROR_INVALID_DATA, "sttsEnrtyCount is empty");
+    uint32_t cttsEnrtyCount = track->sampleHelper->GetcttsEntryCount();
+
+    return (cttsEnrtyCount == 0) ? ConvertPTSAndIndexOnlyByStts(mode, absolutePTS, sampleIndex) :
+        ConvertPTSAndIndexBySttsAndCtts(mode, absolutePTS, sampleIndex);
+}
+
+Status MPEG4DemuxerPlugin::ConvertPTSAndIndexOnlyByStts(IndexAndPTSConversionMode mode, int64_t absolutePTS,
+    uint32_t sampleIndex)
+{
+
+}
+
+Status MPEG4DemuxerPlugin::ConvertPTSAndIndexBySttsAndCtts(IndexAndPTSConversionMode mode, int64_t absolutePTS,
+    uint32_t sampleIndex)
+{
+
+}
 } // namespace MPEG4
 } // namespace Plugins
 } // namespace Media

@@ -106,6 +106,12 @@ public:
     Status SetTrackCacheLimit(uint32_t trackId, uint32_t limitBytes, uint32_t windowMs = 500) override
         { return Status::ERROR_UNKNOWN; };
 private:
+    enum IndexAndPTSConversionMode : unsigned int {
+        GET_FIRST_PTS,
+        INDEX_TO_RELATIVEPTS,
+        RELATIVEPTS_TO_INDEX,
+    };
+
     std::shared_ptr<MPEG4AtomParser::Track> firstTrack_ = nullptr;
     std::shared_ptr<MPEG4AtomParser::Track> lastTrack_ = nullptr;
     std::vector<MPEG4AtomParser::FragmentEntry> fragmentEntry_ = {};
@@ -188,6 +194,12 @@ private:
     void ParseHEVCMetadataInfo(const MPEG4AtomParser::Track& track, Meta &format);
     void ConvertCsdToAnnexb(const MPEG4AtomParser::Track& track, Meta& format, uint32_t trackIndex);
     int SelectSeekTrack();
+
+    uint32_t GetSampleCount(uint32_t trackIndex);
+    Status GetPresentationTimeUsByMpeg4BoxParser(IndexAndPTSConversionMode mode, uint32_t trackIndex,
+        int64_t absolutePTS, uint32_t sampleIndex);
+    Status ConvertPTSAndIndexOnlyByStts(IndexAndPTSConversionMode mode, int64_t absolutePTS, uint32_t sampleIndex);
+    Status ConvertPTSAndIndexBySttsAndCtts(IndexAndPTSConversionMode mode, int64_t absolutePTS, uint32_t sampleIndex);
 };
 } // namespace MPEG4
 } // namespace Plugins
