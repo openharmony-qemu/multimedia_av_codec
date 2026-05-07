@@ -149,6 +149,12 @@ private:
 
     int64_t absolutePTSOfIndexZero_ = INT64_MAX;
     std::priority_queue<int64_t> index2RelativePTSHeap_;
+    int64_t minRelativePTS_ = INT64_MAX;
+    int64_t maxRelativePTS_ = INT64_MIN;
+    int64_t minRelativePTSDiffOfLeft_ = INT64_MAX;
+    int64_t minRelativePTSDiffOfRight_ = INT64_MAX;
+    uint32_t index2RelativePTS_ = 0;
+
 
     int32_t CountTracks();
     void GetAVTrackIds();
@@ -198,7 +204,8 @@ private:
     void ParseHEVCMetadataInfo(const MPEG4AtomParser::Track& track, Meta &format);
     void ConvertCsdToAnnexb(const MPEG4AtomParser::Track& track, Meta& format, uint32_t trackIndex);
     int SelectSeekTrack();
-
+    
+    void ResetParametersOfPTSAndIndexConversion();
     uint32_t GetSampleCount(uint32_t trackIndex);
     Status GetPresentationTimeUsByMpeg4BoxParser(IndexAndPTSConversionMode mode, uint32_t trackIndex,
         int64_t absolutePTS, uint32_t sampleIndex);
@@ -209,7 +216,7 @@ private:
     void ProcessConversionByMode(IndexAndPTSConversionMode mode, int64_t pts, int64_t absolutePTS,
         uint32_t sampleIndex);
     void ProcessIndex2RelativePTS(int64_t pts, uint32_t index);
-    void ProcessRelativePTS2Index(int64_t pts, int64_t index);
+    void ProcessRelativePTS2Index(int64_t pts, int64_t absolutePTS);
 };
 } // namespace MPEG4
 } // namespace Plugins
