@@ -752,6 +752,10 @@ bool VideoEncDualOutputSample::CreateSurface()
 void VideoEncDualOutputSample::InputFuncSurface()
 {
     UNITTEST_INFO_LOG("InputFuncSurface started, frameCount_: %d", frameCount_);
+    if (primaryEncoder_.signal == nullptr) {
+        UNITTEST_INFO_LOG("InputFuncSurface failed, primaryEncoder_.signal is nullptr");
+        return;
+    }
     while (primaryEncoder_.signal->isRunning_.load()) {
         OHNativeWindowBuffer *ohNativeWindowBuffer = nullptr;
         int fenceFd = -1;
@@ -791,7 +795,9 @@ void *VideoEncDualOutputSample::MapNativeBuffer(OH_NativeBuffer *nativeBuffer)
     int32_t err = OH_NativeBuffer_Map(nativeBuffer, &virAddr);
     if (err != 0) {
         UNITTEST_INFO_LOG("OH_NativeBuffer_Map failed, GSError=%d", err);
-        primaryEncoder_.signal->isRunning_.store(false);
+        if (primaryEncoder_.signal != nullptr) {
+            primaryEncoder_.signal->isRunning_.store(false);
+        }
         return nullptr;
     }
     return virAddr;
@@ -801,6 +807,11 @@ bool VideoEncDualOutputSample::ValidateMappedBuffer(char *dst, OH_NativeBuffer *
     OHNativeWindowBuffer *ohNativeWindowBuffer, int32_t &stride)
 {
     const SurfaceBuffer *sbuffer = SurfaceBuffer::NativeBufferToSurfaceBuffer(nativeBuffer);
+    if (sbuffer == nullptr) {
+        UNITTEST_INFO_LOG("NativeBufferToSurfaceBuffer failed, sbuffer is nullptr");
+        primaryEncoder_.signal->isRunning_.store(false);
+        return false;
+    }
     stride = sbuffer->GetStride();
     if (dst == nullptr || stride < sampleWidth_) {
         UNITTEST_INFO_LOG("invalid va or stride=%d", stride);
@@ -814,6 +825,14 @@ bool VideoEncDualOutputSample::ValidateMappedBuffer(char *dst, OH_NativeBuffer *
 
 void VideoEncDualOutputSample::FillYuvData(char *dst, int32_t stride)
 {
+    if (dst == nullptr) {
+        UNITTEST_INFO_LOG("FillYuvData failed, dst is nullptr");
+        return;
+    }
+    if (primaryEncoder_.signal == nullptr || primaryEncoder_.signal->inFile_ == nullptr) {
+        UNITTEST_INFO_LOG("FillYuvData failed, inFile is nullptr");
+        return;
+    }
     if (primaryEncoder_.signal->inFile_->eof()) {
         (void)primaryEncoder_.signal->inFile_->seekg(0);
     }
@@ -828,6 +847,10 @@ void VideoEncDualOutputSample::NotifyEosForAll(OH_NativeBuffer *nativeBuffer,
 {
     (void)OH_NativeBuffer_Unmap(nativeBuffer);
     (void)NativeWindowCancelBuffer(nativeWindow_, ohNativeWindowBuffer);
+    if (primaryEncoder_.codec == nullptr) {
+        UNITTEST_INFO_LOG("NotifyEosForAll failed, primary codec is nullptr");
+        return;
+    }
     int32_t err = OH_VideoEncoder_NotifyEndOfStream(primaryEncoder_.codec);
     UNITTEST_CHECK_AND_INFO_LOG(err == AV_ERR_OK, "Primary NotifyEos failed, ret=%d", err);
     if (secondaryEncoder_.codec != nullptr) {
