@@ -97,8 +97,8 @@ Status MPEG4DemuxerPlugin::FrameId2SeekMs(uint32_t frameId, int64_t &seekMs)
 Status MPEG4DemuxerPlugin::GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
     const uint64_t relativePresentationTimeUs, uint32_t &index)
 {
-    MEDIA_LOG_I("GetIndexByRelativePresentationTimeUs, trackIndex is %{public}u, time is %{public}zu, "
-        "index is %{public}u", trackIndex, relativePresentationTimeUs, index)
+    MEDIA_LOG_I("GetIndexByRelativePresentationTimeUs, trackIndex is " PUBLIC_LOG_U32 ", time is " PUBLIC_LOG_U32
+        ", index is " PUBLIC_LOG_U32, trackIndex, relativePresentationTimeUs, index)
     std::shared_lock<std::shared_mutex> lock(sharedMutex_);
     return Status::OK;
 }
@@ -106,17 +106,18 @@ Status MPEG4DemuxerPlugin::GetIndexByRelativePresentationTimeUs(const uint32_t t
 Status MPEG4DemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
     const uint32_t index, uint64_t &relativePresentationTimeUs)
 {
-    MEDIA_LOG_I("GetRelativePresentationTimeUsByIndex, trackIndex is %{public}u, time is %{public}zu, "
-        "index is %{public}u", trackIndex, relativePresentationTimeUs, index)
+    MEDIA_LOG_I("GetRelativePresentationTimeUsByIndex, trackIndex is " PUBLIC_LOG_U32 ", time is " PUBLIC_LOG_U32
+        ", index is " PUBLIC_LOG_U32, trackIndex, relativePresentationTimeUs, index)
     std::shared_lock<std::shared_mutex> lock(sharedMutex_);
     int32_t trackCount = CountTracks();
-    FALSE_RETURN_V_MSG_E(trackIndex < trackCount, Status::ERROR_INVALID_DATA, "Track is out of range");3
+    FALSE_RETURN_V_MSG_E(trackIndex < trackCount, Status::ERROR_INVALID_DATA, "Track is out of range");
     // >>>为什么不能等于
     FALSE_RETURN_V_MSG_E(index < UINT32_MAX, Status::ERROR_INVALID_DATA, "Index is out of range");
     uint32_t sampleCount = GetSampleCount(trackIndex);
     // >>>ffmpeg和自研中该上限不同
     FALSE_RETURN_V_MSG_E(sampleCount <= 36000, "Sample count exceeds limit");
-    GetPresentationTimeUsByMpeg4BoxParser(trackIndex);
+    GetPresentationTimeUsByMpeg4BoxParser(IndexAndPTSConversionMode::GET_FIRST_PTS, trackIndex,
+        static_cast<int64_t>(relativePresentationTimeUs), index);
 
 
     return Status::OK;
@@ -149,10 +150,15 @@ Status MPEG4DemuxerPlugin::GetPresentationTimeUsByMpeg4BoxParser(IndexAndPTSConv
         ConvertPTSAndIndexBySttsAndCtts(mode, absolutePTS, sampleIndex);
 }
 
-Status MPEG4DemuxerPlugin::ConvertPTSAndIndexOnlyByStts(IndexAndPTSConversionMode mode, int64_t absolutePTS,
-    uint32_t sampleIndex)
+Status MPEG4DemuxerPlugin::ConvertPTSAndIndexOnlyByStts(const std::shared_ptr<Track>& track,
+    IndexAndPTSConversionMode mode, int64_t absolutePTS, uint32_t sampleIndex)
 {
-
+    MEDIA_LOG_I("ConvertPTSAndIndexOnlyByStts, mode is " PUBLIC_LOG_U32 ", absolutePTS is " PUBLIC_LOG_D64
+        ", sampleIndex is " PUBLIC_LOG_U32, mode, absolutePTS, sampleIndex)
+    FALSE_RETURN_V_MSG_E(track && track->sampleHelper, 0, "track or sampleHelper is nullptr");
+    uint32_t sttsEntryIndex = 0;
+    uint32_t sttsEntryCount = track->sampleHelper->GetSttsEntryCount();
+    unint32 sampleCountOfCurrentSttsEntry = 
 }
 
 Status MPEG4DemuxerPlugin::ConvertPTSAndIndexBySttsAndCtts(IndexAndPTSConversionMode mode, int64_t absolutePTS,
