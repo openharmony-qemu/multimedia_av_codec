@@ -23,6 +23,7 @@
 #include <unistd.h>
 
 #include "file_server_demo.h"
+#include "mpeg4_sample_memory.h"
 
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -119,6 +120,23 @@ std::shared_ptr<DataSourceImpl> CreateFileDataSource(const std::string& filePath
     }
     streamDemuxer->SetDemuxerState(0, DemuxerState::DEMUXER_STATE_PARSE_FRAME);
     return std::make_shared<DataSourceImpl>(streamDemuxer, 0);
+}
+
+std::shared_ptr<Plugins::MPEG4::Sample> CreateMpeg4Sample(int32_t size, bool hasData)
+{
+    auto sample = std::make_shared<Plugins::MPEG4::Sample>();
+    sample->pts = 0;
+    sample->dts = 0;
+    sample->duration = 0;
+    sample->flag = Plugins::MPEG4::Sample::NONE;
+    sample->size = size;
+    if (hasData && size > 0) {
+        sample->data = std::make_unique<uint8_t[]>(size);
+        for (int32_t index = 0; index < size; ++index) {
+            sample->data[index] = static_cast<uint8_t>(index);
+        }
+    }
+    return sample;
 }
 }
 
@@ -933,6 +951,71 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AsyncCacheAndControlInte
     MediaInfo mediaInfo;
     EXPECT_EQ(mpeg4Plugin_->GetMediaInfo(mediaInfo), Status::OK);
     EXPECT_TRUE(mediaInfo.tracks.empty());
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SampleMemoryValidBranch_001
+ * @tc.desc: Verify MPEG4SampleMemory valid sample and boundary offset branches
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SampleMemoryValidBranch_001, TestSize.Level1)
+{
+    constexpr int32_t sampleSize = 8;
+    constexpr int32_t startOffset = 3;
+    auto sample = CreateMpeg4Sample(sampleSize, true);
+    ASSERT_NE(sample, nullptr);
+    ASSERT_NE(sample->data, nullptr);
+
+    Plugins::MPEG4::MPEG4SampleMemory memory(sample, startOffset);
+    EXPECT_EQ(memory.GetMemoryType(), MemoryType::CUSTOM_MEMORY);
+    EXPECT_EQ(memory.GetAddr(), sample->data.get() + startOffset);
+    EXPECT_EQ(memory.GetCapacity(), sampleSize - startOffset);
+    EXPECT_EQ(memory.GetSize(), sampleSize - startOffset);
+    EXPECT_EQ(memory.GetOffset(), 0);
+    EXPECT_EQ(memory.Write(nullptr, sampleSize), 0);
+
+    Plugins::MPEG4::MPEG4SampleMemory endOffsetMemory(sample, sampleSize);
+    EXPECT_EQ(endOffsetMemory.GetAddr(), sample->data.get() + sampleSize);
+    EXPECT_EQ(endOffsetMemory.GetCapacity(), 0);
+    EXPECT_EQ(endOffsetMemory.GetSize(), 0);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SampleMemoryInvalidBranch_001
+ * @tc.desc: Verify MPEG4SampleMemory invalid sample, data, size and offset branches
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SampleMemoryInvalidBranch_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4SampleMemory nullSampleMemory(nullptr);
+    EXPECT_EQ(nullSampleMemory.GetAddr(), nullptr);
+    EXPECT_EQ(nullSampleMemory.GetCapacity(), 0);
+    EXPECT_EQ(nullSampleMemory.GetSize(), 0);
+    EXPECT_EQ(nullSampleMemory.GetOffset(), 0);
+
+    auto sampleWithoutData = CreateMpeg4Sample(8, false);
+    Plugins::MPEG4::MPEG4SampleMemory nullDataMemory(sampleWithoutData);
+    EXPECT_EQ(nullDataMemory.GetAddr(), nullptr);
+    EXPECT_EQ(nullDataMemory.GetCapacity(), 0);
+    EXPECT_EQ(nullDataMemory.GetSize(), 0);
+
+    auto negativeSizeSample = CreateMpeg4Sample(-1, false);
+    negativeSizeSample->data = std::make_unique<uint8_t[]>(1);
+    Plugins::MPEG4::MPEG4SampleMemory negativeSizeMemory(negativeSizeSample);
+    EXPECT_EQ(negativeSizeMemory.GetAddr(), nullptr);
+    EXPECT_EQ(negativeSizeMemory.GetCapacity(), 0);
+    EXPECT_EQ(negativeSizeMemory.GetSize(), 0);
+
+    auto validSample = CreateMpeg4Sample(8, true);
+    Plugins::MPEG4::MPEG4SampleMemory negativeOffsetMemory(validSample, -1);
+    EXPECT_EQ(negativeOffsetMemory.GetAddr(), nullptr);
+    EXPECT_EQ(negativeOffsetMemory.GetCapacity(), 0);
+    EXPECT_EQ(negativeOffsetMemory.GetSize(), 0);
+
+    Plugins::MPEG4::MPEG4SampleMemory overflowOffsetMemory(validSample, validSample->size + 1);
+    EXPECT_EQ(overflowOffsetMemory.GetAddr(), nullptr);
+    EXPECT_EQ(overflowOffsetMemory.GetCapacity(), 0);
+    EXPECT_EQ(overflowOffsetMemory.GetSize(), 0);
 }
 
 /**
