@@ -61,6 +61,7 @@ public:
     const char *OUT_DIR = "/data/test/media/VDecTest.yuv";
     const char *OUT_DIR2 = "/data/test/media/VDecTest2.yuv";
     bool SF_OUTPUT = false;
+    bool expireSurface = false;
     bool TRANSFER_FLAG = false;
     bool NV21_FLAG = false;
     bool PREPARE_FLAG = true;
@@ -92,7 +93,7 @@ public:
     int32_t sliceHeight_ = 0;
     int32_t picWidth_ = 0;
     int32_t picHeight_ = 0;
-    int32_t enbleSyncMode = 0;
+    int32_t enableSyncMode = 0;
     int64_t syncInputWaitTime = -1;
     int64_t syncOutputWaitTime = -1;
     bool queryOutputBufferEOS = false;
@@ -100,6 +101,8 @@ public:
     bool setTransform = false;
     int32_t DEFAULT_TRANSFORM = 0;
     bool needAutoSwitch = true;
+    bool hdrColorInfo = false;
+    bool hdrStaticMetadata = false;
     int32_t beforeSwitchTransform = -1;
     int32_t afterSwitchTransform = -2;
     int32_t Start();
@@ -113,6 +116,7 @@ public:
     void SetEOS(uint32_t index, OH_AVBuffer *buffer);
     void WaitForEOS();
     int32_t ConfigureVideoDecoder();
+    void ConfigHDRMetadata(OH_AVFormat *format);
     int32_t StartVideoDecoder();
     int64_t GetSystemTimeUs();
     int32_t CreateVideoDecoder(std::string codeName);
@@ -133,6 +137,7 @@ public:
     void GetStride();
     void InputFuncTest();
     void InFuncTest();
+    void ExpireSurface();
     void SyncInputFunc();
     void OutputFuncTest();
     void SyncOutputFunc();
@@ -187,7 +192,6 @@ public:
     bool outputCallbackFlush = false;
     bool outputCallbackStop = false;
     bool useHDRSource = false;
-    bool NocaleHash = false;
     bool isAPI = false;
     int32_t DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
     int32_t DecodeSetSurface();
@@ -200,7 +204,7 @@ public:
     };
     uint32_t INPUT_NAL_NUM = 1;
     InputStreamType INPUT_STREAM_TYPE = Input_Stream_Type_Avcc;
-    bool NEED_MD5_COMPAIRE = true;
+    bool NEED_MD5_COMPARE = true;
 
 private:
     int32_t InitReadFileNals();
@@ -215,6 +219,7 @@ private:
     uint8_t* iptMultiStreamsBuf_ = nullptr;
 private:
     std::unique_ptr<std::ifstream> inFile_;
+    std::unique_ptr<std::ofstream> outFile_;
     std::unique_ptr<std::thread> inputLoop_;
     std::unique_ptr<std::thread> outputLoop_;
     std::unordered_map<uint32_t, OH_AVBuffer *> inBufferMap_;
