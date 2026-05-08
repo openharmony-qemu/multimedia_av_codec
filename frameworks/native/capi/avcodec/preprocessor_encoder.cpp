@@ -183,6 +183,9 @@ OH_AVErrCode PreprocessorEncoder::InitAsPrimary(const char *mime)
     mime_ = mime;
     encoderId_ = GenerateEncoderId("primary");
 
+    CHECK_AND_RETURN_RET_LOG(Preprocessor::IsAvailable(), AV_ERR_UNSUPPORT,
+                             "Preprocessor not available, primary encoder creation failed!");
+
     auto videoEncoder = VideoEncoderFactory::CreateByMime(mime_);
     CHECK_AND_RETURN_RET_LOG(videoEncoder != nullptr, AV_ERR_NO_MEMORY, "VideoEncoder create failed!");
 

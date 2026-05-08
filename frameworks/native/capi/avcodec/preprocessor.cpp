@@ -154,6 +154,18 @@ Preprocessor::~Preprocessor()
     }
 }
 
+bool Preprocessor::IsAvailable()
+{
+    if (!fastKitEnable) {
+        return true;
+    }
+    auto &fastKits = PreProcessing::FastKitsInterface::GetInstance();
+    fastKits.Retain();
+    bool loaded = fastKits.IsLoaded();
+    fastKits.Release();
+    return loaded;
+}
+
 int32_t Preprocessor::Configure(const Media::Format &format)
 {
     int32_t enableSyncMode = false;
