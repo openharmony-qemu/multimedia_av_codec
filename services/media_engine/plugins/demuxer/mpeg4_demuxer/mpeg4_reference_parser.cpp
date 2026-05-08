@@ -103,8 +103,7 @@ Status MPEG4DemuxerPlugin::GetIndexByRelativePresentationTimeUs(const uint32_t t
     MEDIA_LOG_I("GetIndexByRelativePresentationTimeUs, trackIndex is " PUBLIC_LOG_U32 ", time is " PUBLIC_LOG_U64
         ", index is " PUBLIC_LOG_U32, trackIndex, relativePresentationTimeUs, index);
     std::shared_lock<std::shared_mutex> lock(sharedMutex_);
-    int32_t trackCount = CountTracks();
-    // >>>类型比较告警
+    uint32_t trackCount = static_cast<uint32_t>(CountTracks());
     FALSE_RETURN_V_MSG_E(trackIndex < trackCount, Status::ERROR_INVALID_DATA, "Track is out of range");
 
     uint32_t sampleCount = GetSampleCount(trackIndex);
@@ -140,16 +139,14 @@ Status MPEG4DemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t t
     MEDIA_LOG_I("GetRelativePresentationTimeUsByIndex, trackIndex is " PUBLIC_LOG_U32 ", time is " PUBLIC_LOG_U64
         ", index is " PUBLIC_LOG_U32, trackIndex, relativePresentationTimeUs, index);
     std::shared_lock<std::shared_mutex> lock(sharedMutex_);
-    int32_t trackCount = CountTracks();
-    // >>>类型比较告警
+    uint32_t trackCount = static_cast<uint32_t>(CountTracks());
     FALSE_RETURN_V_MSG_E(trackIndex < trackCount, Status::ERROR_INVALID_DATA, "Track is out of range");
-    // >>>为什么不能等于
-    FALSE_RETURN_V_MSG_E(index <= UINT32_MAX, Status::ERROR_INVALID_DATA, "Index is out of range");
-
+    
+    FALSE_RETURN_V_MSG_E(index < UINT32_MAX, Status::ERROR_INVALID_DATA, "Index is out of range");
     uint32_t sampleCount = GetSampleCount(trackIndex);
     FALSE_RETURN_V_MSG_E(sampleCount <= REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT, Status::ERROR_INVALID_DATA,
         "Sample count exceeds limit");
-    // 此处替换原有index + 1 > indexToRelativePTSCount_
+    // >>>此处替换原有index + 1 > indexToRelativePTSCount_
     FALSE_RETURN_V_MSG_E(index + 1 <= sampleCount, Status::ERROR_INVALID_DATA, "Index is out of range");
     
     ResetParametersOfPTSAndIndexConversion();
@@ -263,7 +260,7 @@ Status MPEG4DemuxerPlugin::ConvertPTSAndIndexBySttsAndCtts(const std::shared_ptr
     uint32_t cttsEntryIndex = 0;
     uint32_t cttsEntryCount = track->sampleHelper->GetCttsEntryCount();
     uint32_t sampleCountOfCurrentCttsEntry = track->sampleHelper->GetSampleCountOfCttsEntry(cttsEntryIndex);
-    // >>>为了避免ctts中存在小于0的offset
+    // Avoid offset less than 0 in Ctts Box
     int32_t minSampleOffsetOfCttsEntry = track->sampleHelper->GetMinOffsetOfCttsEntry();
 
     int64_t pts = 0;
@@ -284,6 +281,7 @@ Status MPEG4DemuxerPlugin::ConvertPTSAndIndexBySttsAndCtts(const std::shared_ptr
         
         int64_t sampleOffsetOfCurrentCttsEntry = static_cast<int64_t>(
             track->sampleHelper->GetSampleOffsetOfCttsEntry(cttsEntryIndex) - minSampleOffsetOfCttsEntry);
+        // >>>此处的溢出校验存在问题
         FALSE_RETURN_V_MSG_E((INT64_MAX / THOUSAND / THOUSAND) >= ((dts + sampleOffsetOfCurrentCttsEntry) /
             static_cast<int64_t>(timeScale)), Status::ERROR_INVALID_DATA, "dts overflow");
         pts = static_cast<int64_t>((dts + sampleOffsetOfCurrentCttsEntry) * timeScaleRate);
