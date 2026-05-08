@@ -1537,14 +1537,15 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_SCALING_MODE_VALID_TEST_1603, TestS
  */
 HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_OUTPUT_IN_DECODING_ORDER_INVALID_TEST_1701, TestSize.Level3)
 {
-    OH_AVCapability *capability = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false);
-    if (capability != nullptr && OH_AVCapability_IsFeatureSupported(capability,
-        VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER)) {
+    OH_AVCapability *capability = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4, false);
+    if (capability != nullptr &&
+        OH_AVCapability_IsFeatureSupported(capability, VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER)) {
         std::cout << "Device supports VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, skip failure test" << std::endl;
         return;
     }
 
-    std::shared_ptr<AVCodecVideoDecoder> videoDecInner = VideoDecoderFactory::CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    std::shared_ptr<AVCodecVideoDecoder> videoDecInner =
+        VideoDecoderFactory::CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4);
     ASSERT_NE(nullptr, videoDecInner);
 
     Format format;
@@ -1566,13 +1567,14 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_OUTPUT_IN_DECODING_ORDER_INVALID_TE
 HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_OUTPUT_IN_DECODING_ORDER_VALID_TEST_1702, TestSize.Level3)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false);
-    if (capability == nullptr || !OH_AVCapability_IsFeatureSupported(capability,
-        VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER)) {
+    if (capability == nullptr ||
+        !OH_AVCapability_IsFeatureSupported(capability, VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER)) {
         std::cout << "Device does not support VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, skip success test" << std::endl;
         return;
     }
 
-    std::shared_ptr<AVCodecVideoDecoder> videoDecInner = VideoDecoderFactory::CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    std::shared_ptr<AVCodecVideoDecoder> videoDecInner =
+        VideoDecoderFactory::CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
     ASSERT_NE(nullptr, videoDecInner);
 
     Format format;
