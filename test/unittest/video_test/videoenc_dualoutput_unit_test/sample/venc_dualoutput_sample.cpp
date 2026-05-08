@@ -863,13 +863,15 @@ void VideoEncDualOutputSample::StopSurfaceInput()
 {
     if (primaryEncoder_.signal != nullptr) {
         primaryEncoder_.signal->isRunning_.store(false);
-        if (primaryEncoder_.signal->inFile_ != nullptr && primaryEncoder_.signal->inFile_->is_open()) {
-            primaryEncoder_.signal->inFile_->close();
-        }
     }
     if (inputLoop_ != nullptr && inputLoop_->joinable()) {
         inputLoop_->join();
         inputLoop_.reset();
+    }
+    if (primaryEncoder_.signal != nullptr) {
+        if (primaryEncoder_.signal->inFile_ != nullptr && primaryEncoder_.signal->inFile_->is_open()) {
+            primaryEncoder_.signal->inFile_->close();
+        }
     }
 }
 
