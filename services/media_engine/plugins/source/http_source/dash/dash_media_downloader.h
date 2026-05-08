@@ -129,9 +129,9 @@ private:
         std::shared_ptr<DashStreamDescription> &newVideoStream,
         std::shared_ptr<DashStreamDescription> &newAudioStream);
     void SwitchVideoStream(const std::shared_ptr<DashStreamDescription> &newVideoStream,
-        const std::shared_ptr<DashSegmentDownloader> &segDownloader)
+        const std::shared_ptr<DashSegmentDownloader> &segDownloader);
     void SwitchAudioStream(const std::shared_ptr<DashStreamDescription> &newAudioStream,
-        const std::shared_ptr<DashSegmentDownloader> &segDownloader)
+        const std::shared_ptr<DashSegmentDownloader> &segDownloader);
 
 private:
 
