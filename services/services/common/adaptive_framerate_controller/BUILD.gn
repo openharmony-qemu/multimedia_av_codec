@@ -46,7 +46,6 @@ ohos_source_set("adaptive_framerate_controller") {
   external_deps = [
     "c_utils:utils",
     "init:libbegetutil",
-    "graphic_2d_ext:libaps_client"
   ]
 
   subsystem_name = "multimedia"

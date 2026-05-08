@@ -137,10 +137,6 @@ void DecodingBehaviorAnalyzer::CalcOutputVideoFps(int64_t currentPts, bool rende
             if (curtInfo_.second >= CONTINUES_FRAME_CNT) {
                 fixedInfo_.first = curtInfo_.first; //连续相同帧率超过阈值，记录为稳定帧率
                 fixedInfo_.second = curtInfo_.second;
-                auto eventName = "VIDEO_TEST";
-                eventData_["rate"] = std::to_string(fixedInfo_.first);
-                eventData_["decSpeed"] = std::to_string(1);
-                Rosen::ApsManager::GetInstance().SendEvent(eventName, eventData_);
                 AVCODEC_LOGI("video fix fps =%{public}u pts= %{public}ld, lastPts= %{public}ld, delta= %{public}ld",
                     fixedInfo_.first, currentPts, lastPts, delta);
             }

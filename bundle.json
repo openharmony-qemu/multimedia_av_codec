@@ -107,7 +107,7 @@
           "config_policy",
           "json",
           "resource_schedule_service",
-          "graphic_2d_ext",
+          "graphic_2d",
           "certificate_manager",
           "api_metrics"
         ],
