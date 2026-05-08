@@ -51,7 +51,7 @@ union SpeedStatsUnion {
 
 class DecodingBehaviorAnalyzer {
 public:
-    DecodingBehaviorAnalyzer(int32_t instanceId);
+    explicit DecodingBehaviorAnalyzer(int32_t instanceId);
     void OnFrameConsumed(int64_t pts, bool render);
     void OnStopped(bool isDecEnd);
     void OnChecked(double decFps);

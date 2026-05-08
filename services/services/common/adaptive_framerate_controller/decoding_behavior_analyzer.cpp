@@ -36,6 +36,9 @@ constexpr int64_t SEEK_DETECTION_THRESHOLD_MS = 500;
 #ifdef SUPPORT_FPS_FOR_MEMC
 constexpr size_t FPS_WINDOW_SIZE = 3;
 constexpr uint32_t CONTINUES_FRAME_CNT = 5;
+constexpr int64_t PTS_TIME_UNIT = 1000000;
+constexpr int64_t MAX_FPS = 60;
+constexpr int64_t FPS_THRESHOLD = 1000;
 #endif
 const std::unordered_map<size_t, const std::string_view> SPEED_DEC_INFO_KEY_MAP = {
     {1, OHOS::MediaAVCodec::EventInfoExtentedKey::SPEED_DECODING_INFO_0_75X},
@@ -107,10 +110,6 @@ void DecodingBehaviorAnalyzer::CalcOutputVideoFps(int64_t currentPts, bool rende
     if (!render) {
         return;
     }
-    constexpr int64_t PTS_TIME_UNIT = 1000000;
-    constexpr int64_t MAX_FPS = 60;
-    constexpr int64_t FPS_THRESHOLD = 1000;
-    
     int64_t lastPts = lastOutPts_[lastIndex_];
     int64_t delta = currentPts - lastPts;
     if (delta > 0) {
