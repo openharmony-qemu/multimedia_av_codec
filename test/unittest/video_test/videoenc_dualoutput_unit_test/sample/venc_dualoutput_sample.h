@@ -139,9 +139,6 @@ private:
     // Surface input
     OHNativeWindow *nativeWindow_ = nullptr;
     std::unique_ptr<std::thread> inputLoop_;
-    std::mutex inputExitMutex_;
-    std::condition_variable inputExitCv_;
-    bool inputExited_ = false;
     void InputFuncSurface();
     int32_t FlushSurface(OHNativeWindowBuffer *ohNativeWindowBuffer, OH_NativeBuffer *nativeBuffer);
     void *MapNativeBuffer(OH_NativeBuffer *nativeBuffer);

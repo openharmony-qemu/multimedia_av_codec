@@ -769,6 +769,9 @@ void VideoEncDualOutputSample::InputFuncSurface()
             break;
         }
         FillYuvData(dst, stride);
+        if (!primaryEncoder_.signal->isRunning_.load()) {
+            break;
+        }
         if (primaryEncoder_.frameInputCount >= static_cast<int32_t>(frameCount_)) {
             NotifyEosForAll(nativeBuffer, ohNativeWindowBuffer);
             break;
@@ -779,11 +782,6 @@ void VideoEncDualOutputSample::InputFuncSurface()
         usleep(DEFAULT_TIME_INTERVAL);
     }
     UNITTEST_INFO_LOG("InputFuncSurface exited, frameInputCount: %d", primaryEncoder_.frameInputCount.load());
-    {
-        std::lock_guard<std::mutex> lock(inputExitMutex_);
-        inputExited_ = true;
-    }
-    inputExitCv_.notify_all();
 }
 
 void *VideoEncDualOutputSample::MapNativeBuffer(OH_NativeBuffer *nativeBuffer)
@@ -865,12 +863,8 @@ void VideoEncDualOutputSample::StopSurfaceInput()
 {
     if (primaryEncoder_.signal != nullptr) {
         primaryEncoder_.signal->isRunning_.store(false);
-    }
-    {
-        std::unique_lock<std::mutex> lock(inputExitMutex_);
-        if (!inputExitCv_.wait_for(lock, std::chrono::seconds(SAMPLE_TIMEOUT),
-            [this]() { return inputExited_; })) {
-            UNITTEST_INFO_LOG("StopSurfaceInput timeout");
+        if (primaryEncoder_.signal->inFile_ != nullptr && primaryEncoder_.signal->inFile_->is_open()) {
+            primaryEncoder_.signal->inFile_->close();
         }
     }
     if (inputLoop_ != nullptr && inputLoop_->joinable()) {
