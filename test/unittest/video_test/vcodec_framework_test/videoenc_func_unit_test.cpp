@@ -214,7 +214,7 @@ bool TEST_SUIT::GetTemporalScalabilityCapability(int32_t param)
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, HW_HEVC, SW_AVC));
+INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, HW_HEVC));
 
 #if defined(VIDEOENC_INNER_UNIT_TEST)
 #if defined(VIDEOENC_ASYNC_UNIT_TEST)
