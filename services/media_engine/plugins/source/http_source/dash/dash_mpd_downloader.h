@@ -274,7 +274,6 @@ private:
     void SwitchStreamIfNeeded(std::shared_ptr<DashStreamDescription> &currentStream, uint32_t targetPeriodIndex);
     void FindSegmentByRelativeTime(std::shared_ptr<DashStreamDescription> &currentStream,
         int64_t relativeTime, std::shared_ptr<DashSegment> &seg, uint32_t targetPeriodIndex, int64_t &totalDuration);
-    
 
 private:
     std::string url_ {};
