@@ -96,7 +96,7 @@ int32_t HCodec::Init(Media::Meta &callerInfo)
 
 std::shared_mutex HCodec::g_mtx;
 std::unordered_map<HCodec::CallerInfo, std::vector<HCodec::InstInfo>,
-    HCodec::CallerInfo, HCodec::CallerInfo> HCodec::g_decCallers;
+    HCodec::CallerInfo, HCodec::CallerInfo> HCodec::g_callers[2];
 
 void HCodec::PrintCaller()
 {
@@ -105,14 +105,11 @@ void HCodec::PrintCaller()
     } else {
         HLOGI("[pid %d][%s] -> player -> avcodec", caller_.playerCaller.pid, caller_.playerCaller.processName.c_str());
     }
-    if (isEncoder_) {
-        return;
-    }
     std::unique_lock<std::shared_mutex> lk(g_mtx);
-    g_decCallers[caller_.app].emplace_back(InstInfo{GetNowUs(), compUniqueStr_});
- 
+    g_callers[isEncoder_][caller_.app].emplace_back(InstInfo{GetNowUs(), compUniqueStr_});
+    
     size_t totalInstCntNow = CalculateTotalInstCnt();
-    size_t singleAppInstCntNow = g_decCallers[caller_.app].size();
+    size_t singleAppInstCntNow = g_callers[isEncoder_][caller_.app].size();
     if ((totalInstCntNow >= totalWarnInstCnt_) || (singleAppInstCntNow >= singleAppWarnInstCnt_)) {
         ReportToRss();
     }
@@ -121,7 +118,8 @@ void HCodec::PrintCaller()
 size_t HCodec::CalculateTotalInstCnt()
 {
     size_t ret = 0;
-    for (const auto& [_, vec] : g_decCallers) {
+    const auto& callers = g_callers[isEncoder_];
+    for (const auto& [_, vec] : callers) {
         ret += vec.size();
     }
     return ret;
@@ -130,10 +128,12 @@ size_t HCodec::CalculateTotalInstCnt()
 void HCodec::PrintAllCaller()
 {
     std::shared_lock<std::shared_mutex> lk(g_mtx);
-    for (const auto& [app, vec] : g_decCallers) {
-        LOGI("[pid %d][%s] hold %zu decoders", app.pid, app.processName.c_str(), vec.size());
-        for (const InstInfo& inst : vec) {
-            LOGI("createTime: %" PRId64 ", %s", inst.createTimeUs, inst.compUniqueStr.c_str());
+    for (size_t i = 0; i < 2; i++) {
+        for (const auto& [app, vec] : g_callers[i]) {
+            LOGI("[pid %d][%s] hold %zu %s", app.pid, app.processName.c_str(), vec.size(), coderNames[i]);
+            for (const InstInfo& inst : vec) {
+                LOGI("createTime: %" PRId64 ", %s", inst.createTimeUs, inst.compUniqueStr.c_str());
+            }
         }
     }
 }
@@ -141,7 +141,8 @@ void HCodec::PrintAllCaller()
 void HCodec::RemoveCaller()
 {
     std::unique_lock<std::shared_mutex> lk(g_mtx);
-    for (auto mapIter = g_decCallers.begin(); mapIter != g_decCallers.end(); mapIter++) {
+    auto& callers = g_callers[isEncoder_];
+    for (auto mapIter = callers.begin(); mapIter != callers.end(); mapIter++) {
         std::vector<InstInfo>& vec = mapIter->second;
         auto iter = find_if(vec.begin(), vec.end(), [this](const InstInfo& inst) {
             return inst.compUniqueStr == compUniqueStr_;
@@ -153,7 +154,7 @@ void HCodec::RemoveCaller()
         size_t singleAppInstCntBefore = vec.size();
         vec.erase(iter);
         if (vec.empty()) {
-            g_decCallers.erase(mapIter);
+            callers.erase(mapIter);
         }
         if ((totalInstCntBefore >= totalWarnInstCnt_) || (singleAppInstCntBefore >= singleAppWarnInstCnt_)) {
             ReportToRss();
@@ -165,19 +166,18 @@ void HCodec::RemoveCaller()
 void HCodec::ReportToRss()
 {
     std::unordered_map<std::string, std::string> mapPayload;
-    for (const auto& [app, vec] : g_decCallers) {
+    for (const auto& [app, vec] : g_callers[isEncoder_]) {
         nlohmann::json js = {
             {"AppProcessName", app.processName},
-            {"AppHoldDecoderCnt", vec.size()},
-            {"MaxAllowDecoderCnt", maxDecInst_},
+            {"AppHold" + std::string(coderNames[isEncoder_]) + "Cnt", vec.size()},
+            {"MaxAllow" + std::string(coderNames[isEncoder_]) + "Cnt", maxCodecInst_},
         };
         string pidStr = to_string(app.pid);
         string jsStr = js.dump();
-        HLOGI("%s, %s", pidStr.c_str(), jsStr.c_str());
         mapPayload[pidStr] = jsStr;
     }
     ResourceSchedule::ResSchedClient::GetInstance().ReportData(
-        ResourceSchedule::ResType::RES_TYPE_HARDWARE_DECODING_RESOURCES, 0, mapPayload);
+        ResourceSchedule::ResType::RES_TYPE_AVCODE_HARDWARE_RESOURCES, isEncoder_ ? 1 : 0, mapPayload);
 }
 
 int32_t HCodec::SetCallback(const std::shared_ptr<MediaCodecCallback> &callback)
@@ -1515,7 +1515,7 @@ int32_t HCodec::OnAllocateComponent()
         HLOGE("GetCodecComponentManager failed");
         return AVCS_ERR_UNKNOWN;
     }
-    maxDecInst_ = GetMaxDecInstCnt();
+    maxCodecInst_ = isEncoder_ ? GetMaxEncInstCnt() : GetMaxDecInstCnt();
     compCb_ = new HdiCallback(m_token);
     int32_t ret = compMgr_->CreateComponent(compNode_, componentId_, caps_.compName, 0, compCb_);
     if (ret != HDF_SUCCESS || compNode_ == nullptr) {
@@ -1524,15 +1524,16 @@ int32_t HCodec::OnAllocateComponent()
         HLOGE("CreateComponent failed, ret=%d", ret);
         PrintAllCaller();
         std::unique_lock<std::shared_mutex> lk(g_mtx);
+        auto& callers = g_callers[isEncoder_];
         size_t totalInstCntNow = CalculateTotalInstCnt();
-        size_t singleAppInstCntNow = g_decCallers.count(caller_.app) > 0 ? g_decCallers[caller_.app].size() : 0;
+        size_t singleAppInstCntNow = callers.count(caller_.app) > 0 ? callers[caller_.app].size() : 0;
         if ((totalInstCntNow >= totalWarnInstCnt_) || (singleAppInstCntNow >= singleAppWarnInstCnt_)) {
             ReportToRss();
         }
         return ret == OMX_ErrorInsufficientResources ? AVCS_ERR_INSUFFICIENT_HARDWARE_RESOURCES : AVCS_ERR_UNKNOWN;
     }
-    totalWarnInstCnt_ = maxDecInst_ * 0.6;
-    singleAppWarnInstCnt_ = maxDecInst_ * 0.5;
+    totalWarnInstCnt_ = maxCodecInst_ * 0.6;
+    singleAppWarnInstCnt_ = maxCodecInst_ * 0.5;
     compUniqueStr_ = to_string(componentId_) + (isEncoder_ ? "_e" : "_d");
     record_[OMX_DirInput].ownerTraceTag_ = { "[" + compUniqueStr_ + "]in_us", "[" + compUniqueStr_ + "]in_user",
         "[" + compUniqueStr_ + "]in_omx", "[" + compUniqueStr_ + "]in_surface"};

@@ -444,8 +444,9 @@ protected:
         std::string compUniqueStr;
     };
     static std::shared_mutex g_mtx;
-    static std::unordered_map<CallerInfo, std::vector<InstInfo>, CallerInfo, CallerInfo> g_decCallers;
-    uint32_t maxDecInst_ = 0;
+    static std::unordered_map<CallerInfo, std::vector<InstInfo>,
+        CallerInfo, CallerInfo> g_callers[2]; // 0: decoder, 1: encoder
+    uint32_t maxCodecInst_ = 0;
     uint32_t totalWarnInstCnt_ = 0;
     uint32_t singleAppWarnInstCnt_ = 0;
 
@@ -498,6 +499,7 @@ protected:
     static constexpr uint32_t STRIDE_ALIGNMENT = 32;
     static constexpr double FRAME_RATE_COEFFICIENT = 65536.0;
     static constexpr double BYTE_TO_MBIT = 8.0 / 1024.0 / 1024.0;
+    static constexpr char coderNames[][8] = {"Decoder", "Encoder"};
 
 private:
     struct BaseState : State {
