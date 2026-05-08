@@ -268,6 +268,13 @@ private:
     bool ContainsNonDigit(const std::string& str);
     bool ParseFrameRateToUint32(const std::string& str, uint32_t& value);
     void UpdateSeekRanges();
+    std::shared_ptr<DashStreamDescription> FindStreamByStreamId(int streamId) const;
+    bool FindTargetPeriodIndex(const std::shared_ptr<DashStreamDescription> &currentStream,
+        int64_t seekTime, uint32_t &targetPeriodIndex, uint64_t &periodStartTime) const;
+    void SwitchStreamIfNeeded(std::shared_ptr<DashStreamDescription> &currentStream, uint32_t targetPeriodIndex);
+    void FindSegmentByRelativeTime(std::shared_ptr<DashStreamDescription> &currentStream,
+        int64_t relativeTime, std::shared_ptr<DashSegment> &seg, uint32_t targetPeriodIndex, int64_t &totalDuration);
+    
 
 private:
     std::string url_ {};
