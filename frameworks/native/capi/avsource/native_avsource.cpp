@@ -145,6 +145,7 @@ struct OH_AVSource *OH_AVSource_CreateWithURI(char *uri)
     }
     CHECK_AND_RETURN_RET_LOG(uri != nullptr, nullptr, "Uri is nullptr");
 
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVSource_CreateWithURI.Time", TIMES);
     static AppEventReporter appEventReporter = AppEventReporter();
     ApiInvokeRecorder apiInvokeRecorder("OH_AVSource_CreateWithURI", appEventReporter);
 
@@ -195,6 +196,7 @@ struct OH_AVSource *OH_AVSource_CreateWithFD(int32_t fd, int64_t offset, int64_t
     CHECK_AND_RETURN_RET_LOG(offset >= 0, nullptr, "Offset is negative");
     CHECK_AND_RETURN_RET_LOG(size > 0, nullptr, "Size must be greater than zero");
 
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVSource_CreateWithFD.Time", TIMES);
     static AppEventReporter appEventReporter = AppEventReporter();
     ApiInvokeRecorder apiInvokeRecorder("OH_AVSource_CreateWithFD", appEventReporter);
 
@@ -221,6 +223,7 @@ struct OH_AVSource *OH_AVSource_CreateWithDataSource(OH_AVDataSource *dataSource
     std::shared_ptr<NativeAVDataSource> nativeAVDataSource = std::make_shared<NativeAVDataSource>(dataSource);
     CHECK_AND_RETURN_RET_LOG(nativeAVDataSource != nullptr, nullptr, "New nativeAVDataSource failed");
 
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVSource_CreateWithDataSource.Time", TIMES);
     std::shared_ptr<AVSource> source = AVSourceFactory::CreateWithDataSource(nativeAVDataSource);
     CHECK_AND_RETURN_RET_LOG(source != nullptr, nullptr, "New avsource failed");
 
@@ -235,6 +238,7 @@ OH_AVErrCode OH_AVSource_Destroy(OH_AVSource *source)
     CHECK_AND_RETURN_RET_LOG(source != nullptr, AV_ERR_INVALID_VAL, "Input source is nullptr");
     CHECK_AND_RETURN_RET_LOG(source->magic_ == AVMagic::AVCODEC_MAGIC_AVSOURCE, AV_ERR_INVALID_VAL, "Magic error");
 
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVSource_Destroy.Time", TIMES);
     delete source;
     return AV_ERR_OK;
 }
@@ -248,6 +252,7 @@ OH_AVFormat *OH_AVSource_GetSourceFormat(OH_AVSource *source)
     CHECK_AND_RETURN_RET_LOG(sourceObj != nullptr, nullptr, "Get sourceObject failed");
     CHECK_AND_RETURN_RET_LOG(sourceObj->source_ != nullptr, nullptr, "Get sourceObject failed");
 
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVSource_GetSourceFormat.Time", TIMES);
     Format format;
     int32_t ret = sourceObj->source_->GetSourceFormat(format);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Source GetSourceFormat failed");
@@ -267,7 +272,8 @@ OH_AVFormat *OH_AVSource_GetTrackFormat(OH_AVSource *source, uint32_t trackIndex
     struct AVSourceObject *sourceObj = reinterpret_cast<AVSourceObject *>(source);
     CHECK_AND_RETURN_RET_LOG(sourceObj != nullptr, nullptr, "Get sourceObject failed");
     CHECK_AND_RETURN_RET_LOG(sourceObj->source_ != nullptr, nullptr, "Get sourceObject failed");
-    
+
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVSource_GetTrackFormat.Time", TIMES);
     Format format;
     int32_t ret = sourceObj->source_->GetTrackFormat(format, trackIndex);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Source GetTrackFormat failed");
@@ -295,6 +301,7 @@ OH_AVFormat *OH_AVSource_GetCustomMetadataFormat(OH_AVSource *source)
     CHECK_AND_RETURN_RET_LOG(sourceObj != nullptr, nullptr, "Get sourceObject failed");
     CHECK_AND_RETURN_RET_LOG(sourceObj->source_ != nullptr, nullptr, "Get sourceObject failed");
 
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVSource_GetCustomMetadataFormat.Time", TIMES);
     Format format;
     int32_t ret = sourceObj->source_->GetUserMeta(format);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Source GetMetaData failed");
@@ -312,6 +319,7 @@ struct OH_AVSource *OH_AVSource_CreateWithDataSourceExt(OH_AVDataSourceExt *data
     CHECK_AND_RETURN_RET_LOG(dataSource->size > 0, nullptr, "DatasourceExt size must be greater than zero");
     CHECK_AND_RETURN_RET_LOG(dataSource->readAt != nullptr, nullptr, "DatasourceExt readAt is nullptr");
 
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVSource_CreateWithDataSourceExt.Time", TIMES);
     std::shared_ptr<NativeAVDataSource> nativeAVDataSource = std::make_shared<NativeAVDataSource>(dataSource, userData);
     CHECK_AND_RETURN_RET_LOG(nativeAVDataSource != nullptr, nullptr, "New nativeAVDataSourceExt failed");
 
