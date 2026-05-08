@@ -21,6 +21,7 @@
 #include "common/native_mfmagic.h"
 #include "native_avmagic.h"
 #include "hiappevent_util.h"
+#include "api_metrics_util.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_MUXER, "NativeAVMuxer"};
@@ -39,6 +40,7 @@ struct AVMuxerObject : public OH_AVMuxer {
 
 struct OH_AVMuxer *OH_AVMuxer_Create(int32_t fd, OH_AVOutputFormat format)
 {
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVMuxer_Create.Time", TIMES);
     static AppEventReporter appEventReporter = AppEventReporter();
     ApiInvokeRecorder apiInvokeRecorder("OH_AVMuxer_Create", appEventReporter);
     std::shared_ptr<AVMuxer> avmuxer = AVMuxerFactory::CreateAVMuxer(fd, static_cast<Plugins::OutputFormat>(format));
@@ -49,6 +51,7 @@ struct OH_AVMuxer *OH_AVMuxer_Create(int32_t fd, OH_AVOutputFormat format)
 
 OH_AVErrCode OH_AVMuxer_SetRotation(OH_AVMuxer *muxer, int32_t rotation)
 {
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVMuxer_SetRotation.Time", TIMES);
     CHECK_AND_RETURN_RET_LOG(muxer != nullptr, AV_ERR_INVALID_VAL, "input muxer is nullptr!");
     CHECK_AND_RETURN_RET_LOG(muxer->magic_ == AVMagic::AVCODEC_MAGIC_AVMUXER, AV_ERR_INVALID_VAL, "magic error!");
 
@@ -244,6 +247,7 @@ static OH_AVErrCode SetUserMetaParam(std::shared_ptr<Meta> userMeta, AVMuxerObje
 
 OH_AVErrCode OH_AVMuxer_SetFormat(OH_AVMuxer *muxer, OH_AVFormat *format)
 {
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVMuxer_SetFormat.Time", TIMES);
     CHECK_AND_RETURN_RET_LOG(muxer != nullptr, AV_ERR_INVALID_VAL, "input muxer is nullptr!");
     CHECK_AND_RETURN_RET_LOG(muxer->magic_ == AVMagic::AVCODEC_MAGIC_AVMUXER, AV_ERR_INVALID_VAL, "magic error!");
     CHECK_AND_RETURN_RET_LOG(format != nullptr, AV_ERR_INVALID_VAL, "input format is nullptr!");
@@ -275,6 +279,7 @@ OH_AVErrCode OH_AVMuxer_SetFormat(OH_AVMuxer *muxer, OH_AVFormat *format)
 
 OH_AVErrCode OH_AVMuxer_AddTrack(OH_AVMuxer *muxer, int32_t *trackIndex, OH_AVFormat *trackFormat)
 {
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVMuxer_AddTrack.Time", TIMES);
     CHECK_AND_RETURN_RET_LOG(muxer != nullptr, AV_ERR_INVALID_VAL, "input muxer is nullptr!");
     CHECK_AND_RETURN_RET_LOG(muxer->magic_ == AVMagic::AVCODEC_MAGIC_AVMUXER, AV_ERR_INVALID_VAL, "magic error!");
     CHECK_AND_RETURN_RET_LOG(trackIndex != nullptr, AV_ERR_INVALID_VAL, "input track index is nullptr!");
@@ -294,6 +299,7 @@ OH_AVErrCode OH_AVMuxer_AddTrack(OH_AVMuxer *muxer, int32_t *trackIndex, OH_AVFo
 
 OH_AVErrCode OH_AVMuxer_Start(OH_AVMuxer *muxer)
 {
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVMuxer_Start.Time", TIMES);
     CHECK_AND_RETURN_RET_LOG(muxer != nullptr, AV_ERR_INVALID_VAL, "input muxer is nullptr!");
     CHECK_AND_RETURN_RET_LOG(muxer->magic_ == AVMagic::AVCODEC_MAGIC_AVMUXER, AV_ERR_INVALID_VAL, "magic error!");
 
@@ -320,6 +326,7 @@ OH_AVErrCode OH_AVMuxer_WriteSample(OH_AVMuxer *muxer, uint32_t trackIndex,
         static_cast<int64_t>(info.offset) + static_cast<int64_t>(info.size),
         AV_ERR_INVALID_VAL, "invalid memory");
 
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVMuxer_WriteSample.Time", TIMES);
     struct AVMuxerObject *object = reinterpret_cast<AVMuxerObject *>(muxer);
     CHECK_AND_RETURN_RET_LOG(object->muxer_ != nullptr, AV_ERR_INVALID_VAL, "muxer_ is nullptr!");
 
@@ -345,6 +352,7 @@ OH_AVErrCode OH_AVMuxer_WriteSampleBuffer(OH_AVMuxer *muxer, uint32_t trackIndex
     CHECK_AND_RETURN_RET_LOG(sample->magic_ == MFMagic::MFMAGIC_AVBUFFER, AV_ERR_INVALID_VAL,
         "sample magic error!");
 
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVMuxer_WriteSampleBuffer.Time", TIMES);
     struct AVMuxerObject *object = reinterpret_cast<AVMuxerObject *>(muxer);
     CHECK_AND_RETURN_RET_LOG(object->muxer_ != nullptr, AV_ERR_INVALID_VAL, "muxer_ is nullptr!");
 
@@ -357,6 +365,7 @@ OH_AVErrCode OH_AVMuxer_WriteSampleBuffer(OH_AVMuxer *muxer, uint32_t trackIndex
 
 OH_AVErrCode OH_AVMuxer_Stop(OH_AVMuxer *muxer)
 {
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVMuxer_Stop.Time", TIMES);
     CHECK_AND_RETURN_RET_LOG(muxer != nullptr, AV_ERR_INVALID_VAL, "input muxer is nullptr!");
     CHECK_AND_RETURN_RET_LOG(muxer->magic_ == AVMagic::AVCODEC_MAGIC_AVMUXER, AV_ERR_INVALID_VAL, "magic error!");
 
@@ -372,6 +381,7 @@ OH_AVErrCode OH_AVMuxer_Stop(OH_AVMuxer *muxer)
 
 OH_AVErrCode OH_AVMuxer_Destroy(OH_AVMuxer *muxer)
 {
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVMuxer_Destroy.Time", TIMES);
     CHECK_AND_RETURN_RET_LOG(muxer != nullptr, AV_ERR_INVALID_VAL, "input muxer is nullptr!");
     CHECK_AND_RETURN_RET_LOG(muxer->magic_ == AVMagic::AVCODEC_MAGIC_AVMUXER, AV_ERR_INVALID_VAL, "magic error!");
 

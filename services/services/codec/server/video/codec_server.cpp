@@ -777,7 +777,7 @@ int32_t CodecServer::ReleaseOutputBuffer(uint32_t index, bool render)
                 pts = it->second;
             }
         }
-        framerateCalculator_->OnFrameConsumed(pts);
+        framerateCalculator_->OnFrameConsumed(pts, render);
     }
     if (postProcessing_) {
         return ReleaseOutputBufferOfPostProcessing(index, render);

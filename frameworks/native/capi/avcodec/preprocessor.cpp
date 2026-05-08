@@ -45,7 +45,6 @@ constexpr int32_t P010_BYTES_PER_SAMPLE = 2;
 constexpr int32_t YUV_SUBSAMPLE = 2;
 constexpr int32_t INVALID_ROW_BYTES = -1;
 constexpr int32_t UNSET_PROFILE = -1;
-constexpr int32_t INVALID_OUTPUT_FORMAT = -1;
 constexpr int32_t DISABLE_CROP_LEFT = 0;
 constexpr int32_t DISABLE_CROP_TOP = 0;
 constexpr int32_t DISABLE_CROP_RIGHT = 0;
@@ -105,7 +104,7 @@ bool IsGeometrySupported(OHOS::GraphicPixelFormat format, int32_t width, int32_t
 std::string TransformRoiMetadata(const std::string &roi, double scaleX, double scaleY,
                                  int32_t offsetTop, int32_t offsetLeft)
 {
-    static const std::regex roiPattern(R"((?:^|;)(-?\d+),(-?\d+)-(-?\d+),(-?\d+)(?:=([^;]*))?;)");
+    static const std::regex roiPattern(R"((?:^|;)(-?\d+),(-?\d+)-(-?\d+),(-?\d+)(?:=([^;]*))?(?=;|$))");
     std::smatch match;
     std::string temp = roi;
     std::string result;
@@ -331,9 +330,6 @@ int32_t Preprocessor::Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &ou
     CHECK_AND_RETURN_RET_LOG(input && output, AVCS_ERR_INVALID_VAL,
                              "Invalid buffer: input is %{public}s, output is %{public}s", input ? "valid" : "nullptr",
                              output ? "valid" : "nullptr");
-    CHECK_AND_RETURN_RET_LOG(input->GetFormat() == output->GetFormat(), AVCS_ERR_INVALID_VAL,
-                             "Format mismatch: input=%{public}d, output=%{public}d", input->GetFormat(),
-                             output ? output->GetFormat() : INVALID_OUTPUT_FORMAT);
     if (IsCropEnabled()) {
         int32_t ret = Crop(input, output);
         if (ret == AVCS_ERR_OK) {
@@ -491,9 +487,7 @@ void Preprocessor::UpdateOutputMetadata(const sptr<SurfaceBuffer> &input, const 
 
 void Preprocessor::CopyInputMetadata(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output)
 {
-    CHECK_AND_RETURN_LOG(input != nullptr && output != nullptr,
-                         "Invalid buffer for metadata copy: input=%{public}p, output=%{public}p",
-                         input.GetRefPtr(), output.GetRefPtr());
+    CHECK_AND_RETURN_LOG(input != nullptr && output != nullptr, "Invalid buffer for metadata copy");
 
     std::vector<uint32_t> keys;
     GSError ret = input->ListMetadataKeys(keys);
@@ -509,7 +503,7 @@ void Preprocessor::CopyInputMetadata(const sptr<SurfaceBuffer> &input, const spt
             AVCODEC_LOGW("Get metadata failed: key=%{public}u, ret=%{public}d", key, ret);
             continue;
         }
-        ret = output->SetMetadata(key, value);
+        ret = output->SetMetadata(key, value, false);
         if (ret != GSERROR_OK) {
             AVCODEC_LOGW("Set metadata failed: key=%{public}u, ret=%{public}d", key, ret);
         }
@@ -533,7 +527,7 @@ void Preprocessor::UpdateRoiMetadata(const sptr<SurfaceBuffer> &input, const spt
                                                    roiTransform.offsetTop, roiTransform.offsetLeft);
     std::vector<uint8_t> outputRoi(transformed.begin(), transformed.end());
     outputRoi.push_back('\0');
-    GSError ret = output->SetMetadata(V2_2::ATTRKEY_ROI_METADATA, outputRoi);
+    GSError ret = output->SetMetadata(V2_2::ATTRKEY_ROI_METADATA, outputRoi, false);
     CHECK_AND_RETURN_LOG(ret == GSERROR_OK, "Set roi metadata failed: %{public}d", ret);
 }
 

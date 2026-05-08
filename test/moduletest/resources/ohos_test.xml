@@ -638,45 +638,27 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
-    <target name="HevcSwdecoderConfigureFuzzTest">
-        <preparer>
-            <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="video_decoder/. -> /data/test/media" src="res"/>
-            <option name="shell" value="restorecon /data/test/media"/>
-        </preparer>
-    </target>
-    <target name="HevcSwdecoderServerFuzzTest">
-        <preparer>
-            <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="video_decoder/. -> /data/test/media" src="res"/>
-            <option name="shell" value="restorecon /data/test/media"/>
-        </preparer>
-    </target>
     <target name="HevcSwdecoderServerMemrecycleFuzzTest">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="video_decoder/. -> /data/test/media" src="res"/>
+            <option name="push" value="video_decoder/720_1280_25_avcc.h265 -> /data/test/media" src="res"/>
+            <option name="push" value="video_decoder/720_1280_25_avcc.hdr.h265 -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
     <target name="HevcSwdecoderServerNormalFuzzTest">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="video_decoder/. -> /data/test/media" src="res"/>
-            <option name="shell" value="restorecon /data/test/media"/>
-        </preparer>
-    </target>
-    <target name="HevcSwdecoderServerSurfaceFuzzTest">
-        <preparer>
-            <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="video_decoder/. -> /data/test/media" src="res"/>
+            <option name="push" value="video_decoder/720_1280_25_avcc.h265 -> /data/test/media" src="res"/>
+            <option name="push" value="video_decoder/720_1280_25_avcc.hdr.h265 -> /data/test/media" src="res"/>
+            <option name="push" value="video_decoder/hdr_hlg_metadata_res.h265 -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
     <target name="HevcSwdecoderSetParameterFuzzTest">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="video_decoder/. -> /data/test/media" src="res"/>
+            <option name="push" value="video_decoder/1920_1080_30.h265 -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>

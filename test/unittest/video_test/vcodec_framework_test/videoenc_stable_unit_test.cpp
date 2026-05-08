@@ -127,7 +127,7 @@ HWMTEST_F(VideoEncStableTest, VideoEncoder_Multithread_Release_AVBuffer_001, Tes
     EXPECT_EQ(venc->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
-INSTANTIATE_TEST_SUITE_P(, VideoEncStableTest, testing::Values("Flush", "Stop", "Reset"));
+INSTANTIATE_TEST_SUITE_P(, VideoEncStableTest, testing::Values("Flush", "Stop", "Reset", "Flush"));
 
 /**
  * @tc.name: VideoEncoder_Multithread_001

@@ -52,7 +52,7 @@ union SpeedStatsUnion {
 class DecodingBehaviorAnalyzer {
 public:
     DecodingBehaviorAnalyzer();
-    void OnFrameConsumed(int64_t pts);
+    void OnFrameConsumed(int64_t pts, bool render);
     void OnStopped(bool isDecEnd);
     void OnChecked(double decFps);
 
@@ -63,6 +63,7 @@ private:
     int64_t startPtsMs_ = -1;
     int64_t endPtsMs_ = -1;
     uint32_t frameCnt_ = 0;
+    uint32_t renderCnt_ = 0;
     std::chrono::steady_clock::time_point startTime_;
     std::chrono::steady_clock::time_point lastCheckTime_;
     size_t maxPossibleDecSpeedIdx_ = 0;
@@ -70,7 +71,11 @@ private:
     std::deque<size_t> speedWindow_;
     std::array<size_t, stdSpeedLevels> speedCount_ = {};
     std::vector<DecodingBehaviorSnapshot> history_;
+    double lastReportedFps_ = -1.0;
+    double lastReportedRenderFps_ = -1.0;
+    int64_t lastPtsMs_ = -1;
 
+    void ResetIntervalStats();
     size_t MatchAndUpdateSpeedStats(double decSpeed);
     DecodingBehaviorType DetermineDecodingBehaviorType();
     bool IsDecChanged(DecodingBehaviorType oldType, size_t oldSpeedIdx,

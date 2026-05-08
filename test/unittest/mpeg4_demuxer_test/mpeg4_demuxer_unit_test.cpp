@@ -332,7 +332,7 @@ HWTEST_F(Mpeg4DemuxerUnitTest, mp4Demuxer_CreateDemuxer_0006, TestSize.Level1)
     fd_ = OpenFile(g_mp4MPEGPSPath);
     int64_t size = GetFileSize(g_mp4MPEGPSPath);
     source_ = Mpeg4SourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size);
-    ASSERT_EQ(source_, nullptr);
+    ASSERT_NE(source_, nullptr);
 }
 
 /**

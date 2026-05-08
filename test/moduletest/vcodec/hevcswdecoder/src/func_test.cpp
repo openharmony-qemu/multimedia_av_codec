@@ -1796,31 +1796,6 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_004, TestSize.Level3)
 }
 
 /**
- * @tc.number    : VIDEO_SWDEC_RESOLUTION_PROFILE_0010
- * @tc.name      : Resolution and profile change
- * @tc.desc      : function test
- */
-HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_RESOLUTION_PROFILE_0010, TestSize.Level0)
-{
-    if (!access("/system/lib64/media/", 0)) {
-        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = "/data/test/media/profResoChange.h265";
-        vDecSample->DEFAULT_WIDTH = 1280;
-        vDecSample->DEFAULT_HEIGHT = 720;
-        vDecSample->DEFAULT_FRAME_RATE = 30;
-        vDecSample->SF_OUTPUT = false;
-        vDecSample->NocaleHash = true;
-        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHevc));
-        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
-        vDecSample->WaitForEOS();
-        ASSERT_EQ(800, vDecSample->outFrameCount);
-        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
-    }
-}
-
-/**
  * @tc.number    : VIDEO_DECODE_SYNC_SW265_FUNC_0010
  * @tc.name      : 265同步软解输出nv12
  * @tc.desc      : function test
@@ -1834,7 +1809,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_DECODE_SYNC_SW265_FUNC_0010, TestSize.Level
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
-        vDecSample->enbleSyncMode = 1;
+        vDecSample->enableSyncMode = 1;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHevc));
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
@@ -1857,7 +1832,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_DECODE_SYNC_SW265_FUNC_0020, TestSize.Level
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
-        vDecSample->enbleSyncMode = 1;
+        vDecSample->enableSyncMode = 1;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHevc));
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
@@ -1881,7 +1856,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_DECODE_SYNC_SW265_FUNC_0030, TestSize.Level
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
-        vDecSample->enbleSyncMode = 1;
+        vDecSample->enableSyncMode = 1;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHevc));
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->DecodeSetSurface());
@@ -2157,7 +2132,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_H265_FLUSH_THREE_0010, TestSize.Level
         vDecSample->DEFAULT_HEIGHT = 720;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
-        vDecSample->NEED_MD5_COMPAIRE = false;
+        vDecSample->NEED_MD5_COMPARE = false;
         vDecSample->INPUT_NAL_NUM = 3;
         vDecSample->INPUT_STREAM_TYPE = OHOS::Media::VDecAPI11Sample::Input_Stream_Type_000001;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHevc));

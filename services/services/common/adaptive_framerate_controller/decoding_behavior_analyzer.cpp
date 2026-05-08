@@ -27,6 +27,10 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "
 constexpr size_t SPEED_WINDON_SIZE = 5;           // Sliding window size used to determine speed stability
 constexpr double DETECTION_THRESHOLD_RATIO = 0.5; // Stability threshold: dominant speed in the window must exceed 50%
 constexpr uint32_t SRC_FRAME_CNT_MIN = 5;         // Minimum valid frame count
+constexpr double EPSILON = 1e-6;
+constexpr double FPS_REPORT_DIFF_THRESHOLD = 2.0 + EPSILON;
+constexpr double MAX_REPORT_FPS = 60.0;
+constexpr int64_t SEEK_DETECTION_THRESHOLD_MS = 500;
 const std::unordered_map<size_t, const std::string_view> SPEED_DEC_INFO_KEY_MAP = {
     {1, OHOS::MediaAVCodec::EventInfoExtentedKey::SPEED_DECODING_INFO_0_75X},
     {2, OHOS::MediaAVCodec::EventInfoExtentedKey::SPEED_DECODING_INFO_1_00X},
@@ -44,21 +48,25 @@ DecodingBehaviorAnalyzer::DecodingBehaviorAnalyzer()
     startTime_ = std::chrono::steady_clock::now();
 }
 
-void DecodingBehaviorAnalyzer::OnFrameConsumed(int64_t pts)
+void DecodingBehaviorAnalyzer::OnFrameConsumed(int64_t pts, bool render)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     if (pts < 0) {
         return;
     }
     int64_t ptsMs = pts / 1000; // 1000: us to ms
-    if (ptsMs < startPtsMs_) { // handle looped playback
+    if (lastPtsMs_ != -1 && std::abs(ptsMs - lastPtsMs_) > SEEK_DETECTION_THRESHOLD_MS) {
         frameCnt_ = 0;
+        renderCnt_ = 0;
     }
     if (frameCnt_ == 0) {
         startPtsMs_ = ptsMs;
     }
     endPtsMs_ = ptsMs;
     frameCnt_++;
+    if (render) {
+        renderCnt_++;
+    }
 }
 
 void DecodingBehaviorAnalyzer::SaveDecodingBehaviorAsSnapshot(
@@ -114,7 +122,9 @@ void DecodingBehaviorAnalyzer::OnStopped(bool isDecEnd)
         SaveDecodingBehaviorAsSnapshot(type_, lastCheckTime_, maxPossibleDecSpeedIdx_);
     }
     ReportSpeedDecodingInfo();
-    frameCnt_ = 0;
+    ResetIntervalStats();
+    lastReportedFps_ = -1.0;
+    lastReportedRenderFps_ = -1.0;
     type_ = DecodingBehaviorType::UNKNOWN;
     speedWindow_.clear();
     for (auto& element : speedCount_) {
@@ -182,18 +192,47 @@ bool DecodingBehaviorAnalyzer::IsDecChanged(DecodingBehaviorType oldType, size_t
     }
 }
 
-void DecodingBehaviorAnalyzer::OnChecked(double decFps)
+void DecodingBehaviorAnalyzer::ResetIntervalStats()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (frameCnt_ < SRC_FRAME_CNT_MIN || endPtsMs_ <= startPtsMs_) {
-        return;
-    }
-    double ptsIntvlMs = static_cast<double>(endPtsMs_ - startPtsMs_) / (frameCnt_ - 1);
-    double srcFps = 1000.0 / ptsIntvlMs;
-    AVCODEC_LOGD("%{public}" PRId64 ", %{public}" PRId64 ", %{public}u", endPtsMs_, startPtsMs_, frameCnt_);
     startPtsMs_ = -1;
     endPtsMs_ = -1;
     frameCnt_ = 0;
+    renderCnt_ = 0;
+}
+
+void DecodingBehaviorAnalyzer::OnChecked(double decFps)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (frameCnt_ < SRC_FRAME_CNT_MIN) {
+        return;
+    }
+    if (endPtsMs_ <= startPtsMs_) {
+        ResetIntervalStats();
+        return;
+    }
+    double srcFps = 0.0;
+    double renderFps = 0.0;
+    if (frameCnt_ > 1 && endPtsMs_ > startPtsMs_) {
+        double ptsIntvlMs = static_cast<double>(endPtsMs_ - startPtsMs_) / (frameCnt_ - 1);
+        srcFps = 1000.0 / ptsIntvlMs; //1000.0: ms to s
+    }
+    if (frameCnt_ > 0) {
+        renderFps = decFps * static_cast<double>(renderCnt_) / frameCnt_;
+    }
+    AVCODEC_LOGD("Render: %{public}.2f fps, dec: %{public}.2f fps, src: %{public}.2f fps, renderCnt %{public}u"
+                 ", frameCnt %{public}u", renderFps, decFps, srcFps, renderCnt_, frameCnt_);
+    double reportDecFps = decFps > (MAX_REPORT_FPS + EPSILON) ? (MAX_REPORT_FPS + 1.0) : decFps;
+    double reportRenderFps = renderFps > (MAX_REPORT_FPS + EPSILON) ? (MAX_REPORT_FPS + 1.0) : renderFps;
+    if (lastReportedFps_ < 0.0 || lastReportedRenderFps_ < 0.0 ||
+        std::abs(reportRenderFps - lastReportedRenderFps_) > FPS_REPORT_DIFF_THRESHOLD ||
+        std::abs(reportDecFps - lastReportedFps_) > FPS_REPORT_DIFF_THRESHOLD) {
+        AVCODEC_LOGD("Framerate changed: render: %{public}.2f fps, dec: %{public}.2f fps, src: %{public}.2f fps",
+                     reportRenderFps, reportDecFps, srcFps);
+        lastReportedRenderFps_ = reportRenderFps;
+        lastReportedFps_ = reportDecFps;
+    }
+    AVCODEC_LOGD("%{public}" PRId64 ", %{public}" PRId64 ", %{public}u", endPtsMs_, startPtsMs_, frameCnt_);
+    ResetIntervalStats();
 
     double decSpeed = decFps / srcFps;
     size_t newSpeedIdx = MatchAndUpdateSpeedStats(decSpeed);

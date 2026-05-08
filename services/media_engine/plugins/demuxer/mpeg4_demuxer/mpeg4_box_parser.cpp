@@ -118,6 +118,14 @@ constexpr std::array<size_t, 4> MATRIX_2X2_INDICES = {0, 1, 3, 4}; // [0][0], [0
 constexpr std::array<size_t, 3> MATRIX_DIAGONAL_INDICES = {0, 4, 8}; // [0][0], [1][1], [2][2]
 constexpr std::array<size_t, 6> MATRIX_OFF_DIAGONAL_INDICES = {1, 2, 3, 5, 6, 7}; // 非对角线元素
 
+static std::map<TrackType, MediaType> g_convertMpeg4TrackType = {
+    {VIDEO_TYPE, MediaType::VIDEO},
+    {AUDIO_TYPE, MediaType::AUDIO},
+    {SUBTITLE_TYPE, MediaType::SUBTITLE},
+    {TIMEDMETA_TYPE, MediaType::TIMEDMETA},
+    {AUXILIARY_TYPE, MediaType::AUXILIARY},
+};
+
 struct PathAdder {
     PathAdder(std::vector<uint32_t> *path, uint32_t atomType): path_(path)
     {
@@ -133,6 +141,12 @@ private:
     PathAdder(const PathAdder&);
     PathAdder& operator=(const PathAdder &);
 };
+
+bool NeedParseMediaTrackInfo(TrackType trackType)
+{
+    return trackType == TrackType::VIDEO_TYPE || trackType == TrackType::AUDIO_TYPE ||
+           trackType == TrackType::TIMEDMETA_TYPE || trackType == TrackType::AUXILIARY_TYPE;
+}
 
 static std::string GetMimeType(int32_t atomtype)
 {
@@ -183,15 +197,6 @@ static std::string GetMimeType(int32_t atomtype)
         return it->second;
     }
     return MimeType::INVALID_TYPE;
-}
-
-static bool UserMetaToSource(std::string key)
-{
-    static std::vector<std::string> keys = {
-        "aigc"
-    };
-    auto it = std::find(keys.begin(), keys.end(), key);
-    return it != keys.end();
 }
 
 static bool StartWith(const char* name, const char* chars)
@@ -793,14 +798,17 @@ int64_t MPEG4AtomParser::GetTrackDuration(std::shared_ptr<Track> track, bool cal
     }
     
     int64_t duration = 0;
-    if (track->sampleHelper && !track->sampleHelper->sampleIndexEntry_.empty() && !hasMoofBox_) {
-        // 如果是用于比特率计算，直接返回原始的 totalDuration_
+    if (track->sampleHelper && !track->sampleHelper->sampleIndexEntry_.empty()) {
         if (calculateBitrate) {
             duration = track->sampleHelper->totalDuration_;
             MEDIA_LOG_D("Using raw sample helper duration for bitrate: " PUBLIC_LOG_D64, duration);
             return duration;
         }
-        duration = std::min(track->duration, track->sampleHelper->totalDuration_);
+        if (hasMoofBox_) {
+            duration = track->sampleHelper->totalDuration_;
+        } else {
+            duration = std::min(track->duration, track->sampleHelper->totalDuration_);
+        }
         MEDIA_LOG_D("sample helper duration" PUBLIC_LOG_D64, track->sampleHelper->totalDuration_);
     }
     if (track->totalElstDuration) {
@@ -948,9 +956,24 @@ Status MPEG4AtomParser::ParseTrak(MPEG4Atom currentAtom, int32_t depth, ParseCon
         }
     }
     SetCodecConfig(lastTrack_);
+    AdapterFormat(lastTrack_);
     return Status::OK;
 }
 
+void MPEG4AtomParser::AdapterFormat(std::shared_ptr<Track> track)
+{
+    if (!NeedParseMediaTrackInfo(track->codecParms.trackType)) {
+        mediaInfo_.tracks[track->trackIndex].Remove(Tag::MEDIA_LANGUAGE);
+    }
+    int32_t channelCount = -1;
+    if (mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_CHANNEL_COUNT>(channelCount)) {
+        mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_OUTPUT_CHANNELS>(channelCount);
+    }
+    AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
+    if (mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout)) {
+        mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(layout);
+    }
+}
 void MPEG4AtomParser::CalculateSampleAspectRatio(std::shared_ptr<Track> track, uint32_t width, uint32_t height)
 {
     FALSE_RETURN_MSG(track != nullptr, "CalculateSampleAspectRatio: track is null");
@@ -1254,8 +1277,14 @@ Status MPEG4AtomParser::ParseMdhd(MPEG4Atom currentAtom, int32_t depth, ParseCon
     uint32_t durationOffset = (version == 1) ? DURATION_OFFSET_V1 : DURATION_OFFSET_V0;
     if (version == 1) {
         duration = GetU64Value(&headerInfo[durationOffset]);
+        if (duration == UINT64_MAX) {
+            duration = 0;
+        }
     } else if (version == 0) {
         duration = GetU32Value(&headerInfo[durationOffset]);
+        if (duration == UINT32_MAX) {
+            duration = 0;
+        }
     }
     lastTrack_->duration = duration;
     FALSE_RETURN_V_MSG_E(IsValidTrackIndex(mediaInfo_, lastTrack_->trackIndex), Status::ERROR_INVALID_DATA,
@@ -1267,18 +1296,16 @@ Status MPEG4AtomParser::ParseMdhd(MPEG4Atom currentAtom, int32_t depth, ParseCon
     uint16_t languageValue = (version == 1) ? GetU16Value(&headerInfo[languageOffsetVersionOne])
                                             : GetU16Value(&headerInfo[languageOffsetVersionZero]);
     std::string langString = ConvertLanguageCode(languageValue);
-    mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::MEDIA_LANGUAGE>(langString);
+    if (langString.size() > 0) {
+        mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::MEDIA_LANGUAGE>(langString);
+    }
 
     int32_t fileTimeScale = 0;
     if (mediaInfo_.general.GetData(Tag::MEDIA_TIME_SCALE, fileTimeScale) && fileTimeScale > 0 &&
         lastTrack_->sampleHelper != nullptr) {
-        int64_t emptyDurationTrackTs = 0;
-        if (lastTrack_->elstInitEmptyEdit > 0) {
-            emptyDurationTrackTs = (lastTrack_->elstInitEmptyEdit * timeScale + fileTimeScale - 1) / fileTimeScale;
-        }
-        int64_t timeOffset = lastTrack_->elstShiftStartTime - emptyDurationTrackTs;
-        lastTrack_->sampleHelper->SetTimeOffset(timeOffset);
-        MEDIA_LOG_D("Set timeOffset: " PUBLIC_LOG_D64 " for track " PUBLIC_LOG_U32, timeOffset, lastTrack_->trackIndex);
+        int64_t emptyDurationTrackTs = lastTrack_->elstInitEmptyEdit > 0 ?
+            ((lastTrack_->elstInitEmptyEdit * timeScale + fileTimeScale - 1) / fileTimeScale) : 0;
+        lastTrack_->sampleHelper->SetTimeOffset(lastTrack_->elstShiftStartTime - emptyDurationTrackTs);
     }
     return ret;
 }
@@ -1307,6 +1334,15 @@ bool MPEG4AtomParser::UnderMetaPath(const std::vector<uint32_t>& path, int32_t d
     return false;
 }
 
+void MPEG4AtomParser::SetTrackMediaType(const std::shared_ptr<Track>& track)
+{
+    if (g_convertMpeg4TrackType.count(track->codecParms.trackType) > 0) {
+        mediaInfo_.tracks[track->trackIndex].Set<Tag::MEDIA_TYPE>(g_convertMpeg4TrackType[track->codecParms.trackType]);
+        return;
+    }
+    MEDIA_LOG_W("Parse track type failed: " PUBLIC_LOG_D32, static_cast<int32_t>(track->codecParms.trackType));
+}
+
 Status MPEG4AtomParser::ParseHdlr(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {
     FALSE_RETURN_V_MSG_E(currentAtom.dataSize >= MIN_HDLR_DATA_SIZE, Status::ERROR_INVALID_DATA, "Invalid size");
@@ -1315,7 +1351,6 @@ Status MPEG4AtomParser::ParseHdlr(MPEG4Atom currentAtom, int32_t depth, ParseCon
     uint8_t typeInfo[12];
     Status ret = dataReader_->ReadUintData(ctx->dataOffset, typeInfo, sizeof(typeInfo));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read hdlr type info failed");
-    uint32_t componentType = GetU32Value(&typeInfo[4]);
     uint32_t handlerType = GetU32Value(&typeInfo[8]);
     // If this is a metadata handler outside a valid track, mark it and return
     if (UnderMetaPath(ctx->path, depth)) {
@@ -1335,24 +1370,23 @@ Status MPEG4AtomParser::ParseHdlr(MPEG4Atom currentAtom, int32_t depth, ParseCon
         case FourccType("text"):
             lastTrack_->codecParms.trackType = SUBTITLE_TYPE;
             break;
+        case FourccType("auxv"):
+            lastTrack_->codecParms.trackType = AUXILIARY_TYPE;
+            break;
         case FourccType("meta"):
             ret = ProcessMetaHandler(currentAtom, ctx);
             FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Process meta handler failed");
             break;
         default:
-            if (componentType == FourccType("mhlr") && handlerType == FourccType("MPEG")) {
-                MEDIA_LOG_E("Unsupported MPEG handler type, it's MPEGPS in MOV ");
-                return Status::ERROR_UNSUPPORTED_FORMAT;
-            } else if (ctx->path.size() > DIRECT_META_PATH_SIZE &&
-                       ctx->path[ctx->path.size() - DIRECT_META_PATH_SIZE] != FourccType("mdia")) {
+            if (ctx->path.size() > DIRECT_META_PATH_SIZE &&
+                ctx->path[ctx->path.size() - DIRECT_META_PATH_SIZE] != FourccType("mdia")) {
                 return Status::OK;
             }
             lastTrack_->codecParms.trackType = INVALID_TYPE;
             break;
     }
     lastTrack_->sampleHelper->trackType_ = lastTrack_->codecParms.trackType;
-    MediaType mediaType = static_cast<MediaType>(lastTrack_->codecParms.trackType);
-    mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::MEDIA_TYPE>(mediaType);
+    SetTrackMediaType(lastTrack_);
     return ret;
 }
 
@@ -3285,6 +3319,7 @@ Status MPEG4AtomParser::ParseUserDataString(MPEG4Atom currentAtom, int32_t depth
     } else {
         ret = ParseTraditionalMetadata(currentAtom, key, ctx);
     }
+    ctx->isUserMeta = false;
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse metadata string failed");
     return ret;
 }
@@ -3298,6 +3333,7 @@ std::string MPEG4AtomParser::GetMetadataKey(uint32_t atomType, ParseContext* ctx
         if (index > 0 && index < ctx->metaKeysCount) {
             std::string key = ctx->metaKeys[index];
             if (!key.empty()) {
+                ctx->isUserMeta = true;
                 MEDIA_LOG_D("Found dynamic key[" PUBLIC_LOG_U32 "]: " PUBLIC_LOG_S, index, key.c_str());
                 return key;
             }
@@ -3349,7 +3385,7 @@ Status MPEG4AtomParser::ParseItunesMetadata(MPEG4Atom currentAtom, std::string& 
         if (currentAtom.type == FourccType("covr") || (!key.empty() && key == "com.apple.quicktime.artwork")) {
             return ParseCover(currentAtom, dataType, stringSize, ctx);
         }
-        ret = ReadMetadataString(key, ctx->dataOffset + headerSize, stringSize, dataType);
+        ret = ReadMetadataString(key, ctx->dataOffset + headerSize, stringSize, dataType, ctx->isUserMeta);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read iTunes metadata string failed");
     } else {
         MEDIA_LOG_W("Invalid iTunes metadata format: dataTag=" PUBLIC_LOG_U32, dataTag);
@@ -3370,10 +3406,10 @@ Status MPEG4AtomParser::ParseTraditionalMetadata(MPEG4Atom currentAtom, std::str
     constexpr uint16_t defaultSkipSize = 4;
     if (stringLength > currentAtom.dataSize - defaultSkipSize) {
         // 作为原始数据处理
-        ret = ReadMetadataString(key, ctx->dataOffset, currentAtom.dataSize, 0);
+        ret = ReadMetadataString(key, ctx->dataOffset, currentAtom.dataSize, 0, ctx->isUserMeta);
     } else {
         // 跳过语言代码
-        ret = ReadMetadataString(key, ctx->dataOffset + defaultSkipSize, stringLength, 0);
+        ret = ReadMetadataString(key, ctx->dataOffset + defaultSkipSize, stringLength, 0, ctx->isUserMeta);
     }
     
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read traditional metadata string failed");
@@ -3469,7 +3505,8 @@ bool MPEG4AtomParser::SetMetadataValue(const std::string& key, const std::string
     return false;
 }
 
-Status MPEG4AtomParser::ReadMetadataString(std::string& key, int64_t offset, uint64_t size, uint32_t dataType)
+Status MPEG4AtomParser::ReadMetadataString(
+    std::string& key, int64_t offset, uint64_t size, uint32_t dataType, bool isUserMeta)
 {
     FALSE_RETURN_V_NOLOG(size > 0, Status::OK);
     auto buffer = std::make_unique<uint8_t[]>(size + 1);
@@ -3478,8 +3515,7 @@ Status MPEG4AtomParser::ReadMetadataString(std::string& key, int64_t offset, uin
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read metadata string data failed");
     
     buffer[size] = '\0';
-    if (SetMetadataValue(key, std::string(reinterpret_cast<char*>(buffer.get()), size)) &&
-        !UserMetaToSource(Converter::ToLower(key))) {
+    if (SetMetadataValue(key, std::string(reinterpret_cast<char*>(buffer.get()), size)) && !isUserMeta) {
         return Status::OK;
     }
     FALSE_RETURN_V_NOLOG(userFormat_ != nullptr, Status::ERROR_NO_MEMORY);
@@ -3958,7 +3994,6 @@ void MPEG4AtomParser::InitParseTable()
         {FourccType("avcC"), &MPEG4AtomParser::ParseCodecConfig},
         {FourccType("hvcC"), &MPEG4AtomParser::ParseCodecConfig},
         {FourccType("vvcC"), &MPEG4AtomParser::ParseCodecConfig},
-        {FourccType("d263"), &MPEG4AtomParser::ParseCodecConfig},
         {FourccType("dfLa"), &MPEG4AtomParser::ParseDfla}, {FourccType("dOps"), &MPEG4AtomParser::ParseDops},
         {FourccType("pcmC"), &MPEG4AtomParser::ParsePcmc}, {FourccType("enda"), &MPEG4AtomParser::ParseEnda},
         {FourccType("colr"), &MPEG4AtomParser::ParseColr}, {FourccType("aclr"), &MPEG4AtomParser::ParseAclr},
@@ -4450,7 +4485,7 @@ std::string MPEG4AtomParser::ConvertLanguageCode(uint16_t langcode)
             return result;
         }
     }
-    return "und";
+    return "";
 }
 } // namespace MPEG4
 } // namespace Plugins
