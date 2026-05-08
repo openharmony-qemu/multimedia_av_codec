@@ -96,7 +96,11 @@ bool IsGeometrySupported(OHOS::GraphicPixelFormat format, int32_t width, int32_t
     if (width <= 0 || height <= 0) {
         return false;
     }
-    if (!OHOS::MediaAVCodec::PreProcessing::CpuImageProcessor::IsFormatSupported(static_cast<int32_t>(format))) {
+    if (fastKitEnable &&
+        !OHOS::MediaAVCodec::PreProcessing::FastKitsInterface::IsFormatSupported(static_cast<int32_t>(format))) {
+        return false;
+    } else if (!fastKitEnable &&
+               !OHOS::MediaAVCodec::PreProcessing::CpuImageProcessor::IsFormatSupported(static_cast<int32_t>(format))) {
         return false;
     }
     return !IsYuv420Format(format) || (width % YUV_SUBSAMPLE == 0 && height % YUV_SUBSAMPLE == 0);
