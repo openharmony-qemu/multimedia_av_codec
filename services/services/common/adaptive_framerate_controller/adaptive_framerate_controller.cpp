@@ -36,7 +36,7 @@ FramerateCalculator::FramerateCalculator(int32_t instanceId, bool isEnc, std::fu
     : instanceId_(instanceId), resetFramerateHandler_(std::move(handler))
 {
     if (!isEnc) {
-        behaviorAnalyzer_ = std::make_unique<DecodingBehaviorAnalyzer>();
+        behaviorAnalyzer_ = std::make_unique<DecodingBehaviorAnalyzer>(instanceId);
     }
 }
 

@@ -17,8 +17,10 @@
 #include "avcodec_log_ex.h"
 #include "event_manager.h"
 #include "event_info_extented_key.h"
+#include "avcodec_server_manager.h"
 #include <map>
 #include <mutex>
+#include <aps_manager.h>
 
 namespace {
 using namespace std::chrono;
@@ -32,8 +34,8 @@ constexpr double FPS_REPORT_DIFF_THRESHOLD = 2.0 + EPSILON;
 constexpr double MAX_REPORT_FPS = 60.0;
 constexpr int64_t SEEK_DETECTION_THRESHOLD_MS = 500;
 #ifdef SUPPORT_FPS_FOR_MEMC
-    constexpr size_t FPS_WINDOW_SIZE = 3;
-    constexpr uint32_t CONTINUES_FRAME_CNT = 5;
+constexpr size_t FPS_WINDOW_SIZE = 3;
+constexpr uint32_t CONTINUES_FRAME_CNT = 5;
 #endif
 const std::unordered_map<size_t, const std::string_view> SPEED_DEC_INFO_KEY_MAP = {
     {1, OHOS::MediaAVCodec::EventInfoExtentedKey::SPEED_DECODING_INFO_0_75X},
@@ -47,9 +49,18 @@ const std::unordered_map<size_t, const std::string_view> SPEED_DEC_INFO_KEY_MAP 
 
 namespace OHOS {
 namespace MediaAVCodec {
-DecodingBehaviorAnalyzer::DecodingBehaviorAnalyzer()
+DecodingBehaviorAnalyzer::DecodingBehaviorAnalyzer(int32_t instanceId)
 {
     startTime_ = std::chrono::steady_clock::now();
+    auto instanceInfoOpt = AVCodecServerManager::GetInstance().GetInstanceInfoByInstanceId(instanceId);
+    CHECK_AND_RETURN_LOG(instanceInfoOpt != std::nullopt, "Can not find this instance, id: %{public}d", instanceId);
+    auto instanceInfo = instanceInfoOpt.value();
+
+    eventData_.insert(std::make_pair("processName", instanceInfo.caller.processName));
+    eventData_.insert(std::make_pair("pid", std::to_string(instanceInfo.caller.pid)));
+    eventData_.insert(std::make_pair("rate", "0"));
+    eventData_.insert(std::make_pair("instanceId", std::to_string(instanceId)));
+    eventData_.insert(std::make_pair("decSpeed", "1"));
 }
 
 void DecodingBehaviorAnalyzer::OnFrameConsumed(int64_t pts, bool render)
@@ -127,6 +138,10 @@ void DecodingBehaviorAnalyzer::CalcOutputVideoFps(int64_t currentPts, bool rende
             if (curtInfo_.second >= CONTINUES_FRAME_CNT) {
                 fixedInfo_.first = curtInfo_.first; //连续相同帧率超过阈值，记录为稳定帧率
                 fixedInfo_.second = curtInfo_.second;
+                auto eventName = "VIDEO_TEST";
+                eventData_["rate"] = std::to_string(fixedInfo_.first);
+                eventData_["decSpeed"] = std::to_string(1);
+                Rosen::ApsManager::GetInstance().SendEvent(eventName, eventData_);
                 AVCODEC_LOGI("video fix fps =%{public}u pts= %{public}ld, lastPts= %{public}ld, delta= %{public}ld",
                     fixedInfo_.first, currentPts, lastPts, delta);
             }
