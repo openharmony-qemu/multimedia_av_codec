@@ -145,7 +145,7 @@ private:
     std::vector<uint32_t> avTrackIds_ {};
     std::map<int32_t, std::shared_ptr<Sample>> firstFrameMap_ {};
     std::unordered_map<uint32_t, std::shared_ptr<MPEG4Sample>> cacheSamples_ {};
-
+    
     int64_t absolutePTSOfIndexZero_ = INT64_MAX;
     std::priority_queue<int64_t> index2RelativePTSHeap_;
     int64_t minRelativePTS_ = INT64_MAX;
@@ -153,7 +153,6 @@ private:
     int64_t minRelativePTSDiffOfLeft_ = INT64_MAX;
     int64_t minRelativePTSDiffOfRight_ = INT64_MAX;
     uint32_t index2RelativePTS_ = 0;
-
 
     int32_t CountTracks();
     void GetAVTrackIds();
