@@ -769,9 +769,6 @@ void VideoEncDualOutputSample::InputFuncSurface()
             break;
         }
         FillYuvData(dst, stride);
-        if (!primaryEncoder_.signal->isRunning_.load()) {
-            break;
-        }
         if (primaryEncoder_.frameInputCount >= static_cast<int32_t>(frameCount_)) {
             NotifyEosForAll(nativeBuffer, ohNativeWindowBuffer);
             break;
@@ -867,11 +864,6 @@ void VideoEncDualOutputSample::StopSurfaceInput()
     if (inputLoop_ != nullptr && inputLoop_->joinable()) {
         inputLoop_->join();
         inputLoop_.reset();
-    }
-    if (primaryEncoder_.signal != nullptr) {
-        if (primaryEncoder_.signal->inFile_ != nullptr && primaryEncoder_.signal->inFile_->is_open()) {
-            primaryEncoder_.signal->inFile_->close();
-        }
     }
 }
 

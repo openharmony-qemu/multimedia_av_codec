@@ -1663,8 +1663,7 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_ResetPrimaryWhileSecondaryRunning_001, Te
     ASSERT_EQ(AV_ERR_OK, dualSample_->Reset(EncoderType::PRIMARY));
     dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
                                 DEFAULT_FRAME_RATE);
-    auto priSignal = make_shared<VCodecSignal>(dualSample_);
-    RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, priSignal);
+    RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Stop(EncoderType::SECONDARY));
 }
@@ -1695,10 +1694,9 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_ResetSecondaryWhilePrimaryRunning_001, Te
     ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Reset(EncoderType::SECONDARY));
-    auto secSignal2 = make_shared<VCodecSignal>(dualSample_);
     dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
                                 DEFAULT_FRAME_RATE);
-    RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal2);
+    RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Stop(EncoderType::PRIMARY));
 }
@@ -1899,16 +1897,14 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_BothReset_ThenReconfigure_001, TestSize.L
     ASSERT_EQ(AV_ERR_OK, dualSample_->Reset(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Reset(EncoderType::SECONDARY));
 
-    auto priSignal2 = make_shared<VCodecSignal>(dualSample_);
     dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
                                 DEFAULT_FRAME_RATE);
-    RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, priSignal2);
+    RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
 
-    auto secSignal2 = make_shared<VCodecSignal>(dualSample_);
     dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
                                 DEFAULT_FRAME_RATE);
-    RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal2);
+    RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
 }
 

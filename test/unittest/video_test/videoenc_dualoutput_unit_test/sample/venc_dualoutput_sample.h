@@ -17,7 +17,6 @@
 #define VENC_DUALOUTPUT_SAMPLE_H
 
 #include <atomic>
-#include <condition_variable>
 #include <fstream>
 #include <memory>
 #include <mutex>
