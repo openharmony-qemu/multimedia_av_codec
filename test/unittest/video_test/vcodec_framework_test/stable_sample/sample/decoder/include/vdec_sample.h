@@ -94,6 +94,7 @@ public:
     bool maxInputBufferCount_ = false;
     bool scaleMode_ = false;
     bool lowLatency_ = false;
+    bool decoderOrder_ = false;
     bool hdrColorInfo_ = false;
     bool hdrStaticMeta_ = false;
     bool setSurfaceParam_ = false;
