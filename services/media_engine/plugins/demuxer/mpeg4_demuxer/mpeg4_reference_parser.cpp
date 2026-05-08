@@ -174,7 +174,7 @@ uint32_t MPEG4DemuxerPlugin::GetSampleCount(uint32_t trackIndex)
 {
     std::shared_ptr<MPEG4AtomParser::Track> track = FindTrackById(trackIndex);
     FALSE_RETURN_V_MSG_E(track && track->sampleHelper, 0, "firstTrack_ is nullptr");
-    return track->sampleHelper->CalculateSampleCount();;
+    return track->sampleHelper->CalculateSampleCount();
 }
 
 void MPEG4DemuxerPlugin::ResetParametersOfPTSAndIndexConversion()
@@ -284,9 +284,8 @@ Status MPEG4DemuxerPlugin::ConvertPTSAndIndexBySttsAndCtts(const std::shared_ptr
         
         int64_t sampleOffsetOfCurrentCttsEntry = static_cast<int64_t>(
             track->sampleHelper->GetSampleOffsetOfCttsEntry(cttsEntryIndex) - minSampleOffsetOfCttsEntry);
-        FALSE_RETURN_V_MSG_E((INT64_MAX / THOUSAND / THOUSAND) >=
-            ((dts + sampleOffsetOfCurrentCttsEntry) / static_cast<int64_t>(timeScale)), Status::ERROR_INVALID_DATA,
-            "dts overflow");
+        FALSE_RETURN_V_MSG_E((INT64_MAX / THOUSAND / THOUSAND) >= ((dts + sampleOffsetOfCurrentCttsEntry) /
+            static_cast<int64_t>(timeScale)), Status::ERROR_INVALID_DATA, "dts overflow");
         pts = static_cast<int64_t>((dts + sampleOffsetOfCurrentCttsEntry) * timeScaleRate);
         ProcessConversionByMode(mode, pts, absolutePTS, sampleIndex);
         if (sampleCountOfCurrentSttsEntry == 0) {
