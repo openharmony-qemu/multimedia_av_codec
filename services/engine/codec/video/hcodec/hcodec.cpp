@@ -1277,6 +1277,14 @@ void HCodec::ReclaimBuffer(OMX_DIRTYPE portIndex, BufferOwner owner, bool erase)
     }
 }
 
+bool HCodec::ThereAreBufsStillOwnedByOmx(OMX_DIRTYPE portIndex)
+{
+    vector<BufferInfo>& pool = (portIndex == OMX_DirInput) ? inputBufferPool_ : outputBufferPool_;
+    return std::any_of(pool.begin(), pool.end(), [](const BufferInfo& info) {
+        return info.owner == BufferOwner::OWNED_BY_OMX;
+    });
+}
+
 bool HCodec::IsAllBufferOwnedByUsOrSurface(OMX_DIRTYPE portIndex)
 {
     const vector<BufferInfo>& pool = (portIndex == OMX_DirInput) ? inputBufferPool_ : outputBufferPool_;

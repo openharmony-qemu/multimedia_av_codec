@@ -328,6 +328,7 @@ protected:
     virtual void SubmitBuffersToNextOwner() {}
 
     // stop/release
+    bool ThereAreBufsStillOwnedByOmx(OMX_DIRTYPE portIndex);
     void ReclaimBuffer(OMX_DIRTYPE portIndex, BufferOwner owner, bool erase = false);
     bool IsAllBufferOwnedByUsOrSurface(OMX_DIRTYPE portIndex);
     bool IsAllBufferOwnedByUsOrSurface();
