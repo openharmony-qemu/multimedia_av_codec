@@ -1545,8 +1545,8 @@ void DashMediaDownloader::SwitchToPeriod(uint32_t newPeriodIndex)
 
         if (segDownloader->GetStreamType() == MediaAVCodec::MediaType::MEDIA_TYPE_VID) {
             SwitchVideoStream(newVideoStream, segDownloader);
-        } else if (segDownloader->GetStreamType() == MediaAVCodec::MediaType::MEDIA_TYPE_AUD && 
-                    newAudioStream != nullptr){
+        } else if (segDownloader->GetStreamType() == MediaAVCodec::MediaType::MEDIA_TYPE_AUD &&
+                    newAudioStream != nullptr) {
             SwitchAudioStream(newAudioStream, segDownloader);
         }
     });

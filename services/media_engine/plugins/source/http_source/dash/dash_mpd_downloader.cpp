@@ -2569,7 +2569,7 @@ std::shared_ptr<DashStreamDescription> DashMpdDownloader::GetStreamByPeriodIndex
 uint32_t DashMpdDownloader::GetPeriodIndexBySeekTime(int64_t seekTime) const
 {
     std::shared_ptr<DashStreamDescription> currentStream;
-    for(const auto &index : streamDescriptions_) {
+    for (const auto &index : streamDescriptions_) {
         if (index != nullptr && index->periodIndex_ == currentPeriodIndex_) {
             currentStream = index;
             break;
