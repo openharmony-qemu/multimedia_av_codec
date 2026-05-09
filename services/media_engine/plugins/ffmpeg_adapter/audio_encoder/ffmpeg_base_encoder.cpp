@@ -192,6 +192,8 @@ Status FFmpegBaseEncoder::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outputBuf
                     (prevPts_ + outputBuffer->duration_);
     if (ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE) {
         outputBuffer->pts_ = startPts_ + basePts;
+    } else if (ptsMode_ == ZERO_START_ENCODE_PTS_MODE) {
+        outputBuffer->pts_ = basePts - outputBuffer->duration_;
     } else {
         outputBuffer->pts_ = basePts;
     }

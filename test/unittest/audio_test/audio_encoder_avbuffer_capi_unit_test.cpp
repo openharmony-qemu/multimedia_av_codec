@@ -604,9 +604,27 @@ void AudioEncoderBufferCapiUnitTest::InputFuncPts()
             break;
         }
         if (inputPtsIndex >= PTS_TEST_FRAME_COUNT) {
-            // Send EOS after enough frames
+            // Send EOS after enough frames - get next buffer for EOS
             break;
         }
+    }
+    // Send EOS: wait for next input buffer
+    while (isRunning_.load()) {
+        unique_lock<mutex> lock(signal_->inMutex_);
+        signal_->inCond_.wait(lock, [this]() { return (signal_->inQueue_.size() > 0 || !isRunning_.load()); });
+        if (!isRunning_.load()) {
+            break;
+        }
+        uint32_t eosIndex = signal_->inQueue_.front();
+        auto eosBuffer = signal_->inBufferQueue_.front();
+        signal_->inQueue_.pop();
+        signal_->inBufferQueue_.pop();
+        if (eosBuffer != nullptr) {
+            eosBuffer->buffer_->memory_->SetSize(1);
+            eosBuffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_EOS;
+            HandleEOS(eosIndex);
+        }
+        break;
     }
     cout << "stop, exit" << endl;
     inputFile_->close();
