@@ -99,7 +99,7 @@ public:
     MOCK_METHOD(GSError, AcquireBuffer, (sptr<SurfaceBuffer>& buffer, sptr<SyncFence>& fence, int64_t& timestamp, Rect& damage), (override));
     MOCK_METHOD(GSError, AttachBuffer, (sptr<SurfaceBuffer>& buffer), (override));
     MOCK_METHOD(GSError, DetachBuffer, (sptr<SurfaceBuffer>& buffer), (override));
-    
+
     MOCK_METHOD(GSError, SetQueueSize, (uint32_t queueSize), (override));
     MOCK_METHOD(uint32_t, GetQueueSize, (), (override));
     MOCK_METHOD(int32_t, GetDefaultWidth, (), (override));
@@ -107,17 +107,17 @@ public:
     MOCK_METHOD(GSError, SetDefaultWidthAndHeight, (int32_t width, int32_t height), (override));
     MOCK_METHOD(GSError, SetDefaultUsage, (uint64_t usage), (override));
     MOCK_METHOD(uint64_t, GetDefaultUsage, (), (override));
-    
+
     MOCK_METHOD(GSError, SetUserData, (const std::string &key, const std::string &val), (override));
     MOCK_METHOD(std::string, GetUserData, (const std::string &key), (override));
     MOCK_METHOD(const std::string&, GetName, (), (override));
     MOCK_METHOD(uint64_t, GetUniqueId, (), (const, override));
-    
+
     MOCK_METHOD(GSError, Connect, (), (override));
     MOCK_METHOD(GSError, Disconnect, (), (override));
     MOCK_METHOD(GSError, CleanCache, (bool cleanAll), (override));
     MOCK_METHOD(GSError, GoBackground, (), (override));
-    
+
     MOCK_METHOD(GSError, SetTransform, (GraphicTransformType transform), (override));
     MOCK_METHOD(GraphicTransformType, GetTransform, (), (const, override));
     MOCK_METHOD(GSError, SetScalingMode, (uint32_t sequence, ScalingMode scalingMode), (override));
@@ -126,7 +126,7 @@ public:
     MOCK_METHOD(GSError, SetMetaDataSet, (uint32_t sequence, GraphicHDRMetadataKey key, const std::vector<uint8_t> &metaData), (override));
     MOCK_METHOD(GSError, SetTunnelHandle, (const GraphicExtDataHandle *handle), (override));
     MOCK_METHOD(void, Dump, (std::string &result), (const, override));
-    
+
     MOCK_METHOD(GSError, AttachBuffer, (sptr<SurfaceBuffer>& buffer, int32_t timeOut), (override));
     MOCK_METHOD(GSError, RegisterSurfaceDelegator, (sptr<IRemoteObject> client), (override));
     MOCK_METHOD(GSError, RegisterReleaseListener, (OnReleaseFuncWithFence func), (override));
@@ -150,7 +150,7 @@ class TestableSideOutputSurfaceProcessor : public SideOutputSurfaceProcessor {
 public:
     using SideOutputSurfaceProcessor::SurfaceBufferInfo;
     using SideOutputSurfaceProcessor::ProcessorState;
-    
+
     using SideOutputSurfaceProcessor::consumerSurface_;
     using SideOutputSurfaceProcessor::producerSurface_;
     using SideOutputSurfaceProcessor::sideSurface_;
@@ -173,7 +173,7 @@ public:
     using SideOutputSurfaceProcessor::sampleResult_;
     using SideOutputSurfaceProcessor::isPaused_;
     using SideOutputSurfaceProcessor::worker_;
-    
+
     using SideOutputSurfaceProcessor::OnConsumerBufferAvailable;
     using SideOutputSurfaceProcessor::OnProducerBufferReleased;
     using SideOutputSurfaceProcessor::GetConsumerAndProducerBuffer;
@@ -205,7 +205,7 @@ public:
 
 protected:
     sptr<MockSurfaceBuffer> CreateMockBufferWithMemory(uint32_t size);
-    
+
     std::shared_ptr<TestableSideOutputSurfaceProcessor> processor_ { nullptr };
     std::shared_ptr<MockPostProcessorCallback> callback_ {nullptr};
     std::shared_ptr<MockEventReceiver> receiver_ {nullptr};
