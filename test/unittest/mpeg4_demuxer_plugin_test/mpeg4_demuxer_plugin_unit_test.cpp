@@ -792,8 +792,6 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest,
     GopLayerInfo gopLayerInfo;
     std::vector<uint32_t> iFramePos;
     uint32_t frameId = 0;
-    uint32_t index = 0;
-    uint64_t relativePresentationTimeUs = 0;
     int64_t seekMs = 0;
     EXPECT_EQ(plugin->GetFrameLayerInfo(buffer, frameLayerInfo), Status::OK);
     EXPECT_EQ(plugin->GetFrameLayerInfo(frameId, frameLayerInfo), Status::OK);
