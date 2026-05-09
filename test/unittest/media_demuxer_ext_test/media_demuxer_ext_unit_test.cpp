@@ -179,8 +179,8 @@ static void PrepareAutoSelectTrackByBitrate(const std::shared_ptr<MediaDemuxer> 
     int32_t streamId, uint32_t currentBitRate)
 {
     mediaDemuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
-    filteredStreamMap_[VIDEO].clear();
-    filteredStreamMap_[VIDEO].push_back(MakeAutoSelectVideoStream(streamId, currentBitRate));
+    mediaDemuxer->filteredStreamMap_->map[VIDEO].clear();
+    mediaDemuxer->filteredStreamMap_->map[VIDEO].push_back(MakeAutoSelectVideoStream(streamId, currentBitRate));
     mediaDemuxer->isAutoSelect_.store(true);
     mediaDemuxer->curDownloadBitRate_.store(currentBitRate);
     mediaDemuxer->lastSwitchDownloadRate_.store(UNUM_0);
@@ -213,7 +213,7 @@ StreamInfo MakeTrackSelectionFilterStream(int32_t streamId, StreamType type, uin
 void PrepareTrackSelectionFilter(const std::shared_ptr<MediaDemuxer> &mediaDemuxer, const std::string &playType,
     const std::vector<StreamInfo> &streams)
 {
-    filteredStreamMap_.clear();
+    mediaDemuxer->filteredStreamMap_->map.clear();
     mediaDemuxer->isPrepared_.store(true);
     mediaDemuxer->currentPlayType_ = playType;
     mediaDemuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
@@ -6112,7 +6112,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, AutoSelectTrackByBitrate_005, TestSize.Level1)
 HWTEST_F(MediaDemuxerExtUnitTest, AutoSelectTrackByBitrate_006, TestSize.Level1)
 {
     PrepareAutoSelectTrackByBitrate(mediaDemuxer_, NUM_1, UNUM_1000);
-    filteredStreamMap_[VIDEO].clear();
+    mediaDemuxer_->filteredStreamMap_->map[VIDEO].clear();
 
     mediaDemuxer_->AutoSelectTrackByBitrate(NUM_1);
     EXPECT_NE(mediaDemuxer_->lastCheckAutoSelectTimeMs_, 0);
@@ -6216,10 +6216,11 @@ HWTEST_F(MediaDemuxerExtUnitTest, AutoSelectTrackByBitrate_011, TestSize.Level1)
 HWTEST_F(MediaDemuxerExtUnitTest, AutoSelectTrackByBitrate_012, TestSize.Level1)
 {
     PrepareAutoSelectTrackByBitrate(mediaDemuxer_, NUM_1, UNUM_2000);
-    filteredStreamMap_[VIDEO].clear();
-    filteredStreamMap_[VIDEO].push_back(MakeAutoSelectVideoStream(NUM_1, UNUM_1000, StreamType::AUDIO));
-    filteredStreamMap_[VIDEO].push_back(MakeAutoSelectVideoStream(NUM_2, UNUM_3000));
-    filteredStreamMap_[VIDEO].push_back(MakeAutoSelectVideoStream(NUM_3, UNUM_2000));
+    mediaDemuxer_->filteredStreamMap_->map[VIDEO].clear();
+    mediaDemuxer_->filteredStreamMap_->map[VIDEO].push_back(MakeAutoSelectVideoStream(
+        NUM_1, UNUM_1000, StreamType::AUDIO));
+    mediaDemuxer_->filteredStreamMap_->map[VIDEO].push_back(MakeAutoSelectVideoStream(NUM_2, UNUM_3000));
+    mediaDemuxer_->filteredStreamMap_->map[VIDEO].push_back(MakeAutoSelectVideoStream(NUM_3, UNUM_2000));
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetCurrentBitRate()).WillRepeatedly(Return(UNUM_2000));
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillRepeatedly(Return(false));
     EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), ResetAllCache()).WillOnce(Return(Status::OK));
@@ -7244,8 +7245,8 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectSubtitleDefaultId_010, T
  */
 HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_001, TestSize.Level1)
 {
-    filteredStreamMap_.clear();
-    filteredStreamMap_[VIDEO] = {
+    mediaDemuxer_->filteredStreamMap_->map.clear();
+    mediaDemuxer_->filteredStreamMap_->map[VIDEO] = {
         MakeTrackSelectionFilterStream(FILTER_VIDEO_STREAM_ID_1, VIDEO, UNUM_1000, FILTER_MIME_VIDEO_AVC, "")
     };
     mediaDemuxer_->currentPlayType_ = "hls";
@@ -7265,7 +7266,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_001, TestSize.Level1)
  */
 HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_002, TestSize.Level1)
 {
-    filteredStreamMap_.clear();
+    mediaDemuxer_->filteredStreamMap_->map.clear();
     mediaDemuxer_->currentPlayType_ = "hls";
     mediaDemuxer_->trackSelectionFilter_ = {};
     mediaDemuxer_->isHdrStart_ = false;
@@ -7283,14 +7284,14 @@ HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_002, TestSize.Level1)
  */
 HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_003, TestSize.Level1)
 {
-    filteredStreamMap_.clear();
-    filteredStreamMap_[VIDEO] = {
+    mediaDemuxer_->filteredStreamMap_->map.clear();
+    mediaDemuxer_->filteredStreamMap_->map[VIDEO] = {
         MakeTrackSelectionFilterStream(FILTER_VIDEO_STREAM_ID_1, VIDEO, UNUM_1000, FILTER_MIME_VIDEO_AVC, "")
     };
-    filteredStreamMap_[AUDIO] = {
+    mediaDemuxer_->filteredStreamMap_->map[AUDIO] = {
         MakeSelectAudioDefaultStream(FILTER_AUDIO_STREAM_ID_1, FILTER_LANG_ENG, "audio/aac")
     };
-    filteredStreamMap_[SUBTITLE] = {
+    mediaDemuxer_->filteredStreamMap_->map[SUBTITLE] = {
         MakeSelectSubtitleDefaultStream(FILTER_SUBTITLE_STREAM_ID_1, FILTER_LANG_CHI)
     };
     mediaDemuxer_->currentPlayType_ = FILTER_PLAY_TYPE_HTTP;
@@ -7316,11 +7317,11 @@ HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_003, TestSize.Level1)
  */
 HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_004, TestSize.Level1)
 {
-    filteredStreamMap_.clear();
-    filteredStreamMap_[AUDIO] = {
+    mediaDemuxer_->filteredStreamMap_->map.clear();
+    mediaDemuxer_->filteredStreamMap_->map[AUDIO] = {
         MakeSelectAudioDefaultStream(FILTER_AUDIO_STREAM_ID_1, FILTER_LANG_ENG, "audio/aac")
     };
-    filteredStreamMap_[SUBTITLE] = {
+    mediaDemuxer_->filteredStreamMap_->map[SUBTITLE] = {
         MakeSelectSubtitleDefaultStream(FILTER_SUBTITLE_STREAM_ID_1, FILTER_LANG_CHI)
     };
     mediaDemuxer_->currentPlayType_ = FILTER_PLAY_TYPE_DASH;
@@ -7342,8 +7343,8 @@ HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_004, TestSize.Level1)
  */
 HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_005, TestSize.Level1)
 {
-    filteredStreamMap_.clear();
-    filteredStreamMap_[AUDIO] = {
+    mediaDemuxer_->filteredStreamMap_->map.clear();
+    mediaDemuxer_->filteredStreamMap_->map[AUDIO] = {
         MakeSelectAudioDefaultStream(FILTER_AUDIO_STREAM_ID_1, FILTER_LANG_ENG, "audio/aac")
     };
     mediaDemuxer_->currentPlayType_ = FILTER_PLAY_TYPE_DASH;
@@ -7363,7 +7364,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_005, TestSize.Level1)
  */
 HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_006, TestSize.Level1)
 {
-    filteredStreamMap_.clear();
+    mediaDemuxer_->filteredStreamMap_->map.clear();
     mediaDemuxer_->currentPlayType_ = FILTER_PLAY_TYPE_DASH;
     mediaDemuxer_->trackSelectionFilter_ = {};
     mediaDemuxer_->defaultAudioLang_ = FILTER_LANG_ENG;
@@ -7380,8 +7381,8 @@ HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_006, TestSize.Level1)
  */
 HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_007, TestSize.Level1)
 {
-    filteredStreamMap_.clear();
-    filteredStreamMap_[SUBTITLE] = {
+    mediaDemuxer_->filteredStreamMap_->map.clear();
+    mediaDemuxer_->filteredStreamMap_->map[SUBTITLE] = {
         MakeSelectSubtitleDefaultStream(FILTER_SUBTITLE_STREAM_ID_1, FILTER_LANG_CHI)
     };
     mediaDemuxer_->currentPlayType_ = FILTER_PLAY_TYPE_DASH;
@@ -7400,7 +7401,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_007, TestSize.Level1)
  */
 HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_008, TestSize.Level1)
 {
-    filteredStreamMap_.clear();
+    mediaDemuxer_->filteredStreamMap_->map.clear();
     mediaDemuxer_->currentPlayType_ = FILTER_PLAY_TYPE_DASH;
     mediaDemuxer_->trackSelectionFilter_ = {};
     mediaDemuxer_->defaultSubtitleLang_ = FILTER_LANG_CHI;
@@ -8013,7 +8014,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_PrintStreamInfo_001, TestSize.
  */
 HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetPreferredVideoStream_001, TestSize.Level1)
 {
-    filteredStreamMap_.clear();
+    mediaDemuxer_->filteredStreamMap_->map.clear();
 
     StreamInfo audioStream;
     audioStream.streamId = TEST_STREAM_ID_1;
@@ -8035,13 +8036,13 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetPreferredVideoStream_001, T
     videoStreamHigh.type = StreamType::VIDEO;
     videoStreamHigh.bitRate = 4200;
 
-    filteredStreamMap_[VIDEO] = {audioStream, videoStreamLow, mixedStream, videoStreamHigh};
-    StreamInfo *preferredStream = GetPreferredVideoStream(2500);
+    mediaDemuxer_->filteredStreamMap_->map[VIDEO] = {audioStream, videoStreamLow, mixedStream, videoStreamHigh};
+    StreamInfo *preferredStream = GetPreferredVideoStream(mediaDemuxer_->filteredStreamMap_->map, 2500);
 
     ASSERT_NE(preferredStream, nullptr);
     EXPECT_EQ(preferredStream->streamId, TEST_STREAM_ID_3);
     EXPECT_EQ(preferredStream->bitRate, 2600u);
-    filteredStreamMap_.clear();
+    mediaDemuxer_->filteredStreamMap_->map.clear();
 }
 
 /**
@@ -8051,7 +8052,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetPreferredVideoStream_001, T
  */
 HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetPreferredVideoStream_002, TestSize.Level1)
 {
-    filteredStreamMap_.clear();
+    mediaDemuxer_->filteredStreamMap_->map.clear();
 
     StreamInfo videoStreamLow;
     videoStreamLow.streamId = TEST_STREAM_ID_1;
@@ -8063,13 +8064,14 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetPreferredVideoStream_002, T
     videoStreamExact.type = StreamType::VIDEO;
     videoStreamExact.bitRate = TEST_MAX_VIDEO_BITRATE;
 
-    filteredStreamMap_[VIDEO] = {videoStreamLow, videoStreamExact};
-    StreamInfo *preferredStream = GetPreferredVideoStream(TEST_MAX_VIDEO_BITRATE);
+    mediaDemuxer_->filteredStreamMap_->map[VIDEO] = {videoStreamLow, videoStreamExact};
+    StreamInfo *preferredStream = GetPreferredVideoStream(
+        mediaDemuxer_->filteredStreamMap_->map, TEST_MAX_VIDEO_BITRATE);
 
     ASSERT_NE(preferredStream, nullptr);
     EXPECT_EQ(preferredStream->streamId, TEST_STREAM_ID_2);
     EXPECT_EQ(preferredStream->bitRate, static_cast<uint32_t>(TEST_MAX_VIDEO_BITRATE));
-    filteredStreamMap_.clear();
+    mediaDemuxer_->filteredStreamMap_->map.clear();
 }
 
 
