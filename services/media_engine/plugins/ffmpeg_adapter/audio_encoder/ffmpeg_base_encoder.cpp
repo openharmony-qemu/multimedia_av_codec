@@ -397,6 +397,7 @@ void FFmpegBaseEncoder::SetCallback(DataCallback *callback)
 {
     dataCallback_ = callback;
 }
+
 void FFmpegBaseEncoder::SetPtsMode(AudioEncodePtsMode mode)
 {
     ptsMode_ = mode;
