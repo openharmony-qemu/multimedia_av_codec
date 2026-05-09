@@ -832,7 +832,7 @@ HWTEST_F(DashMediaDownloaderUnittest, SwitchToPeriod_005, TestSize.Level0)
     ASSERT_NE(mediaDownloader_, nullptr);
     mediaDownloader_->currentPeriodIndex_ = 0;
     mediaDownloader_->segmentDownloaders_.Clear();
-    mediaDownloader_->segmentDownloaders.PushBack(nullptr);
+    mediaDownloader_->segmentDownloaders_.PushBack(nullptr);
 
     auto oldVideoStream = std::make_shared<DashStreamDescription>();
     oldVideoStream->streamId_ = 1;
@@ -905,7 +905,7 @@ HWTEST_F(DashMediaDownloaderUnittest, NeedRestartDecoder_004, TestSize.Level0)
  * @tc.number: NeedRestartDecoder_005
  * @tc.desc  : Test NeedRestartDecoder when videoType are different
  */
-HWTEST_F(DashMediaDownloaderUnittest, NeedRestartDecoder_001, TestSize.Level0)
+HWTEST_F(DashMediaDownloaderUnittest, NeedRestartDecoder_005, TestSize.Level0)
 {
     ASSERT_NE(mediaDownloader_, nullptr);
     auto oldStream = std::make_shared<DashStreamDescription>();

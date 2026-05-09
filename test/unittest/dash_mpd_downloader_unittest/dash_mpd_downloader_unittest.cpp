@@ -2041,11 +2041,11 @@ HWTEST_F(DashMpdDownloaderUnittest, SeekToTs_002, TestSize.Level0)
     currentStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
 
     auto newStream = std::make_shared<DashStreamDescription>();
-    currentStream->streamId_ = 2;
-    currentStream->segsState_ = DASH_SEGS_STATE_FINISH;
-    currentStream->periodIndex_ = 1;
-    currentStream->periodStartTime_ = 4000;
-    currentStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
+    newStream->streamId_ = 2;
+    newStream->segsState_ = DASH_SEGS_STATE_FINISH;
+    newStream->periodIndex_ = 1;
+    newStream->periodStartTime_ = 4000;
+    newStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
 
     auto seg1 = std::make_shared<DashSegment>();
     seg1->duration_ = 2000;
@@ -2083,7 +2083,7 @@ HWTEST_F(DashMpdDownloaderUnittest, SeekToTs_003, TestSize.Level0)
     auto seg1 = std::make_shared<DashSegment>();
     seg1->duration_ = 1000;
     seg1->numberSeq_ = 1;
-    newStream->mediaSegments_.push_back(seg1);
+    currentStream->mediaSegments_.push_back(seg1);
 
     mpdDownloader_->streamDescriptions_.push_back(currentStream);
     
@@ -2092,7 +2092,7 @@ HWTEST_F(DashMpdDownloaderUnittest, SeekToTs_003, TestSize.Level0)
 }
 
 /**
- * @tc.name  : Test SeekToTs with empty mediaSegment
+ * @tc.name  : Test SeekToTs with empty mediaSegments
  * @tc.number: SeekToTs_004
  * @tc.desc  : Test mediaSegments_.empty() case
  */
@@ -2136,7 +2136,7 @@ HWTEST_F(DashMpdDownloaderUnittest, GetStreamByPeriodIndex_001, TestSize.Level0)
     mpdDownloader_->streamDescriptions_.push_back(streamDesc);
     
     auto ret = mpdDownloader_->GetStreamByPeriodIndex(0, MediaAVCodec::MediaType::MEDIA_TYPE_VID);
-    EXPECT_EQ(ret, nullptr);
+    EXPECT_NE(ret, nullptr);
     EXPECT_EQ(ret->streamId_, 1);
 }
 
@@ -2170,7 +2170,7 @@ HWTEST_F(DashMpdDownloaderUnittest, GetPeriodIndexBySeekTime_001, TestSize.Level
     streamDesc->periodIndex_ = 0;
     streamDesc->periodStartTime_ = 0;
     streamDesc->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
-    streamDesc->segState_ = DASH_SEGS_STATE_FINISH;
+    streamDesc->segsState_ = DASH_SEGS_STATE_FINISH;
     mpdDownloader_->streamDescriptions_.push_back(streamDesc);
 
     auto ret = mpdDownloader_->GetPeriodIndexBySeekTime(1000);
@@ -2180,7 +2180,7 @@ HWTEST_F(DashMpdDownloaderUnittest, GetPeriodIndexBySeekTime_001, TestSize.Level
 /**
  * @tc.name  : Test GetPeriodIndexBySeekTime with segsState FINISH
  * @tc.number: GetPeriodIndexBySeekTime_002
- * @tc.desc  : Test GetPeriodIndexBySeekTime with currentPeriodIndex stream not found
+ * @tc.desc  : Test GetPeriodIndexBySeekTime when currentPeriodIndex stream not found
  */
 HWTEST_F(DashMpdDownloaderUnittest, GetPeriodIndexBySeekTime_002, TestSize.Level0)
 {
@@ -2193,7 +2193,7 @@ HWTEST_F(DashMpdDownloaderUnittest, GetPeriodIndexBySeekTime_002, TestSize.Level
     streamDesc->periodIndex_ = 0;
     streamDesc->periodStartTime_ = 0;
     streamDesc->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
-    streamDesc->segState_ = DASH_SEGS_STATE_FINISH;
+    streamDesc->segsState_ = DASH_SEGS_STATE_FINISH;
     mpdDownloader_->streamDescriptions_.push_back(streamDesc);
 
     auto ret = mpdDownloader_->GetPeriodIndexBySeekTime(1000);
@@ -2216,7 +2216,7 @@ HWTEST_F(DashMpdDownloaderUnittest, GetPeriodIndexBySeekTime_003, TestSize.Level
     streamDesc1->periodIndex_ = 0;
     streamDesc1->periodStartTime_ = 0;
     streamDesc1->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
-    streamDesc1->segState_ = DASH_SEGS_STATE_FINISH;
+    streamDesc1->segsState_ = DASH_SEGS_STATE_FINISH;
     mpdDownloader_->streamDescriptions_.push_back(streamDesc1);
 
     auto streamDesc2 = std::make_shared<DashStreamDescription>();
@@ -2224,7 +2224,7 @@ HWTEST_F(DashMpdDownloaderUnittest, GetPeriodIndexBySeekTime_003, TestSize.Level
     streamDesc2->periodIndex_ = 1;
     streamDesc2->periodStartTime_ = 5000;
     streamDesc2->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
-    streamDesc2->segState_ = DASH_SEGS_STATE_FINISH;
+    streamDesc2->segsState_ = DASH_SEGS_STATE_FINISH;
     mpdDownloader_->streamDescriptions_.push_back(streamDesc2);
 
     auto ret = mpdDownloader_->GetPeriodIndexBySeekTime(6000);
@@ -2232,9 +2232,9 @@ HWTEST_F(DashMpdDownloaderUnittest, GetPeriodIndexBySeekTime_003, TestSize.Level
 }
 
 /**
- * @tc.name  : Test SwitchStreamIfNeeded with empty mediaSegment
+ * @tc.name  : Test SwitchStreamIfNeeded with empty mediaSegments
  * @tc.number: SwitchStreamIfNeeded_001
- * @tc.desc  : Test SwitchStreamIfNeeded when mediaSegment is empty
+ * @tc.desc  : Test SwitchStreamIfNeeded when mediaSegments is empty
  */
 HWTEST_F(DashMpdDownloaderUnittest, SwitchStreamIfNeeded_001, TestSize.Level0)
 {
@@ -2324,7 +2324,7 @@ HWTEST_F(DashMpdDownloaderUnittest, FindTargetPeriodIndex_002, TestSize.Level0)
 }
 
 /**
- * @tc.name  : Test FindSegmentByRelativeTime with empty segment
+ * @tc.name  : Test FindSegmentByRelativeTime with empty segments
  * @tc.number: FindSegmentByRelativeTime_001
  * @tc.desc  : Test FindSegmentByRelativeTime when mediaSegments_ is empty
  */
