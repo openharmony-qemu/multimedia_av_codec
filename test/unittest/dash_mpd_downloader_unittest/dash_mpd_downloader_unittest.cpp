@@ -1191,15 +1191,21 @@ HWTEST_F(DashMpdDownloaderUnittest, GetStreamInfo_001, TestSize.Level0)
     std::vector<StreamInfo> streams;
     auto ret = mpdDownloader_->GetStreamInfo(streams);
     EXPECT_EQ(ret, Status::OK);
-    EXPECT_EQ(streams.size(), NUM_TEST);
+    EXPECT_EQ(streams.size(), 1);
 
-    ptr->adptSetIndex_ = NUM_TEST;
+    mpdDownloader_->streamDescriptions_.clear();
+    auto ptr2 = std::make_shared<DashStreamDescription>();
+    ptr2->segsState_ = DashSegsState::DASH_SEGS_STATE_NONE;
+    ptr2->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE;
+    ptr2->adptSetIndex_ = NUM_TEST;
     ptr->videoType_ = DASH_VIDEO_TYPE_HDR_10;
-    ret = mpdDownloader_->GetStreamInfo(streams);
+    mpdDownloader_->streamDescriptions_.push_back(ptr2);
+    std::vector<StreamInfo> streams2;
+    ret = mpdDownloader_->GetStreamInfo(streams2);
     EXPECT_EQ(ret, Status::OK);
-    ASSERT_NE(streams.size(), 0);
-    EXPECT_EQ(streams[0].type, SUBTITLE);
-    EXPECT_EQ(streams[0].videoType, VIDEO_TYPE_HDR_10);
+    ASSERT_NE(streams2.size(), 0);
+    EXPECT_EQ(streams2[0].type, SUBTITLE);
+    EXPECT_EQ(streams2[0].videoType, VIDEO_TYPE_HDR_10);
 }
 
 /**
