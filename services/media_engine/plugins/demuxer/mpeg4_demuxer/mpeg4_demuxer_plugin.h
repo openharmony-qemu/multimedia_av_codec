@@ -145,7 +145,7 @@ private:
     std::vector<uint32_t> avTrackIds_ {};
     std::map<int32_t, std::shared_ptr<Sample>> firstFrameMap_ {};
     std::unordered_map<uint32_t, std::shared_ptr<MPEG4Sample>> cacheSamples_ {};
-    
+
     int64_t absolutePTSOfIndexZero_ = INT64_MAX;
     std::priority_queue<int64_t> index2RelativePTSHeap_;
     int64_t minRelativePTS_ = INT64_MAX;
@@ -217,6 +217,8 @@ private:
         IndexAndPTSConversionMode mode, int64_t absolutePTS, uint32_t sampleIndex);
     void ProcessConversionByMode(IndexAndPTSConversionMode mode, int64_t pts, int64_t absolutePTS,
         uint32_t sampleIndex);
+    Status UpdatePTSBySttsAndCtts(int64_t& pts, int64_t dts, double timeScaleRate,
+        int64_t sampleOffsetOfCurrentCttsEntry);
     void ProcessIndex2RelativePTS(int64_t pts, uint32_t index);
     void ProcessRelativePTS2Index(int64_t pts, int64_t absolutePTS);
     
