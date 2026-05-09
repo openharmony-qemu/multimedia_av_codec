@@ -45,7 +45,6 @@ namespace Plugins {
 namespace MPEG4 {
 
 constexpr uint32_t REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT = 200000u;
-constexpr int64_t THOUSAND = 1000;
 
 bool MPEG4DemuxerPlugin::IsRefParserSupported()
 {
