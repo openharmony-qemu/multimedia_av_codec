@@ -177,7 +177,7 @@ void HCodec::ReportToRss()
         mapPayload[pidStr] = jsStr;
     }
     ResourceSchedule::ResSchedClient::GetInstance().ReportData(
-        ResourceSchedule::ResType::RES_TYPE_AVCODE_HARDWARE_RESOURCES, isEncoder_ ? 1 : 0, mapPayload);
+        ResourceSchedule::ResType::RES_TYPE_HARDWARE_DECODING_RESOURCES, isEncoder_ ? 1 : 0, mapPayload);
 }
 
 int32_t HCodec::SetCallback(const std::shared_ptr<MediaCodecCallback> &callback)
