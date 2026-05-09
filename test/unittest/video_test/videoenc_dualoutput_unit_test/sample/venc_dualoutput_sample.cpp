@@ -757,6 +757,12 @@ void VideoEncDualOutputSample::InputFuncSurface()
         int fenceFd = -1;
         UNITTEST_CHECK_AND_BREAK_LOG(nativeWindow_ != nullptr, "nativeWindow_ == nullptr");
 
+        if (primaryEncoder_.frameInputCount > PARAM_CHANGE_START_FRAME) {
+            int32_t ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_FORMAT,
+                                                                GRAPHIC_PIXEL_FMT_YCBCR_P010);
+            UNITTEST_CHECK_AND_CONTINUE_LOG(ret == 0, "OH_NativeWindow_NativeWindowHandleOpt failed, Error=%d", ret);
+        }
+
         int32_t err = OH_NativeWindow_NativeWindowRequestBuffer(nativeWindow_, &ohNativeWindowBuffer, &fenceFd);
         UNITTEST_CHECK_AND_CONTINUE_LOG(err == 0, "RequestBuffer failed, GSError=%d", err);
         if (fenceFd > 0) {

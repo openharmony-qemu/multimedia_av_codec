@@ -1934,6 +1934,75 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_StartOnlyPrimary_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Stop(EncoderType::PRIMARY));
 }
+
+/**
+ * @tc.name: State_Machine_Dual_8BitTo10Bit_001
+ * @tc.desc: Test 8-bit to 10-bit format conversion
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, State_Machine_Dual_8BitTo10Bit_001, TestSize.Level1)
+{
+    auto signal = make_shared<VCodecSignal>(dualSample_);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
+    RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
+
+    ASSERT_TRUE(dualSample_->CreateSurface());
+    ASSERT_TRUE(dualSample_->CreateSecondary());
+    auto secSignal = make_shared<VCodecSignal>(dualSample_);
+    RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
+
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Stop(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Stop(EncoderType::PRIMARY));
+}
+
+/**
+ * @tc.name: State_Machine_Dual_SetParam_Crop_001
+ * @tc.desc: Test setting crop parameters
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, State_Machine_Dual_SetParam_Crop_001, TestSize.Level1)
+{
+    auto signal = make_shared<VCodecSignal>(dualSample_);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
+    RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
+
+    ASSERT_TRUE(dualSample_->CreateSurface());
+    ASSERT_TRUE(dualSample_->CreateSecondary());
+    auto secSignal = make_shared<VCodecSignal>(dualSample_);
+    RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
+
+
+    OH_AVFormat *format = OH_AVFormat_Create();
+    bool ret =
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT, 10) &&
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_TOP, 10) &&
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_RIGHT, 629) &&
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM, 479);
+    ASSERT_TRUE(ret);
+
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->SetParameter(EncoderType::PRIMARY, format));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Stop(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Stop(EncoderType::PRIMARY));
+    OH_AVFormat_Destroy(format);
+}
 #endif // ONLY_FOR_FLAGSHIP_CHIP
 int main(int argc, char **argv)
 {

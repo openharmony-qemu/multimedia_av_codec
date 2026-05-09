@@ -35,6 +35,7 @@ namespace OHOS {
 namespace MediaAVCodec {
 inline std::string FAST_IMAGE_PATH = "/system/lib64/ndk/libfast_image.so";
 enum class EncoderType { PRIMARY, SECONDARY };
+constexpr int32_t PARAM_CHANGE_START_FRAME = 3;
 
 class VideoEncDualOutputSample : public NoCopyable, public VCodecSampleBase {
 public:
