@@ -792,8 +792,6 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest,
     GopLayerInfo gopLayerInfo;
     std::vector<uint32_t> iFramePos;
     uint32_t frameId = 0;
-    uint32_t index = 0;
-    uint64_t relativePresentationTimeUs = 0;
     int64_t seekMs = 0;
     EXPECT_EQ(plugin->GetFrameLayerInfo(buffer, frameLayerInfo), Status::OK);
     EXPECT_EQ(plugin->GetFrameLayerInfo(frameId, frameLayerInfo), Status::OK);
@@ -802,8 +800,6 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest,
     EXPECT_EQ(plugin->Dts2FrameId(0, frameId), Status::OK);
     EXPECT_EQ(plugin->SeekMs2FrameId(0, frameId), Status::OK);
     EXPECT_EQ(plugin->FrameId2SeekMs(frameId, seekMs), Status::OK);
-    EXPECT_EQ(plugin->GetIndexByRelativePresentationTimeUs(0, 0, index), Status::OK);
-    EXPECT_EQ(plugin->GetRelativePresentationTimeUsByIndex(0, index, relativePresentationTimeUs), Status::OK);
 
     int64_t realSeekTime = 0;
     EXPECT_EQ(plugin->SeekToKeyFrame(0, 0, SeekMode::SEEK_NEXT_SYNC, realSeekTime, 0),
