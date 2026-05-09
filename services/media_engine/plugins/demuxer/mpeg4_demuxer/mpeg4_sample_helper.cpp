@@ -1071,7 +1071,7 @@ uint32_t MPEG4SampleHelper::GetSampleCountOfCttsEntry(uint32_t cttsEntryIndex)
     return cttsEntry_[cttsEntryIndex].count;
 }
 
-uint32_t MPEG4SampleHelper::GetSampleOffsetOfCttsEntry(uint32_t cttsEntryIndex)
+int32_t MPEG4SampleHelper::GetSampleOffsetOfCttsEntry(uint32_t cttsEntryIndex)
 {
     FALSE_RETURN_V_MSG_E(cttsEntryIndex >= 0 && cttsEntryIndex < cttsEntry_.size(), 0,
         "cttsEntryIndex(%{public}d) is invalid", cttsEntryIndex);
