@@ -61,6 +61,7 @@ public:
     Status CloseCtxLocked();
     int32_t GetMaxInputSize() const noexcept;
     void SetCallback(DataCallback *callback);
+    void SetPtsMode(AudioEncodePtsMode mode);
 
 private:
     int32_t maxInputSize_;
@@ -73,6 +74,9 @@ private:
     std::shared_ptr<Meta> format_;
     std::shared_ptr<Meta> bufferMeta_ {nullptr};
     int64_t prevPts_;
+    AudioEncodePtsMode ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
+    bool isFirstInputPts_ = true;
+    int64_t startPts_ = 0;
     DataCallback *dataCallback_{nullptr};
     std::shared_ptr<AVBuffer> outBuffer_ {nullptr};
 

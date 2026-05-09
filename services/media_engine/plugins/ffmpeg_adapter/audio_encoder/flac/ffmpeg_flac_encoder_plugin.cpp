@@ -174,6 +174,10 @@ Status FFmpegFlacEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &parame
     CHECK_AND_RETURN_RET_LOG(ret == Status::OK, ret, "init failed, because OpenContext failed. ret=%{public}d", ret);
     
     audioParameter_ = *parameter;
+    AudioEncodePtsMode ptsMode = DEFAULT_ENCODE_PTS_MODE;
+    if (parameter->Get<Tag::AUDIO_ENCODE_PTS_MODE>(ptsMode)) {
+        basePlugin->SetPtsMode(ptsMode);
+    }
 
     ret = basePlugin->InitFrame();
     CHECK_AND_RETURN_RET_LOG(ret == Status::OK, ret, "init failed, because InitFrame failed. ret=%{public}d", ret);

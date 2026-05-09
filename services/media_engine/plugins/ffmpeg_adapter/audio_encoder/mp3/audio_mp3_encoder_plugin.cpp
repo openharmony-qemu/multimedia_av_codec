@@ -228,6 +228,10 @@ Status AudioMp3EncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer>& 
     }
     outputSize_ = outputSize;
     pts_ = inputBuffer->pts_;
+    if (ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE && isFirstInputPts_) {
+        startPts_ = inputBuffer->pts_;
+        isFirstInputPts_ = false;
+    }
     SafeCallInputBufferDone(dataCallback_, inputBuffer);
 
     return Status::OK;
@@ -253,7 +257,15 @@ Status AudioMp3EncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& outpu
 
         memory->Write(const_cast<const uint8_t*>(lameMp3Buffer.get()), outputSize_, 0);
         memory->SetSize(outputSize_);
-        outputBuffer->pts_ = pts_;
+        if (ptsMode_ == ZERO_START_ENCODE_PTS_MODE) {
+            outputBuffer->pts_ = prevPts_;
+            prevPts_ += static_cast<int64_t>(frameSize_) * 1000000LL / sampleRate_;
+        } else if (ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE) {
+            outputBuffer->pts_ = startPts_ + prevPts_;
+            prevPts_ += static_cast<int64_t>(frameSize_) * 1000000LL / sampleRate_;
+        } else {
+            outputBuffer->pts_ = pts_;
+        }
         SafeCallOutputBufferDone(dataCallback_, outputBuffer);
     }
 
@@ -263,6 +275,9 @@ Status AudioMp3EncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& outpu
 Status AudioMp3EncoderPlugin::Reset()
 {
     AVCODEC_LOGD("Reset begins");
+    isFirstInputPts_ = true;
+    startPts_ = 0;
+    prevPts_ = 0;
     auto ret = Release();
     if (ret != Status::OK) {
         AVCODEC_LOGE("AudioMp3EncoderPlugin Reset Release error.");
@@ -303,6 +318,9 @@ Status AudioMp3EncoderPlugin::Release()
 
 Status AudioMp3EncoderPlugin::Flush()
 {
+    isFirstInputPts_ = true;
+    startPts_ = 0;
+    prevPts_ = 0;
     return Status::OK;
 }
 
@@ -349,6 +367,11 @@ Status AudioMp3EncoderPlugin::SetParameter(const std::shared_ptr<Meta>& paramete
     }
     int32_t frameSize = lame_get_framesize(lameInfo->gfp);
     audioParameter_.Set<Tag::AUDIO_SAMPLE_PER_FRAME>(frameSize);
+    AudioEncodePtsMode ptsMode = DEFAULT_ENCODE_PTS_MODE;
+    if (parameter->Get<Tag::AUDIO_ENCODE_PTS_MODE>(ptsMode)) {
+        ptsMode_ = ptsMode;
+    }
+    frameSize_ = frameSize;
     lameInitFlag = 1;
     return Status::OK;
 }
