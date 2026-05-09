@@ -96,4 +96,4 @@ private:
 } // namespace Media
 } // namespace OHOS
 
-#endif // FFMPEG_BASE_ENCODER_H
+#endif // FFMPEG_BASE_ENCODER_H
