@@ -15,7 +15,6 @@
 
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
-#include "media_description.h"
 #include "meta/meta_key.h"
 #include "avcodec_log.h"
 #include "avcodec_suspend.h"
