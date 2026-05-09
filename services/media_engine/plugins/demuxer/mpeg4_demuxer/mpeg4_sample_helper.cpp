@@ -1033,8 +1033,10 @@ uint32_t MPEG4SampleHelper::CalculateSampleCount()
 {
     uint32_t sampleCount = 0;
     for (const auto& entry : sttsEntry_) {
+        FALSE_RETURN_V_MSG_E(UINT32_MAX - entry.count >= sampleCount, 0, "sampleCount overflow");
         sampleCount += entry.count;
     }
+    MEDIA_LOG_I("sampleCount is " PUBLIC_LOG_U32, sampleCount);
     return sampleCount;
 }
 
