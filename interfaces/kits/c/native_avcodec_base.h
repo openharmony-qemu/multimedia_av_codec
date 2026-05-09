@@ -1474,6 +1474,35 @@ extern const char *OH_MD_KEY_VIDEO_DECODER_SPEED;
 extern const char *OH_MD_KEY_HDR_TYPE;
 
 /**
+ * @brief Key for querying the number of pending frames in the video encoder.
+ *
+ * It is used in {@link OH_VideoEncoder_GetInputDescription}.
+ *
+ * @since 26.0.0
+*/
+extern const char *OH_MD_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES.
+
+/**
+ * @brief Key to set the maximum number of frames that a compressor is allowed to hold before it must output a
+ * compressed frame.
+ *
+ * It is used in {@link OH_VideoDecoder_Configure}.
+ *
+ * @since 26.0.0
+*/
+extern const char *OH_MD_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT.
+
+/**
+ * @brief Key to repeat headers before sync frames, value type is int32_t (0 or 1): 1 is enabled, 0 disabled.
+ *
+ * This is an optional key that applies only to video encoder and is only used in configure.
+ * By default, this feature is disabled (0).
+ *
+ * @since 26.0.0
+*/
+extern const char *OH_MD_VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES.
+
+/**
  * @brief HDR type.
  *
  * @since 26.0.0
