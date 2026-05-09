@@ -202,8 +202,7 @@ Status MPEG4DemuxerPlugin::GetPresentationTimeUsByMpeg4BoxParser(IndexAndPTSConv
 Status MPEG4DemuxerPlugin::ConvertPTSAndIndexOnlyByStts(const std::shared_ptr<MPEG4AtomParser::Track>& track,
     IndexAndPTSConversionMode mode, int64_t absolutePTS, uint32_t sampleIndex)
 {
-    MEDIA_LOG_I("ConvertPTSAndIndexOnlyByStts, mode is " PUBLIC_LOG_U32 ", absolutePTS is " PUBLIC_LOG_D64
-        ", sampleIndex is " PUBLIC_LOG_U32, mode, absolutePTS, sampleIndex);
+    MEDIA_LOG_I("absolutePTS is " PUBLIC_LOG_D64 ", sampleIndex is " PUBLIC_LOG_U32, absolutePTS, sampleIndex);
     FALSE_RETURN_V_MSG_E(track && track->sampleHelper, Status::ERROR_INVALID_DATA, "track or sampleHelper is nullptr");
 
     int32_t timeScale = 0;
@@ -245,8 +244,6 @@ Status MPEG4DemuxerPlugin::ConvertPTSAndIndexOnlyByStts(const std::shared_ptr<MP
 Status MPEG4DemuxerPlugin::ConvertPTSAndIndexBySttsAndCtts(const std::shared_ptr<MPEG4AtomParser::Track>& track,
     IndexAndPTSConversionMode mode, int64_t absolutePTS, uint32_t sampleIndex)
 {
-    MEDIA_LOG_I("ConvertPTSAndIndexBySttsAndCtts, mode is " PUBLIC_LOG_U32 ", absolutePTS is " PUBLIC_LOG_D64
-        ", sampleIndex is " PUBLIC_LOG_U32, mode, absolutePTS, sampleIndex);
     FALSE_RETURN_V_MSG_E(track && track->sampleHelper, Status::ERROR_INVALID_DATA, "track or sampleHelper is nullptr");
 
     int32_t timeScale = 0;
