@@ -77,7 +77,6 @@ private:
     int64_t lastPtsMs_ = -1;
 #ifdef SUPPORT_FPS_FOR_MEMC
     int64_t lastOutPts_[3] = {0};
-    uint32_t outputCount = false;
     size_t lastIndex_ = 0;
     std::pair<int32_t, int32_t> fixedInfo_{};
     std::pair<int32_t, int32_t> curtInfo_{};
