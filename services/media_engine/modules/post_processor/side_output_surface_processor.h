@@ -92,6 +92,7 @@ private:
     bool HandleBufferSizeMismatch(SurfaceBufferInfo& srcBufferInfo, SurfaceBufferInfo& dstBufferInfo);
     sptr<SurfaceBuffer> HandleRenderBufferOverflow();
     void CancelOldBuffersOnResolutionChange(sptr<Surface> producerSurface);
+    void UpdateConfigIfZero(sptr<SurfaceBuffer> srcBuffer);
 
     sptr<Surface> consumerSurface_;
     sptr<Surface> producerSurface_;
