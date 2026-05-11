@@ -2342,6 +2342,224 @@ HWTEST_F(DashMpdDownloaderUnittest, FindSegmentByRelativeTime_001, TestSize.Leve
     mpdDownloader_->FindSegmentByRelativeTime(streamDesc, 1000, seg, 0, totalDuration);
     EXPECT_EQ(seg, nullptr);
 }
+
+/**
+ * @tc.name  : Test FindStreamByStreamId - segsState not FINISH
+ * @tc.number: FindStreamByStreamId_001
+ * @tc.desc  : Test FindStreamByStreamId when stream's segsState is not FINISH
+ */
+HWTEST_F(DashMpdDownloaderUnittest, FindStreamByStreamId_001, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    mpdDownloader_->streamDescriptions_.clear();
+
+    auto stream1 = std::make_shared<DashStreamDescription>();
+    stream1->streamId_ = 1;
+    stream1->segsState_ = DASH_SEGS_STATE_NONE;
+    mpdDownloader_->streamDescriptions_.push_back(stream1);
+
+    auto stream2 = std::make_shared<DashStreamDescription>();
+    stream2->streamId_ = 2;
+    stream2->segsState_ = DASH_SEGS_STATE_FINISH;
+    mpdDownloader_->streamDescriptions_.push_back(stream2);
+
+    auto ret = mpdDownloader_->FindStreamByStreamId(1);
+    EXPECT_EQ(ret, nullptr);
+
+    ret = mpdDownloader_->FindStreamByStreamId(2);
+    EXPECT_NE(ret, nullptr);
+}
+
+/**
+ * @tc.name  : Test SeekToTs - needSwitch is true
+ * @tc.number: SeekToTs_005
+ * @tc.desc  : Test SeekToTs when needSwitch is true (targetPeriodIndex != currentStream->periodIndex_)
+ */
+HWTEST_F(DashMpdDownloaderUnittest, SeekToTs_005, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    mpdDownloader_->streamDescriptions_.clear();
+
+    auto currentStream = std::make_shared<DashStreamDescription>();
+    currentStream->streamId_ = 1;
+    currentStream->segsState_ = DASH_SEGS_STATE_FINISH;
+    currentStream->periodIndex_ = 0;
+    currentStream->periodStartTime_ = 0;
+    currentStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
+
+    auto targetStream = std::make_shared<DashStreamDescription>();
+    targetStream->streamId_ = 2;
+    targetStream->segsState_ = DASH_SEGS_STATE_FINISH;
+    targetStream->periodIndex_ = 1;
+    targetStream->periodStartTime_ = 5000;
+    targetStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
+    targetStream->mediaSegments_.clear();
+
+    auto seg1 = std::make_shared<DashSegment>();
+    seg1->duration_ = 2000;
+    seg1->numberSeq_ = 1;
+    targetStream->mediaSegments_.push_back(seg1);
+
+    mpdDownloader_->streamDescriptions_.push_back(currentStream);
+    mpdDownloader_->streamDescriptions_.push_back(targetStream);
+
+    std::shared_ptr<DashSegment> seg;
+    auto ret = mpdDownloader_->SeekToTs(1, 6000, seg);
+    EXPECT_EQ(ret, 5000);
+}
+
+/**
+ * @tc.name  : Test SeekToTs - relativeTime >= 0
+ * @tc.number: SeekToTs_006
+ * @tc.desc  : Test SeekToTs when relativeTime >=0 (no need to set to 0)
+ */
+HWTEST_F(DashMpdDownloaderUnittest, SeekToTs_006, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    mpdDownloader_->streamDescriptions_.clear();
+
+    auto currentStream = std::make_shared<DashStreamDescription>();
+    currentStream->streamId_ = 1;
+    currentStream->segsState_ = DASH_SEGS_STATE_FINISH;
+    currentStream->periodIndex_ = 0;
+    currentStream->periodStartTime_ = 1000;
+    currentStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
+
+    auto seg1 = std::make_shared<DashSegment>();
+    seg1->duration_ = 2000;
+    seg1->numberSeq_ = 1;
+    targetStream->mediaSegments_.push_back(seg1);
+
+    mpdDownloader_->streamDescriptions_.push_back(currentStream);
+
+    std::shared_ptr<DashSegment> seg;
+    auto ret = mpdDownloader_->SeekToTs(1, 3000, seg);
+    EXPECT_EQ(ret, 3000);
+}
+
+/**
+ * @tc.name  : Test GetStreamInfo - multiple audio streams with same adptSetIndex
+ * @tc.number: GetStreamInfo_002
+ * @tc.desc  : Test GetStreamInfo when there are multiple audio streams with same adptSetIndex in different periods
+ */
+HWTEST_F(DashMpdDownloaderUnittest, GetStreamInfo_002, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    mpdDownloader_->streamDescriptions_.clear();
+
+    auto audioStream1 = std::make_shared<DashStreamDescription>();
+    audioStream1->streamId_ = 1;
+    audioStream1->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_AUD;
+    audioStream1->adptSetIndex_ = 1;
+    audioStream1->periodIndex_ = 0;
+    audioStream1->bandwidth_ = 128000;
+    mpdDownloader_->streamDescriptions_.push_back(audioStream1);
+
+    auto audioStream2 = std::make_shared<DashStreamDescription>();
+    audioStream2->streamId_ = 2;
+    audioStream2->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_AUD;
+    audioStream2->adptSetIndex_ = 1;
+    audioStream2->periodIndex_ = 1;
+    audioStream2->bandwidth_ = 128000;
+    mpdDownloader_->streamDescriptions_.push_back(audioStream2);
+
+    std::vector<StreamInfo> streams;
+    auto ret = mpdDownloader_->GetStreamInfo(streams);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(streams.size(), 2);
+}
+
+/**
+ * @tc.name  : Test GetStreamInfo - multiple subtitle streams with same adptSetIndex
+ * @tc.number: GetStreamInfo_003
+ * @tc.desc  : Test GetStreamInfo when there are multiple subtitle streams with same adptSetIndex in different periods
+ */
+HWTEST_F(DashMpdDownloaderUnittest, GetStreamInfo_003, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    mpdDownloader_->streamDescriptions_.clear();
+
+    auto subtitleStream1 = std::make_shared<DashStreamDescription>();
+    subtitleStream1->streamId_ = 1;
+    subtitleStream1->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE;
+    subtitleStream1->adptSetIndex_ = 1;
+    subtitleStream1->periodIndex_ = 0;
+    mpdDownloader_->streamDescriptions_.push_back(subtitleStream1);
+
+    auto subtitleStream2 = std::make_shared<DashStreamDescription>();
+    subtitleStream2->streamId_ = 2;
+    subtitleStream2->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE;
+    subtitleStream2->adptSetIndex_ = 1;
+    subtitleStream2->periodIndex_ = 1;
+    mpdDownloader_->streamDescriptions_.push_back(subtitleStream2);
+
+    std::vector<StreamInfo> streams;
+    auto ret = mpdDownloader_->GetStreamInfo(streams);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(streams.size(), 2);
+}
+
+/**
+ * @tc.name  : Test GetPeriodIndexBySeekTime - periodIndex equals currentPeriodIndex
+ * @tc.number: GetPeriodIndexBySeekTime_004
+ * @tc.desc  : Test GetPeriodIndexBySeekTime when periodIndex equals currentPeriodIndex
+ */
+HWTEST_F(DashMpdDownloaderUnittest, GetPeriodIndexBySeekTime_004, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    mpdDownloader_->streamDescriptions_.clear();
+    mpdDownloader_->currentPeriodIndex_ = 1;
+
+    auto streamDesc1 = std::make_shared<DashStreamDescription>();
+    streamDesc1->streamId_ = 1;
+    streamDesc1->periodIndex_ = 0;
+    streamDesc1->periodStartTime_ = 0;
+    streamDesc1->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
+    streamDesc1->segsState_ = DASH_SEGS_STATE_NONE;
+    mpdDownloader_->streamDescriptions_.push_back(streamDesc1);
+
+    auto streamDesc2 = std::make_shared<DashStreamDescription>();
+    streamDesc2->streamId_ = 2;
+    streamDesc2->periodIndex_ = 1;
+    streamDesc2->periodStartTime_ = 5000;
+    streamDesc2->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
+    streamDesc2->segsState_ = DASH_SEGS_STATE_NONE;
+    mpdDownloader_->streamDescriptions_.push_back(streamDesc2);
+
+    auto ret = mpdDownloader_->GetPeriodIndexBySeekTime(6000);
+    EXPECT_EQ(ret, 1);
+}
+
+/**
+ * @tc.name  : Test SwitchStreamIfNeeded - mediaSegment not empty
+ * @tc.number: SwitchStreamIfNeeded_002
+ * @tc.desc  : Test SwitchStreamIfNeeded when target stream's mediaSegment is not empty
+ */
+HWTEST_F(DashMpdDownloaderUnittest, SwitchStreamIfNeeded_002, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    mpdDownloader_->streamDescriptions_.clear();
+
+    auto currentStream = std::make_shared<DashStreamDescription>();
+    currentStream->streamId_ = 1;
+    currentStream->periodIndex_ = 0;
+    currentStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
+
+    auto targetStream = std::make_shared<DashStreamDescription>();
+    targetStream->streamId_ = 2;
+    targetStream->periodIndex_ = 1;
+    targetStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
+
+    auto seg1 = std::make_shared<DashSegment>();
+    seg1->numberSeq_ = 1;
+    targetStream->mediaSegments_.push_back(seg1);
+
+    mpdDownloader_->streamDescriptions_.push_back(currentStream);
+    mpdDownloader_->streamDescriptions_.push_back(targetStream);
+
+    mpdDownloader_->SwitchStreamIfNeeded(currentStream, 1);
+    EXPECT_EQ(currentStream->streamId_, 2);
+}
 }
 }
 }
