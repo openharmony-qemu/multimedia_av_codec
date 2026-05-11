@@ -113,6 +113,8 @@ constexpr uint8_t MPEG4_DEC_SPECIFIC_DESCR_TAG = 0x05;
 constexpr float LUMI_SCALE = 0.0001;
 constexpr float PRIMARY_SCALE = 0.00002;
 constexpr uint64_t CREATION_TIME_SCALE = 1000000;
+// 辅助轨相关常量
+constexpr uint32_t MAX_TRACK_REFERENCE_COUNT = 1000;
 
 constexpr std::array<size_t, 4> MATRIX_2X2_INDICES = {0, 1, 3, 4}; // [0][0], [0][1], [1][0], [1][1]
 constexpr std::array<size_t, 3> MATRIX_DIAGONAL_INDICES = {0, 4, 8}; // [0][0], [1][1], [2][2]
@@ -944,7 +946,7 @@ Status MPEG4AtomParser::ParseTrak(MPEG4Atom currentAtom, int32_t depth, ParseCon
     Status ret = ParseContainerAtom(currentAtom, depth, ctx);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Failed to parse trak atom");
 
-    if (lastTrack_->codecParms.trackType == VIDEO_TYPE) {
+    if (NeedParseVideoInfo(*lastTrack_)) {
         ParseOrientationFromMatrix(lastTrack_);
         ParseRotationTypeFromMatrix(lastTrack_);
         CalculateSARFromTrackInfo(lastTrack_);
@@ -972,6 +974,17 @@ void MPEG4AtomParser::AdapterFormat(std::shared_ptr<Track> track)
     AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
     if (mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout)) {
         mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(layout);
+    }
+
+    // 辅助轨相关处理
+    if (track->codecParms.trackType != TrackType::AUXILIARY_TYPE &&
+        track->codecParms.trackType != TrackType::TIMEDMETA_TYPE) {
+        mediaInfo_.tracks[track->trackIndex].Remove(Tag::TRACK_DESCRIPTION);
+        mediaInfo_.tracks[track->trackIndex].Remove(Tag::TRACK_REFERENCE_TYPE);
+        mediaInfo_.tracks[track->trackIndex].Remove(Tag::REFERENCE_TRACK_IDS);
+
+        mediaInfo_.tracks[track->trackIndex].Remove(Tag::TIMED_METADATA_KEY);
+        mediaInfo_.tracks[track->trackIndex].Remove(Tag::TIMED_METADATA_SRC_TRACK);
     }
 }
 void MPEG4AtomParser::CalculateSampleAspectRatio(std::shared_ptr<Track> track, uint32_t width, uint32_t height)
@@ -1206,41 +1219,52 @@ Status MPEG4AtomParser::ParseTref(MPEG4Atom currentAtom, int32_t depth, ParseCon
 {
     FALSE_RETURN_V_MSG_E(lastTrack_ != nullptr, Status::ERROR_NULL_POINTER, "Current track is null");
     FALSE_RETURN_V_MSG_E(depth == MPEG4_DEPTH_TWO, Status::ERROR_INVALID_DATA, "Invalid tref depth");
-    Status ret = ParseContainerAtom(currentAtom, depth, ctx);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse tref container failed");
-    return ret;
-}
-
-Status MPEG4AtomParser::ParseCdsc(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
-{
-    FALSE_RETURN_V_MSG_E(lastTrack_ != nullptr, Status::ERROR_NULL_POINTER, "Current track is null");
-    uint32_t idCount = currentAtom.dataSize / 4;
-    FALSE_RETURN_V_MSG_E(idCount > 0, Status::ERROR_INVALID_DATA, "Invalid id count in cdsc atom");
-
+    constexpr uint32_t typeOffset = 4;
+    constexpr uint32_t minAtomSize = 8;
+    uint8_t subAtomData[8];
+    Status ret = dataReader_->ReadUintData(ctx->dataOffset, subAtomData, sizeof(subAtomData));
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read tref data failed");
+    uint32_t subAtomSize = GetU32Value(&subAtomData[0]);
+    FALSE_RETURN_V_MSG_E(subAtomSize >= minAtomSize, ret, "Invalid atom size");
+    uint32_t subAtomType = GetU32Value(&subAtomData[typeOffset]);
+    mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::TRACK_REFERENCE_TYPE>(FourccToString(subAtomType));
+    
+    MEDIA_LOG_D("ParseTref subAtomSize: " PUBLIC_LOG_U32 " subAtomType: " PUBLIC_LOG_U32 ", type: " PUBLIC_LOG_S,
+        subAtomSize, subAtomType, FourccToString(subAtomType).c_str());
+    
+    uint32_t idCount = (subAtomSize - 8) / 4;
+    FALSE_RETURN_V_MSG_E(idCount > 0 && idCount <= MAX_TRACK_REFERENCE_COUNT, Status::ERROR_INVALID_DATA,
+        "Invalid id count in tref atom");
+    
     auto idData = std::make_unique<uint8_t[]>(idCount * sizeof(uint32_t));
-    Status ret = dataReader_->ReadUintData(ctx->dataOffset, idData.get(), idCount * sizeof(uint32_t));
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read cdsc atom id data failed");
-    std::vector<uint32_t> referencedTrackIds;
-    std::string referencedIdsStr;
+    ret = dataReader_->ReadUintData(ctx->dataOffset + sizeof(subAtomData), idData.get(), idCount * sizeof(uint32_t));
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read tref atom id data failed");
+
+    std::vector<int32_t> referencedTrackIds;
+    std::ostringstream referencedIdsStr;
     for (uint32_t i = 0; i < idCount; ++i) {
-        uint32_t trackId = GetU32Value(&idData[i * sizeof(uint32_t)]);
+        int32_t trackId = static_cast<int32_t>(GetU32Value(&idData[i * sizeof(uint32_t)]));
         if (trackId > 0) {
-            referencedTrackIds.emplace_back(trackId - 1);
-            if (!referencedIdsStr.empty()) {
-                referencedIdsStr += ",";
+            int32_t adjustedTrackId = trackId - 1;
+            referencedTrackIds.emplace_back(adjustedTrackId);
+            if (!referencedTrackIds.empty() && referencedTrackIds.size() > 1) {
+                referencedIdsStr << ",";
             }
-            referencedIdsStr += std::to_string(trackId - 1);
+            referencedIdsStr << adjustedTrackId;
         } else {
             MEDIA_LOG_W("Invalid track ID: " PUBLIC_LOG_U32, trackId);
         }
     }
 
     if (!referencedTrackIds.empty()) {
-        int32_t referencedTrackId = referencedTrackIds[0];
-        mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::TIMED_METADATA_SRC_TRACK>(referencedTrackId);
-        MEDIA_LOG_D("Referenced track IDs: " PUBLIC_LOG_S, referencedIdsStr.c_str());
+        if (subAtomType == FourccType("cdsc")) {
+            int32_t referencedTrackId = referencedTrackIds[0];
+            mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::TIMED_METADATA_SRC_TRACK>(referencedTrackId);
+        }
+        mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::REFERENCE_TRACK_IDS>(referencedTrackIds);
+        MEDIA_LOG_D("ParseTref Referenced track IDs: " PUBLIC_LOG_S, referencedIdsStr.str().c_str());
     }
-
+    
     ctx->offset += currentAtom.size;
     return ret;
 }
@@ -1372,6 +1396,8 @@ Status MPEG4AtomParser::ParseHdlr(MPEG4Atom currentAtom, int32_t depth, ParseCon
             break;
         case FourccType("auxv"):
             lastTrack_->codecParms.trackType = AUXILIARY_TYPE;
+            ret = ProcessAuxiliaryHandler(currentAtom, ctx);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Process auxv handler failed");
             break;
         case FourccType("meta"):
             ret = ProcessMetaHandler(currentAtom, ctx);
@@ -1392,24 +1418,50 @@ Status MPEG4AtomParser::ParseHdlr(MPEG4Atom currentAtom, int32_t depth, ParseCon
 
 Status MPEG4AtomParser::ProcessMetaHandler(MPEG4Atom currentAtom, ParseContext* ctx)
 {
-    char titleBuffer[MAX_TITLE_SIZE + 1] = {'\0'};
-    uint64_t titleSize = std::min(static_cast<uint64_t>(MAX_TITLE_SIZE), currentAtom.dataSize - MAX_TITLE_SIZE);
+    uint64_t titleSize = currentAtom.dataSize - MAX_TITLE_SIZE;
     if (titleSize <= 0) {
+        MEDIA_LOG_W("ProcessMetaHandler titleSize <= 0");
         return Status::OK;
     }
-    
+    if (titleSize > std::min(static_cast<uint64_t>(INT_MAX), static_cast<uint64_t>(SIZE_MAX - 1))) {
+        MEDIA_LOG_E("Titlesize is invalid");
+        return Status::ERROR_INVALID_DATA;
+    }
+    std::vector titleBuffer(static_cast<size_t>(titleSize) + 1, '\0');
     Status ret = dataReader_->ReadUintData(ctx->dataOffset + MAX_TITLE_SIZE,
-        reinterpret_cast<uint8_t*>(titleBuffer), titleSize);
+        reinterpret_cast<uint8_t*>(titleBuffer.data()), titleSize);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read meta handler title failed");
     
     int32_t offset = (!isIsom_ && static_cast<uint8_t>(titleBuffer[0]) == titleSize - 1) ? 1 : 0;
+    mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::TRACK_DESCRIPTION>(titleBuffer.data() + offset);
     constexpr uint32_t timedMetaDataLength = 14;
 
     if (titleSize >= static_cast<uint64_t>(offset + timedMetaDataLength) &&
-        strncmp(titleBuffer + offset, "timed_metadata", timedMetaDataLength) == 0) {
+        strncmp(titleBuffer.data() + offset, "timed_metadata", timedMetaDataLength) == 0) {
         lastTrack_->codecParms.trackType = TIMEDMETA_TYPE;
         lastTrack_->sampleHelper->trackType_ = TIMEDMETA_TYPE;
     }
+    return Status::OK;
+}
+
+Status MPEG4AtomParser::ProcessAuxiliaryHandler(MPEG4Atom currentAtom, ParseContext *ctx)
+{
+    uint64_t titleSize = currentAtom.dataSize - MAX_TITLE_SIZE;
+    if (titleSize <= 0) {
+        MEDIA_LOG_W("ProcessAuxiliaryHandler titleSize <= 0");
+        return Status::OK;
+    }
+    if (titleSize > std::min(static_cast<uint64_t>(INT_MAX), static_cast<uint64_t>(SIZE_MAX - 1))) {
+        MEDIA_LOG_E("Titlesize is invalid");
+        return Status::ERROR_INVALID_DATA;
+    }
+    std::vector titleBuffer(static_cast<size_t>(titleSize) + 1, '\0');
+    Status ret = dataReader_->ReadUintData(ctx->dataOffset + MAX_TITLE_SIZE,
+        reinterpret_cast<uint8_t *>(titleBuffer.data()), titleSize);
+
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read auxiliary handler title failed");
+    int32_t offset = (!isIsom_ && static_cast<uint8_t>(titleBuffer[0]) == titleSize - 1) ? 1 : 0;
+    mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::TRACK_DESCRIPTION>(titleBuffer.data() + offset);
     return Status::OK;
 }
 
@@ -1458,9 +1510,9 @@ Status MPEG4AtomParser::ParseStsd(MPEG4Atom currentAtom, int32_t depth, ParseCon
         };
         ctx->dataOffset = atomOffset + sizeof(sampleEntryHeader);
         MEDIA_LOG_D("Sample Entry type: " PUBLIC_LOG_S, FourccToString(atom.type).c_str());
-        if (lastTrack_->codecParms.trackType == VIDEO_TYPE) {
+        if (NeedParseVideoInfo(GetMimeType(atom.type), lastTrack_->codecParms.trackType)) {
             ret = ParseVideoSampleEntry(atom, depth + 1, ctx);
-        } else if (lastTrack_->codecParms.trackType == AUDIO_TYPE) {
+        } else if (NeedParseAudioInfo(GetMimeType(atom.type), lastTrack_->codecParms.trackType)) {
             ret = ParseAudioSampleEntry(atom, depth + 1, ctx);
         } else if (lastTrack_->codecParms.trackType == SUBTITLE_TYPE) {
             ret = ParseSubtitleSampleEntry(atom, depth + 1, ctx);
@@ -1477,7 +1529,7 @@ Status MPEG4AtomParser::ParseStsd(MPEG4Atom currentAtom, int32_t depth, ParseCon
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse stsd container failed");
     }
     FALSE_RETURN_V_MSG_E(ctx->offset == endOffset, Status::ERROR_INVALID_DATA, "Invalid stsd size");
-    if (lastTrack_->codecParms.trackType == AUDIO_TYPE) {
+    if (NeedParseAudioInfo(*lastTrack_)) {
         ret = SetAudioAttribute();
     }
     return ret;
@@ -3986,7 +4038,7 @@ void MPEG4AtomParser::InitParseTable()
         {FourccType("trak"), &MPEG4AtomParser::ParseTrak}, {FourccType("mvhd"), &MPEG4AtomParser::ParseMvhd},
         {FourccType("tkhd"), &MPEG4AtomParser::ParseTkhd}, {FourccType("edts"), &MPEG4AtomParser::ParseEdts},
         {FourccType("elst"), &MPEG4AtomParser::ParseElst}, {FourccType("tref"), &MPEG4AtomParser::ParseTref},
-        {FourccType("cdsc"), &MPEG4AtomParser::ParseCdsc}, {FourccType("mdia"), &MPEG4AtomParser::ParseMdia},
+        {FourccType("mdia"), &MPEG4AtomParser::ParseMdia},
         {FourccType("mdhd"), &MPEG4AtomParser::ParseMdhd}, {FourccType("hdlr"), &MPEG4AtomParser::ParseHdlr},
         {FourccType("minf"), &MPEG4AtomParser::ParseMinf}, {FourccType("stbl"), &MPEG4AtomParser::ParseStbl},
         {FourccType("stsd"), &MPEG4AtomParser::ParseStsd}, {FourccType("btrt"), &MPEG4AtomParser::ParseBtrt},
@@ -4142,11 +4194,11 @@ void MPEG4AtomParser::CalculateMPEG4Attributes()
     mediaInfo_.general.Set<Tag::MEDIA_HAS_TIMEDMETA>(false);
     mediaInfo_.general.Set<Tag::MEDIA_HAS_AUXILIARY>(false);
     for (auto track = firstTrack_; track; track = track->next) {
-        if (track->codecParms.trackType == VIDEO_TYPE) {
+        if (NeedParseVideoInfo(*track)) {
             CalculateVideoFrameRate(track);
             mediaInfo_.tracks[track->trackIndex].Set<Tag::VIDEO_DELAY>(0);
         }
-        if (track->codecParms.trackType == AUDIO_TYPE) {
+        if (NeedParseAudioInfo(*track)) {
             int32_t channelCount = 0;
             AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
             if (!mediaInfo_.tracks[lastTrack_->trackIndex].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout) &&
@@ -4186,6 +4238,9 @@ void MPEG4AtomParser::SetTrackType(std::shared_ptr<Track> track)
             break;
         case TIMEDMETA_TYPE:
             tagType = Tag::MEDIA_HAS_TIMEDMETA;
+            break;
+        case AUXILIARY_TYPE:
+            tagType = Tag::MEDIA_HAS_AUXILIARY;
             break;
         default:
             MEDIA_LOG_W("Unknown track type for track " PUBLIC_LOG_U32, track->trackIndex);
@@ -4487,6 +4542,47 @@ std::string MPEG4AtomParser::ConvertLanguageCode(uint16_t langcode)
     }
     return "";
 }
+
+bool MPEG4AtomParser::NeedParseVideoInfo(std::string mimeType, TrackType trackType)
+{
+    bool isVideoCodec = false;
+    isVideoCodec = (mimeType == MimeType::VIDEO_MPEG4 || mimeType == MimeType::VIDEO_AVC ||
+        mimeType == MimeType::VIDEO_HEVC || mimeType == MimeType::VIDEO_VVC);
+    return trackType == VIDEO_TYPE || (trackType == AUXILIARY_TYPE && isVideoCodec);
+}
+
+bool MPEG4AtomParser::NeedParseAudioInfo(std::string mimeType, TrackType trackType)
+{
+    bool isAudioCodec = false;
+    isAudioCodec = (mimeType == MimeType::AUDIO_AAC || mimeType == MimeType::AUDIO_AVS3DA ||
+        mimeType == MimeType::AUDIO_MPEG || mimeType == MimeType::AUDIO_AC3);
+    return trackType == AUDIO_TYPE || (trackType == AUXILIARY_TYPE && isAudioCodec);
+}
+
+bool MPEG4AtomParser::NeedParseVideoInfo(const MPEG4AtomParser::Track &track)
+{
+    TrackType trackType = track.codecParms.trackType;
+    FALSE_RETURN_V_MSG_E(track.sampleHelper != nullptr, trackType == TrackType::VIDEO_TYPE,
+        "NeedParseVideoInfo sampleHelper is null");
+    bool isVideoCodec = false;
+    std::string mimeType = track.sampleHelper->mimeType_;
+    isVideoCodec = (mimeType == MimeType::VIDEO_MPEG4 || mimeType == MimeType::VIDEO_AVC ||
+        mimeType == MimeType::VIDEO_HEVC || mimeType == MimeType::VIDEO_VVC);
+    return trackType == VIDEO_TYPE || (trackType == AUXILIARY_TYPE && isVideoCodec);
+}
+
+bool MPEG4AtomParser::NeedParseAudioInfo(const MPEG4AtomParser::Track &track)
+{
+    TrackType trackType = track.codecParms.trackType;
+    FALSE_RETURN_V_MSG_E(track.sampleHelper != nullptr, trackType == TrackType::AUDIO_TYPE,
+        "NeedParseAudioInfo sampleHelper is null");
+    bool isAudioCodec = false;
+    std::string mimeType = track.sampleHelper->mimeType_;
+    isAudioCodec = (mimeType == MimeType::AUDIO_AAC || mimeType == MimeType::AUDIO_AVS3DA ||
+        mimeType == MimeType::AUDIO_MPEG || mimeType == MimeType::AUDIO_AC3);
+    return trackType == AUDIO_TYPE || (trackType == AUXILIARY_TYPE && isAudioCodec);
+}
+
 } // namespace MPEG4
 } // namespace Plugins
 } // namespace Media

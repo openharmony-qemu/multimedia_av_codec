@@ -206,6 +206,12 @@ private:
     void ParseHEVCMetadataInfo(const MPEG4AtomParser::Track& track, Meta &format);
     void ConvertCsdToAnnexb(const MPEG4AtomParser::Track& track, Meta& format, uint32_t trackIndex);
     int SelectSeekTrack();
+
+    // 辅助轨相关函数
+    bool IsVideoType(const MPEG4AtomParser::Track& track);
+    bool IsAudioType(const MPEG4AtomParser::Track& track);
+    void UpdateReferenceIds();
+    std::map<int32_t, std::vector<int32_t>> referenceIdsMap_ {};
     
     void ResetParametersOfPTSAndIndexConversion();
     uint32_t GetSampleCount(uint32_t trackIndex);
@@ -221,7 +227,7 @@ private:
         int64_t sampleOffsetOfCurrentCttsEntry);
     void ProcessIndex2RelativePTS(int64_t pts, uint32_t index);
     void ProcessRelativePTS2Index(int64_t pts, int64_t absolutePTS);
-    
+
     Status WaitForLoop(uint32_t trackId, uint32_t timeout);
     bool ShouldWaitForRead(uint32_t trackId);
     void MPEG4ReadLoop();
