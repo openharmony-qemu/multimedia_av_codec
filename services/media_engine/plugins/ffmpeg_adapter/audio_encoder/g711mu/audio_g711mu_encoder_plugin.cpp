@@ -213,7 +213,8 @@ Status AudioG711muEncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& ou
             outputBuffer->pts_ = pts_;
         }
         if (ptsMode_ != DEFAULT_ENCODE_PTS_MODE) {
-            prevPts_ = (frameDuration > 0 && prevPts_ > INT64_MAX - frameDuration) ? prevPts_ : prevPts_ + frameDuration;
+            prevPts_ = (frameDuration > 0 && prevPts_ > INT64_MAX - frameDuration)
+                ? prevPts_ : prevPts_ + frameDuration;
         }
         SafeCallOutputBufferDone(dataCallback_, outputBuffer);
     }

@@ -1725,7 +1725,8 @@ HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_Aac_PtsMode_ZeroStart, Tes
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                             AudioSampleFormat::SAMPLE_F32LE);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(), AUDIO_ENCODER_PTS_MODE_ZERO_START);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(),
+                            AUDIO_ENCODER_PTS_MODE_ZERO_START);
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
     {
@@ -1755,7 +1756,8 @@ HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_Aac_PtsMode_FirstInputStar
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                             AudioSampleFormat::SAMPLE_F32LE);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(), AUDIO_ENCODER_PTS_MODE_FIRST_INPUT_START);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(),
+                            AUDIO_ENCODER_PTS_MODE_FIRST_INPUT_START);
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
     {
@@ -1785,7 +1787,8 @@ HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_Flac_PtsMode_ZeroStart, Te
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), SAMPLE_FORMAT);
     OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(), CHANNEL_LAYOUT);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), COMPLIANCE_LEVEL);
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(), AUDIO_ENCODER_PTS_MODE_ZERO_START);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(),
+                            AUDIO_ENCODER_PTS_MODE_ZERO_START);
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
     {
@@ -1818,7 +1821,8 @@ HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_Flac_PtsMode_FirstInputSta
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), SAMPLE_FORMAT);
     OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(), CHANNEL_LAYOUT);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), COMPLIANCE_LEVEL);
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(), AUDIO_ENCODER_PTS_MODE_FIRST_INPUT_START);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(),
+                            AUDIO_ENCODER_PTS_MODE_FIRST_INPUT_START);
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
     {
@@ -1871,7 +1875,8 @@ HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_G711mu_PtsMode_ZeroStart, 
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                             AudioSampleFormat::SAMPLE_S16LE);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE_8K);
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(), AUDIO_ENCODER_PTS_MODE_ZERO_START);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(),
+                            AUDIO_ENCODER_PTS_MODE_ZERO_START);
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
     {
@@ -1901,7 +1906,8 @@ HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_G711mu_PtsMode_FirstInputS
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                             AudioSampleFormat::SAMPLE_S16LE);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE_8K);
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(), AUDIO_ENCODER_PTS_MODE_FIRST_INPUT_START);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(),
+                            AUDIO_ENCODER_PTS_MODE_FIRST_INPUT_START);
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
     {
@@ -1929,7 +1935,8 @@ HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_Mp3_PtsMode_ZeroStart, Tes
                             AudioSampleFormat::SAMPLE_S16LE);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
     OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), MP3_BIT_RATE);
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(), AUDIO_ENCODER_PTS_MODE_ZERO_START);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(),
+                            AUDIO_ENCODER_PTS_MODE_ZERO_START);
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
     {
@@ -1960,7 +1967,8 @@ HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_Mp3_PtsMode_FirstInputStar
                             AudioSampleFormat::SAMPLE_S16LE);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
     OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), MP3_BIT_RATE);
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(), AUDIO_ENCODER_PTS_MODE_FIRST_INPUT_START);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(),
+                            AUDIO_ENCODER_PTS_MODE_FIRST_INPUT_START);
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
     {

@@ -2081,7 +2081,7 @@ HWTEST_F(AudioCodeCapiEncoderUnitTest, aac_profile, TestSize.Level1)
 } // namespace MediaAVCodec
 } // namespace OHOS
 
-// ===== PTS Mode NDK Interface Tests =====
+// ===== PTS Mode CAPI Interface Tests =====
 
 HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_Aac_PtsMode_ZeroStart_Configure, TestSize.Level1)
 {
