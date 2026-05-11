@@ -879,7 +879,7 @@ HWTEST_F(DashMediaDownloaderUnittest, NeedRestartDecoder_003, TestSize.Level0)
     auto oldStream = std::make_shared<DashStreamDescription>();
     oldStream->codecs_ = "avc1.64001f";
     oldStream->videoType_ = DASH_VIDEO_TYPE_SDR;
-    auto ret = mediaDownloader_->NeedRestartDecoder(oldStream , nullptr);
+    auto ret = mediaDownloader_->NeedRestartDecoder(oldStream, nullptr);
     EXPECT_EQ(ret, false);
 }
 
@@ -897,7 +897,7 @@ HWTEST_F(DashMediaDownloaderUnittest, NeedRestartDecoder_004, TestSize.Level0)
     auto newStream = std::make_shared<DashStreamDescription>();
     newStream->codecs_ = "hev1.1.6.L93.90";
     newStream->videoType_ = DASH_VIDEO_TYPE_SDR;
-    auto ret = mediaDownloader_->NeedRestartDecoder(oldStream , newStream);
+    auto ret = mediaDownloader_->NeedRestartDecoder(oldStream, newStream);
     EXPECT_EQ(ret, true);
 }
 
@@ -915,7 +915,7 @@ HWTEST_F(DashMediaDownloaderUnittest, NeedRestartDecoder_005, TestSize.Level0)
     auto newStream = std::make_shared<DashStreamDescription>();
     newStream->codecs_ = "avc1.64001f";
     newStream->videoType_ = DASH_VIDEO_TYPE_HDR_10;
-    auto ret = mediaDownloader_->NeedRestartDecoder(oldStream , newStream);
+    auto ret = mediaDownloader_->NeedRestartDecoder(oldStream, newStream);
     EXPECT_EQ(ret, true);
 }
 
@@ -1113,7 +1113,7 @@ HWTEST_F(DashMediaDownloaderUnittest, NeedRestartDecoder_006, TestSize.Level0)
     auto newStream = std::make_shared<DashStreamDescription>();
     newStream->codecs_ = "avc1.64001f";
     newStream->videoType_ = DASH_VIDEO_TYPE_SDR;
-    auto ret = mediaDownloader_->NeedRestartDecoder(oldStream , newStream);
+    auto ret = mediaDownloader_->NeedRestartDecoder(oldStream, newStream);
     EXPECT_EQ(ret, false);
 }
 
