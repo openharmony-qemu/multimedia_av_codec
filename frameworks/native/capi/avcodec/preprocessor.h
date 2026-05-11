@@ -165,7 +165,6 @@ private:
     bool CheckOrReallocOutSurfaceBuffer(int32_t targetWidth, int32_t targetHeight,
                                         int32_t targetFormat, sptr<SurfaceBuffer> &output);
 
-
     EncoderConfig encoderParams_;               // for validation before configure
     CropParams cropParams_;                     // for validation before configure
     DownsamplingParams downsamplingParams_;     // for validation before configure
