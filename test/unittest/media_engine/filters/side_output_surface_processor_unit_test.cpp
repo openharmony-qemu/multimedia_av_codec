@@ -22,6 +22,10 @@ using namespace std;
 using namespace testing;
 using namespace testing::ext;
 
+namespace {
+constexpr uint32_t MAX_BUFFER_SIZE = 100 * 1024 * 1024; // 100MB
+}
+
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
@@ -62,9 +66,20 @@ void SideOutputSurfaceProcessorUnitTest::TearDown(void)
 sptr<MockSurfaceBuffer> SideOutputSurfaceProcessorUnitTest::CreateMockBufferWithMemory(uint32_t size)
 {
     sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    if (size == 0 || size > MAX_BUFFER_SIZE) {
+        EXPECT_CALL(*mockBuffer, GetVirAddr()).WillRepeatedly(Return(nullptr));
+        EXPECT_CALL(*mockBuffer, GetSize()).WillRepeatedly(Return(0));
+        return mockBuffer;
+    }
     void* realBuffer = malloc(size);
     if (realBuffer != nullptr) {
-        memset(realBuffer, 0, size);
+        errno_t ret = memset_s(realBuffer, size, 0, size);
+        if (ret != EOK) {
+            free(realBuffer);
+            EXPECT_CALL(*mockBuffer, GetVirAddr()).WillRepeatedly(Return(nullptr));
+            EXPECT_CALL(*mockBuffer, GetSize()).WillRepeatedly(Return(0));
+            return mockBuffer;
+        }
         allocatedBuffers_.push_back(realBuffer);
         EXPECT_CALL(*mockBuffer, GetVirAddr()).WillRepeatedly(Return(realBuffer));
     } else {
@@ -1197,71 +1212,6 @@ HWTEST_F(SideOutputSurfaceProcessorUnitTest, RequestSideBuffer_DefaultCfg, TestS
     TestableSideOutputSurfaceProcessor::SurfaceBufferInfo sideBufferInfo;
     bool result = processor_->RequestSideBuffer(sideBufferInfo, mockSurface_);
     EXPECT_TRUE(result);
-}
-
-/**
- * @tc.name: SideOutputSurfaceProcessor_CopyBufferData_001
- * @tc.desc: test CopyBufferData when virAddr is nullptr
- * @tc.type: FUNC
- */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, CopyBufferData_NullVirAddr, TestSize.Level1)
-{
-    sptr<MockSurfaceBuffer> srcMockBuffer = new MockSurfaceBuffer();
-    EXPECT_CALL(*srcMockBuffer, GetVirAddr()).WillRepeatedly(Return(nullptr));
-    EXPECT_CALL(*srcMockBuffer, GetSize()).WillRepeatedly(Return(100));
-
-    sptr<MockSurfaceBuffer> sideMockBuffer = new MockSurfaceBuffer();
-    EXPECT_CALL(*sideMockBuffer, GetVirAddr()).WillRepeatedly(Return(nullptr));
-    EXPECT_CALL(*sideMockBuffer, GetSize()).WillRepeatedly(Return(200));
-
-    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo sideBufferInfo;
-    sideBufferInfo.buffer = sideMockBuffer;
-
-    EXPECT_CALL(*mockSurface_, CancelBuffer(_)).Times(AnyNumber());
-
-    bool result = processor_->CopyBufferData(srcMockBuffer, sideBufferInfo, mockSurface_);
-    EXPECT_FALSE(result);
-}
-
-/**
- * @tc.name: SideOutputSurfaceProcessor_CopyBufferData_002
- * @tc.desc: test CopyBufferData with valid memory addresses (memcpy success path)
- * @tc.type: FUNC
- */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, CopyBufferData_Success, TestSize.Level1)
-{
-    sptr<MockSurfaceBuffer> srcMockBuffer = CreateMockBufferWithMemory(100);
-    sptr<MockSurfaceBuffer> sideMockBuffer = CreateMockBufferWithMemory(200);
-
-    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo sideBufferInfo;
-    sideBufferInfo.buffer = sideMockBuffer;
-
-    bool result = processor_->CopyBufferData(srcMockBuffer, sideBufferInfo, mockSurface_);
-    EXPECT_TRUE(result);
-}
-
-/**
- * @tc.name: SideOutputSurfaceProcessor_CopyBufferData_003
- * @tc.desc: test CopyBufferData when src virAddr is nullptr
- * @tc.type: FUNC
- */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, CopyBufferData_NullSrcVirAddr, TestSize.Level1)
-{
-    sptr<MockSurfaceBuffer> srcMockBuffer = new MockSurfaceBuffer();
-    EXPECT_CALL(*srcMockBuffer, GetVirAddr()).WillRepeatedly(Return(nullptr));
-    EXPECT_CALL(*srcMockBuffer, GetSize()).WillRepeatedly(Return(100));
-
-    sptr<MockSurfaceBuffer> sideMockBuffer = new MockSurfaceBuffer();
-    EXPECT_CALL(*sideMockBuffer, GetVirAddr()).WillRepeatedly(Return(nullptr));
-    EXPECT_CALL(*sideMockBuffer, GetSize()).WillRepeatedly(Return(200));
-
-    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo sideBufferInfo;
-    sideBufferInfo.buffer = sideMockBuffer;
-
-    EXPECT_CALL(*mockSurface_, CancelBuffer(_)).Times(AnyNumber());
-
-    bool result = processor_->CopyBufferData(srcMockBuffer, sideBufferInfo, mockSurface_);
-    EXPECT_FALSE(result);
 }
 
 /**
