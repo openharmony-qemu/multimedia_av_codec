@@ -33,6 +33,8 @@ public:
     explicit Preprocessor(const std::string &mime);
     ~Preprocessor();
 
+    static bool IsAvailable();
+
     int32_t Configure(const Media::Format &format);
     int32_t SetParameter(const Media::Format &format);
 
