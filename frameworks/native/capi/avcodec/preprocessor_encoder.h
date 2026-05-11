@@ -73,6 +73,7 @@ private:
     OH_AVErrCode InitAsPrimary(const char* mime);
     OH_AVErrCode InitAsSecondary(PreprocessorEncoder* primary);
 
+    int32_t ValidateConfiguration(const Media::Format& format, bool configuring);
     int32_t ConfigureVideoEncoder(const Media::Format& format);
     int32_t ConfigurePreprocessor(const Media::Format& format);
     int32_t CreateEncoderSurface();
@@ -88,6 +89,7 @@ private:
     bool isPrimary_{false};
     std::string mime_;
     std::string encoderId_;
+    bool configured_{false};
 
     std::mutex instanceMutex_;
     PreprocessorEncoder* primary_{nullptr};
