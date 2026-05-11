@@ -5928,6 +5928,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSeekChangeStream_001, Te
     int32_t newStreamId = 1;
     int32_t trackId = 0;
     mediaDemuxer_->isHls_ = true;
+    mediaDemuxer_->videoTrackId_ = trackId;
     mediaDemuxer_->streamDemuxer_ = std::make_shared<StreamDemuxer>();
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillOnce(Return(true));
     EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), SetNewVideoStreamID(newStreamId)).Times(1);
