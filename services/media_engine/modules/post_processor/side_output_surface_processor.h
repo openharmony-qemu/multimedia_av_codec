@@ -70,7 +70,7 @@ private:
         sptr<SyncFence> fence;
         int64_t timestamp;
     };
-    
+
     GSError OnProducerBufferReleased();
     bool GetConsumerAndProducerBuffer(SurfaceBufferInfo& srcBufferInfo, SurfaceBufferInfo& dstBufferInfo);
     bool ProcessBuffer(SurfaceBufferInfo& srcBufferInfo, SurfaceBufferInfo& dstBufferInfo);
@@ -85,8 +85,13 @@ private:
     void DealNotRenderBuffer(SurfaceBufferInfo& bufferInfo);
     bool CopyBufferToSideSurface(sptr<SurfaceBuffer> srcBuffer, int64_t timestamp);
     bool RequestSideBuffer(SurfaceBufferInfo& sideBufferInfo, sptr<Surface> sideSurface);
-    bool CopyBufferData(sptr<SurfaceBuffer> srcBuffer, SurfaceBufferInfo& sideBufferInfo, sptr<Surface> sideSurface);
     bool FlushSideBuffer(SurfaceBufferInfo& sideBufferInfo, int64_t timestamp, sptr<Surface> sideSurface);
+
+    bool UpdateRequestConfigFromBuffer(const SurfaceBufferInfo& bufferInfo);
+    void HandleResolutionChange();
+    bool HandleBufferSizeMismatch(SurfaceBufferInfo& srcBufferInfo, SurfaceBufferInfo& dstBufferInfo);
+    sptr<SurfaceBuffer> HandleRenderBufferOverflow();
+    void CancelOldBuffersOnResolutionChange(sptr<Surface> producerSurface);
 
     sptr<Surface> consumerSurface_;
     sptr<Surface> producerSurface_;
