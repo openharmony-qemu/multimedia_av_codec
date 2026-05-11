@@ -44,7 +44,6 @@ constexpr int32_t RGBA_BYTES_PER_PIXEL = 4;
 constexpr int32_t P010_BYTES_PER_SAMPLE = 2;
 constexpr int32_t YUV_SUBSAMPLE = 2;
 constexpr int32_t INVALID_ROW_BYTES = -1;
-constexpr int32_t UNSET_PROFILE = -1;
 constexpr int32_t DISABLE_CROP_LEFT = 0;
 constexpr int32_t DISABLE_CROP_TOP = 0;
 constexpr int32_t DISABLE_CROP_RIGHT = 0;
@@ -177,6 +176,7 @@ int32_t Preprocessor::ValidateConfiguration(const Media::Format &format, bool co
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
+
     if (cropParams_.result == ConfigResult::ENABLED && downsamplingParams_.result == ConfigResult::ENABLED) {
         AVCODEC_LOGE("Crop and downsampling cannot be enabled simultaneously");
         return AVCS_ERR_INVALID_VAL;
@@ -190,18 +190,34 @@ int32_t Preprocessor::ValidateConfiguration(const Media::Format &format, bool co
     return AVCS_ERR_OK;
 }
 
-std::optional<GraphicPixelFormat> Preprocessor::GetPixelFormatFromConfiguration(const Media::Format &format) const
+GraphicPixelFormat Preprocessor::GetPixelFormatFromConfiguration(const Media::Format &format) const
 {
-    int32_t pixelFormat = 0;
-    if (format.GetIntValue(Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, pixelFormat)) {
-        return static_cast<GraphicPixelFormat>(pixelFormat);
+    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::NV12);
+    (void)format.GetIntValue(Media::Tag::VIDEO_PIXEL_FORMAT, pixelFormat);
+    int32_t profile = static_cast<int32_t>(HEVCProfile::HEVC_PROFILE_UNKNOW);
+    (void)format.GetIntValue(Media::Tag::MEDIA_PROFILE, profile);
+    return ConvertVideoPixelFormat2GraphicPixelFormat(static_cast<VideoPixelFormat>(pixelFormat), profile);
+}
+
+GraphicPixelFormat Preprocessor::GetPixelFormatFromParameter(const Media::Format &format) const
+{
+    bool isConfigured10Bit = (encoderConfig_.pixelFormat == GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010 ||
+                              encoderConfig_.pixelFormat == GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010 ||
+                              encoderConfig_.pixelFormat == GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_1010102 ||
+                              encoderConfig_.pixelFormat == GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_1010108 ||
+                              encoderConfig_.pixelFormat == GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RAW10);
+    int32_t profile = static_cast<int32_t>(HEVCProfile::HEVC_PROFILE_UNKNOW);
+    bool hasProfile = format.GetIntValue(Media::Tag::MEDIA_PROFILE, profile);
+    if (!hasProfile) {
+        profile = isConfigured10Bit ? static_cast<int32_t>(HEVCProfile::HEVC_PROFILE_MAIN_10) : profile;
     }
-    if (format.GetIntValue(Media::Tag::VIDEO_PIXEL_FORMAT, pixelFormat)) {
-        int32_t profile = UNSET_PROFILE;
-        (void)format.GetIntValue(Media::Tag::MEDIA_PROFILE, profile);
+    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::NV12);
+    bool hasPixelFormat = format.GetIntValue(Media::Tag::VIDEO_PIXEL_FORMAT, pixelFormat);
+    if (hasPixelFormat) {
         return ConvertVideoPixelFormat2GraphicPixelFormat(static_cast<VideoPixelFormat>(pixelFormat), profile);
     }
-    return std::nullopt;
+
+    return encoderConfig_.pixelFormat;
 }
 
 int32_t Preprocessor::Configure(const Media::Format &format)
@@ -236,9 +252,9 @@ int32_t Preprocessor::Configure(const Media::Format &format)
 
 bool Preprocessor::IsSyncModeConfigured(const Media::Format &format)
 {
-    int32_t enableSyncMode = false;
+    int32_t enableSyncMode = 0;
     (void)format.GetIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, enableSyncMode);
-    return enableSyncMode;
+    return enableSyncMode != 0;
 }
 
 int32_t Preprocessor::ValidateCrop(const Media::Format &format)
@@ -588,26 +604,20 @@ GraphicPixelFormat Preprocessor::ConvertVideoPixelFormat2GraphicPixelFormat(Vide
 {
     bool is10BitData = IsHevc10BitData(static_cast<HEVCProfile>(profile));
     switch (pixelFormat) {
-        case VideoPixelFormat::YUVI420: {
+        case VideoPixelFormat::YUVI420:
             return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_P;
-        }
-        case VideoPixelFormat::RGBA: {
+        case VideoPixelFormat::RGBA:
             return is10BitData ? GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_1010102
                                : GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888;
-        }
-        case VideoPixelFormat::NV12: {
-            return is10BitData ? GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010
-                               : GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
-        }
-        case VideoPixelFormat::NV21: {
+        case VideoPixelFormat::NV21:
             return is10BitData ? GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010
                                : GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
-        }
-        case VideoPixelFormat::RGBA1010102: {
+        case VideoPixelFormat::RGBA1010102:
             return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_1010102;
-        }
+        case VideoPixelFormat::NV12:
         default:
-            return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT;
+            return is10BitData ? GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010
+                               : GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
     }
 }
 
@@ -626,12 +636,8 @@ void Preprocessor::UpdateConfiguredValues(const Media::Format &format, bool conf
         encoderParams_.frameRate = RoundToTwoDecimals(configuredFramerate);
     }
 
-    auto pixelFormat = GetPixelFormatFromConfiguration(format);
-    if (configuring) {
-        encoderParams_.pixelFormat = pixelFormat ? *pixelFormat : GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
-    } else {
-        encoderParams_.pixelFormat = pixelFormat ? *pixelFormat : encoderConfig_.pixelFormat;
-    }
+    encoderParams_.pixelFormat =
+        configuring ? GetPixelFormatFromConfiguration(format) : GetPixelFormatFromParameter(format);
 }
 
 bool Preprocessor::GetEncoderRange(const Media::Format &format, Range &encWidth, Range &encHeight)
@@ -650,12 +656,13 @@ bool Preprocessor::GetEncoderRange(const Media::Format &format, Range &encWidth,
 bool Preprocessor::CheckOrReallocOutSurfaceBuffer(int32_t targetWidth, int32_t targetHeight,
                                                   int32_t targetFormat, sptr<SurfaceBuffer> &output)
 {
-    if (!IsGeometrySupported(encoderConfig_.pixelFormat, targetWidth, targetHeight)) {
+    auto targetGraphicFormat = static_cast<GraphicPixelFormat>(targetFormat);
+    if (!IsGeometrySupported(targetGraphicFormat, targetWidth, targetHeight)) {
         AVCODEC_LOGE("Unsupported target geometry: %{public}dx%{public}d format=%{public}d",
-                     targetWidth, targetHeight, encoderConfig_.pixelFormat);
+                     targetWidth, targetHeight, targetFormat);
         return false;
     }
-    int32_t minStride = GetMinRowBytes(encoderConfig_.pixelFormat, targetWidth);
+    int32_t minStride = GetMinRowBytes(targetGraphicFormat, targetWidth);
     if (minStride <= 0) {
         return false;
     }
@@ -703,17 +710,6 @@ int32_t Preprocessor::GetConfiguredHeight() const
 GraphicPixelFormat Preprocessor::GetConfiguredPixelFormat() const
 {
     return encoderConfig_.pixelFormat;
-}
-
-bool Preprocessor::PixelFormatIs10Bit() const
-{
-    if (encoderConfig_.pixelFormat == GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_1010102 ||
-        encoderConfig_.pixelFormat == GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010 ||
-        encoderConfig_.pixelFormat == GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010) {
-        return true;
-    }
-
-    return false;
 }
 
 int32_t Preprocessor::GetOutputWidth() const

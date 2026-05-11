@@ -17,7 +17,6 @@
 #define PREPROCESSOR_H
 
 #include <memory>
-#include <optional>
 #include <string>
 #include "avcodec_info.h"
 #include "cpu_image_processor.h"
@@ -37,7 +36,8 @@ public:
     static bool IsAvailable();
 
     int32_t ValidateConfiguration(const Media::Format &format, bool configuring);
-    std::optional<GraphicPixelFormat> GetPixelFormatFromConfiguration(const Media::Format &format) const;
+    GraphicPixelFormat GetPixelFormatFromConfiguration(const Media::Format &format) const;
+    GraphicPixelFormat GetPixelFormatFromParameter(const Media::Format &format) const;
     int32_t Configure(const Media::Format &format);
     int32_t SetParameter(const Media::Format &format);
 
@@ -52,7 +52,6 @@ public:
     int32_t GetConfiguredWidth() const;
     int32_t GetConfiguredHeight() const;
     GraphicPixelFormat GetConfiguredPixelFormat() const;
-    bool PixelFormatIs10Bit() const;
     int32_t GetOutputWidth() const;
     int32_t GetOutputHeight() const;
 

@@ -288,11 +288,8 @@ OH_AVErrCode PreprocessorEncoder::Configure(const Media::Format &format)
 {
     std::scoped_lock lock(instanceMutex_);
     CHECK_AND_RETURN_RET_LOG(!configured_, AV_ERR_INVALID_STATE, "Preprocessor is already configured!");
-    int32_t ret = ValidateConfiguration(format, true);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                             "Validate preprocessor encoder configuration failed!");
 
-    ret = ConfigureVideoEncoder(format);
+    auto ret = ConfigureVideoEncoder(format);
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Configure video encoder failed!");
 
@@ -318,28 +315,19 @@ OH_AVErrCode PreprocessorEncoder::SetParameter(const Media::Format &format)
     if (!preprocessor) {
         return AV_ERR_INVALID_VAL;
     }
-    auto configuringPixelFormat = preprocessor->GetPixelFormatFromConfiguration(format);
-    if (configuringPixelFormat) {
-        bool pixelFormatIs10Bit = (*configuringPixelFormat == GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_1010102 ||
-                                   *configuringPixelFormat == GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010 ||
-                                   *configuringPixelFormat == GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010 ||
-                                   *configuringPixelFormat == GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RAW10);
-        bool configuredPixelFormatIs10Bit = preprocessor->PixelFormatIs10Bit();
-        CHECK_AND_RETURN_RET_LOG(pixelFormatIs10Bit == configuredPixelFormatIs10Bit, AV_ERR_INVALID_VAL,
-                                 "Bits per pixel should be the same as configured");
-    }
-    int32_t ret = preprocessor->ValidateConfiguration(format, false);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                             "Validate parameter failed!");
 
+    int32_t ret = AVCS_ERR_OK;
     if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
         ret = videoEncoderObject_->videoEncoder_->SetParameter(format);
-        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                                  "PreprocessorEncoder set parameter failed!");
     }
 
+    ret = preprocessor->ValidateConfiguration(format, false);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
+                             "PreprocessorEncoder validate preprocessor parameter failed!");
     ret = preprocessor->SetParameter(format);
-    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "PreprocessorEncoder set preprocessor parameter failed!");
 
     return AV_ERR_OK;
@@ -349,38 +337,6 @@ sptr<Surface> PreprocessorEncoder::GetSurface()
 {
     std::scoped_lock lock(instanceMutex_);
     return GetSharedSurface();
-}
-
-int32_t PreprocessorEncoder::ValidateConfiguration(const Media::Format &format, bool configuring)
-{
-    auto preprocessor = GetPreprocessor();
-    CHECK_AND_RETURN_RET_LOG(preprocessor, AVCS_ERR_INVALID_VAL, "Preprocessor encoder does not have a preprocessor!");
-    int32_t ret = preprocessor->ValidateConfiguration(format, configuring);
-    if (ret != AVCS_ERR_OK) {
-        return ret;
-    }
-
-    auto configuringPixelFormat = preprocessor->GetPixelFormatFromConfiguration(format);
-    if (!configuringPixelFormat || *configuringPixelFormat == GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT) {
-        return AVCS_ERR_OK;
-    }
-    bool pixelFormatIs10Bit = (*configuringPixelFormat == (GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_1010102 ||
-                                                           GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010 ||
-                                                           GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010 ||
-                                                           GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RAW10));
-    
-    std::shared_ptr<Preprocessor> peerPreprocessor{nullptr};
-    if (isPrimary_ && secondary_ != nullptr) {
-        peerPreprocessor = secondary_->GetPreprocessor();
-    }
-    if (!isPrimary_ && primary_ != nullptr) {
-        peerPreprocessor = primary_->GetPreprocessor();
-    }
-    if (peerPreprocessor != nullptr) {
-        return (pixelFormatIs10Bit == peerPreprocessor->PixelFormatIs10Bit() ? AVCS_ERR_OK : AVCS_ERR_INVALID_VAL);
-    }
-
-    return AVCS_ERR_OK;
 }
 
 int32_t PreprocessorEncoder::ConfigureVideoEncoder(const Media::Format &format)
@@ -411,6 +367,10 @@ int32_t PreprocessorEncoder::ConfigurePreprocessor(const Media::Format &format)
 {
     auto preprocessor = GetPreprocessor();
     if (preprocessor) {
+        auto ret = preprocessor->ValidateConfiguration(format, true);
+        if (ret != AVCS_ERR_OK) {
+            return ret;
+        }
         return preprocessor->Configure(format);
     }
     return AVCS_ERR_OK;
