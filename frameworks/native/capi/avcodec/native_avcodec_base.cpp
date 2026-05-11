@@ -202,6 +202,7 @@ const char *OH_MD_KEY_SCREEN_CAPTURE_WINDOW_RECT = "screen_capture_window_rect";
 const char *OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_MODE = "video_decoder_frame_retention_mode";
 const char *OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_RATIO = "video_decoder_frame_retention_ratio";
 const char *OH_MD_KEY_VIDEO_DECODER_SPEED = "video_decoder_speed";
+const char *OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER = "video_decoder_output_in_decoding_order";
 #ifdef __cplusplus
 }
 #endif

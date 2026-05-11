@@ -1474,6 +1474,17 @@ extern const char *OH_MD_KEY_VIDEO_DECODER_SPEED;
 extern const char *OH_MD_KEY_HDR_TYPE;
 
 /**
+ * @brief Key to enable the decoder to output frames in decoding order,
+ * value type is int32_t (0 or 1): 1 is enabled, 0 disabled.
+ *
+ * This is an optional key that applies only to video decoder and is only used in configure.
+ * By default, this feature is disabled (0).
+ *
+ * @since 26.0.0
+ */
+extern const char *OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER;
+
+/**
  * @brief HDR type.
  *
  * @since 26.0.0
