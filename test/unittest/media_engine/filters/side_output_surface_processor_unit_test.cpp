@@ -756,7 +756,7 @@ HWTEST_F(SideOutputSurfaceProcessorUnitTest, ProcessBuffer_NullMemory, TestSize.
     
     processor_->callback_ = nullptr;
     bool result = processor_->ProcessBuffer(srcBufferInfo, dstBufferInfo);
-    EXPECT_TRUE(result);
+    EXPECT_FALSE(result);
 }
 
 /**
