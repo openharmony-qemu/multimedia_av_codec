@@ -257,14 +257,16 @@ Status AudioMp3EncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& outpu
 
         memory->Write(const_cast<const uint8_t*>(lameMp3Buffer.get()), outputSize_, 0);
         memory->SetSize(outputSize_);
+        int64_t frameDuration = static_cast<int64_t>(frameSize_) * 1000000LL / sampleRate_;
         if (ptsMode_ == ZERO_START_ENCODE_PTS_MODE) {
             outputBuffer->pts_ = prevPts_;
-            prevPts_ += static_cast<int64_t>(frameSize_) * 1000000LL / sampleRate_;
         } else if (ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE) {
-            outputBuffer->pts_ = startPts_ + prevPts_;
-            prevPts_ += static_cast<int64_t>(frameSize_) * 1000000LL / sampleRate_;
+            outputBuffer->pts_ = (startPts_ > 0 && prevPts_ > INT64_MAX - startPts_) ? prevPts_ : startPts_ + prevPts_;
         } else {
             outputBuffer->pts_ = pts_;
+        }
+        if (ptsMode_ != DEFAULT_ENCODE_PTS_MODE) {
+            prevPts_ = (frameDuration > 0 && prevPts_ > INT64_MAX - frameDuration) ? prevPts_ : prevPts_ + frameDuration;
         }
         SafeCallOutputBufferDone(dataCallback_, outputBuffer);
     }

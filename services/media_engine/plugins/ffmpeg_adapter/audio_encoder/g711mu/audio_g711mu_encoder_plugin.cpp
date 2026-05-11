@@ -182,6 +182,7 @@ Status AudioG711muEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer
             AVCODEC_LOGE("AudioG711muEncoderPlugin inputBuffer size in bytes is odd and the last byte is ignored");
         }
         pts_ = inputBuffer->pts_;
+        inputSamples_ = sampleNum;
         if (ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE && isFirstInputPts_) {
             startPts_ = inputBuffer->pts_;
             isFirstInputPts_ = false;
@@ -203,14 +204,16 @@ Status AudioG711muEncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& ou
         auto outSize = sizeof(uint8_t) * encodeResult_.size();
         memory->Write(reinterpret_cast<const uint8_t *>(encodeResult_.data()), outSize, 0);
         memory->SetSize(outSize);
+        int64_t frameDuration = static_cast<int64_t>(inputSamples_) * 1000000LL / sampleRate_;
         if (ptsMode_ == ZERO_START_ENCODE_PTS_MODE) {
             outputBuffer->pts_ = prevPts_;
-            prevPts_ += static_cast<int64_t>(outSize) * 1000000LL / sampleRate_;
         } else if (ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE) {
-            outputBuffer->pts_ = startPts_ + prevPts_;
-            prevPts_ += static_cast<int64_t>(outSize) * 1000000LL / sampleRate_;
+            outputBuffer->pts_ = (startPts_ > 0 && prevPts_ > INT64_MAX - startPts_) ? prevPts_ : startPts_ + prevPts_;
         } else {
             outputBuffer->pts_ = pts_;
+        }
+        if (ptsMode_ != DEFAULT_ENCODE_PTS_MODE) {
+            prevPts_ = (frameDuration > 0 && prevPts_ > INT64_MAX - frameDuration) ? prevPts_ : prevPts_ + frameDuration;
         }
         SafeCallOutputBufferDone(dataCallback_, outputBuffer);
     }

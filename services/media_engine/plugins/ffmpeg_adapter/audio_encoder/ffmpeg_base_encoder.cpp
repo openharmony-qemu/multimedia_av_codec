@@ -187,13 +187,12 @@ Status FFmpegBaseEncoder::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outputBuf
     // pts us
     outputBuffer->duration_ = ConvertTimeFromFFmpeg(avPacket_->duration, avCodecContext_->time_base) /
 	                      NS_PER_US;
-    int64_t basePts = ((INT64_MAX - prevPts_) < avPacket_->duration) ?
-                    (outputBuffer->duration_ - (INT64_MAX - prevPts_)) :
-                    (prevPts_ + outputBuffer->duration_);
+    int64_t durationUs = outputBuffer->duration_;
+    int64_t basePts = (durationUs > 0 && prevPts_ > INT64_MAX - durationUs) ? prevPts_ : prevPts_ + durationUs;
     if (ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE) {
-        outputBuffer->pts_ = startPts_ + basePts;
+        outputBuffer->pts_ = (startPts_ > 0 && basePts > INT64_MAX - startPts_) ? basePts : startPts_ + basePts;
     } else if (ptsMode_ == ZERO_START_ENCODE_PTS_MODE) {
-        outputBuffer->pts_ = basePts - outputBuffer->duration_;
+        outputBuffer->pts_ = (durationUs > basePts - INT64_MIN) ? 0 : basePts - durationUs;
     } else {
         outputBuffer->pts_ = basePts;
     }
