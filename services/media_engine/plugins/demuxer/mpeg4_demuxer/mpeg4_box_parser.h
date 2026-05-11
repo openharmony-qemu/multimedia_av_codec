@@ -193,6 +193,12 @@ private:
     std::string GetMetadataKey(uint32_t atomType, ParseContext* parseCtx);
     bool SetMetadataValue(const std::string& key, const std::string& value);
     void ParseLocationString(const std::string& locationStr);
+    // 辅助轨相关辅助函数
+    bool NeedParseVideoInfo(std::string mimeType, TrackType trackType);
+    bool NeedParseAudioInfo(std::string mimeType, TrackType trackType);
+    bool NeedParseVideoInfo(const MPEG4AtomParser::Track &track);
+    bool NeedParseAudioInfo(const MPEG4AtomParser::Track &track);
+    Status ProcessAuxiliaryHandler(MPEG4Atom currentAtom, ParseContext* parseCtx);
     // 音频属性相关辅助函数
     bool ParseDecoderConfigDescriptor(const uint8_t* data, uint64_t dataSize, uint64_t& offset);
     bool ParseAACConfig(const uint8_t* data, uint32_t size, uint32_t& sampleRate, uint32_t& channels,
@@ -242,7 +248,6 @@ private:
     Status ParseEdts(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseElst(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseTref(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
-    Status ParseCdsc(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseMdia(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseMdhd(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseHdlr(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
