@@ -88,7 +88,6 @@ private:
     bool isPrimary_{false};
     std::string mime_;
     std::string encoderId_;
-    bool configured_{false};
 
     std::mutex instanceMutex_;
     PreprocessorEncoder* primary_{nullptr};

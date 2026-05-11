@@ -287,7 +287,6 @@ OH_AVErrCode PreprocessorEncoder::RegisterCallback(struct OH_AVCodecCallback cal
 OH_AVErrCode PreprocessorEncoder::Configure(const Media::Format &format)
 {
     std::scoped_lock lock(instanceMutex_);
-    CHECK_AND_RETURN_RET_LOG(!configured_, AV_ERR_INVALID_STATE, "Preprocessor is already configured!");
 
     auto ret = ConfigureVideoEncoder(format);
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
@@ -302,8 +301,6 @@ OH_AVErrCode PreprocessorEncoder::Configure(const Media::Format &format)
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AV_ERR_OPERATE_NOT_PERMIT, "Create internal surface failed!");
     }
     RegisterEncoderToManager();
-
-    configured_ = true;
 
     return AV_ERR_OK;
 }
@@ -487,8 +484,6 @@ OH_AVErrCode PreprocessorEncoder::Reset()
         preprocMgr_->SetEncoderRunning(encoderId_, false);
         UnregisterEncoderFromManager();
     }
-
-    configured_ = false;
 
     return AV_ERR_OK;
 }
