@@ -17,7 +17,6 @@
 #include "avcodec_log_ex.h"
 #include "event_manager.h"
 #include "event_info_extented_key.h"
-#include "avcodec_server_manager.h"
 #include <map>
 #include <mutex>
 
@@ -51,18 +50,9 @@ const std::unordered_map<size_t, const std::string_view> SPEED_DEC_INFO_KEY_MAP 
 
 namespace OHOS {
 namespace MediaAVCodec {
-DecodingBehaviorAnalyzer::DecodingBehaviorAnalyzer(int32_t instanceId)
+DecodingBehaviorAnalyzer::DecodingBehaviorAnalyzer()
 {
     startTime_ = std::chrono::steady_clock::now();
-    auto instanceInfoOpt = AVCodecServerManager::GetInstance().GetInstanceInfoByInstanceId(instanceId);
-    CHECK_AND_RETURN_LOG(instanceInfoOpt != std::nullopt, "Can not find this instance, id: %{public}d", instanceId);
-    auto instanceInfo = instanceInfoOpt.value();
-
-    eventData_.insert(std::make_pair("processName", instanceInfo.caller.processName));
-    eventData_.insert(std::make_pair("pid", std::to_string(instanceInfo.caller.pid)));
-    eventData_.insert(std::make_pair("rate", "0"));
-    eventData_.insert(std::make_pair("instanceId", std::to_string(instanceId)));
-    eventData_.insert(std::make_pair("decSpeed", "1"));
 }
 
 void DecodingBehaviorAnalyzer::OnFrameConsumed(int64_t pts, bool render)

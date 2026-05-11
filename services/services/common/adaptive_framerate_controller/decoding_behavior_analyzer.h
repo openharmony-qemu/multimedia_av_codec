@@ -51,7 +51,7 @@ union SpeedStatsUnion {
 
 class DecodingBehaviorAnalyzer {
 public:
-    explicit DecodingBehaviorAnalyzer(int32_t instanceId);
+    DecodingBehaviorAnalyzer();
     void OnFrameConsumed(int64_t pts, bool render);
     void OnStopped(bool isDecEnd);
     void OnChecked(double decFps);
@@ -71,7 +71,6 @@ private:
     std::deque<size_t> speedWindow_;
     std::array<size_t, stdSpeedLevels> speedCount_ = {};
     std::vector<DecodingBehaviorSnapshot> history_;
-    std::unordered_map<std::string, std::string> eventData_;
     double lastReportedFps_ = -1.0;
     double lastReportedRenderFps_ = -1.0;
     int64_t lastPtsMs_ = -1;
