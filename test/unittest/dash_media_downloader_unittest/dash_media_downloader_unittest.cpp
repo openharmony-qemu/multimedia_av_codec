@@ -766,6 +766,7 @@ HWTEST_F(DashMediaDownloaderUnittest, SwitchVideoStream_001, TestSize.Level0)
     segDownloader->Init();
 
     mediaDownloader_->SwitchVideoStream(newVideoStream, segDownloader);
+    EXPECT_EQ(mediaDownloader_->trackParam_.streamId_, 2);
 }
 
 /**
@@ -1158,6 +1159,7 @@ HWTEST_F(DashMediaDownloaderUnittest, SwitchVideoStream_002, TestSize.Level0)
     segDownloader->Init();
 
     mediaDownloader_->SwitchVideoStream(newVideoStream, segDownloader);
+    EXPECT_EQ(mediaDownloader_->trackParam_.streamId_, 2);
 }
 
 /**
@@ -1178,6 +1180,7 @@ HWTEST_F(DashMediaDownloaderUnittest, SwitchAudioStream_002, TestSize.Level0)
     segDownloader->Init();
 
     mediaDownloader_->SwitchAudioStream(newAudioStream, segDownloader);
+    EXPECT_EQ(mediaDownloader_->trackParam_.streamId_, 3);
 }
 }
 }
