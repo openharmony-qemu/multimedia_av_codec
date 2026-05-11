@@ -551,7 +551,7 @@ bool SideOutputSurfaceProcessor::ProcessBuffer(SurfaceBufferInfo& srcBufferInfo,
         consumerSurface->ReleaseBuffer(srcBufferInfo.buffer, -1);
     }
     OutputBuffer(dstBufferInfo);
-return true;
+    return true;
 }
 
 sptr<SurfaceBuffer> SideOutputSurfaceProcessor::HandleRenderBufferOverflow()
