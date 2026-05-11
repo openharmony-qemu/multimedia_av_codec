@@ -32,7 +32,8 @@ public:
     MOCK_METHOD(void, OnError, (int32_t errorCode), (override));
     MOCK_METHOD(void, OnOutputFormatChanged, (const Format &format), (override));
     MOCK_METHOD(void, OnInputBufferAvailable, (uint32_t index, std::shared_ptr<AVBuffer> buffer), (override));
-    MOCK_METHOD(void, OnOutputBufferAvailable, (uint32_t index, std::shared_ptr<AVBuffer> buffer, bool isInSeekContinous), (override));
+    MOCK_METHOD(void, OnOutputBufferAvailable, (uint32_t index, std::shared_ptr<AVBuffer> buffer,
+        bool isInSeekContinous), (override));
 };
 
 class MockEventReceiver : public EventReceiver {
