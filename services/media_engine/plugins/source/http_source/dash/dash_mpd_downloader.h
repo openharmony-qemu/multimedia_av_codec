@@ -151,7 +151,9 @@ public:
     }
     void SetCurrentPeriodIndex(uint32_t index)
     {
-        currentPeriodIndex_ = index;
+        if (mpdInfo_ != nullptr && index < mpdInfo_->periodInfoList_.size()) {
+            currentPeriodIndex_ = index;
+        }
     }
     DashMpdInfo* GetMpdInfo() const
     {
