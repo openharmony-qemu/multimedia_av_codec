@@ -927,7 +927,7 @@ HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_SYNC_API_0080, TestSize.Level2)
  * @tc.name      : layered encoding
  * @tc.desc      : api test
  */
-HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_SYNC_API_0080, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_LAYER_API_0090, TestSize.Level2)
 {
     string codecName = "";
     codecName = OH_AVCapability_GetName(cap);

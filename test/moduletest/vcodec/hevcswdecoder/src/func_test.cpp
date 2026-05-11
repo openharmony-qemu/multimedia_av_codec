@@ -2153,7 +2153,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_H265_FLUSH_THREE_0010, TestSize.Level
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0010, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
-        shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = ginpDirVar1920;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
@@ -2179,7 +2179,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0010, TestSize.
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0020, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
-        shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = ginpDirVar1920;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
@@ -2205,7 +2205,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0020, TestSize.
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0030, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
-        shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = ginpDirVar1920;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
@@ -2231,7 +2231,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0030, TestSize.
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0040, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
-        shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = ginpDirVar1920;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
@@ -2257,7 +2257,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0040, TestSize.
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0050, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
-        shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = ginpDirVar1920;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
@@ -2283,7 +2283,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0050, TestSize.
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0060, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
-        shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = ginpDirVar1920;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
@@ -2309,7 +2309,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0060, TestSize.
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0070, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
-        shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = ginpDirVar1920;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
@@ -2337,7 +2337,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0070, TestSize.
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0080, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
-        shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = ginpDirVar1920;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
@@ -2364,7 +2364,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0080, TestSize.
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0090, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
-        shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = ginpDirVar1920;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
@@ -2392,7 +2392,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0090, TestSize.
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0100, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
-        shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = ginpDirVar1920;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
@@ -2420,7 +2420,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0100, TestSize.
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0110, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
-        shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = ginpDirVar1920;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
@@ -2448,7 +2448,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0110, TestSize.
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0120, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
-        shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = ginpDirVar1920;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
@@ -2476,7 +2476,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0120, TestSize.
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0130, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
-        shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = ginpDirVar1920;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
@@ -2500,7 +2500,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0130, TestSize.
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0140, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
-        shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = ginpDirVar1920;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
@@ -2526,7 +2526,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0140, TestSize.
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0150, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
-        shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = ginpDirVar1920;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
@@ -2552,7 +2552,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0150, TestSize.
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0160, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
-        shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = ginpDirVar1920;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
@@ -2580,7 +2580,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0160, TestSize.
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0170, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
-        shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = ginpDirVar1920;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
@@ -2608,7 +2608,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0170, TestSize.
 HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0180, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
-        shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = ginpDirVar1920;
         vDecSample->DEFAULT_WIDTH = 1920;
         vDecSample->DEFAULT_HEIGHT = 1080;
