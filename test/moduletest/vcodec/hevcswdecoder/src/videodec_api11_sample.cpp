@@ -1701,25 +1701,29 @@ void VDecAPI11Sample::SetParameterForSpeedPlayer()
         double paremeter6 = 1.0;
         if (this->frameCount_ == oneHundred) {
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_MODE,
-                                         OH_FRAME_RETENTION_MODE_ADAPITIVE);
+                                          OH_FRAME_RETENTION_MODE_ADAPITIVE);
             (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_VIDEO_DECODER_SPEED, paremeter3);
-        } else if (this->frameCount_ == twoHundred) {
+        }
+        else if (this->frameCount_ == twoHundred) {
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_MODE,
-                                         OH_FRAME_RETENTION_MODE_UNIFORM);
+                                          OH_FRAME_RETENTION_MODE_UNIFORM);
             (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_VIDEO_DECODER_SPEED, paremeter1);
             (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_RATIO,
-                                         paremeter4);
-        } else if (this->frameCount_ == threeHundred) {
+                                             paremeter4);
+        }
+        else if (this->frameCount_ == threeHundred) {
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_MODE,
-                                         OH_FRAME_RETENTION_MODE_UNIFORM);
+                                          OH_FRAME_RETENTION_MODE_UNIFORM);
             (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_VIDEO_DECODER_SPEED, paremeter2);
             (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_RATIO,
-                                         paremeter5);
-        } else if (this->frameCount_ == fourHundred) {
+                                             paremeter5);
+        }
+        else if (this->frameCount_ == fourHundred) {
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_MODE,
-                                         OH_FRAME_RETENTION_MODE_FULL);
+                                          OH_FRAME_RETENTION_MODE_FULL);
             (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_VIDEO_DECODER_SPEED, paremeter6);
-        } else {
+        }
+        else {
             cout << "Unknown frame count: " << this->frameCount_ << endl;
         }
         OH_VideoDecoder_SetParameter(vdec_, format);

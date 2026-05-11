@@ -50,7 +50,6 @@ protected:
     const char *ginpDirVar = "/data/test/media/95_71_Rext_gray.h265";
     const char *ginpDirVar1080 = "/data/test/media/1920_1080_64_64_var.h265";
     const char *ginpDirVar1920 = "/data/test/media/1920_1080_20M_30.h265";
-
 };
 } // namespace Media
 } // namespace OHOS
