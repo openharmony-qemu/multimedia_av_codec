@@ -72,7 +72,6 @@ public:
     MOCK_METHOD(GSError, ReadFromMessageParcel, (MessageParcel &parcel,
         std::function<int32_t(MessageParcel&, std::function<int32_t(Parcel&)>)> buffer), (override));
     MOCK_METHOD(void, SetBufferHandle, (BufferHandle *handle), (override));
-    MOCK_METHOD(GSError, Alloc, (const BufferRequestConfig &config), (override));
     MOCK_METHOD(GSError, Map, (), (override));
     MOCK_METHOD(GSError, Unmap, (), (override));
     MOCK_METHOD(GSError, FlushCache, (), (override));
