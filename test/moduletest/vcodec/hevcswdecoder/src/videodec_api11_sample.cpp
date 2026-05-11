@@ -400,7 +400,7 @@ int32_t VDecAPI11Sample::ConfigureVideoDecoder()
     }
     if (retentionRatioSet) {
         (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_RATIO,
-                                         defaultRetentionRadio);
+                                         defaultRetentionRatio);
     }
     if (decoderSpeedSet) {
         (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_VIDEO_DECODER_SPEED, defaultDecoderSpeed);

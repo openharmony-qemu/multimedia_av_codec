@@ -932,7 +932,7 @@ HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_LAYER_API_0090, TestSize.Level2)
     string codecName = "";
     codecName = OH_AVCapability_GetName(cap);
     venc_ = OH_VideoEncoder_CreateByName(codecName.c_str());
-    OH_AVFormat *format = OH_VideoEncoder_GetOutputDescription(venc_);
+    format = OH_VideoEncoder_GetOutputDescription(venc_);
     int32_t layerId = 0;
     int32_t ret = OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_LAYER_ID, &layerId);
     ASSERT_EQ(AV_ERR_OK, ret);
