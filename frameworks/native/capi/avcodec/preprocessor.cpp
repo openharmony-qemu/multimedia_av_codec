@@ -208,8 +208,8 @@ GraphicPixelFormat Preprocessor::GetPixelFormatFromParameter(const Media::Format
                               encoderConfig_.pixelFormat == GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RAW10);
     int32_t profile = static_cast<int32_t>(HEVCProfile::HEVC_PROFILE_UNKNOW);
     bool hasProfile = format.GetIntValue(Media::Tag::MEDIA_PROFILE, profile);
-    if (!hasProfile) {
-        profile = isConfigured10Bit ? static_cast<int32_t>(HEVCProfile::HEVC_PROFILE_MAIN_10) : profile;
+    if (!hasProfile && isConfigured10Bit) {
+        profile = static_cast<int32_t>(HEVCProfile::HEVC_PROFILE_MAIN_10);
     }
     int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::NV12);
     bool hasPixelFormat = format.GetIntValue(Media::Tag::VIDEO_PIXEL_FORMAT, pixelFormat);
