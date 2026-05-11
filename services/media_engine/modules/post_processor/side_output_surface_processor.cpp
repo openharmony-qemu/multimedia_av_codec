@@ -249,7 +249,7 @@ Status SideOutputSurfaceProcessor::SetOutputSurface(sptr<Surface> surface)
     producerSurface_ = surface;
     return Status::OK;
 }
- 
+
 Status SideOutputSurfaceProcessor::ReleaseOutputBuffer(uint32_t index, bool render)
 {
     MEDIA_LOG_I("SideOutputSurfaceProcessor ReleaseOutputBuffer index: %{public}u, render: %{public}d", index, render);
@@ -343,57 +343,79 @@ void SideOutputSurfaceProcessor::OnConsumerBufferAvailable()
     PushBufferToConsumer(bufferInfo);
 }
 
+bool SideOutputSurfaceProcessor::UpdateRequestConfigFromBuffer(const SurfaceBufferInfo& bufferInfo)
+{
+    if (!isBufferQueueReady_.load()) {
+        isBufferQueueReady_ = true;
+        requestCfg_.usage = bufferInfo.buffer->GetUsage();
+        requestCfg_.timeout = 0;
+        requestCfg_.strideAlignment = STRIDE_ALIGNMENT;
+        requestCfg_.width = bufferInfo.buffer->GetWidth();
+        requestCfg_.height = bufferInfo.buffer->GetHeight();
+        requestCfg_.format = bufferInfo.buffer->GetFormat();
+        MEDIA_LOG_I("Use requestCfg_ to prepare buffers.");
+        needPrepareBuffers_.store(true);
+        return true;
+    }
+    if (requestCfg_.width != bufferInfo.buffer->GetWidth() ||
+            requestCfg_.height != bufferInfo.buffer->GetHeight()) {
+        requestCfg_.width = bufferInfo.buffer->GetWidth();
+        requestCfg_.height = bufferInfo.buffer->GetHeight();
+        requestCfg_.format = bufferInfo.buffer->GetFormat();
+        MEDIA_LOG_E("Resolution changed: %{public}u x %{public}u", requestCfg_.width, requestCfg_.height);
+        return false;
+    }
+    return false;
+}
+
+void SideOutputSurfaceProcessor::CancelOldBuffersOnResolutionChange(sptr<Surface> producerSurface)
+{
+    if (producerSurface == nullptr) {
+        return;
+    }
+    producerSurface->SetDefaultWidthAndHeight(requestCfg_.width, requestCfg_.height);
+    std::lock_guard<std::mutex> bufferLock(bufferLock_);
+    while (!producerBufferQueue_.empty()) {
+        auto oldBuffer = producerBufferQueue_.front();
+        producerBufferQueue_.pop();
+        if (oldBuffer.buffer != nullptr) {
+            producerSurface->CancelBuffer(oldBuffer.buffer);
+        }
+    }
+}
+
+void SideOutputSurfaceProcessor::HandleResolutionChange()
+{
+    sptr<Surface> producerSurface;
+    {
+        std::lock_guard<std::mutex> lock(lock_);
+        producerSurface = producerSurface_;
+    }
+    CancelOldBuffersOnResolutionChange(producerSurface);
+    OnProducerBufferReleased();
+}
+
 void SideOutputSurfaceProcessor::PushBufferToConsumer(SurfaceBufferInfo& bufferInfo)
 {
     bool needPrepare = false;
     bool resolutionChanged = false;
     {
         std::lock_guard<std::mutex> consumerBufferLock(consumerBufferLock_);
-        if (!isBufferQueueReady_.load()) {
-            isBufferQueueReady_ = true;
-            requestCfg_.usage = bufferInfo.buffer->GetUsage();
-            requestCfg_.timeout = 0;
-            requestCfg_.strideAlignment = STRIDE_ALIGNMENT;
-            requestCfg_.width = bufferInfo.buffer->GetWidth();
-            requestCfg_.height = bufferInfo.buffer->GetHeight();
-            requestCfg_.format = bufferInfo.buffer->GetFormat();
-            MEDIA_LOG_I("Use requestCfg_ to prepare buffers.");
-            needPrepareBuffers_.store(true);
+        bool isFirstBuffer = UpdateRequestConfigFromBuffer(bufferInfo);
+        if (isFirstBuffer) {
+            needPrepare = needPrepareBuffers_.load();
+            needPrepareBuffers_.store(false);
         } else if (requestCfg_.width != bufferInfo.buffer->GetWidth() ||
-                requestCfg_.height != bufferInfo.buffer->GetHeight()) {
-            requestCfg_.width = bufferInfo.buffer->GetWidth();
-            requestCfg_.height = bufferInfo.buffer->GetHeight();
-            requestCfg_.format = bufferInfo.buffer->GetFormat();
+                   requestCfg_.height != bufferInfo.buffer->GetHeight()) {
             resolutionChanged = true;
-            MEDIA_LOG_E("Resolution changed: %{public}u x %{public}u", requestCfg_.width, requestCfg_.height);
         }
         consumerBufferQueue_.push(bufferInfo);
-        if (needPrepareBuffers_.load()) {
-            needPrepareBuffers_.store(false);
-            needPrepare = true;
-        }
     }
     if (needPrepare) {
         OnProducerBufferReleased();
     }
     if (resolutionChanged) {
-        sptr<Surface> producerSurface;
-        {
-            std::lock_guard<std::mutex> lock(lock_);
-            producerSurface = producerSurface_;
-        }
-        if (producerSurface != nullptr) {
-            producerSurface->SetDefaultWidthAndHeight(requestCfg_.width, requestCfg_.height);
-            std::lock_guard<std::mutex> bufferLock(bufferLock_);
-            while (!producerBufferQueue_.empty()) {
-                auto oldBuffer = producerBufferQueue_.front();
-                producerBufferQueue_.pop();
-                if (oldBuffer.buffer != nullptr) {
-                    producerSurface->CancelBuffer(oldBuffer.buffer);
-                }
-            }
-        }
-        OnProducerBufferReleased();
+        HandleResolutionChange();
     }
     cvTrigger_.notify_one();
 }
@@ -475,82 +497,88 @@ bool SideOutputSurfaceProcessor::GetConsumerAndProducerBuffer(SurfaceBufferInfo&
     return true;
 }
 
+bool SideOutputSurfaceProcessor::HandleBufferSizeMismatch(SurfaceBufferInfo& srcBufferInfo,
+    SurfaceBufferInfo& dstBufferInfo)
+{
+    MEDIA_LOG_E("Buffer size mismatch: src=%{public}u > dst=%{public}u",
+        srcBufferInfo.buffer->GetSize(), dstBufferInfo.buffer->GetSize());
+    sptr<Surface> consumerSurface;
+    sptr<Surface> producerSurface;
+    {
+        std::lock_guard<std::mutex> lock(lock_);
+        consumerSurface = consumerSurface_;
+        producerSurface = producerSurface_;
+    }
+    if (consumerSurface != nullptr) {
+        consumerSurface->ReleaseBuffer(srcBufferInfo.buffer, -1);
+    }
+    if (producerSurface != nullptr && dstBufferInfo.buffer != nullptr) {
+        producerSurface->CancelBuffer(dstBufferInfo.buffer);
+    }
+    OnProducerBufferReleased();
+    return false;
+}
+
 bool SideOutputSurfaceProcessor::ProcessBuffer(SurfaceBufferInfo& srcBufferInfo, SurfaceBufferInfo& dstBufferInfo)
 {
-    MEDIA_LOG_D("ProcessBuffer srcBuffer(consumer input): width=%{public}d, height=%{public}d, format=%{public}d",
-        srcBufferInfo.buffer->GetWidth(), srcBufferInfo.buffer->GetHeight(), srcBufferInfo.buffer->GetFormat());
-    MEDIA_LOG_D("ProcessBuffer dstBuffer(producer output): width=%{public}d, height=%{public}d, format=%{public}d",
-        dstBufferInfo.buffer->GetWidth(), dstBufferInfo.buffer->GetHeight(), dstBufferInfo.buffer->GetFormat());
-
+    MEDIA_LOG_D("ProcessBuffer src(w=%{public}d,h=%{public}d), dst(w=%{public}d,h=%{public}d)",
+        srcBufferInfo.buffer->GetWidth(), srcBufferInfo.buffer->GetHeight(),
+        dstBufferInfo.buffer->GetWidth(), dstBufferInfo.buffer->GetHeight());
     srcBufferInfo.buffer->InvalidateCache();
-
     dstBufferInfo.timestamp = srcBufferInfo.timestamp;
-
     void* srcAddr = srcBufferInfo.buffer->GetVirAddr();
     void* dstAddr = dstBufferInfo.buffer->GetVirAddr();
-
-    if (srcAddr != nullptr && dstAddr != nullptr) {
-        uint32_t size = srcBufferInfo.buffer->GetSize();
-        if (size > dstBufferInfo.buffer->GetSize()) {
-            MEDIA_LOG_E("Buffer size mismatch: src=%{public}u > dst=%{public}u", size, dstBufferInfo.buffer->GetSize());
-            sptr<Surface> consumerSurface;
-            sptr<Surface> producerSurface;
-            {
-                std::lock_guard<std::mutex> lock(lock_);
-                consumerSurface = consumerSurface_;
-                producerSurface = producerSurface_;
-            }
-            if (consumerSurface != nullptr) {
-                consumerSurface->ReleaseBuffer(srcBufferInfo.buffer, -1);
-            }
-            if (producerSurface != nullptr && dstBufferInfo.buffer != nullptr) {
-                producerSurface->CancelBuffer(dstBufferInfo.buffer);
-            }
-            OnProducerBufferReleased();
+    if (srcAddr == nullptr || dstAddr == nullptr) {
+        return false;
+    }
+    uint32_t size = srcBufferInfo.buffer->GetSize();
+    if (size > dstBufferInfo.buffer->GetSize()) {
+        return HandleBufferSizeMismatch(srcBufferInfo, dstBufferInfo);
+    }
+    if (size > 0) {
+        errno_t ret = memcpy_s(dstAddr, size, srcAddr, size);
+        if (ret != EOK) {
+            MEDIA_LOG_E("ProcessBuffer memcpy_s failed, ret=%{public}d", ret);
             return false;
         }
-        if (size > 0) {
-            errno_t ret = memcpy_s(dstAddr, size, srcAddr, size);
-            if (ret != EOK) {
-                MEDIA_LOG_E("ProcessBuffer memcpy_s failed, ret=%{public}d", ret);
-                return false;
-            }
-        }
     }
-
     sptr<Surface> consumerSurface;
     {
         std::lock_guard<std::mutex> lock(lock_);
         consumerSurface = consumerSurface_;
     }
-
     if (consumerSurface != nullptr) {
         consumerSurface->ReleaseBuffer(srcBufferInfo.buffer, -1);
     }
-
     OutputBuffer(dstBufferInfo);
-    return true;
+return true;
 }
- 
+
+sptr<SurfaceBuffer> SideOutputSurfaceProcessor::HandleRenderBufferOverflow()
+{
+    if (renderBufferQueue_.size() < MAX_RENDER_BUFFER_QUEUE_SIZE) {
+        return nullptr;
+    }
+    auto oldest = renderBufferQueue_.begin();
+    if (oldest == renderBufferQueue_.end() || oldest->second.buffer == nullptr) {
+        renderBufferQueue_.erase(oldest);
+        return nullptr;
+    }
+    MEDIA_LOG_W("renderBufferQueue overflow, drop oldest buffer id: %{public}u",
+        oldest->second.buffer->GetSeqNum());
+    sptr<SurfaceBuffer> bufferToCancel = oldest->second.buffer;
+    renderBufferQueue_.erase(oldest);
+    return bufferToCancel;
+}
+
 void SideOutputSurfaceProcessor::OutputBuffer(const SurfaceBufferInfo& bufferInfo)
 {
-    sptr<SurfaceBuffer> bufferToCancel = nullptr;
+    sptr<SurfaceBuffer> bufferToCancel;
     {
         std::lock_guard<std::mutex> bufferLock(bufferLock_);
-        if (renderBufferQueue_.size() >= MAX_RENDER_BUFFER_QUEUE_SIZE) {
-            auto oldest = renderBufferQueue_.begin();
-            if (oldest != renderBufferQueue_.end() && oldest->second.buffer != nullptr) {
-                MEDIA_LOG_W("renderBufferQueue overflow, drop oldest buffer id: %{public}u",
-                    oldest->second.buffer->GetSeqNum());
-                bufferToCancel = oldest->second.buffer;
-            }
-            renderBufferQueue_.erase(oldest);
-        }
+        bufferToCancel = HandleRenderBufferOverflow();
         renderBufferQueue_[bufferInfo.buffer->GetSeqNum()] = bufferInfo;
-        MEDIA_LOG_D("renderBufferQueue_.push id: %{public}u size: %{public}zu",
-            bufferInfo.buffer->GetSeqNum(), renderBufferQueue_.size());
     }
-
     if (bufferToCancel != nullptr) {
         sptr<Surface> producerSurface;
         {
@@ -561,13 +589,11 @@ void SideOutputSurfaceProcessor::OutputBuffer(const SurfaceBufferInfo& bufferInf
             producerSurface->CancelBuffer(bufferToCancel);
         }
     }
-
     std::shared_ptr<PostProcessorCallback> callback;
     {
         std::lock_guard<std::mutex> lock(lock_);
         callback = callback_;
     }
-
     if (callback != nullptr) {
         MEDIA_LOG_I("OnOutputBufferAvailable start");
         auto avBuffer = AVBuffer::CreateAVBuffer(bufferInfo.buffer);
@@ -778,7 +804,7 @@ void SideOutputSurfaceProcessor::ClearBufferQueues()
         tempQueue.pop();
     }
 }
- 
+
 void SideOutputSurfaceProcessor::GetVideoSample(int32_t &result)
 {
     MEDIA_LOG_I("SideOutputSurfaceProcessor GetVideoSample");
@@ -852,53 +878,65 @@ void SideOutputSurfaceProcessor::HandleSampleTask()
     MEDIA_LOG_I("SideOutputSurfaceProcessor HandleSampleTask end, result:%{public}d", copyResult);
 }
 
+void SideOutputSurfaceProcessor::UpdateConfigIfZero(sptr<SurfaceBuffer> srcBuffer)
+{
+    std::lock_guard<std::mutex> consumerLock(consumerBufferLock_);
+    if (requestCfg_.width == 0 || requestCfg_.height == 0) {
+        requestCfg_.width = srcBuffer->GetWidth();
+        requestCfg_.height = srcBuffer->GetHeight();
+        requestCfg_.format = srcBuffer->GetFormat();
+        requestCfg_.usage = srcBuffer->GetUsage();
+        requestCfg_.timeout = 0;
+        requestCfg_.strideAlignment = STRIDE_ALIGNMENT;
+        MEDIA_LOG_I("CopyBufferToSideSurface: update requestCfg_ from srcBuffer, "
+            "width=%{public}u, height=%{public}u", requestCfg_.width, requestCfg_.height);
+    }
+}
+
 bool SideOutputSurfaceProcessor::CopyBufferToSideSurface(sptr<SurfaceBuffer> srcBuffer, int64_t timestamp)
 {
     if (srcBuffer == nullptr) {
         MEDIA_LOG_E("CopyBufferToSideSurface: srcBuffer is nullptr");
         return false;
     }
-
-    MEDIA_LOG_I("[SIDE_OUTPUT] srcBuffer(pending source): width=%{public}d, height=%{public}d, format=%{public}d",
+    MEDIA_LOG_I("[SIDE_OUTPUT] srcBuffer: w=%{public}d,h=%{public}d,f=%{public}d",
         srcBuffer->GetWidth(), srcBuffer->GetHeight(), srcBuffer->GetFormat());
-
     sptr<Surface> sideSurface;
     {
         std::lock_guard<std::mutex> lock(lock_);
         sideSurface = sideSurface_;
     }
-
     if (sideSurface == nullptr) {
         MEDIA_LOG_E("CopyBufferToSideSurface: sideSurface is nullptr");
         return false;
     }
-
-    {
-        std::lock_guard<std::mutex> consumerLock(consumerBufferLock_);
-        if (requestCfg_.width == 0 || requestCfg_.height == 0) {
-            requestCfg_.width = srcBuffer->GetWidth();
-            requestCfg_.height = srcBuffer->GetHeight();
-            requestCfg_.format = srcBuffer->GetFormat();
-            requestCfg_.usage = srcBuffer->GetUsage();
-            requestCfg_.timeout = 0;
-            requestCfg_.strideAlignment = STRIDE_ALIGNMENT;
-            MEDIA_LOG_I("CopyBufferToSideSurface: update requestCfg_ from srcBuffer, "
-                "width=%{public}u, height=%{public}u", requestCfg_.width, requestCfg_.height);
-        }
-    }
-
+    UpdateConfigIfZero(srcBuffer);
     SurfaceBufferInfo sideBufferInfo;
     if (!RequestSideBuffer(sideBufferInfo, sideSurface)) {
         return false;
     }
-
-    MEDIA_LOG_I("[SIDE_OUTPUT] sideBuffer(side output): width=%{public}d, height=%{public}d, format=%{public}d",
-        sideBufferInfo.buffer->GetWidth(), sideBufferInfo.buffer->GetHeight(), sideBufferInfo.buffer->GetFormat());
-
-    if (!CopyBufferData(srcBuffer, sideBufferInfo, sideSurface)) {
+    MEDIA_LOG_I("[SIDE_OUTPUT] sideBuffer: w=%{public}d,h=%{public}d,f=%{public}d",
+        sideBufferInfo.buffer->GetWidth(), sideBufferInfo.buffer->GetHeight(),
+        sideBufferInfo.buffer->GetFormat());
+    srcBuffer->InvalidateCache();
+    void* srcAddr = srcBuffer->GetVirAddr();
+    void* sideAddr = sideBufferInfo.buffer->GetVirAddr();
+    if (srcAddr == nullptr || sideAddr == nullptr) {
+        MEDIA_LOG_E("CopyBufferData: virAddr is null");
+        sideSurface->CancelBuffer(sideBufferInfo.buffer);
         return false;
     }
-
+    uint32_t srcSize = srcBuffer->GetSize();
+    uint32_t sideSize = sideBufferInfo.buffer->GetSize();
+    uint32_t copySize = (srcSize < sideSize) ? srcSize : sideSize;
+    if (copySize > 0) {
+        errno_t ret = memcpy_s(sideAddr, copySize, srcAddr, copySize);
+        if (ret != EOK) {
+            MEDIA_LOG_E("CopyBufferData: memcpy_s failed ret=%{public}d", ret);
+            sideSurface->CancelBuffer(sideBufferInfo.buffer);
+            return false;
+        }
+    }
     return FlushSideBuffer(sideBufferInfo, timestamp, sideSurface);
 }
 
@@ -922,35 +960,6 @@ bool SideOutputSurfaceProcessor::RequestSideBuffer(SurfaceBufferInfo& sideBuffer
     return true;
 }
 
-bool SideOutputSurfaceProcessor::CopyBufferData(sptr<SurfaceBuffer> srcBuffer,
-    SurfaceBufferInfo& sideBufferInfo, sptr<Surface> sideSurface)
-{
-    srcBuffer->InvalidateCache();
-
-    void* srcAddr = srcBuffer->GetVirAddr();
-    void* sideAddr = sideBufferInfo.buffer->GetVirAddr();
-
-    if (srcAddr == nullptr || sideAddr == nullptr) {
-        MEDIA_LOG_E("CopyBufferData: virAddr is null");
-        sideSurface->CancelBuffer(sideBufferInfo.buffer);
-        return false;
-    }
-
-    uint32_t srcSize = srcBuffer->GetSize();
-    uint32_t sideSize = sideBufferInfo.buffer->GetSize();
-    uint32_t copySize = (srcSize < sideSize) ? srcSize : sideSize;
-
-    if (copySize > 0) {
-        errno_t ret = memcpy_s(sideAddr, copySize, srcAddr, copySize);
-        if (ret != EOK) {
-            MEDIA_LOG_E("CopyBufferData: memcpy_s failed ret=%{public}d", ret);
-            sideSurface->CancelBuffer(sideBufferInfo.buffer);
-            return false;
-        }
-    }
-    return true;
-}
-
 bool SideOutputSurfaceProcessor::FlushSideBuffer(SurfaceBufferInfo& sideBufferInfo,
     int64_t timestamp, sptr<Surface> sideSurface)
 {
@@ -958,15 +967,13 @@ bool SideOutputSurfaceProcessor::FlushSideBuffer(SurfaceBufferInfo& sideBufferIn
         .damage = {0, 0, sideBufferInfo.buffer->GetWidth(), sideBufferInfo.buffer->GetHeight()},
         .timestamp = timestamp
     };
-
     GSError flushRet = sideSurface->FlushBuffer(sideBufferInfo.buffer, -1, flushConfig);
     if (flushRet == GSERROR_OK) {
         MEDIA_LOG_I("FlushSideBuffer success");
         return true;
-    } else {
-        MEDIA_LOG_E("FlushSideBuffer failed ret=%{public}d", flushRet);
-        return false;
     }
+    MEDIA_LOG_E("FlushSideBuffer failed ret=%{public}d", flushRet);
+    return false;
 }
 
 void SideOutputSurfaceProcessor::DealNoImage()
