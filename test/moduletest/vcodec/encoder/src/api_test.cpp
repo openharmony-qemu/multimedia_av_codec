@@ -938,6 +938,5 @@ HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_SYNC_API_0080, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, ret);
     OH_AVFormat_Destroy(format);
     OH_VideoEncoder_Destroy(venc_);
- 	
 }
 } // namespace
