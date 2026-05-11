@@ -68,21 +68,24 @@ public:
     MOCK_METHOD(void, SetExtraData, (sptr<BufferExtraData> bedata), (override));
     MOCK_METHOD(sptr<BufferExtraData>, GetExtraData, (), (const, override));
     MOCK_METHOD(GSError, WriteToMessageParcel, (MessageParcel &parcel), (override));
-    MOCK_METHOD(GSError, ReadFromMessageParcel, (MessageParcel &parcel, std::function<int32_t(MessageParcel&, std::function<int32_t(Parcel&)>)> buffer), (override));
+    MOCK_METHOD(GSError, ReadFromMessageParcel, (MessageParcel &parcel,
+        std::function<int32_t(MessageParcel&, std::function<int32_t(Parcel&)>)> buffer), (override));
     MOCK_METHOD(void, SetBufferHandle, (BufferHandle *handle), (override));
     MOCK_METHOD(GSError, Alloc, (const BufferRequestConfig &config), (override));
     MOCK_METHOD(GSError, Map, (), (override));
     MOCK_METHOD(GSError, Unmap, (), (override));
     MOCK_METHOD(GSError, FlushCache, (), (override));
     MOCK_METHOD(GSError, InvalidateCache, (), (override));
-    MOCK_METHOD(GSError, SetMetadata, (uint32_t key, const std::vector<uint8_t>& value, bool enableCache), (override));
+    MOCK_METHOD(GSError, SetMetadata, (uint32_t key, const std::vector<uint8_t>& value,
+        bool enableCache), (override));
     MOCK_METHOD(GSError, GetMetadata, (uint32_t key, std::vector<uint8_t>& value), (override));
     MOCK_METHOD(GSError, ListMetadataKeys, (std::vector<uint32_t>& keys), (override));
     MOCK_METHOD(GSError, EraseMetadataKey, (uint32_t key), (override));
     MOCK_METHOD(OH_NativeBuffer*, SurfaceBufferToNativeBuffer, (), (override));
     MOCK_METHOD(void, SetAndMergeSyncFence, (const sptr<SyncFence>& syncFence), (override));
     MOCK_METHOD(sptr<SyncFence>, GetSyncFence, (), (const, override));
-    MOCK_METHOD(GSError, Alloc, (const BufferRequestConfig &config, const sptr<SurfaceBuffer>& previousBuffer), (override));
+    MOCK_METHOD(GSError, Alloc, (const BufferRequestConfig &config,
+        const sptr<SurfaceBuffer>& previousBuffer), (override));
 };
 
 class MockSurface : public Surface {
@@ -92,11 +95,14 @@ public:
 
     MOCK_METHOD(bool, IsConsumer, (), (const, override));
     MOCK_METHOD(sptr<IBufferProducer>, GetProducer, (), (const, override));
-    MOCK_METHOD(GSError, RequestBuffer, (sptr<SurfaceBuffer>& buffer, sptr<SyncFence>& fence, BufferRequestConfig& config), (override));
-    MOCK_METHOD(GSError, FlushBuffer, (sptr<SurfaceBuffer>& buffer, int32_t fence, BufferFlushConfig& config), (override));
+    MOCK_METHOD(GSError, RequestBuffer, (sptr<SurfaceBuffer>& buffer,
+        sptr<SyncFence>& fence, BufferRequestConfig& config), (override));
+    MOCK_METHOD(GSError, FlushBuffer, (sptr<SurfaceBuffer>& buffer, int32_t fence,
+        BufferFlushConfig& config), (override));
     MOCK_METHOD(GSError, CancelBuffer, (sptr<SurfaceBuffer>& buffer), (override));
     MOCK_METHOD(GSError, ReleaseBuffer, (sptr<SurfaceBuffer>& buffer, int32_t fence), (override));
-    MOCK_METHOD(GSError, AcquireBuffer, (sptr<SurfaceBuffer>& buffer, sptr<SyncFence>& fence, int64_t& timestamp, Rect& damage), (override));
+    MOCK_METHOD(GSError, AcquireBuffer, (sptr<SurfaceBuffer>& buffer,
+        sptr<SyncFence>& fence, int64_t& timestamp, Rect& damage), (override));
     MOCK_METHOD(GSError, AttachBuffer, (sptr<SurfaceBuffer>& buffer), (override));
     MOCK_METHOD(GSError, DetachBuffer, (sptr<SurfaceBuffer>& buffer), (override));
 
@@ -122,8 +128,10 @@ public:
     MOCK_METHOD(GraphicTransformType, GetTransform, (), (const, override));
     MOCK_METHOD(GSError, SetScalingMode, (uint32_t sequence, ScalingMode scalingMode), (override));
     MOCK_METHOD(GSError, SetScalingMode, (ScalingMode scalingMode), (override));
-    MOCK_METHOD(GSError, SetMetaData, (uint32_t sequence, const std::vector<GraphicHDRMetaData> &metaData), (override));
-    MOCK_METHOD(GSError, SetMetaDataSet, (uint32_t sequence, GraphicHDRMetadataKey key, const std::vector<uint8_t> &metaData), (override));
+    MOCK_METHOD(GSError, SetMetaData, (uint32_t sequence,
+        const std::vector<GraphicHDRMetaData> &metaData), (override));
+    MOCK_METHOD(GSError, SetMetaDataSet, (uint32_t sequence, GraphicHDRMetadataKey key,
+        const std::vector<uint8_t> &metaData), (override));
     MOCK_METHOD(GSError, SetTunnelHandle, (const GraphicExtDataHandle *handle), (override));
     MOCK_METHOD(void, Dump, (std::string &result), (const, override));
 
@@ -131,7 +139,8 @@ public:
     MOCK_METHOD(GSError, RegisterSurfaceDelegator, (sptr<IRemoteObject> client), (override));
     MOCK_METHOD(GSError, RegisterReleaseListener, (OnReleaseFuncWithFence func), (override));
     MOCK_METHOD(GSError, UnRegisterReleaseListener, (), (override));
-    MOCK_METHOD(GSError, RegisterUserDataChangeListener, (const std::string &funcName, OnUserDataChangeFunc func), (override));
+    MOCK_METHOD(GSError, RegisterUserDataChangeListener, (const std::string &funcName,
+        OnUserDataChangeFunc func), (override));
     MOCK_METHOD(GSError, UnRegisterUserDataChangeListener, (const std::string &funcName), (override));
     MOCK_METHOD(GSError, ClearUserDataChangeListener, (), (override));
     MOCK_METHOD(GSError, AttachBufferToQueue, (sptr<SurfaceBuffer> buffer), (override));
@@ -189,7 +198,6 @@ public:
     using SideOutputSurfaceProcessor::DealNotRenderBuffer;
     using SideOutputSurfaceProcessor::CopyBufferToSideSurface;
     using SideOutputSurfaceProcessor::RequestSideBuffer;
-    using SideOutputSurfaceProcessor::CopyBufferData;
     using SideOutputSurfaceProcessor::FlushSideBuffer;
     using SideOutputSurfaceProcessor::HandleSampleTask;
     using SideOutputSurfaceProcessor::DealNoImage;
