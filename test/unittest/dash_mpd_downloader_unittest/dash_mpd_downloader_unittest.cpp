@@ -2428,7 +2428,7 @@ HWTEST_F(DashMpdDownloaderUnittest, SeekToTs_006, TestSize.Level0)
     auto seg1 = std::make_shared<DashSegment>();
     seg1->duration_ = 2000;
     seg1->numberSeq_ = 1;
-    targetStream->mediaSegments_.push_back(seg1);
+    currentStream->mediaSegments_.push_back(seg1);
 
     mpdDownloader_->streamDescriptions_.push_back(currentStream);
 
@@ -2531,9 +2531,9 @@ HWTEST_F(DashMpdDownloaderUnittest, GetPeriodIndexBySeekTime_004, TestSize.Level
 }
 
 /**
- * @tc.name  : Test SwitchStreamIfNeeded - mediaSegment not empty
+ * @tc.name  : Test SwitchStreamIfNeeded - mediaSegments not empty
  * @tc.number: SwitchStreamIfNeeded_002
- * @tc.desc  : Test SwitchStreamIfNeeded when target stream's mediaSegment is not empty
+ * @tc.desc  : Test SwitchStreamIfNeeded when target stream's mediaSegments is not empty
  */
 HWTEST_F(DashMpdDownloaderUnittest, SwitchStreamIfNeeded_002, TestSize.Level0)
 {

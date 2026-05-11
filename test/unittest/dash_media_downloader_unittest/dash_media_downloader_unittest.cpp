@@ -1026,16 +1026,16 @@ HWTEST_F(DashMediaDownloaderUnittest, GetStreamsForPeriodSwitch_001, TestSize.Le
     newVideoStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
     mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(newVideoStream);
 
-    std::make_shared<DashStreamDescription> oldVideoStream;
-    std::make_shared<DashStreamDescription> newVideoStreamOut;
-    std::make_shared<DashStreamDescription> newAudioStreamOut;
+    std::shared_ptr<DashStreamDescription> oldVideoStream;
+    std::shared_ptr<DashStreamDescription> newVideoStreamOut;
+    std::shared_ptr<DashStreamDescription> newAudioStreamOut;
 
     auto ret = mediaDownloader_->GetStreamsForPeriodSwitch(1, oldVideoStream, newVideoStreamOut, newAudioStreamOut);
     EXPECT_EQ(ret, false);
 }
 
 /**
- * @tc.name  : Test GetStreamsForPeriodSwitch - new stream not found
+ * @tc.name  : Test GetStreamsForPeriodSwitch - new video stream not found
  * @tc.number: GetStreamsForPeriodSwitch_002
  * @tc.desc  : Test GetStreamsForPeriodSwitch return false when newVideoStream is nullptr
  */
@@ -1050,9 +1050,9 @@ HWTEST_F(DashMediaDownloaderUnittest, GetStreamsForPeriodSwitch_002, TestSize.Le
     oldVideoStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
     mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(oldVideoStream);
 
-    std::make_shared<DashStreamDescription> oldVideoStreamOut;
-    std::make_shared<DashStreamDescription> newVideoStreamOut;
-    std::make_shared<DashStreamDescription> newAudioStreamOut;
+    std::shared_ptr<DashStreamDescription> oldVideoStreamOut;
+    std::shared_ptr<DashStreamDescription> newVideoStreamOut;
+    std::shared_ptr<DashStreamDescription> newAudioStreamOut;
 
     auto ret = mediaDownloader_->GetStreamsForPeriodSwitch(2, oldVideoStreamOut, newVideoStreamOut, newAudioStreamOut);
     EXPECT_EQ(ret, false);
@@ -1087,9 +1087,9 @@ HWTEST_F(DashMediaDownloaderUnittest, GetStreamsForPeriodSwitch_003, TestSize.Le
     mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(newVideoStream);
     mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(newAudioStream);
 
-    std::make_shared<DashStreamDescription> oldVideoStreamOut;
-    std::make_shared<DashStreamDescription> newVideoStreamOut;
-    std::make_shared<DashStreamDescription> newAudioStreamOut;
+    std::shared_ptr<DashStreamDescription> oldVideoStreamOut;
+    std::shared_ptr<DashStreamDescription> newVideoStreamOut;
+    std::shared_ptr<DashStreamDescription> newAudioStreamOut;
 
     auto ret = mediaDownloader_->GetStreamsForPeriodSwitch(1, oldVideoStreamOut, newVideoStreamOut, newAudioStreamOut);
     EXPECT_EQ(ret, true);
@@ -1132,9 +1132,9 @@ HWTEST_F(DashMediaDownloaderUnittest, GetStreamsForPeriodSwitch_004, TestSize.Le
     audioStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_AUD;
     mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(audioStream);
 
-    std::make_shared<DashStreamDescription> oldVideoStreamOut;
-    std::make_shared<DashStreamDescription> newVideoStreamOut;
-    std::make_shared<DashStreamDescription> newAudioStreamOut;
+    std::shared_ptr<DashStreamDescription> oldVideoStreamOut;
+    std::shared_ptr<DashStreamDescription> newVideoStreamOut;
+    std::shared_ptr<DashStreamDescription> newAudioStreamOut;
 
     auto ret = mediaDownloader_->GetStreamsForPeriodSwitch(1, oldVideoStreamOut, newVideoStreamOut, newAudioStreamOut);
     EXPECT_EQ(ret, false);
@@ -1177,7 +1177,7 @@ HWTEST_F(DashMediaDownloaderUnittest, SwitchAudioStream_002, TestSize.Level0)
         callback, 2, MediaAVCodec::MediaType::MEDIA_TYPE_AUD, 0, nullptr);
     segDownloader->Init();
 
-    mediaDownloader_->SwitchVideoStream(newAudioStream, segDownloader);
+    mediaDownloader_->SwitchAudioStream(newAudioStream, segDownloader);
 }
 }
 }
