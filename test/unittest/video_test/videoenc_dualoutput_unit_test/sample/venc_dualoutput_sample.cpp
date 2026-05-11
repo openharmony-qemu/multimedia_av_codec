@@ -749,19 +749,19 @@ bool VideoEncDualOutputSample::CreateSurface()
     return true;
 }
 
-void VideoEncDualOutputSample::ResetFrameParam()
+int32_t VideoEncDualOutputSample::ResetFrameParam()
 {
+    int32_t ret = AV_ERR_OK;
     if (primaryEncoder_.frameInputCount > PARAM_CHANGE_START_FRAME) {
         if (input8BitTo10Bit_) {
             int32_t ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_FORMAT,
                                                                 GRAPHIC_PIXEL_FMT_YCBCR_P010);
-            UNITTEST_CHECK_AND_CONTINUE_LOG(ret == 0, "OH_NativeWindow_NativeWindowHandleOpt failed, Error=%d", ret);
         } else if (inputResizeWidthHeight_) {
             int32_t ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_BUFFER_GEOMETRY,
                                                                 RESIZE_WIDTH, RESIZE_HEIGHT);
-            UNITTEST_CHECK_AND_CONTINUE_LOG(ret == 0, "OH_NativeWindow_NativeWindowHandleOpt failed, Error=%d", ret);
         }
     }
+    return ret;
 }
 
 void VideoEncDualOutputSample::InputFuncSurface()
@@ -771,8 +771,9 @@ void VideoEncDualOutputSample::InputFuncSurface()
         OHNativeWindowBuffer *ohNativeWindowBuffer = nullptr;
         int fenceFd = -1;
         UNITTEST_CHECK_AND_BREAK_LOG(nativeWindow_ != nullptr, "nativeWindow_ == nullptr");
-        SetCallbackParam();
-        int32_t err = OH_NativeWindow_NativeWindowRequestBuffer(nativeWindow_, &ohNativeWindowBuffer, &fenceFd);
+        int32_t err = ResetFrameParam();
+        UNITTEST_CHECK_AND_CONTINUE_LOG(err == 0, "ResetFrameParam failed, Error=%d", err);
+        err = OH_NativeWindow_NativeWindowRequestBuffer(nativeWindow_, &ohNativeWindowBuffer, &fenceFd);
         UNITTEST_CHECK_AND_CONTINUE_LOG(err == 0, "RequestBuffer failed, GSError=%d", err);
         if (fenceFd > 0) {
             close(fenceFd);

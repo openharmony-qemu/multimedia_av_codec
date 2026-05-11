@@ -142,7 +142,7 @@ private:
     // Surface input
     OHNativeWindow *nativeWindow_ = nullptr;
     std::unique_ptr<std::thread> inputLoop_;
-    void ResetFrameParam();
+    int32_t ResetFrameParam();
     void InputFuncSurface();
     int32_t FlushSurface(OHNativeWindowBuffer *ohNativeWindowBuffer, OH_NativeBuffer *nativeBuffer);
     void *MapNativeBuffer(OH_NativeBuffer *nativeBuffer);
