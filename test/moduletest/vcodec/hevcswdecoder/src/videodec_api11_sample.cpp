@@ -1701,7 +1701,7 @@ void VDecAPI11Sample::SetParameterForSpeedPlayer()
         double paremeter6 = 1.0;
         if (this->frameCount_ == oneHundred) {
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_MODE,
-                                          OH_FRAME_RETENTION_MODE_ADAPITIVE);
+                                          OH_FRAME_RETENTION_MODE_ADAPTIVE);
             (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_VIDEO_DECODER_SPEED, paremeter3);
         } else if (this->frameCount_ == twoHundred) {
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_MODE,

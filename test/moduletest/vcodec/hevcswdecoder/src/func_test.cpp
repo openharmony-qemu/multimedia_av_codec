@@ -2161,7 +2161,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0010, TestSize.
         vDecSample->retentionModeSet = true;
         vDecSample->decoderSpeedSet = true;
         vDecSample->enableHash = false;
-        vDecSample->DEFAULT_RETENTION_MODE = OH_FRAME_RETENTION_MODE_FULL;
+        vDecSample->defaultRetentionMode = OH_FRAME_RETENTION_MODE_FULL;
         vDecSample->defaultDecoderSpeed = 3;
         vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
         vDecSample->SF_OUTPUT = false;
@@ -2187,7 +2187,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0020, TestSize.
         vDecSample->retentionModeSet = true;
         vDecSample->decoderSpeedSet = true;
         vDecSample->enableHash = false;
-        vDecSample->DEFAULT_RETENTION_MODE = OH_FRAME_RETENTION_MODE_FULL;
+        vDecSample->defaultRetentionMode = OH_FRAME_RETENTION_MODE_FULL;
         vDecSample->defaultDecoderSpeed = 1;
         vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
         vDecSample->SF_OUTPUT = false;
@@ -2561,7 +2561,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0160, TestSize.
         vDecSample->decoderSpeedSet = true;
         vDecSample->retentionRatioSet = true;
         vDecSample->enableHash = false;
-        vDecSample->defaultRetentionMode = OH_FRAME_RETENTION_MODE_ADAPITIVE;
+        vDecSample->defaultRetentionMode = OH_FRAME_RETENTION_MODE_ADAPTIVE;
         vDecSample->defaultDecoderSpeed = 1;
         vDecSample->defaultRetentionRatio = 0.5;
         vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
@@ -2589,7 +2589,7 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0170, TestSize.
         vDecSample->decoderSpeedSet = true;
         vDecSample->retentionRatioSet = true;
         vDecSample->enableHash = false;
-        vDecSample->defaultRetentionMode = OH_FRAME_RETENTION_MODE_ADAPITIVE;
+        vDecSample->defaultRetentionMode = OH_FRAME_RETENTION_MODE_ADAPTIVE;
         vDecSample->defaultDecoderSpeed = 0;
         vDecSample->defaultRetentionRatio = 0.5;
         vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
