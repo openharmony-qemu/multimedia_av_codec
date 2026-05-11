@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -155,6 +155,7 @@ public:
     void GetVideoSupportedPixelFormats();
     void GetFormatKey();
     void SwitchSurfaceGetTransform();
+    void SetParameterForSpeedPlayer();
     bool isGetVideoSupportedPixelFormats = false;
     bool isGetFormatKey = false;
     int isGetVideoSupportedPixelFormatsNum = 0;
@@ -193,6 +194,15 @@ public:
     bool outputCallbackStop = false;
     bool useHDRSource = false;
     bool isAPI = false;
+    bool enableSetParameter = false;
+    bool setSpeedPlayerFlag = false;
+    bool retentionModeSet = false;
+    bool retentionRatioSet = false;
+    bool decoderSpeedSet = false;
+    bool enableHash = true;
+    int32_t defaultRetentionMode = 0;
+    int32_t defaultRetentionRadio = 0;
+    int32_t defaultDecoderSpeed = 0;
     int32_t DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
     int32_t DecodeSetSurface();
     int enbleBlankFrame = 0;
