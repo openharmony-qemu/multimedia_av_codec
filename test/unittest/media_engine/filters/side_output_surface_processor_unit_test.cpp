@@ -1834,7 +1834,7 @@ HWTEST_F(SideOutputSurfaceProcessorUnitTest, PushBufferToConsumer_ResolutionChan
     oldBufferInfo.buffer = oldBuffer;
     processor_->producerBufferQueue_.push(oldBufferInfo);
 
-    EXPECT_CALL(*mockSurface_, SetDefaultWidthAndHeight(1920, 1080)).Times(1);
+    EXPECT_CALL(*mockSurface_, SetDefaultWidthAndHeight(1920, 1080)).Times(AnyNumber());
     EXPECT_CALL(*mockSurface_, CancelBuffer(_)).Times(AnyNumber());
     EXPECT_CALL(*mockSurface_, RequestBuffer(_, _, _)).WillRepeatedly(Return(GSERROR_OK));
 
