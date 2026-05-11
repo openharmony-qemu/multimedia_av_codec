@@ -36,6 +36,8 @@ namespace MediaAVCodec {
 inline std::string FAST_IMAGE_PATH = "/system/lib64/ndk/libfast_image.so";
 enum class EncoderType { PRIMARY, SECONDARY };
 constexpr int32_t PARAM_CHANGE_START_FRAME = 3;
+constexpr int32_t RESIZE_WIDTH = 1920;
+constexpr int32_t RESIZE_HEIGHT = 1080;
 
 class VideoEncDualOutputSample : public NoCopyable, public VCodecSampleBase {
 public:
@@ -96,6 +98,8 @@ public:
     int32_t sampleWidth_ = 1280;
     int32_t sampleHeight_ = 720;
     int32_t samplePixel_ = AV_PIXEL_FORMAT_NV12;
+    bool input8BitTo10Bit_ = false;
+    bool inputResizeWidthHeight_ = false;
 
     static bool needDump_;
     static uint64_t sampleTimout_;
@@ -138,6 +142,7 @@ private:
     // Surface input
     OHNativeWindow *nativeWindow_ = nullptr;
     std::unique_ptr<std::thread> inputLoop_;
+    void ResetFrameParam();
     void InputFuncSurface();
     int32_t FlushSurface(OHNativeWindowBuffer *ohNativeWindowBuffer, OH_NativeBuffer *nativeBuffer);
     void *MapNativeBuffer(OH_NativeBuffer *nativeBuffer);

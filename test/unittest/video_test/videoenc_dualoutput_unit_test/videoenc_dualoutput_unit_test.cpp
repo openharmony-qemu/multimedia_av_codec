@@ -1948,6 +1948,7 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_8BitTo10Bit_001, TestSize.Level1)
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
+    dualSample_->input8BitTo10Bit_ = true;
 
     ASSERT_TRUE(dualSample_->CreateSurface());
     ASSERT_TRUE(dualSample_->CreateSecondary());
@@ -1960,8 +1961,38 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_8BitTo10Bit_001, TestSize.Level1)
 
     ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::SECONDARY));
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Stop(EncoderType::SECONDARY));
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Stop(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->WaitForEos(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->WaitForEos(EncoderType::PRIMARY));
+}
+
+/**
+ * @tc.name: State_Machine_Dual_ResizeWidthHeight_001
+ * @tc.desc: Test resizing width and height
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, State_Machine_Dual_ResizeWidthHeight_001, TestSize.Level1)
+{
+    auto signal = make_shared<VCodecSignal>(dualSample_);
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
+    RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
+    dualSample_->inputResizeWidthHeight_ = true;
+
+    ASSERT_TRUE(dualSample_->CreateSurface());
+    ASSERT_TRUE(dualSample_->CreateSecondary());
+    auto secSignal = make_shared<VCodecSignal>(dualSample_);
+    RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
+
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->WaitForEos(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->WaitForEos(EncoderType::PRIMARY));
 }
 
 /**

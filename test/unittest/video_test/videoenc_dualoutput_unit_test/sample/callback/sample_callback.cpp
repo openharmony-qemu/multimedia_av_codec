@@ -27,6 +27,7 @@ void OnErrorVoid(OH_AVCodec *codec, int32_t errorCode, void *userData)
     (void)codec;
     (void)errorCode;
     (void)userData;
+    std::cout << "OnErrorVoid called, errorCode: " << errorCode << std::endl;
 }
 
 void OnStreamChangedVoid(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
