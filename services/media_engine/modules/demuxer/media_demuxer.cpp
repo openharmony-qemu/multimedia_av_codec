@@ -1792,8 +1792,13 @@ Status MediaDemuxer::HandleSeekChangeStream(int32_t currentStreamId, int32_t new
     MEDIA_LOG_I("streamID changed, streamId: " PUBLIC_LOG_D32 ", newStreamId: " PUBLIC_LOG_D32,
         currentStreamId, newStreamId);
     // Fix hls change stream after seek or change stream after completed seek
-    if (streamDemuxer_ != nullptr && (isHls_ || HasEosTrack())) {
-        streamDemuxer_->SetNewVideoStreamID(newStreamId);
+    if (streamDemuxer_ != nullptr && (isHls_ || HasEosTrack() ||
+        (demuxerPluginManager_ != nullptr && demuxerPluginManager_->IsDash()))) {
+        if (trackId == videoTrackId_) {
+            streamDemuxer_->SetNewVideoStreamID(newStreamId);
+        } else if (trackId == audioTrackId_) {
+            streamDemuxer_->SetNewAudioStreamID(newStreamId);
+        }
         FALSE_GOON_NOEXEC(demuxerPluginManager_ && demuxerPluginManager_->IsDash(), HandleDashChangeStream(trackId));
     }
     return Status::OK;
