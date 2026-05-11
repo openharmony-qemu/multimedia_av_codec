@@ -142,7 +142,7 @@ private:
         int32_t offsetLeft;
     };
 
-    bool IsSyncModeConfigured(const Media::Format &format);
+    bool UsingAsyncMode(const Media::Format &format) const;
     int32_t ValidateCrop(const Media::Format &format);
     int32_t ValidateDownsampling(const Media::Format &format);
     int32_t ValidateDropFrame(const Media::Format &format);

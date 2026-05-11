@@ -166,7 +166,7 @@ bool Preprocessor::IsAvailable()
 
 int32_t Preprocessor::ValidateConfiguration(const Media::Format &format, bool configuring)
 {
-    CHECK_AND_RETURN_RET_LOG(IsSyncModeConfigured(format), AVCS_ERR_INVALID_VAL,
+    CHECK_AND_RETURN_RET_LOG(UsingAsyncMode(format), AVCS_ERR_INVALID_VAL,
                              "Preprocessor encoder does not support synchronous mode!");
 
     UpdateConfiguredValues(format, configuring);
@@ -250,11 +250,11 @@ int32_t Preprocessor::Configure(const Media::Format &format)
     return AVCS_ERR_OK;
 }
 
-bool Preprocessor::IsSyncModeConfigured(const Media::Format &format)
+bool Preprocessor::UsingAsyncMode(const Media::Format &format) const
 {
-    int32_t enableSyncMode = 0;
-    (void)format.GetIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, enableSyncMode);
-    return enableSyncMode != 0;
+    int32_t asyncMode = 0;
+    (void)format.GetIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, asyncMode);
+    return asyncMode == 0;
 }
 
 int32_t Preprocessor::ValidateCrop(const Media::Format &format)
