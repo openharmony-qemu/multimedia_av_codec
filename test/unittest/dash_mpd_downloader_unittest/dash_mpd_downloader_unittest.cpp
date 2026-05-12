@@ -1200,7 +1200,6 @@ HWTEST_F(DashMpdDownloaderUnittest, GetStreamInfo_001, TestSize.Level0)
     ptr2->adptSetIndex_ = NUM_TEST;
     ptr2->videoType_ = DASH_VIDEO_TYPE_HDR_10;
     mpdDownloader_->streamDescriptions_.push_back(ptr2);
-    
     std::vector<StreamInfo> streams2;
     ret = mpdDownloader_->GetStreamInfo(streams2);
     EXPECT_EQ(ret, Status::OK);
