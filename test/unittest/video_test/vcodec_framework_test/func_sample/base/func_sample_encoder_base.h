@@ -49,6 +49,9 @@ constexpr int32_t RATIO_US_TO_NS = 1000;
 inline uint8_t g_mdTest[SHA512_DIGEST_LENGTH];
 inline std::atomic<uint32_t> g_shaBufferCount = 0;
 inline SHA512_CTX g_ctxTest;
+constexpr int32_t PARAM_CHANGE_START_FRAME = 3;
+constexpr int32_t RESIZE_WIDTH = 1920;
+constexpr int32_t RESIZE_HEIGHT = 1080;
 
 inline void UpdateSHAForCheck(bool needCheckSHA, const char *addr, int32_t size)
 {

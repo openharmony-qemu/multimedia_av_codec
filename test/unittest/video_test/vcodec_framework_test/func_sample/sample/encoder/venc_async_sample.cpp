@@ -47,11 +47,21 @@ void VEncCallbackTest::OnError(int32_t errorCode)
     }
     signal_->errorNum_ += 1;
     cout << ", errorNum=" << signal_->errorNum_ << endl;
+    if (input8BitTo10Bit_) {
+        EXPECT_LT(0, signal_->errorNum_);
+    }
 }
 
 void VEncCallbackTest::OnStreamChanged(std::shared_ptr<FormatMock> format)
 {
     UNITTEST_INFO_LOG("format changed: %s", format->DumpInfo());
+    if (inputResizeWidthHeight_) {
+        int32_t width, height;
+        EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, &width));
+        EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, &height));
+        EXPECT_EQ(RESIZE_WIDTH, width);
+        EXPECT_EQ(RESIZE_HEIGHT, height);
+    }
 }
 
 void VEncCallbackTest::OnNeedInputData(uint32_t index, std::shared_ptr<AVMemoryMock> data)
@@ -100,6 +110,13 @@ void VEncCallbackTestExt::OnError(int32_t errorCode)
 void VEncCallbackTestExt::OnStreamChanged(std::shared_ptr<FormatMock> format)
 {
     UNITTEST_INFO_LOG("format changed: %s", format->DumpInfo());
+    if (inputResizeWidthHeight_) {
+        int32_t width, height;
+        EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, &width));
+        EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, &height));
+        EXPECT_EQ(RESIZE_WIDTH, width);
+        EXPECT_EQ(RESIZE_HEIGHT, height);
+    }
 }
 
 void VEncCallbackTestExt::OnNeedInputData(uint32_t index, std::shared_ptr<AVBufferMock> data)
@@ -1031,12 +1048,27 @@ void VideoEncAsyncSample::ReadFrameToBuffer(
 
 void VideoEncAsyncSample::InputFuncSurface()
 {
+    int32_t ret = AV_ERR_OK;
+    if (frameInputCount_ > PARAM_CHANGE_START_FRAME) {
+        if (input8BitTo10Bit_) {
+            ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_FORMAT, GRAPHIC_PIXEL_FMT_YCBCR_P010);
+        } else if (inputResizeWidthHeight_) {
+            ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_BUFFER_GEOMETRY,
+                                                        RESIZE_WIDTH, RESIZE_HEIGHT);
+        }
+    }
+    return ret;
+}
+
+void VideoEncAsyncSample::InputFuncSurface()
+{
     while (signal_->isRunning_.load()) {
         OHNativeWindowBuffer *ohNativeWindowBuffer;
         int fenceFd = -1;
         UNITTEST_CHECK_AND_BREAK_LOG(nativeWindow_ != nullptr, "nativeWindow_ == nullptr");
-
-        int32_t err = OH_NativeWindow_NativeWindowRequestBuffer(nativeWindow_, &ohNativeWindowBuffer, &fenceFd);
+        int32_t err = ResetFrameParam();
+        UNITTEST_CHECK_AND_CONTINUE_LOG(err == 0, "ResetFrameParam failed, Error=%d", err);
+        err = OH_NativeWindow_NativeWindowRequestBuffer(nativeWindow_, &ohNativeWindowBuffer, &fenceFd);
         UNITTEST_CHECK_AND_CONTINUE_LOG(err == 0, "RequestBuffer failed, GSError=%d", err);
         if (fenceFd > 0) {
             close(fenceFd);

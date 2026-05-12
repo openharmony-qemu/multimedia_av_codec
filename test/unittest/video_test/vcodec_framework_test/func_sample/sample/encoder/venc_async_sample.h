@@ -62,12 +62,15 @@ public:
     std::string roiRects_ = "";
     bool enableVariableFrameRate_ = false;
     int32_t frameIndex_ = 0;
+    bool input8BitTo10Bit_ = false;
+    bool inputResizeWidthHeight_ = false;
 
 private:
     void FlushInner();
     void PrepareInner();
     void WaitForEos();
 
+    int32_t ResetFrameParam();
     void InputFuncSurface();
     int32_t InputProcess(OH_NativeBuffer *nativeBuffer, OHNativeWindowBuffer *ohNativeWindowBuffer);
 

@@ -1961,8 +1961,10 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_8BitTo10Bit_001, TestSize.Level1)
 
     ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::SECONDARY));
-    ASSERT_EQ(AV_ERR_OK, dualSample_->WaitForEos(EncoderType::SECONDARY));
-    ASSERT_EQ(AV_ERR_OK, dualSample_->WaitForEos(EncoderType::PRIMARY));
+    ASSERT_TRUE(dualSample_->WaitForEos(EncoderType::SECONDARY));
+    ASSERT_TRUE(dualSample_->WaitForEos(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Release(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Release(EncoderType::PRIMARY));
 }
 
 /**
@@ -1991,8 +1993,10 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_ResizeWidthHeight_001, TestSize.Level1)
 
     ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::SECONDARY));
-    ASSERT_EQ(AV_ERR_OK, dualSample_->WaitForEos(EncoderType::SECONDARY));
-    ASSERT_EQ(AV_ERR_OK, dualSample_->WaitForEos(EncoderType::PRIMARY));
+    ASSERT_TRUE(dualSample_->WaitForEos(EncoderType::SECONDARY));
+    ASSERT_TRUE(dualSample_->WaitForEos(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Release(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Release(EncoderType::PRIMARY));
 }
 
 /**
@@ -2030,8 +2034,10 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_SetParam_Crop_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->SetParameter(EncoderType::PRIMARY, format));
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Stop(EncoderType::SECONDARY));
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Stop(EncoderType::PRIMARY));
+    ASSERT_TRUE(dualSample_->WaitForEos(EncoderType::SECONDARY));
+    ASSERT_TRUE(dualSample_->WaitForEos(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Release(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Release(EncoderType::PRIMARY));
     OH_AVFormat_Destroy(format);
 }
 #endif // ONLY_FOR_FLAGSHIP_CHIP

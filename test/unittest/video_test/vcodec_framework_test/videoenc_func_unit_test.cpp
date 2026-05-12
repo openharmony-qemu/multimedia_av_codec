@@ -943,6 +943,37 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Hardware_Active_All_001, TestSize.Level1)
     ret = AVCodecSuspend::SuspendActiveAll();
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
+
+/**
+ * @tc.name: VideoEncoder_8BitTo10Bit_001
+ * @tc.desc: Test 8-bit to 10-bit format conversion
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_8BitTo10Bit_001, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    videoEnc_->input8BitTo10Bit_ = true;
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+}
+
+/**
+ * @tc.name: VideoEncoder_ResizeWidthHeight_001
+ * @tc.desc: Test resizing width and height
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_ResizeWidthHeight_001, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    videoEnc_->inputResizeWidthHeight_ = true;
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+}
+
 #ifdef ONLY_FOR_FLAGSHIP_CHIP
 /**
  * @tc.name: VideoEncoder_SetPTSParameter_001

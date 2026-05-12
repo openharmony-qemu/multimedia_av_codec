@@ -754,10 +754,10 @@ int32_t VideoEncDualOutputSample::ResetFrameParam()
     int32_t ret = AV_ERR_OK;
     if (primaryEncoder_.frameInputCount > PARAM_CHANGE_START_FRAME) {
         if (input8BitTo10Bit_) {
-            int32_t ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_FORMAT,
+            ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_FORMAT,
                                                                 GRAPHIC_PIXEL_FMT_YCBCR_P010);
         } else if (inputResizeWidthHeight_) {
-            int32_t ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_BUFFER_GEOMETRY,
+            ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_BUFFER_GEOMETRY,
                                                                 RESIZE_WIDTH, RESIZE_HEIGHT);
         }
     }
