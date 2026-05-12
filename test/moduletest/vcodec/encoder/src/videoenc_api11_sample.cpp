@@ -131,11 +131,11 @@ static void onEncOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVB
 
 static void onEncInputParamRoi(OH_AVCodec *codec, uint32_t index, OH_AVFormat *parameter, void *userData)
 {
-    if (g_encSample == nullptr || g_encSample->roiInfo == nullptr) {
+    if (enc_sample == nullptr || enc_sample->roiInfo == nullptr) {
         cout << "g_encSample or roiInfo is null" << endl;
         return;
     }
-    OH_AVFormat_SetStringValue(parameter, OH_MD_KEY_VIDEO_ENCODER_ROI_PARAMS, g_encSample->roiInfo);
+    OH_AVFormat_SetStringValue(parameter, OH_MD_KEY_VIDEO_ENCODER_ROI_PARAMS, enc_sample->roiInfo);
     if (!parameter || !userData) {
         return;
     }
