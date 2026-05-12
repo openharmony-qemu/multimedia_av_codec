@@ -15,6 +15,8 @@
 
 #include "codec_buffer_info.h"
 #include "meta/any.h"
+#include "meta/meta_key.h"
+#include <gtest/gtest.h>
 #include "sample_callback.h"
 #include "vcodec_signal.h"
 #include "venc_dualoutput_sample.h"
@@ -25,16 +27,29 @@ namespace MediaAVCodec {
 void OnErrorVoid(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
     (void)codec;
-    (void)errorCode;
-    (void)userData;
+    auto signal = reinterpret_cast<VCodecSignal *>(userData);
+    auto codecSample = signal->codecSample_.lock();
+    auto dualSample = std::static_pointer_cast<VideoEncDualOutputSample>(codecSample);
     std::cout << "OnErrorVoid called, errorCode: " << errorCode << std::endl;
+    if (dualSample && dualSample->input8BitTo10Bit_) {
+        EXPECT_LT(0, errorCode);
+    }
 }
 
 void OnStreamChangedVoid(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 {
     (void)codec;
-    (void)format;
-    (void)userData;
+    auto signal = reinterpret_cast<VCodecSignal *>(userData);
+    auto codecSample = signal->codecSample_.lock();
+    auto dualSample = std::static_pointer_cast<VideoEncDualOutputSample>(codecSample);
+    if (dualSample && dualSample->inputResizeWidthHeight_) {
+        int32_t width = 0;
+        int32_t height = 0;
+        EXPECT_EQ(AV_ERR_OK, OH_AVFormat_GetIntValue(format, Media::Tag::VIDEO_PIC_WIDTH, &width));
+        EXPECT_EQ(AV_ERR_OK, OH_AVFormat_GetIntValue(format, Media::Tag::VIDEO_PIC_HEIGHT, &height));
+        EXPECT_EQ(RESIZE_WIDTH, width);
+        EXPECT_EQ(RESIZE_HEIGHT, height);
+    }
 }
 
 void InBufferHandle(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)

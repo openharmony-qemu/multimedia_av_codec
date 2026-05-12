@@ -121,6 +121,8 @@ public:
     void OnStreamChanged(std::shared_ptr<FormatMock> format) override;
     void OnNeedInputData(uint32_t index, std::shared_ptr<AVMemoryMock> data) override;
     void OnNewOutputData(uint32_t index, std::shared_ptr<AVMemoryMock> data, OH_AVCodecBufferAttr attr) override;
+    bool inputResizeWidthHeight_ = false;
+    bool input8BitTo10Bit_ = false;
 
 private:
     std::shared_ptr<VEncSignal> signal_ = nullptr;
@@ -134,6 +136,8 @@ public:
     void OnStreamChanged(std::shared_ptr<FormatMock> format) override;
     void OnNeedInputData(uint32_t index, std::shared_ptr<AVBufferMock> data) override;
     void OnNewOutputData(uint32_t index, std::shared_ptr<AVBufferMock> data) override;
+    bool inputResizeWidthHeight_ = false;
+    bool input8BitTo10Bit_ = false;
 
 private:
     std::shared_ptr<VEncSignal> signal_ = nullptr;

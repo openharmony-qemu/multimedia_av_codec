@@ -954,7 +954,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_8BitTo10Bit_001, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    videoEnc_->input8BitTo10Bit_ = true;
+    vencCallback_->input8BitTo10Bit_ = true;
     ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
 }
@@ -969,7 +969,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_ResizeWidthHeight_001, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    videoEnc_->inputResizeWidthHeight_ = true;
+    vencCallback_->inputResizeWidthHeight_ = true;
     ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
 }
