@@ -321,6 +321,19 @@ int32_t VideoEncSyncSample::CreateInputSurface()
 }
 #endif
 
+int32_t VideoEncSyncSample::GetSurfaceQueueSize()
+{
+    if (nativeWindow_ == nullptr) {
+        return -1;
+    }
+    int32_t queueSize = 0;
+    int32_t ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, GET_BUFFERQUEUE_SIZE, &queueSize);
+    if (ret != 0) {
+        return -1;
+    }
+    return queueSize;
+}
+
 bool VideoEncSyncSample::IsValid()
 {
     if (videoEnc_ == nullptr) {

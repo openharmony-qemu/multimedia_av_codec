@@ -24,6 +24,9 @@
 #ifdef VIDEOENC_CAPI_UNIT_TEST
 #include "native_avmagic.h"
 #include "videoenc_capi_mock.h"
+#include "native_avcodec_videoencoder.h"
+#include "native_avformat.h"
+#include "external_window.h"
 #endif
 #include "videoenc_func_test_suit.h"
 
@@ -1097,6 +1100,36 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetPTSParameter_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 #endif // ONLY_FOR_FLAGSHIP_CHIP
+
+/**
+ * @tc.name: VideoEncoder_MaxFrameDelayCount_Surface_001
+ * @tc.desc: HW encoder configure with max frame delay count in surface mode and verify buffer queue size
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoEncoder_MaxFrameDelayCount_Surface_001, TestSize.Level1)
+{
+    auto capability = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), true,
+                                                                    AVCodecCategory::AVCODEC_HARDWARE);
+    ASSERT_NE(nullptr, capability);
+    std::string codecName = capability->GetName();
+    ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(codecName));
+
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_SURFACE);
+
+    int32_t expectedValue = 3;
+    format_->PutIntValue(MediaDescriptionKey::OH_MD_KEY_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, expectedValue);
+
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+
+    int32_t queueSize = videoEnc_->GetSurfaceQueueSize();
+    EXPECT_EQ(queueSize, expectedValue);
+
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
 } // namespace
 
 int main(int argc, char **argv)
