@@ -24,9 +24,6 @@
 #ifdef VIDEOENC_CAPI_UNIT_TEST
 #include "native_avmagic.h"
 #include "videoenc_capi_mock.h"
-#include "native_avcodec_videoencoder.h"
-#include "native_avformat.h"
-#include "external_window.h"
 #endif
 #include "videoenc_func_test_suit.h"
 
