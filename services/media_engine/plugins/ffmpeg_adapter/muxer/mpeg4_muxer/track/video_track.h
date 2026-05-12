@@ -17,6 +17,7 @@
 #define MPEG4_MUXER_VIDEO_TRACK_H
 
 #include <queue>
+#include <list>
 #include "basic_track.h"
 #include "video_parser.h"
 #include "meta/video_types.h"
@@ -46,25 +47,24 @@ public:
     void SetCttsBox(std::shared_ptr<SttsBox> ctts);
     void SetStssBox(std::shared_ptr<StssBox> stss);
     bool GetSrcTrackIds(const std::shared_ptr<Meta> &trackDesc);
-
+    
 private:
     int32_t CreateParser();
     void ParserSetConfig();
     bool InitColor(const std::shared_ptr<Meta> &trackDesc);
     void InitCuva(const std::shared_ptr<Meta> &trackDesc);
-    void DisposeCtts(int64_t pts);
-    void DisposeCttsAndStts();
-    void DisposeCttsAndStts(int64_t mpeg4Pts);
-    void DisposeCttsByFrameRate(int64_t pts);
-    void DisposeSttsNoPts();
-    void DisposeSttsOnly();
+    void DisposeCtts(int64_t pts, int64_t dts);
+    void DisposeSttsAndCtts(int64_t ptsUs, int64_t mpeg4Pts);
+    void UpdateCtts();
     void DisposeDuration();
     void DisposeBitrate();
     void DisposeColor();
     void DisposeCuva();
     void DisposeSdtp(uint32_t flag);
     void AddSdtpBox();
+    bool CheckPts(int64_t pts);
     Status SetVideoDelay(const std::shared_ptr<Meta> &trackDesc);
+    int64_t CalculateDtsByPts(int64_t mpeg4Pts);
     int32_t width_ = 0;
     int32_t height_ = 0;
     int64_t delay_ = 0;
@@ -80,14 +80,14 @@ private:
     std::shared_ptr<SttsBox> tempCtts_ = nullptr;
     std::shared_ptr<StssBox> stss_ = nullptr;
     std::shared_ptr<SdtpBox> sdtp_ = nullptr;
-    std::queue<int64_t> allPts_;
-    bool isHaveBFrame_ = false;
-    int64_t dts_ = 0;
     int64_t startDts_ = 0;
+    int64_t preDts_ = 0;
+    int64_t prePtsUs_ = 0;
+    int64_t preDuration_ = 0;
     bool hasSetParserConfig_ = false;
     std::vector<std::shared_ptr<BasicTrack>> &tracks_;
-    int64_t ptsMax_ = 0;  // mpeg4 time scale
-    bool hasVideoDelay_ = false;
+    int32_t videoDelay_ = 0;
+    std::list<int64_t> dtsList_;
 };
 } // Mpeg4
 } // Plugins

@@ -61,6 +61,7 @@ struct CropRect {
 class FastKitsInterface {
 public:
     static FastKitsInterface &GetInstance();
+    static bool IsFormatSupported(int32_t format);
 
     void Retain();
     void Release();

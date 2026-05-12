@@ -263,7 +263,7 @@ Status FFmpegAACEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> 
                 return Status::ERROR_INVALID_DATA;
             }
             bufferMeta_ = inputBuffer->meta_;
-            if (ptsMode_ == GENERATE_ENCODE_PTS_BY_INPUT_MODE && isFirstInputPts_) {
+            if (ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE && isFirstInputPts_) {
                 prevPts_ = inputBuffer->pts_;
                 isFirstInputPts_ = false;
             }
@@ -319,9 +319,13 @@ Status FFmpegAACEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outB
     // how get perfect pts with upstream pts(us)
     outBuffer->duration_ = ConvertTimeFromFFmpeg(avPacket_->duration, avCodecContext_->time_base) / NS_PER_US;
     // adjust ffmpeg duration with sample rate
-    if (ptsMode_ == GENERATE_ENCODE_PTS_BY_INPUT_MODE && isFirstOutputPts_) {
+    if (ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE && isFirstOutputPts_) {
         outBuffer->pts_ = prevPts_ - (initPadding_ * US_PER_SECOND / sampleRate_);
         MEDIA_LOG_I("corrected outBuffer->pts_: %{public}" PRIu64 ".", outBuffer->pts_);
+        isFirstOutputPts_ = false;
+    } else if (ptsMode_ == ZERO_START_ENCODE_PTS_MODE && isFirstOutputPts_) {
+        outBuffer->pts_ = 0;
+        MEDIA_LOG_I("zero_start outBuffer->pts_: %{public}" PRIu64 ".", outBuffer->pts_);
         isFirstOutputPts_ = false;
     } else if (prevPts_ < 0) {
         outBuffer->pts_ = prevPts_ + outBuffer->duration_;

@@ -121,6 +121,17 @@ private:
     void OpenInitSegment(const std::shared_ptr<DashStreamDescription> &streamDesc,
                          const std::shared_ptr<DashSegment> &seg);
     void HandleSeekReady(int32_t streamType, int32_t streamId, int64_t seekTimeMs, int32_t isEos);
+    bool NeedRestartDecoder(const std::shared_ptr<DashStreamDescription>& oldStream,
+        const std::shared_ptr<DashStreamDescription>& newStream);
+    void SwitchToPeriod(uint32_t newPeriodIndex);
+    bool GetStreamsForPeriodSwitch(uint32_t newPeriodIndex,
+        std::shared_ptr<DashStreamDescription> &oldVideoStream,
+        std::shared_ptr<DashStreamDescription> &newVideoStream,
+        std::shared_ptr<DashStreamDescription> &newAudioStream);
+    void SwitchVideoStream(const std::shared_ptr<DashStreamDescription> &newVideoStream,
+        const std::shared_ptr<DashSegmentDownloader> &segDownloader);
+    void SwitchAudioStream(const std::shared_ptr<DashStreamDescription> &newAudioStream,
+        const std::shared_ptr<DashSegmentDownloader> &segDownloader);
 
 private:
 
@@ -148,6 +159,7 @@ private:
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
     std::shared_ptr<DownloadMetricsInfo> downloadMetricsInfo_ {nullptr};
     std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
+    uint32_t currentPeriodIndex_ {0};
 };
 }
 }

@@ -174,6 +174,7 @@ struct DashStreamDescription {
         maxFrameRate_ = desc.maxFrameRate_;
         mimeType_ = desc.mimeType_;
         codecs_ = desc.codecs_;
+        periodStartTime_ = desc.periodStartTime_;
     }
 
     DashStreamDescription& operator=(const DashStreamDescription& desc)
@@ -206,6 +207,7 @@ struct DashStreamDescription {
             maxFrameRate_ = desc.maxFrameRate_;
             mimeType_ = desc.mimeType_;
             codecs_ = desc.codecs_;
+            periodStartTime_ = desc.periodStartTime_;
         }
         return *this;
     }
@@ -237,6 +239,7 @@ struct DashStreamDescription {
     std::string maxFrameRate_ {};
     std::string mimeType_ {};
     std::string codecs_ {};
+    uint64_t periodStartTime_ = 0;
     std::shared_ptr<DashInitSegment> initSegment_ = nullptr;
     std::shared_ptr<DashIndexSegment> indexSegment_ = nullptr;
     std::vector<std::shared_ptr<DashSegment>> mediaSegments_;

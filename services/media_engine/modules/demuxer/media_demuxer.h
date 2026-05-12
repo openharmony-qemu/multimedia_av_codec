@@ -223,6 +223,7 @@ public:
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
+    struct FilteredStreamMap;
     struct MediaMetaData {
         std::vector<std::shared_ptr<Meta>> trackMetas;
         std::shared_ptr<Meta> globalMeta;
@@ -622,6 +623,7 @@ private:
     int64_t lastCheckAutoSelectTimeMs_ {0};
     int32_t lastAutoSelectBitRate_ {0};
     std::shared_ptr<MediaAVCodec::AVCodecList> codecList_ {nullptr};
+    std::unique_ptr<FilteredStreamMap> filteredStreamMap_;
 };
 } // namespace Media
 } // namespace OHOS

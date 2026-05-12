@@ -110,6 +110,7 @@ bool HDecoder::DecideOutputBufMode()
 
 int32_t HDecoder::OnConfigure(const Format &format)
 {
+    ClearMember();
     configFormat_ = make_shared<Format>(format);
 
     (void)SetProcessName();
@@ -290,6 +291,9 @@ void HDecoder::UpdateColorAspects()
         outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES, param.aspects.primaries);
         outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS, param.aspects.transfer);
         outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, param.aspects.matrixCoeffs);
+        if (!currGenerationLayoutHasParsed_) {
+            return;
+        }
         HLOGI("output format changed: %s", outputFormat_->Stringify().c_str());
         callback_->OnOutputFormatChanged(*(outputFormat_.get()));
     }
@@ -775,6 +779,7 @@ void HDecoder::ProcSurfaceBufferToUser(const sptr<SurfaceBuffer>& buffer)
         HLOGI("buffer layout update: %s -> %s", currLayout_->ToString().c_str(), layout.ToString().c_str());
         *currLayout_ = layout;
     }
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, layout.fmt.graphicFmt);
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(layout.fmt.innerFmt));
     outputFormat_->PutStringValue("pixel_format_string", layout.fmt.strFmt);
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, layout.byteStride);
@@ -1494,6 +1499,11 @@ void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode
 }
 
 void HDecoder::OnEnterUninitializedState()
+{
+    ClearMember();
+}
+ 
+void HDecoder::ClearMember()
 {
     freeList_.clear();
     currSurface_.Release();

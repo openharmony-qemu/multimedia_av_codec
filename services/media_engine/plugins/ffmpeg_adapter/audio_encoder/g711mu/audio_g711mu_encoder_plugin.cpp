@@ -182,6 +182,11 @@ Status AudioG711muEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer
             AVCODEC_LOGE("AudioG711muEncoderPlugin inputBuffer size in bytes is odd and the last byte is ignored");
         }
         pts_ = inputBuffer->pts_;
+        inputSamples_ = sampleNum;
+        if (ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE && isFirstInputPts_) {
+            startPts_ = inputBuffer->pts_;
+            isFirstInputPts_ = false;
+        }
         SafeCallInputBufferDone(dataCallback_, inputBuffer);
     }
     return Status::OK;
@@ -199,7 +204,18 @@ Status AudioG711muEncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& ou
         auto outSize = sizeof(uint8_t) * encodeResult_.size();
         memory->Write(reinterpret_cast<const uint8_t *>(encodeResult_.data()), outSize, 0);
         memory->SetSize(outSize);
-        outputBuffer->pts_ = pts_;
+        int64_t frameDuration = static_cast<int64_t>(inputSamples_) * 1000000LL / sampleRate_;
+        if (ptsMode_ == ZERO_START_ENCODE_PTS_MODE) {
+            outputBuffer->pts_ = prevPts_;
+        } else if (ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE) {
+            outputBuffer->pts_ = (startPts_ > 0 && prevPts_ > INT64_MAX - startPts_) ? prevPts_ : startPts_ + prevPts_;
+        } else {
+            outputBuffer->pts_ = pts_;
+        }
+        if (ptsMode_ != DEFAULT_ENCODE_PTS_MODE) {
+            prevPts_ = (frameDuration > 0 && prevPts_ > INT64_MAX - frameDuration)
+                ? prevPts_ : prevPts_ + frameDuration;
+        }
         SafeCallOutputBufferDone(dataCallback_, outputBuffer);
     }
     return Status::OK;
@@ -208,6 +224,9 @@ Status AudioG711muEncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& ou
 Status AudioG711muEncoderPlugin::Reset()
 {
     std::lock_guard<std::mutex> lock(avMutex_);
+    isFirstInputPts_ = true;
+    startPts_ = 0;
+    prevPts_ = 0;
     return Status::OK;
 }
 
@@ -220,6 +239,9 @@ Status AudioG711muEncoderPlugin::Release()
 Status AudioG711muEncoderPlugin::Flush()
 {
     std::lock_guard<std::mutex> lock(avMutex_);
+    isFirstInputPts_ = true;
+    startPts_ = 0;
+    prevPts_ = 0;
     return Status::OK;
 }
 
@@ -260,6 +282,10 @@ Status AudioG711muEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &param
     }
 
     audioParameter_ = *parameter;
+    AudioEncodePtsMode ptsMode = DEFAULT_ENCODE_PTS_MODE;
+    if (parameter->Get<Tag::AUDIO_ENCODE_PTS_MODE>(ptsMode)) {
+        ptsMode_ = ptsMode;
+    }
     return ret;
 }
 

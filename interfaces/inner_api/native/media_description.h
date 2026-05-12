@@ -310,6 +310,12 @@ public:
     static constexpr std::string_view MD_KEY_TRACK_DESCRIPTION = "track_description";
     static constexpr std::string_view MD_KEY_VIDEO_ENCODER_ENABLE_PTS_BASED_RATECONTROL =
         "video_encoder_enable_pts_based_ratecontrol";
+
+    /**
+     * Key for audio encoder PTS output mode, value type is int32_t.
+     * See AudioEncoderPtsMode for valid values. Default is AUDIO_ENCODER_PTS_MODE_DEFAULT.
+     */
+    static constexpr std::string_view MD_KEY_AUDIO_ENCODER_PTS_MODE = "audio_encode_pts_mode";
     /**
      * key for AIGC info, the value type is string
      */
@@ -445,6 +451,14 @@ enum ChromaLocation {
     CHROMA_LOC_TOP = 4,
     CHROMA_LOC_BOTTOMLEFT = 5,
     CHROMA_LOC_BOTTOM = 6,
+};
+/**
+ * @brief PTS output mode for audio encoder.
+ */
+enum AudioEncoderPtsMode : int32_t {
+    AUDIO_ENCODER_PTS_MODE_DEFAULT = 0,
+    AUDIO_ENCODER_PTS_MODE_ZERO_START = 1,
+    AUDIO_ENCODER_PTS_MODE_FIRST_INPUT_START = 2,
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

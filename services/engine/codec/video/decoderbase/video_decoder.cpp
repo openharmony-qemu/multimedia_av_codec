@@ -251,7 +251,7 @@ int32_t VideoDecoder::Configure(const Format &format)
                    it.first == MediaDescriptionKey::MD_KEY_SCALE_TYPE ||
                    it.first == OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE) {
             continue;
-        } else if (it.first == OHOS::Media::Tag::VIDEO_ENABLE_LOW_LATENCY) {
+        } else if (it.first == Tag::VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER) {
             CHECK_AND_CONTINUE_LOG(format.GetIntValue(it.first, val32),
                 "not find valid int value for key %{public}s", it.first.data());
             format_.PutIntValue(it.first, val32);

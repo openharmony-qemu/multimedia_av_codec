@@ -1465,6 +1465,13 @@ extern const char *OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_RATIO;
  * @since 26.0.0
  */
 extern const char *OH_MD_KEY_VIDEO_DECODER_SPEED;
+/**
+ * @brief Key for configuring the PTS output mode of the audio encoder, value type is int32_t,
+ * refer to {@link OH_AudioEncoderPTSMode}.
+ *
+ * @since 26.0.0
+ */
+extern const char *OH_MD_KEY_AUDIO_ENCODER_PTS_MODE;
 
 /**
  * @brief Key for HDR type, value type is int32_t, refer to {@link OH_HDRType}.
@@ -1472,6 +1479,17 @@ extern const char *OH_MD_KEY_VIDEO_DECODER_SPEED;
  * @since 26.0.0
 */
 extern const char *OH_MD_KEY_HDR_TYPE;
+
+/**
+ * @brief Key to enable the decoder to output frames in decoding order,
+ * value type is int32_t (0 or 1): 1 is enabled, 0 disabled.
+ *
+ * This is an optional key that applies only to video decoder and is only used in configure.
+ * By default, this feature is disabled (0).
+ *
+ * @since 26.0.0
+ */
+extern const char *OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER;
 
 /**
  * @brief Key for querying the number of pending frames in the video encoder.
@@ -2375,6 +2393,28 @@ typedef enum OH_FRAME_RETENTION_MODE {
      */
     OH_FRAME_RETENTION_MODE_UNIFORM
 } OH_FRAME_RETENTION_MODE;
+/**
+ * @brief Enum for the PTS mode of audio encoder.
+ *
+ * @since 26.0.0
+ */
+typedef enum OH_AudioEncoderPTSMode {
+    /**
+     * Default PTS mode. Different encoders may perform differently.
+     * @since 26.0.0
+     */
+    OH_AUDIO_ENCODER_PTS_MODE_DEFAULT = 0,
+    /**
+     * PTS starts from zero.
+     * @since 26.0.0
+     */
+    OH_AUDIO_ENCODER_PTS_MODE_ZERO_START = 1,
+    /**
+     * PTS starts from the first input PTS.
+     * @since 26.0.0
+     */
+    OH_AUDIO_ENCODER_PTS_MODE_FIRST_INPUT_START = 2,
+} OH_AudioEncoderPTSMode;
 
 #ifdef __cplusplus
 }

@@ -131,7 +131,8 @@ public:
     std::vector<SeekRange> GetSeekableRanges() const;
     std::vector<uint32_t> GetBitRates() const;
     std::vector<uint32_t> GetBitRatesByHdr(bool isHdr) const;
-    int64_t SeekToTs(int streamId, int64_t seekTime, std::shared_ptr<DashSegment> &seg) const;
+    int64_t SeekToTs(int streamId, int64_t seekTime, std::shared_ptr<DashSegment> &seg);
+    uint32_t GetPeriodIndexBySeekTime(int64_t seekTime) const;
     void UpdateDownloadFinished(const std::string &url);
     int GetInUseVideoStreamId() const;
     DashMpdGetRet GetNextSegmentByStreamId(int streamId, std::shared_ptr<DashSegment> &seg);
@@ -140,8 +141,24 @@ public:
     DashMpdGetRet GetNextTrackStream(DashMpdTrackParam &param);
     Status GetStreamInfo(std::vector<StreamInfo> &streams);
     std::shared_ptr<DashStreamDescription> GetStreamByStreamId(int streamId);
+    std::shared_ptr<DashStreamDescription> GetStreamByPeriodIndex(uint32_t periodIndex,
+        MediaAVCodec::MediaType type);
     std::shared_ptr<DashStreamDescription> GetUsingStreamByType(MediaAVCodec::MediaType type);
     std::shared_ptr<DashInitSegment> GetInitSegmentByStreamId(int streamId);
+    uint32_t GetCurrentPeriodIndex() const
+    {
+        return currentPeriodIndex_;
+    }
+    void SetCurrentPeriodIndex(uint32_t index)
+    {
+        if (mpdInfo_ != nullptr && index < mpdInfo_->periodInfoList_.size()) {
+            currentPeriodIndex_ = index;
+        }
+    }
+    DashMpdInfo* GetMpdInfo() const
+    {
+        return mpdInfo_;
+    }
     void SetCurrentNumberSeqByStreamId(int streamId, int64_t numberSeq);
     void UpdateCurrentNumberSeqByTime(const std::shared_ptr<DashStreamDescription> &streamDesc, uint32_t nextSegTime);
     void SetHdrStart(bool isHdrStart);
@@ -253,6 +270,12 @@ private:
     bool ContainsNonDigit(const std::string& str);
     bool ParseFrameRateToUint32(const std::string& str, uint32_t& value);
     void UpdateSeekRanges();
+    std::shared_ptr<DashStreamDescription> FindStreamByStreamId(int streamId) const;
+    bool FindTargetPeriodIndex(const std::shared_ptr<DashStreamDescription> &currentStream,
+        int64_t seekTime, uint32_t &targetPeriodIndex, uint64_t &periodStartTime) const;
+    void SwitchStreamIfNeeded(std::shared_ptr<DashStreamDescription> &currentStream, uint32_t targetPeriodIndex);
+    void FindSegmentByRelativeTime(std::shared_ptr<DashStreamDescription> &currentStream,
+        int64_t relativeTime, std::shared_ptr<DashSegment> &seg, uint32_t targetPeriodIndex, int64_t &totalDuration);
 
 private:
     std::string url_ {};
@@ -287,6 +310,7 @@ private:
     int32_t videoStreamId_ {-1};
     int32_t audioStreamId_ {-1};
     int32_t subTitleStreamId_ {-1};
+    uint32_t currentPeriodIndex_ {0};
     mutable std::mutex seekRangeMutex_ {};
     std::vector<SeekRange> seekRanges_ {};
 };
