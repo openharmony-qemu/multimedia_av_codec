@@ -1352,9 +1352,8 @@ ohos_unittest("videoenc_bitrate_mode_capi_unit_test") {
     "./videoenc_bitrate_mode_unit_test.cpp",
   ]
   deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
-  external_deps = av_codec_capi_external_deps
 
-  resource_config_file = resource_configuration_file
+  resource_config_file = "$av_codec_root_dir/test/moduletest/resources/ohos_test.xml"
 }
 
 #################################################################################################################videodec
