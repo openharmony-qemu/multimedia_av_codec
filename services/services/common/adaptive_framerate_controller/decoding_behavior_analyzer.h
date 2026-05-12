@@ -74,7 +74,12 @@ private:
     double lastReportedFps_ = -1.0;
     double lastReportedRenderFps_ = -1.0;
     int64_t lastPtsMs_ = -1;
-
+#ifdef SUPPORT_FPS_FOR_MEMC
+    int64_t lastOutPts_[3] = {0};
+    size_t lastIndex_ = 0;
+    std::pair<int32_t, int32_t> fixedInfo_{};
+    std::pair<int32_t, int32_t> curtInfo_{};
+#endif
     void ResetIntervalStats();
     size_t MatchAndUpdateSpeedStats(double decSpeed);
     DecodingBehaviorType DetermineDecodingBehaviorType();
@@ -83,6 +88,10 @@ private:
     void SaveDecodingBehaviorAsSnapshot(
         DecodingBehaviorType type, std::chrono::steady_clock::time_point endTime, size_t decSpeedIdx);
     void ReportSpeedDecodingInfo();
+#ifdef SUPPORT_FPS_FOR_MEMC
+    bool IsStableFps(float fps);
+    void CalcOutputVideoFps(int64_t currentPts, bool render);
+#endif
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
