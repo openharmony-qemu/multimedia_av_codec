@@ -637,7 +637,7 @@ Status FFmpegAACEncoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
     }
     int32_t maxInputBufferSize = -1;
     if (meta->Get<Tag::AUDIO_MAX_INPUT_BUFFER_SIZE>(maxInputBufferSize) && maxInputBufferSize > 0) {
-        MEDIA_LOG_I("maxInputBufferSize: %{public}d, AAC uses FIFO internally", maxInputBufferSize);
+        MEDIA_LOG_I("maxInputBufferSize: %{public}d", maxInputBufferSize);
     }
     if (meta->Get<Tag::AUDIO_CHANNEL_LAYOUT>(channelLayout)) {
         srcLayout_ = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(channelLayout);

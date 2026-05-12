@@ -365,14 +365,7 @@ Status AudioMp3EncoderPlugin::SetParameter(const std::shared_ptr<Meta>& paramete
     }
     frameSize_ = frameSize;
     lameInitFlag = 1;
-    maxInputBufferSize_ = -1;
-    enableCache_ = false;
-    if (parameter->Get<Tag::AUDIO_MAX_INPUT_BUFFER_SIZE>(maxInputBufferSize_) && maxInputBufferSize_ > 0) {
-        if (maxInputBufferSize_ > MAX_INPUT_BUFFER_SIZE_LIMIT) {
-            maxInputBufferSize_ = MAX_INPUT_BUFFER_SIZE_LIMIT;
-        }
-        enableCache_ = true;
-    }
+    ConfigureCache(parameter);
     return Status::OK;
 }
 
@@ -388,7 +381,7 @@ void AudioMp3EncoderPlugin::EncodeOneFrame()
                                         lameMp3Buffer.get(), LAME_BUFFER_SIZE_DEFAULT);
     } else {
         outputSize = lame_encode_buffer_interleaved(lameInfo->gfp, const_cast<short*>(pcmData),
-                                                     sampleNum, lameMp3Buffer.get(), LAME_BUFFER_SIZE_DEFAULT);
+                                       sampleNum, lameMp3Buffer.get(), LAME_BUFFER_SIZE_DEFAULT);
     }
     if (outputSize < 0) {
         AVCODEC_LOGE("AudioMp3EncoderPlugin lame encode error.");
@@ -449,6 +442,18 @@ void AudioMp3EncoderPlugin::SetOutputPts(std::shared_ptr<AVBuffer>& outputBuffer
             ? prevPts_ : prevPts_ + frameDuration;
     } else {
         outputBuffer->pts_ = pts_;
+    }
+}
+
+void AudioMp3EncoderPlugin::ConfigureCache(const std::shared_ptr<Meta>& parameter)
+{
+    maxInputBufferSize_ = -1;
+    enableCache_ = false;
+    if (parameter->Get<Tag::AUDIO_MAX_INPUT_BUFFER_SIZE>(maxInputBufferSize_) && maxInputBufferSize_ > 0) {
+        if (maxInputBufferSize_ > MAX_INPUT_BUFFER_SIZE_LIMIT) {
+            maxInputBufferSize_ = MAX_INPUT_BUFFER_SIZE_LIMIT;
+        }
+        enableCache_ = true;
     }
 }
 

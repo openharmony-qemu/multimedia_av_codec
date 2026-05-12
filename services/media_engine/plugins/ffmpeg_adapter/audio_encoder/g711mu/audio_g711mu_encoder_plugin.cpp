@@ -280,8 +280,8 @@ Status AudioG711muEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &param
     }
     int32_t maxInputBufferSize = -1;
     if (parameter->Get<Tag::AUDIO_MAX_INPUT_BUFFER_SIZE>(maxInputBufferSize) && maxInputBufferSize > 0) {
-        if (maxInputBufferSize > 10 * 1024 * 1024) {
-            maxInputBufferSize = 10 * 1024 * 1024;
+        if (maxInputBufferSize > MAX_INPUT_BUFFER_SIZE_LIMIT) {
+            maxInputBufferSize = MAX_INPUT_BUFFER_SIZE_LIMIT;
         }
         maxInputSize_ = maxInputBufferSize;
         maxOutputSize_ = (maxInputBufferSize / sizeof(int16_t)) + 1;

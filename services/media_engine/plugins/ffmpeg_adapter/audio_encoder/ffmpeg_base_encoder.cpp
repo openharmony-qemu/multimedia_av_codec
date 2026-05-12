@@ -312,15 +312,15 @@ Status FFmpegBaseEncoder::InitContext(const std::shared_ptr<Meta> &format)
     format_->GetData(Tag::AUDIO_SAMPLE_RATE, avCodecContext_->sample_rate);
     format_->GetData(Tag::MEDIA_BITRATE, avCodecContext_->bit_rate);
     format_->GetData(Tag::AUDIO_MAX_INPUT_SIZE, maxInputSize_);
-\    maxInputBufferSize_ = -1;
-\    enableCache_ = false;
-\    format_->GetData(Tag::AUDIO_MAX_INPUT_BUFFER_SIZE, maxInputBufferSize_);
-\    if (maxInputBufferSize_ > 0) {
-\        if (maxInputBufferSize_ > MAX_INPUT_BUFFER_SIZE_LIMIT) {
-\            maxInputBufferSize_ = MAX_INPUT_BUFFER_SIZE_LIMIT;
-\        }
-\        enableCache_ = true;
-\    }
+    maxInputBufferSize_ = -1;
+    enableCache_ = false;
+    format_->GetData(Tag::AUDIO_MAX_INPUT_BUFFER_SIZE, maxInputBufferSize_);
+    if (maxInputBufferSize_ > 0) {
+        if (maxInputBufferSize_ > MAX_INPUT_BUFFER_SIZE_LIMIT) {
+            maxInputBufferSize_ = MAX_INPUT_BUFFER_SIZE_LIMIT;
+        }
+        enableCache_ = true;
+    }
 
     AudioChannelLayout channelLayout = UNKNOWN;
     format_->GetData(Tag::AUDIO_CHANNEL_LAYOUT, channelLayout);
