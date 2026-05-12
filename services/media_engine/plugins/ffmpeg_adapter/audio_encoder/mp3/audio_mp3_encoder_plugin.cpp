@@ -345,27 +345,7 @@ Status AudioMp3EncoderPlugin::SetParameter(const std::shared_ptr<Meta>& paramete
         return Status::ERROR_INVALID_PARAMETER;
     }
     audioParameter_ = *parameter;
-    lame_set_in_samplerate(lameInfo->gfp, sampleRate_);
-    lame_set_out_samplerate(lameInfo->gfp, sampleRate_);
-    lame_set_num_channels(lameInfo->gfp, channels_);
-    lame_set_quality(lameInfo->gfp, DEFAULT_COMPRESSION_LEVEL);
-    if (channels_ == 1) {
-        lame_set_mode(lameInfo->gfp, MPEG_mode_e::MONO);
-    }
-    lame_set_brate(lameInfo->gfp, bitrate_ / ONE_THOUSAND_BITRATE);
-    if (lame_init_params(lameInfo->gfp) < 0) {
-        AVCODEC_LOGE("AudioMp3EncoderPlugin LAME parameter initialization error");
-        return Status::ERROR_UNKNOWN;
-    }
-    int32_t frameSize = lame_get_framesize(lameInfo->gfp);
-    audioParameter_.Set<Tag::AUDIO_SAMPLE_PER_FRAME>(frameSize);
-    AudioEncodePtsMode ptsMode = DEFAULT_ENCODE_PTS_MODE;
-    if (parameter->Get<Tag::AUDIO_ENCODE_PTS_MODE>(ptsMode)) {
-        ptsMode_ = ptsMode;
-    }
-    frameSize_ = frameSize;
-    lameInitFlag = 1;
-    ConfigureCache(parameter);
+    ConfigureLame(parameter);
     return Status::OK;
 }
 
@@ -381,7 +361,7 @@ void AudioMp3EncoderPlugin::EncodeOneFrame()
                                         lameMp3Buffer.get(), LAME_BUFFER_SIZE_DEFAULT);
     } else {
         outputSize = lame_encode_buffer_interleaved(lameInfo->gfp, const_cast<short*>(pcmData),
-                                       sampleNum, lameMp3Buffer.get(), LAME_BUFFER_SIZE_DEFAULT);
+                                                    sampleNum, lameMp3Buffer.get(), LAME_BUFFER_SIZE_DEFAULT);
     }
     if (outputSize < 0) {
         AVCODEC_LOGE("AudioMp3EncoderPlugin lame encode error.");
@@ -443,6 +423,31 @@ void AudioMp3EncoderPlugin::SetOutputPts(std::shared_ptr<AVBuffer>& outputBuffer
     } else {
         outputBuffer->pts_ = pts_;
     }
+}
+
+void AudioMp3EncoderPlugin::ConfigureLame(const std::shared_ptr<Meta>& parameter)
+{
+    lame_set_in_samplerate(lameInfo->gfp, sampleRate_);
+    lame_set_out_samplerate(lameInfo->gfp, sampleRate_);
+    lame_set_num_channels(lameInfo->gfp, channels_);
+    lame_set_quality(lameInfo->gfp, DEFAULT_COMPRESSION_LEVEL);
+    if (channels_ == 1) {
+        lame_set_mode(lameInfo->gfp, MPEG_mode_e::MONO);
+    }
+    lame_set_brate(lameInfo->gfp, bitrate_ / ONE_THOUSAND_BITRATE);
+    if (lame_init_params(lameInfo->gfp) < 0) {
+        AVCODEC_LOGE("AudioMp3EncoderPlugin LAME parameter initialization error");
+        return;
+    }
+    int32_t frameSize = lame_get_framesize(lameInfo->gfp);
+    audioParameter_.Set<Tag::AUDIO_SAMPLE_PER_FRAME>(frameSize);
+    frameSize_ = frameSize;
+    lameInitFlag = 1;
+    AudioEncodePtsMode ptsMode = DEFAULT_ENCODE_PTS_MODE;
+    if (parameter->Get<Tag::AUDIO_ENCODE_PTS_MODE>(ptsMode)) {
+        ptsMode_ = ptsMode;
+    }
+    ConfigureCache(parameter);
 }
 
 void AudioMp3EncoderPlugin::ConfigureCache(const std::shared_ptr<Meta>& parameter)
