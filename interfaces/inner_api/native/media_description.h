@@ -357,6 +357,12 @@ public:
     static constexpr std::string_view OH_MD_KEY_VIDEO_ENCODER_PREPROC_DROP_TO_FRAME_RATE =
         "video_encoder_preproc_drop_to_frame_rate";
 
+    /**
+     * Key for video encoder number of pending frames, value type is int32_t
+     */
+    static constexpr std::string_view MD_KEY_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES =
+        "video_encoder_number_of_pending_frames";
+
 private:
     MediaDescriptionKey() = delete;
     ~MediaDescriptionKey() = delete;

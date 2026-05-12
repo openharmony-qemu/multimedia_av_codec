@@ -902,11 +902,11 @@ HWTEST_F(TEST_SUIT, VideoEncoder_GetInputDescription_NumberOfPendingFrames_002, 
 }
 
 /**
- * @tc.name: VideoEncoder_GetInputDescription_NumberOfPendingFrames_002
+ * @tc.name: VideoEncoder_GetInputDescription_NumberOfPendingFrames_003
  * @tc.desc: GetInputDescription with OH_MD_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES for HW HEVC after Configure
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoEncoder_GetInputDescription_NumberOfPendingFrames_002, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_GetInputDescription_NumberOfPendingFrames_003, TestSize.Level1)
 {
     auto capability = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_HEVC.data(), true,
                                                                     AVCodecCategory::AVCODEC_HARDWARE);
@@ -923,16 +923,16 @@ HWTEST_F(TEST_SUIT, VideoEncoder_GetInputDescription_NumberOfPendingFrames_002, 
 
     int32_t pendingFrames = -1;
     bool ret = inputDesc->GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames);
-    EXPECT_EQ(true, ret);
+    EXPECT_TRUE(ret);
     EXPECT_EQ(pendingFrames, 0);
 }
 
 /**
- * @tc.name: VideoEncoder_GetInputDescription_NumberOfPendingFrames_003
+ * @tc.name: VideoEncoder_GetInputDescription_NumberOfPendingFrames_004
  * @tc.desc: GetInputDescription with OH_MD_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES not supported for SW AVC
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoEncoder_GetInputDescription_NumberOfPendingFrames_003, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_GetInputDescription_NumberOfPendingFrames_004, TestSize.Level1)
 {
     auto capability = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), true,
                                                                     AVCodecCategory::AVCODEC_SOFTWARE);
@@ -949,7 +949,7 @@ HWTEST_F(TEST_SUIT, VideoEncoder_GetInputDescription_NumberOfPendingFrames_003, 
 
     int32_t pendingFrames = -1;
     bool ret = inputDesc->GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames);
-    EXPECT_EQ(false, ret);
+    EXPECT_FALSE(ret);
 }
 
 /**
