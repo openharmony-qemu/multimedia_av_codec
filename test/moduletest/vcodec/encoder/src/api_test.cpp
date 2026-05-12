@@ -933,10 +933,9 @@ HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_LAYER_API_0090, TestSize.Level2)
     codecName = OH_AVCapability_GetName(cap);
     venc_ = OH_VideoEncoder_CreateByName(codecName.c_str());
     format = OH_VideoEncoder_GetOutputDescription(venc_);
+    ASSERT_NE(NULL, format);
     int32_t layerId = 0;
-    int32_t ret = OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_LAYER_ID, &layerId);
-    ASSERT_EQ(AV_ERR_OK, ret);
-    OH_AVFormat_Destroy(format);
-    OH_VideoEncoder_Destroy(venc_);
+    bool found = OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_LAYER_ID, &layerId);
+    ASSERT_TRUE(found);
 }
 } // namespace

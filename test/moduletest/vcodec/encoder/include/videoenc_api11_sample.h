@@ -227,6 +227,7 @@ public:
     bool noDestroy = false;
     std::atomic<bool> isRunning_ { false };
     bool isSurface = false;
+    bool enableRoi = false;
 private:
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;
