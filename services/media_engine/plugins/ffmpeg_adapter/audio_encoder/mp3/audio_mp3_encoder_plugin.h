@@ -95,6 +95,13 @@ private:
     int32_t maxInputSize_;
     int32_t maxOutputSize_;
     int32_t outputSize_;
+
+    void ConfigureLame(const std::shared_ptr<Meta>& parameter);
+    void ConfigureCache(const std::shared_ptr<Meta>& parameter);
+    void EncodeOneFrame();
+    void EncodeDirect(const std::shared_ptr<AVBuffer>& inputBuffer);
+    void FlushRemaining();
+    void SetOutputPts(std::shared_ptr<AVBuffer>& outputBuffer);
     std::unique_ptr<unsigned char[]> lameMp3Buffer;
 };
 } // namespace Mp3
