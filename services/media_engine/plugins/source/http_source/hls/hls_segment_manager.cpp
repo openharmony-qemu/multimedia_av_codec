@@ -804,6 +804,7 @@ Status HlsSegmentManager::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
     readTime_ = now;
     bool isLive = playlistDownloader_ != nullptr ? playlistDownloader_->IsLive() : false;
+    
     if (!CheckDataIntegrity() && !isLive) {
         MEDIA_LOG_W("HLS Read in, fix download, type: %{public}d", type_);
         SeekToTsForRead(readTsIndex_);
