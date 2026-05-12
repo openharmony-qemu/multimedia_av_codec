@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -1528,6 +1528,7 @@ int64_t HlsSegmentManager::RequestNewTs(uint64_t seekTime, SeekMode mode, double
     playInfo.offset_ = item.offset_;
     playInfo.length_ = item.length_;
     playInfo.keyIndex_ = item.keyIndex_;
+    playInfo.sequence_ = item.sequence_;
     if (mode == SeekMode::SEEK_PREVIOUS_SYNC) {
         double lastTotalDuration = totalDuration - hstTime;
         if (static_cast<uint64_t>(lastTotalDuration) <= seekTime) {
@@ -1635,6 +1636,7 @@ int64_t HlsSegmentManager::RequestNewTsForRead(const PlayInfo& item)
     playInfo.length_ = item.length_;
     playInfo.keyIndex_ = item.keyIndex_;
     playInfo.startTimePos_ = 0;
+    playInfo.sequence_ = item.sequence_;
     PushPlayInfo(playInfo);
     return 0;
 }
