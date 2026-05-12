@@ -219,6 +219,7 @@ public:
     uint32_t inCount = 0;
     int32_t enbleSyncMode = 0;
     int32_t enbleBFrameMode = 0;
+    int32_t layerId = 0;
     int64_t syncInputWaitTime = -1;
     int64_t syncOutputWaitTime = -1;
     bool queryOutputBufferEOS = false;

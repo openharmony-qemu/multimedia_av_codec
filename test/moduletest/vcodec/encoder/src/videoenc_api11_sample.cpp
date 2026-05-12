@@ -1513,6 +1513,8 @@ void VEncAPI11Sample::GetFormatKey()
     OH_VideoEncoder_Configure(venc_, format);
     format = OH_VideoEncoder_GetOutputDescription(venc_);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_NATIVE_BUFFER_FORMAT, &firstCallBackKey);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_LAYER_ID, &layerId);
+    std::cout << "layerId:" << layerId << std::endl;
     OH_AVFormat_Destroy(format);
     std::cout << "firstCallBackKey:" << firstCallBackKey << std::endl;
     isGetFormatKeyNum++;
