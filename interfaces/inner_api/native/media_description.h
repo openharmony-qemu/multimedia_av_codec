@@ -316,6 +316,8 @@ public:
      * See AudioEncoderPtsMode for valid values. Default is AUDIO_ENCODER_PTS_MODE_DEFAULT.
      */
     static constexpr std::string_view MD_KEY_AUDIO_ENCODER_PTS_MODE = "audio_encode_pts_mode";
+
+    static constexpr std::string_view MD_KEY_AUDIO_MAX_INPUT_BUFFER_SIZE = "audio_max_input_buffer_size";
     /**
      * key for AIGC info, the value type is string
      */

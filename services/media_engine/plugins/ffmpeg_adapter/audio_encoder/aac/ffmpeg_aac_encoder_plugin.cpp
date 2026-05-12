@@ -323,10 +323,6 @@ Status FFmpegAACEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outB
         outBuffer->pts_ = prevPts_ - (initPadding_ * US_PER_SECOND / sampleRate_);
         MEDIA_LOG_I("corrected outBuffer->pts_: %{public}" PRIu64 ".", outBuffer->pts_);
         isFirstOutputPts_ = false;
-    } else if (ptsMode_ == ZERO_START_ENCODE_PTS_MODE && isFirstOutputPts_) {
-        outBuffer->pts_ = 0;
-        MEDIA_LOG_I("zero_start outBuffer->pts_: %{public}" PRIu64 ".", outBuffer->pts_);
-        isFirstOutputPts_ = false;
     } else if (prevPts_ < 0) {
         outBuffer->pts_ = prevPts_ + outBuffer->duration_;
     } else {
@@ -638,6 +634,10 @@ Status FFmpegAACEncoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
     }
     if (meta->Get<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_)) {
         MEDIA_LOG_I("maxInputSize: %{public}d", maxInputSize_);
+    }
+    int32_t maxInputBufferSize = -1;
+    if (meta->Get<Tag::AUDIO_MAX_INPUT_BUFFER_SIZE>(maxInputBufferSize) && maxInputBufferSize > 0) {
+        MEDIA_LOG_I("maxInputBufferSize: %{public}d, AAC uses FIFO internally", maxInputBufferSize);
     }
     if (meta->Get<Tag::AUDIO_CHANNEL_LAYOUT>(channelLayout)) {
         srcLayout_ = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(channelLayout);

@@ -184,7 +184,7 @@ Status AudioG711muEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer
         pts_ = inputBuffer->pts_;
         inputSamples_ = sampleNum;
         if (ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE && isFirstInputPts_) {
-            startPts_ = inputBuffer->pts_;
+            prevPts_ = inputBuffer->pts_;
             isFirstInputPts_ = false;
         }
         SafeCallInputBufferDone(dataCallback_, inputBuffer);
@@ -205,14 +205,8 @@ Status AudioG711muEncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& ou
         memory->Write(reinterpret_cast<const uint8_t *>(encodeResult_.data()), outSize, 0);
         memory->SetSize(outSize);
         int64_t frameDuration = static_cast<int64_t>(inputSamples_) * 1000000LL / sampleRate_;
-        if (ptsMode_ == ZERO_START_ENCODE_PTS_MODE) {
+        if (ptsMode_ == ZERO_START_ENCODE_PTS_MODE || ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE) {
             outputBuffer->pts_ = prevPts_;
-        } else if (ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE) {
-            outputBuffer->pts_ = (startPts_ > 0 && prevPts_ > INT64_MAX - startPts_) ? prevPts_ : startPts_ + prevPts_;
-        } else {
-            outputBuffer->pts_ = pts_;
-        }
-        if (ptsMode_ != DEFAULT_ENCODE_PTS_MODE) {
             prevPts_ = (frameDuration > 0 && prevPts_ > INT64_MAX - frameDuration)
                 ? prevPts_ : prevPts_ + frameDuration;
         }
@@ -225,7 +219,6 @@ Status AudioG711muEncoderPlugin::Reset()
 {
     std::lock_guard<std::mutex> lock(avMutex_);
     isFirstInputPts_ = true;
-    startPts_ = 0;
     prevPts_ = 0;
     return Status::OK;
 }
@@ -240,7 +233,6 @@ Status AudioG711muEncoderPlugin::Flush()
 {
     std::lock_guard<std::mutex> lock(avMutex_);
     isFirstInputPts_ = true;
-    startPts_ = 0;
     prevPts_ = 0;
     return Status::OK;
 }
@@ -285,6 +277,14 @@ Status AudioG711muEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &param
     AudioEncodePtsMode ptsMode = DEFAULT_ENCODE_PTS_MODE;
     if (parameter->Get<Tag::AUDIO_ENCODE_PTS_MODE>(ptsMode)) {
         ptsMode_ = ptsMode;
+    }
+    int32_t maxInputBufferSize = -1;
+    if (parameter->Get<Tag::AUDIO_MAX_INPUT_BUFFER_SIZE>(maxInputBufferSize) && maxInputBufferSize > 0) {
+        if (maxInputBufferSize > 10 * 1024 * 1024) {
+            maxInputBufferSize = 10 * 1024 * 1024;
+        }
+        maxInputSize_ = maxInputBufferSize;
+        maxOutputSize_ = (maxInputBufferSize / sizeof(int16_t)) + 1;
     }
     return ret;
 }

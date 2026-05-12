@@ -1474,6 +1474,13 @@ extern const char *OH_MD_KEY_VIDEO_DECODER_SPEED;
 extern const char *OH_MD_KEY_AUDIO_ENCODER_PTS_MODE;
 
 /**
+ * @brief Key for audio max input buffer size, value type is int32_t.
+ *
+ * @since 26.0.0
+ */
+extern const char *OH_MD_KEY_AUDIO_MAX_INPUT_BUFFER_SIZE;
+
+/**
  * @brief Key for HDR type, value type is int32_t, refer to {@link OH_HDRType}.
  *
  * @since 26.0.0
