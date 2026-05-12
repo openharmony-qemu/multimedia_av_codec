@@ -104,6 +104,10 @@ Status FFmpegBaseEncoder::SendBuffer(const std::shared_ptr<AVBuffer> &inputBuffe
 
     auto memory = inputBuffer->memory_;
     bool isEos = inputBuffer->flag_ & BUFFER_FLAG_EOS;
+    if (!isEos && ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE && isFirstInputPts_) {
+        startPts_ = inputBuffer->pts_;
+        isFirstInputPts_ = false;
+    }
     if (!isEos) {
         auto errCode = PcmFillFrame(inputBuffer);
         if (errCode != Status::OK) {
@@ -183,10 +187,16 @@ Status FFmpegBaseEncoder::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outputBuf
     // pts us
     outputBuffer->duration_ = ConvertTimeFromFFmpeg(avPacket_->duration, avCodecContext_->time_base) /
 	                      NS_PER_US;
-    outputBuffer->pts_ = ((INT64_MAX - prevPts_) < avPacket_->duration) ?
-                    (outputBuffer->duration_ - (INT64_MAX - prevPts_)) :
-                    (prevPts_ + outputBuffer->duration_);
-    prevPts_ = outputBuffer->pts_;
+    int64_t durationUs = outputBuffer->duration_;
+    int64_t basePts = (durationUs > 0 && prevPts_ > INT64_MAX - durationUs) ? prevPts_ : prevPts_ + durationUs;
+    if (ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE) {
+        outputBuffer->pts_ = (startPts_ > 0 && basePts > INT64_MAX - startPts_) ? basePts : startPts_ + basePts;
+    } else if (ptsMode_ == ZERO_START_ENCODE_PTS_MODE) {
+        outputBuffer->pts_ = (durationUs > basePts - INT64_MIN) ? 0 : basePts - durationUs;
+    } else {
+        outputBuffer->pts_ = basePts;
+    }
+    prevPts_ = basePts;
     return Status::OK;
 }
 
@@ -221,6 +231,9 @@ Status FFmpegBaseEncoder::Reset()
     std::lock_guard<std::mutex> lock(avMutext_);
     auto ret = CloseCtxLocked();
     prevPts_ = 0;
+    ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
+    isFirstInputPts_ = true;
+    startPts_ = 0;
     return ret;
 }
 
@@ -238,6 +251,8 @@ Status FFmpegBaseEncoder::Flush()
         avcodec_flush_buffers(avCodecContext_.get());
     }
     prevPts_ = 0;
+    isFirstInputPts_ = true;
+    startPts_ = 0;
     return ReAllocateContext();
 }
 
@@ -380,6 +395,11 @@ int32_t FFmpegBaseEncoder::GetMaxInputSize() const noexcept
 void FFmpegBaseEncoder::SetCallback(DataCallback *callback)
 {
     dataCallback_ = callback;
+}
+
+void FFmpegBaseEncoder::SetPtsMode(AudioEncodePtsMode mode)
+{
+    ptsMode_ = mode;
 }
 
 Status FFmpegBaseEncoder::CloseCtxLocked()

@@ -1028,6 +1028,65 @@ void MPEG4SampleHelper::CalculateDtsShift()
         }
     }
 }
+
+uint32_t MPEG4SampleHelper::CalculateSampleCount()
+{
+    uint32_t sampleCount = 0;
+    for (const auto& entry : sttsEntry_) {
+        FALSE_RETURN_V_MSG_E(UINT32_MAX - entry.count >= sampleCount, 0, "sampleCount overflow");
+        sampleCount += entry.count;
+    }
+    MEDIA_LOG_I("sampleCount is " PUBLIC_LOG_U32, sampleCount);
+    return sampleCount;
+}
+
+uint32_t MPEG4SampleHelper::GetSttsEntryCount()
+{
+    return sttsEntry_.size();
+}
+
+uint32_t MPEG4SampleHelper::GetSampleCountOfSttsEntry(uint32_t sttsEntryIndex)
+{
+    FALSE_RETURN_V_MSG_E(sttsEntryIndex >= 0 && sttsEntryIndex < sttsEntry_.size(), 0,
+        "sttsEntryIndex(%{public}d) is invalid", sttsEntryIndex);
+    return sttsEntry_[sttsEntryIndex].count;
+}
+
+uint32_t MPEG4SampleHelper::GetSampleDeltaOfSttsEntry(uint32_t sttsEntryIndex)
+{
+    FALSE_RETURN_V_MSG_E(sttsEntryIndex >= 0 && sttsEntryIndex < sttsEntry_.size(), 0,
+        "sttsEntryIndex(%{public}d) is invalid", sttsEntryIndex);
+    return sttsEntry_[sttsEntryIndex].delta;
+}
+
+uint32_t MPEG4SampleHelper::GetCttsEntryCount()
+{
+    return cttsEntry_.size();
+}
+
+uint32_t MPEG4SampleHelper::GetSampleCountOfCttsEntry(uint32_t cttsEntryIndex)
+{
+    FALSE_RETURN_V_MSG_E(cttsEntryIndex >= 0 && cttsEntryIndex < cttsEntry_.size(), 0,
+        "cttsEntryIndex(%{public}d) is invalid", cttsEntryIndex);
+    return cttsEntry_[cttsEntryIndex].count;
+}
+
+int32_t MPEG4SampleHelper::GetSampleOffsetOfCttsEntry(uint32_t cttsEntryIndex)
+{
+    FALSE_RETURN_V_MSG_E(cttsEntryIndex >= 0 && cttsEntryIndex < cttsEntry_.size(), 0,
+        "cttsEntryIndex(%{public}d) is invalid", cttsEntryIndex);
+    return cttsEntry_[cttsEntryIndex].delta;
+}
+
+int32_t MPEG4SampleHelper::GetMinOffsetOfCttsEntry()
+{
+    int32_t minSampleOffsetOfCttsEntry = INT32_MAX;
+    for (uint32_t i = 0; i < cttsEntry_.size(); ++i) {
+        minSampleOffsetOfCttsEntry = minSampleOffsetOfCttsEntry < cttsEntry_[i].delta ? minSampleOffsetOfCttsEntry :
+            cttsEntry_[i].delta;
+    }
+    return std::min(0, minSampleOffsetOfCttsEntry);
+}
 } // namespace MPEG4
 } // namespace Plugins
 } // namespace Media

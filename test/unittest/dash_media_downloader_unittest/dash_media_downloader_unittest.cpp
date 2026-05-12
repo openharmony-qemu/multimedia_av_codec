@@ -747,6 +747,441 @@ HWTEST_F(DashMediaDownloaderUnittest, STOP_BUFFERING, TestSize.Level1)
     
     EXPECT_EQ(mediaDownloader->StopBufferring(false), Status::ERROR_NULL_POINTER);
 }
+
+/**
+ * @tc.name  : Test SwitchVideoStream
+ * @tc.number: SwitchVideoStream_001
+ * @tc.desc  : Test SwitchVideoStream with DASH_MPD_GET_UNDONE
+ */
+HWTEST_F(DashMediaDownloaderUnittest, SwitchVideoStream_001, TestSize.Level0)
+{
+    ASSERT_NE(mediaDownloader_, nullptr);
+    auto newVideoStream = std::make_shared<DashStreamDescription>();
+    newVideoStream->streamId_ = 2;
+    newVideoStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
+
+    std::shared_ptr<Callback> callback = nullptr;
+    auto segDownloader = std::make_shared<DashSegmentDownloader>(
+        callback, 1, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 0, nullptr);
+    segDownloader->Init();
+
+    mediaDownloader_->SwitchVideoStream(newVideoStream, segDownloader);
+    EXPECT_EQ(mediaDownloader_->trackParam_.streamId_, 2);
+}
+
+/**
+ * @tc.name  : Test NeedRestartDecoder - both streams null
+ * @tc.number: NeedRestartDecoder_001
+ * @tc.desc  : Test NeedRestartDecoder when both oldStream and newStream are nullptr
+ */
+HWTEST_F(DashMediaDownloaderUnittest, NeedRestartDecoder_001, TestSize.Level0)
+{
+    ASSERT_NE(mediaDownloader_, nullptr);
+    auto ret = mediaDownloader_->NeedRestartDecoder(nullptr, nullptr);
+    EXPECT_EQ(ret, false);
+}
+
+/**
+ * @tc.name  : Test SwitchToPeriod - period switch with needRestart
+ * @tc.number: SwitchToPeriod_004
+ * @tc.desc  : Test SwitchToPeriod with codec change requiring restart
+ */
+HWTEST_F(DashMediaDownloaderUnittest, SwitchToPeriod_004, TestSize.Level0)
+{
+    ASSERT_NE(mediaDownloader_, nullptr);
+    mediaDownloader_->currentPeriodIndex_ = 0;
+
+    auto oldVideoStream = std::make_shared<DashStreamDescription>();
+    oldVideoStream->streamId_ = 1;
+    oldVideoStream->inUse_ = true;
+    oldVideoStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
+    oldVideoStream->width_ = 1920;
+    oldVideoStream->height_ = 1080;
+    oldVideoStream->codecs_ = "avc1.64001f";
+    oldVideoStream->videoType_ = DASH_VIDEO_TYPE_SDR;
+
+    auto newVideoStream = std::make_shared<DashStreamDescription>();
+    newVideoStream->streamId_ = 2;
+    newVideoStream->inUse_ = false;
+    newVideoStream->periodIndex_ = 1;
+    newVideoStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
+    newVideoStream->width_ = 1920;
+    newVideoStream->height_ = 1080;
+    newVideoStream->codecs_ = "hev1.1.6.L93.90";
+    newVideoStream->videoType_ = DASH_VIDEO_TYPE_HDR_10;
+
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(oldVideoStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(newVideoStream);
+
+    std::shared_ptr<Callback> callback = nullptr;
+    auto videoDownloader = std::make_shared<DashSegmentDownloader>(
+        callback, 1, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 0, nullptr);
+    videoDownloader->Init();
+    mediaDownloader_->segmentDownloaders_.PushBack(videoDownloader);
+    
+    mediaDownloader_->SwitchToPeriod(1);
+    EXPECT_EQ(mediaDownloader_->currentPeriodIndex_, 1);
+}
+
+/**
+ * @tc.name  : Test SwitchToPeriod with nullptr segment downloader
+ * @tc.number: SwitchToPeriod_005
+ * @tc.desc  : Test SwitchToPeriod when segmentDownloader is nullptr in Foreach
+ */
+HWTEST_F(DashMediaDownloaderUnittest, SwitchToPeriod_005, TestSize.Level0)
+{
+    ASSERT_NE(mediaDownloader_, nullptr);
+    mediaDownloader_->currentPeriodIndex_ = 0;
+    mediaDownloader_->segmentDownloaders_.Clear();
+    mediaDownloader_->segmentDownloaders_.PushBack(nullptr);
+
+    auto oldVideoStream = std::make_shared<DashStreamDescription>();
+    oldVideoStream->streamId_ = 1;
+    oldVideoStream->inUse_ = true;
+    oldVideoStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
+
+    auto newVideoStream = std::make_shared<DashStreamDescription>();
+    newVideoStream->streamId_ = 2;
+    newVideoStream->inUse_ = false;
+    newVideoStream->periodIndex_ = 1;
+    newVideoStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
+
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(oldVideoStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(newVideoStream);
+
+    mediaDownloader_->SwitchToPeriod(1);
+    EXPECT_EQ(mediaDownloader_->currentPeriodIndex_, 1);
+}
+
+/**
+ * @tc.name  : Test NeedRestartDecoder - old stream null
+ * @tc.number: NeedRestartDecoder_002
+ * @tc.desc  : Test NeedRestartDecoder when oldStream is nullptr
+ */
+HWTEST_F(DashMediaDownloaderUnittest, NeedRestartDecoder_002, TestSize.Level0)
+{
+    ASSERT_NE(mediaDownloader_, nullptr);
+    auto newStream = std::make_shared<DashStreamDescription>();
+    newStream->codecs_ = "avc1.64001f";
+    newStream->videoType_ = DASH_VIDEO_TYPE_SDR;
+    auto ret = mediaDownloader_->NeedRestartDecoder(nullptr, newStream);
+    EXPECT_EQ(ret, false);
+}
+
+/**
+ * @tc.name  : Test NeedRestartDecoder - new stream null
+ * @tc.number: NeedRestartDecoder_003
+ * @tc.desc  : Test NeedRestartDecoder when newStream is nullptr
+ */
+HWTEST_F(DashMediaDownloaderUnittest, NeedRestartDecoder_003, TestSize.Level0)
+{
+    ASSERT_NE(mediaDownloader_, nullptr);
+    auto oldStream = std::make_shared<DashStreamDescription>();
+    oldStream->codecs_ = "avc1.64001f";
+    oldStream->videoType_ = DASH_VIDEO_TYPE_SDR;
+    auto ret = mediaDownloader_->NeedRestartDecoder(oldStream, nullptr);
+    EXPECT_EQ(ret, false);
+}
+
+/**
+ * @tc.name  : Test NeedRestartDecoder - codecs different
+ * @tc.number: NeedRestartDecoder_004
+ * @tc.desc  : Test NeedRestartDecoder when codecs are different
+ */
+HWTEST_F(DashMediaDownloaderUnittest, NeedRestartDecoder_004, TestSize.Level0)
+{
+    ASSERT_NE(mediaDownloader_, nullptr);
+    auto oldStream = std::make_shared<DashStreamDescription>();
+    oldStream->codecs_ = "avc1.64001f";
+    oldStream->videoType_ = DASH_VIDEO_TYPE_SDR;
+    auto newStream = std::make_shared<DashStreamDescription>();
+    newStream->codecs_ = "hev1.1.6.L93.90";
+    newStream->videoType_ = DASH_VIDEO_TYPE_SDR;
+    auto ret = mediaDownloader_->NeedRestartDecoder(oldStream, newStream);
+    EXPECT_EQ(ret, true);
+}
+
+/**
+ * @tc.name  : Test NeedRestartDecoder - videoType different
+ * @tc.number: NeedRestartDecoder_005
+ * @tc.desc  : Test NeedRestartDecoder when videoType are different
+ */
+HWTEST_F(DashMediaDownloaderUnittest, NeedRestartDecoder_005, TestSize.Level0)
+{
+    ASSERT_NE(mediaDownloader_, nullptr);
+    auto oldStream = std::make_shared<DashStreamDescription>();
+    oldStream->codecs_ = "avc1.64001f";
+    oldStream->videoType_ = DASH_VIDEO_TYPE_SDR;
+    auto newStream = std::make_shared<DashStreamDescription>();
+    newStream->codecs_ = "avc1.64001f";
+    newStream->videoType_ = DASH_VIDEO_TYPE_HDR_10;
+    auto ret = mediaDownloader_->NeedRestartDecoder(oldStream, newStream);
+    EXPECT_EQ(ret, true);
+}
+
+/**
+ * @tc.name  : Test SwitchToPeriod - only video stream exists
+ * @tc.number: SwitchToPeriod_006
+ * @tc.desc  : Test SwitchToPeriod when there is only video stream (no audio)
+ */
+HWTEST_F(DashMediaDownloaderUnittest, SwitchToPeriod_006, TestSize.Level0)
+{
+    ASSERT_NE(mediaDownloader_, nullptr);
+    mediaDownloader_->currentPeriodIndex_ = 0;
+    mediaDownloader_->segmentDownloaders_.Clear();
+
+    auto oldVideoStream = std::make_shared<DashStreamDescription>();
+    oldVideoStream->streamId_ = 1;
+    oldVideoStream->inUse_ = true;
+    oldVideoStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
+    oldVideoStream->codecs_ = "avc1.64001f";
+    oldVideoStream->videoType_ = DASH_VIDEO_TYPE_SDR;
+
+    auto newVideoStream = std::make_shared<DashStreamDescription>();
+    newVideoStream->streamId_ = 2;
+    newVideoStream->inUse_ = false;
+    newVideoStream->periodIndex_ = 1;
+    newVideoStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
+    newVideoStream->codecs_ = "avc1.64001f";
+    newVideoStream->videoType_ = DASH_VIDEO_TYPE_SDR;
+
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(oldVideoStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(newVideoStream);
+
+    std::shared_ptr<Callback> callback = nullptr;
+    auto videoDownloader = std::make_shared<DashSegmentDownloader>(
+        callback, 1, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 0, nullptr);
+    videoDownloader->Init();
+    mediaDownloader_->segmentDownloaders_.PushBack(videoDownloader);
+
+    mediaDownloader_->SwitchToPeriod(1);
+    EXPECT_EQ(mediaDownloader_->currentPeriodIndex_, 1);
+}
+
+/**
+ * @tc.name  : Test SwitchToPeriod - both video and audio streams
+ * @tc.number: SwitchToPeriod_007
+ * @tc.desc  : Test SwitchToPeriod with both video and audio stream downloaders
+ */
+HWTEST_F(DashMediaDownloaderUnittest, SwitchToPeriod_007, TestSize.Level0)
+{
+    ASSERT_NE(mediaDownloader_, nullptr);
+    mediaDownloader_->currentPeriodIndex_ = 0;
+    mediaDownloader_->segmentDownloaders_.Clear();
+
+    auto oldVideoStream = std::make_shared<DashStreamDescription>();
+    oldVideoStream->streamId_ = 1;
+    oldVideoStream->inUse_ = true;
+    oldVideoStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
+
+    auto oldAudioStream = std::make_shared<DashStreamDescription>();
+    oldAudioStream->streamId_ = 2;
+    oldAudioStream->inUse_ = true;
+    oldAudioStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_AUD;
+
+    auto newVideoStream = std::make_shared<DashStreamDescription>();
+    newVideoStream->streamId_ = 3;
+    newVideoStream->inUse_ = false;
+    newVideoStream->periodIndex_ = 1;
+    newVideoStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
+
+    auto newAudioStream = std::make_shared<DashStreamDescription>();
+    newAudioStream->streamId_ = 4;
+    newAudioStream->inUse_ = false;
+    newAudioStream->periodIndex_ = 1;
+    newAudioStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_AUD;
+
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(oldVideoStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(oldAudioStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(newVideoStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(newAudioStream);
+
+    std::shared_ptr<Callback> callback = nullptr;
+    auto videoDownloader = std::make_shared<DashSegmentDownloader>(
+        callback, 1, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 0, nullptr);
+    videoDownloader->Init();
+    mediaDownloader_->segmentDownloaders_.PushBack(videoDownloader);
+
+    auto audioDownloader = std::make_shared<DashSegmentDownloader>(
+        callback, 2, MediaAVCodec::MediaType::MEDIA_TYPE_AUD, 0, nullptr);
+    audioDownloader->Init();
+    mediaDownloader_->segmentDownloaders_.PushBack(audioDownloader);
+
+    mediaDownloader_->SwitchToPeriod(1);
+    EXPECT_EQ(mediaDownloader_->currentPeriodIndex_, 1);
+}
+
+/**
+ * @tc.name  : Test GetStreamsForPeriodSwitch - old stream not found
+ * @tc.number: GetStreamsForPeriodSwitch_001
+ * @tc.desc  : Test GetStreamsForPeriodSwitch return false when oldStream is nullptr
+ */
+HWTEST_F(DashMediaDownloaderUnittest, GetStreamsForPeriodSwitch_001, TestSize.Level0)
+{
+    ASSERT_NE(mediaDownloader_, nullptr);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.clear();
+
+    auto newVideoStream = std::make_shared<DashStreamDescription>();
+    newVideoStream->streamId_ = 2;
+    newVideoStream->periodIndex_ = 1;
+    newVideoStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(newVideoStream);
+
+    std::shared_ptr<DashStreamDescription> oldVideoStream;
+    std::shared_ptr<DashStreamDescription> newVideoStreamOut;
+    std::shared_ptr<DashStreamDescription> newAudioStreamOut;
+
+    auto ret = mediaDownloader_->GetStreamsForPeriodSwitch(1, oldVideoStream, newVideoStreamOut, newAudioStreamOut);
+    EXPECT_EQ(ret, false);
+}
+
+/**
+ * @tc.name  : Test GetStreamsForPeriodSwitch - new video stream not found
+ * @tc.number: GetStreamsForPeriodSwitch_002
+ * @tc.desc  : Test GetStreamsForPeriodSwitch return false when newVideoStream is nullptr
+ */
+HWTEST_F(DashMediaDownloaderUnittest, GetStreamsForPeriodSwitch_002, TestSize.Level0)
+{
+    ASSERT_NE(mediaDownloader_, nullptr);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.clear();
+
+    auto oldVideoStream = std::make_shared<DashStreamDescription>();
+    oldVideoStream->streamId_ = 1;
+    oldVideoStream->inUse_ = true;
+    oldVideoStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(oldVideoStream);
+
+    std::shared_ptr<DashStreamDescription> oldVideoStreamOut;
+    std::shared_ptr<DashStreamDescription> newVideoStreamOut;
+    std::shared_ptr<DashStreamDescription> newAudioStreamOut;
+
+    auto ret = mediaDownloader_->GetStreamsForPeriodSwitch(2, oldVideoStreamOut, newVideoStreamOut, newAudioStreamOut);
+    EXPECT_EQ(ret, false);
+}
+
+/**
+ * @tc.name  : Test GetStreamsForPeriodSwitch - success case
+ * @tc.number: GetStreamsForPeriodSwitch_003
+ * @tc.desc  : Test GetStreamsForPeriodSwitch return true with valid streams
+ */
+HWTEST_F(DashMediaDownloaderUnittest, GetStreamsForPeriodSwitch_003, TestSize.Level0)
+{
+    ASSERT_NE(mediaDownloader_, nullptr);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.clear();
+
+    auto oldVideoStream = std::make_shared<DashStreamDescription>();
+    oldVideoStream->streamId_ = 1;
+    oldVideoStream->inUse_ = true;
+    oldVideoStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
+
+    auto newVideoStream = std::make_shared<DashStreamDescription>();
+    newVideoStream->streamId_ = 2;
+    newVideoStream->periodIndex_ = 1;
+    newVideoStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
+
+    auto newAudioStream = std::make_shared<DashStreamDescription>();
+    newAudioStream->streamId_ = 3;
+    newAudioStream->periodIndex_ = 1;
+    newAudioStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_AUD;
+
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(oldVideoStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(newVideoStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(newAudioStream);
+
+    std::shared_ptr<DashStreamDescription> oldVideoStreamOut;
+    std::shared_ptr<DashStreamDescription> newVideoStreamOut;
+    std::shared_ptr<DashStreamDescription> newAudioStreamOut;
+
+    auto ret = mediaDownloader_->GetStreamsForPeriodSwitch(1, oldVideoStreamOut, newVideoStreamOut, newAudioStreamOut);
+    EXPECT_EQ(ret, true);
+    EXPECT_NE(oldVideoStreamOut, nullptr);
+    EXPECT_NE(newVideoStreamOut, nullptr);
+    EXPECT_NE(newAudioStreamOut, nullptr);
+}
+
+/**
+ * @tc.name  : Test NeedRestartDecoder - both streams not null, same codecs and videoType
+ * @tc.number: NeedRestartDecoder_006
+ * @tc.desc  : Test NeedRestartDecoder when both streams exists with same codecs and videoType
+ */
+HWTEST_F(DashMediaDownloaderUnittest, NeedRestartDecoder_006, TestSize.Level0)
+{
+    ASSERT_NE(mediaDownloader_, nullptr);
+    auto oldStream = std::make_shared<DashStreamDescription>();
+    oldStream->codecs_ = "avc1.64001f";
+    oldStream->videoType_ = DASH_VIDEO_TYPE_SDR;
+    auto newStream = std::make_shared<DashStreamDescription>();
+    newStream->codecs_ = "avc1.64001f";
+    newStream->videoType_ = DASH_VIDEO_TYPE_SDR;
+    auto ret = mediaDownloader_->NeedRestartDecoder(oldStream, newStream);
+    EXPECT_EQ(ret, false);
+}
+
+/**
+ * @tc.name  : Test GetStreamsForPeriodSwitch - no video stream
+ * @tc.number: GetStreamsForPeriodSwitch_004
+ * @tc.desc  : Test GetStreamsForPeriodSwitch when there is video stream instreamDescription
+ */
+HWTEST_F(DashMediaDownloaderUnittest, GetStreamsForPeriodSwitch_004, TestSize.Level0)
+{
+    ASSERT_NE(mediaDownloader_, nullptr);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.clear();
+
+    auto audioStream = std::make_shared<DashStreamDescription>();
+    audioStream->streamId_ = 1;
+    audioStream->inUse_ = true;
+    audioStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_AUD;
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(audioStream);
+
+    std::shared_ptr<DashStreamDescription> oldVideoStreamOut;
+    std::shared_ptr<DashStreamDescription> newVideoStreamOut;
+    std::shared_ptr<DashStreamDescription> newAudioStreamOut;
+
+    auto ret = mediaDownloader_->GetStreamsForPeriodSwitch(1, oldVideoStreamOut, newVideoStreamOut, newAudioStreamOut);
+    EXPECT_EQ(ret, false);
+}
+
+/**
+ * @tc.name  : Test SwitchVideoStream - basic test
+ * @tc.number: SwitchVideoStream_002
+ * @tc.desc  : Test SwitchVideoStream basic execution
+ */
+HWTEST_F(DashMediaDownloaderUnittest, SwitchVideoStream_002, TestSize.Level0)
+{
+    ASSERT_NE(mediaDownloader_, nullptr);
+    auto newVideoStream = std::make_shared<DashStreamDescription>();
+    newVideoStream->streamId_ = 2;
+    newVideoStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
+
+    std::shared_ptr<Callback> callback = nullptr;
+    auto segDownloader = std::make_shared<DashSegmentDownloader>(
+        callback, 1, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 0, nullptr);
+    segDownloader->Init();
+
+    mediaDownloader_->SwitchVideoStream(newVideoStream, segDownloader);
+    EXPECT_EQ(mediaDownloader_->trackParam_.streamId_, 2);
+}
+
+/**
+ * @tc.name  : Test SwitchAudioStream - basic test
+ * @tc.number: SwitchAudioStream_002
+ * @tc.desc  : Test SwitchAudioStream basic execution
+ */
+HWTEST_F(DashMediaDownloaderUnittest, SwitchAudioStream_002, TestSize.Level0)
+{
+    ASSERT_NE(mediaDownloader_, nullptr);
+    auto newAudioStream = std::make_shared<DashStreamDescription>();
+    newAudioStream->streamId_ = 3;
+    newAudioStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_AUD;
+
+    std::shared_ptr<Callback> callback = nullptr;
+    auto segDownloader = std::make_shared<DashSegmentDownloader>(
+        callback, 2, MediaAVCodec::MediaType::MEDIA_TYPE_AUD, 0, nullptr);
+    segDownloader->Init();
+
+    mediaDownloader_->SwitchAudioStream(newAudioStream, segDownloader);
+    EXPECT_EQ(mediaDownloader_->trackParam_.streamId_, 3);
+}
 }
 }
 }

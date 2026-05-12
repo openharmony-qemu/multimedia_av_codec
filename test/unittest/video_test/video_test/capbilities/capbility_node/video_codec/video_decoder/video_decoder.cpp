@@ -68,7 +68,8 @@ int32_t VideoDecoder::Configure(const SampleInfo &sampleInfo)
     }
 
     if (sampleInfo.enableDecoderOrder) {
-        OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_VIDEO_ENABLE_LOW_LATENCY, sampleInfo.enableDecoderOrder);
+        OH_AVFormat_SetIntValue(format.get(),
+            OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, sampleInfo.enableDecoderOrder);
     }
 
     int ret = OH_VideoDecoder_Configure(codec_.get(), format.get());
