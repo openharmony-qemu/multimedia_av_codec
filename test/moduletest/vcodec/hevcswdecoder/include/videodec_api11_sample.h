@@ -200,9 +200,9 @@ public:
     bool retentionRatioSet = false;
     bool decoderSpeedSet = false;
     bool enableHash = true;
+    double defaultDecoderSpeed = 0;
     double defaultRetentionRatio = 0;
     int32_t defaultRetentionMode = 0;
-    int32_t defaultDecoderSpeed = 0;
     int32_t DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
     int32_t DecodeSetSurface();
     int enbleBlankFrame = 0;
