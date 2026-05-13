@@ -103,6 +103,8 @@ private:
     bool HandlePostDecodePassthrough(int64_t pts, uint32_t preDropCount, const PostDecCost& cost);
     void UpdateRetentionFeedback(bool shouldRetain, double speed);
     void ApplyNewStrategy(RetentionStrategyType newMode, const std::optional<double>& newRatio);
+    void SetRefFrameMap(int64_t pts, bool isNonRef);
+    bool GetRefFrameFromMap(int64_t pts);
 
     mutable std::mutex configMutex_;
     std::unique_ptr<DropSyncCoordinator> dropSyncCoordinator_{nullptr};
@@ -114,7 +116,7 @@ private:
     std::unique_ptr<SmartFluencyDecodingDumper> dumper_{nullptr};
 #endif
     MVStats lastValidMVStats_{};
-    std::unordered_map<int64_t, bool> refFrameMap_;
+    std::map<int64_t, bool> refFrameMap_;
     mutable std::mutex refFrameMapMutex_;
     bool hasValidMVStats_{false};
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> inBufferMap_;
