@@ -270,7 +270,7 @@ int32_t FCodec::ConfigurePixelFormat(const Format &format)
     return AVCS_ERR_OK;
 }
 
-void FCodec::ConfigureThreading(const Format &format)
+void FCodec::ConfigureThread(const Format &format)
 {
     avCodecContext_->width = width_;
     avCodecContext_->height = height_;
@@ -295,7 +295,7 @@ int32_t FCodec::ConfigureContext(const Format &format)
     ret = ConfigurePixelFormat(format);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Configure pixel format failed");
 
-    ConfigureThreading(format);
+    ConfigureThread(format);
 
 #if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES) || (defined SUPPORT_CODEC_VC1)
     return SetCodecExtradata(format);
