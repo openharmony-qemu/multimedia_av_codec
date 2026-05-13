@@ -66,9 +66,16 @@ struct TrackReadDigest {
     std::string mime;
     int32_t frameCount = 0;
     int32_t keyFrameCount = 0;
+    int32_t discardFrameCount = 0;
     int64_t firstPts = INT64_MIN;
     int64_t lastPts = INT64_MIN;
     std::vector<uint32_t> keyFrameIndexes;
+    std::vector<uint32_t> discardFrameIndexes;
+    std::vector<int64_t> samplePts;
+    std::vector<int64_t> sampleDts;
+    std::vector<int64_t> sampleDurations;
+    std::vector<uint32_t> sampleDiscardFlags;
+    std::vector<std::vector<uint8_t>> sampleSkipInfos;
 };
 
 struct ReadDigest {
@@ -109,7 +116,6 @@ struct TrackSampleReadContext {
     TrackReadDigest& trackDigest;
     const std::shared_ptr<MediaAVBuffer>& buffer;
     ReadMode readMode;
-    const std::string& firstSampleLogPrefix;
 };
 
 class Mpeg4DemuxerPluginUnitTest : public testing::Test {
@@ -140,9 +146,14 @@ protected:
     SampleDigest ReadFirstSample(const std::shared_ptr<BaseDemuxerPlugin>& plugin, const MediaInfo& mediaInfo,
         ReadMode readMode);
     ReadDigest ReadAllSamples(const std::shared_ptr<BaseDemuxerPlugin>& plugin, const MediaInfo& mediaInfo,
-        const std::vector<uint32_t>& selectedTrackIds, ReadMode readMode = ReadMode::COPY,
-        const std::string& firstSampleLogPrefix = "");
+        const std::vector<uint32_t>& selectedTrackIds, ReadMode readMode = ReadMode::COPY);
     void CompareReadDigest(const ReadDigest& lhs, const ReadDigest& rhs);
+    void CompareMovFixIndexResultWithFfmpeg(const std::string& filePath, bool compareBitRate = true,
+        bool compareFullTimeline = true, bool compareDurations = true);
+    void CompareTrackPropertiesWithFfmpeg(const std::vector<uint32_t>& mpeg4SelectedTrackIds,
+        const std::vector<uint32_t>& ffmpegSelectedTrackIds, bool compareBitRate = true);
+    void CompareTimelineDigest(const ReadDigest& mpeg4Digest, const ReadDigest& ffmpegDigest,
+        bool compareFullTimeline = true, bool compareDurations = true);
     void CheckReadResultWithExpected(const std::string& filePath, const std::vector<int32_t>& expectedFrames,
         const std::vector<int32_t>& expectedKeyFrames, const std::vector<uint32_t>& expectedKeyFrameIndexes,
         bool useUri = false);

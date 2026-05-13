@@ -24,14 +24,21 @@
 namespace OHOS {
 namespace Media {
 namespace Plugins {
+constexpr uint32_t RBSP_BYTE_BITS = 0x08;
+
 class RbspContext {
 public:
     RbspContext(const uint8_t *buf, int32_t size);
+    RbspContext(const uint8_t *buf, int32_t size, bool skipEmulationPreventionByte);
     ~RbspContext() = default;
     bool RbspCheckSize(uint32_t size) const;
     void RbspSkipBits(uint32_t size);
     uint32_t RbspGetLeftBytesNum() const;
     uint32_t GetBytesIndex() const;
+    bool RbspReadBit(uint32_t& bit);
+    bool RbspReadBits(uint32_t size, uint32_t& value);
+    bool RbspReadUE(uint32_t& value);
+    bool RbspReadSE(int32_t& value);
 
     template <typename T = uint8_t, typename U = uint32_t>
     T RbspGetBits(uint32_t size, bool isSkip = true)
@@ -42,15 +49,17 @@ public:
         }
 
         U reverseData = 0;
-        uint32_t byteCount = (bitIndex_ + size) % 0x08 == 0 ? (bitIndex_ + size) / 0x08 : (bitIndex_ + size) / 0x08 + 1;
+        uint32_t byteCount = (bitIndex_ + size) % RBSP_BYTE_BITS == 0 ?
+            (bitIndex_ + size) / RBSP_BYTE_BITS : (bitIndex_ + size) / RBSP_BYTE_BITS + 1;
         for (uint32_t i = 0; i < byteCount; ++i) {
             if (byteIndex_ + i >= size_) {
                 return 0;
             }
-            reverseData = (reverseData << 0x08) | (*(buf_ + byteIndex_ + i) & 0xFF);
+            reverseData = (reverseData << RBSP_BYTE_BITS) | (*(buf_ + byteIndex_ + i) & 0xFF);
         }
-        reverseData = (sizeof(U) >= byteCount) ? reverseData << (0x08 * (sizeof(U) - byteCount)) : reverseData;
-        T data = static_cast<T>((reverseData << bitIndex_) >> (0x08 * sizeof(U) - size));
+        reverseData = (byteCount <= sizeof(U)) ?
+            reverseData << (RBSP_BYTE_BITS * (sizeof(U) - byteCount)) : reverseData;
+        T data = static_cast<T>((reverseData << bitIndex_) >> (RBSP_BYTE_BITS * sizeof(U) - size));
 
         if (isSkip) {
             RbspSkipBits(size);
@@ -60,11 +69,15 @@ public:
 
 private:
     uint8_t RbspGetBit() const;
+    bool RbspReadEbspBit(uint32_t& bit);
+    void SkipEmulationPreventionByte();
 
     const uint8_t* buf_;
     uint32_t size_;
     uint32_t byteIndex_;
     uint32_t bitIndex_;
+    uint32_t zeroCount_;
+    bool skipEmulationPreventionByte_;
 };
 } // namespace Plugins
 } // namespace Media

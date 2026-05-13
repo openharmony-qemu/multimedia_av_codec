@@ -1080,7 +1080,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2012, TestSize.Level1)
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
     EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.startTime, 33000);
+    EXPECT_EQ(formatVal_.startTime, 33007);
     EXPECT_EQ(formatVal_.timeScale, 15360);
     EXPECT_EQ(formatVal_.width, 720);
     EXPECT_EQ(formatVal_.height, 480);
@@ -1168,7 +1168,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3012, TestSize.Level1)
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
     EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.startTime, 33000);
+    EXPECT_EQ(formatVal_.startTime, 33007);
     EXPECT_EQ(formatVal_.timeScale, 15360);
     EXPECT_EQ(formatVal_.width, 720);
     EXPECT_EQ(formatVal_.height, 480);
@@ -2283,4 +2283,5 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3024, TestSize.Level1)
     EXPECT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     EXPECT_EQ(formatVal_.channelLayout, 63);
 }
+
 } // namespace

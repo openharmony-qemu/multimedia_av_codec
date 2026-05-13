@@ -96,6 +96,11 @@ Status MPEG4DemuxerPlugin::WriteSampleMemory(uint32_t trackIndex, std::shared_pt
     outBuffer->meta_->Set<Tag::BUFFER_DECODING_TIMESTAMP>(mpeg4Sample->sample->dts);
     outBuffer->duration_ = mpeg4Sample->sample->duration;
     outBuffer->meta_->Set<Tag::BUFFER_DURATION>(mpeg4Sample->sample->duration);
+    if (!mpeg4Sample->sample->skipSamplesInfo.empty()) {
+        outBuffer->meta_->Set<Tag::BUFFER_SKIP_SAMPLES_INFO>(mpeg4Sample->sample->skipSamplesInfo);
+    } else {
+        outBuffer->meta_->Remove(Tag::BUFFER_SKIP_SAMPLES_INFO);
+    }
     MEDIA_LOG_D("CurrentBuffer: [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "], track: "
         PUBLIC_LOG_U32, outBuffer->pts_, outBuffer->dts_, outBuffer->duration_, trackIndex);
 
@@ -261,6 +266,137 @@ bool MPEG4DemuxerPlugin::NeedWaitForRead(uint32_t trackId)
         !stopReadThread_.load(std::memory_order_acquire);
 }
 
+bool MPEG4DemuxerPlugin::IsWebVTTTrack(const std::shared_ptr<MPEG4AtomParser::Track>& track) const
+{
+    if (track == nullptr || track->sampleHelper == nullptr) {
+        return false;
+    }
+    std::string metaMime;
+    mediaInfo_.tracks[track->trackIndex].Get<Tag::MIME_TYPE>(metaMime);
+    return track->sampleHelper->mimeType_ == MimeType::TEXT_WEBVTT || metaMime == MimeType::TEXT_WEBVTT;
+}
+
+void MPEG4DemuxerPlugin::AdvanceSampleIndex(const std::shared_ptr<MPEG4AtomParser::Track>& track)
+{
+    if (seekable_ == Seekable::SEEKABLE && track != nullptr) {
+        ++track->currentSampleIndex;
+    }
+}
+
+static void UpdateWebVTTDuration(const std::shared_ptr<Sample>& sample, int64_t endPts)
+{
+    FALSE_RETURN(sample != nullptr);
+    if (endPts > sample->pts) {
+        sample->duration = endPts - sample->pts;
+    }
+}
+
+static bool GetRoundedDurationUs(int64_t durationUs, int32_t trackTimeScale, int64_t& roundedDurationUs)
+{
+    FALSE_RETURN_V(durationUs > 0 && trackTimeScale > 0, false);
+
+    constexpr int64_t halfDivisor = 2;
+    int64_t durationTicks = 0;
+    int64_t temp = 0;
+    int64_t usPerSecond = static_cast<int64_t>(S_TO_US);
+    if (__builtin_mul_overflow(durationUs, static_cast<int64_t>(trackTimeScale), &temp)) {
+        return false;
+    }
+    durationTicks = temp / usPerSecond;
+    if (temp % usPerSecond >= usPerSecond / halfDivisor) {
+        ++durationTicks;
+    }
+    return durationTicks > 0 &&
+        ConvertTimeScale(durationTicks, usPerSecond, trackTimeScale, &roundedDurationUs) == Status::OK;
+}
+
+int64_t MPEG4DemuxerPlugin::GetWebVTTFlushEndPtsUs(
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, const std::shared_ptr<Sample>& sample) const
+{
+    int32_t trackTimeScale = 0;
+    if (sample != nullptr && sample->duration > 0) {
+        int64_t sampleEndPts = 0;
+        if (!__builtin_add_overflow(sample->pts, sample->duration, &sampleEndPts)) {
+            return sampleEndPts;
+        }
+    }
+
+    int64_t trackDuration = 0;
+    if (track != nullptr && mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_TIME_SCALE>(trackTimeScale) &&
+        trackTimeScale > 0 &&
+        ConvertTimeScale(track->duration, static_cast<int64_t>(S_TO_US), trackTimeScale, &trackDuration) ==
+        Status::OK) {
+        return trackDuration;
+    }
+
+    int64_t fileDuration = 0;
+    int64_t roundedFileDuration = 0;
+    if (track != nullptr && trackTimeScale > 0 && mediaInfo_.general.Get<Tag::MEDIA_DURATION>(fileDuration) &&
+        GetRoundedDurationUs(fileDuration, trackTimeScale, roundedFileDuration)) {
+        return roundedFileDuration;
+    }
+    return 0;
+}
+
+Status MPEG4DemuxerPlugin::ProcessWebVTTSampleForCache(
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, std::shared_ptr<MPEG4Sample> mpeg4Sample)
+{
+    FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");
+    FALSE_RETURN_V_MSG_E(mpeg4Sample != nullptr && mpeg4Sample->sample != nullptr,
+        Status::ERROR_NULL_POINTER, "Sample is nullptr");
+
+    uint32_t trackId = track->trackIndex;
+    Status ret = ProcessWebVTTSample(mpeg4Sample);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ProcessWebVTTSample failed");
+    AdvanceSampleIndex(track);
+
+    auto pending = pendingWebVttSamples_.find(trackId);
+    if (mpeg4Sample->isVttc) {
+        if (pending != pendingWebVttSamples_.end()) {
+            UpdateWebVTTDuration(pending->second, mpeg4Sample->sample->pts);
+            ret = AddSampleToCacheQueue(pending->second, trackId);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add pending WebVTT cache failed");
+        }
+        pendingWebVttSamples_[trackId] = mpeg4Sample->sample;
+        return Status::OK;
+    }
+
+    if (pending == pendingWebVttSamples_.end()) {
+        return Status::OK;
+    }
+    UpdateWebVTTDuration(pending->second, mpeg4Sample->sample->pts);
+    ret = AddSampleToCacheQueue(pending->second, trackId);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add WebVTT cache failed");
+    pendingWebVttSamples_.erase(pending);
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::FlushPendingWebVTTSample(uint32_t trackId)
+{
+    auto iter = pendingWebVttSamples_.find(trackId);
+    if (iter == pendingWebVttSamples_.end()) {
+        return Status::OK;
+    }
+    auto track = FindTrackById(static_cast<int32_t>(trackId));
+    int64_t endPts = GetWebVTTFlushEndPtsUs(track, iter->second);
+    if (endPts > 0) {
+        UpdateWebVTTDuration(iter->second, endPts);
+    }
+    Status ret = AddSampleToCacheQueue(iter->second, trackId);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add pending WebVTT cache failed");
+    pendingWebVttSamples_.erase(iter);
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::FlushPendingWebVTTSamples()
+{
+    while (!pendingWebVttSamples_.empty()) {
+        Status ret = FlushPendingWebVTTSample(pendingWebVttSamples_.begin()->first);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Flush pending WebVTT sample failed");
+    }
+    return Status::OK;
+}
+
 void MPEG4DemuxerPlugin::HandleReadWait()
 {
     std::unique_lock<std::mutex> readLock(readThreadMutex_);
@@ -324,23 +460,30 @@ Status MPEG4DemuxerPlugin::ReadSampleToCache(uint32_t trackId)
         FALSE_RETURN_V_MSG_E(ret == Status::OK || ret == Status::END_OF_STREAM, ret,
             "Get sample info failed");
         if (ret == Status::END_OF_STREAM) {
-            return ret;
+            ret = FlushPendingWebVTTSample(trackId);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Flush pending WebVTT samples failed");
+            return cacheQueue_.HasCache(trackId) ? Status::OK : Status::END_OF_STREAM;
         }
 
         auto currentTrack = FindTrackById(static_cast<int32_t>(currentTrackId));
         FALSE_RETURN_V_MSG_E(currentTrack != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");
         auto sample = std::make_shared<Sample>();
         FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate sample");
+        auto mpeg4Sample = std::make_shared<MPEG4Sample>();
+        FALSE_RETURN_V_MSG_E(mpeg4Sample != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate MPEG4Sample");
+        mpeg4Sample->sample = sample;
         {
             std::unique_lock<std::mutex> sLock(syncMutex_);
             ret = ReadSampleData(sample, pos, size, currentTrackId);
         }
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ReadSampleData failed");
-        ret = AddSampleToCacheQueue(sample, currentTrackId);
-        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add cache failed");
-        if (seekable_ == Seekable::SEEKABLE) {
-            ++currentTrack->currentSampleIndex;
+        if (IsWebVTTTrack(currentTrack)) {
+            ret = ProcessWebVTTSampleForCache(currentTrack, mpeg4Sample);
+        } else {
+            ret = AddSampleToCacheQueue(sample, currentTrackId);
+            AdvanceSampleIndex(currentTrack);
         }
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add cache failed");
     }
     return Status::OK;
 }

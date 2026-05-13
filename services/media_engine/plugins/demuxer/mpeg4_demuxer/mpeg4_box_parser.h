@@ -56,8 +56,10 @@ public:
         int64_t duration = 0; // track的duration，mdhd box中定义的
         int64_t totalElstDuration = 0; // elst box中所有entry的segment duration之和
         int64_t sidxDuration = 0; // sidx box的dts
+        int64_t sidxReferencedSize = 0; // sum of referenced_size from sidx entries
         int64_t elstInitEmptyEdit = 0;
         int64_t elstShiftStartTime = 0;
+        std::vector<MPEG4SampleHelper::EditListEntry> editListEntries;
         uint32_t tkhdWidth = 0;
         uint32_t tkhdHeight = 0;
         uint32_t stsdWidth = 0;
@@ -65,6 +67,7 @@ public:
         uint32_t hSpacing = 0;
         uint32_t vSpacing = 0;
         bool hasPasp = false;
+        bool inferredTrackType = false;
         CodecParams codecParms{};
 
         Track() = default;
@@ -143,6 +146,13 @@ private:
         const char* name;
     };
 
+    struct MvhdInfo {
+        uint64_t creationTime = 0;
+        uint64_t duration = 0;
+        uint32_t timeScale = 1;
+        int32_t matrixOffset = 0;
+    };
+
     uint32_t trackCount_ = 0;
     int64_t moofOffset_ = 0;
     using ParseFunction = Status (MPEG4AtomParser::*)(MPEG4Atom atom, int32_t depth, ParseContext* ctx);
@@ -155,6 +165,7 @@ private:
     bool hasMdatBox_;
     bool hasSidxBox_;
     bool isDistributedSidx_;
+    bool hasIncompleteSidxReference_;
     bool hasMoofBox_;
     bool moovFound_;
     MediaInfo mediaInfo_;
@@ -178,14 +189,27 @@ private:
     // 计算流信息相关辅助函数
     void CalculateVideoFrameRate(std::shared_ptr<Track> track);
     void CalculateTrackBitrates(std::shared_ptr<Track> track);
+    bool ShouldSkipCalculatedBitrate(uint32_t trackIndex, std::string& mime);
+    int64_t GetBitrateDuration(const std::shared_ptr<Track>& track);
+    int64_t GetBitrateTotalSize(const std::shared_ptr<Track>& track);
+    bool HasEnoughSamplesForBitrate(const std::shared_ptr<Track>& track, const std::string& mime);
+    bool GetBitrateDurationAndSize(std::shared_ptr<Track> track, int64_t& duration, int64_t& totalSize);
+    void CalculateVideoDelay(std::shared_ptr<Track> track);
+    void NormalizeAudioAttributes(std::shared_ptr<Track> track);
+    AudioSampleFormat GetAv3aSampleFormat(int32_t bitsPerRawSample) const;
+    AudioChannelLayout GetAv3aChannelLayout(int32_t channelCount, int32_t sampleRate) const;
     void CalculateMPEG4Attributes();
     void SetTrackType(std::shared_ptr<Track> track);
     void SetFileDuration();
+    void UpdateTrackStartTime(const std::shared_ptr<Track>& track, int64_t& trackStartTime,
+        int64_t& containerStartTimeForTrack);
     void SetStartTime();
     void SetHEVCDefaultValue();
     int64_t GetElstDuration(std::shared_ptr<Track> track);
     int64_t GetMpeg4FileDuration();
     int64_t GetTrackDuration(std::shared_ptr<Track> track, bool calculateBitrate = false);
+    int64_t GetSidxTrackStartTime(const std::shared_ptr<Track>& track, int64_t containerStartTime);
+    int64_t GetSidxSampleEndTime(const std::shared_ptr<Track>& track, int32_t timeScale);
     int64_t FindMaxTrackDuration(int64_t& maxDuration, uint32_t& maxDurationTrackIndex);
     double CalculateDuration(std::shared_ptr<Track> track, bool isRawFile);
     // 元数据解析辅助函数
@@ -196,9 +220,11 @@ private:
     // 辅助轨相关辅助函数
     bool NeedParseVideoInfo(std::string mimeType, TrackType trackType);
     bool NeedParseAudioInfo(std::string mimeType, TrackType trackType);
+    void InferTrackTypeFromMime(const std::string& mimeType);
     bool NeedParseVideoInfo(const MPEG4AtomParser::Track &track);
     bool NeedParseAudioInfo(const MPEG4AtomParser::Track &track);
     Status ProcessAuxiliaryHandler(MPEG4Atom currentAtom, ParseContext* parseCtx);
+    Status ParseSampleDescriptionEntry(int32_t depth, ParseContext* ctx);
     // 音频属性相关辅助函数
     bool ParseDecoderConfigDescriptor(const uint8_t* data, uint64_t dataSize, uint64_t& offset);
     bool ParseAACConfig(const uint8_t* data, uint32_t size, uint32_t& sampleRate, uint32_t& channels,
@@ -208,6 +234,15 @@ private:
     bool ParseOPUSExtradata(const uint8_t* data, uint64_t dataSize);
     void SetAmrAudioAttribute(std::string mime);
     void SetMpegAudioAttribute();
+    struct AudioVersionInfoContext {
+        ParseContext* ctx = nullptr;
+        uint16_t version = 0;
+        uint16_t& channelCount;
+        uint16_t& sampleSize;
+        uint32_t& sampleRate;
+        uint32_t& samplePerFrame;
+    };
+    Status ParseAudioVersionInfo(MPEG4Atom currentAtom, AudioVersionInfoContext& context);
     void SetAudioMimeTypeAndSampleSize(const MPEG4Atom& currentAtom, uint16_t& sampleSize);
     void SetRawPCMSampleFormat(const MPEG4Atom& currentAtom, uint16_t& sampleSize);
     int32_t GetRawPCMBitsPerSample(const MPEG4Atom& currentAtom, uint16_t& sampleSize);
@@ -229,9 +264,12 @@ private:
     Status ParseItunesMetadata(MPEG4Atom currentAtom, std::string& key, ParseContext* parseCtx);
     Status ParseTraditionalMetadata(MPEG4Atom currentAtom, std::string& key, ParseContext* parseCtx);
     Status ReadMetadataString(std::string& key, int64_t offset, uint64_t size, uint32_t dataType, bool isUserMeta);
+    Status SetAlacAudioAttributes(const uint8_t* buffer);
     Status ParseAlacEntry(ParseContext& ctx);
     Status ParseIccProfile(int64_t offset, uint64_t dataSize);
     Status ParseColorParams(int64_t offset, uint64_t dataSize, const std::string& colorType, ParseContext* parseCtx);
+    std::shared_ptr<Track> FindSidxTrack(uint32_t referenceId);
+    void CheckSidxReferenceEnd();
     Status ParseSidxEntries(const uint8_t* headerInfo, int64_t entryOffset,
         SidxParseContext& sidxCtx, std::shared_ptr<Track> currentTrack);
     Status FindNextMoof(int64_t& headerOffset, uint32_t& atomSize);
@@ -242,6 +280,9 @@ private:
     Status ParseMoov(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseWide(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseMdat(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
+    MvhdInfo ParseMvhdInfo(const uint8_t* headerInfo) const;
+    void SetMvhdMediaInfo(const MvhdInfo& mvhdInfo);
+    Status ParseMvhdDisplayMatrix(const MPEG4Atom& currentAtom, const uint8_t* headerInfo, ParseContext* ctx);
     Status ParseMvhd(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseTrak(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseTkhd(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
@@ -250,6 +291,7 @@ private:
     Status ParseTref(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseMdia(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseMdhd(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
+    void UpdateMdhdTimeOffset(uint32_t timeScale);
     Status ParseHdlr(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseMinf(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseStbl(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
