@@ -114,6 +114,9 @@ int FFmpegDemuxerPlugin::HandleReadOK(IOContext* ioContext, int dataSize)
 {
     if (dataSize > 0) {
         ioContext->offset += dataSize;
+        if (ioContext->readTimeoutMs > 0) {
+            ioContext->readStartTimeMs = 0;
+        }
         return dataSize;
     }
     return AV_READ_PACKET_READ_ERROR;
@@ -166,6 +169,9 @@ int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize, int
 {
     if (dataSize > 0) {
         ioContext->offset += dataSize;
+        if (ioContext->readTimeoutMs > 0) {
+            ioContext->readStartTimeMs = 0;
+        }
         return dataSize;
     }
     if (ioContext->invokerType != InvokerType::READ) {

@@ -1598,6 +1598,9 @@ void FFmpegDemuxerPlugin::PrepareSetDataSourceContext()
 {
     ioContext_.retry = false;
     ioContext_.initErrorAgain = false;
+    if (ioContext_.readTimeoutMs > 0) {
+        ioContext_.readStartTimeMs = 0;
+    }
     if (ioContext_.invokerType != InvokerType::INIT) {
         std::lock_guard<std::mutex> initLock(ioContext_.invokerTypeMutex);
         ioContext_.invokerType = InvokerType::INIT;
@@ -2820,6 +2823,9 @@ void FFmpegDemuxerPlugin::SyncSeekThread()
 {
     ioContext_.retry = false;
     ioContext_.avReadPacketStopState.store(AVReadPacketStopState::FALSE);
+    if (ioContext_.readTimeoutMs > 0) {
+        ioContext_.readStartTimeMs = 0;
+    }
     if (ioContext_.invokerType != InvokerType::SEEK) {
         std::lock_guard<std::mutex> seekLock(ioContext_.invokerTypeMutex);
         ioContext_.invokerType = InvokerType::SEEK;
