@@ -47,21 +47,15 @@ void VEncCallbackTest::OnError(int32_t errorCode)
     }
     signal_->errorNum_ += 1;
     cout << ", errorNum=" << signal_->errorNum_ << endl;
-    if (input8BitTo10Bit_) {
-        EXPECT_LT(0, signal_->errorNum_);
-    }
 }
 
 void VEncCallbackTest::OnStreamChanged(std::shared_ptr<FormatMock> format)
 {
     UNITTEST_INFO_LOG("format changed: %s", format->DumpInfo());
-    if (inputResizeWidthHeight_) {
-        int32_t width, height;
-        EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, &width));
-        EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, &height));
-        EXPECT_EQ(RESIZE_WIDTH, width);
-        EXPECT_EQ(RESIZE_HEIGHT, height);
-    }
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, signal_->width_));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, signal_->height_));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_STRIDE, signal_->wStride_));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, signal_->hStride_));
 }
 
 void VEncCallbackTest::OnNeedInputData(uint32_t index, std::shared_ptr<AVMemoryMock> data)
@@ -110,13 +104,10 @@ void VEncCallbackTestExt::OnError(int32_t errorCode)
 void VEncCallbackTestExt::OnStreamChanged(std::shared_ptr<FormatMock> format)
 {
     UNITTEST_INFO_LOG("format changed: %s", format->DumpInfo());
-    if (inputResizeWidthHeight_) {
-        int32_t width, height;
-        EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, &width));
-        EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, &height));
-        EXPECT_EQ(RESIZE_WIDTH, width);
-        EXPECT_EQ(RESIZE_HEIGHT, height);
-    }
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, signal_->width_));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, signal_->height_));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_STRIDE, signal_->wStride_));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, signal_->hStride_));
 }
 
 void VEncCallbackTestExt::OnNeedInputData(uint32_t index, std::shared_ptr<AVBufferMock> data)

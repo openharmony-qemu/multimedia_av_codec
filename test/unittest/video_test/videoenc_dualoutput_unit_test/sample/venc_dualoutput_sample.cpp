@@ -453,6 +453,9 @@ bool VideoEncDualOutputSample::WaitForEos(EncoderType type)
     bool isNotTimeout = encoderContext.signal->eosCond_.wait_for(lock, seconds(sampleTimout_), lck);
     lock.unlock();
 
+    if (input8BitTo10Bit_) {
+        EXPECT_LT(0, errorNum_);
+    }
     if (type == EncoderType::PRIMARY) {
         EXPECT_GE(encoderContext.frameOutputCount,
                   encoderContext.frameInputCount / 2); // 2: at least half of the input frame
@@ -755,10 +758,10 @@ int32_t VideoEncDualOutputSample::ResetFrameParam()
     if (primaryEncoder_.frameInputCount > PARAM_CHANGE_START_FRAME) {
         if (input8BitTo10Bit_) {
             ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_FORMAT,
-                                                                GRAPHIC_PIXEL_FMT_YCBCR_P010);
+                                                        GRAPHIC_PIXEL_FMT_YCBCR_P010);
         } else if (inputResizeWidthHeight_) {
             ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_BUFFER_GEOMETRY,
-                                                                RESIZE_WIDTH, RESIZE_HEIGHT);
+                                                        RESIZE_WIDTH, RESIZE_HEIGHT);
         }
     }
     return ret;

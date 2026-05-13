@@ -99,6 +99,7 @@ public:
     int32_t sampleHeight_ = 720;
     int32_t samplePixel_ = AV_PIXEL_FORMAT_NV12;
     bool input8BitTo10Bit_ = false;
+    int32_t errorNum_ = 0;
     bool inputResizeWidthHeight_ = false;
 
     static bool needDump_;
