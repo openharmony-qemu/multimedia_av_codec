@@ -102,6 +102,7 @@ private:
     sptr<Surface> consumer_ = nullptr;
     sptr<Surface> producer_ = nullptr;
     OHNativeWindow *nativeWindow_ = nullptr;
+    std::shared_ptr<SurfaceMock> surfaceMock_ = nullptr;
     LtrParam ltrParam;
 };
 } // namespace MediaAVCodec

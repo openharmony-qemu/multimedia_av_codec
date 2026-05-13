@@ -103,6 +103,10 @@ public:
     int32_t errorNum_ = 0;
     std::atomic<bool> isRunning_ = false;
     std::atomic<bool> isPreparing_ = true;
+
+    // For MAX_FRAME_DELAY_COUNT verification
+    std::atomic<int32_t> pendingInputCount_ = 0;
+    std::atomic<int32_t> maxPendingInputCount_ = 0;
 };
 
 struct LtrParam {

@@ -1127,6 +1127,38 @@ HWTEST_F(TEST_SUIT, VideoEncoder_MaxFrameDelayCount_Surface_001, TestSize.Level1
 
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
+
+/**
+ * @tc.name: VideoEncoder_MaxFrameDelayCount_Buffer_001
+ * @tc.desc: HW encoder configure with max frame delay count in buffer mode and verify pending buffer count
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoEncoder_MaxFrameDelayCount_Buffer_001, TestSize.Level1)
+{
+    auto capability = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), true,
+                                                                    AVCodecCategory::AVCODEC_HARDWARE);
+    ASSERT_NE(nullptr, capability);
+    std::string codecName = capability->GetName();
+    ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(codecName));
+
+    videoEnc_->isAVBufferMode_ = true;
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+
+    int32_t expectedValue = 3;
+    format_->PutIntValue(MediaDescriptionKey::OH_MD_KEY_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, expectedValue);
+
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    int32_t maxPending = videoEnc_->GetMaxPendingInputCount();
+    EXPECT_LE(maxPending, expectedValue);
+
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
 } // namespace
 
 int main(int argc, char **argv)

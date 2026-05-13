@@ -48,6 +48,7 @@ public:
     int32_t FreeOutputBuffer(uint32_t index);
     int32_t CreateInputSurface();
     int32_t GetSurfaceQueueSize();
+    int32_t GetMaxPendingInputCount();
     bool IsValid();
     int32_t SetCustomBuffer(std::shared_ptr<AVBufferMock> buffer);
 
@@ -114,6 +115,7 @@ private:
     sptr<Surface> consumer_ = nullptr;
     sptr<Surface> producer_ = nullptr;
     OHNativeWindow *nativeWindow_ = nullptr;
+    std::shared_ptr<SurfaceMock> surfaceMock_ = nullptr;
     LtrParam ltrParam;
 };
 } // namespace MediaAVCodec

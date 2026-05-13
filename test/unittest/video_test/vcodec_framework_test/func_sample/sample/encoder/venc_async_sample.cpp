@@ -114,6 +114,16 @@ void VEncCallbackTestExt::OnNeedInputData(uint32_t index, std::shared_ptr<AVBuff
     signal_->inIndexQueue_.push(index);
     signal_->inBufferQueue_.push(data);
     signal_->inCond_.notify_all();
+
+    // For MAX_FRAME_DELAY_COUNT verification
+    signal_->pendingInputCount_++;
+    int32_t current = signal_->pendingInputCount_.load();
+    int32_t max = signal_->maxPendingInputCount_.load();
+    while (current > max) {
+        if (signal_->maxPendingInputCount_.compare_exchange_weak(max, current)) {
+            break;
+        }
+    }
 }
 
 void VEncCallbackTestExt::OnNewOutputData(uint32_t index, std::shared_ptr<AVBufferMock> data)
@@ -402,10 +412,10 @@ int32_t VideoEncAsyncSample::FreeOutputBuffer(uint32_t index)
 #ifdef VIDEOENC_CAPI_UNIT_TEST
 int32_t VideoEncAsyncSample::CreateInputSurface()
 {
-    auto surfaceMock = videoEnc_->CreateInputSurface();
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock != nullptr, AV_ERR_NO_MEMORY, "OH_VideoEncoder_GetSurface fail");
+    surfaceMock_ = videoEnc_->CreateInputSurface();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock_ != nullptr, AV_ERR_NO_MEMORY, "OH_VideoEncoder_GetSurface fail");
 
-    nativeWindow_ = std::static_pointer_cast<SurfaceCapiMock>(surfaceMock)->GetSurface();
+    nativeWindow_ = std::static_pointer_cast<SurfaceCapiMock>(surfaceMock_)->GetSurface();
     nativeWindow_->IncStrongRef(nativeWindow_);
     int32_t ret = 0;
     ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_FORMAT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
@@ -425,12 +435,12 @@ int32_t VideoEncAsyncSample::CreateInputSurface()
 #else
 int32_t VideoEncAsyncSample::CreateInputSurface()
 {
-    auto surfaceMock = videoEnc_->CreateInputSurface();
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock != nullptr, AV_ERR_INVALID_VAL, "CreateInputSurface fail");
+    surfaceMock_ = videoEnc_->CreateInputSurface();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock_ != nullptr, AV_ERR_INVALID_VAL, "CreateInputSurface fail");
 
-    sptr<Surface> surface = std::static_pointer_cast<SurfaceInnerMock>(surfaceMock)->GetSurface();
+    sptr<Surface> surface = std::static_pointer_cast<SurfaceInnerMock>(surfaceMock_)->GetSurface();
     nativeWindow_ = CreateNativeWindowFromSurface(&surface);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock != nullptr, AV_ERR_INVALID_VAL,
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock_ != nullptr, AV_ERR_INVALID_VAL,
                                       "CreateNativeWindowFromSurface failed!");
 
     int32_t ret = AV_ERR_OK;
@@ -452,15 +462,18 @@ int32_t VideoEncAsyncSample::CreateInputSurface()
 
 int32_t VideoEncAsyncSample::GetSurfaceQueueSize()
 {
-    if (nativeWindow_ == nullptr) {
+    if (surfaceMock_ == nullptr) {
         return -1;
     }
-    int32_t queueSize = 0;
-    int32_t ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, GET_BUFFERQUEUE_SIZE, &queueSize);
-    if (ret != 0) {
+    return surfaceMock_->GetQueueSize();
+}
+
+int32_t VideoEncAsyncSample::GetMaxPendingInputCount()
+{
+    if (signal_ == nullptr) {
         return -1;
     }
-    return queueSize;
+    return signal_->maxPendingInputCount_.load();
 }
 
 bool VideoEncAsyncSample::IsValid()
@@ -1003,6 +1016,7 @@ int32_t VideoEncAsyncSample::InputLoopInnerExt()
     if (attr.flags & AVCODEC_BUFFER_FLAG_EOS) {
         buffer->SetBufferAttr(attr);
         int32_t ret = PushInputBuffer(index);
+        signal_->pendingInputCount_--;
         cout << "Input EOS Frame, frameCount = " << frameInputCount_ << endl;
         if (inFile_ != nullptr && inFile_->is_open()) {
             inFile_->close();
@@ -1017,7 +1031,9 @@ int32_t VideoEncAsyncSample::InputLoopInnerExt()
     }
     InputLoopInnerFeatureExt(attr);
     buffer->SetBufferAttr(attr);
-    return PushInputBuffer(index);
+    int32_t ret = PushInputBuffer(index);
+    signal_->pendingInputCount_--;
+    return ret;
 }
 
 void VideoEncAsyncSample::ReadFrameToBuffer(

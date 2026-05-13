@@ -273,10 +273,10 @@ int32_t VideoEncSyncSample::FreeOutputBuffer(uint32_t index)
 #ifdef VIDEOENC_CAPI_UNIT_TEST
 int32_t VideoEncSyncSample::CreateInputSurface()
 {
-    auto surfaceMock = videoEnc_->CreateInputSurface();
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock != nullptr, AV_ERR_NO_MEMORY, "OH_VideoEncoder_GetSurface fail");
+    surfaceMock_ = videoEnc_->CreateInputSurface();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock_ != nullptr, AV_ERR_NO_MEMORY, "OH_VideoEncoder_GetSurface fail");
 
-    nativeWindow_ = std::static_pointer_cast<SurfaceCapiMock>(surfaceMock)->GetSurface();
+    nativeWindow_ = std::static_pointer_cast<SurfaceCapiMock>(surfaceMock_)->GetSurface();
     nativeWindow_->IncStrongRef(nativeWindow_);
     int32_t ret = 0;
     ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_FORMAT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
@@ -296,12 +296,12 @@ int32_t VideoEncSyncSample::CreateInputSurface()
 #else
 int32_t VideoEncSyncSample::CreateInputSurface()
 {
-    auto surfaceMock = videoEnc_->CreateInputSurface();
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock != nullptr, AV_ERR_INVALID_VAL, "CreateInputSurface fail");
+    surfaceMock_ = videoEnc_->CreateInputSurface();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock_ != nullptr, AV_ERR_INVALID_VAL, "CreateInputSurface fail");
 
-    sptr<Surface> surface = std::static_pointer_cast<SurfaceInnerMock>(surfaceMock)->GetSurface();
+    sptr<Surface> surface = std::static_pointer_cast<SurfaceInnerMock>(surfaceMock_)->GetSurface();
     nativeWindow_ = CreateNativeWindowFromSurface(&surface);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock != nullptr, AV_ERR_INVALID_VAL,
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock_ != nullptr, AV_ERR_INVALID_VAL,
                                       "CreateNativeWindowFromSurface failed!");
 
     int32_t ret = AV_ERR_OK;
@@ -323,15 +323,10 @@ int32_t VideoEncSyncSample::CreateInputSurface()
 
 int32_t VideoEncSyncSample::GetSurfaceQueueSize()
 {
-    if (nativeWindow_ == nullptr) {
+    if (surfaceMock_ == nullptr) {
         return -1;
     }
-    int32_t queueSize = 0;
-    int32_t ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, GET_BUFFERQUEUE_SIZE, &queueSize);
-    if (ret != 0) {
-        return -1;
-    }
-    return queueSize;
+    return surfaceMock_->GetQueueSize();
 }
 
 bool VideoEncSyncSample::IsValid()
