@@ -66,14 +66,17 @@ Status FFmpegBaseEncoder::ProcessSendData(const std::shared_ptr<AVBuffer> &input
             ret = SendBuffer(inputBuffer);
         } else {
             bool isEos = inputBuffer->flag_ & BUFFER_FLAG_EOS;
+            if (!isEos && ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE && isFirstInputPts_) {
+                prevPts_ = inputBuffer->pts_;
+                isFirstInputPts_ = false;
+            }
             if (isEos) {
                 ret = SendEosBuffer();
             } else {
                 pcmCache_.insert(pcmCache_.end(), memory->GetAddr(),
                                  memory->GetAddr() + memory->GetSize());
-                if (static_cast<int32_t>(pcmCache_.size()) > maxInputBufferSize_) {
-                    AVCODEC_LOGE("PCM cache size exceeds max");
-                    pcmCache_.clear();
+                if (static_cast<int32_t>(pcmCache_.size()) > MAX_INPUT_BUFFER_SIZE_LIMIT) {
+                    AVCODEC_LOGE("PCM cache size exceeds max limit");
                     return Status::ERROR_UNKNOWN;
                 }
                 ret = SendCachedFrames();
@@ -475,6 +478,11 @@ Status FFmpegBaseEncoder::SendEosBuffer()
             return Status::ERROR_UNKNOWN;
         }
         pcmCache_.erase(pcmCache_.begin(), pcmCache_.begin() + frameBytes);
+    }
+    pcmCache_.clear();
+    auto ret = avcodec_send_frame(avCodecContext_.get(), nullptr);
+    if (ret != 0 && ret != AVERROR(EAGAIN)) {
+        AVCODEC_LOGW("Send EOS frame failed: %{public}s", OSAL::AVStrError(ret).c_str());
     }
     return Status::OK;
 }
