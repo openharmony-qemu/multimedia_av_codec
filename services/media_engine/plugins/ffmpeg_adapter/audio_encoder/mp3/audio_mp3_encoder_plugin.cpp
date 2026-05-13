@@ -202,11 +202,6 @@ Status AudioMp3EncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer>& 
     if (enableCache_) {
         if (!isEos) {
             pcmCache_.insert(pcmCache_.end(), memory->GetAddr(), memory->GetAddr() + inputSize);
-            if (static_cast<int32_t>(pcmCache_.size()) > maxInputBufferSize_) {
-                AVCODEC_LOGE("PCM cache size exceeds max");
-                pcmCache_.clear();
-                return Status::ERROR_UNKNOWN;
-            }
             auto frameBytes = static_cast<size_t>(frameSize_ * channels_ * sizeof(int16_t));
             if (pcmCache_.size() >= frameBytes) {
                 EncodeOneFrame();
@@ -473,7 +468,11 @@ Status AudioMp3EncoderPlugin::GetParameter(std::shared_ptr<Meta>& parameter)
     maxOutputSize_ = OUTPUT_BUFFER_SIZE_DEFAULT;
     AVCODEC_LOGD("AudioMp3EncoderPlugin GetParameter maxInputSize_: %{public}d", maxInputSize_);
     audioParameter_.Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
-    audioParameter_.Set<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_);
+    if (maxInputBufferSize_ > 0) {
+        audioParameter_.Set<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputBufferSize_);
+    } else {
+        audioParameter_.Set<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_);
+    }
     audioParameter_.Set<Tag::AUDIO_MAX_OUTPUT_SIZE>(maxOutputSize_);
     audioParameter_.Set<Tag::MEDIA_BITRATE>(bitrate_);
     *parameter = audioParameter_;

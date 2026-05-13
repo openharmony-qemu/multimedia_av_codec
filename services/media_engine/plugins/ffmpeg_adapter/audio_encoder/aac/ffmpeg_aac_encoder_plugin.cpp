@@ -51,6 +51,7 @@ constexpr int32_t CORRECTION_BIT_RATE = 70000;
 constexpr int64_t US_PER_SECOND = 1000000;
 constexpr int32_t CORRECTION_CHANNEL_COUNT = 2;
 constexpr float Q_SCALE = 1.2f;
+constexpr int32_t MAX_INPUT_BUFFER_SIZE_LIMIT = 10 * 1024 * 1024;  // 10MB
 static std::map<int32_t, uint8_t> sampleFreqMap = {{96000, 0},  {88200, 1}, {64000, 2}, {48000, 3}, {44100, 4},
                                                    {32000, 5},  {24000, 6}, {22050, 7}, {16000, 8}, {12000, 9},
                                                    {11025, 10}, {8000, 11}, {7350, 12}};
@@ -635,6 +636,12 @@ Status FFmpegAACEncoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
     if (meta->Get<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_)) {
         MEDIA_LOG_I("maxInputSize: %{public}d", maxInputSize_);
     }
+    if (meta->Get<Tag::AUDIO_MAX_INPUT_BUFFER_SIZE>(maxInputBufferSize_)) {
+        if (maxInputBufferSize_ > MAX_INPUT_BUFFER_SIZE_LIMIT) {
+            maxInputBufferSize_ = MAX_INPUT_BUFFER_SIZE_LIMIT;
+        }
+        MEDIA_LOG_I("maxInputBufferSize: %{public}d", maxInputBufferSize_);
+    }
     if (meta->Get<Tag::AUDIO_CHANNEL_LAYOUT>(channelLayout)) {
         srcLayout_ = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(channelLayout);
     } else {
@@ -675,7 +682,11 @@ Status FFmpegAACEncoderPlugin::GetParameter(std::shared_ptr<Meta> &meta)
     maxOutputSize_ = OUTPUT_BUFFER_SIZE_DEFAULT;
     MEDIA_LOG_I("GetParameter maxInputSize_: %{public}d", maxInputSize_);
     // add codec meta
-    audioParameter_.Set<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_);
+    if (maxInputBufferSize_ > 0) {
+        audioParameter_.Set<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputBufferSize_);
+    } else {
+        audioParameter_.Set<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_);
+    }
     audioParameter_.Set<Tag::AUDIO_MAX_OUTPUT_SIZE>(maxOutputSize_);
     *meta = audioParameter_;
     return Status::OK;

@@ -60,6 +60,7 @@ public:
     std::shared_ptr<AVCodecContext> GetCodecContext() const;
     Status CloseCtxLocked();
     int32_t GetMaxInputSize() const noexcept;
+    int32_t GetMaxInputBufferSize() const noexcept;
     void SetCallback(DataCallback *callback);
     void SetPtsMode(AudioEncodePtsMode mode);
 

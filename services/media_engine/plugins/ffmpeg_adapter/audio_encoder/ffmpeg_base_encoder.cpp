@@ -421,6 +421,11 @@ int32_t FFmpegBaseEncoder::GetMaxInputSize() const noexcept
     return maxInputSize_;
 }
 
+int32_t FFmpegBaseEncoder::GetMaxInputBufferSize() const noexcept
+{
+    return maxInputBufferSize_;
+}
+
 void FFmpegBaseEncoder::SetCallback(DataCallback *callback)
 {
     dataCallback_ = callback;

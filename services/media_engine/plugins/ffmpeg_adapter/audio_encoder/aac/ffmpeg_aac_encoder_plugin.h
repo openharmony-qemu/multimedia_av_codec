@@ -150,6 +150,7 @@ private:
     bool isEosFlush_ = false;
     int32_t initPadding_ = 0;
     bool isCreateCxtAndFifo_ = false;
+    int32_t maxInputBufferSize_ = -1;
 };
 } // namespace Ffmpeg
 } // namespace Plugins
