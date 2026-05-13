@@ -199,6 +199,9 @@ void SmartFluencyDecoding::Flush()
         strategy_->Reset();
     }
     inBufferMap_.clear();
+    refFrameMap_.clear();
+    lastValidMVStats_ = {};
+    hasValidMVStats_ = false;
 #ifdef SFD_DEBUG
     if (dumper_) {
         dumper_->DumpToFile();
@@ -366,6 +369,10 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
         int64_t naluStartUs = GetCurrentSysTimeUs();
 #endif
         res.isNonRef = naluAnalyzer_->IsNonReferenceFrame(buffer);
+        {
+            std::lock_guard<std::mutex> lock(refFrameMapMutex_);
+            refFrameMap_[buffer->pts_] = res.isNonRef;
+        }
 #ifdef SFD_DEBUG
         res.naluCostUs = GetCurrentSysTimeUs() - naluStartUs;
 #endif
@@ -457,9 +464,33 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
     if (caps.isPassthrough) {
         return HandlePostDecodePassthrough(pts, preDropCount, cost);
     }
+
+    bool isNonRef = false;
+    {
+        std::lock_guard<std::mutex> lock(refFrameMapMutex_);
+        auto it = refFrameMap_.fing(pts);
+        if (it != refFrameMap_.end()) {
+            isNonRef = it.second;
+            refFrameMap_.erase(it);
+        } else {
+            AVCODEC_LOGE_WITH_TAG("refMap can't find pts: %{public}ld", pts);
+        }
+    }
     MVStats mvStats;
-    if (caps.requiresMv && surfaceBuffer != nullptr) {
+    if (!caps.requiresMv || surfaceBuffer == nullptr) {
+        mvStats = {};
+    } else if (isNonRef) {
+        if (hasValidMVStats_) {
+            mvStats = lastValidMVStats_;
+        } else {
+            mvStats = {};
+        }
+    } else {
         ParseMVData(surfaceBuffer, mvStats, cost.copyMvCostUs, cost.analyzeMvCostUs);
+        if (mvStats.validBlocks > 0) {
+            lastValidMVStats_ = mvStats;
+            hasValidMVStats_ = true;
+        }
     }
     PostDecResult res;
     FrameRetentionContext ctx { preDropCount, caps.requiresMv ? &mvStats : nullptr };
