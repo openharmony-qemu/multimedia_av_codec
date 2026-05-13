@@ -113,6 +113,10 @@ private:
 #ifdef SFD_DEBUG
     std::unique_ptr<SmartFluencyDecodingDumper> dumper_{nullptr};
 #endif
+    MVStats lastValidMVStats_{};
+    std::unordered_map<int64_t, bool> refFrameMap_;
+    mutable std::mutex refFrameMapMutex_;
+    bool hasValidMVStats_{false};
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> inBufferMap_;
     std::shared_ptr<AVBuffer> csdBuffer_{nullptr};
     SFDConfig config_{};
