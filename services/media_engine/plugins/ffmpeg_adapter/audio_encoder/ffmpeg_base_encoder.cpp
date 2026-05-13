@@ -228,7 +228,7 @@ Status FFmpegBaseEncoder::SendOutputBuffer(std::shared_ptr<AVBuffer> &outputBuff
         }
         SafeCallOutputBufferDone(dataCallback_, outputBuffer);
     } else {
-        SafeCallOutputBufferDone(dataCallback_, outputBuffer);
+        AVCODEC_LOGE("SendOutputBuffer-ReceiveBuffer error");
     }
     return status;
 }
