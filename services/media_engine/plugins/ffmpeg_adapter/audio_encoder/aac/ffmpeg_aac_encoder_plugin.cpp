@@ -323,10 +323,6 @@ Status FFmpegAACEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outB
         outBuffer->pts_ = prevPts_ - (initPadding_ * US_PER_SECOND / sampleRate_);
         MEDIA_LOG_I("corrected outBuffer->pts_: %{public}" PRIu64 ".", outBuffer->pts_);
         isFirstOutputPts_ = false;
-    } else if (ptsMode_ == ZERO_START_ENCODE_PTS_MODE && isFirstOutputPts_) {
-        outBuffer->pts_ = 0;
-        MEDIA_LOG_I("zero_start outBuffer->pts_: %{public}" PRIu64 ".", outBuffer->pts_);
-        isFirstOutputPts_ = false;
     } else if (prevPts_ < 0) {
         outBuffer->pts_ = prevPts_ + outBuffer->duration_;
     } else {
