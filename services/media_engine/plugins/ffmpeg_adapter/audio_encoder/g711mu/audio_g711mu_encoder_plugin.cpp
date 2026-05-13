@@ -293,10 +293,12 @@ Status AudioG711muEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &param
 Status AudioG711muEncoderPlugin::GetParameter(std::shared_ptr<Meta> &parameter)
 {
     std::lock_guard<std::mutex> lock(paramMutex_);
-    if (maxInputSize_ <= 0 || maxInputSize_ > INPUT_BUFFER_SIZE_DEFAULT) {
+    if (maxInputSize_ <= 0) {
         maxInputSize_ = INPUT_BUFFER_SIZE_DEFAULT;
     }
-    maxOutputSize_ = OUTPUT_BUFFER_SIZE_DEFAULT;
+    if (maxOutputSize_ <= 0) {
+        maxOutputSize_ = OUTPUT_BUFFER_SIZE_DEFAULT;
+    }
     AVCODEC_LOGD("AudioG711muEncoderPlugin GetParameter maxInputSize_: %{public}d", maxInputSize_);
     audioParameter_.Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
     audioParameter_.Set<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_);
