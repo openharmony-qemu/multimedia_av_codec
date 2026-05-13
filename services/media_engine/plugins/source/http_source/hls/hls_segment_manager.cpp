@@ -816,8 +816,8 @@ Status HlsSegmentManager::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     if (isNeedResume_.load()) {
         ClearChunksInLargeSegment();
         if (freeSize > GetDownloadResumeThreshold()) {
-            downloader_->Resume();
             isNeedResume_.store(false);
+            downloader_->Resume();
             MEDIA_LOG_I("HLS download resume, type: %{public}d", type_);
         }
     }
