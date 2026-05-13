@@ -803,7 +803,8 @@ Status HlsSegmentManager::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     FALSE_RETURN_V(cacheMediaBuffer_ != nullptr, Status::ERROR_AGAIN);
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
     readTime_ = now;
-    if (!CheckDataIntegrity()) {
+    bool isLive = playlistDownloader_ != nullptr ? playlistDownloader_->IsLive() : false;
+    if (!CheckDataIntegrity() && !isLive) {
         MEDIA_LOG_W("HLS Read in, fix download, type: %{public}d", type_);
         SeekToTsForRead(readTsIndex_);
         return Status::ERROR_AGAIN;
