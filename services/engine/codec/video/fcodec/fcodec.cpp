@@ -274,17 +274,13 @@ void FCodec::ConfigureThreading(const Format &format)
 {
     avCodecContext_->width = width_;
     avCodecContext_->height = height_;
-    int32_t decodeOrder = -1;
+    avCodecContext_->thread_count = DEFAULT_THREAD_COUNT;
+    int32_t decodeOrder = 0;
     format.GetIntValue(FMTKey::VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, decodeOrder);
-    if (codecName_ == AVCodecCodecName::VIDEO_DECODER_AVC_NAME && decodeOrder > 0) {
+    if (codecName_ == AVCodecCodecName::VIDEO_DECODER_AVC_NAME && decodeOrder != 0) {
         av_opt_set(avCodecContext_.get(), "output_decode_order", "1", AV_OPT_SEARCH_CHILDREN);
-        avCodecContext_->thread_count = 0;
-        avCodecContext_->thread_type = FF_THREAD_SLICE;
-        avCodecContext_->flags |= AV_CODEC_FLAG_LOW_DELAY;
-        avCodecContext_->flags2 |= AV_CODEC_FLAG2_FAST;
-        AVCODEC_LOGI("H264 decode order enabled by %{public}d", decodeOrder);
-    } else {
         avCodecContext_->thread_count = DEFAULT_THREAD_COUNT;
+        AVCODEC_LOGI("H264 decode order enabled by %{public}d", decodeOrder);
     }
 }
 
