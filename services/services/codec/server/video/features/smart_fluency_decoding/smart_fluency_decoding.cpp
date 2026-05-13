@@ -468,9 +468,9 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
     bool isNonRef = false;
     {
         std::lock_guard<std::mutex> lock(refFrameMapMutex_);
-        auto it = refFrameMap_.fing(pts);
+        auto it = refFrameMap_.find(pts);
         if (it != refFrameMap_.end()) {
-            isNonRef = it.second;
+            isNonRef = it->second;
             refFrameMap_.erase(it);
         } else {
             AVCODEC_LOGE_WITH_TAG("refMap can't find pts: %{public}ld", pts);
