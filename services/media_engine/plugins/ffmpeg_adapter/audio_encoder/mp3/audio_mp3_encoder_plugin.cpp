@@ -245,6 +245,7 @@ Status AudioMp3EncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& outpu
     auto memory = outputBuffer->memory_;
     if (outputSize_ == 0) {
         AVCODEC_LOGD("AudioMp3EncoderPlugin lame outputSize of this frame is 0.");
+        SafeCallOutputBufferDone(dataCallback_, outputBuffer);
         return Status::ERROR_NOT_ENOUGH_DATA;
     }
     memory->Write(const_cast<const uint8_t*>(lameMp3Buffer.get()), outputSize_, 0);
@@ -255,6 +256,7 @@ Status AudioMp3EncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& outpu
         auto frameBytes = static_cast<size_t>(frameSize_ * channels_ * sizeof(int16_t));
         if (pcmCache_.size() >= frameBytes) {
             EncodeOneFrame();
+            SafeCallOutputBufferDone(dataCallback_, outputBuffer);
             return Status::ERROR_AGAIN;
         }
     }
