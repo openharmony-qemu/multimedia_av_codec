@@ -786,10 +786,10 @@ void VideoEncPreprocDualOutputSample::OnStreamChanged(OH_AVCodec *codec, OH_AVFo
         if (cropWidth >= width || cropHeight >= height) {
             std::cout << "[OnStreamChanged] Turn off crop" << std::endl;
             auto parameter = OH_AVFormat_Create();
-            (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT, 0);
-            (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_TOP, 0);
-            (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_RIGHT, 0);
-            (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM, 0);
+            (void)OH_AVFormat_SetIntValue(parameter, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT, 0);
+            (void)OH_AVFormat_SetIntValue(parameter, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_TOP, 0);
+            (void)OH_AVFormat_SetIntValue(parameter, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_RIGHT, 0);
+            (void)OH_AVFormat_SetIntValue(parameter, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM, 0);
             auto ret = OH_VideoEncoder_SetParameter(codec, parameter);
             if (ret != 0) {
                 std::cout << "[OnStreamChanged] SetParameter failed. ret=" << ret << std::endl;
@@ -802,8 +802,8 @@ void VideoEncPreprocDualOutputSample::OnStreamChanged(OH_AVCodec *codec, OH_AVFo
     if (downsamplingWidth != 0 || downsamplingHeight != 0) {
         std::cout << "[OnStreamChanged] Turn off downsampling" << std::endl;
         auto parameter = OH_AVFormat_Create();
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH, 0);
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT, 0);
+        (void)OH_AVFormat_SetIntValue(parameter, OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH, 0);
+        (void)OH_AVFormat_SetIntValue(parameter, OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT, 0);
         auto ret = OH_VideoEncoder_SetParameter(codec, parameter);
         if (ret != 0) {
             std::cout << "[OnStreamChanged] SetParameter failed. ret=" << ret << std::endl;

@@ -289,11 +289,11 @@ OH_AVErrCode PreprocessorEncoder::Configure(const Media::Format &format)
     std::scoped_lock lock(instanceMutex_);
 
     auto ret = ConfigureVideoEncoder(format);
-    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Configure video encoder failed!");
 
     ret = ConfigurePreprocessor(format);
-    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Configure preprocessor failed!");
 
     if (encoderSurface_ == nullptr) {
