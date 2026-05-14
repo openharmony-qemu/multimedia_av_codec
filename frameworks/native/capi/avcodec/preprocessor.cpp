@@ -435,11 +435,11 @@ int32_t Preprocessor::Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &ou
         return ret;
     }
     int32_t ret = Copy(input, output);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Copy failed: %{public}d", ret)
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Copy failed: %{public}d", ret);
     UpdateOutputMetadata(input, output,
                          {IDENTITY_METADATA_SCALE, IDENTITY_METADATA_SCALE, DEFAULT_METADATA_OFFSET,
                           DEFAULT_METADATA_OFFSET});
-    ret ret;
+    return ret;
 }
 
 bool Preprocessor::ShouldDropFrame(uint64_t pts)
