@@ -598,7 +598,8 @@ bool SmartFluencyDecoding::GetRefFrameFromMap(int64_t pts) {
     return isNonRef;
 }
 
-MVStats SmartFluencyDecoding::ExtractMVStats(StrategyCaps caps, int64_t pts, PostDecCost& cost, const sptr<SurfaceBuffer> surfaceBuffer)
+MVStats SmartFluencyDecoding::ExtractMVStats(StrategyCaps caps, int64_t pts,
+    PostDecCost& cost, const sptr<SurfaceBuffer> surfaceBuffer)
 {
     bool isNonRef = GetRefFrameFromMap(pts);
     MVStats mvStats;
