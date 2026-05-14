@@ -20,7 +20,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "AdaptiveStrategy"};
 constexpr double MAX_SPEED_FOR_RETENTION = 1.0;
-constexpr double MAX_DROPS_MULTIPLIER_HIGH = 5.0;
+constexpr double MAX_DROPS_MULTIPLIER_HIGH = 3.0;
 constexpr double ZERO_MOTION_RATIO_THRESHOLD = 0.85;
 
 struct DecisionNode {
