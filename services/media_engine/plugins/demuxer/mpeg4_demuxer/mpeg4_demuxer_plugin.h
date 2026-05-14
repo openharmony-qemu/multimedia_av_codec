@@ -145,6 +145,7 @@ private:
     std::vector<uint32_t> avTrackIds_ {};
     std::map<int32_t, std::shared_ptr<Sample>> firstFrameMap_ {};
     std::unordered_map<uint32_t, std::shared_ptr<MPEG4Sample>> cacheSamples_ {};
+    std::unordered_map<uint32_t, std::shared_ptr<Sample>> pendingWebVttSamples_ {};
 
     int64_t absolutePTSOfIndexZero_ = INT64_MAX;
     std::priority_queue<int64_t> index2RelativePTSHeap_;
@@ -170,12 +171,45 @@ private:
     std::shared_ptr<MPEG4AtomParser::Track> FindTrackById(int32_t trackId);
 
     Status DynamicBaseTrackSelect(int64_t seekTime, int64_t &maxPts, int32_t &baseTrackIndex);
+    struct DynamicBaseTrackState {
+        int64_t& minPts;
+        int32_t& baseTrackTimeBase;
+        bool& baseTrackIsVideo;
+        int32_t& baseTrackIndex;
+    };
+    Status UpdateDynamicBaseTrack(const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t trackId,
+        int64_t seekTime, DynamicBaseTrackState& state);
     Status FindBaseTrackAndCalcDelay(int64_t seekTime, SeekMode mode, int32_t &trackId);
     Status FindFragmentSyncSample(uint32_t fragmentIndex, std::shared_ptr<MPEG4AtomParser::Track> track);
     Status FindFragmentAtTime(int64_t reqTime, SeekMode flag, std::shared_ptr<MPEG4AtomParser::Track> track,
         bool &findFragmentSync);
     Status FragmentSeek(int64_t seekTime, SeekMode mode, int32_t trackIndex, bool &findFragmentSync);
+    struct SeekTimeContext {
+        bool editListApplied = false;
+        int32_t baseTrackTimeScale = 0;
+        int64_t relativeSeekTime = 0;
+        int64_t trackSeekTime = 0;
+    };
+    Status PrepareSeekTime(const std::shared_ptr<MPEG4AtomParser::Track>& track, int64_t seekTime,
+        int64_t& realSeekTime, SeekTimeContext& context);
+    struct SeekSampleIndexContext {
+        int64_t seekTime = 0;
+        int64_t trackSeekTime = 0;
+        SeekMode mode = SeekMode::SEEK_PREVIOUS_SYNC;
+        uint32_t sampleIndex = 0;
+        bool isBaseTrack = true;
+    };
+    Status FindSeekSampleIndex(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+        SeekSampleIndexContext& context);
     Status DoSeekInternal(int32_t trackIndex, int64_t seekTime, SeekMode mode, int64_t& realSeekTime);
+    struct VideoSyncSeekContext {
+        uint32_t sampleIndex;
+        bool isBaseTrack;
+        bool editListApplied;
+        int32_t baseTrackTimeScale;
+        int64_t& syncSeekTime;
+    };
+    Status GetVideoSyncSeekTime(const std::shared_ptr<MPEG4AtomParser::Track>& track, VideoSyncSeekContext& context);
     Status MultiTrackSync(int32_t trackIndex, bool isBaseTrack, int64_t syncSeekTime, SeekMode mode);
     Status SeekToStartInternal();
     
@@ -236,6 +270,14 @@ private:
     bool ReadAndCacheSample();
     Status ReadSampleToCache(uint32_t trackId);
     Status PushEosToCache(uint32_t trackId);
+    bool IsWebVTTTrack(const std::shared_ptr<MPEG4AtomParser::Track>& track) const;
+    void AdvanceSampleIndex(const std::shared_ptr<MPEG4AtomParser::Track>& track);
+    Status ProcessWebVTTSampleForCache(
+        const std::shared_ptr<MPEG4AtomParser::Track>& track, std::shared_ptr<MPEG4Sample> mpeg4Sample);
+    Status FlushPendingWebVTTSample(uint32_t trackId);
+    Status FlushPendingWebVTTSamples();
+    int64_t GetWebVTTFlushEndPtsUs(
+        const std::shared_ptr<MPEG4AtomParser::Track>& track, const std::shared_ptr<Sample>& sample) const;
     void ReleaseReadLoop();
     void UpdateAsyncReadThreadPriority();
 

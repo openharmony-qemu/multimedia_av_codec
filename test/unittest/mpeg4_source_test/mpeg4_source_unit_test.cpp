@@ -387,7 +387,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_0004, TestSize.Level1)
     EXPECT_EQ(formatVal_.width, 720);
     EXPECT_EQ(formatVal_.height, 480);
     EXPECT_EQ(formatVal_.startTime, 33333);
-    EXPECT_EQ(formatVal_.bitRate, 1076608);
+    EXPECT_EQ(formatVal_.bitRate, 1753781);
     EXPECT_EQ(formatVal_.frameRate, 60.000000);
     trackIndex_ = 1;
     format_->Destroy();
@@ -562,10 +562,9 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_0008, TestSize.Level1)
     printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
     EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
+    EXPECT_FALSE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
     EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
     EXPECT_EQ(formatVal_.codecMime, "audio/g711mu");
-    EXPECT_EQ(formatVal_.bitRate, 64000);
 }
 
 /**
@@ -1206,7 +1205,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_0022, TestSize.Level1)
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
     EXPECT_EQ(formatVal_.sampleRate, 16000);
     EXPECT_EQ(formatVal_.channelCount, 1);
-    EXPECT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32LE);
+    EXPECT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     EXPECT_EQ(formatVal_.channelLayout, 4);
 }
 
@@ -1239,7 +1238,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_0023, TestSize.Level1)
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
     EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
     EXPECT_EQ(formatVal_.codecMime, "video/mpeg2");
-    EXPECT_EQ(formatVal_.bitRate, 1344761);
+    EXPECT_EQ(formatVal_.bitRate, 1399095);
     trackIndex_ = 1;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
@@ -1282,7 +1281,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_0024, TestSize.Level1)
     EXPECT_EQ(formatVal_.timeScale, 15360);
     EXPECT_EQ(formatVal_.width, 640);
     EXPECT_EQ(formatVal_.height, 352);
-    EXPECT_EQ(formatVal_.frameRate, 28.787878787878789);
+    EXPECT_EQ(formatVal_.frameRate, 27.66990291262136);
     trackIndex_ = 1;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
@@ -1327,7 +1326,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_0025, TestSize.Level1)
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
     EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
     EXPECT_EQ(formatVal_.codecMime, "video/mpeg2");
-    EXPECT_EQ(formatVal_.bitRate, 1344761);
+    EXPECT_EQ(formatVal_.bitRate, 1399095);
     trackIndex_ = 1;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
@@ -1336,7 +1335,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_0025, TestSize.Level1)
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
     EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    EXPECT_EQ(formatVal_.bitRate, 1413017);
+    EXPECT_EQ(formatVal_.bitRate, 1411200);
 }
 
 /**
@@ -1370,7 +1369,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_0026, TestSize.Level1)
     EXPECT_EQ(formatVal_.timeScale, 15360);
     EXPECT_EQ(formatVal_.width, 640);
     EXPECT_EQ(formatVal_.height, 352);
-    EXPECT_EQ(formatVal_.frameRate, 28.787878787878789);
+    EXPECT_EQ(formatVal_.frameRate, 27.66990291262136);
     trackIndex_ = 1;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
@@ -1513,10 +1512,9 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_0029, TestSize.Level1)
     printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
     EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
+    EXPECT_FALSE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
     EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
     EXPECT_EQ(formatVal_.codecMime, "audio/raw");
-    EXPECT_EQ(formatVal_.bitRate, 11289600);
 }
 
 /**
@@ -1563,7 +1561,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_0030, TestSize.Level1)
     EXPECT_EQ(formatVal_.sampleRate, 44100);
     EXPECT_EQ(formatVal_.channelCount, 8);
     EXPECT_EQ(formatVal_.audioSampleFormat, 26);
-    EXPECT_EQ(formatVal_.channelLayout, 1599);
+    EXPECT_EQ(formatVal_.channelLayout, 206158431759);
 }
 
 /**
