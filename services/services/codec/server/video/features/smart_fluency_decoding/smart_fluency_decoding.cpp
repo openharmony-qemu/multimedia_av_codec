@@ -462,23 +462,7 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
         return HandlePostDecodePassthrough(pts, preDropCount, cost);
     }
 
-    bool isNonRef = GetRefFrameFromMap(pts);
-    MVStats mvStats;
-    if (!caps.requiresMv || surfaceBuffer == nullptr) {
-        mvStats = {};
-    } else if (isNonRef) {
-        if (hasValidMVStats_) {
-            mvStats = lastValidMVStats_;
-        } else {
-            mvStats = {};
-        }
-    } else {
-        ParseMVData(surfaceBuffer, mvStats, cost.copyMvCostUs, cost.analyzeMvCostUs);
-        if (mvStats.validBlocks > 0) {
-            lastValidMVStats_ = mvStats;
-            hasValidMVStats_ = true;
-        }
-    }
+    MVStats mvStats = ExtractMVStats(caps, pts, cost, surfaceBuffer);
     PostDecResult res;
     FrameRetentionContext ctx { preDropCount, caps.requiresMv ? &mvStats : nullptr };
     {
@@ -612,6 +596,31 @@ bool SmartFluencyDecoding::GetRefFrameFromMap(int64_t pts) {
     }
 
     return isNonRef;
+}
+
+MVStats SmartFluencyDecoding::ExtractMVStats(StrategyCaps caps, int64_t pts, PostDecCost& cost, const sptr<SurfaceBuffer> surfaceBuffer)
+{
+    bool isNonRef = GetRefFrameFromMap(pts);
+    MVStats mvStats;
+    if (!caps.requiresMv || surfaceBuffer == nullptr) {
+        mvStats = {};
+        return mvStats;
+    }
+
+    if (isNonRef) {
+        if (hasValidMVStats_) {
+            mvStats = lastValidMVStats_;
+        } else {
+            mvStats = {};
+        }
+    } else {
+        ParseMVData(surfaceBuffer, mvStats, cost.copyMvCostUs, cost.analyzeMvCostUs);
+        if (mvStats.validBlocks > 0) {
+            lastValidMVStats_ = mvStats;
+            hasValidMVStats_ = true;
+        }
+    }
+    return mvStats;
 }
 
 } // namespace SFD
