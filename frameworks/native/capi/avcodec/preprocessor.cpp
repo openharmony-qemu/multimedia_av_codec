@@ -31,6 +31,13 @@
 #include "v2_2/buffer_handle_meta_key_type.h"
 #include "securec.h"
 
+namespace {
+bool IsEvenNumber(int32_t value)
+{
+    constexpr int32_t checkEvenNumber = 2;
+    return (value % checkEvenNumber == 0);
+}
+}
 namespace OHOS {
 namespace MediaAVCodec {
 namespace {
@@ -181,7 +188,23 @@ int32_t Preprocessor::ValidateConfiguration(const Media::Format &format, bool co
         AVCODEC_LOGE("Crop and downsampling cannot be enabled simultaneously");
         return AVCS_ERR_INVALID_VAL;
     }
+    if (cropParams_.result == ConfigResult::ENABLED && IsYuv420Format(encoderParams_.pixelFormat)) {
+        int32_t cropWidth = cropParams_.right - cropParams_.left + 1;
+        int32_t cropHeight = cropParams_.bottom - cropParams_.top + 1;
+        bool invalid = (!IsEvenNumber(cropParams_.left) || !IsEvenNumber(cropParams_.top) ||
+                        !IsEvenNumber(cropWidth) || !IsEvenNumber(cropHeight));
+        CHECK_AND_RETURN_RET_LOG(!invalid, AVCS_ERR_INVALID_VAL,
+            "For YUV pixel format input, crop left-top coordinates and crop width, height must be even numbers. "
+            "(left, top)=(%{public}d, %{public}d), width=%{public}d, height=%{public}d",
+            cropParams_.left, cropParams_.top, cropWidth, cropHeight);
 
+    }
+    if (downsamplingParams_.result == ConfigResult::ENABLED && IsYuv420Format(encoderParams_.pixelFormat)) {
+        bool invalid = !IsEvenNumber(downsamplingParams_.width) || !IsEvenNumber(downsamplingParams_.height);
+        CHECK_AND_RETURN_RET_LOG(!invalid, AVCS_ERR_INVALID_VAL,
+            "For YUV pixel format input, target width and height of downsampling must be even numbers."
+            "width=%{public}d, height=%{public}d", downsamplingParams_.width, downsamplingParams_.height);
+    }
     if ((cropParams_.result == ConfigResult::ENABLED || downsamplingParams_.result == ConfigResult::ENABLED) &&
         !IsAvailable()) {
         AVCODEC_LOGE("Crop and downsampling are not supported");
