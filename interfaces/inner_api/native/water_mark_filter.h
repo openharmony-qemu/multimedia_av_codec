@@ -76,6 +76,8 @@ public:
     void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId);
     Status SetWatermark(std::shared_ptr<AVBuffer> &waterMarkBuffer, int32_t width, int32_t height);
     Status SetVideoResize(int32_t width, int32_t height);  // 设置视频缩放的目标宽高
+    Status SetOutputSurface(sptr<Surface> surface, int32_t width, int32_t height, int32_t rotation);
+    void SetAVRecorderMode();
  
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -128,6 +130,8 @@ private:
     std::condition_variable wakeUpCond_;
     std::vector<GLuint> watermarkTexIds_;     // 每个水印的纹理ID
     std::unique_ptr<ShaderProgram> watermarkMergeShaderProgram_;  // 水印合成shader
+    int32_t rotation_ = 0;
+    bool isAVRecorderMode_ = false; //是否录制模式，默认否
  
     bool CreateNativeImage();
     void UpdateNativeWindow(void *window, uint64_t width, uint64_t height);

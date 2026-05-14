@@ -519,6 +519,25 @@ bool WaterMarkFilter::RenderWatermarksToFBO(int32_t width, int32_t height)
     return true;
 }
 
+Status WaterMarkFilter::SetOutputSurface(sptr<Surface> surface, int32_t width, int32_t height, int32_t rotation)
+{
+    std::unique_lock<std::mutex> lock(releaseMutex_);
+    MEDIA_LOG_I("WaterMarkFilter SetOutputSurface %{public}d, %{public}d", width, height);
+    targetWidth_ = width;
+    targetHeight_ = height;
+    rotation_ = rotation;
+    FALSE_RETURN_V_MSG(surface != nullptr, Status::ERROR_UNKNOWN, "surface is null");
+    auto window = CreateNativeWindowFromSurface(&surface);
+    UpdateNativeWindow(window, width, height);
+
+    // 只在第一次调用时创建线程，避免重复创建
+    FALSE_RETURN_V_MSG(!thread_.joinable(), Status::OK, "thread_ is run");
+    thread_ = std::thread([this]() {
+        ThreadMainLoop();
+    });
+    return Status::OK;
+}
+
 bool WaterMarkFilter::MergeWaterMarksWithOpenGL()
 {
     FALSE_RETURN_V_MSG(!watermarkList_.empty(), false, "watermarkList is empty, skip MergeWaterMarksWithOpenGL");
@@ -716,8 +735,13 @@ Status WaterMarkFilter::DoPrepare()
     FALSE_RETURN_V_MSG(filterCallback_ != nullptr, Status::ERROR_UNKNOWN, "filterCallback_ is nullptr");
     switch (filterType_) {
         case FilterType::WATERMARK:
-            filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
-                StreamType::STREAMTYPE_RAW_VIDEO);
+            if (isAVRecorderMode_) {
+                filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
+                    StreamType::STREAMTYPE_WATERMARK);
+            } else {
+                filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
+                    StreamType::STREAMTYPE_RAW_VIDEO);
+            }
             break;
         default:
             break;
@@ -764,6 +788,7 @@ Status WaterMarkFilter::DoRelease()
         return Status::OK;
     }
     hasReleased_ = true;
+    isAVRecorderMode_ = false;
 
     // 停止渲染线程
     {
@@ -996,6 +1021,12 @@ FilterType WaterMarkFilter::GetFilterType()
 {
     MEDIA_LOG_I("GetFilterType");
     return filterType_;
+}
+
+void WaterMarkFilter::SetAVRecorderMode()
+{
+    MEDIA_LOG_I("SetAVRecorderMode");
+    isAVRecorderMode_ = true;
 }
 } // namespace Pipeline
 } // namespace MEDIA
