@@ -1713,8 +1713,18 @@ void MPEG4AtomParser::UpdateMdhdTimeOffset(uint32_t timeScale)
         lastTrack_->sampleHelper->SetTimeOffset(0);
         return;
     }
-    int64_t emptyDurationTrackTs = lastTrack_->elstInitEmptyEdit > 0 ?
-        ((lastTrack_->elstInitEmptyEdit * timeScale + fileTimeScale - 1) / fileTimeScale) : 0;
+    int64_t emptyDurationTrackTs = 0;
+    if (lastTrack_->elstInitEmptyEdit > 0) {
+        int64_t scaledEmptyDuration = 0;
+        int64_t roundOffset = static_cast<int64_t>(fileTimeScale) - 1;
+        if (__builtin_mul_overflow(lastTrack_->elstInitEmptyEdit, static_cast<int64_t>(timeScale),
+            &scaledEmptyDuration) ||
+            __builtin_add_overflow(scaledEmptyDuration, roundOffset, &scaledEmptyDuration)) {
+            MEDIA_LOG_E("Convert empty edit duration overflow");
+            return;
+        }
+        emptyDurationTrackTs = scaledEmptyDuration / static_cast<int64_t>(fileTimeScale);
+    }
     lastTrack_->sampleHelper->SetTimeOffset(lastTrack_->elstShiftStartTime - emptyDurationTrackTs);
 }
 
@@ -1948,7 +1958,13 @@ Status MPEG4AtomParser::ParseSampleDescriptionEntry(int32_t depth, ParseContext*
     std::string invalidMimeType = MimeType::INVALID_TYPE;
     lastTrack_->sampleHelper->mimeType_ = invalidMimeType;
     mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::MIME_TYPE>(invalidMimeType);
-    ctx->offset += atom.size;
+    int64_t nextOffset = 0;
+    if (atom.size > static_cast<uint64_t>(std::numeric_limits<int64_t>::max()) ||
+        __builtin_add_overflow(ctx->offset, static_cast<int64_t>(atom.size), &nextOffset)) {
+        MEDIA_LOG_E("Sample entry offset overflow");
+        return Status::ERROR_INVALID_DATA;
+    }
+    ctx->offset = nextOffset;
     return Status::OK;
 }
 
@@ -3540,6 +3556,8 @@ Status MPEG4AtomParser::ParseSidxEntries(const uint8_t* headerInfo, int64_t entr
             MEDIA_LOG_W("Sub sidx not supported");
         }
         uint32_t referencedSize = size & 0x7FFFFFFF;
+        int64_t safeReferencedSize = static_cast<int64_t>(referencedSize);
+        int64_t safeDuration = static_cast<int64_t>(duration);
         MEDIA_LOG_D("Entry " PUBLIC_LOG_U32 ": offset=" PUBLIC_LOG_D64 ", size="
             PUBLIC_LOG_U32 ", duration=" PUBLIC_LOG_U32, i, sidxCtx.firstMoofOffset, referencedSize, duration);
         int64_t firstMoofOffset = sidxCtx.firstMoofOffset;
@@ -3548,19 +3566,28 @@ Status MPEG4AtomParser::ParseSidxEntries(const uint8_t* headerInfo, int64_t entr
                 return entry.moofOffset == firstMoofOffset;
             });
         if (!found) {
+            FALSE_RETURN_V_MSG_E(sidxCtx.dts <= static_cast<uint64_t>(std::numeric_limits<int64_t>::max()),
+                Status::ERROR_INVALID_DATA, "Sidx dts overflow");
             fragmentEntry_.emplace_back(FragmentEntry {
                 .firstDts = static_cast<int64_t>(sidxCtx.dts),
                 .moofOffset = sidxCtx.firstMoofOffset,
-                .duration = static_cast<int64_t>(duration),
+                .duration = safeDuration,
                 .hasRead = false
             });
         }
         if (currentTrack) {
-            currentTrack->sidxDuration += duration;
-            currentTrack->sidxReferencedSize += referencedSize;
+            if (__builtin_add_overflow(currentTrack->sidxDuration, safeDuration, &currentTrack->sidxDuration) ||
+                __builtin_add_overflow(currentTrack->sidxReferencedSize, safeReferencedSize,
+                    &currentTrack->sidxReferencedSize)) {
+                MEDIA_LOG_E("Sidx track info overflow");
+                return Status::ERROR_INVALID_DATA;
+            }
         }
-        sidxCtx.firstMoofOffset += referencedSize;
-        sidxCtx.dts += duration;
+        if (__builtin_add_overflow(sidxCtx.firstMoofOffset, safeReferencedSize, &sidxCtx.firstMoofOffset) ||
+            __builtin_add_overflow(sidxCtx.dts, static_cast<uint64_t>(duration), &sidxCtx.dts)) {
+            MEDIA_LOG_E("Sidx context overflow");
+            return Status::ERROR_INVALID_DATA;
+        }
     }
     return Status::OK;
 }

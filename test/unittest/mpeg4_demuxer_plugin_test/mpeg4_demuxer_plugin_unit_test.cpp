@@ -1607,6 +1607,24 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_RbspReadUEBoundary_001, 
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_RbspGetBitsBoundary_001
+ * @tc.desc: Verify RbspGetBits handles zero, oversized and unaligned 32-bit reads safely
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_RbspGetBitsBoundary_001, TestSize.Level1)
+{
+    const uint8_t unalignedData[] = {0x0F, 0xFF, 0xFF, 0xFF, 0xF0};
+    RbspContext unalignedContext(unalignedData, static_cast<int32_t>(sizeof(unalignedData)));
+    EXPECT_EQ(static_cast<uint32_t>(unalignedContext.RbspGetBits<uint8_t>(4)), 0U);
+    EXPECT_EQ((unalignedContext.RbspGetBits<uint32_t, uint64_t>(32)), 0xFFFFFFFFU);
+
+    RbspContext invalidContext(unalignedData, static_cast<int32_t>(sizeof(unalignedData)));
+    EXPECT_EQ((invalidContext.RbspGetBits<uint32_t, uint32_t>(0)), 0U);
+    EXPECT_EQ(static_cast<uint32_t>(invalidContext.RbspGetBits<uint8_t, uint32_t>(9)), 0U);
+    EXPECT_EQ((invalidContext.RbspGetBits<uint32_t, uint32_t>(33)), 0U);
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_LifecycleMetaAndStubInterfaces_001
  * @tc.desc: Verify MPEG4 demuxer lifecycle, meta, probe, drm and reference-parser interfaces
  * @tc.type: FUNC

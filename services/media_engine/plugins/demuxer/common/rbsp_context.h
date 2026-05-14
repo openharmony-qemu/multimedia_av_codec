@@ -43,28 +43,36 @@ public:
     template <typename T = uint8_t, typename U = uint32_t>
     T RbspGetBits(uint32_t size, bool isSkip = true)
     {
+        constexpr uint32_t valueBits = sizeof(T) * RBSP_BYTE_BITS;
+        constexpr uint32_t workBits = sizeof(U) * RBSP_BYTE_BITS;
+        constexpr uint32_t accumulatorBits = sizeof(uint64_t) * RBSP_BYTE_BITS;
+        if (size == 0 || size > valueBits || size > workBits || size > accumulatorBits) {
+            return 0;
+        }
+
         if (!RbspCheckSize(size)) {
             RbspSkipBits(size);
             return 0;
         }
 
-        U reverseData = 0;
-        uint32_t byteCount = (bitIndex_ + size) % RBSP_BYTE_BITS == 0 ?
-            (bitIndex_ + size) / RBSP_BYTE_BITS : (bitIndex_ + size) / RBSP_BYTE_BITS + 1;
-        for (uint32_t i = 0; i < byteCount; ++i) {
-            if (byteIndex_ + i >= size_) {
+        uint64_t data = 0;
+        for (uint32_t i = 0; i < size; ++i) {
+            uint64_t totalBitOffset = static_cast<uint64_t>(bitIndex_) + i;
+            uint64_t currentByteIndex = static_cast<uint64_t>(byteIndex_) + totalBitOffset / RBSP_BYTE_BITS;
+            if (currentByteIndex >= size_) {
                 return 0;
             }
-            reverseData = (reverseData << RBSP_BYTE_BITS) | (*(buf_ + byteIndex_ + i) & 0xFF);
+            uint32_t currentBitIndex = static_cast<uint32_t>(totalBitOffset % RBSP_BYTE_BITS);
+            uint32_t shiftBits = (RBSP_BYTE_BITS - 1) - currentBitIndex;
+            uint64_t currentByte = static_cast<uint64_t>(*(buf_ + static_cast<uint32_t>(currentByteIndex)));
+            uint8_t bit = static_cast<uint8_t>((currentByte >> shiftBits) & 0x01);
+            data = (data << 1) | bit;
         }
-        reverseData = (byteCount <= sizeof(U)) ?
-            reverseData << (RBSP_BYTE_BITS * (sizeof(U) - byteCount)) : reverseData;
-        T data = static_cast<T>((reverseData << bitIndex_) >> (RBSP_BYTE_BITS * sizeof(U) - size));
 
         if (isSkip) {
             RbspSkipBits(size);
         }
-        return data;
+        return static_cast<T>(data);
     }
 
 private:

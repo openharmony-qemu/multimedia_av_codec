@@ -954,9 +954,18 @@ bool MPEG4SampleHelper::IsValidTrunSampleData(int64_t dataSize, uint32_t bufferO
     uint32_t numSamples) const
 {
     if (byteLength != 0) {
-        return (dataSize - sizeof(uint64_t) - bufferOffset) / byteLength >= numSamples;
+        constexpr int64_t trunHeaderSize = sizeof(uint64_t);
+        if (dataSize < trunHeaderSize) {
+            return false;
+        }
+        int64_t dataBytes = dataSize - trunHeaderSize;
+        int64_t safeBufferOffset = static_cast<int64_t>(bufferOffset);
+        if (dataBytes < safeBufferOffset) {
+            return false;
+        }
+        return (dataBytes - safeBufferOffset) / static_cast<int64_t>(byteLength) >= static_cast<int64_t>(numSamples);
     }
-    return numSamples <= MAX_TRUN_SAMPLES;
+    return static_cast<int64_t>(numSamples) <= MAX_TRUN_SAMPLES;
 }
 
 Status MPEG4SampleHelper::SetTrackFragmentRunParams(int64_t dataOffset, int64_t dataSize, int64_t sidxDts,
