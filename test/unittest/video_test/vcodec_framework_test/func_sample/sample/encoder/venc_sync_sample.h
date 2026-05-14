@@ -48,6 +48,7 @@ public:
     int32_t FreeOutputBuffer(uint32_t index);
     int32_t CreateInputSurface();
     int32_t GetSurfaceQueueSize();
+    int32_t GetMaxPendingInputCount();
     int32_t GetIDRFrameCount();
     int32_t GetIDRWithImmediateXPSCount();
     void SetIsAVCCodec(bool isAVC);
@@ -62,6 +63,7 @@ public:
     bool isAVBufferMode_ = false;
     bool isTemporalScalabilitySyncIdr_ = false;
     bool isDiscardFrame_ = false;
+    
     std::string roiRects_ = "";
     bool enableVariableFrameRate_ = false;
     int32_t frameIndex_ = 0;

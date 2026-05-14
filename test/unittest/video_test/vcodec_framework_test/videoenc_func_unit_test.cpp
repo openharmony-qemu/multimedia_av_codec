@@ -837,24 +837,21 @@ HWTEST_F(TEST_SUIT, VideoEncoder_GetInputDescription_NumberOfPendingFrames_001, 
     auto inputDesc = videoEnc_->GetInputDescription();
     ASSERT_NE(nullptr, inputDesc);
     int32_t pendingFrames = -1;
-    bool hasKey = inputDesc->GetIntValue(
-        MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames);
+    bool hasKey = inputDesc->GetIntValue(Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames);
     EXPECT_TRUE(hasKey);
     EXPECT_EQ(pendingFrames, 0);
 
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     inputDesc = videoEnc_->GetInputDescription();
     ASSERT_NE(nullptr, inputDesc);
-    hasKey = inputDesc->GetIntValue(
-        MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames);
+    hasKey = inputDesc->GetIntValue(Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames);
     EXPECT_TRUE(hasKey);
     EXPECT_GE(pendingFrames, 0);
 
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
     inputDesc = videoEnc_->GetInputDescription();
     ASSERT_NE(nullptr, inputDesc);
-    hasKey = inputDesc->GetIntValue(
-        MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames);
+    hasKey = inputDesc->GetIntValue(Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames);
     EXPECT_TRUE(hasKey);
     EXPECT_EQ(pendingFrames, 0);
 }
@@ -879,24 +876,21 @@ HWTEST_F(TEST_SUIT, VideoEncoder_GetInputDescription_NumberOfPendingFrames_002, 
     auto inputDesc = videoEnc_->GetInputDescription();
     ASSERT_NE(nullptr, inputDesc);
     int32_t pendingFrames = -1;
-    bool hasKey = inputDesc->GetIntValue(
-        MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames);
+    bool hasKey = inputDesc->GetIntValue(Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames);
     EXPECT_TRUE(hasKey);
     EXPECT_EQ(pendingFrames, 0);
 
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     inputDesc = videoEnc_->GetInputDescription();
     ASSERT_NE(nullptr, inputDesc);
-    hasKey = inputDesc->GetIntValue(
-        MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames);
+    hasKey = inputDesc->GetIntValue(Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames);
     EXPECT_TRUE(hasKey);
     EXPECT_GE(pendingFrames, 0);
 
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
     inputDesc = videoEnc_->GetInputDescription();
     ASSERT_NE(nullptr, inputDesc);
-    hasKey = inputDesc->GetIntValue(
-        MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames);
+    hasKey = inputDesc->GetIntValue(Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames);
     EXPECT_TRUE(hasKey);
     EXPECT_EQ(pendingFrames, 0);
 }
@@ -922,7 +916,7 @@ HWTEST_F(TEST_SUIT, VideoEncoder_GetInputDescription_NumberOfPendingFrames_003, 
     ASSERT_NE(nullptr, inputDesc);
 
     int32_t pendingFrames = -1;
-    bool ret = inputDesc->GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames);
+    bool ret = inputDesc->GetIntValue(Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames);
     EXPECT_TRUE(ret);
     EXPECT_EQ(pendingFrames, 0);
 }
@@ -948,7 +942,7 @@ HWTEST_F(TEST_SUIT, VideoEncoder_GetInputDescription_NumberOfPendingFrames_004, 
     ASSERT_NE(nullptr, inputDesc);
 
     int32_t pendingFrames = -1;
-    bool ret = inputDesc->GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames);
+    bool ret = inputDesc->GetIntValue(Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames);
     EXPECT_FALSE(ret);
 }
 
@@ -1113,10 +1107,10 @@ HWTEST_F(TEST_SUIT, VideoEncoder_MaxFrameDelayCount_Surface_001, TestSize.Level1
 
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_SURFACE);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
 
     int32_t expectedValue = 3;
-    format_->PutIntValue(MediaDescriptionKey::OH_MD_KEY_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, expectedValue);
+    format_->PutIntValue(Tag::VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, expectedValue);
 
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
@@ -1147,7 +1141,7 @@ HWTEST_F(TEST_SUIT, VideoEncoder_MaxFrameDelayCount_Buffer_001, TestSize.Level1)
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
 
     int32_t expectedValue = 3;
-    format_->PutIntValue(MediaDescriptionKey::OH_MD_KEY_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, expectedValue);
+    format_->PutIntValue(Tag::VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, expectedValue);
 
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
@@ -1180,7 +1174,7 @@ HWTEST_F(TEST_SUIT, VideoEncoder_RepeatHeaderBeforeSyncFrames_001, TestSize.Leve
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
 
     int32_t repeatHeader = 1;
-    format_->PutIntValue(MediaDescriptionKey::OH_MD_VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES, repeatHeader);
+    format_->PutIntValue(Tag::VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES, repeatHeader);
 
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());

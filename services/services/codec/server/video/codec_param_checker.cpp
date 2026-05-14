@@ -913,19 +913,19 @@ int32_t MaxFrameDelayCountChecker(CapabilityData &capData, Format &format, Codec
     (void)scenario;
     int32_t maxFrameDelayCount;
     bool maxFrameDelayCountExist = format.GetIntValue(
-        MediaDescriptionKey::OH_MD_KEY_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, maxFrameDelayCount);
+        Tag::VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, maxFrameDelayCount);
     if (!maxFrameDelayCountExist) {
         return AVCS_ERR_OK;
     }
 
     if (!capData.isVendor) {
-        AVCODEC_LOGW("Not support OH_MD_KEY_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT for software encoder");
+        AVCODEC_LOGW("Not support VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT for software encoder");
         return AVCS_ERR_OK;
     }
 
     CHECK_AND_RETURN_RET_LOG(maxFrameDelayCount > 0 && maxFrameDelayCount <= 5, AVCS_ERR_INVALID_VAL,
         "Param invalid, %{public}s: %{public}d, should be in range [1, 5]",
-        MediaDescriptionKey::OH_MD_KEY_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT.data(), maxFrameDelayCount);
+        Tag::VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, maxFrameDelayCount);
     return AVCS_ERR_OK;
 }
 } // namespace

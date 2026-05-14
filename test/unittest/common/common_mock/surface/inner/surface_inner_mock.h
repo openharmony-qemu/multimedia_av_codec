@@ -30,7 +30,7 @@ public:
 
     void SetTransform(int32_t transform);
     void GetTransform(int32_t &transform);
-    int32_t GetQueueSize() override;
+    int32_t GetQueueSize();
 private:
     sptr<Surface> surface_ = nullptr;
 };

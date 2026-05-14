@@ -367,6 +367,14 @@ int32_t VideoEncSyncSample::GetSurfaceQueueSize()
     return surfaceMock_->GetQueueSize();
 }
 
+int32_t VideoEncSyncSample::GetMaxPendingInputCount()
+{
+    if (signal_ == nullptr) {
+        return -1;
+    }
+    return signal_->maxPendingInputCount_.load();
+}
+
 int32_t VideoEncSyncSample::GetIDRFrameCount()
 {
     if (signal_ == nullptr) {
@@ -669,6 +677,15 @@ int32_t VideoEncSyncSample::InputLoopInnerExt()
     }
 
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: QueryInputBuffer fail");
+    signal_->pendingInputCount_++;
+    int32_t current = signal_->pendingInputCount_.load();
+    int32_t max = signal_->maxPendingInputCount_.load();
+    while (current > max) {
+        if (signal_->maxPendingInputCount_.compare_exchange_weak(max, current)) {
+            break;
+        }
+    }
+
     auto buffer = videoEnc_->GetInputBuffer(index);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->GetAddr() != nullptr, AV_ERR_INVALID_VAL,
                                       "Fatal: GetInputBuffer fail, index: %d", index);
@@ -693,6 +710,7 @@ int32_t VideoEncSyncSample::InputLoopInnerExt()
     if (attr.flags & AVCODEC_BUFFER_FLAG_EOS) {
         buffer->SetBufferAttr(attr);
         int32_t res = PushInputBuffer(index);
+        signal_->pendingInputCount_--;
         cout << "Input EOS Frame, frameCount = " << frameInputCount_ << endl;
         if (inFile_ != nullptr && inFile_->is_open()) {
             inFile_->close();
@@ -707,7 +725,9 @@ int32_t VideoEncSyncSample::InputLoopInnerExt()
     }
     InputLoopInnerFeatureExt(attr);
     buffer->SetBufferAttr(attr);
-    return PushInputBuffer(index);
+    int32_t ret = PushInputBuffer(index);
+    signal_->pendingInputCount_--;
+    return ret;
 }
 
 void VideoEncSyncSample::InputFuncSurface()
