@@ -819,19 +819,14 @@ HWTEST_P(TEST_SUIT, VideoEncoder_GetOutputDescription_001, TestSize.Level1)
 
 /**
  * @tc.name: VideoEncoder_GetInputDescription_NumberOfPendingFrames_001
- * @tc.desc: GetInputDescription with OH_MD_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES for HW AVC
+ * @tc.desc: GetInputDescription with OH_MD_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES for HW encoder
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoEncoder_GetInputDescription_NumberOfPendingFrames_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_GetInputDescription_NumberOfPendingFrames_001, TestSize.Level1)
 {
-    auto capability = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), true,
-                                                                    AVCodecCategory::AVCODEC_HARDWARE);
-    ASSERT_NE(nullptr, capability);
-    std::string codecName = capability->GetName();
-    ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(codecName));
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
 
     auto inputDesc = videoEnc_->GetInputDescription();
@@ -858,58 +853,14 @@ HWTEST_F(TEST_SUIT, VideoEncoder_GetInputDescription_NumberOfPendingFrames_001, 
 
 /**
  * @tc.name: VideoEncoder_GetInputDescription_NumberOfPendingFrames_002
- * @tc.desc: GetInputDescription with OH_MD_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES for HW HEVC
+ * @tc.desc: GetInputDescription with OH_MD_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES for HW encoder after Configure
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoEncoder_GetInputDescription_NumberOfPendingFrames_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_GetInputDescription_NumberOfPendingFrames_002, TestSize.Level1)
 {
-    auto capability = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_HEVC.data(), true,
-                                                                    AVCodecCategory::AVCODEC_HARDWARE);
-    ASSERT_NE(nullptr, capability);
-    std::string codecName = capability->GetName();
-    ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(codecName));
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
-    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-
-    auto inputDesc = videoEnc_->GetInputDescription();
-    ASSERT_NE(nullptr, inputDesc);
-    int32_t pendingFrames = -1;
-    bool hasKey = inputDesc->GetIntValue(Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames);
-    EXPECT_TRUE(hasKey);
-    EXPECT_EQ(pendingFrames, 0);
-
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    inputDesc = videoEnc_->GetInputDescription();
-    ASSERT_NE(nullptr, inputDesc);
-    hasKey = inputDesc->GetIntValue(Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames);
-    EXPECT_TRUE(hasKey);
-    EXPECT_GE(pendingFrames, 0);
-
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
-    inputDesc = videoEnc_->GetInputDescription();
-    ASSERT_NE(nullptr, inputDesc);
-    hasKey = inputDesc->GetIntValue(Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames);
-    EXPECT_TRUE(hasKey);
-    EXPECT_EQ(pendingFrames, 0);
-}
-
-/**
- * @tc.name: VideoEncoder_GetInputDescription_NumberOfPendingFrames_003
- * @tc.desc: GetInputDescription with OH_MD_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES for HW HEVC after Configure
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, VideoEncoder_GetInputDescription_NumberOfPendingFrames_003, TestSize.Level1)
-{
-    auto capability = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_HEVC.data(), true,
-                                                                    AVCodecCategory::AVCODEC_HARDWARE);
-    ASSERT_NE(nullptr, capability);
-    std::string codecName = capability->GetName();
-    ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(codecName));
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
 
     auto inputDesc = videoEnc_->GetInputDescription();
@@ -919,31 +870,6 @@ HWTEST_F(TEST_SUIT, VideoEncoder_GetInputDescription_NumberOfPendingFrames_003, 
     bool ret = inputDesc->GetIntValue(Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames);
     EXPECT_TRUE(ret);
     EXPECT_EQ(pendingFrames, 0);
-}
-
-/**
- * @tc.name: VideoEncoder_GetInputDescription_NumberOfPendingFrames_004
- * @tc.desc: GetInputDescription with OH_MD_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES not supported for SW AVC
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, VideoEncoder_GetInputDescription_NumberOfPendingFrames_004, TestSize.Level1)
-{
-    auto capability = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), true,
-                                                                    AVCodecCategory::AVCODEC_SOFTWARE);
-    ASSERT_NE(nullptr, capability);
-    std::string codecName = capability->GetName();
-    ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(codecName));
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
-    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-
-    auto inputDesc = videoEnc_->GetInputDescription();
-    ASSERT_NE(nullptr, inputDesc);
-
-    int32_t pendingFrames = -1;
-    bool ret = inputDesc->GetIntValue(Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames);
-    EXPECT_FALSE(ret);
 }
 
 /**
@@ -1097,17 +1023,12 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetPTSParameter_001, TestSize.Level1)
  * @tc.desc: HW encoder configure with max frame delay count in surface mode and verify buffer queue size
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoEncoder_MaxFrameDelayCount_Surface_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_MaxFrameDelayCount_Surface_001, TestSize.Level1)
 {
-    auto capability = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), true,
-                                                                    AVCodecCategory::AVCODEC_HARDWARE);
-    ASSERT_NE(nullptr, capability);
-    std::string codecName = capability->GetName();
-    ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(codecName));
-
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_SURFACE);
 
     int32_t expectedValue = 3;
     format_->PutIntValue(Tag::VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, expectedValue);
@@ -1127,18 +1048,12 @@ HWTEST_F(TEST_SUIT, VideoEncoder_MaxFrameDelayCount_Surface_001, TestSize.Level1
  * @tc.desc: HW encoder configure with max frame delay count in buffer mode and verify pending buffer count
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoEncoder_MaxFrameDelayCount_Buffer_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_MaxFrameDelayCount_Buffer_001, TestSize.Level1)
 {
-    auto capability = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), true,
-                                                                    AVCodecCategory::AVCODEC_HARDWARE);
-    ASSERT_NE(nullptr, capability);
-    std::string codecName = capability->GetName();
-    ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(codecName));
-
     videoEnc_->isAVBufferMode_ = true;
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
 
     int32_t expectedValue = 3;
     format_->PutIntValue(Tag::VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, expectedValue);
@@ -1159,19 +1074,13 @@ HWTEST_F(TEST_SUIT, VideoEncoder_MaxFrameDelayCount_Buffer_001, TestSize.Level1)
  * @tc.desc: HW encoder configure with repeat header before sync frames and verify XPS output
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoEncoder_RepeatHeaderBeforeSyncFrames_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_RepeatHeaderBeforeSyncFrames_001, TestSize.Level1)
 {
-    auto capability = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), true,
-                                                                    AVCodecCategory::AVCODEC_HARDWARE);
-    ASSERT_NE(nullptr, capability);
-    std::string codecName = capability->GetName();
-    ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(codecName));
-
     videoEnc_->isAVBufferMode_ = true;
-    videoEnc_->SetIsAVCCodec(true);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+    videoEnc_->SetIsAVCCodec(GetParam() == VCodecTestParam::HW_AVC);
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
 
     int32_t repeatHeader = 1;
     format_->PutIntValue(Tag::VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES, repeatHeader);

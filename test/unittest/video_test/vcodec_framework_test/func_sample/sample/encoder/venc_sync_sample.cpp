@@ -725,9 +725,9 @@ int32_t VideoEncSyncSample::InputLoopInnerExt()
     }
     InputLoopInnerFeatureExt(attr);
     buffer->SetBufferAttr(attr);
-    int32_t ret = PushInputBuffer(index);
+
     signal_->pendingInputCount_--;
-    return ret;
+    return PushInputBuffer(index);;
 }
 
 void VideoEncSyncSample::InputFuncSurface()
