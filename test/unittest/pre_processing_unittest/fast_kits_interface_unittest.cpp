@@ -25,6 +25,7 @@
 #include <gtest/gtest.h>
 #include "fast_kits_interface.h"
 #include "surface.h"
+#include "surface_buffer_impl.h"
 #include "surface_type.h"
 #include "v1_0/buffer_handle_meta_key_type.h"
 #include "v2_2/buffer_handle_meta_key_type.h"
@@ -130,6 +131,12 @@ const DsFormatParam DS_FORMAT_PARAMS[] = {
     {"NV12_P010", "/data/test/media/1280_720_nv12_10bit.yuv", GRAPHIC_PIXEL_FMT_YCBCR_P010},
 };
 
+// RGBA formats — YUV DS/Crop is covered by FastKitsSliceComboTest
+const DsFormatParam RGBA_FORMAT_PARAMS[] = {
+    {"RGBA8888", "/data/test/media/1280_720_0.rgba", GRAPHIC_PIXEL_FMT_RGBA_8888},
+    {"RGBA1010102", "/data/test/media/1280_720_rgba1010102.rgb", GRAPHIC_PIXEL_FMT_RGBA_1010102},
+};
+
 void EnsureDir(const std::string &dir)
 {
     mkdir(dir.c_str(), 0755); // 0755: rwxr-xr-x directory permission
@@ -157,8 +164,46 @@ sptr<SurfaceBuffer> AllocBuffer(int32_t w, int32_t h, int32_t format)
     return buffer;
 }
 
+// 分配带 slice height 的 buffer：
+// 1. 按 64 对齐分配（如 720 → 768）
+// 2. 将 BufferHandle.height 改回 contentHeight（模拟解码器输出的 slice > height）
+// 3. 手动设置 planesInfo_，使 GetPlanesInfo 返回正确的 slice 布局
+sptr<SurfaceBuffer> AllocSliceBuffer(int32_t w, int32_t contentHeight, int32_t format)
+{
+    int32_t alignedH = ((contentHeight + 63) / 64) * 64; // 64: height alignment, 63 = alignment - 1
+    sptr<SurfaceBuffer> buffer = AllocBuffer(w, alignedH, format);
+    if (buffer == nullptr) {
+        return nullptr;
+    }
+    buffer->GetBufferHandle()->height = contentHeight;
+
+    auto *impl = static_cast<SurfaceBufferImpl *>(buffer.GetRefPtr());
+    int32_t stride = buffer->GetStride();
+    bool isYUV = (format == GRAPHIC_PIXEL_FMT_YCBCR_420_SP || format == GRAPHIC_PIXEL_FMT_YCRCB_420_SP ||
+                  format == GRAPHIC_PIXEL_FMT_YCBCR_P010 || format == GRAPHIC_PIXEL_FMT_YCRCB_P010);
+    if (!isYUV) {
+        return buffer;
+    }
+    constexpr int32_t yuvPlaneCount = 2; // Y plane + UV interleaved plane
+    impl->planesInfo_.planeCount = yuvPlaneCount;
+    impl->planesInfo_.planes[0].offset = 0;
+    impl->planesInfo_.planes[0].rowStride = stride;
+    impl->planesInfo_.planes[0].columnStride = 1;
+    impl->planesInfo_.planes[1].offset = static_cast<uint64_t>(stride) * alignedH; // UV offset = stride * sliceHeight
+    impl->planesInfo_.planes[1].rowStride = stride;
+    impl->planesInfo_.planes[1].columnStride = 1;
+    return buffer;
+}
+
 struct PlaneRowInfo {
     int32_t fileRowBytes{0};
+    int32_t rowCount{0};
+};
+
+struct PlaneReadParams {
+    int32_t planeOffset{0};
+    int32_t dstRowBytes{0};
+    int32_t srcRowBytes{0};
     int32_t rowCount{0};
 };
 
@@ -196,12 +241,13 @@ bool ReadPlanesFromFile(std::ifstream &ifs, uint8_t *addr, int32_t stride, const
                srcRowBytes, rowCount, skipBytes, planeOffset);
         for (int32_t row = 0; row < rowCount; ++row) {
             ifs.read(reinterpret_cast<char *>(addr + planeOffset + row * stride), dstRowBytes);
+            if (ifs.gcount() != dstRowBytes) {
+                printf("[ReadFile] FAIL at plane%zu row %d/%d: read %lld/%d bytes\n", i, row, rowCount,
+                       static_cast<long long>(ifs.gcount()), dstRowBytes);
+                return false;
+            }
             if (skipBytes > 0) {
                 ifs.seekg(skipBytes, std::ios::cur);
-            }
-            if (!ifs.good() && !ifs.eof()) {
-                printf("[ReadFile] FAIL at plane%zu row %d\n", i, row);
-                return false;
             }
         }
         planeOffset += rowCount * stride;
@@ -270,6 +316,18 @@ void VerifyFileSize(const std::string &path, int32_t expectedSize)
     EXPECT_EQ(static_cast<int32_t>(ifs.tellg()), expectedSize);
 }
 
+int32_t GetSliceHeight(const sptr<SurfaceBuffer> &buffer)
+{
+    int32_t height = buffer->GetHeight();
+    int32_t stride = buffer->GetStride();
+    OH_NativeBuffer_Planes *planes = nullptr;
+    GSError err = buffer->GetPlanesInfo(reinterpret_cast<void **>(&planes));
+    if (stride > 0 && err == GSERROR_OK && planes != nullptr && planes->planeCount > 1) {
+        return static_cast<int32_t>(static_cast<int64_t>(planes->planes[1].offset) / stride);
+    }
+    return height;
+}
+
 int32_t CalcDataSize(const sptr<SurfaceBuffer> &buffer)
 {
     int32_t width = buffer->GetWidth();
@@ -289,15 +347,20 @@ int32_t CalcDataSize(const sptr<SurfaceBuffer> &buffer)
 
 bool SaveOutput(const std::string &prefix, const sptr<SurfaceBuffer> &buffer, const std::string &suffix)
 {
-    int32_t dataSize = CalcDataSize(buffer);
-    int32_t bufSize = static_cast<int32_t>(buffer->GetSize());
-    std::string outPath = std::string(MEDIA_DIR) + prefix + std::to_string(buffer->GetWidth()) + "x" +
-                          std::to_string(buffer->GetHeight()) + "_stride" + std::to_string(buffer->GetStride()) + "_" +
-                          suffix + ".raw";
-    printf("[SaveFile] %s %dx%d fmt=%d stride=%d dataSize=%d bufSize=%d\n", outPath.c_str(), buffer->GetWidth(),
-           buffer->GetHeight(), buffer->GetFormat(), buffer->GetStride(), dataSize, bufSize);
+    auto *addr = static_cast<uint8_t *>(buffer->GetVirAddr());
+    if (addr == nullptr) {
+        return false;
+    }
+    int32_t w = buffer->GetWidth();
+    int32_t h = buffer->GetHeight();
+    int32_t stride = buffer->GetStride();
+    int32_t sliceH = GetSliceHeight(buffer);
+    int32_t dataSize = static_cast<int32_t>(buffer->GetSize());
+    std::string outPath = std::string(MEDIA_DIR) + prefix + std::to_string(w) + "x" + std::to_string(h) + "(" +
+                          std::to_string(stride) + "x" + std::to_string(sliceH) + ")_" + suffix + ".raw";
+    printf("[Save] %s fmt=%d dataSize=%d\n", outPath.c_str(), buffer->GetFormat(), dataSize);
     if (!WriteRawFile(outPath, buffer, dataSize)) {
-        printf("[SaveFile] FAIL write\n");
+        printf("[Save] FAIL write\n");
         return false;
     }
     VerifyFileSize(outPath, dataSize);
@@ -403,9 +466,9 @@ HWTEST_P(FastKitsInitTest, Init_Format, TestSize.Level1)
 INSTANTIATE_TEST_SUITE_P(, FastKitsInitTest, testing::ValuesIn(DS_FORMAT_PARAMS),
                          [](const testing::TestParamInfo<DsFormatParam> &info) { return info.param.name; });
 
-// ========== DownSample 集成测试 ==========
+// ========== RGBA 格式 DownSample / Crop 测试 ==========
 
-class FastKitsFormatTest : public testing::TestWithParam<DsFormatParam> {
+class FastKitsRgbaTest : public testing::TestWithParam<DsFormatParam> {
 public:
     void SetUp() override
     {
@@ -436,17 +499,17 @@ protected:
     sptr<SurfaceBuffer> inputBuffer_;
 };
 
-using FastKitsDsTest = FastKitsFormatTest;
-using FastKitsCropTest = FastKitsFormatTest;
+using FastKitsRgbaDsTest = FastKitsRgbaTest;
+using FastKitsRgbaCropTest = FastKitsRgbaTest;
 
-INSTANTIATE_TEST_SUITE_P(FastKits, FastKitsDsTest, testing::ValuesIn(DS_FORMAT_PARAMS));
+INSTANTIATE_TEST_SUITE_P(FastKits, FastKitsRgbaDsTest, testing::ValuesIn(RGBA_FORMAT_PARAMS));
 
 /**
  * @tc.name: FastKitsInterface_Downsample_636x360_001
  * @tc.desc: 降采样到636x360并验证输出文件
  * @tc.type: FUNC
  */
-HWTEST_P(FastKitsDsTest, Downsample_636x360, TestSize.Level1)
+HWTEST_P(FastKitsRgbaDsTest, Downsample_636x360, TestSize.Level1)
 {
     auto param = GetParam();
     constexpr int32_t outW = 636; // 636: downsample target width
@@ -474,7 +537,7 @@ HWTEST_P(FastKitsDsTest, Downsample_636x360, TestSize.Level1)
  * @tc.desc: 降采样输出不能全零
  * @tc.type: FUNC
  */
-HWTEST_P(FastKitsDsTest, Downsample_OutputNotAllZero, TestSize.Level1)
+HWTEST_P(FastKitsRgbaDsTest, Downsample_OutputNotAllZero, TestSize.Level1)
 {
     auto param = GetParam();
     constexpr int32_t outW = 316; // 316: downsample target width
@@ -512,7 +575,7 @@ HWTEST_P(FastKitsDsTest, Downsample_OutputNotAllZero, TestSize.Level1)
  * @tc.desc: 降采样到与输入相同宽高，输出应与输入一致
  * @tc.type: FUNC
  */
-HWTEST_P(FastKitsDsTest, Downsample_SameDimensions, TestSize.Level1)
+HWTEST_P(FastKitsRgbaDsTest, Downsample_SameDimensions, TestSize.Level1)
 {
     auto param = GetParam();
     constexpr int32_t outW = INPUT_WIDTH;
@@ -535,16 +598,16 @@ HWTEST_P(FastKitsDsTest, Downsample_SameDimensions, TestSize.Level1)
     EXPECT_TRUE(SaveOutput("ds_same_", output, param.name));
 }
 
-// ========== Crop 集成测试 ==========
+// ========== RGBA Crop 测试 ==========
 
-INSTANTIATE_TEST_SUITE_P(FastKits, FastKitsCropTest, testing::ValuesIn(DS_FORMAT_PARAMS));
+INSTANTIATE_TEST_SUITE_P(FastKits, FastKitsRgbaCropTest, testing::ValuesIn(RGBA_FORMAT_PARAMS));
 
 /**
  * @tc.name: FastKitsInterface_Crop_80_40_979_659_001
  * @tc.desc: 裁剪80,40~979,659并验证输出
  * @tc.type: FUNC
  */
-HWTEST_P(FastKitsCropTest, Crop_80_40_979_659, TestSize.Level1)
+HWTEST_P(FastKitsRgbaCropTest, Crop_80_40_979_659, TestSize.Level1)
 {
     auto param = GetParam();
     constexpr int32_t left = 80;    // 80: crop left boundary
@@ -577,7 +640,7 @@ HWTEST_P(FastKitsCropTest, Crop_80_40_979_659, TestSize.Level1)
  * @tc.desc: 裁剪区域与输入相同（left=0,top=0,right=W-1,bottom=H-1），输出宽高与输入一致
  * @tc.type: FUNC
  */
-HWTEST_P(FastKitsCropTest, Crop_SameDimensions, TestSize.Level1)
+HWTEST_P(FastKitsRgbaCropTest, Crop_SameDimensions, TestSize.Level1)
 {
     auto param = GetParam();
     constexpr int32_t outW = INPUT_WIDTH;
@@ -626,7 +689,7 @@ const RoiTestCase ROI_TEST_CASES[] = {
     {"NegativeLegacyValueNoTrailing", "100,200-300,400=-5"},
 };
 
-class FastKitsRoiFormatTest : public testing::TestWithParam<RoiTestCase> {
+class FastKitsRoiTest : public testing::TestWithParam<RoiTestCase> {
 public:
     void SetUp() override
     {
@@ -650,10 +713,10 @@ protected:
     sptr<SurfaceBuffer> inputBuffer_;
 };
 
-INSTANTIATE_TEST_SUITE_P(FastKits, FastKitsRoiFormatTest, testing::ValuesIn(ROI_TEST_CASES),
+INSTANTIATE_TEST_SUITE_P(FastKits, FastKitsRoiTest, testing::ValuesIn(ROI_TEST_CASES),
                          [](const testing::TestParamInfo<RoiTestCase> &info) { return info.param.name; });
 
-HWTEST_P(FastKitsRoiFormatTest, Downsample_PreservesRoi, TestSize.Level1)
+HWTEST_P(FastKitsRoiTest, Downsample_PreservesRoi, TestSize.Level1)
 {
     auto roiInput = GetParam().input;
     constexpr int32_t outW = 636;
@@ -676,7 +739,7 @@ HWTEST_P(FastKitsRoiFormatTest, Downsample_PreservesRoi, TestSize.Level1)
     ExpectROIMetadata(output, expected, ctx);
 }
 
-HWTEST_P(FastKitsRoiFormatTest, Crop_PreservesRoi, TestSize.Level1)
+HWTEST_P(FastKitsRoiTest, Crop_PreservesRoi, TestSize.Level1)
 {
     auto roiInput = GetParam().input;
     constexpr int32_t left = 80;
@@ -830,6 +893,249 @@ HWTEST_F(FastKitsConcurrentTest, ConcurrentCrop, TestSize.Level1)
     }
 
     EXPECT_EQ(successCount.load(), threadCount);
+}
+
+// ========== 高跨距（Slice Height）测试 ==========
+
+void PrintBufferLayout(const sptr<SurfaceBuffer> &buffer, const char *tag)
+{
+    OH_NativeBuffer_Planes *planes = nullptr;
+    GSError err = buffer->GetPlanesInfo(reinterpret_cast<void **>(&planes));
+    printf("[%s] %dx%d fmt=%d stride=%d size=%u sliceHeight=%d", tag, buffer->GetWidth(), buffer->GetHeight(),
+           buffer->GetFormat(), buffer->GetStride(), buffer->GetSize(), GetSliceHeight(buffer));
+    if (err == GSERROR_OK && planes != nullptr) {
+        printf(" planes=%u", planes->planeCount);
+        for (uint32_t i = 0; i < planes->planeCount && i < 4; i++) { // 4: max planes
+            printf(" [%u:off=%llu rs=%u cs=%u]", i, (unsigned long long)planes->planes[i].offset,
+                   planes->planes[i].rowStride, planes->planes[i].columnStride);
+        }
+    }
+    printf("\n");
+}
+
+// 读取一个 plane 的数据到 buffer，跳过 src/dst 行宽差异
+bool ReadPlaneRows(std::ifstream &ifs, uint8_t *addr, int32_t stride, const PlaneReadParams &params)
+{
+    for (int32_t row = 0; row < params.rowCount; ++row) {
+        ifs.read(reinterpret_cast<char *>(addr + params.planeOffset + row * stride), params.dstRowBytes);
+        if (ifs.gcount() != params.dstRowBytes) {
+            printf("[ReadPlaneRows] FAIL at row %d/%d: read %lld/%d bytes\n", row, params.rowCount,
+                   static_cast<long long>(ifs.gcount()), params.dstRowBytes);
+            return false;
+        }
+        if (params.srcRowBytes > params.dstRowBytes) {
+            ifs.seekg(params.srcRowBytes - params.dstRowBytes, std::ios::cur);
+        }
+    }
+    return true;
+}
+
+bool ReadFileToBufferByPlanes(const std::string &path, const sptr<SurfaceBuffer> &buffer, int32_t srcWidth)
+{
+    std::ifstream ifs(path, std::ios::binary);
+    if (!ifs.is_open()) {
+        printf("[ReadByPlanes] FAIL open %s\n", path.c_str());
+        return false;
+    }
+    auto *addr = static_cast<uint8_t *>(buffer->GetVirAddr());
+    if (addr == nullptr) {
+        return false;
+    }
+    int32_t dstWidth = buffer->GetWidth();
+    int32_t height = buffer->GetHeight();
+    int32_t format = buffer->GetFormat();
+    int32_t stride = buffer->GetStride();
+    int32_t sliceHeight = GetSliceHeight(buffer);
+    if (srcWidth <= 0) {
+        srcWidth = dstWidth;
+    }
+    printf("[ReadByPlanes] %s -> %dx%d fmt=%d stride=%d sliceHeight=%d srcWidth=%d\n", path.c_str(), dstWidth, height,
+           format, stride, sliceHeight, srcWidth);
+
+    std::vector<PlaneRowInfo> dstPlanes;
+    std::vector<PlaneRowInfo> srcPlanes;
+    if (!GetPlaneRowInfo(format, dstWidth, height, dstPlanes) ||
+        !GetPlaneRowInfo(format, srcWidth, height, srcPlanes)) {
+        ifs.read(reinterpret_cast<char *>(addr), buffer->GetSize());
+        return ifs.good() || ifs.eof();
+    }
+    // Y plane
+    if (!ReadPlaneRows(ifs, addr, stride,
+                       {0, dstPlanes[0].fileRowBytes, srcPlanes[0].fileRowBytes, dstPlanes[0].rowCount})) {
+        return false;
+    }
+    // UV plane: UV offset = stride * sliceHeight
+    int32_t uvOff = stride * sliceHeight;
+    if (!ReadPlaneRows(ifs, addr, stride,
+                       {uvOff, dstPlanes[1].fileRowBytes, srcPlanes[1].fileRowBytes, dstPlanes[1].rowCount})) {
+        return false;
+    }
+    return true;
+}
+
+// Only test multi-planar formats (NV12, NV21, P010) — RGBA has no slice height concept
+const DsFormatParam SLICE_HEIGHT_FORMAT_PARAMS[] = {
+    {"NV21", "/data/test/media/1280_720_nv.yuv", GRAPHIC_PIXEL_FMT_YCRCB_420_SP},
+    {"NV12", "/data/test/media/1280_720_nv.yuv", GRAPHIC_PIXEL_FMT_YCBCR_420_SP},
+    {"NV21_P010", "/data/test/media/1280_720_nv12_10bit.yuv", GRAPHIC_PIXEL_FMT_YCRCB_P010},
+    {"NV12_P010", "/data/test/media/1280_720_nv12_10bit.yuv", GRAPHIC_PIXEL_FMT_YCBCR_P010},
+};
+
+// ========== Slice Height 参数化组合测试 ==========
+// Buffer dimension type: first char = width (w=aligned, s=has stride padding)
+//                         second char = height (h=normal, s=has slice alignment)
+struct BufDimType {
+    const char *name;
+    bool useSlice;
+    int32_t width;
+    int32_t height;
+};
+
+// Input buffer types (720 height)
+static const BufDimType IN_BUF_TYPES[] = {
+    {"wh", false, 1280, 720}, // 1280: 128-aligned, likely stride==width
+    {"sh", false, 1080, 720}, // 1080: stride > width expected
+    {"ws", true, 1280, 720},  // aligned width + slice height
+    {"ss", true, 1080, 720},  // stride + slice height
+};
+
+// DownSample output buffer types (360 height)
+static const BufDimType DS_OUT_BUF_TYPES[] = {
+    {"wh", false, 640, 360}, // 640 = 5*128, aligned
+    {"sh", false, 540, 360}, // unaligned
+    {"ws", true, 640, 360},  // aligned + slice
+    {"ss", true, 540, 360},  // unaligned + slice
+};
+
+// Crop output buffer types (640 height)
+static const BufDimType CROP_OUT_BUF_TYPES[] = {
+    {"wh", false, 896, 640}, // 896 = 7*128, aligned
+    {"sh", false, 900, 640}, // unaligned
+    {"ws", true, 896, 640},  // aligned + slice
+    {"ss", true, 900, 640},  // unaligned + slice
+};
+
+struct SliceConvertParam {
+    const BufDimType *inType;
+    const BufDimType *outType;
+    bool isCrop;
+    DsFormatParam format;
+
+    std::string Name() const
+    {
+        return std::string(inType->name) + "2" + outType->name + "_" + (isCrop ? "crop" : "ds") + "_" + format.name;
+    }
+};
+
+std::vector<SliceConvertParam> GenerateSliceConvertParams()
+{
+    std::vector<SliceConvertParam> params;
+    for (const auto &fmt : SLICE_HEIGHT_FORMAT_PARAMS) {
+        for (const auto &in : IN_BUF_TYPES) {
+            for (const auto &out : DS_OUT_BUF_TYPES) {
+                params.push_back({&in, &out, false, fmt});
+            }
+            for (const auto &out : CROP_OUT_BUF_TYPES) {
+                params.push_back({&in, &out, true, fmt});
+            }
+        }
+    }
+    return params;
+}
+
+sptr<SurfaceBuffer> AllocByType(const BufDimType &type, int32_t format)
+{
+    if (type.useSlice) {
+        return AllocSliceBuffer(type.width, type.height, format);
+    }
+    return AllocBuffer(type.width, type.height, format);
+}
+
+CropRect ComputeCropRect(int32_t inW, int32_t inH, int32_t outW, int32_t outH)
+{
+    int32_t left = (inW - outW) / 2; // center crop horizontally
+    int32_t top = (inH - outH) / 2;  // center crop vertically
+    return {top, left, top + outH - 1, left + outW - 1};
+}
+
+class FastKitsSliceComboTest : public testing::TestWithParam<SliceConvertParam> {
+public:
+    void SetUp() override
+    {
+        auto &p = GetParam();
+        auto &inst = FastKitsInterface::GetInstance();
+        inst.Retain();
+        if (inst.Init(p.format.pixelFormat, FastResizeAlgoType::BICUBIC) != AVCS_ERR_OK) {
+            GTEST_SKIP() << "libfast_image.so not available";
+        }
+
+        inputBuffer_ = AllocByType(*p.inType, p.format.pixelFormat);
+        if (inputBuffer_ == nullptr) {
+            GTEST_SKIP() << "Input alloc failed for " << p.format.name;
+        }
+        EnsureDir(MEDIA_DIR);
+        ASSERT_TRUE(ReadFileToBufferByPlanes(p.format.inputFile, inputBuffer_, SRC_FILE_WIDTH));
+        PrintBufferLayout(inputBuffer_, p.inType->name);
+        SaveOutput("in_", inputBuffer_, p.format.name);
+
+        outputBuffer_ = AllocByType(*p.outType, p.format.pixelFormat);
+        if (outputBuffer_ == nullptr) {
+            GTEST_SKIP() << "Output alloc failed for " << p.format.name;
+        }
+        PrintBufferLayout(outputBuffer_, p.outType->name);
+    }
+
+    void TearDown() override
+    {
+        FastKitsInterface::GetInstance().Release();
+    }
+
+protected:
+    sptr<SurfaceBuffer> inputBuffer_;
+    sptr<SurfaceBuffer> outputBuffer_;
+};
+
+INSTANTIATE_TEST_SUITE_P(FastKits, FastKitsSliceComboTest, testing::ValuesIn(GenerateSliceConvertParams()),
+                         [](const testing::TestParamInfo<SliceConvertParam> &info) { return info.param.Name(); });
+
+/**
+ * @tc.name: FastKitsInterface_SliceCombo_Convert
+ * @tc.desc: 参数化测试 wh/sh/ws/ss × DownSample/Crop，验证各种 stride+slice 组合
+ * @tc.type: FUNC
+ */
+HWTEST_P(FastKitsSliceComboTest, Convert, TestSize.Level1)
+{
+    auto &p = GetParam();
+    std::string prefix = std::string(p.inType->name) + "2" + p.outType->name + "_" + (p.isCrop ? "crop_" : "ds_");
+
+    SetTestHDRMetadata(inputBuffer_);
+
+    EXPECT_NO_FATAL_FAILURE({
+        auto &inst = FastKitsInterface::GetInstance();
+        int32_t ret;
+        if (p.isCrop) {
+            CropRect cropRect = ComputeCropRect(p.inType->width, p.inType->height, p.outType->width, p.outType->height);
+            ret = inst.Crop(inputBuffer_, outputBuffer_, cropRect);
+        } else {
+            ret = inst.DownSample(inputBuffer_, outputBuffer_, FastResizeAlgoType::BICUBIC);
+        }
+        EXPECT_EQ(ret, AVCS_ERR_OK) << prefix << " failed";
+    });
+
+    ExpectHDRMetadataEqual(inputBuffer_, outputBuffer_);
+
+    int32_t outSize = CalcDataSize(outputBuffer_);
+    uint8_t *data = static_cast<uint8_t *>(outputBuffer_->GetVirAddr());
+    ASSERT_NE(data, nullptr);
+    bool allZero = true;
+    for (int32_t i = 0; i < outSize; i++) {
+        if (data[i] != 0) {
+            allZero = false;
+            break;
+        }
+    }
+    EXPECT_FALSE(allZero) << prefix << " output all zero";
+    EXPECT_TRUE(SaveOutput(prefix, outputBuffer_, p.format.name));
 }
 
 // ========== FastKitsInterface 生命周期测试 ==========

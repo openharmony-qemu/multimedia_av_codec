@@ -187,6 +187,10 @@ int32_t Preprocessor::Configure(const Media::Format &format)
         AVCODEC_LOGE("Crop and downsampling cannot be enabled simultaneously");
         return AVCS_ERR_INVALID_VAL;
     }
+    if ((cropParams.result == ConfigResult::ENABLED || dsParams.result == ConfigResult::ENABLED) && !IsAvailable()) {
+        AVCODEC_LOGE("Crop/downsampling requires FastKits but it is not available");
+        return AVCS_ERR_UNSUPPORT;
+    }
     if (cropParams.result != ConfigResult::NOT_SET) {
         cropConfig_ = CropConfig(cropParams);
     }
