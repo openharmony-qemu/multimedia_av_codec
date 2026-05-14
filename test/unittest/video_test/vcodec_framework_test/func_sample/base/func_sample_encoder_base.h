@@ -107,6 +107,12 @@ public:
     // For MAX_FRAME_DELAY_COUNT verification
     std::atomic<int32_t> pendingInputCount_ = 0;
     std::atomic<int32_t> maxPendingInputCount_ = 0;
+
+    // For REPEAT_HEADER_BEFORE_SYNC_FRAMES verification
+    std::atomic<int32_t> idrFrameCount_ = 0;
+    std::atomic<int32_t> idrWithImmediateXPSCount_ = 0;
+    std::atomic<bool> lastOutputWasXPS_ = false;
+    bool isAVCCodec_ = true;
 };
 
 struct LtrParam {

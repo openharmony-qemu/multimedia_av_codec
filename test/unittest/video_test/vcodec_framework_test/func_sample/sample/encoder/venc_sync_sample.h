@@ -48,6 +48,9 @@ public:
     int32_t FreeOutputBuffer(uint32_t index);
     int32_t CreateInputSurface();
     int32_t GetSurfaceQueueSize();
+    int32_t GetIDRFrameCount();
+    int32_t GetIDRWithImmediateXPSCount();
+    void SetIsAVCCodec(bool isAVC);
     bool IsValid();
     int32_t SetCustomBuffer(std::shared_ptr<AVBufferMock> buffer);
 
