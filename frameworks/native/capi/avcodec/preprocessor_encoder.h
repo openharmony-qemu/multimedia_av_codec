@@ -67,6 +67,8 @@ public:
     PreprocessorEncoder* DetachSecondaryEncoder();
     void DetachFromPrimaryEncoder();
 private:
+    void OnStreamChanged(const Media::Format& format);
+    void OnPreprocessError(int32_t errorCode);
     static std::string GenerateEncoderId(const std::string& prefix);
     OH_AVErrCode InitAsPrimary(const char* mime);
     OH_AVErrCode InitAsSecondary(PreprocessorEncoder* primary);
@@ -96,6 +98,9 @@ private:
 
     OHOS::sptr<OHOS::Surface> encoderSurface_{nullptr};
     std::queue<sptr<SurfaceBuffer>> writableBufferQueue_{}; // queue of surface buffers for writing preprocessing result
+
+    OH_AVCodecAsyncCallback asyncCallback_{};
+    void* userData_{nullptr};
 };
 
 } // namespace MediaAVCodec
