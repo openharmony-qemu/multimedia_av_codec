@@ -32,7 +32,7 @@ void OnErrorVoid(OH_AVCodec *codec, int32_t errorCode, void *userData)
     auto dualSample = std::static_pointer_cast<VideoEncDualOutputSample>(codecSample);
     std::cout << "OnErrorVoid called, errorCode: " << errorCode << std::endl;
     if (dualSample && dualSample->input8BitTo10Bit_) {
-        dualSample->input8BitTo10BitErrorCnt_++;
+        dualSample->errorNum_++;
     }
 }
 

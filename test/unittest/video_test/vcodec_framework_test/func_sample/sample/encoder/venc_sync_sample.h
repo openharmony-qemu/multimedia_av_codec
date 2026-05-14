@@ -61,6 +61,8 @@ public:
     std::string roiRects_ = "";
     bool enableVariableFrameRate_ = false;
     int32_t frameIndex_ = 0;
+    bool input8BitTo10Bit_ = false;
+    bool inputResizeWidthHeight_ = false;
 
 private:
     void FlushInner();

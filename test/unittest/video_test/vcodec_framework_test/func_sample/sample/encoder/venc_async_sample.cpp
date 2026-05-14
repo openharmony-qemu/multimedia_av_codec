@@ -52,10 +52,13 @@ void VEncCallbackTest::OnError(int32_t errorCode)
 void VEncCallbackTest::OnStreamChanged(std::shared_ptr<FormatMock> format)
 {
     UNITTEST_INFO_LOG("format changed: %s", format->DumpInfo());
-    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, signal_->width_));
-    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, signal_->height_));
-    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_STRIDE, signal_->wStride_));
-    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, signal_->hStride_));
+    int32_t picWidhth, picHeight, stride, sliceHeight, width, height;
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, picWidhth));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, picHeight));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_WIDTH, width));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_HEIGHT, height));
 }
 
 void VEncCallbackTest::OnNeedInputData(uint32_t index, std::shared_ptr<AVMemoryMock> data)
@@ -104,10 +107,13 @@ void VEncCallbackTestExt::OnError(int32_t errorCode)
 void VEncCallbackTestExt::OnStreamChanged(std::shared_ptr<FormatMock> format)
 {
     UNITTEST_INFO_LOG("format changed: %s", format->DumpInfo());
-    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, signal_->width_));
-    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, signal_->height_));
-    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_STRIDE, signal_->wStride_));
-    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, signal_->hStride_));
+    int32_t picWidhth, picHeight, stride, sliceHeight, width, height;
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, picWidhth));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, picHeight));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_WIDTH, width));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_HEIGHT, height));
 }
 
 void VEncCallbackTestExt::OnNeedInputData(uint32_t index, std::shared_ptr<AVBufferMock> data)
@@ -1037,7 +1043,7 @@ void VideoEncAsyncSample::ReadFrameToBuffer(
     }
 }
 
-void VideoEncAsyncSample::InputFuncSurface()
+int32_t VideoEncAsyncSample::ResetFrameParam()
 {
     int32_t ret = AV_ERR_OK;
     if (frameInputCount_ > PARAM_CHANGE_START_FRAME) {
