@@ -73,6 +73,9 @@ private:
     mutable std::mutex avMutex_ {};
     mutable std::mutex paramMutex_ {};
 
+    std::vector<uint8_t> pcmCache_;
+    int32_t maxInputBufferSize_ = -1;
+    bool enableCache_ = false;
     DataCallback* dataCallback_ {nullptr};
     AudioSampleFormat audioSampleFormat_;
 
@@ -85,7 +88,6 @@ private:
     int64_t pts_;
     AudioEncodePtsMode ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
     bool isFirstInputPts_ = true;
-    int64_t startPts_ = 0;
     int64_t prevPts_ = 0;
     int32_t frameSize_ = 1152;
 
@@ -93,6 +95,13 @@ private:
     int32_t maxInputSize_;
     int32_t maxOutputSize_;
     int32_t outputSize_;
+
+    void ConfigureLame(const std::shared_ptr<Meta>& parameter);
+    void ConfigureCache(const std::shared_ptr<Meta>& parameter);
+    void EncodeOneFrame();
+    void EncodeDirect(const std::shared_ptr<AVBuffer>& inputBuffer);
+    void FlushRemaining();
+    void SetOutputPts(std::shared_ptr<AVBuffer>& outputBuffer);
     std::unique_ptr<unsigned char[]> lameMp3Buffer;
 };
 } // namespace Mp3

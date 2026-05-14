@@ -32,6 +32,7 @@ constexpr int32_t SUPPORT_CHANNELS = 1;
 constexpr int SUPPORT_SAMPLE_RATE = 8000;
 constexpr int INPUT_BUFFER_SIZE_DEFAULT = 1280;  // 20ms:320
 constexpr int OUTPUT_BUFFER_SIZE_DEFAULT = 640;  // 20ms:160
+constexpr int32_t MAX_INPUT_BUFFER_SIZE_LIMIT = 10 * 1024 * 1024;  // 10MB
 
 constexpr int AVCODEC_G711MU_LINEAR_BIAS = 0x84;
 constexpr int AVCODEC_G711MU_CLIP = 8159;
@@ -184,7 +185,7 @@ Status AudioG711muEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer
         pts_ = inputBuffer->pts_;
         inputSamples_ = sampleNum;
         if (ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE && isFirstInputPts_) {
-            startPts_ = inputBuffer->pts_;
+            prevPts_ = inputBuffer->pts_;
             isFirstInputPts_ = false;
         }
         SafeCallInputBufferDone(dataCallback_, inputBuffer);
@@ -205,14 +206,8 @@ Status AudioG711muEncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& ou
         memory->Write(reinterpret_cast<const uint8_t *>(encodeResult_.data()), outSize, 0);
         memory->SetSize(outSize);
         int64_t frameDuration = static_cast<int64_t>(inputSamples_) * 1000000LL / sampleRate_;
-        if (ptsMode_ == ZERO_START_ENCODE_PTS_MODE) {
+        if (ptsMode_ == ZERO_START_ENCODE_PTS_MODE || ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE) {
             outputBuffer->pts_ = prevPts_;
-        } else if (ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE) {
-            outputBuffer->pts_ = (startPts_ > 0 && prevPts_ > INT64_MAX - startPts_) ? prevPts_ : startPts_ + prevPts_;
-        } else {
-            outputBuffer->pts_ = pts_;
-        }
-        if (ptsMode_ != DEFAULT_ENCODE_PTS_MODE) {
             prevPts_ = (frameDuration > 0 && prevPts_ > INT64_MAX - frameDuration)
                 ? prevPts_ : prevPts_ + frameDuration;
         }
@@ -225,7 +220,6 @@ Status AudioG711muEncoderPlugin::Reset()
 {
     std::lock_guard<std::mutex> lock(avMutex_);
     isFirstInputPts_ = true;
-    startPts_ = 0;
     prevPts_ = 0;
     return Status::OK;
 }
@@ -240,7 +234,6 @@ Status AudioG711muEncoderPlugin::Flush()
 {
     std::lock_guard<std::mutex> lock(avMutex_);
     isFirstInputPts_ = true;
-    startPts_ = 0;
     prevPts_ = 0;
     return Status::OK;
 }
@@ -286,16 +279,26 @@ Status AudioG711muEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &param
     if (parameter->Get<Tag::AUDIO_ENCODE_PTS_MODE>(ptsMode)) {
         ptsMode_ = ptsMode;
     }
+    int32_t maxInputBufferSize = -1;
+    if (parameter->Get<Tag::AUDIO_MAX_INPUT_BUFFER_SIZE>(maxInputBufferSize) && maxInputBufferSize > 0) {
+        if (maxInputBufferSize > MAX_INPUT_BUFFER_SIZE_LIMIT) {
+            maxInputBufferSize = MAX_INPUT_BUFFER_SIZE_LIMIT;
+        }
+        maxInputSize_ = maxInputBufferSize;
+        maxOutputSize_ = (maxInputBufferSize / sizeof(int16_t)) + 1;
+    }
     return ret;
 }
 
 Status AudioG711muEncoderPlugin::GetParameter(std::shared_ptr<Meta> &parameter)
 {
     std::lock_guard<std::mutex> lock(paramMutex_);
-    if (maxInputSize_ <= 0 || maxInputSize_ > INPUT_BUFFER_SIZE_DEFAULT) {
+    if (maxInputSize_ <= 0) {
         maxInputSize_ = INPUT_BUFFER_SIZE_DEFAULT;
     }
-    maxOutputSize_ = OUTPUT_BUFFER_SIZE_DEFAULT;
+    if (maxOutputSize_ <= 0) {
+        maxOutputSize_ = OUTPUT_BUFFER_SIZE_DEFAULT;
+    }
     AVCODEC_LOGD("AudioG711muEncoderPlugin GetParameter maxInputSize_: %{public}d", maxInputSize_);
     audioParameter_.Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
     audioParameter_.Set<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_);

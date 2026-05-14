@@ -22,6 +22,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-FFmpegBaseEncoder"};
 constexpr int32_t NS_PER_US = 1000;
+constexpr int32_t MAX_INPUT_BUFFER_SIZE_LIMIT = 10 * 1024 * 1024;
 }  // namespace
 
 namespace OHOS {
@@ -61,7 +62,26 @@ Status FFmpegBaseEncoder::ProcessSendData(const std::shared_ptr<AVBuffer> &input
         if (avCodecContext_ == nullptr) {
             return Status::ERROR_WRONG_STATE;
         }
-        ret = SendBuffer(inputBuffer);
+        if (!enableCache_) {
+            ret = SendBuffer(inputBuffer);
+        } else {
+            bool isEos = inputBuffer->flag_ & BUFFER_FLAG_EOS;
+            if (!isEos && ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE && isFirstInputPts_) {
+                prevPts_ = inputBuffer->pts_;
+                isFirstInputPts_ = false;
+            }
+            if (isEos) {
+                ret = SendEosBuffer();
+            } else {
+                pcmCache_.insert(pcmCache_.end(), memory->GetAddr(),
+                                 memory->GetAddr() + memory->GetSize());
+                if (static_cast<int32_t>(pcmCache_.size()) > MAX_INPUT_BUFFER_SIZE_LIMIT) {
+                    AVCODEC_LOGE("PCM cache size exceeds max limit");
+                    return Status::ERROR_UNKNOWN;
+                }
+                ret = SendCachedFrames();
+            }
+        }
         if (ret == Status::OK || ret == Status::END_OF_STREAM) {
             std::lock_guard<std::mutex> l(bufferMetaMutex_);
             if (inputBuffer->meta_ == nullptr) {
@@ -105,7 +125,7 @@ Status FFmpegBaseEncoder::SendBuffer(const std::shared_ptr<AVBuffer> &inputBuffe
     auto memory = inputBuffer->memory_;
     bool isEos = inputBuffer->flag_ & BUFFER_FLAG_EOS;
     if (!isEos && ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE && isFirstInputPts_) {
-        startPts_ = inputBuffer->pts_;
+        prevPts_ = inputBuffer->pts_;
         isFirstInputPts_ = false;
     }
     if (!isEos) {
@@ -188,15 +208,13 @@ Status FFmpegBaseEncoder::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outputBuf
     outputBuffer->duration_ = ConvertTimeFromFFmpeg(avPacket_->duration, avCodecContext_->time_base) /
 	                      NS_PER_US;
     int64_t durationUs = outputBuffer->duration_;
-    int64_t basePts = (durationUs > 0 && prevPts_ > INT64_MAX - durationUs) ? prevPts_ : prevPts_ + durationUs;
-    if (ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE) {
-        outputBuffer->pts_ = (startPts_ > 0 && basePts > INT64_MAX - startPts_) ? basePts : startPts_ + basePts;
-    } else if (ptsMode_ == ZERO_START_ENCODE_PTS_MODE) {
-        outputBuffer->pts_ = (durationUs > basePts - INT64_MIN) ? 0 : basePts - durationUs;
+    if (ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE || ptsMode_ == ZERO_START_ENCODE_PTS_MODE) {
+        outputBuffer->pts_ = prevPts_;
+        prevPts_ = (durationUs > 0 && prevPts_ > INT64_MAX - durationUs) ? prevPts_ : prevPts_ + durationUs;
     } else {
-        outputBuffer->pts_ = basePts;
+        prevPts_ = (durationUs > 0 && prevPts_ > INT64_MAX - durationUs) ? prevPts_ : prevPts_ + durationUs;
+        outputBuffer->pts_ = prevPts_;
     }
-    prevPts_ = basePts;
     return Status::OK;
 }
 
@@ -233,7 +251,9 @@ Status FFmpegBaseEncoder::Reset()
     prevPts_ = 0;
     ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
     isFirstInputPts_ = true;
-    startPts_ = 0;
+    pcmCache_.clear();
+    maxInputBufferSize_ = -1;
+    enableCache_ = false;
     return ret;
 }
 
@@ -252,7 +272,7 @@ Status FFmpegBaseEncoder::Flush()
     }
     prevPts_ = 0;
     isFirstInputPts_ = true;
-    startPts_ = 0;
+    pcmCache_.clear();
     return ReAllocateContext();
 }
 
@@ -295,6 +315,15 @@ Status FFmpegBaseEncoder::InitContext(const std::shared_ptr<Meta> &format)
     format_->GetData(Tag::AUDIO_SAMPLE_RATE, avCodecContext_->sample_rate);
     format_->GetData(Tag::MEDIA_BITRATE, avCodecContext_->bit_rate);
     format_->GetData(Tag::AUDIO_MAX_INPUT_SIZE, maxInputSize_);
+    maxInputBufferSize_ = -1;
+    enableCache_ = false;
+    format_->GetData(Tag::AUDIO_MAX_INPUT_BUFFER_SIZE, maxInputBufferSize_);
+    if (maxInputBufferSize_ > 0) {
+        if (maxInputBufferSize_ > MAX_INPUT_BUFFER_SIZE_LIMIT) {
+            maxInputBufferSize_ = MAX_INPUT_BUFFER_SIZE_LIMIT;
+        }
+        enableCache_ = true;
+    }
 
     AudioChannelLayout channelLayout = UNKNOWN;
     format_->GetData(Tag::AUDIO_CHANNEL_LAYOUT, channelLayout);
@@ -392,9 +421,75 @@ int32_t FFmpegBaseEncoder::GetMaxInputSize() const noexcept
     return maxInputSize_;
 }
 
+int32_t FFmpegBaseEncoder::GetMaxInputBufferSize() const noexcept
+{
+    return maxInputBufferSize_;
+}
+
 void FFmpegBaseEncoder::SetCallback(DataCallback *callback)
 {
     dataCallback_ = callback;
+}
+
+Status FFmpegBaseEncoder::FillFrameFromCache()
+{
+    auto frameSize = avCodecContext_->frame_size;
+    auto frameBytes = static_cast<uint32_t>(frameSize) * channelsBytesPerSample_;
+    if (pcmCache_.size() < frameBytes) {
+        return Status::ERROR_UNKNOWN;
+    }
+    int ret = av_frame_make_writable(cachedFrame_.get());
+    if (ret != 0) {
+        return Status::ERROR_UNKNOWN;
+    }
+    errno_t err = memcpy_s(cachedFrame_->data[0], frameBytes, pcmCache_.data(), frameBytes);
+    if (err != EOK) {
+        return Status::ERROR_UNKNOWN;
+    }
+    cachedFrame_->nb_samples = frameSize;
+    cachedFrame_->extended_data = cachedFrame_->data;
+    cachedFrame_->linesize[0] = static_cast<int>(frameBytes);
+    return Status::OK;
+}
+
+Status FFmpegBaseEncoder::SendCachedFrames()
+{
+    auto frameBytes = static_cast<uint32_t>(avCodecContext_->frame_size) * channelsBytesPerSample_;
+    while (pcmCache_.size() >= frameBytes) {
+        if (FillFrameFromCache() != Status::OK) {
+            return Status::ERROR_UNKNOWN;
+        }
+        auto ret = avcodec_send_frame(avCodecContext_.get(), cachedFrame_.get());
+        if (ret == AVERROR(EAGAIN)) {
+            break;
+        }
+        if (ret != 0) {
+            return Status::ERROR_UNKNOWN;
+        }
+        pcmCache_.erase(pcmCache_.begin(), pcmCache_.begin() + frameBytes);
+    }
+    return Status::OK;
+}
+
+Status FFmpegBaseEncoder::SendEosBuffer()
+{
+    auto frameBytes = static_cast<uint32_t>(avCodecContext_->frame_size) * channelsBytesPerSample_;
+    while (pcmCache_.size() >= frameBytes) {
+        if (FillFrameFromCache() != Status::OK) {
+            return Status::ERROR_UNKNOWN;
+        }
+        auto ret = avcodec_send_frame(avCodecContext_.get(), cachedFrame_.get());
+        if (ret != 0 && ret != AVERROR(EAGAIN)) {
+            return Status::ERROR_UNKNOWN;
+        }
+        pcmCache_.erase(pcmCache_.begin(), pcmCache_.begin() + frameBytes);
+    }
+    pcmCache_.clear();
+    auto ret = avcodec_send_frame(avCodecContext_.get(), nullptr);
+    if (ret != 0 && ret != AVERROR(EAGAIN)) {
+        AVCODEC_LOGW("Send EOS frame failed: %{public}s", OSAL::AVStrError(ret).c_str());
+    }
+    return Status::OK;
 }
 
 void FFmpegBaseEncoder::SetPtsMode(AudioEncodePtsMode mode)

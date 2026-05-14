@@ -84,7 +84,6 @@ private:
     int64_t pts_;
     AudioEncodePtsMode ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
     bool isFirstInputPts_ = true;
-    int64_t startPts_ = 0;
     int64_t prevPts_ = 0;
     int32_t inputSamples_ = 0;
     int32_t maxInputSize_;

@@ -60,6 +60,7 @@ public:
     std::shared_ptr<AVCodecContext> GetCodecContext() const;
     Status CloseCtxLocked();
     int32_t GetMaxInputSize() const noexcept;
+    int32_t GetMaxInputBufferSize() const noexcept;
     void SetCallback(DataCallback *callback);
     void SetPtsMode(AudioEncodePtsMode mode);
 
@@ -76,7 +77,9 @@ private:
     int64_t prevPts_;
     AudioEncodePtsMode ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
     bool isFirstInputPts_ = true;
-    int64_t startPts_ = 0;
+    std::vector<uint8_t> pcmCache_;
+    int32_t maxInputBufferSize_ = -1;
+    bool enableCache_ = false;
     DataCallback *dataCallback_{nullptr};
     std::shared_ptr<AVBuffer> outBuffer_ {nullptr};
 
@@ -86,6 +89,9 @@ private:
     Status ReceivePacketSucc(std::shared_ptr<AVBuffer> &outputBuffer);
     Status SendOutputBuffer(std::shared_ptr<AVBuffer>& outputBuffer);
     Status PcmFillFrame(const std::shared_ptr<AVBuffer> &inputBuffer);
+    Status FillFrameFromCache();
+    Status SendCachedFrames();
+    Status SendEosBuffer();
     Status ReAllocateContext();
     bool codecContextValid_;
     mutable std::mutex bufferMetaMutex_ {};
@@ -96,4 +102,4 @@ private:
 } // namespace Media
 } // namespace OHOS
 
-#endif // FFMPEG_BASE_ENCODER_H
+#endif // FFMPEG_BASE_ENCODER_H

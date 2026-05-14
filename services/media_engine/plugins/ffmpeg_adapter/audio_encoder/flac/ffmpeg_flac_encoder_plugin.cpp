@@ -150,7 +150,12 @@ Status FFmpegFlacEncoderPlugin::GetParameter(std::shared_ptr<Meta> &parameter)
 {
     auto maxInputSize = GetInputBufferSize();
     auto maxOutputSize = GetOutputBufferSize();
-    audioParameter_.SetData(Tag::AUDIO_MAX_INPUT_SIZE, maxInputSize);
+    auto maxInputBufferSize = basePlugin->GetMaxInputBufferSize();
+    if (maxInputBufferSize > 0) {
+        audioParameter_.SetData(Tag::AUDIO_MAX_INPUT_SIZE, maxInputBufferSize);
+    } else {
+        audioParameter_.SetData(Tag::AUDIO_MAX_INPUT_SIZE, maxInputSize);
+    }
     audioParameter_.SetData(Tag::AUDIO_MAX_OUTPUT_SIZE, maxOutputSize);
     *parameter = audioParameter_;
     return Status::OK;
