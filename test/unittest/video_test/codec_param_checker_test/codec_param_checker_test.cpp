@@ -23,12 +23,10 @@
 #include "avcodec_info.h"
 #include "avcodec_list.h"
 #include "avcodec_video_encoder.h"
-#include "avcodec_video_decoder.h"
 #include "format.h"
 using namespace testing::ext;
 using namespace OHOS;
 using namespace OHOS::Media;
-using namespace OHOS::MediaAVCodec;
 
 constexpr double DEFAULT_FRAME_RATE = 30.0;
 uint32_t DEFAULT_QUALITY = 30;
@@ -1544,19 +1542,21 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_OUTPUT_IN_DECODING_ORDER_INVALID_TE
         return;
     }
 
-    std::shared_ptr<AVCodecVideoDecoder> videoDecInner =
-        VideoDecoderFactory::CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4);
-    ASSERT_NE(nullptr, videoDecInner);
+    OH_AVCodec *videoDec = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4);
+    ASSERT_NE(nullptr, videoDec);
 
-    Format format;
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
-        static_cast<int32_t>(VideoPixelFormat::SURFACE_FORMAT));
-    format.PutIntValue(Tag::VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, 1);
+    OH_AVFormat *format = OH_AVFormat_Create();
+    ASSERT_NE(nullptr, format);
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT,
+        static_cast<int32_t>(VideoPixelFormat::SURFACE_FORMAT)));
 
-    int32_t ret = videoDecInner->Configure(format);
-    ASSERT_NE(AVCS_ERR_OK, ret);
+    OH_AVErrCode ret = OH_VideoDecoder_Configure(videoDec, format);
+    ASSERT_NE(AV_ERR_OK, ret);
+
+    OH_AVFormat_Destroy(format);
+    OH_VideoDecoder_Destroy(videoDec);
 }
 
 /**
@@ -1573,18 +1573,20 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_OUTPUT_IN_DECODING_ORDER_VALID_TEST
         return;
     }
 
-    std::shared_ptr<AVCodecVideoDecoder> videoDecInner =
-        VideoDecoderFactory::CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, videoDecInner);
+    OH_AVCodec *videoDec = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    ASSERT_NE(nullptr, videoDec);
 
-    Format format;
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
-        static_cast<int32_t>(VideoPixelFormat::SURFACE_FORMAT));
-    format.PutIntValue(Tag::VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, 1);
+    OH_AVFormat *format = OH_AVFormat_Create();
+    ASSERT_NE(nullptr, format);
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT,
+        static_cast<int32_t>(VideoPixelFormat::SURFACE_FORMAT)));
 
-    int32_t ret = videoDecInner->Configure(format);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
+    OH_AVErrCode ret = OH_VideoDecoder_Configure(videoDec, format);
+    ASSERT_EQ(AV_ERR_OK, ret);
+
+    OH_AVFormat_Destroy(format);
+    OH_VideoDecoder_Destroy(videoDec);
 }
 }
