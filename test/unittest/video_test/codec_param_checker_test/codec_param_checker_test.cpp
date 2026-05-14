@@ -1549,8 +1549,7 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_OUTPUT_IN_DECODING_ORDER_INVALID_TE
     ASSERT_NE(nullptr, format);
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
-    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT,
-        static_cast<int32_t>(VideoPixelFormat::SURFACE_FORMAT)));
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, DECODER_PIXEL_FORMAT));
 
     OH_AVErrCode ret = OH_VideoDecoder_Configure(videoDec, format);
     ASSERT_NE(AV_ERR_OK, ret);
@@ -1580,8 +1579,7 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_OUTPUT_IN_DECODING_ORDER_VALID_TEST
     ASSERT_NE(nullptr, format);
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
-    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT,
-        static_cast<int32_t>(VideoPixelFormat::SURFACE_FORMAT)));
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, DECODER_PIXEL_FORMAT));
 
     OH_AVErrCode ret = OH_VideoDecoder_Configure(videoDec, format);
     ASSERT_EQ(AV_ERR_OK, ret);
