@@ -89,6 +89,7 @@ private:
     };
 
     std::shared_ptr<AVBuffer> FetchInputBufferAndCapabilities(uint32_t index, StrategyCaps& caps);
+    MVStats ExtractMVStats(StrategyCaps caps, int64_t pts, PostDecCost& cost, const sptr<SurfaceBuffer> surfaceBuffer);
     void RecordPreDecodeDump(const std::shared_ptr<AVBuffer>& buffer, const PreDecResult& res, int64_t startUs);
     void RecordPostDecodeDump(int64_t pts, uint32_t preDropCount, const PostDecResult& res,
                               const MVStats& mvStats, const PostDecCost& cost);
