@@ -960,14 +960,14 @@ bool ReadFileToBufferByPlanes(const std::string &path, const sptr<SurfaceBuffer>
         return ifs.good() || ifs.eof();
     }
     // Y plane
-    if (!ReadPlaneRows(ifs, addr, stride,
-                       {0, dstPlanes[0].fileRowBytes, srcPlanes[0].fileRowBytes, dstPlanes[0].rowCount})) {
+    PlaneReadParams yParams = {0, dstPlanes[0].fileRowBytes, srcPlanes[0].fileRowBytes, dstPlanes[0].rowCount};
+    if (!ReadPlaneRows(ifs, addr, stride, yParams)) {
         return false;
     }
     // UV plane: UV offset = stride * sliceHeight
     int32_t uvOff = stride * sliceHeight;
-    if (!ReadPlaneRows(ifs, addr, stride,
-                       {uvOff, dstPlanes[1].fileRowBytes, srcPlanes[1].fileRowBytes, dstPlanes[1].rowCount})) {
+    PlaneReadParams uvParams = {uvOff, dstPlanes[1].fileRowBytes, srcPlanes[1].fileRowBytes, dstPlanes[1].rowCount};
+    if (!ReadPlaneRows(ifs, addr, stride, uvParams)) {
         return false;
     }
     return true;

@@ -102,13 +102,13 @@ bool IsEven(int32_t value)
 
 int32_t GetSliceHeightFromBuffer(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer)
 {
+    int32_t stride = buffer->GetStride();
+    if (stride <= 0) {
+        return buffer->GetHeight();
+    }
     OH_NativeBuffer_Planes *planes = nullptr;
     GSError err = buffer->GetPlanesInfo(reinterpret_cast<void **>(&planes));
     if (err != GSERROR_OK || planes == nullptr || planes->planeCount <= 1) {
-        return buffer->GetHeight();
-    }
-    int32_t stride = buffer->GetStride();
-    if (stride <= 0) {
         return buffer->GetHeight();
     }
     int32_t sliceHeight = static_cast<int32_t>(static_cast<int64_t>(planes->planes[1].offset) / stride);
