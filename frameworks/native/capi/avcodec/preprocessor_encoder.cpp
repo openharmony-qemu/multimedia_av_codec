@@ -266,6 +266,7 @@ void PreprocessorEncoder::DetachFromPrimaryEncoder()
 OH_AVErrCode PreprocessorEncoder::RegisterCallback(struct OH_AVCodecCallback callback, void *userData)
 {
     std::scoped_lock lock(instanceMutex_);
+    asyncCallback_.onError = callback.onError;
     asyncCallback_.onStreamChanged = callback.onStreamChanged;
     userData_ = userData;
 
@@ -563,7 +564,8 @@ void PreprocessorEncoder::OnPreprocessError(int32_t errorCode)
         return;
     }
 
-    asyncCallback_.onError(this, errorCode, userData_);
+    OH_AVErrCode avErrorCode = AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(errorCode));
+    asyncCallback_.onError(this, static_cast<int32_t>(avErrorCode), userData_);
 }
 
 OH_AVFormat* PreprocessorEncoder::GetOutputDescription()

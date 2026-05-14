@@ -113,6 +113,7 @@ private:
         void EncoderThreadLoop();
         void CheckAndNotifyStreamChange(const std::shared_ptr<SurfaceBufferWrapper>& inputBuffer);
         void ReportPreprocessError(int32_t errorCode);
+        Media::Format FillStreamDescription(int32_t width, int32_t height, int32_t pixelFormat, int32_t stride);
 
         std::queue<std::shared_ptr<SurfaceBufferWrapper>> pendingBuffers_{};
         std::map<uint32_t, sptr<SurfaceBuffer>> encoderSurfaceBufferPool_;

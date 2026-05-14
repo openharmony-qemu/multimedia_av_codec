@@ -552,6 +552,7 @@ void PreprocessorManager::EncoderInfo::CheckAndNotifyStreamChange(
     const std::shared_ptr<SurfaceBufferWrapper>& inputBuffer)
 {
     if (!onStreamChangedCallback_) {
+        AVCODEC_LOGW("OnStreamChangedCallback is not found.");
         return;
     }
 
@@ -579,38 +580,7 @@ void PreprocessorManager::EncoderInfo::CheckAndNotifyStreamChange(
     int32_t inputFmt = inputBuffer->buffer->GetFormat();
     int32_t inputStride = inputBuffer->buffer->GetStride();
 
-    Media::Format streamFormat;
-    streamFormat.PutIntValue(Media::Tag::VIDEO_WIDTH, inputW);
-    streamFormat.PutIntValue(Media::Tag::VIDEO_HEIGHT, inputH);
-    streamFormat.PutIntValue(Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, inputFmt);
-    if (inputStride > 0) {
-        streamFormat.PutIntValue(Media::Tag::VIDEO_STRIDE, inputStride);
-    }
-    if (inputH > 0) {
-        streamFormat.PutIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, inputH);
-    }
-
-    VideoPixelFormat mappedFmt;
-    if (GraphicPixelFmtToVideoPixelFmt(static_cast<GraphicPixelFormat>(inputFmt), mappedFmt)) {
-        streamFormat.PutIntValue(Media::Tag::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(mappedFmt));
-    }
-
-    if (preprocessor_->IsCropEnabled()) {
-        streamFormat.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT,
-                                 preprocessor_->GetCropLeft());
-        streamFormat.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_RIGHT,
-                                 preprocessor_->GetCropRight());
-        streamFormat.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_TOP,
-                                 preprocessor_->GetCropTop());
-        streamFormat.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM,
-                                 preprocessor_->GetCropBottom());
-    }
-    if (preprocessor_->IsDownsamplingEnabled()) {
-        streamFormat.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH,
-                                 preprocessor_->GetDownsamplingWidth());
-        streamFormat.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT,
-                                 preprocessor_->GetDownsamplingHeight());
-    }
+    Media::Format streamFormat = FillStreamDescription(inputW, inputH, inputFmt, inputStride);
 
     lastNotifiedWidth_ = inputW;
     lastNotifiedHeight_ = inputH;
@@ -669,5 +639,35 @@ void PreprocessorManager::EncoderInfo::ReportPreprocessError(int32_t errorCode)
         preprocessErrorCallback_(errorCode);
     }
 }
+
+Media::Format PreprocessorManager::EncoderInfo::FillStreamDescription(int32_t width, int32_t height,
+                                                                      int32_t pixelFormat, int32_t stride)
+{
+    Media::Format format;
+    format.PutIntValue(Media::Tag::VIDEO_WIDTH, width);
+    format.PutIntValue(Media::Tag::VIDEO_HEIGHT, height);
+    format.PutIntValue(Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, pixelFormat);
+    if (stride > 0) {
+        format.PutIntValue(Media::Tag::VIDEO_STRIDE, stride);
+    }
+
+    VideoPixelFormat mappedFmt;
+    if (GraphicPixelFmtToVideoPixelFmt(static_cast<GraphicPixelFormat>(pixelFormat), mappedFmt)) {
+        format.PutIntValue(Media::Tag::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(mappedFmt));
+    }
+
+    if (preprocessor_->IsCropEnabled()) {
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT, preprocessor_->GetCropLeft());
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_RIGHT, preprocessor_->GetCropRight());
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_TOP, preprocessor_->GetCropTop());
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM, preprocessor_->GetCropBottom());
+    }
+    if (preprocessor_->IsDownsamplingEnabled()) {
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH, preprocessor_->GetDownsamplingWidth());
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT, preprocessor_->GetDownsamplingHeight());
+    }
+    return format;
+}
+
 } // namespace MediaAVCodec
 } // namespace OHOS
