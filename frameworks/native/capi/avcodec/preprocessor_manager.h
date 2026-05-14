@@ -140,7 +140,6 @@ private:
         uint64_t lastReportedErrorFrameCount_{0};
         int32_t lastReportedPreprocessError_{0};
         OnPreprocessErrorCallback preprocessErrorCallback_{nullptr};
-        static constexpr uint32_t ERROR_REPORT_INTERVAL_FRAMES = 30;
     };
 
     sptr<Surface> sharedConsumerSurface_{nullptr};

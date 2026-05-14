@@ -387,6 +387,7 @@ ohos_shared_library("native_media_venc") {
     "$av_codec_root_dir/frameworks/native/capi/avcodec/native_video_encoder.cpp",
     "$av_codec_root_dir/frameworks/native/capi/avcodec/preprocessor.cpp",
     "$av_codec_root_dir/frameworks/native/capi/avcodec/preprocessor_encoder.cpp",
+    "$av_codec_root_dir/frameworks/native/capi/avcodec/preprocessor_format_utils.cpp",
     "$av_codec_root_dir/frameworks/native/capi/avcodec/preprocessor_manager.cpp",
     "$av_codec_root_dir/frameworks/native/capi/avcodec/shared_surface_manager.cpp",
     "$av_codec_root_dir/frameworks/native/capi/avcodec/video_encoder_object.cpp",

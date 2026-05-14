@@ -32,6 +32,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "PreprocessorManager"};
 constexpr int32_t BUFFER_REQUEST_STRIDE_ALIGNMENT = 32;
+constexpr uint32_t ERROR_REPORT_INTERVAL_FRAMES = 30;
 
 class ConsumerListener : public OHOS::IBufferConsumerListener {
 public:
@@ -565,12 +566,10 @@ void PreprocessorManager::EncoderInfo::CheckAndNotifyStreamChange(
         int32_t w = inputBuffer->buffer->GetWidth();
         int32_t h = inputBuffer->buffer->GetHeight();
         int32_t fmt = inputBuffer->buffer->GetFormat();
-
         if (w != lastNotifiedWidth_ || h != lastNotifiedHeight_ || fmt != lastNotifiedFormat_) {
             shouldNotify = true;
         }
     }
-
     if (!shouldNotify) {
         return;
     }
@@ -579,9 +578,7 @@ void PreprocessorManager::EncoderInfo::CheckAndNotifyStreamChange(
     int32_t inputH = inputBuffer->buffer->GetHeight();
     int32_t inputFmt = inputBuffer->buffer->GetFormat();
     int32_t inputStride = inputBuffer->buffer->GetStride();
-
     Media::Format streamFormat = FillStreamDescription(inputW, inputH, inputFmt, inputStride);
-
     lastNotifiedWidth_ = inputW;
     lastNotifiedHeight_ = inputH;
     lastNotifiedFormat_ = inputFmt;
