@@ -420,46 +420,27 @@ int32_t Preprocessor::Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &ou
                              output ? "valid" : "nullptr");
     if (IsCropEnabled()) {
         int32_t ret = Crop(input, output);
-        if (ret == AVCS_ERR_OK) {
-            UpdateOutputMetadata(input, output,
-                                 {IDENTITY_METADATA_SCALE, IDENTITY_METADATA_SCALE, cropConfig_.top,
-                                  cropConfig_.left});
-            return ret;
-        }
-        AVCODEC_LOGW("Crop failed: %{public}d, fallback to copy", ret);
-        ret = Copy(input, output);
-        if (ret == AVCS_ERR_OK) {
-            UpdateOutputMetadata(input, output,
-                                 {IDENTITY_METADATA_SCALE, IDENTITY_METADATA_SCALE, DEFAULT_METADATA_OFFSET,
-                                  DEFAULT_METADATA_OFFSET});
-        }
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Crop failed: %{public}d", ret);
+        UpdateOutputMetadata(input, output,
+                             {IDENTITY_METADATA_SCALE, IDENTITY_METADATA_SCALE, cropConfig_.top,
+                              cropConfig_.left});
         return ret;
     }
     if (IsDownsamplingEnabled()) {
         int32_t ret = Downsampling(input, output);
-        if (ret == AVCS_ERR_OK) {
-            UpdateOutputMetadata(input, output,
-                                 {static_cast<double>(output->GetWidth()) / input->GetWidth(),
-                                  static_cast<double>(output->GetHeight()) / input->GetHeight(),
-                                  DEFAULT_METADATA_OFFSET, DEFAULT_METADATA_OFFSET});
-            return ret;
-        }
-        AVCODEC_LOGW("Downsampling failed: %{public}d, fallback to copy", ret);
-        ret = Copy(input, output);
-        if (ret == AVCS_ERR_OK) {
-            UpdateOutputMetadata(input, output,
-                                 {IDENTITY_METADATA_SCALE, IDENTITY_METADATA_SCALE, DEFAULT_METADATA_OFFSET,
-                                  DEFAULT_METADATA_OFFSET});
-        }
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Downsampling failed: %{public}d", ret);
+        UpdateOutputMetadata(input, output,
+                             {static_cast<double>(output->GetWidth()) / input->GetWidth(),
+                              static_cast<double>(output->GetHeight()) / input->GetHeight(),
+                              DEFAULT_METADATA_OFFSET, DEFAULT_METADATA_OFFSET});
         return ret;
     }
     int32_t ret = Copy(input, output);
-    if (ret == AVCS_ERR_OK) {
-        UpdateOutputMetadata(input, output,
-                             {IDENTITY_METADATA_SCALE, IDENTITY_METADATA_SCALE, DEFAULT_METADATA_OFFSET,
-                              DEFAULT_METADATA_OFFSET});
-    }
-    return ret;
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Copy failed: %{public}d", ret)
+    UpdateOutputMetadata(input, output,
+                         {IDENTITY_METADATA_SCALE, IDENTITY_METADATA_SCALE, DEFAULT_METADATA_OFFSET,
+                          DEFAULT_METADATA_OFFSET});
+    ret ret;
 }
 
 bool Preprocessor::ShouldDropFrame(uint64_t pts)

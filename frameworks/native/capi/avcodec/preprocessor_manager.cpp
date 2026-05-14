@@ -106,6 +106,7 @@ void DumpBuffers(const OHOS::sptr<OHOS::SurfaceBuffer> &, const OHOS::sptr<OHOS:
                  const std::string &, uint64_t) {}
 #endif
 }
+
 namespace OHOS {
 namespace MediaAVCodec {
 
