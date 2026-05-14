@@ -544,6 +544,9 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_0008, TestSize.Level1)
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
     EXPECT_EQ(formatVal_.timeScale, 1000);
     EXPECT_EQ(formatVal_.duration, 1500000);
+    float altitude = 0.0;
+    EXPECT_TRUE(format_->GetFloatValue(Media::Tag::MEDIA_ALTITUDE, altitude));
+    EXPECT_EQ(altitude, float(11.694000));
     trackIndex_ = 0;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);

@@ -28,6 +28,7 @@
 #include <optional>
 #include "avcodec_trace.h"
 #include "avcodec_log.h"
+#include "demuxer_utils.h"
 #include "securec.h"
 #include "ffmpeg_format_helper.h"
 #include "ffmpeg_utils.h"
@@ -94,21 +95,6 @@ const char* PLUGIN_NAME_AAC = "aac";
 const char* PLUGIN_NAME_MPEGPS = "mpeg";
 const int32_t MPEGPS_START_CODE_SIZE = 4;
 const uint8_t MPEGPS_START_CODE[] = {0x00, 0x00, 0x01, 0xBA};
-
-const char* g_heifBrands[] = {"heic", "avif", "heif", "mif1", "msf1", "miaf", "heix", "heim", "heis"};
-
-bool IsHeifFormat(const char* majorBrand)
-{
-    if (majorBrand == nullptr) {
-        return false;
-    }
-    for (const auto& brand : g_heifBrands) {
-        if (StartWith(majorBrand, brand)) {
-            return true;
-        }
-    }
-    return false;
-}
 
 const uint32_t SETTIMER_TIMEOUT = 5; // second
 constexpr int64_t LOG_INTERVAL_MS = 2000; // 2s

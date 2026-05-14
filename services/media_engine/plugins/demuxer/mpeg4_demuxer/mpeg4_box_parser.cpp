@@ -30,6 +30,7 @@
 #include <arpa/inet.h>
 #include "avc_parser_impl.h"
 #include "avcodec_trace.h"
+#include "demuxer_utils.h"
 #include "securec.h"
 #include "mpeg4_box_parser.h"
 #include "mpeg4_utils.h"
@@ -157,6 +158,11 @@ constexpr float PRIMARY_SCALE = 0.00002;
 constexpr uint64_t CREATION_TIME_SCALE = 1000000;
 // 辅助轨相关常量
 constexpr uint32_t MAX_TRACK_REFERENCE_COUNT = 1000;
+// location info
+constexpr int32_t PRECISION = 4;
+constexpr int32_t ALTITUDE_PRECISION = 6;
+constexpr int32_t LATITUDE_WIDTH = 8;
+constexpr int32_t LONGITUDE_WIDTH = 9;
 
 constexpr std::array<size_t, 4> MATRIX_2X2_INDICES = {0, 1, 3, 4}; // [0][0], [0][1], [1][0], [1][1]
 constexpr std::array<size_t, 3> MATRIX_DIAGONAL_INDICES = {0, 4, 8}; // [0][0], [1][1], [2][2]
@@ -291,15 +297,6 @@ int64_t GetMaxSampleDtsEnd(const std::vector<MPEG4SampleHelper::SampleIndexEntry
     }
     return maxDtsEnd;
 }
-
-static bool StartWith(const char* name, const char* chars)
-{
-    if (name == nullptr || chars == nullptr) {
-        return false;
-    }
-    return !strncmp(name, chars, strlen(chars));
-}
-
 
 static const std::map<std::string, VideoOrientationType> matrixTypes = {
     /**
@@ -708,6 +705,7 @@ Status MPEG4AtomParser::ParseFtyp(MPEG4Atom currentAtom, int32_t depth, ParseCon
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read ftyp atom header failed");
     std::string majorBrand = GetCharValue(&ftypInfo[0]);
 
+    FALSE_RETURN_V_MSG_E(!IsHeifFormat(majorBrand.c_str()), Status::ERROR_UNKNOWN, "HEIF format is not supported");
     uint32_t compatibleBrandsCount = (currentAtom.dataSize - 8) / 4;
     FALSE_RETURN_V_MSG_E(compatibleBrandsCount > 0, Status::ERROR_INVALID_DATA, "Invalid compatible brands number");
     // 一次性读取所有compatible brands数据
@@ -3816,18 +3814,15 @@ void MPEG4AtomParser::ParseLocationString(const std::string& locationStr)
     
     const uint32_t minLocationNum = 2; // 至少需要两个数字：纬度和经度
     auto cnt = static_cast<uint32_t>(std::distance(numbers, end));
-    if (cnt >= minLocationNum) {
-        float latitude = std::stof(numbers->str());
-        float longitude = std::stof((++numbers)->str());
-
-        mediaInfo_.general.Set<Tag::MEDIA_LATITUDE>(latitude);
-        mediaInfo_.general.Set<Tag::MEDIA_LONGITUDE>(longitude);
-        if (cnt > minLocationNum) {
-            float altitude = std::stof(numbers->str());
-            mediaInfo_.general.Set<Tag::MEDIA_ALTITUDE>(altitude);
-        }
-    } else {
-        MEDIA_LOG_W("Invalid location format: " PUBLIC_LOG_S, locationStr.c_str());
+    if (cnt < minLocationNum) {
+        MEDIA_LOG_D("Info format error");
+        return;
+    }
+    SetToFormatIfConvertSuccess(mediaInfo_.general, Tag::MEDIA_LATITUDE, numbers->str(), ConvertValueType::FLOAT);
+    SetToFormatIfConvertSuccess(mediaInfo_.general, Tag::MEDIA_LONGITUDE, (++numbers)->str(), ConvertValueType::FLOAT);
+    if (cnt > minLocationNum) {
+        SetToFormatIfConvertSuccess(
+            mediaInfo_.general, Tag::MEDIA_ALTITUDE, (++numbers)->str(), ConvertValueType::FLOAT);
     }
 }
 
@@ -4299,8 +4294,7 @@ Status MPEG4AtomParser::ParseLoci(MPEG4Atom currentAtom, int32_t depth, ParseCon
         ++offset;
     }
     
-    FALSE_RETURN_V_MSG_E(offset < currentAtom.dataSize, Status::ERROR_INVALID_DATA,
-        "loci place name not null-terminated");
+    FALSE_RETURN_V_MSG_E(offset < currentAtom.dataSize, Status::ERROR_INVALID_DATA, "loci place not null-terminated");
     // 提取地点名称
     std::string place;
     if (offset > placeStartOffset) {
@@ -4310,28 +4304,26 @@ Status MPEG4AtomParser::ParseLoci(MPEG4Atom currentAtom, int32_t depth, ParseCon
     ++offset; // 跳过null terminator
     remainingLen = currentAtom.dataSize - offset;
     // 检查剩余数据是否足够（role(1) + coordinates(12) = 13字节）
-    if (remainingLen < 13) {
-        MEDIA_LOG_E("loci too short (" PUBLIC_LOG_U64 " bytes left, need at least 13)", remainingLen);
-        return Status::ERROR_INVALID_DATA;
-    }
+    FALSE_RETURN_V_MSG_E(remainingLen >= 13, Status::ERROR_INVALID_DATA, "loci need at least 13");
     ++offset; // 跳过role (1字节)
 
     int32_t longitudeRaw = static_cast<int32_t>(GetU32Value(&lociInfo[offset]));
     int32_t latitudeRaw = static_cast<int32_t>(GetU32Value(&lociInfo[offset + 4]));
+    int32_t altitudeRaw = static_cast<int32_t>(GetU32Value(&lociInfo[offset + 8]));
     float longitude = longitudeRaw / static_cast<float>(CONVERT_SCALE);
     float latitude = latitudeRaw / static_cast<float>(CONVERT_SCALE);
+    float altitude = altitudeRaw / static_cast<float>(CONVERT_SCALE);
 
-    constexpr int32_t precision = 4;
-    constexpr int32_t latitudeWidth = 8;
-    constexpr int32_t longitudeWidth = 9;
     std::ostringstream locationStream;
     locationStream << std::fixed <<
-                      std::setprecision(precision) <<
+                      std::setprecision(PRECISION) <<
                       std::showpos <<
                       std::setfill('0') <<
-                      std::setw(latitudeWidth) << latitude <<
-                      std::setw(longitudeWidth) << longitude;
-
+                      std::setw(LATITUDE_WIDTH) << latitude <<
+                      std::setw(LONGITUDE_WIDTH) << longitude;
+    if (altitude) {
+        locationStream << std::setprecision(ALTITUDE_PRECISION) << altitude;
+    }
     std::string locationStr = locationStream.str();
     ParseLocationString(locationStr);
     return ret;
@@ -4790,6 +4782,7 @@ void MPEG4AtomParser::CalculateMPEG4Attributes()
                 mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_CHANNEL_LAYOUT>(layout);
                 mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(layout);
             }
+            mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_BLOCK_ALIGN>(0);
         }
         NormalizeAudioAttributes(track);
         if (track->codecParms.trackType != ATTACHMENT_TYPE) {
@@ -5139,6 +5132,7 @@ void MPEG4AtomParser::SetHEVCDefaultValue()
     ColorPrimary colorPrimaries = ColorPrimary::UNSPECIFIED;
     TransferCharacteristic colorTrc = TransferCharacteristic::UNSPECIFIED;
     MatrixCoefficient colorMatrix = MatrixCoefficient::UNSPECIFIED;
+    ChromaLocation chromaLocation = ChromaLocation::UNSPECIFIED;
     bool colorRange = false;
     std::string mime;
     for (auto track = firstTrack_; track; track = track->next) {
@@ -5158,6 +5152,10 @@ void MPEG4AtomParser::SetHEVCDefaultValue()
             if (!mediaInfo_.tracks[track->trackIndex].Get<Tag::VIDEO_COLOR_MATRIX_COEFF>(colorMatrix)) {
                 MatrixCoefficient newColorMatrix = MatrixCoefficient::UNSPECIFIED;
                 mediaInfo_.tracks[track->trackIndex].Set<Tag::VIDEO_COLOR_MATRIX_COEFF>(newColorMatrix);
+            }
+            if (!mediaInfo_.tracks[track->trackIndex].Get<Tag::VIDEO_CHROMA_LOCATION>(chromaLocation)) {
+                ChromaLocation newChromaLocation = ChromaLocation::UNSPECIFIED;
+                mediaInfo_.tracks[track->trackIndex].Set<Tag::VIDEO_CHROMA_LOCATION>(newChromaLocation);
             }
         }
     }
