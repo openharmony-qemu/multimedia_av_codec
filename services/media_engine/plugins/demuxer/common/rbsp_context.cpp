@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include <algorithm>
+#include <limits>
 #include <set>
 #include "rbsp_context.h"
 
@@ -20,7 +21,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace {
-constexpr uint32_t RBSP_MAX_UE_LEADING_ZERO_BITS = 31;
+constexpr uint32_t RBSP_MAX_UE_LEADING_ZERO_BITS = sizeof(uint32_t) * RBSP_BYTE_BITS;
 constexpr uint32_t RBSP_EXP_GOLOMB_SIGNED_DIVISOR = 2;
 constexpr uint32_t RBSP_EMULATION_PREVENTION_ZERO_COUNT = 2;
 constexpr uint8_t RBSP_EMULATION_PREVENTION_BYTE = 0x03;
@@ -130,7 +131,7 @@ bool RbspContext::RbspReadUE(uint32_t& value)
     uint32_t bit = 0;
     while (RbspReadBit(bit) && bit == 0) {
         ++leadingZeroBits;
-        if (leadingZeroBits >= RBSP_MAX_UE_LEADING_ZERO_BITS) {
+        if (leadingZeroBits > RBSP_MAX_UE_LEADING_ZERO_BITS) {
             return false;
         }
     }
@@ -141,7 +142,11 @@ bool RbspContext::RbspReadUE(uint32_t& value)
     if (leadingZeroBits > 0 && !RbspReadBits(leadingZeroBits, suffix)) {
         return false;
     }
-    value = (1U << leadingZeroBits) - 1 + suffix;
+    uint64_t codeNum = (static_cast<uint64_t>(1) << leadingZeroBits) - 1 + suffix;
+    if (codeNum > std::numeric_limits<uint32_t>::max()) {
+        return false;
+    }
+    value = static_cast<uint32_t>(codeNum);
     return true;
 }
 
@@ -151,8 +156,15 @@ bool RbspContext::RbspReadSE(int32_t& value)
     if (!RbspReadUE(codeNum)) {
         return false;
     }
-    value = ((codeNum & 0x01) != 0) ? static_cast<int32_t>((codeNum + 1) / RBSP_EXP_GOLOMB_SIGNED_DIVISOR) :
-        -static_cast<int32_t>(codeNum / RBSP_EXP_GOLOMB_SIGNED_DIVISOR);
+    uint64_t magnitude = ((static_cast<uint64_t>(codeNum) + 1) / RBSP_EXP_GOLOMB_SIGNED_DIVISOR);
+    if ((codeNum & 0x01) != 0) {
+        if (magnitude > static_cast<uint64_t>(std::numeric_limits<int32_t>::max())) {
+            return false;
+        }
+        value = static_cast<int32_t>(magnitude);
+        return true;
+    }
+    value = -static_cast<int32_t>(codeNum / RBSP_EXP_GOLOMB_SIGNED_DIVISOR);
     return true;
 }
 

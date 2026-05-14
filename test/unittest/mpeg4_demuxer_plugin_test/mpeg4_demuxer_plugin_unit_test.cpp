@@ -29,6 +29,7 @@
 
 #include "file_server_demo.h"
 #include "mpeg4_sample_memory.h"
+#include "rbsp_context.h"
 
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -1580,6 +1581,29 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_InitSelectTrack_001, Tes
     ASSERT_GT(mpeg4MediaInfo_.tracks.size(), 0U);
     auto selectedTrackIds = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
     EXPECT_FALSE(selectedTrackIds.empty());
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_RbspReadUEBoundary_001
+ * @tc.desc: Verify unsigned Exp-Golomb boundary avoids 32-bit shift overflow
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_RbspReadUEBoundary_001, TestSize.Level1)
+{
+    const uint8_t maxLeadingZeroUe[] = {0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00};
+    RbspContext maxContext(maxLeadingZeroUe, static_cast<int32_t>(sizeof(maxLeadingZeroUe)));
+    uint32_t value = 0;
+    EXPECT_TRUE(maxContext.RbspReadUE(value));
+    EXPECT_EQ(value, 0xFFFFFFFFU);
+
+    RbspContext signedOverflowContext(maxLeadingZeroUe, static_cast<int32_t>(sizeof(maxLeadingZeroUe)));
+    int32_t signedValue = 0;
+    EXPECT_FALSE(signedOverflowContext.RbspReadSE(signedValue));
+
+    const uint8_t overflowUe[] = {0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x80};
+    RbspContext overflowContext(overflowUe, static_cast<int32_t>(sizeof(overflowUe)));
+    value = 0;
+    EXPECT_FALSE(overflowContext.RbspReadUE(value));
 }
 
 /**
