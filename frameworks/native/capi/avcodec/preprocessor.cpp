@@ -197,7 +197,6 @@ int32_t Preprocessor::ValidateConfiguration(const Media::Format &format, bool co
             "For YUV pixel format input, crop left-top coordinates and crop width, height must be even numbers. "
             "(left, top)=(%{public}d, %{public}d), width=%{public}d, height=%{public}d",
             cropParams_.left, cropParams_.top, cropWidth, cropHeight);
-
     }
     if (downsamplingParams_.result == ConfigResult::ENABLED && IsYuv420Format(encoderParams_.pixelFormat)) {
         bool invalid = !IsEvenNumber(downsamplingParams_.width) || !IsEvenNumber(downsamplingParams_.height);
