@@ -279,7 +279,6 @@ void FCodec::ConfigureThread(const Format &format)
     format.GetIntValue(FMTKey::VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, decodeOrder);
     if (codecName_ == AVCodecCodecName::VIDEO_DECODER_AVC_NAME && decodeOrder != 0) {
         av_opt_set(avCodecContext_.get(), "output_decode_order", "1", AV_OPT_SEARCH_CHILDREN);
-        avCodecContext_->thread_count = DEFAULT_THREAD_COUNT;
         AVCODEC_LOGI("H264 decode order enabled by %{public}d", decodeOrder);
     }
 }
