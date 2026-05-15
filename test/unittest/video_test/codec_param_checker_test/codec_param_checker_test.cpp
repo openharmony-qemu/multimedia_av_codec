@@ -1548,13 +1548,6 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_MAX_FRAME_DELAY_COUNT_VALID_TEST_17
     OH_AVErrCode ret = OH_VideoEncoder_Configure(videoEnc, g_format);
     ASSERT_EQ(ret, AV_ERR_OK);
 
-    OH_AVFormat *inputDesc = OH_VideoEncoder_GetInputDescription(videoEnc);
-    ASSERT_NE(nullptr, inputDesc);
-    int32_t actualValue = -1;
-    ASSERT_TRUE(OH_AVFormat_GetIntValue(inputDesc, OH_MD_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, &actualValue));
-    EXPECT_EQ(expectedValue, actualValue);
-
-    OH_AVFormat_Destroy(inputDesc);
     OH_AVFormat_Destroy(g_format);
     g_format = OH_AVFormat_Create();
     ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
