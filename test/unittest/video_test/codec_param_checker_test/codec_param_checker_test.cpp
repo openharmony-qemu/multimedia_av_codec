@@ -1565,21 +1565,23 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_OUTPUT_IN_DECODING_ORDER_INVALID_TE
  */
 HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_OUTPUT_IN_DECODING_ORDER_VALID_TEST_1702, TestSize.Level3)
 {
-    OH_AVCapability *capability = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, SOFTWARE);
     if (capability == nullptr ||
         !OH_AVCapability_IsFeatureSupported(capability, VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER)) {
-        std::cout << "Device does not support VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, skip success test" << std::endl;
+        std::cout << "Software decoder does not support VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, skip success test" << std::endl;
         return;
     }
 
-    OH_AVCodec *videoDec = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    const char *codecName = OH_AVCapability_GetName(capability);
+    OH_AVCodec *videoDec = OH_VideoDecoder_CreateByName(codecName);
     ASSERT_NE(nullptr, videoDec);
 
     OH_AVFormat *format = OH_AVFormat_Create();
     ASSERT_NE(nullptr, format);
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
-    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, DECODER_PIXEL_FORMAT));
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT,
+        static_cast<int32_t>(VideoPixelFormat::SURFACE_FORMAT)));
 
     OH_AVErrCode ret = OH_VideoDecoder_Configure(videoDec, format);
     ASSERT_EQ(AV_ERR_OK, ret);
