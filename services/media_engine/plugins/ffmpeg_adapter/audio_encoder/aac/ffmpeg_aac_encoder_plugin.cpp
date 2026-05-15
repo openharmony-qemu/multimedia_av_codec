@@ -705,6 +705,7 @@ Status FFmpegAACEncoderPlugin::InitFrame()
     if (!(fifo_ = av_audio_fifo_alloc(
         avCodecContext_->sample_fmt, avCodecContext_->ch_layout.nb_channels, cachedFrame_->nb_samples))) {
         MEDIA_LOG_E("Could not allocate FIFO");
+        return Status::ERROR_UNKNOWN;
     }
     return Status::OK;
 }
@@ -792,6 +793,7 @@ Status FFmpegAACEncoderPlugin::SendFrameToFfmpeg()
 
 Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
+    CHECK_AND_RETURN_RET_LOG(fifo_ != nullptr, Status::ERROR_UNKNOWN, "fifo_ is nullptr.");
     MEDIA_LOG_D("PcmFillFrame enter, buffer->pts" PUBLIC_LOG_D64, inputBuffer->pts_);
     auto memory = inputBuffer->memory_;
     auto bytesPerSample = av_get_bytes_per_sample(avCodecContext_->sample_fmt);

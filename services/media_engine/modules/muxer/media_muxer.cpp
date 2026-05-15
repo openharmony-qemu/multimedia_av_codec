@@ -349,19 +349,6 @@ void MediaMuxer::StopThread()
     }
 }
 
-Status MediaMuxer::Reset()
-{
-    MEDIA_LOG_I("Reset");
-    if (state_ == State::STARTED) {
-        Stop();
-    }
-    state_ = State::UNINITIALIZED;
-    muxer_ = nullptr;
-    tracks_.clear();
-
-    return Status::NO_ERROR;
-}
-
 void MediaMuxer::ThreadProcessor()
 {
     MEDIA_LOG_D("Enter ThreadProcessor [%{public}s]", threadName_.c_str());
