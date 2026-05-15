@@ -33,6 +33,27 @@ namespace Plugins {
 namespace HttpPlugin {
 namespace {
 static const std::string MPD_SEGMENT_LIST_TIMELINE = "http://127.0.0.1:47777/test_dash/segment_list/index_timeline.mpd";
+class DashCallbackMock1 : public Plugins::Callback {
+public:
+    void OnEvent(const Plugins::PluginEvent &event) override
+    {
+        switch (event.type) {
+            case PluginEventType::STREAM_UPDATE: {
+                int videoId = -1;
+                int audioId = -1;
+                int textId = -1;
+                mpdDownloader->SetDefaultStreamId(videoId, audioId, textId);
+                break;
+            }
+            default:break;
+        }
+    }
+    void SetDownload(std::shared_ptr<DashMpdDownloader> mpdloader)
+    {
+        mpdDownloader = mpdloader;
+    }
+    std::shared_ptr<DashMpdDownloader> mpdDownloader;
+};
 }
 using namespace std;
 using namespace OHOS::Media;
@@ -40,6 +61,9 @@ constexpr int32_t WAIT_FOR_SIDX_TIME = 1000 * 1000;
 bool DashMpdDownFinishedFuzzerTest(const uint8_t *data, size_t size)
 {
     auto downloader = std::make_shared<DashMpdDownloader>();
+    auto cb = std::make_shared<DashCallbackMock1>();
+    cb->SetDownload(downloader);
+    downloader->SetCallback(cb);
     downloader->Init();
     std::string testUrl = MPD_SEGMENT_LIST_TIMELINE;
     downloader->Open(testUrl);
