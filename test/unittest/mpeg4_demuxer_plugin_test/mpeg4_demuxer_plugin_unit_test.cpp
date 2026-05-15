@@ -1738,7 +1738,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest,
     EXPECT_EQ(plugin->SeekToKeyFrame(0, 0, SeekMode::SEEK_NEXT_SYNC, realSeekTime, 0),
         Status::ERROR_INVALID_PARAMETER);
     EXPECT_EQ(plugin->SeekToFrameByDts(0, 0, SeekMode::SEEK_NEXT_SYNC, realSeekTime, 0),
-        Status::ERROR_INVALID_PARAMETER);
+        Status::ERROR_NULL_POINTER);
 }
 
 /**
