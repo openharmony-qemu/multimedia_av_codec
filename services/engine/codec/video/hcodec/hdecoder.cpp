@@ -114,14 +114,15 @@ int32_t HDecoder::OnConfigure(const Format &format)
     currGenerationLayoutHasParsed_ = false;
     currLayout_.reset();
     configFormat_ = make_shared<Format>(format);
-
     (void)SetProcessName();
     (void)SetVrrEnable(format);
- 
+    (void)SetIsMvUpload(format);
+
     if (!DecideOutputBufMode()) {
         HLOGE("set output buffer type failed");
         return AVCS_ERR_UNKNOWN;
     }
+
     int32_t ret = SetLowLatency(format);
     if (ret != AVCS_ERR_OK) {
         return ret;
@@ -132,9 +133,8 @@ int32_t HDecoder::OnConfigure(const Format &format)
     SetContentLightLevelFromContainer(format);
 
     SaveTransform(format);
-    (void)SetProcessName();
+    SaveScaleMode(format);
     (void)SetFrameRateAdaptiveMode(format);
-    (void)SetIsMvUpload(format);
     return SetupPort(format);
 }
 
