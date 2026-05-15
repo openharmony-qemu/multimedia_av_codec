@@ -158,9 +158,7 @@ bool IsValidBuffer(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer)
 {
     if (!buffer || buffer->GetVirAddr() == nullptr || buffer->GetWidth() <= 0 || buffer->GetHeight() <= 0 ||
         buffer->GetStride() <= 0 || buffer->GetSize() <= 0) {
-        AVCODEC_LOGE("Invalid buffer: buffer=%{public}p, addr=%{public}p, width=%{public}d, "
-                     "height=%{public}d, stride=%{public}d, size=%{public}d",
-                     buffer.GetRefPtr(), buffer ? buffer->GetVirAddr() : nullptr,
+        AVCODEC_LOGE("Invalid buffer. width=%{public}d, height=%{public}d, stride=%{public}d, size=%{public}d",
                      buffer ? buffer->GetWidth() : INVALID_BUFFER_VALUE,
                      buffer ? buffer->GetHeight() : INVALID_BUFFER_VALUE,
                      buffer ? buffer->GetStride() : INVALID_BUFFER_VALUE,
