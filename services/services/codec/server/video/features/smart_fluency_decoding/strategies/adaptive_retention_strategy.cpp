@@ -97,23 +97,21 @@ bool AdaptiveRetentionStrategy::MakeRetentionDecision(const FrameRetentionContex
     if (DoubleUtils::IsLessOrEqual(currentSpeed_, MAX_SPEED_FOR_RETENTION)) {
         isRetain = true;
         lastReason_ = SfdDecisionReason::POST_RETAIN_ADAPTIVE_SPEED;
-        targetRatio_ = 1.0;
     } else if (!ctx.mvStats) {
         lastReason_ = lastReason_ = SfdDecisionReason::UNSPECIFIED;
     } else if (ctx.mvStats->zeroMotionRatio >= ZERO_MOTION_RATIO_THRESHOLD) {
         isRetain = false;
         lastReason_ = SfdDecisionReason::POST_DROP_ADAPTIVE_DT;
-        targetRatio_ = 1.0 / (maxDrops + 1.0);
     } else if (ctx.mvStats->validBlocks > 0) {
         double consistency = ctx.mvStats->motionConsistency;
         double magnitude = ctx.mvStats->perceptualMagnitude * currentSpeed_;
         isRetain = FluencyEvaluator::ShouldRetainFrame(magnitude, consistency);
         lastReason_ = isRetain ? SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT : SfdDecisionReason::POST_DROP_ADAPTIVE_DT;
-        targetRatio_ = 1.0 / (maxDrops + 1.0);
     } else {
         lastReason_ = SfdDecisionReason::UNSPECIFIED;
     }
 
+    dropCount_ += ctx.preDropCount;
     if (!isRetain) {
         dropCount_++;
         if (dropCount_ > maxDrops) {
@@ -125,6 +123,7 @@ bool AdaptiveRetentionStrategy::MakeRetentionDecision(const FrameRetentionContex
     } else {
         dropCount_ = 0;
     }
+    targetRatio_ = isRetain ? 1.0 : 1.0 / (maxDrops + 1.0);
     AVCODEC_LOGD("AdaptiveRetentionStrategy decision: %{public}d (speed:%{public}.3f, ratio:%{public}.3f)",
                  isRetain, currentSpeed_, targetRatio_);
     return isRetain;
