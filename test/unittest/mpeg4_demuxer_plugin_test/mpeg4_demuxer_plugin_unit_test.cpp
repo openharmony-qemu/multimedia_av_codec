@@ -1143,8 +1143,8 @@ void Mpeg4DemuxerPluginUnitTest::CheckSeekToFrameByDtsResult(
             continue;
         }
         targetDtsUsList.push_back(dtsUs);
-        std::cout << "[" << testLabel << "] source frame index: " << i
-            << ", source dts(us): " << dtsUs << std::endl;
+        std::cout << "[" << testLabel << "] source frame index: " << i <<
+            ", source dts(us): " << dtsUs << std::endl;
         if (targetDtsUsList.size() == targetDtsCount) {
             break;
         }

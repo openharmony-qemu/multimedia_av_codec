@@ -211,12 +211,19 @@ private:
     Status GetVideoSyncSeekTime(const std::shared_ptr<MPEG4AtomParser::Track>& track, VideoSyncSeekContext& context);
     Status MultiTrackSync(int32_t trackIndex, bool isBaseTrack, int64_t syncSeekTime, SeekMode mode);
     Status SeekToStartInternal();
-    
+    Status CheckSeekToFrameByDtsParam(int32_t trackId, int64_t seekTime, SeekMode mode);
+    void ResetCacheForSeek();
+    Status PrepareSeekToFrameByDts(int32_t trackId, int64_t seekTime,
+        std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t& sampleIndex,
+        int64_t& actualDts, int32_t& trackTimeScale);
     Status FindValidSample(std::shared_ptr<MPEG4AtomParser::Track> &track,
         std::shared_ptr<MPEG4SampleHelper::SampleIndexEntry> &sample);
     Status GetUnseekableSampleInfo(uint32_t &trackId, int64_t &pos, int32_t &size);
     Status GetSeekableSampleInfo(uint32_t trackId, int64_t &pos, int32_t &size);
     Status ReadSampleData(std::shared_ptr<Sample> sample, uint64_t pos, int32_t size, uint32_t trackId);
+    Status CheckReadSampleDataState(int32_t size);
+    Status ReadSampleDataToBuffer(std::shared_ptr<Sample> sample, uint64_t pos, int32_t size);
+    Status UpdateReadSampleDataTimeout(Status ret, std::shared_ptr<Sample> sample);
     Status ReadSampleData(std::shared_ptr<MPEG4Sample>& mpeg4Sample, uint64_t pos, int32_t size, uint32_t trackId);
     Status AddSampleToCacheQueue(std::shared_ptr<Sample> sample, const uint32_t trackId);
     void MaybeNotifyCachePressure(uint32_t trackId, uint32_t cacheBytes);
