@@ -74,10 +74,17 @@ void DumpSurfaceBuffer(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer, const std:
     EnsureDumpDir();
     int32_t w = buffer->GetWidth();
     int32_t h = buffer->GetHeight();
+    int32_t stride = buffer->GetStride();
+    int32_t sliceH = h; // default: sliceHeight == height
+    OH_NativeBuffer_Planes *planes = nullptr;
+    if (buffer->GetPlanesInfo(reinterpret_cast<void **>(&planes)) == OHOS::GSERROR_OK &&
+        planes != nullptr && planes->planeCount > 1 && stride > 0) {
+        sliceH = static_cast<int32_t>(planes->planes[1].offset / stride);
+    }
     int32_t fmt = buffer->GetFormat();
     char name[256];
-    int ret = sprintf_s(name, sizeof(name), "%s/%s_%s_%dx%d_fmt%d_pts%" PRIu64 ".bin",
-                        DUMP_PATH, encoderId.c_str(), prefix.c_str(), w, h, fmt, pts);
+    int ret = sprintf_s(name, sizeof(name), "%s/%s_%s_%dx%d(%dx%d)_fmt%d_pts%" PRIu64 ".bin",
+                        DUMP_PATH, encoderId.c_str(), prefix.c_str(), w, h, stride, sliceH, fmt, pts);
     if (ret > 0) {
         std::ofstream ofs(name, std::ios::binary | std::ios::app);
         if (ofs.is_open()) {
