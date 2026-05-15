@@ -824,6 +824,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_GetOutputDescription_001, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_GetInputDescription_NumberOfPendingFrames_001, TestSize.Level1)
 {
+    videoEnc_->isAVBufferMode_ = true;
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
@@ -837,6 +838,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_GetInputDescription_NumberOfPendingFrames_001, 
     EXPECT_EQ(pendingFrames, 0);
 
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 
     int32_t maxObserved = videoEnc_->GetMaxPendingFramesObserved();

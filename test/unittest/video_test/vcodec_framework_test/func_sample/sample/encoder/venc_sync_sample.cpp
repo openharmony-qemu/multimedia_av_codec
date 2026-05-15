@@ -697,7 +697,7 @@ int32_t VideoEncSyncSample::InputLoopInnerExt()
     auto inputDesc = videoEnc_->GetInputDescription();
     if (inputDesc != nullptr) {
         int32_t pendingFrames = -1;
-        if (inputDesc->GetIntValue(Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames)) {
+        if (inputDesc->GetIntValue(Media::Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames)) {
             int32_t observedMax = signal_->maxPendingFramesObserved_.load();
             while (pendingFrames > observedMax) {
                 if (signal_->maxPendingFramesObserved_.compare_exchange_weak(observedMax, pendingFrames)) {
