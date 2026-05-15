@@ -113,6 +113,9 @@ public:
     std::atomic<int32_t> idrWithImmediateXPSCount_ = 0;
     std::atomic<bool> lastOutputWasXPS_ = false;
     bool isAVCCodec_ = true;
+
+    // For NUMBER_OF_PENDING_FRAMES verification
+    std::atomic<int32_t> maxPendingFramesObserved_ = 0;
 };
 
 struct LtrParam {

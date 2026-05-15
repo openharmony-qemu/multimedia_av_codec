@@ -391,6 +391,14 @@ int32_t VideoEncSyncSample::GetIDRWithImmediateXPSCount()
     return signal_->idrWithImmediateXPSCount_.load();
 }
 
+int32_t VideoEncSyncSample::GetMaxPendingFramesObserved()
+{
+    if (signal_ == nullptr) {
+        return -1;
+    }
+    return signal_->maxPendingFramesObserved_.load();
+}
+
 void VideoEncSyncSample::SetIsAVCCodec(bool isAVC)
 {
     if (signal_ != nullptr) {
@@ -683,6 +691,19 @@ int32_t VideoEncSyncSample::InputLoopInnerExt()
     while (current > max) {
         if (signal_->maxPendingInputCount_.compare_exchange_weak(max, current)) {
             break;
+        }
+    }
+
+    auto inputDesc = videoEnc_->GetInputDescription();
+    if (inputDesc != nullptr) {
+        int32_t pendingFrames = -1;
+        if (inputDesc->GetIntValue(Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames)) {
+            int32_t observedMax = signal_->maxPendingFramesObserved_.load();
+            while (pendingFrames > observedMax) {
+                if (signal_->maxPendingFramesObserved_.compare_exchange_weak(observedMax, pendingFrames)) {
+                    break;
+                }
+            }
         }
     }
 

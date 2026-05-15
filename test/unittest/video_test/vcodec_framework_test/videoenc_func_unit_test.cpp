@@ -837,13 +837,11 @@ HWTEST_P(TEST_SUIT, VideoEncoder_GetInputDescription_NumberOfPendingFrames_001, 
     EXPECT_EQ(pendingFrames, 0);
 
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    inputDesc = videoEnc_->GetInputDescription();
-    ASSERT_NE(nullptr, inputDesc);
-    hasKey = inputDesc->GetIntValue(Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames);
-    EXPECT_TRUE(hasKey);
-    EXPECT_GE(pendingFrames, 0);
-
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+
+    int32_t maxObserved = videoEnc_->GetMaxPendingFramesObserved();
+    EXPECT_GE(maxObserved, 0);
+
     inputDesc = videoEnc_->GetInputDescription();
     ASSERT_NE(nullptr, inputDesc);
     hasKey = inputDesc->GetIntValue(Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames);

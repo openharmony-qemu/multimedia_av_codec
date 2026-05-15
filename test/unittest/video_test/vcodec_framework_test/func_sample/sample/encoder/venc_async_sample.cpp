@@ -526,6 +526,14 @@ int32_t VideoEncAsyncSample::GetIDRWithImmediateXPSCount()
     return signal_->idrWithImmediateXPSCount_.load();
 }
 
+int32_t VideoEncAsyncSample::GetMaxPendingFramesObserved()
+{
+    if (signal_ == nullptr) {
+        return -1;
+    }
+    return signal_->maxPendingFramesObserved_.load();
+}
+
 void VideoEncAsyncSample::SetIsAVCCodec(bool isAVC)
 {
     if (signal_ != nullptr) {
@@ -1045,6 +1053,19 @@ int32_t VideoEncAsyncSample::InputLoopInnerExt()
     std::shared_ptr<AVBufferMock> buffer = signal_->inBufferQueue_.front();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail. index: %d",
                                       index);
+
+    auto inputDesc = videoEnc_->GetInputDescription();
+    if (inputDesc != nullptr) {
+        int32_t pendingFrames = -1;
+        if (inputDesc->GetIntValue(Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames)) {
+            int32_t currentMax = signal_->maxPendingFramesObserved_.load();
+            while (pendingFrames > currentMax) {
+                if (signal_->maxPendingFramesObserved_.compare_exchange_weak(currentMax, pendingFrames)) {
+                    break;
+                }
+            }
+        }
+    }
 
     if (isTemporalScalabilitySyncIdr_ && frameInputCount_ == REQUEST_I_FRAME_NUM) {
         std::shared_ptr<FormatMock> format = buffer->GetParameter();

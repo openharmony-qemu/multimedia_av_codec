@@ -51,6 +51,7 @@ public:
     int32_t GetMaxPendingInputCount();
     int32_t GetIDRFrameCount();
     int32_t GetIDRWithImmediateXPSCount();
+    int32_t GetMaxPendingFramesObserved();
     void SetIsAVCCodec(bool isAVC);
     bool IsValid();
     int32_t SetCustomBuffer(std::shared_ptr<AVBufferMock> buffer);
