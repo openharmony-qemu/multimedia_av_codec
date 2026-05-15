@@ -213,9 +213,13 @@ private:
     Status SeekToStartInternal();
     Status CheckSeekToFrameByDtsParam(int32_t trackId, int64_t seekTime, SeekMode mode);
     void ResetCacheForSeek();
-    Status PrepareSeekToFrameByDts(int32_t trackId, int64_t seekTime,
-        std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t& sampleIndex,
-        int64_t& actualDts, int32_t& trackTimeScale);
+    struct SeekToFrameByDtsContext {
+        std::shared_ptr<MPEG4AtomParser::Track> track;
+        uint32_t sampleIndex = 0;
+        int64_t actualDts = 0;
+        int32_t trackTimeScale = 0;
+    };
+    Status PrepareSeekToFrameByDts(int32_t trackId, int64_t seekTime, SeekToFrameByDtsContext& context);
     Status FindValidSample(std::shared_ptr<MPEG4AtomParser::Track> &track,
         std::shared_ptr<MPEG4SampleHelper::SampleIndexEntry> &sample);
     Status GetUnseekableSampleInfo(uint32_t &trackId, int64_t &pos, int32_t &size);

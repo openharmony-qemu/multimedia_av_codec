@@ -96,21 +96,20 @@ void MPEG4DemuxerPlugin::ResetCacheForSeek()
 }
 
 Status MPEG4DemuxerPlugin::PrepareSeekToFrameByDts(int32_t trackId, int64_t seekTime,
-    std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t& sampleIndex,
-    int64_t& actualDts, int32_t& trackTimeScale)
+    SeekToFrameByDtsContext& context)
 {
-    track = FindTrackById(trackId);
-    FALSE_RETURN_V_MSG_E(track != nullptr && track->sampleHelper != nullptr,
+    context.track = FindTrackById(trackId);
+    FALSE_RETURN_V_MSG_E(context.track != nullptr && context.track->sampleHelper != nullptr,
         Status::ERROR_NULL_POINTER, "Track or sampleHelper is nullptr");
-    FALSE_RETURN_V_MSG_E(mediaInfo_.tracks[trackId].Get<Tag::MEDIA_TIME_SCALE>(trackTimeScale) &&
-        trackTimeScale > 0, Status::ERROR_INVALID_PARAMETER, "Get track time scale failed");
+    FALSE_RETURN_V_MSG_E(mediaInfo_.tracks[trackId].Get<Tag::MEDIA_TIME_SCALE>(context.trackTimeScale) &&
+        context.trackTimeScale > 0, Status::ERROR_INVALID_PARAMETER, "Get track time scale failed");
     int64_t targetDts = 0;
-    FALSE_RETURN_V_MSG_E(ConvertTimeScale(seekTime, static_cast<int64_t>(trackTimeScale), 1000LL, &targetDts) ==
-        Status::OK, Status::ERROR_INVALID_PARAMETER, "Convert seek time failed");
-    Status ret = FindFirstSampleIndexByDts(track, targetDts, sampleIndex);
+    FALSE_RETURN_V_MSG_E(ConvertTimeScale(seekTime, static_cast<int64_t>(context.trackTimeScale), 1000LL,
+        &targetDts) == Status::OK, Status::ERROR_INVALID_PARAMETER, "Convert seek time failed");
+    Status ret = FindFirstSampleIndexByDts(context.track, targetDts, context.sampleIndex);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Find sample by dts failed");
-    actualDts = track->sampleHelper->sampleIndexEntry_[sampleIndex].dts;
-    ret = SyncSelectedTracksByDts(trackId, actualDts);
+    context.actualDts = context.track->sampleHelper->sampleIndexEntry_[context.sampleIndex].dts;
+    ret = SyncSelectedTracksByDts(trackId, context.actualDts);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Sync selected tracks failed");
     return Status::OK;
 }
@@ -129,17 +128,14 @@ Status MPEG4DemuxerPlugin::SeekToFrameByDts(int32_t trackId, int64_t seekTime,
     Status ret = CheckSeekToFrameByDtsParam(trackId, seekTime, mode);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Check seek by dts parameter failed");
     ResetCacheForSeek();
-    std::shared_ptr<MPEG4AtomParser::Track> track;
-    uint32_t sampleIndex = 0;
-    int64_t actualDts = 0;
-    int32_t trackTimeScale = 0;
-    ret = PrepareSeekToFrameByDts(trackId, seekTime, track, sampleIndex, actualDts, trackTimeScale);
+    SeekToFrameByDtsContext context;
+    ret = PrepareSeekToFrameByDts(trackId, seekTime, context);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Prepare seek by dts failed");
     FALSE_RETURN_V_MSG_E(!isTimeout(), Status::ERROR_WAIT_TIMEOUT, "Seek by dts timeout");
-    ret = PrefetchSeekSample(track, sampleIndex);
+    ret = PrefetchSeekSample(context.track, context.sampleIndex);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Prefetch seek sample failed");
-    FALSE_RETURN_V_MSG_E(ConvertTimeScale(actualDts, NS_PER_MS * 1000LL, trackTimeScale, &realSeekTime) == Status::OK,
-        Status::ERROR_INVALID_PARAMETER, "Convert real seek time failed");
+    FALSE_RETURN_V_MSG_E(ConvertTimeScale(context.actualDts, NS_PER_MS * 1000LL, context.trackTimeScale,
+        &realSeekTime) == Status::OK, Status::ERROR_INVALID_PARAMETER, "Convert real seek time failed");
     return isTimeout() ? Status::ERROR_WAIT_TIMEOUT : Status::OK;
 }
 
