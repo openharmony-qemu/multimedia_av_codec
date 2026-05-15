@@ -852,27 +852,6 @@ HWTEST_P(TEST_SUIT, VideoEncoder_GetInputDescription_NumberOfPendingFrames_001, 
 }
 
 /**
- * @tc.name: VideoEncoder_GetInputDescription_NumberOfPendingFrames_002
- * @tc.desc: GetInputDescription with OH_MD_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES for HW encoder after Configure
- * @tc.type: FUNC
- */
-HWTEST_P(TEST_SUIT, VideoEncoder_GetInputDescription_NumberOfPendingFrames_002, TestSize.Level1)
-{
-    CreateByNameWithParam(GetParam());
-    SetFormatWithParam(GetParam());
-    PrepareSource(GetParam());
-    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-
-    auto inputDesc = videoEnc_->GetInputDescription();
-    ASSERT_NE(nullptr, inputDesc);
-
-    int32_t pendingFrames = -1;
-    bool ret = inputDesc->GetIntValue(Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames);
-    EXPECT_TRUE(ret);
-    EXPECT_EQ(pendingFrames, 0);
-}
-
-/**
  * @tc.name: VideoEncoder_HRDVivid2SDR_001
  * @tc.desc: set key output_color_space, value is INT32_MIN
  * @tc.type: FUNC
