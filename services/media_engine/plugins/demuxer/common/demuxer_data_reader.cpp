@@ -75,15 +75,15 @@ Status DemuxerDataReader::ReadUintData(int64_t offset, uint8_t* buffer, size_t s
 
     auto bufferInfo = std::make_shared<Buffer>();
     FALSE_RETURN_V_MSG_E(bufferInfo != nullptr, Status::ERROR_NO_MEMORY, "bufferInfo is nullptr");
-    auto bufData = bufferInfo->WrapMemory(buffer, size, size);
-    FALSE_RETURN_V_MSG_E(bufferInfo->GetMemory() != nullptr, Status::ERROR_NO_MEMORY, "Alloc memory failed");
+    auto bufferMemory = bufferInfo->WrapMemory(buffer, size, size);
+    FALSE_RETURN_V_MSG_E(bufferMemory != nullptr, Status::ERROR_NO_MEMORY, "Alloc memory failed");
     
     Status ret = Status::ERROR_AGAIN;
     uint32_t count = 0;
     while (ret == Status::ERROR_AGAIN &&
         (readTimeoutConfigured_ || count < READ_RETRY_TIMES)) {
         ret = dataSource_->ReadAt(offset, bufferInfo, size);
-        if (ret == Status::OK && bufferInfo->GetMemory()->GetSize() == size) {
+        if (ret == Status::OK && bufferMemory->GetSize() == size) {
             readStartTimeMs_ = 0;
             break;
         }
@@ -95,7 +95,7 @@ Status DemuxerDataReader::ReadUintData(int64_t offset, uint8_t* buffer, size_t s
     }
 
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read data failed");
-    FALSE_RETURN_V_MSG_E(bufferInfo->GetMemory()->GetSize() > 0, Status::ERROR_AGAIN, "No enough data");
+    FALSE_RETURN_V_MSG_E(bufferMemory->GetSize() > 0, Status::ERROR_AGAIN, "No enough data");
 
     return Status::OK;
 }
