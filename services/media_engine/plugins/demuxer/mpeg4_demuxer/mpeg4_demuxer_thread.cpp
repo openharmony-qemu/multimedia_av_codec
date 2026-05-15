@@ -127,12 +127,13 @@ Status MPEG4DemuxerPlugin::SeekToFrameByDts(int32_t trackId, int64_t seekTime,
 
     Status ret = CheckSeekToFrameByDtsParam(trackId, seekTime, mode);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Check seek by dts parameter failed");
+    int64_t startMs = NowMs();
     ResetCacheForSeek();
     SeekToFrameByDtsContext context;
     ret = PrepareSeekToFrameByDts(trackId, seekTime, context);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Prepare seek by dts failed");
     FALSE_RETURN_V_MSG_E(!isTimeout(), Status::ERROR_WAIT_TIMEOUT, "Seek by dts timeout");
-    ret = PrefetchSeekSample(context.track, context.sampleIndex);
+    ret = PrefetchSeekSampleWithTimeout(context.track, context.sampleIndex, startMs, timeoutMs);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Prefetch seek sample failed");
     FALSE_RETURN_V_MSG_E(ConvertTimeScale(context.actualDts, NS_PER_MS * 1000LL, context.trackTimeScale,
         &realSeekTime) == Status::OK, Status::ERROR_INVALID_PARAMETER, "Convert real seek time failed");
@@ -230,6 +231,26 @@ Status MPEG4DemuxerPlugin::SyncSelectedTracksByDts(int32_t baseTrackId, int64_t 
         }
     }
     return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::PrefetchSeekSampleWithTimeout(
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex, int64_t startMs, uint32_t timeoutMs)
+{
+    if (timeoutMs == 0) {
+        return PrefetchSeekSample(track, sampleIndex);
+    }
+    int64_t elapsedMs = NowMs() - startMs;
+    if (elapsedMs >= static_cast<int64_t>(timeoutMs)) {
+        return Status::ERROR_WAIT_TIMEOUT;
+    }
+    int64_t savedTimeoutMs = readTimeoutMs_.load(std::memory_order_acquire);
+    int64_t savedStartTimeMs = readStartTimeMs_.load(std::memory_order_acquire);
+    readTimeoutMs_.store(static_cast<int64_t>(timeoutMs) - elapsedMs, std::memory_order_release);
+    readStartTimeMs_.store(0, std::memory_order_release);
+    Status ret = PrefetchSeekSample(track, sampleIndex);
+    readTimeoutMs_.store(savedTimeoutMs, std::memory_order_release);
+    readStartTimeMs_.store(savedStartTimeMs, std::memory_order_release);
+    return ret;
 }
 
 Status MPEG4DemuxerPlugin::PrefetchSeekSample(

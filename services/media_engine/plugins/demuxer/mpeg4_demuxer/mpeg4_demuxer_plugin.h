@@ -235,6 +235,8 @@ private:
     Status FindFirstSampleIndexByDts(const std::shared_ptr<MPEG4AtomParser::Track>& track,
         int64_t targetDts, uint32_t& sampleIndex) const;
     Status SyncSelectedTracksByDts(int32_t baseTrackId, int64_t baseDts);
+    Status PrefetchSeekSampleWithTimeout(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+        uint32_t sampleIndex, int64_t startMs, uint32_t timeoutMs);
     Status PrefetchSeekSample(const std::shared_ptr<MPEG4AtomParser::Track>& track,
         uint32_t sampleIndex);
     Status ConvertSampleToAnnexb(std::shared_ptr<MPEG4Sample> dstMpeg4Sample, const uint32_t trackId);

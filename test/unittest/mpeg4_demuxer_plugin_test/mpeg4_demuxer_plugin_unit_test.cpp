@@ -2021,6 +2021,24 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SetReadTimeoutForSeek_Ti
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_SetReadTimeoutForSeek_TimeoutFail_002
+ * @tc.desc: Verify SeekToFrameByDts timeout limits prefetch read even when internal read timeout is longer
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SetReadTimeoutForSeek_TimeoutFail_002, TestSize.Level1)
+{
+    constexpr uint32_t apiTimeoutMs = 100;
+    constexpr uint32_t internalTimeoutMs = 2000;
+    InitDeferredWeakNetworkMpeg4Plugin(TEST_MP4_PATH_H264_B, 0, 1000, 20);
+    auto selectedTrackIds = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
+    ASSERT_FALSE(selectedTrackIds.empty());
+    ASSERT_EQ(mpeg4Plugin_->SetReadTimeoutForInitSeek(internalTimeoutMs), Status::OK);
+    int64_t realSeekTime = 0;
+    EXPECT_NE(mpeg4Plugin_->SeekToFrameByDts(static_cast<int32_t>(selectedTrackIds.front()), 0,
+        SeekMode::SEEK_CLOSEST, realSeekTime, apiTimeoutMs), Status::OK);
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_SetReadTimeoutForSeek_TimeoutSuccess_001
  * @tc.desc: Verify MPEG4 demuxer DTS seek succeeds when read timeout is disabled
  * @tc.type: FUNC
