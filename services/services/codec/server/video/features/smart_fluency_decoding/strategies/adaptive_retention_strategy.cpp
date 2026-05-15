@@ -95,7 +95,6 @@ bool AdaptiveRetentionStrategy::MakeRetentionDecision(const FrameRetentionContex
     bool isRetain = true;
     uint32_t maxDrops = static_cast<uint32_t>((currentSpeed_ - 1.0) * MAX_DROPS_MULTIPLIER_HIGH);
     if (DoubleUtils::IsLessOrEqual(currentSpeed_, MAX_SPEED_FOR_RETENTION)) {
-        isRetain = true;
         lastReason_ = SfdDecisionReason::POST_RETAIN_ADAPTIVE_SPEED;
     } else if (!ctx.mvStats) {
         lastReason_ = lastReason_ = SfdDecisionReason::UNSPECIFIED;
@@ -116,7 +115,6 @@ bool AdaptiveRetentionStrategy::MakeRetentionDecision(const FrameRetentionContex
         dropCount_++;
         if (dropCount_ > maxDrops) {
             dropCount_ = 0;
-            targetRatio_ = 1.0;
             isRetain = true;
             lastReason_ = SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT;
         }
