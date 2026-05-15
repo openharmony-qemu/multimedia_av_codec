@@ -454,7 +454,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_001, TestSize.Level1)
     param->PutIntValue(Tag::VIDEO_COORDINATE_W, bufferConfig.width);
     param->PutIntValue(Tag::VIDEO_COORDINATE_H, bufferConfig.height);
     buffer->SetParameter(param);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
 }
@@ -483,7 +483,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_002, TestSize.Level1)
     param->PutIntValue(Tag::VIDEO_COORDINATE_W, DEFAULT_CONFIG.width);
     param->PutIntValue(Tag::VIDEO_COORDINATE_H, DEFAULT_CONFIG.height);
     buffer->SetParameter(param);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_NE(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
 }
 
@@ -510,7 +510,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_003, TestSize.Level1)
     param->PutIntValue(Tag::VIDEO_COORDINATE_Y, 11);
     param->PutIntValue(Tag::VIDEO_COORDINATE_H, DEFAULT_CONFIG.height);
     buffer->SetParameter(param);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_NE(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
 }
 
@@ -538,7 +538,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_004, TestSize.Level1)
     param->PutIntValue(Tag::VIDEO_COORDINATE_W, DEFAULT_CONFIG.width);
     param->PutIntValue(Tag::VIDEO_COORDINATE_H, DEFAULT_CONFIG.height);
     buffer->SetParameter(param);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_NE(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
 }
 
@@ -574,7 +574,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_005, TestSize.Level1)
     param->PutIntValue(Tag::VIDEO_COORDINATE_W, DEFAULT_CONFIG.width);
     param->PutIntValue(Tag::VIDEO_COORDINATE_H, DEFAULT_CONFIG.height);
     buffer->SetParameter(param);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_NE(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
 }
 
@@ -600,7 +600,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_006, TestSize.Level1)
     param->PutIntValue(Tag::VIDEO_COORDINATE_W, DEFAULT_CONFIG.width);
     param->PutIntValue(Tag::VIDEO_COORDINATE_H, DEFAULT_CONFIG.height);
     buffer->SetParameter(param);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_NE(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
 }
 
@@ -651,7 +651,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_008, TestSize.Level1)
     param->PutIntValue(Tag::VIDEO_COORDINATE_W, DEFAULT_CONFIG.width);
     param->PutIntValue(Tag::VIDEO_COORDINATE_H, DEFAULT_CONFIG.height);
     buffer->SetParameter(param);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     ASSERT_NE(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
 }
@@ -689,7 +689,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_009, TestSize.Level1)
     param->PutIntValue(Tag::VIDEO_COORDINATE_W, bufferConfig.width);
     param->PutIntValue(Tag::VIDEO_COORDINATE_H, bufferConfig.height);
     buffer->SetParameter(param);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
@@ -728,7 +728,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_0010, TestSize.Level1)
     param->PutIntValue(Tag::VIDEO_COORDINATE_W, bufferConfig.width);
     param->PutIntValue(Tag::VIDEO_COORDINATE_H, bufferConfig.height);
     buffer->SetParameter(param);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
@@ -828,7 +828,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_HRDVivid2SDR_001, TestSize.Level1)
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, INT32_MIN);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
@@ -844,7 +844,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_HRDVivid2SDR_002, TestSize.Level1)
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, INT32_MAX);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
@@ -861,7 +861,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_HRDVivid2SDR_003, TestSize.Level1)
     PrepareSource(GetParam());
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
@@ -878,7 +878,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_HRDVivid2SDR_004, TestSize.Level1)
     PrepareSource(GetParam());
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
@@ -893,13 +893,13 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Hardware_Freeze_001, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Flush());
     pid_t pid = getpid();
     std::vector<pid_t> pidList = {pid};
     auto ret = AVCodecSuspend::SuspendFreeze(pidList);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ASSERT_EQ(AV_ERR_OK, ret);
 }
 
 /**
@@ -912,15 +912,15 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Hardware_Active_001, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Flush());
     pid_t pid = getpid();
     std::vector<pid_t> pidList = {pid};
     auto ret = AVCodecSuspend::SuspendFreeze(pidList);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ASSERT_EQ(AV_ERR_OK, ret);
     ret = AVCodecSuspend::SuspendActive(pidList);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ASSERT_EQ(AV_ERR_OK, ret);
 }
 
 /**
@@ -933,15 +933,15 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Hardware_Active_All_001, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Flush());
     pid_t pid = getpid();
     std::vector<pid_t> pidList = {pid};
     auto ret = AVCodecSuspend::SuspendFreeze(pidList);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ASSERT_EQ(AV_ERR_OK, ret);
     ret = AVCodecSuspend::SuspendActiveAll();
-    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ASSERT_EQ(AV_ERR_OK, ret);
 }
 
 /**
@@ -955,7 +955,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_8BitTo10Bit_001, TestSize.Level1)
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     videoEnc_->input8BitTo10Bit_ = true;
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
 }
 
@@ -970,7 +971,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_ResizeWidthHeight_001, TestSize.Level1)
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     videoEnc_->inputResizeWidthHeight_ = true;
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
 }
 
