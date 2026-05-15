@@ -1028,7 +1028,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_MaxFrameDelayCount_Surface_001, TestSize.Level1
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_SURFACE);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
 
     int32_t expectedValue = 3;
     format_->PutIntValue(Tag::VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, expectedValue);
