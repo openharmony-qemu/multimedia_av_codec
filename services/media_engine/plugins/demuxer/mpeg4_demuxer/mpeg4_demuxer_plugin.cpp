@@ -59,6 +59,8 @@ constexpr int32_t MIN_ATOM_SIZE = 16;
 constexpr int64_t SNIFF_DATA_SIZE = 2048;
 constexpr int32_t BOX_HEADER_SIZE = 8;
 constexpr int32_t BOX_TYPE_OFFSET = 4;
+constexpr uint32_t DEFAULT_CACHE_PRESSURE_WINDOW_MS = 500;
+constexpr int64_t NS_PER_MS = 1000000LL;
 
 static const std::map<std::string, VideoStreamType> g_streamParserMap = {
     { "video/avc",  VideoStreamType::AVC },
@@ -290,7 +292,7 @@ Status MPEG4DemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sour
     dataSource_ = source;
     auto parser = std::make_shared<MPEG4AtomParser>();
     FALSE_RETURN_V_MSG_E(parser != nullptr, Status::ERROR_NO_MEMORY, "parser allocation failed");
-    Status ret = parser->MPEG4ParseHeader(source, seekable_);
+    Status ret = parser->MPEG4ParseHeader(source, seekable_, readTimeoutMs_.load(std::memory_order_acquire));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "MPEG4ParseHeader failed");
     
     mediaInfo_ = parser->GetMediaInfo();
@@ -1032,8 +1034,8 @@ Status MPEG4DemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode mo
     MediaAVCodec::AVCodecTrace trace("SeekTo");
     FALSE_RETURN_V_MSG_E(inited_, Status::ERROR_NULL_POINTER, "Plugin has not been initialized");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
-    FALSE_RETURN_V_MSG_E(seekTime >= 0 && seekTime <= INT64_MAX / MS_TO_NS, Status::ERROR_INVALID_PARAMETER,
-        "Seek time " PUBLIC_LOG_D64 " is not supported", seekTime);
+    FALSE_RETURN_V_MSG_E(seekTime >= INT64_MIN / MS_TO_NS && seekTime <= INT64_MAX / MS_TO_NS,
+        Status::ERROR_INVALID_PARAMETER, "Seek time " PUBLIC_LOG_D64 " is not supported", seekTime);
 
     ReleaseReadLoop();
     for (const auto& selectedTrackId : selectedTrackIds_) {
@@ -1048,6 +1050,150 @@ Status MPEG4DemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode mo
     Status ret = FindBaseTrackAndCalcDelay(seekTime, mode, trackId); // find base track
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Find basetrack failed");
     return DoSeekInternal(trackId, seekTime, mode, realSeekTime);
+}
+
+Status MPEG4DemuxerPlugin::FindFirstSampleIndexByDts(
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, int64_t targetDts, uint32_t& sampleIndex) const
+{
+    FALSE_RETURN_V_MSG_E(track != nullptr && track->sampleHelper != nullptr,
+        Status::ERROR_NULL_POINTER, "Track or sampleHelper is nullptr");
+    const auto& entry = track->sampleHelper->sampleIndexEntry_;
+    FALSE_RETURN_V_MSG_E(!entry.empty(), Status::ERROR_INVALID_DATA, "Sample index entry is empty");
+    auto iter = std::lower_bound(entry.begin(), entry.end(), targetDts,
+        [](const MPEG4SampleHelper::SampleIndexEntry& sample, int64_t dts) {
+            return sample.dts < dts;
+        });
+    if (iter == entry.end()) {
+        return Status::END_OF_STREAM;
+    }
+    sampleIndex = static_cast<uint32_t>(std::distance(entry.begin(), iter));
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::SyncSelectedTracksByDts(int32_t baseTrackId, int64_t baseDts)
+{
+    auto baseTrack = FindTrackById(baseTrackId);
+    FALSE_RETURN_V_MSG_E(baseTrack != nullptr, Status::ERROR_NULL_POINTER, "Base track is nullptr");
+    int32_t baseTimeScale = 0;
+    FALSE_RETURN_V_MSG_E(mediaInfo_.tracks[baseTrackId].Get<Tag::MEDIA_TIME_SCALE>(baseTimeScale) &&
+        baseTimeScale > 0, Status::ERROR_INVALID_PARAMETER, "Get base time scale failed");
+
+    for (const auto& selectedTrackId : selectedTrackIds_) {
+        int32_t currentTrackId = static_cast<int32_t>(selectedTrackId);
+        if (currentTrackId == baseTrackId) {
+            continue;
+        }
+        auto track = FindTrackById(currentTrackId);
+        FALSE_RETURN_V_MSG_E(track != nullptr && track->sampleHelper != nullptr,
+            Status::ERROR_NULL_POINTER, "Track or sampleHelper is nullptr");
+        int32_t trackTimeScale = 0;
+        FALSE_RETURN_V_MSG_E(mediaInfo_.tracks[currentTrackId].Get<Tag::MEDIA_TIME_SCALE>(trackTimeScale) &&
+            trackTimeScale > 0, Status::ERROR_INVALID_PARAMETER, "Get track time scale failed");
+
+        int64_t targetDts = 0;
+        FALSE_RETURN_V_MSG_E(ConvertTimeScale(baseDts, static_cast<int64_t>(trackTimeScale),
+            static_cast<int64_t>(baseTimeScale), &targetDts) == Status::OK,
+            Status::ERROR_INVALID_PARAMETER, "Convert dts failed");
+        uint32_t sampleIndex = 0;
+        Status ret = FindFirstSampleIndexByDts(track, targetDts, sampleIndex);
+        if (ret == Status::OK) {
+            track->currentSampleIndex = sampleIndex;
+        } else if (ret == Status::END_OF_STREAM) {
+            track->currentSampleIndex = static_cast<uint32_t>(track->sampleHelper->sampleIndexEntry_.size());
+        } else {
+            return ret;
+        }
+    }
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::PrefetchSeekSample(
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex)
+{
+    FALSE_RETURN_V_MSG_E(track != nullptr && track->sampleHelper != nullptr,
+        Status::ERROR_NULL_POINTER, "Track or sampleHelper is nullptr");
+    auto& entry = track->sampleHelper->sampleIndexEntry_;
+    FALSE_RETURN_V_MSG_E(sampleIndex < entry.size(), Status::ERROR_INVALID_PARAMETER, "Invalid sample index");
+
+    uint32_t oldIndex = track->currentSampleIndex;
+    track->currentSampleIndex = sampleIndex;
+    auto sample = std::make_shared<Sample>();
+    FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate sample");
+    {
+        std::unique_lock<std::mutex> sLock(syncMutex_);
+        Status ret = ReadSampleData(sample, entry[sampleIndex].pos, entry[sampleIndex].size, track->trackIndex);
+        if (ret != Status::OK) {
+            track->currentSampleIndex = oldIndex;
+            return ret;
+        }
+    }
+    Status ret = AddSampleToCacheQueue(sample, track->trackIndex);
+    if (ret != Status::OK) {
+        track->currentSampleIndex = oldIndex;
+        return ret;
+    }
+    track->currentSampleIndex = std::min<uint32_t>(sampleIndex + 1, static_cast<uint32_t>(entry.size()));
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::SeekToFrameByDts(int32_t trackId, int64_t seekTime,
+    SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs)
+{
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
+    MediaAVCodec::AVCodecTrace trace("SeekToFrameByDts");
+    auto start = std::chrono::steady_clock::now();
+    auto isTimeout = [timeoutMs, start]() {
+        return timeoutMs > 0 && std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - start).count() > static_cast<int64_t>(timeoutMs);
+    };
+
+    FALSE_RETURN_V_MSG_E(inited_, Status::ERROR_NULL_POINTER, "Plugin has not been initialized");
+    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
+    FALSE_RETURN_V_MSG_E(seekTime >= INT64_MIN / MS_TO_NS && seekTime <= INT64_MAX / MS_TO_NS,
+        Status::ERROR_INVALID_PARAMETER, "Seek time " PUBLIC_LOG_D64 " is not supported", seekTime);
+    FALSE_RETURN_V_MSG_E(mode == SeekMode::SEEK_CLOSEST, Status::ERROR_INVALID_PARAMETER,
+        "Seek mode " PUBLIC_LOG_U32 " is not supported", static_cast<uint32_t>(mode));
+    int32_t trackCount = 0;
+    FALSE_RETURN_V_MSG_E(mediaInfo_.general.Get<Tag::MEDIA_TRACK_COUNT>(trackCount),
+        Status::ERROR_INVALID_DATA, "Get track count failed");
+    FALSE_RETURN_V_MSG_E(trackId >= 0 && trackId < trackCount, Status::ERROR_INVALID_PARAMETER,
+        "Invalid trackId " PUBLIC_LOG_D32, trackId);
+    FALSE_RETURN_V_MSG_E(TrackIsSelected(static_cast<uint32_t>(trackId)), Status::ERROR_INVALID_OPERATION,
+        "Track " PUBLIC_LOG_D32 " is not selected", trackId);
+
+    ReleaseReadLoop();
+    for (const auto& selectedTrackId : selectedTrackIds_) {
+        cacheQueue_.RemoveTrackQueue(selectedTrackId);
+        cacheQueue_.AddTrackQueue(selectedTrackId);
+    }
+    cacheSamples_.clear();
+    pendingWebVttSamples_.clear();
+    readToEnd_ = false;
+
+    auto track = FindTrackById(trackId);
+    FALSE_RETURN_V_MSG_E(track != nullptr && track->sampleHelper != nullptr,
+        Status::ERROR_NULL_POINTER, "Track or sampleHelper is nullptr");
+    int32_t trackTimeScale = 0;
+    FALSE_RETURN_V_MSG_E(mediaInfo_.tracks[trackId].Get<Tag::MEDIA_TIME_SCALE>(trackTimeScale) &&
+        trackTimeScale > 0, Status::ERROR_INVALID_PARAMETER, "Get track time scale failed");
+    int64_t targetDts = 0;
+    FALSE_RETURN_V_MSG_E(ConvertTimeScale(seekTime, static_cast<int64_t>(trackTimeScale), 1000LL, &targetDts) ==
+        Status::OK, Status::ERROR_INVALID_PARAMETER, "Convert seek time failed");
+
+    uint32_t sampleIndex = 0;
+    Status ret = FindFirstSampleIndexByDts(track, targetDts, sampleIndex);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Find sample by dts failed");
+    int64_t actualDts = track->sampleHelper->sampleIndexEntry_[sampleIndex].dts;
+    ret = SyncSelectedTracksByDts(trackId, actualDts);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Sync selected tracks failed");
+    if (isTimeout()) {
+        return Status::ERROR_WAIT_TIMEOUT;
+    }
+    ret = PrefetchSeekSample(track, sampleIndex);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Prefetch seek sample failed");
+    FALSE_RETURN_V_MSG_E(ConvertTimeScale(actualDts, NS_PER_MS * 1000LL, trackTimeScale, &realSeekTime) == Status::OK,
+        Status::ERROR_INVALID_PARAMETER, "Convert real seek time failed");
+    return isTimeout() ? Status::ERROR_WAIT_TIMEOUT : Status::OK;
 }
 
 Status MPEG4DemuxerPlugin::SeekToStartInternal()
@@ -1109,6 +1255,10 @@ Status MPEG4DemuxerPlugin::ParseMoof(int64_t offset)
     auto dataReader = std::make_shared<DemuxerDataReader>();
     FALSE_RETURN_V_MSG_E(dataReader != nullptr, Status::ERROR_NO_MEMORY, "dataReader allocation failed");
     dataReader->SetDataReader(dataSource_);
+    int64_t timeoutMs = readTimeoutMs_.load(std::memory_order_acquire);
+    if (timeoutMs >= 0) {
+        dataReader->SetReadTimeoutForInitSeek(timeoutMs);
+    }
     parser->SetDataReader(dataReader);
     parser->SetSeekable(seekable_);
     parser->GetFragmentEntry(fragmentEntry_);
@@ -1326,7 +1476,8 @@ Status MPEG4DemuxerPlugin::ReadSampleData(std::shared_ptr<Sample> sample, uint64
 
     Status ret = Status::ERROR_AGAIN;
     uint32_t count = 0;
-    while (ret == Status::ERROR_AGAIN && count < READ_RETRY_TIMES) {
+    while (ret == Status::ERROR_AGAIN &&
+        (readTimeoutMs_.load(std::memory_order_acquire) >= 0 || count < READ_RETRY_TIMES)) {
         if (stopReadThread_.load(std::memory_order_acquire) ||
             avReadPacketStopState_.load(std::memory_order_acquire) == AVReadPacketStopState::TRUE) {
             MEDIA_LOG_I("ReadSampleData stopped");
@@ -1336,10 +1487,25 @@ Status MPEG4DemuxerPlugin::ReadSampleData(std::shared_ptr<Sample> sample, uint64
         ret = dataSource_->ReadAt(pos, buffer, bufferSize);
         memory = buffer->GetMemory();
         FALSE_RETURN_V_MSG_E(memory != nullptr, Status::ERROR_UNKNOWN, "Memory is nullptr");
-        if (memory->GetSize() == bufferSize) {
+        if (ret == Status::OK && memory->GetSize() == bufferSize) {
+            readStartTimeMs_.store(0, std::memory_order_release);
             break;
         }
-        count++;
+        int64_t timeoutMs = readTimeoutMs_.load(std::memory_order_acquire);
+        if (ret == Status::ERROR_AGAIN && timeoutMs > 0) {
+            int64_t nowMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch()).count();
+            int64_t startMs = readStartTimeMs_.load(std::memory_order_acquire);
+            if (startMs <= 0) {
+                readStartTimeMs_.store(nowMs, std::memory_order_release);
+            } else if (nowMs - startMs > timeoutMs) {
+                MEDIA_LOG_E("ReadSampleData timeout, elapsed: " PUBLIC_LOG_D64 "ms, limit: " PUBLIC_LOG_D64 "ms",
+                    nowMs - startMs, timeoutMs);
+                sample->data.reset();
+                return Status::ERROR_UNKNOWN;
+            }
+        }
+        ++count;
         usleep(READ_RETRY_SLEEP_TIME_US);
     }
     memory = buffer->GetMemory();
@@ -1383,6 +1549,10 @@ Status MPEG4DemuxerPlugin::AddSampleToCacheQueue(std::shared_ptr<Sample> sample,
         cacheSample->offset = 0;
         cacheQueue_.Push(trackId, cacheSample);
         ret = CheckCacheDataLimit(trackId);
+        uint32_t cacheBytes = cacheQueue_.GetCacheDataSize(trackId);
+        if (cacheBytes < UINT32_MAX) {
+            MaybeNotifyCachePressure(trackId, cacheBytes);
+        }
     }
     return ret;
 }
@@ -1712,6 +1882,68 @@ void MPEG4DemuxerPlugin::SetCacheLimit(uint32_t limitSize)
 {
     setLimitByUser_ = true;
     cachelimitSize_ = limitSize;
+}
+
+Status MPEG4DemuxerPlugin::SetReadTimeoutForInitSeek(int64_t timeoutMs)
+{
+    FALSE_RETURN_V_MSG_E(timeoutMs >= 0, Status::ERROR_INVALID_PARAMETER,
+        "SetReadTimeoutForInitSeek timeoutMs must be non-negative");
+    MEDIA_LOG_I("Set read timeout for init/seek: " PUBLIC_LOG_D64 " ms", timeoutMs);
+    readTimeoutMs_.store(timeoutMs, std::memory_order_release);
+    readStartTimeMs_.store(0, std::memory_order_release);
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::SetCachePressureCallback(CachePressureCallback cb)
+{
+    std::lock_guard<std::mutex> lock(cachePressureMutex_);
+    cachePressureCb_ = std::move(cb);
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::SetTrackCacheLimit(uint32_t trackId, uint32_t limitBytes, uint32_t windowMs)
+{
+    std::lock_guard<std::mutex> lock(cachePressureMutex_);
+    if (limitBytes == 0) {
+        trackCacheLimitMap_.erase(trackId);
+        trackThrottleWindowMs_.erase(trackId);
+        trackLastNotifyMs_.erase(trackId);
+        return Status::OK;
+    }
+    trackCacheLimitMap_[trackId] = limitBytes;
+    trackThrottleWindowMs_[trackId] = (windowMs == 0) ? DEFAULT_CACHE_PRESSURE_WINDOW_MS : windowMs;
+    trackLastNotifyMs_.erase(trackId);
+    return Status::OK;
+}
+
+int64_t MPEG4DemuxerPlugin::NowMs() const
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+
+void MPEG4DemuxerPlugin::MaybeNotifyCachePressure(uint32_t trackId, uint32_t cacheBytes)
+{
+    std::lock_guard<std::mutex> lock(cachePressureMutex_);
+    if (!cachePressureCb_) {
+        return;
+    }
+    auto limitIt = trackCacheLimitMap_.find(trackId);
+    if (limitIt == trackCacheLimitMap_.end() || limitIt->second == 0 || cacheBytes < limitIt->second) {
+        return;
+    }
+    uint32_t windowMs = DEFAULT_CACHE_PRESSURE_WINDOW_MS;
+    auto windowIt = trackThrottleWindowMs_.find(trackId);
+    if (windowIt != trackThrottleWindowMs_.end() && windowIt->second > 0) {
+        windowMs = windowIt->second;
+    }
+    int64_t now = NowMs();
+    auto lastIt = trackLastNotifyMs_.find(trackId);
+    if (lastIt != trackLastNotifyMs_.end() && now - lastIt->second < static_cast<int64_t>(windowMs)) {
+        return;
+    }
+    trackLastNotifyMs_[trackId] = now;
+    cachePressureCb_(trackId, cacheBytes);
 }
 
 Status MPEG4DemuxerPlugin::GetCurrentCacheSize(uint32_t trackId, uint32_t& size)

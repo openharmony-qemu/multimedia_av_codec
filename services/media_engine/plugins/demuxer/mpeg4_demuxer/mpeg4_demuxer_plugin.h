@@ -91,19 +91,18 @@ public:
         const int32_t probSize) override;
     Status BoostReadThreadPriority() override;
     Status SetAVReadPacketStopState(bool state) override;
-    Status SetReadTimeoutForInitSeek(int64_t timeoutMs) override { return Status::OK; }
+    Status SetReadTimeoutForInitSeek(int64_t timeoutMs) override;
     Status ReadSampleZeroCopy(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout) override;
     Status GetCurrentCacheFrameCount(uint32_t trackId, uint32_t& frameCount) override;
     Status SeekToStart() override;
     Status SeekToKeyFrame(
         int32_t trackId, int64_t seekTime, SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs) override;
     Status SeekToFrameByDts(int32_t trackId, int64_t seekTime,
-        SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs) override { return Status::ERROR_UNKNOWN; };
+        SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs) override;
 
     // cache pressure control
-    Status SetCachePressureCallback(CachePressureCallback cb) override { return Status::ERROR_UNKNOWN; };
-    Status SetTrackCacheLimit(uint32_t trackId, uint32_t limitBytes, uint32_t windowMs = 500) override
-        { return Status::ERROR_UNKNOWN; };
+    Status SetCachePressureCallback(CachePressureCallback cb) override;
+    Status SetTrackCacheLimit(uint32_t trackId, uint32_t limitBytes, uint32_t windowMs = 500) override;
 private:
     enum IndexAndPTSConversionMode : unsigned int {
         GET_FIRST_SAMPLE_PTS,
@@ -220,6 +219,13 @@ private:
     Status ReadSampleData(std::shared_ptr<Sample> sample, uint64_t pos, int32_t size, uint32_t trackId);
     Status ReadSampleData(std::shared_ptr<MPEG4Sample>& mpeg4Sample, uint64_t pos, int32_t size, uint32_t trackId);
     Status AddSampleToCacheQueue(std::shared_ptr<Sample> sample, const uint32_t trackId);
+    void MaybeNotifyCachePressure(uint32_t trackId, uint32_t cacheBytes);
+    int64_t NowMs() const;
+    Status FindFirstSampleIndexByDts(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+        int64_t targetDts, uint32_t& sampleIndex) const;
+    Status SyncSelectedTracksByDts(int32_t baseTrackId, int64_t baseDts);
+    Status PrefetchSeekSample(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+        uint32_t sampleIndex);
     Status ConvertSampleToAnnexb(std::shared_ptr<MPEG4Sample> dstMpeg4Sample, const uint32_t trackId);
     Status SetEosSample(std::shared_ptr<AVBuffer> sample);
     Status SetEosSample(std::shared_ptr<AVBuffer> sample, bool replaceMemory);
@@ -321,6 +327,13 @@ private:
     std::atomic<uint32_t> readModeFlags_ {0};
     std::atomic<bool> isAsyncReadThreadPrioritySet_ {false};
     std::atomic<AVReadPacketStopState> avReadPacketStopState_ {AVReadPacketStopState::UNSET};
+    std::atomic<int64_t> readTimeoutMs_ {-1};
+    std::atomic<int64_t> readStartTimeMs_ {0};
+    CachePressureCallback cachePressureCb_ {nullptr};
+    std::unordered_map<uint32_t, uint32_t> trackCacheLimitMap_ {};
+    std::unordered_map<uint32_t, uint32_t> trackThrottleWindowMs_ {};
+    std::unordered_map<uint32_t, int64_t> trackLastNotifyMs_ {};
+    std::mutex cachePressureMutex_ {};
 };
 } // namespace MPEG4
 } // namespace Plugins
