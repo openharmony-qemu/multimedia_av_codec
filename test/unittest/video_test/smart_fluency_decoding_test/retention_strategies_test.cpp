@@ -377,9 +377,9 @@ HWTEST_F(AdaptiveRetentionStrategyTest, MakeDecision_MaxDropsEnforcement_007, Te
     bool first = strategy->MakeRetentionDecision(ctx);
     if (!first) {
         EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_DROP_ADAPTIVE_DT);
-        // maxDrops = (2.0 - 1.0) * 5.0 = 5
-        // It should drop 5 frames then retain 1.
-        for (int i = 0; i < 4; ++i) {
+        // maxDrops = (2.0 - 1.0) * 3.0 = 5
+        // It should drop 3 frames then retain 1.
+        for (int i = 0; i < 2; ++i) {
             EXPECT_FALSE(strategy->MakeRetentionDecision(ctx));
         }
         // 6th frame should retain (adaptive drop limit reached)
@@ -429,9 +429,9 @@ HWTEST_F(AdaptiveRetentionStrategyTest, GetRatio_UpdateOnDrop_009, TestSize.Leve
     ctx.mvStats = &mvStats;
 
     strategy->MakeRetentionDecision(ctx);
-    // If it dropped, ratio should be 1/(5+1) = 0.166...
+    // If it dropped, ratio should be 1/(3+1) = 0.25
     if (strategy->GetLastDecisionReason() == SfdDecisionReason::POST_DROP_ADAPTIVE_DT) {
-        EXPECT_NEAR(strategy->GetRatio(), 1.0 / 6.0, 0.01);
+        EXPECT_NEAR(strategy->GetRatio(), 1.0 / 4.0, 0.01);
     }
 }
 
