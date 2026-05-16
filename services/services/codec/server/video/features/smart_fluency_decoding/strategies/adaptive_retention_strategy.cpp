@@ -116,7 +116,7 @@ bool AdaptiveRetentionStrategy::MakeRetentionDecision(const FrameRetentionContex
         if (dropCount_ > maxDrops) {
             dropCount_ = 0;
             isRetain = true;
-            lastReason_ = SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT;
+            lastReason_ = SfdDecisionReason::POST_RETAIN_ADAPTIVE_MAX_DROP;
         }
     } else {
         dropCount_ = 0;

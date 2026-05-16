@@ -198,3 +198,61 @@ HWTEST_F(SFDBuilderTest, SetMethods_FluentApiChaining_012, TestSize.Level1)
     auto& ref = builder.SetVideoWidth(WIDTH_1080P).SetVideoHeight(HEIGHT_1080P).SetCodecMime("video/avc");
     EXPECT_EQ(&ref, &builder);
 }
+
+/**
+ * @tc.name: Build_VvcCodec_013
+ * @tc.desc: Verify SFD builder successfully handles VVC codec mime type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDBuilderTest, Build_VvcCodec_013, TestSize.Level1)
+{
+    SmartFluencyDecodingBuilder builder;
+    Format format;
+    format.PutIntValue(Tag::VIDEO_WIDTH, WIDTH_1080P);
+    format.PutIntValue(Tag::VIDEO_HEIGHT, HEIGHT_1080P);
+    format.PutStringValue(Tag::MIME_TYPE, "video/vvc");
+    format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, 0);
+
+    builder.SetCodecMime("video/vvc").SetFromFormat(format);
+    auto sfd = builder.Build();
+    EXPECT_NE(sfd, nullptr);
+}
+
+/**
+ * @tc.name: Build_UnknownMime_014
+ * @tc.desc: Verify Build returns nullptr when an unsupported mime type is provided.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDBuilderTest, Build_UnknownMime_014, TestSize.Level1)
+{
+    SmartFluencyDecodingBuilder builder;
+    Format format;
+    format.PutIntValue(Tag::VIDEO_WIDTH, WIDTH_1080P);
+    format.PutIntValue(Tag::VIDEO_HEIGHT, HEIGHT_1080P);
+    format.PutStringValue(Tag::MIME_TYPE, "video/vp9");
+
+    builder.SetCodecMime("video/vp9").SetFromFormat(format);
+    auto sfd = builder.Build();
+    EXPECT_EQ(sfd, nullptr);
+}
+
+/**
+ * @tc.name: Build_UpdatePlaybackSpeed_015
+ * @tc.desc: Verify playback speed is propagated to the built SFD instance.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDBuilderTest, Build_UpdatePlaybackSpeed_015, TestSize.Level1)
+{
+    SmartFluencyDecodingBuilder builder;
+    Format format;
+    format.PutIntValue(Tag::VIDEO_WIDTH, WIDTH_1080P);
+    format.PutIntValue(Tag::VIDEO_HEIGHT, HEIGHT_1080P);
+    format.PutStringValue(Tag::MIME_TYPE, "video/avc");
+    format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, 0);
+    format.PutDoubleValue(Tag::VIDEO_DECODER_SPEED, 2.0);
+
+    builder.SetCodecMime("video/avc").SetFromFormat(format);
+    auto sfd = builder.Build();
+    ASSERT_NE(sfd, nullptr);
+    EXPECT_NEAR(sfd->currentPlaybackSpeed_, 2.0, 0.001);
+}
