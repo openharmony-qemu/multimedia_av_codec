@@ -199,7 +199,7 @@ void SmartFluencyDecoding::Flush()
         strategy_->Reset();
     }
     inBufferMap_.clear();
-    refFrameMap_.clear();
+    noRefFrameMap_.clear();
     lastValidMVStats_ = {};
     hasValidMVStats_ = false;
 #ifdef SFD_DEBUG
@@ -580,17 +580,18 @@ bool SmartFluencyDecoding::IsRatioValid(double ratio)
 
 void SmartFluencyDecoding::SetRefFrameMap(int64_t pts, bool isNonRef)
 {
-    std::lock_guard<std::mutex> lock(refFrameMapMutex_);
-    refFrameMap_[pts] = isNonRef;
+    std::lock_guard<std::mutex> lock(noRefFrameMapMutex_);
+    noRefFrameMap_[pts] = isNonRef;
 }
 
-bool SmartFluencyDecoding::GetRefFrameFromMap(int64_t pts) {
-    std::lock_guard<std::mutex> lock(refFrameMapMutex_);
-    auto it = refFrameMap_.find(pts);
+bool SmartFluencyDecoding::GetNoRefFrameFromMap(int64_t pts)
+{
+    std::lock_guard<std::mutex> lock(noRefFrameMapMutex_);
+    auto it = noRefFrameMap_.find(pts);
     bool isNonRef = false;
-    if (it != refFrameMap_.end()) {
+    if (it != noRefFrameMap_.end()) {
         isNonRef = it->second;
-        refFrameMap_.erase(refFrameMap_.begin(), std::next(it));
+        noRefFrameMap_.erase(noRefFrameMap_.begin(), std::next(it));
     } else {
         AVCODEC_LOGE_WITH_TAG("refMap can't find pts: %{public}ld", pts);
     }
@@ -599,28 +600,24 @@ bool SmartFluencyDecoding::GetRefFrameFromMap(int64_t pts) {
 }
 
 MVStats SmartFluencyDecoding::ExtractMVStats(StrategyCaps caps, int64_t pts,
-    PostDecCost& cost, const sptr<SurfaceBuffer> surfaceBuffer)
+                                             PostDecCost& cost, const sptr<SurfaceBuffer> surfaceBuffer)
 {
-    bool isNonRef = GetRefFrameFromMap(pts);
-    MVStats mvStats;
     if (!caps.requiresMv || surfaceBuffer == nullptr) {
-        mvStats = {};
-        return mvStats;
+        return MVStats{}; 
     }
 
+    bool isNonRef = GetRefFrameFromMap(pts);
     if (isNonRef) {
-        if (hasValidMVStats_) {
-            mvStats = lastValidMVStats_;
-        } else {
-            mvStats = {};
-        }
-    } else {
-        ParseMVData(surfaceBuffer, mvStats, cost.copyMvCostUs, cost.analyzeMvCostUs);
-        if (mvStats.validBlocks > 0) {
-            lastValidMVStats_ = mvStats;
-            hasValidMVStats_ = true;
-        }
+        return hasValidMVStats_ ? lastValidMVStats_ : MVStats{};
     }
+
+    MVStats mvStats;
+    ParseMVData(surfaceBuffer, mvStats, cost.copyMvCostUs, cost.analyzeMvCostUs);
+    if (mvStats.validBlocks > 0) {
+        lastValidMVStats_ = mvStats;
+        hasValidMVStats_ = true;
+    }
+
     return mvStats;
 }
 
