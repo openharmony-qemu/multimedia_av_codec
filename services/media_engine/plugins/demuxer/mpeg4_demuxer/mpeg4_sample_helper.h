@@ -67,6 +67,8 @@ public:
     uint32_t GetSampleCountOfCttsEntry(uint32_t cttsEntryIndex);
     int32_t GetSampleOffsetOfCttsEntry(uint32_t cttsEntryIndex);
     int32_t GetMinOffsetOfCttsEntry();
+    std::vector<uint32_t> GetSyncSamplesPosFromStssEntry();
+
     struct EditListEntry {
         int64_t mediaTime = 0;
         int64_t duration = 0;

@@ -1563,6 +1563,15 @@ int32_t MPEG4SampleHelper::GetMinOffsetOfCttsEntry()
     }
     return std::min(0, minSampleOffsetOfCttsEntry);
 }
+
+std::vector<uint32_t> MPEG4SampleHelper::GetSyncSamplesPosFromStssEntry()
+{
+    std::vector<uint32_t> syncSamplesPos;
+    for (uint32_t i = 0; i < stssEntry_.size(); ++i) {
+        syncSamplesPos.emplace(stssEntry_[i].index);
+    }
+    return syncSamplesPos;
+}
 } // namespace MPEG4
 } // namespace Plugins
 } // namespace Media

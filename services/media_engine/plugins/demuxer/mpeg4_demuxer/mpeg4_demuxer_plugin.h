@@ -69,6 +69,7 @@ public:
     Status GetLastPTSByTrackId(uint32_t trackId, int64_t &lastPTS) override;
     Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo) override;
     void ResetEosStatus() override {}
+
     bool IsRefParserSupported() override;
     Status ParserRefUpdatePos(int64_t timeStampMs, bool isForward = true) override;
     Status ParserRefInfo() override;
@@ -79,6 +80,12 @@ public:
     Status Dts2FrameId(int64_t dts, uint32_t &frameId) override;
     Status SeekMs2FrameId(int64_t seekMs, uint32_t &frameId) override;
     Status FrameId2SeekMs(uint32_t frameId, int64_t &seekMs) override;
+
+    bool IsMultiVideoTracks();
+    bool IsSupportedCodec();
+    Status GetGopIdBySeekPos(int64_t seekMs, int32_t &gopId);
+    Status GetSampleIndexByDts(int64_t seekMs, uint32_t &sampleIdx);
+
     Status GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
         const uint64_t relativePresentationTimeUs, uint32_t &index) override;
     Status GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
@@ -109,6 +116,7 @@ private:
         GET_FIRST_SAMPLE_PTS,
         INDEX_TO_RELATIVEPTS,
         RELATIVEPTS_TO_INDEX,
+        PTS_TO_DTS_MAPPING,
     };
 
     std::shared_ptr<MPEG4AtomParser::Track> firstTrack_ = nullptr;
@@ -154,6 +162,10 @@ private:
     int64_t minRelativePTSDiffOfLeft_ = INT64_MAX;
     int64_t minRelativePTSDiffOfRight_ = INT64_MAX;
     uint32_t index2RelativePTS_ = 0;
+
+    int64_t ptsOfIndexZero_ = 0;
+    int32_t refParserTrackIdx_ = -1;
+    std::vector<uint32_t> syncSamplesPos_;
 
     int32_t CountTracks();
     void GetAVTrackIds();
@@ -256,7 +268,7 @@ private:
     Status ConvertPTSAndIndexBySttsAndCtts(const std::shared_ptr<MPEG4AtomParser::Track>& track,
         IndexAndPTSConversionMode mode, int64_t absolutePTS, uint32_t sampleIndex);
     void ProcessConversionByMode(IndexAndPTSConversionMode mode, int64_t pts, int64_t absolutePTS,
-        uint32_t sampleIndex);
+        uint32_t sampleIndex, int64_t dts);
     Status UpdatePTSBySttsAndCtts(int64_t& pts, int64_t dts, double timeScaleRate,
         int64_t sampleOffsetOfCurrentCttsEntry);
     void ProcessIndex2RelativePTS(int64_t pts, uint32_t index);

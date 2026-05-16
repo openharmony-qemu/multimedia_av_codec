@@ -47,12 +47,27 @@ namespace MPEG4 {
 constexpr uint32_t REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT = 200000u;
 
 bool MPEG4DemuxerPlugin::IsRefParserSupported()
-{
+{   
+    FileType fileType = FileType::UNKNOW;
+    FALSE_RETURN_V_MSG_E(mediaInfo_.general.Get<Tag::MEDIA_FILE_TYPE>(fileType), false,
+        "fileType does not exist in mediaInfo_");
+    FALSE_RETURN_V_MSG_E(fileType == FileType::MP4 || fileType == FileType::MOV, false,
+        "RefParser unsupported file type " PUBLIC_LOG_D32, fileType);
+    FALSE_RETURN_V_MSG_E(!IsMultiVideoTracks(), false, "multi-video-tracks video is unsupported");
+    FALSE_RETURN_V_MSG_W(IsSupportedCodec(), false, "RefParser unsupported stream type");
     return true;
 }
 
 Status MPEG4DemuxerPlugin::ParserRefUpdatePos(int64_t timeStampMs, bool isForward)
 {
+    FALSE_RETURN_V_MSG_E(IsRefParserSupported(), Status::ERROR_UNSUPPORTED_FORMAT, "Unsupport ref parser");
+    int64_t clipTimeStampMs = std::max(timeStampMs, static_cast<int64_t>(0));
+    /** */
+
+    int32_t gopId = 0;
+    FALSE_RETURN_V_MSG_E(GetGopIdBySeekPos(clipTimeStampMs, gopId) == Status::OK, Status::ERROR_UNKNOWN,
+        "GetGopIdBySeekPos failed.");
+
     return Status::OK;
 }
 
@@ -93,6 +108,73 @@ Status MPEG4DemuxerPlugin::SeekMs2FrameId(int64_t seekMs, uint32_t &frameId)
 
 Status MPEG4DemuxerPlugin::FrameId2SeekMs(uint32_t frameId, int64_t &seekMs)
 {
+    return Status::OK;
+}
+
+bool MPEG4DemuxerPlugin::IsMultiVideoTracks()
+{
+    uint32_t videoTrackCount = 0;
+    for (uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
+        TrackType trackType = INVALID_TYPE;
+        mediaInfo_.tracks[i].Get<Tag::MEDIA_TYPE>(trackType);
+        std::string mimeType = MimeType::INVALID_TYPE;
+        mediaInfo_.tracks[i].Get<Tag::MIME_TYPE>(mimeType);
+        MEDIA_LOG_I("track index is " PUBLIC_LOG_U32 ", trackType is " PUBLIC_LOG_D32 ", mimeType is " PUBLIC_LOG_S, i,
+            trackType, mimeType);
+        if (trackType == TrackType::VIDEO_TYPE && StartWith(mimeType, "video/")) {
+            refParserTrackIdx_ = (refParserTrackIdx_ == -1) ? i : refParserTrackIdx_;
+            videoTrackCount++;
+            if (videoTrackCount > 1) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool MPEG4DemuxerPlugin::IsSupportedCodec()
+{
+    for (uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
+        TrackType trackType = INVALID_TYPE;
+        mediaInfo_.tracks[i].Get<Tag::MEDIA_TYPE>(trackType);
+        if (trackType == TrackType::VIDEO_TYPE) {
+            std::string mimeType = MimeType::INVALID_TYPE;
+            mediaInfo_.tracks[i].Get<Tag::MIME_TYPE>(mimeType);
+            if (mimeType == MimeType::VIDEO_AVC || mimeType == MimeType::VIDEO_HEVC) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+Status MPEG4DemuxerPlugin::GetGopIdBySeekPos(int64_t seekMs, int32_t &gopId)
+{
+    FALSE_RETURN_V_MSG_E(seekMs >= 0L, Status::ERROR_INVALID_PARAMETER, "SeekMs is less than 0");
+    uint32_t sampleIdx = 0;
+    FALSE_RETURN_V_MSG_E(GetSampleIndexByDts(seekMs, sampleIdx) == Status::OK, ret, "GetSampleIdByDts failed, seekMs is"
+        PUBLIC_LOG_D64, seekMs);
+
+    std::shared_ptr<MPEG4AtomParser::Track> track = FindTrackById(refParserTrackIdx_);
+    FALSE_RETURN_V_MSG_E(track && track->sampleHelper, 0, "track is nullptr");
+    syncSamplesPos_ = track->sampleHelper->GetSyncSamplesPosFromStssEntry();
+    FALSE_RETURN_V_MSG_E(!syncSamplesPos_.empty(), ret, "syncSamplesPos_ is empty");
+
+    gopId = std::upper_bound(syncSamplesPos_.begin(), syncSamplesPos_.end(), sampleIdx) - syncSamplesPos_.begin();
+    MEDIA_LOG_I("gopId is " PUBLIC_LOG_D32, gopId);
+    if (gopId > 0) {
+        --gopId;
+    }
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::GetSampleIndexByDts(int64_t seekMs, uint32_t &sampleIdx)
+{
+    FALSE_RETURN_V_MSG_E(seekMs >= 0, Status::ERROR_INVALID_PARAMETER, "seekMs less than 0");
+    FALSE_RETURN_V_MSG_E(refParserTrackIdx_ >= 0, Status::ERROR_INVALID_PARAMETER, "refParserTrackIdx_ less than 0");
+    Status ret = GetIndexByRelativePresentationTimeUs(refParserTrackIdx_, pts, seekMs * 1000, sampleIdx);
+    FALSE_RETURN_V_MSG_E(refParserTrackIdx_ >= 0, Status::ERROR_INVALID_PARAMETER,
+        "GetIndexByRelativePresentationTimeUs failed.");
     return Status::OK;
 }
 
@@ -168,7 +250,7 @@ Status MPEG4DemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t t
 uint32_t MPEG4DemuxerPlugin::GetSampleCount(uint32_t trackIndex)
 {
     std::shared_ptr<MPEG4AtomParser::Track> track = FindTrackById(trackIndex);
-    FALSE_RETURN_V_MSG_E(track && track->sampleHelper, 0, "firstTrack_ is nullptr");
+    FALSE_RETURN_V_MSG_E(track && track->sampleHelper, 0, "track is nullptr");
     return track->sampleHelper->CalculateSampleCount();
 }
 
@@ -187,7 +269,7 @@ Status MPEG4DemuxerPlugin::GetPresentationTimeUsByMpeg4BoxParser(IndexAndPTSConv
     int64_t absolutePTS, uint32_t sampleIndex)
 {
     std::shared_ptr<MPEG4AtomParser::Track> track = FindTrackById(trackIndex);
-    FALSE_RETURN_V_MSG_E(track && track->sampleHelper, Status::ERROR_INVALID_DATA, "firstTrack_ is nullptr");
+    FALSE_RETURN_V_MSG_E(track && track->sampleHelper, Status::ERROR_INVALID_DATA, "track is nullptr");
 
     uint32_t sttsEnrtyCount = track->sampleHelper->GetSttsEntryCount();
     FALSE_RETURN_V_MSG_E(sttsEnrtyCount != 0, Status::ERROR_INVALID_DATA, "sttsEnrtyCount is empty");
@@ -218,7 +300,7 @@ Status MPEG4DemuxerPlugin::ConvertPTSAndIndexOnlyByStts(const std::shared_ptr<MP
         FALSE_RETURN_V_MSG_E(timeScaleRate != 0 && static_cast<double>(INT64_MAX) / timeScaleRate >=
             static_cast<double>(dts), Status::ERROR_INVALID_DATA, "dts overflow");
         pts = static_cast<int64_t>(dts * timeScaleRate);
-        ProcessConversionByMode(mode, pts, absolutePTS, sampleIndex);
+        ProcessConversionByMode(mode, pts, absolutePTS, sampleIndex, dts);
 
         if (sampleCountOfCurrentSttsEntry == 0) {
             break;
@@ -278,7 +360,7 @@ Status MPEG4DemuxerPlugin::ConvertPTSAndIndexBySttsAndCtts(const std::shared_ptr
             track->sampleHelper->GetSampleOffsetOfCttsEntry(cttsEntryIndex) - minSampleOffsetOfCttsEntry);
         FALSE_RETURN_V_MSG_E(UpdatePTSBySttsAndCtts(pts, dts, timeScaleRate, sampleOffsetOfCurrentCttsEntry) ==
             Status::OK, Status::ERROR_INVALID_DATA,  "dts overflow");
-        ProcessConversionByMode(mode, pts, absolutePTS, sampleIndex);
+        ProcessConversionByMode(mode, pts, absolutePTS, sampleIndex, dts);
         if (sampleCountOfCurrentSttsEntry == 0) {
             break;
         }
@@ -310,7 +392,7 @@ Status MPEG4DemuxerPlugin::UpdatePTSBySttsAndCtts(int64_t& pts, int64_t dts, dou
 }
 
 void MPEG4DemuxerPlugin::ProcessConversionByMode(IndexAndPTSConversionMode mode, int64_t pts, int64_t absolutePTS,
-    uint32_t sampleIndex)
+    uint32_t sampleIndex, int64_t dts)
 {
     switch (mode) {
         case IndexAndPTSConversionMode::GET_FIRST_SAMPLE_PTS:
@@ -321,6 +403,9 @@ void MPEG4DemuxerPlugin::ProcessConversionByMode(IndexAndPTSConversionMode mode,
             break;
         case IndexAndPTSConversionMode::RELATIVEPTS_TO_INDEX:
             ProcessRelativePTS2Index(pts, absolutePTS);
+            break;
+        case IndexAndPTSConversionMode::PTS_TO_DTS_MAPPING:
+            ProcessPts2DtsMap(pts, dts);
             break;
         default:
             MEDIA_LOG_E("mode(" PUBLIC_LOG_U32 ") is invalid", mode);
@@ -353,6 +438,16 @@ void MPEG4DemuxerPlugin::ProcessRelativePTS2Index(int64_t pts, int64_t absoluteP
     if (pts < absolutePTS) {  // Record the first index greater than or equal to pts
         index2RelativePTS_++;
     }
+}
+
+void MPEG4DemuxerPlugin::ProcessPts2DtsMap(int64_t pts, int64_t dts)
+{
+    if (dts == 0) {
+        ptsOfIndexZero_ = pts;
+        MEDIA_LOG_I("ptsOfIndexZero_ is " PUBLIC_LOG_D64, ptsOfIndexZero_);
+    }
+    MEDIA_LOG_D("[pts" PUBLIC_LOG_D64 ", dts]" PUBLIC_LOG_D64, pts - ptsOfIndexZero_, dts - ptsOfIndexZero_);
+    pts2Dts_.emplace(pts - ptsOfIndexZero_, dts - ptsOfIndexZero_);
 }
 } // namespace MPEG4
 } // namespace Plugins
