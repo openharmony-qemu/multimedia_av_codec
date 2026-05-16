@@ -369,7 +369,7 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
         int64_t naluStartUs = GetCurrentSysTimeUs();
 #endif
         res.isNonRef = naluAnalyzer_->IsNonReferenceFrame(buffer);
-        SetRefFrameMap(buffer->pts_, res.isNonRef);
+        SetNoRefFrameMap(buffer->pts_, res.isNonRef);
 #ifdef SFD_DEBUG
         res.naluCostUs = GetCurrentSysTimeUs() - naluStartUs;
 #endif
@@ -578,7 +578,7 @@ bool SmartFluencyDecoding::IsRatioValid(double ratio)
     return true;
 }
 
-void SmartFluencyDecoding::SetRefFrameMap(int64_t pts, bool isNonRef)
+void SmartFluencyDecoding::SetNoRefFrameMap(int64_t pts, bool isNonRef)
 {
     std::lock_guard<std::mutex> lock(noRefFrameMapMutex_);
     noRefFrameMap_[pts] = isNonRef;
@@ -606,7 +606,7 @@ MVStats SmartFluencyDecoding::ExtractMVStats(StrategyCaps caps, int64_t pts,
         return MVStats{}; 
     }
 
-    bool isNonRef = GetRefFrameFromMap(pts);
+    bool isNonRef = GetNoRefFrameFromMap(pts);
     if (isNonRef) {
         return hasValidMVStats_ ? lastValidMVStats_ : MVStats{};
     }
