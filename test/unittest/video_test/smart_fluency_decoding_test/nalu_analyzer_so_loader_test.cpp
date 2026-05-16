@@ -114,3 +114,32 @@ HWTEST_F(NaluAnalyzerSoLoaderTest, IsNonRef_WithReferenceBuffer_006, TestSize.Le
     buffer->memory_->SetSize(refData.size());
     EXPECT_FALSE(analyzer->IsNonReferenceFrame(buffer));
 }
+
+/**
+ * @tc.name: IsNonRef_NullBuffer_007
+ * @tc.desc: Verify IsNonReferenceFrame returns false when input buffer is null.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NaluAnalyzerSoLoaderTest, IsNonRef_NullBuffer_007, TestSize.Level1)
+{
+    auto analyzer = NaluAnalyzerFactory::CreateNaluAnalyzer(SFDCodecType::AVC);
+    ASSERT_NE(analyzer, nullptr);
+    EXPECT_FALSE(analyzer->IsNonReferenceFrame(nullptr));
+}
+
+/**
+ * @tc.name: IsNonRef_NullMemory_008
+ * @tc.desc: Verify IsNonReferenceFrame returns false when buffer memory is null.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NaluAnalyzerSoLoaderTest, IsNonRef_NullMemory_008, TestSize.Level1)
+{
+    auto analyzer = NaluAnalyzerFactory::CreateNaluAnalyzer(SFDCodecType::AVC);
+    ASSERT_NE(analyzer, nullptr);
+
+    auto allocator = OHOS::Media::AVAllocatorFactory::CreateSharedAllocator(OHOS::Media::MEMORY_READ_WRITE);
+    auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, 100);
+    ASSERT_NE(buffer, nullptr);
+    buffer->memory_ = nullptr;
+    EXPECT_FALSE(analyzer->IsNonReferenceFrame(buffer));
+}
