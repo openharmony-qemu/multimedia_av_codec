@@ -47,7 +47,7 @@ namespace MPEG4 {
 constexpr uint32_t REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT = 200000u;
 
 bool MPEG4DemuxerPlugin::IsRefParserSupported()
-{   
+{
     FileType fileType = FileType::UNKNOW;
     FALSE_RETURN_V_MSG_E(mediaInfo_.general.Get<Tag::MEDIA_FILE_TYPE>(fileType), false,
         "fileType does not exist in mediaInfo_");
@@ -62,37 +62,59 @@ Status MPEG4DemuxerPlugin::ParserRefUpdatePos(int64_t timeStampMs, bool isForwar
 {
     FALSE_RETURN_V_MSG_E(IsRefParserSupported(), Status::ERROR_UNSUPPORTED_FORMAT, "Unsupport ref parser");
     int64_t clipTimeStampMs = std::max(timeStampMs, static_cast<int64_t>(0));
-    /** */
+    /* todo */
 
     int32_t gopId = 0;
     FALSE_RETURN_V_MSG_E(GetGopIdBySeekPos(clipTimeStampMs, gopId) == Status::OK, Status::ERROR_UNKNOWN,
         "GetGopIdBySeekPos failed.");
-
+    /* todo */
+    GopLayerInfo gopLayerInfo;
+    Status ret = GetGopLayerInfo(gopId, gopLayerInfo);
+    if (ret == Status::ERROR_AGAIN && gopId != parserCurGopId_) {
+        pendingSeekMsTime_ = clipTimeStampMs;
+        parserState_ = false;
+        MEDIA_LOG_I("Pending time: " PUBLIC_LOG_D64, pendingSeekMsTime_);
+    }
+    updatePosIsForward_ = isForward;
     return Status::OK;
 }
 
 Status MPEG4DemuxerPlugin::ParserRefInfo()
 {
-    return Status::OK;
+
 }
 
 Status MPEG4DemuxerPlugin::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo)
 {
-    return Status::OK;
+    FALSE_RETURN_V_MSG_W(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "Reference is nullptr");
+    MEDIA_LOG_D("In, dts: " PUBLIC_LOG_D64, videoSample->dts_);
+    if (isSdtpExist_) {
+        uint32_t frameId = 0;
+        Status ret = Dts2FrameId(videoSample->dts_, frameId);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Dts2FrameId failed");
+        return referenceParser_->GetFrameLayerInfo(frameId, frameLayerInfo);
+    }
+    return referenceParser_->GetFrameLayerInfo(videoSample->dts_, frameLayerInfo);
 }
 
 Status MPEG4DemuxerPlugin::GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo)
 {
-    return Status::OK;
+    FALSE_RETURN_V_MSG_W(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "Reference is nullptr");
+    MEDIA_LOG_D("In, dts: " PUBLIC_LOG_U32, frameId);
+    return referenceParser_->GetFrameLayerInfo(frameId, frameLayerInfo);
 }
 
 Status MPEG4DemuxerPlugin::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo)
 {
-    return Status::OK;
+    FALSE_RETURN_V_MSG_W(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "Reference is nullptr");
+    MEDIA_LOG_D("In, gopId: " PUBLIC_LOG_U32, gopId);
+    return referenceParser_->GetGopLayerInfo(gopId, gopLayerInfo);
 }
 
 Status MPEG4DemuxerPlugin::GetIFramePos(std::vector<uint32_t> &IFramePos)
 {
+    FALSE_RETURN_V_MSG_E(IFramePos_.size() > 0, Status::ERROR_UNKNOWN, "IFramePos size is 0");
+    IFramePos = IFramePos_;
     return Status::OK;
 }
 
