@@ -498,7 +498,7 @@ HWTEST_F(SmartFluencyDecodingTest, MakePreDecodeDecision_EosBuffer_026, TestSize
 
     auto allocator = OHOS::Media::AVAllocatorFactory::CreateSharedAllocator(OHOS::Media::MEMORY_READ_WRITE);
     auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, 100);
-    buffer->flag_ = AVCODEC_BUFFER_FLAG_EOS;
+    buffer->flag_ = OHOS::MediaAVCodec::AVCODEC_BUFFER_FLAG_EOS;
     sfd_->inBufferMap_[0] = buffer;
 
     bool result = sfd_->MakePreDecodeDecision(0);
@@ -544,10 +544,10 @@ HWTEST_F(SmartFluencyDecodingTest, SetRefFrameMap_GetNoRefFrameFromMap_029, Test
     SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::ADAPTIVE);
     sfd_->Initialize(cfg);
 
-    sfd_->SetRefFrameMap(100, true);
+    sfd_->SetNoRefFrameMap(100, true);
     EXPECT_TRUE(sfd_->GetNoRefFrameFromMap(100));
 
-    sfd_->SetRefFrameMap(200, false);
+    sfd_->SetNoRefFrameMap(200, false);
     EXPECT_FALSE(sfd_->GetNoRefFrameFromMap(200));
 }
 
