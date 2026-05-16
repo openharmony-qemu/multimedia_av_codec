@@ -1554,11 +1554,6 @@ Status MPEG4DemuxerPlugin::WriteBuffer(uint32_t trackIndex, std::shared_ptr<AVBu
     outBuffer->meta_->Set<Tag::BUFFER_DECODING_TIMESTAMP>(mpeg4Sample->sample->dts);
     outBuffer->duration_ = mpeg4Sample->sample->duration;
     outBuffer->meta_->Set<Tag::BUFFER_DURATION>(mpeg4Sample->sample->duration);
-    if (!mpeg4Sample->sample->skipSamplesInfo.empty()) {
-        outBuffer->meta_->Set<Tag::BUFFER_SKIP_SAMPLES_INFO>(mpeg4Sample->sample->skipSamplesInfo);
-    } else {
-        outBuffer->meta_->Remove(Tag::BUFFER_SKIP_SAMPLES_INFO);
-    }
     MEDIA_LOG_D("CurrentBuffer: [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "], track: "
         PUBLIC_LOG_U32, outBuffer->pts_, outBuffer->dts_, outBuffer->duration_, trackIndex);
     
