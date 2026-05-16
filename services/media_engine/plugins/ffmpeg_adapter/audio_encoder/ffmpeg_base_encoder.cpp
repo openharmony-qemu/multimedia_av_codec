@@ -17,6 +17,7 @@
 #include "avcodec_log.h"
 #include "avcodec_common.h"
 #include "ffmpeg_converter.h"
+#include "common/pcm_convert.h"
 #include "osal/utils/util.h"
 
 namespace {
@@ -45,6 +46,18 @@ FFmpegBaseEncoder::~FFmpegBaseEncoder()
     CloseCtxLocked();
 }
 
+void FFmpegBaseEncoder::SetFormatConvert(bool enable, AudioSampleFormat srcFormat, AudioSampleFormat dstFormat)
+{
+    isEnableFormatConvert_ = enable;
+    srcSampleFormat_ = srcFormat;
+    dstSampleFormat_ = dstFormat;
+    if (enable) {
+        srcBytesPerSample_ = GetPcmBytesPerSample(srcFormat);
+        AVCODEC_LOGI("convert enable, srcFormat:%{public}d, dstFormat:%{public}d, srcBytesPerSample:%{public}d",
+            static_cast<int32_t>(srcFormat), static_cast<int32_t>(dstFormat), srcBytesPerSample_);
+    }
+}
+
 Status FFmpegBaseEncoder::ProcessSendData(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
     auto memory = inputBuffer->memory_;
@@ -57,42 +70,56 @@ Status FFmpegBaseEncoder::ProcessSendData(const std::shared_ptr<AVBuffer> &input
         return Status::ERROR_INVALID_DATA;
     }
     Status ret;
-    {
-        std::lock_guard<std::mutex> lock(avMutext_);
-        if (avCodecContext_ == nullptr) {
-            return Status::ERROR_WRONG_STATE;
+
+    std::lock_guard<std::mutex> lock(avMutext_);
+    if (avCodecContext_ == nullptr) {
+        return Status::ERROR_WRONG_STATE;
+    }
+    if (!enableCache_) {
+        ret = SendBuffer(inputBuffer);
+    } else {
+        bool isEos = inputBuffer->flag_ & BUFFER_FLAG_EOS;
+        if (!isEos && ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE && isFirstInputPts_) {
+            prevPts_ = inputBuffer->pts_;
+            isFirstInputPts_ = false;
         }
-        if (!enableCache_) {
-            ret = SendBuffer(inputBuffer);
+        if (isEos) {
+            ret = SendEosBuffer();
         } else {
-            bool isEos = inputBuffer->flag_ & BUFFER_FLAG_EOS;
-            if (!isEos && ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE && isFirstInputPts_) {
-                prevPts_ = inputBuffer->pts_;
-                isFirstInputPts_ = false;
-            }
-            if (isEos) {
-                ret = SendEosBuffer();
+            if (isEnableFormatConvert_ && srcSampleFormat_ != dstSampleFormat_) {
+                size_t srcBufferSize = static_cast<size_t>(memory->GetSize());
+                size_t inputSampleCnt = srcBufferSize / srcBytesPerSample_;
+                size_t dstBufferSize = GetPcmConvertOutputSize(inputSampleCnt, dstSampleFormat_);
+                if (dstBufferSize == 0) {
+                    AVCODEC_LOGE("GetPcmConvertOutputSize failed");
+                    return Status::ERROR_INVALID_PARAMETER;
+                }
+                convertBuffer_.resize(dstBufferSize);
+                ConvertPcmSampleFormat(memory->GetAddr(), inputSampleCnt,
+                    srcSampleFormat_, dstSampleFormat_, convertBuffer_.data());
+                pcmCache_.insert(pcmCache_.end(), convertBuffer_.begin(), convertBuffer_.end());
             } else {
                 pcmCache_.insert(pcmCache_.end(), memory->GetAddr(),
                                  memory->GetAddr() + memory->GetSize());
-                if (static_cast<int32_t>(pcmCache_.size()) > MAX_INPUT_BUFFER_SIZE_LIMIT) {
-                    AVCODEC_LOGE("PCM cache size exceeds max limit");
-                    return Status::ERROR_UNKNOWN;
-                }
-                ret = SendCachedFrames();
             }
-        }
-        if (ret == Status::OK || ret == Status::END_OF_STREAM) {
-            std::lock_guard<std::mutex> l(bufferMetaMutex_);
-            if (inputBuffer->meta_ == nullptr) {
-                AVCODEC_LOGE("encoder input buffer or meta is nullptr");
-                return Status::ERROR_INVALID_DATA;
+            if (static_cast<int32_t>(pcmCache_.size()) > MAX_INPUT_BUFFER_SIZE_LIMIT) {
+                AVCODEC_LOGE("PCM cache size exceeds max limit");
+                return Status::ERROR_UNKNOWN;
             }
-            bufferMeta_ = inputBuffer->meta_;
-            SafeCallInputBufferDone(dataCallback_, inputBuffer);
-            ret = Status::OK;
+            ret = SendCachedFrames();
         }
     }
+    if (ret == Status::OK || ret == Status::END_OF_STREAM) {
+        std::lock_guard<std::mutex> l(bufferMetaMutex_);
+        if (inputBuffer->meta_ == nullptr) {
+            AVCODEC_LOGE("encoder input buffer or meta is nullptr");
+            return Status::ERROR_INVALID_DATA;
+        }
+        bufferMeta_ = inputBuffer->meta_;
+        SafeCallInputBufferDone(dataCallback_, inputBuffer);
+        ret = Status::OK;
+    }
+
     return ret;
 }
 
@@ -101,16 +128,38 @@ Status FFmpegBaseEncoder::PcmFillFrame(const std::shared_ptr<AVBuffer> &inputBuf
     auto memory = inputBuffer->memory_;
     auto usedSize = memory->GetSize();
     auto frameSize = avCodecContext_->frame_size;
-    cachedFrame_->nb_samples = usedSize / channelsBytesPerSample_;
+
+    if (isEnableFormatConvert_ && srcSampleFormat_ != dstSampleFormat_) {
+        size_t srcBufferSize = static_cast<size_t>(usedSize);
+        size_t inputSampleCnt = srcBufferSize / srcBytesPerSample_;
+        size_t dstBufferSize = GetPcmConvertOutputSize(inputSampleCnt, dstSampleFormat_);
+        if (dstBufferSize == 0) {
+            AVCODEC_LOGE("GetPcmConvertOutputSize failed");
+            return Status::ERROR_INVALID_PARAMETER;
+        }
+        convertBuffer_.resize(dstBufferSize);
+        Status ret = ConvertPcmSampleFormat(memory->GetAddr(), inputSampleCnt,
+            srcSampleFormat_, dstSampleFormat_, convertBuffer_.data());
+        if (ret != Status::OK) {
+            AVCODEC_LOGE("ConvertPcmSampleFormat failed");
+            return ret;
+        }
+        cachedFrame_->nb_samples = static_cast<int>(dstBufferSize / channelsBytesPerSample_);
+        cachedFrame_->data[0] = convertBuffer_.data();
+        cachedFrame_->linesize[0] = static_cast<int>(dstBufferSize);
+    } else {
+        cachedFrame_->nb_samples = usedSize / channelsBytesPerSample_;
+        cachedFrame_->data[0] = memory->GetAddr();
+        cachedFrame_->linesize[0] = usedSize;
+    }
+
     AVCODEC_LOGI("sampleRate : %{public}d, frameSize : %{public}d", avCodecContext_->sample_rate, frameSize);
     if (cachedFrame_->nb_samples > frameSize) {
         AVCODEC_LOGE("cachedFrame_->nb_samples is greater than frameSize, please enter a correct frameBytes."
                      "hint: nb_samples is %{public}d. frameSize is %{public}d.", cachedFrame_->nb_samples, frameSize);
         return Status::ERROR_UNKNOWN;
     }
-    cachedFrame_->data[0] = memory->GetAddr();
     cachedFrame_->extended_data = cachedFrame_->data;
-    cachedFrame_->linesize[0] = usedSize;
     return Status::OK;
 }
 
@@ -227,8 +276,6 @@ Status FFmpegBaseEncoder::SendOutputBuffer(std::shared_ptr<AVBuffer> &outputBuff
             outBuffer_->meta_ = bufferMeta_;
         }
         SafeCallOutputBufferDone(dataCallback_, outputBuffer);
-    } else {
-        AVCODEC_LOGE("SendOutputBuffer-ReceiveBuffer error");
     }
     return status;
 }
@@ -252,8 +299,12 @@ Status FFmpegBaseEncoder::Reset()
     ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
     isFirstInputPts_ = true;
     pcmCache_.clear();
+    convertBuffer_.clear();
     maxInputBufferSize_ = -1;
     enableCache_ = false;
+    isEnableFormatConvert_ = false;
+    srcSampleFormat_ = AudioSampleFormat::INVALID_WIDTH;
+    dstSampleFormat_ = AudioSampleFormat::INVALID_WIDTH;
     return ret;
 }
 
@@ -273,6 +324,7 @@ Status FFmpegBaseEncoder::Flush()
     prevPts_ = 0;
     isFirstInputPts_ = true;
     pcmCache_.clear();
+    convertBuffer_.clear();
     return ReAllocateContext();
 }
 
@@ -341,7 +393,11 @@ Status FFmpegBaseEncoder::InitContext(const std::shared_ptr<Meta> &format)
 
     AudioSampleFormat sampleFormat;
     format_->GetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFormat);
-    auto ffSampleFormat = FFMpegConverter::ConvertOHAudioFormatToFFMpeg(static_cast<AudioSampleFormat>(sampleFormat));
+    // If format conversion is enabled, use the converted format for FFmpeg context
+    AudioSampleFormat effectiveFormat = (isEnableFormatConvert_ && dstSampleFormat_ != AudioSampleFormat::INVALID_WIDTH)
+        ? dstSampleFormat_ : sampleFormat;
+    auto ffSampleFormat = FFMpegConverter::ConvertOHAudioFormatToFFMpeg(
+        static_cast<AudioSampleFormat>(effectiveFormat));
     avCodecContext_->sample_fmt = ffSampleFormat;
 
     channelsBytesPerSample_ = av_get_bytes_per_sample(ffSampleFormat) * channels;
@@ -380,6 +436,7 @@ Status FFmpegBaseEncoder::ReAllocateContext()
             ptr = nullptr;
         }
     });
+
     CHECK_AND_RETURN_RET_LOG(tmpContext != nullptr, Status::ERROR_NO_MEMORY,
         "Allocate tmpContext failed.");
 
@@ -492,7 +549,7 @@ Status FFmpegBaseEncoder::SendEosBuffer()
     return Status::OK;
 }
 
-void FFmpegBaseEncoder::SetPtsMode(AudioEncodePtsMode mode)
+void FFmpegBaseEncoder::SetPtsMode(int32_t mode)
 {
     ptsMode_ = mode;
 }
@@ -501,7 +558,6 @@ Status FFmpegBaseEncoder::CloseCtxLocked()
 {
     if (avCodecContext_ != nullptr) {
         avCodecContext_.reset();
-        avCodecContext_ = nullptr;
     }
     return Status::OK;
 }
