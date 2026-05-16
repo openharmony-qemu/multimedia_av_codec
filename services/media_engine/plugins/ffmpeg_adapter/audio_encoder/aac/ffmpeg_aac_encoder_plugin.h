@@ -104,12 +104,14 @@ private:
     bool AudioSampleFormat2AVSampleFormat(const AudioSampleFormat &audioFmt, AVSampleFormat &fmt);
     Status SendEncoder(const std::shared_ptr<AVBuffer> &inputBuffer);
     Status GetMetaData(const std::shared_ptr<Meta> &meta);
+    Status GetMetaAdvance(const std::shared_ptr<Meta> &meta);
     Status SendFrameToFfmpeg();
 
     mutable std::mutex parameterMutex_{};
     Meta audioParameter_;
     bool needResample_;
     bool codecContextValid_;
+    bool isEnableFormatConvert_ = false;
     mutable std::mutex avMutex_{};
     std::shared_ptr<const AVCodec> avCodec_{};
     std::shared_ptr<AVCodecContext> avCodecContext_{};
@@ -133,10 +135,12 @@ private:
     std::shared_ptr<Ffmpeg::Resample> resample_{nullptr};
     AVSampleFormat srcFmt_{AVSampleFormat::AV_SAMPLE_FMT_NONE};
     AudioSampleFormat audioSampleFormat_;
+    AudioSampleFormat convertSampleFormat_ = AudioSampleFormat::INVALID_WIDTH;
+    int32_t originSampleByte_ = 1;
     uint64_t srcLayout_;
     uint32_t fullInputFrameSize_{0};
     uint32_t srcBytesPerSample_{0};
-    AudioEncodePtsMode ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
+    int32_t ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
     bool isFirstInputPts_ = true;
     bool isFirstOutputPts_ = true;
 

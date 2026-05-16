@@ -69,6 +69,8 @@ public:
 
 private:
     bool CheckFormat();
+    Status QueueOutputBufferBasic(std::shared_ptr<AVBuffer> &outputBuffer);
+    Status QueueOutputBufferCache(std::shared_ptr<AVBuffer> &outputBuffer);
     Meta audioParameter_ ;
     mutable std::mutex avMutex_ {};
     mutable std::mutex paramMutex_ {};
@@ -86,10 +88,12 @@ private:
     int32_t channels_;
     int64_t bitrate_;
     int64_t pts_;
-    AudioEncodePtsMode ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
+    int32_t ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
     bool isFirstInputPts_ = true;
     int64_t prevPts_ = 0;
     int32_t frameSize_ = 1152;
+    bool isEnableFormatConvert_ = false;
+    int32_t originSampleByte_ = sizeof(int16_t);
 
     int32_t sampleRate_;
     int32_t maxInputSize_;

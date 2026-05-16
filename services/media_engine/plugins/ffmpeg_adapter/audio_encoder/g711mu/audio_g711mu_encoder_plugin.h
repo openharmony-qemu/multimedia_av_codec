@@ -82,8 +82,10 @@ private:
     int32_t channels_;
     int32_t sampleRate_;
     int64_t pts_;
-    AudioEncodePtsMode ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
+    int32_t ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
+    bool isEnableFormatConvert_ = false;
     bool isFirstInputPts_ = true;
+    int32_t originSampleByte_ = sizeof(int16_t);
     int64_t prevPts_ = 0;
     int32_t inputSamples_ = 0;
     int32_t maxInputSize_;
