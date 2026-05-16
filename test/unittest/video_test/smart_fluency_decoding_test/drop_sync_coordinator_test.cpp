@@ -186,3 +186,35 @@ HWTEST_F(DropSyncCoordinatorTest, GetAndConsume_EmptyQueueReturnsZero_010, TestS
 {
     EXPECT_EQ(tracker_.GetAndConsumePreDroppedCount(100), 0); // 100: query pts
 }
+
+/**
+ * @tc.name: GetAndConsume_FuturePts_011
+ * @tc.desc: Verify frames with PTS >= currentPts are skipped during consumption.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DropSyncCoordinatorTest, GetAndConsume_FuturePts_011, TestSize.Level1)
+{
+    EXPECT_TRUE(tracker_.RecordPreDroppedFrame(100, 1.0));
+    EXPECT_TRUE(tracker_.RecordPreDroppedFrame(200, 1.0));
+
+    // Query with PTS 50: both frames have PTS >= 50, so none should be consumed
+    EXPECT_EQ(tracker_.GetAndConsumePreDroppedCount(50), 0);
+    // Frames are still there
+    EXPECT_EQ(tracker_.GetAndConsumePreDroppedCount(300), 2);
+}
+
+/**
+ * @tc.name: GetAndConsume_AlreadyConsumed_012
+ * @tc.desc: Verify already-consumed frames are skipped correctly.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DropSyncCoordinatorTest, GetAndConsume_AlreadyConsumed_012, TestSize.Level1)
+{
+    EXPECT_TRUE(tracker_.RecordPreDroppedFrame(100, 1.0));
+    EXPECT_TRUE(tracker_.RecordPreDroppedFrame(200, 1.0));
+
+    // Consume first frame
+    EXPECT_EQ(tracker_.GetAndConsumePreDroppedCount(150), 1);
+    // Consume second frame — first should be skipped (already consumed)
+    EXPECT_EQ(tracker_.GetAndConsumePreDroppedCount(300), 1);
+}

@@ -406,3 +406,59 @@ HWTEST_F(SFDManagerTest, Configure_InitializeWithCsd_020, TestSize.Level1)
     manager.Configure(format);
     EXPECT_TRUE(manager.IsSfdActive());
 }
+
+/**
+ * @tc.name: Flush_ActiveSfd_021
+ * @tc.desc: Verify Flush propagates to active SFD without crash.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDManagerTest, Flush_ActiveSfd_021, TestSize.Level1)
+{
+    SmartFluencyDecodingManager manager("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
+    Format format;
+    format.PutIntValue(Tag::VIDEO_WIDTH, WIDTH_1080P);
+    format.PutIntValue(Tag::VIDEO_HEIGHT, HEIGHT_1080P);
+    format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, 0);
+    manager.Configure(format);
+    ASSERT_TRUE(manager.IsSfdActive());
+
+    manager.Flush();
+    EXPECT_TRUE(manager.IsSfdActive());
+}
+
+/**
+ * @tc.name: Flush_NoSfd_022
+ * @tc.desc: Verify Flush does not crash when SFD is not active.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDManagerTest, Flush_NoSfd_022, TestSize.Level1)
+{
+    SmartFluencyDecodingManager manager("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
+    manager.Flush();
+    EXPECT_FALSE(manager.IsSfdActive());
+}
+
+/**
+ * @tc.name: OnOutputBufferUnbinded_ClearsMap_023
+ * @tc.desc: Verify OnOutputBufferUnbinded clears the surface buffer map.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDManagerTest, OnOutputBufferUnbinded_ClearsMap_023, TestSize.Level1)
+{
+    SmartFluencyDecodingManager manager("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
+    manager.surfaceBufMap_[1] = nullptr;
+    manager.OnOutputBufferUnbinded();
+    EXPECT_TRUE(manager.surfaceBufMap_.empty());
+}
+
+/**
+ * @tc.name: MakePostDecodeDecision_NullBuffer_024
+ * @tc.desc: Verify MakePostDecodeDecision returns true when buffer is null.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDManagerTest, MakePostDecodeDecision_NullBuffer_024, TestSize.Level1)
+{
+    SmartFluencyDecodingManager manager("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
+    bool result = manager.MakePostDecodeDecision(0, nullptr, false);
+    EXPECT_TRUE(result);
+}
