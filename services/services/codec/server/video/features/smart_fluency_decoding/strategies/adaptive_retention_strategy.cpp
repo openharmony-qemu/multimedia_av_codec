@@ -110,7 +110,7 @@ bool AdaptiveRetentionStrategy::MakeRetentionDecision(const FrameRetentionContex
         lastReason_ = SfdDecisionReason::UNSPECIFIED;
     }
 
-    dropCount_ += ctx.preDropCount;
+    dropCount_ += ctx.preDroppedCount;
     if (!isRetain) {
         dropCount_++;
         if (dropCount_ > maxDrops) {
