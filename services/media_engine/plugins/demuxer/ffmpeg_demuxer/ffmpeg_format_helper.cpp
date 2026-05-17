@@ -66,6 +66,10 @@ const int32_t VALUE_2 = 2;
 const int32_t VALUE_4 = 4;
 const int32_t VALUE_10 = 10;
 
+const int32_t SMPTE2086_RED_INDEX = 0;
+const int32_t SMPTE2086_GREEN_INDEX = 1;
+const int32_t SMPTE2086_BLUE_INDEX = 2;
+
 const size_t BRAND_CODE_LEN = 4; // 4 is brand code length
 
 static std::map<AVPixelFormat, RawVideoPixelFormat> g_convertFfmpegPixFmt = {
@@ -1202,12 +1206,12 @@ void FFmpegFormatHelper::ParseHdrStaticMetadata(const AVStream& avStream, Meta &
         AVMasteringDisplayMetadata* smpte2086Data = reinterpret_cast<AVMasteringDisplayMetadata*>(sideData);
         if (smpte2086Data != nullptr && smpte2086Data->has_luminance && smpte2086Data->has_primaries) {
             Smpte2086 smpte2086;
-            smpte2086.displayPrimaryRedX = av_q2d(smpte2086Data->display_primaries[0][0]);
-            smpte2086.displayPrimaryRedY = av_q2d(smpte2086Data->display_primaries[0][1]);
-            smpte2086.displayPrimaryGreenX = av_q2d(smpte2086Data->display_primaries[1][0]);
-            smpte2086.displayPrimaryGreenY = av_q2d(smpte2086Data->display_primaries[1][1]);
-            smpte2086.displayPrimaryBlueX = av_q2d(smpte2086Data->display_primaries[2][0]);
-            smpte2086.displayPrimaryBlueY = av_q2d(smpte2086Data->display_primaries[2][1]);
+            smpte2086.displayPrimaryRedX = av_q2d(smpte2086Data->display_primaries[SMPTE2086_RED_INDEX][0]);
+            smpte2086.displayPrimaryRedY = av_q2d(smpte2086Data->display_primaries[SMPTE2086_RED_INDEX][1]);
+            smpte2086.displayPrimaryGreenX = av_q2d(smpte2086Data->display_primaries[SMPTE2086_GREEN_INDEX][0]);
+            smpte2086.displayPrimaryGreenY = av_q2d(smpte2086Data->display_primaries[SMPTE2086_GREEN_INDEX][1]);
+            smpte2086.displayPrimaryBlueX = av_q2d(smpte2086Data->display_primaries[SMPTE2086_BLUE_INDEX][0]);
+            smpte2086.displayPrimaryBlueY = av_q2d(smpte2086Data->display_primaries[SMPTE2086_BLUE_INDEX][1]);
             smpte2086.whitePointX = av_q2d(smpte2086Data->white_point[0]);
             smpte2086.whitePointY = av_q2d(smpte2086Data->white_point[1]);
             smpte2086.maxLuminance = av_q2d(smpte2086Data->max_luminance);
