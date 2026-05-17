@@ -41,6 +41,49 @@ constexpr int32_t WAIT_FOR_SIDX_TIME = 1000 * 1000;
 constexpr uint32_t DEFAULT_WIDTH = 1280;
 constexpr uint32_t DEFAULT_HEIGHT = 720;
 constexpr uint32_t DEFAULT_DURATION = 20;
+class DashCallbackMock1 : public Plugins::Callback {
+public:
+    void OnEvent(const Plugins::PluginEvent &event) override
+    {
+        switch (event.type) {
+            case PluginEventType::STREAM_UPDATE: {
+                int videoId = -1;
+                int audioId = -1;
+                int textId = -1;
+                mediaDownloader->SetDefaultStreamId(videoId, audioId, textId);
+                break;
+            }
+            default:break;
+        }
+    }
+    void SetDownload(std::shared_ptr<DashMediaDownloader> downloader)
+    {
+        mediaDownloader = downloader;
+    }
+    std::shared_ptr<DashMediaDownloader> mediaDownloader;
+};
+
+class DashCallbackMock2 : public Plugins::Callback {
+public:
+    void OnEvent(const Plugins::PluginEvent &event) override
+    {
+        switch (event.type) {
+            case PluginEventType::STREAM_UPDATE: {
+                int videoId = -1;
+                int audioId = -1;
+                int textId = -1;
+                mpdDownloader->SetDefaultStreamId(videoId, audioId, textId);
+                break;
+            }
+            default:break;
+        }
+    }
+    void SetDownload(std::shared_ptr<DashMpdDownloader> mpdloader)
+    {
+        mpdDownloader = mpdloader;
+    }
+    std::shared_ptr<DashMpdDownloader> mpdDownloader;
+};
 }
 
 bool DashMediaDownFinishedFuzzerTest(const uint8_t *data, size_t size)
@@ -50,6 +93,9 @@ bool DashMediaDownFinishedFuzzerTest(const uint8_t *data, size_t size)
     }
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
     mediaDownloader->Init();
+    auto cb = std::make_shared<DashCallbackMock1>();
+    cb->SetDownload(mediaDownloader);
+    mediaDownloader->SetCallback(cb);
     std::string testUrl = MPD_MULTI_AUDIO_SUB;
     std::map<std::string, std::string> httpHeader = {
         {"User-Agent", "ABC"},
@@ -101,6 +147,9 @@ bool DashMpdParse(const uint8_t *data, size_t size)
     std::shared_ptr<DashMpdDownloader> mpdMpddownload = std::make_shared<DashMpdDownloader>();
     const std::string url = MPD_MULTI_AUDIO_SUB;
     mpdMpddownload->Init();
+    auto cb = std::make_shared<DashCallbackMock2>();
+    cb->SetDownload(mpdMpddownload);
+    mpdMpddownload->SetCallback(cb);
     mpdMpddownload->Open(MPD_MULTI_AUDIO_SUB);
     std::shared_ptr<DashSegment> seg = std::make_shared<DashSegment>();
     int streamId = GetData<int>();

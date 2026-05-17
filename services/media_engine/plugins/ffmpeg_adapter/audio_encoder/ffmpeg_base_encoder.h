@@ -62,7 +62,8 @@ public:
     int32_t GetMaxInputSize() const noexcept;
     int32_t GetMaxInputBufferSize() const noexcept;
     void SetCallback(DataCallback *callback);
-    void SetPtsMode(AudioEncodePtsMode mode);
+    void SetPtsMode(int32_t mode);
+    void SetFormatConvert(bool enable, AudioSampleFormat srcFormat, AudioSampleFormat dstFormat);
 
 private:
     int32_t maxInputSize_;
@@ -75,11 +76,12 @@ private:
     std::shared_ptr<Meta> format_;
     std::shared_ptr<Meta> bufferMeta_ {nullptr};
     int64_t prevPts_;
-    AudioEncodePtsMode ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
+    int32_t ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
     bool isFirstInputPts_ = true;
     std::vector<uint8_t> pcmCache_;
     int32_t maxInputBufferSize_ = -1;
     bool enableCache_ = false;
+    bool isEnableFormatConvert_ = false;
     DataCallback *dataCallback_{nullptr};
     std::shared_ptr<AVBuffer> outBuffer_ {nullptr};
 
@@ -96,6 +98,10 @@ private:
     bool codecContextValid_;
     mutable std::mutex bufferMetaMutex_ {};
     int32_t channelsBytesPerSample_ {1};
+    AudioSampleFormat srcSampleFormat_ = AudioSampleFormat::INVALID_WIDTH;
+    AudioSampleFormat dstSampleFormat_ = AudioSampleFormat::INVALID_WIDTH;
+    int32_t srcBytesPerSample_ = 1;
+    std::vector<uint8_t> convertBuffer_;
 };
 } // namespace Ffmpeg
 } // namespace Plugins
