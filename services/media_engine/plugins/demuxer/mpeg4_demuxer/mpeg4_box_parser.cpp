@@ -4577,12 +4577,12 @@ Status MPEG4AtomParser::ParseMdcv(MPEG4Atom currentAtom, int32_t depth, ParseCon
     uint8_t info[24];
     Status ret = dataReader_->ReadUintData(ctx->dataOffset, info, sizeof(info));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read chan data failed");
-    float displayPrimaryRedX = static_cast<float>(GetU16Value(&info[0]));
-    float displayPrimaryRedY = static_cast<float>(GetU16Value(&info[2]));
-    float displayPrimaryGreenX = static_cast<float>(GetU16Value(&info[4]));
-    float displayPrimaryGreenY = static_cast<float>(GetU16Value(&info[6]));
-    float displayPrimaryBlueX = static_cast<float>(GetU16Value(&info[8]));
-    float displayPrimaryBlueY = static_cast<float>(GetU16Value(&info[10]));
+    float displayPrimaryGreenX = static_cast<float>(GetU16Value(&info[0]));
+    float displayPrimaryGreenY = static_cast<float>(GetU16Value(&info[2]));
+    float displayPrimaryBlueX = static_cast<float>(GetU16Value(&info[4]));
+    float displayPrimaryBlueY = static_cast<float>(GetU16Value(&info[6]));
+    float displayPrimaryRedX = static_cast<float>(GetU16Value(&info[8]));
+    float displayPrimaryRedY = static_cast<float>(GetU16Value(&info[10]));
     float whitePointX = static_cast<float>(GetU16Value(&info[12]));
     float whitePointY = static_cast<float>(GetU16Value(&info[14]));
     float maxLuminance = static_cast<float>(GetU32Value(&info[16]));

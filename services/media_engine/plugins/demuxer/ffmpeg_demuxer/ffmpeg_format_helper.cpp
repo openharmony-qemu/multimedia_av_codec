@@ -1184,8 +1184,7 @@ void FFmpegFormatHelper::ParseHvccBoxInfo(const AVStream& avStream, Meta &format
 
 void FFmpegFormatHelper::ParseHdrStaticMetadata(const AVStream& avStream, Meta &format)
 {
-    uint8_t *sideData = nullptr;
-    sideData = (uint8_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_CONTENT_LIGHT_LEVEL, nullptr);
+    uint8_t *sideData = (uint8_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_CONTENT_LIGHT_LEVEL, nullptr);
     if (sideData != nullptr) {
         AVContentLightMetadata* cta861Data = reinterpret_cast<AVContentLightMetadata*>(sideData);
         if (cta861Data != nullptr) {
@@ -1211,8 +1210,8 @@ void FFmpegFormatHelper::ParseHdrStaticMetadata(const AVStream& avStream, Meta &
             smpte2086.displayPrimaryBlueY = av_q2d(smpte2086Data->display_primaries[2][1]);
             smpte2086.whitePointX = av_q2d(smpte2086Data->white_point[0]);
             smpte2086.whitePointY = av_q2d(smpte2086Data->white_point[1]);
-            smpte2086.maxLuminance = av_q2d(smpte2086Data->min_luminance);
-            smpte2086.minLuminance = av_q2d(smpte2086Data->max_luminance);
+            smpte2086.maxLuminance = av_q2d(smpte2086Data->max_luminance);
+            smpte2086.minLuminance = av_q2d(smpte2086Data->min_luminance);
             std::vector<uint8_t> smpte2086Vec(sizeof(smpte2086));
             smpte2086Vec.assign(
                 reinterpret_cast<uint8_t*>(&smpte2086), reinterpret_cast<uint8_t*>(&smpte2086) + sizeof(smpte2086));
