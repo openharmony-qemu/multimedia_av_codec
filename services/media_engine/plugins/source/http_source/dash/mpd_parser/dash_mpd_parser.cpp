@@ -1126,13 +1126,13 @@ void DashMpdParser::ParseAudioChannelConfiguration(std::shared_ptr<XmlParser> xm
         size_t pos = 0;
         int32_t base = 10;
         unsigned long value = 0;
-        try {
-            value = std::stoul(val, &pos, base);
-        } catch (const std::exception &e) {
-            MEDIA_LOG_E("audioChannelConfigurationNode stoul exception: " PUBLIC_LOG_S, e.what());
-            IDashMpdNode::DestroyNode(node);
-            return;
+        if (!val.empty()) {
+            const char* start = val.c_str();
+            char* end = nullptr;
+            value = strtoul(start, &end, base);
+            pos = static_cast<size_t>(end - start);
         }
+
         if (pos < val.length()) {
             MEDIA_LOG_E("audioChannelConfigurationNode out of range");
             IDashMpdNode::DestroyNode(node);
