@@ -202,10 +202,9 @@ int32_t DashStrToDuration(const std::string &str, uint32_t &duration)
         size_t parsedPos = 0;
         double num = 0.0;
         if (!remain.empty()) {
-            const char* start = remain.c_str();
             char* end = nullptr;
-            num = strtod(start, &end);
-            parsedPos = static_cast<size_t>(end - start);
+            num = strtod(remain.c_str(), &end);
+            parsedPos = static_cast<size_t>(end - remain.c_str());
         }
         if (parsedPos > 0) {
             remain = remain.substr(parsedPos);
@@ -307,10 +306,9 @@ bool DashStrToNonNegativeDouble(const std::string &str, double &result)
         return false;
     }
     size_t pos = 0;
-    const char* start = str.c_str();
     char* end = nullptr;
-    result = strtod(start, &end);
-    pos = static_cast<size_t>(end - start);
+    result = strtod(str.c_str(), &end);
+    pos = static_cast<size_t>(end - str.c_str());
     if (pos == 0) {
         MEDIA_LOG_E("DashStrToNonNegativeDouble parse failed");
         return false;
