@@ -105,8 +105,8 @@ void RegisterCallbackWithSignal(shared_ptr<VideoEncDualOutputSample> &sample, En
                                 shared_ptr<VCodecSignal> &signal)
 {
     struct OH_AVCodecCallback cb = {};
-    cb.onErrorVoid = OnError;
-    cb.onStreamChangedVoid = OnStreamChanged;
+    cb.onError = OnError;
+    cb.onStreamChanged = OnStreamChanged;
     cb.onNeedInputBuffer = InBufferVoid;
     cb.onNewOutputBuffer = (type == EncoderType::SECONDARY) ? OutBufferHandleSecondary : OutBufferHandle;
     signal->isRunning_ = true;
@@ -2038,6 +2038,44 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_SetParam_Crop_001, TestSize.Level1)
     ASSERT_TRUE(dualSample_->WaitForEos(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Release(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Release(EncoderType::PRIMARY));
+    OH_AVFormat_Destroy(format);
+}
+
+/**
+ * @tc.name: State_Machine_Dual_SetParam_Crop_002
+ * @tc.desc: Test setting invalid crop parameters
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, State_Machine_Dual_SetParam_Crop_002, TestSize.Level1)
+{
+    auto signal = make_shared<VCodecSignal>(dualSample_);
+    dualSample_->inputSetParamCrop_ = true;
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
+    RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
+
+    ASSERT_TRUE(dualSample_->CreateSurface());
+    ASSERT_TRUE(dualSample_->CreateSecondary());
+    auto secSignal = make_shared<VCodecSignal>(dualSample_);
+    RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
+
+    OH_AVFormat *format = OH_AVFormat_Create();
+    bool ret =
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT, 19) &&
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_TOP, 17) &&
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_RIGHT, 620) &&
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM, 480);
+    ASSERT_TRUE(ret);
+
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::SECONDARY));
+    ASSERT_NE(AV_ERR_OK, dualSample_->SetParameter(EncoderType::PRIMARY, format));
     OH_AVFormat_Destroy(format);
 }
 #endif // ONLY_FOR_FLAGSHIP_CHIP
