@@ -1546,7 +1546,7 @@ void DashMpdDownloader::GetStreamDescriptions(const std::string &periodBaseUrl, 
 unsigned int DashMpdDownloader::GetResolutionDelta(unsigned int width, unsigned int height)
 {
     uint64_t product = static_cast<uint64_t>(width) * static_cast<uint64_t>(height);
- 	unsigned int resolution = (product > std::numeric_limits<unsigned int>::max()) ?
+    unsigned int resolution = (product > std::numeric_limits<unsigned int>::max()) ?
  	    std::numeric_limits<unsigned int>::max() : static_cast<unsigned int>(product);
     if (resolution > initResolution_) {
         return resolution - initResolution_;
@@ -2402,36 +2402,16 @@ bool DashMpdDownloader::ParseFrameRateToUint32(const std::string& str, uint32_t&
         return false;
     }
 
-    std::string frameRateStr = str;
-    auto slashPos = frameRateStr.find('/');
+    auto slashPos = str.find('/');
     if (slashPos != std::string::npos) {
-        std::string numStr = frameRateStr.substr(0, slashPos);
-        std::string denStr = frameRateStr.substr(slashPos + 1);
-        if (numStr.empty() || denStr.empty()) {
-            return false;
-        }
-        size_t pos = 0;
+        std::string numStr = str.substr(0, slashPos);
+        std::string denStr = str.substr(slashPos + 1);
         double num = 0.0;
-        try {
-            num = std::stod(numStr, &pos);
-        } catch (const std::exception &e) {
-            MEDIA_LOG_E("ParseFrameRateToUint32 stod num exception: " PUBLIC_LOG_S, e.what());
-            return false;
-        }
-        if (pos < numStr.length()) {
-            return false;
-        }
         double den = 0.0;
-        try {
-            den = std::stod(denStr, &pos);
-        } catch (const std::exception &e) {
-            MEDIA_LOG_E("ParseFrameRateToUint32 stod den exception: " PUBLIC_LOG_S, e.what());
+        if (!DashStrToNonNegativeDouble(numStr, num) || !DashStrToNonNegativeDouble(denStr, den)) {
             return false;
         }
-        if (pos < denStr.length()) {
-            return false;
-        }
-        if (den < 0.0 || std::abs(den) < TOLERANCE) {
+        if (std::abs(den) < TOLERANCE) {
             return false;
         }
         double fps = num / den;
@@ -2441,18 +2421,8 @@ bool DashMpdDownloader::ParseFrameRateToUint32(const std::string& str, uint32_t&
         value = static_cast<uint32_t>(std::ceil(fps));
         return true;
     }
-    size_t pos = 0;
     double fps = 0.0;
-    try {
-        fps = std::stod(frameRateStr, &pos);
-    } catch (const std::exception &e) {
-        MEDIA_LOG_E("ParseFrameRateToUint32 stod fps exception: " PUBLIC_LOG_S, e.what());
-        return false;
-    }
-    if (pos < frameRateStr.length()) {
-        return false;
-    }
-    if (fps < 0.0) {
+    if (!DashStrToNonNegativeDouble(str, fps)) {
         return false;
     }
     value = static_cast<uint32_t>(std::ceil(fps));

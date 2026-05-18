@@ -1121,36 +1121,9 @@ uint32_t HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len, bool notBloc
 {
     FALSE_RETURN_V_MSG(data != nullptr && len <= BODY_MAX_SIZE, 0, "SaveData failed, http data too large.");
     if (!isRingBuffer_ && (cacheMediaBuffer_ == nullptr || !isCacheBufferInited_)) {
-        auto downloadRequest = GetDownloadRequest();
-        FALSE_RETURN_V_MSG(downloadRequest != nullptr, 0, "downloadRequest nullptr");
-        if (cacheMediaBuffer_ == nullptr) {
-            cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferImpl>();
+        if (!EnsureCacheBufferInited()) {
+            return 0;
         }
-        if (cacheMediaBuffer_ == nullptr) {
-            {
-                AutoLock lock(sleepMutex_);
-                isCacheBufferInited_ = false;
-            }
-            sleepCond_.NotifyAll();
-            MEDIA_LOG_I("HTTP CacheBuffer create failed.");
-            return false;
-        }
-        size_t fileContentLen = downloadRequest->GetFileContentLength();
-        if (fileContentLen > MAX_BUFFER_SIZE - BUFFER_REDUNDANCY) {
-            MEDIA_LOG_W("HTTP fileContentLen " PUBLIC_LOG_ZU " exceeds buffer cap, clamp to MAX_BUFFER_SIZE",
-                fileContentLen);
-            totalBufferSize_ = MAX_BUFFER_SIZE;
-        } else {
-            totalBufferSize_ =  fileContentLen == 0 ? MAX_BUFFER_SIZE : fileContentLen + BUFFER_REDUNDANCY;
-        }
-        MEDIA_LOG_I("HTTP setting buffer size: " PUBLIC_LOG_ZU " fileContentLen: " PUBLIC_LOG_ZU,
-            totalBufferSize_, fileContentLen);
-        {
-            AutoLock lock(sleepMutex_);
-            isCacheBufferInited_ = cacheMediaBuffer_->Init(totalBufferSize_, CHUNK_SIZE);
-        }
-        sleepCond_.NotifyAll();
-        FALSE_RETURN_V_MSG(isCacheBufferInited_, 0, "HTTP CacheBufferInit failed");
     }
 
     if (cacheMediaBuffer_ == nullptr && ringBuffer_ == nullptr) {
@@ -1171,6 +1144,41 @@ uint32_t HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len, bool notBloc
     }
     HandleBuffering();
     return ret;
+}
+
+bool HttpMediaDownloader::EnsureCacheBufferInited()
+{
+    auto downloadRequest = GetDownloadRequest();
+    FALSE_RETURN_V_MSG(downloadRequest != nullptr, false, "downloadRequest nullptr");
+    if (cacheMediaBuffer_ == nullptr) {
+        cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferImpl>();
+    }
+    if (cacheMediaBuffer_ == nullptr) {
+        {
+            AutoLock lock(sleepMutex_);
+            isCacheBufferInited_ = false;
+        }
+        sleepCond_.NotifyAll();
+        MEDIA_LOG_I("HTTP CacheBuffer create failed.");
+        return false;
+    }
+    size_t fileContentLen = downloadRequest->GetFileContentLength();
+    if (fileContentLen > MAX_BUFFER_SIZE - BUFFER_REDUNDANCY) {
+        MEDIA_LOG_W("HTTP fileContentLen " PUBLIC_LOG_ZU " exceeds buffer cap, clamp to MAX_BUFFER_SIZE",
+            fileContentLen);
+        totalBufferSize_ = MAX_BUFFER_SIZE;
+    } else {
+        totalBufferSize_ =  fileContentLen == 0 ? MAX_BUFFER_SIZE : fileContentLen + BUFFER_REDUNDANCY;
+    }
+    MEDIA_LOG_I("HTTP setting buffer size: " PUBLIC_LOG_ZU " fileContentLen: " PUBLIC_LOG_ZU,
+        totalBufferSize_, fileContentLen);
+    {
+        AutoLock lock(sleepMutex_);
+        isCacheBufferInited_ = cacheMediaBuffer_->Init(totalBufferSize_, CHUNK_SIZE);
+    }
+    sleepCond_.NotifyAll();
+    FALSE_RETURN_V_MSG(isCacheBufferInited_, false, "HTTP CacheBufferInit failed");
+    return true;
 }
 
 bool HttpMediaDownloader::CacheBufferFullLoop()

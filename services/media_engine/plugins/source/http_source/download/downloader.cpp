@@ -1015,6 +1015,15 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
         mediaDownloader->currentRequest_->isDownloading_ = true;
     }
     UpdateDownloadInfo(mediaDownloader, dataLen);
+    size_t ret = SaveBodyData(mediaDownloader, buffer, dataLen);
+    if (ret == dataLen) {
+        mediaDownloader->currentRequest_->isDownloading_ = false;
+    }
+    return ret;
+}
+
+size_t Downloader::SaveBodyData(Downloader* mediaDownloader, void* buffer, size_t dataLen)
+{
     uint64_t keyIndex = mediaDownloader->currentRequest_->keyIndex_;
     uint32_t writeLen = (keyIndex > 0) ? mediaDownloader->currentRequest_->keySaveData_(static_cast<uint8_t *>(buffer),
         static_cast<uint32_t>(dataLen), mediaDownloader->isNotBlock_, keyIndex) :
@@ -1035,8 +1044,6 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
         MEDIA_LOG_W("Save data failed.");
         return 0; // save data failed, make perform finished.
     }
- 
-    mediaDownloader->currentRequest_->isDownloading_ = false;
     return dataLen;
 }
 
@@ -1204,18 +1211,8 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
     ToLower(key);
 
     if (!strncmp(key, "transfer-encoding", strlen("transfer-encoding"))) {
-        char* token = strtok_s(nullptr, ":", &next);
-        FALSE_RETURN_V(token != nullptr, size * nitems);
-        if (!strncmp(StringTrim(token), "chunked", strlen("chunked")) &&
-            !mediaDownloader->currentRequest_->IsM3u8Request()) {
-            info->isChunked = true;
-            if (mediaDownloader->currentRequest_->url_.find(".flv") == std::string::npos) {
-                info->contentLen = LIVE_CONTENT_LENGTH;
-            } else {
-                info->contentLen = 0;
-            }
-            std::string headStr = (std::string)token;
-            MEDIA_LOG_I("transfer-encoding: " PUBLIC_LOG_S, headStr.c_str());
+        if (!HandleTransferEncoding(info, key, next, mediaDownloader)) {
+            return size * nitems;
         }
     }
     if (!strncmp(key, "location", strlen("location"))) {
@@ -1234,6 +1231,25 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
     }
 
     return size * nitems;
+}
+
+bool Downloader::HandleTransferEncoding(HeaderInfo* info, char* key, char* next, Downloader* mediaDownloader)
+{
+    (void)key;
+    char* token = strtok_s(nullptr, ":", &next);
+    FALSE_RETURN_V(token != nullptr, false);
+    if (!strncmp(StringTrim(token), "chunked", strlen("chunked")) &&
+        !mediaDownloader->currentRequest_->IsM3u8Request()) {
+        info->isChunked = true;
+        if (mediaDownloader->currentRequest_->url_.find(".flv") == std::string::npos) {
+            info->contentLen = LIVE_CONTENT_LENGTH;
+        } else {
+            info->contentLen = 0;
+        }
+        std::string headStr = (std::string)token;
+        MEDIA_LOG_I("transfer-encoding: " PUBLIC_LOG_S, headStr.c_str());
+    }
+    return true;
 }
 
 void Downloader::PauseLoop(bool isAsync)

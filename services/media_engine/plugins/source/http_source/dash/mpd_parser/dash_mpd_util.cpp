@@ -121,10 +121,10 @@ int32_t DashSubstituteTmpltStr(std::string &segTmpltStr, const std::string &segT
             }
 
             GetSubstitutionStr(substitutionStr, str);
-            segTmpltStr = ReplaceSubStr(segTmpltStr, (uint32_t) pos, (uint32_t) (posEnd + identifierLength + 1),
-                substitutionStr);
+            segTmpltStr = ReplaceSubStr(segTmpltStr, static_cast<uint32_t>(pos),
+                static_cast<uint32_t>(posEnd + identifierLength + 1), substitutionStr);
         } else if (str[0] == '$') {
-            segTmpltStr = ReplaceSubStr(segTmpltStr, (uint32_t) pos, identifierLength + 1, substitutionStr);
+            segTmpltStr = ReplaceSubStr(segTmpltStr, static_cast<uint32_t>(pos), identifierLength + 1, substitutionStr);
         } else {
             // error format, should drop the representation
             MEDIA_LOG_E("Error format, should drop the representation");
@@ -159,6 +159,36 @@ void GetSubstitutionStr(std::string &substitutionStr, std::string &str)
     }
 }
 
+static int32_t GetDurationCoefficient(char unit, int32_t &secondTime)
+{
+    switch (unit) {
+        case 'M':
+            return secondTime ? M_2_S : 0;
+        case 'D':
+            return D_2_H * H_2_M * M_2_S;
+        case 'T':
+            secondTime = 1;
+            return 0;
+        case 'H':
+            return H_2_M * M_2_S;
+        case 'S':
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+static void ClampDurationToUint32(int64_t time, uint32_t &duration)
+{
+    if (time < 0) {
+        duration = 0;
+    } else if (time > static_cast<int64_t>(std::numeric_limits<uint32_t>::max())) {
+        duration = std::numeric_limits<uint32_t>::max();
+    } else {
+        duration = static_cast<uint32_t>(time);
+    }
+}
+
 int32_t DashStrToDuration(const std::string &str, uint32_t &duration)
 {
     int64_t time = 0;
@@ -169,7 +199,6 @@ int32_t DashStrToDuration(const std::string &str, uint32_t &duration)
 
     std::string remain = str.substr(1);
     while (!remain.empty()) {
-        int32_t coefficient = 0;
         size_t parsedPos = 0;
         double num = 0.0;
         try {
@@ -184,29 +213,7 @@ int32_t DashStrToDuration(const std::string &str, uint32_t &duration)
         if (remain.empty()) {
             break;
         }
-        switch (remain[0]) {
-            case 'M':
-                if (secondTime) {
-                    coefficient = M_2_S;
-                }
-                break;
-            case 'Y':
-                break;
-            case 'D':
-                coefficient = D_2_H * H_2_M * M_2_S;
-                break;
-            case 'T':
-                secondTime = 1;
-                break;
-            case 'H':
-                coefficient = H_2_M * M_2_S;
-                break;
-            case 'S':
-                coefficient = 1;
-                break;
-            default:
-                break;
-        }
+        int32_t coefficient = GetDurationCoefficient(remain[0], secondTime);
 
         if (coefficient > 0 && num > 0) {
             double scaled = num * static_cast<double>(S_2_MS) * static_cast<double>(coefficient);
@@ -220,15 +227,7 @@ int32_t DashStrToDuration(const std::string &str, uint32_t &duration)
         remain = remain.substr(1);
     }
 
-    // clamp 到 [0, UINT32_MAX]
-    if (time < 0) {
-        duration = 0;
-    } else if (time > static_cast<int64_t>(std::numeric_limits<uint32_t>::max())) {
-        duration = std::numeric_limits<uint32_t>::max();
-    } else {
-        duration = static_cast<uint32_t>(time);
-    }
-
+    ClampDurationToUint32(time, duration);
     return 0;
 }
 
@@ -301,6 +300,27 @@ bool DashStreamIsHdr(DashList<DashDescriptor*> essentialPropertyList)
     }
  
     return false;
+}
+
+bool DashStrToNonNegativeDouble(const std::string &str, double &result)
+{
+    if (str.empty()) {
+        return false;
+    }
+    size_t pos = 0;
+    try {
+        result = std::stod(str, &pos);
+    } catch (const std::exception &e) {
+        MEDIA_LOG_E("DashStrToNonNegativeDouble stod exception: " PUBLIC_LOG_S, e.what());
+        return false;
+    }
+    if (pos < str.length()) {
+        return false;
+    }
+    if (result < 0.0) {
+        return false;
+    }
+    return true;
 }
 
 } // namespace HttpPluginLite
