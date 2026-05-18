@@ -97,7 +97,7 @@ bool AdaptiveRetentionStrategy::MakeRetentionDecision(const FrameRetentionContex
     if (DoubleUtils::IsLessOrEqual(currentSpeed_, MAX_SPEED_FOR_RETENTION)) {
         lastReason_ = SfdDecisionReason::POST_RETAIN_ADAPTIVE_SPEED;
     } else if (!ctx.mvStats) {
-        lastReason_ = lastReason_ = SfdDecisionReason::UNSPECIFIED;
+        lastReason_ = SfdDecisionReason::UNSPECIFIED;
     } else if (ctx.mvStats->zeroMotionRatio >= ZERO_MOTION_RATIO_THRESHOLD) {
         isRetain = false;
         lastReason_ = SfdDecisionReason::POST_DROP_ADAPTIVE_DT;

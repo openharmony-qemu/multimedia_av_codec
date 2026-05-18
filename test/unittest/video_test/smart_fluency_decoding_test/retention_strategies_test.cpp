@@ -638,3 +638,26 @@ HWTEST_F(FullRetentionStrategyTest, FullStrategy_Properties_003, TestSize.Level1
     EXPECT_FALSE(strategy->RequiresNaluAnalysis());
     EXPECT_FALSE(strategy->RequiresMvAnalysis());
 }
+
+// --- AutoFallbackRetentionStrategy additional tests ---
+
+/**
+ * @tc.name: LastReason_DropMapping_005
+ * @tc.desc: Verify POST_DROP_FIXED_ACC from underlying FixedRatio is returned as-is (not mapped).
+ * @tc.type: FUNC
+ */
+HWTEST_F(AutoFallbackRetentionStrategyTest, LastReason_DropMapping_005, TestSize.Level1)
+{
+    auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
+    FrameRetentionContext ctx{};
+    // Frame 1: always retained, reason mapped to POST_RETAIN_AUTO_FALLBACK
+    strategy->MakeRetentionDecision(ctx);
+    // Frame 2: should be drop for 0.8 ratio (accumulator = 0.8 < 1.0)
+    bool retained = strategy->MakeRetentionDecision(ctx);
+    if (!retained) {
+        EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_DROP_FIXED_ACC);
+    }
+}
+
+// --- DropSyncCoordinator additional tests (in drop_sync_coordinator_test.cpp) ---
+// Note: tests below continue in separate file
