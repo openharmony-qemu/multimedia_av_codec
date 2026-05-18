@@ -2162,6 +2162,12 @@ Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacketWrapperPtr pktWrapper)
 
 Status FFmpegDemuxerPlugin::AccumulateXpsPkt(AVPacketWrapperPtr pkt)
 {
+    std::lock_guard<std::mutex> lock(accumulatePktMutex_);
+    return AccumulateXpsPktLocked(pkt);
+}
+
+Status FFmpegDemuxerPlugin::AccumulateXpsPktLocked(AVPacketWrapperPtr pkt)
+{
     FALSE_RETURN_V_MSG_E(pkt != nullptr && pkt->GetAVPacket() != nullptr, Status::ERROR_NULL_POINTER, "Pkt is nullptr");
     FALSE_RETURN_V_MSG_E(fileType_ == FileType::MPEGPS, Status::OK, "FileType is not MPEGPS");
     FALSE_RETURN_V_MSG_E(pkt->GetData() != nullptr && pkt->GetSize() >= 0,
@@ -2169,20 +2175,23 @@ Status FFmpegDemuxerPlugin::AccumulateXpsPkt(AVPacketWrapperPtr pkt)
     int32_t trackIndex = pkt->GetStreamIndex();
     FALSE_RETURN_V_MSG_E(trackIndex >= 0, Status::ERROR_INVALID_DATA, "Invalid track index");
     int32_t ffRet = 0;
-    if (accumulatePktMap_.find(trackIndex) == accumulatePktMap_.end()) {
-        accumulatePktMap_[trackIndex] = pkt;
-        accumulatePktFinishMap_[trackIndex] = false;
+    auto pktIt = accumulatePktMap_.find(trackIndex);
+    if (pktIt == accumulatePktMap_.end()) {
+        accumulatePktMap_.emplace(trackIndex, pkt);
+        accumulatePktFinishMap_.insert_or_assign(trackIndex, false);
     } else {
-        AVPacket* dstPkt = accumulatePktMap_[trackIndex]->GetAVPacket();
+        FALSE_RETURN_V_MSG_E(pktIt->second != nullptr && pktIt->second->GetAVPacket() != nullptr,
+            Status::ERROR_NULL_POINTER, "Accumulated packet is nullptr");
+        AVPacket* dstPkt = pktIt->second->GetAVPacket();
         int pktSize = pkt->GetSize();
-        if (pktSize < 0 || pktSize > INT_MAX - dstPkt->size) {
+        if (pktSize < 0 || dstPkt->size < 0 || pktSize > INT_MAX - dstPkt->size) {
             MEDIA_LOG_E("Invalid packet size for concatenation: dst=" PUBLIC_LOG_D32 ", src=" PUBLIC_LOG_D32,
                         dstPkt->size, pktSize);
             return Status::ERROR_INVALID_DATA;
         }
         ffRet = av_grow_packet(dstPkt, pktSize);
         if (ffRet < 0) {
-            AccumulateXpsPktRelease(trackIndex);
+            AccumulateXpsPktReleaseLocked(static_cast<uint32_t>(trackIndex));
             MEDIA_LOG_E("Call av_grow_packet failed, ret:" PUBLIC_LOG_D32, ffRet);
             return Status::ERROR_INVALID_DATA;
         }
@@ -2199,23 +2208,29 @@ Status FFmpegDemuxerPlugin::AccumulateXpsPkt(AVPacketWrapperPtr pkt)
         }
     }
     if (!IsPktOnlyParameterSets(pkt->GetData(), pkt->GetSize())) {
-        accumulatePktFinishMap_[trackIndex] = true;
+        accumulatePktFinishMap_.insert_or_assign(trackIndex, true);
     }
     return Status::OK;
 }
 
 void FFmpegDemuxerPlugin::AccumulateXpsPktRelease(uint32_t trackIndex)
 {
-    if (fileType_ != FileType::MPEGPS || !streamParsers_->ParserIsCreated(trackIndex)) {
+    std::lock_guard<std::mutex> lock(accumulatePktMutex_);
+    AccumulateXpsPktReleaseLocked(trackIndex);
+}
+
+void FFmpegDemuxerPlugin::AccumulateXpsPktReleaseLocked(uint32_t trackIndex)
+{
+    if (fileType_ != FileType::MPEGPS || streamParsers_ == nullptr ||
+        !streamParsers_->ParserIsCreated(trackIndex)) {
         return;
     }
-    if (accumulatePktMap_.find(trackIndex) != accumulatePktMap_.end()) {
-        accumulatePktMap_[trackIndex].reset();
-        accumulatePktMap_.erase(trackIndex);
+    auto pktIt = accumulatePktMap_.find(trackIndex);
+    if (pktIt != accumulatePktMap_.end()) {
+        pktIt->second.reset();
+        accumulatePktMap_.erase(pktIt);
     }
-    if (accumulatePktFinishMap_.find(trackIndex) != accumulatePktFinishMap_.end()) {
-        accumulatePktFinishMap_.erase(trackIndex);
-    }
+    accumulatePktFinishMap_.erase(trackIndex);
 }
 
 void FFmpegDemuxerPlugin::AccumulateXpsPktReleaseAll()
@@ -2223,8 +2238,9 @@ void FFmpegDemuxerPlugin::AccumulateXpsPktReleaseAll()
     if (fileType_ != FileType::MPEGPS) {
         return;
     }
-    for (auto &it : accumulatePktMap_) {
-        AccumulateXpsPktRelease(static_cast<uint32_t>(it.first));
+    std::lock_guard<std::mutex> lock(accumulatePktMutex_);
+    for (auto& item : accumulatePktMap_) {
+        item.second.reset();
     }
     accumulatePktMap_.clear();
     accumulatePktFinishMap_.clear();
@@ -2233,20 +2249,36 @@ void FFmpegDemuxerPlugin::AccumulateXpsPktReleaseAll()
 FFmpegDemuxerPlugin::AccumulateAction FFmpegDemuxerPlugin::ProcessAccumulateXpsPkt(
     AVPacketWrapperPtr& pktWrapper, int ffmpegRet, Status& status)
 {
-    int32_t trackId = pktWrapper->GetStreamIndex();
-    if (fileType_ != FileType::MPEGPS || !streamParsers_->ParserIsCreated(trackId) || ffmpegRet < 0) {
+    if (fileType_ != FileType::MPEGPS || ffmpegRet < 0) {
         return AccumulateAction::NOT_SUPPORT_TYPE;
     }
-    status = AccumulateXpsPkt(pktWrapper);
+    if (pktWrapper == nullptr) {
+        status = Status::ERROR_NULL_POINTER;
+        return AccumulateAction::ERROR;
+    }
+    int32_t trackId = pktWrapper->GetStreamIndex();
+    if (trackId < 0 || streamParsers_ == nullptr ||
+        !streamParsers_->ParserIsCreated(static_cast<uint32_t>(trackId))) {
+        return AccumulateAction::NOT_SUPPORT_TYPE;
+    }
+    std::lock_guard<std::mutex> lock(accumulatePktMutex_);
+    status = AccumulateXpsPktLocked(pktWrapper);
     if (status != Status::OK) {
         MEDIA_LOG_E("PsAccumulateXpsPkt failed");
         return AccumulateAction::ERROR;
     }
-    if (!accumulatePktFinishMap_[trackId]) {
+    auto finishIt = accumulatePktFinishMap_.find(trackId);
+    if (finishIt == accumulatePktFinishMap_.end() || !finishIt->second) {
         MEDIA_LOG_I("PsAccumulateXpsPkt not completed, skip");
         return AccumulateAction::ACCUMULATE_NOT_COMPLETED;
     }
-    pktWrapper = accumulatePktMap_[trackId];
+    auto pktIt = accumulatePktMap_.find(trackId);
+    if (pktIt == accumulatePktMap_.end() || pktIt->second == nullptr) {
+        status = Status::ERROR_NULL_POINTER;
+        MEDIA_LOG_E("Accumulated packet is nullptr");
+        return AccumulateAction::ERROR;
+    }
+    pktWrapper = pktIt->second;
     return AccumulateAction::ACCUMULATE_COMPLETED;
 }
 
