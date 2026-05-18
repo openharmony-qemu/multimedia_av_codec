@@ -101,6 +101,8 @@ public:
     bool input8BitTo10Bit_ = false;
     int32_t errorNum_ = 0;
     bool inputResizeWidthHeight_ = false;
+    bool inputSetParamCrop_ = false;
+    bool isCallFuncOnStreamChanged_ = false;
 
     static bool needDump_;
     static uint64_t sampleTimout_;

@@ -453,12 +453,15 @@ bool VideoEncDualOutputSample::WaitForEos(EncoderType type)
     bool isNotTimeout = encoderContext.signal->eosCond_.wait_for(lock, seconds(sampleTimout_), lck);
     lock.unlock();
 
-    if (input8BitTo10Bit_) {
-        EXPECT_LT(0, errorNum_);
-    }
     if (type == EncoderType::PRIMARY) {
         EXPECT_GE(encoderContext.frameOutputCount,
                   encoderContext.frameInputCount / 2); // 2: at least half of the input frame
+
+        if (input8BitTo10Bit_) {
+            EXPECT_LT(0, errorNum_);
+        } else if (inputResizeWidthHeight_ || inputSetParamCrop_) {
+            EXPECT_TRUE(isCallFuncOnStreamChanged_);
+        }
     }
 
     encoderContext.signal->isRunning_ = false;

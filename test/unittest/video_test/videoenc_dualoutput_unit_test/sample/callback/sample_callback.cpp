@@ -24,25 +24,26 @@
 namespace OHOS {
 namespace MediaAVCodec {
 
-void OnErrorVoid(OH_AVCodec *codec, int32_t errorCode, void *userData)
+void OnError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
     (void)codec;
     auto signal = reinterpret_cast<VCodecSignal *>(userData);
     auto codecSample = signal->codecSample_.lock();
     auto dualSample = std::static_pointer_cast<VideoEncDualOutputSample>(codecSample);
-    std::cout << "OnErrorVoid called, errorCode: " << errorCode << std::endl;
+    std::cout << "OnError called, errorCode: " << errorCode << std::endl;
     if (dualSample && dualSample->input8BitTo10Bit_) {
         dualSample->errorNum_++;
     }
 }
 
-void OnStreamChangedVoid(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
+void OnStreamChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 {
     (void)codec;
     auto signal = reinterpret_cast<VCodecSignal *>(userData);
     auto codecSample = signal->codecSample_.lock();
     auto dualSample = std::static_pointer_cast<VideoEncDualOutputSample>(codecSample);
-    if (dualSample && dualSample->inputResizeWidthHeight_) {
+    if (dualSample && (dualSample->inputResizeWidthHeight_ || dualSample->inputSetParamCrop_)) {
+        dualSample->isCallFuncOnStreamChanged_ = true;
         int32_t width = 0;
         int32_t height = 0;
         EXPECT_TRUE(OH_AVFormat_GetIntValue(format, OH_MD_KEY_WIDTH, &width));
