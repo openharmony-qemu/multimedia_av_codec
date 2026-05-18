@@ -1030,7 +1030,7 @@ Status MPEG4DemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode mo
     MediaAVCodec::AVCodecTrace trace("SeekTo");
     FALSE_RETURN_V_MSG_E(inited_, Status::ERROR_NULL_POINTER, "Plugin has not been initialized");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
-    FALSE_RETURN_V_MSG_E(seekTime >= INT64_MIN / MS_TO_NS && seekTime <= INT64_MAX / MS_TO_NS,
+    FALSE_RETURN_V_MSG_E(seekTime >= 0 && seekTime <= INT64_MAX / MS_TO_NS,
         Status::ERROR_INVALID_PARAMETER, "Seek time " PUBLIC_LOG_D64 " is not supported", seekTime);
 
     ReleaseReadLoop();
