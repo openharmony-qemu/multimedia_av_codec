@@ -20,7 +20,8 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "AdaptiveStrategy"};
 constexpr double MAX_SPEED_FOR_RETENTION = 1.0;
-constexpr double MAX_DROPS_MULTIPLIER_HIGH = 3.0;
+constexpr double EXTRA_DROP_COUNTS = 2.0;
+constexpr double BASE_DROP_COUNTS = 1.0;
 constexpr double ZERO_MOTION_RATIO_THRESHOLD = 0.85;
 
 struct DecisionNode {
@@ -93,7 +94,7 @@ AdaptiveRetentionStrategy::AdaptiveRetentionStrategy()
 bool AdaptiveRetentionStrategy::MakeRetentionDecision(const FrameRetentionContext& ctx)
 {
     bool isRetain = true;
-    uint32_t maxDrops = static_cast<uint32_t>((currentSpeed_ - 1.0) * MAX_DROPS_MULTIPLIER_HIGH);
+    uint32_t maxDrops = <uint32_t>((currentSpeed_ - 1.0) * EXTRA_DROP_COUNTS + BASE_DROP_COUNTS);
     if (DoubleUtils::IsLessOrEqual(currentSpeed_, MAX_SPEED_FOR_RETENTION)) {
         lastReason_ = SfdDecisionReason::POST_RETAIN_ADAPTIVE_SPEED;
     } else if (!ctx.mvStats) {
