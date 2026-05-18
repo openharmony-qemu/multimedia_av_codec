@@ -40,14 +40,14 @@ constexpr double DEFAULT_FRAME_RATE = 30.0;
 
 enum CodecType : int32_t { AVC = 0, HEVC = 1 };
 
-static void OnError(OH_AVCodec *codec, int32_t errorCode, void *userData)
+static void OnErrorVoid(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
     (void)codec;
     (void)errorCode;
     (void)userData;
 }
 
-static void OnStreamChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
+static void OnStreamChangedVoid(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 {
     (void)codec;
     (void)format;
@@ -105,8 +105,8 @@ void RegisterCallbackWithSignal(shared_ptr<VideoEncDualOutputSample> &sample, En
                                 shared_ptr<VCodecSignal> &signal)
 {
     struct OH_AVCodecCallback cb = {};
-    cb.onError = OnError;
-    cb.onStreamChanged = OnStreamChanged;
+    cb.onErrorVoid = OnError;
+    cb.onStreamChangedVoid = OnStreamChanged;
     cb.onNeedInputBuffer = InBufferVoid;
     cb.onNewOutputBuffer = (type == EncoderType::SECONDARY) ? OutBufferHandleSecondary : OutBufferHandle;
     signal->isRunning_ = true;
@@ -486,7 +486,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_CreateSecondaryFromPrimary_001, TestSize.Level1
  */
 HWTEST_P(TEST_SUIT, Primary_SetCallback_Normal_001, TestSize.Level1)
 {
-    OH_AVCodecAsyncCallback cb = {OnError, OnStreamChanged, OnNeedInputData, OnNewOutputData};
+    OH_AVCodecAsyncCallback cb = {OnErrorVoid, OnStreamChangedVoid, OnNeedInputData, OnNewOutputData};
     ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, dualSample_->SetCallback(EncoderType::PRIMARY, cb, nullptr));
 }
 
@@ -693,7 +693,7 @@ HWTEST_P(TEST_SUIT, Primary_IsValid_Normal_001, TestSize.Level1)
 HWTEST_P(TEST_SUIT, Secondary_RegisterCallback_Normal_001, TestSize.Level1)
 {
     ASSERT_TRUE(dualSample_->CreateSecondary());
-    OH_AVCodecCallback cb = {OnError, OnStreamChanged, OnNeedInputBuffer, OnNewOutputBuffer};
+    OH_AVCodecCallback cb = {OnErrorVoid, OnStreamChangedVoid, OnNeedInputBuffer, OnNewOutputBuffer};
     ASSERT_EQ(AV_ERR_OK, dualSample_->RegisterCallback(EncoderType::SECONDARY, cb, nullptr));
 }
 
@@ -722,7 +722,7 @@ HWTEST_P(TEST_SUIT, Secondary_Prepare_Normal_001, TestSize.Level1)
                                 DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
 
-    OH_AVCodecCallback cb = {OnError, OnStreamChanged, OnNeedInputBuffer, OnNewOutputBuffer};
+    OH_AVCodecCallback cb = {OnErrorVoid, OnStreamChangedVoid, OnNeedInputBuffer, OnNewOutputBuffer};
     ASSERT_EQ(AV_ERR_OK, dualSample_->RegisterCallback(EncoderType::SECONDARY, cb, nullptr));
 
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
@@ -773,7 +773,7 @@ HWTEST_P(TEST_SUIT, Secondary_GetOutputDescription_Normal_001, TestSize.Level1)
                                 DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
 
-    OH_AVCodecCallback cb = {OnError, OnStreamChanged, OnNeedInputBuffer, OnNewOutputBuffer};
+    OH_AVCodecCallback cb = {OnErrorVoid, OnStreamChangedVoid, OnNeedInputBuffer, OnNewOutputBuffer};
     ASSERT_EQ(AV_ERR_OK, dualSample_->RegisterCallback(EncoderType::SECONDARY, cb, nullptr));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
 
