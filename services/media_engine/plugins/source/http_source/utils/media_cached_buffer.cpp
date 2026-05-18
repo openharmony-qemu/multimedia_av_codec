@@ -111,6 +111,10 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
     readPos_ = fragmentCacheBuffer_.end();
     writePos_ = fragmentCacheBuffer_.end();
     size_t sizePerChunk = sizeof(CacheChunk) + chunkSize;
+    if (sizePerChunk == 0 || chunkNum <= 0 ||
+        static_cast<uint64_t>(chunkNum) > std::numeric_limits<int64_t>::max() / sizePerChunk) {
+        return false;
+    }
     int64_t totalSize = static_cast<int64_t>(sizePerChunk) * chunkNum;
     if (totalSize <= 0 || totalSize > MAX_CACHE_BUFFER_SIZE * CHUNK_SIZE) {
         return false;

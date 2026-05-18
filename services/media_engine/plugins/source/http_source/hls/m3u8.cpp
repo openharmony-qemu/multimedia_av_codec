@@ -333,6 +333,11 @@ void M3U8::ParseMap(const std::shared_ptr<AttributesTag>& tag)
         return;
     }
     if (length > 0 && length < DEFAULT_MAX_SIZE) {
+        if (fmp4Header_ != nullptr) {
+            delete[] fmp4Header_;
+            fmp4Header_ = nullptr;
+        }
+        downloadHeaderLen_ = 0;
         fmp4Header_ = new uint8_t[length + 1]; // 1
         fmp4HeaderLen = length + 1;
     }
@@ -492,9 +497,20 @@ uint32_t M3U8::SaveMapData(uint8_t* data, uint32_t len, bool notBlock)
         FALSE_RETURN_V_MSG(fmp4Header_ != nullptr, 0u, "SaveMapData error, no memory.");
         fmp4HeaderLen = headerLen;
     }
-    NZERO_RETURN_V(memcpy_s(fmp4Header_ + downloadHeaderLen_, fmp4HeaderLen - downloadHeaderLen_, data, len), 0);
-    downloadHeaderLen_ += std::min(len, fmp4HeaderLen - downloadHeaderLen_);
-    return len;
+    FALSE_RETURN_V_MSG(fmp4Header_ != nullptr && fmp4HeaderLen > 0, 0u, "SaveMapData fmp4Header_ not ready");
+    if (downloadHeaderLen_ >= fmp4HeaderLen) {
+        MEDIA_LOG_W("SaveMapData: downloadHeaderLen_ " PUBLIC_LOG_U32 " >= fmp4HeaderLen " PUBLIC_LOG_U32,
+            downloadHeaderLen_, fmp4HeaderLen);
+        return 0;
+    }
+    uint32_t remain = fmp4HeaderLen - downloadHeaderLen_;
+    uint32_t copyLen = std::min(len, remain);
+    if (copyLen == 0) {
+        return 0;
+    }
+    NZERO_RETURN_V(memcpy_s(fmp4Header_ + downloadHeaderLen_, remain, data, copyLen), 0);
+    downloadHeaderLen_ += copyLen;
+    return copyLen;
 }
 
 uint64_t M3U8::ExtractNumber(const std::string& uri)
@@ -759,8 +775,8 @@ bool M3U8::SetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
 {
     std::string::size_type n;
     std::string psshString;
-    std::vector<uint8_t> pssh; // 2048: pssh len
     uint32_t psshSize = 2048; // 2048: pssh len
+    std::vector<uint8_t> pssh(psshSize, 0); // pre-allocate to psshSize bytes
     if (keyUri_ == nullptr) {
         return false;
     }
@@ -775,7 +791,7 @@ bool M3U8::SetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
         static_cast<uint32_t>(psshString.length()), pssh.data(), &psshSize);
     if (ret) {
         uint32_t uuidSize = 16; // 16: uuid len
-        if (psshSize >= DRM_UUID_OFFSET + uuidSize) {
+        if (psshSize <= pssh.size() && psshSize >= DRM_UUID_OFFSET + uuidSize) {
             uint8_t uuid[16]; // 16: uuid len
             NZERO_RETURN_V(memcpy_s(uuid, sizeof(uuid), pssh.data() + DRM_UUID_OFFSET, uuidSize), false);
             std::stringstream ssConverter;

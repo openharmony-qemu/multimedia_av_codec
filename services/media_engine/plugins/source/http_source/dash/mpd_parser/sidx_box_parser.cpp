@@ -85,6 +85,15 @@ template <typename T> bool GetBytes(char *buffer, uint32_t &currPos, uint32_t st
 int32_t SidxBoxParser::ParseSidxBox(char *bitStream, uint32_t streamSize, int64_t sidxEndOffset,
                                     DashList<std::shared_ptr<SubSegmentIndex>> &subSegIndexTable)
 {
+    // Defensive check: although callers (e.g. DashMpdDownloader::ParseSidx) already guarantee
+    // non-empty content via downloadContent_.length() check and substr bounds, still validate here
+    // to prevent any future caller from passing nullptr or zero-size buffer.
+    if (bitStream == nullptr || streamSize == 0) {
+        MEDIA_LOG_E("ParseSidxBox invalid input: bitStream=%{public}p, streamSize="
+            PUBLIC_LOG_U32, bitStream, streamSize);
+        return -1;
+    }
+
     const uint32_t BEM_SIDX = BemSource('s', 'i', 'd', 'x');
     uint32_t currPos = 0;
 
@@ -150,6 +159,12 @@ bool SidxBoxParser::BuildSubSegmentIndexes(char *bitStream, uint32_t streamSize,
     int64_t mediaSegOffset = firstOffset + sidxEndOffset + 1;
 
     // skip reserved
+    // 边界校验：防止 currPos + SHIFT_NUM_2 越过 streamSize
+if (streamSize < currPos || streamSize - currPos < SHIFT_NUM_2) {
+        MEDIA_LOG_W("sidx box reserved out of range, currPos:" PUBLIC_LOG_U32 ", streamSize:" PUBLIC_LOG_U32,
+            currPos, streamSize);
+        return false;
+    }
     ForwardBytes(currPos, SHIFT_NUM_2);
 
     uint32_t referenceCount = 0;

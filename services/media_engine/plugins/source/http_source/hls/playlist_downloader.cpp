@@ -182,8 +182,13 @@ void PlayListDownloader::DoOpenNative(const std::string& url)
         delete[] buf;
         return;
     }
-    buf[size_] = '\0';
-    std::string m3u8(buf);
+    // 使用 read 实际返回长度，避免尾部未初始化数据被当作字符串读取
+    size_t validLen = static_cast<size_t>(ret);
+    if (validLen > size_) {
+        validLen = static_cast<size_t>(size_);
+    }
+    buf[validLen] = '\0';
+    std::string m3u8(buf, validLen);
     MEDIA_LOG_I("Read success.");
     playList_ = m3u8;
     ParseManifest(playList_);
@@ -269,6 +274,12 @@ bool PlayListDownloader::GetPlayListDownloadStatus()
 uint32_t PlayListDownloader::SaveData(uint8_t* data, uint32_t len, bool notBlock)
 {
     if (data == nullptr || len == 0 || len > PLAYLIST_MAX_SIZE) {
+        return 0;
+    }
+    // 限制 playList_ 累计总量，避免服务器持续下发导致内存无界增长
+    if (playList_.size() > PLAYLIST_MAX_SIZE || len > PLAYLIST_MAX_SIZE - playList_.size()) {
+        MEDIA_LOG_E("playList_ exceeds max size, drop data, current " PUBLIC_LOG_ZU ", incoming " PUBLIC_LOG_U32,
+            playList_.size(), len);
         return 0;
     }
     playList_.reserve(playList_.size() + len);

@@ -53,8 +53,13 @@ static const uint8_t BASE64_DECODE_TABLE[] = {
  */
 bool Base64Utils::Base64Decode(const uint8_t *src, uint32_t srcSize, uint8_t *dest, uint32_t *destSize)
 {
-    if ((src == nullptr) || (srcSize == 0) || (dest == nullptr) || (destSize == nullptr) || (srcSize > *destSize)) {
+    if ((src == nullptr) || (srcSize == 0) || (dest == nullptr) || (destSize == nullptr)) {
         MEDIA_LOG_E("parameter is err");
+        return false;
+    }
+    // base64 解码后理论上限为 srcSize / 4 * 3，以该实际上限为准校验，避免不必要的拒绝
+if ((srcSize / BASE64_DATA_MULTIPLE) * BASE64_BASE_UNIT_OF_CONVERSION > *destSize) {
+        MEDIA_LOG_E("parameter is err, decoded size may exceed destSize");
         return false;
     }
     if ((srcSize < BASE64_DATA_MULTIPLE) || (srcSize % BASE64_DATA_MULTIPLE != 0)) {

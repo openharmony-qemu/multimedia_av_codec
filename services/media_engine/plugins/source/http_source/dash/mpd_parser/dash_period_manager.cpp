@@ -46,6 +46,10 @@ static void GetMimeTypeFromRepresentation(const DashAdptSetInfo *adptSetInfo, st
 {
     DashList<DashRepresentationInfo *> representationList = adptSetInfo->representationList_;
     for (DashRepresentationInfo *representationInfo : representationList) {
+        // 对齐 dash_adpt_set_manager.cpp:220，防止上游 push_back 了 nullptr 导致解引用崩溃
+if (representationInfo == nullptr) {
+            continue;
+        }
         mimeType = representationInfo->commonAttrsAndElements_.mimeType_;
         if (!mimeType.empty()) {
             break;

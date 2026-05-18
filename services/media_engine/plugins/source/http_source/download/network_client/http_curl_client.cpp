@@ -367,8 +367,15 @@ void HttpCurlClient::CheckRequestRange(long startPos, int len)
     if (startPos >= 0) {
         char requestRange[128] = {0};
         if (len > 0) {
-            snprintf_s(requestRange, sizeof(requestRange), sizeof(requestRange) - 1, "%ld-%ld",
-                       startPos, startPos + len - 1);
+            // 防止 startPos + len - 1 溢出 long：要求 len > 0 且 startPos <= LONG_MAX - (len - 1)
+if (startPos > std::numeric_limits<long>::max() - static_cast<long>(len - 1)) {
+                MEDIA_LOG_W("CheckRequestRange overflow, startPos " PUBLIC_LOG_D64 ", len " PUBLIC_LOG_D32,
+                    static_cast<int64_t>(startPos), len);
+                snprintf_s(requestRange, sizeof(requestRange), sizeof(requestRange) - 1, "%ld-", startPos);
+            } else {
+                snprintf_s(requestRange, sizeof(requestRange), sizeof(requestRange) - 1, "%ld-%ld",
+                    startPos, startPos + static_cast<long>(len) - 1);
+            }
         } else {
             snprintf_s(requestRange, sizeof(requestRange), sizeof(requestRange) - 1, "%ld-", startPos);
         }

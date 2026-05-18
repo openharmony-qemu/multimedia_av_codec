@@ -16,7 +16,9 @@
 #include <mutex>
 #include <unistd.h>
 #include <cstdlib>
+#include <cstdint>
 #include <limits>
+#include <stdexcept>
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
@@ -24,6 +26,7 @@
 #include "dash_mpd_downloader.h"
 #include "dash_mpd_util.h"
 #include "sidx_box_parser.h"
+#include "utils/string_utils.h"
 #include "utils/time_utils.h"
 #include "base64_utils.h"
 
@@ -168,7 +171,11 @@ static int64_t ParseStartNumber(const std::string &numberStr)
 {
     int64_t startNum = 1;
     if (numberStr.length() > 0) {
-        startNum = atoi(numberStr.c_str());
+        // 使用 SafeStoInt64 避免 atoi 无范围检查与输入为非法字符串时不可区分
+int64_t tmp = 0;
+        if (StringUtil::SafeStoInt64(numberStr, tmp) && tmp >= 0) {
+            startNum = tmp;
+        }
     }
 
     return startNum;
@@ -381,6 +388,8 @@ DashMpdGetRet DashMpdDownloader::GetBreakPointSegment(int streamId, int64_t brea
                 seg = streamDescription->mediaSegments_[index];
                 break;
             }
+            // 修复功能 Bug：原逻辑未累加导致仅能匹配第一个超过 breakpoint 的 segment
+segmentDuration += static_cast<int64_t>(streamDescription->mediaSegments_[index]->duration_);
         }
 
         if (seg != nullptr) {
@@ -595,7 +604,13 @@ void DashMpdDownloader::SetInitResolution(unsigned int width, unsigned int heigh
 {
     MEDIA_LOG_I("SetInitResolution, width:" PUBLIC_LOG_U32 ", height:" PUBLIC_LOG_U32, width, height);
     if (width > 0 && height > 0) {
-        initResolution_ = width * height;
+        // 防止 width * height 溢出 unsigned int：先以 uint64_t 计算，超过 UINT32_MAX 取上限
+uint64_t product = static_cast<uint64_t>(width) * static_cast<uint64_t>(height);
+        if (product > std::numeric_limits<unsigned int>::max()) {
+            initResolution_ = std::numeric_limits<unsigned int>::max();
+        } else {
+            initResolution_ = static_cast<unsigned int>(product);
+        }
     }
 }
 
@@ -804,6 +819,12 @@ void DashMpdDownloader::ProcessDrmInfos()
         }
 
         std::string psshString = drmInfo.pssh_;
+        // base64 解码后长度 ≈ srcSize * 3 / 4，限制输入 base64 字符串不超过 2730（解码后不超 2048）
+constexpr uint32_t MAX_PSSH_BASE64_LEN = 2730;
+        if (psshString.length() > MAX_PSSH_BASE64_LEN) {
+            MEDIA_LOG_W("pssh base64 length too large, drmId " PUBLIC_LOG_S, drmInfo.drmId_.c_str());
+            continue;
+        }
         uint8_t pssh[2048]; // 2048: pssh len
         uint32_t psshSize = 2048; // 2048: pssh len
         if (Base64Utils::Base64Decode(reinterpret_cast<const uint8_t *>(psshString.c_str()),
@@ -1528,7 +1549,10 @@ void DashMpdDownloader::GetStreamDescriptions(const std::string &periodBaseUrl, 
 
 unsigned int DashMpdDownloader::GetResolutionDelta(unsigned int width, unsigned int height)
 {
-    unsigned int resolution = width * height;
+    // 防止 width * height 溢出 unsigned int，使用 uint64_t 计算后 clamp 到 UINT32_MAX
+uint64_t product = static_cast<uint64_t>(width) * static_cast<uint64_t>(height);
+    unsigned int resolution = (product > std::numeric_limits<unsigned int>::max()) ?
+        std::numeric_limits<unsigned int>::max() : static_cast<unsigned int>(product);
     if (resolution > initResolution_) {
         return resolution - initResolution_;
     } else {
@@ -2392,11 +2416,23 @@ bool DashMpdDownloader::ParseFrameRateToUint32(const std::string& str, uint32_t&
             return false;
         }
         size_t pos = 0;
-        double num = std::stod(numStr, &pos);
+        double num = 0.0;
+        try {
+            num = std::stod(numStr, &pos);
+        } catch (const std::exception &e) {
+            MEDIA_LOG_E("ParseFrameRateToUint32 stod num exception: " PUBLIC_LOG_S, e.what());
+            return false;
+        }
         if (pos < numStr.length()) {
             return false;
         }
-        double den = std::stod(denStr, &pos);
+        double den = 0.0;
+        try {
+            den = std::stod(denStr, &pos);
+        } catch (const std::exception &e) {
+            MEDIA_LOG_E("ParseFrameRateToUint32 stod den exception: " PUBLIC_LOG_S, e.what());
+            return false;
+        }
         if (pos < denStr.length()) {
             return false;
         }
@@ -2411,7 +2447,13 @@ bool DashMpdDownloader::ParseFrameRateToUint32(const std::string& str, uint32_t&
         return true;
     }
     size_t pos = 0;
-    double fps = std::stod(frameRateStr, &pos);
+    double fps = 0.0;
+    try {
+        fps = std::stod(frameRateStr, &pos);
+    } catch (const std::exception &e) {
+        MEDIA_LOG_E("ParseFrameRateToUint32 stod fps exception: " PUBLIC_LOG_S, e.what());
+        return false;
+    }
     if (pos < frameRateStr.length()) {
         return false;
     }

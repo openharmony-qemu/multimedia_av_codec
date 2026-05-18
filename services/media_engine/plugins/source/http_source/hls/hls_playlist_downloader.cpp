@@ -176,7 +176,11 @@ void HlsPlayListDownloader::Clone(std::shared_ptr<PlayListDownloader> ptr)
     statusCallback_ = other->statusCallback_;
     
     startedDownloadStatus_ = other->startedDownloadStatus_;
-    fd_ = dup(other->fd_);
+    if (fd_ >= 0) {
+        close(fd_);
+        fd_ = -1;
+    }
+    fd_ = (other->fd_ >= 0) ? dup(other->fd_) : -1;
     offset_ = other->offset_;
     size_ = other->size_;
     fileSize_ = other->fileSize_;
@@ -757,13 +761,16 @@ void HlsPlayListDownloader::PreParseManifest(const std::string& location)
         return;
     }
     int tsNum = 0;
-    int tsIndex = 0;
-    int firstTsTagIndex = 0;
-    int lastTsTagIndex = 0;
+    std::string::size_type tsIndex = 0;
+    std::string::size_type firstTsTagIndex = 0;
+    std::string::size_type lastTsTagIndex = 0;
     std::string tsTag = M3U8_TS_TAG;
-    int tsTagSize = static_cast<int>(tsTag.size());
-    while ((tsIndex = static_cast<int>(playList_.find(tsTag, tsIndex))) <
-            static_cast<int>(playList_.length()) && tsIndex != -1) { // -1
+    std::string::size_type tsTagSize = tsTag.size();
+    while (true) {
+        tsIndex = playList_.find(tsTag, tsIndex);
+        if (tsIndex == std::string::npos || tsIndex >= playList_.length()) {
+            break;
+        }
         if (tsNum == 0) {
             firstTsTagIndex = tsIndex;
         }
@@ -993,6 +1000,11 @@ bool HlsPlayListDownloader::ReadMediaHeader(const std::list<std::shared_ptr<M3U8
             !stream->m3u8_->isHeaderReady_) {
             continue;
         }
+        if (stream->m3u8_->downloadHeaderLen_ > wantLen) {
+            MEDIA_LOG_E("ReadMediaHeader downloadHeaderLen_ " PUBLIC_LOG_U32 " > wantLen " PUBLIC_LOG_U32,
+                stream->m3u8_->downloadHeaderLen_, wantLen);
+            return false;
+        }
         errno_t err = memcpy_s(buffer, wantLen, stream->m3u8_->fmp4Header_, stream->m3u8_->downloadHeaderLen_);
         if (err == 0) {
             readLen = stream->m3u8_->downloadHeaderLen_;
@@ -1012,6 +1024,11 @@ bool HlsPlayListDownloader::ReadStreamHeader(const std::list<std::shared_ptr<M3U
         if (stream == nullptr || stream->m3u8_ == nullptr || stream->streamId_ != streamId ||
             !stream->m3u8_->isHeaderReady_) {
             continue;
+        }
+        if (stream->m3u8_->downloadHeaderLen_ > wantLen) {
+            MEDIA_LOG_E("ReadStreamHeader downloadHeaderLen_ " PUBLIC_LOG_U32 " > wantLen " PUBLIC_LOG_U32,
+                stream->m3u8_->downloadHeaderLen_, wantLen);
+            return false;
         }
         errno_t err = memcpy_s(buffer, wantLen, stream->m3u8_->fmp4Header_, stream->m3u8_->downloadHeaderLen_);
         if (err == 0) {

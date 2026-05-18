@@ -13,8 +13,11 @@
  * limitations under the License.
  */
 
+#include <cstdint>
+#include <limits>
 #include "dash_seg_url_node.h"
 #include "dash_mpd_util.h"
+#include "utils/string_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -58,7 +61,10 @@ void DashSegUrlNode::GetAttr(const std::string &attrName, uint32_t &uiAttrVal)
     uint32_t index = DashGetAttrIndex(attrName, segUrlAttrs_, DASH_SEG_URL_ATTR_NUM);
     if (index < DASH_SEG_URL_ATTR_NUM) {
         if (segUrlAttr_[index].val_.length() > 0) {
-            uiAttrVal = static_cast<uint32_t>(std::atoll(segUrlAttr_[index].val_.c_str()));
+            int64_t tempUiAttrVal = 0;
+            auto ret = StringUtil::SafeStoInt64(segUrlAttr_[index].val_, tempUiAttrVal);
+            uiAttrVal = (ret && tempUiAttrVal >= 0 && tempUiAttrVal <= std::numeric_limits<uint32_t>::max()) ?
+                static_cast<uint32_t>(tempUiAttrVal) : 0;
         } else {
             uiAttrVal = 0;
         }
@@ -70,7 +76,10 @@ void DashSegUrlNode::GetAttr(const std::string &attrName, int32_t &iAttrVal)
     uint32_t index = DashGetAttrIndex(attrName, segUrlAttrs_, DASH_SEG_URL_ATTR_NUM);
     if (index < DASH_SEG_URL_ATTR_NUM) {
         if (segUrlAttr_[index].val_.length() > 0) {
-            iAttrVal = static_cast<int32_t>(std::atoll(segUrlAttr_[index].val_.c_str()));
+            int64_t tempiAttrVal = 0;
+            auto ret = StringUtil::SafeStoInt64(segUrlAttr_[index].val_, tempiAttrVal);
+            iAttrVal = (ret && tempiAttrVal >= std::numeric_limits<int32_t>::min() &&
+                tempiAttrVal <= std::numeric_limits<int32_t>::max()) ? static_cast<int32_t>(tempiAttrVal) : 0;
         } else {
             iAttrVal = 0;
         }
@@ -82,7 +91,10 @@ void DashSegUrlNode::GetAttr(const std::string &attrName, uint64_t &ullAttrVal)
     uint32_t index = DashGetAttrIndex(attrName, segUrlAttrs_, DASH_SEG_URL_ATTR_NUM);
     if (index < DASH_SEG_URL_ATTR_NUM) {
         if (segUrlAttr_[index].val_.length() > 0) {
-            ullAttrVal = static_cast<uint64_t>(std::atoll(segUrlAttr_[index].val_.c_str()));
+            int64_t tempUllAttrVal = 0;
+            auto ret = StringUtil::SafeStoInt64(segUrlAttr_[index].val_, tempUllAttrVal);
+            ullAttrVal = (ret && tempUllAttrVal >= 0) ?
+                static_cast<uint64_t>(tempUllAttrVal) : 0;
         } else {
             ullAttrVal = 0;
         }

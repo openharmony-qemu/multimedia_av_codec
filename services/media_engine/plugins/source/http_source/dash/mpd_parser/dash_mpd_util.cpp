@@ -16,8 +16,12 @@
 
 #include <cstring>
 #include <cstdlib>
+#include <cstdint>
+#include <limits>
+#include <string>
 #include "common/log.h"
 #include "dash_mpd_util.h"
+#include "utils/string_utils.h"
 #include "utils/time_utils.h"
 
 namespace {
@@ -109,7 +113,8 @@ int32_t DashSubstituteTmpltStr(std::string &segTmpltStr, const std::string &segT
     while (pos != std::string::npos && (pos + identifierLength) < segTmpltStr.length()) {
         std::string str = segTmpltStr.substr(pos + identifierLength);
         // contain format %0[width]d
-        if (str.length() > 1 && str[0] == '%' && str[1] == '0') {
+        // 明确判定 length > 1 后才访问 str[1]，避免微小越界误警与误使用
+if (str.length() > 1 && str[0] == '%' && str[1] == '0') {
             std::string::size_type posEnd = str.find("$");
             // not find end '$', drop the representation
             if (posEnd == std::string::npos) {
@@ -159,26 +164,30 @@ int32_t DashStrToDuration(const std::string &str, uint32_t &duration)
 {
     int64_t time = 0;
     int32_t secondTime = 0;
-    char *end = nullptr;
-    char *start = const_cast<char *>(str.c_str());
-    if (str.length() == 0 || *start != 'P') {
+    if (str.length() == 0 || str[0] != 'P') {
         return -1;
     }
 
-    start++;
-    do {
+    // 使用 std::string 与 std::stod 避免 const_cast 及 strtod 在走 P/T 等字符时 end 未推进导致的死循环
+std::string remain = str.substr(1);
+    while (!remain.empty()) {
         int32_t coefficient = 0;
-        double num = strtod(start, &end);
-
-        if (end == nullptr) {
-            num = 0;
+        size_t parsedPos = 0;
+        double num = 0.0;
+        try {
+            num = std::stod(remain, &parsedPos);
+        } catch (const std::exception &e) {
+            // 数字解析失败，仅跳过当前字符
+num = 0.0;
+            parsedPos = 0;
         }
-
-        if (start != end && end) {
-            start = end;
+        if (parsedPos > 0) {
+            remain = remain.substr(parsedPos);
         }
-
-        switch (*start) {
+        if (remain.empty()) {
+            break;
+        }
+        switch (remain[0]) {
             case 'M':
                 if (secondTime) {
                     coefficient = M_2_S;
@@ -202,13 +211,27 @@ int32_t DashStrToDuration(const std::string &str, uint32_t &duration)
                 break;
         }
 
-        time += (int64_t)(num * S_2_MS) * coefficient;
-        if (*start) {
-            start++;
+        // 乘法前预检查防止 int64_t 溢出
+if (coefficient > 0 && num > 0) {
+            double scaled = num * static_cast<double>(S_2_MS) * static_cast<double>(coefficient);
+            if (scaled > static_cast<double>(std::numeric_limits<int64_t>::max() - time)) {
+                duration = std::numeric_limits<uint32_t>::max();
+                return 0;
+            }
+            time += static_cast<int64_t>(scaled);
         }
-    } while (*start);
 
-    duration = static_cast<uint32_t>(time);
+        remain = remain.substr(1);
+    }
+
+    // clamp 到 [0, UINT32_MAX]
+if (time < 0) {
+        duration = 0;
+    } else if (time > static_cast<int64_t>(std::numeric_limits<uint32_t>::max())) {
+        duration = std::numeric_limits<uint32_t>::max();
+    } else {
+        duration = static_cast<uint32_t>(time);
+    }
 
     return 0;
 }
@@ -240,11 +263,18 @@ void DashParseRange(const std::string &rangeStr, int64_t &startRange, int64_t &e
         }
 
         std::string firstRange = rangeStr.substr(0, separatePosition);
-        startRange = atoll(firstRange.c_str());
+        // 使用 SafeStoInt64 避免 atoll 无范围/输入合法性区分
+int64_t tmpStart = 0;
+        if (StringUtil::SafeStoInt64(firstRange, tmpStart) && tmpStart >= 0) {
+            startRange = tmpStart;
+        }
 
         if (separatePosition < rangeStr.length() - 1) {
             std::string lastRange = rangeStr.substr(separatePosition + 1, rangeStr.length() - separatePosition - 1);
-            endRange = atoll(lastRange.c_str());
+            int64_t tmpEnd = 0;
+            if (StringUtil::SafeStoInt64(lastRange, tmpEnd) && tmpEnd >= 0) {
+                endRange = tmpEnd;
+            }
         }
         MEDIA_LOG_D("startRange=" PUBLIC_LOG_D64 ", endRange=" PUBLIC_LOG_D64 ", range="
             PUBLIC_LOG_S, startRange, endRange, rangeStr.c_str());

@@ -69,6 +69,12 @@ void AesDecryptor::Decrypt(uint8_t *in, uint8_t *out, uint32_t len)
     if (keyLen_ == 0) {
         return;
     }
+    // AES CBC 要求输入长度为 AES_BLOCK_SIZE (16) 的整数倍，否则会误读未初始化内存
+constexpr uint32_t AES_BLOCK_SIZE = 16;
+    if (len % AES_BLOCK_SIZE != 0) {
+        MEDIA_LOG_E("Decrypt len " PUBLIC_LOG_U32 " is not aligned to AES_BLOCK_SIZE", len);
+        return;
+    }
     AES_cbc_encrypt(in, out, len, &aesKey_, iv_, AES_DECRYPT);
 }
 

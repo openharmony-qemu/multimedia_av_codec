@@ -16,6 +16,8 @@
 
 #include "dash_segment_downloader.h"
 #include <map>
+#include <cstdint>
+#include <limits>
 #include <algorithm>
 #include "network/network_typs.h"
 #include "dash_mpd_util.h"
@@ -396,9 +398,16 @@ int32_t DashSegmentDownloader::GetWaterLineAbove()
         }
 
         if (realTimeBitBate_ > static_cast<int64_t>(downloadBiteRate_)) {
-            waterLineAbove = static_cast<int32_t>(DEFAULT_MAX_CACHE_TIME * realTimeBitBate_ / BYTES_TO_BIT);
+            // 先以 int64_t 计算避免中间过程 float 精度损失与 int32_t 截断
+int64_t calc = static_cast<int64_t>(DEFAULT_MAX_CACHE_TIME * realTimeBitBate_) / BYTES_TO_BIT;
+            calc = std::min<int64_t>(calc, std::numeric_limits<int32_t>::max());
+            calc = std::max<int64_t>(calc, 0);
+            waterLineAbove = static_cast<int32_t>(calc);
         } else {
-            waterLineAbove = static_cast<int32_t>(DEFAULT_MIN_CACHE_TIME * realTimeBitBate_ / BYTES_TO_BIT);
+            int64_t calc = static_cast<int64_t>(DEFAULT_MIN_CACHE_TIME * realTimeBitBate_) / BYTES_TO_BIT;
+            calc = std::min<int64_t>(calc, std::numeric_limits<int32_t>::max());
+            calc = std::max<int64_t>(calc, 0);
+            waterLineAbove = static_cast<int32_t>(calc);
         }
         int32_t maxWaterLineAbove = static_cast<int32_t>(ringBufferCapcity_ / 2);
         waterLineAbove = waterLineAbove > maxWaterLineAbove ? maxWaterLineAbove : waterLineAbove;
@@ -535,7 +544,13 @@ bool DashSegmentDownloader::ReadInitSegment(uint8_t *buff, uint32_t wantReadLeng
             std::string readStr = initSegment->content_.substr(initSegment->readIndex_);
             CHECK_AND_RETURN_RET_LOG(wantReadLength <= VID_RING_BUFFER_SIZE, 1, "too large");
             CHECK_AND_RETURN_RET_LOG(realReadLength <= VID_RING_BUFFER_SIZE, 1, "too large");
-            memcpy_s(buff, wantReadLength, readStr.c_str(), realReadLength);
+            // 检查 memcpy_s 返回值，失败时不推进读取位置并返回错误
+errno_t memRet = memcpy_s(buff, wantReadLength, readStr.c_str(), realReadLength);
+            if (memRet != EOK) {
+                MEDIA_LOG_E("ReadInitSegment memcpy_s failed, ret " PUBLIC_LOG_D32, memRet);
+                realReadLength = 0;
+                return false;
+            }
             initSegment->readIndex_ += realReadLength;
             if (initSegment->readIndex_ == contentLen && initSegment->isDownloadFinish_) {
                 // init segment read finish
@@ -1087,6 +1102,11 @@ void DashSegmentDownloader::PutRequestIntoDownloader(unsigned int duration, int6
         FALSE_RETURN_MSG(shareDownloader != nullptr, "realStatusCb, dash seg downloader already destructed.");
         auto downloaderPtr = shareDownloader->GetDownloader();
         FALSE_RETURN_MSG(downloaderPtr != nullptr, "downloaderPtr is nullptr");
+        // statusCallback_ 是 std::function，可能为空。调用空 function 会抛 std::bad_function_call
+if (!shareDownloader->statusCallback_) {
+            MEDIA_LOG_W("statusCallback_ is empty, skip");
+            return;
+        }
         shareDownloader->statusCallback_(status, downloaderPtr, std::forward<decltype(request)>(request));
     };
     auto downloadDoneCallback = [weakDownloader](const std::string &url, const std::string &location) {

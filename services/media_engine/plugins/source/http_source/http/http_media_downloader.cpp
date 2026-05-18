@@ -1137,6 +1137,8 @@ uint32_t HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len, bool notBloc
         }
         size_t fileContentLen = downloadRequest->GetFileContentLength();
         if (fileContentLen > MAX_BUFFER_SIZE - BUFFER_REDUNDANCY) {
+            MEDIA_LOG_W("HTTP fileContentLen " PUBLIC_LOG_ZU " exceeds buffer cap, clamp to MAX_BUFFER_SIZE",
+                fileContentLen);
             totalBufferSize_ = MAX_BUFFER_SIZE;
         } else {
             totalBufferSize_ =  fileContentLen == 0 ? MAX_BUFFER_SIZE : fileContentLen + BUFFER_REDUNDANCY;
@@ -1152,6 +1154,11 @@ uint32_t HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len, bool notBloc
     }
 
     if (cacheMediaBuffer_ == nullptr && ringBuffer_ == nullptr) {
+        return 0;
+    }
+    if (!isRingBuffer_ && totalBufferSize_ > 0 && static_cast<size_t>(len) > totalBufferSize_) {
+        MEDIA_LOG_E("SaveData failed, single write len " PUBLIC_LOG_U32 " exceeds totalBufferSize_ "
+            PUBLIC_LOG_ZU, len, totalBufferSize_);
         return 0;
     }
     OnWriteBuffer(len);

@@ -63,10 +63,21 @@ bool StorageUsageUtil::HasEnoughStorage()
         return false;
     }
     MEDIA_LOG_I("StorageUsageUtil freesize:" PUBLIC_LOG_D64 "; totalsize:" PUBLIC_LOG_D64, freesize, totalSize);
+    // 样本上限：totalSize 由 statvfs 返回，不会超过磁盘实际容量；
+    // STORAGE_PERCENT_THRESHOLD * totalSize + STORAGE_EXTRA_2G 在 totalSize <= 1EB 范围内不会溢出 int64_t。
+    // 仍加显式 clamp 以使代码在极端入参下保持健康
+auto safeThreshold = [](int64_t total, double percent) -> int64_t {
+        double r = static_cast<double>(total) * percent;
+        constexpr double kInt64MaxAsDouble = 9.0e18;
+        if (r >= kInt64MaxAsDouble) {
+            return std::numeric_limits<int64_t>::max() - STORAGE_EXTRA_2G;
+        }
+        return static_cast<int64_t>(r);
+    };
     if (totalSize > STORAGE_THRESHOLD_500G) {
-        return freesize > (static_cast<long long>(totalSize * STORAGE_PERCENT_THRESHOLD_OVER_500G) + STORAGE_EXTRA_2G);
+        return freesize > (safeThreshold(totalSize, STORAGE_PERCENT_THRESHOLD_OVER_500G) + STORAGE_EXTRA_2G);
     }
-    return freesize > (static_cast<long long>(totalSize * STORAGE_PERCENT_THRESHOLD) + STORAGE_EXTRA_2G);
+    return freesize > (safeThreshold(totalSize, STORAGE_PERCENT_THRESHOLD) + STORAGE_EXTRA_2G);
 }
 } // namespace Media
 } // namespace OHOS
