@@ -842,7 +842,7 @@ HWTEST_F(SmartFluencyDecodingTest, ExtractMVStats_NoMvRequired_047, TestSize.Lev
     cfg.retentionRatio = 0.5;
     sfd_->Initialize(cfg);
 
-    PostDecCost cost{};
+    SmartFluencyDecoding::PostDecCost cost{};
     auto stats = sfd_->ExtractMVStats({false, false, false}, 0, cost, nullptr);
     EXPECT_EQ(stats.validBlocks, 0u);
 }
