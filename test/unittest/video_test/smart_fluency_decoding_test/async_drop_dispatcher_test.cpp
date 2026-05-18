@@ -155,3 +155,25 @@ HWTEST_F(AsyncDropDispatcherTest, SubmitTask_NullTask_005, TestSize.Level1)
     // No crash = success
     EXPECT_TRUE(true);
 }
+
+/**
+ * @tc.name: SubmitTask_StoppedDispatcher_006
+ * @tc.desc: Verify SubmitTask rejects tasks when dispatcher is stopped.
+ * @tc.type: FUNC
+ */
+HWTEST_F(AsyncDropDispatcherTest, SubmitTask_StoppedDispatcher_006, TestSize.Level1)
+{
+    AsyncDropDispatcher dispatcher;
+    std::atomic<bool> taskExecuted{false};
+
+    // Manually stop the dispatcher
+    dispatcher.isWorking_.store(false);
+
+    dispatcher.SubmitTask([&taskExecuted]() {
+        taskExecuted.store(true);
+    });
+
+    // Give worker thread time to potentially process (it won't, since stopped)
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    EXPECT_FALSE(taskExecuted.load());
+}

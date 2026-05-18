@@ -218,3 +218,37 @@ HWTEST_F(DropSyncCoordinatorTest, GetAndConsume_AlreadyConsumed_012, TestSize.Le
     // Consume second frame — first should be skipped (already consumed)
     EXPECT_EQ(tracker_.GetAndConsumePreDroppedCount(300), 1);
 }
+
+/**
+ * @tc.name: UpdateFeedback_HighSpeedAlphaClamp_013
+ * @tc.desc: Verify alpha is clamped to 1.0 when speed is very high.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DropSyncCoordinatorTest, UpdateFeedback_HighSpeedAlphaClamp_013, TestSize.Level1)
+{
+    // BASE_ALPHA=0.15, speed=10.0 → alpha=1.5, clamped to 1.0
+    // EMA = 1.0 * currentVal + 0.0 * previous = currentVal
+    tracker_.UpdateFeedback(false, 10.0); // high speed forces alpha=1.0
+    EXPECT_NEAR(tracker_.GetEmaRatio(), 0.0, DEFAULT_TOLERANCE);
+}
+
+/**
+ * @tc.name: GetAndConsume_PartialConsume_014
+ * @tc.desc: Verify GetAndConsume handles partial consumption correctly when some frames are skipped.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DropSyncCoordinatorTest, GetAndConsume_PartialConsume_014, TestSize.Level1)
+{
+    EXPECT_TRUE(tracker_.RecordPreDroppedFrame(10, 1.0));
+    EXPECT_TRUE(tracker_.RecordPreDroppedFrame(500, 1.0)); // large PTS gap
+    EXPECT_TRUE(tracker_.RecordPreDroppedFrame(20, 1.0));  // out of order PTS
+
+    // Query PTS 100: frame at 10 should be consumed, 500 skipped (>=100), 20 consumed (20<100)
+    // But 20 was written after 500, so readIndex=0, scanIndex walks 0,1,2
+    // Index 0: pts 10 < 100 → consume
+    // Index 1: pts 500 >= 100 → skip
+    // Index 2: pts 20 < 100 → consume
+    // readIndex advances to 1 (index 0 consumed)
+    // count = 2
+    EXPECT_EQ(tracker_.GetAndConsumePreDroppedCount(100), 2);
+}
