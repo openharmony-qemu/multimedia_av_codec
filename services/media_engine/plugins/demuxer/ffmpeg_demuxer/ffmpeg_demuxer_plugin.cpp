@@ -1394,14 +1394,32 @@ int FFmpegDemuxerPlugin::CheckContextIsValid(void* opaque, int &bufSize)
     }
 
     if (ioContext->isLimit) {
-        if (bufSize > ioContext->sizeLimit - ioContext->readSizeCnt) {
+        int32_t remainingSize = ioContext->sizeLimit - ioContext->readSizeCnt;
+        if (remainingSize <= 0) {
             MEDIA_LOG_E("Read limit cur: " PUBLIC_LOG_D32 ", limit: " PUBLIC_LOG_D32 ", read: " PUBLIC_LOG_D32,
                 ioContext->readSizeCnt, ioContext->sizeLimit, bufSize);
             return ret;
         }
-        ioContext->readSizeCnt += bufSize;
+        if (bufSize > remainingSize) {
+            bufSize = remainingSize;
+        }
     }
     return 0;
+}
+
+void FFmpegDemuxerPlugin::UpdateReadSizeCnt(IOContext* ioContext, int dataSize)
+{
+    if (ioContext == nullptr || !ioContext->isLimit || dataSize <= 0) {
+        return;
+    }
+    int32_t remainingSize = ioContext->sizeLimit - ioContext->readSizeCnt;
+    if (dataSize > remainingSize) {
+        MEDIA_LOG_W("Actual read size exceeds limit, cur: " PUBLIC_LOG_D32 ", limit: " PUBLIC_LOG_D32
+            ", read: " PUBLIC_LOG_D32, ioContext->readSizeCnt, ioContext->sizeLimit, dataSize);
+        ioContext->readSizeCnt = ioContext->sizeLimit;
+        return;
+    }
+    ioContext->readSizeCnt += dataSize;
 }
 
 int64_t FFmpegDemuxerPlugin::AVSeek(void* opaque, int64_t offset, int whence)
