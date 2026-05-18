@@ -94,7 +94,7 @@ AdaptiveRetentionStrategy::AdaptiveRetentionStrategy()
 bool AdaptiveRetentionStrategy::MakeRetentionDecision(const FrameRetentionContext& ctx)
 {
     bool isRetain = true;
-    uint32_t maxDrops = <uint32_t>((currentSpeed_ - 1.0) * EXTRA_DROP_COUNTS + BASE_DROP_COUNTS);
+    uint32_t maxDrops = static_cast<uint32_t>((currentSpeed_ - 1.0) * EXTRA_DROP_COUNTS + BASE_DROP_COUNTS);
     if (DoubleUtils::IsLessOrEqual(currentSpeed_, MAX_SPEED_FOR_RETENTION)) {
         lastReason_ = SfdDecisionReason::POST_RETAIN_ADAPTIVE_SPEED;
     } else if (!ctx.mvStats) {
