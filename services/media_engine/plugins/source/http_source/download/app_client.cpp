@@ -59,10 +59,8 @@ void AppClient::MapToString(std::map<std::string, std::string> httpHeader)
     for (std::map<std::string, std::string>::iterator iter = httpHeaderTmp.begin();
         iter != httpHeaderTmp.end(); iter++) {
         headerStr = iter->first + " : " + iter->second;
-        // const_cast 明确丢弃 const 以适配 rxHeader_ 接口，该调用不会写 buffer
-char* headerTmp = const_cast<char*>(headerStr.c_str());
-        MEDIA_LOG_D("0x%{public}06" PRIXPTR " AppClient header: " PUBLIC_LOG_S,
-            FAKE_POINTER(this), const_cast<char*>(headerStr.c_str()));
+        char* headerTmp = const_cast<char*>(headerStr.c_str());
+        MEDIA_LOG_D("0x%{public}06" PRIXPTR " AppClient header: " PUBLIC_LOG_S, FAKE_POINTER(this), headerTmp);
         void* buffer = reinterpret_cast<void*>(headerTmp);
         rxHeader_(buffer, 1, 1, userParam_);
     }

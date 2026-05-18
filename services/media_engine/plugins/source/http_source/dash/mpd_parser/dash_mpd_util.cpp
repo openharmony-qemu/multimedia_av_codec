@@ -113,8 +113,7 @@ int32_t DashSubstituteTmpltStr(std::string &segTmpltStr, const std::string &segT
     while (pos != std::string::npos && (pos + identifierLength) < segTmpltStr.length()) {
         std::string str = segTmpltStr.substr(pos + identifierLength);
         // contain format %0[width]d
-        // 明确判定 length > 1 后才访问 str[1]，避免微小越界误警与误使用
-if (str.length() > 1 && str[0] == '%' && str[1] == '0') {
+        if (str.length() > 1 && str[0] == '%' && str[1] == '0') {
             std::string::size_type posEnd = str.find("$");
             // not find end '$', drop the representation
             if (posEnd == std::string::npos) {
@@ -168,8 +167,7 @@ int32_t DashStrToDuration(const std::string &str, uint32_t &duration)
         return -1;
     }
 
-    // 使用 std::string 与 std::stod 避免 const_cast 及 strtod 在走 P/T 等字符时 end 未推进导致的死循环
-std::string remain = str.substr(1);
+    std::string remain = str.substr(1);
     while (!remain.empty()) {
         int32_t coefficient = 0;
         size_t parsedPos = 0;
@@ -177,8 +175,7 @@ std::string remain = str.substr(1);
         try {
             num = std::stod(remain, &parsedPos);
         } catch (const std::exception &e) {
-            // 数字解析失败，仅跳过当前字符
-num = 0.0;
+            num = 0.0;
             parsedPos = 0;
         }
         if (parsedPos > 0) {
@@ -211,8 +208,7 @@ num = 0.0;
                 break;
         }
 
-        // 乘法前预检查防止 int64_t 溢出
-if (coefficient > 0 && num > 0) {
+        if (coefficient > 0 && num > 0) {
             double scaled = num * static_cast<double>(S_2_MS) * static_cast<double>(coefficient);
             if (scaled > static_cast<double>(std::numeric_limits<int64_t>::max() - time)) {
                 duration = std::numeric_limits<uint32_t>::max();
@@ -225,7 +221,7 @@ if (coefficient > 0 && num > 0) {
     }
 
     // clamp 到 [0, UINT32_MAX]
-if (time < 0) {
+    if (time < 0) {
         duration = 0;
     } else if (time > static_cast<int64_t>(std::numeric_limits<uint32_t>::max())) {
         duration = std::numeric_limits<uint32_t>::max();
@@ -263,8 +259,7 @@ void DashParseRange(const std::string &rangeStr, int64_t &startRange, int64_t &e
         }
 
         std::string firstRange = rangeStr.substr(0, separatePosition);
-        // 使用 SafeStoInt64 避免 atoll 无范围/输入合法性区分
-int64_t tmpStart = 0;
+        int64_t tmpStart = 0;
         if (StringUtil::SafeStoInt64(firstRange, tmpStart) && tmpStart >= 0) {
             startRange = tmpStart;
         }

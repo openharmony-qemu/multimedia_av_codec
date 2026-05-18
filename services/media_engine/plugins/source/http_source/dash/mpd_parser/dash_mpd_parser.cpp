@@ -1194,8 +1194,7 @@ void DashMpdParser::ParseSegmentTimeline(std::shared_ptr<XmlParser> xmlParser, s
 }
 
 void DashMpdParser::ParseUrlType(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
-                                 const std::string urlTypeName,
-                                 DashUrlType **urlTypeInfo)
+    const std::string urlTypeName, DashUrlType **urlTypeInfo)
 {
     if (urlTypeInfo == nullptr) {
         MEDIA_LOG_E("ParseUrlType urlTypeInfo == nullptr");
@@ -1214,8 +1213,7 @@ void DashMpdParser::ParseUrlType(std::shared_ptr<XmlParser> xmlParser, std::shar
 
     IDashMpdNode *urlTypeNode = IDashMpdNode::CreateNode(urlTypeName);
     if (urlTypeNode == nullptr) {
-        // 避免 urlTypeNode 为空时仍将未填充的 urlType 赋给调用方
-MEDIA_LOG_W("ParseUrlType urlTypeNode is nullptr, name=" PUBLIC_LOG_S, urlTypeName.c_str());
+        MEDIA_LOG_W("ParseUrlType urlTypeNode is nullptr, name=" PUBLIC_LOG_S, urlTypeName.c_str());
         delete urlType;
         return;
     }

@@ -522,8 +522,7 @@ void DashMediaDownloader::OpenInitSegment(
     }
     downloader->Init();
     downloader->SetSourceStatisticsDfx(reportInfo_);
-    // 无论 statusCallback_ 是否为空都下发，segment 层会在调用点空判避免 std::bad_function_call
-downloader->SetStatusCallback(statusCallback_);
+    downloader->SetStatusCallback(statusCallback_);
     auto weakDownloader = weak_from_this();
     auto doneCallback = [weakDownloader] (int streamId) {
         auto shareDownloader = weakDownloader.lock();

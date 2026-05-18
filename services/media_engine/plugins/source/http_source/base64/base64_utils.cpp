@@ -57,8 +57,7 @@ bool Base64Utils::Base64Decode(const uint8_t *src, uint32_t srcSize, uint8_t *de
         MEDIA_LOG_E("parameter is err");
         return false;
     }
-    // base64 解码后理论上限为 srcSize / 4 * 3，以该实际上限为准校验，避免不必要的拒绝
-if ((srcSize / BASE64_DATA_MULTIPLE) * BASE64_BASE_UNIT_OF_CONVERSION > *destSize) {
+    if ((srcSize / BASE64_DATA_MULTIPLE) * BASE64_BASE_UNIT_OF_CONVERSION > *destSize) {
         MEDIA_LOG_E("parameter is err, decoded size may exceed destSize");
         return false;
     }

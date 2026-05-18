@@ -327,8 +327,7 @@ Status FileFdSourcePlugin::SeekTo(uint64_t offset)
 
 Status FileFdSourcePlugin::SeekToOfflineFile(uint64_t offset)
 {
-    // 校验 offset + offset_ 不超过 INT64_MAX，避免 lseek off_t 溢出
-if (offset_ < 0 || offset > static_cast<uint64_t>(std::numeric_limits<int64_t>::max() - offset_)) {
+    if (offset_ < 0 || offset > static_cast<uint64_t>(std::numeric_limits<int64_t>::max() - offset_)) {
         MEDIA_LOG_E("SeekToOfflineFile offset overflow, offset " PUBLIC_LOG_U64 ", offset_ " PUBLIC_LOG_D64,
             offset, offset_);
         return Status::ERROR_UNKNOWN;
@@ -445,8 +444,7 @@ void FileFdSourcePlugin::CacheDataLoop()
     GetCurrentSpeed(curTime);
     int64_t lastSize = GetLastSize(cachePosition_.load());
     size_t bufferSize = lastSize < 0 ? PER_CACHE_SIZE : std::min(PER_CACHE_SIZE, static_cast<size_t>(lastSize));
-    // 使用 unique_ptr<char[]> 接管生命周期，避免未来增加处理分支时遗漏 delete
-std::unique_ptr<char[]> cacheBufferPtr(new (std::nothrow) char[bufferSize]);
+    std::unique_ptr<char[]> cacheBufferPtr(new (std::nothrow) char[bufferSize]);
     if (cacheBufferPtr == nullptr) {
         MEDIA_LOG_E("CacheData memory is not enough bufferSize " PUBLIC_LOG_ZU, bufferSize);
         WaitForInterrupt(TEN_MILLISECOUNDS);

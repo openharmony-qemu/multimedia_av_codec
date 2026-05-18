@@ -984,8 +984,7 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
     FALSE_RETURN_V(userParam != nullptr, 0);
     auto mediaDownloader = static_cast<Downloader *>(userParam);
     if (size != 0 && nitems > std::numeric_limits<size_t>::max() / size) {
-        MEDIA_LOG_E("RxBodyData: size * nitems overflow, size: " PUBLIC_LOG_ZU ", nitems: " PUBLIC_LOG_ZU,
-            size, nitems);
+        MEDIA_LOG_E("RxBodyData: size overflow, size: " PUBLIC_LOG_ZU ", nitems: " PUBLIC_LOG_ZU, size, nitems);
         return 0;
     }
     size_t dataLen = size * nitems;

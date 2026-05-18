@@ -36,8 +36,7 @@ int32_t XmlParser::ParseFromBuffer(const char *buf, int32_t length)
     }
 
     xmlInitParser();
-    // 使用 xmlReadMemory + XML_PARSE_NONET 禁用网络访问，防止 XXE 反向引入外部实体
-xmlDocPtr doc = xmlReadMemory(buf, length, nullptr, nullptr,
+    xmlDocPtr doc = xmlReadMemory(buf, length, nullptr, nullptr,
         XML_PARSE_NONET | XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
     if (doc == nullptr) {
         MEDIA_LOG_E("ParseFromBuffer error.");
@@ -62,8 +61,7 @@ int32_t XmlParser::ParseFromString(const std::string &xmlStr)
     }
 
     xmlInitParser();
-    // 使用 xmlReadDoc + XML_PARSE_NONET 禁用网络访问，防止 XXE
-xmlDocPtr doc = xmlReadDoc(docData, nullptr, nullptr,
+    xmlDocPtr doc = xmlReadDoc(docData, nullptr, nullptr,
         XML_PARSE_NONET | XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
     if (doc == nullptr) {
         MEDIA_LOG_E("ParseFromString error.");
@@ -82,8 +80,7 @@ int32_t XmlParser::ParseFromFile(const std::string &filePath)
     }
 
     xmlInitParser();
-    // 使用 xmlReadFile + XML_PARSE_NONET 禁用网络访问，防止 XXE
-xmlDocPtr doc = xmlReadFile(filePath.c_str(), nullptr,
+    xmlDocPtr doc = xmlReadFile(filePath.c_str(), nullptr,
         XML_PARSE_NONET | XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
     if (doc == nullptr) {
         MEDIA_LOG_E("ParseFromFile error.");

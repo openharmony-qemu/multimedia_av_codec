@@ -182,7 +182,6 @@ void PlayListDownloader::DoOpenNative(const std::string& url)
         delete[] buf;
         return;
     }
-    // 使用 read 实际返回长度，避免尾部未初始化数据被当作字符串读取
     size_t validLen = static_cast<size_t>(ret);
     if (validLen > size_) {
         validLen = static_cast<size_t>(size_);
