@@ -2076,6 +2076,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_SetParam_Crop_002, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::SECONDARY));
     ASSERT_NE(AV_ERR_OK, dualSample_->SetParameter(EncoderType::PRIMARY, format));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Stop(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Stop(EncoderType::SECONDARY));
     OH_AVFormat_Destroy(format);
 }
 #endif // ONLY_FOR_FLAGSHIP_CHIP
