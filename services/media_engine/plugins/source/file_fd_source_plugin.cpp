@@ -327,21 +327,14 @@ Status FileFdSourcePlugin::SeekTo(uint64_t offset)
 
 Status FileFdSourcePlugin::SeekToOfflineFile(uint64_t offset)
 {
-    if (offset_ < 0 || offset > static_cast<uint64_t>(std::numeric_limits<int64_t>::max() - offset_)) {
-        MEDIA_LOG_E("SeekToOfflineFile offset overflow, offset " PUBLIC_LOG_U64 ", offset_ " PUBLIC_LOG_D64,
-            offset, offset_);
-        return Status::ERROR_UNKNOWN;
-    }
-    off_t target = static_cast<off_t>(offset + static_cast<uint64_t>(offset_));
-    off_t ret = lseek(fd_, target, SEEK_SET);
-    if (ret == static_cast<off_t>(-1)) {
+    int32_t ret = lseek(fd_, offset + static_cast<uint64_t>(offset_), SEEK_SET);
+    if (ret == -1) {
         MEDIA_LOG_E("SeekLocal failed, fd " PUBLIC_LOG_D32 ", offset " PUBLIC_LOG_U64 ", errStr "
             PUBLIC_LOG_S, fd_, offset, strerror(errno));
         return Status::ERROR_UNKNOWN;
     }
     position_ = offset + static_cast<uint64_t>(offset_);
-    MEDIA_LOG_D("SeekLocal end ret " PUBLIC_LOG_D64 ", position_ " PUBLIC_LOG_U64,
-        static_cast<int64_t>(ret), position_.load());
+    MEDIA_LOG_D("SeekLocal end ret " PUBLIC_LOG_D32 ", position_ " PUBLIC_LOG_U64, ret, position_.load());
     return Status::OK;
 }
 
@@ -444,17 +437,17 @@ void FileFdSourcePlugin::CacheDataLoop()
     GetCurrentSpeed(curTime);
     int64_t lastSize = GetLastSize(cachePosition_.load());
     size_t bufferSize = lastSize < 0 ? PER_CACHE_SIZE : std::min(PER_CACHE_SIZE, static_cast<size_t>(lastSize));
-    std::unique_ptr<char[]> cacheBufferPtr(new (std::nothrow) char[bufferSize]);
-    if (cacheBufferPtr == nullptr) {
+    char* cacheBuffer = new char[bufferSize];
+    if (cacheBuffer == nullptr) {
         MEDIA_LOG_E("CacheData memory is not enough bufferSize " PUBLIC_LOG_ZU, bufferSize);
         WaitForInterrupt(TEN_MILLISECOUNDS);
         return;
     }
-    char* cacheBuffer = cacheBufferPtr.get();
     int size = read(fd_, cacheBuffer, bufferSize);
     if (size <= 0) {
         int64_t ct = steadyClock2_.ElapsedMilliseconds() - curTime;
         MEDIA_LOG_I("read failed, cost time: " PUBLIC_LOG_U64, ct);
+        DeleteCacheBuffer(cacheBuffer, bufferSize);
         HandleReadResult(bufferSize, size);
         return;
     }
@@ -463,6 +456,7 @@ void FileFdSourcePlugin::CacheDataLoop()
     while (!ringBuffer_->WriteBuffer(cacheBuffer, size)) {
         MEDIA_LOG_I("CacheData ringbuffer write failed");
         if (inSeek_ || isInterrupted_) {
+            DeleteCacheBuffer(cacheBuffer, bufferSize);
             return;
         }
         WaitForInterrupt(TEN_MILLISECOUNDS);
@@ -483,6 +477,8 @@ void FileFdSourcePlugin::CacheDataLoop()
         size_, ct);
     }
     
+    DeleteCacheBuffer(cacheBuffer, bufferSize);
+
     CheckAndNotifyBufferingEnd();
 }
 
