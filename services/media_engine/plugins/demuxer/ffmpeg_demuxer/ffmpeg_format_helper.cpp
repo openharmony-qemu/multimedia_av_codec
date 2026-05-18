@@ -61,6 +61,10 @@ const int32_t AV3A_SAMPLE_8BITS = 8;
 const int32_t AV3A_SAMPLE_16BITS = 16;
 const int32_t AV3A_SAMPLE_24BITS = 24;
 
+const int32_t SMPTE2086_RED_INDEX = 0;
+const int32_t SMPTE2086_GREEN_INDEX = 1;
+const int32_t SMPTE2086_BLUE_INDEX = 2;
+
 const size_t BRAND_CODE_LEN = 4; // 4 is brand code length
 
 static std::map<AVPixelFormat, RawVideoPixelFormat> g_convertFfmpegPixFmt = {
@@ -703,13 +707,8 @@ void FFmpegFormatHelper::ParseAVTrackInfo(const AVStream& avStream, Meta &format
     }
 }
 
-void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &format,
-                                             const AVFormatContext& avFormatContext)
+void FFmpegFormatHelper::ParseFrameRate(const AVStream& avStream, Meta &format)
 {
-    format.Set<Tag::VIDEO_WIDTH>(static_cast<uint32_t>(avStream.codecpar->width));
-    format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(avStream.codecpar->height));
-    format.Set<Tag::VIDEO_DELAY>(static_cast<uint32_t>(avStream.codecpar->video_delay));
-
     double frameRate = 0;
     if (avStream.avg_frame_rate.den == 0 || avStream.avg_frame_rate.num == 0) {
         frameRate = static_cast<double>(av_q2d(avStream.r_frame_rate));
@@ -721,7 +720,15 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
     } else {
         MEDIA_LOG_D("Parse frame rate failed: " PUBLIC_LOG_F, frameRate);
     }
+}
 
+void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &format,
+                                             const AVFormatContext& avFormatContext)
+{
+    format.Set<Tag::VIDEO_WIDTH>(static_cast<uint32_t>(avStream.codecpar->width));
+    format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(avStream.codecpar->height));
+    format.Set<Tag::VIDEO_DELAY>(static_cast<uint32_t>(avStream.codecpar->video_delay));
+    ParseFrameRate(avStream, format);
     AVDictionaryEntry *valPtr = nullptr;
     valPtr = av_dict_get(avStream.metadata, "rotate", nullptr, AV_DICT_MATCH_CASE);
     if (valPtr == nullptr) {
@@ -751,6 +758,9 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
     if (avStream.codecpar->codec_id == AV_CODEC_ID_HEVC) {
         ParseHvccBoxInfo(avStream, format);
         ParseColorBoxInfo(avStream, format);
+        if (IsMpeg4File(fileType)) {
+            ParseHdrStaticMetadata(avStream, format);
+        }
     }
     if (avStream.codecpar->codec_id == AV_CODEC_ID_RAWVIDEO) {
         ParseRawvideoInfo(avStream, format);
@@ -1072,6 +1082,44 @@ void FFmpegFormatHelper::ParseHvccBoxInfo(const AVStream& avStream, Meta &format
         format.Set<Tag::MEDIA_LEVEL>(level);
     } else {
         MEDIA_LOG_D("Parse hevc level failed: " PUBLIC_LOG_D32, level);
+    }
+}
+
+void FFmpegFormatHelper::ParseHdrStaticMetadata(const AVStream& avStream, Meta &format)
+{
+    uint8_t *sideData = (uint8_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_CONTENT_LIGHT_LEVEL, nullptr);
+    if (sideData != nullptr) {
+        AVContentLightMetadata* cta861Data = reinterpret_cast<AVContentLightMetadata*>(sideData);
+        if (cta861Data != nullptr) {
+            Cta861 cta861;
+            cta861.maxContentLightLevel = static_cast<float>(cta861Data->MaxCLL);
+            cta861.maxFrameAverageLightLevel = static_cast<float>(cta861Data->MaxFALL);
+            std::vector<uint8_t> cta861Vec(sizeof(cta861));
+            cta861Vec.assign(reinterpret_cast<uint8_t*>(&cta861), reinterpret_cast<uint8_t*>(&cta861) + sizeof(cta861));
+            format.Set<Tag::VIDEO_STATIC_METADATA_CTA861>(cta861Vec);
+        }
+    }
+    
+    sideData = (uint8_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_MASTERING_DISPLAY_METADATA, nullptr);
+    if (sideData != nullptr) {
+        AVMasteringDisplayMetadata* smpte2086Data = reinterpret_cast<AVMasteringDisplayMetadata*>(sideData);
+        if (smpte2086Data != nullptr && smpte2086Data->has_luminance && smpte2086Data->has_primaries) {
+            Smpte2086 smpte2086;
+            smpte2086.displayPrimaryRedX = av_q2d(smpte2086Data->display_primaries[SMPTE2086_RED_INDEX][0]);
+            smpte2086.displayPrimaryRedY = av_q2d(smpte2086Data->display_primaries[SMPTE2086_RED_INDEX][1]);
+            smpte2086.displayPrimaryGreenX = av_q2d(smpte2086Data->display_primaries[SMPTE2086_GREEN_INDEX][0]);
+            smpte2086.displayPrimaryGreenY = av_q2d(smpte2086Data->display_primaries[SMPTE2086_GREEN_INDEX][1]);
+            smpte2086.displayPrimaryBlueX = av_q2d(smpte2086Data->display_primaries[SMPTE2086_BLUE_INDEX][0]);
+            smpte2086.displayPrimaryBlueY = av_q2d(smpte2086Data->display_primaries[SMPTE2086_BLUE_INDEX][1]);
+            smpte2086.whitePointX = av_q2d(smpte2086Data->white_point[0]);
+            smpte2086.whitePointY = av_q2d(smpte2086Data->white_point[1]);
+            smpte2086.maxLuminance = av_q2d(smpte2086Data->max_luminance);
+            smpte2086.minLuminance = av_q2d(smpte2086Data->min_luminance);
+            std::vector<uint8_t> smpte2086Vec(sizeof(smpte2086));
+            smpte2086Vec.assign(
+                reinterpret_cast<uint8_t*>(&smpte2086), reinterpret_cast<uint8_t*>(&smpte2086) + sizeof(smpte2086));
+            format.Set<Tag::VIDEO_STATIC_METADATA_SMPT2086>(smpte2086Vec);
+        }
     }
 }
 
