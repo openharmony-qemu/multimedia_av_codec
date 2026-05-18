@@ -2049,7 +2049,6 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_SetParam_Crop_001, TestSize.Level1)
 HWTEST_P(TEST_SUIT, State_Machine_Dual_SetParam_Crop_002, TestSize.Level1)
 {
     auto signal = make_shared<VCodecSignal>(dualSample_);
-    dualSample_->inputSetParamCrop_ = true;
     dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
                                 DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
