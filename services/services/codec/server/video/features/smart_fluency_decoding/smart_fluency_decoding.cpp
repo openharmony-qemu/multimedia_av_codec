@@ -611,7 +611,7 @@ MVStats SmartFluencyDecoding::ExtractMVStats(StrategyCaps caps, int64_t pts,
         return hasValidMVStats_ ? lastValidMVStats_ : MVStats{};
     }
 
-    MVStats mvStats;
+    MVStats mvStats{};
     ParseMVData(surfaceBuffer, mvStats, cost.copyMvCostUs, cost.analyzeMvCostUs);
     if (mvStats.validBlocks > 0) {
         lastValidMVStats_ = mvStats;
