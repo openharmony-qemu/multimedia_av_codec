@@ -282,6 +282,7 @@ private:
     void ProcessRelativePTS2Index(int64_t pts, int64_t absolutePTS);
 
     Status WaitForLoop(uint32_t trackId, uint32_t timeout);
+    Status EnsureReadLoopStarted();
     bool ShouldWaitForRead(uint32_t trackId);
     void MPEG4ReadLoop();
     bool NeedWaitForRead(uint32_t trackId);

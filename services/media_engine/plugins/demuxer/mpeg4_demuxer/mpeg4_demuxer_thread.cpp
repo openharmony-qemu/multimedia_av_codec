@@ -510,13 +510,10 @@ Status MPEG4DemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer
     if (!cacheQueue_.HasCache(trackId) && timeout == 0) {
         return Status::ERROR_WAIT_TIMEOUT;
     }
-    if (!readThread_) {
-        stopReadThread_.store(false, std::memory_order_release);
-        readLoopStatus_.store(Status::OK, std::memory_order_release);
-        readThread_ = std::make_unique<std::thread>(&MPEG4DemuxerPlugin::MPEG4ReadLoop, this);
-    }
 
-    Status ret = WaitForLoop(trackId, timeout);
+    Status ret = EnsureReadLoopStarted();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Ensure read loop started failed");
+    ret = WaitForLoop(trackId, timeout);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Frame reading thread error, ret = " PUBLIC_LOG_D32, ret);
 
     std::lock_guard<std::mutex> lockTrack(*trackMtx_[trackId].get());
@@ -560,13 +557,10 @@ Status MPEG4DemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t &sampleSi
     if (!cacheQueue_.HasCache(trackId) && timeout == 0) {
         return Status::ERROR_WAIT_TIMEOUT;
     }
-    if (!readThread_) {
-        stopReadThread_.store(false, std::memory_order_release);
-        readLoopStatus_.store(Status::OK, std::memory_order_release);
-        readThread_ = std::make_unique<std::thread>(&MPEG4DemuxerPlugin::MPEG4ReadLoop, this);
-    }
 
-    Status ret = WaitForLoop(trackId, timeout);
+    Status ret = EnsureReadLoopStarted();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Ensure read loop started failed");
+    ret = WaitForLoop(trackId, timeout);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Frame reading thread error, ret = " PUBLIC_LOG_D32, ret);
 
     std::lock_guard<std::mutex> lockTrack(*trackMtx_[trackId].get());
@@ -600,6 +594,19 @@ Status MPEG4DemuxerPlugin::GetLastPTSByTrackId(uint32_t trackId, int64_t &lastPT
 bool MPEG4DemuxerPlugin::ShouldWaitForRead(uint32_t trackId)
 {
     return !cacheQueue_.HasCache(trackId);
+}
+
+Status MPEG4DemuxerPlugin::EnsureReadLoopStarted()
+{
+    std::lock_guard<std::mutex> lock(readThreadMutex_);
+    if (readThread_ != nullptr) {
+        return Status::OK;
+    }
+    stopReadThread_.store(false, std::memory_order_release);
+    readLoopStatus_.store(Status::OK, std::memory_order_release);
+    readThread_ = std::make_unique<std::thread>(&MPEG4DemuxerPlugin::MPEG4ReadLoop, this);
+    FALSE_RETURN_V_MSG_E(readThread_ != nullptr, Status::ERROR_NO_MEMORY, "Create read thread failed");
+    return Status::OK;
 }
 
 Status MPEG4DemuxerPlugin::WaitForLoop(uint32_t trackId, uint32_t timeout)
@@ -990,13 +997,10 @@ Status MPEG4DemuxerPlugin::ReadSampleZeroCopy(uint32_t trackId, std::shared_ptr<
     if (!cacheQueue_.HasCache(trackId) && timeout == 0) {
         return Status::ERROR_WAIT_TIMEOUT;
     }
-    if (!readThread_) {
-        stopReadThread_.store(false, std::memory_order_release);
-        readLoopStatus_.store(Status::OK, std::memory_order_release);
-        readThread_ = std::make_unique<std::thread>(&MPEG4DemuxerPlugin::MPEG4ReadLoop, this);
-    }
 
-    Status ret = WaitForLoop(trackId, timeout);
+    Status ret = EnsureReadLoopStarted();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Ensure read loop started failed");
+    ret = WaitForLoop(trackId, timeout);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Frame reading thread error, ret = " PUBLIC_LOG_D32, ret);
 
     std::lock_guard<std::mutex> lockTrack(*trackMtx_[trackId].get());
