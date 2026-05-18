@@ -538,7 +538,7 @@ bool PreprocessorManager::EncoderInfo::ProcessFrame(std::shared_ptr<SurfaceBuffe
     CheckAndNotifyStreamChange(inputBuffer);
     auto ret = preprocessor_->Process(inputBuffer->buffer, outputBuffer->buffer, inputBuffer->timestamp);
     if (ret != static_cast<int32_t>(AVCS_ERR_OK)) {
-        ReportPreprocessError(static_cast<int32_t>(ret));
+        ReportPreprocessError(ret);
         return false;
     }
     SetBufferFlushConfig(inputBuffer, outputBuffer);
