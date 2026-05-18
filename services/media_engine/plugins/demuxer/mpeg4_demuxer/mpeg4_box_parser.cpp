@@ -4503,7 +4503,8 @@ Status MPEG4AtomParser::ParseChap(MPEG4Atom currentAtom, int32_t depth, ParseCon
     return Status::OK;
 }
 
-Status MPEG4AtomParser::MPEG4ParseHeader(const std::shared_ptr<DataSource>& source, Seekable seekable)
+Status MPEG4AtomParser::MPEG4ParseHeader(const std::shared_ptr<DataSource>& source, Seekable seekable,
+    int64_t readTimeoutMs)
 {
     FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "DataSource is nullptr");
     dataSource_ = source;
@@ -4511,6 +4512,9 @@ Status MPEG4AtomParser::MPEG4ParseHeader(const std::shared_ptr<DataSource>& sour
     dataReader_ = std::make_shared<DemuxerDataReader>();
     FALSE_RETURN_V_MSG_E(dataReader_ != nullptr, Status::ERROR_NO_MEMORY, "Failed create dataReader");
     dataReader_->SetDataReader(source);
+    if (readTimeoutMs >= 0) {
+        dataReader_->SetReadTimeoutForInitSeek(readTimeoutMs);
+    }
     Status ret = Status::OK;
     uint64_t dataSourceSize = 0;
     Status sizeRet = dataSource_->GetSize(dataSourceSize);
