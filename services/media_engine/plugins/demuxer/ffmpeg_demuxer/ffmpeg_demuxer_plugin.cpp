@@ -2221,8 +2221,7 @@ void FFmpegDemuxerPlugin::AccumulateXpsPktRelease(uint32_t trackIndex)
 
 void FFmpegDemuxerPlugin::AccumulateXpsPktReleaseLocked(uint32_t trackIndex)
 {
-    if (fileType_ != FileType::MPEGPS || streamParsers_ == nullptr ||
-        !streamParsers_->ParserIsCreated(trackIndex)) {
+    if (fileType_ != FileType::MPEGPS) {
         return;
     }
     auto pktIt = accumulatePktMap_.find(trackIndex);
