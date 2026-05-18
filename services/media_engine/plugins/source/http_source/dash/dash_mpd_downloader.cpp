@@ -383,12 +383,13 @@ DashMpdGetRet DashMpdDownloader::GetBreakPointSegment(int streamId, int64_t brea
         }
 
         int64_t segmentDuration = 0;
-        for (unsigned int index = 0; index <  streamDescription->mediaSegments_.size(); index++) {
-            if (segmentDuration + (int64_t)(streamDescription->mediaSegments_[index]->duration_) > breakpoint) {
+        for (unsigned int index = 0; index < streamDescription->mediaSegments_.size(); index++) {
+            int64_t curDuration = static_cast<int64_t>(streamDescription->mediaSegments_[index]->duration_);
+            if (segmentDuration + curDuration > breakpoint) {
                 seg = streamDescription->mediaSegments_[index];
                 break;
             }
-            segmentDuration += static_cast<int64_t>(streamDescription->mediaSegments_[index]->duration_);
+            segmentDuration += curDuration;
         }
 
         if (seg != nullptr) {

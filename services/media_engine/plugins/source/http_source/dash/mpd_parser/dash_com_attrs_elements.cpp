@@ -61,8 +61,7 @@ void DashComAttrsElements::GetAttr(const std::string &attrName, uint32_t &uiAttr
         if (commonAttr_[index].val_.length() > 0) {
             int64_t tempUiAttrVal = 0;
             auto ret = StringUtil::SafeStoInt64(commonAttr_[index].val_, tempUiAttrVal);
-            uiAttrVal = (ret && tempUiAttrVal >= 0 &&
-                tempUiAttrVal <= std::numeric_limits<uint32_t>::max()) ?
+            uiAttrVal = (ret && tempUiAttrVal >= 0 && tempUiAttrVal <= std::numeric_limits<uint32_t>::max()) ?
                 static_cast<uint32_t>(tempUiAttrVal) : 0;
         } else {
             uiAttrVal = 0;
@@ -78,8 +77,7 @@ void DashComAttrsElements::GetAttr(const std::string &attrName, int32_t &iAttrVa
             int64_t tempiAttrVal = 0;
             auto ret = StringUtil::SafeStoInt64(commonAttr_[index].val_, tempiAttrVal);
             iAttrVal = (ret && tempiAttrVal >= std::numeric_limits<int32_t>::min() &&
-                tempiAttrVal <= std::numeric_limits<int32_t>::max()) ?
-                static_cast<int32_t>(tempiAttrVal) : 0;
+                tempiAttrVal <= std::numeric_limits<int32_t>::max()) ? static_cast<int32_t>(tempiAttrVal) : 0;
         } else {
             iAttrVal = 0;
         }
@@ -93,8 +91,7 @@ void DashComAttrsElements::GetAttr(const std::string &attrName, uint64_t &ullAtt
         if (commonAttr_[index].val_.length() > 0) {
             int64_t tempUllAttrVal = 0;
             auto ret = StringUtil::SafeStoInt64(commonAttr_[index].val_, tempUllAttrVal);
-            ullAttrVal = (ret && tempUllAttrVal >= 0) ?
-                static_cast<uint64_t>(tempUllAttrVal) : 0;
+            ullAttrVal = (ret && tempUllAttrVal >= 0) ? static_cast<uint64_t>(tempUllAttrVal) : 0;
         } else {
             ullAttrVal = 0;
         }

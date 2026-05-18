@@ -85,12 +85,6 @@ template <typename T> bool GetBytes(char *buffer, uint32_t &currPos, uint32_t st
 int32_t SidxBoxParser::ParseSidxBox(char *bitStream, uint32_t streamSize, int64_t sidxEndOffset,
                                     DashList<std::shared_ptr<SubSegmentIndex>> &subSegIndexTable)
 {
-    if (bitStream == nullptr || streamSize == 0) {
-        MEDIA_LOG_E("ParseSidxBox invalid input: bitStream=%{public}p, streamSize="
-            PUBLIC_LOG_U32, bitStream, streamSize);
-        return -1;
-    }
-
     const uint32_t BEM_SIDX = BemSource('s', 'i', 'd', 'x');
     uint32_t currPos = 0;
 

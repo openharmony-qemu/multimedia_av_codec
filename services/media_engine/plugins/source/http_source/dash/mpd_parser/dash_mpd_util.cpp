@@ -110,7 +110,7 @@ int32_t DashSubstituteTmpltStr(std::string &segTmpltStr, const std::string &segT
 {
     std::string::size_type pos = segTmpltStr.find(segTmpltIdentifier);
     uint32_t identifierLength = segTmpltIdentifier.length();
-    while (pos != std::string::npos && (pos + identifierLength) < segTmpltStr.length()) {
+    while (pos != std::string::npos && (pos + identifierLength) <= segTmpltStr.length()) {
         std::string str = segTmpltStr.substr(pos + identifierLength);
         // contain format %0[width]d
         if (str.length() > 1 && str[0] == '%' && str[1] == '0') {
@@ -214,7 +214,6 @@ int32_t DashStrToDuration(const std::string &str, uint32_t &duration)
             break;
         }
         int32_t coefficient = GetDurationCoefficient(remain[0], secondTime);
-
         if (coefficient > 0 && num > 0) {
             double scaled = num * static_cast<double>(S_2_MS) * static_cast<double>(coefficient);
             if (scaled > static_cast<double>(std::numeric_limits<int64_t>::max() - time)) {

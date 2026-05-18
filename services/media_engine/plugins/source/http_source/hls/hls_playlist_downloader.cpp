@@ -120,6 +120,10 @@ HlsPlayListDownloader::~HlsPlayListDownloader()
         downloader_->Stop(false);
     }
     aesDecryptorManager_ = nullptr;
+    if (fd_ >= 0) {
+        close(fd_);
+        fd_ = -1;
+    }
     MEDIA_LOG_I("~HlsPlayListDownloader out");
     FALSE_RETURN_MSG(reportInfo_ != nullptr, "reportInfo_ is nullptr");
     auto currentVariant = GetThreadSafeCurrentVariant();
