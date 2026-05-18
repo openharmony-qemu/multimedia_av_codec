@@ -39,6 +39,12 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "MPEG4ReferenceParser" };
 }
 
+int64_t GetDuration(int64_t startTime)
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count() - startTime;
+}
+
 namespace OHOS {
 namespace Media {
 namespace Plugins {
@@ -81,7 +87,53 @@ Status MPEG4DemuxerPlugin::ParserRefUpdatePos(int64_t timeStampMs, bool isForwar
 
 Status MPEG4DemuxerPlugin::ParserRefInfo()
 {
-
+    if (!isInit_) {
+        isInit_ = true;
+        Status ret = RefParserInit();
+        FALSE_RETURN_V_NOLOG(ret != Status::END_OF_STREAM, Status::OK);
+        FALSE_RETURN_V(ret == Status::OK, Status::ERROR_UNKNOWN);
+    }
+    int64_t duration = GetDuration(refParserStartTime_);
+    RefTrace trace("ParserRefCost_2_" + std::to_string(duration) + "_" + std::to_string(parserCurGopId_));
+    FALSE_RETURN_V_MSG_W(duration < REFERENCE_PARSER_TIMEOUT_MS, Status::ERROR_UNKNOWN, "Reference parser timeout");
+    FALSE_RETURN_V_MSG(parserCurGopId_ != -1, Status::OK, "Reference parser end");  // 参考关系解析完毕
+    FALSE_RETURN_V_MSG_E(SelectProGopId() == Status::OK, Status::ERROR_UNKNOWN, "Call selectProGopId failed");
+    uint32_t curStreamId = syncSamplesPos_[parserCurGopId_];
+    MEDIA_LOG_I("curStreamId: " PUBLIC_LOG_U32 ", parserCurGopId: " PUBLIC_LOG_D32 ", IFramePos size: " PUBLIC_LOG_ZU
+        ", processingIFrame_ size: " PUBLIC_LOG_ZU ", duration: " PUBLIC_LOG_D64, curStreamId, parserCurGopId_,
+        syncSamplesPos_.size(), processingIFrame_.size(), duration);
+    AVPacket *pkt = av_packet_alloc();
+    FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_UNKNOWN, "Packet is nullptr!");
+    int loopCounter = 0;
+    while (formatContext_ != nullptr && parserState_ && parserCurGopId_ != -1) {
+        Status rlt = ParserRefInfoLoop(pkt, curStreamId);
+        if (rlt == Status::ERROR_EARLY_STOP) { // START 首GOP提前终止
+            MEDIA_LOG_I("Exiting reference parsing early due to simple first GOP structure.");
+            av_packet_unref(pkt);
+            av_packet_free(&pkt);
+            parserState_ = true;
+            return Status::OK;
+        }
+        if ((loopCounter++ % 100) == 0) { // 100 trace降采样
+            duration = GetDuration(parserRefStartTime_);
+            std::string suffix = "_" + std::to_string(parserCurGopId_) + "_" + std::to_string(curStreamId);
+            RefTrace traceInLoop("ParserRefCost_3_" + std::to_string(duration) + suffix);
+            FALSE_RETURN_V_MSG_W(duration < REFERENCE_PARSER_TIMEOUT_MS, Status::ERROR_UNKNOWN, "Infoloop timeout");
+        }
+        if (rlt != Status::OK) {
+            av_packet_unref(pkt);
+            av_packet_free(&pkt);
+            parserState_ = true;
+            return rlt;
+        }
+        if (pkt->stream_index == parserRefIdx_) {
+            curStreamId++;
+        }
+        av_packet_unref(pkt);
+    }
+    av_packet_free(&pkt);
+    parserState_ = true;
+    return Status::ERROR_AGAIN;
 }
 
 Status MPEG4DemuxerPlugin::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo)
@@ -113,8 +165,8 @@ Status MPEG4DemuxerPlugin::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLaye
 
 Status MPEG4DemuxerPlugin::GetIFramePos(std::vector<uint32_t> &IFramePos)
 {
-    FALSE_RETURN_V_MSG_E(IFramePos_.size() > 0, Status::ERROR_UNKNOWN, "IFramePos size is 0");
-    IFramePos = IFramePos_;
+    FALSE_RETURN_V_MSG_E(syncSamplesPos_.size() > 0, Status::ERROR_UNKNOWN, "IFramePos size is 0");
+    IFramePos = syncSamplesPos_;
     return Status::OK;
 }
 
@@ -172,7 +224,7 @@ bool MPEG4DemuxerPlugin::IsSupportedCodec()
 
 Status MPEG4DemuxerPlugin::GetGopIdBySeekPos(int64_t seekMs, int32_t &gopId)
 {
-    FALSE_RETURN_V_MSG_E(seekMs >= 0L, Status::ERROR_INVALID_PARAMETER, "SeekMs is less than 0");
+    FALSE_RETURN_V_MSG_E(seekMs >= 0, Status::ERROR_INVALID_PARAMETER, "SeekMs is less than 0");
     uint32_t sampleIdx = 0;
     FALSE_RETURN_V_MSG_E(GetSampleIndexByDts(seekMs, sampleIdx) == Status::OK, ret, "GetSampleIdByDts failed, seekMs is"
         PUBLIC_LOG_D64, seekMs);
@@ -198,6 +250,34 @@ Status MPEG4DemuxerPlugin::GetSampleIndexByDts(int64_t seekMs, uint32_t &sampleI
     FALSE_RETURN_V_MSG_E(refParserTrackIdx_ >= 0, Status::ERROR_INVALID_PARAMETER,
         "GetIndexByRelativePresentationTimeUs failed.");
     return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::RefParserInit(int64_t seekMs, uint32_t &sampleIdx)
+{
+    refParserStartTime_ = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count();
+    std::string suffix = std::to_string(refParserStartTime_) + "_" + std::to_string(syncSamplesPos_.size());
+    RefTrace trace("ParserRefCost_1_" + suffix);
+    MEDIA_LOG_I("Parser ref start time is " PUBLIC_LOG_D64, refParserStartTime_);
+    FALSE_RETURN_V_MSG_E(syncSamplesPos_.size() > 0, Status::ERROR_UNKNOWN,
+        "Init failed, syncSamplesPos_ size is" PUBLIC_LOG_ZU, syncSamplesPos_.size());
+    FALSE_RETURN_V_MSG_E(IsRefParserSupported(), Status::ERROR_UNSUPPORTED_FORMAT, "Unsupported ref parser");
+    /* todo */
+    referenceParser_ = ReferenceParserManager::Create(codecType, IFramePos_);
+    FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "referenceParser_ is nullptr");
+    
+
+    std::shared_ptr<MPEG4AtomParser::Track> track = FindTrackById(refParserTrackIdx_);
+    FALSE_RETURN_V_MSG_E(track && track->sampleHelper, Status::ERROR_INVALID_DATA, "track is nullptr");
+    SdtpEntry sdtpEntry = track->sampleHelper->GetSdtpEntry();
+    if (sdtpEntry->sdtpEntryCount > 0 && !sdtpEntry->sdtpData.empty()) {
+        if (referenceParser_->ParserSdtpData(sdtpEntry->sdtpEntryCount, sdtpEntry->sdtpData.data()) == Status::OK) {
+            isSdtpExist_ = true;
+            return Status::END_OF_STREAM;
+        }
+    }
+    /* todo */
+    return referenceParser_->ParserExtraData(videoStream->codecpar->extradata, videoStream->codecpar->extradata_size);
 }
 
 Status MPEG4DemuxerPlugin::GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,

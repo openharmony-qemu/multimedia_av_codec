@@ -85,6 +85,7 @@ public:
     bool IsSupportedCodec();
     Status GetGopIdBySeekPos(int64_t seekMs, int32_t &gopId);
     Status GetSampleIndexByDts(int64_t seekMs, uint32_t &sampleIdx);
+    Status RefParserInit();
 
     Status GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
         const uint64_t relativePresentationTimeUs, uint32_t &index) override;
@@ -163,9 +164,12 @@ private:
     int64_t minRelativePTSDiffOfRight_ = INT64_MAX;
     uint32_t index2RelativePTS_ = 0;
 
+    std::shared_ptr<ReferenceParserManager> referenceParser_ = nullptr;
     int64_t ptsOfIndexZero_ = 0;
     int32_t refParserTrackIdx_ = -1;
     std::vector<uint32_t> syncSamplesPos_;
+    int64_t refParserStartTime_ = -1;
+    
 
     int32_t CountTracks();
     void GetAVTrackIds();

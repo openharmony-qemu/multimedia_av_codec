@@ -689,6 +689,28 @@ Status MPEG4SampleHelper::SetSampleToChunkParams(int64_t dataOffset, size_t data
     return Status::OK;
 }
 
+Status MPEG4SampleHelper::SetSampleDependencyTypeParams(int64_t ctsOffset, int64_t dataOffset, size_t dataSize)
+{
+    MEDIA_LOG_D("In");
+    sdtpEntry_.sdtpEntryCount = 0;
+    sdtpEntry_.sdtpData.clear();
+
+    FALSE_RETURN_V_MSG_E(dataSize > 0 && dataSize <= static_cast<uint32_t>(UINT64_MAX), Status::ERROR_INVALID_DATA,
+        "dataSize is invalid");
+    FALSE_RETURN_V_MSG_E(currentOffset < MIN_DATA_OFFSET, Status::ERROR_INVALID_PARAMETER, "currentOffset is invalid");
+
+    int64_t currentOffset = dataOffset;
+    for (uint32_t i = 0; i < dataSize && currentOffset < ctsOffset; ++i) {  // Each entry size is 1 Byte
+        uint8_t sdtpEntry;
+        Status ret = dataReader_->ReadUintData(currentOffset, &sdtpEntry, sizeof(sdtpEntry));
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read header failed");
+        sdtpEntry_.sdtpData.emplace_back(sdtpEntry);
+        currentOffset++;
+        sdtpEntry_.sdtpEntryCount++;
+    }
+    return Status::OK;
+}
+
 Status MPEG4SampleHelper::SetTrackExtendsParams(int64_t dataOffset, size_t dataSize)
 {
     MEDIA_LOG_D("In");
@@ -1571,6 +1593,11 @@ std::vector<uint32_t> MPEG4SampleHelper::GetSyncSamplesPosFromStssEntry()
         syncSamplesPos.emplace(stssEntry_[i].index);
     }
     return syncSamplesPos;
+}
+
+SdtpEntry MPEG4SampleHelper::GetSdtpEntry()
+{
+    return sdtpEntry_;
 }
 } // namespace MPEG4
 } // namespace Plugins

@@ -317,6 +317,7 @@ private:
     Status ParseStsz(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseStco(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseCtts(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
+    Status ParseSdtp(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseFiel(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseMvex(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseTrex(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
