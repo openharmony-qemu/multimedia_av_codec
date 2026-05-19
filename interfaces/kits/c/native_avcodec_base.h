@@ -1465,6 +1465,19 @@ extern const char *OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_RATIO;
  * @since 26.0.0
  */
 extern const char *OH_MD_KEY_VIDEO_DECODER_SPEED;
+
+/**
+ * @brief Key for setting or querying the maximum input buffer size (in bytes) for audio codec, value type is int32_t.
+ *
+ * This key is used to configure or retrieve the maximum size of the input buffer for audio codec.
+ * The actual buffer size is limited by the codec implementation. Setting a value larger than the
+ * codec's maximum supported size can not take effect.
+ * This configuration is optional. If not set, the codec will use its default buffer size.
+ *
+ * @since 26.0.0
+ */
+extern const char *OH_MD_KEY_AUDIO_MAX_INPUT_BUFFER_SIZE;
+
 /**
  * @brief Key for configuring the PTS output mode of the audio encoder, value type is int32_t,
  * refer to {@link OH_AudioEncoderPTSMode}.
@@ -1472,6 +1485,19 @@ extern const char *OH_MD_KEY_VIDEO_DECODER_SPEED;
  * @since 26.0.0
  */
 extern const char *OH_MD_KEY_AUDIO_ENCODER_PTS_MODE;
+
+/**
+ * @brief Key for enabling sample format conversion in the audio encoder.
+ * Optional. The value type is int32_t (0 or 1). 1 is enabled, 0 is disabled. Defaults to 0.
+ *
+ * The audio encoder supports only a limited number of sample formats. After this configuration is enabled, if
+ * an unsupported sampling format is used, the audio encoder will convert the sample format to an supported one for 
+ * encoding. The supported sample formats before conversion are as follows: {@link SAMPLE_U8}, {@link SAMPLE_S16LE}, 
+ * {@link SAMPLE_S24LE}, {@link SAMPLE_S32LE}, {@link SAMPLE_F32LE}.
+ *
+ * @since 26.0.0
+ */
+extern const char *OH_MD_KEY_AUDIO_ENCODER_ENABLE_SAMPLE_FORMAT_CONVERT;
 
 /**
  * @brief Key for HDR type, value type is int32_t, refer to {@link OH_HDRType}.
