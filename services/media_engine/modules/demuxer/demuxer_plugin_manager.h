@@ -194,4 +194,3 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
-#endif // MEDIA_DEMUXER_H
