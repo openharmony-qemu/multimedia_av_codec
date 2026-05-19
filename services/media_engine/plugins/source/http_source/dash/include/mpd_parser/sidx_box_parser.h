@@ -34,6 +34,8 @@ public:
 private:
     static bool BuildSubSegmentIndexes(char *bitStream, uint32_t streamSize, int64_t sidxEndOffset,
                                        DashList<std::shared_ptr<SubSegmentIndex>> &subSegIndexTable, uint32_t &currPos);
+    static bool ReadSidxHeader(char *bitStream, uint32_t streamSize,
+        uint32_t &currPos, uint32_t &version, uint32_t &timescale);
     static bool ReadFirstOffset(char *bitStream, uint32_t streamSize, uint32_t version,
         uint32_t &currPos, int64_t &firstOffset);
     static std::shared_ptr<SubSegmentIndex> ReadOneSubSegmentIndex(char *bitStream, uint32_t streamSize,

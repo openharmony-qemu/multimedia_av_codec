@@ -91,8 +91,7 @@ void DashMpdNode::GetAttr(const std::string &attrName, uint64_t &ullAttrVal)
         if (mpdAttr_[index].val_.length() > 0) {
             int64_t tempUllAttrVal = 0;
             auto ret = StringUtil::SafeStoInt64(mpdAttr_[index].val_, tempUllAttrVal);
-            ullAttrVal = (ret && tempUllAttrVal >= 0) ?
-                static_cast<uint64_t>(tempUllAttrVal) : 0;
+            ullAttrVal = (ret && tempUllAttrVal >= 0) ? static_cast<uint64_t>(tempUllAttrVal) : 0;
         } else {
             ullAttrVal = 0;
         }
