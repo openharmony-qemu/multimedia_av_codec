@@ -639,7 +639,7 @@ std::shared_ptr<BasicBox> BoxParser::TimedMetaMebxBoxGenerate(std::shared_ptr<Ba
     mebxBox->SetFunc([] (std::shared_ptr<AVIOStream> io) {
             io->Write(static_cast<uint32_t>(0));  /* Reserved */
             io->Write(static_cast<uint16_t>(0));  /* Reserved */
-            io->Write(static_cast<uint16_t>(0));  /* Data-reference index */
+            io->Write(static_cast<uint16_t>(1));  /* Data-reference index */
         }, [] () {
             return static_cast<uint32_t>(sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t));
         });
