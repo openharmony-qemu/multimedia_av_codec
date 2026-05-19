@@ -91,11 +91,12 @@ private:
     Status ReceivePacketSucc(std::shared_ptr<AVBuffer> &outputBuffer);
     Status SendOutputBuffer(std::shared_ptr<AVBuffer>& outputBuffer);
     Status PcmFillFrame(const std::shared_ptr<AVBuffer> &inputBuffer);
-    Status FillFrameFromCache();
+    Status FillFrameFromCache(bool isEos = false);
     Status SendCachedFrames();
     Status SendEosBuffer();
     Status ReAllocateContext();
     bool codecContextValid_;
+    uint32_t frameBytes_ = 1;
     mutable std::mutex bufferMetaMutex_ {};
     int32_t channelsBytesPerSample_ {1};
     AudioSampleFormat srcSampleFormat_ = AudioSampleFormat::INVALID_WIDTH;

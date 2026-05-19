@@ -102,10 +102,6 @@ Status FFmpegBaseEncoder::ProcessSendData(const std::shared_ptr<AVBuffer> &input
                 pcmCache_.insert(pcmCache_.end(), memory->GetAddr(),
                                  memory->GetAddr() + memory->GetSize());
             }
-            if (static_cast<int32_t>(pcmCache_.size()) > MAX_INPUT_BUFFER_SIZE_LIMIT) {
-                AVCODEC_LOGE("PCM cache size exceeds max limit");
-                return Status::ERROR_UNKNOWN;
-            }
             ret = SendCachedFrames();
         }
     }
@@ -218,11 +214,14 @@ Status FFmpegBaseEncoder::ProcessReceiveData(std::shared_ptr<AVBuffer> &outputBu
 
 Status FFmpegBaseEncoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outputBuffer)
 {
+    Status status = Status::ERROR_UNKNOWN;
     (void)memset_s(avPacket_.get(), sizeof(AVPacket), 0, sizeof(AVPacket));
     auto ret = avcodec_receive_packet(avCodecContext_.get(), avPacket_.get());
-    Status status;
     if (ret >= 0) {
         status = ReceivePacketSucc(outputBuffer);
+        if (enableCache_ && pcmCache_.size() >= frameBytes_) {
+            SendCachedFrames();
+        }
     } else if (ret == AVERROR_EOF) {
         AVCODEC_LOGI("eos received");
         outputBuffer->flag_ = MediaAVCodec::AVCODEC_BUFFER_FLAG_EOS;
@@ -232,7 +231,6 @@ Status FFmpegBaseEncoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outputBuffer)
         status = Status::ERROR_NOT_ENOUGH_DATA;
     } else {
         AVCODEC_LOGE("audio encoder receive unknow error: %{public}s", OSAL::AVStrError(ret).c_str());
-        status = Status::ERROR_UNKNOWN;
     }
     av_packet_unref(avPacket_.get());
     return status;
@@ -255,22 +253,23 @@ Status FFmpegBaseEncoder::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outputBuf
     }
     // pts us
     outputBuffer->duration_ = ConvertTimeFromFFmpeg(avPacket_->duration, avCodecContext_->time_base) /
-	                      NS_PER_US;
+	                          NS_PER_US;
     int64_t durationUs = outputBuffer->duration_;
-    if (ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE || ptsMode_ == ZERO_START_ENCODE_PTS_MODE) {
-        outputBuffer->pts_ = prevPts_;
-        prevPts_ = (durationUs > 0 && prevPts_ > INT64_MAX - durationUs) ? prevPts_ : prevPts_ + durationUs;
+    outputBuffer->pts_ = prevPts_;
+    if (prevPts_ < 0) {
+        prevPts_ += durationUs;
     } else {
-        prevPts_ = (durationUs > 0 && prevPts_ > INT64_MAX - durationUs) ? prevPts_ : prevPts_ + durationUs;
-        outputBuffer->pts_ = prevPts_;
+        prevPts_ = (INT64_MAX - prevPts_ < durationUs) ? (durationUs - (INT64_MAX - prevPts_)) :
+                   (prevPts_ + durationUs);
     }
-    return Status::OK;
+    outputBuffer->flag_ &= (~static_cast<uint32_t>(BUFFER_FLAG_EOS));
+    return Status::ERROR_AGAIN;
 }
 
 Status FFmpegBaseEncoder::SendOutputBuffer(std::shared_ptr<AVBuffer> &outputBuffer)
 {
     Status status = ReceiveBuffer(outputBuffer);
-    if (status == Status::OK || status == Status::END_OF_STREAM) {
+    if (status == Status::OK || status == Status::END_OF_STREAM || status == Status::ERROR_AGAIN) {
         {
             std::lock_guard<std::mutex> l(bufferMetaMutex_);
             outBuffer_->meta_ = bufferMeta_;
@@ -418,7 +417,10 @@ Status FFmpegBaseEncoder::OpenContext()
     }
     if (avCodecContext_->frame_size <= 0) {
         AVCODEC_LOGE("frame size invalid");
+        return Status::ERROR_UNKNOWN;
     }
+    frameBytes_ = static_cast<uint32_t>(avCodecContext_->frame_size) * channelsBytesPerSample_;
+    AVCODEC_LOGI("flac encode frameBytes_:%{public}d", static_cast<int32_t>(frameBytes_));
     return Status::OK;
 }
 
@@ -452,7 +454,8 @@ Status FFmpegBaseEncoder::ReAllocateContext()
         return Status::ERROR_UNKNOWN;
     }
     avCodecContext_ = tmpContext;
-
+    frameBytes_ = static_cast<uint32_t>(avCodecContext_->frame_size) * channelsBytesPerSample_;
+    AVCODEC_LOGI("flac encode frameBytes_:%{public}d", static_cast<int32_t>(frameBytes_));
     return Status::OK;
 }
 
@@ -488,58 +491,61 @@ void FFmpegBaseEncoder::SetCallback(DataCallback *callback)
     dataCallback_ = callback;
 }
 
-Status FFmpegBaseEncoder::FillFrameFromCache()
+Status FFmpegBaseEncoder::FillFrameFromCache(bool isEos)
 {
-    auto frameSize = avCodecContext_->frame_size;
-    auto frameBytes = static_cast<uint32_t>(frameSize) * channelsBytesPerSample_;
-    if (pcmCache_.size() < frameBytes) {
+    if (!isEos && pcmCache_.size() < frameBytes_) {
         return Status::ERROR_UNKNOWN;
     }
+    if (isEos && pcmCache_.size() <= 0) {
+        return Status::OK;
+    }
+    uint32_t readBytes = isEos ? pcmCache_.size() : frameBytes_;
     int ret = av_frame_make_writable(cachedFrame_.get());
     if (ret != 0) {
+        AVCODEC_LOGE("FillFrameFromCache error:%{public}d", ret);
         return Status::ERROR_UNKNOWN;
     }
-    errno_t err = memcpy_s(cachedFrame_->data[0], frameBytes, pcmCache_.data(), frameBytes);
+    errno_t err = memcpy_s(cachedFrame_->data[0], readBytes, pcmCache_.data(), readBytes);
     if (err != EOK) {
+        AVCODEC_LOGE("FillFrameFromCache memcpy error");
         return Status::ERROR_UNKNOWN;
     }
-    cachedFrame_->nb_samples = frameSize;
+    pcmCache_.erase(pcmCache_.begin(), pcmCache_.begin() + readBytes);
+    cachedFrame_->nb_samples = readBytes / channelsBytesPerSample_;
     cachedFrame_->extended_data = cachedFrame_->data;
-    cachedFrame_->linesize[0] = static_cast<int>(frameBytes);
+    cachedFrame_->linesize[0] = static_cast<int>(readBytes);
     return Status::OK;
 }
 
 Status FFmpegBaseEncoder::SendCachedFrames()
 {
-    auto frameBytes = static_cast<uint32_t>(avCodecContext_->frame_size) * channelsBytesPerSample_;
-    while (pcmCache_.size() >= frameBytes) {
+    if (pcmCache_.size() >= frameBytes_) {
         if (FillFrameFromCache() != Status::OK) {
             return Status::ERROR_UNKNOWN;
         }
         auto ret = avcodec_send_frame(avCodecContext_.get(), cachedFrame_.get());
         if (ret == AVERROR(EAGAIN)) {
-            break;
+            AVCODEC_LOGD("avcodec_send_frame return EAGAIN");
+            return Status::OK;
         }
         if (ret != 0) {
+            AVCODEC_LOGE("avcodec_send_frame error:%{public}d", static_cast<int32_t>(ret));
             return Status::ERROR_UNKNOWN;
         }
-        pcmCache_.erase(pcmCache_.begin(), pcmCache_.begin() + frameBytes);
     }
     return Status::OK;
 }
 
 Status FFmpegBaseEncoder::SendEosBuffer()
 {
-    auto frameBytes = static_cast<uint32_t>(avCodecContext_->frame_size) * channelsBytesPerSample_;
-    while (pcmCache_.size() >= frameBytes) {
-        if (FillFrameFromCache() != Status::OK) {
+    if (pcmCache_.size() >= 0) {
+        if (FillFrameFromCache(true) != Status::OK) {
             return Status::ERROR_UNKNOWN;
         }
         auto ret = avcodec_send_frame(avCodecContext_.get(), cachedFrame_.get());
         if (ret != 0 && ret != AVERROR(EAGAIN)) {
-            return Status::ERROR_UNKNOWN;
+            AVCODEC_LOGE("SendEosBuffer avcodec_send_frame error:%{public}d", static_cast<int32_t>(ret));
         }
-        pcmCache_.erase(pcmCache_.begin(), pcmCache_.begin() + frameBytes);
     }
     pcmCache_.clear();
     auto ret = avcodec_send_frame(avCodecContext_.get(), nullptr);
