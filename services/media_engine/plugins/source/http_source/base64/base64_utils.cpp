@@ -85,10 +85,14 @@ bool Base64Utils::Base64Decode(const uint8_t *src, uint32_t srcSize, uint8_t *de
             return false;
         }
         dest[j] = (BASE64_DECODE_TABLE[src[i]] << 2) | (BASE64_DECODE_TABLE[src[i + 1]] >> 4); // 2&4bits move
-        dest[j + 1] = (BASE64_DECODE_TABLE[src[i + 1]] << 4) | // 4:4bits moved
-                      (BASE64_DECODE_TABLE[src[i + 2]] >> 2); // 2:index 2:2bits moved
-        dest[j + 2] = (BASE64_DECODE_TABLE[src[i + 2]] << 6) | // 2:index 6:6bits moved
-                      (BASE64_DECODE_TABLE[src[i + 3]]); // 3:index
+        if (j + 1 < len) {
+            dest[j + 1] = (BASE64_DECODE_TABLE[src[i + 1]] << 4) | // 4:4bits moved
+                          (BASE64_DECODE_TABLE[src[i + 2]] >> 2); // 2:index 2:2bits moved
+        }
+        if (j + 2 < len) {
+            dest[j + 2] = (BASE64_DECODE_TABLE[src[i + 2]] << 6) | // 2:index 6:6bits moved
+                          (BASE64_DECODE_TABLE[src[i + 3]]); // 3:index
+        }
     }
     *destSize = len;
     return true;

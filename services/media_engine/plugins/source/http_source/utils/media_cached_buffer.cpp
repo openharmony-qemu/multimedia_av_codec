@@ -36,6 +36,7 @@ constexpr int64_t UP_LIMIT_MAX_TOTAL_READ_SIZE = 3000000;
 constexpr int64_t ACCESS_OFFSET_MAX_LENGTH = 2 * 1024;
 constexpr uint32_t CHUNK_SIZE = 16 * 1024;
 constexpr uint64_t MAX_CACHE_BUFFER_SIZE = 19 * 1024 * 1024;
+constexpr double epsilon = 1e-9;
 
 inline constexpr bool BoundedIntervalComp(int64_t mid, uint64_t start, int64_t end)
 {
@@ -121,7 +122,12 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
     chunkMaxNum_ = chunkNum >= 1 ? static_cast<uint32_t>(chunkNum) - 1 : 0; // -1
     totalBuffSize_ = totalBuffSize;
     chunkSize_ = chunkSize;
-    initReadSizeFactor_ = newFragmentInitChunkNum / (chunkMaxNum_ - newFragmentInitChunkNum);
+    double divisor = chunkMaxNum_ - newFragmentInitChunkNum;
+    if (divisor < epsilon) {
+        MEDIA_LOG_E("EnsureCacheBufferInited: invalid divisor");
+        return false;
+    }
+    initReadSizeFactor_ = newFragmentInitChunkNum / divisor;
     loopInterruptClock_.Reset();
     return true;
 }
