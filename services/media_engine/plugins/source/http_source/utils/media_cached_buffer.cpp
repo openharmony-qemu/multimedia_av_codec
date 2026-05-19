@@ -125,6 +125,8 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
     double divisor = chunkMaxNum_ - newFragmentInitChunkNum;
     if (divisor < EPSILON) {
         MEDIA_LOG_E("EnsureCacheBufferInited: invalid divisor");
+        free(bufferAddr_);
+        bufferAddr_ = nullptr;
         return false;
     }
     initReadSizeFactor_ = newFragmentInitChunkNum / divisor;
