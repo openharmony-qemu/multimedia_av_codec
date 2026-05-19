@@ -44,7 +44,7 @@ const std::string DASH_LIST[] = {
 };
 constexpr auto UNALLOWED_PROTOCOLS = std::array{
     std::string_view{"file://"},
-}
+};
 
 }
 
