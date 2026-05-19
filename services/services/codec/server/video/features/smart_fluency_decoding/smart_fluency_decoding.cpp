@@ -593,7 +593,7 @@ bool SmartFluencyDecoding::GetNoRefFrameFromMap(int64_t pts)
         isNonRef = it->second;
         noRefFrameMap_.erase(noRefFrameMap_.begin(), std::next(it));
     } else {
-        AVCODEC_LOGE_WITH_TAG("refMap can't find pts: %{public}ld", pts);
+        AVCODEC_LOGE_WITH_TAG("refMap can't find pts: %{public}lld", pts);
     }
 
     return isNonRef;
