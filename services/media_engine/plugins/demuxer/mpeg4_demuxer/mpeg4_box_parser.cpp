@@ -4558,7 +4558,6 @@ Status MPEG4AtomParser::ParseClli(MPEG4Atom currentAtom, int32_t depth, ParseCon
     std::vector<uint8_t> cta861Vec(sizeof(cta861));
     cta861Vec.assign(reinterpret_cast<uint8_t*>(&cta861), reinterpret_cast<uint8_t*>(&cta861) + sizeof(cta861));
     mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::VIDEO_STATIC_METADATA_CTA861>(cta861Vec);
-    lastTrack_->codecParms.hdrBoxInfo.isHdr = true;
     return Status::OK;
 }
 
@@ -4594,7 +4593,6 @@ Status MPEG4AtomParser::ParseMdcv(MPEG4Atom currentAtom, int32_t depth, ParseCon
     smpte2086Vec.assign(
         reinterpret_cast<uint8_t*>(&smpte2086), reinterpret_cast<uint8_t*>(&smpte2086) + sizeof(smpte2086));
     mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::VIDEO_STATIC_METADATA_SMPT2086>(smpte2086Vec);
-    lastTrack_->codecParms.hdrBoxInfo.isHdr = true;
     return Status::OK;
 }
 

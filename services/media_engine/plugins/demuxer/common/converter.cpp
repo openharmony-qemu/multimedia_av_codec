@@ -455,13 +455,11 @@ void Converter::ParseHdrTypeInfo(HdrBoxInfo hdrBoxInfo, Meta &format, HevcParseF
         return;
     } else if (parse.isHdr10Plus) {
         format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HDR_10);
-        format.Set<Tag::VIDEO_HDR_COMPATIBILITY>(HDRType::HDR_10);
         return;
     }
 
     if (hdrBoxInfo.haveHdrDoblyVisionBox) {
         format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HDR_10);
-        format.Set<Tag::VIDEO_HDR_COMPATIBILITY>(HDRType::HDR_10);
         return;
     } else if (hdrBoxInfo.haveHdrVividBox) {
         format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HDR_VIVID);
@@ -472,12 +470,7 @@ void Converter::ParseHdrTypeInfo(HdrBoxInfo hdrBoxInfo, Meta &format, HevcParseF
     format.Get<Tag::VIDEO_COLOR_TRC>(colorTrans);
     if (colorTrans == TransferCharacteristic::HLG) {
         format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HLG);
-    }
-    if (!hdrBoxInfo.isHdr && !parse.isHdr) {
-        return;
-    }
-    format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::OTHER);
-    if (colorTrans == TransferCharacteristic::PQ) {
+    } else if (colorTrans == TransferCharacteristic::PQ) {
         format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HDR_10);
     }
 }

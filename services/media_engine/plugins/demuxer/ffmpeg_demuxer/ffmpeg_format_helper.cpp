@@ -1169,20 +1169,13 @@ void FFmpegFormatHelper::ParseHevcInfo(
         format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(parse.picHetInLumaSamples));
     }
     if (IsMpeg4File(fileType)) {
-        HdrBoxInfo hdrBoxInfo {false, false, false};
+        HdrBoxInfo hdrBoxInfo {false, false};
         const AVDictionaryEntry *type = av_dict_get(avStream.metadata, "hdr_type", NULL, 0);
         if (type != nullptr && type->value != nullptr) {
             if (StartWith(type->value, "dolbyVision")) {
                 hdrBoxInfo.haveHdrDoblyVisionBox = true;
             } else if (StartWith(type->value, "hdrVivid")) {
                 hdrBoxInfo.haveHdrVividBox = true;
-            }
-        }
-
-        type = av_dict_get(avStream.metadata, "is_hdr", NULL, 0);
-        if (type != nullptr && type->value != nullptr) {
-            if (StartWith(type->value, "1")) {
-                hdrBoxInfo.isHdr = true;
             }
         }
         Converter::ParseHdrTypeInfo(hdrBoxInfo, format, parse);
