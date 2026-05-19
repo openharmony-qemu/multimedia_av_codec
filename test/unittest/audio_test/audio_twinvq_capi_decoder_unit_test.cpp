@@ -505,6 +505,10 @@ int32_t AudioCodeTwinvqDecoderUnitTest::Configure()
     OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(),
         OH_AudioChannelLayout::CH_LAYOUT_MONO);
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), DEFAULT_SAMPLE_RATE);
+    if (!isTestingFormat_) {
+        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+            AVSampleFormat::AV_SAMPLE_FMT_S16);
+    }
     int32_t ret = SetExtraData(format_);
     if (ret != OH_AVErrCode::AV_ERR_OK) {
         return ret;

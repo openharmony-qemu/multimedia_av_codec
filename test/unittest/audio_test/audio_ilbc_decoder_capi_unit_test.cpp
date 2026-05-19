@@ -493,6 +493,10 @@ int32_t AudioCodeIlbcDecoderUnitTest::Configure()
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), DEFAULT_CHANNELS);
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), DEFAULT_SAMPLE_RATE);
     OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(), bitRate);
+    if (!isTestingFormat_) {
+        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+            AVSampleFormat::AV_SAMPLE_FMT_S16);
+    }
     return OH_AudioCodec_Configure(audioDec_, format_);
 }
 
