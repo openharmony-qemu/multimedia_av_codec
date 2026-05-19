@@ -1251,16 +1251,6 @@ INSTANTIATE_TEST_SUITE_P(Query, VideoEncPreprocDualOutputInfoTest, testing::Valu
                          });
 
 /**
- * @tc.name: VideoEncoder_Preproc_Dual_Output_PrintScenarioInfo
- * @tc.desc: print preproc dual-output scenario information by scenario name on demand.
- * @tc.type: FUNC
- */
-HWTEST_P(VideoEncPreprocDualOutputInfoTest, DISABLED_PrintScenarioInfo, TestSize.Level0)
-{
-    std::cout << DescribeScenario(GetParam()) << std::endl;
-}
-
-/**
  * @tc.name: Level0
  * @tc.desc: preproc dual-output smoke scenarios on primary surface input.
  * @tc.type: FUNC
@@ -1276,16 +1266,6 @@ HWTEST_P(VideoEncPreprocDualOutputLevel0Test, Level0, TestSize.Level0)
  * @tc.type: FUNC
  */
 HWTEST_P(VideoEncPreprocDualOutputLevel1Test, Level1, TestSize.Level1)
-{
-    RunScenarioByFlow(GetParam());
-}
-
-/**
- * @tc.name: Level2
- * @tc.desc: preproc dual-output extended scenarios on primary surface input.
- * @tc.type: FUNC
- */
-HWTEST_P(VideoEncPreprocDualOutputLevel2Test, DISABLED_Level2, TestSize.Level2)
 {
     RunScenarioByFlow(GetParam());
 }
