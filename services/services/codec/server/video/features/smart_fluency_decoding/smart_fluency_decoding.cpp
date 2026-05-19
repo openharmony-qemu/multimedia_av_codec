@@ -603,7 +603,7 @@ MVStats SmartFluencyDecoding::ExtractMVStats(StrategyCaps caps, int64_t pts,
                                              PostDecCost& cost, const sptr<SurfaceBuffer> surfaceBuffer)
 {
     if (!caps.requiresMv || surfaceBuffer == nullptr) {
-        return MVStats{}; 
+        return MVStats{};
     }
 
     bool isNonRef = GetNoRefFrameFromMap(pts);
