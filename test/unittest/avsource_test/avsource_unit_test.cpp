@@ -147,6 +147,7 @@ string g_truehdPath = TEST_FILE_PATH + string("truehd.thd");
 string g_movAltitude100Path = TEST_FILE_PATH + string("loci_altitude_100.mp4");
 string g_movAltitude102Path = TEST_FILE_PATH + string("loci_altitude_102.mp4");
 string g_movAltitudeEmptyPath = TEST_FILE_PATH + string("loci_altitude_empty.mp4");
+string g_mp4LargeTrefPath = TEST_FILE_PATH + string("large_tref.mp4");
 } // namespace
 
 void AVSourceUnitTest::SetUpTestCase(void)
@@ -5209,5 +5210,19 @@ HWTEST_F(AVSourceUnitTest, AVSource_MOV_ALTITUDE_0003, TestSize.Level1)
 
     float altitude = 0.0;
     ASSERT_FALSE(format_->GetFloatValue(Media::Tag::MEDIA_ALTITUDE, altitude));
+}
+
+/**
+ * @tc.name: AVSource_CreateSourceWithFD_2000
+ * @tc.desc: create source with fd with large tref
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CreateSourceWithFD_2000, TestSize.Level1)
+{
+    printf("---- %s ----\n", g_mp4LargeTrefPath.c_str());
+    fd_ = OpenFile(g_mp4LargeTrefPath);
+    size_ = GetFileSize(g_mp4LargeTrefPath);
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
 }
 } // namespace
