@@ -762,9 +762,16 @@ int32_t VideoEncDualOutputSample::ResetFrameParam()
         if (input8BitTo10Bit_) {
             ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_FORMAT,
                                                         GRAPHIC_PIXEL_FMT_YCBCR_P010);
-        } else if (inputResizeWidthHeight_) {
+        } else if (inputResizeWidthHeight_ == 1) {
             ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_BUFFER_GEOMETRY,
                                                         RESIZE_WIDTH, RESIZE_HEIGHT);
+        } else if (inputResizeWidthHeight_ == 2) {
+            int32_t width, height;
+            width = 200 * (primaryEncoder_.frameInputCount + 1);
+            height = 100 * (primaryEncoder_.frameInputCount + 1);
+            ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_BUFFER_GEOMETRY,
+                                                        std::min(DEFAULT_WIDTH, width),
+                                                        std::min(DEFAULT_HEIGHT, height));
         }
     }
     return ret;

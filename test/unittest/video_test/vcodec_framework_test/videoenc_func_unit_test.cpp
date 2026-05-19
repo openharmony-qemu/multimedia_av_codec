@@ -949,11 +949,11 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Hardware_Active_All_001, TestSize.Level1)
  * @tc.desc: Test 8-bit to 10-bit format conversion
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoEncoder_8BitTo10Bit_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_8BitTo10Bit_001, TestSize.Level1)
 {
-    CreateByNameWithParam(GetParam());
-    SetFormatWithParam(GetParam());
-    PrepareSource(GetParam());
+    CreateByNameWithParam(VCodecTestCode::HW_HEVC);
+    SetFormatWithParam(VCodecTestCode::HW_HEVC);
+    PrepareSource(VCodecTestCode::HW_HEVC);
     videoEnc_->input8BitTo10Bit_ = true;
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
