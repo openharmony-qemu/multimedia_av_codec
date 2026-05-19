@@ -287,6 +287,86 @@ enum AACDataBlockType : uint8_t {
     TYPE_END
 };
 
+constexpr uint64_t AV3A_DCA3_BOX_MIN_SIZE = 5;
+constexpr uint64_t AV3A_DCA3_BOX_MAX_SIZE = 64;
+constexpr int32_t AV3A_AUDIO_FRAME_SIZE = 1024;
+constexpr uint8_t AV3A_LOSSY_CODEC_ID = 2;
+constexpr uint8_t AV3A_BASELINE_NN_TYPE = 0;
+constexpr uint8_t AV3A_LC_NN_TYPE = 2;
+constexpr uint8_t AV3A_CHANNEL_BASED_TYPE = 0;
+constexpr uint8_t AV3A_OBJECT_BASED_TYPE = 1;
+constexpr uint8_t AV3A_CHANNEL_OBJECT_TYPE = 2;
+constexpr uint8_t AV3A_AMBISONIC_TYPE = 3;
+constexpr uint8_t AV3A_AMBISONIC_FIRST_ORDER = 1;
+constexpr uint8_t AV3A_AMBISONIC_THIRD_ORDER = 3;
+constexpr uint8_t AV3A_CHANNEL_CONFIG_MONO = 0;
+constexpr uint8_t AV3A_CHANNEL_CONFIG_STEREO = 1;
+constexpr uint8_t AV3A_CHANNEL_CONFIG_7_1_4 = 10;
+
+struct Av3aResolutionInfo {
+    AudioSampleFormat sampleFormat;
+    int32_t bitsPerSample;
+};
+
+struct Av3aChannelConfig {
+    uint8_t index;
+    AudioChannelLayout layout;
+    int32_t channels;
+};
+
+struct Av3aConfigParams {
+    int32_t soundbedChannels = 0;
+    int32_t objectNumber = 0;
+    int32_t hoaOrder = 0;
+    AudioChannelLayout channelLayout = AudioChannelLayout::UNKNOWN;
+};
+
+constexpr std::array<Av3aResolutionInfo, 4> AV3A_RESOLUTION_TABLE = {{
+    {AudioSampleFormat::SAMPLE_U8, 8},
+    {AudioSampleFormat::SAMPLE_S16LE, 16},
+    {AudioSampleFormat::SAMPLE_S24LE, 24},
+    {AudioSampleFormat::INVALID_WIDTH, 0},
+}};
+
+constexpr std::array<Av3aChannelConfig, 11> AV3A_CHANNEL_CONFIG_TABLE = {{
+    {0, AudioChannelLayout::MONO, 1},
+    {1, AudioChannelLayout::STEREO, 2},
+    {2, AudioChannelLayout::CH_4POINT0, 4},
+    {3, AudioChannelLayout::CH_5POINT0, 5},
+    {4, AudioChannelLayout::CH_5POINT1, 6},
+    {5, AudioChannelLayout::CH_7POINT0, 7},
+    {6, AudioChannelLayout::CH_7POINT1, 8},
+    {7, AudioChannelLayout::CH_5POINT1POINT2, 8},
+    {8, AudioChannelLayout::CH_5POINT1POINT4, 10},
+    {9, AudioChannelLayout::CH_7POINT1POINT2, 10},
+    {10, AudioChannelLayout::CH_7POINT1POINT4, 12},
+}};
+
+uint32_t ReadBitsWide(DemuxerBitReader& bitReader, uint8_t numBits)
+{
+    uint32_t value = 0;
+    while (numBits > 0) {
+        uint8_t bitsToRead = std::min<uint8_t>(numBits, 8);
+        value = (value << bitsToRead) | bitReader.ReadBits(bitsToRead);
+        numBits -= bitsToRead;
+    }
+    return value;
+}
+
+bool GetAv3aChannelConfig(uint8_t channelNumberIndex, AudioChannelLayout& layout, int32_t& channels)
+{
+    auto ite = std::find_if(AV3A_CHANNEL_CONFIG_TABLE.begin(), AV3A_CHANNEL_CONFIG_TABLE.end(),
+        [channelNumberIndex](const auto& item) {
+            return item.index == channelNumberIndex;
+        });
+    if (ite == AV3A_CHANNEL_CONFIG_TABLE.end()) {
+        return false;
+    }
+    layout = ite->layout;
+    channels = ite->channels;
+    return true;
+}
+
 MPEG4AtomParser::MPEG4AtomParser()
     : firstTrack_(nullptr),
       lastTrack_(nullptr),
@@ -1697,11 +1777,12 @@ Status MPEG4AtomParser::ParseAudioAttributes(MPEG4Atom currentAtom, ParseContext
         mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_SAMPLE_PER_FRAME>(
             static_cast<int32_t>(samplePerFrame));
     }
-
+    if (currentAtom.type == FourccType("av3a") || currentAtom.type == FourccType("dca3")) {
+        FALSE_LOG_MSG_W(ParseDca3Entry(currentAtom, ctx) == Status::OK, "Parse AV3A entry failed");
+    }
     if (currentAtom.type == FourccType("alac")) {
         FALSE_LOG_MSG_W(ParseAlacEntry(*ctx) == Status::OK, "Parse ALAC entry failed");
     }
-
     return ret;
 }
 
@@ -2468,6 +2549,208 @@ Status MPEG4AtomParser::ParseDops(MPEG4Atom currentAtom, int32_t depth, ParseCon
         Status::ERROR_INVALID_DATA, "Parse opus extradata failed");
     lastTrack_->codecParms.data = std::move(opusHead);
     lastTrack_->codecParms.extradataSize = opusHeadSize;
+    return Status::OK;
+}
+
+Status MPEG4AtomParser::ReadDca3Payload(MPEG4Atom currentAtom, ParseContext* ctx,
+                                        std::unique_ptr<uint8_t[]>& dca3Data, uint64_t& dataSize)
+{
+    int64_t dataOffset = ctx->dataOffset;
+    dataSize = currentAtom.dataSize;
+
+    if (currentAtom.type == FourccType("av3a")) {
+        int64_t dataEndOffset = 0;
+        FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(ctx->dataOffset, currentAtom.dataSize, &dataEndOffset),
+            Status::ERROR_INVALID_DATA, "av3a atom size overflow");
+        FALSE_RETURN_V_MSG_E(ctx->offset >= ctx->dataOffset && ctx->offset <= dataEndOffset,
+            Status::ERROR_INVALID_DATA, "Invalid av3a data offset");
+
+        if (ctx->offset == dataEndOffset) {
+            dataSize = 0;
+            ctx->offset = dataEndOffset;
+            return Status::OK;
+        }
+
+        uint8_t atomHeader[8];
+        Status ret = dataReader_->ReadUintData(ctx->offset, atomHeader, sizeof(atomHeader));
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read dca3 header failed");
+
+        MPEG4Atom dca3Atom{
+            .size = GetU32Value(&atomHeader[0]),
+            .type = static_cast<int32_t>(GetU32Value(&atomHeader[4])),
+            .dataSize = GetU32Value(&atomHeader[0]) - sizeof(atomHeader)
+        };
+        FALSE_RETURN_V_MSG_E(dca3Atom.type == FourccType("dca3"), Status::ERROR_INVALID_DATA,
+            "Invalid av3a child atom");
+
+        int64_t dca3EndOffset = 0;
+        FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(ctx->offset, dca3Atom.size, &dca3EndOffset),
+            Status::ERROR_INVALID_DATA, "dca3 atom size overflow");
+        FALSE_RETURN_V_MSG_E(dca3Atom.size >= sizeof(atomHeader) && dca3EndOffset <= dataEndOffset,
+            Status::ERROR_INVALID_DATA, "Invalid dca3 atom size");
+
+        dataOffset = ctx->offset + sizeof(atomHeader);
+        dataSize = dca3Atom.dataSize;
+        ctx->offset = dataEndOffset;
+    } else if (currentAtom.type == FourccType("dca3")) {
+        int64_t dataEndOffset = 0;
+        FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(ctx->dataOffset, currentAtom.dataSize, &dataEndOffset),
+            Status::ERROR_INVALID_DATA, "dca3 atom size overflow");
+        FALSE_RETURN_V_MSG_E(ctx->offset >= ctx->dataOffset && ctx->offset <= dataEndOffset,
+            Status::ERROR_INVALID_DATA, "Invalid dca3 data offset");
+
+        dataOffset = ctx->offset;
+        dataSize = static_cast<uint64_t>(dataEndOffset - ctx->offset);
+        ctx->offset = dataEndOffset;
+    } else {
+        ctx->offset += currentAtom.size;
+    }
+
+    if (dataSize == 0) {
+        return Status::OK;
+    }
+
+    FALSE_RETURN_V_MSG_E(dataSize >= AV3A_DCA3_BOX_MIN_SIZE && dataSize <= AV3A_DCA3_BOX_MAX_SIZE,
+        Status::ERROR_INVALID_DATA, "Invalid av3a config size");
+
+    dca3Data = std::make_unique<uint8_t[]>(dataSize);
+    FALSE_RETURN_V_MSG_E(dca3Data != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate dca3 buffer");
+    
+    Status ret = dataReader_->ReadUintData(dataOffset, dca3Data.get(), dataSize);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read av3a config data failed");
+    return Status::OK;
+}
+
+Status MPEG4AtomParser::ParseDca3ContentType(DemuxerBitReader& bitReader, uint8_t contentType, 
+                                             Av3aConfigParams& params) 
+{
+    switch (contentType) {
+        case AV3A_CHANNEL_BASED_TYPE:
+        case AV3A_CHANNEL_OBJECT_TYPE: {
+            FALSE_RETURN_V_MSG_E(bitReader.HasBits(8), Status::ERROR_INVALID_DATA, "av3a channel config missing");
+            uint8_t channelNumberIndex = static_cast<uint8_t>(ReadBitsWide(bitReader, 7));
+            FALSE_RETURN_V_MSG_E(bitReader.SkipBits(1), Status::ERROR_INVALID_DATA, "Skip av3a reserved channel bit failed");
+            
+            uint8_t minChannelConfig = (contentType == AV3A_CHANNEL_OBJECT_TYPE) ? 
+                AV3A_CHANNEL_CONFIG_STEREO : AV3A_CHANNEL_CONFIG_MONO;
+            FALSE_RETURN_V_MSG_E(channelNumberIndex >= minChannelConfig && channelNumberIndex <= AV3A_CHANNEL_CONFIG_7_1_4,
+                Status::ERROR_INVALID_DATA, "Unsupported av3a channel config");
+            FALSE_RETURN_V_MSG_E(GetAv3aChannelConfig(channelNumberIndex, params.channelLayout, params.soundbedChannels),
+                Status::ERROR_INVALID_DATA, "Invalid av3a channel config");
+            
+            if (contentType == AV3A_CHANNEL_OBJECT_TYPE) {
+                FALSE_RETURN_V_MSG_E(bitReader.HasBits(8), Status::ERROR_INVALID_DATA, "av3a object count missing");
+                params.objectNumber = static_cast<int32_t>(ReadBitsWide(bitReader, 7));
+                FALSE_RETURN_V_MSG_E(bitReader.SkipBits(1), Status::ERROR_INVALID_DATA, "Skip reserved object bit failed");
+                FALSE_RETURN_V_MSG_E(params.objectNumber > 0, Status::ERROR_INVALID_DATA, "Invalid av3a object count");
+            }
+            break;
+        }
+        case AV3A_OBJECT_BASED_TYPE: {
+            FALSE_RETURN_V_MSG_E(bitReader.HasBits(8), Status::ERROR_INVALID_DATA, "av3a object count missing");
+            params.objectNumber = static_cast<int32_t>(ReadBitsWide(bitReader, 7));
+            FALSE_RETURN_V_MSG_E(bitReader.SkipBits(1), Status::ERROR_INVALID_DATA, "Skip reserved object bit failed");
+            FALSE_RETURN_V_MSG_E(params.objectNumber > 0, Status::ERROR_INVALID_DATA, "Invalid av3a object count");
+            break;
+        }
+        case AV3A_AMBISONIC_TYPE: {
+            FALSE_RETURN_V_MSG_E(bitReader.HasBits(4), Status::ERROR_INVALID_DATA, "av3a hoa order missing");
+            params.hoaOrder = static_cast<int32_t>(ReadBitsWide(bitReader, 4));
+            FALSE_RETURN_V_MSG_E(params.hoaOrder >= AV3A_AMBISONIC_FIRST_ORDER && 
+                params.hoaOrder <= AV3A_AMBISONIC_THIRD_ORDER, Status::ERROR_INVALID_DATA, "Invalid av3a hoa order");
+            
+            params.channelLayout = (params.hoaOrder == 1) ? AudioChannelLayout::HOA_ORDER1_ACN_SN3D :
+                                   (params.hoaOrder == 2) ? AudioChannelLayout::HOA_ORDER2_ACN_SN3D : 
+                                                            AudioChannelLayout::HOA_ORDER3_ACN_SN3D;
+            params.soundbedChannels = (params.hoaOrder + 1) * (params.hoaOrder + 1);
+            break;
+        }
+        default:
+            return Status::ERROR_INVALID_DATA;
+    }
+    return Status::OK;
+}
+
+Status MPEG4AtomParser::UpdateDca3TrackMeta(DemuxerBitReader& bitReader, const Av3aConfigParams& params) 
+{
+    FALSE_RETURN_V_MSG_E(bitReader.HasBits(18), Status::ERROR_INVALID_DATA, "av3a bitrate or resolution missing");
+    uint32_t bitrateKbps = ReadBitsWide(bitReader, 16);
+    FALSE_RETURN_V_MSG_E(bitrateKbps > 0, Status::ERROR_INVALID_DATA, "Invalid av3a bitrate");
+    
+    uint8_t resolutionIndex = static_cast<uint8_t>(ReadBitsWide(bitReader, 2));
+    FALSE_RETURN_V_MSG_E(resolutionIndex < AV3A_RESOLUTION_TABLE.size() && 
+        AV3A_RESOLUTION_TABLE[resolutionIndex].sampleFormat != AudioSampleFormat::INVALID_WIDTH,
+        Status::ERROR_INVALID_DATA, "Invalid av3a resolution");
+
+    int32_t totalChannels = params.soundbedChannels + params.objectNumber;
+    auto& trackMeta = mediaInfo_.tracks[lastTrack_->trackIndex];
+    
+    trackMeta.Set<Tag::MEDIA_BITRATE>(static_cast<int64_t>(bitrateKbps) * 1000);
+    trackMeta.Set<Tag::AUDIO_SAMPLE_FORMAT>(AV3A_RESOLUTION_TABLE[resolutionIndex].sampleFormat);
+    trackMeta.Set<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(AV3A_RESOLUTION_TABLE[resolutionIndex].bitsPerSample);
+    trackMeta.Set<Tag::AUDIO_BITS_PER_CODED_SAMPLE>(AV3A_RESOLUTION_TABLE[resolutionIndex].bitsPerSample);
+    trackMeta.Set<Tag::AUDIO_SAMPLE_PER_FRAME>(AV3A_AUDIO_FRAME_SIZE);
+    trackMeta.Set<Tag::AUDIO_OBJECT_NUMBER>(params.objectNumber);
+    trackMeta.Set<Tag::AUDIO_SOUNDBED_CHANNELS_NUMBER>(params.soundbedChannels);
+    
+    if (params.hoaOrder > 0) trackMeta.Set<Tag::AUDIO_HOA_ORDER>(params.hoaOrder);
+    if (totalChannels > 0) {
+        trackMeta.Set<Tag::AUDIO_CHANNEL_COUNT>(totalChannels);
+        trackMeta.Set<Tag::AUDIO_OUTPUT_CHANNELS>(totalChannels);
+    }
+    trackMeta.Set<Tag::AUDIO_CHANNEL_LAYOUT>(params.channelLayout);
+    trackMeta.Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(params.channelLayout);
+
+    return Status::OK;
+}
+
+Status MPEG4AtomParser::ParseDca3Entry(MPEG4Atom currentAtom, ParseContext* ctx)
+{
+    FALSE_RETURN_V_MSG_E(ctx != nullptr, Status::ERROR_NULL_POINTER, "Parse context is null");
+    FALSE_RETURN_V_MSG_E(lastTrack_ != nullptr, Status::ERROR_NULL_POINTER, "Current track is null");
+
+    std::unique_ptr<uint8_t[]> dca3Data;
+    uint64_t dataSize = 0;
+    
+    // 读取有效载荷
+    Status ret = ReadDca3Payload(currentAtom, ctx, dca3Data, dataSize);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read av3a payload failed");
+    if (dataSize == 0) {
+        auto& trackMeta = mediaInfo_.tracks[lastTrack_->trackIndex];
+        trackMeta.Set<Tag::AUDIO_CHANNEL_LAYOUT>(AudioChannelLayout::UNKNOWN);
+        trackMeta.Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(AudioChannelLayout::UNKNOWN);
+        return Status::OK;
+    }
+
+    auto bitReader = std::make_shared<DemuxerBitReader>(dca3Data.get(), dataSize);
+    FALSE_RETURN_V_MSG_E(bitReader != nullptr, Status::ERROR_NO_MEMORY, "Failed create bitReader");
+    FALSE_RETURN_V_MSG_E(bitReader->HasBits(16), Status::ERROR_INVALID_DATA, "av3a config data too short");
+
+    // 解析基础头部信息
+    uint8_t audioCodecId = bitReader->ReadBits(4);
+    FALSE_RETURN_V_MSG_E(audioCodecId == AV3A_LOSSY_CODEC_ID, Status::ERROR_INVALID_DATA, "Unsupported codec id");
+    uint8_t samplingFrequencyIndex = bitReader->ReadBits(4);
+    uint8_t nnType = bitReader->ReadBits(3);
+    FALSE_RETURN_V_MSG_E(nnType >= AV3A_BASELINE_NN_TYPE && nnType <= AV3A_LC_NN_TYPE,
+        Status::ERROR_INVALID_DATA, "Unsupported av3a nn type");
+    FALSE_RETURN_V_MSG_E(bitReader->SkipBits(1), Status::ERROR_INVALID_DATA, "Skip reserved bit failed");
+    uint8_t contentType = bitReader->ReadBits(4);
+
+    // 解析 ContentType 对应详情
+    Av3aConfigParams params;
+    ret = ParseDca3ContentType(*bitReader, contentType, params);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ParseDca3ContentType failed");
+
+    // 更新元数据标签
+    ret = UpdateDca3TrackMeta(*bitReader, params);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "UpdateDca3TrackMeta failed");
+
+    MEDIA_LOG_I("MPEG4AtomParser::ParseDca3 out");
+    MEDIA_LOG_I("Parse av3a config success, samplingIndex=" PUBLIC_LOG_U8 ", contentType=" PUBLIC_LOG_U8
+        ", soundbed=" PUBLIC_LOG_D32 ", objects=" PUBLIC_LOG_D32 ", layout=" PUBLIC_LOG_U64,
+        samplingFrequencyIndex, contentType, params.soundbedChannels, params.objectNumber, 
+        static_cast<uint64_t>(params.channelLayout));
+    
     return Status::OK;
 }
 

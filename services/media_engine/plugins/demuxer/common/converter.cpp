@@ -69,7 +69,9 @@ const std::vector<std::pair<AudioChannelLayout, int>> g_audioVividChannelLayoutM
     {AudioChannelLayout::MONO, 1},
     {AudioChannelLayout::STEREO, 2},
     {AudioChannelLayout::CH_4POINT0, 4},
+    {AudioChannelLayout::CH_5POINT0, 5},
     {AudioChannelLayout::CH_5POINT1, 6},
+    {AudioChannelLayout::CH_7POINT0, 7},
     {AudioChannelLayout::CH_7POINT1, 8},
     {AudioChannelLayout::CH_5POINT1POINT2, 8},
     {AudioChannelLayout::CH_5POINT1POINT4, 10},
@@ -83,7 +85,9 @@ const std::vector<std::pair<AudioChannelLayout, int>> g_audioVividChannelLayoutM
 const std::vector<std::pair<int, AudioChannelLayout>> g_channelLayoutDefaultMap = {
     {2, AudioChannelLayout::STEREO},             // 2: STEREO
     {4, AudioChannelLayout::CH_4POINT0},         // 4: CH_4POINT0
+    {5, AudioChannelLayout::CH_5POINT0},         // 5: CH_5POINT0
     {6, AudioChannelLayout::CH_5POINT1},         // 6: CH_5POINT1
+    {7, AudioChannelLayout::CH_7POINT0},         // 7: CH_7POINT0
     {8, AudioChannelLayout::CH_5POINT1POINT2},   // 8: CH_5POINT1POINT2
     {9, AudioChannelLayout::HOA_ORDER2_ACN_N3D}, // 9: HOA_ORDER2_ACN_N3D
     {10, AudioChannelLayout::CH_7POINT1POINT2},  // 10: CH_7POINT1POINT2 or CH_5POINT1POINT4 ?

@@ -179,6 +179,7 @@ public:
     Status PauseDemuxerReadLoop();
     Status SetTranscoderMode();
     Status SetPlayerMode();
+    Status SetMetadataMode();
     Status SetSkippingAudioDecAndEnc();
     void SetCacheLimit(uint32_t limitSize);
     void SetEnableOnlineFdCache(bool isEnableFdCache);

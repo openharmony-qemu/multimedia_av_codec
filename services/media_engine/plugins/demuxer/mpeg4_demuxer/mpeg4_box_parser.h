@@ -203,6 +203,11 @@ private:
         ParseContext* ctx);
     Status ProcessMetaHandler(MPEG4Atom currentAtom, ParseContext* parseCtx);
     Status ProcessTfhdAtom(const MPEG4Atom& atom);
+    Status UpdateDca3TrackMeta(DemuxerBitReader& bitReader, const Av3aConfigParams& params);
+    Status ReadDca3Payload(MPEG4Atom currentAtom, ParseContext* ctx,
+                                        std::unique_ptr<uint8_t[]>& dca3Data, uint64_t& dataSize);
+    Status ParseDca3ContentType(DemuxerBitReader& bitReader, uint8_t contentType, Av3aConfigParams& params);
+
     bool UpdataMoofInfo(MPEG4Atom& atom, Status& ret, int64_t& currentOffset, FragmentEntry& frag, int64_t sidxDts);
     // 解析函数
     Status ParseContainerAtom(const MPEG4Atom& containerAtom, int32_t depth, ParseContext* ctx);
@@ -212,6 +217,7 @@ private:
     Status ParseTraditionalMetadata(MPEG4Atom currentAtom, std::string& key, ParseContext* parseCtx);
     Status ReadMetadataString(std::string& key, int64_t offset, uint64_t size, uint32_t dataType);
     Status ParseAlacEntry(ParseContext& ctx);
+    Status ParseDca3Entry(MPEG4Atom currentAtom, ParseContext* ctx);
     Status ParseIccProfile(int64_t offset, uint64_t dataSize);
     Status ParseColorParams(int64_t offset, uint64_t dataSize, const std::string& colorType, ParseContext* parseCtx);
     Status ParseSidxEntries(const uint8_t* headerInfo, int64_t entryOffset,
