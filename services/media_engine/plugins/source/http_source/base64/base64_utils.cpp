@@ -57,10 +57,6 @@ bool Base64Utils::Base64Decode(const uint8_t *src, uint32_t srcSize, uint8_t *de
         MEDIA_LOG_E("parameter is err");
         return false;
     }
-    if ((srcSize / BASE64_DATA_MULTIPLE) * BASE64_BASE_UNIT_OF_CONVERSION > *destSize) {
-        MEDIA_LOG_E("parameter is err, decoded size may exceed destSize");
-        return false;
-    }
     if ((srcSize < BASE64_DATA_MULTIPLE) || (srcSize % BASE64_DATA_MULTIPLE != 0)) {
         MEDIA_LOG_E("srcSize is err");
         return false;
@@ -75,6 +71,10 @@ bool Base64Utils::Base64Decode(const uint8_t *src, uint32_t srcSize, uint8_t *de
     }
     if (src[srcSize - 2] == '=') { // 2:second to last
         len--;
+    }
+    if (len > *destSize) {
+        MEDIA_LOG_E("parameter is err, decoded size may exceed destSize");
+        return false;
     }
 
     for (i = 0, j = 0; i < srcSize;

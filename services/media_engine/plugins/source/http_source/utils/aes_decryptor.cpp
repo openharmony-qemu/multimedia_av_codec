@@ -37,14 +37,20 @@ AesDecryptor::AesDecryptor()
 
 AesDecryptor::~AesDecryptor()
 {
-    NZERO_LOG(memset_s(iv_, BLOCK_LEN, 0, BLOCK_LEN));
-    NZERO_LOG(memset_s(initIv_, BLOCK_LEN, 0, BLOCK_LEN));
-    NZERO_LOG(memset_s(key_, BLOCK_LEN, 0, BLOCK_LEN));
-    OPENSSL_cleanse(&aesKey_, sizeof(aesKey_));
+    Reset();
 }
 
 void AesDecryptor::Init()
 {
+}
+
+void AesDecryptor::Reset()
+{
+    keyLen_ = 0;
+    NZERO_LOG(memset_s(iv_, BLOCK_LEN, 0, BLOCK_LEN));
+    NZERO_LOG(memset_s(initIv_, BLOCK_LEN, 0, BLOCK_LEN));
+    NZERO_LOG(memset_s(key_, BLOCK_LEN, 0, BLOCK_LEN));
+    OPENSSL_cleanse(&aesKey_, sizeof(aesKey_));
 }
 
 void AesDecryptor::OnSourceKeyChange(const uint8_t* key, size_t keyLen, const uint8_t* iv)
@@ -61,7 +67,7 @@ void AesDecryptor::OnSourceKeyChange(const uint8_t* key, size_t keyLen, const ui
     int ret = AES_set_decrypt_key(key_, KEY_BITS, &aesKey_);
     if (ret != 0) {
         MEDIA_LOG_E("AES_set_decrypt_key failed, ret: " PUBLIC_LOG_D32, ret);
-        keyLen_ = 0;
+        Reset();
     }
 }
 

@@ -1075,14 +1075,14 @@ bool Downloader::HandleContentRange(HeaderInfo* info, char* key, char* next, siz
         size_t start = 0;
         size_t end = 0;
         size_t fileLen = 0;
-        int sret = sscanf_s(strRange, "bytes %lu-%lu/%lu", &start, &end, &fileLen);
+        int sret = sscanf_s(strRange, "bytes %zu-%zu/%zu", &start, &end, &fileLen);
         if (sret != 3) { // 3: expected fields parsed from content-range
             MEDIA_LOG_W("sscanf get range failed, parsed: " PUBLIC_LOG_D32, sret);
-            return true;
+            return false;
         }
         if (fileLen > MAX_FILE_CONTENT_LEN_FROM_SERVER) {
             MEDIA_LOG_E("Content-Range fileLen exceeds upper bound: " PUBLIC_LOG_ZU, fileLen);
-            return true;
+            return false;
         }
         if (info->fileContentLen > 0 && info->fileContentLen != fileLen) {
             MEDIA_LOG_E("FileContentLen doesn't equal to fileLen");
@@ -1236,6 +1236,7 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
 bool Downloader::HandleTransferEncoding(HeaderInfo* info, char* key, char* next, Downloader* mediaDownloader)
 {
     (void)key;
+    FALSE_RETURN_V(mediaDownloader != nullptr && mediaDownloader->currentRequest_ != nullptr, false);
     char* token = strtok_s(nullptr, ":", &next);
     FALSE_RETURN_V(token != nullptr, false);
     if (!strncmp(StringTrim(token), "chunked", strlen("chunked")) &&

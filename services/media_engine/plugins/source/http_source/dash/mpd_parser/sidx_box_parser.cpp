@@ -197,7 +197,7 @@ bool SidxBoxParser::ReadFirstOffset(char *bitStream, uint32_t streamSize, uint32
         if (!GetBytes<uint32_t>(bitStream, currPos, streamSize, firstOffset32)) {
             return false;
         }
-        firstOffset = firstOffset32;
+        firstOffset = static_cast<int64_t>(firstOffset32);
     } else {
         // skip earliestPresentationTime
         if (!GetBytes<int64_t>(bitStream, currPos, streamSize, dummyByte8)) {

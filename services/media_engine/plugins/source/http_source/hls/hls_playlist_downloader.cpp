@@ -1005,9 +1005,9 @@ bool HlsPlayListDownloader::ReadMediaHeader(const std::list<std::shared_ptr<M3U8
             continue;
         }
         if (stream->m3u8_->downloadHeaderLen_ > wantLen) {
-            MEDIA_LOG_E("ReadMediaHeader downloadHeaderLen_ " PUBLIC_LOG_U32 " > wantLen " PUBLIC_LOG_U32,
+            MEDIA_LOG_W("ReadMediaHeader downloadHeaderLen_ " PUBLIC_LOG_U32 " > wantLen " PUBLIC_LOG_U32,
                 stream->m3u8_->downloadHeaderLen_, wantLen);
-            return false;
+            continue;
         }
         errno_t err = memcpy_s(buffer, wantLen, stream->m3u8_->fmp4Header_, stream->m3u8_->downloadHeaderLen_);
         if (err == 0) {
@@ -1030,9 +1030,9 @@ bool HlsPlayListDownloader::ReadStreamHeader(const std::list<std::shared_ptr<M3U
             continue;
         }
         if (stream->m3u8_->downloadHeaderLen_ > wantLen) {
-            MEDIA_LOG_E("ReadStreamHeader downloadHeaderLen_ " PUBLIC_LOG_U32 " > wantLen " PUBLIC_LOG_U32,
+            MEDIA_LOG_W("ReadStreamHeader downloadHeaderLen_ " PUBLIC_LOG_U32 " > wantLen " PUBLIC_LOG_U32,
                 stream->m3u8_->downloadHeaderLen_, wantLen);
-            return false;
+            continue;
         }
         errno_t err = memcpy_s(buffer, wantLen, stream->m3u8_->fmp4Header_, stream->m3u8_->downloadHeaderLen_);
         if (err == 0) {
