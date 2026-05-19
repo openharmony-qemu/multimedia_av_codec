@@ -485,3 +485,364 @@ HWTEST_F(SmartFluencyDecodingTest, MakePostDecodeDecision_NullSurface_ConsumePre
     uint32_t remaining = sfd_->dropSyncCoordinator_->GetAndConsumePreDroppedCount(4000);
     EXPECT_EQ(remaining, 0);
 }
+
+/**
+ * @tc.name: MakePreDecodeDecision_EosBuffer_026
+ * @tc.desc: Verify EOS buffer is always retained in pre-decode decision.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, MakePreDecodeDecision_EosBuffer_026, TestSize.Level1)
+{
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::ADAPTIVE);
+    sfd_->Initialize(cfg);
+
+    auto allocator = OHOS::Media::AVAllocatorFactory::CreateSharedAllocator(OHOS::Media::MEMORY_READ_WRITE);
+    auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, 100);
+    buffer->flag_ = OHOS::MediaAVCodec::AVCODEC_BUFFER_FLAG_EOS;
+    sfd_->inBufferMap_[0] = buffer;
+
+    bool result = sfd_->MakePreDecodeDecision(0);
+    EXPECT_TRUE(result);
+}
+
+/**
+ * @tc.name: UpdatePlaybackSpeed_ValidSpeed_027
+ * @tc.desc: Verify UpdatePlaybackSpeed correctly stores a valid positive speed.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, UpdatePlaybackSpeed_ValidSpeed_027, TestSize.Level1)
+{
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::ADAPTIVE);
+    sfd_->Initialize(cfg);
+
+    sfd_->UpdatePlaybackSpeed(2.5);
+    EXPECT_NEAR(sfd_->currentPlaybackSpeed_, 2.5, 0.001);
+}
+
+/**
+ * @tc.name: MakePostDecodeDecision_NoStrategy_028
+ * @tc.desc: Verify MakePostDecodeDecision returns true when strategy is null.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, MakePostDecodeDecision_NoStrategy_028, TestSize.Level1)
+{
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::ADAPTIVE);
+    sfd_->Initialize(cfg);
+    sfd_->strategy_ = nullptr;
+
+    bool result = sfd_->MakePostDecodeDecision(0, 1000, nullptr);
+    EXPECT_TRUE(result);
+}
+
+/**
+ * @tc.name: SetRefFrameMap_GetNoRefFrameFromMap_029
+ * @tc.desc: Verify SetRefFrameMap stores and GetNoRefFrameFromMap retrieves non-ref status correctly.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, SetRefFrameMap_GetNoRefFrameFromMap_029, TestSize.Level1)
+{
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::ADAPTIVE);
+    sfd_->Initialize(cfg);
+
+    sfd_->SetNoRefFrameMap(100, true);
+    EXPECT_TRUE(sfd_->GetNoRefFrameFromMap(100));
+
+    sfd_->SetNoRefFrameMap(200, false);
+    EXPECT_FALSE(sfd_->GetNoRefFrameFromMap(200));
+}
+
+/**
+ * @tc.name: GetNoRefFrameFromMap_MissingPts_030
+ * @tc.desc: Verify GetNoRefFrameFromMap returns false when PTS is not found.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, GetNoRefFrameFromMap_MissingPts_030, TestSize.Level1)
+{
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::ADAPTIVE);
+    sfd_->Initialize(cfg);
+
+    EXPECT_FALSE(sfd_->GetNoRefFrameFromMap(999));
+}
+
+/**
+ * @tc.name: MakePreDecodeDecision_EmaSatisfied_031
+ * @tc.desc: Verify PRE_RETAIN_EMA_SATISFIED branch: EMA below target → non-ref frame is retained.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, MakePreDecodeDecision_EmaSatisfied_031, TestSize.Level1)
+{
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::FIXED_RATIO);
+    cfg.retentionRatio = 0.5;
+    sfd_->Initialize(cfg);
+
+    // EMA ratio (0.3) is below target (0.5) → EMA satisfied branch
+    sfd_->dropSyncCoordinator_->emaRatio_ = 0.3;
+    auto allocator = OHOS::Media::AVAllocatorFactory::CreateSharedAllocator(OHOS::Media::MEMORY_READ_WRITE);
+    auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, 100);
+    uint8_t* addr = buffer->memory_->GetAddr();
+    addr[0] = 0x00; addr[1] = 0x00; addr[2] = 0x00; addr[3] = 0x01;
+    addr[4] = 0x01; // nal_ref_idc = 0 → non-ref
+    buffer->memory_->SetSize(10);
+    sfd_->inBufferMap_[0] = buffer;
+    sfd_->EnsureNaluAnalyzer();
+
+    bool result = sfd_->MakePreDecodeDecision(0);
+    EXPECT_TRUE(result);
+}
+
+/**
+ * @tc.name: MakePostDecodeDecision_PassthroughPath_032
+ * @tc.desc: Verify FULL mode passthrough in MakePostDecodeDecision.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, MakePostDecodeDecision_PassthroughPath_032, TestSize.Level1)
+{
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::FULL);
+    sfd_->Initialize(cfg);
+
+    // FULL mode → isPassthrough=true → HandlePostDecodePassthrough → returns true
+    bool result = sfd_->MakePostDecodeDecision(0, 1000, nullptr);
+    EXPECT_TRUE(result);
+}
+
+/**
+ * @tc.name: MakePreDecodeDecision_Uninitialized_033
+ * @tc.desc: Verify MakePreDecodeDecision returns true when SFD is not initialized.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, MakePreDecodeDecision_Uninitialized_033, TestSize.Level1)
+{
+    // sfd_ is created but not initialized
+    bool result = sfd_->MakePreDecodeDecision(0);
+    EXPECT_TRUE(result);
+}
+
+/**
+ * @tc.name: MakePostDecodeDecision_Uninitialized_034
+ * @tc.desc: Verify MakePostDecodeDecision returns true when SFD is not initialized.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, MakePostDecodeDecision_Uninitialized_034, TestSize.Level1)
+{
+    // sfd_ is created but not initialized
+    bool result = sfd_->MakePostDecodeDecision(0, 0, nullptr);
+    EXPECT_TRUE(result);
+}
+
+/**
+ * @tc.name: SetInputBuffer_NullBuffer_035
+ * @tc.desc: Verify SetInputBuffer does not crash when buffer is null.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, SetInputBuffer_NullBuffer_035, TestSize.Level1)
+{
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::FULL);
+    sfd_->Initialize(cfg);
+    sfd_->SetInputBuffer(0, nullptr);
+    EXPECT_TRUE(sfd_->inBufferMap_.empty());
+}
+
+/**
+ * @tc.name: Flush_NullInternals_036
+ * @tc.desc: Verify Flush does not crash when strategy_ and dropSyncCoordinator_ are null.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, Flush_NullInternals_036, TestSize.Level1)
+{
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::FULL);
+    sfd_->Initialize(cfg);
+    sfd_->strategy_ = nullptr;
+    sfd_->dropSyncCoordinator_ = nullptr;
+    sfd_->Flush();
+    EXPECT_TRUE(true);
+}
+
+/**
+ * @tc.name: ExecutePreDrop_NullCallback_037
+ * @tc.desc: Verify ExecutePreDrop skips dispatcher when callback is null.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, ExecutePreDrop_NullCallback_037, TestSize.Level1)
+{
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::ADAPTIVE);
+    sfd_->Initialize(cfg);
+    sfd_->asyncDropInputCb_ = nullptr;
+    auto allocator = OHOS::Media::AVAllocatorFactory::CreateSharedAllocator(OHOS::Media::MEMORY_READ_WRITE);
+    auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, 100);
+    buffer->flag_ = 0;
+    buffer->pts_ = 1000;
+    sfd_->ExecutePreDrop(0, buffer);
+    EXPECT_TRUE(true);
+}
+
+/**
+ * @tc.name: ExecutePostDrop_NullCallback_038
+ * @tc.desc: Verify ExecutePostDrop skips dispatcher when callback is null.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, ExecutePostDrop_NullCallback_038, TestSize.Level1)
+{
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::ADAPTIVE);
+    sfd_->Initialize(cfg);
+    sfd_->asyncDropOutputCb_ = nullptr;
+    sfd_->ExecutePostDrop(0);
+    EXPECT_TRUE(true);
+}
+
+/**
+ * @tc.name: UpdatePlaybackSpeed_NullStrategy_039
+ * @tc.desc: Verify UpdatePlaybackSpeed still stores speed when strategy_ is null.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, UpdatePlaybackSpeed_NullStrategy_039, TestSize.Level1)
+{
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::FULL);
+    sfd_->Initialize(cfg);
+    sfd_->strategy_ = nullptr;
+    sfd_->UpdatePlaybackSpeed(2.0);
+    EXPECT_NEAR(sfd_->currentPlaybackSpeed_, 2.0, 0.001);
+}
+
+/**
+ * @tc.name: MakePreDecodeDecision_RefFrame_040
+ * @tc.desc: Verify reference frame (isNonRef=false) is retained without entering drop logic.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, MakePreDecodeDecision_RefFrame_040, TestSize.Level1)
+{
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::FIXED_RATIO);
+    cfg.retentionRatio = 0.5;
+    sfd_->Initialize(cfg);
+
+    auto allocator = OHOS::Media::AVAllocatorFactory::CreateSharedAllocator(OHOS::Media::MEMORY_READ_WRITE);
+    auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, 100);
+    uint8_t* addr = buffer->memory_->GetAddr();
+    addr[0] = 0x00; addr[1] = 0x00; addr[2] = 0x00; addr[3] = 0x01;
+    addr[4] = 0x65;  // IDR: nal_ref_idc=3 (non-zero) → reference frame
+    buffer->memory_->SetSize(10);
+    buffer->pts_ = 1000;
+    sfd_->inBufferMap_[0] = buffer;
+    sfd_->EnsureNaluAnalyzer();
+
+    bool result = sfd_->MakePreDecodeDecision(0);
+    EXPECT_TRUE(result);
+}
+
+/**
+ * @tc.name: MakePostDecodeDecision_FixedRatio_041
+ * @tc.desc: Verify post-decode decision with FIXED_RATIO (requiresMv=false) path.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, MakePostDecodeDecision_FixedRatio_041, TestSize.Level1)
+{
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::FIXED_RATIO);
+    cfg.retentionRatio = 0.5;
+    sfd_->Initialize(cfg);
+
+    bool result = sfd_->MakePostDecodeDecision(0, 1000, nullptr);
+    EXPECT_TRUE(result);
+}
+
+/**
+ * @tc.name: ParseRetentionConfig_InvalidParsedRatio_042
+ * @tc.desc: Verify ParseRetentionConfig ignores ratio values outside valid range.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, ParseRetentionConfig_InvalidParsedRatio_042, TestSize.Level1)
+{
+    RetentionStrategyType mode = RetentionStrategyType::INVALID;
+    std::optional<double> ratio;
+    OHOS::Media::Format format;
+    format.PutDoubleValue(OHOS::Media::Tag::VIDEO_DECODER_FRAME_RETENTION_RATIO, 2.0);
+    sfd_->ParseRetentionConfig(format, mode, ratio);
+    EXPECT_FALSE(ratio.has_value());
+}
+
+/**
+ * @tc.name: ParseRetentionConfig_RatioOnlyNoMode_043
+ * @tc.desc: Verify hasNewRatio with INVALID mode transitions to FIXED_RATIO.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, ParseRetentionConfig_RatioOnlyNoMode_043, TestSize.Level1)
+{
+    RetentionStrategyType mode = RetentionStrategyType::INVALID;
+    std::optional<double> ratio;
+    OHOS::Media::Format format;
+    format.PutDoubleValue(OHOS::Media::Tag::VIDEO_DECODER_FRAME_RETENTION_RATIO, 0.3);
+    sfd_->ParseRetentionConfig(format, mode, ratio);
+    EXPECT_EQ(mode, RetentionStrategyType::FIXED_RATIO);
+    EXPECT_NEAR(ratio.value(), 0.3, 0.001);
+}
+
+/**
+ * @tc.name: InitializeWithCsd_VvcCodec_044
+ * @tc.desc: Verify InitializeWithCsd works with VVC codec (different codec path).
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, InitializeWithCsd_VvcCodec_044, TestSize.Level1)
+{
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::VVC, RetentionStrategyType::ADAPTIVE);
+    sfd_->Initialize(cfg);
+    sfd_->EnsureNaluAnalyzer();
+
+    std::vector<uint8_t> csd = {0x00, 0x00, 0x00, 0x01, 0x40, 0x01};
+    EXPECT_TRUE(sfd_->InitializeWithCsd(csd));
+    EXPECT_NE(sfd_->csdBuffer_, nullptr);
+}
+
+/**
+ * @tc.name: MakePreDecodeDecision_NoNaluAnalyzer_045
+ * @tc.desc: Verify MakePreDecodeDecision with requiresNalu=true but naluAnalyzer_ null
+ *           falls through to else-if passthrough check.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, MakePreDecodeDecision_NoNaluAnalyzer_045, TestSize.Level1)
+{
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::FIXED_RATIO);
+    cfg.retentionRatio = 0.5;
+    sfd_->Initialize(cfg);
+    // naluAnalyzer_ is null by default for FIXED_RATIO (RequiresNaluAnalysis=true is default but depends on strategy)
+    // Force naluAnalyzer_ to null
+    sfd_->naluAnalyzer_ = nullptr;
+
+    auto allocator = OHOS::Media::AVAllocatorFactory::CreateSharedAllocator(OHOS::Media::MEMORY_READ_WRITE);
+    auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, 100);
+    sfd_->inBufferMap_[0] = buffer;
+
+    bool result = sfd_->MakePreDecodeDecision(0);
+    EXPECT_TRUE(result);
+}
+
+/**
+ * @tc.name: InitializeWithCsd_NaluAnalyzerNull_046
+ * @tc.desc: Verify InitializeWithCsd caches CSD when naluAnalyzer_ is not instantiated.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, InitializeWithCsd_NaluAnalyzerNull_046, TestSize.Level1)
+{
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::FULL);
+    sfd_->Initialize(cfg);
+    // FULL mode does not require NALU analysis, so analyzer is null
+    ASSERT_EQ(sfd_->naluAnalyzer_, nullptr);
+
+    std::vector<uint8_t> csd = {0x00, 0x00, 0x00, 0x01, 0x67};
+    bool result = sfd_->InitializeWithCsd(csd);
+    EXPECT_FALSE(result);  // Returns false when naluAnalyzer_ is null
+    EXPECT_NE(sfd_->csdBuffer_, nullptr);  // But still caches
+}
+
+/**
+ * @tc.name: ExtractMVStats_NoMvRequired_047
+ * @tc.desc: Verify ExtractMVStats returns empty stats when requiresMv=false.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, ExtractMVStats_NoMvRequired_047, TestSize.Level1)
+{
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::FIXED_RATIO);
+    cfg.retentionRatio = 0.5;
+    sfd_->Initialize(cfg);
+
+    SmartFluencyDecoding::PostDecCost cost{};
+    auto stats = sfd_->ExtractMVStats({false, false, false}, 0, cost, nullptr);
+    EXPECT_EQ(stats.validBlocks, 0u);
+}
