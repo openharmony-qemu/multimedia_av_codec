@@ -371,6 +371,9 @@ int32_t CodecServer::Stop()
                                       AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
                                       GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    if (sfdManager_) {
+        sfdManager_->CleanResources();
+    }
     if (temporalScalability_ != nullptr && inputParamTask_ != nullptr) {
         temporalScalability_->SetBlockQueueActive();
         inputParamTask_->Stop();
@@ -777,7 +780,7 @@ int32_t CodecServer::ReleaseOutputBuffer(uint32_t index, bool render)
                 pts = it->second;
             }
         }
-        framerateCalculator_->OnFrameConsumed(pts);
+        framerateCalculator_->OnFrameConsumed(pts, render);
     }
     if (postProcessing_) {
         return ReleaseOutputBufferOfPostProcessing(index, render);
@@ -1774,7 +1777,10 @@ void CodecServer::InitSfdManager()
     if (sfdManager_ != nullptr) {
         return;
     }
-    if (!SFD::SmartFluencyDecodingManager::IsCodecSupported(codecMime_, codecType_)) {
+    std::string tmpName = codecName_;
+    transform(tmpName.begin(), tmpName.end(), tmpName.begin(), ::tolower);
+    bool isSecure = tmpName.find(".secure") != std::string::npos;
+    if (!SFD::SmartFluencyDecodingManager::IsCodecSupported(codecMime_, codecType_, isSecure)) {
         return;
     }
     sfdManager_ = std::make_unique<SFD::SmartFluencyDecodingManager>(codecMime_, codecType_);

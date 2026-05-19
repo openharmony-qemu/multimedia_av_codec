@@ -155,6 +155,7 @@ group("av_codec_unit_test") {
         "unittest/mpeg4_demuxer_test:mpeg4_demuxer_capi_unit_test",
         "unittest/mpeg4_demuxer_test:mpeg4_demuxer_inner_buffer_unit_test",
         "unittest/mpeg4_demuxer_test:mpeg4_demuxer_inner_unit_test",
+        "unittest/mpeg4_demuxer_plugin_test:mpeg4_demuxer_plugin_unit_test",
         "unittest/mpeg4_source_test:mpeg4_source_capi_unit_test",
         "unittest/mpeg4_source_test:mpeg4_source_inner_unit_test",
         "unittest/plugins_source_test:plugins_source_unit_test",
@@ -424,6 +425,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/encoderapi11h265bframe8bit_fuzzer:EncoderAPI11H265BFrame8BitFuzzTest",
       "fuzztest/encoderconfigure_fuzzer:EncoderConfigureFuzzTest",
       "fuzztest/encoderinner_fuzzer:EncoderInnerFuzzTest",
+      "fuzztest/video_encoder_dual_output_fuzzer:VideoEncoderDualOutputFuzzTest",
       "fuzztest/encodersetparameter_fuzzer:EncoderSetParameterFuzzTest",
       "fuzztest/fcodecsurfaceconfigure_fuzzer:FCodecSurfaceConfigureFuzzTest",
       "fuzztest/h263swdecoderconfigure_fuzzer:H263SwdecoderConfigureFuzzTest",
@@ -516,6 +518,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/http_plugin_fuzztest/dashmpddownfinished_fuzzer:DashMpdDownFinishedFuzzTest",
       "fuzztest/hlstagsattronly_fuzzer:HlsTagsAttrOnlyFuzzTest",
       "fuzztest/http_plugin_fuzztest/dashmediadownloader2_fuzzer:DashMediaDownloader2FuzzTest",
+      "fuzztest/http_plugin_fuzztest/dashcomprehensive_fuzzer:DashComprehensiveFuzzTest",
       "fuzztest/http_plugin_fuzztest/mpdparserthird_fuzzer:MpdParserThirdFuzzTest",
       "fuzztest/http_plugin_fuzztest/mpdparserseven_fuzzer:MpdParserSevenFuzzTest",
       "fuzztest/http_plugin_fuzztest/mpddown_fuzzer:MpdDownFuzzTest",
@@ -619,6 +622,7 @@ group("video_codec_unit_test") {
         "unittest/video_test/smart_fluency_decoding_test:smart_fluency_decoding_test",
         "unittest/video_test/vcodec_framework_test:vcodec_framework_test",
         "unittest/video_test/vcodec_server_test:codec_server_test",
+        "unittest/video_test/videoenc_dualoutput_unit_test:videoenc_dualoutput_unit_test",
       ]
     }
   }

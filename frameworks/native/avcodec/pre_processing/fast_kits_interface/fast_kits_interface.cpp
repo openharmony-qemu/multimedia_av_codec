@@ -14,9 +14,11 @@
  */
 
 #include "fast_kits_interface.h"
+#include <unordered_map>
+#include "hitrace_meter.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "FastKits"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "FastKitsInterface"};
 constexpr const char *FAST_IMAGE_SO_PATH = "libfast_image.so";
 } // namespace
 
@@ -28,6 +30,21 @@ FastKitsInterface &FastKitsInterface::GetInstance()
 {
     static FastKitsInterface instance;
     return instance;
+}
+
+bool FastKitsInterface::IsFormatSupported(int32_t format)
+{
+    switch (format) {
+        case GRAPHIC_PIXEL_FMT_RGBA_8888:
+        case GRAPHIC_PIXEL_FMT_RGBA_1010102:
+        case GRAPHIC_PIXEL_FMT_YCBCR_420_SP:
+        case GRAPHIC_PIXEL_FMT_YCRCB_420_SP:
+        case GRAPHIC_PIXEL_FMT_YCBCR_P010:
+        case GRAPHIC_PIXEL_FMT_YCRCB_P010:
+            return true;
+        default:
+            return false;
+    }
 }
 
 FastKitsInterface::~FastKitsInterface()
@@ -42,7 +59,8 @@ FastKitsInterface::~FastKitsInterface()
 void FastKitsInterface::Retain()
 {
     std::unique_lock<std::shared_mutex> lock(mutex_);
-    if (handle_ == nullptr) {
+    refCount_++;
+    if (refCount_ == 1 && handle_ == nullptr) {
         if (OpenLibrary() && ReadSymbols()) {
             AVCODEC_LOGI("fastkit lib loaded");
         } else {
@@ -59,7 +77,10 @@ void FastKitsInterface::Retain()
 void FastKitsInterface::Release()
 {
     std::unique_lock<std::shared_mutex> lock(mutex_);
-    if (handle_ != nullptr) {
+    if (refCount_ > 0) {
+        refCount_--;
+    }
+    if (refCount_ == 0 && handle_ != nullptr) {
         if (fastScaleClearGPUFunc_ != nullptr) {
             fastScaleClearGPUFunc_();
         }
@@ -72,16 +93,15 @@ void FastKitsInterface::Release()
 
 int32_t FastKitsInterface::ConvertErrorCode(int32_t fastErr)
 {
-    switch (fastErr) {
-        case FAST_ERR_SUCCESS:
-        case FAST_ERR_SUCCESS_PARTIAL:
-            return AVCS_ERR_OK;
-        case FAST_ERR_ILLEGAL_INPUT:
-        case FAST_ERR_INVALID_PTR:
-            return AVCS_ERR_INVALID_VAL;
-        default:
-            return AVCS_ERR_UNKNOWN;
-    }
+    static const std::unordered_map<int32_t, int32_t> errMap = {
+        { FAST_ERR_SUCCESS,          AVCS_ERR_OK },
+        { FAST_ERR_SUCCESS_PARTIAL,  AVCS_ERR_OK },
+        { FAST_ERR_ILLEGAL_INPUT,    AVCS_ERR_INVALID_VAL },
+        { FAST_ERR_INVALID_PTR,      AVCS_ERR_INVALID_VAL },
+        { FAST_ERR_UNSURPPORTED,     AVCS_ERR_UNSUPPORT },
+    };
+    auto it = errMap.find(fastErr);
+    return it != errMap.end() ? it->second : AVCS_ERR_UNKNOWN;
 }
 
 template <typename FuncPtr>
@@ -97,6 +117,7 @@ bool FastKitsInterface::LoadSymbol(void *handle, FuncPtr &func, const char *name
 
 int32_t FastKitsInterface::Init(uint32_t format, FastResizeAlgoType algo)
 {
+    HITRACE_METER_FMT(HITRACE_TAG_ZMEDIA, "DS Init format=%u algo=%d", format, static_cast<int32_t>(algo));
     std::unique_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(handle_ != nullptr, AVCS_ERR_UNKNOWN, "Library not loaded, call Retain first");
     CHECK_AND_RETURN_RET_LOG(initFunc_ != nullptr, AVCS_ERR_INVALID_VAL, "Init function not loaded");
@@ -146,6 +167,8 @@ bool FastKitsInterface::IsLoaded() const
 int32_t FastKitsInterface::Crop(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output,
                                 const CropRect &rect)
 {
+    HITRACE_METER_FMT(HITRACE_TAG_ZMEDIA, "Crop %dx%d->%dx%d rect=[%d,%d,%d,%d]", input->GetWidth(), input->GetHeight(),
+                      output->GetWidth(), output->GetHeight(), rect.top, rect.left, rect.bottom, rect.right);
     std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(cropFunc_ != nullptr && createRectFunc_ != nullptr && destroyRectFunc_ != nullptr,
                              AVCS_ERR_INVALID_VAL, "Crop functions not loaded");
@@ -168,6 +191,8 @@ int32_t FastKitsInterface::Crop(const sptr<SurfaceBuffer> &input, const sptr<Sur
 int32_t FastKitsInterface::DownSample(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output,
                                       FastResizeAlgoType algo)
 {
+    HITRACE_METER_FMT(HITRACE_TAG_ZMEDIA, "DS %dx%d->%dx%d algo=%d", input->GetWidth(), input->GetHeight(),
+                      output->GetWidth(), output->GetHeight(), static_cast<int32_t>(algo));
     std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(downSampleFunc_ != nullptr, AVCS_ERR_INVALID_VAL, "DownSample function not loaded");
 

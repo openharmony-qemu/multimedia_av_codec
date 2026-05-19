@@ -18,6 +18,12 @@
 #include "mv_analyzer.h"
 #include "mv_analyzer_so_loader.h"
 
+bool GetStreamAuxInfoCalled();
+const StreamAuxInfo& GetLastStreamAuxInfo();
+bool GetVideoInfoCalled();
+uint32_t GetLastVideoWidth();
+uint32_t GetLastVideoHeight();
+
 namespace {
 constexpr int32_t WIDTH_1080P = 1920;
 constexpr int32_t HEIGHT_1080P = 1080;
@@ -98,4 +104,45 @@ HWTEST_F(MvAnalyzerSoLoaderTest, Loader_InterfaceCall_MockData_006, TestSize.Lev
 
     // Expect 100 as hardcoded in our Mock
     EXPECT_EQ(stats.validBlocks, 100); // 100: mock valid blocks
+}
+
+/**
+ * @tc.name: SetVideoInfo_VerifyParams_007
+ * @tc.desc: Verify SetVideoInfo correctly passes width and height to the underlying C API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MvAnalyzerSoLoaderTest, SetVideoInfo_VerifyParams_007, TestSize.Level1)
+{
+    auto analyzer = MvAnalyzerFactory::CreateMvAnalyzer(SFDCodecType::AVC);
+    ASSERT_NE(analyzer, nullptr);
+
+    analyzer->SetVideoInfo(WIDTH_1080P, HEIGHT_1080P);
+
+    EXPECT_TRUE(GetVideoInfoCalled());
+    EXPECT_EQ(GetLastVideoWidth(), WIDTH_1080P);
+    EXPECT_EQ(GetLastVideoHeight(), HEIGHT_1080P);
+}
+
+/**
+ * @tc.name: SetStreamAuxInfo_VerifyParams_008
+ * @tc.desc: Verify SetStreamAuxInfo correctly passes StreamAuxInfo fields to the underlying C API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MvAnalyzerSoLoaderTest, SetStreamAuxInfo_VerifyParams_008, TestSize.Level1)
+{
+    auto analyzer = MvAnalyzerFactory::CreateMvAnalyzer(SFDCodecType::AVC);
+    ASSERT_NE(analyzer, nullptr);
+
+    StreamAuxInfo auxInfo{};
+    auxInfo.ctuSize = 64;
+    auxInfo.directSpatialMvPredFlag = 1;
+    auxInfo.direct8x8InferenceFlag = 1;
+    auxInfo.frameMbsOnlyFlag = 1;
+    analyzer->SetStreamAuxInfo(auxInfo);
+
+    EXPECT_TRUE(GetStreamAuxInfoCalled());
+    EXPECT_EQ(GetLastStreamAuxInfo().ctuSize, 64u);
+    EXPECT_EQ(GetLastStreamAuxInfo().directSpatialMvPredFlag, 1u);
+    EXPECT_EQ(GetLastStreamAuxInfo().direct8x8InferenceFlag, 1u);
+    EXPECT_EQ(GetLastStreamAuxInfo().frameMbsOnlyFlag, 1);
 }

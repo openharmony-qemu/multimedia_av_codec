@@ -54,21 +54,45 @@ public:
     Status SetTrackFragmentRunParams(int64_t dataOffset, int64_t dataSize, int64_t sidxDts, int64_t &moofDts,
         int64_t &duration);
     Status BuildSampleIndexEntries();
+    void UpdateRawSampleStats();
     Status GetSampleDuration(uint32_t index, uint32_t &delta);
     void SetTimeOffset(int64_t timeOffset);
     void CalculateDtsShift();
 
+    uint32_t CalculateSampleCount();
+    uint32_t GetSttsEntryCount();
+    uint32_t GetSampleCountOfSttsEntry(uint32_t sttsEntryIndex);
+    uint32_t GetSampleDeltaOfSttsEntry(uint32_t sttsEntryIndex);
+    uint32_t GetCttsEntryCount();
+    uint32_t GetSampleCountOfCttsEntry(uint32_t cttsEntryIndex);
+    int32_t GetSampleOffsetOfCttsEntry(uint32_t cttsEntryIndex);
+    int32_t GetMinOffsetOfCttsEntry();
+    struct EditListEntry {
+        int64_t mediaTime = 0;
+        int64_t duration = 0;
+    };
     struct SampleIndexEntry {
-        int64_t dts;
-        int64_t pts;
-        int64_t pos;
-        uint32_t flag;
-        int32_t size;
+        int64_t dts = 0;
+        int64_t pts = 0;
+        int64_t pos = 0;
+        uint32_t flag = 0;
+        int32_t size = 0;
+        int64_t duration = 0;
+        std::vector<uint8_t> skipSamplesInfo;
     };
     struct CttsEntry {
         uint32_t count;
         int32_t delta;
     };
+
+    void SetEditListParams(const std::vector<EditListEntry>& editListEntries, int32_t movieTimeScale,
+        int32_t trackTimeScale);
+    bool HasEditList() const;
+    bool HasAppliedEditList() const;
+    int64_t GetRawTotalSize() const;
+    int64_t GetRawTotalDuration() const;
+    int64_t GetRawSampleCount() const;
+    uint32_t EstimateVideoDelay() const;
 
     std::shared_ptr<DemuxerDataReader> dataReader_;
     std::vector<SampleIndexEntry> sampleIndexEntry_;
@@ -100,7 +124,7 @@ private:
     };
     struct StssEntry {
         uint32_t index;
-        int64_t pts;
+        int64_t syncDts;
     };
     struct TrackFragmentHeaderInfo {
         enum Flags {
@@ -127,6 +151,31 @@ private:
         uint32_t dataOffset = 0;
         uint32_t index = 0;
     };
+    struct EditListBuildContext {
+        const std::vector<SampleIndexEntry>& oldEntries;
+        std::vector<SampleIndexEntry>& newEntries;
+        int64_t& editListDtsEntryEnd;
+        int64_t& emptyEditsDuration;
+        int64_t& minCorrectedPts;
+        bool& foundNonEmptyEdit;
+        int32_t& firstNonZeroAudioEdit;
+        int64_t startDts;
+    };
+    struct EditListProcessContext {
+        const EditListEntry* edit = nullptr;
+        int64_t editDuration = 0;
+        size_t startIndex = 0;
+        int64_t dtsCounter = 0;
+        int64_t editEndTime = 0;
+        bool skipEntry = false;
+        bool editListStartEncountered = false;
+        bool foundKeyframeAfterEdit = false;
+        bool continueAfterEdit = false;
+        bool shouldBreak = false;
+        SampleIndexEntry newEntry;
+        int64_t frameEndTime = 0;
+        std::vector<int64_t> leadingDurations;
+    };
 
     std::vector<SttsEntry> sttsEntry_;
     std::vector<StscEntry> stscEntry_;
@@ -141,13 +190,42 @@ private:
     uint32_t numMoovSamples_ = 0;
     bool hasTfhd_ = false;
     bool hasDefaultStszSize_ = false;
+    bool editListApplied_ = false;
     int64_t dtsShift_ = 0;
     int64_t timeOffset_ = 0;
+    int64_t rawTotalSize_ = 0;
+    int64_t rawTotalDuration_ = 0;
+    int64_t rawSampleCount_ = 0;
+    int32_t movieTimeScale_ = 0;
+    int32_t trackTimeScale_ = 0;
+    std::vector<EditListEntry> editListEntries_;
 
     void ProcessHalfByteSampleSizes(const uint8_t* data, uint32_t& entryIndex, uint32_t numSampleSizes);
     Status ExpandCttsEntry(uint32_t sttsNum);
+    Status ApplyEditList();
+    Status RebuildSyncSamples();
     Status FindWithSyncSamples(int64_t inputPTS, bool isBaseTrack, SeekMode flag, uint32_t& syncIndex);
+    int64_t FindIndexWithoutSyncSamples(int64_t inputPTS) const;
+    bool ResolveDirectSyncSample(int64_t inputPTS, int64_t currentIndex, uint32_t& sampleIndex) const;
+    bool ResolveNonBaseTrackEos(int64_t inputPTS, bool isBaseTrack, SeekMode flag, uint32_t& sampleIndex) const;
+    bool ResolveTextWebVttSample(int64_t inputPTS, int64_t& currentIndex, uint32_t& sampleIndex) const;
     Status CheckSyncSample(int64_t inputPTS, bool isBaseTrack, SeekMode flag, int64_t &currentIndex);
+    bool IsSyncSample(const SampleIndexEntry& entry) const;
+    int64_t GetCttsDelta(size_t index) const;
+    int64_t GetFrameDuration(const std::vector<SampleIndexEntry>& entries, size_t index, int64_t editDuration) const;
+    int64_t FindPrevClosestIndex(const std::vector<SampleIndexEntry>& entries, int64_t timestampPts,
+        bool anyFrame) const;
+    void FixLeadingDiscardTimestamps(std::vector<SampleIndexEntry>& entries, size_t endIndex, int64_t endDts,
+        const std::vector<int64_t>& leadingDurations) const;
+    Status ConvertEditDuration(const EditListEntry& edit, int64_t& editDuration) const;
+    Status PrepareEditListEntry(const EditListEntry& edit, EditListBuildContext& buildCtx,
+        EditListProcessContext& processCtx);
+    Status BuildEditListSampleEntry(const SampleIndexEntry& oldEntry, size_t index, EditListBuildContext& buildCtx,
+        EditListProcessContext& processCtx);
+    Status AppendEditListSamples(EditListBuildContext& buildCtx, EditListProcessContext& processCtx);
+    Status AppendEditListSample(const SampleIndexEntry& oldEntry, size_t index, EditListBuildContext& buildCtx,
+        EditListProcessContext& processCtx);
+    void FinalizeAppliedEditList(EditListBuildContext& buildCtx);
     Status SetFieldSize(uint32_t atomType, int64_t &currentOffset, uint32_t& fieldSize);
     Status ProcessSampleSizeData(uint32_t atomType, int64_t currentOffset, uint32_t size,
         uint32_t fieldSize, uint32_t numSampleSizes);
@@ -156,11 +234,15 @@ private:
         int64_t& remainSamples);
     void GetSampleFlag(uint32_t sampleIndex, SampleIndexEntry& entry, uint32_t& syncIndex);
     void InitMoofParam();
+    Status ReadTrunRunData(int64_t dataOffset, int64_t dataSize, uint16_t& trunFlag, uint32_t& numSamples,
+        std::unique_ptr<uint8_t[]>& data);
+    bool IsValidTrunSampleData(int64_t dataSize, uint32_t bufferOffset, uint32_t byteLength,
+        uint32_t numSamples) const;
     Status InitSampleInfo(SampleInfo& sampleInfo, uint32_t& bufferOffset, uint16_t trunFlag,
         uint8_t* data, uint32_t& firstSampleFlag);
     void UpdateSampleInfo(SampleInfo& sampleInfo, uint32_t& bufferOffset, uint16_t trunFlag,
         uint8_t* data, uint32_t firstSampleFlag);
-    void UpdateSampleEntryInfo(SampleInfo sampleInfo, int64_t& offset, int64_t& currentDts);
+    void UpdateSampleEntryInfo(SampleInfo sampleInfo, int64_t& offset, int64_t& currentDts, bool isOverlap = false);
 };
 } // namespace MPEG4
 } // namespace Plugins

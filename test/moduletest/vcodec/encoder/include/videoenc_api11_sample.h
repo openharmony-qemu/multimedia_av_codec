@@ -187,6 +187,7 @@ public:
     bool repeatRun = false;
     bool showLog = false;
     bool enableLTR = false;
+    bool enableLowLatency = false;
     bool getInputBufferIndexRepeat = false;
     bool abnormalIndexValue = false;
     bool getOutputBufferIndexNoExisted = false;
@@ -218,6 +219,7 @@ public:
     uint32_t inCount = 0;
     int32_t enbleSyncMode = 0;
     int32_t enbleBFrameMode = 0;
+    int32_t layerId = 0;
     int64_t syncInputWaitTime = -1;
     int64_t syncOutputWaitTime = -1;
     bool queryOutputBufferEOS = false;
@@ -226,6 +228,7 @@ public:
     bool noDestroy = false;
     std::atomic<bool> isRunning_ { false };
     bool isSurface = false;
+    bool enableRoi = false;
 private:
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;

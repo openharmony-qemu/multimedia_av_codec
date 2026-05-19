@@ -28,6 +28,7 @@
 #include <optional>
 #include "avcodec_trace.h"
 #include "avcodec_log.h"
+#include "demuxer_utils.h"
 #include "securec.h"
 #include "ffmpeg_format_helper.h"
 #include "ffmpeg_utils.h"
@@ -94,21 +95,6 @@ const char* PLUGIN_NAME_AAC = "aac";
 const char* PLUGIN_NAME_MPEGPS = "mpeg";
 const int32_t MPEGPS_START_CODE_SIZE = 4;
 const uint8_t MPEGPS_START_CODE[] = {0x00, 0x00, 0x01, 0xBA};
-
-const char* g_heifBrands[] = {"heic", "avif", "heif", "mif1", "msf1", "miaf", "heix", "heim", "heis"};
-
-bool IsHeifFormat(const char* majorBrand)
-{
-    if (majorBrand == nullptr) {
-        return false;
-    }
-    for (const auto& brand : g_heifBrands) {
-        if (StartWith(majorBrand, brand)) {
-            return true;
-        }
-    }
-    return false;
-}
 
 const uint32_t SETTIMER_TIMEOUT = 5; // second
 constexpr int64_t LOG_INTERVAL_MS = 2000; // 2s
@@ -1394,14 +1380,32 @@ int FFmpegDemuxerPlugin::CheckContextIsValid(void* opaque, int &bufSize)
     }
 
     if (ioContext->isLimit) {
-        if (bufSize > ioContext->sizeLimit - ioContext->readSizeCnt) {
+        int32_t remainingSize = ioContext->sizeLimit - ioContext->readSizeCnt;
+        if (remainingSize <= 0) {
             MEDIA_LOG_E("Read limit cur: " PUBLIC_LOG_D32 ", limit: " PUBLIC_LOG_D32 ", read: " PUBLIC_LOG_D32,
                 ioContext->readSizeCnt, ioContext->sizeLimit, bufSize);
             return ret;
         }
-        ioContext->readSizeCnt += bufSize;
+        if (bufSize > remainingSize) {
+            bufSize = remainingSize;
+        }
     }
     return 0;
+}
+
+void FFmpegDemuxerPlugin::UpdateReadSizeCnt(IOContext* ioContext, int dataSize)
+{
+    if (ioContext == nullptr || !ioContext->isLimit || dataSize <= 0) {
+        return;
+    }
+    int32_t remainingSize = ioContext->sizeLimit - ioContext->readSizeCnt;
+    if (dataSize > remainingSize) {
+        MEDIA_LOG_W("Actual read size exceeds limit, cur: " PUBLIC_LOG_D32 ", limit: " PUBLIC_LOG_D32
+            ", read: " PUBLIC_LOG_D32, ioContext->readSizeCnt, ioContext->sizeLimit, dataSize);
+        ioContext->readSizeCnt = ioContext->sizeLimit;
+        return;
+    }
+    ioContext->readSizeCnt += dataSize;
 }
 
 int64_t FFmpegDemuxerPlugin::AVSeek(void* opaque, int64_t offset, int whence)
@@ -1598,6 +1602,9 @@ void FFmpegDemuxerPlugin::PrepareSetDataSourceContext()
 {
     ioContext_.retry = false;
     ioContext_.initErrorAgain = false;
+    if (ioContext_.readTimeoutMs > 0) {
+        ioContext_.readStartTimeMs = 0;
+    }
     if (ioContext_.invokerType != InvokerType::INIT) {
         std::lock_guard<std::mutex> initLock(ioContext_.invokerTypeMutex);
         ioContext_.invokerType = InvokerType::INIT;
@@ -2159,6 +2166,12 @@ Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacketWrapperPtr pktWrapper)
 
 Status FFmpegDemuxerPlugin::AccumulateXpsPkt(AVPacketWrapperPtr pkt)
 {
+    std::lock_guard<std::mutex> lock(accumulatePktMutex_);
+    return AccumulateXpsPktLocked(pkt);
+}
+
+Status FFmpegDemuxerPlugin::AccumulateXpsPktLocked(AVPacketWrapperPtr pkt)
+{
     FALSE_RETURN_V_MSG_E(pkt != nullptr && pkt->GetAVPacket() != nullptr, Status::ERROR_NULL_POINTER, "Pkt is nullptr");
     FALSE_RETURN_V_MSG_E(fileType_ == FileType::MPEGPS, Status::OK, "FileType is not MPEGPS");
     FALSE_RETURN_V_MSG_E(pkt->GetData() != nullptr && pkt->GetSize() >= 0,
@@ -2166,20 +2179,23 @@ Status FFmpegDemuxerPlugin::AccumulateXpsPkt(AVPacketWrapperPtr pkt)
     int32_t trackIndex = pkt->GetStreamIndex();
     FALSE_RETURN_V_MSG_E(trackIndex >= 0, Status::ERROR_INVALID_DATA, "Invalid track index");
     int32_t ffRet = 0;
-    if (accumulatePktMap_.find(trackIndex) == accumulatePktMap_.end()) {
-        accumulatePktMap_[trackIndex] = pkt;
-        accumulatePktFinishMap_[trackIndex] = false;
+    auto pktIt = accumulatePktMap_.find(trackIndex);
+    if (pktIt == accumulatePktMap_.end()) {
+        accumulatePktMap_.emplace(trackIndex, pkt);
+        accumulatePktFinishMap_.insert_or_assign(trackIndex, false);
     } else {
-        AVPacket* dstPkt = accumulatePktMap_[trackIndex]->GetAVPacket();
+        FALSE_RETURN_V_MSG_E(pktIt->second != nullptr && pktIt->second->GetAVPacket() != nullptr,
+            Status::ERROR_NULL_POINTER, "Accumulated packet is nullptr");
+        AVPacket* dstPkt = pktIt->second->GetAVPacket();
         int pktSize = pkt->GetSize();
-        if (pktSize < 0 || pktSize > INT_MAX - dstPkt->size) {
+        if (pktSize < 0 || dstPkt->size < 0 || pktSize > INT_MAX - dstPkt->size) {
             MEDIA_LOG_E("Invalid packet size for concatenation: dst=" PUBLIC_LOG_D32 ", src=" PUBLIC_LOG_D32,
                         dstPkt->size, pktSize);
             return Status::ERROR_INVALID_DATA;
         }
         ffRet = av_grow_packet(dstPkt, pktSize);
         if (ffRet < 0) {
-            AccumulateXpsPktRelease(trackIndex);
+            AccumulateXpsPktReleaseLocked(static_cast<uint32_t>(trackIndex));
             MEDIA_LOG_E("Call av_grow_packet failed, ret:" PUBLIC_LOG_D32, ffRet);
             return Status::ERROR_INVALID_DATA;
         }
@@ -2196,23 +2212,28 @@ Status FFmpegDemuxerPlugin::AccumulateXpsPkt(AVPacketWrapperPtr pkt)
         }
     }
     if (!IsPktOnlyParameterSets(pkt->GetData(), pkt->GetSize())) {
-        accumulatePktFinishMap_[trackIndex] = true;
+        accumulatePktFinishMap_.insert_or_assign(trackIndex, true);
     }
     return Status::OK;
 }
 
 void FFmpegDemuxerPlugin::AccumulateXpsPktRelease(uint32_t trackIndex)
 {
-    if (fileType_ != FileType::MPEGPS || !streamParsers_->ParserIsCreated(trackIndex)) {
+    std::lock_guard<std::mutex> lock(accumulatePktMutex_);
+    AccumulateXpsPktReleaseLocked(trackIndex);
+}
+
+void FFmpegDemuxerPlugin::AccumulateXpsPktReleaseLocked(uint32_t trackIndex)
+{
+    if (fileType_ != FileType::MPEGPS) {
         return;
     }
-    if (accumulatePktMap_.find(trackIndex) != accumulatePktMap_.end()) {
-        accumulatePktMap_[trackIndex].reset();
-        accumulatePktMap_.erase(trackIndex);
+    auto pktIt = accumulatePktMap_.find(trackIndex);
+    if (pktIt != accumulatePktMap_.end()) {
+        pktIt->second.reset();
+        accumulatePktMap_.erase(pktIt);
     }
-    if (accumulatePktFinishMap_.find(trackIndex) != accumulatePktFinishMap_.end()) {
-        accumulatePktFinishMap_.erase(trackIndex);
-    }
+    accumulatePktFinishMap_.erase(trackIndex);
 }
 
 void FFmpegDemuxerPlugin::AccumulateXpsPktReleaseAll()
@@ -2220,8 +2241,9 @@ void FFmpegDemuxerPlugin::AccumulateXpsPktReleaseAll()
     if (fileType_ != FileType::MPEGPS) {
         return;
     }
-    for (auto &it : accumulatePktMap_) {
-        AccumulateXpsPktRelease(static_cast<uint32_t>(it.first));
+    std::lock_guard<std::mutex> lock(accumulatePktMutex_);
+    for (auto& item : accumulatePktMap_) {
+        item.second.reset();
     }
     accumulatePktMap_.clear();
     accumulatePktFinishMap_.clear();
@@ -2230,20 +2252,36 @@ void FFmpegDemuxerPlugin::AccumulateXpsPktReleaseAll()
 FFmpegDemuxerPlugin::AccumulateAction FFmpegDemuxerPlugin::ProcessAccumulateXpsPkt(
     AVPacketWrapperPtr& pktWrapper, int ffmpegRet, Status& status)
 {
-    int32_t trackId = pktWrapper->GetStreamIndex();
-    if (fileType_ != FileType::MPEGPS || !streamParsers_->ParserIsCreated(trackId) || ffmpegRet < 0) {
+    if (fileType_ != FileType::MPEGPS || ffmpegRet < 0) {
         return AccumulateAction::NOT_SUPPORT_TYPE;
     }
-    status = AccumulateXpsPkt(pktWrapper);
+    if (pktWrapper == nullptr) {
+        status = Status::ERROR_NULL_POINTER;
+        return AccumulateAction::ERROR;
+    }
+    int32_t trackId = pktWrapper->GetStreamIndex();
+    if (trackId < 0 || streamParsers_ == nullptr ||
+        !streamParsers_->ParserIsCreated(static_cast<uint32_t>(trackId))) {
+        return AccumulateAction::NOT_SUPPORT_TYPE;
+    }
+    std::lock_guard<std::mutex> lock(accumulatePktMutex_);
+    status = AccumulateXpsPktLocked(pktWrapper);
     if (status != Status::OK) {
         MEDIA_LOG_E("PsAccumulateXpsPkt failed");
         return AccumulateAction::ERROR;
     }
-    if (!accumulatePktFinishMap_[trackId]) {
+    auto finishIt = accumulatePktFinishMap_.find(trackId);
+    if (finishIt == accumulatePktFinishMap_.end() || !finishIt->second) {
         MEDIA_LOG_I("PsAccumulateXpsPkt not completed, skip");
         return AccumulateAction::ACCUMULATE_NOT_COMPLETED;
     }
-    pktWrapper = accumulatePktMap_[trackId];
+    auto pktIt = accumulatePktMap_.find(trackId);
+    if (pktIt == accumulatePktMap_.end() || pktIt->second == nullptr) {
+        status = Status::ERROR_NULL_POINTER;
+        MEDIA_LOG_E("Accumulated packet is nullptr");
+        return AccumulateAction::ERROR;
+    }
+    pktWrapper = pktIt->second;
     return AccumulateAction::ACCUMULATE_COMPLETED;
 }
 
@@ -2820,6 +2858,9 @@ void FFmpegDemuxerPlugin::SyncSeekThread()
 {
     ioContext_.retry = false;
     ioContext_.avReadPacketStopState.store(AVReadPacketStopState::FALSE);
+    if (ioContext_.readTimeoutMs > 0) {
+        ioContext_.readStartTimeMs = 0;
+    }
     if (ioContext_.invokerType != InvokerType::SEEK) {
         std::lock_guard<std::mutex> seekLock(ioContext_.invokerTypeMutex);
         ioContext_.invokerType = InvokerType::SEEK;

@@ -191,9 +191,10 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_001, TestSize.Level1)
     vEncSample->DEFAULT_WIDTH = 1920;
     vEncSample->DEFAULT_HEIGHT = 1080;
     vEncSample->roiInfo = "10,10-100,100=-8;100,1-200,200=-4;"
-                      "300,350-430,440=-4;510,54050,690=-4;"
+                      "300,350-430,440=-4;510,540-650,690=-4;"
                       "700,710-820,1000=-4";
     vEncSample->OUT_DIR = OUT_DIR;
+    vEncSample->enableRoi = true;
     vEncSample->DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV12;
     vEncSample->DEFAULT_BITRATE_MODE = CBR;
     vEncSample->INP_DIR = INP_DIR_1920_30;
@@ -221,6 +222,7 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_002, TestSize.Level1)
     vEncSample->DEFAULT_HEIGHT = 1080;
     vEncSample->roiInfo = "440,1272-1080,1920=-51";
     vEncSample->OUT_DIR = OUT_DIR;
+    vEncSample->enableRoi = true;
     vEncSample->DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV12;
     vEncSample->DEFAULT_BITRATE_MODE = VBR;
     vEncSample->INP_DIR = INP_DIR_1920_30;
@@ -248,6 +250,7 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_003, TestSize.Level1)
     vEncSample->DEFAULT_HEIGHT = 1920;
     vEncSample->roiInfo = "10,10-100,100=-4;100,100-200,200=-4;350,300-400,430=-4;540,510-690,650=51";
     vEncSample->OUT_DIR = OUT_DIR;
+    vEncSample->enableRoi = true;
     vEncSample->DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV12;
     vEncSample->INP_DIR = INP_DIR_1080_30;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
@@ -274,6 +277,7 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_004, TestSize.Level1)
     vEncSample->DEFAULT_HEIGHT = 1920;
     vEncSample->roiInfo = "0,0-500,500;500,500-600,600;600,500-700,600";
     vEncSample->OUT_DIR = OUT_DIR;
+    vEncSample->enableRoi = true;
     vEncSample->DEFAULT_BITRATE_MODE = SQR;
     vEncSample->DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV12;
     vEncSample->INP_DIR = INP_DIR_1080_30;
@@ -301,6 +305,7 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_005, TestSize.Level1)
     vEncSample->DEFAULT_HEIGHT = 1080;
     vEncSample->roiInfo = "123456789123,123456789123-123456789-12345678912=-8";
     vEncSample->OUT_DIR = OUT_DIR;
+    vEncSample->enableRoi = true;
     vEncSample->DEFAULT_BITRATE_MODE = SQR;
     vEncSample->DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV12;
     vEncSample->INP_DIR = INP_DIR_1920_30;
@@ -327,13 +332,14 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_006, TestSize.Level1)
     vEncSample->DEFAULT_WIDTH = 1080;
     vEncSample->DEFAULT_HEIGHT = 1920;
     vEncSample->roiInfo = "10,10-100,100=-8;100,10-200,200=-4;"
-                        "300,350-430,440=-4;510,540650,690=-4;"
+                        "300,350-430,440=-4;510,540-650,690=-4;"
                         "700,710-80,1000=-4";
     vEncSample->OUT_DIR = OUT_DIR;
     vEncSample->SURF_INPUT = true;
     vEncSample->enableSeekEos = true;
     vEncSample->enableRepeat = true;
     vEncSample->setMaxCount = true;
+    vEncSample->enableRoi = true;
     vEncSample->DEFAULT_BITRATE_MODE = CBR;
     vEncSample->INP_DIR = INP_DIR_1080_30;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
@@ -364,6 +370,7 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_007, TestSize.Level1)
     vEncSample->enableSeekEos = true;
     vEncSample->enableRepeat = true;
     vEncSample->setMaxCount = true;
+    vEncSample->enableRoi = true;
     vEncSample->DEFAULT_BITRATE_MODE = VBR;
     vEncSample->INP_DIR = INP_DIR_1080_30;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
@@ -388,8 +395,9 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_008, TestSize.Level1)
     auto vEncSample = make_unique<VEncAPI11Sample>();
     vEncSample->DEFAULT_WIDTH = 1080;
     vEncSample->DEFAULT_HEIGHT = 1920;
-    vEncSample->roiInfo = "10,10-100,100=-4;100,100-200,200=-4;350,300-400,430=-4;540,510-690,650=51";
+    vEncSample->roiInfo = "10,10-100,100=-4;100,100-200,200=-4;350,300-400,430=-4;540,510-690,750=51";
     vEncSample->OUT_DIR = OUT_DIR;
+    vEncSample->enableRoi = true;
     vEncSample->SURF_INPUT = true;
     vEncSample->enableSeekEos = true;
     vEncSample->enableRepeat = true;
@@ -424,6 +432,7 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_009, TestSize.Level1)
     vEncSample->enableSeekEos = true;
     vEncSample->enableRepeat = true;
     vEncSample->setMaxCount = true;
+    vEncSample->enableRoi = true;
     vEncSample->DEFAULT_BITRATE_MODE = SQR;
     vEncSample->DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV12;
     vEncSample->INP_DIR = INP_DIR_1080_30;
@@ -455,6 +464,7 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_010, TestSize.Level1)
     vEncSample->enableSeekEos = true;
     vEncSample->enableRepeat = true;
     vEncSample->setMaxCount = true;
+    vEncSample->enableRoi = true;
     vEncSample->DEFAULT_BITRATE_MODE = SQR;
     vEncSample->DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV12;
     vEncSample->INP_DIR = INP_DIR_1080_30;

@@ -365,5 +365,9 @@ test/unittest/resources/demuxer_res/short_video.mp4 filter=lfs diff=lfs merge=lf
 test/unittest/resources/demuxer_res/sidx.mp4 filter=lfs diff=lfs merge=lfs -text
 test/unittest/resources/demuxer_res/test_h264.mp4 filter=lfs diff=lfs merge=lfs -text
 test/unittest/resources/demuxer_res/wvtt.mp4 filter=lfs diff=lfs merge=lfs -text
+test/unittest/resources/demuxer_res/loci_altitude_100.mp4 filter=lfs diff=lfs merge=lfs -text
+test/unittest/resources/demuxer_res/loci_altitude_102.mp4 filter=lfs diff=lfs merge=lfs -text
+test/unittest/resources/demuxer_res/loci_altitude_empty.mp4 filter=lfs diff=lfs merge=lfs -text
+test/unittest/resources/demuxer_res/large_tref.mp4 filter=lfs diff=lfs merge=lfs -text
 /test/moduletest/resources/demuxer/mkv.mkv filter=lfs diff=lfs merge=lfs -text
 /test/unittest/resources/reference_parser_test/mp4/ippp_0.mp4 filter=lfs diff=lfs merge=lfs -text

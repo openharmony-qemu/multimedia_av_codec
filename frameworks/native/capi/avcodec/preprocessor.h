@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 #include "avcodec_info.h"
+#include "cpu_image_processor.h"
 #include "fast_kits_interface.h"
 #include "format.h"
 #include "frame_drop_filter.h"
@@ -32,6 +33,11 @@ public:
     explicit Preprocessor(const std::string &mime);
     ~Preprocessor();
 
+    static bool IsAvailable();
+
+    int32_t ValidateConfiguration(const Media::Format &format, bool configuring);
+    GraphicPixelFormat GetPixelFormatFromConfiguration(const Media::Format &format) const;
+    GraphicPixelFormat GetPixelFormatFromParameter(const Media::Format &format) const;
     int32_t Configure(const Media::Format &format);
     int32_t SetParameter(const Media::Format &format);
 
@@ -129,23 +135,40 @@ private:
         }
     };
 
-    int32_t ValidateCrop(const Media::Format &format, CropParams &params);
-    int32_t ValidateDownsampling(const Media::Format &format, DownsamplingParams &params);
-    int32_t ValidateDropFrame(const Media::Format &format, DropFrameParams &params);
+    struct RoiTransform {
+        double scaleX;
+        double scaleY;
+        int32_t offsetTop;
+        int32_t offsetLeft;
+    };
+
+    bool UsingAsyncMode(const Media::Format &format) const;
+    int32_t ValidateCrop(const Media::Format &format);
+    int32_t ValidateDownsampling(const Media::Format &format);
+    int32_t ValidateDropFrame(const Media::Format &format);
     const CropConfig &GetCropConfig() const;
     const DownsamplingConfig &GetDownsamplingConfig() const;
     const DropFrameConfig &GetDropFrameConfig() const;
-    void Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output);
-    void Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output);
-    void Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output);
+    int32_t Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output);
+    int32_t Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output);
+    int32_t Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output);
+    void UpdateOutputMetadata(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output,
+                              const RoiTransform &roiTransform);
+    void CopyInputMetadata(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output);
+    void UpdateRoiMetadata(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output,
+                           const RoiTransform &roiTransform);
 
-    bool IsHevc10BitData(HEVCProfile profile);
-    GraphicPixelFormat ConvertVideoPixelFormat2GraphicPixelFormat(VideoPixelFormat pixelFormat, int32_t profile);
-    void UpdateConfiguredValues(const Media::Format &format, EncoderConfig &config);
+    bool IsHevc10BitData(HEVCProfile profile) const;
+    GraphicPixelFormat ConvertVideoPixelFormat2GraphicPixelFormat(VideoPixelFormat pixelFormat, int32_t profile) const;
+    void UpdateConfiguredValues(const Media::Format &format, bool configuring);
     bool GetEncoderRange(const Media::Format &format, Range &encWidth, Range &encHeight);
     bool CheckOrReallocOutSurfaceBuffer(int32_t targetWidth, int32_t targetHeight,
-                                        int32_t targetStride, sptr<SurfaceBuffer> &output);
+                                        int32_t targetFormat, sptr<SurfaceBuffer> &output);
 
+    EncoderConfig encoderParams_;               // for validation before configure
+    CropParams cropParams_;                     // for validation before configure
+    DownsamplingParams downsamplingParams_;     // for validation before configure
+    DropFrameParams dropParams_;                // for validation before configure
     CropConfig cropConfig_;
     DownsamplingConfig downsamplingConfig_;
     DropFrameConfig dropFrameConfig_;

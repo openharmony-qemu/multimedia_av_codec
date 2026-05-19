@@ -51,7 +51,7 @@ ohos_fuzztest("HevcSwdecoderServerMemrecycleFuzzTest") {
     "$MEDIA_ROOT_DIR/services/engine/codec/video/hevcdecoder:hevc_decoder",
   ]
   resource_config_file =
-      "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
+    "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
 }
 
 ###############################################################################

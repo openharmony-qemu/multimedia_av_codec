@@ -50,6 +50,7 @@ struct Sample {
     int64_t duration;
     uint32_t flag;
     int32_t size;
+    std::vector<uint8_t> skipSamplesInfo;
     std::unique_ptr<uint8_t[]> data;
 };
 
@@ -57,6 +58,7 @@ struct MPEG4Sample {
     int32_t offset = 0;
     std::shared_ptr<Sample> sample = nullptr;
     bool isAnnexb = false;
+    bool isVttc = false;
     uint32_t queueIndex = 0;
 };
 } // namespace MPEG4

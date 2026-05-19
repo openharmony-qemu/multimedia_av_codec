@@ -20,7 +20,6 @@
 #include "native_avcodec_videoencoder.h"
 #include "native_avcodec_videodecoder.h"
 #include "native_avcapability.h"
-
 #include "avcodec_info.h"
 #include "avcodec_list.h"
 #include "avcodec_video_encoder.h"
@@ -1527,5 +1526,67 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_SCALING_MODE_VALID_TEST_1603, TestS
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_SCALING_MODE, INT32_MIN));
     OH_AVErrCode ret = OH_VideoDecoder_Configure(g_videoDec, g_format);
     ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+}
+
+/**
+ * @tc.name: DECODE_KEY_OUTPUT_IN_DECODING_ORDER_INVALID_TEST_1701
+ * @tc.desc: decoder configure output in decoding order fails when not supported
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_OUTPUT_IN_DECODING_ORDER_INVALID_TEST_1701, TestSize.Level3)
+{
+    OH_AVCapability *capability = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4, false);
+    if (capability != nullptr &&
+        OH_AVCapability_IsFeatureSupported(capability, VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER)) {
+        std::cout << "Device supports VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER" << std::endl;
+        return;
+    }
+
+    OH_AVCodec *videoDec = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4);
+    ASSERT_NE(nullptr, videoDec);
+
+    OH_AVFormat *format = OH_AVFormat_Create();
+    ASSERT_NE(nullptr, format);
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, DECODER_PIXEL_FORMAT));
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, 1));
+
+    OH_AVErrCode ret = OH_VideoDecoder_Configure(videoDec, format);
+    ASSERT_NE(AV_ERR_OK, ret);
+
+    OH_AVFormat_Destroy(format);
+    OH_VideoDecoder_Destroy(videoDec);
+}
+
+/**
+ * @tc.name: DECODE_KEY_OUTPUT_IN_DECODING_ORDER_VALID_TEST_1702
+ * @tc.desc: decoder configure output in decoding order succeeds when supported
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_OUTPUT_IN_DECODING_ORDER_VALID_TEST_1702, TestSize.Level3)
+{
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, SOFTWARE);
+    if (capability == nullptr ||
+        !OH_AVCapability_IsFeatureSupported(capability, VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER)) {
+        std::cout << "Software decoder does not support VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER" << std::endl;
+        return;
+    }
+
+    const char *codecName = OH_AVCapability_GetName(capability);
+    OH_AVCodec *videoDec = OH_VideoDecoder_CreateByName(codecName);
+    ASSERT_NE(nullptr, videoDec);
+
+    OH_AVFormat *format = OH_AVFormat_Create();
+    ASSERT_NE(nullptr, format);
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, 1));
+
+    OH_AVErrCode ret = OH_VideoDecoder_Configure(videoDec, format);
+    ASSERT_EQ(AV_ERR_OK, ret);
+
+    OH_AVFormat_Destroy(format);
+    OH_VideoDecoder_Destroy(videoDec);
 }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -1434,7 +1434,7 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, GET_SEG_TYPE_002, TestSize.Level1)
     downloader->Init();
     // manually insert into audioStreamIds_ and subtitlesStreamIds_
     {
-        std::lock_guard<std::mutex> lock(downloader->streamIdMutex);
+        std::lock_guard<std::mutex> lock(downloader->streamIdMutex_);
         downloader->audioStreamIds_.insert(100);
         downloader->subtitlesStreamIds_.insert(200);
     }
@@ -1997,5 +1997,1113 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, UPDATE_LIVE_BASE_OFFSET_003, TestSize.Le
     downloader->UpdateLiveBaseOffsetForTest(files2);
     auto offset2 = downloader->GetLiveBaseOffset();
     EXPECT_GE(offset2, offset1);
+}
+
+/**
+ * @tc.name: CLONE_001
+ * @tc.desc: test Clone copies httpHeader correctly
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, CLONE_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->httpHeader_["User-Agent"] = "testAgent";
+    downloader->httpHeader_["Referer"] = "testReferer";
+
+    auto other = std::make_shared<HlsPlayListDownloaderTestable>();
+    other->Init();
+    other->httpHeader_["Test"] = "value";
+
+    downloader->Clone(other);
+    EXPECT_EQ(downloader->httpHeader_["Test"], "value");
+}
+
+/**
+ * @tc.name: CLONE_002
+ * @tc.desc: test Clone copies statusCallback and startedDownloadStatus
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, CLONE_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+
+    auto other = std::make_shared<HlsPlayListDownloaderTestable>();
+    other->Init();
+    auto callback = [] (DownloadStatus status, std::shared_ptr<Downloader>& d,
+        std::shared_ptr<DownloadRequest>& r) {};
+    other->statusCallback_ = callback;
+    other->startedDownloadStatus_ = true;
+    other->url_ = "http://test.url";
+    other->urlOrigin_ = "http://origin.url";
+    other->mimeType_ = "application/x-mpegURL";
+    other->isParseFinished_.store(true);
+
+    downloader->Clone(other);
+    EXPECT_TRUE(downloader->startedDownloadStatus_);
+    EXPECT_EQ(downloader->url_, "http://test.url");
+}
+
+/**
+ * @tc.name: IS_FRAGMENT_IN_PLAYLIST_001
+ * @tc.desc: test IsFragmentInCurrentPlayList returns false when currentVariant is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, IS_FRAGMENT_IN_PLAYLIST_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloader>();
+    downloader->Init();
+
+    EXPECT_FALSE(downloader->IsFragmentInCurrentPlayList("http://test.ts", "", 0, 0));
+}
+
+/**
+ * @tc.name: IS_FRAGMENT_IN_PLAYLIST_002
+ * @tc.desc: test IsFragmentInCurrentPlayList returns true when fragment uri matches
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, IS_FRAGMENT_IN_PLAYLIST_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    auto m3u8 = std::make_shared<M3U8>(TEST_URI_PATH, "");
+    auto fragment = std::make_shared<M3U8Fragment>("http://test.ts", 5.0, 0, false);
+    m3u8->files_.push_back(fragment);
+    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, m3u8);
+    downloader->currentVariant_ = variant;
+
+    EXPECT_TRUE(downloader->IsFragmentInCurrentPlayList("http://test.ts", "", 0, 0));
+}
+
+/**
+ * @tc.name: IS_FRAGMENT_IN_PLAYLIST_003
+ * @tc.desc: test IsFragmentInCurrentPlayList matches rangeUrl with offset and length
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, IS_FRAGMENT_IN_PLAYLIST_003, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    auto m3u8 = std::make_shared<M3U8>(TEST_URI_PATH, "");
+    auto fragment = std::make_shared<M3U8Fragment>("http://test.ts", 5.0, 0, false);
+    fragment->offset_ = 100;
+    fragment->length_ = 200;
+    m3u8->files_.push_back(fragment);
+    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, m3u8);
+    downloader->currentVariant_ = variant;
+
+    EXPECT_TRUE(downloader->IsFragmentInCurrentPlayList("http://test.ts", "http://test.ts", 100, 200));
+    EXPECT_FALSE(downloader->IsFragmentInCurrentPlayList("http://test.ts", "http://test.ts", 50, 200));
+}
+
+/**
+ * @tc.name: UPDATE_MANIFEST_001
+ * @tc.desc: test UpdateManifest when currentVariant is null does not crash
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, UPDATE_MANIFEST_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    downloader->currentVariant_ = nullptr;
+    bool notifyFinishedBefore = downloader->isNotifyPlayListFinished_.load();
+
+    downloader->UpdateManifest();
+    EXPECT_EQ(downloader->isNotifyPlayListFinished_.load(), notifyFinishedBefore);
+}
+
+/**
+ * @tc.name: UPDATE_MANIFEST_002
+ * @tc.desc: test UpdateManifest when currentVariant m3u8 uri is valid
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, UPDATE_MANIFEST_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    auto m3u8 = std::make_shared<M3U8>(TEST_URI_PATH, "");
+    m3u8->uri_ = TEST_URI_PATH + "test.m3u8";
+    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, m3u8);
+    downloader->currentVariant_ = variant;
+    downloader->isNotifyPlayListFinished_ = false;
+
+    downloader->UpdateManifest();
+    EXPECT_EQ(downloader->currentVariant_, variant);
+}
+
+/**
+ * @tc.name: REOPEN_001
+ * @tc.desc: test ReOpen resets master and currentVariant
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, REOPEN_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    auto m3u8 = std::make_shared<M3U8>(TEST_URI_PATH, "");
+    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, m3u8);
+    downloader->currentVariant_ = variant;
+    downloader->downloader_ = nullptr;
+    downloader->urlOrigin_ = TEST_URI_PATH;
+    downloader->isLiveUpdateTaskStarted_ = true;
+    downloader->retryStartTime_ = 1000;
+
+    downloader->ReOpen();
+    EXPECT_EQ(downloader->GetMaster(), nullptr);
+    EXPECT_EQ(downloader->GetCurrentVariant(), nullptr);
+    EXPECT_FALSE(downloader->isLiveUpdateTaskStarted_);
+    EXPECT_EQ(downloader->retryStartTime_, 0);
+}
+
+/**
+ * @tc.name: GET_STREAM_INFO_BY_ID_002
+ * @tc.desc: test GetStreamInfoById returns info when variant matches streamId
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_STREAM_INFO_BY_ID_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    auto m3u8 = std::make_shared<M3U8>(TEST_URI_PATH, "");
+    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, m3u8);
+    variant->streamId_ = HLS_VIDEO_STREAM_ID;
+    variant->bandWidth_ = 1000000;
+    variant->width_ = 1920;
+    variant->height_ = 1080;
+    downloader->master_->variants_.push_back(variant);
+    downloader->currentVariant_ = variant;
+
+    auto info = downloader->GetStreamInfoById(HLS_VIDEO_STREAM_ID);
+    EXPECT_NE(info, nullptr);
+    EXPECT_EQ(info->streamId, static_cast<int32_t>(HLS_VIDEO_STREAM_ID));
+}
+
+/**
+ * @tc.name: GET_STREAM_INFO_BY_ID_003
+ * @tc.desc: test GetStreamInfoById returns nullptr when no matching variant
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_STREAM_INFO_BY_ID_003, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    auto m3u8 = std::make_shared<M3U8>(TEST_URI_PATH, "");
+    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, m3u8);
+    variant->streamId_ = HLS_VIDEO_STREAM_ID;
+    downloader->master_->variants_.push_back(variant);
+    downloader->currentVariant_ = variant;
+
+    auto info = downloader->GetStreamInfoById(999);
+    EXPECT_EQ(info, nullptr);
+}
+
+/**
+ * @tc.name: SET_DEFAULT_MEDIA_003
+ * @tc.desc: test SetDefaultMedia sets currentSubtitles when defaultSubtitles_ is set
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, SET_DEFAULT_MEDIA_003, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    auto m3u8 = std::make_shared<M3U8>(TEST_URI_PATH, "");
+    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, m3u8);
+    downloader->master_->defaultVariant_ = variant;
+    auto subM3u8 = std::make_shared<M3U8>("http://sub.m3u8", "");
+    auto subtitle = std::make_shared<M3U8Media>("s", "http://sub.m3u8", subM3u8);
+    subtitle->streamId_ = HLS_SUBTITLE_STREAM_ID;
+    variant->defaultSubtitles_ = subtitle;
+    downloader->currentSubtitles_ = nullptr;
+
+    downloader->SetDefaultMedia(HlsSegmentType::SEG_SUBTITLE);
+    EXPECT_NE(downloader->currentSubtitles_, nullptr);
+}
+
+/**
+ * @tc.name: SET_DEFAULT_MEDIA_004
+ * @tc.desc: test SetDefaultMedia returns when defaultVariant_ is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, SET_DEFAULT_MEDIA_004, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    downloader->master_->defaultVariant_ = nullptr;
+
+    downloader->SetDefaultMedia(HlsSegmentType::SEG_AUDIO);
+    EXPECT_EQ(downloader->currentAudio_, nullptr);
+}
+
+/**
+ * @tc.name: SELECT_MEDIA_003
+ * @tc.desc: test SelectMedia with empty audioMedia and subtitlesMedia
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, SELECT_MEDIA_003, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    auto m3u8 = std::make_shared<M3U8>(TEST_URI_PATH, "");
+    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, m3u8);
+    variant->audioMedia_.clear();
+    variant->subtitlesMedia_.clear();
+    downloader->currentVariant_ = variant;
+
+    downloader->SelectMedia(99, HlsSegmentType::SEG_AUDIO);
+    EXPECT_EQ(downloader->currentAudio_, nullptr);
+}
+
+/**
+ * @tc.name: SELECT_MEDIA_004
+ * @tc.desc: test SelectMedia sets currentSubtitles from subtitlesMedia
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, SELECT_MEDIA_004, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    auto m3u8 = std::make_shared<M3U8>(TEST_URI_PATH, "");
+    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, m3u8);
+    auto subM3u8 = std::make_shared<M3U8>("http://sub.m3u8", "");
+    auto media = std::make_shared<M3U8Media>("sub1", "http://sub.m3u8", subM3u8);
+    media->streamId_ = 88;
+    variant->subtitlesMedia_.push_back(media);
+    downloader->currentVariant_ = variant;
+
+    downloader->SelectMedia(88, HlsSegmentType::SEG_SUBTITLE);
+    EXPECT_NE(downloader->currentSubtitles_, nullptr);
+    EXPECT_EQ(downloader->currentSubtitles_->streamId_, 88u);
+}
+
+/**
+ * @tc.name: UPDATE_MEDIA_001
+ * @tc.desc: test UpdateMedia returns when currentVariant is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, UPDATE_MEDIA_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->currentVariant_ = nullptr;
+    std::string urlBefore = downloader->url_;
+
+    downloader->UpdateMedia(HlsSegmentType::SEG_AUDIO);
+    EXPECT_EQ(downloader->url_, urlBefore);
+}
+
+/**
+ * @tc.name: UPDATE_MEDIA_002
+ * @tc.desc: test UpdateMedia sets nextUrl for audio
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, UPDATE_MEDIA_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    auto m3u8 = std::make_shared<M3U8>(TEST_URI_PATH, "");
+    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, m3u8);
+    downloader->currentVariant_ = variant;
+    auto audioM3u8 = std::make_shared<M3U8>("http://audio.uri", "");
+    auto audio = std::make_shared<M3U8Media>("a", "http://audio.uri", audioM3u8);
+    audio->uri_ = "http://audio.next.uri";
+    downloader->currentAudio_ = audio;
+
+    downloader->UpdateMedia(HlsSegmentType::SEG_AUDIO);
+    EXPECT_EQ(downloader->url_, "http://audio.next.uri");
+}
+
+/**
+ * @tc.name: UPDATE_MEDIA_003
+ * @tc.desc: test UpdateMedia sets nextUrl for subtitle
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, UPDATE_MEDIA_003, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    auto m3u8 = std::make_shared<M3U8>(TEST_URI_PATH, "");
+    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, m3u8);
+    downloader->currentVariant_ = variant;
+    downloader->currentAudio_ = nullptr;
+    auto subM3u8 = std::make_shared<M3U8>("http://sub.uri", "");
+    auto sub = std::make_shared<M3U8Media>("s", "http://sub.uri", subM3u8);
+    sub->uri_ = "http://sub.next.uri";
+    downloader->currentSubtitles_ = sub;
+
+    downloader->UpdateMedia(HlsSegmentType::SEG_SUBTITLE);
+    EXPECT_EQ(downloader->url_, "http://sub.next.uri");
+}
+
+/**
+ * @tc.name: GET_DEFAULT_MEDIA_STREAM_ID_003
+ * @tc.desc: test GetDefaultMediaStreamId returns streamId from defaultAudio_
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_DEFAULT_MEDIA_STREAM_ID_003, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    auto m3u8 = std::make_shared<M3U8>(TEST_URI_PATH, "");
+    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, m3u8);
+    downloader->master_->defaultVariant_ = variant;
+    downloader->currentVariant_ = variant;
+    downloader->audioStreamId_.store(-1);
+    downloader->subtitleStreamId_.store(-1);
+    auto audioM3u8 = std::make_shared<M3U8>("http://audio.m3u8", "");
+    auto audio = std::make_shared<M3U8Media>("a", "http://audio.m3u8", audioM3u8);
+    audio->streamId_ = HLS_AUDIO_STREAM_ID;
+    variant->defaultAudio_ = audio;
+
+    EXPECT_EQ(downloader->GetDefaultMediaStreamId(HlsSegmentType::SEG_AUDIO), HLS_AUDIO_STREAM_ID);
+}
+
+/**
+ * @tc.name: GET_DEFAULT_MEDIA_STREAM_ID_004
+ * @tc.desc: test GetDefaultMediaStreamId returns streamId from defaultSubtitles_
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_DEFAULT_MEDIA_STREAM_ID_004, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    auto m3u8 = std::make_shared<M3U8>(TEST_URI_PATH, "");
+    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, m3u8);
+    downloader->master_->defaultVariant_ = variant;
+    downloader->currentVariant_ = variant;
+    downloader->audioStreamId_.store(-1);
+    downloader->subtitleStreamId_.store(-1);
+    variant->defaultAudio_ = nullptr;
+    auto subM3u8 = std::make_shared<M3U8>("http://sub.m3u8", "");
+    auto sub = std::make_shared<M3U8Media>("s", "http://sub.m3u8", subM3u8);
+    sub->streamId_ = HLS_SUBTITLE_STREAM_ID;
+    variant->defaultSubtitles_ = sub;
+
+    EXPECT_EQ(downloader->GetDefaultMediaStreamId(HlsSegmentType::SEG_SUBTITLE), HLS_SUBTITLE_STREAM_ID);
+}
+
+/**
+ * @tc.name: IS_BITRATE_SAME_001
+ * @tc.desc: test IsBitrateSame returns false when master is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, IS_BITRATE_SAME_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloader>();
+    downloader->Init();
+
+    EXPECT_FALSE(downloader->IsBitrateSame(1000000));
+}
+
+/**
+ * @tc.name: IS_BITRATE_SAME_002
+ * @tc.desc: test IsBitrateSame with nullptr variant item
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, IS_BITRATE_SAME_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    auto nullVariant = std::shared_ptr<M3U8VariantStream>(nullptr);
+    downloader->master_->variants_.push_back(nullVariant);
+
+    EXPECT_FALSE(downloader->IsBitrateSame(1000000));
+}
+
+/**
+ * @tc.name: IS_BITRATE_SAME_003
+ * @tc.desc: test IsBitrateSame when firstVideoStream_ is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, IS_BITRATE_SAME_003, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    downloader->master_->firstVideoStream_ = nullptr;
+    auto m3u8 = std::make_shared<M3U8>(TEST_URI_PATH, "");
+    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, m3u8);
+    variant->bandWidth_ = 1000000;
+    variant->isVideo_ = false;
+    downloader->master_->variants_.push_back(variant);
+    downloader->currentVariant_ = variant;
+
+    downloader->IsBitrateSame(1000000);
+    EXPECT_NE(downloader->newVariant_, nullptr);
+}
+
+/**
+ * @tc.name: IS_BITRATE_SAME_004
+ * @tc.desc: test IsBitrateSame when item->isVideo_ is true
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, IS_BITRATE_SAME_004, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    auto m3u8 = std::make_shared<M3U8>(TEST_URI_PATH, "");
+    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, m3u8);
+    variant->bandWidth_ = 1000000;
+    variant->isVideo_ = true;
+    downloader->master_->variants_.push_back(variant);
+    downloader->currentVariant_ = variant;
+
+    downloader->IsBitrateSame(1000000);
+    EXPECT_NE(downloader->newVariant_, nullptr);
+}
+
+/**
+ * @tc.name: SELECT_BIT_RATE_001
+ * @tc.desc: test SelectBitRate when newVariant_ is null returns early
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, SELECT_BIT_RATE_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->newVariant_ = nullptr;
+    auto variantBefore = downloader->currentVariant_;
+
+    downloader->SelectBitRate(1000000);
+    EXPECT_EQ(downloader->currentVariant_, variantBefore);
+}
+
+/**
+ * @tc.name: IS_LIVE_END_002
+ * @tc.desc: test IsLiveEnd when isLiveEnd_ is true
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, IS_LIVE_END_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->isLiveEnd_ = true;
+
+    EXPECT_TRUE(downloader->IsLiveEnd());
+}
+
+/**
+ * @tc.name: IS_PARSE_AND_NOTIFY_FINISHED_001
+ * @tc.desc: test IsParseAndNotifyFinished when both flags are true
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, IS_PARSE_AND_NOTIFY_FINISHED_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->isParseFinished_.store(true);
+    downloader->isNotifyPlayListFinished_.store(true);
+
+    EXPECT_TRUE(downloader->IsParseAndNotifyFinished());
+}
+
+/**
+ * @tc.name: IS_PARSE_AND_NOTIFY_FINISHED_002
+ * @tc.desc: test IsParseAndNotifyFinished when only isParseFinished is true
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, IS_PARSE_AND_NOTIFY_FINISHED_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->isParseFinished_.store(true);
+    downloader->isNotifyPlayListFinished_.store(false);
+
+    EXPECT_FALSE(downloader->IsParseAndNotifyFinished());
+}
+
+/**
+ * @tc.name: GET_BIT_RATES_003
+ * @tc.desc: test GetBitRates with master having multiple variants
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_BIT_RATES_003, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    auto m3u8 = std::make_shared<M3U8>(TEST_URI_PATH, "");
+    auto variant1 = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, m3u8);
+    variant1->bandWidth_ = 1000000;
+    auto variant2 = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, m3u8);
+    variant2->bandWidth_ = 2000000;
+    downloader->master_->variants_.push_back(variant1);
+    downloader->master_->variants_.push_back(variant2);
+
+    auto rates = downloader->GetBitRates();
+    EXPECT_EQ(rates.size(), 2u);
+}
+
+/**
+ * @tc.name: GET_CUR_STREAM_ID_003
+ * @tc.desc: test GetCurStreamId when currentVariant is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_CUR_STREAM_ID_003, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->currentVariant_ = nullptr;
+    downloader->currentAudio_ = nullptr;
+    downloader->currentSubtitles_ = nullptr;
+
+    EXPECT_EQ(downloader->GetCurStreamId(), 0u);
+}
+
+/**
+ * @tc.name: GET_CUR_STREAM_ID_004
+ * @tc.desc: test GetCurStreamId returns currentAudio streamId when set
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_CUR_STREAM_ID_004, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    auto m3u8 = std::make_shared<M3U8>(TEST_URI_PATH, "");
+    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, m3u8);
+    variant->streamId_ = HLS_VIDEO_STREAM_ID;
+    downloader->currentVariant_ = variant;
+    auto audioM3u8 = std::make_shared<M3U8>("http://audio", "");
+    auto audio = std::make_shared<M3U8Media>("a", "http://audio", audioM3u8);
+    audio->streamId_ = HLS_AUDIO_STREAM_ID;
+    downloader->currentAudio_ = audio;
+
+    EXPECT_EQ(downloader->GetCurStreamId(), HLS_AUDIO_STREAM_ID);
+}
+
+/**
+ * @tc.name: GET_CUR_STREAM_ID_005
+ * @tc.desc: test GetCurStreamId returns currentSubtitles streamId when audio is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_CUR_STREAM_ID_005, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    auto m3u8 = std::make_shared<M3U8>(TEST_URI_PATH, "");
+    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, m3u8);
+    variant->streamId_ = HLS_VIDEO_STREAM_ID;
+    downloader->currentVariant_ = variant;
+    downloader->currentAudio_ = nullptr;
+    auto subM3u8 = std::make_shared<M3U8>("http://sub", "");
+    auto sub = std::make_shared<M3U8Media>("s", "http://sub", subM3u8);
+    sub->streamId_ = HLS_SUBTITLE_STREAM_ID;
+    downloader->currentSubtitles_ = sub;
+
+    EXPECT_EQ(downloader->GetCurStreamId(), HLS_SUBTITLE_STREAM_ID);
+}
+
+/**
+ * @tc.name: IS_MEDIA_SAME_003
+ * @tc.desc: test IsMediaSame returns true when streamId matches for audio
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, IS_MEDIA_SAME_003, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    auto m3u8 = std::make_shared<M3U8>("http://example.com", "");
+    auto audio = std::make_shared<M3U8Media>("a", "http://example.com/a.m3u8", m3u8);
+    audio->streamId_ = 10;
+    downloader->currentAudio_ = audio;
+
+    EXPECT_TRUE(downloader->IsMediaSame(10, HlsSegmentType::SEG_AUDIO));
+    EXPECT_FALSE(downloader->IsMediaSame(20, HlsSegmentType::SEG_AUDIO));
+}
+
+/**
+ * @tc.name: IS_MEDIA_SAME_004
+ * @tc.desc: test IsMediaSame returns true when streamId matches for subtitle
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, IS_MEDIA_SAME_004, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    auto m3u8 = std::make_shared<M3U8>("http://example.com", "");
+    auto sub = std::make_shared<M3U8Media>("s", "http://example.com/s.m3u8", m3u8);
+    sub->streamId_ = 15;
+    downloader->currentSubtitles_ = sub;
+
+    EXPECT_TRUE(downloader->IsMediaSame(15, HlsSegmentType::SEG_SUBTITLE));
+    EXPECT_FALSE(downloader->IsMediaSame(25, HlsSegmentType::SEG_SUBTITLE));
+}
+
+/**
+ * @tc.name: IS_PURE_BYTE_RANGE_001
+ * @tc.desc: test IsPureByteRange returns false when master is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, IS_PURE_BYTE_RANGE_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloader>();
+    downloader->Init();
+
+    EXPECT_FALSE(downloader->IsPureByteRange());
+}
+
+/**
+ * @tc.name: IS_PURE_BYTE_RANGE_002
+ * @tc.desc: test IsPureByteRange when isPureByteRange_ is true
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, IS_PURE_BYTE_RANGE_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    downloader->master_->isPureByteRange_.store(true);
+
+    EXPECT_TRUE(downloader->IsPureByteRange());
+}
+
+/**
+ * @tc.name: IS_HLS_FMP4_003
+ * @tc.desc: test IsHlsFmp4 returns false when master is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, IS_HLS_FMP4_003, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloader>();
+    downloader->Init();
+
+    EXPECT_FALSE(downloader->IsHlsFmp4());
+}
+
+/**
+ * @tc.name: IS_HLS_FMP4_004
+ * @tc.desc: test IsHlsFmp4 when isFmp4_ is true
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, IS_HLS_FMP4_004, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    downloader->master_->isFmp4_.store(true);
+
+    EXPECT_TRUE(downloader->IsHlsFmp4());
+}
+
+/**
+ * @tc.name: GET_LIVE_UPDATE_GAP_003
+ * @tc.desc: test GetLiveUpdateGap when currentVariant m3u8 is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_LIVE_UPDATE_GAP_003, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->currentVariant_ = nullptr;
+
+    EXPECT_EQ(downloader->GetLiveUpdateGap(), 0u);
+}
+
+/**
+ * @tc.name: INTERRUPT_M3U8_PARSE_003
+ * @tc.desc: test InterruptM3U8Parse with currentVariant m3u8 set
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, INTERRUPT_M3U8_PARSE_003, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    auto m3u8 = std::make_shared<M3U8>(TEST_URI_PATH, "");
+    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, m3u8);
+    downloader->currentVariant_ = variant;
+
+    downloader->InterruptM3U8Parse(true);
+    EXPECT_TRUE(downloader->master_->isInterruptNeeded_);
+    downloader->InterruptM3U8Parse(false);
+    EXPECT_FALSE(downloader->master_->isInterruptNeeded_);
+}
+
+/**
+ * @tc.name: GET_HLS_DISCONTINUITY_003
+ * @tc.desc: test GetHLSDiscontinuity when master hasDiscontinuity_ is true
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_HLS_DISCONTINUITY_003, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    downloader->master_->hasDiscontinuity_ = true;
+
+    EXPECT_TRUE(downloader->GetHLSDiscontinuity());
+}
+
+/**
+ * @tc.name: GET_HLS_DISCONTINUITY_004
+ * @tc.desc: test GetHLSDiscontinuity when master is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_HLS_DISCONTINUITY_004, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloader>();
+    downloader->Init();
+
+    EXPECT_FALSE(downloader->GetHLSDiscontinuity());
+}
+
+/**
+ * @tc.name: GET_SEGMENT_OFFSET_003
+ * @tc.desc: test GetSegmentOffset when segmentOffsets_ has valid entries
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_SEGMENT_OFFSET_003, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    downloader->master_->segmentOffsets_.push_back(0);
+    downloader->master_->segmentOffsets_.push_back(5000);
+    downloader->master_->segmentOffsets_.push_back(10000);
+
+    EXPECT_EQ(downloader->GetSegmentOffset(0), 0u);
+    EXPECT_EQ(downloader->GetSegmentOffset(1), 5000u);
+    EXPECT_EQ(downloader->GetSegmentOffset(2), 10000u);
+}
+
+/**
+ * @tc.name: SET_PLAYLIST_CALLBACK_001
+ * @tc.desc: test SetPlayListCallback stores callback weak pointer
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, SET_PLAYLIST_CALLBACK_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloader>();
+    downloader->Init();
+
+    auto callback = std::make_shared<MockPlayListCallback>();
+    downloader->SetPlayListCallback(callback);
+    auto lockedCallback = downloader->callbackWeak_.lock();
+    EXPECT_NE(lockedCallback, nullptr);
+    EXPECT_EQ(lockedCallback.get(), callback.get());
+}
+
+/**
+ * @tc.name: SET_SOURCE_STATISTICS_DFX_001
+ * @tc.desc: test SetSourceStatisticsDfx stores reportInfo and sets isFmp4
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, SET_SOURCE_STATISTICS_DFX_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    auto reportInfo = std::make_shared<MediaAVCodec::SourceStatisticsReportInfo>();
+    downloader->reportInfo_ = nullptr;
+    downloader->isFmp4_.store(false);
+
+    downloader->SetSourceStatisticsDfx(reportInfo, true);
+    EXPECT_NE(downloader->reportInfo_, nullptr);
+    EXPECT_TRUE(downloader->isFmp4_.load());
+}
+
+/**
+ * @tc.name: SET_SOURCE_STATISTICS_DFX_002
+ * @tc.desc: test SetSourceStatisticsDfx with isFmp4 false
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, SET_SOURCE_STATISTICS_DFX_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->isFmp4_.store(true);
+    auto reportInfo = std::make_shared<MediaAVCodec::SourceStatisticsReportInfo>();
+
+    downloader->SetSourceStatisticsDfx(reportInfo, false);
+    EXPECT_FALSE(downloader->isFmp4_.load());
+}
+
+/**
+ * @tc.name: GET_SEEKABLE_RANGES_005
+ * @tc.desc: test GetSeekableRanges returns empty when master bLive_ and not seekable
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_SEEKABLE_RANGES_005, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    downloader->master_->bLive_ = true;
+    downloader->master_->isSimple_.store(false);
+
+    auto ranges = downloader->GetSeekableRanges();
+    EXPECT_TRUE(ranges.empty());
+}
+
+/**
+ * @tc.name: IS_LIVE_003
+ * @tc.desc: test IsLive returns false when master is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, IS_LIVE_003, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = nullptr;
+
+    EXPECT_FALSE(downloader->IsLive());
+}
+
+/**
+ * @tc.name: IS_LIVE_004
+ * @tc.desc: test IsLive returns true when master bLive_ is true
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, IS_LIVE_004, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    downloader->master_->bLive_ = true;
+
+    EXPECT_TRUE(downloader->IsLive());
+}
+
+/**
+ * @tc.name: UPDATE_STREAM_INFO_001
+ * @tc.desc: test UpdateStreamInfo when master is null does not crash
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, UPDATE_STREAM_INFO_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = nullptr;
+    size_t videoSizeBefore = downloader->videoStreamIds_.size();
+
+    downloader->UpdateStreamInfo();
+    EXPECT_EQ(downloader->videoStreamIds_.size(), videoSizeBefore);
+}
+
+/**
+ * @tc.name: UPDATE_STREAM_INFO_002
+ * @tc.desc: test UpdateStreamInfo with variants and audio/subtitle media
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, UPDATE_STREAM_INFO_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    auto m3u8 = std::make_shared<M3U8>(TEST_URI_PATH, "");
+    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, m3u8);
+    variant->streamId_ = HLS_VIDEO_STREAM_ID;
+    auto audioM3u8 = std::make_shared<M3U8>("http://audio.m3u8", "");
+    auto audioMedia = std::make_shared<M3U8Media>("audio", "http://audio.m3u8", audioM3u8);
+    audioMedia->streamId_ = HLS_AUDIO_STREAM_ID;
+    variant->audioMedia_.push_back(audioMedia);
+    auto subM3u8 = std::make_shared<M3U8>("http://sub.m3u8", "");
+    auto subMedia = std::make_shared<M3U8Media>("sub", "http://sub.m3u8", subM3u8);
+    subMedia->streamId_ = HLS_SUBTITLE_STREAM_ID;
+    variant->subtitlesMedia_.push_back(subMedia);
+    downloader->master_->variants_.push_back(variant);
+    downloader->needAudioManager_.store(false);
+    downloader->needSubtitlesManager_.store(false);
+
+    downloader->UpdateStreamInfo();
+    EXPECT_TRUE(downloader->needAudioManager_.load());
+    EXPECT_TRUE(downloader->needSubtitlesManager_.load());
+}
+
+/**
+ * @tc.name: GET_SEG_TYPE_003
+ * @tc.desc: test GetSegType returns SEG_VIDEO for streamId in videoStreamIds
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_SEG_TYPE_003, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->videoStreamIds_.insert(HLS_VIDEO_STREAM_ID);
+    downloader->audioStreamIds_.insert(HLS_AUDIO_STREAM_ID);
+    downloader->subtitlesStreamIds_.insert(HLS_SUBTITLE_STREAM_ID);
+
+    EXPECT_EQ(downloader->GetSegType(HLS_VIDEO_STREAM_ID), HlsSegmentType::SEG_VIDEO);
+}
+
+/**
+ * @tc.name: GET_START_INFO_002
+ * @tc.desc: test GetStartInfo returns {0, false} when master is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_START_INFO_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = nullptr;
+
+    auto info = downloader->GetStartInfo();
+    EXPECT_EQ(info.first, 0);
+    EXPECT_FALSE(info.second);
+}
+
+/**
+ * @tc.name: GET_DURATION_011
+ * @tc.desc: test GetDuration returns 0 when master is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_DURATION_011, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = nullptr;
+
+    EXPECT_EQ(downloader->GetDuration(), 0);
+}
+
+/**
+ * @tc.name: GET_CUR_BITRATE_003
+ * @tc.desc: test GetCurBitrate returns 0 when currentVariant is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_CUR_BITRATE_003, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->currentVariant_ = nullptr;
+
+    EXPECT_EQ(downloader->GetCurBitrate(), 0u);
+}
+
+/**
+ * @tc.name: GET_CURRENT_BIT_RATE_001
+ * @tc.desc: test GetCurrentBitRate returns 0 when currentVariant is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_CURRENT_BIT_RATE_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->currentVariant_ = nullptr;
+
+    EXPECT_EQ(downloader->GetCurrentBitRate(), 0u);
+}
+
+/**
+ * @tc.name: GET_VIDEO_WIDTH_001
+ * @tc.desc: test GetVideoWidth returns 0 when currentVariant is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_VIDEO_WIDTH_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->currentVariant_ = nullptr;
+
+    EXPECT_EQ(downloader->GetVideoWidth(), 0);
+}
+
+/**
+ * @tc.name: GET_VIDEO_HEIGHT_001
+ * @tc.desc: test GetVideoHeight returns 0 when currentVariant is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_VIDEO_HEIGHT_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->currentVariant_ = nullptr;
+
+    EXPECT_EQ(downloader->GetVideoHeight(), 0);
+}
+
+/**
+ * @tc.name: READ_FMP4_HEADER_002
+ * @tc.desc: test ReadFmp4Header returns false when master is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, READ_FMP4_HEADER_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloader>();
+    downloader->Init();
+    uint8_t buf[64];
+    uint32_t readLen = 0;
+
+    EXPECT_FALSE(downloader->ReadFmp4Header(buf, sizeof(buf), readLen, 0));
+}
+
+/**
+ * @tc.name: GET_MASTER_001
+ * @tc.desc: test GetMaster returns master when set
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_MASTER_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+
+    EXPECT_NE(downloader->GetMaster(), nullptr);
+}
+
+/**
+ * @tc.name: GET_CURRENT_VARIANT_001
+ * @tc.desc: test GetCurrentVariant returns currentVariant when set
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_CURRENT_VARIANT_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    auto m3u8 = std::make_shared<M3U8>(TEST_URI_PATH, "");
+    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, m3u8);
+    downloader->currentVariant_ = variant;
+
+    EXPECT_NE(downloader->GetCurrentVariant(), nullptr);
+}
+
+/**
+ * @tc.name: GET_NEW_VARIANT_001
+ * @tc.desc: test GetNewVariant returns newVariant when set
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_NEW_VARIANT_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
+    auto m3u8 = std::make_shared<M3U8>(TEST_URI_PATH, "");
+    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, m3u8);
+    downloader->newVariant_ = variant;
+
+    EXPECT_NE(downloader->GetNewVariant(), nullptr);
+}
+
+/**
+ * @tc.name: GET_URL_001
+ * @tc.desc: test GetUrl returns url when set
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_URL_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->url_ = "http://test.url";
+
+    EXPECT_EQ(downloader->GetUrl(), "http://test.url");
 }
 }

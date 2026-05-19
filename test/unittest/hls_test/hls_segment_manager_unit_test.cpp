@@ -115,9 +115,9 @@ public:
     void UpdateManifest() override {}
     void ParseManifest(const std::string& location, bool isPreParse = false) override {}
     void SetPlayListCallback(std::weak_ptr<PlayListChangeCallback> callback) override {}
-    int64_t GetDuration() const override { return 0; }
-    std::pair<int64_t, bool> GetStartInfo() const override { return {0, false}; }
-    Seekable GetSeekable() const override { return Seekable::SEEKABLE; }
+    int64_t GetDuration() override { return 0; }
+    std::pair<int64_t, bool> GetStartInfo() override { return {0, false}; }
+    Seekable GetSeekable() override { return Seekable::SEEKABLE; }
     void SelectBitRate(uint32_t bitRate) override {}
     std::vector<uint32_t> GetBitRates() override { return {}; }
     uint64_t GetCurrentBitRate() override { return 0; }
@@ -126,7 +126,7 @@ public:
     bool IsBitrateSame(uint32_t bitRate) override { return false; }
     bool IsMediaSame(uint32_t streamId, HlsSegmentType mediaType) override { return false; }
     uint32_t GetCurBitrate() override { return 0; }
-    bool IsLive() const override { return false; }
+    bool IsLive() override { return false; }
     void SetMimeType(const std::string& mimeType) override {}
     void PreParseManifest(const std::string& location) override {}
     bool IsParseAndNotifyFinished() override { return true; }

@@ -46,6 +46,7 @@ sptr<CodecHDI::ICodecComponentManager> GetManager(bool getCap,
     bool supportPassthrough = false, bool isSecure = false);
 std::vector<CodecHDI::CodecCompCapability> GetCapList();
 uint32_t GetMaxDecInstCnt();
+uint32_t GetMaxEncInstCnt();
 }
 
 #endif

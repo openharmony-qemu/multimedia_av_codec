@@ -131,6 +131,9 @@ public:
     Status DoReInitAndStart() override;
     void SetIsSwDecoder(bool isSwDecoder);
     void SetBuffering(bool isBuffering);
+    void SetVideoOutput(sptr<Surface> surface);
+    void GetVideoSample(int32_t &outputResult);
+    bool IsResolutionSupportSeekContinuous();
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -204,6 +207,7 @@ private:
     int64_t stopTime_{0};
     sptr<Surface> decoderOutputSurface_;
     sptr<Surface> videoSurface_;
+    sptr<Surface> sideOutputSurface_;
     bool isSwDecoder_ = false;
     bool hasToSwDecoder_ = false;
     bool hasReceiveUnsupportError_ = false;

@@ -15,11 +15,9 @@
 
 #include "ffmpeg_flac_encoder_plugin.h"
 #include <set>
-#include "media_description.h"
-#include "avcodec_errors.h"
+#include <algorithm>
+#include "common/pcm_convert.h"
 #include "avcodec_log.h"
-#include "avcodec_mime_type.h"
-#include "avcodec_audio_common.h"
 #include "ffmpeg_converter.h"
 
 namespace {
@@ -41,10 +39,20 @@ static const int32_t FLAC_ENCODER_SAMPLE_RATE_TABLE[] = {
 static const uint64_t FLAC_CHANNEL_LAYOUT_TABLE[] = {AV_CH_LAYOUT_MONO,    AV_CH_LAYOUT_STEREO,  AV_CH_LAYOUT_SURROUND,
                                                      AV_CH_LAYOUT_QUAD,    AV_CH_LAYOUT_5POINT0, AV_CH_LAYOUT_5POINT1,
                                                      AV_CH_LAYOUT_6POINT1, AV_CH_LAYOUT_7POINT1};
-static std::set<OHOS::MediaAVCodec::AudioSampleFormat> supportedSampleFormats = {
-    OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S16LE,
-    OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S32LE,
+
+static std::set<AudioSampleFormat> supportedSampleFormats = {
+    AudioSampleFormat::SAMPLE_S16LE,
+    AudioSampleFormat::SAMPLE_S32LE,
 };
+
+static std::set<AudioSampleFormat> extendSampleFormats = {
+    AudioSampleFormat::SAMPLE_U8,
+    AudioSampleFormat::SAMPLE_S16LE,
+    AudioSampleFormat::SAMPLE_S24LE,
+    AudioSampleFormat::SAMPLE_S32LE,
+    AudioSampleFormat::SAMPLE_F32LE,
+};
+
 } // namespace
 
 namespace OHOS {
@@ -120,11 +128,32 @@ Status FFmpegFlacEncoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)
     CHECK_AND_RETURN_RET_LOG(ffChannelLayout, Status::ERROR_INVALID_PARAMETER,
         "InitContext failed, because channelLayout is not supported.");
 
-    AudioSampleFormat sampleFormat;
-    format->GetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFormat);
-    if (!sampleFormat) {
-        AVCODEC_LOGE("input sample format not supported");
+    if (!format->GetData(Tag::AUDIO_SAMPLE_FORMAT, audioSampleFormat_)) {
+        AVCODEC_LOGE("flac sample format must be set.");
         return Status::ERROR_INVALID_PARAMETER;
+    }
+
+    if (!isEnableFormatConvert_ &&
+        supportedSampleFormats.find(audioSampleFormat_) == supportedSampleFormats.end()) {
+        AVCODEC_LOGE("input sample format not support:%{public}d", static_cast<int32_t>(audioSampleFormat_));
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+    if (isEnableFormatConvert_ &&
+        extendSampleFormats.find(audioSampleFormat_) == extendSampleFormats.end()) {
+        AVCODEC_LOGE("enable convert but input sample format not support:=%{public}d",
+            static_cast<int32_t>(audioSampleFormat_));
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+
+    convertSampleFormat_ = audioSampleFormat_;
+
+    // FLAC FFmpeg encoder only supports S16 and S32, convert U8/S24LE/F32LE to S32LE
+    if (isEnableFormatConvert_ && (audioSampleFormat_ == AudioSampleFormat::SAMPLE_U8
+        || audioSampleFormat_ == AudioSampleFormat::SAMPLE_S24LE
+        || audioSampleFormat_ == AudioSampleFormat::SAMPLE_F32LE)) {
+        convertSampleFormat_ = AudioSampleFormat::SAMPLE_S32LE;
+        AVCODEC_LOGI("need extend convert sample format from:%{public}d to S32LE",
+            static_cast<int32_t>(audioSampleFormat_));
     }
 
     if (!CheckSampleRate(sampleRate)) {
@@ -150,7 +179,12 @@ Status FFmpegFlacEncoderPlugin::GetParameter(std::shared_ptr<Meta> &parameter)
 {
     auto maxInputSize = GetInputBufferSize();
     auto maxOutputSize = GetOutputBufferSize();
-    audioParameter_.SetData(Tag::AUDIO_MAX_INPUT_SIZE, maxInputSize);
+    auto maxInputBufferSize = basePlugin->GetMaxInputBufferSize();
+    if (maxInputBufferSize > 0) {
+        audioParameter_.SetData(Tag::AUDIO_MAX_INPUT_SIZE, maxInputBufferSize);
+    } else {
+        audioParameter_.SetData(Tag::AUDIO_MAX_INPUT_SIZE, maxInputSize);
+    }
     audioParameter_.SetData(Tag::AUDIO_MAX_OUTPUT_SIZE, maxOutputSize);
     *parameter = audioParameter_;
     return Status::OK;
@@ -162,11 +196,22 @@ Status FFmpegFlacEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &parame
     CHECK_AND_RETURN_RET_LOG(ret == Status::OK, ret,
         "init failed, because AllocateContext failed. ret=%{public}d", ret);
 
+    parameter->Get<Tag::AUDIO_ENCODER_ENABLE_SAMPLE_FORMAT_CONVERT>(isEnableFormatConvert_);
+
     ret = CheckFormat(parameter);
     CHECK_AND_RETURN_RET_LOG(ret == Status::OK, ret,
         "init failed, because CheckFormat failed. ret=%{public}d", ret);
 
-    basePlugin->InitContext(parameter);
+    // Create modified meta with converted sample format for basePlugin
+    std::shared_ptr<Meta> initMeta = std::make_shared<Meta>(*parameter);
+    initMeta->SetData(Tag::AUDIO_SAMPLE_FORMAT, convertSampleFormat_);
+
+    // Configure format conversion in base encoder before InitContext
+    if (isEnableFormatConvert_ && audioSampleFormat_ != convertSampleFormat_) {
+        basePlugin->SetFormatConvert(true, audioSampleFormat_, convertSampleFormat_);
+    }
+
+    basePlugin->InitContext(initMeta);
 
     SetContext(parameter);
 
@@ -174,6 +219,10 @@ Status FFmpegFlacEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &parame
     CHECK_AND_RETURN_RET_LOG(ret == Status::OK, ret, "init failed, because OpenContext failed. ret=%{public}d", ret);
     
     audioParameter_ = *parameter;
+    int32_t ptsMode = DEFAULT_ENCODE_PTS_MODE;
+    if (parameter->Get<Tag::AUDIO_ENCODE_PTS_MODE>(ptsMode)) {
+        basePlugin->SetPtsMode(ptsMode);
+    }
 
     ret = basePlugin->InitFrame();
     CHECK_AND_RETURN_RET_LOG(ret == Status::OK, ret, "init failed, because InitFrame failed. ret=%{public}d", ret);
@@ -198,6 +247,9 @@ Status FFmpegFlacEncoderPlugin::Stop()
 
 Status FFmpegFlacEncoderPlugin::Reset()
 {
+    isEnableFormatConvert_ = false;
+    audioSampleFormat_ = AudioSampleFormat::INVALID_WIDTH;
+    convertSampleFormat_ = AudioSampleFormat::INVALID_WIDTH;
     return basePlugin->Reset();
 }
 

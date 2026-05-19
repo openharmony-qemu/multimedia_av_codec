@@ -106,6 +106,14 @@ bool CheckColorMatrix(Plugins::MatrixCoefficient matrix)
     }
     return false;
 }
+
+inline void InsertSorted(std::list<int64_t>& inputList, int64_t num)
+{
+    // 找到第一个大于等于 num 的位置
+    auto it = std::lower_bound(inputList.begin(), inputList.end(), num);
+    // 在找到的位置插入
+    inputList.insert(it, num);
+}
 }
 
 namespace OHOS {
@@ -132,7 +140,7 @@ int32_t VideoTrack::CreateParser()
         videoParser_ = tmpParser;
         MEDIA_LOG_I("VideoTrack create AvcParser");
     } else if (mimeType_.compare(AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_HEVC) == 0) {
-        auto tmpParser = std::make_shared<HevcParser>(hasVideoDelay_);
+        auto tmpParser = std::make_shared<HevcParser>(videoDelay_);
         FALSE_RETURN_V_MSG_E(tmpParser->Init() == 0, -1, "VideoTrack create h265 parser failed!");
         videoParser_ = tmpParser;
         MEDIA_LOG_I("VideoTrack create HevcParser");
@@ -168,7 +176,7 @@ Status VideoTrack::Init(const std::shared_ptr<Meta> &trackDesc)
         trackDesc->Get<Tag::MEDIA_BITRATE>(bitRate_); // bit rate
         MEDIA_LOG_I("video track bit rate:" PUBLIC_LOG_D64, bitRate_);
     }
-    
+
     FALSE_RETURN_V_MSG_E(InitColor(trackDesc), Status::ERROR_INVALID_PARAMETER, "Init color failed!");
     InitCuva(trackDesc);
     codecConfig_.clear();
@@ -200,9 +208,9 @@ Status VideoTrack::SetVideoDelay(const std::shared_ptr<Meta> &trackDesc)
         trackDesc->Get<Tag::VIDEO_DELAY>(videoDelay); // video delay
         FALSE_RETURN_V_MSG_E(videoDelay >= 0, Status::ERROR_MISMATCHED_TYPE,
             "get video delay failed! video delay:%{public}d", videoDelay);
-        hasVideoDelay_ = videoDelay > 0 && videoDelay <= maxVideoDelay;  // max 16
-        MEDIA_LOG_I("video track get video delay:%{public}d, has:%{public}d",
-            videoDelay, static_cast<int32_t>(hasVideoDelay_));
+        videoDelay_ = videoDelay > 0 && videoDelay <= maxVideoDelay ? videoDelay : 0;
+        MEDIA_LOG_I("video track get video delay:%{public}d, %{public}d",
+            videoDelay, videoDelay_);
     }
     FALSE_RETURN_V_MSG_E((videoDelay > 0 && videoDelay <= maxVideoDelay && frameRate_ > 0) || videoDelay == 0,
         Status::ERROR_MISMATCHED_TYPE, "If the video delayed, the frame rate is required. "
@@ -263,6 +271,17 @@ void VideoTrack::SetRotation(uint32_t rotation)
     }
 }
 
+bool VideoTrack::CheckPts(int64_t pts)
+{
+    if (!dtsList_.empty()) {
+        FALSE_RETURN_V_MSG_E(ConvertTimeToMpeg4(pts, timeScale_) >= preDts_, false,
+            "[%{public}d] pts:" PUBLIC_LOG_D64 " err: " PUBLIC_LOG_D64 " > " PUBLIC_LOG_D64 " , list size:%{public}zu",
+            trackId_, pts, ConvertTimeToMpeg4(pts, timeScale_), preDts_, dtsList_.size());
+        return true;
+    }
+    return pts >= lastTimestampUs_;
+}
+
 Status VideoTrack::WriteSample(std::shared_ptr<AVIOStream> io, const std::shared_ptr<AVBuffer> &sample)
 {
     FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_ != nullptr,
@@ -272,15 +291,18 @@ Status VideoTrack::WriteSample(std::shared_ptr<AVIOStream> io, const std::shared
         Status::ERROR_INVALID_OPERATION, "stss or stsz box is empty");
     FALSE_RETURN_V_MSG_E(videoParser_ != nullptr, Status::ERROR_INVALID_OPERATION, "videoParser is null");
     auto pts = sample->pts_;
-    if (!hasVideoDelay_ && pts < lastTimestampUs_ && ConvertTimeToMpeg4(pts, timeScale_) == 0) {
+    auto mpeg4Pts = ConvertTimeToMpeg4(pts, timeScale_);
+    if (mpeg4Pts < preDts_ && mpeg4Pts == 0) {
         constexpr int64_t ptsOffset = 11; // 11 = 1000000 / 90000
         MEDIA_LOG_I("[%{public}d] change video pts:" PUBLIC_LOG_D64 " -> " PUBLIC_LOG_D64,
             trackId_, pts, (lastTimestampUs_ + ptsOffset));
         pts = lastTimestampUs_ + ptsOffset;
+        mpeg4Pts = ConvertTimeToMpeg4(pts, timeScale_);
     }
-    FALSE_RETURN_V_MSG_E(hasVideoDelay_ || pts >= lastTimestampUs_, Status::ERROR_INVALID_PARAMETER,
-        "[%{public}d] hasVideoDelay:%{public}d, pts: " PUBLIC_LOG_D64 " error, < " PUBLIC_LOG_D64,
-        trackId_, hasVideoDelay_, sample->pts_, lastTimestampUs_);
+    FALSE_RETURN_V_MSG_E(CheckPts(pts), Status::ERROR_INVALID_PARAMETER,
+        "[%{public}d] videoDelay:%{public}d, pts: " PUBLIC_LOG_D64 " error, < " PUBLIC_LOG_D64,
+        trackId_, videoDelay_, sample->pts_, lastTimestampUs_);
+
     if (!hasSetParserConfig_) {
         ParserSetConfig();
     }
@@ -288,7 +310,7 @@ Status VideoTrack::WriteSample(std::shared_ptr<AVIOStream> io, const std::shared
     int32_t size = videoParser_->WriteFrame(io, sample);
     FALSE_RETURN_V_MSG_E(size > 0, (size == 0 ? Status::NO_ERROR : Status::ERROR_INVALID_DATA),
         "video write frame err:%{public}d", size);
-    DisposeCtts(pts);
+    DisposeSttsAndCtts(pts, mpeg4Pts);
     DisposeStco(pos);
     DisposeSdtp(sample->flag_);
     DisposeStsz(static_cast<uint32_t>(size));
@@ -309,15 +331,11 @@ Status VideoTrack::WriteTailer()
         MEDIA_LOG_I("[%{public}d] sample is null, set not write trak box", trackId_);
     }
     if (lastDuration_ == 0 && stsz_->sampleCount_ > 1) {
-        lastDuration_ = ConvertTime(ConvertTimeToMpeg4(lastTimestampUs_ - startTimestampUs_, timeScale_),
-            stsz_->sampleCount_ - 1, 1);
+        lastDuration_ = preDuration_;
     }
     if (stsz_->sampleCount_ > 0) {
-        if (isHaveBFrame_) {
-            DisposeCttsAndStts();
-        } else {
-            DisposeSttsOnly();
-        }
+        DisposeStts(lastDuration_, prePtsUs_);  // dispose last stts
+        UpdateCtts();
         DisposeDuration();
         DisposeBitrate();
         DisposeColor();
@@ -439,132 +457,68 @@ void VideoTrack::InitCuva(const std::shared_ptr<Meta> &trackDesc)
     }
 }
 
-void VideoTrack::DisposeCtts(int64_t pts)
+int64_t VideoTrack::CalculateDtsByPts(int64_t mpeg4Pts)
+{
+    if (stsz_->sampleCount_ == 0 && videoDelay_ > 0) {
+        dtsList_.clear();
+        auto lastDuration = (lastDuration_ > 0) ? lastDuration_ : 1;
+        // 根据最大B帧数初始化dts缓存队列
+        for (int32_t i = videoDelay_; i > 0; i--) {
+            InsertSorted(dtsList_, mpeg4Pts - (lastDuration * i));
+        }
+        startDts_ = dtsList_.empty() ? mpeg4Pts : dtsList_.front();
+        MEDIA_LOG_I("[%{public}d] init dts list finish! video delay:%{public}d, sampleCount:%{public}zu",
+            trackId_, videoDelay_, dtsList_.size());
+    }
+    if (dtsList_.empty()) {
+        return mpeg4Pts;
+    }
+    int64_t curDts = 0;
+    InsertSorted(dtsList_, mpeg4Pts);
+    curDts = dtsList_.front();
+    dtsList_.pop_front();
+    return curDts;
+}
+
+void VideoTrack::DisposeSttsAndCtts(int64_t ptsUs, int64_t mpeg4Pts)
 {
     FALSE_RETURN_MSG(stsz_ != nullptr, "stsz box is empty");
     if (stsz_->sampleCount_ == 0) {
-        startTimestampUs_ = pts;
-        lastTimestampUs_ = pts;
-        startDts_ = ConvertTimeToMpeg4(pts, timeScale_);
-        dts_ = startDts_;
+        startTimestampUs_ = ptsUs;
+        lastTimestampUs_ = ptsUs;
+        // 有B帧的时候startDts_为dtsList_的首帧
+        startDts_ = mpeg4Pts;
         delay_ = 0;
-        MEDIA_LOG_I("video track:%{public}d, start timestamp:" PUBLIC_LOG_D64, trackId_, pts);
+        MEDIA_LOG_I("video track:%{public}d, start timestamp:" PUBLIC_LOG_D64, trackId_, ptsUs);
     } else {
-        startTimestampUs_ = std::min(startTimestampUs_, pts);
-        lastTimestampUs_ = std::max(lastTimestampUs_, pts);
-        if (lastTimestampUs_ != pts) {
-            isHaveBFrame_ = true;
-        }
+        startTimestampUs_ = std::min(startTimestampUs_, ptsUs);
+        lastTimestampUs_ = std::max(lastTimestampUs_, ptsUs);
     }
-    if (lastDuration_ == 0) {
-        allPts_.emplace(pts);
-    } else {
-        DisposeCttsByFrameRate(pts);
+
+    auto curDts = CalculateDtsByPts(mpeg4Pts);
+    DisposeCtts(mpeg4Pts, curDts);
+    if (stsz_->sampleCount_ > 0) {
+        preDuration_ = curDts - preDts_;
+        DisposeStts(preDuration_, prePtsUs_);
     }
+    preDts_ = curDts;
+    prePtsUs_ = ptsUs;
 }
 
-void VideoTrack::DisposeCttsByFrameRate(int64_t pts)
-{
-    FALSE_RETURN_MSG(tempCtts_ != nullptr, "ctts box is empty");
-    int64_t cts = ConvertTimeToMpeg4(pts, timeScale_) - dts_;
-    if (cts > INT32_MAX || cts < INT32_MIN) {
-        MEDIA_LOG_E("ctts sample_offset must <= INT32_MAX and >= INT32_MIN, but the value is " PUBLIC_LOG_D64 ", "
-            "the pts is " PUBLIC_LOG_D64, cts, pts);
-    }
-    delay_ = std::min(cts, delay_);
-    tempCtts_->AddData(static_cast<uint32_t>(cts));
-    dts_ += lastDuration_;
-}
-
-void VideoTrack::DisposeCttsAndStts(int64_t mpeg4Pts)
+void VideoTrack::DisposeCtts(int64_t pts, int64_t dts)
 {
     FALSE_RETURN_MSG(ctts_ != nullptr, "ctts box is empty");
-    int64_t dtsMin = dts_;
-    if (mpeg4Pts > ptsMax_) {
-        // 更新dts为上一次ptsMax和dts的最大值
-        dts_ = std::max(ptsMax_, dts_);
-        ptsMax_ = mpeg4Pts;
-    }
-    int64_t cts = mpeg4Pts - dtsMin;
+    int64_t cts = pts - dts;
     if (cts > INT32_MAX || cts < INT32_MIN) {
         MEDIA_LOG_E("ctts sample_offset must <= INT32_MAX and >= INT32_MIN, but the value is " PUBLIC_LOG_D64 ", "
-            "the pts is " PUBLIC_LOG_D64, cts, mpeg4Pts);
+            "the pts: " PUBLIC_LOG_D64 ", dts:" PUBLIC_LOG_D64, cts, pts, dts);
     }
     delay_ = std::min(cts, delay_);
     ctts_->AddData(static_cast<uint32_t>(cts));
-    dts_ += lastDuration_;
-    DisposeStts(dts_ - dtsMin, mpeg4Pts);
 }
 
-void VideoTrack::DisposeSttsNoPts()
+void VideoTrack::UpdateCtts()
 {
-    int64_t dts = 0;
-    int64_t lastTimestamp = 0;
-    bool isFirst = true;
-    while (tempCtts_->timeToSamples_.size() > 0) {
-        auto timeToSample = tempCtts_->timeToSamples_.front();
-        tempCtts_->timeToSamples_.pop_front();
-        tempCtts_->entryCount_--;
-        for (uint32_t j = 0; j < timeToSample.first; ++j) {
-            if (isFirst) {
-                isFirst = false;
-                dts = startDts_;
-                lastTimestamp = dts + static_cast<int32_t>(timeToSample.second);
-                delay_ = lastTimestamp;
-            } else {
-                dts += lastDuration_;
-                int64_t pts = dts + static_cast<int32_t>(timeToSample.second);
-                int64_t duration = pts - lastTimestamp;
-                lastTimestamp = pts;
-                DisposeStts(duration, lastTimestamp);
-            }
-        }
-    }
-    DisposeStts(lastDuration_, lastTimestamp);
-}
-
-void VideoTrack::DisposeSttsOnly()
-{
-    if (allPts_.size() > 0) {
-        int64_t lastTimestampUs = ConvertTimeToMpeg4(allPts_.front(), timeScale_);
-        allPts_.pop();
-        while (allPts_.size() > 0) {
-            int64_t pts = ConvertTimeToMpeg4(allPts_.front(), timeScale_);
-            allPts_.pop();
-            int64_t duration = pts - lastTimestampUs;
-            lastTimestampUs = pts;
-            DisposeStts(duration, lastTimestampUs);
-        }
-        DisposeStts(lastDuration_, lastTimestampUs);
-    } else {
-        DisposeSttsNoPts();
-    }
-}
-
-void VideoTrack::DisposeCttsAndStts()
-{
-    delay_ = 0;
-    dts_ = startDts_;
-    ptsMax_ = startDts_;
-    if (allPts_.size() > 0) {  // 没有设置帧率
-        while (allPts_.size() > 0) {
-            int64_t pts = allPts_.front();
-            allPts_.pop();
-            DisposeCttsAndStts(ConvertTimeToMpeg4(pts, timeScale_));
-        }
-    } else {  // 有帧率，用ctts还原pts，再计算ctts和stts
-        int64_t dts = startDts_;
-        while (tempCtts_->timeToSamples_.size() > 0) {
-            auto timeToSample = tempCtts_->timeToSamples_.front();
-            tempCtts_->timeToSamples_.pop_front();
-            tempCtts_->entryCount_--;
-            for (uint32_t j = 0; j < timeToSample.first; ++j) {
-                int64_t pts = dts + static_cast<int32_t>(timeToSample.second);
-                DisposeCttsAndStts(pts);
-                dts += lastDuration_;
-            }
-        }
-    }
     // 更新ctts
     for (auto& ctts : ctts_->timeToSamples_) {
         int64_t tmpNum = static_cast<int64_t>(static_cast<int32_t>(ctts.second)) - delay_;

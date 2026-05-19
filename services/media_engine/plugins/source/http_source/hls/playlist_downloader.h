@@ -88,10 +88,10 @@ public:
     virtual void UpdateManifest() = 0;
     virtual void ParseManifest(const std::string& location, bool isPreParse = false) = 0;
     virtual void SetPlayListCallback(std::weak_ptr<PlayListChangeCallback> callback) = 0;
-    virtual int64_t GetDuration() const = 0;
-    virtual std::pair<int64_t, bool> GetStartInfo() const = 0;
-    virtual Seekable GetSeekable() const = 0;
-    virtual std::vector<SeekRange> GetSeekableRanges() const
+    virtual int64_t GetDuration() = 0;
+    virtual std::pair<int64_t, bool> GetStartInfo() = 0;
+    virtual Seekable GetSeekable() = 0;
+    virtual std::vector<SeekRange> GetSeekableRanges()
     {
         return {};
     }
@@ -103,7 +103,7 @@ public:
     virtual bool IsBitrateSame(uint32_t bitRate) = 0;
     virtual bool IsMediaSame(uint32_t streamId, HlsSegmentType mediaType) = 0;
     virtual uint32_t GetCurBitrate() = 0;
-    virtual bool IsLive() const = 0;
+    virtual bool IsLive() = 0;
     virtual void SetMimeType(const std::string& mimeType) = 0;
     virtual void PreParseManifest(const std::string& location) = 0;
     virtual bool IsParseAndNotifyFinished() = 0;
@@ -153,7 +153,7 @@ public:
     }
     void StopBufferring(bool isAppBackground);
 
-    virtual size_t GetLiveUpdateGap() const
+    virtual size_t GetLiveUpdateGap()
     {
         return 0;
     }

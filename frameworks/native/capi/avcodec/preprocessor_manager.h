@@ -27,11 +27,15 @@
 #include <thread>
 #include <vector>
 #include "preprocessor.h"
+#include "format.h"
 #include "surface.h"
 #include "sync_fence.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
+
+using OnStreamChangedCallback = std::function<void(const Media::Format& format)>;
+using OnPreprocessErrorCallback = std::function<void(int32_t errorCode)>;
 
 class PreprocessorManager : public std::enable_shared_from_this<PreprocessorManager> {
 public:
@@ -39,12 +43,15 @@ public:
     ~PreprocessorManager();
 
     void RegisterEncoder(std::string_view encoderId, std::shared_ptr<Preprocessor> preprocessor,
-                         sptr<Surface> producerSurface);
+                         sptr<Surface> producerSurface,
+                         OnStreamChangedCallback streamChangedCb = nullptr,
+                         OnPreprocessErrorCallback errorCb = nullptr);
     void UnregisterEncoder(std::string_view encoderId);
     void SetEncoderRunning(std::string_view encoderId, bool isRunning);
     void CreateSharedSurface();
     sptr<Surface> GetSharedSurface();
     bool RequestNotifyEos(std::string_view encoderId, std::function<void()> notifyEosTask);
+    void NotifyEosNowIfPending(std::string_view encoderId);
 
     void NotifyNewBufferAvailable();
 
@@ -70,7 +77,6 @@ private:
         SurfaceType surfaceType;
         int64_t timestamp{0};
         BufferFlushConfig flushConfig{};
-        bool isProcessed{false};
 
         SurfaceBufferWrapper() = default;
         SurfaceBufferWrapper(wptr<Surface> argSurface, sptr<SurfaceBuffer> buf,
@@ -91,19 +97,23 @@ private:
         void OnNewPendingBufferAvailable(std::shared_ptr<SurfaceBufferWrapper> buffer);
         void OnNewEncoderSurfaceBufferAvailable(uint32_t seq, const sptr<SyncFence>& fence);
         bool RequestNotifyEos(std::function<void()> notifyEosTask);
+        void NotifyEosNowIfPending();
 
         // === Buffer data query for GetInputDescription (reads from pendingBuffers_ directly) ===
         bool PeekPendingBufferData(BufferDataInfo& outInfo) const;
 
+        void SetStreamChangedCallback(OnStreamChangedCallback cb);
+        void SetPreprocessErrorCallback(OnPreprocessErrorCallback cb);
+
     private:
         void SetBufferFlushConfig(std::shared_ptr<SurfaceBufferWrapper> &inputBuffer,
                                   std::shared_ptr<SurfaceBufferWrapper> &outputBuffer);
-        bool DequeueBuffers(std::shared_ptr<SurfaceBufferWrapper> &inputBuffer,
-                            std::shared_ptr<SurfaceBufferWrapper> &outputBuffer,
-                            std::function<void()> &notifyEosTask);
-        void ProcessFrame(std::shared_ptr<SurfaceBufferWrapper> &inputBuffer,
+        bool ProcessFrame(std::shared_ptr<SurfaceBufferWrapper> &inputBuffer,
                           std::shared_ptr<SurfaceBufferWrapper> &outputBuffer);
         void EncoderThreadLoop();
+        void CheckAndNotifyStreamChange(const std::shared_ptr<SurfaceBufferWrapper>& inputBuffer);
+        void ReportPreprocessError(int32_t errorCode);
+        Media::Format FillStreamDescription(int32_t width, int32_t height, int32_t pixelFormat, int32_t stride);
 
         std::queue<std::shared_ptr<SurfaceBufferWrapper>> pendingBuffers_{};
         std::map<uint32_t, sptr<SurfaceBuffer>> encoderSurfaceBufferPool_;
@@ -117,6 +127,19 @@ private:
         mutable std::mutex bufferQueueMutex_;
         std::condition_variable bufferQueueCv_;
         std::string encoderId_;
+
+        // Stream change notification state
+        bool streamChangeNotified_{false};
+        int32_t lastNotifiedWidth_{0};
+        int32_t lastNotifiedHeight_{0};
+        int32_t lastNotifiedFormat_{static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT)};
+        OnStreamChangedCallback onStreamChangedCallback_{nullptr};
+
+        // Preprocess error reporting state
+        uint64_t frameCount_{0};
+        uint64_t lastReportedErrorFrameCount_{0};
+        int32_t lastReportedPreprocessError_{0};
+        OnPreprocessErrorCallback preprocessErrorCallback_{nullptr};
     };
 
     sptr<Surface> sharedConsumerSurface_{nullptr};

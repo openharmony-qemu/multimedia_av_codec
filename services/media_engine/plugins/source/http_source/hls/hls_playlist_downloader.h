@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -39,10 +39,10 @@ public:
     void UpdateManifest() override;
     void ParseManifest(const std::string& location, bool isPreParse = false) override;
     void SetPlayListCallback(std::weak_ptr<PlayListChangeCallback> callback) override;
-    int64_t GetDuration() const override;
-    std::pair<int64_t, bool> GetStartInfo() const override;
-    Seekable GetSeekable() const override;
-    std::vector<SeekRange> GetSeekableRanges() const override;
+    int64_t GetDuration() override;
+    std::pair<int64_t, bool> GetStartInfo() override;
+    Seekable GetSeekable() override;
+    std::vector<SeekRange> GetSeekableRanges() override;
     void SelectBitRate(uint32_t bitRate) override;
     std::vector<uint32_t> GetBitRates() override;
     uint64_t GetCurrentBitRate() override;
@@ -51,7 +51,7 @@ public:
     bool IsBitrateSame(uint32_t bitRate) override;
     bool IsMediaSame(uint32_t streamId, HlsSegmentType mediaType) override;
     uint32_t GetCurBitrate() override;
-    bool IsLive() const override;
+    bool IsLive() override;
     void NotifyListChange();
     void SetMimeType(const std::string& mimeType) override;
     void PreParseManifest(const std::string& location) override;
@@ -66,7 +66,7 @@ public:
     size_t GetSegmentOffset(uint32_t tsIndex) override;
     bool GetHLSDiscontinuity() override;
     void SetInitResolution(uint32_t width, uint32_t height) override;
-    size_t GetLiveUpdateGap() const override;
+    size_t GetLiveUpdateGap() override;
     void InterruptM3U8Parse(bool isInterruptNeeded) override;
     void GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate = false) override;
     bool ReadFmp4Header(uint8_t* buffer, uint32_t wantLen, uint32_t& readLen, uint32_t streamId) override;
@@ -87,7 +87,7 @@ public:
     bool IsLiveEnd() override;
     std::shared_ptr<AesDecryptor> GetAesDecryptor(uint64_t keyIndex) override;
 private:
-    bool IsLiveTimeShiftSeekable() const;
+    bool IsLiveTimeShiftSeekable();
     void UpdateMasterInfo(bool isPreParse);
     void UpdateMasterAndNotifyList(bool isPreParse);
     bool UpdatePlaylists(bool isSimple);
@@ -103,6 +103,17 @@ private:
     void OnMasterReady(bool needAudioManager, bool needSubtitlesManager);
     bool ContainsNonDigit(const std::string& str);
     void UpdateManifestAndNotifyListChange(bool isPreParse);
+    void NotifyDateRanges(const std::list<std::shared_ptr<DateRange>>& dateRanges,
+        const std::shared_ptr<PlayListChangeCallback>& callback);
+    void StartLiveUpdateIfNeeded(const std::shared_ptr<M3U8MasterPlaylist>& master);
+
+    // master_变量保护
+    void SetThreadSafeMaster(std::shared_ptr<M3U8MasterPlaylist> master);
+    std::shared_ptr<M3U8MasterPlaylist> GetThreadSafeMaster();
+
+    // currentVariant_变量保护
+    void SetThreadSafeCurrentVariant(std::shared_ptr<M3U8VariantStream> currentVariant);
+    std::shared_ptr<M3U8VariantStream> GetThreadSafeCurrentVariant();
 
 private:
     std::string url_ {};
@@ -121,7 +132,9 @@ private:
     std::mutex mediaMutex_;
     std::shared_ptr<M3U8Media> currentAudio_;
     std::shared_ptr<M3U8Media> currentSubtitles_;
-    std::mutex streamIdMutex;
+    std::mutex streamIdMutex_;
+    std::shared_mutex masterMutex_;    // 用于保护master_变量
+    std::shared_mutex currentVariantMutex_;    // 用于保护currentVariant_变量
     std::set<uint32_t> videoStreamIds_ = std::set<uint32_t>();
     std::set<uint32_t> audioStreamIds_ = std::set<uint32_t>();
     std::set<uint32_t> subtitlesStreamIds_ = std::set<uint32_t>();

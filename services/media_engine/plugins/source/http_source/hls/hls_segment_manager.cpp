@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -723,8 +723,8 @@ void HlsSegmentManager::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readD
         tsStorageInfo_[readTsIndex_].second == true) {
         uint64_t tsEndOffset = SpliceOffset(readTsIndex_, tsStorageInfo_[readTsIndex_].first);
         if (readOffset_ >= tsEndOffset) {
-            MEDIA_LOG_I("HLS read reach splice end, current: %{public}u, type: %{public}d",
-                readDataInfo.streamId_, type_);
+            MEDIA_LOG_I("HLS read reach splice end, current: %{public}u, type: %{public}d, readTsIndex_: %{public}u",
+                readDataInfo.streamId_, type_, readTsIndex_.load());
             isTsEnd_.store(true);
             notNeedReadBack_.store(true);
             if (playlistDownloader_->IsHlsFmp4()) {
@@ -803,7 +803,8 @@ Status HlsSegmentManager::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     FALSE_RETURN_V(cacheMediaBuffer_ != nullptr, Status::ERROR_AGAIN);
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
     readTime_ = now;
-    if (!CheckDataIntegrity()) {
+    bool isLive = playlistDownloader_ != nullptr ? playlistDownloader_->IsLive() : false;
+    if (!CheckDataIntegrity() && !isLive) {
         MEDIA_LOG_W("HLS Read in, fix download, type: %{public}d", type_);
         SeekToTsForRead(readTsIndex_);
         return Status::ERROR_AGAIN;
@@ -816,8 +817,8 @@ Status HlsSegmentManager::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     if (isNeedResume_.load()) {
         ClearChunksInLargeSegment();
         if (freeSize > GetDownloadResumeThreshold()) {
-            downloader_->Resume();
             isNeedResume_.store(false);
+            downloader_->Resume();
             MEDIA_LOG_I("HLS download resume, type: %{public}d", type_);
         }
     }
@@ -1041,13 +1042,6 @@ void HlsSegmentManager::HandlePlayListChanged(const std::vector<PlayInfo>& playL
             MEDIA_LOG_I("HLS OnPlayListChanged isInterruptNeeded, type: %{public}d", type_);
             break;
         }
-        PlayInfo playerTmp = playList[i];
-        if (InfoIndexMap_.urlMap.find(playList[i].url_) == InfoIndexMap_.urlMap.end()) {
-            playerTmp.sumDuration_ = InfoIndexMap_.lastPlay.sumDuration_ +
-                static_cast<uint64_t>(playerTmp.duration_) * ONE_USSECONDS;
-            InfoIndexMap_.urlMap[playList[i].url_] = playerTmp;
-            InfoIndexMap_.lastPlay = playerTmp;
-        }
         auto fragment = playList[i];
         PlaylistBackup(fragment);
         if (isSelectingBitrate_.load() && fragment.sequence_ > currentSequence_) {
@@ -1061,6 +1055,13 @@ void HlsSegmentManager::HandlePlayListChanged(const std::vector<PlayInfo>& playL
             } else {
                 continue;
             }
+        }
+        PlayInfo playerTmp = playList[i];
+        if (InfoIndexMap_.urlMap.find(playList[i].url_) == InfoIndexMap_.urlMap.end()) {
+            playerTmp.sumDuration_ = InfoIndexMap_.lastPlay.sumDuration_ +
+                static_cast<uint64_t>(playerTmp.duration_) * ONE_USSECONDS;
+            InfoIndexMap_.urlMap[playList[i].url_] = playerTmp;
+            InfoIndexMap_.lastPlay = playerTmp;
         }
         if (!fragmentDownloadStart[fragment.url_] && !fragmentPushed[fragment.url_]) {
             playList_->Push(fragment);
@@ -1481,7 +1482,7 @@ bool HlsSegmentManager::SelectBitRate(uint32_t bitRate)
         std::lock_guard<std::mutex> seekCandidatesLock(seekCandidatesMutex_);
         seekCandidates_.clear();
     }
-    
+    MEDIA_LOG_D("SelectBitRate, writeTsIndex_: " PUBLIC_LOG_U32, writeTsIndex_);
     // switch to des bitrate
     playlistDownloader_->SelectBitRate(bitRate);
     playlistDownloader_->Start();
@@ -1528,6 +1529,7 @@ int64_t HlsSegmentManager::RequestNewTs(uint64_t seekTime, SeekMode mode, double
     playInfo.offset_ = item.offset_;
     playInfo.length_ = item.length_;
     playInfo.keyIndex_ = item.keyIndex_;
+    playInfo.sequence_ = item.sequence_;
     if (mode == SeekMode::SEEK_PREVIOUS_SYNC) {
         double lastTotalDuration = totalDuration - hstTime;
         if (static_cast<uint64_t>(lastTotalDuration) <= seekTime) {
@@ -1635,6 +1637,7 @@ int64_t HlsSegmentManager::RequestNewTsForRead(const PlayInfo& item)
     playInfo.length_ = item.length_;
     playInfo.keyIndex_ = item.keyIndex_;
     playInfo.startTimePos_ = 0;
+    playInfo.sequence_ = item.sequence_;
     PushPlayInfo(playInfo);
     return 0;
 }

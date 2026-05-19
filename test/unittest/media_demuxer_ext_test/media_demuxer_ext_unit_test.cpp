@@ -179,8 +179,8 @@ static void PrepareAutoSelectTrackByBitrate(const std::shared_ptr<MediaDemuxer> 
     int32_t streamId, uint32_t currentBitRate)
 {
     mediaDemuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
-    filteredStreamMap_[VIDEO].clear();
-    filteredStreamMap_[VIDEO].push_back(MakeAutoSelectVideoStream(streamId, currentBitRate));
+    mediaDemuxer->filteredStreamMap_->map[VIDEO].clear();
+    mediaDemuxer->filteredStreamMap_->map[VIDEO].push_back(MakeAutoSelectVideoStream(streamId, currentBitRate));
     mediaDemuxer->isAutoSelect_.store(true);
     mediaDemuxer->curDownloadBitRate_.store(currentBitRate);
     mediaDemuxer->lastSwitchDownloadRate_.store(UNUM_0);
@@ -213,7 +213,7 @@ StreamInfo MakeTrackSelectionFilterStream(int32_t streamId, StreamType type, uin
 void PrepareTrackSelectionFilter(const std::shared_ptr<MediaDemuxer> &mediaDemuxer, const std::string &playType,
     const std::vector<StreamInfo> &streams)
 {
-    filteredStreamMap_.clear();
+    mediaDemuxer->filteredStreamMap_->map.clear();
     mediaDemuxer->isPrepared_.store(true);
     mediaDemuxer->currentPlayType_ = playType;
     mediaDemuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
@@ -5928,6 +5928,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSeekChangeStream_001, Te
     int32_t newStreamId = 1;
     int32_t trackId = 0;
     mediaDemuxer_->isHls_ = true;
+    mediaDemuxer_->videoTrackId_ = trackId;
     mediaDemuxer_->streamDemuxer_ = std::make_shared<StreamDemuxer>();
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillOnce(Return(true));
     EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), SetNewVideoStreamID(newStreamId)).Times(1);
@@ -6112,7 +6113,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, AutoSelectTrackByBitrate_005, TestSize.Level1)
 HWTEST_F(MediaDemuxerExtUnitTest, AutoSelectTrackByBitrate_006, TestSize.Level1)
 {
     PrepareAutoSelectTrackByBitrate(mediaDemuxer_, NUM_1, UNUM_1000);
-    filteredStreamMap_[VIDEO].clear();
+    mediaDemuxer_->filteredStreamMap_->map[VIDEO].clear();
 
     mediaDemuxer_->AutoSelectTrackByBitrate(NUM_1);
     EXPECT_NE(mediaDemuxer_->lastCheckAutoSelectTimeMs_, 0);
@@ -6216,10 +6217,11 @@ HWTEST_F(MediaDemuxerExtUnitTest, AutoSelectTrackByBitrate_011, TestSize.Level1)
 HWTEST_F(MediaDemuxerExtUnitTest, AutoSelectTrackByBitrate_012, TestSize.Level1)
 {
     PrepareAutoSelectTrackByBitrate(mediaDemuxer_, NUM_1, UNUM_2000);
-    filteredStreamMap_[VIDEO].clear();
-    filteredStreamMap_[VIDEO].push_back(MakeAutoSelectVideoStream(NUM_1, UNUM_1000, StreamType::AUDIO));
-    filteredStreamMap_[VIDEO].push_back(MakeAutoSelectVideoStream(NUM_2, UNUM_3000));
-    filteredStreamMap_[VIDEO].push_back(MakeAutoSelectVideoStream(NUM_3, UNUM_2000));
+    mediaDemuxer_->filteredStreamMap_->map[VIDEO].clear();
+    mediaDemuxer_->filteredStreamMap_->map[VIDEO].push_back(MakeAutoSelectVideoStream(
+        NUM_1, UNUM_1000, StreamType::AUDIO));
+    mediaDemuxer_->filteredStreamMap_->map[VIDEO].push_back(MakeAutoSelectVideoStream(NUM_2, UNUM_3000));
+    mediaDemuxer_->filteredStreamMap_->map[VIDEO].push_back(MakeAutoSelectVideoStream(NUM_3, UNUM_2000));
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetCurrentBitRate()).WillRepeatedly(Return(UNUM_2000));
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillRepeatedly(Return(false));
     EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), ResetAllCache()).WillOnce(Return(Status::OK));
@@ -7244,8 +7246,8 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectSubtitleDefaultId_010, T
  */
 HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_001, TestSize.Level1)
 {
-    filteredStreamMap_.clear();
-    filteredStreamMap_[VIDEO] = {
+    mediaDemuxer_->filteredStreamMap_->map.clear();
+    mediaDemuxer_->filteredStreamMap_->map[VIDEO] = {
         MakeTrackSelectionFilterStream(FILTER_VIDEO_STREAM_ID_1, VIDEO, UNUM_1000, FILTER_MIME_VIDEO_AVC, "")
     };
     mediaDemuxer_->currentPlayType_ = "hls";
@@ -7265,7 +7267,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_001, TestSize.Level1)
  */
 HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_002, TestSize.Level1)
 {
-    filteredStreamMap_.clear();
+    mediaDemuxer_->filteredStreamMap_->map.clear();
     mediaDemuxer_->currentPlayType_ = "hls";
     mediaDemuxer_->trackSelectionFilter_ = {};
     mediaDemuxer_->isHdrStart_ = false;
@@ -7283,14 +7285,14 @@ HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_002, TestSize.Level1)
  */
 HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_003, TestSize.Level1)
 {
-    filteredStreamMap_.clear();
-    filteredStreamMap_[VIDEO] = {
+    mediaDemuxer_->filteredStreamMap_->map.clear();
+    mediaDemuxer_->filteredStreamMap_->map[VIDEO] = {
         MakeTrackSelectionFilterStream(FILTER_VIDEO_STREAM_ID_1, VIDEO, UNUM_1000, FILTER_MIME_VIDEO_AVC, "")
     };
-    filteredStreamMap_[AUDIO] = {
+    mediaDemuxer_->filteredStreamMap_->map[AUDIO] = {
         MakeSelectAudioDefaultStream(FILTER_AUDIO_STREAM_ID_1, FILTER_LANG_ENG, "audio/aac")
     };
-    filteredStreamMap_[SUBTITLE] = {
+    mediaDemuxer_->filteredStreamMap_->map[SUBTITLE] = {
         MakeSelectSubtitleDefaultStream(FILTER_SUBTITLE_STREAM_ID_1, FILTER_LANG_CHI)
     };
     mediaDemuxer_->currentPlayType_ = FILTER_PLAY_TYPE_HTTP;
@@ -7316,11 +7318,11 @@ HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_003, TestSize.Level1)
  */
 HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_004, TestSize.Level1)
 {
-    filteredStreamMap_.clear();
-    filteredStreamMap_[AUDIO] = {
+    mediaDemuxer_->filteredStreamMap_->map.clear();
+    mediaDemuxer_->filteredStreamMap_->map[AUDIO] = {
         MakeSelectAudioDefaultStream(FILTER_AUDIO_STREAM_ID_1, FILTER_LANG_ENG, "audio/aac")
     };
-    filteredStreamMap_[SUBTITLE] = {
+    mediaDemuxer_->filteredStreamMap_->map[SUBTITLE] = {
         MakeSelectSubtitleDefaultStream(FILTER_SUBTITLE_STREAM_ID_1, FILTER_LANG_CHI)
     };
     mediaDemuxer_->currentPlayType_ = FILTER_PLAY_TYPE_DASH;
@@ -7342,8 +7344,8 @@ HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_004, TestSize.Level1)
  */
 HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_005, TestSize.Level1)
 {
-    filteredStreamMap_.clear();
-    filteredStreamMap_[AUDIO] = {
+    mediaDemuxer_->filteredStreamMap_->map.clear();
+    mediaDemuxer_->filteredStreamMap_->map[AUDIO] = {
         MakeSelectAudioDefaultStream(FILTER_AUDIO_STREAM_ID_1, FILTER_LANG_ENG, "audio/aac")
     };
     mediaDemuxer_->currentPlayType_ = FILTER_PLAY_TYPE_DASH;
@@ -7363,7 +7365,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_005, TestSize.Level1)
  */
 HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_006, TestSize.Level1)
 {
-    filteredStreamMap_.clear();
+    mediaDemuxer_->filteredStreamMap_->map.clear();
     mediaDemuxer_->currentPlayType_ = FILTER_PLAY_TYPE_DASH;
     mediaDemuxer_->trackSelectionFilter_ = {};
     mediaDemuxer_->defaultAudioLang_ = FILTER_LANG_ENG;
@@ -7380,8 +7382,8 @@ HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_006, TestSize.Level1)
  */
 HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_007, TestSize.Level1)
 {
-    filteredStreamMap_.clear();
-    filteredStreamMap_[SUBTITLE] = {
+    mediaDemuxer_->filteredStreamMap_->map.clear();
+    mediaDemuxer_->filteredStreamMap_->map[SUBTITLE] = {
         MakeSelectSubtitleDefaultStream(FILTER_SUBTITLE_STREAM_ID_1, FILTER_LANG_CHI)
     };
     mediaDemuxer_->currentPlayType_ = FILTER_PLAY_TYPE_DASH;
@@ -7400,7 +7402,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_007, TestSize.Level1)
  */
 HWTEST_F(MediaDemuxerExtUnitTest, UpdateDefaultStreamIds_008, TestSize.Level1)
 {
-    filteredStreamMap_.clear();
+    mediaDemuxer_->filteredStreamMap_->map.clear();
     mediaDemuxer_->currentPlayType_ = FILTER_PLAY_TYPE_DASH;
     mediaDemuxer_->trackSelectionFilter_ = {};
     mediaDemuxer_->defaultSubtitleLang_ = FILTER_LANG_CHI;
@@ -8013,7 +8015,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_PrintStreamInfo_001, TestSize.
  */
 HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetPreferredVideoStream_001, TestSize.Level1)
 {
-    filteredStreamMap_.clear();
+    mediaDemuxer_->filteredStreamMap_->map.clear();
 
     StreamInfo audioStream;
     audioStream.streamId = TEST_STREAM_ID_1;
@@ -8035,13 +8037,13 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetPreferredVideoStream_001, T
     videoStreamHigh.type = StreamType::VIDEO;
     videoStreamHigh.bitRate = 4200;
 
-    filteredStreamMap_[VIDEO] = {audioStream, videoStreamLow, mixedStream, videoStreamHigh};
-    StreamInfo *preferredStream = GetPreferredVideoStream(2500);
+    mediaDemuxer_->filteredStreamMap_->map[VIDEO] = {audioStream, videoStreamLow, mixedStream, videoStreamHigh};
+    StreamInfo *preferredStream = GetPreferredVideoStream(mediaDemuxer_->filteredStreamMap_->map, 2500);
 
     ASSERT_NE(preferredStream, nullptr);
     EXPECT_EQ(preferredStream->streamId, TEST_STREAM_ID_3);
     EXPECT_EQ(preferredStream->bitRate, 2600u);
-    filteredStreamMap_.clear();
+    mediaDemuxer_->filteredStreamMap_->map.clear();
 }
 
 /**
@@ -8051,7 +8053,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetPreferredVideoStream_001, T
  */
 HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetPreferredVideoStream_002, TestSize.Level1)
 {
-    filteredStreamMap_.clear();
+    mediaDemuxer_->filteredStreamMap_->map.clear();
 
     StreamInfo videoStreamLow;
     videoStreamLow.streamId = TEST_STREAM_ID_1;
@@ -8063,13 +8065,14 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetPreferredVideoStream_002, T
     videoStreamExact.type = StreamType::VIDEO;
     videoStreamExact.bitRate = TEST_MAX_VIDEO_BITRATE;
 
-    filteredStreamMap_[VIDEO] = {videoStreamLow, videoStreamExact};
-    StreamInfo *preferredStream = GetPreferredVideoStream(TEST_MAX_VIDEO_BITRATE);
+    mediaDemuxer_->filteredStreamMap_->map[VIDEO] = {videoStreamLow, videoStreamExact};
+    StreamInfo *preferredStream = GetPreferredVideoStream(
+        mediaDemuxer_->filteredStreamMap_->map, TEST_MAX_VIDEO_BITRATE);
 
     ASSERT_NE(preferredStream, nullptr);
     EXPECT_EQ(preferredStream->streamId, TEST_STREAM_ID_2);
     EXPECT_EQ(preferredStream->bitRate, static_cast<uint32_t>(TEST_MAX_VIDEO_BITRATE));
-    filteredStreamMap_.clear();
+    mediaDemuxer_->filteredStreamMap_->map.clear();
 }
 
 
@@ -8544,5 +8547,258 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_InnerSelectTrack_004, TestSize
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetPluginByStreamID(_)).WillRepeatedly(Return(plugin));
     EXPECT_CALL(*plugin, SelectTrack(_)).WillOnce(Return(Status::OK));
     EXPECT_EQ(mediaDemuxer_->InnerSelectTrack(NUM_1), Status::OK);
+}
+
+/**
+ * @tc.name  : SelectBitRate_002
+ * @tc.number: SelectBitRate_002
+ * @tc.desc  : Test SelectBitRate caches pending bitrate when dash change is busy and force select is enabled
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, SelectBitRate_002, TestSize.Level1)
+{
+    mediaDemuxer_->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    mediaDemuxer_->waitVideoBitrate_.store(UNUM_0);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), CanDoChangeStream()).WillOnce(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
+
+    auto ret = mediaDemuxer_->SelectBitRate(UNUM_2000, false, true);
+
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(mediaDemuxer_->waitVideoBitrate_.load(), UNUM_2000);
+}
+
+/**
+ * @tc.name  : SelectBitRate_003
+ * @tc.number: SelectBitRate_003
+ * @tc.desc  : Test SelectBitRate does not cache pending bitrate when dash change is busy and force select is disabled
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, SelectBitRate_003, TestSize.Level1)
+{
+    mediaDemuxer_->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    mediaDemuxer_->waitVideoBitrate_.store(UNUM_0);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), CanDoChangeStream()).WillOnce(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
+
+    auto ret = mediaDemuxer_->SelectBitRate(UNUM_2000, false, false);
+
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(mediaDemuxer_->waitVideoBitrate_.load(), UNUM_0);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectStreamId_007
+ * @tc.number: MediaDemuxerExt_SelectStreamId_007
+ * @tc.desc  : Test SelectStreamId caches pending audio stream when dash change is not allowed
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectStreamId_007, TestSize.Level1)
+{
+    mediaDemuxer_->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    mediaDemuxer_->waitAudioStreamId_.store(NEG_1);
+    mediaDemuxer_->waitSubtitleStreamId_.store(NEG_1);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), CanDoChangeStream()).WillOnce(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(_)).Times(0);
+
+    auto ret = mediaDemuxer_->SelectStreamId(NUM_1, true);
+    EXPECT_EQ(ret, Status::ERROR_WRONG_STATE);
+    EXPECT_EQ(mediaDemuxer_->waitAudioStreamId_.load(), NUM_1);
+    EXPECT_EQ(mediaDemuxer_->waitSubtitleStreamId_.load(), NEG_1);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_SelectStreamId_008
+ * @tc.number: MediaDemuxerExt_SelectStreamId_008
+ * @tc.desc  : Test SelectStreamId caches pending subtitle stream when dash change is not allowed
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectStreamId_008, TestSize.Level1)
+{
+    mediaDemuxer_->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    mediaDemuxer_->waitAudioStreamId_.store(NEG_1);
+    mediaDemuxer_->waitSubtitleStreamId_.store(NEG_1);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillOnce(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), CanDoChangeStream()).WillOnce(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(_)).Times(0);
+
+    auto ret = mediaDemuxer_->SelectStreamId(NUM_2, false);
+    EXPECT_EQ(ret, Status::ERROR_WRONG_STATE);
+    EXPECT_EQ(mediaDemuxer_->waitAudioStreamId_.load(), NEG_1);
+    EXPECT_EQ(mediaDemuxer_->waitSubtitleStreamId_.load(), NUM_2);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_WaitTrackSelectionFilter_001
+ * @tc.number: MediaDemuxerExt_WaitTrackSelectionFilter_001
+ * @tc.desc  : Test WaitTrackSelectionFilter stores values by track type
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_WaitTrackSelectionFilter_001, TestSize.Level1)
+{
+    mediaDemuxer_->waitVideoBitrate_.store(UNUM_0);
+    mediaDemuxer_->waitAudioStreamId_.store(NEG_1);
+    mediaDemuxer_->waitSubtitleStreamId_.store(NEG_1);
+
+    mediaDemuxer_->WaitTrackSelectionFilter(UNUM_1000, NUM_1, DemuxerTrackType::VIDEO);
+    mediaDemuxer_->WaitTrackSelectionFilter(UNUM_0, NUM_2, DemuxerTrackType::AUDIO);
+    mediaDemuxer_->WaitTrackSelectionFilter(UNUM_0, NUM_3, DemuxerTrackType::SUBTITLE);
+
+    EXPECT_EQ(mediaDemuxer_->waitVideoBitrate_.load(), UNUM_1000);
+    EXPECT_EQ(mediaDemuxer_->waitAudioStreamId_.load(), NUM_2);
+    EXPECT_EQ(mediaDemuxer_->waitSubtitleStreamId_.load(), NUM_3);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_WaitTrackSelectionFilter_002
+ * @tc.number: MediaDemuxerExt_WaitTrackSelectionFilter_002
+ * @tc.desc  : Test WaitTrackSelectionFilter ignores unsupported track type
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_WaitTrackSelectionFilter_002, TestSize.Level1)
+{
+    mediaDemuxer_->waitVideoBitrate_.store(UNUM_1000);
+    mediaDemuxer_->waitAudioStreamId_.store(NUM_1);
+    mediaDemuxer_->waitSubtitleStreamId_.store(NUM_2);
+
+    mediaDemuxer_->WaitTrackSelectionFilter(UNUM_2000, NUM_3, static_cast<DemuxerTrackType>(NEG_1));
+
+    EXPECT_EQ(mediaDemuxer_->waitVideoBitrate_.load(), UNUM_1000);
+    EXPECT_EQ(mediaDemuxer_->waitAudioStreamId_.load(), NUM_1);
+    EXPECT_EQ(mediaDemuxer_->waitSubtitleStreamId_.load(), NUM_2);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ProcessTrackSelectionFilter_001
+ * @tc.number: MediaDemuxerExt_ProcessTrackSelectionFilter_001
+ * @tc.desc  : Test ProcessTrackSelectionFilter consumes pending bitrate when current bitrate differs
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ProcessTrackSelectionFilter_001, TestSize.Level1)
+{
+    mediaDemuxer_->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    mediaDemuxer_->waitVideoBitrate_.store(UNUM_2000);
+    mediaDemuxer_->waitAudioStreamId_.store(NUM_1);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetCurrentBitRate()).WillRepeatedly(Return(UNUM_1000));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillOnce(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), ResetAllCache()).WillOnce(Return(Status::OK));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(UNUM_2000)).WillOnce(Return(Status::OK));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(_)).Times(0);
+
+    mediaDemuxer_->ProcessTrackSelectionFilter();
+
+    EXPECT_EQ(mediaDemuxer_->waitVideoBitrate_.load(), UNUM_0);
+    EXPECT_EQ(mediaDemuxer_->waitAudioStreamId_.load(), NUM_1);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ProcessTrackSelectionFilter_002
+ * @tc.number: MediaDemuxerExt_ProcessTrackSelectionFilter_002
+ * @tc.desc  : Test ProcessTrackSelectionFilter clears matched bitrate and selects pending audio stream
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ProcessTrackSelectionFilter_002, TestSize.Level1)
+{
+    mediaDemuxer_->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    mediaDemuxer_->waitVideoBitrate_.store(UNUM_2000);
+    mediaDemuxer_->waitAudioStreamId_.store(NUM_1);
+    mediaDemuxer_->defaultAudioStreamId_ = NUM_1;
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetCurrentBitRate()).WillRepeatedly(Return(UNUM_2000));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillOnce(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), ResetAllCache()).WillOnce(Return(Status::OK));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(NUM_1)).WillOnce(Return(Status::OK));
+
+    mediaDemuxer_->ProcessTrackSelectionFilter();
+
+    EXPECT_EQ(mediaDemuxer_->waitVideoBitrate_.load(), UNUM_0);
+    EXPECT_EQ(mediaDemuxer_->waitAudioStreamId_.load(), NEG_1);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ProcessTrackSelectionFilter_003
+ * @tc.number: MediaDemuxerExt_ProcessTrackSelectionFilter_003
+ * @tc.desc  : Test ProcessTrackSelectionFilter clears unmatched pending audio stream without selecting it
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ProcessTrackSelectionFilter_003, TestSize.Level1)
+{
+    mediaDemuxer_->waitAudioStreamId_.store(NUM_2);
+    mediaDemuxer_->defaultAudioStreamId_ = NUM_1;
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(_)).Times(0);
+
+    mediaDemuxer_->ProcessTrackSelectionFilter();
+
+    EXPECT_EQ(mediaDemuxer_->waitAudioStreamId_.load(), NEG_1);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ProcessTrackSelectionFilter_004
+ * @tc.number: MediaDemuxerExt_ProcessTrackSelectionFilter_004
+ * @tc.desc  : Test ProcessTrackSelectionFilter selects pending subtitle stream when audio wait is empty
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ProcessTrackSelectionFilter_004, TestSize.Level1)
+{
+    mediaDemuxer_->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    mediaDemuxer_->waitAudioStreamId_.store(NEG_1);
+    mediaDemuxer_->waitSubtitleStreamId_.store(NUM_2);
+    mediaDemuxer_->defaultSubtitleStreamId_ = NUM_2;
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillOnce(Return(false));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), ResetAllCache()).WillOnce(Return(Status::OK));
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(NUM_2)).WillOnce(Return(Status::OK));
+
+    mediaDemuxer_->ProcessTrackSelectionFilter();
+
+    EXPECT_EQ(mediaDemuxer_->waitSubtitleStreamId_.load(), NEG_1);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ProcessTrackSelectionFilter_005
+ * @tc.number: MediaDemuxerExt_ProcessTrackSelectionFilter_005
+ * @tc.desc  : Test ProcessTrackSelectionFilter keeps state unchanged when there is no pending filter
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ProcessTrackSelectionFilter_005, TestSize.Level1)
+{
+    mediaDemuxer_->waitVideoBitrate_.store(UNUM_0);
+    mediaDemuxer_->waitAudioStreamId_.store(NEG_1);
+    mediaDemuxer_->waitSubtitleStreamId_.store(NEG_1);
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(_)).Times(0);
+
+    mediaDemuxer_->ProcessTrackSelectionFilter();
+
+    EXPECT_EQ(mediaDemuxer_->waitVideoBitrate_.load(), UNUM_0);
+    EXPECT_EQ(mediaDemuxer_->waitAudioStreamId_.load(), NEG_1);
+    EXPECT_EQ(mediaDemuxer_->waitSubtitleStreamId_.load(), NEG_1);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ProcessTrackSelectionFilter_006
+ * @tc.number: MediaDemuxerExt_ProcessTrackSelectionFilter_006
+ * @tc.desc  : Test ProcessTrackSelectionFilter clears unmatched subtitle stream without selecting it
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ProcessTrackSelectionFilter_006, TestSize.Level1)
+{
+    mediaDemuxer_->waitAudioStreamId_.store(NEG_1);
+    mediaDemuxer_->waitSubtitleStreamId_.store(NUM_2);
+    mediaDemuxer_->defaultSubtitleStreamId_ = NUM_1;
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(_)).Times(0);
+
+    mediaDemuxer_->ProcessTrackSelectionFilter();
+
+    EXPECT_EQ(mediaDemuxer_->waitSubtitleStreamId_.load(), NEG_1);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ProcessTrackSelectionFilter_007
+ * @tc.number: MediaDemuxerExt_ProcessTrackSelectionFilter_007
+ * @tc.desc  : Test ProcessTrackSelectionFilter keeps pending bitrate when demuxer plugin manager is null
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ProcessTrackSelectionFilter_007, TestSize.Level1)
+{
+    mediaDemuxer_->demuxerPluginManager_ = nullptr;
+    mediaDemuxer_->waitVideoBitrate_.store(UNUM_2000);
+    mediaDemuxer_->waitAudioStreamId_.store(NEG_1);
+    mediaDemuxer_->waitSubtitleStreamId_.store(NEG_1);
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(_)).Times(0);
+
+    mediaDemuxer_->ProcessTrackSelectionFilter();
+
+    EXPECT_EQ(mediaDemuxer_->waitVideoBitrate_.load(), UNUM_2000);
 }
 }  // namespace OHOS::Media

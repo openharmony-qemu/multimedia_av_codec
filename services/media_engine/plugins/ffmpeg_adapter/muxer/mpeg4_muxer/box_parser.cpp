@@ -639,7 +639,7 @@ std::shared_ptr<BasicBox> BoxParser::TimedMetaMebxBoxGenerate(std::shared_ptr<Ba
     mebxBox->SetFunc([] (std::shared_ptr<AVIOStream> io) {
             io->Write(static_cast<uint32_t>(0));  /* Reserved */
             io->Write(static_cast<uint16_t>(0));  /* Reserved */
-            io->Write(static_cast<uint16_t>(0));  /* Data-reference index */
+            io->Write(static_cast<uint16_t>(1));  /* Data-reference index */
         }, [] () {
             return static_cast<uint32_t>(sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t));
         });
@@ -745,47 +745,48 @@ std::shared_ptr<BasicBox> BoxParser::HvccBoxGenerate(std::shared_ptr<BasicTrack>
     std::shared_ptr<HvccBox> hvccBox = std::make_shared<HvccBox>(0, "hvcC");
     auto &codecConfig = track->GetCodecConfig();
     size_t size = codecConfig.size();
-    if (size > 23 && codecConfig[0] == 0x01) { // codec config, min: 23
-        uint32_t pos = 0;
-        hvccBox->version_ = codecConfig[pos++];
-        hvccBox->profileSpace_ = (codecConfig[pos] & 0xC0) >> 6;  // 6
-        hvccBox->tierFlag_ = (codecConfig[pos] & 0x20) >> 5;  // 5
-        hvccBox->profileIdc_ = codecConfig[pos++] & 0x1F;
-        hvccBox->profileCompatFlags_ = 0;
-        for (int32_t i = 0; i < 4; ++i) {  // 4
-            hvccBox->profileCompatFlags_ = codecConfig[pos++] + hvccBox->profileCompatFlags_ * 0x100;
-        }
-        hvccBox->constraintIndicatorFlags_ = 0;
-        for (int32_t i = 0; i < 6; ++i) {  // 6
-            hvccBox->constraintIndicatorFlags_ = codecConfig[pos++] + hvccBox->constraintIndicatorFlags_ * 0x100;
-        }
-        hvccBox->levelIdc_ = codecConfig[pos++];
-        uint16_t tmpNum = codecConfig[pos++] * 0x100;
-        hvccBox->segmentIdc_ = tmpNum + codecConfig[pos++];
-        hvccBox->parallelismType_ = codecConfig[pos++];
-        hvccBox->chromaFormat_ = codecConfig[pos++];
-        hvccBox->bitDepthLuma_ = codecConfig[pos++];
-        hvccBox->bitDepthChroma_ = codecConfig[pos++];
+    FALSE_RETURN_V_MSG_W(size > 23 && codecConfig[0] == 0x01, hvccBox,  // 23
+        "invalid hvc codec data, size:%{public}zu", size);
+    uint32_t pos = 0;
+    hvccBox->version_ = codecConfig[pos++];
+    hvccBox->profileSpace_ = (codecConfig[pos] & 0xC0) >> 6;  // 6
+    hvccBox->tierFlag_ = (codecConfig[pos] & 0x20) >> 5;  // 5
+    hvccBox->profileIdc_ = codecConfig[pos++] & 0x1F;
+    hvccBox->profileCompatFlags_ = 0;
+    for (int32_t i = 0; i < 4; ++i) {  // 4
+        hvccBox->profileCompatFlags_ = codecConfig[pos++] + hvccBox->profileCompatFlags_ * 0x100;
+    }
+    hvccBox->constraintIndicatorFlags_ = 0;
+    for (int32_t i = 0; i < 6; ++i) {  // 6
+        hvccBox->constraintIndicatorFlags_ = codecConfig[pos++] + hvccBox->constraintIndicatorFlags_ * 0x100;
+    }
+    hvccBox->levelIdc_ = codecConfig[pos++];
+    uint16_t tmpNum = codecConfig[pos++] * 0x100;
+    hvccBox->segmentIdc_ = tmpNum + codecConfig[pos++];
+    hvccBox->parallelismType_ = codecConfig[pos++];
+    hvccBox->chromaFormat_ = codecConfig[pos++];
+    hvccBox->bitDepthLuma_ = codecConfig[pos++];
+    hvccBox->bitDepthChroma_ = codecConfig[pos++];
+    tmpNum = codecConfig[pos++] * 0x100;
+    hvccBox->avgFrameRate_ = tmpNum + codecConfig[pos++];
+    hvccBox->constFrameRate_ = (codecConfig[pos] & 0xC0) >> 6;  // 6
+    hvccBox->numTemporalLayers_ = (codecConfig[pos] & 0x38) >> 3;  // 3
+    hvccBox->temporalIdNested_ = (codecConfig[pos] & 0x04) >> 2;  // 2
+    hvccBox->lenSizeMinusOne_ = codecConfig[pos++] & 0x03;
+    hvccBox->naluTypeCount_ = codecConfig[pos++]; // pos 23
+    for (uint8_t i = 0; i < hvccBox->naluTypeCount_ && pos + 2 < size; ++i) {  // 2
+        HvccBox::Data data;
+        data.type_ = codecConfig[pos++];
         tmpNum = codecConfig[pos++] * 0x100;
-        hvccBox->avgFrameRate_ = tmpNum + codecConfig[pos++];
-        hvccBox->constFrameRate_ = (codecConfig[pos] & 0xC0) >> 6;  // 6
-        hvccBox->numTemporalLayers_ = (codecConfig[pos] & 0x38) >> 3;  // 3
-        hvccBox->temporalIdNested_ = (codecConfig[pos] & 0x04) >> 2;  // 2
-        hvccBox->lenSizeMinusOne_ = codecConfig[pos++] & 0x03;
-        hvccBox->naluTypeCount_ = codecConfig[pos++]; // pos 23
-        for (uint8_t i = 0; i < hvccBox->naluTypeCount_ && pos + 2 < size; ++i) {  // 2
-            HvccBox::Data data;
-            data.type_ = codecConfig[pos++];
-            tmpNum = codecConfig[pos++] * 0x100;
-            data.count_ = tmpNum + codecConfig[pos++];
-            for (uint32_t j = 0; j < data.count_ && pos + 1 < size; ++j) {
-                uint32_t len = codecConfig[pos] * 0x100 + codecConfig[pos + 1] + 2;  // 2
-                std::vector<uint8_t> nalUnit(codecConfig.data() + pos, codecConfig.data() + pos + len);
-                data.nalu_.emplace_back(nalUnit);
-                pos += len;
-            }
-            hvccBox->naluType_.emplace_back(data);
+        data.count_ = tmpNum + codecConfig[pos++];
+        for (uint32_t j = 0; j < data.count_ && pos + 1 < size; ++j) {
+            uint32_t len = codecConfig[pos] * 0x100 + codecConfig[pos + 1] + 2;  // 2
+            FALSE_RETURN_V_MSG_E(pos + len <= size, hvccBox, "hvcc box size error");
+            std::vector<uint8_t> nalUnit(codecConfig.data() + pos, codecConfig.data() + pos + len);
+            data.nalu_.emplace_back(nalUnit);
+            pos += len;
         }
+        hvccBox->naluType_.emplace_back(data);
     }
     return hvccBox;
 }

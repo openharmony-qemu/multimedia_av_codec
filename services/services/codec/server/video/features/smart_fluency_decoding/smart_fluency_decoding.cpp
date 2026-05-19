@@ -199,6 +199,9 @@ void SmartFluencyDecoding::Flush()
         strategy_->Reset();
     }
     inBufferMap_.clear();
+    noRefFrameMap_.clear();
+    lastValidMVStats_ = {};
+    hasValidMVStats_ = false;
 #ifdef SFD_DEBUG
     if (dumper_) {
         dumper_->DumpToFile();
@@ -261,7 +264,7 @@ bool SmartFluencyDecoding::InitializeWithCsd(const std::vector<uint8_t>& csdData
 void SmartFluencyDecoding::ExecutePreDrop(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     CHECK_AND_RETURN_LOG_WITH_TAG(buffer != nullptr, "ExecutePreDrop: buffer is null for index %{public}u", index);
-    AVCODEC_LOGE_WITH_TAG("[Pre-Drop] Executing drop for index %{public}u, pts %{public}" PRId64
+    AVCODEC_LOGI_WITH_TAG("[Pre-Drop] Executing drop for index %{public}u, pts %{public}" PRId64
         ", flag %{public}u", index, buffer->pts_, buffer->flag_);
     CHECK_AND_RETURN_LOG_WITH_TAG(buffer->flag_ != AVCODEC_BUFFER_FLAG_CODEC_DATA,
         "ExecutePreDrop: skip CODEC_DATA buffer");
@@ -356,13 +359,17 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
     if (!isInitialized_ || !buffer || !dropSyncCoordinator_) {
         return true;
     }
-
+    if (buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
+        AVCODEC_LOGI_WITH_TAG("ignore eos frame");
+        return true;
+    }
     PreDecResult res;
     if (naluAnalyzer_ && caps.requiresNalu) {
 #ifdef SFD_DEBUG
         int64_t naluStartUs = GetCurrentSysTimeUs();
 #endif
         res.isNonRef = naluAnalyzer_->IsNonReferenceFrame(buffer);
+        SetNoRefFrameMap(buffer->pts_, res.isNonRef);
 #ifdef SFD_DEBUG
         res.naluCostUs = GetCurrentSysTimeUs() - naluStartUs;
 #endif
@@ -436,7 +443,7 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
 #ifdef SFD_DEBUG
     cost.startUs = GetCurrentSysTimeUs();
 #endif
-    if (!isInitialized_ || !dropSyncCoordinator_ || !surfaceBuffer) {
+    if (!isInitialized_ || !dropSyncCoordinator_) {
         return true;
     }
     uint32_t preDropCount = dropSyncCoordinator_->GetAndConsumePreDroppedCount(pts);
@@ -454,10 +461,8 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
     if (caps.isPassthrough) {
         return HandlePostDecodePassthrough(pts, preDropCount, cost);
     }
-    MVStats mvStats;
-    if (caps.requiresMv) {
-        ParseMVData(surfaceBuffer, mvStats, cost.copyMvCostUs, cost.analyzeMvCostUs);
-    }
+
+    MVStats mvStats = ExtractMVStats(caps, pts, cost, surfaceBuffer);
     PostDecResult res;
     FrameRetentionContext ctx { preDropCount, caps.requiresMv ? &mvStats : nullptr };
     {
@@ -571,6 +576,49 @@ bool SmartFluencyDecoding::IsRatioValid(double ratio)
     CHECK_AND_RETURN_RET_LOG(DoubleUtils::IsLessOrEqual(ratio, MAX_RETENTION_RATIO), false,
         "Retention ratio invalid: value=%{public}.3f (must be <= %{public}.3f)", ratio, MAX_RETENTION_RATIO);
     return true;
+}
+
+void SmartFluencyDecoding::SetNoRefFrameMap(int64_t pts, bool isNonRef)
+{
+    std::lock_guard<std::mutex> lock(noRefFrameMapMutex_);
+    noRefFrameMap_[pts] = isNonRef;
+}
+
+bool SmartFluencyDecoding::GetNoRefFrameFromMap(int64_t pts)
+{
+    std::lock_guard<std::mutex> lock(noRefFrameMapMutex_);
+    auto it = noRefFrameMap_.find(pts);
+    bool isNonRef = false;
+    if (it != noRefFrameMap_.end()) {
+        isNonRef = it->second;
+        noRefFrameMap_.erase(noRefFrameMap_.begin(), std::next(it));
+    } else {
+        AVCODEC_LOGE_WITH_TAG("refMap can't find pts: %{public}" PRId64 "", pts);
+    }
+
+    return isNonRef;
+}
+
+MVStats SmartFluencyDecoding::ExtractMVStats(StrategyCaps caps, int64_t pts,
+                                             PostDecCost& cost, const sptr<SurfaceBuffer> surfaceBuffer)
+{
+    if (!caps.requiresMv || surfaceBuffer == nullptr) {
+        return MVStats{};
+    }
+
+    bool isNonRef = GetNoRefFrameFromMap(pts);
+    if (isNonRef) {
+        return hasValidMVStats_ ? lastValidMVStats_ : MVStats{};
+    }
+
+    MVStats mvStats{};
+    ParseMVData(surfaceBuffer, mvStats, cost.copyMvCostUs, cost.analyzeMvCostUs);
+    if (mvStats.validBlocks > 0) {
+        lastValidMVStats_ = mvStats;
+        hasValidMVStats_ = true;
+    }
+
+    return mvStats;
 }
 
 } // namespace SFD

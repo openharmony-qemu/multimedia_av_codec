@@ -28,10 +28,13 @@ namespace MediaAVCodec {
 namespace PreProcessing {
 
 // libfast_image.so 返回的错误码
-constexpr int32_t FAST_ERR_SUCCESS = 0;
-constexpr int32_t FAST_ERR_SUCCESS_PARTIAL = 1;
-constexpr int32_t FAST_ERR_ILLEGAL_INPUT = 2;
-constexpr int32_t FAST_ERR_INVALID_PTR = 3;
+enum FastErrCode {
+    FAST_ERR_SUCCESS = 0,
+    FAST_ERR_SUCCESS_PARTIAL = 1,
+    FAST_ERR_ILLEGAL_INPUT = 2,
+    FAST_ERR_INVALID_PTR = 3,
+    FAST_ERR_UNSURPPORTED = 4,
+};
 
 // libfast_image.so 导出符号的函数指针类型
 using FastScaleInitFunc = int32_t (*)(uint32_t format, int32_t algo);
@@ -58,10 +61,11 @@ struct CropRect {
 class FastKitsInterface {
 public:
     static FastKitsInterface &GetInstance();
+    static bool IsFormatSupported(int32_t format);
 
     void Retain();
     void Release();
-    int32_t Init(uint32_t format, FastResizeAlgoType algo = FastResizeAlgoType::HARDWARE);
+    int32_t Init(uint32_t format, FastResizeAlgoType algo = FastResizeAlgoType::BICUBIC);
     bool IsLoaded() const;
 
     int32_t Crop(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output, const CropRect &rect);
@@ -84,6 +88,7 @@ private:
     static int32_t ConvertErrorCode(int32_t fastErr);
 
     mutable std::shared_mutex mutex_;
+    int32_t refCount_ = 0;
     void *handle_ = nullptr;
     FastScaleInitFunc initFunc_ = nullptr;
     FastScaleDownSampleFunc downSampleFunc_ = nullptr;

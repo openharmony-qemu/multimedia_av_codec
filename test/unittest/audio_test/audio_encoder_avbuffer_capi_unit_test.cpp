@@ -86,6 +86,10 @@ constexpr string_view OPUS_OUTPUT_FILE_PATH = "/data/test/media/encoderTest.opus
 const string OPUS_SO_FILE_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_ext_base.z.so";
 constexpr string_view MP3_INPUT_FILE_PATH = "/data/test/media/flac_2c_44100hz_261k.pcm";
 constexpr string_view MP3_OUTPUT_FILE_PATH = "/data/test/media/mp3_2c_44100hz_afterEncode.mp3";
+
+constexpr int64_t INPUT_PTS_BASE = 1000000LL;  // 1 second in us
+constexpr int32_t PTS_TEST_FRAME_COUNT = 5;
+
 } // namespace
 
 namespace OHOS {
@@ -193,6 +197,10 @@ protected:
     int32_t fileSize_ = 0;
     uint32_t frameBytes_ = FLAC_DEFAULT_FRAME_BYTES; // default for flac
     int32_t outputFrameCnt_ = 0;
+    std::vector<int64_t> outputPtsList_;
+    void InputFuncPts();
+    void OutputFuncPts();
+    int32_t StartPtsTest();
 };
 
 void AudioEncoderBufferCapiUnitTest::SetUpTestCase(void)
@@ -541,6 +549,139 @@ int32_t AudioEncoderBufferCapiUnitTest::CheckSoFunc()
     }
     soFile_->close();
     return true;
+}
+
+void AudioEncoderBufferCapiUnitTest::InputFuncPts()
+{
+    if (!inputFile_->is_open()) {
+        cout << "Fatal: open file fail" << endl;
+        return;
+    }
+    int64_t inputPtsIndex = 0;
+    while (isRunning_.load()) {
+        unique_lock<mutex> lock(signal_->inMutex_);
+        signal_->inCond_.wait(lock, [this]() { return (signal_->inQueue_.size() > 0 || !isRunning_.load()); });
+        if (!isRunning_.load()) {
+            break;
+        }
+        uint32_t index = signal_->inQueue_.front();
+        auto buffer = signal_->inBufferQueue_.front();
+        if (buffer == nullptr) {
+            cout << "Fatal: GetInputBuffer fail" << endl;
+            break;
+        }
+        if (!inputFile_->eof()) {
+            inputFile_->read((char *)OH_AVBuffer_GetAddr(buffer), frameBytes_);
+            int32_t readSize = inputFile_->gcount();
+            if (readSize == 0) {
+                continue;
+            }
+            buffer->buffer_->memory_->SetSize(readSize);
+            buffer->buffer_->pts_ = inputPtsIndex * INPUT_PTS_BASE;
+            inputPtsIndex++;
+        } else {
+            buffer->buffer_->memory_->SetSize(1);
+            buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_EOS;
+            HandleEOS(index);
+            break;
+        }
+        int32_t ret = AVCS_ERR_OK;
+        if (isFirstFrame_) {
+            buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
+            ret = OH_AudioCodec_PushInputBuffer(audioEnc_, index);
+            isFirstFrame_ = false;
+        } else {
+            buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_NONE;
+            ret = OH_AudioCodec_PushInputBuffer(audioEnc_, index);
+        }
+        signal_->inQueue_.pop();
+        signal_->inBufferQueue_.pop();
+        if (ret != AVCS_ERR_OK) {
+            cout << "Fatal error, exit" << endl;
+            break;
+        }
+        if (inputPtsIndex >= PTS_TEST_FRAME_COUNT) {
+            // Send EOS after enough frames - get next buffer for EOS
+            break;
+        }
+    }
+    // Send EOS: wait for next input buffer
+    {
+        unique_lock<mutex> lock(signal_->inMutex_);
+        signal_->inCond_.wait(lock, [this]() { return (signal_->inQueue_.size() > 0 || !isRunning_.load()); });
+        if (isRunning_.load()) {
+            uint32_t eosIndex = signal_->inQueue_.front();
+            auto eosBuffer = signal_->inBufferQueue_.front();
+            signal_->inQueue_.pop();
+            signal_->inBufferQueue_.pop();
+            if (eosBuffer != nullptr) {
+                eosBuffer->buffer_->memory_->SetSize(1);
+                eosBuffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_EOS;
+                HandleEOS(eosIndex);
+            }
+        }
+    }
+    cout << "stop, exit" << endl;
+    inputFile_->close();
+}
+
+void AudioEncoderBufferCapiUnitTest::OutputFuncPts()
+{
+    outputFrameCnt_ = 0;
+    outputPtsList_.clear();
+    while (isRunning_.load()) {
+        unique_lock<mutex> lock(signal_->outMutex_);
+        signal_->outCond_.wait(lock, [this]() { return (signal_->outQueue_.size() > 0 || !isRunning_.load()); });
+        if (!isRunning_.load()) {
+            cout << "wait to stop, exit" << endl;
+            break;
+        }
+        uint32_t index = signal_->outQueue_.front();
+        OH_AVBuffer *avBuffer = signal_->outBufferQueue_.front();
+        if (avBuffer == nullptr) {
+            cout << "OutputFuncPts OH_AVBuffer is nullptr" << endl;
+            continue;
+        }
+        int64_t outPts = avBuffer->buffer_->pts_;
+        cout << "OutputFuncPts buffer index:" << index
+             << ", size:" << avBuffer->buffer_->memory_->GetSize()
+             << ", pts:" << outPts << endl;
+        outputPtsList_.push_back(outPts);
+        if (avBuffer->buffer_->flag_ == AVCODEC_BUFFER_FLAGS_EOS || avBuffer->buffer_->memory_->GetSize() == 0) {
+            cout << "encode eos" << endl;
+            isRunning_.store(false);
+            signal_->startCond_.notify_all();
+        }
+        signal_->outBufferQueue_.pop();
+        signal_->outQueue_.pop();
+        if (OH_AudioCodec_FreeOutputBuffer(audioEnc_, index) != AV_ERR_OK) {
+            cout << "Fatal: FreeOutputData fail" << endl;
+            break;
+        }
+        if (avBuffer->buffer_->flag_ == AVCODEC_BUFFER_FLAGS_EOS) {
+            isRunning_.store(false);
+            signal_->startCond_.notify_all();
+        } else {
+            outputFrameCnt_++;
+        }
+    }
+    cout << "stop, exit" << endl;
+}
+
+int32_t AudioEncoderBufferCapiUnitTest::StartPtsTest()
+{
+    isRunning_.store(true);
+    inputLoop_ = make_unique<thread>(&AudioEncoderBufferCapiUnitTest::InputFuncPts, this);
+    if (inputLoop_ == nullptr) {
+        cout << "Fatal: No memory" << endl;
+        return OH_AVErrCode::AV_ERR_UNKNOWN;
+    }
+    outputLoop_ = make_unique<thread>(&AudioEncoderBufferCapiUnitTest::OutputFuncPts, this);
+    if (outputLoop_ == nullptr) {
+        cout << "Fatal: No memory" << endl;
+        return OH_AVErrCode::AV_ERR_UNKNOWN;
+    }
+    return OH_AudioCodec_Start(audioEnc_);
 }
 
 HWTEST_F(AudioEncoderBufferCapiUnitTest, encodeTest_01, TestSize.Level1)
@@ -1570,5 +1711,629 @@ HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_outer_support_codec_name_c
         }
     }
 }
+
+// ===== PTS Mode Tests =====
+
+HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_Aac_PtsMode_ZeroStart, TestSize.Level1)
+{
+    frameBytes_ = AAC_DEFAULT_FRAME_BYTES;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_AAC));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_AAC));
+    format = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            AudioSampleFormat::SAMPLE_F32LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(),
+                            AUDIO_ENCODER_PTS_MODE_ZERO_START);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    JoinThread();
+    EXPECT_GT(outputPtsList_.size(), 0U);
+    if (outputPtsList_.size() > 0) {
+        EXPECT_EQ(outputPtsList_[0], 0LL);
+    }
+    if (outputPtsList_.size() > 1) {
+        EXPECT_GT(outputPtsList_[1], outputPtsList_[0]);
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Flush(audioEnc_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
 }
+
+HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_Aac_PtsMode_FirstInputStart, TestSize.Level1)
+{
+    frameBytes_ = AAC_DEFAULT_FRAME_BYTES;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_AAC));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_AAC));
+    format = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            AudioSampleFormat::SAMPLE_F32LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(),
+                            AUDIO_ENCODER_PTS_MODE_FIRST_INPUT_START);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    JoinThread();
+    EXPECT_GT(outputPtsList_.size(), 0U);
+    if (outputPtsList_.size() > 1) {
+        EXPECT_GE(outputPtsList_[1], outputPtsList_[0]);
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Flush(audioEnc_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_Flac_PtsMode_ZeroStart, TestSize.Level1)
+{
+    frameBytes_ = FLAC_DEFAULT_FRAME_BYTES;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_FLAC));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_FLAC));
+    format = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), BITS_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE.data(), BITS_PER_CODED_SAMPLE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), SAMPLE_FORMAT);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(), CHANNEL_LAYOUT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), COMPLIANCE_LEVEL);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(),
+                            AUDIO_ENCODER_PTS_MODE_ZERO_START);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    JoinThread();
+    EXPECT_GT(outputPtsList_.size(), 0U);
+    if (outputPtsList_.size() > 0) {
+        EXPECT_EQ(outputPtsList_[0], 0LL);
+    }
+    if (outputPtsList_.size() > 1) {
+        EXPECT_GT(outputPtsList_[1], outputPtsList_[0]);
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Flush(audioEnc_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_Flac_PtsMode_FirstInputStart, TestSize.Level1)
+{
+    frameBytes_ = FLAC_DEFAULT_FRAME_BYTES;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_FLAC));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_FLAC));
+    format = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), BITS_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE.data(), BITS_PER_CODED_SAMPLE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), SAMPLE_FORMAT);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(), CHANNEL_LAYOUT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), COMPLIANCE_LEVEL);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(),
+                            AUDIO_ENCODER_PTS_MODE_FIRST_INPUT_START);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    JoinThread();
+    EXPECT_GT(outputPtsList_.size(), 0U);
+    if (outputPtsList_.size() > 1) {
+        EXPECT_GE(outputPtsList_[1], outputPtsList_[0]);
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Flush(audioEnc_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_G711mu_PtsMode_Default, TestSize.Level1)
+{
+    frameBytes_ = G711MU_DEFAULT_FRAME_BYTES;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_G711MU));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_G711MU));
+    format = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_1CHAN_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE_8K);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    JoinThread();
+    EXPECT_GT(outputPtsList_.size(), 0U);
+    if (outputPtsList_.size() > 1) {
+        EXPECT_GT(outputPtsList_[1], outputPtsList_[0]);
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Flush(audioEnc_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_G711mu_PtsMode_ZeroStart, TestSize.Level1)
+{
+    frameBytes_ = G711MU_DEFAULT_FRAME_BYTES;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_G711MU));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_G711MU));
+    format = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_1CHAN_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE_8K);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(),
+                            AUDIO_ENCODER_PTS_MODE_ZERO_START);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    JoinThread();
+    EXPECT_GT(outputPtsList_.size(), 0U);
+    if (outputPtsList_.size() > 0) {
+        EXPECT_EQ(outputPtsList_[0], 0LL);
+    }
+    if (outputPtsList_.size() > 1) {
+        EXPECT_GT(outputPtsList_[1], outputPtsList_[0]);
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Flush(audioEnc_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_G711mu_PtsMode_FirstInputStart, TestSize.Level1)
+{
+    frameBytes_ = G711MU_DEFAULT_FRAME_BYTES;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_G711MU));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_G711MU));
+    format = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_1CHAN_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE_8K);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(),
+                            AUDIO_ENCODER_PTS_MODE_FIRST_INPUT_START);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    JoinThread();
+    EXPECT_GT(outputPtsList_.size(), 0U);
+    if (outputPtsList_.size() > 1) {
+        EXPECT_GT(outputPtsList_[1], outputPtsList_[0]);
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Flush(audioEnc_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_Mp3_PtsMode_ZeroStart, TestSize.Level1)
+{
+    frameBytes_ = MP3_DEFAULT_FRAME_BYTES;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_MP3));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_MP3));
+    format = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), MP3_BIT_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(),
+                            AUDIO_ENCODER_PTS_MODE_ZERO_START);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    JoinThread();
+    EXPECT_GT(outputPtsList_.size(), 0U);
+    if (outputPtsList_.size() > 0) {
+        EXPECT_EQ(outputPtsList_[0], 0LL);
+    }
+    if (outputPtsList_.size() > 1) {
+        EXPECT_GT(outputPtsList_[1], outputPtsList_[0]);
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Flush(audioEnc_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_Mp3_PtsMode_FirstInputStart, TestSize.Level1)
+{
+    frameBytes_ = MP3_DEFAULT_FRAME_BYTES;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_MP3));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_MP3));
+    format = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), MP3_BIT_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(),
+                            AUDIO_ENCODER_PTS_MODE_FIRST_INPUT_START);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    JoinThread();
+    EXPECT_GT(outputPtsList_.size(), 0U);
+    if (outputPtsList_.size() > 1) {
+        EXPECT_GE(outputPtsList_[1], outputPtsList_[0]);
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Flush(audioEnc_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
+}
+}
+
+// ==================== AUDIO_MAX_INPUT_BUFFER_SIZE Test Cases ====================
+
+HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_Flac_MaxInputBufferSize, TestSize.Level1)
+{
+    frameBytes_ = FLAC_DEFAULT_FRAME_BYTES;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_FLAC));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_FLAC));
+    format = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), BITS_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE.data(), BITS_PER_CODED_SAMPLE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), SAMPLE_FORMAT);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(), CHANNEL_LAYOUT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), COMPLIANCE_LEVEL);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_MAX_INPUT_BUFFER_SIZE.data(),
+                            FLAC_DEFAULT_FRAME_BYTES * 4);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    JoinThread();
+    EXPECT_GT(outputPtsList_.size(), 0U);
+    if (outputPtsList_.size() > 1) {
+        EXPECT_GT(outputPtsList_[1], outputPtsList_[0]);
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Flush(audioEnc_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_Mp3_MaxInputBufferSize, TestSize.Level1)
+{
+    frameBytes_ = MP3_DEFAULT_FRAME_BYTES;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_MP3));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_MP3));
+    format = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), MP3_BIT_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_MAX_INPUT_BUFFER_SIZE.data(),
+                            MP3_DEFAULT_FRAME_BYTES * 4);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    JoinThread();
+    EXPECT_GT(outputPtsList_.size(), 0U);
+    if (outputPtsList_.size() > 1) {
+        EXPECT_GT(outputPtsList_[1], outputPtsList_[0]);
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Flush(audioEnc_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_G711mu_MaxInputBufferSize, TestSize.Level1)
+{
+    frameBytes_ = G711MU_DEFAULT_FRAME_BYTES;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_G711MU));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_G711MU));
+    format = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_1CHAN_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE_8K);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_MAX_INPUT_BUFFER_SIZE.data(),
+                            8192);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    JoinThread();
+    EXPECT_GT(outputPtsList_.size(), 0U);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Flush(audioEnc_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_Mp3_PtsMode_Default, TestSize.Level1)
+{
+    frameBytes_ = MP3_DEFAULT_FRAME_BYTES;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_MP3));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_MP3));
+    format = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), MP3_BIT_RATE);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    JoinThread();
+    EXPECT_GT(outputPtsList_.size(), 0U);
+    if (outputPtsList_.size() > 1) {
+        EXPECT_EQ(outputPtsList_[1] - outputPtsList_[0], INPUT_PTS_BASE);
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Flush(audioEnc_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_Mp3_MaxInputBufferSize_PtsMode_ZeroStart, TestSize.Level2)
+{
+    frameBytes_ = MP3_DEFAULT_FRAME_BYTES;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_MP3));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_MP3));
+    format = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), MP3_BIT_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_MAX_INPUT_BUFFER_SIZE.data(),
+                            MP3_DEFAULT_FRAME_BYTES * 4);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(),
+                            AUDIO_ENCODER_PTS_MODE_ZERO_START);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    JoinThread();
+    EXPECT_GT(outputPtsList_.size(), 0U);
+    if (outputPtsList_.size() > 0) {
+        EXPECT_EQ(outputPtsList_[0], 0LL);
+    }
+    if (outputPtsList_.size() > 1) {
+        EXPECT_GT(outputPtsList_[1], outputPtsList_[0]);
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Flush(audioEnc_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_Flac_MaxInputBufferSize_PtsMode_FirstInputStart, TestSize.Level2)
+{
+    frameBytes_ = FLAC_DEFAULT_FRAME_BYTES;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_FLAC));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_FLAC));
+    format = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), BITS_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE.data(), BITS_PER_CODED_SAMPLE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), SAMPLE_FORMAT);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(), CHANNEL_LAYOUT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), COMPLIANCE_LEVEL);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_MAX_INPUT_BUFFER_SIZE.data(),
+                            FLAC_DEFAULT_FRAME_BYTES * 4);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(),
+                            AUDIO_ENCODER_PTS_MODE_FIRST_INPUT_START);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    JoinThread();
+    EXPECT_GT(outputPtsList_.size(), 0U);
+    if (outputPtsList_.size() > 1) {
+        EXPECT_GE(outputPtsList_[1], outputPtsList_[0]);
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Flush(audioEnc_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
+}
+
+
+// ==================== Supplementary PTS + Cache Test Cases ====================
+
+HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_Flac_MaxInputBufferSize_PtsMode_ZeroStart, TestSize.Level2)
+{
+    frameBytes_ = FLAC_DEFAULT_FRAME_BYTES;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_FLAC));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_FLAC));
+    format = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), BITS_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE.data(), BITS_PER_CODED_SAMPLE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), SAMPLE_FORMAT);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(), CHANNEL_LAYOUT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), COMPLIANCE_LEVEL);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_MAX_INPUT_BUFFER_SIZE.data(),
+                            FLAC_DEFAULT_FRAME_BYTES * 4);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(),
+                            AUDIO_ENCODER_PTS_MODE_ZERO_START);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    JoinThread();
+    EXPECT_GT(outputPtsList_.size(), 0U);
+    if (outputPtsList_.size() > 0) {
+        EXPECT_EQ(outputPtsList_[0], 0LL);
+    }
+    if (outputPtsList_.size() > 1) {
+        EXPECT_GT(outputPtsList_[1], outputPtsList_[0]);
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Flush(audioEnc_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_Mp3_MaxInputBufferSize_PtsMode_FirstInputStart, TestSize.Level2)
+{
+    frameBytes_ = MP3_DEFAULT_FRAME_BYTES;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_MP3));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_MP3));
+    format = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), MP3_BIT_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_MAX_INPUT_BUFFER_SIZE.data(),
+                            MP3_DEFAULT_FRAME_BYTES * 4);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(),
+                            AUDIO_ENCODER_PTS_MODE_FIRST_INPUT_START);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    JoinThread();
+    EXPECT_GT(outputPtsList_.size(), 0U);
+    if (outputPtsList_.size() > 1) {
+        EXPECT_GE(outputPtsList_[1], outputPtsList_[0]);
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Flush(audioEnc_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
+}
+
+
+// ==================== Reset Configuration Tests ====================
+
+HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_Mp3_ResetAfterPtsMode, TestSize.Level2)
+{
+    frameBytes_ = MP3_DEFAULT_FRAME_BYTES;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_MP3));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_MP3));
+    format = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), MP3_BIT_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_MAX_INPUT_BUFFER_SIZE.data(),
+                            MP3_DEFAULT_FRAME_BYTES * 4);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(),
+                            AUDIO_ENCODER_PTS_MODE_ZERO_START);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    JoinThread();
+    EXPECT_GT(outputPtsList_.size(), 0U);
+    // Reset and re-encode with default PTS mode
+    outputPtsList_.clear();
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Flush(audioEnc_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Reset(audioEnc_));
+    // Re-configure without PTS mode (default)
+    format = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), MP3_BIT_RATE);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    JoinThread();
+    EXPECT_GT(outputPtsList_.size(), 0U);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_Flac_ResetAfterCache, TestSize.Level2)
+{
+    frameBytes_ = FLAC_DEFAULT_FRAME_BYTES;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_FLAC));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_FLAC));
+    format = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), BITS_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE.data(), BITS_PER_CODED_SAMPLE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), SAMPLE_FORMAT);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(), CHANNEL_LAYOUT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), COMPLIANCE_LEVEL);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_MAX_INPUT_BUFFER_SIZE.data(),
+                            FLAC_DEFAULT_FRAME_BYTES * 4);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_ENCODER_PTS_MODE.data(),
+                            AUDIO_ENCODER_PTS_MODE_FIRST_INPUT_START);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    JoinThread();
+    EXPECT_GT(outputPtsList_.size(), 0U);
+    // Reset and re-encode with default config (no cache, default PTS)
+    outputPtsList_.clear();
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Flush(audioEnc_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Reset(audioEnc_));
+    format = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), BITS_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE.data(), BITS_PER_CODED_SAMPLE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), SAMPLE_FORMAT);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(), CHANNEL_LAYOUT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), COMPLIANCE_LEVEL);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, StartPtsTest());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    JoinThread();
+    EXPECT_GT(outputPtsList_.size(), 0U);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
+}
+
 }

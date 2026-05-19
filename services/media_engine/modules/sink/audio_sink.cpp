@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -573,6 +573,7 @@ void AudioSink::SetThreadGroupId(const std::string& groupId)
 {
     eosTask_ = std::make_unique<Task>("OS_EOSa", groupId, TaskType::AUDIO, TaskPriority::HIGH, false);
     changeTrackTask_ = std::make_unique<Task>("CHANGE_TRACK", groupId, TaskType::GLOBAL, TaskPriority::HIGH, false);
+    bypassTask_ = std::make_unique<Task>("AudioBypass", groupId, TaskType::SINGLETON, TaskPriority::HIGH, false);
 }
 
 void AudioSink::HandleEosInner(bool drain)
@@ -826,6 +827,7 @@ bool AudioSink::CopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStanda
             if (!IsBufferDataDrained(bufferDesc, cacheBuffer, size, cacheBufferSize, isAudioVivid, bufferPts)) {
                 break;
             }
+            HandleBypassOutput(cacheBuffer);
             CalcMaxAmplitude(cacheBuffer);
         }
         ReleaseCacheBuffer(isSwapBuffer);
@@ -1788,6 +1790,74 @@ Status AudioSink::CacheBuffer()
     MEDIA_LOG_I("cacheBuffer availOutputBuffers_ size:%{public}d, swapOutputBuffers_ size:%{public}d",
         static_cast<int>(availOutputBuffers_.size()), static_cast<int>(swapOutputBuffers_.size()));
     return Status::OK;
+}
+
+void AudioSink::SetPCMOutputCallback(const std::function<void(const std::shared_ptr<AVBuffer>&)>& callback)
+{
+    MEDIA_LOG_I("SetPCMOutputCallback");
+    std::lock_guard<std::mutex> lock(pcmCallbackMutex_);
+    pcmOutputCallback_ = callback;
+}
+
+void AudioSink::HandleBypassOutput(const std::shared_ptr<AVBuffer> &buffer)
+{
+    {
+        std::lock_guard<std::mutex> pcmLock(pcmCallbackMutex_);
+        FALSE_RETURN_NOLOG(pcmOutputCallback_ != nullptr);
+    }
+    FALSE_RETURN_MSG(buffer != nullptr && buffer->memory_ != nullptr, "buffer is null.");
+    FALSE_RETURN_MSG(bypassTask_ != nullptr, "bypassTask_ is null.");
+
+    std::shared_ptr<AVBuffer> pcmBypassBuffer = CopyPcmBuffer(buffer);
+    FALSE_RETURN(pcmBypassBuffer != nullptr);
+
+    std::weak_ptr<AudioSink> weakPtr(shared_from_this());
+    bypassTask_->SubmitJobOnce([weakPtr, pcmBypassBuffer] {
+        auto strongPtr = weakPtr.lock();
+        FALSE_RETURN(strongPtr != nullptr);
+        FALSE_RETURN(strongPtr->state_.load() == Pipeline::FilterState::RUNNING);
+
+        std::function<void(const std::shared_ptr<AVBuffer>&)> callback;
+        {
+            std::lock_guard<std::mutex> pcmLock(strongPtr->pcmCallbackMutex_);
+            FALSE_RETURN(strongPtr->pcmOutputCallback_ != nullptr);
+            callback = strongPtr->pcmOutputCallback_;
+        }
+
+        std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+        {
+            std::lock_guard<std::mutex> pluginLock(strongPtr->pluginMutex_);
+            FALSE_RETURN(strongPtr->plugin_ != nullptr);
+            strongPtr->plugin_->GetParameter(meta);
+        }
+
+        pcmBypassBuffer->meta_ = std::move(meta);
+        callback(pcmBypassBuffer);
+    });
+}
+
+std::shared_ptr<AVBuffer> AudioSink::CopyPcmBuffer(const std::shared_ptr<AVBuffer> buffer, int32_t minCapacity)
+{
+    FALSE_RETURN_V_MSG_E(buffer != nullptr && buffer->memory_->GetSize() > 0, nullptr, "buffer or memory is nullptr");
+    AVBufferConfig avBufferConfig;
+
+    // If minCapacity is default value or less than buffer size, use buffer size
+    avBufferConfig.capacity = std::max(minCapacity, static_cast<int32_t>(buffer->memory_->GetSize()));
+    avBufferConfig.memoryType = bufferMemoryType_;
+    std::shared_ptr<AVBuffer> swapBuffer = AVBuffer::CreateAVBuffer(avBufferConfig);
+    FALSE_RETURN_V_MSG_E(swapBuffer != nullptr && swapBuffer->memory_ != nullptr, nullptr, "create swapBuffer failed");
+    swapBuffer->pts_ = buffer->pts_;
+    swapBuffer->dts_ = buffer->dts_;
+    swapBuffer->duration_ = buffer->duration_;
+    swapBuffer->flag_ = buffer->flag_;
+    FALSE_RETURN_V_MSG_E(swapBuffer->memory_->GetCapacity() >= buffer->memory_->GetSize(), nullptr, "no enough memory");
+    errno_t res = memcpy_s(swapBuffer->memory_->GetAddr(),
+        swapBuffer->memory_->GetCapacity(),
+        buffer->memory_->GetAddr(),
+        buffer->memory_->GetSize());
+    FALSE_RETURN_V_MSG_E(res == EOK, nullptr, "copy data failed");
+    swapBuffer->memory_->SetSize(buffer->memory_->GetSize());
+    return swapBuffer;
 }
 } // namespace MEDIA
 } // namespace OHOS

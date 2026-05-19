@@ -15,83 +15,285 @@
 
 #include "preprocessor.h"
 #include <algorithm>
+#include <charconv>
 #include <cmath>
 #include <cstring>
 #include <limits>
+#include <optional>
+#include <regex>
+#include <string>
+#include <vector>
 #include "securec.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "avcodeclist_impl.h"
 #include "meta/meta_key.h"
 #include "native_avcodec_base.h"
+#include "syspara/parameters.h"
+#include "v2_2/buffer_handle_meta_key_type.h"
+#include "securec.h"
 
 namespace {
+bool IsEvenNumber(int32_t value)
+{
+    constexpr int32_t checkEvenNumber = 2;
+    return (value % checkEvenNumber == 0);
+}
+}
+namespace OHOS {
+namespace MediaAVCodec {
+namespace {
+using namespace OHOS;
+namespace V2_2 = OHOS::HDI::Display::Graphic::Common::V2_2;
+
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "Preprocessor"};
+constexpr int32_t BUFFER_REQUEST_STRIDE_ALIGNMENT = 32;
+constexpr double ROUND_TO_TWO_DECIMALS_FACTOR = 100.0;
+constexpr int32_t RGBA_BYTES_PER_PIXEL = 4;
+constexpr int32_t P010_BYTES_PER_SAMPLE = 2;
+constexpr int32_t YUV_SUBSAMPLE = 2;
+constexpr int32_t INVALID_ROW_BYTES = -1;
+constexpr int32_t DISABLE_CROP_LEFT = 0;
+constexpr int32_t DISABLE_CROP_TOP = 0;
+constexpr int32_t DISABLE_CROP_RIGHT = 0;
+constexpr int32_t DISABLE_CROP_BOTTOM = 0;
+constexpr int32_t DISABLE_DOWNSAMPLING_WIDTH = 0;
+constexpr int32_t DISABLE_DOWNSAMPLING_HEIGHT = 0;
+constexpr int32_t DEFAULT_METADATA_OFFSET = 0;
+constexpr double IDENTITY_METADATA_SCALE = 1.0;
+constexpr size_t ROI_MATCH_TOP_INDEX = 1;
+constexpr size_t ROI_MATCH_LEFT_INDEX = 2;
+constexpr size_t ROI_MATCH_BOTTOM_INDEX = 3;
+constexpr size_t ROI_MATCH_RIGHT_INDEX = 4;
+constexpr size_t ROI_MATCH_PARAM_INDEX = 5;
+auto fastKitEnable = OHOS::system::GetBoolParameter("persist.OHOS.MediaAVCodec.FastKit.Enable", false);
+
+std::optional<int32_t> ParseInt32(const std::string &str)
+{
+    int32_t value = 0;
+    auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), value);
+    return ec == std::errc{} && ptr == (str.data() + str.size()) ? std::optional<int32_t>(value) : std::nullopt;
+}
 
 double RoundToTwoDecimals(double value)
 {
-    return std::round(value * 100.0) / 100.0; // 100.0: Round to 2 decimal digits using round half up
+    return std::round(value * ROUND_TO_TWO_DECIMALS_FACTOR) / ROUND_TO_TWO_DECIMALS_FACTOR;
 }
+
+bool IsYuv420Format(OHOS::GraphicPixelFormat format)
+{
+    return format == GRAPHIC_PIXEL_FMT_YCBCR_420_SP || format == GRAPHIC_PIXEL_FMT_YCRCB_420_SP ||
+           format == GRAPHIC_PIXEL_FMT_YCBCR_P010 || format == GRAPHIC_PIXEL_FMT_YCRCB_P010 ||
+           format == GRAPHIC_PIXEL_FMT_YCBCR_420_P;
+}
+
+int32_t GetMinRowBytes(OHOS::GraphicPixelFormat format, int32_t width)
+{
+    switch (format) {
+        case GRAPHIC_PIXEL_FMT_RGBA_8888:
+        case GRAPHIC_PIXEL_FMT_RGBA_1010102:
+            return width * RGBA_BYTES_PER_PIXEL;
+        case GRAPHIC_PIXEL_FMT_YCBCR_P010:
+        case GRAPHIC_PIXEL_FMT_YCRCB_P010:
+            return width * P010_BYTES_PER_SAMPLE;
+        case GRAPHIC_PIXEL_FMT_YCBCR_420_SP:
+        case GRAPHIC_PIXEL_FMT_YCRCB_420_SP:
+        case GRAPHIC_PIXEL_FMT_YCBCR_420_P:
+            return width;
+        default:
+            return INVALID_ROW_BYTES;
+    }
+}
+
+bool IsGeometrySupported(OHOS::GraphicPixelFormat format, int32_t width, int32_t height)
+{
+    if (width <= 0 || height <= 0) {
+        return false;
+    }
+    if (fastKitEnable &&
+        !OHOS::MediaAVCodec::PreProcessing::FastKitsInterface::IsFormatSupported(static_cast<int32_t>(format))) {
+        return false;
+    } else if (!fastKitEnable &&
+               !OHOS::MediaAVCodec::PreProcessing::CpuImageProcessor::IsFormatSupported(static_cast<int32_t>(format))) {
+        return false;
+    }
+    return !IsYuv420Format(format) || (width % YUV_SUBSAMPLE == 0 && height % YUV_SUBSAMPLE == 0);
+}
+
+std::string TransformRoiMetadata(const std::string &roi, double scaleX, double scaleY,
+                                 int32_t offsetTop, int32_t offsetLeft)
+{
+    static const std::regex roiPattern(R"((?:^|;)(-?\d+),(-?\d+)-(-?\d+),(-?\d+)(?:=([^;]*))?(?=;|$))");
+    std::smatch match;
+    std::string temp = roi;
+    std::string result;
+    while (std::regex_search(temp, match, roiPattern)) {
+        auto top = ParseInt32(match[ROI_MATCH_TOP_INDEX].str());
+        auto left = ParseInt32(match[ROI_MATCH_LEFT_INDEX].str());
+        auto bottom = ParseInt32(match[ROI_MATCH_BOTTOM_INDEX].str());
+        auto right = ParseInt32(match[ROI_MATCH_RIGHT_INDEX].str());
+        if (!top || !left || !bottom || !right) {
+            continue;
+        }
+        int32_t newTop = static_cast<int32_t>(std::round(*top * scaleY)) - offsetTop;
+        int32_t newLeft = static_cast<int32_t>(std::round(*left * scaleX)) - offsetLeft;
+        int32_t newBottom = static_cast<int32_t>(std::round(*bottom * scaleY)) - offsetTop;
+        int32_t newRight = static_cast<int32_t>(std::round(*right * scaleX)) - offsetLeft;
+        if (!result.empty()) {
+            result += ";";
+        }
+        result += std::to_string(newTop) + "," + std::to_string(newLeft) + "-" +
+                  std::to_string(newBottom) + "," + std::to_string(newRight);
+        if (match[ROI_MATCH_PARAM_INDEX].matched) {
+            result += "=" + match[ROI_MATCH_PARAM_INDEX].str();
+        }
+        temp = match.suffix().str();
+    }
+    if (!result.empty()) {
+        result += ";";
+    }
+    return result;
+}
+
 } // namespace
 
-namespace OHOS {
-namespace MediaAVCodec {
 Preprocessor::Preprocessor(const std::string &mime) : mime_(mime)
 {
-    fastKitsInterface_.Retain();
+    if (fastKitEnable) {
+        fastKitsInterface_.Retain();
+    }
 }
 
 Preprocessor::~Preprocessor()
 {
-    fastKitsInterface_.Release();
+    if (fastKitEnable) {
+        fastKitsInterface_.Release();
+    }
+}
+
+bool Preprocessor::IsAvailable()
+{
+    if (!fastKitEnable) {
+        return true;
+    }
+    auto &fastKits = PreProcessing::FastKitsInterface::GetInstance();
+    fastKits.Retain();
+    bool loaded = fastKits.IsLoaded();
+    fastKits.Release();
+    return loaded;
+}
+
+int32_t Preprocessor::ValidateConfiguration(const Media::Format &format, bool configuring)
+{
+    CHECK_AND_RETURN_RET_LOG(UsingAsyncMode(format), AVCS_ERR_INVALID_VAL,
+                             "Preprocessor encoder does not support synchronous mode!");
+
+    UpdateConfiguredValues(format, configuring);
+    int32_t ret = ValidateCrop(format);
+    ret = (ret == AVCS_ERR_OK) ? ValidateDownsampling(format) : ret;
+    ret = (ret == AVCS_ERR_OK) ? ValidateDropFrame(format) : ret;
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
+
+    if (cropParams_.result == ConfigResult::ENABLED && downsamplingParams_.result == ConfigResult::ENABLED) {
+        AVCODEC_LOGE("Crop and downsampling cannot be enabled simultaneously");
+        return AVCS_ERR_INVALID_VAL;
+    }
+    if (cropParams_.result == ConfigResult::ENABLED && IsYuv420Format(encoderParams_.pixelFormat)) {
+        int32_t cropWidth = cropParams_.right - cropParams_.left + 1;
+        int32_t cropHeight = cropParams_.bottom - cropParams_.top + 1;
+        bool invalid = (!IsEvenNumber(cropParams_.left) || !IsEvenNumber(cropParams_.top) ||
+                        !IsEvenNumber(cropWidth) || !IsEvenNumber(cropHeight));
+        CHECK_AND_RETURN_RET_LOG(!invalid, AVCS_ERR_INVALID_VAL,
+            "For YUV pixel format input, crop left-top coordinates and crop width, height must be even numbers. "
+            "(left, top)=(%{public}d, %{public}d), width=%{public}d, height=%{public}d",
+            cropParams_.left, cropParams_.top, cropWidth, cropHeight);
+    }
+    if (downsamplingParams_.result == ConfigResult::ENABLED && IsYuv420Format(encoderParams_.pixelFormat)) {
+        bool invalid = !IsEvenNumber(downsamplingParams_.width) || !IsEvenNumber(downsamplingParams_.height);
+        CHECK_AND_RETURN_RET_LOG(!invalid, AVCS_ERR_INVALID_VAL,
+            "For YUV pixel format input, target width and height of downsampling must be even numbers."
+            "width=%{public}d, height=%{public}d", downsamplingParams_.width, downsamplingParams_.height);
+    }
+    if ((cropParams_.result == ConfigResult::ENABLED || downsamplingParams_.result == ConfigResult::ENABLED) &&
+        !IsAvailable()) {
+        AVCODEC_LOGE("Crop and downsampling are not supported");
+        return AVCS_ERR_UNSUPPORT;
+    }
+    return AVCS_ERR_OK;
+}
+
+GraphicPixelFormat Preprocessor::GetPixelFormatFromConfiguration(const Media::Format &format) const
+{
+    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::NV12);
+    (void)format.GetIntValue(Media::Tag::VIDEO_PIXEL_FORMAT, pixelFormat);
+    int32_t profile = static_cast<int32_t>(HEVCProfile::HEVC_PROFILE_UNKNOW);
+    (void)format.GetIntValue(Media::Tag::MEDIA_PROFILE, profile);
+    return ConvertVideoPixelFormat2GraphicPixelFormat(static_cast<VideoPixelFormat>(pixelFormat), profile);
+}
+
+GraphicPixelFormat Preprocessor::GetPixelFormatFromParameter(const Media::Format &format) const
+{
+    bool isConfigured10Bit = (encoderConfig_.pixelFormat == GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010 ||
+                              encoderConfig_.pixelFormat == GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010 ||
+                              encoderConfig_.pixelFormat == GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_1010102 ||
+                              encoderConfig_.pixelFormat == GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_1010108 ||
+                              encoderConfig_.pixelFormat == GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RAW10);
+    int32_t profile = static_cast<int32_t>(HEVCProfile::HEVC_PROFILE_UNKNOW);
+    bool hasProfile = format.GetIntValue(Media::Tag::MEDIA_PROFILE, profile);
+    if (!hasProfile && isConfigured10Bit) {
+        profile = static_cast<int32_t>(HEVCProfile::HEVC_PROFILE_MAIN_10);
+    }
+    int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::NV12);
+    bool hasPixelFormat = format.GetIntValue(Media::Tag::VIDEO_PIXEL_FORMAT, pixelFormat);
+    if (hasPixelFormat) {
+        return ConvertVideoPixelFormat2GraphicPixelFormat(static_cast<VideoPixelFormat>(pixelFormat), profile);
+    }
+
+    return encoderConfig_.pixelFormat;
 }
 
 int32_t Preprocessor::Configure(const Media::Format &format)
 {
-    int32_t enableSyncMode = false;
-    if (format.GetIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, enableSyncMode) && enableSyncMode) {
-        AVCODEC_LOGE("Synchronous mode is not supported for primary/secondary encoder!");
-        return AVCS_ERR_INVALID_VAL;
+    if (cropParams_.result != ConfigResult::NOT_SET) {
+        cropConfig_ = CropConfig(cropParams_);
     }
-    UpdateConfiguredValues(format, encoderConfig_);
-    CropParams cropParams;
-    DownsamplingParams dsParams;
-    DropFrameParams dropParams;
-    int32_t ret = ValidateCrop(format, cropParams);
-    ret = (ret == AVCS_ERR_OK) ? ValidateDownsampling(format, dsParams) : ret;
-    ret = (ret == AVCS_ERR_OK) ? ValidateDropFrame(format, dropParams) : ret;
-    if (ret != AVCS_ERR_OK) {
-        return ret;
+    if (downsamplingParams_.result != ConfigResult::NOT_SET) {
+        downsamplingConfig_ = DownsamplingConfig(downsamplingParams_);
     }
-    if (cropParams.result == ConfigResult::ENABLED && dsParams.result == ConfigResult::ENABLED) {
-        AVCODEC_LOGE("Crop and downsampling cannot be enabled simultaneously");
-        return AVCS_ERR_INVALID_VAL;
+    if (dropParams_.result != ConfigResult::NOT_SET) {
+        dropFrameConfig_ = DropFrameConfig(dropParams_);
     }
-    if (cropParams.result != ConfigResult::NOT_SET) {
-        cropConfig_ = CropConfig(cropParams);
-    }
-    if (dsParams.result != ConfigResult::NOT_SET) {
-        downsamplingConfig_ = DownsamplingConfig(dsParams);
-    }
-    if (dropParams.result != ConfigResult::NOT_SET) {
-        dropFrameConfig_ = DropFrameConfig(dropParams);
-    }
-    if (cropConfig_.enabled || downsamplingConfig_.enabled) {
-        int32_t initRet = fastKitsInterface_.Init(static_cast<uint32_t>(encoderConfig_.pixelFormat));
+    if (fastKitEnable && (cropConfig_.enabled || downsamplingConfig_.enabled)) {
+        int32_t initRet = fastKitsInterface_.Init(static_cast<uint32_t>(encoderParams_.pixelFormat));
         CHECK_AND_RETURN_RET_LOG(initRet == AVCS_ERR_OK, initRet, "Failed to init FastKitsInterface: %{public}d",
                                  initRet);
     }
     if (dropFrameConfig_.enabled) {
-        dropFilter_.Configure(dropFrameConfig_.targetFrameRate, encoderConfig_.frameRate);
+        dropFilter_.Configure(dropFrameConfig_.targetFrameRate, encoderParams_.frameRate);
     }
+
+    encoderConfig_.width = encoderParams_.width;
+    encoderConfig_.height = encoderParams_.height;
+    encoderConfig_.pixelFormat = encoderParams_.pixelFormat;
+    encoderConfig_.frameRate = encoderParams_.frameRate;
+
     AVCODEC_LOGI("PreProcessor configured: crop=%{public}d, ds=%{public}d, drop=%{public}d", cropConfig_.enabled,
                  downsamplingConfig_.enabled, dropFrameConfig_.enabled);
     return AVCS_ERR_OK;
 }
 
-int32_t Preprocessor::ValidateCrop(const Media::Format &format, CropParams &params)
+bool Preprocessor::UsingAsyncMode(const Media::Format &format) const
 {
-    params.result = ConfigResult::NOT_SET;
+    int32_t asyncMode = 0;
+    (void)format.GetIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, asyncMode);
+    return asyncMode == 0;
+}
+
+int32_t Preprocessor::ValidateCrop(const Media::Format &format)
+{
+    cropParams_.result = ConfigResult::NOT_SET;
     int32_t left{0};
     int32_t right{0};
     int32_t top{0};
@@ -104,46 +306,51 @@ int32_t Preprocessor::ValidateCrop(const Media::Format &format, CropParams &para
     bool hasAny = hasLeft || hasRight || hasTop || hasBottom;
     bool hasAll = hasLeft && hasRight && hasTop && hasBottom;
 
-    if (!hasAny) {              // If none of the 4 values (left, right, top and bottom) is configured,
+    if (!hasAny) {              // If none of the crop values (left, right, top and bottom) is configured,
         return AVCS_ERR_OK;     // keep current status.
     }
 
-    if (hasAny && !hasAll) {            // At least one of the 4 values is not configured,
+    if (hasAny && !hasAll) {            // At least one crop value is not configured,
+        AVCODEC_LOGE("Incomplete crop parameters: hasLeft=%{public}d, hasRight=%{public}d, "
+                     "hasTop=%{public}d, hasBottom=%{public}d",
+                     hasLeft, hasRight, hasTop, hasBottom);
         return AVCS_ERR_INVALID_VAL;    // it is not allowed.
     }
 
-    // left, right, top and bottom are all configured
+    // left, right, top and bottom are all configured 0, disable crop.
+    if (left == DISABLE_CROP_LEFT && top == DISABLE_CROP_TOP &&
+        right == DISABLE_CROP_RIGHT && bottom == DISABLE_CROP_BOTTOM) {
+        cropParams_.result = ConfigResult::DISABLED;
+        AVCODEC_LOGI("Crop disabled by zero crop parameters");
+        return AVCS_ERR_OK;
+    }
+
     Range encWidth;
     Range encHeight;
     if (!GetEncoderRange(format, encWidth, encHeight)) {
         AVCODEC_LOGE("Failed to get encoder capability for crop");
         return AVCS_ERR_INVALID_VAL;
     }
-    if (left == 0 && top == 0 && right == 0 && bottom == 0) {
-        params.result = ConfigResult::DISABLED;
-        return AVCS_ERR_OK;
-    }
-    int32_t cropWidth = right - left + 1;
-    int32_t cropHeight = bottom - top + 1;
-    bool rangeValid = (0 <= left && left < right && right < encoderConfig_.width) &&
-                      (0 <= top && top < bottom && bottom < encoderConfig_.height) &&
+    constexpr int32_t cropRectInclusiveOffset = 1;
+    int32_t cropWidth = right - left + cropRectInclusiveOffset;
+    int32_t cropHeight = bottom - top + cropRectInclusiveOffset;
+    bool rangeValid = (0 <= left && left < right && right < encoderParams_.width) &&
+                      (0 <= top && top < bottom && bottom < encoderParams_.height) &&
                       (encWidth.InRange(cropWidth) && encHeight.InRange(cropHeight));
-    if (!rangeValid) {
-        AVCODEC_LOGE("Invalid crop parameters: left=%{public}d, right=%{public}d, top=%{public}d, bottom=%{public}d",
-                     left, right, top, bottom);
-        return AVCS_ERR_INVALID_VAL;
-    }
-    params.left = left;
-    params.right = right;
-    params.top = top;
-    params.bottom = bottom;
-    params.result = ConfigResult::ENABLED;
+    CHECK_AND_RETURN_RET_LOG(rangeValid, AVCS_ERR_INVALID_VAL,
+        "Invalid crop parameters: left=%{public}d, right=%{public}d, top=%{public}d, bottom=%{public}d",
+        left, right, top, bottom);
+    cropParams_.left = left;
+    cropParams_.right = right;
+    cropParams_.top = top;
+    cropParams_.bottom = bottom;
+    cropParams_.result = ConfigResult::ENABLED;
     return AVCS_ERR_OK;
 }
 
-int32_t Preprocessor::ValidateDownsampling(const Media::Format &format, DownsamplingParams &params)
+int32_t Preprocessor::ValidateDownsampling(const Media::Format &format)
 {
-    params.result = ConfigResult::NOT_SET;
+    downsamplingParams_.result = ConfigResult::NOT_SET;
     int32_t width{0};
     int32_t height{0};
     bool hasWidth = format.GetIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH, width);
@@ -154,8 +361,8 @@ int32_t Preprocessor::ValidateDownsampling(const Media::Format &format, Downsamp
     if (!hasWidth && !hasHeight) {
         return AVCS_ERR_OK;
     }
-    if (width == 0 && height == 0) {
-        params.result = ConfigResult::DISABLED;
+    if (width == DISABLE_DOWNSAMPLING_WIDTH && height == DISABLE_DOWNSAMPLING_HEIGHT) {
+        downsamplingParams_.result = ConfigResult::DISABLED;
         return AVCS_ERR_OK;
     }
     Range encWidth;
@@ -168,43 +375,47 @@ int32_t Preprocessor::ValidateDownsampling(const Media::Format &format, Downsamp
     int32_t maxWidth = (dAlgoWidthMax_ > 0) ? std::min(dAlgoWidthMax_, encWidth.maxVal) : encWidth.maxVal;
     int32_t minHeight = std::max((dAlgoHeightMin_ > 0) ? dAlgoHeightMin_ : encHeight.minVal, encHeight.minVal);
     int32_t maxHeight = (dAlgoHeightMax_ > 0) ? std::min(dAlgoHeightMax_, encHeight.maxVal) : encHeight.maxVal;
-    if (!(minWidth > 0 && minHeight > 0 && minWidth <= width && width <= encoderConfig_.width &&
-          encoderConfig_.width <= maxWidth && minHeight <= height && height <= encoderConfig_.height &&
-          encoderConfig_.height <= maxHeight)) {
-        AVCODEC_LOGE("Invalid downsampling parameters: width=%{public}d, height=%{public}d", width, height);
+    if (!(minWidth > 0 && minHeight > 0 && minWidth <= width && width <= encoderParams_.width &&
+          encoderParams_.width <= maxWidth && minHeight <= height && height <= encoderParams_.height &&
+          encoderParams_.height <= maxHeight)) {
+        AVCODEC_LOGE("Invalid downsampling parameters: width=%{public}d, height=%{public}d, "
+                     "valid range: width [%{public}d, %{public}d], height [%{public}d, %{public}d], "
+                     "encoder configured: %{public}dx%{public}d",
+                     width, height, minWidth, maxWidth, minHeight, maxHeight, encoderParams_.width,
+                     encoderParams_.height);
         return AVCS_ERR_INVALID_VAL;
     }
-    params.width = width;
-    params.height = height;
-    params.result = ConfigResult::ENABLED;
+    downsamplingParams_.width = width;
+    downsamplingParams_.height = height;
+    downsamplingParams_.result = ConfigResult::ENABLED;
     return AVCS_ERR_OK;
 }
 
-int32_t Preprocessor::ValidateDropFrame(const Media::Format &format, DropFrameParams &params)
+int32_t Preprocessor::ValidateDropFrame(const Media::Format &format)
 {
-    params.result = ConfigResult::NOT_SET;
+    dropParams_.result = ConfigResult::NOT_SET;
     double targetFrameRate = 0;
     if (!format.GetDoubleValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DROP_TO_FRAME_RATE, targetFrameRate)) {
         return AVCS_ERR_OK;
     }
     targetFrameRate = RoundToTwoDecimals(targetFrameRate);
     if (targetFrameRate < -std::numeric_limits<double>::epsilon() ||
-        encoderConfig_.frameRate < -std::numeric_limits<double>::epsilon()) {
+        encoderParams_.frameRate < -std::numeric_limits<double>::epsilon()) {
         AVCODEC_LOGE("Invalid drop frame rate: %{public}.2f, configured=%{public}.2f", targetFrameRate,
-                     encoderConfig_.frameRate);
+                     encoderParams_.frameRate);
         return AVCS_ERR_INVALID_VAL;
     }
     if (std::fabs(targetFrameRate) < std::numeric_limits<double>::epsilon()) {
-        params.result = ConfigResult::DISABLED;
+        dropParams_.result = ConfigResult::DISABLED;
         return AVCS_ERR_OK;
     }
-    if ((targetFrameRate - encoderConfig_.frameRate) < -std::numeric_limits<double>::epsilon()) {
-        params.targetFrameRate = targetFrameRate;
-        params.result = ConfigResult::ENABLED;
+    if ((targetFrameRate - encoderParams_.frameRate) < -std::numeric_limits<double>::epsilon()) {
+        dropParams_.targetFrameRate = targetFrameRate;
+        dropParams_.result = ConfigResult::ENABLED;
         return AVCS_ERR_OK;
     }
     AVCODEC_LOGE("Invalid drop frame rate: %{public}.2f, configured=%{public}.2f", targetFrameRate,
-                 encoderConfig_.frameRate);
+                 encoderParams_.frameRate);
     return AVCS_ERR_INVALID_VAL;
 }
 
@@ -216,20 +427,31 @@ int32_t Preprocessor::SetParameter(const Media::Format &format)
 int32_t Preprocessor::Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output, uint64_t pts)
 {
     CHECK_AND_RETURN_RET_LOG(input && output, AVCS_ERR_INVALID_VAL,
-                             "Invalid buffer: input=%{public}p, output=%{public}p", input.GetRefPtr(),
-                             output.GetRefPtr());
-    CHECK_AND_RETURN_RET_LOG(input->GetFormat() == output->GetFormat(), AVCS_ERR_INVALID_VAL,
-                             "Format mismatch: input=%{public}d, output=%{public}d", input->GetFormat(),
-                             output->GetFormat());
+                             "Invalid buffer: input is %{public}s, output is %{public}s", input ? "valid" : "nullptr",
+                             output ? "valid" : "nullptr");
     if (IsCropEnabled()) {
-        Crop(input, output);
-    } else if (IsDownsamplingEnabled()) {
-        Downsampling(input, output);
-    } else {
-        Copy(input, output);
+        int32_t ret = Crop(input, output);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Crop failed: %{public}d", ret);
+        UpdateOutputMetadata(input, output,
+                             {IDENTITY_METADATA_SCALE, IDENTITY_METADATA_SCALE, cropConfig_.top,
+                              cropConfig_.left});
+        return ret;
     }
-
-    return AVCS_ERR_OK;
+    if (IsDownsamplingEnabled()) {
+        int32_t ret = Downsampling(input, output);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Downsampling failed: %{public}d", ret);
+        UpdateOutputMetadata(input, output,
+                             {static_cast<double>(output->GetWidth()) / input->GetWidth(),
+                              static_cast<double>(output->GetHeight()) / input->GetHeight(),
+                              DEFAULT_METADATA_OFFSET, DEFAULT_METADATA_OFFSET});
+        return ret;
+    }
+    int32_t ret = Copy(input, output);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Copy failed: %{public}d", ret);
+    UpdateOutputMetadata(input, output,
+                         {IDENTITY_METADATA_SCALE, IDENTITY_METADATA_SCALE, DEFAULT_METADATA_OFFSET,
+                          DEFAULT_METADATA_OFFSET});
+    return ret;
 }
 
 bool Preprocessor::ShouldDropFrame(uint64_t pts)
@@ -278,106 +500,165 @@ const Preprocessor::DropFrameConfig &Preprocessor::GetDropFrameConfig() const
     return dropFrameConfig_;
 }
 
-void Preprocessor::Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
+int32_t Preprocessor::Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
 {
-    if (!CheckOrReallocOutSurfaceBuffer(cropConfig_.width, cropConfig_.height, input->GetStride(), output)) {
-        AVCODEC_LOGE("Realloc buffer failed, buffer seq: %{public}d", output->GetSeqNum());
-        return;
+    if (!CheckOrReallocOutSurfaceBuffer(cropConfig_.width, cropConfig_.height, input->GetFormat(), output)) {
+        AVCODEC_LOGE("Realloc buffer failed");
+        return AVCS_ERR_NO_MEMORY;
     }
-    PreProcessing::CropRect rect{cropConfig_.top, cropConfig_.left, cropConfig_.bottom, cropConfig_.right};
-    int32_t ret = fastKitsInterface_.Crop(input, output, rect);
-    CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Crop failed: %{public}d", ret);
+    if (fastKitEnable) {
+        PreProcessing::CropRect rect{cropConfig_.top, cropConfig_.left, cropConfig_.bottom, cropConfig_.right};
+        int32_t ret = fastKitsInterface_.Crop(input, output, rect);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "FastKit crop failed: %{public}d", ret);
+        return AVCS_ERR_OK;
+    }
+    PreProcessing::CpuImageProcessRequest request;
+    request.input = input;
+    request.output = output;
+    request.operation = PreProcessing::CpuImageOperation::CROP;
+    request.crop = {cropConfig_.left, cropConfig_.top, cropConfig_.width, cropConfig_.height};
+    int32_t ret = PreProcessing::CpuImageProcessor::Process(request);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Crop failed: %{public}d", ret);
+    return AVCS_ERR_OK;
 }
 
-void Preprocessor::Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
+int32_t Preprocessor::Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
 {
     if (!CheckOrReallocOutSurfaceBuffer(downsamplingConfig_.width, downsamplingConfig_.height,
-                                        input->GetStride(), output)) {
-        AVCODEC_LOGE("Realloc buffer failed, buffer seq: %{public}d", output->GetSeqNum());
-        return;
+                                        input->GetFormat(), output)) {
+        AVCODEC_LOGE("Realloc buffer failed");
+        return AVCS_ERR_NO_MEMORY;
     }
-    int32_t ret = fastKitsInterface_.DownSample(input, output);
-    CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Downsampling failed: %{public}d", ret);
+    if (fastKitEnable) {
+        int32_t ret = fastKitsInterface_.DownSample(input, output);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "FastKit downsampling failed: %{public}d", ret);
+        return AVCS_ERR_OK;
+    }
+    PreProcessing::CpuImageProcessRequest request;
+    request.input = input;
+    request.output = output;
+    request.operation = PreProcessing::CpuImageOperation::DOWNSAMPLE;
+    int32_t ret = PreProcessing::CpuImageProcessor::Process(request);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Downsampling failed: %{public}d", ret);
+    return AVCS_ERR_OK;
 }
 
-void Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
+int32_t Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output)
 {
-    if (!CheckOrReallocOutSurfaceBuffer(encoderConfig_.width, encoderConfig_.height, input->GetStride(), output)) {
-        AVCODEC_LOGE("Realloc buffer failed, buffer seq: %{public}d", output->GetSeqNum());
-        return;
+    if (!CheckOrReallocOutSurfaceBuffer(input->GetWidth(), input->GetHeight(), input->GetFormat(), output)) {
+        AVCODEC_LOGE("Realloc buffer failed");
+        return AVCS_ERR_NO_MEMORY;
     }
-    auto *src = static_cast<uint8_t *>(input->GetVirAddr());
-    auto *dst = static_cast<uint8_t *>(output->GetVirAddr());
-    CHECK_AND_RETURN_LOG(src != nullptr && dst != nullptr,
-                         "Invalid vir addr: input=%{public}p, output=%{public}p", src, dst);
-    EXPECT_AND_LOGW(input->GetFormat() != output->GetFormat(),
-                    "SurfaceBuffer format mismatch, input=%{public}d, output=%{public}d",
-                    input->GetFormat(), output->GetFormat());
-
-    (void)memcpy_s(dst, input->GetSize(), src, output->GetSize());
+    if (fastKitEnable) {
+        PreProcessing::CropRect rect{0, 0, input->GetHeight() - 1, input->GetWidth() - 1};
+        int32_t ret = fastKitsInterface_.Crop(input, output, rect);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "FastKit copy failed: %{public}d", ret);
+        return AVCS_ERR_OK;
+    }
+    PreProcessing::CpuImageProcessRequest request;
+    request.input = input;
+    request.output = output;
+    request.operation = PreProcessing::CpuImageOperation::COPY;
+    int32_t ret = PreProcessing::CpuImageProcessor::Process(request);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Copy failed: %{public}d", ret);
+    return AVCS_ERR_OK;
 }
 
-bool Preprocessor::IsHevc10BitData(HEVCProfile profile)
+void Preprocessor::UpdateOutputMetadata(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output,
+                                        const RoiTransform &roiTransform)
+{
+    CopyInputMetadata(input, output);
+    UpdateRoiMetadata(input, output, roiTransform);
+}
+
+void Preprocessor::CopyInputMetadata(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output)
+{
+    CHECK_AND_RETURN_LOG(input != nullptr && output != nullptr, "Invalid buffer for metadata copy");
+
+    std::vector<uint32_t> keys;
+    GSError ret = input->ListMetadataKeys(keys);
+    CHECK_AND_RETURN_LOG(ret == GSERROR_OK, "List input metadata failed: %{public}d", ret);
+
+    for (uint32_t key : keys) {
+        if (key == V2_2::ATTRKEY_ROI_METADATA) {
+            continue;
+        }
+        std::vector<uint8_t> value;
+        ret = input->GetMetadata(key, value);
+        if (ret != GSERROR_OK) {
+            AVCODEC_LOGW("Get metadata failed: key=%{public}u, ret=%{public}d", key, ret);
+            continue;
+        }
+        ret = output->SetMetadata(key, value, false);
+        if (ret != GSERROR_OK) {
+            AVCODEC_LOGW("Set metadata failed: key=%{public}u, ret=%{public}d", key, ret);
+        }
+    }
+}
+
+void Preprocessor::UpdateRoiMetadata(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output,
+                                     const RoiTransform &roiTransform)
+{
+    CHECK_AND_RETURN_LOG(input != nullptr && output != nullptr, "Invalid buffer for roi metadata!");
+
+    std::vector<uint8_t> roiData;
+    if (input->GetMetadata(V2_2::ATTRKEY_ROI_METADATA, roiData) != GSERROR_OK || roiData.empty()) {
+        return;
+    }
+    auto nullPos = std::find(roiData.begin(), roiData.end(), '\0');
+    std::string roi(roiData.begin(), nullPos);
+    std::string transformed = TransformRoiMetadata(roi, roiTransform.scaleX, roiTransform.scaleY,
+                                                   roiTransform.offsetTop, roiTransform.offsetLeft);
+    std::vector<uint8_t> outputRoi(transformed.begin(), transformed.end());
+    outputRoi.push_back('\0');
+    GSError ret = output->SetMetadata(V2_2::ATTRKEY_ROI_METADATA, outputRoi, false);
+    CHECK_AND_RETURN_LOG(ret == GSERROR_OK, "Set roi metadata failed: %{public}d", ret);
+}
+
+bool Preprocessor::IsHevc10BitData(HEVCProfile profile) const
 {
     return profile == HEVC_PROFILE_MAIN_10 && mime_ == "video/hevc";
 }
 
 GraphicPixelFormat Preprocessor::ConvertVideoPixelFormat2GraphicPixelFormat(VideoPixelFormat pixelFormat,
-                                                                            int32_t profile)
+                                                                            int32_t profile) const
 {
     bool is10BitData = IsHevc10BitData(static_cast<HEVCProfile>(profile));
     switch (pixelFormat) {
-        case VideoPixelFormat::YUVI420: {
+        case VideoPixelFormat::YUVI420:
             return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_P;
-        }
-        case VideoPixelFormat::RGBA: {
+        case VideoPixelFormat::RGBA:
             return is10BitData ? GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_1010102
                                : GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888;
-        }
-        case VideoPixelFormat::NV12: {
-            return is10BitData ? GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010
-                               : GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
-        }
-        case VideoPixelFormat::NV21: {
+        case VideoPixelFormat::NV21:
             return is10BitData ? GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010
                                : GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
-        }
-        case VideoPixelFormat::RGBA1010102: {
+        case VideoPixelFormat::RGBA1010102:
             return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_1010102;
-        }
+        case VideoPixelFormat::NV12:
         default:
-            return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT;
+            return is10BitData ? GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010
+                               : GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
     }
 }
 
-void Preprocessor::UpdateConfiguredValues(const Media::Format &format, EncoderConfig &config)
+void Preprocessor::UpdateConfiguredValues(const Media::Format &format, bool configuring)
 {
     int32_t configuredWidth = 0;
     int32_t configuredHeight = 0;
     double configuredFramerate = 0;
     if (format.GetIntValue(Media::Tag::VIDEO_WIDTH, configuredWidth) &&
         format.GetIntValue(Media::Tag::VIDEO_HEIGHT, configuredHeight)) {
-        config.width = configuredWidth;
-        config.height = configuredHeight;
+        encoderParams_.width = configuredWidth;
+        encoderParams_.height = configuredHeight;
     }
 
     if (format.GetDoubleValue(Media::Tag::VIDEO_FRAME_RATE, configuredFramerate)) {
-        config.frameRate = RoundToTwoDecimals(configuredFramerate);
+        encoderParams_.frameRate = RoundToTwoDecimals(configuredFramerate);
     }
 
-    int32_t configuredPixelFormat = 0;
-    if (format.GetIntValue(Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, configuredPixelFormat)) {
-        config.pixelFormat = static_cast<GraphicPixelFormat>(configuredPixelFormat);
-    } else {
-        if (format.GetIntValue(Media::Tag::VIDEO_PIXEL_FORMAT, configuredPixelFormat)) {
-            int32_t profile = -1;
-            (void)format.GetIntValue(Media::Tag::MEDIA_PROFILE, profile);
-            config.pixelFormat = ConvertVideoPixelFormat2GraphicPixelFormat(
-                static_cast<VideoPixelFormat>(configuredPixelFormat), profile);
-        } else {
-            config.pixelFormat = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
-        }
-    }
+    encoderParams_.pixelFormat =
+        configuring ? GetPixelFormatFromConfiguration(format) : GetPixelFormatFromParameter(format);
 }
 
 bool Preprocessor::GetEncoderRange(const Media::Format &format, Range &encWidth, Range &encHeight)
@@ -394,25 +675,44 @@ bool Preprocessor::GetEncoderRange(const Media::Format &format, Range &encWidth,
 }
 
 bool Preprocessor::CheckOrReallocOutSurfaceBuffer(int32_t targetWidth, int32_t targetHeight,
-                                                  int32_t targetStride, sptr<SurfaceBuffer> &output)
+                                                  int32_t targetFormat, sptr<SurfaceBuffer> &output)
 {
-    if (output->GetWidth() != targetWidth || output->GetHeight() != targetHeight ||
-        output->GetFormat() != static_cast<int32_t>(encoderConfig_.pixelFormat ||
-        output->GetStride() != targetStride)) {
+    auto targetGraphicFormat = static_cast<GraphicPixelFormat>(targetFormat);
+    if (!IsGeometrySupported(targetGraphicFormat, targetWidth, targetHeight)) {
+        AVCODEC_LOGE("Unsupported target geometry: %{public}dx%{public}d format=%{public}d",
+                     targetWidth, targetHeight, targetFormat);
+        return false;
+    }
+    int32_t minStride = GetMinRowBytes(targetGraphicFormat, targetWidth);
+    if (minStride <= 0) {
+        return false;
+    }
+    bool needRealloc = !output || output->GetWidth() != targetWidth || output->GetHeight() != targetHeight ||
+                       output->GetFormat() != targetFormat ||
+                       output->GetVirAddr() == nullptr ||
+                       output->GetStride() < minStride;
+    if (needRealloc) {
         sptr<SurfaceBuffer> newBuffer = SurfaceBuffer::Create();
+        if (!newBuffer) {
+            return false;
+        }
+        constexpr auto DEFAULT_USAGE = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_MMZ_CACHE;
         BufferRequestConfig config = {
             .width = targetWidth,
             .height = targetHeight,
-            .strideAlignment = targetStride,
-            .format = static_cast<int32_t>(encoderConfig_.pixelFormat),
-            .usage = output->GetUsage(),
+            .strideAlignment = BUFFER_REQUEST_STRIDE_ALIGNMENT,
+            .format = targetFormat,
+            .usage = output ? output->GetUsage() | DEFAULT_USAGE : DEFAULT_USAGE,
             .timeout = 0,
         };
         auto ret = newBuffer->Alloc(config);
         if (ret != GSERROR_OK) {
+            AVCODEC_LOGE("Alloc output buffer failed: %{public}d", ret);
             return false;
         }
-        onOutSurfaceBufferReallocCb_(output, newBuffer);
+        if (output && onOutSurfaceBufferReallocCb_) {
+            onOutSurfaceBufferReallocCb_(output, newBuffer);
+        }
         output = newBuffer;
     }
     return true;
