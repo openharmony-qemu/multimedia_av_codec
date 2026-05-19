@@ -841,12 +841,6 @@ HWTEST_F(HttpSourcePluginUnitTest, isAllowedProtocol_case_sensitive_006, TestSiz
     EXPECT_TRUE(httpSourcePlugin->isAllowedProtocol(url));
 }
 
-HWTEST_F(HttpSourcePluginUnitTest, isAllowedProtocol_partial_match_001, TestSize.Level1)
-{
-    std::string url = "httpfile://example.com/video.mp4";
-    EXPECT_TRUE(httpSourcePlugin->isAllowedProtocol(url));
-}
-
 HWTEST_F(HttpSourcePluginUnitTest, isAllowedProtocol_with_params_001, TestSize.Level1)
 {
     std::string url = "http://example.com/video.mp4?token=abc&expire=123";

@@ -219,7 +219,7 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     AutoLock lock(mutex_);
     FALSE_RETURN_V(downloader_ == nullptr, Status::ERROR_INVALID_OPERATION); // not allowed set again
     FALSE_RETURN_V(source != nullptr, Status::ERROR_INVALID_OPERATION);
-    FALSE_RETURN_V(isAllowedProtocol(source->GetSourceUri()), Status::ERROR_INVALID_OPERATION);
+    FALSE_RETURN_V(IsAllowedProtocol(source->GetSourceUri()), Status::ERROR_INVALID_OPERATION);
     InitSourcePlugin(source);
     redirectUrl_ = GetCurUrl();
     FALSE_RETURN_V(!redirectUrl_.empty() && source->GetSourceUri() != redirectUrl_, Status::OK);
@@ -770,7 +770,7 @@ bool HttpSourcePlugin::IsHls()
     return true;
 }
 
-bool HttpSourcePlugin::isAllowedProtocol(std::string_view url)
+bool HttpSourcePlugin::IsAllowedProtocol(std::string_view url)
 {
     for (auto& protocol : UNALLOWED_PROTOCOLS) {
         size_t protocolLen = protocol.size();

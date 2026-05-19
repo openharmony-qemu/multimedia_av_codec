@@ -94,7 +94,7 @@ private:
     std::string GetCurUrl();
     Status InitSourcePlugin(const std::shared_ptr<MediaSource>& source);
     bool IsDash();
-    bool isAllowedProtocol(std::string_view url);
+    bool IsAllowedProtocol(std::string_view url);
     uint32_t bufferSize_;
     uint32_t waterline_;
     uint32_t seekErrorCount_{0};
