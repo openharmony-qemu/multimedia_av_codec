@@ -192,5 +192,6 @@ private:
     bool isHlsFmp4_ {false};
     std::string pluginName_ {};
 };
-} // namespace Media
-} // namespace OHOS
+} // namespace Media	 
+} // namespace OHOS	 
+#endif // MEDIA_DEMUXER_H
