@@ -1889,10 +1889,6 @@ void HttpMediaDownloader::NotifyInitSuccess()
     if (bufferDurationForPlaying_ <= 0 || currentBitRate_ <= 0) {
         return;
     }
-    if (currentBitRate_ > 0) {
-        waterlineForPlaying_ = static_cast<uint64_t>(static_cast<double>(currentBitRate_) /
-            static_cast<double>(BYTES_TO_BIT) * bufferDurationForPlaying_);
-    }
     isBuffering_.store(true);
     bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
 }

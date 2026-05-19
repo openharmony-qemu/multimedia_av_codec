@@ -221,7 +221,7 @@ void FCodec::ConfigureDefaultVal(const Format &format, const std::string_view &f
     }
 }
 
-int32_t FCodec::ConfigureContext(const Format &format)
+int32_t FCodec::AllocateCodecContext()
 {
     avCodecContext_ = std::shared_ptr<AVCodecContext>(avcodec_alloc_context3(avCodec_.get()), [](AVCodecContext *p) {
         if (p != nullptr) {
@@ -235,30 +235,68 @@ int32_t FCodec::ConfigureContext(const Format &format)
     CHECK_AND_RETURN_RET_LOG(avCodecContext_ != nullptr, AVCS_ERR_INVALID_OPERATION,
                              "Configure codec failed: Allocate context error");
     avCodecContext_->codec_type = AVMEDIA_TYPE_VIDEO;
-    CHECK_AND_RETURN_RET_LOG(format.GetIntValue(FMTKey::VIDEO_WIDTH, width_) &&
-                             width_ >= VIDEO_MIN_SIZE && width_ <= VIDEO_MAX_WIDTH_SIZE,
-                             AVCS_ERR_INVALID_VAL, "Invalid width %{public}d!", width_);
-    CHECK_AND_RETURN_RET_LOG(format.GetIntValue(FMTKey::VIDEO_HEIGHT, height_) &&
-                             height_ >= VIDEO_MIN_SIZE && height_ <= VIDEO_MAX_HEIGHT_SIZE,
-                             AVCS_ERR_INVALID_VAL, "Invalid height %{public}d!", height_);
+    return AVCS_ERR_OK;
+}
+
+int32_t FCodec::ValidateAndSetVideoResolutionFormat(const Format &format)
+{
+    CHECK_AND_RETURN_RET_LOG(format.GetIntValue(FMTKey::VIDEO_WIDTH, width_), AVCS_ERR_INVALID_VAL,
+                             "Get video width failed");
+    CHECK_AND_RETURN_RET_LOG(format.GetIntValue(FMTKey::VIDEO_HEIGHT, height_), AVCS_ERR_INVALID_VAL,
+                             "Get video height failed");
+    bool isValid = (width_ >= VIDEO_MIN_SIZE && width_ <= VIDEO_MAX_WIDTH_SIZE && height_ >= VIDEO_MIN_SIZE &&
+                    height_ <= VIDEO_MAX_HEIGHT_SIZE);
+    CHECK_AND_RETURN_RET_LOG(isValid, AVCS_ERR_INVALID_VAL,
+                             "Invalid video resolution: width=%{public}d, height=%{public}d", width_, height_);
     format_.PutIntValue(FMTKey::VIDEO_STRIDE,
                         outputPixelFmt_ == VideoPixelFormat::RGBA ? width_ * VIDEO_PIX_DEPTH_RGBA : width_);
     format_.PutIntValue(FMTKey::VIDEO_SLICE_HEIGHT, height_);
     format_.PutIntValue(FMTKey::VIDEO_PIC_WIDTH, width_);
     format_.PutIntValue(FMTKey::VIDEO_PIC_HEIGHT, height_);
-    int32_t pixelFormat = 0;
-    if (format.GetIntValue(FMTKey::VIDEO_RAWVIDEO_INPUT_PIXEL_FORMAT, pixelFormat)) {
-        rawvideoPixFmt_ = static_cast<RawVideoPixelFormat>(pixelFormat);
-        CHECK_AND_RETURN_RET_LOG(rawvideoPixFmt_ >= RawVideoPixelFormat::YUV420P &&
-                                 rawvideoPixFmt_ <= RawVideoPixelFormat::RGBA,
-                                 AVCS_ERR_INVALID_VAL, "Unsupported rawvideo pixel format %{public}d!",
-                                 static_cast<int32_t>(rawvideoPixFmt_));
-        avCodecContext_->pix_fmt = g_convertFfmpegPixFmt[rawvideoPixFmt_];
-    }
+    return AVCS_ERR_OK;
+}
 
+int32_t FCodec::ConfigurePixelFormat(const Format &format)
+{
+    int32_t pixelFormat = 0;
+    if (!format.GetIntValue(FMTKey::VIDEO_RAWVIDEO_INPUT_PIXEL_FORMAT, pixelFormat)) {
+        return AVCS_ERR_OK;
+    }
+    rawvideoPixFmt_ = static_cast<RawVideoPixelFormat>(pixelFormat);
+    CHECK_AND_RETURN_RET_LOG(
+        rawvideoPixFmt_ >= RawVideoPixelFormat::YUV420P && rawvideoPixFmt_ <= RawVideoPixelFormat::RGBA,
+        AVCS_ERR_INVALID_VAL, "Unsupported rawvideo pixel format %{public}d!", static_cast<int32_t>(rawvideoPixFmt_));
+    avCodecContext_->pix_fmt = g_convertFfmpegPixFmt[rawvideoPixFmt_];
+    return AVCS_ERR_OK;
+}
+
+void FCodec::ConfigureThread(const Format &format)
+{
     avCodecContext_->width = width_;
     avCodecContext_->height = height_;
     avCodecContext_->thread_count = DEFAULT_THREAD_COUNT;
+    int32_t decodeOrder = 0;
+    format.GetIntValue(FMTKey::VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, decodeOrder);
+    if (codecName_ == AVCodecCodecName::VIDEO_DECODER_AVC_NAME && decodeOrder != 0) {
+        CHECK_AND_RETURN_LOG(av_opt_set(avCodecContext_.get(), "output_decode_order", "1", AV_OPT_SEARCH_CHILDREN) == 0,
+                             "H264 decode order enable failed");
+        AVCODEC_LOGI("H264 decode order enabled by %{public}d", decodeOrder);
+    }
+}
+
+int32_t FCodec::ConfigureContext(const Format &format)
+{
+    int32_t ret = AllocateCodecContext();
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Configure codec failed: Allocate context error");
+
+    ret = ValidateAndSetVideoResolutionFormat(format);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Invalid video resolution");
+
+    ret = ConfigurePixelFormat(format);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Configure pixel format failed");
+
+    ConfigureThread(format);
+
 #if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES) || (defined SUPPORT_CODEC_VC1)
     return SetCodecExtradata(format);
 #else

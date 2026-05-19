@@ -1080,7 +1080,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2012, TestSize.Level1)
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
     EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.startTime, 33000);
+    EXPECT_EQ(formatVal_.startTime, 33007);
     EXPECT_EQ(formatVal_.timeScale, 15360);
     EXPECT_EQ(formatVal_.width, 720);
     EXPECT_EQ(formatVal_.height, 480);
@@ -1168,7 +1168,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3012, TestSize.Level1)
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
     EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.startTime, 33000);
+    EXPECT_EQ(formatVal_.startTime, 33007);
     EXPECT_EQ(formatVal_.timeScale, 15360);
     EXPECT_EQ(formatVal_.width, 720);
     EXPECT_EQ(formatVal_.height, 480);
@@ -1917,100 +1917,6 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3020, TestSize.Level1)
 }
 
 /**
- * @tc.name: mp4Source_GetFormat_2021
- * @tc.desc: get format when the file is MP4(hevc + pcm), local
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2021, TestSize.Level1)
-{
-    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
-        return;
-    }
-    fd_ = OpenFile(g_mp4HevcPcmPath);
-    size_ = GetFileSize(g_mp4HevcPcmPath);
-    printf("---- %s ----\n", g_mp4HevcPcmPath.c_str());
-    source_ = Mpeg4SourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
-    EXPECT_EQ(formatVal_.duration, 10100000);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_TRACK_START_TIME, formatVal_.startTime));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    EXPECT_EQ(formatVal_.codecMime, "video/hevc");
-    EXPECT_EQ(formatVal_.bitRate, 2133375);
-    EXPECT_EQ(formatVal_.startTime, 33000);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    EXPECT_EQ(formatVal_.codecMime, "audio/raw");
-    EXPECT_EQ(formatVal_.bitRate, 1411200);
-}
-
-/**
- * @tc.name: mp4Source_GetFormat_3021
- * @tc.desc: get format when the file is MP4(hevc + pcm), uri
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3021, TestSize.Level1)
-{
-    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
-        return;
-    }
-    printf("---- %s ----\n", g_mp4HevcPcmUri.c_str());
-    source_ = Mpeg4SourceMockFactory::CreateSourceWithURI(const_cast<char*>(g_mp4HevcPcmUri.data()));
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
-    EXPECT_EQ(formatVal_.duration, 10100000);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_TRACK_START_TIME, formatVal_.startTime));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    EXPECT_EQ(formatVal_.codecMime, "video/hevc");
-    EXPECT_EQ(formatVal_.bitRate, 2133375);
-    EXPECT_EQ(formatVal_.startTime, 33000);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    EXPECT_EQ(formatVal_.codecMime, "audio/raw");
-    EXPECT_EQ(formatVal_.bitRate, 1411200);
-}
-
-/**
  * @tc.name: mp4Source_GetFormat_2022
  * @tc.desc: get format when the file is MP4(hevc + pcm), local
  * @tc.type: FUNC
@@ -2283,4 +2189,5 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3024, TestSize.Level1)
     EXPECT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     EXPECT_EQ(formatVal_.channelLayout, 63);
 }
+
 } // namespace

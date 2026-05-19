@@ -18,8 +18,10 @@
 #include "avcodec_codec_name.h"
 #include "avcodec_log.h"
 #include "avcodec_mime_type.h"
+#include "common/pcm_convert.h"
 #include "plugin/codec_plugin.h"
 #include "plugin/plugin_definition.h"
+#include <set>
 
 
 namespace {
@@ -32,12 +34,21 @@ constexpr int32_t SUPPORT_CHANNELS = 1;
 constexpr int SUPPORT_SAMPLE_RATE = 8000;
 constexpr int INPUT_BUFFER_SIZE_DEFAULT = 1280;  // 20ms:320
 constexpr int OUTPUT_BUFFER_SIZE_DEFAULT = 640;  // 20ms:160
-
+constexpr int32_t MAX_INPUT_BUFFER_SIZE_LIMIT = 10 * 1024 * 1024;  // 10MB
+constexpr int32_t BUFFER_FLAG_EOS = 0x00000001;
 constexpr int AVCODEC_G711MU_LINEAR_BIAS = 0x84;
 constexpr int AVCODEC_G711MU_CLIP = 8159;
 constexpr uint16_t AVCODEC_G711MU_SEG_NUM = 8;
 static const short AVCODEC_G711MU_SEG_END[8] = { // list of pcm limit value
     0x3F, 0x7F, 0xFF, 0x1FF, 0x3FF, 0x7FF, 0xFFF, 0x1FFF};
+
+static std::set<AudioSampleFormat> extendSampleFormats = {
+    AudioSampleFormat::SAMPLE_U8,
+    AudioSampleFormat::SAMPLE_S16LE,
+    AudioSampleFormat::SAMPLE_S24LE,
+    AudioSampleFormat::SAMPLE_S32LE,
+    AudioSampleFormat::SAMPLE_F32LE,
+};
 
 
 Status RegisterAudioEncoderPlugins(const std::shared_ptr<Register>& reg)
@@ -103,10 +114,23 @@ bool AudioG711muEncoderPlugin::CheckFormat()
         return false;
     }
 
-    if (audioSampleFormat_ != AudioSampleFormat::SAMPLE_S16LE) {
+    if (!isEnableFormatConvert_ && audioSampleFormat_ != AudioSampleFormat::SAMPLE_S16LE) {
         AVCODEC_LOGE("AudioG711muEncoderPlugin sampleFmt not supported");
         return false;
     }
+
+    if (isEnableFormatConvert_ &&
+        extendSampleFormats.find(audioSampleFormat_) == extendSampleFormats.end()) {
+        AVCODEC_LOGE("enable convert but input sample format not support:%{public}d",
+            static_cast<int32_t>(audioSampleFormat_));
+        return false;
+    }
+    int32_t bytesPerSample = GetPcmBytesPerSample(audioSampleFormat_);
+    if (bytesPerSample == 0) {
+        AVCODEC_LOGE("get bytes per sample fail from:%{public}d", static_cast<int32_t>(audioSampleFormat_));
+        return false;
+    }
+    originSampleByte_ = bytesPerSample;
     return true;
 }
 
@@ -169,26 +193,35 @@ Status AudioG711muEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer
                      memory->GetSize(), memory->GetCapacity());
         return Status::ERROR_UNKNOWN;
     }
-    {
-        std::lock_guard<std::mutex> lock(avMutex_);
-        int32_t sampleNum = memory->GetSize() / sizeof(int16_t);
-        int16_t* pcmToEncode = reinterpret_cast<int16_t*>(memory->GetAddr());
-        CHECK_AND_RETURN_RET_LOG(pcmToEncode != nullptr, Status::ERROR_NULL_POINTER, "pcmToEncode is empty");
-        encodeResult_.clear();
-        for (int32_t i = 0; i < sampleNum; ++i) {
-            encodeResult_.push_back(G711MuLawEncode(pcmToEncode[i]));
-        }
-        if (memory->GetSize() % sizeof(int16_t) == 1) {
-            AVCODEC_LOGE("AudioG711muEncoderPlugin inputBuffer size in bytes is odd and the last byte is ignored");
-        }
-        pts_ = inputBuffer->pts_;
-        inputSamples_ = sampleNum;
-        if (ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE && isFirstInputPts_) {
-            startPts_ = inputBuffer->pts_;
-            isFirstInputPts_ = false;
-        }
-        SafeCallInputBufferDone(dataCallback_, inputBuffer);
+
+    std::lock_guard<std::mutex> lock(avMutex_);
+    int32_t sampleNum = memory->GetSize() / sizeof(int16_t);
+    int16_t *pcmToEncode = reinterpret_cast<int16_t *>(memory->GetAddr());
+    CHECK_AND_RETURN_RET_LOG(pcmToEncode != nullptr, Status::ERROR_NULL_POINTER, "pcmToEncode is empty");
+
+    std::vector<uint8_t> tmpBuffer;
+    if (isEnableFormatConvert_ && audioSampleFormat_ != AudioSampleFormat::SAMPLE_S16LE) {
+        sampleNum = memory->GetSize() / originSampleByte_;
+        tmpBuffer.resize(sizeof(int16_t) * sampleNum);
+        ConvertPcmSampleFormat(memory->GetAddr(), sampleNum, audioSampleFormat_,
+            AudioSampleFormat::SAMPLE_S16LE, tmpBuffer.data());
+        pcmToEncode = reinterpret_cast<int16_t *>(tmpBuffer.data());
     }
+
+    if (sampleNum + encodeResult_.size() < encodeResult_.capacity()) {
+        encodeResult_.reserve(sampleNum + encodeResult_.size());
+    }
+    for (int32_t i = 0; i < sampleNum; ++i) {
+        encodeResult_.push_back(G711MuLawEncode(pcmToEncode[i]));
+    }
+    pts_ = inputBuffer->pts_;
+    inputSamples_ = sampleNum;
+    if (ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE && isFirstInputPts_) {
+        prevPts_ = inputBuffer->pts_;
+        isFirstInputPts_ = false;
+    }
+    SafeCallInputBufferDone(dataCallback_, inputBuffer);
+
     return Status::OK;
 }
 
@@ -198,35 +231,41 @@ Status AudioG711muEncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& ou
         AVCODEC_LOGE("AudioG711muEncoderPlugin Queue out buffer is null.");
         return Status::ERROR_INVALID_PARAMETER;
     }
-    {
-        std::lock_guard<std::mutex> lock(avMutex_);
-        auto memory = outputBuffer->memory_;
-        auto outSize = sizeof(uint8_t) * encodeResult_.size();
-        memory->Write(reinterpret_cast<const uint8_t *>(encodeResult_.data()), outSize, 0);
-        memory->SetSize(outSize);
-        int64_t frameDuration = static_cast<int64_t>(inputSamples_) * 1000000LL / sampleRate_;
-        if (ptsMode_ == ZERO_START_ENCODE_PTS_MODE) {
-            outputBuffer->pts_ = prevPts_;
-        } else if (ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE) {
-            outputBuffer->pts_ = (startPts_ > 0 && prevPts_ > INT64_MAX - startPts_) ? prevPts_ : startPts_ + prevPts_;
-        } else {
-            outputBuffer->pts_ = pts_;
-        }
-        if (ptsMode_ != DEFAULT_ENCODE_PTS_MODE) {
-            prevPts_ = (frameDuration > 0 && prevPts_ > INT64_MAX - frameDuration)
-                ? prevPts_ : prevPts_ + frameDuration;
-        }
-        SafeCallOutputBufferDone(dataCallback_, outputBuffer);
+
+    std::lock_guard<std::mutex> lock(avMutex_);
+    auto memory = outputBuffer->memory_;
+    if (memory->GetCapacity() < OUTPUT_BUFFER_SIZE_DEFAULT) {
+        return Status::ERROR_NO_MEMORY;
     }
-    return Status::OK;
+    Status ret = Status::OK;
+    if ((outputBuffer->flag_ & BUFFER_FLAG_EOS) && (encodeResult_.size() > 0)) {
+        outputBuffer->flag_ = 0;
+        ret = Status::ERROR_AGAIN;
+    }
+    auto outSize = encodeResult_.size() > OUTPUT_BUFFER_SIZE_DEFAULT ?
+        OUTPUT_BUFFER_SIZE_DEFAULT : encodeResult_.size();
+    memory->Write(reinterpret_cast<const uint8_t *>(encodeResult_.data()), outSize, 0);
+    memory->SetSize(outSize);
+    int64_t frameDuration = static_cast<int64_t>(outSize) * 1000000LL / sampleRate_;
+    if (ptsMode_ == ZERO_START_ENCODE_PTS_MODE || ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE) {
+        outputBuffer->pts_ = prevPts_;
+        prevPts_ = (frameDuration > 0 && prevPts_ > INT64_MAX - frameDuration)
+            ? prevPts_ : prevPts_ + frameDuration;
+    }
+    encodeResult_.erase(encodeResult_.begin(), encodeResult_.begin() + outSize);
+    SafeCallOutputBufferDone(dataCallback_, outputBuffer);
+    if (encodeResult_.size() >= OUTPUT_BUFFER_SIZE_DEFAULT) {
+        return Status::ERROR_AGAIN;
+    }
+    return ret;
 }
 
 Status AudioG711muEncoderPlugin::Reset()
 {
     std::lock_guard<std::mutex> lock(avMutex_);
     isFirstInputPts_ = true;
-    startPts_ = 0;
     prevPts_ = 0;
+    isEnableFormatConvert_ = false;
     return Status::OK;
 }
 
@@ -240,7 +279,6 @@ Status AudioG711muEncoderPlugin::Flush()
 {
     std::lock_guard<std::mutex> lock(avMutex_);
     isFirstInputPts_ = true;
-    startPts_ = 0;
     prevPts_ = 0;
     return Status::OK;
 }
@@ -264,11 +302,13 @@ Status AudioG711muEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &param
         ret = Status::ERROR_INVALID_PARAMETER;
     }
 
-    if (parameter->Find(Tag::AUDIO_SAMPLE_FORMAT) != parameter->end()) {
-        parameter->Get<Tag::AUDIO_SAMPLE_FORMAT>(audioSampleFormat_);
-    } else {
+    if (parameter->Get<Tag::AUDIO_ENCODER_ENABLE_SAMPLE_FORMAT_CONVERT>(isEnableFormatConvert_)) {
+        AVCODEC_LOGI("set format convert:%{public}d", static_cast<int32_t>(isEnableFormatConvert_));
+    }
+
+    if (!parameter->Get<Tag::AUDIO_SAMPLE_FORMAT>(audioSampleFormat_)) {
         AVCODEC_LOGE("no AUDIO_SAMPLE_FORMAT");
-        ret = Status::ERROR_INVALID_PARAMETER;
+        return Status::ERROR_INVALID_PARAMETER;
     }
 
     if (parameter->Find(Tag::AUDIO_MAX_INPUT_SIZE) != parameter->end()) {
@@ -282,9 +322,18 @@ Status AudioG711muEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &param
     }
 
     audioParameter_ = *parameter;
-    AudioEncodePtsMode ptsMode = DEFAULT_ENCODE_PTS_MODE;
+    int32_t ptsMode = DEFAULT_ENCODE_PTS_MODE;
     if (parameter->Get<Tag::AUDIO_ENCODE_PTS_MODE>(ptsMode)) {
         ptsMode_ = ptsMode;
+    }
+    int32_t maxInputBufferSize = -1;
+    if (parameter->Get<Tag::AUDIO_MAX_INPUT_BUFFER_SIZE>(maxInputBufferSize) && maxInputBufferSize > 0) {
+        if (maxInputBufferSize > MAX_INPUT_BUFFER_SIZE_LIMIT) {
+            maxInputBufferSize = MAX_INPUT_BUFFER_SIZE_LIMIT;
+        }
+        maxInputSize_ = maxInputBufferSize;
+        maxOutputSize_ = (maxInputBufferSize / sizeof(int16_t)) + 1;
+        encodeResult_.reserve(maxOutputSize_);
     }
     return ret;
 }
@@ -292,14 +341,13 @@ Status AudioG711muEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &param
 Status AudioG711muEncoderPlugin::GetParameter(std::shared_ptr<Meta> &parameter)
 {
     std::lock_guard<std::mutex> lock(paramMutex_);
-    if (maxInputSize_ <= 0 || maxInputSize_ > INPUT_BUFFER_SIZE_DEFAULT) {
+    if (maxInputSize_ <= 0) {
         maxInputSize_ = INPUT_BUFFER_SIZE_DEFAULT;
     }
-    maxOutputSize_ = OUTPUT_BUFFER_SIZE_DEFAULT;
     AVCODEC_LOGD("AudioG711muEncoderPlugin GetParameter maxInputSize_: %{public}d", maxInputSize_);
     audioParameter_.Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
     audioParameter_.Set<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_);
-    audioParameter_.Set<Tag::AUDIO_MAX_OUTPUT_SIZE>(maxOutputSize_);
+    audioParameter_.Set<Tag::AUDIO_MAX_OUTPUT_SIZE>(OUTPUT_BUFFER_SIZE_DEFAULT);
     *parameter = audioParameter_;
     return Status::OK;
 }

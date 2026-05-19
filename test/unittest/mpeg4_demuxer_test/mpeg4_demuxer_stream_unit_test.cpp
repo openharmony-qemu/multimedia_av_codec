@@ -288,4 +288,5 @@ HWTEST_F(Mpeg4DemuxerUnitTest, mp4Demuxer_SeekToTime_3002, TestSize.Level1)
         }
     }
 }
+
 } // namespace

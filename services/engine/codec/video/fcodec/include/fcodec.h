@@ -117,6 +117,10 @@ private:
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
                              int32_t maxVal = INT_MAX);
     int32_t ConfigureContext(const Format &format);
+    int32_t AllocateCodecContext();
+    int32_t ValidateAndSetVideoResolutionFormat(const Format &format);
+    int32_t ConfigurePixelFormat(const Format &format);
+    void ConfigureThread(const Format &format);
 #if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES) || (defined SUPPORT_CODEC_VC1)
     int32_t SetCodecExtradata(const Format &format);
 #endif

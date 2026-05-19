@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -803,7 +803,8 @@ Status HlsSegmentManager::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     FALSE_RETURN_V(cacheMediaBuffer_ != nullptr, Status::ERROR_AGAIN);
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
     readTime_ = now;
-    if (!CheckDataIntegrity()) {
+    bool isLive = playlistDownloader_ != nullptr ? playlistDownloader_->IsLive() : false;
+    if (!CheckDataIntegrity() && !isLive) {
         MEDIA_LOG_W("HLS Read in, fix download, type: %{public}d", type_);
         SeekToTsForRead(readTsIndex_);
         return Status::ERROR_AGAIN;
@@ -816,8 +817,8 @@ Status HlsSegmentManager::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     if (isNeedResume_.load()) {
         ClearChunksInLargeSegment();
         if (freeSize > GetDownloadResumeThreshold()) {
-            downloader_->Resume();
             isNeedResume_.store(false);
+            downloader_->Resume();
             MEDIA_LOG_I("HLS download resume, type: %{public}d", type_);
         }
     }
@@ -1528,6 +1529,7 @@ int64_t HlsSegmentManager::RequestNewTs(uint64_t seekTime, SeekMode mode, double
     playInfo.offset_ = item.offset_;
     playInfo.length_ = item.length_;
     playInfo.keyIndex_ = item.keyIndex_;
+    playInfo.sequence_ = item.sequence_;
     if (mode == SeekMode::SEEK_PREVIOUS_SYNC) {
         double lastTotalDuration = totalDuration - hstTime;
         if (static_cast<uint64_t>(lastTotalDuration) <= seekTime) {
@@ -1635,6 +1637,7 @@ int64_t HlsSegmentManager::RequestNewTsForRead(const PlayInfo& item)
     playInfo.length_ = item.length_;
     playInfo.keyIndex_ = item.keyIndex_;
     playInfo.startTimePos_ = 0;
+    playInfo.sequence_ = item.sequence_;
     PushPlayInfo(playInfo);
     return 0;
 }

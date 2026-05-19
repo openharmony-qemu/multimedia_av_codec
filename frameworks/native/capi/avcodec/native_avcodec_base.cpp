@@ -198,6 +198,8 @@ const char *OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH = "video_encoder_
 const char *OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT = "video_encoder_preproc_downsampling_height";
 const char *OH_MD_KEY_VIDEO_ENCODER_PREPROC_DROP_TO_FRAME_RATE = "video_encoder_preproc_drop_to_frame_rate";
 const char *OH_MD_KEY_AUDIO_ENCODER_PTS_MODE = "audio_encode_pts_mode";
+const char *OH_MD_KEY_AUDIO_ENCODER_ENABLE_SAMPLE_FORMAT_CONVERT = "audio_encoder_enable_sample_format_convert";
+const char *OH_MD_KEY_AUDIO_MAX_INPUT_BUFFER_SIZE = "audio_max_input_buffer_size";
 const char *OH_MD_KEY_SCREEN_CAPTURE_WINDOW_RECT = "screen_capture_window_rect";
 
 const char *OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_MODE = "video_decoder_frame_retention_mode";

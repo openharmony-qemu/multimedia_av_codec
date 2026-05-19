@@ -152,12 +152,10 @@ Status MPEG4AudioParser::ParseMpegAudio(MediaInfo& mediaInfo)
 {
     MEDIA_LOG_D("In");
     const int32_t layerTwoSamples = 1152;
-    const int32_t layerThreeLsfSamples = 576;
     if (dataSize_ < 0x02) {
         return Status::ERROR_INVALID_DATA;
     }
     uint32_t layer = 4 - ((audioData_[1] & 0x06) >> 1);
-    bool lsf = ((audioData_[2] >> 4) & 0x03) == 2;
     int32_t samplesPerFrame = 0;
     AudioSampleFormat sampleFormat = AudioSampleFormat::INVALID_WIDTH;
     switch (layer) {
@@ -168,7 +166,7 @@ Status MPEG4AudioParser::ParseMpegAudio(MediaInfo& mediaInfo)
             sampleFormat = AudioSampleFormat::SAMPLE_S16P;
             break;
         default:
-            samplesPerFrame = lsf ? layerThreeLsfSamples : layerTwoSamples;
+            samplesPerFrame = layerTwoSamples;
             sampleFormat = AudioSampleFormat::SAMPLE_F32P;
             break;
     }

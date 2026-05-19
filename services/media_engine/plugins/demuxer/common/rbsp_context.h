@@ -24,47 +24,68 @@
 namespace OHOS {
 namespace Media {
 namespace Plugins {
+constexpr uint32_t RBSP_BYTE_BITS = 0x08;
+
 class RbspContext {
 public:
     RbspContext(const uint8_t *buf, int32_t size);
+    RbspContext(const uint8_t *buf, int32_t size, bool skipEmulationPreventionByte);
     ~RbspContext() = default;
     bool RbspCheckSize(uint32_t size) const;
     void RbspSkipBits(uint32_t size);
     uint32_t RbspGetLeftBytesNum() const;
     uint32_t GetBytesIndex() const;
+    bool RbspReadBit(uint32_t& bit);
+    bool RbspReadBits(uint32_t size, uint32_t& value);
+    bool RbspReadUE(uint32_t& value);
+    bool RbspReadSE(int32_t& value);
 
     template <typename T = uint8_t, typename U = uint32_t>
     T RbspGetBits(uint32_t size, bool isSkip = true)
     {
+        constexpr uint32_t valueBits = sizeof(T) * RBSP_BYTE_BITS;
+        constexpr uint32_t workBits = sizeof(U) * RBSP_BYTE_BITS;
+        constexpr uint32_t accumulatorBits = sizeof(uint64_t) * RBSP_BYTE_BITS;
+        if (size == 0 || size > valueBits || size > workBits || size > accumulatorBits) {
+            return 0;
+        }
+
         if (!RbspCheckSize(size)) {
             RbspSkipBits(size);
             return 0;
         }
 
-        U reverseData = 0;
-        uint32_t byteCount = (bitIndex_ + size) % 0x08 == 0 ? (bitIndex_ + size) / 0x08 : (bitIndex_ + size) / 0x08 + 1;
-        for (uint32_t i = 0; i < byteCount; ++i) {
-            if (byteIndex_ + i >= size_) {
+        uint64_t data = 0;
+        for (uint32_t i = 0; i < size; ++i) {
+            uint64_t totalBitOffset = static_cast<uint64_t>(bitIndex_) + i;
+            uint64_t currentByteIndex = static_cast<uint64_t>(byteIndex_) + totalBitOffset / RBSP_BYTE_BITS;
+            if (currentByteIndex >= size_) {
                 return 0;
             }
-            reverseData = (reverseData << 0x08) | (*(buf_ + byteIndex_ + i) & 0xFF);
+            uint32_t currentBitIndex = static_cast<uint32_t>(totalBitOffset % RBSP_BYTE_BITS);
+            uint32_t shiftBits = (RBSP_BYTE_BITS - 1) - currentBitIndex;
+            uint64_t currentByte = static_cast<uint64_t>(*(buf_ + static_cast<uint32_t>(currentByteIndex)));
+            uint8_t bit = static_cast<uint8_t>((currentByte >> shiftBits) & 0x01);
+            data = (data << 1) | bit;
         }
-        reverseData = (sizeof(U) >= byteCount) ? reverseData << (0x08 * (sizeof(U) - byteCount)) : reverseData;
-        T data = static_cast<T>((reverseData << bitIndex_) >> (0x08 * sizeof(U) - size));
 
         if (isSkip) {
             RbspSkipBits(size);
         }
-        return data;
+        return static_cast<T>(data);
     }
 
 private:
     uint8_t RbspGetBit() const;
+    bool RbspReadEbspBit(uint32_t& bit);
+    void SkipEmulationPreventionByte();
 
     const uint8_t* buf_;
     uint32_t size_;
     uint32_t byteIndex_;
     uint32_t bitIndex_;
+    uint32_t zeroCount_;
+    bool skipEmulationPreventionByte_;
 };
 } // namespace Plugins
 } // namespace Media

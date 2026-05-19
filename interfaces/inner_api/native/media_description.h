@@ -316,6 +316,8 @@ public:
      * See AudioEncoderPtsMode for valid values. Default is AUDIO_ENCODER_PTS_MODE_DEFAULT.
      */
     static constexpr std::string_view MD_KEY_AUDIO_ENCODER_PTS_MODE = "audio_encode_pts_mode";
+
+    static constexpr std::string_view MD_KEY_AUDIO_MAX_INPUT_BUFFER_SIZE = "audio_max_input_buffer_size";
     /**
      * key for AIGC info, the value type is string
      */
@@ -358,7 +360,7 @@ public:
         "video_encoder_preproc_downsampling_height";
 
     /**
-     * Key for video encoder preproc drop to frame rate, value type is int32_t
+     * Key for video encoder preproc drop to frame rate, value type is double
      */
     static constexpr std::string_view OH_MD_KEY_VIDEO_ENCODER_PREPROC_DROP_TO_FRAME_RATE =
         "video_encoder_preproc_drop_to_frame_rate";

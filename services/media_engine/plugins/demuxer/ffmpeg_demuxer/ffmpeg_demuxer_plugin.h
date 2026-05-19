@@ -399,6 +399,8 @@ private:
     Status AccumulateXpsPkt(AVPacketWrapperPtr pkt);
     void AccumulateXpsPktRelease(uint32_t trackIndex);
     void AccumulateXpsPktReleaseAll();
+    Status AccumulateXpsPktLocked(AVPacketWrapperPtr pkt);
+    void AccumulateXpsPktReleaseLocked(uint32_t trackIndex);
     enum class AccumulateAction {
         ERROR,
         NOT_SUPPORT_TYPE,
@@ -407,6 +409,7 @@ private:
     };
     AccumulateAction ProcessAccumulateXpsPkt(AVPacketWrapperPtr& pktWrapper,
         int ffmpegRet, Status& status);
+    std::mutex accumulatePktMutex_ {};
     std::map<int32_t, AVPacketWrapperPtr> accumulatePktMap_ {};
     std::map<int32_t, bool> accumulatePktFinishMap_ {};
     bool VideoFirstFrameValid(uint32_t trackIndex);

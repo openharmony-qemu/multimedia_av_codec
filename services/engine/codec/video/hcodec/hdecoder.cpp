@@ -110,16 +110,17 @@ bool HDecoder::DecideOutputBufMode()
 
 int32_t HDecoder::OnConfigure(const Format &format)
 {
-    ClearMember();
+    currGeneration_ = 0;
+    currGenerationLayoutHasParsed_ = false;
+    currLayout_.reset();
     configFormat_ = make_shared<Format>(format);
-
     (void)SetProcessName();
-    (void)SetVrrEnable(format);
- 
+
     if (!DecideOutputBufMode()) {
         HLOGE("set output buffer type failed");
         return AVCS_ERR_UNKNOWN;
     }
+
     int32_t ret = SetLowLatency(format);
     if (ret != AVCS_ERR_OK) {
         return ret;
@@ -130,8 +131,9 @@ int32_t HDecoder::OnConfigure(const Format &format)
     SetContentLightLevelFromContainer(format);
 
     SaveTransform(format);
-    (void)SetProcessName();
+    SaveScaleMode(format);
     (void)SetFrameRateAdaptiveMode(format);
+    (void)SetVrrEnable(format);
     (void)SetIsMvUpload(format);
     return SetupPort(format);
 }
@@ -482,7 +484,7 @@ void HDecoder::SetIsMvUpload(const Format &format)
     InitOMXParam(param);
     param.bEnabled = OMX_TRUE;
     if (!SetParameter(OMX_IndexParamIsMvUpload, param)) {
-        HLOGE("SetIsMvUpload SetParameter failed");
+        HLOGW("SetIsMvUpload SetParameter failed, ignore");
         return;
     }
     HLOGI("SetIsMvUpload SetParameter success");
@@ -948,6 +950,9 @@ uint64_t HDecoder::GetSurfaceConsumerUsage()
         return 0;
     }
     uint64_t consumerUsage = currSurface_.surface_->GetDefaultUsage();
+    if (consumerUsage & BUFFER_USAGE_MEM_MMZ_CACHE) {
+        HLOGI("got cache flag from Surface::GetDefaultUsage(), consumer must deal with cache!");
+    }
     if (currSurface_.surface_->GetName().find("SurfaceImage") != string::npos) {
         consumerUsage |= BUFFER_USAGE_HW_COMPOSER;
 #ifdef USE_VIDEO_PROCESSING_ENGINE
@@ -1499,11 +1504,6 @@ void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode
 }
 
 void HDecoder::OnEnterUninitializedState()
-{
-    ClearMember();
-}
- 
-void HDecoder::ClearMember()
 {
     freeList_.clear();
     currSurface_.Release();

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -49,6 +49,7 @@ protected:
     const char *ginpDir71 = "/data/test/media/95_71_Rext_gray.h265";
     const char *ginpDirVar = "/data/test/media/95_71_Rext_gray.h265";
     const char *ginpDirVar1080 = "/data/test/media/1920_1080_64_64_var.h265";
+    const char *ginpDirVar1920 = "/data/test/media/1920_1080_20M_30.h265";
 };
 } // namespace Media
 } // namespace OHOS
@@ -2139,6 +2140,489 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_H265_FLUSH_THREE_0010, TestSize.Level
         ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0010
+ * @tc.name      : test h265 decode buffer speed player
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0010, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = ginpDirVar1920;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->retentionModeSet = true;
+        vDecSample->decoderSpeedSet = true;
+        vDecSample->enableHash = false;
+        vDecSample->defaultRetentionMode = OH_FRAME_RETENTION_MODE_FULL;
+        vDecSample->defaultDecoderSpeed = 3;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        vDecSample->SF_OUTPUT = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHevc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0020
+ * @tc.name      : test h265 decode buffer speed player
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0020, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = ginpDirVar1920;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->retentionModeSet = true;
+        vDecSample->decoderSpeedSet = true;
+        vDecSample->enableHash = false;
+        vDecSample->defaultRetentionMode = OH_FRAME_RETENTION_MODE_FULL;
+        vDecSample->defaultDecoderSpeed = 1;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        vDecSample->SF_OUTPUT = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHevc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0030
+ * @tc.name      : test h265 decode buffer speed player
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0030, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = ginpDirVar1920;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->retentionModeSet = true;
+        vDecSample->decoderSpeedSet = true;
+        vDecSample->enableHash = false;
+        vDecSample->defaultRetentionMode = OH_FRAME_RETENTION_MODE_FULL;
+        vDecSample->defaultDecoderSpeed = 0.5;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        vDecSample->SF_OUTPUT = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHevc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0040
+ * @tc.name      : test h265 decode buffer speed player
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0040, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = ginpDirVar1920;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->retentionModeSet = true;
+        vDecSample->decoderSpeedSet = true;
+        vDecSample->enableHash = false;
+        vDecSample->defaultRetentionMode = OH_FRAME_RETENTION_MODE_ADAPTIVE;
+        vDecSample->defaultDecoderSpeed = 3;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        vDecSample->SF_OUTPUT = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHevc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0050
+ * @tc.name      : test h265 decode buffer speed player
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0050, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = ginpDirVar1920;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->retentionModeSet = true;
+        vDecSample->decoderSpeedSet = true;
+        vDecSample->enableHash = false;
+        vDecSample->defaultRetentionMode = OH_FRAME_RETENTION_MODE_ADAPTIVE;
+        vDecSample->defaultDecoderSpeed = 1;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        vDecSample->SF_OUTPUT = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHevc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0060
+ * @tc.name      : test h265 decode buffer speed player
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0060, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = ginpDirVar1920;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->retentionModeSet = true;
+        vDecSample->decoderSpeedSet = true;
+        vDecSample->enableHash = false;
+        vDecSample->defaultRetentionMode = OH_FRAME_RETENTION_MODE_ADAPTIVE;
+        vDecSample->defaultDecoderSpeed = 0.5;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        vDecSample->SF_OUTPUT = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHevc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0070
+ * @tc.name      : test h265 decode buffer speed player
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0070, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = ginpDirVar1920;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->retentionModeSet = true;
+        vDecSample->decoderSpeedSet = true;
+        vDecSample->retentionRatioSet = true;
+        vDecSample->enableHash = false;
+        vDecSample->defaultRetentionMode = OH_FRAME_RETENTION_MODE_ADAPTIVE;
+        vDecSample->defaultDecoderSpeed = 1;
+        vDecSample->defaultRetentionRatio = 0.5;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        vDecSample->SF_OUTPUT = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHevc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0080
+ * @tc.name      : test h265 decode buffer speed player
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0080, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = ginpDirVar1920;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->retentionModeSet = true;
+        vDecSample->decoderSpeedSet = true;
+        vDecSample->retentionRatioSet = true;
+        vDecSample->enableHash = false;
+        vDecSample->defaultRetentionMode = OH_FRAME_RETENTION_MODE_UNIFORM;
+        vDecSample->defaultDecoderSpeed = 3;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        vDecSample->SF_OUTPUT = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHevc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0090
+ * @tc.name      : test h265 decode buffer speed player
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0090, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = ginpDirVar1920;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->retentionModeSet = true;
+        vDecSample->decoderSpeedSet = true;
+        vDecSample->retentionRatioSet = true;
+        vDecSample->enableHash = false;
+        vDecSample->defaultRetentionMode = OH_FRAME_RETENTION_MODE_UNIFORM;
+        vDecSample->defaultDecoderSpeed = 1;
+        vDecSample->defaultRetentionRatio = 0.01;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        vDecSample->SF_OUTPUT = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHevc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0100
+ * @tc.name      : test h265 decode buffer speed player
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0100, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = ginpDirVar1920;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->retentionModeSet = true;
+        vDecSample->decoderSpeedSet = true;
+        vDecSample->retentionRatioSet = true;
+        vDecSample->enableHash = false;
+        vDecSample->defaultRetentionMode = OH_FRAME_RETENTION_MODE_UNIFORM;
+        vDecSample->defaultDecoderSpeed = 0.5;
+        vDecSample->defaultRetentionRatio = 1;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        vDecSample->SF_OUTPUT = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHevc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0110
+ * @tc.name      : test h265 decode buffer speed player
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0110, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = ginpDirVar1920;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->retentionModeSet = true;
+        vDecSample->decoderSpeedSet = true;
+        vDecSample->retentionRatioSet = true;
+        vDecSample->enableHash = false;
+        vDecSample->defaultRetentionMode = OH_FRAME_RETENTION_MODE_UNIFORM;
+        vDecSample->defaultDecoderSpeed = 1.5;
+        vDecSample->defaultRetentionRatio = 0.5;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        vDecSample->SF_OUTPUT = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHevc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0120
+ * @tc.name      : test h265 decode buffer speed player
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0120, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = ginpDirVar1920;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->retentionModeSet = true;
+        vDecSample->decoderSpeedSet = true;
+        vDecSample->retentionRatioSet = true;
+        vDecSample->enableHash = false;
+        vDecSample->defaultRetentionMode = OH_FRAME_RETENTION_MODE_UNIFORM;
+        vDecSample->defaultDecoderSpeed = 2;
+        vDecSample->defaultRetentionRatio = 5;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        vDecSample->SF_OUTPUT = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHevc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0130
+ * @tc.name      : test h265 decode buffer speed player
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0130, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = ginpDirVar1920;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->decoderSpeedSet = true;
+        vDecSample->enableHash = false;
+        vDecSample->defaultDecoderSpeed = 2;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        vDecSample->SF_OUTPUT = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHevc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0140
+ * @tc.name      : test h265 decode buffer speed player
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0140, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = ginpDirVar1920;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->decoderSpeedSet = true;
+        vDecSample->retentionRatioSet = true;
+        vDecSample->enableHash = false;
+        vDecSample->defaultDecoderSpeed = 2;
+        vDecSample->defaultRetentionRatio = 0.5;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        vDecSample->SF_OUTPUT = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHevc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0150
+ * @tc.name      : test h265 decode buffer speed player
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0150, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = ginpDirVar1920;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->decoderSpeedSet = true;
+        vDecSample->retentionRatioSet = true;
+        vDecSample->enableHash = false;
+        vDecSample->defaultDecoderSpeed = 2;
+        vDecSample->defaultRetentionRatio = 2;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        vDecSample->SF_OUTPUT = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHevc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0160
+ * @tc.name      : test h265 decode buffer speed player
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0160, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = ginpDirVar1920;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->retentionModeSet = true;
+        vDecSample->decoderSpeedSet = true;
+        vDecSample->retentionRatioSet = true;
+        vDecSample->enableHash = false;
+        vDecSample->defaultRetentionMode = OH_FRAME_RETENTION_MODE_ADAPTIVE;
+        vDecSample->defaultDecoderSpeed = 1;
+        vDecSample->defaultRetentionRatio = 0.5;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        vDecSample->SF_OUTPUT = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHevc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0170
+ * @tc.name      : test h265 decode buffer speed player
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0170, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = ginpDirVar1920;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->retentionModeSet = true;
+        vDecSample->decoderSpeedSet = true;
+        vDecSample->retentionRatioSet = true;
+        vDecSample->enableHash = false;
+        vDecSample->defaultRetentionMode = OH_FRAME_RETENTION_MODE_ADAPTIVE;
+        vDecSample->defaultDecoderSpeed = 0;
+        vDecSample->defaultRetentionRatio = 0.5;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        vDecSample->SF_OUTPUT = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHevc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0180
+ * @tc.name      : test h265 decode buffer speed player
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_SPEED_PLAYER_0180, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = ginpDirVar1920;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->retentionModeSet = true;
+        vDecSample->decoderSpeedSet = true;
+        vDecSample->setSpeedPlayerFlag = true;
+        vDecSample->enableHash = false;
+        vDecSample->enableSetParameter = true;
+        vDecSample->defaultRetentionMode = OH_FRAME_RETENTION_MODE_FULL;
+        vDecSample->defaultDecoderSpeed = 1;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        vDecSample->SF_OUTPUT = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHevc));
         vDecSample->WaitForEOS();
         ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }

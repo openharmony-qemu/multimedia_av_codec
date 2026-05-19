@@ -80,8 +80,10 @@ private:
     static void ParseHvccBoxInfo(const AVStream& avStream, Meta &format);
     static void ParseColorBoxInfo(const AVStream& avStream, Meta &format);
     static void ParseHdrTypeInfo(const AVStream& avStream, Meta &format, HevcParseFormat parse);
+    static void ParseHdrStaticMetadata(const AVStream& avStream, Meta &format);
 
     static void ParseLocationInfo(const AVFormatContext& avFormatContext, Meta &format);
+    static void ParseFrameRate(const AVStream& avStream, Meta &format);
 
     static void ParseInfoFromMetadata(
         const AVDictionary* metadata, Meta &format, std::map<std::string, TagType> &tagRange);
