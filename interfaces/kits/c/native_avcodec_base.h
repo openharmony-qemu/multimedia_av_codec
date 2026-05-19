@@ -1479,8 +1479,10 @@ extern const char *OH_MD_KEY_VIDEO_DECODER_SPEED;
 extern const char *OH_MD_KEY_AUDIO_MAX_INPUT_BUFFER_SIZE;
 
 /**
- * @brief Key for configuring the PTS output mode of the audio encoder, value type is int32_t,
- * refer to {@link OH_AudioEncoderPTSMode}.
+ * @brief Key for configuring the PTS output mode of the audio encoder.
+ *
+ * Sets the PTS output behavior mode. The value type is int32_t from {@link OH_AudioEncoderPTSMode}.
+ * Optional. Defaults to {@link OH_AUDIO_ENCODER_PTS_MODE_DEFAULT} if not set.
  *
  * @since 26.0.0
  */
