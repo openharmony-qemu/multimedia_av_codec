@@ -1063,6 +1063,46 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatHeaderBeforeSyncFrames_001, TestSize.Leve
 
     int32_t repeatHeader = 1;
     format_->PutIntValue(Tag::VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES, repeatHeader);
+    format_->PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, 0);
+
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+
+    int32_t idrCount = videoEnc_->GetIDRFrameCount();
+    int32_t idrWithXPS = videoEnc_->GetIDRWithImmediateXPSCount();
+
+    EXPECT_GT(idrCount, 0);
+    EXPECT_EQ(idrWithXPS, idrCount);
+
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_RepeatHeaderBeforeSyncFrames_002
+ * @tc.desc: SW AVC encoder configure with repeat header before sync frames and verify XPS output
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoEncoder_RepeatHeaderBeforeSyncFrames_002, TestSize.Level1)
+{
+    auto capability = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), true,
+                                                                    AVCodecCategory::AVCODEC_SOFTWARE);
+    ASSERT_NE(nullptr, capability);
+    std::string codecName = capability->GetName();
+    if (!videoEnc_->CreateVideoEncMockByName(codecName)) {
+        return;
+    }
+
+    videoEnc_->isAVBufferMode_ = true;
+    videoEnc_->SetIsAVCCodec(true);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+
+    int32_t repeatHeader = 1;
+    format_->PutIntValue(Tag::VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES, repeatHeader);
+    format_->PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, 0);
 
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
