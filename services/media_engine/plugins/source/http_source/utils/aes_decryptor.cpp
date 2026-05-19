@@ -27,8 +27,6 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_PLAYER, "Hi
 
 namespace OHOS {
 namespace Media {
-constexpr uint32_t BLOCK_LEN = 16;
-
 AesDecryptor::AesDecryptor()
 {
     aesKey_.rounds = 0;
