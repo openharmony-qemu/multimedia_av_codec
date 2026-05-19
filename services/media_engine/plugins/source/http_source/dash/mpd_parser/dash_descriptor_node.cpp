@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-
 #include <cstdint>
 #include <limits>
 #include "dash_descriptor_node.h"
