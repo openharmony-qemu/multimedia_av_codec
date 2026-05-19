@@ -778,16 +778,16 @@ bool HttpSourcePlugin::isAllowedProtocol(std::string_view url)
             continue;
         }
 
-        bool match = true;
+        bool isMatch = true;
         for (size_t i = 0; i < protocolLen; ++i) {
-            char c = static_cast<char>(std::tolower(static_cast<unsigned char>(url[i])));
-            if (c != protocol[i]) {
-                match = false;
+            char ch = static_cast<char>(std::tolower(static_cast<unsigned char>(url[i])));
+            if (ch != protocol[i]) {
+                isMatch = false;
                 break;
             }
         }
 
-        if (match) {
+        if (isMatch) {
             return false;
         }
     }
