@@ -3182,6 +3182,21 @@ Status MPEG4AtomParser::ParseDops(MPEG4Atom currentAtom, int32_t depth, ParseCon
     return Status::OK;
 }
 
+static Status ReadDca3ConfigData(const std::shared_ptr<DemuxerDataReader>& dataReader, int64_t dataOffset,
+    std::unique_ptr<uint8_t[]>& dca3Data, uint64_t dataSize)
+{
+    if (dataSize == 0) {
+        return Status::OK;
+    }
+    FALSE_RETURN_V_MSG_E(dataSize >= AV3A_DCA3_BOX_MIN_SIZE && dataSize <= AV3A_DCA3_BOX_MAX_SIZE,
+        Status::ERROR_INVALID_DATA, "Invalid av3a config size");
+    dca3Data = std::make_unique<uint8_t[]>(dataSize);
+    FALSE_RETURN_V_MSG_E(dca3Data != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate dca3 buffer");
+    Status ret = dataReader->ReadUintData(dataOffset, dca3Data.get(), dataSize);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read av3a config data failed");
+    return Status::OK;
+}
+
 Status MPEG4AtomParser::ReadDca3Payload(MPEG4Atom currentAtom, ParseContext* ctx,
                                         std::unique_ptr<uint8_t[]>& dca3Data, uint64_t& dataSize)
 {
@@ -3193,6 +3208,10 @@ Status MPEG4AtomParser::ReadDca3Payload(MPEG4Atom currentAtom, ParseContext* ctx
             Status::ERROR_INVALID_DATA, "av3a atom size overflow");
         FALSE_RETURN_V_MSG_E(ctx->offset >= ctx->dataOffset && ctx->offset <= dataEndOffset,
             Status::ERROR_INVALID_DATA, "Invalid av3a data offset");
+        if (ctx->offset == dataEndOffset) {
+            dataSize = 0;
+            return Status::OK;
+        }
         uint8_t atomHeader[8];
         Status ret = dataReader_->ReadUintData(ctx->offset, atomHeader, sizeof(atomHeader));
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read dca3 header failed");
@@ -3223,13 +3242,7 @@ Status MPEG4AtomParser::ReadDca3Payload(MPEG4Atom currentAtom, ParseContext* ctx
     } else {
         ctx->offset += currentAtom.size;
     }
-    FALSE_RETURN_V_MSG_E(dataSize >= AV3A_DCA3_BOX_MIN_SIZE && dataSize <= AV3A_DCA3_BOX_MAX_SIZE,
-        Status::ERROR_INVALID_DATA, "Invalid av3a config size");
-    dca3Data = std::make_unique<uint8_t[]>(dataSize);
-    FALSE_RETURN_V_MSG_E(dca3Data != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate dca3 buffer");
-    Status ret = dataReader_->ReadUintData(dataOffset, dca3Data.get(), dataSize);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read av3a config data failed");
-    return Status::OK;
+    return ReadDca3ConfigData(dataReader_, dataOffset, dca3Data, dataSize);
 }
  
 Status MPEG4AtomParser::ParseDca3ContentType(DemuxerBitReader& bitReader, uint8_t contentType,
@@ -3238,6 +3251,7 @@ Status MPEG4AtomParser::ParseDca3ContentType(DemuxerBitReader& bitReader, uint8_
     switch (contentType) {
         case AV3A_CHANNEL_BASED_TYPE:
         case AV3A_CHANNEL_OBJECT_TYPE: {
+            // 8为av3a channel config长度
             FALSE_RETURN_V_MSG_E(bitReader.HasBits(8), Status::ERROR_INVALID_DATA, "av3a channel config missing");
             uint8_t channelNumberIndex = static_cast<uint8_t>(ReadBitsWide(bitReader, 7));
             FALSE_RETURN_V_MSG_E(bitReader.SkipBits(1), Status::ERROR_INVALID_DATA,
@@ -3253,7 +3267,9 @@ Status MPEG4AtomParser::ParseDca3ContentType(DemuxerBitReader& bitReader, uint8_
                 Status::ERROR_INVALID_DATA, "Invalid av3a channel config");
             
             if (contentType == AV3A_CHANNEL_OBJECT_TYPE) {
+                // 8为av3a object count长度
                 FALSE_RETURN_V_MSG_E(bitReader.HasBits(8), Status::ERROR_INVALID_DATA, "av3a object count missing");
+                // 7为av3a object数量有效位
                 params.objectNumber = static_cast<int32_t>(ReadBitsWide(bitReader, 7));
                 FALSE_RETURN_V_MSG_E(bitReader.SkipBits(1),
                     Status::ERROR_INVALID_DATA, "Skip reserved object bit failed");
@@ -3262,20 +3278,25 @@ Status MPEG4AtomParser::ParseDca3ContentType(DemuxerBitReader& bitReader, uint8_
             break;
         }
         case AV3A_OBJECT_BASED_TYPE: {
+            // 8为av3a object count长度
             FALSE_RETURN_V_MSG_E(bitReader.HasBits(8), Status::ERROR_INVALID_DATA, "av3a object count missing");
+            // 7为av3a object数量有效位
             params.objectNumber = static_cast<int32_t>(ReadBitsWide(bitReader, 7));
             FALSE_RETURN_V_MSG_E(bitReader.SkipBits(1), Status::ERROR_INVALID_DATA, "Skip reserved object bit failed");
             FALSE_RETURN_V_MSG_E(params.objectNumber > 0, Status::ERROR_INVALID_DATA, "Invalid av3a object count");
             break;
         }
         case AV3A_AMBISONIC_TYPE: {
+            // 4为av3a hoa order长度
             FALSE_RETURN_V_MSG_E(bitReader.HasBits(4), Status::ERROR_INVALID_DATA, "av3a hoa order missing");
+            // 4为av3a hoa order有效位
             params.hoaOrder = static_cast<int32_t>(ReadBitsWide(bitReader, 4));
             FALSE_RETURN_V_MSG_E(params.hoaOrder >= AV3A_AMBISONIC_FIRST_ORDER &&
                 params.hoaOrder <= AV3A_AMBISONIC_THIRD_ORDER, Status::ERROR_INVALID_DATA, "Invalid av3a hoa order");
-            
+            // 计算声道布局和声床声道数
             params.channelLayout = (params.hoaOrder == 1) ? AudioChannelLayout::HOA_ORDER1_ACN_SN3D :
-                                   (params.hoaOrder == 2) ? AudioChannelLayout::HOA_ORDER2_ACN_SN3D :
+                                    // params.hoaOrder为2对应HOA_ORDER2_ACN_SN3D布局
+                                    (params.hoaOrder == 2) ? AudioChannelLayout::HOA_ORDER2_ACN_SN3D :
                                                             AudioChannelLayout::HOA_ORDER3_ACN_SN3D;
             params.soundbedChannels = (params.hoaOrder + 1) * (params.hoaOrder + 1);
             break;
@@ -3288,6 +3309,7 @@ Status MPEG4AtomParser::ParseDca3ContentType(DemuxerBitReader& bitReader, uint8_
  
 Status MPEG4AtomParser::UpdateDca3TrackMeta(DemuxerBitReader& bitReader, const Av3aConfigParams& params)
 {
+    // 18为av3a bitrate和resolution长度
     FALSE_RETURN_V_MSG_E(bitReader.HasBits(18), Status::ERROR_INVALID_DATA, "av3a bitrate or resolution missing");
     uint32_t bitrateKbps = ReadBitsWide(bitReader, 16);
     FALSE_RETURN_V_MSG_E(bitrateKbps > 0, Status::ERROR_INVALID_DATA, "Invalid av3a bitrate");
@@ -3299,7 +3321,8 @@ Status MPEG4AtomParser::UpdateDca3TrackMeta(DemuxerBitReader& bitReader, const A
  
     int32_t totalChannels = params.soundbedChannels + params.objectNumber;
     auto& trackMeta = mediaInfo_.tracks[lastTrack_->trackIndex];
-    
+
+    // 1000为av3a bitrate转换为bps
     trackMeta.Set<Tag::MEDIA_BITRATE>(static_cast<int64_t>(bitrateKbps) * 1000);
     trackMeta.Set<Tag::AUDIO_SAMPLE_FORMAT>(AV3A_RESOLUTION_TABLE[resolutionIndex].sampleFormat);
     trackMeta.Set<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(AV3A_RESOLUTION_TABLE[resolutionIndex].bitsPerSample);
@@ -3330,9 +3353,17 @@ Status MPEG4AtomParser::ParseDca3Entry(MPEG4Atom currentAtom, ParseContext* ctx)
     // 读取有效载荷
     Status ret = ReadDca3Payload(currentAtom, ctx, dca3Data, dataSize);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read av3a payload failed");
+
+    if (dataSize == 0) {
+        auto& trackMeta = mediaInfo_.tracks[lastTrack_->trackIndex];
+        trackMeta.Set<Tag::AUDIO_CHANNEL_LAYOUT>(AudioChannelLayout::UNKNOWN);
+        trackMeta.Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(AudioChannelLayout::UNKNOWN);
+        return Status::OK;
+    }
  
     auto bitReader = std::make_shared<DemuxerBitReader>(dca3Data.get(), dataSize);
     FALSE_RETURN_V_MSG_E(bitReader != nullptr, Status::ERROR_NO_MEMORY, "Failed create bitReader");
+    // 16为av3a config data长度
     FALSE_RETURN_V_MSG_E(bitReader->HasBits(16), Status::ERROR_INVALID_DATA, "av3a config data too short");
  
     // 解析基础头部信息
