@@ -116,23 +116,6 @@ void VEncCallbackTestExt::OnNeedInputData(uint32_t index, std::shared_ptr<AVBuff
     signal_->inCond_.notify_all();
 }
 
-static const uint8_t *GetNalTypeAddr(const uint8_t *bufferAddr, int32_t size)
-{
-    if (bufferAddr == nullptr || size < 4) {
-        return nullptr;
-    }
-    for (int32_t i = 0; i < size - 3; i++) {
-        if (bufferAddr[i] == 0 && bufferAddr[i + 1] == 0) {
-            if (bufferAddr[i + 2] == 1) {
-                return bufferAddr + i + 3;
-            } else if (bufferAddr[i + 2] == 0 && i + 4 <= size && bufferAddr[i + 3] == 1) {
-                return bufferAddr + i + 4;
-            }
-        }
-    }
-    return nullptr;
-}
-
 void VEncCallbackTestExt::OnNewOutputData(uint32_t index, std::shared_ptr<AVBufferMock> data)
 {
     if (signal_ == nullptr) {
@@ -145,41 +128,6 @@ void VEncCallbackTestExt::OnNewOutputData(uint32_t index, std::shared_ptr<AVBuff
     signal_->outIndexQueue_.push(index);
     signal_->outBufferQueue_.push(data);
     signal_->outCond_.notify_all();
-
-    struct OH_AVCodecBufferAttr attr;
-    data->GetBufferAttr(attr);
-    uint8_t *bufferAddr = data->GetAddr();
-    const uint8_t *nalAddr = GetNalTypeAddr(bufferAddr, attr.size);
-    if (nalAddr != nullptr) {
-        uint8_t nalType = 0;
-        bool isXPS = false;
-        bool isIDR = false;
-        if (signal_->isAVCCodec_) {
-            nalType = (*nalAddr) & 0x1F;
-            isXPS = (nalType == 7 || nalType == 8);
-            isIDR = (nalType == 5);
-        } else {
-            nalType = ((*nalAddr) & 0x7E) >> 1;
-            isXPS = (nalType >= 32 && nalType <= 34);
-            isIDR = (nalType == 19 || nalType == 20);
-        }
-
-        if (isXPS) {
-            signal_->lastOutputWasXPS_.store(true);
-        }
-
-        if (isIDR) {
-            signal_->idrFrameCount_++;
-            if (signal_->lastOutputWasXPS_.load()) {
-                signal_->idrWithImmediateXPSCount_++;
-            }
-            signal_->lastOutputWasXPS_.store(false);
-        }
-
-        if (!isXPS && !isIDR) {
-            signal_->lastOutputWasXPS_.store(false);
-        }
-    }
 }
 
 VEncParamCallbackTest::VEncParamCallbackTest(std::shared_ptr<VEncSignal> signal) : signal_(signal) {}
