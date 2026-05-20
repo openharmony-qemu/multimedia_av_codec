@@ -1532,7 +1532,7 @@ extern const char *OH_MD_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES;
  * @brief Key to set the maximum number of frames that a compressor is allowed to hold before it must output a
  * compressed frame.
  *
- * It is used in {@link OH_VideoDecoder_Configure}.
+ * It is used in {@link OH_VideoEncoder_Configure}.
  *
  * @since 26.0.0
 */
