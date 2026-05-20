@@ -137,7 +137,7 @@ static const uint8_t *GetNalTypeAddr(const uint8_t *bufferAddr, int32_t size)
     if (bufferAddr == nullptr || size < 4) { // minimum 4-byte start code: 00 00 00 01
         return nullptr;
     }
-    for (int32_t i = 0; i < size - 3; i++) {
+    for (int32_t i = 0; i < size - 3; i++) { // 3: min size for start code
         if (bufferAddr[i] == 0 && bufferAddr[i + 1] == 0) {
             if (bufferAddr[i + 2] == 1) { // 3-byte start code: 00 00 01  2: offset
                 return bufferAddr + i + 3;
