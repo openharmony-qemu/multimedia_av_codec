@@ -66,7 +66,7 @@ constexpr size_t ROI_MATCH_LEFT_INDEX = 2;
 constexpr size_t ROI_MATCH_BOTTOM_INDEX = 3;
 constexpr size_t ROI_MATCH_RIGHT_INDEX = 4;
 constexpr size_t ROI_MATCH_PARAM_INDEX = 5;
-auto fastKitEnable = OHOS::system::GetBoolParameter("persist.OHOS.MediaAVCodec.FastKit.Enable", false);
+auto fastKitEnable = OHOS::system::GetBoolParameter("persist.OHOS.MediaAVCodec.FastKit.Enable", true);
 
 std::optional<int32_t> ParseInt32(const std::string &str)
 {
