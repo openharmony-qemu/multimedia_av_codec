@@ -467,10 +467,28 @@ void AudioSinkFilter::SetAudioPassFlag(bool isAudioPass)
     audioSink_->SetAudioPassFlag(isAudioPass);
 }
 
-void AudioSinkFilter::SetPCMOutputCallback(const std::function<void(const std::shared_ptr<AVBuffer>&)>& callback)
+void AudioSinkFilter::SetPCMCallback(const std::shared_ptr<IPCMCallback>& callback)
 {
     FALSE_RETURN(audioSink_ != nullptr);
-    audioSink_->SetPCMOutputCallback(callback);
+    audioSink_->SetPCMCallback(callback);
+}
+
+void AudioSinkFilter::SetPCMOutputStatus(bool isEnable)
+{
+    FALSE_RETURN(audioSink_ != nullptr);
+    audioSink_->SetPCMOutputStatus(isEnable);
+}
+
+void AudioSinkFilter::SetPCMProcessorStatus(bool isEnable)
+{
+    FALSE_RETURN(audioSink_ != nullptr);
+    audioSink_->SetPCMProcessorStatus(isEnable);
+}
+
+void AudioSinkFilter::SetPCMProcessorMaxLen(int32_t maxProcessedPcmLen)
+{
+    FALSE_RETURN(audioSink_ != nullptr);
+    audioSink_->SetPCMProcessorMaxLen(maxProcessedPcmLen);
 }
 } // namespace Pipeline
 } // namespace Media

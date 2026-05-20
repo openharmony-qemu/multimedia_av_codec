@@ -1114,6 +1114,12 @@ void AudioSink::GetAvailableOutputBuffers()
             MEDIA_LOG_I("AudioSink Recv EOS");
             isEosBuffer_ = true;
         }
+
+        HandlePostProcessingOutput(filledInputBuffer);
+        if (filledInputBuffer->memory_->GetSize() <= 0 && !isEosBuffer_) {
+            inputBufferQueueConsumer_->ReleaseBuffer(filledInputBuffer);
+            continue;
+        }
         availOutputBuffers_.push(filledInputBuffer);
         MEDIA_LOG_DD("the pts is " PUBLIC_LOG_D64 " buffer is push", filledInputBuffer->pts_);
         availDataSize_.fetch_add(filledInputBuffer->memory_->GetSize());
@@ -1792,23 +1798,44 @@ Status AudioSink::CacheBuffer()
     return Status::OK;
 }
 
-void AudioSink::SetPCMOutputCallback(const std::function<void(const std::shared_ptr<AVBuffer>&)>& callback)
+void AudioSink::SetPCMCallback(const std::shared_ptr<IPCMCallback> &callback)
 {
-    MEDIA_LOG_I("SetPCMOutputCallback");
+    MEDIA_LOG_I("SetPCMCallback");
     std::lock_guard<std::mutex> lock(pcmCallbackMutex_);
-    pcmOutputCallback_ = callback;
+    pcmCallback_ = callback;
+}
+
+void AudioSink::SetPCMOutputStatus(bool isEnable)
+{
+    MEDIA_LOG_I("SetPCMOutputStatus isEnable: %{public}d", isEnable);
+    std::lock_guard<std::mutex> lock(pcmCallbackMutex_);
+    isPcmOutputEnable_ = isEnable;
+}
+
+void AudioSink::SetPCMProcessorStatus(bool isEnable)
+{
+    MEDIA_LOG_I("SetPCMProcessorStatus isEnable: %{public}d", isEnable);
+    std::lock_guard<std::mutex> lock(pcmCallbackMutex_);
+    isPcmProcessorEnable_ = isEnable;
+}
+
+void AudioSink::SetPCMProcessorMaxLen(int32_t maxProcessedPcmLen)
+{
+    MEDIA_LOG_I("SetPCMProcessorMaxLen: %{public}d", maxProcessedPcmLen);
+    std::lock_guard<std::mutex> lock(pcmCallbackMutex_);
+    maxProcessedPcmLen_ = maxProcessedPcmLen;
 }
 
 void AudioSink::HandleBypassOutput(const std::shared_ptr<AVBuffer> &buffer)
 {
     {
         std::lock_guard<std::mutex> pcmLock(pcmCallbackMutex_);
-        FALSE_RETURN_NOLOG(pcmOutputCallback_ != nullptr);
+        FALSE_RETURN_NOLOG(pcmCallback_ != nullptr && isPcmOutputEnable_);
     }
     FALSE_RETURN_MSG(buffer != nullptr && buffer->memory_ != nullptr, "buffer is null.");
     FALSE_RETURN_MSG(bypassTask_ != nullptr, "bypassTask_ is null.");
 
-    std::shared_ptr<AVBuffer> pcmBypassBuffer = CopyPcmBuffer(buffer);
+    auto pcmBypassBuffer = CopyPcmBuffer(buffer);
     FALSE_RETURN(pcmBypassBuffer != nullptr);
 
     std::weak_ptr<AudioSink> weakPtr(shared_from_this());
@@ -1817,11 +1844,11 @@ void AudioSink::HandleBypassOutput(const std::shared_ptr<AVBuffer> &buffer)
         FALSE_RETURN(strongPtr != nullptr);
         FALSE_RETURN(strongPtr->state_.load() == Pipeline::FilterState::RUNNING);
 
-        std::function<void(const std::shared_ptr<AVBuffer>&)> callback;
+        std::shared_ptr<IPCMCallback> callback;
         {
             std::lock_guard<std::mutex> pcmLock(strongPtr->pcmCallbackMutex_);
-            FALSE_RETURN(strongPtr->pcmOutputCallback_ != nullptr);
-            callback = strongPtr->pcmOutputCallback_;
+            FALSE_RETURN(strongPtr->pcmCallback_ != nullptr);
+            callback = strongPtr->pcmCallback_;
         }
 
         std::shared_ptr<Meta> meta = std::make_shared<Meta>();
@@ -1832,13 +1859,47 @@ void AudioSink::HandleBypassOutput(const std::shared_ptr<AVBuffer> &buffer)
         }
 
         pcmBypassBuffer->meta_ = std::move(meta);
-        callback(pcmBypassBuffer);
+        callback->OnPCMOutput(pcmBypassBuffer);
     });
+}
+
+void AudioSink::HandlePostProcessingOutput(std::shared_ptr<AVBuffer> &buffer)
+{
+    std::shared_ptr<IPCMCallback> callback;
+    {
+        std::lock_guard<std::mutex> pcmLock(pcmCallbackMutex_);
+        FALSE_RETURN_NOLOG(pcmCallback_ != nullptr && isPcmProcessorEnable_);
+        callback = pcmCallback_;
+    }
+
+    FALSE_RETURN_MSG(buffer != nullptr && buffer->memory_ != nullptr, "buffer is null.");
+    bool needExpand = maxProcessedPcmLen_ > buffer->memory_->GetCapacity();
+    auto pcmBuffer = needExpand ? CopyPcmBuffer(buffer, maxProcessedPcmLen_) : buffer;
+    FALSE_RETURN(pcmBuffer != nullptr);
+
+    FALSE_RETURN(plugin_ != nullptr);
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    plugin_->GetParameter(meta);
+
+    pcmBuffer->meta_ = std::move(meta);
+    callback->OnPCMProcessor(pcmBuffer);
+
+    FALSE_RETURN_NOLOG(needExpand);
+    if (pcmBuffer->memory_ != nullptr && pcmBuffer->memory_->GetSize() <= 0) {
+        buffer->memory_->SetSize(0);
+        return;
+    }
+    auto processedBuffer = CopyPcmBuffer(pcmBuffer);
+    FALSE_RETURN(processedBuffer != nullptr); // Copy buffer failed, use unprocessed buffer
+
+    inputBufferQueueConsumer_->ReleaseBuffer(buffer);
+    buffer = processedBuffer;
 }
 
 std::shared_ptr<AVBuffer> AudioSink::CopyPcmBuffer(const std::shared_ptr<AVBuffer> buffer, int32_t minCapacity)
 {
-    FALSE_RETURN_V_MSG_E(buffer != nullptr && buffer->memory_->GetSize() > 0, nullptr, "buffer or memory is nullptr");
+    FALSE_RETURN_V_MSG_E(buffer != nullptr && buffer->memory_ != nullptr && buffer->memory_->GetSize() > 0, nullptr,
+        "buffer or memory is nullptr");
     AVBufferConfig avBufferConfig;
 
     // If minCapacity is default value or less than buffer size, use buffer size

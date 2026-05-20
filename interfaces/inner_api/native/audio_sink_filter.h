@@ -20,6 +20,7 @@
 
 #include "media_sync_manager.h"
 #include "audio_sink.h"
+#include "dolby_passthrough.h"
 #include "plugin/plugin_info.h"
 #include "filter/filter.h"
 
@@ -116,7 +117,13 @@ public:
 
     void SetAudioPassFlag(bool isAudioPass);
 
-    void SetPCMOutputCallback(const std::function<void(const std::shared_ptr<AVBuffer>&)>& callback);
+    void SetPCMCallback(const std::shared_ptr<IPCMCallback>& callback);
+
+    void SetPCMOutputStatus(bool isEnable);
+
+    void SetPCMProcessorStatus(bool isEnable);
+
+    void SetPCMProcessorMaxLen(int32_t maxProcessedPcmLen);
 
 protected:
     Status OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,
