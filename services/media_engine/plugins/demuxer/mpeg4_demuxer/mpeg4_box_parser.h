@@ -104,6 +104,13 @@ private:
         NB = 3,
     };
 
+    struct Av3aConfigParams {
+        int32_t soundbedChannels = 0;
+        int32_t objectNumber = 0;
+        int32_t hoaOrder = 0;
+        AudioChannelLayout channelLayout = AudioChannelLayout::UNKNOWN;
+    };
+    
     struct MPEG4Atom {
         int32_t type = 0;
         uint64_t size = 0;
