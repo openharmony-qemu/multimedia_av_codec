@@ -117,6 +117,11 @@ void VEncCallbackTestExt::OnNeedInputData(uint32_t index, std::shared_ptr<AVBuff
 
     // For MAX_FRAME_DELAY_COUNT verification
     signal_->pendingInputCount_++;
+    UpdateMaxPendingInputCount();
+}
+
+void VEncCallbackTestExt::UpdateMaxPendingInputCount()
+{
     int32_t current = signal_->pendingInputCount_.load();
     int32_t max = signal_->maxPendingInputCount_.load();
     while (current > max) {
@@ -124,6 +129,7 @@ void VEncCallbackTestExt::OnNeedInputData(uint32_t index, std::shared_ptr<AVBuff
             break;
         }
     }
+}
 }
 
 static const uint8_t *GetNalTypeAddr(const uint8_t *bufferAddr, int32_t size)
@@ -135,8 +141,9 @@ static const uint8_t *GetNalTypeAddr(const uint8_t *bufferAddr, int32_t size)
         if (bufferAddr[i] == 0 && bufferAddr[i + 1] == 0) {
             if (bufferAddr[i + 2] == 1) { // 3-byte start code: 00 00 01  2: offset
                 return bufferAddr + i + 3;
-            } else if (bufferAddr[i + 2] == 0 && i + 4 <= size && bufferAddr[i + 3] == 1) { // 4-byte start code: 00 00 00 01
-                return bufferAddr + i + 4;
+            } else if (bufferAddr[i + 2] == 0 && i + 4 <= size && // 4-byte start code: 00 00 00 01, 2: offset
+                       bufferAddr[i + 3] == 1) { // 3: offset
+                return bufferAddr + i + 4; // 4: offset
             }
         }
     }

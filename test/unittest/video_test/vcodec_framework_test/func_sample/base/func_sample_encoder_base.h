@@ -146,6 +146,7 @@ public:
     void OnNewOutputData(uint32_t index, std::shared_ptr<AVBufferMock> data) override;
 
 private:
+    void UpdateMaxPendingInputCount();
     std::shared_ptr<VEncSignal> signal_ = nullptr;
 };
 
