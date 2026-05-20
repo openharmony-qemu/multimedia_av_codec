@@ -587,7 +587,7 @@ bool DemuxerPluginManager::InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamD
     streamInfoMap_[id].dataSource->SetIsDash(isDash_);
 
     std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
-    if (isPlayerMode) {
+    if (isPlayerMode_) {
         configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
     }
     
