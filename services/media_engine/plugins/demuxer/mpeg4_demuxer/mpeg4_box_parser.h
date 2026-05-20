@@ -89,7 +89,7 @@ public:
     void SetSeekable(const Seekable seekable);
     bool GetHasSidx();
     bool GetHasMoof();
-    Status MPEG4ParseHeader(const std::shared_ptr<DataSource>& source, Seekable seekable);
+    Status MPEG4ParseHeader(const std::shared_ptr<DataSource>& source, Seekable seekable, int64_t readTimeoutMs = -1);
     Status ParseMoof(const std::shared_ptr<Track>& track, int64_t offset);
     
 private:

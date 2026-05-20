@@ -704,7 +704,7 @@ Status AudioRawDecoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
         }
         // 64: uint64_t bit number
         std::bitset<64> bits(layout_);
-        CHECK_AND_RETURN_RET_LOG(bits.count() == channels_, Status::ERROR_INVALID_PARAMETER,
+        CHECK_AND_RETURN_RET_LOG(static_cast<int32_t>(bits.count()) == channels_, Status::ERROR_INVALID_PARAMETER,
             "AudioRawDecoderPlugin channels:%d and layout:%" PRIu64 " do not match", channels_, layout_);
     }
     return Status::OK;

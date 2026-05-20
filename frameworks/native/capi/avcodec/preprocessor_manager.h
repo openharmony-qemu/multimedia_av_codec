@@ -136,9 +136,6 @@ private:
         OnStreamChangedCallback onStreamChangedCallback_{nullptr};
 
         // Preprocess error reporting state
-        uint64_t frameCount_{0};
-        uint64_t lastReportedErrorFrameCount_{0};
-        int32_t lastReportedPreprocessError_{0};
         OnPreprocessErrorCallback preprocessErrorCallback_{nullptr};
     };
 

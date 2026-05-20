@@ -525,6 +525,13 @@ int32_t AudioCodeDtsDecoderUnitTest::Configure()
     OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(), bitRate);
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
         AVSampleFormat::AV_SAMPLE_FMT_FLTP);
+    if (!isTestingFormat_) {
+        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+            AVSampleFormat::AV_SAMPLE_FMT_S16);
+        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), 6);  // 6
+        OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(),
+            OH_AudioChannelLayout::CH_LAYOUT_5POINT1);
+    }
     return OH_AudioCodec_Configure(audioDec_, format_);
 }
 

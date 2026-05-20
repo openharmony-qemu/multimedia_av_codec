@@ -16,6 +16,7 @@
 #include "mpeg4_demuxer_plugin_unit_test.h"
 
 #include <algorithm>
+#include <atomic>
 #include <cctype>
 #include <cstdlib>
 #include <dirent.h>
@@ -1109,6 +1110,63 @@ Status Mpeg4DemuxerPluginUnitTest::GetNextSampleSizeWithRetry(const std::shared_
     return ret;
 }
 
+void Mpeg4DemuxerPluginUnitTest::CheckSeekToFrameByDtsResult(
+    const std::string& filePath, const std::string& testLabel)
+{
+    InitMpeg4Plugin(filePath);
+    auto selectedTrackIds = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
+    ASSERT_FALSE(selectedTrackIds.empty());
+
+    uint32_t videoTrackId = selectedTrackIds.front();
+    bool hasVideoTrack = false;
+    for (auto trackId : selectedTrackIds) {
+        std::string mime;
+        if (mpeg4MediaInfo_.tracks[trackId].Get<Tag::MIME_TYPE>(mime) && mime.find("video/") == 0) {
+            videoTrackId = trackId;
+            hasVideoTrack = true;
+            break;
+        }
+    }
+    ASSERT_TRUE(hasVideoTrack);
+
+    AVBufferWrapper buffer(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
+    ASSERT_NE(buffer.mediaAVBuffer, nullptr);
+    std::vector<int64_t> targetDtsUsList;
+    constexpr uint32_t readFrameCount = 40;
+    constexpr uint32_t targetDtsCount = 3;
+    constexpr int64_t usPerMs = 1000;
+    for (uint32_t i = 0; i < readFrameCount; ++i) {
+        ASSERT_EQ(ReadSampleWithRetry(mpeg4Plugin_, videoTrackId, buffer.mediaAVBuffer, ReadMode::COPY), Status::OK);
+        int64_t dtsUs = buffer.mediaAVBuffer->dts_;
+        if (dtsUs % usPerMs != 0 ||
+            std::find(targetDtsUsList.begin(), targetDtsUsList.end(), dtsUs) != targetDtsUsList.end()) {
+            continue;
+        }
+        targetDtsUsList.push_back(dtsUs);
+        std::cout << "[" << testLabel << "] source frame index: " << i <<
+            ", source dts(us): " << dtsUs << std::endl;
+        if (targetDtsUsList.size() == targetDtsCount) {
+            break;
+        }
+    }
+    ASSERT_EQ(targetDtsUsList.size(), targetDtsCount);
+
+    for (auto targetDtsUs : targetDtsUsList) {
+        int64_t seekTimeMs = targetDtsUs / usPerMs;
+        int64_t realSeekTime = 0;
+        ASSERT_EQ(mpeg4Plugin_->SeekToFrameByDts(static_cast<int32_t>(videoTrackId), seekTimeMs,
+            SeekMode::SEEK_CLOSEST, realSeekTime, MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_TIMEOUT), Status::OK);
+        EXPECT_EQ(realSeekTime, seekTimeMs * 1000000LL);
+
+        ASSERT_EQ(ReadSampleWithRetry(mpeg4Plugin_, videoTrackId, buffer.mediaAVBuffer, ReadMode::COPY), Status::OK);
+        std::cout << "[" << testLabel << "] target dts(us): " << targetDtsUs
+            << ", input seek dts(ms): " << seekTimeMs
+            << ", real seek time(ns): " << realSeekTime
+            << ", seeked frame dts(us): " << buffer.mediaAVBuffer->dts_ << std::endl;
+        EXPECT_EQ(buffer.mediaAVBuffer->dts_, targetDtsUs);
+    }
+}
+
 void Mpeg4DemuxerPluginUnitTest::InitPluginsForReadTest(const std::string& filePath, bool useUri)
 {
     if (useUri) {
@@ -1647,8 +1705,8 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest,
     plugin->SetInterruptState(false);
     EXPECT_EQ(plugin->SetReadTimeoutForInitSeek(10), Status::OK);
     EXPECT_EQ(plugin->SetAVReadPacketStopState(false), Status::OK);
-    EXPECT_EQ(plugin->SetCachePressureCallback(nullptr), Status::ERROR_UNKNOWN);
-    EXPECT_EQ(plugin->SetTrackCacheLimit(0, 1024), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(plugin->SetCachePressureCallback(nullptr), Status::OK);
+    EXPECT_EQ(plugin->SetTrackCacheLimit(0, 1024), Status::OK);
 
     int32_t offset = -1;
     int32_t size = -1;
@@ -1679,7 +1737,337 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest,
     int64_t realSeekTime = 0;
     EXPECT_EQ(plugin->SeekToKeyFrame(0, 0, SeekMode::SEEK_NEXT_SYNC, realSeekTime, 0),
         Status::ERROR_INVALID_PARAMETER);
-    EXPECT_EQ(plugin->SeekToFrameByDts(0, 0, SeekMode::SEEK_NEXT_SYNC, realSeekTime, 0), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(plugin->SeekToFrameByDts(0, 0, SeekMode::SEEK_NEXT_SYNC, realSeekTime, 0),
+        Status::ERROR_NULL_POINTER);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_CachePressure_001
+ * @tc.desc: Verify MPEG4 demuxer cache pressure callback and per-track limit controls
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_CachePressure_001, TestSize.Level1)
+{
+    InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
+    auto selectedTrackIds = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
+    ASSERT_FALSE(selectedTrackIds.empty());
+    uint32_t trackId = selectedTrackIds.front();
+
+    std::atomic<int32_t> callbackCount {0};
+    ASSERT_EQ(mpeg4Plugin_->SetCachePressureCallback(
+        [&callbackCount](uint32_t callbackTrackId, uint32_t cachedBytes) {
+            (void)callbackTrackId;
+            (void)cachedBytes;
+            ++callbackCount;
+        }), Status::OK);
+    ASSERT_EQ(mpeg4Plugin_->SetTrackCacheLimit(trackId, 1, 1), Status::OK);
+
+    uint32_t initialFrameCount = 0;
+    EXPECT_EQ(mpeg4Plugin_->GetCurrentCacheFrameCount(trackId, initialFrameCount), Status::OK);
+    uint32_t initialCacheSize = 0;
+    EXPECT_EQ(mpeg4Plugin_->GetCurrentCacheSize(trackId, initialCacheSize), Status::OK);
+
+    AVBufferWrapper buffer(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
+    ASSERT_NE(buffer.mediaAVBuffer, nullptr);
+    EXPECT_EQ(ReadSampleWithRetry(mpeg4Plugin_, trackId, buffer.mediaAVBuffer, ReadMode::COPY), Status::OK);
+
+    uint32_t frameCount = 0;
+    EXPECT_EQ(mpeg4Plugin_->GetCurrentCacheFrameCount(trackId, frameCount), Status::OK);
+    uint32_t cacheSize = 0;
+    EXPECT_EQ(mpeg4Plugin_->GetCurrentCacheSize(trackId, cacheSize), Status::OK);
+    EXPECT_GT(callbackCount.load(), 0);
+    EXPECT_EQ(mpeg4Plugin_->SetTrackCacheLimit(trackId, 0), Status::OK);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_CachePressure_Disable_001
+ * @tc.desc: Verify cache pressure notification stops after disabling per-track limit
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_CachePressure_Disable_001, TestSize.Level1)
+{
+    InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
+    auto selectedTrackIds = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
+    ASSERT_FALSE(selectedTrackIds.empty());
+    uint32_t trackId = selectedTrackIds.front();
+
+    std::atomic<int32_t> callbackCount {0};
+    ASSERT_EQ(mpeg4Plugin_->SetCachePressureCallback(
+        [&callbackCount](uint32_t callbackTrackId, uint32_t cachedBytes) {
+            (void)callbackTrackId;
+            (void)cachedBytes;
+            ++callbackCount;
+        }), Status::OK);
+    ASSERT_EQ(mpeg4Plugin_->SetTrackCacheLimit(trackId, 1, 1), Status::OK);
+
+    int64_t realSeekTime = 0;
+    ASSERT_EQ(mpeg4Plugin_->SeekToFrameByDts(static_cast<int32_t>(trackId), 0,
+        SeekMode::SEEK_CLOSEST, realSeekTime, MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_TIMEOUT), Status::OK);
+    ASSERT_GT(callbackCount.load(), 0);
+
+    ASSERT_EQ(mpeg4Plugin_->SetTrackCacheLimit(trackId, 0), Status::OK);
+    callbackCount.store(0);
+    ASSERT_EQ(mpeg4Plugin_->SeekToFrameByDts(static_cast<int32_t>(trackId), 40,
+        SeekMode::SEEK_CLOSEST, realSeekTime, MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_TIMEOUT), Status::OK);
+    EXPECT_EQ(callbackCount.load(), 0);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_CachePressure_Throttle_001
+ * @tc.desc: Verify cache pressure callback is throttled by per-track notification window
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_CachePressure_Throttle_001, TestSize.Level1)
+{
+    InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
+    auto selectedTrackIds = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
+    ASSERT_FALSE(selectedTrackIds.empty());
+    uint32_t trackId = selectedTrackIds.front();
+
+    std::atomic<int32_t> callbackCount {0};
+    ASSERT_EQ(mpeg4Plugin_->SetCachePressureCallback(
+        [&callbackCount](uint32_t callbackTrackId, uint32_t cachedBytes) {
+            (void)callbackTrackId;
+            (void)cachedBytes;
+            ++callbackCount;
+        }), Status::OK);
+    constexpr uint32_t throttleWindowMs = 10000;
+    ASSERT_EQ(mpeg4Plugin_->SetTrackCacheLimit(trackId, 1, throttleWindowMs), Status::OK);
+
+    int64_t realSeekTime = 0;
+    ASSERT_EQ(mpeg4Plugin_->SeekToFrameByDts(static_cast<int32_t>(trackId), 0,
+        SeekMode::SEEK_CLOSEST, realSeekTime, MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_TIMEOUT), Status::OK);
+    int32_t firstCallbackCount = callbackCount.load();
+    ASSERT_GT(firstCallbackCount, 0);
+
+    ASSERT_EQ(mpeg4Plugin_->SeekToFrameByDts(static_cast<int32_t>(trackId), 40,
+        SeekMode::SEEK_CLOSEST, realSeekTime, MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_TIMEOUT), Status::OK);
+    ASSERT_EQ(mpeg4Plugin_->SeekToFrameByDts(static_cast<int32_t>(trackId), 80,
+        SeekMode::SEEK_CLOSEST, realSeekTime, MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_TIMEOUT), Status::OK);
+    EXPECT_EQ(callbackCount.load(), firstCallbackCount);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_CachePressure_AfterSeek_001
+ * @tc.desc: Verify cache pressure and cache query remain valid after DTS seek
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_CachePressure_AfterSeek_001, TestSize.Level1)
+{
+    InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
+    auto selectedTrackIds = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
+    ASSERT_FALSE(selectedTrackIds.empty());
+    uint32_t trackId = selectedTrackIds.front();
+
+    std::atomic<int32_t> callbackCount {0};
+    ASSERT_EQ(mpeg4Plugin_->SetCachePressureCallback(
+        [&callbackCount](uint32_t callbackTrackId, uint32_t cachedBytes) {
+            (void)callbackTrackId;
+            (void)cachedBytes;
+            ++callbackCount;
+        }), Status::OK);
+    ASSERT_EQ(mpeg4Plugin_->SetTrackCacheLimit(trackId, 1, 1), Status::OK);
+
+    int64_t realSeekTime = 0;
+    ASSERT_EQ(mpeg4Plugin_->SeekToFrameByDts(static_cast<int32_t>(trackId), 0,
+        SeekMode::SEEK_CLOSEST, realSeekTime, MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_TIMEOUT), Status::OK);
+    EXPECT_GT(callbackCount.load(), 0);
+
+    uint32_t frameCount = 0;
+    EXPECT_EQ(mpeg4Plugin_->GetCurrentCacheFrameCount(trackId, frameCount), Status::OK);
+    EXPECT_GT(frameCount, 0);
+    uint32_t cacheSize = 0;
+    EXPECT_EQ(mpeg4Plugin_->GetCurrentCacheSize(trackId, cacheSize), Status::OK);
+    EXPECT_GT(cacheSize, 0);
+
+    AVBufferWrapper buffer(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
+    ASSERT_NE(buffer.mediaAVBuffer, nullptr);
+    ASSERT_EQ(ReadSampleWithRetry(mpeg4Plugin_, trackId, buffer.mediaAVBuffer, ReadMode::COPY), Status::OK);
+    EXPECT_EQ(buffer.mediaAVBuffer->dts_, 0);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SeekToFrameByDts_001
+ * @tc.desc: Verify MPEG4 demuxer can seek to the first frame whose DTS reaches the target
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SeekToFrameByDts_001, TestSize.Level1)
+{
+    CheckSeekToFrameByDtsResult(TEST_MP4_PATH_H264_B, "SeekToFrameByDts_001");
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SeekToFrameByDts_H264Fmp4_001
+ * @tc.desc: Verify MPEG4 demuxer DTS seek on H264 fragmented MP4 resource
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SeekToFrameByDts_H264Fmp4_001, TestSize.Level1)
+{
+    CheckSeekToFrameByDtsResult(TEST_FMP4_PATH_H264, "SeekToFrameByDts_H264Fmp4_001");
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SeekToFrameByDts_H265Fmp4_001
+ * @tc.desc: Verify MPEG4 demuxer DTS seek on H265 fragmented MP4 resource
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SeekToFrameByDts_H265Fmp4_001, TestSize.Level1)
+{
+    CheckSeekToFrameByDtsResult(TEST_FMP4_PATH_H265, "SeekToFrameByDts_H265Fmp4_001");
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SeekToFrameByDts_DelayV1S_001
+ * @tc.desc: Verify MPEG4 demuxer DTS seek on MP4 resource with video delay metadata
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SeekToFrameByDts_DelayV1S_001, TestSize.Level1)
+{
+    CheckSeekToFrameByDtsResult(TEST_MP4_PATH_DELAY_V1S, "SeekToFrameByDts_DelayV1S_001");
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SeekToFrameByDts_InvalidParam_001
+ * @tc.desc: Verify MPEG4 demuxer SeekToFrameByDts parameter checks
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SeekToFrameByDts_InvalidParam_001, TestSize.Level1)
+{
+    auto plugin = std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4");
+    ASSERT_NE(plugin, nullptr);
+    int64_t realSeekTime = 0;
+    EXPECT_EQ(plugin->SeekToFrameByDts(0, 0, SeekMode::SEEK_CLOSEST, realSeekTime, 0),
+        Status::ERROR_NULL_POINTER);
+    EXPECT_EQ(plugin->SeekToFrameByDts(0, 0, SeekMode::SEEK_NEXT_SYNC, realSeekTime, 0),
+        Status::ERROR_NULL_POINTER);
+
+    InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
+    EXPECT_EQ(mpeg4Plugin_->SeekToFrameByDts(0, 0, SeekMode::SEEK_CLOSEST, realSeekTime, 0),
+        Status::ERROR_INVALID_OPERATION);
+    auto selectedTrackIds = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
+    ASSERT_FALSE(selectedTrackIds.empty());
+    EXPECT_EQ(mpeg4Plugin_->SeekToFrameByDts(static_cast<int32_t>(selectedTrackIds.front()), 0,
+        SeekMode::SEEK_NEXT_SYNC, realSeekTime, 0), Status::ERROR_INVALID_PARAMETER);
+    EXPECT_EQ(mpeg4Plugin_->SeekToFrameByDts(-1, 0, SeekMode::SEEK_CLOSEST, realSeekTime, 0),
+        Status::ERROR_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SetReadTimeoutForInit_TimeoutFail_001
+ * @tc.desc: Verify MPEG4 demuxer init fails when ReadAt keeps returning ERROR_AGAIN beyond timeout
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SetReadTimeoutForInit_TimeoutFail_001, TestSize.Level1)
+{
+    struct stat fileStatus {};
+    ASSERT_EQ(stat(TEST_MP4_PATH_H264_B.c_str(), &fileStatus), 0);
+    int fd = open(TEST_MP4_PATH_H264_B.c_str(), O_RDONLY);
+    ASSERT_GE(fd, 0);
+    auto uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileStatus.st_size);
+    auto source = std::make_shared<Source>();
+    ASSERT_EQ(source->SetSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    auto streamDemuxer = std::make_shared<Mpeg4StreamDemuxerPullDataFailMock>(0, 1000);
+    streamDemuxer->SetInterruptState(false);
+    streamDemuxer->SetSource(source);
+    ASSERT_EQ(streamDemuxer->Init(""), Status::OK);
+    streamDemuxer->SetDemuxerState(0, DemuxerState::DEMUXER_STATE_PARSE_FRAME);
+    auto dataSource = std::make_shared<DataSourceImpl>(streamDemuxer, 0);
+    auto plugin = std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4");
+    ASSERT_EQ(plugin->SetReadTimeoutForInitSeek(100), Status::OK);
+    EXPECT_NE(plugin->SetDataSource(dataSource), Status::OK);
+    close(fd);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SetReadTimeoutForInit_TimeoutSuccess_001
+ * @tc.desc: Verify MPEG4 demuxer init succeeds when read timeout is explicitly disabled
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SetReadTimeoutForInit_TimeoutSuccess_001, TestSize.Level1)
+{
+    struct stat fileStatus {};
+    ASSERT_EQ(stat(TEST_MP4_PATH_H264_B.c_str(), &fileStatus), 0);
+    int fd = open(TEST_MP4_PATH_H264_B.c_str(), O_RDONLY);
+    ASSERT_GE(fd, 0);
+    auto uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileStatus.st_size);
+    auto source = std::make_shared<Source>();
+    ASSERT_EQ(source->SetSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    auto streamDemuxer = std::make_shared<Mpeg4StreamDemuxerPullDataFailMock>(0, 20);
+    streamDemuxer->SetInterruptState(false);
+    streamDemuxer->SetSource(source);
+    ASSERT_EQ(streamDemuxer->Init(""), Status::OK);
+    streamDemuxer->SetDemuxerState(0, DemuxerState::DEMUXER_STATE_PARSE_FRAME);
+    auto dataSource = std::make_shared<DataSourceImpl>(streamDemuxer, 0);
+    auto plugin = std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4");
+    ASSERT_EQ(plugin->SetReadTimeoutForInitSeek(0), Status::OK);
+    EXPECT_EQ(plugin->SetDataSource(dataSource), Status::OK);
+    close(fd);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SetReadTimeoutForSeek_TimeoutFail_001
+ * @tc.desc: Verify MPEG4 demuxer DTS seek fails when prefetch read times out
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SetReadTimeoutForSeek_TimeoutFail_001, TestSize.Level1)
+{
+    InitDeferredWeakNetworkMpeg4Plugin(TEST_MP4_PATH_H264_B, 0, 1000);
+    auto selectedTrackIds = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
+    ASSERT_FALSE(selectedTrackIds.empty());
+    ASSERT_EQ(mpeg4Plugin_->SetReadTimeoutForInitSeek(100), Status::OK);
+    int64_t realSeekTime = 0;
+    EXPECT_NE(mpeg4Plugin_->SeekToFrameByDts(static_cast<int32_t>(selectedTrackIds.front()), 0,
+        SeekMode::SEEK_CLOSEST, realSeekTime, MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_TIMEOUT), Status::OK);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SetReadTimeoutForSeek_TimeoutFail_002
+ * @tc.desc: Verify SeekToFrameByDts timeout limits prefetch read even when internal read timeout is longer
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SetReadTimeoutForSeek_TimeoutFail_002, TestSize.Level1)
+{
+    constexpr uint32_t apiTimeoutMs = 100;
+    constexpr uint32_t internalTimeoutMs = 2000;
+    InitDeferredWeakNetworkMpeg4Plugin(TEST_MP4_PATH_H264_B, 0, 1000, 20);
+    auto selectedTrackIds = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
+    ASSERT_FALSE(selectedTrackIds.empty());
+    ASSERT_EQ(mpeg4Plugin_->SetReadTimeoutForInitSeek(internalTimeoutMs), Status::OK);
+    int64_t realSeekTime = 0;
+    EXPECT_NE(mpeg4Plugin_->SeekToFrameByDts(static_cast<int32_t>(selectedTrackIds.front()), 0,
+        SeekMode::SEEK_CLOSEST, realSeekTime, apiTimeoutMs), Status::OK);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SetReadTimeoutForSeek_TimeoutSuccess_001
+ * @tc.desc: Verify MPEG4 demuxer DTS seek succeeds when read timeout is disabled
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SetReadTimeoutForSeek_TimeoutSuccess_001, TestSize.Level1)
+{
+    InitDeferredWeakNetworkMpeg4Plugin(TEST_MP4_PATH_H264_B, 0, 20);
+    auto selectedTrackIds = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
+    ASSERT_FALSE(selectedTrackIds.empty());
+    ASSERT_EQ(mpeg4Plugin_->SetReadTimeoutForInitSeek(0), Status::OK);
+    int64_t realSeekTime = 0;
+    EXPECT_EQ(mpeg4Plugin_->SeekToFrameByDts(static_cast<int32_t>(selectedTrackIds.front()), 0,
+        SeekMode::SEEK_CLOSEST, realSeekTime, 0), Status::OK);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SetReadTimeoutForSeek_TimeoutSuccess_002
+ * @tc.desc: Verify MPEG4 demuxer DTS seek succeeds when read timeout is long enough
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SetReadTimeoutForSeek_TimeoutSuccess_002, TestSize.Level1)
+{
+    InitDeferredWeakNetworkMpeg4Plugin(TEST_MP4_PATH_H264_B, 0, 20);
+    auto selectedTrackIds = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
+    ASSERT_FALSE(selectedTrackIds.empty());
+    ASSERT_EQ(mpeg4Plugin_->SetReadTimeoutForInitSeek(2000), Status::OK);
+    int64_t realSeekTime = 0;
+    EXPECT_EQ(mpeg4Plugin_->SeekToFrameByDts(static_cast<int32_t>(selectedTrackIds.front()), 0,
+        SeekMode::SEEK_CLOSEST, realSeekTime, 2000), Status::OK);
 }
 
 /**
