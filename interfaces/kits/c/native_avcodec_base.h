@@ -1513,7 +1513,6 @@ extern const char *OH_MD_KEY_AUDIO_ENCODER_ENABLE_SAMPLE_FORMAT_CONVERT;
 extern const char *OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER;
 
 /**
-
  * @brief Key for querying the number of pending frames in the video encoder.
  *
  * It is used in {@link OH_VideoEncoder_GetInputDescription}.
