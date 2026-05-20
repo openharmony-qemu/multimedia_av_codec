@@ -3458,8 +3458,8 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
         }
         cttsCurNum--;
         int64_t currentCttsDuration = static_cast<int64_t>(avStream->ctts_data[cttsIndex].duration - minCttsDuration);
-        if ((INT64_MAX / 1000 / 1000) < // 1000 is used for converting pts to us
-            ((dts + currentCttsDuration) / static_cast<int64_t>(avStream->time_scale))) {
+        if (((dts + currentCttsDuration) / static_cast<int64_t>(avStream->time_scale)) >
+            (INT64_MAX / 1000 / 1000)) { // 1000 is used for converting pts to us
                 MEDIA_LOG_E("pts overflow");
                 return Status::ERROR_INVALID_DATA;
         }
@@ -3498,8 +3498,8 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertOnlySttsProcess(IndexAndPTSConvert
     ptsCnt_ = 0;
     int32_t sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIndex].count);
     while (sttsIndex < avStream->stts_count && sttsCurNum >= 0) {
-        if ((INT64_MAX / 1000 / 1000) < // 1000 is used for converting pts to us
-            (dts / static_cast<int64_t>(avStream->time_scale))) {
+        if ((dts / static_cast<int64_t>(avStream->time_scale)) >
+            (INT64_MAX / 1000 / 1000)) { // 1000 is used for converting pts to us
                 MEDIA_LOG_E("pts overflow");
                 return Status::ERROR_INVALID_DATA;
         }
