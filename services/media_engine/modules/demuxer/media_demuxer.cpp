@@ -978,6 +978,7 @@ void MediaDemuxer::AddHandleFlvSelectBitrateTask()
 Status MediaDemuxer::InnerPrepare()
 {
     Plugins::MediaInfo mediaInfo;
+    demuxerPluginManager_->SetPlayerMode(isPlayerMode_);
     Status ret = demuxerPluginManager_->LoadCurrentAllPlugin(streamDemuxer_, mediaInfo);
     if (ret == Status::OK) {
         if (isTranscoderMode_ || isPlayerMode_) {
