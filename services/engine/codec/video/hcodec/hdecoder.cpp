@@ -32,6 +32,7 @@
 #include "buffer_extra_data_impl.h"  // foundation/graphic/graphic_surface/surface/include/
 #include "surface_tools.h"
 #include "hcodec_utils.h"
+#include "event_type.h"
 #ifdef USE_VIDEO_PROCESSING_ENGINE
 #include "algorithm_video.h"
 #endif
@@ -1013,6 +1014,10 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
         GSError err = surfaceBuffer->Alloc(requestCfg_);
         if (err != GSERROR_OK) {
             HLOGE("Alloc surfacebuffer %u failed, GSError=%d", i, err);
+            if (isSecure_ && !isEncoder_) {
+                auto meta = std::make_shared<Media::Meta>();
+                ReportStatisticsEvent(StatisticsEventType::SECURE_DECODER_ALLOC_BUF_FAILED_INFO, meta);
+            }
             return err == GSERROR_NO_MEM ? AVCS_ERR_NO_MEMORY : AVCS_ERR_UNKNOWN;
         }
         shared_ptr<OmxCodecBuffer> omxBuffer = SurfaceBufferToOmxBuffer(surfaceBuffer);

@@ -15,6 +15,8 @@
 #ifndef CODECBASE_H
 #define CODECBASE_H
 
+#include <cstdint>
+#include <functional>
 #include <string>
 #include "avcodec_common.h"
 #include "buffer/avsharedmemorybase.h"
@@ -28,6 +30,7 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+enum class StatisticsEventType : uint32_t;
 class CodecBase {
 public:
     CodecBase() = default;
@@ -165,6 +168,22 @@ public:
         (void) isLpp;
         return AVCODEC_ERROR_EXTEND_START;
     }
+
+    using StatisticsEventReporter = std::function<void(StatisticsEventType, std::shared_ptr<Media::Meta> &)>;
+    void SetStatisticsEventReporter(StatisticsEventReporter reporter)
+    {
+        statisticsEventReporter_ = std::move(reporter);
+    }
+
+    virtual void ReportStatisticsEvent(StatisticsEventType type, std::shared_ptr<Media::Meta> &meta)
+    {
+        if (statisticsEventReporter_) {
+            statisticsEventReporter_(type, meta);
+        }
+    }
+
+private:
+    StatisticsEventReporter statisticsEventReporter_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

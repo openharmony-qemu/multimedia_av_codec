@@ -204,6 +204,7 @@ private:
     int32_t repeatMaxCnt_ = 10;  // default repeat 10 times. <0 means repeat forever. =0 means nothing.
     std::optional<int64_t> pts_;
     static constexpr size_t roiNum = 6;
+    bool roiReported_ = false;
     std::unordered_set<int64_t> unfinishedFrames_;
 };
 } // namespace OHOS::MediaAVCodec

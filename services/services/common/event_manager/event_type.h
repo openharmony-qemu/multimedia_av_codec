@@ -63,11 +63,16 @@ enum class StatisticsEventType : uint32_t {
     BASIC_QUERY_CAP_INFO                                = EventType::STATISTICS_EVENT | (0 << 16) | (0 << 8) | 1,
     BASIC_CREATE_CODEC_INFO                             = EventType::STATISTICS_EVENT | (0 << 16) | (0 << 8) | 2,
     BASIC_CREATE_CODEC_SPEC_INFO                        = EventType::STATISTICS_EVENT | (0 << 16) | (0 << 8) | 3,
+    CODEC_INSTANCE_USAGE_INFO                           = EventType::STATISTICS_EVENT | (0 << 16) | (2 << 8) | 0,
+    RESOLUTION_SPEC_INFO                                = EventType::STATISTICS_EVENT | (0 << 16) | (3 << 8) | 0,
+    DEMUXER_FORMAT_INFO                                 = EventType::STATISTICS_EVENT | (0 << 16) | (4 << 8) | 0,
+    CODEC_MODE_INFO                                     = EventType::STATISTICS_EVENT | (0 << 16) | (5 << 8) | 0,
 
     APP_SPECIFICATIONS_INFO                             = EventType::STATISTICS_EVENT | (1 << 16) | (0 << 8) | 0,
     CAP_UNSUPPORTED_INFO                                = EventType::STATISTICS_EVENT | (1 << 16) | (1 << 8) | 0,
     CAP_UNSUPPORTED_QUERY_CAP_INFO                      = EventType::STATISTICS_EVENT | (1 << 16) | (1 << 8) | 1,
     CAP_UNSUPPORTED_CREATE_CODEC_INFO                   = EventType::STATISTICS_EVENT | (1 << 16) | (1 << 8) | 2,
+    ADVANCED_FEATURE_INFO                               = EventType::STATISTICS_EVENT | (1 << 16) | (2 << 8) | 0,
 
     APP_BEHAVIORS_INFO                                  = EventType::STATISTICS_EVENT | (2 << 16) | (0 << 8) | 0,
     APP_BEHAVIORS_RELEASE_HDEC_INFO                     = EventType::STATISTICS_EVENT | (2 << 16) | (1 << 8) | 1,
@@ -75,6 +80,7 @@ enum class StatisticsEventType : uint32_t {
     DEC_ABNORMAL_OCCUPATION_HDEC_LIMIT_EXCEEDED_INFO    = EventType::STATISTICS_EVENT | (2 << 16) | (2 << 8) | 1,
     DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO        = EventType::STATISTICS_EVENT | (2 << 16) | (2 << 8) | 2,
     SPEED_DECODING_INFO                                 = EventType::STATISTICS_EVENT | (2 << 16) | (3 << 8) | 0,
+    SECURE_DECODER_ALLOC_BUF_FAILED_INFO                = EventType::STATISTICS_EVENT | (2 << 16) | (4 << 8) | 0,
 
     CODEC_ABNORMAL_INFO                                 = EventType::STATISTICS_EVENT | (3 << 16) | (0 << 8) | 0,
     CODEC_ERROR_INFO                                    = EventType::STATISTICS_EVENT | (3 << 16) | (1 << 8) | 0,

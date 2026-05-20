@@ -20,10 +20,12 @@
 #include <algorithm>
 #include "avcodec_trace.h"
 #include "common/log.h"
+#include "event_info_extented_key.h"
 #include "meta/any.h"
 #include "osal/utils/util.h"
 #include "plugin/plugin_info.h"
 #include "plugin/plugin_manager_v2.h"
+#include "statistics_event_reporter.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "TypeFinder" };
@@ -201,6 +203,15 @@ std::string TypeFinder::SniffMediaType()
     }
     FALSE_RETURN_V_MSG_E(ret == Status::OK && getDataSize > 0, "", "Not data for sniff " PUBLIC_LOG_ZU, getDataSize);
     pluginName = Plugins::PluginManagerV2::Instance().SnifferPlugin(PluginType::DEMUXER, dataSource);
+    constexpr std::string_view AVDEMUX_PREFIX = "avdemux_";
+    std::string pluginNameTemp = pluginName;
+    if (pluginNameTemp.size() > AVDEMUX_PREFIX.size() &&
+        pluginNameTemp.substr(0, AVDEMUX_PREFIX.size()) == AVDEMUX_PREFIX) {
+        pluginNameTemp = pluginNameTemp.substr(AVDEMUX_PREFIX.size());
+    }
+    Media::Meta eventMeta;
+    eventMeta.SetData(MediaAVCodec::EventInfoExtentedKey::DEMUXER_FORMAT.data(), pluginNameTemp);
+    MediaAVCodec::StatisticsEventReporter::Report(MediaAVCodec::StatisticsEventType::DEMUXER_FORMAT_INFO, eventMeta);
     return pluginName;
 }
 

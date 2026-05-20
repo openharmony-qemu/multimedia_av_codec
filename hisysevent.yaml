@@ -51,3 +51,9 @@ STATISTICS_INFO:
   DEC_ABNORMAL_OCCUPATION_INFO: {type: STRING, desc: Statistics on application exceptions occupying decoders}
   SPEED_DECODING_INFO: {type: STRING, desc: Statistics on playback speed decoding}
   CODEC_ERROR_INFO: {type: STRING, desc: Statistics on codec exceptions}
+  CODEC_INSTANCE_USAGE_INFO: {type: STRING, desc: Statistics on codec instance usage}
+  RESOLUTION_SPEC_INFO: {type: STRING, desc: Statistics on video resolution specifications}
+  DEMUXER_FORMAT_INFO: {type: STRING, desc: Statistics on demuxer format sniff results}
+  CODEC_MODE_INFO: {type: STRING, desc: Statistics on codec surface and buffer modes}
+  ADVANCED_FEATURE_INFO: {type: STRING, desc: Statistics on codec advanced feature usage}
+  SECURE_DECODER_ALLOC_BUF_FAILED_INFO: {type: STRING, desc: Statistics on secure decoder buffer allocation failures}

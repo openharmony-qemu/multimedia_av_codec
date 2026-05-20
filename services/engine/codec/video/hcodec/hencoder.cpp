@@ -23,6 +23,8 @@
 #include "hcodec_log.h"
 #include "hcodec_dfx.h"
 #include "hcodec_list.h"
+#include "event_info_extented_key.h"
+#include "event_type.h"
 #include "v2_2/buffer_handle_meta_key_type.h"
 #include "v4_0/codec_ext_types.h"
 #include <algorithm>
@@ -88,6 +90,27 @@ int32_t HEncoder::OnConfigure(const Format &format)
         return ret;
     }
     (void)EnableEncoderParamsFeedback(format);
+    if (auto bitrateMode = GetBitRateModeFromUser(format); bitrateMode.has_value()) {
+        auto meta = std::make_shared<Media::Meta>();
+        meta->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "RC_MODE_"s + std::to_string(*bitrateMode));
+        meta->SetData(EventInfoExtentedKey::RC_MODE.data(), static_cast<int32_t>(bitrateMode.value()));
+        ReportStatisticsEvent(StatisticsEventType::ADVANCED_FEATURE_INFO, meta);
+    }
+    if (enableTSVC_) {
+        auto meta = std::make_shared<Media::Meta>();
+        meta->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "LAYERED_CODING");
+        ReportStatisticsEvent(StatisticsEventType::ADVANCED_FEATURE_INFO, meta);
+    }
+    if (GetSQRFactorFromUser(format).has_value() || GetSQRMaxBitrateFromUser(format).has_value()) {
+        auto meta = std::make_shared<Media::Meta>();
+        meta->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "SQR");
+        ReportStatisticsEvent(StatisticsEventType::ADVANCED_FEATURE_INFO, meta);
+    }
+    if (enableQPMap_) {
+        auto meta = std::make_shared<Media::Meta>();
+        meta->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "HD_LOW_BITRATE");
+        ReportStatisticsEvent(StatisticsEventType::ADVANCED_FEATURE_INFO, meta);
+    }
     return AVCS_ERR_OK;
 }
 
@@ -1400,6 +1423,12 @@ void HEncoder::WrapRoiParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer> &o
         return;
     }
     ParseRoiStringValid(roiValue, omxBuffer);
+    if (!roiReported_) {
+        auto eventMeta = std::make_shared<Media::Meta>();
+        eventMeta->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "ROI");
+        ReportStatisticsEvent(StatisticsEventType::ADVANCED_FEATURE_INFO, eventMeta);
+        roiReported_ = true;
+    }
 }
 
 void HEncoder::DealWithResolutionChange(uint32_t newWidth, uint32_t newHeight)

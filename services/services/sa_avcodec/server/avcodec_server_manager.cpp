@@ -361,6 +361,17 @@ std::optional<CodecInstance> AVCodecServerManager::GetCodecInstanceByInstanceId(
     return std::nullopt;
 }
 
+std::string AVCodecServerManager::GetCallerNameByPid(pid_t pid)
+{
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    auto iter = std::find_if(codecStubMap_.begin(), codecStubMap_.end(),
+        [pid] (const auto &objectPair) -> bool { return objectPair.first == pid; });
+    if (iter == codecStubMap_.end()) {
+        return "";
+    }
+    return iter->second.second.caller.processName;
+}
+
 std::unordered_map<std::string, uint32_t> AVCodecServerManager::GetHDecUsageStatistics()
 {
     std::shared_lock<std::shared_mutex> lock(mutex_);
