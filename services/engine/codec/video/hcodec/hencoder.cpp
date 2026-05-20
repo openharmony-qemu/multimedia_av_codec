@@ -41,14 +41,30 @@ HEncoder::~HEncoder()
 int32_t HEncoder::OnConfigure(const Format &format)
 {
     configFormat_ = make_shared<Format>(format);
-    int32_t ret = ConfigureBufferType();
+    EnableVariableFrameRate(format);
+    optional<double> frameRate = GetFrameRateFromUser(format);
+    defaultFrameRate_ = frameRate;
+
+    int32_t ret = ConfigureBaseParams(format, frameRate);
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
 
-    EnableVariableFrameRate(format);
-    optional<double> frameRate = GetFrameRateFromUser(format);
-    defaultFrameRate_ = frameRate;
+    ret = ConfigureAdvancedParams(format);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
+
+    ReportAdvancedFeatures(format);
+    return AVCS_ERR_OK;
+}
+
+int32_t HEncoder::ConfigureBaseParams(const Format &format, std::optional<double> &frameRate)
+{
+    int32_t ret = ConfigureBufferType();
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
     ret = ConfigBEncodeMode(format);
     if (ret != AVCS_ERR_OK) {
         return ret;
@@ -65,7 +81,12 @@ int32_t HEncoder::OnConfigure(const Format &format)
     (void)SetFrameRateAdaptiveMode(format);
     (void)SetIdrAppendXpsParam(format);
     CheckIfEnableCb(format);
-    ret = SetTemperalLayer(format);
+    return AVCS_ERR_OK;
+}
+
+int32_t HEncoder::ConfigureAdvancedParams(const Format &format)
+{
+    int32_t ret = SetTemperalLayer(format);
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
@@ -90,6 +111,11 @@ int32_t HEncoder::OnConfigure(const Format &format)
         return ret;
     }
     (void)EnableEncoderParamsFeedback(format);
+    return AVCS_ERR_OK;
+}
+
+void HEncoder::ReportAdvancedFeatures(const Format &format)
+{
     if (auto bitrateMode = GetBitRateModeFromUser(format); bitrateMode.has_value()) {
         auto meta = std::make_shared<Media::Meta>();
         meta->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "RC_MODE_"s + std::to_string(*bitrateMode));
@@ -111,7 +137,6 @@ int32_t HEncoder::OnConfigure(const Format &format)
         meta->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "HD_LOW_BITRATE");
         ReportStatisticsEvent(StatisticsEventType::ADVANCED_FEATURE_INFO, meta);
     }
-    return AVCS_ERR_OK;
 }
 
 void HEncoder::EnableVariableFrameRate(const Format &format)

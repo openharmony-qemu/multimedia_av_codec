@@ -84,7 +84,7 @@ std::string GetMetaValueString(const Media::Meta &meta, const std::string_view &
 
 std::string GetCodecTypeString(const Media::Meta &meta)
 {
-    auto isEncoder = [](const Media::Meta &meta){
+    auto isEncoder = [](const Media::Meta &meta) {
         bool isEncoder = false;
         if (meta.GetData(EventInfoExtentedKey::IS_ENCODER.data(), isEncoder)) {
             return isEncoder;
@@ -109,6 +109,12 @@ std::string JoinKey(const std::vector<std::string> &parts)
         key += part.empty() ? "UNKNOWN" : part;
     }
     return key;
+}
+
+time_t GetCurrentTime()
+{
+    time_t now = time(nullptr);
+    return now == static_cast<time_t>(-1) ? 0 : now;
 }
 
 void AddMapToJsonObject(cJSON *root, const std::unordered_map<std::string, uint32_t> &records)
@@ -389,7 +395,7 @@ public:
             cJSON_AddNumberToObject(cJSON_AddObjectToObject(jsonObj.get(), key.c_str()), key.c_str(), count);
         }
         submitInfo.jsonObjects[CODEC_SPECIFIED_INFO] = std::move(jsonObj);
-        SettleInstanceUsage(time(nullptr));
+        SettleInstanceUsage(GetCurrentTime());
         submitInfo.jsonObjects[CODEC_INSTANCE_USAGE_INFO] = BuildInstanceUsageJson();
         submitInfo.jsonObjects[RESOLUTION_SPEC_INFO] = BuildCountJson(resolutionSpecInfo_);
         submitInfo.jsonObjects[DEMUXER_FORMAT_INFO] = BuildCountJson(demuxerFormatInfo_);
@@ -406,7 +412,7 @@ public:
         resolutionSpecInfo_.clear();
         demuxerFormatInfo_.clear();
         codecModeInfo_.clear();
-        time_t now = time(nullptr);
+        time_t now = GetCurrentTime();
         for (auto &[_, usage] : instanceUsageInfo_) {
             usage.periodMax = usage.currentCount;
             usage.weightedSum = 0;
@@ -420,13 +426,21 @@ private:
         uint32_t currentCount = 0;
         uint32_t periodMax = 0;
         uint64_t weightedSum = 0;
-        time_t periodStartTime = time(nullptr);
-        time_t lastSettleTime = time(nullptr);
+        time_t periodStartTime = GetCurrentTime();
+        time_t lastSettleTime = GetCurrentTime();
     };
 
-    static constexpr const char INSTANCE_ACTION_CREATE[] = "create";
-    static constexpr const char INSTANCE_ACTION_RELEASE[] = "release";
-    static constexpr const char INSTANCE_ACTION_EMPTY[] = "empty";
+    static constexpr const char instanceActionCreate[] = "create";
+    static constexpr const char instanceActionRelease[] = "release";
+    static constexpr const char instanceActionEmpty[] = "empty";
+    static constexpr int32_t resolution360P = 360;
+    static constexpr int32_t resolution480P = 480;
+    static constexpr int32_t resolution576P = 576;
+    static constexpr int32_t resolution720P = 720;
+    static constexpr int32_t resolution1080P = 1080;
+    static constexpr int32_t resolution1440P = 1440;
+    static constexpr int32_t resolution2160P = 2160;
+    static constexpr int32_t resolution4320P = 4320;
 
     void SettleInstanceUsage(time_t now)
     {
@@ -456,24 +470,23 @@ private:
 
     void OnCodecInstanceUsageInfo(const Media::Meta &meta)
     {
-        time_t now = time(nullptr);
+        time_t now = GetCurrentTime();
         SettleInstanceUsage(now);
         std::string key = GetCodecTypeString(meta);
         auto &usage = instanceUsageInfo_[key];
         usage.lastSettleTime = now;
-        std::string action = GetMetaString(meta, EventInfoExtentedKey::INSTANCE_ACTION, INSTANCE_ACTION_EMPTY);
-        if(action == INSTANCE_ACTION_EMPTY){
+        std::string action = GetMetaString(meta, EventInfoExtentedKey::INSTANCE_ACTION, instanceActionEmpty);
+        if (action == instanceActionEmpty) {
             return;
         }
-        if (action == INSTANCE_ACTION_RELEASE) {
+        if (action == instanceActionRelease) {
             if (usage.currentCount > 0) {
                 usage.currentCount--;
             }
-        } else if(action == INSTANCE_ACTION_CREATE) {
+        } else if (action == instanceActionCreate) {
             usage.currentCount++;
             usage.periodMax = std::max(usage.periodMax, usage.currentCount);
         }
-
     }
 
     void OnResolutionSpecInfo(const Media::Meta &meta)
@@ -498,22 +511,22 @@ private:
             !meta.GetData(EventInfoExtentedKey::HEIGHT.data(), height) || width <= 0 || height <= 0) {
             return "OTHER";
         }
-        const int32_t normalized = std::min(width * 9, height * 16) / 16;
-        if (normalized <= 360) {
+        const int32_t normalized = std::min(width * 9, height * 16) / 16; // 16:9 as baseline to normalize resolution
+        if (normalized <= resolution360P) {
             return "360P";
-        } else if (normalized <= 480) {
+        } else if (normalized <= resolution480P) {
             return "480P";
-        } else if (normalized <= 576) {
+        } else if (normalized <= resolution576P) {
             return "576P";
-        } else if (normalized <= 720) {
+        } else if (normalized <= resolution720P) {
             return "720P";
-        } else if (normalized <= 1080) {
+        } else if (normalized <= resolution1080P) {
             return "1080P";
-        } else if (normalized <= 1440) {
+        } else if (normalized <= resolution1440P) {
             return "1440P";
-        } else if (normalized <= 2160) {
+        } else if (normalized <= resolution2160P) {
             return "2160P";
-        } else if (normalized <= 4320) {
+        } else if (normalized <= resolution4320P) {
             return "4320P";
         }
         return "OTHER";
@@ -574,7 +587,8 @@ private:
 
     uint32_t queryCapTimes_ { 0 };
     uint32_t createCodecTimes_ { 0 };
-    std::unordered_map<VCodecSpecifiedType, uint32_t, HashTuple> codecSpecInfo_; // <VideoCodecType, mimeType, isSecure>, count
+    // <VideoCodecType, mimeType, isSecure>, count
+    std::unordered_map<VCodecSpecifiedType, uint32_t, HashTuple> codecSpecInfo_;
     std::unordered_map<std::string, InstanceUsage> instanceUsageInfo_;
     std::unordered_map<std::string, uint32_t> resolutionSpecInfo_;
     std::unordered_map<std::string, uint32_t> demuxerFormatInfo_;

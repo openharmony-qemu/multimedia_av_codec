@@ -232,48 +232,18 @@ int32_t CodecServer::Configure(const Format &format)
     isSetParameterCb_ = isSetParameterCb != 0;
 
     int32_t paramCheckRet = AVCS_ERR_OK;
-    if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
-        auto scenario = CodecParamChecker::CheckCodecScenario(config, codecType_, codecName_);
-        CHECK_AND_RETURN_RET_LOG_WITH_TAG(scenario != std::nullopt, AVCS_ERR_INVALID_VAL,
-                                          "Failed to get codec scenario");
-        scenario_ = scenario.value();
-        paramCheckRet = CodecParamChecker::CheckConfigureValid(config, codecName_, scenario_);
-        CHECK_AND_RETURN_RET_LOG_WITH_TAG(paramCheckRet == AVCS_ERR_OK ||
-                                              paramCheckRet == AVCS_ERR_CODEC_PARAM_INCORRECT,
-                                          paramCheckRet, "Params in format is not valid");
-        CodecScenarioInit(config);
-    }
+    int32_t ret = ConfigureCodecScenario(config, paramCheckRet);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret, "Configure codec scenario failed");
 
-    if (framerateCalculator_) {
-        auto framerate = 0.0;
-        if (format.GetDoubleValue(Tag::VIDEO_FRAME_RATE, framerate)) {
-            framerateCalculator_->SetConfiguredFramerate(framerate);
-        }
-    }
+    UpdateConfiguredFramerate(format);
 
-    InitSfdManager();
-    if (sfdManager_) {
-        sfdManager_->Configure(config);
-        sfdManager_->EnableMVOutput(config);
-    }
-    int32_t ret = codecBase_->Configure(config);
+    ret = ConfigureCodecBase(config);
     if (ret != AVCS_ERR_OK) {
         StatusChanged(ERROR);
         return ret;
     }
-    if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER) {
-        Media::Meta statisticsMeta;
-        FillStatisticsCodecInfo(statisticsMeta, codecType_, vcodecType_, codecMime_, codecName_);
-        int32_t width = 0;
-        int32_t height = 0;
-        if (config.GetIntValue(Media::Tag::VIDEO_WIDTH, width)) {
-            statisticsMeta.SetData(EventInfoExtentedKey::WIDTH.data(), width);
-        }
-        if (config.GetIntValue(Media::Tag::VIDEO_HEIGHT, height)) {
-            statisticsMeta.SetData(EventInfoExtentedKey::HEIGHT.data(), height);
-        }
-        EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::RESOLUTION_SPEC_INFO, statisticsMeta);
-    }
+    ReportEncoderResolution(config);
+
     ret = CreatePostProcessing(config);
     if (ret != AVCS_ERR_OK) {
         StatusChanged(ERROR);
@@ -281,6 +251,58 @@ int32_t CodecServer::Configure(const Format &format)
     }
     StatusChanged(CONFIGURED);
     return paramCheckRet;
+}
+
+int32_t CodecServer::ConfigureCodecScenario(Format &config, int32_t &paramCheckRet)
+{
+    auto scenario = CodecParamChecker::CheckCodecScenario(config, codecType_, codecName_);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(scenario != std::nullopt, AVCS_ERR_INVALID_VAL,
+                                      "Failed to get codec scenario");
+    scenario_ = scenario.value();
+    paramCheckRet = CodecParamChecker::CheckConfigureValid(config, codecName_, scenario_);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(paramCheckRet == AVCS_ERR_OK ||
+                                          paramCheckRet == AVCS_ERR_CODEC_PARAM_INCORRECT,
+                                      paramCheckRet, "Params in format is not valid");
+    return CodecScenarioInit(config);
+}
+
+void CodecServer::UpdateConfiguredFramerate(const Format &format)
+{
+    if (!framerateCalculator_) {
+        return;
+    }
+    auto framerate = 0.0;
+    if (format.GetDoubleValue(Tag::VIDEO_FRAME_RATE, framerate)) {
+        framerateCalculator_->SetConfiguredFramerate(framerate);
+    }
+}
+
+int32_t CodecServer::ConfigureCodecBase(Format &config)
+{
+    InitSfdManager();
+    if (sfdManager_) {
+        sfdManager_->Configure(config);
+        sfdManager_->EnableMVOutput(config);
+    }
+    return codecBase_->Configure(config);
+}
+
+void CodecServer::ReportEncoderResolution(const Format &config)
+{
+    if (codecType_ != AVCODEC_TYPE_VIDEO_ENCODER) {
+        return;
+    }
+    Media::Meta statisticsMeta;
+    FillStatisticsCodecInfo(statisticsMeta, codecType_, vcodecType_, codecMime_, codecName_);
+    int32_t width = 0;
+    int32_t height = 0;
+    if (config.GetIntValue(Media::Tag::VIDEO_WIDTH, width)) {
+        statisticsMeta.SetData(EventInfoExtentedKey::WIDTH.data(), width);
+    }
+    if (config.GetIntValue(Media::Tag::VIDEO_HEIGHT, height)) {
+        statisticsMeta.SetData(EventInfoExtentedKey::HEIGHT.data(), height);
+    }
+    EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::RESOLUTION_SPEC_INFO, statisticsMeta);
 }
 
 int32_t CodecServer::SetCustomBuffer(std::shared_ptr<AVBuffer> buffer)
