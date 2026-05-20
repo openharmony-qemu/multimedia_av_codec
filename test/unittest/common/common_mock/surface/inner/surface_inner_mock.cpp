@@ -38,5 +38,13 @@ void SurfaceInnerMock::GetTransform(int32_t &transform)
 {
     transform = static_cast<int32_t>(surface_->GetTransform());
 }
+
+int32_t SurfaceInnerMock::GetQueueSize()
+{
+    if (surface_ == nullptr) {
+        return -1;
+    }
+    return static_cast<int32_t>(surface_->GetQueueSize());
+}
 } // namespace MediaAVCodec
 } // namespace OHOS
