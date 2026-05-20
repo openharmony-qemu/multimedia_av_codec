@@ -3517,10 +3517,10 @@ void PrintStreamInfo(const std::string &logTag, StreamInfo *streamInfo, const st
         MEDIA_LOG_I(PUBLIC_LOG_S "desStreamInfo Video streamId: " PUBLIC_LOG_D32 " bitrate: " PUBLIC_LOG_D32
             " videoHeight: " PUBLIC_LOG_D32 " videoWidth: " PUBLIC_LOG_D32 " framerate: " PUBLIC_LOG_D32 " mimeType: "
             PUBLIC_LOG_S " codec:" PUBLIC_LOG_S " curDownloadBitrate: " PUBLIC_LOG_D32 " change stream state: "
-            PUBLIC_LOG_D32, logTag.c_str(), streamInfo->streamId, streamInfo->bitRate, streamInfo->videoHeight,
-            streamInfo->videoWidth, streamInfo->frameRate,
+            PUBLIC_LOG_D32 "videoType: " PUBLIC_LOG_D32, logTag.c_str(), streamInfo->streamId, streamInfo->bitRate,
+            streamInfo->videoHeight, streamInfo->videoWidth, streamInfo->frameRate,
             currentPlayType == "dash" ? streamInfo->mimeType.c_str() : "", streamInfo->originCodecs.c_str(),
-            currentBitRate, status);
+            currentBitRate, status, streamInfo->videoType);
     } else if (streamInfo->type == StreamType::AUDIO) {
         MEDIA_LOG_I(PUBLIC_LOG_S "desStreamInfo Audio streamId: " PUBLIC_LOG_D32 " channels: " PUBLIC_LOG_D32
             " bitRate: " PUBLIC_LOG_D32 " mimeType: " PUBLIC_LOG_S  " codec:" PUBLIC_LOG_S " lang: " PUBLIC_LOG_S
@@ -3534,7 +3534,8 @@ void PrintStreamInfo(const std::string &logTag, StreamInfo *streamInfo, const st
     }
 }
 
-StreamInfo *GetPreferredVideoStream(std::map<StreamType, std::vector<StreamInfo>> &streamMap, uint32_t desBitrate)
+StreamInfo *GetPreferredVideoStream(std::map<StreamType, std::vector<StreamInfo>> &streamMap, uint32_t desBitrate,
+    int32_t streamId = -1, std::string currentPlayType = "")
 {
     bool isFirstSelect = true;
     StreamInfo *destStream = nullptr;
@@ -3543,10 +3544,16 @@ StreamInfo *GetPreferredVideoStream(std::map<StreamType, std::vector<StreamInfo>
         if (stream.type != StreamType::VIDEO && stream.type != StreamType::MIXED) {
             continue;
         }
+        if (streamId == stream.streamId && currentPlayType == "dash" && stream.videoType != VIDEO_TYPE_SDR) {
+            return nullptr;
+        }
         uint32_t tempGap = stream.bitRate > desBitrate ? stream.bitRate - desBitrate : desBitrate - stream.bitRate;
         if (isFirstSelect || tempGap < maxGap) {
             isFirstSelect = false;
             maxGap = tempGap;
+            if (currentPlayType == "dash" && stream.videoType != VIDEO_TYPE_SDR) {
+                continue;
+            }
             destStream = &stream;
         }
     }
@@ -3557,7 +3564,7 @@ StreamInfo *GetPreferredVideoStream(std::map<StreamType, std::vector<StreamInfo>
     return destStream;
 }
 
-void MediaDemuxer::AutoSelectTrackByBitrate(int32_t trackId)
+void MediaDemuxer::AutoSelectTrackByBitrate(int32_t trackId, bool isSelectHigherBitrate)
 {
     FALSE_RETURN_NOLOG(isAutoSelect_.load() && curDownloadBitRate_.load() != 0 &&
         curDownloadBitRate_.load() != lastSwitchDownloadRate_.load());
@@ -3569,17 +3576,29 @@ void MediaDemuxer::AutoSelectTrackByBitrate(int32_t trackId)
         return;
     }
     std::lock_guard<std::recursive_mutex> lock(streamMapMutex_);
-    StreamInfo *preferredStreamInfo = GetPreferredVideoStream(filteredStreamMap_->map, curDownloadBitRate_.load());
+    StreamInfo *preferredStreamInfo = GetPreferredVideoStream(filteredStreamMap_->map,
+        curDownloadBitRate_.load(), defaultVideoStreamId_, currentPlayType_);
     FALSE_RETURN(preferredStreamInfo != nullptr);
+    if (isSelectHigherBitrate) {
+        if (preferredStreamInfo->bitRate < lastAutoSelectBitRate_ && lastAutoSelectBitRate_ != 0) {
+            MEDIA_LOG_I("AutoSelectTrackByBitrate: Select lower bitrate stream");
+            return;
+        }
+    } else {
+        if (preferredStreamInfo->bitRate > lastAutoSelectBitRate_ && lastAutoSelectBitRate_ != 0) {
+            MEDIA_LOG_I("AutoSelectTrackByBitrate: Select higher bitrate stream");
+            return;
+        }
+    }
     MEDIA_LOG_D("Check can auto select, defaultVideoStreamId_: " PUBLIC_LOG_D32 " preferredStreamInfo->streamId: "
-        PUBLIC_LOG_D32 " lastAutoSelectBitRate_: " PUBLIC_LOG_D32
+        PUBLIC_LOG_D32 " lastAutoSelectBitRate_: " PUBLIC_LOG_U32
         " trackId: " PUBLIC_LOG_D32 " preferredBitrate: " PUBLIC_LOG_U32 " isSelectBitRate_: " PUBLIC_LOG_D32
         " isSelectTrack_: " PUBLIC_LOG_D32 " targetBitRate_: " PUBLIC_LOG_U32
         " demuxerPluginManager_->GetCurrentBitRate(): " PUBLIC_LOG_U32, defaultVideoStreamId_,
         preferredStreamInfo->streamId, lastAutoSelectBitRate_, trackId, preferredStreamInfo->bitRate,
         isSelectBitRate_.load(), isSelectTrack_.load(), targetBitRate_, demuxerPluginManager_->GetCurrentBitRate());
     if (defaultVideoStreamId_ != preferredStreamInfo->streamId &&
-        lastAutoSelectBitRate_ != static_cast<int32_t>(preferredStreamInfo->bitRate) && CanAutoSelectBitRate()) {
+        lastAutoSelectBitRate_ != preferredStreamInfo->bitRate && CanAutoSelectBitRate()) {
         Status status = SelectBitRate(preferredStreamInfo->bitRate, true);
         if (status == Status::OK) {
             defaultVideoStreamId_ = preferredStreamInfo->streamId;
@@ -4802,9 +4821,9 @@ void MediaDemuxer::ConsumeWaterLoopControl(int32_t trackId, std::shared_ptr<Samp
     if (!IsCloudFd() && !IsNeedPreDownload() &&
         (streamType == StreamType::VIDEO || streamType == StreamType::MIXED)) {
         if (sampleQueueController_->CheckWaterLineStopProduce(trackId, sampleQueueMap_[trackId])) {
-            AutoSelectTrackByBitrate(trackId);
+            AutoSelectTrackByBitrate(trackId, true);
         } else if (sampleQueueController_->CheckWaterLineStartConsume(trackId, sampleQueueMap_[trackId])) {
-            AutoSelectTrackByBitrate(trackId);
+            AutoSelectTrackByBitrate(trackId, false);
         } else {
             lastCheckAutoSelectTimeMs_ = 0;
         }
