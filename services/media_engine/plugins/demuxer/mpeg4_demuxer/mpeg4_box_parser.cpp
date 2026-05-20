@@ -3204,7 +3204,6 @@ Status MPEG4AtomParser::ReadDca3Payload(MPEG4Atom currentAtom, ParseContext* ctx
 
         if (ctx->offset == dataEndOffset) {
             dataSize = 0;
-            ctx->offset = dataEndOffset;
             return Status::OK;
         }
 
