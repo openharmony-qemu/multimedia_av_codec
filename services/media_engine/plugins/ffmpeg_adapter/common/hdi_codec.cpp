@@ -217,6 +217,9 @@ Status HdiCodec::EmptyThisBuffer(const std::shared_ptr<AVBuffer> &buffer)
     omxInBufferInfo_->omxBuffer->pts = buffer->pts_;
     omxInBufferInfo_->omxBuffer->flag = buffer->flag_;
 
+    CHECK_AND_RETURN_RET_LOG(
+        omxInBufferInfo_->avBuffer->memory_->GetCapacity() >= omxInBufferInfo_->omxBuffer->filledLen,
+        Status::ERROR_INVALID_DATA, "buffer not enough %{public}d < %{public}u");
     errno_t rc = memcpy_s(omxInBufferInfo_->avBuffer->memory_->GetAddr(),
                           omxInBufferInfo_->avBuffer->memory_->GetCapacity(),
                           buffer->memory_->GetAddr(), omxInBufferInfo_->omxBuffer->filledLen);
@@ -241,6 +244,9 @@ Status HdiCodec::FillThisBuffer(std::shared_ptr<AVBuffer> &buffer)
     condition_.wait_for(lock, std::chrono::milliseconds(TIMEOUT_MS), [this] { return outputOmxBuffer_ != nullptr; });
     CHECK_AND_RETURN_RET_LOG(outputOmxBuffer_ != nullptr, Status::ERROR_INVALID_PARAMETER, "FillThisBuffer timeout!");
 
+    CHECK_AND_RETURN_RET_LOG(
+        omxInBufferInfo_->avBuffer->memory_->GetCapacity() >= omxInBufferInfo_->omxBuffer->filledLen,
+        Status::ERROR_INVALID_DATA, "buffer not enough %{public}d < %{public}u");
     errno_t rc = memcpy_s(buffer->memory_->GetAddr(), buffer->memory_->GetCapacity(),
                           omxOutBufferInfo_->avBuffer->memory_->GetAddr(), outputOmxBuffer_->filledLen);
     CHECK_AND_RETURN_RET_LOG(rc == EOK, Status::ERROR_INVALID_DATA, "memory copy failed!");
@@ -257,6 +263,7 @@ Status HdiCodec::FillThisBuffer(std::shared_ptr<AVBuffer> &buffer)
 Status HdiCodec::FreeBuffer(PortIndex portIndex, const std::shared_ptr<OmxCodecBuffer> &omxBuffer)
 {
     if (omxBuffer != nullptr) {
+        CHECK_AND_RETURN_RET_LOG(compNode_ != nullptr, Status::ERROR_NULL_POINTER, "compNode is nullptr!");
         int32_t ret = compNode_->FreeBuffer(static_cast<uint32_t>(portIndex), *omxBuffer.get());
         CHECK_AND_RETURN_RET_LOG(ret == HDF_SUCCESS, Status::ERROR_INVALID_DATA,
             "Free buffer fail, portIndex=%{public}d, ret=%{public}d", portIndex, ret);
