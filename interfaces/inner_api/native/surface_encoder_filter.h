@@ -45,6 +45,7 @@ public:
     Status SetStopTime();
     Status SetInputSurface(sptr<Surface> surface);
     Status SetTransCoderMode();
+    Status SetWatermarkMode();
     sptr<Surface> GetInputSurface();
     Status DoPrepare() override;
     Status DoStart() override;

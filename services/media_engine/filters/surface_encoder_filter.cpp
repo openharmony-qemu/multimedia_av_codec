@@ -246,6 +246,13 @@ Status SurfaceEncoderFilter::SetTransCoderMode()
     return Status::OK;
 }
 
+Status SurfaceEncoderFilter::SetWatermarkMode()
+{
+    MEDIA_LOG_I("SetWatermarkMode");
+    mediaCodec_->SetWatermarkMode();
+    return Status::OK;
+}
+
 sptr<Surface> SurfaceEncoderFilter::GetInputSurface()
 {
     MEDIA_LOG_I("GetInputSurface");
