@@ -133,11 +133,6 @@ Status FFmpegFlacEncoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)
         return Status::ERROR_INVALID_PARAMETER;
     }
 
-    if (!isEnableFormatConvert_ &&
-        supportedSampleFormats.find(audioSampleFormat_) == supportedSampleFormats.end()) {
-        AVCODEC_LOGE("input sample format not support:%{public}d", static_cast<int32_t>(audioSampleFormat_));
-        return Status::ERROR_INVALID_PARAMETER;
-    }
     if (isEnableFormatConvert_ &&
         extendSampleFormats.find(audioSampleFormat_) == extendSampleFormats.end()) {
         AVCODEC_LOGE("enable convert but input sample format not support:=%{public}d",
