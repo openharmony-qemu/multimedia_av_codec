@@ -67,6 +67,8 @@ enum class AVCapabilityFeature : int32_t {
     VIDEO_DECODER_SEEK_WITHOUT_FLUSH = 6,
     VIDEO_ENCODER_B_FRAME = 7,
     VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER = 8,
+    VIDEO_ENCODER_PREPROC_DOWNSAMPLING = 9,
+    VIDEO_ENCODER_PREPROC_CROP = 10,
     MAX_VALUE
 };
 
@@ -298,7 +300,7 @@ public:
      * @version 5.0
      */
     bool IsFeatureSupported(AVCapabilityFeature feature);
-    
+
     /**
      * @brief Get the properties of a specified feature.
      * @param feature Feature enum, refer to {@link AVCapabilityFeature} for details
