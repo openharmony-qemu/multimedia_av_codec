@@ -538,7 +538,7 @@ Status FFmpegBaseEncoder::SendCachedFrames()
 
 Status FFmpegBaseEncoder::SendEosBuffer()
 {
-    if (pcmCache_.size() >= 0) {
+    if (pcmCache_.size() > 0) {
         if (FillFrameFromCache(true) != Status::OK) {
             return Status::ERROR_UNKNOWN;
         }
