@@ -18,8 +18,6 @@
 #include "avcodec_log.h"
 #include "avsource.h"
 #include "common/native_mfmagic.h"
-#include "meta/meta.h"
-#include "meta/meta_key.h"
 #include "native_avformat.h"
 #include "native_avmagic.h"
 #include "native_object.h"
@@ -35,7 +33,6 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_DEMUXER, "Na
 }
 
 using namespace OHOS::MediaAVCodec;
-using namespace OHOS::Media;
 
 class NativeAVDataSource : public OHOS::Media::IMediaDataSource {
 public:
@@ -278,14 +275,6 @@ OH_AVFormat *OH_AVSource_GetTrackFormat(OH_AVSource *source, uint32_t trackIndex
     Format format;
     int32_t ret = sourceObj->source_->GetTrackFormat(format, trackIndex);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Source GetTrackFormat failed");
-    int32_t hdrCompatibility = -1;
-    int32_t hdrType = -1;
-    if (format.GetIntValue(Tag::VIDEO_HDR_COMPATIBILITY, hdrCompatibility) &&
-        format.GetIntValue(Tag::VIDEO_HDR_TYPE, hdrType) &&
-        hdrCompatibility == hdrType) {
-        format.PutIntValue(Tag::VIDEO_HDR_TYPE, static_cast<int32_t>(Plugins::HDRType::OTHER));
-    }
-    format.RemoveKey(Tag::VIDEO_HDR_COMPATIBILITY);
     OH_AVFormat *avFormat = OH_AVFormat_Create();
     CHECK_AND_RETURN_RET_LOG(avFormat != nullptr, nullptr, "Format is nullptr");
     avFormat->format_ = format;

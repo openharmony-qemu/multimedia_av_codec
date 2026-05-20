@@ -1502,13 +1502,6 @@ extern const char *OH_MD_KEY_AUDIO_ENCODER_PTS_MODE;
 extern const char *OH_MD_KEY_AUDIO_ENCODER_ENABLE_SAMPLE_FORMAT_CONVERT;
 
 /**
- * @brief Key for HDR type, value type is int32_t, refer to {@link OH_HDRType}.
- *
- * @since 26.0.0
-*/
-extern const char *OH_MD_KEY_HDR_TYPE;
-
-/**
  * @brief Key to enable the decoder to output frames in decoding order,
  * value type is int32_t (0 or 1): 1 is enabled, 0 disabled.
  *
@@ -1548,36 +1541,6 @@ extern const char *OH_MD_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT;
  * @since 26.0.0
 */
 extern const char *OH_MD_VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES;
-
-/**
- * @brief HDR type.
- *
- * @since 26.0.0
-*/
-typedef enum OH_HDRType {
-    /** Non-HDR
-     * @since 26.0.0
-     */
-    OH_HDR_TYPE_NONE = -1,
-    /** HLG
-     * @since 26.0.0
-     */
-    OH_HDR_TYPE_HLG = 0,
-    /**
-     * HDR10
-     * @since 26.0.0
-     */
-    OH_HDR_TYPE_HDR10 = 1,
-    /**
-     * HDR Vivid
-     * @since 26.0.0
-     */
-    OH_HDR_TYPE_HDR_VIVID = 2,
-    /** Other HDR type
-     * @since 26.0.0
-     */
-    OH_HDR_TYPE_OTHER = 3,
-} OH_HDRType;
 
 /**
  * @brief Media type.

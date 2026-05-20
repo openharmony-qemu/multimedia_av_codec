@@ -41,7 +41,7 @@ public:
         std::unique_ptr<uint8_t[]> data = nullptr;
         int64_t extradataSize = 0;
         TrackType trackType = INVALID_TYPE;
-        HdrBoxInfo hdrBoxInfo {false, false, false};
+        HdrBoxInfo hdrBoxInfo {false, false};
         CodecParams() = default;
     };
 
