@@ -377,6 +377,7 @@ int32_t FCodec::Configure(const Format &format)
     }
     GetSurfaceCfgFromFmt(format);
     if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
+        outputPixelFmt_ = VideoPixelFormat::NV12;
         format_.PutIntValue(FMTKey::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     }
     AVCODEC_LOGI("current output pixel format %{public}d", static_cast<int32_t>(outputPixelFmt_));
