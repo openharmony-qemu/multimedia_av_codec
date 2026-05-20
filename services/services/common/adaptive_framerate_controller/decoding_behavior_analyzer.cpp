@@ -30,7 +30,10 @@ constexpr uint32_t SRC_FRAME_CNT_MIN = 5;         // Minimum valid frame count
 constexpr double EPSILON = 1e-6;
 constexpr double FPS_REPORT_DIFF_THRESHOLD = 2.0 + EPSILON;
 constexpr double MAX_REPORT_FPS = 60.0;
-constexpr int64_t SEEK_DETECTION_THRESHOLD_MS = 500;
+constexpr int64_t SEEK_DETECTION_THRESHOLD_MS = 1000;
+constexpr double MIN_CAL_DURATION_MS = 100.0;
+constexpr double SMOOTHING_FACTOR = 0.5;
+constexpr int64_t MIN_REASONABLE_DIFF = 8;
 #ifdef SUPPORT_FPS_FOR_MEMC
 constexpr size_t FPS_WINDOW_SIZE = 3;
 constexpr uint32_t CONTINUES_FRAME_CNT = 5;
@@ -66,17 +69,40 @@ void DecodingBehaviorAnalyzer::OnFrameConsumed(int64_t pts, bool render)
 #endif
     int64_t ptsMs = pts / 1000; // 1000: us to ms
     if (lastPtsMs_ != -1 && std::abs(ptsMs - lastPtsMs_) > SEEK_DETECTION_THRESHOLD_MS) {
-        frameCnt_ = 0;
-        renderCnt_ = 0;
+        AVCODEC_LOGI("seek detection, lastPtsMs %{public}ld, ptsMs %{public}ld", lastPtsMs_, ptsMs);
+        ResetIntervalStats();
     }
     if (frameCnt_ == 0) {
-        startPtsMs_ = ptsMs;
+        startSysTime_ = std::chrono::steady_clock::now();
     }
-    endPtsMs_ = ptsMs;
+    ptsWin_.push_back(ptsMs);
+    if (ptsWin_.size() > 30) {
+        ptsWin_.pop_front();
+    }
+    endSysTime_ = std::chrono::steady_clock::now();
     frameCnt_++;
     if (render) {
         renderCnt_++;
     }
+    lastPtsMs_ = ptsMs;
+    AVCODEC_LOGD("frameCnt_ %{public}u, renderCnt_ %{public}u, pts= %{public}ld", frameCnt_, renderCnt_, pts);
+}
+
+double DecodingBehaviorAnalyzer::GetSrcFps()
+{
+    std::vector<int64_t> sortedPts(ptsWin_.begin(), ptsWin_.end());
+    std::sort(sortedPts.begin(), sortedPts.end());
+    int64_t minValidDiff = INT64_MAX;
+    for (size_t i = 1; i < sortedPts.size(); ++i) {
+        int64_t diff = sortedPts[i] - sortedPts[i - 1];
+        if (diff >= MIN_REASONABLE_DIFF && diff < minValidDiff) {
+            minValidDiff = diff;
+        }
+    }
+    if (minValidDiff == 0) {
+        return 0.0;
+    }
+    return 1000.0 / minValidDiff;
 }
 
 #ifdef SUPPORT_FPS_FOR_MEMC
@@ -264,35 +290,58 @@ bool DecodingBehaviorAnalyzer::IsDecChanged(DecodingBehaviorType oldType, size_t
     }
 }
 
+void DecodingBehaviorAnalyzer::OnFrameDropped()
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    droppedCnt_++;
+    AVCODEC_LOGI("droppedCnt_ %{public}u", droppedCnt_);
+}
+
 void DecodingBehaviorAnalyzer::ResetIntervalStats()
 {
-    startPtsMs_ = -1;
-    endPtsMs_ = -1;
+    lastPtsMs_ = -1;
     frameCnt_ = 0;
     renderCnt_ = 0;
+    droppedCnt_ = 0;
+    ptsWin_.clear();
+    AVCODEC_LOGI("ResetIntervalStats");
 }
 
 void DecodingBehaviorAnalyzer::OnChecked(double decFps)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (frameCnt_ < SRC_FRAME_CNT_MIN) {
+    uint32_t totalFrames = frameCnt_ + droppedCnt_;
+    auto sysTimeIntvlMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+        endSysTime_ - startSysTime_).count();
+    if (totalFrames < SRC_FRAME_CNT_MIN || sysTimeIntvlMs <= MIN_CAL_DURATION_MS || ptsWin_.size() < 2) {
         return;
     }
-    if (endPtsMs_ <= startPtsMs_) {
-        ResetIntervalStats();
+    double decInFps = static_cast<double>(totalFrames - 1) / sysTimeIntvlMs * 1000;
+    AVCODEC_LOGI("yxy_debug1 sysTimeIntvlMs: %{public}lld, totalFrames %{public}d", sysTimeIntvlMs, totalFrames);
+    double srcFps = GetSrcFps();
+    if (srcFps < 1.0) {
         return;
     }
-    double srcFps = 0.0;
-    double renderFps = 0.0;
-    if (frameCnt_ > 1 && endPtsMs_ > startPtsMs_) {
-        double ptsIntvlMs = static_cast<double>(endPtsMs_ - startPtsMs_) / (frameCnt_ - 1);
-        srcFps = 1000.0 / ptsIntvlMs; //1000.0: ms to s
+    double speed = decInFps / srcFps;
+    if (decInSpeed_ < 0.0) {
+        decInSpeed_ = speed;
+    } else {
+        decInSpeed_ = (1.0 - SMOOTHING_FACTOR) * decInSpeed_ + SMOOTHING_FACTOR * speed;
     }
-    if (frameCnt_ > 0) {
-        renderFps = decFps * static_cast<double>(renderCnt_) / frameCnt_;
+    if (srcFps_ < 0.0) {
+        srcFps_ = srcFps;
+    } else {
+        srcFps_ = (1.0 - SMOOTHING_FACTOR) * srcFps_ + SMOOTHING_FACTOR * srcFps;
+    }
+    size_t newSpeedIdx = MatchAndUpdateSpeedStats(decInSpeed_);
+    double stdSpeed = standardSpeeds[newSpeedIdx];
+    AVCODEC_LOGI("yxy_debug2 speed: %{public}.2f, avgSpeed: %{public}.2f, stdSpeed %{public}.2f, srcFps %{public}.2f, avgSrcFps: %{public}.2f",
+        speed, decInSpeed_, stdSpeed, srcFps, srcFps_);
+    if (decInfoCallBack_) {
+        decInfoCallBack_(srcFps, stdSpeed);
     }
     AVCODEC_LOGD("Render: %{public}.2f fps, dec: %{public}.2f fps, src: %{public}.2f fps, renderCnt %{public}u"
-                 ", frameCnt %{public}u", renderFps, decFps, srcFps, renderCnt_, frameCnt_);
+        ", frameCnt %{public}u, droppedCnt %{public}u", renderFps, decFps, srcFps, renderCnt_, frameCnt_, droppedCnt_);
     double reportDecFps = decFps > (MAX_REPORT_FPS + EPSILON) ? (MAX_REPORT_FPS + 1.0) : decFps;
     double reportRenderFps = renderFps > (MAX_REPORT_FPS + EPSILON) ? (MAX_REPORT_FPS + 1.0) : renderFps;
     if (lastReportedFps_ < 0.0 || lastReportedRenderFps_ < 0.0 ||
@@ -303,11 +352,6 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
         lastReportedRenderFps_ = reportRenderFps;
         lastReportedFps_ = reportDecFps;
     }
-    AVCODEC_LOGD("%{public}" PRId64 ", %{public}" PRId64 ", %{public}u", endPtsMs_, startPtsMs_, frameCnt_);
-    ResetIntervalStats();
-
-    double decSpeed = decFps / srcFps;
-    size_t newSpeedIdx = MatchAndUpdateSpeedStats(decSpeed);
     size_t lastDecSpeedIdx = maxPossibleDecSpeedIdx_;
     DecodingBehaviorType newType = DetermineDecodingBehaviorType();
     if (IsDecChanged(type_, lastDecSpeedIdx, newType, newSpeedIdx)) {
@@ -319,6 +363,7 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
     }
     type_ = newType;
     lastCheckTime_ = std::chrono::steady_clock::now();
+    ResetIntervalStats();
 }
 
 } // namespace MediaAVCodec
