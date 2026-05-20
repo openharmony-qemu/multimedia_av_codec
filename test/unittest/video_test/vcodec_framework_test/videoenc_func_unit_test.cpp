@@ -1061,14 +1061,13 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatHeaderBeforeSyncFrames_001, TestSize.Leve
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
 
-    int32_t repeatHeader = 1;
-    format_->PutIntValue(Tag::VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES, repeatHeader);
-    format_->PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, 0);
+    format_->PutIntValue(Tag::VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES, REPEAT_HEADER_ENABLED);
+    format_->PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, I_FRAME_INTERVAL_ALL_IDR);
 
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
 
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::this_thread::sleep_for(std::chrono::seconds(ENCODER_RUN_DURATION_SEC));
 
     int32_t idrCount = videoEnc_->GetIDRFrameCount();
     int32_t idrWithXPS = videoEnc_->GetIDRWithImmediateXPSCount();
@@ -1100,14 +1099,13 @@ HWTEST_F(TEST_SUIT, VideoEncoder_RepeatHeaderBeforeSyncFrames_002, TestSize.Leve
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
 
-    int32_t repeatHeader = 1;
-    format_->PutIntValue(Tag::VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES, repeatHeader);
-    format_->PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, 0);
+    format_->PutIntValue(Tag::VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES, REPEAT_HEADER_ENABLED);
+    format_->PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, I_FRAME_INTERVAL_ALL_IDR);
 
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
 
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::this_thread::sleep_for(std::chrono::seconds(ENCODER_RUN_DURATION_SEC));
 
     int32_t idrCount = videoEnc_->GetIDRFrameCount();
     int32_t idrWithXPS = videoEnc_->GetIDRWithImmediateXPSCount();

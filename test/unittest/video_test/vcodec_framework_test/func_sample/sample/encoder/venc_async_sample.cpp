@@ -128,14 +128,14 @@ void VEncCallbackTestExt::OnNeedInputData(uint32_t index, std::shared_ptr<AVBuff
 
 static const uint8_t *GetNalTypeAddr(const uint8_t *bufferAddr, int32_t size)
 {
-    if (bufferAddr == nullptr || size < 4) {
+    if (bufferAddr == nullptr || size < 4) { // minimum 4-byte start code: 00 00 00 01
         return nullptr;
     }
     for (int32_t i = 0; i < size - 3; i++) {
         if (bufferAddr[i] == 0 && bufferAddr[i + 1] == 0) {
-            if (bufferAddr[i + 2] == 1) {
+            if (bufferAddr[i + 2] == 1) { // 3-byte start code: 00 00 01
                 return bufferAddr + i + 3;
-            } else if (bufferAddr[i + 2] == 0 && i + 3 < size && bufferAddr[i + 3] == 1) {
+            } else if (bufferAddr[i + 2] == 0 && i + 4 <= size && bufferAddr[i + 3] == 1) { // 4-byte start code: 00 00 00 01
                 return bufferAddr + i + 4;
             }
         }
@@ -165,13 +165,13 @@ void VEncCallbackTestExt::OnNewOutputData(uint32_t index, std::shared_ptr<AVBuff
         bool isXPS = false;
         bool isIDR = false;
         if (signal_->isAVCCodec_) {
-            nalType = (*nalAddr) & 0x1F;
-            isXPS = (nalType == 7 || nalType == 8);
-            isIDR = (nalType == 5);
+            nalType = (*nalAddr) & 0x1F; // 0x1F: AVC NAL type mask
+            isXPS = (nalType == 7 || nalType == 8); // 7: SPS, 8: PPS
+            isIDR = (nalType == 5); // 5: IDR slice
         } else {
-            nalType = ((*nalAddr) & 0x7E) >> 1;
-            isXPS = (nalType >= 32 && nalType <= 34);
-            isIDR = (nalType == 19 || nalType == 20);
+            nalType = ((*nalAddr) & 0x7E) >> 1; // 0x7E: HEVC NAL type mask, >> 1: shift to get type
+            isXPS = (nalType >= 32 && nalType <= 34); // 32: VPS, 33: SPS, 34: PPS
+            isIDR = (nalType == 19 || nalType == 20); // 19: IDR_W_RADL, 20: IDR_N_LP
         }
 
         if (isXPS) {
@@ -1065,6 +1065,24 @@ void VideoEncAsyncSample::InputLoopInnerFeatureExt(OH_AVCodecBufferAttr &attr)
     }
 }
 
+void VideoEncAsyncSample::UpdateMaxPendingFramesObserved()
+{
+    auto inputDesc = videoEnc_->GetInputDescription();
+    if (inputDesc == nullptr) {
+        return;
+    }
+    int32_t pendingFrames = -1;
+    if (!inputDesc->GetIntValue(Media::Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames)) {
+        return;
+    }
+    int32_t currentMax = signal_->maxPendingFramesObserved_.load();
+    while (pendingFrames > currentMax) {
+        if (signal_->maxPendingFramesObserved_.compare_exchange_weak(currentMax, pendingFrames)) {
+            break;
+        }
+    }
+}
+
 int32_t VideoEncAsyncSample::InputLoopInnerExt()
 {
     uint32_t index = signal_->inIndexQueue_.front();
@@ -1072,18 +1090,7 @@ int32_t VideoEncAsyncSample::InputLoopInnerExt()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail. index: %d",
                                       index);
 
-    auto inputDesc = videoEnc_->GetInputDescription();
-    if (inputDesc != nullptr) {
-        int32_t pendingFrames = -1;
-        if (inputDesc->GetIntValue(Media::Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames)) {
-            int32_t currentMax = signal_->maxPendingFramesObserved_.load();
-            while (pendingFrames > currentMax) {
-                if (signal_->maxPendingFramesObserved_.compare_exchange_weak(currentMax, pendingFrames)) {
-                    break;
-                }
-            }
-        }
-    }
+    UpdateMaxPendingFramesObserved();
 
     if (isTemporalScalabilitySyncIdr_ && frameInputCount_ == REQUEST_I_FRAME_NUM) {
         std::shared_ptr<FormatMock> format = buffer->GetParameter();
