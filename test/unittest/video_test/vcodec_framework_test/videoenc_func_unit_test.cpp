@@ -1067,7 +1067,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatHeaderBeforeSyncFrames_001, TestSize.Leve
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
 
-    std::this_thread::sleep_for(std::chrono::seconds(ENCODER_RUN_DURATION_SEC));
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 
     int32_t idrCount = videoEnc_->GetIDRFrameCount();
     int32_t idrWithXPS = videoEnc_->GetIDRWithImmediateXPSCount();
@@ -1105,7 +1105,7 @@ HWTEST_F(TEST_SUIT, VideoEncoder_RepeatHeaderBeforeSyncFrames_002, TestSize.Leve
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
 
-    std::this_thread::sleep_for(std::chrono::seconds(ENCODER_RUN_DURATION_SEC));
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 
     int32_t idrCount = videoEnc_->GetIDRFrameCount();
     int32_t idrWithXPS = videoEnc_->GetIDRWithImmediateXPSCount();

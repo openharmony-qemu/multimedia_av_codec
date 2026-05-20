@@ -130,7 +130,6 @@ void VEncCallbackTestExt::UpdateMaxPendingInputCount()
         }
     }
 }
-}
 
 static const uint8_t *GetNalTypeAddr(const uint8_t *bufferAddr, int32_t size)
 {
