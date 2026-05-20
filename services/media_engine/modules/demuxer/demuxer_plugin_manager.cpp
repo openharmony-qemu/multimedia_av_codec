@@ -1190,5 +1190,10 @@ void DemuxerPluginManager::UpdateTempTrackMapByStreamId(int32_t oldTrackId, int3
     GetTrackInfoByStreamID(newStreamId, newTrackId, newInnerTrackId, type);
     UpdateTempTrackMapInfo(oldTrackId, newTrackId, newInnerTrackId);
 }
+
+void DemuxerPluginManager::SetPlayerMode(bool isPlayerMode)
+{
+    isPlayerMode_ = isPlayerMode;
+}
 } // namespace Media
 } // namespace OHOS
