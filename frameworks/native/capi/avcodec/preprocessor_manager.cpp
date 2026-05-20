@@ -32,7 +32,6 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "PreprocessorManager"};
 constexpr int32_t BUFFER_REQUEST_STRIDE_ALIGNMENT = 32;
-constexpr uint32_t ERROR_REPORT_INTERVAL_FRAMES = 30;
 
 class ConsumerListener : public OHOS::IBufferConsumerListener {
 public:
@@ -530,7 +529,6 @@ bool PreprocessorManager::EncoderInfo::ProcessFrame(std::shared_ptr<SurfaceBuffe
                                                     std::shared_ptr<SurfaceBufferWrapper> &outputBuffer)
 {
     AVCODEC_SYNC_TRACE;
-    frameCount_++;
 
     if (preprocessor_->ShouldDropFrame(inputBuffer->timestamp)) {
         AVCODEC_LOGD("venc_%{public}s Frame dropped: pts=%{public}" PRId64, encoderId_.data(),
@@ -538,12 +536,12 @@ bool PreprocessorManager::EncoderInfo::ProcessFrame(std::shared_ptr<SurfaceBuffe
         return false;
     }
     CheckAndNotifyStreamChange(inputBuffer);
-    if (preprocessor_->Process(inputBuffer->buffer, outputBuffer->buffer, inputBuffer->timestamp) == AV_ERR_OK) {
-        SetBufferFlushConfig(inputBuffer, outputBuffer);
-    } else {
-        ReportPreprocessError(AVCS_ERR_UNKNOWN);
+    auto ret = preprocessor_->Process(inputBuffer->buffer, outputBuffer->buffer, inputBuffer->timestamp);
+    if (ret != static_cast<int32_t>(AVCS_ERR_OK)) {
+        ReportPreprocessError(ret);
         return false;
     }
+    SetBufferFlushConfig(inputBuffer, outputBuffer);
     return true;
 }
 
@@ -627,19 +625,6 @@ bool PreprocessorManager::EncoderInfo::PeekPendingBufferData(BufferDataInfo& out
 
 void PreprocessorManager::EncoderInfo::ReportPreprocessError(int32_t errorCode)
 {
-    uint64_t frameDiff = frameCount_ - lastReportedErrorFrameCount_;
-    if (errorCode == lastReportedPreprocessError_ && frameDiff < ERROR_REPORT_INTERVAL_FRAMES) {
-        AVCODEC_LOGW("Preprocess error suppressed: encoder=%{public}s, code=%{public}d, frame=%{public}" PRIu64,
-                     encoderId_.data(), errorCode, frameCount_);
-        return;
-    }
-
-    AVCODEC_LOGE("Preprocess error reported: encoder=%{public}s, code=%{public}d, frame=%{public}" PRIu64,
-                 encoderId_.data(), errorCode, frameCount_);
-
-    lastReportedPreprocessError_ = errorCode;
-    lastReportedErrorFrameCount_ = frameCount_;
-
     if (preprocessErrorCallback_) {
         preprocessErrorCallback_(errorCode);
     }
