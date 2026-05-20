@@ -335,6 +335,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/demuxer_fuzzer:DemuxerFuzzTest",
       "fuzztest/demuxerinnerfunc_fuzzer:DemuxerInnerFuncFuzzTest",
       "fuzztest/demuxerinner_fuzzer:DemuxerInnerFuzzTest",
+      "fuzztest/demuxerfilter_fuzzer:DemuxerFilterFuzzTest",
       "fuzztest/demuxeraac_fuzzer:DemuxerAacFuzzTest",
       "fuzztest/demuxeraacapi11_fuzzer:DemuxerAacAPI11FuzzTest",
       "fuzztest/demuxeramr_fuzzer:DemuxerAmrFuzzTest",
@@ -505,9 +506,11 @@ group("av_codec_fuzz_test") {
       "fuzztest/http_plugin_fuzztest/dashmediadownloader_fuzzer:DashMediaDownloaderFuzzTest",
       "fuzztest/http_plugin_fuzztest/dashmediadownselectbit_fuzzer:DashMediaDownSelectBitFuzzTest",
       "fuzztest/http_plugin_fuzztest/dashmpddownloader_fuzzer:DashMpdDownloaderFuzzTest",
+      "fuzztest/http_plugin_fuzztest/dashmpdhelper_fuzzer:DashMpdHelperFuzzTest",
       "fuzztest/http_plugin_fuzztest/httpdownloaderflv_fuzzer:HttpDownloaderFlvFuzzTest",
       "fuzztest/http_plugin_fuzztest/hlsdownload_fuzzer:HlsDownloadFuzzTest",
       "fuzztest/http_plugin_fuzztest/hlscfg_fuzzer:HlsCfgFuzzTest",
+      "fuzztest/http_plugin_fuzztest/hlsmasterplaylist_fuzzer:HlsMasterPlaylistFuzzTest",
       "fuzztest/http_plugin_fuzztest/hlsmediacfg_fuzzer:HlsMediaCfgFuzzTest",
       "fuzztest/http_plugin_fuzztest/hlsm3u8mutate_fuzzer:HlsM3u8MutateFuzzTest",
       "fuzztest/http_plugin_fuzztest/httpdownloader_fuzzer:HttpDownloaderFuzzTest",
@@ -537,6 +540,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/cinepakdecoderconfigure_fuzzer:CinepakdecoderConfigureFuzzTest",
       "fuzztest/cinepakdecoderresource_fuzzer:CinepakdecoderResourceFuzzTest",
       "fuzztest/cinepakdecodersetparameter_fuzzer:CinepakdecoderSetParameterFuzzTest",
+      "fuzztest/samplequeuecontroller_fuzzer:SampleQueueControllerFuzzTest",
     ]
     if(av_codec_support_vp8_decoder) {
       deps += [

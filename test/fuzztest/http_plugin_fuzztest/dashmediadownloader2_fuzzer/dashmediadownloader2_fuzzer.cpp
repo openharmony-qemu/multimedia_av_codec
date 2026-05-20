@@ -85,6 +85,7 @@ bool DashMediaDownloader2FuzzTest(const uint8_t *data, size_t size)
     auto cb = std::make_shared<DashCallbackMock1>();
     cb->SetDownload(mediaDownloader);
     mediaDownloader->SetCallback(cb);
+    mediaDownloader->SetIsTriggerAutoMode(true);
     std::string testUrl = MPD_MULTI_AUDIO_SUB;
     std::map<std::string, std::string> httpHeader = {
         {"User-Agent", "ABC"},

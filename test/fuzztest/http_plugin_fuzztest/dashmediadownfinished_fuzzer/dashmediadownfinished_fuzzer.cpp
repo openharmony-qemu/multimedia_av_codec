@@ -86,6 +86,17 @@ public:
 };
 }
 
+void SetDefaultPlayStrategy(std::shared_ptr<PlayStrategy> playStrategy)
+{
+    if (playStrategy != nullptr) {
+        playStrategy->width = DEFAULT_WIDTH;
+        playStrategy->height = DEFAULT_HEIGHT;
+        playStrategy->duration = DEFAULT_DURATION;
+        playStrategy->audioLanguage = "eng";
+        playStrategy->subtitleLanguage = "en_GB";
+    }
+}
+
 bool DashMediaDownFinishedFuzzerTest(const uint8_t *data, size_t size)
 {
     if (data == nullptr) {
@@ -96,6 +107,7 @@ bool DashMediaDownFinishedFuzzerTest(const uint8_t *data, size_t size)
     auto cb = std::make_shared<DashCallbackMock1>();
     cb->SetDownload(mediaDownloader);
     mediaDownloader->SetCallback(cb);
+    mediaDownloader->SetIsTriggerAutoMode(true);
     std::string testUrl = MPD_MULTI_AUDIO_SUB;
     std::map<std::string, std::string> httpHeader = {
         {"User-Agent", "ABC"},
@@ -106,11 +118,7 @@ bool DashMediaDownFinishedFuzzerTest(const uint8_t *data, size_t size)
     };
     mediaDownloader->SetStatusCallback(statusCallback);
     std::shared_ptr<PlayStrategy> playStrategy = std::make_shared<PlayStrategy>();
-    playStrategy->width = DEFAULT_WIDTH;
-    playStrategy->height = DEFAULT_HEIGHT;
-    playStrategy->duration = DEFAULT_DURATION;
-    playStrategy->audioLanguage = "eng";
-    playStrategy->subtitleLanguage = "en_GB";
+    SetDefaultPlayStrategy(playStrategy);
     mediaDownloader->SetPlayStrategy(playStrategy);
 
     mediaDownloader->Open(testUrl, httpHeader);
