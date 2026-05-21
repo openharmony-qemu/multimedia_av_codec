@@ -217,9 +217,10 @@ Status HdiCodec::EmptyThisBuffer(const std::shared_ptr<AVBuffer> &buffer)
     omxInBufferInfo_->omxBuffer->pts = buffer->pts_;
     omxInBufferInfo_->omxBuffer->flag = buffer->flag_;
 
-    CHECK_AND_RETURN_RET_LOG(
-        omxInBufferInfo_->avBuffer->memory_->GetCapacity() >= omxInBufferInfo_->omxBuffer->filledLen,
-        Status::ERROR_INVALID_DATA, "buffer not enough %{public}d < %{public}u");
+    CHECK_AND_RETURN_RET_LOG(static_cast<uint32_t>(omxInBufferInfo_->avBuffer->memory_->GetCapacity())
+        >= omxInBufferInfo_->omxBuffer->filledLen,
+        Status::ERROR_INVALID_DATA, "buffer not enough %{public}d < %{public}u",
+        omxInBufferInfo_->avBuffer->memory_->GetCapacity(), omxInBufferInfo_->omxBuffer->filledLen);
     errno_t rc = memcpy_s(omxInBufferInfo_->avBuffer->memory_->GetAddr(),
                           omxInBufferInfo_->avBuffer->memory_->GetCapacity(),
                           buffer->memory_->GetAddr(), omxInBufferInfo_->omxBuffer->filledLen);
@@ -244,9 +245,10 @@ Status HdiCodec::FillThisBuffer(std::shared_ptr<AVBuffer> &buffer)
     condition_.wait_for(lock, std::chrono::milliseconds(TIMEOUT_MS), [this] { return outputOmxBuffer_ != nullptr; });
     CHECK_AND_RETURN_RET_LOG(outputOmxBuffer_ != nullptr, Status::ERROR_INVALID_PARAMETER, "FillThisBuffer timeout!");
 
-    CHECK_AND_RETURN_RET_LOG(
-        omxInBufferInfo_->avBuffer->memory_->GetCapacity() >= omxInBufferInfo_->omxBuffer->filledLen,
-        Status::ERROR_INVALID_DATA, "buffer not enough %{public}d < %{public}u");
+    CHECK_AND_RETURN_RET_LOG(static_cast<uint32_t>(omxInBufferInfo_->avBuffer->memory_->GetCapacity())
+        >= omxInBufferInfo_->omxBuffer->filledLen,
+        Status::ERROR_INVALID_DATA, "buffer not enough %{public}d < %{public}u",
+        omxInBufferInfo_->avBuffer->memory_->GetCapacity(), omxInBufferInfo_->omxBuffer->filledLen);
     errno_t rc = memcpy_s(buffer->memory_->GetAddr(), buffer->memory_->GetCapacity(),
                           omxOutBufferInfo_->avBuffer->memory_->GetAddr(), outputOmxBuffer_->filledLen);
     CHECK_AND_RETURN_RET_LOG(rc == EOK, Status::ERROR_INVALID_DATA, "memory copy failed!");
