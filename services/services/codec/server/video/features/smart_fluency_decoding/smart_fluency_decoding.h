@@ -60,6 +60,7 @@ public:
     bool MakePreDecodeDecision(uint32_t index);
     bool MakePostDecodeDecision(uint32_t index, int64_t pts, const sptr<SurfaceBuffer> surfaceBuffer);
     void Flush();
+    void OnDecInfoUpdate(double sourceFps, double speed);
     
 private:
     struct StrategyCaps {

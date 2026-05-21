@@ -32,7 +32,7 @@ public:
     bool RecordPreDroppedFrame(int64_t pts, double speed);
     uint32_t GetAndConsumePreDroppedCount(int64_t currentPts);
     void Reset();
-    double GetEmaRatio() const;
+    double GetActualRetentionRatio() const;
     void UpdateFeedback(bool isRetained, double speed);
     size_t GetWriteIndex() const;
     size_t GetReadIndex() const;
@@ -45,7 +45,7 @@ private:
     std::atomic<bool> isConsumed_[queueCapacity]{};
     alignas(cacheLineSize) std::atomic<size_t> writeIndex_{0};
     alignas(cacheLineSize) std::atomic<size_t> readIndex_{0};
-    double emaRatio_{1.0};
+    double actualRetentionRatio_{1.0};
     mutable std::mutex feedbackMutex_;
 };
 } // namespace SFD

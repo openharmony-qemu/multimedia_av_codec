@@ -29,6 +29,7 @@ public:
 
     bool MakeRetentionDecision(const FrameRetentionContext& ctx) override;
     void UpdatePlaybackSpeed(double speed) override;
+    void UpdateSourceFramerate(double sourceFps) override;
     void Reset() override;
     RetentionStrategyType GetMode() const override;
     double GetRatio() const override;
@@ -36,9 +37,14 @@ public:
     bool RequiresMvAnalysis() const override;
 
 private:
+    double CalculateTargetRatio(const FrameRetentionContext& ctx) const;
+    double EvaluateStutterRisk(const MVStats& mvStats) const;
+    bool ExecuteAccumulatorDecision(double dynamicRatio, uint32_t preDroppedCount);
+
     double currentSpeed_{1.0};
-    uint32_t dropCount_{0};
     double targetRatio_{1.0};
+    double accumulator_{0.0};
+    double sourceFps_{-1.0}; // -1.0 mean not ready
     SfdDecisionReason lastReason_{SfdDecisionReason::UNSPECIFIED};
 };
 

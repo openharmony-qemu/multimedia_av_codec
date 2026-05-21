@@ -105,6 +105,15 @@ void SmartFluencyDecoding::UpdatePlaybackSpeed(double speed)
     }
 }
 
+void SmartFluencyDecoding::OnDecInfoUpdate(double sourceFps, double speed)
+{
+    UpdatePlaybackSpeed(speed);
+    std::lock_guard<std::mutex> lock(configMutex_);
+    if (strategy_) {
+        strategy_->UpdateSourceFramerate(sourceFps);
+    }
+}
+
 void SmartFluencyDecoding::ParseRetentionConfig(
     const Media::Format& format, RetentionStrategyType& mode, std::optional<double>& ratio)
 {
@@ -315,7 +324,7 @@ void SmartFluencyDecoding::RecordPreDecodeDump(
     dumperCtx.preDecCostUs = GetCurrentSysTimeUs() - startUs;
     dumperCtx.naluCostUs = res.naluCostUs;
     dumperCtx.writeIndex = dropSyncCoordinator_->GetWriteIndex();
-    dumperCtx.emaRatio = dropSyncCoordinator_->GetEmaRatio();
+    dumperCtx.actualRetentionRatio = dropSyncCoordinator_->GetActualRetentionRatio();
     dumperCtx.reason = res.reason;
     dumper_->RecordPreDecode(dumperCtx);
 #endif
@@ -338,7 +347,7 @@ void SmartFluencyDecoding::RecordPostDecodeDump(
     dumperCtx.sysTimeMs = GetCurrentSysTimeMs();
     dumperCtx.postDecCostUs = dumperStart - cost.startUs;
     dumperCtx.readIndex = dropSyncCoordinator_->GetReadIndex();
-    dumperCtx.emaRatio = dropSyncCoordinator_->GetEmaRatio();
+    dumperCtx.actualRetentionRatio = dropSyncCoordinator_->GetActualRetentionRatio();
     dumperCtx.reason = res.reason;
     dumperCtx.mvStats = mvStats;
     dumperCtx.copyMvCostUs = cost.copyMvCostUs;
@@ -374,7 +383,7 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
         res.naluCostUs = GetCurrentSysTimeUs() - naluStartUs;
 #endif
         if (res.isNonRef) {
-            double currentEmaRet = dropSyncCoordinator_->GetEmaRatio();
+            double currentEmaRet = dropSyncCoordinator_->GetActualRetentionRatio();
             if (DoubleUtils::IsGreaterOrEqual(caps.targetRatio, 1.0)) {
                 res.reason = SfdDecisionReason::PRE_RETAIN_TARGET_FULL;
             } else if (DoubleUtils::IsLessOrEqual(currentEmaRet, caps.targetRatio)) {

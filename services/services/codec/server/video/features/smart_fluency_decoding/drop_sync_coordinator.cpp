@@ -72,9 +72,9 @@ void DropSyncCoordinator::UpdateFeedback(bool isRetained, double speed)
     std::lock_guard<std::mutex> lock(feedbackMutex_);
     double alpha = std::min(1.0, BASE_ALPHA * speed);
     double currentVal = isRetained ? 1.0 : 0.0;
-    emaRatio_ = alpha * currentVal + (1.0 - alpha) * emaRatio_;
-    AVCODEC_LOGD("isRetained=%{public}d, emaRatio=%{public}.4f",
-        isRetained, emaRatio_);
+    actualRetentionRatio_ = alpha * currentVal + (1.0 - alpha) * actualRetentionRatio_;
+    AVCODEC_LOGD("isRetained=%{public}d, actualRetentionRatio=%{public}.4f",
+        isRetained, actualRetentionRatio_);
 }
 
 void DropSyncCoordinator::Reset()
@@ -89,14 +89,14 @@ void DropSyncCoordinator::Reset()
         readIndex_.store(currentWrite, std::memory_order_relaxed);
     }
     std::lock_guard<std::mutex> lock(feedbackMutex_);
-    emaRatio_ = 1.0;
+    actualRetentionRatio_ = 1.0;
     AVCODEC_LOGI("Reset DropSyncCoordinator");
 }
 
-double DropSyncCoordinator::GetEmaRatio() const
+double DropSyncCoordinator::GetActualRetentionRatio() const
 {
     std::lock_guard<std::mutex> lock(feedbackMutex_);
-    return emaRatio_;
+    return actualRetentionRatio_;
 }
 
 size_t DropSyncCoordinator::GetWriteIndex() const
