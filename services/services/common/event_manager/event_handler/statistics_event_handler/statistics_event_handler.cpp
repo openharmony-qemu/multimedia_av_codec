@@ -725,7 +725,8 @@ public:
             return;
         }
         std::string featurePending;
-        if (int32_t rcMode = 0; feature == "RC_MODE"s && eventMeta.GetData(EventInfoExtentedKey::RC_MODE, rcMode)) {
+        if (int32_t rcMode = 0;
+            feature == "RC_MODE"s && eventMeta.GetData(EventInfoExtentedKey::RC_MODE.data(), rcMode)) {
             featurePending = ToString(static_cast<VideoEncodeBitrateMode>(rcMode));
         }
         AppNameIndex appIndex = AppNameIndexInfo::GetInstance().GetIndexByMeta(eventMeta);
