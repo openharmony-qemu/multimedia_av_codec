@@ -51,6 +51,7 @@ Status ConvertTimeScaleRoundToTimeBase(int64_t multiplicand, int64_t multiplier,
 
 namespace {
 const std::string TEST_MP4_PATH_H264_B = "/data/test/media/test_264_B_Gop25_4sec_cover.mp4";
+const std::string TEST_MP4_PATH_3DGS = "/data/test/media/3dgs.mp4";
 const std::string TEST_MP4_PATH_H265_B = "/data/test/media/test_265_B_Gop25_4sec.mp4";
 const std::string TEST_MP4_PATH_DELAY_V1S = "/data/test/media/delay_v1s.mp4";
 const std::string TEST_MP4_PATH_MPEG4 = "/data/test/media/MPEG4.mp4";
@@ -79,6 +80,7 @@ constexpr int64_t WEAK_NETWORK_FIRST_READ_FAIL_OFFSET = 0;
 constexpr size_t WEAK_NETWORK_TIMEOUT_RECOVER_FAIL_COUNT = 1;
 constexpr size_t WEAK_NETWORK_THREAD_RETRY_FAIL_COUNT = 20;
 constexpr size_t MAX_WEBVTT_SAMPLE_READ_COUNT = 100000;
+constexpr int64_t GLTF_OFFSET_3DGS = 3526448;
 std::unique_ptr<FileServerDemo> g_server = nullptr;
 
 std::vector<SeekExpectedResult> GetExplicitSeekExpectedResults()
@@ -2099,6 +2101,23 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SetDataSourceWithProbSiz
     if (fd >= 0) {
         close(fd);
     }
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_GetGltfOffset_001
+ * @tc.desc: Verify MPEG4 demuxer exposes file-level glTF idat payload offset
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_GetGltfOffset_001, TestSize.Level1)
+{
+    InitMpeg4Plugin(TEST_MP4_PATH_3DGS);
+
+    bool isGltf = false;
+    int64_t gltfOffset = -1;
+    EXPECT_TRUE(mpeg4MediaInfo_.general.Get<Tag::IS_GLTF>(isGltf));
+    EXPECT_TRUE(isGltf);
+    EXPECT_TRUE(mpeg4MediaInfo_.general.Get<Tag::GLTF_OFFSET>(gltfOffset));
+    EXPECT_EQ(gltfOffset, GLTF_OFFSET_3DGS);
 }
 
 /**

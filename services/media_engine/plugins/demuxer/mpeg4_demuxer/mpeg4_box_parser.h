@@ -124,6 +124,8 @@ private:
         bool foundHdlrMdta = false;
         bool founditunesMetadata = false;
         bool isUserMeta = false;
+        bool foundFileMetaHdlrGltf = false;
+        int64_t fileMetaIdatPayloadOffset = -1;
     };
     ParseContext ctx_;
 
@@ -176,6 +178,8 @@ private:
     void AdapterFormat(std::shared_ptr<Track> track);
     bool IsValidTrackIndex(const MediaInfo& mediaInfo, uint32_t index);
     bool UnderMetaPath(const std::vector<uint32_t>& path, int32_t depth);
+    bool UnderFileLevelMetaPath(const std::vector<uint32_t>& path, int32_t depth);
+    void TrySetGltfOffset(ParseContext* ctx);
     
     // Display matrix 相关辅助函数
     void CalculateSampleAspectRatio(std::shared_ptr<Track> track, uint32_t width, uint32_t height);
@@ -337,6 +341,7 @@ private:
     Status ParseKind(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseChan(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseChap(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
+    Status ParseIdat(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseClli(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseMdcv(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
 };
