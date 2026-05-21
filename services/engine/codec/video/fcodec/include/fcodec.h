@@ -126,6 +126,7 @@ private:
 #endif
     void FramePostProcess(std::shared_ptr<FBuffer> &frameBuffer, uint32_t index, int32_t status, int ret);
     int32_t AllocateInputBuffer(int32_t inBufferSize);
+    int32_t AllocateSurfaceBuffer(sptr<SurfaceBuffer> &surfacebuffer);
     int32_t AllocateOutputBuffer(int32_t outBufferSize);
     int32_t ClearSurfaceAndSetQueueSize();
     int32_t AllocateOutputBuffersFromSurface();

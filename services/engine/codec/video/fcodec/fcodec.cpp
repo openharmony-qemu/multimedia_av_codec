@@ -18,6 +18,9 @@
 #include <set>
 #include <thread>
 #include <malloc.h>
+#include <sstream>
+#include <sys/ioctl.h>
+#include <linux/dma-buf.h>
 #include "syspara/parameters.h"
 #include "securec.h"
 #include "avcodec_trace.h"
@@ -61,6 +64,7 @@ static std::map<RawVideoPixelFormat, AVPixelFormat> g_convertFfmpegPixFmt = {
     {RawVideoPixelFormat::NV21, AVPixelFormat::AV_PIX_FMT_NV21},
     {RawVideoPixelFormat::RGBA, AVPixelFormat::AV_PIX_FMT_RGBA},
 };
+#define DMA_BUF_SET_LEAK_TYPE _IOW(DMA_BUF_BASE, 5, const char *)
 } // namespace
 using namespace OHOS::Media;
 using FMTKey = Media::Tag;
@@ -889,23 +893,51 @@ void FCodec::RequestSurfaceBufferOnce()
     requestBufferCV_.notify_one();
 }
 
+int32_t FCodec::AllocateSurfaceBuffer(sptr<SurfaceBuffer> &surfacebuffer)
+{
+    GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(outputPixelFmt_);
+    BufferRequestConfig reqConfig = {.width = width_,
+                                     .height = height_,
+                                     .strideAlignment = SURFACE_STRIDE_ALIGN,
+                                     .format = static_cast<int32_t>(surfacePixelFmt),
+                                     .usage = SURFACE_DEFAULT_USAGE,
+                                     .timeout = TIMEOUT};
+    surfacebuffer = SurfaceBuffer::Create();
+    CHECK_AND_RETURN_RET_LOG(surfacebuffer, AVCS_ERR_UNKNOWN, "Create surface buffer failed!");
+    GSError err = surfacebuffer->Alloc(reqConfig);
+    CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK && surfacebuffer != nullptr, err,
+                             "Alloc surface buffer failed, GSERROR=%{public}d", err);
+    int32_t fd = surfacebuffer->GetFileDescriptor();
+    CHECK_AND_RETURN_RET_LOG(fd > 0, AVCS_ERR_UNKNOWN, "Invalid fd %{public}d, surface buffer(%{public}u)", fd,
+                             surfacebuffer->GetSeqNum());
+    std::string type = "sw-video-decoder";
+    std::string mime(fDecInfo_.mimeType);
+    std::vector<std::string> splitMime;
+    std::string token;
+    std::istringstream iss(mime);
+    while (std::getline(iss, token, '/')) {
+        splitMime.push_back(token);
+    }
+    if (!splitMime.empty()) {
+        mime = splitMime.back();
+    }
+    std::string name = std::to_string(width_) + "x" + std::to_string(height_) + "-" + mime + "-" + fDecInfo_.instanceId;
+    ioctl(fd, DMA_BUF_SET_LEAK_TYPE, type.c_str());
+    std::string pid = std::to_string(fDecInfo_.pid);
+    ioctl(fd, DMA_BUF_SET_NAME_A, pid.c_str());
+    ioctl(fd, DMA_BUF_SET_NAME_A, name.c_str());
+    return AVCS_ERR_OK;
+}
+
 int32_t FCodec::AllocateOutputBuffer(int32_t outBufferSize)
 {
     CHECK_AND_RETURN_RET_LOG(sInfo_.surface == nullptr, AVCS_ERR_UNKNOWN, "Not in buffer mode!");
     int32_t valBufferCnt = 0;
     for (uint32_t i = 0u; i < outputBufferCnt_; i++) {
-        GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(outputPixelFmt_);
-        BufferRequestConfig reqConfig = {.width = width_,
-                                         .height = height_,
-                                         .strideAlignment = SURFACE_STRIDE_ALIGN,
-                                         .format = static_cast<int32_t>(surfacePixelFmt),
-                                         .usage = SURFACE_DEFAULT_USAGE,
-                                         .timeout = TIMEOUT};
-        sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
-        CHECK_AND_RETURN_RET_LOG(sb, AVCS_ERR_UNKNOWN, "Create surface buffer failed!");
-        GSError err = sb->Alloc(reqConfig);
-        CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK && sb != nullptr, err,
-                                 "Alloc surface buffer failed, GSERROR=%{public}d", err);
+        sptr<SurfaceBuffer> sb = nullptr;
+        int32_t ret = AllocateSurfaceBuffer(sb);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK && sb != nullptr, ret,
+                                 "Alloc surface buffer failed, ret=%{public}d", ret);
         std::shared_ptr<FBuffer> buf = std::make_shared<FBuffer>();
         CHECK_AND_RETURN_RET_LOG(buf != nullptr, AVCS_ERR_UNKNOWN, "Creata output buffer failed!");
         buf->width_ = width_;
@@ -1017,18 +1049,10 @@ int32_t FCodec::AllocateBuffers()
 int32_t FCodec::UpdateBuffers(uint32_t index, int32_t bufferSize)
 {
     if (buffers_[INDEX_OUTPUT][index]->width_ != width_ || buffers_[INDEX_OUTPUT][index]->height_ != height_) {
-        GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(outputPixelFmt_);
-        BufferRequestConfig reqConfig = {.width = width_,
-                                         .height = height_,
-                                         .strideAlignment = SURFACE_STRIDE_ALIGN,
-                                         .format = static_cast<int32_t>(surfacePixelFmt),
-                                         .usage = SURFACE_DEFAULT_USAGE,
-                                         .timeout = TIMEOUT};
-        sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
-        CHECK_AND_RETURN_RET_LOG(sb, AVCS_ERR_UNKNOWN, "Create surface buffer failed!");
-        GSError err = sb->Alloc(reqConfig);
-        CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK && sb != nullptr, err,
-                                 "Alloc surface buffer failed, GSERROR=%{public}d", err);
+        sptr<SurfaceBuffer> sb = nullptr;
+        int32_t ret = AllocateSurfaceBuffer(sb);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK && sb != nullptr, ret,
+                                 "Alloc surface buffer failed, ret=%{public}d", ret);
         std::shared_ptr<FBuffer> buf = std::make_shared<FBuffer>();
         CHECK_AND_RETURN_RET_LOG(buf != nullptr, AVCS_ERR_UNKNOWN, "Creata output buffer failed!");
         buf->width_ = width_;
