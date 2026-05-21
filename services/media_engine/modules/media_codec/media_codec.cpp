@@ -138,7 +138,7 @@ int32_t MediaCodec::Init(const std::string &mime, bool isEncoder)
     if (codecPlugin_ != nullptr) {
         AVCODEC_LOGI("codecPlugin_->Init()");
         auto ret = codecPlugin_->Init();
-        CHECK_AND_RETURN_RET_LOG(ret == Status::OK, (int32_t)ret, "pluign init failed");
+        CHECK_AND_RETURN_RET_LOG(ret == Status::OK, static_cast<int32_t>(ret), "pluign init failed");
         state_ = CodecState::INITIALIZED;
     } else {
         AVCODEC_LOGI("createPlugin failed");
@@ -232,9 +232,9 @@ int32_t MediaCodec::Configure(const std::shared_ptr<Meta> &meta)
     CHECK_AND_RETURN_RET_LOG(state_ == CodecState::INITIALIZED, (int32_t)Status::ERROR_INVALID_STATE,
                              "state != inited");
     auto ret = codecPlugin_->SetParameter(meta);
-    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, (int32_t)ret, "ret != ok");
+    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, static_cast<int32_t>(ret), "ret != ok");
     ret = codecPlugin_->SetDataCallback(this);
-    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, (int32_t)ret, "ret != ok");
+    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, static_cast<int32_t>(ret), "ret != ok");
     state_ = CodecState::CONFIGURED;
     return (int32_t)Status::OK;
 }
@@ -259,7 +259,7 @@ int32_t MediaCodec::SetCodecCallback(const std::shared_ptr<CodecCallback> &codec
         "codecCallback is nullptr");
     codecCallback_ = codecCallback;
     auto ret = codecPlugin_->SetDataCallback(this);
-    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, (int32_t)ret, "ret != ok");
+    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, static_cast<int32_t>(ret), "ret != ok");
     return (int32_t)Status::OK;
 }
 
@@ -301,11 +301,11 @@ int32_t MediaCodec::Prepare()
     }
     outputBufferCapacity_ = 0;
     auto ret = (int32_t)PrepareInputBufferQueue();
-    CHECK_AND_RETURN_RET_LOG(ret == (int32_t)Status::OK, (int32_t)ret, "PrepareInputBufferQueue failed");
+    CHECK_AND_RETURN_RET_LOG(ret == (int32_t)Status::OK, static_cast<int32_t>(ret), "PrepareInputBufferQueue failed");
     ret = (int32_t)PrepareOutputBufferQueue();
-    CHECK_AND_RETURN_RET_LOG(ret == (int32_t)Status::OK, (int32_t)ret, "PrepareOutputBufferQueue failed");
+    CHECK_AND_RETURN_RET_LOG(ret == (int32_t)Status::OK, static_cast<int32_t>(ret), "PrepareOutputBufferQueue failed");
     state_ = CodecState::PREPARED;
-    AVCODEC_LOGI("Prepare, ret = %{public}d", (int32_t)ret);
+    AVCODEC_LOGI("Prepare, ret = %{public}d", static_cast<int32_t>(ret));
     return (int32_t)Status::OK;
 }
 
@@ -465,9 +465,9 @@ int32_t MediaCodec::Start()
         (int32_t)Status::ERROR_INVALID_STATE, "state invalid");
     state_ = CodecState::STARTING;
     auto ret = codecPlugin_->Start();
-    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, (int32_t)ret, "plugin start failed");
+    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, static_cast<int32_t>(ret), "plugin start failed");
     state_ = CodecState::RUNNING;
-    return (int32_t)ret;
+    return static_cast<int32_t>(ret);
 }
 
 int32_t MediaCodec::Stop()
@@ -487,11 +487,11 @@ int32_t MediaCodec::Stop()
     state_ = CodecState::STOPPING;
     auto ret = codecPlugin_->Stop();
     AVCODEC_LOGI("codec Stop, state from %{public}s to Stop", StateToString(state_).data());
-    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, (int32_t)ret, "plugin stop failed");
+    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, static_cast<int32_t>(ret), "plugin stop failed");
     ClearInputBuffer();
     ResetBufferStatusInfo();
     state_ = CodecState::PREPARED;
-    return (int32_t)ret;
+    return static_cast<int32_t>(ret);
 }
 
 int32_t MediaCodec::Flush()
@@ -511,11 +511,11 @@ int32_t MediaCodec::Flush()
     state_ = CodecState::FLUSHING;
     inputBufferQueueProducer_->Clear();
     auto ret = codecPlugin_->Flush();
-    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, (int32_t)ret, "plugin flush failed");
+    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, static_cast<int32_t>(ret), "plugin flush failed");
     ClearInputBuffer();
     ResetBufferStatusInfo();
     state_ = CodecState::FLUSHED;
-    return (int32_t)ret;
+    return static_cast<int32_t>(ret);
 }
 
 int32_t MediaCodec::Reset()
@@ -533,7 +533,7 @@ int32_t MediaCodec::Reset()
         return (int32_t)Status::OK;
     }
     auto ret = codecPlugin_->Reset();
-    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, (int32_t)ret, "plugin reset failed");
+    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, static_cast<int32_t>(ret), "plugin reset failed");
     ClearInputBuffer();
     ResetBufferStatusInfo();
     ClearBufferQueue();
@@ -549,7 +549,7 @@ int32_t MediaCodec::Reset()
     // LCOV_EXCL_STOP
     ResetIOStat();
     state_ = CodecState::INITIALIZED;
-    return (int32_t)ret;
+    return static_cast<int32_t>(ret);
 }
 
 int32_t MediaCodec::Release()
@@ -572,7 +572,7 @@ int32_t MediaCodec::Release()
     ResetIOStat();
     state_ = CodecState::RELEASING;
     auto ret = codecPlugin_->Release();
-    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, (int32_t)ret, "plugin release failed");
+    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, static_cast<int32_t>(ret), "plugin release failed");
     codecPlugin_ = nullptr;
     ResetBufferStatusInfo();
     ClearBufferQueue();
@@ -587,7 +587,7 @@ int32_t MediaCodec::Release()
     }
     // LCOV_EXCL_STOP
     state_ = CodecState::UNINITIALIZED;
-    return (int32_t)ret;
+    return static_cast<int32_t>(ret);
 }
 
 int32_t MediaCodec::NotifyEos()
@@ -606,8 +606,8 @@ int32_t MediaCodec::SetParameter(const std::shared_ptr<Meta> &parameter)
     CHECK_AND_RETURN_RET_LOG(state_ != CodecState::UNINITIALIZED && state_ != CodecState::INITIALIZED &&
         state_ != CodecState::PREPARED, (int32_t)Status::ERROR_INVALID_STATE, "state invalid");
     auto ret = codecPlugin_->SetParameter(parameter);
-    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, (int32_t)ret, "plugin set parameter failed");
-    return (int32_t)ret;
+    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, static_cast<int32_t>(ret), "plugin set parameter failed");
+    return static_cast<int32_t>(ret);
 }
 
 void MediaCodec::SetDumpInfo(bool isDump, uint64_t instanceId)
@@ -627,8 +627,8 @@ int32_t MediaCodec::GetOutputFormat(std::shared_ptr<Meta> &parameter)
     CHECK_AND_RETURN_RET_LOG(codecPlugin_ != nullptr, (int32_t)Status::ERROR_INVALID_STATE, "plugin nullptr");
     CHECK_AND_RETURN_RET_LOG(parameter != nullptr, (int32_t)Status::ERROR_INVALID_PARAMETER, "input nullptr");
     auto ret = codecPlugin_->GetParameter(parameter);
-    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, (int32_t)ret, "plugin get parameter failed");
-    return (int32_t)ret;
+    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, static_cast<int32_t>(ret), "plugin get parameter failed");
+    return static_cast<int32_t>(ret);
 }
 
 Status MediaCodec::AttachBufffer()
@@ -754,12 +754,12 @@ int32_t MediaCodec::PrepareInputBufferQueue()
     MediaAVCodec::AVCodecTrace trace("MediaCodec::PrepareInputBufferQueue");
     CHECK_AND_RETURN_RET_LOG(codecPlugin_ != nullptr, (int32_t)Status::ERROR_UNKNOWN, "codecPlugin_ is nullptr");
     auto ret = codecPlugin_->GetInputBuffers(inputBuffers);
-    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, (int32_t)ret, "pluign getInputBuffers failed");
+    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, static_cast<int32_t>(ret), "pluign getInputBuffers failed");
     if (inputBuffers.empty()) {
         ret = AttachBufffer();
         if (ret != Status::OK) {
             AVCODEC_LOGE("GetParameter failed");
-            return (int32_t)ret;
+            return static_cast<int32_t>(ret);
         }
     } else {
         if (inputBufferQueue_ == nullptr) {
@@ -781,7 +781,7 @@ int32_t MediaCodec::PrepareInputBufferQueue()
     CHECK_AND_RETURN_RET_LOG(inputBufferQueueConsumer_ != nullptr, (int32_t)Status::ERROR_UNKNOWN,
                              "inputBufferQueueConsumer_ is nullptr");
     inputBufferQueueConsumer_->SetBufferAvailableListener(listener);
-    return (int32_t)ret;
+    return static_cast<int32_t>(ret);
 }
 
 int32_t MediaCodec::PrepareOutputBufferQueue()
@@ -791,14 +791,14 @@ int32_t MediaCodec::PrepareOutputBufferQueue()
     MediaAVCodec::AVCodecTrace trace("MediaCodec::PrepareOutputBufferQueue");
     CHECK_AND_RETURN_RET_LOG(codecPlugin_ != nullptr, (int32_t)Status::ERROR_INVALID_STATE, "codecPlugin_ is nullptr");
     auto ret = codecPlugin_->GetOutputBuffers(outputBuffers);
-    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, (int32_t)ret, "GetOutputBuffers failed");
+    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, static_cast<int32_t>(ret), "GetOutputBuffers failed");
     CHECK_AND_RETURN_RET_LOG(outputBufferQueueProducer_ != nullptr, (int32_t)Status::ERROR_INVALID_STATE,
                              "outputBufferQueueProducer_ is nullptr");
     if (outputBuffers.empty()) {
         int outputBufferNum = 30;
         std::shared_ptr<Meta> outputBufferConfig = std::make_shared<Meta>();
         ret = codecPlugin_->GetParameter(outputBufferConfig);
-        CHECK_AND_RETURN_RET_LOG(ret == Status::OK, (int32_t)ret, "GetParameter failed");
+        CHECK_AND_RETURN_RET_LOG(ret == Status::OK, static_cast<int32_t>(ret), "GetParameter failed");
         CHECK_AND_RETURN_RET_LOG(outputBufferConfig != nullptr, (int32_t)Status::ERROR_INVALID_STATE,
                                  "outputBufferConfig is nullptr");
         CHECK_AND_RETURN_RET_LOG(outputBufferConfig->Get<Tag::AUDIO_MAX_OUTPUT_SIZE>(outputBufferCapacity_),
@@ -824,7 +824,7 @@ int32_t MediaCodec::PrepareOutputBufferQueue()
         }
     }
     CHECK_AND_RETURN_RET_LOG(outputBufferVector_.size() > 0, (int32_t)Status::ERROR_INVALID_STATE, "Attach no buffer");
-    return (int32_t)ret;
+    return static_cast<int32_t>(ret);
 }
 
 void MediaCodec::ProcessInputBuffer()
