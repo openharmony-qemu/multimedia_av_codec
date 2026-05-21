@@ -6101,7 +6101,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, AutoSelectTrackByBitrate_005, TestSize.Level1)
     int64_t currentTimeMs = mediaDemuxer_->GetCurrentTimeMs();
     mediaDemuxer_->lastCheckAutoSelectTimeMs_ = currentTimeMs;
 
-    mediaDemuxer_->AutoSelectTrackByBitrate(NUM_1);
+    mediaDemuxer_->AutoSelectTrackByBitrate(NUM_1, true);
     EXPECT_EQ(mediaDemuxer_->lastCheckAutoSelectTimeMs_, currentTimeMs);
 }
 
@@ -6131,7 +6131,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, AutoSelectTrackByBitrate_007, TestSize.Level1)
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetCurrentBitRate()).WillRepeatedly(Return(UNUM_1000));
     EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
 
-    mediaDemuxer_->AutoSelectTrackByBitrate(NUM_1);
+    mediaDemuxer_->AutoSelectTrackByBitrate(NUM_1, true);
     EXPECT_EQ(mediaDemuxer_->lastCheckAutoSelectTimeMs_, 0);
 }
 

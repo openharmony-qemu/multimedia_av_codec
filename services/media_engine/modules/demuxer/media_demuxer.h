@@ -316,7 +316,7 @@ private:
     void UpdateDefaultStreamIds(bool isVideoNoFiltered, bool isAudioNoFiltered, bool isSubtitleNoFiltered);
 
     bool IsLangMatch(const std::string& lang, OHOS::Media::MediaType mediaType);
-    void AutoSelectTrackByBitrate(int32_t trackId);
+    void AutoSelectTrackByBitrate(int32_t trackId, bool isSelectHigherBitrate = false);
     Plugins::Seekable seekable_;
     Plugins::Seekable subSeekable_;
     std::string uri_;
@@ -621,7 +621,7 @@ private:
     std::atomic<int32_t> waitSubtitleStreamId_ {-1};
     TrackSelectionFilter trackSelectionFilter_;
     int64_t lastCheckAutoSelectTimeMs_ {0};
-    int32_t lastAutoSelectBitRate_ {0};
+    uint32_t lastAutoSelectBitRate_ {0};
     std::shared_ptr<MediaAVCodec::AVCodecList> codecList_ {nullptr};
     std::unique_ptr<FilteredStreamMap> filteredStreamMap_;
 };
