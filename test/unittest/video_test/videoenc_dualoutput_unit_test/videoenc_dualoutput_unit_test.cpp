@@ -34,8 +34,6 @@ using namespace OHOS::MediaAVCodec;
 using namespace testing::ext;
 
 namespace {
-constexpr uint32_t DEFAULT_WIDTH = 1280;
-constexpr uint32_t DEFAULT_HEIGHT = 720;
 constexpr double DEFAULT_FRAME_RATE = 30.0;
 
 enum CodecType : int32_t { AVC = 0, HEVC = 1 };
@@ -1940,10 +1938,10 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_StartOnlyPrimary_001, TestSize.Level1)
  * @tc.desc: Test 8-bit to 10-bit format conversion
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, State_Machine_Dual_8BitTo10Bit_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, State_Machine_Dual_8BitTo10Bit_001, TestSize.Level1)
 {
     std::shared_ptr<VideoEncDualOutputSample> dualSample = make_shared<VideoEncDualOutputSample>();
-    ASSERT_TRUE(dualSample->CreatePrimary(GetCurMimeType()));
+    ASSERT_TRUE(dualSample->CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_HEVC));
     auto signal = make_shared<VCodecSignal>(dualSample);
     dualSample->input8BitTo10Bit_ = true;
     dualSample->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
@@ -2056,7 +2054,7 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_SetParam_Crop_002, TestSize.Level1)
     dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
                                 DEFAULT_FRAME_RATE);
     RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
-    dualSample_->SetCrop(EncoderType::PRIMARY, 200, 100, 600, 500); // crop: 200,100,600,500
+    dualSample_->SetCrop(EncoderType::PRIMARY, 200, 100, 599, 499); // crop: 200,100,599,499
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
 
@@ -2066,7 +2064,7 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_SetParam_Crop_002, TestSize.Level1)
     RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
     dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
                                 DEFAULT_FRAME_RATE);
-    dualSample_->SetCrop(EncoderType::SECONDARY, 200, 100, 600, 500); // crop: 200,100,600,500
+    dualSample_->SetCrop(EncoderType::SECONDARY, 200, 100, 599, 499); // crop: 200,100,599,499
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
 
