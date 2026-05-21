@@ -45,8 +45,8 @@ int32_t SharedSurfaceManager::Create()
     producerSurface_ = Surface::CreateSurfaceAsProducer(producer_);
     CHECK_AND_RETURN_RET_LOG(producerSurface_, AVCS_ERR_NO_MEMORY, "Failed to create producer surface");
 
-    auto ret = producerSurface_->SetDefaultUsage(BUFFER_USAGE_CPU_READ);
-    CHECK_AND_RETURN_RET_LOG(ret == GSERROR_OK, AVCS_ERR_UNKNOWN, "Set producer surface usage failed");
+    auto ret = consumerSurface_->SetDefaultUsage(BUFFER_USAGE_CPU_READ);
+    CHECK_AND_RETURN_RET_LOG(ret == GSERROR_OK, AVCS_ERR_UNKNOWN, "Set consumer surface usage failed");
 
     AVCODEC_LOGI("SharedSurfaceManager created");
     return AVCS_ERR_OK;
