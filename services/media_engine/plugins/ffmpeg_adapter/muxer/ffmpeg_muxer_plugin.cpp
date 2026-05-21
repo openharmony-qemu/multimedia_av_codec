@@ -1321,7 +1321,8 @@ uint8_t *FFmpegMuxerPlugin::FindNalStartCode(const uint8_t *buf, const uint8_t *
         return const_cast<uint8_t*>(end);
     }
     const uint8_t *p = buf;
-    const uint8_t *alignedP = p + (EDGE_PROTECT_FOUR - ((uintptr_t)p & 0x3)); // 0x3: fetch the last 2 bits
+    // 0x3: fetch the last 2 bits
+    const uint8_t *alignedP = p + (EDGE_PROTECT_FOUR - (reinterpret_cast<uintptr_t>(p) & 0x3));
     for (end -= EDGE_PROTECT_THREE; p < alignedP && p < end; ++p) {
         if (p[0] == 0 && p[1] == 0 && p[2] == 1) { // 2 is the second byte index
             startCodeLen = (p > buf && *(p - 1) == 0) ? LONG_STARTCODELEN : SHORT_STARTCODELEN;
@@ -1329,7 +1330,7 @@ uint8_t *FFmpegMuxerPlugin::FindNalStartCode(const uint8_t *buf, const uint8_t *
         }
     }
     for (end -= EDGE_PROTECT_THREE; p < end; p += MAIN_MATCH_STRIDE) {
-        uint32_t x = *(const uint32_t*)p;
+        uint32_t x = *reinterpret_cast<const uint32_t*>(p);
         uint32_t y = x < NAL_START_PATTERN ? (x + (BITWISE_NOT_NAL_START_PATTERN + 1)) : (x - NAL_START_PATTERN);
         if (y & (~x) & NAL_MATCH_MASK == 0) {
             continue;
