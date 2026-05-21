@@ -17,6 +17,7 @@
 #define HISTREAMER_AUDIO_SINK_H
 #include <mutex>
 #include "common/status.h"
+#include "dolby_passthrough.h"
 #include "meta/meta.h"
 #include "sink/media_synchronous_sink.h"
 #include "media_sync_manager.h"
@@ -113,7 +114,10 @@ public:
     void SetBuffering(bool isBuffering);
     void SetAudioPassFlag(bool isAudioPass);
     void OnFirstFrameWriting();
-    void SetPCMOutputCallback(const std::function<void(const std::shared_ptr<AVBuffer>&)>& callback);
+    void SetPCMCallback(const std::shared_ptr<IPCMCallback> &callback);
+    void SetPCMOutputStatus(bool isEnable);
+    void SetPCMProcessorStatus(bool isEnable);
+    void SetPCMProcessorMaxLen(int32_t maxProcessedPcmLen);
 
 protected:
     std::atomic<OHOS::Media::Pipeline::FilterState> state_;
@@ -168,6 +172,7 @@ private:
     std::shared_ptr<AVBuffer> CopyBuffer(const std::shared_ptr<AVBuffer> buffer);
     Status MuteAudioBuffer(size_t size, AudioStandard::BufferDesc &bufferDesc, bool isEos);
     void HandleBypassOutput(const std::shared_ptr<AVBuffer> &buffer);
+    void HandlePostProcessingOutput(std::shared_ptr<AVBuffer> &buffer);
     std::shared_ptr<AVBuffer> CopyPcmBuffer(const std::shared_ptr<AVBuffer> buffer, int32_t minCapacity = 0);
 
     class UnderrunDetector {
@@ -340,8 +345,11 @@ private:
     bool isAudioPass_ {false};
     bool isFirstFrameWrite_ {false};
     std::shared_ptr<Meta> globalMeta_ = std::make_shared<Meta>();
-    std::function<void(const std::shared_ptr<AVBuffer>&)> pcmOutputCallback_ {};
+    std::shared_ptr<IPCMCallback> pcmCallback_ {};
     std::mutex pcmCallbackMutex_;
+    bool isPcmOutputEnable_ {false};
+    bool isPcmProcessorEnable_ {false};
+    int32_t maxProcessedPcmLen_ {0};
     std::unique_ptr<Task> bypassTask_ {nullptr};
 };
 }
