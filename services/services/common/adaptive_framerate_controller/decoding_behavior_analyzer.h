@@ -18,6 +18,7 @@
 
 #include <chrono>
 #include <deque>
+#include <functional>
 #include <mutex>
 #include <vector>
 
@@ -49,12 +50,16 @@ union SpeedStatsUnion {
     SpeedStatsUnion() : stats{0u, 0u} {}
 };
 
+using DecInfoCallBack = std::function<void(double srcFps, double speed)>;
+
 class DecodingBehaviorAnalyzer {
 public:
     DecodingBehaviorAnalyzer();
     void OnFrameConsumed(int64_t pts, bool render);
+    void OnFrameDropped();
     void OnStopped(bool isDecEnd);
     void OnChecked(double decFps);
+    void SetDecInfoCallBack(DecInfoCallBack cb);
 
 private:
     static constexpr size_t stdSpeedLevels = 8;
@@ -62,6 +67,7 @@ private:
     std::mutex mutex_;
     uint32_t frameCnt_ = 0;
     uint32_t renderCnt_ = 0;
+    uint32_t droppedCnt_ = 0;
     std::chrono::steady_clock::time_point startTime_;
     std::chrono::steady_clock::time_point lastCheckTime_;
     size_t maxPossibleDecSpeedIdx_ = 0;
@@ -69,6 +75,7 @@ private:
     std::deque<size_t> speedWindow_;
     std::array<size_t, stdSpeedLevels> speedCount_ = {};
     std::vector<DecodingBehaviorSnapshot> history_;
+    DecInfoCallBack decInfoCallBack_ = nullptr;
     double lastReportedFps_ = -1.0;
     double lastReportedRenderFps_ = -1.0;
     int64_t lastPtsMs_ = -1;

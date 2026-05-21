@@ -340,6 +340,7 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
     if (decInfoCallBack_) {
         decInfoCallBack_(srcFps, stdSpeed);
     }
+    double renderFps = decFps * static_cast<double>(renderCnt_) / frameCnt_;
     AVCODEC_LOGD("Render: %{public}.2f fps, dec: %{public}.2f fps, src: %{public}.2f fps, renderCnt %{public}u"
         ", frameCnt %{public}u, droppedCnt %{public}u", renderFps, decFps, srcFps, renderCnt_, frameCnt_, droppedCnt_);
     double reportDecFps = decFps > (MAX_REPORT_FPS + EPSILON) ? (MAX_REPORT_FPS + 1.0) : decFps;
@@ -364,6 +365,12 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
     type_ = newType;
     lastCheckTime_ = std::chrono::steady_clock::now();
     ResetIntervalStats();
+}
+
+void DecodingBehaviorAnalyzer::SetDecInfoCallBack(DecInfoCallBack cb)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    decInfoCallBack_ = std::move(cb);
 }
 
 } // namespace MediaAVCodec
