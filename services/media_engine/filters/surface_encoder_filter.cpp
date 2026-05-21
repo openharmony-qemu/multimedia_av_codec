@@ -234,6 +234,10 @@ Status SurfaceEncoderFilter::SetStopTime()
 Status SurfaceEncoderFilter::SetInputSurface(sptr<Surface> surface)
 {
     MEDIA_LOG_I("SetInputSurface");
+    if (mediaCodec_ == nullptr) {
+        MEDIA_LOG_E("mediaCodec_ is nullptr");
+        return Status::ERROR_UNKNOWN;
+    }
     mediaCodec_->SetInputSurface(surface);
     return Status::OK;
 }
@@ -241,6 +245,10 @@ Status SurfaceEncoderFilter::SetInputSurface(sptr<Surface> surface)
 Status SurfaceEncoderFilter::SetTransCoderMode()
 {
     MEDIA_LOG_I("SetTransCoderMode");
+    if (mediaCodec_ == nullptr) {
+        MEDIA_LOG_E("mediaCodec_ is nullptr");
+        return Status::ERROR_UNKNOWN;
+    }
     isTranscoderMode_ = true;
     mediaCodec_->SetTransCoderMode();
     return Status::OK;
@@ -249,6 +257,10 @@ Status SurfaceEncoderFilter::SetTransCoderMode()
 Status SurfaceEncoderFilter::SetWatermarkMode()
 {
     MEDIA_LOG_I("SetWatermarkMode");
+    if (mediaCodec_ == nullptr) {
+        MEDIA_LOG_E("mediaCodec_ is nullptr");
+        return Status::ERROR_UNKNOWN;
+    }
     mediaCodec_->SetWatermarkMode();
     return Status::OK;
 }
@@ -329,6 +341,9 @@ Status SurfaceEncoderFilter::Reset()
 Status SurfaceEncoderFilter::DoFlush()
 {
     MEDIA_LOG_I("Flush");
+    if (mediaCodec_ == nullptr) {
+        return Status::ERROR_UNKNOWN;
+    }
     return mediaCodec_->Flush();
 }
 

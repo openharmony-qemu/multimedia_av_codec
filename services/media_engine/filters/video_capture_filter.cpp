@@ -176,6 +176,10 @@ Status VideoCaptureFilter::DoPrepare()
 {
     MEDIA_LOG_I("Prepare");
     MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::Prepare");
+    if (filterCallback_ == nullptr) {
+        MEDIA_LOG_E("filterCallback_ is nullptr");
+        return Status::ERROR_NULL_POINTER;
+    }
     filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
         StreamType::STREAMTYPE_ENCODED_VIDEO);
     return Status::OK;
@@ -378,6 +382,7 @@ bool VideoCaptureFilter::ProcessAndPushOutputBuffer(sptr<SurfaceBuffer>& buffer,
     avBufferConfig.memoryType = MemoryType::SHARED_MEMORY;
     avBufferConfig.memoryFlag = MemoryFlag::MEMORY_READ_WRITE;
     int32_t timeOutMs = 100;
+    FALSE_RETURN_V_MSG(outputBufferQueueProducer_ != nullptr, false, "outputBufferQueueProducer_ is nullptr.");
     Status status = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, timeOutMs);
 
     FALSE_RETURN_V_MSG(status == Status::OK && emptyOutputBuffer != nullptr, false, "RequestBuffer fail.");
