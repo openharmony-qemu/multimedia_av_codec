@@ -733,7 +733,8 @@ public:
         if (appIndex == INVALID_APP_NAME_INDEX) {
             return;
         }
-        CreateOrIncrementMapCount(appAdvancedFeatureInfo_, JoinKey({std::to_string(appIndex), feature, featurePending}));
+        CreateOrIncrementMapCount(appAdvancedFeatureInfo_,
+            JoinKey({std::to_string(appIndex), feature, featurePending}));
     }
 
     void OnSummateEventInfo(StatisticsSubmitInfo &submitInfo) override
