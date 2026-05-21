@@ -110,7 +110,7 @@ OH_AVCapability **OH_AVCodec_GetCapabilityList(OH_AVCodecType codecType, uint32_
         g_caches[typeIndex].count = validCount;
     });
     *count = g_caches[typeIndex].count;
-    CHECK_AND_RETURN_RET_LOG(count != 0, nullptr, "no capability found for codec type %{public}d", codecType);
+    CHECK_AND_RETURN_RET_LOG(*count != 0, nullptr, "no capability found for codec type %{public}d", codecType);
     AVCODEC_LOGD("Get capability list successful, found %{public}u capabilities for codec type %{public}d",
                  *count, codecType);
     return g_caches[typeIndex].array;
