@@ -425,12 +425,7 @@ void SmartFluencyDecoding::ExecutePostDrop(uint32_t index)
 
 bool SmartFluencyDecoding::HandlePostDecodePassthrough(int64_t pts, uint32_t preDropCount, const PostDecCost& cost)
 {
-    double localSpeed = DEFAULT_PLAYBACK_SPEED;
-    {
-        std::lock_guard<std::mutex> lock(configMutex_);
-        localSpeed = currentPlaybackSpeed_;
-    }
-    UpdateRetentionFeedback(true, localSpeed);
+    UpdateRetentionFeedback(true);
 #ifdef SFD_DEBUG
     PostDecResult fastRes {true, 1.0, SfdDecisionReason::POST_RETAIN_FULL};
     RecordPostDecodeDump(pts, preDropCount, fastRes, MVStats(), cost);
@@ -438,11 +433,11 @@ bool SmartFluencyDecoding::HandlePostDecodePassthrough(int64_t pts, uint32_t pre
     return true;
 }
 
-void SmartFluencyDecoding::UpdateRetentionFeedback(bool shouldRetain, double speed)
+void SmartFluencyDecoding::UpdateRetentionFeedback(bool shouldRetain)
 {
     std::lock_guard<std::mutex> lock(configMutex_);
     if (dropSyncCoordinator_) {
-        dropSyncCoordinator_->UpdateFeedback(shouldRetain, speed);
+        dropSyncCoordinator_->UpdateFeedback(shouldRetain);
     }
 }
 
@@ -457,7 +452,6 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
     }
     uint32_t preDropCount = dropSyncCoordinator_->GetAndConsumePreDroppedCount(pts);
     StrategyCaps caps;
-    double localSpeed = DEFAULT_PLAYBACK_SPEED;
     {
         std::lock_guard<std::mutex> lock(configMutex_);
         if (!strategy_) {
@@ -465,7 +459,6 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
         }
         caps.isPassthrough = strategy_->IsPassthrough();
         caps.requiresMv = strategy_->RequiresMvAnalysis();
-        localSpeed = currentPlaybackSpeed_;
     }
     if (caps.isPassthrough) {
         return HandlePostDecodePassthrough(pts, preDropCount, cost);
@@ -482,7 +475,7 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
             res.reason = strategy_->GetLastDecisionReason();
         }
     }
-    UpdateRetentionFeedback(res.shouldRetain, localSpeed);
+    UpdateRetentionFeedback(res.shouldRetain);
     AVCODEC_LOGD_WITH_TAG("Strategy decision: shouldRetain %{public}d, ratio %{public}.3f "
         "(index:%{public}u, pts:%{public}" PRId64 ")", res.shouldRetain, res.ratio, index, pts);
     if (!res.shouldRetain) {

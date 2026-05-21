@@ -14,19 +14,17 @@
  */
 
 #include "drop_sync_coordinator.h"
-#include <algorithm>
 #include "avcodec_log_ex.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "SfdSync"};
-constexpr double BASE_ALPHA = 0.15;
 }
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
 
-bool DropSyncCoordinator::RecordPreDroppedFrame(int64_t pts, double speed)
+bool DropSyncCoordinator::RecordPreDroppedFrame(int64_t pts)
 {
     size_t currentWrite = writeIndex_.load(std::memory_order_relaxed);
     size_t nextWrite = currentWrite + 1;
@@ -36,7 +34,7 @@ bool DropSyncCoordinator::RecordPreDroppedFrame(int64_t pts, double speed)
     ptsRingBuffer_[index] = pts;
     isConsumed_[index].store(false, std::memory_order_release);
     writeIndex_.store(nextWrite, std::memory_order_release);
-    UpdateFeedback(false, speed);
+    UpdateFeedback(false);
     AVCODEC_LOGD("Recorded pre-dropped PTS %{public}" PRId64 ", writeIndex: %{public}zu", pts, nextWrite);
     return true;
 }
@@ -67,14 +65,15 @@ uint32_t DropSyncCoordinator::GetAndConsumePreDroppedCount(int64_t currentPts)
     return count;
 }
 
-void DropSyncCoordinator::UpdateFeedback(bool isRetained, double speed)
+void DropSyncCoordinator::UpdateFeedback(bool isRetained)
 {
     std::lock_guard<std::mutex> lock(feedbackMutex_);
-    double alpha = std::min(1.0, BASE_ALPHA * speed);
-    double currentVal = isRetained ? 1.0 : 0.0;
-    actualRetentionRatio_ = alpha * currentVal + (1.0 - alpha) * actualRetentionRatio_;
-    AVCODEC_LOGD("isRetained=%{public}d, actualRetentionRatio=%{public}.4f",
-        isRetained, actualRetentionRatio_);
+    totalFeedbackFrames_++;
+    if (isRetained) {
+        retainedFeedbackFrames_++;
+    }
+    AVCODEC_LOGD("isRetained=%{public}d, total=%{public}" PRIu64 ", retained=%{public}" PRIu64,
+        isRetained, totalFeedbackFrames_, retainedFeedbackFrames_);
 }
 
 void DropSyncCoordinator::Reset()
@@ -89,14 +88,18 @@ void DropSyncCoordinator::Reset()
         readIndex_.store(currentWrite, std::memory_order_relaxed);
     }
     std::lock_guard<std::mutex> lock(feedbackMutex_);
-    actualRetentionRatio_ = 1.0;
+    totalFeedbackFrames_ = 0;
+    retainedFeedbackFrames_ = 0;
     AVCODEC_LOGI("Reset DropSyncCoordinator");
 }
 
 double DropSyncCoordinator::GetActualRetentionRatio() const
 {
     std::lock_guard<std::mutex> lock(feedbackMutex_);
-    return actualRetentionRatio_;
+    if (totalFeedbackFrames_ == 0) {
+        return 1.0;
+    }
+    return static_cast<double>(retainedFeedbackFrames_) / totalFeedbackFrames_;
 }
 
 size_t DropSyncCoordinator::GetWriteIndex() const

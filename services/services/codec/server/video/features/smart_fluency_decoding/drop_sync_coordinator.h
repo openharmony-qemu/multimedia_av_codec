@@ -29,11 +29,11 @@ public:
     DropSyncCoordinator() = default;
     ~DropSyncCoordinator() = default;
 
-    bool RecordPreDroppedFrame(int64_t pts, double speed);
+    bool RecordPreDroppedFrame(int64_t pts);
     uint32_t GetAndConsumePreDroppedCount(int64_t currentPts);
     void Reset();
     double GetActualRetentionRatio() const;
-    void UpdateFeedback(bool isRetained, double speed);
+    void UpdateFeedback(bool isRetained);
     size_t GetWriteIndex() const;
     size_t GetReadIndex() const;
 
@@ -45,7 +45,8 @@ private:
     std::atomic<bool> isConsumed_[queueCapacity]{};
     alignas(cacheLineSize) std::atomic<size_t> writeIndex_{0};
     alignas(cacheLineSize) std::atomic<size_t> readIndex_{0};
-    double actualRetentionRatio_{1.0};
+    uint64_t totalFeedbackFrames_{0};
+    uint64_t retainedFeedbackFrames_{0};
     mutable std::mutex feedbackMutex_;
 };
 } // namespace SFD

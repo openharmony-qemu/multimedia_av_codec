@@ -103,7 +103,7 @@ private:
     void ExecutePreDrop(uint32_t index, std::shared_ptr<AVBuffer> buffer);
     void ExecutePostDrop(uint32_t index);
     bool HandlePostDecodePassthrough(int64_t pts, uint32_t preDropCount, const PostDecCost& cost);
-    void UpdateRetentionFeedback(bool shouldRetain, double speed);
+    void UpdateRetentionFeedback(bool shouldRetain);
     void ApplyNewStrategy(RetentionStrategyType newMode, const std::optional<double>& newRatio);
     void SetNoRefFrameMap(int64_t pts, bool isNonRef);
     bool GetNoRefFrameFromMap(int64_t pts);

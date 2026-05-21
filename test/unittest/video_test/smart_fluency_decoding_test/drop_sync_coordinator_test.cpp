@@ -134,47 +134,46 @@ HWTEST_F(DropSyncCoordinatorTest, GetAndConsume_StressTest_004, TestSize.Level1)
 }
 
 // ==========================================
-// EMA Feedback Tests
+// Retention Ratio Feedback Tests
 // ==========================================
 
 
-HWTEST_F(DropSyncCoordinatorTest, UpdateFeedback_EmaIncrease_006, TestSize.Level1)
+HWTEST_F(DropSyncCoordinatorTest, UpdateFeedback_AllRetained_006, TestSize.Level1)
 {
-    EXPECT_NEAR(tracker_.GetEmaRatio(), 1.0, DEFAULT_TOLERANCE);
+    EXPECT_NEAR(tracker_.GetActualRetentionRatio(), 1.0, DEFAULT_TOLERANCE);
 
     for (int i = 0; i < 10; ++i) { // 10: iterations
-        tracker_.UpdateFeedback(true, 1.0);
+        tracker_.UpdateFeedback(true);
     }
 
-    EXPECT_NEAR(tracker_.GetEmaRatio(), 1.0, DEFAULT_TOLERANCE);
+    EXPECT_NEAR(tracker_.GetActualRetentionRatio(), 1.0, DEFAULT_TOLERANCE);
 }
 
 HWTEST_F(DropSyncCoordinatorTest, UpdateFeedback_PreDroppedCount_007, TestSize.Level1)
 {
     tracker_.RecordPreDroppedFrame(100, 1.0); // 100: pts
-    EXPECT_LT(tracker_.GetEmaRatio(), 1.0);
+    EXPECT_LT(tracker_.GetActualRetentionRatio(), 1.0);
 }
 
-HWTEST_F(DropSyncCoordinatorTest, Reset_ClearsEma_008, TestSize.Level1)
+HWTEST_F(DropSyncCoordinatorTest, Reset_ClearsCounters_008, TestSize.Level1)
 {
-    tracker_.UpdateFeedback(false, 1.0);
-    EXPECT_LT(tracker_.GetEmaRatio(), 1.0);
+    tracker_.UpdateFeedback(false);
+    EXPECT_LT(tracker_.GetActualRetentionRatio(), 1.0);
 
     tracker_.Reset();
-    EXPECT_NEAR(tracker_.GetEmaRatio(), 1.0, DEFAULT_TOLERANCE);
+    EXPECT_NEAR(tracker_.GetActualRetentionRatio(), 1.0, DEFAULT_TOLERANCE);
 }
 
-HWTEST_F(DropSyncCoordinatorTest, UpdateFeedback_SpeedAffectsAlpha_009, TestSize.Level1)
+HWTEST_F(DropSyncCoordinatorTest, UpdateFeedback_CounterRatio_009, TestSize.Level1)
 {
-    DropSyncCoordinator fast;
-    DropSyncCoordinator slow;
+    // 3 retained + 2 dropped = 3/5 = 0.6
+    tracker_.UpdateFeedback(true);
+    tracker_.UpdateFeedback(true);
+    tracker_.UpdateFeedback(false);
+    tracker_.UpdateFeedback(true);
+    tracker_.UpdateFeedback(false);
 
-    for (int i = 0; i < 5; ++i) { // 5: iterations
-        fast.UpdateFeedback(false, 3.0); // 3.0: high speed
-        slow.UpdateFeedback(false, 0.5); // 0.5: low speed
-    }
-
-    EXPECT_LT(fast.GetEmaRatio(), slow.GetEmaRatio());
+    EXPECT_NEAR(tracker_.GetActualRetentionRatio(), 0.6, DEFAULT_TOLERANCE);
 }
 
 /**
@@ -220,16 +219,14 @@ HWTEST_F(DropSyncCoordinatorTest, GetAndConsume_AlreadyConsumed_012, TestSize.Le
 }
 
 /**
- * @tc.name: UpdateFeedback_HighSpeedAlphaClamp_013
- * @tc.desc: Verify alpha is clamped to 1.0 when speed is very high.
+ * @tc.name: UpdateFeedback_SingleDropZero_013
+ * @tc.desc: Verify a single dropped frame gives ratio 0.0.
  * @tc.type: FUNC
  */
-HWTEST_F(DropSyncCoordinatorTest, UpdateFeedback_HighSpeedAlphaClamp_013, TestSize.Level1)
+HWTEST_F(DropSyncCoordinatorTest, UpdateFeedback_SingleDropZero_013, TestSize.Level1)
 {
-    // BASE_ALPHA=0.15, speed=10.0 → alpha=1.5, clamped to 1.0
-    // EMA = 1.0 * currentVal + 0.0 * previous = currentVal
-    tracker_.UpdateFeedback(false, 10.0); // high speed forces alpha=1.0
-    EXPECT_NEAR(tracker_.GetEmaRatio(), 0.0, DEFAULT_TOLERANCE);
+    tracker_.UpdateFeedback(false);
+    EXPECT_NEAR(tracker_.GetActualRetentionRatio(), 0.0, DEFAULT_TOLERANCE);
 }
 
 /**
