@@ -162,8 +162,8 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
     codecBaseCb_ = std::make_shared<CodecBaseCallback>(shared_from_this());
     ret = codecBase_->SetCallback(codecBaseCb_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret, "SetCallback failed");
-    codecBase_->SetStatisticsEventReporter([this](StatisticsEventType type, std::shared_ptr<Media::Meta> &meta) {
-        CHECK_AND_RETURN_LOG_WITH_TAG(meta != nullptr, "Statistics event meta is nullptr");
+    codecBase_->SetStatisticsEventReporter([this](StatisticsEventType type, std::shared_ptr<Media::Meta> meta) {
+        meta = meta ? meta : std::make_shared<Media::Meta>();
         meta->SetData(Media::Tag::MIME_TYPE, codecMime_);
         bool isForwardCaller = forwardCaller_.pid >= 0 || !forwardCaller_.processName.empty();
         meta->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME,
@@ -236,8 +236,9 @@ int32_t CodecServer::Configure(const Format &format)
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret, "Configure codec scenario failed");
 
     UpdateConfiguredFramerate(format);
+    ConfigureSfdManager(config);
 
-    ret = ConfigureCodecBase(config);
+    ret = codecBase_->Configure(config);
     if (ret != AVCS_ERR_OK) {
         StatusChanged(ERROR);
         return ret;
@@ -277,14 +278,13 @@ void CodecServer::UpdateConfiguredFramerate(const Format &format)
     }
 }
 
-int32_t CodecServer::ConfigureCodecBase(Format &config)
+void CodecServer::ConfigureSfdManager(Format &config)
 {
     InitSfdManager();
     if (sfdManager_) {
         sfdManager_->Configure(config);
         sfdManager_->EnableMVOutput(config);
     }
-    return codecBase_->Configure(config);
 }
 
 void CodecServer::ReportResolutionInfo(const Format &config)
@@ -1399,6 +1399,13 @@ int32_t CodecServer::CreatePostProcessing(const Format& format)
     int32_t ret;
     postProcessing_ = PostProcessingType::Create(codecBase_, format, ret);
     EXPECT_AND_LOGI_WITH_TAG(postProcessing_, "Post processing is configured");
+
+    Media::Meta meta;
+    bool isForwardCaller = forwardCaller_.pid >= 0 || !forwardCaller_.processName.empty();
+    meta.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, isForwardCaller ? forwardCaller_.processName : caller_.processName);
+    meta.SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "PostProcessing");
+    EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::ADVANCED_FEATURE_INFO, meta);
+
     return ret;
 }
 

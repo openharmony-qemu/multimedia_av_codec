@@ -95,7 +95,7 @@ OH_AVErrCode PreprocessorEncoder::CreatePrimary(const char *mime, OH_AVCodec **c
 
     Media::Meta meta;
     meta.SetData(Media::Tag::AV_CODEC_CALLER_PID, getprocpid());
-    meta.SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "1In2Out");
+    meta.SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "PreprocEnc");
     StatisticsEventReporter::Report(StatisticsEventType::ADVANCED_FEATURE_INFO, meta);
 
     std::scoped_lock interfaceLock(g_interfaceMutex);
@@ -125,6 +125,11 @@ OH_AVErrCode PreprocessorEncoder::CreateSecondary(OH_AVCodec *primary, OH_AVCode
 
     OH_AVErrCode ret = encoder->InitAsSecondary(primaryEnc);
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "InitAsSecondary failed!");
+
+    Media::Meta meta;
+    meta.SetData(Media::Tag::AV_CODEC_CALLER_PID, getprocpid());
+    meta.SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "OneInDualOut");
+    StatisticsEventReporter::Report(StatisticsEventType::ADVANCED_FEATURE_INFO, meta);
 
     *secondary = encoder.release();
     return AV_ERR_OK;

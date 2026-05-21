@@ -64,6 +64,22 @@ const std::unordered_map<VideoCodecType, std::string> VIDEO_CODEC_TYPE_TO_STRING
     { VideoCodecType::ENCODER_SOFTWARE, "SEnc" },
 };
 
+const std::unordered_map<VideoEncodeBitrateMode, std::string> BITRATE_MODE_TO_STRING = {
+    { VideoEncodeBitrateMode::CBR, "CBR" },
+    { VideoEncodeBitrateMode::VBR, "VBR" },
+    { VideoEncodeBitrateMode::CQ, "CQ" },
+    { VideoEncodeBitrateMode::SQR, "SQR" },
+    { VideoEncodeBitrateMode::CBR_HIGH_QUALITY, "CBR_HIGH_QUALITY" },
+    { VideoEncodeBitrateMode::CBR_VIDEOCALL, "CBR_VIDEOCALL" },
+    { VideoEncodeBitrateMode::CRF, "CRF" },
+};
+
+std::string ToString(VideoEncodeBitrateMode mode)
+{
+    auto it = BITRATE_MODE_TO_STRING.find(mode);
+    return (it != BITRATE_MODE_TO_STRING.end()) ? it->second : "UNKNOWN";
+}
+
 std::string GetMetaString(const Media::Meta &meta, const std::string_view &key, const std::string &defaultValue = "")
 {
     std::string value;
@@ -87,6 +103,9 @@ std::string JoinKey(const std::vector<std::string> &parts)
 {
     std::string key;
     for (const auto &part : parts) {
+        if (part.empty()) {
+            continue;
+        }
         if (!key.empty()) {
             key += "_";
         }
@@ -703,16 +722,17 @@ public:
         std::lock_guard<std::mutex> lock(mutex_);
         std::string feature = GetMetaString(eventMeta, EventInfoExtentedKey::ADVANCED_FEATURE);
         if (feature.empty()) {
-            feature = GetMetaString(eventMeta, EventInfoExtentedKey::RC_MODE);
-        }
-        if (feature.empty()) {
             return;
+        }
+        std::string featurePending;
+        if (int32_t rcMode = 0; feature == "RC_MODE"s && eventMeta.GetData(EventInfoExtentedKey::RC_MODE, rcMode)) {
+            featurePending = ToString(static_cast<VideoEncodeBitrateMode>(rcMode));
         }
         AppNameIndex appIndex = AppNameIndexInfo::GetInstance().GetIndexByMeta(eventMeta);
         if (appIndex == INVALID_APP_NAME_INDEX) {
             return;
         }
-        CreateOrIncrementMapCount(appAdvancedFeatureInfo_, JoinKey({std::to_string(appIndex), feature}));
+        CreateOrIncrementMapCount(appAdvancedFeatureInfo_, JoinKey({std::to_string(appIndex), feature, featurePending}));
     }
 
     void OnSummateEventInfo(StatisticsSubmitInfo &submitInfo) override

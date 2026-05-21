@@ -127,7 +127,7 @@ private:
     int32_t InitServer(int32_t instanceId = INVALID_INSTANCE_ID);
     int32_t ConfigureCodecScenario(Format &config, int32_t &paramCheckRet);
     void UpdateConfiguredFramerate(const Format &format);
-    int32_t ConfigureCodecBase(Format &config);
+    int32_t ConfigureSfdManager(Format &config);
     void ReportResolutionInfo(const Format &config);
     int32_t CodecScenarioInit(Format &config);
     void StartInputParamTask();

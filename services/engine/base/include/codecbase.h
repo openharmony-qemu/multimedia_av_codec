@@ -175,7 +175,7 @@ public:
         statisticsEventReporter_ = std::move(reporter);
     }
 
-    virtual void ReportStatisticsEvent(StatisticsEventType type, std::shared_ptr<Media::Meta> &meta)
+    virtual void ReportStatisticsEvent(StatisticsEventType type, std::shared_ptr<Media::Meta> meta = nullptr)
     {
         if (statisticsEventReporter_) {
             statisticsEventReporter_(type, meta);

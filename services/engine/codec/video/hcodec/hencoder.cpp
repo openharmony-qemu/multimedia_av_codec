@@ -118,23 +118,13 @@ void HEncoder::ReportAdvancedFeatures(const Format &format)
 {
     if (auto bitrateMode = GetBitRateModeFromUser(format); bitrateMode.has_value()) {
         auto meta = std::make_shared<Media::Meta>();
-        meta->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "RC_MODE_"s + std::to_string(*bitrateMode));
+        meta->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "RC_MODE"s);
         meta->SetData(EventInfoExtentedKey::RC_MODE.data(), static_cast<int32_t>(bitrateMode.value()));
         ReportStatisticsEvent(StatisticsEventType::ADVANCED_FEATURE_INFO, meta);
     }
     if (enableTSVC_) {
         auto meta = std::make_shared<Media::Meta>();
-        meta->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "LAYERED_CODING");
-        ReportStatisticsEvent(StatisticsEventType::ADVANCED_FEATURE_INFO, meta);
-    }
-    if (GetSQRFactorFromUser(format).has_value() || GetSQRMaxBitrateFromUser(format).has_value()) {
-        auto meta = std::make_shared<Media::Meta>();
-        meta->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "SQR");
-        ReportStatisticsEvent(StatisticsEventType::ADVANCED_FEATURE_INFO, meta);
-    }
-    if (enableQPMap_) {
-        auto meta = std::make_shared<Media::Meta>();
-        meta->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "HD_LOW_BITRATE");
+        meta->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "TEMPORAL_SCALABILITY");
         ReportStatisticsEvent(StatisticsEventType::ADVANCED_FEATURE_INFO, meta);
     }
 }
