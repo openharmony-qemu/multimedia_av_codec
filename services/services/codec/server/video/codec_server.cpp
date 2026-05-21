@@ -242,7 +242,7 @@ int32_t CodecServer::Configure(const Format &format)
         StatusChanged(ERROR);
         return ret;
     }
-    ReportEncoderResolution(config);
+    ReportResolutionInfo(config);
 
     ret = CreatePostProcessing(config);
     if (ret != AVCS_ERR_OK) {
@@ -287,7 +287,7 @@ int32_t CodecServer::ConfigureCodecBase(Format &config)
     return codecBase_->Configure(config);
 }
 
-void CodecServer::ReportEncoderResolution(const Format &config)
+void CodecServer::ReportResolutionInfo(const Format &config)
 {
     if (codecType_ != AVCODEC_TYPE_VIDEO_ENCODER) {
         return;
@@ -296,10 +296,10 @@ void CodecServer::ReportEncoderResolution(const Format &config)
     FillStatisticsCodecInfo(statisticsMeta, codecType_, vcodecType_, codecMime_, codecName_);
     int32_t width = 0;
     int32_t height = 0;
-    if (config.GetIntValue(Media::Tag::VIDEO_WIDTH, width)) {
-        statisticsMeta.SetData(EventInfoExtentedKey::WIDTH.data(), width);
+    if (config.GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, width)) {
+            statisticsMeta.SetData(EventInfoExtentedKey::WIDTH.data(), width);
     }
-    if (config.GetIntValue(Media::Tag::VIDEO_HEIGHT, height)) {
+    if (config.GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, height)) {
         statisticsMeta.SetData(EventInfoExtentedKey::HEIGHT.data(), height);
     }
     EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::RESOLUTION_SPEC_INFO, statisticsMeta);
@@ -1137,17 +1137,7 @@ void CodecServer::OnOutputFormatChanged(const Format &format)
     OnInstanceMemoryUpdateEvent(formatTemp.GetMeta());
 
     if (codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
-        Media::Meta statisticsMeta;
-        FillStatisticsCodecInfo(statisticsMeta, codecType_, vcodecType_, codecMime_, codecName_);
-        int32_t width = 0;
-        int32_t height = 0;
-        if (formatTemp.GetIntValue(Media::Tag::VIDEO_WIDTH, width)) {
-            statisticsMeta.SetData(EventInfoExtentedKey::WIDTH.data(), width);
-        }
-        if (formatTemp.GetIntValue(Media::Tag::VIDEO_HEIGHT, height)) {
-            statisticsMeta.SetData(EventInfoExtentedKey::HEIGHT.data(), height);
-        }
-        EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::RESOLUTION_SPEC_INFO, statisticsMeta);
+        ReportResolutionInfo(formatTemp);
     }
 }
 

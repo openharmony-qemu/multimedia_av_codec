@@ -15,6 +15,7 @@
 
 #include "statistics_event_handler.h"
 #include <algorithm>
+#include <cmath>
 #include <mutex>
 #include <ctime>
 #include "cJSON.h"
@@ -80,23 +81,6 @@ std::string GetMetaValueString(const Media::Meta &meta, const std::string_view &
         return defaultValue;
     }
     return std::to_string(value);
-}
-
-std::string GetCodecTypeString(const Media::Meta &meta)
-{
-    auto isEncoder = [](const Media::Meta &meta) {
-        bool isEncoder = false;
-        if (meta.GetData(EventInfoExtentedKey::IS_ENCODER.data(), isEncoder)) {
-            return isEncoder;
-        }
-        AVCodecType codecType = AVCODEC_TYPE_NONE;
-        if (meta.GetData(EventInfoExtentedKey::CODEC_TYPE.data(), codecType)) {
-            return codecType == AVCODEC_TYPE_VIDEO_ENCODER || codecType == AVCODEC_TYPE_AUDIO_ENCODER;
-        }
-        return false;
-    };
-
-    return isEncoder(meta) ? "Enc" : "Dec";
 }
 
 std::string JoinKey(const std::vector<std::string> &parts)
@@ -472,7 +456,7 @@ private:
     {
         time_t now = GetCurrentTime();
         SettleInstanceUsage(now);
-        std::string key = GetCodecTypeString(meta);
+        std::string key = IsEncoder(meta) ? "Enc" : "Dec";
         auto &usage = instanceUsageInfo_[key];
         usage.lastSettleTime = now;
         std::string action = GetMetaString(meta, EventInfoExtentedKey::INSTANCE_ACTION, instanceActionEmpty);
@@ -496,7 +480,7 @@ private:
             level = ResolveResolutionLevel(meta);
         }
         std::string key = JoinKey({
-            GetCodecTypeString(meta),
+            IsEncoder(meta) ? "Enc" : "Dec",
             GetMetaString(meta, Media::Tag::MIME_TYPE, "UNKNOWN"),
             level
         });
@@ -511,7 +495,10 @@ private:
             !meta.GetData(EventInfoExtentedKey::HEIGHT.data(), height) || width <= 0 || height <= 0) {
             return "OTHER";
         }
-        const int32_t normalized = std::min(width * 9, height * 16) / 16; // 16:9 as baseline to normalize resolution
+        
+        constexpr double aspectRatio = 16.0 / 9.0;
+        int64_t area = static_cast<int64_t>(width) * static_cast<int64_t>(height);
+        int32_t normalized = static_cast<int32_t>(std::sqrt(static_cast<double>(area) / aspectRatio));
         if (normalized <= resolution360P) {
             return "360P";
         } else if (normalized <= resolution480P) {
