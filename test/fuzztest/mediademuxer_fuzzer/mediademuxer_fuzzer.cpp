@@ -45,10 +45,27 @@ const int NUMBER_4 = 4;
 const int NUMBER_5 = 5;
 const int NUMBER_8 = 8;
 const int NUMBER_10 = 10;
+const int NUMBER_11 = 11;
+const int NUMBER_12 = 12;
+const int NUMBER_21 = 21;
+const int NUMBER_22 = 22;
+const int NUMBER_23 = 23;
+const int NUMBER_24 = 24;
 const int NUMBER_25 = 25;
+const int NUMBER_30 = 30;
+const int NUMBER_60 = 60;
 const int NUMBER_100 = 100;
 const int NUMBER_111 = 111;
 const int NUMBER_200 = 200;
+const int NUMBER_256 = 256;
+const int NUMBER_320 = 320;
+const int NUMBER_720 = 720;
+const int NUMBER_1080 = 1080;
+const int NUMBER_1280 = 1280;
+const int NUMBER_1500 = 1500;
+const int NUMBER_1800 = 1800;
+const int NUMBER_1920 = 1920;
+const int NUMBER_65536 = 65536;
 const float NUMBER_SPEED = 111.5;
 const double NUMBER_FRAMERATE_1 = 1.5;
 const double NUMBER_FRAMERATE_2 = 15000;
@@ -99,6 +116,9 @@ void FuzzTest51();
 void FuzzTest52();
 void FuzzTest53();
 void FuzzTest54();
+void FuzzTest55();
+void FuzzTest56();
+void FuzzTest57();
 class MediaDemuxerTestCallback : public OHOS::MediaAVCodec::AVDemuxerCallback {
 public:
     explicit MediaDemuxerTestCallback()
@@ -204,6 +224,9 @@ void DoFuzzTest()
     FuzzTest52();
     FuzzTest53();
     FuzzTest54();
+    FuzzTest55();
+    FuzzTest56();
+    FuzzTest57();
 }
 
 void FuzzTest1()
@@ -1269,6 +1292,136 @@ void FuzzTest54()
     demuxer->demuxerPluginManager_->AddTrackMapInfo(1, 0);
     demuxer->demuxerPluginManager_->AddTrackMapInfo(NUMBER_2, 0);
     demuxer->demuxerPluginManager_->GetStreamTypeByTrackID(0);
+}
+
+void FuzzTest55()
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    demuxer->SetIsTriggerAutoMode(false);
+    demuxer->SetIsTriggerAutoMode(true);
+    demuxer->SetPlayStrategy(nullptr);
+
+    auto playStrategy = std::make_shared<PlayStrategy>();
+    playStrategy->audioLanguage = "en";
+    playStrategy->subtitleLanguage = "zh";
+    playStrategy->preferHDR = true;
+    playStrategy->width = NUMBER_1920;
+    playStrategy->height = NUMBER_1080;
+    demuxer->SetPlayStrategy(playStrategy);
+
+    auto invalidPlayStrategy = std::make_shared<PlayStrategy>();
+    invalidPlayStrategy->width = NUMBER_65536;
+    invalidPlayStrategy->height = NUMBER_65536;
+    demuxer->SetPlayStrategy(invalidPlayStrategy);
+}
+
+void FuzzTest56()
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    std::shared_ptr<Source> source = std::make_shared<Source>();
+    std::shared_ptr<SourcePluginMock> pluginMock = std::make_shared<SourcePluginMock>("StatusOK");
+    StreamInfo videoStream;
+    videoStream.streamId = NUMBER_10;
+    videoStream.type = StreamType::VIDEO;
+    videoStream.bitRate = NUMBER_1500;
+    videoStream.frameRate = NUMBER_30;
+    videoStream.mimeType = "video/avc";
+    videoStream.codecs = "video/avc";
+    videoStream.originCodecs = "avc1.64001f";
+    videoStream.videoWidth = NUMBER_1280;
+    videoStream.videoHeight = NUMBER_720;
+    StreamInfo audioStream;
+    audioStream.streamId = NUMBER_11;
+    audioStream.type = StreamType::AUDIO;
+    audioStream.bitRate = NUMBER_256;
+    audioStream.channels = NUMBER_2;
+    audioStream.mimeType = "audio/aac";
+    audioStream.codecs = "audio/aac";
+    audioStream.originCodecs = "mp4a.40.2";
+    audioStream.lang = "en";
+    StreamInfo subtitleStream;
+    subtitleStream.streamId = NUMBER_12;
+    subtitleStream.type = StreamType::SUBTITLE;
+    subtitleStream.lang = "zh";
+    pluginMock->streams_ = {videoStream, audioStream, subtitleStream};
+    source->plugin_ = pluginMock;
+    demuxer->source_ = source;
+    demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    demuxer->isPrepared_.store(true);
+    int32_t defaultVideoStreamId = videoStream.streamId;
+    int32_t defaultAudioStreamId = audioStream.streamId;
+    int32_t defaultSubtitleStreamId = subtitleStream.streamId;
+    source->SetDefaultStreamId(defaultVideoStreamId, defaultAudioStreamId, defaultSubtitleStreamId);
+    TrackSelectionFilter filter;
+    filter.preferredVideoMimeTypes.push_back("video/avc");
+    filter.preferredAudioLanguages.push_back("en");
+    filter.preferredSubtitleLanguages.push_back("zh");
+    demuxer->trackSelectionFilter_ = filter;
+    demuxer->OnEvent({Plugins::PluginEventType::STREAM_UPDATE, std::string("hls"), "STREAM_UPDATE"});
+    demuxer->OnEvent({Plugins::PluginEventType::NETWORK_BITRATE_CHANGED, static_cast<uint32_t>(4096),
+        "NETWORK_BITRATE_CHANGED"});
+    demuxer->OnEvent({Plugins::PluginEventType::STREAM_UPDATE, 1, "STREAM_UPDATE_INVALID"});
+    demuxer->OnEvent({Plugins::PluginEventType::NETWORK_BITRATE_CHANGED, std::string("invalid"),
+        "NETWORK_BITRATE_CHANGED_INVALID"});
+}
+
+void FuzzTest57()
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    std::shared_ptr<Source> source = std::make_shared<Source>();
+    std::shared_ptr<SourcePluginMock> pluginMock = std::make_shared<SourcePluginMock>("StatusOK");
+
+    StreamInfo videoStream;
+    videoStream.streamId = NUMBER_21;
+    videoStream.type = StreamType::VIDEO;
+    videoStream.bitRate = NUMBER_1800;
+    videoStream.frameRate = NUMBER_60;
+    videoStream.mimeType = "video/hevc";
+    videoStream.codecs = "video/hevc";
+    videoStream.originCodecs = "hvc1.1.6.L93";
+    videoStream.videoWidth = NUMBER_1920;
+    videoStream.videoHeight = NUMBER_1080;
+
+    StreamInfo audioStream;
+    audioStream.streamId = NUMBER_22;
+    audioStream.type = StreamType::AUDIO;
+    audioStream.bitRate = NUMBER_320;
+    audioStream.channels = NUMBER_2;
+    audioStream.mimeType = "audio/aac";
+    audioStream.codecs = "audio/aac";
+    audioStream.originCodecs = "mp4a.40.2";
+    audioStream.lang = "en";
+
+    StreamInfo subtitleStream;
+    subtitleStream.streamId = NUMBER_23;
+    subtitleStream.type = StreamType::SUBTITLE;
+    subtitleStream.lang = "zh";
+
+    pluginMock->streams_ = {videoStream, audioStream, subtitleStream};
+    source->plugin_ = pluginMock;
+    demuxer->source_ = source;
+    demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    demuxer->isPrepared_.store(true);
+    demuxer->currentPlayType_ = "hls";
+
+    TrackSelectionFilter filter;
+    filter.preferredVideoMimeTypes.push_back("video/hevc");
+    filter.preferredAudioMimeTypes.push_back("audio/aac");
+    filter.preferredAudioLanguages.push_back("en");
+    filter.preferredSubtitleLanguages.push_back("zh");
+    filter.minVideoFrameRate = NUMBER_24;
+    filter.maxAudioChannels = NUMBER_2;
+    demuxer->SetTrackSelectionFilter(filter);
+
+    demuxer->SelectStreamId(-1);
+    demuxer->SelectStreamId(audioStream.streamId);
+
+    demuxer->currentPlayType_ = "http";
+    demuxer->SetTrackSelectionFilter(filter);
+
+    demuxer->demuxerPluginManager_->isDash_ = true;
+    demuxer->streamDemuxer_->changeStreamFlag_ = false;
+    demuxer->SelectStreamId(videoStream.streamId);
 }
 }
 }

@@ -18,6 +18,8 @@
 #include <test_template.h>
 #include <fuzzer/FuzzedDataProvider.h>
 #include "http/http_media_downloader.h"
+#include "http_source_plugin.h"
+#include "monitor/download_monitor.h"
 #include "http_server_mock.h"
 
 namespace OHOS {
@@ -151,6 +153,13 @@ void CallHttpDownloaderFuncs(std::shared_ptr<HttpMediaDownloader> httpMediaDownl
     httpMediaDownloader->GetStatusCallbackFunc();
     httpMediaDownloader->GetDownloadRateAndSpeed();
     httpMediaDownloader->GetPlayable();
+    std::vector<StreamInfo> streams;
+    httpMediaDownloader->GetStreamInfo(streams);
+    httpMediaDownloader->GetStreamInfo(streams, true);
+    int32_t defaultVideoStreamId = streams.empty() ? -1 : streams.front().streamId;
+    int32_t defaultAudioStreamId = -1;
+    int32_t defaultSubtitleStreamId = -1;
+    httpMediaDownloader->SetDefaultStreamId(defaultVideoStreamId, defaultAudioStreamId, defaultSubtitleStreamId);
     httpMediaDownloader->GetReadTimeOut(true);
     httpMediaDownloader->SetAppUid(fdp.ConsumeIntegral<int32_t>());
     httpMediaDownloader->GetCacheDuration(0);
@@ -289,6 +298,30 @@ void DownloaderFuzz(FuzzedDataProvider &fdp)
     downloader->DropRetryData(g_buffer, 1024, downloader.get());  // 1024
 }
 
+void FuzzHttpSourcePlugin(FuzzedDataProvider &fdp)
+{
+    auto plugin = std::make_shared<HttpSourcePlugin>("HttpSource");
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 4, nullptr);  // 4
+    downloader->Init();
+    plugin->downloader_ = downloader;
+    std::vector<StreamInfo> streams;
+    plugin->GetStreamInfo(streams);
+    plugin->GetStreamInfo(streams, true);
+    int32_t defaultVideoStreamId = streams.empty() ? -1 : streams.front().streamId;
+    int32_t defaultAudioStreamId = -1;
+    int32_t defaultSubtitleStreamId = -1;
+    plugin->SetDefaultStreamId(defaultVideoStreamId, defaultAudioStreamId, defaultSubtitleStreamId);
+    auto monitor = std::make_shared<DownloadMonitor>(downloader);
+    monitor->Init();
+    streams.clear();
+    monitor->GetStreamInfo(streams);
+    monitor->GetStreamInfo(streams, true);
+    defaultVideoStreamId = streams.empty() ? -1 : streams.front().streamId;
+    defaultAudioStreamId = -1;
+    defaultSubtitleStreamId = -1;
+    monitor->SetDefaultStreamId(defaultVideoStreamId, defaultAudioStreamId, defaultSubtitleStreamId);
+}
+
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(uint8_t *data, size_t size)
 {
@@ -303,6 +336,7 @@ extern "C" int LLVMFuzzerTestOneInput(uint8_t *data, size_t size)
     HttpDownloaderRun(fdp);
     HttpDownloaderFlvRun(fdp);
     DownloaderFuzz(fdp);
+    FuzzHttpSourcePlugin(fdp);
     if (!CloseServer()) {
         std::cout << "Close server error" << std::endl;
         return -1;
