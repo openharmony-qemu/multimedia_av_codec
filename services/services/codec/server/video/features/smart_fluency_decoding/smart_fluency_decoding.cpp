@@ -277,7 +277,7 @@ void SmartFluencyDecoding::ExecutePreDrop(uint32_t index, std::shared_ptr<AVBuff
         ", flag %{public}u", index, buffer->pts_, buffer->flag_);
     CHECK_AND_RETURN_LOG_WITH_TAG(buffer->flag_ != AVCODEC_BUFFER_FLAG_CODEC_DATA,
         "ExecutePreDrop: skip CODEC_DATA buffer");
-    dropSyncCoordinator_->RecordPreDroppedFrame(buffer->pts_, currentPlaybackSpeed_);
+    dropSyncCoordinator_->RecordPreDroppedFrame(buffer->pts_);
     AsyncDropInputCallback localCb = nullptr;
     {
         std::lock_guard<std::mutex> lock(configMutex_);
@@ -383,14 +383,14 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
         res.naluCostUs = GetCurrentSysTimeUs() - naluStartUs;
 #endif
         if (res.isNonRef) {
-            double currentEmaRet = dropSyncCoordinator_->GetActualRetentionRatio();
+            double currentRetentionRatio = dropSyncCoordinator_->GetActualRetentionRatio();
             if (DoubleUtils::IsGreaterOrEqual(caps.targetRatio, 1.0)) {
                 res.reason = SfdDecisionReason::PRE_RETAIN_TARGET_FULL;
-            } else if (DoubleUtils::IsLessOrEqual(currentEmaRet, caps.targetRatio)) {
-                res.reason = SfdDecisionReason::PRE_RETAIN_EMA_SATISFIED;
+            } else if (DoubleUtils::IsLessOrEqual(currentRetentionRatio, caps.targetRatio)) {
+                res.reason = SfdDecisionReason::PRE_RETAIN_RATIO_SATISFIED;
             } else {
                 res.shouldRetain = false;
-                res.reason = SfdDecisionReason::PRE_DROP_EMA_UNSATISFIED;
+                res.reason = SfdDecisionReason::PRE_DROP_RATIO_UNSATISFIED;
             }
         }
     } else if (caps.isPassthrough) {

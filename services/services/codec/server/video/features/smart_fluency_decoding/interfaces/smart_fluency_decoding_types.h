@@ -53,8 +53,8 @@ enum class SfdDecisionReason : int32_t {
     // --- Pre-Decode Decision Reasons ---
     PRE_RETAIN_REFERENCE = 1,               // Retain: Frame is a reference frame
     PRE_RETAIN_TARGET_FULL = 2,             // Retain: Target retention ratio is ~100% (FULL mode)
-    PRE_RETAIN_EMA_SATISFIED = 3,           // Retain: Current EMA retention ratio is within target
-    PRE_DROP_EMA_UNSATISFIED = 4,           // Drop: Current EMA is too high, need to drop to compensate
+    PRE_RETAIN_RATIO_SATISFIED = 3,         // Retain: Current retention ratio is within target
+    PRE_DROP_RATIO_UNSATISFIED = 4,         // Drop: Current retention ratio is too high, need to drop to compensate
 
     // --- Post-Decode Decision Reasons ---
     POST_BYPASSED = 10,                     // Bypassed: Frame was already dropped in Pre-Decode phase
