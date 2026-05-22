@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <array>
+#include <limits>
 #include <set>
 #include "common/log.h"
 #include "meta/media_types.h"
@@ -42,6 +43,7 @@ constexpr uint32_t H264_SCALING_LIST_4X4_SIZE = 16;
 constexpr uint32_t H264_SCALING_LIST_8X8_SIZE = 64;
 constexpr uint32_t H264_DEFAULT_SCALING_LIST_COUNT = 8;
 constexpr uint32_t H264_SEPARATE_COLOUR_SCALING_LIST_COUNT = 12;
+constexpr uint32_t MAX_RBSP_SKIP_BYTES = std::numeric_limits<uint32_t>::max() / H264_BYTE_BITS;
 
 bool SkipH264ScalingList(RbspContext& reader, uint32_t sizeOfScalingList)
 {
@@ -322,9 +324,8 @@ bool AvcParserImpl::ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDa
     }
     for (auto iter : addrInfoVec) {
         WriteStartCode(annexbExtraDataVec_);
-        FALSE_RETURN_V_MSG_E(
-            static_cast<uint32_t>(iter.bytesIndex) + iter.bufferSize <= static_cast<uint32_t>(extraDataSize),
-            false, "Error size");
+        FALSE_RETURN_V_MSG_E(iter.bytesIndex <= static_cast<uint32_t>(extraDataSize) &&
+            iter.bufferSize <= static_cast<uint32_t>(extraDataSize) - iter.bytesIndex, false, "Error size");
         annexbExtraDataVec_.insert(
             annexbExtraDataVec_.end(), extraData + iter.bytesIndex, extraData + iter.bytesIndex + iter.bufferSize);
     }
@@ -375,14 +376,15 @@ bool AvcParserImpl::ParsePacket(
         for (int32_t i = 0; i < naluLength_; ++i) {
             naluSize = (naluSize << 0x08) | rbspContext->RbspGetBits(0x08); // 前4位表示数据大小
         }
-        if (naluSize < 0x02 || naluSize > rbspContext->RbspGetLeftBytesNum()) {
+        if (naluSize < 0x02 || naluSize > MAX_RBSP_SKIP_BYTES ||
+            naluSize > rbspContext->RbspGetLeftBytesNum()) {
             return false;
         }
         int32_t naluType = (rbspContext->RbspGetBits(0x08, false)) & 0x1f; // false 读完后不跳转
         bool isIrap = naluType == AvcNalType::AVC_IDR_W_RADL;
         gotIrap = (gotIrap || isIrap) ? true : false;
         dataAddrInfo_ = {rbspContext->GetBytesIndex(), naluSize};
-        rbspContext->RbspSkipBits(naluSize * 0x08);
+        rbspContext->RbspSkipBits(naluSize * H264_BYTE_BITS);
         dataInfoVec.emplace_back(dataAddrInfo_);
     }
     return true;
@@ -405,7 +407,8 @@ void AvcParserImpl::ConvertPacketCore(uint8_t **packet, int32_t &packetSize)
         sendXps_ = true;
     }
     for (auto iter : addrInfoVec) {
-        if (iter.bufferSize > static_cast<uint32_t>(packetSize)) {
+        if (iter.bytesIndex > static_cast<uint32_t>(packetSize) ||
+            iter.bufferSize > static_cast<uint32_t>(packetSize) - iter.bytesIndex) {
             return;
         }
         WriteStartCode(annexbFrameVec_);

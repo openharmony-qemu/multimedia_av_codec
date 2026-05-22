@@ -17,6 +17,8 @@
 
 #include <vector>
 #include <algorithm>
+#include <limits>
+#include <new>
 #include <iconv.h>
 #include "avcodec_log.h"
 #include "common/log.h"
@@ -541,15 +543,21 @@ std::string Converter::ConvertGBKToUTF8(const std::string &strGbk)
         MEDIA_LOG_D("Call iconv_open failed");
         return "";
     }
+    constexpr size_t maxUtf8BytesPerGbkChar = 4; // max for chinese character
     size_t inLen = strGbk.length();
-    size_t outLen = inLen * 4; // max for chinese character
+    if (inLen > std::numeric_limits<size_t>::max() / maxUtf8BytesPerGbkChar) {
+        MEDIA_LOG_D("Output buffer size overflow");
+        iconv_close(cd);
+        return "";
+    }
+    size_t outLen = inLen * maxUtf8BytesPerGbkChar;
     char* inBuf = const_cast<char*>(strGbk.c_str());
     if (inBuf == nullptr) {
         MEDIA_LOG_D("Get in buffer failed");
         iconv_close(cd);
         return "";
     }
-    char* outBuf = new char[outLen];
+    char* outBuf = new (std::nothrow) char[outLen];
     if (outBuf == nullptr) {
         MEDIA_LOG_D("Get out buffer failed");
         iconv_close(cd);
