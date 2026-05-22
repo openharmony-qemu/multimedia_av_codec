@@ -382,10 +382,10 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
         res.naluCostUs = GetCurrentSysTimeUs() - naluStartUs;
 #endif
         if (res.isNonRef) {
-            double currentRetentionRatio = dropSyncCoordinator_->GetActualRetentionRatio();
+            double currentPreRetenedRatio = dropSyncCoordinator_->GetPreRetainedRatio();
             if (DoubleUtils::IsGreaterOrEqual(caps.targetRatio, 1.0)) {
                 res.reason = SfdDecisionReason::PRE_RETAIN_TARGET_FULL;
-            } else if (DoubleUtils::IsLessOrEqual(currentRetentionRatio, caps.targetRatio)) {
+            } else if (DoubleUtils::IsLessOrEqual(currentPreRetenedRatio, caps.targetRatio)) {
                 res.reason = SfdDecisionReason::PRE_RETAIN_RATIO_SATISFIED;
             } else {
                 res.shouldRetain = false;

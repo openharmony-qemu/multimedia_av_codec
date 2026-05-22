@@ -34,7 +34,7 @@ bool DropSyncCoordinator::RecordPreDroppedFrame(int64_t pts)
     ptsRingBuffer_[index] = pts;
     isConsumed_[index].store(false, std::memory_order_release);
     writeIndex_.store(nextWrite, std::memory_order_release);
-    UpdateFeedback(false);
+    UpdateFeedback(false, true);
     AVCODEC_LOGD("Recorded pre-dropped PTS %{public}" PRId64 ", writeIndex: %{public}zu", pts, nextWrite);
     return true;
 }
@@ -65,16 +65,34 @@ uint32_t DropSyncCoordinator::GetAndConsumePreDroppedCount(int64_t currentPts)
     return count;
 }
 
-void DropSyncCoordinator::UpdateFeedback(bool isRetained)
+void DropSyncCoordinator::UpdateFeedback(bool isRetained, bool isPreDropped)
 {
     std::lock_guard<std::mutex> lock(feedbackMutex_);
-    totalFrameCnt_++;
-    if (isRetained) {
-        retainedFrameCnt_++;
+    if (feedbackWindowCount_ == feedbackWindowSize) {
+        auto& old = feedbackWindow_[feedbackWindowPos_];
+        if (old.isRetained) {
+            windowRetainedCount_--;
+        }
+        if (old.isPreDropped) {
+            windowPreDroppedCount_--;
+        }
+    } else {
+        feedbackWindowCount_++;
     }
-    retaintionRatio_ = static_cast<double>(retainedFrameCnt_) / totalFrameCnt_;
-    AVCODEC_LOGD("isRetained=%{public}d, total=%{public}" PRIu64 ", retained=%{public}" PRIu64,
-        isRetained, totalFrameCnt_, retainedFrameCnt_);
+    auto& slot = feedbackWindow_[feedbackWindowPos_];
+    slot.isRetained = isRetained;
+    slot.isPreDropped = isPreDropped;
+    if (isRetained) {
+        windowRetainedCount_++;
+    }
+    if (isPreDropped) {
+        windowPreDroppedCount_++;
+    }
+    feedbackWindowPos_ = (feedbackWindowPos_ + 1) & feedbackWindowMask;
+    AVCODEC_LOGD("isRetained=%{public}d, isPreDropped=%{public}d, window=%{public}zu/%{public}zu"
+        ", retained=%{public}u, preDropped=%{public}u",
+        isRetained, isPreDropped, feedbackWindowCount_, feedbackWindowSize,
+        windowRetainedCount_, windowPreDroppedCount_);
 }
 
 void DropSyncCoordinator::Reset()
@@ -89,16 +107,20 @@ void DropSyncCoordinator::Reset()
         readIndex_.store(currentWrite, std::memory_order_relaxed);
     }
     std::lock_guard<std::mutex> lock(feedbackMutex_);
-    totalFrameCnt_ = 0;
-    retainedFrameCnt_ = 0;
-    retaintionRatio_ = 1.0;
+    feedbackWindowCount_ = 0;
+    feedbackWindowPos_ = 0;
+    windowRetainedCount_ = 0;
+    windowPreDroppedCount_ = 0;
     AVCODEC_LOGI("Reset DropSyncCoordinator");
 }
 
 double DropSyncCoordinator::GetActualRetentionRatio() const
 {
     std::lock_guard<std::mutex> lock(feedbackMutex_);
-    return retaintionRatio_;
+    if (feedbackWindowCount_ == 0) {
+        return 0.0;
+    }
+    return static_cast<double>(windowRetainedCount_) / feedbackWindowCount_;
 }
 
 size_t DropSyncCoordinator::GetWriteIndex() const
@@ -109,6 +131,15 @@ size_t DropSyncCoordinator::GetWriteIndex() const
 size_t DropSyncCoordinator::GetReadIndex() const
 {
     return readIndex_.load(std::memory_order_relaxed);
+}
+
+double DropSyncCoordinator::GetPreRetainedRatio() const
+{
+    std::lock_guard<std::mutex> lock(feedbackMutex_);
+    if (feedbackWindowCount_ == 0) {
+        return 0.0;
+    }
+    return static_cast<double>(feedbackWindowCount_ - windowPreDroppedCount_) / feedbackWindowCount_;
 }
 
 } // namespace SFD

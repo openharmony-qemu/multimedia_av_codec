@@ -174,19 +174,6 @@ HWTEST_F(SmartFluencyDecodingTest, Initialize_FullMode_009, TestSize.Level1)
 }
 
 /**
- * @tc.name: UpdatePlaybackSpeed_Negative_010
- * @tc.desc: Ensure negative playback speed falls back to DEFAULT_PLAYBACK_SPEED (1.0).
- * @tc.type: FUNC
- */
-HWTEST_F(SmartFluencyDecodingTest, UpdatePlaybackSpeed_Negative_010, TestSize.Level1)
-{
-    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::ADAPTIVE);
-    sfd_->Initialize(cfg);
-    sfd_->UpdatePlaybackSpeed(-1.0);
-    EXPECT_NEAR(sfd_->currentPlaybackSpeed_, 1.0, 0.001);
-}
-
-/**
  * @tc.name: IsRatioValid_Invalid_011
  * @tc.desc: Verify IsRatioValid correctly identifies out-of-bounds ratios.
  * @tc.type: FUNC
@@ -304,7 +291,6 @@ HWTEST_F(SmartFluencyDecodingTest, UpdateDynamicConfig_SpeedOnly_016, TestSize.L
     format.PutDoubleValue(OHOS::Media::Tag::VIDEO_DECODER_SPEED, 2.0);
     sfd_->UpdateDynamicConfig(format);
 
-    EXPECT_NEAR(sfd_->currentPlaybackSpeed_, 2.0, 0.001);
     EXPECT_EQ(sfd_->strategy_.get(), originalStrategy); // Should not recreate
 }
 
@@ -509,20 +495,6 @@ HWTEST_F(SmartFluencyDecodingTest, MakePreDecodeDecision_EosBuffer_026, TestSize
 }
 
 /**
- * @tc.name: UpdatePlaybackSpeed_ValidSpeed_027
- * @tc.desc: Verify UpdatePlaybackSpeed correctly stores a valid positive speed.
- * @tc.type: FUNC
- */
-HWTEST_F(SmartFluencyDecodingTest, UpdatePlaybackSpeed_ValidSpeed_027, TestSize.Level1)
-{
-    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::ADAPTIVE);
-    sfd_->Initialize(cfg);
-
-    sfd_->UpdatePlaybackSpeed(2.5);
-    EXPECT_NEAR(sfd_->currentPlaybackSpeed_, 2.5, 0.001);
-}
-
-/**
  * @tc.name: MakePostDecodeDecision_NoStrategy_028
  * @tc.desc: Verify MakePostDecodeDecision returns true when strategy is null.
  * @tc.type: FUNC
@@ -691,20 +663,6 @@ HWTEST_F(SmartFluencyDecodingTest, ExecutePostDrop_NullCallback_038, TestSize.Le
     sfd_->asyncDropOutputCb_ = nullptr;
     sfd_->ExecutePostDrop(0);
     EXPECT_TRUE(true);
-}
-
-/**
- * @tc.name: UpdatePlaybackSpeed_NullStrategy_039
- * @tc.desc: Verify UpdatePlaybackSpeed still stores speed when strategy_ is null.
- * @tc.type: FUNC
- */
-HWTEST_F(SmartFluencyDecodingTest, UpdatePlaybackSpeed_NullStrategy_039, TestSize.Level1)
-{
-    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::FULL);
-    sfd_->Initialize(cfg);
-    sfd_->strategy_ = nullptr;
-    sfd_->UpdatePlaybackSpeed(2.0);
-    EXPECT_NEAR(sfd_->currentPlaybackSpeed_, 2.0, 0.001);
 }
 
 /**

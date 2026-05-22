@@ -33,7 +33,8 @@ public:
     uint32_t GetAndConsumePreDroppedCount(int64_t currentPts);
     void Reset();
     double GetActualRetentionRatio() const;
-    void UpdateFeedback(bool isRetained);
+    double GetPreRetainedRatio() const;
+    void UpdateFeedback(bool isRetained, bool isPreDropped = false);
     size_t GetWriteIndex() const;
     size_t GetReadIndex() const;
 
@@ -41,13 +42,23 @@ private:
     static constexpr size_t queueCapacity = 1024;
     static constexpr size_t queueMask = queueCapacity - 1;
     static constexpr size_t cacheLineSize = 64;
+    static constexpr size_t feedbackWindowSize = 100;
+    static constexpr size_t feedbackWindowMask = feedbackWindowSize - 1;
+
+    struct FeedbackSlot {
+        bool isRetained = false;
+        bool isPreDropped = false;
+    };
+
     int64_t ptsRingBuffer_[queueCapacity]{0};
     std::atomic<bool> isConsumed_[queueCapacity]{};
     alignas(cacheLineSize) std::atomic<size_t> writeIndex_{0};
     alignas(cacheLineSize) std::atomic<size_t> readIndex_{0};
-    uint64_t totalFrameCnt_{0};
-    uint64_t retainedFrameCnt_{0};
-    double retaintionRatio_{1.0};
+    alignas(cacheLineSize) FeedbackSlot feedbackWindow_[feedbackWindowSize]{};
+    size_t feedbackWindowCount_{0};
+    size_t feedbackWindowPos_{0};
+    uint32_t windowRetainedCount_{0};
+    uint32_t windowPreDroppedCount_{0};
     mutable std::mutex feedbackMutex_;
 };
 } // namespace SFD
