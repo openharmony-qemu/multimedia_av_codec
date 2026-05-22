@@ -223,7 +223,7 @@ Status AudioMp3EncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer>& 
     if (enableCache_) {
         std::vector<uint8_t> tmpBuffer;
         if (isEnableFormatConvert_ && audioSampleFormat_ != AudioSampleFormat::SAMPLE_S16LE) {
-            size_t sampleNum = inputSize / originSampleByte_;
+            size_t sampleNum = static_cast<size_t>(inputSize) / static_cast<size_t>(originSampleByte_);
             tmpBuffer.resize(sampleNum * sizeof(int16_t));
             ConvertPcmSampleFormat(memory->GetAddr(), sampleNum, audioSampleFormat_,
                 AudioSampleFormat::SAMPLE_S16LE, tmpBuffer.data());
@@ -272,10 +272,10 @@ Status AudioMp3EncoderPlugin::QueueOutputBufferCache(std::shared_ptr<AVBuffer> &
     auto memory = outputBuffer->memory_;
     Status ret = Status::OK;
     auto frameBytes = static_cast<size_t>(frameSize_ * channels_ * sizeof(int16_t));
-    if (pcmCache_.size() >= frameBytes ||
-        ((outputBuffer->flag_ & BUFFER_FLAG_EOS) && (pcmCache_.size() > channels_ * sizeof(int16_t)))) {
+    if (pcmCache_.size() >= frameBytes || ((outputBuffer->flag_ & BUFFER_FLAG_EOS) &&
+        (static_cast<int32_t>(pcmCache_.size()) > channels_ * sizeof(int16_t)))) {
         frameBytes = (outputBuffer->flag_ & BUFFER_FLAG_EOS) ? pcmCache_.size() : frameBytes;
-        int32_t sampleNum = frameBytes / channels_ / sizeof(int16_t);
+        int32_t sampleNum = static_cast<int32_t>(frameBytes / static_cast<size_t>(channels_) / sizeof(int16_t));
         const short* pcmData = reinterpret_cast<const short*>(pcmCache_.data());
         if (channels_ == ONE_CHANNEL) {
             outputSize_ = lame_encode_buffer(lameInfo->gfp, pcmData, pcmData, sampleNum,
@@ -432,7 +432,7 @@ void AudioMp3EncoderPlugin::EncodeDirect(const std::shared_ptr<AVBuffer>& inputB
     short *inputPcmBuffer = reinterpret_cast<short *>(memory->GetAddr());
     std::vector<uint8_t> tmpBuffer;
     if (isEnableFormatConvert_ && audioSampleFormat_ != AudioSampleFormat::SAMPLE_S16LE) {
-        size_t sampleNum = inputSize / originSampleByte_;
+        size_t sampleNum = static_cast<size_t>(inputSize) / static_cast<size_t>(originSampleByte_);
         tmpBuffer.resize(sampleNum * sizeof(int16_t));
         ConvertPcmSampleFormat(reinterpret_cast<uint8_t *>(inputPcmBuffer), sampleNum, audioSampleFormat_,
             AudioSampleFormat::SAMPLE_S16LE, tmpBuffer.data());

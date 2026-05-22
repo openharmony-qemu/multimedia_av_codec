@@ -208,8 +208,8 @@ Status AudioG711muEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer
         pcmToEncode = reinterpret_cast<int16_t *>(tmpBuffer.data());
     }
 
-    if (sampleNum + encodeResult_.size() < encodeResult_.capacity()) {
-        encodeResult_.reserve(sampleNum + encodeResult_.size());
+    if (static_cast<size_t>(sampleNum) + encodeResult_.size() > encodeResult_.capacity()) {
+        encodeResult_.reserve(static_cast<size_t>(sampleNum) + encodeResult_.size());
     }
     for (int32_t i = 0; i < sampleNum; ++i) {
         encodeResult_.push_back(G711MuLawEncode(pcmToEncode[i]));
