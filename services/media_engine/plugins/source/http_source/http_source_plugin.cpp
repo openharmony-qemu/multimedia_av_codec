@@ -223,6 +223,7 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     InitSourcePlugin(source);
     redirectUrl_ = GetCurUrl();
     FALSE_RETURN_V(!redirectUrl_.empty() && source->GetSourceUri() != redirectUrl_, Status::OK);
+    FALSE_RETURN_V(IsAllowedProtocol(redirectUrl_), Status::ERROR_INVALID_OPERATION);
     uri_ = redirectUrl_;
     FALSE_RETURN_V(IsSeekToTimeSupported(), Status::OK);
     InitSourcePlugin(source);
