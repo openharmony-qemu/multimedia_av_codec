@@ -72,7 +72,7 @@ void DecodingBehaviorAnalyzer::OnFrameConsumed(int64_t pts, bool render)
 #endif
     int64_t ptsMs = pts / 1000; // 1000: us to ms
     if (lastPtsMs_ != -1 && std::abs(ptsMs - lastPtsMs_) > SEEK_DETECTION_THRESHOLD_MS) {
-        AVCODEC_LOGI("seek detection, lastPtsMs %{public}ld, ptsMs %{public}ld", lastPtsMs_, ptsMs);
+        AVCODEC_LOGI("seek detection, lastPtsMs %{public}" PRId64 ", ptsMs %{public}" PRId64 "", lastPtsMs_, ptsMs);
         ResetIntervalStats();
     }
     if (frameCnt_ == 0) {
@@ -88,7 +88,8 @@ void DecodingBehaviorAnalyzer::OnFrameConsumed(int64_t pts, bool render)
         renderCnt_++;
     }
     lastPtsMs_ = ptsMs;
-    AVCODEC_LOGD("frameCnt_ %{public}u, renderCnt_ %{public}u, pts= %{public}ld", frameCnt_, renderCnt_, pts);
+    AVCODEC_LOGD("frameCnt_ %{public}u, renderCnt_ %{public}u, pts= %{public}" PRId64 "",
+        frameCnt_, renderCnt_, pts);
 }
 
 double DecodingBehaviorAnalyzer::GetSrcFps()
