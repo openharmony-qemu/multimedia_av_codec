@@ -722,35 +722,34 @@ Status MPEG4SampleHelper::SetTrackExtendsParams(int64_t dataOffset, size_t dataS
     return Status::OK;
 }
 
-bool MPEG4SampleHelper::HasTfhdRemainingData(size_t dataSize, size_t dataOffset, size_t fieldSize) const
+bool MPEG4SampleHelper::HasTfhdRemainingData(const TfhdParseContext& ctx, size_t fieldSize) const
 {
-    return dataOffset <= dataSize && fieldSize <= dataSize - dataOffset;
+    return ctx.dataOffset <= ctx.dataSize && fieldSize <= ctx.dataSize - ctx.dataOffset;
 }
 
-Status MPEG4SampleHelper::ParseTfhdBaseDataOffset(uint32_t tfhdFlag, const uint8_t* data, size_t dataSize,
-    size_t& tfhdDataOffset, int64_t moofOffset)
+Status MPEG4SampleHelper::ParseTfhdBaseDataOffset(TfhdParseContext& ctx, int64_t moofOffset)
 {
-    if ((tfhdFlag & TrackFragmentHeaderInfo::TFHD_BASE_DATA_OFFSET) && seekable_ == Seekable::SEEKABLE) {
-        FALSE_RETURN_V_MSG_E(HasTfhdRemainingData(dataSize, tfhdDataOffset, sizeof(uint64_t)),
+    if ((ctx.flag & TrackFragmentHeaderInfo::TFHD_BASE_DATA_OFFSET) && seekable_ == Seekable::SEEKABLE) {
+        FALSE_RETURN_V_MSG_E(HasTfhdRemainingData(ctx, sizeof(uint64_t)),
             Status::ERROR_INVALID_DATA, "Invalid tfhd base data offset");
-        tfhd_.baseDataOffset = GetU64Value(data + tfhdDataOffset);
-        tfhdDataOffset += sizeof(uint64_t);
+        tfhd_.baseDataOffset = GetU64Value(ctx.data + ctx.dataOffset);
+        ctx.dataOffset += sizeof(uint64_t);
     } else {
         tfhd_.baseDataOffset = moofOffset;
     }
     return Status::OK;
 }
 
-Status MPEG4SampleHelper::ParseTfhdOptionalUint32(uint32_t tfhdFlag, uint32_t fieldFlag, const uint8_t* data,
-    size_t dataSize, size_t& tfhdDataOffset, uint32_t defaultValue, uint32_t& output)
+Status MPEG4SampleHelper::ParseTfhdOptionalUint32(TfhdParseContext& ctx, const TfhdOptionalUint32Field& field)
 {
-    if (tfhdFlag & fieldFlag) {
-        FALSE_RETURN_V_MSG_E(HasTfhdRemainingData(dataSize, tfhdDataOffset, sizeof(uint32_t)),
+    FALSE_RETURN_V_MSG_E(field.output != nullptr, Status::ERROR_INVALID_PARAMETER, "Invalid tfhd output");
+    if (ctx.flag & field.flag) {
+        FALSE_RETURN_V_MSG_E(HasTfhdRemainingData(ctx, sizeof(uint32_t)),
             Status::ERROR_INVALID_DATA, "Invalid tfhd optional field");
-        output = GetU32Value(data + tfhdDataOffset);
-        tfhdDataOffset += sizeof(uint32_t);
+        *field.output = GetU32Value(ctx.data + ctx.dataOffset);
+        ctx.dataOffset += sizeof(uint32_t);
     } else {
-        output = defaultValue;
+        *field.output = field.defaultValue;
     }
     return Status::OK;
 }
@@ -766,21 +765,20 @@ Status MPEG4SampleHelper::SetTrackFragmentHeaderParams(int64_t dataOffset, int64
     Status ret = dataReader_->ReadUintData(dataOffset, data.get(), size);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read data failed");
 
-    size_t tfhdDataOffset = 0;
-    uint32_t tfhdFlag = flag;
-    ret = ParseTfhdBaseDataOffset(tfhdFlag, data.get(), size, tfhdDataOffset, moofOffset);
+    TfhdParseContext ctx = {flag, data.get(), size, 0};
+    ret = ParseTfhdBaseDataOffset(ctx, moofOffset);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse tfhd base data offset failed");
-    ret = ParseTfhdOptionalUint32(tfhdFlag, TrackFragmentHeaderInfo::TFHD_STSD_ID, data.get(),
-        size, tfhdDataOffset, trex_.defaultSampleDescriptionIndex, tfhd_.sampleDescriptionIndex);
+    ret = ParseTfhdOptionalUint32(ctx,
+        {TrackFragmentHeaderInfo::TFHD_STSD_ID, trex_.defaultSampleDescriptionIndex, &tfhd_.sampleDescriptionIndex});
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse tfhd sample description index failed");
-    ret = ParseTfhdOptionalUint32(tfhdFlag, TrackFragmentHeaderInfo::TFHD_DEFAULT_DURATION, data.get(),
-        size, tfhdDataOffset, trex_.defaultSampleDuration, tfhd_.defaultSampleDuration);
+    ret = ParseTfhdOptionalUint32(ctx,
+        {TrackFragmentHeaderInfo::TFHD_DEFAULT_DURATION, trex_.defaultSampleDuration, &tfhd_.defaultSampleDuration});
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse tfhd default sample duration failed");
-    ret = ParseTfhdOptionalUint32(tfhdFlag, TrackFragmentHeaderInfo::TFHD_DEFAULT_SIZE, data.get(),
-        size, tfhdDataOffset, trex_.defaultSampleSize, tfhd_.defaultSampleSize);
+    ret = ParseTfhdOptionalUint32(ctx,
+        {TrackFragmentHeaderInfo::TFHD_DEFAULT_SIZE, trex_.defaultSampleSize, &tfhd_.defaultSampleSize});
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse tfhd default sample size failed");
-    ret = ParseTfhdOptionalUint32(tfhdFlag, TrackFragmentHeaderInfo::TFHD_DEFAULT_FLAGS, data.get(),
-        size, tfhdDataOffset, trex_.defaultSampleFlags, tfhd_.flags);
+    ret = ParseTfhdOptionalUint32(ctx,
+        {TrackFragmentHeaderInfo::TFHD_DEFAULT_FLAGS, trex_.defaultSampleFlags, &tfhd_.flags});
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse tfhd default sample flags failed");
     hasTfhd_ = true;
     return Status::OK;

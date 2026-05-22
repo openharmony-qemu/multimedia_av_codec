@@ -189,6 +189,17 @@ private:
         int64_t frameEndTime = 0;
         std::vector<int64_t> leadingDurations;
     };
+    struct TfhdParseContext {
+        uint32_t flag = 0;
+        const uint8_t* data = nullptr;
+        size_t dataSize = 0;
+        size_t dataOffset = 0;
+    };
+    struct TfhdOptionalUint32Field {
+        uint32_t flag = 0;
+        uint32_t defaultValue = 0;
+        uint32_t* output = nullptr;
+    };
 
     std::vector<SttsEntry> sttsEntry_;
     std::vector<StscEntry> stscEntry_;
@@ -242,11 +253,9 @@ private:
     Status SetFieldSize(uint32_t atomType, int64_t &currentOffset, uint32_t& fieldSize);
     Status ProcessSampleSizeData(uint32_t atomType, int64_t currentOffset, uint32_t size,
         uint32_t fieldSize, uint32_t numSampleSizes);
-    bool HasTfhdRemainingData(size_t dataSize, size_t dataOffset, size_t fieldSize) const;
-    Status ParseTfhdBaseDataOffset(uint32_t tfhdFlag, const uint8_t* data, size_t dataSize,
-        size_t& tfhdDataOffset, int64_t moofOffset);
-    Status ParseTfhdOptionalUint32(uint32_t tfhdFlag, uint32_t fieldFlag, const uint8_t* data,
-        size_t dataSize, size_t& tfhdDataOffset, uint32_t defaultValue, uint32_t& output);
+    bool HasTfhdRemainingData(const TfhdParseContext& ctx, size_t fieldSize) const;
+    Status ParseTfhdBaseDataOffset(TfhdParseContext& ctx, int64_t moofOffset);
+    Status ParseTfhdOptionalUint32(TfhdParseContext& ctx, const TfhdOptionalUint32Field& field);
     Status PreBuildProcessAndCheck();
     uint64_t CountSttsSamples() const;
     SampleIndexBuildContext CreateSampleIndexBuildContext() const;
