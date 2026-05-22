@@ -104,6 +104,13 @@ private:
         NB = 3,
     };
 
+    struct Av3aConfigParams {
+        int32_t soundbedChannels = 0;
+        int32_t objectNumber = 0;
+        int32_t hoaOrder = 0;
+        AudioChannelLayout channelLayout = AudioChannelLayout::UNKNOWN;
+    };
+    
     struct MPEG4Atom {
         int32_t type = 0;
         uint64_t size = 0;
@@ -256,6 +263,11 @@ private:
     Status ProcessMetaHandler(MPEG4Atom currentAtom, ParseContext* parseCtx);
     void SetTrackMediaType(const std::shared_ptr<Track>& track);
     Status ProcessTfhdAtom(const MPEG4Atom& atom);
+    Status UpdateDca3TrackMeta(DemuxerBitReader& bitReader, const Av3aConfigParams& params);
+    Status ReadDca3Payload(MPEG4Atom currentAtom, ParseContext* ctx,
+                                        std::unique_ptr<uint8_t[]>& dca3Data, uint64_t& dataSize);
+    Status ParseDca3ContentType(DemuxerBitReader& bitReader, uint8_t contentType, Av3aConfigParams& params);
+
     bool UpdataMoofInfo(MPEG4Atom& atom, Status& ret, int64_t& currentOffset, FragmentEntry& frag, int64_t sidxDts);
     // 解析函数
     Status ParseContainerAtom(const MPEG4Atom& containerAtom, int32_t depth, ParseContext* ctx);
@@ -266,6 +278,7 @@ private:
     Status ReadMetadataString(std::string& key, int64_t offset, uint64_t size, uint32_t dataType, bool isUserMeta);
     Status SetAlacAudioAttributes(const uint8_t* buffer);
     Status ParseAlacEntry(ParseContext& ctx);
+    Status ParseDca3Entry(MPEG4Atom currentAtom, ParseContext* ctx);
     Status ParseIccProfile(int64_t offset, uint64_t dataSize);
     Status ParseColorParams(int64_t offset, uint64_t dataSize, const std::string& colorType, ParseContext* parseCtx);
     std::shared_ptr<Track> FindSidxTrack(uint32_t referenceId);
