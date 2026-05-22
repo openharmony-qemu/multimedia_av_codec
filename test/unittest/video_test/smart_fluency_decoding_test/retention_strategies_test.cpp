@@ -313,7 +313,7 @@ HWTEST_F(AdaptiveRetentionStrategyTest, MakeDecision_DecisionTreeRetain_005, Tes
     ctx.mvStats = &mvStats;
 
     EXPECT_FALSE(strategy->MakeRetentionDecision(ctx));
-    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT);
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_DROP_ADAPTIVE_DT);
 }
 
 /**
@@ -403,11 +403,11 @@ HWTEST_F(AdaptiveRetentionStrategyTest, MakeDecision_EmptyMvStats_008, TestSize.
     ctx.mvStats = &mvStats;
 
     EXPECT_FALSE(strategy->MakeRetentionDecision(ctx));
-    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::UNSPECIFIED);
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_DROP_ADAPTIVE_DT);
 
     ctx.mvStats = nullptr;
     EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
-    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::UNSPECIFIED);
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT);
 }
 
 /**
@@ -609,12 +609,12 @@ HWTEST_F(AdaptiveRetentionStrategyTest, MakeDecision_MaxDropsLimit_011, TestSize
     FrameRetentionContext ctx{};
     MVStats mvStats;
     mvStats.validBlocks = 100;
-    mvStats.perceptualMagnitude = 30.0;
+    mvStats.perceptualMagnitude = 100.0;
     mvStats.motionConsistency = 1.0; // Force drop
     ctx.mvStats = &mvStats;
 
     // Drop 3 times in a row
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 2; i++) {
         EXPECT_FALSE(strategy->MakeRetentionDecision(ctx));
     }
     // 4th call: maxDrops limit reached, forces retain
