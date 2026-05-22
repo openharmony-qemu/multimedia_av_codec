@@ -842,7 +842,7 @@ Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inp
     size_t srcBufferSize = static_cast<size_t>(memory->GetSize());
     std::vector<uint8_t> tmpBuffer;
     if (isEnableFormatConvert_ && audioSampleFormat_ != convertSampleFormat_) {
-        size_t inputSampleCnt = srcBufferSize / originSampleByte_;
+        size_t inputSampleCnt = srcBufferSize / static_cast<size_t>(originSampleByte_);
         // 转成F32LE有4 bytes
         srcBufferSize = sizeof(int32_t) * inputSampleCnt;
         tmpBuffer.resize(srcBufferSize);

@@ -88,7 +88,7 @@ Status FFmpegBaseEncoder::ProcessSendData(const std::shared_ptr<AVBuffer> &input
         } else {
             if (isEnableFormatConvert_ && srcSampleFormat_ != dstSampleFormat_) {
                 size_t srcBufferSize = static_cast<size_t>(memory->GetSize());
-                size_t inputSampleCnt = srcBufferSize / srcBytesPerSample_;
+                size_t inputSampleCnt = srcBufferSize / static_cast<size_t>(srcBytesPerSample_);
                 size_t dstBufferSize = GetPcmConvertOutputSize(inputSampleCnt, dstSampleFormat_);
                 if (dstBufferSize == 0) {
                     AVCODEC_LOGE("GetPcmConvertOutputSize failed");
@@ -127,7 +127,7 @@ Status FFmpegBaseEncoder::PcmFillFrame(const std::shared_ptr<AVBuffer> &inputBuf
 
     if (isEnableFormatConvert_ && srcSampleFormat_ != dstSampleFormat_) {
         size_t srcBufferSize = static_cast<size_t>(usedSize);
-        size_t inputSampleCnt = srcBufferSize / srcBytesPerSample_;
+        size_t inputSampleCnt = srcBufferSize / static_cast<size_t>(srcBytesPerSample_);
         size_t dstBufferSize = GetPcmConvertOutputSize(inputSampleCnt, dstSampleFormat_);
         if (dstBufferSize == 0) {
             AVCODEC_LOGE("GetPcmConvertOutputSize failed");
@@ -140,7 +140,7 @@ Status FFmpegBaseEncoder::PcmFillFrame(const std::shared_ptr<AVBuffer> &inputBuf
             AVCODEC_LOGE("ConvertPcmSampleFormat failed");
             return ret;
         }
-        cachedFrame_->nb_samples = static_cast<int>(dstBufferSize / channelsBytesPerSample_);
+        cachedFrame_->nb_samples = static_cast<int>(dstBufferSize / static_cast<size_t>(channelsBytesPerSample_));
         cachedFrame_->data[0] = convertBuffer_.data();
         cachedFrame_->linesize[0] = static_cast<int>(dstBufferSize);
     } else {
@@ -419,7 +419,7 @@ Status FFmpegBaseEncoder::OpenContext()
         AVCODEC_LOGE("frame size invalid");
         return Status::ERROR_UNKNOWN;
     }
-    frameBytes_ = static_cast<uint32_t>(avCodecContext_->frame_size) * channelsBytesPerSample_;
+    frameBytes_ = static_cast<uint32_t>(avCodecContext_->frame_size * channelsBytesPerSample_);
     AVCODEC_LOGI("flac encode frameBytes_:%{public}d", static_cast<int32_t>(frameBytes_));
     return Status::OK;
 }
@@ -454,7 +454,7 @@ Status FFmpegBaseEncoder::ReAllocateContext()
         return Status::ERROR_UNKNOWN;
     }
     avCodecContext_ = tmpContext;
-    frameBytes_ = static_cast<uint32_t>(avCodecContext_->frame_size) * channelsBytesPerSample_;
+    frameBytes_ = static_cast<uint32_t>(avCodecContext_->frame_size * channelsBytesPerSample_);
     AVCODEC_LOGI("flac encode frameBytes_:%{public}d", static_cast<int32_t>(frameBytes_));
     return Status::OK;
 }
@@ -511,7 +511,7 @@ Status FFmpegBaseEncoder::FillFrameFromCache(bool isEos)
         return Status::ERROR_UNKNOWN;
     }
     pcmCache_.erase(pcmCache_.begin(), pcmCache_.begin() + readBytes);
-    cachedFrame_->nb_samples = readBytes / channelsBytesPerSample_;
+    cachedFrame_->nb_samples = static_cast<int>(readBytes) / channelsBytesPerSample_;
     cachedFrame_->extended_data = cachedFrame_->data;
     cachedFrame_->linesize[0] = static_cast<int>(readBytes);
     return Status::OK;
