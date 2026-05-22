@@ -206,7 +206,7 @@ bool BaseStreamDemuxer::IsPlayerMode()
 
 void BaseStreamDemuxer::SetPlayerMode(bool isPlayerMode)
 {
-    return isPlayerMode_.store(isPlayerMode);
+    isPlayerMode_.store(isPlayerMode);
 }
 } // namespace Media
 } // namespace OHOS
