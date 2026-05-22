@@ -47,6 +47,7 @@ private:
     alignas(cacheLineSize) std::atomic<size_t> readIndex_{0};
     uint64_t totalFeedbackFrames_{0};
     uint64_t retainedFeedbackFrames_{0};
+    double retaintionRatio_{0.0};
     mutable std::mutex feedbackMutex_;
 };
 } // namespace SFD

@@ -44,7 +44,7 @@ private:
     double currentSpeed_{1.0};
     double targetRatio_{1.0};
     double accumulator_{0.0};
-    double sourceFps_{-1.0}; // -1.0 mean not ready
+    double sourceFps_{30.0}; // 30.0 mean not ready
     SfdDecisionReason lastReason_{SfdDecisionReason::UNSPECIFIED};
 };
 

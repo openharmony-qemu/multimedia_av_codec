@@ -72,6 +72,7 @@ void DropSyncCoordinator::UpdateFeedback(bool isRetained)
     if (isRetained) {
         retainedFeedbackFrames_++;
     }
+    retaintionRatio_ = static_cast<double>(retainedFeedbackFrames_) / totalFeedbackFrames_;
     AVCODEC_LOGD("isRetained=%{public}d, total=%{public}" PRIu64 ", retained=%{public}" PRIu64,
         isRetained, totalFeedbackFrames_, retainedFeedbackFrames_);
 }
@@ -90,16 +91,14 @@ void DropSyncCoordinator::Reset()
     std::lock_guard<std::mutex> lock(feedbackMutex_);
     totalFeedbackFrames_ = 0;
     retainedFeedbackFrames_ = 0;
+    retaintionRatio_ = 0.0;
     AVCODEC_LOGI("Reset DropSyncCoordinator");
 }
 
 double DropSyncCoordinator::GetActualRetentionRatio() const
 {
     std::lock_guard<std::mutex> lock(feedbackMutex_);
-    if (totalFeedbackFrames_ == 0) {
-        return 1.0;
-    }
-    return static_cast<double>(retainedFeedbackFrames_) / totalFeedbackFrames_;
+    return retaintionRatio_;
 }
 
 size_t DropSyncCoordinator::GetWriteIndex() const

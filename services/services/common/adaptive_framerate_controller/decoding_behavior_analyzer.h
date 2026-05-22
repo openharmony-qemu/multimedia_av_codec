@@ -99,6 +99,10 @@ private:
     void SaveDecodingBehaviorAsSnapshot(
         DecodingBehaviorType type, std::chrono::steady_clock::time_point endTime, size_t decSpeedIdx);
     void ReportSpeedDecodingInfo();
+    size_t UpdateSpeedEstimates(double speed, double srcFps);
+    void ReportFpsIfSignificantChange(double decFps, double renderFps, double srcFps);
+    void HandleBehaviorTransition(DecodingBehaviorType currentType, size_t oldSpeedIdx,
+        DecodingBehaviorType newType, size_t newSpeedIdx);
 #ifdef SUPPORT_FPS_FOR_MEMC
     bool IsStableFps(float fps);
     void CalcOutputVideoFps(int64_t currentPts, bool render);

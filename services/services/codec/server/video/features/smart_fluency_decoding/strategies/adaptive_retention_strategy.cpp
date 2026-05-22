@@ -28,9 +28,9 @@ constexpr double HIGH_RISK_TH = 0.8;
 constexpr double LOW_RISK_TH = 0.2;
 constexpr double CON_LOW_TH = 0.33;
 constexpr double CON_HIGH_TH = 0.66;
-constexpr double MAG_LOW_TH = 6.5;
-constexpr double MAG_HIGH_TH = 21.0;
-constexpr double MAG_CAP = 30.0;
+constexpr double MAG_LOW_TH = 20.0;
+constexpr double MAG_HIGH_TH = 55.0;
+constexpr double MAG_CAP = 80.0;
 } // namespace
 
 namespace OHOS {
@@ -140,7 +140,7 @@ void AdaptiveRetentionStrategy::Reset()
 {
     accumulator_ = 0.0;
     targetRatio_ = 1.0;
-    sourceFps_ = -1.0;
+    sourceFps_ = 30.0;
     lastReason_ = SfdDecisionReason::UNSPECIFIED;
     AVCODEC_LOGI("AdaptiveRetentionStrategy reset completed");
 }

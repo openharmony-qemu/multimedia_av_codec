@@ -317,12 +317,25 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
         return;
     }
     double decInFps = static_cast<double>(totalFrames - 1) / sysTimeIntvlMs * 1000;
-    AVCODEC_LOGI("yxy_debug1 sysTimeIntvlMs: %{public}lld, totalFrames %{public}d", sysTimeIntvlMs, totalFrames);
+    AVCODEC_LOGI("sysTimeIntvlMs: %{public}lld, totalFrames %{public}d", sysTimeIntvlMs, totalFrames);
     double srcFps = GetSrcFps();
     if (srcFps < 1.0) {
         return;
     }
     double speed = decInFps / srcFps;
+    size_t newSpeedIdx = UpdateSpeedEstimates(speed, srcFps);
+    double renderFps = decFps * static_cast<double>(renderCnt_) / frameCnt_;
+    ReportFpsIfSignificantChange(decFps, renderFps, srcFps);
+    size_t lastDecSpeedIdx = maxPossibleDecSpeedIdx_;
+    DecodingBehaviorType newType = DetermineDecodingBehaviorType();
+    HandleBehaviorTransition(type_, lastDecSpeedIdx, newType, newSpeedIdx);
+    type_ = newType;
+    lastCheckTime_ = std::chrono::steady_clock::now();
+    ResetIntervalStats();
+}
+
+size_t DecodingBehaviorAnalyzer::UpdateSpeedEstimates(double speed, double srcFps)
+{
     if (decInSpeed_ < 0.0) {
         decInSpeed_ = speed;
     } else {
@@ -335,12 +348,16 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
     }
     size_t newSpeedIdx = MatchAndUpdateSpeedStats(decInSpeed_);
     double stdSpeed = standardSpeeds[newSpeedIdx];
-    AVCODEC_LOGI("yxy_debug2 speed: %{public}.2f, avgSpeed: %{public}.2f, stdSpeed %{public}.2f, srcFps %{public}.2f, avgSrcFps: %{public}.2f",
-        speed, decInSpeed_, stdSpeed, srcFps, srcFps_);
+    AVCODEC_LOGI("speed: %{public}.2f, avgSpeed: %{public}.2f, stdSpeed %{public}.2f, srcFps %{public}.2f, "
+        "avgSrcFps: %{public}.2f", speed, decInSpeed_, stdSpeed, srcFps, srcFps_);
     if (decInfoCallBack_) {
         decInfoCallBack_(srcFps, stdSpeed);
     }
-    double renderFps = decFps * static_cast<double>(renderCnt_) / frameCnt_;
+    return newSpeedIdx;
+}
+
+void DecodingBehaviorAnalyzer::ReportFpsIfSignificantChange(double decFps, double renderFps, double srcFps)
+{
     AVCODEC_LOGD("Render: %{public}.2f fps, dec: %{public}.2f fps, src: %{public}.2f fps, renderCnt %{public}u"
         ", frameCnt %{public}u, droppedCnt %{public}u", renderFps, decFps, srcFps, renderCnt_, frameCnt_, droppedCnt_);
     double reportDecFps = decFps > (MAX_REPORT_FPS + EPSILON) ? (MAX_REPORT_FPS + 1.0) : decFps;
@@ -353,18 +370,18 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
         lastReportedRenderFps_ = reportRenderFps;
         lastReportedFps_ = reportDecFps;
     }
-    size_t lastDecSpeedIdx = maxPossibleDecSpeedIdx_;
-    DecodingBehaviorType newType = DetermineDecodingBehaviorType();
-    if (IsDecChanged(type_, lastDecSpeedIdx, newType, newSpeedIdx)) {
+}
+
+void DecodingBehaviorAnalyzer::HandleBehaviorTransition(DecodingBehaviorType currentType, size_t oldSpeedIdx,
+    DecodingBehaviorType newType, size_t newSpeedIdx)
+{
+    if (IsDecChanged(currentType, oldSpeedIdx, newType, newSpeedIdx)) {
         std::chrono::steady_clock::time_point endTime = lastCheckTime_ != std::chrono::steady_clock::time_point{} ?
             lastCheckTime_ : std::chrono::steady_clock::now();
         AVCODEC_LOGD("type %{public}d, speed %{public}.2fx, newType %{public}d, new speed %{public}.2fx,",
-            type_, standardSpeeds[lastDecSpeedIdx], newType, standardSpeeds[newSpeedIdx]);
-        SaveDecodingBehaviorAsSnapshot(type_, endTime, lastDecSpeedIdx);
+            currentType, standardSpeeds[oldSpeedIdx], newType, standardSpeeds[newSpeedIdx]);
+        SaveDecodingBehaviorAsSnapshot(currentType, endTime, oldSpeedIdx);
     }
-    type_ = newType;
-    lastCheckTime_ = std::chrono::steady_clock::now();
-    ResetIntervalStats();
 }
 
 void DecodingBehaviorAnalyzer::SetDecInfoCallBack(DecInfoCallBack cb)
