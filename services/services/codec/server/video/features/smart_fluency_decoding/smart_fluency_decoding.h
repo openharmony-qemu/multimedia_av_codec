@@ -60,6 +60,7 @@ public:
     bool MakePreDecodeDecision(uint32_t index);
     bool MakePostDecodeDecision(uint32_t index, int64_t pts, const sptr<SurfaceBuffer> surfaceBuffer);
     void Flush();
+    void OnDecInfoUpdate(double sourceFps, double speed);
     
 private:
     struct StrategyCaps {
@@ -102,7 +103,7 @@ private:
     void ExecutePreDrop(uint32_t index, std::shared_ptr<AVBuffer> buffer);
     void ExecutePostDrop(uint32_t index);
     bool HandlePostDecodePassthrough(int64_t pts, uint32_t preDropCount, const PostDecCost& cost);
-    void UpdateRetentionFeedback(bool shouldRetain, double speed);
+    void UpdateRetentionFeedback(bool shouldRetain);
     void ApplyNewStrategy(RetentionStrategyType newMode, const std::optional<double>& newRatio);
     void SetNoRefFrameMap(int64_t pts, bool isNonRef);
     bool GetNoRefFrameFromMap(int64_t pts);
@@ -124,7 +125,6 @@ private:
     std::shared_ptr<AVBuffer> csdBuffer_{nullptr};
     SFDConfig config_{};
     bool isInitialized_{false};
-    double currentPlaybackSpeed_{1.0};
     AsyncDropInputCallback asyncDropInputCb_{nullptr};
     AsyncDropOutputCallback asyncDropOutputCb_{nullptr};
 };

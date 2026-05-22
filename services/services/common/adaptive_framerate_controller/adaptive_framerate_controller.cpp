@@ -69,6 +69,13 @@ void FramerateCalculator::OnFrameConsumed(int64_t pts, bool render)
     frameCount_++;
 }
 
+ void FramerateCalculator::OnFrameDropped()
+{
+    if (afcEnable && behaviorAnalyzer_) {
+        behaviorAnalyzer_->OnFrameDropped();
+    }
+}
+
 void FramerateCalculator::OnStopped(bool isDecEnd)
 {
     status_ = Status::STOPPED;
@@ -148,6 +155,13 @@ bool FramerateCalculator::SetFramerate2ConfiguredFramerate()
     resetFramerateHandler_(configuredFramerate_);
     lastFramerate_ = configuredFramerate_;
     return true;
+}
+
+void FramerateCalculator::SetDecInfoCallBack(DecInfoCallBack cb)
+{
+    if (behaviorAnalyzer_) {
+        behaviorAnalyzer_->SetDecInfoCallBack(std::move(cb));
+    }
 }
 
 void FramerateCalculator::Register2AFC()

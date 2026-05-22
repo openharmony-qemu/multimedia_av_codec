@@ -254,5 +254,4 @@ HWTEST_F(SFDBuilderTest, Build_UpdatePlaybackSpeed_015, TestSize.Level1)
     builder.SetCodecMime("video/avc").SetFromFormat(format);
     auto sfd = builder.Build();
     ASSERT_NE(sfd, nullptr);
-    EXPECT_NEAR(sfd->currentPlaybackSpeed_, 2.0, 0.001);
 }

@@ -304,6 +304,13 @@ void SmartFluencyDecodingManager::CleanResources()
     AVCODEC_LOGI_WITH_TAG("resources cleaned");
 }
 
+void SmartFluencyDecodingManager::OnDecInfoUpdate(double sourceFps, double speed)
+{
+    if (sfd_) {
+        sfd_->OnDecInfoUpdate(sourceFps, speed);
+    }
+}
+
 #ifdef SFD_DEBUG
 void SmartFluencyDecodingManager::ApplyDebugConfig(Media::Format& format)
 {

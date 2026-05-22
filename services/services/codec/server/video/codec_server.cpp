@@ -728,6 +728,9 @@ int32_t CodecServer::QueueInputBufferIn(uint32_t index)
     }
 
     if (sfdManager_ && !sfdManager_->MakePreDecodeDecision(index)) {
+        if (framerateCalculator_) {
+            framerateCalculator_->OnFrameDropped();
+        }
         return ret;
     }
     if (videoCb_ != nullptr) {
@@ -942,6 +945,13 @@ void CodecServer::InitFramerateCalculator(Meta &callerInfo)
     );
     if (framerateCalculator_) {
         framerateCalculator_->SetTag(CreateVideoLogTag(callerInfo));
+        std::weak_ptr<CodecServer> weakThis = weak_from_this();
+        framerateCalculator_->SetDecInfoCallBack([weakThis](double srcFps, double speed) {
+            auto sharedThis = weakThis.lock();
+            if (sharedThis && sharedThis->sfdManager_) {
+                sharedThis->sfdManager_->OnDecInfoUpdate(srcFps, speed);
+            }
+        });
     }
 }
 

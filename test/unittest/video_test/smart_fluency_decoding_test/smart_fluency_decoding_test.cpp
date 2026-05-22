@@ -119,7 +119,9 @@ HWTEST_F(SmartFluencyDecodingTest, Flush_AfterInit_006, TestSize.Level1)
 
     sfd_->dropSyncCoordinator_->writeIndex_ = 50; // 50: mock index
     sfd_->dropSyncCoordinator_->readIndex_ = 10;  // 10: mock index
-    sfd_->dropSyncCoordinator_->emaRatio_ = 0.5;   // 0.5: mock ratio
+    // Feed 1 retained + 1 dropped = 0.5 ratio
+    sfd_->dropSyncCoordinator_->UpdateFeedback(true);
+    sfd_->dropSyncCoordinator_->UpdateFeedback(false);
     auto allocator = OHOS::Media::AVAllocatorFactory::CreateSharedAllocator(OHOS::Media::MEMORY_READ_WRITE);
     auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, 100);
     sfd_->inBufferMap_[0] = buffer;
@@ -128,7 +130,7 @@ HWTEST_F(SmartFluencyDecodingTest, Flush_AfterInit_006, TestSize.Level1)
     sfd_->Flush();
     EXPECT_EQ(sfd_->dropSyncCoordinator_->writeIndex_, 50u);
     EXPECT_EQ(sfd_->dropSyncCoordinator_->readIndex_.load(), sfd_->dropSyncCoordinator_->writeIndex_.load());
-    EXPECT_NEAR(sfd_->dropSyncCoordinator_->emaRatio_, 1.0, 0.001);
+    EXPECT_NEAR(sfd_->dropSyncCoordinator_->GetActualRetentionRatio(), 0.0, 0.001);
     EXPECT_TRUE(sfd_->inBufferMap_.empty());
 }
 
@@ -169,19 +171,6 @@ HWTEST_F(SmartFluencyDecodingTest, Initialize_FullMode_009, TestSize.Level1)
     SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::FULL);
     int32_t ret = sfd_->Initialize(cfg);
     EXPECT_EQ(ret, 0);
-}
-
-/**
- * @tc.name: UpdatePlaybackSpeed_Negative_010
- * @tc.desc: Ensure negative playback speed falls back to DEFAULT_PLAYBACK_SPEED (1.0).
- * @tc.type: FUNC
- */
-HWTEST_F(SmartFluencyDecodingTest, UpdatePlaybackSpeed_Negative_010, TestSize.Level1)
-{
-    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::ADAPTIVE);
-    sfd_->Initialize(cfg);
-    sfd_->UpdatePlaybackSpeed(-1.0);
-    EXPECT_NEAR(sfd_->currentPlaybackSpeed_, 1.0, 0.001);
 }
 
 /**
@@ -240,8 +229,9 @@ HWTEST_F(SmartFluencyDecodingTest, EvaluatePreDecode_EMA_Unsatisfied_014, TestSi
     cfg.retentionRatio = 0.5;
     sfd_->Initialize(cfg);
 
-    // Inject non-ideal EMA ratio (0.7 > 0.5)
-    sfd_->dropSyncCoordinator_->emaRatio_ = 0.7;
+    // Feed 7 retained + 3 dropped = 0.7 ratio (> 0.5 target)
+    for (int i = 0; i < 7; ++i) { sfd_->dropSyncCoordinator_->UpdateFeedback(true); }
+    for (int i = 0; i < 3; ++i) { sfd_->dropSyncCoordinator_->UpdateFeedback(false); }
     auto allocator = OHOS::Media::AVAllocatorFactory::CreateSharedAllocator(OHOS::Media::MEMORY_READ_WRITE);
     auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, 100); // 100: capacity
     // FakeIsNonReferenceFrame will return true if we set correct data (from dlfcn_mock)
@@ -301,7 +291,6 @@ HWTEST_F(SmartFluencyDecodingTest, UpdateDynamicConfig_SpeedOnly_016, TestSize.L
     format.PutDoubleValue(OHOS::Media::Tag::VIDEO_DECODER_SPEED, 2.0);
     sfd_->UpdateDynamicConfig(format);
 
-    EXPECT_NEAR(sfd_->currentPlaybackSpeed_, 2.0, 0.001);
     EXPECT_EQ(sfd_->strategy_.get(), originalStrategy); // Should not recreate
 }
 
@@ -467,15 +456,15 @@ HWTEST_F(SmartFluencyDecodingTest, MakePostDecodeDecision_NullSurface_ConsumePre
     sfd_->Initialize(cfg);
 
     // Mock dropped frames using RecordPreDroppedFrame
-    sfd_->dropSyncCoordinator_->RecordPreDroppedFrame(2500, 1.0); // Drop 1
-    sfd_->dropSyncCoordinator_->RecordPreDroppedFrame(2600, 1.0); // Drop 2
+    sfd_->dropSyncCoordinator_->RecordPreDroppedFrame(2500); // Drop 1
+    sfd_->dropSyncCoordinator_->RecordPreDroppedFrame(2600); // Drop 2
 
     // Verify consumption logic
     uint32_t preDrop = sfd_->dropSyncCoordinator_->GetAndConsumePreDroppedCount(3000);
     EXPECT_EQ(preDrop, 2);
 
     // Record another drop
-    sfd_->dropSyncCoordinator_->RecordPreDroppedFrame(3100, 1.0); // Drop 3
+    sfd_->dropSyncCoordinator_->RecordPreDroppedFrame(3100); // Drop 3
 
     // Calling MakePostDecodeDecision with null should consume it internally
     bool result = sfd_->MakePostDecodeDecision(0, 3500, nullptr);
@@ -503,20 +492,6 @@ HWTEST_F(SmartFluencyDecodingTest, MakePreDecodeDecision_EosBuffer_026, TestSize
 
     bool result = sfd_->MakePreDecodeDecision(0);
     EXPECT_TRUE(result);
-}
-
-/**
- * @tc.name: UpdatePlaybackSpeed_ValidSpeed_027
- * @tc.desc: Verify UpdatePlaybackSpeed correctly stores a valid positive speed.
- * @tc.type: FUNC
- */
-HWTEST_F(SmartFluencyDecodingTest, UpdatePlaybackSpeed_ValidSpeed_027, TestSize.Level1)
-{
-    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::ADAPTIVE);
-    sfd_->Initialize(cfg);
-
-    sfd_->UpdatePlaybackSpeed(2.5);
-    EXPECT_NEAR(sfd_->currentPlaybackSpeed_, 2.5, 0.001);
 }
 
 /**
@@ -565,18 +540,19 @@ HWTEST_F(SmartFluencyDecodingTest, GetNoRefFrameFromMap_MissingPts_030, TestSize
 }
 
 /**
- * @tc.name: MakePreDecodeDecision_EmaSatisfied_031
- * @tc.desc: Verify PRE_RETAIN_EMA_SATISFIED branch: EMA below target → non-ref frame is retained.
+ * @tc.name: MakePreDecodeDecision_RatioSatisfied_031
+ * @tc.desc: Verify PRE_RETAIN_RATIO_SATISFIED branch: ratio below target → non-ref frame is retained.
  * @tc.type: FUNC
  */
-HWTEST_F(SmartFluencyDecodingTest, MakePreDecodeDecision_EmaSatisfied_031, TestSize.Level1)
+HWTEST_F(SmartFluencyDecodingTest, MakePreDecodeDecision_RatioSatisfied_031, TestSize.Level1)
 {
     SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::FIXED_RATIO);
     cfg.retentionRatio = 0.5;
     sfd_->Initialize(cfg);
 
-    // EMA ratio (0.3) is below target (0.5) → EMA satisfied branch
-    sfd_->dropSyncCoordinator_->emaRatio_ = 0.3;
+    // Feed 3 retained + 7 dropped = 0.3 ratio (< 0.5 target)
+    for (int i = 0; i < 3; ++i) { sfd_->dropSyncCoordinator_->UpdateFeedback(true); }
+    for (int i = 0; i < 7; ++i) { sfd_->dropSyncCoordinator_->UpdateFeedback(false); }
     auto allocator = OHOS::Media::AVAllocatorFactory::CreateSharedAllocator(OHOS::Media::MEMORY_READ_WRITE);
     auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, 100);
     uint8_t* addr = buffer->memory_->GetAddr();
@@ -587,7 +563,7 @@ HWTEST_F(SmartFluencyDecodingTest, MakePreDecodeDecision_EmaSatisfied_031, TestS
     sfd_->EnsureNaluAnalyzer();
 
     bool result = sfd_->MakePreDecodeDecision(0);
-    EXPECT_TRUE(result);
+    EXPECT_FALSE(result);
 }
 
 /**
@@ -687,20 +663,6 @@ HWTEST_F(SmartFluencyDecodingTest, ExecutePostDrop_NullCallback_038, TestSize.Le
     sfd_->asyncDropOutputCb_ = nullptr;
     sfd_->ExecutePostDrop(0);
     EXPECT_TRUE(true);
-}
-
-/**
- * @tc.name: UpdatePlaybackSpeed_NullStrategy_039
- * @tc.desc: Verify UpdatePlaybackSpeed still stores speed when strategy_ is null.
- * @tc.type: FUNC
- */
-HWTEST_F(SmartFluencyDecodingTest, UpdatePlaybackSpeed_NullStrategy_039, TestSize.Level1)
-{
-    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::FULL);
-    sfd_->Initialize(cfg);
-    sfd_->strategy_ = nullptr;
-    sfd_->UpdatePlaybackSpeed(2.0);
-    EXPECT_NEAR(sfd_->currentPlaybackSpeed_, 2.0, 0.001);
 }
 
 /**

@@ -93,7 +93,6 @@ int32_t SmartFluencyDecoding::InitializeInternal()
 void SmartFluencyDecoding::UpdatePlaybackSpeed(double speed)
 {
     std::lock_guard<std::mutex> lock(configMutex_);
-    currentPlaybackSpeed_ = (DoubleUtils::IsGreater(speed, 0.0) ? speed : DEFAULT_PLAYBACK_SPEED);
     if (strategy_) {
         strategy_->UpdatePlaybackSpeed(speed);
 #ifdef SFD_DEBUG
@@ -102,6 +101,15 @@ void SmartFluencyDecoding::UpdatePlaybackSpeed(double speed)
         }
 #endif
         AVCODEC_LOGI_WITH_TAG("SFD Playback speed dynamically updated to: %{public}.3f", speed);
+    }
+}
+
+void SmartFluencyDecoding::OnDecInfoUpdate(double sourceFps, double speed)
+{
+    UpdatePlaybackSpeed(speed);
+    std::lock_guard<std::mutex> lock(configMutex_);
+    if (strategy_) {
+        strategy_->UpdateSourceFramerate(sourceFps);
     }
 }
 
@@ -268,7 +276,7 @@ void SmartFluencyDecoding::ExecutePreDrop(uint32_t index, std::shared_ptr<AVBuff
         ", flag %{public}u", index, buffer->pts_, buffer->flag_);
     CHECK_AND_RETURN_LOG_WITH_TAG(buffer->flag_ != AVCODEC_BUFFER_FLAG_CODEC_DATA,
         "ExecutePreDrop: skip CODEC_DATA buffer");
-    dropSyncCoordinator_->RecordPreDroppedFrame(buffer->pts_, currentPlaybackSpeed_);
+    dropSyncCoordinator_->RecordPreDroppedFrame(buffer->pts_);
     AsyncDropInputCallback localCb = nullptr;
     {
         std::lock_guard<std::mutex> lock(configMutex_);
@@ -315,7 +323,7 @@ void SmartFluencyDecoding::RecordPreDecodeDump(
     dumperCtx.preDecCostUs = GetCurrentSysTimeUs() - startUs;
     dumperCtx.naluCostUs = res.naluCostUs;
     dumperCtx.writeIndex = dropSyncCoordinator_->GetWriteIndex();
-    dumperCtx.emaRatio = dropSyncCoordinator_->GetEmaRatio();
+    dumperCtx.actualRetentionRatio = dropSyncCoordinator_->GetActualRetentionRatio();
     dumperCtx.reason = res.reason;
     dumper_->RecordPreDecode(dumperCtx);
 #endif
@@ -338,7 +346,7 @@ void SmartFluencyDecoding::RecordPostDecodeDump(
     dumperCtx.sysTimeMs = GetCurrentSysTimeMs();
     dumperCtx.postDecCostUs = dumperStart - cost.startUs;
     dumperCtx.readIndex = dropSyncCoordinator_->GetReadIndex();
-    dumperCtx.emaRatio = dropSyncCoordinator_->GetEmaRatio();
+    dumperCtx.actualRetentionRatio = dropSyncCoordinator_->GetActualRetentionRatio();
     dumperCtx.reason = res.reason;
     dumperCtx.mvStats = mvStats;
     dumperCtx.copyMvCostUs = cost.copyMvCostUs;
@@ -374,14 +382,14 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
         res.naluCostUs = GetCurrentSysTimeUs() - naluStartUs;
 #endif
         if (res.isNonRef) {
-            double currentEmaRet = dropSyncCoordinator_->GetEmaRatio();
+            double currentPreRetenedRatio = dropSyncCoordinator_->GetPreRetainedRatio();
             if (DoubleUtils::IsGreaterOrEqual(caps.targetRatio, 1.0)) {
                 res.reason = SfdDecisionReason::PRE_RETAIN_TARGET_FULL;
-            } else if (DoubleUtils::IsLessOrEqual(currentEmaRet, caps.targetRatio)) {
-                res.reason = SfdDecisionReason::PRE_RETAIN_EMA_SATISFIED;
+            } else if (DoubleUtils::IsLessOrEqual(currentPreRetenedRatio, caps.targetRatio)) {
+                res.reason = SfdDecisionReason::PRE_RETAIN_RATIO_SATISFIED;
             } else {
                 res.shouldRetain = false;
-                res.reason = SfdDecisionReason::PRE_DROP_EMA_UNSATISFIED;
+                res.reason = SfdDecisionReason::PRE_DROP_RATIO_UNSATISFIED;
             }
         }
     } else if (caps.isPassthrough) {
@@ -416,12 +424,7 @@ void SmartFluencyDecoding::ExecutePostDrop(uint32_t index)
 
 bool SmartFluencyDecoding::HandlePostDecodePassthrough(int64_t pts, uint32_t preDropCount, const PostDecCost& cost)
 {
-    double localSpeed = DEFAULT_PLAYBACK_SPEED;
-    {
-        std::lock_guard<std::mutex> lock(configMutex_);
-        localSpeed = currentPlaybackSpeed_;
-    }
-    UpdateRetentionFeedback(true, localSpeed);
+    UpdateRetentionFeedback(true);
 #ifdef SFD_DEBUG
     PostDecResult fastRes {true, 1.0, SfdDecisionReason::POST_RETAIN_FULL};
     RecordPostDecodeDump(pts, preDropCount, fastRes, MVStats(), cost);
@@ -429,11 +432,11 @@ bool SmartFluencyDecoding::HandlePostDecodePassthrough(int64_t pts, uint32_t pre
     return true;
 }
 
-void SmartFluencyDecoding::UpdateRetentionFeedback(bool shouldRetain, double speed)
+void SmartFluencyDecoding::UpdateRetentionFeedback(bool shouldRetain)
 {
     std::lock_guard<std::mutex> lock(configMutex_);
     if (dropSyncCoordinator_) {
-        dropSyncCoordinator_->UpdateFeedback(shouldRetain, speed);
+        dropSyncCoordinator_->UpdateFeedback(shouldRetain);
     }
 }
 
@@ -448,7 +451,6 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
     }
     uint32_t preDropCount = dropSyncCoordinator_->GetAndConsumePreDroppedCount(pts);
     StrategyCaps caps;
-    double localSpeed = DEFAULT_PLAYBACK_SPEED;
     {
         std::lock_guard<std::mutex> lock(configMutex_);
         if (!strategy_) {
@@ -456,7 +458,6 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
         }
         caps.isPassthrough = strategy_->IsPassthrough();
         caps.requiresMv = strategy_->RequiresMvAnalysis();
-        localSpeed = currentPlaybackSpeed_;
     }
     if (caps.isPassthrough) {
         return HandlePostDecodePassthrough(pts, preDropCount, cost);
@@ -473,7 +474,7 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
             res.reason = strategy_->GetLastDecisionReason();
         }
     }
-    UpdateRetentionFeedback(res.shouldRetain, localSpeed);
+    UpdateRetentionFeedback(res.shouldRetain);
     AVCODEC_LOGD_WITH_TAG("Strategy decision: shouldRetain %{public}d, ratio %{public}.3f "
         "(index:%{public}u, pts:%{public}" PRId64 ")", res.shouldRetain, res.ratio, index, pts);
     if (!res.shouldRetain) {
