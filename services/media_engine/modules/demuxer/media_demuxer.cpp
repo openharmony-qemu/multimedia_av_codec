@@ -2372,6 +2372,14 @@ Status MediaDemuxer::Pause()
                 sampleConsumerTaskMap_[videoTrackId_]->Pause();
             }
         }
+        if (CheckTrackEnabledById(audioTrackId_)) {
+            taskMap_[audioTrackId_]->PauseAsync();
+            taskMap_[audioTrackId_]->Pause();
+            if (GetEnableSampleQueueFlag()) {
+                sampleConsumerTaskMap_[audioTrackId_]->PauseAsync();
+                sampleConsumerTaskMap_[audioTrackId_]->Pause();
+            }
+        }
     } else {
         PauseAllTaskAsync();
         PauseAllTask();
