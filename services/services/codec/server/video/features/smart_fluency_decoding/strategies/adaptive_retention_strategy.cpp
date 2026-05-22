@@ -130,13 +130,13 @@ bool AdaptiveRetentionStrategy::MakeRetentionDecision(const FrameRetentionContex
 
 void AdaptiveRetentionStrategy::UpdatePlaybackSpeed(double speed)
 {
-    AVCODEC_LOGI("UpdatePlaybackSpeed last is %{public}.3f, now is %{public}.3f", currentSpeed_, speed);
+    AVCODEC_LOGD("UpdatePlaybackSpeed last is %{public}.3f, now is %{public}.3f", currentSpeed_, speed);
     currentSpeed_ = DoubleUtils::IsGreater(speed, 0.0) ? speed : 1.0;
 }
 
 void AdaptiveRetentionStrategy::UpdateSourceFramerate(double sourceFps)
 {
-    AVCODEC_LOGI("UpdateSourceFramerate last is %{public}.3f, now is %{public}.3f", sourceFps_, sourceFps);
+    AVCODEC_LOGD("UpdateSourceFramerate last is %{public}.3f, now is %{public}.3f", sourceFps_, sourceFps);
     sourceFps_ = sourceFps;
 }
 

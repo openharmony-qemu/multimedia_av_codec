@@ -125,7 +125,6 @@ private:
     std::shared_ptr<AVBuffer> csdBuffer_{nullptr};
     SFDConfig config_{};
     bool isInitialized_{false};
-    double currentPlaybackSpeed_{1.0};
     AsyncDropInputCallback asyncDropInputCb_{nullptr};
     AsyncDropOutputCallback asyncDropOutputCb_{nullptr};
 };

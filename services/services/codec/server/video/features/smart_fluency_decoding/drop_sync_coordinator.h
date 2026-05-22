@@ -45,9 +45,9 @@ private:
     std::atomic<bool> isConsumed_[queueCapacity]{};
     alignas(cacheLineSize) std::atomic<size_t> writeIndex_{0};
     alignas(cacheLineSize) std::atomic<size_t> readIndex_{0};
-    uint64_t totalFeedbackFrames_{0};
-    uint64_t retainedFeedbackFrames_{0};
-    double retaintionRatio_{0.0};
+    uint64_t totalFrameCnt_{0};
+    uint64_t retainedFrameCnt_{0};
+    double retaintionRatio_{1.0};
     mutable std::mutex feedbackMutex_;
 };
 } // namespace SFD

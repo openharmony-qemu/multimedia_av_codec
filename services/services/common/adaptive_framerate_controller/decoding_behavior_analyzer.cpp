@@ -36,7 +36,6 @@ constexpr int64_t SEEK_DETECTION_THRESHOLD_MS = 1000;
 constexpr double MIN_CAL_DURATION_MS = 100.0;
 constexpr double SMOOTHING_FACTOR = 0.5;
 constexpr int64_t MIN_REASONABLE_DIFF = 8;
-constexpr double ONE_SECOND = 1000.0;
 #ifdef SUPPORT_FPS_FOR_MEMC
 constexpr size_t FPS_WINDOW_SIZE = 3;
 constexpr uint32_t CONTINUES_FRAME_CNT = 5;
@@ -106,7 +105,7 @@ double DecodingBehaviorAnalyzer::GetSrcFps()
     if (minValidDiff == 0) {
         return 0.0;
     }
-    return ONE_SECOND / minValidDiff;
+    return 1000.0 / minValidDiff; // 1000.0: ms to s
 }
 
 #ifdef SUPPORT_FPS_FOR_MEMC
@@ -298,7 +297,6 @@ void DecodingBehaviorAnalyzer::OnFrameDropped()
 {
     std::lock_guard<std::mutex> lock(mutex_);
     droppedCnt_++;
-    AVCODEC_LOGI("droppedCnt_ %{public}u", droppedCnt_);
 }
 
 void DecodingBehaviorAnalyzer::ResetIntervalStats()
@@ -321,8 +319,7 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
         ptsWin_.size() < PTS_WINDOW_MIN_SIZE) {
         return;
     }
-    double decInFps = static_cast<double>(totalFrames - 1) / sysTimeIntvlMs * 1000;
-    AVCODEC_LOGI("sysTimeIntvlMs: %{public}lld, totalFrames %{public}d", sysTimeIntvlMs, totalFrames);
+    double decInFps = static_cast<double>(totalFrames - 1) / sysTimeIntvlMs * 1000; // 1000: ms to s
     double srcFps = GetSrcFps();
     if (srcFps < 1.0) {
         return;
@@ -356,7 +353,7 @@ size_t DecodingBehaviorAnalyzer::UpdateSpeedEstimates(double speed, double srcFp
     AVCODEC_LOGI("speed: %{public}.2f, avgSpeed: %{public}.2f, stdSpeed %{public}.2f, srcFps %{public}.2f, "
         "avgSrcFps: %{public}.2f", speed, decInSpeed_, stdSpeed, srcFps, srcFps_);
     if (decInfoCallBack_) {
-        decInfoCallBack_(srcFps, stdSpeed);
+        decInfoCallBack_(srcFps_, stdSpeed);
     }
     return newSpeedIdx;
 }
@@ -364,7 +361,7 @@ size_t DecodingBehaviorAnalyzer::UpdateSpeedEstimates(double speed, double srcFp
 void DecodingBehaviorAnalyzer::ReportFpsIfSignificantChange(double decFps, double renderFps, double srcFps)
 {
     AVCODEC_LOGD("Render: %{public}.2f fps, dec: %{public}.2f fps, src: %{public}.2f fps, renderCnt %{public}u"
-        ", frameCnt %{public}u, droppedCnt %{public}u", renderFps, decFps, srcFps, renderCnt_, frameCnt_, droppedCnt_);
+        ", frameCnt %{public}u", renderFps, decFps, srcFps, renderCnt_, frameCnt_);
     double reportDecFps = decFps > (MAX_REPORT_FPS + EPSILON) ? (MAX_REPORT_FPS + 1.0) : decFps;
     double reportRenderFps = renderFps > (MAX_REPORT_FPS + EPSILON) ? (MAX_REPORT_FPS + 1.0) : renderFps;
     if (lastReportedFps_ < 0.0 || lastReportedRenderFps_ < 0.0 ||

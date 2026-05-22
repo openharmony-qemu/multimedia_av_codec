@@ -93,7 +93,6 @@ int32_t SmartFluencyDecoding::InitializeInternal()
 void SmartFluencyDecoding::UpdatePlaybackSpeed(double speed)
 {
     std::lock_guard<std::mutex> lock(configMutex_);
-    currentPlaybackSpeed_ = (DoubleUtils::IsGreater(speed, 0.0) ? speed : DEFAULT_PLAYBACK_SPEED);
     if (strategy_) {
         strategy_->UpdatePlaybackSpeed(speed);
 #ifdef SFD_DEBUG
