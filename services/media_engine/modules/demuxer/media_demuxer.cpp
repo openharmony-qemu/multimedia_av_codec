@@ -2214,7 +2214,7 @@ Status MediaDemuxer::SelectBitRate(uint32_t bitRate, bool isAutoSelect, bool isF
 std::vector<std::shared_ptr<Meta>> MediaDemuxer::GetStreamMetaInfo() const
 {
     MediaAVCodec::AVCODEC_SYNC_TRACE;
-    return mediaMetaData_.trackMetas; 
+    return mediaMetaData_.trackMetas;
 }
 
 std::shared_ptr<Meta> MediaDemuxer::GetGlobalMetaInfo()
@@ -2230,7 +2230,7 @@ std::shared_ptr<Meta> MediaDemuxer::GetUserMeta()
     return demuxerPluginManager_->GetUserMeta();
 }
 
-Status MediaDemuxer::Flush() 
+Status MediaDemuxer::Flush()
 {
     MEDIA_LOG_I("In");
     ResetDraggingOpenGopCnt();
