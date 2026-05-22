@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,6 +20,7 @@
 #include "meta/media_types.h"
 #include "plugin/source_plugin.h"
 #include "download/media_source_loading_request.h"
+#include <string_view>
 
 namespace OHOS {
 namespace Media {
@@ -93,6 +94,7 @@ private:
     std::string GetCurUrl();
     Status InitSourcePlugin(const std::shared_ptr<MediaSource>& source);
     bool IsDash();
+    bool IsAllowedProtocol(std::string_view url);
     uint32_t bufferSize_;
     uint32_t waterline_;
     uint32_t seekErrorCount_{0};
