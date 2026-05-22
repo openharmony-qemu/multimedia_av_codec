@@ -198,5 +198,15 @@ bool BaseStreamDemuxer::SetSourceInitialBufferSize(int32_t offset, int32_t size)
 {
     return source_->SetInitialBufferSize(offset, size);
 }
+
+bool BaseStreamDemuxer::IsPlayerMode()
+{
+    return isPlayerMode_.load();
+}
+
+void BaseStreamDemuxer::SetPlayerMode(bool isPlayerMode)
+{
+    return isPlayerMode_.store(isPlayerMode);
+}
 } // namespace Media
 } // namespace OHOS
