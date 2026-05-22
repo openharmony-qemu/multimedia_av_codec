@@ -68,20 +68,25 @@ Status MPEG4DemuxerPlugin::ParserRefUpdatePos(int64_t timeStampMs, bool isForwar
 {
     FALSE_RETURN_V_MSG_E(IsRefParserSupported(), Status::ERROR_UNSUPPORTED_FORMAT, "Unsupport ref parser");
     int64_t clipTimeStampMs = std::max(timeStampMs, static_cast<int64_t>(0));
-    /* todo */
+    if (syncSamplesPos_.size() == 0 || referenceParser_ == nullptr) {
+        MEDIA_LOG_W("Parse failed, size: " PUBLIC_LOG_ZU, syncSamplesPos_.size());
+        refParserPendingSeekMsTime_ = clipTimeStampMs;
+        refParserIsForward_ = isForward;
+        return Status::OK;
+    }
 
     int32_t gopId = 0;
     FALSE_RETURN_V_MSG_E(GetGopIdBySeekPos(clipTimeStampMs, gopId) == Status::OK, Status::ERROR_UNKNOWN,
         "GetGopIdBySeekPos failed.");
-    /* todo */
+
     GopLayerInfo gopLayerInfo;
     Status ret = GetGopLayerInfo(gopId, gopLayerInfo);
-    if (ret == Status::ERROR_AGAIN && gopId != parserCurGopId_) {
-        pendingSeekMsTime_ = clipTimeStampMs;
-        parserState_ = false;
-        MEDIA_LOG_I("Pending time: " PUBLIC_LOG_D64, pendingSeekMsTime_);
+    if (ret == Status::ERROR_AGAIN && gopId != refParserCurGopId_) {
+        refParserPendingSeekMsTime_ = clipTimeStampMs;
+        refParserState_ = false;
+        MEDIA_LOG_I("Pending time: " PUBLIC_LOG_D64, refParserPendingSeekMsTime_);
     }
-    updatePosIsForward_ = isForward;
+    refParserIsForward_ = isForward;
     return Status::OK;
 }
 
@@ -94,44 +99,39 @@ Status MPEG4DemuxerPlugin::ParserRefInfo()
         FALSE_RETURN_V(ret == Status::OK, Status::ERROR_UNKNOWN);
     }
     int64_t duration = GetDuration(refParserStartTime_);
-    RefTrace trace("ParserRefCost_2_" + std::to_string(duration) + "_" + std::to_string(parserCurGopId_));
+    RefTrace trace("ParserRefCost_2_" + std::to_string(duration) + "_" + std::to_string(refParserCurGopId));
     FALSE_RETURN_V_MSG_W(duration < REFERENCE_PARSER_TIMEOUT_MS, Status::ERROR_UNKNOWN, "Reference parser timeout");
-    FALSE_RETURN_V_MSG(parserCurGopId_ != -1, Status::OK, "Reference parser end");  // 参考关系解析完毕
+    FALSE_RETURN_V_MSG(refParserCurGopId != -1, Status::OK, "Reference parser end");  // 参考关系解析完毕
     FALSE_RETURN_V_MSG_E(SelectProGopId() == Status::OK, Status::ERROR_UNKNOWN, "Call selectProGopId failed");
-    uint32_t curStreamId = syncSamplesPos_[parserCurGopId_];
-    MEDIA_LOG_I("curStreamId: " PUBLIC_LOG_U32 ", parserCurGopId: " PUBLIC_LOG_D32 ", IFramePos size: " PUBLIC_LOG_ZU
-        ", processingIFrame_ size: " PUBLIC_LOG_ZU ", duration: " PUBLIC_LOG_D64, curStreamId, parserCurGopId_,
-        syncSamplesPos_.size(), processingIFrame_.size(), duration);
-    AVPacket *pkt = av_packet_alloc();
-    FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_UNKNOWN, "Packet is nullptr!");
-    int loopCounter = 0;
-    while (formatContext_ != nullptr && parserState_ && parserCurGopId_ != -1) {
-        Status rlt = ParserRefInfoLoop(pkt, curStreamId);
-        if (rlt == Status::ERROR_EARLY_STOP) { // START 首GOP提前终止
+    uint32_t curSyncSampleIndex = syncSamplesPos_[refParserCurGopId];
+    MEDIA_LOG_I("curSyncSampleIndex: " PUBLIC_LOG_U32 ", parserCurGopId: " PUBLIC_LOG_D32 ", IFramePos size: "
+        PUBLIC_LOG_ZU ", processingIFrame_ size: " PUBLIC_LOG_ZU ", duration: " PUBLIC_LOG_D64,
+        curSyncSampleIndex, refParserCurGopId, syncSamplesPos_.size(), processingIFrame_.size(), duration);
+
+    int loopCount = 0;
+    while (parserState_ && refParserCurGopId != -1) {
+        Status rlt = ParserRefInfoLoop(curSyncSampleIndex);
+        if (rlt == Status::ERROR_EARLY_STOP) {  // START 首GOP提前终止
             MEDIA_LOG_I("Exiting reference parsing early due to simple first GOP structure.");
             av_packet_unref(pkt);
             av_packet_free(&pkt);
             parserState_ = true;
             return Status::OK;
         }
-        if ((loopCounter++ % 100) == 0) { // 100 trace降采样
+        if ((loopCount++ % 100) == 0) {  // 100 trace降采样
             duration = GetDuration(parserRefStartTime_);
-            std::string suffix = "_" + std::to_string(parserCurGopId_) + "_" + std::to_string(curStreamId);
+            std::string suffix = "_" + std::to_string(refParserCurGopId) + "_" + std::to_string(curSyncSampleIndex);
             RefTrace traceInLoop("ParserRefCost_3_" + std::to_string(duration) + suffix);
             FALSE_RETURN_V_MSG_W(duration < REFERENCE_PARSER_TIMEOUT_MS, Status::ERROR_UNKNOWN, "Infoloop timeout");
         }
         if (rlt != Status::OK) {
-            av_packet_unref(pkt);
-            av_packet_free(&pkt);
             parserState_ = true;
             return rlt;
         }
         if (pkt->stream_index == parserRefIdx_) {
-            curStreamId++;
+            curSyncSampleIndex++;
         }
-        av_packet_unref(pkt);
     }
-    av_packet_free(&pkt);
     parserState_ = true;
     return Status::ERROR_AGAIN;
 }
@@ -170,8 +170,13 @@ Status MPEG4DemuxerPlugin::GetIFramePos(std::vector<uint32_t> &IFramePos)
     return Status::OK;
 }
 
-Status MPEG4DemuxerPlugin::Dts2FrameId(int64_t dts, uint32_t &frameId)
+Status MPEG4DemuxerPlugin::Dts2FrameId(int64_t dts, uint32_t &sampleIndex)
 {
+    int64_t ffTimeDts = ConvertTimeToFFmpegByUs(dts, avStream->time_base);
+    int32_t tmpFrameId = av_index_search_timestamp(avStream, ffTimeDts, AVSEEK_FLAG_ANY);
+    FALSE_RETURN_V_MSG_E(tmpFrameId >= 0, Status::ERROR_OUT_OF_RANGE, "find nearest frame failed");
+    frameId = static_cast<uint32_t>(tmpFrameId);
+    MEDIA_LOG_D("dts " PUBLIC_LOG_D64 ", frameId " PUBLIC_LOG_U32, dts, frameId);
     return Status::OK;
 }
 
@@ -242,17 +247,21 @@ Status MPEG4DemuxerPlugin::GetGopIdBySeekPos(int64_t seekMs, int32_t &gopId)
     return Status::OK;
 }
 
-Status MPEG4DemuxerPlugin::GetSampleIndexByDts(int64_t seekMs, uint32_t &sampleIdx)
+Status MPEG4DemuxerPlugin::GetSampleIndexBySeekMs(int64_t seekMs, uint32_t &sampleIndex)
 {
-    FALSE_RETURN_V_MSG_E(seekMs >= 0, Status::ERROR_INVALID_PARAMETER, "seekMs less than 0");
-    FALSE_RETURN_V_MSG_E(refParserTrackIdx_ >= 0, Status::ERROR_INVALID_PARAMETER, "refParserTrackIdx_ less than 0");
-    Status ret = GetIndexByRelativePresentationTimeUs(refParserTrackIdx_, pts, seekMs * 1000, sampleIdx);
-    FALSE_RETURN_V_MSG_E(refParserTrackIdx_ >= 0, Status::ERROR_INVALID_PARAMETER,
-        "GetIndexByRelativePresentationTimeUs failed.");
-    return Status::OK;
+    FALSE_RETURN_V_MSG_E(seekMs >= 0, Status::ERROR_INVALID_PARAMETER, "SeekMs is less than 0");
+    int64_t pts = seekMs * 1000; // 1000 for ms to us
+    auto iter = pts2Dts_.upper_bound(pts);
+    if (iter != pts2Dts_.begin()) {
+        --iter;
+    }
+    int64_t dts = iter->second + startPts_;
+    MEDIA_LOG_D("seekMs " PUBLIC_LOG_D64 ", pts " PUBLIC_LOG_D64 ", mapSize " PUBLIC_LOG_ZU ", dts " PUBLIC_LOG_D64
+        ", startPts " PUBLIC_LOG_D64, seekMs, pts, pts2DtsMap_.size(), dts, startPts_);
+    return Dts2FrameId(dts, frameId);
 }
 
-Status MPEG4DemuxerPlugin::RefParserInit(int64_t seekMs, uint32_t &sampleIdx)
+Status MPEG4DemuxerPlugin::RefParserInit()
 {
     refParserStartTime_ = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count();
@@ -262,11 +271,12 @@ Status MPEG4DemuxerPlugin::RefParserInit(int64_t seekMs, uint32_t &sampleIdx)
     FALSE_RETURN_V_MSG_E(syncSamplesPos_.size() > 0, Status::ERROR_UNKNOWN,
         "Init failed, syncSamplesPos_ size is" PUBLIC_LOG_ZU, syncSamplesPos_.size());
     FALSE_RETURN_V_MSG_E(IsRefParserSupported(), Status::ERROR_UNSUPPORTED_FORMAT, "Unsupported ref parser");
-    /* todo */
+    /* todo 处理discard*/
+    
+    processingSyncSamplesPos_.assign(syncSamplesPos_.begin(), syncSamplesPos_.end());
     referenceParser_ = ReferenceParserManager::Create(codecType, IFramePos_);
     FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "referenceParser_ is nullptr");
     
-
     std::shared_ptr<MPEG4AtomParser::Track> track = FindTrackById(refParserTrackIdx_);
     FALSE_RETURN_V_MSG_E(track && track->sampleHelper, Status::ERROR_INVALID_DATA, "track is nullptr");
     SdtpEntry sdtpEntry = track->sampleHelper->GetSdtpEntry();
@@ -276,8 +286,77 @@ Status MPEG4DemuxerPlugin::RefParserInit(int64_t seekMs, uint32_t &sampleIdx)
             return Status::END_OF_STREAM;
         }
     }
-    /* todo */
+    /* todo ParserExtraData */
     return referenceParser_->ParserExtraData(videoStream->codecpar->extradata, videoStream->codecpar->extradata_size);
+}
+
+Status MPEG4DemuxerPlugin::SelectProGopId()
+{
+    if (pendingSeekMsTime_ >= 0) {
+        FALSE_RETURN_V_MSG_E(GetGopIdBySeekPos(pendingSeekMsTime_, refParserCurGopId_) == Status::OK,
+            Status::ERROR_UNKNOWN, "GetGopIdBySeekPos failed");
+        pendingSeekMsTime_ = -1;
+    }
+    int64_t seekPts;
+    if (syncSampleIndex2SeekPts_.find(refParserCurGopId_) != syncSampleIndex2SeekPts_.end()) { // if I frame pts had got before decoding
+        seekPts = syncSampleIndex2SeekPts_[refParserCurGopId_];
+        MEDIA_LOG_D("get I frame pts from which had been decoded");
+    } else {
+        int32_t syncSampleNum = static_cast<int32_t>(syncSampleIndex2SeekPts_.size());
+        /* todo */
+        int64_t dtsCur = CalculateTimeByFrameIndex(st, syncSampleIndex2SeekPts_[refParserCurGopId_]);
+        if (refParserCurGopId_ + 1 < syncSampleNum) {
+            int64_t dtsNext = CalculateTimeByFrameIndex(st, syncSampleIndex2SeekPts_[refParserCurGopId_ + 1]);
+            seekPts = dtsCur + (dtsNext - dtsCur) / 2; // 2 middle between cur gop and next gop
+        } else {
+            seekPts = INT64_MAX; // seek last gop
+        }
+        MEDIA_LOG_D("get I frame pts from simulated dts");
+    }
+    /* todo */
+    auto ret = av_seek_frame(parserRefCtx_.get(), parserRefIdx_, seekPts, AVSEEK_FLAG_BACKWARD);
+    FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_UNKNOWN,
+                         "Call av_seek_frame failed, err: " PUBLIC_LOG_S, AVStrError(ret).c_str());
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::ParserRefInfoLoop(uint32_t curSyncSampleIndex)
+{
+    std::unique_lock<std::mutex> sLock(syncMutex_);
+    /* todo */
+    int ffmpegRet = av_read_frame(parserRefCtx_.get(), pkt);
+    sLock.unlock();
+    if (ffmpegRet < 0 && ffmpegRet != AVERROR_EOF) {
+        MEDIA_LOG_E("Call av_read_frame failed:" PUBLIC_LOG_S ", retry:" PUBLIC_LOG_D32,
+                    AVStrError(ffmpegRet).c_str(), int(parserRefIoContext_.retry));
+        if (parserRefIoContext_.retry) {
+            parserRefCtx_->pb->eof_reached = 0;
+            parserRefCtx_->pb->error = 0;
+            parserRefIoContext_.retry = false;
+            return Status::ERROR_AGAIN;
+        }
+        return Status::ERROR_UNKNOWN;
+    }
+    InsertIframePtsMap(pkt, parserCurGopId_, parserRefIdx_, iFramePtsMap_);
+    FALSE_RETURN_V_MSG_D(pkt->stream_index == parserRefIdx_ || ffmpegRet == AVERROR_EOF, Status::OK,
+                         "eos or not video");
+    int64_t dts = AvTime2Us(ConvertTimeFromFFmpeg(pkt->dts, parserRefCtx_->streams[parserRefIdx_]->time_base));
+    Status result = referenceParser_->ParserNalUnits(pkt->data, pkt->size, curStreamId, dts);
+    FALSE_RETURN_V_MSG_E(result == Status::OK, result, "parse nal units end! ret=" PUBLIC_LOG_D32,
+                         static_cast<int32_t>(result));
+    int32_t iFramePosSize = static_cast<int32_t>(IFramePos_.size());
+    if (ffmpegRet == AVERROR_EOF || result != Status::OK ||
+        (parserCurGopId_ + 1 < iFramePosSize && curSampleId == IFramePos_[parserCurGopId_ + 1] - 1)) { // 处理完一个GOP
+        MEDIA_LOG_D("IFramePos: " PUBLIC_LOG_ZU ", processingIFrame: " PUBLIC_LOG_ZU ", curSampleId: " PUBLIC_LOG_U32
+            ", curGopId: " PUBLIC_LOG_U32, IFramePos_.size(), processingIFrame_.size(), curSampleId, parserCurGopId_);
+        processingIFrame_.remove(IFramePos_[parserCurGopId_]);
+        if (processingIFrame_.size() == 0) {
+            parserCurGopId_ = -1;
+            return Status::OK;
+        }
+        return UpdateParserGopId(iFramePosSize);
+    }
+    return Status::OK;
 }
 
 Status MPEG4DemuxerPlugin::GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
