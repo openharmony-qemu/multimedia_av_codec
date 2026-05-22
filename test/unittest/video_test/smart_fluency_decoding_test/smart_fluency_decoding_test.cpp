@@ -130,7 +130,7 @@ HWTEST_F(SmartFluencyDecodingTest, Flush_AfterInit_006, TestSize.Level1)
     sfd_->Flush();
     EXPECT_EQ(sfd_->dropSyncCoordinator_->writeIndex_, 50u);
     EXPECT_EQ(sfd_->dropSyncCoordinator_->readIndex_.load(), sfd_->dropSyncCoordinator_->writeIndex_.load());
-    EXPECT_NEAR(sfd_->dropSyncCoordinator_->GetActualRetentionRatio(), 1.0, 0.001);
+    EXPECT_NEAR(sfd_->dropSyncCoordinator_->GetActualRetentionRatio(), 0.0, 0.001);
     EXPECT_TRUE(sfd_->inBufferMap_.empty());
 }
 

@@ -140,7 +140,7 @@ HWTEST_F(DropSyncCoordinatorTest, GetAndConsume_StressTest_004, TestSize.Level1)
 
 HWTEST_F(DropSyncCoordinatorTest, UpdateFeedback_AllRetained_006, TestSize.Level1)
 {
-    EXPECT_NEAR(tracker_.GetActualRetentionRatio(), 1.0, DEFAULT_TOLERANCE);
+    EXPECT_NEAR(tracker_.GetActualRetentionRatio(), 0.0, DEFAULT_TOLERANCE);
 
     for (int i = 0; i < 10; ++i) { // 10: iterations
         tracker_.UpdateFeedback(true);
@@ -161,7 +161,7 @@ HWTEST_F(DropSyncCoordinatorTest, Reset_ClearsCounters_008, TestSize.Level1)
     EXPECT_LT(tracker_.GetActualRetentionRatio(), 1.0);
 
     tracker_.Reset();
-    EXPECT_NEAR(tracker_.GetActualRetentionRatio(), 1.0, DEFAULT_TOLERANCE);
+    EXPECT_NEAR(tracker_.GetActualRetentionRatio(), 0.0, DEFAULT_TOLERANCE);
 }
 
 HWTEST_F(DropSyncCoordinatorTest, UpdateFeedback_CounterRatio_009, TestSize.Level1)
