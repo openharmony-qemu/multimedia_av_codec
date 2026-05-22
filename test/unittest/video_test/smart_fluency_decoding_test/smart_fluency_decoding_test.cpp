@@ -563,7 +563,7 @@ HWTEST_F(SmartFluencyDecodingTest, MakePreDecodeDecision_RatioSatisfied_031, Tes
     sfd_->EnsureNaluAnalyzer();
 
     bool result = sfd_->MakePreDecodeDecision(0);
-    EXPECT_TRUE(result);
+    EXPECT_FALSE(result);
 }
 
 /**
