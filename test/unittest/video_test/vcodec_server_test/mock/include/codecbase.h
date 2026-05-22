@@ -38,6 +38,7 @@ class IMediaKeySessionService;
 
 namespace OHOS {
 namespace MediaAVCodec {
+enum class StatisticsEventType : uint32_t;
 enum class CallbackFlag : uint8_t {
     MEMORY_CALLBACK = 1,
     BUFFER_CALLBACK,
@@ -321,6 +322,22 @@ public:
         (void)isFlushed;
         (void)bufferStatus;
     }
+
+    using StatisticsEventReporter = std::function<void(StatisticsEventType, std::shared_ptr<Media::Meta> &)>;
+    void SetStatisticsEventReporter(StatisticsEventReporter reporter)
+    {
+        statisticsEventReporter_ = std::move(reporter);
+    }
+
+    virtual void ReportStatisticsEvent(StatisticsEventType type, std::shared_ptr<Media::Meta> &meta)
+    {
+        if (statisticsEventReporter_) {
+            statisticsEventReporter_(type, meta);
+        }
+    }
+
+private:
+    StatisticsEventReporter statisticsEventReporter_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -68,6 +68,9 @@ private:
 private:
     // configure
     int32_t OnConfigure(const Format &format) override;
+    int32_t ConfigureBaseParams(const Format &format, std::optional<double> &frameRate);
+    int32_t ConfigureAdvancedParams(const Format &format);
+    void ReportAdvancedFeatures(const Format &format);
     int32_t OnConfigureBuffer(std::shared_ptr<AVBuffer> buffer) override;
     int32_t ConfigureBufferType();
     int32_t SetupPort(const Format &format, std::optional<double> &frameRate);
@@ -204,6 +207,7 @@ private:
     int32_t repeatMaxCnt_ = 10;  // default repeat 10 times. <0 means repeat forever. =0 means nothing.
     std::optional<int64_t> pts_;
     static constexpr size_t roiNum = 6;
+    bool roiReported_ = false;
     std::unordered_set<int64_t> unfinishedFrames_;
 };
 } // namespace OHOS::MediaAVCodec

@@ -41,6 +41,17 @@ public:
     static constexpr std::string_view SPEED_DECODING_INFO_1_50X = "speed_decoding_info_1_50x";
     static constexpr std::string_view SPEED_DECODING_INFO_2_00X = "speed_decoding_info_2_00x";
     static constexpr std::string_view SPEED_DECODING_INFO_3_00X = "speed_decoding_info_3_00x";
+    static constexpr std::string_view CODEC_MODE = "av_codec_event_info_codec_mode";
+    static constexpr std::string_view RESOLUTION_LEVEL = "av_codec_event_info_resolution_level";
+    static constexpr std::string_view DEMUXER_FORMAT = "av_codec_event_info_demuxer_format";
+    static constexpr std::string_view ADVANCED_FEATURE = "av_codec_event_info_advanced_feature";
+    static constexpr std::string_view RC_MODE = "av_codec_event_info_rc_mode";
+    static constexpr std::string_view FAILURE_STAGE = "av_codec_event_info_failure_stage";
+    static constexpr std::string_view ERROR_CODE = "av_codec_event_info_error_code";
+    static constexpr std::string_view WIDTH = "av_codec_event_info_width";
+    static constexpr std::string_view HEIGHT = "av_codec_event_info_height";
+    static constexpr std::string_view INSTANCE_ACTION = "av_codec_event_info_instance_action";
+    static constexpr std::string_view APP_INDEX = "av_codec_event_info_app_index";
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

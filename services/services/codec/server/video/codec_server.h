@@ -125,6 +125,10 @@ private:
     int32_t InitByName(const std::string &codecName, Meta &callerInfo);
     int32_t InitByMime(AVCodecType type, const std::string &codecMime, Meta &callerInfo);
     int32_t InitServer(int32_t instanceId = INVALID_INSTANCE_ID);
+    int32_t ConfigureCodecScenario(Format &config, int32_t &paramCheckRet);
+    void UpdateConfiguredFramerate(const Format &format);
+    void ConfigureSfdManager(Format &config);
+    void ReportResolutionInfo(const Format &config);
     int32_t CodecScenarioInit(Format &config);
     void StartInputParamTask();
     const std::string &GetStatusDescription(OHOS::MediaAVCodec::CodecServer::CodecStatus status);

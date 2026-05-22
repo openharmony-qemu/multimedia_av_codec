@@ -20,10 +20,12 @@
 #include <algorithm>
 #include "avcodec_trace.h"
 #include "common/log.h"
+#include "event_info_extented_key.h"
 #include "meta/any.h"
 #include "osal/utils/util.h"
 #include "plugin/plugin_info.h"
 #include "plugin/plugin_manager_v2.h"
+#include "statistics_event_reporter.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "TypeFinder" };
@@ -158,30 +160,38 @@ Plugins::Seekable TypeFinder::GetSeekable()
 
 std::string TypeFinder::SniffMediaType()
 {
-    std::string pluginName;
-    auto dataSource = shared_from_this();
     std::vector<uint8_t> buff(DEFAULT_SNIFF_SIZE);
     auto buffer = std::make_shared<Buffer>();
     FALSE_RETURN_V_MSG_E(buffer != nullptr, "", "Alloc failed");
-    auto bufData = buffer->WrapMemory(buff.data(), DEFAULT_SNIFF_SIZE, DEFAULT_SNIFF_SIZE);
+    (void)buffer->WrapMemory(buff.data(), DEFAULT_SNIFF_SIZE, DEFAULT_SNIFF_SIZE);
     FALSE_RETURN_V_MSG_E(
         buffer->GetMemory() != nullptr, "", "Alloc failed, sniffSize " PUBLIC_LOG_U32, DEFAULT_SNIFF_SIZE);
-    int32_t tryCnt = 0;
-    Status ret = Status::OK;
-    size_t getDataSize = 0;
+
     uint64_t totalSize = 0;
     size_t expectSize = DEFAULT_SNIFF_SIZE;
-    if (dataSource->GetSize(totalSize) == Status::OK && totalSize > 0 &&
-        totalSize < static_cast<uint64_t>(DEFAULT_SNIFF_SIZE)) {
+    if (GetSize(totalSize) == Status::OK && totalSize > 0 && totalSize < static_cast<uint64_t>(DEFAULT_SNIFF_SIZE)) {
         expectSize = static_cast<size_t>(totalSize);
     }
+
+    size_t getDataSize = 0;
+    Status ret = ReadSniffData(buffer, expectSize, getDataSize);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK && getDataSize > 0, "", "Not data for sniff " PUBLIC_LOG_ZU, getDataSize);
+    auto pluginName = Plugins::PluginManagerV2::Instance().SnifferPlugin(PluginType::DEMUXER, shared_from_this());
+    ReportDemuxerFormat(pluginName);
+    return pluginName;
+}
+
+Status TypeFinder::ReadSniffData(std::shared_ptr<Buffer> &buffer, size_t expectSize, size_t &getDataSize)
+{
+    Status ret = Status::OK;
+    int32_t tryCnt = 0;
     while (tryCnt < MAX_SNIFF_TRY_TIMES) {
         auto memory = buffer->GetMemory();
-        FALSE_RETURN_V_MSG_E(memory != nullptr, "", "GetMemory failed");
+        FALSE_RETURN_V_MSG_E(memory != nullptr, Status::ERROR_NO_MEMORY, "GetMemory failed");
         memory->Reset();
-        ret = dataSource->ReadAt(0, buffer, expectSize);
+        ret = ReadAt(0, buffer, expectSize);
         memory = buffer->GetMemory();
-        FALSE_RETURN_V_MSG_E(memory != nullptr, "", "GetMemory failed after ReadAt");
+        FALSE_RETURN_V_MSG_E(memory != nullptr, Status::ERROR_NO_MEMORY, "GetMemory failed after ReadAt");
         getDataSize = memory->GetSize();
         if (ret == Status::OK && getDataSize == expectSize) {
             MEDIA_LOG_D("SniffMediaType ReadAt ok");
@@ -199,9 +209,20 @@ std::string TypeFinder::SniffMediaType()
         readCond_.wait_for(lock, std::chrono::milliseconds(WAIT_TIME), [&] { return isInterruptNeeded_.load(); });
         ++tryCnt;
     }
-    FALSE_RETURN_V_MSG_E(ret == Status::OK && getDataSize > 0, "", "Not data for sniff " PUBLIC_LOG_ZU, getDataSize);
-    pluginName = Plugins::PluginManagerV2::Instance().SnifferPlugin(PluginType::DEMUXER, dataSource);
-    return pluginName;
+    return ret;
+}
+
+void TypeFinder::ReportDemuxerFormat(const std::string &pluginName)
+{
+    constexpr std::string_view AVDEMUX_PREFIX = "avdemux_";
+    std::string pluginNameTemp = pluginName;
+    if (pluginNameTemp.size() > AVDEMUX_PREFIX.size() &&
+        pluginNameTemp.substr(0, AVDEMUX_PREFIX.size()) == AVDEMUX_PREFIX) {
+        pluginNameTemp = pluginNameTemp.substr(AVDEMUX_PREFIX.size());
+    }
+    Media::Meta eventMeta;
+    eventMeta.SetData(MediaAVCodec::EventInfoExtentedKey::DEMUXER_FORMAT.data(), pluginNameTemp);
+    MediaAVCodec::StatisticsEventReporter::Report(MediaAVCodec::StatisticsEventType::DEMUXER_FORMAT_INFO, eventMeta);
 }
 
 bool TypeFinder::IsOffsetValid(int64_t offset) const

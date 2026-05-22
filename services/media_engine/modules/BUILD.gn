@@ -63,6 +63,8 @@ config("av_codec_media_engine_modules_config") {
     "$av_codec_root_dir/services/engine/codeclist",
     "$av_codec_root_dir/services/engine/codec/include/video",
     "$av_codec_root_dir/services/engine/base/include",
+    "$av_codec_root_dir/services/services/sa_avcodec/client",
+    "$av_codec_root_dir/services/services/common/event_manager",
   ]
 }
 
@@ -110,7 +112,10 @@ ohos_shared_library("av_codec_media_engine_modules") {
     sources += [ "post_processor/super_resolution_post_processor.cpp" ]
   }
 
-  deps = [ "$av_codec_root_dir/services/engine/base:av_codec_codec_base" ]
+  deps = [
+    "$av_codec_root_dir/services/engine/base:av_codec_codec_base",
+    "$av_codec_root_dir/services/services/sa_avcodec/client:statistics_event_ipc",
+  ]
 
   public_configs =
       [ ":av_codec_media_engine_modules_pts_and_index_convert_config" ]

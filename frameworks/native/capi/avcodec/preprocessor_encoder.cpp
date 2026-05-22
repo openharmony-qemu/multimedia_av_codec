@@ -19,6 +19,8 @@
 #include "avcodec_log.h"
 #include "media_core.h"
 #include "preprocessor_format_utils.h"
+#include "statistics_event_reporter.h"
+#include "event_info_extented_key.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "PreprocessorEncoder"};
@@ -91,6 +93,11 @@ OH_AVErrCode PreprocessorEncoder::CreatePrimary(const char *mime, OH_AVCodec **c
     OH_AVErrCode ret = encoder->InitAsPrimary(mime);
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "InitAsPrimary failed!");
 
+    Media::Meta meta;
+    meta.SetData(Media::Tag::AV_CODEC_CALLER_PID, getprocpid());
+    meta.SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "PreprocEnc");
+    StatisticsEventReporter::Report(StatisticsEventType::ADVANCED_FEATURE_INFO, meta);
+
     std::scoped_lock interfaceLock(g_interfaceMutex);
     CHECK_AND_RETURN_RET_LOG(*codec == nullptr, AV_ERR_INVALID_VAL,
         "The pointer stored in codec is not nullptr! It must be nullptr!");
@@ -118,6 +125,11 @@ OH_AVErrCode PreprocessorEncoder::CreateSecondary(OH_AVCodec *primary, OH_AVCode
 
     OH_AVErrCode ret = encoder->InitAsSecondary(primaryEnc);
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "InitAsSecondary failed!");
+
+    Media::Meta meta;
+    meta.SetData(Media::Tag::AV_CODEC_CALLER_PID, getprocpid());
+    meta.SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "OneInDualOut");
+    StatisticsEventReporter::Report(StatisticsEventType::ADVANCED_FEATURE_INFO, meta);
 
     *secondary = encoder.release();
     return AV_ERR_OK;
