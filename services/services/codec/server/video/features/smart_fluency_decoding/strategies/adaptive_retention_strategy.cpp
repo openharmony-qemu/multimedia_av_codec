@@ -31,6 +31,10 @@ constexpr double CON_HIGH_TH = 0.66;
 constexpr double MAG_LOW_TH = 20.0;
 constexpr double MAG_HIGH_TH = 55.0;
 constexpr double MAG_CAP = 80.0;
+constexpr double MAG_WEIGHT_MIN = 0.4;
+constexpr double MAG_WEIGHT_RANGE = 0.6;
+constexpr double MAG_WEIGHT_REDUCTION = 0.7;
+constexpr double SOURCE_FPS_DEFAULT = 30.0;
 } // namespace
 
 namespace OHOS {
@@ -57,11 +61,11 @@ double AdaptiveRetentionStrategy::EvaluateStutterRisk(const MVStats& mvStats) co
 
     double magWeight = 1.0;
     if (DoubleUtils::IsLessOrEqual(mag, MAG_LOW_TH)) {
-        magWeight = 0.4 + (mag / MAG_LOW_TH) * 0.6;
+        magWeight = MAG_WEIGHT_MIN + (mag / MAG_LOW_TH) * MAG_WEIGHT_RANGE;
     } else if (DoubleUtils::IsLessOrEqual(mag, MAG_HIGH_TH)) {
         magWeight = 1.0;
     } else {
-        magWeight = 1.0 - ((mag - MAG_HIGH_TH) / (MAG_CAP - MAG_HIGH_TH)) * 0.7;
+        magWeight = 1.0 - ((mag - MAG_HIGH_TH) / (MAG_CAP - MAG_HIGH_TH)) * MAG_WEIGHT_REDUCTION;
     }
     double finalRisk = rawRisk * magWeight;
     return std::clamp(finalRisk, 0.0, 1.0);
@@ -119,8 +123,8 @@ bool AdaptiveRetentionStrategy::MakeRetentionDecision(const FrameRetentionContex
     double dynamicTargetRatio = CalculateTargetRatio(ctx);
     bool isRetain = ExecuteAccumulatorDecision(dynamicTargetRatio, ctx.preDroppedCount);
     targetRatio_ = dynamicTargetRatio;
-    AVCODEC_LOGD("Adaptive dynRatio: %{public}.3f, accumulator: %{public}.3f, isRetain: %{public}d, speed: %{public}.3f",
-                 dynamicTargetRatio, accumulator_, isRetain, currentSpeed_);
+    AVCODEC_LOGD("Adaptive dynRatio: %{public}.3f, accumulator: %{public}.3f, isRetain: %{public}d, "
+        "speed: %{public}.3f",dynamicTargetRatio, accumulator_, isRetain, currentSpeed_);
     return isRetain;
 }
 
@@ -140,7 +144,7 @@ void AdaptiveRetentionStrategy::Reset()
 {
     accumulator_ = 0.0;
     targetRatio_ = 1.0;
-    sourceFps_ = 30.0;
+    sourceFps_ = SOURCE_FPS_DEFAULT;
     lastReason_ = SfdDecisionReason::UNSPECIFIED;
     AVCODEC_LOGI("AdaptiveRetentionStrategy reset completed");
 }

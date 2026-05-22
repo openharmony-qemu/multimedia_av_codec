@@ -24,7 +24,9 @@ namespace {
 using namespace std::chrono;
 
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "DBA"};
-constexpr size_t SPEED_WINDON_SIZE = 5;           // Sliding window size used to determine speed stability
+constexpr size_t SPEED_WINDOW_SIZE = 5;           // Sliding window size used to determine speed stability
+constexpr size_t PTS_WINDOW_MIN_SIZE = 2;
+constexpr size_t PTS_WINDOW_MAX_SIZE = 30;
 constexpr double DETECTION_THRESHOLD_RATIO = 0.5; // Stability threshold: dominant speed in the window must exceed 50%
 constexpr uint32_t SRC_FRAME_CNT_MIN = 5;         // Minimum valid frame count
 constexpr double EPSILON = 1e-6;
@@ -34,6 +36,7 @@ constexpr int64_t SEEK_DETECTION_THRESHOLD_MS = 1000;
 constexpr double MIN_CAL_DURATION_MS = 100.0;
 constexpr double SMOOTHING_FACTOR = 0.5;
 constexpr int64_t MIN_REASONABLE_DIFF = 8;
+constexpr double ONE_SECOND = 1000.0;
 #ifdef SUPPORT_FPS_FOR_MEMC
 constexpr size_t FPS_WINDOW_SIZE = 3;
 constexpr uint32_t CONTINUES_FRAME_CNT = 5;
@@ -76,7 +79,7 @@ void DecodingBehaviorAnalyzer::OnFrameConsumed(int64_t pts, bool render)
         startSysTime_ = std::chrono::steady_clock::now();
     }
     ptsWin_.push_back(ptsMs);
-    if (ptsWin_.size() > 30) {
+    if (ptsWin_.size() > PTS_WINDOW_MAX_SIZE) {
         ptsWin_.pop_front();
     }
     endSysTime_ = std::chrono::steady_clock::now();
@@ -102,7 +105,7 @@ double DecodingBehaviorAnalyzer::GetSrcFps()
     if (minValidDiff == 0) {
         return 0.0;
     }
-    return 1000.0 / minValidDiff;
+    return ONE_SECOND / minValidDiff;
 }
 
 #ifdef SUPPORT_FPS_FOR_MEMC
@@ -242,7 +245,7 @@ size_t DecodingBehaviorAnalyzer::MatchAndUpdateSpeedStats(double decSpeed)
         }
     }
 
-    if (speedWindow_.size() >= SPEED_WINDON_SIZE) {
+    if (speedWindow_.size() >= SPEED_WINDOW_SIZE) {
         size_t oldestIndex = speedWindow_.front();
         speedCount_[oldestIndex]--;
         speedWindow_.pop_front();
@@ -255,7 +258,7 @@ size_t DecodingBehaviorAnalyzer::MatchAndUpdateSpeedStats(double decSpeed)
 
 DecodingBehaviorType DecodingBehaviorAnalyzer::DetermineDecodingBehaviorType()
 {
-    if (speedWindow_.size() < SPEED_WINDON_SIZE) {
+    if (speedWindow_.size() < SPEED_WINDOW_SIZE) {
         return DecodingBehaviorType::UNKNOWN;
     }
     size_t maxCnt = 0;
@@ -267,7 +270,7 @@ DecodingBehaviorType DecodingBehaviorAnalyzer::DetermineDecodingBehaviorType()
         }
     }
     maxPossibleDecSpeedIdx_ = maxCntIdx;
-    bool isStable = static_cast<double>(maxCnt) / SPEED_WINDON_SIZE > DETECTION_THRESHOLD_RATIO;
+    bool isStable = static_cast<double>(maxCnt) / SPEED_WINDOW_SIZE > DETECTION_THRESHOLD_RATIO;
     // 0.0 and 4.0 are placeholders for extremely slow and extremely fast speeds respectively
     bool isUniformSpeed = (maxCntIdx != 0u) && (maxCntIdx != stdSpeedLevels - 1);
     AVCODEC_LOGD("MaxCnt %{public}zu, maxPSpeed %{public}.2fx, isStable %{public}d, isUniformSpeed %{public}d",
@@ -313,7 +316,8 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
     uint32_t totalFrames = frameCnt_ + droppedCnt_;
     auto sysTimeIntvlMs = std::chrono::duration_cast<std::chrono::milliseconds>(
         endSysTime_ - startSysTime_).count();
-    if (totalFrames < SRC_FRAME_CNT_MIN || sysTimeIntvlMs <= MIN_CAL_DURATION_MS || ptsWin_.size() < 2) {
+    if (totalFrames < SRC_FRAME_CNT_MIN || sysTimeIntvlMs <= MIN_CAL_DURATION_MS || 
+        ptsWin_.size() < PTS_WINDOW_MIN_SIZE) {
         return;
     }
     double decInFps = static_cast<double>(totalFrames - 1) / sysTimeIntvlMs * 1000;
