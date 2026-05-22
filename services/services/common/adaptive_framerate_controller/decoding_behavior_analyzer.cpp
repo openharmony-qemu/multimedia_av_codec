@@ -316,7 +316,7 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
     uint32_t totalFrames = frameCnt_ + droppedCnt_;
     auto sysTimeIntvlMs = std::chrono::duration_cast<std::chrono::milliseconds>(
         endSysTime_ - startSysTime_).count();
-    if (totalFrames < SRC_FRAME_CNT_MIN || sysTimeIntvlMs <= MIN_CAL_DURATION_MS || 
+    if (totalFrames < SRC_FRAME_CNT_MIN || sysTimeIntvlMs <= MIN_CAL_DURATION_MS ||
         ptsWin_.size() < PTS_WINDOW_MIN_SIZE) {
         return;
     }

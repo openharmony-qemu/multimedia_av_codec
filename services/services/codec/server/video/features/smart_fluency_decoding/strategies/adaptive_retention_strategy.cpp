@@ -124,7 +124,7 @@ bool AdaptiveRetentionStrategy::MakeRetentionDecision(const FrameRetentionContex
     bool isRetain = ExecuteAccumulatorDecision(dynamicTargetRatio, ctx.preDroppedCount);
     targetRatio_ = dynamicTargetRatio;
     AVCODEC_LOGD("Adaptive dynRatio: %{public}.3f, accumulator: %{public}.3f, isRetain: %{public}d, "
-        "speed: %{public}.3f",dynamicTargetRatio, accumulator_, isRetain, currentSpeed_);
+        "speed: %{public}.3f", dynamicTargetRatio, accumulator_, isRetain, currentSpeed_);
     return isRetain;
 }
 
