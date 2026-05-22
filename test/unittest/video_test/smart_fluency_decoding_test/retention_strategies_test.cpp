@@ -619,7 +619,7 @@ HWTEST_F(AdaptiveRetentionStrategyTest, MakeDecision_MaxDropsLimit_011, TestSize
     }
     // 4th call: maxDrops limit reached, forces retain
     EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
-    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_MAX_DROP);
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT);
 }
 
 // --- FullRetentionStrategy additional tests ---

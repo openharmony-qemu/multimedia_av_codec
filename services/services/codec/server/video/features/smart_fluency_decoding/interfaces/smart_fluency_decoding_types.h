@@ -63,9 +63,8 @@ enum class SfdDecisionReason : int32_t {
     POST_DROP_FIXED_ACC = 13,               // Drop: FixedRatio strategy, accumulator below threshold
     POST_RETAIN_ADAPTIVE_SPEED = 14,        // Retain: Adaptive strategy, playback speed is low
     POST_RETAIN_ADAPTIVE_DT = 15,           // Retain: Adaptive strategy, Decision Tree (DT) allows retention
-    POST_RETAIN_ADAPTIVE_MAX_DROP = 16,     // Retain: Adaptive strategy, forced release due to max consecutive drops+
-    POST_DROP_ADAPTIVE_DT = 17,             // Drop: Adaptive strategy, DT recommends dropping
-    POST_RETAIN_AUTO_FALLBACK = 18,         // Retain: AutoFallback strategy, releasing at safe time interval
+    POST_DROP_ADAPTIVE_DT = 16,             // Drop: Adaptive strategy, DT recommends dropping
+    POST_RETAIN_AUTO_FALLBACK = 17,         // Retain: AutoFallback strategy, releasing at safe time interval
 };
 
 using OnStreamAuxInfoParsed = std::function<void(const StreamAuxInfo& info)>;
