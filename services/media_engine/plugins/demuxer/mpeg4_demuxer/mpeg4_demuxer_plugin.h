@@ -83,7 +83,7 @@ public:
 
     bool IsMultiVideoTracks();
     bool IsSupportedCodec();
-    Status GetGopIdBySeekPos(int64_t seekMs, int32_t &gopId);
+    Status GetGopIdFromSeekPos(int64_t seekMs, int32_t &gopId);
     Status GetSampleIndexBySeekMs(int64_t seekMs, uint32_t &frameId);
     Status RefParserInit();
     Status ParserRefInfoLoop(uint32_t syncSampleIndex);
@@ -167,14 +167,17 @@ private:
 
     std::shared_ptr<ReferenceParserManager> referenceParser_ = nullptr;
     int64_t ptsOfIndexZero_ = 0;
+    std::map<int64_t, int64_t> pts2Dts_;
+    std::unordered_map<int64_t, uint32_t> dts2SyncSampleIndex_;
+    std::unordered_map<uint32_t, int64_t> syncSampleIndex2Pts_;
     int32_t refParserTrackIdx_ = -1;
-    std::vector<uint32_t> syncSamplesPos_;
+    std::vector<uint32_t> syncSamplesPts_;
     int64_t refParserStartTime_ = -1;
     int64_t refParserPendingSeekMsTime_ = -1;
+    int32_t refParserCurGopId_ = 0;
     bool refParserIsForward_ = true;
     std::atomic<bool> refParserState_ = true;
-    int32_t refParserCurGopId_ = 0;
-    std::list<uint32_t> processingSyncSamplesPos_;
+    std::list<uint32_t> processingSyncSamplesPts_;
 
     int32_t CountTracks();
     void GetAVTrackIds();

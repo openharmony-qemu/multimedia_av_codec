@@ -1586,20 +1586,20 @@ int32_t MPEG4SampleHelper::GetMinOffsetOfCttsEntry()
     return std::min(0, minSampleOffsetOfCttsEntry);
 }
 
-std::vector<uint32_t> MPEG4SampleHelper::GetSyncSamplesPosFromStssEntry()
+std::vector<uint32_t> MPEG4SampleHelper::GetSyncSamplesPtsFromStssEntry()
 {
-    std::vector<uint32_t> syncSamplesPos;
+    std::vector<uint32_t> syncSamplesPts;
     // for (uint32_t i = 0; i < stssEntry_.size(); ++i) {
-    //     syncSamplesPos.emplace(stssEntry_[i].index);
+    //     syncSamplesPts.emplace(stssEntry_[i].index);
     // }
     for (uint32_t i = 0; i < stssEntry_.size(); ++i) {
         uint32_t syncSampleIndex = stssEntry_[i].index;
         FALSE_RETURN_V_MSG_E(syncSampleIndex < sampleIndexEntry_.size(), {},
             "syncSampleIndex(%{public}d) is invalid, sampleIndexEntry_ size is %{public}lu",
             syncSampleIndex, sampleIndexEntry_.size());
-        syncSamplesPos.emplace(sampleIndexEntry_[syncSampleIndex].pts);
+        syncSamplesPts.emplace(sampleIndexEntry_[syncSampleIndex].pts);
     }
-    return syncSamplesPos;
+    return syncSamplesPts;
 }
 
 SdtpEntry MPEG4SampleHelper::GetSdtpEntry()
