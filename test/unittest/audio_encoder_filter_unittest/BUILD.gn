@@ -114,7 +114,7 @@ ohos_unittest("audio_encoder_filter_unittest") {
   }
 
   if (av_codec_enable_audio_convert) {
-    av_codec_defines += ["audio_framework:audio_suite"]
+    external_deps += [ "audio_framework:audio_suite" ]
   }
 
   resource_config_file =
