@@ -20,6 +20,7 @@
 #include "media_codec/media_codec.h"
 #include "common/media_core.h"
 #include "avcodec_sysevent.h"
+#include "buffer/avbuffer_queue.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_RECORDER, "AudioEncoderFilter" };

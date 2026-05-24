@@ -138,6 +138,7 @@ private:
     bool svpFlag_ = false;
     bool isDump_ = false;
     bool refreshTotalPauseTime_{false};
+    bool isDecOnlyMode_ = false;
     int64_t latestBufferTime_{HST_TIME_NONE};
     int64_t latestPausedTime_{HST_TIME_NONE};
     int64_t totalPausedTime_{0};

@@ -33,6 +33,7 @@ config("av_codec_media_engine_filters_config") {
     "-fno-rtti",
     "-Wno-unused-but-set-variable",
     "-Wno-format",
+    "-Wno-error=format",
   ]
   cflags_cc = cflags
 

@@ -113,6 +113,10 @@ ohos_unittest("audio_encoder_filter_unitest") {
     external_deps += [ "drm_framework:drm_framework" ]
   }
 
+  if (av_codec_enable_audio_convert) {
+    av_codec_defines += ["audio_framework:audio_suite"]
+  }
+
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }

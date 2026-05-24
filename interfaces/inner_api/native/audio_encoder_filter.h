@@ -17,6 +17,7 @@
 #define FILTERS_AUDIO_ENCODER_FILTER_H
 
 #include <cstring>
+#include <thread>
 #include "filter/filter.h"
 
 namespace OHOS {
