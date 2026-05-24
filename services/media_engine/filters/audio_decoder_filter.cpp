@@ -334,6 +334,13 @@ void AudioDecoderFilter::GetParameter(std::shared_ptr<Meta> &parameter)
     FALSE_RETURN_MSG(decoder_ != nullptr, "decoder_ is nullptr");
     FALSE_RETURN_MSG(parameter != nullptr, "parameter is nullptr");
     decoder_->GetOutputFormat(parameter);
+    int32_t outputbuffersize = 0;
+    if (parameter->GetData(Tag::AUDIO_MAX_OUTPUT_SIZE, outputbuffersize)) {
+        MEDIA_LOG_I("hsp make AUDIO_MAX_OUTPUT_SIZE is outputbuffersize: " PUBLIC_LOG_D32,
+            static_cast<int32_t>(outputbuffersize));
+    } else {
+        MEDIA_LOG_I("hsp make not get AUDIO_MAX_OUTPUT_SIZE");
+    }
 }
 
 Status AudioDecoderFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
@@ -343,7 +350,20 @@ Status AudioDecoderFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, S
     nextFiltersMap_[outType].push_back(nextFilter_);
     std::shared_ptr<FilterLinkCallback> filterLinkCallback =
         std::make_shared<AudioDecoderFilterLinkCallback>(shared_from_this());
+    if (isDecOnlyMode_) {
+        return nextFilter->OnLinked(outType, outputMeta_, filterLinkCallback);
+    }
+    GetParameter(meta_);
     return nextFilter->OnLinked(outType, meta_, filterLinkCallback);
+}
+
+void AudioDecoderFilter::ResetOutputAudioMime(std::string mimeType)
+{
+    MEDIA_LOG_I("AudioDecoderFilter::ResetOutputAudioMime %{public}s ", mimeType.c_str());
+    FALSE_RETURN_MSG(meta_ != nullptr, "meta is nullptr");
+    isDecOnlyMode_ = true;
+    outputMeta_ = std::make_shared<Meta>(*meta_);
+    outputMeta_->SetData(Tag::MIME_TYPE, mimeType);
 }
 
 Status AudioDecoderFilter::UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
@@ -529,7 +549,7 @@ void AudioDecoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
         ret = SetOutputBufferQueueProducerListener();
         FALSE_RETURN_MSG(ret == Status::OK, "OnLinkedResult SetOutputBufferQueueProducerListener failed");
     }
- 
+
     sptr<AVBufferQueueProducer> inputProducer = decoder_->GetInputBufferQueue();
     FALSE_RETURN(inputProducer != nullptr && onLinkedResultCallback_ != nullptr);
 
