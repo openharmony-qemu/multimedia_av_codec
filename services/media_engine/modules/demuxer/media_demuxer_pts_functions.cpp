@@ -219,7 +219,7 @@ int64_t MediaDemuxer::GetCurrentSegmentOffset(int32_t trackId, int64_t oldSegmen
 
 void MediaDemuxer::InitVideoAudioBasePtsDiff()
 {
-    FALSE_RETURN(IsAVInOneStream() && maintainBaseInfos_[audioTrackId_] == nullptr 
+    FALSE_RETURN(IsAVInOneStream() && maintainBaseInfos_[audioTrackId_] == nullptr
         && maintainBaseInfos_[videoTrackId_] == nullptr);
     FALSE_RETURN(maintainBaseInfos_[audioTrackId_]->basePts != INVALID_PTS_DATA);
     FALSE_RETURN(maintainBaseInfos_[videoTrackId_]->basePts != INVALID_PTS_DATA);
