@@ -95,7 +95,8 @@ void MediaDemuxer::HandleAutoMaintainPts(int32_t trackId, std::shared_ptr<AVBuff
         }
     } else {
         sample->pts_ = baseInfo->segmentOffset + curPacketPts - baseInfo->basePts + mediaStartPts_;
-        FALSE_GOON_NOEXEC(videoAudioBasePtsDiff != -1 && trackId != videoTrackId_, sample->pts += videoAudioBasePtsDiff);
+        FALSE_GOON_NOEXEC(videoAudioBasePtsDiff != -1 && trackId != videoTrackId_,
+            sample->pts += videoAudioBasePtsDiff);
         baseInfo->isLastPtsChange = false;
     }
     baseInfo->lastPtsModifyedMax = std::max(sample->pts_, baseInfo->lastPtsModifyedMax);
@@ -218,7 +219,8 @@ int64_t MediaDemuxer::GetCurrentSegmentOffset(int32_t trackId, int64_t oldSegmen
 
 void MediaDemuxer::InitVideoAudioBasePtsDiff()
 {
-    FALSE_RETURN(IsAVInOneStream() && maintainBaseInfos_[audioTrackId_] == nullptr && maintainBaseInfos_[videoTrackId_] == nullptr);
+    FALSE_RETURN(IsAVInOneStream() && maintainBaseInfos_[audioTrackId_] == nullptr 
+        && maintainBaseInfos_[videoTrackId_] == nullptr);
     FALSE_RETURN(maintainBaseInfos_[audioTrackId_]->basePts != INVALID_PTS_DATA);
     FALSE_RETURN(maintainBaseInfos_[videoTrackId_]->basePts != INVALID_PTS_DATA);
     videoAudioBasePtsDiff = maintainBaseInfos_[videoTrackId_]->basePts - maintainBaseInfos_[audioTrackId_]->basePts;
