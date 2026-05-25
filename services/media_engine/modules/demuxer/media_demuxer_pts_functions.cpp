@@ -96,7 +96,7 @@ void MediaDemuxer::HandleAutoMaintainPts(int32_t trackId, std::shared_ptr<AVBuff
     } else {
         sample->pts_ = baseInfo->segmentOffset + curPacketPts - baseInfo->basePts + mediaStartPts_;
         FALSE_GOON_NOEXEC(videoAudioBasePtsDiff != -1 && trackId != videoTrackId_,
-            sample->pts += videoAudioBasePtsDiff);
+            sample->pts_ += videoAudioBasePtsDiff);
         baseInfo->isLastPtsChange = false;
     }
     baseInfo->lastPtsModifyedMax = std::max(sample->pts_, baseInfo->lastPtsModifyedMax);
