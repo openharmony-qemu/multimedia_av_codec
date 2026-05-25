@@ -95,7 +95,7 @@ void MediaDemuxer::HandleAutoMaintainPts(int32_t trackId, std::shared_ptr<AVBuff
         }
     } else {
         sample->pts_ = baseInfo->segmentOffset + curPacketPts - baseInfo->basePts + mediaStartPts_;
-        FALSE_GOON_NOEXEC(videoAudioBasePtsDiff != -1 && trackId != videoTrackId_,
+        FALSE_GOON_NOEXEC(videoAudioBasePtsDiff != -1 && trackId == videoTrackId_,
             sample->pts_ += videoAudioBasePtsDiff);
         baseInfo->isLastPtsChange = false;
     }
