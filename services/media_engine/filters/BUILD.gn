@@ -33,6 +33,7 @@ config("av_codec_media_engine_filters_config") {
     "-fno-rtti",
     "-Wno-unused-but-set-variable",
     "-Wno-format",
+    "-Wno-error=format",
   ]
   cflags_cc = cflags
 
@@ -146,6 +147,10 @@ ohos_shared_library("av_codec_media_engine_filters") {
       "SUPPORT_CAMERA_POST_PROCESSOR",
       "CAMERA_POST_PROCESSOR_PATH=${camera_post_processor_path}",
     ]
+  }
+  
+  if (av_codec_enable_audio_convert) {
+    external_deps += [ "audio_framework:audio_suite" ]
   }
 
   subsystem_name = "multimedia"
