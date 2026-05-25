@@ -24,7 +24,6 @@ config("statistics_event_ipc_public_config") {
 
 ohos_source_set("statistics_event_ipc") {
   branch_protector_ret = "pac_ret"
-  sanitize = av_codec_sanitize
   public_configs = [ ":statistics_event_ipc_public_config" ]
 
   configs = [
