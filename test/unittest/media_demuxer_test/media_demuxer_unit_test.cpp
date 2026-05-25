@@ -2501,4 +2501,69 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_UpdateSegmentOffsetWithTwoTrackIds_0
     demuxer->UpdateSegmentOffset(oldTrackId, invalidNewTrackId);
     EXPECT_EQ(demuxer->currentSegmentOffsetMap_.find(invalidNewTrackId), demuxer->currentSegmentOffsetMap_.end());
 }
+
+/**
+ * @tc.name: MediaDemuxer_Pause_001
+ * @tc.desc: test Pause with one trackIds (invalid audioTrackId_)
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Pause_001, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/h264_fmp4.mp4";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(0, inputBufferQueueProducer), Status::OK);
+
+    EXPECT_EQ(demuxer->Flush(), Status::OK);
+    EXPECT_EQ(demuxer->Start(), Status::OK);
+    demuxer->audioTrackId_ = MediaDemuxer::TRACK_ID_INVALID;
+    bool result = demuxer->CheckTrackEnabledById(demuxer->audioTrackId_);
+    EXPECT_EQ(result, false);
+    EXPECT_EQ(demuxer->Pause(), Status::OK);
+}
+
+/**
+ * @tc.name: MediaDemuxer_Pause_002
+ * @tc.desc: test Pause with one trackIds (valid audioTrackId_)
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Pause_002, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/h264_fmp4.mp4";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(0, inputBufferQueueProducer), Status::OK);
+
+    EXPECT_EQ(demuxer->Flush(), Status::OK);
+    EXPECT_EQ(demuxer->Start(), Status::OK);
+    bool result = demuxer->CheckTrackEnabledById(demuxer->audioTrackId_);
+    EXPECT_EQ(result, true);
+    EXPECT_EQ(demuxer->Pause(), Status::OK);
+}
 }
