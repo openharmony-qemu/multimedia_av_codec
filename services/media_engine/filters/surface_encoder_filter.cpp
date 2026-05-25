@@ -295,6 +295,7 @@ Status SurfaceEncoderFilter::DoStart()
 {
     MEDIA_LOG_I("Start");
     if (mediaCodec_ == nullptr) {
+        MEDIA_LOG_E("mediaCodec_ is nullptr");
         return Status::ERROR_UNKNOWN;
     }
     return mediaCodec_->Start();
@@ -304,6 +305,7 @@ Status SurfaceEncoderFilter::DoPause()
 {
     MEDIA_LOG_I("Pause");
     if (mediaCodec_ == nullptr) {
+        MEDIA_LOG_E("mediaCodec_ is nullptr");
         return Status::ERROR_UNKNOWN;
     }
     return mediaCodec_->Pause();
@@ -313,6 +315,7 @@ Status SurfaceEncoderFilter::DoResume()
 {
     MEDIA_LOG_I("Resume");
     if (mediaCodec_ == nullptr) {
+        MEDIA_LOG_E("mediaCodec_ is nullptr");
         return Status::ERROR_UNKNOWN;
     }
     return mediaCodec_->Resume();
@@ -342,6 +345,7 @@ Status SurfaceEncoderFilter::DoFlush()
 {
     MEDIA_LOG_I("Flush");
     if (mediaCodec_ == nullptr) {
+        MEDIA_LOG_E("mediaCodec_ is nullptr");
         return Status::ERROR_UNKNOWN;
     }
     return mediaCodec_->Flush();
@@ -360,6 +364,7 @@ Status SurfaceEncoderFilter::NotifyEos(int64_t pts)
 {
     MEDIA_LOG_I("NotifyEos");
     if (mediaCodec_ == nullptr) {
+        MEDIA_LOG_E("mediaCodec_ is nullptr");
         return Status::ERROR_UNKNOWN;
     }
     return mediaCodec_->NotifyEos(pts);
