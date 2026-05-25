@@ -114,6 +114,7 @@ Status FFmpegAmrnbDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &param
     format->SetData(Tag::AUDIO_MAX_INPUT_SIZE, GetInputBufferSize());
     format->SetData(Tag::AUDIO_MAX_OUTPUT_SIZE, GetOutputBufferSize());
     format->GetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFormat_);
+    CHECK_AND_RETURN_RET_LOG(sampleFormat_ != INVALID_WIDTH, Status::ERROR_INVALID_PARAMETER, "invalid sample format.");
     Status retContext = basePlugin->OpenContext();
     avCodecContext_ = basePlugin->GetCodecContext();
     return retContext;
