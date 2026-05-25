@@ -154,7 +154,7 @@ void TimedMetaTrack::DisposeDuration()
     durationUs_ = lastTimestampUs_ - startTimestampUs_ + ConvertTimeFromMpeg4(lastDuration_, timeScale_);
     auto durationUs = durationUs_;
     auto startTimestampUs = startTimestampUs_;
-    if (isAuxiliary_ && GetSrcTrackDurationUs(srcTrackDurationUs, srcStartTimeUs) && srcTrackDurationUs > 0) {
+    if (GetSrcTrackDurationUs(srcTrackDurationUs, srcStartTimeUs) && srcTrackDurationUs > 0) {
         durationUs = srcTrackDurationUs;
         startTimestampUs = srcStartTimeUs;
     }
