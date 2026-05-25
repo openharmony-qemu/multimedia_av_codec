@@ -60,10 +60,7 @@ void MediaDemuxer::HandleAutoMaintainPts(int32_t trackId, std::shared_ptr<AVBuff
     }
     int64_t curPacketPts = sample->pts_;
     std::shared_ptr<MaintainBaseInfo> baseInfo = maintainBaseInfos_[trackId];
-    if (baseInfo == nullptr) {
-        MEDIA_LOG_E("BaseInfo is nullptr, track " PUBLIC_LOG_D32, trackId);
-        return;
-    }
+    FALSE_RETURN(baseInfo != nullptr, "BaseInfo is nullptr, track " PUBLIC_LOG_D32, trackId);
     int64_t diff = 0;
     diff = curPacketPts - baseInfo->lastPts;
     auto oldPts =  baseInfo->lastPts;
