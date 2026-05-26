@@ -387,6 +387,7 @@ ohos_shared_library("native_media_vdec") {
 
 ohos_shared_library("native_media_venc") {
   install_enable = true
+  sanitize = av_codec_sanitize
   sources = [
     "$av_codec_root_dir/frameworks/native/capi/avcodec/native_video_encoder.cpp",
     "$av_codec_root_dir/frameworks/native/capi/avcodec/preprocessor.cpp",
