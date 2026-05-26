@@ -16,6 +16,7 @@
 #define HST_LOG_TAG "MPEG4SampleHelper"
 #include <array>
 #include <algorithm>
+#include <limits>
 #include <regex>
 #include <iconv.h>
 #include <sstream>
@@ -364,8 +365,10 @@ Status MPEG4SampleHelper::SetTimeToSampleParams(int64_t dataOffset, size_t dataS
     sttsEntry_.reserve(numSttsEntries);
 
     for (uint32_t i = 0; i < numSttsEntries; ++i) {
+        uint32_t sampleCount = GetU32Value(data.get() + i * sizeof(SttsEntry));
+        FALSE_RETURN_V_MSG_E(sampleCount > 0, Status::ERROR_INVALID_DATA, "Invalid stts sample count");
         sttsEntry_.emplace_back(SttsEntry{
-            .count = GetU32Value(data.get() + i * sizeof(SttsEntry)),
+            .count = sampleCount,
             .delta = GetU32Value(data.get() + 4 + i * sizeof(SttsEntry))
         });
     }
@@ -719,50 +722,64 @@ Status MPEG4SampleHelper::SetTrackExtendsParams(int64_t dataOffset, size_t dataS
     return Status::OK;
 }
 
+bool MPEG4SampleHelper::HasTfhdRemainingData(const TfhdParseContext& ctx, size_t fieldSize) const
+{
+    return ctx.dataOffset <= ctx.dataSize && fieldSize <= ctx.dataSize - ctx.dataOffset;
+}
+
+Status MPEG4SampleHelper::ParseTfhdBaseDataOffset(TfhdParseContext& ctx, int64_t moofOffset)
+{
+    if ((ctx.flag & TrackFragmentHeaderInfo::TFHD_BASE_DATA_OFFSET) && seekable_ == Seekable::SEEKABLE) {
+        FALSE_RETURN_V_MSG_E(HasTfhdRemainingData(ctx, sizeof(uint64_t)),
+            Status::ERROR_INVALID_DATA, "Invalid tfhd base data offset");
+        tfhd_.baseDataOffset = GetU64Value(ctx.data + ctx.dataOffset);
+        ctx.dataOffset += sizeof(uint64_t);
+    } else {
+        tfhd_.baseDataOffset = moofOffset;
+    }
+    return Status::OK;
+}
+
+Status MPEG4SampleHelper::ParseTfhdOptionalUint32(TfhdParseContext& ctx, const TfhdOptionalUint32Field& field)
+{
+    FALSE_RETURN_V_MSG_E(field.output != nullptr, Status::ERROR_INVALID_PARAMETER, "Invalid tfhd output");
+    if (ctx.flag & field.flag) {
+        FALSE_RETURN_V_MSG_E(HasTfhdRemainingData(ctx, sizeof(uint32_t)),
+            Status::ERROR_INVALID_DATA, "Invalid tfhd optional field");
+        *field.output = GetU32Value(ctx.data + ctx.dataOffset);
+        ctx.dataOffset += sizeof(uint32_t);
+    } else {
+        *field.output = field.defaultValue;
+    }
+    return Status::OK;
+}
+
 Status MPEG4SampleHelper::SetTrackFragmentHeaderParams(int64_t dataOffset, int64_t dataSize, uint32_t flag,
     int64_t moofOffset)
 {
-    uint32_t tfhdFlag = flag;
-    uint32_t size = dataSize;
+    FALSE_RETURN_V_MSG_E(dataSize >= 0 &&
+        static_cast<uint64_t>(dataSize) <= static_cast<uint64_t>(std::numeric_limits<size_t>::max()),
+        Status::ERROR_INVALID_PARAMETER, "Invalid tfhd data size");
+    size_t size = static_cast<size_t>(dataSize);
     auto data = std::make_unique<uint8_t[]>(size);
     Status ret = dataReader_->ReadUintData(dataOffset, data.get(), size);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read data failed");
 
-    uint32_t tfhdDataOffset = 0;
-    if ((tfhdFlag & TrackFragmentHeaderInfo::TFHD_BASE_DATA_OFFSET) && seekable_ == Seekable::SEEKABLE) {
-        tfhd_.baseDataOffset = GetU64Value(data.get());
-        tfhdDataOffset += sizeof(uint64_t);
-    } else {
-        tfhd_.baseDataOffset = moofOffset;
-    }
-
-    if (tfhdFlag & TrackFragmentHeaderInfo::TFHD_STSD_ID) {
-        tfhd_.sampleDescriptionIndex = GetU32Value(data.get() + tfhdDataOffset);
-        tfhdDataOffset += sizeof(uint32_t);
-    } else {
-        tfhd_.sampleDescriptionIndex = trex_.defaultSampleDescriptionIndex;
-    }
-    
-    if (tfhdFlag & TrackFragmentHeaderInfo::TFHD_DEFAULT_DURATION) {
-        tfhd_.defaultSampleDuration = GetU32Value(data.get() + tfhdDataOffset);
-        tfhdDataOffset += sizeof(uint32_t);
-    } else {
-        tfhd_.defaultSampleDuration = trex_.defaultSampleDuration;
-    }
-
-    if (tfhdFlag & TrackFragmentHeaderInfo::TFHD_DEFAULT_SIZE) {
-        tfhd_.defaultSampleSize = GetU32Value(data.get() + tfhdDataOffset);
-        tfhdDataOffset += sizeof(uint32_t);
-    } else {
-        tfhd_.defaultSampleSize = trex_.defaultSampleSize;
-    }
-
-    if (tfhdFlag & TrackFragmentHeaderInfo::TFHD_DEFAULT_FLAGS) {
-        tfhd_.flags = GetU32Value(data.get() + tfhdDataOffset);
-        tfhdDataOffset += sizeof(uint32_t);
-    } else {
-        tfhd_.flags = trex_.defaultSampleFlags;
-    }
+    TfhdParseContext ctx = {flag, data.get(), size, 0};
+    ret = ParseTfhdBaseDataOffset(ctx, moofOffset);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse tfhd base data offset failed");
+    ret = ParseTfhdOptionalUint32(ctx,
+        {TrackFragmentHeaderInfo::TFHD_STSD_ID, trex_.defaultSampleDescriptionIndex, &tfhd_.sampleDescriptionIndex});
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse tfhd sample description index failed");
+    ret = ParseTfhdOptionalUint32(ctx,
+        {TrackFragmentHeaderInfo::TFHD_DEFAULT_DURATION, trex_.defaultSampleDuration, &tfhd_.defaultSampleDuration});
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse tfhd default sample duration failed");
+    ret = ParseTfhdOptionalUint32(ctx,
+        {TrackFragmentHeaderInfo::TFHD_DEFAULT_SIZE, trex_.defaultSampleSize, &tfhd_.defaultSampleSize});
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse tfhd default sample size failed");
+    ret = ParseTfhdOptionalUint32(ctx,
+        {TrackFragmentHeaderInfo::TFHD_DEFAULT_FLAGS, trex_.defaultSampleFlags, &tfhd_.flags});
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse tfhd default sample flags failed");
     hasTfhd_ = true;
     return Status::OK;
 }
@@ -798,7 +815,7 @@ Status MPEG4SampleHelper::SetTrackFragmentDecodeTimeParams(int64_t dataOffset, i
     return ret;
 }
 
-Status MPEG4SampleHelper::InitSampleInfo(SampleInfo& sampleInfo, uint32_t& bufferOffset, uint16_t trunFlag,
+Status MPEG4SampleHelper::InitSampleInfo(SampleInfo& sampleInfo, uint32_t& bufferOffset, uint32_t trunFlag,
     uint8_t* data, uint32_t& firstSampleFlag)
 {
     if (trunFlag & TRUN_DATA_OFFSET) {
@@ -836,7 +853,7 @@ Status MPEG4SampleHelper::InitSampleInfo(SampleInfo& sampleInfo, uint32_t& buffe
     return Status::OK;
 }
 
-void MPEG4SampleHelper::UpdateSampleInfo(SampleInfo& sampleInfo, uint32_t& bufferOffset, uint16_t trunFlag,
+void MPEG4SampleHelper::UpdateSampleInfo(SampleInfo& sampleInfo, uint32_t& bufferOffset, uint32_t trunFlag,
     uint8_t* data, uint32_t firstSampleFlag)
 {
     if (trunFlag & TRUN_SAMPLE_DURATION) {
@@ -923,7 +940,7 @@ void MPEG4SampleHelper::UpdateSampleEntryInfo(
     }
 }
 
-Status MPEG4SampleHelper::ReadTrunRunData(int64_t dataOffset, int64_t dataSize, uint16_t& trunFlag,
+Status MPEG4SampleHelper::ReadTrunRunData(int64_t dataOffset, int64_t dataSize, uint32_t& trunFlag,
     uint32_t& numSamples, std::unique_ptr<uint8_t[]>& data)
 {
     constexpr uint32_t trunVersionIndex = 0;
@@ -937,8 +954,9 @@ Status MPEG4SampleHelper::ReadTrunRunData(int64_t dataOffset, int64_t dataSize, 
     auto ret = dataReader_->ReadUintData(dataOffset, header, sizeof(header));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read header failed");
     FALSE_RETURN_V_MSG_E(header[trunVersionIndex] == 0, Status::ERROR_INVALID_DATA, "trun invalid version");
-    trunFlag = (header[trunFlagsFirstIndex] << trunFlagFirstShift) +
-        (header[trunFlagsSecondIndex] << trunFlagSecondShift) + header[trunFlagsThirdIndex];
+    trunFlag = (static_cast<uint32_t>(header[trunFlagsFirstIndex]) << trunFlagFirstShift) |
+        (static_cast<uint32_t>(header[trunFlagsSecondIndex]) << trunFlagSecondShift) |
+        static_cast<uint32_t>(header[trunFlagsThirdIndex]);
     if ((trunFlag & TRUN_FIRST_SAMPLE_FLAGS) && (trunFlag & TRUN_SAMPLE_FLAGS)) {
         return Status::ERROR_INVALID_DATA;
     }
@@ -975,7 +993,7 @@ Status MPEG4SampleHelper::SetTrackFragmentRunParams(int64_t dataOffset, int64_t 
     FALSE_RETURN_V_MSG_E(hasTfhd_, Status::ERROR_INVALID_DATA, "tfhd does not exist");
     FALSE_RETURN_V_NOLOG(dataOffset >= MIN_DATA_OFFSET && dataSize >= MIN_DATA_SIZE, Status::ERROR_INVALID_PARAMETER);
 
-    uint16_t trunFlag = 0;
+    uint32_t trunFlag = 0;
     uint32_t numSamples = 0;
     std::unique_ptr<uint8_t[]> data;
     Status ret = ReadTrunRunData(dataOffset, dataSize, trunFlag, numSamples, data);
@@ -1387,51 +1405,81 @@ Status MPEG4SampleHelper::ApplyEditList()
     return Status::OK;
 }
 
+uint64_t MPEG4SampleHelper::CountSttsSamples() const
+{
+    uint64_t totalSttsSamples = 0;
+    for (const auto& sttsEntry : sttsEntry_) {
+        totalSttsSamples += sttsEntry.count;
+    }
+    return totalSttsSamples;
+}
+
+MPEG4SampleHelper::SampleIndexBuildContext MPEG4SampleHelper::CreateSampleIndexBuildContext() const
+{
+    SampleIndexBuildContext buildCtx;
+    buildCtx.currentOffset = chunkOffsets_[0];
+    buildCtx.currentDts = editListEntries_.empty() ? -timeOffset_ - dtsShift_ : -dtsShift_;
+    buildCtx.remainSamples = static_cast<int64_t>(stscEntry_[buildCtx.stscIndex].count);
+    buildCtx.totalSttsSamples = CountSttsSamples();
+    return buildCtx;
+}
+
+Status MPEG4SampleHelper::AdvanceChunkIfNeeded(SampleIndexBuildContext& buildCtx)
+{
+    if (buildCtx.sampleInChunk < stscEntry_[buildCtx.stscIndex].count) {
+        return Status::OK;
+    }
+    ++buildCtx.chunkIndex;
+    buildCtx.sampleInChunk = 0;
+    if (buildCtx.processedSttsSamples >= buildCtx.totalSttsSamples) {
+        return Status::OK;
+    }
+    FALSE_RETURN_V_MSG_E(buildCtx.chunkIndex < chunkOffsets_.size(), Status::ERROR_INVALID_DATA,
+        "Chunk index is out of range");
+    buildCtx.stscIndex = (buildCtx.stscIndex < stscEntry_.size() - 1 &&
+        buildCtx.chunkIndex == stscEntry_[buildCtx.stscIndex + 1].first) ? buildCtx.stscIndex + 1 :
+        buildCtx.stscIndex;
+    buildCtx.remainSamples = stscEntry_[buildCtx.stscIndex].count;
+    buildCtx.currentOffset = chunkOffsets_[buildCtx.chunkIndex];
+    return Status::OK;
+}
+
+Status MPEG4SampleHelper::AppendSampleIndexEntry(const SttsEntry& sttsEntry, uint32_t& sampleInSttsEntry,
+    SampleIndexBuildContext& buildCtx)
+{
+    int64_t ctsOffset = cttsEntry_.empty() ? 0 : cttsEntry_[buildCtx.sampleIndex].delta;
+    sampleIndexEntry_.emplace_back(SampleIndexEntry {
+        .dts = buildCtx.currentDts,
+        .pts = buildCtx.currentDts + dtsShift_ + ctsOffset,
+        .pos = buildCtx.currentOffset,
+        .flag = Sample::NONE,
+        .size = 0,
+        .duration = 0
+    });
+    FALSE_RETURN_V_MSG_E(GetSampleSize(buildCtx.sampleIndex, buildCtx.samplesPerFrame,
+        sampleIndexEntry_.back(), buildCtx.remainSamples), Status::ERROR_INVALID_DATA, "Sample size is too large");
+    sampleIndexEntry_.back().duration = static_cast<int64_t>(sttsEntry.delta) * buildCtx.samplesPerFrame;
+    GetSampleFlag(buildCtx.sampleIndex, sampleIndexEntry_.back(), buildCtx.syncIndex);
+    lastPTS_ = std::max(lastPTS_, sampleIndexEntry_.back().pts);
+    buildCtx.currentDts += sttsEntry.delta * buildCtx.samplesPerFrame;
+    buildCtx.currentOffset += sampleIndexEntry_.back().size;
+    FALSE_RETURN_V_MSG_E(buildCtx.currentOffset >= 0, Status::ERROR_INVALID_DATA, "Sample Offset is negative");
+    ++buildCtx.sampleIndex;
+    sampleInSttsEntry += buildCtx.samplesPerFrame;
+    buildCtx.sampleInChunk += buildCtx.samplesPerFrame;
+    buildCtx.processedSttsSamples += buildCtx.samplesPerFrame;
+    return AdvanceChunkIfNeeded(buildCtx);
+}
+
 Status MPEG4SampleHelper::BuildSampleIndexEntries()
 {
     FALSE_RETURN_V_MSG_E(PreBuildProcessAndCheck() == Status::OK, Status::ERROR_INVALID_DATA, "PreCheck failed");
-    int64_t currentOffset = chunkOffsets_[0];
-    uint32_t chunkIndex = 0;
-    uint32_t stscIndex = 0;
-    uint32_t sampleIndex = 0;
-    uint32_t syncIndex = 0;
-    int64_t currentDts = editListEntries_.empty() ? -timeOffset_ - dtsShift_ : -dtsShift_;
-    uint32_t sampleInChunk = 0;
-    uint32_t samplesPerFrame = 1;
-    int64_t remainSamples = static_cast<int64_t>(stscEntry_[stscIndex].count);
-
+    SampleIndexBuildContext buildCtx = CreateSampleIndexBuildContext();
     for (const auto& sttsEntry : sttsEntry_) {  // 遍历sttsEntry
         uint32_t sampleInSttsEntry = 0;
         while (sampleInSttsEntry < sttsEntry.count) {  // 根据sttsEntry.count进行循环
-            int64_t ctsOffset = cttsEntry_.empty() ? 0 : cttsEntry_[sampleIndex].delta;
-            sampleIndexEntry_.emplace_back(SampleIndexEntry {
-                .dts = currentDts,
-                .pts = currentDts + dtsShift_ + ctsOffset,
-                .pos = currentOffset,
-                .flag = Sample::NONE,
-                .size = 0,
-                .duration = 0
-            });
-            FALSE_RETURN_V_MSG_E(GetSampleSize(sampleIndex, samplesPerFrame, sampleIndexEntry_.back(), remainSamples),
-                Status::ERROR_INVALID_DATA, "Sample size is too large");
-            sampleIndexEntry_.back().duration = static_cast<int64_t>(sttsEntry.delta) * samplesPerFrame;
-            GetSampleFlag(sampleIndex, sampleIndexEntry_.back(), syncIndex);
-
-            lastPTS_ = std::max(lastPTS_, sampleIndexEntry_.back().pts);
-            currentDts += sttsEntry.delta * samplesPerFrame;
-            currentOffset += sampleIndexEntry_.back().size;
-            FALSE_RETURN_V_MSG_E(currentOffset >= 0, Status::ERROR_INVALID_DATA, "Sample Offset is negative");
-            ++sampleIndex;
-            sampleInSttsEntry += samplesPerFrame;
-            sampleInChunk += samplesPerFrame;
-            if (sampleInChunk >= stscEntry_[stscIndex].count) {
-                ++chunkIndex;
-                sampleInChunk = 0;
-                stscIndex = (chunkIndex == stscEntry_[stscIndex + 1].first && stscIndex < stscEntry_.size() - 1) ?
-                    stscIndex + 1 : stscIndex;
-                remainSamples = stscEntry_[stscIndex].count;
-                currentOffset = chunkOffsets_[chunkIndex];
-            }
+            Status ret = AppendSampleIndexEntry(sttsEntry, sampleInSttsEntry, buildCtx);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Append sample index entry failed");
         }
     }
 
@@ -1464,14 +1512,20 @@ Status MPEG4SampleHelper::GetSampleDuration(uint32_t index, uint32_t &duration)
 
     if (firstMoofSampleIndex_ > 0) {
         if (index < firstMoofSampleIndex_) {
+            int64_t temp = index;
             uint32_t sttsIndex = 0;
-            while (index > 0 && sttsIndex < sttsEntry_.size()) {
-                index -= sttsEntry_[sttsIndex].count;
+            while (sttsIndex < sttsEntry_.size() - 1 &&
+                temp >= static_cast<int64_t>(sttsEntry_[sttsIndex].count)) {
+                temp -= sttsEntry_[sttsIndex].count;
                 ++sttsIndex;
             }
             duration = sttsEntry_[sttsIndex].delta;
         } else {
-            uint32_t sttsIndex = index - numMoovSamples_ + firstMoofSttsIndex_ - 1;
+            FALSE_RETURN_V_MSG_E(index >= numMoovSamples_ && firstMoofSttsIndex_ > 0,
+                Status::ERROR_INVALID_PARAMETER, "Invalid sample index");
+            uint64_t sttsIndex = static_cast<uint64_t>(index) - numMoovSamples_ + firstMoofSttsIndex_ - 1;
+            FALSE_RETURN_V_MSG_E(sttsIndex < sttsEntry_.size(), Status::ERROR_INVALID_PARAMETER,
+                "sttsIndex out of range");
             duration = sttsEntry_[sttsIndex].delta;
         }
         return Status::OK;

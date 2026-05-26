@@ -178,13 +178,17 @@ Status MPEG4AudioParser::ParseMpegAudio(MediaInfo& mediaInfo)
 Status MPEG4AudioParser::ParseDtsAudio(MediaInfo& mediaInfo)
 {
     MEDIA_LOG_D("In");
+    constexpr uint32_t syncWordSize = 4;
+    constexpr uint32_t modeFirstByteOffset = 3;
+    constexpr uint32_t modeSecondByteOffset = 4;
+    constexpr uint32_t minDtsHeaderSize = syncWordSize + modeSecondByteOffset + 1;
     uint32_t currentOffset = 0;
-    if (dataSize_ < 0x04 || GetU32Value(&audioData_[currentOffset]) != DTS_SYNC_WORD) {
+    if (dataSize_ < minDtsHeaderSize || GetU32Value(&audioData_[currentOffset]) != DTS_SYNC_WORD) {
         return Status::ERROR_INVALID_DATA;
     }
-    currentOffset += 0x04;
-    uint8_t mode = ((audioData_[currentOffset + 3] & 0xF) << 4) +
-        (audioData_[currentOffset + 4] >> 6);
+    currentOffset += syncWordSize;
+    uint8_t mode = ((audioData_[currentOffset + modeFirstByteOffset] & 0xF) << 4) +
+        (audioData_[currentOffset + modeSecondByteOffset] >> 6);
     if (mode >= MAX_DTS_AUDIO_MODE) {
         return Status::ERROR_INVALID_DATA;
     }

@@ -3904,20 +3904,23 @@ Status MPEG4AtomParser::FindNextMoof(int64_t& headerOffset, uint32_t& atomSize)
 {
     Status ret = Status::OK;
     int32_t atomType = 0;
-    uint32_t typeOffset = 4;
+    constexpr uint32_t atomHeaderSize = 8;
+    constexpr uint32_t typeOffset = 4;
     do {
-        auto atomHeader = std::make_unique<uint8_t[]>(0x08);
+        auto atomHeader = std::make_unique<uint8_t[]>(atomHeaderSize);
         FALSE_RETURN_V_MSG_E(atomHeader != nullptr, Status::ERROR_NO_MEMORY, "atomHeader is nullptr");
-        ret = dataReader_->ReadUintData(headerOffset, atomHeader.get(), 0x08);
+        ret = dataReader_->ReadUintData(headerOffset, atomHeader.get(), atomHeaderSize);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Find next moof header info failed");
         atomSize = GetU32Value(atomHeader.get());
         atomType = static_cast<int32_t>(GetU32Value(atomHeader.get() + typeOffset));
         if (atomType != FourccType("moof")) {
             MEDIA_LOG_D("not moof box, go find next");
-            auto atomData = std::make_unique<uint8_t[]>(atomSize - sizeof(atomHeader));
+            FALSE_RETURN_V_MSG_E(atomSize >= atomHeaderSize, Status::ERROR_INVALID_DATA,
+                "Invalid atom size " PUBLIC_LOG_U32, atomSize);
+            uint32_t atomDataSize = atomSize - atomHeaderSize;
+            auto atomData = std::make_unique<uint8_t[]>(atomDataSize);
             FALSE_RETURN_V_MSG_E(atomData != nullptr, Status::ERROR_NO_MEMORY, "atomHeader is nullptr");
-            ret = dataReader_->ReadUintData(headerOffset + sizeof(atomHeader), atomData.get(),
-                atomSize - sizeof(atomHeader));
+            ret = dataReader_->ReadUintData(headerOffset + atomHeaderSize, atomData.get(), atomDataSize);
             FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read atom data failed");
             headerOffset += atomSize;
         }

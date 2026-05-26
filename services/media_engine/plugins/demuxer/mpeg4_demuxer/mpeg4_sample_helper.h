@@ -151,6 +151,19 @@ private:
         uint32_t dataOffset = 0;
         uint32_t index = 0;
     };
+    struct SampleIndexBuildContext {
+        int64_t currentOffset = 0;
+        uint32_t chunkIndex = 0;
+        uint32_t stscIndex = 0;
+        uint32_t sampleIndex = 0;
+        uint32_t syncIndex = 0;
+        int64_t currentDts = 0;
+        uint32_t sampleInChunk = 0;
+        uint32_t samplesPerFrame = 1;
+        int64_t remainSamples = 0;
+        uint64_t totalSttsSamples = 0;
+        uint64_t processedSttsSamples = 0;
+    };
     struct EditListBuildContext {
         const std::vector<SampleIndexEntry>& oldEntries;
         std::vector<SampleIndexEntry>& newEntries;
@@ -175,6 +188,17 @@ private:
         SampleIndexEntry newEntry;
         int64_t frameEndTime = 0;
         std::vector<int64_t> leadingDurations;
+    };
+    struct TfhdParseContext {
+        uint32_t flag = 0;
+        const uint8_t* data = nullptr;
+        size_t dataSize = 0;
+        size_t dataOffset = 0;
+    };
+    struct TfhdOptionalUint32Field {
+        uint32_t flag = 0;
+        uint32_t defaultValue = 0;
+        uint32_t* output = nullptr;
     };
 
     std::vector<SttsEntry> sttsEntry_;
@@ -229,18 +253,26 @@ private:
     Status SetFieldSize(uint32_t atomType, int64_t &currentOffset, uint32_t& fieldSize);
     Status ProcessSampleSizeData(uint32_t atomType, int64_t currentOffset, uint32_t size,
         uint32_t fieldSize, uint32_t numSampleSizes);
+    bool HasTfhdRemainingData(const TfhdParseContext& ctx, size_t fieldSize) const;
+    Status ParseTfhdBaseDataOffset(TfhdParseContext& ctx, int64_t moofOffset);
+    Status ParseTfhdOptionalUint32(TfhdParseContext& ctx, const TfhdOptionalUint32Field& field);
     Status PreBuildProcessAndCheck();
+    uint64_t CountSttsSamples() const;
+    SampleIndexBuildContext CreateSampleIndexBuildContext() const;
+    Status AppendSampleIndexEntry(const SttsEntry& sttsEntry, uint32_t& sampleInSttsEntry,
+        SampleIndexBuildContext& buildCtx);
+    Status AdvanceChunkIfNeeded(SampleIndexBuildContext& buildCtx);
     bool GetSampleSize(uint32_t sampleIndex, uint32_t& samplesPerFrame, SampleIndexEntry& entry,
         int64_t& remainSamples);
     void GetSampleFlag(uint32_t sampleIndex, SampleIndexEntry& entry, uint32_t& syncIndex);
     void InitMoofParam();
-    Status ReadTrunRunData(int64_t dataOffset, int64_t dataSize, uint16_t& trunFlag, uint32_t& numSamples,
+    Status ReadTrunRunData(int64_t dataOffset, int64_t dataSize, uint32_t& trunFlag, uint32_t& numSamples,
         std::unique_ptr<uint8_t[]>& data);
     bool IsValidTrunSampleData(int64_t dataSize, uint32_t bufferOffset, uint32_t byteLength,
         uint32_t numSamples) const;
-    Status InitSampleInfo(SampleInfo& sampleInfo, uint32_t& bufferOffset, uint16_t trunFlag,
+    Status InitSampleInfo(SampleInfo& sampleInfo, uint32_t& bufferOffset, uint32_t trunFlag,
         uint8_t* data, uint32_t& firstSampleFlag);
-    void UpdateSampleInfo(SampleInfo& sampleInfo, uint32_t& bufferOffset, uint16_t trunFlag,
+    void UpdateSampleInfo(SampleInfo& sampleInfo, uint32_t& bufferOffset, uint32_t trunFlag,
         uint8_t* data, uint32_t firstSampleFlag);
     void UpdateSampleEntryInfo(SampleInfo sampleInfo, int64_t& offset, int64_t& currentDts, bool isOverlap = false);
 };
