@@ -1750,7 +1750,7 @@ Status DecoderSurfaceFilter::SetSpeed(float speed)
     if (speed >= 4.0f - eps) {
         format.PutFloatValue(Tag::VIDEO_DECODER_FRAME_RETENTION_RATIO, speed);
         format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE,
-            OH_FRAME_RETENTION_MODE::OH_FRAME_RETENTION_MODE_UNIFORM);
+            OH_FrameRetentionMode::OH_FRAME_RETENTION_MODE_UNIFORM);
     }
     videoDecoder_->SetParameter(format);
     FALSE_RETURN_V(postProcessor_ != nullptr, Status::OK);
