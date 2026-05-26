@@ -888,6 +888,14 @@ bool FileFdSourcePlugin::IsCloudFd()
 {
     return isCloudFile_;
 }
+
+void FileFdSourcePlugin::PauseRead()
+{
+    FALSE_RETURN_MSG(fd_ != -1, "no valid fd");
+    FALSE_RETURN_MSG(isCloudFile_, "fd is not cloud");
+    ioctl(fd_, HMDFS_IOC_CANCEL_READ);
+    ioctl(fd_, HMDFS_IOC_RESTORE_READ);
+}
 } // namespace FileFdSource
 } // namespace Plugin
 } // namespace Media

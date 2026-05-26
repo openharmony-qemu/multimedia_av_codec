@@ -2235,6 +2235,7 @@ Status MediaDemuxer::Flush()
     MEDIA_LOG_I("In");
     ResetDraggingOpenGopCnt();
     if (streamDemuxer_) {
+        streamDemuxer_->SetPlayerMode(isPlayerMode_);
         streamDemuxer_->Flush();
     }
     

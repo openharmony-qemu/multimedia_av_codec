@@ -63,6 +63,7 @@ public:
     bool IsLocalFd() override;
     Status GetDownloadInfo(DownloadInfo& downloadInfo) override;
     bool IsCloudFd() override;
+    void PauseRead() override;
 
 private:
     Status ParseUriInfo(const std::string& uri);
