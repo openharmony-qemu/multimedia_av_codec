@@ -90,6 +90,7 @@ protected:
     int64_t startTimestampUs_ = 0;
     int64_t durationUs_ = 0;
     int64_t lastTimestampUs_ = INT64_MIN;
+    int64_t preDts_ = INT64_MIN;
     int64_t lastDuration_ = 0;
     int64_t pos_ = 0;
     uint64_t allSampleSize_ = 0;
