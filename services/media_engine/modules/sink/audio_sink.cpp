@@ -169,6 +169,7 @@ void AudioSink::HandleAudioRenderRequestPost()
     FALSE_RETURN(cacheBuffer != nullptr);
     FALSE_RETURN_NOLOG(IsEosBuffer(cacheBuffer));
     availOutputBuffers_.pop();
+    ReleaseDecodedBuffer();
     HandleEosBuffer(cacheBuffer);
 }
 
@@ -1049,8 +1050,7 @@ void AudioSink::ReleaseCacheBuffer(bool isSwapBuffer)
     availOutputBuffers_.pop();
     FALSE_RETURN_MSG(buffer != nullptr, "release buffer, but buffer is null");
     MEDIA_LOG_DD("the pts is " PUBLIC_LOG_D64 " buffer is release", buffer->pts_);
-    Status ret = inputBufferQueueConsumer_->ReleaseBuffer(buffer);
-    FALSE_RETURN_MSG(ret == Status::OK, "release avbuffer failed");
+    FALSE_RETURN_MSG(ReleaseDecodedBuffer() == Status::OK, "release avbuffer failed");
     std::unique_lock<std::mutex> formatLock(formatChangeMutex_);
     FALSE_RETURN_NOLOG(formatChange_.load() && swapOutputBuffers_.empty() && availOutputBuffers_.empty());
     formatChange_ = false;
@@ -1115,14 +1115,15 @@ void AudioSink::GetAvailableOutputBuffers()
             isEosBuffer_ = true;
         }
 
-        HandlePostProcessingOutput(filledInputBuffer);
+        auto processedBuffer = HandlePostProcessingOutput(filledInputBuffer);
         if (filledInputBuffer->memory_->GetSize() <= 0 && !isEosBuffer_) {
-            inputBufferQueueConsumer_->ReleaseBuffer(filledInputBuffer);
+            inputBufferQueueConsumer_->ReleaseBuffer(processedBuffer);
             continue;
         }
-        availOutputBuffers_.push(filledInputBuffer);
-        MEDIA_LOG_DD("the pts is " PUBLIC_LOG_D64 " buffer is push", filledInputBuffer->pts_);
-        availDataSize_.fetch_add(filledInputBuffer->memory_->GetSize());
+        decodedBuffers_.push(filledInputBuffer);
+        availOutputBuffers_.push(processedBuffer);
+        MEDIA_LOG_DD("the pts is " PUBLIC_LOG_D64 " buffer is push", processedBuffer->pts_);
+        availDataSize_.fetch_add(processedBuffer->memory_->GetSize());
     }
     DriveBufferCircle();
     return;
@@ -1157,8 +1158,7 @@ void AudioSink::DriveBufferCircle()
         MEDIA_LOG_I("DriveBufferCircle availOutputBuffers_ size:%{public}d, swapOutputBuffers_ size:%{public}d",
             static_cast<int>(availOutputBuffers_.size()), static_cast<int>(swapOutputBuffers_.size()));
     }
-    FALSE_RETURN_MSG(inputBufferQueueConsumer_ != nullptr, "bufferQueue consumer is nullptr");
-    inputBufferQueueConsumer_->ReleaseBuffer(oldestBuffer);
+    FALSE_RETURN_MSG(ReleaseDecodedBuffer() == Status::OK, "bufferQueue consumer is nullptr");
 }
 
 std::shared_ptr<AVBuffer> AudioSink::CopyBuffer(const std::shared_ptr<AVBuffer> buffer)
@@ -1790,8 +1790,7 @@ Status AudioSink::CacheBuffer()
 
         availOutputBuffers_.pop();
         swapOutputBuffers_.push(swapBuffer);
-        FALSE_RETURN_V(inputBufferQueueConsumer_ != nullptr, Status::ERROR_UNKNOWN);
-        inputBufferQueueConsumer_->ReleaseBuffer(buffer);
+        FALSE_RETURN_V(ReleaseDecodedBuffer() == Status::OK, Status::ERROR_UNKNOWN);
     }
     MEDIA_LOG_I("cacheBuffer availOutputBuffers_ size:%{public}d, swapOutputBuffers_ size:%{public}d",
         static_cast<int>(availOutputBuffers_.size()), static_cast<int>(swapOutputBuffers_.size()));
@@ -1863,37 +1862,36 @@ void AudioSink::HandleBypassOutput(const std::shared_ptr<AVBuffer> &buffer)
     });
 }
 
-void AudioSink::HandlePostProcessingOutput(std::shared_ptr<AVBuffer> &buffer)
+std::shared_ptr<AVBuffer> AudioSink::HandlePostProcessingOutput(const std::shared_ptr<AVBuffer> &buffer)
 {
     std::shared_ptr<IPCMCallback> callback;
     {
         std::lock_guard<std::mutex> pcmLock(pcmCallbackMutex_);
-        FALSE_RETURN_NOLOG(pcmCallback_ != nullptr && isPcmProcessorEnable_);
+        FALSE_RETURN_V_NOLOG(pcmCallback_ != nullptr && isPcmProcessorEnable_, buffer);
         callback = pcmCallback_;
     }
 
-    FALSE_RETURN_MSG(buffer != nullptr && buffer->memory_ != nullptr, "buffer is null.");
+    FALSE_RETURN_V_MSG(buffer != nullptr && buffer->memory_ != nullptr, buffer, "buffer is null.");
     bool needExpand = maxProcessedPcmLen_ > buffer->memory_->GetCapacity();
     auto pcmBuffer = needExpand ? CopyPcmBuffer(buffer, maxProcessedPcmLen_) : buffer;
-    FALSE_RETURN(pcmBuffer != nullptr);
+    FALSE_RETURN_V(pcmBuffer != nullptr, buffer);
 
-    FALSE_RETURN(plugin_ != nullptr);
+    FALSE_RETURN_V(plugin_ != nullptr, buffer);
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     plugin_->GetParameter(meta);
 
     pcmBuffer->meta_ = std::move(meta);
     callback->OnPCMProcessor(pcmBuffer);
 
-    FALSE_RETURN_NOLOG(needExpand);
+    FALSE_RETURN_V_NOLOG(needExpand, buffer);
     if (pcmBuffer->memory_ != nullptr && pcmBuffer->memory_->GetSize() <= 0) {
         buffer->memory_->SetSize(0);
-        return;
+        return buffer;
     }
     auto processedBuffer = CopyPcmBuffer(pcmBuffer);
-    FALSE_RETURN(processedBuffer != nullptr); // Copy buffer failed, use unprocessed buffer
+    FALSE_RETURN_V(processedBuffer != nullptr, buffer); // Copy buffer failed, use unprocessed buffer
 
-    inputBufferQueueConsumer_->ReleaseBuffer(buffer);
-    buffer = processedBuffer;
+    return processedBuffer;
 }
 
 std::shared_ptr<AVBuffer> AudioSink::CopyPcmBuffer(const std::shared_ptr<AVBuffer> buffer, int32_t minCapacity)
@@ -1919,6 +1917,15 @@ std::shared_ptr<AVBuffer> AudioSink::CopyPcmBuffer(const std::shared_ptr<AVBuffe
     FALSE_RETURN_V_MSG_E(res == EOK, nullptr, "copy data failed");
     swapBuffer->memory_->SetSize(buffer->memory_->GetSize());
     return swapBuffer;
+}
+
+Status AudioSink::ReleaseDecodedBuffer()
+{
+    FALSE_RETURN_V(inputBufferQueueConsumer_ != nullptr, Status::ERROR_UNKNOWN);
+    auto decodedBuffer = std::move(decodedBuffers_.front());
+    decodedBuffers_.pop();
+    inputBufferQueueConsumer_->ReleaseBuffer(decodedBuffer);
+    return Status::OK;
 }
 } // namespace MEDIA
 } // namespace OHOS
