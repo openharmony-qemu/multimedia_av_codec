@@ -101,6 +101,14 @@ int DemuxerSample::CreateDemuxer()
     return 0;
 }
 
+void DemuxerSample::CheckHdrInfo(OH_AVFormat *trackFormat)
+{
+    uint8_t *buffer = nullptr;
+    size_t bufferSize = 0;
+    OH_AVFormat_GetBuffer(trackFormat, "video_static_metadata_smpt2086", &buffer, &bufferSize);
+    OH_AVFormat_GetBuffer(trackFormat, "video_static_metadata_cta861", &buffer, &bufferSize);
+}
+
 void DemuxerSample::RunNormalDemuxer()
 {
     gReadEnd = false;
@@ -129,6 +137,9 @@ void DemuxerSample::RunNormalDemuxer()
                 OH_AVFormat_GetIntValue(trackFormat, "audio.soundbed.channels.number", &gTrackCount);
                 OH_AVFormat_GetIntValue(trackFormat, "audio.hoa.order", &gTrackCount);
                 OH_AVFormat_GetIntValue(trackFormat, "audio_object_number_key", &gTrackCount);
+            }
+            if (gTrackType == MEDIA_TYPE_VID) {
+                CheckHdrInfo(trackFormat);
             }
             if (trackFormat) {
                 OH_AVFormat_Destroy(trackFormat);
