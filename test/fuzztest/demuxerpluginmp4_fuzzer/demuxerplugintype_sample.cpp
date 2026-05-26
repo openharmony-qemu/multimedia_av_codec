@@ -86,7 +86,7 @@ void DemuxerPluginTypeTest::PrepareDemuxerPlugin(MediaInfo& mediaInfo, size_t& b
     if (!demuxerPlugin_) {
         return;
     }
-    if (demuxerPlugin_->SetDataSource(dataSource) != Status::OK) {
+    if (demuxerPlugin_->SetDataSource(dataSource, configs_) != Status::OK) {
         demuxerPlugin_ = nullptr;
         return;
     }
@@ -181,7 +181,7 @@ void DemuxerPluginTypeTest::DemuxerPluginCallback(MediaInfo& mediaInfo)
     }
 }
 
-void DemuxerPluginTypeTest::RunDemuxerInterfaceFuzz()
+void DemuxerPluginTypeTest::RunDemuxerInterfaceFuzz(std::shared_ptr<Media::Meta> configs)
 {
     if (fd_ < 0) {
         return;
@@ -189,6 +189,7 @@ void DemuxerPluginTypeTest::RunDemuxerInterfaceFuzz()
     MediaInfo mediaInfo;
     size_t bufferSize = 0;
     AVBufferWrapper buffer(1, isEmptyBuffer); // 占位初始化
+    configs_ = configs;
     PrepareDemuxerPlugin(mediaInfo, bufferSize, buffer);
     if (!demuxerPlugin_) {
         return;
