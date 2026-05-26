@@ -609,6 +609,7 @@ void SurfaceEncoderAdapter::TransCoderOnOutputBufferAvailable(uint32_t index, st
 
 void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
+    FALSE_RETURN_MSG(buffer != nullptr, "buffer is nullptr, OnOutputBufferAvailable fail");
     MEDIA_LOG_D("OnOutputBufferAvailable buffer->pts" PUBLIC_LOG_D64, buffer->pts_);
     currentPts_ = currentPts_.load() < buffer->pts_? buffer->pts_ : currentPts_.load();
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::OnOutputBufferAvailable");

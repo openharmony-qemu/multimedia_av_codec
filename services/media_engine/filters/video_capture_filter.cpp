@@ -176,10 +176,7 @@ Status VideoCaptureFilter::DoPrepare()
 {
     MEDIA_LOG_I("Prepare");
     MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::Prepare");
-    if (filterCallback_ == nullptr) {
-        MEDIA_LOG_E("filterCallback_ is nullptr");
-        return Status::ERROR_NULL_POINTER;
-    }
+    FALSE_RETURN_V_MSG(filterCallback_ != nullptr, Status::ERROR_NULL_POINTER, "filterCallback_ is nullptr.");
     filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
         StreamType::STREAMTYPE_ENCODED_VIDEO);
     return Status::OK;
