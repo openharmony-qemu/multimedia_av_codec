@@ -37,14 +37,20 @@ AesDecryptor::AesDecryptor()
 
 AesDecryptor::~AesDecryptor()
 {
-    NZERO_LOG(memset_s(iv_, BLOCK_LEN, 0, BLOCK_LEN));
-    NZERO_LOG(memset_s(initIv_, BLOCK_LEN, 0, BLOCK_LEN));
-    NZERO_LOG(memset_s(key_, BLOCK_LEN, 0, BLOCK_LEN));
-    OPENSSL_cleanse(&aesKey_, sizeof(aesKey_));
+    Reset();
 }
 
 void AesDecryptor::Init()
 {
+}
+
+void AesDecryptor::Reset()
+{
+    keyLen_ = 0;
+    NZERO_LOG(memset_s(iv_, BLOCK_LEN, 0, BLOCK_LEN));
+    NZERO_LOG(memset_s(initIv_, BLOCK_LEN, 0, BLOCK_LEN));
+    NZERO_LOG(memset_s(key_, BLOCK_LEN, 0, BLOCK_LEN));
+    OPENSSL_cleanse(&aesKey_, sizeof(aesKey_));
 }
 
 void AesDecryptor::OnSourceKeyChange(const uint8_t* key, size_t keyLen, const uint8_t* iv)
@@ -58,7 +64,11 @@ void AesDecryptor::OnSourceKeyChange(const uint8_t* key, size_t keyLen, const ui
     NZERO_LOG(memcpy_s(iv_, BLOCK_LEN, iv, BLOCK_LEN));
     NZERO_LOG(memcpy_s(initIv_, BLOCK_LEN, iv, BLOCK_LEN));
     NZERO_LOG(memcpy_s(key_, BLOCK_LEN, key, keyLen > BLOCK_LEN ? BLOCK_LEN : keyLen));
-    AES_set_decrypt_key(key_, KEY_BITS, &aesKey_);
+    int ret = AES_set_decrypt_key(key_, KEY_BITS, &aesKey_);
+    if (ret != 0) {
+        MEDIA_LOG_E("AES_set_decrypt_key failed, ret: " PUBLIC_LOG_D32, ret);
+        Reset();
+    }
 }
 
 void AesDecryptor::Decrypt(uint8_t *in, uint8_t *out, uint32_t len)
@@ -67,6 +77,10 @@ void AesDecryptor::Decrypt(uint8_t *in, uint8_t *out, uint32_t len)
         return;
     }
     if (keyLen_ == 0) {
+        return;
+    }
+    if (len % BLOCK_LEN != 0) {
+        MEDIA_LOG_E("Decrypt len " PUBLIC_LOG_U32 " is not aligned to BLOCK_LEN", len);
         return;
     }
     AES_cbc_encrypt(in, out, len, &aesKey_, iv_, AES_DECRYPT);
