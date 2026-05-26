@@ -70,6 +70,7 @@ public:
     int32_t GetMinOffsetOfCttsEntry();
     std::vector<uint32_t> GetSyncSamplesPtsFromStssEntry();
     SdtpEntry GetSdtpEntry();
+    Status GetPtsOfFirstSample(int64_t& startPts);
 
     struct EditListEntry {
         int64_t mediaTime = 0;

@@ -395,6 +395,7 @@ void MPEG4DemuxerPlugin::InitParser()
     auto track = firstTrack_;
     FALSE_RETURN_MSG(track != nullptr, "track is nullptr");
     streamParsers_ = std::make_shared<MultiStreamParserManager>();
+    uint32_t videoTrackCount = 0;
     for (uint32_t trackIndex = 0; track != nullptr; ++trackIndex) {
         std::string mime;
         mediaInfo_.tracks[trackIndex].Get<Tag::MIME_TYPE>(mime);
@@ -408,6 +409,13 @@ void MPEG4DemuxerPlugin::InitParser()
             }
         }
         track = track->next;
+        if (trackType == TrackType::VIDEO_TYPE && StartWith(mimeType, "video/") && videoTrackCount == 0) {
+            videoTrackCount++;
+            std::shared_ptr<MPEG4AtomParser::Track> track = FindTrackById(refParserTrackIdx_);
+            FALSE_RETURN_V_MSG_E(track && track->sampleHelper, Status::ERROR_INVALID_DATA, "track is nullptr");
+            track->sampleHelper->GetPtsOfFirstSample(startPts_);
+            syncSamplesIndex_ = track->sampleHelper->GetSyncSamplesPtsFromStssEntry();
+        }
     }
 }
 

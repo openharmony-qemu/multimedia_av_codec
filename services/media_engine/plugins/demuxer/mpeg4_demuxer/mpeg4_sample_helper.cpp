@@ -1589,22 +1589,29 @@ int32_t MPEG4SampleHelper::GetMinOffsetOfCttsEntry()
 std::vector<uint32_t> MPEG4SampleHelper::GetSyncSamplesPtsFromStssEntry()
 {
     std::vector<uint32_t> syncSamplesPts;
-    // for (uint32_t i = 0; i < stssEntry_.size(); ++i) {
-    //     syncSamplesPts.emplace(stssEntry_[i].index);
-    // }
     for (uint32_t i = 0; i < stssEntry_.size(); ++i) {
-        uint32_t syncSampleIndex = stssEntry_[i].index;
-        FALSE_RETURN_V_MSG_E(syncSampleIndex < sampleIndexEntry_.size(), {},
-            "syncSampleIndex(%{public}d) is invalid, sampleIndexEntry_ size is %{public}lu",
-            syncSampleIndex, sampleIndexEntry_.size());
-        syncSamplesPts.emplace(sampleIndexEntry_[syncSampleIndex].pts);
+        syncSamplesPts.emplace(stssEntry_[i].index);
     }
+    // for (uint32_t i = 0; i < stssEntry_.size(); ++i) {
+    //     uint32_t syncSampleIndex = stssEntry_[i].index;
+    //     FALSE_RETURN_V_MSG_E(syncSampleIndex < sampleIndexEntry_.size(), {},
+    //         "syncSampleIndex(%{public}d) is invalid, sampleIndexEntry_ size is %{public}lu",
+    //         syncSampleIndex, sampleIndexEntry_.size());
+    //     syncSamplesPts.emplace(sampleIndexEntry_[syncSampleIndex].pts);
+    // }
     return syncSamplesPts;
 }
 
 SdtpEntry MPEG4SampleHelper::GetSdtpEntry()
 {
     return sdtpEntry_;
+}
+
+Status MPEG4SampleHelper::GetPtsOfFirstSample(int64_t& startPts)
+{
+    FALSE_RETURN_V_MSG_E(!sampleIndexEntry_.empty(), Status::ERROR_INVALID_DATA, "sampleIndexEntry_ is empty");
+    startPts = sampleIndexEntry_[0].pts;
+    return Status::OK;
 }
 } // namespace MPEG4
 } // namespace Plugins
