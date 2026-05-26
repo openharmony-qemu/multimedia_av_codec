@@ -561,8 +561,8 @@ int32_t AudioCaptureFilter::FillLostFrameNum()
 
 void AudioCaptureFilter::RecordOneAudioFrame(uint64_t bufferSize)
 {
-    if (audioCaptureModule_ == nullptr) {
-        MEDIA_LOG_E("audioCaptureModule_ is nullptr, cannot RecordOneAudioFrame");
+    if (audioCaptureModule_ == nullptr || outputBufferQueue_ == nullptr) {
+        MEDIA_LOG_E("audioCaptureModule_ or outputBufferQueue_ is nullptr, cannot RecordOneAudioFrame");
         return;
     }
     std::shared_ptr<AVBuffer> buffer;
