@@ -1413,7 +1413,7 @@ bool AudioServerSinkPlugin::GetAudioPosition(timespec &time, uint32_t &framePosi
     FALSE_RETURN_V_MSG(ret, false, "GetAudioPosition failed");
     time = audioPositionTimestamp.time;
     int64_t tempframeposition = audioPositionTimestamp.framePosition;
-    FALSE_RETURN_V_MSG(tempframeposition > 0 && tempframeposition <= static_cast<int64_t>(UINT32_MAX),
+    FALSE_RETURN_V_MSG(tempframeposition >= 0 && tempframeposition <= static_cast<int64_t>(UINT32_MAX),
         false, "audioPositionTimestamp.framePosition is invalid");
     framePosition = static_cast<uint32_t>(audioPositionTimestamp.framePosition);
     return ret;
