@@ -80,6 +80,7 @@ public:
     bool outputYuvFlag = false;
     uint32_t repeat_time = 0;
     uint32_t outFrameCount = 0;
+    bool enableDecodingOrder = false;
     // 解码输出数据预期
     bool needCheckOutputDesc = false;
     bool isResChangeStream = false;
@@ -94,15 +95,10 @@ public:
     bool queryInputBufferEOS = false;
     bool setTransform = false;
     int32_t DEFAULT_TRANSFORM = 0;
+    bool enableHash = false;
     bool needAutoSwitch = true;
     int32_t beforeSwitchTransform = -1;
     int32_t afterSwitchTransform = -2;
-    const char *fileSourcesha256[64] = {"27", "6D", "A2", "D4", "18", "21", "A5", "CD", "50", "F6", "DD", "CA", "46",
-                                        "32", "C3", "FE", "58", "FC", "BC", "51", "FD", "70", "C7", "D4", "E7", "4D",
-                                        "5C", "76", "E7", "71", "8A", "B3", "C0", "51", "84", "0A", "FA", "AF", "FA",
-                                        "DC", "7B", "C5", "26", "D1", "9A", "CA", "00", "DE", "FC", "C8", "4E", "34",
-                                        "C5", "9A", "43", "59", "85", "DC", "AC", "97", "A3", "FB", "23", "51"};
-
     int32_t Start();
     int32_t Stop();
     int32_t Flush();
@@ -143,7 +139,8 @@ public:
     void Flush_buffer();
     void StopOutloop();
     bool IsRender();
-    bool MdCompare(unsigned char *buffer, int len, const char *source[]);
+    std::vector<uint8_t> LoadHashFile();
+    bool MdCompare(uint8_t source[]);
     void FlushStatus();
     int32_t SetConfigTransform();
     int32_t SetSurface();

@@ -239,7 +239,12 @@ std::vector<uint8_t> VDecAPI11Sample::LoadHashFile()
         filesystem::path filePath = INP_DIR;
         std::string pixFmt = defualtPixelFormat == AV_PIXEL_FORMAT_NV12 ? "nv12" : "nv21";
         std::string fileName = filePath.filename();
-        std::string hashValue = data[fileName.c_str()][pixFmt];
+        std::string hashValue = "";
+        if (enableDecodingOrder) {
+            hashValue = data[fileName.c_str()]["dec_order"];
+        } else {
+            hashValue = data[fileName.c_str()][pixFmt];
+        }
         std::stringstream ss(hashValue);
         std::string item;
         while (getline(ss, item, ',')) {
@@ -388,6 +393,7 @@ int32_t VDecAPI11Sample::ConfigureVideoDecoder()
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, defualtPixelFormat);
     (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, enableDecodingOrder);
     if (useHDRSource) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, DEFAULT_PROFILE);
     }
@@ -1000,7 +1006,6 @@ uint32_t VDecAPI11Sample::SendData(uint32_t bufferSize, uint32_t index, OH_AVBuf
         OH_AVBuffer_SetBufferAttr(buffer, &attr);
         OH_VideoDecoder_PushInputBuffer(vdec_, index) == AV_ERR_OK ? (0) : (errCount++);
         frameCount_ = frameCount_ + 1;
-        cout << "frameCount_" << frameCount_ << endl;
         if (enableSetParameter) {
             SetParameterForSpeedPlayer();
         }

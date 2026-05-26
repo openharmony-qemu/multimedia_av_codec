@@ -195,6 +195,7 @@ public:
     bool useHDRSource = false;
     bool isAPI = false;
     bool enableSetParameter = false;
+    bool enableDecodingOrder = false;
     bool setSpeedPlayerFlag = false;
     bool retentionModeSet = false;
     bool retentionRatioSet = false;

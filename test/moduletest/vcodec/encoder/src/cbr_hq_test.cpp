@@ -153,13 +153,12 @@ HWTEST_F(CBRHQNdkTest, CBR_HQ_ENCODE_FUNC_0400, TestSize.Level2)
 HWTEST_F(CBRHQNdkTest, CBR_HQ_ENCODE_FUNC_0500, TestSize.Level2)
 {
     auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->INP_DIR = "/data/test/media/1920_1080_nv21.yuv";
+    vEncSample->INP_DIR = "/data/test/media/1080_1920_nv12.yuv";
     vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_CBRHQ_FUNC_0900.h265";
-    vEncSample->DEFAULT_WIDTH = 1920;
-    vEncSample->DEFAULT_HEIGHT = 1080;
+    vEncSample->DEFAULT_WIDTH = 1080;
+    vEncSample->DEFAULT_HEIGHT = 1920;
     vEncSample->DEFAULT_BITRATE = 3000000;
     vEncSample->DEFAULT_BITRATE_MODE = BITRATE_MODE_CBR_HIGH_QUALITY;
-    vEncSample->DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV21;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
     ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
@@ -176,13 +175,12 @@ HWTEST_F(CBRHQNdkTest, CBR_HQ_ENCODE_FUNC_0500, TestSize.Level2)
 HWTEST_F(CBRHQNdkTest, CBR_HQ_ENCODE_FUNC_0600, TestSize.Level2)
 {
     auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->INP_DIR = "/data/test/media/1920_1080_nv21.yuv";
+    vEncSample->INP_DIR = "/data/test/media/1080_1920_nv12.yuv";
     vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_CBRHQ_FUNC_1000.h265";
-    vEncSample->DEFAULT_WIDTH = 1920;
-    vEncSample->DEFAULT_HEIGHT = 1080;
+    vEncSample->DEFAULT_WIDTH = 1080;
+    vEncSample->DEFAULT_HEIGHT = 1920;
     vEncSample->DEFAULT_BITRATE = 3000000;
     vEncSample->DEFAULT_BITRATE_MODE = BITRATE_MODE_CBR_HIGH_QUALITY;
-    vEncSample->DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV21;
     vEncSample->enableLowLatency = true;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
@@ -200,12 +198,11 @@ HWTEST_F(CBRHQNdkTest, CBR_HQ_ENCODE_FUNC_0600, TestSize.Level2)
 HWTEST_F(CBRHQNdkTest, CBR_HQ_ENCODE_FUNC_0700, TestSize.Level2)
 {
     auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->INP_DIR = "/data/test/media/1920_1080_nv21.yuv";
+    vEncSample->INP_DIR = "/data/test/media/1080_1920_nv12.yuv";
     vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_CBRHQ_FUNC_1000.h265";
-    vEncSample->DEFAULT_WIDTH = 1920;
-    vEncSample->DEFAULT_HEIGHT = 1080;
+    vEncSample->DEFAULT_WIDTH = 1080;
+    vEncSample->DEFAULT_HEIGHT = 1920;
     vEncSample->DEFAULT_BITRATE = 3000000;
-    vEncSample->DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV21;
     vEncSample->DEFAULT_BITRATE_MODE = BITRATE_MODE_CBR_HIGH_QUALITY;
     vEncSample->enbleBFrameMode = 1;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
@@ -224,12 +221,11 @@ HWTEST_F(CBRHQNdkTest, CBR_HQ_ENCODE_FUNC_0700, TestSize.Level2)
 HWTEST_F(CBRHQNdkTest, CBR_HQ_ENCODE_FUNC_0800, TestSize.Level2)
 {
     auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->INP_DIR = "/data/test/media/1920_1080_nv21.yuv";
+    vEncSample->INP_DIR = "/data/test/media/1080_1920_nv12.yuv";
     vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_CBRHQ_FUNC_1000.h265";
-    vEncSample->DEFAULT_WIDTH = 1920;
-    vEncSample->DEFAULT_HEIGHT = 1080;
+    vEncSample->DEFAULT_WIDTH = 1080;
+    vEncSample->DEFAULT_HEIGHT = 1920;
     vEncSample->DEFAULT_BITRATE = 3000000;
-    vEncSample->DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV21;
     vEncSample->DEFAULT_BITRATE_MODE = BITRATE_MODE_CBR_HIGH_QUALITY;
     vEncSample->enableForceIDR = true;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
@@ -247,24 +243,25 @@ HWTEST_F(CBRHQNdkTest, CBR_HQ_ENCODE_FUNC_0800, TestSize.Level2)
  */
 HWTEST_F(CBRHQNdkTest, CBR_HQ_ENCODE_FUNC_0900, TestSize.Level2)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->INP_DIR = "/data/test/media/1920_1080_nv21.yuv";
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_CBRHQ_FUNC_1000.h265";
-    vEncSample->DEFAULT_WIDTH = 1920;
-    vEncSample->DEFAULT_HEIGHT = 1080;
-    vEncSample->DEFAULT_BITRATE = 3000000;
-    vEncSample->DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV21;
-    vEncSample->DEFAULT_BITRATE_MODE = BITRATE_MODE_CBR_HIGH_QUALITY;
-    vEncSample->TEMPORAL_ENABLE = true;
-    vEncSample->TEMPORAL_CONFIG = true;
-    vEncSample->TEMPORAL_JUMP_MODE = true;
-    int32_t temporalGopSize = 8;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1920_1080_nv21.yuv";
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_CBRHQ_FUNC_1000.h265";
+        vEncSample->DEFAULT_WIDTH = 1920;
+        vEncSample->DEFAULT_HEIGHT = 1080;
+        vEncSample->DEFAULT_BITRATE = 3000000;
+        vEncSample->DEFAULT_BITRATE_MODE = BITRATE_MODE_CBR_HIGH_QUALITY;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_CONFIG = true;
+        vEncSample->TEMPORAL_JUMP_MODE = true;
+        int32_t temporalGopSize = 8;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -274,25 +271,26 @@ HWTEST_F(CBRHQNdkTest, CBR_HQ_ENCODE_FUNC_0900, TestSize.Level2)
  */
 HWTEST_F(CBRHQNdkTest, CBR_HQ_ENCODE_FUNC_1000, TestSize.Level2)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->INP_DIR = "/data/test/media/1920_1080_nv21.yuv";
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_CBRHQ_FUNC_1000.h265";
-    vEncSample->DEFAULT_WIDTH = 1920;
-    vEncSample->DEFAULT_HEIGHT = 1080;
-    vEncSample->DEFAULT_BITRATE = 3000000;
-    vEncSample->DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV21;
-    vEncSample->DEFAULT_BITRATE_MODE = BITRATE_MODE_CBR_HIGH_QUALITY;
-    vEncSample->enableLTR = true;
-    vEncSample->ltrParam.ltrCount = 5;
-    vEncSample->ltrParam.ltrInterval = 5;
-    vEncSample->ltrParam.enableUseLtr = true;
-    vEncSample->ltrParam.useLtrIndex = 1;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1920_1080_nv21.yuv";
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_CBRHQ_FUNC_1000.h265";
+        vEncSample->DEFAULT_WIDTH = 1920;
+        vEncSample->DEFAULT_HEIGHT = 1080;
+        vEncSample->DEFAULT_BITRATE = 3000000;
+        vEncSample->DEFAULT_BITRATE_MODE = BITRATE_MODE_CBR_HIGH_QUALITY;
+        vEncSample->enableLTR = true;
+        vEncSample->ltrParam.ltrCount = 5;
+        vEncSample->ltrParam.ltrInterval = 5;
+        vEncSample->ltrParam.enableUseLtr = true;
+        vEncSample->ltrParam.useLtrIndex = 1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -302,22 +300,24 @@ HWTEST_F(CBRHQNdkTest, CBR_HQ_ENCODE_FUNC_1000, TestSize.Level2)
  */
 HWTEST_F(CBRHQNdkTest, CBR_HQ_ENCODE_FUNC_1100, TestSize.Level2)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/CBR_HQ_ENCODE_FUNC_1500.h265";
-    vEncSample->SURF_INPUT = true;
-    vEncSample->readMultiFiles = true;
-    vEncSample->DEFAULT_WIDTH = 1920;
-    vEncSample->DEFAULT_HEIGHT = 1080;
-    vEncSample->noDestroy = true;
-    vEncSample->DEFAULT_BITRATE_MODE = BITRATE_MODE_CBR_HIGH_QUALITY;
-    vEncSample->fileInfos.push_back(file_640_480_rgba);
-    vEncSample->fileInfos.push_back(file_1280_720_nv12);
-    vEncSample->fileInfos.push_back(file_1920_1080_nv21);
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/CBR_HQ_ENCODE_FUNC_1500.h265";
+        vEncSample->SURF_INPUT = true;
+        vEncSample->readMultiFiles = true;
+        vEncSample->DEFAULT_WIDTH = 1920;
+        vEncSample->DEFAULT_HEIGHT = 1080;
+        vEncSample->noDestroy = true;
+        vEncSample->DEFAULT_BITRATE_MODE = BITRATE_MODE_CBR_HIGH_QUALITY;
+        vEncSample->fileInfos.push_back(file_640_480_rgba);
+        vEncSample->fileInfos.push_back(file_1280_720_nv12);
+        vEncSample->fileInfos.push_back(file_1920_1080_nv21);
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 }

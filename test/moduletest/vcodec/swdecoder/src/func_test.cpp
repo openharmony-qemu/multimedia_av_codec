@@ -1573,4 +1573,41 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_4K_0140, TestSize.Level2)
         vDecSample->WaitForEOS();
     }
 }
+
+/**
+ * @tc.number    : VIDEO_DECODE_DECODING_ORDER_0010
+ * @tc.name      : h264解码能力查询支持解码序出帧
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_DECODING_ORDER_0010, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        cap_avc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, SOFTWARE);
+        bool ret = OH_AVCapability_IsFeatureSupported(cap_avc, VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER);
+        ASSERT_TRUE(ret);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_DECODING_ORDER_0020
+ * @tc.name      : h264解码b帧码流
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_DECODING_ORDER_0020, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/720_1280_25_avcc.h264";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enableDecodingOrder = true;
+        vDecSample->enableHash = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAvc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+    }
+}
 } // namespace
