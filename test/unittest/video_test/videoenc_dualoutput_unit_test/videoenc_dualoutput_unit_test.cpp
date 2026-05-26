@@ -34,12 +34,8 @@ using namespace OHOS::MediaAVCodec;
 using namespace testing::ext;
 
 namespace {
-constexpr uint32_t DEFAULT_WIDTH = 1280;
-constexpr uint32_t DEFAULT_HEIGHT = 720;
 constexpr double DEFAULT_FRAME_RATE = 30.0;
-
 enum CodecType : int32_t { AVC = 0, HEVC = 1 };
-
 static void OnError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
     (void)codec;
@@ -1025,7 +1021,7 @@ void RunPreprocDualEncoding(int32_t codecType, const std::string &testName,
     auto sample = make_shared<VideoEncDualOutputSample>();
     auto signal = make_shared<VCodecSignal>(sample);
     sample->frameCount_ = 30; // 30: input frame num
-    sample->inPath_ = "1280_720_nv.yuv";
+    sample->inputFile_ = "1280_720_nv.yuv";
     sample->outPath_ = testName + "_";
     ASSERT_TRUE(sample->CreatePrimary(GetMimeType(codecType)));
 
