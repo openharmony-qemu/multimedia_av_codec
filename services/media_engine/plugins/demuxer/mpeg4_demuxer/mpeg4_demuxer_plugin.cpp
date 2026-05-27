@@ -57,6 +57,7 @@ constexpr int32_t MIN_ATOM_SIZE = 16;
 constexpr int64_t SNIFF_DATA_SIZE = 2048;
 constexpr int32_t BOX_HEADER_SIZE = 8;
 constexpr int32_t BOX_TYPE_OFFSET = 4;
+constexpr int64_t US_TO_NS = 1000;
 
 static const std::map<std::string, VideoStreamType> g_streamParserMap = {
     { "video/avc",  VideoStreamType::AVC },
@@ -722,8 +723,13 @@ Status MPEG4DemuxerPlugin::DynamicBaseTrackSelect(int64_t seekTime, int64_t &max
         int64_t timeDelayToPts = 0;
         FALSE_RETURN_V_MSG_E(ConvertTimeScale(timeDelay, static_cast<int64_t>(trackTimeBase), 1000LL,
             &timeDelayToPts) == Status::OK, Status::ERROR_INVALID_PARAMETER, "mul overflow");
+        int64_t seekTimeWithStart = seekTime;
+        if (editListApplied) {
+            FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(seekTime, track->elstInitEmptyEdit, &seekTimeWithStart),
+                Status::ERROR_INVALID_PARAMETER, "Seek time overflow");
+        }
         int64_t seekTimeToPts;
-        FALSE_RETURN_V_MSG_E(ConvertTimeScale(seekTime - timeDelay, static_cast<int64_t>(trackTimeBase),
+        FALSE_RETURN_V_MSG_E(ConvertTimeScale(seekTimeWithStart - timeDelay, static_cast<int64_t>(trackTimeBase),
             1000LL, &seekTimeToPts) == Status::OK, Status::ERROR_INVALID_PARAMETER, "mul overflow");
         if (!editListApplied) {
             seekTimeToPts += track->elstShiftStartTime;
@@ -868,8 +874,12 @@ Status MPEG4DemuxerPlugin::PrepareSeekTime(const std::shared_ptr<MPEG4AtomParser
 {
     FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");
     context.editListApplied = track->sampleHelper != nullptr && track->sampleHelper->HasAppliedEditList();
-    context.relativeSeekTime = context.editListApplied ? seekTime :
-        seekTime - (track->elstInitEmptyEdit - minElstInitEmptyEdit_);
+    if (context.editListApplied) {
+        FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(seekTime, track->elstInitEmptyEdit, &context.relativeSeekTime),
+            Status::ERROR_INVALID_PARAMETER, "Seek time overflow");
+    } else {
+        context.relativeSeekTime = seekTime - (track->elstInitEmptyEdit - minElstInitEmptyEdit_);
+    }
     if (!mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_TIME_SCALE>(context.baseTrackTimeScale)) {
         return Status::ERROR_INVALID_PARAMETER;
     }
@@ -878,7 +888,15 @@ Status MPEG4DemuxerPlugin::PrepareSeekTime(const std::shared_ptr<MPEG4AtomParser
         FALSE_RETURN_V_MSG_E(ConvertTimeScale(track->elstShiftStartTime, 1000LL, context.baseTrackTimeScale,
             &startTime) == Status::OK, Status::ERROR_INVALID_PARAMETER, "mul overflow");
     }
-    realSeekTime = context.editListApplied ? seekTime : context.relativeSeekTime + startTime;  // ms
+    int64_t trackStartTimeUs = 0;
+    FALSE_RETURN_V_MSG_E(mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_START_TIME>(trackStartTimeUs),
+        Status::ERROR_INVALID_DATA, "Get track start time failed");
+    int64_t seekTimeNs = 0;
+    int64_t trackStartTimeNs = 0;
+    FALSE_RETURN_V_MSG_E(!__builtin_mul_overflow(seekTime, static_cast<int64_t>(MS_TO_NS), &seekTimeNs) &&
+        !__builtin_mul_overflow(trackStartTimeUs, US_TO_NS, &trackStartTimeNs) &&
+        !__builtin_add_overflow(seekTimeNs, trackStartTimeNs, &realSeekTime),
+        Status::ERROR_INVALID_PARAMETER, "Real seek time overflow");
 
     FALSE_RETURN_V_MSG_E(ConvertTimeScale(context.relativeSeekTime, static_cast<int64_t>(context.baseTrackTimeScale),
         1000LL, &context.trackSeekTime) == Status::OK, Status::ERROR_INVALID_PARAMETER, "mul overflow");
@@ -892,7 +910,7 @@ Status MPEG4DemuxerPlugin::FindSeekSampleIndex(const std::shared_ptr<MPEG4AtomPa
     SeekSampleIndexContext& context)
 {
     auto& entry = track->sampleHelper->sampleIndexEntry_;
-    Status ret = track->sampleHelper->FindSyncSampleAtTime(
+    Status ret = track->sampleHelper->FindSyncSampleByPts(
         context.trackSeekTime, context.isBaseTrack, context.mode, context.sampleIndex);
     // If seektime > last I-frame and within the track range, and the SeekMode is SEEK_NEXT_SYNC, seek to the EOS frame
     context.sampleIndex = (ret != Status::OK && context.mode == SeekMode::SEEK_NEXT_SYNC) ?
@@ -946,19 +964,19 @@ Status MPEG4DemuxerPlugin::GetVideoSyncSeekTime(
     const std::shared_ptr<MPEG4AtomParser::Track>& track, VideoSyncSeekContext& context)
 {
     auto& entry = track->sampleHelper->sampleIndexEntry_;
-    int64_t syncDts = 0;
+    int64_t syncPts = 0;
     if (!context.isBaseTrack) {
         FALSE_RETURN_V_MSG_E(!entry.empty(), Status::ERROR_INVALID_DATA, "Sample index entry is empty");
-        syncDts = entry.back().dts;
+        syncPts = entry.back().pts;
     } else {
         FALSE_RETURN_V_MSG_E(context.sampleIndex < entry.size(), Status::ERROR_INVALID_DATA,
             "Invalid sync sample index");
-        syncDts = entry[context.sampleIndex].dts;
+        syncPts = entry[context.sampleIndex].pts;
     }
     if (!context.editListApplied) {
-        syncDts -= track->elstShiftStartTime;
+        syncPts -= track->elstShiftStartTime;
     }
-    FALSE_RETURN_V_MSG_E(ConvertTimeScale(syncDts, 1000LL, context.baseTrackTimeScale,
+    FALSE_RETURN_V_MSG_E(ConvertTimeScale(syncPts, 1000LL, context.baseTrackTimeScale,
         &context.syncSeekTime) == Status::OK, Status::ERROR_INVALID_PARAMETER, "mul overflow");
     if (!context.editListApplied) {
         context.syncSeekTime += track->elstInitEmptyEdit;
@@ -995,7 +1013,7 @@ Status MPEG4DemuxerPlugin::MultiTrackSync(int32_t trackIndex, bool isBaseTrack, 
         if (!editListApplied) {
             otherTrackSeekTime += otherTrack->elstShiftStartTime;
         }
-        ret = otherTrack->sampleHelper->FindSyncSampleAtTime(otherTrackSeekTime, isBaseTrack, mode, otherSampleIndex);
+        ret = otherTrack->sampleHelper->FindSyncSampleByPts(otherTrackSeekTime, isBaseTrack, mode, otherSampleIndex);
         if (ret == Status::OK) {
             otherTrack->currentSampleIndex = otherSampleIndex;
             MEDIA_LOG_D("Sync track " PUBLIC_LOG_D32 " to sample " PUBLIC_LOG_D32 " at time " PUBLIC_LOG_D64,

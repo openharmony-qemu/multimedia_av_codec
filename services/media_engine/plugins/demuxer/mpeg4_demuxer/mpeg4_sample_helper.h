@@ -41,7 +41,7 @@ public:
     MPEG4SampleHelper();
     ~MPEG4SampleHelper();
 
-    Status FindSyncSampleAtTime(int64_t reqTime, bool isBaseTrack, SeekMode flag, uint32_t &sampleIndex);
+    Status FindSyncSampleByPts(int64_t reqPts, bool isBaseTrack, SeekMode flag, uint32_t &sampleIndex);
     Status SetTimeToSampleParams(int64_t dataOffset, size_t dataSize);
     Status SetCompositionTimeToSampleParams(int64_t dataOffset, size_t dataSize);
     Status SetSyncSampleParams(int64_t dataOffset, size_t dataSize);
@@ -124,6 +124,7 @@ private:
     };
     struct StssEntry {
         uint32_t index;
+        int64_t syncPts;
         int64_t syncDts;
     };
     struct TrackFragmentHeaderInfo {
@@ -137,7 +138,7 @@ private:
             TFHD_DEFAULT_BASE_IS_MOOF   = 0x020000
         };
         uint32_t flags;
-        uint64_t baseDataOffset;
+        int64_t baseDataOffset;
         uint32_t sampleDescriptionIndex;
         uint32_t defaultSampleDuration;
         uint32_t defaultSampleSize;
@@ -228,12 +229,17 @@ private:
     Status ExpandCttsEntry(uint32_t sttsNum);
     Status ApplyEditList();
     Status RebuildSyncSamples();
-    Status FindWithSyncSamples(int64_t inputPTS, bool isBaseTrack, SeekMode flag, uint32_t& syncIndex);
+    Status FindWithSyncSamplesByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag, uint32_t& syncIndex);
     int64_t FindIndexWithoutSyncSamples(int64_t inputPTS) const;
-    bool ResolveDirectSyncSample(int64_t inputPTS, int64_t currentIndex, uint32_t& sampleIndex) const;
-    bool ResolveNonBaseTrackEos(int64_t inputPTS, bool isBaseTrack, SeekMode flag, uint32_t& sampleIndex) const;
+    bool AssignSampleIndex(int64_t currentIndex, uint32_t& sampleIndex) const;
+    bool AssignSampleIndexFromSize(size_t currentIndex, uint32_t& sampleIndex) const;
+    bool ResolveDirectSyncSampleByPts(int64_t inputPts, int64_t currentIndex, uint32_t& sampleIndex) const;
+    bool ResolveNonBaseTrackEosByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag, uint32_t& sampleIndex) const;
     bool ResolveTextWebVttSample(int64_t inputPTS, int64_t& currentIndex, uint32_t& sampleIndex) const;
-    Status CheckSyncSample(int64_t inputPTS, bool isBaseTrack, SeekMode flag, int64_t &currentIndex);
+    int64_t FindPrevSyncByPts(int64_t inputPts, int64_t currentIndex) const;
+    int64_t FindNextSyncByPts(int64_t inputPts, int64_t currentIndex) const;
+    void SelectClosestSyncByPts(int64_t inputPts, int64_t& currentIndex) const;
+    Status CheckSyncSampleByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag, int64_t &currentIndex);
     bool IsSyncSample(const SampleIndexEntry& entry) const;
     int64_t GetCttsDelta(size_t index) const;
     int64_t GetFrameDuration(const std::vector<SampleIndexEntry>& entries, size_t index, int64_t editDuration) const;
@@ -264,6 +270,8 @@ private:
     Status AdvanceChunkIfNeeded(SampleIndexBuildContext& buildCtx);
     bool GetSampleSize(uint32_t sampleIndex, uint32_t& samplesPerFrame, SampleIndexEntry& entry,
         int64_t& remainSamples);
+    Status UpdateSampleDurationAndDts(uint32_t sttsDelta, uint32_t samplesPerFrame, SampleIndexEntry& entry,
+        int64_t& currentDts) const;
     void GetSampleFlag(uint32_t sampleIndex, SampleIndexEntry& entry, uint32_t& syncIndex);
     void InitMoofParam();
     Status ReadTrunRunData(int64_t dataOffset, int64_t dataSize, uint32_t& trunFlag, uint32_t& numSamples,
