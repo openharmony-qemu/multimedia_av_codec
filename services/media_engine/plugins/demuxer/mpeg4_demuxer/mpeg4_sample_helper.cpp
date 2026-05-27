@@ -927,8 +927,8 @@ void MPEG4SampleHelper::InitMoofParam()
     }
 }
 
-void MPEG4SampleHelper::UpdateSampleEntryInfo(
-    SampleInfo sampleInfo, int64_t& offset, int64_t& currentDts, bool isOverlap)
+MPEG4SampleHelper::SampleIndexEntry MPEG4SampleHelper::CreateSampleEntry(
+    const SampleInfo& sampleInfo, int64_t offset, int64_t currentDts, bool isOverlap) const
 {
     SampleIndexEntry sample;
     sample.pos = offset;
@@ -946,7 +946,48 @@ void MPEG4SampleHelper::UpdateSampleEntryInfo(
     if (isOverlap) {
         sample.flag |= Sample::SampleFlag::DISCARD;
     }
+    return sample;
+}
 
+bool MPEG4SampleHelper::InsertSampleEntry(SampleIndexEntry&& sample, uint32_t duration)
+{
+    uint32_t sampleIndex = 0;
+    auto it = std::upper_bound(sampleIndexEntry_.begin(), sampleIndexEntry_.end(), sample,
+        [](const SampleIndexEntry& a, const SampleIndexEntry& b) { return a.pos < b.pos; });
+    if (!AssignSampleIndex(std::distance(sampleIndexEntry_.begin(), it), sampleIndex)) {
+        MEDIA_LOG_E("Invalid sample index");
+        return false;
+    }
+
+    const int64_t sttsIndex = static_cast<int64_t>(sampleIndex) - static_cast<int64_t>(numMoovSamples_) +
+        firstMoofSttsIndex_ - 1;
+    if (sttsIndex < 0 || static_cast<uint64_t>(sttsIndex) > static_cast<uint64_t>(sttsEntry_.size())) {
+        MEDIA_LOG_E("Invalid stts index");
+        return false;
+    }
+
+    lastPTS_ = std::max(lastPTS_, sample.pts);
+    rawTotalSize_ += sample.size;
+    sampleIndexEntry_.insert(sampleIndexEntry_.begin() + sampleIndex, std::move(sample));
+    const int64_t insertedDts = sampleIndexEntry_[sampleIndex].dts;
+    for (size_t i = static_cast<size_t>(sampleIndex) + 1; i < sampleIndexEntry_.size(); ++i) {
+        if (insertedDts < sampleIndexEntry_[i].dts) {
+            break;
+        }
+        sampleIndexEntry_[i].flag |= Sample::SampleFlag::DISCARD;
+    }
+
+    sttsEntry_.insert(sttsEntry_.begin() + static_cast<size_t>(sttsIndex), SttsEntry {
+        .count = 1,
+        .delta = duration
+    });
+    return true;
+}
+
+void MPEG4SampleHelper::UpdateSampleEntryInfo(
+    SampleInfo sampleInfo, int64_t& offset, int64_t& currentDts, bool isOverlap)
+{
+    SampleIndexEntry sample = CreateSampleEntry(sampleInfo, offset, currentDts, isOverlap);
     ++rawSampleCount_;
     if (sampleIndexEntry_.empty()) {
         lastPTS_ = sample.pts;
@@ -956,31 +997,10 @@ void MPEG4SampleHelper::UpdateSampleEntryInfo(
             .count = 1,
             .delta = sampleInfo.duration
         });
-    } else {
-        uint32_t sampleIndex = 0;
-        auto it = std::upper_bound(sampleIndexEntry_.begin(), sampleIndexEntry_.end(), sample,
-            [](const SampleIndexEntry& a, const SampleIndexEntry& b) { return a.pos < b.pos; });
-        auto sampleDistance = std::distance(sampleIndexEntry_.begin(), it);
-        if (!AssignSampleIndex(static_cast<int64_t>(sampleDistance), sampleIndex)) {
-            MEDIA_LOG_E("Invalid sample index");
-            return;
-        }
-        lastPTS_ = std::max(lastPTS_, sample.pts);
-        rawTotalSize_ += sample.size;
-        sampleIndexEntry_.insert(sampleIndexEntry_.begin() + sampleIndex, std::move(sample));
-        int64_t insertedDts = sampleIndexEntry_[sampleIndex].dts;
-        for (size_t i = sampleIndex + 1; i < sampleIndexEntry_.size(); ++i) {
-            if (insertedDts < sampleIndexEntry_[i].dts) {
-                break;
-            }
-            sampleIndexEntry_[i].flag |= Sample::SampleFlag::DISCARD;
-        }
-
-        uint32_t sttsIndex = sampleIndex - numMoovSamples_ + firstMoofSttsIndex_ - 1;
-        sttsEntry_.insert(sttsEntry_.begin() + sttsIndex, SttsEntry {
-            .count = 1,
-            .delta = sampleInfo.duration
-        });
+        return;
+    }
+    if (!InsertSampleEntry(std::move(sample), sampleInfo.duration)) {
+        return;
     }
 }
 

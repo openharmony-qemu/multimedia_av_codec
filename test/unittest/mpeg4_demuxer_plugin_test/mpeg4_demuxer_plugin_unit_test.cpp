@@ -2792,7 +2792,8 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SeekToPtsTimeline_Uri_00
         SeekMode::SEEK_NEXT_SYNC,
         SeekMode::SEEK_CLOSEST_SYNC,
     };
-    ASSERT_NO_FATAL_FAILURE(CheckSeekFirstVideoSampleWithSourceTimeline(TEST_MP4_PATH_H264_B, seekTimes, seekModes, true));
+    ASSERT_NO_FATAL_FAILURE(
+        CheckSeekFirstVideoSampleWithSourceTimeline(TEST_MP4_PATH_H264_B, seekTimes, seekModes, true));
 }
 
 /**

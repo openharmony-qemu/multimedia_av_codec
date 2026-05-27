@@ -282,6 +282,9 @@ private:
         uint8_t* data, uint32_t& firstSampleFlag);
     void UpdateSampleInfo(SampleInfo& sampleInfo, uint32_t& bufferOffset, uint32_t trunFlag,
         uint8_t* data, uint32_t firstSampleFlag);
+    SampleIndexEntry CreateSampleEntry(const SampleInfo& sampleInfo, int64_t offset, int64_t currentDts,
+        bool isOverlap) const;
+    bool InsertSampleEntry(SampleIndexEntry&& sample, uint32_t duration);
     void UpdateSampleEntryInfo(SampleInfo sampleInfo, int64_t& offset, int64_t& currentDts, bool isOverlap = false);
 };
 } // namespace MPEG4
