@@ -487,26 +487,6 @@ bool MpdParse(const uint8_t *data, size_t size)
         mpdMpddownload->SetStatusCallback(statusCallback);
         mpdMpddownload->SetInitResolution(INIT_WIDTH, INIT_HEIGHT);
         mpdMpddownload->Open(mpdUrl);
-        std::vector<StreamInfo> streams;
-        mpdMpddownload->GetStreamInfo(streams);
-        int32_t defaultVideoStreamId = -1;
-        int32_t defaultAudioStreamId = -1;
-        int32_t defaultSubtitleStreamId = -1;
-        for (const auto &stream : streams) {
-            if (stream.type == VIDEO && defaultVideoStreamId == -1) {
-                defaultVideoStreamId = stream.streamId;
-            }
-            if (stream.type == AUDIO && defaultAudioStreamId == -1) {
-                defaultAudioStreamId = stream.streamId;
-            }
-            if (stream.type == SUBTITLE && defaultSubtitleStreamId == -1) {
-                defaultSubtitleStreamId = stream.streamId;
-            }
-        }
-        if (defaultVideoStreamId == -1 && !streams.empty()) {
-            defaultVideoStreamId = streams.front().streamId;
-        }
-        mpdMpddownload->SetDefaultStreamId(defaultVideoStreamId, defaultAudioStreamId, defaultSubtitleStreamId);
         int64_t seekTime = GetData<int64_t>();
         std::shared_ptr<DashSegment> seg = nullptr;
         int streamId = GetData<int>();
