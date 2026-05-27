@@ -1557,28 +1557,6 @@ void HCodec::ReleaseComponent()
     componentId_ = 0;
 }
 
-const char* HCodec::ToString(MsgWhat what)
-{
-    static const map<MsgWhat, const char*> m = {
-        { INIT, "INIT" }, { SET_CALLBACK, "SET_CALLBACK" }, { CONFIGURE, "CONFIGURE" },
-        { CREATE_INPUT_SURFACE, "CREATE_INPUT_SURFACE" }, { SET_INPUT_SURFACE, "SET_INPUT_SURFACE" },
-        { SET_OUTPUT_SURFACE, "SET_OUTPUT_SURFACE" }, { START, "START" },
-        { GET_INPUT_FORMAT, "GET_INPUT_FORMAT" }, { GET_OUTPUT_FORMAT, "GET_OUTPUT_FORMAT" },
-        { SET_PARAMETERS, "SET_PARAMETERS" }, { REQUEST_IDR_FRAME, "REQUEST_IDR_FRAME" },
-        { FLUSH, "FLUSH" }, { QUEUE_INPUT_BUFFER, "QUEUE_INPUT_BUFFER" },
-        { NOTIFY_EOS, "NOTIFY_EOS" }, { RELEASE_OUTPUT_BUFFER, "RELEASE_OUTPUT_BUFFER" },
-        { RENDER_OUTPUT_BUFFER, "RENDER_OUTPUT_BUFFER" }, { STOP, "STOP" }, { RELEASE, "RELEASE" },
-        { CODEC_EVENT, "CODEC_EVENT" }, { OMX_EMPTY_BUFFER_DONE, "OMX_EMPTY_BUFFER_DONE" },
-        { OMX_FILL_BUFFER_DONE, "OMX_FILL_BUFFER_DONE" }, { GET_BUFFER_FROM_SURFACE, "GET_BUFFER_FROM_SURFACE" },
-        { CHECK_IF_STUCK, "CHECK_IF_STUCK" }, { FORCE_SHUTDOWN, "FORCE_SHUTDOWN" },
-    };
-    auto it = m.find(what);
-    if (it != m.end()) {
-        return it->second;
-    }
-    return "UNKNOWN";
-}
-
 int32_t HCodec::SetColorAspects(const Format &format)
 {
     int range = 0;
