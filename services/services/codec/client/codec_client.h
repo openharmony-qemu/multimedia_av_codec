@@ -32,7 +32,6 @@ class CodecBufferCircular;
 class CodecClient : public MediaCodecCallback, public ICodecService, public std::enable_shared_from_this<CodecClient> {
 public:
     static int32_t Create(const sptr<IStandardCodecService> &ipcProxy, std::shared_ptr<ICodecService> &codec);
-    static int32_t Add(int32_t a, int32_t b);
     explicit CodecClient(const sptr<IStandardCodecService> &ipcProxy);
     ~CodecClient();
     // 业务
