@@ -111,8 +111,8 @@ bool HDecoder::DecideOutputBufMode()
 int32_t HDecoder::OnConfigure(const Format &format)
 {
     currGeneration_ = 0;
- 	currGenerationLayoutHasParsed_ = false;
- 	currLayout_.reset();
+    currGenerationLayoutHasParsed_ = false;
+    currLayout_.reset();
     configFormat_ = make_shared<Format>(format);
 
     (void)SetProcessName();
