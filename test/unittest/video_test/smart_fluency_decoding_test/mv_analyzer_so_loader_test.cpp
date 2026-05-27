@@ -17,6 +17,7 @@
 #include <memory>
 #include "mv_analyzer.h"
 #include "mv_analyzer_so_loader.h"
+#include "test_mock_analyzers.h"
 
 bool GetStreamAuxInfoCalled();
 const StreamAuxInfo& GetLastStreamAuxInfo();
@@ -34,8 +35,8 @@ using namespace testing::ext;
 
 class MvAnalyzerSoLoaderTest : public testing::Test {
 protected:
-    void SetUp() override {}
-    void TearDown() override {}
+    void SetUp() override { SetupTestAnalyzerMocks(); }
+    void TearDown() override { TeardownTestAnalyzerMocks(); }
 };
 
 /**

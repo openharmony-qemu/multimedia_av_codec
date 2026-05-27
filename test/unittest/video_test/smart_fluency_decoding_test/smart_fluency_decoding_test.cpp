@@ -14,12 +14,14 @@
  */
 
 #include <gtest/gtest.h>
+#include <cstring>
 #include <memory>
 #include "smart_fluency_decoding.h"
 #include "avcodec_common.h"
 #include "buffer/avallocator.h"
 #include "buffer/avbuffer.h"
 #include "surface_buffer.h"
+#include "test_mock_analyzers.h"
 
 namespace {
 constexpr int32_t WIDTH_1080P = 1920;
@@ -37,12 +39,14 @@ protected:
 
     void SetUp() override
     {
+        SetupTestAnalyzerMocks();
         sfd_ = std::make_unique<SmartFluencyDecoding>();
     }
 
     void TearDown() override
     {
         sfd_ = nullptr;
+        TeardownTestAnalyzerMocks();
     }
 
     SFDConfig MakeConfig(int32_t w, int32_t h, SFDCodecType codec, RetentionStrategyType mode)
@@ -229,23 +233,20 @@ HWTEST_F(SmartFluencyDecodingTest, EvaluatePreDecode_EMA_Unsatisfied_014, TestSi
     cfg.retentionRatio = 0.5;
     sfd_->Initialize(cfg);
 
-    // Feed 7 retained + 3 dropped = 0.7 ratio (> 0.5 target)
+    // Feed 7 retained + 3 pre-dropped = 0.7 pre-retained ratio (> 0.5 target)
     for (int i = 0; i < 7; ++i) { sfd_->dropSyncCoordinator_->UpdateFeedback(true); }
-    for (int i = 0; i < 3; ++i) { sfd_->dropSyncCoordinator_->UpdateFeedback(false); }
+    for (int i = 0; i < 3; ++i) { sfd_->dropSyncCoordinator_->RecordPreDroppedFrame(i * 1000); }
     auto allocator = OHOS::Media::AVAllocatorFactory::CreateSharedAllocator(OHOS::Media::MEMORY_READ_WRITE);
     auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, 100); // 100: capacity
-    // FakeIsNonReferenceFrame will return true if we set correct data (from dlfcn_mock)
     uint8_t* addr = buffer->memory_->GetAddr();
     addr[0] = 0x00; // 0: start code
     addr[1] = 0x00; // 1: start code
     addr[2] = 0x00; // 2: start code
-    addr[3] = 0x01; // 3: nal type
+    addr[3] = 0x01; // 3: nal header
     addr[4] = 0x01; // 4: nal_ref_idc = 0
     buffer->memory_->SetSize(10);
-    
-    // Push into map for public API access
     sfd_->inBufferMap_[0] = buffer;
-    
+
     sfd_->EnsureNaluAnalyzer();
     bool shouldRetain = sfd_->MakePreDecodeDecision(0);
     EXPECT_FALSE(shouldRetain);
@@ -550,9 +551,9 @@ HWTEST_F(SmartFluencyDecodingTest, MakePreDecodeDecision_RatioSatisfied_031, Tes
     cfg.retentionRatio = 0.5;
     sfd_->Initialize(cfg);
 
-    // Feed 3 retained + 7 dropped = 0.3 ratio (< 0.5 target)
+    // Feed 3 retained + 7 pre-dropped = 0.3 pre-retained ratio (< 0.5 target)
     for (int i = 0; i < 3; ++i) { sfd_->dropSyncCoordinator_->UpdateFeedback(true); }
-    for (int i = 0; i < 7; ++i) { sfd_->dropSyncCoordinator_->UpdateFeedback(false); }
+    for (int i = 0; i < 7; ++i) { sfd_->dropSyncCoordinator_->RecordPreDroppedFrame(i * 1000); }
     auto allocator = OHOS::Media::AVAllocatorFactory::CreateSharedAllocator(OHOS::Media::MEMORY_READ_WRITE);
     auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, 100);
     uint8_t* addr = buffer->memory_->GetAddr();
@@ -563,7 +564,7 @@ HWTEST_F(SmartFluencyDecodingTest, MakePreDecodeDecision_RatioSatisfied_031, Tes
     sfd_->EnsureNaluAnalyzer();
 
     bool result = sfd_->MakePreDecodeDecision(0);
-    EXPECT_FALSE(result);
+    EXPECT_TRUE(result);
 }
 
 /**

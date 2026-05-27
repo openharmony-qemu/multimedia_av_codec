@@ -19,14 +19,15 @@
 #include "nalu_analyzer_so_loader.h"
 #include "buffer/avallocator.h"
 #include "securec.h"
+#include "test_mock_analyzers.h"
 
 using namespace OHOS::MediaAVCodec::SFD;
 using namespace testing::ext;
 
 class NaluAnalyzerSoLoaderTest : public testing::Test {
 protected:
-    void SetUp() override {}
-    void TearDown() override {}
+    void SetUp() override { SetupTestAnalyzerMocks(); }
+    void TearDown() override { TeardownTestAnalyzerMocks(); }
 };
 
 /**

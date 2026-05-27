@@ -16,6 +16,7 @@
 #include <string>
 #include <cstdint>
 #include <cstring>
+#include "nalu_analyzer_c_api.h"
 #include "smart_fluency_decoding_types.h"
 
 namespace {
@@ -38,15 +39,23 @@ extern "C" {
     void* __real_dlsym(void* handle, const char* symbol); // NOLINT: C-style function
     int __real_dlclose(void* handle); // NOLINT: C-style function
 
+    static bool IsNaluCodecSupported(int32_t codecType)
+    {
+        using OHOS::MediaAVCodec::SFD::SFDCodecType;
+        return codecType == static_cast<int32_t>(SFDCodecType::AVC) ||
+               codecType == static_cast<int32_t>(SFDCodecType::HEVC) ||
+               codecType == static_cast<int32_t>(SFDCodecType::VVC);
+    }
+
     void* FakeCreateNaluAnalyzer(int32_t codecType)
     {
-        if (codecType == static_cast<int32_t>(OHOS::MediaAVCodec::SFD::SFDCodecType::INVALID)) {
+        if (!IsNaluCodecSupported(codecType)) {
             return nullptr;
         }
         return NALU_MOCK_HANDLE;
     }
     void FakeDestroyNaluAnalyzer(void* analyzer) {}
-    void FakeSetCallback(void* analyzer, void* cb, void* userData) {}
+    void FakeSetCallback(void* analyzer, NaluStreamAuxInfoCallback cb, void* userData) {}
     bool FakeIsNonReferenceFrame(void* analyzer, const uint8_t* bufferAddr, uint32_t bufferSize)
     {
         (void)analyzer;
@@ -62,9 +71,17 @@ extern "C" {
         return false;
     }
 
+    static bool IsMvCodecSupported(int32_t codecType)
+    {
+        using OHOS::MediaAVCodec::SFD::SFDCodecType;
+        return codecType == static_cast<int32_t>(SFDCodecType::AVC) ||
+               codecType == static_cast<int32_t>(SFDCodecType::HEVC) ||
+               codecType == static_cast<int32_t>(SFDCodecType::VVC);
+    }
+
     void* FakeCreateMvAnalyzer(int32_t codecType)
     {
-        if (codecType == static_cast<int32_t>(OHOS::MediaAVCodec::SFD::SFDCodecType::INVALID)) {
+        if (!IsMvCodecSupported(codecType)) {
             return nullptr;
         }
         return MV_MOCK_HANDLE;
@@ -180,4 +197,26 @@ uint32_t GetLastVideoWidth()
 uint32_t GetLastVideoHeight()
 {
     return g_lastVideoHeight;
+}
+
+void SetTestVideoInfoGlobals(uint32_t width, uint32_t height)
+{
+    g_lastVideoWidth = width;
+    g_lastVideoHeight = height;
+    g_videoInfoCalled = true;
+}
+
+void SetTestStreamAuxInfoGlobals(const StreamAuxInfo& info)
+{
+    g_lastStreamAuxInfo = info;
+    g_streamAuxInfoCalled = true;
+}
+
+void ResetTestMvGlobals()
+{
+    g_lastStreamAuxInfo = {};
+    g_streamAuxInfoCalled = false;
+    g_lastVideoWidth = 0;
+    g_lastVideoHeight = 0;
+    g_videoInfoCalled = false;
 }
