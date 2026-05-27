@@ -76,7 +76,7 @@ bool HDecoder::DecideOutputBufMode()
 {
     isAlloc_ = false;
     isDynamic_ = false;
- 
+
     SupportBufferTypeV2 typeV2;
     InitOMXParamExt(typeV2);
     typeV2.portIndex = OMX_DirOutput;
@@ -661,6 +661,7 @@ bool HDecoder::ReadyToStart()
     } else {
         HLOGI("buffer mode");
     }
+
     uint64_t mode = GetModeUsage();
     uint64_t consumer = GetSurfaceConsumerUsage();
     if (isAlloc_) {
@@ -670,6 +671,7 @@ bool HDecoder::ReadyToStart()
             usageToVendor, mode, cfgedConsumerUsage_, consumer);
         (void)SetUsageToVendor(usageToVendor);
     }
+
     return true;
 }
 
@@ -695,7 +697,7 @@ int32_t HDecoder::AllocateBuffersOnPort(OMX_DIRTYPE portIndex)
     }
     uint64_t mode = GetModeUsage();
     uint64_t consumer = GetSurfaceConsumerUsage();
- 
+
     if (isAlloc_) { // alloc by omx
         uint64_t usageToVendor = mode | cfgedConsumerUsage_ | consumer;
         HLOGI("usage to vendor(0x%" PRIx64 ") = mode(0x%" PRIx64 ") | "
@@ -711,13 +713,14 @@ int32_t HDecoder::AllocateBuffersOnPort(OMX_DIRTYPE portIndex)
         HLOGI("final usage(0x%" PRIx64 ") = vendor(0x%" PRIx64 ") | mode(0x%" PRIx64 ") | "
             "cfged(0x%" PRIx64 ") | consumer(0x%" PRIx64 ")",
             requestCfg_.usage, vendor, mode, cfgedConsumerUsage_, consumer);
- 
+
         if (isDynamic_) {  // use dynamic
             ret = AllocOutDynamicSurfaceBuf();
         } else {  // use preset
             ret = (currSurface_.surface_ ? AllocateOutputBuffersFromSurface() : AllocateAvSurfaceBuffers(portIndex));
         }
     }
+
     return ret;
 }
 
@@ -758,6 +761,7 @@ void HDecoder::ProcSurfaceBufferToUser(const sptr<SurfaceBuffer>& buffer)
         layout.byteStride = currLayout_->byteStride;
         layout.alignedHeight = currLayout_->alignedHeight;
     }
+
     using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
     vector<uint8_t> vec;
     GSError err = buffer->GetMetadata(ATTRKEY_CROP_REGION, vec);
@@ -773,6 +777,7 @@ void HDecoder::ProcSurfaceBufferToUser(const sptr<SurfaceBuffer>& buffer)
         layout.cropW = layout.handleW;
         layout.cropH = layout.handleH;
     }
+
     if (currLayout_ == nullptr) {
         currLayout_ = std::make_shared<SurfaceBufferLayout>(layout);
         HLOGI("buffer layout update: %s", layout.ToString().c_str());
@@ -882,7 +887,8 @@ uint64_t HDecoder::GetModeUsage()
 {
     return currSurface_.surface_ ? SURFACE_MODE_PRODUCER_USAGE : BUFFER_MODE_REQUEST_USAGE;
 }
- uint64_t HDecoder::GetVendorProducerUsage()
+
+uint64_t HDecoder::GetVendorProducerUsage()
 {
     GetBufferHandleUsageParams vendorUsage;
     InitOMXParamExt(vendorUsage);
@@ -1104,6 +1110,7 @@ int32_t HDecoder::AllocateOutputBuffersFromOmx()
         info.omxBuffer = outBuffer;
         info.bufferId = outBuffer->bufferId;
         info.attached = true;
+        info.needDealWithCache = (currSurface_.surface_ == nullptr);
         outputBufferPool_.push_back(info);
         HLOGI("generation=%d, bufferId=%u, seq=%u", currGeneration_, info.bufferId, surfaceBuffer->GetSeqNum());
     }
@@ -1311,7 +1318,7 @@ void HDecoder::DynamicModeSubmitBufferToSlot(sptr<SurfaceBuffer>& buffer, std::v
     IF_TRUE_RETURN_VOID_WITH_MSG(avBuffer == nullptr || avBuffer->memory_ == nullptr, "CreateAVBuffer failed");
     nullSlot->avBuffer = avBuffer;
     if (currSurface_.surface_ == nullptr) {
-        nullSlot->needDealWithCache = (requestCfg_.usage & BUFFER_USAGE_MEM_MMZ_CACHE);
+        nullSlot->needDealWithCache = true;
     }
     SetCallerToBuffer(buffer->GetFileDescriptor(),
                       static_cast<uint32_t>(buffer->GetWidth()),
@@ -1654,6 +1661,7 @@ void HDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface,
     currSurface_ = SurfaceItem(newSurface, compUniqueStr_, instanceId_);
     SetTransform();
     SetScaleMode();
+
     // if owned by old surface, we need to transfer them to new surface
     for (auto [flushTime, i] : ownedBySurfaceFlushTime2BufferIndex) {
         ChangeOwner(outputBufferPool_[i], BufferOwner::OWNED_BY_US);
