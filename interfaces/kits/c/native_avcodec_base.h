@@ -1417,7 +1417,7 @@ extern const char *OH_MD_KEY_AUDIO_OBJECT_BITRATE;
 /**
  * @brief Key for setting the video decoding frame retention mode. The value type is int32_t.
  *
- * The value represents a frame retention mode defined in {@link OH_FRAME_RETENTION_MODE}.
+ * The value represents a frame retention mode defined in {@link OH_FrameRetentionMode}.
  * Please refer to the enumeration definition for detailed descriptions of each mode
  * and their behaviors.This key can be configured via the {@link OH_VideoDecoder_Configure} and
  * {@link OH_VideoDecoder_SetParameter} interfaces.
@@ -1430,10 +1430,10 @@ extern const char *OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_MODE;
  * @brief Key for setting the video decoding frame retention ratio. The value type is double.
  *
  * This parameter takes effect when {@link OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_MODE} is set to
- * {@link OH_FRAME_RETENTION_MODE#OH_FRAME_RETENTION_MODE_UNIFORM}, or when the retention mode is not
+ * {@link OH_FrameRetentionMode#OH_FRAME_RETENTION_MODE_UNIFORM}, or when the retention mode is not
  * configured (implicitly defaulting to uniform behavior). This configuration is ignored ONLY when
- * the retention mode is explicitly set to {@link OH_FRAME_RETENTION_MODE#OH_FRAME_RETENTION_MODE_ADAPTIVE}
- * or {@link OH_FRAME_RETENTION_MODE#OH_FRAME_RETENTION_MODE_FULL}.
+ * the retention mode is explicitly set to {@link OH_FrameRetentionMode#OH_FRAME_RETENTION_MODE_ADAPTIVE}
+ * or {@link OH_FrameRetentionMode#OH_FRAME_RETENTION_MODE_FULL}.
  * The valid range is [0.01, 1.0] (where 1.0 means all frames retained and 0.01 is the minimum limit);
  * any value outside this range is considered invalid and will be ignored. This key can be configured
  * via the {@link OH_VideoDecoder_Configure} and {@link OH_VideoDecoder_SetParameter} interfaces.
@@ -1446,7 +1446,7 @@ extern const char *OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_RATIO;
  * @brief Key for configuring the video decoder playback speed. The value type is double.
  *
  * This key specifies the target playback speed of the video. It is primarily recommended
- * for use in conjunction with {@link OH_FRAME_RETENTION_MODE#OH_FRAME_RETENTION_MODE_ADAPTIVE}
+ * for use in conjunction with {@link OH_FrameRetentionMode#OH_FRAME_RETENTION_MODE_ADAPTIVE}
  * to assist the adaptive algorithm in accurately evaluating the perceptual impact of frame
  * drops. The value must be strictly greater than 0.0, with recommended standard values
  * including 0.5, 0.75, 1.0 (normal speed), 1.25, 1.5, 2.0, and 3.0; any value less than
@@ -2351,7 +2351,7 @@ typedef enum OH_TemporalGopReferenceMode {
  *
  * @since 26.0.0
  */
-typedef enum OH_FRAME_RETENTION_MODE {
+typedef enum OH_FrameRetentionMode {
     /**
      * Full frame retention mode. The decoder operates in a transparent passthrough state,
      * retaining 100% of the input frames and effectively disabling the frame dropping feature.
@@ -2375,7 +2375,7 @@ typedef enum OH_FRAME_RETENTION_MODE {
      * @since 26.0.0
      */
     OH_FRAME_RETENTION_MODE_UNIFORM
-} OH_FRAME_RETENTION_MODE;
+} OH_FrameRetentionMode;
 /**
  * @brief Enum for the PTS mode of audio encoder.
  *
