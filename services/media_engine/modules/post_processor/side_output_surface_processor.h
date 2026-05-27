@@ -120,7 +120,7 @@ private:
     std::atomic<bool> isBufferQueueReady_ {false};
     std::atomic<bool> needPrepareBuffers_ {false};
 
-    BufferRequestConfig requestCfg_;
+    BufferRequestConfig requestCfg_{};
 
     std::shared_ptr<PostProcessorCallback> callback_;
     std::shared_ptr<Pipeline::EventReceiver> eventReceiver_;
