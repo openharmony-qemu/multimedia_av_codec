@@ -48,6 +48,7 @@ std::unordered_map<HDecoder*, HDecoder::DecoderInst> g_insts;
 #ifdef USE_VIDEO_PROCESSING_ENGINE
 std::mutex g_vpeLock;
 std::vector<std::string> g_vpeSupportList{};
+std::vector<std::string> g_srSupportList{};
 bool g_isVpeSupportListInit{false};
 #endif
 
@@ -931,7 +932,10 @@ void HDecoder::CombineConsumerUsageByVpe(uint64_t& consumerUsage)
         if (!getSupportedListByTypeFunc(Media::VideoProcessingEngine::VIDEO_TYPE_AIHDR_ENHANCER, g_vpeSupportList)) {
             HLOGE("get VPE list failed");
             dlclose(vpeHandle);
-            return;
+        }
+        if (!getSupportedListByTypeFunc(Media::VideoProcessingEngine::VIDEO_TYPE_DETAIL_ENHANCER, g_srSupportList)) {
+            HLOGE("get sr list failed");
+            dlclose(vpeHandle);
         }
         g_isVpeSupportListInit = true;
         HLOGD("VPE init support list ok");
@@ -940,6 +944,11 @@ void HDecoder::CombineConsumerUsageByVpe(uint64_t& consumerUsage)
     if (std::find(g_vpeSupportList.cbegin(), g_vpeSupportList.cend(), caller_.app.processName) !=
         g_vpeSupportList.cend()) {
         consumerUsage |= (BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VENDOR_PRI10);
+        HLOGI("VPE Aihdr update usage = 0x%" PRIx64 "", consumerUsage);
+    }
+    if (std::find(g_srSupportList.cbegin(), g_srSupportList.cend(), caller_.app.processName) !=
+        g_srSupportList.cend()) {
+        consumerUsage |= (BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA);
         HLOGI("VPE Aihdr update usage = 0x%" PRIx64 "", consumerUsage);
     }
 }
