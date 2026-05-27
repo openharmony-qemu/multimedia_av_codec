@@ -431,6 +431,101 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_002, Test
 }
 
 /**
+ * @tc.name: AddEventInfo_AudioCodecSpecInfo_001
+ * @tc.desc: 1. eventType is BASIC_CREATE_CODEC_SPEC_INFO
+ *           2. CODEC_TYPE is AVCODEC_TYPE_AUDIO_DECODER
+ *           3. mimeType is audio/mp4a-latm
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AudioCodecSpecInfo_001, TestSize.Level1)
+{
+    meta_ = std::make_shared<Media::Meta>();
+    meta_->SetData(EventInfoExtentedKey::CODEC_TYPE.data(), std::to_string(AVCODEC_TYPE_AUDIO_DECODER));
+    meta_->SetData(Media::Tag::MIME_TYPE, std::string(CodecMimeType::AUDIO_AAC));
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    WaitForEventJson();
+    auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
+    auto codecSpecValue = cJSON_GetObjectItem(data.get(), "CODEC_SPECIFIED_INFO");
+    ASSERT_NE(nullptr, codecSpecValue);
+    ASSERT_TRUE(cJSON_IsString(codecSpecValue));
+    auto parsedValue = std::shared_ptr<cJSON>(cJSON_Parse(codecSpecValue->valuestring), cJSON_Delete);
+    ASSERT_NE(nullptr, parsedValue);
+    ASSERT_TRUE(cJSON_IsArray(parsedValue.get()));
+    std::string expectedKey = "SDec_" + std::string(CodecMimeType::AUDIO_AAC);
+    cJSON *child = parsedValue->child;
+    while (child != nullptr && cJSON_GetObjectItem(child, expectedKey.c_str()) == nullptr) {
+        child = child->next;
+    }
+    ASSERT_NE(nullptr, child);
+    auto item = cJSON_GetObjectItem(child, expectedKey.c_str());
+    ASSERT_NE(nullptr, item);
+    ASSERT_EQ(1, item->valueint);
+}
+
+/**
+ * @tc.name: AddEventInfo_AudioCodecSpecInfo_002
+ * @tc.desc: 1. eventType is BASIC_CREATE_CODEC_SPEC_INFO
+ *           2. CODEC_TYPE is AVCODEC_TYPE_AUDIO_ENCODER
+ *           3. mimeType is audio/mp4a-latm
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AudioCodecSpecInfo_002, TestSize.Level1)
+{
+    meta_ = std::make_shared<Media::Meta>();
+    meta_->SetData(EventInfoExtentedKey::CODEC_TYPE.data(), std::to_string(AVCODEC_TYPE_AUDIO_ENCODER));
+    meta_->SetData(Media::Tag::MIME_TYPE, std::string(CodecMimeType::AUDIO_AAC));
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    WaitForEventJson();
+    auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
+    auto codecSpecValue = cJSON_GetObjectItem(data.get(), "CODEC_SPECIFIED_INFO");
+    ASSERT_NE(nullptr, codecSpecValue);
+    ASSERT_TRUE(cJSON_IsString(codecSpecValue));
+    auto parsedValue = std::shared_ptr<cJSON>(cJSON_Parse(codecSpecValue->valuestring), cJSON_Delete);
+    ASSERT_NE(nullptr, parsedValue);
+    ASSERT_TRUE(cJSON_IsArray(parsedValue.get()));
+    std::string expectedKey = "SEnc_" + std::string(CodecMimeType::AUDIO_AAC);
+    cJSON *child = parsedValue->child;
+    while (child != nullptr && cJSON_GetObjectItem(child, expectedKey.c_str()) == nullptr) {
+        child = child->next;
+    }
+    ASSERT_NE(nullptr, child);
+    auto item = cJSON_GetObjectItem(child, expectedKey.c_str());
+    ASSERT_NE(nullptr, item);
+    ASSERT_EQ(1, item->valueint);
+}
+
+/**
+ * @tc.name: AddEventInfo_ContainerFormatInfo_001
+ * @tc.desc: 1. eventType is CONTAINER_FORMAT_INFO
+ *           2. MUXER_FORMAT is media/mp4
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_ContainerFormatInfo_001, TestSize.Level1)
+{
+    meta_ = std::make_shared<Media::Meta>();
+    meta_->SetData(EventInfoExtentedKey::MUXER_FORMAT.data(), std::string("media/mp4"));
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CONTAINER_FORMAT_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    WaitForEventJson();
+    auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
+    auto containerValue = cJSON_GetObjectItem(data.get(), "CONTAINER_FORMAT_INFO");
+    ASSERT_NE(nullptr, containerValue);
+    ASSERT_TRUE(cJSON_IsString(containerValue));
+    auto parsedValue = std::shared_ptr<cJSON>(cJSON_Parse(containerValue->valuestring), cJSON_Delete);
+    ASSERT_NE(nullptr, parsedValue);
+    auto muxerObj = cJSON_GetObjectItem(parsedValue.get(), "MUXER");
+    ASSERT_NE(nullptr, muxerObj);
+    auto item = cJSON_GetObjectItem(muxerObj, "media/mp4");
+    ASSERT_NE(nullptr, item);
+    ASSERT_EQ(1, item->valueint);
+}
+
+/**
  * @tc.name: AddEventInfo_AppSpecificationsInfo_001
  * @tc.desc: 1. eventType is APP_SPECIFICATIONS_INFO
  *           2. mimeType and isEncoder parameter test
