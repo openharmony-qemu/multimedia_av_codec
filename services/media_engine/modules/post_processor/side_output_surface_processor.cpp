@@ -459,6 +459,9 @@ GSError SideOutputSurfaceProcessor::OnProducerBufferReleased()
             }
             return err;
         }
+        if (bufferInfo.fence != nullptr) {
+            bufferInfo.fence->Wait(WAIT_FOR_EVER);
+        }
         producerBufferQueue_.push(bufferInfo);
         MEDIA_LOG_I("producerSurface->RequestBuffer id: %{public}u", bufferInfo.buffer->GetSeqNum());
     }
