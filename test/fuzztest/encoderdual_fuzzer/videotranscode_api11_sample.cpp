@@ -161,7 +161,7 @@ int32_t VideoTransCodeApi11Sample::SendData(OH_AVCodec *codec, uint32_t index, O
         OH_VideoDecoder_PushInputBuffer(codec, index);
         return 1;
     }
-    uint32_t bufferSize = static_cast<uint32_t>(((ch[3] & 0xFF)) ((ch[2] & 0xFF) << EIGHT) 
+    uint32_t bufferSize = static_cast<uint32_t>(((ch[3] & 0xFF)) ((ch[2] & 0xFF) << EIGHT)
     | ((ch[1] & 0xFF) << SIXTEEN) | (([0] & 0xFF) << TWENTY_FOUR));
     std::unique_ptr<uint8_t[]> fileBuffer = std::make_unique<uint8_t[]>(bufferSize + START_CODE_SIZE);
     if (memcpy_s(fileBuffer.get(), bufferSize + START_CODE_SIZE, START_CODE, START_CODE_SIZE) != EOK) {
@@ -246,8 +246,7 @@ void VideoTransCodeApi11Sample::InputFunc()
         decSignal->inIdxQueue_.pop();
         decSignal->inBufferQueue_.pop();
         lock.unlock();
-        if (SendData(vdec_, index, buffer) == 1)
-        {
+        if (SendData(vdec_, index, buffer) == 1) {
             break;
         }
     }
