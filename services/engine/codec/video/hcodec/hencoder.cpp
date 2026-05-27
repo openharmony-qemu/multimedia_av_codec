@@ -77,6 +77,7 @@ int32_t HEncoder::ConfigureBaseParams(const Format &format, std::optional<double
 
     (void)ConfigureOutputBitrate(format);
     (void)SetColorAspects(format);
+    (void)SetCodecScenario(format);
     (void)SetProcessName();
     (void)SetFrameRateAdaptiveMode(format);
     (void)SetIdrAppendXpsParam(format);
@@ -133,7 +134,6 @@ void HEncoder::EnableVariableFrameRate(const Format &format)
 {
     int32_t enableVariableFrameRate = 0;
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_PTS_BASED_RATECONTROL, enableVariableFrameRate)) {
-        HLOGE("fail to get video_encoder_enable_pts_based_ratecontrol");
         return;
     }
     HLOGI("video_encoder_enable_pts_based_ratecontrol flag is %d", enableVariableFrameRate);
@@ -424,6 +424,27 @@ int32_t HEncoder::OnConfigureBuffer(std::shared_ptr<AVBuffer> buffer)
         return AVCS_ERR_INVALID_VAL;
     }
     HLOGI("SetParameterWithBuffer succ");
+    return AVCS_ERR_OK;
+}
+
+int HEncoder::SetCodecScenario(const Format &format)
+{
+    int32_t scenario = static_cast<int32_t>(SCENARIO_INVALID);
+    if (format.GetIntValue(OHOS::Media::Tag::VIDEO_CODEC_SCENARIO, scenario)) {
+        HLOGI("user set Codec Scenario %d", scenario);
+    }
+    if (scenario < static_cast<int32_t>(SCENARIO_RECORDING) || scenario >= static_cast<int32_t>(SCENARIO_INVALID)) {
+        HLOGW("invalid codec Scenario");
+        return AVCS_ERR_INVALID_VAL;
+    }
+ 
+    OMX_PARAM_U32TYPE config;
+    InitOMXParam(config);
+    config.nU32 = static_cast<uint32_t>(scenario);
+    if (!SetParameter(OMX_IndexParamCodecScenario, config)) {
+        HLOGW("failed to set OMX_IndexParamOperatingRate");
+    }
+    HLOGI("set codec Scenario %d succ", scenario) ;
     return AVCS_ERR_OK;
 }
 

@@ -123,8 +123,9 @@ Status AudioTrack::WriteSample(std::shared_ptr<AVIOStream> io, const std::shared
 {
     FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_ != nullptr && sample->memory_->GetAddr() != nullptr,
         Status::ERROR_NULL_POINTER, "sample is null");
-    FALSE_RETURN_V_MSG_E(sample->pts_ >= lastTimestampUs_, Status::ERROR_INVALID_PARAMETER,
-        "pts: " PUBLIC_LOG_D64 " error, < " PUBLIC_LOG_D64, sample->pts_, lastTimestampUs_);
+    auto mpeg4Pts = ConvertTimeToMpeg4(sample->pts_, timeScale_);
+    FALSE_RETURN_V_MSG_E(mpeg4Pts > preDts_, Status::ERROR_INVALID_PARAMETER,
+        "[%{public}d] pts: " PUBLIC_LOG_D64 " error, < " PUBLIC_LOG_D64, trackId_, sample->pts_, lastTimestampUs_);
     FALSE_RETURN_V_MSG_E(io != nullptr, Status::ERROR_INVALID_OPERATION, "io is null");
     FALSE_RETURN_V_MSG_E(stsz_ != nullptr, Status::ERROR_INVALID_OPERATION, "stsz box is empty");
     int32_t skipBytes = 0;
@@ -138,13 +139,13 @@ Status AudioTrack::WriteSample(std::shared_ptr<AVIOStream> io, const std::shared
         startTimestampUs_ = sample->pts_;
         MEDIA_LOG_I("audio track:" PUBLIC_LOG_D32 ", start timestamp:" PUBLIC_LOG_D64, trackId_, startTimestampUs_);
     } else { // 先写上1帧的时间，最后少一帧stts数据，写tailer前添加
-        lastDuration_ = std::max(static_cast<int64_t>(frameSize_),
-            ConvertTimeToMpeg4(sample->pts_ - lastTimestampUs_, timeScale_));
+        lastDuration_ = std::max(static_cast<int64_t>(frameSize_), mpeg4Pts - preDts_);
         DisposeStts(lastDuration_, sample->pts_);
     }
     DisposeStco(pos);
     DisposeStsz(writeSize);
     lastTimestampUs_ = sample->pts_;
+    preDts_ = mpeg4Pts;
     pos_ = io->GetPos();
     return Status::NO_ERROR;
 }

@@ -57,7 +57,7 @@ private:
         int32_t generation = 0;
     };
 
-        struct SurfaceBufferLayout {
+    struct SurfaceBufferLayout {
         PixelFmt fmt;
         int32_t handleW = 0;
         int32_t handleH = 0;
@@ -67,7 +67,7 @@ private:
         int32_t cropTop = 0;
         int32_t cropW = 0;
         int32_t cropH = 0;
- 
+
         friend bool operator==(const SurfaceBufferLayout& layout1, const SurfaceBufferLayout& layout2)
         {
             return layout1.fmt           == layout2.fmt &&
@@ -80,11 +80,11 @@ private:
                    layout1.cropW         == layout2.cropW &&
                    layout1.cropH         == layout2.cropH;
         }
- 
+
         std::string ToString() const
         {
             std::string s;
-            s.reserve(64); //64Bytes
+            s.reserve(64); // 64Bytes
             (void)sprintf_s(s.data(), s.capacity(), "(%s, [%dx%d][%dx%d], %u/%u/%u/%u)",
                 fmt.strFmt.c_str(), handleW, handleH, byteStride, alignedHeight, cropLeft, cropTop, cropW, cropH);
             return s;
@@ -109,6 +109,7 @@ private:
     uint64_t GetVendorProducerUsage();
     uint64_t GetSurfaceConsumerUsage();
     bool SetUsageToVendor(uint64_t usage);
+
     int32_t SaveTransform(const Format &format, bool set = false);
     int32_t SetTransform();
     int32_t SaveScaleMode(const Format &format, bool set = false);
