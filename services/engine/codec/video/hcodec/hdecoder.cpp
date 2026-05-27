@@ -110,7 +110,9 @@ bool HDecoder::DecideOutputBufMode()
 
 int32_t HDecoder::OnConfigure(const Format &format)
 {
-    ClearMember();
+    currGeneration_ = 0;
+    currGenerationLayoutHasParsed_ = false;
+    currLayout_.reset();
     configFormat_ = make_shared<Format>(format);
 
     (void)SetProcessName();
@@ -1499,11 +1501,6 @@ void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode
 }
 
 void HDecoder::OnEnterUninitializedState()
-{
-    ClearMember();
-}
- 
-void HDecoder::ClearMember()
 {
     freeList_.clear();
     currSurface_.Release();
