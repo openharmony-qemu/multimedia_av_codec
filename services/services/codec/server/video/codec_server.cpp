@@ -243,7 +243,9 @@ int32_t CodecServer::Configure(const Format &format)
         StatusChanged(ERROR);
         return ret;
     }
-    ReportResolutionInfo(config);
+    if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER) {
+        ReportResolutionInfo(config);
+    }
 
     ret = CreatePostProcessing(config);
     if (ret != AVCS_ERR_OK) {
@@ -289,9 +291,6 @@ void CodecServer::ConfigureSfdManager(Format &config)
 
 void CodecServer::ReportResolutionInfo(const Format &config)
 {
-    if (codecType_ != AVCODEC_TYPE_VIDEO_ENCODER) {
-        return;
-    }
     Media::Meta statisticsMeta;
     FillStatisticsCodecInfo(statisticsMeta, codecType_, vcodecType_, codecMime_, codecName_);
     int32_t width = 0;
