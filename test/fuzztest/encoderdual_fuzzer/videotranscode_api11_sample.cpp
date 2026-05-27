@@ -33,8 +33,8 @@ constexpr int32_t EIGHT = 8;
 constexpr int32_t SIXTEEN = 16;
 constexpr int32_t TWENTY_FOUR = 24;
 constexpr uint8_t START_CODE[START_CODE_SIZE] = {0, 0, 0, 1};
-FILE *outFile = nullptr;
-FILE *outFileSec = nullptr;
+FILE *g_outFile = nullptr;
+FILE *g_outFileSec = nullptr;
 }
 
 int64_t GetSystemTimeUs()
@@ -161,9 +161,9 @@ int32_t VideoTransCodeApi11Sample::SendData(OH_AVCodec *codec, uint32_t index, O
         OH_VideoDecoder_PushInputBuffer(codec, index);
         return 1;
     }
-    uint32_t bufferSize = (uint32_t)(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) | ((ch[1] & 0xFF) << SIXTEEN) |
-                                     ((ch[0] & 0xFF) << TWENTY_FOUR));
-    std::unique_ptr<uint8_t[]> fileBuffer(new uint8_t[bufferSize + START_CODE_SIZE]);
+    uint32_t bufferSize = static_cast<uint32_t>(((ch[3] & 0xFF)) ((ch[2] & 0xFF) << EIGHT) | ((ch[1] & 0xFF) << SIXTEEN) |
+                                               (([0] & 0xFF) << TWENTY_FOUR));
+    std::unique_ptr<uint8_t[]> fileBuffer = std::make_unique<uint8_t[]>(bufferSize + START_CODE_SIZE);
     if (memcpy_s(fileBuffer.get(), bufferSize + START_CODE_SIZE, START_CODE, START_CODE_SIZE) != EOK) {
         attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
         attr.offset = 0;
@@ -193,11 +193,11 @@ VideoTransCodeApi11Sample::~VideoTransCodeApi11Sample()
 {
     inputNum = 0;
     Release();
-    if (outFile) {
-        (void)fclose(outFile);
+    if (g_outFile) {
+        (void)fclose(g_outFile);
     }
-    if (outFileSec) {
-        (void)fclose(outFileSec);
+    if (g_outFileSec) {
+        (void)fclose(g_outFileSec);
     }
 }
 
@@ -225,7 +225,7 @@ int32_t VideoTransCodeApi11Sample::CreateVideocoder(std::string codeName, std::s
 
 void VideoTransCodeApi11Sample::InputFunc()
 {
-    while (true) {
+    while (!false) {
         if (!g_isRunning.load()) {
             break;
         }
@@ -251,22 +251,16 @@ void VideoTransCodeApi11Sample::InputFunc()
     }
 }
 
-int32_t VideoTransCodeApi11Sample::Configure()
-{
-    OH_AVFormat *format = OH_AVFormat_Create();
-    if (format == nullptr) {
-        cout << "Fatal: Failed to create format" << endl;
-        return AV_ERR_UNKNOWN;
-    }
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, DEFAULT_PIXEL_FORMAT);
-    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+int32_t SetFormatValue(OH_AVFormat *format){
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, g_defaultWidth);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, g_defaultHeight);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, g_defaultPixelFormat);
+    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, g_defaultFrameRate);
     int ret = OH_VideoDecoder_Configure(vdec_, format);
     if (ret != AV_ERR_OK) {
         return ret;
     }
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, DEFAULT_PROFILE);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, g_defaultProfile);
     if (enableDownsampling) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH, downsamplingWidth);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT, downsamplingHeight);
@@ -277,6 +271,21 @@ int32_t VideoTransCodeApi11Sample::Configure()
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_RIGHT, cropRight);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM, cropBottom);
         (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_DROP_TO_FRAME_RATE, dropFrameRate);
+    }
+    return AV_ERR_OK;
+}
+
+int32_t VideoTransCodeApi11Sample::Configure()
+{
+    OH_AVFormat *format = OH_AVFormat_Create();
+    if (format == nullptr) {
+        cout << "Fatal: Failed to create format" << endl;
+        return AV_ERR_UNKNOWN;
+    }
+    int ret = AV_ERR_OK;
+    ret = SetFormatValue(format);
+    if (ret != AV_ERR_OK) {
+        return ret;
     }
     ret = OH_VideoEncoder_Configure(venc_, format);
     if (ret != AV_ERR_OK) {
@@ -318,7 +327,7 @@ int32_t VideoTransCodeApi11Sample::Start()
 {
     int32_t ret = 0;
     inFile_ = make_unique<ifstream>();
-    inFile_->open(INP_DIR, ios::in | ios::binary);
+    inFile_->open(g_inpDir, ios::in | ios::binary);
     if (!inFile_->is_open()) {
         (void)OH_VideoDecoder_Destroy(vdec_);
         (void)OH_VideoEncoder_Destroy(venc_);

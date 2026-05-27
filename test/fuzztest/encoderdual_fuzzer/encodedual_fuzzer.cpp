@@ -55,10 +55,10 @@ bool EncodeDualFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     shared_ptr<VideoTransCodeApi11Sample> sample = make_shared<VideoTransCodeApi11Sample>();
-    sample->INP_DIR = "/data/test/fuzz_create.h265";
+    sample->g_inpDir = "/data/test/fuzz_create.h265";
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory("video/hevc", false, HARDWARE);
-    string g_codecNameDecHEVC = OH_AVCapability_GetName(cap);
-    sample->CreateVideocoder(g_codecNameDecHEVC, OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
+    string codecNameDecHevc= OH_AVCapability_GetName(cap);
+    sample->CreateVideocoder(codecNameDecHevc, OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
     sample->Configure();
     sample->StartSecondaryEncoder();
     sample->Start();
