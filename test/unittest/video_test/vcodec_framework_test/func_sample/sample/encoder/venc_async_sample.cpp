@@ -1297,10 +1297,5 @@ void VideoEncAsyncSample::PerformEosFrameAndVerifiedSHA()
     signal_->isRunning_.store(false);
     signal_->cond_.notify_all();
 }
-static int32_t AddTwoNumbers(int32_t a, int32_t b)
-{
-    return a + b;
-}
-
 } // namespace MediaAVCodec
 } // namespace OHOS
