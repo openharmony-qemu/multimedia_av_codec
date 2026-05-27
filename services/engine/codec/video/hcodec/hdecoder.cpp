@@ -1101,6 +1101,7 @@ int32_t HDecoder::AllocateOutputBuffersFromOmx()
         info.omxBuffer = outBuffer;
         info.bufferId = outBuffer->bufferId;
         info.attached = true;
+        info.needDealWithCache = (currSurface_.surface_ == nullptr);
         outputBufferPool_.push_back(info);
         HLOGI("generation=%d, bufferId=%u, seq=%u", currGeneration_, info.bufferId, surfaceBuffer->GetSeqNum());
     }
@@ -1308,7 +1309,7 @@ void HDecoder::DynamicModeSubmitBufferToSlot(sptr<SurfaceBuffer>& buffer, std::v
     IF_TRUE_RETURN_VOID_WITH_MSG(avBuffer == nullptr || avBuffer->memory_ == nullptr, "CreateAVBuffer failed");
     nullSlot->avBuffer = avBuffer;
     if (currSurface_.surface_ == nullptr) {
-        nullSlot->needDealWithCache = (requestCfg_.usage & BUFFER_USAGE_MEM_MMZ_CACHE);
+        nullSlot->needDealWithCache = true;
     }
     SetCallerToBuffer(buffer->GetFileDescriptor(),
                       static_cast<uint32_t>(buffer->GetWidth()),
