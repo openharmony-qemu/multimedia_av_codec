@@ -1922,6 +1922,7 @@ std::shared_ptr<AVBuffer> AudioSink::CopyPcmBuffer(const std::shared_ptr<AVBuffe
 Status AudioSink::ReleaseDecodedBuffer()
 {
     FALSE_RETURN_V(inputBufferQueueConsumer_ != nullptr, Status::ERROR_UNKNOWN);
+    FALSE_RETURN_V(!decodedBuffers_.empty(), Status::OK);
     auto decodedBuffer = std::move(decodedBuffers_.front());
     decodedBuffers_.pop();
     inputBufferQueueConsumer_->ReleaseBuffer(decodedBuffer);
