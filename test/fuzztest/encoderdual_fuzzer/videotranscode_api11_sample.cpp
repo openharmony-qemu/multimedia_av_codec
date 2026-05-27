@@ -132,7 +132,7 @@ static void OnEncOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVBuffer 
 int32_t DecAvcPushData(OH_AVBuffer *buffer, uint32_t bufferSize, std::unique_ptr<uint8_t[]> &&fileBuffer)
 {
     int32_t size = OH_AVBuffer_GetCapacity(buffer);
-    if (size < bufferSize + START_CODE_SIZE) {
+    if (size < static_cast<int32_t>(bufferSize) + START_CODE_SIZE) {
         cout << "error: size < bufferSize" << endl;
         return 1;
     }
@@ -161,8 +161,8 @@ int32_t VideoTransCodeApi11Sample::SendData(OH_AVCodec *codec, uint32_t index, O
         OH_VideoDecoder_PushInputBuffer(codec, index);
         return 1;
     }
-    uint32_t bufferSize = static_cast<uint32_t>(((ch[3] & 0xFF)) ((ch[2] & 0xFF) << EIGHT)
-    | ((ch[1] & 0xFF) << SIXTEEN) | (([0] & 0xFF) << TWENTY_FOUR));
+    uint32_t bufferSize = static_cast<uint32_t>(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT)
+    | ((ch[1] & 0xFF) << SIXTEEN) | ((ch[0] & 0xFF) << TWENTY_FOUR));
     std::unique_ptr<uint8_t[]> fileBuffer = std::make_unique<uint8_t[]>(bufferSize + START_CODE_SIZE);
     if (memcpy_s(fileBuffer.get(), bufferSize + START_CODE_SIZE, START_CODE, START_CODE_SIZE) != EOK) {
         attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
@@ -252,7 +252,7 @@ void VideoTransCodeApi11Sample::InputFunc()
     }
 }
 
-int32_t SetFormatValue(OH_AVFormat *format)
+int32_t VideoTransCodeApi11Sample::SetFormatValue(OH_AVFormat *format)
 {
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, defaultWidth);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, defaultHeight);
