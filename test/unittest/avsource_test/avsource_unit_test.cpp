@@ -31,6 +31,7 @@
 #include "avsource_unit_test.h"
 #include "media_data_source.h"
 #include "native_avsource.h"
+#include "syspara/parameters.h"
 
 #define LOCAL true
 #define URI false
@@ -152,6 +153,9 @@ string g_mp4LargeTrefPath = TEST_FILE_PATH + string("large_tref.mp4");
 
 void AVSourceUnitTest::SetUpTestCase(void)
 {
+#ifdef USER_MPEG4_DEMUXER
+    OHOS::system::SetParameter("Mpeg4DemuxerPlugin.enable", "1")
+#endif
     server = make_unique<FileServerDemo>();
     server->StartServer();
 }
@@ -159,6 +163,9 @@ void AVSourceUnitTest::SetUpTestCase(void)
 void AVSourceUnitTest::TearDownTestCase(void)
 {
     server->StopServer();
+#ifdef USER_MPEG4_DEMUXER
+    OHOS::system::SetParameter("Mpeg4DemuxerPlugin.enable", "0");
+#endif
 }
 
 void AVSourceUnitTest::SetUp(void) {}
