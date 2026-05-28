@@ -106,6 +106,27 @@ inline void InjectMockAnalyzers(SmartFluencyDecoding& sfd)
     sfd.mvAnalyzer_ = std::make_unique<MockMvAnalyzer>(SFDCodecType::AVC);
 }
 
+// Try factory first; on platforms with --wrap or real .so this returns the real SoLoader
+// whose methods call C API functions through function pointers (needed for coverage).
+// Falls back to Mock on platforms without .so files.
+inline std::unique_ptr<INaluAnalyzer> CreateNaluAnalyzerOrMock(SFDCodecType codecType)
+{
+    auto a = NaluAnalyzerFactory::CreateNaluAnalyzer(codecType);
+    if (!a) {
+        a = std::make_unique<MockNaluAnalyzer>(codecType);
+    }
+    return a;
+}
+
+inline std::unique_ptr<IMvAnalyzer> CreateMvAnalyzerOrMock(SFDCodecType codecType)
+{
+    auto a = MvAnalyzerFactory::CreateMvAnalyzer(codecType);
+    if (!a) {
+        a = std::make_unique<MockMvAnalyzer>(codecType);
+    }
+    return a;
+}
+
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS

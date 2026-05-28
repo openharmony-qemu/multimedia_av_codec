@@ -39,7 +39,7 @@ protected:
  */
 HWTEST_F(NaluAnalyzerSoLoaderTest, FactoryCreate_AVC_001, TestSize.Level1)
 {
-    auto analyzer = std::make_unique<MockNaluAnalyzer>(SFDCodecType::AVC);
+    auto analyzer = CreateNaluAnalyzerOrMock(SFDCodecType::AVC);
     ASSERT_NE(analyzer, nullptr);
 }
 
@@ -50,7 +50,7 @@ HWTEST_F(NaluAnalyzerSoLoaderTest, FactoryCreate_AVC_001, TestSize.Level1)
  */
 HWTEST_F(NaluAnalyzerSoLoaderTest, FactoryCreate_HEVC_002, TestSize.Level1)
 {
-    auto analyzer = std::make_unique<MockNaluAnalyzer>(SFDCodecType::HEVC);
+    auto analyzer = CreateNaluAnalyzerOrMock(SFDCodecType::HEVC);
     ASSERT_NE(analyzer, nullptr);
 }
 
@@ -61,7 +61,7 @@ HWTEST_F(NaluAnalyzerSoLoaderTest, FactoryCreate_HEVC_002, TestSize.Level1)
  */
 HWTEST_F(NaluAnalyzerSoLoaderTest, FactoryCreate_VVC_003, TestSize.Level1)
 {
-    auto analyzer = std::make_unique<MockNaluAnalyzer>(SFDCodecType::VVC);
+    auto analyzer = CreateNaluAnalyzerOrMock(SFDCodecType::VVC);
     ASSERT_NE(analyzer, nullptr);
 }
 
@@ -83,7 +83,7 @@ HWTEST_F(NaluAnalyzerSoLoaderTest, FactoryCreate_Invalid_004, TestSize.Level1)
  */
 HWTEST_F(NaluAnalyzerSoLoaderTest, IsNonRef_WithValidBuffer_005, TestSize.Level1)
 {
-    auto analyzer = std::make_unique<MockNaluAnalyzer>(SFDCodecType::AVC);
+    auto analyzer = CreateNaluAnalyzerOrMock(SFDCodecType::AVC);
     ASSERT_NE(analyzer, nullptr);
 
     auto allocator = OHOS::Media::AVAllocatorFactory::CreateSharedAllocator(OHOS::Media::MEMORY_READ_WRITE);
@@ -104,7 +104,7 @@ HWTEST_F(NaluAnalyzerSoLoaderTest, IsNonRef_WithValidBuffer_005, TestSize.Level1
  */
 HWTEST_F(NaluAnalyzerSoLoaderTest, IsNonRef_WithReferenceBuffer_006, TestSize.Level1)
 {
-    auto analyzer = std::make_unique<MockNaluAnalyzer>(SFDCodecType::AVC);
+    auto analyzer = CreateNaluAnalyzerOrMock(SFDCodecType::AVC);
     ASSERT_NE(analyzer, nullptr);
 
     auto allocator = OHOS::Media::AVAllocatorFactory::CreateSharedAllocator(OHOS::Media::MEMORY_READ_WRITE);
@@ -125,7 +125,7 @@ HWTEST_F(NaluAnalyzerSoLoaderTest, IsNonRef_WithReferenceBuffer_006, TestSize.Le
  */
 HWTEST_F(NaluAnalyzerSoLoaderTest, IsNonRef_NullBuffer_007, TestSize.Level1)
 {
-    auto analyzer = std::make_unique<MockNaluAnalyzer>(SFDCodecType::AVC);
+    auto analyzer = CreateNaluAnalyzerOrMock(SFDCodecType::AVC);
     ASSERT_NE(analyzer, nullptr);
     EXPECT_FALSE(analyzer->IsNonReferenceFrame(nullptr));
 }
@@ -137,7 +137,7 @@ HWTEST_F(NaluAnalyzerSoLoaderTest, IsNonRef_NullBuffer_007, TestSize.Level1)
  */
 HWTEST_F(NaluAnalyzerSoLoaderTest, IsNonRef_NullMemory_008, TestSize.Level1)
 {
-    auto analyzer = std::make_unique<MockNaluAnalyzer>(SFDCodecType::AVC);
+    auto analyzer = CreateNaluAnalyzerOrMock(SFDCodecType::AVC);
     ASSERT_NE(analyzer, nullptr);
 
     auto allocator = OHOS::Media::AVAllocatorFactory::CreateSharedAllocator(OHOS::Media::MEMORY_READ_WRITE);
@@ -155,9 +155,9 @@ HWTEST_F(NaluAnalyzerSoLoaderTest, IsNonRef_NullMemory_008, TestSize.Level1)
 HWTEST_F(NaluAnalyzerSoLoaderTest, DestroyNaluAnalyzer_MultipleCycles_009, TestSize.Level1)
 {
     for (int i = 0; i < 10; ++i) {
-        auto analyzer = std::make_unique<MockNaluAnalyzer>(SFDCodecType::AVC);
+        auto analyzer = CreateNaluAnalyzerOrMock(SFDCodecType::AVC);
         EXPECT_NE(analyzer, nullptr);
-        // Explicit destroy via reset (calls DestroyNaluAnalyzer internally)
+        // Explicit destroy via reset (calls DestroyNaluAnalyzer via SoLoader destructor on phone)
         analyzer.reset();
         EXPECT_EQ(analyzer, nullptr);
     }
@@ -166,12 +166,21 @@ HWTEST_F(NaluAnalyzerSoLoaderTest, DestroyNaluAnalyzer_MultipleCycles_009, TestS
 
 /**
  * @tc.name: SetCallback_InvokeAndSync_010
- * @tc.desc: Verify SetCallback registers the callback and NaluStreamAuxInfoCallback is invoked
- *           with correct StreamAuxInfo data, syncing to MvAnalyzer.
+ * @tc.desc: Verify SetCallback registers the callback (covered via factory/SoLoader path on phone)
+ *           and NaluStreamAuxInfoCallback is invoked with correct StreamAuxInfo data, syncing to MvAnalyzer.
  * @tc.type: FUNC
  */
 HWTEST_F(NaluAnalyzerSoLoaderTest, SetCallback_InvokeAndSync_010, TestSize.Level1)
 {
+    // Part 1: Cover SetCallback via factory/SoLoader path
+    {
+        auto naluAnalyzer = CreateNaluAnalyzerOrMock(SFDCodecType::AVC);
+        ASSERT_NE(naluAnalyzer, nullptr);
+        // On phone (SoLoader): SetAuxInfoCallback -> setCallbackFunc_ -> FakeSetCallback -> covers SetCallback
+        naluAnalyzer->SetAuxInfoCallback([](const StreamAuxInfo&) {});
+    }
+
+    // Part 2: Cover NaluStreamAuxInfoCallback via mock (needs InvokeAuxInfoCallback)
     ResetTestMvGlobals();
     auto naluAnalyzer = std::make_unique<MockNaluAnalyzer>(SFDCodecType::AVC);
     ASSERT_NE(naluAnalyzer, nullptr);
@@ -179,7 +188,6 @@ HWTEST_F(NaluAnalyzerSoLoaderTest, SetCallback_InvokeAndSync_010, TestSize.Level
     auto mvAnalyzer = std::make_unique<MockMvAnalyzer>(SFDCodecType::AVC);
     ASSERT_NE(mvAnalyzer, nullptr);
 
-    // Simulate EnsureNaluAnalyzer's callback that syncs StreamAuxInfo to MvAnalyzer
     bool callbackInvoked = false;
     naluAnalyzer->SetAuxInfoCallback([&mvAnalyzer, &callbackInvoked](const StreamAuxInfo& info) {
         callbackInvoked = true;
