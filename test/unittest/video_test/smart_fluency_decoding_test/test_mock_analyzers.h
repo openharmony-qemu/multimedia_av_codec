@@ -56,6 +56,13 @@ public:
         uint8_t nalRefIdc = (naluHeader >> 5) & 0x03;
         return nalRefIdc == 0;
     }
+    // Test hook: directly invoke the stored callback to simulate SO library trigger.
+    void InvokeAuxInfoCallback(const StreamAuxInfo& info)
+    {
+        if (callback_) {
+            callback_(info);
+        }
+    }
 private:
     SFDCodecType codecType_;
     OnStreamAuxInfoParsed callback_{nullptr};
