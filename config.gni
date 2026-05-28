@@ -71,6 +71,10 @@ declare_args() {
   if (defined(global_parts_info) && !defined(global_parts_info.hiviewdfx_api_metrics)) {
       av_codec_enable_api_metrics = false
   }
+  av_codec_support_video_encoder_preprocessing = false
+  if (defined(global_parts_info) && defined(global_parts_info.UtilityApplication_FAST)) {
+    av_codec_support_video_encoder_preprocessing = true
+  }
 }
 av_codec_sanitize = {
   boundary_sanitize = true
@@ -251,4 +255,8 @@ if (av_codec_enable_demuxer_truehd) {
 
 if (av_codec_support_10bit_test) {
   av_codec_defines += ["SUPPORT_10BIT_TEST"]
+}
+
+if (av_codec_support_video_encoder_preprocessing) {
+  av_codec_defines += ["SUPPORT_VIDEO_ENCODER_PREPROCESSING"]
 }
