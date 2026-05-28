@@ -162,6 +162,10 @@ protected:
     void CompareSampleDigest(const SampleDigest& lhs, const SampleDigest& rhs);
     void CompareSeekReadResult(const std::string& filePath, const std::vector<int64_t>& seekTimes,
         const std::vector<Plugins::SeekMode>& seekModes, bool useUri = false);
+    void CheckSeekFirstVideoSampleWithSourceTimeline(const std::string& filePath, const std::vector<int64_t>& seekTimes,
+        const std::vector<Plugins::SeekMode>& seekModes, bool useUri = false);
+    void CheckSeekReadResultWithSourceTimeline(const std::string& filePath, const std::vector<int64_t>& seekTimes,
+        const std::vector<Plugins::SeekMode>& seekModes);
     void CheckSeekReadResultWithExpected(const std::string& filePath,
         const std::vector<SeekExpectedResult>& expectedResults, bool useUri = false);
     void CheckSeekToFrameByDtsResult(const std::string& filePath, const std::string& testLabel);
