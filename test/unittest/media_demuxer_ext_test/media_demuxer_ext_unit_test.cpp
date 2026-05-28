@@ -8824,6 +8824,8 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_Pause_002, TestSize.Level1)
     EXPECT_EQ(mediaDemuxer_->CheckTrackEnabledById(mediaDemuxer_->audioTrackId_), true);
 
     mediaDemuxer_->enableSampleQueue_ = true;
+    mediaDemuxer_->isAudioDemuxDecodeAsync_ = true;
+    mediaDemuxer_->isTranscoderMode_ = false;
     EXPECT_EQ(mediaDemuxer_->GetEnableSampleQueueFlag(), true);
 
     auto ret = mediaDemuxer_->Pause();
@@ -8872,6 +8874,8 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_Pause_004, TestSize.Level1)
     EXPECT_EQ(mediaDemuxer_->CheckTrackEnabledById(mediaDemuxer_->audioTrackId_), false);
 
     mediaDemuxer_->enableSampleQueue_ = true;
+    mediaDemuxer_->isAudioDemuxDecodeAsync_ = true;
+    mediaDemuxer_->isTranscoderMode_ = false;
     EXPECT_EQ(mediaDemuxer_->GetEnableSampleQueueFlag(), true);
 
     auto ret = mediaDemuxer_->Pause();
