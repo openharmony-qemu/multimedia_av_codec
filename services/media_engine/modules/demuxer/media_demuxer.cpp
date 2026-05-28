@@ -6120,7 +6120,7 @@ void MediaDemuxer::CheckPtsDiscontinuity(int32_t trackId, std::shared_ptr<AVBuff
     FALSE_RETURN_NOLOG(!isSelectBitRate_.load());
     FALSE_RETURN_NOLOG(!(buffer->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS)));
 
-    int64_t curPts = buffer->pts;
+    int64_t curPts = buffer->pts_;
     int64_t lastPts = 0;
     if (trackId == videoTrackId_) {
         lastPts = lastVideoPts_;
@@ -6131,7 +6131,7 @@ void MediaDemuxer::CheckPtsDiscontinuity(int32_t trackId, std::shared_ptr<AVBuff
     }
 
     constexpr int64_t ptsDiscontinueThresholdUs = 1000000;
-    int64_t ptsDiff = curPts > latPts ? (curPts - lastPts) : (lastPts - curPts);
+    int64_t ptsDiff = curPts > lastPts ? (curPts - lastPts) : (lastPts - curPts);
     if (ptsDiff > ptsDiscontinueThresholdUs && lastPts != 0) {
         MEDIA_LOG_I("PTS discontinuity detected, track " PUBLIC_LOG_D32
         ", lastPts " PUBLIC_LOG_D64 ", curPts " PUBLIC_LOG_D64, trackId, lastPts, curPts);
