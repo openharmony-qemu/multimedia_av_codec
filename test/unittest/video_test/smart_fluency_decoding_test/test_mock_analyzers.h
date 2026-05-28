@@ -43,16 +43,16 @@ public:
         }
         const uint8_t* addr = inputBuffer->memory_->GetAddr();
         uint32_t size = static_cast<uint32_t>(inputBuffer->memory_->GetSize());
-        constexpr uint8_t START_CODE[] = {0x00, 0x00, 0x00, 0x01};
-        constexpr size_t START_CODE_LEN = sizeof(START_CODE);
-        constexpr size_t MIN_NALU_SIZE = START_CODE_LEN + 1;
-        if (addr == nullptr || size < MIN_NALU_SIZE) {
+        constexpr uint8_t startCode[] = {0x00, 0x00, 0x00, 0x01};
+        constexpr size_t startCodeLength = sizeof(startCode);
+        constexpr size_t minNaluSize = startCodeLength + 1;
+        if (addr == nullptr || size < minNaluSize) {
             return false;
         }
-        if (std::memcmp(addr, START_CODE, START_CODE_LEN) != 0) {
+        if (std::memcmp(addr, startCode, startCodeLength) != 0) {
             return false;
         }
-        uint8_t naluHeader = addr[START_CODE_LEN];
+        uint8_t naluHeader = addr[startCodeLength];
         uint8_t nalRefIdc = (naluHeader >> 5) & 0x03;
         return nalRefIdc == 0;
     }
@@ -78,7 +78,8 @@ public:
     }
     void SetVideoInfo(uint32_t width, uint32_t height) override
     {
-        width_ = width; height_ = height;
+        width_ = width;
+        height_ = height;
         SetTestVideoInfoGlobals(width, height);
     }
     MVStats Analyze(const uint8_t* buffer, uint32_t length) override
