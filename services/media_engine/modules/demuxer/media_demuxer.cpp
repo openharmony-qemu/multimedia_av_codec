@@ -118,7 +118,8 @@ constexpr int32_t DURATION_CHANGE_AMOUNT_MILLIONSECOND = 500;
 constexpr int64_t MAX_PRECENT = 100;
 constexpr int64_t TEMP_PRECENT = 100;
 const std::unordered_map<PluginDfxEventType, std::pair<std::string, DfxEventType>> DFX_EVENT_MAP = {
-    { PluginDfxEventType::PERF_SOURCE, { "SRC", DfxEventType::DFX_INFO_PERF_REPORT } }
+    { PluginDfxEventType::PERF_SOURCE, { "SRC", DfxEventType::DFX_INFO_PERF_REPORT } },
+    { PluginDfxEventType::PERF_LOADING_ERROR, { "LOADING_ERROR", DfxEventType::DFX_EVENT_LOADING_ERROR } }
 };
 constexpr uint32_t LIMIT_MEMORY_REPORT_COUNT = 1000;
 constexpr int32_t DFX_BUFFER_QUEUE_SIZE_MAX = 50;
@@ -3234,6 +3235,7 @@ Status MediaDemuxer::HandleReadSample(int32_t trackId)
         if (isAutoMaintainPts_.load() && trackId != subtitleTrackId_) {
             HandleAutoMaintainPts(trackId, bufferMap_[trackId]);
         }
+        CheckPtsDiscontinuity(trackId, bufferMap_[trackId]);
         lastVideoPts_ = trackId == videoTrackId_ ? bufferMap_[trackId]->pts_ : lastVideoPts_;
         lastAudioPtsInMute_ = trackId == audioTrackId_ ? bufferMap_[trackId]->pts_ : lastAudioPtsInMute_;
         bool isDroppable = IsBufferDroppable(bufferMap_[trackId], trackId);
@@ -3428,6 +3430,7 @@ bool MediaDemuxer::HandleDashChangeStream(int32_t trackId, bool isNeedAllEos)
                 demuxerPluginManager_->GetCurrentBitRate());
             isSelectBitRate_.store(targetBitRate_ != demuxerPluginManager_->GetCurrentBitRate());
             ProcessTrackSelectionFilter();
+            ReportMediaChangedEvent();
         }
     } else {
         isSelectTrack_.store(true);
@@ -3440,11 +3443,18 @@ bool MediaDemuxer::HandleDashChangeStream(int32_t trackId, bool isNeedAllEos)
             }
             streamDemuxer_->SetChangeFlag(true);
             ProcessTrackSelectionFilter();
+            ReportMediaChangedEvent();
         }
         isSelectTrack_.store(false);
     }
     AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGE, LOG_INTERVAL_MS, LOG_MAX_COUNT, "Change stream success");
     return ret;
+}
+
+void MediaDemuxer::ReportMediaChangedEvent()
+{
+    FALSE_RETURN(eventReceiver_ != nullptr);
+    eventReceiver_->OnDfxEvent({"DEMUX", DfxEventType::DFX_EVENT_MEDIA_CHANGED, true});
 }
 
 void MediaDemuxer::RecordDemuxerTimeStamp(AVBuffer &buffer, StallingStage stage)
@@ -4110,11 +4120,13 @@ void MediaDemuxer::DispatchPluginEvent(const Plugins::PluginEvent &event,
         case PluginEventType::SOURCE_BITRATE_START: {
             MEDIA_LOG_D("OnEvent source bitrate start");
             eventReceiver->OnEvent({"demuxer_filter", EventType::EVENT_SOURCE_BITRATE_START, event.param});
+            ReportMediaChangedEvent();
             break;
         }
         case PluginEventType::FLV_AUTO_SELECT_BITRATE: {
             MEDIA_LOG_D("OnEvent flv auto select bitrate.");
             eventReceiver->OnEvent({"demuxer_filter", EventType::EVENT_FLV_AUTO_SELECT_BITRATE, event.param});
+            ReportMediaChangedEvent();
             break;
         }
         case PluginEventType::SOURCE_TIMED_METADATA: {
@@ -6099,6 +6111,33 @@ bool MediaDemuxer::IsSubtitleTrackId(int32_t trackId)
     FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, false, "demuxerPluginManger_ is nullptr");
     TrackType trackType = demuxerPluginManager_->GetTrackTypeByTrackID(trackId);
     return trackType == TrackType::TRACK_SUBTITLE;
+}
+
+void MediaDemuxer::CheckPtsDiscontinuity(int32_t trackId, std::shared_ptr<AVBuffer> buffer)
+{
+    FALSE_RETURN_NOLOG(eventReceiver_ != nullptr);
+    FALSE_RETURN_NOLOG(!isFirstFrameAfterSeek_.load());
+    FALSE_RETURN_NOLOG(!isSelectTrack_.load());
+    FALSE_RETURN_NOLOG(!isSelectBitRate_.load());
+    FALSE_RETURN_NOLOG(!(buffer->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS)));
+
+    int64_t curPts = buffer->pts;
+    int64_t lastPts = 0;
+    if (trackId == videoTrackId_) {
+        lastPts = lastVideoPts_;
+    } else if (trackId == audioTrackId_) {
+        lastPts = lastAudioPts_;
+    } else {
+        return;
+    }
+
+    constexpr int64_t PTS_DISCONTINUE_THRESHOLD_US = 1000000;
+    int64_t ptsDiff = curPts > latPts ? (curPts - lastPts) : (lastPts - curPts);
+    if (ptsDiff > PTS_DISCONTINUE_THRESHOLD_US && lastPts != 0) {
+        MEDIA_LOG_I("PTS discontinuity detected, track " PUBLIC_LOG_D32
+        ", lastPts " PUBLIC_LOG_D64 ", curPts " PUBLIC_LOG_D64, trackId, lastPts, curPts);
+        eventReceiver_->OnDfxEvent({"DEMUX", DfxEventType::DFX_EVENT_MEDIA_DISCONTINUE, true});
+    }
 }
 } // namespace Media
 } // namespace OHOS

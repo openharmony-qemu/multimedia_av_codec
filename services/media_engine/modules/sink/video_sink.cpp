@@ -202,6 +202,7 @@ void VideoSink::ResetSyncInfo()
     needUpdateTimeAnchor_ = true;
     lagDetector_.Reset();
     perfRecorder_.Reset();
+    avSyncDetector_.Reset();
 }
 
 Status VideoSink::GetLatency(uint64_t& nanoSec)
@@ -302,6 +303,7 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
         MEDIA_LOG_D("buffer is too late");
     }
     lastBufferAnchoredClockTime_ = bufferAnchoredClockTime;
+    avSyncDetector_.CheckSync(diff, buffer->pts_);
     bool dropFlag = tooLate && ((buffer->flag_ & BUFFER_FLAG_KEY_FRAME) == 0); // buffer is too late, drop it
     return dropFlag ? -1 : waitTimeUs;
 }
@@ -456,6 +458,59 @@ void VideoSink::SetMediaMuted(bool isMuted)
         }
     }
     isMuted_ = isMuted;
+}
+
+void VideoSink::AVSyncDetector::Reset()
+{
+    isInAVSync_ = false;
+    syncStartPts_ = 0;
+}
+
+void VideoSink::AVSyncDetector::CheckSync(int64_t diffUs, int64_t pts)
+{
+    if (std::abs(diffUs) > AV_SYNC_THRESHOLD_US) {
+        if (!isInAVSync_) {
+            isInAVSync_ = true;
+            syncStartPts_ = pts;
+            syncCount_++;
+            MEDIA_LOG_D("AVSync start, pts: " PUBLIC_LOG_D64 ", diff: " PUBLIC_LOG_D64 " us", pts, diffUs);
+            if (eventReceiver_ != nullptr) {
+                eventReceiver_->OnDfxEvent({"VideoSink", DfxEventType::DFX_EVENT_AVDESYNC, isInAVSync_});
+            }
+        } else if ((pts - syncStartPts_) > AV_SYNC_CUMULATIVE_US) {
+            totalSyncDurationUs_ += pts - syncStartPts_;
+            syncStartPts_ = pts;
+        }
+    } else {
+        if (isInAVSync_) {
+            int64_t duration = pts - syncStartPts_;
+            if (duration > 0) {
+                totalSyncDurationUs_ += duration;
+                MEDIA_LOG_D("AVSync end, startPts: " PUBLIC_LOG_D64 ", endPts: " PUBLIC_LOG_D64
+                    ", duration: " PUBLIC_LOG_D64 " us, count: " PUBLIC_LOG_D64 ", totalDuration: "
+                    PUBLIC_LOG_D64 " us", syncStartPts_, pts, duration, syncCount_, totalSyncDurationUs_);
+            }
+            isInAVSync_ = false;
+            syncStartPts_ = 0;
+        }
+    }
+}
+
+void VideoSink::AVSyncDetector::GetAVSyncInfo(int64_t& syncCount, int64_t& totalSyncDurationMs)
+{
+    syncCount = syncCount_;
+    totalSyncDurationMs = totalSyncDurationUs_ / MS_PER_US;
+}
+
+void VideoSink::AVSyncDetector::SetEventReceiver(const std::shared_ptr<EventReceiver> eventReceiver)
+{
+    eventReceiver_ = eventReceiver;
+}
+
+Status VideoSink::GetAVSyncInfo(int64_t& syncCount, int64_t& totalSyncDurationMs)
+{
+    avSyncDetector_.GetAVSyncInfo(syncCount, totalSyncDurationMs);
+    return Status::OK;
 }
 } // namespace Pipeline
 } // namespace MEDIA

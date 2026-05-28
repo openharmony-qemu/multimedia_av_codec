@@ -292,6 +292,7 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
     }
 
     if (downloader_ != nullptr && downloader_->IsNotRetry(request)) { // flv living
+        ReportLoadingErrorEvent();
         NotifyError(clientError, serverError);
         downloader_->SetDownloadErrorState();
         return false;
@@ -311,6 +312,7 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
         SERVER_RETRY_ERROR_CODES.find(serverError) == SERVER_RETRY_ERROR_CODES.end() ||
         serverError > SERVER_ERROR_THRESHOLD) {
         MEDIA_LOG_W("error code dont't need to retry.");
+        ReportLoadingErrorEvent();
         NotifyError(clientError, serverError);
         if (downloader_ != nullptr) {
             downloader_->SetDownloadErrorState();
@@ -322,6 +324,7 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
     int retryTimesTmp = clientError == -1 ? APP_DOWNLOAD_RETRY_TIMES : RETRY_TIMES_TO_REPORT_ERROR;
     if (retryTimes > retryTimesTmp) { // Report error to upper layer
         MEDIA_LOG_W("Retry times readches the upper limit.");
+        ReportLoadingErrorEvent();
         NotifyError(clientError, serverError);
         if (downloader_ != nullptr) {
             downloader_->SetDownloadErrorState();
@@ -329,6 +332,16 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
         return false;
     }
     return true;
+}
+
+void DownloadMonitor::ReportLoadingErrorEvent()
+{
+    auto callback = callback_.lock();
+    if (callback == nullptr) {
+        MEDIA_LOG_E("callback_ is nullptr, report loading error failed");
+        return;
+    }
+    callback->OnDfxEvent({PluginDfxEvent::PERF_LOADING_ERROR, true});
 }
 
 void DownloadMonitor::OnDownloadStatus(std::shared_ptr<Downloader>& downloader,
