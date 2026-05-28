@@ -91,6 +91,7 @@ private:
         int64_t syncStartPts_ = 0;
         int64_t syncCount_ = 0;
         int64_t totalSyncDurationUs_ = 0;
+        std::shared_ptr<EventReceiver> eventReceiver_ { nullptr };
     };
 
     std::atomic<bool> needUpdateTimeAnchor_ {true};
