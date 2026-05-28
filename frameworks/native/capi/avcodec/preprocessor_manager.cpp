@@ -79,7 +79,7 @@ void DumpSurfaceBuffer(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer, const std:
     OH_NativeBuffer_Planes *planes = nullptr;
     if (buffer->GetPlanesInfo(reinterpret_cast<void **>(&planes)) == OHOS::GSERROR_OK &&
         planes != nullptr && planes->planeCount > 1 && stride > 0) {
-        sliceH = static_cast<int32_t>(planes->planes[1].offset / stride);
+        sliceH = static_cast<int32_t>(planes->planes[1].offset / static_cast<uint64_t>(stride));
     }
     int32_t fmt = buffer->GetFormat();
     char name[256];

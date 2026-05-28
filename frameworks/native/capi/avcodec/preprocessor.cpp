@@ -15,9 +15,11 @@
 
 #include "preprocessor.h"
 #include <algorithm>
+#include <charconv>
 #include <cmath>
 #include <cstring>
 #include <limits>
+#include <optional>
 #include <regex>
 #include <string>
 #include <vector>
@@ -65,6 +67,13 @@ constexpr size_t ROI_MATCH_BOTTOM_INDEX = 3;
 constexpr size_t ROI_MATCH_RIGHT_INDEX = 4;
 constexpr size_t ROI_MATCH_PARAM_INDEX = 5;
 auto fastKitEnable = OHOS::system::GetBoolParameter("persist.OHOS.MediaAVCodec.FastKit.Enable", false);
+
+std::optional<int32_t> ParseInt32(const std::string &str)
+{
+    int32_t value = 0;
+    auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), value);
+    return ec == std::errc{} && ptr == (str.data() + str.size()) ? std::optional<int32_t>(value) : std::nullopt;
+}
 
 double RoundToTwoDecimals(double value)
 {
@@ -119,14 +128,17 @@ std::string TransformRoiMetadata(const std::string &roi, double scaleX, double s
     std::string temp = roi;
     std::string result;
     while (std::regex_search(temp, match, roiPattern)) {
-        int32_t top = std::stoi(match[ROI_MATCH_TOP_INDEX].str());
-        int32_t left = std::stoi(match[ROI_MATCH_LEFT_INDEX].str());
-        int32_t bottom = std::stoi(match[ROI_MATCH_BOTTOM_INDEX].str());
-        int32_t right = std::stoi(match[ROI_MATCH_RIGHT_INDEX].str());
-        int32_t newTop = static_cast<int32_t>(std::round(top * scaleY)) - offsetTop;
-        int32_t newLeft = static_cast<int32_t>(std::round(left * scaleX)) - offsetLeft;
-        int32_t newBottom = static_cast<int32_t>(std::round(bottom * scaleY)) - offsetTop;
-        int32_t newRight = static_cast<int32_t>(std::round(right * scaleX)) - offsetLeft;
+        auto top = ParseInt32(match[ROI_MATCH_TOP_INDEX].str());
+        auto left = ParseInt32(match[ROI_MATCH_LEFT_INDEX].str());
+        auto bottom = ParseInt32(match[ROI_MATCH_BOTTOM_INDEX].str());
+        auto right = ParseInt32(match[ROI_MATCH_RIGHT_INDEX].str());
+        if (!top || !left || !bottom || !right) {
+            continue;
+        }
+        int32_t newTop = static_cast<int32_t>(std::round(*top * scaleY)) - offsetTop;
+        int32_t newLeft = static_cast<int32_t>(std::round(*left * scaleX)) - offsetLeft;
+        int32_t newBottom = static_cast<int32_t>(std::round(*bottom * scaleY)) - offsetTop;
+        int32_t newRight = static_cast<int32_t>(std::round(*right * scaleX)) - offsetLeft;
         if (!result.empty()) {
             result += ";";
         }
@@ -536,6 +548,12 @@ int32_t Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &outpu
     if (!CheckOrReallocOutSurfaceBuffer(input->GetWidth(), input->GetHeight(), input->GetFormat(), output)) {
         AVCODEC_LOGE("Realloc buffer failed");
         return AVCS_ERR_NO_MEMORY;
+    }
+    if (fastKitEnable) {
+        PreProcessing::CropRect rect{0, 0, input->GetHeight() - 1, input->GetWidth() - 1};
+        int32_t ret = fastKitsInterface_.Crop(input, output, rect);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "FastKit copy failed: %{public}d", ret);
+        return AVCS_ERR_OK;
     }
     PreProcessing::CpuImageProcessRequest request;
     request.input = input;
