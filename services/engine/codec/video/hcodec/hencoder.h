@@ -38,7 +38,7 @@ constexpr int32_t LEFT_INDEX = 2;
 constexpr int32_t BOTTOM_INDEX = 3;
 constexpr int32_t RIGHT_INDEX = 4;
 constexpr int32_t DELTAQP_INDEX = 5;
-constexpr int32_t DEFAULT_DELTAQP = -6;
+constexpr int32_t DEFAULT_DELTAQP = -3;
 
 namespace OHOS::MediaAVCodec {
 class HEncoder : public HCodec {

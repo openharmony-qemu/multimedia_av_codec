@@ -1415,8 +1415,9 @@ int32_t HEncoder::ParseKvpairs(const std::string& kvpairs)
 
 bool HEncoder::ParseOneRoi(const std::string& roi, RoiRact &roiRact, int32_t width, int32_t height)
 {
-    std::regex pat(R"((-?\d+),(-?\d+)-(-?\d+),(-?\d+)"
-        R"(?:=(-?\d+|dqp:-?\d+(?:,slb:-?\d+)?|slb:-?\d+(?:,dqp:-?\d+)?))?$)");
+    std::regex pat(R"((-?\d+),(-?\d+)-(-?\d+),(-?\d+))"
+        R"((?:=(-?\d+|dqp:-?\d+(?:,slb:-?\d+)?|slb:-?\d+(?:,dqp:-?\d+)?))?$)"
+        );
     std::smatch match;
     if (!std::regex_match(roi, match, pat)) {
         return false;
