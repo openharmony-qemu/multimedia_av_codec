@@ -186,6 +186,7 @@ Status DemuxerFilter::SetTranscoderMode()
 
 Status DemuxerFilter::SetPlayerMode()
 {
+    isPlayerMode_ = true;
     FALSE_RETURN_V(demuxer_ != nullptr, Status::ERROR_NULL_POINTER);
     Status status = demuxer_->SetPlayerMode();
     FALSE_RETURN_V(status == Status::OK, status);
@@ -332,9 +333,7 @@ Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> 
         }
         successNodeCount++;
     }
-    bool isOnlyInvalidAVTrack = (hasInvalidVideo && !demuxer_->HasVideo())
-                                 || (hasInvalidAudio && !demuxer_->HasAudio());
-    if (isOnlyInvalidAVTrack) {
+    if (IsAVTrackInvalid(hasInvalidVideo, hasInvalidAudio, hasVideoFilter, hasAudioTrack)) {
         MEDIA_LOG_E("Only has invalid video or invalid audio track");
         receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DEMUXER_FAILED, GetOriginalCodecName()});
     }
@@ -1199,6 +1198,23 @@ void DemuxerFilter::SetTrackSelectionFilter(TrackSelectionFilter &filter)
 {
     FALSE_RETURN_MSG(demuxer_ != nullptr, "demuxer_ is nullptr");
     demuxer_->SetTrackSelectionFilter(filter);
+}
+
+bool DemuxerFilter::IsAVTrackInvalid(bool hasInvalidVideo, bool hasInvalidAudio, 
+                                     bool hasVideoFilter, bool hasAudioTrack)
+{
+    bool isInvalid = false;
+    if (isPlayerMode_) {
+        bool isVideoInvalid = hasInvalidVideo && !demuxer_->HasVideo();
+        bool isAudioInvalid = hasInvalidAudio && !demuxer_->HasAudio();
+        isInvalid = (isVideoInvalid && isAudioInvalid)
+            || (isVideoInvalid && !hasAudioTrack)
+            || (isAudioInvalid && !hasVideoFilter);
+    } else {
+        isInvalid = (hasInvalidVideo && !demuxer_->HasVideo())
+            || (hasInvalidAudio && !demuxer_->HasAudio());
+    }
+    return isInvalid;
 }
 
 } // namespace Pipeline
