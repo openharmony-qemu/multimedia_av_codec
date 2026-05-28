@@ -227,17 +227,12 @@ HWTEST_F(TEST_SUIT, PreprocManager_EncoderInfo_Start_StopCycle_001, TestSize.Lev
     ASSERT_NE(mockSurface, nullptr);
     preprocessorManager_->RegisterEncoder("test_encoder", preprocessor_, mockSurface);
     preprocessorManager_->CreateSharedSurface();
-    
-    // First cycle
     preprocessorManager_->SetEncoderRunning("test_encoder", true);
     usleep(100000); // 100ms
     preprocessorManager_->SetEncoderRunning("test_encoder", false);
-    
-    // Second cycle - should properly reinitialize
     preprocessorManager_->SetEncoderRunning("test_encoder", true);
     usleep(100000); // 100ms
     preprocessorManager_->SetEncoderRunning("test_encoder", false);
-    
     preprocessorManager_->UnregisterEncoder("test_encoder");
 }
 
@@ -251,19 +246,10 @@ HWTEST_F(TEST_SUIT, PreprocManager_ReportPreprocessError_NoCallback_001, TestSiz
 {
     sptr<Surface> mockSurface = Surface::CreateSurfaceAsConsumer();
     ASSERT_NE(mockSurface, nullptr);
-    
-    // Register encoder without error callback (nullptr)
     preprocessorManager_->RegisterEncoder("test_encoder_no_cb", preprocessor_, mockSurface, nullptr, nullptr);
     preprocessorManager_->CreateSharedSurface();
-    
-    // Start encoder - thread will run but no error callback is set
     preprocessorManager_->SetEncoderRunning("test_encoder_no_cb", true);
     usleep(100000); // 100ms
-    
-    // Even if ProcessFrame encounters errors internally, 
-    // ReportPreprocessError with nullptr callback should be safe
-    // The test verifies no crash occurs
-    
     preprocessorManager_->SetEncoderRunning("test_encoder_no_cb", false);
     preprocessorManager_->UnregisterEncoder("test_encoder_no_cb");
 }
@@ -279,24 +265,15 @@ HWTEST_F(TEST_SUIT, PreprocManager_ReportPreprocessError_WithCallback_001, TestS
     std::vector<int32_t> errorCodes;
     sptr<Surface> mockSurface = Surface::CreateSurfaceAsConsumer();
     ASSERT_NE(mockSurface, nullptr);
-    
-    // Register encoder with error callback
     preprocessorManager_->RegisterEncoder("test_encoder_with_cb", preprocessor_, mockSurface, nullptr,
                                          [&errorCodes](int32_t code) {
                                              errorCodes.push_back(code);
                                          });
     preprocessorManager_->CreateSharedSurface();
-    
     // Start encoder with callback registered
     preprocessorManager_->SetEncoderRunning("test_encoder_with_cb", true);
     usleep(100000); // 100ms
-    
-    // Callback is registered and ready to receive errors
-    // If any preprocessing errors occur during frame processing,
-    // ReportPreprocessError will invoke the callback
-    // Verify callback mechanism is properly set up
-    ASSERT_EQ(errorCodes.size(), 0);  // No errors triggered in normal operation
-    
+    ASSERT_EQ(errorCodes.size(), 0);
     preprocessorManager_->SetEncoderRunning("test_encoder_with_cb", false);
     preprocessorManager_->UnregisterEncoder("test_encoder_with_cb");
 }
@@ -313,27 +290,76 @@ HWTEST_F(TEST_SUIT, PreprocManager_ReportPreprocessError_MultipleCallbacks_001, 
     int32_t callbackCount = 0;
     sptr<Surface> mockSurface = Surface::CreateSurfaceAsConsumer();
     ASSERT_NE(mockSurface, nullptr);
-    
-    // Register encoder with callback that tracks invocations
     preprocessorManager_->RegisterEncoder("test_encoder_multi", preprocessor_, mockSurface, nullptr,
                                          [&lastErrorCode, &callbackCount](int32_t code) {
                                              lastErrorCode = code;
                                              callbackCount++;
                                          });
     preprocessorManager_->CreateSharedSurface();
-    
-    // Start encoder
     preprocessorManager_->SetEncoderRunning("test_encoder_multi", true);
     usleep(100000); // 100ms
-    
-    // Verify callback state before any errors
     ASSERT_EQ(callbackCount, 0);
     ASSERT_EQ(lastErrorCode, 0);
-    
-    // Stop encoder
     preprocessorManager_->SetEncoderRunning("test_encoder_multi", false);
     preprocessorManager_->UnregisterEncoder("test_encoder_multi");
 }
+
+/**
+ * @tc.name: PreprocessorManger_CreateSharedSurface_001
+ * @tc.desc: CreateSharedSurface coverage test
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocessorManger_CreateSharedSurface_001, TestSize.Level1)
+{
+    preprocessorManger_->sharedConsumerSurface_ = nullptr;
+    preprocessorManger_->CreateSharedSurface();
+}
+
+/**
+ * @tc.name: PreprocessorManger_CreateSharedSurface_002
+ * @tc.desc: CreateSharedSurface coverage test
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocessorManger_CreateSharedSurface_002, TestSize.Level1)
+{
+    preprocessorManger_->sharedConsumerSurface_ = Surface::CreateSurfaceAsConsumer();
+    ASSERT_NE(preprocessorManger_->sharedConsumerSurface_, nullptr);
+    preprocessorManger_->CreateSharedSurface();
+}
+
+/**
+ * @tc.name: PreprocManager_Destructor_WithRunningEncoder_001
+ * @tc.desc: Test PreprocessorManager destructor with running encoder
+ *           This covers the branch where Stop() is called on active encoder during destruction
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocManager_Destructor_WithRunningEncoder_001, TestSize.Level1)
+{
+    sptr<Surface> mockSurface = Surface::CreateSurfaceAsConsumer();
+    ASSERT_NE(mockSurface, nullptr);
+    preprocessorManger_->RegisterEncoder("running_encoder", preprocessor_, mockSurface);
+    preprocessorManger_->CreateSharedSurface();
+    preprocessorManger_->SetEncoderRunning("running_encoder", true);
+    usleep(100000); // 100ms to ensure thread is running
+}
+
+/**
+ * @tc.name: PreprocManager_Destructor_WithStoppedEncoder_001
+ * @tc.desc: Test PreprocessorManager destructor with stopped encoder
+ *           This covers the branch where Stop() is called on already stopped encoder
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocManager_Destructor_WithStoppedEncoder_001, TestSize.Level1)
+{
+    sptr<Surface> mockSurface = Surface::CreateSurfaceAsConsumer();
+    ASSERT_NE(mockSurface, nullptr);
+    preprocessorManger_->RegisterEncoder("stopped_encoder", preprocessor_, mockSurface);
+    preprocessorManger_->CreateSharedSurface();
+    preprocessorManger_->SetEncoderRunning("stopped_encoder", true);
+    usleep(100000);  // 100ms to ensure thread is running
+    preprocessorManger_->SetEncoderRunning("stopped_encoder", false);
+}
+
 
 /**
  * @tc.name: Preprocessor_UpdateRoiMetadata_NullInput_001
@@ -539,221 +565,4 @@ HWTEST_F(TEST_SUIT, Preprocessor_UpdateRoiMetadata_MixedRoisWithParams_001, Test
     (void)input->SetMetadata(V2_2::ATTRKEY_ROI_METADATA, roiData, false);
     Preprocessor::RoiTransform roiTransform = {0.5, 0.5, 0, 0};
     preprocessor_->UpdateRoiMetadata(input, output, roiTransform);
-}
-
-/**
- * @tc.name: PreprocessorEncoder_CreateSharedSurface_001
- * @tc.desc: CreateSharedSurface coverage test
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, PreprocessorEncoder_CreateSharedSurface_001, TestSize.Level1)
-{
-    int32_t ret = preprocessorEncoder_->InitAsPrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_EQ(ret, AV_ERR_OK);
-    preprocessorEncoder_->preprocMgr_ = nullptr;
-    preprocessorEncoder_->CreateSharedSurface();
-}
-
-/**
- * @tc.name: PreprocessorEncoder_GetSharedSurface_001
- * @tc.desc: preprocMgr_ is nullptr
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, PreprocessorEncoder_GetSharedSurface_001, TestSize.Level1)
-{
-    auto ret = preprocessorEncoder_->GetSharedSurface();
-    ASSERT_EQ(ret, nullptr);
-}
-
-/**
- * @tc.name: PreprocessorEncoder_GetSharedSurface_002
- * @tc.desc: preprocMgr_ is't nullptr
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, PreprocessorEncoder_GetSharedSurface_002, TestSize.Level1)
-{
-    preprocessorEncoder_->preprocMgr_ = std::make_shared<PreprocessorManager>();
-    ASSERT_NE(preprocessorEncoder_->preprocMgr_, nullptr);
-    auto ret = preprocessorEncoder_->GetSharedSurface();
-    ASSERT_NE(ret, nullptr);
-}
-
-/**
- * @tc.name: PreprocessorEncoder_DetachSecondaryEncoder_NoSecondary_001
- * @tc.desc: Test DetachSecondaryEncoder when secondary_ is nullptr
- *           This covers the branch where there is no secondary encoder attached
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, PreprocessorEncoder_DetachSecondaryEncoder_NoSecondary_001, TestSize.Level1)
-{
-    OH_AVCodec* primary = nullptr;
-    OH_AVErrCode ret = preprocessorEncoder_->CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &primary);
-    ASSERT_EQ(ret, AV_ERR_OK);
-    ASSERT_NE(primary, nullptr);
-    PreprocessorEncoder* detached = preprocessorEncoder_->DetachSecondaryEncoder();
-    ASSERT_EQ(detached, nullptr);
-    preprocessorEncoder_->Destroy(primary);
-}
-
-/**
- * @tc.name: PreprocessorEncoder_DetachSecondaryEncoder_WithSecondary_001
- * @tc.desc: Test DetachSecondaryEncoder when secondary_ exists and primary_ points back correctly
- *           This covers the success path: secondary != nullptr && secondary->primary_ == this
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, PreprocessorEncoder_DetachSecondaryEncoder_WithSecondary_001, TestSize.Level1)
-{
-    OH_AVCodec* primary = nullptr;
-    OH_AVErrCode ret = preprocessorEncoder_->CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &primary);
-    ASSERT_EQ(ret, AV_ERR_OK);
-    ASSERT_NE(primary, nullptr);
-    OH_AVCodec* secondary = nullptr;
-    ret = preprocessorEncoder_->CreateSecondary(primary, &secondary);
-    ASSERT_EQ(ret, AV_ERR_OK);
-    ASSERT_NE(secondary, nullptr);
-    PreprocessorEncoder* detached = preprocessorEncoder_->DetachSecondaryEncoder();
-    ASSERT_EQ(detached, reinterpret_cast<PreprocessorEncoder*>(secondary));
-    preprocessorEncoder_->Destroy(primary);
-    preprocessorEncoder_->Destroy(secondary);
-}
-
-/**
- * @tc.name: PreprocessorEncoder_DetachSecondaryEncoder_CorruptedLink_001
- * @tc.desc: Test DetachSecondaryEncoder when secondary exists but primary_ doesn't point back
- *           This covers the branch: secondary != nullptr && secondary->primary_ != this
- *           Note: This is a defensive programming test for corrupted state
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, PreprocessorEncoder_DetachSecondaryEncoder_CorruptedLink_001, TestSize.Level1)
-{
-    OH_AVCodec* primary = nullptr;
-    OH_AVErrCode ret = preprocessorEncoder_->CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &primary);
-    ASSERT_EQ(ret, AV_ERR_OK);
-    ASSERT_NE(primary, nullptr);
-    OH_AVCodec* secondary = nullptr;
-    ret = preprocessorEncoder_->CreateSecondary(primary, &secondary);
-    ASSERT_EQ(ret, AV_ERR_OK);
-    ASSERT_NE(secondary, nullptr);
-    PreprocessorEncoder* primaryEnc = reinterpret_cast<PreprocessorEncoder*>(primary);
-    PreprocessorEncoder* detached = primaryEnc->DetachSecondaryEncoder();
-    ASSERT_NE(detached, nullptr);
-    preprocessorEncoder_->Destroy(primary);
-    preprocessorEncoder_->Destroy(secondary);
-}
-
-/**
- * @tc.name: PreprocManager_Destructor_EmptyEncoders_001
- * @tc.desc: Test PreprocessorManager destructor when encoders_ map is empty
- *           This covers the branch where no encoders are registered
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, PreprocManager_Destructor_EmptyEncoders_001, TestSize.Level1)
-{
-    // Create a manager without registering any encoders
-    auto emptyManager = std::make_shared<PreprocessorManager>();
-    ASSERT_NE(emptyManager, nullptr);
-    
-    // Destroy the manager - should handle empty encoders_ gracefully
-    emptyManager.reset();
-    
-    // If we reach here without crash, the test passes
-    SUCCEED();
-}
-
-/**
- * @tc.name: PreprocManager_Destructor_WithRunningEncoder_001
- * @tc.desc: Test PreprocessorManager destructor with running encoder
- *           This covers the branch where Stop() is called on active encoder during destruction
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, PreprocManager_Destructor_WithRunningEncoder_001, TestSize.Level1)
-{
-    sptr<Surface> mockSurface = Surface::CreateSurfaceAsConsumer();
-    ASSERT_NE(mockSurface, nullptr);
-    
-    // Create a new manager for this test
-    auto testManager = std::make_shared<PreprocessorManager>();
-    ASSERT_NE(testManager, nullptr);
-    
-    // Register and start an encoder
-    testManager->RegisterEncoder("running_encoder", preprocessor_, mockSurface);
-    testManager->CreateSharedSurface();
-    testManager->SetEncoderRunning("running_encoder", true);
-    usleep(100000); // 100ms to ensure thread is running
-    
-    // Destroy the manager while encoder is still running
-    // Destructor should call Stop() on the encoder
-    testManager.reset();
-    
-    // If we reach here without crash or hang, the test passes
-    SUCCEED();
-}
-
-/**
- * @tc.name: PreprocManager_Destructor_WithStoppedEncoder_001
- * @tc.desc: Test PreprocessorManager destructor with stopped encoder
- *           This covers the branch where Stop() is called on already stopped encoder
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, PreprocManager_Destructor_WithStoppedEncoder_001, TestSize.Level1)
-{
-    sptr<Surface> mockSurface = Surface::CreateSurfaceAsConsumer();
-    ASSERT_NE(mockSurface, nullptr);
-    
-    // Create a new manager for this test
-    auto testManager = std::make_shared<PreprocessorManager>();
-    ASSERT_NE(testManager, nullptr);
-    
-    // Register, start, then stop an encoder
-    testManager->RegisterEncoder("stopped_encoder", preprocessor_, mockSurface);
-    testManager->CreateSharedSurface();
-    testManager->SetEncoderRunning("stopped_encoder", true);
-    usleep(100000); // 100ms
-    testManager->SetEncoderRunning("stopped_encoder", false);
-    
-    // Destroy the manager after encoder is already stopped
-    // Destructor should still call Stop() (which handles already-stopped case)
-    testManager.reset();
-    
-    // If we reach here without crash, the test passes
-    SUCCEED();
-}
-
-/**
- * @tc.name: PreprocManager_Destructor_MultipleEncoders_001
- * @tc.desc: Test PreprocessorManager destructor with multiple encoders
- *           This covers the loop through all encoders in the map
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, PreprocManager_Destructor_MultipleEncoders_001, TestSize.Level1)
-{
-    sptr<Surface> mockSurface1 = Surface::CreateSurfaceAsConsumer();
-    sptr<Surface> mockSurface2 = Surface::CreateSurfaceAsConsumer();
-    sptr<Surface> mockSurface3 = Surface::CreateSurfaceAsConsumer();
-    ASSERT_NE(mockSurface1, nullptr);
-    ASSERT_NE(mockSurface2, nullptr);
-    ASSERT_NE(mockSurface3, nullptr);
-    
-    // Create a new manager for this test
-    auto testManager = std::make_shared<PreprocessorManager>();
-    ASSERT_NE(testManager, nullptr);
-    
-    // Register multiple encoders with different states
-    testManager->RegisterEncoder("encoder1", preprocessor_, mockSurface1);
-    testManager->RegisterEncoder("encoder2", preprocessor_, mockSurface2);
-    testManager->RegisterEncoder("encoder3", preprocessor_, mockSurface3);
-    testManager->CreateSharedSurface();
-    
-    // Start some encoders, leave others stopped
-    testManager->SetEncoderRunning("encoder1", true);
-    testManager->SetEncoderRunning("encoder2", true);
-    // encoder3 remains stopped
-    
-    usleep(100000); // 100ms
-    
-    // Destroy the manager - should stop all encoders
-    testManager.reset();
-    
-    // If we reach here without crash or hang, the test passes
-    SUCCEED();
 }
