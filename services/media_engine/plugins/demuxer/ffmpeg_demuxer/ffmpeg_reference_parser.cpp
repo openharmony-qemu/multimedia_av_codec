@@ -265,7 +265,7 @@ Status FFmpegDemuxerPlugin::UpdateParserGopId(int32_t iFramePosSize)
     return Status::OK;
 }
 
-Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t syncSampleIndex)
+Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId)
 {
     std::unique_lock<std::mutex> sLock(syncMutex_);
     FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_UNKNOWN, "Packet is nullptr!");
@@ -286,14 +286,14 @@ Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t syncSample
     FALSE_RETURN_V_MSG_D(pkt->stream_index == parserRefIdx_ || ffmpegRet == AVERROR_EOF, Status::OK,
                          "eos or not video");
     int64_t dts = AvTime2Us(ConvertTimeFromFFmpeg(pkt->dts, parserRefCtx_->streams[parserRefIdx_]->time_base));
-    Status result = referenceParser_->ParserNalUnits(pkt->data, pkt->size, syncSampleIndex, dts);
+    Status result = referenceParser_->ParserNalUnits(pkt->data, pkt->size, curStreamId, dts);
     FALSE_RETURN_V_MSG_E(result == Status::OK, result, "parse nal units end! ret=" PUBLIC_LOG_D32,
                          static_cast<int32_t>(result));
     int32_t iFramePosSize = static_cast<int32_t>(IFramePos_.size());
     if (ffmpegRet == AVERROR_EOF || result != Status::OK ||
-        (parserCurGopId_ + 1 < iFramePosSize && curSampleId == IFramePos_[parserCurGopId_ + 1] - 1)) { // 处理完一个GOP
-        MEDIA_LOG_D("IFramePos: " PUBLIC_LOG_ZU ", processingIFrame: " PUBLIC_LOG_ZU ", curSampleId: " PUBLIC_LOG_U32
-            ", curGopId: " PUBLIC_LOG_U32, IFramePos_.size(), processingIFrame_.size(), curSampleId, parserCurGopId_);
+        (parserCurGopId_ + 1 < iFramePosSize && curStreamId == IFramePos_[parserCurGopId_ + 1] - 1)) { // 处理完一个GOP
+        MEDIA_LOG_D("IFramePos: " PUBLIC_LOG_ZU ", processingIFrame: " PUBLIC_LOG_ZU ", curStreamId: " PUBLIC_LOG_U32
+            ", curGopId: " PUBLIC_LOG_U32, IFramePos_.size(), processingIFrame_.size(), curStreamId, parserCurGopId_);
         processingIFrame_.remove(IFramePos_[parserCurGopId_]);
         if (processingIFrame_.size() == 0) {
             parserCurGopId_ = -1;
