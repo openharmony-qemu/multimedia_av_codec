@@ -15,7 +15,6 @@
 #define HST_LOG_TAG "MediaDemuxer"
 #define MEDIA_ATOMIC_ABILITY
 
-
 #include "media_demuxer.h"
 
 #include <cinttypes>
