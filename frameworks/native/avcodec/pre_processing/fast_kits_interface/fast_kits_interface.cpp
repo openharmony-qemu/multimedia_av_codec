@@ -32,6 +32,21 @@ FastKitsInterface &FastKitsInterface::GetInstance()
     return instance;
 }
 
+bool FastKitsInterface::IsFormatSupported(int32_t format)
+{
+    switch (format) {
+        case GRAPHIC_PIXEL_FMT_RGBA_8888:
+        case GRAPHIC_PIXEL_FMT_RGBA_1010102:
+        case GRAPHIC_PIXEL_FMT_YCBCR_420_SP:
+        case GRAPHIC_PIXEL_FMT_YCRCB_420_SP:
+        case GRAPHIC_PIXEL_FMT_YCBCR_P010:
+        case GRAPHIC_PIXEL_FMT_YCRCB_P010:
+            return true;
+        default:
+            return false;
+    }
+}
+
 FastKitsInterface::~FastKitsInterface()
 {
     if (handle_ != nullptr) {
