@@ -1509,8 +1509,8 @@ extern const char *OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER;
  * It is used in {@link OH_VideoEncoder_GetInputDescription}.
  *
  * @since 26.0.0
-*/
-extern const char *OH_MD_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES;
+ */
+extern const char *OH_MD_KEY_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES;
 
 /**
  * @brief Key to set the maximum number of frames that a compressor is allowed to hold before it must output a
@@ -1519,9 +1519,8 @@ extern const char *OH_MD_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES;
  * It is used in {@link OH_VideoEncoder_Configure}.
  *
  * @since 26.0.0
-*/
-extern const char *OH_MD_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT;
-
+ */
+extern const char *OH_MD_KEY_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT;
 
 /**
  * @brief Key to repeat headers before sync frames, value type is int32_t (0 or 1): 1 is enabled, 0 disabled.
@@ -1530,8 +1529,8 @@ extern const char *OH_MD_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT;
  * By default, this feature is disabled (0).
  *
  * @since 26.0.0
-*/
-extern const char *OH_MD_VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES;
+ */
+extern const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES;
 
 /**
  * @brief Media type.

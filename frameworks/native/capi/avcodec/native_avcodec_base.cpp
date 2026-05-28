@@ -204,9 +204,9 @@ const char *OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_MODE = "video_decoder_frame_
 const char *OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_RATIO = "video_decoder_frame_retention_ratio";
 const char *OH_MD_KEY_VIDEO_DECODER_SPEED = "video_decoder_speed";
 const char *OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER = "video_decoder_output_in_decoding_order";
-const char *OH_MD_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES = "video_encoder_number_of_pending_frames";
-const char *OH_MD_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT = "video_encoder_max_frame_delay_count";
-const char *OH_MD_VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES = "video_encoder_repeat_header_before_sync_frames";
+const char *OH_MD_KEY_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES = "video_encoder_number_of_pending_frames";
+const char *OH_MD_KEY_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT = "video_encoder_max_frame_delay_count";
+const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES = "video_encoder_repeat_header_before_sync_frames";
 #ifdef __cplusplus
 }
 #endif
