@@ -41,6 +41,17 @@ using namespace OHOS::MediaAVCodec;
 using namespace testing::ext;
 namespace V2_2 = OHOS::HDI::Display::Graphic::Common::V2_2;
 
+namespace {
+BufferRequestConfig CONFIG = {
+    .width = 1280,
+    .height = 720,
+    .strideAlignment = 32,
+    .format = 26,
+    .usage = (1ULL << 0) | (1ULL << 1) | (1ULL << 5),
+    .timeout = 0,
+};
+}
+
 class TEST_SUIT : public testing::TestWithParam<int32_t> {
 public:
     static void SetUpTestCase(void){};
@@ -87,7 +98,7 @@ HWTEST_F(TEST_SUIT, PreprocManager_PeekPendingBufferData_UnknownId_001, TestSize
 
 /**
  * @tc.name: PreprocManager_PeekPendingBufferData_EmptyQueue_001
- * @tc.desc: Test PeekPendingBufferData when pendingBuffers_ is empty - covers empty queue path
+ * @tc.desc: Test PeekPendingBufferData when pendingBuffers_ is empty
  * @tc.type: FUNC
  */
 HWTEST_F(TEST_SUIT, PreprocManager_PeekPendingBufferData_EmptyQueue_001, TestSize.Level1)
@@ -173,11 +184,8 @@ HWTEST_F(TEST_SUIT, PreprocManager_RepPreprocErr_ZeroCode_001, TestSize.Level1)
 
 /**
  * @tc.name: PreprocManager_NotifyEosNowIfPending_UnknownId_001
- * @tc.desc: Test NotifyEosNowIfPending with non-existent encoder ID - covers iter == encoders_.end() branch
+ * @tc.desc: Test NotifyEosNowIfPending with non-existent encoder ID
  * @tc.type: FUNC
- * @note: The branch "!iter->second" (encoderInfo is nullptr) cannot be covered through public APIs
- *        because RegisterEncoder always creates valid EncoderInfo objects. This is a defensive check
- *        that handles abnormal scenarios which cannot occur in normal operation.
  */
 HWTEST_F(TEST_SUIT, PreprocManager_NotifyEosNowIfPending_UnknownId_001, TestSize.Level1)
 {
@@ -186,7 +194,7 @@ HWTEST_F(TEST_SUIT, PreprocManager_NotifyEosNowIfPending_UnknownId_001, TestSize
 
 /**
  * @tc.name: PreprocManager_NotifyEosNowIfPending_WithPendingBuffers_001
- * @tc.desc: Test NotifyEosNowIfPending when EOS is requested with pending buffers - covers L457-L458
+ * @tc.desc: Test NotifyEosNowIfPending when EOS is requested with pending buffers
  * @tc.type: FUNC
  */
 HWTEST_F(TEST_SUIT, PreprocManager_NotifyEosNowIfPending_WithPendingBuffers_001, TestSize.Level1)
@@ -210,7 +218,7 @@ HWTEST_F(TEST_SUIT, PreprocManager_NotifyEosNowIfPending_WithPendingBuffers_001,
 
 /**
  * @tc.name: Preprocessor_UpdateRoiMetadata_NullInput_001
- * @tc.desc: Test UpdateRoiMetadata with null input buffer - covers early return path
+ * @tc.desc: Test UpdateRoiMetadata with null input buffer
  * @tc.type: FUNC
  */
 HWTEST_F(TEST_SUIT, Preprocessor_UpdateRoiMetadata_NullInput_001, TestSize.Level1)
@@ -223,7 +231,7 @@ HWTEST_F(TEST_SUIT, Preprocessor_UpdateRoiMetadata_NullInput_001, TestSize.Level
 
 /**
  * @tc.name: Preprocessor_UpdateRoiMetadata_NoRoiMetadata_001
- * @tc.desc: Test UpdateRoiMetadata when input has no ROI metadata - covers empty metadata path
+ * @tc.desc: Test UpdateRoiMetadata when input has no ROI metadata
  * @tc.type: FUNC
  */
 HWTEST_F(TEST_SUIT, Preprocessor_UpdateRoiMetadata_NoRoiMetadata_001, TestSize.Level1)
@@ -238,7 +246,7 @@ HWTEST_F(TEST_SUIT, Preprocessor_UpdateRoiMetadata_NoRoiMetadata_001, TestSize.L
 
 /**
  * @tc.name: Preprocessor_UpdateRoiMetadata_EmptyRoiMetadata_001
- * @tc.desc: Test UpdateRoiMetadata when input has empty ROI metadata - covers empty roiData path
+ * @tc.desc: Test UpdateRoiMetadata when input has empty ROI metadata
  * @tc.type: FUNC
  */
 HWTEST_F(TEST_SUIT, Preprocessor_UpdateRoiMetadata_EmptyRoiMetadata_001, TestSize.Level1)
@@ -247,6 +255,7 @@ HWTEST_F(TEST_SUIT, Preprocessor_UpdateRoiMetadata_EmptyRoiMetadata_001, TestSiz
     sptr<SurfaceBuffer> output = SurfaceBuffer::Create();
     ASSERT_NE(input, nullptr);
     ASSERT_NE(output, nullptr);
+    input->Alloc(CONFIG);
     std::vector<uint8_t> emptyRoi;
     (void)input->SetMetadata(V2_2::ATTRKEY_ROI_METADATA, emptyRoi, false);
     Preprocessor::RoiTransform roiTransform = {1.0, 1.0, 0, 0};
@@ -264,7 +273,28 @@ HWTEST_F(TEST_SUIT, Preprocessor_UpdateRoiMetadata_ValidRoi_001, TestSize.Level1
     sptr<SurfaceBuffer> output = SurfaceBuffer::Create();
     ASSERT_NE(input, nullptr);
     ASSERT_NE(output, nullptr);
-    std::string roiStr = "10,20-30,40";
+    input->Alloc(CONFIG);
+    std::string roiStr = "2147483648,1-2,3";
+    std::vector<uint8_t> roiData(roiStr.begin(), roiStr.end());
+    roiData.push_back('\0');
+    (void)input->SetMetadata(V2_2::ATTRKEY_ROI_METADATA, roiData, false);
+    Preprocessor::RoiTransform roiTransform = {1.0, 1.0, 0, 0};
+    preprocessor_->UpdateRoiMetadata(input, output, roiTransform);
+}
+
+/**
+ * @tc.name: Preprocessor_UpdateRoiMetadata_ValidRoi_002
+ * @tc.desc: Test UpdateRoiMetadata with valid ROI metadata and identity transform
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, Preprocessor_UpdateRoiMetadata_ValidRoi_002, TestSize.Level1)
+{
+    sptr<SurfaceBuffer> input = SurfaceBuffer::Create();
+    sptr<SurfaceBuffer> output = SurfaceBuffer::Create();
+    ASSERT_NE(input, nullptr);
+    ASSERT_NE(output, nullptr);
+    input->Alloc(CONFIG);
+    std::string roiStr = "100,200-300,400=label1;10,20-30,40";
     std::vector<uint8_t> roiData(roiStr.begin(), roiStr.end());
     roiData.push_back('\0');
     (void)input->SetMetadata(V2_2::ATTRKEY_ROI_METADATA, roiData, false);
@@ -283,7 +313,8 @@ HWTEST_F(TEST_SUIT, Preprocessor_UpdateRoiMetadata_WithScale_001, TestSize.Level
     sptr<SurfaceBuffer> output = SurfaceBuffer::Create();
     ASSERT_NE(input, nullptr);
     ASSERT_NE(output, nullptr);
-    std::string roiStr = "10,20-30,40";
+    input->Alloc(CONFIG);
+    std::string roiStr = "1,2147483648-2,3";
     std::vector<uint8_t> roiData(roiStr.begin(), roiStr.end());
     roiData.push_back('\0');
     (void)input->SetMetadata(V2_2::ATTRKEY_ROI_METADATA, roiData, false);
@@ -302,7 +333,8 @@ HWTEST_F(TEST_SUIT, Preprocessor_UpdateRoiMetadata_WithOffset_001, TestSize.Leve
     sptr<SurfaceBuffer> output = SurfaceBuffer::Create();
     ASSERT_NE(input, nullptr);
     ASSERT_NE(output, nullptr);
-    std::string roiStr = "10,20-30,40";
+    input->Alloc(CONFIG);
+    std::string roiStr = "1,2-2147483648,3";
     std::vector<uint8_t> roiData(roiStr.begin(), roiStr.end());
     roiData.push_back('\0');
     (void)input->SetMetadata(V2_2::ATTRKEY_ROI_METADATA, roiData, false);
@@ -321,7 +353,8 @@ HWTEST_F(TEST_SUIT, Preprocessor_UpdateRoiMetadata_MultipleRois_001, TestSize.Le
     sptr<SurfaceBuffer> output = SurfaceBuffer::Create();
     ASSERT_NE(input, nullptr);
     ASSERT_NE(output, nullptr);
-    std::string roiStr = "10,20-30,40;50,60-70,80";
+    input->Alloc(CONFIG);
+    std::string roiStr = "1,2-3,2147483648";
     std::vector<uint8_t> roiData(roiStr.begin(), roiStr.end());
     roiData.push_back('\0');
     (void)input->SetMetadata(V2_2::ATTRKEY_ROI_METADATA, roiData, false);
@@ -340,7 +373,8 @@ HWTEST_F(TEST_SUIT, Preprocessor_UpdateRoiMetadata_InvalidRoiSkipped_001, TestSi
     sptr<SurfaceBuffer> output = SurfaceBuffer::Create();
     ASSERT_NE(input, nullptr);
     ASSERT_NE(output, nullptr);
-    std::string roiStr = "abc,20-30,40";
+    input->Alloc(CONFIG);
+    std::string roiStr = "-2147483649,1-2,3";
     std::vector<uint8_t> roiData(roiStr.begin(), roiStr.end());
     roiData.push_back('\0');
     (void)input->SetMetadata(V2_2::ATTRKEY_ROI_METADATA, roiData, false);
@@ -350,7 +384,7 @@ HWTEST_F(TEST_SUIT, Preprocessor_UpdateRoiMetadata_InvalidRoiSkipped_001, TestSi
 
 /**
  * @tc.name: Preprocessor_UpdateRoiMetadata_WithParam_001
- * @tc.desc: Test UpdateRoiMetadata with ROI containing extra parameter - covers L146-L147
+ * @tc.desc: Test UpdateRoiMetadata with ROI containing extra parameter
  * @tc.type: FUNC
  */
 HWTEST_F(TEST_SUIT, Preprocessor_UpdateRoiMetadata_WithParam_001, TestSize.Level1)
@@ -359,7 +393,8 @@ HWTEST_F(TEST_SUIT, Preprocessor_UpdateRoiMetadata_WithParam_001, TestSize.Level
     sptr<SurfaceBuffer> output = SurfaceBuffer::Create();
     ASSERT_NE(input, nullptr);
     ASSERT_NE(output, nullptr);
-    std::string roiStr = "10,20-30,40=weight=0.8";
+    input->Alloc(CONFIG);
+    std::string roiStr = "1,-2147483649-2,3";
     std::vector<uint8_t> roiData(roiStr.begin(), roiStr.end());
     roiData.push_back('\0');
     (void)input->SetMetadata(V2_2::ATTRKEY_ROI_METADATA, roiData, false);
@@ -369,7 +404,7 @@ HWTEST_F(TEST_SUIT, Preprocessor_UpdateRoiMetadata_WithParam_001, TestSize.Level
 
 /**
  * @tc.name: Preprocessor_UpdateRoiMetadata_MixedRoisWithParams_001
- * @tc.desc: Test UpdateRoiMetadata with multiple ROIs, some with parameters - covers B3+B4 combinations
+ * @tc.desc: Test UpdateRoiMetadata with multiple ROIs, some with parameters
  * @tc.type: FUNC
  */
 HWTEST_F(TEST_SUIT, Preprocessor_UpdateRoiMetadata_MixedRoisWithParams_001, TestSize.Level1)
@@ -378,7 +413,8 @@ HWTEST_F(TEST_SUIT, Preprocessor_UpdateRoiMetadata_MixedRoisWithParams_001, Test
     sptr<SurfaceBuffer> output = SurfaceBuffer::Create();
     ASSERT_NE(input, nullptr);
     ASSERT_NE(output, nullptr);
-    std::string roiStr = "10,20-30,40;50,60-70,80=importance=high";
+    input->Alloc(CONFIG);
+    std::string roiStr = "1,2--2147483649,3";
     std::vector<uint8_t> roiData(roiStr.begin(), roiStr.end());
     roiData.push_back('\0');
     (void)input->SetMetadata(V2_2::ATTRKEY_ROI_METADATA, roiData, false);
@@ -531,7 +567,6 @@ HWTEST_F(TEST_SUIT, EncoderInfo_Init_BufferReallocCallback_NullBuffers_001, Test
     sptr<Surface> surface = Surface::CreateSurfaceAsConsumer();
     ASSERT_NE(surface, nullptr);
     encoderInfo.Init(preprocessor, surface);
-    preprocessor->SetOnBufferReallocCallback(nullptr, nullptr);
 }
 
 /**
