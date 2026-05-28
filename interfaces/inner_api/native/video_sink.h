@@ -91,7 +91,7 @@ private:
         int64_t syncStartPts_ = 0;
         int64_t syncCount_ = 0;
         int64_t totalSyncDurationUs_ = 0;
- 	};
+    };
 
     std::atomic<bool> needUpdateTimeAnchor_ {true};
     int64_t refreshTime_ {0};
