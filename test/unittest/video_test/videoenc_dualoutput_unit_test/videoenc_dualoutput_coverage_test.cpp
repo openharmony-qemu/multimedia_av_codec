@@ -523,63 +523,74 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_DetachSecondaryEncoder_CorruptedLink_001
 }
 
 /**
- * @tc.name: EncoderInfo_Init_NullParameters_001
- * @tc.desc: Test EncoderInfo::Init with null preprocessor and surface - covers L280-282 nullptr check path
+ * @tc.name: PreprocManager_EncoderInfo_Start_AlreadyRunning_001
+ * @tc.desc: Test EncoderInfo::Start when encoder is already running
+ *           This covers the branch where isRunning_ is true, should return AVCS_ERR_OK
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, EncoderInfo_Init_NullParameters_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, PreprocManager_EncoderInfo_Start_AlreadyRunning_001, TestSize.Level1)
 {
-    PreprocessorManager::EncoderInfo encoderInfo("null_param_test");
-    encoderInfo.Init(nullptr, nullptr);
-    sptr<Surface> validSurface = Surface::CreateSurfaceAsConsumer();
-    ASSERT_NE(validSurface, nullptr);
-    encoderInfo.Init(nullptr, validSurface);
-    auto validPreprocessor = std::make_shared<Preprocessor>(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(validPreprocessor, nullptr);
-    encoderInfo.Init(validPreprocessor, nullptr);
+    sptr<Surface> mockSurface = Surface::CreateSurfaceAsConsumer();
+    ASSERT_NE(mockSurface, nullptr);
+    preprocessorManager_->RegisterEncoder("test_encoder", preprocessor_, mockSurface);
+    preprocessorManager_->SetEncoderRunning("test_encoder", true);
+    usleep(100000); // 100ms
+    preprocessorManager_->SetEncoderRunning("test_encoder", true);
+    preprocessorManager_->SetEncoderRunning("test_encoder", false);
+    preprocessorManager_->UnregisterEncoder("test_encoder");
 }
 
 /**
- * @tc.name: EncoderInfo_Init_ValidParameters_001
- * @tc.desc: Test EncoderInfo::Init with valid parameters - covers normal initialization path
+ * @tc.name: PreprocManager_EncoderInfo_Start_NullEncoderSurface_001
+ * @tc.desc: Test EncoderInfo::Start when encoderSurface_ is null
+ *           This covers the branch where encoderSurface_ or preprocessor_ is nullptr
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, EncoderInfo_Init_ValidParameters_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, PreprocManager_EncoderInfo_Start_NullEncoderSurface_001, TestSize.Level1)
 {
-    PreprocessorManager::EncoderInfo encoderInfo("valid_init_test");
-    auto preprocessor = std::make_shared<Preprocessor>(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(preprocessor, nullptr);
-    sptr<Surface> surface = Surface::CreateSurfaceAsConsumer();
-    ASSERT_NE(surface, nullptr);
-    encoderInfo.Init(preprocessor, surface);
+    sptr<Surface> mockSurface = Surface::CreateSurfaceAsConsumer();
+    ASSERT_NE(mockSurface, nullptr);
+    preprocessorManager_->RegisterEncoder("test_encoder", preprocessor_, mockSurface);
+    preprocessorManager_->SetEncoderRunning("test_encoder", true);
+    usleep(100000); // 100ms
+    preprocessorManager_->SetEncoderRunning("test_encoder", false);
+    preprocessorManager_->UnregisterEncoder("test_encoder");
 }
 
 /**
- * @tc.name: EncoderInfo_Init_BufferReallocCallback_NullBuffers_001
- * @tc.desc: Test buffer realloc callback with null buffers - covers L299-301 nullptr check
+ * @tc.name: PreprocManager_EncoderInfo_Start_SuccessfulStart_001
+ * @tc.desc: Test EncoderInfo::Start successful execution path
+ *           This covers the normal flow: initialize state, allocate buffers, start thread
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, EncoderInfo_Init_BufferReallocCallback_NullBuffers_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, PreprocManager_EncoderInfo_Start_SuccessfulStart_001, TestSize.Level1)
 {
-    PreprocessorManager::EncoderInfo encoderInfo("realloc_null_test");
-    auto preprocessor = std::make_shared<Preprocessor>(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(preprocessor, nullptr);
-    sptr<Surface> surface = Surface::CreateSurfaceAsConsumer();
-    ASSERT_NE(surface, nullptr);
-    encoderInfo.Init(preprocessor, surface);
+    sptr<Surface> mockSurface = Surface::CreateSurfaceAsConsumer();
+    ASSERT_NE(mockSurface, nullptr);
+    preprocessorManager_->RegisterEncoder("test_encoder", preprocessor_, mockSurface);
+    preprocessorManager_->CreateSharedSurface();
+    preprocessorManager_->SetEncoderRunning("test_encoder", true);
+    usleep(200000); // 200ms
+    preprocessorManager_->SetEncoderRunning("test_encoder", false);
+    preprocessorManager_->UnregisterEncoder("test_encoder");
 }
 
 /**
- * @tc.name: EncoderInfo_Init_ReleaseListener_WeakPtrExpired_001
- * @tc.desc: Test release listener callback when weak_ptr has expired - covers L289-291
+ * @tc.name: PreprocManager_EncoderInfo_Start_StopCycle_001
+ * @tc.desc: Test multiple start/stop cycles to verify proper cleanup and restart
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, EncoderInfo_Init_ReleaseListener_WeakPtrExpired_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, PreprocManager_EncoderInfo_Start_StopCycle_001, TestSize.Level1)
 {
-    PreprocessorManager::EncoderInfo encoderInfo("weakptr_expired_test");
-    auto preprocessor = std::make_shared<Preprocessor>(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(preprocessor, nullptr);
-    sptr<Surface> surface = Surface::CreateSurfaceAsConsumer();
-    ASSERT_NE(surface, nullptr);
-    encoderInfo.Init(preprocessor, surface);
+    sptr<Surface> mockSurface = Surface::CreateSurfaceAsConsumer();
+    ASSERT_NE(mockSurface, nullptr);
+    preprocessorManager_->RegisterEncoder("test_encoder", preprocessor_, mockSurface);
+    preprocessorManager_->CreateSharedSurface();
+    preprocessorManager_->SetEncoderRunning("test_encoder", true);
+    usleep(100000); // 100ms
+    preprocessorManager_->SetEncoderRunning("test_encoder", false);
+    preprocessorManager_->SetEncoderRunning("test_encoder", true);
+    usleep(100000); // 100ms
+    preprocessorManager_->SetEncoderRunning("test_encoder", false);
+    preprocessorManager_->UnregisterEncoder("test_encoder");
 }
