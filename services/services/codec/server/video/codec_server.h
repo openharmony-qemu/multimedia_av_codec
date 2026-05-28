@@ -128,7 +128,7 @@ private:
     int32_t ConfigureCodecScenario(Format &config, int32_t &paramCheckRet);
     void UpdateConfiguredFramerate(const Format &format);
     void ConfigureSfdManager(Format &config);
-    void ReportResolutionInfo(const Format &config);
+    void ReportResolutionInfo(const Format &config, std::string tag);
     int32_t CodecScenarioInit(Format &config);
     void StartInputParamTask();
     const std::string &GetStatusDescription(OHOS::MediaAVCodec::CodecServer::CodecStatus status);

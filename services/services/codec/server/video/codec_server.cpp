@@ -244,7 +244,7 @@ int32_t CodecServer::Configure(const Format &format)
         return ret;
     }
     if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER) {
-        ReportResolutionInfo(config);
+        ReportResolutionInfo(config, __FUNCTION__);
     }
 
     ret = CreatePostProcessing(config);
@@ -289,18 +289,36 @@ void CodecServer::ConfigureSfdManager(Format &config)
     }
 }
 
-void CodecServer::ReportResolutionInfo(const Format &config)
+void CodecServer::ReportResolutionInfo(const Format &config, std::string tag)
 {
     Media::Meta statisticsMeta;
-    FillStatisticsCodecInfo(statisticsMeta, codecType_, vcodecType_, codecMime_, codecName_);
     int32_t width = 0;
     int32_t height = 0;
-    if (config.GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, width)) {
+    CHECK_AND_RETURN_LOG_WITH_TAG(tag == "Configure" || tag == "OnOutputFormatChanged",
+        "Invalid tag: %{public}s", tag.c_str());
+
+    if(tag == "Configure"){
+        if (config.GetIntValue(Media::Tag::VIDEO_WIDTH, width)) {
             statisticsMeta.SetData(EventInfoExtentedKey::WIDTH.data(), width);
+        }
+        if (config.GetIntValue(Media::Tag::VIDEO_WIDTH, height)) {
+            statisticsMeta.SetData(EventInfoExtentedKey::HEIGHT.data(), height);
+        }
     }
-    if (config.GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, height)) {
-        statisticsMeta.SetData(EventInfoExtentedKey::HEIGHT.data(), height);
+
+    if(tag == "OnOutputFormatChanged"){
+        if (config.GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, width)) {
+            statisticsMeta.SetData(EventInfoExtentedKey::WIDTH.data(), width);
+        }
+        if (config.GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, height)) {
+            statisticsMeta.SetData(EventInfoExtentedKey::HEIGHT.data(), height);
+        }
     }
+
+    CHECK_AND_RETURN_LOG_WITH_TAG(width > 0 && height > 0,
+        "Invalid resolution: width %{public}d, height %{public}d", width, height);
+
+    FillStatisticsCodecInfo(statisticsMeta, codecType_, vcodecType_, codecMime_, codecName_);
     EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::RESOLUTION_SPEC_INFO, statisticsMeta);
 }
 
@@ -1136,7 +1154,7 @@ void CodecServer::OnOutputFormatChanged(const Format &format)
     OnInstanceMemoryUpdateEvent(formatTemp.GetMeta());
 
     if (codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
-        ReportResolutionInfo(formatTemp);
+        ReportResolutionInfo(formatTemp, __FUNCTION__);
     }
 }
 
