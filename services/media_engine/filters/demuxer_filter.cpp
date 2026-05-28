@@ -1200,7 +1200,7 @@ void DemuxerFilter::SetTrackSelectionFilter(TrackSelectionFilter &filter)
     demuxer_->SetTrackSelectionFilter(filter);
 }
 
-bool DemuxerFilter::IsAVTrackInvalid(bool hasInvalidVideo, bool hasInvalidAudio, 
+bool DemuxerFilter::IsAVTrackInvalid(bool hasInvalidVideo, bool hasInvalidAudio,
                                      bool hasVideoFilter, bool hasAudioTrack)
 {
     bool isInvalid = false;

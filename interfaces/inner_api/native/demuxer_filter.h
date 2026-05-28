@@ -172,7 +172,7 @@ private:
     Status HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> &trackInfos, int32_t &successNodeCount);
     std::string CollectVideoAndAudioMime();
     std::string GetOriginalCodecName();
-    bool IsAVTrackInvalid(bool hasInvalidVideo, bool hasInvalidAudio, 
+    bool IsAVTrackInvalid(bool hasInvalidVideo, bool hasInvalidAudio,
         bool hasVideoFilter, bool hasAudioTrack);
 
     std::string uri_;
