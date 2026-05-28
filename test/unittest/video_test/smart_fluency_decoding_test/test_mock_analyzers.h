@@ -21,8 +21,9 @@
 #include "analyzers/nalu_analyzer.h"
 #include "analyzers/mv_analyzer.h"
 #include "buffer/avbuffer.h"
+#include "smart_fluency_decoding.h"
 
-// Setters for dlfcn_mock.cpp global state (used by SO loader tests to verify C API delegation)
+// Setters for dlfcn_mock.cpp global variables (SO loader tests verify C API delegation)
 void SetTestVideoInfoGlobals(uint32_t width, uint32_t height);
 void SetTestStreamAuxInfoGlobals(const StreamAuxInfo& info);
 void ResetTestMvGlobals();
@@ -89,27 +90,13 @@ private:
     uint32_t height_{0};
 };
 
-inline void SetupTestAnalyzerMocks()
+// Inject mock analyzers directly into SmartFluencyDecoding's private members.
+// This bypasses EnsureNaluAnalyzer/EnsureMvAnalyzer (which would call dlopen).
+// Relies on -Dprivate=public to access private members.
+inline void InjectMockAnalyzers(SmartFluencyDecoding& sfd)
 {
-    ResetTestMvGlobals();
-    NaluAnalyzerFactory::SetTestCreator([](SFDCodecType codec) -> std::unique_ptr<INaluAnalyzer> {
-        if (codec == SFDCodecType::INVALID) {
-            return nullptr;
-        }
-        return std::make_unique<MockNaluAnalyzer>(codec);
-    });
-    MvAnalyzerFactory::SetTestCreator([](SFDCodecType codec) -> std::unique_ptr<IMvAnalyzer> {
-        if (codec == SFDCodecType::INVALID) {
-            return nullptr;
-        }
-        return std::make_unique<MockMvAnalyzer>(codec);
-    });
-}
-
-inline void TeardownTestAnalyzerMocks()
-{
-    NaluAnalyzerFactory::ClearTestCreator();
-    MvAnalyzerFactory::ClearTestCreator();
+    sfd.naluAnalyzer_ = std::make_unique<MockNaluAnalyzer>(SFDCodecType::AVC);
+    sfd.mvAnalyzer_ = std::make_unique<MockMvAnalyzer>(SFDCodecType::AVC);
 }
 
 } // namespace SFD

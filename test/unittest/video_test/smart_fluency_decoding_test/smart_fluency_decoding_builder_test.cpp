@@ -18,7 +18,6 @@
 #include "smart_fluency_decoding_builder.h"
 #include "smart_fluency_decoding.h"
 #include "meta/video_types.h"
-#include "test_mock_analyzers.h"
 
 namespace {
 constexpr int32_t WIDTH_1080P = 1920;
@@ -33,14 +32,8 @@ using namespace testing::ext;
 
 class SFDBuilderTest : public testing::Test {
 protected:
-    void SetUp() override
-    {
-        SetupTestAnalyzerMocks();
-    }
-    void TearDown() override
-    {
-        TeardownTestAnalyzerMocks();
-    }
+    void SetUp() override {}
+    void TearDown() override {}
 };
 
 /**

@@ -24,7 +24,6 @@
 #include "buffer/avallocator.h"
 #include "buffer/avbuffer.h"
 #include "surface_buffer.h"
-#include "test_mock_analyzers.h"
 
 namespace {
 constexpr int32_t WIDTH_1080P = 1920;
@@ -40,14 +39,8 @@ using namespace testing::ext;
 
 class SFDManagerTest : public testing::Test {
 protected:
-    void SetUp() override
-    {
-        SetupTestAnalyzerMocks();
-    }
-    void TearDown() override
-    {
-        TeardownTestAnalyzerMocks();
-    }
+    void SetUp() override {}
+    void TearDown() override {}
 
     std::shared_ptr<OHOS::Media::AVBuffer> CreateMockBuffer(uint32_t flag, size_t size)
     {

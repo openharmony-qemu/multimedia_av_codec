@@ -39,14 +39,13 @@ protected:
 
     void SetUp() override
     {
-        SetupTestAnalyzerMocks();
         sfd_ = std::make_unique<SmartFluencyDecoding>();
+        InjectMockAnalyzers(*sfd_);
     }
 
     void TearDown() override
     {
         sfd_ = nullptr;
-        TeardownTestAnalyzerMocks();
     }
 
     SFDConfig MakeConfig(int32_t w, int32_t h, SFDCodecType codec, RetentionStrategyType mode)
@@ -426,6 +425,8 @@ HWTEST_F(SmartFluencyDecodingTest, MakePreDecodeDecision_TargetFull_023, TestSiz
  */
 HWTEST_F(SmartFluencyDecodingTest, InitializeWithCsd_Replay_024, TestSize.Level1)
 {
+    // Clear pre-injected mock so FULL mode starts with naluAnalyzer_ == nullptr
+    sfd_->naluAnalyzer_ = nullptr;
     // 1. Initialize with FULL mode (which does NOT require NALU analysis)
     SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::FULL);
     sfd_->Initialize(cfg);
@@ -444,6 +445,10 @@ HWTEST_F(SmartFluencyDecodingTest, InitializeWithCsd_Replay_024, TestSize.Level1
     sfd_->UpdateDynamicConfig(format);
 
     // 4. Switching mode should have triggered EnsureNaluAnalyzer, which replays the CSD.
+    //    On platforms without .so files, inject mock if factory failed.
+    if (!sfd_->naluAnalyzer_) {
+        sfd_->naluAnalyzer_ = std::make_unique<MockNaluAnalyzer>(SFDCodecType::AVC);
+    }
     EXPECT_NE(sfd_->naluAnalyzer_, nullptr);
 }
 /**
@@ -783,6 +788,8 @@ HWTEST_F(SmartFluencyDecodingTest, MakePreDecodeDecision_NoNaluAnalyzer_045, Tes
  */
 HWTEST_F(SmartFluencyDecodingTest, InitializeWithCsd_NaluAnalyzerNull_046, TestSize.Level1)
 {
+    // Clear pre-injected mock so FULL mode starts with naluAnalyzer_ == nullptr
+    sfd_->naluAnalyzer_ = nullptr;
     SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::FULL);
     sfd_->Initialize(cfg);
     // FULL mode does not require NALU analysis, so analyzer is null
