@@ -6130,9 +6130,9 @@ void MediaDemuxer::CheckPtsDiscontinuity(int32_t trackId, std::shared_ptr<AVBuff
         return;
     }
 
-    constexpr int64_t PTS_DISCONTINUE_THRESHOLD_US = 1000000;
+    constexpr int64_t ptsDiscontinueThresholdUs = 1000000;
     int64_t ptsDiff = curPts > latPts ? (curPts - lastPts) : (lastPts - curPts);
-    if (ptsDiff > PTS_DISCONTINUE_THRESHOLD_US && lastPts != 0) {
+    if (ptsDiff > ptsDiscontinueThresholdUs && lastPts != 0) {
         MEDIA_LOG_I("PTS discontinuity detected, track " PUBLIC_LOG_D32
         ", lastPts " PUBLIC_LOG_D64 ", curPts " PUBLIC_LOG_D64, trackId, lastPts, curPts);
         eventReceiver_->OnDfxEvent({"DEMUX", DfxEventType::DFX_EVENT_MEDIA_DISCONTINUE, true});
