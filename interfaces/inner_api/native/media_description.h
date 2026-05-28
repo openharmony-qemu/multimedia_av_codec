@@ -352,7 +352,7 @@ public:
         "video_encoder_preproc_downsampling_height";
 
     /**
-     * Key for video encoder preproc drop to frame rate, value type is int32_t
+     * Key for video encoder preproc drop to frame rate, value type is double
      */
     static constexpr std::string_view OH_MD_KEY_VIDEO_ENCODER_PREPROC_DROP_TO_FRAME_RATE =
         "video_encoder_preproc_drop_to_frame_rate";

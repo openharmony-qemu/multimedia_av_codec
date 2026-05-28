@@ -18,6 +18,7 @@
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "media_core.h"
+#include "preprocessor_format_utils.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "PreprocessorEncoder"};
@@ -27,37 +28,6 @@ static std::mutex g_interfaceMutex;
 
 namespace OHOS {
 namespace MediaAVCodec {
-
-// Reverse mapping: GraphicPixelFormat (Surface/Buffer) → VideoPixelFormat (Codec internal)
-// Returns true on success, false if format is unknown.
-// Mapping table derived from Preprocessor::ConvertVideoPixelFormat2GraphicPixelFormat (preprocessor.cpp:406)
-static bool GraphicPixelFmtToVideoPixelFmt(GraphicPixelFormat graphicFmt, VideoPixelFormat& outVideoFmt)
-{
-    switch (graphicFmt) {
-        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_P:
-            outVideoFmt = VideoPixelFormat::YUVI420;
-            return true;
-        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888:
-            outVideoFmt = VideoPixelFormat::RGBA;
-            return true;
-        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP:
-            outVideoFmt = VideoPixelFormat::NV12;
-            return true;
-        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP:
-            outVideoFmt = VideoPixelFormat::NV21;
-            return true;
-        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_1010102:
-            outVideoFmt = VideoPixelFormat::RGBA1010102;
-            return true;
-        // 10-bit formats (HEVC Main10 profile)
-        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010:
-        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010:
-            outVideoFmt = VideoPixelFormat::NV12;  // P010 maps to NV12 in codec context
-            return true;
-        default:
-            return false;
-    }
-}
 
 } // namespace MediaAVCodec
 } // namespace OHOS
@@ -243,7 +213,13 @@ void PreprocessorEncoder::RegisterEncoderToManager()
 {
     if (preprocMgr_) {
         auto preprocessor = preprocessors_[encoderId_];
-        preprocMgr_->RegisterEncoder(encoderId_, preprocessor, encoderSurface_);
+        auto streamChangedCb = [this](const Media::Format& format) {
+            OnStreamChanged(format);
+        };
+        auto errorCb = [this](int32_t errorCode) {
+            OnPreprocessError(errorCode);
+        };
+        preprocMgr_->RegisterEncoder(encoderId_, preprocessor, encoderSurface_, streamChangedCb, errorCb);
     }
 }
 
@@ -290,6 +266,10 @@ void PreprocessorEncoder::DetachFromPrimaryEncoder()
 OH_AVErrCode PreprocessorEncoder::RegisterCallback(struct OH_AVCodecCallback callback, void *userData)
 {
     std::scoped_lock lock(instanceMutex_);
+    asyncCallback_.onError = callback.onError;
+    asyncCallback_.onStreamChanged = callback.onStreamChanged;
+    userData_ = userData;
+
     if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
         if (videoEncoderObject_->callback_ != nullptr) {
             videoEncoderObject_->callback_->UpdateCallback(callback, userData);
@@ -307,27 +287,15 @@ OH_AVErrCode PreprocessorEncoder::RegisterCallback(struct OH_AVCodecCallback cal
 OH_AVErrCode PreprocessorEncoder::Configure(const Media::Format &format)
 {
     std::scoped_lock lock(instanceMutex_);
-    int32_t ret = ConfigureVideoEncoder(format);
-    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
+
+    auto ret = ConfigureVideoEncoder(format);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Configure video encoder failed!");
 
     ret = ConfigurePreprocessor(format);
-    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Configure preprocessor failed!");
 
-    if (!isPrimary_ && primary_ != nullptr) {
-        auto secondaryPreprocessor = GetPreprocessor();
-        auto primaryPreprocessor = primary_->GetPreprocessor();
-        if (secondaryPreprocessor && primaryPreprocessor) {
-            GraphicPixelFormat secFmt = secondaryPreprocessor->GetConfiguredPixelFormat();
-            GraphicPixelFormat priFmt = primaryPreprocessor->GetConfiguredPixelFormat();
-            if (secFmt != priFmt && priFmt != GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT) {
-                AVCODEC_LOGE("PixelFormat mismatch: primary=%{public}d, secondary=%{public}d",
-                    static_cast<int32_t>(priFmt), static_cast<int32_t>(secFmt));
-                return AVCSErrorToOHAVErrCode(AVCS_ERR_INVALID_VAL);
-            }
-        }
-    }
     if (encoderSurface_ == nullptr) {
         ret = CreateEncoderSurface();
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AV_ERR_OPERATE_NOT_PERMIT, "Create internal surface failed!");
@@ -340,18 +308,24 @@ OH_AVErrCode PreprocessorEncoder::Configure(const Media::Format &format)
 OH_AVErrCode PreprocessorEncoder::SetParameter(const Media::Format &format)
 {
     std::scoped_lock lock(instanceMutex_);
+    auto preprocessor = GetPreprocessor();
+    if (!preprocessor) {
+        return AV_ERR_INVALID_VAL;
+    }
+
+    int32_t ret = AVCS_ERR_OK;
     if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
-        int32_t ret = videoEncoderObject_->videoEncoder_->SetParameter(format);
-        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
+        ret = videoEncoderObject_->videoEncoder_->SetParameter(format);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                                  "PreprocessorEncoder set parameter failed!");
     }
 
-    auto preprocessor = GetPreprocessor();
-    if (preprocessor) {
-        int32_t ret = preprocessor->Configure(format);
-        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                                 "PreprocessorEncoder set preprocessor parameter failed!");
-    }
+    ret = preprocessor->ValidateConfiguration(format, false);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
+                             "PreprocessorEncoder validate preprocessor parameter failed!");
+    ret = preprocessor->SetParameter(format);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
+                             "PreprocessorEncoder set preprocessor parameter failed!");
 
     return AV_ERR_OK;
 }
@@ -390,6 +364,10 @@ int32_t PreprocessorEncoder::ConfigurePreprocessor(const Media::Format &format)
 {
     auto preprocessor = GetPreprocessor();
     if (preprocessor) {
+        auto ret = preprocessor->ValidateConfiguration(format, true);
+        if (ret != AVCS_ERR_OK) {
+            return ret;
+        }
         return preprocessor->Configure(format);
     }
     return AVCS_ERR_OK;
@@ -563,6 +541,31 @@ OH_AVErrCode PreprocessorEncoder::ReleaseOutputBuffer(uint32_t index)
     return AV_ERR_OK;
 }
 
+void PreprocessorEncoder::OnStreamChanged(const Media::Format& format)
+{
+    if (asyncCallback_.onStreamChanged == nullptr) {
+        return;
+    }
+
+    OHOS::sptr<OH_AVFormat> object = new (std::nothrow) OH_AVFormat(format);
+    if (object == nullptr) {
+        AVCODEC_LOGE("OH_AVFormat create failed in OnStreamChanged");
+        return;
+    }
+
+    asyncCallback_.onStreamChanged(this, reinterpret_cast<OH_AVFormat*>(object.GetRefPtr()), userData_);
+}
+
+void PreprocessorEncoder::OnPreprocessError(int32_t errorCode)
+{
+    if (asyncCallback_.onError == nullptr) {
+        return;
+    }
+
+    OH_AVErrCode avErrorCode = AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(errorCode));
+    asyncCallback_.onError(this, static_cast<int32_t>(avErrorCode), userData_);
+}
+
 OH_AVFormat* PreprocessorEncoder::GetOutputDescription()
 {
     if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
@@ -606,6 +609,9 @@ OH_AVFormat* PreprocessorEncoder::GetInputDescription()
             }
             if (bufInfo.stride > 0) {
                 format.PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, bufInfo.stride);
+            }
+            if (bufInfo.height > 0) {
+                format.PutIntValue(OHOS::Media::Tag::VIDEO_SLICE_HEIGHT, bufInfo.height);
             }
         }
     }
