@@ -341,7 +341,7 @@ void DownloadMonitor::ReportLoadingErrorEvent()
         MEDIA_LOG_E("callback_ is nullptr, report loading error failed");
         return;
     }
-    callback->OnDfxEvent({PluginDfxEvent::PERF_LOADING_ERROR, true});
+    callback->OnDfxEvent({PluginDfxEventType::PERF_LOADING_ERROR, true});
 }
 
 void DownloadMonitor::OnDownloadStatus(std::shared_ptr<Downloader>& downloader,
