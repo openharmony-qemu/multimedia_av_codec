@@ -347,6 +347,7 @@ void VideoSink::SetEventReceiver(const std::shared_ptr<EventReceiver> &receiver)
 {
     this->eventReceiver_ = receiver;
     lagDetector_.SetEventReceiver(receiver);
+    avSyncDetector_.SetEventReceiver(receiver);
 }
 
 void VideoSink::SetFirstPts(int64_t pts)
