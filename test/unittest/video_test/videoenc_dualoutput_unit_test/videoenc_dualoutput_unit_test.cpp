@@ -419,6 +419,137 @@ HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_014, TestSize.Level1)
 }
 
 /**
+ * @tc.name: VideoEncoder_ConfigurePreproc_015
+ * @tc.desc: Test odd cropping width configuration
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_015, TestSize.Level1)
+{
+    IsSupportFastImage();
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
+    dualSample_->SetCrop(EncoderType::PRIMARY, 10, 10, 630, 479); // crop: 10,10,630,479
+    ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample_->Configure(EncoderType::PRIMARY)) << "Odd cropping width is invalid";
+}
+
+/**
+ * @tc.name: VideoEncoder_ConfigurePreproc_016
+ * @tc.desc: Test odd cropping height configuration
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_016, TestSize.Level1)
+{
+    IsSupportFastImage();
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
+    dualSample_->SetCrop(EncoderType::PRIMARY, 10, 10, 629, 480); // crop: 10,10,629,480
+    ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample_->Configure(EncoderType::PRIMARY)) << "Odd cropping height is invalid";
+}
+
+/**
+ * @tc.name: VideoEncoder_ConfigurePreproc_017
+ * @tc.desc: Test odd cropping width and height configuration
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_017, TestSize.Level1)
+{
+    IsSupportFastImage();
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
+    dualSample_->SetCrop(EncoderType::PRIMARY, 10, 10, 630, 480); // crop: 10,10,630,480
+    ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample_->Configure(EncoderType::PRIMARY)) <<
+        "Odd cropping width and height is invalid";
+}
+
+/**
+ * @tc.name: VideoEncoder_ConfigurePreproc_018
+ * @tc.desc: Test odd cropping left configuration
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_018, TestSize.Level1)
+{
+    IsSupportFastImage();
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
+    dualSample_->SetCrop(EncoderType::PRIMARY, 11, 10, 630, 479); // crop: 11,10,630,479
+    ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample_->Configure(EncoderType::PRIMARY)) <<
+        "Odd cropping left is invalid";
+}
+
+/**
+ * @tc.name: VideoEncoder_ConfigurePreproc_019
+ * @tc.desc: Test odd cropping left configuration
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_019, TestSize.Level1)
+{
+    IsSupportFastImage();
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
+    dualSample_->SetCrop(EncoderType::PRIMARY, 10, 11, 629, 480); // crop: 10,11,629,480
+    ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample_->Configure(EncoderType::PRIMARY)) <<
+        "Odd cropping top is invalid";
+}
+
+/**
+ * @tc.name: VideoEncoder_ConfigurePreproc_020
+ * @tc.desc: Test odd cropping left and top configuration
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_020, TestSize.Level1)
+{
+    IsSupportFastImage();
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
+    dualSample_->SetCrop(EncoderType::PRIMARY, 11, 11, 630, 480); // crop: 11,11,630,480
+    ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample_->Configure(EncoderType::PRIMARY)) <<
+        "Odd cropping left and top is invalid";
+}
+
+/**
+ * @tc.name: VideoEncoder_ConfigurePreproc_021
+ * @tc.desc: Test odd downsampling width configuration
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_021, TestSize.Level1)
+{
+    IsSupportFastImage();
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
+    dualSample_->SetDownsampling(EncoderType::PRIMARY, 629, 480); // downsampling: 629,480
+    ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample_->Configure(EncoderType::PRIMARY)) << "Odd downsampling width is invalid";
+}
+
+/**
+ * @tc.name: VideoEncoder_ConfigurePreproc_022
+ * @tc.desc: Test odd downsampling height configuration
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_022, TestSize.Level1)
+{
+    IsSupportFastImage();
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
+    dualSample_->SetDownsampling(EncoderType::PRIMARY, 630, 479); // downsampling: 629,480
+    ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample_->Configure(EncoderType::PRIMARY)) << "Odd downsampling height is invalid";
+}
+
+/**
+ * @tc.name: VideoEncoder_ConfigurePreproc_023
+ * @tc.desc: Test odd downsampling width and height configuration
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_ConfigurePreproc_023, TestSize.Level1)
+{
+    IsSupportFastImage();
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
+    dualSample_->SetDownsampling(EncoderType::PRIMARY, 629, 479); // downsampling: 629,480
+    ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample_->Configure(EncoderType::PRIMARY)) <<
+        "Odd downsampling width and height is invalid";
+}
+
+/**
  * @tc.name: VideoEncoder_CreateSecondaryFromPrimary_NullParam_001
  * @tc.desc: Test creating secondary with NULL primary encoder
  * @tc.type: FUNC

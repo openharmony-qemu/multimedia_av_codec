@@ -287,27 +287,15 @@ OH_AVErrCode PreprocessorEncoder::RegisterCallback(struct OH_AVCodecCallback cal
 OH_AVErrCode PreprocessorEncoder::Configure(const Media::Format &format)
 {
     std::scoped_lock lock(instanceMutex_);
-    int32_t ret = ConfigureVideoEncoder(format);
-    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
+
+    auto ret = ConfigureVideoEncoder(format);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Configure video encoder failed!");
 
     ret = ConfigurePreprocessor(format);
-    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Configure preprocessor failed!");
 
-    if (!isPrimary_ && primary_ != nullptr) {
-        auto secondaryPreprocessor = GetPreprocessor();
-        auto primaryPreprocessor = primary_->GetPreprocessor();
-        if (secondaryPreprocessor && primaryPreprocessor) {
-            GraphicPixelFormat secFmt = secondaryPreprocessor->GetConfiguredPixelFormat();
-            GraphicPixelFormat priFmt = primaryPreprocessor->GetConfiguredPixelFormat();
-            if (secFmt != priFmt && priFmt != GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT) {
-                AVCODEC_LOGE("PixelFormat mismatch: primary=%{public}d, secondary=%{public}d",
-                    static_cast<int32_t>(priFmt), static_cast<int32_t>(secFmt));
-                return AVCSErrorToOHAVErrCode(AVCS_ERR_INVALID_VAL);
-            }
-        }
-    }
     if (encoderSurface_ == nullptr) {
         ret = CreateEncoderSurface();
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AV_ERR_OPERATE_NOT_PERMIT, "Create internal surface failed!");
@@ -320,18 +308,24 @@ OH_AVErrCode PreprocessorEncoder::Configure(const Media::Format &format)
 OH_AVErrCode PreprocessorEncoder::SetParameter(const Media::Format &format)
 {
     std::scoped_lock lock(instanceMutex_);
+    auto preprocessor = GetPreprocessor();
+    if (!preprocessor) {
+        return AV_ERR_INVALID_VAL;
+    }
+
+    int32_t ret = AVCS_ERR_OK;
     if (videoEncoderObject_ && videoEncoderObject_->videoEncoder_) {
-        int32_t ret = videoEncoderObject_->videoEncoder_->SetParameter(format);
-        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
+        ret = videoEncoderObject_->videoEncoder_->SetParameter(format);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                                  "PreprocessorEncoder set parameter failed!");
     }
 
-    auto preprocessor = GetPreprocessor();
-    if (preprocessor) {
-        int32_t ret = preprocessor->Configure(format);
-        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                                 "PreprocessorEncoder set preprocessor parameter failed!");
-    }
+    ret = preprocessor->ValidateConfiguration(format, false);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
+                             "PreprocessorEncoder validate preprocessor parameter failed!");
+    ret = preprocessor->SetParameter(format);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
+                             "PreprocessorEncoder set preprocessor parameter failed!");
 
     return AV_ERR_OK;
 }
@@ -370,6 +364,10 @@ int32_t PreprocessorEncoder::ConfigurePreprocessor(const Media::Format &format)
 {
     auto preprocessor = GetPreprocessor();
     if (preprocessor) {
+        auto ret = preprocessor->ValidateConfiguration(format, true);
+        if (ret != AVCS_ERR_OK) {
+            return ret;
+        }
         return preprocessor->Configure(format);
     }
     return AVCS_ERR_OK;
