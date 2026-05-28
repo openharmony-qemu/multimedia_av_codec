@@ -60,7 +60,7 @@ public:
     void WaitForEos();
     void ReleaseInFile();
     void InputFunc();
-    int32_t SetFormatValue(OH_AVFormat *format)
+    int32_t SetFormatValue(OH_AVFormat *format);
     int32_t CreateVideocoder(std::string codeName, std::string enCodeName);
     int32_t SendData(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer);
     int32_t StartSecondaryEncoder();
