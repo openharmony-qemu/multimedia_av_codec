@@ -2454,7 +2454,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ORDER_0500, TestSize.Level2)
             vDecSample->DEFAULT_HEIGHT = PORTRAIT_HEIGHT;
             vDecSample->DEFAULT_FRAME_RATE = DEFAULT_FRAME_RATE;
             vDecSample->isCheckLowLatency = true;
-            vDecSample->enableOrderDecode = true;  
+            vDecSample->enableOrderDecode = true;
             ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
             vDecSample->WaitForEOS();
             ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
