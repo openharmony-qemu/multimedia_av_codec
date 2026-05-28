@@ -57,6 +57,28 @@ int32_t GetNaluSize(const uint8_t *nalStart);
 const uint8_t* FindNalStartCode(const uint8_t *start, const uint8_t *end, int32_t &startCodeLen);
 bool IsAnnexbSyncFrame(const uint8_t *sample, int32_t size);
 
+bool Raw2BitPerSample(AudioSampleFormat sampleFormat, uint8_t &bitPerSample)
+{
+    static const std::unordered_map<AudioSampleFormat, uint8_t> table = {
+        {AudioSampleFormat::SAMPLE_U8, 8},
+        {AudioSampleFormat::SAMPLE_S16LE, 16},
+        {AudioSampleFormat::SAMPLE_S24LE, 24},
+        {AudioSampleFormat::SAMPLE_S32LE, 32},
+        {AudioSampleFormat::SAMPLE_F32LE, 32},
+        {AudioSampleFormat::SAMPLE_U8P, 8},
+        {AudioSampleFormat::SAMPLE_S16P, 16},
+        {AudioSampleFormat::SAMPLE_S24P, 24},
+        {AudioSampleFormat::SAMPLE_S32P, 32},
+        {AudioSampleFormat::SAMPLE_F32P, 32},
+    };
+    auto it = table.find(sampleFormat);
+    if (it != table.end()) {
+        bitPerSample = it->second;
+        return true;
+    }
+    return false;
+}
+
 std::string AVStrError(int errnum)
 {
     char errbuf[AV_ERROR_MAX_STRING_SIZE] = {0};
