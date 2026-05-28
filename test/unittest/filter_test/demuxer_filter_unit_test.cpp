@@ -51,30 +51,8 @@ public:
         return metaInfo_;
     }
 
-    bool HasVideo() override
-    {
-        return hasVideo_;
-    }
-
-    bool HasAudio() override
-    {
-        return hasAudio_;
-    }
-
-    void SetHasVideo(bool hasVideo)
-    {
-        hasVideo_ = hasVideo;
-    }
-
-    void SetHasAudio(bool hasAudio)
-    {
-        hasAudio_ = hasAudio;
-    }
-
 protected:
     std::vector<std::shared_ptr<Meta>> metaInfo_{};
-    bool hasVideo_{false};
-    bool hasAudio_{false};
 };
 
 class FilterEventReceiverMock : public EventReceiver {
@@ -990,216 +968,216 @@ HWTEST_F(DemuxerFilterUnitTest, IsAVTrackInvalid_PlayerMode, TestSize.Level1)
     
     // Test Case 1: Both video and audio invalid, demuxer has no video and no audio
     // Expected: (true && true) || (true && true) || (true && true) = true
-    demuxer->SetHasVideo(false);
-    demuxer->SetHasAudio(false);
+    demuxer->videoTrackId_ = -1;
+    demuxer->audioTrackId_ = -1;
     bool result = demuxerFilter->IsAVTrackInvalid(true, true, false, false);
     EXPECT_TRUE(result);
     
     // Test Case 2: Only video invalid, no audio track, demuxer has no video but has audio
     // Expected: (false && false) || (true && true) || (false && false) = true
-    demuxer->SetHasVideo(false);
-    demuxer->SetHasAudio(true);
+    demuxer->videoTrackId_ = -1;
+    demuxer->audioTrackId_ = 1;
     result = demuxerFilter->IsAVTrackInvalid(true, false, false, false);
     EXPECT_TRUE(result);
     
     // Test Case 3: Only audio invalid, no video filter, demuxer has video but no audio
     // Expected: (false && true) || (false && false) || (true && true) = true
-    demuxer->SetHasVideo(true);
-    demuxer->SetHasAudio(false);
+    demuxer->videoTrackId_ = 0;
+    demuxer->audioTrackId_ = -1;
     result = demuxerFilter->IsAVTrackInvalid(false, true, false, true);
     EXPECT_TRUE(result);
     
     // Test Case 4: Both valid, hasVideoFilter=true, hasAudioTrack=true, demuxer has both
     // Expected: (false && false) || (false && false) || (false && false) = false
-    demuxer->SetHasVideo(true);
-    demuxer->SetHasAudio(true);
+    demuxer->videoTrackId_ = 0;
+    demuxer->audioTrackId_ = 1;
     result = demuxerFilter->IsAVTrackInvalid(false, false, true, true);
     EXPECT_FALSE(result);
     
     // Test Case 5: Video invalid, hasVideoFilter=true, hasAudioTrack=true, demuxer has video
     // Expected: (false && false) || (false && false) || (false && false) = false
-    demuxer->SetHasVideo(true);
-    demuxer->SetHasAudio(true);
+    demuxer->videoTrackId_ = 0;
+    demuxer->audioTrackId_ = 1;
     result = demuxerFilter->IsAVTrackInvalid(false, false, true, true);
     EXPECT_FALSE(result);
     
     // Test Case 6: Video invalid, hasVideoFilter=true, hasAudioTrack=true, demuxer has video but no audio
     // Expected: (false && false) || (false && true) || (false && false) = false
-    demuxer->SetHasVideo(true);
-    demuxer->SetHasAudio(false);
+    demuxer->videoTrackId_ = 0;
+    demuxer->audioTrackId_ = -1;
     result = demuxerFilter->IsAVTrackInvalid(true, false, true, true);
     EXPECT_FALSE(result);
     
     // Test Case 7: Audio invalid, hasVideoFilter=true, hasAudioTrack=true, demuxer has no video but has audio
     // Expected: (false && false) || (false && false) || (false && false) = false
-    demuxer->SetHasVideo(false);
-    demuxer->SetHasAudio(true);
+    demuxer->videoTrackId_ = -1;
+    demuxer->audioTrackId_ = 1;
     result = demuxerFilter->IsAVTrackInvalid(false, true, true, true);
     EXPECT_FALSE(result);
     
     // Test Case 8: Both invalid, hasVideoFilter=true, hasAudioTrack=true, demuxer has both
     // isVideoInvalid = true && !true = false, isAudioInvalid = true && !true = false
     // isInvalid = (false && false) || (false && !true) || (false && !true) = false || false || false = false
-    demuxer->SetHasVideo(true);
-    demuxer->SetHasAudio(true);
+    demuxer->videoTrackId_ = 0;
+    demuxer->audioTrackId_ = 1;
     result = demuxerFilter->IsAVTrackInvalid(true, true, true, true);
     EXPECT_FALSE(result);
     
     // Test Case 9: Both valid, hasVideoFilter=true, hasAudioTrack=true, demuxer has no video and no audio
     // Expected: (false && false) || (false && true) || (false && true) = false
-    demuxer->SetHasVideo(false);
-    demuxer->SetHasAudio(false);
+    demuxer->videoTrackId_ = -1;
+    demuxer->audioTrackId_ = -1;
     result = demuxerFilter->IsAVTrackInvalid(false, false, true, true);
     EXPECT_FALSE(result);
     
     // Test Case 10: Video invalid, hasVideoFilter=true, hasAudioTrack=true, demuxer has no video and no audio
     // isVideoInvalid = true && !false = true, isAudioInvalid = false && !false = false
     // isInvalid = (true && false) || (true && !true) || (false && !true) = false || false || false = false
-    demuxer->SetHasVideo(false);
-    demuxer->SetHasAudio(false);
+    demuxer->videoTrackId_ = -1;
+    demuxer->audioTrackId_ = -1;
     result = demuxerFilter->IsAVTrackInvalid(true, false, true, true);
     EXPECT_FALSE(result);
     
     // Test Case 11: Audio invalid, hasVideoFilter=true, hasAudioTrack=true, demuxer has no video and no audio
     // isVideoInvalid = false && !false = false, isAudioInvalid = true && !false = true
     // isInvalid = (false && true) || (false && !true) || (true && !true) = false || false || false = false
-    demuxer->SetHasVideo(false);
-    demuxer->SetHasAudio(false);
+    demuxer->videoTrackId_ = -1;
+    demuxer->audioTrackId_ = -1;
     result = demuxerFilter->IsAVTrackInvalid(false, true, true, true);
     EXPECT_FALSE(result);
     
     // Test Case 12: Both invalid, hasVideoFilter=true, hasAudioTrack=true, demuxer has no video but has audio
     // isVideoInvalid = true && !false = true, isAudioInvalid = true && !true = false
     // isInvalid = (true && false) || (true && !true) || (false && !true) = false || false || false = false
-    demuxer->SetHasVideo(false);
-    demuxer->SetHasAudio(true);
+    demuxer->videoTrackId_ = -1;
+    demuxer->audioTrackId_ = 1;
     result = demuxerFilter->IsAVTrackInvalid(true, true, true, true);
     EXPECT_FALSE(result);
     
     // Test Case 13: Both valid, hasVideoFilter=true, hasAudioTrack=true, demuxer has no video but has audio
     // Expected: (false && false) || (false && false) || (false && false) = false
-    demuxer->SetHasVideo(false);
-    demuxer->SetHasAudio(true);
+    demuxer->videoTrackId_ = -1;
+    demuxer->audioTrackId_ = 1;
     result = demuxerFilter->IsAVTrackInvalid(false, false, true, true);
     EXPECT_FALSE(result);
     
     // Test Case 14: Video invalid, hasVideoFilter=true, hasAudioTrack=true, demuxer has no video but has audio
     // Expected: (false && false) || (true && false) || (false && false) = false
-    demuxer->SetHasVideo(false);
-    demuxer->SetHasAudio(true);
+    demuxer->videoTrackId_ = -1;
+    demuxer->audioTrackId_ = 1;
     result = demuxerFilter->IsAVTrackInvalid(true, false, true, true);
     EXPECT_FALSE(result);
     
     // Test Case 15: Both invalid, hasVideoFilter=true, hasAudioTrack=true, demuxer has video but no audio
     // isVideoInvalid = true && !true = false, isAudioInvalid = true && !false = true
     // isInvalid = (false && true) || (false && !true) || (true && !true) = false || false || false = false
-    demuxer->SetHasVideo(true);
-    demuxer->SetHasAudio(false);
+    demuxer->videoTrackId_ = 0;
+    demuxer->audioTrackId_ = -1;
     result = demuxerFilter->IsAVTrackInvalid(true, true, true, true);
     EXPECT_FALSE(result);
     
     // Test Case 16: Both valid, hasVideoFilter=true, hasAudioTrack=true, demuxer has video but no audio
     // Expected: (false && false) || (false && true) || (false && false) = false
-    demuxer->SetHasVideo(true);
-    demuxer->SetHasAudio(false);
+    demuxer->videoTrackId_ = 0;
+    demuxer->audioTrackId_ = -1;
     result = demuxerFilter->IsAVTrackInvalid(false, false, true, true);
     EXPECT_FALSE(result);
     
     // Test Case 17: Audio invalid, hasVideoFilter=true, hasAudioTrack=true, demuxer has video but no audio
     // Expected: (false && false) || (false && true) || (true && false) = false
-    demuxer->SetHasVideo(true);
-    demuxer->SetHasAudio(false);
+    demuxer->videoTrackId_ = 0;
+    demuxer->audioTrackId_ = -1;
     result = demuxerFilter->IsAVTrackInvalid(false, true, true, true);
     EXPECT_FALSE(result);
     
     // Test Case 18: Both valid, hasVideoFilter=false, hasAudioTrack=true, demuxer has no video but has audio
     // Expected: (false && false) || (false && false) || (false && false) = false
-    demuxer->SetHasVideo(false);
-    demuxer->SetHasAudio(true);
+    demuxer->videoTrackId_ = -1;
+    demuxer->audioTrackId_ = 1;
     result = demuxerFilter->IsAVTrackInvalid(false, false, false, true);
     EXPECT_FALSE(result);
     
     // Test Case 19: Video invalid, hasVideoFilter=false, hasAudioTrack=true, demuxer has no video but has audio
     // Expected: (false && false) || (true && false) || (false && false) = false
-    demuxer->SetHasVideo(false);
-    demuxer->SetHasAudio(true);
+    demuxer->videoTrackId_ = -1;
+    demuxer->audioTrackId_ = 1;
     result = demuxerFilter->IsAVTrackInvalid(true, false, false, true);
     EXPECT_FALSE(result);
     
     // Test Case 20: Both invalid, hasVideoFilter=false, hasAudioTrack=true, demuxer has no video but has audio
     // Expected: (true && false) || (true && false) || (true && false) = false
-    demuxer->SetHasVideo(false);
-    demuxer->SetHasAudio(true);
+    demuxer->videoTrackId_ = -1;
+    demuxer->audioTrackId_ = 1;
     result = demuxerFilter->IsAVTrackInvalid(true, true, false, true);
     EXPECT_FALSE(result);
     
     // Test Case 21: Both valid, hasVideoFilter=true, hasAudioTrack=false, demuxer has video but no audio
     // Expected: (false && false) || (false && true) || (false && false) = false
-    demuxer->SetHasVideo(true);
-    demuxer->SetHasAudio(false);
+    demuxer->videoTrackId_ = 0;
+    demuxer->audioTrackId_ = -1;
     result = demuxerFilter->IsAVTrackInvalid(false, false, true, false);
     EXPECT_FALSE(result);
     
     // Test Case 22: Audio invalid, hasVideoFilter=true, hasAudioTrack=false, demuxer has video but no audio
     // isVideoInvalid = false && !true = false, isAudioInvalid = true && !false = true
     // isInvalid = (false && true) || (false && !false) || (true && !true) = false || false || false = false
-    demuxer->SetHasVideo(true);
-    demuxer->SetHasAudio(false);
+    demuxer->videoTrackId_ = 0;
+    demuxer->audioTrackId_ = -1;
     result = demuxerFilter->IsAVTrackInvalid(false, true, true, false);
     EXPECT_FALSE(result);
     
     // Test Case 23: Both invalid, hasVideoFilter=true, hasAudioTrack=false, demuxer has video but no audio
     // isVideoInvalid = true && !true = false, isAudioInvalid = true && !false = true
     // isInvalid = (false && true) || (false && !false) || (true && !true) = false || false || false = false
-    demuxer->SetHasVideo(true);
-    demuxer->SetHasAudio(false);
+    demuxer->videoTrackId_ = 0;
+    demuxer->audioTrackId_ = -1;
     result = demuxerFilter->IsAVTrackInvalid(true, true, true, false);
     EXPECT_FALSE(result);
     
     // Test Case 24: Both valid, hasVideoFilter=false, hasAudioTrack=true, demuxer has no video and no audio
     // isVideoInvalid = false && !false = false, isAudioInvalid = false && !false = false
     // isInvalid = (false && false) || (false && !true) || (false && !false) = false || false || false = false
-    demuxer->SetHasVideo(false);
-    demuxer->SetHasAudio(false);
+    demuxer->videoTrackId_ = -1;
+    demuxer->audioTrackId_ = -1;
     result = demuxerFilter->IsAVTrackInvalid(false, false, false, true);
     EXPECT_FALSE(result);
     
     // Test Case 25: Video invalid, hasVideoFilter=false, hasAudioTrack=true, demuxer has no video and no audio
     // isVideoInvalid = true && !false = true, isAudioInvalid = false && !false = false
     // isInvalid = (true && false) || (true && !true) || (false && !false) = false || false || false = false
-    demuxer->SetHasVideo(false);
-    demuxer->SetHasAudio(false);
+    demuxer->videoTrackId_ = -1;
+    demuxer->audioTrackId_ = -1;
     result = demuxerFilter->IsAVTrackInvalid(true, false, false, true);
     EXPECT_FALSE(result);
     
     // Test Case 26: Both invalid, hasVideoFilter=false, hasAudioTrack=true, demuxer has no video and no audio
     // isVideoInvalid = true && !false = true, isAudioInvalid = true && !false = true
     // isInvalid = (true && true) || (true && !true) || (true && !false) = true || false || true = true
-    demuxer->SetHasVideo(false);
-    demuxer->SetHasAudio(false);
+    demuxer->videoTrackId_ = -1;
+    demuxer->audioTrackId_ = -1;
     result = demuxerFilter->IsAVTrackInvalid(true, true, false, true);
     EXPECT_TRUE(result);
     
     // Test Case 27: Both valid, hasVideoFilter=true, hasAudioTrack=false, demuxer has no video and no audio
     // isVideoInvalid = false && !false = false, isAudioInvalid = false && !false = false
     // isInvalid = (false && false) || (false && !false) || (false && !true) = false || false || false = false
-    demuxer->SetHasVideo(false);
-    demuxer->SetHasAudio(false);
+    demuxer->videoTrackId_ = -1;
+    demuxer->audioTrackId_ = -1;
     result = demuxerFilter->IsAVTrackInvalid(false, false, true, false);
     EXPECT_FALSE(result);
     
     // Test Case 28: Video invalid, hasVideoFilter=true, hasAudioTrack=false, demuxer has no video and no audio
     // isVideoInvalid = true && !false = true, isAudioInvalid = false && !false = false
     // isInvalid = (true && false) || (true && !false) || (false && !true) = false || true || false = true
-    demuxer->SetHasVideo(false);
-    demuxer->SetHasAudio(false);
+    demuxer->videoTrackId_ = -1;
+    demuxer->audioTrackId_ = -1;
     result = demuxerFilter->IsAVTrackInvalid(true, false, true, false);
     EXPECT_TRUE(result);
     
     // Test Case 29: Both invalid, hasVideoFilter=true, hasAudioTrack=false, demuxer has no video and no audio
     // Expected: (true && false) || (true && true) || (true && true) = true
-    demuxer->SetHasVideo(false);
-    demuxer->SetHasAudio(false);
+    demuxer->videoTrackId_ = -1;
+    demuxer->audioTrackId_ = -1;
     result = demuxerFilter->IsAVTrackInvalid(true, true, true, false);
     EXPECT_TRUE(result);
 }
@@ -1218,113 +1196,113 @@ HWTEST_F(DemuxerFilterUnitTest, IsAVTrackInvalid_NonPlayerMode, TestSize.Level1)
     
     // Test Case 1: Invalid video, demuxer has no video but has audio
     // Expected: (true && true) || (false && false) = true
-    demuxer->SetHasVideo(false);
-    demuxer->SetHasAudio(true);
+    demuxer->videoTrackId_ = -1;
+    demuxer->audioTrackId_ = 1;
     bool result = demuxerFilter->IsAVTrackInvalid(true, false, false, false);
     EXPECT_TRUE(result);
     
     // Test Case 2: Invalid audio, demuxer has video but no audio
     // Expected: (false && false) || (true && true) = true
-    demuxer->SetHasVideo(true);
-    demuxer->SetHasAudio(false);
+    demuxer->videoTrackId_ = 0;
+    demuxer->audioTrackId_ = -1;
     result = demuxerFilter->IsAVTrackInvalid(false, true, false, false);
     EXPECT_TRUE(result);
     
     // Test Case 3: Both invalid, demuxer has no video and no audio
     // Expected: (true && true) || (true && true) = true
-    demuxer->SetHasVideo(false);
-    demuxer->SetHasAudio(false);
+    demuxer->videoTrackId_ = -1;
+    demuxer->audioTrackId_ = -1;
     result = demuxerFilter->IsAVTrackInvalid(true, true, false, false);
     EXPECT_TRUE(result);
     
     // Test Case 4: Both valid, demuxer has both video and audio
     // Expected: (false && false) || (false && false) = false
-    demuxer->SetHasVideo(true);
-    demuxer->SetHasAudio(true);
+    demuxer->videoTrackId_ = 0;
+    demuxer->audioTrackId_ = 1;
     result = demuxerFilter->IsAVTrackInvalid(false, false, false, false);
     EXPECT_FALSE(result);
     
     // Test Case 5: Invalid video, demuxer has video and audio
     // Expected: (true && false) || (false && false) = false
-    demuxer->SetHasVideo(true);
-    demuxer->SetHasAudio(true);
+    demuxer->videoTrackId_ = 0;
+    demuxer->audioTrackId_ = 1;
     result = demuxerFilter->IsAVTrackInvalid(true, false, false, false);
     EXPECT_FALSE(result);
     
     // Test Case 6: Invalid audio, demuxer has video and audio
     // Expected: (false && false) || (true && false) = false
-    demuxer->SetHasVideo(true);
-    demuxer->SetHasAudio(true);
+    demuxer->videoTrackId_ = 0;
+    demuxer->audioTrackId_ = 1;
     result = demuxerFilter->IsAVTrackInvalid(false, true, false, false);
     EXPECT_FALSE(result);
     
     // Test Case 7: Both invalid, demuxer has video but no audio
     // Expected: (true && false) || (true && true) = true
-    demuxer->SetHasVideo(true);
-    demuxer->SetHasAudio(false);
+    demuxer->videoTrackId_ = 0;
+    demuxer->audioTrackId_ = -1;
     result = demuxerFilter->IsAVTrackInvalid(true, true, false, false);
     EXPECT_TRUE(result);
     
     // Test Case 8: Both invalid, demuxer has no video but has audio
     // Expected: (true && true) || (true && false) = true
-    demuxer->SetHasVideo(false);
-    demuxer->SetHasAudio(true);
+    demuxer->videoTrackId_ = -1;
+    demuxer->audioTrackId_ = 1;
     result = demuxerFilter->IsAVTrackInvalid(true, true, false, false);
     EXPECT_TRUE(result);
     
     // Test Case 9: Both valid, demuxer has no video and no audio
     // Expected: (false && true) || (false && true) = false
-    demuxer->SetHasVideo(false);
-    demuxer->SetHasAudio(false);
+    demuxer->videoTrackId_ = -1;
+    demuxer->audioTrackId_ = -1;
     result = demuxerFilter->IsAVTrackInvalid(false, false, false, false);
     EXPECT_FALSE(result);
     
     // Test Case 10: Video invalid, demuxer has no video and no audio
     // Expected: (true && true) || (false && true) = true
-    demuxer->SetHasVideo(false);
-    demuxer->SetHasAudio(false);
+    demuxer->videoTrackId_ = -1;
+    demuxer->audioTrackId_ = -1;
     result = demuxerFilter->IsAVTrackInvalid(true, false, false, false);
     EXPECT_TRUE(result);
     
     // Test Case 11: Audio invalid, demuxer has no video and no audio
     // Expected: (false && true) || (true && true) = true
-    demuxer->SetHasVideo(false);
-    demuxer->SetHasAudio(false);
+    demuxer->videoTrackId_ = -1;
+    demuxer->audioTrackId_ = -1;
     result = demuxerFilter->IsAVTrackInvalid(false, true, false, false);
     EXPECT_TRUE(result);
     
     // Test Case 12: Both valid, demuxer has no video but has audio
     // Expected: (false && true) || (false && false) = false
-    demuxer->SetHasVideo(false);
-    demuxer->SetHasAudio(true);
+    demuxer->videoTrackId_ = -1;
+    demuxer->audioTrackId_ = 1;
     result = demuxerFilter->IsAVTrackInvalid(false, false, false, false);
     EXPECT_FALSE(result);
     
     // Test Case 13: Audio invalid, demuxer has no video but has audio
     // Expected: (false && true) || (true && false) = false
-    demuxer->SetHasVideo(false);
-    demuxer->SetHasAudio(true);
+    demuxer->videoTrackId_ = -1;
+    demuxer->audioTrackId_ = 1;
     result = demuxerFilter->IsAVTrackInvalid(false, true, false, false);
     EXPECT_FALSE(result);
     
     // Test Case 14: Both valid, demuxer has video but no audio
     // Expected: (false && false) || (false && true) = false
-    demuxer->SetHasVideo(true);
-    demuxer->SetHasAudio(false);
+    demuxer->videoTrackId_ = 0;
+    demuxer->audioTrackId_ = -1;
     result = demuxerFilter->IsAVTrackInvalid(false, false, false, false);
     EXPECT_FALSE(result);
     
     // Test Case 15: Video invalid, demuxer has video but no audio
     // Expected: (true && false) || (false && true) = false
-    demuxer->SetHasVideo(true);
-    demuxer->SetHasAudio(false);
+    demuxer->videoTrackId_ = 0;
+    demuxer->audioTrackId_ = -1;
     result = demuxerFilter->IsAVTrackInvalid(true, false, false, false);
     EXPECT_FALSE(result);
     
     // Test Case 16: Both invalid, demuxer has both video and audio
     // Expected: (true && false) || (true && false) = false
-    demuxer->SetHasVideo(true);
-    demuxer->SetHasAudio(true);
+    demuxer->videoTrackId_ = 0;
+    demuxer->audioTrackId_ = 1;
     result = demuxerFilter->IsAVTrackInvalid(true, true, false, false);
     EXPECT_FALSE(result);
 }

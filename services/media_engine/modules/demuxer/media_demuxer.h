@@ -195,8 +195,8 @@ public:
     bool IsFlvLive();
 
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
-    virtual bool HasVideo();
-    virtual bool HasAudio();
+    bool HasVideo();
+    bool HasAudio();
     bool IsSeekToTimeSupported();
     const std::string& GetOriginalCodecName() const;
 
