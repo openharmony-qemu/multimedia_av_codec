@@ -421,11 +421,14 @@ bool CheckCBRHQMode(CapabilityData &capData, Format &format)
     bool qualityExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality);
     bool sqrFactorExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, sqrFactor);
     bool bitrateModeExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
+    AVCODEC_LOGI("LJY CheckCBRHQMode mode %{public}d",bitrateMode);
     if (!bitrateModeExist || bitrateMode != VideoEncodeBitrateMode::CBR_HIGH_QUALITY) {
+        AVCODEC_LOGI("LJY 1");
         return true;
     }
 
     if (IsSupported(capData.bitrateMode, static_cast<int32_t>(VideoEncodeBitrateMode::CBR_HIGH_QUALITY))) {
+        AVCODEC_LOGI("LJY chechCBRHQ supported");
         if (sqrFactorExist) {
             AVCODEC_LOGE("Param invalid, in CBRHQ mode but set SQR factor!");
             return false;
@@ -440,6 +443,7 @@ bool CheckCBRHQMode(CapabilityData &capData, Format &format)
         AVCODEC_LOGI("Param valid, set CBRHQ mode successfully!");
         return true;
     }
+    AVCODEC_LOGI("LJY chechCBRHQ not supported");
     format.RemoveKey(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, VideoEncodeBitrateMode::CBR);
     AVCODEC_LOGW("Param invalid, convert the mode to CBR!");
