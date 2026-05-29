@@ -336,9 +336,8 @@ Status DecoderSurfaceFilter::Configure(const std::shared_ptr<Meta> &parameter)
         MEDIA_LOG_I("height update 0 -> 512");
         configFormat_.PutIntValue(Tag::VIDEO_HEIGHT, VIDEO_HEIGHT);
     }
-    configFormat_.PutDoubleValue(Tag::VIDEO_DECODER_SPEED, 1.0);
     configFormat_.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE,
-        OH_FrameRetentionMode::OH_FRAME_RETENTION_MODE_ADAPTIVE);
+        OH_FrameRetentionMode::OH_FRAME_RETENTION_MODE_FULL);
     Status ret = videoDecoder_->Configure(configFormat_);
 
     std::shared_ptr<MediaAVCodec::MediaCodecCallback> mediaCodecCallback = nullptr;
@@ -1749,9 +1748,15 @@ Status DecoderSurfaceFilter::SetSpeed(float speed)
 
     Format format;
     format.PutDoubleValue(Tag::VIDEO_FRAME_RATE, frameRateWithSpeed);
-    format.PutFloatValue(Tag::VIDEO_DECODER_SPEED, speed);
-    format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE,
-        OH_FrameRetentionMode::OH_FRAME_RETENTION_MODE_ADAPTIVE);
+    const double eps = 1e-6;
+    if (speed <= 1.0 + eps) {
+        format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE,
+            OH_FrameRetentionMode::OH_FRAME_RETENTION_MODE_FULL);
+    } else {
+        format.PutFloatValue(Tag::VIDEO_DECODER_SPEED, speed);
+        format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE,
+            OH_FrameRetentionMode::OH_FRAME_RETENTION_MODE_ADAPTIVE);
+    }
 
     videoDecoder_->SetParameter(format);
     FALSE_RETURN_V(postProcessor_ != nullptr, Status::OK);
