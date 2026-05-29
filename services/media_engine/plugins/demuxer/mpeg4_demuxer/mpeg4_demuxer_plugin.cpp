@@ -412,9 +412,9 @@ void MPEG4DemuxerPlugin::InitParser()
         }
         MediaType trackType = MediaType::UNKNOWN;
         mediaInfo_.tracks[trackIndex].Get<Tag::MEDIA_TYPE>(trackType);
-        if (trackType == TrackType::VIDEO && StartWith(mime.c_str(), "video/") && videoTrackCount == 0) {
+        if (trackType == MediaType::VIDEO && StartWith(mime.c_str(), "video/") && videoTrackCount == 0) {
             videoTrackCount++;
-            FALSE_RETURN_MSG(track->sampleHelper, Status::ERROR_INVALID_DATA, "sampleHelper is nullptr");
+            FALSE_RETURN_MSG(track->sampleHelper, "sampleHelper is nullptr");
             track->sampleHelper->GetPtsOfFirstSample(startPts_);  // todo
             syncSamplesIndex_ = track->sampleHelper->GetSyncSamplesPtsFromStssEntry();
         }

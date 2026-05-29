@@ -202,7 +202,7 @@ bool MPEG4DemuxerPlugin::IsMultiVideoTracks()
     uint32_t videoTrackCount = 0;
     for (uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
         MediaType trackType = MediaType::UNKNOWN;
-        mediaInfo_.tracks[trackIndex].Get<Tag::MEDIA_TYPE>(trackType);
+        mediaInfo_.tracks[i].Get<Tag::MEDIA_TYPE>(trackType);
         std::string mimeType = MimeType::INVALID_TYPE;
         mediaInfo_.tracks[i].Get<Tag::MIME_TYPE>(mimeType);
         MEDIA_LOG_I("track index is " PUBLIC_LOG_U32 ", trackType is " PUBLIC_LOG_D32 ", mimeType is " PUBLIC_LOG_S, i,
@@ -368,7 +368,7 @@ Status MPEG4DemuxerPlugin::ParserRefInfoLoop(std::shared_ptr<AVBuffer> buffer, u
     FALSE_RETURN_V_MSG_E(buffer != nullptr || buffer->memory_ != nullptr, Status::ERROR_UNKNOWN,
         "buffer or memory_ is nullptr!");
     FALSE_RETURN_V_MSG_I(buffer->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS), Status::OK, "eos or not video");
-    Status result = referenceParser_->ParserNalUnits(buffer->memory_->GetAddr(), pkt->memory_->GetSize(),
+    Status result = referenceParser_->ParserNalUnits(buffer->memory_->GetAddr(), buffer->memory_->GetSize(),
         syncSampleIndex, buffer->dts_);
     FALSE_RETURN_V_MSG_E(result == Status::OK, result, "parse nal units end! ret=" PUBLIC_LOG_D32,
                          static_cast<int32_t>(result));
