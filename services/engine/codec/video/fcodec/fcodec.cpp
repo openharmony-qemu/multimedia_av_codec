@@ -1499,7 +1499,10 @@ int32_t FCodec::DecodedFrameProcess(uint32_t index)
     std::vector<uint8_t> colorSpaceInfoData(sizeof(CM_ColorSpaceInfo));
     GetCropInfo(cropVec, isChanged);
     GetColorAspectsInfo(colorSpaceInfoData, isChanged);
-    if (isChanged || decNum_ == 0) {
+    if (decNum_ == 0) {
+        callback_->OnOutputFormatChanged(format_);
+    }
+    if (isChanged) {
         callback_->OnOutputFormatChanged(format_);
     }
     std::unique_lock<std::mutex> oLock(outputMutex_);
