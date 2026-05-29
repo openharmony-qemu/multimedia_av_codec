@@ -1069,7 +1069,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1585,
     AVCODEC_LOGI("LJY ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_1585 start");
     SetFormatBasicParam(formatInner_);
     if (!IsEncoderBitrateModeSupported(capabilityDataHevc_, CBR_HIGH_QUALITY)) {
-        AVCODEC_LOGI("LJY support CBRHQ set bitratemode and sqr factor %{public}d",DEFAULT_SQR_FACTOR);
+        AVCODEC_LOGI("LJY support CBRHQ set bitratemode and sqr factor %{public}d", DEFAULT_SQR_FACTOR);
         formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR_HIGH_QUALITY);
         formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, DEFAULT_SQR_FACTOR);
         ASSERT_EQ(AVCS_ERR_CODEC_PARAM_INCORRECT, videoEncHevcInner_->Configure(formatInner_));
