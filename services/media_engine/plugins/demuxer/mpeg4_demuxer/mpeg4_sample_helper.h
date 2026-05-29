@@ -69,7 +69,6 @@ public:
     int32_t GetSampleOffsetOfCttsEntry(uint32_t cttsEntryIndex);
     int32_t GetMinOffsetOfCttsEntry();
     std::vector<uint32_t> GetSyncSamplesPtsFromStssEntry();
-    SdtpEntry GetSdtpEntry();
     Status GetPtsOfFirstSample(int64_t& startPts);
 
     struct EditListEntry {
@@ -90,6 +89,11 @@ public:
         int32_t delta;
     };
 
+    struct SdtpEntry {
+        uint32_t sdtpEntryCount = 0;
+        std::vector<uint8_t> sdtpData;
+    };
+    
     void SetEditListParams(const std::vector<EditListEntry>& editListEntries, int32_t movieTimeScale,
         int32_t trackTimeScale);
     bool HasEditList() const;
@@ -98,6 +102,7 @@ public:
     int64_t GetRawTotalDuration() const;
     int64_t GetRawSampleCount() const;
     uint32_t EstimateVideoDelay() const;
+    SdtpEntry GetSdtpEntry();
 
     std::shared_ptr<DemuxerDataReader> dataReader_;
     std::vector<SampleIndexEntry> sampleIndexEntry_;
@@ -130,10 +135,6 @@ private:
     struct StssEntry {
         uint32_t index;
         int64_t syncDts;
-    };
-    struct SdtpEntry {
-        uint32_t sdtpEntryCount = 0;
-        std::vector<uint8_t> sdtpData;
     };
     struct TrackFragmentHeaderInfo {
         enum Flags {

@@ -336,7 +336,7 @@ Status MPEG4SampleHelper::SetTimeToSampleParams(int64_t dataOffset, size_t dataS
     MEDIA_LOG_D("In");
     FALSE_RETURN_V_MSG_E(sttsEntry_.empty(), Status::ERROR_INVALID_OPERATION, "sttsEntry exist");
     FALSE_RETURN_V_MSG_E(dataOffset >= 0 && dataSize >= MIN_DATA_SIZE, Status::ERROR_INVALID_PARAMETER, "Invalid data");
-
+    
     int64_t currentOffset = dataOffset;
     uint8_t header[8];
     auto ret = dataReader_->ReadUintData(currentOffset, header, sizeof(header));
@@ -697,9 +697,9 @@ Status MPEG4SampleHelper::SetSampleDependencyTypeParams(int64_t ctsOffset, int64
 
     FALSE_RETURN_V_MSG_E(dataSize > 0 && dataSize <= static_cast<uint32_t>(UINT64_MAX), Status::ERROR_INVALID_DATA,
         "dataSize is invalid");
-    FALSE_RETURN_V_MSG_E(currentOffset < MIN_DATA_OFFSET, Status::ERROR_INVALID_PARAMETER, "currentOffset is invalid");
-
+        
     int64_t currentOffset = dataOffset;
+    FALSE_RETURN_V_MSG_E(currentOffset < MIN_DATA_OFFSET, Status::ERROR_INVALID_PARAMETER, "currentOffset is invalid");
     for (uint32_t i = 0; i < dataSize && currentOffset < ctsOffset; ++i) {  // Each entry size is 1 Byte
         uint8_t sdtpEntry;
         Status ret = dataReader_->ReadUintData(currentOffset, &sdtpEntry, sizeof(sdtpEntry));
@@ -1590,19 +1590,19 @@ std::vector<uint32_t> MPEG4SampleHelper::GetSyncSamplesPtsFromStssEntry()
 {
     std::vector<uint32_t> syncSamplesPts;
     for (uint32_t i = 0; i < stssEntry_.size(); ++i) {
-        syncSamplesPts.emplace(stssEntry_[i].index);
+        syncSamplesPts.emplace_back(stssEntry_[i].index);
     }
     // for (uint32_t i = 0; i < stssEntry_.size(); ++i) {
     //     uint32_t syncSampleIndex = stssEntry_[i].index;
     //     FALSE_RETURN_V_MSG_E(syncSampleIndex < sampleIndexEntry_.size(), {},
     //         "syncSampleIndex(%{public}d) is invalid, sampleIndexEntry_ size is %{public}lu",
     //         syncSampleIndex, sampleIndexEntry_.size());
-    //     syncSamplesPts.emplace(sampleIndexEntry_[syncSampleIndex].pts);
+    //     syncSamplesPts.emplace_back(sampleIndexEntry_[syncSampleIndex].pts);
     // }
     return syncSamplesPts;
 }
 
-SdtpEntry MPEG4SampleHelper::GetSdtpEntry()
+MPEG4SampleHelper::SdtpEntry MPEG4SampleHelper::GetSdtpEntry()
 {
     return sdtpEntry_;
 }

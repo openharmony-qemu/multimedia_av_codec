@@ -24,7 +24,9 @@
 #include <fstream>
 #include <chrono>
 #include <limits>
+
 #include "avcodec_trace.h"
+#include "demuxer_utils.h"
 #include "securec.h"
 #include "converter.h"
 #include "mpeg4_sample_helper.h"
@@ -408,14 +410,15 @@ void MPEG4DemuxerPlugin::InitParser()
                 MEDIA_LOG_D("Track " PUBLIC_LOG_D32 " will be converted", trackIndex);
             }
         }
-        track = track->next;
-        if (trackType == TrackType::VIDEO_TYPE && StartWith(mimeType, "video/") && videoTrackCount == 0) {
+        MediaType trackType = MediaType::UNKNOWN;
+        mediaInfo_.tracks[trackIndex].Get<Tag::MEDIA_TYPE>(trackType);
+        if (trackType == TrackType::VIDEO && StartWith(mime.c_str(), "video/") && videoTrackCount == 0) {
             videoTrackCount++;
-            std::shared_ptr<MPEG4AtomParser::Track> track = FindTrackById(refParserTrackIdx_);
-            FALSE_RETURN_V_MSG_E(track && track->sampleHelper, Status::ERROR_INVALID_DATA, "track is nullptr");
-            track->sampleHelper->GetPtsOfFirstSample(startPts_);
+            FALSE_RETURN_MSG(track->sampleHelper, Status::ERROR_INVALID_DATA, "sampleHelper is nullptr");
+            track->sampleHelper->GetPtsOfFirstSample(startPts_);  // todo
             syncSamplesIndex_ = track->sampleHelper->GetSyncSamplesPtsFromStssEntry();
         }
+        track = track->next;
     }
 }
 

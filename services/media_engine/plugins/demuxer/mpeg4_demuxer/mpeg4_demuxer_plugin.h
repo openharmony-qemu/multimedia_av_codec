@@ -88,6 +88,7 @@ public:
     Status RefParserInit();
     Status ParserRefInfoLoop(std::shared_ptr<AVBuffer> buffer, uint32_t syncSampleIndex);
     Status UpdateParserGopId(int32_t syncSamplesPtsSize);
+    Status SelectProGopId();
 
     Status GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
         const uint64_t relativePresentationTimeUs, uint32_t &index) override;
@@ -167,6 +168,7 @@ private:
     uint32_t index2RelativePTS_ = 0;
 
     std::shared_ptr<ReferenceParserManager> referenceParser_ = nullptr;
+    bool isInit_ = false;
     int64_t ptsOfIndexZero_ = 0;
     std::map<int64_t, int64_t> pts2Dts_;  // relative pts(us)->relative dts(us)
     std::unordered_map<int64_t, uint32_t> dts2SyncSampleIndex_;
@@ -181,6 +183,9 @@ private:
     std::list<uint32_t> processingSyncSamplesIndex_;
     std::unordered_map<int32_t, int64_t> gopId2DecodedSamplePts_;  // gopId->absolute dts(us)
     std::string mimeTypeOfVideoStream_ = MimeType::INVALID_TYPE;
+    int64_t startPts_ = 0;  // todo checkpts
+    bool updatePosIsForward_ = true;
+    bool isSdtpExist_ = false;
 
     int32_t CountTracks();
     void GetAVTrackIds();
@@ -288,6 +293,7 @@ private:
         int64_t sampleOffsetOfCurrentCttsEntry);
     void ProcessIndex2RelativePTS(int64_t pts, uint32_t index);
     void ProcessRelativePTS2Index(int64_t pts, int64_t absolutePTS);
+    void ProcessPts2DtsMap(int64_t pts, int64_t dts);
 
     Status WaitForLoop(uint32_t trackId, uint32_t timeout);
     bool ShouldWaitForRead(uint32_t trackId);
