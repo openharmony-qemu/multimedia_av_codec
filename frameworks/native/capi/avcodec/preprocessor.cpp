@@ -125,7 +125,6 @@ std::string TransformRoiMetadata(const std::string &roi, double scaleX, double s
 {
     static const std::regex roiPattern(R"((?:^|;)(-?\d+),(-?\d+)-(-?\d+),(-?\d+)(?:=([^;]*))?(?=;|$))");
     std::smatch match;
-    std::string temp = roi;
     std::string result;
     for (std::string temp = roi; std::regex_search(temp, match, roiPattern); temp = match.suffix().str()) {
         auto top = ParseInt32(match[ROI_MATCH_TOP_INDEX].str());
