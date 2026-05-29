@@ -421,7 +421,7 @@ bool CheckCBRHQMode(CapabilityData &capData, Format &format)
     bool qualityExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality);
     bool sqrFactorExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, sqrFactor);
     bool bitrateModeExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
-    AVCODEC_LOGI("LJY CheckCBRHQMode mode %{public}d",bitrateMode);
+    AVCODEC_LOGI("LJY CheckCBRHQMode mode %{public}d", bitrateMode);
     if (!bitrateModeExist || bitrateMode != VideoEncodeBitrateMode::CBR_HIGH_QUALITY) {
         AVCODEC_LOGI("LJY 1");
         return true;
