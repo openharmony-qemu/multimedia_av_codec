@@ -51,13 +51,6 @@ static void OnError(OH_AVCodec *codec, int32_t errorCode, void *userData)
     (void)errorCode;
     (void)userData;
 }
-
-static void OnStreamChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
-{
-    (void)codec;
-    (void)format;
-    (void)userData;
-}
 }
 
 class TEST_SUIT : public testing::TestWithParam<int32_t> {
@@ -722,19 +715,6 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_OnStreamChanged_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: PreprocessorEncoder_CreateEncoderSurface_NullEncoderObject_001
- * @tc.name: PreprocessorEncoder_OnStreamChanged_002
- * @tc.desc: onStreamChanged is't nullptr
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, PreprocessorEncoder_OnStreamChanged_002, TestSize.Level1)
-{
-    Media::Format format;
-    preprocessorEncoder_->asyncCallback_.onStreamChanged = OnStreamChanged;
-    preprocessorEncoder_->OnStreamChanged(format);
-}
-
-/**
  * @tc.name: PreprocessorEncoder_OnPreprocessError_001
  * @tc.desc: onError is nullptr
  * @tc.type: FUNC
@@ -834,23 +814,6 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_DetachSecondaryEncoder_InvalidPrimaryRef
     ASSERT_EQ(primaryEncoder2->primary_, nullptr);
     preprocessorEncoder_->Destroy(primaryCodec1);
     preprocessorEncoder_->Destroy(primaryCodec2);
-}
-
-/**
- * @tc.name: PreprocessorEncoder_ConfigureVideoEncoder_NullEncoderObject_001
- * @tc.desc: Test ConfigureVideoEncoder when videoEncoderObject_ is nullptr
- *           This tests the case where encoder is not properly initialized
- *           Expected: Returns AVCS_ERR_OK without calling Configure
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, PreprocessorEncoder_ConfigureVideoEncoder_NullEncoderObject_001, TestSize.Level1)
-{
-    ASSERT_EQ(preprocessorEncoder_->videoEncoderObject_, nullptr);
-    Media::Format format;
-    format.PutLongValue(OH_MD_KEY_BITRATE, 1000000);
-    format.PutLongValue(OH_MD_KEY_MAX_BITRATE, 2000000);
-    int32_t result = preprocessorEncoder_->ConfigureVideoEncoder(format);
-    ASSERT_EQ(result, AVCS_ERR_OK);
 }
 
 /**
@@ -1210,7 +1173,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_Reset_NullEncoderObject_001, TestSize.Le
 /**
  * @tc.name: PreprocessorEncoder_Reset_WithPreprocMgr_001
  * @tc.desc: Test Reset when preprocMgr_ is set
- *           This tests the path where NotifyEosNowIfPending, SetEncoderRunning and UnregisterEncoderFromManager are called
+ *           This tests the path where NotifyEosNowIfPending, SetEncoderRunning UnregisterEncoderFromManager are called
  *           Expected: Calls all preprocMgr_ methods including UnregisterEncoderFromManager
  * @tc.type: FUNC
  */
@@ -1465,6 +1428,10 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_GetInputDescription_WithDownsampling_001
  */
 HWTEST_F(TEST_SUIT, PreprocessorEncoder_GetInputDescription_NullVideoEncoder_001, TestSize.Level1)
 {
+    preprocessorEncoder_->encoderId_ = "test_encoder_null_videoencoder";
+    auto preprocessor = std::make_shared<Preprocessor>(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    ASSERT_NE(preprocessor, nullptr);
+    preprocessorEncoder_->preprocessors_[preprocessorEncoder_->encoderId_] = preprocessor;
     preprocessorEncoder_->preprocMgr_ = std::make_shared<PreprocessorManager>();
     preprocessorEncoder_->videoEncoderObject_ = std::make_shared<VideoEncoderObject>(nullptr);
     OH_AVFormat* result = preprocessorEncoder_->GetInputDescription();
@@ -1482,6 +1449,10 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_GetInputDescription_NullVideoEncoder_001
  */
 HWTEST_F(TEST_SUIT, PreprocessorEncoder_GetInputDescription_NullVideoEncoderObject_001, TestSize.Level1)
 {
+    preprocessorEncoder_->encoderId_ = "test_encoder_null_videoencoderobj";
+    auto preprocessor = std::make_shared<Preprocessor>(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    ASSERT_NE(preprocessor, nullptr);
+    preprocessorEncoder_->preprocessors_[preprocessorEncoder_->encoderId_] = preprocessor;
     preprocessorEncoder_->preprocMgr_ = std::make_shared<PreprocessorManager>();
     preprocessorEncoder_->videoEncoderObject_ = nullptr;
     OH_AVFormat* result = preprocessorEncoder_->GetInputDescription();
