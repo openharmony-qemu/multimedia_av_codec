@@ -37,6 +37,14 @@ constexpr uint8_t HEVC_NAL_TYPE_TSA_N = 2;   // Temporal sub-layer access, non-r
 constexpr uint8_t HEVC_NAL_TYPE_STSA_N = 4;  // Step-wise temporal sub-layer access, non-reference
 constexpr uint8_t HEVC_NAL_TYPE_RADL_N = 6;  // Random access decodable leading, non-reference
 constexpr uint8_t HEVC_NAL_TYPE_RASL_N = 8;  // Random access skippable leading, non-reference
+// NALU size field byte indices (4-byte big-endian length prefix)
+constexpr uint32_t NALU_SIZE_BYTE_0 = 0; // Most significant byte
+constexpr uint32_t NALU_SIZE_BYTE_1 = 1;
+constexpr uint32_t NALU_SIZE_BYTE_2 = 2;
+constexpr uint32_t NALU_SIZE_BYTE_3 = 3; // Least significant byte
+constexpr uint32_t BYTE_BITS = 8;         // Bits per byte for shift operations
+constexpr uint32_t HEVC_NUM_2 = 2;
+constexpr uint32_t HEVC_NUM_3 = 3;
 }
 
 #define AV_CODEC_TIME_BASE (static_cast<int64_t>(1))
@@ -394,15 +402,19 @@ bool IsBeginAsAnnexb(const uint8_t *sample, int32_t size)
     if (size < NAL_START_CODE_SIZE) {
         return false;
     }
-    bool hasShortStartCode = (sample[0] == 0 && sample[1] == 0 && sample[2] == 1);
-    bool hasLongStartCode = (sample[0] == 0 && sample[1] == 0 && sample[2] == 0 && sample[3] == 1);
+    bool hasShortStartCode = (sample[NALU_SIZE_BYTE_0] == 0 &&
+        sample[NALU_SIZE_BYTE_1] == 0 && sample[NALU_SIZE_BYTE_2] == 1);
+    bool hasLongStartCode = (sample[NALU_SIZE_BYTE_0] == 0 &&
+        sample[NALU_SIZE_BYTE_1] == 0 && sample[NALU_SIZE_BYTE_2] == 0 && sample[NALU_SIZE_BYTE_3] == 1);
     return hasShortStartCode || hasLongStartCode;
 }
 
 int32_t GetNaluSize(const uint8_t *nalStart)
 {
     return static_cast<int32_t>(
-        (nalStart[3]) | (nalStart[2] << 8) | (nalStart[1] << 16) | (nalStart[0] << 24));
+        nalStart[NALU_SIZE_BYTE_3] | (nalStart[NALU_SIZE_BYTE_2] << BYTE_BITS) |
+        (nalStart[NALU_SIZE_BYTE_1] << (BYTE_BITS * HEVC_NUM_2)) |
+        (nalStart[NALU_SIZE_BYTE_0] << (BYTE_BITS * HEVC_NUM_3)));
 }
 
 int64_t AvTime2Us(int64_t hTime)

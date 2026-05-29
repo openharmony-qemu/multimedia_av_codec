@@ -397,6 +397,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1208, TestSize.Level1)
     ASSERT_EQ(formatVal_.bitRate, 32250);
 }
 
+#ifndef USER_MPEG4_DEMUXER
 /**
  * @tc.name: AVSource_GetFormat_1209
  * @tc.desc: get format when the file is audio vivid (2obj_44100Hz_16bit_32k.mp4)
@@ -440,4 +441,5 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1209, TestSize.Level1)
     ASSERT_EQ(formatVal_.codecMime, CodecMimeType::AUDIO_AVS3DA);
     ASSERT_EQ(formatVal_.bitRate, 64082);
 }
+#endif
 } // namespace

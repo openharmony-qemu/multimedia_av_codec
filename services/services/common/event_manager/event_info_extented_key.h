@@ -44,6 +44,7 @@ public:
     static constexpr std::string_view CODEC_MODE = "av_codec_event_info_codec_mode";
     static constexpr std::string_view RESOLUTION_LEVEL = "av_codec_event_info_resolution_level";
     static constexpr std::string_view DEMUXER_FORMAT = "av_codec_event_info_demuxer_format";
+    static constexpr std::string_view MUXER_FORMAT = "av_codec_event_info_muxer_format";
     static constexpr std::string_view ADVANCED_FEATURE = "av_codec_event_info_advanced_feature";
     static constexpr std::string_view RC_MODE = "av_codec_event_info_rc_mode";
     static constexpr std::string_view FAILURE_STAGE = "av_codec_event_info_failure_stage";

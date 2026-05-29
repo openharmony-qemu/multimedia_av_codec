@@ -30,6 +30,7 @@
 #include "media_downloader.h"
 #include "common/media_source.h"
 #include "common/media_core.h"
+#include "common/event.h"
 
 namespace OHOS {
 namespace Media {
@@ -108,6 +109,7 @@ private:
     void NotifyError(int32_t clientErrorCode, int32_t serverErrorCode);
     void GetServerMediaServiceErrorCode(int32_t errorCode, int32_t& serverCode);
     void GetClientMediaServiceErrorCode(int32_t errorCode, int32_t& clientCode);
+    void ReportLoadingErrorEvent();
 
     std::atomic<bool> isClosed_{false};
     std::shared_ptr<MediaDownloader> downloader_;
