@@ -1087,7 +1087,10 @@ HWTEST_F(TEST_SUIT, VideoEncoder_RepeatHeaderBeforeSyncFrames_002, TestSize.Leve
 {
     auto capability = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), true,
                                                                     AVCodecCategory::AVCODEC_SOFTWARE);
-    ASSERT_NE(nullptr, capability);
+    if (capability == nullptr) {
+        std::cout << "SOFTWARE encoder not available, skip test" << std::endl;
+        return;
+    }
     std::string codecName = capability->GetName();
     if (!videoEnc_->CreateVideoEncMockByName(codecName)) {
         return;
