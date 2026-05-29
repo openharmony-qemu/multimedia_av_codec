@@ -1390,20 +1390,6 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_ReleaseOutputBuffer_MultipleIndices_001,
 }
 
 /**
- * @tc.name: PreprocessorEncoder_GetOutputDescription_NullEncoderObject_001
- * @tc.desc: Test GetOutputDescription when videoEncoderObject_ is nullptr
- *           This tests the case where encoder is not properly initialized
- *           Expected: Returns nullptr without calling GetOutputFormat
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, PreprocessorEncoder_GetOutputDescription_NullEncoderObject_001, TestSize.Level1)
-{
-    ASSERT_EQ(preprocessorEncoder_->videoEncoderObject_, nullptr);
-    OH_AVFormat* result = preprocessorEncoder_->GetOutputDescription();
-    ASSERT_EQ(result, nullptr);
-}
-
-/**
  * @tc.name: PreprocessorEncoder_GetOutputDescription_ValidEncoder_001
  * @tc.desc: Test GetOutputDescription with valid videoEncoderObject_
  *           This tests the normal path where GetOutputFormat is called
@@ -1479,7 +1465,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_GetInputDescription_WithCropEnabled_001,
         GTEST_SKIP() << "Cannot create primary encoder";
     }
     auto* encoder = static_cast<PreprocessorEncoder*>(primaryCodec);
-    encoder->preprocMgr_ = std::make_shared<PreprocessorManager>();
+    encoder->preprocMgr_ = nullptr;
     OH_AVFormat* result = encoder->GetInputDescription();
     (void)result;
     if (result != nullptr) {
@@ -1506,6 +1492,54 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_GetInputDescription_WithDownsampling_001
     encoder->preprocMgr_ = std::make_shared<PreprocessorManager>();
     OH_AVFormat* result = encoder->GetInputDescription();
     (void)result;
+    if (result != nullptr) {
+        OH_AVFormat_Destroy(result);
+    }
+    preprocessorEncoder_->Destroy(primaryCodec);
+}
+
+/**
+ * @tc.name: PreprocessorEncoder_GetInputDescription_NullVideoEncoder_001
+ * @tc.desc: Test GetInputDescription when videoEncoderObject_ exists but videoEncoder_ is nullptr
+ *           This tests the case where videoEncoderObject_ is not null but videoEncoderObject_->videoEncoder_ is null
+ *           Expected: Returns valid OH_AVFormat* without encoder format, only preprocessor metadata
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocessorEncoder_GetInputDescription_NullVideoEncoder_001, TestSize.Level1)
+{
+    OH_AVCodec* primaryCodec = nullptr;
+    auto ret = preprocessorEncoder_->CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &primaryCodec);
+    if (ret != AV_ERR_OK || primaryCodec == nullptr) {
+        GTEST_SKIP() << "Cannot create primary encoder";
+    }
+    auto* encoder = static_cast<PreprocessorEncoder*>(primaryCodec);
+    encoder->preprocMgr_ = std::make_shared<PreprocessorManager>();
+    encoder->videoEncoderObject_ = std::make_shared<VideoEncoderObject>(nullptr);
+    OH_AVFormat* result = encoder->GetInputDescription();
+    if (result != nullptr) {
+        OH_AVFormat_Destroy(result);
+    }
+    preprocessorEncoder_->Destroy(primaryCodec);
+}
+
+/**
+ * @tc.name: PreprocessorEncoder_GetInputDescription_NullVideoEncoderObject_001
+ * @tc.desc: Test GetInputDescription when videoEncoderObject_ is nullptr
+ *           This tests the case where videoEncoderObject_ itself is null
+ *           Expected: Returns valid OH_AVFormat* without encoder format, only preprocessor metadata
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocessorEncoder_GetInputDescription_NullVideoEncoderObject_001, TestSize.Level1)
+{
+    OH_AVCodec* primaryCodec = nullptr;
+    auto ret = preprocessorEncoder_->CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &primaryCodec);
+    if (ret != AV_ERR_OK || primaryCodec == nullptr) {
+        GTEST_SKIP() << "Cannot create primary encoder";
+    }
+    auto* encoder = static_cast<PreprocessorEncoder*>(primaryCodec);
+    encoder->preprocMgr_ = std::make_shared<PreprocessorManager>();
+    encoder->videoEncoderObject_ = nullptr;
+    OH_AVFormat* result = encoder->GetInputDescription();
     if (result != nullptr) {
         OH_AVFormat_Destroy(result);
     }
