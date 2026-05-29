@@ -28,11 +28,6 @@
 #include "vcodec_signal.h"
 #include "venc_dualoutput_sample.h"
 #include "v2_2/buffer_handle_meta_key_type.h"
-
-#define IsSupportFastImage()                                                                                           \
-    if (access(FAST_IMAGE_PATH.data(), 0) != 0) {                                                                      \
-        GTEST_SKIP() << "Unsupport fast image";                                                                        \
-    }
 #define TEST_SUIT DualOutputCoverageTest
 
 using namespace std;
@@ -43,12 +38,12 @@ namespace V2_2 = OHOS::HDI::Display::Graphic::Common::V2_2;
 
 namespace {
 BufferRequestConfig CONFIG = {
-    .width = 1280,
-    .height = 720,
-    .strideAlignment = 32,
-    .format = 26,
+    .width = 1280,          // 1280: default width
+    .height = 720,          // 720: default height
+    .strideAlignment = 32,  // 1280: default strideAlignment
+    .format = 26,           // 26: default format
     .usage = (1ULL << 0) | (1ULL << 1) | (1ULL << 5),
-    .timeout = 0,
+    .timeout = 0,           // 0: timeout
 };
 static void OnError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
