@@ -1015,7 +1015,7 @@ HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_ZEROCOPY_INNER_FUNC_0031, TestSiz
  * @tc.name      : fast init, mp3, 24k
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0001, TestSize.Level2)
+HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0001, TestSize.Level0)
 {
     std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
     configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
@@ -1225,7 +1225,7 @@ HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0005, TestSiz
  * @tc.name      : fast init, wav, adpcm_g722
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0006, TestSize.Level2)
+HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0006, TestSize.Level1)
 {
     std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
     configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
