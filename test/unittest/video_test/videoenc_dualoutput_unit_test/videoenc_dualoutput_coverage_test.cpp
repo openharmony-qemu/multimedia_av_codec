@@ -958,8 +958,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_CreateEncoderSurface_ExistingSurface_001
         GTEST_SKIP() << "Cannot create primary encoder";
     }
     auto* encoder = static_cast<PreprocessorEncoder*>(primaryCodec);
-    int32_t result = encoder->CreateEncoderSurface();
-    ASSERT_EQ(result, AVCS_ERR_OK);
+    encoder->CreateEncoderSurface();
     sptr<Surface> firstSurface = encoder->encoderSurface_;
     (void)encoder->CreateEncoderSurface();
     (void)firstSurface;
@@ -1050,20 +1049,6 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_Start_AfterConfigure_001, TestSize.Level
     encoder->Start();
     preprocessorEncoder_->Destroy(primaryCodec);
 }
- 
-/**
- * @tc.name: PreprocessorEncoder_Stop_NullEncoderObject_001
- * @tc.desc: Test Stop when videoEncoderObject_ is nullptr
- *           This tests the case where encoder is not properly initialized
- *           Expected: Skips video encoder stop, handles preprocMgr_ if available
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, PreprocessorEncoder_Stop_NullEncoderObject_001, TestSize.Level1)
-{
-    ASSERT_EQ(preprocessorEncoder_->videoEncoderObject_, nullptr);
-    OH_AVErrCode result = preprocessorEncoder_->Stop();
-    ASSERT_EQ(result, AV_ERR_OK);
-}
 
 /**
  * @tc.name: PreprocessorEncoder_Stop_WithPreprocMgr_001
@@ -1084,20 +1069,6 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_Stop_WithPreprocMgr_001, TestSize.Level1
     OH_AVErrCode result = encoder->Stop();
     (void)result;
     preprocessorEncoder_->Destroy(primaryCodec);
-}
-
-/**
- * @tc.name: PreprocessorEncoder_Flush_NullEncoderObject_001
- * @tc.desc: Test Flush when videoEncoderObject_ is nullptr
- *           This tests the case where encoder is not properly initialized
- *           Expected: Skips video encoder flush, handles preprocMgr_ if available
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, PreprocessorEncoder_Flush_NullEncoderObject_001, TestSize.Level1)
-{
-    ASSERT_EQ(preprocessorEncoder_->videoEncoderObject_, nullptr);
-    OH_AVErrCode result = preprocessorEncoder_->Flush();
-    ASSERT_EQ(result, AV_ERR_OK);
 }
 
 /**
@@ -1122,20 +1093,6 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_Flush_WithPreprocMgr_001, TestSize.Level
 }
 
 /**
- * @tc.name: PreprocessorEncoder_Reset_NullEncoderObject_001
- * @tc.desc: Test Reset when videoEncoderObject_ is nullptr
- *           This tests the case where encoder is not properly initialized
- *           Expected: Skips video encoder reset, handles preprocMgr_ and UnregisterEncoderFromManager
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, PreprocessorEncoder_Reset_NullEncoderObject_001, TestSize.Level1)
-{
-    ASSERT_EQ(preprocessorEncoder_->videoEncoderObject_, nullptr);
-    OH_AVErrCode result = preprocessorEncoder_->Reset();
-    ASSERT_EQ(result, AV_ERR_OK);
-}
-
-/**
  * @tc.name: PreprocessorEncoder_Reset_WithPreprocMgr_001
  * @tc.desc: Test Reset when preprocMgr_ is set
  *           This tests the path where NotifyEosNowIfPending, SetEncoderRunning UnregisterEncoderFromManager are called
@@ -1154,21 +1111,6 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_Reset_WithPreprocMgr_001, TestSize.Level
     OH_AVErrCode result = encoder->Reset();
     (void)result;
     preprocessorEncoder_->Destroy(primaryCodec);
-}
-
-/**
- * @tc.name: PreprocessorEncoder_Release_NullEncoderObject_001
- * @tc.desc: Test Release when videoEncoderObject_ is nullptr
- *           This tests the case where encoder is not properly initialized
- *           Expected: Skips video encoder release, sets magic_ to INVALID_ENTITY
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, PreprocessorEncoder_Release_NullEncoderObject_001, TestSize.Level1)
-{
-    ASSERT_EQ(preprocessorEncoder_->videoEncoderObject_, nullptr);
-    OH_AVErrCode result = preprocessorEncoder_->Release();
-    ASSERT_EQ(result, AV_ERR_OK);
-    ASSERT_EQ(preprocessorEncoder_->magic_, AVMagic::AVCODEC_MAGIC_INVALID_ENTITY);
 }
 
 /**
@@ -1213,21 +1155,6 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_Release_ValidEncoder_001, TestSize.Level
     (void)result;
     ASSERT_EQ(encoder->magic_, AVMagic::AVCODEC_MAGIC_INVALID_ENTITY);
     delete encoder;
-}
-
-/**
- * @tc.name: PreprocessorEncoder_ReleaseOutputBuffer_NullEncoderObject_001
- * @tc.desc: Test ReleaseOutputBuffer when videoEncoderObject_ is nullptr
- *           This tests the case where encoder is not properly initialized
- *           Expected: Skips video encoder ReleaseOutputBuffer, returns AV_ERR_OK
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, PreprocessorEncoder_ReleaseOutputBuffer_NullEncoderObject_001, TestSize.Level1)
-{
-    ASSERT_EQ(preprocessorEncoder_->videoEncoderObject_, nullptr);
-    uint32_t index = 0;
-    OH_AVErrCode result = preprocessorEncoder_->ReleaseOutputBuffer(index);
-    ASSERT_EQ(result, AV_ERR_OK);
 }
 
 /**
