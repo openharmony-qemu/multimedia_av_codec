@@ -686,25 +686,25 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_CreateSharedSurface_002, TestSize.Level1
 }
 
 /**
- * @tc.name: PreprocessorEncoder_CetSharedSurface_001
+ * @tc.name: PreprocessorEncoder_GetSharedSurface_001
  * @tc.desc: preprocMgr_ is nullptr
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, PreprocessorEncoder_CetSharedSurface_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, PreprocessorEncoder_GetSharedSurface_001, TestSize.Level1)
 {
     preprocessorEncoder_->preprocMgr_ = nullptr;
-    preprocessorEncoder_->CetSharedSurface();
+    preprocessorEncoder_->GetSharedSurface();
 }
 
 /**
- * @tc.name: PreprocessorEncoder_CetSharedSurface_002
+ * @tc.name: PreprocessorEncoder_GetSharedSurface_002
  * @tc.desc: preprocMgr_ is't nullptr
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, PreprocessorEncoder_CetSharedSurface_002, TestSize.Level1)
+HWTEST_F(TEST_SUIT, PreprocessorEncoder_GetSharedSurface_002, TestSize.Level1)
 {
     preprocessorEncoder_->preprocMgr_ = std::make_shared<PreprocessorManager>();
-    preprocessorEncoder_->CetSharedSurface();
+    preprocessorEncoder_->GetSharedSurface();
 }
 
 /**
@@ -759,12 +759,12 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_UnregisterEncoderFromManager_002, TestSi
 HWTEST_F(TEST_SUIT, PreprocessorEncoder_OnStreamChanged_001, TestSize.Level1)
 {
     Media::Format format;
-    preprocessorEncoder_->asyncCallback_ = std::make_shared<OH_AVCodecAsyncCallback>();
-    preprocessorEncoder_->asyncCallback_->onStreamChanged = nullptr;
+    preprocessorEncoder_->asyncCallback_.onStreamChanged = nullptr;
     preprocessorEncoder_->OnStreamChanged(format);
 }
 
 /**
+ * @tc.name: PreprocessorEncoder_CreateEncoderSurface_NullEncoderObject_001
  * @tc.name: PreprocessorEncoder_OnStreamChanged_002
  * @tc.desc: onStreamChanged is't nullptr
  * @tc.type: FUNC
@@ -772,8 +772,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_OnStreamChanged_001, TestSize.Level1)
 HWTEST_F(TEST_SUIT, PreprocessorEncoder_OnStreamChanged_002, TestSize.Level1)
 {
     Media::Format format;
-    preprocessorEncoder_->asyncCallback_ = std::make_shared<OH_AVCodecAsyncCallback>();
-    preprocessorEncoder_->asyncCallback_->onStreamChanged = OnStreamChanged;
+    preprocessorEncoder_->asyncCallback_.onStreamChanged = OnStreamChanged;
     preprocessorEncoder_->OnStreamChanged(format);
 }
 
@@ -785,8 +784,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_OnStreamChanged_002, TestSize.Level1)
 HWTEST_F(TEST_SUIT, PreprocessorEncoder_OnPreprocessError_001, TestSize.Level1)
 {
     int32_t errorCode = 0;
-    preprocessorEncoder_->asyncCallback_ = std::make_shared<OH_AVCodecAsyncCallback>();
-    preprocessorEncoder_->asyncCallback_->onError = nullptr;
+    preprocessorEncoder_->asyncCallback_.onError = nullptr;
     preprocessorEncoder_->OnPreprocessError(errorCode);
 }
 
@@ -798,8 +796,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_OnPreprocessError_001, TestSize.Level1)
 HWTEST_F(TEST_SUIT, PreprocessorEncoder_OnPreprocessError_002, TestSize.Level1)
 {
     int32_t errorCode = 0;
-    preprocessorEncoder_->asyncCallback_ = std::make_shared<OH_AVCodecAsyncCallback>();
-    preprocessorEncoder_->asyncCallback_->onError = OnError;
+    preprocessorEncoder_->asyncCallback_.onError = OnError;
     preprocessorEncoder_->OnPreprocessError(errorCode);
 }
 
@@ -998,9 +995,10 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_ConfigureVideoEncoder_SQRModeWithoutBitr
  * @tc.desc: preprocessor is nullptr
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, PreprocessorEncoder_UnregisterEncoderFromManager_002, TestSize.Level1)
+HWTEST_F(TEST_SUIT, PreprocessorEncoder_ConfigurePreprocessor_001, TestSize.Level1)
 {
-    preprocessorEncoder_->ConfigurePreprocessor();
+    Media::Format format;
+    preprocessorEncoder_->ConfigurePreprocessor(format);
 }
 
 /**
@@ -1057,7 +1055,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_CreateEncoderSurface_ExistingSurface_001
     auto* encoder = static_cast<PreprocessorEncoder*>(primaryCodec);
     int32_t result1 = encoder->CreateEncoderSurface();
     ASSERT_EQ(result1, AVCS_ERR_OK);
-    auto* firstSurface = encoder->encoderSurface_;
+    sptr<Surface> firstSurface = encoder->encoderSurface_;
     int32_t result2 = encoder->CreateEncoderSurface();
     ASSERT_EQ(result2, AVCS_ERR_OK);
     (void)firstSurface;
