@@ -1900,6 +1900,12 @@ bool DecoderSurfaceFilter::IsResolutionSupportSeekContinuous()
     }
     return true;
 }
+
+Status DecoderSurfaceFilter::GetAVSyncInfo(int64_t& syncCount, int64_t& totalSyncDurationMs)
+    {
+        FALSE_RETURN_V(videoSink_ != nullptr, Status::ERROR_INVALID_OPERATION);
+        return videoSink_->GetAVSyncInfo(syncCount, totalSyncDurationMs);
+    }
 } // namespace Pipeline
 } // namespace MEDIA
 } // namespace OHOS
