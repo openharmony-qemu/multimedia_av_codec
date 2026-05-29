@@ -164,7 +164,7 @@ private:
     void WrapIsSkipFrameIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                       const std::shared_ptr<Media::Meta> &meta);
     void ParseRoiStringValid(const std::string &roiValue, std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer);
-    bool ParseOneRoi(const std::string& roi, RoiRact &roiract, int32_t width, int32_t height);
+    bool ParseOneRoi(const std::string& roi, RoiRect &roiRect, int32_t width, int32_t height);
     int32_t ParseKvpairs(const std::string& kvpairs);
     void WrapRoiParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                   const std::shared_ptr<Media::Meta> &meta, sptr<SurfaceBuffer> surfaceBuffer);
