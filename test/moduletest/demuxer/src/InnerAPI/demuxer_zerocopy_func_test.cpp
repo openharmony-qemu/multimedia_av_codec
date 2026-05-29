@@ -405,7 +405,7 @@ bool DemuxerZerocopyInnerFuncTest::PluginReadSample(uint32_t idx, uint32_t& flag
             printf("false return: ReadSample failed\n");
             return false;
         }
-        flag = avBuf->flag_;        
+        flag = avBuf->flag_;
     }
 
     return true;
@@ -1229,7 +1229,8 @@ HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0006, TestSiz
 {
     std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
     configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
-    ASSERT_EQ(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_LOCAL_ADPCM_G722_WAV, configs), true);
+    ASSERT_EQ(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV,
+        TEST_FILE_LOCAL_ADPCM_G722_WAV, configs), true);
     MediaInfo mediaInfo;
     demuxerPlugin_->GetMediaInfo(mediaInfo);
     string encoder;
@@ -1256,7 +1257,8 @@ HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0007, TestSiz
 {
     std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
     configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
-    ASSERT_EQ(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_LOCAL_ADPCM_G726_WAV, configs), true);
+    ASSERT_EQ(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV,
+        TEST_FILE_LOCAL_ADPCM_G726_WAV, configs), true);
     MediaInfo mediaInfo;
     demuxerPlugin_->GetMediaInfo(mediaInfo);
     string encoder;
@@ -1283,7 +1285,8 @@ HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0008, TestSiz
 {
     std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
     configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
-    ASSERT_EQ(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_LOCAL_ADPCM_IMA_WAV, configs), true);
+    ASSERT_EQ(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV,
+        TEST_FILE_LOCAL_ADPCM_IMA_WAV, configs), true);
     MediaInfo mediaInfo;
     demuxerPlugin_->GetMediaInfo(mediaInfo);
     string encoder;
@@ -1310,7 +1313,8 @@ HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0009, TestSiz
 {
     std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
     configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
-    ASSERT_EQ(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_LOCAL_ADPCM_MS_WAV, configs), true);
+    ASSERT_EQ(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV,
+        TEST_FILE_LOCAL_ADPCM_MS_WAV, configs), true);
     MediaInfo mediaInfo;
     demuxerPlugin_->GetMediaInfo(mediaInfo);
     string encoder;
@@ -1337,7 +1341,8 @@ HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0010, TestSiz
 {
     std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
     configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
-    ASSERT_EQ(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_LOCAL_ADPCM_YAMAHA_WAV, configs), true);
+    ASSERT_EQ(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV,
+        TEST_FILE_LOCAL_ADPCM_YAMAHA_WAV, configs), true);
     MediaInfo mediaInfo;
     demuxerPlugin_->GetMediaInfo(mediaInfo);
     string artist;
