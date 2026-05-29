@@ -445,6 +445,7 @@ bool CheckCBRHQMode(CapabilityData &capData, Format &format)
     }
     format.RemoveKey(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, VideoEncodeBitrateMode::CBR);
+    AVCODEC_LOGW("Param invalid, convert the mode to CBR!");
     return true;
 }
 
