@@ -33,6 +33,12 @@ constexpr double SMOOTH_FACTOR_CLIP_MAX = 0.9;
 constexpr int32_t SMOOTH_FACTOR_CLIP_RANGE_MAX = 70;
 constexpr double AVERAGE_DURATION_ERROR_COUNT = 3.0;
 constexpr double AVERAGE_DURATION_ERROR_FRAMERATE_RANGE = 0.5;
+constexpr int32_t TOP_INDEX = 1;
+constexpr int32_t LEFT_INDEX = 2;
+constexpr int32_t BOTTOM_INDEX = 3;
+constexpr int32_t RIGHT_INDEX = 4;
+constexpr int32_t DELTAQP_INDEX = 5;
+constexpr int32_t DEFAULT_DELTAQP = -3;
 
 namespace OHOS::MediaAVCodec {
 class HEncoder : public HCodec {
@@ -63,6 +69,14 @@ private:
         int32_t y = 0;
         int32_t w = 0;
         int32_t h = 0;
+    };
+
+    struct RoiRect {
+        int32_t top = 0;
+        int32_t left = 0;
+        int32_t bottom = 0;
+        int32_t right = 0;
+        int32_t deltaQP = DEFAULT_DELTAQP;
     };
 
 private:
@@ -150,6 +164,8 @@ private:
     void WrapIsSkipFrameIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                       const std::shared_ptr<Media::Meta> &meta);
     void ParseRoiStringValid(const std::string &roiValue, std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer);
+    bool ParseOneRoi(const std::string& roi, RoiRect &roiRect, int32_t width, int32_t height);
+    int32_t ParseKvpairs(const std::string& kvpairs);
     void WrapRoiParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                   const std::shared_ptr<Media::Meta> &meta, sptr<SurfaceBuffer> surfaceBuffer);
     void BeforeCbOutToUser(BufferInfo &info) override;
