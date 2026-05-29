@@ -45,8 +45,6 @@ public:
         }
     }
 
-    void test();
-
 private:
     std::weak_ptr<SampleQueue> sampleQueue_;
 };
