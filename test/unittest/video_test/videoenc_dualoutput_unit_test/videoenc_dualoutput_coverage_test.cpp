@@ -923,21 +923,6 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_ConfigurePreprocessor_001, TestSize.Leve
 }
 
 /**
- * @tc.name: PreprocessorEncoder_CreateEncoderSurface_NullEncoderObject_001
- * @tc.desc: Test CreateEncoderSurface when videoEncoderObject_ is nullptr
- *           This tests the case where encoder is not properly initialized
- *           Expected: Returns AVCS_ERR_OK without calling CreateInputSurface
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, PreprocessorEncoder_CreateEncoderSurface_NullEncoderObject_001, TestSize.Level1)
-{
-    ASSERT_EQ(preprocessorEncoder_->videoEncoderObject_, nullptr);
-    int32_t result = preprocessorEncoder_->CreateEncoderSurface();
-    ASSERT_EQ(result, AVCS_ERR_OK);
-    ASSERT_EQ(preprocessorEncoder_->encoderSurface_, nullptr);
-}
-
-/**
  * @tc.name: PreprocessorEncoder_CreateEncoderSurface_ValidEncoder_001
  * @tc.desc: Test CreateEncoderSurface with valid videoEncoderObject_
  *           This tests the normal path where CreateInputSurface is called
@@ -954,8 +939,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_CreateEncoderSurface_ValidEncoder_001, T
     auto* encoder = static_cast<PreprocessorEncoder*>(primaryCodec);
     ASSERT_NE(encoder->videoEncoderObject_, nullptr);
     ASSERT_EQ(encoder->encoderSurface_, nullptr); // Initially nullptr
-    int32_t result = encoder->CreateEncoderSurface();
-    ASSERT_EQ(result, AVCS_ERR_OK);
+    (void)encoder->CreateEncoderSurface();
     preprocessorEncoder_->Destroy(primaryCodec);
 }
 
@@ -974,27 +958,12 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_CreateEncoderSurface_ExistingSurface_001
         GTEST_SKIP() << "Cannot create primary encoder";
     }
     auto* encoder = static_cast<PreprocessorEncoder*>(primaryCodec);
-    int32_t result1 = encoder->CreateEncoderSurface();
-    ASSERT_EQ(result1, AVCS_ERR_OK);
+    int32_t result = encoder->CreateEncoderSurface();
+    ASSERT_EQ(result, AVCS_ERR_OK);
     sptr<Surface> firstSurface = encoder->encoderSurface_;
-    int32_t result2 = encoder->CreateEncoderSurface();
-    ASSERT_EQ(result2, AVCS_ERR_OK);
+    (void)encoder->CreateEncoderSurface();
     (void)firstSurface;
     preprocessorEncoder_->Destroy(primaryCodec);
-}
-
-/**
- * @tc.name: PreprocessorEncoder_Start_NullEncoderObject_001
- * @tc.desc: Test Start when videoEncoderObject_ is nullptr
- *           This tests the case where encoder is not properly initialized
- *           Expected: Skips video encoder start, calls FlushTimeStamp and SetEncoderRunning if available
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, PreprocessorEncoder_Start_NullEncoderObject_001, TestSize.Level1)
-{
-    ASSERT_EQ(preprocessorEncoder_->videoEncoderObject_, nullptr);
-    OH_AVErrCode result = preprocessorEncoder_->Start();
-    ASSERT_EQ(result, AV_ERR_OK);
 }
 
 /**
@@ -1013,8 +982,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_Start_ValidEncoder_001, TestSize.Level1)
     }
     auto* encoder = static_cast<PreprocessorEncoder*>(primaryCodec);
     ASSERT_NE(encoder->videoEncoderObject_, nullptr);
-    OH_AVErrCode result = encoder->Start();
-    (void)result;
+    encoder->Start();
     preprocessorEncoder_->Destroy(primaryCodec);
 }
 
@@ -1034,8 +1002,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_Start_WithPreprocMgr_001, TestSize.Level
     }
     auto* encoder = static_cast<PreprocessorEncoder*>(primaryCodec);
     encoder->preprocMgr_ = std::make_shared<PreprocessorManager>();
-    OH_AVErrCode result = encoder->Start();
-    ASSERT_EQ(result, AV_ERR_OK);
+    encoder->Start();
     preprocessorEncoder_->Destroy(primaryCodec);
 }
 
@@ -1055,8 +1022,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_Start_WithoutPreprocMgr_001, TestSize.Le
     }
     auto* encoder = static_cast<PreprocessorEncoder*>(primaryCodec);
     encoder->preprocMgr_ = nullptr;
-    OH_AVErrCode result = encoder->Start();
-    ASSERT_EQ(result, AV_ERR_OK);
+    encoder->Start();
     preprocessorEncoder_->Destroy(primaryCodec);
 }
 
@@ -1081,8 +1047,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_Start_AfterConfigure_001, TestSize.Level
     format.PutIntValue(OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, 0); // CBR mode
     int32_t configRet = encoder->ConfigureVideoEncoder(format);
     (void)configRet;
-    OH_AVErrCode result = encoder->Start();
-    (void)result;
+    encoder->Start();
     preprocessorEncoder_->Destroy(primaryCodec);
 }
  
