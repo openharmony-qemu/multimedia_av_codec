@@ -637,6 +637,10 @@ bool VideoDecSample::DoSubHdrConfigure(OH_AVFormat* format, bool setFormatRet)
             sizeof(Cta861));
         setFormatRet = setFormatRet && ret;
     }
+    if (decoderOrder_) {
+        ret = OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, 1);
+        setFormatRet = setFormatRet && ret;
+    }
     return setFormatRet;
 }
 
@@ -690,6 +694,7 @@ bool VideoDecSample::DoConfigure(OH_AVFormat* format)
         setFormatRet = setFormatRet && OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENABLE_LOW_LATENCY, 1);
         setFormatRet = setFormatRet && OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 1000000); // 1000000
     }
+
     DoSubHdrConfigure(format, setFormatRet);
 
     if (setRawVideoPixFmt_) {

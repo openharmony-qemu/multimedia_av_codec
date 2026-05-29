@@ -486,6 +486,10 @@ int32_t AudioCodeCookDecoderUnitTest::Configure()
                               extraData.data(), static_cast<int32_t>(extraData.size()));
     }
     OH_AVFormat_SetIntValue(format_, OH_MD_KEY_BLOCK_ALIGN, BLOCK_ALIGN);
+    if (!isTestingFormat_) {
+        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+            AVSampleFormat::AV_SAMPLE_FMT_S16);
+    }
     return OH_AudioCodec_Configure(audioDec_, format_);
 }
 

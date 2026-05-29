@@ -34,6 +34,7 @@ public:
     void ParseExtraData(
         const uint8_t *sample, int32_t size, uint8_t **extraDataBuf, int32_t *extraDataSize) override { return; };
     bool ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDataSize) override;
+    bool ParseMaxReorderPicFromAvcConfig(const uint8_t *extraData, int32_t extraDataSize);
     void ConvertPacketToAnnexb(uint8_t **hvccPacket, int32_t &hvccPacketSize, uint8_t *sideData, size_t sideDataSize,
         bool isExtradata) override;
     bool ConvertPacketToAnnexb(const PacketConvertToBufferInfo &convertInfo) override { return false; };
@@ -51,9 +52,8 @@ public:
     uint32_t GetPicHetInLumaSamples() override { return false; };;
     void ResetXPSSendStatus() override;
     std::vector<uint8_t> GetLogInfo() override { return {}; };;
-    uint32_t GetMaxReorderPic() override { return 0; };;
+    uint32_t GetMaxReorderPic() override { return maxReorderPic_; };;
     bool IsHdr10Plus() override  { return false; };
-    bool IsHdr() override  { return false; };
     int32_t GetFirstFillerDataNalSize(const uint8_t *sample, int32_t size) override { return 0; };
 
     enum AvcNalType : uint8_t {
@@ -70,6 +70,7 @@ private:
     std::vector<uint8_t> annexbExtraDataVec_;
     std::vector<uint8_t> annexbFrameVec_;
     uint8_t naluLength_;
+    uint32_t maxReorderPic_ = 0;
     bool sendXps_ = false;
 
     bool IsAnnexbFrame(const uint8_t *sample, int32_t size);

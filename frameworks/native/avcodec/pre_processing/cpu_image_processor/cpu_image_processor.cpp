@@ -19,6 +19,7 @@
 #include <cstring>
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
+#include "native_buffer.h"
 #include "securec.h"
 
 namespace {
@@ -51,6 +52,7 @@ struct BufferView {
     int32_t width{0};
     int32_t height{0};
     int32_t stride{0};
+    int32_t sliceHeight{0};
     size_t size{0};
     std::array<Plane, MAX_PLANE_COUNT> planes{};
     size_t planeCount{0};
@@ -98,7 +100,38 @@ bool IsEven(int32_t value)
     return (value % YUV_SUBSAMPLE) == 0;
 }
 
-bool AddPlane(BufferView &view, const PlaneInfo &planeInfo, size_t &offset)
+int32_t GetSliceHeightFromBuffer(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer)
+{
+    int32_t stride = buffer->GetStride();
+    if (stride <= 0) {
+        return buffer->GetHeight();
+    }
+    OH_NativeBuffer_Planes *planes = nullptr;
+    GSError err = buffer->GetPlanesInfo(reinterpret_cast<void **>(&planes));
+    if (err != GSERROR_OK || planes == nullptr || planes->planeCount <= 1) {
+        return buffer->GetHeight();
+    }
+    int32_t sliceHeight = static_cast<int32_t>(static_cast<int64_t>(planes->planes[1].offset) / stride);
+    return std::max(sliceHeight, buffer->GetHeight());
+}
+
+size_t PlaneBytes(int32_t height, int32_t stride)
+{
+    return static_cast<size_t>(height) * static_cast<size_t>(stride);
+}
+
+PlaneInfo LumaInfo(int32_t w, int32_t h, int32_t rowBytes, int32_t stride, int32_t bpp = DEFAULT_PLANE_BYTES_PER_PIXEL)
+{
+    return {w, h, rowBytes, stride, bpp, NO_SUBSAMPLE, NO_SUBSAMPLE};
+}
+
+PlaneInfo ChromaInfo(int32_t w, int32_t h, int32_t rowBytes, int32_t stride,
+                     int32_t bpp = DEFAULT_PLANE_BYTES_PER_PIXEL)
+{
+    return {w, h, rowBytes, stride, bpp, YUV_SUBSAMPLE, YUV_SUBSAMPLE};
+}
+
+bool AddPlane(BufferView &view, const PlaneInfo &planeInfo, size_t offset)
 {
     if (view.planeCount >= view.planes.size() || planeInfo.width <= 0 || planeInfo.height <= 0 ||
         planeInfo.rowBytes <= 0 || planeInfo.stride < planeInfo.rowBytes || offset > view.size) {
@@ -118,7 +151,6 @@ bool AddPlane(BufferView &view, const PlaneInfo &planeInfo, size_t &offset)
     }
     view.planes[view.planeCount++] = {offset, planeInfo.width, planeInfo.height, planeInfo.rowBytes, planeInfo.stride,
                                       planeInfo.bytesPerPixel, planeInfo.xSubsample, planeInfo.ySubsample};
-    offset += static_cast<size_t>(planeInfo.height) * static_cast<size_t>(planeInfo.stride);
     return true;
 }
 
@@ -126,9 +158,7 @@ bool IsValidBuffer(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer)
 {
     if (!buffer || buffer->GetVirAddr() == nullptr || buffer->GetWidth() <= 0 || buffer->GetHeight() <= 0 ||
         buffer->GetStride() <= 0 || buffer->GetSize() <= 0) {
-        AVCODEC_LOGE("Invalid buffer: buffer=%{public}p, addr=%{public}p, width=%{public}d, "
-                     "height=%{public}d, stride=%{public}d, size=%{public}d",
-                     buffer.GetRefPtr(), buffer ? buffer->GetVirAddr() : nullptr,
+        AVCODEC_LOGE("Invalid buffer. width=%{public}d, height=%{public}d, stride=%{public}d, size=%{public}d",
                      buffer ? buffer->GetWidth() : INVALID_BUFFER_VALUE,
                      buffer ? buffer->GetHeight() : INVALID_BUFFER_VALUE,
                      buffer ? buffer->GetStride() : INVALID_BUFFER_VALUE,
@@ -145,9 +175,43 @@ void InitBufferView(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer, BufferView &v
     view.width = buffer->GetWidth();
     view.height = buffer->GetHeight();
     view.stride = buffer->GetStride();
+    view.sliceHeight = GetSliceHeightFromBuffer(buffer);
     view.size = static_cast<size_t>(buffer->GetSize());
     view.isYuv420 = IsYuv420(view.format);
     view.planeCount = 0;
+}
+
+bool BuildNV12Layout(BufferView &view)
+{
+    size_t uvOffset = PlaneBytes(view.sliceHeight, view.stride);
+    return AddPlane(view, LumaInfo(view.width, view.height, view.width, view.stride), 0) &&
+           AddPlane(view, ChromaInfo(view.width / YUV_SUBSAMPLE, view.height / YUV_SUBSAMPLE,
+                                     view.width, view.stride, YUV_SUBSAMPLE), uvOffset);
+}
+
+bool BuildP010Layout(BufferView &view)
+{
+    size_t uvOffset = PlaneBytes(view.sliceHeight, view.stride);
+    return AddPlane(view, LumaInfo(view.width, view.height, view.width * P010_LUMA_BYTES_PER_PIXEL,
+                                    view.stride, P010_LUMA_BYTES_PER_PIXEL), 0) &&
+           AddPlane(view, ChromaInfo(view.width / YUV_SUBSAMPLE, view.height / YUV_SUBSAMPLE,
+                                     view.width * P010_LUMA_BYTES_PER_PIXEL, view.stride,
+                                     P010_CHROMA_BYTES_PER_PIXEL), uvOffset);
+}
+
+bool BuildI420Layout(BufferView &view)
+{
+    if (!IsEven(view.stride)) {
+        return false;
+    }
+    int32_t chromaStride = view.stride / YUV_SUBSAMPLE;
+    size_t uOffset = PlaneBytes(view.sliceHeight, view.stride);
+    size_t vOffset = uOffset + PlaneBytes(view.sliceHeight / YUV_SUBSAMPLE, chromaStride);
+    return AddPlane(view, LumaInfo(view.width, view.height, view.width, view.stride), 0) &&
+           AddPlane(view, ChromaInfo(view.width / YUV_SUBSAMPLE, view.height / YUV_SUBSAMPLE,
+                                     view.width / YUV_SUBSAMPLE, chromaStride), uOffset) &&
+           AddPlane(view, ChromaInfo(view.width / YUV_SUBSAMPLE, view.height / YUV_SUBSAMPLE,
+                                     view.width / YUV_SUBSAMPLE, chromaStride), vOffset);
 }
 
 bool BuildPlaneLayout(BufferView &view)
@@ -157,36 +221,19 @@ bool BuildPlaneLayout(BufferView &view)
                      view.width, view.height, view.format);
         return false;
     }
-
-    size_t offset = 0;
     switch (view.format) {
         case GRAPHIC_PIXEL_FMT_YCBCR_420_SP:
         case GRAPHIC_PIXEL_FMT_YCRCB_420_SP:
-            return AddPlane(view, {view.width, view.height, view.width, view.stride}, offset) &&
-                   AddPlane(view, {view.width / YUV_SUBSAMPLE, view.height / YUV_SUBSAMPLE, view.width, view.stride,
-                                   YUV_SUBSAMPLE, YUV_SUBSAMPLE, YUV_SUBSAMPLE}, offset);
+            return BuildNV12Layout(view);
         case GRAPHIC_PIXEL_FMT_YCBCR_P010:
         case GRAPHIC_PIXEL_FMT_YCRCB_P010:
-            return AddPlane(view, {view.width, view.height, view.width * P010_LUMA_BYTES_PER_PIXEL, view.stride,
-                                   P010_LUMA_BYTES_PER_PIXEL}, offset) &&
-                   AddPlane(view, {view.width / YUV_SUBSAMPLE, view.height / YUV_SUBSAMPLE,
-                                   view.width * P010_LUMA_BYTES_PER_PIXEL, view.stride,
-                                   P010_CHROMA_BYTES_PER_PIXEL, YUV_SUBSAMPLE, YUV_SUBSAMPLE}, offset);
-        case GRAPHIC_PIXEL_FMT_YCBCR_420_P: {
-            int32_t chromaStride = view.stride / YUV_SUBSAMPLE;
-            return IsEven(view.stride) &&
-                   AddPlane(view, {view.width, view.height, view.width, view.stride}, offset) &&
-                   AddPlane(view, {view.width / YUV_SUBSAMPLE, view.height / YUV_SUBSAMPLE,
-                                   view.width / YUV_SUBSAMPLE, chromaStride, DEFAULT_PLANE_BYTES_PER_PIXEL,
-                                   YUV_SUBSAMPLE, YUV_SUBSAMPLE}, offset) &&
-                   AddPlane(view, {view.width / YUV_SUBSAMPLE, view.height / YUV_SUBSAMPLE,
-                                   view.width / YUV_SUBSAMPLE, chromaStride, DEFAULT_PLANE_BYTES_PER_PIXEL,
-                                   YUV_SUBSAMPLE, YUV_SUBSAMPLE}, offset);
-        }
+            return BuildP010Layout(view);
+        case GRAPHIC_PIXEL_FMT_YCBCR_420_P:
+            return BuildI420Layout(view);
         case GRAPHIC_PIXEL_FMT_RGBA_8888:
         case GRAPHIC_PIXEL_FMT_RGBA_1010102:
-            return AddPlane(view, {view.width, view.height, view.width * RGBA_BYTES_PER_PIXEL, view.stride,
-                                   RGBA_BYTES_PER_PIXEL}, offset);
+            return AddPlane(view, LumaInfo(view.width, view.height, view.width * RGBA_BYTES_PER_PIXEL,
+                                           view.stride, RGBA_BYTES_PER_PIXEL), 0);
         default:
             AVCODEC_LOGE("Unsupported buffer format: %{public}d", view.format);
             return false;

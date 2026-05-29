@@ -41,7 +41,6 @@ namespace Plugins {
 struct HdrBoxInfo {
     bool haveHdrDoblyVisionBox = false;
     bool haveHdrVividBox = false;
-    bool isHdr = false; // have static metadata or dynamic metadata
 };
 
 class Converter {

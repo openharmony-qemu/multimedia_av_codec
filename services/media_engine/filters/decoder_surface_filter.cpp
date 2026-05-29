@@ -66,6 +66,7 @@ static const std::string SCENE_MP_PWP = "2"; // moving photo playing with proces
 static const int32_t VIDEO_WIDTH = 512;
 static const int32_t VIDEO_HEIGHT = 512;
 static const int32_t playWaterLine = 100; // 100ms
+static const int64_t RESOLUTION_8K_PIXELS = 7680LL * 4320LL;
 
 static AutoRegisterFilter<DecoderSurfaceFilter> g_registerDecoderSurfaceFilter("builtin.player.videodecoder",
     FilterType::FILTERTYPE_VDEC, [](const std::string& name, const FilterType type) {
@@ -1745,6 +1746,12 @@ Status DecoderSurfaceFilter::SetSpeed(float speed)
 
     Format format;
     format.PutDoubleValue(Tag::VIDEO_FRAME_RATE, frameRateWithSpeed);
+    const double eps = 1e-6;
+    if (speed >= 4.0f - eps) {
+        format.PutFloatValue(Tag::VIDEO_DECODER_FRAME_RETENTION_RATIO, speed);
+        format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE,
+            OH_FrameRetentionMode::OH_FRAME_RETENTION_MODE_UNIFORM);
+    }
     videoDecoder_->SetParameter(format);
     FALSE_RETURN_V(postProcessor_ != nullptr, Status::OK);
     return postProcessor_->SetSpeed(speed);
@@ -1873,6 +1880,32 @@ void DecoderSurfaceFilter::GetVideoSample(int32_t &outputResult)
     FALSE_RETURN_MSG(postProcessor_ != nullptr, "postProcessor_ is nullptr");
     postProcessor_->GetVideoSample(outputResult);
 }
+
+bool DecoderSurfaceFilter::IsResolutionSupportSeekContinuous()
+{
+    FALSE_RETURN_V_MSG_E(meta_ != nullptr, false, "meta_ is nullptr, cannot check resolution support");
+    int32_t width = 0;
+    int32_t height = 0;
+    FALSE_RETURN_V_MSG_E(meta_->GetData(Tag::VIDEO_WIDTH, width), false, "failed to get width");
+    FALSE_RETURN_V_MSG_E(meta_->GetData(Tag::VIDEO_HEIGHT, height), false, "failed to get height");
+    if (width <= 0 || height <= 0) {
+        MEDIA_LOG_W("invalid size, width=" PUBLIC_LOG_D32 ", height=" PUBLIC_LOG_D32, width, height);
+        return false;
+    }
+    int64_t totalPixels = static_cast<int64_t>(width) * static_cast<int64_t>(height);
+    if (totalPixels >= RESOLUTION_8K_PIXELS) {
+        MEDIA_LOG_W("exceeds 8K limit, width=" PUBLIC_LOG_D32 ", height=" PUBLIC_LOG_D32
+            ", totalPixels=" PUBLIC_LOG_D64, width, height, totalPixels);
+        return false;
+    }
+    return true;
+}
+
+Status DecoderSurfaceFilter::GetAVSyncInfo(int64_t& syncCount, int64_t& totalSyncDurationMs)
+    {
+        FALSE_RETURN_V(videoSink_ != nullptr, Status::ERROR_INVALID_OPERATION);
+        return videoSink_->GetAVSyncInfo(syncCount, totalSyncDurationMs);
+    }
 } // namespace Pipeline
 } // namespace MEDIA
 } // namespace OHOS

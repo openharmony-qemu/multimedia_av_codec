@@ -33,6 +33,12 @@ constexpr double SMOOTH_FACTOR_CLIP_MAX = 0.9;
 constexpr int32_t SMOOTH_FACTOR_CLIP_RANGE_MAX = 70;
 constexpr double AVERAGE_DURATION_ERROR_COUNT = 3.0;
 constexpr double AVERAGE_DURATION_ERROR_FRAMERATE_RANGE = 0.5;
+constexpr int32_t TOP_INDEX = 1;
+constexpr int32_t LEFT_INDEX = 2;
+constexpr int32_t BOTTOM_INDEX = 3;
+constexpr int32_t RIGHT_INDEX = 4;
+constexpr int32_t DELTAQP_INDEX = 5;
+constexpr int32_t DEFAULT_DELTAQP = -3;
 
 namespace OHOS::MediaAVCodec {
 class HEncoder : public HCodec {
@@ -65,9 +71,20 @@ private:
         int32_t h = 0;
     };
 
+    struct RoiRect {
+        int32_t top = 0;
+        int32_t left = 0;
+        int32_t bottom = 0;
+        int32_t right = 0;
+        int32_t deltaQP = DEFAULT_DELTAQP;
+    };
+
 private:
     // configure
     int32_t OnConfigure(const Format &format) override;
+    int32_t ConfigureBaseParams(const Format &format, std::optional<double> &frameRate);
+    int32_t ConfigureAdvancedParams(const Format &format);
+    void ReportAdvancedFeatures(const Format &format);
     int32_t OnConfigureBuffer(std::shared_ptr<AVBuffer> buffer) override;
     int32_t ConfigureBufferType();
     int32_t SetupPort(const Format &format, std::optional<double> &frameRate);
@@ -85,6 +102,7 @@ private:
     int32_t SetupAVCEncoderParameters(const Format &format, std::optional<double> frameRate);
     void SetAvcFields(OMX_VIDEO_PARAM_AVCTYPE& avcType, int32_t iFrameInterval, double frameRate);
     int32_t SetupHEVCEncoderParameters(const Format &format, std::optional<double> frameRate);
+    int32_t SetCodecScenario(const Format &format);
     int32_t OnSetParameters(const Format &format) override;
     sptr<Surface> OnCreateInputSurface() override;
     int32_t OnSetInputSurface(sptr<Surface> &inputSurface) override;
@@ -146,6 +164,8 @@ private:
     void WrapIsSkipFrameIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                       const std::shared_ptr<Media::Meta> &meta);
     void ParseRoiStringValid(const std::string &roiValue, std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer);
+    bool ParseOneRoi(const std::string& roi, RoiRect &roiRect, int32_t width, int32_t height);
+    int32_t ParseKvpairs(const std::string& kvpairs);
     void WrapRoiParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                   const std::shared_ptr<Media::Meta> &meta, sptr<SurfaceBuffer> surfaceBuffer);
     void BeforeCbOutToUser(BufferInfo &info) override;
@@ -204,6 +224,7 @@ private:
     int32_t repeatMaxCnt_ = 10;  // default repeat 10 times. <0 means repeat forever. =0 means nothing.
     std::optional<int64_t> pts_;
     static constexpr size_t roiNum = 6;
+    bool roiReported_ = false;
     std::unordered_set<int64_t> unfinishedFrames_;
 };
 } // namespace OHOS::MediaAVCodec

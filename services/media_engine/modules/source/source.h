@@ -149,6 +149,7 @@ public:
     bool IsHls();
     void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId);
     bool IsCloudFd();
+    void PauseRead();
 
 private:
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);

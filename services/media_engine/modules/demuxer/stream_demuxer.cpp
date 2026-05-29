@@ -326,6 +326,9 @@ Status StreamDemuxer::PullData(int32_t streamID, uint64_t offset, size_t size,
 
 Status StreamDemuxer::ResetCache(int32_t streamID)
 {
+    if (source_ && IsPlayerMode()) {
+        source_->PauseRead();
+    }
     std::unique_lock<std::mutex> lock(cacheDataMutex_);
     if (cacheDataMap_.find(streamID) != cacheDataMap_.end()) {
         cacheDataMap_[streamID].Reset();

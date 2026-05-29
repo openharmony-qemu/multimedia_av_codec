@@ -534,6 +534,8 @@ HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Start_03, TestSiz
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), MAX_CHANNEL_COUNT);
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), DEFAULT_SAMPLE_RATE);
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE.data(), VIVID_MAX_INPUT_SIZE);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            OH_BitsPerSample::SAMPLE_S16LE);
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioDec_, format_));
 
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());

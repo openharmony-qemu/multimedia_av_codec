@@ -400,7 +400,6 @@ int32_t VDecAPI11Sample::ConfigureVideoDecoder()
     }
     OH_AVFormat *format = OH_AVFormat_Create();
     if (format == nullptr) {
-        cout << "Fatal: Failed to create format" << endl;
         return AV_ERR_UNKNOWN;
     }
     if (maxInputSize > 0) {
@@ -414,7 +413,6 @@ int32_t VDecAPI11Sample::ConfigureVideoDecoder()
     (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
     if (setTransform) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_TRANSFORM_TYPE, DEFAULT_TRANSFORM);
-        cout << "config transform: " << DEFAULT_TRANSFORM << endl;
     }
     if (useHDRSource) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, DEFAULT_PROFILE);
@@ -432,6 +430,9 @@ int32_t VDecAPI11Sample::ConfigureVideoDecoder()
     }
     if (enableLowLatency) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENABLE_LOW_LATENCY, 1);
+    }
+    if (enableOrderDecode) {
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, 1);
     }
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_ENABLE_SYNC_MODE, enbleSyncMode);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN, enbleBlankFrame);
@@ -1640,7 +1641,6 @@ void VDecAPI11Sample::GetFormatKey()
         return;
     }
     OH_AVFormat *format = OH_AVFormat_Create();
-    OH_VideoDecoder_Configure(vdec_, format);
     format = OH_VideoDecoder_GetOutputDescription(vdec_);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_NATIVE_BUFFER_FORMAT, &firstCallBackKey);
     OH_AVFormat_Destroy(format);

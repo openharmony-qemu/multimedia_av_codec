@@ -158,6 +158,7 @@ public:
     void SetApiVersion(int32_t apiVersion);
     void SetIsHlsFmp4(bool isHlsFmp4);
     bool GetPluginName(std::string& pluginName);
+    void SetPlayerMode(bool isPlayerMode);
 private:
     bool CreatePlugin(std::string pluginName, int32_t id);
     bool InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, const std::string& pluginName, int32_t id);
@@ -191,6 +192,7 @@ private:
     int32_t apiVersion_ {0};
     bool isHlsFmp4_ {false};
     std::string pluginName_ {};
+    std::atomic<bool> isPlayerMode_ = false;
 };
 } // namespace Media
 } // namespace OHOS

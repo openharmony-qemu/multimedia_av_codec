@@ -98,6 +98,7 @@ public:
     void OnOutputFormatChanged(const Format &format);
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
+    int32_t CalculateLayerIdByTemporalInfo(int32_t poc);
 
     void OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &bufferMap);
     void OnOutputBufferUnbinded();
@@ -125,6 +126,10 @@ private:
     int32_t InitByName(const std::string &codecName, Meta &callerInfo);
     int32_t InitByMime(AVCodecType type, const std::string &codecMime, Meta &callerInfo);
     int32_t InitServer(int32_t instanceId = INVALID_INSTANCE_ID);
+    int32_t ConfigureCodecScenario(Format &config, int32_t &paramCheckRet);
+    void UpdateConfiguredFramerate(const Format &format);
+    void ConfigureSfdManager(Format &config);
+    void ReportResolutionInfo(const Format &config);
     int32_t CodecScenarioInit(Format &config);
     void StartInputParamTask();
     const std::string &GetStatusDescription(OHOS::MediaAVCodec::CodecServer::CodecStatus status);
@@ -224,6 +229,10 @@ private:
     // smart flency decoding, video decoder only
     void InitSfdManager();
     std::unique_ptr<SFD::SmartFluencyDecodingManager> sfdManager_ = nullptr;
+    
+    bool isSVC_ = false;
+    int32_t temporalGopSize_ = 0;
+    int32_t temporalGopReferenceMode_ = 0;
 };
 
 class CodecBaseCallback : public MediaCodecCallback, public NoCopyable {

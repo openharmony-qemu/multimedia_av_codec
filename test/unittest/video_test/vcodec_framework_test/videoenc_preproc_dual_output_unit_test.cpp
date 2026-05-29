@@ -874,26 +874,6 @@ const std::vector<ScenarioCase> &GetLevel1Scenarios()
     return scenarios;
 }
 
-std::vector<ScenarioCase> BuildLevel2Scenarios()
-{
-    std::vector<ScenarioCase> scenarios;
-    const auto &level0 = GetLevel0Scenarios();
-    const auto &level1 = GetLevel1Scenarios();
-    for (const auto &scenario : GetSupportedScenarios()) {
-        if (ContainsScenarioName(level0, scenario.name) || ContainsScenarioName(level1, scenario.name)) {
-            continue;
-        }
-        AddScenarioIfMissing(scenarios, scenario);
-    }
-    return scenarios;
-}
-
-const std::vector<ScenarioCase> &GetLevel2Scenarios()
-{
-    static const std::vector<ScenarioCase> scenarios = BuildLevel2Scenarios();
-    return scenarios;
-}
-
 std::string SanitizeName(std::string name)
 {
     for (char &value : name) {
@@ -1240,26 +1220,6 @@ INSTANTIATE_TEST_SUITE_P(Level1, VideoEncPreprocDualOutputLevel1Test, testing::V
                              return SanitizeName(info.param.name);
                          });
 
-INSTANTIATE_TEST_SUITE_P(Level2, VideoEncPreprocDualOutputLevel2Test, testing::ValuesIn(GetLevel2Scenarios()),
-                         [](const testing::TestParamInfo<ScenarioCase> &info) {
-                             return SanitizeName(info.param.name);
-                         });
-
-INSTANTIATE_TEST_SUITE_P(Query, VideoEncPreprocDualOutputInfoTest, testing::ValuesIn(GetSupportedScenarios()),
-                         [](const testing::TestParamInfo<ScenarioCase> &info) {
-                             return SanitizeName(info.param.name);
-                         });
-
-/**
- * @tc.name: VideoEncoder_Preproc_Dual_Output_PrintScenarioInfo
- * @tc.desc: print preproc dual-output scenario information by scenario name on demand.
- * @tc.type: FUNC
- */
-HWTEST_P(VideoEncPreprocDualOutputInfoTest, DISABLED_PrintScenarioInfo, TestSize.Level0)
-{
-    std::cout << DescribeScenario(GetParam()) << std::endl;
-}
-
 /**
  * @tc.name: Level0
  * @tc.desc: preproc dual-output smoke scenarios on primary surface input.
@@ -1276,16 +1236,6 @@ HWTEST_P(VideoEncPreprocDualOutputLevel0Test, Level0, TestSize.Level0)
  * @tc.type: FUNC
  */
 HWTEST_P(VideoEncPreprocDualOutputLevel1Test, Level1, TestSize.Level1)
-{
-    RunScenarioByFlow(GetParam());
-}
-
-/**
- * @tc.name: Level2
- * @tc.desc: preproc dual-output extended scenarios on primary surface input.
- * @tc.type: FUNC
- */
-HWTEST_P(VideoEncPreprocDualOutputLevel2Test, DISABLED_Level2, TestSize.Level2)
 {
     RunScenarioByFlow(GetParam());
 }

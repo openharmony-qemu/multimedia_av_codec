@@ -22,6 +22,8 @@
 #include "iremote_broker.h"
 #include "iremote_stub.h"
 #include "nocopyable.h"
+#include "event_type.h"
+#include "meta/meta.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -41,6 +43,7 @@ public:
     virtual int32_t SuspendActive(const std::vector<pid_t> &pidList) = 0;
     virtual int32_t SuspendActiveAll() = 0;
     virtual int32_t GetActiveSecureDecoderPids(std::vector<pid_t> &pidList) = 0;
+    virtual void ReportStatisticsEvent(StatisticsEventType type, Media::Meta &meta) {};
     DECLARE_INTERFACE_DESCRIPTOR(u"IStandardAVCodecServiceInterface");
 };
 
@@ -59,6 +62,7 @@ public:
     MOCK_METHOD(int32_t, SuspendActiveAll, ());
     MOCK_METHOD(int32_t, GetActiveSecureDecoderPids, (std::vector<pid_t> &pidList));
     MOCK_METHOD(int32_t, SetDeathListener, (const sptr<IRemoteObject> &object));
+    MOCK_METHOD(void, ReportStatisticsEvent, (StatisticsEventType type, Media::Meta &meta));
 };
 
 class AVCodecServiceStub : public IRemoteStub<IStandardAVCodecService>, public NoCopyable {
@@ -74,6 +78,7 @@ public:
     int32_t SuspendActiveAll();
     int32_t GetActiveSecureDecoderPids(std::vector<pid_t> &pidList);
     int32_t SetDeathListener(const sptr<IRemoteObject> &object);
+    MOCK_METHOD(void, ReportStatisticsEvent, (StatisticsEventType type, Media::Meta &meta));
 };
 
 class IStandardAVCodecListener : public IRemoteBroker {

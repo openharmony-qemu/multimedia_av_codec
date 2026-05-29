@@ -14,6 +14,8 @@
  */
 
 #include "statistics_event_handler.h"
+#include <algorithm>
+#include <cmath>
 #include <mutex>
 #include <ctime>
 #include "cJSON.h"
@@ -29,7 +31,7 @@ namespace OHOS {
 namespace MediaAVCodec {
 using namespace std::string_literals;
 using AVCodecSpecifiedType = std::pair<bool, std::string>;
-using VCodecSpecifiedType = std::pair<VideoCodecType, std::string>;
+using VCodecSpecifiedType = std::tuple<VideoCodecType, std::string, bool>;
 
 namespace {
 // EVENT_STR_L0
@@ -45,6 +47,12 @@ static constexpr const char CAP_UNSUPPORTED_INFO[] = "CAP_UNSUPPORTED_INFO";
 static constexpr const char DEC_ABNORMAL_OCCUPATION_INFO[] = "DEC_ABNORMAL_OCCUPATION_INFO";
 static constexpr const char SPEED_DECODING_INFO[] = "SPEED_DECODING_INFO";
 static constexpr const char CODEC_ERROR_INFO[] = "CODEC_ERROR_INFO";
+static constexpr const char CODEC_INSTANCE_USAGE_INFO[] = "CODEC_INSTANCE_USAGE_INFO";
+static constexpr const char RESOLUTION_SPEC_INFO[] = "RESOLUTION_SPEC_INFO";
+static constexpr const char CONTAINER_FORMAT_INFO[] = "CONTAINER_FORMAT_INFO";
+static constexpr const char CODEC_MODE_INFO[] = "CODEC_MODE_INFO";
+static constexpr const char ADVANCED_FEATURE_INFO[] = "ADVANCED_FEATURE_INFO";
+static constexpr const char SECURE_DECODER_ALLOC_BUF_FAILED_INFO[] = "SECURE_DECODER_ALLOC_BUF_FAILED_INFO";
 // EVENT_STR_L3
 static constexpr const char QUERY_CAP_UNSUPPORTED_INFO[] = "QUERY_CAP_UNSUPPORTED_INFO";
 static constexpr const char CREATE_CODEC_UNSUPPORTED_INFO[] = "CREATE_CODEC_UNSUPPORTED_INFO";
@@ -55,6 +63,72 @@ const std::unordered_map<VideoCodecType, std::string> VIDEO_CODEC_TYPE_TO_STRING
     { VideoCodecType::ENCODER_HARDWARE, "HEnc" },
     { VideoCodecType::ENCODER_SOFTWARE, "SEnc" },
 };
+
+const std::unordered_map<VideoEncodeBitrateMode, std::string> BITRATE_MODE_TO_STRING = {
+    { VideoEncodeBitrateMode::CBR, "CBR" },
+    { VideoEncodeBitrateMode::VBR, "VBR" },
+    { VideoEncodeBitrateMode::CQ, "CQ" },
+    { VideoEncodeBitrateMode::SQR, "SQR" },
+    { VideoEncodeBitrateMode::CBR_HIGH_QUALITY, "CBR_HIGH_QUALITY" },
+    { VideoEncodeBitrateMode::CBR_VIDEOCALL, "CBR_VIDEOCALL" },
+    { VideoEncodeBitrateMode::CRF, "CRF" },
+};
+
+std::string ToString(VideoEncodeBitrateMode mode)
+{
+    auto it = BITRATE_MODE_TO_STRING.find(mode);
+    return (it != BITRATE_MODE_TO_STRING.end()) ? it->second : "UNKNOWN";
+}
+
+std::string GetMetaString(const Media::Meta &meta, const std::string_view &key, const std::string &defaultValue = "")
+{
+    std::string value;
+    if (!meta.GetData(key.data(), value) || value.empty()) {
+        return defaultValue;
+    }
+    return value;
+}
+
+template<typename T>
+std::string GetMetaValueString(const Media::Meta &meta, const std::string_view &key, const std::string &defaultValue)
+{
+    T value {};
+    if (!meta.GetData(key.data(), value)) {
+        return defaultValue;
+    }
+    return std::to_string(value);
+}
+
+std::string JoinKey(const std::vector<std::string> &parts)
+{
+    std::string key;
+    for (const auto &part : parts) {
+        if (part.empty()) {
+            continue;
+        }
+        if (!key.empty()) {
+            key += "_";
+        }
+        key += part.empty() ? "UNKNOWN" : part;
+    }
+    return key;
+}
+
+time_t GetCurrentTime()
+{
+    time_t now = time(nullptr);
+    return now == static_cast<time_t>(-1) ? 0 : now;
+}
+
+void AddMapToJsonObject(cJSON *root, const std::unordered_map<std::string, uint32_t> &records)
+{
+    if (root == nullptr) {
+        return;
+    }
+    for (const auto &[key, count] : records) {
+        cJSON_AddNumberToObject(root, key.c_str(), count);
+    }
+}
 
 class ScopedJsonString {
 public:
@@ -173,6 +247,21 @@ public:
         return appIndex;
     }
 
+    AppNameIndex GetIndexByMeta(const Media::Meta &meta)
+    {
+        std::string callerName;
+        pid_t pid = INVALID_PID;
+        if (!(meta.GetData(Media::Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, callerName) ||
+              meta.GetData(Media::Tag::AV_CODEC_CALLER_PROCESS_NAME, callerName) ||
+              meta.GetData(Media::Tag::AV_CODEC_CALLER_PID, pid))) {
+            return INVALID_APP_NAME_INDEX;
+        }
+        if (callerName.empty() && pid != INVALID_PID) {
+            callerName = AVCodecServerManager::GetInstance().GetCallerNameByPid(pid);
+        }
+        return callerName.empty() ? INVALID_APP_NAME_INDEX : GetIndexByAppName(callerName);
+    }
+
     std::string GetAppNameByIndex(AppNameIndex appIndex)
     {
         std::shared_lock<std::shared_mutex> lock(mutex_);
@@ -263,18 +352,21 @@ public:
             case StatisticsEventType::BASIC_CREATE_CODEC_INFO:
                 createCodecTimes_++;
                 break;
-            case StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO: {
-                VideoCodecType vcodecType = VideoCodecType::UNKNOWN;
-                std::string mimeType;
-                if (eventMeta.GetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), vcodecType) &&
-                    eventMeta.GetData(Media::Tag::MIME_TYPE, mimeType) &&
-                    (vcodecType > VideoCodecType::UNKNOWN && vcodecType < VideoCodecType::END) &&
-                    !mimeType.empty()) {
-                    auto type = std::make_pair(vcodecType, mimeType);
-                    CreateOrIncrementMapCount(codecSpecInfo_, type);
-                }
+            case StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO:
+                OnBasicCreateCodecSpecInfo(eventMeta);
                 break;
-            }
+            case StatisticsEventType::CODEC_INSTANCE_USAGE_INFO:
+                OnCodecInstanceUsageInfo(eventMeta);
+                break;
+            case StatisticsEventType::RESOLUTION_SPEC_INFO:
+                OnResolutionSpecInfo(eventMeta);
+                break;
+            case StatisticsEventType::CONTAINER_FORMAT_INFO:
+                OnContainerFormatInfo(eventMeta);
+                break;
+            case StatisticsEventType::CODEC_MODE_INFO:
+                OnCodecModeInfo(eventMeta);
+                break;
             default:
                 break;
         }
@@ -291,7 +383,7 @@ public:
             return;
         }
         for (const auto &[codecSpecType, count] : codecSpecInfo_) {
-            const auto &[vcodecType, mimeType] = codecSpecType;
+            const auto &[vcodecType, mimeType, isSecure] = codecSpecType;
             if (vcodecType <= VideoCodecType::UNKNOWN || vcodecType >= VideoCodecType::END || mimeType.empty()) {
                 continue;
             }
@@ -300,9 +392,20 @@ public:
                 continue;
             }
             std::string key = typeIter->second + "_" + mimeType;
+            if (isSecure) {
+                key += "_secure";
+            }
+            cJSON_AddNumberToObject(cJSON_AddObjectToObject(jsonObj.get(), key.c_str()), key.c_str(), count);
+        }
+        for (const auto &[key, count] : audioCodecSpecInfo_) {
             cJSON_AddNumberToObject(cJSON_AddObjectToObject(jsonObj.get(), key.c_str()), key.c_str(), count);
         }
         submitInfo.jsonObjects[CODEC_SPECIFIED_INFO] = std::move(jsonObj);
+        SettleInstanceUsage(GetCurrentTime());
+        submitInfo.jsonObjects[CODEC_INSTANCE_USAGE_INFO] = BuildInstanceUsageJson();
+        submitInfo.jsonObjects[RESOLUTION_SPEC_INFO] = BuildCountJson(resolutionSpecInfo_);
+        submitInfo.jsonObjects[CONTAINER_FORMAT_INFO] = BuildContainerFormatJson();
+        submitInfo.jsonObjects[CODEC_MODE_INFO] = BuildCountJson(codecModeInfo_);
         AppNameIndexInfo::GetInstance().OnSummateEventInfo(submitInfo);
     }
 
@@ -312,22 +415,247 @@ public:
         queryCapTimes_ = 0;
         createCodecTimes_ = 0;
         codecSpecInfo_.clear();
+        audioCodecSpecInfo_.clear();
+        resolutionSpecInfo_.clear();
+        demuxerFormatInfo_.clear();
+        muxerFormatInfo_.clear();
+        codecModeInfo_.clear();
+        time_t now = GetCurrentTime();
+        for (auto &[_, usage] : instanceUsageInfo_) {
+            usage.periodMax = usage.currentCount;
+            usage.weightedSum = 0;
+            usage.periodStartTime = now;
+            usage.lastSettleTime = now;
+        }
     }
 
 private:
+    struct InstanceUsage {
+        uint32_t currentCount = 0;
+        uint32_t periodMax = 0;
+        uint64_t weightedSum = 0;
+        time_t periodStartTime = GetCurrentTime();
+        time_t lastSettleTime = GetCurrentTime();
+    };
+
+    static constexpr const char instanceActionCreate[] = "create";
+    static constexpr const char instanceActionRelease[] = "release";
+    static constexpr const char instanceActionEmpty[] = "empty";
+    static constexpr int32_t resolution360P = 360;
+    static constexpr int32_t resolution480P = 480;
+    static constexpr int32_t resolution576P = 576;
+    static constexpr int32_t resolution720P = 720;
+    static constexpr int32_t resolution1080P = 1080;
+    static constexpr int32_t resolution1440P = 1440;
+    static constexpr int32_t resolution2160P = 2160;
+    static constexpr int32_t resolution4320P = 4320;
+
+    void SettleInstanceUsage(time_t now)
+    {
+        for (auto &[_, usage] : instanceUsageInfo_) {
+            if (now > usage.lastSettleTime) {
+                usage.weightedSum += static_cast<uint64_t>(usage.currentCount) *
+                    static_cast<uint64_t>(now - usage.lastSettleTime);
+                usage.lastSettleTime = now;
+            }
+        }
+    }
+
+    void OnBasicCreateCodecSpecInfo(const Media::Meta &meta)
+    {
+        std::string codecType;
+        if (meta.GetData(EventInfoExtentedKey::CODEC_TYPE.data(), codecType) &&
+            (codecType == std::to_string(AVCODEC_TYPE_AUDIO_ENCODER) ||
+            codecType == std::to_string(AVCODEC_TYPE_AUDIO_DECODER))) {
+            bool isEncoder = (codecType == std::to_string(AVCODEC_TYPE_AUDIO_ENCODER));
+            OnAudioCodecSpecInfo(meta, isEncoder);
+            return;
+        }
+
+        VideoCodecType vcodecType = VideoCodecType::UNKNOWN;
+        std::string mimeType;
+        if (meta.GetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), vcodecType) &&
+            meta.GetData(Media::Tag::MIME_TYPE, mimeType) &&
+            (vcodecType > VideoCodecType::UNKNOWN && vcodecType < VideoCodecType::END) &&
+            !mimeType.empty()) {
+            const bool isSecure = GetMetaString(meta, Media::Tag::MEDIA_CODEC_NAME).find("secure") !=
+                std::string::npos;
+            auto type = std::make_tuple(vcodecType, mimeType, isSecure);
+            CreateOrIncrementMapCount(codecSpecInfo_, type);
+        }
+    }
+
+    void OnAudioCodecSpecInfo(const Media::Meta &meta, bool isEncoder)
+    {
+        std::string mimeType;
+        if (!meta.GetData(Media::Tag::MIME_TYPE, mimeType) || mimeType.empty()) {
+            return;
+        }
+        std::string kind = isEncoder ? "SEnc" : "SDec";
+        std::string key = kind + "_" + mimeType;
+        CreateOrIncrementMapCount(audioCodecSpecInfo_, key);
+    }
+
+    void OnCodecInstanceUsageInfo(const Media::Meta &meta)
+    {
+        time_t now = GetCurrentTime();
+        SettleInstanceUsage(now);
+        std::string key = IsEncoder(meta) ? "Enc" : "Dec";
+        auto &usage = instanceUsageInfo_[key];
+        usage.lastSettleTime = now;
+        std::string action = GetMetaString(meta, EventInfoExtentedKey::INSTANCE_ACTION, instanceActionEmpty);
+        if (action == instanceActionEmpty) {
+            return;
+        }
+        if (action == instanceActionRelease) {
+            if (usage.currentCount > 0) {
+                usage.currentCount--;
+            }
+        } else if (action == instanceActionCreate) {
+            usage.currentCount++;
+            usage.periodMax = std::max(usage.periodMax, usage.currentCount);
+        }
+    }
+
+    void OnResolutionSpecInfo(const Media::Meta &meta)
+    {
+        std::string level = GetMetaString(meta, EventInfoExtentedKey::RESOLUTION_LEVEL);
+        if (level.empty()) {
+            level = ResolveResolutionLevel(meta);
+        }
+        std::string key = JoinKey({
+            IsEncoder(meta) ? "Enc" : "Dec",
+            GetMetaString(meta, Media::Tag::MIME_TYPE, "UNKNOWN"),
+            level
+        });
+        CreateOrIncrementMapCount(resolutionSpecInfo_, key);
+    }
+
+    std::string ResolveResolutionLevel(const Media::Meta &meta) const
+    {
+        int32_t width = 0;
+        int32_t height = 0;
+        if (!meta.GetData(EventInfoExtentedKey::WIDTH.data(), width) ||
+            !meta.GetData(EventInfoExtentedKey::HEIGHT.data(), height) || width <= 0 || height <= 0) {
+            return "OTHER";
+        }
+        
+        constexpr double aspectRatio = 16.0 / 9.0;
+        int64_t area = static_cast<int64_t>(width) * static_cast<int64_t>(height);
+        int32_t normalized = static_cast<int32_t>(std::sqrt(static_cast<double>(area) / aspectRatio));
+        if (normalized <= resolution360P) {
+            return "360P";
+        } else if (normalized <= resolution480P) {
+            return "480P";
+        } else if (normalized <= resolution576P) {
+            return "576P";
+        } else if (normalized <= resolution720P) {
+            return "720P";
+        } else if (normalized <= resolution1080P) {
+            return "1080P";
+        } else if (normalized <= resolution1440P) {
+            return "1440P";
+        } else if (normalized <= resolution2160P) {
+            return "2160P";
+        } else if (normalized <= resolution4320P) {
+            return "4320P";
+        }
+        return "OTHER";
+    }
+
+    void OnContainerFormatInfo(const Media::Meta &meta)
+    {
+        std::string muxerFormat = GetMetaString(meta, EventInfoExtentedKey::MUXER_FORMAT);
+        if (!muxerFormat.empty()) {
+            CreateOrIncrementMapCount(muxerFormatInfo_, muxerFormat);
+            return;
+        }
+        std::string format = GetMetaString(meta, EventInfoExtentedKey::DEMUXER_FORMAT, "fail:unknown");
+        CreateOrIncrementMapCount(demuxerFormatInfo_, format);
+    }
+
+    void OnCodecModeInfo(const Media::Meta &meta)
+    {
+        std::string key = JoinKey({
+            IsEncoder(meta) ? "Enc" : "Dec",
+            GetMetaString(meta, Media::Tag::MIME_TYPE, "UNKNOWN"),
+            GetMetaString(meta, EventInfoExtentedKey::CODEC_MODE, "UNKNOWN")
+        });
+        CreateOrIncrementMapCount(codecModeInfo_, key);
+    }
+
+    bool IsEncoder(const Media::Meta &meta) const
+    {
+        bool isEncoder = false;
+        if (meta.GetData(EventInfoExtentedKey::IS_ENCODER.data(), isEncoder)) {
+            return isEncoder;
+        }
+        AVCodecType codecType = AVCODEC_TYPE_NONE;
+        if (meta.GetData(EventInfoExtentedKey::CODEC_TYPE.data(), codecType)) {
+            return codecType == AVCODEC_TYPE_VIDEO_ENCODER || codecType == AVCODEC_TYPE_AUDIO_ENCODER;
+        }
+        return false;
+    }
+
+    std::shared_ptr<cJSON> BuildCountJson(const std::unordered_map<std::string, uint32_t> &records) const
+    {
+        auto jsonObj = std::shared_ptr<cJSON>(cJSON_CreateObject(), cJSON_Delete);
+        AddMapToJsonObject(jsonObj.get(), records);
+        return jsonObj;
+    }
+
+    std::shared_ptr<cJSON> BuildContainerFormatJson() const
+    {
+        auto jsonObj = std::shared_ptr<cJSON>(cJSON_CreateObject(), cJSON_Delete);
+        if (jsonObj == nullptr) {
+            return jsonObj;
+        }
+        auto demuxerObj = cJSON_AddObjectToObject(jsonObj.get(), "DEMUXER");
+        AddMapToJsonObject(demuxerObj, demuxerFormatInfo_);
+        auto muxerObj = cJSON_AddObjectToObject(jsonObj.get(), "MUXER");
+        AddMapToJsonObject(muxerObj, muxerFormatInfo_);
+        return jsonObj;
+    }
+
+    std::shared_ptr<cJSON> BuildInstanceUsageJson() const
+    {
+        auto jsonObj = std::shared_ptr<cJSON>(cJSON_CreateObject(), cJSON_Delete);
+        if (jsonObj == nullptr) {
+            return jsonObj;
+        }
+        for (const auto &[key, usage] : instanceUsageInfo_) {
+            auto infoObj = cJSON_AddObjectToObject(jsonObj.get(), key.c_str());
+            cJSON_AddNumberToObject(infoObj, "Current", usage.currentCount);
+            cJSON_AddNumberToObject(infoObj, "Max", usage.periodMax);
+            double duration = static_cast<double>(usage.lastSettleTime - usage.periodStartTime);
+            double average = duration > 0 ? static_cast<double>(usage.weightedSum) / duration : usage.currentCount;
+            cJSON_AddNumberToObject(infoObj, "WeightedAverage", average);
+        }
+        return jsonObj;
+    }
+
     uint32_t queryCapTimes_ { 0 };
     uint32_t createCodecTimes_ { 0 };
-    std::unordered_map<VCodecSpecifiedType, uint32_t, HashPair> codecSpecInfo_; // <VideoCodecType, mimeType>, count
+    // <VideoCodecType, mimeType, isSecure>, count
+    std::unordered_map<VCodecSpecifiedType, uint32_t, HashTuple> codecSpecInfo_;
+    std::unordered_map<std::string, uint32_t> audioCodecSpecInfo_;
+    std::unordered_map<std::string, InstanceUsage> instanceUsageInfo_;
+    std::unordered_map<std::string, uint32_t> resolutionSpecInfo_;
+    std::unordered_map<std::string, uint32_t> demuxerFormatInfo_;
+    std::unordered_map<std::string, uint32_t> muxerFormatInfo_;
+    std::unordered_map<std::string, uint32_t> codecModeInfo_;
 };
 
 /*----------------------------------- AppSpecificationsInfo -----------------------------------*/
 
 class CapUnsupportedInfo;
+class AdvancedFeatureInfo;
 class AppSpecificationsInfo : public StatisticsMainEventInfoBase {
 public:
     AppSpecificationsInfo()
     {
         eventInfoMap_.emplace(StatisticsEventType::CAP_UNSUPPORTED_INFO, std::make_shared<CapUnsupportedInfo>());
+        eventInfoMap_.emplace(StatisticsEventType::ADVANCED_FEATURE_INFO, std::make_shared<AdvancedFeatureInfo>());
     }
 };
 
@@ -430,10 +758,56 @@ private:
     std::unordered_map<AVCodecSpecifiedType, uint32_t, HashPair> createCodecUnsupportedInfo_;
 };
 
+class AdvancedFeatureInfo : public StatisticsMainEventInfoBase {
+public:
+    AdvancedFeatureInfo() = default;
+
+    void OnAddEventInfo(StatisticsEventType eventType, const Media::Meta &eventMeta) override
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        std::string feature = GetMetaString(eventMeta, EventInfoExtentedKey::ADVANCED_FEATURE);
+        if (feature.empty()) {
+            return;
+        }
+        std::string featurePending;
+        if (int32_t rcMode = 0;
+            feature == "RC_MODE"s && eventMeta.GetData(EventInfoExtentedKey::RC_MODE.data(), rcMode)) {
+            featurePending = ToString(static_cast<VideoEncodeBitrateMode>(rcMode));
+        }
+        AppNameIndex appIndex = AppNameIndexInfo::GetInstance().GetIndexByMeta(eventMeta);
+        if (appIndex == INVALID_APP_NAME_INDEX) {
+            return;
+        }
+        CreateOrIncrementMapCount(appAdvancedFeatureInfo_,
+            JoinKey({std::to_string(appIndex), feature, featurePending}));
+    }
+
+    void OnSummateEventInfo(StatisticsSubmitInfo &submitInfo) override
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        auto jsonObj = std::shared_ptr<cJSON>(cJSON_CreateObject(), cJSON_Delete);
+        if (jsonObj == nullptr) {
+            return;
+        }
+        AddMapToJsonObject(jsonObj.get(), appAdvancedFeatureInfo_);
+        submitInfo.jsonObjects[ADVANCED_FEATURE_INFO] = std::move(jsonObj);
+    }
+
+    void ResetEventInfo() override
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        appAdvancedFeatureInfo_.clear();
+    }
+
+private:
+    std::unordered_map<std::string, uint32_t> appAdvancedFeatureInfo_;
+};
+
 /*----------------------------------- AppBehaviorsInfo -----------------------------------*/
 
 class DecAbnormalOccupationInfo;
 class SpeedDecodingInfo;
+class SecureDecoderAllocBufFailedInfo;
 class AppBehaviorsInfo : public StatisticsMainEventInfoBase {
 public:
     AppBehaviorsInfo()
@@ -441,6 +815,8 @@ public:
         eventInfoMap_.emplace(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_INFO,
                               std::make_shared<DecAbnormalOccupationInfo>());
         eventInfoMap_.emplace(StatisticsEventType::SPEED_DECODING_INFO, std::make_shared<SpeedDecodingInfo>());
+        eventInfoMap_.emplace(StatisticsEventType::SECURE_DECODER_ALLOC_BUF_FAILED_INFO,
+                              std::make_shared<SecureDecoderAllocBufFailedInfo>());
     }
 };
 
@@ -451,13 +827,7 @@ public:
     void OnAddEventInfo(StatisticsEventType eventType, const Media::Meta &eventMeta) override
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        std::string callerName;
-        if (!(eventMeta.GetData(Media::Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, callerName) ||
-              eventMeta.GetData(Media::Tag::AV_CODEC_CALLER_PROCESS_NAME, callerName)) ||
-            callerName.empty()) {
-            return;
-        }
-        AppNameIndex callerNameIndex = AppNameIndexInfo::GetInstance().GetIndexByAppName(callerName);
+        AppNameIndex callerNameIndex = AppNameIndexInfo::GetInstance().GetIndexByMeta(eventMeta);
         if (callerNameIndex == INVALID_APP_NAME_INDEX) {
             return;
         }
@@ -670,6 +1040,42 @@ private:
     uint32_t decCnt300x_ = 0U;
 };
 
+class SecureDecoderAllocBufFailedInfo : public StatisticsMainEventInfoBase {
+public:
+    SecureDecoderAllocBufFailedInfo() = default;
+
+    void OnAddEventInfo(StatisticsEventType eventType, const Media::Meta &eventMeta) override
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        AppNameIndex appIndex = AppNameIndexInfo::GetInstance().GetIndexByMeta(eventMeta);
+        if (appIndex == INVALID_APP_NAME_INDEX) {
+            return;
+        }
+        std::string mimeType = GetMetaString(eventMeta, Media::Tag::MIME_TYPE, "UNKNOWN");
+        CreateOrIncrementMapCount(secureDecoderAllocBufFailedInfo_[appIndex], mimeType);
+    }
+
+    void OnSummateEventInfo(StatisticsSubmitInfo &submitInfo) override
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        auto jsonObj = std::shared_ptr<cJSON>(cJSON_CreateObject(), cJSON_Delete);
+        for (const auto &[appIndex, mimeInfo] : secureDecoderAllocBufFailedInfo_) {
+            auto appObj = cJSON_AddObjectToObject(jsonObj.get(), std::to_string(appIndex).c_str());
+            AddMapToJsonObject(appObj, mimeInfo);
+        }
+        submitInfo.jsonObjects[SECURE_DECODER_ALLOC_BUF_FAILED_INFO] = std::move(jsonObj);
+    }
+
+    void ResetEventInfo() override
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        secureDecoderAllocBufFailedInfo_.clear();
+    }
+
+private:
+    std::unordered_map<AppNameIndex, std::unordered_map<std::string, uint32_t>> secureDecoderAllocBufFailedInfo_;
+};
+
 /*----------------------------------- CodecAbnormalInfo -----------------------------------*/
 
 class CodecErrorInfo;
@@ -796,7 +1202,13 @@ void StatisticsEventInfo::OnSubmitEventInfo()
         CAP_UNSUPPORTED_INFO,               getJsonField(CAP_UNSUPPORTED_INFO).CStr(),
         DEC_ABNORMAL_OCCUPATION_INFO,       getJsonField(DEC_ABNORMAL_OCCUPATION_INFO).CStr(),
         SPEED_DECODING_INFO,                getJsonField(SPEED_DECODING_INFO).CStr(),
-        CODEC_ERROR_INFO,                   getJsonField(CODEC_ERROR_INFO).CStr()
+        CODEC_ERROR_INFO,                   getJsonField(CODEC_ERROR_INFO).CStr(),
+        CODEC_INSTANCE_USAGE_INFO,          getJsonField(CODEC_INSTANCE_USAGE_INFO).CStr(),
+        RESOLUTION_SPEC_INFO,               getJsonField(RESOLUTION_SPEC_INFO).CStr(),
+        CONTAINER_FORMAT_INFO,              getJsonField(CONTAINER_FORMAT_INFO).CStr(),
+        CODEC_MODE_INFO,                    getJsonField(CODEC_MODE_INFO).CStr(),
+        ADVANCED_FEATURE_INFO,              getJsonField(ADVANCED_FEATURE_INFO).CStr(),
+        SECURE_DECODER_ALLOC_BUF_FAILED_INFO, getJsonField(SECURE_DECODER_ALLOC_BUF_FAILED_INFO).CStr()
     );
 
     {

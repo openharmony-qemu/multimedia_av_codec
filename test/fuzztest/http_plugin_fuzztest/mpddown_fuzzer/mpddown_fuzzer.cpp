@@ -90,6 +90,27 @@ const std::string ATTR_BASE[] = {
     std::string("schemeIdUri"),
 };
 
+class DashCallbackMock1 : public Plugins::Callback {
+public:
+    void OnEvent(const Plugins::PluginEvent &event) override
+    {
+        switch (event.type) {
+            case PluginEventType::STREAM_UPDATE: {
+                int videoId = -1;
+                int audioId = -1;
+                int textId = -1;
+                mpdDownloader->SetDefaultStreamId(videoId, audioId, textId);
+                break;
+            }
+            default:break;
+        }
+    }
+    void SetDownload(std::shared_ptr<DashMpdDownloader> mpdloader)
+    {
+        mpdDownloader = mpdloader;
+    }
+    std::shared_ptr<DashMpdDownloader> mpdDownloader;
+};
 }
 
 static const std::string BASE_MPD = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n"
@@ -133,9 +154,22 @@ static const std::string BASE_MPD = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>
     "</MPD>";
 }
 
+void GetUsingStreamByType(std::shared_ptr<DashMpdDownloader> mpdMpddownload)
+{
+    if (mpdMpddownload != nullptr) {
+        mpdMpddownload->GetUsingStreamByType(MediaAVCodec::MediaType::MEDIA_TYPE_AUD);
+        mpdMpddownload->GetUsingStreamByType(MediaAVCodec::MediaType::MEDIA_TYPE_VID);
+        mpdMpddownload->GetUsingStreamByType(MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE);
+        mpdMpddownload->GetUsingStreamByType(MediaAVCodec::MediaType::MEDIA_TYPE_TIMED_METADATA);
+    }
+}
+
 void RunMpdDownloaderTests(DashMpdInfo *mpdInfo)
 {
     std::shared_ptr<DashMpdDownloader> mpdMpddownload = std::make_shared<DashMpdDownloader>();
+    auto cb = std::make_shared<DashCallbackMock1>();
+    cb->SetDownload(mpdMpddownload);
+    mpdMpddownload->SetCallback(cb);
     std::shared_ptr<DashMpdManager> mpdManager = std::make_shared<DashMpdManager>(mpdInfo, "http://1.0.0.1/1.mpd");
     mpdManager->GetMpdInfo();
     mpdManager->GetPeriods();
@@ -171,10 +205,7 @@ void RunMpdDownloaderTests(DashMpdInfo *mpdInfo)
     uint32_t nextSegTime = GetData<uint32_t>();
     mpdMpddownload->UpdateCurrentNumberSeqByTime(streamDesc, nextSegTime);
     mpdMpddownload->GetInitSegmentByStreamId(streamId);
-    mpdMpddownload->GetUsingStreamByType(MediaAVCodec::MediaType::MEDIA_TYPE_AUD);
-    mpdMpddownload->GetUsingStreamByType(MediaAVCodec::MediaType::MEDIA_TYPE_VID);
-    mpdMpddownload->GetUsingStreamByType(MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE);
-    mpdMpddownload->GetUsingStreamByType(MediaAVCodec::MediaType::MEDIA_TYPE_TIMED_METADATA);
+    GetUsingStreamByType(mpdMpddownload);
     mpdMpddownload->GetStreamByStreamId(streamId);
     mpdMpddownload->GetInUseVideoStreamId();
     int64_t seekTime = GetData<int64_t>();
@@ -448,6 +479,9 @@ bool MpdParse(const uint8_t *data, size_t size)
     for (auto mpdUrl : MPD_BASE_URLS) {
         std::shared_ptr<DashMpdDownloader> mpdMpddownload = std::make_shared<DashMpdDownloader>();
         mpdMpddownload->Init();
+        auto cb = std::make_shared<DashCallbackMock1>();
+        cb->SetDownload(mpdMpddownload);
+        mpdMpddownload->SetCallback(cb);
         auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                                 std::shared_ptr<DownloadRequest>& request) {};
         mpdMpddownload->SetStatusCallback(statusCallback);

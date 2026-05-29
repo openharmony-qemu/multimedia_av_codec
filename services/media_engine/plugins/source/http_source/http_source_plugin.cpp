@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -25,6 +25,7 @@
 #include "http_media_utils.h"
 #include "storage_usage_util.h"
 #include "meta/meta_key.h"
+#include <array>
 
 namespace OHOS {
 namespace Media {
@@ -40,6 +41,9 @@ const std::string EQUAL_M3U8 = "=" + LOWER_M3U8;
 const std::string DASH_LIST[] = {
     std::string(".mpd"),
     std::string("type=mpd"),
+};
+constexpr auto UNALLOWED_PROTOCOLS = std::array{
+    std::string_view{"file://"},
 };
 
 }
@@ -215,9 +219,11 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     AutoLock lock(mutex_);
     FALSE_RETURN_V(downloader_ == nullptr, Status::ERROR_INVALID_OPERATION); // not allowed set again
     FALSE_RETURN_V(source != nullptr, Status::ERROR_INVALID_OPERATION);
+    FALSE_RETURN_V(IsAllowedProtocol(source->GetSourceUri()), Status::ERROR_INVALID_OPERATION);
     InitSourcePlugin(source);
     redirectUrl_ = GetCurUrl();
     FALSE_RETURN_V(!redirectUrl_.empty() && source->GetSourceUri() != redirectUrl_, Status::OK);
+    FALSE_RETURN_V(IsAllowedProtocol(redirectUrl_), Status::ERROR_INVALID_OPERATION);
     uri_ = redirectUrl_;
     FALSE_RETURN_V(IsSeekToTimeSupported(), Status::OK);
     InitSourcePlugin(source);
@@ -396,12 +402,8 @@ Status HttpSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer,
     buffer->streamID = readDataInfo.nextStreamId_;
 
     bufData->UpdateDataSize(readDataInfo.realReadLength_);
-    MEDIA_LOG_D("Read finished, read size = "
-    PUBLIC_LOG_ZU
-    ", nextStreamId = "
-    PUBLIC_LOG_D32
-    ", isDownloadDone "
-    PUBLIC_LOG_D32, bufData->GetSize(), readDataInfo.nextStreamId_, readDataInfo.isEos_);
+    MEDIA_LOG_D("Read finished, read size = " PUBLIC_LOG_ZU ", nextStreamId = " PUBLIC_LOG_D32 ", isDownloadDone "
+        PUBLIC_LOG_D32, bufData->GetSize(), readDataInfo.nextStreamId_, readDataInfo.isEos_);
     return result;
 }
 
@@ -762,6 +764,30 @@ bool HttpSourcePlugin::IsHls()
         return CheckIsM3U8Uri();
     }
     MEDIA_LOG_I("IsHls return true");
+    return true;
+}
+
+bool HttpSourcePlugin::IsAllowedProtocol(std::string_view url)
+{
+    for (auto& protocol : UNALLOWED_PROTOCOLS) {
+        size_t protocolLen = protocol.size();
+        if (url.size() < protocolLen) {
+            continue;
+        }
+
+        bool isMatch = true;
+        for (size_t i = 0; i < protocolLen; ++i) {
+            char ch = static_cast<char>(std::tolower(static_cast<unsigned char>(url[i])));
+            if (ch != protocol[i]) {
+                isMatch = false;
+                break;
+            }
+        }
+
+        if (isMatch) {
+            return false;
+        }
+    }
     return true;
 }
 }

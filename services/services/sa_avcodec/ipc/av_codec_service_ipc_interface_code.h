@@ -78,7 +78,8 @@ enum class AVCodecServiceInterfaceCode {
     FREEZE,
     ACTIVE,
     ACTIVEALL,
-    GET_ACTIVE_SECURE_DECODER_PIDS
+    GET_ACTIVE_SECURE_DECODER_PIDS,
+    REPORT_STATISTICS_EVENT
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

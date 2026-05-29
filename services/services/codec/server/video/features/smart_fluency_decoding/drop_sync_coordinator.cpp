@@ -14,19 +14,17 @@
  */
 
 #include "drop_sync_coordinator.h"
-#include <algorithm>
 #include "avcodec_log_ex.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "SfdSync"};
-constexpr double BASE_ALPHA = 0.15;
 }
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace SFD {
 
-bool DropSyncCoordinator::RecordPreDroppedFrame(int64_t pts, double speed)
+bool DropSyncCoordinator::RecordPreDroppedFrame(int64_t pts)
 {
     size_t currentWrite = writeIndex_.load(std::memory_order_relaxed);
     size_t nextWrite = currentWrite + 1;
@@ -36,7 +34,7 @@ bool DropSyncCoordinator::RecordPreDroppedFrame(int64_t pts, double speed)
     ptsRingBuffer_[index] = pts;
     isConsumed_[index].store(false, std::memory_order_release);
     writeIndex_.store(nextWrite, std::memory_order_release);
-    UpdateFeedback(false, speed);
+    UpdateFeedback(false, true);
     AVCODEC_LOGD("Recorded pre-dropped PTS %{public}" PRId64 ", writeIndex: %{public}zu", pts, nextWrite);
     return true;
 }
@@ -67,14 +65,34 @@ uint32_t DropSyncCoordinator::GetAndConsumePreDroppedCount(int64_t currentPts)
     return count;
 }
 
-void DropSyncCoordinator::UpdateFeedback(bool isRetained, double speed)
+void DropSyncCoordinator::UpdateFeedback(bool isRetained, bool isPreDropped)
 {
     std::lock_guard<std::mutex> lock(feedbackMutex_);
-    double alpha = std::min(1.0, BASE_ALPHA * speed);
-    double currentVal = isRetained ? 1.0 : 0.0;
-    emaRatio_ = alpha * currentVal + (1.0 - alpha) * emaRatio_;
-    AVCODEC_LOGD("isRetained=%{public}d, emaRatio=%{public}.4f",
-        isRetained, emaRatio_);
+    if (feedbackWindowCount_ == feedbackWindowSize) {
+        auto& old = feedbackWindow_[feedbackWindowPos_];
+        if (old.isRetained) {
+            windowRetainedCount_--;
+        }
+        if (old.isPreDropped) {
+            windowPreDroppedCount_--;
+        }
+    } else {
+        feedbackWindowCount_++;
+    }
+    auto& slot = feedbackWindow_[feedbackWindowPos_];
+    slot.isRetained = isRetained;
+    slot.isPreDropped = isPreDropped;
+    if (isRetained) {
+        windowRetainedCount_++;
+    }
+    if (isPreDropped) {
+        windowPreDroppedCount_++;
+    }
+    feedbackWindowPos_ = (feedbackWindowPos_ + 1) & feedbackWindowMask;
+    AVCODEC_LOGD("isRetained=%{public}d, isPreDropped=%{public}d, window=%{public}zu/%{public}zu"
+        ", retained=%{public}u, preDropped=%{public}u",
+        isRetained, isPreDropped, feedbackWindowCount_, feedbackWindowSize,
+        windowRetainedCount_, windowPreDroppedCount_);
 }
 
 void DropSyncCoordinator::Reset()
@@ -89,14 +107,20 @@ void DropSyncCoordinator::Reset()
         readIndex_.store(currentWrite, std::memory_order_relaxed);
     }
     std::lock_guard<std::mutex> lock(feedbackMutex_);
-    emaRatio_ = 1.0;
+    feedbackWindowCount_ = 0;
+    feedbackWindowPos_ = 0;
+    windowRetainedCount_ = 0;
+    windowPreDroppedCount_ = 0;
     AVCODEC_LOGI("Reset DropSyncCoordinator");
 }
 
-double DropSyncCoordinator::GetEmaRatio() const
+double DropSyncCoordinator::GetActualRetentionRatio() const
 {
     std::lock_guard<std::mutex> lock(feedbackMutex_);
-    return emaRatio_;
+    if (feedbackWindowCount_ == 0) {
+        return 0.0;
+    }
+    return static_cast<double>(windowRetainedCount_) / feedbackWindowCount_;
 }
 
 size_t DropSyncCoordinator::GetWriteIndex() const
@@ -107,6 +131,15 @@ size_t DropSyncCoordinator::GetWriteIndex() const
 size_t DropSyncCoordinator::GetReadIndex() const
 {
     return readIndex_.load(std::memory_order_relaxed);
+}
+
+double DropSyncCoordinator::GetPreRetainedRatio() const
+{
+    std::lock_guard<std::mutex> lock(feedbackMutex_);
+    if (feedbackWindowCount_ == 0) {
+        return 0.0;
+    }
+    return static_cast<double>(feedbackWindowCount_ - windowPreDroppedCount_) / feedbackWindowCount_;
 }
 
 } // namespace SFD

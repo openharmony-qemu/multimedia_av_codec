@@ -29,7 +29,18 @@ class SourceCallback : public Plugins::Callback {
 public:
     void OnEvent(const Plugins::PluginEvent &event)
     {
-        (void)event;
+        switch (event.type) {
+            case PluginEventType::STREAM_UPDATE: {
+                int videoId = -1;
+                int audioId = -1;
+                int textId = -1;
+                if (httpMediaDownloader != nullptr) {
+                    httpMediaDownloader->SetDefaultStreamId(videoId, audioId, textId);
+                }
+                break;
+            }
+            default:break;
+        }
     }
 
     void SetSelectBitRateFlag(bool flag, uint32_t desBitRate)
@@ -42,6 +53,13 @@ public:
     {
         return true;
     }
+
+    void SetDownload(std::shared_ptr<HttpMediaDownloader> &downloader)
+    {
+        httpMediaDownloader = downloader;
+    }
+
+    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader = nullptr;
 };
 
 class SourceLoader : public IMediaSourceLoader {
@@ -107,6 +125,7 @@ std::shared_ptr<HttpMediaDownloader> InitializeAndDownload()
         std::shared_ptr<DownloadRequest>& request) {};
     httpMediaDownloader->SetStatusCallback(statusCallback);
     auto sourceCallback = std::make_shared<SourceCallback>();
+    sourceCallback->SetDownload(httpMediaDownloader);
     httpMediaDownloader->SetCallback(sourceCallback);
     httpMediaDownloader->Open(FLV_SEGMENT_BASE, httpHeader);
     httpMediaDownloader->GetSeekable();

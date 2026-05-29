@@ -50,6 +50,7 @@ struct Sample {
     int64_t duration;
     uint32_t flag;
     int32_t size;
+    std::vector<uint8_t> skipSamplesInfo;
     std::unique_ptr<uint8_t[]> data;
 };
 

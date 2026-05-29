@@ -406,3 +406,163 @@ HWTEST_F(SFDManagerTest, Configure_InitializeWithCsd_020, TestSize.Level1)
     manager.Configure(format);
     EXPECT_TRUE(manager.IsSfdActive());
 }
+
+/**
+ * @tc.name: Flush_ActiveSfd_021
+ * @tc.desc: Verify Flush propagates to active SFD without crash.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDManagerTest, Flush_ActiveSfd_021, TestSize.Level1)
+{
+    SmartFluencyDecodingManager manager("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
+    Format format;
+    format.PutIntValue(Tag::VIDEO_WIDTH, WIDTH_1080P);
+    format.PutIntValue(Tag::VIDEO_HEIGHT, HEIGHT_1080P);
+    format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, 0);
+    manager.Configure(format);
+    ASSERT_TRUE(manager.IsSfdActive());
+
+    manager.Flush();
+    EXPECT_TRUE(manager.IsSfdActive());
+}
+
+/**
+ * @tc.name: Flush_NoSfd_022
+ * @tc.desc: Verify Flush does not crash when SFD is not active.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDManagerTest, Flush_NoSfd_022, TestSize.Level1)
+{
+    SmartFluencyDecodingManager manager("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
+    manager.Flush();
+    EXPECT_FALSE(manager.IsSfdActive());
+}
+
+/**
+ * @tc.name: OnOutputBufferUnbinded_ClearsMap_023
+ * @tc.desc: Verify OnOutputBufferUnbinded clears the surface buffer map.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDManagerTest, OnOutputBufferUnbinded_ClearsMap_023, TestSize.Level1)
+{
+    SmartFluencyDecodingManager manager("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
+    manager.surfaceBufMap_[1] = nullptr;
+    manager.OnOutputBufferUnbinded();
+    EXPECT_TRUE(manager.surfaceBufMap_.empty());
+}
+
+/**
+ * @tc.name: MakePostDecodeDecision_NullBuffer_024
+ * @tc.desc: Verify MakePostDecodeDecision returns true when buffer is null.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDManagerTest, MakePostDecodeDecision_NullBuffer_024, TestSize.Level1)
+{
+    SmartFluencyDecodingManager manager("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
+    bool result = manager.MakePostDecodeDecision(0, nullptr, false);
+    EXPECT_TRUE(result);
+}
+
+/**
+ * @tc.name: OnInputBufferAvailable_NullBuffer_025
+ * @tc.desc: Verify OnInputBufferAvailable returns early without crash when buffer is null.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDManagerTest, OnInputBufferAvailable_NullBuffer_025, TestSize.Level1)
+{
+    SmartFluencyDecodingManager manager("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
+    manager.OnInputBufferAvailable(0, nullptr);
+    EXPECT_FALSE(manager.IsSfdActive());
+}
+
+/**
+ * @tc.name: EnableMVOutput_AvcNoSfd_026
+ * @tc.desc: Verify EnableMVOutput does not set MV tag for AVC when SFD is not active.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDManagerTest, EnableMVOutput_AvcNoSfd_026, TestSize.Level1)
+{
+    SmartFluencyDecodingManager manager("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
+    Format format;
+    manager.EnableMVOutput(format);
+    int32_t val = -1;
+    EXPECT_FALSE(format.GetIntValue(Tag::VIDEO_DECODER_ENABLE_MV_UPLOAD, val));
+}
+
+/**
+ * @tc.name: Configure_ModeNotSet_027
+ * @tc.desc: Verify Configure without retention mode returns nullptr from Build.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDManagerTest, Configure_ModeNotSet_027, TestSize.Level1)
+{
+    SmartFluencyDecodingManager manager("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
+    Format format;
+    format.PutIntValue(Tag::VIDEO_WIDTH, WIDTH_1080P);
+    format.PutIntValue(Tag::VIDEO_HEIGHT, HEIGHT_1080P);
+    // No VIDEO_DECODER_FRAME_RETENTION_MODE → INVALID → Build returns null
+    manager.Configure(format);
+    EXPECT_FALSE(manager.IsSfdActive());
+}
+
+/**
+ * @tc.name: ExtractCsdData_NonCsdNonSyncFrame_028
+ * @tc.desc: Verify CacheCsdData does not cache buffers with neither CODEC_DATA nor SYNC_FRAME flags.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDManagerTest, ExtractCsdData_NonCsdNonSyncFrame_028, TestSize.Level1)
+{
+    SmartFluencyDecodingManager manager("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
+    auto buffer = CreateMockBuffer(0, 100);  // flag=0: neither CODEC_DATA nor SYNC_FRAME
+    ASSERT_NE(buffer, nullptr);
+    manager.OnInputBufferAvailable(0, buffer);
+    manager.MakePreDecodeDecision(0);
+    EXPECT_FALSE(manager.isCsdCached_);
+}
+
+/**
+ * @tc.name: IsCodecSupported_SecureDecoder_029
+ * @tc.desc: Verify IsCodecSupported returns false for secure decoder mode.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDManagerTest, IsCodecSupported_SecureDecoder_029, TestSize.Level1)
+{
+    EXPECT_FALSE(SmartFluencyDecodingManager::IsCodecSupported("video/avc", AVCODEC_TYPE_VIDEO_DECODER, true));
+    EXPECT_FALSE(SmartFluencyDecodingManager::IsCodecSupported("video/hevc", AVCODEC_TYPE_VIDEO_DECODER, true));
+}
+
+/**
+ * @tc.name: OnInputBufferAvailable_AfterCsdCached_030
+ * @tc.desc: Verify OnInputBufferAvailable skips tempCsdBufferMap insertion after CSD is cached.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDManagerTest, OnInputBufferAvailable_AfterCsdCached_030, TestSize.Level1)
+{
+    SmartFluencyDecodingManager manager("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
+    // Fill CSD cache to trigger isCsdCached_=true
+    auto buffer1 = CreateMockBuffer(AVCODEC_BUFFER_FLAG_CODEC_DATA, 256);
+    manager.OnInputBufferAvailable(0, buffer1);
+    manager.MakePreDecodeDecision(0);
+    EXPECT_TRUE(manager.isCsdCached_);
+    EXPECT_TRUE(manager.tempCsdBufferMap_.empty());  // Cleared after caching complete
+
+    // After isCsdCached_=true, new buffers skip tempCsdBufferMap_ insertion
+    auto buffer2 = CreateMockBuffer(0, 100);
+    manager.OnInputBufferAvailable(1, buffer2);
+    EXPECT_TRUE(manager.tempCsdBufferMap_.empty());  // Still empty, skipped insertion
+}
+
+/**
+ * @tc.name: EnableMVOutput_VvcAuto_031
+ * @tc.desc: Verify EnableMVOutput automatically enables MV for VVC codec.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDManagerTest, EnableMVOutput_VvcAuto_031, TestSize.Level1)
+{
+    SmartFluencyDecodingManager manager("video/vvc", AVCODEC_TYPE_VIDEO_DECODER);
+    Format format;
+    manager.EnableMVOutput(format);
+    int32_t val = -1;
+    EXPECT_TRUE(format.GetIntValue(Tag::VIDEO_DECODER_ENABLE_MV_UPLOAD, val));
+    EXPECT_EQ(val, 1);
+}

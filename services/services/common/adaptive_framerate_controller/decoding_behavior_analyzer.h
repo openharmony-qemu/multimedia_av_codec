@@ -18,6 +18,7 @@
 
 #include <chrono>
 #include <deque>
+#include <functional>
 #include <mutex>
 #include <vector>
 
@@ -49,21 +50,24 @@ union SpeedStatsUnion {
     SpeedStatsUnion() : stats{0u, 0u} {}
 };
 
+using DecInfoCallBack = std::function<void(double srcFps, double speed)>;
+
 class DecodingBehaviorAnalyzer {
 public:
     DecodingBehaviorAnalyzer();
     void OnFrameConsumed(int64_t pts, bool render);
+    void OnFrameDropped();
     void OnStopped(bool isDecEnd);
     void OnChecked(double decFps);
+    void SetDecInfoCallBack(DecInfoCallBack cb);
 
 private:
     static constexpr size_t stdSpeedLevels = 8;
     static constexpr std::array<double, stdSpeedLevels> standardSpeeds = {0.0, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0, 4.0};
     std::mutex mutex_;
-    int64_t startPtsMs_ = -1;
-    int64_t endPtsMs_ = -1;
     uint32_t frameCnt_ = 0;
     uint32_t renderCnt_ = 0;
+    uint32_t droppedCnt_ = 0;
     std::chrono::steady_clock::time_point startTime_;
     std::chrono::steady_clock::time_point lastCheckTime_;
     size_t maxPossibleDecSpeedIdx_ = 0;
@@ -71,11 +75,23 @@ private:
     std::deque<size_t> speedWindow_;
     std::array<size_t, stdSpeedLevels> speedCount_ = {};
     std::vector<DecodingBehaviorSnapshot> history_;
+    DecInfoCallBack decInfoCallBack_ = nullptr;
     double lastReportedFps_ = -1.0;
     double lastReportedRenderFps_ = -1.0;
     int64_t lastPtsMs_ = -1;
-
+    std::chrono::steady_clock::time_point startSysTime_;
+    std::chrono::steady_clock::time_point endSysTime_;
+    std::deque<int64_t> ptsWin_;
+    double decInSpeed_ = -1.0;
+    double srcFps_ = -1.0;
+#ifdef SUPPORT_FPS_FOR_MEMC
+    int64_t lastOutPts_[3] = {0};
+    size_t lastIndex_ = 0;
+    std::pair<int32_t, int32_t> fixedInfo_{};
+    std::pair<int32_t, int32_t> curtInfo_{};
+#endif
     void ResetIntervalStats();
+    double GetSrcFps();
     size_t MatchAndUpdateSpeedStats(double decSpeed);
     DecodingBehaviorType DetermineDecodingBehaviorType();
     bool IsDecChanged(DecodingBehaviorType oldType, size_t oldSpeedIdx,
@@ -83,6 +99,14 @@ private:
     void SaveDecodingBehaviorAsSnapshot(
         DecodingBehaviorType type, std::chrono::steady_clock::time_point endTime, size_t decSpeedIdx);
     void ReportSpeedDecodingInfo();
+    size_t UpdateSpeedEstimates(double speed, double srcFps);
+    void ReportFpsIfSignificantChange(double decFps, double renderFps, double srcFps);
+    void HandleBehaviorTransition(DecodingBehaviorType currentType, size_t oldSpeedIdx,
+        DecodingBehaviorType newType, size_t newSpeedIdx);
+#ifdef SUPPORT_FPS_FOR_MEMC
+    bool IsStableFps(float fps);
+    void CalcOutputVideoFps(int64_t currentPts, bool render);
+#endif
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

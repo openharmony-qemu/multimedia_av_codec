@@ -737,6 +737,8 @@ int32_t HevcDecoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         }
         capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(HEVC_PROFILE_MAIN), levels));
         capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(HEVC_PROFILE_MAIN_10), levels));
+        capsData.featuresMap.insert(std::make_pair(
+            static_cast<int32_t>(AVCapabilityFeature::VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER), Format()));
         capaArray.emplace_back(capsData);
     }
     return AVCS_ERR_OK;

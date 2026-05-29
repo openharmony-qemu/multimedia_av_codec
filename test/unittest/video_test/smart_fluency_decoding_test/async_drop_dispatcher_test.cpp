@@ -141,3 +141,17 @@ HWTEST_F(AsyncDropDispatcherTest, SubmitTask_TaskOrdering_004, TestSize.Level1)
         EXPECT_EQ(results[i], i);
     }
 }
+
+/**
+ * @tc.name: SubmitTask_NullTask_005
+ * @tc.desc: Verify SubmitTask returns early without crash when a null task is provided.
+ * @tc.type: FUNC
+ */
+HWTEST_F(AsyncDropDispatcherTest, SubmitTask_NullTask_005, TestSize.Level1)
+{
+    AsyncDropDispatcher dispatcher;
+    dispatcher.SubmitTask(nullptr);
+    dispatcher.SubmitTask(std::function<void()>());
+    // No crash = success
+    EXPECT_TRUE(true);
+}

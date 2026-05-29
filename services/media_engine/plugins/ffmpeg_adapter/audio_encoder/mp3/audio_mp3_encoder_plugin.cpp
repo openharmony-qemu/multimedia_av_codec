@@ -19,6 +19,8 @@
 #include "avcodec_log.h"
 #include "avcodec_mime_type.h"
 #include "lame.h"
+#include "common/pcm_convert.h"
+#include <set>
 #include "plugin/codec_plugin.h"
 #include "plugin/plugin_definition.h"
 
@@ -41,7 +43,8 @@ constexpr int32_t BIT_RATE_64000 = 64000;
 constexpr int32_t BIT_RATE_160000 = 160000;
 
 constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 4096;
-constexpr int32_t LAME_BUFFER_SIZE_DEFAULT = 8640;         // 1152*1.25+7200=8640
+constexpr int32_t LAME_BUFFER_SIZE_DEFAULT = 8640;
+constexpr int32_t MAX_INPUT_BUFFER_SIZE_LIMIT = 10 * 1024 * 1024;  // 10MB
 constexpr int32_t LAME_INPUT_BUFFER_SIZE_ONE_CHAN = 2304;  // 1152*2=2304
 constexpr int32_t LAME_INPUT_BUFFER_SIZE_TWO_CHAN = 4608;  // 1152*2*2=4608
 constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 5120;        // 1152*2*2=4608
@@ -54,6 +57,14 @@ constexpr int32_t BIT_RATE_PICK[SUPPORT_BIT_RATE] = {8000, 16000, 32000, 40000, 
 constexpr int32_t SAMPLE_RATE_PICK[SUPPORT_SAMPLE_RATE] = {8000, 11025, 12000, 16000, 22050,
                                                            24000, 32000, 44100, 48000};
 constexpr int32_t DEFAULT_COMPRESSION_LEVEL = 5;
+
+static std::set<AudioSampleFormat> extendSampleFormats = {
+    AudioSampleFormat::SAMPLE_U8,
+    AudioSampleFormat::SAMPLE_S16LE,
+    AudioSampleFormat::SAMPLE_S24LE,
+    AudioSampleFormat::SAMPLE_S32LE,
+    AudioSampleFormat::SAMPLE_F32LE,
+};
 
 Status RegisterAudioEncoderPlugins(const std::shared_ptr<Register>& reg)
 {
@@ -135,10 +146,22 @@ bool AudioMp3EncoderPlugin::CheckFormat()
             return false;
         }
     }
-    if (audioSampleFormat_ != AudioSampleFormat::SAMPLE_S16LE) {
+    if (!isEnableFormatConvert_ && audioSampleFormat_ != AudioSampleFormat::SAMPLE_S16LE) {
         AVCODEC_LOGE("AudioMp3EncoderPlugin sampleFmt not supported");
         return false;
     }
+    if (isEnableFormatConvert_ &&
+        extendSampleFormats.find(audioSampleFormat_) == extendSampleFormats.end()) {
+        AVCODEC_LOGE("enable convert but input sample format not support:%{public}d",
+            static_cast<int32_t>(audioSampleFormat_));
+        return false;
+    }
+    int32_t bytesPerSample = GetPcmBytesPerSample(audioSampleFormat_);
+    if (bytesPerSample == 0) {
+        AVCODEC_LOGE("get bytes per sample fail from:%{public}d", static_cast<int32_t>(audioSampleFormat_));
+        return false;
+    }
+    originSampleByte_ = bytesPerSample;
     if (sampleRate_ < SAMPLE_RATE_16000 && bitrate_ > BIT_RATE_64000) {
         AVCODEC_LOGE("sample<16k,bitrate must <=64k");
         return false;
@@ -191,46 +214,107 @@ Status AudioMp3EncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer>& 
         AVCODEC_LOGE("size is 0, but eos flag is not 1");
         return Status::ERROR_INVALID_DATA;
     }
-    if ((channels_ == ONE_CHANNEL && inputSize > LAME_INPUT_BUFFER_SIZE_ONE_CHAN) ||
-        (channels_ == TWO_CHANNELS && inputSize > LAME_INPUT_BUFFER_SIZE_TWO_CHAN)) {
-        AVCODEC_LOGE("SendBuffer size > max InputBufferSize(1 channel: 2304bytes; 2 channels: 4608bytes)\
-            size: %{public}d", inputSize);
-        return Status::ERROR_UNKNOWN;
-    }
     if (inputSize > memory->GetCapacity()) {
         AVCODEC_LOGE("send input buffer is > allocate size. size : %{public}d, allocate size : %{public}d",
                      inputSize, memory->GetCapacity());
         return Status::ERROR_UNKNOWN;
     }
     std::lock_guard<std::mutex> lock(avMutex_);
-    int32_t sampleNumTmp = -1; // -1:initialize invalid value
-    sampleNumTmp = channels_ == ONE_CHANNEL ? inputSize / sizeof(int16_t) : inputSize / sizeof(int16_t) / 2; // 2ch
-    unsigned char* lamePcmBuffer = memory->GetAddr();
-    int outputSize = 0;
-
-    const int sampleNum = static_cast<const int>(sampleNumTmp);
-    const short* inputPcmBuffer = reinterpret_cast<const short*>(lamePcmBuffer);
-    if (sampleNumTmp > 0) {
-        if (channels_ == 1) { // 1:mono
-            outputSize = lame_encode_buffer(lameInfo->gfp, inputPcmBuffer, inputPcmBuffer, sampleNum,
-                                            lameMp3Buffer.get(), LAME_BUFFER_SIZE_DEFAULT);
+    if (enableCache_) {
+        std::vector<uint8_t> tmpBuffer;
+        if (isEnableFormatConvert_ && audioSampleFormat_ != AudioSampleFormat::SAMPLE_S16LE) {
+            size_t sampleNum = static_cast<size_t>(inputSize) / static_cast<size_t>(originSampleByte_);
+            tmpBuffer.resize(sampleNum * sizeof(int16_t));
+            ConvertPcmSampleFormat(memory->GetAddr(), sampleNum, audioSampleFormat_,
+                AudioSampleFormat::SAMPLE_S16LE, tmpBuffer.data());
+            pcmCache_.insert(pcmCache_.end(), tmpBuffer.begin(), tmpBuffer.end());
         } else {
-            outputSize = lame_encode_buffer_interleaved(lameInfo->gfp, reinterpret_cast<short*>(lamePcmBuffer),
-                                                        sampleNumTmp, lameMp3Buffer.get(), LAME_BUFFER_SIZE_DEFAULT);
+            pcmCache_.insert(pcmCache_.end(), memory->GetAddr(), memory->GetAddr() + inputSize);
         }
-    } else if (sampleNumTmp == 0) {
-        outputSize = lame_encode_flush(lameInfo->gfp, lameMp3Buffer.get(), LAME_BUFFER_SIZE_DEFAULT);
+    } else {
+        if ((channels_ == ONE_CHANNEL && inputSize > LAME_INPUT_BUFFER_SIZE_ONE_CHAN) ||
+            (channels_ == TWO_CHANNELS && inputSize > LAME_INPUT_BUFFER_SIZE_TWO_CHAN)) {
+            AVCODEC_LOGE("SendBuffer size > max InputBufferSize(1 ch: 2304; 2 ch: 4608) size: %{public}d",
+                         inputSize);
+            return Status::ERROR_UNKNOWN;
+        }
+        EncodeDirect(inputBuffer);
     }
-
-    if (outputSize < 0) {
-        AVCODEC_LOGE("AudioMp3EncoderPlugin lame encode error.");
-        return Status::ERROR_UNKNOWN;
+    if (ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE && isFirstInputPts_) {
+        prevPts_ = inputBuffer->pts_;
+        isFirstInputPts_ = false;
     }
-    outputSize_ = outputSize;
-    pts_ = inputBuffer->pts_;
     SafeCallInputBufferDone(dataCallback_, inputBuffer);
-
     return Status::OK;
+}
+
+Status AudioMp3EncoderPlugin::QueueOutputBufferBasic(std::shared_ptr<AVBuffer> &outputBuffer)
+{
+    auto memory = outputBuffer->memory_;
+    if (outputBuffer->flag_ & BUFFER_FLAG_EOS) {
+        SafeCallOutputBufferDone(dataCallback_, outputBuffer);
+        return Status::END_OF_STREAM;
+    }
+    if (outputSize_ == 0) {
+        AVCODEC_LOGD("AudioMp3EncoderPlugin lame outputSize of this frame is 0.");
+        return Status::ERROR_NOT_ENOUGH_DATA;
+    }
+    memory->Write(const_cast<const uint8_t*>(lameMp3Buffer.get()), outputSize_, 0);
+    memory->SetSize(outputSize_);
+    SetOutputPts(outputBuffer);
+    outputSize_ = 0;
+    SafeCallOutputBufferDone(dataCallback_, outputBuffer);
+    return Status::OK;
+}
+
+Status AudioMp3EncoderPlugin::QueueOutputBufferCache(std::shared_ptr<AVBuffer> &outputBuffer)
+{
+    auto memory = outputBuffer->memory_;
+    Status ret = Status::OK;
+    auto frameBytes = static_cast<size_t>(frameSize_ * channels_ * sizeof(int16_t));
+    if (pcmCache_.size() >= frameBytes || ((outputBuffer->flag_ & BUFFER_FLAG_EOS) &&
+        (static_cast<int32_t>(pcmCache_.size()) > channels_ * sizeof(int16_t)))) {
+        frameBytes = (outputBuffer->flag_ & BUFFER_FLAG_EOS) ? pcmCache_.size() : frameBytes;
+        int32_t sampleNum = static_cast<int32_t>(frameBytes / static_cast<size_t>(channels_) / sizeof(int16_t));
+        const short* pcmData = reinterpret_cast<const short*>(pcmCache_.data());
+        if (channels_ == ONE_CHANNEL) {
+            outputSize_ = lame_encode_buffer(lameInfo->gfp, pcmData, pcmData, sampleNum,
+                                             lameMp3Buffer.get(), LAME_BUFFER_SIZE_DEFAULT);
+        } else {
+            outputSize_ = lame_encode_buffer_interleaved(lameInfo->gfp, const_cast<short*>(pcmData),
+                                                         sampleNum, lameMp3Buffer.get(), LAME_BUFFER_SIZE_DEFAULT);
+        }
+        pcmCache_.erase(pcmCache_.begin(), pcmCache_.begin() + frameBytes);
+        if (outputSize_ < 0) {
+            AVCODEC_LOGE("AudioMp3EncoderPlugin lame encode error.");
+            return Status::ERROR_UNKNOWN;
+        }
+        if (outputSize_ == 0 && (outputBuffer->flag_ & BUFFER_FLAG_EOS)) {
+            outputSize_ = lame_encode_flush(lameInfo->gfp, lameMp3Buffer.get(), LAME_BUFFER_SIZE_DEFAULT);
+            outputSize_ = outputSize_ > 0 ? outputSize_ : 0;
+        }
+        memory->Write(const_cast<const uint8_t*>(lameMp3Buffer.get()), outputSize_, 0);
+        memory->SetSize(outputSize_);
+        if (outputSize_ > 0) {
+            outputBuffer->flag_ = 0;
+            ret = Status::ERROR_AGAIN;
+        }
+    } else if (outputBuffer->flag_ & BUFFER_FLAG_EOS) {
+        outputSize_ = lame_encode_flush(lameInfo->gfp, lameMp3Buffer.get(), LAME_BUFFER_SIZE_DEFAULT);
+        if (outputSize_ > 0) {
+            memory->Write(const_cast<const uint8_t*>(lameMp3Buffer.get()), outputSize_, 0);
+            memory->SetSize(outputSize_);
+            outputBuffer->flag_ = 0;
+            ret = Status::ERROR_AGAIN;
+        } else {
+            memory->SetSize(0);
+        }
+    } else {
+        return Status::ERROR_NOT_ENOUGH_DATA;
+    }
+    SetOutputPts(outputBuffer);
+    SafeCallOutputBufferDone(dataCallback_, outputBuffer);
+    return ret;
 }
 
 Status AudioMp3EncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& outputBuffer)
@@ -239,30 +323,23 @@ Status AudioMp3EncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& outpu
         AVCODEC_LOGE("AudioMp3EncoderPlugin Queue out buffer is null.");
         return Status::ERROR_INVALID_PARAMETER;
     }
-    {
-        std::lock_guard<std::mutex> lock(avMutex_);
-        if (outputBuffer->flag_ & BUFFER_FLAG_EOS) {
-            SafeCallOutputBufferDone(dataCallback_, outputBuffer);
-            return Status::END_OF_STREAM;
-        }
-        auto memory = outputBuffer->memory_;
-        if (outputSize_ == 0) {
-            AVCODEC_LOGD("AudioMp3EncoderPlugin lame outputSize of this frame is 0.");
-            return Status::ERROR_NOT_ENOUGH_DATA;
-        }
-
-        memory->Write(const_cast<const uint8_t*>(lameMp3Buffer.get()), outputSize_, 0);
-        memory->SetSize(outputSize_);
-        outputBuffer->pts_ = pts_;
-        SafeCallOutputBufferDone(dataCallback_, outputBuffer);
+    std::lock_guard<std::mutex> lock(avMutex_);
+    if (!enableCache_) {
+        return QueueOutputBufferBasic(outputBuffer);
     }
-
-    return Status::OK;
+    return QueueOutputBufferCache(outputBuffer);
 }
 
 Status AudioMp3EncoderPlugin::Reset()
 {
     AVCODEC_LOGD("Reset begins");
+    isFirstInputPts_ = true;
+    prevPts_ = 0;
+    ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
+    pcmCache_.clear();
+    maxInputBufferSize_ = -1;
+    enableCache_ = false;
+    isEnableFormatConvert_ = false;
     auto ret = Release();
     if (ret != Status::OK) {
         AVCODEC_LOGE("AudioMp3EncoderPlugin Reset Release error.");
@@ -303,6 +380,9 @@ Status AudioMp3EncoderPlugin::Release()
 
 Status AudioMp3EncoderPlugin::Flush()
 {
+    isFirstInputPts_ = true;
+    prevPts_ = 0;
+    pcmCache_.clear();
     return Status::OK;
 }
 
@@ -322,6 +402,9 @@ Status AudioMp3EncoderPlugin::SetParameter(const std::shared_ptr<Meta>& paramete
         AVCODEC_LOGE("AudioMp3EncoderPlugin SetParameter error. no AUDIO_SAMPLE_FORMAT");
         return Status::ERROR_INVALID_PARAMETER;
     }
+    if (parameter->Get<Tag::AUDIO_ENCODER_ENABLE_SAMPLE_FORMAT_CONVERT>(isEnableFormatConvert_)) {
+        AVCODEC_LOGI("set format convert:%{public}d", static_cast<int32_t>(isEnableFormatConvert_));
+    }
     if (!parameter->Get<Tag::MEDIA_BITRATE>(bitrate_)) {
         AVCODEC_LOGE("AudioMp3EncoderPlugin SetParameter error. no MEDIA_BITRATE of mp3 encoder CBR");
         return Status::ERROR_INVALID_PARAMETER;
@@ -335,6 +418,58 @@ Status AudioMp3EncoderPlugin::SetParameter(const std::shared_ptr<Meta>& paramete
         return Status::ERROR_INVALID_PARAMETER;
     }
     audioParameter_ = *parameter;
+    ConfigureLame(parameter);
+    return Status::OK;
+}
+
+void AudioMp3EncoderPlugin::EncodeDirect(const std::shared_ptr<AVBuffer>& inputBuffer)
+{
+    auto memory = inputBuffer->memory_;
+    auto inputSize = memory->GetSize();
+    int32_t sampleNumTmp = channels_ == 1 ? inputSize / originSampleByte_ :
+        inputSize / originSampleByte_ / TWO_CHANNELS;
+    int outputSize = 0;
+    short *inputPcmBuffer = reinterpret_cast<short *>(memory->GetAddr());
+    std::vector<uint8_t> tmpBuffer;
+    if (isEnableFormatConvert_ && audioSampleFormat_ != AudioSampleFormat::SAMPLE_S16LE) {
+        size_t sampleNum = static_cast<size_t>(inputSize) / static_cast<size_t>(originSampleByte_);
+        tmpBuffer.resize(sampleNum * sizeof(int16_t));
+        ConvertPcmSampleFormat(reinterpret_cast<uint8_t *>(inputPcmBuffer), sampleNum, audioSampleFormat_,
+            AudioSampleFormat::SAMPLE_S16LE, tmpBuffer.data());
+        inputPcmBuffer = reinterpret_cast<short *>(tmpBuffer.data());
+    }
+    if (sampleNumTmp > 0) {
+        if (channels_ == 1) {
+            outputSize = lame_encode_buffer(lameInfo->gfp, inputPcmBuffer, inputPcmBuffer, sampleNumTmp,
+                                            lameMp3Buffer.get(), LAME_BUFFER_SIZE_DEFAULT);
+        } else {
+            outputSize = lame_encode_buffer_interleaved(lameInfo->gfp, inputPcmBuffer,
+                                                        sampleNumTmp, lameMp3Buffer.get(), LAME_BUFFER_SIZE_DEFAULT);
+        }
+    } else if (sampleNumTmp == 0) {
+        outputSize = lame_encode_flush(lameInfo->gfp, lameMp3Buffer.get(), LAME_BUFFER_SIZE_DEFAULT);
+    }
+    if (outputSize < 0) {
+        AVCODEC_LOGE("AudioMp3EncoderPlugin lame encode error.");
+        return;
+    }
+    outputSize_ = outputSize;
+    pts_ = inputBuffer->pts_;
+}
+
+void AudioMp3EncoderPlugin::SetOutputPts(std::shared_ptr<AVBuffer>& outputBuffer)
+{
+    int64_t frameDuration = static_cast<int64_t>(frameSize_) * 1000000LL / sampleRate_;
+    if (ptsMode_ == ZERO_START_ENCODE_PTS_MODE || ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE) {
+        outputBuffer->pts_ = prevPts_;
+        prevPts_ = (prevPts_ > INT64_MAX - frameDuration) ? prevPts_ : prevPts_ + frameDuration;
+    } else {
+        outputBuffer->pts_ = pts_;
+    }
+}
+
+void AudioMp3EncoderPlugin::ConfigureLame(const std::shared_ptr<Meta>& parameter)
+{
     lame_set_in_samplerate(lameInfo->gfp, sampleRate_);
     lame_set_out_samplerate(lameInfo->gfp, sampleRate_);
     lame_set_num_channels(lameInfo->gfp, channels_);
@@ -345,12 +480,30 @@ Status AudioMp3EncoderPlugin::SetParameter(const std::shared_ptr<Meta>& paramete
     lame_set_brate(lameInfo->gfp, bitrate_ / ONE_THOUSAND_BITRATE);
     if (lame_init_params(lameInfo->gfp) < 0) {
         AVCODEC_LOGE("AudioMp3EncoderPlugin LAME parameter initialization error");
-        return Status::ERROR_UNKNOWN;
+        return;
     }
     int32_t frameSize = lame_get_framesize(lameInfo->gfp);
     audioParameter_.Set<Tag::AUDIO_SAMPLE_PER_FRAME>(frameSize);
+    frameSize_ = frameSize;
     lameInitFlag = 1;
-    return Status::OK;
+    int32_t ptsMode = DEFAULT_ENCODE_PTS_MODE;
+    if (parameter->Get<Tag::AUDIO_ENCODE_PTS_MODE>(ptsMode)) {
+        AVCODEC_LOGI("mp3 encode set pts mode:%{public}d", static_cast<int32_t>(ptsMode));
+        ptsMode_ = ptsMode;
+    }
+    ConfigureCache(parameter);
+}
+
+void AudioMp3EncoderPlugin::ConfigureCache(const std::shared_ptr<Meta>& parameter)
+{
+    maxInputBufferSize_ = -1;
+    enableCache_ = false;
+    if (parameter->Get<Tag::AUDIO_MAX_INPUT_BUFFER_SIZE>(maxInputBufferSize_) && maxInputBufferSize_ > 0) {
+        if (maxInputBufferSize_ > MAX_INPUT_BUFFER_SIZE_LIMIT) {
+            maxInputBufferSize_ = MAX_INPUT_BUFFER_SIZE_LIMIT;
+        }
+        enableCache_ = true;
+    }
 }
 
 Status AudioMp3EncoderPlugin::GetParameter(std::shared_ptr<Meta>& parameter)
@@ -362,7 +515,11 @@ Status AudioMp3EncoderPlugin::GetParameter(std::shared_ptr<Meta>& parameter)
     maxOutputSize_ = OUTPUT_BUFFER_SIZE_DEFAULT;
     AVCODEC_LOGD("AudioMp3EncoderPlugin GetParameter maxInputSize_: %{public}d", maxInputSize_);
     audioParameter_.Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
-    audioParameter_.Set<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_);
+    if (maxInputBufferSize_ > 0) {
+        audioParameter_.Set<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputBufferSize_);
+    } else {
+        audioParameter_.Set<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_);
+    }
     audioParameter_.Set<Tag::AUDIO_MAX_OUTPUT_SIZE>(maxOutputSize_);
     audioParameter_.Set<Tag::MEDIA_BITRATE>(bitrate_);
     *parameter = audioParameter_;

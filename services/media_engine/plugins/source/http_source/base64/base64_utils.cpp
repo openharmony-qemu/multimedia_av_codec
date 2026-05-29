@@ -53,7 +53,7 @@ static const uint8_t BASE64_DECODE_TABLE[] = {
  */
 bool Base64Utils::Base64Decode(const uint8_t *src, uint32_t srcSize, uint8_t *dest, uint32_t *destSize)
 {
-    if ((src == nullptr) || (srcSize == 0) || (dest == nullptr) || (destSize == nullptr) || (srcSize > *destSize)) {
+    if ((src == nullptr) || (srcSize == 0) || (dest == nullptr) || (destSize == nullptr)) {
         MEDIA_LOG_E("parameter is err");
         return false;
     }
@@ -72,6 +72,10 @@ bool Base64Utils::Base64Decode(const uint8_t *src, uint32_t srcSize, uint8_t *de
     if (src[srcSize - 2] == '=') { // 2:second to last
         len--;
     }
+    if (len > *destSize) {
+        MEDIA_LOG_E("parameter is err, decoded size may exceed destSize");
+        return false;
+    }
 
     for (i = 0, j = 0; i < srcSize;
          i += BASE64_DATA_MULTIPLE, j += BASE64_BASE_UNIT_OF_CONVERSION) {
@@ -81,10 +85,14 @@ bool Base64Utils::Base64Decode(const uint8_t *src, uint32_t srcSize, uint8_t *de
             return false;
         }
         dest[j] = (BASE64_DECODE_TABLE[src[i]] << 2) | (BASE64_DECODE_TABLE[src[i + 1]] >> 4); // 2&4bits move
-        dest[j + 1] = (BASE64_DECODE_TABLE[src[i + 1]] << 4) | // 4:4bits moved
-                      (BASE64_DECODE_TABLE[src[i + 2]] >> 2); // 2:index 2:2bits moved
-        dest[j + 2] = (BASE64_DECODE_TABLE[src[i + 2]] << 6) | // 2:index 6:6bits moved
-                      (BASE64_DECODE_TABLE[src[i + 3]]); // 3:index
+        if (j + 1 < len) {
+            dest[j + 1] = (BASE64_DECODE_TABLE[src[i + 1]] << 4) | // 4:4bits moved
+                          (BASE64_DECODE_TABLE[src[i + 2]] >> 2); // 2:index 2:2bits moved
+        }
+        if (j + 2 < len) {
+            dest[j + 2] = (BASE64_DECODE_TABLE[src[i + 2]] << 6) | // 2:index 6:6bits moved
+                          (BASE64_DECODE_TABLE[src[i + 3]]); // 3:index
+        }
     }
     *destSize = len;
     return true;

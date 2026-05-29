@@ -34,6 +34,27 @@ constexpr int32_t WAIT_FOR_SIDX_TIME = 100 * 1000; // wait sidx download and par
 constexpr uint32_t DEFAULT_WIDTH = 1280;
 constexpr uint32_t DEFAULT_HEIGHT = 720;
 constexpr uint32_t DEFAULT_DURATION = 20;
+class DashCallbackMock1 : public Plugins::Callback {
+public:
+    void OnEvent(const Plugins::PluginEvent &event) override
+    {
+        switch (event.type) {
+            case PluginEventType::STREAM_UPDATE: {
+                int videoId = -1;
+                int audioId = -1;
+                int textId = -1;
+                mediaDownloader->SetDefaultStreamId(videoId, audioId, textId);
+                break;
+            }
+            default:break;
+        }
+    }
+    void SetDownload(std::shared_ptr<DashMediaDownloader> downloader)
+    {
+        mediaDownloader = downloader;
+    }
+    std::shared_ptr<DashMediaDownloader> mediaDownloader;
+};
 }
 
 bool DashMediaDownAppUidFuzzerTest(const uint8_t *data, size_t size)
@@ -42,6 +63,10 @@ bool DashMediaDownAppUidFuzzerTest(const uint8_t *data, size_t size)
         return false;
     }
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
+    auto cb = std::make_shared<DashCallbackMock1>();
+    cb->SetDownload(mediaDownloader);
+    mediaDownloader->SetCallback(cb);
+    mediaDownloader->SetIsTriggerAutoMode(true);
     std::string testUrl = MPD_MULTI_AUDIO_SUB;
     std::map<std::string, std::string> httpHeader;
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,

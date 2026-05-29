@@ -61,15 +61,16 @@ struct CropRect {
 class FastKitsInterface {
 public:
     static FastKitsInterface &GetInstance();
+    static bool IsFormatSupported(int32_t format);
 
     void Retain();
     void Release();
-    int32_t Init(uint32_t format, FastResizeAlgoType algo = FastResizeAlgoType::BICUBIC);
+    int32_t Init(uint32_t format, FastResizeAlgoType algo = FastResizeAlgoType::HARDWARE);
     bool IsLoaded() const;
 
     int32_t Crop(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output, const CropRect &rect);
     int32_t DownSample(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output,
-                       FastResizeAlgoType algo = FastResizeAlgoType::BICUBIC);
+                       FastResizeAlgoType algo = FastResizeAlgoType::HARDWARE);
 
 private:
     FastKitsInterface() = default;

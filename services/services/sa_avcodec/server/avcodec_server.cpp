@@ -155,6 +155,11 @@ int32_t AVCodecServer::GetActiveSecureDecoderPids(std::vector<pid_t> &pidList)
     return AVCS_ERR_OK;
 }
 
+void AVCodecServer::ReportStatisticsEvent(StatisticsEventType type, Media::Meta &meta)
+{
+    EventManager::GetInstance().OnInstanceEvent(type, meta);
+}
+
 int32_t AVCodecServer::Dump(int32_t fd, const std::vector<std::u16string> &args)
 {
     if (fd <= 0) {

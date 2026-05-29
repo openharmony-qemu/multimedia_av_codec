@@ -36,6 +36,7 @@ public:
     int32_t SuspendActive(const std::vector<pid_t> &pidList) override;
     int32_t SuspendActiveAll() override;
     int32_t GetActiveSecureDecoderPids(std::vector<pid_t> &pidList) override;
+    void ReportStatisticsEvent(StatisticsEventType type, Media::Meta &meta) override;
                             
 protected:
     // SystemAbility override

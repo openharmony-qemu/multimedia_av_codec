@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,6 +17,7 @@
 #define HISTREAMER_AUDIO_SINK_H
 #include <mutex>
 #include "common/status.h"
+#include "dolby_passthrough.h"
 #include "meta/meta.h"
 #include "sink/media_synchronous_sink.h"
 #include "media_sync_manager.h"
@@ -113,6 +114,10 @@ public:
     void SetBuffering(bool isBuffering);
     void SetAudioPassFlag(bool isAudioPass);
     void OnFirstFrameWriting();
+    void SetPCMCallback(const std::shared_ptr<IPCMCallback> &callback);
+    void SetPCMOutputStatus(bool isEnable);
+    void SetPCMProcessorStatus(bool isEnable);
+    void SetPCMProcessorMaxLen(int32_t maxProcessedPcmLen);
 
 protected:
     std::atomic<OHOS::Media::Pipeline::FilterState> state_;
@@ -166,6 +171,9 @@ private:
     void WaitForAllBufferConsumed();
     std::shared_ptr<AVBuffer> CopyBuffer(const std::shared_ptr<AVBuffer> buffer);
     Status MuteAudioBuffer(size_t size, AudioStandard::BufferDesc &bufferDesc, bool isEos);
+    void HandleBypassOutput(const std::shared_ptr<AVBuffer> &buffer);
+    void HandlePostProcessingOutput(std::shared_ptr<AVBuffer> &buffer);
+    std::shared_ptr<AVBuffer> CopyPcmBuffer(const std::shared_ptr<AVBuffer> buffer, int32_t minCapacity = 0);
 
     class UnderrunDetector {
     public:
@@ -337,6 +345,12 @@ private:
     bool isAudioPass_ {false};
     bool isFirstFrameWrite_ {false};
     std::shared_ptr<Meta> globalMeta_ = std::make_shared<Meta>();
+    std::shared_ptr<IPCMCallback> pcmCallback_ {};
+    std::mutex pcmCallbackMutex_;
+    bool isPcmOutputEnable_ {false};
+    bool isPcmProcessorEnable_ {false};
+    int32_t maxProcessedPcmLen_ {0};
+    std::unique_ptr<Task> bypassTask_ {nullptr};
 };
 }
 }

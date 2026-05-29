@@ -67,46 +67,56 @@ public:
     int32_t NotifyResume() override;
 
 protected:
-    enum MsgWhat : MsgType {
-        INIT,
-        SET_CALLBACK,
-        CONFIGURE,
-        CONFIGURE_BUFFER,
-        CREATE_INPUT_SURFACE,
-        SET_INPUT_SURFACE,
-        SET_OUTPUT_SURFACE,
-        START,
-        GET_INPUT_FORMAT,
-        GET_OUTPUT_FORMAT,
-        SET_PARAMETERS,
-        REQUEST_IDR_FRAME,
-        FLUSH,
-        QUEUE_INPUT_BUFFER,
-        NOTIFY_EOS,
-        RELEASE_OUTPUT_BUFFER,
-        RENDER_OUTPUT_BUFFER,
-        STOP,
-        RELEASE,
-        SUSPEND,
-        RESUME,
-        BUFFER_RECYCLE,
-        BUFFER_WRITEBACK,
-        GET_HIDUMPER_INFO,
-        PRINT_ALL_BUFFER_OWNER,
-
-        INNER_MSG_BEGIN = 1000,
-        CODEC_EVENT,
-        OMX_EMPTY_BUFFER_DONE,
-        OMX_FILL_BUFFER_DONE,
-        GET_BUFFER_FROM_SURFACE,
-        CHECK_IF_REPEAT,
-        SUBMIT_DYNAMIC_IF_EOS,
-        CHECK_IF_STUCK,
-        FORCE_SHUTDOWN,
-        QUERY_JANK_REASON,
-        XPERF_RESUME_EVENT,
-        XPERF_PAUSE_EVENT,
-    };
+    #define MSG_TYPES \
+        X(INIT) \
+        X(SET_CALLBACK) \
+        X(CONFIGURE)    \
+        X(CONFIGURE_BUFFER) \
+        X(CREATE_INPUT_SURFACE) \
+        X(SET_INPUT_SURFACE) \
+        X(SET_OUTPUT_SURFACE) \
+        X(START) \
+        X(GET_INPUT_FORMAT) \
+        X(GET_OUTPUT_FORMAT) \
+        X(SET_PARAMETERS) \
+        X(REQUEST_IDR_FRAME) \
+        X(FLUSH) \
+        X(QUEUE_INPUT_BUFFER) \
+        X(NOTIFY_EOS) \
+        X(RELEASE_OUTPUT_BUFFER) \
+        X(RENDER_OUTPUT_BUFFER) \
+        X(STOP) \
+        X(RELEASE) \
+        X(SUSPEND) \
+        X(RESUME) \
+        X(BUFFER_RECYCLE) \
+        X(BUFFER_WRITEBACK) \
+        X(GET_HIDUMPER_INFO) \
+        X(PRINT_ALL_BUFFER_OWNER) \
+        X(CODEC_EVENT) \
+        X(OMX_EMPTY_BUFFER_DONE) \
+        X(OMX_FILL_BUFFER_DONE) \
+        X(GET_BUFFER_FROM_SURFACE) \
+        X(CHECK_IF_REPEAT) \
+        X(SUBMIT_DYNAMIC_IF_EOS) \
+        X(CHECK_IF_STUCK) \
+        X(FORCE_SHUTDOWN) \
+        X(QUERY_JANK_REASON) \
+        X(XPERF_RESUME_EVENT) \
+        X(XPERF_PAUSE_EVENT)
+ 
+    // 展开为 enum
+    #define X(name) name,
+    enum MsgWhat : MsgType { MSG_TYPES };
+    #undef X
+ 
+    // 展开为字符串数组
+    #define X(name) #name,
+    static const char* ToString(MsgWhat what) {
+        static const char* names[] = { MSG_TYPES };
+        return names[static_cast<size_t>(what)];
+    }
+    #undef X
 
     enum BufferOperationMode {
         KEEP_BUFFER,
@@ -228,7 +238,6 @@ protected:
 protected:
     HCodec(CodecHDI::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool isEncoder);
     ~HCodec() override;
-    static const char* ToString(MsgWhat what);
     static const char* ToString(BufferOwner owner);
     void ReplyErrorCode(MsgId id, int32_t err);
     void UpdateOwner();
@@ -328,6 +337,7 @@ protected:
     virtual void SubmitBuffersToNextOwner() {}
 
     // stop/release
+    bool ThereAreBufsStillOwnedByOmx(OMX_DIRTYPE portIndex);
     void ReclaimBuffer(OMX_DIRTYPE portIndex, BufferOwner owner, bool erase = false);
     bool IsAllBufferOwnedByUsOrSurface(OMX_DIRTYPE portIndex);
     bool IsAllBufferOwnedByUsOrSurface();
@@ -443,8 +453,9 @@ protected:
         std::string compUniqueStr;
     };
     static std::shared_mutex g_mtx;
-    static std::unordered_map<CallerInfo, std::vector<InstInfo>, CallerInfo, CallerInfo> g_decCallers;
-    uint32_t maxDecInst_ = 0;
+    static std::unordered_map<CallerInfo, std::vector<InstInfo>,
+        CallerInfo, CallerInfo> g_callers[2]; // 0: decoder, 1: encoder
+    uint32_t maxCodecInst_ = 0;
     uint32_t totalWarnInstCnt_ = 0;
     uint32_t singleAppWarnInstCnt_ = 0;
 
@@ -497,6 +508,7 @@ protected:
     static constexpr uint32_t STRIDE_ALIGNMENT = 32;
     static constexpr double FRAME_RATE_COEFFICIENT = 65536.0;
     static constexpr double BYTE_TO_MBIT = 8.0 / 1024.0 / 1024.0;
+    static constexpr char coderNames[][8] = {"Decoder", "Encoder"};
 
 private:
     struct BaseState : State {

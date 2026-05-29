@@ -58,6 +58,7 @@ ohos_unittest("mpeg4_source_capi_unit_test") {
   if (av_codec_support_source) {
     sources = [
       "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
+      "./mpeg4_source_stream_extra_unit_test.cpp",
       "./mpeg4_source_stream_unit_test.cpp",
       "./mpeg4_source_unit_test.cpp",
       "./mpeg4_source_uri_unit_test.cpp",
@@ -118,6 +119,7 @@ ohos_unittest("mpeg4_source_inner_unit_test") {
   if (av_codec_support_source) {
     sources = [
       "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
+      "./mpeg4_source_stream_extra_unit_test.cpp",
       "./mpeg4_source_stream_unit_test.cpp",
       "./mpeg4_source_unit_test.cpp",
       "./mpeg4_source_uri_unit_test.cpp",

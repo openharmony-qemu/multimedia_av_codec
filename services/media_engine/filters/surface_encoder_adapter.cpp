@@ -114,6 +114,7 @@ SurfaceEncoderAdapter::SurfaceEncoderAdapter()
 SurfaceEncoderAdapter::~SurfaceEncoderAdapter()
 {
     MEDIA_LOG_I("encoder adapter destroy");
+    isWatermarkMode_ = false;
     if (codecServer_) {
         codecServer_->Release();
     }
@@ -326,6 +327,13 @@ Status SurfaceEncoderAdapter::SetTransCoderMode()
     return Status::OK;
 }
 
+Status SurfaceEncoderAdapter::SetWatermarkMode()
+{
+    MEDIA_LOG_I("SetWatermarkMode");
+    isWatermarkMode_ = true;
+    return Status::OK;
+}
+
 sptr<Surface> SurfaceEncoderAdapter::GetInputSurface()
 {
     FALSE_RETURN_V_MSG(codecServer_ != nullptr, nullptr, "codecServer_ is nullptr");
@@ -515,6 +523,7 @@ Status SurfaceEncoderAdapter::Release()
         return Status::OK;
     }
     int32_t ret = codecServer_->Release();
+    isWatermarkMode_ = false;
     if (ret == 0) {
         return Status::OK;
     } else {
@@ -600,14 +609,15 @@ void SurfaceEncoderAdapter::TransCoderOnOutputBufferAvailable(uint32_t index, st
 
 void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
+    FALSE_RETURN_MSG(buffer != nullptr, "buffer is nullptr, OnOutputBufferAvailable fail");
     MEDIA_LOG_D("OnOutputBufferAvailable buffer->pts" PUBLIC_LOG_D64, buffer->pts_);
     currentPts_ = currentPts_.load() < buffer->pts_? buffer->pts_ : currentPts_.load();
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::OnOutputBufferAvailable");
+    FALSE_RETURN_MSG(buffer->memory_ != nullptr, "buffer->memory_ is nullptr, OnOutputBufferAvailable fail");
     if (isTransCoderMode) {
         TransCoderOnOutputBufferAvailable(index, buffer);
         return;
     }
-    FALSE_RETURN_MSG(buffer->memory_ != nullptr, "buffer->memory_ is nullptr, OnOutputBufferAvailable fail");
     int32_t size = buffer->memory_->GetSize();
     std::shared_ptr<AVBuffer> outputBuffer;
     AVBufferConfig avBufferConfig;
@@ -734,37 +744,18 @@ void SurfaceEncoderAdapter::OnInputParameterWithAttrAvailable(uint32_t index, st
     CheckAndAdjustFrameRate();
     int64_t currentPts = 0;
     attribute->GetLongValue(Tag::MEDIA_TIME_STAMP, currentPts);
-    bool isDroppedFrames = CheckFrames(currentPts, checkFramesPauseTime_);
-    MEDIA_LOG_D("currentPts " PUBLIC_LOG_D64 " checkFramesPauseTime_ " PUBLIC_LOG_D64
-        " isDroppedFrames " PUBLIC_LOG_S, currentPts, checkFramesPauseTime_, isDroppedFrames ? "true" : "false");
-    {
-        std::lock_guard<std::mutex> mappingLock(mappingPtsMutex_);
-        int64_t adjustPts = currentPts - totalPauseTimeQueue_[0] + checkFramesPauseTime_;
-        MEDIA_LOG_D("OnInputParameterWithAttrAvailable adjustPts: " PUBLIC_LOG_D64
-            "totalPauseTimeQueue_[0]:" PUBLIC_LOG_D64, adjustPts, totalPauseTimeQueue_[0]);
-        if (!isDroppedFrames) {
-            if (startBufferTime_ == -1) {
-                startBufferTime_ = currentPts;
-            }
-            int64_t mappingTime = adjustPts - startBufferTime_;
-            MEDIA_LOG_D("OnInputParameterWithAttrAvailable mappingTime = " PUBLIC_LOG_D64, mappingTime);
-            if (mappingTime < 0) {
-                MEDIA_LOG_W("mappingTime is invalid, mappingTime: " PUBLIC_LOG_D64 " currentPts: " PUBLIC_LOG_D64
-                    " totalPauseTimeQueue_[0]: " PUBLIC_LOG_D64 "checkFramesPauseTime_: " PUBLIC_LOG_D64,
-                    mappingTime, currentPts, totalPauseTimeQueue_[0], checkFramesPauseTime_);
-            }
-            preKeyFramePts_ = currentKeyFramePts_;
-            currentKeyFramePts_ = currentPts;
-            AddStartPts(currentPts);
-            AddPauseResumePts(currentPts);
-            parameter->PutLongValue(Tag::VIDEO_ENCODE_SET_FRAME_PTS, mappingTime);
-        }
-        lastBufferTime_ = currentPts;
+    if (isWatermarkMode_ && currentPts <= 0) {
+        MEDIA_LOG_W("OnInputParameterWithAttrAvailable currentPts = " PUBLIC_LOG_D64, currentPts);
+        return;
     }
+    bool isDroppedFrames = CheckFrames(currentPts, checkFramesPauseTime_);
+    MEDIA_LOG_D("currentPts: " PUBLIC_LOG_D64 " checkFramesPauseTime_: " PUBLIC_LOG_D64
+        " isDroppedFrames: " PUBLIC_LOG_S, currentPts, checkFramesPauseTime_, isDroppedFrames ? "true" : "false");
+    HandlePtsMapping(currentPts, isDroppedFrames, parameter);
     parameter->PutIntValue(Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, isDroppedFrames);
     codecServer_->QueueInputParameter(index);
     recordVideoFrameCount_++;
-    FALSE_RETURN_MSG(videoFrameRate_ != 0, "videoFrameRate_ = 0, invalid value.");
+    FALSE_RETURN_MSG(videoFrameRate_ != 0, "videoFrameRate_ is 0, invalid value.");
     if (stopTime_ != -1 && currentPts > stopTime_ - (SEC_TO_NS / videoFrameRate_)) {
         MEDIA_LOG_I("currentPts > stopTime, send EOS.");
         int32_t ret = codecServer_->NotifyEos();
@@ -772,6 +763,33 @@ void SurfaceEncoderAdapter::OnInputParameterWithAttrAvailable(uint32_t index, st
             MEDIA_LOG_E("OnInputParameterWithAttrAvailable codecServer_->NotifyEos() failed!");
         }
     }
+}
+
+void SurfaceEncoderAdapter::HandlePtsMapping(int64_t currentPts, bool isDroppedFrames,
+    std::shared_ptr<Format> &parameter)
+{
+    std::lock_guard<std::mutex> mappingLock(mappingPtsMutex_);
+    int64_t adjustPts = currentPts - totalPauseTimeQueue_[0] + checkFramesPauseTime_;
+    MEDIA_LOG_D("HandlePtsMapping adjustPts: " PUBLIC_LOG_D64
+        " totalPauseTimeQueue_[0]:" PUBLIC_LOG_D64, adjustPts, totalPauseTimeQueue_[0]);
+    if (!isDroppedFrames) {
+        if (startBufferTime_ == -1) {
+            startBufferTime_ = currentPts;
+        }
+        int64_t mappingTime = adjustPts - startBufferTime_;
+        MEDIA_LOG_D("HandlePtsMapping mappingTime: " PUBLIC_LOG_D64, mappingTime);
+        if (mappingTime < 0) {
+            MEDIA_LOG_W("mappingTime is invalid, mappingTime: " PUBLIC_LOG_D64 " currentPts: " PUBLIC_LOG_D64
+                " totalPauseTimeQueue_[0]: " PUBLIC_LOG_D64 " checkFramesPauseTime_: " PUBLIC_LOG_D64,
+                mappingTime, currentPts, totalPauseTimeQueue_[0], checkFramesPauseTime_);
+        }
+        preKeyFramePts_ = currentKeyFramePts_;
+        currentKeyFramePts_ = currentPts;
+        AddStartPts(currentPts);
+        AddPauseResumePts(currentPts);
+        parameter->PutLongValue(Tag::VIDEO_ENCODE_SET_FRAME_PTS, mappingTime);
+    }
+    lastBufferTime_ = currentPts;
 }
 
 void SurfaceEncoderAdapter::HandleTranscoderMode(uint32_t index, std::shared_ptr<Format> &parameter)

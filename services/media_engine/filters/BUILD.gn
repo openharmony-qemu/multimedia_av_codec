@@ -33,6 +33,7 @@ config("av_codec_media_engine_filters_config") {
     "-fno-rtti",
     "-Wno-unused-but-set-variable",
     "-Wno-format",
+    "-Wno-error=format",
   ]
   cflags_cc = cflags
 
@@ -87,6 +88,9 @@ ohos_shared_library("av_codec_media_engine_filters") {
     "video_capture_filter.cpp",
     "video_decoder_adapter.cpp",
     "video_resize_filter.cpp",
+    "water_mark_filter.cpp",
+    "egl_render_context.cpp",
+    "shader_porgram.cpp",
   ]
 
   deps = [
@@ -105,6 +109,10 @@ ohos_shared_library("av_codec_media_engine_filters") {
     "c_utils:utils",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
+    "graphic_2d:EGL",
+    "graphic_2d:libnative_image",
+    "graphic_2d:GLESv3",
+    "graphic_2d:color_manager",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
     "hisysevent:libhisysevent",
@@ -139,6 +147,10 @@ ohos_shared_library("av_codec_media_engine_filters") {
       "SUPPORT_CAMERA_POST_PROCESSOR",
       "CAMERA_POST_PROCESSOR_PATH=${camera_post_processor_path}",
     ]
+  }
+  
+  if (av_codec_enable_audio_convert) {
+    external_deps += [ "audio_framework:audio_suite" ]
   }
 
   subsystem_name = "multimedia"
