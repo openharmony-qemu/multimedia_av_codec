@@ -819,7 +819,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_GetOutputDescription_001, TestSize.Level1)
 
 /**
  * @tc.name: VideoEncoder_GetInputDescription_NumberOfPendingFrames_001
- * @tc.desc: GetInputDescription with OH_MD_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES for HW encoder
+ * @tc.desc: GetInputDescription with OH_MD_KEY_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES for HW encoder
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_GetInputDescription_NumberOfPendingFrames_001, TestSize.Level1)

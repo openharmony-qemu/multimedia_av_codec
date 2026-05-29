@@ -222,7 +222,7 @@ void TypeFinder::ReportDemuxerFormat(const std::string &pluginName)
     }
     Media::Meta eventMeta;
     eventMeta.SetData(MediaAVCodec::EventInfoExtentedKey::DEMUXER_FORMAT.data(), pluginNameTemp);
-    MediaAVCodec::StatisticsEventReporter::Report(MediaAVCodec::StatisticsEventType::DEMUXER_FORMAT_INFO, eventMeta);
+    MediaAVCodec::StatisticsEventReporter::Report(MediaAVCodec::StatisticsEventType::CONTAINER_FORMAT_INFO, eventMeta);
 }
 
 bool TypeFinder::IsOffsetValid(int64_t offset) const

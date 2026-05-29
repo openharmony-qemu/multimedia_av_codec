@@ -62,7 +62,6 @@ private:
     void DisposeCuva();
     void DisposeSdtp(uint32_t flag);
     void AddSdtpBox();
-    bool CheckPts(int64_t pts);
     Status SetVideoDelay(const std::shared_ptr<Meta> &trackDesc);
     int64_t CalculateDtsByPts(int64_t mpeg4Pts);
     int32_t width_ = 0;
@@ -81,8 +80,7 @@ private:
     std::shared_ptr<StssBox> stss_ = nullptr;
     std::shared_ptr<SdtpBox> sdtp_ = nullptr;
     int64_t startDts_ = 0;
-    int64_t preDts_ = 0;
-    int64_t prePtsUs_ = 0;
+    int64_t prePtsUs_ = INT64_MIN;
     int64_t preDuration_ = 0;
     bool hasSetParserConfig_ = false;
     std::vector<std::shared_ptr<BasicTrack>> &tracks_;

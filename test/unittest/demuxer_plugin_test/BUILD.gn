@@ -79,6 +79,7 @@ config("demuxer_plugin_test_unittest_cfg") {
     "$av_codec_root_dir/services/services/sa_avcodec/client",
     "$av_codec_root_dir/test/unittest/common",
     "$av_codec_root_dir/services/media_engine/plugins/common",
+    "$av_codec_root_dir/services/media_engine/plugins/demuxer/common",
     "$av_codec_root_dir/services/media_engine/plugins/demuxer/ffmpeg_demuxer",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common",
     "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo",

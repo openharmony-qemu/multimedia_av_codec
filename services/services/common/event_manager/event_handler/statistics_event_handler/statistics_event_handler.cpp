@@ -49,7 +49,7 @@ static constexpr const char SPEED_DECODING_INFO[] = "SPEED_DECODING_INFO";
 static constexpr const char CODEC_ERROR_INFO[] = "CODEC_ERROR_INFO";
 static constexpr const char CODEC_INSTANCE_USAGE_INFO[] = "CODEC_INSTANCE_USAGE_INFO";
 static constexpr const char RESOLUTION_SPEC_INFO[] = "RESOLUTION_SPEC_INFO";
-static constexpr const char DEMUXER_FORMAT_INFO[] = "DEMUXER_FORMAT_INFO";
+static constexpr const char CONTAINER_FORMAT_INFO[] = "CONTAINER_FORMAT_INFO";
 static constexpr const char CODEC_MODE_INFO[] = "CODEC_MODE_INFO";
 static constexpr const char ADVANCED_FEATURE_INFO[] = "ADVANCED_FEATURE_INFO";
 static constexpr const char SECURE_DECODER_ALLOC_BUF_FAILED_INFO[] = "SECURE_DECODER_ALLOC_BUF_FAILED_INFO";
@@ -361,8 +361,8 @@ public:
             case StatisticsEventType::RESOLUTION_SPEC_INFO:
                 OnResolutionSpecInfo(eventMeta);
                 break;
-            case StatisticsEventType::DEMUXER_FORMAT_INFO:
-                OnDemuxerFormatInfo(eventMeta);
+            case StatisticsEventType::CONTAINER_FORMAT_INFO:
+                OnContainerFormatInfo(eventMeta);
                 break;
             case StatisticsEventType::CODEC_MODE_INFO:
                 OnCodecModeInfo(eventMeta);
@@ -397,11 +397,14 @@ public:
             }
             cJSON_AddNumberToObject(cJSON_AddObjectToObject(jsonObj.get(), key.c_str()), key.c_str(), count);
         }
+        for (const auto &[key, count] : audioCodecSpecInfo_) {
+            cJSON_AddNumberToObject(cJSON_AddObjectToObject(jsonObj.get(), key.c_str()), key.c_str(), count);
+        }
         submitInfo.jsonObjects[CODEC_SPECIFIED_INFO] = std::move(jsonObj);
         SettleInstanceUsage(GetCurrentTime());
         submitInfo.jsonObjects[CODEC_INSTANCE_USAGE_INFO] = BuildInstanceUsageJson();
         submitInfo.jsonObjects[RESOLUTION_SPEC_INFO] = BuildCountJson(resolutionSpecInfo_);
-        submitInfo.jsonObjects[DEMUXER_FORMAT_INFO] = BuildCountJson(demuxerFormatInfo_);
+        submitInfo.jsonObjects[CONTAINER_FORMAT_INFO] = BuildContainerFormatJson();
         submitInfo.jsonObjects[CODEC_MODE_INFO] = BuildCountJson(codecModeInfo_);
         AppNameIndexInfo::GetInstance().OnSummateEventInfo(submitInfo);
     }
@@ -412,8 +415,10 @@ public:
         queryCapTimes_ = 0;
         createCodecTimes_ = 0;
         codecSpecInfo_.clear();
+        audioCodecSpecInfo_.clear();
         resolutionSpecInfo_.clear();
         demuxerFormatInfo_.clear();
+        muxerFormatInfo_.clear();
         codecModeInfo_.clear();
         time_t now = GetCurrentTime();
         for (auto &[_, usage] : instanceUsageInfo_) {
@@ -458,6 +463,15 @@ private:
 
     void OnBasicCreateCodecSpecInfo(const Media::Meta &meta)
     {
+        std::string codecType;
+        if (meta.GetData(EventInfoExtentedKey::CODEC_TYPE.data(), codecType) &&
+            (codecType == std::to_string(AVCODEC_TYPE_AUDIO_ENCODER) ||
+            codecType == std::to_string(AVCODEC_TYPE_AUDIO_DECODER))) {
+            bool isEncoder = (codecType == std::to_string(AVCODEC_TYPE_AUDIO_ENCODER));
+            OnAudioCodecSpecInfo(meta, isEncoder);
+            return;
+        }
+
         VideoCodecType vcodecType = VideoCodecType::UNKNOWN;
         std::string mimeType;
         if (meta.GetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), vcodecType) &&
@@ -469,6 +483,17 @@ private:
             auto type = std::make_tuple(vcodecType, mimeType, isSecure);
             CreateOrIncrementMapCount(codecSpecInfo_, type);
         }
+    }
+
+    void OnAudioCodecSpecInfo(const Media::Meta &meta, bool isEncoder)
+    {
+        std::string mimeType;
+        if (!meta.GetData(Media::Tag::MIME_TYPE, mimeType) || mimeType.empty()) {
+            return;
+        }
+        std::string kind = isEncoder ? "SEnc" : "SDec";
+        std::string key = kind + "_" + mimeType;
+        CreateOrIncrementMapCount(audioCodecSpecInfo_, key);
     }
 
     void OnCodecInstanceUsageInfo(const Media::Meta &meta)
@@ -538,8 +563,13 @@ private:
         return "OTHER";
     }
 
-    void OnDemuxerFormatInfo(const Media::Meta &meta)
+    void OnContainerFormatInfo(const Media::Meta &meta)
     {
+        std::string muxerFormat = GetMetaString(meta, EventInfoExtentedKey::MUXER_FORMAT);
+        if (!muxerFormat.empty()) {
+            CreateOrIncrementMapCount(muxerFormatInfo_, muxerFormat);
+            return;
+        }
         std::string format = GetMetaString(meta, EventInfoExtentedKey::DEMUXER_FORMAT, "fail:unknown");
         CreateOrIncrementMapCount(demuxerFormatInfo_, format);
     }
@@ -574,6 +604,19 @@ private:
         return jsonObj;
     }
 
+    std::shared_ptr<cJSON> BuildContainerFormatJson() const
+    {
+        auto jsonObj = std::shared_ptr<cJSON>(cJSON_CreateObject(), cJSON_Delete);
+        if (jsonObj == nullptr) {
+            return jsonObj;
+        }
+        auto demuxerObj = cJSON_AddObjectToObject(jsonObj.get(), "DEMUXER");
+        AddMapToJsonObject(demuxerObj, demuxerFormatInfo_);
+        auto muxerObj = cJSON_AddObjectToObject(jsonObj.get(), "MUXER");
+        AddMapToJsonObject(muxerObj, muxerFormatInfo_);
+        return jsonObj;
+    }
+
     std::shared_ptr<cJSON> BuildInstanceUsageJson() const
     {
         auto jsonObj = std::shared_ptr<cJSON>(cJSON_CreateObject(), cJSON_Delete);
@@ -595,9 +638,11 @@ private:
     uint32_t createCodecTimes_ { 0 };
     // <VideoCodecType, mimeType, isSecure>, count
     std::unordered_map<VCodecSpecifiedType, uint32_t, HashTuple> codecSpecInfo_;
+    std::unordered_map<std::string, uint32_t> audioCodecSpecInfo_;
     std::unordered_map<std::string, InstanceUsage> instanceUsageInfo_;
     std::unordered_map<std::string, uint32_t> resolutionSpecInfo_;
     std::unordered_map<std::string, uint32_t> demuxerFormatInfo_;
+    std::unordered_map<std::string, uint32_t> muxerFormatInfo_;
     std::unordered_map<std::string, uint32_t> codecModeInfo_;
 };
 
@@ -1160,7 +1205,7 @@ void StatisticsEventInfo::OnSubmitEventInfo()
         CODEC_ERROR_INFO,                   getJsonField(CODEC_ERROR_INFO).CStr(),
         CODEC_INSTANCE_USAGE_INFO,          getJsonField(CODEC_INSTANCE_USAGE_INFO).CStr(),
         RESOLUTION_SPEC_INFO,               getJsonField(RESOLUTION_SPEC_INFO).CStr(),
-        DEMUXER_FORMAT_INFO,                getJsonField(DEMUXER_FORMAT_INFO).CStr(),
+        CONTAINER_FORMAT_INFO,              getJsonField(CONTAINER_FORMAT_INFO).CStr(),
         CODEC_MODE_INFO,                    getJsonField(CODEC_MODE_INFO).CStr(),
         ADVANCED_FEATURE_INFO,              getJsonField(ADVANCED_FEATURE_INFO).CStr(),
         SECURE_DECODER_ALLOC_BUF_FAILED_INFO, getJsonField(SECURE_DECODER_ALLOC_BUF_FAILED_INFO).CStr()

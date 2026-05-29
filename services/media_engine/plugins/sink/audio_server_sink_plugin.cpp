@@ -474,6 +474,9 @@ Status AudioServerSinkPlugin::Start()
     }
     ApplyAudioHapticsSyncId();
     bool ret = audioRenderer_->Start();
+    if (!ret) {
+        playerEventReceiver_->OnDfxEvent({"AudioServerSinkPlugin", DfxEventType::DFX_EVENT_AUDIO_ERROR, true});
+    }
     FALSE_RETURN_V_MSG(ret, Status::ERROR_UNKNOWN, "AudioRenderer::Start failed");
     MEDIA_LOG_I_T("AudioRenderer::Start end");
     return Status::OK;
