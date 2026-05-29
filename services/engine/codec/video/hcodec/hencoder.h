@@ -71,7 +71,7 @@ private:
         int32_t h = 0;
     };
 
-    struct RoiRact {
+    struct RoiRect {
         int32_t top = 0;
         int32_t left = 0;
         int32_t bottom = 0;

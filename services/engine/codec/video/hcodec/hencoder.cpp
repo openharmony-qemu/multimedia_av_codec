@@ -1413,10 +1413,11 @@ int32_t HEncoder::ParseKvpairs(const std::string& kvpairs)
     return dqp;
 }
 
-bool HEncoder::ParseOneRoi(const std::string& roi, RoiRact &roiRact, int32_t width, int32_t height)
+bool HEncoder::ParseOneRoi(const std::string& roi, RoiRect &roiRect, int32_t width, int32_t height)
 {
     // regex roi: Top,Left-Bottom,Right=(deltaQP | slb:value | dqp:value)(option)
-    std::regex pat(R"((-?\d+),(-?\d+)-(-?\d+),(-?\d+))"
+    std::regex pat(
+        R"((-?\d+),(-?\d+)-(-?\d+),(-?\d+))"
         R"((?:=(-?\d+|dqp:-?\d+(?:,slb:-?\d+)?|slb:-?\d+(?:,dqp:-?\d+)?))?$)"
         );
     std::smatch match;
@@ -1424,16 +1425,16 @@ bool HEncoder::ParseOneRoi(const std::string& roi, RoiRact &roiRact, int32_t wid
         return false;
     }
     
-    roiRact.top = std::clamp(std::stoi(match[TOP_INDEX].str()), 0, height);
-    roiRact.left = std::clamp(std::stoi(match[LEFT_INDEX].str()), 0, width);
-    roiRact.bottom = std::clamp(std::stoi(match[BOTTOM_INDEX].str()), 0, height);
-    roiRact.right = std::clamp(std::stoi(match[RIGHT_INDEX].str()), 0, width);
+    roiRect.top = std::clamp(std::stoi(match[TOP_INDEX].str()), 0, height);
+    roiRect.left = std::clamp(std::stoi(match[LEFT_INDEX].str()), 0, width);
+    roiRect.bottom = std::clamp(std::stoi(match[BOTTOM_INDEX].str()), 0, height);
+    roiRect.right = std::clamp(std::stoi(match[RIGHT_INDEX].str()), 0, width);
     if (match[DELTAQP_INDEX].matched) {
         std::string kvStr = match[DELTAQP_INDEX].str();
         if (kvStr.find(":") != std::string::npos) {
-            roiRact.deltaQP = ParseKvpairs(kvStr);
+            roiRect.deltaQP = ParseKvpairs(kvStr);
         } else {
-            roiRact.deltaQP = std::stoi(kvStr);
+            roiRect.deltaQP = std::stoi(kvStr);
         }
     }
     return true;
@@ -1459,17 +1460,17 @@ void HEncoder::ParseRoiStringValid(const std::string& roiValue, shared_ptr<Codec
         if (count >= roiNum) {
             break;
         }
-        RoiRact roiRact;;
-        if (ParseOneRoi(reg, roiRact, static_cast<int32_t>(width_), static_cast<int32_t>(height_))) {
+        RoiRect roiRect;;
+        if (ParseOneRoi(reg, roiRect, static_cast<int32_t>(width_), static_cast<int32_t>(height_))) {
             param.roiInfo[count].regionEnable = true;
             param.roiInfo[count].absQp = 0;
-            param.roiInfo[count].roiQp = roiRact.deltaQP;
-            param.roiInfo[count].roiStartX = roiRact.left;
-            param.roiInfo[count].roiStartY = roiRact.top;
-            param.roiInfo[count].roiWidth = roiRact.right - roiRact.left;
-            param.roiInfo[count].roiHeight = roiRact.bottom - roiRact.top;
+            param.roiInfo[count].roiQp = roiRect.deltaQP;
+            param.roiInfo[count].roiStartX = roiRect.left;
+            param.roiInfo[count].roiStartY = roiRect.top;
+            param.roiInfo[count].roiWidth = roiRect.right - roiRect.left;
+            param.roiInfo[count].roiHeight = roiRect.bottom - roiRect.top;
             HLOGD("Get a valid roi: %d,%d-%d,%d qp=%d",
-                roiRact.top, roiRact.left, roiRact.bottom, roiRact.right, roiRact.deltaQP);
+                roiRect.top, roiRect.left, roiRect.bottom, roiRect.right, roiRect.deltaQP);
             count++;
         }
     }
