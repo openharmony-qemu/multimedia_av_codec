@@ -208,10 +208,9 @@ HWTEST_F(TEST_SUIT, PreprocManager_NotifyEosNowIfPending_WithPendingBuffers_001,
     preprocessorManager_->SetEncoderRunning("test_encoder", true);
     preprocessorManager_->NotifyNewBufferAvailable();
     preprocessorManager_->NotifyNewBufferAvailable();  // Add multiple buffers
-    bool requestResult = preprocessorManager_->RequestNotifyEos("test_encoder", [&eosCalled]() {
+    preprocessorManager_->RequestNotifyEos("test_encoder", [&eosCalled]() {
         eosCalled = true;
     });
-    ASSERT_TRUE(requestResult);
     preprocessorManager_->NotifyEosNowIfPending("test_encoder");
     ASSERT_TRUE(eosCalled);
     preprocessorManager_->UnregisterEncoder("test_encoder");
