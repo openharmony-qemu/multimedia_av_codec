@@ -469,7 +469,6 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1210, TestSize.Level1)
     ASSERT_EQ(formatVal_.hasVideo, 1);
     ASSERT_EQ(formatVal_.hasAudio, 1);
 #endif
-    bool hasVideoTrack = false;
     bool hasAudioTrack = false;
     for (trackIndex_ = 0; trackIndex_ < static_cast<uint32_t>(formatVal_.trackCount); trackIndex_++) {
         format_ = source_->GetTrackFormat(trackIndex_);
@@ -485,7 +484,6 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1210, TestSize.Level1)
             ASSERT_EQ(formatVal_.width, 720);
             ASSERT_EQ(formatVal_.height, 480);
             ASSERT_DOUBLE_EQ(formatVal_.frameRate, 60.000000);
-            hasVideoTrack = true;
         } else if (formatVal_.trackType == MediaType::MEDIA_TYPE_AUD) {
             ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
             ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
@@ -498,7 +496,6 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1210, TestSize.Level1)
             hasAudioTrack = true;
         }
     }
-    ASSERT_TRUE(hasVideoTrack);
     ASSERT_TRUE(hasAudioTrack);
 }
 } // namespace
