@@ -122,7 +122,7 @@ Status HevcParser::SetVideoDelay()
     FALSE_RETURN_V_MSG_E(parser_ != nullptr, Status::ERROR_INVALID_DATA, "hevc parser is null");
     uint32_t maxReorderPic = parser_->GetMaxReorderPic();
     if (maxReorderPic > 0) {
-        videoDelay_ = (maxReorderPic > 0 && maxReorderPic <= 16) ? maxReorderPic : 0;  // max 16
+        videoDelay_ = (maxReorderPic > 0 && maxReorderPic <= 16) ? static_cast<int32_t>(maxReorderPic) : 0;  // max 16
     }
     MEDIA_LOG_I("hevc parser get video delay:%{public}d, videoDelay:%{public}d",
         maxReorderPic, videoDelay_);
