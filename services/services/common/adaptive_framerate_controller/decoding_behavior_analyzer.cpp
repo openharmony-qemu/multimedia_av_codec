@@ -327,7 +327,7 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
     if (srcFps > srcFps_ + EPSILON) {
         srcFps_ = srcFps;
     }
-    double speed = decInFps / srcFps;
+    double speed = decInFps / srcFps_;
     size_t newSpeedIdx = UpdateSpeedEstimates(speed);
     double renderFps = decFps * static_cast<double>(renderCnt_) / frameCnt_;
     ReportFpsIfSignificantChange(decFps, renderFps, srcFps_);
