@@ -572,20 +572,22 @@ Status FFmpegFlvMuxerPlugin::WriteNormal(
     } else {
         cachePacket_->dts = AV_NOPTS_VALUE;
     }
-    cachePacket_->flags = 0;
+
+    uint32_t tmpFlags = 0;
     if ((sample->flag_ & static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME)) ||
         st->codecpar->codec_type == AVMEDIA_TYPE_TIMEDMETA) {
         MEDIA_LOG_D("It is key frame");
-        cachePacket_->flags |= AV_PKT_FLAG_KEY;
+        tmpFlags |= AV_PKT_FLAG_KEY;
     }
     if (sample->flag_ & static_cast<uint32_t>(AVBufferFlag::DISPOSABLE)) {
         MEDIA_LOG_D("It is disposable frame");
-        cachePacket_->flags |= AV_PKT_FLAG_DISPOSABLE;
+        tmpFlags |= AV_PKT_FLAG_DISPOSABLE;
     }
     if (sample->flag_ & static_cast<uint32_t>(AVBufferFlag::DISPOSABLE_EXT)) {
         MEDIA_LOG_D("It is disposable_ext frame");
-        cachePacket_->flags |= AV_PKT_FLAG_DISPOSABLE_EXT;
+        tmpFlags |= AV_PKT_FLAG_DISPOSABLE_EXT;
     }
+    cachePacket_->flags = static_cast<int32_t>(tmpFlags);
 
     auto ret = av_interleaved_write_frame(formatContext_.get(), cachePacket_.get());
     av_packet_unref(cachePacket_.get());
