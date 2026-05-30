@@ -311,7 +311,7 @@ void CodecServer::ReportResolutionInfo(const Format &config)
         if (config.GetIntValue(Media::Tag::VIDEO_WIDTH, width)) {
             statisticsMeta.SetData(EventInfoExtentedKey::WIDTH.data(), width);
         }
-        if (config.GetIntValue(Media::Tag::VIDEO_WIDTH, height)) {
+        if (config.GetIntValue(Media::Tag::VIDEO_HEIGHT, height)) {
             statisticsMeta.SetData(EventInfoExtentedKey::HEIGHT.data(), height);
         }
     } else if (codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
