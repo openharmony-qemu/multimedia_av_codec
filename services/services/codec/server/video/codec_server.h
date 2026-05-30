@@ -127,8 +127,9 @@ private:
     int32_t InitServer(int32_t instanceId = INVALID_INSTANCE_ID);
     int32_t ConfigureCodecScenario(Format &config, int32_t &paramCheckRet);
     void UpdateConfiguredFramerate(const Format &format);
+    void ReportSfdInfo();
     void ConfigureSfdManager(Format &config);
-    void ReportResolutionInfo(const Format &config, std::string tag);
+    void ReportResolutionInfo(const Format &config);
     int32_t CodecScenarioInit(Format &config);
     void StartInputParamTask();
     const std::string &GetStatusDescription(OHOS::MediaAVCodec::CodecServer::CodecStatus status);
