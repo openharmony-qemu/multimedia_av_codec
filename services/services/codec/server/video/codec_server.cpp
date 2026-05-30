@@ -294,7 +294,7 @@ void CodecServer::ConfigureSfdManager(Format &config)
     InitSfdManager();
     if (sfdManager_) {
         sfdManager_->Configure(config);
-        if(sfdManager_->IsSfdActive()){
+        if (sfdManager_->IsSfdActive()) {
             ReportSfdInfo();
         }
         sfdManager_->EnableMVOutput(config);
@@ -307,7 +307,7 @@ void CodecServer::ReportResolutionInfo(const Format &config)
     int32_t width = 0;
     int32_t height = 0;
 
-    if(codecType_ == AVCODEC_TYPE_VIDEO_ENCODER) {
+    if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER) {
         if (config.GetIntValue(Media::Tag::VIDEO_WIDTH, width)) {
             statisticsMeta.SetData(EventInfoExtentedKey::WIDTH.data(), width);
         }
@@ -998,9 +998,9 @@ int32_t CodecServer::SetParameter(const Format &format)
     }
 
     if (sfdManager_) {
-        bool isEnable = sfdManager_->IsSfdActive();
+        bool isEnabled = sfdManager_->IsSfdActive();
         sfdManager_->Configure(format);
-        if(!isEnable && sfdManager_->IsSfdActive()) {
+        if (!isEnabled && sfdManager_->IsSfdActive()) {
             ReportSfdInfo();
         }
     }
