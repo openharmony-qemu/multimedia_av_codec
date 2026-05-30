@@ -106,7 +106,7 @@ bool AdaptiveRetentionStrategy::ExecuteAccumulatorDecision(double dynamicRatio, 
 {
     accumulator_ += dynamicRatio + (preDroppedCount * dynamicRatio);
     if (DoubleUtils::IsGreaterOrEqual(accumulator_, 1.0)) {
-        accumulator_ -= 1.0;
+        accumulator_ = 0.0;
         if (DoubleUtils::IsLess(currentSpeed_, MIN_SPEED_FOR_DYNAMIC_DROP)) {
             lastReason_ = SfdDecisionReason::POST_RETAIN_ADAPTIVE_SPEED;
         } else {
@@ -123,8 +123,8 @@ bool AdaptiveRetentionStrategy::MakeRetentionDecision(const FrameRetentionContex
     double dynamicTargetRatio = CalculateTargetRatio(ctx);
     bool isRetain = ExecuteAccumulatorDecision(dynamicTargetRatio, ctx.preDroppedCount);
     targetRatio_ = dynamicTargetRatio;
-    AVCODEC_LOGD("Adaptive dynRatio: %{public}.3f, accumulator: %{public}.3f, isRetain: %{public}d, "
-        "speed: %{public}.3f", dynamicTargetRatio, accumulator_, isRetain, currentSpeed_);
+    AVCODEC_LOGD("Adaptive dynRatio: %{public}.3f, count %{public}u, accumulator: %{public}.3f, isRetain: %{public}d, "
+        "speed: %{public}.3f", dynamicTargetRatio, ctx.preDroppedCount, accumulator_, isRetain, currentSpeed_);
     return isRetain;
 }
 
