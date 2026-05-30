@@ -1753,7 +1753,7 @@ Status DecoderSurfaceFilter::SetSpeed(float speed)
         format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE,
             OH_FrameRetentionMode::OH_FRAME_RETENTION_MODE_FULL);
     } else {
-        format.PutFloatValue(Tag::VIDEO_DECODER_SPEED, speed);
+        format.PutDoubleValue(Tag::VIDEO_DECODER_SPEED, speed);
         format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE,
             OH_FrameRetentionMode::OH_FRAME_RETENTION_MODE_ADAPTIVE);
     }
