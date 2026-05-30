@@ -91,6 +91,7 @@ static const FourccSet g_supportedSubtitleCodecsFourcc = {
 };
 
 static const FourccSet g_supportedAuxlCodecsFourcc = {
+    FourccType("avc1"), FourccType("acv3"),
     FourccType("hvc1"), FourccType("hev1"),
     FourccType("mp4a"), FourccType(".mp3"), FourccType("mebx"),
 };
@@ -278,7 +279,7 @@ bool IsSupportedBrandPrefix(const std::string& majorBrand)
     return false;
 }
 
-bool IsUnsupportedBrand(const std::string& brand)
+bool IsSupportedBrand(const std::string& brand)
 {
     uint32_t majorBrandInt = (static_cast<uint32_t>(brand[0]) << 24)
         | (static_cast<uint32_t>(brand[1]) << 16)
@@ -322,20 +323,20 @@ bool IsVideoMimeType(const std::string& mime, bool formatDebug)
 {
     if (!formatDebug) {
         return (std::find(g_supportVideoMimeTypeTemp.cbegin(), g_supportVideoMimeTypeTemp.cend(),
-             mime) != g_supportVideoMimeTypeTemp.cend());
+            mime) != g_supportVideoMimeTypeTemp.cend());
     }
     return (std::find(g_supportVideoMimeType.cbegin(), g_supportVideoMimeType.cend(),
-         mime) != g_supportVideoMimeType.cend());
+        mime) != g_supportVideoMimeType.cend());
 }
 
 bool IsAudioMimeType(const std::string& mime, bool formatDebug)
 {
     if (!formatDebug) {
         return (std::find(g_supportAudioMimeTypeTemp.cbegin(), g_supportAudioMimeTypeTemp.cend(),
-             mime) != g_supportAudioMimeTypeTemp.cend());
+            mime) != g_supportAudioMimeTypeTemp.cend());
     }
     return (std::find(g_supportAudioMimeType.cbegin(), g_supportAudioMimeType.cend(),
-         mime) != g_supportAudioMimeType.cend());
+        mime) != g_supportAudioMimeType.cend());
 }
 
 bool IsSupportCodec(int32_t fourcc, TrackType trackType, const std::string& mime)
@@ -353,6 +354,7 @@ bool IsSupportCodec(int32_t fourcc, TrackType trackType, const std::string& mime
         case SUBTITLE_TYPE: {
             return IsSupportedSubtitleCodec(fourcc);
         }
+        case TIMEDMETA_TYPE:
         case AUXILIARY_TYPE: {
             return IsSupportedAuxiliaryCodec(fourcc);
         }

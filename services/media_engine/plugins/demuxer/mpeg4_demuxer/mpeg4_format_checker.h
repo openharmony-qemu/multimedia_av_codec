@@ -28,8 +28,8 @@ namespace Plugins {
 namespace MPEG4 {
 
 bool IsSupportedBrand(int32_t brand);
+bool IsSupportedBrand(const std::string& brand);
 bool IsUnsupportedBrand(int32_t brand);
-bool IsUnsupportedBrand(const std::string& brand);
 bool IsSupportedVideoCodec(int32_t fourcc);
 bool IsSupportedAudioCodec(int32_t fourcc);
 bool IsSupportedSubtitleCodec(int32_t fourcc);

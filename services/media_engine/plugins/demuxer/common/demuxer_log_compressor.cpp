@@ -138,7 +138,6 @@ std::string DemuxerLogCompressor::FormatTagSerialize(Format& format)
     FALSE_RETURN_V_MSG_E(meta != nullptr, "", "Meta is nullptr");
     for (auto iter = meta->begin(); iter != meta->end(); ++iter) {
         if (g_formatToIndex.find(iter->first) == g_formatToIndex.end()) {
-            dumpStr << iter->first << "=" << AnyCast<std::string>(iter->second) << "|";
             continue;
         }
         switch (format.GetValueType(iter->first)) {

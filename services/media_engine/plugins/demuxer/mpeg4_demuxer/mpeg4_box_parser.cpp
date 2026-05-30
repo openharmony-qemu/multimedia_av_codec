@@ -722,7 +722,7 @@ Status MPEG4AtomParser::ParseFtyp(MPEG4Atom currentAtom, int32_t depth, ParseCon
 
     FALSE_RETURN_V_MSG_E(!IsHeifFormat(majorBrand.c_str()), Status::ERROR_UNKNOWN, "HEIF format is not supported");
     if (formatDebug_) {
-        FALSE_RETURN_V_MSG_E(IsUnsupportedBrand(majorBrand),
+        FALSE_RETURN_V_MSG_E(IsSupportedBrand(majorBrand),
             Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT, "Unsupported file %{public}s", majorBrand.c_str());
     }
     uint32_t compatibleBrandsCount = (currentAtom.dataSize - 8) / 4;
