@@ -123,8 +123,8 @@ Status FFmpegAmrnbDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &param
     format->SetData(Tag::AUDIO_MAX_OUTPUT_SIZE, GetOutputBufferSize());
     format->GetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFormat_);
     if (g_supportedSampleFormats.find(sampleFormat_) == g_supportedSampleFormats.end()) {
-        sampleFormat_ = SAMPLE_S16LE;
         AVCODEC_LOGI("set sample format %{public}d to SAMPLE_S16LE", static_cast<int32_t>(sampleFormat_));
+        sampleFormat_ = SAMPLE_S16LE;
     }
     Status retContext = basePlugin->OpenContext();
     avCodecContext_ = basePlugin->GetCodecContext();
