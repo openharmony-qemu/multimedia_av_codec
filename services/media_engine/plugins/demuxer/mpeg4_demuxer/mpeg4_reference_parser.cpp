@@ -183,10 +183,8 @@ Status MPEG4DemuxerPlugin::Dts2FrameId(int64_t dts, uint32_t &frameId)
     FALSE_RETURN_V_MSG_E(!__builtin_sub_overflow(dts, startPts_, &dtsBasedOnPtsZero), Status::ERROR_INVALID_DATA,
         "Overflow");
     FALSE_RETURN_V_MSG_E(dts2SyncSampleIndex_.find(dtsBasedOnPtsZero) != dts2SyncSampleIndex_.end(),
-        Status::ERROR_INVALID_DATA, "dts does not exist in dts2SyncSampleIndex_");
-    uint32_t syncSampleIndex = dts2SyncSampleIndex_[dtsBasedOnPtsZero];
-    FALSE_RETURN_V_MSG_E(syncSampleIndex >= 0, Status::ERROR_OUT_OF_RANGE, "find nearest frame failed");
-    frameId = syncSampleIndex;
+        Status::ERROR_OUT_OF_RANGE, "Failed to find nearest frame, dts does not exist in dts2SyncSampleIndex_");
+    frameId = dts2SyncSampleIndex_[dtsBasedOnPtsZero];
     MEDIA_LOG_I("Dts2FrameId end, dts is " PUBLIC_LOG_D64 ", frameId is " PUBLIC_LOG_U32, dts, frameId);
     return Status::OK;
 }
@@ -233,6 +231,7 @@ bool MPEG4DemuxerPlugin::IsSupportedCodec()
                     MimeType::INVALID_TYPE;
                 return true;
             }
+            return false;
         }
     }
     return false;
@@ -257,7 +256,9 @@ Status MPEG4DemuxerPlugin::SeekMs2FrameId(int64_t seekMs, uint32_t &frameId)
 {
     MEDIA_LOG_I("SeekMs2FrameId start, seekMs is ", PUBLIC_LOG_D64, seekMs);
     FALSE_RETURN_V_MSG_E(seekMs >= 0, Status::ERROR_INVALID_PARAMETER, "SeekMs is less than 0");
-    int64_t pts = seekMs * 1000;  // ms to us
+    int64_t pts = 0;
+    // ms to us
+    FALSE_RETURN_V_MSG_E(!__builtin_mul_overflow(seekMs, MS_TO_US, &pts), Status::ERROR_INVALID_DATA, "Overflow");
     auto iter = pts2Dts_.upper_bound(pts);
     if (iter != pts2Dts_.begin()) {
         --iter;
@@ -367,7 +368,7 @@ Status MPEG4DemuxerPlugin::ParserRefInfoLoop(std::shared_ptr<AVBuffer> buffer, u
     //     return Status::ERROR_UNKNOWN;
     // }
     InsertIframePtsMap(buffer, refParserCurGopId_, gopId2DecodedSamplePts_);
-    FALSE_RETURN_V_MSG_E(buffer != nullptr || buffer->memory_ != nullptr, Status::ERROR_UNKNOWN,
+    FALSE_RETURN_V_MSG_E(buffer != nullptr && buffer->memory_ != nullptr, Status::ERROR_UNKNOWN,
         "buffer or memory_ is nullptr!");
     FALSE_RETURN_V_MSG_I(buffer->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS), Status::OK, "eos or not video");
     Status result = referenceParser_->ParserNalUnits(buffer->memory_->GetAddr(), buffer->memory_->GetSize(),
@@ -486,7 +487,7 @@ Status MPEG4DemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t t
 uint32_t MPEG4DemuxerPlugin::GetSampleCount(uint32_t trackIndex)
 {
     std::shared_ptr<MPEG4AtomParser::Track> track = FindTrackById(trackIndex);
-    FALSE_RETURN_V_MSG_E(track && track->sampleHelper, 0, "track or sampleHelper is nullptr");
+    FALSE_RETURN_V_MSG_E(track && track->sampleHelper, 0, "firstTrack_ is nullptr");
     return track->sampleHelper->CalculateSampleCount();
 }
 

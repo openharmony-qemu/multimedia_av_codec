@@ -48,7 +48,7 @@ public:
     Status SetSampleSizeParams(uint32_t type, int64_t dataOffset, size_t dataSize);
     Status SetChunkOffsetParams(uint32_t type, int64_t dataOffset, size_t dataSize);
     Status SetSampleToChunkParams(int64_t dataOffset, size_t dataSize);
-    Status SetSampleDependencyTypeParams(int64_t ctsOffset, int64_t dataOffset, size_t dataSize);
+    Status SetSampleDependencyTypeParams(int64_t ctxOffset, int64_t dataOffset, size_t dataSize);
     Status SetTrackExtendsParams(int64_t dataOffset, size_t dataSize);
     Status SetTrackFragmentHeaderParams(int64_t dataOffset, int64_t dataSize, uint32_t flag, int64_t moofOffset);
     Status SetTrackFragmentDecodeTimeParams(int64_t dataOffset, int64_t dataSize);

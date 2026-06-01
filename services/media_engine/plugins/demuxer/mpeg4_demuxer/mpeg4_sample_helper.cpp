@@ -689,18 +689,18 @@ Status MPEG4SampleHelper::SetSampleToChunkParams(int64_t dataOffset, size_t data
     return Status::OK;
 }
 
-Status MPEG4SampleHelper::SetSampleDependencyTypeParams(int64_t ctsOffset, int64_t dataOffset, size_t dataSize)
+Status MPEG4SampleHelper::SetSampleDependencyTypeParams(int64_t ctxOffset, int64_t dataOffset, size_t dataSize)
 {
     MEDIA_LOG_D("In");
     sdtpEntry_.sdtpEntryCount = 0;
     sdtpEntry_.sdtpData.clear();
 
-    FALSE_RETURN_V_MSG_E(dataSize > 0 && dataSize <= static_cast<uint32_t>(UINT64_MAX), Status::ERROR_INVALID_DATA,
-        "dataSize is invalid");
-        
+    FALSE_RETURN_V_MSG_E(dataSize > 0 && dataSize <= UINT64_MAX, Status::ERROR_INVALID_DATA, "dataSize is invalid");
+
+    // After removing type, size..., the starting offset of the actual data in the atom
     int64_t currentOffset = dataOffset;
     FALSE_RETURN_V_MSG_E(currentOffset < MIN_DATA_OFFSET, Status::ERROR_INVALID_PARAMETER, "currentOffset is invalid");
-    for (uint32_t i = 0; i < dataSize && currentOffset < ctsOffset; ++i) {  // Each entry size is 1 Byte
+    for (uint32_t i = 0; i < dataSize && currentOffset < ctxOffset; ++i) {  // Each entry size is 1 Byte
         uint8_t sdtpEntry;
         Status ret = dataReader_->ReadUintData(currentOffset, &sdtpEntry, sizeof(sdtpEntry));
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read header failed");

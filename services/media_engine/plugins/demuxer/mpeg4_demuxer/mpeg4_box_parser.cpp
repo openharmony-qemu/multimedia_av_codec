@@ -3411,7 +3411,7 @@ Status MPEG4AtomParser::ParseSdtp(MPEG4Atom currentAtom, int32_t depth, ParseCon
     FALSE_RETURN_V_MSG_E(lastTrack_ != nullptr && lastTrack_->sampleHelper != nullptr, Status::ERROR_INVALID_DATA,
         "Track or sampleHelper is nullptr");
     ctx->offset += currentAtom.size;
-    Status ret = lastTrack_->sampleHelper->SetSampleDependencyTypeParams(currentAtom.type, ctx->dataOffset,
+    Status ret = lastTrack_->sampleHelper->SetSampleDependencyTypeParams(ctx->offset, ctx->dataOffset,
         currentAtom.dataSize);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SetSampleDependencyTypeParams failed");
     return Status::OK;
