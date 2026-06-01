@@ -17,6 +17,9 @@
 #include "avcodec_log_ex.h"
 #include "event_manager.h"
 #include "event_info_extented_key.h"
+#ifdef SUPPORT_FPS_FOR_MEMC
+#include "transaction/rs_render_service_client.h"
+#endif
 #include <map>
 #include <mutex>
 
@@ -42,6 +45,8 @@ constexpr uint32_t CONTINUES_FRAME_CNT = 5;
 constexpr int64_t PTS_TIME_UNIT = 1000000;
 constexpr int64_t MAX_FPS = 60;
 constexpr int64_t FPS_THRESHOLD = 1000;
+constexpr uint32_t NORMAL_SPEED = 2;
+constexpr uint32_t FLOAT2INT = 100;
 #endif
 const std::unordered_map<size_t, const std::string_view> SPEED_DEC_INFO_KEY_MAP = {
     {1, OHOS::MediaAVCodec::EventInfoExtentedKey::SPEED_DECODING_INFO_0_75X},
@@ -58,6 +63,9 @@ namespace MediaAVCodec {
 DecodingBehaviorAnalyzer::DecodingBehaviorAnalyzer()
 {
     startTime_ = std::chrono::steady_clock::now();
+
+    eventData_.insert(std::make_pair("rate", "0"));
+    eventData_.insert(std::make_pair("decSpeed", "100"));
 }
 
 void DecodingBehaviorAnalyzer::OnFrameConsumed(int64_t pts, bool render)
@@ -123,11 +131,31 @@ bool DecodingBehaviorAnalyzer::IsStableFps(float fps)
     return false;
 }
 
-void DecodingBehaviorAnalyzer::CalcOutputVideoFps(int64_t currentPts, bool render)
+void DecodingBehaviorAnalyzer::IsNeedReport()
 {
-    if (!render) {
+    std::chrono::steady_clock::time_point curt = std::chrono::steady_clock::now();
+    auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(curt - lastConsumTime_).count();
+    if (elapsedTime > SEEK_DETECTION_THRESHOLD_MS && lastConsumTime_ != std::chrono::steady_clock::time_point{}) {
+        eventData_["rate"] = std::to_string(fixedInfo_.first);
+        NotifyVideoInfo(eventData_);
+        AVCODEC_LOGI("video fix fps =%{public}u", fixedInfo_.first);
+    }
+    lastConsumTime_ = std::chrono::steady_clock::now();
+}
+
+void DecodingBehaviorAnalyzer::NotifyVideoInfo(std::unordered_map<std::string, std::string>& event)
+{
+    auto rsClient = Rosen::RSRenderServiceClient::CreateRenderServiceClient();
+    if (rsClient == nullptr) {
+        AVCODEC_LOGE("NotifyVideoInfo create rs client failed");
         return;
     }
+    rsClient->SendVideoRateInfo(event);
+}
+
+void DecodingBehaviorAnalyzer::CalcOutputVideoFps(int64_t currentPts, bool render)
+{
+    IsNeedReport();
     int64_t lastPts = lastOutPts_[lastIndex_];
     int64_t delta = currentPts - lastPts;
     if (delta > 0) {
@@ -155,6 +183,8 @@ void DecodingBehaviorAnalyzer::CalcOutputVideoFps(int64_t currentPts, bool rende
             if (curtInfo_.second >= CONTINUES_FRAME_CNT) {
                 fixedInfo_.first = curtInfo_.first; //连续相同帧率超过阈值，记录为稳定帧率
                 fixedInfo_.second = curtInfo_.second;
+                eventData_["rate"] = std::to_string(fixedInfo_.first);
+                NotifyVideoInfo(eventData_);
                 AVCODEC_LOGI("video fix fps =%{public}u pts= %{public}ld, lastPts= %{public}ld, delta= %{public}ld",
                     fixedInfo_.first, currentPts, lastPts, delta);
             }
@@ -320,7 +350,11 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
         return;
     }
     double decInFps = static_cast<double>(totalFrames - 1) / sysTimeIntvlMs * 1000; // 1000: ms to s
+#ifdef SUPPORT_FPS_FOR_MEMC
+    double srcFps = fixedInfo_.first;
+#else
     double srcFps = GetSrcFps();
+#endif
     if (srcFps < 1.0) {
         return;
     }
@@ -332,6 +366,15 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
     double renderFps = decFps * static_cast<double>(renderCnt_) / frameCnt_;
     ReportFpsIfSignificantChange(decFps, renderFps, srcFps_);
     size_t lastDecSpeedIdx = maxPossibleDecSpeedIdx_;
+#ifdef SUPPORT_FPS_FOR_MEMC
+    if ((lastDecSpeedIdx > NORMAL_SPEED && isSingleSpeed_) || (lastDecSpeedIdx <= NORMAL_SPEED && !isSingleSpeed_)) {
+        eventData_["decSpeed"] = std::to_string(static_cast<int>(standardSpeeds[lastDecSpeedIdx] * FLOAT2INT));
+        NotifyVideoInfo(eventData_);
+        AVCODEC_LOGI("video fix fps =%{public}u, new =%{public}zu last =%{public}zu",
+            fixedInfo_.first, newSpeedIdx, lastDecSpeedIdx);
+    }
+    isSingleSpeed_ = lastDecSpeedIdx <= NORMAL_SPEED;
+#endif
     DecodingBehaviorType newType = DetermineDecodingBehaviorType();
     HandleBehaviorTransition(type_, lastDecSpeedIdx, newType, newSpeedIdx);
     type_ = newType;

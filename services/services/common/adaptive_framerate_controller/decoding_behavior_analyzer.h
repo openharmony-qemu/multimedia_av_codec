@@ -76,6 +76,7 @@ private:
     std::array<size_t, stdSpeedLevels> speedCount_ = {};
     std::vector<DecodingBehaviorSnapshot> history_;
     DecInfoCallBack decInfoCallBack_ = nullptr;
+    std::unordered_map<std::string, std::string> eventData_;
     double lastReportedFps_ = -1.0;
     double lastReportedRenderFps_ = -1.0;
     int64_t lastPtsMs_ = -1;
@@ -89,6 +90,8 @@ private:
     size_t lastIndex_ = 0;
     std::pair<int32_t, int32_t> fixedInfo_{};
     std::pair<int32_t, int32_t> curtInfo_{};
+    bool isSingleSpeed_{true};
+    std::chrono::steady_clock::time_point lastConsumTime_;
 #endif
     void ResetIntervalStats();
     double GetSrcFps();
@@ -106,6 +109,8 @@ private:
 #ifdef SUPPORT_FPS_FOR_MEMC
     bool IsStableFps(float fps);
     void CalcOutputVideoFps(int64_t currentPts, bool render);
+    void IsNeedReport();
+    void NotifyVideoInfo(std::unordered_map<std::string, std::string>& event);
 #endif
 };
 } // namespace MediaAVCodec

@@ -43,6 +43,10 @@ ohos_source_set("adaptive_framerate_controller") {
     "init:libbegetutil",
   ]
 
+  if (av_codec_enable_memc) {
+    external_deps += ["graphic_2d:librender_service_proxy",]
+  }
+
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }
