@@ -1800,9 +1800,8 @@ void IsMPEGPS(int64_t offset, int64_t kMaxOffset, const std::shared_ptr<DemuxerD
 }
 
 int32_t GetFtypConfidence(std::shared_ptr<DemuxerDataReader> dataReader_,
-    int64_t chunkDataOffset, int64_t chunkDataSize, int32_t confidence)
+    int64_t chunkDataOffset, int64_t chunkDataSize, int32_t confidence, bool formatDebug)
 {
-    std::string formatDebug = OHOS::system::GetParameter("Mpeg4DemuxerPlugin.formatDebug", "0");
     const int32_t readLengHalf = 4;
     FALSE_RETURN_V_MSG_E(chunkDataSize >= READ_LEN, 0, "ftyp data size error");
     uint32_t numBrands = (chunkDataSize - READ_LEN) / readLengHalf;
@@ -1820,7 +1819,7 @@ int32_t GetFtypConfidence(std::shared_ptr<DemuxerDataReader> dataReader_,
             chunkDataOffset + readLengHalf * i, brandData, sizeof(brandData)) == Status::OK,
             0, "Read brand failed");
         brand = GetU32Value(brandData);
-        if (formatDebug != "1") {
+        if (!formatDebug) {
             if (i == 0 && !IsJPEGBrand(brand)) {
                 confidence = FIRST_LEVEL_RANK;
                 return confidence;
@@ -1901,7 +1900,8 @@ int32_t GetConfidence(std::shared_ptr<DemuxerDataReader> dataReader)
     MoovInfo moov {false, -1, -1};
     int64_t offset = 0;
     int32_t confidence = 0;
-
+    bool isFirstAtom = true;
+    bool formatDebug = (OHOS::system::GetParameter("Mpeg4DemuxerPlugin.formatDebug", "0") == "1");
     while (!moov.found && offset < SNIFF_DATA_SIZE) {
         uint8_t atomInfoData[8];
         FALSE_RETURN_V_MSG_E(dataReader->ReadUintData(offset, atomInfoData, sizeof(atomInfoData)) == Status::OK, 0,
@@ -1911,10 +1911,14 @@ int32_t GetConfidence(std::shared_ptr<DemuxerDataReader> dataReader)
         FALSE_RETURN_V_NOLOG(UpdateAtomSize(atom, offset, chunkDataOffset, dataReader), 0);
         int64_t chunkDataSize = atom.size - (chunkDataOffset - offset);
         FALSE_RETURN_V_MSG_E(chunkDataSize >= 0, 0, "atom data size error");
+        if (formatDebug) {
+            FALSE_RETURN_V_MSG_E(!isFirstAtom || atom.type == FourccType("ftyp"), 0, "no ftyp atom");
+        }
+        isFirstAtom = false;
         switch (GetAtomLevel(atom)) {
             case AtomLevel::LEVEL_0: {
                 int32_t originalConfidence = confidence;
-                confidence = GetFtypConfidence(dataReader, chunkDataOffset, chunkDataSize, confidence);
+                confidence = GetFtypConfidence(dataReader, chunkDataOffset, chunkDataSize, confidence, formatDebug);
                 FALSE_RETURN_V_NOLOG(!(confidence != FIRST_LEVEL_RANK || confidence == originalConfidence), confidence);
                 break;
             }

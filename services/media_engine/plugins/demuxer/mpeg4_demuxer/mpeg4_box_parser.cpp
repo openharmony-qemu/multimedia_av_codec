@@ -1906,10 +1906,8 @@ Status MPEG4AtomParser::ParseHdlr(MPEG4Atom currentAtom, int32_t depth, ParseCon
             FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Process meta handler failed");
             break;
         default:
-            if (formatDebug_) {
-                MEDIA_LOG_E("Unsupported handler: %{public}s", FourccToString(handlerType).c_str());
-                return Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT;
-            }
+            FALSE_RETURN_V_MSG_E(!formatDebug_, Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT,
+                "Unsupported handler: %{public}s", FourccToString(handlerType).c_str());
             if (ctx->path.size() > DIRECT_META_PATH_SIZE &&
                 ctx->path[ctx->path.size() - DIRECT_META_PATH_SIZE] != FourccType("mdia")) {
                 return Status::OK;
@@ -2018,7 +2016,6 @@ Status MPEG4AtomParser::ParseSampleDescriptionEntry(int32_t depth, ParseContext*
         .dataSize = GetU32Value(&sampleEntryHeader[0]) - sizeof(sampleEntryHeader)
     };
     ctx->dataOffset = atomOffset + sizeof(sampleEntryHeader);
-    MEDIA_LOG_D("Sample Entry type: " PUBLIC_LOG_S, FourccToString(atom.type).c_str());
     std::string mimeType = GetMimeType(atom.type, formatDebug_);
     if (formatDebug_) {
         FALSE_RETURN_V_MSG_E(IsSupportCodec(atom.type, lastTrack_->codecParms.trackType, mimeType),
@@ -2031,7 +2028,6 @@ Status MPEG4AtomParser::ParseSampleDescriptionEntry(int32_t depth, ParseContext*
     }
     InferTrackTypeFromMime(mimeType);
     if (lastTrack_->codecParms.trackType == VIDEO_TYPE && IsImageMimeType(mimeType)) {
-        MEDIA_LOG_D("Cover track detected, mime: " PUBLIC_LOG_S, mimeType.c_str());
         ctx->offset += atom.size;
         return Status::OK;
     }
@@ -2047,10 +2043,9 @@ Status MPEG4AtomParser::ParseSampleDescriptionEntry(int32_t depth, ParseContext*
     if (lastTrack_->codecParms.trackType == TIMEDMETA_TYPE) {
         return ParseMebx(atom, depth + 1, ctx);
     }
+    FALSE_RETURN_V_MSG_E(!formatDebug_, Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT,
+        "Unsupported track type: " PUBLIC_LOG_D32, lastTrack_->codecParms.trackType);
     MEDIA_LOG_W("Unsupported track type: " PUBLIC_LOG_D32, lastTrack_->codecParms.trackType);
-    if (formatDebug_) {
-        return Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT;
-    }
     std::string invalidMimeType = MimeType::INVALID_TYPE;
     lastTrack_->sampleHelper->mimeType_ = invalidMimeType;
     mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::MIME_TYPE>(invalidMimeType);

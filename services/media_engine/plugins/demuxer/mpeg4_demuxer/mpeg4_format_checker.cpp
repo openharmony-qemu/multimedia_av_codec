@@ -281,10 +281,10 @@ bool IsSupportedBrandPrefix(const std::string& majorBrand)
 
 bool IsSupportedBrand(const std::string& brand)
 {
-    uint32_t majorBrandInt = (static_cast<uint32_t>(brand[0]) << 24)
-        | (static_cast<uint32_t>(brand[1]) << 16)
-        | (static_cast<uint32_t>(brand[2]) << 8)
-        | static_cast<uint32_t>(brand[3]);
+    uint32_t majorBrandInt = (static_cast<uint32_t>(brand[0]) << 24) |
+                             (static_cast<uint32_t>(brand[1]) << 16) |
+                             (static_cast<uint32_t>(brand[2]) << 8) |
+                             static_cast<uint32_t>(brand[3]);
     return IsSupportedBrand(majorBrandInt) || IsSupportedBrandPrefix(brand);
 }
 
