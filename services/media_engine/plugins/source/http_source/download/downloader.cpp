@@ -51,7 +51,6 @@ constexpr int APP_OPEN_RETRY_TIMES = 10;
 constexpr int32_t REDIRECT_CODE = 302;
 constexpr uint32_t MAX_LOOP_TIMES = 100;
 constexpr size_t MAX_HEADER_LINE_LEN = 16 * 1024;
-constexpr uint64_t MAX_FILE_CONTENT_LEN_FROM_SERVER = static_cast<uint64_t>(100ULL * 1024 * 1024 * 1024);
 }
 
 DownloadRequest::DownloadRequest(const std::string& url, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
@@ -1080,7 +1079,7 @@ bool Downloader::HandleContentRange(HeaderInfo* info, char* key, char* next, siz
             MEDIA_LOG_W("sscanf get range failed, parsed: " PUBLIC_LOG_D32, sret);
             return false;
         }
-        if (fileLen > MAX_FILE_CONTENT_LEN_FROM_SERVER) {
+        if (fileLen > SIZE_MAX) {
             MEDIA_LOG_E("Content-Range fileLen exceeds upper bound: " PUBLIC_LOG_ZU, fileLen);
             return false;
         }
