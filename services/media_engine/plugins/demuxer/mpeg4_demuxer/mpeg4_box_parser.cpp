@@ -782,13 +782,18 @@ Status MPEG4AtomParser::ParseFtyp(MPEG4Atom currentAtom, int32_t depth, ParseCon
     uint32_t compatibleBrandsCount = (currentAtom.dataSize - 8) / 4;
     FALSE_RETURN_V_MSG_E(compatibleBrandsCount > 0, Status::ERROR_INVALID_DATA, "Invalid compatible brands number");
     // 一次性读取所有compatible brands数据
+    bool hasGltfBrand = false;
     if (compatibleBrandsCount > 0) {
         for (uint32_t i = 0; i < compatibleBrandsCount; ++i) {
             // 解析和存储所有brands, 跳过 minor version，从第8字节开始
             uint32_t compatibleBrand = GetU32Value(&ftypInfo[8 + 4 * i]);
             std::string brandStr = FourccToString(compatibleBrand);
             ctx->compatibleBrands.insert(compatibleBrand);
+            hasGltfBrand = hasGltfBrand || compatibleBrand == FourccType("glti");
         }
+    }
+    if (hasGltfBrand) {
+        mediaInfo_.general.Set<Tag::IS_GLTF>(true);
     }
     mediaInfo_.general.Set<Tag::MEDIA_FILE_TYPE>(FileType::MP4);
     if (StartWith(majorBrand.c_str(), "m4a") || StartWith(majorBrand.c_str(), "M4A")) {
@@ -1856,6 +1861,20 @@ bool MPEG4AtomParser::UnderMetaPath(const std::vector<uint32_t>& path, int32_t d
     return false;
 }
 
+bool MPEG4AtomParser::UnderFileLevelMetaPath(const std::vector<uint32_t>& path, int32_t depth)
+{
+    return depth == MPEG4_DEPTH_ONE && path.size() == DIRECT_META_PATH_SIZE &&
+        path[0] == FourccType("meta");
+}
+
+void MPEG4AtomParser::TrySetGltfOffset(ParseContext* ctx)
+{
+    FALSE_RETURN_NOLOG(ctx != nullptr);
+    if (ctx->foundFileMetaHdlrGltf && ctx->fileMetaIdatPayloadOffset >= 0) {
+        mediaInfo_.general.Set<Tag::GLTF_OFFSET>(ctx->fileMetaIdatPayloadOffset);
+    }
+}
+
 void MPEG4AtomParser::SetTrackMediaType(const std::shared_ptr<Track>& track)
 {
     if (g_convertMpeg4TrackType.count(track->codecParms.trackType) > 0) {
@@ -1874,6 +1893,11 @@ Status MPEG4AtomParser::ParseHdlr(MPEG4Atom currentAtom, int32_t depth, ParseCon
     Status ret = dataReader_->ReadUintData(ctx->dataOffset, typeInfo, sizeof(typeInfo));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read hdlr type info failed");
     uint32_t handlerType = GetU32Value(&typeInfo[8]);
+    if (UnderFileLevelMetaPath(ctx->path, depth)) {
+        ctx->foundFileMetaHdlrGltf = ctx->foundFileMetaHdlrGltf || handlerType == FourccType("gltf");
+        TrySetGltfOffset(ctx);
+        return Status::OK;
+    }
     // If this is a metadata handler outside a valid track, mark it and return
     if (UnderMetaPath(ctx->path, depth)) {
         ctx->foundHdlrMdta = handlerType == FourccType("mdta") ? true : false;
@@ -3880,20 +3904,23 @@ Status MPEG4AtomParser::FindNextMoof(int64_t& headerOffset, uint32_t& atomSize)
 {
     Status ret = Status::OK;
     int32_t atomType = 0;
-    uint32_t typeOffset = 4;
+    constexpr uint32_t atomHeaderSize = 8;
+    constexpr uint32_t typeOffset = 4;
     do {
-        auto atomHeader = std::make_unique<uint8_t[]>(0x08);
+        auto atomHeader = std::make_unique<uint8_t[]>(atomHeaderSize);
         FALSE_RETURN_V_MSG_E(atomHeader != nullptr, Status::ERROR_NO_MEMORY, "atomHeader is nullptr");
-        ret = dataReader_->ReadUintData(headerOffset, atomHeader.get(), 0x08);
+        ret = dataReader_->ReadUintData(headerOffset, atomHeader.get(), atomHeaderSize);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Find next moof header info failed");
         atomSize = GetU32Value(atomHeader.get());
         atomType = static_cast<int32_t>(GetU32Value(atomHeader.get() + typeOffset));
         if (atomType != FourccType("moof")) {
             MEDIA_LOG_D("not moof box, go find next");
-            auto atomData = std::make_unique<uint8_t[]>(atomSize - sizeof(atomHeader));
+            FALSE_RETURN_V_MSG_E(atomSize >= atomHeaderSize, Status::ERROR_INVALID_DATA,
+                "Invalid atom size " PUBLIC_LOG_U32, atomSize);
+            uint32_t atomDataSize = atomSize - atomHeaderSize;
+            auto atomData = std::make_unique<uint8_t[]>(atomDataSize);
             FALSE_RETURN_V_MSG_E(atomData != nullptr, Status::ERROR_NO_MEMORY, "atomHeader is nullptr");
-            ret = dataReader_->ReadUintData(headerOffset + sizeof(atomHeader), atomData.get(),
-                atomSize - sizeof(atomHeader));
+            ret = dataReader_->ReadUintData(headerOffset + atomHeaderSize, atomData.get(), atomDataSize);
             FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read atom data failed");
             headerOffset += atomSize;
         }
@@ -4476,7 +4503,9 @@ Status MPEG4AtomParser::ParseMeta(MPEG4Atom currentAtom, int32_t depth, ParseCon
         MEDIA_LOG_E("Container atom size overflow");
         return Status::ERROR_INVALID_DATA;
     }
-    if (currentAtom.dataSize < sizeof(uint32_t) || depth == MPEG4_ROOT_DEPTH) {
+    bool isFileLevelGltfMeta = depth == MPEG4_ROOT_DEPTH &&
+        ctx->compatibleBrands.count(FourccType("glti")) > 0;
+    if (currentAtom.dataSize < sizeof(uint32_t) || (depth == MPEG4_ROOT_DEPTH && !isFileLevelGltfMeta)) {
         // 数据太小，或者在root级别，直接跳过
         ctx->offset = endOffset;
         return Status::OK;
@@ -4501,6 +4530,9 @@ Status MPEG4AtomParser::ParseMeta(MPEG4Atom currentAtom, int32_t depth, ParseCon
     while (ctx->offset < endOffset) {
         ret = MPEG4ParseAtom(depth + 1, ctx);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Failed to parse child at offset " PUBLIC_LOG_D64, ctx->offset);
+    }
+    if (isFileLevelGltfMeta) {
+        TrySetGltfOffset(ctx);
     }
     ctx->offset = endOffset;
     return Status::OK;
@@ -4793,6 +4825,16 @@ Status MPEG4AtomParser::ParseChap(MPEG4Atom currentAtom, int32_t depth, ParseCon
     return Status::OK;
 }
 
+Status MPEG4AtomParser::ParseIdat(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
+{
+    if (UnderFileLevelMetaPath(ctx->path, depth)) {
+        ctx->fileMetaIdatPayloadOffset = ctx->dataOffset;
+        TrySetGltfOffset(ctx);
+    }
+    ctx->offset += currentAtom.size;
+    return Status::OK;
+}
+
 Status MPEG4AtomParser::MPEG4ParseHeader(const std::shared_ptr<DataSource>& source, Seekable seekable,
     int64_t readTimeoutMs)
 {
@@ -4923,6 +4965,7 @@ void MPEG4AtomParser::InitParseTable()
         {FourccType("schi"), &MPEG4AtomParser::ParseSchi}, {FourccType("schm"), &MPEG4AtomParser::ParseSchm},
         {FourccType("kind"), &MPEG4AtomParser::ParseKind}, {FourccType("chan"), &MPEG4AtomParser::ParseChan},
         {FourccType("chap"), &MPEG4AtomParser::ParseChap}, {FourccType("gnre"), &MPEG4AtomParser::ParseMoovGenre},
+        {FourccType("idat"), &MPEG4AtomParser::ParseIdat},
         {FourccType("clli"), &MPEG4AtomParser::ParseClli}, {FourccType("mdcv"), &MPEG4AtomParser::ParseMdcv},
     };
 }

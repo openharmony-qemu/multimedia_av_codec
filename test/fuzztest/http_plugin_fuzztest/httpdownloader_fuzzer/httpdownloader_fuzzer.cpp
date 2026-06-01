@@ -31,7 +31,18 @@ class SourceCallback : public Plugins::Callback {
 public:
     void OnEvent(const Plugins::PluginEvent &event)
     {
-        (void)event;
+        switch (event.type) {
+            case PluginEventType::STREAM_UPDATE: {
+                int videoId = -1;
+                int audioId = -1;
+                int textId = -1;
+                if (httpMediaDownloader != nullptr) {
+                    httpMediaDownloader->SetDefaultStreamId(videoId, audioId, textId);
+                }
+                break;
+            }
+            default:break;
+        }
     }
 
     void SetSelectBitRateFlag(bool flag, uint32_t desBitRate)
@@ -44,6 +55,13 @@ public:
     {
         return true;
     }
+
+    void SetDownload(std::shared_ptr<HttpMediaDownloader> &downloader)
+    {
+        httpMediaDownloader = downloader;
+    }
+
+    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader = nullptr;
 };
 
 class SourceLoader : public IMediaSourceLoader {
@@ -189,6 +207,7 @@ void HttpDownloaderRun(FuzzedDataProvider &fdp)
         std::shared_ptr<DownloadRequest>& request) {};
     httpMediaDownloader->SetStatusCallback(statusCallback);
     auto sourceCallback = std::make_shared<SourceCallback>();
+    sourceCallback->SetDownload(httpMediaDownloader);
     httpMediaDownloader->SetCallback(sourceCallback);
     httpMediaDownloader->Open(MP4_SEGMENT_BASE, g_httpHeader);
     httpMediaDownloader->GetSeekable();
@@ -234,6 +253,7 @@ void HttpDownloaderFlvRun(FuzzedDataProvider &fdp)
         std::shared_ptr<DownloadRequest>& request) {};
     httpMediaDownloader->SetStatusCallback(statusCallback);
     auto sourceCallback = std::make_shared<SourceCallback>();
+    sourceCallback->SetDownload(httpMediaDownloader);
     httpMediaDownloader->SetCallback(sourceCallback);
     httpMediaDownloader->Open(FLV_SEGMENT_BASE, httpHeader);
     httpMediaDownloader->GetSeekable();
@@ -298,30 +318,6 @@ void DownloaderFuzz(FuzzedDataProvider &fdp)
     downloader->DropRetryData(g_buffer, 1024, downloader.get());  // 1024
 }
 
-void FuzzHttpSourcePlugin(FuzzedDataProvider &fdp)
-{
-    auto plugin = std::make_shared<HttpSourcePlugin>("HttpSource");
-    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 4, nullptr);  // 4
-    downloader->Init();
-    plugin->downloader_ = downloader;
-    std::vector<StreamInfo> streams;
-    plugin->GetStreamInfo(streams);
-    plugin->GetStreamInfo(streams, true);
-    int32_t defaultVideoStreamId = streams.empty() ? -1 : streams.front().streamId;
-    int32_t defaultAudioStreamId = -1;
-    int32_t defaultSubtitleStreamId = -1;
-    plugin->SetDefaultStreamId(defaultVideoStreamId, defaultAudioStreamId, defaultSubtitleStreamId);
-    auto monitor = std::make_shared<DownloadMonitor>(downloader);
-    monitor->Init();
-    streams.clear();
-    monitor->GetStreamInfo(streams);
-    monitor->GetStreamInfo(streams, true);
-    defaultVideoStreamId = streams.empty() ? -1 : streams.front().streamId;
-    defaultAudioStreamId = -1;
-    defaultSubtitleStreamId = -1;
-    monitor->SetDefaultStreamId(defaultVideoStreamId, defaultAudioStreamId, defaultSubtitleStreamId);
-}
-
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(uint8_t *data, size_t size)
 {
@@ -336,7 +332,6 @@ extern "C" int LLVMFuzzerTestOneInput(uint8_t *data, size_t size)
     HttpDownloaderRun(fdp);
     HttpDownloaderFlvRun(fdp);
     DownloaderFuzz(fdp);
-    FuzzHttpSourcePlugin(fdp);
     if (!CloseServer()) {
         std::cout << "Close server error" << std::endl;
         return -1;

@@ -262,6 +262,7 @@ void AudioDataSourceFilter::ReadLoop()
         }
         return;
     }
+    FALSE_RETURN_MSG(buffer != nullptr && buffer->memory_ != nullptr, "buffer->memory_ is nullptr");
     buffer->memory_->SetSize(bufferSize);
     status = outputBufferQueue_->PushBuffer(buffer, true);
     if (status != Status::OK) {

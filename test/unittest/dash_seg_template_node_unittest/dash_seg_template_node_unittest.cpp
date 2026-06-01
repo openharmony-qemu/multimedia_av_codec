@@ -321,14 +321,14 @@ HWTEST_F(DashSegTemplateNodeUnittest, GetAttr_019, TestSize.Level0)
 /**
  * @tc.name  : Test GetAttr(uint64_t, with large value)
  * @tc.number: GetAttr_020
- * @tc.desc  : Test getting large uint64_t value
+ * @tc.desc  : Test getting large uint64_t value within int64_t range
  */
 HWTEST_F(DashSegTemplateNodeUnittest, GetAttr_020, TestSize.Level0)
 {
     ASSERT_NE(dashPtr_, nullptr);
     std::string attrName = "media";
     uint64_t ullAttrVal = 0;
-    uint64_t largeValue = 18446744073709551615ULL;
+    uint64_t largeValue = 9223372036854775807ULL; // INT64_MAX
     dashPtr_->segTemplateAttr_[NUM_TEST].val_ = std::to_string(largeValue);
     dashPtr_->GetAttr(attrName, ullAttrVal);
     EXPECT_EQ(ullAttrVal, largeValue);

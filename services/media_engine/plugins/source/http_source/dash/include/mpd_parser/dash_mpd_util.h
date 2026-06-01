@@ -46,6 +46,7 @@ uint32_t DashGetAttrIndex(const std::string &attrName, const char *const *nodeAt
 void DashParseRange(const std::string &rangeStr, int64_t &startRange, int64_t &endRange);
 bool DashStreamIsHdr(DashList<DashDescriptor*> essentialPropertyList);
 void GetSubstitutionStr(std::string &substitutionStr, std::string &str);
+bool DashStrToNonNegativeDouble(const std::string &str, double &result);
 } // namespace HttpPluginLite
 } // namespace Plugin
 } // namespace Media

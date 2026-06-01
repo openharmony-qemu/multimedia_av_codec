@@ -44,6 +44,7 @@ public:
 private:
     void ResetFlag();
     int CreateDemuxer();
+    void CheckHdrInfo(OH_AVFormat *trackFormat);
     int32_t gWidth = 3840;
     int32_t gHeight = 2160;
     int gTrackType = 0;

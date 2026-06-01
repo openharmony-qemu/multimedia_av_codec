@@ -47,6 +47,7 @@ public:
     Status SetPerfRecEnabled(bool isPerfRecEnabled);
     void SetMediaMuted(bool isMuted);
     int64_t GetFrameInterval();
+    Status GetAVSyncInfo(int64_t& syncCount, int64_t& totalSyncDurationMs);
 
 private:
     int64_t CalcBufferDiff(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer,
@@ -74,6 +75,22 @@ private:
         int64_t lastSystemTimeMs_ = 0;
         int64_t lastBufferTimeMs_ = 0;
         int64_t totalLagDuration_ = 0;
+        std::shared_ptr<EventReceiver> eventReceiver_ { nullptr };
+    };
+
+    class AVSyncDetector {
+    public:
+        void Reset();
+        void CheckSync(int64_t diffUs, int64_t pts);
+        void GetAVSyncInfo(int64_t& syncCount, int64_t& totalSyncDurationMs);
+        void SetEventReceiver(const std::shared_ptr<EventReceiver> eventReceiver);
+    private:
+        static constexpr int64_t AV_SYNC_THRESHOLD_US = 200000; // 200ms
+        static constexpr int64_t AV_SYNC_CUMULATIVE_US = 1000000; // 1s
+        bool isInAVSync_ = false;
+        int64_t syncStartPts_ = 0;
+        int64_t syncCount_ = 0;
+        int64_t totalSyncDurationUs_ = 0;
         std::shared_ptr<EventReceiver> eventReceiver_ { nullptr };
     };
 
@@ -107,6 +124,7 @@ private:
     PerfRecorder perfRecorder_ {};
     bool isMuted_ = false;
     std::atomic<bool> needDropOnMute_ {false};
+    AVSyncDetector avSyncDetector_ {};
 };
 } // namespace Pipeline
 } // namespace Media

@@ -36,7 +36,8 @@ int32_t XmlParser::ParseFromBuffer(const char *buf, int32_t length)
     }
 
     xmlInitParser();
-    xmlDocPtr doc = xmlParseMemory(buf, length);
+    xmlDocPtr doc = xmlReadMemory(buf, length, nullptr, nullptr,
+        XML_PARSE_NONET | XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
     if (doc == nullptr) {
         MEDIA_LOG_E("ParseFromBuffer error.");
         return -1;
@@ -60,7 +61,8 @@ int32_t XmlParser::ParseFromString(const std::string &xmlStr)
     }
 
     xmlInitParser();
-    xmlDocPtr doc = xmlParseDoc(docData);
+    xmlDocPtr doc = xmlReadDoc(docData, nullptr, nullptr,
+        XML_PARSE_NONET | XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
     if (doc == nullptr) {
         MEDIA_LOG_E("ParseFromString error.");
         return -1;
@@ -78,7 +80,8 @@ int32_t XmlParser::ParseFromFile(const std::string &filePath)
     }
 
     xmlInitParser();
-    xmlDocPtr doc = xmlParseFile(filePath.c_str());
+    xmlDocPtr doc = xmlReadFile(filePath.c_str(), nullptr,
+        XML_PARSE_NONET | XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
     if (doc == nullptr) {
         MEDIA_LOG_E("ParseFromFile error.");
         return -1;

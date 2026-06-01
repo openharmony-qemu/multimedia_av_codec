@@ -448,6 +448,8 @@ private:
     void WaitTrackSelectionFilter(uint32_t bitRate, int32_t streamId, DemuxerTrackType type);
     void ProcessTrackSelectionFilter();
     void InitVideoAudioBasePtsDiff();
+    void ReportMediaChangedEvent();
+    void CheckPtsDiscontinuity(int32_t trackId, std::shared_ptr<AVBuffer> buffer);
 
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;

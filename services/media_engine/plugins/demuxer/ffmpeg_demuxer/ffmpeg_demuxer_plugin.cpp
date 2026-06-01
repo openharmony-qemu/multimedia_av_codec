@@ -2188,27 +2188,30 @@ Status FFmpegDemuxerPlugin::AccumulateXpsPktLocked(AVPacketWrapperPtr pkt)
             Status::ERROR_NULL_POINTER, "Accumulated packet is nullptr");
         AVPacket* dstPkt = pktIt->second->GetAVPacket();
         int pktSize = pkt->GetSize();
+        auto releaseAndReturn = [this, trackIndex](Status status) {
+            AccumulateXpsPktReleaseLocked(static_cast<uint32_t>(trackIndex));
+            return status;
+        };
         if (pktSize < 0 || dstPkt->size < 0 || pktSize > INT_MAX - dstPkt->size) {
             MEDIA_LOG_E("Invalid packet size for concatenation: dst=" PUBLIC_LOG_D32 ", src=" PUBLIC_LOG_D32,
                         dstPkt->size, pktSize);
-            return Status::ERROR_INVALID_DATA;
+            return releaseAndReturn(Status::ERROR_INVALID_DATA);
         }
         ffRet = av_grow_packet(dstPkt, pktSize);
         if (ffRet < 0) {
-            AccumulateXpsPktReleaseLocked(static_cast<uint32_t>(trackIndex));
             MEDIA_LOG_E("Call av_grow_packet failed, ret:" PUBLIC_LOG_D32, ffRet);
-            return Status::ERROR_INVALID_DATA;
+            return releaseAndReturn(Status::ERROR_INVALID_DATA);
         }
         uint8_t* dstPos = dstPkt->data + (dstPkt->size - pktSize);
         const uint8_t* srcPos = pkt->GetData();
         if (dstPos < dstPkt->data || dstPos > dstPkt->data + dstPkt->size || srcPos == nullptr) {
             MEDIA_LOG_E("Invalid pointer for memcpy");
-            return Status::ERROR_INVALID_DATA;
+            return releaseAndReturn(Status::ERROR_INVALID_DATA);
         }
         auto ret = memcpy_s(dstPos, pktSize, srcPos, pktSize);
         if (ret != EOK) {
             MEDIA_LOG_E("Memcpy failed, ret:" PUBLIC_LOG_D32, ret);
-            return Status::ERROR_UNKNOWN;
+            return releaseAndReturn(Status::ERROR_UNKNOWN);
         }
     }
     if (!IsPktOnlyParameterSets(pkt->GetData(), pkt->GetSize())) {

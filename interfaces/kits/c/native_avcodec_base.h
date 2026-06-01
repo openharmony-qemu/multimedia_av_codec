@@ -1415,18 +1415,9 @@ extern const char *OH_MD_KEY_AUDIO_SOUNDBED_BITRATE;
 extern const char *OH_MD_KEY_AUDIO_OBJECT_BITRATE;
 
 /**
- * @brief Key for getting screen capture rectangular window. Value type is a int32_t array, the array length is 4.
- * Get the rectangular window in captured screen, represent [top, left, width, height] in the int32_t array,
- * which can be obtained by calling {@link OH_AVFormat_GetIntBuffer}.
- *
- * @since 26.0.0
- */
-extern const char *OH_MD_KEY_SCREEN_CAPTURE_WINDOW_RECT;
-
-/**
  * @brief Key for setting the video decoding frame retention mode. The value type is int32_t.
  *
- * The value represents a frame retention mode defined in {@link OH_FRAME_RETENTION_MODE}.
+ * The value represents a frame retention mode defined in {@link OH_FrameRetentionMode}.
  * Please refer to the enumeration definition for detailed descriptions of each mode
  * and their behaviors.This key can be configured via the {@link OH_VideoDecoder_Configure} and
  * {@link OH_VideoDecoder_SetParameter} interfaces.
@@ -1439,10 +1430,10 @@ extern const char *OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_MODE;
  * @brief Key for setting the video decoding frame retention ratio. The value type is double.
  *
  * This parameter takes effect when {@link OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_MODE} is set to
- * {@link OH_FRAME_RETENTION_MODE#OH_FRAME_RETENTION_MODE_UNIFORM}, or when the retention mode is not
+ * {@link OH_FrameRetentionMode#OH_FRAME_RETENTION_MODE_UNIFORM}, or when the retention mode is not
  * configured (implicitly defaulting to uniform behavior). This configuration is ignored ONLY when
- * the retention mode is explicitly set to {@link OH_FRAME_RETENTION_MODE#OH_FRAME_RETENTION_MODE_ADAPTIVE}
- * or {@link OH_FRAME_RETENTION_MODE#OH_FRAME_RETENTION_MODE_FULL}.
+ * the retention mode is explicitly set to {@link OH_FrameRetentionMode#OH_FRAME_RETENTION_MODE_ADAPTIVE}
+ * or {@link OH_FrameRetentionMode#OH_FRAME_RETENTION_MODE_FULL}.
  * The valid range is [0.01, 1.0] (where 1.0 means all frames retained and 0.01 is the minimum limit);
  * any value outside this range is considered invalid and will be ignored. This key can be configured
  * via the {@link OH_VideoDecoder_Configure} and {@link OH_VideoDecoder_SetParameter} interfaces.
@@ -1455,7 +1446,7 @@ extern const char *OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_RATIO;
  * @brief Key for configuring the video decoder playback speed. The value type is double.
  *
  * This key specifies the target playback speed of the video. It is primarily recommended
- * for use in conjunction with {@link OH_FRAME_RETENTION_MODE#OH_FRAME_RETENTION_MODE_ADAPTIVE}
+ * for use in conjunction with {@link OH_FrameRetentionMode#OH_FRAME_RETENTION_MODE_ADAPTIVE}
  * to assist the adaptive algorithm in accurately evaluating the perceptual impact of frame
  * drops. The value must be strictly greater than 0.0, with recommended standard values
  * including 0.5, 0.75, 1.0 (normal speed), 1.25, 1.5, 2.0, and 3.0; any value less than
@@ -1518,8 +1509,8 @@ extern const char *OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER;
  * It is used in {@link OH_VideoEncoder_GetInputDescription}.
  *
  * @since 26.0.0
-*/
-extern const char *OH_MD_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES;
+ */
+extern const char *OH_MD_KEY_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES;
 
 /**
  * @brief Key to set the maximum number of frames that a compressor is allowed to hold before it must output a
@@ -1528,9 +1519,8 @@ extern const char *OH_MD_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES;
  * It is used in {@link OH_VideoEncoder_Configure}.
  *
  * @since 26.0.0
-*/
-extern const char *OH_MD_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT;
-
+ */
+extern const char *OH_MD_KEY_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT;
 
 /**
  * @brief Key to repeat headers before sync frames, value type is int32_t (0 or 1): 1 is enabled, 0 disabled.
@@ -1539,8 +1529,8 @@ extern const char *OH_MD_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT;
  * By default, this feature is disabled (0).
  *
  * @since 26.0.0
-*/
-extern const char *OH_MD_VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES;
+ */
+extern const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES;
 
 /**
  * @brief Media type.
@@ -2360,7 +2350,7 @@ typedef enum OH_TemporalGopReferenceMode {
  *
  * @since 26.0.0
  */
-typedef enum OH_FRAME_RETENTION_MODE {
+typedef enum OH_FrameRetentionMode {
     /**
      * Full frame retention mode. The decoder operates in a transparent passthrough state,
      * retaining 100% of the input frames and effectively disabling the frame dropping feature.
@@ -2384,7 +2374,7 @@ typedef enum OH_FRAME_RETENTION_MODE {
      * @since 26.0.0
      */
     OH_FRAME_RETENTION_MODE_UNIFORM
-} OH_FRAME_RETENTION_MODE;
+} OH_FrameRetentionMode;
 /**
  * @brief Enum for the PTS mode of audio encoder.
  *

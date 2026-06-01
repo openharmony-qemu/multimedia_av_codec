@@ -271,17 +271,6 @@ void VideoTrack::SetRotation(uint32_t rotation)
     }
 }
 
-bool VideoTrack::CheckPts(int64_t pts)
-{
-    if (!dtsList_.empty()) {
-        FALSE_RETURN_V_MSG_E(ConvertTimeToMpeg4(pts, timeScale_) >= preDts_, false,
-            "[%{public}d] pts:" PUBLIC_LOG_D64 " err: " PUBLIC_LOG_D64 " > " PUBLIC_LOG_D64 " , list size:%{public}zu",
-            trackId_, pts, ConvertTimeToMpeg4(pts, timeScale_), preDts_, dtsList_.size());
-        return true;
-    }
-    return pts >= lastTimestampUs_;
-}
-
 Status VideoTrack::WriteSample(std::shared_ptr<AVIOStream> io, const std::shared_ptr<AVBuffer> &sample)
 {
     FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_ != nullptr,
@@ -292,16 +281,16 @@ Status VideoTrack::WriteSample(std::shared_ptr<AVIOStream> io, const std::shared
     FALSE_RETURN_V_MSG_E(videoParser_ != nullptr, Status::ERROR_INVALID_OPERATION, "videoParser is null");
     auto pts = sample->pts_;
     auto mpeg4Pts = ConvertTimeToMpeg4(pts, timeScale_);
-    if (mpeg4Pts < preDts_ && mpeg4Pts == 0) {
+    if (mpeg4Pts <= preDts_ && mpeg4Pts == 0) {
         constexpr int64_t ptsOffset = 11; // 11 = 1000000 / 90000
         MEDIA_LOG_I("[%{public}d] change video pts:" PUBLIC_LOG_D64 " -> " PUBLIC_LOG_D64,
             trackId_, pts, (lastTimestampUs_ + ptsOffset));
         pts = lastTimestampUs_ + ptsOffset;
         mpeg4Pts = ConvertTimeToMpeg4(pts, timeScale_);
     }
-    FALSE_RETURN_V_MSG_E(CheckPts(pts), Status::ERROR_INVALID_PARAMETER,
-        "[%{public}d] videoDelay:%{public}d, pts: " PUBLIC_LOG_D64 " error, < " PUBLIC_LOG_D64,
-        trackId_, videoDelay_, sample->pts_, lastTimestampUs_);
+    FALSE_RETURN_V_MSG_E(mpeg4Pts > preDts_, Status::ERROR_INVALID_PARAMETER,
+        "[%{public}d] pts:" PUBLIC_LOG_D64 " err: " PUBLIC_LOG_D64 " <= " PUBLIC_LOG_D64 " , list size:%{public}zu"
+        " videoDelay:%{public}d", trackId_, mpeg4Pts, pts, lastTimestampUs_, dtsList_.size(), videoDelay_);
 
     if (!hasSetParserConfig_) {
         ParserSetConfig();

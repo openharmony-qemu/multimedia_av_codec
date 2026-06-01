@@ -172,6 +172,8 @@ private:
     Status HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> &trackInfos, int32_t &successNodeCount);
     std::string CollectVideoAndAudioMime();
     std::string GetOriginalCodecName();
+    bool IsAVTrackInvalid(bool hasInvalidVideo, bool hasInvalidAudio,
+        bool hasVideoFilter, bool hasAudioTrack);
 
     std::string uri_;
     std::atomic<bool> isLoopStarted{false};
@@ -181,6 +183,7 @@ private:
     std::shared_ptr<MediaSource> mediaSource_;
     std::shared_ptr<FilterLinkCallback> onLinkedResultCallback_;
     bool isTransCoderMode_ {false};
+    bool isPlayerMode_ {false};
 
     std::map<StreamType, std::vector<int32_t>> track_id_map_;
     Mutex mapMutex_ {};

@@ -77,6 +77,7 @@ int32_t HEncoder::ConfigureBaseParams(const Format &format, std::optional<double
 
     (void)ConfigureOutputBitrate(format);
     (void)SetColorAspects(format);
+    (void)SetCodecScenario(format);
     (void)SetProcessName();
     (void)SetFrameRateAdaptiveMode(format);
     (void)SetIdrAppendXpsParam(format);
@@ -133,7 +134,6 @@ void HEncoder::EnableVariableFrameRate(const Format &format)
 {
     int32_t enableVariableFrameRate = 0;
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_PTS_BASED_RATECONTROL, enableVariableFrameRate)) {
-        HLOGE("fail to get video_encoder_enable_pts_based_ratecontrol");
         return;
     }
     HLOGI("video_encoder_enable_pts_based_ratecontrol flag is %d", enableVariableFrameRate);
@@ -424,6 +424,27 @@ int32_t HEncoder::OnConfigureBuffer(std::shared_ptr<AVBuffer> buffer)
         return AVCS_ERR_INVALID_VAL;
     }
     HLOGI("SetParameterWithBuffer succ");
+    return AVCS_ERR_OK;
+}
+
+int HEncoder::SetCodecScenario(const Format &format)
+{
+    int32_t scenario = static_cast<int32_t>(SCENARIO_INVALID);
+    if (format.GetIntValue(OHOS::Media::Tag::VIDEO_CODEC_SCENARIO, scenario)) {
+        HLOGI("user set Codec Scenario %d", scenario);
+    }
+    if (scenario < static_cast<int32_t>(SCENARIO_RECORDING) || scenario >= static_cast<int32_t>(SCENARIO_INVALID)) {
+        HLOGW("invalid codec Scenario");
+        return AVCS_ERR_INVALID_VAL;
+    }
+ 
+    OMX_PARAM_U32TYPE config;
+    InitOMXParam(config);
+    config.nU32 = static_cast<uint32_t>(scenario);
+    if (!SetParameter(OMX_IndexParamCodecScenario, config)) {
+        HLOGW("failed to set OMX_IndexParamOperatingRate");
+    }
+    HLOGI("set codec Scenario %d succ", scenario) ;
     return AVCS_ERR_OK;
 }
 
@@ -870,7 +891,8 @@ int32_t HEncoder::SetupHEVCEncoderParameters(const Format &format, std::optional
         } else if (iFrameInterval == 0) { // all intra
             hevcType.keyFrameInterval = 1;
         } else {
-            hevcType.keyFrameInterval = iFrameInterval * frameRate.value() / TIME_RATIO_S_TO_MS;
+            hevcType.keyFrameInterval = std::max(1u, static_cast<uint32_t>(
+                iFrameInterval * frameRate.value() / TIME_RATIO_S_TO_MS));
         }
         HLOGI("frameRate %.2f, iFrameInterval %d, keyFrameInterval %u", frameRate.value(),
               iFrameInterval, hevcType.keyFrameInterval);
@@ -1377,7 +1399,49 @@ int32_t HEncoder::CalculateFrameRateParamIntoOmxBuffer(int64_t curPts)
     return 0;
 }
 
-void HEncoder::ParseRoiStringValid(const std::string &roiValue, shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer)
+int32_t HEncoder::ParseKvpairs(const std::string& kvpairs)
+{
+    std::regex kvPat(R"((dqp|slb):(-?\d+))");
+    std::smatch match;
+    int32_t dqp = DEFAULT_DELTAQP;
+    std::string temp = kvpairs;
+    while (std::regex_search(temp, match, kvPat)) {
+        if (match[1].str() == "dqp") {
+            dqp = std::stoi(match[2].str());      // 2: value
+        }
+        temp = match.suffix().str();
+    }
+    return dqp;
+}
+
+bool HEncoder::ParseOneRoi(const std::string& roi, RoiRect &roiRect, int32_t width, int32_t height)
+{
+    // regex roi: Top,Left-Bottom,Right=(deltaQP | slb:value | dqp:value)(option)
+    std::regex pat(
+        R"((-?\d+),(-?\d+)-(-?\d+),(-?\d+))"
+        R"((?:=(-?\d+|dqp:-?\d+(?:,slb:-?\d+)?|slb:-?\d+(?:,dqp:-?\d+)?))?$)"
+        );
+    std::smatch match;
+    if (!std::regex_match(roi, match, pat)) {
+        return false;
+    }
+    
+    roiRect.top = std::clamp(std::stoi(match[TOP_INDEX].str()), 0, height);
+    roiRect.left = std::clamp(std::stoi(match[LEFT_INDEX].str()), 0, width);
+    roiRect.bottom = std::clamp(std::stoi(match[BOTTOM_INDEX].str()), 0, height);
+    roiRect.right = std::clamp(std::stoi(match[RIGHT_INDEX].str()), 0, width);
+    if (match[DELTAQP_INDEX].matched) {
+        std::string kvStr = match[DELTAQP_INDEX].str();
+        if (kvStr.find(":") != std::string::npos) {
+            roiRect.deltaQP = ParseKvpairs(kvStr);
+        } else {
+            roiRect.deltaQP = std::stoi(kvStr);
+        }
+    }
+    return true;
+}
+
+void HEncoder::ParseRoiStringValid(const std::string& roiValue, shared_ptr<CodecHDI::OmxCodecBuffer>& omxBuffer)
 {
     AppendToVector(omxBuffer->alongParam, OMX_IndexParamRoi);
     CodecRoiParam param;
@@ -1386,45 +1450,30 @@ void HEncoder::ParseRoiStringValid(const std::string &roiValue, shared_ptr<Codec
         AppendToVector(omxBuffer->alongParam, param);
         return;
     }
-    // step1 parse the string
-    // method regex roi: Top1,Left1-Bottom1,Right1=Offset1(option);Top2,Left2-Bottom2,Right2=Offset2;...
-    std::regex pattern(R"((-?\d+),(-?\d+)-(-?\d+),(-?\d+)(?:=(-?\d+))?(?:;|$))");
-    std::smatch match;
-    std::string temp = roiValue;
-    size_t vaildCount = 0;
-    constexpr int TOP_INDEX = 1;
-    constexpr int LEFT_INDEX = 2;
-    constexpr int BOTTOM_INDEX = 3;
-    constexpr int RIGHT_INDEX = 4;
-    constexpr int QPOFFSET_INDEX = 5;
-    constexpr int defaultOffset = -3; // default roi qp
-    while (std::regex_search(temp, match, pattern) && vaildCount < roiNum) {
-        int32_t qpOffset, left, top, right, bottom;
-        top = std::clamp(static_cast<int>(std::strtol(match[TOP_INDEX].str().c_str(), nullptr, 10)), //10:Decimal
-            0, static_cast<int>(height_));
-        left = std::clamp(static_cast<int>(std::strtol(match[LEFT_INDEX].str().c_str(), nullptr, 10)), //10:Decimal
-            0, static_cast<int>(width_));
-        bottom = std::clamp(static_cast<int>(std::strtol(match[BOTTOM_INDEX].str().c_str(), nullptr, 10)), //10:Decimal
-            0, static_cast<int>(height_));
-        right = std::clamp(static_cast<int>(std::strtol(match[RIGHT_INDEX].str().c_str(), nullptr, 10)), //10:Decimal
-            0, static_cast<int>(width_));
-        if (match[QPOFFSET_INDEX].matched) {
-            qpOffset = static_cast<int>(std::strtol(match[QPOFFSET_INDEX].str().c_str(), nullptr, 10)); //10:Decimal
-        } else {
-            qpOffset = defaultOffset;
+    
+    std::regex sepPat(";");
+    std::vector<std::string> regions;
+    std::copy(std::sregex_token_iterator(roiValue.begin(), roiValue.end(), sepPat, -1),
+              std::sregex_token_iterator(), std::back_inserter(regions));
+    
+    size_t count = 0;
+    for (const auto& reg : regions) {
+        if (count >= roiNum) {
+            break;
         }
-        temp = match.suffix().str();
-        int32_t roiWidth = right - left;
-        int32_t roiHeight = bottom - top;
-        param.roiInfo[vaildCount].regionEnable = true;
-        param.roiInfo[vaildCount].absQp = 0;
-        param.roiInfo[vaildCount].roiQp = static_cast<int32_t>(qpOffset);
-        param.roiInfo[vaildCount].roiStartX = static_cast<uint32_t>(left);
-        param.roiInfo[vaildCount].roiStartY = static_cast<uint32_t>(top);
-        param.roiInfo[vaildCount].roiWidth = static_cast<int32_t>(roiWidth);
-        param.roiInfo[vaildCount].roiHeight = static_cast<int32_t>(roiHeight);
-        vaildCount++;
-        HLOGD("Get a valid roi: %d,%d-%d,%d=%d", top, left, bottom, right, qpOffset);
+        RoiRect roiRect;;
+        if (ParseOneRoi(reg, roiRect, static_cast<int32_t>(width_), static_cast<int32_t>(height_))) {
+            param.roiInfo[count].regionEnable = true;
+            param.roiInfo[count].absQp = 0;
+            param.roiInfo[count].roiQp = roiRect.deltaQP;
+            param.roiInfo[count].roiStartX = roiRect.left;
+            param.roiInfo[count].roiStartY = roiRect.top;
+            param.roiInfo[count].roiWidth = roiRect.right - roiRect.left;
+            param.roiInfo[count].roiHeight = roiRect.bottom - roiRect.top;
+            HLOGD("Get a valid roi: %d,%d-%d,%d qp=%d",
+                roiRect.top, roiRect.left, roiRect.bottom, roiRect.right, roiRect.deltaQP);
+            count++;
+        }
     }
     AppendToVector(omxBuffer->alongParam, param);
 }
@@ -1438,12 +1487,7 @@ void HEncoder::WrapRoiParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer> &o
         return;
     }
     ParseRoiStringValid(roiValue, omxBuffer);
-    if (!roiReported_) {
-        auto eventMeta = std::make_shared<Media::Meta>();
-        eventMeta->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "ROI");
-        ReportStatisticsEvent(StatisticsEventType::ADVANCED_FEATURE_INFO, eventMeta);
-        roiReported_ = true;
-    }
+    ReportROIUsageEvent();
 }
 
 void HEncoder::DealWithResolutionChange(uint32_t newWidth, uint32_t newHeight)
@@ -1459,6 +1503,17 @@ void HEncoder::DealWithResolutionChange(uint32_t newWidth, uint32_t newHeight)
         HLOGI("output format changed: %s", outputFormat_->Stringify().c_str());
         callback_->OnOutputFormatChanged(*(outputFormat_.get()));
     }
+}
+
+void HEncoder::ReportROIUsageEvent()
+{
+    if (roiReported_) {
+        return;
+    }
+    auto eventMeta = std::make_shared<Media::Meta>();
+    eventMeta->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "ROI");
+    ReportStatisticsEvent(StatisticsEventType::ADVANCED_FEATURE_INFO, eventMeta);
+    roiReported_ = true;
 }
 
 void HEncoder::OnFrameSubmitted(int64_t pts)
@@ -1809,6 +1864,7 @@ void HEncoder::SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info)
         if (GetROIBySurfaceBuffer(info.surfaceBuffer, roiStr)) {
             info.omxBuffer->alongParam.clear();
             ParseRoiStringValid(roiStr, info.omxBuffer);
+            ReportROIUsageEvent();
         }
         CheckPts(info.omxBuffer->pts);
         if (enableVariableFrameRate_) {

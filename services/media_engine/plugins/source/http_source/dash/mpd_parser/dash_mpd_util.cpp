@@ -16,8 +16,12 @@
 
 #include <cstring>
 #include <cstdlib>
+#include <cstdint>
+#include <limits>
+#include <string>
 #include "common/log.h"
 #include "dash_mpd_util.h"
+#include "utils/string_utils.h"
 #include "utils/time_utils.h"
 
 namespace {
@@ -106,7 +110,7 @@ int32_t DashSubstituteTmpltStr(std::string &segTmpltStr, const std::string &segT
 {
     std::string::size_type pos = segTmpltStr.find(segTmpltIdentifier);
     uint32_t identifierLength = segTmpltIdentifier.length();
-    while (pos != std::string::npos && (pos + identifierLength) < segTmpltStr.length()) {
+    while (pos != std::string::npos && (pos + identifierLength) <= segTmpltStr.length()) {
         std::string str = segTmpltStr.substr(pos + identifierLength);
         // contain format %0[width]d
         if (str.length() > 1 && str[0] == '%' && str[1] == '0') {
@@ -117,10 +121,10 @@ int32_t DashSubstituteTmpltStr(std::string &segTmpltStr, const std::string &segT
             }
 
             GetSubstitutionStr(substitutionStr, str);
-            segTmpltStr = ReplaceSubStr(segTmpltStr, (uint32_t) pos, (uint32_t) (posEnd + identifierLength + 1),
-                substitutionStr);
+            segTmpltStr = ReplaceSubStr(segTmpltStr, static_cast<uint32_t>(pos),
+                static_cast<uint32_t>(posEnd + identifierLength + 1), substitutionStr);
         } else if (str[0] == '$') {
-            segTmpltStr = ReplaceSubStr(segTmpltStr, (uint32_t) pos, identifierLength + 1, substitutionStr);
+            segTmpltStr = ReplaceSubStr(segTmpltStr, static_cast<uint32_t>(pos), identifierLength + 1, substitutionStr);
         } else {
             // error format, should drop the representation
             MEDIA_LOG_E("Error format, should drop the representation");
@@ -155,61 +159,73 @@ void GetSubstitutionStr(std::string &substitutionStr, std::string &str)
     }
 }
 
+static int32_t GetDurationCoefficient(char unit, int32_t &secondTime)
+{
+    switch (unit) {
+        case 'M':
+            return secondTime ? M_2_S : 0;
+        case 'D':
+            return D_2_H * H_2_M * M_2_S;
+        case 'T':
+            secondTime = 1;
+            return 0;
+        case 'H':
+            return H_2_M * M_2_S;
+        case 'S':
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+static void ClampDurationToUint32(int64_t time, uint32_t &duration)
+{
+    if (time < 0) {
+        duration = 0;
+    } else if (time > static_cast<int64_t>(std::numeric_limits<uint32_t>::max())) {
+        duration = std::numeric_limits<uint32_t>::max();
+    } else {
+        duration = static_cast<uint32_t>(time);
+    }
+}
+
 int32_t DashStrToDuration(const std::string &str, uint32_t &duration)
 {
     int64_t time = 0;
     int32_t secondTime = 0;
-    char *end = nullptr;
-    char *start = const_cast<char *>(str.c_str());
-    if (str.length() == 0 || *start != 'P') {
+    if (str.length() == 0 || str[0] != 'P') {
         return -1;
     }
 
-    start++;
-    do {
-        int32_t coefficient = 0;
-        double num = strtod(start, &end);
-
-        if (end == nullptr) {
-            num = 0;
+    std::string remain = str.substr(1);
+    while (!remain.empty()) {
+        size_t parsedPos = 0;
+        double num = 0.0;
+        if (!remain.empty()) {
+            char* end = nullptr;
+            num = strtod(remain.c_str(), &end);
+            parsedPos = static_cast<size_t>(end - remain.c_str());
+        }
+        if (parsedPos > 0) {
+            remain = remain.substr(parsedPos);
+        }
+        if (remain.empty()) {
+            break;
+        }
+        int32_t coefficient = GetDurationCoefficient(remain[0], secondTime);
+        if (coefficient > 0 && num > 0) {
+            double scaled = num * static_cast<double>(S_2_MS) * static_cast<double>(coefficient);
+            if (scaled > static_cast<double>(std::numeric_limits<int64_t>::max() - time)) {
+                duration = std::numeric_limits<uint32_t>::max();
+                return 0;
+            }
+            time += static_cast<int64_t>(scaled);
         }
 
-        if (start != end && end) {
-            start = end;
-        }
+        remain = remain.substr(1);
+    }
 
-        switch (*start) {
-            case 'M':
-                if (secondTime) {
-                    coefficient = M_2_S;
-                }
-                break;
-            case 'Y':
-                break;
-            case 'D':
-                coefficient = D_2_H * H_2_M * M_2_S;
-                break;
-            case 'T':
-                secondTime = 1;
-                break;
-            case 'H':
-                coefficient = H_2_M * M_2_S;
-                break;
-            case 'S':
-                coefficient = 1;
-                break;
-            default:
-                break;
-        }
-
-        time += (int64_t)(num * S_2_MS) * coefficient;
-        if (*start) {
-            start++;
-        }
-    } while (*start);
-
-    duration = static_cast<uint32_t>(time);
-
+    ClampDurationToUint32(time, duration);
     return 0;
 }
 
@@ -240,11 +256,17 @@ void DashParseRange(const std::string &rangeStr, int64_t &startRange, int64_t &e
         }
 
         std::string firstRange = rangeStr.substr(0, separatePosition);
-        startRange = atoll(firstRange.c_str());
+        int64_t tmpStart = 0;
+        if (StringUtil::SafeStoInt64(firstRange, tmpStart) && tmpStart >= 0) {
+            startRange = tmpStart;
+        }
 
         if (separatePosition < rangeStr.length() - 1) {
             std::string lastRange = rangeStr.substr(separatePosition + 1, rangeStr.length() - separatePosition - 1);
-            endRange = atoll(lastRange.c_str());
+            int64_t tmpEnd = 0;
+            if (StringUtil::SafeStoInt64(lastRange, tmpEnd) && tmpEnd >= 0) {
+                endRange = tmpEnd;
+            }
         }
         MEDIA_LOG_D("startRange=" PUBLIC_LOG_D64 ", endRange=" PUBLIC_LOG_D64 ", range="
             PUBLIC_LOG_S, startRange, endRange, rangeStr.c_str());
@@ -276,6 +298,28 @@ bool DashStreamIsHdr(DashList<DashDescriptor*> essentialPropertyList)
     }
  
     return false;
+}
+
+bool DashStrToNonNegativeDouble(const std::string &str, double &result)
+{
+    if (str.empty()) {
+        return false;
+    }
+    size_t pos = 0;
+    char* end = nullptr;
+    result = strtod(str.c_str(), &end);
+    pos = static_cast<size_t>(end - str.c_str());
+    if (pos == 0) {
+        MEDIA_LOG_E("DashStrToNonNegativeDouble parse failed");
+        return false;
+    }
+    if (pos < str.length()) {
+        return false;
+    }
+    if (result < 0.0) {
+        return false;
+    }
+    return true;
 }
 
 } // namespace HttpPluginLite

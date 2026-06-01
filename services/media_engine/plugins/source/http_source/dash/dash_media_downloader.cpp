@@ -522,9 +522,7 @@ void DashMediaDownloader::OpenInitSegment(
     }
     downloader->Init();
     downloader->SetSourceStatisticsDfx(reportInfo_);
-    if (statusCallback_ != nullptr) {
-        downloader->SetStatusCallback(statusCallback_);
-    }
+    downloader->SetStatusCallback(statusCallback_);
     auto weakDownloader = weak_from_this();
     auto doneCallback = [weakDownloader] (int streamId) {
         auto shareDownloader = weakDownloader.lock();

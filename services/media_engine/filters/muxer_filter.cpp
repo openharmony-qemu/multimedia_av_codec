@@ -333,7 +333,8 @@ void MuxerFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t
         if (currentBufferPts / US_TO_MS > maxDuration_ * S_TO_MS && isReachMaxDuration_.load() == false) {
             MEDIA_LOG_I("MuxerFilter::OnBufferFilled currentBufferPts > maxDuration_ start to stop");
             isReachMaxDuration_.store(true);
-            std::thread asyncThread(std::bind(&MuxerFilter::EventCompleteStopAsync, this));
+            std::shared_ptr<MuxerFilter> self = this->shared_from_this();
+            std::thread asyncThread(std::bind(&MuxerFilter::EventCompleteStopAsync, self));
             asyncThread.detach();
         }
         int64_t anotherBufferPts = 0;

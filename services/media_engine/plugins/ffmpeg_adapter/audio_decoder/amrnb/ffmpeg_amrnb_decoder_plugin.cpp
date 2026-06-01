@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include "ffmpeg_amrnb_decoder_plugin.h"
+#include <set>
 #include "avcodec_codec_name.h"
 #include "avcodec_log.h"
 #include "avcodec_common.h"
@@ -38,6 +39,13 @@ constexpr int32_t US_PER_SECOND = 1000000;
 constexpr int32_t frame_sizes_nb[16] = {
     13, 14, 16, 18, 20, 21, 27, 32, 6, // 0 - 8, valid frame size
     0, 0, 0, 0, 0, 0, 0 // 9 -15, invalid
+};
+
+static std::set<AudioSampleFormat> g_supportedSampleFormats = {
+    AudioSampleFormat::SAMPLE_U8,
+    AudioSampleFormat::SAMPLE_S16LE,
+    AudioSampleFormat::SAMPLE_S32LE,
+    AudioSampleFormat::SAMPLE_F32LE
 };
 } // namespace
 
@@ -114,6 +122,10 @@ Status FFmpegAmrnbDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &param
     format->SetData(Tag::AUDIO_MAX_INPUT_SIZE, GetInputBufferSize());
     format->SetData(Tag::AUDIO_MAX_OUTPUT_SIZE, GetOutputBufferSize());
     format->GetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFormat_);
+    if (g_supportedSampleFormats.find(sampleFormat_) == g_supportedSampleFormats.end()) {
+        sampleFormat_ = SAMPLE_S16LE;
+        AVCODEC_LOGI("set sample format %{public}d to SAMPLE_S16LE", static_cast<int32_t>(sampleFormat_));
+    }
     Status retContext = basePlugin->OpenContext();
     avCodecContext_ = basePlugin->GetCodecContext();
     return retContext;

@@ -34,8 +34,8 @@ std::map<VideoStreamType, DestroyFunc> MultiStreamParserManager::destroyFuncMap_
 
 StreamParser *CreateH264StreamParser()
 {
-    AvcParserImpl *avcParser = new AvcParserImpl();
-    return avcParser;
+    auto avcParser = std::make_unique<AvcParserImpl>();
+    return avcParser.release();
 }
 
 void DestroyH264StreamParser(StreamParser* avcParser)
@@ -63,11 +63,15 @@ Status MultiStreamParserManager::Create(uint32_t trackId, VideoStreamType videoS
     if (!Init(videoStreamType)) {
         return Status::ERROR_UNKNOWN;
     }
-    StreamParser* streamParser = createFuncMap_[videoStreamType]();
+    auto createIt = createFuncMap_.find(videoStreamType);
+    auto destroyIt = destroyFuncMap_.find(videoStreamType);
+    FALSE_RETURN_V_MSG_E(createIt != createFuncMap_.end() && destroyIt != destroyFuncMap_.end(),
+        Status::ERROR_UNKNOWN, "Create or destroy func is invalid:" PUBLIC_LOG_D32, videoStreamType);
+    std::unique_ptr<StreamParser, DestroyFunc> streamParser(createIt->second(), destroyIt->second);
     FALSE_RETURN_V_MSG_E(streamParser != nullptr, Status::ERROR_UNKNOWN, "Create failed:" PUBLIC_LOG_D32,
         videoStreamType);
     streamMap_[trackId].type = videoStreamType;
-    streamMap_[trackId].parser = streamParser;
+    streamMap_[trackId].parser = streamParser.release();
     streamMap_[trackId].inited = false;
     return Status::OK;
 }

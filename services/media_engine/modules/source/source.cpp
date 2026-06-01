@@ -712,5 +712,11 @@ bool Source::IsCloudFd()
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, false, "plugin_ is nullptr");
     return plugin_->IsCloudFd();
 }
+
+void Source::PauseRead()
+{
+    FALSE_RETURN_MSG(plugin_ != nullptr, "plugin_ is nullptr");
+    plugin_->PauseRead();
+}
 } // namespace Media
 } // namespace OHOS

@@ -65,7 +65,7 @@ enum class StatisticsEventType : uint32_t {
     BASIC_CREATE_CODEC_SPEC_INFO                        = EventType::STATISTICS_EVENT | (0 << 16) | (0 << 8) | 3,
     CODEC_INSTANCE_USAGE_INFO                           = EventType::STATISTICS_EVENT | (0 << 16) | (2 << 8) | 0,
     RESOLUTION_SPEC_INFO                                = EventType::STATISTICS_EVENT | (0 << 16) | (3 << 8) | 0,
-    DEMUXER_FORMAT_INFO                                 = EventType::STATISTICS_EVENT | (0 << 16) | (4 << 8) | 0,
+    CONTAINER_FORMAT_INFO                               = EventType::STATISTICS_EVENT | (0 << 16) | (4 << 8) | 0,
     CODEC_MODE_INFO                                     = EventType::STATISTICS_EVENT | (0 << 16) | (5 << 8) | 0,
 
     APP_SPECIFICATIONS_INFO                             = EventType::STATISTICS_EVENT | (1 << 16) | (0 << 8) | 0,

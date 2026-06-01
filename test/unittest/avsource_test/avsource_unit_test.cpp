@@ -31,6 +31,7 @@
 #include "avsource_unit_test.h"
 #include "media_data_source.h"
 #include "native_avsource.h"
+#include "syspara/parameters.h"
 
 #define LOCAL true
 #define URI false
@@ -59,6 +60,7 @@ string g_tsPath = TEST_FILE_PATH + string("test_mpeg2_Gop25_4sec.ts");
 string g_aacPath = TEST_FILE_PATH + string("audio/aac_44100_1.aac");
 string g_flacPath = TEST_FILE_PATH + string("audio/flac_48000_1_cover.flac");
 string g_flacPath1 = TEST_FILE_PATH + string("audio/flac_48000_1_duplicate_information.flac");
+string g_mpeg4EncoderPath = TEST_FILE_PATH + string("mpeg4_encoder.mp4");
 string g_m4aPath = TEST_FILE_PATH + string("audio/m4a_48000_1_ut.m4a");
 string g_mp3Path = TEST_FILE_PATH + string("audio/mp3_48000_1_cover.mp3");
 string g_oggPath = TEST_FILE_PATH + string("audio/ogg_48000_1_ut.ogg");
@@ -152,6 +154,9 @@ string g_mp4LargeTrefPath = TEST_FILE_PATH + string("large_tref.mp4");
 
 void AVSourceUnitTest::SetUpTestCase(void)
 {
+#ifdef USER_MPEG4_DEMUXER
+    OHOS::system::SetParameter("Mpeg4DemuxerPlugin.enable", "1");
+#endif
     server = make_unique<FileServerDemo>();
     server->StartServer();
 }
@@ -159,6 +164,9 @@ void AVSourceUnitTest::SetUpTestCase(void)
 void AVSourceUnitTest::TearDownTestCase(void)
 {
     server->StopServer();
+#ifdef USER_MPEG4_DEMUXER
+    OHOS::system::SetParameter("Mpeg4DemuxerPlugin.enable", "0");
+#endif
 }
 
 void AVSourceUnitTest::SetUp(void) {}
@@ -1517,6 +1525,26 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1112, TestSize.Level1)
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_ARTIST, formatVal_.artist));
     ASSERT_EQ(formatVal_.artist, "artist");
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_1113
+ * @tc.desc: get metadata encoder when the mpeg4 file has encoder attribute
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1113, TestSize.Level1)
+{
+    fd_ = OpenFile(g_mpeg4EncoderPath);
+    size_ = GetFileSize(g_mpeg4EncoderPath);
+    printf("---- %s ----\n", g_mpeg4EncoderPath.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    std::string encoder;
+    ASSERT_TRUE(format_->GetStringValue(Media::Tag::MEDIA_ENCODER, encoder));
+    ASSERT_EQ(encoder, "Lavf59.27.100");
 }
 
 /**

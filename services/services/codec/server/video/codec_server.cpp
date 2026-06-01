@@ -243,7 +243,9 @@ int32_t CodecServer::Configure(const Format &format)
         StatusChanged(ERROR);
         return ret;
     }
-    ReportResolutionInfo(config);
+    if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER) {
+        ReportResolutionInfo(config);
+    }
 
     ret = CreatePostProcessing(config);
     if (ret != AVCS_ERR_OK) {
@@ -278,30 +280,53 @@ void CodecServer::UpdateConfiguredFramerate(const Format &format)
     }
 }
 
+void CodecServer::ReportSfdInfo()
+{
+    Media::Meta meta;
+    bool isForwardCaller = forwardCaller_.pid >= 0 || !forwardCaller_.processName.empty();
+    meta.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, isForwardCaller ? forwardCaller_.processName : caller_.processName);
+    meta.SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "SmartFluencyDecoding");
+    EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::ADVANCED_FEATURE_INFO, meta);
+}
+
 void CodecServer::ConfigureSfdManager(Format &config)
 {
     InitSfdManager();
     if (sfdManager_) {
         sfdManager_->Configure(config);
+        if (sfdManager_->IsSfdActive()) {
+            ReportSfdInfo();
+        }
         sfdManager_->EnableMVOutput(config);
     }
 }
 
 void CodecServer::ReportResolutionInfo(const Format &config)
 {
-    if (codecType_ != AVCODEC_TYPE_VIDEO_ENCODER) {
-        return;
-    }
     Media::Meta statisticsMeta;
-    FillStatisticsCodecInfo(statisticsMeta, codecType_, vcodecType_, codecMime_, codecName_);
     int32_t width = 0;
     int32_t height = 0;
-    if (config.GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, width)) {
+
+    if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER) {
+        if (config.GetIntValue(Media::Tag::VIDEO_WIDTH, width)) {
             statisticsMeta.SetData(EventInfoExtentedKey::WIDTH.data(), width);
+        }
+        if (config.GetIntValue(Media::Tag::VIDEO_HEIGHT, height)) {
+            statisticsMeta.SetData(EventInfoExtentedKey::HEIGHT.data(), height);
+        }
+    } else if (codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
+        if (config.GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, width)) {
+            statisticsMeta.SetData(EventInfoExtentedKey::WIDTH.data(), width);
+        }
+        if (config.GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, height)) {
+            statisticsMeta.SetData(EventInfoExtentedKey::HEIGHT.data(), height);
+        }
     }
-    if (config.GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, height)) {
-        statisticsMeta.SetData(EventInfoExtentedKey::HEIGHT.data(), height);
-    }
+    
+    CHECK_AND_RETURN_LOG_WITH_TAG(width > 0 && height > 0,
+        "Invalid resolution: width %{public}d, height %{public}d", width, height);
+
+    FillStatisticsCodecInfo(statisticsMeta, codecType_, vcodecType_, codecMime_, codecName_);
     EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::RESOLUTION_SPEC_INFO, statisticsMeta);
 }
 
@@ -325,6 +350,9 @@ int32_t CodecServer::CodecScenarioInit(Format &config)
         case CodecScenario::CODEC_SCENARIO_ENC_TEMPORAL_SCALABILITY:
             temporalScalability_ = std::make_shared<TemporalScalability>(codecName_);
             temporalScalability_->ValidateTemporalGopParam(config);
+            (void)config.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize_);
+            (void)config.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, temporalGopReferenceMode_);
+            isSVC_ = true;
             if (!temporalScalability_->svcLTR_) {
                 temporalScalability_ = nullptr;
             } else {
@@ -983,7 +1011,11 @@ int32_t CodecServer::SetParameter(const Format &format)
     }
 
     if (sfdManager_) {
+        bool isEnabled = sfdManager_->IsSfdActive();
         sfdManager_->Configure(format);
+        if (!isEnabled && sfdManager_->IsSfdActive()) {
+            ReportSfdInfo();
+        }
     }
     return codecBase_->SetParameter(format);
 }
@@ -1216,6 +1248,14 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuff
         temporalScalability_->SetDisposableFlag(buffer);
     }
 
+    if (isSVC_ && buffer->meta_!= nullptr && !(buffer->flag_ == AVCODEC_BUFFER_FLAG_CODEC_DATA)) {
+        int32_t poc = 0;
+        if (buffer->meta_->GetData(Tag::VIDEO_PER_FRAME_POC, poc)) {
+            int32_t layerId = CalculateLayerIdByTemporalInfo(poc);
+            buffer->meta_->SetData(Tag::VIDEO_ENCODER_FRAME_TEMPORAL_ID, layerId);
+        }
+    }
+
     if (postProcessing_) {
         /*
             If post processing is configured, this callback flow is intercepted here. Just push the decoded buffer info
@@ -1231,6 +1271,28 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuff
     } else {
         HandleOutputBufferAvailability(index, buffer);
     }
+}
+
+int32_t CodecServer::CalculateLayerIdByTemporalInfo(int32_t poc)
+{
+    int32_t temporalPoc = poc % temporalGopSize_;
+    if (temporalGopReferenceMode_ ==
+        static_cast<int32_t>(Media::Plugins::TemporalGopReferenceMode::ADJACENT_REFERENCE)) {
+        return temporalPoc;
+    }
+    if (temporalGopReferenceMode_ ==
+        static_cast<int32_t>(Media::Plugins::TemporalGopReferenceMode::JUMP_REFERENCE)) {
+        return (temporalPoc == 0) ? 0 : 1;
+    }
+    if (temporalGopSize_ == MIN_TEMPORAL_GOPSIZE) {
+        return temporalPoc;
+    }
+    if (temporalPoc == 0) {
+        return 0;
+    } else if (temporalPoc == 2) { // temporalPoc is 2
+        return 1;
+    }
+    return 2; // layerId is 2
 }
 
 CodecBaseCallback::CodecBaseCallback(const std::shared_ptr<CodecServer> &codec) : weakCodec_(codec)
