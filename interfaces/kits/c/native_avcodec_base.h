@@ -1415,15 +1415,6 @@ extern const char *OH_MD_KEY_AUDIO_SOUNDBED_BITRATE;
 extern const char *OH_MD_KEY_AUDIO_OBJECT_BITRATE;
 
 /**
- * @brief Key for getting screen capture rectangular window. Value type is a int32_t array, the array length is 4.
- * Get the rectangular window in captured screen, represent [top, left, width, height] in the int32_t array,
- * which can be obtained by calling {@link OH_AVFormat_GetIntBuffer}.
- *
- * @since 26.0.0
- */
-extern const char *OH_MD_KEY_SCREEN_CAPTURE_WINDOW_RECT;
-
-/**
  * @brief Key for setting the video decoding frame retention mode. The value type is int32_t.
  *
  * The value represents a frame retention mode defined in {@link OH_FRAME_RETENTION_MODE}.
