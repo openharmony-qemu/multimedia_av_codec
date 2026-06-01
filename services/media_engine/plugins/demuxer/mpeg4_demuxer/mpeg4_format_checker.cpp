@@ -32,7 +32,7 @@ static const FourccSet g_supportedFileBrandsFourcc = {
     FourccType("M4A "), FourccType("m4a "),
 };
 
-static const std::string g_supportedFileBrandsPrefixs[] = {
+static const std::vector<std::string> g_supportedFileBrandsPrefixs = {
     "isom", "iso2", "iso3", "iso4",
     "mp41", "mp42",
     "avc1", "avc3",
