@@ -220,7 +220,7 @@ std::vector<uint8_t> VDecAPI11Sample::LoadHashFile()
     if (f) {
         json data = json::parse(f);
         filesystem::path filePath = INP_DIR;
-        std::string pixFmt = defualtPixelFormat == AV_PIXEL_FORMAT_NV12 ? "nv12" : "nv21";
+        std::string pixFmt = defaultPixelFormat == AV_PIXEL_FORMAT_NV12 ? "nv12" : "nv21";
         std::string fileName = filePath.filename();
         std::string hashValue = "";
         if (enableDecodingOrder) {
@@ -287,7 +287,7 @@ int32_t VDecAPI11Sample::ConfigureVideoDecoder()
     originalHeight = DEFAULT_HEIGHT;
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, defualtPixelFormat);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, defaultPixelFormat);
     (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
     (void)OH_AVFormat_SetIntValue (format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, enableDecodingOrder);
     if (useHDRSource) {

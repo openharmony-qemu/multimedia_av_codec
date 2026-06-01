@@ -66,7 +66,7 @@ public:
     uint32_t originalWidth = 0;
     uint32_t originalHeight = 0;
     bool SURFACE_OUTPUT = false;
-    uint32_t defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+    uint32_t defaultPixelFormat = AV_PIXEL_FORMAT_NV12;
     uint32_t REPEAT_CALL_TIME = 10;
     uint32_t MAX_SURF_NUM = 2;
     double DEFAULT_FRAME_RATE = 30.0;
