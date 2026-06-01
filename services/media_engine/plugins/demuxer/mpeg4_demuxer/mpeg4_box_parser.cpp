@@ -169,17 +169,6 @@ constexpr std::array<size_t, 4> MATRIX_2X2_INDICES = {0, 1, 3, 4}; // [0][0], [0
 constexpr std::array<size_t, 3> MATRIX_DIAGONAL_INDICES = {0, 4, 8}; // [0][0], [1][1], [2][2]
 constexpr std::array<size_t, 6> MATRIX_OFF_DIAGONAL_INDICES = {1, 2, 3, 5, 6, 7}; // 非对角线元素
 
-void SetCodecName(Meta &format, std::string mimeType)
-{
-    std::string originalCodecName = "";
-    if (!format.Get<Tag::ORIGINAL_CODEC_NAME>(originalCodecName)) {
-        std::string codecName = GetCodecName(mimeType);
-        if (!codecName.empty()) {
-            format.Set<Tag::ORIGINAL_CODEC_NAME>(codecName);
-        }
-    }
-}
-
 void SetTrackMediaType(Meta &format, TrackType trackType)
 {
     MediaType mediaType = GetMediaType(trackType);
@@ -2031,9 +2020,6 @@ Status MPEG4AtomParser::ParseSampleDescriptionEntry(int32_t depth, ParseContext*
         Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT,
         "Unsupported fourcc[%{public}s] track[%{public}d] mimeType[%{public}s]",
         FourccToString(atom.type).c_str(), lastTrack_->codecParms.trackType, mimeType.c_str());
-    if (lastTrack_->trackIndex < mediaInfo_.tracks.size()) {
-        SetCodecName(mediaInfo_.tracks[lastTrack_->trackIndex], mimeType);
-    }
     InferTrackTypeFromMime(mimeType);
     if (lastTrack_->codecParms.trackType == VIDEO_TYPE && IsImageMimeType(mimeType)) {
         ctx->offset += atom.size;
@@ -2171,6 +2157,7 @@ Status MPEG4AtomParser::ParseMebx(MPEG4Atom currentAtom, int32_t depth, ParseCon
     constexpr uint64_t skipSize = 8;
     // 设置MIME类型
     std::string mimeType = GetMimeType(currentAtom.type, formatDebug_);
+    lastTrack_->sampleHelper->mimeType_ = mimeType;
     mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::MIME_TYPE>(mimeType);
 
     // 读取mebx数据
@@ -2718,10 +2705,10 @@ bool MPEG4AtomParser::ParseDecoderConfigDescriptor(const uint8_t* data, uint64_t
     // 跳过 streamType(1字节) buffer size (3字节) 和 max bitrate (4字节)
     offset += sizeof(uint64_t);
 
-    std::string mimetype = GetMimeTypeByObjectType(objectTypeId, formatDebug_);
-    if (!mimetype.empty()) {
-        mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::MIME_TYPE>(mimetype);
-        lastTrack_->sampleHelper->mimeType_ = mimetype;
+    std::string mimeType = GetMimeTypeByObjectType(objectTypeId, formatDebug_);
+    if (!mimeType.empty()) {
+        mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::MIME_TYPE>(mimeType);
+        lastTrack_->sampleHelper->mimeType_ = mimeType;
     }
     uint32_t avgBitrate = GetU32Value(&data[offset]);
     offset += sizeof(uint32_t);
@@ -2748,7 +2735,7 @@ bool MPEG4AtomParser::ParseDecoderConfigDescriptor(const uint8_t* data, uint64_t
         // 提取 decoder specific info
         const uint8_t* specificInfo = &data[offset];
         if (specificInfo && size > 0) {
-            if (mimetype == MimeType::VIDEO_MPEG4 && IsValidTrackIndex(mediaInfo_, lastTrack_->trackIndex) &&
+            if (mimeType == MimeType::VIDEO_MPEG4 && IsValidTrackIndex(mediaInfo_, lastTrack_->trackIndex) &&
                 (size < MPEG_START_CODE_SIZE || specificInfo[MPEG_START_CODE_FIRST_INDEX] != MPEG_START_CODE_FIRST ||
                  specificInfo[MPEG_START_CODE_SECOND_INDEX] != MPEG_START_CODE_SECOND ||
                  specificInfo[MPEG_START_CODE_THIRD_INDEX] != MPEG_START_CODE_THIRD)) {
@@ -2765,7 +2752,7 @@ bool MPEG4AtomParser::ParseDecoderConfigDescriptor(const uint8_t* data, uint64_t
             FALSE_RETURN_V_MSG_E(ret == EOK, false, "Failed to copy codec config data");
             lastTrack_->codecParms.extradataSize = size;
         }
-        if (mimetype == MimeType::AUDIO_AAC) {
+        if (mimeType == MimeType::AUDIO_AAC) {
             return ParseAACSpecificConfig(specificInfo, size);
         }
     }
@@ -5157,9 +5144,14 @@ void MPEG4AtomParser::SetTrackType(std::shared_ptr<Track> track)
             MEDIA_LOG_W("Unknown track type for track " PUBLIC_LOG_U32, track->trackIndex);
             return; // 不处理未知类型
     }
-    mediaInfo_.general.SetData(tagType, true);
+    if (!tagType.empty()) {
+        mediaInfo_.general.SetData(tagType, true);
+    }
     if (track != nullptr && track->sampleHelper != nullptr && track->trackIndex < mediaInfo_.tracks.size()) {
-        SetCodecName(mediaInfo_.tracks[track->trackIndex], track->sampleHelper->mimeType_);
+        std::string codecName = GetCodecName(track->sampleHelper->mimeType_);
+        if (!codecName.empty()) {
+            mediaInfo_.tracks[track->trackIndex].Set<Tag::ORIGINAL_CODEC_NAME>(codecName);
+        }
     }
 }
 
