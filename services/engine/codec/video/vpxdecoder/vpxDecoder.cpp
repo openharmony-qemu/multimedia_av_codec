@@ -563,7 +563,7 @@ int32_t VpxDecoder::ConvertHdrStaticMetadata(const HdrMetadata &hdrMetadata, std
 
 int VpxDecoder::VpxCreateDecoderFunc(void **vpxDecoder, const char *name)
 {
-    const VpxInterface *decoder = NULL;
+    const VpxInterface *decoder = nullptr;
     vpx_codec_ctx_t *ctx = (vpx_codec_ctx_t *)malloc(sizeof(*ctx));
     if (!ctx) {
         AVCODEC_LOGE("Error: Failed to allocate memory for vpx_codec_ctx_t");
@@ -576,7 +576,7 @@ int VpxDecoder::VpxCreateDecoderFunc(void **vpxDecoder, const char *name)
         AVCODEC_LOGE("Error: Unknown input codec!");
         return -1;
     }
-    if (vpx_codec_dec_init(ctx, decoder->codec_interface(), NULL, VPX_CODEC_USE_FRAME_THREADING)) {
+    if (vpx_codec_dec_init(ctx, decoder->codec_interface(), nullptr, VPX_CODEC_USE_FRAME_THREADING)) {
         free(ctx);
         AVCODEC_LOGE("Error: Failed to initialize decoder.");
         return -1;
@@ -587,13 +587,13 @@ int VpxDecoder::VpxCreateDecoderFunc(void **vpxDecoder, const char *name)
 
 int VpxDecoder::VpxDestroyDecoderFunc(void **vpxDecoder)
 {
-    if (vpxDecoder == NULL || *vpxDecoder == NULL) {
+    if (vpxDecoder == nullptr || *vpxDecoder == nullptr) {
         return -1;
     }
     vpx_codec_ctx_t *codec = (vpx_codec_ctx_t *)(*vpxDecoder);
     vpx_codec_err_t res = vpx_codec_destroy(codec);
     free(codec);
-    *vpxDecoder = NULL;
+    *vpxDecoder = nullptr;
     if (res != VPX_CODEC_OK) {
         AVCODEC_LOGE("Error: Failed to destroy decoder: %s\n", vpx_codec_err_to_string(res));
         return -1;
@@ -604,7 +604,7 @@ int VpxDecoder::VpxDestroyDecoderFunc(void **vpxDecoder)
 int VpxDecoder::VpxDecodeFrameFunc(void *vpxDecoder, const unsigned char *frame, unsigned int frameSize)
 {
     vpx_codec_ctx_t *codec = (vpx_codec_ctx_t *)vpxDecoder;
-    int ret = vpx_codec_decode(codec, frame, (unsigned int)frameSize, NULL, 0);
+    int ret = vpx_codec_decode(codec, frame, static_cast<unsigned int>(frameSize), nullptr, 0);
     if (ret) {
         AVCODEC_LOGE("Error: Failed to decode frame.");
         return ret;
@@ -615,7 +615,7 @@ int VpxDecoder::VpxDecodeFrameFunc(void *vpxDecoder, const unsigned char *frame,
 int VpxDecoder::VpxGetFrameFunc(void *vpxDecoder, vpx_image_t **outputImg)
 {
     vpx_codec_ctx_t *codec = (vpx_codec_ctx_t *)vpxDecoder;
-    vpx_codec_iter_t iter = NULL;
+    vpx_codec_iter_t iter = nullptr;
     *outputImg = vpx_codec_get_frame(codec, &iter);
     return 0;
 }
