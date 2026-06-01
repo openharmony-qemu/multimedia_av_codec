@@ -204,8 +204,6 @@ private:
     PathAdder& operator=(const PathAdder &);
 };
 
-
-
 int64_t GetMaxSamplePtsEnd(const std::vector<MPEG4SampleHelper::SampleIndexEntry>& samples)
 {
     int64_t maxPtsEnd = 0;
@@ -2011,18 +2009,15 @@ Status MPEG4AtomParser::ParseSampleDescriptionEntry(int32_t depth, ParseContext*
     Status ret = dataReader_->ReadUintData(atomOffset, sampleEntryHeader, sizeof(sampleEntryHeader));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read sample entry header failed");
     MPEG4Atom atom {
-        .type = static_cast<int32_t>(GetU32Value(&sampleEntryHeader[4])),
-        .size = GetU32Value(&sampleEntryHeader[0]),
+        .type = static_cast<int32_t>(GetU32Value(&sampleEntryHeader[4])), .size = GetU32Value(&sampleEntryHeader[0]),
         .dataSize = GetU32Value(&sampleEntryHeader[0]) - sizeof(sampleEntryHeader)
     };
     ctx->dataOffset = atomOffset + sizeof(sampleEntryHeader);
     std::string mimeType = GetMimeType(atom.type, formatDebug_);
-    if (formatDebug_) {
-        FALSE_RETURN_V_MSG_E(IsSupportCodec(atom.type, lastTrack_->codecParms.trackType, mimeType),
-            Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT,
-            "Unsupported fourcc[%{public}s] track[%{public}d] mimeType[%{public}s]",
-            FourccToString(atom.type).c_str(), lastTrack_->codecParms.trackType, mimeType.c_str());
-    }
+    FALSE_RETURN_V_MSG_E(!formatDebug_ || IsSupportCodec(atom.type, lastTrack_->codecParms.trackType, mimeType),
+        Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT,
+        "Unsupported fourcc[%{public}s] track[%{public}d] mimeType[%{public}s]",
+        FourccToString(atom.type).c_str(), lastTrack_->codecParms.trackType, mimeType.c_str());
     if (lastTrack_->trackIndex < mediaInfo_.tracks.size()) {
         SetCodecName(mediaInfo_.tracks[lastTrack_->trackIndex], mimeType);
     }
@@ -4941,7 +4936,7 @@ void MPEG4AtomParser::InitParseTable()
         {FourccType("clli"), &MPEG4AtomParser::ParseClli}, {FourccType("mdcv"), &MPEG4AtomParser::ParseMdcv},
     };
     if (!formatDebug_) {
-        MPEG4ParseTable_[FourccType("mvex")] = &MPEG4AtomParser::ParseMvex; 
+        MPEG4ParseTable_[FourccType("mvex")] = &MPEG4AtomParser::ParseMvex;
     }
 }
 
@@ -5100,7 +5095,7 @@ void MPEG4AtomParser::CalculateMPEG4Attributes()
         }
         NormalizeAudioAttributes(track);
         if (track->codecParms.trackType == VIDEO_TYPE && track->sampleHelper != nullptr &&
-            IsImageMimeType(track->sampleHelper->mimeType_ )) {
+            IsImageMimeType(track->sampleHelper->mimeType_)) {
             ParseImageTrackData(track);
         } else {
             CalculateTrackBitrates(track);

@@ -1911,9 +1911,7 @@ int32_t GetConfidence(std::shared_ptr<DemuxerDataReader> dataReader)
         FALSE_RETURN_V_NOLOG(UpdateAtomSize(atom, offset, chunkDataOffset, dataReader), 0);
         int64_t chunkDataSize = atom.size - (chunkDataOffset - offset);
         FALSE_RETURN_V_MSG_E(chunkDataSize >= 0, 0, "atom data size error");
-        if (formatDebug) {
-            FALSE_RETURN_V_MSG_E(!isFirstAtom || atom.type == FourccType("ftyp"), 0, "no ftyp atom");
-        }
+        FALSE_RETURN_V_MSG_E(!formatDebug || (!isFirstAtom || atom.type == FourccType("ftyp")), 0, "no ftyp atom");
         isFirstAtom = false;
         switch (GetAtomLevel(atom)) {
             case AtomLevel::LEVEL_0: {
