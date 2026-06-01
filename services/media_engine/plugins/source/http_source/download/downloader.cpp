@@ -51,7 +51,7 @@ constexpr int APP_OPEN_RETRY_TIMES = 10;
 constexpr int32_t REDIRECT_CODE = 302;
 constexpr uint32_t MAX_LOOP_TIMES = 100;
 constexpr size_t MAX_HEADER_LINE_LEN = 16 * 1024;
-constexpr size_t MAX_FILE_CONTENT_LEN_FROM_SERVER = static_cast<size_t>(100ULL * 1024 * 1024 * 1024);
+constexpr uint64_t MAX_FILE_CONTENT_LEN_FROM_SERVER = static_cast<uint64_t>(100ULL * 1024 * 1024 * 1024);
 }
 
 DownloadRequest::DownloadRequest(const std::string& url, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
