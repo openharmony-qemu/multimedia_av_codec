@@ -1109,7 +1109,8 @@ bool MPEG4SampleHelper::GetSampleSize(uint32_t sampleIndex, uint32_t &samplesPer
 
 void MPEG4SampleHelper::GetSampleFlag(uint32_t sampleIndex, SampleIndexEntry &entry, uint32_t &syncIndex)
 {
-    if (trackType_ == VIDEO_TYPE || trackType_ == AUDIO_TYPE || trackType_ == TIMEDMETA_TYPE) {
+    if (trackType_ == VIDEO_TYPE || trackType_ == AUDIO_TYPE || trackType_ == TIMEDMETA_TYPE ||
+        trackType_ == AUXILIARY_TYPE) {
         if (!stssEntry_.empty()) {
             if ((syncIndex < stssEntry_.size()) && (sampleIndex == stssEntry_[syncIndex].index)) {
                 entry.flag |= Sample::SampleFlag::SYNC_FRAME;
