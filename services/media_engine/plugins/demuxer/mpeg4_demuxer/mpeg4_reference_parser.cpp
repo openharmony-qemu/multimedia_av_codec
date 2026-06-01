@@ -254,7 +254,7 @@ Status MPEG4DemuxerPlugin::GetGopIdFromSeekPos(int64_t seekMs, int32_t &gopId)
 
 Status MPEG4DemuxerPlugin::SeekMs2FrameId(int64_t seekMs, uint32_t &frameId)
 {
-    MEDIA_LOG_I("SeekMs2FrameId start, seekMs is ", PUBLIC_LOG_D64, seekMs);
+    MEDIA_LOG_I("SeekMs2FrameId start, seekMs is " PUBLIC_LOG_D64, seekMs);
     FALSE_RETURN_V_MSG_E(seekMs >= 0, Status::ERROR_INVALID_PARAMETER, "SeekMs is less than 0");
     int64_t pts = 0;
     // ms to us
