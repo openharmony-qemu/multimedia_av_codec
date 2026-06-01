@@ -524,6 +524,43 @@ bool DemuxerZerocopyInnerFuncTest::PluginCheckDemuxerResult(TestFileInfo info)
     return true;
 }
 
+bool CheckAttr()
+{
+    MediaInfo mediaInfo;
+    demuxerPlugin_->GetMediaInfo(mediaInfo);
+    string album;
+    mediaInfo.general.GetData(Tag::MEDIA_ALBUM, album);
+    if (album != "") {
+        return false;
+    }
+    string artist;
+    mediaInfo.general.GetData(Tag::MEDIA_ARTIST, artist);
+    if (artist != "") {
+        return false;
+    }
+    string date;
+    mediaInfo.general.GetData(Tag::MEDIA_DATE, date);
+    if (date != "") {
+        return false;
+    }
+    string encoder;
+    mediaInfo.general.GetData(Tag::MEDIA_ENCODER, encoder);
+    if (encoder != "") {
+        return false;
+    }
+    string genre;
+    mediaInfo.general.GetData(Tag::MEDIA_GENRE, genre);
+    if (genre != "") {
+        return false;
+    }
+    string title;
+    mediaInfo.general.GetData(Tag::MEDIA_TITLE, title);
+    if (title != "") {
+        return false;
+    }
+    return true;
+}
+
 /**
  * @tc.number    : DEMUXER_ZEROCOPY_INNER_API_0001
  * @tc.name      : trackId为 UNINT32_T_MAX
@@ -1019,36 +1056,17 @@ HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0001, TestSiz
 {
     std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
     configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
-    ASSERT_EQ(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_MP3, TEST_FILE_LOCAL_24K_MP3, configs), true);
-    MediaInfo mediaInfo;
-    demuxerPlugin_->GetMediaInfo(mediaInfo);
-    string album;
-    mediaInfo.general.GetData(Tag::MEDIA_ALBUM, album);
-    ASSERT_EQ(0, strcmp(album.c_str(), ""));
-    string artist;
-    mediaInfo.general.GetData(Tag::MEDIA_ARTIST, artist);
-    ASSERT_EQ(0, strcmp(artist.c_str(), ""));
-    string date;
-    mediaInfo.general.GetData(Tag::MEDIA_DATE, date);
-    ASSERT_EQ(0, strcmp(date.c_str(), ""));
-    string encoder;
-    mediaInfo.general.GetData(Tag::MEDIA_ENCODER, encoder);
-    ASSERT_EQ(0, strcmp(encoder.c_str(), ""));
-    string genre;
-    mediaInfo.general.GetData(Tag::MEDIA_GENRE, genre);
-    ASSERT_EQ(0, strcmp(genre.c_str(), ""));
-    string title;
-    mediaInfo.general.GetData(Tag::MEDIA_TITLE, title);
-    ASSERT_EQ(0, strcmp(title.c_str(), ""));
+    ASSERT_TRUE(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_MP3, TEST_FILE_LOCAL_24K_MP3, configs));
+    ASSERT_TRUE(CheckAttr());
     TestFrameCount readFrameCount = {{9151}, {9151}};
     TestFrameCount seekFrameCount = {{8}, {8}};
-    ASSERT_EQ(PluginSelectTracks(), true);
-    ASSERT_EQ(PluginReadAllSample(false), true);
-    ASSERT_EQ(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt), true);
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginReadAllSample(false));
+    ASSERT_TRUE(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt));
     RemoveValue();
-    ASSERT_EQ(PluginSelectTracks(), true);
-    ASSERT_EQ(PluginSeekTo(219408000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false), true);
-    ASSERT_EQ(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt), true);
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginSeekTo(219408000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false));
+    ASSERT_TRUE(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt));
     RemoveValue();
 }
 
@@ -1061,36 +1079,17 @@ HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0002, TestSiz
 {
     std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
     configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
-    ASSERT_EQ(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_MP3, TEST_FILE_LOCAL_48000_MP3, configs), true);
-    MediaInfo mediaInfo;
-    demuxerPlugin_->GetMediaInfo(mediaInfo);
-    string album;
-    mediaInfo.general.GetData(Tag::MEDIA_ALBUM, album);
-    ASSERT_EQ(0, strcmp(album.c_str(), ""));
-    string artist;
-    mediaInfo.general.GetData(Tag::MEDIA_ARTIST, artist);
-    ASSERT_EQ(0, strcmp(artist.c_str(), ""));
-    string date;
-    mediaInfo.general.GetData(Tag::MEDIA_DATE, date);
-    ASSERT_EQ(0, strcmp(date.c_str(), ""));
-    string encoder;
-    mediaInfo.general.GetData(Tag::MEDIA_ENCODER, encoder);
-    ASSERT_EQ(0, strcmp(encoder.c_str(), ""));
-    string genre;
-    mediaInfo.general.GetData(Tag::MEDIA_GENRE, genre);
-    ASSERT_EQ(0, strcmp(genre.c_str(), ""));
-    string title;
-    mediaInfo.general.GetData(Tag::MEDIA_TITLE, title);
-    ASSERT_EQ(0, strcmp(title.c_str(), ""));
+    ASSERT_TRUE(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_MP3, TEST_FILE_LOCAL_48000_MP3, configs));
+    ASSERT_TRUE(CheckAttr());
     TestFrameCount readFrameCount = {{9150}, {9150}};
     TestFrameCount seekFrameCount = {{8}, {8}};
-    ASSERT_EQ(PluginSelectTracks(), true);
-    ASSERT_EQ(PluginReadAllSample(false), true);
-    ASSERT_EQ(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt), true);
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginReadAllSample(false));
+    ASSERT_TRUE(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt));
     RemoveValue();
-    ASSERT_EQ(PluginSelectTracks(), true);
-    ASSERT_EQ(PluginSeekTo(219408000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false), true);
-    ASSERT_EQ(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt), true);
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginSeekTo(219408000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false));
+    ASSERT_TRUE(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt));
     RemoveValue();
 }
 
@@ -1103,36 +1102,17 @@ HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0003, TestSiz
 {
     std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
     configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
-    ASSERT_EQ(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_MP3, TEST_FILE_LOCAL_16K_MP3, configs), true);
-    MediaInfo mediaInfo;
-    demuxerPlugin_->GetMediaInfo(mediaInfo);
-    string album;
-    mediaInfo.general.GetData(Tag::MEDIA_ALBUM, album);
-    ASSERT_EQ(0, strcmp(album.c_str(), ""));
-    string artist;
-    mediaInfo.general.GetData(Tag::MEDIA_ARTIST, artist);
-    ASSERT_EQ(0, strcmp(artist.c_str(), ""));
-    string date;
-    mediaInfo.general.GetData(Tag::MEDIA_DATE, date);
-    ASSERT_EQ(0, strcmp(date.c_str(), ""));
-    string encoder;
-    mediaInfo.general.GetData(Tag::MEDIA_ENCODER, encoder);
-    ASSERT_EQ(0, strcmp(encoder.c_str(), ""));
-    string genre;
-    mediaInfo.general.GetData(Tag::MEDIA_GENRE, genre);
-    ASSERT_EQ(0, strcmp(genre.c_str(), ""));
-    string title;
-    mediaInfo.general.GetData(Tag::MEDIA_TITLE, title);
-    ASSERT_EQ(0, strcmp(title.c_str(), ""));
+    ASSERT_TRUE(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_MP3, TEST_FILE_LOCAL_16K_MP3, configs));
+    ASSERT_TRUE(CheckAttr());
     TestFrameCount readFrameCount = {{6101}, {6101}};
     TestFrameCount seekFrameCount = {{7}, {7}};
-    ASSERT_EQ(PluginSelectTracks(), true);
-    ASSERT_EQ(PluginReadAllSample(false), true);
-    ASSERT_EQ(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt), true);
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginReadAllSample(false));
+    ASSERT_TRUE(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt));
     RemoveValue();
-    ASSERT_EQ(PluginSelectTracks(), true);
-    ASSERT_EQ(PluginSeekTo(219348000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false), true);
-    ASSERT_EQ(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt), true);
+    ASSERT_TRUE(PluginSelectTracks(), true);
+    ASSERT_TRUE(PluginSeekTo(219348000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false));
+    ASSERT_TRUE(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt));
     RemoveValue();
 }
 
@@ -1145,36 +1125,17 @@ HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0004, TestSiz
 {
     std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
     configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
-    ASSERT_EQ(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_MP3, TEST_FILE_LOCAL_8K_MP3, configs), true);
-    MediaInfo mediaInfo;
-    demuxerPlugin_->GetMediaInfo(mediaInfo);
-    string album;
-    mediaInfo.general.GetData(Tag::MEDIA_ALBUM, album);
-    ASSERT_EQ(0, strcmp(album.c_str(), ""));
-    string artist;
-    mediaInfo.general.GetData(Tag::MEDIA_ARTIST, artist);
-    ASSERT_EQ(0, strcmp(artist.c_str(), ""));
-    string date;
-    mediaInfo.general.GetData(Tag::MEDIA_DATE, date);
-    ASSERT_EQ(0, strcmp(date.c_str(), ""));
-    string encoder;
-    mediaInfo.general.GetData(Tag::MEDIA_ENCODER, encoder);
-    ASSERT_EQ(0, strcmp(encoder.c_str(), ""));
-    string genre;
-    mediaInfo.general.GetData(Tag::MEDIA_GENRE, genre);
-    ASSERT_EQ(0, strcmp(genre.c_str(), ""));
-    string title;
-    mediaInfo.general.GetData(Tag::MEDIA_TITLE, title);
-    ASSERT_EQ(0, strcmp(title.c_str(), ""));
+    ASSERT_TRUE(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_MP3, TEST_FILE_LOCAL_8K_MP3, configs));
+    ASSERT_TRUE(CheckAttr());
     TestFrameCount readFrameCount = {{3052}, {3052}};
     TestFrameCount seekFrameCount = {{6}, {6}};
-    ASSERT_EQ(PluginSelectTracks(), true);
-    ASSERT_EQ(PluginReadAllSample(false), true);
-    ASSERT_EQ(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt), true);
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginReadAllSample(false));
+    ASSERT_TRUE(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt));
     RemoveValue();
-    ASSERT_EQ(PluginSelectTracks(), true);
-    ASSERT_EQ(PluginSeekTo(219240000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false), true);
-    ASSERT_EQ(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt), true);
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginSeekTo(219240000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false));
+    ASSERT_TRUE(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt));
     RemoveValue();
 }
 
@@ -1187,36 +1148,36 @@ HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0005, TestSiz
 {
     std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
     configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
-    ASSERT_EQ(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_LOCAL_B_GOP_MP4, configs), true);
+    ASSERT_TRUE(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_LOCAL_B_GOP_MP4, configs));
     MediaInfo mediaInfo;
     demuxerPlugin_->GetMediaInfo(mediaInfo);
     string album;
     mediaInfo.general.GetData(Tag::MEDIA_ALBUM, album);
-    ASSERT_EQ(0, strcmp(album.c_str(), "album"));
+    ASSERT_EQ(album, "album");
     string artist;
     mediaInfo.general.GetData(Tag::MEDIA_ARTIST, artist);
-    ASSERT_EQ(0, strcmp(artist.c_str(), "artist"));
+    ASSERT_EQ(artist, "artist");
     string date;
     mediaInfo.general.GetData(Tag::MEDIA_DATE, date);
-    ASSERT_EQ(0, strcmp(date.c_str(), "2023"));
+    ASSERT_EQ(date.c_str(), "2023");
     string encoder;
     mediaInfo.general.GetData(Tag::MEDIA_ENCODER, encoder);
-    ASSERT_EQ(0, strcmp(encoder.c_str(), "Lavf60.3.100"));
+    ASSERT_EQ(encoder.c_str(), "Lavf60.3.100");
     string genre;
     mediaInfo.general.GetData(Tag::MEDIA_GENRE, genre);
-    ASSERT_EQ(0, strcmp(genre.c_str(), "genre"));
+    ASSERT_EQ(genre.c_str(), "genre");
     string title;
     mediaInfo.general.GetData(Tag::MEDIA_TITLE, title);
-    ASSERT_EQ(0, strcmp(title.c_str(), "title"));
+    ASSERT_EQ(title.c_str(), "title");
     TestFrameCount readFrameCount = {{103, 174}, {5, 174}};
     TestFrameCount seekFrameCount = {{3, 5}, {1, 5}};
-    ASSERT_EQ(PluginSelectTracks(), true);
-    ASSERT_EQ(PluginReadAllSample(false), true);
-    ASSERT_EQ(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt), true);
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginReadAllSample(false));
+    ASSERT_TRUE(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt));
     RemoveValue();
-    ASSERT_EQ(PluginSelectTracks(), true);
-    ASSERT_EQ(PluginSeekTo(4000000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false), true);
-    ASSERT_EQ(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt), true);
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginSeekTo(4000000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false));
+    ASSERT_TRUE(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt));
     RemoveValue();
 }
 
@@ -1229,22 +1190,17 @@ HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0006, TestSiz
 {
     std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
     configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
-    ASSERT_EQ(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV,
-        TEST_FILE_LOCAL_ADPCM_G722_WAV, configs), true);
-    MediaInfo mediaInfo;
-    demuxerPlugin_->GetMediaInfo(mediaInfo);
-    string encoder;
-    mediaInfo.general.GetData(Tag::MEDIA_ENCODER, encoder);
-    ASSERT_EQ(0, strcmp(encoder.c_str(), ""));
+    ASSERT_TRUE(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_LOCAL_ADPCM_G722_WAV, configs));
+    ASSERT_TRUE(CheckAttr());
     TestFrameCount readFrameCount = {{54}, {54}};
     TestFrameCount seekFrameCount = {{17}, {17}};
-    ASSERT_EQ(PluginSelectTracks(), true);
-    ASSERT_EQ(PluginReadAllSample(false), true);
-    ASSERT_EQ(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt), true);
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginReadAllSample(false));
+    ASSERT_TRUE(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt));
     RemoveValue();
-    ASSERT_EQ(PluginSelectTracks(), true);
-    ASSERT_EQ(PluginSeekTo(9473741, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false), true);
-    ASSERT_EQ(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt), true);
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginSeekTo(9473741, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false));
+    ASSERT_TRUE(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt));
     RemoveValue();
 }
 
@@ -1257,22 +1213,17 @@ HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0007, TestSiz
 {
     std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
     configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
-    ASSERT_EQ(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV,
-        TEST_FILE_LOCAL_ADPCM_G726_WAV, configs), true);
-    MediaInfo mediaInfo;
-    demuxerPlugin_->GetMediaInfo(mediaInfo);
-    string encoder;
-    mediaInfo.general.GetData(Tag::MEDIA_ENCODER, encoder);
-    ASSERT_EQ(0, strcmp(encoder.c_str(), ""));
+    ASSERT_TRUE(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_LOCAL_ADPCM_G726_WAV, configs));
+    ASSERT_TRUE(CheckAttr());
     TestFrameCount readFrameCount = {{10}, {10}};
     TestFrameCount seekFrameCount = {{1}, {1}};
-    ASSERT_EQ(PluginSelectTracks(), true);
-    ASSERT_EQ(PluginReadAllSample(false), true);
-    ASSERT_EQ(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt), true);
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginReadAllSample(false));
+    ASSERT_TRUE(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt));
     RemoveValue();
-    ASSERT_EQ(PluginSelectTracks(), true);
-    ASSERT_EQ(PluginSeekTo(9664000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false), true);
-    ASSERT_EQ(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt), true);
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginSeekTo(9664000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false));
+    ASSERT_TRUE(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt));
     RemoveValue();
 }
 
@@ -1285,22 +1236,17 @@ HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0008, TestSiz
 {
     std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
     configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
-    ASSERT_EQ(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV,
-        TEST_FILE_LOCAL_ADPCM_IMA_WAV, configs), true);
-    MediaInfo mediaInfo;
-    demuxerPlugin_->GetMediaInfo(mediaInfo);
-    string encoder;
-    mediaInfo.general.GetData(Tag::MEDIA_ENCODER, encoder);
-    ASSERT_EQ(0, strcmp(encoder.c_str(), ""));
+    ASSERT_TRUE(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_LOCAL_ADPCM_IMA_WAV, configs));
+    ASSERT_TRUE(CheckAttr());
     TestFrameCount readFrameCount = {{55}, {55}};
     TestFrameCount seekFrameCount = {{17}, {17}};
-    ASSERT_EQ(PluginSelectTracks(), true);
-    ASSERT_EQ(PluginReadAllSample(false), true);
-    ASSERT_EQ(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt), true);
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginReadAllSample(false));
+    ASSERT_TRUE(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt));
     RemoveValue();
-    ASSERT_EQ(PluginSelectTracks(), true);
-    ASSERT_EQ(PluginSeekTo(9719048, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false), true);
-    ASSERT_EQ(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt), true);
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginSeekTo(9719048, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false));
+    ASSERT_TRUE(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt));
     RemoveValue();
 }
 
@@ -1313,22 +1259,17 @@ HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0009, TestSiz
 {
     std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
     configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
-    ASSERT_EQ(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV,
-        TEST_FILE_LOCAL_ADPCM_MS_WAV, configs), true);
-    MediaInfo mediaInfo;
-    demuxerPlugin_->GetMediaInfo(mediaInfo);
-    string encoder;
-    mediaInfo.general.GetData(Tag::MEDIA_ENCODER, encoder);
-    ASSERT_EQ(0, strcmp(encoder.c_str(), ""));
+    ASSERT_TRUE(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_LOCAL_ADPCM_MS_WAV, configs));
+    ASSERT_TRUE(CheckAttr());
     TestFrameCount readFrameCount = {{9}, {9}};
     TestFrameCount seekFrameCount = {{2}, {2}};
-    ASSERT_EQ(PluginSelectTracks(), true);
-    ASSERT_EQ(PluginReadAllSample(false), true);
-    ASSERT_EQ(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt), true);
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginReadAllSample(false));
+    ASSERT_TRUE(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt));
     RemoveValue();
-    ASSERT_EQ(PluginSelectTracks(), true);
-    ASSERT_EQ(PluginSeekTo(2770068, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false), true);
-    ASSERT_EQ(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt), true);
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginSeekTo(2770068, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false));
+    ASSERT_TRUE(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt));
     RemoveValue();
 }
 
@@ -1341,31 +1282,18 @@ HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0010, TestSiz
 {
     std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
     configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
-    ASSERT_EQ(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV,
-        TEST_FILE_LOCAL_ADPCM_YAMAHA_WAV, configs), true);
-    MediaInfo mediaInfo;
-    demuxerPlugin_->GetMediaInfo(mediaInfo);
-    string artist;
-    mediaInfo.general.GetData(Tag::MEDIA_ARTIST, artist);
-    ASSERT_EQ(0, strcmp(artist.c_str(), ""));
-    string date;
-    mediaInfo.general.GetData(Tag::MEDIA_DATE, date);
-    ASSERT_EQ(0, strcmp(date.c_str(), ""));
-    string encoder;
-    mediaInfo.general.GetData(Tag::MEDIA_ENCODER, encoder);
-    ASSERT_EQ(0, strcmp(encoder.c_str(), ""));
-    string title;
-    mediaInfo.general.GetData(Tag::MEDIA_TITLE, title);
-    ASSERT_EQ(0, strcmp(title.c_str(), ""));
+    ASSERT_TRUE(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV,
+        TEST_FILE_LOCAL_ADPCM_YAMAHA_WAV, configs));
+    ASSERT_TRUE(CheckAttr());
     TestFrameCount readFrameCount = {{12}, {12}};
     TestFrameCount seekFrameCount = {{9}, {9}};
-    ASSERT_EQ(PluginSelectTracks(), true);
-    ASSERT_EQ(PluginReadAllSample(false), true);
-    ASSERT_EQ(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt), true);
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginReadAllSample(false));
+    ASSERT_TRUE(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt));
     RemoveValue();
-    ASSERT_EQ(PluginSelectTracks(), true);
-    ASSERT_EQ(PluginSeekTo(768000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false), true);
-    ASSERT_EQ(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt), true);
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginSeekTo(768000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false));
+    ASSERT_TRUE(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt));
     RemoveValue();
 }
 
@@ -1378,21 +1306,17 @@ HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0011, TestSiz
 {
     std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
     configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
-    ASSERT_EQ(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_LOCAL_DVAUDIO, configs), true);
-    MediaInfo mediaInfo;
-    demuxerPlugin_->GetMediaInfo(mediaInfo);
-    string encoder;
-    mediaInfo.general.GetData(Tag::MEDIA_ENCODER, encoder);
-    ASSERT_EQ(0, strcmp(encoder.c_str(), ""));
+    ASSERT_TRUE(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_LOCAL_DVAUDIO, configs));
+    ASSERT_TRUE(CheckAttr());
     TestFrameCount readFrameCount = {{100}, {100}};
     TestFrameCount seekFrameCount = {{54}, {54}};
-    ASSERT_EQ(PluginSelectTracks(), true);
-    ASSERT_EQ(PluginReadAllSample(false), true);
-    ASSERT_EQ(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt), true);
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginReadAllSample(false));
+    ASSERT_TRUE(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt));
     RemoveValue();
-    ASSERT_EQ(PluginSelectTracks(), true);
-    ASSERT_EQ(PluginSeekTo(1840000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false), true);
-    ASSERT_EQ(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt), true);
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginSeekTo(1840000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false));
+    ASSERT_TRUE(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt));
     RemoveValue();
 }
 
@@ -1405,36 +1329,17 @@ HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0012, TestSiz
 {
     std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
     configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
-    ASSERT_EQ(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_LOCAL_PCM_WAV, configs), true);
-    MediaInfo mediaInfo;
-    demuxerPlugin_->GetMediaInfo(mediaInfo);
-    string album;
-    mediaInfo.general.GetData(Tag::MEDIA_ALBUM, album);
-    ASSERT_EQ(0, strcmp(album.c_str(), ""));
-    string artist;
-    mediaInfo.general.GetData(Tag::MEDIA_ARTIST, artist);
-    ASSERT_EQ(0, strcmp(artist.c_str(), ""));
-    string date;
-    mediaInfo.general.GetData(Tag::MEDIA_DATE, date);
-    ASSERT_EQ(0, strcmp(date.c_str(), ""));
-    string encoder;
-    mediaInfo.general.GetData(Tag::MEDIA_ENCODER, encoder);
-    ASSERT_EQ(0, strcmp(encoder.c_str(), ""));
-    string genre;
-    mediaInfo.general.GetData(Tag::MEDIA_GENRE, genre);
-    ASSERT_EQ(0, strcmp(genre.c_str(), ""));
-    string title;
-    mediaInfo.general.GetData(Tag::MEDIA_TITLE, title);
-    ASSERT_EQ(0, strcmp(title.c_str(), ""));
+    ASSERT_TRUE(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_LOCAL_PCM_WAV, configs));
+    ASSERT_TRUE(CheckAttr());
     TestFrameCount readFrameCount = {{2110}, {2110}};
     TestFrameCount seekFrameCount = {{4}, {4}};
-    ASSERT_EQ(PluginSelectTracks(), true);
-    ASSERT_EQ(PluginReadAllSample(false), true);
-    ASSERT_EQ(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt), true);
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginReadAllSample(false));
+    ASSERT_TRUE(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt));
     RemoveValue();
-    ASSERT_EQ(PluginSelectTracks(), true);
-    ASSERT_EQ(PluginSeekTo(89856000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false), true);
-    ASSERT_EQ(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt), true);
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginSeekTo(89856000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false));
+    ASSERT_TRUE(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt));
     RemoveValue();
 }
 
@@ -1447,36 +1352,17 @@ HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0013, TestSiz
 {
     std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
     configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
-    ASSERT_EQ(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_LOCAL_ALAW_WAV, configs), true);
-    MediaInfo mediaInfo;
-    demuxerPlugin_->GetMediaInfo(mediaInfo);
-    string album;
-    mediaInfo.general.GetData(Tag::MEDIA_ALBUM, album);
-    ASSERT_EQ(0, strcmp(album.c_str(), ""));
-    string artist;
-    mediaInfo.general.GetData(Tag::MEDIA_ARTIST, artist);
-    ASSERT_EQ(0, strcmp(artist.c_str(), ""));
-    string date;
-    mediaInfo.general.GetData(Tag::MEDIA_DATE, date);
-    ASSERT_EQ(0, strcmp(date.c_str(), ""));
-    string encoder;
-    mediaInfo.general.GetData(Tag::MEDIA_ENCODER, encoder);
-    ASSERT_EQ(0, strcmp(encoder.c_str(), ""));
-    string genre;
-    mediaInfo.general.GetData(Tag::MEDIA_GENRE, genre);
-    ASSERT_EQ(0, strcmp(genre.c_str(), ""));
-    string title;
-    mediaInfo.general.GetData(Tag::MEDIA_TITLE, title);
-    ASSERT_EQ(0, strcmp(title.c_str(), ""));
+    ASSERT_TRUE(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_LOCAL_ALAW_WAV, configs));
+    ASSERT_TRUE(CheckAttr());
     TestFrameCount readFrameCount = {{2573}, {2573}};
     TestFrameCount seekFrameCount = {{8}, {8}};
-    ASSERT_EQ(PluginSelectTracks(), true);
-    ASSERT_EQ(PluginReadAllSample(false), true);
-    ASSERT_EQ(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt), true);
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginReadAllSample(false));
+    ASSERT_TRUE(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt));
     RemoveValue();
-    ASSERT_EQ(PluginSelectTracks(), true);
-    ASSERT_EQ(PluginSeekTo(218880000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false), true);
-    ASSERT_EQ(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt), true);
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginSeekTo(218880000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false));
+    ASSERT_TRUE(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt));
     RemoveValue();
 }
 }  // namespace Media
