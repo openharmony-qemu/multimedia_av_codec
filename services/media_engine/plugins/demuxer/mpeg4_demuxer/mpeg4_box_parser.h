@@ -308,6 +308,7 @@ private:
     Status ParseMdhd(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     void UpdateMdhdTimeOffset(uint32_t timeScale);
     Status ParseHdlr(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
+    Status SetTrackTypeByHdlr(MPEG4Atom currentAtom, uint32_t handlerType, ParseContext* ctx);
     Status ParseMinf(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseStbl(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseStsd(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);

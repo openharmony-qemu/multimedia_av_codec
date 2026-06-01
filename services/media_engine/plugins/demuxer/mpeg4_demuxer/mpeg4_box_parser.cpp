@@ -1861,6 +1861,50 @@ void MPEG4AtomParser::TrySetGltfOffset(ParseContext* ctx)
     }
 }
 
+Status MPEG4AtomParser::SetTrackTypeByHdlr(MPEG4Atom currentAtom, uint32_t handlerType, ParseContext* ctx)
+{
+    FALSE_RETURN_V_MSG_E(lastTrack_ != nullptr, Status::ERROR_NULL_POINTER, "not in a valid track");
+    switch (handlerType) {
+        case FourccType("vide"):
+        case FourccType("covr"): {
+            lastTrack_->codecParms.trackType = VIDEO_TYPE;
+            break;
+        }
+        case FourccType("soun"): {
+            lastTrack_->codecParms.trackType = AUDIO_TYPE;
+            break;
+        }
+        case FourccType("subp"):
+        case FourccType("clcp"):
+        case FourccType("text"): {
+            lastTrack_->codecParms.trackType = SUBTITLE_TYPE;
+            break;
+        }
+        case FourccType("auxv"): {
+            lastTrack_->codecParms.trackType = AUXILIARY_TYPE;
+            Status ret = ProcessAuxiliaryHandler(currentAtom, ctx);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Process auxv handler failed");
+            break;
+        }
+        case FourccType("meta"): {
+            Status ret = ProcessMetaHandler(currentAtom, ctx);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Process meta handler failed");
+            break;
+        }
+        default: {
+            FALSE_RETURN_V_MSG_E(!formatDebug_, Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT,
+                "Unsupported handler: %{public}s", FourccToString(handlerType).c_str());
+            if (ctx->path.size() > DIRECT_META_PATH_SIZE &&
+                ctx->path[ctx->path.size() - DIRECT_META_PATH_SIZE] != FourccType("mdia")) {
+                return Status::OK;
+            }
+            lastTrack_->codecParms.trackType = INVALID_TYPE;
+            break;
+        }
+    }
+    return Status::OK;
+}
+
 Status MPEG4AtomParser::ParseHdlr(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {
     FALSE_RETURN_V_MSG_E(currentAtom.dataSize >= MIN_HDLR_DATA_SIZE, Status::ERROR_INVALID_DATA, "Invalid size");
@@ -1880,39 +1924,8 @@ Status MPEG4AtomParser::ParseHdlr(MPEG4Atom currentAtom, int32_t depth, ParseCon
         ctx->foundHdlrMdta = handlerType == FourccType("mdta") ? true : false;
         return Status::OK;
     }
-    FALSE_RETURN_V_MSG_E(lastTrack_ != nullptr, Status::ERROR_NULL_POINTER, "not in a valid track");
-    switch (handlerType) {
-        case FourccType("vide"):
-        case FourccType("covr"):
-            lastTrack_->codecParms.trackType = VIDEO_TYPE;
-            break;
-        case FourccType("soun"):
-            lastTrack_->codecParms.trackType = AUDIO_TYPE;
-            break;
-        case FourccType("subp"):
-        case FourccType("clcp"):
-        case FourccType("text"):
-            lastTrack_->codecParms.trackType = SUBTITLE_TYPE;
-            break;
-        case FourccType("auxv"):
-            lastTrack_->codecParms.trackType = AUXILIARY_TYPE;
-            ret = ProcessAuxiliaryHandler(currentAtom, ctx);
-            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Process auxv handler failed");
-            break;
-        case FourccType("meta"):
-            ret = ProcessMetaHandler(currentAtom, ctx);
-            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Process meta handler failed");
-            break;
-        default:
-            FALSE_RETURN_V_MSG_E(!formatDebug_, Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT,
-                "Unsupported handler: %{public}s", FourccToString(handlerType).c_str());
-            if (ctx->path.size() > DIRECT_META_PATH_SIZE &&
-                ctx->path[ctx->path.size() - DIRECT_META_PATH_SIZE] != FourccType("mdia")) {
-                return Status::OK;
-            }
-            lastTrack_->codecParms.trackType = INVALID_TYPE;
-            break;
-    }
+    ret = SetTrackTypeByHdlr(currentAtom, handlerType, ctx);
+    FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
     lastTrack_->sampleHelper->trackType_ = lastTrack_->codecParms.trackType;
     SetTrackMediaType(mediaInfo_.tracks[lastTrack_->trackIndex], lastTrack_->sampleHelper->trackType_);
     return ret;
