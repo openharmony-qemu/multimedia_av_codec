@@ -93,6 +93,7 @@ public:
     Status ParseMoof(const std::shared_ptr<Track>& track, int64_t offset);
     
 private:
+    bool formatDebug_ = false;
     std::shared_ptr<Track> firstTrack_;
     std::shared_ptr<Track> lastTrack_;
     std::shared_ptr<Track> currentTrack_;
@@ -187,7 +188,7 @@ private:
     bool UnderMetaPath(const std::vector<uint32_t>& path, int32_t depth);
     bool UnderFileLevelMetaPath(const std::vector<uint32_t>& path, int32_t depth);
     void TrySetGltfOffset(ParseContext* ctx);
-    
+
     // Display matrix 相关辅助函数
     void CalculateSampleAspectRatio(std::shared_ptr<Track> track, uint32_t width, uint32_t height);
     void CalculateSARFromTrackInfo(std::shared_ptr<Track> track);
@@ -197,6 +198,7 @@ private:
     // 视频方向解析相关辅助函数
     void ParseOrientationFromMatrix(std::shared_ptr<Track> track);
     void ParseRotationTypeFromMatrix(std::shared_ptr<Track> track);
+    void ParseImageTrackData(std::shared_ptr<Track> track);
     // 计算流信息相关辅助函数
     void CalculateVideoFrameRate(std::shared_ptr<Track> track);
     void CalculateTrackBitrates(std::shared_ptr<Track> track);
@@ -229,11 +231,7 @@ private:
     bool SetMetadataValue(const std::string& key, const std::string& value);
     void ParseLocationString(const std::string& locationStr);
     // 辅助轨相关辅助函数
-    bool NeedParseVideoInfo(std::string mimeType, TrackType trackType);
-    bool NeedParseAudioInfo(std::string mimeType, TrackType trackType);
     void InferTrackTypeFromMime(const std::string& mimeType);
-    bool NeedParseVideoInfo(const MPEG4AtomParser::Track &track);
-    bool NeedParseAudioInfo(const MPEG4AtomParser::Track &track);
     Status ProcessAuxiliaryHandler(MPEG4Atom currentAtom, ParseContext* parseCtx);
     Status ParseSampleDescriptionEntry(int32_t depth, ParseContext* ctx);
     // 音频属性相关辅助函数
@@ -245,6 +243,7 @@ private:
     bool ParseOPUSExtradata(const uint8_t* data, uint64_t dataSize);
     void SetAmrAudioAttribute(std::string mime);
     void SetMpegAudioAttribute();
+    bool ParseJpegDimensions(const uint8_t* data, uint64_t size, int32_t& width, int32_t& height);
     struct AudioVersionInfoContext {
         ParseContext* ctx = nullptr;
         uint16_t version = 0;
@@ -265,7 +264,6 @@ private:
     Status ParseAtomHeader(MPEG4Atom& atom, std::string& typeStr, int32_t depth, bool &isZeroSizeAtom,
         ParseContext* ctx);
     Status ProcessMetaHandler(MPEG4Atom currentAtom, ParseContext* parseCtx);
-    void SetTrackMediaType(const std::shared_ptr<Track>& track);
     Status ProcessTfhdAtom(const MPEG4Atom& atom);
     Status UpdateDca3TrackMeta(DemuxerBitReader& bitReader, const Av3aConfigParams& params);
     Status ReadDca3Payload(MPEG4Atom currentAtom, ParseContext* ctx,
@@ -310,6 +308,7 @@ private:
     Status ParseMdhd(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     void UpdateMdhdTimeOffset(uint32_t timeScale);
     Status ParseHdlr(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
+    Status SetTrackTypeByHdlr(MPEG4Atom currentAtom, uint32_t handlerType, ParseContext* ctx);
     Status ParseMinf(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseStbl(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseStsd(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);

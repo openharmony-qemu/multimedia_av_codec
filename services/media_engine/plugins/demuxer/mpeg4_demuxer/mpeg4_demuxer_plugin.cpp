@@ -29,6 +29,7 @@
 #include "converter.h"
 #include "mpeg4_sample_helper.h"
 #include "mpeg4_demuxer_plugin.h"
+#include "mpeg4_format_checker.h"
 #include "mpeg4_utils.h"
 #include "plugin/plugin_buffer.h"
 #include "plugin/plugin_definition.h"
@@ -156,7 +157,6 @@ bool IsSupportedTrackType(const std::shared_ptr<MPEG4AtomParser::Track>& track)
         track->codecParms.trackType) != g_streamMediaTypeVec.cend());
 }
 
-
 bool IsSupportedTrack(const std::shared_ptr<MPEG4AtomParser::Track>& track)
 {
     FALSE_RETURN_V_MSG_E(track != nullptr, false, "track is nullptr");
@@ -164,9 +164,9 @@ bool IsSupportedTrack(const std::shared_ptr<MPEG4AtomParser::Track>& track)
         MEDIA_LOG_E("Unsupport track type: " PUBLIC_LOG_D32, track->codecParms.trackType);
         return false;
     }
-    if (track->codecParms.trackType == ATTACHMENT_TYPE || track->sampleHelper->sampleIndexEntry_.size() <= 0) {
-        MEDIA_LOG_E("Unsupport image track or empty SampleIndexEntry");
-        return false;
+    if (track->codecParms.trackType == VIDEO_TYPE) {
+        FALSE_RETURN_V_MSG_E(track->sampleHelper != nullptr && !IsImageMimeType(track->sampleHelper->mimeType_), false,
+            "Unsupport image track");
     }
     return true;
 }
@@ -335,8 +335,9 @@ Status MPEG4DemuxerPlugin::ConvertElstTimescaleToMs()
     }
     int32_t trackTimeScale;
     for (uint32_t trackIndex = 0; track != nullptr; ++trackIndex) {
-        if (track->codecParms.trackType == ATTACHMENT_TYPE) {
-            MEDIA_LOG_D("Skip attachment track " PUBLIC_LOG_U32, trackIndex);
+        if (track->codecParms.trackType == VIDEO_TYPE &&
+            (track->sampleHelper == nullptr || IsImageMimeType(track->sampleHelper->mimeType_))) {
+            MEDIA_LOG_D("Skip cover track " PUBLIC_LOG_U32, trackIndex);
             track = track->next;
             continue;
         }
@@ -1799,7 +1800,7 @@ void IsMPEGPS(int64_t offset, int64_t kMaxOffset, const std::shared_ptr<DemuxerD
 }
 
 int32_t GetFtypConfidence(std::shared_ptr<DemuxerDataReader> dataReader_,
-    int64_t chunkDataOffset, int64_t chunkDataSize, int32_t confidence)
+    int64_t chunkDataOffset, int64_t chunkDataSize, int32_t confidence, bool formatDebug)
 {
     const int32_t readLengHalf = 4;
     FALSE_RETURN_V_MSG_E(chunkDataSize >= READ_LEN, 0, "ftyp data size error");
@@ -1818,15 +1819,27 @@ int32_t GetFtypConfidence(std::shared_ptr<DemuxerDataReader> dataReader_,
             chunkDataOffset + readLengHalf * i, brandData, sizeof(brandData)) == Status::OK,
             0, "Read brand failed");
         brand = GetU32Value(brandData);
-        if (i == 0 && !IsJPEGBrand(brand)) {
-            confidence = FIRST_LEVEL_RANK;
-            return confidence;
-        }
-        if (i == 0) {
-            confidence = std::max(confidence, RANK_MIN);
-        } else if (IsBrand(brand)) {
-            confidence = FIRST_LEVEL_RANK;
-            return confidence;
+        if (!formatDebug) {
+            if (i == 0 && !IsJPEGBrand(brand)) {
+                confidence = FIRST_LEVEL_RANK;
+                return confidence;
+            }
+            if (i == 0) {
+                confidence = std::max(confidence, RANK_MIN);
+            } else if (IsBrand(brand)) {
+                confidence = FIRST_LEVEL_RANK;
+                return confidence;
+            }
+        } else {
+            if (IsSupportedBrand(brand)) {
+                return FIRST_LEVEL_RANK;
+            }
+            if (IsUnsupportedBrand(brand)) {
+                return 0;
+            }
+            if (i == 0) {
+                confidence = std::max(confidence, RANK_MIN);
+            }
         }
     }
     return confidence;
@@ -1887,7 +1900,8 @@ int32_t GetConfidence(std::shared_ptr<DemuxerDataReader> dataReader)
     MoovInfo moov {false, -1, -1};
     int64_t offset = 0;
     int32_t confidence = 0;
-
+    bool isFirstAtom = true;
+    bool formatDebug = (OHOS::system::GetParameter("Mpeg4DemuxerPlugin.formatDebug", "0") == "1");
     while (!moov.found && offset < SNIFF_DATA_SIZE) {
         uint8_t atomInfoData[8];
         FALSE_RETURN_V_MSG_E(dataReader->ReadUintData(offset, atomInfoData, sizeof(atomInfoData)) == Status::OK, 0,
@@ -1897,10 +1911,12 @@ int32_t GetConfidence(std::shared_ptr<DemuxerDataReader> dataReader)
         FALSE_RETURN_V_NOLOG(UpdateAtomSize(atom, offset, chunkDataOffset, dataReader), 0);
         int64_t chunkDataSize = atom.size - (chunkDataOffset - offset);
         FALSE_RETURN_V_MSG_E(chunkDataSize >= 0, 0, "atom data size error");
+        FALSE_RETURN_V_MSG_E(!formatDebug || (!isFirstAtom || atom.type == FourccType("ftyp")), 0, "no ftyp atom");
+        isFirstAtom = false;
         switch (GetAtomLevel(atom)) {
             case AtomLevel::LEVEL_0: {
                 int32_t originalConfidence = confidence;
-                confidence = GetFtypConfidence(dataReader, chunkDataOffset, chunkDataSize, confidence);
+                confidence = GetFtypConfidence(dataReader, chunkDataOffset, chunkDataSize, confidence, formatDebug);
                 FALSE_RETURN_V_NOLOG(!(confidence != FIRST_LEVEL_RANK || confidence == originalConfidence), confidence);
                 break;
             }
