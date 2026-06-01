@@ -68,7 +68,7 @@ public:
     uint32_t GetSampleCountOfCttsEntry(uint32_t cttsEntryIndex);
     int32_t GetSampleOffsetOfCttsEntry(uint32_t cttsEntryIndex);
     int32_t GetMinOffsetOfCttsEntry();
-    std::vector<uint32_t> GetSyncSamplesPtsFromStssEntry();
+    std::vector<uint32_t> GetSyncSamplesIndexFromStssEntry();
     Status GetPtsOfFirstSample(int64_t& startPtsBasedOnTimescale);
 
     struct EditListEntry {

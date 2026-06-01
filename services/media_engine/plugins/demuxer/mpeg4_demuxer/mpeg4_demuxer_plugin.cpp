@@ -423,7 +423,7 @@ void MPEG4DemuxerPlugin::InitParser()
                 startPts_ = static_cast<int64_t>(
                     (static_cast<double>(startPtsBasedOnTimescale) / static_cast<double>(timeScale)) * S_TO_US);
             }
-            syncSamplesIndex_ = track->sampleHelper->GetSyncSamplesPtsFromStssEntry();
+            syncSamplesIndex_ = track->sampleHelper->GetSyncSamplesIndexFromStssEntry();
         }
         track = track->next;
     }
