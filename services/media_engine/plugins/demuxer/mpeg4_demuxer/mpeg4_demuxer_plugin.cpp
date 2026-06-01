@@ -414,12 +414,22 @@ void MPEG4DemuxerPlugin::InitParser()
         mediaInfo_.tracks[trackIndex].Get<Tag::MEDIA_TYPE>(trackType);
         if (trackType == MediaType::VIDEO && StartWith(mime.c_str(), "video/") && videoTrackCount == 0) {
             videoTrackCount++;
-            FALSE_RETURN_MSG(track->sampleHelper, "sampleHelper is nullptr");
-            track->sampleHelper->GetPtsOfFirstSample(startPts_);  // todo
+            int32_t timeScale = 0;
+            mediaInfo_.tracks[trackIndex].Get<Tag::MEDIA_TIME_SCALE>(timeScale);
+            if (timeScale > 0) {
+                FALSE_RETURN_MSG(track->sampleHelper, "sampleHelper is nullptr");
+                int64_t startPtsBasedOnTimescale = 0;
+                track->sampleHelper->GetPtsOfFirstSample(startPtsBasedOnTimescale);
+                startPts_ = static_cast<int64_t>(
+                    (static_cast<double>(startPtsBasedOnTimescale) / static_cast<double>(timeScale)) * S_TO_US);
+            }
             syncSamplesIndex_ = track->sampleHelper->GetSyncSamplesPtsFromStssEntry();
         }
         track = track->next;
     }
+    FALSE_RETURN_MSG(!IsMultiVideoTracks(), "multi-video-tracks video is unsupported");
+    FALSE_RETURN_MSG(GetPresentationTimeUsByMpeg4BoxParser(IndexAndPTSConversionMode::PTS_TO_DTS_MAPPING,
+        refParserTrackIdx_, 0, 0) == Status::OK, "Failed to get pts and dts of all frames");
 }
 
 void MPEG4DemuxerPlugin::GetAVTrackIds()

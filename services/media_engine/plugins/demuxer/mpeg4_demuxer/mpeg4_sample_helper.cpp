@@ -336,7 +336,7 @@ Status MPEG4SampleHelper::SetTimeToSampleParams(int64_t dataOffset, size_t dataS
     MEDIA_LOG_D("In");
     FALSE_RETURN_V_MSG_E(sttsEntry_.empty(), Status::ERROR_INVALID_OPERATION, "sttsEntry exist");
     FALSE_RETURN_V_MSG_E(dataOffset >= 0 && dataSize >= MIN_DATA_SIZE, Status::ERROR_INVALID_PARAMETER, "Invalid data");
-    
+
     int64_t currentOffset = dataOffset;
     uint8_t header[8];
     auto ret = dataReader_->ReadUintData(currentOffset, header, sizeof(header));
@@ -1607,10 +1607,10 @@ MPEG4SampleHelper::SdtpEntry MPEG4SampleHelper::GetSdtpEntry()
     return sdtpEntry_;
 }
 
-Status MPEG4SampleHelper::GetPtsOfFirstSample(int64_t& startPts)
+Status MPEG4SampleHelper::GetPtsOfFirstSample(int64_t& startPtsBasedOnTimescale)
 {
     FALSE_RETURN_V_MSG_E(!sampleIndexEntry_.empty(), Status::ERROR_INVALID_DATA, "sampleIndexEntry_ is empty");
-    startPts = sampleIndexEntry_[0].pts;
+    startPtsBasedOnTimescale = sampleIndexEntry_[0].pts;  // pts based on track time scale
     return Status::OK;
 }
 } // namespace MPEG4

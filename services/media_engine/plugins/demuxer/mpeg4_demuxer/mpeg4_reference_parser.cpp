@@ -116,6 +116,7 @@ Status MPEG4DemuxerPlugin::ParserRefInfo()
     std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer();
     FALSE_RETURN_V_MSG_E(buffer != nullptr, Status::ERROR_UNKNOWN, "AVBuffer is nullptr");
     int loopCount = 0;
+    SelectTrack(refParserTrackIdx_);
     while (refParserState_ && refParserCurGopId_ != -1) {
         Status rlt = ParserRefInfoLoop(buffer, curSyncSampleIndex);
         if (rlt == Status::ERROR_EARLY_STOP) {  // START 首GOP提前终止
@@ -180,8 +181,8 @@ Status MPEG4DemuxerPlugin::Dts2FrameId(int64_t dts, uint32_t &frameId)
     int64_t dtsBasedOnPtsZero = 0;  // dts starting from 0 for pts
     FALSE_RETURN_V_MSG_E(!__builtin_sub_overflow(dts, startPts_, &dtsBasedOnPtsZero), Status::ERROR_INVALID_DATA,
         "Overflow");
-    FALSE_RETURN_V_MSG_E(dts2SyncSampleIndex_.find(dts) != dts2SyncSampleIndex_.end(), Status::ERROR_INVALID_DATA,
-        "dts does not exist in dts2SyncSampleIndex_");
+    FALSE_RETURN_V_MSG_E(dts2SyncSampleIndex_.find(dtsBasedOnPtsZero) != dts2SyncSampleIndex_.end(),
+        Status::ERROR_INVALID_DATA, "dts does not exist in dts2SyncSampleIndex_");
     uint32_t syncSampleIndex = dts2SyncSampleIndex_[dtsBasedOnPtsZero];
     FALSE_RETURN_V_MSG_E(syncSampleIndex >= 0, Status::ERROR_OUT_OF_RANGE, "find nearest frame failed");
     frameId = syncSampleIndex;
@@ -210,7 +211,7 @@ bool MPEG4DemuxerPlugin::IsMultiVideoTracks()
         if (trackType == MediaType::VIDEO && StartWith(mimeType.c_str(), "video/")) {
             refParserTrackIdx_ = (refParserTrackIdx_ == -1) ? i : refParserTrackIdx_;
             videoTrackCount++;
-            if (videoTrackCount >= 1) {
+            if (videoTrackCount > 1) {  // multi video tracks
                 return true;
             }
         }
@@ -260,9 +261,8 @@ Status MPEG4DemuxerPlugin::SeekMs2FrameId(int64_t seekMs, uint32_t &frameId)
     if (iter != pts2Dts_.begin()) {
         --iter;
     }
-    // todo startPts_
     // Add startPts_ to adjust the initial timestamp, making it the actual playback time
-    int64_t dts = iter->second + startPts_;  // todo 时间基是否需要转换 startpts是ms还是us，需要时us
+    int64_t dts = iter->second + startPts_;
     MEDIA_LOG_D("seekMs " PUBLIC_LOG_D64 ", pts " PUBLIC_LOG_D64 ", mapSize " PUBLIC_LOG_ZU ", dts " PUBLIC_LOG_D64
         ", startPts " PUBLIC_LOG_D64, seekMs, pts, pts2Dts_.size(), dts, startPts_);
     return Dts2FrameId(dts, frameId);
@@ -330,10 +330,9 @@ Status MPEG4DemuxerPlugin::SelectProGopId()
         MEDIA_LOG_D("get I frame pts from simulated dts");
     }
     int64_t realSeekTime = 0;
-    // Status ret = SeekToFrameByDts(refParserTrackIdx_, seekPts / US_TO_MS, SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime,
-        // 0);
-    SeekToFrameByDts(refParserTrackIdx_, seekPts / US_TO_MS, SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime, 0);
-    // FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_UNKNOWN, "SeekToFrameByDts failed");
+    Status ret = SeekToFrameByDts(refParserTrackIdx_, seekPts / US_TO_MS, SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime,
+        0);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "SeekToFrameByDts failed");
     return Status::OK;
 }
 
@@ -531,7 +530,7 @@ Status MPEG4DemuxerPlugin::ConvertPTSAndIndexOnlyByStts(const std::shared_ptr<MP
         FALSE_RETURN_V_MSG_E(timeScaleRate != 0 && static_cast<double>(INT64_MAX) / timeScaleRate >=
             static_cast<double>(dts), Status::ERROR_INVALID_DATA, "dts overflow");
         pts = static_cast<int64_t>(dts * timeScaleRate);
-        ProcessConversionByMode(mode, pts, absolutePTS, sampleIndex, dts);
+        ProcessConversionByMode(mode, pts, absolutePTS, sampleIndex, static_cast<int64_t>(dts * timeScaleRate));
 
         if (sampleCountOfCurrentSttsEntry == 0) {
             break;
@@ -591,7 +590,7 @@ Status MPEG4DemuxerPlugin::ConvertPTSAndIndexBySttsAndCtts(const std::shared_ptr
             track->sampleHelper->GetSampleOffsetOfCttsEntry(cttsEntryIndex) - minSampleOffsetOfCttsEntry);
         FALSE_RETURN_V_MSG_E(UpdatePTSBySttsAndCtts(pts, dts, timeScaleRate, sampleOffsetOfCurrentCttsEntry) ==
             Status::OK, Status::ERROR_INVALID_DATA,  "dts overflow");
-        ProcessConversionByMode(mode, pts, absolutePTS, sampleIndex, dts);
+        ProcessConversionByMode(mode, pts, absolutePTS, sampleIndex, static_cast<int64_t>(dts * timeScaleRate));
         if (sampleCountOfCurrentSttsEntry == 0) {
             break;
         }
