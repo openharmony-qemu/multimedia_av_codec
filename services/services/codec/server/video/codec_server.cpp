@@ -243,7 +243,9 @@ int32_t CodecServer::Configure(const Format &format)
         StatusChanged(ERROR);
         return ret;
     }
-    ReportResolutionInfo(config);
+    if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER) {
+        ReportResolutionInfo(config);
+    }
 
     ret = CreatePostProcessing(config);
     if (ret != AVCS_ERR_OK) {
@@ -278,30 +280,53 @@ void CodecServer::UpdateConfiguredFramerate(const Format &format)
     }
 }
 
+void CodecServer::ReportSfdInfo()
+{
+    Media::Meta meta;
+    bool isForwardCaller = forwardCaller_.pid >= 0 || !forwardCaller_.processName.empty();
+    meta.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, isForwardCaller ? forwardCaller_.processName : caller_.processName);
+    meta.SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "SmartFluencyDecoding");
+    EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::ADVANCED_FEATURE_INFO, meta);
+}
+
 void CodecServer::ConfigureSfdManager(Format &config)
 {
     InitSfdManager();
     if (sfdManager_) {
         sfdManager_->Configure(config);
+        if (sfdManager_->IsSfdActive()) {
+            ReportSfdInfo();
+        }
         sfdManager_->EnableMVOutput(config);
     }
 }
 
 void CodecServer::ReportResolutionInfo(const Format &config)
 {
-    if (codecType_ != AVCODEC_TYPE_VIDEO_ENCODER) {
-        return;
-    }
     Media::Meta statisticsMeta;
-    FillStatisticsCodecInfo(statisticsMeta, codecType_, vcodecType_, codecMime_, codecName_);
     int32_t width = 0;
     int32_t height = 0;
-    if (config.GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, width)) {
+
+    if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER) {
+        if (config.GetIntValue(Media::Tag::VIDEO_WIDTH, width)) {
             statisticsMeta.SetData(EventInfoExtentedKey::WIDTH.data(), width);
+        }
+        if (config.GetIntValue(Media::Tag::VIDEO_HEIGHT, height)) {
+            statisticsMeta.SetData(EventInfoExtentedKey::HEIGHT.data(), height);
+        }
+    } else if (codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
+        if (config.GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, width)) {
+            statisticsMeta.SetData(EventInfoExtentedKey::WIDTH.data(), width);
+        }
+        if (config.GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, height)) {
+            statisticsMeta.SetData(EventInfoExtentedKey::HEIGHT.data(), height);
+        }
     }
-    if (config.GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, height)) {
-        statisticsMeta.SetData(EventInfoExtentedKey::HEIGHT.data(), height);
-    }
+    
+    CHECK_AND_RETURN_LOG_WITH_TAG(width > 0 && height > 0,
+        "Invalid resolution: width %{public}d, height %{public}d", width, height);
+
+    FillStatisticsCodecInfo(statisticsMeta, codecType_, vcodecType_, codecMime_, codecName_);
     EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::RESOLUTION_SPEC_INFO, statisticsMeta);
 }
 
@@ -986,7 +1011,11 @@ int32_t CodecServer::SetParameter(const Format &format)
     }
 
     if (sfdManager_) {
+        bool isEnabled = sfdManager_->IsSfdActive();
         sfdManager_->Configure(format);
+        if (!isEnabled && sfdManager_->IsSfdActive()) {
+            ReportSfdInfo();
+        }
     }
     return codecBase_->SetParameter(format);
 }

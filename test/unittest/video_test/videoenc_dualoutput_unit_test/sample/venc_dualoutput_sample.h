@@ -35,6 +35,10 @@ namespace OHOS {
 namespace MediaAVCodec {
 inline std::string FAST_IMAGE_PATH = "/system/lib64/ndk/libfast_image.so";
 enum class EncoderType { PRIMARY, SECONDARY };
+constexpr uint32_t DEFAULT_WIDTH = 1280;
+constexpr uint32_t DEFAULT_HEIGHT = 720;
+constexpr uint32_t FRAME_COUNT = 10;
+const std::string INPUT_FILE = "1280_720_nv.yuv";
 
 class VideoEncDualOutputSample : public NoCopyable, public VCodecSampleBase {
 public:
@@ -87,13 +91,13 @@ public:
     int32_t HandleOutputFrame(std::shared_ptr<CodecBufferInfo> bufferInfo) override;
     int32_t Operate() override;
 
-    uint32_t frameCount_ = 10;
+    uint32_t frameCount_ = FRAME_COUNT;
     std::string operation_ = "NULL";
     std::string mime_ = "";
-    std::string inPath_ = "1280_720_nv.yuv";
+    std::string inputFile_ = INPUT_FILE;
     std::string outPath_ = "";
-    int32_t sampleWidth_ = 1280;
-    int32_t sampleHeight_ = 720;
+    int32_t sampleWidth_ = DEFAULT_WIDTH;
+    int32_t sampleHeight_ = DEFAULT_HEIGHT;
     int32_t samplePixel_ = AV_PIXEL_FORMAT_NV12;
 
     static bool needDump_;

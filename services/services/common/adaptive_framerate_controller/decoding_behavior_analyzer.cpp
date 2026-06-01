@@ -324,10 +324,13 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
     if (srcFps < 1.0) {
         return;
     }
-    double speed = decInFps / srcFps;
-    size_t newSpeedIdx = UpdateSpeedEstimates(speed, srcFps);
+    if (srcFps > srcFps_ + EPSILON) {
+        srcFps_ = srcFps;
+    }
+    double speed = decInFps / srcFps_;
+    size_t newSpeedIdx = UpdateSpeedEstimates(speed);
     double renderFps = decFps * static_cast<double>(renderCnt_) / frameCnt_;
-    ReportFpsIfSignificantChange(decFps, renderFps, srcFps);
+    ReportFpsIfSignificantChange(decFps, renderFps, srcFps_);
     size_t lastDecSpeedIdx = maxPossibleDecSpeedIdx_;
     DecodingBehaviorType newType = DetermineDecodingBehaviorType();
     HandleBehaviorTransition(type_, lastDecSpeedIdx, newType, newSpeedIdx);
@@ -336,22 +339,17 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
     ResetIntervalStats();
 }
 
-size_t DecodingBehaviorAnalyzer::UpdateSpeedEstimates(double speed, double srcFps)
+size_t DecodingBehaviorAnalyzer::UpdateSpeedEstimates(double speed)
 {
     if (decInSpeed_ < 0.0) {
         decInSpeed_ = speed;
     } else {
         decInSpeed_ = (1.0 - SMOOTHING_FACTOR) * decInSpeed_ + SMOOTHING_FACTOR * speed;
     }
-    if (srcFps_ < 0.0) {
-        srcFps_ = srcFps;
-    } else {
-        srcFps_ = (1.0 - SMOOTHING_FACTOR) * srcFps_ + SMOOTHING_FACTOR * srcFps;
-    }
     size_t newSpeedIdx = MatchAndUpdateSpeedStats(decInSpeed_);
     double stdSpeed = standardSpeeds[newSpeedIdx];
-    AVCODEC_LOGI("speed: %{public}.2f, avgSpeed: %{public}.2f, stdSpeed %{public}.2f, srcFps %{public}.2f, "
-        "avgSrcFps: %{public}.2f", speed, decInSpeed_, stdSpeed, srcFps, srcFps_);
+    AVCODEC_LOGI("speed: %{public}.2f, avgSpeed: %{public}.2f, stdSpeed %{public}.2f, srcFps %{public}.2f",
+        speed, decInSpeed_, stdSpeed, srcFps_);
     if (decInfoCallBack_) {
         decInfoCallBack_(srcFps_, stdSpeed);
     }

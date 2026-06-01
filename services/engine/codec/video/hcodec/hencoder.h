@@ -138,6 +138,7 @@ private:
     bool GetOneBufferFromSurface();
     void TraverseAvaliableBuffers();
     bool GetROIBySurfaceBuffer(sptr<SurfaceBuffer> surfaceBuffer, std::string &roiStr);
+    void ReportROIUsageEvent();
     void SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info);
     void SetBufferPts(BufferInfo* info);
     void ResetSlot(BufferInfo& info);

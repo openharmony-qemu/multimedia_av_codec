@@ -891,7 +891,8 @@ int32_t HEncoder::SetupHEVCEncoderParameters(const Format &format, std::optional
         } else if (iFrameInterval == 0) { // all intra
             hevcType.keyFrameInterval = 1;
         } else {
-            hevcType.keyFrameInterval = iFrameInterval * frameRate.value() / TIME_RATIO_S_TO_MS;
+            hevcType.keyFrameInterval = std::max(1u, static_cast<uint32_t>(
+                iFrameInterval * frameRate.value() / TIME_RATIO_S_TO_MS));
         }
         HLOGI("frameRate %.2f, iFrameInterval %d, keyFrameInterval %u", frameRate.value(),
               iFrameInterval, hevcType.keyFrameInterval);
@@ -1486,12 +1487,7 @@ void HEncoder::WrapRoiParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer> &o
         return;
     }
     ParseRoiStringValid(roiValue, omxBuffer);
-    if (!roiReported_) {
-        auto eventMeta = std::make_shared<Media::Meta>();
-        eventMeta->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "ROI");
-        ReportStatisticsEvent(StatisticsEventType::ADVANCED_FEATURE_INFO, eventMeta);
-        roiReported_ = true;
-    }
+    ReportROIUsageEvent();
 }
 
 void HEncoder::DealWithResolutionChange(uint32_t newWidth, uint32_t newHeight)
@@ -1507,6 +1503,17 @@ void HEncoder::DealWithResolutionChange(uint32_t newWidth, uint32_t newHeight)
         HLOGI("output format changed: %s", outputFormat_->Stringify().c_str());
         callback_->OnOutputFormatChanged(*(outputFormat_.get()));
     }
+}
+
+void HEncoder::ReportROIUsageEvent()
+{
+    if (roiReported_) {
+        return;
+    }
+    auto eventMeta = std::make_shared<Media::Meta>();
+    eventMeta->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "ROI");
+    ReportStatisticsEvent(StatisticsEventType::ADVANCED_FEATURE_INFO, eventMeta);
+    roiReported_ = true;
 }
 
 void HEncoder::OnFrameSubmitted(int64_t pts)
@@ -1857,6 +1864,7 @@ void HEncoder::SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info)
         if (GetROIBySurfaceBuffer(info.surfaceBuffer, roiStr)) {
             info.omxBuffer->alongParam.clear();
             ParseRoiStringValid(roiStr, info.omxBuffer);
+            ReportROIUsageEvent();
         }
         CheckPts(info.omxBuffer->pts);
         if (enableVariableFrameRate_) {

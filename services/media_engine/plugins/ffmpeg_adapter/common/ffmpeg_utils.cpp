@@ -26,11 +26,7 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
 constexpr uint32_t FLAC_CODEC_CONFIG_SIZE = 34;
 
-constexpr uint8_t HEVC_NAL_TYPE_MASK = 0x7E; // NAL unit type mask (bits 1-6 of first byte)
 constexpr uint8_t HEVC_NAL_TYPE_SHIFT = 1;   // Right shift to get NAL type
-constexpr uint8_t HEVC_NAL_TYPE_VPS = 32;    // Video Parameter Set
-constexpr uint8_t HEVC_NAL_TYPE_SPS = 33;    // Sequence Parameter Set
-constexpr uint8_t HEVC_NAL_TYPE_PPS = 34;    // Picture Parameter Set
 constexpr uint8_t HEVC_NAL_TYPE_EXTRACT_MASK = 0x3F; // Mask to extract NAL unit type after shift
 constexpr uint8_t HEVC_NAL_TYPE_TRAIL_N = 0; // Trailing picture, non-reference
 constexpr uint8_t HEVC_NAL_TYPE_TSA_N = 2;   // Temporal sub-layer access, non-reference
