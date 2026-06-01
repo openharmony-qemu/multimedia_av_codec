@@ -73,6 +73,7 @@ private:
     bool CreateDemuxerPluginByNameWithConfig(const std::string& typeName, const std::string& filePath,
         std::shared_ptr<Media::Meta>& configs);
     bool PluginSeekTo(int64_t seekTime, SeekMode mode, bool emptyBuffer);
+    bool CheckAttr();
 
     int streamId_ = 0;
     std::map<uint32_t, uint32_t> frames_;
@@ -524,7 +525,7 @@ bool DemuxerZerocopyInnerFuncTest::PluginCheckDemuxerResult(TestFileInfo info)
     return true;
 }
 
-bool CheckAttr()
+bool DemuxerZerocopyInnerFuncTest::CheckAttr()
 {
     MediaInfo mediaInfo;
     demuxerPlugin_->GetMediaInfo(mediaInfo);
@@ -1110,7 +1111,7 @@ HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0003, TestSiz
     ASSERT_TRUE(PluginReadAllSample(false));
     ASSERT_TRUE(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt));
     RemoveValue();
-    ASSERT_TRUE(PluginSelectTracks(), true);
+    ASSERT_TRUE(PluginSelectTracks());
     ASSERT_TRUE(PluginSeekTo(219348000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false));
     ASSERT_TRUE(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt));
     RemoveValue();
