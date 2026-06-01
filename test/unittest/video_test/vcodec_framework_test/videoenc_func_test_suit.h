@@ -36,6 +36,7 @@ public:
     void CreateByNameWithParam(int32_t param);
     void SetFormatWithParam(int32_t param);
     void PrepareSource(int32_t param);
+    void PrepareSource(int32_t param, int32_t index);
     bool ReadCustomDataToAVBuffer(const std::string &fileName, std::shared_ptr<AVBuffer> buffer);
     bool GetWaterMarkCapability(int32_t param);
     bool GetTemporalScalabilityCapability(int32_t param);
