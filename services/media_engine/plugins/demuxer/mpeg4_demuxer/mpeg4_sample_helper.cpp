@@ -339,58 +339,98 @@ bool MPEG4SampleHelper::IsInputCoveredByPreviousSample(int64_t inputPts, int64_t
         inputPts < entry[currentIndex - 1].pts + entry[currentIndex - 1].duration;
 }
 
+bool MPEG4SampleHelper::ShouldStepBackForBaseAudioCoverage(int64_t inputPts, SeekMode flag, bool fromSyncSamples,
+    int64_t currentIndex) const
+{
+    if (!fromSyncSamples || !IsAudioSampleIndexInRange(currentIndex)) {
+        return false;
+    }
+    const auto& entry = sampleIndexEntry_;
+    bool allowCoverageBackStep = flag == SeekMode::SEEK_CLOSEST_SYNC ||
+        (flag == SeekMode::SEEK_NEXT_SYNC && static_cast<size_t>(currentIndex) == entry.size() - 1);
+    return entry[currentIndex].pts > inputPts && IsInputCoveredByPreviousSample(inputPts, currentIndex) &&
+        allowCoverageBackStep;
+}
+
+bool MPEG4SampleHelper::ShouldStepBackForFirstNonBaseAudioSample(int64_t inputPts, bool isBaseTrack,
+    bool fromSyncSamples, int64_t currentIndex) const
+{
+    const auto& entry = sampleIndexEntry_;
+    return fromSyncSamples && !isBaseTrack && currentIndex == 1 && !entry.empty() &&
+        inputPts <= entry[0].pts + entry[0].duration;
+}
+
+bool MPEG4SampleHelper::ShouldStepBackForSyncPrerollSample(int64_t inputPts, bool isBaseTrack,
+    bool fromSyncSamples, int64_t currentIndex) const
+{
+    const auto& entry = sampleIndexEntry_;
+    return fromSyncSamples && !isBaseTrack && IsAudioSampleIndexInRange(currentIndex) &&
+        entry[currentIndex].pts >= inputPts && !entry[currentIndex - 1].skipSamplesInfo.empty();
+}
+
+bool MPEG4SampleHelper::ShouldStepBackForShiftedAudioCoverage(int64_t inputPts, int64_t currentIndex) const
+{
+    const auto& entry = sampleIndexEntry_;
+    return trackTimeScale_ > 0 && !entry.empty() && entry.front().pts >= trackTimeScale_ &&
+        IsAudioSampleIndexInRange(currentIndex) && inputPts < entry[currentIndex].pts &&
+        IsInputCoveredByPreviousSample(inputPts, currentIndex);
+}
+
+bool MPEG4SampleHelper::ShouldStepBackForNoSyncPrerollSample(int64_t inputPts, bool isBaseTrack, SeekMode flag,
+    bool fromSyncSamples, int64_t currentIndex) const
+{
+    const auto& entry = sampleIndexEntry_;
+    return !fromSyncSamples && !isBaseTrack && flag == SeekMode::SEEK_PREVIOUS_SYNC &&
+        IsAudioSampleIndexInRange(currentIndex) && entry[currentIndex].pts >= inputPts &&
+        entry[currentIndex - 1].pts < inputPts && !entry[currentIndex - 1].skipSamplesInfo.empty();
+}
+
+bool MPEG4SampleHelper::ShouldStepBackForExactPtsPrerollSample(int64_t inputPts, bool isBaseTrack, SeekMode flag,
+    bool fromSyncSamples, int64_t currentIndex) const
+{
+    const auto& entry = sampleIndexEntry_;
+    return fromSyncSamples && !isBaseTrack && flag == SeekMode::SEEK_PREVIOUS_SYNC &&
+        IsAudioSampleIndexInRange(currentIndex) && entry[currentIndex].pts == inputPts &&
+        entry[currentIndex - 1].pts < inputPts && !entry[currentIndex - 1].skipSamplesInfo.empty();
+}
+
 void MPEG4SampleHelper::AdjustAudioSeekSampleIndexByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag,
     bool fromSyncSamples, int64_t& currentIndex) const
 {
     if (trackType_ != AUDIO_TYPE) {
         return;
     }
-    const auto& entry = sampleIndexEntry_;
     // Step back when the selected audio sample starts after inputPts but the previous sample still covers it.
-    if (fromSyncSamples && isBaseTrack && IsAudioSampleIndexInRange(currentIndex) &&
-        entry[currentIndex].pts > inputPts && IsInputCoveredByPreviousSample(inputPts, currentIndex) &&
-        (flag == SeekMode::SEEK_CLOSEST_SYNC ||
-        (flag == SeekMode::SEEK_NEXT_SYNC && static_cast<size_t>(currentIndex) == entry.size() - 1))) {
+    if (isBaseTrack && ShouldStepBackForBaseAudioCoverage(inputPts, flag, fromSyncSamples, currentIndex)) {
         --currentIndex;
     }
     // Keep the first audio sample if it covers the sync point for a non-base track.
-    if (fromSyncSamples && !isBaseTrack && currentIndex == 1 &&
-        inputPts <= entry[0].pts + entry[0].duration) {
+    if (ShouldStepBackForFirstNonBaseAudioSample(inputPts, isBaseTrack, fromSyncSamples, currentIndex)) {
         --currentIndex;
     }
     // Keep AAC priming/skip-sample metadata by seeking to the preroll sample before the target point.
-    if (fromSyncSamples && !isBaseTrack && IsAudioSampleIndexInRange(currentIndex) &&
-        entry[currentIndex].pts >= inputPts && !entry[currentIndex - 1].skipSamplesInfo.empty()) {
+    if (ShouldStepBackForSyncPrerollSample(inputPts, isBaseTrack, fromSyncSamples, currentIndex)) {
         --currentIndex;
     }
     // Empty edits can shift audio PTS forward; use sample coverage instead of skipping the covered sample.
-    if (trackTimeScale_ > 0 && !entry.empty() && entry.front().pts >= trackTimeScale_ &&
-        IsAudioSampleIndexInRange(currentIndex) && inputPts < entry[currentIndex].pts &&
-        IsInputCoveredByPreviousSample(inputPts, currentIndex)) {
+    if (ShouldStepBackForShiftedAudioCoverage(inputPts, currentIndex)) {
         --currentIndex;
     }
     // Apply the same preroll rule on tracks without sync-sample entries.
-    if (!fromSyncSamples && !isBaseTrack && flag == SeekMode::SEEK_PREVIOUS_SYNC &&
-        IsAudioSampleIndexInRange(currentIndex) && entry[currentIndex].pts >= inputPts &&
-        entry[currentIndex - 1].pts < inputPts && !entry[currentIndex - 1].skipSamplesInfo.empty()) {
+    if (ShouldStepBackForNoSyncPrerollSample(inputPts, isBaseTrack, flag, fromSyncSamples, currentIndex)) {
         --currentIndex;
     }
     // Exact PTS matches may still need the previous AAC preroll sample for correct decode trimming.
-    if (fromSyncSamples && !isBaseTrack && flag == SeekMode::SEEK_PREVIOUS_SYNC &&
-        IsAudioSampleIndexInRange(currentIndex) && entry[currentIndex].pts == inputPts &&
-        entry[currentIndex - 1].pts < inputPts && !entry[currentIndex - 1].skipSamplesInfo.empty()) {
+    if (ShouldStepBackForExactPtsPrerollSample(inputPts, isBaseTrack, flag, fromSyncSamples, currentIndex)) {
         --currentIndex;
     }
 }
 
-Status MPEG4SampleHelper::FindSyncSampleByPts(
-    int64_t inputPts, bool isBaseTrack, SeekMode flag, uint32_t &sampleIndex)
+Status MPEG4SampleHelper::ResolveEarlySeekSampleByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag,
+    uint32_t& sampleIndex, bool& resolved) const
 {
-    MEDIA_LOG_D("In");
+    resolved = true;
     const auto& entry = sampleIndexEntry_;
-    if (entry.empty()) {
-        return Status::ERROR_INVALID_DATA;
-    }
     if (inputPts < 0) {
         sampleIndex = stssEntry_.empty() ? 0 : stssEntry_[0].index;
         return Status::OK;
@@ -407,15 +447,40 @@ Status MPEG4SampleHelper::FindSyncSampleByPts(
         (flag == SeekMode::SEEK_NEXT_SYNC || flag == SeekMode::SEEK_CLOSEST_SYNC) && inputPts >= lastPTS_) {
         return AssignSampleIndexFromSize(entry.size(), sampleIndex) ? Status::OK : Status::ERROR_INVALID_DATA;
     }
+    resolved = false;
+    return Status::OK;
+}
+
+Status MPEG4SampleHelper::FindIndexWithSyncSamplesByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag,
+    int64_t& currentIndex)
+{
+    uint32_t syncIndex = 0;
+    Status ret = FindWithSyncSamplesByPts(inputPts, isBaseTrack, flag, syncIndex);
+    currentIndex = syncIndex < stssEntry_.size() ? stssEntry_[syncIndex].index : stssEntry_.back().index;
+    if (ret == Status::OK) {
+        AdjustAudioSeekSampleIndexByPts(inputPts, isBaseTrack, flag, true, currentIndex);
+    }
+    return ret;
+}
+
+Status MPEG4SampleHelper::FindSyncSampleByPts(
+    int64_t inputPts, bool isBaseTrack, SeekMode flag, uint32_t &sampleIndex)
+{
+    MEDIA_LOG_D("In");
+    const auto& entry = sampleIndexEntry_;
+    if (entry.empty()) {
+        return Status::ERROR_INVALID_DATA;
+    }
+    bool resolved = false;
+    Status ret = ResolveEarlySeekSampleByPts(inputPts, isBaseTrack, flag, sampleIndex, resolved);
+    if (resolved) {
+        return ret;
+    }
 
     int64_t currentIndex = 0;
-    Status ret = Status::OK;
     if (!stssEntry_.empty()) {
-        uint32_t syncIndex = 0;
-        ret = FindWithSyncSamplesByPts(inputPts, isBaseTrack, flag, syncIndex);
-        currentIndex = syncIndex < stssEntry_.size() ? stssEntry_[syncIndex].index : stssEntry_.back().index;
+        ret = FindIndexWithSyncSamplesByPts(inputPts, isBaseTrack, flag, currentIndex);
         if (ret == Status::OK) {
-            AdjustAudioSeekSampleIndexByPts(inputPts, isBaseTrack, flag, true, currentIndex);
             FALSE_RETURN_V_MSG_E(AssignSampleIndex(currentIndex, sampleIndex), Status::ERROR_INVALID_DATA,
                 "Invalid sample index");
             return Status::OK;

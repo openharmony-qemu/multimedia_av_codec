@@ -238,8 +238,23 @@ private:
     bool ResolveTextWebVttSample(int64_t inputPTS, int64_t& currentIndex, uint32_t& sampleIndex) const;
     bool IsAudioSampleIndexInRange(int64_t currentIndex) const;
     bool IsInputCoveredByPreviousSample(int64_t inputPts, int64_t currentIndex) const;
+    bool ShouldStepBackForBaseAudioCoverage(int64_t inputPts, SeekMode flag, bool fromSyncSamples,
+        int64_t currentIndex) const;
+    bool ShouldStepBackForFirstNonBaseAudioSample(int64_t inputPts, bool isBaseTrack, bool fromSyncSamples,
+        int64_t currentIndex) const;
+    bool ShouldStepBackForSyncPrerollSample(int64_t inputPts, bool isBaseTrack, bool fromSyncSamples,
+        int64_t currentIndex) const;
+    bool ShouldStepBackForShiftedAudioCoverage(int64_t inputPts, int64_t currentIndex) const;
+    bool ShouldStepBackForNoSyncPrerollSample(int64_t inputPts, bool isBaseTrack, SeekMode flag,
+        bool fromSyncSamples, int64_t currentIndex) const;
+    bool ShouldStepBackForExactPtsPrerollSample(int64_t inputPts, bool isBaseTrack, SeekMode flag,
+        bool fromSyncSamples, int64_t currentIndex) const;
     void AdjustAudioSeekSampleIndexByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag,
         bool fromSyncSamples, int64_t& currentIndex) const;
+    Status ResolveEarlySeekSampleByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag,
+        uint32_t& sampleIndex, bool& resolved) const;
+    Status FindIndexWithSyncSamplesByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag,
+        int64_t& currentIndex);
     int64_t FindPrevSyncByPts(int64_t inputPts, int64_t currentIndex) const;
     int64_t FindNextSyncByPts(int64_t inputPts, int64_t currentIndex) const;
     void SelectClosestSyncByPts(int64_t inputPts, int64_t& currentIndex) const;

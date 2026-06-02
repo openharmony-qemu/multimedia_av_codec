@@ -883,6 +883,58 @@ Status MPEG4DemuxerPlugin::FragmentSeek(int64_t seekTime, SeekMode mode, int32_t
     return ret;
 }
 
+Status MPEG4DemuxerPlugin::CalculateRealSeekTime(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+    int64_t seekTime, int64_t& realSeekTime)
+{
+    int64_t trackStartTimeUs = 0;
+    FALSE_RETURN_V_MSG_E(mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_START_TIME>(trackStartTimeUs),
+        Status::ERROR_INVALID_DATA, "Get track start time failed");
+    int64_t seekTimeNs = 0;
+    int64_t trackStartTimeNs = 0;
+    FALSE_RETURN_V_MSG_E(!__builtin_mul_overflow(seekTime, static_cast<int64_t>(MS_TO_NS), &seekTimeNs) &&
+        !__builtin_mul_overflow(trackStartTimeUs, US_TO_NS, &trackStartTimeNs) &&
+        !__builtin_add_overflow(seekTimeNs, trackStartTimeNs, &realSeekTime),
+        Status::ERROR_INVALID_PARAMETER, "Real seek time overflow");
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::CheckElstShiftStartTime(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+    const SeekTimeContext& context) const
+{
+    if (context.editListApplied) {
+        return Status::OK;
+    }
+    int64_t startTime = 0;
+    FALSE_RETURN_V_MSG_E(ConvertTimeScale(track->elstShiftStartTime, 1000LL, context.baseTrackTimeScale,
+        &startTime) == Status::OK, Status::ERROR_INVALID_PARAMETER, "mul overflow");
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::ClampSeekTimeToStreamDuration(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+    SeekTimeContext& context)
+{
+    int64_t streamDuration = track->duration;
+    if (context.editListApplied && track->sampleHelper != nullptr) {
+        streamDuration = std::max(track->sampleHelper->totalDuration_, track->sampleHelper->lastPTS_);
+    }
+    // Align with FFmpeg: when timestamp is out of stream duration but inside file duration, seek to end of stream.
+    if (streamDuration <= 0 || context.trackSeekTime <= streamDuration) {
+        return Status::OK;
+    }
+    MEDIA_LOG_W("Out of stream, seek to " PUBLIC_LOG_D64, context.trackSeekTime);
+    context.trackSeekTime = streamDuration;
+    int64_t syncTrackTime = context.trackSeekTime;
+    if (!context.editListApplied) {
+        syncTrackTime -= track->elstShiftStartTime;
+    }
+    FALSE_RETURN_V_MSG_E(ConvertTimeScale(syncTrackTime, 1000LL, context.baseTrackTimeScale,
+        &context.syncSeekTime) == Status::OK, Status::ERROR_INVALID_PARAMETER, "mul overflow");
+    if (!context.editListApplied) {
+        context.syncSeekTime += track->elstInitEmptyEdit;
+    }
+    return Status::OK;
+}
+
 Status MPEG4DemuxerPlugin::PrepareSeekTime(const std::shared_ptr<MPEG4AtomParser::Track>& track, int64_t seekTime,
     int64_t& realSeekTime, SeekTimeContext& context)
 {
@@ -898,45 +950,17 @@ Status MPEG4DemuxerPlugin::PrepareSeekTime(const std::shared_ptr<MPEG4AtomParser
     if (!mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_TIME_SCALE>(context.baseTrackTimeScale)) {
         return Status::ERROR_INVALID_PARAMETER;
     }
-    int64_t startTime = 0;
-    if (!context.editListApplied) {
-        FALSE_RETURN_V_MSG_E(ConvertTimeScale(track->elstShiftStartTime, 1000LL, context.baseTrackTimeScale,
-            &startTime) == Status::OK, Status::ERROR_INVALID_PARAMETER, "mul overflow");
-    }
-    int64_t trackStartTimeUs = 0;
-    FALSE_RETURN_V_MSG_E(mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_START_TIME>(trackStartTimeUs),
-        Status::ERROR_INVALID_DATA, "Get track start time failed");
-    int64_t seekTimeNs = 0;
-    int64_t trackStartTimeNs = 0;
-    FALSE_RETURN_V_MSG_E(!__builtin_mul_overflow(seekTime, static_cast<int64_t>(MS_TO_NS), &seekTimeNs) &&
-        !__builtin_mul_overflow(trackStartTimeUs, US_TO_NS, &trackStartTimeNs) &&
-        !__builtin_add_overflow(seekTimeNs, trackStartTimeNs, &realSeekTime),
-        Status::ERROR_INVALID_PARAMETER, "Real seek time overflow");
+    Status ret = CheckElstShiftStartTime(track, context);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Check elst shift start time failed");
+    ret = CalculateRealSeekTime(track, seekTime, realSeekTime);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Calculate real seek time failed");
 
     FALSE_RETURN_V_MSG_E(ConvertTimeScale(context.relativeSeekTime, static_cast<int64_t>(context.baseTrackTimeScale),
         1000LL, &context.trackSeekTime) == Status::OK, Status::ERROR_INVALID_PARAMETER, "mul overflow");
     if (!context.editListApplied) {
         context.trackSeekTime += track->elstShiftStartTime;
     }
-    int64_t streamDuration = track->duration;
-    if (context.editListApplied && track->sampleHelper != nullptr) {
-        streamDuration = std::max(track->sampleHelper->totalDuration_, track->sampleHelper->lastPTS_);
-    }
-    // Align with FFmpeg: when timestamp is out of stream duration but inside file duration, seek to end of stream.
-    if (streamDuration > 0 && context.trackSeekTime > streamDuration) {
-        MEDIA_LOG_W("Out of stream, seek to " PUBLIC_LOG_D64, context.trackSeekTime);
-        context.trackSeekTime = streamDuration;
-        int64_t syncTrackTime = context.trackSeekTime;
-        if (!context.editListApplied) {
-            syncTrackTime -= track->elstShiftStartTime;
-        }
-        FALSE_RETURN_V_MSG_E(ConvertTimeScale(syncTrackTime, 1000LL, context.baseTrackTimeScale,
-            &context.syncSeekTime) == Status::OK, Status::ERROR_INVALID_PARAMETER, "mul overflow");
-        if (!context.editListApplied) {
-            context.syncSeekTime += track->elstInitEmptyEdit;
-        }
-    }
-    return Status::OK;
+    return ClampSeekTimeToStreamDuration(track, context);
 }
 
 Status MPEG4DemuxerPlugin::FindSeekSampleIndex(const std::shared_ptr<MPEG4AtomParser::Track>& track,
