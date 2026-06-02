@@ -44,6 +44,8 @@ constexpr uint32_t H264_SCALING_LIST_8X8_SIZE = 64;
 constexpr uint32_t H264_DEFAULT_SCALING_LIST_COUNT = 8;
 constexpr uint32_t H264_SEPARATE_COLOUR_SCALING_LIST_COUNT = 12;
 constexpr uint32_t MAX_RBSP_SKIP_BYTES = std::numeric_limits<uint32_t>::max() / H264_BYTE_BITS;
+constexpr int32_t DATA_DEDUPLICATION_THRESHOLD = 1024;
+constexpr uint8_t SEI_TYPE_BUFFERING_PERIOD = 0;
 
 bool SkipH264ScalingList(RbspContext& reader, uint32_t sizeOfScalingList)
 {
@@ -265,6 +267,8 @@ namespace Media {
 namespace Plugins {
 AvcParserImpl::~AvcParserImpl()
 {
+    spsVec_.clear();
+    ppsVec_.clear();
     annexbExtraDataVec_.clear();
     annexbFrameVec_.clear();
 }
@@ -288,15 +292,61 @@ void AvcParserImpl::WriteStartCode(std::vector<uint8_t> &vec)
     vec.emplace_back(0x01);
 }
 
+void AvcParserImpl::AppendOutOfBandPs(std::vector<uint8_t> &vec, const std::vector<uint8_t> &ps)
+{
+    if (!ps.empty()) {
+        vec.insert(vec.end(), ps.begin(), ps.end());
+    }
+}
+
+void AvcParserImpl::AppendNalUnit(std::vector<uint8_t> &vec, const uint8_t *data, uint32_t size, PsSource ps)
+{
+    if (ps == PS_OUT_OF_BAND) {
+        vec.insert(vec.end(), data, data + size);
+    } else {
+        WriteStartCode(vec);
+        vec.insert(vec.end(), data, data + size);
+    }
+}
+
+void AvcParserImpl::SavePs(std::vector<uint8_t> &dst, const uint8_t *nal, uint32_t nalSize, bool first)
+{
+    if (first) {
+        dst.clear();
+    }
+    WriteStartCode(dst);
+    dst.insert(dst.end(), nal, nal + nalSize);
+}
+
+bool AvcParserImpl::SavePsVector(
+    uint8_t *extraData, int32_t extraDataSize, std::vector<DataAddrInfo> src, AvcNalType nalType)
+{
+    for (auto iter : src) {
+        FALSE_RETURN_V_MSG_E(iter.bytesIndex <= static_cast<uint32_t>(extraDataSize) &&
+            iter.bufferSize <= static_cast<uint32_t>(extraDataSize) - iter.bytesIndex, false, "Error size");
+        if (nalType == AvcNalType::AVC_NAL_SPS) {
+            WriteStartCode(spsVec_);
+            spsVec_.insert(spsVec_.end(), extraData + iter.bytesIndex, extraData + iter.bytesIndex + iter.bufferSize);
+        } else if (nalType == AvcNalType::AVC_NAL_PPS) {
+            WriteStartCode(ppsVec_);
+            ppsVec_.insert(ppsVec_.end(), extraData + iter.bytesIndex, extraData + iter.bytesIndex + iter.bufferSize);
+        }
+    }
+    return true;
+}
+
 bool AvcParserImpl::ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDataSize)
 {
+    spsVec_.clear();
+    ppsVec_.clear();
     annexbExtraDataVec_.clear();
     (void)ParseMaxReorderPicFromAvcConfig(extraData, extraDataSize);
     if (IsAnnexbFrame(extraData, extraDataSize)) {
         annexbExtraDataVec_.insert(annexbExtraDataVec_.end(), extraData, extraData + extraDataSize);
         return true;
     }
-    std::vector<DataAddrInfo> addrInfoVec;
+    std::vector<DataAddrInfo> spsAddrInfoVec;
+    std::vector<DataAddrInfo> ppsAddrInfoVec;
     std::shared_ptr<RbspContext> rbspContext = std::make_shared<RbspContext>(extraData, extraDataSize);
     FALSE_RETURN_V_MSG_E(rbspContext != nullptr, false, "rbspContext is nullptr");
 
@@ -309,26 +359,39 @@ bool AvcParserImpl::ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDa
         uint16_t naluLength = rbspContext->RbspGetBits<uint16_t, uint32_t>(0x10); // sequenceParameterSetsLength
         uint32_t copySize =
             static_cast<uint32_t>(extraDataSize) > naluLength ? naluLength : static_cast<uint32_t>(extraDataSize);
-        dataAddrInfo_ = {rbspContext->GetBytesIndex(), copySize};
+        DataAddrInfo addrInfo = {rbspContext->GetBytesIndex(), copySize};
         rbspContext->RbspSkipBits(copySize * 0x08); // nalUnit
-        addrInfoVec.emplace_back(dataAddrInfo_);
+        spsAddrInfoVec.emplace_back(addrInfo);
     }
     uint8_t numOfPPS = rbspContext->RbspGetBits(0x08);   // numOfPictureParameterSets
     for (int32_t i = 0; i < numOfPPS; ++i) {
         uint16_t naluLength = rbspContext->RbspGetBits<uint16_t, uint32_t>(0x10);  // pictureParameterSetsLength
         uint32_t copySize =
             static_cast<uint32_t>(extraDataSize) > naluLength ? naluLength : static_cast<uint32_t>(extraDataSize);
-        dataAddrInfo_ = {rbspContext->GetBytesIndex(), copySize};
+        DataAddrInfo addrInfo = {rbspContext->GetBytesIndex(), copySize};
         rbspContext->RbspSkipBits(copySize * 0x08);  // nalUnit
-        addrInfoVec.emplace_back(dataAddrInfo_);
+        ppsAddrInfoVec.emplace_back(addrInfo);
     }
-    for (auto iter : addrInfoVec) {
-        WriteStartCode(annexbExtraDataVec_);
-        FALSE_RETURN_V_MSG_E(iter.bytesIndex <= static_cast<uint32_t>(extraDataSize) &&
-            iter.bufferSize <= static_cast<uint32_t>(extraDataSize) - iter.bytesIndex, false, "Error size");
-        annexbExtraDataVec_.insert(
-            annexbExtraDataVec_.end(), extraData + iter.bytesIndex, extraData + iter.bytesIndex + iter.bufferSize);
+    if (extraDataSize <= DATA_DEDUPLICATION_THRESHOLD) {
+        FALSE_RETURN_V_NOLOG(SavePsVector(extraData, extraDataSize, spsAddrInfoVec, AvcNalType::AVC_NAL_SPS), false);
+        FALSE_RETURN_V_NOLOG(SavePsVector(extraData, extraDataSize, ppsAddrInfoVec, AvcNalType::AVC_NAL_PPS), false);
+    } else {
+        if (!spsAddrInfoVec.empty()) {
+            FALSE_RETURN_V_NOLOG(
+                SavePsVector(extraData, extraDataSize, {spsAddrInfoVec.back()}, AvcNalType::AVC_NAL_SPS), false);
+        }
+        if (!ppsAddrInfoVec.empty()) {
+            FALSE_RETURN_V_NOLOG(
+                SavePsVector(extraData, extraDataSize, {ppsAddrInfoVec.back()}, AvcNalType::AVC_NAL_PPS), false);
+        }
     }
+    annexbExtraDataVec_.insert(annexbExtraDataVec_.end(), spsVec_.begin(), spsVec_.end());
+    annexbExtraDataVec_.insert(annexbExtraDataVec_.end(), ppsVec_.begin(), ppsVec_.end());
+
+    extradataParsed_ = true;
+    newIdr_ = true;
+    idrSpsSeen_ = false;
+    idrPpsSeen_ = false;
     return true;
 }
 
@@ -363,57 +426,122 @@ void AvcParserImpl::ConvertExtradata(uint8_t **packet, int32_t &packetSize)
     packetSize = static_cast<int32_t>(annexbExtraDataVec_.size());
 }
 
-bool AvcParserImpl::ParsePacket(
-    std::vector<DataAddrInfo> &dataInfoVec, bool &gotIrap, const uint8_t *packet, int32_t packetSize)
+bool AvcParserImpl::ParseNalUnits(std::vector<NalUnitInfo> &nalUnits, const uint8_t *packet, int32_t packetSize)
 {
-    std::shared_ptr<RbspContext> rbspContext = std::make_shared<RbspContext>(packet, packetSize);
-    FALSE_RETURN_V_MSG_E(rbspContext != nullptr, false, "rbspContext is nullptr");
-    while (rbspContext->RbspGetLeftBytesNum() > 0) {
-        uint32_t naluSize = 0;
-        if (rbspContext->RbspGetLeftBytesNum() < naluLength_) {
-            return false;
-        }
+    const uint8_t *buf = packet;
+    const uint8_t *bufEnd = packet + packetSize;
+    while (buf + naluLength_ <= bufEnd) {
+        uint32_t nalSize = 0;
         for (int32_t i = 0; i < naluLength_; ++i) {
-            naluSize = (naluSize << 0x08) | rbspContext->RbspGetBits(0x08); // 前4位表示数据大小
+            nalSize = (nalSize << 0x08) | buf[i];
         }
-        if (naluSize < 0x02 || naluSize > MAX_RBSP_SKIP_BYTES ||
-            naluSize > rbspContext->RbspGetLeftBytesNum()) {
+        buf += naluLength_;
+        if (nalSize == 0) {
+            continue;
+        }
+        if (nalSize < 0x02 || nalSize > MAX_RBSP_SKIP_BYTES ||
+            static_cast<int64_t>(nalSize) > bufEnd - buf) {
             return false;
         }
-        int32_t naluType = (rbspContext->RbspGetBits(0x08, false)) & 0x1f; // false 读完后不跳转
-        bool isIrap = naluType == AvcNalType::AVC_IDR_W_RADL;
-        gotIrap = (gotIrap || isIrap) ? true : false;
-        dataAddrInfo_ = {rbspContext->GetBytesIndex(), naluSize};
-        rbspContext->RbspSkipBits(naluSize * H264_BYTE_BITS);
-        dataInfoVec.emplace_back(dataAddrInfo_);
+        uint8_t nalType = buf[0] & 0x1f;
+        nalUnits.emplace_back(NalUnitInfo{buf, nalSize, nalType});
+        buf += nalSize;
     }
     return true;
+}
+
+void AvcParserImpl::FilterPsFromPacket(const uint8_t *packet, int32_t packetSize)
+{
+    const uint8_t *buf = packet;
+    const uint8_t *bufEnd = packet + packetSize;
+    int spsCount = 0;
+    int ppsCount = 0;
+    while (buf + naluLength_ <= bufEnd) {
+        uint32_t nalSize = 0;
+        for (int32_t i = 0; i < naluLength_; ++i) {
+            nalSize = (nalSize << 0x08) | buf[i];
+        }
+        buf += naluLength_;
+        if (static_cast<int64_t>(nalSize) > bufEnd - buf) {
+            return;
+        }
+        if (nalSize == 0) {
+            continue;
+        }
+        uint8_t unitType = buf[0] & 0x1f;
+        if (unitType == AvcNalType::AVC_NAL_SPS) {
+            SavePs(spsVec_, buf, nalSize, spsCount == 0);
+            spsCount++;
+        } else if (unitType == AvcNalType::AVC_NAL_PPS) {
+            SavePs(ppsVec_, buf, nalSize, ppsCount == 0);
+            ppsCount++;
+        }
+        buf += nalSize;
+    }
+}
+
+void AvcParserImpl::HandleNal(NalUnitInfo nal)
+{
+    if (nal.nalType == AvcNalType::AVC_NAL_SPS) {
+        idrSpsSeen_ = true;
+        newIdr_ = true;
+    } else if (nal.nalType == AvcNalType::AVC_NAL_PPS) {
+        idrPpsSeen_ = true;
+        newIdr_ = true;
+        if (!idrSpsSeen_) {
+            if (!spsVec_.empty()) {
+                AppendOutOfBandPs(annexbFrameVec_, spsVec_);
+                idrSpsSeen_ = true;
+            }
+        }
+    }
+    if (!newIdr_ && nal.nalType == AvcNalType::AVC_NAL_IDR_SLICE && (nal.size > 1 && (nal.data[1] & 0x80))) {
+        newIdr_ = true;
+    }
+    if (nal.nalType == AvcNalType::AVC_NAL_SEI && nal.size > 1 && nal.data[1] == SEI_TYPE_BUFFERING_PERIOD
+        && !idrSpsSeen_ && !idrPpsSeen_) {
+        if (!spsVec_.empty()) {
+            AppendOutOfBandPs(annexbFrameVec_, spsVec_);
+            idrSpsSeen_ = true;
+        }
+        if (!ppsVec_.empty()) {
+            AppendOutOfBandPs(annexbFrameVec_, ppsVec_);
+            idrPpsSeen_ = true;
+        }
+    }
+    if (newIdr_ && nal.nalType == AvcNalType::AVC_NAL_IDR_SLICE && !idrSpsSeen_ && !idrPpsSeen_) {
+        if (!spsVec_.empty()) {
+            AppendOutOfBandPs(annexbFrameVec_, spsVec_);
+        }
+        if (!ppsVec_.empty()) {
+            AppendOutOfBandPs(annexbFrameVec_, ppsVec_);
+        }
+        newIdr_ = false;
+    } else if (newIdr_ && nal.nalType == AvcNalType::AVC_NAL_IDR_SLICE && idrSpsSeen_ && !idrPpsSeen_) {
+        if (!ppsVec_.empty()) {
+            AppendOutOfBandPs(annexbFrameVec_, ppsVec_);
+        }
+    }
+    PsSource ps = 
+        (nal.nalType == AvcNalType::AVC_NAL_SPS || nal.nalType == AvcNalType::AVC_NAL_PPS) ? PS_IN_BAND : PS_NONE;
+    AppendNalUnit(annexbFrameVec_, nal.data, nal.size, ps);
+    if (nal.nalType == AvcNalType::AVC_NAL_SLICE) {
+        newIdr_ = true;
+        idrSpsSeen_ = false;
+        idrPpsSeen_ = false;
+    }
 }
 
 void AvcParserImpl::ConvertPacketCore(uint8_t **packet, int32_t &packetSize)
 {
     annexbFrameVec_.clear();
-    std::vector<DataAddrInfo> addrInfoVec;
-    bool gotIrap = false;
-    bool ret = ParsePacket(addrInfoVec, gotIrap, *packet, packetSize);
-    if (!ret) {
-        MEDIA_LOG_E("ParsePacket failed");
-        return;
-    }
-    // just add xps to begin of first frame.
-    if (!sendXps_ && gotIrap) {
-        annexbFrameVec_.insert(
-            annexbFrameVec_.end(), annexbExtraDataVec_.data(), annexbExtraDataVec_.data() + annexbExtraDataVec_.size());
-        sendXps_ = true;
-    }
-    for (auto iter : addrInfoVec) {
-        if (iter.bytesIndex > static_cast<uint32_t>(packetSize) ||
-            iter.bufferSize > static_cast<uint32_t>(packetSize) - iter.bytesIndex) {
-            return;
-        }
-        WriteStartCode(annexbFrameVec_);
-        annexbFrameVec_.insert(
-            annexbFrameVec_.end(), *packet + iter.bytesIndex, *packet + iter.bytesIndex + iter.bufferSize);
+    FALSE_RETURN_NOLOG(extradataParsed_);
+    FilterPsFromPacket(*packet, packetSize);
+    std::vector<NalUnitInfo> nalUnits;
+    bool ret = ParseNalUnits(nalUnits, *packet, packetSize);
+    FALSE_RETURN_MSG_W(ret, "ParseNalUnits failed");
+    for (auto &nal : nalUnits) {
+        HandleNal(nal);
     }
     *packet = annexbFrameVec_.data();
     packetSize = static_cast<int32_t>(annexbFrameVec_.size());
@@ -436,7 +564,9 @@ void AvcParserImpl::ConvertPacketToAnnexb(
 
 void AvcParserImpl::ResetXPSSendStatus()
 {
-    sendXps_ = false;
+    idrSpsSeen_ = false;
+    idrPpsSeen_ = false;
+    newIdr_ = extradataParsed_;
 }
 } // namespace Plugins
 } // namespace Media

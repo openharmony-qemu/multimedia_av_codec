@@ -33,7 +33,6 @@ public:
     ~RbspContext() = default;
     bool RbspCheckSize(uint32_t size) const;
     void RbspSkipBits(uint32_t size);
-    uint32_t RbspGetLeftBytesNum() const;
     uint32_t GetBytesIndex() const;
     bool RbspReadBit(uint32_t& bit);
     bool RbspReadBits(uint32_t size, uint32_t& value);
@@ -76,7 +75,6 @@ public:
     }
 
 private:
-    uint8_t RbspGetBit() const;
     bool RbspReadEbspBit(uint32_t& bit);
     void SkipEmulationPreventionByte();
 
