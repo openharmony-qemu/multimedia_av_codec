@@ -60,6 +60,7 @@ public:
     bool MakePreDecodeDecision(uint32_t index);
     bool MakePostDecodeDecision(uint32_t index, int64_t pts, const sptr<SurfaceBuffer> surfaceBuffer);
     void Flush();
+    void OnDecInfoUpdate(double sourceFps, double speed);
     
 private:
     struct StrategyCaps {
@@ -89,6 +90,7 @@ private:
     };
 
     std::shared_ptr<AVBuffer> FetchInputBufferAndCapabilities(uint32_t index, StrategyCaps& caps);
+    MVStats ExtractMVStats(StrategyCaps caps, int64_t pts, PostDecCost& cost, const sptr<SurfaceBuffer> surfaceBuffer);
     void RecordPreDecodeDump(const std::shared_ptr<AVBuffer>& buffer, const PreDecResult& res, int64_t startUs);
     void RecordPostDecodeDump(int64_t pts, uint32_t preDropCount, const PostDecResult& res,
                               const MVStats& mvStats, const PostDecCost& cost);
@@ -101,8 +103,10 @@ private:
     void ExecutePreDrop(uint32_t index, std::shared_ptr<AVBuffer> buffer);
     void ExecutePostDrop(uint32_t index);
     bool HandlePostDecodePassthrough(int64_t pts, uint32_t preDropCount, const PostDecCost& cost);
-    void UpdateRetentionFeedback(bool shouldRetain, double speed);
+    void UpdateRetentionFeedback(bool shouldRetain);
     void ApplyNewStrategy(RetentionStrategyType newMode, const std::optional<double>& newRatio);
+    void SetNoRefFrameMap(int64_t pts, bool isNonRef);
+    bool GetNoRefFrameFromMap(int64_t pts);
 
     mutable std::mutex configMutex_;
     std::unique_ptr<DropSyncCoordinator> dropSyncCoordinator_{nullptr};
@@ -113,11 +117,14 @@ private:
 #ifdef SFD_DEBUG
     std::unique_ptr<SmartFluencyDecodingDumper> dumper_{nullptr};
 #endif
+    MVStats lastValidMVStats_{};
+    std::map<int64_t, bool> noRefFrameMap_;
+    mutable std::mutex noRefFrameMapMutex_;
+    bool hasValidMVStats_{false};
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> inBufferMap_;
     std::shared_ptr<AVBuffer> csdBuffer_{nullptr};
     SFDConfig config_{};
     bool isInitialized_{false};
-    double currentPlaybackSpeed_{1.0};
     AsyncDropInputCallback asyncDropInputCb_{nullptr};
     AsyncDropOutputCallback asyncDropOutputCb_{nullptr};
 };

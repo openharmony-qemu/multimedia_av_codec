@@ -116,7 +116,7 @@ void SmartFluencyDecodingDumper::UpdateExistingPreRecord(const PreDecodeRecordCt
         it->speed = currentSpeed_;
         it->preDecCostUs = ctx.preDecCostUs;
         it->writeIndex = ctx.writeIndex;
-        it->emaRatio = ctx.emaRatio;
+        it->actualRetentionRatio = ctx.actualRetentionRatio;
         it->naluCostUs = ctx.naluCostUs;
         it->preReason = ctx.reason;
     }
@@ -140,7 +140,7 @@ void SmartFluencyDecodingDumper::CreateNewPreRecord(const PreDecodeRecordCtx& ct
     rec.speed = currentSpeed_;
     rec.preDecCostUs = ctx.preDecCostUs;
     rec.writeIndex = ctx.writeIndex;
-    rec.emaRatio = ctx.emaRatio;
+    rec.actualRetentionRatio = ctx.actualRetentionRatio;
     rec.naluCostUs = ctx.naluCostUs;
     rec.preReason = ctx.reason;
     records_.push_back(rec);
@@ -179,7 +179,7 @@ void SmartFluencyDecodingDumper::UpdateExistingPostRecord(const PostDecodeRecord
         it->postSysTimeMs = ctx.sysTimeMs;
         it->postDecCostUs = ctx.postDecCostUs;
         it->readIndex = ctx.readIndex;
-        it->emaRatio = ctx.emaRatio;
+        it->actualRetentionRatio = ctx.actualRetentionRatio;
         it->validBlocks = ctx.mvStats.validBlocks;
         it->perceptualMagnitude = ctx.mvStats.perceptualMagnitude;
         it->motionConsistency = ctx.mvStats.motionConsistency;
@@ -203,7 +203,7 @@ void SmartFluencyDecodingDumper::CreateNewPostRecord(const PostDecodeRecordCtx& 
     rec.speed = currentSpeed_;
     rec.postDecCostUs = ctx.postDecCostUs;
     rec.readIndex = ctx.readIndex;
-    rec.emaRatio = ctx.emaRatio;
+    rec.actualRetentionRatio = ctx.actualRetentionRatio;
     rec.validBlocks = ctx.mvStats.validBlocks;
     rec.perceptualMagnitude = ctx.mvStats.perceptualMagnitude;
     rec.motionConsistency = ctx.mvStats.motionConsistency;
@@ -296,7 +296,7 @@ void SmartFluencyDecodingDumper::WriteRecordsToStream(std::ofstream& ofs, const 
 
         ofs << rec.preDecCostUs << "," << rec.naluCostUs << "," << rec.postDecCostUs << ","
             << rec.copyMvCostUs << "," << rec.analyzeMvCostUs << "," << rec.updateDumperCostUs << ","
-            << rec.writeIndex << "," << rec.readIndex << "," << rec.emaRatio << ","
+            << rec.writeIndex << "," << rec.readIndex << "," << rec.actualRetentionRatio << ","
             << rec.validBlocks << "," << rec.perceptualMagnitude << "," << rec.motionConsistency << ","
             << rec.zeroMotionRatio << "\n";
     }

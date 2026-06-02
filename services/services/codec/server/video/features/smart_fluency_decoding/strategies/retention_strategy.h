@@ -34,6 +34,7 @@ public:
 
     virtual bool MakeRetentionDecision(const FrameRetentionContext& ctx) = 0;
     virtual void UpdatePlaybackSpeed(double /* speed */) {}
+    virtual void UpdateSourceFramerate(double /*sourceFps*/) {}
     virtual void Reset() {}
     virtual RetentionStrategyType GetMode() const = 0;
     virtual double GetRatio() const = 0;
