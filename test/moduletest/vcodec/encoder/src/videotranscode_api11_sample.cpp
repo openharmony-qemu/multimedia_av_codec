@@ -36,8 +36,8 @@ constexpr uint8_t H264_NALU_TYPE = 0x1f;
 constexpr uint8_t START_CODE[START_CODE_SIZE] = {0, 0, 0, 1};
 constexpr uint8_t SPS = 7;
 constexpr uint8_t PPS = 8;
-FILE *outFile = nullptr;
-FILE *outFileSec = nullptr;
+FILE *g_outFile = nullptr;
+FILE *g_outFileSec = nullptr;
 }
 
 int64_t GetSystemTimeUs()
@@ -112,11 +112,11 @@ static void VencInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *b
 static void OnEncOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
 {
     VideoTransCodeApi11Sample *sample = static_cast<VideoTransCodeApi11Sample*>(userData);
-    if (outFile == nullptr) {
-        outFile = fopen(sample->OUT_DIR, "wb");
+    if (g_outFile == nullptr) {
+        g_outFile = fopen(sample->OUT_DIR, "wb");
     }
-    if (outFileSec == nullptr) {
-        outFileSec = fopen(sample->OUT_DIR_SEC, "wb");
+    if (g_outFileSec == nullptr) {
+        g_outFileSec = fopen(sample->OUT_DIR_SEC, "wb");
     }
     OH_AVCodecBufferAttr attr;
     OH_AVBuffer_GetBufferAttr(buffer, &attr);
@@ -138,17 +138,17 @@ static void OnEncOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVBuffer 
     }
     int size = attr.size;
     if (codec == sample->venc_) {
-        if (outFile == nullptr) {
-            cout << "dump outFile data fail" << endl;
+        if (g_outFile == nullptr) {
+            cout << "dump g_outFile data fail" << endl;
         } else {
-            fwrite(OH_AVBuffer_GetAddr(buffer), size, 1, outFile);
+            fwrite(OH_AVBuffer_GetAddr(buffer), size, 1, g_outFile);
         }
         OH_VideoEncoder_FreeOutputBuffer(sample->venc_, index);
     } else if (codec == sample->vencSecondary) {
-        if (outFileSec == nullptr) {
-            cout << "dump outFileSec data fail" << endl;
+        if (g_outFileSec == nullptr) {
+            cout << "dump g_outFileSec data fail" << endl;
         } else {
-            fwrite(OH_AVBuffer_GetAddr(buffer), size, 1, outFileSec);
+            fwrite(OH_AVBuffer_GetAddr(buffer), size, 1, g_outFileSec);
         }
         OH_VideoEncoder_FreeOutputBuffer(sample->vencSecondary, index);
     }
@@ -226,11 +226,11 @@ VideoTransCodeApi11Sample::~VideoTransCodeApi11Sample()
 {
     inputNum = 0;
     Release();
-    if (outFile) {
-        (void)fclose(outFile);
+    if (g_outFile) {
+        (void)fclose(g_outFile);
     }
-    if (outFileSec) {
-        (void)fclose(outFileSec);
+    if (g_outFileSec) {
+        (void)fclose(g_outFileSec);
     }
 }
 
@@ -258,8 +258,10 @@ int32_t VideoTransCodeApi11Sample::CreateVideocoder(std::string codeName, std::s
 
 void VideoTransCodeApi11Sample::InputFunc()
 {
-    while (true) {
+    bool flag = true;
+    while (flag) {
         if (!g_isRunning.load()) {
+            flag = false;
             break;
         }
         uint32_t index;

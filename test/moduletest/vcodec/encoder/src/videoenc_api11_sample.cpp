@@ -264,6 +264,15 @@ void VEncAPI11Sample::SetConfigureEnc(OH_AVFormat *format)
     if (enableLowLatency) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENABLE_LOW_LATENCY, 1);
     }
+    if (enableColorSpaceParams) {
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_RANGE_FLAG, DEFAULT_RANGE_FLAG);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_COLOR_PRIMARIES, DEFAULT_COLOR_PRIMARIES);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_TRANSFER_CHARACTERISTICS, DEFAULT_TRANSFER_CHARACTERISTICS);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_MATRIX_COEFFICIENTS, DEFAULT_MATRIX_COEFFICIENTS);
+    }
+    if (enableLTR && (ltrParam.ltrCount >= 0)) {
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_LTR_FRAME_COUNT, ltrParam.ltrCount);
+    }
 }
 
 int32_t VEncAPI11Sample::ConfigureVideoEncoder()
@@ -299,15 +308,6 @@ int32_t VEncAPI11Sample::ConfigureVideoEncoder()
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_QP_MIN, DEFAULT_QP);
     }
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, DEFAULT_BITRATE_MODE);
-    if (enableLTR && (ltrParam.ltrCount >= 0)) {
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_LTR_FRAME_COUNT, ltrParam.ltrCount);
-    }
-    if (enableColorSpaceParams) {
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_RANGE_FLAG, DEFAULT_RANGE_FLAG);
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_COLOR_PRIMARIES, DEFAULT_COLOR_PRIMARIES);
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_TRANSFER_CHARACTERISTICS, DEFAULT_TRANSFER_CHARACTERISTICS);
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_MATRIX_COEFFICIENTS, DEFAULT_MATRIX_COEFFICIENTS);
-    }
     if (enableRepeat) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, DEFAULT_FRAME_AFTER);
         if (setMaxCount) {

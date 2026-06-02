@@ -1164,7 +1164,7 @@ HWTEST_F(HwEncPreProcessNdkTest, VIDEO_ENCODE_PRE_PROCESS_0410, TestSize.Level2)
         vEncSample->preProcessParameter.downsamplingWidth = 640;
         vEncSample->preProcessParameter.downsamplingHeight = 361;
         ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder());
-        ASSERT_EQ(AV_ERR_OK, vEncSample->ResetSecondary());    
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ResetSecondary());
     }
 }
 
@@ -1198,7 +1198,7 @@ HWTEST_F(HwEncPreProcessNdkTest, VIDEO_ENCODE_PRE_PROCESS_0420, TestSize.Level2)
         vEncSample->preProcessParameter.cropTop = 100;
         vEncSample->preProcessParameter.cropBottom = 700;
         ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder());
-        ASSERT_EQ(AV_ERR_OK, vEncSample->ResetSecondary());    
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ResetSecondary());
     }
 }
 } // namespace
