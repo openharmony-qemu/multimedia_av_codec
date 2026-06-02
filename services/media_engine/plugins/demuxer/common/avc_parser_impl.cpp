@@ -351,6 +351,17 @@ bool AvcParserImpl::ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDa
     FALSE_RETURN_V_MSG_E(rbspContext != nullptr, false, "rbspContext is nullptr");
 
     // configurationVersion, AVCProfileIndication, profile_compatibility, AVCLevelIndication, reserverd
+    ParseAvcConfigNalUnits(rbspContext, extraDataSize, spsAddrInfoVec, ppsAddrInfoVec);
+    FALSE_RETURN_V_NOLOG(SaveAvcConfigPs(extraData, extraDataSize, spsAddrInfoVec, ppsAddrInfoVec), false);
+    annexbExtraDataVec_.insert(annexbExtraDataVec_.end(), spsVec_.begin(), spsVec_.end());
+    annexbExtraDataVec_.insert(annexbExtraDataVec_.end(), ppsVec_.begin(), ppsVec_.end());
+    SetPsFlag();
+    return true;
+}
+
+void AvcParserImpl::ParseAvcConfigNalUnits(const std::shared_ptr<RbspContext> &rbspContext, int32_t extraDataSize,
+    std::vector<DataAddrInfo> &spsAddrInfoVec, std::vector<DataAddrInfo> &ppsAddrInfoVec)
+{
     rbspContext->RbspSkipBits(0x26);
     naluLength_ = rbspContext->RbspGetBits(0x02) + 0x01;  // lengthSizeMinusOne
     rbspContext->RbspSkipBits(0x03);                      // reserverd
@@ -372,6 +383,11 @@ bool AvcParserImpl::ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDa
         rbspContext->RbspSkipBits(copySize * 0x08);  // nalUnit
         ppsAddrInfoVec.emplace_back(addrInfo);
     }
+}
+
+bool AvcParserImpl::SaveAvcConfigPs(uint8_t *extraData, int32_t extraDataSize,
+    const std::vector<DataAddrInfo> &spsAddrInfoVec, const std::vector<DataAddrInfo> &ppsAddrInfoVec)
+{
     if (extraDataSize <= DATA_DEDUPLICATION_THRESHOLD) {
         FALSE_RETURN_V_NOLOG(SavePsVector(extraData, extraDataSize, spsAddrInfoVec, AvcNalType::AVC_NAL_SPS), false);
         FALSE_RETURN_V_NOLOG(SavePsVector(extraData, extraDataSize, ppsAddrInfoVec, AvcNalType::AVC_NAL_PPS), false);
@@ -385,9 +401,6 @@ bool AvcParserImpl::ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDa
                 SavePsVector(extraData, extraDataSize, {ppsAddrInfoVec.back()}, AvcNalType::AVC_NAL_PPS), false);
         }
     }
-    annexbExtraDataVec_.insert(annexbExtraDataVec_.end(), spsVec_.begin(), spsVec_.end());
-    annexbExtraDataVec_.insert(annexbExtraDataVec_.end(), ppsVec_.begin(), ppsVec_.end());
-    SetPsFlag();
     return true;
 }
 
@@ -484,7 +497,7 @@ void AvcParserImpl::FilterPsFromPacket(const uint8_t *packet, int32_t packetSize
     }
 }
 
-void AvcParserImpl::HandleNal(NalUnitInfo nal)
+void AvcParserImpl::HandleNalPsState(NalUnitInfo nal)
 {
     if (nal.nalType == AvcNalType::AVC_NAL_SPS) {
         idrSpsSeen_ = true;
@@ -499,9 +512,17 @@ void AvcParserImpl::HandleNal(NalUnitInfo nal)
             }
         }
     }
+}
+
+void AvcParserImpl::HandleNalIdrDetect(NalUnitInfo nal)
+{
     if (!newIdr_ && nal.nalType == AvcNalType::AVC_NAL_IDR_SLICE && (nal.size > 1 && (nal.data[1] & 0x80))) {
         newIdr_ = true;
     }
+}
+
+void AvcParserImpl::InsertPsBeforeIdr(NalUnitInfo nal)
+{
     if (nal.nalType == AvcNalType::AVC_NAL_SEI && nal.size > 1 && nal.data[1] == SEI_TYPE_BUFFERING_PERIOD &&
         !idrSpsSeen_ && !idrPpsSeen_) {
         if (!spsVec_.empty()) {
@@ -512,8 +533,12 @@ void AvcParserImpl::HandleNal(NalUnitInfo nal)
             AppendOutOfBandPs(annexbFrameVec_, ppsVec_);
             idrPpsSeen_ = true;
         }
+        return;
     }
-    if (newIdr_ && nal.nalType == AvcNalType::AVC_NAL_IDR_SLICE && !idrSpsSeen_ && !idrPpsSeen_) {
+    if (!newIdr_ || nal.nalType != AvcNalType::AVC_NAL_IDR_SLICE) {
+        return;
+    }
+    if (!idrSpsSeen_ && !idrPpsSeen_) {
         if (!spsVec_.empty()) {
             AppendOutOfBandPs(annexbFrameVec_, spsVec_);
         }
@@ -521,11 +546,18 @@ void AvcParserImpl::HandleNal(NalUnitInfo nal)
             AppendOutOfBandPs(annexbFrameVec_, ppsVec_);
         }
         newIdr_ = false;
-    } else if (newIdr_ && nal.nalType == AvcNalType::AVC_NAL_IDR_SLICE && idrSpsSeen_ && !idrPpsSeen_) {
+    } else if (idrSpsSeen_ && !idrPpsSeen_) {
         if (!ppsVec_.empty()) {
             AppendOutOfBandPs(annexbFrameVec_, ppsVec_);
         }
     }
+}
+
+void AvcParserImpl::HandleNal(NalUnitInfo nal)
+{
+    HandleNalPsState(nal);
+    HandleNalIdrDetect(nal);
+    InsertPsBeforeIdr(nal);
     PsSource ps =
         (nal.nalType == AvcNalType::AVC_NAL_SPS || nal.nalType == AvcNalType::AVC_NAL_PPS) ? PS_IN_BAND : PS_NONE;
     AppendNalUnit(annexbFrameVec_, nal.data, nal.size, ps);

@@ -103,6 +103,13 @@ private:
     bool ParseNalUnits(std::vector<NalUnitInfo> &nalUnits, const uint8_t *packet, int32_t packetSize);
     void SavePs(std::vector<uint8_t> &dst, const uint8_t *nal, uint32_t nalSize, bool first);
     bool SavePsVector(uint8_t *extraData, int32_t extraDataSize, std::vector<DataAddrInfo> src, AvcNalType nalType);
+    void ParseAvcConfigNalUnits(const std::shared_ptr<RbspContext> &rbspContext, int32_t extraDataSize,
+        std::vector<DataAddrInfo> &spsAddrInfoVec, std::vector<DataAddrInfo> &ppsAddrInfoVec);
+    bool SaveAvcConfigPs(uint8_t *extraData, int32_t extraDataSize,
+        const std::vector<DataAddrInfo> &spsAddrInfoVec, const std::vector<DataAddrInfo> &ppsAddrInfoVec);
+    void HandleNalPsState(NalUnitInfo nal);
+    void HandleNalIdrDetect(NalUnitInfo nal);
+    void InsertPsBeforeIdr(NalUnitInfo nal);
     void HandleNal(NalUnitInfo nal);
     void SetPsFlag();
 };
