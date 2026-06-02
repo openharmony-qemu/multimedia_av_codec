@@ -387,12 +387,16 @@ bool AvcParserImpl::ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDa
     }
     annexbExtraDataVec_.insert(annexbExtraDataVec_.end(), spsVec_.begin(), spsVec_.end());
     annexbExtraDataVec_.insert(annexbExtraDataVec_.end(), ppsVec_.begin(), ppsVec_.end());
+    SetPsFlag();
+    return true;
+}
 
+void AvcParserImpl::SetPsFlag()
+{
     extradataParsed_ = true;
     newIdr_ = true;
     idrSpsSeen_ = false;
     idrPpsSeen_ = false;
-    return true;
 }
 
 bool AvcParserImpl::ParseMaxReorderPicFromAvcConfig(const uint8_t *extraData, int32_t extraDataSize)
@@ -498,8 +502,8 @@ void AvcParserImpl::HandleNal(NalUnitInfo nal)
     if (!newIdr_ && nal.nalType == AvcNalType::AVC_NAL_IDR_SLICE && (nal.size > 1 && (nal.data[1] & 0x80))) {
         newIdr_ = true;
     }
-    if (nal.nalType == AvcNalType::AVC_NAL_SEI && nal.size > 1 && nal.data[1] == SEI_TYPE_BUFFERING_PERIOD
-        && !idrSpsSeen_ && !idrPpsSeen_) {
+    if (nal.nalType == AvcNalType::AVC_NAL_SEI && nal.size > 1 && nal.data[1] == SEI_TYPE_BUFFERING_PERIOD &&
+        !idrSpsSeen_ && !idrPpsSeen_) {
         if (!spsVec_.empty()) {
             AppendOutOfBandPs(annexbFrameVec_, spsVec_);
             idrSpsSeen_ = true;
@@ -522,7 +526,7 @@ void AvcParserImpl::HandleNal(NalUnitInfo nal)
             AppendOutOfBandPs(annexbFrameVec_, ppsVec_);
         }
     }
-    PsSource ps = 
+    PsSource ps =
         (nal.nalType == AvcNalType::AVC_NAL_SPS || nal.nalType == AvcNalType::AVC_NAL_PPS) ? PS_IN_BAND : PS_NONE;
     AppendNalUnit(annexbFrameVec_, nal.data, nal.size, ps);
     if (nal.nalType == AvcNalType::AVC_NAL_SLICE) {

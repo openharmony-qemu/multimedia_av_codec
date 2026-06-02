@@ -104,6 +104,7 @@ private:
     void SavePs(std::vector<uint8_t> &dst, const uint8_t *nal, uint32_t nalSize, bool first);
     bool SavePsVector(uint8_t *extraData, int32_t extraDataSize, std::vector<DataAddrInfo> src, AvcNalType nalType);
     void HandleNal(NalUnitInfo nal);
+    void SetPsFlag();
 };
 } // namespace Plugins
 } // namespace Media
