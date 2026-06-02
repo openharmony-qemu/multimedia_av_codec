@@ -571,9 +571,12 @@ int32_t MediaCodec::Release()
     AVCODEC_LOGI("codec Release, state from %{public}s to RELEASING", StateToString(state_).data());
     ResetIOStat();
     state_ = CodecState::RELEASING;
-    auto ret = codecPlugin_->Release();
-    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, (int32_t)ret, "plugin release failed");
-    codecPlugin_ = nullptr;
+    {
+        AutoLock pluginLock{codecPluginMutex_};
+        auto ret = codecPlugin_->Release();
+        CHECK_AND_RETURN_RET_LOG(ret == Status::OK, static_cast<int32_t>(ret), "plugin release failed");
+        codecPlugin_ = nullptr;
+    }
     ResetBufferStatusInfo();
     ClearBufferQueue();
     // LCOV_EXCL_START
@@ -587,7 +590,7 @@ int32_t MediaCodec::Release()
     }
     // LCOV_EXCL_STOP
     state_ = CodecState::UNINITIALIZED;
-    return (int32_t)ret;
+    return static_cast<int32_t>(Status::OK);
 }
 
 int32_t MediaCodec::NotifyEos()
