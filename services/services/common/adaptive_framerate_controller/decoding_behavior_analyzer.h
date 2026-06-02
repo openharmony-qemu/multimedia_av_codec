@@ -83,7 +83,7 @@ private:
     std::chrono::steady_clock::time_point endSysTime_;
     std::deque<int64_t> ptsWin_;
     double decInSpeed_ = -1.0;
-    double srcFps_ = -1.0;
+    double srcFps_ = 0.0;
     void ResetIntervalStats();
     double GetSrcFps();
     size_t MatchAndUpdateSpeedStats(double decSpeed);
@@ -93,7 +93,7 @@ private:
     void SaveDecodingBehaviorAsSnapshot(
         DecodingBehaviorType type, std::chrono::steady_clock::time_point endTime, size_t decSpeedIdx);
     void ReportSpeedDecodingInfo();
-    size_t UpdateSpeedEstimates(double speed, double srcFps);
+    size_t UpdateSpeedEstimates(double speed);
     void ReportFpsIfSignificantChange(double decFps, double renderFps, double srcFps);
     void HandleBehaviorTransition(DecodingBehaviorType currentType, size_t oldSpeedIdx,
         DecodingBehaviorType newType, size_t newSpeedIdx);

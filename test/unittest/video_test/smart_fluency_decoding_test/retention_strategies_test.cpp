@@ -362,29 +362,30 @@ HWTEST_F(AdaptiveRetentionStrategyTest, MakeDecision_DecisionTreeDrop_006, TestS
 HWTEST_F(AdaptiveRetentionStrategyTest, MakeDecision_MaxDropsEnforcement_007, TestSize.Level1)
 {
     auto strategy = std::make_unique<AdaptiveRetentionStrategy>();
-    strategy->UpdatePlaybackSpeed(2.0);
+    strategy->UpdatePlaybackSpeed(2.0); // sourceFps(30) * 2.0 = 60.0 Render FPS
 
     FrameRetentionContext ctx{};
     MVStats mvStats;
     mvStats.validBlocks = 100;
-    // Force a drop (Rule 14 as above)
     mvStats.motionConsistency = 0.99;
     mvStats.perceptualMagnitude = 30.0;
     ctx.mvStats = &mvStats;
 
-    // First decision: Drop
-    bool first = strategy->MakeRetentionDecision(ctx);
-    if (!first) {
-        EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_DROP_ADAPTIVE_DT);
-        // maxDrops = (2.0 - 1.0) * 3.0 = 5
-        // It should drop 3 frames then retain 1.
-        for (int i = 0; i < 2; ++i) {
-            EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
-        }
-        // 6th frame should retain (adaptive drop limit reached)
-        EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
-        EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT);
-    }
+    // Frame 1: acc = 0.0 + 0.75 = 0.75 < 1.0 -> Drop
+    EXPECT_FALSE(strategy->MakeRetentionDecision(ctx));
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_DROP_ADAPTIVE_DT);
+
+    // Frame 2: acc = 0.75 + 0.75 = 1.50 >= 1.0 -> Retain (accumulator_ = 0.0)
+    EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT);
+
+    // Frame 3: acc = 0.0 + 0.75 = 0.75 < 1.0 -> Drop
+    EXPECT_FALSE(strategy->MakeRetentionDecision(ctx));
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_DROP_ADAPTIVE_DT);
+
+    // Frame 4: acc = 0.75 + 0.75 = 1.50 >= 1.0 -> Retain
+    EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT);
 }
 
 /**
@@ -604,20 +605,22 @@ HWTEST_F(AdaptiveRetentionStrategyTest, MakeDecision_ZeroMotionDrop_010, TestSiz
 HWTEST_F(AdaptiveRetentionStrategyTest, MakeDecision_MaxDropsLimit_011, TestSize.Level1)
 {
     auto strategy = std::make_unique<AdaptiveRetentionStrategy>();
-    strategy->UpdatePlaybackSpeed(2.0); // maxDrops = (2.0 - 1.0) * 3.0 = 3
-
+    strategy->UpdatePlaybackSpeed(2.0); // Render FPS = 60.0
     FrameRetentionContext ctx{};
     MVStats mvStats;
     mvStats.validBlocks = 100;
-    mvStats.perceptualMagnitude = 100.0;
-    mvStats.motionConsistency = 1.0; // Force drop
+    mvStats.motionConsistency = 0.1;
+    mvStats.perceptualMagnitude = 10.0;
     ctx.mvStats = &mvStats;
 
-    // Drop 3 times in a row
-    for (int i = 0; i < 2; i++) {
-        EXPECT_FALSE(strategy->MakeRetentionDecision(ctx));
-    }
-    // 4th call: maxDrops limit reached, forces retain
+    // Frame 1: acc = 0.366 (< 1.0) -> Drop
+    EXPECT_FALSE(strategy->MakeRetentionDecision(ctx));
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_DROP_ADAPTIVE_DT);
+
+    // Frame 2: acc = 0.733 (< 1.0) -> Drop
+    EXPECT_FALSE(strategy->MakeRetentionDecision(ctx));
+
+    // Frame 3: acc = 1.099 (>= 1.0) -> Retain (accumulator_ = 0.0)
     EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
     EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT);
 }
