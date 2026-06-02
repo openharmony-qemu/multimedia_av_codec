@@ -346,30 +346,36 @@ void MPEG4SampleHelper::AdjustAudioSeekSampleIndexByPts(int64_t inputPts, bool i
         return;
     }
     const auto& entry = sampleIndexEntry_;
+    // Step back when the selected audio sample starts after inputPts but the previous sample still covers it.
     if (fromSyncSamples && isBaseTrack && IsAudioSampleIndexInRange(currentIndex) &&
         entry[currentIndex].pts > inputPts && IsInputCoveredByPreviousSample(inputPts, currentIndex) &&
         (flag == SeekMode::SEEK_CLOSEST_SYNC ||
         (flag == SeekMode::SEEK_NEXT_SYNC && static_cast<size_t>(currentIndex) == entry.size() - 1))) {
         --currentIndex;
     }
+    // Keep the first audio sample if it covers the sync point for a non-base track.
     if (fromSyncSamples && !isBaseTrack && currentIndex == 1 &&
         inputPts <= entry[0].pts + entry[0].duration) {
         --currentIndex;
     }
+    // Keep AAC priming/skip-sample metadata by seeking to the preroll sample before the target point.
     if (fromSyncSamples && !isBaseTrack && IsAudioSampleIndexInRange(currentIndex) &&
         entry[currentIndex].pts >= inputPts && !entry[currentIndex - 1].skipSamplesInfo.empty()) {
         --currentIndex;
     }
+    // Empty edits can shift audio PTS forward; use sample coverage instead of skipping the covered sample.
     if (trackTimeScale_ > 0 && !entry.empty() && entry.front().pts >= trackTimeScale_ &&
         IsAudioSampleIndexInRange(currentIndex) && inputPts < entry[currentIndex].pts &&
         IsInputCoveredByPreviousSample(inputPts, currentIndex)) {
         --currentIndex;
     }
+    // Apply the same preroll rule on tracks without sync-sample entries.
     if (!fromSyncSamples && !isBaseTrack && flag == SeekMode::SEEK_PREVIOUS_SYNC &&
         IsAudioSampleIndexInRange(currentIndex) && entry[currentIndex].pts >= inputPts &&
         entry[currentIndex - 1].pts < inputPts && !entry[currentIndex - 1].skipSamplesInfo.empty()) {
         --currentIndex;
     }
+    // Exact PTS matches may still need the previous AAC preroll sample for correct decode trimming.
     if (fromSyncSamples && !isBaseTrack && flag == SeekMode::SEEK_PREVIOUS_SYNC &&
         IsAudioSampleIndexInRange(currentIndex) && entry[currentIndex].pts == inputPts &&
         entry[currentIndex - 1].pts < inputPts && !entry[currentIndex - 1].skipSamplesInfo.empty()) {
