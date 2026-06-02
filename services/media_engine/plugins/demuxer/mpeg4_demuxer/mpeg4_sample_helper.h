@@ -236,6 +236,10 @@ private:
     bool ResolveDirectSyncSampleByPts(int64_t inputPts, int64_t currentIndex, uint32_t& sampleIndex) const;
     bool ResolveNonBaseTrackEosByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag, uint32_t& sampleIndex) const;
     bool ResolveTextWebVttSample(int64_t inputPTS, int64_t& currentIndex, uint32_t& sampleIndex) const;
+    bool IsAudioSampleIndexInRange(int64_t currentIndex) const;
+    bool IsInputCoveredByPreviousSample(int64_t inputPts, int64_t currentIndex) const;
+    void AdjustAudioSeekSampleIndexByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag,
+        bool fromSyncSamples, int64_t& currentIndex) const;
     int64_t FindPrevSyncByPts(int64_t inputPts, int64_t currentIndex) const;
     int64_t FindNextSyncByPts(int64_t inputPts, int64_t currentIndex) const;
     void SelectClosestSyncByPts(int64_t inputPts, int64_t& currentIndex) const;

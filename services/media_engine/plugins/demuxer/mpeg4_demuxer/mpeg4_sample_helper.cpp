@@ -296,6 +296,9 @@ bool MPEG4SampleHelper::ResolveNonBaseTrackEosByPts(int64_t inputPts, bool isBas
 {
     bool beyondLastSync =
         !stssEntry_.empty() && inputPts > stssEntry_.back().syncPts && flag == SeekMode::SEEK_NEXT_SYNC;
+    if (!isBaseTrack && trackType_ == AUDIO_TYPE && flag == SeekMode::SEEK_NEXT_SYNC && inputPts >= lastPTS_) {
+        return AssignSampleIndexFromSize(sampleIndexEntry_.size(), sampleIndex);
+    }
     if (isBaseTrack || (inputPts <= lastPTS_ && !beyondLastSync)) {
         return false;
     }
@@ -323,29 +326,97 @@ bool MPEG4SampleHelper::ResolveTextWebVttSample(int64_t inputPTS, int64_t& curre
     return true;
 }
 
+bool MPEG4SampleHelper::IsAudioSampleIndexInRange(int64_t currentIndex) const
+{
+    return trackType_ == AUDIO_TYPE && currentIndex > 0 &&
+        static_cast<size_t>(currentIndex) < sampleIndexEntry_.size();
+}
+
+bool MPEG4SampleHelper::IsInputCoveredByPreviousSample(int64_t inputPts, int64_t currentIndex) const
+{
+    const auto& entry = sampleIndexEntry_;
+    return IsAudioSampleIndexInRange(currentIndex) &&
+        inputPts < entry[currentIndex - 1].pts + entry[currentIndex - 1].duration;
+}
+
+void MPEG4SampleHelper::AdjustAudioSeekSampleIndexByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag,
+    bool fromSyncSamples, int64_t& currentIndex) const
+{
+    if (trackType_ != AUDIO_TYPE) {
+        return;
+    }
+    const auto& entry = sampleIndexEntry_;
+    if (fromSyncSamples && isBaseTrack && IsAudioSampleIndexInRange(currentIndex) &&
+        entry[currentIndex].pts > inputPts && IsInputCoveredByPreviousSample(inputPts, currentIndex) &&
+        (flag == SeekMode::SEEK_CLOSEST_SYNC ||
+        (flag == SeekMode::SEEK_NEXT_SYNC && static_cast<size_t>(currentIndex) == entry.size() - 1))) {
+        --currentIndex;
+    }
+    if (fromSyncSamples && !isBaseTrack && currentIndex == 1 &&
+        inputPts <= entry[0].pts + entry[0].duration) {
+        --currentIndex;
+    }
+    if (fromSyncSamples && !isBaseTrack && IsAudioSampleIndexInRange(currentIndex) &&
+        entry[currentIndex].pts >= inputPts && !entry[currentIndex - 1].skipSamplesInfo.empty()) {
+        --currentIndex;
+    }
+    if (trackTimeScale_ > 0 && !entry.empty() && entry.front().pts >= trackTimeScale_ &&
+        IsAudioSampleIndexInRange(currentIndex) && inputPts < entry[currentIndex].pts &&
+        IsInputCoveredByPreviousSample(inputPts, currentIndex)) {
+        --currentIndex;
+    }
+    if (!fromSyncSamples && !isBaseTrack && flag == SeekMode::SEEK_PREVIOUS_SYNC &&
+        IsAudioSampleIndexInRange(currentIndex) && entry[currentIndex].pts >= inputPts &&
+        entry[currentIndex - 1].pts < inputPts && !entry[currentIndex - 1].skipSamplesInfo.empty()) {
+        --currentIndex;
+    }
+    if (fromSyncSamples && !isBaseTrack && flag == SeekMode::SEEK_PREVIOUS_SYNC &&
+        IsAudioSampleIndexInRange(currentIndex) && entry[currentIndex].pts == inputPts &&
+        entry[currentIndex - 1].pts < inputPts && !entry[currentIndex - 1].skipSamplesInfo.empty()) {
+        --currentIndex;
+    }
+}
+
 Status MPEG4SampleHelper::FindSyncSampleByPts(
     int64_t inputPts, bool isBaseTrack, SeekMode flag, uint32_t &sampleIndex)
 {
     MEDIA_LOG_D("In");
+    const auto& entry = sampleIndexEntry_;
+    if (entry.empty()) {
+        return Status::ERROR_INVALID_DATA;
+    }
     if (inputPts < 0) {
         sampleIndex = stssEntry_.empty() ? 0 : stssEntry_[0].index;
         return Status::OK;
     }
+    if (trackType_ == AUDIO_TYPE && isBaseTrack && inputPts == 0 && entry.front().pts < 0 &&
+        entry.front().skipSamplesInfo.empty()) {
+        sampleIndex = 0;
+        return Status::OK;
+    }
+    if (trackType_ == AUDIO_TYPE && isBaseTrack && inputPts > lastPTS_) {
+        return AssignSampleIndex(entry.size() - 1, sampleIndex) ? Status::OK : Status::ERROR_INVALID_DATA;
+    }
+    if (!isBaseTrack && trackType_ == AUDIO_TYPE &&
+        (flag == SeekMode::SEEK_NEXT_SYNC || flag == SeekMode::SEEK_CLOSEST_SYNC) && inputPts >= lastPTS_) {
+        return AssignSampleIndexFromSize(entry.size(), sampleIndex) ? Status::OK : Status::ERROR_INVALID_DATA;
+    }
 
     int64_t currentIndex = 0;
-    const auto& entry = sampleIndexEntry_;
     Status ret = Status::OK;
     if (!stssEntry_.empty()) {
         uint32_t syncIndex = 0;
         ret = FindWithSyncSamplesByPts(inputPts, isBaseTrack, flag, syncIndex);
         currentIndex = syncIndex < stssEntry_.size() ? stssEntry_[syncIndex].index : stssEntry_.back().index;
         if (ret == Status::OK) {
+            AdjustAudioSeekSampleIndexByPts(inputPts, isBaseTrack, flag, true, currentIndex);
             FALSE_RETURN_V_MSG_E(AssignSampleIndex(currentIndex, sampleIndex), Status::ERROR_INVALID_DATA,
                 "Invalid sample index");
             return Status::OK;
         }
     } else {
         currentIndex = FindIndexWithoutSyncSamples(inputPts);
+        AdjustAudioSeekSampleIndexByPts(inputPts, isBaseTrack, flag, false, currentIndex);
     }
 
     if (currentIndex >= static_cast<int64_t>(entry.size())) {
@@ -1361,7 +1432,7 @@ Status MPEG4SampleHelper::BuildEditListSampleEntry(const SampleIndexEntry& oldEn
     processCtx.newEntry.skipSamplesInfo.clear();
     bool outsideEdit = currCts < edit.mediaTime || currCts >= processCtx.editEndTime;
     bool crossedAudioStart = trackType_ == AUDIO_TYPE && mimeType_ != MimeType::AUDIO_VORBIS &&
-        currCts < edit.mediaTime && processCtx.frameEndTime > edit.mediaTime && buildCtx.firstNonZeroAudioEdit > 0;
+        currCts < edit.mediaTime && processCtx.frameEndTime >= edit.mediaTime && buildCtx.firstNonZeroAudioEdit > 0;
     if (outsideEdit && crossedAudioStart) {
         int64_t packetSkipSamples = edit.mediaTime - currCts;
         processCtx.newEntry.skipSamplesInfo = MakeSkipSamplesInfo(packetSkipSamples);

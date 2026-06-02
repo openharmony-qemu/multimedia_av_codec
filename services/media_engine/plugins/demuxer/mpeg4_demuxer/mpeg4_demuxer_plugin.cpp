@@ -58,6 +58,7 @@ constexpr int64_t SNIFF_DATA_SIZE = 2048;
 constexpr int32_t BOX_HEADER_SIZE = 8;
 constexpr int32_t BOX_TYPE_OFFSET = 4;
 constexpr int64_t US_TO_NS = 1000;
+constexpr int64_t MS_TO_US = 1000;
 
 static const std::map<std::string, VideoStreamType> g_streamParserMap = {
     { "video/avc",  VideoStreamType::AVC },
@@ -98,6 +99,19 @@ bool GetFfmpegFallbackDurationUs(
     }
     return ConvertTimeScale(fallbackDurationTicks, static_cast<int64_t>(S_TO_US), trackTimeScale, &durationUs) ==
         Status::OK;
+}
+
+bool CheckSeekTimeInFileDuration(const MediaInfo& mediaInfo, int64_t seekTime)
+{
+    int64_t fileDuration = 0;
+    if (!mediaInfo.general.Get<Tag::MEDIA_DURATION>(fileDuration) || fileDuration <= 0) {
+        return true;
+    }
+    if (seekTime > fileDuration / MS_TO_US) { // fileDuration us
+        MEDIA_LOG_E("Seek to timestamp=" PUBLIC_LOG_D64 " failed, max=" PUBLIC_LOG_D64, seekTime, fileDuration);
+        return false;
+    }
+    return true;
 }
 
 int32_t GetSampleSizeWithCodecConfig(const MediaInfo& mediaInfo,
@@ -873,6 +887,7 @@ Status MPEG4DemuxerPlugin::PrepareSeekTime(const std::shared_ptr<MPEG4AtomParser
     int64_t& realSeekTime, SeekTimeContext& context)
 {
     FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");
+    context.syncSeekTime = seekTime;
     context.editListApplied = track->sampleHelper != nullptr && track->sampleHelper->HasAppliedEditList();
     if (context.editListApplied) {
         FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(seekTime, track->elstInitEmptyEdit, &context.relativeSeekTime),
@@ -902,6 +917,24 @@ Status MPEG4DemuxerPlugin::PrepareSeekTime(const std::shared_ptr<MPEG4AtomParser
         1000LL, &context.trackSeekTime) == Status::OK, Status::ERROR_INVALID_PARAMETER, "mul overflow");
     if (!context.editListApplied) {
         context.trackSeekTime += track->elstShiftStartTime;
+    }
+    int64_t streamDuration = track->duration;
+    if (context.editListApplied && track->sampleHelper != nullptr) {
+        streamDuration = std::max(track->sampleHelper->totalDuration_, track->sampleHelper->lastPTS_);
+    }
+    // Align with FFmpeg: when timestamp is out of stream duration but inside file duration, seek to end of stream.
+    if (streamDuration > 0 && context.trackSeekTime > streamDuration) {
+        MEDIA_LOG_W("Out of stream, seek to " PUBLIC_LOG_D64, context.trackSeekTime);
+        context.trackSeekTime = streamDuration;
+        int64_t syncTrackTime = context.trackSeekTime;
+        if (!context.editListApplied) {
+            syncTrackTime -= track->elstShiftStartTime;
+        }
+        FALSE_RETURN_V_MSG_E(ConvertTimeScale(syncTrackTime, 1000LL, context.baseTrackTimeScale,
+            &context.syncSeekTime) == Status::OK, Status::ERROR_INVALID_PARAMETER, "mul overflow");
+        if (!context.editListApplied) {
+            context.syncSeekTime += track->elstInitEmptyEdit;
+        }
     }
     return Status::OK;
 }
@@ -943,10 +976,10 @@ Status MPEG4DemuxerPlugin::DoSeekInternal(int32_t trackIndex, int64_t seekTime, 
     }
 
     bool isVideo = IsVideoType(*track);
-    SeekSampleIndexContext sampleContext {seekTime, seekContext.trackSeekTime, mode};
+    SeekSampleIndexContext sampleContext {seekContext.syncSeekTime, seekContext.trackSeekTime, mode};
     ret = FindSeekSampleIndex(track, sampleContext);
 
-    int64_t syncSeekTime = seekTime;
+    int64_t syncSeekTime = seekContext.syncSeekTime;
     if (isVideo) {
         VideoSyncSeekContext context {
             sampleContext.sampleIndex, sampleContext.isBaseTrack, seekContext.editListApplied,
@@ -955,7 +988,13 @@ Status MPEG4DemuxerPlugin::DoSeekInternal(int32_t trackIndex, int64_t seekTime, 
         ret = GetVideoSyncSeekTime(track, context);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Get video sync seek time failed");
     }
-    ret = MultiTrackSync(trackIndex, !sampleContext.isBaseTrack, syncSeekTime, mode);  // 多轨同步
+    SeekMode multiTrackMode = mode;
+    if (mode == SeekMode::SEEK_CLOSEST_SYNC && syncSeekTime < seekTime) {
+        multiTrackMode = SeekMode::SEEK_PREVIOUS_SYNC;
+    } else if (mode == SeekMode::SEEK_CLOSEST_SYNC) {
+        multiTrackMode = SeekMode::SEEK_NEXT_SYNC;
+    }
+    ret = MultiTrackSync(trackIndex, !sampleContext.isBaseTrack, syncSeekTime, multiTrackMode);  // 多轨同步
     track->currentSampleIndex = ret == Status::OK ? sampleContext.sampleIndex : track->currentSampleIndex;
     return ret;
 }
@@ -1016,8 +1055,9 @@ Status MPEG4DemuxerPlugin::MultiTrackSync(int32_t trackIndex, bool isBaseTrack, 
         ret = otherTrack->sampleHelper->FindSyncSampleByPts(otherTrackSeekTime, isBaseTrack, mode, otherSampleIndex);
         if (ret == Status::OK) {
             otherTrack->currentSampleIndex = otherSampleIndex;
-            MEDIA_LOG_D("Sync track " PUBLIC_LOG_D32 " to sample " PUBLIC_LOG_D32 " at time " PUBLIC_LOG_D64,
-                currentTrackId, otherSampleIndex, adjustSeekTime);
+            MEDIA_LOG_D("Sync track " PUBLIC_LOG_D32 " to sample " PUBLIC_LOG_D32 " at time " PUBLIC_LOG_D64
+                ", mode " PUBLIC_LOG_D32,
+                currentTrackId, otherSampleIndex, adjustSeekTime, static_cast<int32_t>(mode));
         } else {
             MEDIA_LOG_W("Failed to sync track " PUBLIC_LOG_D32 " to time " PUBLIC_LOG_D64,
                 currentTrackId, adjustSeekTime);
@@ -1050,6 +1090,8 @@ Status MPEG4DemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode mo
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
     FALSE_RETURN_V_MSG_E(seekTime >= 0 && seekTime <= INT64_MAX / MS_TO_NS,
         Status::ERROR_INVALID_PARAMETER, "Seek time " PUBLIC_LOG_D64 " is not supported", seekTime);
+    FALSE_RETURN_V_MSG_E(CheckSeekTimeInFileDuration(mediaInfo_, seekTime), Status::ERROR_INVALID_PARAMETER,
+        "Seek time out of file duration");
 
     ReleaseReadLoop();
     for (const auto& selectedTrackId : selectedTrackIds_) {
