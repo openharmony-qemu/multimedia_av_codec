@@ -16,7 +16,9 @@
 #include <mutex>
 #include <unistd.h>
 #include <cstdlib>
+#include <cstdint>
 #include <limits>
+#include <stdexcept>
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
@@ -24,6 +26,7 @@
 #include "dash_mpd_downloader.h"
 #include "dash_mpd_util.h"
 #include "sidx_box_parser.h"
+#include "utils/string_utils.h"
 #include "utils/time_utils.h"
 #include "base64_utils.h"
 
@@ -38,6 +41,7 @@ constexpr int32_t MPD_HTTP_TIME_OUT_MS = 5 * 1000;
 constexpr uint32_t MPD_MAX_SIZE = 100 * 1024 * 1024;
 constexpr unsigned int SEGMENT_DURATION_DELTA = 100; // ms
 constexpr double TOLERANCE = 1e-15;
+constexpr uint32_t MAX_PSSH_BASE64_LEN = 2730;
 
 namespace {
 void CollectPeriodRanges(const DashMpdInfo *mpdInfo, uint64_t fallbackDurationMs,
@@ -168,7 +172,10 @@ static int64_t ParseStartNumber(const std::string &numberStr)
 {
     int64_t startNum = 1;
     if (numberStr.length() > 0) {
-        startNum = atoi(numberStr.c_str());
+        int64_t tmp = 0;
+        if (StringUtil::SafeStoInt64(numberStr, tmp) && tmp >= 0) {
+            startNum = tmp;
+        }
     }
 
     return startNum;
@@ -376,11 +383,13 @@ DashMpdGetRet DashMpdDownloader::GetBreakPointSegment(int streamId, int64_t brea
         }
 
         int64_t segmentDuration = 0;
-        for (unsigned int index = 0; index <  streamDescription->mediaSegments_.size(); index++) {
-            if (segmentDuration + (int64_t)(streamDescription->mediaSegments_[index]->duration_) > breakpoint) {
+        for (unsigned int index = 0; index < streamDescription->mediaSegments_.size(); index++) {
+            int64_t curDuration = static_cast<int64_t>(streamDescription->mediaSegments_[index]->duration_);
+            if (segmentDuration + curDuration >= breakpoint) {
                 seg = streamDescription->mediaSegments_[index];
                 break;
             }
+            segmentDuration += curDuration;
         }
 
         if (seg != nullptr) {
@@ -595,7 +604,12 @@ void DashMpdDownloader::SetInitResolution(unsigned int width, unsigned int heigh
 {
     MEDIA_LOG_I("SetInitResolution, width:" PUBLIC_LOG_U32 ", height:" PUBLIC_LOG_U32, width, height);
     if (width > 0 && height > 0) {
-        initResolution_ = width * height;
+        uint64_t product = static_cast<uint64_t>(width) * static_cast<uint64_t>(height);
+        if (product > std::numeric_limits<unsigned int>::max()) {
+            initResolution_ = std::numeric_limits<unsigned int>::max();
+        } else {
+            initResolution_ = static_cast<unsigned int>(product);
+        }
     }
 }
 
@@ -804,6 +818,10 @@ void DashMpdDownloader::ProcessDrmInfos()
         }
 
         std::string psshString = drmInfo.pssh_;
+        if (psshString.length() > MAX_PSSH_BASE64_LEN) {
+            MEDIA_LOG_W("pssh base64 length too large, drmId " PUBLIC_LOG_S, drmInfo.drmId_.c_str());
+            continue;
+        }
         uint8_t pssh[2048]; // 2048: pssh len
         uint32_t psshSize = 2048; // 2048: pssh len
         if (Base64Utils::Base64Decode(reinterpret_cast<const uint8_t *>(psshString.c_str()),
@@ -1528,7 +1546,9 @@ void DashMpdDownloader::GetStreamDescriptions(const std::string &periodBaseUrl, 
 
 unsigned int DashMpdDownloader::GetResolutionDelta(unsigned int width, unsigned int height)
 {
-    unsigned int resolution = width * height;
+    uint64_t product = static_cast<uint64_t>(width) * static_cast<uint64_t>(height);
+    unsigned int resolution = (product > std::numeric_limits<unsigned int>::max()) ?
+ 	    std::numeric_limits<unsigned int>::max() : static_cast<unsigned int>(product);
     if (resolution > initResolution_) {
         return resolution - initResolution_;
     } else {
@@ -2383,24 +2403,16 @@ bool DashMpdDownloader::ParseFrameRateToUint32(const std::string& str, uint32_t&
         return false;
     }
 
-    std::string frameRateStr = str;
-    auto slashPos = frameRateStr.find('/');
+    auto slashPos = str.find('/');
     if (slashPos != std::string::npos) {
-        std::string numStr = frameRateStr.substr(0, slashPos);
-        std::string denStr = frameRateStr.substr(slashPos + 1);
-        if (numStr.empty() || denStr.empty()) {
+        std::string numStr = str.substr(0, slashPos);
+        std::string denStr = str.substr(slashPos + 1);
+        double num = 0.0;
+        double den = 0.0;
+        if (!DashStrToNonNegativeDouble(numStr, num) || !DashStrToNonNegativeDouble(denStr, den)) {
             return false;
         }
-        size_t pos = 0;
-        double num = std::stod(numStr, &pos);
-        if (pos < numStr.length()) {
-            return false;
-        }
-        double den = std::stod(denStr, &pos);
-        if (pos < denStr.length()) {
-            return false;
-        }
-        if (den < 0.0 || std::abs(den) < TOLERANCE) {
+        if (std::abs(den) < TOLERANCE) {
             return false;
         }
         double fps = num / den;
@@ -2410,12 +2422,8 @@ bool DashMpdDownloader::ParseFrameRateToUint32(const std::string& str, uint32_t&
         value = static_cast<uint32_t>(std::ceil(fps));
         return true;
     }
-    size_t pos = 0;
-    double fps = std::stod(frameRateStr, &pos);
-    if (pos < frameRateStr.length()) {
-        return false;
-    }
-    if (fps < 0.0) {
+    double fps = 0.0;
+    if (!DashStrToNonNegativeDouble(str, fps)) {
         return false;
     }
     value = static_cast<uint32_t>(std::ceil(fps));

@@ -129,6 +129,8 @@ public:
     void SetSourceType(SourceType type);
     bool GetIsDataSrcNoSeek();
     inline bool GetIsDataSrc() const { return isDataSrc_; }
+    bool IsPlayerMode();
+    void SetPlayerMode(bool isPlayerMode);
 protected:
     std::shared_ptr<Source> source_;
     std::shared_ptr<TypeFinder> typeFinder_;
@@ -155,6 +157,7 @@ private:
     std::atomic<bool> changeStreamFlag_ = true;
     std::mutex typeFinderMutex_ {};
     std::mutex pluginStateMutex_ {};
+    std::atomic<bool> isPlayerMode_ {false};
 };
 } // namespace Media
 } // namespace OHOS

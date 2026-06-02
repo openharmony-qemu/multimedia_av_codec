@@ -30,6 +30,7 @@ public:
     AesDecryptor();
     ~AesDecryptor();
     void Init();
+    void Reset();
     void Decrypt(uint8_t *in, uint8_t *out, uint32_t len);
     void OnSourceKeyChange(const uint8_t* key, size_t keyLen, const uint8_t* iv);
     

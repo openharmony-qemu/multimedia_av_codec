@@ -54,9 +54,6 @@ void VideoEncDualOutputSample::OnError(OH_AVCodec *codec, int32_t errorCode, voi
 
 void VideoEncDualOutputSample::OnStreamChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 {
-    if (format != nullptr) {
-        OH_AVFormat_Destroy(format);
-    }
 }
 
 void VideoEncDualOutputSample::OnNeedInputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)

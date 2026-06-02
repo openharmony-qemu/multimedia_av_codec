@@ -100,7 +100,8 @@ private:
     uint32_t curTrakInfoIndex_ = 0;
     std::vector<TrakInfo> trakInfoVec_;
 
-    std::map<std::string, void(TimeAndIndexConversion::*)(uint32_t)> boxParsers = {
+    using BoxParser = void(TimeAndIndexConversion::*)(uint64_t);
+    std::map<std::string, BoxParser> boxParsers = {
         {BOX_TYPE_STTS, &TimeAndIndexConversion::ParseStts},
         {BOX_TYPE_CTTS, &TimeAndIndexConversion::ParseCtts},
         {BOX_TYPE_HDLR, &TimeAndIndexConversion::ParseHdlr},
@@ -115,13 +116,13 @@ private:
     void ReadBufferFromDataSource(size_t bufSize, std::shared_ptr<Buffer> &buffer);
     void ReadBoxHeader(std::shared_ptr<Buffer> buffer, BoxHeader &header);
     bool IsMP4orMOV();
-    void ParseMoov(uint32_t boxSize);
-    void ParseTrak(uint32_t boxSize);
-    void ParseBox(uint32_t boxSize);
-    void ParseCtts(uint32_t boxSize);
-    void ParseStts(uint32_t boxSize);
-    void ParseHdlr(uint32_t boxSize);
-    void ParseMdhd(uint32_t boxSize);
+    void ParseMoov(uint64_t boxSize);
+    void ParseTrak(uint64_t boxSize);
+    void ParseBox(uint64_t boxSize);
+    void ParseCtts(uint64_t boxSize);
+    void ParseStts(uint64_t boxSize);
+    void ParseHdlr(uint64_t boxSize);
+    void ParseMdhd(uint64_t boxSize);
 
     Status GetPresentationTimeUsFromFfmpegMOV(IndexAndPTSConvertMode mode,
         uint32_t trackIndex, int64_t absolutePTS, uint32_t index);

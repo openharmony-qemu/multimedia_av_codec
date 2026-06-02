@@ -998,7 +998,8 @@ bool AudioSink::IsTimeAnchorNeedUpdate()
     }
     Pipeline::IMediaSyncCenter::IMediaTime iMediaTime = {lastBufferPTS - firstPts_, lastBufferPTS,
         lastBufferDuration};
-    syncCenter->UpdateTimeAnchor(nowCt, latency + fixDelay_, iMediaTime, this);
+    int64_t delayTime = latency == 0 ? fixDelay_ : latency;
+    syncCenter->UpdateTimeAnchor(nowCt, delayTime, iMediaTime, this);
     MEDIA_LOG_I("AudioSink fixDelay_: " PUBLIC_LOG_D64
         " us, latency: " PUBLIC_LOG_D64
         " us, pts-f: " PUBLIC_LOG_D64

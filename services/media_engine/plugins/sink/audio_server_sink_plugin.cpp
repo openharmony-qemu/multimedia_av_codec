@@ -474,6 +474,9 @@ Status AudioServerSinkPlugin::Start()
     }
     ApplyAudioHapticsSyncId();
     bool ret = audioRenderer_->Start();
+    if (!ret) {
+        playerEventReceiver_->OnDfxEvent({"AudioServerSinkPlugin", DfxEventType::DFX_EVENT_AUDIO_ERROR, true});
+    }
     FALSE_RETURN_V_MSG(ret, Status::ERROR_UNKNOWN, "AudioRenderer::Start failed");
     MEDIA_LOG_I_T("AudioRenderer::Start end");
     return Status::OK;
@@ -1167,7 +1170,7 @@ Status AudioServerSinkPlugin::Drain()
 int64_t AudioServerSinkPlugin::GetPlayedOutDurationUs(int64_t nowUs)
 {
     FALSE_RETURN_V(audioRenderer_ != nullptr && (rendererParams_.sampleRate != 0 || customSampleRate_ != 0), -1);
-    uint32_t numFramesPlayed = 0;
+    int64_t numFramesPlayed = 0;
     AudioStandard::Timestamp ts;
     bool res = audioRenderer_->GetAudioTime(ts, AudioStandard::Timestamp::Timestampbase::MONOTONIC);
     if (res) {
@@ -1412,7 +1415,10 @@ bool AudioServerSinkPlugin::GetAudioPosition(timespec &time, uint32_t &framePosi
         AudioStandard::Timestamp::Timestampbase::MONOTONIC);
     FALSE_RETURN_V_MSG(ret, false, "GetAudioPosition failed");
     time = audioPositionTimestamp.time;
-    framePosition = audioPositionTimestamp.framePosition;
+    int64_t tempframeposition = audioPositionTimestamp.framePosition;
+    FALSE_RETURN_V_MSG(tempframeposition >= 0 && tempframeposition <= static_cast<int64_t>(UINT32_MAX),
+        false, "audioPositionTimestamp.framePosition is invalid");
+    framePosition = static_cast<uint32_t>(audioPositionTimestamp.framePosition);
     return ret;
 }
 

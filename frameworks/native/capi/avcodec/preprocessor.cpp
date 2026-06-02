@@ -125,9 +125,8 @@ std::string TransformRoiMetadata(const std::string &roi, double scaleX, double s
 {
     static const std::regex roiPattern(R"((?:^|;)(-?\d+),(-?\d+)-(-?\d+),(-?\d+)(?:=([^;]*))?(?=;|$))");
     std::smatch match;
-    std::string temp = roi;
     std::string result;
-    while (std::regex_search(temp, match, roiPattern)) {
+    for (std::string temp = roi; std::regex_search(temp, match, roiPattern); temp = match.suffix().str()) {
         auto top = ParseInt32(match[ROI_MATCH_TOP_INDEX].str());
         auto left = ParseInt32(match[ROI_MATCH_LEFT_INDEX].str());
         auto bottom = ParseInt32(match[ROI_MATCH_BOTTOM_INDEX].str());
@@ -147,7 +146,6 @@ std::string TransformRoiMetadata(const std::string &roi, double scaleX, double s
         if (match[ROI_MATCH_PARAM_INDEX].matched) {
             result += "=" + match[ROI_MATCH_PARAM_INDEX].str();
         }
-        temp = match.suffix().str();
     }
     if (!result.empty()) {
         result += ";";
@@ -552,8 +550,14 @@ int32_t Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &outpu
     if (fastKitEnable) {
         PreProcessing::CropRect rect{0, 0, input->GetHeight() - 1, input->GetWidth() - 1};
         int32_t ret = fastKitsInterface_.Crop(input, output, rect);
+#ifdef SUPPORT_VIDEO_ENCODER_PREPROCESSING
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "FastKit copy failed: %{public}d", ret);
         return AVCS_ERR_OK;
+#else
+        if (ret == AVCS_ERR_OK) {
+            return AVCS_ERR_OK;
+        }
+#endif
     }
     PreProcessing::CpuImageProcessRequest request;
     request.input = input;
@@ -577,7 +581,9 @@ void Preprocessor::CopyInputMetadata(const sptr<SurfaceBuffer> &input, const spt
 
     std::vector<uint32_t> keys;
     GSError ret = input->ListMetadataKeys(keys);
-    CHECK_AND_RETURN_LOG(ret == GSERROR_OK, "List input metadata failed: %{public}d", ret);
+    if (ret != GSERROR_OK) {
+        return;
+    }
 
     for (uint32_t key : keys) {
         if (key == V2_2::ATTRKEY_ROI_METADATA) {

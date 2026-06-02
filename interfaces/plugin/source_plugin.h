@@ -375,6 +375,8 @@ public:
     {
         return false;
     }
+
+    virtual void PauseRead() {}
 };
 
 /// Source plugin api major number.

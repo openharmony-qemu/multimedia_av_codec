@@ -186,7 +186,7 @@ static void PrepareAutoSelectTrackByBitrate(const std::shared_ptr<MediaDemuxer> 
     mediaDemuxer->lastSwitchDownloadRate_.store(UNUM_0);
     mediaDemuxer->lastCheckAutoSelectTimeMs_ = mediaDemuxer->GetCurrentTimeMs() - NUM_2000;
     mediaDemuxer->defaultVideoStreamId_ = NEG_1;
-    mediaDemuxer->lastAutoSelectBitRate_ = NEG_1;
+    mediaDemuxer->lastAutoSelectBitRate_ = UNUM_0;
     mediaDemuxer->isPrepared_.store(true);
     mediaDemuxer->isSelectBitRate_.store(false);
     mediaDemuxer->isSelectTrack_.store(false);
@@ -218,7 +218,7 @@ void PrepareTrackSelectionFilter(const std::shared_ptr<MediaDemuxer> &mediaDemux
     mediaDemuxer->currentPlayType_ = playType;
     mediaDemuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
     mediaDemuxer->curDownloadBitRate_.store(UNUM_2000);
-    mediaDemuxer->lastAutoSelectBitRate_ = NEG_1;
+    mediaDemuxer->lastAutoSelectBitRate_ = UNUM_0;
     EXPECT_CALL(*(mediaDemuxer->source_), IsCloudFd()).WillOnce(Return(false));
     EXPECT_CALL(*(mediaDemuxer->source_), IsNeedPreDownload()).WillOnce(Return(false));
     EXPECT_CALL(*(mediaDemuxer->source_), GetStreamInfo(_, true)).WillOnce(Invoke(
@@ -6204,7 +6204,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, AutoSelectTrackByBitrate_011, TestSize.Level1)
 
     mediaDemuxer_->AutoSelectTrackByBitrate(NUM_1);
     EXPECT_EQ(mediaDemuxer_->defaultVideoStreamId_, NEG_1);
-    EXPECT_EQ(mediaDemuxer_->lastAutoSelectBitRate_, NEG_1);
+    EXPECT_EQ(mediaDemuxer_->lastAutoSelectBitRate_, UNUM_0);
     EXPECT_EQ(mediaDemuxer_->lastSwitchDownloadRate_.load(), UNUM_0);
     EXPECT_EQ(mediaDemuxer_->lastCheckAutoSelectTimeMs_, 0);
 }
@@ -6369,7 +6369,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, SetTrackSelectionFilter_007, TestSize.Level1)
 
     mediaDemuxer_->SetTrackSelectionFilter(filter);
     EXPECT_EQ(mediaDemuxer_->defaultVideoStreamId_, FILTER_VIDEO_STREAM_ID_2);
-    EXPECT_EQ(mediaDemuxer_->lastAutoSelectBitRate_, NEG_1);
+    EXPECT_EQ(mediaDemuxer_->lastAutoSelectBitRate_, UNUM_0);
 }
 
 /**

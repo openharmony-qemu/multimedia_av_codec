@@ -36,6 +36,7 @@ constexpr int64_t UP_LIMIT_MAX_TOTAL_READ_SIZE = 3000000;
 constexpr int64_t ACCESS_OFFSET_MAX_LENGTH = 2 * 1024;
 constexpr uint32_t CHUNK_SIZE = 16 * 1024;
 constexpr uint64_t MAX_CACHE_BUFFER_SIZE = 19 * 1024 * 1024;
+constexpr double EPSILON = 1e-9;
 
 inline constexpr bool BoundedIntervalComp(int64_t mid, uint64_t start, int64_t end)
 {
@@ -111,6 +112,30 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
     readPos_ = fragmentCacheBuffer_.end();
     writePos_ = fragmentCacheBuffer_.end();
     size_t sizePerChunk = sizeof(CacheChunk) + chunkSize;
+    if (sizePerChunk == 0 || chunkNum <= 0 ||
+        static_cast<uint64_t>(chunkNum) > std::numeric_limits<uint64_t>::max() / sizePerChunk) {
+        return false;
+    }
+    if (!AllocateAndInitChunks(chunkNum, sizePerChunk, chunkSize)) {
+        return false;
+    }
+    chunkMaxNum_ = chunkNum >= 1 ? static_cast<uint32_t>(chunkNum) - 1 : 0; // -1
+    totalBuffSize_ = totalBuffSize;
+    chunkSize_ = chunkSize;
+    double divisor = chunkMaxNum_ - newFragmentInitChunkNum;
+    if (divisor < EPSILON) {
+        MEDIA_LOG_E("EnsureCacheBufferInited: invalid divisor");
+        free(bufferAddr_);
+        bufferAddr_ = nullptr;
+        return false;
+    }
+    initReadSizeFactor_ = newFragmentInitChunkNum / divisor;
+    loopInterruptClock_.Reset();
+    return true;
+}
+
+bool CacheMediaChunkBufferImpl::AllocateAndInitChunks(int64_t chunkNum, size_t sizePerChunk, uint32_t chunkSize)
+{
     int64_t totalSize = static_cast<int64_t>(sizePerChunk) * chunkNum;
     if (totalSize <= 0 || totalSize > MAX_CACHE_BUFFER_SIZE * CHUNK_SIZE) {
         return false;
@@ -128,11 +153,6 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
         freeChunks_.push_back(chunkInfo);
         temp += sizePerChunk;
     }
-    chunkMaxNum_ = chunkNum >= 1 ? static_cast<uint32_t>(chunkNum) - 1 : 0; // -1
-    totalBuffSize_ = totalBuffSize;
-    chunkSize_ = chunkSize;
-    initReadSizeFactor_ = newFragmentInitChunkNum / (chunkMaxNum_ - newFragmentInitChunkNum);
-    loopInterruptClock_.Reset();
     return true;
 }
 

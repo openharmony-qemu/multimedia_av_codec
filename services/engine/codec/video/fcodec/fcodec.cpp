@@ -29,6 +29,7 @@
 #include "avcodec_codec_name.h"
 #include "dma_swap.h"
 #include "fcodec_surport_codec.h"
+#include "fcodec_utils.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -52,6 +53,7 @@ constexpr uint32_t DEFAULT_TRY_DECODE_TIME = 1;
 constexpr uint32_t DEFAULT_DECODE_WAIT_TIME = 200;
 constexpr uint32_t LOG_FREQUENCE = 2000;
 constexpr int32_t DEFAULT_THREAD_COUNT = 2;
+constexpr int32_t MAX_INPUT_BUFFER_SIZE = 8192 * 4096 * 4;
 
 #ifdef BUILD_ENG_VERSION
 constexpr uint32_t PATH_MAX_LEN = 128;
@@ -225,6 +227,17 @@ void FCodec::ConfigureDefaultVal(const Format &format, const std::string_view &f
     }
 }
 
+
+void FCodec::ConfigureMaxInputSize(const Format &format)
+{
+    int32_t maxInputSize = 0;
+    CHECK_AND_RETURN_LOG(format.GetIntValue(FMTKey::REQUIRED_IN_BUFFER_SIZE, maxInputSize),
+                         "not set parameter: %{public}s", std::string(FMTKey::REQUIRED_IN_BUFFER_SIZE).c_str());
+    if (maxInputSize > 0 && maxInputSize < MAX_INPUT_BUFFER_SIZE) {
+        format_.PutIntValue(FMTKey::REQUIRED_IN_BUFFER_SIZE, maxInputSize);
+    }
+}
+
 int32_t FCodec::AllocateCodecContext()
 {
     avCodecContext_ = std::shared_ptr<AVCodecContext>(avcodec_alloc_context3(avCodec_.get()), [](AVCodecContext *p) {
@@ -369,16 +382,16 @@ int32_t FCodec::Configure(const Format &format)
             CHECK_AND_RETURN_RET_LOG(format.GetDoubleValue(FMTKey::VIDEO_FRAME_RATE, val) && val > 0.0f,
                                      AVCS_ERR_INVALID_VAL, "Cannot get frame rate!");
             format_.PutDoubleValue(FMTKey::VIDEO_FRAME_RATE, val);
-        } else if (it.first == FMTKey::VIDEO_PIXEL_FORMAT ||
-                   it.first == FMTKey::VIDEO_ROTATION ||
-                   it.first == FMTKey::VIDEO_ORIENTATION_TYPE ||
-                   it.first == FMTKey::VIDEO_SCALE_TYPE ||
-                   it.first == FMTKey::VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER) {
+        } else if (it.first == FMTKey::VIDEO_PIXEL_FORMAT || it.first == FMTKey::VIDEO_ROTATION ||
+                   it.first == FMTKey::VIDEO_ORIENTATION_TYPE || it.first == FMTKey::VIDEO_SCALE_TYPE ||
+                   it.first == FMTKey::VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER ||
+                   it.first == FMTKey::REQUIRED_IN_BUFFER_SIZE) {
             continue;
         } else {
             AVCODEC_LOGW("Set parameter failed: %{public}s, unsupport key", it.first.data());
         }
     }
+    ConfigureMaxInputSize(format);
     GetSurfaceCfgFromFmt(format);
     if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
         outputPixelFmt_ = VideoPixelFormat::NV12;
@@ -676,12 +689,12 @@ int32_t FCodec::GetOutputFormat(Format &format)
             format_.PutDoubleValue(FMTKey::VIDEO_FRAME_RATE, value);
         }
     }
+    format = format_;
     if (!format_.ContainKey(FMTKey::REQUIRED_IN_BUFFER_SIZE)) {
         int32_t stride = AlignUp(width_, VIDEO_ALIGN_SIZE);
         int32_t maxInputSize = static_cast<int32_t>((stride * height_ * VIDEO_PIX_DEPTH_YUV) / UV_SCALE_FACTOR);
-        format_.PutIntValue(FMTKey::REQUIRED_IN_BUFFER_SIZE, maxInputSize);
+        format.PutIntValue(FMTKey::REQUIRED_IN_BUFFER_SIZE, maxInputSize);
     }
-    format = format_;
     AVCODEC_LOGI("Get outputFormat successful");
     return AVCS_ERR_OK;
 }
@@ -704,6 +717,13 @@ void FCodec::CalculateBufferSize()
     } else {
         size = std::max(VIDEO_MIN_BUFFER_SIZE, outputBufferSize_);
     }
+    std::unique_lock<std::mutex> fLock(formatMutex_);
+    int32_t maxInputSize = 0;
+    if (format_.GetIntValue(FMTKey::REQUIRED_IN_BUFFER_SIZE, maxInputSize)) {
+        AVCODEC_LOGI("set input size: %{public}d", maxInputSize);
+        size = static_cast<int64_t>(maxInputSize);
+    }
+    fLock.unlock();
     if (size >= INT32_MAX || size <= 0) {
         inputBufferSize_ = 0;
         AVCODEC_LOGE("width = %{public}d, height = %{public}d invalid", width_, height_);
@@ -1046,7 +1066,7 @@ int32_t FCodec::AllocateBuffers()
     return AVCS_ERR_OK;
 }
 
-int32_t FCodec::UpdateBuffers(uint32_t index, int32_t bufferSize)
+int32_t FCodec::UpdateBuffers(uint32_t index)
 {
     if (buffers_[INDEX_OUTPUT][index]->width_ != width_ || buffers_[INDEX_OUTPUT][index]->height_ != height_) {
         sptr<SurfaceBuffer> sb = nullptr;
@@ -1139,22 +1159,13 @@ void FCodec::PutFormatValue()
     format_.PutIntValue(FMTKey::VIDEO_PIC_HEIGHT, height_);
 }
 
-int32_t FCodec::CheckFormatChange(uint32_t index, int width, int height)
+int32_t FCodec::CheckFormatChange(uint32_t index, bool &isChanged)
 {
-    AVCODEC_LOGD("cur decNum: %{public}u", decNum_);
-    if (decNum_ == 0) {
-        callback_->OnOutputFormatChanged(format_);
-    }
-    decNum_++;
-#ifdef BUILD_ENG_VERSION
-    DumpOutputBuffer();
-#endif // BUILD_ENG_VERSION
-    bool isChanged = false;
-    if (width_ != width || height_ != height) {
-        AVCODEC_LOGI("format change, width: %{public}d->%{public}d, height: %{public}d->%{public}d", width_, width,
-                     height_, height);
-        width_ = width;
-        height_ = height;
+    if (width_ != cachedFrame_->width || height_ != cachedFrame_->height) {
+        AVCODEC_LOGI("format change, width: %{public}d->%{public}d, height: %{public}d->%{public}d", width_,
+                     cachedFrame_->width, height_, cachedFrame_->height);
+        width_ = cachedFrame_->width;
+        height_ = cachedFrame_->height;
         CHECK_AND_RETURN_RET_LOG(ValidateVideoResolution(codecName_, width_, height_), AVCS_ERR_INVALID_VAL,
             "Current decoder:%{public}s dosn't support width of %{public}d and height of %{public}d!",
             codecName_.c_str(), width_, height_);
@@ -1176,17 +1187,6 @@ int32_t FCodec::CheckFormatChange(uint32_t index, int width, int height)
     }
     CHECK_AND_RETURN_RET_LOG(CheckStrideChange(index, isChanged), AVCS_ERR_UNKNOWN,
                              "frameBuffer or surfaceMemory is nullptr!");
-    if (isChanged) {
-        callback_->OnOutputFormatChanged(format_);
-    }
-    std::lock_guard<std::mutex> oLock(outputMutex_);
-    if (sInfo_.surface == nullptr) {
-        CHECK_AND_RETURN_RET_LOG((UpdateBuffers(index, outputBufferSize_) == AVCS_ERR_OK),
-                                 AVCS_ERR_NO_MEMORY, "Update output buffer failed, index=%{public}u", index);
-    } else {
-        CHECK_AND_RETURN_RET_LOG((UpdateSurfaceMemory(index) == AVCS_ERR_OK), AVCS_ERR_NO_MEMORY,
-                                 "Update buffer failed");
-    }
     return AVCS_ERR_OK;
 }
 
@@ -1337,8 +1337,11 @@ int32_t FCodec::FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer)
         targetPixelFmt = VideoPixelFormat::NV12;
     }
     AVPixelFormat ffmpegFormat = ConvertPixelFormatToFFmpeg(targetPixelFmt);
+    int32_t ffpixfmt = cachedFrame_->format;
+    AVCODEC_LOGI("decode output ffmpeg pixfmt: %{public}d, target output ffmpeg pixfmt: %{public}d", ffpixfmt,
+                 static_cast<int32_t>(ffmpegFormat));
     int32_t ret;
-    if (ffmpegFormat == static_cast<AVPixelFormat>(cachedFrame_->format)) {
+    if (ffmpegFormat == static_cast<AVPixelFormat>(ffpixfmt)) {
         for (int32_t i = 0; i < AV_NUM_DATA_POINTERS && cachedFrame_->linesize[i] > 0; i++) {
             scaleData_[i] = cachedFrame_->data[i];
             scaleLineSize_[i] = cachedFrame_->linesize[i];
@@ -1426,6 +1429,103 @@ void FCodec::DumpOutputBuffer()
 }
 #endif // BUILD_ENG_VERSION
 
+void FCodec::GetCropInfo(std::vector<uint8_t> &vec, bool isFmtChanged)
+{
+    int32_t cropTop = static_cast<int32_t>(cachedFrame_->crop_top);
+    int32_t cropBottom = static_cast<int32_t>(cachedFrame_->crop_bottom);
+    int32_t cropLeft = static_cast<int32_t>(cachedFrame_->crop_left);
+    int32_t cropRight = static_cast<int32_t>(cachedFrame_->crop_right);
+    AVCODEC_LOGD("ffmpeg decode crop info top: %{public}d, bottom: %{public}d, left: %{public}d, right: %{public}d",
+                 cropTop, cropBottom, cropLeft, cropRight);
+    BufferHandleMetaRegion *crop = reinterpret_cast<BufferHandleMetaRegion *>(vec.data());
+    crop->left = cropLeft;
+    crop->top = cropTop;
+    crop->width = width_ - 1;
+    crop->height = height_ - 1;
+    if (isFmtChanged || decNum_ == 0) {
+        std::lock_guard<std::mutex> fLock(formatMutex_);
+        format_.PutIntValue(FMTKey::VIDEO_CROP_TOP, cropTop);
+        format_.PutIntValue(FMTKey::VIDEO_CROP_BOTTOM, cropBottom);
+        format_.PutIntValue(FMTKey::VIDEO_CROP_LEFT, cropLeft);
+        format_.PutIntValue(FMTKey::VIDEO_CROP_RIGHT, cropRight);
+    }
+}
+
+void FCodec::GetColorAspectsInfo(std::vector<uint8_t> &vec, bool isFmtChanged)
+{
+    AVColorPrimaries colorPrimaries = cachedFrame_->color_primaries;
+    AVColorTransferCharacteristic colorTransFunc = cachedFrame_->color_trc;
+    AVColorSpace colorMatrix = cachedFrame_->colorspace;
+    AVColorRange colorRange = cachedFrame_->color_range;
+    AVCODEC_LOGD("ffmpeg color aspects info range: %{public}d, primaries: %{public}d, transferCharacteristic: "
+                 "%{public}d, space: %{public}d",
+                 static_cast<int32_t>(colorRange), static_cast<int32_t>(colorPrimaries),
+                 static_cast<int32_t>(colorTransFunc), static_cast<int32_t>(colorMatrix));
+    CM_ColorPrimaries cmColorPrimaries = AVColorPrimariesToCM(colorPrimaries);
+    CM_TransFunc cmTrcFunc = AVColorTransferCharacteristicToCM(colorTransFunc);
+    CM_Matrix cmMatrix = AVColorSpaceToMatrix(colorMatrix);
+    CM_Range cmRange = AVColorRangeToRange(colorRange);
+    AVCODEC_LOGD("CM color range: %{public}d, colorprimaries: %{public}d, trans func: %{public}d, matrix: %{public}d",
+                 static_cast<int32_t>(cmRange), static_cast<int32_t>(cmColorPrimaries), static_cast<int32_t>(cmTrcFunc),
+                 static_cast<int32_t>(cmMatrix));
+    CM_ColorSpaceInfo *colorSpaceInfo = reinterpret_cast<CM_ColorSpaceInfo *>(vec.data());
+    colorSpaceInfo->primaries = cmColorPrimaries;
+    colorSpaceInfo->transfunc = cmTrcFunc;
+    colorSpaceInfo->matrix = cmMatrix;
+    colorSpaceInfo->range = cmRange;
+    int32_t colPrimary = static_cast<int32_t>(CMColorPrimariesToColorPrimary(cmColorPrimaries));
+    int32_t colTrcFunc = static_cast<int32_t>(CMTransFuncToTransferCharacteristic(cmTrcFunc));
+    int32_t colMatrix = static_cast<int32_t>(CMMatrixToMatrixCoefficient(cmMatrix));
+    int32_t colRange = CMRangeToBoolean(cmRange);
+    if (isFmtChanged || decNum_ == 0) {
+        std::lock_guard<std::mutex> fLock(formatMutex_);
+        format_.PutIntValue(FMTKey::VIDEO_COLOR_PRIMARIES, colPrimary);
+        format_.PutIntValue(FMTKey::VIDEO_COLOR_TRC, colTrcFunc);
+        format_.PutIntValue(FMTKey::VIDEO_COLOR_MATRIX_COEFF, colMatrix);
+        format_.PutIntValue(FMTKey::VIDEO_COLOR_RANGE, colRange);
+    }
+}
+
+int32_t FCodec::DecodedFrameProcess(uint32_t index)
+{
+    AVCODEC_LOGD("cur decNum: %{public}u", decNum_);
+#ifdef BUILD_ENG_VERSION
+    DumpOutputBuffer();
+#endif // BUILD_ENG_VERSION
+    bool isChanged = false;
+    int32_t ret = CheckFormatChange(index, isChanged);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Check format change failed");
+    std::vector<uint8_t> cropVec(sizeof(BufferHandleMetaRegion));
+    std::vector<uint8_t> colorSpaceInfoData(sizeof(CM_ColorSpaceInfo));
+    GetCropInfo(cropVec, isChanged);
+    GetColorAspectsInfo(colorSpaceInfoData, isChanged);
+    if (decNum_ == 0) {
+        callback_->OnOutputFormatChanged(format_);
+    }
+    if (isChanged) {
+        callback_->OnOutputFormatChanged(format_);
+    }
+    std::unique_lock<std::mutex> oLock(outputMutex_);
+    if (sInfo_.surface == nullptr) {
+        CHECK_AND_RETURN_RET_LOG((UpdateBuffers(index) == AVCS_ERR_OK), AVCS_ERR_NO_MEMORY,
+                                 "Update output buffer failed, index=%{public}u", index);
+    } else {
+        CHECK_AND_RETURN_RET_LOG((UpdateSurfaceMemory(index) == AVCS_ERR_OK), AVCS_ERR_NO_MEMORY,
+                                 "Update buffer failed");
+    }
+    oLock.unlock();
+    std::shared_ptr<FBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
+    std::shared_ptr<AVMemory> &bufferMemory = frameBuffer->avBuffer_->memory_;
+    sptr<SurfaceBuffer> surfacebuffer = bufferMemory->GetSurfaceBuffer();
+    CHECK_AND_RETURN_RET_LOG(surfacebuffer != nullptr, AVCS_ERR_UNKNOWN, "surfacebuffer is nullptr");
+    GSError err = surfacebuffer->SetMetadata(ATTRKEY_CROP_REGION, cropVec);
+    CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, AVCS_ERR_UNKNOWN, "SetBufferMeta ATTRKEY_CROP_REGION failed");
+    err = surfacebuffer->SetMetadata(ATTRKEY_COLORSPACE_INFO, colorSpaceInfoData);
+    CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, AVCS_ERR_UNKNOWN, "SetBufferMeta ATTRKEY_COLORSPACE_INFO failed");
+    decNum_++;
+    return AVCS_ERR_OK;
+}
+
 void FCodec::ReceiveFrame()
 {
     CHECK_AND_RETURN_LOG_LIMIT(state_ != State::STOPPING && state_ != State::FLUSHING, LOG_FREQUENCE, "Invalid state");
@@ -1442,7 +1542,7 @@ void FCodec::ReceiveFrame()
     std::shared_ptr<FBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
     CHECK_AND_RETURN_LOG(ret != AVERROR_INVALIDDATA, "ffmpeg ret = %{public}s", AVStrError(ret).c_str());
     if (ret >= 0) {
-        if (CheckFormatChange(index, cachedFrame_->width, cachedFrame_->height) == AVCS_ERR_OK) {
+        if (DecodedFrameProcess(index) == AVCS_ERR_OK) {
             CHECK_AND_RETURN_LOG(state_ == State::RUNNING, "Not in running state");
             frameBuffer = buffers_[INDEX_OUTPUT][index];
             status = FillFrameBuffer(frameBuffer);

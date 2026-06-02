@@ -67,46 +67,56 @@ public:
     int32_t NotifyResume() override;
 
 protected:
-    enum MsgWhat : MsgType {
-        INIT,
-        SET_CALLBACK,
-        CONFIGURE,
-        CONFIGURE_BUFFER,
-        CREATE_INPUT_SURFACE,
-        SET_INPUT_SURFACE,
-        SET_OUTPUT_SURFACE,
-        START,
-        GET_INPUT_FORMAT,
-        GET_OUTPUT_FORMAT,
-        SET_PARAMETERS,
-        REQUEST_IDR_FRAME,
-        FLUSH,
-        QUEUE_INPUT_BUFFER,
-        NOTIFY_EOS,
-        RELEASE_OUTPUT_BUFFER,
-        RENDER_OUTPUT_BUFFER,
-        STOP,
-        RELEASE,
-        SUSPEND,
-        RESUME,
-        BUFFER_RECYCLE,
-        BUFFER_WRITEBACK,
-        GET_HIDUMPER_INFO,
-        PRINT_ALL_BUFFER_OWNER,
-
-        INNER_MSG_BEGIN = 1000,
-        CODEC_EVENT,
-        OMX_EMPTY_BUFFER_DONE,
-        OMX_FILL_BUFFER_DONE,
-        GET_BUFFER_FROM_SURFACE,
-        CHECK_IF_REPEAT,
-        SUBMIT_DYNAMIC_IF_EOS,
-        CHECK_IF_STUCK,
-        FORCE_SHUTDOWN,
-        QUERY_JANK_REASON,
-        XPERF_RESUME_EVENT,
-        XPERF_PAUSE_EVENT,
-    };
+    #define MSG_TYPES \
+        X(INIT) \
+        X(SET_CALLBACK) \
+        X(CONFIGURE)    \
+        X(CONFIGURE_BUFFER) \
+        X(CREATE_INPUT_SURFACE) \
+        X(SET_INPUT_SURFACE) \
+        X(SET_OUTPUT_SURFACE) \
+        X(START) \
+        X(GET_INPUT_FORMAT) \
+        X(GET_OUTPUT_FORMAT) \
+        X(SET_PARAMETERS) \
+        X(REQUEST_IDR_FRAME) \
+        X(FLUSH) \
+        X(QUEUE_INPUT_BUFFER) \
+        X(NOTIFY_EOS) \
+        X(RELEASE_OUTPUT_BUFFER) \
+        X(RENDER_OUTPUT_BUFFER) \
+        X(STOP) \
+        X(RELEASE) \
+        X(SUSPEND) \
+        X(RESUME) \
+        X(BUFFER_RECYCLE) \
+        X(BUFFER_WRITEBACK) \
+        X(GET_HIDUMPER_INFO) \
+        X(PRINT_ALL_BUFFER_OWNER) \
+        X(CODEC_EVENT) \
+        X(OMX_EMPTY_BUFFER_DONE) \
+        X(OMX_FILL_BUFFER_DONE) \
+        X(GET_BUFFER_FROM_SURFACE) \
+        X(CHECK_IF_REPEAT) \
+        X(SUBMIT_DYNAMIC_IF_EOS) \
+        X(CHECK_IF_STUCK) \
+        X(FORCE_SHUTDOWN) \
+        X(QUERY_JANK_REASON) \
+        X(XPERF_RESUME_EVENT) \
+        X(XPERF_PAUSE_EVENT)
+ 
+    // 展开为 enum
+    #define X(name) name,
+    enum MsgWhat : MsgType { MSG_TYPES };
+    #undef X
+ 
+    // 展开为字符串数组
+    #define X(name) #name,
+    static const char* ToString(MsgWhat what) {
+        static const char* names[] = { MSG_TYPES };
+        return names[static_cast<size_t>(what)];
+    }
+    #undef X
 
     enum BufferOperationMode {
         KEEP_BUFFER,
@@ -228,7 +238,6 @@ protected:
 protected:
     HCodec(CodecHDI::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool isEncoder);
     ~HCodec() override;
-    static const char* ToString(MsgWhat what);
     static const char* ToString(BufferOwner owner);
     void ReplyErrorCode(MsgId id, int32_t err);
     void UpdateOwner();
