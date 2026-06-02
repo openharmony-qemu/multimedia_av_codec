@@ -576,7 +576,7 @@ HWTEST_F(HwEncPreProcessNdkTest, VIDEO_ENCODE_PRE_PROCESS_0160, TestSize.Level2)
  * @tc.name      : 硬编h265，普通编码器，stop/flush
  * @tc.desc      : function test
  */
-HWTEST_F(HwEncPreProcessNdkTest, VIDEO_ENCODE_PRE_PROCESS_0170, TestSize.Level2 )
+HWTEST_F(HwEncPreProcessNdkTest, VIDEO_ENCODE_PRE_PROCESS_0170, TestSize.Level2)
 {
     if (cap != nullptr && SupportPreprocess(cap)) {
         auto vEncSample = make_unique<VEncAPI11Sample>();
