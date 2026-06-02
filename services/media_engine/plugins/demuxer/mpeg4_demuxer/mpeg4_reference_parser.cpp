@@ -178,14 +178,13 @@ Status MPEG4DemuxerPlugin::GetIFramePos(std::vector<uint32_t> &IFramePos)
 
 Status MPEG4DemuxerPlugin::Dts2FrameId(int64_t dts, uint32_t &frameId)
 {
-    MEDIA_LOG_I("Dts2FrameId start, dts is " PUBLIC_LOG_D64, dts);
     int64_t dtsBasedOnPtsZero = 0;  // dts starting from 0 for pts
     FALSE_RETURN_V_MSG_E(!__builtin_sub_overflow(dts, startPts_, &dtsBasedOnPtsZero), Status::ERROR_INVALID_DATA,
         "Overflow");
     FALSE_RETURN_V_MSG_E(dts2SyncSampleIndex_.find(dtsBasedOnPtsZero) != dts2SyncSampleIndex_.end(),
         Status::ERROR_OUT_OF_RANGE, "Failed to find nearest frame, dts does not exist in dts2SyncSampleIndex_");
     frameId = dts2SyncSampleIndex_[dtsBasedOnPtsZero];
-    MEDIA_LOG_I("Dts2FrameId end, dts is " PUBLIC_LOG_D64 ", frameId is " PUBLIC_LOG_U32, dts, frameId);
+    MEDIA_LOG_I("Dts2FrameId, dts is " PUBLIC_LOG_D64 ", frameId is " PUBLIC_LOG_U32, dts, frameId);
     return Status::OK;
 }
 
