@@ -116,6 +116,7 @@ public:
     void SetEOS(uint32_t index, OH_AVBuffer *buffer);
     void WaitForEOS();
     int32_t ConfigureVideoDecoder();
+    void ConfigureVideoDecoder2(OH_AVFormat *format);
     void ConfigHDRMetadata(OH_AVFormat *format);
     int32_t StartVideoDecoder();
     int64_t GetSystemTimeUs();
@@ -195,6 +196,7 @@ public:
     bool useHDRSource = false;
     bool isAPI = false;
     bool enableSetParameter = false;
+    bool enableDecodingOrder = false;
     bool setSpeedPlayerFlag = false;
     bool retentionModeSet = false;
     bool retentionRatioSet = false;
