@@ -391,7 +391,7 @@ HWTEST_F(DashMpdDownloaderUnitTest, TEST_SET_CURRENT_NUMBER_SEQ, TestSize.Level1
     int usingStreamId = mpdDownloader_->GetInUseVideoStreamId();
     mpdDownloader_->SetCurrentNumberSeqByStreamId(usingStreamId, 10);
     std::shared_ptr<DashStreamDescription> stream = mpdDownloader_->GetStreamByStreamId(usingStreamId);
-    EXPECT_NE(stream, nullptr);
+    ASSERT_NE(stream, nullptr);
     EXPECT_EQ(stream->currentNumberSeq_, 10);
 }
 
