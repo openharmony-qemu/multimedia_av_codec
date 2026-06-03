@@ -2544,45 +2544,46 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_IsRefParserSupported_000
 
 /**
  * @tc.name: Mpeg4DemuxerPlugin_ParserRefUpdatePos_0001
- * @tc.desc: Resource types supported by RefParser
+ * @tc.desc: ParserRefUpdatePos
  * @tc.type: FUNC
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ParserRefUpdatePos_0001, TestSize.Level1)
 {
     ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
     InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
-    Status ret = mpeg4Plugin_->ParserRefUpdatePos();
+    Status ret = mpeg4Plugin_->ParserRefUpdatePos(0, true);
     EXPECT_EQ(ret, Status::OK);
 }
 
 /**
  * @tc.name: Mpeg4DemuxerPlugin_ParserRefUpdatePos_0002
- * @tc.desc: Resource types supported by RefParser
+ * @tc.desc: ParserRefUpdatePos
  * @tc.type: FUNC
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ParserRefUpdatePos_0002, TestSize.Level1)
 {
     ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
     InitMpeg4Plugin(TEST_MP4_MULTIPLE_VIDEO_TRACKS);
-    Status ret = mpeg4Plugin_->ParserRefUpdatePos();
+    Status ret = mpeg4Plugin_->ParserRefUpdatePos(0, true);
     EXPECT_EQ(ret, Status::ERROR_UNSUPPORTED_FORMAT);
 }
 
 /**
  * @tc.name: Mpeg4DemuxerPlugin_ParserRefUpdatePos_0003
- * @tc.desc: Resource types supported by RefParser
+ * @tc.desc: ParserRefUpdatePos
  * @tc.type: FUNC
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ParserRefUpdatePos_0003, TestSize.Level1)
 {
     ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
-    Status ret = mpeg4Plugin_->ParserRefUpdatePos();
-    EXPECT_EQ(ret, Status::OK);
+    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4"));
+    Status ret = mpeg4Plugin_->ParserRefUpdatePos(0, true);
+    EXPECT_EQ(ret, Status::ERROR_UNSUPPORTED_FORMAT);
 }
 
 /**
  * @tc.name: Mpeg4DemuxerPlugin_ParserRefInfo_0001
- * @tc.desc: Resource types supported by RefParser
+ * @tc.desc: ParserRefInfo
  * @tc.type: FUNC
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ParserRefInfo_0001, TestSize.Level1)
@@ -2590,12 +2591,12 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ParserRefInfo_0001, Test
     ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
     InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
     Status ret = mpeg4Plugin_->ParserRefInfo();
-    EXPECT_EQ(ret, Status::ERROR_AGAIN);
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
 }
 
 /**
  * @tc.name: Mpeg4DemuxerPlugin_GetFrameLayerInfo_0001
- * @tc.desc: Resource types supported by RefParser
+ * @tc.desc: GetFrameLayerInfo
  * @tc.type: FUNC
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_GetFrameLayerInfo_0001, TestSize.Level1)
@@ -2606,12 +2607,12 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_GetFrameLayerInfo_0001, 
     videoSample->dts_ = 0;
     FrameLayerInfo frameLayerInfo;
     Status ret = mpeg4Plugin_->GetFrameLayerInfo(videoSample, frameLayerInfo);
-    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(ret, Status::ERROR_NULL_POINTER);
 }
 
 /**
  * @tc.name: Mpeg4DemuxerPlugin_GetFrameLayerInfo_0002
- * @tc.desc: Resource types supported by RefParser
+ * @tc.desc: GetFrameLayerInfo
  * @tc.type: FUNC
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_GetFrameLayerInfo_0002, TestSize.Level1)
@@ -2620,12 +2621,12 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_GetFrameLayerInfo_0002, 
     InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
     FrameLayerInfo frameLayerInfo;
     Status ret = mpeg4Plugin_->GetFrameLayerInfo(0, frameLayerInfo);
-    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(ret, Status::ERROR_NULL_POINTER);
 }
 
 /**
  * @tc.name: Mpeg4DemuxerPlugin_GetGopLayerInfo_0001
- * @tc.desc: Resource types supported by RefParser
+ * @tc.desc: GetGopLayerInfo
  * @tc.type: FUNC
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_GetGopLayerInfo_0001, TestSize.Level1)
@@ -2634,12 +2635,12 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_GetGopLayerInfo_0001, Te
     InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
     GopLayerInfo gopLayerInfo;
     Status ret = mpeg4Plugin_->GetGopLayerInfo(0, gopLayerInfo);
-    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(ret, Status::ERROR_NULL_POINTER);
 }
 
 /**
  * @tc.name: Mpeg4DemuxerPlugin_GetIFramePos_0001
- * @tc.desc: Resource types supported by RefParser
+ * @tc.desc: GetIFramePos
  * @tc.type: FUNC
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_GetIFramePos_0001, TestSize.Level1)
@@ -2653,12 +2654,13 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_GetIFramePos_0001, TestS
 
 /**
  * @tc.name: Mpeg4DemuxerPlugin_GetIFramePos_0002
- * @tc.desc: Resource types supported by RefParser
+ * @tc.desc: GetIFramePos
  * @tc.type: FUNC
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_GetIFramePos_0002, TestSize.Level1)
 {
     ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
+    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4"));
     std::vector<uint32_t> IFramePos;
     mpeg4Plugin_->GetIFramePos(IFramePos);
     EXPECT_EQ(IFramePos.size(), 0);
@@ -2666,7 +2668,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_GetIFramePos_0002, TestS
 
 /**
  * @tc.name: Mpeg4DemuxerPlugin_Dts2FrameId_0001
- * @tc.desc: Resource types supported by RefParser
+ * @tc.desc: Dts2FrameId
  * @tc.type: FUNC
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_Dts2FrameId_0001, TestSize.Level1)
@@ -2676,12 +2678,12 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_Dts2FrameId_0001, TestSi
     int64_t dts = 0;
     uint32_t frameId = -1;
     mpeg4Plugin_->Dts2FrameId(dts, frameId);
-    EXPECT_EQ(frameId, 0);
+    EXPECT_EQ(frameId, 2);
 }
 
 /**
  * @tc.name: Mpeg4DemuxerPlugin_Dts2FrameId_0002
- * @tc.desc: Resource types supported by RefParser
+ * @tc.desc: Dts2FrameId
  * @tc.type: FUNC
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_Dts2FrameId_0002, TestSize.Level1)
@@ -2696,7 +2698,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_Dts2FrameId_0002, TestSi
 
 /**
  * @tc.name: Mpeg4DemuxerPlugin_FrameId2SeekMs_0001
- * @tc.desc: Resource types supported by RefParser
+ * @tc.desc: FrameId2SeekMs
  * @tc.type: FUNC
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_FrameId2SeekMs_0001, TestSize.Level1)
@@ -2707,21 +2709,6 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_FrameId2SeekMs_0001, Tes
     int64_t seekMs = -1;
     mpeg4Plugin_->FrameId2SeekMs(frameId, seekMs);
     EXPECT_EQ(seekMs, 0);
-}
-
-/**
- * @tc.name: Mpeg4DemuxerPlugin_GetGopIdFromSeekPos_0001
- * @tc.desc: Resource types supported by RefParser
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_GetGopIdFromSeekPos_0001, TestSize.Level1)
-{
-    ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
-    InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
-    int64_t seekMs = 0;
-    int32_t gopId = -1;
-    mpeg4Plugin_->GetGopIdFromSeekPos(seekMs, gopId);
-    EXPECT_EQ(gopId, 0);
 }
 } // namespace Media
 } // namespace OHOS

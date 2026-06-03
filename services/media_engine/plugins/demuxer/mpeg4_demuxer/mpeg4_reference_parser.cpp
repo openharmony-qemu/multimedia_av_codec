@@ -40,6 +40,8 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "MPEG4ReferenceParser" };
 constexpr int64_t REFERENCE_PARSER_TIMEOUT_MS = 10000;
+constexpr int64_t MIDPOINT_DIVISOR = 2;
+constexpr int64_t TRACE_RATE = 100;
 
 int64_t GetDuration(int64_t startTime)
 {
@@ -124,7 +126,7 @@ Status MPEG4DemuxerPlugin::ParserRefInfo()
             refParserState_ = true;
             return Status::OK;
         }
-        if ((loopCount++ % 100) == 0) {  // trace降采样
+        if ((loopCount++ % TRACE_RATE) == 0) {  // trace降采样
             duration = GetDuration(refParserStartTime_);
             std::string suffix = "_" + std::to_string(refParserCurGopId_) + "_" + std::to_string(curSyncSampleIndex);
             RefTrace traceInLoop("ParserRefCost_3_" + std::to_string(duration) + suffix);
@@ -321,7 +323,7 @@ Status MPEG4DemuxerPlugin::SelectProGopId()
             FALSE_RETURN_V_MSG_E(pts2Dts_.find(ptsOfNextSyncSample) != pts2Dts_.end(), Status::ERROR_UNKNOWN,
                 "ptsOfNextSyncSample(" PUBLIC_LOG_D64 ") is invalid", ptsOfNextSyncSample);
             int64_t dtsOfNextSyncSample = pts2Dts_[ptsOfNextSyncSample];  // relative dts of next sync sample
-            seekPts = dts + (dtsOfNextSyncSample - dts) / 2;
+            seekPts = dts + (dtsOfNextSyncSample - dts) / MIDPOINT_DIVISOR;
         } else {
             seekPts = INT64_MAX; // seek last gop
         }

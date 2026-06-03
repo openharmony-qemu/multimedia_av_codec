@@ -695,12 +695,12 @@ Status MPEG4SampleHelper::SetSampleDependencyTypeParams(int64_t ctxOffset, int64
     sdtpEntry_.sdtpEntryCount = 0;
     sdtpEntry_.sdtpData.clear();
 
-    FALSE_RETURN_V_MSG_E(dataSize > 0 && dataSize <= UINT64_MAX, Status::ERROR_INVALID_DATA, "dataSize is invalid");
+    const uint32_t versionAndFlagsOffset = 4;  // version + flags = 4Bytes
+    FALSE_RETURN_V_MSG_E(dataSize > versionAndFlagsOffset, Status::ERROR_INVALID_DATA, "dataSize is invalid");
 
     // After removing type, size..., the starting offset of the actual data in the atom
     int64_t currentOffset = dataOffset;
     FALSE_RETURN_V_MSG_E(currentOffset >= MIN_DATA_OFFSET, Status::ERROR_INVALID_PARAMETER, "currentOffset is invalid");
-    const uint32_t versionAndFlagsOffset = 4;  // version + flags = 4Bytes
     for (uint32_t i = 0; i < dataSize && currentOffset < ctxOffset; ++i) {  // Each entry size is 1 Byte
         if (i >= 0 && i < versionAndFlagsOffset) {  // skip version and flags
             currentOffset++;
