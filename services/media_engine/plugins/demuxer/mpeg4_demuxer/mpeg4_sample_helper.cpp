@@ -1516,6 +1516,7 @@ Status MPEG4SampleHelper::BuildEditListSampleEntry(const SampleIndexEntry& oldEn
     if (outsideEdit && crossedAudioStart) {
         int64_t packetSkipSamples = edit.mediaTime - currCts;
         processCtx.newEntry.skipSamplesInfo = MakeSkipSamplesInfo(packetSkipSamples);
+        processCtx.newEntry.flag |= Sample::SampleFlag::DISCARD;
         processCtx.dtsCounter -= packetSkipSamples;
         processCtx.newEntry.dts = processCtx.dtsCounter;
         processCtx.newEntry.pts = processCtx.dtsCounter + dtsShift_ + currCtts;
