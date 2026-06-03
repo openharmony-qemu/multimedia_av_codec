@@ -400,25 +400,31 @@ void MPEG4SampleHelper::AdjustAudioSeekSampleIndexByPts(int64_t inputPts, bool i
     if (trackType_ != AUDIO_TYPE) {
         return;
     }
+    // Only one back step is allowed; later checks must not re-evaluate a modified index.
     // Step back when the selected audio sample starts after inputPts but the previous sample still covers it.
     if (isBaseTrack && ShouldStepBackForBaseAudioCoverage(inputPts, flag, fromSyncSamples, currentIndex)) {
         --currentIndex;
+        return;
     }
     // Keep the first audio sample if it covers the sync point for a non-base track.
     if (ShouldStepBackForFirstNonBaseAudioSample(inputPts, isBaseTrack, fromSyncSamples, currentIndex)) {
         --currentIndex;
+        return;
     }
     // Keep AAC priming/skip-sample metadata by seeking to the preroll sample before the target point.
     if (ShouldStepBackForSyncPrerollSample(inputPts, isBaseTrack, fromSyncSamples, currentIndex)) {
         --currentIndex;
+        return;
     }
     // Empty edits can shift audio PTS forward; use sample coverage instead of skipping the covered sample.
     if (ShouldStepBackForShiftedAudioCoverage(inputPts, currentIndex)) {
         --currentIndex;
+        return;
     }
     // Apply the same preroll rule on tracks without sync-sample entries.
     if (ShouldStepBackForNoSyncPrerollSample(inputPts, isBaseTrack, flag, fromSyncSamples, currentIndex)) {
         --currentIndex;
+        return;
     }
     // Exact PTS matches may still need the previous AAC preroll sample for correct decode trimming.
     if (ShouldStepBackForExactPtsPrerollSample(inputPts, isBaseTrack, flag, fromSyncSamples, currentIndex)) {
