@@ -447,6 +447,7 @@ private:
     bool IsSubtitleTrackId(int32_t trackId);
     void WaitTrackSelectionFilter(uint32_t bitRate, int32_t streamId, DemuxerTrackType type);
     void ProcessTrackSelectionFilter();
+    void InitVideoAudioBasePtsDiff();
     void ReportMediaChangedEvent();
     void CheckPtsDiscontinuity(int32_t trackId, std::shared_ptr<AVBuffer> buffer);
 
@@ -626,6 +627,7 @@ private:
     uint32_t lastAutoSelectBitRate_ {0};
     std::shared_ptr<MediaAVCodec::AVCodecList> codecList_ {nullptr};
     std::unique_ptr<FilteredStreamMap> filteredStreamMap_;
+    int64_t videoAudioBasePtsDiff = -1;
 };
 } // namespace Media
 } // namespace OHOS
