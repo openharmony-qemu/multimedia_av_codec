@@ -2322,7 +2322,8 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, UPDATE_MEDIA_002, TestSize.Level1)
     downloader->currentAudio_ = audio;
 
     downloader->UpdateMedia(HlsSegmentType::SEG_AUDIO);
-    EXPECT_EQ(downloader->url_, "http://audio.next.uri");
+    ASSERT_NE(downloader->downloadRequest_, nullptr);
+    EXPECT_EQ(downloader->downloadRequest_->GetUrl(), "http://audio.next.uri");
 }
 
 /**
@@ -2345,7 +2346,8 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, UPDATE_MEDIA_003, TestSize.Level1)
     downloader->currentSubtitles_ = sub;
 
     downloader->UpdateMedia(HlsSegmentType::SEG_SUBTITLE);
-    EXPECT_EQ(downloader->url_, "http://sub.next.uri");
+    ASSERT_NE(downloader->downloadRequest_, nullptr);
+    EXPECT_EQ(downloader->downloadRequest_->GetUrl(), "http://sub.next.uri");
 }
 
 /**
