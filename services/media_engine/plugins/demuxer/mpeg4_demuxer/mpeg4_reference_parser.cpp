@@ -86,7 +86,7 @@ Status MPEG4DemuxerPlugin::ParserRefUpdatePos(int64_t timeStampMs, bool isForwar
 
     GopLayerInfo gopLayerInfo;
     Status ret = GetGopLayerInfo(gopId, gopLayerInfo);
-    if (ret == Status::ERROR_AGAIN && gopId != refParserCurGopId_) {  // todo refParserCurGopId_数量不一致
+    if (ret == Status::ERROR_AGAIN && gopId != refParserCurGopId_) {
         refParserPendingSeekMsTime_ = clipTimeStampMs;
         refParserState_ = false;
         MEDIA_LOG_I("Pending time: " PUBLIC_LOG_D64, refParserPendingSeekMsTime_);
@@ -119,12 +119,12 @@ Status MPEG4DemuxerPlugin::ParserRefInfo()
     SelectTrack(refParserTrackIdx_);
     while (refParserState_ && refParserCurGopId_ != -1) {
         Status rlt = ParserRefInfoLoop(buffer, curSyncSampleIndex);
-        if (rlt == Status::ERROR_EARLY_STOP) {  // START 首GOP提前终止
+        if (rlt == Status::ERROR_EARLY_STOP) {  // 编码格式等不符合快速解析时，直接跳过
             MEDIA_LOG_I("Exiting reference parsing early due to simple first GOP structure.");
             refParserState_ = true;
             return Status::OK;
         }
-        if ((loopCount++ % 100) == 0) {  // 100 trace降采样
+        if ((loopCount++ % 100) == 0) {  // trace降采样
             duration = GetDuration(refParserStartTime_);
             std::string suffix = "_" + std::to_string(refParserCurGopId_) + "_" + std::to_string(curSyncSampleIndex);
             RefTrace traceInLoop("ParserRefCost_3_" + std::to_string(duration) + suffix);
@@ -134,9 +134,7 @@ Status MPEG4DemuxerPlugin::ParserRefInfo()
             refParserState_ = true;
             return rlt;
         }
-        // if (pkt->stream_index == parserRefIdx_) {  // todo
         curSyncSampleIndex++;
-        // }
     }
     refParserState_ = true;
     return Status::ERROR_AGAIN;
@@ -278,7 +276,6 @@ Status MPEG4DemuxerPlugin::RefParserInit()
     FALSE_RETURN_V_MSG_E(syncSamplesIndex_.size() > 0, Status::ERROR_UNKNOWN,
         "Init failed, syncSamplesIndex_ size is" PUBLIC_LOG_ZU, syncSamplesIndex_.size());
     FALSE_RETURN_V_MSG_E(IsRefParserSupported(), Status::ERROR_UNSUPPORTED_FORMAT, "Unsupported ref parser");
-    // todo 处理discard
     
     processingSyncSamplesIndex_.assign(syncSamplesIndex_.begin(), syncSamplesIndex_.end());
     CodecType codecType = mimeTypeOfVideoStream_ == MimeType::VIDEO_HEVC ? CodecType::H265 : CodecType::H264;
@@ -352,20 +349,9 @@ Status MPEG4DemuxerPlugin::ParserRefInfoLoop(std::shared_ptr<AVBuffer> buffer, u
 {
     std::unique_lock<std::mutex> sLock(syncMutex_);
     FALSE_RETURN_V_MSG_E(buffer != nullptr, Status::ERROR_UNKNOWN, "buffer is nullptr!");
-    // Status ret = ReadSample(refParserTrackIdx_, buffer);
-    ReadSample(refParserTrackIdx_, buffer);
+    Status ret = ReadSample(refParserTrackIdx_, buffer);
     sLock.unlock();
-    // if (ret < 0 && ret != AVERROR_EOF) {  // todo
-    //     MEDIA_LOG_E("Call av_read_frame failed:" PUBLIC_LOG_S ", retry:" PUBLIC_LOG_D32,
-    //                 AVStrError(ffmpegRet).c_str(), int(parserRefIoContext_.retry));
-    //     if (parserRefIoContext_.retry) {
-    //         parserRefCtx_->pb->eof_reached = 0;
-    //         parserRefCtx_->pb->error = 0;
-    //         parserRefIoContext_.retry = false;  // todo
-    //         return Status::ERROR_AGAIN;
-    //     }
-    //     return Status::ERROR_UNKNOWN;
-    // }
+    FALSE_RETURN_V_MSG_I(ret == Status::OK, Status::ERROR_UNKNOWN, "Failed to read sample");
     InsertIframePtsMap(buffer, refParserCurGopId_, gopId2DecodedSamplePts_);
     FALSE_RETURN_V_MSG_E(buffer != nullptr && buffer->memory_ != nullptr, Status::ERROR_UNKNOWN,
         "buffer or memory_ is nullptr!");
@@ -376,7 +362,7 @@ Status MPEG4DemuxerPlugin::ParserRefInfoLoop(std::shared_ptr<AVBuffer> buffer, u
                          static_cast<int32_t>(result));
     int32_t syncSampleNum = static_cast<int32_t>(syncSamplesIndex_.size());
     if (result != Status::OK || (refParserCurGopId_ + 1 < syncSampleNum &&
-        syncSampleIndex == syncSamplesIndex_[refParserCurGopId_ + 1] - 1)) {  // 处理完一个GOP  todo,此处的-1比较逻辑
+        syncSampleIndex == syncSamplesIndex_[refParserCurGopId_ + 1] - 1)) {
         MEDIA_LOG_D("IFramePos: " PUBLIC_LOG_ZU ", processingSyncSamplesIndex_: " PUBLIC_LOG_ZU ", syncSampleIndex: "
             PUBLIC_LOG_U32 ", curGopId: " PUBLIC_LOG_U32, syncSamplesIndex_.size(), processingSyncSamplesIndex_.size(),
             syncSampleIndex, refParserCurGopId_);
