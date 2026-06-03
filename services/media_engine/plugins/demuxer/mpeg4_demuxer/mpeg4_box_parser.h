@@ -227,7 +227,7 @@ private:
     double CalculateDuration(std::shared_ptr<Track> track, bool isRawFile);
     // 元数据解析辅助函数
     std::string ConvertLanguageCode(uint16_t langcode);
-    std::string GetMetadataKey(uint32_t atomType, ParseContext* parseCtx);
+    std::string GetMetadataKey(uint32_t atomType, ParseContext* ctx);
     bool SetMetadataValue(const std::string& key, const std::string& value);
     void ParseLocationString(const std::string& locationStr);
     // 辅助轨相关辅助函数

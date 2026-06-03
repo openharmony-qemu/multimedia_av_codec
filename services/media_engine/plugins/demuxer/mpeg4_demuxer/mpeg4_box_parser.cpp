@@ -164,6 +164,7 @@ constexpr int32_t PRECISION = 4;
 constexpr int32_t ALTITUDE_PRECISION = 6;
 constexpr int32_t LATITUDE_WIDTH = 8;
 constexpr int32_t LONGITUDE_WIDTH = 9;
+constexpr uint32_t FULLBOX_PREFIX_SIZE = 4;
 
 constexpr std::array<size_t, 4> MATRIX_2X2_INDICES = {0, 1, 3, 4}; // [0][0], [0][1], [1][0], [1][1]
 constexpr std::array<size_t, 3> MATRIX_DIAGONAL_INDICES = {0, 4, 8}; // [0][0], [1][1], [2][2]
@@ -2218,20 +2219,28 @@ Status MPEG4AtomParser::ParseCodecConfig(MPEG4Atom currentAtom, int32_t depth, P
         "CodecConfig size too large");
     ctx->offset += currentAtom.size;
     // 检查是否已经有 codec config 数据
+    int64_t dataOffset = ctx->dataOffset;
+    uint64_t dataSize = currentAtom.dataSize;
+    if (currentAtom.type == FourccType("vvcC")) {
+        FALSE_RETURN_V_MSG_E(dataSize > FULLBOX_PREFIX_SIZE, Status::ERROR_INVALID_DATA,
+            "vvcC data too small to contain FullBox prefix");
+        dataOffset += FULLBOX_PREFIX_SIZE;
+        dataSize -= FULLBOX_PREFIX_SIZE;
+    }
     if (lastTrack_->codecParms.data != nullptr) {
         MEDIA_LOG_W("CodecConfig already exists, replacing with new data. Old size: " PUBLIC_LOG_D64 ", New size: "
-            PUBLIC_LOG_D64, lastTrack_->codecParms.extradataSize, currentAtom.dataSize);
+            PUBLIC_LOG_D64, lastTrack_->codecParms.extradataSize, dataSize);
         lastTrack_->codecParms.data.reset();
         lastTrack_->codecParms.extradataSize = 0;
     }
 
-    auto configData = std::make_unique<uint8_t[]>(currentAtom.dataSize);
+    auto configData = std::make_unique<uint8_t[]>(dataSize);
     FALSE_RETURN_V_MSG_E(configData != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate CodecConfig extradata");
-    Status ret = dataReader_->ReadUintData(ctx->dataOffset, configData.get(), currentAtom.dataSize);
+    Status ret = dataReader_->ReadUintData(dataOffset, configData.get(), dataSize);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_NOT_ENOUGH_DATA, "Read CodecConfig data failed");
 
     lastTrack_->codecParms.data = std::move(configData);
-    lastTrack_->codecParms.extradataSize = currentAtom.dataSize;
+    lastTrack_->codecParms.extradataSize = dataSize;
     MEDIA_LOG_D("CodecConfig extradata size: " PUBLIC_LOG_D64, lastTrack_->codecParms.extradataSize);
     return ret;
 }
@@ -3203,7 +3212,7 @@ Status MPEG4AtomParser::ReadDca3Payload(MPEG4Atom currentAtom, ParseContext* ctx
         MPEG4Atom dca3Atom{
             .size = GetU32Value(&atomHeader[0]),
             .type = static_cast<int32_t>(GetU32Value(&atomHeader[4])),
-            .dataSize = GetU32Value(&atomHeader[0]) - sizeof(atomHeader)
+            .dataSize = GetU32Value(&atomHeader[0]) - static_cast<uint32_t>(sizeof(atomHeader))
         };
         FALSE_RETURN_V_MSG_E(dca3Atom.type == FourccType("dca3"), Status::ERROR_INVALID_DATA,
             "Invalid av3a child atom");

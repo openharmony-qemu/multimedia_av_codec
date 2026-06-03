@@ -127,8 +127,8 @@ bool MultiStreamParserManager::CheckSymbol(void *handler, VideoStreamType videoS
         std::string destroyFuncName = "DestroyStreamParser";
         CreateFunc createFunc = nullptr;
         DestroyFunc destroyFunc = nullptr;
-        createFunc = (CreateFunc)(::dlsym(handler, createFuncName.c_str()));
-        destroyFunc = (DestroyFunc)(::dlsym(handler, destroyFuncName.c_str()));
+        createFunc = reinterpret_cast<CreateFunc>(::dlsym(handler, createFuncName.c_str()));
+        destroyFunc = reinterpret_cast<DestroyFunc>(::dlsym(handler, destroyFuncName.c_str()));
         if (createFunc && destroyFunc) {
             MEDIA_LOG_D("CreateFuncName %{public}s", createFuncName.c_str());
             MEDIA_LOG_D("DestroyFuncName %{public}s", destroyFuncName.c_str());
