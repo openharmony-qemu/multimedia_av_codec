@@ -697,7 +697,7 @@ HWTEST_F(TEST_SUIT, OnBasicCreateCodecSpecInfo_VideoCodec_InvalidType_001, TestS
 /**
  * @tc.name: OnBasicCreateCodecSpecInfo_AllValidVideoCodecTypes_001
  * @tc.desc: Test OnBasicCreateCodecSpecInfo handles all valid video codec types correctly.
- *           Verifies DECODER_HARDWARE, DECODER_SOFTWARE, ENCODER_HARDWARE, 
+ *           Verifies DECODER_HARDWARE, DECODER_SOFTWARE, ENCODER_HARDWARE,
  *           ENCODER_SOFTWARE are all processed correctly.
  * @tc.type: FUNC
  */
@@ -1211,7 +1211,8 @@ HWTEST_F(TEST_SUIT, CodecErrorInfo_OnSummate_IncrementCount_001, TestSize.Level1
 HWTEST_F(TEST_SUIT, CodecErrorInfo_OnSummate_PositiveErrorCode_001, TestSize.Level1)
 {
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "positive_error_code_test");
-    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), static_cast<int32_t>(VideoCodecType::ENCODER_HARDWARE));
+    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), 
+                   static_cast<int32_t>(VideoCodecType::ENCODER_HARDWARE));
     meta_->SetData(Media::Tag::MIME_TYPE, "video/hevc");
     meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(1001));
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
@@ -1227,7 +1228,8 @@ HWTEST_F(TEST_SUIT, CodecErrorInfo_OnSummate_PositiveErrorCode_001, TestSize.Lev
 HWTEST_F(TEST_SUIT, CodecErrorInfo_OnSummate_ZeroErrorCode_001, TestSize.Level1)
 {
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "zero_error_code_test");
-    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), static_cast<int32_t>(VideoCodecType::ENCODER_SOFTWARE));
+    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(),
+                   static_cast<int32_t>(VideoCodecType::ENCODER_SOFTWARE));
     meta_->SetData(Media::Tag::MIME_TYPE, "video/av01");
     meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(0));
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
@@ -1244,7 +1246,7 @@ HWTEST_F(TEST_SUIT, CodecErrorInfo_OnSummate_MixedScenarios_001, TestSize.Level1
 {
     Media::Meta meta1;
     meta1.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "mixed_scenarios_test");
-    meta1.SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), 
+    meta1.SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(),
                   static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE));
     meta1.SetData(Media::Tag::MIME_TYPE, "video/avc");
     meta1.SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(-1001));
@@ -1252,7 +1254,7 @@ HWTEST_F(TEST_SUIT, CodecErrorInfo_OnSummate_MixedScenarios_001, TestSize.Level1
 
     Media::Meta meta2;
     meta2.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "mixed_scenarios_test");
-    meta2.SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), 
+    meta2.SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(),
                   static_cast<int32_t>(VideoCodecType::ENCODER_HARDWARE));
     meta2.SetData(Media::Tag::MIME_TYPE, "video/hevc");
     meta2.SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(-2001));
@@ -1632,7 +1634,8 @@ HWTEST_F(TEST_SUIT, OnAddEventInfo_EventHookAndEventHandler_001, TestSize.Level1
         });
 
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "both_handler_and_hook_test");
-    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE));
+    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(),
+                   static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE));
     meta_->SetData(Media::Tag::MIME_TYPE, "video/avc");
     StatisticsEventInfo::GetInstance().OnAddEventInfo(testEventType, *meta_);
     ASSERT_EQ(true, hookCalled);
