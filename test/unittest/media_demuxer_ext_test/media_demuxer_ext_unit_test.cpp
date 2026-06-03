@@ -8801,4 +8801,104 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ProcessTrackSelectionFilter_00
 
     EXPECT_EQ(mediaDemuxer_->waitVideoBitrate_.load(), UNUM_2000);
 }
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest Pause API
+ * @tc.number: MediaDemuxerExt_Pause_002
+ * @tc.desc  : Test CheckTrackEnabledById() && GetEnableSampleQueueFlag()
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_Pause_002, TestSize.Level1)
+{
+    mediaDemuxer_->streamDemuxer_ = nullptr;
+    mediaDemuxer_->source_ = nullptr;
+    mediaDemuxer_->audioTrackId_ = NUM_0;
+    mediaDemuxer_->videoTrackId_ = NUM_1;
+    mediaDemuxer_->enableSampleQueue_ = false;
+    mediaDemuxer_->inPreroll_ = true;
+    std::string taskName = "Demux";
+    std::unique_ptr<MockTask> taskPtr = std::make_unique<MockTask>(taskName, mediaDemuxer_->playerId_);
+    mediaDemuxer_->taskMap_[mediaDemuxer_->audioTrackId_] = std::move(taskPtr);
+    auto* mockProducer = new MockAVBufferQueueProducer();
+    sptr<AVBufferQueueProducer> sptrProducer(mockProducer);
+    mediaDemuxer_->bufferQueueMap_[mediaDemuxer_->audioTrackId_] = sptrProducer;
+    EXPECT_EQ(mediaDemuxer_->CheckTrackEnabledById(mediaDemuxer_->audioTrackId_), true);
+
+    mediaDemuxer_->enableSampleQueue_ = true;
+    mediaDemuxer_->isAudioDemuxDecodeAsync_ = true;
+    mediaDemuxer_->isTranscoderMode_ = false;
+    EXPECT_EQ(mediaDemuxer_->GetEnableSampleQueueFlag(), true);
+
+    auto ret = mediaDemuxer_->Pause();
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest Pause API
+ * @tc.number: MediaDemuxerExt_Pause_003
+ * @tc.desc  : Test CheckTrackEnabledById() && !GetEnableSampleQueueFlag()
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_Pause_003, TestSize.Level1)
+{
+    mediaDemuxer_->streamDemuxer_ = nullptr;
+    mediaDemuxer_->source_ = nullptr;
+    mediaDemuxer_->audioTrackId_ = NUM_0;
+    mediaDemuxer_->videoTrackId_ = NUM_1;
+    mediaDemuxer_->enableSampleQueue_ = false;
+    mediaDemuxer_->inPreroll_ = true;
+    std::string taskName = "Demux";
+    std::unique_ptr<MockTask> taskPtr = std::make_unique<MockTask>(taskName, mediaDemuxer_->playerId_);
+    mediaDemuxer_->taskMap_[mediaDemuxer_->audioTrackId_] = std::move(taskPtr);
+    auto* mockProducer = new MockAVBufferQueueProducer();
+    sptr<AVBufferQueueProducer> sptrProducer(mockProducer);
+    mediaDemuxer_->bufferQueueMap_[mediaDemuxer_->audioTrackId_] = sptrProducer;
+    EXPECT_EQ(mediaDemuxer_->CheckTrackEnabledById(mediaDemuxer_->audioTrackId_), true);
+
+    mediaDemuxer_->enableSampleQueue_ = false;
+    EXPECT_EQ(mediaDemuxer_->GetEnableSampleQueueFlag(), false);
+
+    auto ret = mediaDemuxer_->Pause();
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest Pause API
+ * @tc.number: MediaDemuxerExt_Pause_004
+ * @tc.desc  : Test !CheckTrackEnabledById() && GetEnableSampleQueueFlag()
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_Pause_004, TestSize.Level1)
+{
+    mediaDemuxer_->streamDemuxer_ = nullptr;
+    mediaDemuxer_->source_ = nullptr;
+    mediaDemuxer_->audioTrackId_ = MediaDemuxer::TRACK_ID_INVALID;
+    mediaDemuxer_->inPreroll_ = true;
+    EXPECT_EQ(mediaDemuxer_->CheckTrackEnabledById(mediaDemuxer_->audioTrackId_), false);
+
+    mediaDemuxer_->enableSampleQueue_ = true;
+    mediaDemuxer_->isAudioDemuxDecodeAsync_ = true;
+    mediaDemuxer_->isTranscoderMode_ = false;
+    EXPECT_EQ(mediaDemuxer_->GetEnableSampleQueueFlag(), true);
+
+    auto ret = mediaDemuxer_->Pause();
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest Pause API
+ * @tc.number: MediaDemuxerExt_Pause_005
+ * @tc.desc  : Test !CheckTrackEnabledById() && !GetEnableSampleQueueFlag()
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_Pause_005, TestSize.Level1)
+{
+    mediaDemuxer_->streamDemuxer_ = nullptr;
+    mediaDemuxer_->source_ = nullptr;
+    mediaDemuxer_->audioTrackId_ = MediaDemuxer::TRACK_ID_INVALID;
+    mediaDemuxer_->inPreroll_ = true;
+    EXPECT_EQ(mediaDemuxer_->CheckTrackEnabledById(mediaDemuxer_->audioTrackId_), false);
+
+    mediaDemuxer_->enableSampleQueue_ = false;
+    EXPECT_EQ(mediaDemuxer_->GetEnableSampleQueueFlag(), false);
+
+    auto ret = mediaDemuxer_->Pause();
+    EXPECT_EQ(ret, Status::OK);
+}
 }  // namespace OHOS::Media
