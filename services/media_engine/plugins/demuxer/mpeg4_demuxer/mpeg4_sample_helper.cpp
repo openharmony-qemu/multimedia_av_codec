@@ -437,6 +437,9 @@ Status MPEG4SampleHelper::ResolveEarlySeekSampleByPts(int64_t inputPts, bool isB
 {
     resolved = true;
     const auto& entry = sampleIndexEntry_;
+    if (entry.empty()) {
+        return Status::ERROR_INVALID_DATA;
+    }
     if (inputPts < 0) {
         sampleIndex = stssEntry_.empty() ? 0 : stssEntry_[0].index;
         return Status::OK;

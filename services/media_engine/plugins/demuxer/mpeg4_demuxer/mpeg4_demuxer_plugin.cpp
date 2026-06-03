@@ -107,8 +107,10 @@ bool CheckSeekTimeInFileDuration(const MediaInfo& mediaInfo, int64_t seekTime)
     if (!mediaInfo.general.Get<Tag::MEDIA_DURATION>(fileDuration) || fileDuration <= 0) {
         return true;
     }
-    if (seekTime > fileDuration / MS_TO_US) { // fileDuration us
-        MEDIA_LOG_E("Seek to timestamp=" PUBLIC_LOG_D64 " failed, max=" PUBLIC_LOG_D64, seekTime, fileDuration);
+    int64_t fileDurationMs = fileDuration / MS_TO_US; // MEDIA_DURATION is us, seekTime is ms.
+    if (seekTime > fileDurationMs) {
+        MEDIA_LOG_E("Seek to timestamp=" PUBLIC_LOG_D64 " ms failed, max=" PUBLIC_LOG_D64 " ms",
+            seekTime, fileDurationMs);
         return false;
     }
     return true;
@@ -898,7 +900,7 @@ Status MPEG4DemuxerPlugin::CalculateRealSeekTime(const std::shared_ptr<MPEG4Atom
     return Status::OK;
 }
 
-Status MPEG4DemuxerPlugin::CheckElstShiftStartTime(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+Status MPEG4DemuxerPlugin::ValidateElstShiftStartTimeScale(const std::shared_ptr<MPEG4AtomParser::Track>& track,
     const SeekTimeContext& context) const
 {
     if (context.editListApplied) {
@@ -926,6 +928,10 @@ Status MPEG4DemuxerPlugin::ClampSeekTimeToStreamDuration(const std::shared_ptr<M
     int64_t syncTrackTime = context.trackSeekTime;
     if (!context.editListApplied) {
         syncTrackTime -= track->elstShiftStartTime;
+        if (syncTrackTime < 0) {
+            MEDIA_LOG_W("Clamp negative sync track time " PUBLIC_LOG_D64 " to 0", syncTrackTime);
+            syncTrackTime = 0;
+        }
     }
     FALSE_RETURN_V_MSG_E(ConvertTimeScale(syncTrackTime, 1000LL, context.baseTrackTimeScale,
         &context.syncSeekTime) == Status::OK, Status::ERROR_INVALID_PARAMETER, "mul overflow");
@@ -950,8 +956,8 @@ Status MPEG4DemuxerPlugin::PrepareSeekTime(const std::shared_ptr<MPEG4AtomParser
     if (!mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_TIME_SCALE>(context.baseTrackTimeScale)) {
         return Status::ERROR_INVALID_PARAMETER;
     }
-    Status ret = CheckElstShiftStartTime(track, context);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Check elst shift start time failed");
+    Status ret = ValidateElstShiftStartTimeScale(track, context);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Validate elst shift start time scale failed");
     ret = CalculateRealSeekTime(track, seekTime, realSeekTime);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Calculate real seek time failed");
 
@@ -1013,6 +1019,7 @@ Status MPEG4DemuxerPlugin::DoSeekInternal(int32_t trackIndex, int64_t seekTime, 
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Get video sync seek time failed");
     }
     SeekMode multiTrackMode = mode;
+    // Keep exact closest hits in NEXT mode to match current FFmpeg-parity count expectations.
     if (mode == SeekMode::SEEK_CLOSEST_SYNC && syncSeekTime < seekTime) {
         multiTrackMode = SeekMode::SEEK_PREVIOUS_SYNC;
     } else if (mode == SeekMode::SEEK_CLOSEST_SYNC) {

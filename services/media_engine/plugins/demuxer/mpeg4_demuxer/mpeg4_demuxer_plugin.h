@@ -194,7 +194,7 @@ private:
         int64_t& realSeekTime, SeekTimeContext& context);
     Status CalculateRealSeekTime(const std::shared_ptr<MPEG4AtomParser::Track>& track, int64_t seekTime,
         int64_t& realSeekTime);
-    Status CheckElstShiftStartTime(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+    Status ValidateElstShiftStartTimeScale(const std::shared_ptr<MPEG4AtomParser::Track>& track,
         const SeekTimeContext& context) const;
     Status ClampSeekTimeToStreamDuration(const std::shared_ptr<MPEG4AtomParser::Track>& track,
         SeekTimeContext& context);
