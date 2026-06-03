@@ -1029,7 +1029,7 @@ HWTEST_F(TEST_SUIT, CodecErrorInfo_OnSummate_ValidCodecError_001, TestSize.Level
 {
     Media::Meta meta1;
     meta1.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "valid_codec_error_test");
-    meta1.SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), 
+    meta1.SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(),
                   static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE));
     meta1.SetData(Media::Tag::MIME_TYPE, "video/avc");
     meta1.SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(-1001));
@@ -1037,7 +1037,7 @@ HWTEST_F(TEST_SUIT, CodecErrorInfo_OnSummate_ValidCodecError_001, TestSize.Level
 
     Media::Meta meta2;
     meta2.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "valid_codec_error_test");
-    meta2.SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), 
+    meta2.SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(),
                   static_cast<int32_t>(VideoCodecType::ENCODER_SOFTWARE));
     meta2.SetData(Media::Tag::MIME_TYPE, "video/hevc");
     meta2.SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(-1002));
@@ -1193,7 +1193,8 @@ HWTEST_F(TEST_SUIT, CodecErrorInfo_OnSummate_DifferentErrorCodes_001, TestSize.L
 HWTEST_F(TEST_SUIT, CodecErrorInfo_OnSummate_IncrementCount_001, TestSize.Level1)
 {
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "increment_count_test");
-    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE));
+    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(),
+                   static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE));
     meta_->SetData(Media::Tag::MIME_TYPE, "video/avc");
     meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(-1001));
     for (int i = 0; i < 5; ++i) {
@@ -1211,7 +1212,7 @@ HWTEST_F(TEST_SUIT, CodecErrorInfo_OnSummate_IncrementCount_001, TestSize.Level1
 HWTEST_F(TEST_SUIT, CodecErrorInfo_OnSummate_PositiveErrorCode_001, TestSize.Level1)
 {
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "positive_error_code_test");
-    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), 
+    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(),
                    static_cast<int32_t>(VideoCodecType::ENCODER_HARDWARE));
     meta_->SetData(Media::Tag::MIME_TYPE, "video/hevc");
     meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(1001));
