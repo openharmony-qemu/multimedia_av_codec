@@ -57,7 +57,17 @@ public:
     int32_t GetFirstFillerDataNalSize(const uint8_t *sample, int32_t size) override { return 0; };
 
     enum AvcNalType : uint8_t {
-        AVC_IDR_W_RADL = 5,
+        AVC_NAL_SLICE = 1,
+        AVC_NAL_IDR_SLICE = 5,
+        AVC_NAL_SEI = 6,
+        AVC_NAL_SPS = 7,
+        AVC_NAL_PPS = 8,
+    };
+
+    enum PsSource : int8_t {
+        PS_OUT_OF_BAND = -1,
+        PS_NONE = 0,
+        PS_IN_BAND = 1,
     };
 
 private:
@@ -66,18 +76,42 @@ private:
         uint32_t bufferSize;
     };
 
-    DataAddrInfo dataAddrInfo_;
+    struct NalUnitInfo {
+        const uint8_t *data;
+        uint32_t size;
+        uint8_t nalType;
+    };
+
+    std::vector<uint8_t> spsVec_;
+    std::vector<uint8_t> ppsVec_;
     std::vector<uint8_t> annexbExtraDataVec_;
     std::vector<uint8_t> annexbFrameVec_;
-    uint8_t naluLength_;
+    uint8_t naluLength_ = 0;
     uint32_t maxReorderPic_ = 0;
-    bool sendXps_ = false;
+    bool extradataParsed_ = false;
+    bool newIdr_ = false;
+    bool idrSpsSeen_ = false;
+    bool idrPpsSeen_ = false;
 
     bool IsAnnexbFrame(const uint8_t *sample, int32_t size);
     void WriteStartCode(std::vector<uint8_t> &vec);
+    void AppendOutOfBandPs(std::vector<uint8_t> &vec, const std::vector<uint8_t> &ps);
+    void AppendNalUnit(std::vector<uint8_t> &vec, const uint8_t *data, uint32_t size, PsSource ps);
     void ConvertExtradata(uint8_t **packet, int32_t &packetSize);
     void ConvertPacketCore(uint8_t **packet, int32_t &packetSize);
-    bool ParsePacket(std::vector<DataAddrInfo> &dataInfoVec, bool &gotIrap, const uint8_t *packet, int32_t packetSize);
+    void FilterPsFromPacket(const uint8_t *packet, int32_t packetSize);
+    bool ParseNalUnits(std::vector<NalUnitInfo> &nalUnits, const uint8_t *packet, int32_t packetSize);
+    void SavePs(std::vector<uint8_t> &dst, const uint8_t *nal, uint32_t nalSize, bool first);
+    bool SavePsVector(uint8_t *extraData, int32_t extraDataSize, std::vector<DataAddrInfo> src, AvcNalType nalType);
+    void ParseAvcConfigNalUnits(const std::shared_ptr<RbspContext> &rbspContext, int32_t extraDataSize,
+        std::vector<DataAddrInfo> &spsAddrInfoVec, std::vector<DataAddrInfo> &ppsAddrInfoVec);
+    bool SaveAvcConfigPs(uint8_t *extraData, int32_t extraDataSize,
+        const std::vector<DataAddrInfo> &spsAddrInfoVec, const std::vector<DataAddrInfo> &ppsAddrInfoVec);
+    void HandleNalPsState(NalUnitInfo nal);
+    void HandleNalIdrDetect(NalUnitInfo nal);
+    void InsertPsBeforeIdr(NalUnitInfo nal);
+    void HandleNal(NalUnitInfo nal);
+    void SetPsFlag();
 };
 } // namespace Plugins
 } // namespace Media
