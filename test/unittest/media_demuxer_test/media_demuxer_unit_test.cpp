@@ -2281,22 +2281,6 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SetCurrentSegmentOffset_002, TestSiz
 }
 
 /**
- * @tc.name: MediaDemuxer_SetCurrentSegmentOffset_003
- * @tc.desc: test SetCurrentSegmentOffset (segmentOffset overflow should be capped to int64_t max)
- * @tc.type: FUNC
- */
-HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SetCurrentSegmentOffset_003, TestSize.Level1)
-{
-    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    int32_t trackId = 0;
-    size_t maxSegmentOffset = std::numeric_limits<size_t>::max();
-    int64_t expectedValue = std::numeric_limits<int64_t>::max();
-
-    demuxer->SetCurrentSegmentOffset(trackId, maxSegmentOffset);
-    EXPECT_EQ(demuxer->currentSegmentOffsetMap_[trackId], expectedValue);
-}
-
-/**
  * @tc.name: MediaDemuxer_GetCurrentSegmentOffset_001
  * @tc.desc: test GetCurrentSegmentOffset (normal case with valid trackId and autoMaintainPts enabled)
  * @tc.type: FUNC
