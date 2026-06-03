@@ -71,8 +71,8 @@ void PrepareDefaultStreamSelection(const std::shared_ptr<DashMpdDownloader>& dow
     }
     if (defaultVideoStreamId != -1) {
         downloader->SetDefaultStreamId(defaultVideoStreamId,
-                                        defaultAudioStreamId,
-                                        defaultSubtitleStreamId);
+                                       defaultAudioStreamId,
+                                       defaultSubtitleStreamId);
         downloader->GetSeekable();
     }
 }
