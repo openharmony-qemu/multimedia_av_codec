@@ -617,7 +617,7 @@ group("video_codec_unit_test") {
         "unittest/video_test/codeclist_test:codeclist_capi_unit_test",
         "unittest/video_test/codeclist_test:codeclist_inner_unit_test",
         "unittest/video_test/codeclist_test/coverage_unit_test:codeclist_coverage_unit_test",
-        "unittest/video_test/dfx_statistics_event_test:video_codec_dfx_statics_event_test",
+        "unittest/video_test/dfx_statistics_event_test:video_codec_dfx_statistics_event_test",
         "unittest/video_test/dfx_test:video_codec_dfx_test",
         "unittest/video_test/drm_decryptor_test:drm_decryptor_coverage_unit_test",
         "unittest/video_test/event_manager_unit_test:video_event_manager_coverage_unit_test",

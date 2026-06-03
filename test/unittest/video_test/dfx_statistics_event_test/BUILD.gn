@@ -40,15 +40,15 @@ av_codec_unittest_cflags = [
   "-Dprotected=public",
 ]
 
-group("video_codec_dfx_statics_event_test") {
+group("video_codec_dfx_statistics_event_test") {
   testonly = true
   deps = [
-    ":video_codec_dfx_statics_event_coverage_test",
-    ":video_codec_dfx_statics_event_unit_test",
+    ":video_codec_dfx_statistics_event_coverage_test",
+    ":video_codec_dfx_statistics_event_unit_test",
   ]
 }
 
-ohos_unittest("video_codec_dfx_statics_event_unit_test") {
+ohos_unittest("video_codec_dfx_statistics_event_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = "av_codec/AVCodec_Video/unittest"
 
@@ -65,7 +65,7 @@ ohos_unittest("video_codec_dfx_statics_event_unit_test") {
   sources = [
     "$av_codec_root_dir/services/services/sa_avcodec/server/avcodec_server_manager.cpp",
     "$event_handler_dir/event_handler/statistics_event_handler/statistics_event_handler.cpp",
-    "./dfx_statics_event_unit_test.cpp",
+    "./dfx_statistics_event_unit_test.cpp",
   ]
 
   deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
@@ -85,7 +85,7 @@ ohos_unittest("video_codec_dfx_statics_event_unit_test") {
   part_name = "av_codec"
 }
 
-ohos_unittest("video_codec_dfx_statics_event_coverage_test") {
+ohos_unittest("video_codec_dfx_statistics_event_coverage_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = "av_codec/AVCodec_Video/unittest"
 
@@ -102,7 +102,7 @@ ohos_unittest("video_codec_dfx_statics_event_coverage_test") {
   sources = [
     "$av_codec_root_dir/services/services/sa_avcodec/server/avcodec_server_manager.cpp",
     "$event_handler_dir/event_handler/statistics_event_handler/statistics_event_handler.cpp",
-    "./dfx_statics_event_coverage_test.cpp",
+    "./dfx_statistics_event_coverage_test.cpp",
   ]
 
   deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
