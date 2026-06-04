@@ -61,7 +61,6 @@ constexpr int64_t SNIFF_DATA_SIZE = 2048;
 constexpr int32_t BOX_HEADER_SIZE = 8;
 constexpr int32_t BOX_TYPE_OFFSET = 4;
 constexpr int64_t US_TO_NS = 1000;
-constexpr int64_t MS_TO_US = 1000;
 
 static const std::map<std::string, VideoStreamType> g_streamParserMap = {
     { "video/avc",  VideoStreamType::AVC },
