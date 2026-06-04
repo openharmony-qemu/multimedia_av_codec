@@ -575,6 +575,7 @@ Status AudioMp3EncoderPlugin::GetParameter(std::shared_ptr<Meta>& parameter)
     maxOutputSize_ = OUTPUT_BUFFER_SIZE_DEFAULT;
     AVCODEC_LOGD("AudioMp3EncoderPlugin GetParameter maxInputSize_: %{public}d", maxInputSize_);
     audioParameter_.Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
+    audioParameter_.Set<Tag::MIME_TYPE>(MimeType::AUDIO_MPEG);
     if (maxInputBufferSize_ > 0) {
         audioParameter_.Set<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputBufferSize_);
     } else {
