@@ -41,6 +41,7 @@ constexpr int64_t NEXT_FRAME = 1;
 constexpr int64_t PREVIOUS_FRAME = 0;
 constexpr int64_t MAX_SAMPLES_PER_FRAME = 1024;
 constexpr size_t MIN_DATA_SIZE = 8;
+constexpr int64_t MIN_DATA_SIZE_INT = 8;
 constexpr int64_t MIN_DATA_OFFSET = 0;
 constexpr uint32_t STSZ_HEAD_LENGTH = 12;  // stsz头数据长度
 constexpr uint32_t HALF_BYTE_BITS = 4;
@@ -828,7 +829,7 @@ Status MPEG4SampleHelper::SetTrackFragmentDecodeTimeParams(int64_t dataOffset, i
 {
     MEDIA_LOG_D("In");
     int64_t currentOffset = dataOffset;
-    if (currentOffset < MIN_DATA_OFFSET || dataSize < MIN_DATA_SIZE) {
+    if (currentOffset < MIN_DATA_OFFSET || dataSize < MIN_DATA_SIZE_INT) {
         return Status::ERROR_INVALID_PARAMETER;
     }
     
@@ -1055,7 +1056,8 @@ Status MPEG4SampleHelper::SetTrackFragmentRunParams(int64_t dataOffset, int64_t 
 {
     MEDIA_LOG_D("In");
     FALSE_RETURN_V_MSG_E(hasTfhd_, Status::ERROR_INVALID_DATA, "tfhd does not exist");
-    FALSE_RETURN_V_NOLOG(dataOffset >= MIN_DATA_OFFSET && dataSize >= MIN_DATA_SIZE, Status::ERROR_INVALID_PARAMETER);
+    FALSE_RETURN_V_NOLOG(dataOffset >= MIN_DATA_OFFSET && dataSize >= MIN_DATA_SIZE_INT,
+        Status::ERROR_INVALID_PARAMETER);
 
     uint32_t trunFlag = 0;
     uint32_t numSamples = 0;
