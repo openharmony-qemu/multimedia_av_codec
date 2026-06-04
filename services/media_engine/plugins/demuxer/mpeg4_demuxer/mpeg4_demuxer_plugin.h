@@ -188,9 +188,16 @@ private:
         int32_t baseTrackTimeScale = 0;
         int64_t relativeSeekTime = 0;
         int64_t trackSeekTime = 0;
+        int64_t syncSeekTime = 0;
     };
     Status PrepareSeekTime(const std::shared_ptr<MPEG4AtomParser::Track>& track, int64_t seekTime,
         int64_t& realSeekTime, SeekTimeContext& context);
+    Status CalculateRealSeekTime(const std::shared_ptr<MPEG4AtomParser::Track>& track, int64_t seekTime,
+        int64_t& realSeekTime);
+    Status ValidateElstShiftStartTimeScale(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+        const SeekTimeContext& context) const;
+    Status ClampSeekTimeToStreamDuration(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+        SeekTimeContext& context);
     struct SeekSampleIndexContext {
         int64_t seekTime = 0;
         int64_t trackSeekTime = 0;
