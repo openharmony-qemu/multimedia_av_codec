@@ -155,7 +155,7 @@ void SetParameter(std::shared_ptr<VEncAPI11Sample>& encSample, ConfigParameter &
     encSample->setMaxCount = configParameter.maxCount;
     encSample->DEFAULT_FRAME_AFTER = configParameter.frameAfter;
     encSample->DEFAULT_MAX_COUNT = configParameter.maxCountFrame;
-    encSample->enableRoi = configParameter.roi;
+    encSample->enableDualRoi = configParameter.roi;
     encSample->roiInfo = configParameter.roiInfo;
     encSample->TEMPORAL_ENABLE = configParameter.enableTemporal;
     encSample->TEMPORAL_CONFIG = configParameter.temporalConfig;
@@ -1363,7 +1363,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0630, TestSize.Level2)
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.roi = true}));
         ASSERT_EQ(AV_ERR_OK, SetPrimaryConfig(vEncSample, {.enbleBFrame = 1}));
-        vEncSample->enableRoi = true;
+        vEncSample->enableDualRoi = true;
         ASSERT_EQ(AV_ERR_OK, StartEncoder(vEncSample));
     }
 }
@@ -1428,7 +1428,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0670, TestSize.Level2)
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.roi = true}));
         ASSERT_EQ(AV_ERR_OK, SetPrimaryConfig(vEncSample, {.repeat = true, .maxCount = true}));
-        vEncSample->enableRoi = true;
+        vEncSample->enableDualRoi = true;
         ASSERT_EQ(AV_ERR_OK, StartEncoder(vEncSample));
     }
 }
@@ -1493,7 +1493,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0710, TestSize.Level2)
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.roi = true}));
         ASSERT_EQ(AV_ERR_OK, SetPrimaryConfig(vEncSample, {.repeat = true, .maxCount = true}));
-        vEncSample->enableRoi = true;
+        vEncSample->enableDualRoi = true;
         ASSERT_EQ(AV_ERR_OK, StartEncoder(vEncSample));
     }
 }
@@ -1539,7 +1539,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0740, TestSize.Level2)
 {
     if (cap != nullptr && !access("/system/lib64/media/", 0)) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
-        vEncSample->enableRoi = true;
+        vEncSample->enableDualRoi = true;
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.roi = true}));
         ASSERT_EQ(AV_ERR_OK, SetPrimaryConfig(vEncSample, {.roi = true}));

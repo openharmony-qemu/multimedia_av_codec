@@ -301,6 +301,7 @@ public:
     bool repeatCreateSecondary = false;
     bool needStopInLoop = false;
     bool noStop = false;
+    bool enableDualRoi = false;
 private:
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;

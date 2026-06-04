@@ -1894,7 +1894,7 @@ void VEncAPI11Sample::SwitchParame(size_t index, OH_AVCodec *venc)
 
 int32_t VEncAPI11Sample::SetRoi(OH_NativeBuffer *nativeBuffer)
 {
-    if (!enableRoi) {
+    if (!enableDualRoi) {
         return 0;
     }
     int32_t err = OH_NativeBuffer_SetMetadataValue(nativeBuffer, OH_REGION_OF_INTEREST_METADATA,
