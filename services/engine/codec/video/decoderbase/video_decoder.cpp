@@ -228,7 +228,6 @@ int32_t VideoDecoder::Configure(const Format &format)
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_VIDEO_HEIGHT);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, DEFAULT_OUT_BUFFER_CNT);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT, DEFAULT_IN_BUFFER_CNT);
-    isInputSizeAssigned_.store(false);
     isValidHdrSttMd_.store(false);
     int32_t val32;
     for (auto &it : format.GetFormatMap()) {
@@ -237,11 +236,6 @@ int32_t VideoDecoder::Configure(const Format &format)
             ConfigureDefaultVal(format, it.first, DEFAULT_MIN_BUFFER_CNT, DEFAULT_MAX_BUFFER_CNT);
         } else if (it.first == MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT) {
             ConfigureDefaultVal(format, it.first, DEFAULT_MIN_BUFFER_CNT, DEFAULT_MAX_BUFFER_CNT);
-        } else if (it.first == MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE) {
-            CHECK_AND_CONTINUE_LOG(format.GetIntValue(it.first, val32) && val32 > 0,
-                "not find valid int value for key %{public}s", it.first.data());
-            inputBufferSize_ = val32;
-            isInputSizeAssigned_.store(true);
         } else if (it.first == MediaDescriptionKey::MD_KEY_WIDTH) {
             ConfigurelWidthAndHeight(format, it.first, true);
         } else if (it.first == MediaDescriptionKey::MD_KEY_HEIGHT) {
@@ -437,9 +431,7 @@ int32_t VideoDecoder::SetParameter(const Format &format)
 
 void VideoDecoder::CalculateBufferSize()
 {
-    if (isInputSizeAssigned_.load()) {
-        AVCODEC_LOGI("Num %{public}u find setted max input size, value %{public}d", decInstanceID_, inputBufferSize_);
-    } else if (codecName_ == AVCodecCodecName::VIDEO_DECODER_VP8_NAME) {
+    if (codecName_ == AVCodecCodecName::VIDEO_DECODER_VP8_NAME) {
         inputBufferSize_ = static_cast<UINT32>(width_ * height_ * VIDEO_PLANE_COUNT_YUV) >> 1;
     } else if (codecName_ == AVCodecCodecName::VIDEO_DECODER_VP9_NAME ||
                codecName_ == AVCodecCodecName::VIDEO_DECODER_AV1_NAME) {

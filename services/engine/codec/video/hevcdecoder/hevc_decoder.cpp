@@ -638,9 +638,7 @@ void HevcDecoder::FlushAllFrames()
 
 void HevcDecoder::CalculateBufferSize(void)
 {
-    if (isInputSizeAssigned_.load()) {
-        AVCODEC_LOGI("Num %{public}u find setted max input size, value %{public}d", decInstanceID_, inputBufferSize_);
-    } else if ((static_cast<UINT32>(width_ * height_ * VIDEO_PIX_DEPTH_YUV) >> 1) <= VIDEO_MIN_BUFFER_SIZE) {
+    if ((static_cast<UINT32>(width_ * height_ * VIDEO_PIX_DEPTH_YUV) >> 1) <= VIDEO_MIN_BUFFER_SIZE) {
         inputBufferSize_ = VIDEO_MIN_BUFFER_SIZE;
     } else {
         inputBufferSize_ = VIDEO_MAX_BUFFER_SIZE;
