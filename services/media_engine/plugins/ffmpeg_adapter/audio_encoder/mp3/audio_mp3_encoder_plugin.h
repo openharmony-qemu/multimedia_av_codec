@@ -102,10 +102,14 @@ private:
 
     void ConfigureLame(const std::shared_ptr<Meta>& parameter);
     void ConfigureCache(const std::shared_ptr<Meta>& parameter);
-    void EncodeOneFrame();
     void EncodeDirect(const std::shared_ptr<AVBuffer>& inputBuffer);
-    void FlushRemaining();
     void SetOutputPts(std::shared_ptr<AVBuffer>& outputBuffer);
+    Status OutputEos(std::shared_ptr<AVBuffer>& outputBuffer, const char* reason);
+    int32_t EncodePcmFromCache(int32_t sampleNum, size_t frameBytes);
+    void WriteOutputBuffer(std::shared_ptr<AVBuffer>& outputBuffer);
+    Status EncodeOneFrame(std::shared_ptr<AVBuffer>& outputBuffer, size_t frameBytes, bool isEos);
+    Status EncodeResidual(std::shared_ptr<AVBuffer>& outputBuffer);
+    Status FlushAndOutput(std::shared_ptr<AVBuffer>& outputBuffer);
     std::unique_ptr<unsigned char[]> lameMp3Buffer;
 };
 } // namespace Mp3
