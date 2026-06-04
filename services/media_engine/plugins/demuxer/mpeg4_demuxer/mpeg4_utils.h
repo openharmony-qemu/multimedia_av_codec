@@ -26,7 +26,6 @@ namespace MPEG4 {
 constexpr int32_t MS_TO_NS = 1000000;
 constexpr uint64_t S_TO_US = 1000000;
 constexpr int64_t US_TO_MS = 1000;
-constexpr int64_t MS_TO_US = 1000;
 
 const int32_t FOURCC_TYPE_LENGTH = 5;
 const int32_t MAJOR_BRAND_LENGTH = 4;
