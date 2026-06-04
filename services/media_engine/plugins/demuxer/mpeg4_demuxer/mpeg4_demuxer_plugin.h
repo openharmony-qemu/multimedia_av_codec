@@ -172,7 +172,7 @@ private:
     int64_t ptsOfIndexZero_ = 0;
     std::map<int64_t, int64_t> pts2Dts_;  // relative pts(us)->relative dts(us)
     std::unordered_map<int64_t, uint32_t> dts2SyncSampleIndex_;
-    std::unordered_map<uint32_t, int64_t> sampleIndex2Pts_;  // Sample idex->relative pts(us)
+    std::unordered_map<uint32_t, int64_t> sampleIndex2Pts_;  // Sample index->relative pts(us)
     int32_t refParserTrackIdx_ = -1;
     std::vector<uint32_t> syncSamplesIndex_;  // Sync sample index or Gop id (start from 0)
     int64_t refParserStartTime_ = -1;
