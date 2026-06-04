@@ -19,6 +19,7 @@
 #include "common/pcm_convert.h"
 #include "avcodec_log.h"
 #include "ffmpeg_converter.h"
+#include "meta/mime_type.h"
 
 namespace {
 using namespace OHOS::Media;
@@ -181,6 +182,8 @@ Status FFmpegFlacEncoderPlugin::GetParameter(std::shared_ptr<Meta> &parameter)
         audioParameter_.SetData(Tag::AUDIO_MAX_INPUT_SIZE, maxInputSize);
     }
     audioParameter_.SetData(Tag::AUDIO_MAX_OUTPUT_SIZE, maxOutputSize);
+    audioParameter_.SetData(Tag::AUDIO_SAMPLE_FORMAT, convertSampleFormat_);
+    audioParameter_.SetData(Tag::MIME_TYPE, MimeType::AUDIO_FLAC);
     *parameter = audioParameter_;
     return Status::OK;
 }
