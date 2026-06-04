@@ -183,7 +183,7 @@ private:
     std::list<uint32_t> processingSyncSamplesIndex_;
     std::unordered_map<int32_t, int64_t> gopId2DecodedSamplePts_;  // gopId->absolute dts(us)
     std::string mimeTypeOfVideoStream_ = MimeType::INVALID_TYPE;
-    int64_t startPts_ = 0;  // todo checkpts
+    int64_t startPts_ = 0;
     bool updatePosIsForward_ = true;
     bool isSdtpExist_ = false;
 
