@@ -75,7 +75,7 @@ public:
         auto allocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
         auto buffer = AVBuffer::CreateAVBuffer(allocator, sizeInBytes);
         if (buffer && buffer->memory_ && sizeInBytes > 0) {
-            vector<uint8_t> data(sizeInBytes, 0x10);
+            vector<uint8_t> data(sizeInBytes, 0x10); // 0x10: fill pattern for test PCM data
             buffer->memory_->Write(data.data(), sizeInBytes, 0);
             buffer->memory_->SetSize(sizeInBytes);
         } else if (buffer && buffer->memory_) {
@@ -96,7 +96,9 @@ public:
     Status InitAndConfigure(int32_t channels, int32_t sampleRate, int32_t bitRate, bool enableCache)
     {
         auto ret = plugin_->Init();
-        if (ret != Status::OK) return ret;
+        if (ret != Status::OK) {
+            return ret;
+        }
         plugin_->SetDataCallback(this);
         auto meta = make_shared<Meta>();
         meta->Set<Tag::AUDIO_CHANNEL_COUNT>(channels);
@@ -107,7 +109,9 @@ public:
             meta->Set<Tag::AUDIO_MAX_INPUT_BUFFER_SIZE>(MULTI_FRAME_PCM);
         }
         ret = plugin_->SetParameter(meta);
-        if (ret != Status::OK) return ret;
+        if (ret != Status::OK) {
+            return ret;
+        }
         return plugin_->Prepare();
     }
 
@@ -175,7 +179,7 @@ TEST_F(Mp3EncoderPluginUnitTest, SetParameter_InvalidChannelCount)
     ASSERT_NE(plugin_, nullptr);
     EXPECT_EQ(Status::OK, plugin_->Init());
     auto meta = make_shared<Meta>();
-    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(7); // invalid
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(7); // 7: invalid channel count for testing
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(MP3_SAMPLE_RATE);
     meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
     meta->Set<Tag::MEDIA_BITRATE>(MP3_BIT_RATE);
@@ -188,7 +192,7 @@ TEST_F(Mp3EncoderPluginUnitTest, SetParameter_InvalidSampleRate)
     EXPECT_EQ(Status::OK, plugin_->Init());
     auto meta = make_shared<Meta>();
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(MP3_CHANNELS);
-    meta->Set<Tag::AUDIO_SAMPLE_RATE>(99999); // invalid
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(99999); // 99999: invalid sample rate for testing
     meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
     meta->Set<Tag::MEDIA_BITRATE>(MP3_BIT_RATE);
     EXPECT_EQ(Status::ERROR_INVALID_PARAMETER, plugin_->SetParameter(meta));
@@ -202,7 +206,7 @@ TEST_F(Mp3EncoderPluginUnitTest, SetParameter_InvalidBitRate)
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(MP3_CHANNELS);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(MP3_SAMPLE_RATE);
     meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
-    meta->Set<Tag::MEDIA_BITRATE>(99999); // invalid
+    meta->Set<Tag::MEDIA_BITRATE>(99999); // 99999: invalid bitrate for testing
     EXPECT_EQ(Status::ERROR_INVALID_PARAMETER, plugin_->SetParameter(meta));
 }
 
@@ -258,7 +262,7 @@ TEST_F(Mp3EncoderPluginUnitTest, CacheMode_EmptyCache_NotEnoughData)
     ASSERT_NE(plugin_, nullptr);
     EXPECT_EQ(Status::OK, InitAndConfigure(MP3_CHANNELS, MP3_SAMPLE_RATE, MP3_BIT_RATE, true));
     EXPECT_EQ(Status::OK, plugin_->Start());
-    auto output = CreateOutputBuffer(16384);
+    auto output = CreateOutputBuffer(16384); // 16384: 16KB output buffer capacity
     EXPECT_EQ(Status::ERROR_NOT_ENOUGH_DATA, plugin_->QueueOutputBuffer(output));
 }
 
@@ -270,7 +274,7 @@ TEST_F(Mp3EncoderPluginUnitTest, CacheMode_Branch1_EncodeProducing)
     auto input = CreatePcmInputBuffer(FRAME_BYTES, false);
     EXPECT_EQ(Status::OK, plugin_->QueueInputBuffer(input));
     outputCallbackCount_ = 0;
-    auto output = CreateOutputBuffer(16384);
+    auto output = CreateOutputBuffer(16384); // 16384: 16KB output buffer capacity
     Status ret = plugin_->QueueOutputBuffer(output);
     EXPECT_EQ(Status::ERROR_AGAIN, ret);
     EXPECT_EQ(1, outputCallbackCount_);
@@ -287,11 +291,15 @@ TEST_F(Mp3EncoderPluginUnitTest, CacheMode_Branch1_MultipleFramesDrain)
     outputCallbackCount_ = 0;
     int encodeCount = 0;
     while (true) {
-        auto output = CreateOutputBuffer(16384);
+        auto output = CreateOutputBuffer(16384); // 16384: 16KB output buffer capacity
         Status ret = plugin_->QueueOutputBuffer(output);
-        if (ret != Status::ERROR_AGAIN) break;
+        if (ret != Status::ERROR_AGAIN) {
+            break;
+        }
         encodeCount++;
-        if (encodeCount > 30) break; // safety
+        if (encodeCount > 30) { // 30: max safety iteration limit
+            break;
+        }
     }
     EXPECT_GT(encodeCount, 0);
     EXPECT_EQ(encodeCount, outputCallbackCount_);
@@ -305,8 +313,10 @@ TEST_F(Mp3EncoderPluginUnitTest, CacheMode_Branch2_ResidualEncode_SmallResidual)
     auto input = CreatePcmInputBuffer(MULTI_FRAME_PCM, false);
     EXPECT_EQ(Status::OK, plugin_->QueueInputBuffer(input));
     while (true) {
-        auto output = CreateOutputBuffer(16384);
-        if (plugin_->QueueOutputBuffer(output) != Status::ERROR_AGAIN) break;
+        auto output = CreateOutputBuffer(16384); // 16384: 16KB output buffer capacity
+        if (plugin_->QueueOutputBuffer(output) != Status::ERROR_AGAIN) {
+            break;
+        }
     }
     auto residualInput = CreatePcmInputBuffer(SMALL_RESIDUAL_BYTES, false);
     EXPECT_EQ(Status::OK, plugin_->QueueInputBuffer(residualInput));
@@ -315,12 +325,18 @@ TEST_F(Mp3EncoderPluginUnitTest, CacheMode_Branch2_ResidualEncode_SmallResidual)
     outputCallbackCount_ = 0;
     int residualCount = 0;
     while (true) {
-        auto output = CreateOutputBuffer(16384);
+        auto output = CreateOutputBuffer(16384); // 16384: 16KB output buffer capacity
         output->flag_ = BUFFER_FLAG_EOS;
         Status ret = plugin_->QueueOutputBuffer(output);
-        if (ret != Status::ERROR_AGAIN && ret != Status::OK) break;
-        if (outputCallbackCount_ > 0) residualCount++;
-        if (residualCount > 10) break;
+        if (ret != Status::ERROR_AGAIN && ret != Status::OK) {
+            break;
+        }
+        if (outputCallbackCount_ > 0) {
+            residualCount++;
+        }
+        if (residualCount > 10) { // 10: max safety iteration limit for residual drain
+            break;
+        }
     }
     EXPECT_GT(outputCallbackCount_, 0);
 }
@@ -333,14 +349,16 @@ TEST_F(Mp3EncoderPluginUnitTest, CacheMode_Branch3_Flush_NoResidual)
     auto input = CreatePcmInputBuffer(MULTI_FRAME_PCM, false);
     EXPECT_EQ(Status::OK, plugin_->QueueInputBuffer(input));
     while (true) {
-        auto output = CreateOutputBuffer(16384);
-        if (plugin_->QueueOutputBuffer(output) != Status::ERROR_AGAIN) break;
+        auto output = CreateOutputBuffer(16384); // 16384: 16KB output buffer capacity
+        if (plugin_->QueueOutputBuffer(output) != Status::ERROR_AGAIN) {
+            break;
+        }
     }
     auto eosInput = CreatePcmInputBuffer(0, true);
     EXPECT_EQ(Status::OK, plugin_->QueueInputBuffer(eosInput));
     outputCallbackCount_ = 0;
-    outputCallbackSize_ = -1;
-    auto output = CreateOutputBuffer(16384);
+    outputCallbackSize_ = -1; // -1: sentinel value to verify callback updates it
+    auto output = CreateOutputBuffer(16384); // 16384: 16KB output buffer capacity
     output->flag_ = BUFFER_FLAG_EOS;
     Status ret = plugin_->QueueOutputBuffer(output);
     EXPECT_EQ(Status::OK, ret);
@@ -356,7 +374,7 @@ TEST_F(Mp3EncoderPluginUnitTest, CacheMode_Branch3_FlushWithEos_NoInput)
     EXPECT_EQ(Status::OK, plugin_->Start());
     auto eosInput = CreatePcmInputBuffer(0, true);
     EXPECT_EQ(Status::OK, plugin_->QueueInputBuffer(eosInput));
-    auto output = CreateOutputBuffer(16384);
+    auto output = CreateOutputBuffer(16384); // 16384: 16KB output buffer capacity
     output->flag_ = BUFFER_FLAG_EOS;
     Status ret = plugin_->QueueOutputBuffer(output);
     EXPECT_EQ(Status::OK, ret);
@@ -368,32 +386,38 @@ TEST_F(Mp3EncoderPluginUnitTest, CacheMode_FullFlow_MultipleInputsThenEos)
     ASSERT_NE(plugin_, nullptr);
     EXPECT_EQ(Status::OK, InitAndConfigure(MP3_CHANNELS, MP3_SAMPLE_RATE, MP3_BIT_RATE, true));
     EXPECT_EQ(Status::OK, plugin_->Start());
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 5; i++) { // 5: number of multi-frame input iterations
         auto input = CreatePcmInputBuffer(MULTI_FRAME_PCM, false);
         EXPECT_EQ(Status::OK, plugin_->QueueInputBuffer(input));
     }
     int outputFrames = 0;
     while (true) {
-        auto output = CreateOutputBuffer(16384);
+        auto output = CreateOutputBuffer(16384); // 16384: 16KB output buffer capacity
         Status ret = plugin_->QueueOutputBuffer(output);
-        if (ret != Status::ERROR_AGAIN) break;
+        if (ret != Status::ERROR_AGAIN) {
+            break;
+        }
         outputFrames++;
-        if (outputFrames > 100) break;
+        if (outputFrames > 100) { // 100: max safety iteration limit for drain
+            break;
+        }
     }
     EXPECT_GT(outputFrames, 0);
     auto eosInput = CreatePcmInputBuffer(0, true);
     EXPECT_EQ(Status::OK, plugin_->QueueInputBuffer(eosInput));
     bool gotEos = false;
-    int maxIter = 50;
+    int maxIter = 50; // 50: max iterations to wait for EOS output
     while (maxIter-- > 0) {
-        auto output = CreateOutputBuffer(16384);
+        auto output = CreateOutputBuffer(16384); // 16384: 16KB output buffer capacity
         output->flag_ = BUFFER_FLAG_EOS;
         Status ret = plugin_->QueueOutputBuffer(output);
         if ((output->flag_ & BUFFER_FLAG_EOS) != 0) {
             gotEos = true;
             break;
         }
-        if (ret != Status::ERROR_AGAIN && ret != Status::OK) break;
+        if (ret != Status::ERROR_AGAIN && ret != Status::OK) {
+            break;
+        }
     }
     EXPECT_TRUE(gotEos);
 }
@@ -405,7 +429,7 @@ TEST_F(Mp3EncoderPluginUnitTest, BasicMode_EncodeDirect)
     EXPECT_EQ(Status::OK, plugin_->Start());
     auto input = CreatePcmInputBuffer(FRAME_BYTES, false);
     EXPECT_EQ(Status::OK, plugin_->QueueInputBuffer(input));
-    auto output = CreateOutputBuffer(16384);
+    auto output = CreateOutputBuffer(16384); // 16384: 16KB output buffer capacity
     Status ret = plugin_->QueueOutputBuffer(output);
     EXPECT_TRUE(ret == Status::OK || ret == Status::ERROR_NOT_ENOUGH_DATA);
 }
@@ -423,7 +447,7 @@ TEST_F(Mp3EncoderPluginUnitTest, BasicMode_InvalidInputSize)
     ASSERT_NE(plugin_, nullptr);
     EXPECT_EQ(Status::OK, InitAndConfigure(MP3_CHANNELS, MP3_SAMPLE_RATE, MP3_BIT_RATE, false));
     EXPECT_EQ(Status::OK, plugin_->Start());
-    auto input = CreatePcmInputBuffer(32 * 1024, false);
+    auto input = CreatePcmInputBuffer(32 * 1024, false); // 32*1024: 32KB, oversize input beyond frame limit
     EXPECT_NE(Status::OK, plugin_->QueueInputBuffer(input));
 }
 
@@ -443,7 +467,7 @@ TEST_F(Mp3EncoderPluginUnitTest, Flush_ClearsCache)
     auto input = CreatePcmInputBuffer(MULTI_FRAME_PCM, false);
     EXPECT_EQ(Status::OK, plugin_->QueueInputBuffer(input));
     EXPECT_EQ(Status::OK, plugin_->Flush());
-    auto output = CreateOutputBuffer(16384);
+    auto output = CreateOutputBuffer(16384); // 16384: 16KB output buffer capacity
     EXPECT_EQ(Status::ERROR_NOT_ENOUGH_DATA, plugin_->QueueOutputBuffer(output));
 }
 
@@ -464,14 +488,16 @@ TEST_F(Mp3EncoderPluginUnitTest, MonoChannel_Encode)
     ASSERT_NE(plugin_, nullptr);
     EXPECT_EQ(Status::OK, InitAndConfigure(1, MP3_SAMPLE_RATE, MP3_BIT_RATE, true));
     EXPECT_EQ(Status::OK, plugin_->Start());
-    int monoFrameBytes = MP3_FRAME_SIZE * 1 * 2; // 2304
-    auto input = CreatePcmInputBuffer(monoFrameBytes * 3, false);
+    int monoFrameBytes = MP3_FRAME_SIZE * 1 * 2; // 1: mono channels, 2: bytes per s16 sample, total 2304
+    auto input = CreatePcmInputBuffer(monoFrameBytes * 3, false); // 3: encode three mono frames
     EXPECT_EQ(Status::OK, plugin_->QueueInputBuffer(input));
     outputCallbackCount_ = 0;
     while (true) {
-        auto output = CreateOutputBuffer(16384);
+        auto output = CreateOutputBuffer(16384); // 16384: 16KB output buffer capacity
         Status ret = plugin_->QueueOutputBuffer(output);
-        if (ret != Status::ERROR_AGAIN) break;
+        if (ret != Status::ERROR_AGAIN) {
+            break;
+        }
     }
     EXPECT_GT(outputCallbackCount_, 0);
 }
@@ -486,24 +512,30 @@ TEST_F(Mp3EncoderPluginUnitTest, CacheMode_FirstCallNoEos_SecondCallEos)
     outputCallbackCount_ = 0;
     int drainCount = 0;
     while (true) {
-        auto output = CreateOutputBuffer(16384);
+        auto output = CreateOutputBuffer(16384); // 16384: 16KB output buffer capacity
         Status ret = plugin_->QueueOutputBuffer(output);
-        if (ret != Status::ERROR_AGAIN) break;
+        if (ret != Status::ERROR_AGAIN) {
+            break;
+        }
         drainCount++;
-        if (drainCount > 50) break;
+        if (drainCount > 50) { // 50: max safety iteration limit for drain
+            break;
+        }
     }
     auto eosInput = CreatePcmInputBuffer(0, true);
     EXPECT_EQ(Status::OK, plugin_->QueueInputBuffer(eosInput));
     bool eosReceived = false;
     while (true) {
-        auto output = CreateOutputBuffer(16384);
+        auto output = CreateOutputBuffer(16384); // 16384: 16KB output buffer capacity
         output->flag_ = BUFFER_FLAG_EOS;
         Status ret = plugin_->QueueOutputBuffer(output);
         if ((output->flag_ & BUFFER_FLAG_EOS) != 0) {
             eosReceived = true;
             break;
         }
-        if (ret != Status::ERROR_AGAIN && ret != Status::OK) break;
+        if (ret != Status::ERROR_AGAIN && ret != Status::OK) {
+            break;
+        }
     }
     EXPECT_TRUE(eosReceived);
 }
@@ -519,13 +551,13 @@ TEST_F(Mp3EncoderPluginUnitTest, CacheMode_Branch2_ResidualEncode_SmallEosResidu
     auto eosInput = CreatePcmInputBuffer(0, true);
     EXPECT_EQ(Status::OK, plugin_->QueueInputBuffer(eosInput));
     outputCallbackCount_ = 0;
-    auto output1 = CreateOutputBuffer(16384);
+    auto output1 = CreateOutputBuffer(16384); // 16384: 16KB output buffer capacity
     output1->flag_ = BUFFER_FLAG_EOS;
     Status ret = plugin_->QueueOutputBuffer(output1);
     EXPECT_EQ(Status::ERROR_AGAIN, ret);
     EXPECT_EQ(1, outputCallbackCount_);
     if (ret == Status::ERROR_AGAIN) {
-        auto output2 = CreateOutputBuffer(16384);
+        auto output2 = CreateOutputBuffer(16384); // 16384: 16KB output buffer capacity
         output2->flag_ = BUFFER_FLAG_EOS;
         Status ret2 = plugin_->QueueOutputBuffer(output2);
         EXPECT_EQ(Status::OK, ret2);
