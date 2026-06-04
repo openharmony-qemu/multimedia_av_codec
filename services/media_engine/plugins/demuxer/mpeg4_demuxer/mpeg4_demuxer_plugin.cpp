@@ -24,7 +24,9 @@
 #include <fstream>
 #include <chrono>
 #include <limits>
+
 #include "avcodec_trace.h"
+#include "demuxer_utils.h"
 #include "securec.h"
 #include "converter.h"
 #include "mpeg4_sample_helper.h"
@@ -411,6 +413,7 @@ void MPEG4DemuxerPlugin::InitParser()
     auto track = firstTrack_;
     FALSE_RETURN_MSG(track != nullptr, "track is nullptr");
     streamParsers_ = std::make_shared<MultiStreamParserManager>();
+    uint32_t videoTrackCount = 0;
     for (uint32_t trackIndex = 0; track != nullptr; ++trackIndex) {
         std::string mime;
         mediaInfo_.tracks[trackIndex].Get<Tag::MIME_TYPE>(mime);
@@ -423,8 +426,26 @@ void MPEG4DemuxerPlugin::InitParser()
                 MEDIA_LOG_D("Track " PUBLIC_LOG_D32 " will be converted", trackIndex);
             }
         }
+        MediaType trackType = MediaType::UNKNOWN;
+        mediaInfo_.tracks[trackIndex].Get<Tag::MEDIA_TYPE>(trackType);
+        if (trackType == MediaType::VIDEO && StartWith(mime.c_str(), "video/") && videoTrackCount == 0) {
+            videoTrackCount++;
+            int32_t timeScale = 0;
+            mediaInfo_.tracks[trackIndex].Get<Tag::MEDIA_TIME_SCALE>(timeScale);
+            if (timeScale > 0) {
+                FALSE_RETURN_MSG(track->sampleHelper, "sampleHelper is nullptr");
+                int64_t startPtsBasedOnTimescale = 0;
+                track->sampleHelper->GetPtsOfFirstSample(startPtsBasedOnTimescale);
+                startPts_ = static_cast<int64_t>(
+                    (static_cast<double>(startPtsBasedOnTimescale) / static_cast<double>(timeScale)) * S_TO_US);
+            }
+            syncSamplesIndex_ = track->sampleHelper->GetSyncSamplesIndexFromStssEntry();
+        }
         track = track->next;
     }
+    FALSE_RETURN_MSG(!IsMultiVideoTracks(), "multi-video-tracks video is unsupported");
+    FALSE_RETURN_MSG(GetPresentationTimeUsByMpeg4BoxParser(IndexAndPTSConversionMode::PTS_TO_DTS_MAPPING,
+        refParserTrackIdx_, 0, 0) == Status::OK, "Failed to get pts and dts of all frames");
 }
 
 void MPEG4DemuxerPlugin::GetAVTrackIds()

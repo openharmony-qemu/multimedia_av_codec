@@ -880,6 +880,33 @@ Status MPEG4SampleHelper::SetSampleToChunkParams(int64_t dataOffset, size_t data
     return Status::OK;
 }
 
+Status MPEG4SampleHelper::SetSampleDependencyTypeParams(int64_t ctxOffset, int64_t dataOffset, size_t dataSize)
+{
+    MEDIA_LOG_D("In");
+    sdtpEntry_.sdtpEntryCount = 0;
+    sdtpEntry_.sdtpData.clear();
+
+    const uint32_t versionAndFlagsOffset = 4;  // version + flags = 4Bytes
+    FALSE_RETURN_V_MSG_E(dataSize > versionAndFlagsOffset, Status::ERROR_INVALID_DATA, "dataSize is invalid");
+
+    // After removing type, size..., the starting offset of the actual data in the atom
+    int64_t currentOffset = dataOffset;
+    FALSE_RETURN_V_MSG_E(currentOffset >= MIN_DATA_OFFSET, Status::ERROR_INVALID_PARAMETER, "currentOffset is invalid");
+    for (uint32_t i = 0; i < dataSize && currentOffset < ctxOffset; ++i) {  // Each entry size is 1 Byte
+        if (i >= 0 && i < versionAndFlagsOffset) {  // skip version and flags
+            currentOffset++;
+            continue;
+        }
+        uint8_t sdtpEntry;
+        Status ret = dataReader_->ReadUintData(currentOffset, &sdtpEntry, sizeof(sdtpEntry));
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read header failed");
+        sdtpEntry_.sdtpData.emplace_back(sdtpEntry);
+        currentOffset++;
+        sdtpEntry_.sdtpEntryCount++;
+    }
+    return Status::OK;
+}
+
 Status MPEG4SampleHelper::SetTrackExtendsParams(int64_t dataOffset, size_t dataSize)
 {
     MEDIA_LOG_D("In");
@@ -1340,7 +1367,8 @@ Status MPEG4SampleHelper::UpdateSampleDurationAndDts(uint32_t sttsDelta, uint32_
 
 void MPEG4SampleHelper::GetSampleFlag(uint32_t sampleIndex, SampleIndexEntry &entry, uint32_t &syncIndex)
 {
-    if (trackType_ == VIDEO_TYPE || trackType_ == AUDIO_TYPE || trackType_ == TIMEDMETA_TYPE) {
+    if (trackType_ == VIDEO_TYPE || trackType_ == AUDIO_TYPE || trackType_ == TIMEDMETA_TYPE ||
+        trackType_ == AUXILIARY_TYPE) {
         if (!stssEntry_.empty()) {
             if ((syncIndex < stssEntry_.size()) && (sampleIndex == stssEntry_[syncIndex].index)) {
                 entry.flag |= Sample::SampleFlag::SYNC_FRAME;
@@ -1855,6 +1883,27 @@ int32_t MPEG4SampleHelper::GetMinOffsetOfCttsEntry()
             cttsEntry_[i].delta;
     }
     return std::min(0, minSampleOffsetOfCttsEntry);
+}
+
+std::vector<uint32_t> MPEG4SampleHelper::GetSyncSamplesIndexFromStssEntry()
+{
+    std::vector<uint32_t> syncSamplesIndex;
+    for (uint32_t i = 0; i < stssEntry_.size(); ++i) {
+        syncSamplesIndex.emplace_back(stssEntry_[i].index);
+    }
+    return syncSamplesIndex;
+}
+
+MPEG4SampleHelper::SdtpEntry MPEG4SampleHelper::GetSdtpEntry()
+{
+    return sdtpEntry_;
+}
+
+Status MPEG4SampleHelper::GetPtsOfFirstSample(int64_t& startPtsBasedOnTimescale)
+{
+    FALSE_RETURN_V_MSG_E(!sampleIndexEntry_.empty(), Status::ERROR_INVALID_DATA, "sampleIndexEntry_ is empty");
+    startPtsBasedOnTimescale = sampleIndexEntry_[0].pts;  // pts based on track time scale
+    return Status::OK;
 }
 } // namespace MPEG4
 } // namespace Plugins

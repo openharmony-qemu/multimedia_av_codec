@@ -48,6 +48,7 @@ public:
     Status SetSampleSizeParams(uint32_t type, int64_t dataOffset, size_t dataSize);
     Status SetChunkOffsetParams(uint32_t type, int64_t dataOffset, size_t dataSize);
     Status SetSampleToChunkParams(int64_t dataOffset, size_t dataSize);
+    Status SetSampleDependencyTypeParams(int64_t ctxOffset, int64_t dataOffset, size_t dataSize);
     Status SetTrackExtendsParams(int64_t dataOffset, size_t dataSize);
     Status SetTrackFragmentHeaderParams(int64_t dataOffset, int64_t dataSize, uint32_t flag, int64_t moofOffset);
     Status SetTrackFragmentDecodeTimeParams(int64_t dataOffset, int64_t dataSize);
@@ -67,6 +68,9 @@ public:
     uint32_t GetSampleCountOfCttsEntry(uint32_t cttsEntryIndex);
     int32_t GetSampleOffsetOfCttsEntry(uint32_t cttsEntryIndex);
     int32_t GetMinOffsetOfCttsEntry();
+    std::vector<uint32_t> GetSyncSamplesIndexFromStssEntry();
+    Status GetPtsOfFirstSample(int64_t& startPtsBasedOnTimescale);
+
     struct EditListEntry {
         int64_t mediaTime = 0;
         int64_t duration = 0;
@@ -85,6 +89,11 @@ public:
         int32_t delta;
     };
 
+    struct SdtpEntry {
+        uint32_t sdtpEntryCount = 0;
+        std::vector<uint8_t> sdtpData;
+    };
+    
     void SetEditListParams(const std::vector<EditListEntry>& editListEntries, int32_t movieTimeScale,
         int32_t trackTimeScale);
     bool HasEditList() const;
@@ -93,6 +102,7 @@ public:
     int64_t GetRawTotalDuration() const;
     int64_t GetRawSampleCount() const;
     uint32_t EstimateVideoDelay() const;
+    SdtpEntry GetSdtpEntry();
 
     std::shared_ptr<DemuxerDataReader> dataReader_;
     std::vector<SampleIndexEntry> sampleIndexEntry_;
@@ -207,6 +217,7 @@ private:
     std::vector<StssEntry> stssEntry_;
     std::vector<int32_t> sampleSizes_;
     std::vector<int64_t> chunkOffsets_;
+    SdtpEntry sdtpEntry_;
     TrackExtendsInfo trex_;
     TrackFragmentHeaderInfo tfhd_;
     int64_t tfdtDts_ = -1;

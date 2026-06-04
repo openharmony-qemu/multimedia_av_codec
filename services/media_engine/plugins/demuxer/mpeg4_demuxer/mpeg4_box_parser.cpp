@@ -3684,6 +3684,17 @@ Status MPEG4AtomParser::ParseStco(MPEG4Atom currentAtom, int32_t depth, ParseCon
     return Status::OK;
 }
 
+Status MPEG4AtomParser::ParseSdtp(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
+{
+    FALSE_RETURN_V_MSG_E(lastTrack_ != nullptr && lastTrack_->sampleHelper != nullptr, Status::ERROR_INVALID_DATA,
+        "Track or sampleHelper is nullptr");
+    ctx->offset += currentAtom.size;
+    Status ret = lastTrack_->sampleHelper->SetSampleDependencyTypeParams(ctx->offset, ctx->dataOffset,
+        currentAtom.dataSize);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SetSampleDependencyTypeParams failed");
+    return Status::OK;
+}
+
 Status MPEG4AtomParser::ParseFiel(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {
     FALSE_RETURN_V_MSG_E(lastTrack_ != nullptr, Status::ERROR_NULL_POINTER, "Current track is null");
@@ -4932,6 +4943,7 @@ void MPEG4AtomParser::InitParseTable()
         {FourccType("stss"), &MPEG4AtomParser::ParseStss}, {FourccType("ctts"), &MPEG4AtomParser::ParseCtts},
         {FourccType("stsc"), &MPEG4AtomParser::ParseStsc}, {FourccType("stsz"), &MPEG4AtomParser::ParseStsz},
         {FourccType("stz2"), &MPEG4AtomParser::ParseStsz}, {FourccType("stco"), &MPEG4AtomParser::ParseStco},
+        {FourccType("sdtp"), &MPEG4AtomParser::ParseSdtp},
         {FourccType("co64"), &MPEG4AtomParser::ParseStco}, {FourccType("fiel"), &MPEG4AtomParser::ParseFiel},
         {FourccType("trex"), &MPEG4AtomParser::ParseTrex},
         {FourccType("sidx"), &MPEG4AtomParser::ParseSidx}, {FourccType("udta"), &MPEG4AtomParser::ParseUdta},
