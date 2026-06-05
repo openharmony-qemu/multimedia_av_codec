@@ -128,7 +128,6 @@ private:
     int32_t InitServer(int32_t instanceId = INVALID_INSTANCE_ID);
     int32_t ConfigureCodecScenario(Format &config, int32_t &paramCheckRet);
     void UpdateConfiguredFramerate(const Format &format);
-    void ReportSfdInfo();
     void ConfigureSfdManager(Format &config);
     void ReportResolutionInfo(const Format &config);
     int32_t CodecScenarioInit(Format &config);
@@ -146,6 +145,7 @@ private:
     void OnInstanceEncodeBeginEvent(std::shared_ptr<Media::Meta> meta = nullptr);
     void OnInstanceEncodeEndEvent(std::shared_ptr<Media::Meta> meta = nullptr);
     void SetInstanceEncodeEventInfo(std::shared_ptr<Media::Meta> &meta);
+    void OnInstanceAdvancedFeatureEvent(std::string feature, std::shared_ptr<Media::Meta> meta = nullptr);
     void InitFramerateCalculator(Meta &callerInfo);
 
     CodecStatus status_ = UNINITIALIZED;

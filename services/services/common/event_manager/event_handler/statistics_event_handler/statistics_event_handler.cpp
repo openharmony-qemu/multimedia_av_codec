@@ -26,6 +26,7 @@
 #include "avcodec_info.h"
 #include "avcodec_xcollie.h"
 #include "syspara/parameters.h"
+#include "avcodec_errors.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -52,7 +53,7 @@ static constexpr const char RESOLUTION_SPEC_INFO[] = "RESOLUTION_SPEC_INFO";
 static constexpr const char CONTAINER_FORMAT_INFO[] = "CONTAINER_FORMAT_INFO";
 static constexpr const char CODEC_MODE_INFO[] = "CODEC_MODE_INFO";
 static constexpr const char ADVANCED_FEATURE_INFO[] = "ADVANCED_FEATURE_INFO";
-static constexpr const char SECURE_DECODER_ALLOC_BUF_FAILED_INFO[] = "SECURE_DECODER_ALLOC_BUF_FAILED_INFO";
+static constexpr const char SECURE_DEC_ALLOC_BUF_FAILED_INFO[] = "SECURE_DEC_ALLOC_BUF_FAILED_INFO";
 // EVENT_STR_L3
 static constexpr const char QUERY_CAP_UNSUPPORTED_INFO[] = "QUERY_CAP_UNSUPPORTED_INFO";
 static constexpr const char CREATE_CODEC_UNSUPPORTED_INFO[] = "CREATE_CODEC_UNSUPPORTED_INFO";
@@ -305,6 +306,7 @@ public:
     virtual void OnAddEventInfo(StatisticsEventType eventType, const Media::Meta &eventMeta) = 0;
     virtual void OnSummateEventInfo(StatisticsSubmitInfo &submitInfo) = 0;
     virtual void ResetEventInfo() = 0;
+    virtual bool IsEventValid() = 0;
 
 protected:
     std::mutex mutex_;
@@ -334,6 +336,8 @@ public:
             eventInfo.second->ResetEventInfo();
         }
     }
+
+    bool IsEventValid() override { return false; }
 };
 
 /*----------------------------------- BasicInfo -----------------------------------*/
@@ -427,6 +431,13 @@ public:
             usage.periodStartTime = now;
             usage.lastSettleTime = now;
         }
+    }
+
+    bool IsEventValid() override
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return queryCapTimes_ > 0 || createCodecTimes_ > 0 || !codecSpecInfo_.empty() ||
+               !audioCodecSpecInfo_.empty() || !instanceUsageInfo_.empty();
     }
 
 private:
@@ -815,7 +826,7 @@ public:
         eventInfoMap_.emplace(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_INFO,
                               std::make_shared<DecAbnormalOccupationInfo>());
         eventInfoMap_.emplace(StatisticsEventType::SPEED_DECODING_INFO, std::make_shared<SpeedDecodingInfo>());
-        eventInfoMap_.emplace(StatisticsEventType::SECURE_DECODER_ALLOC_BUF_FAILED_INFO,
+        eventInfoMap_.emplace(StatisticsEventType::SECURE_DEC_ALLOC_BUF_FAILED_INFO,
                               std::make_shared<SecureDecoderAllocBufFailedInfo>());
     }
 };
@@ -1063,7 +1074,7 @@ public:
             auto appObj = cJSON_AddObjectToObject(jsonObj.get(), std::to_string(appIndex).c_str());
             AddMapToJsonObject(appObj, mimeInfo);
         }
-        submitInfo.jsonObjects[SECURE_DECODER_ALLOC_BUF_FAILED_INFO] = std::move(jsonObj);
+        submitInfo.jsonObjects[SECURE_DEC_ALLOC_BUF_FAILED_INFO] = std::move(jsonObj);
     }
 
     void ResetEventInfo() override
@@ -1123,8 +1134,9 @@ public:
             if (typeIter == VIDEO_CODEC_TYPE_TO_STRING.end()) {
                 continue;
             }
-            std::string key = typeIter->second + "_" + mimeType + "_Err_" + std::to_string(errorCode);
-            cJSON_AddNumberToObject(codecErrorRootObj, key.c_str(), count);
+            std::string key = typeIter->second + "_" + mimeType + "_Err_" +
+                AVCSErrorToEnumName(static_cast<AVCodecServiceErrCode>(errorCode));
+            cJSON_AddStringToObject(codecErrorRootObj, key.c_str(), std::to_string(count).c_str());
         }
 
         submitInfo.jsonObjects[CODEC_ERROR_INFO] = std::move(jsonObj);
@@ -1192,24 +1204,26 @@ void StatisticsEventInfo::OnSubmitEventInfo()
         return ScopedJsonString(it->second);
     };
 
-    HiSysEventWrite(
-        EVENT_DOMAIN, EVENT_STATISTICS_INFO,
-        OHOS::HiviewDFX::HiSysEvent::EventType::STATISTIC,
-        QUERY_CAP_TIMES,                    submitInfo.queryCapTimes,
-        CREATE_CODEC_TIMES,                 submitInfo.createCodecTimes,
-        CODEC_SPECIFIED_INFO,               getJsonField(CODEC_SPECIFIED_INFO).CStr(),
-        APP_NAME_DICT,                      getJsonField(APP_NAME_DICT).CStr(),
-        CAP_UNSUPPORTED_INFO,               getJsonField(CAP_UNSUPPORTED_INFO).CStr(),
-        DEC_ABNORMAL_OCCUPATION_INFO,       getJsonField(DEC_ABNORMAL_OCCUPATION_INFO).CStr(),
-        SPEED_DECODING_INFO,                getJsonField(SPEED_DECODING_INFO).CStr(),
-        CODEC_ERROR_INFO,                   getJsonField(CODEC_ERROR_INFO).CStr(),
-        CODEC_INSTANCE_USAGE_INFO,          getJsonField(CODEC_INSTANCE_USAGE_INFO).CStr(),
-        RESOLUTION_SPEC_INFO,               getJsonField(RESOLUTION_SPEC_INFO).CStr(),
-        CONTAINER_FORMAT_INFO,              getJsonField(CONTAINER_FORMAT_INFO).CStr(),
-        CODEC_MODE_INFO,                    getJsonField(CODEC_MODE_INFO).CStr(),
-        ADVANCED_FEATURE_INFO,              getJsonField(ADVANCED_FEATURE_INFO).CStr(),
-        SECURE_DECODER_ALLOC_BUF_FAILED_INFO, getJsonField(SECURE_DECODER_ALLOC_BUF_FAILED_INFO).CStr()
-    );
+    if (IsEventValid()) {
+        HiSysEventWrite(
+            EVENT_DOMAIN, EVENT_STATISTICS_INFO,
+            OHOS::HiviewDFX::HiSysEvent::EventType::STATISTIC,
+            QUERY_CAP_TIMES,                    submitInfo.queryCapTimes,
+            CREATE_CODEC_TIMES,                 submitInfo.createCodecTimes,
+            CODEC_SPECIFIED_INFO,               getJsonField(CODEC_SPECIFIED_INFO).CStr(),
+            APP_NAME_DICT,                      getJsonField(APP_NAME_DICT).CStr(),
+            CAP_UNSUPPORTED_INFO,               getJsonField(CAP_UNSUPPORTED_INFO).CStr(),
+            DEC_ABNORMAL_OCCUPATION_INFO,       getJsonField(DEC_ABNORMAL_OCCUPATION_INFO).CStr(),
+            SPEED_DECODING_INFO,                getJsonField(SPEED_DECODING_INFO).CStr(),
+            CODEC_ERROR_INFO,                   getJsonField(CODEC_ERROR_INFO).CStr(),
+            CODEC_INSTANCE_USAGE_INFO,          getJsonField(CODEC_INSTANCE_USAGE_INFO).CStr(),
+            RESOLUTION_SPEC_INFO,               getJsonField(RESOLUTION_SPEC_INFO).CStr(),
+            CONTAINER_FORMAT_INFO,               getJsonField(CONTAINER_FORMAT_INFO).CStr(),
+            CODEC_MODE_INFO,                    getJsonField(CODEC_MODE_INFO).CStr(),
+            ADVANCED_FEATURE_INFO,              getJsonField(ADVANCED_FEATURE_INFO).CStr(),
+            SECURE_DEC_ALLOC_BUF_FAILED_INFO, getJsonField(SECURE_DEC_ALLOC_BUF_FAILED_INFO).CStr()
+        );
+    }
 
     {
         std::lock_guard<std::shared_mutex> eventHookLock(eventHookMutex_);
@@ -1253,6 +1267,17 @@ void StatisticsEventInfo::RegisterSubmitEventTimer()
     }
     timer_ = std::make_shared<AVCodecXcollieTimer>("SubmitStatisticsEvent", false, false, timeout,
                                                    [this](void *) { OnSubmitEventInfo(); });
+}
+
+bool StatisticsEventInfo::IsEventValid()
+{
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    for (auto &[eventType, eventInfo] : eventInfoMap_) {
+        if (eventInfo != nullptr && eventInfo->IsEventValid()) {
+            return true;
+        }
+    }
+    return false;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
