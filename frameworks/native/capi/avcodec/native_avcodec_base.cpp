@@ -207,6 +207,12 @@ const char *OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER = "video_decoder_ou
 const char *OH_MD_KEY_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES = "video_encoder_number_of_pending_frames";
 const char *OH_MD_KEY_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT = "video_encoder_max_frame_delay_count";
 const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES = "video_encoder_repeat_header_before_sync_frames";
+const char *OH_MD_KEY_VIDEO_METADATA_ROI_TOP = "video_metadata_roi_top";
+const char *OH_MD_KEY_VIDEO_METADATA_ROI_LEFT = "video_metadata_roi_left";
+const char *OH_MD_KEY_VIDEO_METADATA_ROI_BOTTOM = "video_metadata_roi_bottom";
+const char *OH_MD_KEY_VIDEO_METADATA_ROI_RIGHT = "video_metadata_roi_right";
+const char *OH_MD_KEY_VIDEO_METADATA_ROI_DELTA_QP = "video_metadata_roi_deltaqp";
+const char *OH_MD_KEY_VIDEO_METADATA_ROI_SEM_LABEL = "video_metadata_roi_sem_label";
 #ifdef __cplusplus
 }
 #endif
