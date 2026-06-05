@@ -18,6 +18,7 @@
 #include "gtest/gtest.h"
 #include "avcodec_dump_utils.h"
 #include "avcodec_errors.h"
+#include "meta/format.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;

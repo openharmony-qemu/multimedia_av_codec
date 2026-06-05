@@ -644,7 +644,8 @@ int32_t CodecServiceStub::QueueInputBuffer(MessageParcel &data, MessageParcel &r
     bool ret =
         static_cast<CodecListenerProxy *>(listener_.GetRefPtr())->InputBufferInfoFromParcel(index, info, flag, data);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret, AVCS_ERR_INVALID_OPERATION, "Listener read meta data failed");
-    AVCODEC_SYNC_CUSTOM_TRACE_WITH_TAG(HITRACE_LEVEL_INFO, "", "%s:S, flag: %u", __FUNCTION__, flag);
+    AVCODEC_SYNC_CUSTOM_TRACE_WITH_TAG(MediaAVCodec::AVCODEC_TRACE_LEVEL_INFO, "", "%s:S, flag: %u",
+        __FUNCTION__, flag);
 
     ret = reply.WriteInt32(QueueInputBuffer(index, info, flag));
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");

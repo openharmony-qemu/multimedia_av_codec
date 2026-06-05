@@ -212,7 +212,10 @@ ohos_unittest("demuxer_inner_unit_test") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "init:libbegetutil",
     "ipc:ipc_single",
+    "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
   ]
 
   resource_config_file =
@@ -293,7 +296,10 @@ ohos_unittest("demuxer_capi_buffer_unit_test") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "init:libbegetutil",
     "ipc:ipc_single",
+    "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
   ]
 
   resource_config_file =
@@ -373,7 +379,10 @@ ohos_unittest("demuxer_inner_buffer_unit_test") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "init:libbegetutil",
     "ipc:ipc_single",
+    "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
   ]
 
   resource_config_file =

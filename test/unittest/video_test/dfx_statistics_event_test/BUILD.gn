@@ -111,6 +111,7 @@ ohos_unittest("video_codec_dfx_statistics_event_coverage_test") {
     "cJSON:cjson",
     "c_utils:utils",
     "hidumper:lib_dump_usage",
+    "hilog:libhilog",
     "hisysevent:libhisysevent",
     "hisysevent:libhisyseventmanager",
     "init:libbegetutil",

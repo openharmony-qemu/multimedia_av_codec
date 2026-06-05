@@ -204,10 +204,6 @@ ohos_shared_library("av_codec_client") {
     ":av_codec_client_codec_config",
   ]
 
-  public_external_deps = [
-    "ffmpeg:libohosffmpeg",
-    "media_foundation:media_foundation",
-  ]
   sanitize = av_codec_sanitize
 
   configs = [
@@ -321,6 +317,7 @@ ohos_shared_library("av_codec_client") {
     "bundle_framework:appexecfwk_core",
     "c_utils:utils",
     "drivers_interface_codec:libcodec_proxy_4.0",
+    "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "hilog:libhilog",
     "ipc:ipc_single",
@@ -353,7 +350,6 @@ ohos_shared_library("av_codec_suspend_client") {
     ":av_codec_client_codec_config",
   ]
 
-  public_external_deps = [ "media_foundation:media_foundation" ]
   sanitize = av_codec_sanitize
 
   configs = [

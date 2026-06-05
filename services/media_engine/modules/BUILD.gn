@@ -16,6 +16,8 @@ import("//foundation/multimedia/av_codec/config.gni")
 
 config("av_codec_media_engine_modules_pts_and_index_convert_config") {
   include_dirs = [
+    "$av_codec_root_dir/services/media_engine/modules",
+    "$av_codec_root_dir/services/media_engine/modules/demuxer",
     "$av_codec_root_dir/services/media_engine/modules/pts_index_conversion",
   ]
 }

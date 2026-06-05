@@ -38,8 +38,10 @@ ohos_fuzztest("EncoderDualFuzzTest") {
 
   external_deps = [
     "c_utils:utils",
+    "graphic_surface:surface",
     "hilog:libhilog",
     "ipc:ipc_single",
+    "media_foundation:media_foundation",
     "media_foundation:native_media_core",
     "openssl:libcrypto_shared",
     "window_manager:libwm",

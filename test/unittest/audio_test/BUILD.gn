@@ -128,6 +128,7 @@ ohos_unittest("av_audio_codecbase_unit_test") {
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "media_foundation:media_foundation",
   ]
 
   if (target_cpu == "arm64") {
@@ -230,6 +231,8 @@ ohos_unittest("av_audio_inner_unit_test") {
   external_deps = [
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
+    "hilog:libhilog",
+    "media_foundation:media_foundation",
   ]
 
   if (target_cpu == "arm64") {
@@ -603,6 +606,8 @@ ohos_unittest("audio_hdi_codec_inner_unit_test") {
     "drivers_interface_codec:libcodec_proxy_4.0",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
+    "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
   ]
 
   if (target_cpu == "arm64") {
@@ -654,6 +659,8 @@ ohos_unittest("audio_g711mu_encoder_plugin_unit_test") {
   external_deps = [
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
+    "hilog:libhilog",
+    "media_foundation:media_foundation",
   ]
 
   if (target_cpu == "arm64") {
@@ -752,6 +759,9 @@ ohos_unittest("audio_resample_unit_test") {
   external_deps = [
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
+    "hilog:libhilog",
+    "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
   ]
 
   if (target_cpu == "arm64") {
@@ -801,6 +811,8 @@ ohos_unittest("audio_decoder_plugin_unit_test") {
   external_deps = [
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
+    "hilog:libhilog",
+    "media_foundation:media_foundation",
   ]
 
   if (target_cpu == "arm64") {
@@ -850,6 +862,8 @@ ohos_unittest("audio_encoder_plugin_unit_test") {
   external_deps = [
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
+    "hilog:libhilog",
+    "media_foundation:media_foundation",
   ]
 
   if (target_cpu == "arm64") {
@@ -977,6 +991,7 @@ ohos_unittest("audio_ffmpeg_base_codec_unit_test") {
   external_deps = [
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
+    "media_foundation:media_foundation",
   ]
 
   if (target_cpu == "arm64") {
@@ -1435,6 +1450,7 @@ ohos_unittest("audio_sync_codec_adapter_unit_test") {
 
   external_deps = [
     "c_utils:utils",
+    "hilog:libhilog",
     "media_foundation:media_foundation",
     "googletest:gmock_main"
   ]
@@ -1540,6 +1556,7 @@ ohos_unittest("audio_sync_mode_capi_unit_test") {
   ]
 
   external_deps = [
+    "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
   ]
@@ -1968,6 +1985,7 @@ ohos_unittest("audio_wma_decoder_unit_test") {
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "c_utils:utils",
+    "media_foundation:media_foundation",
     "media_foundation:native_media_core",
   ]
 
@@ -2031,6 +2049,7 @@ ohos_unittest("audio_adpcm_decoder_unit_test") {
   external_deps = [
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
+    "media_foundation:media_foundation",
   ]
 
   if (target_cpu == "arm64") {
@@ -2511,6 +2530,9 @@ ohos_unittest("audio_decoder_skip_info_unit_test") {
   ]
 
   external_deps = [
+    "graphic_surface:surface",
+    "ipc:ipc_single",
+    "media_foundation:media_foundation",
     "media_foundation:native_media_core",
   ]
 
@@ -2553,6 +2575,9 @@ ohos_unittest("audio_decoder_skip_info_innter_unit_test") {
 
   external_deps = [
     "c_utils:utils",
+    "graphic_surface:surface",
+    "ipc:ipc_single",
+    "media_foundation:media_foundation",
     "media_foundation:native_media_core",
   ]
 
@@ -3266,6 +3291,7 @@ ohos_unittest("audio_sync_mode_cook_capi_unit_test") {
   ]
 
   external_deps = [
+    "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
   ]
@@ -3580,6 +3606,7 @@ ohos_unittest("audio_amrnb_multiframe_decode_unit_test") {
 
   external_deps = [
     "c_utils:utils",
+    "hilog:libhilog",
     "media_foundation:media_foundation",
     "googletest:gmock_main"
   ]

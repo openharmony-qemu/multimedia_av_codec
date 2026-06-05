@@ -68,8 +68,6 @@ ohos_unittest("capability_module_test") {
     "-Wunused-parameter",
   ]
 
-  public_external_deps = [ "ffmpeg:libohosffmpeg" ]
-
   deps = [
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
@@ -78,6 +76,7 @@ ohos_unittest("capability_module_test") {
 
   external_deps = [
     "c_utils:utils",
+    "ffmpeg:libohosffmpeg",
     "graphic_2d:libgraphic_utils",
     "graphic_2d:librender_service_client",
     "graphic_surface:surface",

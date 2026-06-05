@@ -40,7 +40,9 @@ ohos_source_set("adaptive_framerate_controller") {
 
   external_deps = [
     "c_utils:utils",
+    "hilog:libhilog",
     "init:libbegetutil",
+    "media_foundation:media_foundation",
   ]
 
   subsystem_name = "multimedia"

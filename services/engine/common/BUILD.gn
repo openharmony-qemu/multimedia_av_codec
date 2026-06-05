@@ -33,7 +33,7 @@ ohos_static_library("av_codec_engine_common") {
     "$av_codec_root_dir/services/engine/common/fsurface_memory.cpp",
   ]
 
-  public_deps = [
+  deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
   ]
