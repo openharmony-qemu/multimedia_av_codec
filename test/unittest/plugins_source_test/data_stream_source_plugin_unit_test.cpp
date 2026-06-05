@@ -70,7 +70,7 @@ HWTEST_F(DataStreamSourceUnitTest, Read_001, TestSize.Level1)
     EXPECT_CALL(*mockDataSrc_, ReadAt(1024, testing::_))
         .Times(1)
         .WillOnce(testing::Return(1024));
-    
+
     Status result = plugin_->Read(buffer, offset, expectedLen);
 
     EXPECT_EQ(result, Status::OK);
@@ -96,6 +96,7 @@ HWTEST_F(DataStreamSourceUnitTest, Read_002, TestSize.Level1)
         .WillOnce(testing::Return(1024));
 
     Status result = plugin_->Read(buffer, offset, expectedLen);
+
     EXPECT_EQ(result, Status::OK);
 }
 
@@ -178,7 +179,7 @@ HWTEST_F(DataStreamSourceUnitTest, Read_006, TestSize.Level1)
     uint64_t offset = 0;
     size_t expectedLen = 1024;
     std::shared_ptr<Plugins::Buffer> buffer = nullptr;
-    EXPECT_CALL(*mockDataSrc_, ReadAt(testing::_, testing::_).Time(0));
+    EXPECT_CALL(*mockDataSrc_, ReadAt(testing::_, testing::_)).Times(0);
 
     Status result = plugin_->Read(buffer, offset, expectedLen);
 
