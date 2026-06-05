@@ -31,8 +31,7 @@
 namespace OHOS {
 namespace Media {
 
-struct Mpeg4DemuxerPluginFuzzConfig
-{
+struct Mpeg4DemuxerPluginFuzzConfig {
     bool useEmptyBuffer = false;
     bool useConfigs = false;
     bool interruptState = false;
@@ -52,8 +51,7 @@ struct Mpeg4DemuxerPluginFuzzConfig
     int64_t dts = 0;
 };
 
-class Mpeg4AVBufferWrapper
-{
+class Mpeg4AVBufferWrapper {
 public:
     explicit Mpeg4AVBufferWrapper(uint32_t capacity, bool useEmptyBuffer);
     std::shared_ptr<AVBuffer> GetBuffer() const;
@@ -63,8 +61,7 @@ private:
     std::shared_ptr<AVBuffer> buffer_ = nullptr;
 };
 
-class Mpeg4DemuxerPluginFuzzTest
-{
+class Mpeg4DemuxerPluginFuzzTest {
 public:
     Mpeg4DemuxerPluginFuzzTest();
     ~Mpeg4DemuxerPluginFuzzTest();
@@ -80,6 +77,13 @@ private:
     std::shared_ptr<DataSourceImpl> CreateDataSource();
     void RunPreInitInterfaceFuzz(std::shared_ptr<MPEG4DemuxerPlugin> plugin,
                                  const Mpeg4DemuxerPluginFuzzConfig &config);
+    void RunPreInitReadInterfaceFuzz(std::shared_ptr<MPEG4DemuxerPlugin> plugin,
+                                     const Mpeg4DemuxerPluginFuzzConfig &config,
+                                     Mpeg4AVBufferWrapper &buffer);
+    void RunPreInitSeekInterfaceFuzz(std::shared_ptr<MPEG4DemuxerPlugin> plugin,
+                                     const Mpeg4DemuxerPluginFuzzConfig &config);
+    void RunPreInitControlInterfaceFuzz(std::shared_ptr<MPEG4DemuxerPlugin> plugin,
+                                        const Mpeg4DemuxerPluginFuzzConfig &config);
     void RunPostInitInterfaceFuzz(std::shared_ptr<MPEG4DemuxerPlugin> plugin,
                                   const Mpeg4DemuxerPluginFuzzConfig &config);
     void RunTrackInterfaceFuzz(std::shared_ptr<MPEG4DemuxerPlugin> plugin,

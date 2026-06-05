@@ -111,8 +111,7 @@ bool Mpeg4DemuxerPluginFuzzTest::InitWithData(const uint8_t *data, size_t size)
     return true;
 }
 
-std::shared_ptr<Mpeg4DemuxerPluginFuzzTest::MPEG4DemuxerPlugin>
-Mpeg4DemuxerPluginFuzzTest::CreatePlugin() const
+std::shared_ptr<Mpeg4DemuxerPluginFuzzTest::MPEG4DemuxerPlugin> Mpeg4DemuxerPluginFuzzTest::CreatePlugin() const
 {
     return std::make_shared<MPEG4DemuxerPlugin>("MPEG4DemuxerPluginFuzz");
 }
@@ -138,27 +137,16 @@ std::shared_ptr<DataSourceImpl> Mpeg4DemuxerPluginFuzzTest::CreateDataSource()
     return dataSource_;
 }
 
-void Mpeg4DemuxerPluginFuzzTest::RunPreInitInterfaceFuzz(
+void Mpeg4DemuxerPluginFuzzTest::RunPreInitReadInterfaceFuzz(
     std::shared_ptr<MPEG4DemuxerPlugin> plugin,
-    const Mpeg4DemuxerPluginFuzzConfig &config)
+    const Mpeg4DemuxerPluginFuzzConfig &config, Mpeg4AVBufferWrapper &buffer)
 {
     if (plugin == nullptr) {
         return;
     }
-    MediaInfo mediaInfo;
-    std::shared_ptr<Meta> userMeta = std::make_shared<Meta>();
-    Mpeg4AVBufferWrapper buffer(DEFAULT_BUFFER_SIZE, config.useEmptyBuffer);
-    int64_t realSeekTime = 0;
     int32_t nextSampleSize = 0;
     int64_t lastPts = 0;
-    std::multimap<std::string, std::vector<uint8_t>> drmInfo;
-    uint32_t cacheSize = 0;
-    uint32_t frameCount = 0;
-    int32_t probeOffset = 0;
-    int32_t probeSize = 0;
 
-    plugin->GetMediaInfo(mediaInfo);
-    plugin->GetUserMeta(userMeta);
     plugin->SelectTrack(config.invalidTrackId);
     plugin->UnselectTrack(config.invalidTrackId);
     plugin->ReadSample(config.invalidTrackId, buffer.GetBuffer());
@@ -170,6 +158,17 @@ void Mpeg4DemuxerPluginFuzzTest::RunPreInitInterfaceFuzz(
     plugin->GetNextSampleSize(config.invalidTrackId, nextSampleSize,
                               config.timeoutMs);
     plugin->GetLastPTSByTrackId(config.invalidTrackId, lastPts);
+}
+
+void Mpeg4DemuxerPluginFuzzTest::RunPreInitSeekInterfaceFuzz(
+    std::shared_ptr<MPEG4DemuxerPlugin> plugin,
+    const Mpeg4DemuxerPluginFuzzConfig &config)
+{
+    if (plugin == nullptr) {
+        return;
+    }
+    int64_t realSeekTime = 0;
+
     plugin->SeekTo(static_cast<int32_t>(config.invalidTrackId),
                    config.seekTimeMs, SeekMode::SEEK_PREVIOUS_SYNC,
                    realSeekTime);
@@ -180,6 +179,21 @@ void Mpeg4DemuxerPluginFuzzTest::RunPreInitInterfaceFuzz(
     plugin->SeekToFrameByDts(static_cast<int32_t>(config.invalidTrackId),
                              config.seekTimeMs, SeekMode::SEEK_CLOSEST,
                              realSeekTime, config.timeoutMs);
+}
+
+void Mpeg4DemuxerPluginFuzzTest::RunPreInitControlInterfaceFuzz(
+    std::shared_ptr<MPEG4DemuxerPlugin> plugin,
+    const Mpeg4DemuxerPluginFuzzConfig &config)
+{
+    if (plugin == nullptr) {
+        return;
+    }
+    std::multimap<std::string, std::vector<uint8_t>> drmInfo;
+    uint32_t cacheSize = 0;
+    uint32_t frameCount = 0;
+    int32_t probeOffset = 0;
+    int32_t probeSize = 0;
+
     plugin->GetDrmInfo(drmInfo);
     plugin->GetCurrentCacheSize(config.invalidTrackId, cacheSize);
     plugin->GetCurrentCacheFrameCount(config.invalidTrackId, frameCount);
@@ -192,6 +206,24 @@ void Mpeg4DemuxerPluginFuzzTest::RunPreInitInterfaceFuzz(
     plugin->Pause();
     plugin->ResetEosStatus();
     plugin->Reset();
+}
+
+void Mpeg4DemuxerPluginFuzzTest::RunPreInitInterfaceFuzz(
+    std::shared_ptr<MPEG4DemuxerPlugin> plugin,
+    const Mpeg4DemuxerPluginFuzzConfig &config)
+{
+    if (plugin == nullptr) {
+        return;
+    }
+    MediaInfo mediaInfo;
+    std::shared_ptr<Meta> userMeta = std::make_shared<Meta>();
+    Mpeg4AVBufferWrapper buffer(DEFAULT_BUFFER_SIZE, config.useEmptyBuffer);
+
+    plugin->GetMediaInfo(mediaInfo);
+    plugin->GetUserMeta(userMeta);
+    RunPreInitReadInterfaceFuzz(plugin, config, buffer);
+    RunPreInitSeekInterfaceFuzz(plugin, config);
+    RunPreInitControlInterfaceFuzz(plugin, config);
 }
 
 void Mpeg4DemuxerPluginFuzzTest::RunTrackInterfaceFuzz(
