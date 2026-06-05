@@ -63,6 +63,7 @@ ohos_unittest("video_codec_dfx_statistics_event_unit_test") {
   ]
 
   sources = [
+    "$av_codec_root_dir/frameworks/native/common/avcodec_errors.cpp",
     "$av_codec_root_dir/services/services/sa_avcodec/server/avcodec_server_manager.cpp",
     "$event_handler_dir/event_handler/statistics_event_handler/statistics_event_handler.cpp",
     "./dfx_statistics_event_unit_test.cpp",
@@ -100,6 +101,7 @@ ohos_unittest("video_codec_dfx_statistics_event_coverage_test") {
   ]
 
   sources = [
+    "$av_codec_root_dir/frameworks/native/common/avcodec_errors.cpp",
     "$av_codec_root_dir/services/services/sa_avcodec/server/avcodec_server_manager.cpp",
     "$event_handler_dir/event_handler/statistics_event_handler/statistics_event_handler.cpp",
     "./dfx_statistics_event_coverage_test.cpp",

@@ -280,22 +280,13 @@ void CodecServer::UpdateConfiguredFramerate(const Format &format)
     }
 }
 
-void CodecServer::ReportSfdInfo()
-{
-    Media::Meta meta;
-    bool isForwardCaller = forwardCaller_.pid >= 0 || !forwardCaller_.processName.empty();
-    meta.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, isForwardCaller ? forwardCaller_.processName : caller_.processName);
-    meta.SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "SmartFluencyDecoding");
-    EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::ADVANCED_FEATURE_INFO, meta);
-}
-
 void CodecServer::ConfigureSfdManager(Format &config)
 {
     InitSfdManager();
     if (sfdManager_) {
         sfdManager_->Configure(config);
         if (sfdManager_->IsSfdActive()) {
-            ReportSfdInfo();
+            OnInstanceAdvancedFeatureEvent("SmartFluencyDecoding", nullptr);
         }
         sfdManager_->EnableMVOutput(config);
     }
@@ -359,6 +350,7 @@ int32_t CodecServer::CodecScenarioInit(Format &config)
                 temporalScalability_->SetTag(this->GetTag());
             }
             config.RemoveKey(Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE);
+            OnInstanceAdvancedFeatureEvent("TemporalScalability", nullptr);
             break;
         case CodecScenario::CODEC_SCENARIO_ENC_ENABLE_B_FRAME:
             config.RemoveKey(Tag::VIDEO_ENCODER_LTR_FRAME_COUNT);
@@ -938,6 +930,18 @@ void CodecServer::SetInstanceEncodeEventInfo(std::shared_ptr<Media::Meta> &meta)
     meta->SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
 }
 
+void CodecServer::OnInstanceAdvancedFeatureEvent(std::string feature, std::shared_ptr<Media::Meta> meta)
+{
+    if (meta == nullptr) {
+        meta = std::make_shared<Media::Meta>();
+    }
+    bool isForwardCaller = forwardCaller_.pid >= 0 || !forwardCaller_.processName.empty();
+    std::string processName = isForwardCaller ? forwardCaller_.processName : caller_.processName;
+    meta->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, processName);
+    meta->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), feature);
+    EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::ADVANCED_FEATURE_INFO, *meta);
+}
+
 void CodecServer::OnInstanceEncodeBeginEvent(std::shared_ptr<Media::Meta> meta)
 {
     if (codecType_ != AVCODEC_TYPE_VIDEO_ENCODER) {
@@ -1015,7 +1019,7 @@ int32_t CodecServer::SetParameter(const Format &format)
         bool isEnabled = sfdManager_->IsSfdActive();
         sfdManager_->Configure(format);
         if (!isEnabled && sfdManager_->IsSfdActive()) {
-            ReportSfdInfo();
+            OnInstanceAdvancedFeatureEvent("SmartFluencyDecoding", nullptr);
         }
     }
     return codecBase_->SetParameter(format);
@@ -1473,12 +1477,7 @@ int32_t CodecServer::CreatePostProcessing(const Format& format)
     postProcessing_ = PostProcessingType::Create(codecBase_, format, ret);
     EXPECT_AND_LOGI_WITH_TAG(postProcessing_, "Post processing is configured");
 
-    Media::Meta meta;
-    bool isForwardCaller = forwardCaller_.pid >= 0 || !forwardCaller_.processName.empty();
-    meta.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, isForwardCaller ? forwardCaller_.processName : caller_.processName);
-    meta.SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "PostProcessing");
-    EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::ADVANCED_FEATURE_INFO, meta);
-
+    OnInstanceAdvancedFeatureEvent("PostProcessing", nullptr);
     return ret;
 }
 

@@ -1030,7 +1030,7 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
         if (err != GSERROR_OK) {
             HLOGE("Alloc surfacebuffer %u failed, GSError=%d", i, err);
             if (isSecure_ && !isEncoder_) {
-                ReportStatisticsEvent(StatisticsEventType::SECURE_DECODER_ALLOC_BUF_FAILED_INFO);
+                ReportStatisticsEvent(StatisticsEventType::SECURE_DEC_ALLOC_BUF_FAILED_INFO);
             }
             return err == GSERROR_NO_MEM ? AVCS_ERR_NO_MEMORY : AVCS_ERR_UNKNOWN;
         }
