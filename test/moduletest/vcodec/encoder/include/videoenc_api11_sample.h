@@ -127,6 +127,7 @@ public:
     uint32_t DEFAULT_COLOR_PRIMARIES = COLOR_PRIMARY_BT709;
     uint32_t DEFAULT_TRANSFER_CHARACTERISTICS = TRANSFER_CHARACTERISTIC_BT709;
     uint32_t DEFAULT_MATRIX_COEFFICIENTS = MATRIX_COEFFICIENT_BT709;
+    uint32_t GOP_REFERENCE_MODE = UNIFORMLY_SCALED_REFERENCE;
     uint32_t repeat_time = 0;
     bool runDualEncoder = false;
     PreProcessParameter preProcessParameter;
@@ -238,6 +239,7 @@ public:
     uint32_t outCount = 0;
     uint32_t frameCount = 0;
     uint32_t switchParamsTimeSec = 3;
+    uint32_t temporalGopSize = 4;
     bool sleepOnFPS = false;
     bool SURF_INPUT = false;
     bool enableAutoSwitchParam = false;
@@ -266,6 +268,8 @@ public:
     bool TEMPORAL_JUMP_MODE = false;
     bool TEMPORAL_DEFAULT = false;
     bool TEMPORAL_UNIFORMLY = false;
+    bool ENABLE_GOP_SIZE = false;
+    bool TEMPORAL_ENABLE_RUN = false;
     bool getQpMse = false;
     std::vector<fileInfo> fileInfos;
     bool readMultiFiles = false;
