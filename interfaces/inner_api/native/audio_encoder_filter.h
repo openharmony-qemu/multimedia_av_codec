@@ -31,6 +31,8 @@
 #include "audio_format_converter.h"
 #include "audio_suite_pcm_buffer.h"
 #include "audio_stream_info.h"
+
+#define BUFFER_IS_EOS 1
 #endif
 
 namespace OHOS {

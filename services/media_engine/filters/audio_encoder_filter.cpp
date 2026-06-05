@@ -22,6 +22,7 @@
 #include "avcodec_sysevent.h"
 #include "buffer/avbuffer_queue.h"
 #include "buffer/avbuffer_queue_define.h"
+#include "avcodec_trace.h"
 #ifdef SUPPORT_AUDIO_CONVERT
 #include "audio_format_converter.h"
 #include "audio_suite_pcm_buffer.h"
