@@ -182,7 +182,7 @@ HWTEST_F(SourceUnitTest, Source_GetDownloadInfo_0100, TestSize.Level1)
     std::shared_ptr<MediaSource> mediaSource = std::make_shared<MediaSource>(VIDEO_FILE1);
     EXPECT_EQ(Status::OK, source_->SetSource(mediaSource));
     EXPECT_EQ(Status::OK, source_->Prepare());
-    source_->GetDownloadInfo(downloadInfo);
+    EXPECT_EQ(Status::OK, source_->GetDownloadInfo(downloadInfo));
     EXPECT_EQ(Status::OK, source_->Stop());
 }
 /**
@@ -196,7 +196,7 @@ HWTEST_F(SourceUnitTest, Source_IsNeedPreDownload_0100, TestSize.Level1)
     std::shared_ptr<MediaSource> mediaSource = std::make_shared<MediaSource>(VIDEO_FILE1);
     EXPECT_EQ(Status::OK, source_->SetSource(mediaSource));
     EXPECT_EQ(Status::OK, source_->Prepare());
-    source_->IsNeedPreDownload();
+    EXPECT_FALSE(source_->IsNeedPreDownload());
     EXPECT_EQ(Status::OK, source_->Stop());
 }
 /**
@@ -206,7 +206,11 @@ HWTEST_F(SourceUnitTest, Source_IsNeedPreDownload_0100, TestSize.Level1)
  */
 HWTEST_F(SourceUnitTest, Source_Pause_0100, TestSize.Level1)
 {
+    std::shared_ptr<MediaSource> mediaSource = std::make_shared<MediaSource>(VIDEO_FILE1);
+    EXPECT_EQ(Status::OK, source_->SetSource(mediaSource));
+    EXPECT_EQ(Status::OK, source_->Prepare());
     EXPECT_EQ(Status::OK, source_->Pause());
+    EXPECT_EQ(Status::OK, source_->Stop());
 }
 /**
  * @tc.name: Source_Resume_0100
@@ -215,7 +219,13 @@ HWTEST_F(SourceUnitTest, Source_Pause_0100, TestSize.Level1)
  */
 HWTEST_F(SourceUnitTest, Source_Resume_0100, TestSize.Level1)
 {
+    std::shared_ptr<MediaSource> mediaSource = std::make_shared<MediaSource>(VIDEO_FILE1);
+    EXPECT_EQ(Status::OK, source_->SetSource(mediaSource));
+    EXPECT_EQ(Status::OK, source_->Prepare());
+    EXPECT_EQ(Status::OK, source_->Start());
+    EXPECT_EQ(Status::OK, source_->Pause());
     EXPECT_EQ(Status::OK, source_->Resume());
+    EXPECT_EQ(Status::OK, source_->Stop());
 }
 /**
  * @tc.name: Source_SetReadBlockingFlag_0100
@@ -242,7 +252,8 @@ HWTEST_F(SourceUnitTest, Source_GetDuration_0100, TestSize.Level1)
     std::shared_ptr<MediaSource> mediaSource = std::make_shared<MediaSource>(VIDEO_FILE1);
     EXPECT_EQ(Status::OK, source_->SetSource(mediaSource));
     EXPECT_EQ(Status::OK, source_->Prepare());
-    source_->GetDuration();
+    int64_t duration = source_->GetDuration();
+    EXPECT_TRUE(duration >= 0 || duration == -1);
     EXPECT_EQ(Status::OK, source_->Stop());
 }
 /**
