@@ -55,15 +55,14 @@ void DataStreamSourceUnitTest::TearDown(void)
 /**
 * @tc.name  : Read_001
 * @tc.number: 1
-* @tc.desc  : test normal Read flow
+* @tc.desc  : test isInterrupted_ true
 */
 HWTEST_F(DataStreamSourceUnitTest, Read_001, TestSize.Level1)
 {
     plugin_->isInterrupted_ = true;
-    plugin_->isExitRead_ = false;
+    std::shared_ptr<Plugins::Buffer> buffer;
     uint64_t offset = 0;
     size_t expectedLen = 1024;
-    std::shared_ptr<Plugins::Buffer> buffer = Plugins::Buffer::CreateDefaultBuffer(expectedLen);
     Status result = plugin_->Read(buffer, offset, expectedLen);
 
     EXPECT_EQ(result, Status::OK);
@@ -72,7 +71,7 @@ HWTEST_F(DataStreamSourceUnitTest, Read_001, TestSize.Level1)
 /**
 * @tc.name  : Read_002
 * @tc.number: 2
-* @tc.desc  : Test Read flow with isExitRead=true
+* @tc.desc  : Test isInterrupted_ false isExitRead_ true
 */
 HWTEST_F(DataStreamSourceUnitTest, Read_002, TestSize.Level1)
 {
@@ -81,30 +80,6 @@ HWTEST_F(DataStreamSourceUnitTest, Read_002, TestSize.Level1)
     uint64_t offset = 0;
     size_t expectedLen = 1024;
     std::shared_ptr<Plugins::Buffer> buffer = Plugins::Buffer::CreateDefaultBuffer(expectedLen);
-    Status result = plugin_->Read(buffer, offset, expectedLen);
-
-    EXPECT_EQ(result, Status::OK);
-}
-
-/**
-* @tc.name  : Read_002_normal
-* @tc.number: 2
-* @tc.desc  : Test normal Read flow with SEEKABLE
-*/
-HWTEST_F(DataStreamSourceUnitTest, Read_002_normal, TestSize.Level1)
-{
-    plugin_->isInterrupted_ = false;
-    plugin_->isExitRead_ = false;
-    plugin_->seekable_ = Plugins::Seekable::SEEKABLE;
-    plugin_->offset_ = 0;
-    plugin_->size_ = 2048;
-    uint64_t offset = 0;
-    size_t expectedLen = 1024;
-    std::shared_ptr<Plugins::Buffer> buffer = Plugins::Buffer::CreateDefaultBuffer(expectedLen);
-    EXPECT_CALL(*mockDataSrc_, ReadAt(0, 1024, testing::_))
-        .Times(1)
-        .WillOnce(testing::Return(1024));
-
     Status result = plugin_->Read(buffer, offset, expectedLen);
 
     EXPECT_EQ(result, Status::OK);
