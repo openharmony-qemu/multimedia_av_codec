@@ -272,14 +272,14 @@ void VEncAPI11Sample::SetConfigureEnc(OH_AVFormat *format)
     }
     if (enableLTR && (ltrParam.ltrCount >= 0)) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_LTR_FRAME_COUNT, ltrParam.ltrCount);
+    }
     if (TEMPORAL_ENABLE_RUN) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
     } else {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 0);
     }
     if (ENABLE_GOP_SIZE) {
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
-        GOP_REFERENCE_MODE);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, GOP_REFERENCE_MODE);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize);
     }
 }
@@ -629,7 +629,6 @@ int32_t VEncAPI11Sample::StartVideoEncoder()
     }
     return AV_ERR_OK;
 }
-
 
 int32_t VEncAPI11Sample::StartSecondaryEncoder()
 {
