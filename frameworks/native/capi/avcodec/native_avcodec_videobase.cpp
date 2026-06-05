@@ -19,6 +19,20 @@
 #include <stdbool.h>
 #include "native_avcodec_videobase.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+const char *OH_MD_KEY_VIDEO_METADATA_ROI_TOP = "video_metadata_roi_top";
+const char *OH_MD_KEY_VIDEO_METADATA_ROI_LEFT = "video_metadata_roi_left";
+const char *OH_MD_KEY_VIDEO_METADATA_ROI_BOTTOM = "video_metadata_roi_bottom";
+const char *OH_MD_KEY_VIDEO_METADATA_ROI_RIGHT = "video_metadata_roi_right";
+const char *OH_MD_KEY_VIDEO_METADATA_ROI_DELTA_QP = "video_metadata_roi_deltaqp";
+const char *OH_MD_KEY_VIDEO_METADATA_ROI_SEM_LABEL = "video_metadata_roi_sem_label";
+#ifdef __cplusplus
+}
+#endif
+
 OH_AVErrCode OH_VideoMetadata_AppendRoiString(char **roiStrInOut, OH_AVFormat *format) {
     if (roiStrInOut == NULL || format == NULL) {
         return AV_ERR_INVALID_VAL;
