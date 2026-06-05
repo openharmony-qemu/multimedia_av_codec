@@ -63,6 +63,7 @@ HWTEST_F(DataStreamSourceUnitTest, Read_001, TestSize.Level1)
     std::shared_ptr<Plugins::Buffer> buffer;
     uint64_t offset = 0;
     size_t expectedLen = 1024;
+
     Status result = plugin_->Read(buffer, offset, expectedLen);
 
     EXPECT_EQ(result, Status::OK);
