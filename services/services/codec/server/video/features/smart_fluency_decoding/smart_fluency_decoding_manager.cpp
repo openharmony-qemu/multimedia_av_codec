@@ -262,9 +262,7 @@ bool SmartFluencyDecodingManager::IsSfdActive() const
 
 void SmartFluencyDecodingManager::EnableMVOutput(Media::Format& format)
 {
-    if (sfd_ != nullptr ||
-        codecMime_ == MediaAVCodec::AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_HEVC ||
-        codecMime_ == MediaAVCodec::AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_VVC) {
+    if (sfd_ != nullptr) {
         format.PutIntValue(Media::Tag::VIDEO_DECODER_ENABLE_MV_UPLOAD, 1);
     }
 }
