@@ -182,7 +182,7 @@ HWTEST_F(DataStreamSourceUnitTest, Read_006, TestSize.Level1)
     EXPECT_CALL(*mockDataSrc_, ReadAt(1024, testing::_))
         .Times(1)
         .WillOnce(testing::Return(1024));
-    
+
     Status result = plugin_->Read(buffer, offset, expectedLen);
 
     EXPECT_EQ(result, Status::OK);
