@@ -876,10 +876,8 @@ Status AudioEncoderFilter::RequestCodecBuffer(std::shared_ptr<AVBuffer>& buffer,
     
     std::lock_guard<std::mutex> lock(producerMutex_);
     
-    if (mediaCodecInputProducer == nullptr) {
-        MEDIA_LOG_E("mediaCodecInputProducer is nullptr");
-        return Status::ERROR_NULL_POINTER;
-    }
+    FALSE_RETURN_V_MSG_E(mediaCodecInputProducer != nullptr,
+        Status::ERROR_NULL_POINTER, "mediaCodecInputProducer is nullptr");
     
     Status ret = mediaCodecInputProducer->RequestBuffer(buffer, config, AVTRANSCODER_MAX_BUFFER_WAIT);
     if (ret != Status::OK || buffer == nullptr || buffer->memory_ == nullptr) {
@@ -894,9 +892,7 @@ Status AudioEncoderFilter::RequestCodecBuffer(std::shared_ptr<AVBuffer>& buffer,
 void AudioEncoderFilter::CopyBufferMetadata(const std::shared_ptr<AVBuffer>& srcBuffer,
     const std::shared_ptr<AVBuffer>& dstBuffer)
 {
-    if (srcBuffer == nullptr || dstBuffer == nullptr) {
-        return;
-    }
+    FALSE_RETURN_NOLOG(srcBuffer != nullptr && dstBuffer != nullptr);
     
     dstBuffer->flag_ = srcBuffer->flag_;
     dstBuffer->pts_ = srcBuffer->pts_;
@@ -968,15 +964,12 @@ Status AudioEncoderFilter::PushBufferToCodec(const std::shared_ptr<AVBuffer>& bu
 {
     std::lock_guard<std::mutex> lock(producerMutex_);
     
-    if (mediaCodecInputProducer == nullptr) {
-        MEDIA_LOG_E("mediaCodecInputProducer is nullptr when pushing buffer");
-        return Status::ERROR_NULL_POINTER;
-    }
+    FALSE_RETURN_V_MSG_E(mediaCodecInputProducer != nullptr,
+        Status::ERROR_NULL_POINTER, "mediaCodecInputProducer is nullptr when pushing buffer");
     
     Status ret = mediaCodecInputProducer->PushBuffer(buffer, true);
-    if (ret != Status::OK) {
-        MEDIA_LOG_E("PushBuffer to mediaCodec failed, ret: %{public}d", ret);
-    }
+    FALSE_RETURN_V_MSG_E(ret == Status::OK,
+        ret, "PushBuffer to mediaCodec failed, ret: %{public}d", ret);
     
     return ret;
 }
