@@ -16,6 +16,7 @@
 
 #include <chrono>
 #include <thread>
+#include "avcodec_trace.h"
 #include "common/log.h"
 #include "demuxer_data_reader.h"
 

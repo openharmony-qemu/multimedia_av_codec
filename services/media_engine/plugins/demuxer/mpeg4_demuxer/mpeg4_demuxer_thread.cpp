@@ -29,6 +29,8 @@
 #include "mpeg4_sample_memory.h"
 #include "plugin/plugin_buffer.h"
 #include "qos.h"
+#include "xcollie/xcollie.h"
+#include "xcollie/xcollie_define.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "MPEG4DemuxerThread" };
@@ -43,6 +45,7 @@ constexpr uint8_t READ_RETRY_TIMES = 10;
 constexpr uint32_t READ_RETRY_SLEEP_TIME_US = 5000;
 constexpr uint32_t DEFAULT_CACHE_PRESSURE_WINDOW_MS = 500;
 constexpr int64_t NS_PER_MS = 1000000LL;
+const uint32_t SETTIMER_TIMEOUT = 5; // second
 
 bool HaveValidParserForThread(const std::string& mime)
 {
