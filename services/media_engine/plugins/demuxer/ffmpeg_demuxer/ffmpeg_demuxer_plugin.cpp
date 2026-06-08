@@ -756,6 +756,27 @@ AVPacketWrapperPtr FFmpegDemuxerPlugin::CombinePackets(std::shared_ptr<SamplePac
     return tempWrapper;
 }
 
+Status FFmpegDemuxerPlugin::SkipPacketAfterPacketConvertError(uint32_t trackId,
+    const std::shared_ptr<SamplePacket>& samplePacket, bool popSample, bool restoreCacheInfo)
+{
+    AVPacketWrapperPtr firstWrapper =
+        (samplePacket != nullptr && !samplePacket->pkts.empty()) ? samplePacket->pkts[0] : nullptr;
+    AVPacket *firstPkt = (firstWrapper != nullptr) ? firstWrapper->GetAVPacket() : nullptr;
+    int64_t pts = (firstPkt != nullptr) ? firstPkt->pts : AV_NOPTS_VALUE;
+    int64_t dts = (firstPkt != nullptr) ? firstPkt->dts : AV_NOPTS_VALUE;
+    int64_t pos = (firstPkt != nullptr) ? firstPkt->pos : -1;
+    MEDIA_LOG_W("Skip packet due to annexb convert error, trackId=" PUBLIC_LOG_U32 ", ret=" PUBLIC_LOG_D32
+        ", pts=" PUBLIC_LOG_D64 ", dts=" PUBLIC_LOG_D64 ", pos=" PUBLIC_LOG_D64,
+        trackId, static_cast<int32_t>(Status::ERROR_PACKET_CONVERT_FAILED), pts, dts, pos);
+    if (restoreCacheInfo && samplePacket != nullptr && !cacheQueue_.SetInfo(samplePacket)) {
+        MEDIA_LOG_D("Set info failed before skip packet");
+    }
+    if (popSample) {
+        cacheQueue_.Pop(trackId);
+    }
+    return Status::ERROR_AGAIN;
+}
+
 Status FFmpegDemuxerPlugin::ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample,
     AVPacketWrapperPtr srcWrapper, std::shared_ptr<SamplePacket> dstSamplePacket)
 {
@@ -786,10 +807,23 @@ Status FFmpegDemuxerPlugin::ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> samp
         AVPacketWrapperPtr firstWrapper =
             (dstSamplePacket->pkts.size() > 0) ? dstSamplePacket->pkts[0] : nullptr;
         AVPacket *firstPkt = (firstWrapper != nullptr) ? firstWrapper->GetAVPacket() : nullptr;
+        bool shouldRetry = ioContext_.retry;
         if (firstPkt != nullptr) {
-            cacheQueue_.Pop(static_cast<uint32_t>(firstPkt->stream_index));
+            uint32_t trackId = static_cast<uint32_t>(firstPkt->stream_index);
+            if (ret == Status::ERROR_PACKET_CONVERT_FAILED) {
+                if (shouldRetry) {
+                    ioContext_.retry = false;
+                    formatContext_->pb->eof_reached = 0;
+                    formatContext_->pb->error = 0;
+                }
+                return SkipPacketAfterPacketConvertError(trackId, dstSamplePacket, true, true);
+            }
+            if (cacheQueue_.SetInfo(dstSamplePacket) == false) {
+                MEDIA_LOG_D("Set info failed before pop packet");
+            }
+            cacheQueue_.Pop(trackId);
         }
-        if (ioContext_.retry) {
+        if (shouldRetry) {
             ioContext_.retry = false;
             formatContext_->pb->eof_reached = 0;
             formatContext_->pb->error = 0;
@@ -3299,7 +3333,8 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         MEDIA_LOG_D("All partial sample has been copied");
         cacheQueue_.Pop(trackId);
     }
-    return ret;
+    return ret == Status::ERROR_PACKET_CONVERT_FAILED ?
+        SkipPacketAfterPacketConvertError(trackId, samplePacket, true, true) : ret;
 }
 
 Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size)

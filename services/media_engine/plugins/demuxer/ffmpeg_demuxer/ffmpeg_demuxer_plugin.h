@@ -276,6 +276,8 @@ private:
         AVPacketWrapperPtr tempPktWrapper, uint32_t copySize, bool combined);
     Status ConvertToAnnexbAndUpdateSample(std::shared_ptr<AVBuffer> sample,
         std::shared_ptr<SamplePacket> samplePacket, AVPacketWrapperPtr& tempPktWrapper);
+    Status SkipPacketAfterPacketConvertError(uint32_t trackId, const std::shared_ptr<SamplePacket>& samplePacket,
+        bool popSample, bool restoreCacheInfo);
     Status ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacketWrapperPtr avpacketWrapper,
         std::shared_ptr<SamplePacket> dstSamplePacket);
     Status ConvertPacketToAnnexb(AVPacketWrapperPtr srcWrapper, std::shared_ptr<SamplePacket> samplePacket,
