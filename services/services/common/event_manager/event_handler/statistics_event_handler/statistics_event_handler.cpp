@@ -435,7 +435,6 @@ public:
 
     bool IsEventValid() override
     {
-        std::lock_guard<std::mutex> lock(mutex_);
         return queryCapTimes_ > 0 || createCodecTimes_ > 0 || !codecSpecInfo_.empty() ||
                !audioCodecSpecInfo_.empty() || !instanceUsageInfo_.empty();
     }
@@ -1271,7 +1270,6 @@ void StatisticsEventInfo::RegisterSubmitEventTimer()
 
 bool StatisticsEventInfo::IsEventValid()
 {
-    std::shared_lock<std::shared_mutex> lock(mutex_);
     for (auto &[eventType, eventInfo] : eventInfoMap_) {
         if (eventInfo != nullptr && eventInfo->IsEventValid()) {
             return true;
