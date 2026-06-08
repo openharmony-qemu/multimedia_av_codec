@@ -119,6 +119,8 @@ Status MPEG4DemuxerPlugin::SeekToFrameByDts(int32_t trackId, int64_t seekTime,
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MediaAVCodec::AVCodecTrace trace("SeekToFrameByDts");
+    auto id = HiviewDFX::XCollie::GetInstance().SetTimer("av_codec::demuxer_seekToFrameByDts", SETTIMER_TIMEOUT,
+        nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
     auto start = std::chrono::steady_clock::now();
     auto isTimeout = [timeoutMs, start]() {
         return timeoutMs > 0 && std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -137,6 +139,7 @@ Status MPEG4DemuxerPlugin::SeekToFrameByDts(int32_t trackId, int64_t seekTime,
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Prefetch seek sample failed");
     FALSE_RETURN_V_MSG_E(ConvertTimeScale(context.actualDts, NS_PER_MS * 1000LL, context.trackTimeScale,
         &realSeekTime) == Status::OK, Status::ERROR_INVALID_PARAMETER, "Convert real seek time failed");
+    HiviewDFX::XCollie::GetInstance().CancelTimer(id);
     return isTimeout() ? Status::ERROR_WAIT_TIMEOUT : Status::OK;
 }
 
