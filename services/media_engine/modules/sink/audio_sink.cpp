@@ -985,8 +985,8 @@ bool AudioSink::IsTimeAnchorNeedUpdate()
     if (isAudioPass_) {
         int64_t currentRenderPTS = innerSynchroizer_->GetCurrentRenderPTS();
         int64_t currentRenderClockTime = innerSynchroizer_->GetCurrentRenderClockTime();
-        Pipeline::IMediaSyncCenter::IMediaTime iPassMediaTime = {lastBufferPTS - firstPts_,
-            currentRenderPTS, lastBufferDuration};
+        Pipeline::IMediaSyncCenter::IMediaTime iPassMediaTime = {currentRenderPTS,
+ 	        lastBufferPTS - firstPts_, lastBufferDuration};
         syncCenter->UpdateTimeAnchor(currentRenderClockTime, 0, iPassMediaTime, this);
         MEDIA_LOG_I("DolbyPassthrough AudioSink , pts-f: " PUBLIC_LOG_D64
             " us, currentRenderPTS: " PUBLIC_LOG_D64 " us"
