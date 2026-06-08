@@ -475,4 +475,132 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_010, TestSize.Level1)
     vEncSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
 }
+
+/**
+ * @tc.number    : VIDEO_HW_ENCODE_ROI_FUNC_1000
+ * @tc.name      : hardware encoder roi CBR NV12
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_1000, TestSize.Level1)
+{
+    bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(cap_hevc, BITRATE_MODE_SQR);
+    if (!isSupported) {
+        return;
+    }
+    auto vEncSample = make_unique<VEncAPI11Sample>();
+    vEncSample->DEFAULT_WIDTH = 1080;
+    vEncSample->DEFAULT_HEIGHT = 1920;
+    vEncSample->roiInfo = "0,0-100,100=dqp:-6,0";
+    vEncSample->OUT_DIR = OUT_DIR;
+    vEncSample->SURF_INPUT = true;
+    vEncSample->enableSeekEos = true;
+    vEncSample->enableRepeat = true;
+    vEncSample->setMaxCount = true;
+    vEncSample->enableRoi = true;
+    vEncSample->DEFAULT_BITRATE_MODE = SQR;
+    vEncSample->DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV12;
+    vEncSample->INP_DIR = INP_DIR_1080_30;
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+    vEncSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+}
+
+/**
+ * @tc.number    : VIDEO_HW_ENCODE_ROI_FUNC_1100
+ * @tc.name      : hardware encoder roi SQR NV12
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_1100, TestSize.Level1)
+{
+    bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(cap_hevc, BITRATE_MODE_SQR);
+    if (!isSupported) {
+        return;
+    }
+    auto vEncSample = make_unique<VEncAPI11Sample>();
+    vEncSample->DEFAULT_WIDTH = 1080;
+    vEncSample->DEFAULT_HEIGHT = 1920;
+    vEncSample->roiInfo = "0,0-100,100=-5,slb:1";
+    vEncSample->OUT_DIR = OUT_DIR;
+    vEncSample->SURF_INPUT = true;
+    vEncSample->enableSeekEos = true;
+    vEncSample->enableRepeat = true;
+    vEncSample->setMaxCount = true;
+    vEncSample->enableRoi = true;
+    vEncSample->DEFAULT_BITRATE_MODE = SQR;
+    vEncSample->DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV12;
+    vEncSample->INP_DIR = INP_DIR_1080_30;
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+    vEncSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+}
+
+/**
+ * @tc.number    : VIDEO_HW_ENCODE_ROI_FUNC_1200
+ * @tc.name      : hardware encoder roi SQR NV12
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_1200, TestSize.Level1)
+{
+    bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(cap_hevc, BITRATE_MODE_SQR);
+    if (!isSupported) {
+        return;
+    }
+    auto vEncSample = make_unique<VEncAPI11Sample>();
+    vEncSample->DEFAULT_WIDTH = 1080;
+    vEncSample->DEFAULT_HEIGHT = 1920;
+    vEncSample->roiInfo = "0,0-100,100=:,:;";
+    vEncSample->OUT_DIR = OUT_DIR;
+    vEncSample->SURF_INPUT = false;
+    vEncSample->enableSeekEos = true;
+    vEncSample->enableRepeat = true;
+    vEncSample->setMaxCount = true;
+    vEncSample->enableRoi = true;
+    vEncSample->DEFAULT_BITRATE_MODE = SQR;
+    vEncSample->DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV12;
+    vEncSample->INP_DIR = INP_DIR_1080_30;
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+    vEncSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+}
+
+/**
+ * @tc.number    : VIDEO_HW_ENCODE_ROI_FUNC_1300
+ * @tc.name      : hardware encoder roi SQR NV12
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncGetParamNdkTest, VIDEO_HW_ENCODE_ROI_FUNC_1300, TestSize.Level1)
+{
+    bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(cap_hevc, BITRATE_MODE_SQR);
+    if (!isSupported) {
+        return;
+    }
+    auto vEncSample = make_unique<VEncAPI11Sample>();
+    vEncSample->DEFAULT_WIDTH = 1080;
+    vEncSample->DEFAULT_HEIGHT = 1920;
+    vEncSample->roiInfo = "0,0-100,100=sdfgegghththjscgrf";
+    vEncSample->OUT_DIR = OUT_DIR;
+    vEncSample->SURF_INPUT = true;
+    vEncSample->enableSeekEos = true;
+    vEncSample->enableRepeat = true;
+    vEncSample->setMaxCount = true;
+    vEncSample->enableRoi = true;
+    vEncSample->DEFAULT_BITRATE_MODE = SQR;
+    vEncSample->DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV12;
+    vEncSample->INP_DIR = INP_DIR_1080_30;
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+    vEncSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+}
 }
