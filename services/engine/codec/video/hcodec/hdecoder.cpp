@@ -27,6 +27,7 @@
 #include "OMX_VideoExt.h"
 #include "hcodec_log.h"
 #include "hcodec_dfx.h"
+#include "hcodec_list.h"
 #include "type_converter.h"
 #include "surface_buffer.h"
 #include "buffer_extra_data_impl.h"  // foundation/graphic/graphic_surface/surface/include/
@@ -123,7 +124,11 @@ int32_t HDecoder::OnConfigure(const Format &format)
         return AVCS_ERR_UNKNOWN;
     }
 
-    int32_t ret = SetLowLatency(format);
+    int32_t ret  = SetDecOrder(format);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
+    ret = SetLowLatency(format);
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
@@ -138,6 +143,30 @@ int32_t HDecoder::OnConfigure(const Format &format)
     (void)SetVrrEnable(format);
     (void)SetIsMvUpload(format);
     return SetupPort(format);
+}
+
+int32_t HDecoder::SetDecOrder(const Format &format)
+{
+    int32_t enableDecOrder;
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, enableDecOrder) ||
+        enableDecOrder == 0) {
+        return AVCS_ERR_OK;
+    }
+    CodecHDI::VideoFeature feature =
+        HCodecList::FindFeature(caps_.port.video.features, CodecHDI::VIDEO_FEATURE_LOW_LATENCY);
+    if (!feature.support) {
+        HLOGE("don't support dec order");
+        return AVCS_ERR_UNSUPPORT;
+    }
+    OMX_CONFIG_BOOLEANTYPE param {};
+    InitOMXParam(param);
+    param.bEnabled = OMX_TRUE;
+    if (!SetParameter(OMX_IndexParamLowLatency, param)) {
+        HLOGW("enable dec order failed");
+        return AVCS_ERR_UNKNOWN;
+    }
+    HLOGI("enable dec order succ");
+    return AVCS_ERR_OK;
 }
 
 int32_t HDecoder::SetupPort(const Format &format)
