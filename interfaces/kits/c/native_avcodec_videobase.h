@@ -12,6 +12,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * @addtogroup CodecBase
+ * @{
+ *
+ * @brief The CodecBase module provides variables, properties, and functions
+ * for audio and video muxer, demuxer, and basic encoding and decoding functions.
+ *
+ * @since 9
+ */
+/**
+ * @file native_avcodec_videobase.h
+ *
+ * @brief Declare the Native API used for basic video encoding and decoding functions, 
+ * as well as video-specific configurations and parameters.
+ *
+ * @kit AVCodecKit
+ * @library libnative_media_codecbase.so
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 26.0.0
+ */
 
 #ifndef NATIVE_AVCODEC_VIDEOBASE_H
 #define NATIVE_AVCODEC_VIDEOBASE_H

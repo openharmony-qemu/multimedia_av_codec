@@ -38,7 +38,10 @@ OH_AVErrCode OH_VideoMetadata_AppendRoiString(char **roiStrInOut, OH_AVFormat *f
         return AV_ERR_INVALID_VAL;
     }
 
-    int32_t top = 0, left = 0, bottom = 0, right = 0;
+    int32_t top = 0;
+    int32_t left = 0;
+    int32_t bottom = 0;
+    int32_t right = 0;
     
     if (!OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_METADATA_ROI_TOP, &top) ||
         !OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_METADATA_ROI_LEFT, &left) ||
