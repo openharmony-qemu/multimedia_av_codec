@@ -307,6 +307,7 @@ Status MPEG4DemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sour
     auto parser = std::make_shared<MPEG4AtomParser>();
     FALSE_RETURN_V_MSG_E(parser != nullptr, Status::ERROR_NO_MEMORY, "parser allocation failed");
     Status ret = parser->MPEG4ParseHeader(source, seekable_, readTimeoutMs_.load(std::memory_order_acquire));
+    FALSE_RETURN_V_MSG_E(ret != Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT, ret, "MPEG4 demuxer unsupport");
     FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "MPEG4ParseHeader failed");
     
     mediaInfo_ = parser->GetMediaInfo();

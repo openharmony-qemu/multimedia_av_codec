@@ -4856,6 +4856,7 @@ Status MPEG4AtomParser::MPEG4ParseHeader(const std::shared_ptr<DataSource>& sour
         ret = MPEG4ParseAtom(depth, &ctx_);
         if (ret != Status::OK) {
             MEDIA_LOG_E("Parse error occurred: " PUBLIC_LOG_D32, static_cast<int32_t>(ret));
+            FALSE_RETURN_V_NOLOG(ret != Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT, ret);
             break;
         } else if (ctx_.offset <= originalOffset) {
             MEDIA_LOG_E("Parse header failed");
