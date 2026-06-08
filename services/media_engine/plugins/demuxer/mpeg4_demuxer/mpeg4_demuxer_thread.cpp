@@ -324,6 +324,7 @@ Status MPEG4DemuxerPlugin::ReadSampleDataToBuffer(std::shared_ptr<Sample> sample
 
     Status ret = Status::ERROR_AGAIN;
     uint32_t count = 0;
+    MediaAVCodec::AVCodecTrace trace("AVReadPacket_ReadAt");
     while (ret == Status::ERROR_AGAIN &&
         (readTimeoutMs_.load(std::memory_order_acquire) >= 0 || count < READ_RETRY_TIMES)) {
         if (stopReadThread_.load(std::memory_order_acquire) ||

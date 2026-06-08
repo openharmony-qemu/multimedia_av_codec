@@ -80,6 +80,7 @@ Status DemuxerDataReader::ReadUintData(int64_t offset, uint8_t* buffer, size_t s
     
     Status ret = Status::ERROR_AGAIN;
     uint32_t count = 0;
+    MediaAVCodec::AVCodecTrace trace("AVReadPacket_ReadAt");
     while (ret == Status::ERROR_AGAIN &&
         (readTimeoutConfigured_ || count < READ_RETRY_TIMES)) {
         ret = dataSource_->ReadAt(offset, bufferInfo, size);
