@@ -4826,6 +4826,7 @@ Status MPEG4AtomParser::MPEG4ParseHeader(const std::shared_ptr<DataSource>& sour
     int64_t readTimeoutMs)
 {
     FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "DataSource is nullptr");
+    MediaAVCodec::AVCodecTrace trace("mpeg4_init");
     dataSource_ = source;
     seekable_ = seekable;
     dataReader_ = std::make_shared<DemuxerDataReader>();

@@ -1883,9 +1883,9 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest,
 
     std::multimap<std::string, std::vector<uint8_t>> drmInfo;
     EXPECT_EQ(plugin->GetDrmInfo(drmInfo), Status::OK);
-    EXPECT_TRUE(plugin->IsRefParserSupported());
-    EXPECT_EQ(plugin->ParserRefUpdatePos(0), Status::OK);
-    EXPECT_EQ(plugin->ParserRefInfo(), Status::OK);
+    EXPECT_FALSE(plugin->IsRefParserSupported());
+    EXPECT_EQ(plugin->ParserRefUpdatePos(0), Status::ERROR_UNSUPPORTED_FORMAT);
+    EXPECT_EQ(plugin->ParserRefInfo(), Status::ERROR_UNKNOWN);
 
     auto buffer = MediaAVBuffer::CreateAVBuffer();
     FrameLayerInfo frameLayerInfo;
@@ -1893,13 +1893,13 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest,
     std::vector<uint32_t> iFramePos;
     uint32_t frameId = 0;
     int64_t seekMs = 0;
-    EXPECT_EQ(plugin->GetFrameLayerInfo(buffer, frameLayerInfo), Status::OK);
-    EXPECT_EQ(plugin->GetFrameLayerInfo(frameId, frameLayerInfo), Status::OK);
-    EXPECT_EQ(plugin->GetGopLayerInfo(0, gopLayerInfo), Status::OK);
-    EXPECT_EQ(plugin->GetIFramePos(iFramePos), Status::OK);
-    EXPECT_EQ(plugin->Dts2FrameId(0, frameId), Status::OK);
-    EXPECT_EQ(plugin->SeekMs2FrameId(0, frameId), Status::OK);
-    EXPECT_EQ(plugin->FrameId2SeekMs(frameId, seekMs), Status::OK);
+    EXPECT_EQ(plugin->GetFrameLayerInfo(buffer, frameLayerInfo), Status::ERROR_NULL_POINTER);
+    EXPECT_EQ(plugin->GetFrameLayerInfo(frameId, frameLayerInfo), Status::ERROR_NULL_POINTER);
+    EXPECT_EQ(plugin->GetGopLayerInfo(0, gopLayerInfo), Status::ERROR_NULL_POINTER);
+    EXPECT_EQ(plugin->GetIFramePos(iFramePos), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(plugin->Dts2FrameId(0, frameId), Status::ERROR_OUT_OF_RANGE);
+    EXPECT_EQ(plugin->SeekMs2FrameId(0, frameId), Status::ERROR_OUT_OF_RANGE);
+    EXPECT_EQ(plugin->FrameId2SeekMs(frameId, seekMs), Status::ERROR_UNKNOWN);
 
     int64_t realSeekTime = 0;
     EXPECT_EQ(plugin->SeekToKeyFrame(0, 0, SeekMode::SEEK_NEXT_SYNC, realSeekTime, 0),

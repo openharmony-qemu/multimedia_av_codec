@@ -1998,7 +1998,7 @@ void FFmpegDemuxerPlugin::BuildTrackMeta(uint32_t trackId, AVStream* avStream)
 
 Status FFmpegDemuxerPlugin::GetMediaInfo()
 {
-    MediaAVCodec::AVCodecTrace trace("FFmpegDemuxerPlugin::GetMediaInfo");
+    MediaAVCodec::AVCodecTrace trace("GetMediaInfo");
     GetStreamInitialParams();
     Status ret = ParseVideoFirstFrames();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse video info failed");
@@ -2023,7 +2023,7 @@ Status FFmpegDemuxerPlugin::GetMediaInfo()
 
 Status FFmpegDemuxerPlugin::GetUserMeta(std::shared_ptr<Meta> meta)
 {
-    MediaAVCodec::AVCodecTrace trace("FFmpegDemuxerPlugin::GetUserMeta");
+    MediaAVCodec::AVCodecTrace trace("GetUserMeta");
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
     FALSE_RETURN_V_MSG_E(meta != nullptr, Status::ERROR_NULL_POINTER, "Meta is nullptr");
