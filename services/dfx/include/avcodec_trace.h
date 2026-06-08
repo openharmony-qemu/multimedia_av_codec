@@ -16,93 +16,67 @@
 #ifndef AVCODEC_TRACE_H
 #define AVCODEC_TRACE_H
 
-#include <cstdint>
 #include <string>
+#include "hitrace_meter.h"
 #include "nocopyable.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-enum AVCodecTraceLevel : int32_t {
-    AVCODEC_TRACE_LEVEL_DEBUG = 0,
-    AVCODEC_TRACE_LEVEL_INFO = 1,
-    AVCODEC_TRACE_LEVEL_CRITICAL = 2,
-    AVCODEC_TRACE_LEVEL_COMMERCIAL = 3,
-};
-
-__attribute__((visibility("default"))) void AVCodecStartTrace(AVCodecTraceLevel level, const char *name,
-                                                              const char *customArgs = "");
-__attribute__((visibility("default"))) void AVCodecFinishTrace(AVCodecTraceLevel level);
-__attribute__((visibility("default"))) void AVCodecStartAsyncTrace(AVCodecTraceLevel level, const char *name,
-                                                                   int32_t taskId, const char *customArgs = "");
-__attribute__((visibility("default"))) void AVCodecFinishAsyncTrace(AVCodecTraceLevel level, const char *name,
-                                                                    int32_t taskId);
-__attribute__((visibility("default"))) void AVCodecCountTrace(AVCodecTraceLevel level, const char *name,
-                                                              int64_t count);
-__attribute__((visibility("default"))) void AVCodecStartTraceArgs(AVCodecTraceLevel level, const char *customArg,
-                                                                  const char *fmt, ...);
-__attribute__((visibility("default"))) void AVCodecStartAsyncTraceArgs(AVCodecTraceLevel level, const char *customArg,
-                                                                       int32_t taskId, const char *fmt, ...);
-__attribute__((visibility("default"))) void AVCodecFinishAsyncTraceArgs(AVCodecTraceLevel level, int32_t taskId,
-                                                                        const char *fmt, ...);
-
 #define AVCODEC_SYNC_CUSTOM_TRACE(level, fmt, ...) AVCodecTrace trace(level, "", fmt, ##__VA_ARGS__)
-#define AVCODEC_SYNC_TRACE AVCODEC_SYNC_CUSTOM_TRACE(::OHOS::MediaAVCodec::AVCODEC_TRACE_LEVEL_INFO, "%s", __FUNCTION__)
+#define AVCODEC_SYNC_TRACE AVCODEC_SYNC_CUSTOM_TRACE(HITRACE_LEVEL_INFO, "%s", __FUNCTION__)
 
 #define AVCODEC_SYNC_CUSTOM_TRACE_WITH_TAG(level, customArgs, fmt, ...) \
     AVCodecTrace trace(level, customArgs, "%s" fmt, tag_.load(), ##__VA_ARGS__)
 #define AVCODEC_FUNC_TRACE_WITH_TAG        \
-    AVCODEC_SYNC_CUSTOM_TRACE_WITH_TAG(::OHOS::MediaAVCodec::AVCODEC_TRACE_LEVEL_INFO, "", "%s", __FUNCTION__)
+    AVCODEC_SYNC_CUSTOM_TRACE_WITH_TAG(HITRACE_LEVEL_INFO, "", "%s", __FUNCTION__)
 #define AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT \
-    AVCODEC_SYNC_CUSTOM_TRACE_WITH_TAG(::OHOS::MediaAVCodec::AVCODEC_TRACE_LEVEL_INFO, "", "%s:C", __FUNCTION__)
+    AVCODEC_SYNC_CUSTOM_TRACE_WITH_TAG(HITRACE_LEVEL_INFO, "", "%s:C", __FUNCTION__)
 #define AVCODEC_FUNC_TRACE_WITH_TAG_SERVER \
-    AVCODEC_SYNC_CUSTOM_TRACE_WITH_TAG(::OHOS::MediaAVCodec::AVCODEC_TRACE_LEVEL_INFO, "", "%s:S", __FUNCTION__)
+    AVCODEC_SYNC_CUSTOM_TRACE_WITH_TAG(HITRACE_LEVEL_INFO, "", "%s:S", __FUNCTION__)
 
 class AVCodecTrace : public NoCopyable {
 public:
-    AVCodecTrace(const std::string& funcName, AVCodecTraceLevel level = AVCODEC_TRACE_LEVEL_INFO) : level_(level)
+    AVCodecTrace(const std::string& funcName, HiTraceOutputLevel level = HITRACE_LEVEL_INFO) : level_(level)
     {
-        AVCodecStartTrace(level, funcName.c_str());
+        StartTraceEx(level, HITRACE_TAG_ZMEDIA, funcName.c_str());
     }
-    static void TraceBegin(const std::string& funcName, int32_t taskId,
-                           AVCodecTraceLevel level = AVCODEC_TRACE_LEVEL_INFO)
+    static void TraceBegin(const std::string& funcName, int32_t taskId, HiTraceOutputLevel level = HITRACE_LEVEL_INFO)
     {
-        AVCodecStartAsyncTrace(level, funcName.c_str(), taskId);
+        StartAsyncTraceEx(level, HITRACE_TAG_ZMEDIA, funcName.c_str(), taskId, "");
     }
-    static void TraceEnd(const std::string& funcName, int32_t taskId,
-                         AVCodecTraceLevel level = AVCODEC_TRACE_LEVEL_INFO)
+    static void TraceEnd(const std::string& funcName, int32_t taskId, HiTraceOutputLevel level = HITRACE_LEVEL_INFO)
     {
-        AVCodecFinishAsyncTrace(level, funcName.c_str(), taskId);
+        FinishAsyncTraceEx(level, HITRACE_TAG_ZMEDIA, funcName.c_str(), taskId);
     }
-    static void CounterTrace(const std::string& varName, int32_t val,
-                             AVCodecTraceLevel level = AVCODEC_TRACE_LEVEL_INFO)
+    static void CounterTrace(const std::string& varName, int32_t val, HiTraceOutputLevel level = HITRACE_LEVEL_INFO)
     {
-        AVCodecCountTrace(level, varName.c_str(), val);
+        CountTraceEx(level, HITRACE_TAG_ZMEDIA, varName.c_str(), val);
     }
 
     template <typename... Args>
-    AVCodecTrace(AVCodecTraceLevel level, const char *customArg, const char *fmt, Args&&... args) : level_(level)
+    AVCodecTrace(HiTraceOutputLevel level, const char *customArg, const char *fmt, Args&&... args) : level_(level)
     {
-        AVCodecStartTraceArgs(level, customArg, fmt, args...);
+        StartTraceArgsEx(level, HITRACE_TAG_ZMEDIA, customArg, fmt, args...);
     }
     template <typename... Args>
-    static void TraceBegin(AVCodecTraceLevel level, const char *customArg, int32_t taskId,
+    static void TraceBegin(HiTraceOutputLevel level, const char *customArg, int32_t taskId,
                            const char *fmt, Args&&... args)
     {
-        AVCodecStartAsyncTraceArgs(level, customArg, taskId, fmt, args...);
+        StartAsyncTraceArgsEx(level, HITRACE_TAG_ZMEDIA, taskId, "", customArg, fmt, args...);
     }
     template <typename... Args>
-    static void TraceEnd(AVCodecTraceLevel level, int32_t taskId, const char *fmt, Args&&... args)
+    static void TraceEnd(HiTraceOutputLevel level, int32_t taskId, const char *fmt, Args&&... args)
     {
-        AVCodecFinishAsyncTraceArgs(level, taskId, fmt, args...);
+        FinishAsyncTraceArgsEx(level, HITRACE_TAG_ZMEDIA, taskId, fmt, args...);
     }
 
     ~AVCodecTrace()
     {
-        AVCodecFinishTrace(level_);
+        FinishTraceEx(level_, HITRACE_TAG_ZMEDIA);
     }
 
 private:
-    AVCodecTraceLevel level_ = AVCODEC_TRACE_LEVEL_INFO;
+    HiTraceOutputLevel level_ = HITRACE_LEVEL_INFO;
 };
 
 #ifdef MEDIA_TRACE_DEBUG_ENABLE

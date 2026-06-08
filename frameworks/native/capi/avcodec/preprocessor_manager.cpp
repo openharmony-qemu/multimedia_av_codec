@@ -246,7 +246,7 @@ void PreprocessorManager::NotifyEosNowIfPending(std::string_view encoderId)
 
 PreprocessorManager::SurfaceBufferWrapper::~SurfaceBufferWrapper()
 {
-    AVCODEC_SYNC_CUSTOM_TRACE(MediaAVCodec::AVCODEC_TRACE_LEVEL_INFO, "OnSurfaceBufferWrapperDestruct, %s",
+    AVCODEC_SYNC_CUSTOM_TRACE(HITRACE_LEVEL_INFO, "OnSurfaceBufferWrapperDestruct, %s",
         (surfaceType == SurfaceType::PRODUCER ? "Flush" : "Release"));
     auto surfacePtr = surface.promote();
     if (!buffer || !surfacePtr) {
