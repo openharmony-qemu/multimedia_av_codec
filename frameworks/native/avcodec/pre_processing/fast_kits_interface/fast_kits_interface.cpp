@@ -121,10 +121,15 @@ int32_t FastKitsInterface::Init(uint32_t format, FastResizeAlgoType algo)
     std::unique_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(handle_ != nullptr, AVCS_ERR_UNKNOWN, "Library not loaded, call Retain first");
     CHECK_AND_RETURN_RET_LOG(initFunc_ != nullptr, AVCS_ERR_INVALID_VAL, "Init function not loaded");
+    if (initializedFormats_.count(format) > 0) {
+        AVCODEC_LOGD("Format %{public}u already initialized, skip", format);
+        return AVCS_ERR_OK;
+    }
     int32_t ret = initFunc_(format, static_cast<int32_t>(algo));
     int32_t err = ConvertErrorCode(ret);
     CHECK_AND_RETURN_RET_LOG(err == AVCS_ERR_OK, err, "Init %{public}d, fmt %{public}u algo %{public}d",
                              ret, format, static_cast<int32_t>(algo));
+    initializedFormats_.insert(format);
     return err;
 }
 
@@ -156,6 +161,7 @@ void FastKitsInterface::ClearSymbols()
     createRectFunc_ = nullptr;
     destroyRectFunc_ = nullptr;
     fastScaleClearGPUFunc_ = nullptr;
+    initializedFormats_.clear();
 }
 
 bool FastKitsInterface::IsLoaded() const

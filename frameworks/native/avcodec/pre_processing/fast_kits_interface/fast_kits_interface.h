@@ -18,6 +18,7 @@
 
 #include <dlfcn.h>
 #include <shared_mutex>
+#include <unordered_set>
 
 #include "avcodec_errors.h"
 #include "avcodec_log_ex.h"
@@ -90,6 +91,7 @@ private:
     mutable std::shared_mutex mutex_;
     int32_t refCount_ = 0;
     void *handle_ = nullptr;
+    std::unordered_set<uint32_t> initializedFormats_;
     FastScaleInitFunc initFunc_ = nullptr;
     FastScaleDownSampleFunc downSampleFunc_ = nullptr;
     FastScaleCropFunc cropFunc_ = nullptr;
