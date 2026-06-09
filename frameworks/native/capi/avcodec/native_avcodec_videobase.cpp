@@ -13,10 +13,9 @@
  * limitations under the License.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include "securec.h"
 #include "native_avcodec_videobase.h"
 #include "avcodec_log.h"
@@ -80,7 +79,9 @@ uint32_t RoiStringHelper::CountExistingRois(const char *roiStr)
     uint32_t count = 0;
     size_t len = strlen(roiStr);
     for (size_t i = 0; i < len; i++) {
-        if (roiStr[i] == ';') count++;
+        if (roiStr[i] == ';') {
+            count++;
+        }
     }
     return count + (len > 0 && roiStr[len - 1] != ';');
 }
@@ -96,8 +97,8 @@ int RoiStringHelper::BuildRoiSegmentStr(char *buffer, size_t bufferSize, OH_AVFo
     OH_AVFormat_GetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_BOTTOM, &bottom);
     OH_AVFormat_GetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_RIGHT, &right);
 
-    int written = snprintf(buffer, bufferSize, "%d,%d-%d,%d", top, left, bottom, right);
-    if (written < 0 || written >= (int)bufferSize) {
+    int written = snprintf_s(buffer, bufferSize, bufferSize - 1, "%d,%d-%d,%d", top, left, bottom, right);
+    if (written < 0) {
         return written;
     }
 
@@ -116,8 +117,9 @@ int RoiStringHelper::BuildRoiSegmentStr(char *buffer, size_t bufferSize, OH_AVFo
             if (writePos >= (int)bufferSize) { return -1; }
             buffer[writePos++] = ',';
         }
-        int n = snprintf(buffer + writePos, bufferSize - writePos, "%s:%d", ROI_KV_TABLE[i].keyName, val);
-        if (n < 0 || writePos + n >= (int)bufferSize) {
+        int n = snprintf_s(buffer + writePos, bufferSize - writePos, bufferSize - writePos - 1,
+                           "%s:%d", ROI_KV_TABLE[i].keyName, val);
+        if (n < 0) {
             return -1;
         }
         writePos += n;
@@ -131,13 +133,13 @@ int RoiStringHelper::BuildRoiSegmentStr(char *buffer, size_t bufferSize, OH_AVFo
 OH_AVErrCode RoiStringHelper::AppendSegmentToRoiStr(char **roiStrInOut, const char *segment)
 {
     size_t segLen = strlen(segment);
-    const char *oldStr = (*roiStrInOut != NULL) ? *roiStrInOut : "";
+    const char *oldStr = (*roiStrInOut != nullptr) ? *roiStrInOut : "";
     size_t oldLen = strlen(oldStr);
     size_t extraLen = (oldLen > 0 && oldStr[oldLen - 1] != ';') ? 1 : 0;
     size_t newBufferSize = oldLen + extraLen + segLen + 1;
 
     char *newStr = (char *)malloc(newBufferSize);
-    if (newStr == NULL) {
+    if (newStr == nullptr) {
         return AV_ERR_NO_MEMORY;
     }
     if (oldLen > 0 && memcpy_s(newStr, newBufferSize, oldStr, oldLen) != EOK) {
@@ -162,7 +164,7 @@ bool RoiStringHelper::ValidateAndParseRoiKvpairs(OH_AVFormat *avFormat, const ch
     bool isCommaPending = false;
     bool isKvSet[ROI_KV_COUNT] = {false};
     bool isAnyKvPrefix = false;
-    while (*curPtr != '\0' && (segEnd == NULL || curPtr < segEnd)) {
+    while (*curPtr != '\0' && (segEnd == nullptr || curPtr < segEnd)) {
         uint32_t matchedIdx = ROI_KV_COUNT;
         for (uint32_t i = 0; i < ROI_KV_COUNT; i++) {
             if (strncmp(curPtr, ROI_KV_TABLE[i].keyName, ROI_KV_TABLE[i].keyNameLen) != 0 ||
@@ -183,7 +185,7 @@ bool RoiStringHelper::ValidateAndParseRoiKvpairs(OH_AVFormat *avFormat, const ch
         isAnyKvPrefix = true;
         int32_t val = 0;
         int n = 0;
-        if (sscanf(curPtr + ROI_KV_TABLE[matchedIdx].keyNameLen + 1, "%d%n", &val, &n) != 1) {
+        if (sscanf_s(curPtr + ROI_KV_TABLE[matchedIdx].keyNameLen + 1, "%d%n", &val, &n) != 1) {
             return false;
         }
         OH_AVFormat_SetIntValue(avFormat, ROI_KV_TABLE[matchedIdx].key, val);
@@ -200,7 +202,7 @@ bool RoiStringHelper::ValidateAndParseRoiKvpairs(OH_AVFormat *avFormat, const ch
     }
     int32_t dqpVal = 0;
     int n = 0;
-    if (sscanf(eqPos, "=%d%n", &dqpVal, &n) != 1 || (eqPos[n] != ';' && eqPos[n] != '\0')) {
+    if (sscanf_s(eqPos, "=%d%n", &dqpVal, &n) != 1 || (eqPos[n] != ';' && eqPos[n] != '\0')) {
         return false;
     }
     OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_DELTA_QP, dqpVal);
@@ -214,16 +216,16 @@ OH_AVFormat *RoiStringHelper::ParseOneRoiSegmentToFormat(const char *start, cons
     int bottom = 0;
     int right = 0;
     int consumed = 0;
-    if (sscanf(start, "%d,%d-%d,%d%n", &top, &left, &bottom, &right, &consumed) != 4) {
-        return NULL;
+    if (sscanf_s(start, "%d,%d-%d,%d%n", &top, &left, &bottom, &right, &consumed) != 4) {
+        return nullptr;
     }
     char nextChar = start[consumed];
     if (nextChar != '=' && nextChar != ';' && nextChar != '\0') {
-        return NULL;
+        return nullptr;
     }
     OH_AVFormat *avFormat = OH_AVFormat_Create();
-    if (avFormat == NULL) {
-        return NULL;
+    if (avFormat == nullptr) {
+        return nullptr;
     }
     OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_TOP, top);
     OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_LEFT, left);
@@ -231,10 +233,10 @@ OH_AVFormat *RoiStringHelper::ParseOneRoiSegmentToFormat(const char *start, cons
     OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_RIGHT, right);
 
     const char *eqPos = strchr(start, '=');
-    if (eqPos != NULL && (segEnd == NULL || eqPos < segEnd)) {
+    if (eqPos != nullptr && (segEnd == nullptr || eqPos < segEnd)) {
         if (!ValidateAndParseRoiKvpairs(avFormat, eqPos, segEnd)) {
             OH_AVFormat_Destroy(avFormat);
-            return NULL;
+            return nullptr;
         }
     }
     return avFormat;
@@ -242,7 +244,7 @@ OH_AVFormat *RoiStringHelper::ParseOneRoiSegmentToFormat(const char *start, cons
 
 OH_AVErrCode RoiStringHelper::AppendRoiString(char **roiStrInOut, OH_AVFormat *format)
 {
-    if (roiStrInOut == NULL || format == NULL) {
+    if (roiStrInOut == nullptr || format == nullptr) {
         return AV_ERR_INVALID_VAL;
     }
 
@@ -254,19 +256,19 @@ OH_AVErrCode RoiStringHelper::AppendRoiString(char **roiStrInOut, OH_AVFormat *f
         return AV_ERR_INVALID_VAL;
     }
 
-    if (*roiStrInOut != NULL && CountExistingRois(*roiStrInOut) >= ROI_MAX_COUNT) {
+    if (*roiStrInOut != nullptr && CountExistingRois(*roiStrInOut) >= ROI_MAX_COUNT) {
         return AV_ERR_INVALID_VAL;
     }
 
     char segmentBuf[128] = {0};
     int written = BuildRoiSegmentStr(segmentBuf, sizeof(segmentBuf), format);
-    if (written < 0 || written >= (int)sizeof(segmentBuf)) {
+    if (written < 0) {
         return AV_ERR_UNKNOWN;
     }
 
     size_t segLen = strlen(segmentBuf);
     size_t newTotalLen = segLen;
-    if (*roiStrInOut != NULL) {
+    if (*roiStrInOut != nullptr) {
         size_t oldLen = strlen(*roiStrInOut);
         size_t extraLen = (oldLen > 0 && (*roiStrInOut)[oldLen - 1] != ';') ? 1 : 0;
         newTotalLen = oldLen + extraLen + segLen;
@@ -280,7 +282,7 @@ OH_AVErrCode RoiStringHelper::AppendRoiString(char **roiStrInOut, OH_AVFormat *f
 
 OH_AVErrCode RoiStringHelper::GetRoiCount(const char *roiStr, uint32_t *outCount)
 {
-    if (roiStr == NULL || outCount == NULL) {
+    if (roiStr == nullptr || outCount == nullptr) {
         return AV_ERR_INVALID_VAL;
     }
 
@@ -289,11 +291,11 @@ OH_AVErrCode RoiStringHelper::GetRoiCount(const char *roiStr, uint32_t *outCount
     while (*curPtr != '\0') {
         const char *segEnd = strchr(curPtr, ';');
         OH_AVFormat *avFormat = ParseOneRoiSegmentToFormat(curPtr, segEnd);
-        if (avFormat != NULL) {
+        if (avFormat != nullptr) {
             count++;
             OH_AVFormat_Destroy(avFormat);
         }
-        if (segEnd == NULL) {
+        if (segEnd == nullptr) {
             break;
         }
         curPtr = segEnd + 1;
@@ -305,7 +307,7 @@ OH_AVErrCode RoiStringHelper::GetRoiCount(const char *roiStr, uint32_t *outCount
 OH_AVErrCode RoiStringHelper::ParseRoiString(const char *roiStr, OH_AVFormat **outFormats,
                                               uint32_t maxCapacity, uint32_t *outCount)
 {
-    if (roiStr == NULL || outFormats == NULL || outCount == NULL) {
+    if (roiStr == nullptr || outFormats == nullptr || outCount == nullptr) {
         return AV_ERR_INVALID_VAL;
     }
 
@@ -314,10 +316,10 @@ OH_AVErrCode RoiStringHelper::ParseRoiString(const char *roiStr, OH_AVFormat **o
     while (*curPtr != '\0' && parsedNum < maxCapacity) {
         const char *segEnd = strchr(curPtr, ';');
         OH_AVFormat *avFormat = ParseOneRoiSegmentToFormat(curPtr, segEnd);
-        if (avFormat != NULL) {
+        if (avFormat != nullptr) {
             outFormats[parsedNum++] = avFormat;
         }
-        if (segEnd == NULL) {
+        if (segEnd == nullptr) {
             break;
         }
         curPtr = segEnd + 1;
