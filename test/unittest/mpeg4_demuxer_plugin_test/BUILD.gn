@@ -136,6 +136,7 @@ ohos_unittest("mpeg4_demuxer_plugin_unit_test") {
     "graphic_surface:surface",
     "hicollie:libhicollie",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "hisysevent:libhisysevent",
     "init:libbegetutil",
     "ipc:ipc_single",

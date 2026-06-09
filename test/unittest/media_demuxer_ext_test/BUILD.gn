@@ -89,6 +89,7 @@ ohos_unittest("media_demuxer_ext_unit_test") {
     "googletest:gtest",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "hisysevent:libhisysevent",
     "init:libbegetutil",
     "ipc:ipc_single",

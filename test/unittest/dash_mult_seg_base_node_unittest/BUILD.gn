@@ -115,6 +115,7 @@ ohos_unittest("dash_mult_seg_base_node_unittest") {
     "graphic_surface:surface",
     "googletest:gmock",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
     "libxml2:libxml2",

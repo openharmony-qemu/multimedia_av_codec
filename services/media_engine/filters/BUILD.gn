@@ -117,6 +117,7 @@ ohos_shared_library("av_codec_media_engine_filters") {
     "hilog:libhilog",
     "hisysevent:libhisysevent",
     "hitrace:libhitracechain",
+    "hitrace:hitrace_meter",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "safwk:system_ability_fwk",

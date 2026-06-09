@@ -114,6 +114,7 @@ ohos_unittest("dash_period_manager_unit_test") {
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
     "libxml2:libxml2",
@@ -124,4 +125,3 @@ ohos_unittest("dash_period_manager_unit_test") {
     "samgr:samgr_proxy",
   ]
 }
-

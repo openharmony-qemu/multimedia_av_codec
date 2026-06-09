@@ -324,6 +324,7 @@ ohos_shared_library("av_codec_client") {
     "drivers_interface_codec:libcodec_proxy_4.0",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "ipc:ipc_single",
     "qos_manager:qos",
     "samgr:samgr_proxy",
@@ -374,6 +375,7 @@ ohos_shared_library("av_codec_suspend_client") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "samgr:samgr_proxy",

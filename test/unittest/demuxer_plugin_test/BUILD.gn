@@ -122,6 +122,7 @@ ohos_unittest("demuxer_plugin_unit_test") {
     "ffmpeg:libohosffmpeg",
     "hicollie:libhicollie",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "hisysevent:libhisysevent",
     "init:libbegetutil",
     "ipc:ipc_single",
