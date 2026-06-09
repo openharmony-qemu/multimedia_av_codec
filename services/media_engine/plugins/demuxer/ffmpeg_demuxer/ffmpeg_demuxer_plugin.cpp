@@ -777,6 +777,28 @@ Status FFmpegDemuxerPlugin::SkipPacketAfterPacketConvertError(uint32_t trackId,
     return Status::ERROR_AGAIN;
 }
 
+Status FFmpegDemuxerPlugin::ConvertPacketToAnnexbByCodec(std::shared_ptr<AVBuffer> sample, AVPacket& pkt,
+    std::shared_ptr<SamplePacket> dstSamplePacket, AVCodecID codecId)
+{
+    if (codecId == AV_CODEC_ID_HEVC && streamParsers_ != nullptr &&
+        streamParsers_->ParserIsInited(pkt.stream_index)) {
+        Status ret = ConvertHevcToAnnexb(pkt, dstSamplePacket);
+        SetDropTag(pkt, sample, AV_CODEC_ID_HEVC);
+        return ret;
+    }
+    if (codecId == AV_CODEC_ID_VVC && streamParsers_ != nullptr &&
+        streamParsers_->ParserIsInited(pkt.stream_index)) {
+        return ConvertVvcToAnnexb(pkt, dstSamplePacket);
+    }
+    if ((codecId == AV_CODEC_ID_H264 || codecId == AV_CODEC_ID_HEVC) &&
+        avbsfContexts_.count(pkt.stream_index) > 0 && avbsfContexts_[pkt.stream_index] != nullptr) {
+        Status ret = ConvertAvcToAnnexb(pkt);
+        SetDropTag(pkt, sample, codecId);
+        return ret;
+    }
+    return Status::OK;
+}
+
 Status FFmpegDemuxerPlugin::ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample,
     AVPacketWrapperPtr srcWrapper, std::shared_ptr<SamplePacket> dstSamplePacket)
 {
@@ -790,19 +812,7 @@ Status FFmpegDemuxerPlugin::ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> samp
     const AVStreamSnapshot* snapshot = GetStreamSnapshot(static_cast<uint32_t>(srcAVPacket->stream_index));
     FALSE_RETURN_V_MSG_E(snapshot != nullptr && snapshot->valid,
         Status::ERROR_INVALID_OPERATION, "Stream snapshot is invalid");
-    auto codecId = snapshot->codecId;
-    if (codecId == AV_CODEC_ID_HEVC && streamParsers_ != nullptr &&
-        streamParsers_->ParserIsInited(srcAVPacket->stream_index)) {
-        ret = ConvertHevcToAnnexb(*srcAVPacket, dstSamplePacket);
-        SetDropTag(*srcAVPacket, sample, AV_CODEC_ID_HEVC);
-    } else if (codecId == AV_CODEC_ID_VVC && streamParsers_ != nullptr &&
-        streamParsers_->ParserIsInited(srcAVPacket->stream_index)) {
-        ret = ConvertVvcToAnnexb(*srcAVPacket, dstSamplePacket);
-    } else if ((codecId == AV_CODEC_ID_H264 || codecId == AV_CODEC_ID_HEVC) &&
-        avbsfContexts_.count(srcAVPacket->stream_index) > 0 && avbsfContexts_[srcAVPacket->stream_index] != nullptr) {
-        ret = ConvertAvcToAnnexb(*srcAVPacket);
-        SetDropTag(*srcAVPacket, sample, codecId);
-    }
+    ret = ConvertPacketToAnnexbByCodec(sample, *srcAVPacket, dstSamplePacket, snapshot->codecId);
     if (ret != Status::OK) {
         AVPacketWrapperPtr firstWrapper =
             (dstSamplePacket->pkts.size() > 0) ? dstSamplePacket->pkts[0] : nullptr;
