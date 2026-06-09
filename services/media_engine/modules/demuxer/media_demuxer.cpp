@@ -3595,6 +3595,8 @@ void MediaDemuxer::StartConsume(int32_t trackId)
         return;
     }
     {
+        std::unique_lock<std::mutex> stopLock(stopMutex_);
+        FALSE_RETURN(!isStopped_);
         AutoLock lock(mapMutex_);
         startConsumeResult = sampleQueueController_->ShouldStartConsume(trackId, sampleQueueMap_[trackId],
             sampleConsumerTaskMap_[trackId], inPreroll_.load());
@@ -3650,6 +3652,8 @@ void MediaDemuxer::ProduceWaterLoopControl(int32_t trackId)
         return;
     }
     {
+        std::unique_lock<std::mutex> stopLock(stopMutex_);
+        FALSE_RETURN(!isStopped_);
         AutoLock lock(mapMutex_);
         sampleQueueController_->ShouldStopProduce(trackId, sampleQueueMap_[trackId], taskMap_[trackId]);
     }
@@ -4807,6 +4811,8 @@ void MediaDemuxer::ConsumeWaterLoopControl(int32_t trackId, std::shared_ptr<Samp
 
     bool stopConsumeResult = false;
     {
+        std::unique_lock<std::mutex> stopLock(stopMutex_);
+        FALSE_RETURN(!isStopped_);
         AutoLock lock(mapMutex_);
         sampleQueueController_->ShouldStartProduce(trackId, sampleQueue, taskMap_[trackId]);
         stopConsumeResult =
