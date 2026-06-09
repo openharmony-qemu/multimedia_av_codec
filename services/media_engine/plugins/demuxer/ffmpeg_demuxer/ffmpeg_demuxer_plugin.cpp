@@ -818,16 +818,17 @@ Status FFmpegDemuxerPlugin::ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> samp
             (dstSamplePacket->pkts.size() > 0) ? dstSamplePacket->pkts[0] : nullptr;
         AVPacket *firstPkt = (firstWrapper != nullptr) ? firstWrapper->GetAVPacket() : nullptr;
         bool shouldRetry = ioContext_.retry;
-        if (firstPkt != nullptr) {
-            uint32_t trackId = static_cast<uint32_t>(firstPkt->stream_index);
-            if (ret == Status::ERROR_PACKET_CONVERT_FAILED) {
-                if (shouldRetry) {
-                    ioContext_.retry = false;
-                    formatContext_->pb->eof_reached = 0;
-                    formatContext_->pb->error = 0;
-                }
-                return SkipPacketAfterPacketConvertError(trackId, dstSamplePacket, true, true);
+        uint32_t trackId = (firstPkt != nullptr) ? static_cast<uint32_t>(firstPkt->stream_index) :
+            static_cast<uint32_t>(srcAVPacket->stream_index);
+        if (ret == Status::ERROR_PACKET_CONVERT_FAILED) {
+            if (shouldRetry) {
+                ioContext_.retry = false;
+                formatContext_->pb->eof_reached = 0;
+                formatContext_->pb->error = 0;
             }
+            return SkipPacketAfterPacketConvertError(trackId, dstSamplePacket, true, true);
+        }
+        if (firstPkt != nullptr) {
             if (cacheQueue_.SetInfo(dstSamplePacket) == false) {
                 MEDIA_LOG_D("Set info failed before pop packet");
             }
