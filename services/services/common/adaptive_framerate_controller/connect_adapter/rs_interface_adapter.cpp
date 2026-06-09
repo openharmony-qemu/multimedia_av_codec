@@ -53,8 +53,8 @@ RSInterfaceAdapter::RSInterfaceAdapter()
 
 RSInterfaceAdapter &RSInterfaceAdapter::GetInstance()
 {
-    static RSInterfaceAdapter g_rsInterfaceAdapter;
-    return g_rsInterfaceAdapter;
+    static RSInterfaceAdapter rsInterfaceAdapter;
+    return rsInterfaceAdapter;
 }
 
 bool RSInterfaceAdapter::ConnectRenderService()
