@@ -67,7 +67,7 @@ void TEST_SUIT::SetUpTestCase(void)
                                                                     AVCodecCategory::AVCODEC_HARDWARE);
     if (!capability) {
         capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), true,
-                                                                    AVCodecCategory::AVCODEC_SOFTWARE);
+            AVCodecCategory::AVCODEC_SOFTWARE);
     }
     ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_AVC).data() << " can not found!" << std::endl;
     g_vencName = capability->GetName();
