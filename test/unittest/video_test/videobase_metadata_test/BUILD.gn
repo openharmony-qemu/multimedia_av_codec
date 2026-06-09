@@ -41,6 +41,7 @@ ohos_unittest("videobase_metadata_unit_test") {
     "c_utils:utils",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
+    "hilog:libhilog",
   ]
 
   subsystem_name = "multimedia"

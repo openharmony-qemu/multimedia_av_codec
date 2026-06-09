@@ -19,6 +19,11 @@
 #include <stdbool.h>
 #include "securec.h"
 #include "native_avcodec_videobase.h"
+#include "avcodec_log.h"
+
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "NativeAvcodecVideoBase"};
+}
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,22 +40,42 @@ const char *OH_MD_KEY_VIDEO_METADATA_ROI_SEM_LABEL = "video_metadata_roi_sem_lab
 }
 #endif
 
-typedef struct {
-    const char *prefix;
-    const char *key;
-    int prefixLen;
-} KvDesc;
+class RoiStringHelper {
+private:
+    struct KvDesc {
+        const char *keyName;
+        const char *key;
+        int keyNameLen;
+    };
 
-static const KvDesc ROI_KV_TABLE[] = {
-    { "dqp:", OH_MD_KEY_VIDEO_METADATA_ROI_DELTA_QP, 4 },
-    { "slb:", OH_MD_KEY_VIDEO_METADATA_ROI_SEM_LABEL, 4 },
+    static const KvDesc ROI_KV_TABLE[];
+    static const uint32_t ROI_KV_COUNT;
+    static const size_t ROI_STR_MAX_LEN;
+    static const uint32_t ROI_MAX_COUNT;
+
+    static uint32_t CountExistingRois(const char *roiStr);
+    static int BuildRoiSegmentStr(char *buffer, size_t bufferSize, OH_AVFormat *avFormat);
+    static OH_AVErrCode AppendSegmentToRoiStr(char **roiStrInOut, const char *segment);
+    static bool ValidateAndParseRoiKvpairs(OH_AVFormat *avFormat, const char *eqPos, const char *segEnd);
+    static OH_AVFormat *ParseOneRoiSegmentToFormat(const char *start, const char *segEnd);
+
+public:
+    static OH_AVErrCode AppendRoiString(char **roiStrInOut, OH_AVFormat *format);
+    static OH_AVErrCode GetRoiCount(const char *roiStr, uint32_t *outCount);
+    static OH_AVErrCode ParseRoiString(const char *roiStr, OH_AVFormat **outFormats,
+                                       uint32_t maxCapacity, uint32_t *outCount);
 };
-#define ROI_KV_COUNT (sizeof(ROI_KV_TABLE) / sizeof(ROI_KV_TABLE[0]))
 
-static const size_t ROI_STR_MAX_LEN = 256;
-static const uint32_t ROI_MAX_COUNT = 6;
+const RoiStringHelper::KvDesc RoiStringHelper::ROI_KV_TABLE[] = {
+    { "dqp", OH_MD_KEY_VIDEO_METADATA_ROI_DELTA_QP, 3 },
+    { "slb", OH_MD_KEY_VIDEO_METADATA_ROI_SEM_LABEL, 3 },
+};
+const uint32_t RoiStringHelper::ROI_KV_COUNT =
+    sizeof(RoiStringHelper::ROI_KV_TABLE) / sizeof(RoiStringHelper::ROI_KV_TABLE[0]);
+const size_t RoiStringHelper::ROI_STR_MAX_LEN = 256;
+const uint32_t RoiStringHelper::ROI_MAX_COUNT = 6;
 
-static uint32_t CountExistingRois(const char *roiStr)
+uint32_t RoiStringHelper::CountExistingRois(const char *roiStr)
 {
     uint32_t count = 0;
     size_t len = strlen(roiStr);
@@ -60,7 +85,7 @@ static uint32_t CountExistingRois(const char *roiStr)
     return count + (len > 0 && roiStr[len - 1] != ';');
 }
 
-static int BuildRoiSegmentStr(char *buffer, size_t bufferSize, OH_AVFormat *avFormat)
+int RoiStringHelper::BuildRoiSegmentStr(char *buffer, size_t bufferSize, OH_AVFormat *avFormat)
 {
     int32_t top = 0;
     int32_t left = 0;
@@ -84,23 +109,26 @@ static int BuildRoiSegmentStr(char *buffer, size_t bufferSize, OH_AVFormat *avFo
             continue;
         }
         if (isFirstKv) {
+            if (writePos >= (int)bufferSize) { return -1; }
             buffer[writePos++] = '=';
             isFirstKv = false;
         } else {
+            if (writePos >= (int)bufferSize) { return -1; }
             buffer[writePos++] = ',';
         }
-        int n = snprintf(buffer + writePos, bufferSize - writePos, "%s%d", ROI_KV_TABLE[i].prefix, val);
+        int n = snprintf(buffer + writePos, bufferSize - writePos, "%s:%d", ROI_KV_TABLE[i].keyName, val);
         if (n < 0 || writePos + n >= (int)bufferSize) {
             return -1;
         }
         writePos += n;
     }
+    if (writePos + 1 >= (int)bufferSize) { return -1; }
     buffer[writePos++] = ';';
     buffer[writePos] = '\0';
     return writePos;
 }
 
-static OH_AVErrCode AppendSegmentToRoiStr(char **roiStrInOut, const char *segment)
+OH_AVErrCode RoiStringHelper::AppendSegmentToRoiStr(char **roiStrInOut, const char *segment)
 {
     size_t segLen = strlen(segment);
     const char *oldStr = (*roiStrInOut != NULL) ? *roiStrInOut : "";
@@ -128,7 +156,7 @@ static OH_AVErrCode AppendSegmentToRoiStr(char **roiStrInOut, const char *segmen
     return AV_ERR_OK;
 }
 
-static bool ValidateAndParseRoiKvpairs(OH_AVFormat *avFormat, const char *eqPos, const char *segEnd)
+bool RoiStringHelper::ValidateAndParseRoiKvpairs(OH_AVFormat *avFormat, const char *eqPos, const char *segEnd)
 {
     const char *curPtr = eqPos + 1;
     bool isCommaPending = false;
@@ -137,7 +165,8 @@ static bool ValidateAndParseRoiKvpairs(OH_AVFormat *avFormat, const char *eqPos,
     while (*curPtr != '\0' && (segEnd == NULL || curPtr < segEnd)) {
         uint32_t matchedIdx = ROI_KV_COUNT;
         for (uint32_t i = 0; i < ROI_KV_COUNT; i++) {
-            if (strncmp(curPtr, ROI_KV_TABLE[i].prefix, ROI_KV_TABLE[i].prefixLen) != 0) {
+            if (strncmp(curPtr, ROI_KV_TABLE[i].keyName, ROI_KV_TABLE[i].keyNameLen) != 0 ||
+                curPtr[ROI_KV_TABLE[i].keyNameLen] != ':') {
                 continue;
             }
             matchedIdx = i;
@@ -154,11 +183,11 @@ static bool ValidateAndParseRoiKvpairs(OH_AVFormat *avFormat, const char *eqPos,
         isAnyKvPrefix = true;
         int32_t val = 0;
         int n = 0;
-        if (sscanf(curPtr + ROI_KV_TABLE[matchedIdx].prefixLen, "%d%n", &val, &n) != 1) {
+        if (sscanf(curPtr + ROI_KV_TABLE[matchedIdx].keyNameLen + 1, "%d%n", &val, &n) != 1) {
             return false;
         }
         OH_AVFormat_SetIntValue(avFormat, ROI_KV_TABLE[matchedIdx].key, val);
-        curPtr += ROI_KV_TABLE[matchedIdx].prefixLen + n;
+        curPtr += ROI_KV_TABLE[matchedIdx].keyNameLen + 1 + n;
         if (*curPtr == ',') {
             curPtr++;
             isCommaPending = true;
@@ -171,17 +200,14 @@ static bool ValidateAndParseRoiKvpairs(OH_AVFormat *avFormat, const char *eqPos,
     }
     int32_t dqpVal = 0;
     int n = 0;
-    if (sscanf(eqPos, "=%d%n", &dqpVal, &n) != 1) {
-        return false;
-    }
-    if (eqPos[n] != ';' && eqPos[n] != '\0') {
+    if (sscanf(eqPos, "=%d%n", &dqpVal, &n) != 1 || (eqPos[n] != ';' && eqPos[n] != '\0')) {
         return false;
     }
     OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_DELTA_QP, dqpVal);
     return true;
 }
 
-static OH_AVFormat *ParseOneRoiSegmentToFormat(const char *start, const char *segEnd)
+OH_AVFormat *RoiStringHelper::ParseOneRoiSegmentToFormat(const char *start, const char *segEnd)
 {
     int top = 0;
     int left = 0;
@@ -214,7 +240,7 @@ static OH_AVFormat *ParseOneRoiSegmentToFormat(const char *start, const char *se
     return avFormat;
 }
 
-OH_AVErrCode OH_VideoMetadata_AppendRoiString(char **roiStrInOut, OH_AVFormat *format)
+OH_AVErrCode RoiStringHelper::AppendRoiString(char **roiStrInOut, OH_AVFormat *format)
 {
     if (roiStrInOut == NULL || format == NULL) {
         return AV_ERR_INVALID_VAL;
@@ -252,7 +278,7 @@ OH_AVErrCode OH_VideoMetadata_AppendRoiString(char **roiStrInOut, OH_AVFormat *f
     return AppendSegmentToRoiStr(roiStrInOut, segmentBuf);
 }
 
-OH_AVErrCode OH_VideoMetadata_GetRoiCount(const char *roiStr, uint32_t *outCount)
+OH_AVErrCode RoiStringHelper::GetRoiCount(const char *roiStr, uint32_t *outCount)
 {
     if (roiStr == NULL || outCount == NULL) {
         return AV_ERR_INVALID_VAL;
@@ -276,8 +302,8 @@ OH_AVErrCode OH_VideoMetadata_GetRoiCount(const char *roiStr, uint32_t *outCount
     return AV_ERR_OK;
 }
 
-OH_AVErrCode OH_VideoMetadata_ParseRoiString(const char *roiStr, OH_AVFormat **outFormats,
-                                             uint32_t maxCapacity, uint32_t *outCount)
+OH_AVErrCode RoiStringHelper::ParseRoiString(const char *roiStr, OH_AVFormat **outFormats,
+                                              uint32_t maxCapacity, uint32_t *outCount)
 {
     if (roiStr == NULL || outFormats == NULL || outCount == NULL) {
         return AV_ERR_INVALID_VAL;
@@ -298,4 +324,39 @@ OH_AVErrCode OH_VideoMetadata_ParseRoiString(const char *roiStr, OH_AVFormat **o
     }
     *outCount = parsedNum;
     return AV_ERR_OK;
+}
+
+OH_AVErrCode OH_VideoMetadata_AppendRoiString(char **roiStrInOut, OH_AVFormat *format)
+{
+    CHECK_AND_RETURN_RET_LOG(roiStrInOut != nullptr, AV_ERR_INVALID_VAL, "roiStrInOut is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(format != nullptr, AV_ERR_INVALID_VAL, "format is nullptr!");
+
+    OH_AVErrCode ret = RoiStringHelper::AppendRoiString(roiStrInOut, format);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Append roi string failed, ret=%{public}d!", ret);
+    AVCODEC_LOGD("Append roi string success!");
+    return ret;
+}
+
+OH_AVErrCode OH_VideoMetadata_GetRoiCount(const char *roiStr, uint32_t *outCount)
+{
+    CHECK_AND_RETURN_RET_LOG(roiStr != nullptr, AV_ERR_INVALID_VAL, "roiStr is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(outCount != nullptr, AV_ERR_INVALID_VAL, "outCount is nullptr!");
+
+    OH_AVErrCode ret = RoiStringHelper::GetRoiCount(roiStr, outCount);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Get roi count failed, ret=%{public}d!", ret);
+    AVCODEC_LOGD("Get roi count success, count=%{public}u!", *outCount);
+    return ret;
+}
+
+OH_AVErrCode OH_VideoMetadata_ParseRoiString(const char *roiStr, OH_AVFormat **outFormats,
+                                             uint32_t maxCapacity, uint32_t *outCount)
+{
+    CHECK_AND_RETURN_RET_LOG(roiStr != nullptr, AV_ERR_INVALID_VAL, "roiStr is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(outFormats != nullptr, AV_ERR_INVALID_VAL, "outFormats is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(outCount != nullptr, AV_ERR_INVALID_VAL, "outCount is nullptr!");
+
+    OH_AVErrCode ret = RoiStringHelper::ParseRoiString(roiStr, outFormats, maxCapacity, outCount);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Parse roi string failed, ret=%{public}d!", ret);
+    AVCODEC_LOGD("Parse roi string success, count=%{public}u!", *outCount);
+    return ret;
 }
