@@ -110,7 +110,6 @@ private:
     bool IsStableFps(float fps);
     void CalcOutputVideoFps(int64_t currentPts, bool render);
     void IsNeedReport();
-    void NotifyVideoInfo(std::unordered_map<std::string, std::string>& event);
 #endif
 };
 } // namespace MediaAVCodec

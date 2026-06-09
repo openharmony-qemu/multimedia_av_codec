@@ -28,6 +28,7 @@ ohos_source_set("adaptive_framerate_controller") {
   sources = [
     "adaptive_framerate_controller.cpp",
     "decoding_behavior_analyzer.cpp",
+    "connect_adapter/rs_interface_adapter.cpp",
   ]
 
   defines = []
@@ -41,11 +42,10 @@ ohos_source_set("adaptive_framerate_controller") {
   external_deps = [
     "c_utils:utils",
     "init:libbegetutil",
+    "ipc:ipc_single",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
   ]
-
-  if (av_codec_enable_memc) {
-    external_deps += ["graphic_2d:librender_service_proxy",]
-  }
 
   subsystem_name = "multimedia"
   part_name = "av_codec"
