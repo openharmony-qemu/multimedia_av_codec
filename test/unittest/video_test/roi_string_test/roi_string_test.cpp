@@ -18,7 +18,7 @@
 #include <string.h>
 #include "native_avcodec_videobase.h"
 #include "native_avformat.h"
-#define TEST_SUIT VideoMetadataRoiTest
+#define TEST_SUIT RoiStringTest
 
 using namespace testing::ext;
 
@@ -48,11 +48,11 @@ static void DestroyFormats(OH_AVFormat **formats, uint32_t count)
 }
 
 /**
- * @tc.name: VideoMetadataRoi_AppendRoiString_NullRoiStrInOut_001
+ * @tc.name: RoiString_AppendRoiString_NullRoiStrInOut_001
  * @tc.desc: Test AppendRoiString with null double pointer
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_AppendRoiString_NullRoiStrInOut_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_NullRoiStrInOut_001, TestSize.Level1)
 {
     OH_AVFormat *fmt = CreateRoiFormat(0, 0, 10, 10);
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoMetadata_AppendRoiString(NULL, fmt));
@@ -60,22 +60,22 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_AppendRoiString_NullRoiStrInOut_001, TestSi
 }
 
 /**
- * @tc.name: VideoMetadataRoi_AppendRoiString_NullFormat_002
+ * @tc.name: RoiString_AppendRoiString_NullFormat_002
  * @tc.desc: Test AppendRoiString with null format
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_AppendRoiString_NullFormat_002, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_NullFormat_002, TestSize.Level1)
 {
     char *roiStr = NULL;
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoMetadata_AppendRoiString(&roiStr, NULL));
 }
 
 /**
- * @tc.name: VideoMetadataRoi_AppendRoiString_CoordsOnly_003
+ * @tc.name: RoiString_AppendRoiString_CoordsOnly_003
  * @tc.desc: Test AppendRoiString with only coordinates
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_AppendRoiString_CoordsOnly_003, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_CoordsOnly_003, TestSize.Level1)
 {
     OH_AVFormat *fmt = CreateRoiFormat(0, 0, 10, 10);
     char *roiStr = NULL;
@@ -87,11 +87,11 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_AppendRoiString_CoordsOnly_003, TestSize.Le
 }
 
 /**
- * @tc.name: VideoMetadataRoi_AppendRoiString_WithDqp_004
+ * @tc.name: RoiString_AppendRoiString_WithDqp_004
  * @tc.desc: Test AppendRoiString with dqp only
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_AppendRoiString_WithDqp_004, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_WithDqp_004, TestSize.Level1)
 {
     OH_AVFormat *fmt = CreateRoiFormat(0, 0, 100, 100);
     OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_VIDEO_METADATA_ROI_DELTA_QP, 5);
@@ -104,11 +104,11 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_AppendRoiString_WithDqp_004, TestSize.Level
 }
 
 /**
- * @tc.name: VideoMetadataRoi_AppendRoiString_WithDqpAndSemLabel_005
+ * @tc.name: RoiString_AppendRoiString_WithDqpAndSemLabel_005
  * @tc.desc: Test AppendRoiString with both dqp and semLabel
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_AppendRoiString_WithDqpAndSemLabel_005, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_WithDqpAndSemLabel_005, TestSize.Level1)
 {
     OH_AVFormat *fmt = CreateRoiFormat(0, 0, 50, 60);
     OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_VIDEO_METADATA_ROI_DELTA_QP, -3);
@@ -122,11 +122,11 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_AppendRoiString_WithDqpAndSemLabel_005, Tes
 }
 
 /**
- * @tc.name: VideoMetadataRoi_AppendRoiString_SeparatorProtection_006
+ * @tc.name: RoiString_AppendRoiString_SeparatorProtection_006
  * @tc.desc: Test AppendRoiString when existing string lacks trailing semicolon
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_AppendRoiString_SeparatorProtection_006, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_SeparatorProtection_006, TestSize.Level1)
 {
     char *roiStr = (char *)malloc(16);
     strcpy(roiStr, "0,0-100,100=5");
@@ -139,11 +139,11 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_AppendRoiString_SeparatorProtection_006, Te
 }
 
 /**
- * @tc.name: VideoMetadataRoi_AppendRoiString_ExceedMaxCount_007
+ * @tc.name: RoiString_AppendRoiString_ExceedMaxCount_007
  * @tc.desc: Test that appending the 7th ROI is rejected and original string unchanged
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_AppendRoiString_ExceedMaxCount_007, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_ExceedMaxCount_007, TestSize.Level1)
 {
     char *roiStr = NULL;
     for (int32_t i = 0; i < 6; i++) {
@@ -161,11 +161,11 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_AppendRoiString_ExceedMaxCount_007, TestSiz
 }
 
 /**
- * @tc.name: VideoMetadataRoi_AppendRoiString_ExceedMaxLen_008
+ * @tc.name: RoiString_AppendRoiString_ExceedMaxLen_008
  * @tc.desc: Test that appending a ROI which would push total length over 256 is rejected
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_AppendRoiString_ExceedMaxLen_008, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_ExceedMaxLen_008, TestSize.Level1)
 {
     char *roiStr = NULL;
     int32_t bigCoord = 2147483647;
@@ -196,32 +196,32 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_AppendRoiString_ExceedMaxLen_008, TestSize.
 }
 
 /**
- * @tc.name: VideoMetadataRoi_GetRoiCount_NullRoiStr_009
+ * @tc.name: RoiString_GetRoiCount_NullRoiStr_009
  * @tc.desc: Test GetRoiCount with null roiStr
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_GetRoiCount_NullRoiStr_009, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_GetRoiCount_NullRoiStr_009, TestSize.Level1)
 {
     uint32_t count = 0;
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoMetadata_GetRoiCount(NULL, &count));
 }
 
 /**
- * @tc.name: VideoMetadataRoi_GetRoiCount_NullOutCount_010
+ * @tc.name: RoiString_GetRoiCount_NullOutCount_010
  * @tc.desc: Test GetRoiCount with null outCount
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_GetRoiCount_NullOutCount_010, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_GetRoiCount_NullOutCount_010, TestSize.Level1)
 {
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoMetadata_GetRoiCount("0,0-10,10;", NULL));
 }
 
 /**
- * @tc.name: VideoMetadataRoi_GetRoiCount_EmptyString_011
+ * @tc.name: RoiString_GetRoiCount_EmptyString_011
  * @tc.desc: Test GetRoiCount with empty string
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_GetRoiCount_EmptyString_011, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_GetRoiCount_EmptyString_011, TestSize.Level1)
 {
     uint32_t count = 0;
     ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_GetRoiCount("", &count));
@@ -229,11 +229,11 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_GetRoiCount_EmptyString_011, TestSize.Level
 }
 
 /**
- * @tc.name: VideoMetadataRoi_GetRoiCount_SingleOldFormat_012
+ * @tc.name: RoiString_GetRoiCount_SingleOldFormat_012
  * @tc.desc: Test GetRoiCount with single old-format ROI string
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_GetRoiCount_SingleOldFormat_012, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_GetRoiCount_SingleOldFormat_012, TestSize.Level1)
 {
     uint32_t count = 0;
     ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_GetRoiCount("0,0-100,100=5;", &count));
@@ -241,11 +241,11 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_GetRoiCount_SingleOldFormat_012, TestSize.L
 }
 
 /**
- * @tc.name: VideoMetadataRoi_GetRoiCount_MultipleRois_013
+ * @tc.name: RoiString_GetRoiCount_MultipleRois_013
  * @tc.desc: Test GetRoiCount with multiple ROI regions
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_GetRoiCount_MultipleRois_013, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_GetRoiCount_MultipleRois_013, TestSize.Level1)
 {
     uint32_t count = 0;
     ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_GetRoiCount("0,0-100,100;10,20-200,300=dqp:3;", &count));
@@ -253,11 +253,11 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_GetRoiCount_MultipleRois_013, TestSize.Leve
 }
 
 /**
- * @tc.name: VideoMetadataRoi_GetRoiCount_InvalidKvpDqpNonInt_014
+ * @tc.name: RoiString_GetRoiCount_InvalidKvpDqpNonInt_014
  * @tc.desc: Test GetRoiCount rejects segment with non-integer dqp value "dqp:abc"
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_GetRoiCount_InvalidKvpDqpNonInt_014, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_GetRoiCount_InvalidKvpDqpNonInt_014, TestSize.Level1)
 {
     uint32_t count = 0;
     ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_GetRoiCount("1,2-3,4=dqp:abc;", &count));
@@ -265,11 +265,11 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_GetRoiCount_InvalidKvpDqpNonInt_014, TestSi
 }
 
 /**
- * @tc.name: VideoMetadataRoi_GetRoiCount_InvalidKvpSlbTrailing_015
+ * @tc.name: RoiString_GetRoiCount_InvalidKvpSlbTrailing_015
  * @tc.desc: Test GetRoiCount rejects segment with trailing garbage "slb:1t"
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_GetRoiCount_InvalidKvpSlbTrailing_015, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_GetRoiCount_InvalidKvpSlbTrailing_015, TestSize.Level1)
 {
     uint32_t count = 0;
     ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_GetRoiCount("1,2-3,4=slb:1t;", &count));
@@ -277,11 +277,11 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_GetRoiCount_InvalidKvpSlbTrailing_015, Test
 }
 
 /**
- * @tc.name: VideoMetadataRoi_GetRoiCount_InvalidKvpOldFormatNonInt_016
+ * @tc.name: RoiString_GetRoiCount_InvalidKvpOldFormatNonInt_016
  * @tc.desc: Test GetRoiCount rejects old format segment "=abc"
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_GetRoiCount_InvalidKvpOldFormatNonInt_016, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_GetRoiCount_InvalidKvpOldFormatNonInt_016, TestSize.Level1)
 {
     uint32_t count = 0;
     ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_GetRoiCount("1,2-3,4=abc;", &count));
@@ -289,11 +289,11 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_GetRoiCount_InvalidKvpOldFormatNonInt_016, 
 }
 
 /**
- * @tc.name: VideoMetadataRoi_GetRoiCount_InvalidKvpOldFormatTrailing_017
+ * @tc.name: RoiString_GetRoiCount_InvalidKvpOldFormatTrailing_017
  * @tc.desc: Test GetRoiCount rejects old format "=5xyz" with trailing garbage
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_GetRoiCount_InvalidKvpOldFormatTrailing_017, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_GetRoiCount_InvalidKvpOldFormatTrailing_017, TestSize.Level1)
 {
     uint32_t count = 0;
     ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_GetRoiCount("1,2-3,4=5xyz;", &count));
@@ -301,11 +301,11 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_GetRoiCount_InvalidKvpOldFormatTrailing_017
 }
 
 /**
- * @tc.name: VideoMetadataRoi_GetRoiCount_MixedValidAndInvalid_018
+ * @tc.name: RoiString_GetRoiCount_MixedValidAndInvalid_018
  * @tc.desc: Test GetRoiCount only counts valid segments among mixed valid/invalid
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_GetRoiCount_MixedValidAndInvalid_018, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_GetRoiCount_MixedValidAndInvalid_018, TestSize.Level1)
 {
     uint32_t count = 0;
     ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_GetRoiCount("0,0-10,10=dqp:5;1,2-3,4=abc;5,6-7,8;", &count));
@@ -313,11 +313,11 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_GetRoiCount_MixedValidAndInvalid_018, TestS
 }
 
 /**
- * @tc.name: VideoMetadataRoi_GetRoiCount_DuplicateKey_019
+ * @tc.name: RoiString_GetRoiCount_DuplicateKey_019
  * @tc.desc: Test GetRoiCount rejects segment with duplicate key "=dqp:5,dqp:3"
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_GetRoiCount_DuplicateKey_019, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_GetRoiCount_DuplicateKey_019, TestSize.Level1)
 {
     uint32_t count = 0;
     ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_GetRoiCount("1,2-3,4=dqp:5,dqp:3;", &count));
@@ -325,11 +325,11 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_GetRoiCount_DuplicateKey_019, TestSize.Leve
 }
 
 /**
- * @tc.name: VideoMetadataRoi_GetRoiCount_TrailingComma_020
+ * @tc.name: RoiString_GetRoiCount_TrailingComma_020
  * @tc.desc: Test GetRoiCount rejects segment with trailing comma "=dqp:5,"
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_GetRoiCount_TrailingComma_020, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_GetRoiCount_TrailingComma_020, TestSize.Level1)
 {
     uint32_t count = 0;
     ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_GetRoiCount("1,2-3,4=dqp:5,", &count));
@@ -337,11 +337,11 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_GetRoiCount_TrailingComma_020, TestSize.Lev
 }
 
 /**
- * @tc.name: VideoMetadataRoi_GetRoiCount_GarbageBetweenCoordsAndEq_021
+ * @tc.name: RoiString_GetRoiCount_GarbageBetweenCoordsAndEq_021
  * @tc.desc: Test GetRoiCount rejects segment with garbage between coords and "="
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_GetRoiCount_GarbageBetweenCoordsAndEq_021, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_GetRoiCount_GarbageBetweenCoordsAndEq_021, TestSize.Level1)
 {
     uint32_t count = 0;
     ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_GetRoiCount("1,2-3,4,ab=dqp:1;", &count));
@@ -349,11 +349,11 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_GetRoiCount_GarbageBetweenCoordsAndEq_021, 
 }
 
 /**
- * @tc.name: VideoMetadataRoi_ParseRoiString_NullRoiStr_022
+ * @tc.name: RoiString_ParseRoiString_NullRoiStr_022
  * @tc.desc: Test ParseRoiString with null roiStr
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_ParseRoiString_NullRoiStr_022, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_ParseRoiString_NullRoiStr_022, TestSize.Level1)
 {
     OH_AVFormat *formats[4] = {};
     uint32_t count = 0;
@@ -361,11 +361,11 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_ParseRoiString_NullRoiStr_022, TestSize.Lev
 }
 
 /**
- * @tc.name: VideoMetadataRoi_ParseRoiString_OldFormatDeltaQP_023
+ * @tc.name: RoiString_ParseRoiString_OldFormatDeltaQP_023
  * @tc.desc: Test ParseRoiString with old format "=deltaQP"
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_ParseRoiString_OldFormatDeltaQP_023, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_ParseRoiString_OldFormatDeltaQP_023, TestSize.Level1)
 {
     OH_AVFormat *formats[4] = {};
     uint32_t count = 0;
@@ -378,11 +378,11 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_ParseRoiString_OldFormatDeltaQP_023, TestSi
 }
 
 /**
- * @tc.name: VideoMetadataRoi_ParseRoiString_NewFormatSlbAndDqp_024
+ * @tc.name: RoiString_ParseRoiString_NewFormatSlbAndDqp_024
  * @tc.desc: Test ParseRoiString with reversed order "=slb:val,dqp:val"
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_ParseRoiString_NewFormatSlbAndDqp_024, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_ParseRoiString_NewFormatSlbAndDqp_024, TestSize.Level1)
 {
     OH_AVFormat *formats[4] = {};
     uint32_t count = 0;
@@ -397,11 +397,11 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_ParseRoiString_NewFormatSlbAndDqp_024, Test
 }
 
 /**
- * @tc.name: VideoMetadataRoi_ParseRoiString_NoCrossSegmentParse_025
+ * @tc.name: RoiString_ParseRoiString_NoCrossSegmentParse_025
  * @tc.desc: Test that old-format "=5" is not confused by dqp in later segments
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_ParseRoiString_NoCrossSegmentParse_025, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_ParseRoiString_NoCrossSegmentParse_025, TestSize.Level1)
 {
     OH_AVFormat *formats[4] = {};
     uint32_t count = 0;
@@ -416,11 +416,11 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_ParseRoiString_NoCrossSegmentParse_025, Tes
 }
 
 /**
- * @tc.name: VideoMetadataRoi_ParseRoiString_InvalidKvpDqpNonInt_026
+ * @tc.name: RoiString_ParseRoiString_InvalidKvpDqpNonInt_026
  * @tc.desc: Test ParseRoiString skips segment with non-integer dqp value
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_ParseRoiString_InvalidKvpDqpNonInt_026, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_ParseRoiString_InvalidKvpDqpNonInt_026, TestSize.Level1)
 {
     OH_AVFormat *formats[4] = {};
     uint32_t count = 0;
@@ -429,11 +429,11 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_ParseRoiString_InvalidKvpDqpNonInt_026, Tes
 }
 
 /**
- * @tc.name: VideoMetadataRoi_ParseRoiString_InvalidKvpSlbTrailing_027
+ * @tc.name: RoiString_ParseRoiString_InvalidKvpSlbTrailing_027
  * @tc.desc: Test ParseRoiString skips segment with trailing garbage in slb value
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_ParseRoiString_InvalidKvpSlbTrailing_027, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_ParseRoiString_InvalidKvpSlbTrailing_027, TestSize.Level1)
 {
     OH_AVFormat *formats[4] = {};
     uint32_t count = 0;
@@ -442,11 +442,11 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_ParseRoiString_InvalidKvpSlbTrailing_027, T
 }
 
 /**
- * @tc.name: VideoMetadataRoi_ParseRoiString_MixedValidAndInvalid_028
+ * @tc.name: RoiString_ParseRoiString_MixedValidAndInvalid_028
  * @tc.desc: Test ParseRoiString only parses valid segments from mixed input
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_ParseRoiString_MixedValidAndInvalid_028, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_ParseRoiString_MixedValidAndInvalid_028, TestSize.Level1)
 {
     OH_AVFormat *formats[4] = {};
     uint32_t count = 0;
@@ -462,11 +462,11 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_ParseRoiString_MixedValidAndInvalid_028, Te
 }
 
 /**
- * @tc.name: VideoMetadataRoi_ParseRoiString_DuplicateKey_029
+ * @tc.name: RoiString_ParseRoiString_DuplicateKey_029
  * @tc.desc: Test ParseRoiString skips segment with duplicate key
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_ParseRoiString_DuplicateKey_029, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_ParseRoiString_DuplicateKey_029, TestSize.Level1)
 {
     OH_AVFormat *formats[4] = {};
     uint32_t count = 0;
@@ -475,11 +475,11 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_ParseRoiString_DuplicateKey_029, TestSize.L
 }
 
 /**
- * @tc.name: VideoMetadataRoi_RoundTrip_AppendAndParse_030
+ * @tc.name: RoiString_RoundTrip_AppendAndParse_030
  * @tc.desc: Test round-trip: append multiple ROIs then parse back
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_RoundTrip_AppendAndParse_030, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_RoundTrip_AppendAndParse_030, TestSize.Level1)
 {
     char *roiStr = NULL;
     OH_AVFormat *fmt1 = CreateRoiFormat(0, 0, 100, 100);
@@ -518,11 +518,11 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_RoundTrip_AppendAndParse_030, TestSize.Leve
 }
 
 /**
- * @tc.name: VideoMetadataRoi_RoundTrip_ParseThenAppend_031
+ * @tc.name: RoiString_RoundTrip_ParseThenAppend_031
  * @tc.desc: Test: parse a valid ROI string, then append one more, verify consistency
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_RoundTrip_ParseThenAppend_031, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_RoundTrip_ParseThenAppend_031, TestSize.Level1)
 {
     const char *inputStr = "0,0-100,100=dqp:5;";
     OH_AVFormat *parsed[4] = {};
@@ -549,11 +549,11 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_RoundTrip_ParseThenAppend_031, TestSize.Lev
 }
 
 /**
- * @tc.name: VideoMetadataRoi_RoundTrip_ParseInvalidThenAppend_032
+ * @tc.name: RoiString_RoundTrip_ParseInvalidThenAppend_032
  * @tc.desc: Test: parse an invalid ROI string (0 segments), append valid ones, verify result
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_RoundTrip_ParseInvalidThenAppend_032, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_RoundTrip_ParseInvalidThenAppend_032, TestSize.Level1)
 {
     const char *invalidStr = "1,2-3,4=dqp:abc;";
     OH_AVFormat *parsed[4] = {};
@@ -576,11 +576,11 @@ HWTEST_F(TEST_SUIT, VideoMetadataRoi_RoundTrip_ParseInvalidThenAppend_032, TestS
 }
 
 /**
- * @tc.name: VideoMetadataRoi_RoundTrip_ParseMixedThenReparse_033
+ * @tc.name: RoiString_RoundTrip_ParseMixedThenReparse_033
  * @tc.desc: Test: parse mixed valid/invalid string, append parsed results, then re-parse
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoMetadataRoi_RoundTrip_ParseMixedThenReparse_033, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_RoundTrip_ParseMixedThenReparse_033, TestSize.Level1)
 {
     const char *mixedStr = "0,0-10,10=dqp:5;1,2-3,4=abc;5,6-7,8=slb:1;";
     OH_AVFormat *parsed[4] = {};

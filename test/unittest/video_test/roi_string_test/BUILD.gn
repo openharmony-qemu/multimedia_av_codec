@@ -14,7 +14,7 @@
 import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
-ohos_unittest("videobase_metadata_unit_test") {
+ohos_unittest("roi_string_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = "av_codec/AVCodec_Video/unittest"
 
@@ -28,7 +28,7 @@ ohos_unittest("videobase_metadata_unit_test") {
   ]
 
   sources = [
-    "videobase_metadata_test.cpp",
+    "roi_string_test.cpp",
     "$av_codec_root_dir/frameworks/native/capi/avcodec/native_avcodec_videobase.cpp",
   ]
 
