@@ -313,6 +313,7 @@ ohos_shared_library("av_codec_client") {
 
   public_external_deps = [
     "media_foundation:media_foundation",
+    "ffmpeg:libohosffmpeg",
   ]
 
   external_deps = [
@@ -321,7 +322,6 @@ ohos_shared_library("av_codec_client") {
     "bundle_framework:appexecfwk_core",
     "c_utils:utils",
     "drivers_interface_codec:libcodec_proxy_4.0",
-    "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
