@@ -4370,7 +4370,7 @@ int32_t ParseSignedInteger(uint8_t* data, uint64_t size)
 
 std::string DecodeMacString(const uint8_t* data, size_t size)
 {
-    FALSE_RETURN_V_MSG_E(data != nullptr || size > 0, "", "DecodeMacString: data is null");
+    FALSE_RETURN_V_MSG_E(data != nullptr && size > 0, "", "DecodeMacString: data is null");
     
     std::string result;
     result.reserve(size);
