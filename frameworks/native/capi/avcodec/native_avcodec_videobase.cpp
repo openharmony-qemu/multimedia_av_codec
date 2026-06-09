@@ -110,11 +110,11 @@ int RoiStringHelper::BuildRoiSegmentStr(char *buffer, size_t bufferSize, OH_AVFo
             continue;
         }
         if (isFirstKv) {
-            if (writePos >= (int)bufferSize) { return -1; }
+            if (writePos >= static_cast<int>(bufferSize)) { return -1; }
             buffer[writePos++] = '=';
             isFirstKv = false;
         } else {
-            if (writePos >= (int)bufferSize) { return -1; }
+            if (writePos >= static_cast<int>(bufferSize)) { return -1; }
             buffer[writePos++] = ',';
         }
         int n = snprintf_s(buffer + writePos, bufferSize - writePos, bufferSize - writePos - 1,
@@ -124,7 +124,7 @@ int RoiStringHelper::BuildRoiSegmentStr(char *buffer, size_t bufferSize, OH_AVFo
         }
         writePos += n;
     }
-    if (writePos + 1 >= (int)bufferSize) { return -1; }
+    if (writePos + 1 >= static_cast<int>(bufferSize)) { return -1; }
     buffer[writePos++] = ';';
     buffer[writePos] = '\0';
     return writePos;
@@ -138,7 +138,7 @@ OH_AVErrCode RoiStringHelper::AppendSegmentToRoiStr(char **roiStrInOut, const ch
     size_t extraLen = (oldLen > 0 && oldStr[oldLen - 1] != ';') ? 1 : 0;
     size_t newBufferSize = oldLen + extraLen + segLen + 1;
 
-    char *newStr = (char *)malloc(newBufferSize);
+    char *newStr = static_cast<char *>(malloc(newBufferSize));
     if (newStr == nullptr) {
         return AV_ERR_NO_MEMORY;
     }
