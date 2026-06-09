@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Huawei Technologies Co., Ltd. 2024. All rights reserved.
+ * Copyright (C) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -53,8 +53,8 @@ RSInterfaceAdapter::RSInterfaceAdapter()
 
 RSInterfaceAdapter &RSInterfaceAdapter::GetInstance()
 {
-    static RSInterfaceAdapter RSInterfaceAdapter;
-    return RSInterfaceAdapter;
+    static RSInterfaceAdapter g_rsInterfaceAdapter;
+    return g_rsInterfaceAdapter;
 }
 
 bool RSInterfaceAdapter::ConnectRenderService()
