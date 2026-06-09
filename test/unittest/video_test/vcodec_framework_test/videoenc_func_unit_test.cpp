@@ -65,6 +65,10 @@ void TEST_SUIT::SetUpTestCase(void)
 {
     auto capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), true,
                                                                     AVCodecCategory::AVCODEC_HARDWARE);
+    if (!capability) {
+        capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), true,
+                                                                    AVCodecCategory::AVCODEC_SOFTWARE);
+    }
     ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_AVC).data() << " can not found!" << std::endl;
     g_vencName = capability->GetName();
 }
@@ -1095,6 +1099,7 @@ HWTEST_F(TEST_SUIT, VideoEncoder_RepeatHeaderBeforeSyncFrames_002, TestSize.Leve
     if (!videoEnc_->CreateVideoEncMockByName(codecName)) {
         return;
     }
+    videoEnc_->SetCallback(vencCallbackExt_);
 
     videoEnc_->isAVBufferMode_ = true;
     videoEnc_->SetIsAVCCodec(true);
