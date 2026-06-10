@@ -38,7 +38,7 @@ public:
     void ConvertPacketToAnnexb(uint8_t **hvccPacket, int32_t &hvccPacketSize, uint8_t *sideData, size_t sideDataSize,
         bool isExtradata) override;
     bool ConvertPacketToAnnexb(const PacketConvertToBufferInfo &convertInfo) override { return false; };
-    void ParseAnnexbExtraData(const uint8_t *sample, int32_t size) override { return; };
+    void ParseAnnexbExtraData(const uint8_t *sample, int32_t size) override;
     bool IsHdrVivid() override { return false; };;
     bool IsSyncFrame(const uint8_t *sample, int32_t size) override { return false; };
     bool GetColorRange() override { return false; };;
@@ -48,11 +48,12 @@ public:
     uint8_t GetProfileIdc() override { return false; };;
     uint8_t GetLevelIdc() override { return false; };;
     uint32_t GetChromaLocation() override { return false; };;
-    uint32_t GetPicWidInLumaSamples() override { return false; };;
-    uint32_t GetPicHetInLumaSamples() override { return false; };;
+    uint32_t GetPicWidInLumaSamples() override { return picWidInLumaSamples_; };;
+    uint32_t GetPicHetInLumaSamples() override { return picHetInLumaSamples_; };;
     void ResetXPSSendStatus() override;
     std::vector<uint8_t> GetLogInfo() override { return {}; };;
     uint32_t GetMaxReorderPic() override { return maxReorderPic_; };;
+    double GetSar() override { return sar_; };
     bool IsHdr10Plus() override  { return false; };
     int32_t GetFirstFillerDataNalSize(const uint8_t *sample, int32_t size) override { return 0; };
 
@@ -88,6 +89,9 @@ private:
     std::vector<uint8_t> annexbFrameVec_;
     uint8_t naluLength_ = 0;
     uint32_t maxReorderPic_ = 0;
+    uint32_t picWidInLumaSamples_ = 0;
+    uint32_t picHetInLumaSamples_ = 0;
+    double sar_ = 0.0;
     bool extradataParsed_ = false;
     bool newIdr_ = false;
     bool idrSpsSeen_ = false;

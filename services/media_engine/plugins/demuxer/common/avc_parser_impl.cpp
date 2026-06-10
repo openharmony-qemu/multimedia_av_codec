@@ -33,7 +33,6 @@ constexpr uint8_t AVC_CONFIG_SPS_COUNT_MASK = 0x1F;
 constexpr int32_t AVC_NAL_HEADER_SIZE = 1;
 constexpr int32_t H264_SCALING_LIST_MOD = 256;
 constexpr uint32_t H264_EXTENDED_SAR = 255;
-constexpr uint32_t H264_FRAME_CROP_OFFSET_COUNT = 4;
 constexpr uint32_t H264_BYTE_BITS = 8;
 constexpr uint32_t H264_SHORT_BITS = 16;
 constexpr uint32_t H264_WORD_BITS = 32;
@@ -43,9 +42,31 @@ constexpr uint32_t H264_SCALING_LIST_4X4_SIZE = 16;
 constexpr uint32_t H264_SCALING_LIST_8X8_SIZE = 64;
 constexpr uint32_t H264_DEFAULT_SCALING_LIST_COUNT = 8;
 constexpr uint32_t H264_SEPARATE_COLOUR_SCALING_LIST_COUNT = 12;
+constexpr uint32_t H264_MB_SIZE = 16;
 constexpr uint32_t MAX_RBSP_SKIP_BYTES = std::numeric_limits<uint32_t>::max() / H264_BYTE_BITS;
 constexpr int32_t DATA_DEDUPLICATION_THRESHOLD = 1024;
 constexpr uint8_t SEI_TYPE_BUFFERING_PERIOD = 0;
+
+struct H264SarEntry {
+    uint32_t width;
+    uint32_t height;
+};
+
+struct H264SpsInfo {
+    uint32_t width = 0;
+    uint32_t height = 0;
+    uint32_t chromaFormatIdc = 1;
+    uint32_t separateColourPlaneFlag = 0;
+    uint32_t reorderDelay = 0;
+    double sar = 0.0;
+};
+
+constexpr std::array<H264SarEntry, 16> H264_SAR_TABLE = {{
+    {1u, 1u},     {12u, 11u},   {10u, 11u},   {16u, 11u},
+    {40u, 33u},   {24u, 11u},   {20u, 11u},   {32u, 11u},
+    {80u, 33u},   {18u, 11u},   {15u, 11u},   {64u, 33u},
+    {160u, 99u},  {4u, 3u},     {3u, 2u},     {2u, 1u},
+}};
 
 bool SkipH264ScalingList(RbspContext& reader, uint32_t sizeOfScalingList)
 {
@@ -95,22 +116,21 @@ bool IsH264HighProfile(uint32_t profileIdc)
     return std::find(highProfiles.begin(), highProfiles.end(), profileIdc) != highProfiles.end();
 }
 
-bool SkipH264HighProfileSyntax(RbspContext& reader, uint32_t& tmp)
+bool ReadH264HighProfileSyntax(RbspContext& reader, uint32_t& tmp, H264SpsInfo& info)
 {
-    uint32_t chromaFormatIdc = 0;
-    FALSE_RETURN_V(reader.RbspReadUE(chromaFormatIdc), false);
-    if (chromaFormatIdc == H264_CHROMA_FORMAT_444) {
-        FALSE_RETURN_V(reader.RbspReadBit(tmp), false);
+    FALSE_RETURN_V(reader.RbspReadUE(info.chromaFormatIdc), false); // chroma_format_idc
+    if (info.chromaFormatIdc == H264_CHROMA_FORMAT_444) {
+        FALSE_RETURN_V(reader.RbspReadBit(tmp), false); // residual_color_transform_flag
     }
-    FALSE_RETURN_V(reader.RbspReadUE(tmp), false);
-    FALSE_RETURN_V(reader.RbspReadUE(tmp), false);
-    FALSE_RETURN_V(reader.RbspReadBit(tmp), false);
+    FALSE_RETURN_V(reader.RbspReadUE(tmp), false); // bit_depth_luma
+    FALSE_RETURN_V(reader.RbspReadUE(tmp), false); // bit_depth_chroma
+    FALSE_RETURN_V(reader.RbspReadBit(tmp), false); // transform_bypass
     uint32_t seqScalingMatrixPresent = 0;
-    FALSE_RETURN_V(reader.RbspReadBit(seqScalingMatrixPresent), false);
+    FALSE_RETURN_V(reader.RbspReadBit(seqScalingMatrixPresent), false); // present_flag
     if (!seqScalingMatrixPresent) {
         return true;
     }
-    uint32_t scalingListCount = (chromaFormatIdc != H264_CHROMA_FORMAT_444) ?
+    uint32_t scalingListCount = (info.chromaFormatIdc != H264_CHROMA_FORMAT_444) ?
         H264_DEFAULT_SCALING_LIST_COUNT : H264_SEPARATE_COLOUR_SCALING_LIST_COUNT;
     for (uint32_t i = 0; i < scalingListCount; ++i) {
         uint32_t scalingListPresent = 0;
@@ -126,139 +146,200 @@ bool SkipH264HighProfileSyntax(RbspContext& reader, uint32_t& tmp)
 
 bool SkipH264PictureOrderSyntax(RbspContext& reader, uint32_t& tmp)
 {
-    FALSE_RETURN_V(reader.RbspReadUE(tmp), false);
+    FALSE_RETURN_V(reader.RbspReadUE(tmp), false); // log2_max_frame_num_minus4
     uint32_t picOrderCntType = 0;
-    FALSE_RETURN_V(reader.RbspReadUE(picOrderCntType), false);
+    FALSE_RETURN_V(reader.RbspReadUE(picOrderCntType), false); // poc_type
     if (picOrderCntType == 0) {
-        return reader.RbspReadUE(tmp);
+        return reader.RbspReadUE(tmp); // t
     }
     if (picOrderCntType != 1) {
         return true;
     }
-    FALSE_RETURN_V(reader.RbspReadBit(tmp), false);
+    FALSE_RETURN_V(reader.RbspReadBit(tmp), false); // delta_pic_order_always_zero_flag
     int32_t signedTmp = 0;
-    FALSE_RETURN_V(reader.RbspReadSE(signedTmp), false);
-    FALSE_RETURN_V(reader.RbspReadSE(signedTmp), false);
+    FALSE_RETURN_V(reader.RbspReadSE(signedTmp), false); // offset_for_non_ref_pic
+    FALSE_RETURN_V(reader.RbspReadSE(signedTmp), false); // offset_for_top_to_bottom_field
     uint32_t cycleCount = 0;
-    FALSE_RETURN_V(reader.RbspReadUE(cycleCount), false);
+    FALSE_RETURN_V(reader.RbspReadUE(cycleCount), false); // poc_cycle_length
     for (uint32_t i = 0; i < cycleCount; ++i) {
-        FALSE_RETURN_V(reader.RbspReadSE(signedTmp), false);
+        FALSE_RETURN_V(reader.RbspReadSE(signedTmp), false); // offset_for_ref_frame
     }
     return true;
 }
 
-bool SkipH264VuiBeforeRestriction(RbspContext& reader, uint32_t& tmp)
+bool ReadH264VuiBeforeRestriction(RbspContext& reader, uint32_t& tmp, H264SpsInfo& info)
 {
     uint32_t flag = 0;
-    FALSE_RETURN_V(reader.RbspReadBit(flag), false);
+    FALSE_RETURN_V(reader.RbspReadBit(flag), false); // aspect_ratio_info_present_flag
     if (flag) {
         uint32_t aspectRatioIdc = 0;
-        FALSE_RETURN_V(reader.RbspReadBits(H264_BYTE_BITS, aspectRatioIdc), false);
+        FALSE_RETURN_V(reader.RbspReadBits(H264_BYTE_BITS, aspectRatioIdc), false); // aspect_ratio_idc
         if (aspectRatioIdc == H264_EXTENDED_SAR) {
-            FALSE_RETURN_V(reader.RbspReadBits(H264_SHORT_BITS, tmp), false);
-            FALSE_RETURN_V(reader.RbspReadBits(H264_SHORT_BITS, tmp), false);
+            uint32_t sarWidth = 0;
+            uint32_t sarHeight = 0;
+            FALSE_RETURN_V(reader.RbspReadBits(H264_SHORT_BITS, sarWidth), false); // sar.num
+            FALSE_RETURN_V(reader.RbspReadBits(H264_SHORT_BITS, sarHeight), false); // sar.den
+            if (sarWidth > 0 && sarHeight > 0) {
+                info.sar = static_cast<double>(sarWidth) / static_cast<double>(sarHeight);
+            }
+        }
+        if (aspectRatioIdc > 0 && aspectRatioIdc <= static_cast<uint32_t>(H264_SAR_TABLE.size())) {
+            const H264SarEntry& entry = H264_SAR_TABLE[aspectRatioIdc - 1];
+            info.sar = static_cast<double>(entry.width) / static_cast<double>(entry.height);
         }
     }
-    FALSE_RETURN_V(reader.RbspReadBit(flag), false);
+    FALSE_RETURN_V(reader.RbspReadBit(flag), false); // overscan_info_present_flag
     if (flag) {
-        FALSE_RETURN_V(reader.RbspReadBit(tmp), false);
+        FALSE_RETURN_V(reader.RbspReadBit(tmp), false); // overscan_appropriate_flag
     }
-    FALSE_RETURN_V(reader.RbspReadBit(flag), false);
+    FALSE_RETURN_V(reader.RbspReadBit(flag), false); // video_signal_type_present_flag
     if (flag) {
-        FALSE_RETURN_V(reader.RbspReadBits(H264_CHROMA_FORMAT_444, tmp), false);
-        FALSE_RETURN_V(reader.RbspReadBit(tmp), false);
+        FALSE_RETURN_V(reader.RbspReadBits(H264_CHROMA_FORMAT_444, tmp), false); // video_format
+        FALSE_RETURN_V(reader.RbspReadBit(tmp), false); // video_full_range_flag
         uint32_t colourDescriptionPresent = 0;
-        FALSE_RETURN_V(reader.RbspReadBit(colourDescriptionPresent), false);
+        FALSE_RETURN_V(reader.RbspReadBit(colourDescriptionPresent), false); // colour_description_present_flag
         if (colourDescriptionPresent) {
-            FALSE_RETURN_V(reader.RbspReadBits(H264_BYTE_BITS, tmp), false);
-            FALSE_RETURN_V(reader.RbspReadBits(H264_BYTE_BITS, tmp), false);
-            FALSE_RETURN_V(reader.RbspReadBits(H264_BYTE_BITS, tmp), false);
+            FALSE_RETURN_V(reader.RbspReadBits(H264_BYTE_BITS, tmp), false); // colour_primaries
+            FALSE_RETURN_V(reader.RbspReadBits(H264_BYTE_BITS, tmp), false); // transfer_characteristics
+            FALSE_RETURN_V(reader.RbspReadBits(H264_BYTE_BITS, tmp), false); // matrix_coeffs
         }
     }
-    FALSE_RETURN_V(reader.RbspReadBit(flag), false);
+    FALSE_RETURN_V(reader.RbspReadBit(flag), false); // chroma_loc_info_present_flag
     if (flag) {
-        FALSE_RETURN_V(reader.RbspReadUE(tmp), false);
-        FALSE_RETURN_V(reader.RbspReadUE(tmp), false);
+        FALSE_RETURN_V(reader.RbspReadUE(tmp), false); // chroma_sample_loc_type_top_field
+        FALSE_RETURN_V(reader.RbspReadUE(tmp), false); // chroma_sample_loc_type_bottom_field
     }
     return true;
 }
 
-bool SkipH264GeometrySyntax(RbspContext& reader, uint32_t& tmp)
+bool ReadH264GeometrySyntax(RbspContext& reader, uint32_t& tmp, H264SpsInfo& info)
 {
-    FALSE_RETURN_V(reader.RbspReadUE(tmp), false);
-    FALSE_RETURN_V(reader.RbspReadBit(tmp), false);
-    FALSE_RETURN_V(reader.RbspReadUE(tmp), false);
-    FALSE_RETURN_V(reader.RbspReadUE(tmp), false);
+    uint32_t picWidthInMbsMinus1 = 0;
+    FALSE_RETURN_V(reader.RbspReadUE(picWidthInMbsMinus1), false); // mb_width
+    uint32_t picHeightInMapUnitsMinus1 = 0;
+    FALSE_RETURN_V(reader.RbspReadUE(picHeightInMapUnitsMinus1), false); // mb_height
     uint32_t frameMbsOnlyFlag = 0;
-    FALSE_RETURN_V(reader.RbspReadBit(frameMbsOnlyFlag), false);
+    FALSE_RETURN_V(reader.RbspReadBit(frameMbsOnlyFlag), false); // frame_mbs_only_flag
     if (!frameMbsOnlyFlag) {
-        FALSE_RETURN_V(reader.RbspReadBit(tmp), false);
+        FALSE_RETURN_V(reader.RbspReadBit(tmp), false); // mb_aff
     }
-    FALSE_RETURN_V(reader.RbspReadBit(tmp), false);
+    FALSE_RETURN_V(reader.RbspReadBit(tmp), false); // direct_8x8_inference_flag
+
+    uint32_t frameCropLeftOffset = 0;
+    uint32_t frameCropRightOffset = 0;
+    uint32_t frameCropTopOffset = 0;
+    uint32_t frameCropBottomOffset = 0;
     uint32_t frameCroppingFlag = 0;
-    FALSE_RETURN_V(reader.RbspReadBit(frameCroppingFlag), false);
+    FALSE_RETURN_V(reader.RbspReadBit(frameCroppingFlag), false); // crop
     if (frameCroppingFlag) {
-        for (uint32_t i = 0; i < H264_FRAME_CROP_OFFSET_COUNT; ++i) {
-            FALSE_RETURN_V(reader.RbspReadUE(tmp), false);
-        }
+        FALSE_RETURN_V(reader.RbspReadUE(frameCropLeftOffset), false); // crop_left
+        FALSE_RETURN_V(reader.RbspReadUE(frameCropRightOffset), false); // crop_right
+        FALSE_RETURN_V(reader.RbspReadUE(frameCropTopOffset), false); // crop_top
+        FALSE_RETURN_V(reader.RbspReadUE(frameCropBottomOffset), false); // crop_bottom
+    }
+
+    uint32_t frameMbsFactor = frameMbsOnlyFlag ? 1u : 2u;
+    uint32_t width = (picWidthInMbsMinus1 + 1u) * H264_MB_SIZE;
+    uint32_t height = (picHeightInMapUnitsMinus1 + 1u) * H264_MB_SIZE * frameMbsFactor;
+    uint32_t subWidthC = 1u;
+    uint32_t subHeightC = 1u;
+    if (info.chromaFormatIdc == 1u) {
+        subWidthC = 2u;
+        subHeightC = 2u;
+    } else if (info.chromaFormatIdc == 2u) {
+        subWidthC = 2u;
+    }
+    uint32_t cropUnitX = (info.chromaFormatIdc == 0u || info.separateColourPlaneFlag) ? 1u : subWidthC;
+    uint32_t cropUnitY = (info.chromaFormatIdc == 0u || info.separateColourPlaneFlag) ?
+        frameMbsFactor : subHeightC * frameMbsFactor;
+    uint32_t cropX = (frameCropLeftOffset + frameCropRightOffset) * cropUnitX;
+    uint32_t cropY = (frameCropTopOffset + frameCropBottomOffset) * cropUnitY;
+    if (width > cropX && height > cropY) {
+        info.width = width - cropX;
+        info.height = height - cropY;
     }
     return true;
 }
 
-bool ReadH264ReorderDelayFromVui(RbspContext& reader, uint32_t& tmp, uint32_t& reorderDelay)
+// before max_dec_frame_buffering etc.
+bool ReadH264ReorderDelayFromVui(RbspContext& reader, uint32_t& tmp, H264SpsInfo& info)
 {
-    FALSE_RETURN_V(SkipH264VuiBeforeRestriction(reader, tmp), false);
+    FALSE_RETURN_V(ReadH264VuiBeforeRestriction(reader, tmp, info), false);
     uint32_t flag = 0;
-    FALSE_RETURN_V(reader.RbspReadBit(flag), false);
+    FALSE_RETURN_V(reader.RbspReadBit(flag), false); // timing_info_present_flag
     if (flag) {
-        FALSE_RETURN_V(reader.RbspReadBits(H264_WORD_BITS, tmp), false);
-        FALSE_RETURN_V(reader.RbspReadBits(H264_WORD_BITS, tmp), false);
-        FALSE_RETURN_V(reader.RbspReadBit(tmp), false);
+        FALSE_RETURN_V(reader.RbspReadBits(H264_WORD_BITS, tmp), false); // num_units_in_tick
+        FALSE_RETURN_V(reader.RbspReadBits(H264_WORD_BITS, tmp), false); // time_scale
+        FALSE_RETURN_V(reader.RbspReadBit(tmp), false); // fixed_frame_rate_flag
     }
-    FALSE_RETURN_V(reader.RbspReadBit(flag), false);
-    if (flag) {
-        return false;
-    }
-    FALSE_RETURN_V(reader.RbspReadBit(flag), false);
+    FALSE_RETURN_V(reader.RbspReadBit(flag), false); // nal_hrd_parameters_present_flag
     if (flag) {
         return false;
     }
-    FALSE_RETURN_V(reader.RbspReadBit(tmp), false);
-    FALSE_RETURN_V(reader.RbspReadBit(flag), false);
+    FALSE_RETURN_V(reader.RbspReadBit(flag), false); // vcl_hrd_parameters_present_flag
+    if (flag) {
+        return false;
+    }
+    FALSE_RETURN_V(reader.RbspReadBit(tmp), false); // pic_struct_present_flag
+    FALSE_RETURN_V(reader.RbspReadBit(flag), false); // bitstream_restriction_flag
     if (!flag) {
         return false;
     }
-    FALSE_RETURN_V(reader.RbspReadBit(tmp), false);
-    FALSE_RETURN_V(reader.RbspReadUE(tmp), false);
-    FALSE_RETURN_V(reader.RbspReadUE(tmp), false);
-    FALSE_RETURN_V(reader.RbspReadUE(tmp), false);
-    FALSE_RETURN_V(reader.RbspReadUE(tmp), false);
-    return reader.RbspReadUE(reorderDelay);
+    FALSE_RETURN_V(reader.RbspReadBit(tmp), false); // motion_vectors_over_pic_boundaries_flag
+    FALSE_RETURN_V(reader.RbspReadUE(tmp), false); // max_bytes_per_pic_denom
+    FALSE_RETURN_V(reader.RbspReadUE(tmp), false); // max_bits_per_mb_denom
+    FALSE_RETURN_V(reader.RbspReadUE(tmp), false); // log2_max_mv_length_horizontal
+    FALSE_RETURN_V(reader.RbspReadUE(tmp), false); // log2_max_mv_length_vertical
+    return reader.RbspReadUE(info.reorderDelay); // num_reorder_frames
 }
 
-bool ParseH264SpsReorderDelay(const uint8_t* sps, size_t size, uint32_t& reorderDelay)
+bool ParseH264SpsInfo(const uint8_t* sps, size_t size, H264SpsInfo& info)
 {
     FALSE_RETURN_V(sps != nullptr && size > AVC_NAL_HEADER_SIZE, false);
     RbspContext reader(sps + AVC_NAL_HEADER_SIZE, static_cast<int32_t>(size - AVC_NAL_HEADER_SIZE), true);
     uint32_t profileIdc = 0;
     uint32_t tmp = 0;
-    FALSE_RETURN_V(reader.RbspReadBits(H264_BYTE_BITS, profileIdc), false);
-    FALSE_RETURN_V(reader.RbspReadBits(H264_BYTE_BITS, tmp), false);
-    FALSE_RETURN_V(reader.RbspReadBits(H264_BYTE_BITS, tmp), false);
-    FALSE_RETURN_V(reader.RbspReadUE(tmp), false);
+    FALSE_RETURN_V(reader.RbspReadBits(H264_BYTE_BITS, profileIdc), false); // profile_idc
+    FALSE_RETURN_V(reader.RbspReadBits(H264_BYTE_BITS, tmp), false); // constraint + reserved
+    FALSE_RETURN_V(reader.RbspReadBits(H264_BYTE_BITS, tmp), false); // level_idc
+    FALSE_RETURN_V(reader.RbspReadUE(tmp), false); // sps_id
 
-    if (IsH264HighProfile(profileIdc) && !SkipH264HighProfileSyntax(reader, tmp)) {
+    if (IsH264HighProfile(profileIdc) && !ReadH264HighProfileSyntax(reader, tmp, info)) {
         return false;
     }
 
     FALSE_RETURN_V(SkipH264PictureOrderSyntax(reader, tmp), false);
-    FALSE_RETURN_V(SkipH264GeometrySyntax(reader, tmp), false);
+    FALSE_RETURN_V(reader.RbspReadUE(tmp), false); // ref_frame_count
+    FALSE_RETURN_V(reader.RbspReadBit(tmp), false); // gaps_in_frame_num_allowed_flag
+    FALSE_RETURN_V(ReadH264GeometrySyntax(reader, tmp, info), false);
     uint32_t vuiParametersPresent = 0;
-    FALSE_RETURN_V(reader.RbspReadBit(vuiParametersPresent), false);
+    FALSE_RETURN_V(reader.RbspReadBit(vuiParametersPresent), false); // vui_parameters_present_flag
     if (!vuiParametersPresent) {
         return false;
     }
-    return ReadH264ReorderDelayFromVui(reader, tmp, reorderDelay);
+    return ReadH264ReorderDelayFromVui(reader, tmp, info);
+}
+
+size_t GetAnnexbStartCodeLength(const uint8_t *data, size_t offset, size_t size)
+{
+    if (offset + 3u <= size && data[offset] == 0x00 && data[offset + 1u] == 0x00 && data[offset + 2u] == 0x01) {
+        return 3u;
+    }
+    if (offset + 4u <= size && data[offset] == 0x00 && data[offset + 1u] == 0x00 &&
+        data[offset + 2u] == 0x00 && data[offset + 3u] == 0x01) {
+        return 4u;
+    }
+    return 0u;
+}
+
+size_t FindAnnexbStartCode(const uint8_t *data, size_t offset, size_t size)
+{
+    for (size_t pos = offset; pos + 3u <= size; ++pos) {
+        if (GetAnnexbStartCodeLength(data, pos, size) > 0u) {
+            return pos;
+        }
+    }
+    return size;
 }
 }
 
@@ -359,6 +440,41 @@ bool AvcParserImpl::ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDa
     return true;
 }
 
+void AvcParserImpl::ParseAnnexbExtraData(const uint8_t *sample, int32_t size)
+{
+    FALSE_RETURN_MSG(sample != nullptr && size > 0, "Annexb sample is invalid");
+    size_t sampleSize = static_cast<size_t>(size);
+    size_t start = FindAnnexbStartCode(sample, 0u, sampleSize);
+    while (start < sampleSize) {
+        size_t startCodeLength = GetAnnexbStartCodeLength(sample, start, sampleSize);
+        if (startCodeLength == 0u) {
+            break;
+        }
+        size_t nalStart = start + startCodeLength;
+        size_t nextStart = FindAnnexbStartCode(sample, nalStart, sampleSize);
+        if (nalStart >= nextStart) {
+            start = nextStart;
+            continue;
+        }
+        const uint8_t *nal = sample + nalStart;
+        size_t nalSize = nextStart - nalStart;
+        uint8_t nalType = static_cast<uint8_t>(static_cast<uint32_t>(nal[0]) & 0x1Fu);
+        if (nalType == AvcNalType::AVC_NAL_SPS) {
+            H264SpsInfo info;
+            if (ParseH264SpsInfo(nal, nalSize, info)) {
+                maxReorderPic_ = info.reorderDelay;
+                picWidInLumaSamples_ = info.width;
+                picHetInLumaSamples_ = info.height;
+                sar_ = info.sar;
+                MEDIA_LOG_D("Parsed AVC SPS w:%{public}u h:%{public}u sar:%{public}f",
+                    picWidInLumaSamples_, picHetInLumaSamples_, sar_);
+                return;
+            }
+        }
+        start = nextStart;
+    }
+}
+
 void AvcParserImpl::ParseAvcConfigNalUnits(const std::shared_ptr<RbspContext> &rbspContext, int32_t extraDataSize,
     std::vector<DataAddrInfo> &spsAddrInfoVec, std::vector<DataAddrInfo> &ppsAddrInfoVec)
 {
@@ -427,9 +543,12 @@ bool AvcParserImpl::ParseMaxReorderPicFromAvcConfig(const uint8_t *extraData, in
         if (offset + spsLength > static_cast<size_t>(extraDataSize)) {
             return false;
         }
-        uint32_t reorderDelay = 0;
-        if (ParseH264SpsReorderDelay(extraData + offset, spsLength, reorderDelay)) {
-            maxReorderPic_ = reorderDelay;
+        H264SpsInfo info;
+        if (ParseH264SpsInfo(extraData + offset, spsLength, info)) {
+            maxReorderPic_ = info.reorderDelay;
+            picWidInLumaSamples_ = info.width;
+            picHetInLumaSamples_ = info.height;
+            sar_ = info.sar;
             return true;
         }
         offset += spsLength;

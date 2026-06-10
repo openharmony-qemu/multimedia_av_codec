@@ -533,7 +533,7 @@ void MPEG4DemuxerPlugin::GetSingleTrackInfo(const MPEG4AtomParser::Track& track,
     Meta meta = mediaInfo_.tracks[trackIndex];
     std::string mime;
     mediaInfo_.tracks[trackIndex].Get<Tag::MIME_TYPE>(mime);
-    if (mime == "video/hevc") {
+    if (mime == "video/hevc" || mime == "video/avc") {
         if (streamParsers_ != nullptr && streamParsers_->ParserIsInited(trackIndex) &&
             FirstFrameValid(trackIndex)) {
             auto firstFrame = firstFrameMap_[trackIndex];
@@ -544,7 +544,20 @@ void MPEG4DemuxerPlugin::GetSingleTrackInfo(const MPEG4AtomParser::Track& track,
             // Parser only sends xps info when first call ConvertPacketToAnnexb
             // readSample will call ConvertPacketToAnnexb again, so rest here
             streamParsers_->ResetXPSSendStatus(trackIndex);
-            ParseHEVCMetadataInfo(track, meta);
+            if (mime == "video/hevc") {
+                ParseHEVCMetadataInfo(track, meta);
+            } else if (mime == "video/avc") {
+                uint32_t w = streamParsers_->GetPicWidInLumaSamples(trackIndex);
+                uint32_t h = streamParsers_->GetPicHetInLumaSamples(trackIndex);
+                double sar = streamParsers_->GetSar(trackIndex);
+                if (w > 0 && h > 0) {
+                    meta.Set<Tag::VIDEO_WIDTH>(w);
+                    meta.Set<Tag::VIDEO_HEIGHT>(h);
+                }
+                if (sar > 0) {
+                    meta.Set<Tag::VIDEO_SAR>(sar);
+                }
+            }
         } else {
             MEDIA_LOG_W("Parse hevc info failed");
         }
