@@ -13,11 +13,13 @@
  * limitations under the License.
  */
 
+#include "native_avcodec_videobase.h"
+#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cstdint>
 #include "securec.h"
-#include "native_avcodec_videobase.h"
 #include "avcodec_log.h"
 
 namespace {
@@ -40,7 +42,16 @@ const char *OH_MD_KEY_VIDEO_METADATA_ROI_SEM_LABEL = "video_metadata_roi_sem_lab
 #endif
 
 class RoiStringHelper {
+public:
+    static OH_AVErrCode AppendRoiString(char **roiStrInOut, OH_AVFormat *format);
+    static OH_AVErrCode GetRoiCount(const char *roiStr, uint32_t *outCount);
+    static OH_AVErrCode ParseRoiString(const char *roiStr, OH_AVFormat **outFormats,
+                                       uint32_t maxCapacity, uint32_t *outCount);
+
 private:
+    RoiStringHelper() = delete;
+    ~RoiStringHelper() = delete;
+
     struct KvDesc {
         const char *keyName;
         const char *key;
@@ -52,17 +63,12 @@ private:
     static const size_t ROI_STR_MAX_LEN;
     static const uint32_t ROI_MAX_COUNT;
 
+    static bool ParseInt32(const char *str, int32_t *outVal, const char **outEndPtr);
     static uint32_t CountExistingRois(const char *roiStr);
     static int BuildRoiSegmentStr(char *buffer, size_t bufferSize, OH_AVFormat *avFormat);
     static OH_AVErrCode AppendSegmentToRoiStr(char **roiStrInOut, const char *segment);
     static bool ValidateAndParseRoiKvpairs(OH_AVFormat *avFormat, const char *eqPos, const char *segEnd);
     static OH_AVFormat *ParseOneRoiSegmentToFormat(const char *start, const char *segEnd);
-
-public:
-    static OH_AVErrCode AppendRoiString(char **roiStrInOut, OH_AVFormat *format);
-    static OH_AVErrCode GetRoiCount(const char *roiStr, uint32_t *outCount);
-    static OH_AVErrCode ParseRoiString(const char *roiStr, OH_AVFormat **outFormats,
-                                       uint32_t maxCapacity, uint32_t *outCount);
 };
 
 const RoiStringHelper::KvDesc RoiStringHelper::ROI_KV_TABLE[] = {
@@ -73,6 +79,19 @@ const uint32_t RoiStringHelper::ROI_KV_COUNT =
     sizeof(RoiStringHelper::ROI_KV_TABLE) / sizeof(RoiStringHelper::ROI_KV_TABLE[0]);
 const size_t RoiStringHelper::ROI_STR_MAX_LEN = 256;
 const uint32_t RoiStringHelper::ROI_MAX_COUNT = 6;
+
+bool RoiStringHelper::ParseInt32(const char *str, int32_t *outVal, const char **outEndPtr)
+{
+    errno = 0;
+    char *endPtr = nullptr;
+    long val = strtol(str, &endPtr, 10);
+    if (errno == ERANGE || endPtr == str || val < INT32_MIN || val > INT32_MAX) {
+        return false;
+    }
+    *outVal = static_cast<int32_t>(val);
+    *outEndPtr = endPtr;
+    return true;
+}
 
 uint32_t RoiStringHelper::CountExistingRois(const char *roiStr)
 {
@@ -110,11 +129,15 @@ int RoiStringHelper::BuildRoiSegmentStr(char *buffer, size_t bufferSize, OH_AVFo
             continue;
         }
         if (isFirstKv) {
-            if (writePos >= static_cast<int>(bufferSize)) { return -1; }
+            if (writePos >= static_cast<int>(bufferSize)) {
+                return -1;
+            }
             buffer[writePos++] = '=';
             isFirstKv = false;
         } else {
-            if (writePos >= static_cast<int>(bufferSize)) { return -1; }
+            if (writePos >= static_cast<int>(bufferSize)) {
+                return -1;
+            }
             buffer[writePos++] = ',';
         }
         int n = snprintf_s(buffer + writePos, bufferSize - writePos, bufferSize - writePos - 1,
@@ -124,7 +147,9 @@ int RoiStringHelper::BuildRoiSegmentStr(char *buffer, size_t bufferSize, OH_AVFo
         }
         writePos += n;
     }
-    if (writePos + 1 >= static_cast<int>(bufferSize)) { return -1; }
+    if (writePos + 1 >= static_cast<int>(bufferSize)) {
+        return -1;
+    }
     buffer[writePos++] = ';';
     buffer[writePos] = '\0';
     return writePos;
@@ -183,13 +208,13 @@ bool RoiStringHelper::ValidateAndParseRoiKvpairs(OH_AVFormat *avFormat, const ch
         isCommaPending = false;
         isKvSet[matchedIdx] = true;
         isAnyKvPrefix = true;
+        const char *numEndPtr = nullptr;
         int32_t val = 0;
-        int n = 0;
-        if (sscanf_s(curPtr + ROI_KV_TABLE[matchedIdx].keyNameLen + 1, "%d%n", &val, &n) != 1) {
+        if (!ParseInt32(curPtr + ROI_KV_TABLE[matchedIdx].keyNameLen + 1, &val, &numEndPtr)) {
             return false;
         }
         OH_AVFormat_SetIntValue(avFormat, ROI_KV_TABLE[matchedIdx].key, val);
-        curPtr += ROI_KV_TABLE[matchedIdx].keyNameLen + 1 + n;
+        curPtr = numEndPtr;
         if (*curPtr == ',') {
             curPtr++;
             isCommaPending = true;
@@ -200,9 +225,9 @@ bool RoiStringHelper::ValidateAndParseRoiKvpairs(OH_AVFormat *avFormat, const ch
     if (isAnyKvPrefix) {
         return !isCommaPending && (*curPtr == ';' || *curPtr == '\0');
     }
+    const char *dqpEndPtr = nullptr;
     int32_t dqpVal = 0;
-    int n = 0;
-    if (sscanf_s(eqPos, "=%d%n", &dqpVal, &n) != 1 || (eqPos[n] != ';' && eqPos[n] != '\0')) {
+    if (!ParseInt32(eqPos + 1, &dqpVal, &dqpEndPtr) || (*dqpEndPtr != ';' && *dqpEndPtr != '\0')) {
         return false;
     }
     OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_DELTA_QP, dqpVal);
@@ -211,15 +236,24 @@ bool RoiStringHelper::ValidateAndParseRoiKvpairs(OH_AVFormat *avFormat, const ch
 
 OH_AVFormat *RoiStringHelper::ParseOneRoiSegmentToFormat(const char *start, const char *segEnd)
 {
-    int top = 0;
-    int left = 0;
-    int bottom = 0;
-    int right = 0;
-    int consumed = 0;
-    if (sscanf_s(start, "%d,%d-%d,%d%n", &top, &left, &bottom, &right, &consumed) != 4) {
+    const char *endPtr = nullptr;
+    int32_t top = 0;
+    if (!ParseInt32(start, &top, &endPtr) || *endPtr != ',') {
         return nullptr;
     }
-    char nextChar = start[consumed];
+    int32_t left = 0;
+    if (!ParseInt32(endPtr + 1, &left, &endPtr) || *endPtr != '-') {
+        return nullptr;
+    }
+    int32_t bottom = 0;
+    if (!ParseInt32(endPtr + 1, &bottom, &endPtr) || *endPtr != ',') {
+        return nullptr;
+    }
+    int32_t right = 0;
+    if (!ParseInt32(endPtr + 1, &right, &endPtr)) {
+        return nullptr;
+    }
+    char nextChar = *endPtr;
     if (nextChar != '=' && nextChar != ';' && nextChar != '\0') {
         return nullptr;
     }
