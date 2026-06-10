@@ -463,13 +463,12 @@ void AvcParserImpl::ParseAnnexbExtraData(const uint8_t *sample, int32_t size)
         uint8_t nalType = static_cast<uint8_t>(static_cast<uint32_t>(nal[0]) & 0x1Fu);
         if (nalType == AvcNalType::AVC_NAL_SPS) {
             H264SpsInfo info;
-            if (ParseH264SpsInfo(nal, nalSize, info)) {
-                maxReorderPic_ = info.reorderDelay;
-                picWidInLumaSamples_ = info.width;
-                picHetInLumaSamples_ = info.height;
-                sar_ = info.sar;
-                MEDIA_LOG_D("Parsed AVC SPS w:%{public}u h:%{public}u sar:%{public}f",
-                    picWidInLumaSamples_, picHetInLumaSamples_, sar_);
+            bool parseSuccess = ParseH264SpsInfo(nal, nalSize, info);
+            maxReorderPic_ = info.reorderDelay > 0 ? info.reorderDelay : maxReorderPic_;
+            picWidInLumaSamples_ = info.width > 0 ? info.width : picWidInLumaSamples_;
+            picHetInLumaSamples_ = info.height > 0 ? info.height : picHetInLumaSamples_;
+            sar_ = info.sar > 0 ? info.sar : sar_;
+            if (parseSuccess) {
                 return;
             }
         }
@@ -546,11 +545,12 @@ bool AvcParserImpl::ParseMaxReorderPicFromAvcConfig(const uint8_t *extraData, in
             return false;
         }
         H264SpsInfo info;
-        if (ParseH264SpsInfo(extraData + offset, spsLength, info)) {
-            maxReorderPic_ = info.reorderDelay;
-            picWidInLumaSamples_ = info.width;
-            picHetInLumaSamples_ = info.height;
-            sar_ = info.sar;
+        bool parseSuccess = ParseH264SpsInfo(extraData + offset, spsLength, info);
+        maxReorderPic_ = info.reorderDelay > 0 ? info.reorderDelay : maxReorderPic_;
+        picWidInLumaSamples_ = info.width > 0 ? info.width : picWidInLumaSamples_;
+        picHetInLumaSamples_ = info.height > 0 ? info.height : picHetInLumaSamples_;
+        sar_ = info.sar > 0 ? info.sar : sar_;
+        if (parseSuccess) {
             return true;
         }
         offset += spsLength;
