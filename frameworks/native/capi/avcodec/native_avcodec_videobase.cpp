@@ -333,7 +333,7 @@ OH_AVErrCode RoiStringHelper::GetRoiCount(const char *roiStr, uint32_t *outCount
 }
 
 OH_AVErrCode RoiStringHelper::ParseRoiString(const char *roiStr, OH_AVFormat **outFormats,
-                                              uint32_t maxCapacity, uint32_t *outCount)
+    uint32_t maxCapacity, uint32_t *outCount)
 {
     if (roiStr == nullptr || outFormats == nullptr || outCount == nullptr) {
         return AV_ERR_INVALID_VAL;
@@ -379,7 +379,7 @@ OH_AVErrCode OH_VideoMetadata_GetRoiCount(const char *roiStr, uint32_t *outCount
 }
 
 OH_AVErrCode OH_VideoMetadata_ParseRoiString(const char *roiStr, OH_AVFormat **outFormats,
-                                             uint32_t maxCapacity, uint32_t *outCount)
+    uint32_t maxCapacity, uint32_t *outCount)
 {
     CHECK_AND_RETURN_RET_LOG(roiStr != nullptr, AV_ERR_INVALID_VAL, "roiStr is nullptr!");
     CHECK_AND_RETURN_RET_LOG(outFormats != nullptr, AV_ERR_INVALID_VAL, "outFormats is nullptr!");
