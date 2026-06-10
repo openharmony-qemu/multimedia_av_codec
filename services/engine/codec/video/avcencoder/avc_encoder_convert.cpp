@@ -246,8 +246,8 @@ int32_t ConvertRgbToYuv420(uint8_t *dstData, int32_t width, int32_t height,
             if ((x & 1) == 0 && (y & 1) == 0) {
                 uint8_t u = ((r * weights[1][0] + g * weights[1][1] + b * weights[1][2]) >> 8) + 128;
                 uint8_t v = ((r * weights[2][0] + g * weights[2][1] + b * weights[2][2]) >> 8) + 128;
-                dstU[x >> 1] = Clip3(zeroLvl, v, maxLvlChroma);
-                dstV[x >> 1] = Clip3(zeroLvl, u, maxLvlChroma);
+                dstU[x >> 1] = Clip3(zeroLvl, u, maxLvlChroma);
+                dstV[x >> 1] = Clip3(zeroLvl, v, maxLvlChroma);
             }
             pRed += bytesPerPixel;
             pGreen += bytesPerPixel;
