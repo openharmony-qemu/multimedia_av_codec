@@ -1183,9 +1183,7 @@ void CodecServer::OnOutputFormatChanged(const Format &format)
     auto formatTemp = format;
     OnInstanceMemoryUpdateEvent(formatTemp.GetMeta());
 
-    if (codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
-        ReportResolutionInfo(formatTemp);
-    }
+    ReportResolutionInfo(formatTemp);
 }
 
 void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
