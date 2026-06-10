@@ -16,6 +16,7 @@
 #include <gtest/gtest.h>
 #include "avcodec_errors.h"
 #include "cpu_image_processor.h"
+#include "securec.h"
 #include "surface.h"
 #define TEST_SUIT CpuImageProcessorCoverageTest
 
@@ -173,7 +174,7 @@ HWTEST_F(TEST_SUIT, AddPlane_StrideLessThanRowBytes_Test_005, TestSize.Level1)
 
     void* virAddr = inputBuffer->GetVirAddr();
     ASSERT_NE(virAddr, nullptr);
-    memset(virAddr, 0, bufferSize);
+    memset_s(virAddr, bufferSize, 0, bufferSize);
 
     sptr<SurfaceBuffer> outputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
     ASSERT_NE(outputBuffer, nullptr);
@@ -204,7 +205,7 @@ HWTEST_F(TEST_SUIT, AddPlane_OffsetExceedsSize_Test_006, TestSize.Level1)
 
     void* virAddr = inputBuffer->GetVirAddr();
     ASSERT_NE(virAddr, nullptr);
-    memset(virAddr, 0, bufferSize);
+    memset_s(virAddr, bufferSize, 0, bufferSize);
 
     sptr<SurfaceBuffer> outputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_P);
     ASSERT_NE(outputBuffer, nullptr);
@@ -233,7 +234,7 @@ HWTEST_F(TEST_SUIT, AddPlane_ValidPath_NV12_Test_007, TestSize.Level1)
 
     void* virAddr = inputBuffer->GetVirAddr();
     ASSERT_NE(virAddr, nullptr);
-    memset(virAddr, 0, bufferSize);
+    memset_s(virAddr, bufferSize, 0, bufferSize);
 
     sptr<SurfaceBuffer> outputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
     ASSERT_NE(outputBuffer, nullptr);
@@ -262,7 +263,7 @@ HWTEST_F(TEST_SUIT, AddPlane_ValidPath_RGBA_Test_008, TestSize.Level1)
 
     void* virAddr = inputBuffer->GetVirAddr();
     ASSERT_NE(virAddr, nullptr);
-    memset(virAddr, 0, bufferSize);
+    memset_s(virAddr, bufferSize, 0, bufferSize);
 
     sptr<SurfaceBuffer> outputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_RGBA_8888);
     ASSERT_NE(outputBuffer, nullptr);
@@ -291,7 +292,7 @@ HWTEST_F(TEST_SUIT, AddPlane_ValidPath_I420_Test_009, TestSize.Level1)
 
     void* virAddr = inputBuffer->GetVirAddr();
     ASSERT_NE(virAddr, nullptr);
-    memset(virAddr, 0, bufferSize);
+    memset_s(virAddr, bufferSize, 0, bufferSize);
 
     sptr<SurfaceBuffer> outputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_P);
     ASSERT_NE(outputBuffer, nullptr);
@@ -321,7 +322,7 @@ HWTEST_F(TEST_SUIT, IsValidBuffer_NullBuffer_Test_011, TestSize.Level1)
 
     void* virAddr = outputBuffer->GetVirAddr();
     ASSERT_NE(virAddr, nullptr);
-    memset(virAddr, 0, bufferSize);
+    memset_s(virAddr, bufferSize, 0, bufferSize);
 
     CpuImageProcessRequest request;
     request.input = nullptr;
@@ -347,7 +348,7 @@ HWTEST_F(TEST_SUIT, IsValidBuffer_NullOutputBuffer_Test_012, TestSize.Level1)
 
     void* virAddr = inputBuffer->GetVirAddr();
     ASSERT_NE(virAddr, nullptr);
-    memset(virAddr, 0, bufferSize);
+    memset_s(virAddr, bufferSize, 0, bufferSize);
 
     CpuImageProcessRequest request;
     request.input = inputBuffer;
@@ -465,7 +466,7 @@ HWTEST_F(TEST_SUIT, IsValidBuffer_ValidBuffer_Test_019, TestSize.Level1)
 
     void* virAddr = inputBuffer->GetVirAddr();
     ASSERT_NE(virAddr, nullptr);
-    memset(virAddr, 0, bufferSize);
+    memset_s(virAddr, bufferSize, 0, bufferSize);
 
     sptr<SurfaceBuffer> outputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
     ASSERT_NE(outputBuffer, nullptr);
@@ -496,14 +497,14 @@ HWTEST_F(TEST_SUIT, ValidateCropRect_NegativeLeft_Test_020, TestSize.Level1)
 
     void* virAddr = inputBuffer->GetVirAddr();
     ASSERT_NE(virAddr, nullptr);
-    memset(virAddr, 0, BUFFER_SIZE);
+    memset_s(virAddr, BUFFER_SIZE, 0, BUFFER_SIZE);
 
     sptr<SurfaceBuffer> outputBuffer = AllocBuffer(cropWidth, cropHeight, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
     ASSERT_NE(outputBuffer, nullptr);
 
     void* outVirAddr = outputBuffer->GetVirAddr();
     ASSERT_NE(outVirAddr, nullptr);
-    memset(outVirAddr, 0, outputBufferSize);
+    memset_s(outVirAddr, outputBufferSize, 0, outputBufferSize);
 
     CpuImageProcessRequest request;
     request.input = inputBuffer;
@@ -535,14 +536,14 @@ HWTEST_F(TEST_SUIT, ValidateCropRect_NegativeTop_Test_021, TestSize.Level1)
 
     void* virAddr = inputBuffer->GetVirAddr();
     ASSERT_NE(virAddr, nullptr);
-    memset(virAddr, 0, BUFFER_SIZE);
+    memset_s(virAddr, BUFFER_SIZE, 0, BUFFER_SIZE);
 
     sptr<SurfaceBuffer> outputBuffer = AllocBuffer(cropWidth, cropHeight, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
     ASSERT_NE(outputBuffer, nullptr);
 
     void* outVirAddr = outputBuffer->GetVirAddr();
     ASSERT_NE(outVirAddr, nullptr);
-    memset(outVirAddr, 0, outputBufferSize);
+    memset_s(outVirAddr, outputBufferSize, 0, outputBufferSize);
 
     CpuImageProcessRequest request;
     request.input = inputBuffer;
@@ -575,14 +576,14 @@ HWTEST_F(TEST_SUIT, ValidateCropRect_ZeroWidth_Test_022, TestSize.Level1)
 
     void* virAddr = inputBuffer->GetVirAddr();
     ASSERT_NE(virAddr, nullptr);
-    memset(virAddr, 0, BUFFER_SIZE);
+    memset_s(virAddr, BUFFER_SIZE, 0, BUFFER_SIZE);
 
     sptr<SurfaceBuffer> outputBuffer = AllocBuffer(cropWidth, cropHeight, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
     ASSERT_NE(outputBuffer, nullptr);
 
     void* outVirAddr = outputBuffer->GetVirAddr();
     ASSERT_NE(outVirAddr, nullptr);
-    memset(outVirAddr, 0, outputBufferSize);
+    memset_s(outVirAddr, outputBufferSize, 0, outputBufferSize);
 
     CpuImageProcessRequest request;
     request.input = inputBuffer;
@@ -614,14 +615,14 @@ HWTEST_F(TEST_SUIT, ValidateCropRect_ZeroHeight_Test_023, TestSize.Level1)
 
     void* virAddr = inputBuffer->GetVirAddr();
     ASSERT_NE(virAddr, nullptr);
-    memset(virAddr, 0, BUFFER_SIZE);
+    memset_s(virAddr, BUFFER_SIZE, 0, BUFFER_SIZE);
 
     sptr<SurfaceBuffer> outputBuffer = AllocBuffer(cropWidth, cropHeight, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
     ASSERT_NE(outputBuffer, nullptr);
 
     void* outVirAddr = outputBuffer->GetVirAddr();
     ASSERT_NE(outVirAddr, nullptr);
-    memset(outVirAddr, 0, outputBufferSize);
+    memset_s(outVirAddr, outputBufferSize, 0, outputBufferSize);
 
     CpuImageProcessRequest request;
     request.input = inputBuffer;
@@ -653,14 +654,14 @@ HWTEST_F(TEST_SUIT, ValidateCropRect_OutsideWidth_Test_024, TestSize.Level1)
 
     void* virAddr = inputBuffer->GetVirAddr();
     ASSERT_NE(virAddr, nullptr);
-    memset(virAddr, 0, BUFFER_SIZE);
+    memset_s(virAddr, BUFFER_SIZE, 0, BUFFER_SIZE);
 
     sptr<SurfaceBuffer> outputBuffer = AllocBuffer(cropWidth, cropHeight, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
     ASSERT_NE(outputBuffer, nullptr);
 
     void* outVirAddr = outputBuffer->GetVirAddr();
     ASSERT_NE(outVirAddr, nullptr);
-    memset(outVirAddr, 0, outputBufferSize);
+    memset_s(outVirAddr, outputBufferSize, 0, outputBufferSize);
 
     CpuImageProcessRequest request;
     request.input = inputBuffer;
@@ -692,14 +693,14 @@ HWTEST_F(TEST_SUIT, ValidateCropRect_OutsideHeight_Test_025, TestSize.Level1)
 
     void* virAddr = inputBuffer->GetVirAddr();
     ASSERT_NE(virAddr, nullptr);
-    memset(virAddr, 0, BUFFER_SIZE);
+    memset_s(virAddr, BUFFER_SIZE, 0, BUFFER_SIZE);
 
     sptr<SurfaceBuffer> outputBuffer = AllocBuffer(cropWidth, cropHeight, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
     ASSERT_NE(outputBuffer, nullptr);
 
     void* outVirAddr = outputBuffer->GetVirAddr();
     ASSERT_NE(outVirAddr, nullptr);
-    memset(outVirAddr, 0, outputBufferSize);
+    memset_s(outVirAddr, outputBufferSize, 0, outputBufferSize);
 
     CpuImageProcessRequest request;
     request.input = inputBuffer;
@@ -731,14 +732,14 @@ HWTEST_F(TEST_SUIT, ValidateCropRect_ValidCropRect_Test_026, TestSize.Level1)
 
     void* virAddr = inputBuffer->GetVirAddr();
     ASSERT_NE(virAddr, nullptr);
-    memset(virAddr, 0, BUFFER_SIZE);
+    memset_s(virAddr, BUFFER_SIZE, 0, BUFFER_SIZE);
 
     sptr<SurfaceBuffer> outputBuffer = AllocBuffer(cropWidth, cropHeight, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
     ASSERT_NE(outputBuffer, nullptr);
 
     void* outVirAddr = outputBuffer->GetVirAddr();
     ASSERT_NE(outVirAddr, nullptr);
-    memset(outVirAddr, 0, outputBufferSize);
+    memset_s(outVirAddr, outputBufferSize, 0, outputBufferSize);
 
     CpuImageProcessRequest request;
     request.input = inputBuffer;
@@ -766,14 +767,14 @@ HWTEST_F(TEST_SUIT, ValidateOperation_NegativeOperation_Test_038, TestSize.Level
 
     void* virAddr = inputBuffer->GetVirAddr();
     ASSERT_NE(virAddr, nullptr);
-    memset(virAddr, 0, BUFFER_SIZE);
+    memset_s(virAddr, BUFFER_SIZE, 0, BUFFER_SIZE);
 
     sptr<SurfaceBuffer> outputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
     ASSERT_NE(outputBuffer, nullptr);
 
     void* outVirAddr = outputBuffer->GetVirAddr();
     ASSERT_NE(outVirAddr, nullptr);
-    memset(outVirAddr, 0, BUFFER_SIZE);
+    memset_s(outVirAddr, BUFFER_SIZE, 0, BUFFER_SIZE);
 
     CpuImageProcessRequest request;
     request.input = inputBuffer;
@@ -797,14 +798,14 @@ HWTEST_F(TEST_SUIT, ValidateOperation_ValidOperation_Test_039, TestSize.Level1)
 
     void* virAddr = inputBuffer->GetVirAddr();
     ASSERT_NE(virAddr, nullptr);
-    memset(virAddr, 0, BUFFER_SIZE);
+    memset_s(virAddr, BUFFER_SIZE, 0, BUFFER_SIZE);
 
     sptr<SurfaceBuffer> outputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
     ASSERT_NE(outputBuffer, nullptr);
 
     void* outVirAddr = outputBuffer->GetVirAddr();
     ASSERT_NE(outVirAddr, nullptr);
-    memset(outVirAddr, 0, BUFFER_SIZE);
+    memset_s(outVirAddr, BUFFER_SIZE, 0, BUFFER_SIZE);
 
     CpuImageProcessRequest request;
     request.input = inputBuffer;
@@ -830,14 +831,14 @@ HWTEST_F(TEST_SUIT, ValidateOperation_UnsupportedOperation_Test_040, TestSize.Le
 
     void* virAddr = inputBuffer->GetVirAddr();
     ASSERT_NE(virAddr, nullptr);
-    memset(virAddr, 0, BUFFER_SIZE);
+    memset_s(virAddr, BUFFER_SIZE, 0, BUFFER_SIZE);
 
     sptr<SurfaceBuffer> outputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
     ASSERT_NE(outputBuffer, nullptr);
 
     void* outVirAddr = outputBuffer->GetVirAddr();
     ASSERT_NE(outVirAddr, nullptr);
-    memset(outVirAddr, 0, BUFFER_SIZE);
+    memset_s(outVirAddr, BUFFER_SIZE, 0, BUFFER_SIZE);
 
     CpuImageProcessRequest request;
     request.input = inputBuffer;
@@ -866,14 +867,14 @@ HWTEST_F(TEST_SUIT, IsFormatSupported_UnsupportedFormat_Test_047, TestSize.Level
 
     void* virAddr = inputBuffer->GetVirAddr();
     ASSERT_NE(virAddr, nullptr);
-    memset(virAddr, 0, bufferSize);
+    memset_s(virAddr, bufferSize, 0, bufferSize);
 
     sptr<SurfaceBuffer> outputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_BGRA_8888);
     ASSERT_NE(outputBuffer, nullptr);
 
     void* outVirAddr = outputBuffer->GetVirAddr();
     ASSERT_NE(outVirAddr, nullptr);
-    memset(outVirAddr, 0, bufferSize);
+    memset_s(outVirAddr, bufferSize, 0, bufferSize);
 
     CpuImageProcessRequest request;
     request.input = inputBuffer;
