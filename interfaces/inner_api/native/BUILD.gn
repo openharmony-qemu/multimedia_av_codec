@@ -204,10 +204,6 @@ ohos_shared_library("av_codec_client") {
     ":av_codec_client_codec_config",
   ]
 
-  public_external_deps = [
-    "ffmpeg:libohosffmpeg",
-    "media_foundation:media_foundation",
-  ]
   sanitize = av_codec_sanitize
 
   configs = [
@@ -327,6 +323,7 @@ ohos_shared_library("av_codec_client") {
     "media_foundation:media_foundation",
     "qos_manager:qos",
     "samgr:samgr_proxy",
+    "ffmpeg:libohosffmpeg",
   ]
 
   if (av_codec_support_drm) {
