@@ -528,6 +528,21 @@ int32_t MPEG4DemuxerPlugin::CountTracks()
     return count;
 }
 
+void MPEG4DemuxerPlugin::ParseAVCMetadataInfo(const MPEG4AtomParser::Track& track, Meta &format)
+{
+    uint32_t trackIndex = track.trackIndex;
+    uint32_t w = streamParsers_->GetPicWidInLumaSamples(trackIndex);
+    uint32_t h = streamParsers_->GetPicHetInLumaSamples(trackIndex);
+    double sar = streamParsers_->GetSar(trackIndex);
+    if (w > 0 && h > 0) {
+        format.Set<Tag::VIDEO_WIDTH>(w);
+        format.Set<Tag::VIDEO_HEIGHT>(h);
+    }
+    if (sar > 0) {
+        format.Set<Tag::VIDEO_SAR>(sar);
+    }
+}
+
 void MPEG4DemuxerPlugin::GetSingleTrackInfo(const MPEG4AtomParser::Track& track, const uint32_t trackIndex)
 {
     Meta meta = mediaInfo_.tracks[trackIndex];
@@ -547,19 +562,10 @@ void MPEG4DemuxerPlugin::GetSingleTrackInfo(const MPEG4AtomParser::Track& track,
             if (mime == "video/hevc") {
                 ParseHEVCMetadataInfo(track, meta);
             } else if (mime == "video/avc") {
-                uint32_t w = streamParsers_->GetPicWidInLumaSamples(trackIndex);
-                uint32_t h = streamParsers_->GetPicHetInLumaSamples(trackIndex);
-                double sar = streamParsers_->GetSar(trackIndex);
-                if (w > 0 && h > 0) {
-                    meta.Set<Tag::VIDEO_WIDTH>(w);
-                    meta.Set<Tag::VIDEO_HEIGHT>(h);
-                }
-                if (sar > 0) {
-                    meta.Set<Tag::VIDEO_SAR>(sar);
-                }
+                ParseAVCMetadataInfo(track, meta);
             }
         } else {
-            MEDIA_LOG_W("Parse hevc info failed");
+            MEDIA_LOG_W("Parse avc/hevc info failed");
         }
     }
     if (HaveValidParser(mime)) {
