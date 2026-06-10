@@ -284,6 +284,7 @@ void AvcEncoder::GetBufferFromSurface()
         inputSurface_->ReleaseBuffer(buffer, -1);
         return;
     }
+    buffer->InvalidateCache();
 
     AVCODEC_LOGD("timestamp: %{public}" PRId64 ", dataSize: %{public}d", pts, buffer->GetSize());
     CHECK_AND_RETURN_LOG(!freeList_.empty(), "freeList_ is empty!");
