@@ -270,7 +270,8 @@ Status AudioEncoderFilter::DoStart()
     int32_t ret = mediaCodec_->Start();
     if (ret != 0) {
         SetFaultEvent("AudioEncoderFilter::DoStart error", ret);
-        return Status::ERROR_UNKNOWN;
+        MEDIA_LOG_E("audioEncoder start fail");
+        return Status::ERROR_AUD_ENC_START_FAILED;
     }
     return Status::OK;
 }
@@ -294,7 +295,8 @@ Status AudioEncoderFilter::DoStop()
     int32_t ret = mediaCodec_->Stop();
     if (ret != 0) {
         SetFaultEvent("AudioEncoderFilter::DoStop error", ret);
-        return Status::ERROR_UNKNOWN;
+        MEDIA_LOG_E("audioEncoder stop fail");
+        return Status::ERROR_AUD_ENC_STOP_FAILED;
     }
     return Status::OK;
 }
@@ -342,7 +344,8 @@ Status AudioEncoderFilter::DoRelease()
     int32_t ret = mediaCodec_->Release();
     if (ret != 0) {
         SetFaultEvent("AudioEncoderFilter::DoRelease error", ret);
-        return Status::ERROR_UNKNOWN;
+        MEDIA_LOG_E("audioEncoder release fail");
+        return Status::ERROR_FRAMEWORK_ERR;
     }
     return Status::OK;
 }

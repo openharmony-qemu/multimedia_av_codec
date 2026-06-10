@@ -215,7 +215,7 @@ Status AudioDataSourceFilter::SendEos()
         AVBufferConfig avBufferConfig;
         ret = outputBufferQueue_->RequestBuffer(buffer, avBufferConfig, TIME_OUT_MS);
         if (ret != Status::OK) {
-            MEDIA_LOG_I("RequestBuffer fail, ret" PUBLIC_LOG_D32, ret);
+            MEDIA_LOG_E("RequestBuffer fail, ret" PUBLIC_LOG_D32, ret);
             return ret;
         }
         buffer->flag_ |= BUFFER_FLAG_EOS;

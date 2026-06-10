@@ -21,7 +21,7 @@
 #include "avcodec_sysevent.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_RECORDER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_RECORDER, "AudioCaptureModule" };
 static constexpr uint64_t AUDIO_NS_PER_SECOND = 1000000000;
 static constexpr uint64_t AUDIO_CAPTURE_READ_FRAME_TIME = 20000000; // 20000000 ns 20ms
 }
@@ -95,7 +95,7 @@ Status AudioCaptureModule::Init()
         if (audioCapturer_ == nullptr) {
             MEDIA_LOG_E("Create audioCapturer fail");
             SetFaultEvent("AudioCaptureModule::Init, create audioCapturer fail");
-            return Status::ERROR_UNKNOWN;
+            return Status::ERROR_AUD_INIT_FAILED;
         }
         audioInterruptCallback_ = std::make_shared<AudioCapturerCallbackImpl>(audioCaptureModuleCallback_);
         audioCapturer_->SetCapturerCallback(audioInterruptCallback_);
@@ -129,7 +129,7 @@ Status AudioCaptureModule::Prepare()
     size_t size;
     {
         AutoLock lock (captureMutex_);
-        FALSE_RETURN_V_MSG_E(audioCapturer_ != nullptr, Status::ERROR_WRONG_STATE, "no available audio capture");
+        FALSE_RETURN_V_MSG_E(audioCapturer_ != nullptr, Status::ERROR_AUD_INIT_FAILED, "no available audio capture");
         FAIL_LOG_RETURN(audioCapturer_->GetBufferSize(size), "audioCapturer GetBufferSize");
     }
     FALSE_RETURN_V_MSG_E(size < MAX_CAPTURE_BUFFER_SIZE, Status::ERROR_INVALID_PARAMETER,
@@ -144,7 +144,7 @@ Status AudioCaptureModule::Reset()
     MEDIA_LOG_I("Reset enter.");
     {
         AutoLock lock (captureMutex_);
-        FALSE_RETURN_V_MSG_E(audioCapturer_ != nullptr, Status::ERROR_WRONG_STATE, "no available audio capture");
+        FALSE_RETURN_V_MSG_E(audioCapturer_ != nullptr, Status::ERROR_AUD_INIT_FAILED, "no available audio capture");
         if (audioCapturer_->GetStatus() == AudioStandard::CapturerState::CAPTURER_RUNNING) {
             FALSE_LOG_MSG(audioCapturer_->Stop(), "Stop audioCapturer fail");
         }
@@ -159,12 +159,12 @@ Status AudioCaptureModule::Start()
 {
     MEDIA_LOG_I("start enter.");
     AutoLock lock (captureMutex_);
-    FALSE_RETURN_V_MSG_E(audioCapturer_ != nullptr, Status::ERROR_WRONG_STATE, "no available audio capture");
+    FALSE_RETURN_V_MSG_E(audioCapturer_ != nullptr, Status::ERROR_AUD_INIT_FAILED, "no available audio capture");
     if (audioCapturer_->GetStatus() != AudioStandard::CapturerState::CAPTURER_RUNNING) {
         if (!audioCapturer_->Start()) {
             MEDIA_LOG_E("audioCapturer start failed");
             SetFaultEvent("AudioCaptureModule::Start error");
-            return Status::ERROR_UNKNOWN;
+            return Status::ERROR_AUD_START_FAILED;
         }
     }
     isTrackMaxAmplitude = false;
@@ -178,8 +178,8 @@ Status AudioCaptureModule::Stop()
     if (audioCapturer_ && audioCapturer_->GetStatus() == AudioStandard::CAPTURER_RUNNING) {
         if (!audioCapturer_->Stop()) {
             MEDIA_LOG_E("Stop audioCapturer fail");
-            SetFaultEvent("AudioCaptureModule::Stop error");
-            return Status::ERROR_UNKNOWN;
+            SetFaultEvent("audioCapturer stop fail");
+            return Status::ERROR_AUD_STOP_FAILED;
         }
     }
     return Status::OK;
@@ -192,7 +192,7 @@ Status AudioCaptureModule::GetParameter(std::shared_ptr<Meta> &meta)
     {
         AutoLock lock (captureMutex_);
         if (!audioCapturer_) {
-            return Status::ERROR_WRONG_STATE;
+            return Status::ERROR_AUD_INIT_FAILED;
         }
         FAIL_LOG_RETURN(audioCapturer_->GetParams(params), "audioCapturer GetParams");
     }
@@ -358,7 +358,7 @@ Status AudioCaptureModule::Read(uint8_t *cacheAudioData, size_t expectedLen)
     auto size = 0;
     {
         AutoLock lock(captureMutex_);
-        FALSE_RETURN_V_MSG_E(audioCapturer_ != nullptr, Status::ERROR_WRONG_STATE, "Audio capture is null");
+        FALSE_RETURN_V_MSG_E(audioCapturer_ != nullptr, Status::ERROR_AUD_INIT_FAILED, "no available audio capture");
         FALSE_RETURN_V_MSG_E(audioCapturer_->GetStatus() == AudioStandard::CAPTURER_RUNNING,
             Status::ERROR_AGAIN, "Audio capture Status error");
         FALSE_RETURN_V_MSG_E(cacheAudioData != nullptr, Status::ERROR_UNKNOWN, "cacheAudioData is null");
@@ -420,7 +420,7 @@ Status AudioCaptureModule::SetAudioCapturerInfoChangeCallback(
     const std::shared_ptr<AudioStandard::AudioCapturerInfoChangeCallback> &callback)
 {
     if (audioCapturer_ == nullptr) {
-        return Status::ERROR_WRONG_STATE;
+        return Status::ERROR_AUD_INIT_FAILED;
     }
     audioCapturerInfoChangeCallback_ = callback;
     int32_t ret = audioCapturer_->SetAudioCapturerInfoChangeCallback(audioCapturerInfoChangeCallback_);

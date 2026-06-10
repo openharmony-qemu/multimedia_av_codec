@@ -94,7 +94,7 @@ HWTEST_F(SurfaceEncoderFilterUnitTest, SurfaceEncoderFilter_002, TestSize.Level1
     EXPECT_EQ(surfaceEncoder->SetTransCoderMode(), Status::OK);
     EXPECT_EQ(surfaceEncoder->DoPrepare(), Status::OK);
 
-    EXPECT_EQ(surfaceEncoder->DoStart(), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(surfaceEncoder->DoStart(), Status::ERROR_FRAMEWORK_ERR);
     EXPECT_EQ(surfaceEncoder->DoPause(), Status::OK);
     EXPECT_EQ(surfaceEncoder->DoResume(), Status::OK);
     EXPECT_EQ(surfaceEncoder->DoStop(), Status::OK);
