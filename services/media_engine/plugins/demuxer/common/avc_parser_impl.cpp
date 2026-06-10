@@ -118,10 +118,12 @@ bool IsH264HighProfile(uint32_t profileIdc)
 
 bool ReadH264HighProfileSyntax(RbspContext& reader, uint32_t& tmp, H264SpsInfo& info)
 {
-    FALSE_RETURN_V(reader.RbspReadUE(info.chromaFormatIdc), false); // chroma_format_idc
-    if (info.chromaFormatIdc == H264_CHROMA_FORMAT_444) {
+    uint32_t chromaFormatIdc = 0;
+    FALSE_RETURN_V(reader.RbspReadUE(chromaFormatIdc), false); // chroma_format_idc
+    if (chromaFormatIdc == H264_CHROMA_FORMAT_444) {
         FALSE_RETURN_V(reader.RbspReadBit(tmp), false); // residual_color_transform_flag
     }
+    info.chromaFormatIdc = chromaFormatIdc;
     FALSE_RETURN_V(reader.RbspReadUE(tmp), false); // bit_depth_luma
     FALSE_RETURN_V(reader.RbspReadUE(tmp), false); // bit_depth_chroma
     FALSE_RETURN_V(reader.RbspReadBit(tmp), false); // transform_bypass
