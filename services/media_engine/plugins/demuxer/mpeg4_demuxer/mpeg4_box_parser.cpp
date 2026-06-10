@@ -3209,11 +3209,10 @@ Status MPEG4AtomParser::ReadDca3Payload(MPEG4Atom currentAtom, ParseContext* ctx
         uint8_t atomHeader[8];
         Status ret = dataReader_->ReadUintData(ctx->offset, atomHeader, sizeof(atomHeader));
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read dca3 header failed");
-        MPEG4Atom dca3Atom{
-            .size = GetU32Value(&atomHeader[0]),
-            .type = static_cast<int32_t>(GetU32Value(&atomHeader[4])),
-            .dataSize = GetU32Value(&atomHeader[0]) - static_cast<uint32_t>(sizeof(atomHeader))
-        };
+        MPEG4Atom dca3Atom;
+        dca3Atom.size = GetU32Value(&atomHeader[0]);
+        dca3Atom.type = static_cast<int32_t>(GetU32Value(&atomHeader[4]));
+        dca3Atom.dataSize = GetU32Value(&atomHeader[0]) - static_cast<uint32_t>(sizeof(atomHeader));
         FALSE_RETURN_V_MSG_E(dca3Atom.type == FourccType("dca3"), Status::ERROR_INVALID_DATA,
             "Invalid av3a child atom");
         int64_t dca3EndOffset = 0;
