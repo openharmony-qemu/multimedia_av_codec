@@ -420,23 +420,17 @@ public:
         createCodecTimes_ = 0;
         codecSpecInfo_.clear();
         audioCodecSpecInfo_.clear();
+        instanceUsageInfo_.clear();
         resolutionSpecInfo_.clear();
         demuxerFormatInfo_.clear();
         muxerFormatInfo_.clear();
         codecModeInfo_.clear();
-        time_t now = GetCurrentTime();
-        for (auto &[_, usage] : instanceUsageInfo_) {
-            usage.periodMax = usage.currentCount;
-            usage.weightedSum = 0;
-            usage.periodStartTime = now;
-            usage.lastSettleTime = now;
-        }
     }
 
     bool IsEventValid() override
     {
         return queryCapTimes_ > 0 || createCodecTimes_ > 0 || !codecSpecInfo_.empty() ||
-               !audioCodecSpecInfo_.empty() || !instanceUsageInfo_.empty();
+               !audioCodecSpecInfo_.empty();
     }
 
 private:
