@@ -22,10 +22,6 @@
 #include "securec.h"
 #include "avcodec_log.h"
 
-namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "NativeAvcodecVideoBase"};
-}
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -41,6 +37,24 @@ const char *OH_MD_KEY_VIDEO_METADATA_ROI_SEM_LABEL = "video_metadata_roi_sem_lab
 }
 #endif
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "NativeAvcodecVideoBase"};
+
+struct KvDesc {
+    const char *keyName;
+    const char *key;
+    int keyNameLen;
+};
+
+const KvDesc ROI_KV_TABLE[] = {
+    { "dqp", OH_MD_KEY_VIDEO_METADATA_ROI_DELTA_QP, 3 },
+    { "slb", OH_MD_KEY_VIDEO_METADATA_ROI_SEM_LABEL, 3 },
+};
+constexpr uint32_t ROI_KV_COUNT = sizeof(ROI_KV_TABLE) / sizeof(ROI_KV_TABLE[0]);
+constexpr size_t ROI_STR_MAX_LEN = 256;
+constexpr uint32_t ROI_MAX_COUNT = 6;
+}
+
 class RoiStringHelper {
 public:
     static OH_AVErrCode AppendRoiString(char **roiStrInOut, OH_AVFormat *format);
@@ -52,17 +66,6 @@ private:
     RoiStringHelper() = delete;
     ~RoiStringHelper() = delete;
 
-    struct KvDesc {
-        const char *keyName;
-        const char *key;
-        int keyNameLen;
-    };
-
-    static const KvDesc ROI_KV_TABLE[];
-    static const uint32_t ROI_KV_COUNT;
-    static const size_t ROI_STR_MAX_LEN;
-    static const uint32_t ROI_MAX_COUNT;
-
     static bool ParseInt32(const char *str, int32_t *outVal, const char **outEndPtr);
     static uint32_t CountExistingRois(const char *roiStr);
     static int BuildRoiSegmentStr(char *buffer, size_t bufferSize, OH_AVFormat *avFormat);
@@ -70,15 +73,6 @@ private:
     static bool ValidateAndParseRoiKvpairs(OH_AVFormat *avFormat, const char *eqPos, const char *segEnd);
     static OH_AVFormat *ParseOneRoiSegmentToFormat(const char *start, const char *segEnd);
 };
-
-const RoiStringHelper::KvDesc RoiStringHelper::ROI_KV_TABLE[] = {
-    { "dqp", OH_MD_KEY_VIDEO_METADATA_ROI_DELTA_QP, 3 },
-    { "slb", OH_MD_KEY_VIDEO_METADATA_ROI_SEM_LABEL, 3 },
-};
-const uint32_t RoiStringHelper::ROI_KV_COUNT =
-    sizeof(RoiStringHelper::ROI_KV_TABLE) / sizeof(RoiStringHelper::ROI_KV_TABLE[0]);
-const size_t RoiStringHelper::ROI_STR_MAX_LEN = 256;
-const uint32_t RoiStringHelper::ROI_MAX_COUNT = 6;
 
 bool RoiStringHelper::ParseInt32(const char *str, int32_t *outVal, const char **outEndPtr)
 {

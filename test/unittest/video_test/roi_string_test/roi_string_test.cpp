@@ -14,10 +14,11 @@
  */
 
 #include <gtest/gtest.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 #include "native_avcodec_videobase.h"
 #include "native_avformat.h"
+#include "securec.h"
 #define TEST_SUIT RoiStringTest
 
 using namespace testing::ext;
@@ -55,7 +56,7 @@ static void DestroyFormats(OH_AVFormat **formats, uint32_t count)
 HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_NullRoiStrInOut_001, TestSize.Level1)
 {
     OH_AVFormat *fmt = CreateRoiFormat(0, 0, 10, 10);
-    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoMetadata_AppendRoiString(NULL, fmt));
+    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoMetadata_AppendRoiString(nullptr, fmt));
     OH_AVFormat_Destroy(fmt);
 }
 
@@ -66,8 +67,8 @@ HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_NullRoiStrInOut_001, TestSize.Leve
  */
 HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_NullFormat_002, TestSize.Level1)
 {
-    char *roiStr = NULL;
-    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoMetadata_AppendRoiString(&roiStr, NULL));
+    char *roiStr = nullptr;
+    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoMetadata_AppendRoiString(&roiStr, nullptr));
 }
 
 /**
@@ -78,7 +79,7 @@ HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_NullFormat_002, TestSize.Level1)
 HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_CoordsOnly_003, TestSize.Level1)
 {
     OH_AVFormat *fmt = CreateRoiFormat(0, 0, 10, 10);
-    char *roiStr = NULL;
+    char *roiStr = nullptr;
     ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_AppendRoiString(&roiStr, fmt));
     ASSERT_NE(roiStr, nullptr);
     EXPECT_STREQ(roiStr, "0,0-10,10;");
@@ -95,7 +96,7 @@ HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_WithDqp_004, TestSize.Level1)
 {
     OH_AVFormat *fmt = CreateRoiFormat(0, 0, 100, 100);
     OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_VIDEO_METADATA_ROI_DELTA_QP, 5);
-    char *roiStr = NULL;
+    char *roiStr = nullptr;
     ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_AppendRoiString(&roiStr, fmt));
     ASSERT_NE(roiStr, nullptr);
     EXPECT_STREQ(roiStr, "0,0-100,100=dqp:5;");
@@ -113,7 +114,7 @@ HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_WithDqpAndSemLabel_005, TestSize.L
     OH_AVFormat *fmt = CreateRoiFormat(0, 0, 50, 60);
     OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_VIDEO_METADATA_ROI_DELTA_QP, -3);
     OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_VIDEO_METADATA_ROI_SEM_LABEL, 1);
-    char *roiStr = NULL;
+    char *roiStr = nullptr;
     ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_AppendRoiString(&roiStr, fmt));
     ASSERT_NE(roiStr, nullptr);
     EXPECT_STREQ(roiStr, "0,0-50,60=dqp:-3,slb:1;");
@@ -128,8 +129,8 @@ HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_WithDqpAndSemLabel_005, TestSize.L
  */
 HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_SeparatorProtection_006, TestSize.Level1)
 {
-    char *roiStr = (char *)malloc(16);
-    strcpy(roiStr, "0,0-100,100=5");
+    char *roiStr = static_cast<char *>(malloc(16));
+    strcpy_s(roiStr, 16, "0,0-100,100=5");
     OH_AVFormat *fmt = CreateRoiFormat(10, 20, 200, 300);
     ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_AppendRoiString(&roiStr, fmt));
     ASSERT_NE(roiStr, nullptr);
@@ -145,7 +146,7 @@ HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_SeparatorProtection_006, TestSize.
  */
 HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_ExceedMaxCount_007, TestSize.Level1)
 {
-    char *roiStr = NULL;
+    char *roiStr = nullptr;
     for (int32_t i = 0; i < 6; i++) {
         OH_AVFormat *fmt = CreateRoiFormat(i * 10, 0, (i + 1) * 10, 100);
         ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_AppendRoiString(&roiStr, fmt));
@@ -167,7 +168,7 @@ HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_ExceedMaxCount_007, TestSize.Level
  */
 HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_ExceedMaxLen_008, TestSize.Level1)
 {
-    char *roiStr = NULL;
+    char *roiStr = nullptr;
     int32_t bigCoord = 2147483647;
     for (int32_t i = 0; i < 4; i++) {
         OH_AVFormat *fmt = OH_AVFormat_Create();
@@ -203,7 +204,7 @@ HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_ExceedMaxLen_008, TestSize.Level1)
 HWTEST_F(TEST_SUIT, RoiString_GetRoiCount_NullRoiStr_009, TestSize.Level1)
 {
     uint32_t count = 0;
-    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoMetadata_GetRoiCount(NULL, &count));
+    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoMetadata_GetRoiCount(nullptr, &count));
 }
 
 /**
@@ -213,7 +214,7 @@ HWTEST_F(TEST_SUIT, RoiString_GetRoiCount_NullRoiStr_009, TestSize.Level1)
  */
 HWTEST_F(TEST_SUIT, RoiString_GetRoiCount_NullOutCount_010, TestSize.Level1)
 {
-    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoMetadata_GetRoiCount("0,0-10,10;", NULL));
+    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoMetadata_GetRoiCount("0,0-10,10;", nullptr));
 }
 
 /**
@@ -357,7 +358,7 @@ HWTEST_F(TEST_SUIT, RoiString_ParseRoiString_NullRoiStr_022, TestSize.Level1)
 {
     OH_AVFormat *formats[4] = {};
     uint32_t count = 0;
-    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoMetadata_ParseRoiString(NULL, formats, 4, &count));
+    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoMetadata_ParseRoiString(nullptr, formats, 4, &count));
 }
 
 /**
@@ -481,7 +482,7 @@ HWTEST_F(TEST_SUIT, RoiString_ParseRoiString_DuplicateKey_029, TestSize.Level1)
  */
 HWTEST_F(TEST_SUIT, RoiString_RoundTrip_AppendAndParse_030, TestSize.Level1)
 {
-    char *roiStr = NULL;
+    char *roiStr = nullptr;
     OH_AVFormat *fmt1 = CreateRoiFormat(0, 0, 100, 100);
     OH_AVFormat_SetIntValue(fmt1, OH_MD_KEY_VIDEO_METADATA_ROI_DELTA_QP, 5);
     ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_AppendRoiString(&roiStr, fmt1));
@@ -530,7 +531,7 @@ HWTEST_F(TEST_SUIT, RoiString_RoundTrip_ParseThenAppend_031, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_ParseRoiString(inputStr, parsed, 4, &parsedCount));
     ASSERT_EQ(parsedCount, 1);
 
-    char *roiStr = NULL;
+    char *roiStr = nullptr;
     ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_AppendRoiString(&roiStr, parsed[0]));
     EXPECT_STREQ(roiStr, "0,0-100,100=dqp:5;");
 
@@ -561,7 +562,7 @@ HWTEST_F(TEST_SUIT, RoiString_RoundTrip_ParseInvalidThenAppend_032, TestSize.Lev
     ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_ParseRoiString(invalidStr, parsed, 4, &parsedCount));
     EXPECT_EQ(parsedCount, 0);
 
-    char *roiStr = NULL;
+    char *roiStr = nullptr;
     OH_AVFormat *fmt = CreateRoiFormat(5, 5, 50, 50);
     OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_VIDEO_METADATA_ROI_DELTA_QP, -10);
     ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_AppendRoiString(&roiStr, fmt));
@@ -588,7 +589,7 @@ HWTEST_F(TEST_SUIT, RoiString_RoundTrip_ParseMixedThenReparse_033, TestSize.Leve
     ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_ParseRoiString(mixedStr, parsed, 4, &parsedCount));
     ASSERT_EQ(parsedCount, 2);
 
-    char *roiStr = NULL;
+    char *roiStr = nullptr;
     ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_AppendRoiString(&roiStr, parsed[0]));
     ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_AppendRoiString(&roiStr, parsed[1]));
     EXPECT_STREQ(roiStr, "0,0-10,10=dqp:5;5,6-7,8=slb:1;");
