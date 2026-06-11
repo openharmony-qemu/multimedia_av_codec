@@ -88,6 +88,7 @@ public:
     virtual std::vector<uint8_t> GetLogInfo() = 0;
     virtual uint32_t GetMaxReorderPic() = 0;
     virtual int32_t GetFirstFillerDataNalSize(const uint8_t *sample, int32_t size) = 0;
+    virtual double GetSar() = 0;
 };
 } // Plugins
 } // Media

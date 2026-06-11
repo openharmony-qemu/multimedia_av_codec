@@ -207,7 +207,8 @@ bool MPEG4DemuxerPlugin::IsMultiVideoTracks()
         MEDIA_LOG_I("track index is " PUBLIC_LOG_U32 ", trackType is " PUBLIC_LOG_D32 ", mimeType is " PUBLIC_LOG_S, i,
             trackType, mimeType.c_str());
         if (trackType == MediaType::VIDEO && StartWith(mimeType.c_str(), "video/")) {
-            refParserTrackIdx_ = (refParserTrackIdx_ == -1) ? i : refParserTrackIdx_;
+            refParserTrackIdx_ =
+                (refParserTrackIdx_ == -1) && i <= INT32_MAX ? static_cast<int32_t>(i) : refParserTrackIdx_;
             videoTrackCount++;
             if (videoTrackCount > 1) {  // multi video tracks
                 return true;

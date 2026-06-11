@@ -256,7 +256,7 @@ int64_t AvTime2Us(int64_t hTime)
 
 bool IsBeginAsAnnexb(const uint8_t *sample, int32_t size)
 {
-    if (size < NAL_START_CODE_SIZE) {
+    if (sample == nullptr || size < NAL_START_CODE_SIZE) {
         return false;
     }
     bool hasShortStartCode = (sample[0] == 0 && sample[1] == 0 && sample[2] == 1); // 001
