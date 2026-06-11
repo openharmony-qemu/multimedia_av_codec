@@ -161,7 +161,7 @@ static void CheckSeekModeResult(seekInfo seekInfo, OH_AVErrCode errCode)
     OH_AVFormat_Destroy(sourceFormat);
     sourceFormat = nullptr;
     close(fd);
-    ASSERT_EQ(errCode ,seekReturn);
+    ASSERT_EQ(errCode, seekReturn);
 }
 
 static void CheckSeekMode(seekInfo seekInfo)
