@@ -76,6 +76,7 @@ private:
 
     static bool ParseInt32(const char *str, int32_t *outVal, const char **outEndPtr);
     static bool ParseRectangleSegment(const char *start, RoiRectangleData *data, const char **outEndPtr);
+    static bool ValidateRoiFormat(OH_AVFormat *format);
     static uint32_t CountExistingRois(const char *roiStr);
     static int BuildRoiSegmentStr(char *buffer, size_t bufferSize, OH_AVFormat *avFormat);
     static OH_AVErrCode AppendSegmentToRoiStr(char **roiStrInOut, const char *segment);
@@ -96,6 +97,32 @@ bool RoiStringHelper::ParseInt32(const char *str, int32_t *outVal, const char **
     }
     *outVal = static_cast<int32_t>(val);
     *outEndPtr = endPtr;
+    return true;
+}
+
+bool RoiStringHelper::ValidateRoiFormat(OH_AVFormat *format)
+{
+    int32_t top = 0;
+    int32_t left = 0;
+    int32_t bottom = 0;
+    int32_t right = 0;
+    if (!OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_METADATA_ROI_TOP, &top) ||
+        !OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_METADATA_ROI_LEFT, &left) ||
+        !OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_METADATA_ROI_BOTTOM, &bottom) ||
+        !OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_METADATA_ROI_RIGHT, &right)) {
+        return false;
+    }
+    if (top < 0 || left < 0 || bottom < 0 || right < 0 || top >= bottom || left >= right) {
+        return false;
+    }
+    for (uint32_t i = 0; i < ROI_KV_COUNT; i++) {
+        int32_t kvVal = 0;
+        if (OH_AVFormat_GetIntValue(format, ROI_KV_TABLE[i].key, &kvVal)) {
+            if (kvVal < ROI_KV_TABLE[i].minVal || kvVal > ROI_KV_TABLE[i].maxVal) {
+                return false;
+            }
+        }
+    }
     return true;
 }
 
@@ -362,27 +389,8 @@ OH_AVErrCode RoiStringHelper::AppendRoiString(char **roiStrInOut, OH_AVFormat *f
         return AV_ERR_INVALID_VAL;
     }
 
-    int32_t top = 0;
-    int32_t left = 0;
-    int32_t bottom = 0;
-    int32_t right = 0;
-    if (!OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_METADATA_ROI_TOP, &top) ||
-        !OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_METADATA_ROI_LEFT, &left) ||
-        !OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_METADATA_ROI_BOTTOM, &bottom) ||
-        !OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_METADATA_ROI_RIGHT, &right)) {
+    if (!ValidateRoiFormat(format)) {
         return AV_ERR_INVALID_VAL;
-    }
-    if (top < 0 || left < 0 || bottom < 0 || right < 0 || top >= bottom || left >= right) {
-        return AV_ERR_INVALID_VAL;
-    }
-
-    for (uint32_t i = 0; i < ROI_KV_COUNT; i++) {
-        int32_t kvVal = 0;
-        if (OH_AVFormat_GetIntValue(format, ROI_KV_TABLE[i].key, &kvVal)) {
-            if (kvVal < ROI_KV_TABLE[i].minVal || kvVal > ROI_KV_TABLE[i].maxVal) {
-                return AV_ERR_INVALID_VAL;
-            }
-        }
     }
 
     char segmentBuf[128] = {0};
