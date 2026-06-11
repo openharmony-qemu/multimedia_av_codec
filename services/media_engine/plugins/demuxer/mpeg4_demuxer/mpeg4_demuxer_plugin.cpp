@@ -115,6 +115,7 @@ Status RescaleRoundNearest(int64_t value, int64_t multiplier, int64_t divisor, i
     if (quotient > static_cast<uint64_t>(std::numeric_limits<int64_t>::max()) / multiplierAbs) {
         return Status::ERROR_INVALID_DATA;
     }
+    // Scale quotient and remainder separately to avoid overflowing value * multiplier.
     uint64_t quotientScaled = quotient * multiplierAbs;
     uint64_t remainderScaled = remainder * multiplierAbs;
     uint64_t roundedRemainder = (remainderScaled + divisorAbs / ROUND_HALF_DIVISOR) / divisorAbs;
@@ -199,6 +200,7 @@ int64_t GetEffectiveStreamDurationTicks(const MediaInfo& mediaInfo,
     if (rawSampleDuration > 0) {
         streamDuration = streamDuration > 0 ? std::min(streamDuration, rawSampleDuration) : rawSampleDuration;
     }
+    // Initial empty edit shifts the visible video range; remove it from packet tail duration.
     if (streamDuration > 0 && track->codecParms.trackType == VIDEO_TYPE && !hasInitialEmptyEdit &&
         track->elstInitEmptyEdit > 0) {
         int32_t movieTimeScale = 0;
@@ -235,11 +237,13 @@ bool GetPacketDurationUs(
 
     int64_t duration = 0;
     if (sampleIndex + 1 < entries.size()) {
+        // For normal packets, duration follows the distance to the next decode timestamp.
         duration = entries[sampleIndex + 1].dts - entries[sampleIndex].dts;
         if (duration <= 0) {
             return false;
         }
     } else {
+        // The final packet has no next DTS, so close it against the effective stream duration.
         int64_t streamDuration = GetEffectiveStreamDurationTicks(mediaInfo, track, trackTimeScale);
         if (streamDuration < entries[sampleIndex].dts && entries[sampleIndex].duration != 0) {
             durationUs = 0;
@@ -278,6 +282,7 @@ bool GetMpegAudioFrameDurationUs(const MediaInfo& mediaInfo,
     if (entries.empty() || sampleIndex >= entries.size()) {
         return false;
     }
+    // A short final STTS run means the container already records a real tail duration.
     bool hasExplicitShortTailStts = track->sampleHelper->GetSttsEntryCount() == SHORT_TAIL_STTS_ENTRY_COUNT &&
         track->sampleHelper->GetSampleCountOfSttsEntry(1) == SINGLE_SAMPLE_RUN_COUNT &&
         track->sampleHelper->GetSampleDeltaOfSttsEntry(0) > track->sampleHelper->GetSampleDeltaOfSttsEntry(1);
@@ -380,6 +385,7 @@ bool IsWebVttCueSample(const std::shared_ptr<MPEG4AtomParser::Track>& track, uin
     if (sampleIndex >= entries.size() || entries[sampleIndex].size < BOX_HEADER_SIZE) {
         return false;
     }
+    // WebVTT sample payload starts with an ISO BMFF box header; cue samples use vttc.
     uint8_t header[BOX_HEADER_SIZE] = {0};
     if (track->sampleHelper->dataReader_->ReadUintData(entries[sampleIndex].pos, header, sizeof(header)) !=
         Status::OK) {
@@ -513,6 +519,7 @@ bool GetTrailingZeroEditedAudioDurationUs(const MediaInfo& mediaInfo,
         return false;
     }
     const auto& entries = track->sampleHelper->sampleIndexEntry_;
+    // Trailing zero STTS entries borrow the previous packet spacing unless stream tail is shorter.
     int64_t previousDuration = currentSample.dts - entries[sampleIndex - 1].dts;
     if (previousDuration <= 0) {
         return false;
@@ -530,6 +537,7 @@ bool GetSkipInfoEditedAudioDurationUs(const std::shared_ptr<MPEG4AtomParser::Tra
     int32_t trackTimeScale, int64_t& durationUs)
 {
     const auto& entries = track->sampleHelper->sampleIndexEntry_;
+    // Edit-list audio with skip samples may need to merge the previous packet spacing into the tail.
     if (rawTailDuration != currentSample.duration || entries.front().skipSamplesInfo.empty() || sampleIndex == 0) {
         return false;
     }
@@ -609,6 +617,7 @@ bool GetNominalSttsFrameDurationUs(const std::shared_ptr<MPEG4AtomParser::Track>
         return false;
     }
 
+    // Use the smallest non-zero STTS delta as the nominal frame spacing for zero-duration tails.
     uint32_t minDelta = 0;
     uint32_t entryCount = track->sampleHelper->GetSttsEntryCount();
     for (uint32_t i = 0; i < entryCount; ++i) {
@@ -697,6 +706,7 @@ bool AvcSampleContainsIdr(const std::shared_ptr<MPEG4AtomParser::Track>& track,
     if (nalLengthSize == 0 || sample.size < nalLengthSize) {
         return false;
     }
+    // AVC samples are length-prefixed here; scan NAL units to recover missing IDR key flags.
     std::vector<uint8_t> sampleData(static_cast<size_t>(sample.size));
     if (track->sampleHelper->dataReader_->ReadUintData(sample.pos, sampleData.data(), sampleData.size()) !=
         Status::OK) {
@@ -736,6 +746,7 @@ uint32_t GetSkipSamplesFromInfo(const std::vector<uint8_t>& skipSamplesInfo)
     }
     uint32_t skipSamples = 0;
     for (size_t i = 0; i < sizeof(uint32_t); ++i) {
+        // Skip samples side data is stored as little-endian 32-bit sample count.
         skipSamples |= static_cast<uint32_t>(skipSamplesInfo[i]) << (i * BITS_PER_BYTE);
     }
     return skipSamples;
@@ -805,6 +816,7 @@ bool GetMovEditTimelineOffsetTicks(const MediaInfo& mediaInfo, const std::shared
     int64_t emptyDuration = 0;
     int64_t startTime = 0;
     bool foundStart = false;
+    // Translate edit-list empty edit plus media start into a track-time timeline offset.
     for (size_t i = 0; i < track->editListEntries.size(); ++i) {
         const auto& edit = track->editListEntries[i];
         if (i == 0 && edit.mediaTime == -1) {
@@ -839,6 +851,7 @@ bool GetRawAudioDtsTicks(const std::shared_ptr<MPEG4AtomParser::Track>& track, u
         return false;
     }
     rawDts = 0;
+    // Rebuild raw DTS from sample durations before edit-list trimming.
     for (uint32_t i = 0; i < sampleIndex; ++i) {
         uint32_t duration = 0;
         if (track->sampleHelper->GetSampleDuration(i, duration) != Status::OK) {
@@ -863,6 +876,7 @@ Status SetPacketTimelineUs(const MediaInfo& mediaInfo,
     int64_t pts = currentSample.pts - timelineOffset;
     dts = currentSample.dts - timelineOffset;
     if (ShouldApplyMovEditTimelineOffset(track)) {
+        // For edit lists beyond raw media duration, packet PTS/DTS follows the raw decode timeline.
         int64_t rawDts = 0;
         FALSE_RETURN_V_MSG_E(GetRawAudioDtsTicks(track, sampleIndex, rawDts),
             Status::ERROR_INVALID_DATA, "Get raw audio dts failed");
@@ -880,6 +894,7 @@ bool UpdatePacketDurationUs(const MediaInfo& mediaInfo, const std::shared_ptr<MP
     uint32_t sampleIndex, int32_t trackTimeScale, bool hasPlayableVideoTrack, ReadSamplePacketAttr& attr)
 {
     const auto& currentSample = track->sampleHelper->sampleIndexEntry_[sampleIndex];
+    // Duration sources are ordered from container-specific corrections to generic sample-table fallback.
     bool hasDuration = GetSingleEditShortTailAudioDurationUs(track, sampleIndex, trackTimeScale,
         hasPlayableVideoTrack, attr.durationUs) ||
         GetMpegAudioFrameDurationUs(mediaInfo, track, track->trackIndex, sampleIndex, attr.durationUs) ||
