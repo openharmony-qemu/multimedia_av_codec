@@ -71,8 +71,14 @@ private:
     static int BuildRoiSegmentStr(char *buffer, size_t bufferSize, OH_AVFormat *avFormat);
     static OH_AVErrCode AppendSegmentToRoiStr(char **roiStrInOut, const char *segment);
     static bool ValidateAndParseRoiKvpairs(OH_AVFormat *avFormat, const char *eqPos, const char *segEnd);
+    static bool IsValidCoordinates(int32_t top, int32_t left, int32_t bottom, int32_t right);
     static OH_AVFormat *ParseOneRoiSegmentToFormat(const char *start, const char *segEnd);
 };
+
+bool RoiStringHelper::IsValidCoordinates(int32_t top, int32_t left, int32_t bottom, int32_t right)
+{
+    return top >= 0 && left >= 0 && bottom >= 0 && right >= 0 && top < bottom && left < right;
+}
 
 bool RoiStringHelper::ParseInt32(const char *str, int32_t *outVal, const char **outEndPtr)
 {
@@ -251,7 +257,7 @@ OH_AVFormat *RoiStringHelper::ParseOneRoiSegmentToFormat(const char *start, cons
     if (nextChar != '=' && nextChar != ';' && nextChar != '\0') {
         return nullptr;
     }
-    if (top < 0 || left < 0 || bottom < 0 || right < 0 || top >= bottom || left >= right) {
+    if (!IsValidCoordinates(top, left, bottom, right)) {
         return nullptr;
     }
     OH_AVFormat *avFormat = OH_AVFormat_Create();
