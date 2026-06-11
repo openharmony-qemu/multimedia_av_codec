@@ -38,8 +38,10 @@ ohos_fuzztest("DemuxerInnerFuzzTest") {
   ]
   external_deps = [
     "c_utils:utils",
+    "graphic_surface:surface",
     "hilog:libhilog",
     "ipc:ipc_core",
+    "media_foundation:media_foundation",
     "media_foundation:native_media_core",
     "window_manager:libwm",
   ]

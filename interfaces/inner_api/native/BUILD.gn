@@ -204,10 +204,6 @@ ohos_shared_library("av_codec_client") {
     ":av_codec_client_codec_config",
   ]
 
-  public_external_deps = [
-    "ffmpeg:libohosffmpeg",
-    "media_foundation:media_foundation",
-  ]
   sanitize = av_codec_sanitize
 
   configs = [
@@ -315,6 +311,11 @@ ohos_shared_library("av_codec_client") {
 
   deps += [ "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules" ]
 
+  public_external_deps = [
+    "media_foundation:media_foundation",
+    "ffmpeg:libohosffmpeg",
+  ]
+
   external_deps = [
     "bounds_checking_function:libsec_static",
     "bundle_framework:appexecfwk_base",
@@ -323,8 +324,8 @@ ohos_shared_library("av_codec_client") {
     "drivers_interface_codec:libcodec_proxy_4.0",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "ipc:ipc_single",
-    "media_foundation:media_foundation",
     "qos_manager:qos",
     "samgr:samgr_proxy",
   ]
@@ -353,7 +354,6 @@ ohos_shared_library("av_codec_suspend_client") {
     ":av_codec_client_codec_config",
   ]
 
-  public_external_deps = [ "media_foundation:media_foundation" ]
   sanitize = av_codec_sanitize
 
   configs = [
@@ -375,6 +375,7 @@ ohos_shared_library("av_codec_suspend_client") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "samgr:samgr_proxy",

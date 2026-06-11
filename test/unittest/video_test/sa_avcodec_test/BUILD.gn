@@ -158,6 +158,7 @@ ohos_unittest("video_sa_avcodec_unit_test") {
     "ffmpeg:libohosffmpeg",
     "googletest:gmock_main",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "hisysevent:libhisysevent",
     "hiview:libucollection_client",
     "init:libbegetutil",

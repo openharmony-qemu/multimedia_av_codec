@@ -74,6 +74,7 @@ ohos_unittest("source_unit_test") {
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "ipc:ipc_single",
+    "media_foundation:media_foundation",
     "media_foundation:native_media_core",
   ]
 

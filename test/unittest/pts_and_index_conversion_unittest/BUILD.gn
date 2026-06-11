@@ -86,6 +86,7 @@ ohos_unittest("pts_and_index_conversion_unittest") {
     "googletest:gmock",
     "googletest:gtest",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "hisysevent:libhisysevent",
     "media_foundation:media_foundation",
   ]

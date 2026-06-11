@@ -127,6 +127,7 @@ ohos_unittest("fast_kits_interface_unittest") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
   ]

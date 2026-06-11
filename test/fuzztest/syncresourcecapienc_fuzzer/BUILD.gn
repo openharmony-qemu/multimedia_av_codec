@@ -61,8 +61,7 @@ ohos_fuzztest("SyncResourceCapiEncFuzzTest") {
     "VIDEOENC_CAPI_UNIT_TEST",
     "VIDEOENC_SYNC_UNIT_TEST",
   ]
-  public_deps =
-      [ "$MEDIA_ROOT_DIR/test/unittest/common:av_codec_capi_unit_test" ]
+  deps = [ "$MEDIA_ROOT_DIR/test/unittest/common:av_codec_capi_unit_test" ]
 
   external_deps = [
     "c_utils:utils",
@@ -72,8 +71,10 @@ ohos_fuzztest("SyncResourceCapiEncFuzzTest") {
     "graphic_surface:sync_fence",
     "hilog:libhilog",
     "ipc:ipc_single",
+    "media_foundation:media_foundation",
     "media_foundation:native_media_core",
     "googletest:gtest",
+    "openssl:libcrypto_shared",
   ]
 
   if (av_codec_support_drm) {

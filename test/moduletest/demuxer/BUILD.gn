@@ -131,6 +131,7 @@ ohos_unittest("demuxer_native_module_test") {
     "c_utils:utils",
     "graphic_2d:librender_service_client",
     "graphic_surface:surface",
+    "init:libbegetutil",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
     "window_manager:libwm",

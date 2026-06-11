@@ -131,7 +131,10 @@ ohos_source_set("video_sample") {
 ohos_executable("video_codec_demo") {
   sources = [ "./demo/video_codec_demo.cpp" ]
 
-  deps = [ ":video_sample" ]
+  deps = [
+    ":video_sample",
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+  ]
 
   external_deps = [
     "c_utils:utils",

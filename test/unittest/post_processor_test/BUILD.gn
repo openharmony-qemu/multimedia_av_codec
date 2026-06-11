@@ -79,10 +79,11 @@ ohos_unittest("post_processor_unit_test") {
 
   public_configs = []
 
+  deps = [ "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules" ]
+
   external_deps = [
     "audio_framework:audio_capturer",
     "audio_framework:audio_client",
-    "av_codec:av_codec_media_engine_modules",
     "c_utils:utils",
     "ffmpeg:libohosffmpeg",
     "googletest:gmock_main",

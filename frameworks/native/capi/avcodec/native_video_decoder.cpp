@@ -20,7 +20,6 @@
 #include <unordered_map>
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
-#include "avcodec_trace.h"
 #include "avcodec_video_decoder.h"
 #include "buffer/avsharedmemory.h"
 #include "common/native_mfmagic.h"

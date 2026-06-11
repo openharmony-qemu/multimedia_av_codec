@@ -43,7 +43,6 @@ codeclist_unittest_cflags = [
 ]
 
 av_codec_inner_external_deps = [
-  "av_codec:av_codec_client",
   "bounds_checking_function:libsec_static",
   "cJSON:cjson",
   "c_utils:utils",
