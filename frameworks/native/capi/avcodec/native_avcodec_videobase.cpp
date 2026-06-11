@@ -362,11 +362,17 @@ OH_AVErrCode RoiStringHelper::AppendRoiString(char **roiStrInOut, OH_AVFormat *f
         return AV_ERR_INVALID_VAL;
     }
 
-    int32_t val = 0;
-    if (!OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_METADATA_ROI_TOP, &val) ||
-        !OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_METADATA_ROI_LEFT, &val) ||
-        !OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_METADATA_ROI_BOTTOM, &val) ||
-        !OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_METADATA_ROI_RIGHT, &val)) {
+    int32_t top = 0;
+    int32_t left = 0;
+    int32_t bottom = 0;
+    int32_t right = 0;
+    if (!OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_METADATA_ROI_TOP, &top) ||
+        !OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_METADATA_ROI_LEFT, &left) ||
+        !OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_METADATA_ROI_BOTTOM, &bottom) ||
+        !OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_METADATA_ROI_RIGHT, &right)) {
+        return AV_ERR_INVALID_VAL;
+    }
+    if (top < 0 || left < 0 || bottom < 0 || right < 0 || top >= bottom || left >= right) {
         return AV_ERR_INVALID_VAL;
     }
 
