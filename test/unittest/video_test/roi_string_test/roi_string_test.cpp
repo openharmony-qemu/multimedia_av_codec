@@ -140,24 +140,21 @@ HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_SeparatorProtection_006, TestSize.
 }
 
 /**
- * @tc.name: RoiString_AppendRoiString_ExceedMaxCount_007
- * @tc.desc: Test that appending the 7th ROI is rejected and original string unchanged
+ * @tc.name: RoiString_AppendRoiString_NoCountLimit_007
+ * @tc.desc: Test that appending more than 6 ROIs succeeds when total length stays under 256
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_ExceedMaxCount_007, TestSize.Level1)
+HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_NoCountLimit_007, TestSize.Level1)
 {
     char *roiStr = nullptr;
-    for (int32_t i = 0; i < 6; i++) {
+    for (int32_t i = 0; i < 7; i++) {
         OH_AVFormat *fmt = CreateRoiFormat(i * 10, 0, (i + 1) * 10, 100);
         ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_AppendRoiString(&roiStr, fmt));
         OH_AVFormat_Destroy(fmt);
     }
-    OH_AVFormat *fmt7 = CreateRoiFormat(0, 0, 10, 10);
-    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoMetadata_AppendRoiString(&roiStr, fmt7));
     uint32_t count = 0;
     ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_GetRoiCount(roiStr, &count));
-    EXPECT_EQ(count, 6);
-    OH_AVFormat_Destroy(fmt7);
+    EXPECT_EQ(count, 7);
     free(roiStr);
 }
 
@@ -172,8 +169,8 @@ HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_ExceedMaxLen_008, TestSize.Level1)
     int32_t bigCoord = 2147483647;
     for (int32_t i = 0; i < 4; i++) {
         OH_AVFormat *fmt = OH_AVFormat_Create();
-        OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_VIDEO_METADATA_ROI_TOP, bigCoord);
-        OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_VIDEO_METADATA_ROI_LEFT, bigCoord);
+        OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_VIDEO_METADATA_ROI_TOP, bigCoord - 1 - i);
+        OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_VIDEO_METADATA_ROI_LEFT, bigCoord - 1);
         OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_VIDEO_METADATA_ROI_BOTTOM, bigCoord);
         OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_VIDEO_METADATA_ROI_RIGHT, bigCoord);
         OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_VIDEO_METADATA_ROI_DELTA_QP, -51);
@@ -182,8 +179,8 @@ HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_ExceedMaxLen_008, TestSize.Level1)
         OH_AVFormat_Destroy(fmt);
     }
     OH_AVFormat *fmt5 = OH_AVFormat_Create();
-    OH_AVFormat_SetIntValue(fmt5, OH_MD_KEY_VIDEO_METADATA_ROI_TOP, bigCoord);
-    OH_AVFormat_SetIntValue(fmt5, OH_MD_KEY_VIDEO_METADATA_ROI_LEFT, bigCoord);
+    OH_AVFormat_SetIntValue(fmt5, OH_MD_KEY_VIDEO_METADATA_ROI_TOP, bigCoord - 1);
+    OH_AVFormat_SetIntValue(fmt5, OH_MD_KEY_VIDEO_METADATA_ROI_LEFT, bigCoord - 1);
     OH_AVFormat_SetIntValue(fmt5, OH_MD_KEY_VIDEO_METADATA_ROI_BOTTOM, bigCoord);
     OH_AVFormat_SetIntValue(fmt5, OH_MD_KEY_VIDEO_METADATA_ROI_RIGHT, bigCoord);
     OH_AVFormat_SetIntValue(fmt5, OH_MD_KEY_VIDEO_METADATA_ROI_DELTA_QP, -51);

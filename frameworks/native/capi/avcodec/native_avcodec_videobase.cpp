@@ -44,11 +44,13 @@ struct KvDesc {
     const char *keyName;
     const char *key;
     int keyNameLen;
+    int32_t minVal;
+    int32_t maxVal;
 };
 
 const KvDesc ROI_KV_TABLE[] = {
-    { "dqp", OH_MD_KEY_VIDEO_METADATA_ROI_DELTA_QP, 3 },
-    { "slb", OH_MD_KEY_VIDEO_METADATA_ROI_SEM_LABEL, 3 },
+    { "dqp", OH_MD_KEY_VIDEO_METADATA_ROI_DELTA_QP, 3, -51, 51 },
+    { "slb", OH_MD_KEY_VIDEO_METADATA_ROI_SEM_LABEL, 3, 0, 1 },
 };
 constexpr uint32_t ROI_KV_COUNT = sizeof(ROI_KV_TABLE) / sizeof(ROI_KV_TABLE[0]);
 constexpr size_t ROI_STR_MAX_LEN = 256;
@@ -80,6 +82,7 @@ private:
     static int BuildRoiSegmentStr(char *buffer, size_t bufferSize, OH_AVFormat *avFormat);
     static OH_AVErrCode AppendSegmentToRoiStr(char **roiStrInOut, const char *segment);
     static bool ValidateAndParseRoiKvpairs(OH_AVFormat *avFormat, const char *eqPos, const char *segEnd);
+    static bool ParseOldFormatDqp(OH_AVFormat *avFormat, const char *eqPos);
     static OH_AVFormat *ParseOneRoiSegmentToFormat(const char *start, const char *segEnd);
     static bool IsSameRoiFormat(OH_AVFormat *a, OH_AVFormat *b);
 };
@@ -226,6 +229,20 @@ OH_AVErrCode RoiStringHelper::AppendSegmentToRoiStr(char **roiStrInOut, const ch
     return AV_ERR_OK;
 }
 
+bool RoiStringHelper::ParseOldFormatDqp(OH_AVFormat *avFormat, const char *eqPos)
+{
+    const char *dqpEndPtr = nullptr;
+    int32_t dqpVal = 0;
+    if (!ParseInt32(eqPos + 1, &dqpVal, &dqpEndPtr) || (*dqpEndPtr != ';' && *dqpEndPtr != '\0')) {
+        return false;
+    }
+    if (dqpVal < ROI_KV_TABLE[0].minVal || dqpVal > ROI_KV_TABLE[0].maxVal) {
+        return false;
+    }
+    OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_DELTA_QP, dqpVal);
+    return true;
+}
+
 bool RoiStringHelper::ValidateAndParseRoiKvpairs(OH_AVFormat *avFormat, const char *eqPos, const char *segEnd)
 {
     const char *curPtr = eqPos + 1;
@@ -256,6 +273,9 @@ bool RoiStringHelper::ValidateAndParseRoiKvpairs(OH_AVFormat *avFormat, const ch
         if (!ParseInt32(curPtr + ROI_KV_TABLE[matchedIdx].keyNameLen + 1, &val, &numEndPtr)) {
             return false;
         }
+        if (val < ROI_KV_TABLE[matchedIdx].minVal || val > ROI_KV_TABLE[matchedIdx].maxVal) {
+            return false;
+        }
         OH_AVFormat_SetIntValue(avFormat, ROI_KV_TABLE[matchedIdx].key, val);
         curPtr = numEndPtr;
         if (*curPtr == ',') {
@@ -268,13 +288,7 @@ bool RoiStringHelper::ValidateAndParseRoiKvpairs(OH_AVFormat *avFormat, const ch
     if (isAnyKvPrefix) {
         return !isCommaPending && (*curPtr == ';' || *curPtr == '\0');
     }
-    const char *dqpEndPtr = nullptr;
-    int32_t dqpVal = 0;
-    if (!ParseInt32(eqPos + 1, &dqpVal, &dqpEndPtr) || (*dqpEndPtr != ';' && *dqpEndPtr != '\0')) {
-        return false;
-    }
-    OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_DELTA_QP, dqpVal);
-    return true;
+    return ParseOldFormatDqp(avFormat, eqPos);
 }
 
 bool RoiStringHelper::IsSameRoiFormat(OH_AVFormat *a, OH_AVFormat *b)
@@ -344,6 +358,15 @@ OH_AVErrCode RoiStringHelper::AppendRoiString(char **roiStrInOut, OH_AVFormat *f
         !OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_METADATA_ROI_BOTTOM, &val) ||
         !OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_METADATA_ROI_RIGHT, &val)) {
         return AV_ERR_INVALID_VAL;
+    }
+
+    for (uint32_t i = 0; i < ROI_KV_COUNT; i++) {
+        int32_t kvVal = 0;
+        if (OH_AVFormat_GetIntValue(format, ROI_KV_TABLE[i].key, &kvVal)) {
+            if (kvVal < ROI_KV_TABLE[i].minVal || kvVal > ROI_KV_TABLE[i].maxVal) {
+                return AV_ERR_INVALID_VAL;
+            }
+        }
     }
 
     char segmentBuf[128] = {0};
