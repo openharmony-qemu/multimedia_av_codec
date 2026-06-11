@@ -26,7 +26,6 @@
 #include "avc_encoder_util.h"
 #include "avc_encoder_convert.h"
 #include "avc_encoder.h"
-#include <malloc.h>
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -173,6 +172,11 @@ AvcEncoder::~AvcEncoder()
     ReleaseResource();
     ReleaseHandle();
     callback_ = nullptr;
+    if (avcEncHeaderArgs_.streamBuf) {
+        free(avcEncHeaderArgs_.streamBuf);
+        avcEncHeaderArgs_.streamBuf = nullptr;
+        avcEncHeaderArgs_.size = 0;
+    }
     if (encInstanceID_ < VIDEO_INSTANCE_SIZE) {
         std::lock_guard<std::mutex> lock(encoderCountMutex_);
         freeIDSet_.push_back(encInstanceID_);
@@ -1053,12 +1057,6 @@ void AvcEncoder::ReleaseResource()
         inputSurface_->UnregisterConsumerListener();
     }
 
-    if (avcEncHeaderArgs_.streamBuf) {
-        free(avcEncHeaderArgs_.streamBuf);
-        avcEncHeaderArgs_.streamBuf = nullptr;
-        avcEncHeaderArgs_.size = 0;
-    }
-
     std::unique_lock<std::mutex> runLock(encRunMutex_);
     if (avcEncoder_ != nullptr && avcEncoderDeleteFunc_ != nullptr) {
         uint32_t ret = avcEncoderDeleteFunc_(avcEncoder_);
@@ -1602,8 +1600,10 @@ int32_t AvcEncoder::ProcessHeaderInfo()
         FillAvcEncoderInDefaultArgs(headerInArgs);
         ret = EncoderAvcFrame(headerInArgs, avcEncOutputArgs_);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_VID_ENC_FAILED, "encode header info failed!");
-        ret = StoreHeaderInfo();
-        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_VID_ENC_FAILED, "store header info failed!");
+        if (enableIdrAppendXps_) {
+            ret = StoreHeaderInfo();
+            CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_VID_ENC_FAILED, "store header info failed!");
+        }
     } else {
         ret = CopyHeaderInfoToOutArgs();
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_VID_ENC_FAILED, "copy header info failed!");
