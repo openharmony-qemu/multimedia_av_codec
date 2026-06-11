@@ -138,9 +138,8 @@ struct seekInfo {
     int32_t subtitleCount;
 };
 
-static uint32_t CheckSeekModeResult(seekInfo seekInfo)
+static void CheckSeekModeResult(seekInfo seekInfo, OH_AVErrCode errCode)
 {
-    OH_AVCodecBufferAttr attr;
     uint32_t seekReturn = 0;
     int fd = open(seekInfo.fileName, O_RDONLY);
     int64_t size = GetFileSize(seekInfo.fileName);
@@ -162,7 +161,7 @@ static uint32_t CheckSeekModeResult(seekInfo seekInfo)
     OH_AVFormat_Destroy(sourceFormat);
     sourceFormat = nullptr;
     close(fd);
-    return seekReturn;
+    ASSERT_EQ(errCode ,seekReturn);
 }
 
 static void CheckSeekMode(seekInfo seekInfo)
@@ -1219,7 +1218,7 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_0600, TestSize.
     cout << "-----------------fileTest2_finish-----------------"<< endl;
     seekInfo fileTest3{"/data/test/media/264_audiovivid_short_pts.flv", SEEK_MODE_NEXT_SYNC,
         1000000, 0, 0, 0};
-    ASSERT_EQ(AV_ERR_UNKNOWN, CheckSeekModeResult(fileTest3));
+    CheckSeekModeResult(fileTest3, AV_ERR_UNKNOWN);
     cout << "-----------------fileTest3_finish-----------------"<< endl;
     seekInfo fileTest4{"/data/test/media/264_audiovivid_short_pts.flv", SEEK_MODE_PREVIOUS_SYNC,
         2000000, 123, 27, 0};
@@ -1231,7 +1230,7 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_0600, TestSize.
     cout << "-----------------fileTest5_finish-----------------"<< endl;
     seekInfo fileTest6{"/data/test/media/264_audiovivid_short_pts.flv", SEEK_MODE_NEXT_SYNC,
         2000000, 0, 0, 0};
-    ASSERT_EQ(AV_ERR_UNKNOWN, CheckSeekModeResult(fileTest6));
+    CheckSeekModeResult(fileTest6, AV_ERR_UNKNOWN);
     cout << "-----------------fileTest6_finish-----------------"<< endl;
     seekInfo fileTest7{"/data/test/media/264_audiovivid_short_pts.flv", SEEK_MODE_PREVIOUS_SYNC,
         4000000, 123, 27, 0};
@@ -1243,7 +1242,7 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_0600, TestSize.
     cout << "-----------------fileTest8_finish-----------------"<< endl;
     seekInfo fileTest9{"/data/test/media/264_audiovivid_short_pts.flv", SEEK_MODE_NEXT_SYNC,
         4000000, 0, 0, 0};
-    ASSERT_EQ(AV_ERR_UNKNOWN, CheckSeekModeResult(fileTest9));
+    CheckSeekModeResult(fileTest9, AV_ERR_UNKNOWN);
     cout << "-----------------fileTest9_finish-----------------"<< endl;
 }
 
@@ -1264,7 +1263,7 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_0700, TestSize.
     cout << "-----------------fileTest2_finish-----------------"<< endl;
     seekInfo fileTest3{"/data/test/media/265_audiovivid_short_pts.flv", SEEK_MODE_NEXT_SYNC,
         1000000, 0, 0, 0};
-    ASSERT_EQ(AV_ERR_UNKNOWN, CheckSeekModeResult(fileTest3));
+    CheckSeekModeResult(fileTest3, AV_ERR_UNKNOWN);
     cout << "-----------------fileTest3_finish-----------------"<< endl;
     seekInfo fileTest4{"/data/test/media/265_audiovivid_short_pts.flv", SEEK_MODE_PREVIOUS_SYNC,
         2000000, 242, 12, 0};
@@ -1276,7 +1275,7 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_0700, TestSize.
     cout << "-----------------fileTest5_finish-----------------"<< endl;
     seekInfo fileTest6{"/data/test/media/265_audiovivid_short_pts.flv", SEEK_MODE_NEXT_SYNC,
         2000000, 0, 0, 0};
-    ASSERT_EQ(AV_ERR_UNKNOWN, CheckSeekModeResult(fileTest6));
+    CheckSeekModeResult(fileTest6, AV_ERR_UNKNOWN);
     cout << "-----------------fileTest6_finish-----------------"<< endl;
     seekInfo fileTest7{"/data/test/media/265_audiovivid_short_pts.flv", SEEK_MODE_PREVIOUS_SYNC,
         4000000, 242, 12, 0};
@@ -1288,7 +1287,7 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_0700, TestSize.
     cout << "-----------------fileTest8_finish-----------------"<< endl;
     seekInfo fileTest9{"/data/test/media/265_audiovivid_short_pts.flv", SEEK_MODE_NEXT_SYNC,
         4000000, 0, 0, 0};
-    ASSERT_EQ(AV_ERR_UNKNOWN, CheckSeekModeResult(fileTest9));
+    CheckSeekModeResult(fileTest9, AV_ERR_UNKNOWN);
     cout << "-----------------fileTest9_finish-----------------"<< endl;
 }
 
