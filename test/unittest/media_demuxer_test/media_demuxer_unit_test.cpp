@@ -196,7 +196,7 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_SetDataSource_001, TestSize.
     streamDemuxer->Init("");
 
     std::thread initPluginThread([demuxerPluginManager, streamDemuxer, pluginName]() {
-        EXPECT_EQ(demuxerPluginManager->InitPlugin(streamDemuxer, pluginName, 0), true);
+        EXPECT_EQ(demuxerPluginManager->InitPlugin(streamDemuxer, pluginName, 0), Status::OK);
     });
     initPluginThread.join();
     TestPullDataFailReadSample(demuxerPluginManager);
@@ -228,7 +228,7 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_SetDataSource_002, TestSize.
     streamDemuxer->Init("");
 
     std::thread initPluginThread([demuxerPluginManager, streamDemuxer, pluginName]() {
-        EXPECT_EQ(demuxerPluginManager->InitPlugin(streamDemuxer, pluginName, 0), true);
+        EXPECT_EQ(demuxerPluginManager->InitPlugin(streamDemuxer, pluginName, 0), Status::OK);
     });
     initPluginThread.join();
     TestPullDataFailReadSample(demuxerPluginManager);
@@ -258,13 +258,13 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_SetDataSource_003, TestSize.
     streamDemuxer->SetSource(source);
     streamDemuxer->Init("");
 
-    bool ret = true;
+    Status ret = Status::OK;
     std::thread initPluginThread([&ret, demuxerPluginManager, streamDemuxer, pluginName]() {
         ret = demuxerPluginManager->InitPlugin(streamDemuxer, pluginName, 0);
     });
     streamDemuxer->SetInterruptState(true);
     initPluginThread.join();
-    EXPECT_EQ(ret, false);
+    EXPECT_NE(ret, Status::OK);
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SelectTrack_003, TestSize.Level1)
@@ -1274,7 +1274,7 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_InitPlugin_001, TestSize.Lev
 
     std::shared_ptr<StreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxerMock>();
     std::thread initPluginThread([demuxerManager, streamDemuxer, pluginName]() {
-        EXPECT_EQ(demuxerManager->InitPlugin(streamDemuxer, pluginName, 0), true);
+        EXPECT_EQ(demuxerManager->InitPlugin(streamDemuxer, pluginName, 0), Status::OK);
     });
     initPluginThread.join();
 }
@@ -1293,7 +1293,7 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_InitPlugin_002, TestSize.Lev
 
     std::shared_ptr<StreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxerMock>();
     std::thread initPluginThread([demuxerManager, streamDemuxer, pluginName]() {
-        EXPECT_EQ(demuxerManager->InitPlugin(streamDemuxer, pluginName, 0), true);
+        EXPECT_EQ(demuxerManager->InitPlugin(streamDemuxer, pluginName, 0), Status::OK);
     });
     std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     demuxerManager->NotifyInitialBufferingEnd(true);
@@ -1314,7 +1314,7 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_InitPlugin_003, TestSize.Lev
 
     std::shared_ptr<StreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxerMock>();
     std::thread initPluginThread([demuxerManager, streamDemuxer, pluginName]() {
-        EXPECT_EQ(demuxerManager->InitPlugin(streamDemuxer, pluginName, 0), false);
+        EXPECT_EQ(demuxerManager->InitPlugin(streamDemuxer, pluginName, 0), Status::ERROR_NOT_ENOUGH_DATA);
     });
     std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     demuxerManager->NotifyInitialBufferingEnd(false);
@@ -1335,7 +1335,7 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_InitPlugin_004, TestSize.Lev
 
     std::shared_ptr<StreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxerMock>();
     std::thread initPluginThread([demuxerManager, streamDemuxer, pluginName]() {
-        EXPECT_EQ(demuxerManager->InitPlugin(streamDemuxer, pluginName, 0), false);
+        EXPECT_EQ(demuxerManager->InitPlugin(streamDemuxer, pluginName, 0), Status::ERROR_NOT_ENOUGH_DATA);
     });
     std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     demuxerManager->NotifyInitialBufferingEnd(true);
