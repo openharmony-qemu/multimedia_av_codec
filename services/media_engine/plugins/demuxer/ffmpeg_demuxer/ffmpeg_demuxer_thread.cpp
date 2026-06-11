@@ -269,7 +269,8 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         MEDIA_LOG_D("All partial sample has been copied");
         cacheQueue_.Pop(trackId);
     }
-    return ret;
+    return ret == Status::ERROR_PACKET_CONVERT_FAILED ?
+        SkipPacketAfterPacketConvertError(trackId, samplePacket, true, true) : ret;
 }
 
 Status FFmpegDemuxerPlugin::ReadSampleZeroCopy(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout)
@@ -318,7 +319,8 @@ Status FFmpegDemuxerPlugin::ReadSampleZeroCopy(uint32_t trackId, std::shared_ptr
     if (ret == Status::OK) {
         cacheQueue_.Pop(trackId);
     }
-    return ret;
+    return ret == Status::ERROR_PACKET_CONVERT_FAILED ?
+        SkipPacketAfterPacketConvertError(trackId, samplePacket, true, true) : ret;
 }
 
 Status FFmpegDemuxerPlugin::ConvertAVPacketToSampleMemory(
