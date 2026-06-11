@@ -52,14 +52,13 @@ constexpr uint32_t MAX_REORDER_DELAY = 16;
 Status ConvertTimeScaleRoundNearest(int64_t multiplicand, int64_t multiplier, int64_t timeScale, int64_t* result)
 {
     int64_t scaled = 0;
-    if (result == nullptr || timeScale == 0 || __builtin_mul_overflow(multiplicand, multiplier, &scaled)) {
+    if (result == nullptr || timeScale <= 0 || __builtin_mul_overflow(multiplicand, multiplier, &scaled)) {
         return Status::ERROR_INVALID_DATA;
     }
     int64_t quotient = scaled / timeScale;
     int64_t remainder = scaled % timeScale;
-    int64_t absTimeScale = std::abs(timeScale);
-    int64_t halfTimeScale = absTimeScale / 2;
-    int64_t roundThreshold = absTimeScale - halfTimeScale;
+    int64_t halfTimeScale = timeScale / 2;
+    int64_t roundThreshold = timeScale - halfTimeScale;
     if (remainder > 0 && remainder >= roundThreshold) {
         if (quotient == std::numeric_limits<int64_t>::max()) {
             return Status::ERROR_INVALID_DATA;
