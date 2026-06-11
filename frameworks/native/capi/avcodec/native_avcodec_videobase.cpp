@@ -378,11 +378,7 @@ OH_AVErrCode RoiStringHelper::GetRoiCount(const char *roiStr, uint32_t *outCount
         return AV_ERR_OK;
     }
 
-    if (estimatedCount > SIZE_MAX / sizeof(OH_AVFormat *)) {
-        return AV_ERR_INVALID_VAL;
-    }
-
-    size_t allocSize = sizeof(OH_AVFormat *) * estimatedCount;
+    size_t allocSize = sizeof(OH_AVFormat *) * static_cast<size_t>(estimatedCount);
     OH_AVFormat **tempFormats = static_cast<OH_AVFormat **>(malloc(allocSize));
     if (tempFormats == nullptr) {
         return AV_ERR_NO_MEMORY;
