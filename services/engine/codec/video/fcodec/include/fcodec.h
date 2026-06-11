@@ -116,7 +116,6 @@ private:
     void ReceiveFrame();
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
                              int32_t maxVal = INT_MAX);
-    void ConfigureMaxInputSize(const Format &format);
     int32_t ConfigureContext(const Format &format);
     int32_t AllocateCodecContext();
     int32_t ValidateAndSetVideoResolutionFormat(const Format &format);

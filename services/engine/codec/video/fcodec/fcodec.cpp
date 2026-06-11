@@ -53,7 +53,6 @@ constexpr uint32_t DEFAULT_TRY_DECODE_TIME = 1;
 constexpr uint32_t DEFAULT_DECODE_WAIT_TIME = 200;
 constexpr uint32_t LOG_FREQUENCE = 2000;
 constexpr int32_t DEFAULT_THREAD_COUNT = 2;
-constexpr int32_t MAX_INPUT_BUFFER_SIZE = 8192 * 4096 * 4;
 
 #ifdef BUILD_ENG_VERSION
 constexpr uint32_t PATH_MAX_LEN = 128;
@@ -212,6 +211,10 @@ void FCodec::GetSurfaceCfgFromFmt(const Format &format)
     if (orientation) {
         format_.PutIntValue(FMTKey::VIDEO_ORIENTATION_TYPE, orientation.value());
     }
+#ifdef EMULATOR_ENABLED
+    outputPixelFmt_ = VideoPixelFormat::RGBA;
+    format_.PutIntValue(FMTKey::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::RGBA));
+#endif
 }
 
 void FCodec::ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal,
@@ -224,17 +227,6 @@ void FCodec::ConfigureDefaultVal(const Format &format, const std::string_view &f
         AVCODEC_LOGW("Set parameter failed: %{public}s, which minimum threshold=%{public}d, "
                      "maximum threshold=%{public}d",
                      std::string(formatKey).c_str(), minVal, maxVal);
-    }
-}
-
-
-void FCodec::ConfigureMaxInputSize(const Format &format)
-{
-    int32_t maxInputSize = 0;
-    CHECK_AND_RETURN_LOG(format.GetIntValue(FMTKey::REQUIRED_IN_BUFFER_SIZE, maxInputSize),
-                         "not set parameter: %{public}s", std::string(FMTKey::REQUIRED_IN_BUFFER_SIZE).c_str());
-    if (maxInputSize > 0 && maxInputSize < MAX_INPUT_BUFFER_SIZE) {
-        format_.PutIntValue(FMTKey::REQUIRED_IN_BUFFER_SIZE, maxInputSize);
     }
 }
 
@@ -384,14 +376,12 @@ int32_t FCodec::Configure(const Format &format)
             format_.PutDoubleValue(FMTKey::VIDEO_FRAME_RATE, val);
         } else if (it.first == FMTKey::VIDEO_PIXEL_FORMAT || it.first == FMTKey::VIDEO_ROTATION ||
                    it.first == FMTKey::VIDEO_ORIENTATION_TYPE || it.first == FMTKey::VIDEO_SCALE_TYPE ||
-                   it.first == FMTKey::VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER ||
-                   it.first == FMTKey::REQUIRED_IN_BUFFER_SIZE) {
+                   it.first == FMTKey::VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER) {
             continue;
         } else {
             AVCODEC_LOGW("Set parameter failed: %{public}s, unsupport key", it.first.data());
         }
     }
-    ConfigureMaxInputSize(format);
     GetSurfaceCfgFromFmt(format);
     if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
         outputPixelFmt_ = VideoPixelFormat::NV12;
@@ -690,7 +680,7 @@ int32_t FCodec::GetOutputFormat(Format &format)
         }
     }
     format = format_;
-    if (!format_.ContainKey(FMTKey::REQUIRED_IN_BUFFER_SIZE)) {
+    if (!format.ContainKey(FMTKey::REQUIRED_IN_BUFFER_SIZE)) {
         int32_t stride = AlignUp(width_, VIDEO_ALIGN_SIZE);
         int32_t maxInputSize = static_cast<int32_t>((stride * height_ * VIDEO_PIX_DEPTH_YUV) / UV_SCALE_FACTOR);
         format.PutIntValue(FMTKey::REQUIRED_IN_BUFFER_SIZE, maxInputSize);
@@ -717,13 +707,6 @@ void FCodec::CalculateBufferSize()
     } else {
         size = std::max(VIDEO_MIN_BUFFER_SIZE, outputBufferSize_);
     }
-    std::unique_lock<std::mutex> fLock(formatMutex_);
-    int32_t maxInputSize = 0;
-    if (format_.GetIntValue(FMTKey::REQUIRED_IN_BUFFER_SIZE, maxInputSize)) {
-        AVCODEC_LOGI("set input size: %{public}d", maxInputSize);
-        size = static_cast<int64_t>(maxInputSize);
-    }
-    fLock.unlock();
     if (size >= INT32_MAX || size <= 0) {
         inputBufferSize_ = 0;
         AVCODEC_LOGE("width = %{public}d, height = %{public}d invalid", width_, height_);
@@ -1338,7 +1321,7 @@ int32_t FCodec::FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer)
     }
     AVPixelFormat ffmpegFormat = ConvertPixelFormatToFFmpeg(targetPixelFmt);
     int32_t ffpixfmt = cachedFrame_->format;
-    AVCODEC_LOGI("decode output ffmpeg pixfmt: %{public}d, target output ffmpeg pixfmt: %{public}d", ffpixfmt,
+    AVCODEC_LOGD("decode output ffmpeg pixfmt: %{public}d, target output ffmpeg pixfmt: %{public}d", ffpixfmt,
                  static_cast<int32_t>(ffmpegFormat));
     int32_t ret;
     if (ffmpegFormat == static_cast<AVPixelFormat>(ffpixfmt)) {
