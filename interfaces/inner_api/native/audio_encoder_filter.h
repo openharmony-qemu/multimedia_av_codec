@@ -31,6 +31,8 @@
 #include "audio_format_converter.h"
 #include "audio_suite_pcm_buffer.h"
 #include "audio_stream_info.h"
+
+constexpr int32_t BUFFER_IS_EOS = 1;
 #endif
 
 namespace OHOS {
@@ -38,6 +40,17 @@ namespace Media {
 class MediaCodec;
 
 namespace Pipeline {
+struct AudioConfigure {
+    int32_t sampleRate = 0;
+    int32_t channelCount = 0;
+    int64_t bitrate = 0;
+    std::string mimeType = Plugins::MimeType::AUDIO_AAC;
+    Plugins::AudioChannelLayout channelLayout = Plugins::AudioChannelLayout::MONO;
+    Plugins::AudioSampleFormat sampleFormat = Plugins::AudioSampleFormat::SAMPLE_S16LE;
+};
+
+constexpr int32_t AVTRANSCODER_MAX_BUFFER_WAIT = 8;
+constexpr int32_t SAMPLE_FORMAT_16 = 16;
 class AudioEncoderFilter : public Filter, public std::enable_shared_from_this<AudioEncoderFilter> {
 public:
     explicit AudioEncoderFilter(std::string name, FilterType type);
@@ -79,6 +92,11 @@ protected:
 
 private:
     Status UpdateParameterToConfigure(const std::shared_ptr<Meta> &meta);
+    void GetAudioPCMConfigure(const std::shared_ptr<Meta> &meta, std::shared_ptr<AudioConfigure> &pcmConfig,
+        const std::string &inputMetaName = "Meta");
+    void AdjustAudioConfigure(std::shared_ptr<AudioConfigure> &adjustedConfig,
+        std::shared_ptr<AudioConfigure> &inputPCM, std::shared_ptr<AudioConfigure> &outputPCM);
+    void AddInternalBufferQueue();
     std::string name_;
     FilterType filterType_;
 
@@ -118,6 +136,12 @@ private:
     void ProcessIntermediateBuffer();
     void ProcessingThreadFunc();
     void StopProcessingThread();
+    Status AcquireIntermediateBuffer(std::shared_ptr<AVBuffer>& buffer);
+    Status RequestCodecBuffer(std::shared_ptr<AVBuffer>& buffer, const AVBufferConfig& config);
+    Status ConvertAudioData(const std::shared_ptr<AVBuffer>& srcBuffer, const std::shared_ptr<AVBuffer>& dstBuffer);
+    Status CopyAudioData(const std::shared_ptr<AVBuffer>& srcBuffer, const std::shared_ptr<AVBuffer>& dstBuffer);
+    void CopyBufferMetadata(const std::shared_ptr<AVBuffer>& srcBuffer, const std::shared_ptr<AVBuffer>& dstBuffer);
+    Status PushBufferToCodec(const std::shared_ptr<AVBuffer>& buffer);
 
     // 声道转换相关
 #ifdef SUPPORT_AUDIO_CONVERT
@@ -135,7 +159,7 @@ private:
     AudioStandard::AudioSuite::PcmBufferFormat converterInputFormat_;
     AudioStandard::AudioSuite::PcmBufferFormat converterOutputFormat_;
 #endif
-    bool needChannelConvert_ = false;
+    std::atomic<bool> needChannelConvert_ {false};
 };
 } // namespace Pipeline
 } // namespace MEDIA

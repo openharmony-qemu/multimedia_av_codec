@@ -95,6 +95,7 @@ private:
     // configure
     bool DecideOutputBufMode();
     int32_t OnConfigure(const Format &format) override;
+    int32_t SetDecOrder(const Format &format);
     int32_t SetupPort(const Format &format);
     int32_t UpdateInPortFormat() override;
     int32_t UpdateOutPortFormat() override;

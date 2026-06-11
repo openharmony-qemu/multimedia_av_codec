@@ -336,10 +336,10 @@ void AudioDecoderFilter::GetParameter(std::shared_ptr<Meta> &parameter)
     decoder_->GetOutputFormat(parameter);
     int32_t outputbuffersize = 0;
     if (parameter->GetData(Tag::AUDIO_MAX_OUTPUT_SIZE, outputbuffersize)) {
-        MEDIA_LOG_I("hsp make AUDIO_MAX_OUTPUT_SIZE is outputbuffersize: " PUBLIC_LOG_D32,
+        MEDIA_LOG_I("AUDIO_MAX_OUTPUT_SIZE is: " PUBLIC_LOG_D32,
             static_cast<int32_t>(outputbuffersize));
     } else {
-        MEDIA_LOG_I("hsp make not get AUDIO_MAX_OUTPUT_SIZE");
+        MEDIA_LOG_I("Failed to get AUDIO_MAX_OUTPUT_SIZE");
     }
 }
 

@@ -384,6 +384,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/demuxerpluginmov_fuzzer:DemuxerPluginMovFuzzTest",
       "fuzztest/demuxerpluginmp3_fuzzer:DemuxerPluginMp3FuzzTest",
       "fuzztest/demuxerpluginmp4_fuzzer:DemuxerPluginMp4FuzzTest",
+      "fuzztest/demuxerpluginmpeg4_fuzzer:DemuxerPluginMpeg4FuzzTest",
       "fuzztest/demuxerpluginmpegts_fuzzer:DemuxerPluginMpegtsFuzzTest",
       "fuzztest/demuxerpluginmpg_fuzzer:DemuxerPluginMpgFuzzTest",
       "fuzztest/demuxerpluginogg_fuzzer:DemuxerPluginOggFuzzTest",

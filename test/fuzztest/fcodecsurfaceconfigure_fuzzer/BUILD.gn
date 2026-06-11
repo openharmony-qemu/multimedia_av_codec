@@ -48,7 +48,6 @@ ohos_fuzztest("FCodecSurfaceConfigureFuzzTest") {
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_vdec",
-    "$MEDIA_ROOT_DIR/services/engine/codec/video/fcodec:fcodec",
   ]
   defines = []
   defines += av_codec_defines

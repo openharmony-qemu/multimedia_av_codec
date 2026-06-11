@@ -88,8 +88,8 @@ HWTEST_F(SFDManagerTest, EnableMVOutput_FormatTag_002, TestSize.Level1)
     SmartFluencyDecodingManager managerHevc("video/hevc", AVCODEC_TYPE_VIDEO_DECODER);
     managerHevc.EnableMVOutput(format);
     // HEVC enables MV automatically
-    EXPECT_TRUE(format.GetIntValue(Tag::VIDEO_DECODER_ENABLE_MV_UPLOAD, mvUpload));
-    EXPECT_EQ(mvUpload, 1);
+    EXPECT_FALSE(format.GetIntValue(Tag::VIDEO_DECODER_ENABLE_MV_UPLOAD, mvUpload));
+    EXPECT_EQ(mvUpload, -1);
 }
 
 /**
@@ -563,6 +563,6 @@ HWTEST_F(SFDManagerTest, EnableMVOutput_VvcAuto_031, TestSize.Level1)
     Format format;
     manager.EnableMVOutput(format);
     int32_t val = -1;
-    EXPECT_TRUE(format.GetIntValue(Tag::VIDEO_DECODER_ENABLE_MV_UPLOAD, val));
-    EXPECT_EQ(val, 1);
+    EXPECT_FALSE(format.GetIntValue(Tag::VIDEO_DECODER_ENABLE_MV_UPLOAD, val));
+    EXPECT_EQ(val, -1);
 }

@@ -398,9 +398,12 @@ HWTEST_F(TestSyncManager, GetAnchoredClockTime_003, TestSize.Level0)
     MediaSyncManager mediaSyncManager;
     mediaSyncManager.minRangeStartOfMediaTime_ = 100;
     mediaSyncManager.maxRangeEndOfMediaTime_ = 200;
+    mediaSyncManager.currentAnchorClockTime_ = 100;
+    mediaSyncManager.currentAnchorMediaTime_ = 150;
+    mediaSyncManager.playRate_ = 1.0f;
     int64_t mediaTime = 150;
     int64_t result = mediaSyncManager.GetAnchoredClockTime(mediaTime);
-    EXPECT_EQ(result, HST_TIME_NONE);
+    EXPECT_EQ(result, 100);
 }
 
 // Scenario1: audio priority and not seeked, do not go back

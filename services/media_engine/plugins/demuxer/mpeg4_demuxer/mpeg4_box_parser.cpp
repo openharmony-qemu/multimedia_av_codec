@@ -4370,7 +4370,7 @@ int32_t ParseSignedInteger(uint8_t* data, uint64_t size)
 
 std::string DecodeMacString(const uint8_t* data, size_t size)
 {
-    FALSE_RETURN_V_MSG_E(data != nullptr || size > 0, "", "DecodeMacString: data is null");
+    FALSE_RETURN_V_MSG_E(data != nullptr && size > 0, "", "DecodeMacString: data is null");
     
     std::string result;
     result.reserve(size);
@@ -4826,6 +4826,7 @@ Status MPEG4AtomParser::MPEG4ParseHeader(const std::shared_ptr<DataSource>& sour
     int64_t readTimeoutMs)
 {
     FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "DataSource is nullptr");
+    MediaAVCodec::AVCodecTrace trace("mpeg4_init");
     dataSource_ = source;
     seekable_ = seekable;
     dataReader_ = std::make_shared<DemuxerDataReader>();
@@ -4855,6 +4856,7 @@ Status MPEG4AtomParser::MPEG4ParseHeader(const std::shared_ptr<DataSource>& sour
         ret = MPEG4ParseAtom(depth, &ctx_);
         if (ret != Status::OK) {
             MEDIA_LOG_E("Parse error occurred: " PUBLIC_LOG_D32, static_cast<int32_t>(ret));
+            FALSE_RETURN_V_NOLOG(ret != Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT, ret);
             break;
         } else if (ctx_.offset <= originalOffset) {
             MEDIA_LOG_E("Parse header failed");

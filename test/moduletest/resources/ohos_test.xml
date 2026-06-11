@@ -1334,12 +1334,5 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
-    <target name="videoenc_bitrate_mode_capi_unit_test">
-        <preparer>
-            <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="video_encoder/1280_720_nv.yuv -> /data/test/media" src="res"/>
-            <option name="shell" value="restorecon /data/test/media"/>
-        </preparer>
-    </target>
 </configuration>
 

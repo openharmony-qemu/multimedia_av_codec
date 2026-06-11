@@ -520,7 +520,7 @@ HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_get_parameter_002, TestSize.
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     meta->Set<Tag::AUDIO_RENDER_SET_FLAG>(true);
     ASSERT_EQ(Status::OK, audioServerSinkPlugin->SetParameter(meta));
-    audioServerSinkPlugin->GetParameter(meta);
+    ASSERT_EQ(Status::OK, audioServerSinkPlugin->GetParameter(meta));
 }
 
 HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_get_parameter_003, TestSize.Level1)
@@ -537,10 +537,10 @@ HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_get_parameter_003, TestSize.
     audioServerSinkPlugin->mimeType_ = MimeType::AUDIO_FLAC;
     audioServerSinkPlugin->customSampleRate_ = 0;
     ASSERT_EQ(Status::OK, audioServerSinkPlugin->SetParameter(meta));
-    audioServerSinkPlugin->GetParameter(meta);
+    ASSERT_EQ(Status::OK, audioServerSinkPlugin->GetParameter(meta));
     audioServerSinkPlugin->customSampleRate_ = 44100;
     ASSERT_EQ(Status::OK, audioServerSinkPlugin->SetParameter(meta));
-    audioServerSinkPlugin->GetParameter(meta);
+    ASSERT_EQ(Status::OK, audioServerSinkPlugin->GetParameter(meta));
 }
 
 HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_cache_data, TestSize.Level1)

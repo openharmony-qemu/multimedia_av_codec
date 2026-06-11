@@ -307,6 +307,7 @@ Status MPEG4DemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sour
     auto parser = std::make_shared<MPEG4AtomParser>();
     FALSE_RETURN_V_MSG_E(parser != nullptr, Status::ERROR_NO_MEMORY, "parser allocation failed");
     Status ret = parser->MPEG4ParseHeader(source, seekable_, readTimeoutMs_.load(std::memory_order_acquire));
+    FALSE_RETURN_V_MSG_E(ret != Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT, ret, "MPEG4 demuxer unsupport");
     FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "MPEG4ParseHeader failed");
     
     mediaInfo_ = parser->GetMediaInfo();
@@ -559,7 +560,7 @@ void MPEG4DemuxerPlugin::GetSingleTrackInfo(const MPEG4AtomParser::Track& track,
 Status MPEG4DemuxerPlugin::GetMediaInfo()
 {
     MEDIA_LOG_D("In");
-    MediaAVCodec::AVCodecTrace trace("MPEG4DemuxerPlugin::GetMediaInfo");
+    MediaAVCodec::AVCodecTrace trace("GetMediaInfo");
     int32_t trackCount = CountTracks();
     mediaInfo_.general.Set<Tag::MEDIA_TRACK_COUNT>(trackCount);
     Status ret = ParseAVFirstFrames();
@@ -613,7 +614,7 @@ void MPEG4DemuxerPlugin::UpdateReferenceIds()
 
 Status MPEG4DemuxerPlugin::GetUserMeta(std::shared_ptr<Meta> userformat)
 {
-    MediaAVCodec::AVCodecTrace trace("MPEG4DemuxerPlugin::GetUserMeta");
+    MediaAVCodec::AVCodecTrace trace("GetUserMeta");
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     FALSE_RETURN_V_MSG_E(inited_, Status::ERROR_NULL_POINTER, "Plugin has not been initialized");
     FALSE_RETURN_V_MSG_E(userformat != nullptr, Status::ERROR_NULL_POINTER, "userformat is nullptr");
@@ -1640,7 +1641,7 @@ void MPEG4DemuxerPlugin::CheckResetXPSSendStatus(uint32_t trackIndex, std::share
 Status MPEG4DemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> outBuffer)
 {
     std::shared_lock<std::shared_mutex> lock(sharedMutex_);
-    MediaAVCodec::AVCodecTrace trace("ReadSample");
+    MediaAVCodec::AVCodecTrace trace(std::string("ReadSample_") + std::to_string(trackId));
     MEDIA_LOG_D("In");
     FALSE_RETURN_V_MSG_E(inited_, Status::ERROR_NULL_POINTER, "Plugin has not been initialized");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
@@ -1687,7 +1688,7 @@ Status MPEG4DemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer
 Status MPEG4DemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t &sampleSize)
 {
     std::shared_lock<std::shared_mutex> lock(sharedMutex_);
-    MediaAVCodec::AVCodecTrace trace("GetNextSampleSize");
+    MediaAVCodec::AVCodecTrace trace(std::string("GetNextSampleSize_") + std::to_string(trackId));
     MEDIA_LOG_D("In, track " PUBLIC_LOG_D32, trackId);
     FALSE_RETURN_V_MSG_E(inited_, Status::ERROR_UNKNOWN, "Plugin has not been initialized");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
