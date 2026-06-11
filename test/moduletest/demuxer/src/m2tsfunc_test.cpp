@@ -393,7 +393,6 @@ static void CheckFrames(int videoFrameNum, int videoKey, int audioFrameNum, int 
             }
         }
     }
-    cout << "videoFrame:" << videoFrame << "    vKeyCount:" << vKeyCount << "    audioFrame:"<< audioFrame << "     aKeyCount:" << aKeyCount<< endl;
     ASSERT_EQ(audioFrame, audioFrameNum);
     ASSERT_EQ(aKeyCount, audioKey);
     ASSERT_EQ(videoFrame, videoFrameNum);
