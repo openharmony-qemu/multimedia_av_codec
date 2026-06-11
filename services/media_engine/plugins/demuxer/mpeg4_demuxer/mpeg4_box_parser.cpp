@@ -48,6 +48,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace MPEG4 {
+constexpr uint32_t UINT32_SIZE = 4;
 constexpr uint64_t MIN_FLOAT_SIZE = 4;
 constexpr uint32_t ALAC_SPECIFIC_SIZE = 36;
 constexpr int32_t BYTE_TO_BITS = 8;
@@ -3211,7 +3212,7 @@ Status MPEG4AtomParser::ReadDca3Payload(MPEG4Atom currentAtom, ParseContext* ctx
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read dca3 header failed");
         MPEG4Atom dca3Atom;
         dca3Atom.size = GetU32Value(&atomHeader[0]);
-        dca3Atom.type = static_cast<int32_t>(GetU32Value(&atomHeader[4]));
+        dca3Atom.type = static_cast<int32_t>(GetU32Value(&atomHeader[UINT32_SIZE]));
         dca3Atom.dataSize = GetU32Value(&atomHeader[0]) - static_cast<uint32_t>(sizeof(atomHeader));
         FALSE_RETURN_V_MSG_E(dca3Atom.type == FourccType("dca3"), Status::ERROR_INVALID_DATA,
             "Invalid av3a child atom");
