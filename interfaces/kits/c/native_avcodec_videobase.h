@@ -115,13 +115,13 @@ extern const char *OH_MD_KEY_VIDEO_METADATA_ROI_SEM_LABEL;
  */
 typedef enum OH_VideoMetadataRoiSemanticLabel {
     /**
-     * Indicates an unspecified or unknown region.
+     * @brief Indicates an unspecified or unknown region.
      *
      * @since 26.0.0
      */
     OH_VIDEO_METADATA_ROI_SEM_LABEL_OTHER = 0,
     /**
-     * Indicates that the ROI contains a human face.
+     * @brief Indicates that the ROI contains a human face.
      *
      * @since 26.0.0
      */
@@ -139,18 +139,18 @@ typedef enum OH_VideoMetadataRoiSemanticLabel {
  * reallocated to append the new configuration.
  *
  * @note The caller takes ownership of the memory allocated for *roiStrInOut.
- * The memory is allocated using the standard C library allocator (malloc/realloc).
- * The caller must free the string using the matching standard C library deallocator (free)
- * when it is no longer needed, and set the pointer to NULL to prevent double-free.
+ *     The memory is allocated using the standard C library allocator (malloc/realloc).
+ *     The caller must free the string using the matching standard C library deallocator (free)
+ *     when it is no longer needed, and set the pointer to NULL to prevent double-free.
  *
  * @param roiStrInOut A double pointer to the target string. The pointer itself must not be NULL.
- * If *roiStrInOut is NULL, a new string is allocated.
- * @param format The OH_AVFormat handle containing the ROI parameters to be appended.
- * Must not be NULL.
- * @return Returns AV_ERR_OK if the string is successfully formatted and appended.
- * Returns AV_ERR_INVALID_VAL if the roiStrInOut pointer or format handle is NULL,
- * or if the format lacks required ROI keys.
- * Returns AV_ERR_NO_MEMORY if internal memory allocation or reallocation fails.
+ *     If *roiStrInOut is NULL, a new string is allocated.
+ * @param format The OH_AVFormat handle containing the ROI parameters to be appended, must not be NULL.
+ * @return Result code.
+ *     <br>Returns {@link AV_ERR_OK} if the string is successfully formatted and appended.
+ *     <br>Returns {@link AV_ERR_INVALID_VAL} if the roiStrInOut pointer or format handle is NULL,
+ *     or if the format lacks required ROI keys.
+ *     <br>Returns {@link AV_ERR_NO_MEMORY} if internal memory allocation or reallocation fails.
  * @release free {roiStrInOut}
  * @since 26.0.0
  */
@@ -164,8 +164,9 @@ OH_AVErrCode OH_VideoMetadata_AppendRoiString(char **roiStrInOut, OH_AVFormat *f
  *
  * @param roiStr The input ROI configuration string.
  * @param outCount [OUT] Returns the number of valid ROI regions parsed from the string.
- * @return Returns AV_ERR_OK if the operation is successful.
- * Returns AV_ERR_INVALID_VAL if the roiStr or outCount pointer is NULL.
+ * @return Result code.
+ *     <br>Returns {@link AV_ERR_OK} if the operation is successful.
+ *     <br>Returns {@link AV_ERR_INVALID_VAL} if the roiStr or outCount pointer is NULL.
  * @since 26.0.0
  */
 OH_AVErrCode OH_VideoMetadata_GetRoiCount(const char *roiStr, uint32_t *outCount);
@@ -174,19 +175,20 @@ OH_AVErrCode OH_VideoMetadata_GetRoiCount(const char *roiStr, uint32_t *outCount
  * @brief Parses the ROI string and populates the caller-provided OH_AVFormat array.
  *
  * @note The caller takes ownership of every successfully created OH_AVFormat handle. Upon return,
- * the valid handles are stored in the first *outCount elements of the outOwnedFormats array.
- * - On full or partial success (*outCount > 0), the caller must individually destroy
- * each valid handle using {@link OH_AVFormat_Destroy} to prevent memory leaks.
- * - On total failure (*outCount == 0), no handles are created and no destruction is needed.
+ *     the valid handles are stored in the first *outCount elements of the outOwnedFormats array.
+ *     - On full or partial success (*outCount > 0), the caller must individually destroy
+ *     each valid handle using {@link OH_AVFormat_Destroy} to prevent memory leaks.
+ *     - On total failure (*outCount == 0), no handles are created and no destruction is needed.
  *
  * @param roiStr The input ROI configuration string.
  * @param outOwnedFormats [OUT] A pointer array allocated by the caller to receive the parsed
- * OH_AVFormat handles. The caller owns each non-NULL handle in this array.
+ *     OH_AVFormat handles. The caller owns each non-NULL handle in this array.
  * @param maxCapacity [IN] Indicates the maximum physical capacity of the outOwnedFormats array to prevent
- * out-of-bounds writes.
+ *     out-of-bounds writes.
  * @param outCount [OUT] Returns the actual number of ROIs successfully parsed and populated into the array.
- * @return Returns AV_ERR_OK if the operation is successful.
- * Returns AV_ERR_INVALID_VAL if roiStr, outOwnedFormats, or outCount is NULL.
+ * @return Result code.
+ *     <br>Returns {@link AV_ERR_OK} if the operation is successful.
+ *     <br>Returns {@link AV_ERR_INVALID_VAL} if roiStr, outOwnedFormats, or outCount is NULL.
  * @release media_foundation/OH_AVFormat_Destroy {outOwnedFormats}
  * @since 26.0.0
  */
