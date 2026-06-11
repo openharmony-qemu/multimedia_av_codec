@@ -101,6 +101,7 @@ public:
     int64_t GetRawTotalSize() const;
     int64_t GetRawTotalDuration() const;
     int64_t GetRawSampleCount() const;
+    bool HasTrailingZeroSttsDuration() const;
     uint32_t EstimateVideoDelay() const;
     SdtpEntry GetSdtpEntry();
 
