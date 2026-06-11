@@ -59,21 +59,6 @@ constexpr int32_t RANK_MAX = 100 + 1; // 适配自研优先
 constexpr int32_t READ_LEN = 8;
 constexpr int32_t MIN_ATOM_SIZE = 16;
 constexpr int64_t SNIFF_DATA_SIZE = 2048;
-constexpr int32_t BOX_HEADER_SIZE = 8;
-constexpr int32_t BOX_TYPE_OFFSET = 4;
-constexpr int64_t US_TO_NS = 1000;
-constexpr int64_t NS_TIME_BASE = 1000000000LL;
-constexpr int64_t MS_TIME_SCALE = 1000LL;
-constexpr uint32_t AAC_SAMPLES_PER_FRAME = 1024;
-constexpr uint32_t SINGLE_SAMPLE_RUN_COUNT = 1;
-constexpr uint32_t EDIT_LIST_ROUNDING_TOLERANCE_TICKS = 2;
-constexpr uint8_t AVC_NAL_LENGTH_SIZE_OFFSET = 4;
-constexpr uint8_t AVC_NAL_LENGTH_SIZE_MASK = 0x03;
-constexpr uint8_t AVC_NAL_TYPE_MASK = 0x1F;
-constexpr uint8_t AVC_IDR_NAL_TYPE = 5;
-constexpr uint8_t AVC_MIN_NAL_LENGTH_SIZE = 1;
-constexpr uint8_t AVC_MAX_NAL_LENGTH_SIZE = 4;
-constexpr uint8_t BITS_PER_BYTE = 8;
 
 static const std::map<std::string, VideoStreamType> g_streamParserMap = {
     { "video/avc",  VideoStreamType::AVC },
@@ -85,6 +70,26 @@ bool HaveValidParser(const std::string mime)
 {
     return g_streamParserMap.count(mime) != 0;
 }
+
+constexpr int64_t US_TO_NS = 1000;
+constexpr int64_t NS_TIME_BASE = 1000000000LL;
+constexpr int64_t MS_TIME_SCALE = 1000LL;
+constexpr uint32_t AAC_SAMPLES_PER_FRAME = 1024;
+constexpr uint32_t SINGLE_SAMPLE_RUN_COUNT = 1;
+constexpr uint32_t EDIT_LIST_ROUNDING_TOLERANCE_TICKS = 2;
+constexpr uint32_t SHORT_TAIL_STTS_ENTRY_COUNT = 2;
+constexpr uint32_t EDIT_START_DISCARD_STTS_ENTRY_COUNT = 3;
+constexpr uint32_t MIN_TAIL_PACKET_COUNT = 2;
+constexpr uint32_t ROUND_HALF_DIVISOR = 2;
+constexpr int32_t BOX_HEADER_SIZE = 8;
+constexpr int32_t BOX_TYPE_OFFSET = 4;
+constexpr uint8_t AVC_NAL_LENGTH_SIZE_OFFSET = 4;
+constexpr uint8_t AVC_NAL_LENGTH_SIZE_MASK = 0x03;
+constexpr uint8_t AVC_NAL_TYPE_MASK = 0x1F;
+constexpr uint8_t AVC_IDR_NAL_TYPE = 5;
+constexpr uint8_t AVC_MIN_NAL_LENGTH_SIZE = 1;
+constexpr uint8_t AVC_MAX_NAL_LENGTH_SIZE = 4;
+constexpr uint8_t BITS_PER_BYTE = 8;
 
 struct ReadSamplePacketAttr {
     int64_t ptsUs = 0;
@@ -112,17 +117,17 @@ Status RescaleRoundNearest(int64_t value, int64_t multiplier, int64_t divisor, i
     }
     uint64_t quotientScaled = quotient * multiplierAbs;
     uint64_t remainderScaled = remainder * multiplierAbs;
-    uint64_t roundedRemainder = (remainderScaled + divisorAbs / 2) / divisorAbs;
+    uint64_t roundedRemainder = (remainderScaled + divisorAbs / ROUND_HALF_DIVISOR) / divisorAbs;
     uint64_t total = quotientScaled + roundedRemainder;
     if (total < quotientScaled) {
         return Status::ERROR_INVALID_DATA;
     }
-    constexpr uint64_t INT64_MIN_ABS = static_cast<uint64_t>(std::numeric_limits<int64_t>::max()) + 1;
+    constexpr uint64_t int64MinAbs = static_cast<uint64_t>(std::numeric_limits<int64_t>::max()) + 1;
     if ((!negative && total > static_cast<uint64_t>(std::numeric_limits<int64_t>::max())) ||
-        (negative && total > INT64_MIN_ABS)) {
+        (negative && total > int64MinAbs)) {
         return Status::ERROR_INVALID_DATA;
     }
-    if (negative && total == INT64_MIN_ABS) {
+    if (negative && total == int64MinAbs) {
         result = std::numeric_limits<int64_t>::min();
     } else {
         result = negative ? -static_cast<int64_t>(total) : static_cast<int64_t>(total);
@@ -213,37 +218,6 @@ int64_t GetEffectiveStreamDurationTicks(const MediaInfo& mediaInfo,
     return streamDuration;
 }
 
-bool GetLastPacketDurationFromStreamUs(
-    const MediaInfo& mediaInfo, const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex,
-    int32_t trackTimeScale, int64_t& durationUs)
-{
-    if (track == nullptr || track->sampleHelper == nullptr) {
-        return false;
-    }
-    const auto& entries = track->sampleHelper->sampleIndexEntry_;
-    if (entries.empty() || sampleIndex >= entries.size()) {
-        return false;
-    }
-
-    if (sampleIndex + 1 < entries.size()) {
-        return false;
-    }
-
-    int64_t streamDuration = GetEffectiveStreamDurationTicks(mediaInfo, track, trackTimeScale);
-    if (streamDuration < entries[sampleIndex].dts) {
-        durationUs = 0;
-        return true;
-    }
-    if (streamDuration == entries[sampleIndex].dts) {
-        return false;
-    }
-    int64_t duration = streamDuration - entries[sampleIndex].dts;
-    if (RescaleTrackTimeToUsRoundNearest(duration, trackTimeScale, durationUs) != Status::OK) {
-        return false;
-    }
-    return true;
-}
-
 bool GetPacketDurationUs(
     const MediaInfo& mediaInfo, const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex,
     int32_t trackTimeScale, int64_t& durationUs)
@@ -304,7 +278,7 @@ bool GetMpegAudioFrameDurationUs(const MediaInfo& mediaInfo,
     if (entries.empty() || sampleIndex >= entries.size()) {
         return false;
     }
-    bool hasExplicitShortTailStts = track->sampleHelper->GetSttsEntryCount() == 2 &&
+    bool hasExplicitShortTailStts = track->sampleHelper->GetSttsEntryCount() == SHORT_TAIL_STTS_ENTRY_COUNT &&
         track->sampleHelper->GetSampleCountOfSttsEntry(1) == SINGLE_SAMPLE_RUN_COUNT &&
         track->sampleHelper->GetSampleDeltaOfSttsEntry(0) > track->sampleHelper->GetSampleDeltaOfSttsEntry(1);
     if (hasExplicitShortTailStts && sampleIndex + 1 == entries.size() && entries[sampleIndex].duration > 0 &&
@@ -318,7 +292,7 @@ bool IsSingleEditShortTailAudio(const std::shared_ptr<MPEG4AtomParser::Track>& t
 {
     if (track == nullptr || track->codecParms.trackType != AUDIO_TYPE || track->sampleHelper == nullptr ||
         track->editListEntries.size() != 1 || track->editListEntries.front().mediaTime <= 0 ||
-        track->sampleHelper->GetSttsEntryCount() != 2) {
+        track->sampleHelper->GetSttsEntryCount() != SHORT_TAIL_STTS_ENTRY_COUNT) {
         return false;
     }
     uint32_t firstCount = track->sampleHelper->GetSampleCountOfSttsEntry(0);
@@ -336,7 +310,7 @@ bool IsSingleEditShortTailAudio(const std::shared_ptr<MPEG4AtomParser::Track>& t
 bool HasAacShortTailStts(const std::shared_ptr<MPEG4AtomParser::Track>& track)
 {
     if (track == nullptr || track->codecParms.trackType != AUDIO_TYPE || track->sampleHelper == nullptr ||
-        track->sampleHelper->GetSttsEntryCount() != 2) {
+        track->sampleHelper->GetSttsEntryCount() != SHORT_TAIL_STTS_ENTRY_COUNT) {
         return false;
     }
     uint32_t firstCount = track->sampleHelper->GetSampleCountOfSttsEntry(0);
@@ -357,7 +331,7 @@ bool HasEditStartDiscardAudioStts(const std::shared_ptr<MPEG4AtomParser::Track>&
         return true;
     }
     if (track == nullptr || track->codecParms.trackType != AUDIO_TYPE || track->sampleHelper == nullptr ||
-        track->sampleHelper->GetSttsEntryCount() != 3) {
+        track->sampleHelper->GetSttsEntryCount() != EDIT_START_DISCARD_STTS_ENTRY_COUNT) {
         return false;
     }
     uint32_t firstCount = track->sampleHelper->GetSampleCountOfSttsEntry(0);
@@ -503,7 +477,7 @@ void UpdateWebVttFinalPacketDurationFromMedia(const MediaInfo& mediaInfo,
         return;
     }
     // MOV/MP4's WebVTT stream duration is expressed in the text stream timebase (1 ms here).
-    mediaDurationUs = ((mediaDurationUs + MS_TO_US / 2) / MS_TO_US) * MS_TO_US;
+    mediaDurationUs = ((mediaDurationUs + MS_TO_US / ROUND_HALF_DIVISOR) / MS_TO_US) * MS_TO_US;
     int64_t tailDuration = mediaDurationUs - attr.ptsUs;
     if (tailDuration > attr.durationUs) {
         attr.durationUs = tailDuration;
@@ -518,7 +492,7 @@ bool GetSingleEditShortTailAudioDurationUs(
         return false;
     }
     const auto& entries = track->sampleHelper->sampleIndexEntry_;
-    if (entries.size() < 2 || sampleIndex + 1 != entries.size()) {
+    if (entries.size() < MIN_TAIL_PACKET_COUNT || sampleIndex + 1 != entries.size()) {
         return false;
     }
     const auto& currentSample = entries[sampleIndex];
@@ -530,9 +504,45 @@ bool GetSingleEditShortTailAudioDurationUs(
     return RescaleTrackTimeToUsRoundNearest(duration, trackTimeScale, durationUs) == Status::OK;
 }
 
-bool GetEditedAudioTailDurationUs(
-    const MediaInfo& mediaInfo, const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex,
-    int32_t trackTimeScale,
+bool GetTrailingZeroEditedAudioDurationUs(const MediaInfo& mediaInfo,
+    const std::shared_ptr<MPEG4AtomParser::Track>& track,
+    const MPEG4SampleHelper::SampleIndexEntry& currentSample, uint32_t sampleIndex, int32_t trackTimeScale,
+    int64_t& durationUs)
+{
+    if (!track->sampleHelper->HasTrailingZeroSttsDuration() || sampleIndex == 0) {
+        return false;
+    }
+    const auto& entries = track->sampleHelper->sampleIndexEntry_;
+    int64_t previousDuration = currentSample.dts - entries[sampleIndex - 1].dts;
+    if (previousDuration <= 0) {
+        return false;
+    }
+    int64_t streamDuration = GetEffectiveStreamDurationTicks(mediaInfo, track, trackTimeScale);
+    int64_t tailDuration = streamDuration - currentSample.dts;
+    if (tailDuration > 0 && tailDuration < previousDuration) {
+        return RescaleTrackTimeToUsRoundNearest(tailDuration, trackTimeScale, durationUs) == Status::OK;
+    }
+    return RescaleTrackTimeToUsRoundNearest(previousDuration, trackTimeScale, durationUs) == Status::OK;
+}
+
+bool GetSkipInfoEditedAudioDurationUs(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+    const MPEG4SampleHelper::SampleIndexEntry& currentSample, int64_t rawTailDuration, uint32_t sampleIndex,
+    int32_t trackTimeScale, int64_t& durationUs)
+{
+    const auto& entries = track->sampleHelper->sampleIndexEntry_;
+    if (rawTailDuration != currentSample.duration || entries.front().skipSamplesInfo.empty() || sampleIndex == 0) {
+        return false;
+    }
+    int64_t previousDuration = currentSample.dts - entries[sampleIndex - 1].dts;
+    if (previousDuration <= 0) {
+        return false;
+    }
+    int64_t duration = currentSample.duration + previousDuration;
+    return RescaleTrackTimeToUsRoundNearest(duration, trackTimeScale, durationUs) == Status::OK;
+}
+
+bool GetEditedAudioTailDurationUs(const MediaInfo& mediaInfo,
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex, int32_t trackTimeScale,
     int64_t& durationUs)
 {
     if (track == nullptr || track->codecParms.trackType != AUDIO_TYPE || track->sampleHelper == nullptr ||
@@ -545,28 +555,18 @@ bool GetEditedAudioTailDurationUs(
     }
 
     const auto& currentSample = entries[sampleIndex];
-    if (track->sampleHelper->HasTrailingZeroSttsDuration() && sampleIndex > 0) {
-        int64_t previousDuration = currentSample.dts - entries[sampleIndex - 1].dts;
-        if (previousDuration > 0) {
-            int64_t streamDuration = GetEffectiveStreamDurationTicks(mediaInfo, track, trackTimeScale);
-            int64_t tailDuration = streamDuration - currentSample.dts;
-            if (tailDuration > 0 && tailDuration < previousDuration) {
-                return RescaleTrackTimeToUsRoundNearest(tailDuration, trackTimeScale, durationUs) == Status::OK;
-            }
-            return RescaleTrackTimeToUsRoundNearest(previousDuration, trackTimeScale, durationUs) == Status::OK;
-        }
+    if (GetTrailingZeroEditedAudioDurationUs(mediaInfo, track, currentSample, sampleIndex, trackTimeScale,
+        durationUs)) {
+        return true;
     }
     if (currentSample.duration <= 0) {
         return false;
     }
     int64_t rawTotalDuration = track->sampleHelper->GetRawTotalDuration();
     int64_t rawTailDuration = rawTotalDuration - currentSample.dts;
-    if (rawTailDuration == currentSample.duration && !entries.front().skipSamplesInfo.empty() && sampleIndex > 0) {
-        int64_t previousDuration = currentSample.dts - entries[sampleIndex - 1].dts;
-        if (previousDuration > 0) {
-            int64_t duration = currentSample.duration + previousDuration;
-            return RescaleTrackTimeToUsRoundNearest(duration, trackTimeScale, durationUs) == Status::OK;
-        }
+    if (GetSkipInfoEditedAudioDurationUs(track, currentSample, rawTailDuration, sampleIndex, trackTimeScale,
+        durationUs)) {
+        return true;
     }
     if (rawTailDuration > 0) {
         return false;
@@ -622,7 +622,8 @@ bool GetNominalSttsFrameDurationUs(const std::shared_ptr<MPEG4AtomParser::Track>
         return false;
     }
 
-    uint32_t frameRate = static_cast<uint32_t>((static_cast<int64_t>(trackTimeScale) + minDelta / 2) / minDelta);
+    uint32_t frameRate =
+        static_cast<uint32_t>((static_cast<int64_t>(trackTimeScale) + minDelta / ROUND_HALF_DIVISOR) / minDelta);
     if (frameRate == 0) {
         return false;
     }
@@ -643,7 +644,7 @@ bool GetVideoTailDurationUs(
         return false;
     }
     const auto& entries = track->sampleHelper->sampleIndexEntry_;
-    if (entries.size() < 2 || sampleIndex + 1 != entries.size()) {
+    if (entries.size() < MIN_TAIL_PACKET_COUNT || sampleIndex + 1 != entries.size()) {
         return false;
     }
 
@@ -735,7 +736,7 @@ uint32_t GetSkipSamplesFromInfo(const std::vector<uint8_t>& skipSamplesInfo)
     }
     uint32_t skipSamples = 0;
     for (size_t i = 0; i < sizeof(uint32_t); ++i) {
-        skipSamples |= static_cast<uint32_t>(skipSamplesInfo[i]) << (i * 8);
+        skipSamples |= static_cast<uint32_t>(skipSamplesInfo[i]) << (i * BITS_PER_BYTE);
     }
     return skipSamples;
 }
@@ -848,26 +849,19 @@ bool GetRawAudioDtsTicks(const std::shared_ptr<MPEG4AtomParser::Track>& track, u
     return true;
 }
 
-Status BuildReadSamplePacketAttr(const MediaInfo& mediaInfo,
+Status SetPacketTimelineUs(const MediaInfo& mediaInfo,
     const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex, int32_t trackTimeScale,
-    bool hasPlayableVideoTrack, ReadSamplePacketAttr& attr)
+    int64_t& dts, ReadSamplePacketAttr& attr)
 {
-    if (track == nullptr || track->sampleHelper == nullptr) {
-        return Status::ERROR_NULL_POINTER;
-    }
     const auto& entries = track->sampleHelper->sampleIndexEntry_;
-    if (entries.empty() || sampleIndex >= entries.size()) {
-        return Status::ERROR_INVALID_PARAMETER;
-    }
     const auto& currentSample = entries[sampleIndex];
-
     int64_t timelineOffset = 0;
     if (ShouldApplyMovEditTimelineOffset(track)) {
         FALSE_RETURN_V_MSG_E(GetMovEditTimelineOffsetTicks(mediaInfo, track, trackTimeScale, timelineOffset),
             Status::ERROR_INVALID_DATA, "Get MOV edit-list time offset failed");
     }
     int64_t pts = currentSample.pts - timelineOffset;
-    int64_t dts = currentSample.dts - timelineOffset;
+    dts = currentSample.dts - timelineOffset;
     if (ShouldApplyMovEditTimelineOffset(track)) {
         int64_t rawDts = 0;
         FALSE_RETURN_V_MSG_E(GetRawAudioDtsTicks(track, sampleIndex, rawDts),
@@ -879,7 +873,13 @@ Status BuildReadSamplePacketAttr(const MediaInfo& mediaInfo,
         Status::ERROR_INVALID_DATA, "Convert pts to read sample packet us failed");
     FALSE_RETURN_V_MSG_E(RescaleTrackTimeToUsRoundNearest(dts, trackTimeScale, attr.dtsUs) == Status::OK,
         Status::ERROR_INVALID_DATA, "Convert dts to read sample packet us failed");
+    return Status::OK;
+}
 
+bool UpdatePacketDurationUs(const MediaInfo& mediaInfo, const std::shared_ptr<MPEG4AtomParser::Track>& track,
+    uint32_t sampleIndex, int32_t trackTimeScale, bool hasPlayableVideoTrack, ReadSamplePacketAttr& attr)
+{
+    const auto& currentSample = track->sampleHelper->sampleIndexEntry_[sampleIndex];
     bool hasDuration = GetSingleEditShortTailAudioDurationUs(track, sampleIndex, trackTimeScale,
         hasPlayableVideoTrack, attr.durationUs) ||
         GetMpegAudioFrameDurationUs(mediaInfo, track, track->trackIndex, sampleIndex, attr.durationUs) ||
@@ -891,18 +891,46 @@ Status BuildReadSamplePacketAttr(const MediaInfo& mediaInfo,
         hasDuration = GetCttsFrameRateDurationUs(mediaInfo, track->trackIndex, trackTimeScale, attr.durationUs);
     }
     if (!hasDuration) {
-        FALSE_RETURN_V_MSG_E(RescaleTrackTimeToUsRoundNearest(currentSample.duration, trackTimeScale, attr.durationUs) ==
-            Status::OK, Status::ERROR_INVALID_DATA, "Convert duration to read sample packet us failed");
+        hasDuration = RescaleTrackTimeToUsRoundNearest(currentSample.duration, trackTimeScale, attr.durationUs) ==
+            Status::OK;
     }
-    if (ShouldApplyMovEditTimelineOffset(track) && sampleIndex + 1 == entries.size()) {
-        int64_t streamDuration = GetEffectiveStreamDurationTicks(mediaInfo, track, trackTimeScale);
-        int64_t duration = streamDuration - dts;
-        if (duration > 0) {
-            (void)RescaleTrackTimeToUsRoundNearest(duration, trackTimeScale, attr.durationUs);
-        }
+    return hasDuration;
+}
+
+void UpdateMovEditTailDurationUs(const MediaInfo& mediaInfo, const std::shared_ptr<MPEG4AtomParser::Track>& track,
+    uint32_t sampleIndex, int32_t trackTimeScale, int64_t dts, ReadSamplePacketAttr& attr)
+{
+    const auto& entries = track->sampleHelper->sampleIndexEntry_;
+    if (!ShouldApplyMovEditTimelineOffset(track) || sampleIndex + 1 != entries.size()) {
+        return;
     }
+    int64_t streamDuration = GetEffectiveStreamDurationTicks(mediaInfo, track, trackTimeScale);
+    int64_t duration = streamDuration - dts;
+    if (duration > 0) {
+        (void)RescaleTrackTimeToUsRoundNearest(duration, trackTimeScale, attr.durationUs);
+    }
+}
+
+Status BuildReadSamplePacketAttr(const MediaInfo& mediaInfo,
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex, int32_t trackTimeScale,
+    bool hasPlayableVideoTrack, ReadSamplePacketAttr& attr)
+{
+    if (track == nullptr || track->sampleHelper == nullptr) {
+        return Status::ERROR_NULL_POINTER;
+    }
+    const auto& entries = track->sampleHelper->sampleIndexEntry_;
+    if (entries.empty() || sampleIndex >= entries.size()) {
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+    int64_t dts = 0;
+    FALSE_RETURN_V_MSG_E(SetPacketTimelineUs(mediaInfo, track, sampleIndex, trackTimeScale, dts, attr) == Status::OK,
+        Status::ERROR_INVALID_DATA, "Set read sample packet timeline failed");
+    FALSE_RETURN_V_MSG_E(UpdatePacketDurationUs(mediaInfo, track, sampleIndex, trackTimeScale, hasPlayableVideoTrack,
+        attr), Status::ERROR_INVALID_DATA, "Set read sample packet duration failed");
+    UpdateMovEditTailDurationUs(mediaInfo, track, sampleIndex, trackTimeScale, dts, attr);
     UpdateWebVttFinalPacketDurationFromMedia(mediaInfo, track, sampleIndex, attr);
 
+    const auto& currentSample = entries[sampleIndex];
     attr.flag = GetPacketSampleFlag(track, sampleIndex, currentSample, hasPlayableVideoTrack);
     attr.skipSamplesInfo = currentSample.skipSamplesInfo;
     attr.sourceSampleIndex = sampleIndex;
