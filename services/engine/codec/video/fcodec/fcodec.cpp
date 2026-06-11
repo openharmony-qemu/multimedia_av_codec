@@ -1421,10 +1421,10 @@ void FCodec::GetCropInfo(std::vector<uint8_t> &vec, bool isFmtChanged)
     AVCODEC_LOGD("ffmpeg decode crop info top: %{public}d, bottom: %{public}d, left: %{public}d, right: %{public}d",
                  cropTop, cropBottom, cropLeft, cropRight);
     BufferHandleMetaRegion *crop = reinterpret_cast<BufferHandleMetaRegion *>(vec.data());
-    crop->left = cropLeft;
-    crop->top = cropTop;
-    crop->width = width_ - 1;
-    crop->height = height_ - 1;
+    crop->left = static_cast<uint32_t>(cropLeft);
+    crop->top = static_cast<uint32_t>(cropTop);
+    crop->width = static_cast<uint32_t>(width_ - 1);
+    crop->height = static_cast<uint32_t>(height_ - 1);
     if (isFmtChanged || decNum_ == 0) {
         std::lock_guard<std::mutex> fLock(formatMutex_);
         format_.PutIntValue(FMTKey::VIDEO_CROP_TOP, cropTop);
