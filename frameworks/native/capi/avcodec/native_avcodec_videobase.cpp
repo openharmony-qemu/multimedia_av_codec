@@ -52,7 +52,13 @@ const KvDesc ROI_KV_TABLE[] = {
 };
 constexpr uint32_t ROI_KV_COUNT = sizeof(ROI_KV_TABLE) / sizeof(ROI_KV_TABLE[0]);
 constexpr size_t ROI_STR_MAX_LEN = 256;
-constexpr uint32_t ROI_MAX_COUNT = 6;
+
+struct RoiRectangleData {
+    int32_t top;
+    int32_t left;
+    int32_t bottom;
+    int32_t right;
+};
 }
 
 class RoiStringHelper {
@@ -67,18 +73,16 @@ private:
     ~RoiStringHelper() = delete;
 
     static bool ParseInt32(const char *str, int32_t *outVal, const char **outEndPtr);
+    static bool IsValidRectangle(int32_t top, int32_t left, int32_t bottom, int32_t right);
+    static bool ParseRectangleSegment(const char *start, RoiRectangleData *data, const char **outEndPtr);
+    static void SetRectangleValues(OH_AVFormat *avFormat, const RoiRectangleData *data);
     static uint32_t CountExistingRois(const char *roiStr);
     static int BuildRoiSegmentStr(char *buffer, size_t bufferSize, OH_AVFormat *avFormat);
     static OH_AVErrCode AppendSegmentToRoiStr(char **roiStrInOut, const char *segment);
     static bool ValidateAndParseRoiKvpairs(OH_AVFormat *avFormat, const char *eqPos, const char *segEnd);
-    static bool IsValidCoordinates(int32_t top, int32_t left, int32_t bottom, int32_t right);
     static OH_AVFormat *ParseOneRoiSegmentToFormat(const char *start, const char *segEnd);
+    static bool IsSameRoiFormat(OH_AVFormat *a, OH_AVFormat *b);
 };
-
-bool RoiStringHelper::IsValidCoordinates(int32_t top, int32_t left, int32_t bottom, int32_t right)
-{
-    return top >= 0 && left >= 0 && bottom >= 0 && right >= 0 && top < bottom && left < right;
-}
 
 bool RoiStringHelper::ParseInt32(const char *str, int32_t *outVal, const char **outEndPtr)
 {
@@ -91,6 +95,45 @@ bool RoiStringHelper::ParseInt32(const char *str, int32_t *outVal, const char **
     *outVal = static_cast<int32_t>(val);
     *outEndPtr = endPtr;
     return true;
+}
+
+bool RoiStringHelper::IsValidRectangle(int32_t top, int32_t left, int32_t bottom, int32_t right)
+{
+    return top >= 0 && left >= 0 && bottom >= 0 && right >= 0 && top < bottom && left < right;
+}
+
+bool RoiStringHelper::ParseRectangleSegment(const char *start, RoiRectangleData *data, const char **outEndPtr)
+{
+    const char *endPtr = nullptr;
+    if (!ParseInt32(start, &data->top, &endPtr) || *endPtr != ',') {
+        return false;
+    }
+    if (!ParseInt32(endPtr + 1, &data->left, &endPtr) || *endPtr != '-') {
+        return false;
+    }
+    if (!ParseInt32(endPtr + 1, &data->bottom, &endPtr) || *endPtr != ',') {
+        return false;
+    }
+    if (!ParseInt32(endPtr + 1, &data->right, &endPtr)) {
+        return false;
+    }
+    char nextChar = *endPtr;
+    if (nextChar != '=' && nextChar != ';' && nextChar != '\0') {
+        return false;
+    }
+    if (!IsValidRectangle(data->top, data->left, data->bottom, data->right)) {
+        return false;
+    }
+    *outEndPtr = endPtr;
+    return true;
+}
+
+void RoiStringHelper::SetRectangleValues(OH_AVFormat *avFormat, const RoiRectangleData *data)
+{
+    OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_TOP, data->top);
+    OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_LEFT, data->left);
+    OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_BOTTOM, data->bottom);
+    OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_RIGHT, data->right);
 }
 
 uint32_t RoiStringHelper::CountExistingRois(const char *roiStr)
@@ -234,41 +277,51 @@ bool RoiStringHelper::ValidateAndParseRoiKvpairs(OH_AVFormat *avFormat, const ch
     return true;
 }
 
+bool RoiStringHelper::IsSameRoiFormat(OH_AVFormat *a, OH_AVFormat *b)
+{
+    int32_t aTop = 0;
+    int32_t aLeft = 0;
+    int32_t aBottom = 0;
+    int32_t aRight = 0;
+    int32_t bTop = 0;
+    int32_t bLeft = 0;
+    int32_t bBottom = 0;
+    int32_t bRight = 0;
+    OH_AVFormat_GetIntValue(a, OH_MD_KEY_VIDEO_METADATA_ROI_TOP, &aTop);
+    OH_AVFormat_GetIntValue(a, OH_MD_KEY_VIDEO_METADATA_ROI_LEFT, &aLeft);
+    OH_AVFormat_GetIntValue(a, OH_MD_KEY_VIDEO_METADATA_ROI_BOTTOM, &aBottom);
+    OH_AVFormat_GetIntValue(a, OH_MD_KEY_VIDEO_METADATA_ROI_RIGHT, &aRight);
+    OH_AVFormat_GetIntValue(b, OH_MD_KEY_VIDEO_METADATA_ROI_TOP, &bTop);
+    OH_AVFormat_GetIntValue(b, OH_MD_KEY_VIDEO_METADATA_ROI_LEFT, &bLeft);
+    OH_AVFormat_GetIntValue(b, OH_MD_KEY_VIDEO_METADATA_ROI_BOTTOM, &bBottom);
+    OH_AVFormat_GetIntValue(b, OH_MD_KEY_VIDEO_METADATA_ROI_RIGHT, &bRight);
+    if (aTop != bTop || aLeft != bLeft || aBottom != bBottom || aRight != bRight) {
+        return false;
+    }
+    for (uint32_t i = 0; i < ROI_KV_COUNT; i++) {
+        int32_t aVal = 0;
+        int32_t bVal = 0;
+        bool aHas = OH_AVFormat_GetIntValue(a, ROI_KV_TABLE[i].key, &aVal);
+        bool bHas = OH_AVFormat_GetIntValue(b, ROI_KV_TABLE[i].key, &bVal);
+        if (aHas != bHas || (aHas && aVal != bVal)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 OH_AVFormat *RoiStringHelper::ParseOneRoiSegmentToFormat(const char *start, const char *segEnd)
 {
+    RoiRectangleData data = {};
     const char *endPtr = nullptr;
-    int32_t top = 0;
-    if (!ParseInt32(start, &top, &endPtr) || *endPtr != ',') {
-        return nullptr;
-    }
-    int32_t left = 0;
-    if (!ParseInt32(endPtr + 1, &left, &endPtr) || *endPtr != '-') {
-        return nullptr;
-    }
-    int32_t bottom = 0;
-    if (!ParseInt32(endPtr + 1, &bottom, &endPtr) || *endPtr != ',') {
-        return nullptr;
-    }
-    int32_t right = 0;
-    if (!ParseInt32(endPtr + 1, &right, &endPtr)) {
-        return nullptr;
-    }
-    char nextChar = *endPtr;
-    if (nextChar != '=' && nextChar != ';' && nextChar != '\0') {
-        return nullptr;
-    }
-    if (!IsValidCoordinates(top, left, bottom, right)) {
+    if (!ParseRectangleSegment(start, &data, &endPtr)) {
         return nullptr;
     }
     OH_AVFormat *avFormat = OH_AVFormat_Create();
     if (avFormat == nullptr) {
         return nullptr;
     }
-    OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_TOP, top);
-    OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_LEFT, left);
-    OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_BOTTOM, bottom);
-    OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_RIGHT, right);
-
+    SetRectangleValues(avFormat, &data);
     const char *eqPos = strchr(start, '=');
     if (eqPos != nullptr && (segEnd == nullptr || eqPos < segEnd)) {
         if (!ValidateAndParseRoiKvpairs(avFormat, eqPos, segEnd)) {
@@ -290,10 +343,6 @@ OH_AVErrCode RoiStringHelper::AppendRoiString(char **roiStrInOut, OH_AVFormat *f
         !OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_METADATA_ROI_LEFT, &val) ||
         !OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_METADATA_ROI_BOTTOM, &val) ||
         !OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_METADATA_ROI_RIGHT, &val)) {
-        return AV_ERR_INVALID_VAL;
-    }
-
-    if (*roiStrInOut != nullptr && CountExistingRois(*roiStrInOut) >= ROI_MAX_COUNT) {
         return AV_ERR_INVALID_VAL;
     }
 
@@ -323,26 +372,34 @@ OH_AVErrCode RoiStringHelper::GetRoiCount(const char *roiStr, uint32_t *outCount
         return AV_ERR_INVALID_VAL;
     }
 
-    uint32_t count = 0;
-    const char *curPtr = roiStr;
-    while (*curPtr != '\0') {
-        const char *segEnd = strchr(curPtr, ';');
-        OH_AVFormat *avFormat = ParseOneRoiSegmentToFormat(curPtr, segEnd);
-        if (avFormat != nullptr) {
-            count++;
-            OH_AVFormat_Destroy(avFormat);
-        }
-        if (segEnd == nullptr) {
-            break;
-        }
-        curPtr = segEnd + 1;
+    uint32_t estimatedCount = CountExistingRois(roiStr);
+    if (estimatedCount == 0) {
+        *outCount = 0;
+        return AV_ERR_OK;
     }
-    *outCount = count;
+
+    OH_AVFormat **tempFormats = static_cast<OH_AVFormat **>(malloc(sizeof(OH_AVFormat *) * estimatedCount));
+    if (tempFormats == nullptr) {
+        return AV_ERR_NO_MEMORY;
+    }
+
+    uint32_t actualCount = 0;
+    OH_AVErrCode ret = ParseRoiString(roiStr, tempFormats, estimatedCount, &actualCount);
+    if (ret != AV_ERR_OK) {
+        free(tempFormats);
+        return ret;
+    }
+
+    for (uint32_t i = 0; i < actualCount; i++) {
+        OH_AVFormat_Destroy(tempFormats[i]);
+    }
+    free(tempFormats);
+    *outCount = actualCount;
     return AV_ERR_OK;
 }
 
 OH_AVErrCode RoiStringHelper::ParseRoiString(const char *roiStr, OH_AVFormat **outFormats,
-    uint32_t maxCapacity, uint32_t *outCount)
+                                              uint32_t maxCapacity, uint32_t *outCount)
 {
     if (roiStr == nullptr || outFormats == nullptr || outCount == nullptr) {
         return AV_ERR_INVALID_VAL;
@@ -361,7 +418,23 @@ OH_AVErrCode RoiStringHelper::ParseRoiString(const char *roiStr, OH_AVFormat **o
         }
         curPtr = segEnd + 1;
     }
-    *outCount = parsedNum;
+
+    uint32_t uniqueNum = 0;
+    for (uint32_t i = 0; i < parsedNum; i++) {
+        bool isDuplicate = false;
+        for (uint32_t j = 0; j < uniqueNum; j++) {
+            if (IsSameRoiFormat(outFormats[i], outFormats[j])) {
+                isDuplicate = true;
+                break;
+            }
+        }
+        if (isDuplicate) {
+            OH_AVFormat_Destroy(outFormats[i]);
+        } else {
+            outFormats[uniqueNum++] = outFormats[i];
+        }
+    }
+    *outCount = uniqueNum;
     return AV_ERR_OK;
 }
 
@@ -388,7 +461,7 @@ OH_AVErrCode OH_VideoMetadata_GetRoiCount(const char *roiStr, uint32_t *outCount
 }
 
 OH_AVErrCode OH_VideoMetadata_ParseRoiString(const char *roiStr, OH_AVFormat **outFormats,
-    uint32_t maxCapacity, uint32_t *outCount)
+                                             uint32_t maxCapacity, uint32_t *outCount)
 {
     CHECK_AND_RETURN_RET_LOG(roiStr != nullptr, AV_ERR_INVALID_VAL, "roiStr is nullptr!");
     CHECK_AND_RETURN_RET_LOG(outFormats != nullptr, AV_ERR_INVALID_VAL, "outFormats is nullptr!");
