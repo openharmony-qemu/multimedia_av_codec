@@ -75,9 +75,7 @@ private:
     ~RoiStringHelper() = delete;
 
     static bool ParseInt32(const char *str, int32_t *outVal, const char **outEndPtr);
-    static bool IsValidRectangle(int32_t top, int32_t left, int32_t bottom, int32_t right);
     static bool ParseRectangleSegment(const char *start, RoiRectangleData *data, const char **outEndPtr);
-    static void SetRectangleValues(OH_AVFormat *avFormat, const RoiRectangleData *data);
     static uint32_t CountExistingRois(const char *roiStr);
     static int BuildRoiSegmentStr(char *buffer, size_t bufferSize, OH_AVFormat *avFormat);
     static OH_AVErrCode AppendSegmentToRoiStr(char **roiStrInOut, const char *segment);
@@ -85,6 +83,7 @@ private:
     static bool ParseOldFormatDqp(OH_AVFormat *avFormat, const char *eqPos);
     static OH_AVFormat *ParseOneRoiSegmentToFormat(const char *start, const char *segEnd);
     static bool IsSameRoiFormat(OH_AVFormat *a, OH_AVFormat *b);
+    static uint32_t DedupFormats(OH_AVFormat **formats, uint32_t count);
 };
 
 bool RoiStringHelper::ParseInt32(const char *str, int32_t *outVal, const char **outEndPtr)
@@ -98,11 +97,6 @@ bool RoiStringHelper::ParseInt32(const char *str, int32_t *outVal, const char **
     *outVal = static_cast<int32_t>(val);
     *outEndPtr = endPtr;
     return true;
-}
-
-bool RoiStringHelper::IsValidRectangle(int32_t top, int32_t left, int32_t bottom, int32_t right)
-{
-    return top >= 0 && left >= 0 && bottom >= 0 && right >= 0 && top < bottom && left < right;
 }
 
 bool RoiStringHelper::ParseRectangleSegment(const char *start, RoiRectangleData *data, const char **outEndPtr)
@@ -124,19 +118,12 @@ bool RoiStringHelper::ParseRectangleSegment(const char *start, RoiRectangleData 
     if (nextChar != '=' && nextChar != ';' && nextChar != '\0') {
         return false;
     }
-    if (!IsValidRectangle(data->top, data->left, data->bottom, data->right)) {
+    if (data->top < 0 || data->left < 0 || data->bottom < 0 || data->right < 0 ||
+        data->top >= data->bottom || data->left >= data->right) {
         return false;
     }
     *outEndPtr = endPtr;
     return true;
-}
-
-void RoiStringHelper::SetRectangleValues(OH_AVFormat *avFormat, const RoiRectangleData *data)
-{
-    OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_TOP, data->top);
-    OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_LEFT, data->left);
-    OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_BOTTOM, data->bottom);
-    OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_RIGHT, data->right);
 }
 
 uint32_t RoiStringHelper::CountExistingRois(const char *roiStr)
@@ -324,6 +311,26 @@ bool RoiStringHelper::IsSameRoiFormat(OH_AVFormat *a, OH_AVFormat *b)
     return true;
 }
 
+uint32_t RoiStringHelper::DedupFormats(OH_AVFormat **formats, uint32_t count)
+{
+    uint32_t uniqueNum = 0;
+    for (uint32_t i = 0; i < count; i++) {
+        bool isDuplicate = false;
+        for (uint32_t j = 0; j < uniqueNum; j++) {
+            if (IsSameRoiFormat(formats[i], formats[j])) {
+                isDuplicate = true;
+                break;
+            }
+        }
+        if (isDuplicate) {
+            OH_AVFormat_Destroy(formats[i]);
+        } else {
+            formats[uniqueNum++] = formats[i];
+        }
+    }
+    return uniqueNum;
+}
+
 OH_AVFormat *RoiStringHelper::ParseOneRoiSegmentToFormat(const char *start, const char *segEnd)
 {
     RoiRectangleData data = {};
@@ -335,7 +342,10 @@ OH_AVFormat *RoiStringHelper::ParseOneRoiSegmentToFormat(const char *start, cons
     if (avFormat == nullptr) {
         return nullptr;
     }
-    SetRectangleValues(avFormat, &data);
+    OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_TOP, data.top);
+    OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_LEFT, data.left);
+    OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_BOTTOM, data.bottom);
+    OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_RIGHT, data.right);
     const char *eqPos = strchr(start, '=');
     if (eqPos != nullptr && (segEnd == nullptr || eqPos < segEnd)) {
         if (!ValidateAndParseRoiKvpairs(avFormat, eqPos, segEnd)) {
@@ -429,13 +439,25 @@ OH_AVErrCode RoiStringHelper::ParseRoiString(const char *roiStr, OH_AVFormat **o
         return AV_ERR_INVALID_VAL;
     }
 
+    uint32_t estimatedCount = CountExistingRois(roiStr);
+    if (estimatedCount == 0) {
+        *outCount = 0;
+        return AV_ERR_OK;
+    }
+
+    size_t allocSize = sizeof(OH_AVFormat *) * static_cast<size_t>(estimatedCount);
+    OH_AVFormat **allFormats = static_cast<OH_AVFormat **>(malloc(allocSize));
+    if (allFormats == nullptr) {
+        return AV_ERR_NO_MEMORY;
+    }
+
     uint32_t parsedNum = 0;
     const char *curPtr = roiStr;
-    while (*curPtr != '\0' && parsedNum < maxCapacity) {
+    while (*curPtr != '\0') {
         const char *segEnd = strchr(curPtr, ';');
         OH_AVFormat *avFormat = ParseOneRoiSegmentToFormat(curPtr, segEnd);
         if (avFormat != nullptr) {
-            outFormats[parsedNum++] = avFormat;
+            allFormats[parsedNum++] = avFormat;
         }
         if (segEnd == nullptr) {
             break;
@@ -443,22 +465,18 @@ OH_AVErrCode RoiStringHelper::ParseRoiString(const char *roiStr, OH_AVFormat **o
         curPtr = segEnd + 1;
     }
 
-    uint32_t uniqueNum = 0;
-    for (uint32_t i = 0; i < parsedNum; i++) {
-        bool isDuplicate = false;
-        for (uint32_t j = 0; j < uniqueNum; j++) {
-            if (IsSameRoiFormat(outFormats[i], outFormats[j])) {
-                isDuplicate = true;
-                break;
-            }
-        }
-        if (isDuplicate) {
-            OH_AVFormat_Destroy(outFormats[i]);
-        } else {
-            outFormats[uniqueNum++] = outFormats[i];
-        }
+    uint32_t uniqueNum = DedupFormats(allFormats, parsedNum);
+
+    uint32_t copyNum = (uniqueNum < maxCapacity) ? uniqueNum : maxCapacity;
+    for (uint32_t i = 0; i < copyNum; i++) {
+        outFormats[i] = allFormats[i];
     }
-    *outCount = uniqueNum;
+    for (uint32_t i = copyNum; i < uniqueNum; i++) {
+        OH_AVFormat_Destroy(allFormats[i]);
+    }
+
+    free(allFormats);
+    *outCount = copyNum;
     return AV_ERR_OK;
 }
 
