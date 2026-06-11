@@ -25,17 +25,25 @@ using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
 
-static VDecFuzzSample *g_vDecSample = nullptr;
 constexpr uint32_t DEFAULT_WIDTH = 720;
 constexpr uint32_t DEFAULT_HEIGHT = 480;
 constexpr double DEFAULT_FRAME_RATE = 30.0;
 
-OH_AVFormat *format = nullptr;
-
-void SetFormatValue(const uint8_t *data, size_t size)
+void Release(VDecFuzzSample *&sample)
 {
-    format = OH_AVFormat_CreateVideoFormat("video/wvc1", DEFAULT_WIDTH, DEFAULT_HEIGHT);
-    FuzzedDataProvider fdp(data, size);
+    if (sample != nullptr) {
+        sample->Release();
+        delete sample;
+        sample = nullptr;
+    }
+}
+
+static OH_AVFormat *SetFormatValue(FuzzedDataProvider &fdp)
+{
+    OH_AVFormat *format = OH_AVFormat_CreateVideoFormat("video/wvc1", DEFAULT_WIDTH, DEFAULT_HEIGHT);
+    if (format == nullptr) {
+        return nullptr;
+    }
 
     int intData0 = fdp.ConsumeIntegral<int32_t>();
     int intData1 = fdp.ConsumeIntegral<int32_t>();
@@ -60,6 +68,7 @@ void SetFormatValue(const uint8_t *data, size_t size)
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, intData8);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_DURATION, longData);
     OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, doubleData);
+    return format;
 }
 
 namespace OHOS {
@@ -68,40 +77,28 @@ bool WVc1SwdecoderFuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int64_t)) {
         return false;
     }
-    if (!g_vDecSample) {
-        g_vDecSample = new VDecFuzzSample();
-        g_vDecSample->defaultWidth = DEFAULT_WIDTH;
-        g_vDecSample->defaultHeight = DEFAULT_HEIGHT;
-        g_vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
-        g_vDecSample->isSurfMode = true;
-        
-        if (g_vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.WVC1") != AV_ERR_OK) {
-            delete g_vDecSample;
-            g_vDecSample = nullptr;
-            return false;
-        }
-        if (g_vDecSample->ConfigureVideoDecoder() != AV_ERR_OK) {
-            delete g_vDecSample;
-            g_vDecSample = nullptr;
-            return false;
-        }
-        if (g_vDecSample->SetVideoDecoderCallback() != AV_ERR_OK) {
-            delete g_vDecSample;
-            g_vDecSample = nullptr;
-            return false;
-        }
-        if (g_vDecSample->Start() != AV_ERR_OK) {
-            delete g_vDecSample;
-            g_vDecSample = nullptr;
-            return false;
-        }
+    FuzzedDataProvider fdp(data, size);
+    VDecFuzzSample *vDecSample = new VDecFuzzSample();
+    
+    vDecSample->defaultWidth = fdp.ConsumeIntegral<int32_t>();
+    vDecSample->defaultHeight = fdp.ConsumeIntegral<int32_t>();
+    vDecSample->defaultFrameRate = fdp.ConsumeFloatingPoint<double>();
+    vDecSample->isSurfMode = fdp.ConsumeBool();
+
+    if (vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.WVC1") != AV_ERR_OK ||
+        vDecSample->ConfigureVideoDecoder() != AV_ERR_OK ||
+        vDecSample->SetVideoDecoderCallback() != AV_ERR_OK ||
+        vDecSample->Start() != AV_ERR_OK) {
+        Release(vDecSample);
+        return false;
     }
 
-    SetFormatValue(data, size);
-    g_vDecSample->SetParameter(format);
-    OH_AVFormat_Destroy(format);
-    delete g_vDecSample;
-    g_vDecSample = nullptr;
+    OH_AVFormat *format = SetFormatValue(fdp);
+    if (format != nullptr) {
+        vDecSample->SetParameter(format);
+        OH_AVFormat_Destroy(format);
+    }
+    Release(vDecSample);
     return true;
 }
 } // namespace OHOS
