@@ -242,6 +242,7 @@ ohos_unittest("avmuxer_gltf_unit_test") {
     "graphic_surface:surface",
     "init:libbegetutil",
     "hicollie:libhicollie",
+    "hitrace:hitrace_meter",
     "media_foundation:media_foundation",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
