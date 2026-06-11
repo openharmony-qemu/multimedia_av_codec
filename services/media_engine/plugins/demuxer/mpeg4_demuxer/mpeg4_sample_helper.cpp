@@ -52,7 +52,10 @@ constexpr uint32_t MAX_REORDER_DELAY = 16;
 Status ConvertTimeScaleRoundNearest(int64_t multiplicand, int64_t multiplier, int64_t timeScale, int64_t* result)
 {
     int64_t scaled = 0;
-    if (result == nullptr || timeScale <= 0 || __builtin_mul_overflow(multiplicand, multiplier, &scaled)) {
+    if (result == nullptr || timeScale <= 0) {
+        return Status::ERROR_INVALID_DATA;
+    }
+    if (__builtin_mul_overflow(multiplicand, multiplier, &scaled)) {
         return Status::ERROR_INVALID_DATA;
     }
     int64_t quotient = scaled / timeScale;
