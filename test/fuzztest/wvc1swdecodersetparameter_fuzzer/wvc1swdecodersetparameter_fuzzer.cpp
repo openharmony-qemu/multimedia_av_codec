@@ -27,7 +27,6 @@ using namespace OHOS::Media;
 
 constexpr uint32_t DEFAULT_WIDTH = 720;
 constexpr uint32_t DEFAULT_HEIGHT = 480;
-constexpr double DEFAULT_FRAME_RATE = 30.0;
 
 void Release(VDecFuzzSample *&sample)
 {
