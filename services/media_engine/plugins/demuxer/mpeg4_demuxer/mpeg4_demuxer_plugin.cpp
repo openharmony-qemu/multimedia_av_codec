@@ -307,7 +307,7 @@ Status MPEG4DemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sour
     auto parser = std::make_shared<MPEG4AtomParser>();
     FALSE_RETURN_V_MSG_E(parser != nullptr, Status::ERROR_NO_MEMORY, "parser allocation failed");
     Status ret = parser->MPEG4ParseHeader(source, seekable_, readTimeoutMs_.load(std::memory_order_acquire));
-    FALSE_RETURN_V_MSG_E(ret != Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT, ret, "MPEG4 demuxer unsupport");
+    FALSE_RETURN_V_MSG_E(ret != Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT, ret, "MPEG4 demuxer unsupport type");
     FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "MPEG4ParseHeader failed");
     
     mediaInfo_ = parser->GetMediaInfo();
@@ -1831,60 +1831,6 @@ bool MPEG4DemuxerPlugin::IsAudioType(const MPEG4AtomParser::Track &track)
 }
 
 namespace {
-static bool IsJPEGBrand(uint32_t fourcc)
-{
-    static const uint32_t jpegBrands[] = {
-        FourccType("jp2 "),
-        FourccType("jpx "),
-        FourccType("jxl "),
-    };
-    for (size_t i = 0; i < sizeof(jpegBrands) / sizeof(jpegBrands[0]); ++i) {
-        if (jpegBrands[i] == fourcc) {
-            return true;
-        }
-    }
-    return false;
-}
-
-static bool IsBrand(uint32_t fourcc)
-{
-    static const uint32_t compatibleBrands[] = {
-        FourccType("isom"),
-        FourccType("iso2"),
-        FourccType("avc1"),
-        FourccType("hvc1"),
-        FourccType("hev1"),
-        FourccType("vvc1"),
-        FourccType("vvi1"),
-        FourccType("av01"),
-        FourccType("vp09"),
-        FourccType("3gp4"),
-        FourccType("mp41"),
-        FourccType("mp42"),
-        FourccType("dash"),
-        FourccType("nvr1"),
-
-        FourccType("qt  "),
-        FourccType("MSNV"),
-        FourccType("wmf "),
-        FourccType("3g2a"),
-        FourccType("3g2b"),
-        FourccType("mif1"),
-        FourccType("heic"),
-        FourccType("msf1"),
-        FourccType("hevc"),
-        FourccType("avif"),
-        FourccType("avis"),
-        FourccType("iso4"),
-    };
-    for (size_t i = 0; i < sizeof(compatibleBrands) / sizeof(compatibleBrands[0]); ++i) {
-        if (compatibleBrands[i] == fourcc) {
-            return true;
-        }
-    }
-    return false;
-}
-
 void IsMPEGPS(int64_t offset, int64_t kMaxOffset, const std::shared_ptr<DemuxerDataReader>& dataReader,
     int32_t& confidence)
 {
@@ -1913,7 +1859,7 @@ void IsMPEGPS(int64_t offset, int64_t kMaxOffset, const std::shared_ptr<DemuxerD
 }
 
 int32_t GetFtypConfidence(std::shared_ptr<DemuxerDataReader> dataReader_,
-    int64_t chunkDataOffset, int64_t chunkDataSize, int32_t confidence, bool formatDebug)
+    int64_t chunkDataOffset, int64_t chunkDataSize, int32_t confidence)
 {
     const int32_t readLengHalf = 4;
     FALSE_RETURN_V_MSG_E(chunkDataSize >= READ_LEN, 0, "ftyp data size error");
@@ -1932,27 +1878,14 @@ int32_t GetFtypConfidence(std::shared_ptr<DemuxerDataReader> dataReader_,
             chunkDataOffset + readLengHalf * i, brandData, sizeof(brandData)) == Status::OK,
             0, "Read brand failed");
         brand = GetU32Value(brandData);
-        if (!formatDebug) {
-            if (i == 0 && !IsJPEGBrand(brand)) {
-                confidence = FIRST_LEVEL_RANK;
-                return confidence;
-            }
-            if (i == 0) {
-                confidence = std::max(confidence, RANK_MIN);
-            } else if (IsBrand(brand)) {
-                confidence = FIRST_LEVEL_RANK;
-                return confidence;
-            }
-        } else {
-            if (IsSupportedBrand(brand)) {
-                return FIRST_LEVEL_RANK;
-            }
-            if (IsUnsupportedBrand(brand)) {
-                return 0;
-            }
-            if (i == 0) {
-                confidence = std::max(confidence, RANK_MIN);
-            }
+        if (IsSupportedBrand(brand)) {
+            return FIRST_LEVEL_RANK;
+        }
+        if (IsUnsupportedBrand(brand)) {
+            return 0;
+        }
+        if (i == 0) {
+            confidence = std::max(confidence, RANK_MIN);
         }
     }
     return confidence;
@@ -2014,7 +1947,6 @@ int32_t GetConfidence(std::shared_ptr<DemuxerDataReader> dataReader)
     int64_t offset = 0;
     int32_t confidence = 0;
     bool isFirstAtom = true;
-    bool formatDebug = (OHOS::system::GetParameter("Mpeg4DemuxerPlugin.formatDebug", "0") == "1");
     while (!moov.found && offset < SNIFF_DATA_SIZE) {
         uint8_t atomInfoData[8];
         FALSE_RETURN_V_MSG_E(dataReader->ReadUintData(offset, atomInfoData, sizeof(atomInfoData)) == Status::OK, 0,
@@ -2024,12 +1956,12 @@ int32_t GetConfidence(std::shared_ptr<DemuxerDataReader> dataReader)
         FALSE_RETURN_V_NOLOG(UpdateAtomSize(atom, offset, chunkDataOffset, dataReader), 0);
         int64_t chunkDataSize = atom.size - (chunkDataOffset - offset);
         FALSE_RETURN_V_MSG_E(chunkDataSize >= 0, 0, "atom data size error");
-        FALSE_RETURN_V_MSG_E(!formatDebug || (!isFirstAtom || atom.type == FourccType("ftyp")), 0, "no ftyp atom");
+        FALSE_RETURN_V_MSG_E((!isFirstAtom || atom.type == FourccType("ftyp")), 0, "no ftyp atom");
         isFirstAtom = false;
         switch (GetAtomLevel(atom)) {
             case AtomLevel::LEVEL_0: {
                 int32_t originalConfidence = confidence;
-                confidence = GetFtypConfidence(dataReader, chunkDataOffset, chunkDataSize, confidence, formatDebug);
+                confidence = GetFtypConfidence(dataReader, chunkDataOffset, chunkDataSize, confidence);
                 FALSE_RETURN_V_NOLOG(!(confidence != FIRST_LEVEL_RANK || confidence == originalConfidence), confidence);
                 break;
             }
@@ -2065,8 +1997,6 @@ int32_t GetConfidence(std::shared_ptr<DemuxerDataReader> dataReader)
 
 int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> source)
 {
-    std::string debug = OHOS::system::GetParameter("Mpeg4DemuxerPlugin.debug", "0");
-    FALSE_RETURN_V_MSG_W(debug == "0", 0, "Skip Mpeg4Demuxer, debug");
     std::string enable = OHOS::system::GetParameter("Mpeg4DemuxerPlugin.enable", "0");
     FALSE_RETURN_V_MSG_W(enable == "1", 0, "Skip Mpeg4Demuxer");
     FALSE_RETURN_V_MSG_E(!pluginName.empty(), 0, "Plugin name is empty");

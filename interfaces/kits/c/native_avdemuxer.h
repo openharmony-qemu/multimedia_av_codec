@@ -4,7 +4,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,17 +12,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 /**
  * @addtogroup AVDemuxer
  * @{
  *
  * @brief The AVDemuxer module provides an interface for extracting samples from media file streams.
  *
- * @syscap SystemCapability.Multimedia.Media.Spliter
  * @since 10
  */
-
 /**
  * @file native_avdemuxer.h
  *
@@ -45,212 +42,226 @@
 extern "C" {
 #endif
 
+/**
+ * @brief The struct describes a native object for the OH_AVDemuxer interface.
+ *
+ * @since 10
+ */
 typedef struct OH_AVDemuxer OH_AVDemuxer;
+/**
+ * @brief The struct describes a native object for the DRM_MediaKeySystemInfo interface.
+ *
+ * @since 11
+ */
 typedef struct DRM_MediaKeySystemInfo DRM_MediaKeySystemInfo;
 
 /**
- * @brief Pointer type for media key system information callback function.
+ * @brief Defines a pointer to the callback function for DRM_MediaKeySystemInfo. No demuxer instance is returned. This
+ * callback function applies to the scenario where a single demuxer instance is used.
+ *
+ * You need to call {@link OH_AVDemuxer_SetMediaKeySystemInfoCallback} to set the callback function as a callback.
+ *
  * @deprecated since 14
  * @useinstead Demuxer_MediaKeySystemInfoCallback
  * @since 11
  */
-typedef void (*DRM_MediaKeySystemInfoCallback)(DRM_MediaKeySystemInfo* mediaKeySystemInfo);
+typedef void (*DRM_MediaKeySystemInfoCallback)(DRM_MediaKeySystemInfo *mediaKeySystemInfo);
 
 /**
- * @brief Pointer type for media key system information callback function.
+ * @brief Defines a pointer to the callback function for {@link DRM_MediaKeySystemInfo}.
+ * A demuxer instance is returned.
+ * This callback function applies to the scenario where multiple demuxer instances are used.
+ *
+ * You need to call {@link OH_AVDemuxer_SetDemuxerMediaKeySystemInfoCallback} to set the callback function as a
+ * callback. This callback function is recommended.
+ *
  * @param demuxer Player OH_AVDemuxer.
  * @param mediaKeySystemInfo DRM information.
  * @since 12
- * @version 1.0
  */
 typedef void (*Demuxer_MediaKeySystemInfoCallback)(OH_AVDemuxer *demuxer, DRM_MediaKeySystemInfo *mediaKeySystemInfo);
 
 /**
- * @brief Creates an OH_AVDemuxer instance for getting samples from source.
- * For the create, destrory, and use of source, please refer to {@link OH_AVSource}.
- * @syscap SystemCapability.Multimedia.Media.Spliter
+ * @brief Creates an OH_AVDemuxer instance based on a source instance.
+ *
+ * For details about how to create, destroy, and use a source instance, see {@link OH_AVSource}.
+ *
  * @param source Pointer to an OH_AVSource instance.
- * @return Returns a pointer to an OH_AVDemuxer instance if the execution is successful, otherwise returns NULL.
- * Possible failure causes:
- *  1. invalid source, is NULL pointer;
- *  2. non OH_AVSource instance.
+ * @return Pointer to an OH_AVDemuxer instance.
+ *     <br>If the operation fails, NULL is returned.
+ *     <br>The possible causes of an operation failure are as follows:
+ *     <br>1. The value of **source** is invalid (either nullptr or a pointer to a non-OH_AVSource instance).
+ *     <br>2. The value of **source** does not point to an OH_AVSource instance.
  * @since 10
-*/
+ */
 OH_AVDemuxer *OH_AVDemuxer_CreateWithSource(OH_AVSource *source);
 
 /**
- * @brief Destroy the OH_AVDemuxer instance and free the internal resources.
- * The same instance can only be destroyed once. The destroyed instance
- * should not be used before it is created again. It is recommended setting
- * the instance pointer to NULL right after the instance is destroyed successfully.
- * @syscap SystemCapability.Multimedia.Media.Spliter
+ * @brief Destroys an OH_AVDemuxer instance and clears internal resources. An instance can be destroyed only once.
+ *
+ * The destroyed instance cannot be used until it is re-created. You are advised to set the pointer to NULL after the
+ * instance is destroyed.
+ *
  * @param demuxer Pointer to an OH_AVDemuxer instance.
- * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
- * {@link AV_ERR_INVALID_VAL} the input demuxer pointer is non demuxer instance or NULL.
+ * @return {@link AV_ERR_OK}: The operation is successful.
+ *     <br>{@link AV_ERR_INVALID_VAL}: The value of **demuxer** is nullptr or does not point to a demuxer instance.
  * @since 10
-*/
+ */
 OH_AVErrCode OH_AVDemuxer_Destroy(OH_AVDemuxer *demuxer);
 
 /**
- * @brief The specified track is selected and the demuxer will read samples from
- * this track. Multiple tracks are selected by calling this interface multiple times
- * with different track indexes. Only the selected tracks are valid when calling
- * OH_AVDemuxer_ReadSample to read samples. The interface returns AV_ERR_OK and the
- * track is selected only once if the same track is selected multiple times.
- * @syscap SystemCapability.Multimedia.Media.Spliter
+ * @brief Selects a track from which the demuxer reads sample data.
+ *
+ * You can select multiple tracks by calling this API multiple times, with a different track index passed in each time.
+ *
+ * When {@link OH_AVDemuxer_ReadSample} is called, only the data in the selected track is read. If the same track is
+ * selected multiple times, {@link AV_ERR_OK} is returned and the API call takes effect only once.
+ *
  * @param demuxer Pointer to an OH_AVDemuxer instance.
- * @param trackIndex The index of the selected track.
- * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
- * {@link AV_ERR_OPERATE_NOT_PERMIT} demuxer is not properly initialized.
- * {@link AV_ERR_INVALID_VAL}
- * 1. the input demuxer pointer is non demuxer instance or NULL;
- * 2. trackIndex is out of range;
- * 3. track is not supported to be read.
+ * @param trackIndex Index of the track.
+ * @return {@link AV_ERR_OK}: The operation is successful.
+ *     <br>{@link AV_ERR_INVALID_VAL}:
+ *     <br>1. The value of **demuxer** is nullptr or does not point to a demuxer instance.
+ *     <br>2. The track index is out of range.
+ *     <br>3. Track reading is not supported.
+ *     <br>{@link AV_ERR_OPERATE_NOT_PERMIT}: The demuxer is not correctly initialized.
  * @since 10
-*/
+ */
 OH_AVErrCode OH_AVDemuxer_SelectTrackByID(OH_AVDemuxer *demuxer, uint32_t trackIndex);
 
 /**
- * @brief The specified selected track is unselected. The unselected track's sample
- * can not be read from demuxer. Multiple selected tracks are unselected by calling
- * this interface multiple times with different track indexes. The interface returns
- * AV_ERR_OK and the track is unselected only once if the same track is unselected
- * multiple times.
- * @syscap SystemCapability.Multimedia.Media.Spliter
+ * @brief Deselects a track. The demuxer no longer reads sample data from a track after it is deselected.
+ *
+ * You can deselect multiple tracks by calling this API multiple times, with a different track index passed in each
+ * time.
+ * If the same track is deselected multiple times,
+ * {@link AV_ERR_OK} is returned and the API call takes effect only once.
+ *
  * @param demuxer Pointer to an OH_AVDemuxer instance.
- * @param trackIndex The index of the unselected track.
- * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
- * {@link AV_ERR_OPERATE_NOT_PERMIT} demuxer is not properly initialized.
- * {@link AV_ERR_INVALID_VAL} the input demuxer pointer is non demuxer instance or NULL.
+ * @param trackIndex Index of the track.
+ * @return {@link AV_ERR_OK}: The operation is successful.
+ *     <br>{@link AV_ERR_INVALID_VAL}: The value of **demuxer** is nullptr or does not point to a demuxer instance.
+ *     <br>{@link AV_ERR_OPERATE_NOT_PERMIT}: The demuxer is not correctly initialized.
  * @since 10
-*/
+ */
 OH_AVErrCode OH_AVDemuxer_UnselectTrackByID(OH_AVDemuxer *demuxer, uint32_t trackIndex);
 
 /**
- * @brief Obtain samples and related information for the specified track.
- * Note that the track index must be selected before reading sample. The demuxer will advance
- * automatically after calling this interface.
- * @syscap SystemCapability.Multimedia.Media.Spliter
+ * @brief Reads the sample and related information from the specified track.
+ *
+ * You must select a track before reading the sample. After this API is called, the demuxer automatically proceeds to
+ * the next frame.
+ *
  * @param demuxer Pointer to an OH_AVDemuxer instance.
- * @param trackIndex The index of the track from which read an encoded sample.
- * @param sample The OH_AVMemory handle pointer to the buffer storing the sample data.
- * @param info The OH_AVCodecBufferAttr handle pointer to the buffer storing sample information.
- * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
- * {@link AV_ERR_INVALID_VAL}
- * 1. the input demuxer pointer is non demuxer instance or NULL;
- * 2. sample is a NULL pointer;
- * 3. trackIndex is out of range;
- * 4. the input sample is empty.
- * {@link AV_ERR_OPERATE_NOT_PERMIT}
- * 1. trackIndex has not been selected;
- * 2. demuxer is not properly initialized.
- * {@link AV_ERR_NO_MEMORY} capability of sample is not enough to store frame data.
- * {@link AV_ERR_UNKNOWN} failed to read or parse frame from file.
+ * @param trackIndex Index of the track from which the compressed frame is to be read.
+ * @param sample Pointer to the OH_AVMemory instance for storing the compressed frame data.
+ * @param info Pointer to the OH_AVCodecBufferAttr instance for storing the compressed frame information.
+ * @return {@link AV_ERR_OK}: The operation is successful.
+ *     <br>{@link AV_ERR_INVALID_VAL}:
+ *     <br>1. The value of **demuxer** is nullptr or does not point to a demuxer instance.
+ *     <br>2. The track index is out of range.
+ *     <br>3. Track reading is not supported.
+ *     <br>4. The value of **sample** is null.
+ *     <br>5. The value of **info** is null.
+ *     <br>{@link AV_ERR_OPERATE_NOT_PERMIT}:
+ *     <br>1. The track with the specified index is not selected.
+ *     <br>2. The demuxer is not correctly initialized.
+ *     <br>{@link AV_ERR_NO_MEMORY}: The sample capacity is insufficient to store all frame data.
+ *     <br>{@link AV_ERR_UNKNOWN}: Failed to read or parse the frame from the file.
  * @deprecated since 11
  * @useinstead OH_AVDemuxer_ReadSampleBuffer
  * @since 10
-*/
+ */
 OH_AVErrCode OH_AVDemuxer_ReadSample(OH_AVDemuxer *demuxer, uint32_t trackIndex,
     OH_AVMemory *sample, OH_AVCodecBufferAttr *info);
 
 /**
- * @brief Obtain samples and related information for the specified track.
- * Note that the track index must be selected before reading sample. The demuxer will advance
- * automatically after calling this interface.
- * @syscap SystemCapability.Multimedia.Media.Spliter
+ * @brief Reads the sample and related information from the specified track.
+ *
+ * You can use {@link OH_AVDemuxer_SelectTrackByID} to select a track before reading the sample. After this API is
+ * called, the demuxer automatically proceeds to the next frame.
+ *
  * @param demuxer Pointer to an OH_AVDemuxer instance.
- * @param trackIndex The index of the track from which read an encoded sample.
- * @param sample The OH_AVBuffer handle pointer to the buffer storing the sample data and corresponding attribute.
- * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
- * {@link AV_ERR_INVALID_VAL}
- * 1. the input demuxer pointer is non demuxer instance or NULL;
- * 2. sample is a NULL pointer;
- * 3. trackIndex is out of range;
- * 4. the input sample is empty.
- * {@link AV_ERR_OPERATE_NOT_PERMIT}
- * 1. trackIndex has not been selected;
- * 2. demuxer is not properly initialized.
- * {@link AV_ERR_NO_MEMORY} capability of sample is not enough to store frame data.
- * {@link AV_ERR_UNKNOWN} failed to read or parse frame from file.
+ * @param trackIndex Index of the track from which the compressed frame is to be read.
+ * @param sample Pointer to the OH_AVBuffer instance for storing the compressed frame data and related information.
+ * @return {@link AV_ERR_OK}: The operation is successful.
+ *     <br>{@link AV_ERR_INVALID_VAL}:
+ *     <br>1. The value of **demuxer** is nullptr or does not point to a demuxer instance.
+ *     <br>2. The value of **sample** is nullptr.
+ *     <br>3. The track index is out of range.
+ *     <br>4. The value of **sample** is null.
+ *     <br>{@link AV_ERR_OPERATE_NOT_PERMIT}:
+ *     <br>1. The track with the specified index is not selected.
+ *     <br>2. The demuxer is not correctly initialized.
+ *     <br>{@link AV_ERR_NO_MEMORY}: The sample capacity is insufficient to store all frame data.
+ *     <br>{@link AV_ERR_UNKNOWN}: Failed to read or parse the frame from the file.
  * @since 11
-*/
+ */
 OH_AVErrCode OH_AVDemuxer_ReadSampleBuffer(OH_AVDemuxer *demuxer, uint32_t trackIndex,
     OH_AVBuffer *sample);
 
 /**
- * @brief All selected tracks seek near to the requested time according to the seek mode.
- * @syscap SystemCapability.Multimedia.Media.Spliter
+ * @brief Seeks to the specified time for all the selected tracks based on a seek mode.
+ *
  * @param demuxer Pointer to an OH_AVDemuxer instance.
- * @param millisecond The millisecond for seeking, the timestamp is the position of
- * the file relative to the start of the file.
- * @param mode The mode for seeking. See {@link OH_AVSeekMode}.
- * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
- * {@link AV_ERR_INVALID_VAL}
- * 1. the input demuxer pointer is non demuxer instance or NULL;
- * 2. the millisecond value is out of range.
- * {@link AV_ERR_OPERATE_NOT_PERMIT}
- * 1. trackIndex has not been selected;
- * 2. demuxer is not properly initialized;
- * 3. resource is unseekable.
- * {@link AV_ERR_UNKNOWN}
- * 1. seek failed;
- * 2. selecting SEEK_MODE_CEXT_SYNC for OH_AVSeekMode and no I-frame after the time point may result in jump failure.
+ * @param millisecond Time to seek to, in milliseconds. The timestamp is relative to the start position of the file.
+ * @param mode Seek mode.
+ * @return {@link AV_ERR_OK}: The operation is successful.
+ *     <br>{@link AV_ERR_INVALID_VAL}:
+ *     <br>1. The value of **demuxer** is nullptr or does not point to a demuxer instance.
+ *     <br>2. The value of **millisecond** is out of range.
+ *     <br>{@link AV_ERR_OPERATE_NOT_PERMIT}:
+ *     <br>1. The track with the specified index is not selected.
+ *     <br>2. The demuxer is not correctly initialized.
+ *     <br>3. The seek operation cannot be performed on the resource.
+ *     <br>{@link AV_ERR_UNKNOWN}:
+ *     <br>1. The seek operation fails.
+ *     <br>2. **OH_AVSeekMode** is set to **SEEK_MODE_NEXT_SYNC** and there is no I-frame
+ *     following the specified position.
  * @since 10
-*/
+ */
 OH_AVErrCode OH_AVDemuxer_SeekToTime(OH_AVDemuxer *demuxer, int64_t millisecond, OH_AVSeekMode mode);
 
 /**
- * @brief Set DRM information callback function.
- * @syscap SystemCapability.Multimedia.Media.Spliter
- * @param demuxer Pointer to an OH_AVDemuxer instance
- * @param callback object pointer.
- * @return
- * {@link AV_ERR_OK} execution successful.
- * {@link AV_ERR_OPERATE_NOT_PERMIT} demuxer is not properly initialized.
- * {@link AV_ERR_INVALID_VAL} the input demuxer pointer is non demuxer instance or NULL.
- * @since 11
+ * @brief Sets a callback for obtaining the media key system information.
+ *
+ * @param demuxer Pointer to an OH_AVDemuxer instance.
+ * @param callback Callback function.
+ * @return {@link AV_ERR_OK}: The operation is successful.
+ *     <br>{@link AV_ERR_OPERATE_NOT_PERMIT}: The demuxer is not correctly initialized.
+ *     <br>{@link AV_ERR_INVALID_VAL}: The value of **demuxer** is nullptr or does not point to a demuxer instance.
  * @deprecated since 14
  * @useinstead OH_AVDemuxer_SetDemuxerMediaKeySystemInfoCallback
- * @version 1.0
+ * @since 11
  */
 OH_AVErrCode OH_AVDemuxer_SetMediaKeySystemInfoCallback(OH_AVDemuxer *demuxer,
     DRM_MediaKeySystemInfoCallback callback);
 
 /**
- * @brief Set DRM information callback function.
- * @syscap SystemCapability.Multimedia.Media.Spliter
- * @param demuxer Pointer to an OH_AVDemuxer instance
- * @param callback object pointer.
- * @return
- * {@link AV_ERR_OK} execution successful.
- * {@link AV_ERR_OPERATE_NOT_PERMIT} demuxer is not properly initialized.
- * {@link AV_ERR_INVALID_VAL} the input demuxer pointer is non demuxer instance or NULL.
+ * @brief Sets a callback for obtaining the media key system information.
+ *
+ * @param demuxer Pointer to an OH_AVDemuxer instance.
+ * @param callback Callback function.
+ * @return {@link AV_ERR_OK}: The operation is successful.
+ *     <br>{@link AV_ERR_OPERATE_NOT_PERMIT}: The demuxer is not correctly initialized.
+ *     <br>{@link AV_ERR_INVALID_VAL}: The value of **demuxer** is nullptr or does not point to a demuxer instance.
  * @since 12
- * @version 1.0
  */
 OH_AVErrCode OH_AVDemuxer_SetDemuxerMediaKeySystemInfoCallback(OH_AVDemuxer *demuxer,
     Demuxer_MediaKeySystemInfoCallback callback);
 
 /**
- * @brief Obtain DRM information. After the {@link Demuxer_MediaKeySystemInfoCallback}
- * or {@link DRM_MediaKeySystemInfoCallback} callback is successful,
- * this interface can be called to obtain DRM information.
- * @syscap SystemCapability.Multimedia.Media.Spliter
- * @param demuxer Pointer to an OH_AVDemuxer instance
- * @param mediaKeySystemInfo Pointer to DRM information, please refer to {@link DRM_MediaKeySystemInfo}
- * @return
- * {@link AV_ERR_OK} execution successful.
- * {@link AV_ERR_INVALID_VAL}
- * 1. the input demuxer pointer is non demuxer instance or NULL;
- * 2. the mediaKeySystemInfo is NULL.
+ * @brief Obtains the media key system information. The media key system information can be obtained only after
+ * {@link Demuxer_MediaKeySystemInfoCallback} or {@link DRM_MediaKeySystemInfoCallback} is successfully invoked.
+ *
+ * @param demuxer Pointer to an OH_AVDemuxer instance.
+ * @param mediaKeySystemInfo Pointer to the media key system information.
+ * @return {@link AV_ERR_OK}: The operation is successful.
+ *     <br>{@link AV_ERR_OPERATE_NOT_PERMIT}: The demuxer engine is not initialized or fails to be initialized.
+ *     <br>{@link AV_ERR_INVALID_VAL}:
+ *     <br>1. The value of **demuxer** is nullptr or does not point to a demuxer instance.
+ *     <br>2. The value of **mediaKeySystemInfo** is nullptr.
  * @since 11
- * @version 1.0
  */
 OH_AVErrCode OH_AVDemuxer_GetMediaKeySystemInfo(OH_AVDemuxer *demuxer, DRM_MediaKeySystemInfo *mediaKeySystemInfo);
 

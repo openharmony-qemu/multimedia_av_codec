@@ -34,17 +34,17 @@ bool IsSupportedVideoCodec(int32_t fourcc);
 bool IsSupportedAudioCodec(int32_t fourcc);
 bool IsSupportedSubtitleCodec(int32_t fourcc);
 bool IsSupportedAuxiliaryCodec(int32_t fourcc);
-bool IsVideoMimeType(const std::string& mime, bool formatDebug);
-bool IsAudioMimeType(const std::string& mime, bool formatDebug);
+bool IsVideoMimeType(const std::string& mime);
+bool IsAudioMimeType(const std::string& mime);
 bool IsImageMimeType(const std::string& mime);
 bool IsSupportCodec(int32_t fourcc, TrackType trackType, const std::string& mime);
 
-bool NeedParseVideoInfo(std::string mimeType, TrackType trackType, bool formatDebug);
-bool NeedParseAudioInfo(std::string mimeType, TrackType trackType, bool formatDebug);
+bool NeedParseVideoInfo(std::string mimeType, TrackType trackType);
+bool NeedParseAudioInfo(std::string mimeType, TrackType trackType);
 bool NeedParseMediaTrackInfo(TrackType trackType);
 
-std::string GetMimeType(int32_t atomtype, bool formatDebug);
-std::string GetMimeTypeByObjectType(uint8_t objectTypeId, bool formatDebug);
+std::string GetMimeType(int32_t atomtype);
+std::string GetMimeTypeByObjectType(uint8_t objectTypeId);
 std::string GetCodecName(std::string mimeType);
 MediaType GetMediaType(TrackType trackType);
 } // namespace MPEG4
