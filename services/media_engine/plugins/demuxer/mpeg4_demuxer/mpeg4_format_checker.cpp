@@ -134,36 +134,7 @@ static const std::map<int32_t, std::string> g_supportedMimeFourcc = {
     { FourccType("bmp "), MimeType::IMAGE_BMP },
 };
 
-static const std::map<int32_t, std::string> g_unsupportedMimeFourcc = {
-    { FourccType("mp4v"), MimeType::VIDEO_MPEG4 },
-    { FourccType("s263"), MimeType::VIDEO_H263 },
-    { FourccType("H263"), MimeType::VIDEO_H263 },
-    { FourccType("h263"), MimeType::VIDEO_H263 },
-    { FourccType("mp2v"), MimeType::VIDEO_MPEG2 },
-    { FourccType("m2v1"), MimeType::VIDEO_MPEG2 },
-    { FourccType("fLaC"), MimeType::AUDIO_FLAC },
-    { FourccType("alaw"), MimeType::AUDIO_G711A },
-    { FourccType("ulaw"), MimeType::AUDIO_G711MU },
-    { FourccType("fl32"), MimeType::AUDIO_RAW },
-    { FourccType("fl64"), MimeType::AUDIO_RAW },
-    { FourccType("in24"), MimeType::AUDIO_RAW },
-    { FourccType("in32"), MimeType::AUDIO_RAW },
-    { FourccType("raw "), MimeType::AUDIO_RAW },
-    { FourccType("NONE"), MimeType::AUDIO_RAW },
-    { FourccType("ipcm"), MimeType::AUDIO_RAW },
-    { FourccType("lpcm"), MimeType::AUDIO_RAW },
-    { FourccType("twos"), MimeType::AUDIO_RAW },
-    { FourccType("sowt"), MimeType::AUDIO_RAW },
-    { FourccType("msVo"), MimeType::AUDIO_VORBIS },
-    { FourccType("Opus"), MimeType::AUDIO_OPUS },
-    { FourccType("alac"), MimeType::AUDIO_ALAC },
-    { FourccType("dtsc"), MimeType::AUDIO_DTS },
-    { FourccType("dtsh"), MimeType::AUDIO_DTS },
-    { FourccType("dtsl"), MimeType::AUDIO_DTS },
-    { FourccType("dtse"), MimeType::AUDIO_DTS },
-};
-
-static const std::map<uint8_t, std::string> g_unsupportedObjectType = {
+static const std::map<uint8_t, std::string> g_supportedObjectType = {
     // 视频编解码器
     {0x21, MimeType::VIDEO_AVC},      // H.264/AVC
     {0x23, MimeType::VIDEO_HEVC},     // H.265/HEVC
@@ -175,32 +146,6 @@ static const std::map<uint8_t, std::string> g_unsupportedObjectType = {
     {0x68, MimeType::AUDIO_AAC},      // MPEG-2 AAC SSR
     {0x69, MimeType::AUDIO_MPEG},     // MPEG-2 Layer 3 (MP3) / MPEG-1 Layer 2 (MP2)
     {0x6B, MimeType::AUDIO_MPEG},     // MPEG-1 Layer 3 (MP3)
-};
-
-static const std::map<uint8_t, std::string> g_unsupportedObjectTypeTemp = {
-    // 视频编解码器
-    {0x20, MimeType::VIDEO_MPEG4},    // MPEG-4 Visual
-    {0x21, MimeType::VIDEO_AVC},      // H.264/AVC
-    {0x23, MimeType::VIDEO_HEVC},     // H.265/HEVC
-    {0x33, MimeType::VIDEO_VVC},      // H.266/VVC (OHOS扩展)
-    // MPEG-2 Video系列
-    {0x60, MimeType::VIDEO_MPEG2},    // MPEG-2 Simple Profile
-    {0x61, MimeType::VIDEO_MPEG2},    // MPEG-2 Main Profile
-    {0x62, MimeType::VIDEO_MPEG2},    // MPEG-2 SNR Profile
-    {0x63, MimeType::VIDEO_MPEG2},    // MPEG-2 Spatial Profile
-    {0x64, MimeType::VIDEO_MPEG2},    // MPEG-2 High Profile
-    {0x65, MimeType::VIDEO_MPEG2},    // MPEG-2 422 Profile
-    // 音频编解码器
-    {0x40, MimeType::AUDIO_AAC},      // MPEG-4 AAC
-    {0x66, MimeType::AUDIO_AAC},      // MPEG-2 AAC Main
-    {0x67, MimeType::AUDIO_AAC},      // MPEG-2 AAC Low Complexity
-    {0x68, MimeType::AUDIO_AAC},      // MPEG-2 AAC SSR
-    {0x69, MimeType::AUDIO_MPEG},     // MPEG-2 Layer 3 (MP3) / MPEG-1 Layer 2 (MP2)
-    {0x6B, MimeType::AUDIO_MPEG},     // MPEG-1 Layer 3 (MP3)
-    {0xC1, MimeType::AUDIO_FLAC},     // FLAC
-    {0xDD, MimeType::AUDIO_VORBIS},   // Vorbis
-    {0xAD, MimeType::AUDIO_OPUS},     // Opus
-    {0xA9, MimeType::AUDIO_DTS}       // DTS
 };
 
 static const std::vector<std::string_view> g_supportImageMimeType = {
@@ -319,22 +264,14 @@ bool IsImageMimeType(const std::string& mime)
         mime) != g_supportImageMimeType.cend());
 }
 
-bool IsVideoMimeType(const std::string& mime, bool formatDebug)
+bool IsVideoMimeType(const std::string& mime)
 {
-    if (!formatDebug) {
-        return (std::find(g_supportVideoMimeTypeTemp.cbegin(), g_supportVideoMimeTypeTemp.cend(),
-            mime) != g_supportVideoMimeTypeTemp.cend());
-    }
     return (std::find(g_supportVideoMimeType.cbegin(), g_supportVideoMimeType.cend(),
         mime) != g_supportVideoMimeType.cend());
 }
 
-bool IsAudioMimeType(const std::string& mime, bool formatDebug)
+bool IsAudioMimeType(const std::string& mime)
 {
-    if (!formatDebug) {
-        return (std::find(g_supportAudioMimeTypeTemp.cbegin(), g_supportAudioMimeTypeTemp.cend(),
-            mime) != g_supportAudioMimeTypeTemp.cend());
-    }
     return (std::find(g_supportAudioMimeType.cbegin(), g_supportAudioMimeType.cend(),
         mime) != g_supportAudioMimeType.cend());
 }
@@ -364,16 +301,16 @@ bool IsSupportCodec(int32_t fourcc, TrackType trackType, const std::string& mime
     }
 }
 
-bool NeedParseVideoInfo(std::string mimeType, TrackType trackType, bool formatDebug)
+bool NeedParseVideoInfo(std::string mimeType, TrackType trackType)
 {
     return (trackType == VIDEO_TYPE  && !IsImageMimeType(mimeType)) ||
-           (trackType == AUXILIARY_TYPE  && IsVideoMimeType(mimeType, formatDebug));
+           (trackType == AUXILIARY_TYPE  && IsVideoMimeType(mimeType));
 }
 
-bool NeedParseAudioInfo(std::string mimeType, TrackType trackType, bool formatDebug)
+bool NeedParseAudioInfo(std::string mimeType, TrackType trackType)
 {
     return (trackType == AUDIO_TYPE) ||
-           (trackType == AUXILIARY_TYPE && IsAudioMimeType(mimeType, formatDebug));
+           (trackType == AUXILIARY_TYPE && IsAudioMimeType(mimeType));
 }
 
 bool NeedParseMediaTrackInfo(TrackType trackType)
@@ -382,27 +319,19 @@ bool NeedParseMediaTrackInfo(TrackType trackType)
         trackType) != g_supportMediaInfoType.cend());
 }
 
-std::string GetMimeType(int32_t atomtype, bool formatDebug)
+std::string GetMimeType(int32_t atomtype)
 {
     auto it = g_supportedMimeFourcc.find(atomtype);
     if (it != g_supportedMimeFourcc.end()) {
         return it->second;
     }
-    it = g_unsupportedMimeFourcc.find(atomtype);
-    if (!formatDebug && it != g_unsupportedMimeFourcc.end()) {
-        return it->second;
-    }
     return MimeType::INVALID_TYPE;
 }
 
-std::string GetMimeTypeByObjectType(uint8_t objectTypeId, bool formatDebug)
+std::string GetMimeTypeByObjectType(uint8_t objectTypeId)
 {
-    if (!formatDebug) {
-        auto it = g_unsupportedObjectTypeTemp.find(objectTypeId);
-        return (it != g_unsupportedObjectTypeTemp.end()) ? it->second : "";
-    }
-    auto it = g_unsupportedObjectType.find(objectTypeId);
-    return (it != g_unsupportedObjectType.end()) ? it->second : "";
+    auto it = g_supportedObjectType.find(objectTypeId);
+    return (it != g_supportedObjectType.end()) ? it->second : "";
 }
 
 std::string GetCodecName(std::string mimeType)
