@@ -251,6 +251,9 @@ OH_AVFormat *RoiStringHelper::ParseOneRoiSegmentToFormat(const char *start, cons
     if (nextChar != '=' && nextChar != ';' && nextChar != '\0') {
         return nullptr;
     }
+    if (top < 0 || left < 0 || bottom < 0 || right < 0 || top >= bottom || left >= right) {
+        return nullptr;
+    }
     OH_AVFormat *avFormat = OH_AVFormat_Create();
     if (avFormat == nullptr) {
         return nullptr;
