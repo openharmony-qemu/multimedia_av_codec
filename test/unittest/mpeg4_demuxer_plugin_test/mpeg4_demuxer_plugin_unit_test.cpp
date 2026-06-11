@@ -70,7 +70,6 @@ constexpr int64_t WEAK_NETWORK_FIRST_READ_FAIL_OFFSET = 0;
 constexpr size_t WEAK_NETWORK_TIMEOUT_RECOVER_FAIL_COUNT = 1;
 constexpr size_t WEAK_NETWORK_THREAD_RETRY_FAIL_COUNT = 20;
 constexpr size_t MAX_WEBVTT_SAMPLE_READ_COUNT = 100000;
-constexpr int64_t GLTF_OFFSET_3DGS = 3526448;
 constexpr int64_t TEST_MS_TO_US = 1000;
 constexpr int64_t TEST_US_TO_NS = 1000;
 std::unique_ptr<FileServerDemo> g_server = nullptr;
@@ -675,11 +674,7 @@ bool HasDemuxerResourceSuffix(const std::string& fileName)
 
 bool IsSupportedFile(const std::string& fileName)
 {
-    auto iter = std::find_if(g_supportFiles.begin(), g_supportFiles.end(),
-        [&fileName](std::string& file) {
-            return fileName == file;
-        });
-    return (iter != g_supportFiles.end());
+    return (std::find(g_supportFiles.cbegin(), g_supportFiles.cend(), fileName) != g_supportFiles.cend());
 }
 
 std::vector<std::string> CollectDemuxerResourceFiles()
