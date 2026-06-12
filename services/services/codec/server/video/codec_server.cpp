@@ -371,9 +371,7 @@ int32_t CodecServer::Stop()
                                       AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
                                       GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-    if (sfdManager_) {
-        sfdManager_->CleanResources();
-    }
+    
     if (temporalScalability_ != nullptr && inputParamTask_ != nullptr) {
         temporalScalability_->SetBlockQueueActive();
         inputParamTask_->Stop();
@@ -395,6 +393,9 @@ int32_t CodecServer::Stop()
     OnInstanceEncodeEndEvent();
     if (framerateCalculator_) {
         framerateCalculator_->OnStopped();
+    }
+    if (sfdManager_) {
+        sfdManager_->CleanResources();
     }
     return AVCS_ERR_OK;
 }
