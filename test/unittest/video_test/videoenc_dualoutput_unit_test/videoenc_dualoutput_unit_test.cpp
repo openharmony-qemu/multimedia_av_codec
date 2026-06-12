@@ -17,6 +17,7 @@
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
 #include <memory>
+#include "native_avcapability.h"
 #include "native_avcodec_base.h"
 #include "native_avcodec_videoencoder.h"
 #include "sample_callback.h"
@@ -122,13 +123,23 @@ public:
     void FullLifecycleSecondary();
     const char *GetCurMimeType() { return GetMimeType(GetParam()); }
 
+    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, STRINGFY(TEST_SUIT)};
 protected:
     std::shared_ptr<VideoEncDualOutputSample> dualSample_;
 };
 
 INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(AVC, HEVC));
 
-void TEST_SUIT::SetUpTestCase(void) {}
+void TEST_SUIT::SetUpTestCase(void)
+{
+    OH_AVCapability *encoderCapability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC,
+                                                                            true, HARDWARE);
+    EXPECT_NE(encoderCapability, nullptr);
+    if (!OH_AVCapability_IsFeatureSupported(encoderCapability, VIDEO_ENCODER_PREPROC_DOWNSAMPLING) ||
+        !OH_AVCapability_IsFeatureSupported(encoderCapability, VIDEO_ENCODER_PREPROC_CROP)) {
+            GTEST_SKIP() << "Unsupport preproc downsampling or preproc crop";
+    }
+}
 
 void TEST_SUIT::TearDownTestCase(void) {}
 
@@ -136,9 +147,14 @@ void TEST_SUIT::SetUp(void)
 {
     dualSample_ = make_shared<VideoEncDualOutputSample>();
     ASSERT_TRUE(dualSample_->CreatePrimary(GetCurMimeType()));
+
+    const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
+    std::string testCaseName = testInfo_->name();
+    AVCODEC_LOGI("%{public}s", testCaseName.c_str());
 }
 
 void TEST_SUIT::TearDown(void)
+
 {
     dualSample_.reset();
 }
@@ -1146,7 +1162,7 @@ HWTEST_P(TEST_SUIT, State_Machine_Secondary_Prepare_BeforeConfigure_001, TestSiz
     ASSERT_TRUE(dualSample_->CreateSecondary());
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
 }
-#ifdef ONLY_FOR_FLAGSHIP_CHIP
+
 void RunPreprocDualEncoding(int32_t codecType, const std::string &testName,
                             std::function<void(VideoEncDualOutputSample &)> setPrimaryPreproc,
                             std::function<void(VideoEncDualOutputSample &)> setSecondaryPreproc = nullptr)
@@ -2202,7 +2218,7 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_SetParam_Crop_002, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, dualSample_->Release(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Release(EncoderType::PRIMARY));
 }
-#endif // ONLY_FOR_FLAGSHIP_CHIP
+
 int main(int argc, char **argv)
 {
     testing::GTEST_FLAG(output) = "xml:./";
