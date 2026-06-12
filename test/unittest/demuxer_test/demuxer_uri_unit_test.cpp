@@ -589,6 +589,12 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2000, TestSize.Level1)
         47, 91, 47, 5, 5, 5, 5};
     vector<int32_t> videoVals = {103, 103, 103, 53, 53, 53, 53, 78, 53, 28, 53, 53, 28, 53, 53, 28, 53, 28, 28, 53, 28,
         28, 53, 28, 3, 3, 3, 3};
+    if (useMpeg4_) {
+        audioVals = {174, 174, 174, 86, 87, 86, 86, 130, 86, 43, 87, 87, 43, 87, 87, 43, 87, 87, 43, 87, 43,
+        43, 87, 43, 1, 1, 1, 1};
+        videoVals = {103, 103, 103, 53, 53, 53, 53, 78, 53, 28, 53, 53, 28, 53, 53, 28, 53, 53, 28, 53, 28,
+        28, 53, 28, 3, 3, 3, 3};
+    }
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
@@ -1054,6 +1060,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2150, TestSize.Level1)
     ASSERT_EQ(demuxer_->UnselectTrackByID(0), AV_ERR_OK);
 }
 
+#ifndef USE_MPEG4_DEMUXER
 /**
  * @tc.name: Demuxer_SeekToTime_21501
  * @tc.desc: seek to the file duration(audioVivid m4a)
@@ -1081,6 +1088,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_21501, TestSize.Level1)
         }
     }
 }
+#endif
 
 /**
  * @tc.name: Demuxer_SeekToTime_1195
@@ -1099,6 +1107,11 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1195, TestSize.Level1)
     vector<int32_t> videoVals = {602, 602, 602, 102, 352, 352, 102, 352, 102, 352, 602, 602, 102, 102};
     vector<int32_t> audioVals = {433, 433, 433, 74, 254, 254, 74, 254, 74, 253, 433, 433, 75, 75};
     vector<int32_t> audioVals2 = {417, 417, 417, 71, 245, 245, 71, 245, 71, 244, 417, 417, 72, 72};
+    if (useMpeg4_) {
+        videoVals = {602, 602, 602, 102, 352, 352, 102, 352, 102, 352, 602, 0, 102, 102};
+        audioVals = {433, 433, 433, 73, 253, 253, 73, 253, 73, 252, 433, 433, 2, 74, 74};
+        audioVals2 = {417, 417, 417, 69, 243, 243, 69, 243, 69, 242, 417, 417, 1, 70, 70};
+    }
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {

@@ -856,7 +856,6 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1313, TestSize.Level1)
     }
 }
 
-#ifndef USER_MPEG4_DEMUXER
 /**
  * @tc.name: AVSource_GetFormat_1314
  * @tc.desc: get audiovivid hdrvivid fmp4 format, local
@@ -978,7 +977,6 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1315, TestSize.Level1)
         CheckHevcInfo("doubleVivid");
     }
 }
-#endif
 
 /**
  * @tc.name: AVSource_GetFormat_1402

@@ -130,6 +130,7 @@ group("av_codec_unit_test") {
         "unittest/demuxer_test:demuxer_capi_buffer_unit_test",
         "unittest/demuxer_test:demuxer_capi_unit_test",
         "unittest/demuxer_test:demuxer_inner_buffer_unit_test",
+        "unittest/demuxer_test:demuxer_inner_buffer_unit_test_for_mpeg4",
         "unittest/demuxer_test:demuxer_inner_unit_test",
         "unittest/demuxer_unit_test:demuxer_unit_test",
         "unittest/filter_test:filter_unit_test",
