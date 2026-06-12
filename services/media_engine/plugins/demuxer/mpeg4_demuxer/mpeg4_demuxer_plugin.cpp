@@ -80,7 +80,7 @@ constexpr uint32_t EDIT_LIST_ROUNDING_TOLERANCE_TICKS = 2;
 constexpr uint32_t SHORT_TAIL_STTS_ENTRY_COUNT = 2;
 constexpr uint32_t EDIT_START_DISCARD_STTS_ENTRY_COUNT = 3;
 constexpr uint32_t MIN_TAIL_PACKET_COUNT = 2;
-constexpr uint32_t ROUND_HALF_DIVISOR = 2;
+constexpr int64_t ROUND_HALF_DIVISOR = 2;
 constexpr int32_t BOX_HEADER_SIZE = 8;
 constexpr int32_t BOX_TYPE_OFFSET = 4;
 constexpr uint8_t AVC_NAL_LENGTH_SIZE_OFFSET = 4;
@@ -144,7 +144,8 @@ Status RescaleRoundNearest(int64_t value, int64_t multiplier, int64_t divisor, i
     // Scale quotient and remainder separately to avoid overflowing value * multiplier.
     uint64_t quotientScaled = quotient * multiplierAbs;
     uint64_t remainderScaled = remainder * multiplierAbs;
-    uint64_t roundedRemainder = (remainderScaled + divisorAbs / ROUND_HALF_DIVISOR) / divisorAbs;
+    uint64_t roundedRemainder = (remainderScaled + divisorAbs / static_cast<uint64_t>(ROUND_HALF_DIVISOR)) /
+        divisorAbs;
     uint64_t total = quotientScaled + roundedRemainder;
     if (total < quotientScaled) {
         return Status::ERROR_INVALID_DATA;
@@ -602,29 +603,29 @@ bool GetNominalSttsFrameDurationUs(const std::shared_ptr<MPEG4AtomParser::Track>
     }
 
     // Use the smallest non-zero STTS delta as the nominal frame spacing for zero-duration tails.
-    uint32_t minDelta = 0;
+    int64_t minDeltaTicks = 0;
     uint32_t entryCount = track->sampleHelper->GetSttsEntryCount();
     for (uint32_t i = 0; i < entryCount; ++i) {
-        uint32_t delta = track->sampleHelper->GetSampleDeltaOfSttsEntry(i);
-        if (delta == 0) {
+        int64_t deltaTicks = static_cast<int64_t>(track->sampleHelper->GetSampleDeltaOfSttsEntry(i));
+        if (deltaTicks == 0) {
             continue;
         }
-        minDelta = minDelta == 0 ? delta : std::min(minDelta, delta);
+        minDeltaTicks = minDeltaTicks == 0 ? deltaTicks : std::min(minDeltaTicks, deltaTicks);
     }
-    if (minDelta == 0) {
+    if (minDeltaTicks == 0) {
         return false;
     }
 
-    uint32_t frameRate =
-        static_cast<uint32_t>((static_cast<int64_t>(trackTimeScale) + minDelta / ROUND_HALF_DIVISOR) / minDelta);
+    int64_t timeScale = static_cast<int64_t>(trackTimeScale);
+    int64_t frameRate = (timeScale + minDeltaTicks / ROUND_HALF_DIVISOR) / minDeltaTicks;
     if (frameRate == 0) {
         return false;
     }
-    int64_t nominalDuration = trackTimeScale / frameRate;
+    int64_t nominalDuration = timeScale / frameRate;
     if (nominalDuration <= 0) {
         return false;
     }
-    return RescaleTrackTimeToUsRoundNearest(nominalDuration, trackTimeScale, durationUs) == Status::OK;
+    return RescaleTrackTimeToUsRoundNearest(nominalDuration, timeScale, durationUs) == Status::OK;
 }
 
 bool GetVideoTailDurationUs(
