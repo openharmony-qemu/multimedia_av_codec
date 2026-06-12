@@ -101,7 +101,8 @@ HWTEST_F(FileSourceUnitTest, FileSource_Reset_0100, TestSize.Level1)
 HWTEST_F(FileSourceUnitTest, FileSource_GetParameter_0100, TestSize.Level1)
 {
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
-    fileSourcePlugin_->GetParameter(meta);
+    auto ret = fileSourcePlugin_->GetParameter(meta);
+    EXPECT_EQ(Status::ERROR_UNIMPLEMENTED, ret);
     EXPECT_EQ(Status::OK, fileSourcePlugin_->Deinit());
     
 }
@@ -112,7 +113,8 @@ HWTEST_F(FileSourceUnitTest, FileSource_GetParameter_0100, TestSize.Level1)
  */
 HWTEST_F(FileSourceUnitTest, FileSource_GetAllocator_0100, TestSize.Level1)
 {
-    fileSourcePlugin_->GetAllocator();
+    auto allocator = fileSourcePlugin_->GetAllocator();
+    EXPECT_EQ(nullptr, allocator);
     EXPECT_EQ(Status::OK, fileSourcePlugin_->Deinit());
 }
 /**
@@ -135,19 +137,19 @@ HWTEST_F(FileSourceUnitTest, FileSource_ParseFileName_0100, TestSize.Level1)
 {
     std::string uri = "";
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(uri);
-    fileSourcePlugin_->SetSource(source);
+    EXPECT_NE(Status::OK, fileSourcePlugin_->SetSource(source));
     uri = "file://#test";
     source = std::make_shared<MediaSource>(uri);
-    fileSourcePlugin_->SetSource(source);
+    EXPECT_NE(Status::OK, fileSourcePlugin_->SetSource(source));
     uri = "file://#";
     source = std::make_shared<MediaSource>(uri);
-    fileSourcePlugin_->SetSource(source);
+    EXPECT_NE(Status::OK, fileSourcePlugin_->SetSource(source));
     uri = "file://#";
     source = std::make_shared<MediaSource>(uri);
-    fileSourcePlugin_->SetSource(source);
+    EXPECT_NE(Status::OK, fileSourcePlugin_->SetSource(source));
     uri = "file:///////////#";
     source = std::make_shared<MediaSource>(uri);
-    fileSourcePlugin_->SetSource(source);
+    EXPECT_NE(Status::OK, fileSourcePlugin_->SetSource(source));
     EXPECT_EQ(Status::OK, fileSourcePlugin_->Deinit());
 }
 
@@ -222,6 +224,7 @@ HWTEST_F(FileSourceUnitTest, FileSource_GetSeekableRanges_0400, TestSize.Level1)
 HWTEST_F(FileSourceUnitTest, FileSource_SetMediaDuration_0100, TestSize.Level1)
 {
     ASSERT_EQ(Status::OK, fileSourcePlugin_->SetMediaDuration(DURATION));
+    ASSERT_EQ(DURATION, fileSourcePlugin_->durationUs_);
 }
 } // namespace FileSource
 } // namespace Plugins
