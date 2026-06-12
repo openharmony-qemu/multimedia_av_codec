@@ -54,6 +54,7 @@ const KvDesc ROI_KV_TABLE[] = {
 };
 constexpr uint32_t ROI_KV_COUNT = sizeof(ROI_KV_TABLE) / sizeof(ROI_KV_TABLE[0]);
 constexpr size_t ROI_STR_MAX_LEN = 256;
+constexpr size_t ROI_SEGMENT_BUF_SIZE = 128;
 
 struct RoiRectangleData {
     int32_t top;
@@ -79,7 +80,8 @@ private:
     static bool ValidateRoiFormat(OH_AVFormat *format);
     static uint32_t CountExistingRois(const char *roiStr);
     static int BuildRoiSegmentStr(char *buffer, size_t bufferSize, OH_AVFormat *avFormat);
-    static OH_AVErrCode AppendSegmentToRoiStr(char **roiStrInOut, const char *segment);
+    static OH_AVErrCode AppendSegmentToRoiStr(char **roiStrInOut, const char *segment,
+                                           size_t oldLen, size_t extraLen);
     static bool ValidateAndParseRoiKvpairs(OH_AVFormat *avFormat, const char *eqPos, const char *segEnd);
     static bool ParseOldFormatDqp(OH_AVFormat *avFormat, const char *eqPos);
     static OH_AVFormat *ParseOneRoiSegmentToFormat(const char *start, const char *segEnd);
@@ -126,6 +128,7 @@ bool RoiStringHelper::ValidateRoiFormat(OH_AVFormat *format)
     return true;
 }
 
+// Format: "top,left-bottom,right[=kvpair...];" where kvpair is "keyName:val" separated by ','
 bool RoiStringHelper::ParseRectangleSegment(const char *start, RoiRectangleData *data, const char **outEndPtr)
 {
     const char *endPtr = nullptr;
@@ -215,28 +218,27 @@ int RoiStringHelper::BuildRoiSegmentStr(char *buffer, size_t bufferSize, OH_AVFo
     return writePos;
 }
 
-OH_AVErrCode RoiStringHelper::AppendSegmentToRoiStr(char **roiStrInOut, const char *segment)
+OH_AVErrCode RoiStringHelper::AppendSegmentToRoiStr(char **roiStrInOut, const char *segment,
+    size_t oldLen, size_t extraLen)
 {
     size_t segLen = strlen(segment);
-    const char *oldStr = (*roiStrInOut != nullptr) ? *roiStrInOut : "";
-    size_t oldLen = strlen(oldStr);
-    size_t extraLen = (oldLen > 0 && oldStr[oldLen - 1] != ';') ? 1 : 0;
     size_t newBufferSize = oldLen + extraLen + segLen + 1;
 
     char *newStr = static_cast<char *>(malloc(newBufferSize));
     if (newStr == nullptr) {
         return AV_ERR_NO_MEMORY;
     }
+    const char *oldStr = (*roiStrInOut != nullptr) ? *roiStrInOut : "";
     if (oldLen > 0 && memcpy_s(newStr, newBufferSize, oldStr, oldLen) != EOK) {
         free(newStr);
-        return AV_ERR_UNKNOWN;
+        return AV_ERR_NO_MEMORY;
     }
     if (extraLen > 0) {
         newStr[oldLen] = ';';
     }
     if (memcpy_s(newStr + oldLen + extraLen, segLen + 1, segment, segLen + 1) != EOK) {
         free(newStr);
-        return AV_ERR_UNKNOWN;
+        return AV_ERR_NO_MEMORY;
     }
     free(*roiStrInOut);
     *roiStrInOut = newStr;
@@ -373,9 +375,8 @@ OH_AVFormat *RoiStringHelper::ParseOneRoiSegmentToFormat(const char *start, cons
     OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_LEFT, data.left);
     OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_BOTTOM, data.bottom);
     OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_RIGHT, data.right);
-    const char *eqPos = strchr(start, '=');
-    if (eqPos != nullptr && (segEnd == nullptr || eqPos < segEnd)) {
-        if (!ValidateAndParseRoiKvpairs(avFormat, eqPos, segEnd)) {
+    if (*endPtr == '=' && (segEnd == nullptr || endPtr < segEnd)) {
+        if (!ValidateAndParseRoiKvpairs(avFormat, endPtr, segEnd)) {
             OH_AVFormat_Destroy(avFormat);
             return nullptr;
         }
@@ -393,24 +394,26 @@ OH_AVErrCode RoiStringHelper::AppendRoiString(char **roiStrInOut, OH_AVFormat *f
         return AV_ERR_INVALID_VAL;
     }
 
-    char segmentBuf[128] = {0};
-    int written = BuildRoiSegmentStr(segmentBuf, sizeof(segmentBuf), format);
+    char segmentBuf[ROI_SEGMENT_BUF_SIZE] = {0};
+    int written = BuildRoiSegmentStr(segmentBuf, ROI_SEGMENT_BUF_SIZE, format);
     if (written < 0) {
-        return AV_ERR_UNKNOWN;
+        return AV_ERR_NO_MEMORY;
     }
 
     size_t segLen = strlen(segmentBuf);
+    size_t oldLen = 0;
+    size_t extraLen = 0;
     size_t newTotalLen = segLen;
     if (*roiStrInOut != nullptr) {
-        size_t oldLen = strlen(*roiStrInOut);
-        size_t extraLen = (oldLen > 0 && (*roiStrInOut)[oldLen - 1] != ';') ? 1 : 0;
+        oldLen = strlen(*roiStrInOut);
+        extraLen = (oldLen > 0 && (*roiStrInOut)[oldLen - 1] != ';') ? 1 : 0;
         newTotalLen = oldLen + extraLen + segLen;
     }
     if (newTotalLen > ROI_STR_MAX_LEN) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_NO_MEMORY;
     }
 
-    return AppendSegmentToRoiStr(roiStrInOut, segmentBuf);
+    return AppendSegmentToRoiStr(roiStrInOut, segmentBuf, oldLen, extraLen);
 }
 
 OH_AVErrCode RoiStringHelper::GetRoiCount(const char *roiStr, uint32_t *outCount)
@@ -507,9 +510,10 @@ OH_AVErrCode OH_VideoMetadata_AppendRoiString(char **roiStrInOut, OH_AVFormat *f
 
 OH_AVErrCode OH_VideoMetadata_GetRoiCount(const char *roiStr, uint32_t *outCount)
 {
-    CHECK_AND_RETURN_RET_LOG(roiStr != nullptr, AV_ERR_INVALID_VAL, "roiStr is nullptr!");
     CHECK_AND_RETURN_RET_LOG(outCount != nullptr, AV_ERR_INVALID_VAL, "outCount is nullptr!");
-
+    *outCount = 0;
+    CHECK_AND_RETURN_RET_LOG(roiStr != nullptr, AV_ERR_INVALID_VAL, "roiStr is nullptr!");
+    
     OH_AVErrCode ret = RoiStringHelper::GetRoiCount(roiStr, outCount);
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Get roi count failed, ret=%{public}d!", ret);
     AVCODEC_LOGD("Get roi count success, count=%{public}u!", *outCount);
@@ -519,10 +523,11 @@ OH_AVErrCode OH_VideoMetadata_GetRoiCount(const char *roiStr, uint32_t *outCount
 OH_AVErrCode OH_VideoMetadata_ParseRoiString(const char *roiStr, OH_AVFormat **outFormats,
                                              uint32_t maxCapacity, uint32_t *outCount)
 {
+    CHECK_AND_RETURN_RET_LOG(outCount != nullptr, AV_ERR_INVALID_VAL, "outCount is nullptr!");
+    *outCount = 0;
     CHECK_AND_RETURN_RET_LOG(roiStr != nullptr, AV_ERR_INVALID_VAL, "roiStr is nullptr!");
     CHECK_AND_RETURN_RET_LOG(outFormats != nullptr, AV_ERR_INVALID_VAL, "outFormats is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(outCount != nullptr, AV_ERR_INVALID_VAL, "outCount is nullptr!");
-
+    
     OH_AVErrCode ret = RoiStringHelper::ParseRoiString(roiStr, outFormats, maxCapacity, outCount);
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Parse roi string failed, ret=%{public}d!", ret);
     AVCODEC_LOGD("Parse roi string success, count=%{public}u!", *outCount);
