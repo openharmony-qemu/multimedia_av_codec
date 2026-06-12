@@ -25,7 +25,6 @@
 #include <shared_mutex>
 #include <list>
 #include <unordered_map>
-#include <unordered_set>
 #include <arpa/inet.h>
 #include "buffer/avbuffer.h"
 #include "plugin/demuxer_plugin.h"
@@ -158,8 +157,6 @@ private:
     std::map<int32_t, std::shared_ptr<Sample>> firstFrameMap_ {};
     std::unordered_map<uint32_t, std::shared_ptr<MPEG4Sample>> cacheSamples_ {};
     std::unordered_map<uint32_t, std::shared_ptr<Sample>> pendingWebVttSamples_ {};
-    std::unordered_map<uint32_t, std::unordered_set<int64_t>> webVttCueEndPositions_ {};
-    std::unordered_set<uint32_t> webVttCueCacheReady_ {};
     std::unordered_map<uint32_t, std::vector<int64_t>> rawDtsPrefix_ {};
 
     int64_t absolutePTSOfIndexZero_ = INT64_MAX;
@@ -265,9 +262,6 @@ private:
     Status PrepareSeekToFrameByDts(int32_t trackId, int64_t seekTime, SeekToFrameByDtsContext& context);
     Status FindValidSample(std::shared_ptr<MPEG4AtomParser::Track> &track,
         std::shared_ptr<MPEG4SampleHelper::SampleIndexEntry> &sample);
-    bool ShouldEmitReadSamplePacket(const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex);
-    bool HasAdjacentWebVttCueBeforeSample(const MPEG4SampleHelper::SampleIndexEntry& sample);
-    bool BuildWebVttCueEndPositionCache(const std::shared_ptr<MPEG4AtomParser::Track>& track);
     Status GetUnseekableSampleInfo(uint32_t &trackId, int64_t &pos, int32_t &size);
     Status GetSeekableSampleInfo(uint32_t trackId, int64_t &pos, int32_t &size);
     Status ReadSampleData(std::shared_ptr<Sample> sample, uint64_t pos, int32_t size, uint32_t trackId);

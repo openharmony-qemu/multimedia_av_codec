@@ -383,24 +383,6 @@ bool HasEditStartDiscardAudioStts(const std::shared_ptr<MPEG4AtomParser::Track>&
     return rawSampleCount > 0 && totalCount == static_cast<uint64_t>(rawSampleCount);
 }
 
-bool MPEG4DemuxerPlugin::ShouldEmitReadSamplePacket(
-    const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex)
-{
-    if (track == nullptr || track->codecParms.trackType != VIDEO_TYPE || track->sampleHelper == nullptr ||
-        track->sampleHelper->cttsEntry_.empty() || track->editListEntries.empty()) {
-        return true;
-    }
-    const auto& entries = track->sampleHelper->sampleIndexEntry_;
-    if (sampleIndex >= entries.size()) {
-        return false;
-    }
-    if (track->sampleHelper->mimeType_ == MimeType::VIDEO_AVC &&
-        HasAdjacentWebVttCueBeforeSample(entries[sampleIndex])) {
-        return false;
-    }
-    return true;
-}
-
 bool IsWebVttCueSample(const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex)
 {
     if (track == nullptr || track->sampleHelper == nullptr ||
@@ -419,42 +401,6 @@ bool IsWebVttCueSample(const std::shared_ptr<MPEG4AtomParser::Track>& track, uin
         return false;
     }
     return GetU32Value(header + BOX_TYPE_OFFSET) == static_cast<uint32_t>(FourccType("vttc"));
-}
-
-bool MPEG4DemuxerPlugin::BuildWebVttCueEndPositionCache(const std::shared_ptr<MPEG4AtomParser::Track>& track)
-{
-    if (track == nullptr || track->sampleHelper == nullptr ||
-        track->sampleHelper->mimeType_ != MimeType::TEXT_WEBVTT) {
-        return false;
-    }
-    uint32_t trackIndex = track->trackIndex;
-    if (webVttCueCacheReady_.count(trackIndex) != 0) {
-        return true;
-    }
-    auto& cueEndPositions = webVttCueEndPositions_[trackIndex];
-    const auto& entries = track->sampleHelper->sampleIndexEntry_;
-    for (uint32_t index = 0; index < entries.size(); ++index) {
-        int64_t cueEnd = 0;
-        if (IsWebVttCueSample(track, index) && SafeAddInt64(entries[index].pos, entries[index].size, cueEnd)) {
-            cueEndPositions.insert(cueEnd);
-        }
-    }
-    webVttCueCacheReady_.insert(trackIndex);
-    return true;
-}
-
-bool MPEG4DemuxerPlugin::HasAdjacentWebVttCueBeforeSample(const MPEG4SampleHelper::SampleIndexEntry& sample)
-{
-    for (auto track = firstTrack_; track != nullptr; track = track->next) {
-        if (!BuildWebVttCueEndPositionCache(track)) {
-            continue;
-        }
-        auto iter = webVttCueEndPositions_.find(track->trackIndex);
-        if (iter != webVttCueEndPositions_.end() && iter->second.find(sample.pos) != iter->second.end()) {
-            return true;
-        }
-    }
-    return false;
 }
 
 bool HasFutureWebVttCueSample(const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t startIndex)
@@ -1153,8 +1099,6 @@ MPEG4DemuxerPlugin::~MPEG4DemuxerPlugin()
     firstFrameMap_.clear();
     cacheSamples_.clear();
     pendingWebVttSamples_.clear();
-    webVttCueEndPositions_.clear();
-    webVttCueCacheReady_.clear();
     rawDtsPrefix_.clear();
     avTrackIds_.clear();
     inited_ = false;
@@ -1177,8 +1121,6 @@ void MPEG4DemuxerPlugin::ResetParam()
     streamParsers_.reset();
     cacheSamples_.clear();
     pendingWebVttSamples_.clear();
-    webVttCueEndPositions_.clear();
-    webVttCueCacheReady_.clear();
     rawDtsPrefix_.clear();
     
     hasMoofBox_ = false;
@@ -2160,10 +2102,6 @@ Status MPEG4DemuxerPlugin::FindValidSample(std::shared_ptr<MPEG4AtomParser::Trac
 
         uint32_t index = currentTrack->currentSampleIndex;
         uint32_t numSamples = currentTrack->sampleHelper->sampleIndexEntry_.size();
-        while (index < numSamples && !ShouldEmitReadSamplePacket(currentTrack, index)) {
-            ++currentTrack->currentSampleIndex;
-            index = currentTrack->currentSampleIndex;
-        }
         if (index >= numSamples) {
             continue;
         }
@@ -2223,10 +2161,6 @@ Status MPEG4DemuxerPlugin::GetSeekableSampleInfo(uint32_t trackId, int64_t &pos,
     while (!hasFoundSample) {
         uint32_t numSamples = track->sampleHelper->sampleIndexEntry_.size();
         uint32_t index = track->currentSampleIndex;
-        while (index < numSamples && !ShouldEmitReadSamplePacket(track, index)) {
-            ++track->currentSampleIndex;
-            index = track->currentSampleIndex;
-        }
         MPEG4SampleHelper::SampleIndexEntry sample;
         if (index < numSamples) {
             sample = track->sampleHelper->sampleIndexEntry_[index];
