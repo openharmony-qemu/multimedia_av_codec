@@ -145,7 +145,7 @@ void VpxDecoder::ConfigureHdrMetadata(const Format &format)
     uint8_t *extraData = nullptr;
     format.GetBuffer(MediaDescriptionKey::MD_KEY_VIDEO_HDR_METADATA, &extraData, extraSize);
     const AVMasteringDisplayMetadata *metadata = (AVMasteringDisplayMetadata *)extraData;
-    if (metadata == nullptr) {
+    if (metadata == nullptr || extraSize != sizeof(AVMasteringDisplayMetadata)) {
         AVCODEC_LOGE("Get HDR metadata from format failed");
         return;
     }
