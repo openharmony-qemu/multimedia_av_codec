@@ -27,9 +27,9 @@
 #include "native_averrors.h"
 #include "native_buffer_inner.h"
 #include "native_window.h"
-#include "window.h"
 #include "sample_callback.h"
 #include "vcodec_signal.h"
+#include "window.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
