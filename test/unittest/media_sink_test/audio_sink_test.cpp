@@ -899,7 +899,6 @@ HWTEST(TestAudioSink, audio_sink_DrainOutputBuffer_002, TestSize.Level1)
     auto audioSink = std::make_shared<AudioSink>();
     ASSERT_TRUE(audioSink != nullptr);
     audioSink->lastBufferWriteSuccess_ = false;
-    audioSink->lastBufferWriteSuccess_ = false;
     audioSink->DrainOutputBuffer(true);
     ASSERT_FALSE(audioSink->lastBufferWriteSuccess_);
 }
