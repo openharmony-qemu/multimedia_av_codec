@@ -94,7 +94,7 @@ HWTEST_F(TestVideoSink, do_sync_write_not_eos, TestSize.Level1)
     ASSERT_EQ(writeResult, -1);
     buffer->pts_ = 1;
     videoSink_->lastBufferAnchoredClockTime_ = 1;
-    videoSink_->seekFlag_.store(false);
+    videoSink_->seekFlag_ = false;
     bool lateResult = videoSink_->CheckBufferLatenessMayWait(buffer, 1);
     ASSERT_TRUE(lateResult == 0 || lateResult == 1);
     float speed = 0;
@@ -134,7 +134,7 @@ HWTEST_F(TestVideoSink, do_sync_write_two_frames, TestSize.Level1)
     ASSERT_TRUE(writeResult >= 0);
     buffer->pts_ = 1;
     videoSink_->lastBufferAnchoredClockTime_ = 1;
-    videoSink_->seekFlag_.store(false);
+    videoSink_->seekFlag_ = false;
     bool lateResult = videoSink_->CheckBufferLatenessMayWait(buffer, 1);
     ASSERT_TRUE(lateResult == 0 || lateResult == 1);
     float speed = 0;
@@ -174,7 +174,7 @@ HWTEST_F(TestVideoSink, do_sync_write_eos, TestSize.Level1)
     ASSERT_EQ(writeResult, -1);
     buffer->pts_ = 1;
     videoSink_->lastBufferAnchoredClockTime_ = 1;
-    videoSink_->seekFlag_.store(false);
+    videoSink_->seekFlag_ = false;
     bool lateResult = videoSink_->CheckBufferLatenessMayWait(buffer, 1);
     ASSERT_TRUE(lateResult == 0 || lateResult == 1);
     float speed = 0;
