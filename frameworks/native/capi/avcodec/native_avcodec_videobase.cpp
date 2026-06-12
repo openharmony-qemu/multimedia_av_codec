@@ -180,9 +180,7 @@ int RoiStringHelper::BuildRoiSegmentStr(char *buffer, size_t bufferSize, OH_AVFo
     OH_AVFormat_GetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_RIGHT, &right);
 
     int written = snprintf_s(buffer, bufferSize, bufferSize - 1, "%d,%d-%d,%d", top, left, bottom, right);
-    if (written < 0) {
-        return written;
-    }
+    CHECK_AND_RETURN_RET_LOG(written >= 0, -1, "Snprintf coords failed!");
 
     int writePos = written;
     bool isFirstKv = true;
@@ -192,27 +190,19 @@ int RoiStringHelper::BuildRoiSegmentStr(char *buffer, size_t bufferSize, OH_AVFo
             continue;
         }
         if (isFirstKv) {
-            if (writePos >= static_cast<int>(bufferSize)) {
-                return -1;
-            }
+            CHECK_AND_RETURN_RET_LOG(writePos < static_cast<int>(bufferSize), -1, "Buffer overflow!");
             buffer[writePos++] = '=';
             isFirstKv = false;
         } else {
-            if (writePos >= static_cast<int>(bufferSize)) {
-                return -1;
-            }
+            CHECK_AND_RETURN_RET_LOG(writePos < static_cast<int>(bufferSize), -1, "Buffer overflow!");
             buffer[writePos++] = ',';
         }
         int n = snprintf_s(buffer + writePos, bufferSize - writePos, bufferSize - writePos - 1,
                            "%s:%d", ROI_KV_TABLE[i].keyName, val);
-        if (n < 0) {
-            return -1;
-        }
+        CHECK_AND_RETURN_RET_LOG(n >= 0, -1, "Snprintf kv pair failed!");
         writePos += n;
     }
-    if (writePos + 1 >= static_cast<int>(bufferSize)) {
-        return -1;
-    }
+    CHECK_AND_RETURN_RET_LOG(writePos + 1 < static_cast<int>(bufferSize), -1, "Buffer overflow!");
     buffer[writePos++] = ';';
     buffer[writePos] = '\0';
     return writePos;
@@ -225,9 +215,7 @@ OH_AVErrCode RoiStringHelper::AppendSegmentToRoiStr(char **roiStrInOut, const ch
     size_t newBufferSize = oldLen + extraLen + segLen + 1;
 
     char *newStr = static_cast<char *>(malloc(newBufferSize));
-    if (newStr == nullptr) {
-        return AV_ERR_NO_MEMORY;
-    }
+    CHECK_AND_RETURN_RET_LOG(newStr != nullptr, AV_ERR_NO_MEMORY, "Malloc roi str buffer failed!");
     const char *oldStr = (*roiStrInOut != nullptr) ? *roiStrInOut : "";
     if (oldLen > 0 && memcpy_s(newStr, newBufferSize, oldStr, oldLen) != EOK) {
         free(newStr);
@@ -368,9 +356,7 @@ OH_AVFormat *RoiStringHelper::ParseOneRoiSegmentToFormat(const char *start, cons
         return nullptr;
     }
     OH_AVFormat *avFormat = OH_AVFormat_Create();
-    if (avFormat == nullptr) {
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(avFormat != nullptr, nullptr, "Create avformat failed!");
     OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_TOP, data.top);
     OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_LEFT, data.left);
     OH_AVFormat_SetIntValue(avFormat, OH_MD_KEY_VIDEO_METADATA_ROI_BOTTOM, data.bottom);
@@ -386,9 +372,8 @@ OH_AVFormat *RoiStringHelper::ParseOneRoiSegmentToFormat(const char *start, cons
 
 OH_AVErrCode RoiStringHelper::AppendRoiString(char **roiStrInOut, OH_AVFormat *format)
 {
-    if (roiStrInOut == nullptr || format == nullptr) {
-        return AV_ERR_INVALID_VAL;
-    }
+    CHECK_AND_RETURN_RET_LOG(roiStrInOut != nullptr && format != nullptr, AV_ERR_INVALID_VAL,
+        "roiStrInOut or format is nullptr!");
 
     if (!ValidateRoiFormat(format)) {
         return AV_ERR_INVALID_VAL;
@@ -396,9 +381,7 @@ OH_AVErrCode RoiStringHelper::AppendRoiString(char **roiStrInOut, OH_AVFormat *f
 
     char segmentBuf[ROI_SEGMENT_BUF_SIZE] = {0};
     int written = BuildRoiSegmentStr(segmentBuf, ROI_SEGMENT_BUF_SIZE, format);
-    if (written < 0) {
-        return AV_ERR_NO_MEMORY;
-    }
+    CHECK_AND_RETURN_RET_LOG(written >= 0, AV_ERR_NO_MEMORY, "Build roi segment str failed!");
 
     size_t segLen = strlen(segmentBuf);
     size_t oldLen = 0;
@@ -418,9 +401,8 @@ OH_AVErrCode RoiStringHelper::AppendRoiString(char **roiStrInOut, OH_AVFormat *f
 
 OH_AVErrCode RoiStringHelper::GetRoiCount(const char *roiStr, uint32_t *outCount)
 {
-    if (roiStr == nullptr || outCount == nullptr) {
-        return AV_ERR_INVALID_VAL;
-    }
+    CHECK_AND_RETURN_RET_LOG(roiStr != nullptr && outCount != nullptr, AV_ERR_INVALID_VAL,
+        "roiStr or outCount is nullptr!");
 
     uint32_t estimatedCount = CountExistingRois(roiStr);
     if (estimatedCount == 0) {
@@ -430,9 +412,7 @@ OH_AVErrCode RoiStringHelper::GetRoiCount(const char *roiStr, uint32_t *outCount
 
     size_t allocSize = sizeof(OH_AVFormat *) * static_cast<size_t>(estimatedCount);
     OH_AVFormat **tempFormats = static_cast<OH_AVFormat **>(malloc(allocSize));
-    if (tempFormats == nullptr) {
-        return AV_ERR_NO_MEMORY;
-    }
+    CHECK_AND_RETURN_RET_LOG(tempFormats != nullptr, AV_ERR_NO_MEMORY, "Malloc temp formats failed!");
 
     uint32_t actualCount = 0;
     OH_AVErrCode ret = ParseRoiString(roiStr, tempFormats, estimatedCount, &actualCount);
@@ -452,9 +432,8 @@ OH_AVErrCode RoiStringHelper::GetRoiCount(const char *roiStr, uint32_t *outCount
 OH_AVErrCode RoiStringHelper::ParseRoiString(const char *roiStr, OH_AVFormat **outFormats,
     uint32_t maxCapacity, uint32_t *outCount)
 {
-    if (roiStr == nullptr || outFormats == nullptr || outCount == nullptr) {
-        return AV_ERR_INVALID_VAL;
-    }
+    CHECK_AND_RETURN_RET_LOG(roiStr != nullptr && outFormats != nullptr && outCount != nullptr,
+        AV_ERR_INVALID_VAL, "roiStr, outFormats or outCount is nullptr!");
 
     uint32_t estimatedCount = CountExistingRois(roiStr);
     if (estimatedCount == 0) {
@@ -464,9 +443,7 @@ OH_AVErrCode RoiStringHelper::ParseRoiString(const char *roiStr, OH_AVFormat **o
 
     size_t allocSize = sizeof(OH_AVFormat *) * static_cast<size_t>(estimatedCount);
     OH_AVFormat **allFormats = static_cast<OH_AVFormat **>(malloc(allocSize));
-    if (allFormats == nullptr) {
-        return AV_ERR_NO_MEMORY;
-    }
+    CHECK_AND_RETURN_RET_LOG(allFormats != nullptr, AV_ERR_NO_MEMORY, "Malloc all formats failed!");
 
     uint32_t parsedNum = 0;
     const char *curPtr = roiStr;
