@@ -432,6 +432,7 @@ ohos_unittest("demuxer_inner_buffer_unit_test_for_mpeg4") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "init:libbegetutil",
     "ipc:ipc_single",
   ]
 
