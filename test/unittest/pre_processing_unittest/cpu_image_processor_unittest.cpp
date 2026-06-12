@@ -368,11 +368,7 @@ HWTEST_P(CpuImageProcessorTest, OddGeometryPolicy, TestSize.Level1)
     request.crop = {ODD_CROP_LEFT, ODD_CROP_TOP, ODD_CROP_WIDTH, ODD_CROP_HEIGHT};
 
     int32_t ret = CpuImageProcessor::Process(request);
-    if (param.yuv420) {
-        EXPECT_NE(ret, AVCS_ERR_OK);
-    } else {
-        EXPECT_EQ(ret, AVCS_ERR_OK);
-    }
+    EXPECT_NE(ret, AVCS_ERR_OK);
 }
 
 INSTANTIATE_TEST_SUITE_P(SupportedFormats, CpuImageProcessorTest, testing::ValuesIn(FORMAT_PARAMS),

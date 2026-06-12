@@ -37,6 +37,7 @@ ohos_fuzztest("HdrMuxerFuzzTest") {
   ]
   external_deps = [
     "c_utils:utils",
+    "graphic_surface:surface",
     "hilog:libhilog",
     "ipc:ipc_single",
     "media_foundation:native_media_core",

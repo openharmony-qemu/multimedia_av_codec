@@ -824,7 +824,7 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_SYNC_SW264_FUNC_0010, TestSize.Level1)
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->enbleSyncMode = 1;
-        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        vDecSample->defaultPixelFormat = AV_PIXEL_FORMAT_NV12;
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->sleepOnFPS = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAvc));
@@ -849,7 +849,7 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_SYNC_SW264_FUNC_0020, TestSize.Level0)
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->enbleSyncMode = 1;
-        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
+        vDecSample->defaultPixelFormat = AV_PIXEL_FORMAT_NV21;
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->sleepOnFPS = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAvc));
@@ -900,7 +900,7 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_SYNC_SW264_FUNC_0040, TestSize.Level1)
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->enbleSyncMode = 1;
-        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_RGBA;
+        vDecSample->defaultPixelFormat = AV_PIXEL_FORMAT_RGBA;
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->sleepOnFPS = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAvc));
@@ -1247,7 +1247,7 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_4K_0010, TestSize.Level0)
         vDecSample->DEFAULT_HEIGHT = 4148;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->enbleSyncMode = 1;
-        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        vDecSample->defaultPixelFormat = AV_PIXEL_FORMAT_NV12;
         vDecSample->SF_OUTPUT = false;
         vDecSample->outputYuvFlag = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAvc));
@@ -1272,7 +1272,7 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_4K_0020, TestSize.Level0)
         vDecSample->DEFAULT_HEIGHT = 5120;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->enbleSyncMode = 1;
-        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
+        vDecSample->defaultPixelFormat = AV_PIXEL_FORMAT_NV21;
         vDecSample->SF_OUTPUT = false;
         vDecSample->outputYuvFlag = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAvc));
@@ -1297,7 +1297,7 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_4K_0030, TestSize.Level0)
         vDecSample->DEFAULT_HEIGHT = 2880;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->enbleSyncMode = 1;
-        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_YUVI420;
+        vDecSample->defaultPixelFormat = AV_PIXEL_FORMAT_YUVI420;
         vDecSample->SF_OUTPUT = false;
         vDecSample->outputYuvFlag = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAvc));
@@ -1322,7 +1322,7 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_4K_0040, TestSize.Level1)
         vDecSample->DEFAULT_HEIGHT = 1920;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->enbleSyncMode = 0;
-        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        vDecSample->defaultPixelFormat = AV_PIXEL_FORMAT_NV12;
         vDecSample->SF_OUTPUT = false;
         vDecSample->outputYuvFlag = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameAvc));
@@ -1345,7 +1345,7 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_4K_0050, TestSize.Level2)
         vDecSample->DEFAULT_HEIGHT = 5120;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->enbleSyncMode = 0;
-        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        vDecSample->defaultPixelFormat = AV_PIXEL_FORMAT_NV12;
         vDecSample->SF_OUTPUT = false;
         vDecSample->outputYuvFlag = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameAvc));
@@ -1368,7 +1368,7 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_4K_0060, TestSize.Level2)
         vDecSample->DEFAULT_HEIGHT = 5120;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->enbleSyncMode = 0;
-        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_YUVI420;
+        vDecSample->defaultPixelFormat = AV_PIXEL_FORMAT_YUVI420;
         vDecSample->SF_OUTPUT = false;
         vDecSample->outputYuvFlag = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameAvc));
@@ -1570,6 +1570,43 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_4K_0140, TestSize.Level2)
         vDecSample->sleepOnFPS = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameAvc));
         ASSERT_EQ(AV_ERR_OK, vDecSample->SwitchSurface());
+        vDecSample->WaitForEOS();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_DECODING_ORDER_0010
+ * @tc.name      : h264解码能力查询支持解码序出帧
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_DECODING_ORDER_0010, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        cap_avc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, SOFTWARE);
+        bool ret = OH_AVCapability_IsFeatureSupported(cap_avc, VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER);
+        ASSERT_TRUE(ret);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_DECODING_ORDER_0020
+ * @tc.name      : h264解码b帧码流
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_DECODING_ORDER_0020, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/720_1280_25_avcc.h264";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enableDecodingOrder = true;
+        vDecSample->enableHash = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAvc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
         vDecSample->WaitForEOS();
     }
 }

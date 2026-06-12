@@ -39,8 +39,10 @@ ohos_fuzztest("HevcSwdecoderServerSurfaceFuzzTest") {
   external_deps = [
     "c_utils:utils",
     "ffmpeg:libohosffmpeg",
+    "graphic_surface:surface",
     "hilog:libhilog",
     "ipc:ipc_single",
+    "media_foundation:media_foundation",
     "media_foundation:native_media_core",
     "window_manager:libwm",
   ]

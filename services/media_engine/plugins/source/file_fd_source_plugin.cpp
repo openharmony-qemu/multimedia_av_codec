@@ -179,8 +179,10 @@ Status FileFdSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
             Status::ERROR_NO_MEMORY, "memory is not enough ringBuffer_");
         downloadTask_ = std::make_shared<Task>(std::string("downloadTaskFD"));
         FALSE_RETURN_V_MSG_E(downloadTask_ != nullptr, Status::ERROR_NO_MEMORY, "memory is not enough");
-        downloadTask_->RegisterJob([this] {
-            CacheDataLoop();
+        downloadTask_->RegisterJob([weakSelf = weak_from_this()] {
+            auto sourcePlugin = weakSelf.lock();
+            FALSE_RETURN_V_MSG_E(sourcePlugin != nullptr, 0, "sourcePlugin destroyed before task execytion.");
+            sourcePlugin->CacheDataLoop();
             return 0;
         });
         downloadTask_->Start();

@@ -61,7 +61,7 @@ void AppClient::MapToString(std::map<std::string, std::string> httpHeader)
         char* headerTmp = const_cast<char*>(headerStr.c_str());
         MEDIA_LOG_D("0x%{public}06" PRIXPTR " AppClient header: " PUBLIC_LOG_S, FAKE_POINTER(this), headerTmp);
         void* buffer = reinterpret_cast<void*>(headerTmp);
-        rxHeader_(buffer, 1, 1, userParam_);
+        rxHeader_(buffer, 1, headerStr.size(), userParam_);
     }
 }
 

@@ -53,8 +53,6 @@ ohos_shared_library("vpx_decoder") {
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
   ]
 
-  public_deps = []
-
   external_deps = [
     "bounds_checking_function:libsec_static",
     "c_utils:utils",

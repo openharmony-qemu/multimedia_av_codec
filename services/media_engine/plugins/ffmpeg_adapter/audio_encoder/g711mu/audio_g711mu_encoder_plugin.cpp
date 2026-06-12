@@ -346,6 +346,7 @@ Status AudioG711muEncoderPlugin::GetParameter(std::shared_ptr<Meta> &parameter)
     }
     AVCODEC_LOGD("AudioG711muEncoderPlugin GetParameter maxInputSize_: %{public}d", maxInputSize_);
     audioParameter_.Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
+    audioParameter_.Set<Tag::MIME_TYPE>(MimeType::AUDIO_G711MU);
     audioParameter_.Set<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_);
     audioParameter_.Set<Tag::AUDIO_MAX_OUTPUT_SIZE>(OUTPUT_BUFFER_SIZE_DEFAULT);
     *parameter = audioParameter_;

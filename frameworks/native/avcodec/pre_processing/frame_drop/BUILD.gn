@@ -38,6 +38,7 @@ ohos_source_set("frame_drop") {
 
   external_deps = [
     "c_utils:utils",
+    "hilog:libhilog",
     "hitrace:hitrace_meter",
     "media_foundation:media_foundation",
   ]

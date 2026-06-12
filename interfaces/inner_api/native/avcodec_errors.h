@@ -101,6 +101,7 @@ typedef enum AVCodecServiceErrCode : ErrCode {
 } AVCodecServiceErrCode;
 
 __attribute__((visibility("default"))) std::string AVCSErrorToString(AVCodecServiceErrCode code);
+__attribute__((visibility("default"))) std::string AVCSErrorToEnumName(AVCodecServiceErrCode code);
 __attribute__((visibility("default"))) std::string OHAVErrCodeToString(OH_AVErrCode code);
 __attribute__((visibility("default"))) std::string AVCSErrorToOHAVErrCodeString(AVCodecServiceErrCode code);
 __attribute__((visibility("default"))) OH_AVErrCode AVCSErrorToOHAVErrCode(AVCodecServiceErrCode code);

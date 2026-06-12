@@ -25,6 +25,22 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
 constexpr uint32_t FLAC_CODEC_CONFIG_SIZE = 34;
+
+constexpr uint8_t HEVC_NAL_TYPE_SHIFT = 1;   // Right shift to get NAL type
+constexpr uint8_t HEVC_NAL_TYPE_EXTRACT_MASK = 0x3F; // Mask to extract NAL unit type after shift
+constexpr uint8_t HEVC_NAL_TYPE_TRAIL_N = 0; // Trailing picture, non-reference
+constexpr uint8_t HEVC_NAL_TYPE_TSA_N = 2;   // Temporal sub-layer access, non-reference
+constexpr uint8_t HEVC_NAL_TYPE_STSA_N = 4;  // Step-wise temporal sub-layer access, non-reference
+constexpr uint8_t HEVC_NAL_TYPE_RADL_N = 6;  // Random access decodable leading, non-reference
+constexpr uint8_t HEVC_NAL_TYPE_RASL_N = 8;  // Random access skippable leading, non-reference
+// NALU size field byte indices (4-byte big-endian length prefix)
+constexpr uint32_t NALU_SIZE_BYTE_0 = 0; // Most significant byte
+constexpr uint32_t NALU_SIZE_BYTE_1 = 1;
+constexpr uint32_t NALU_SIZE_BYTE_2 = 2;
+constexpr uint32_t NALU_SIZE_BYTE_3 = 3; // Least significant byte
+constexpr uint32_t BYTE_BITS = 8;         // Bits per byte for shift operations
+constexpr uint32_t HEVC_NUM_2 = 2;
+constexpr uint32_t HEVC_NUM_3 = 3;
 }
 
 #define AV_CODEC_TIME_BASE (static_cast<int64_t>(1))
@@ -33,6 +49,7 @@ constexpr uint32_t FLAC_CODEC_CONFIG_SIZE = 34;
 #define AV_CODEC_MSECOND (static_cast<int64_t>(1000) * AV_CODEC_USECOND)
 #define AV_CODEC_SECOND (static_cast<int64_t>(1000) * AV_CODEC_MSECOND)
 const uint8_t START_CODE[] = {0x00, 0x00, 0x01};
+const int32_t NAL_START_CODE_SIZE = 4;
 
 namespace OHOS {
 namespace Media {
@@ -290,6 +307,115 @@ std::vector<uint8_t> GenerateAACCodecConfig(int32_t profile, int32_t sampleRate,
     }
 
     return codecConfig;
+}
+
+int FindNaluSpliter(int size, const uint8_t* data)
+{
+    int naluPos = -1;
+    if (size >= 4 && data[0] == 0x00 && data[1] == 0x00) { // 4: least size
+        if (data[2] == 0x01) { // 2: next index
+            naluPos = 3; // 3: the actual start pos of nal unit
+        } else if (size >= 5 && data[2] == 0x00 && data[3] == 0x01) { // 5: least size, 2, 3: next indecies
+            naluPos = 4; // 4: the actual start pos of nal unit
+        }
+    }
+    return naluPos;
+}
+
+bool CanDropAvcPkt(const AVPacket& pkt)
+{
+    const uint8_t *data = pkt.data;
+    if (data == nullptr) {
+        MEDIA_LOG_D("pkt->data is null!");
+        return false;
+    }
+    int size = pkt.size;
+    int naluPos = FindNaluSpliter(size, data);
+    if (naluPos < 0) {
+        MEDIA_LOG_D("pkt->data starts with error start code!");
+        return false;
+    }
+    int nalRefIdc = (data[naluPos] >> 5) & 0x03; // 5: get H.264 nal_ref_idc
+    int nalUnitType = data[naluPos] & 0x1f; // get H.264 nal_unit_type
+    bool isCodedSliceData = nalUnitType == 1 || nalUnitType == 2 || // 1: non-IDR, 2: partiton A
+        nalUnitType == 3 || nalUnitType == 4 || nalUnitType == 5; // 3: partiton B, 4: partiton C, 5: IDR
+    return nalRefIdc == 0 && isCodedSliceData;
+}
+
+bool CanDropHevcPkt(const AVPacket& pkt)
+{
+    const uint8_t *data = pkt.data;
+    if (data == nullptr) {
+        MEDIA_LOG_D("pkt->data is null!");
+        return false;
+    }
+    int size = pkt.size;
+    if (IsBeginAsAnnexb(data, size)) {
+        // Annex B format: find start code then check NAL unit type
+        int naluPos = FindNaluSpliter(size, data);
+        if (naluPos < 0) {
+            MEDIA_LOG_D("pkt->data starts with error start code!");
+            return false;
+        }
+        int nalUnitType = (data[naluPos] >> HEVC_NAL_TYPE_SHIFT) & HEVC_NAL_TYPE_EXTRACT_MASK;
+        return nalUnitType == HEVC_NAL_TYPE_TRAIL_N || nalUnitType == HEVC_NAL_TYPE_TSA_N ||
+            nalUnitType == HEVC_NAL_TYPE_STSA_N || nalUnitType == HEVC_NAL_TYPE_RADL_N ||
+            nalUnitType == HEVC_NAL_TYPE_RASL_N;
+    } else {
+        // hvcC format: 4-byte length prefix, check NAL unit type after length
+        if (size < NAL_START_CODE_SIZE) {
+            MEDIA_LOG_D("pkt size too small for hvcC");
+            return false;
+        }
+        int32_t naluSize = GetNaluSize(data);
+        if (naluSize <= 0 || naluSize + NAL_START_CODE_SIZE > size) {
+            MEDIA_LOG_D("Invalid hvcC naluSize=" PUBLIC_LOG_D32, naluSize);
+            return false;
+        }
+        uint8_t nalUnitType = (data[NAL_START_CODE_SIZE] >> HEVC_NAL_TYPE_SHIFT) & HEVC_NAL_TYPE_EXTRACT_MASK;
+        return nalUnitType == HEVC_NAL_TYPE_TRAIL_N || nalUnitType == HEVC_NAL_TYPE_TSA_N ||
+            nalUnitType == HEVC_NAL_TYPE_STSA_N || nalUnitType == HEVC_NAL_TYPE_RADL_N ||
+            nalUnitType == HEVC_NAL_TYPE_RASL_N;
+    }
+}
+
+void SetDropTag(const AVPacket& pkt, std::shared_ptr<AVBuffer> sample, AVCodecID codecId)
+{
+    sample->meta_->Remove(Media::Tag::VIDEO_BUFFER_CAN_DROP);
+    bool canDrop = false;
+    if (codecId == AV_CODEC_ID_HEVC) {
+        canDrop = CanDropHevcPkt(pkt);
+    } else if (codecId == AV_CODEC_ID_H264) {
+        canDrop = CanDropAvcPkt(pkt);
+    }
+    if (canDrop) {
+        sample->meta_->SetData(Media::Tag::VIDEO_BUFFER_CAN_DROP, true);
+    }
+}
+
+bool IsBeginAsAnnexb(const uint8_t *sample, int32_t size)
+{
+    if (size < NAL_START_CODE_SIZE) {
+        return false;
+    }
+    bool hasShortStartCode = (sample[NALU_SIZE_BYTE_0] == 0 &&
+        sample[NALU_SIZE_BYTE_1] == 0 && sample[NALU_SIZE_BYTE_2] == 1);
+    bool hasLongStartCode = (sample[NALU_SIZE_BYTE_0] == 0 &&
+        sample[NALU_SIZE_BYTE_1] == 0 && sample[NALU_SIZE_BYTE_2] == 0 && sample[NALU_SIZE_BYTE_3] == 1);
+    return hasShortStartCode || hasLongStartCode;
+}
+
+int32_t GetNaluSize(const uint8_t *nalStart)
+{
+    return static_cast<int32_t>(
+        nalStart[NALU_SIZE_BYTE_3] | (nalStart[NALU_SIZE_BYTE_2] << BYTE_BITS) |
+        (nalStart[NALU_SIZE_BYTE_1] << (BYTE_BITS * HEVC_NUM_2)) |
+        (nalStart[NALU_SIZE_BYTE_0] << (BYTE_BITS * HEVC_NUM_3)));
+}
+
+int64_t AvTime2Us(int64_t hTime)
+{
+    return hTime / AV_CODEC_USECOND;
 }
 
 bool FlacCodecConfig::GenerateCodecConfig(const std::shared_ptr<Meta> &trackDesc)

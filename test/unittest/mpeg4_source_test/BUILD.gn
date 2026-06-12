@@ -58,10 +58,8 @@ ohos_unittest("mpeg4_source_capi_unit_test") {
   if (av_codec_support_source) {
     sources = [
       "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
-      "./mpeg4_source_stream_extra_unit_test.cpp",
       "./mpeg4_source_stream_unit_test.cpp",
       "./mpeg4_source_unit_test.cpp",
-      "./mpeg4_source_uri_unit_test.cpp",
       "./capi/mpeg4_source_capi_mock.cpp",
       "./capi/mpeg4_source_capi_mock_factory.cpp",
     ]
@@ -76,11 +74,13 @@ ohos_unittest("mpeg4_source_capi_unit_test") {
   defines += av_codec_defines
   deps = [
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
+    "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules",
     "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test"
   ]
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "init:libbegetutil",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
   ]
@@ -119,21 +119,21 @@ ohos_unittest("mpeg4_source_inner_unit_test") {
   if (av_codec_support_source) {
     sources = [
       "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
-      "./mpeg4_source_stream_extra_unit_test.cpp",
       "./mpeg4_source_stream_unit_test.cpp",
       "./mpeg4_source_unit_test.cpp",
-      "./mpeg4_source_uri_unit_test.cpp",
       "./inner/mpeg4_source_inner_mock.cpp",
       "./inner/mpeg4_source_inner_mock_factory.cpp",
     ]
   }
   deps = [
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
+    "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules",
     "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test"
   ]
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "init:libbegetutil",
     "media_foundation:media_foundation",
   ]
 

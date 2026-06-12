@@ -336,4 +336,181 @@ HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_H265_HDRMETADATA_COMP_0080, TestSize.
         ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
+
+/**
+ * @tc.number    : VIDEO_SWDEC_SET_DECODING_ORDER_0010
+ * @tc.name      : software decode frame set decoding order
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_SET_DECODING_ORDER_0010, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/1920_1080_20M_30.h265";
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enableDecodingOrder = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHevc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_SET_DECODING_ORDER_0020
+ * @tc.name      : software decode frame set decoding order
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_SET_DECODING_ORDER_0020, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/test_continuous_b_4.hevc";
+        vDecSample->DEFAULT_WIDTH = 320;
+        vDecSample->DEFAULT_HEIGHT = 240;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enableDecodingOrder = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHevc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_SET_DECODING_ORDER_0030
+ * @tc.name      : software decode frame set decoding order
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_SET_DECODING_ORDER_0030, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/test_continuous_b_8.hevc";
+        vDecSample->DEFAULT_WIDTH = 320;
+        vDecSample->DEFAULT_HEIGHT = 240;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enableDecodingOrder = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHevc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_SET_DECODING_ORDER_0050
+ * @tc.name      : software decode frame set decoding order
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_SET_DECODING_ORDER_0050, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/test_ibbp.hevc";
+        vDecSample->DEFAULT_WIDTH = 320;
+        vDecSample->DEFAULT_HEIGHT = 240;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enableDecodingOrder = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHevc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_SET_DECODING_ORDER_0060
+ * @tc.name      : software decode frame set decoding order
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_SET_DECODING_ORDER_0060, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/test_ibpbp.hevc";
+        vDecSample->DEFAULT_WIDTH = 320;
+        vDecSample->DEFAULT_HEIGHT = 240;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enableDecodingOrder = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHevc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_SET_DECODING_ORDER_0070
+ * @tc.name      : software decode frame set decoding order
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_SET_DECODING_ORDER_0070, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/1920_1080_20M_30.h265";
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enableDecodingOrder = true;
+        vDecSample->enableSyncMode = 1;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHevc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_SET_DECODING_ORDER_0080
+ * @tc.name      : software decode frame set decoding order
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_SET_DECODING_ORDER_0080, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/1920_1080_20M_30.h265";
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enableDecodingOrder = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHevc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_SET_DECODING_ORDER_0090
+ * @tc.name      : software decode frame set decoding order
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_SET_DECODING_ORDER_0090, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/hlg_1280_720_10.h265";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enableDecodingOrder = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHevc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_SET_DECODING_ORDER_0100
+ * @tc.name      : software decode frame set decoding order
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_SET_DECODING_ORDER_0100, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        cap_hevc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
+        bool ret = OH_AVCapability_IsFeatureSupported(cap_hevc, VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER);
+        ASSERT_TRUE(ret);
+    }
+}
 }

@@ -25,6 +25,7 @@
 #include "avcodec_log.h"
 #include "osal/utils/util.h"
 #include "avcodec_common.h"
+#include "meta/mime_type.h"
 
 namespace {
 using namespace OHOS::Media;
@@ -729,6 +730,8 @@ Status FFmpegAACEncoderPlugin::GetParameter(std::shared_ptr<Meta> &meta)
         audioParameter_.Set<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_);
     }
     audioParameter_.Set<Tag::AUDIO_MAX_OUTPUT_SIZE>(maxOutputSize_);
+    audioParameter_.Set<Tag::AUDIO_SAMPLE_FORMAT>(convertSampleFormat_);
+    audioParameter_.Set<Tag::MIME_TYPE>(MimeType::AUDIO_AAC);
     *meta = audioParameter_;
     return Status::OK;
 }

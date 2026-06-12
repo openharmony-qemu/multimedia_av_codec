@@ -29,6 +29,8 @@
 #include "mpeg4_sample_memory.h"
 #include "plugin/plugin_buffer.h"
 #include "qos.h"
+#include "xcollie/xcollie.h"
+#include "xcollie/xcollie_define.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "MPEG4DemuxerThread" };
@@ -43,6 +45,7 @@ constexpr uint8_t READ_RETRY_TIMES = 10;
 constexpr uint32_t READ_RETRY_SLEEP_TIME_US = 5000;
 constexpr uint32_t DEFAULT_CACHE_PRESSURE_WINDOW_MS = 500;
 constexpr int64_t NS_PER_MS = 1000000LL;
+const uint32_t SETTIMER_TIMEOUT = 5; // second
 
 bool HaveValidParserForThread(const std::string& mime)
 {
@@ -119,6 +122,8 @@ Status MPEG4DemuxerPlugin::SeekToFrameByDts(int32_t trackId, int64_t seekTime,
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MediaAVCodec::AVCodecTrace trace("SeekToFrameByDts");
+    auto id = HiviewDFX::XCollie::GetInstance().SetTimer("av_codec::demuxer_seekToFrameByDts", SETTIMER_TIMEOUT,
+        nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
     auto start = std::chrono::steady_clock::now();
     auto isTimeout = [timeoutMs, start]() {
         return timeoutMs > 0 && std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -137,6 +142,7 @@ Status MPEG4DemuxerPlugin::SeekToFrameByDts(int32_t trackId, int64_t seekTime,
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Prefetch seek sample failed");
     FALSE_RETURN_V_MSG_E(ConvertTimeScale(context.actualDts, NS_PER_MS * 1000LL, context.trackTimeScale,
         &realSeekTime) == Status::OK, Status::ERROR_INVALID_PARAMETER, "Convert real seek time failed");
+    HiviewDFX::XCollie::GetInstance().CancelTimer(id);
     return isTimeout() ? Status::ERROR_WAIT_TIMEOUT : Status::OK;
 }
 
@@ -324,6 +330,7 @@ Status MPEG4DemuxerPlugin::ReadSampleDataToBuffer(std::shared_ptr<Sample> sample
 
     Status ret = Status::ERROR_AGAIN;
     uint32_t count = 0;
+    MediaAVCodec::AVCodecTrace trace("AVReadPacket_ReadAt");
     while (ret == Status::ERROR_AGAIN &&
         (readTimeoutMs_.load(std::memory_order_acquire) >= 0 || count < READ_RETRY_TIMES)) {
         if (stopReadThread_.load(std::memory_order_acquire) ||

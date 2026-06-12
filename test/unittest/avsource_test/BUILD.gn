@@ -95,6 +95,7 @@ ohos_unittest("avsource_capi_unit_test") {
     "graphic_2d:libgraphic_utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "init:libbegetutil",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
   ]
@@ -163,6 +164,7 @@ ohos_unittest("avsource_inner_unit_test") {
     "graphic_2d:libgraphic_utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
   ]
@@ -232,6 +234,7 @@ ohos_unittest("avsource_inner_unit_test_for_mpeg4") {
     "graphic_2d:libgraphic_utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
   ]

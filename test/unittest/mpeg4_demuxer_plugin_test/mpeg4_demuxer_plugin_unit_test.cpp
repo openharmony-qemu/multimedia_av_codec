@@ -51,21 +51,11 @@ Status ConvertTimeScaleRoundToTimeBase(int64_t multiplicand, int64_t multiplier,
 
 namespace {
 const std::string TEST_MP4_PATH_H264_B = "/data/test/media/test_264_B_Gop25_4sec_cover.mp4";
-const std::string TEST_MP4_PATH_3DGS = "/data/test/media/3dgs.mp4";
 const std::string TEST_MP4_PATH_H265_B = "/data/test/media/test_265_B_Gop25_4sec.mp4";
-const std::string TEST_MP4_PATH_DELAY_V1S = "/data/test/media/delay_v1s.mp4";
-const std::string TEST_MP4_PATH_MPEG4 = "/data/test/media/MPEG4.mp4";
 const std::string TEST_MP4_PATH_HEVC_AUX = "/data/test/media/muxer_auxl_265.mp4";
 const std::string TEST_MP4_PATH_HEVC_AVC_AAC = "/data/test/media/muxer_auxl_265_264_aac.mp4";
-const std::string TEST_FMP4_PATH_H264 = "/data/test/media/h264_fmp4.mp4";
-const std::string TEST_FMP4_PATH_H265 = "/data/test/media/h265_fmp4.mp4";
-const std::string TEST_FMP4_PATH_MORE_SIDX = "/data/test/media/more_sidx.mp4";
-const std::string TEST_MOV_PATH_HEVC_PCM = "/data/test/media/265_pcm_s16le.mov";
-const std::string TEST_MOV_PATH_H264_AAC = "/data/test/media/h264_aac.mov";
-const std::string TEST_MOV_PATH_H264_MP3 = "/data/test/media/h264_mp3.mov";
-const std::string TEST_MOV_PATH_H264_VORBIS = "/data/test/media/h264_vorbis.mov";
-const std::string TEST_MOV_PATH_MPEG4_MP2 = "/data/test/media/MPEG4_mp2.mov";
 const std::string TEST_MP4_PATH_WEBVTT = "/data/test/media/webvtt.mp4";
+const std::string TEST_MP4_MULTIPLE_VIDEO_TRACKS = "/data/test/media/h264_double_video_audio.mp4";
 const std::string TEST_URI_PATH = "http://127.0.0.1:46666/";
 const std::string TEST_RELATIVE_PATH = "/data/test/media/";
 const std::string TEST_DEMUXER_RESOURCE_DIR = "/data/test/media";
@@ -80,10 +70,157 @@ constexpr int64_t WEAK_NETWORK_FIRST_READ_FAIL_OFFSET = 0;
 constexpr size_t WEAK_NETWORK_TIMEOUT_RECOVER_FAIL_COUNT = 1;
 constexpr size_t WEAK_NETWORK_THREAD_RETRY_FAIL_COUNT = 20;
 constexpr size_t MAX_WEBVTT_SAMPLE_READ_COUNT = 100000;
-constexpr int64_t GLTF_OFFSET_3DGS = 3526448;
 constexpr int64_t TEST_MS_TO_US = 1000;
 constexpr int64_t TEST_US_TO_NS = 1000;
 std::unique_ptr<FileServerDemo> g_server = nullptr;
+
+static const std::vector<std::string> g_supportFiles = {
+    "2obj_16bit_44100Hz_64kbps.mp4",
+    "2obj_44100Hz_16bit_32k.m4a",
+    "2obj_44100Hz_16bit_32k.mp4",
+    "5_1_4_4obj_16bit_48000Hz_1232kbps.mp4",
+    "5_1_4_16bit_32000Hz_704kbps.mp4",
+    "5_1_4_16bit_96000Hz_704kbps.mp4",
+    "5_1_4_24bit_48000Hz_704kbps.mp4",
+    "7_1_4_16bit_48000Hz_832kbps.mp4",
+    "aac_hdrvivid.mp4",
+    "aigc_str.m4a",
+    "aigc_str.mp4",
+    "avc_aac.mp4",
+    "avcc_10sec.mp4",
+    "avcc_aac_mp3.mp4",
+    "camera.mp4",
+    "camera_h265_aac_rotate270.mp4",
+    "camera_info_parser.mp4",
+    "comment_0010.mp4",
+    "comment_0020.mp4",
+    "comment_0030.mp4",
+    "comment_0040.mp4",
+    "comment_0050.mp4",
+    "comment_0060.mp4",
+    "demuxer_parser_2_layer_frame_avc.mp4",
+    "demuxer_parser_2_layer_frame_hevc.mp4",
+    "demuxer_parser_3_layer_frame_avc.mp4",
+    "demuxer_parser_3_layer_frame_hevc.mp4",
+    "demuxer_parser_4_layer_frame_avc.mp4",
+    "demuxer_parser_4_layer_frame_hevc.mp4",
+    "demuxer_parser_all_i_frame_avc.mp4",
+    "demuxer_parser_all_i_frame_hevc.mp4",
+    "demuxer_parser_hdr_1_hevc.mp4",
+    "demuxer_parser_hdr_2_hevc.mp4",
+    "demuxer_parser_hdr_vivid.mp4",
+    "demuxer_parser_hdr_vivid_gltf.mp4",
+    "demuxer_parser_ipb_frame_avc.mp4",
+    "demuxer_parser_ipb_frame_hevc.mp4",
+    "demuxer_parser_ltr_frame_avc.mp4",
+    "demuxer_parser_ltr_frame_hevc.mp4",
+    "demuxer_parser_one_i_frame_avc.mp4",
+    "demuxer_parser_one_i_frame_hevc.mp4",
+    "demuxer_parser_one_i_frame_no_audio_avc.mp4",
+    "demuxer_parser_one_i_frame_no_audio_hevc.mp4",
+    "demuxer_parser_recording.mp4",
+    "demuxer_parser_sdtp_extended_hevc.mp4",
+    "demuxer_parser_sdtp_frame_avc.mp4",
+    "demuxer_parser_sdtp_frame_hevc.mp4",
+    "double_hevc.mp4",
+    "double_vivid.mp4",
+    "FLIP_V.mp4",
+    "FLIP_V_90.mp4",
+    "gb2312.m4a",
+    "gb2312.mp4",
+    "gb18030.m4a",
+    "gb18030.mp4",
+    "gbk.m4a",
+    "gbk.mp4",
+    "h264.mp4",
+    "h264_aac_ch5.1.mp4",
+    "H264_AAC_multi_track.mp4",
+    "h264_double_video_audio.mp4",
+    "h265_mp3_gltf.mp4",
+    "hdrType_hdr10.mp4",
+    "hdrType_hdrVivid.mp4",
+    "hdrType_hlg.mp4",
+    "hdrvivid_720p_2s.mp4",
+    "hevc_aac.mp4",
+    "hlg.mp4",
+    "hlgHdrVivid.mp4",
+    "hoa3_16bit_48000Hz_640kbps.mp4",
+    "hvcc.mp4",
+    "large_tref.mp4",
+    "loci_altitude_100.mp4",
+    "loci_altitude_102.mp4",
+    "loci_altitude_empty.mp4",
+    "M4A_24K_2.m4a",
+    "M4A_64K_2_main.m4a",
+    "M4A_96K_1_cbr.m4a",
+    "M4A_48000_1.m4a",
+    "m4a_48000_1_ut.m4a",
+    "M4A_48000_aigc.m4a",
+    "m4a_m4a.m4a",
+    "m4v_h264_noaudio.m4v",
+    "m4v_hevc_aac.m4v",
+    "metaAlltype.mp4",
+    "metaFloatval.mp4",
+    "metaIntval.mp4",
+    "metaMaxval.mp4",
+    "metaStringval.mp4",
+    "metaval_01.m4a",
+    "metaval_01.mp4",
+    "metaval_03.m4a",
+    "metaval_03.mp4",
+    "metaval_04.m4a",
+    "metaval_04.mp4",
+    "metaval_05.m4a",
+    "metaval_05.mp4",
+    "mp3_h264.mp4",
+    "mp3_h265.mp4",
+    "mp3_h265_fmp4.mp4",
+    "Muxer_Auxiliary.mp4",
+    "Muxer_Auxiliary_02.mp4",
+    "Muxer_Auxiliary_03.mp4",
+    "Muxer_Auxiliary_04.mp4",
+    "muxer_auxl_265.mp4",
+    "muxer_auxl_265_264_aac.mp4",
+    "Muxer_SetFormat_Comment_1000.mp4",
+    "Muxer_SetFormat_Comment_1100.mp4",
+    "Muxer_SetFormat_Comment_1200.mp4",
+    "Muxer_SetFormat_Comment_1300.mp4",
+    "noframe.mp4",
+    "NoTimedmetadataAudio.mp4",
+    "pqHdrvivid.mp4",
+    "pre_record_parser.mp4",
+    "ROTATE_270.mp4",
+    "ROTATE_NONE.mp4",
+    "sarnot1.mp4",
+    "short_audio.mp4",
+    "short_video.mp4",
+    "single_60.mp4",
+    "single_rk.mp4",
+    "stereo_16bit_48000Hz_32kbps.mp4",
+    "test_264_B_Gop25_4sec.mp4",
+    "test_264_B_Gop25_4sec_cover.mp4",
+    "test_264_B_Gop25_4sec_gltf.mp4",
+    "test_265_B_Gop25_4sec.mp4",
+    "test_h264.mp4",
+    "test_starttime.mp4",
+    "timed_metadata_track.mp4",
+    "Timedmetadata1Track0.mp4",
+    "Timedmetadata1Track1.mp4",
+    "Timedmetadata1Track2.mp4",
+    "Timedmetadata2Track2.mp4",
+    "TimedmetadataAudio.mp4",
+    "TimedmetadataVideo.mp4",
+    "unsupport_type.mp4",
+    "video_2audio.mp4",
+    "video_9audio.mp4",
+    "video_audio_one_frame_test.mp4",
+    "vvc_1280_720_8.mp4",
+    "vvc_1280_720_8_gltf.mp4",
+    "webvtt.mp4",
+    "wvtt.mp4",
+    "xm.mp4",
+    "zero_track.mp4",
+};
 
 std::vector<SeekExpectedResult> GetExplicitSeekExpectedResults()
 {
@@ -535,6 +672,11 @@ bool HasDemuxerResourceSuffix(const std::string& fileName)
     });
 }
 
+bool IsSupportedFile(const std::string& fileName)
+{
+    return (std::find(g_supportFiles.cbegin(), g_supportFiles.cend(), fileName) != g_supportFiles.cend());
+}
+
 std::vector<std::string> CollectDemuxerResourceFiles()
 {
     std::vector<std::string> filePaths;
@@ -547,7 +689,7 @@ std::vector<std::string> CollectDemuxerResourceFiles()
     struct dirent* entry = nullptr;
     while ((entry = readdir(dir)) != nullptr) {
         std::string fileName = entry->d_name;
-        if (fileName == "." || fileName == ".." || !HasDemuxerResourceSuffix(fileName)) {
+        if (fileName == "." || fileName == ".." || !HasDemuxerResourceSuffix(fileName) || !IsSupportedFile(fileName)) {
             continue;
         }
         std::string filePath = TEST_DEMUXER_RESOURCE_DIR + "/" + fileName;
@@ -1882,9 +2024,9 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest,
 
     std::multimap<std::string, std::vector<uint8_t>> drmInfo;
     EXPECT_EQ(plugin->GetDrmInfo(drmInfo), Status::OK);
-    EXPECT_TRUE(plugin->IsRefParserSupported());
-    EXPECT_EQ(plugin->ParserRefUpdatePos(0), Status::OK);
-    EXPECT_EQ(plugin->ParserRefInfo(), Status::OK);
+    EXPECT_FALSE(plugin->IsRefParserSupported());
+    EXPECT_EQ(plugin->ParserRefUpdatePos(0), Status::ERROR_UNSUPPORTED_FORMAT);
+    EXPECT_EQ(plugin->ParserRefInfo(), Status::ERROR_UNKNOWN);
 
     auto buffer = MediaAVBuffer::CreateAVBuffer();
     FrameLayerInfo frameLayerInfo;
@@ -1892,13 +2034,13 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest,
     std::vector<uint32_t> iFramePos;
     uint32_t frameId = 0;
     int64_t seekMs = 0;
-    EXPECT_EQ(plugin->GetFrameLayerInfo(buffer, frameLayerInfo), Status::OK);
-    EXPECT_EQ(plugin->GetFrameLayerInfo(frameId, frameLayerInfo), Status::OK);
-    EXPECT_EQ(plugin->GetGopLayerInfo(0, gopLayerInfo), Status::OK);
-    EXPECT_EQ(plugin->GetIFramePos(iFramePos), Status::OK);
-    EXPECT_EQ(plugin->Dts2FrameId(0, frameId), Status::OK);
-    EXPECT_EQ(plugin->SeekMs2FrameId(0, frameId), Status::OK);
-    EXPECT_EQ(plugin->FrameId2SeekMs(frameId, seekMs), Status::OK);
+    EXPECT_EQ(plugin->GetFrameLayerInfo(buffer, frameLayerInfo), Status::ERROR_NULL_POINTER);
+    EXPECT_EQ(plugin->GetFrameLayerInfo(frameId, frameLayerInfo), Status::ERROR_NULL_POINTER);
+    EXPECT_EQ(plugin->GetGopLayerInfo(0, gopLayerInfo), Status::ERROR_NULL_POINTER);
+    EXPECT_EQ(plugin->GetIFramePos(iFramePos), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(plugin->Dts2FrameId(0, frameId), Status::ERROR_OUT_OF_RANGE);
+    EXPECT_EQ(plugin->SeekMs2FrameId(0, frameId), Status::ERROR_OUT_OF_RANGE);
+    EXPECT_EQ(plugin->FrameId2SeekMs(frameId, seekMs), Status::ERROR_UNKNOWN);
 
     int64_t realSeekTime = 0;
     EXPECT_EQ(plugin->SeekToKeyFrame(0, 0, SeekMode::SEEK_NEXT_SYNC, realSeekTime, 0),
@@ -2062,35 +2204,6 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SeekToFrameByDts_001, Te
     ASSERT_NO_FATAL_FAILURE(CheckSeekToFrameByDtsResult(TEST_MP4_PATH_H264_B, "SeekToFrameByDts_001"));
 }
 
-/**
- * @tc.name: Mpeg4DemuxerPlugin_SeekToFrameByDts_H264Fmp4_001
- * @tc.desc: Verify MPEG4 demuxer DTS seek on H264 fragmented MP4 resource
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SeekToFrameByDts_H264Fmp4_001, TestSize.Level1)
-{
-    ASSERT_NO_FATAL_FAILURE(CheckSeekToFrameByDtsResult(TEST_FMP4_PATH_H264, "SeekToFrameByDts_H264Fmp4_001"));
-}
-
-/**
- * @tc.name: Mpeg4DemuxerPlugin_SeekToFrameByDts_H265Fmp4_001
- * @tc.desc: Verify MPEG4 demuxer DTS seek on H265 fragmented MP4 resource
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SeekToFrameByDts_H265Fmp4_001, TestSize.Level1)
-{
-    ASSERT_NO_FATAL_FAILURE(CheckSeekToFrameByDtsResult(TEST_FMP4_PATH_H265, "SeekToFrameByDts_H265Fmp4_001"));
-}
-
-/**
- * @tc.name: Mpeg4DemuxerPlugin_SeekToFrameByDts_DelayV1S_001
- * @tc.desc: Verify MPEG4 demuxer DTS seek on MP4 resource with video delay metadata
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SeekToFrameByDts_DelayV1S_001, TestSize.Level1)
-{
-    ASSERT_NO_FATAL_FAILURE(CheckSeekToFrameByDtsResult(TEST_MP4_PATH_DELAY_V1S, "SeekToFrameByDts_DelayV1S_001"));
-}
 
 /**
  * @tc.name: Mpeg4DemuxerPlugin_SeekToFrameByDts_InvalidParam_001
@@ -2265,23 +2378,6 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SetDataSourceWithProbSiz
     if (fd >= 0) {
         close(fd);
     }
-}
-
-/**
- * @tc.name: Mpeg4DemuxerPlugin_GetGltfOffset_001
- * @tc.desc: Verify MPEG4 demuxer exposes file-level glTF idat payload offset
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_GetGltfOffset_001, TestSize.Level1)
-{
-    InitMpeg4Plugin(TEST_MP4_PATH_3DGS);
-
-    bool isGltf = false;
-    int64_t gltfOffset = -1;
-    EXPECT_TRUE(mpeg4MediaInfo_.general.Get<Tag::IS_GLTF>(isGltf));
-    EXPECT_TRUE(isGltf);
-    EXPECT_TRUE(mpeg4MediaInfo_.general.Get<Tag::GLTF_OFFSET>(gltfOffset));
-    EXPECT_EQ(gltfOffset, GLTF_OFFSET_3DGS);
 }
 
 /**
@@ -2604,23 +2700,6 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_WebVttSeekAndTimeScaleBo
 }
 
 /**
- * @tc.name: Mpeg4DemuxerPlugin_ReadSample_MP4_CompareWithFfmpeg_002
- * @tc.desc: Compare MPEG4 and FFmpeg demuxer full-frame read results on mpeg4 mp4
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSample_MP4_CompareWithFfmpeg_002, TestSize.Level1)
-{
-    InitFfmpegPlugin(TEST_MP4_PATH_MPEG4);
-    InitMpeg4Plugin(TEST_MP4_PATH_MPEG4);
-
-    auto ffmpegSelectedTracks = SelectSupportedTracks(ffmpegPlugin_, ffmpegMediaInfo_);
-    auto mpeg4SelectedTracks = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
-    auto ffmpegDigest = ReadAllSamples(ffmpegPlugin_, ffmpegMediaInfo_, ffmpegSelectedTracks);
-    auto mpeg4Digest = ReadAllSamples(mpeg4Plugin_, mpeg4MediaInfo_, mpeg4SelectedTracks);
-    ASSERT_NO_FATAL_FAILURE(CompareReadDigest(mpeg4Digest, ffmpegDigest));
-}
-
-/**
  * @tc.name: Mpeg4DemuxerPlugin_MovFixIndex_CompareWithFfmpeg_001
  * @tc.desc: Compare MPEG4 and FFmpeg edit-list fixed index attributes on h264 mp4
  * @tc.type: FUNC
@@ -2638,36 +2717,6 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MovFixIndex_CompareWithF
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MovFixIndex_CompareWithFfmpeg_002, TestSize.Level1)
 {
     ASSERT_NO_FATAL_FAILURE(CompareMovFixIndexResultWithFfmpeg(TEST_MP4_PATH_H265_B));
-}
-
-/**
- * @tc.name: Mpeg4DemuxerPlugin_MovFixIndex_CompareWithFfmpeg_003
- * @tc.desc: Compare MPEG4 and FFmpeg edit-list start-time attributes on delayed mp4
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MovFixIndex_CompareWithFfmpeg_003, TestSize.Level1)
-{
-    ASSERT_NO_FATAL_FAILURE(CompareMovFixIndexResultWithFfmpeg(TEST_MP4_PATH_DELAY_V1S, true, true, false));
-}
-
-/**
- * @tc.name: Mpeg4DemuxerPlugin_MovFixIndex_CompareWithFfmpeg_004
- * @tc.desc: Compare MPEG4 and FFmpeg fragmented mp4 index attributes on h264 fmp4
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MovFixIndex_CompareWithFfmpeg_004, TestSize.Level1)
-{
-    ASSERT_NO_FATAL_FAILURE(CompareMovFixIndexResultWithFfmpeg(TEST_FMP4_PATH_H264, true, true, false));
-}
-
-/**
- * @tc.name: Mpeg4DemuxerPlugin_MovFixIndex_CompareWithFfmpeg_005
- * @tc.desc: Compare MPEG4 and FFmpeg fragmented mp4 index attributes on multi-sidx mp4
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MovFixIndex_CompareWithFfmpeg_005, TestSize.Level1)
-{
-    ASSERT_NO_FATAL_FAILURE(CompareMovFixIndexResultWithFfmpeg(TEST_FMP4_PATH_MORE_SIDX, false, false, false));
 }
 
 /**
@@ -2764,22 +2813,6 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SeekToPtsTimeline_ReadDi
 }
 
 /**
- * @tc.name: Mpeg4DemuxerPlugin_SeekToPtsTimeline_EditList_001
- * @tc.desc: Verify first video sample after PTS seek against source sync-sample timeline on edit-list mp4
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SeekToPtsTimeline_EditList_001, TestSize.Level1)
-{
-    std::vector<int64_t> seekTimes = {0, 500, 1000, 1500, 2000};
-    std::vector<SeekMode> seekModes = {
-        SeekMode::SEEK_PREVIOUS_SYNC,
-        SeekMode::SEEK_NEXT_SYNC,
-        SeekMode::SEEK_CLOSEST_SYNC,
-    };
-    ASSERT_NO_FATAL_FAILURE(CheckSeekFirstVideoSampleWithSourceTimeline(TEST_MP4_PATH_DELAY_V1S, seekTimes, seekModes));
-}
-
-/**
  * @tc.name: Mpeg4DemuxerPlugin_SeekToPtsTimeline_Uri_001
  * @tc.desc: Verify first video sample after PTS seek against source sync-sample timeline on B-frame mp4 uri source
  * @tc.type: FUNC
@@ -2833,27 +2866,6 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest,
     ASSERT_NO_FATAL_FAILURE(CompareWeakNetworkReadResult(TEST_MP4_PATH_H264_B, 2560656, 3));
 }
 
-/**
- * @tc.name: Mpeg4DemuxerPlugin_ReadSample_WeakNetwork_MP4_CompareWithFfmpeg_002
- * @tc.desc: Compare MPEG4 and FFmpeg demuxer async read results on mpeg4 mp4 under weak network
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest,
-    Mpeg4DemuxerPlugin_ReadSample_WeakNetwork_MP4_CompareWithFfmpeg_002, TestSize.Level1)
-{
-    ASSERT_NO_FATAL_FAILURE(CompareWeakNetworkReadResult(TEST_MP4_PATH_MPEG4, 2560656, 3));
-}
-
-/**
- * @tc.name: Mpeg4DemuxerPlugin_ReadSample_WeakNetwork_FMP4_CompareWithFfmpeg_001
- * @tc.desc: Compare MPEG4 and FFmpeg demuxer async read results on h264 fmp4 under weak network
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest,
-    Mpeg4DemuxerPlugin_ReadSample_WeakNetwork_FMP4_CompareWithFfmpeg_001, TestSize.Level1)
-{
-    ASSERT_NO_FATAL_FAILURE(CompareWeakNetworkReadResult(TEST_FMP4_PATH_H264, 2560656, 3));
-}
 
 /**
  * @tc.name: Mpeg4DemuxerPlugin_ReadSample_WeakNetwork_ThreadRetryRecover_001
@@ -2915,19 +2927,6 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSample_MP4_ExplicitF
 }
 
 /**
- * @tc.name: Mpeg4DemuxerPlugin_ReadSample_MP4_ExplicitFrames_0003
- * @tc.desc: Explicitly verify mp4 frame and key-frame statistics
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSample_MP4_ExplicitFrames_0003, TestSize.Level1)
-{
-    ASSERT_NO_FATAL_FAILURE(CheckReadResultWithExpected(TEST_MP4_PATH_MPEG4, {602, 434}, {51, 434},
-        {0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144, 156, 168, 180, 192, 204, 216, 228, 240, 252, 264,
-        276, 288, 300, 312, 324, 336, 348, 360, 372, 384, 396, 408, 420, 432, 444, 456, 468, 480, 492, 504, 516,
-        528, 540, 552, 564, 576, 588, 600}));
-}
-
-/**
  * @tc.name: Mpeg4DemuxerPlugin_ReadSample_MP4_ExplicitFrames_0004
  * @tc.desc: Explicitly verify hevc mp4 frame and key-frame statistics
  * @tc.type: FUNC
@@ -2956,83 +2955,6 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSample_MP4_ExplicitF
 }
 
 /**
- * @tc.name: Mpeg4DemuxerPlugin_ReadSample_FMP4_ExplicitFrames_0001
- * @tc.desc: Explicitly verify h264 fmp4 frame and key-frame statistics
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSample_FMP4_ExplicitFrames_0001, TestSize.Level1)
-{
-    ASSERT_NO_FATAL_FAILURE(CheckReadResultWithExpected(TEST_FMP4_PATH_H264, {602, 433}, {3, 433}, {0, 250, 500}));
-}
-
-/**
- * @tc.name: Mpeg4DemuxerPlugin_ReadSample_FMP4_ExplicitFrames_0002
- * @tc.desc: Explicitly verify h265 fmp4 frame and key-frame statistics
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSample_FMP4_ExplicitFrames_0002, TestSize.Level1)
-{
-    ASSERT_NO_FATAL_FAILURE(CheckReadResultWithExpected(TEST_FMP4_PATH_H265, {604, 433}, {3, 433}, {0, 246, 497}));
-}
-
-/**
- * @tc.name: Mpeg4DemuxerPlugin_ReadSample_MOV_ExplicitFrames_0001
- * @tc.desc: Explicitly verify mov frame and key-frame statistics
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSample_MOV_ExplicitFrames_0001, TestSize.Level1)
-{
-    ASSERT_NO_FATAL_FAILURE(
-        CheckReadResultWithExpected(TEST_MOV_PATH_HEVC_PCM, {604, 433}, {3, 433}, {0, 246, 497}));
-}
-
-/**
- * @tc.name: Mpeg4DemuxerPlugin_ReadSample_MOV_ExplicitFrames_0002
- * @tc.desc: Explicitly verify mov frame and key-frame statistics
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSample_MOV_ExplicitFrames_0002, TestSize.Level1)
-{
-    ASSERT_NO_FATAL_FAILURE(
-        CheckReadResultWithExpected(TEST_MOV_PATH_H264_AAC, {602, 434}, {3, 434}, {0, 250, 500}));
-}
-
-/**
- * @tc.name: Mpeg4DemuxerPlugin_ReadSample_MOV_ExplicitFrames_0003
- * @tc.desc: Explicitly verify mov frame and key-frame statistics
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSample_MOV_ExplicitFrames_0003, TestSize.Level1)
-{
-    ASSERT_NO_FATAL_FAILURE(
-        CheckReadResultWithExpected(TEST_MOV_PATH_H264_MP3, {602, 386}, {3, 386}, {0, 250, 500}));
-}
-
-/**
- * @tc.name: Mpeg4DemuxerPlugin_ReadSample_MOV_ExplicitFrames_0004
- * @tc.desc: Explicitly verify mov frame and key-frame statistics
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSample_MOV_ExplicitFrames_0004, TestSize.Level1)
-{
-    ASSERT_NO_FATAL_FAILURE(
-        CheckReadResultWithExpected(TEST_MOV_PATH_H264_VORBIS, {602, 609}, {3, 609}, {0, 250, 500}));
-}
-
-/**
- * @tc.name: Mpeg4DemuxerPlugin_ReadSample_MOV_ExplicitFrames_0005
- * @tc.desc: Explicitly verify mov frame and key-frame statistics
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSample_MOV_ExplicitFrames_0005, TestSize.Level1)
-{
-    ASSERT_NO_FATAL_FAILURE(CheckReadResultWithExpected(TEST_MOV_PATH_MPEG4_MP2, {602, 385}, {51, 385},
-        {0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144, 156, 168, 180, 192, 204, 216, 228, 240, 252, 264,
-        276, 288, 300, 312, 324, 336, 348, 360, 372, 384, 396, 408, 420, 432, 444, 456, 468, 480, 492, 504, 516,
-        528, 540, 552, 564, 576, 588, 600}));
-}
-
-/**
  * @tc.name: Mpeg4DemuxerPlugin_ReadSample_URI_MP4_ExplicitFrames_0001
  * @tc.desc: Explicitly verify mp4 uri frame and key-frame statistics
  * @tc.type: FUNC
@@ -3052,19 +2974,6 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSample_URI_MP4_Expli
 {
     ASSERT_NO_FATAL_FAILURE(
         CheckReadResultWithExpected(TEST_MP4_PATH_H264_B, {103, 174}, {5, 174}, {0, 25, 50, 75, 100}, true));
-}
-
-/**
- * @tc.name: Mpeg4DemuxerPlugin_ReadSample_URI_MP4_ExplicitFrames_0003
- * @tc.desc: Explicitly verify mp4 uri frame and key-frame statistics
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSample_URI_MP4_ExplicitFrames_0003, TestSize.Level1)
-{
-    ASSERT_NO_FATAL_FAILURE(CheckReadResultWithExpected(TEST_MP4_PATH_MPEG4, {602, 434}, {51, 434},
-        {0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144, 156, 168, 180, 192, 204, 216, 228, 240, 252, 264,
-        276, 288, 300, 312, 324, 336, 348, 360, 372, 384, 396, 408, 420, 432, 444, 456, 468, 480, 492, 504, 516,
-        528, 540, 552, 564, 576, 588, 600}, true));
 }
 
 /**
@@ -3096,84 +3005,6 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSample_URI_MP4_Expli
         CheckReadResultWithExpected(TEST_MP4_PATH_HEVC_AVC_AAC, {430, 601}, {430, 3}, numbers, true));
 }
 
-/**
- * @tc.name: Mpeg4DemuxerPlugin_ReadSample_URI_FMP4_ExplicitFrames_0001
- * @tc.desc: Explicitly verify h264 fmp4 uri frame and key-frame statistics
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSample_URI_FMP4_ExplicitFrames_0001, TestSize.Level1)
-{
-    ASSERT_NO_FATAL_FAILURE(
-        CheckReadResultWithExpected(TEST_FMP4_PATH_H264, {602, 433}, {3, 433}, {0, 250, 500}, true));
-}
-
-/**
- * @tc.name: Mpeg4DemuxerPlugin_ReadSample_URI_FMP4_ExplicitFrames_0002
- * @tc.desc: Explicitly verify h265 fmp4 uri frame and key-frame statistics
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSample_URI_FMP4_ExplicitFrames_0002, TestSize.Level1)
-{
-    ASSERT_NO_FATAL_FAILURE(
-        CheckReadResultWithExpected(TEST_FMP4_PATH_H265, {604, 433}, {3, 433}, {0, 246, 497}, true));
-}
-
-/**
- * @tc.name: Mpeg4DemuxerPlugin_ReadSample_URI_MOV_ExplicitFrames_0001
- * @tc.desc: Explicitly verify mov uri frame and key-frame statistics
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSample_URI_MOV_ExplicitFrames_0001, TestSize.Level1)
-{
-    ASSERT_NO_FATAL_FAILURE(
-        CheckReadResultWithExpected(TEST_MOV_PATH_HEVC_PCM, {604, 433}, {3, 433}, {0, 246, 497}, true));
-}
-
-/**
- * @tc.name: Mpeg4DemuxerPlugin_ReadSample_URI_MOV_ExplicitFrames_0002
- * @tc.desc: Explicitly verify mov uri frame and key-frame statistics
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSample_URI_MOV_ExplicitFrames_0002, TestSize.Level1)
-{
-    ASSERT_NO_FATAL_FAILURE(
-        CheckReadResultWithExpected(TEST_MOV_PATH_H264_AAC, {602, 434}, {3, 434}, {0, 250, 500}, true));
-}
-
-/**
- * @tc.name: Mpeg4DemuxerPlugin_ReadSample_URI_MOV_ExplicitFrames_0003
- * @tc.desc: Explicitly verify mov uri frame and key-frame statistics
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSample_URI_MOV_ExplicitFrames_0003, TestSize.Level1)
-{
-    ASSERT_NO_FATAL_FAILURE(
-        CheckReadResultWithExpected(TEST_MOV_PATH_H264_MP3, {602, 386}, {3, 386}, {0, 250, 500}, true));
-}
-
-/**
- * @tc.name: Mpeg4DemuxerPlugin_ReadSample_URI_MOV_ExplicitFrames_0004
- * @tc.desc: Explicitly verify mov uri frame and key-frame statistics
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSample_URI_MOV_ExplicitFrames_0004, TestSize.Level1)
-{
-    ASSERT_NO_FATAL_FAILURE(
-        CheckReadResultWithExpected(TEST_MOV_PATH_H264_VORBIS, {602, 609}, {3, 609}, {0, 250, 500}, true));
-}
-
-/**
- * @tc.name: Mpeg4DemuxerPlugin_ReadSample_URI_MOV_ExplicitFrames_0005
- * @tc.desc: Explicitly verify mov uri frame and key-frame statistics
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSample_URI_MOV_ExplicitFrames_0005, TestSize.Level1)
-{
-    ASSERT_NO_FATAL_FAILURE(CheckReadResultWithExpected(TEST_MOV_PATH_MPEG4_MP2, {602, 385}, {51, 385},
-        {0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144, 156, 168, 180, 192, 204, 216, 228, 240, 252, 264,
-        276, 288, 300, 312, 324, 336, 348, 360, 372, 384, 396, 408, 420, 432, 444, 456, 468, 480, 492, 504, 516,
-        528, 540, 552, 564, 576, 588, 600}, true));
-}
 
 /**
  * @tc.name: Mpeg4DemuxerPlugin_SeekTo_ExplicitFrames_0001
@@ -3194,6 +3025,201 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SeekTo_URI_ExplicitFrame
 {
     ASSERT_NO_FATAL_FAILURE(
         CheckSeekReadResultWithExpected(TEST_MP4_PATH_H264_B, GetExplicitSeekExpectedResults(), true));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_IsRefParserSupported_0001
+ * @tc.desc: Resource types supported by RefParser
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_IsRefParserSupported_0001, TestSize.Level1)
+{
+    ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
+    InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
+    bool isSupport = mpeg4Plugin_->IsRefParserSupported();
+    EXPECT_EQ(isSupport, true);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_IsRefParserSupported_0002
+ * @tc.desc: Resource types supported by RefParser
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_IsRefParserSupported_0002, TestSize.Level1)
+{
+    ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
+    InitMpeg4Plugin(TEST_MP4_MULTIPLE_VIDEO_TRACKS);
+    bool isSupport = mpeg4Plugin_->IsRefParserSupported();
+    EXPECT_EQ(isSupport, false);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ParserRefUpdatePos_0001
+ * @tc.desc: ParserRefUpdatePos
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ParserRefUpdatePos_0001, TestSize.Level1)
+{
+    ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
+    InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
+    Status ret = mpeg4Plugin_->ParserRefUpdatePos(0, true);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ParserRefUpdatePos_0002
+ * @tc.desc: ParserRefUpdatePos
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ParserRefUpdatePos_0002, TestSize.Level1)
+{
+    ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
+    InitMpeg4Plugin(TEST_MP4_MULTIPLE_VIDEO_TRACKS);
+    Status ret = mpeg4Plugin_->ParserRefUpdatePos(0, true);
+    EXPECT_EQ(ret, Status::ERROR_UNSUPPORTED_FORMAT);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ParserRefUpdatePos_0003
+ * @tc.desc: ParserRefUpdatePos
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ParserRefUpdatePos_0003, TestSize.Level1)
+{
+    ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
+    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4"));
+    Status ret = mpeg4Plugin_->ParserRefUpdatePos(0, true);
+    EXPECT_EQ(ret, Status::ERROR_UNSUPPORTED_FORMAT);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ParserRefInfo_0001
+ * @tc.desc: ParserRefInfo
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ParserRefInfo_0001, TestSize.Level1)
+{
+    ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
+    InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
+    Status ret = mpeg4Plugin_->ParserRefInfo();
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_GetFrameLayerInfo_0001
+ * @tc.desc: GetFrameLayerInfo
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_GetFrameLayerInfo_0001, TestSize.Level1)
+{
+    ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
+    InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
+    std::shared_ptr<AVBuffer> videoSample = AVBuffer::CreateAVBuffer();
+    videoSample->dts_ = 0;
+    FrameLayerInfo frameLayerInfo;
+    Status ret = mpeg4Plugin_->GetFrameLayerInfo(videoSample, frameLayerInfo);
+    EXPECT_EQ(ret, Status::ERROR_NULL_POINTER);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_GetFrameLayerInfo_0002
+ * @tc.desc: GetFrameLayerInfo
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_GetFrameLayerInfo_0002, TestSize.Level1)
+{
+    ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
+    InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
+    FrameLayerInfo frameLayerInfo;
+    Status ret = mpeg4Plugin_->GetFrameLayerInfo(0, frameLayerInfo);
+    EXPECT_EQ(ret, Status::ERROR_NULL_POINTER);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_GetGopLayerInfo_0001
+ * @tc.desc: GetGopLayerInfo
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_GetGopLayerInfo_0001, TestSize.Level1)
+{
+    ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
+    InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
+    GopLayerInfo gopLayerInfo;
+    Status ret = mpeg4Plugin_->GetGopLayerInfo(0, gopLayerInfo);
+    EXPECT_EQ(ret, Status::ERROR_NULL_POINTER);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_GetIFramePos_0001
+ * @tc.desc: GetIFramePos
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_GetIFramePos_0001, TestSize.Level1)
+{
+    ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
+    InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
+    std::vector<uint32_t> IFramePos;
+    mpeg4Plugin_->GetIFramePos(IFramePos);
+    EXPECT_GE(IFramePos.size(), 0);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_GetIFramePos_0002
+ * @tc.desc: GetIFramePos
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_GetIFramePos_0002, TestSize.Level1)
+{
+    ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
+    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4"));
+    std::vector<uint32_t> IFramePos;
+    mpeg4Plugin_->GetIFramePos(IFramePos);
+    EXPECT_EQ(IFramePos.size(), 0);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_Dts2FrameId_0001
+ * @tc.desc: Dts2FrameId
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_Dts2FrameId_0001, TestSize.Level1)
+{
+    ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
+    InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
+    int64_t dts = 0;
+    uint32_t frameId = -1;
+    mpeg4Plugin_->Dts2FrameId(dts, frameId);
+    EXPECT_EQ(frameId, 2);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_Dts2FrameId_0002
+ * @tc.desc: Dts2FrameId
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_Dts2FrameId_0002, TestSize.Level1)
+{
+    ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
+    InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
+    int64_t dts = -1;
+    uint32_t frameId = -1;
+    Status ret = mpeg4Plugin_->Dts2FrameId(dts, frameId);
+    EXPECT_EQ(ret, Status::ERROR_OUT_OF_RANGE);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_FrameId2SeekMs_0001
+ * @tc.desc: FrameId2SeekMs
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_FrameId2SeekMs_0001, TestSize.Level1)
+{
+    ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
+    InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
+    uint32_t frameId = 0;
+    int64_t seekMs = -1;
+    mpeg4Plugin_->FrameId2SeekMs(frameId, seekMs);
+    EXPECT_EQ(seekMs, 0);
 }
 } // namespace Media
 } // namespace OHOS

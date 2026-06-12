@@ -123,11 +123,6 @@ void HEncoder::ReportAdvancedFeatures(const Format &format)
         meta->SetData(EventInfoExtentedKey::RC_MODE.data(), static_cast<int32_t>(bitrateMode.value()));
         ReportStatisticsEvent(StatisticsEventType::ADVANCED_FEATURE_INFO, meta);
     }
-    if (enableTSVC_) {
-        auto meta = std::make_shared<Media::Meta>();
-        meta->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "TEMPORAL_SCALABILITY");
-        ReportStatisticsEvent(StatisticsEventType::ADVANCED_FEATURE_INFO, meta);
-    }
 }
 
 void HEncoder::EnableVariableFrameRate(const Format &format)

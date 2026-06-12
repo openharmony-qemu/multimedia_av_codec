@@ -2374,6 +2374,14 @@ Status MediaDemuxer::Pause()
                 sampleConsumerTaskMap_[videoTrackId_]->Pause();
             }
         }
+        if (CheckTrackEnabledById(audioTrackId_)) {
+            taskMap_[audioTrackId_]->PauseAsync();
+            taskMap_[audioTrackId_]->Pause();
+            if (GetEnableSampleQueueFlag()) {
+                sampleConsumerTaskMap_[audioTrackId_]->PauseAsync();
+                sampleConsumerTaskMap_[audioTrackId_]->Pause();
+            }
+        }
     } else {
         PauseAllTaskAsync();
         PauseAllTask();
@@ -3631,6 +3639,8 @@ void MediaDemuxer::StartConsume(int32_t trackId)
         return;
     }
     {
+        std::unique_lock<std::mutex> stopLock(stopMutex_);
+        FALSE_RETURN(!isStopped_);
         AutoLock lock(mapMutex_);
         startConsumeResult = sampleQueueController_->ShouldStartConsume(trackId, sampleQueueMap_[trackId],
             sampleConsumerTaskMap_[trackId], inPreroll_.load());
@@ -3686,6 +3696,8 @@ void MediaDemuxer::ProduceWaterLoopControl(int32_t trackId)
         return;
     }
     {
+        std::unique_lock<std::mutex> stopLock(stopMutex_);
+        FALSE_RETURN(!isStopped_);
         AutoLock lock(mapMutex_);
         sampleQueueController_->ShouldStopProduce(trackId, sampleQueueMap_[trackId], taskMap_[trackId]);
     }
@@ -4845,6 +4857,8 @@ void MediaDemuxer::ConsumeWaterLoopControl(int32_t trackId, std::shared_ptr<Samp
 
     bool stopConsumeResult = false;
     {
+        std::unique_lock<std::mutex> stopLock(stopMutex_);
+        FALSE_RETURN(!isStopped_);
         AutoLock lock(mapMutex_);
         sampleQueueController_->ShouldStartProduce(trackId, sampleQueue, taskMap_[trackId]);
         stopConsumeResult =

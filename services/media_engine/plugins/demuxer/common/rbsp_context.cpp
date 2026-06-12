@@ -68,24 +68,6 @@ void RbspContext::RbspSkipBits(uint32_t size)
     bitIndex_ = (bitIndex_ + size) % 0x08;
 }
 
-uint8_t RbspContext::RbspGetBit() const
-{
-    if (buf_ == nullptr || RbspGetLeftBytesNum() == 0) {
-        return 0;
-    }
-    uint8_t data = 0;
-    if (static_cast<uint32_t>(size_) > byteIndex_) {
-        data = *(buf_ + byteIndex_);
-    }
-    data = (data >> (0x07 - bitIndex_)) & 0x01;
-    return data;
-}
-
-uint32_t RbspContext::RbspGetLeftBytesNum() const
-{
-    return byteIndex_ >= size_ ? 0 : size_ - byteIndex_;
-}
-
 uint32_t RbspContext::GetBytesIndex() const
 {
     return byteIndex_;

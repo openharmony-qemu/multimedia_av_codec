@@ -82,6 +82,7 @@ ohos_unittest("pts_and_index_conversion_unit_test") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "hisysevent:libhisysevent",
     "media_foundation:media_foundation",
   ]

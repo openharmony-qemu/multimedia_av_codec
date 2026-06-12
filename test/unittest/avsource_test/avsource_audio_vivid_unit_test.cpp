@@ -489,10 +489,10 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1210, TestSize.Level1)
             ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
             ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
             ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
-            ASSERT_EQ(formatVal_.sampleRate, 44100);
+            ASSERT_EQ(formatVal_.sampleRate, 48000);
             ASSERT_EQ(formatVal_.channelCount, 2);
             ASSERT_EQ(formatVal_.codecMime, CodecMimeType::AUDIO_AVS3DA);
-            ASSERT_EQ(formatVal_.channelLayout, 0);
+            ASSERT_EQ(formatVal_.channelLayout, 3);
             hasAudioTrack = true;
         }
     }

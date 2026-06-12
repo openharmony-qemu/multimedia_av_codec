@@ -183,6 +183,11 @@ bool Preprocessor::IsAvailable()
 
 int32_t Preprocessor::ValidateConfiguration(const Media::Format &format, bool configuring)
 {
+    if (!IsAvailable()) {
+        AVCODEC_LOGE("Crop and downsampling are not supported");
+        return AVCS_ERR_UNSUPPORT;
+    }
+
     CHECK_AND_RETURN_RET_LOG(UsingAsyncMode(format), AVCS_ERR_INVALID_VAL,
                              "Preprocessor encoder does not support synchronous mode!");
 
@@ -213,11 +218,6 @@ int32_t Preprocessor::ValidateConfiguration(const Media::Format &format, bool co
         CHECK_AND_RETURN_RET_LOG(!invalid, AVCS_ERR_INVALID_VAL,
             "For YUV pixel format input, target width and height of downsampling must be even numbers."
             "width=%{public}d, height=%{public}d", downsamplingParams_.width, downsamplingParams_.height);
-    }
-    if ((cropParams_.result == ConfigResult::ENABLED || downsamplingParams_.result == ConfigResult::ENABLED) &&
-        !IsAvailable()) {
-        AVCODEC_LOGE("Crop and downsampling are not supported");
-        return AVCS_ERR_UNSUPPORT;
     }
     return AVCS_ERR_OK;
 }

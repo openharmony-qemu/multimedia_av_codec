@@ -1089,7 +1089,7 @@ int32_t HCodec::InBufUsToOmx(BufferInfo& info)
         gotFirstInput_ = true;
     }
 #ifdef BUILD_ENG_VERSION
-    info.Dump(compUniqueStr_, record_[OMX_DirInput].frameCntTotal_, dumpMode_, isEncoder_);
+    info.Dump(compUniqueStrWithMime_, record_[OMX_DirInput].frameCntTotal_, dumpMode_, isEncoder_);
 #endif
     info.EndCpuAccess();
     int32_t ret = compNode_->EmptyThisBuffer(*(info.omxBuffer));
@@ -1186,7 +1186,7 @@ void HCodec::OutBufUsToUser(BufferInfo &info)
 #endif
     info.BeginCpuAccess();
 #ifdef BUILD_ENG_VERSION
-    info.Dump(compUniqueStr_, record_[OMX_DirOutput].frameCntTotal_, dumpMode_, isEncoder_);
+    info.Dump(compUniqueStrWithMime_, record_[OMX_DirOutput].frameCntTotal_, dumpMode_, isEncoder_);
 #endif
     shared_ptr<OmxCodecBuffer> omxBuffer = info.omxBuffer;
     info.avBuffer->pts_ = omxBuffer->pts;
@@ -1534,6 +1534,7 @@ int32_t HCodec::OnAllocateComponent()
     totalWarnInstCnt_ = maxCodecInst_ * 0.6;
     singleAppWarnInstCnt_ = maxCodecInst_ * 0.5;
     compUniqueStr_ = to_string(componentId_) + (isEncoder_ ? "_e" : "_d");
+    compUniqueStrWithMime_ = compUniqueStr_ + "_" + mime_;
     record_[OMX_DirInput].ownerTraceTag_ = { "[" + compUniqueStr_ + "]in_us", "[" + compUniqueStr_ + "]in_user",
         "[" + compUniqueStr_ + "]in_omx", "[" + compUniqueStr_ + "]in_surface"};
     record_[OMX_DirOutput].ownerTraceTag_ = { "[" + compUniqueStr_ + "]out_us", "[" + compUniqueStr_ + "]out_user",

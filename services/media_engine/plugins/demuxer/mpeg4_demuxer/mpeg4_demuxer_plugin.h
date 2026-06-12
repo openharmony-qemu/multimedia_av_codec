@@ -69,6 +69,7 @@ public:
     Status GetLastPTSByTrackId(uint32_t trackId, int64_t &lastPTS) override;
     Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo) override;
     void ResetEosStatus() override {}
+
     bool IsRefParserSupported() override;
     Status ParserRefUpdatePos(int64_t timeStampMs, bool isForward = true) override;
     Status ParserRefInfo() override;
@@ -79,6 +80,16 @@ public:
     Status Dts2FrameId(int64_t dts, uint32_t &frameId) override;
     Status SeekMs2FrameId(int64_t seekMs, uint32_t &frameId) override;
     Status FrameId2SeekMs(uint32_t frameId, int64_t &seekMs) override;
+
+    bool IsMultiVideoTracks();
+    bool IsSupportedCodec();
+    Status GetGopIdFromSeekPos(int64_t seekMs, int32_t &gopId);
+    Status GetSampleIndexBySeekMs(int64_t seekMs, uint32_t &frameId);
+    Status RefParserInit();
+    Status ParserRefInfoLoop(std::shared_ptr<AVBuffer> buffer, uint32_t syncSampleIndex);
+    Status UpdateParserGopId(int32_t syncSamplesPtsSize);
+    Status SelectProGopId();
+
     Status GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
         const uint64_t relativePresentationTimeUs, uint32_t &index) override;
     Status GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
@@ -108,6 +119,7 @@ private:
         GET_FIRST_SAMPLE_PTS,
         INDEX_TO_RELATIVEPTS,
         RELATIVEPTS_TO_INDEX,
+        PTS_TO_DTS_MAPPING,
     };
 
     std::shared_ptr<MPEG4AtomParser::Track> firstTrack_ = nullptr;
@@ -154,6 +166,26 @@ private:
     int64_t minRelativePTSDiffOfRight_ = INT64_MAX;
     uint32_t index2RelativePTS_ = 0;
 
+    std::shared_ptr<ReferenceParserManager> referenceParser_ = nullptr;
+    bool isInit_ = false;
+    int64_t ptsOfIndexZero_ = 0;
+    std::map<int64_t, int64_t> pts2Dts_;  // relative pts(us)->relative dts(us)
+    std::unordered_map<int64_t, uint32_t> dts2SyncSampleIndex_;
+    std::unordered_map<uint32_t, int64_t> sampleIndex2Pts_;  // Sample index->relative pts(us)
+    int32_t refParserTrackIdx_ = -1;
+    std::vector<uint32_t> syncSamplesIndex_;  // Sync sample index or Gop id (start from 0)
+    int64_t refParserStartTime_ = -1;
+    int64_t refParserPendingSeekMsTime_ = -1;
+    int32_t refParserCurGopId_ = 0;
+    bool refParserIsForward_ = true;
+    std::atomic<bool> refParserState_ = true;
+    std::list<uint32_t> processingSyncSamplesIndex_;
+    std::unordered_map<int32_t, int64_t> gopId2DecodedSamplePts_;  // gopId->absolute dts(us)
+    std::string mimeTypeOfVideoStream_ = MimeType::INVALID_TYPE;
+    int64_t startPts_ = 0;
+    bool updatePosIsForward_ = true;
+    bool isSdtpExist_ = false;
+
     int32_t CountTracks();
     void GetAVTrackIds();
     Status ParseAVFirstFrames();
@@ -188,9 +220,16 @@ private:
         int32_t baseTrackTimeScale = 0;
         int64_t relativeSeekTime = 0;
         int64_t trackSeekTime = 0;
+        int64_t syncSeekTime = 0;
     };
     Status PrepareSeekTime(const std::shared_ptr<MPEG4AtomParser::Track>& track, int64_t seekTime,
         int64_t& realSeekTime, SeekTimeContext& context);
+    Status CalculateRealSeekTime(const std::shared_ptr<MPEG4AtomParser::Track>& track, int64_t seekTime,
+        int64_t& realSeekTime);
+    Status ValidateElstShiftStartTimeScale(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+        const SeekTimeContext& context) const;
+    Status ClampSeekTimeToStreamDuration(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+        SeekTimeContext& context);
     struct SeekSampleIndexContext {
         int64_t seekTime = 0;
         int64_t trackSeekTime = 0;
@@ -257,6 +296,7 @@ private:
 
     Status CheckCacheDataLimit(uint32_t trackId);
     void ParseHEVCMetadataInfo(const MPEG4AtomParser::Track& track, Meta &format);
+    void ParseAVCMetadataInfo(const MPEG4AtomParser::Track& track, Meta &format);
     void ConvertCsdToAnnexb(const MPEG4AtomParser::Track& track, Meta& format, uint32_t trackIndex);
     int SelectSeekTrack();
 
@@ -275,11 +315,12 @@ private:
     Status ConvertPTSAndIndexBySttsAndCtts(const std::shared_ptr<MPEG4AtomParser::Track>& track,
         IndexAndPTSConversionMode mode, int64_t absolutePTS, uint32_t sampleIndex);
     void ProcessConversionByMode(IndexAndPTSConversionMode mode, int64_t pts, int64_t absolutePTS,
-        uint32_t sampleIndex);
+        uint32_t sampleIndex, int64_t dts);
     Status UpdatePTSBySttsAndCtts(int64_t& pts, int64_t dts, double timeScaleRate,
         int64_t sampleOffsetOfCurrentCttsEntry);
     void ProcessIndex2RelativePTS(int64_t pts, uint32_t index);
     void ProcessRelativePTS2Index(int64_t pts, int64_t absolutePTS);
+    void ProcessPts2DtsMap(int64_t pts, int64_t dts);
 
     Status WaitForLoop(uint32_t trackId, uint32_t timeout);
     Status EnsureReadLoopStarted();
