@@ -388,6 +388,7 @@ ohos_unittest("thread_safe_container_unit_test") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
   ]
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
@@ -409,6 +410,7 @@ ohos_unittest("aes_decryptor_unit_test") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "media_foundation:media_foundation",
     "openssl:libcrypto_shared",
   ]

@@ -80,6 +80,7 @@ ohos_unittest("sei_parser_filter_unittest") {
   external_deps = [
     "c_utils:utils",
     "googletest:gmock",
+    "hitrace:hitrace_meter",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
   ]

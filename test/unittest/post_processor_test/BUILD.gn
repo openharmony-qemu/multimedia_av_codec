@@ -91,6 +91,7 @@ ohos_unittest("post_processor_unit_test") {
     "graphic_surface:sync_fence",
     "hilog:libhilog",
     "hitrace:libhitracechain",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
