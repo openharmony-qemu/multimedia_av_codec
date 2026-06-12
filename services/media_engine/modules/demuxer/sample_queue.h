@@ -138,7 +138,7 @@ private:
 
     int64_t lastEnterSamplePts_{Plugins::HST_TIME_NONE};
     int64_t lastOutSamplePts_{Plugins::HST_TIME_NONE};
-    int64_t lastEndSamplePts_{Plugins::HST_TIME_NONE};
+    std::atomic<int64_t> lastEndSamplePts_{Plugins::HST_TIME_NONE};
     int64_t startPtsToSwitch_{Plugins::HST_TIME_NONE};
     SelectBitrateStatus switchStatus_{SelectBitrateStatus::NORMAL};
     std::mutex statusMutex_;
