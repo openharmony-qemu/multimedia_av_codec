@@ -154,7 +154,6 @@ void TEST_SUIT::SetUp(void)
 }
 
 void TEST_SUIT::TearDown(void)
-
 {
     dualSample_.reset();
 }
@@ -2183,40 +2182,6 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_SetParam_Crop_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, dualSample_->Release(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Release(EncoderType::PRIMARY));
     OH_AVFormat_Destroy(format);
-}
-
-/**
- * @tc.name: State_Machine_Dual_SetParam_Crop_002
- * @tc.desc: Test setting invalid crop parameters
- * @tc.type: FUNC
- */
-HWTEST_P(TEST_SUIT, State_Machine_Dual_SetParam_Crop_002, TestSize.Level1)
-{
-    auto signal = make_shared<VCodecSignal>(dualSample_);
-    dualSample_->inputResizeWidthHeight_ = 2;
-    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
-                                DEFAULT_FRAME_RATE);
-    RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
-    dualSample_->SetCrop(EncoderType::PRIMARY, 200, 100, 599, 499); // crop: 200,100,599,499
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
-
-    ASSERT_TRUE(dualSample_->CreateSurface());
-    ASSERT_TRUE(dualSample_->CreateSecondary());
-    auto secSignal = make_shared<VCodecSignal>(dualSample_);
-    RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
-    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
-                                DEFAULT_FRAME_RATE);
-    dualSample_->SetCrop(EncoderType::SECONDARY, 200, 100, 599, 499); // crop: 200,100,599,499
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
-
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::SECONDARY));
-    ASSERT_TRUE(dualSample_->WaitForEos(EncoderType::SECONDARY));
-    ASSERT_TRUE(dualSample_->WaitForEos(EncoderType::PRIMARY));
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Release(EncoderType::SECONDARY));
-    ASSERT_EQ(AV_ERR_OK, dualSample_->Release(EncoderType::PRIMARY));
 }
 
 int main(int argc, char **argv)

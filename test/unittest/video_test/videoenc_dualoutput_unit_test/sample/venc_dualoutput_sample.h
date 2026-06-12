@@ -104,7 +104,7 @@ public:
     int32_t samplePixel_ = AV_PIXEL_FORMAT_NV12;
     bool input8BitTo10Bit_ = false;
     int32_t errorNum_ = 0;
-    int32_t inputResizeWidthHeight_ = 0; // 1: constant width and height; 2: increasing width and height
+    int32_t inputResizeWidthHeight_ = 0; // 1: constant width and height;
     bool inputSetParamCrop_ = false;
     bool isCallFuncOnStreamChanged_ = false;
 

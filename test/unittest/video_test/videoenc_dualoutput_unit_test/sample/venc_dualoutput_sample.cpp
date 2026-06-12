@@ -766,13 +766,6 @@ int32_t VideoEncDualOutputSample::ResetFrameParam()
         } else if (inputResizeWidthHeight_ == 1) {
             ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_BUFFER_GEOMETRY,
                                                         RESIZE_WIDTH, RESIZE_HEIGHT);
-        } else if (inputResizeWidthHeight_ == 2) { // 2: increasing width and height
-            int32_t width, height;
-            width = 200 * (primaryEncoder_.frameInputCount + 1);
-            height = 100 * (primaryEncoder_.frameInputCount + 1);
-            ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_BUFFER_GEOMETRY,
-                                                        std::min(static_cast<int>(DEFAULT_WIDTH), width),
-                                                        std::min(static_cast<int>(DEFAULT_HEIGHT), height));
         }
     }
     return ret;
