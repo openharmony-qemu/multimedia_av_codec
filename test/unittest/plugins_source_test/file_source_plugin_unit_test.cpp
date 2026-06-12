@@ -103,6 +103,7 @@ HWTEST_F(FileSourceUnitTest, FileSource_GetParameter_0100, TestSize.Level1)
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     fileSourcePlugin_->GetParameter(meta);
     EXPECT_EQ(Status::OK, fileSourcePlugin_->Deinit());
+    
 }
 /**
  * @tc.name: FileSource_GetAllocator_0100
