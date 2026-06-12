@@ -1060,7 +1060,6 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2150, TestSize.Level1)
     ASSERT_EQ(demuxer_->UnselectTrackByID(0), AV_ERR_OK);
 }
 
-#ifndef USE_MPEG4_DEMUXER
 /**
  * @tc.name: Demuxer_SeekToTime_21501
  * @tc.desc: seek to the file duration(audioVivid m4a)
@@ -1078,6 +1077,9 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_21501, TestSize.Level1)
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
             ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (useMpeg4_) {
+                continue;
+            }
             ASSERT_EQ(ret_, AV_ERR_OK);
             ReadData();
             printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
@@ -1088,7 +1090,6 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_21501, TestSize.Level1)
         }
     }
 }
-#endif
 
 /**
  * @tc.name: Demuxer_SeekToTime_1195
@@ -1108,7 +1109,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1195, TestSize.Level1)
     vector<int32_t> audioVals = {433, 433, 433, 74, 254, 254, 74, 254, 74, 253, 433, 433, 75, 75};
     vector<int32_t> audioVals2 = {417, 417, 417, 71, 245, 245, 71, 245, 71, 244, 417, 417, 72, 72};
     if (useMpeg4_) {
-        videoVals = {602, 602, 602, 102, 352, 352, 102, 352, 102, 352, 602, 0, 102, 102};
+        videoVals = {602, 602, 602, 102, 352, 352, 102, 352, 102, 352, 602, 602, 0, 102, 102};
         audioVals = {433, 433, 433, 73, 253, 253, 73, 253, 73, 252, 433, 433, 2, 74, 74};
         audioVals2 = {417, 417, 417, 69, 243, 243, 69, 243, 69, 242, 417, 417, 1, 70, 70};
     }
