@@ -161,7 +161,7 @@ public:
     void SetPlayerMode(bool isPlayerMode);
 private:
     bool CreatePlugin(std::string pluginName, int32_t id);
-    bool InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, const std::string& pluginName, int32_t id);
+    Status InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, const std::string& pluginName, int32_t id);
     void MediaTypeFound(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, const std::string& pluginName, int32_t id);
     void InitAudioTrack(const StreamInfo& info);
     void InitVideoTrack(const StreamInfo& info);
