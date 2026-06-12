@@ -138,6 +138,32 @@ struct seekInfo {
     int32_t subtitleCount;
 };
 
+static void CheckSeekModeResult(seekInfo seekInfo, OH_AVErrCode errCode)
+{
+    uint32_t seekReturn = 0;
+    int fd = open(seekInfo.fileName, O_RDONLY);
+    int64_t size = GetFileSize(seekInfo.fileName);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    seekReturn = OH_AVDemuxer_SeekToTime(demuxer, seekInfo.millisecond / THOUSAND, seekInfo.seekmode);
+    OH_AVSource_Destroy(source);
+    source = nullptr;
+    OH_AVDemuxer_Destroy(demuxer);
+    demuxer = nullptr;
+    OH_AVFormat_Destroy(sourceFormat);
+    sourceFormat = nullptr;
+    close(fd);
+    ASSERT_EQ(errCode, seekReturn);
+}
+
 static void CheckSeekMode(seekInfo seekInfo)
 {
     OH_AVCodecBufferAttr attr;
@@ -315,7 +341,7 @@ static void SetAudioValue(OH_AVCodecBufferAttr attr, bool &audioIsEnd, int &audi
         cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
     } else {
         audioFrame++;
-        cout << "audio track !!!!!" << endl;
+        // cout << "audio track !!!!!" << endl;
         if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
             aKeyCount++;
         }
@@ -329,7 +355,7 @@ static void SetVideoValue(OH_AVCodecBufferAttr attr, bool &videoIsEnd, int &vide
         cout << videoFrame << "   video is end !!!!!!!!!!!!!!!" << endl;
     } else {
         videoFrame++;
-        cout << "video track !!!!!" << endl;
+        // cout << "video track !!!!!" << endl;
         if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
             vKeyCount++;
         }
@@ -432,6 +458,52 @@ static void CheckM2TSSourceKey()
     ASSERT_EQ(expectcurrentFileType, currentFileType);
     int expectduration = 10054666;
     ASSERT_EQ(expectduration, duration);
+}
+
+static void CheckSourceKey(int expecthasVideo, int expecthasAudio, int expectduration)
+{
+    int64_t duration = 0;
+    int32_t hasAudio = 0;
+    int32_t hasVideo = 0;
+    ASSERT_TRUE(OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_DURATION, &duration));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, Media::Tag::MEDIA_HAS_VIDEO, &hasVideo));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, Media::Tag::MEDIA_HAS_AUDIO, &hasAudio));
+    ASSERT_EQ(expecthasVideo, hasVideo);
+    ASSERT_EQ(expecthasAudio, hasAudio);
+    ASSERT_EQ(expectduration, duration);
+}
+
+static void CheckVideoFormat(int expectWidth, int expectHeight, int expectframeRate, const char* expectMime)
+{
+    int32_t currentWidth = 0;
+    int32_t currentHeight = 0;
+    double frameRate;
+    const char* mimeType = nullptr;
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_WIDTH, &currentWidth));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_HEIGHT, &currentHeight));
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+    ASSERT_TRUE(OH_AVFormat_GetDoubleValue(trackFormat, OH_MD_KEY_FRAME_RATE, &frameRate));
+    ASSERT_EQ(expectWidth, currentWidth);
+    ASSERT_EQ(expectHeight, currentHeight);
+    ASSERT_EQ(0, strcmp(mimeType, expectMime));
+    ASSERT_EQ(expectframeRate, frameRate);
+}
+
+static void CheckAudioFormat(int expectaudioCount, int expectsampleRate, const char* expectMime, int expectbr)
+{
+    const char* mimeType = nullptr;
+    int32_t audioCount = 0;
+    int32_t sampleRate = 0;
+    int64_t br = 0;
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, &sampleRate));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, &audioCount));
+    ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &br));
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+    cout << "mimeType:" << mimeType << "   br:" << br << endl;
+    ASSERT_EQ(expectaudioCount, audioCount);
+    ASSERT_EQ(expectsampleRate, sampleRate);
+    ASSERT_EQ(0, strcmp(mimeType, expectMime));
+    ASSERT_EQ(expectbr, br);
 }
 
 /**
@@ -1063,4 +1135,261 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, DEMUXER_M2TS_RANDOM_SEEK_0500, TestSize.Level2)
 HWTEST_F(DemuxerM2tsFuncNdkTest, DEMUXER_M2TS_RANDOM_SEEK_0600, TestSize.Level2)
 {
     CheckSeekResult("/data/test/media/mpeg2_aac.m2ts", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : FLV_AUDIOVIVID_DEMUXER_FUNCTION_0100
+ * @tc.name      : fd demux 264_audiovivid_short_pts.flv
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_0100, TestSize.Level0)
+{
+    const char *file = "/data/test/media/264_audiovivid_short_pts.flv";
+    int fd = open(file, O_RDONLY);
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
+    CheckTrackSelect();
+    CheckFrames(123, 1, 43, 43);
+    close(fd);
+    fd = -1;
+}
+
+/**
+ * @tc.number    : FLV_AUDIOVIVID_DEMUXER_FUNCTION_0200
+ * @tc.name      : fd demux 265_audiovivid_short_pts.flv
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_0200, TestSize.Level0)
+{
+    const char *file = "/data/test/media/265_audiovivid_short_pts.flv";
+    int fd = open(file, O_RDONLY);
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
+    CheckTrackSelect();
+    CheckFrames(242, 1, 43, 43);
+    close(fd);
+    fd = -1;
+}
+
+/**
+ * @tc.number    : FLV_AUDIOVIVID_DEMUXER_FUNCTION_0300
+ * @tc.name      : demuxer random seek, audiovivid.flv
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_0300, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/audiovivid.flv", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : FLV_AUDIOVIVID_DEMUXER_FUNCTION_0400
+ * @tc.name      : demuxer random seek, 264_audiovivid_short_pts.flv
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_0400, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/264_audiovivid_short_pts.flv", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : FLV_AUDIOVIVID_DEMUXER_FUNCTION_0500
+ * @tc.name      : demuxer random seek, 265_audiovivid_short_pts.flv
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_0500, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/265_audiovivid_short_pts.flv", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : FLV_AUDIOVIVID_DEMUXER_FUNCTION_0600
+ * @tc.name      : demuxer seek, 264_audiovivid_short_pts.flv
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_0600, TestSize.Level2)
+{
+    seekInfo fileTest1{"/data/test/media/264_audiovivid_short_pts.flv", SEEK_MODE_PREVIOUS_SYNC,
+        1000000, 123, 27, 0};
+    CheckSeekMode(fileTest1);
+    cout << "-----------------fileTest1_finish-----------------"<< endl;
+    seekInfo fileTest2{"/data/test/media/264_audiovivid_short_pts.flv", SEEK_MODE_CLOSEST_SYNC,
+        1000000, 123, 27, 0};
+    CheckSeekMode(fileTest2);
+    cout << "-----------------fileTest2_finish-----------------"<< endl;
+    seekInfo fileTest3{"/data/test/media/264_audiovivid_short_pts.flv", SEEK_MODE_NEXT_SYNC,
+        1000000, 0, 0, 0};
+    CheckSeekModeResult(fileTest3, AV_ERR_UNKNOWN);
+    cout << "-----------------fileTest3_finish-----------------"<< endl;
+    seekInfo fileTest4{"/data/test/media/264_audiovivid_short_pts.flv", SEEK_MODE_PREVIOUS_SYNC,
+        2000000, 123, 27, 0};
+    CheckSeekMode(fileTest4);
+    cout << "-----------------fileTest4_finish-----------------"<< endl;
+    seekInfo fileTest5{"/data/test/media/264_audiovivid_short_pts.flv", SEEK_MODE_CLOSEST_SYNC,
+        2000000, 123, 27, 0};
+    CheckSeekMode(fileTest5);
+    cout << "-----------------fileTest5_finish-----------------"<< endl;
+    seekInfo fileTest6{"/data/test/media/264_audiovivid_short_pts.flv", SEEK_MODE_NEXT_SYNC,
+        2000000, 0, 0, 0};
+    CheckSeekModeResult(fileTest6, AV_ERR_UNKNOWN);
+    cout << "-----------------fileTest6_finish-----------------"<< endl;
+    seekInfo fileTest7{"/data/test/media/264_audiovivid_short_pts.flv", SEEK_MODE_PREVIOUS_SYNC,
+        4000000, 123, 27, 0};
+    CheckSeekMode(fileTest7);
+    cout << "-----------------fileTest7_finish-----------------"<< endl;
+    seekInfo fileTest8{"/data/test/media/264_audiovivid_short_pts.flv", SEEK_MODE_CLOSEST_SYNC,
+        4000000, 123, 27, 0};
+    CheckSeekMode(fileTest8);
+    cout << "-----------------fileTest8_finish-----------------"<< endl;
+    seekInfo fileTest9{"/data/test/media/264_audiovivid_short_pts.flv", SEEK_MODE_NEXT_SYNC,
+        4000000, 0, 0, 0};
+    CheckSeekModeResult(fileTest9, AV_ERR_UNKNOWN);
+    cout << "-----------------fileTest9_finish-----------------"<< endl;
+}
+
+/**
+ * @tc.number    : FLV_AUDIOVIVID_DEMUXER_FUNCTION_0700
+ * @tc.name      : demuxer seek, 265_audiovivid_short_pts.flv
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_0700, TestSize.Level2)
+{
+    seekInfo fileTest1{"/data/test/media/265_audiovivid_short_pts.flv", SEEK_MODE_PREVIOUS_SYNC,
+        1000000, 242, 12, 0};
+    CheckSeekMode(fileTest1);
+    cout << "-----------------fileTest1_finish-----------------"<< endl;
+    seekInfo fileTest2{"/data/test/media/265_audiovivid_short_pts.flv", SEEK_MODE_CLOSEST_SYNC,
+        1000000, 242, 12, 0};
+    CheckSeekMode(fileTest2);
+    cout << "-----------------fileTest2_finish-----------------"<< endl;
+    seekInfo fileTest3{"/data/test/media/265_audiovivid_short_pts.flv", SEEK_MODE_NEXT_SYNC,
+        1000000, 0, 0, 0};
+    CheckSeekModeResult(fileTest3, AV_ERR_UNKNOWN);
+    cout << "-----------------fileTest3_finish-----------------"<< endl;
+    seekInfo fileTest4{"/data/test/media/265_audiovivid_short_pts.flv", SEEK_MODE_PREVIOUS_SYNC,
+        2000000, 242, 12, 0};
+    CheckSeekMode(fileTest4);
+    cout << "-----------------fileTest4_finish-----------------"<< endl;
+    seekInfo fileTest5{"/data/test/media/265_audiovivid_short_pts.flv", SEEK_MODE_CLOSEST_SYNC,
+        2000000, 242, 12, 0};
+    CheckSeekMode(fileTest5);
+    cout << "-----------------fileTest5_finish-----------------"<< endl;
+    seekInfo fileTest6{"/data/test/media/265_audiovivid_short_pts.flv", SEEK_MODE_NEXT_SYNC,
+        2000000, 0, 0, 0};
+    CheckSeekModeResult(fileTest6, AV_ERR_UNKNOWN);
+    cout << "-----------------fileTest6_finish-----------------"<< endl;
+    seekInfo fileTest7{"/data/test/media/265_audiovivid_short_pts.flv", SEEK_MODE_PREVIOUS_SYNC,
+        4000000, 242, 12, 0};
+    CheckSeekMode(fileTest7);
+    cout << "-----------------fileTest7_finish-----------------"<< endl;
+    seekInfo fileTest8{"/data/test/media/265_audiovivid_short_pts.flv", SEEK_MODE_CLOSEST_SYNC,
+        4000000, 242, 12, 0};
+    CheckSeekMode(fileTest8);
+    cout << "-----------------fileTest8_finish-----------------"<< endl;
+    seekInfo fileTest9{"/data/test/media/265_audiovivid_short_pts.flv", SEEK_MODE_NEXT_SYNC,
+        4000000, 0, 0, 0};
+    CheckSeekModeResult(fileTest9, AV_ERR_UNKNOWN);
+    cout << "-----------------fileTest9_finish-----------------"<< endl;
+}
+
+/**
+ * @tc.number    : FLV_AUDIOVIVID_DEMUXER_FUNCTION_0800
+ * @tc.name      : format check 264_audiovivid_short_pts.flv
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_0800, TestSize.Level2)
+{
+    const char *file = "/data/test/media/264_audiovivid_short_pts.flv";
+    int fd = open(file, O_RDONLY);
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
+    CheckTrackSelect();
+    CheckSourceKey(1, 1, 5566000);
+    for (int32_t index = 0; index < 2; index++) {
+        trackFormat = OH_AVSource_GetTrackFormat(source, index);
+        ASSERT_NE(trackFormat, nullptr);
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &g_tarckType));
+        if (g_tarckType == MEDIA_TYPE_AUD) {
+            CheckAudioFormat(8, 44100, "audio/av3a", 152000);
+        } else if (g_tarckType == MEDIA_TYPE_VID) {
+            CheckVideoFormat(640, 360, 30.0, "video/avc");
+        }
+        OH_AVFormat_Destroy(trackFormat);
+        trackFormat = nullptr;
+    }
+    close(fd);
+    fd = -1;
+}
+
+/**
+ * @tc.number    : FLV_AUDIOVIVID_DEMUXER_FUNCTION_0900
+ * @tc.name      : format check 265_audiovivid_short_pts.flv
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_0900, TestSize.Level2)
+{
+    const char *file = "/data/test/media/265_audiovivid_short_pts.flv";
+    int fd = open(file, O_RDONLY);
+    OpenFile(file, fd, &source, &demuxer);
+    CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
+    CheckTrackSelect();
+    CheckSourceKey(1, 1, 5500000);
+    for (int32_t index = 0; index < 2; index++) {
+        trackFormat = OH_AVSource_GetTrackFormat(source, index);
+        ASSERT_NE(trackFormat, nullptr);
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &g_tarckType));
+        if (g_tarckType == MEDIA_TYPE_AUD) {
+            CheckAudioFormat(8, 44100, "audio/av3a", 152000);
+        } else if (g_tarckType == MEDIA_TYPE_VID) {
+            CheckVideoFormat(640, 360, 60.0, "video/hevc");
+        }
+        OH_AVFormat_Destroy(trackFormat);
+        trackFormat = nullptr;
+    }
+    close(fd);
+    fd = -1;
+}
+
+/**
+ * @tc.number    : FLV_AUDIOVIVID_DEMUXER_FUNCTION_1000
+ * @tc.name      : demuxer seek, audiovivid.flv
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_1000, TestSize.Level2)
+{
+    seekInfo fileTest1{"/data/test/media/audiovivid.flv", SEEK_MODE_PREVIOUS_SYNC,
+        0, 0, 43, 0};
+    CheckSeekMode(fileTest1);
+    cout << "-----------------fileTest1_finish-----------------"<< endl;
+    seekInfo fileTest2{"/data/test/media/audiovivid.flv", SEEK_MODE_CLOSEST_SYNC,
+        0, 0, 43, 0};
+    CheckSeekMode(fileTest2);
+    cout << "-----------------fileTest2_finish-----------------"<< endl;
+    seekInfo fileTest3{"/data/test/media/audiovivid.flv", SEEK_MODE_NEXT_SYNC,
+        0, 0, 43, 0};
+    CheckSeekMode(fileTest3);
+    cout << "-----------------fileTest3_finish-----------------"<< endl;
+    seekInfo fileTest4{"/data/test/media/audiovivid.flv", SEEK_MODE_PREVIOUS_SYNC,
+        400000, 0, 26, 0};
+    CheckSeekMode(fileTest4);
+    cout << "-----------------fileTest4_finish-----------------"<< endl;
+    seekInfo fileTest5{"/data/test/media/audiovivid.flv", SEEK_MODE_CLOSEST_SYNC,
+        400000, 0, 26, 0};
+    CheckSeekMode(fileTest5);
+    cout << "-----------------fileTest5_finish-----------------"<< endl;
+    seekInfo fileTest6{"/data/test/media/audiovivid.flv", SEEK_MODE_NEXT_SYNC,
+        400000, 0, 25, 0};
+    CheckSeekMode(fileTest6);
+    cout << "-----------------fileTest6_finish-----------------"<< endl;
+    seekInfo fileTest7{"/data/test/media/audiovivid.flv", SEEK_MODE_PREVIOUS_SYNC,
+        900000, 0, 5, 0};
+    CheckSeekMode(fileTest7);
+    cout << "-----------------fileTest7_finish-----------------"<< endl;
+    seekInfo fileTest8{"/data/test/media/audiovivid.flv", SEEK_MODE_CLOSEST_SYNC,
+        900000, 0, 5, 0};
+    CheckSeekMode(fileTest8);
+    cout << "-----------------fileTest8_finish-----------------"<< endl;
+    seekInfo fileTest9{"/data/test/media/audiovivid.flv", SEEK_MODE_NEXT_SYNC,
+        900000, 0, 4, 0};
+    CheckSeekMode(fileTest9);
+    cout << "-----------------fileTest9_finish-----------------"<< endl;
 }
