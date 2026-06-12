@@ -406,6 +406,7 @@ HWTEST(TestAudioSink, find_audio_sink_audio_reset_sync_info, TestSize.Level1)
     ASSERT_TRUE(audioSink != nullptr);
     audioSink->ResetSyncInfo();
     SUCCEED();
+    
 }
 
 HWTEST(TestAudioSink, find_audio_sink_audio_change_track, TestSize.Level1)
