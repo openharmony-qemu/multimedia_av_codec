@@ -104,7 +104,6 @@ HWTEST_F(FileSourceUnitTest, FileSource_GetParameter_0100, TestSize.Level1)
     auto ret = fileSourcePlugin_->GetParameter(meta);
     EXPECT_EQ(Status::ERROR_UNIMPLEMENTED, ret);
     EXPECT_EQ(Status::OK, fileSourcePlugin_->Deinit());
-    
 }
 /**
  * @tc.name: FileSource_GetAllocator_0100
