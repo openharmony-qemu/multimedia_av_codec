@@ -185,7 +185,7 @@ HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_ExceedMaxLen_008, TestSize.Level1)
     OH_AVFormat_SetIntValue(fmt5, OH_MD_KEY_VIDEO_METADATA_ROI_RIGHT, bigCoord);
     OH_AVFormat_SetIntValue(fmt5, OH_MD_KEY_VIDEO_METADATA_ROI_DELTA_QP, -51);
     OH_AVFormat_SetIntValue(fmt5, OH_MD_KEY_VIDEO_METADATA_ROI_SEM_LABEL, 1);
-    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoMetadata_AppendRoiString(&roiStr, fmt5));
+    EXPECT_EQ(AV_ERR_NO_MEMORY, OH_VideoMetadata_AppendRoiString(&roiStr, fmt5));
     uint32_t count = 0;
     ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_GetRoiCount(roiStr, &count));
     EXPECT_EQ(count, 4);
