@@ -96,6 +96,7 @@ HWTEST_F(TestVideoSink, do_sync_write_not_eos, TestSize.Level1)
     (void)videoSink_->CheckBufferLatenessMayWait(buffer, 1);
     float speed = 0;
     videoSink_->AdjustPlaybackRate(speed);
+    
 }
 
 HWTEST_F(TestVideoSink, do_sync_write_two_frames, TestSize.Level1)
